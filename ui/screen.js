@@ -108,7 +108,14 @@
     const src = spriteUrl(species, form, back);
     if (img.getAttribute("src") === src || img.dataset.wanted === src) return;
     img.dataset.wanted = src;
-    img.onerror = form ? () => { img.onerror = null; img.src = spriteUrl(species, "", back); } : null;
+    // Keep the old picture (the last Pokémon here) from showing while the new one loads.
+    img.style.visibility = "hidden";
+    img.onload = () => { img.style.visibility = ""; };
+    img.onerror = () => {
+      img.onerror = null;
+      if (form) img.src = spriteUrl(species, "", back);   // no art for this form: use the base one
+      else img.style.visibility = "";
+    };
     img.src = src;
   }
   // The same as an <img> tag, for HTML built as strings.
