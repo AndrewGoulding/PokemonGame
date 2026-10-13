@@ -20,7 +20,7 @@ for (const src of headless) {
 }
 
 for (const name of ["TYPE_CHART", "NATURES", "DEX", "MOVES", "ABILITIES", "ITEMS", "LEARNSETS_GEN6",
-  "Stats", "Damage", "CONDITIONS", "ITEM_EFFECTS", "BATTLE_MOVE_EFFECTS", "Battle", "RandomTeam"]) {
+  "Stats", "Damage", "CONDITIONS", "ITEM_EFFECTS", "BATTLE_MOVE_EFFECTS", "Battle", "RandomTeam", "OpponentAI"]) {
   assert(window[name], "missing global " + name);
 }
 
@@ -138,4 +138,69 @@ for (const [setup, called] of [[null, "Tri Attack"], ["Electric Terrain", "Thund
   assert(!battle.events.some((ev) => ev[0] === "-fail" && ev[1] === "p1a: Tentacruel"), "Wring Out failed");
 }
 
-console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns)");
+// ---------- Opponent AI ----------
+
+function aiPick(p1Team, p2Team, setup) {
+  const battle = new Battle({ seed: 1, p1: { name: "A", team: p1Team }, p2: { name: "B", team: p2Team } });
+  battle.start();
+  if (setup) setup(battle);
+  const choice = OpponentAI.choose(battle, "p2");
+  const side = battle.sides.p2;
+  return choice.type === "move" ? side.active.moves[choice.move].name : "switch:" + side.pokemon[choice.index].species;
+}
+
+// Picks the strongest move against this target, accounting for type matchups.
+assert.strictEqual(aiPick([{ species: "Heatran", level: 50, moves: ["Splash"] }],
+  [{ species: "Garchomp", level: 50, moves: ["Swords Dance", "Dragon Claw", "Earthquake"] }]), "Earthquake");
+assert.strictEqual(aiPick([{ species: "Skarmory", level: 50, moves: ["Splash"] }],
+  [{ species: "Garchomp", level: 50, moves: ["Swords Dance", "Earthquake", "Dragon Claw"] }]), "Dragon Claw");
+// Weighs accuracy: Surf (90 power, 100%) over Hydro Pump (110 power, 80%), and
+// when either would KO, the one that can't miss.
+const starmie = [{ species: "Starmie", level: 50, moves: ["Hydro Pump", "Surf"] }];
+assert.strictEqual(aiPick([{ species: "Snorlax", level: 50, moves: ["Splash"] }], starmie), "Surf");
+assert.strictEqual(aiPick([{ species: "Snorlax", level: 50, moves: ["Splash"] }], starmie,
+  (b) => { b.sides.p1.active.hp = 20; }), "Surf");
+// After a faint, sends in the Pokémon with the best matchup (Raichu vs Gyarados).
+assert.strictEqual(aiPick([{ species: "Gyarados", level: 50, moves: ["Waterfall"] }],
+  [{ species: "Magikarp", level: 5, moves: ["Splash"] }, { species: "Charizard", level: 50, moves: ["Flamethrower"] },
+   { species: "Raichu", level: 50, moves: ["Thunderbolt"] }, { species: "Onix", level: 50, moves: ["Rock Throw"] }],
+  (b) => { b.choose("p1", { type: "move", move: 0 }); b.choose("p2", { type: "move", move: 0 }); }), "switch:Raichu");
+
+// Beats an opponent that picks random moves most of the time. Each seed is played
+// twice with the teams swapped so team strength cancels out.
+let aiWinRate;
+{
+  const randomMove = (battle, side, rng) => {
+    const req = battle.getRequest(side);
+    const pick = (arr) => arr[Math.floor(rng() * arr.length)];
+    if (req.phase === "switch") return { type: "switch", index: pick(req.switches) };
+    if (req.phase !== "move") return null;
+    if (req.active.forced) return { type: "move", move: 0 };
+    if (req.active.struggle) return { type: "move", move: "Struggle" };
+    return { type: "move", move: pick(req.active.moves.filter((m) => !m.disabled)).index };
+  };
+  let wins = 0, games = 0;
+  for (let seed = 1; seed <= 100; seed++) {
+    for (const swap of [false, true]) {
+      const teamRng = mulberry32(seed * 31);
+      let aiTeam = RandomTeam.team(3, { rng: teamRng }), otherTeam = RandomTeam.team(3, { rng: teamRng });
+      if (swap) [aiTeam, otherTeam] = [otherTeam, aiTeam];
+      const battle = new Battle({ seed, p1: { name: "AI", team: aiTeam }, p2: { name: "Random", team: otherTeam } });
+      const rng = mulberry32(seed);
+      battle.start();
+      for (let step = 0; step < 2000 && !battle.ended; step++) {
+        const a = OpponentAI.choose(battle, "p1", rng);
+        if (a) assert(battle.choose("p1", a).ok, "AI choice rejected in battle " + seed);
+        const r = randomMove(battle, "p2", rng);
+        if (r) assert(battle.choose("p2", r).ok, "random choice rejected in battle " + seed);
+      }
+      assert(battle.ended, "AI battle " + seed + " did not finish");
+      games++;
+      if (battle.winner === "p1") wins++;
+    }
+  }
+  assert(wins / games >= 0.7, "AI only won " + wins + "/" + games + " against random moves");
+  aiWinRate = Math.round((100 * wins) / games);
+}
+
+console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns), AI beat random moves in " + aiWinRate + "% of games");

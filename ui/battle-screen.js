@@ -1,5 +1,6 @@
 // Battle screen
-// Depends on: everything in data/ and engine/, plus game/random-team.js.
+// Depends on: everything in data/ and engine/, plus game/random-team.js and
+// game/opponent-ai.js.
 //
 // The screen never reads HP or status straight from the engine while events are
 // playing. It replays battle.events one at a time, updating its own copy of each
@@ -440,16 +441,6 @@
 
   // ---------- Turn flow ----------
 
-  // Placeholder opponent: a random usable move, and a random Pokémon when it must
-  // switch. Never switches by choice.
-  function opponentChoice(req) {
-    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-    if (req.phase === "switch") return { type: "switch", index: pick(req.switches) };
-    if (req.active.forced) return { type: "move", move: 0 };
-    if (req.active.struggle) return { type: "move", move: "Struggle" };
-    return { type: "move", move: pick(req.active.moves.filter((m) => !m.disabled)).index };
-  }
-
   // Engine bugs shouldn't freeze the screen: report them and offer a new battle.
   function choose(side, choice) {
     try {
@@ -483,7 +474,9 @@
       if (p1.phase === "switch") { showSwitchMenu(p1, false); return; }
       const p2 = battle.getRequest("p2");
       if (p2.phase === "move" || p2.phase === "switch") {
-        if (choose("p2", opponentChoice(p2)).crashed) { crashed(); return; }
+        let aiChoice;
+        try { aiChoice = OpponentAI.choose(battle, "p2"); } catch (e) { console.error(e); crashed(); return; }
+        if (choose("p2", aiChoice).crashed) { crashed(); return; }
         continue;
       }
       say("Something went wrong: neither side can act.");
