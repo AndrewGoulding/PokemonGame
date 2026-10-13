@@ -1,0 +1,83 @@
+/* Party screen, starter choice and evolution */
+
+.scene {
+  min-height: 320px;
+  padding: 14px;
+  background: linear-gradient(to bottom, #e8f6ff, #cdeaf9);
+}
+.scene.hidden { display: none; }
+
+/* ---------- Party ---------- */
+
+.party {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 10px;
+}
+
+.card {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 8px 10px;
+  border: 3px solid #3c4048;
+  border-radius: 12px;
+  background: #fbfbf2;
+  color: #222;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.card:first-child { border-color: #c8a85a; background: #fff8e1; }
+.card:disabled { cursor: default; }
+.card:hover:not(:disabled) { filter: brightness(1.04); }
+.card.fainted { background: #eadede; }
+.card img { width: 72px; height: 72px; image-rendering: pixelated; flex-shrink: 0; }
+.card-body { flex: 1; min-width: 0; font-size: 14px; }
+.card-top { display: flex; gap: 6px; align-items: baseline; }
+.card-top b { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-hp { text-align: right; font-size: 12px; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.card-moves { margin-top: 4px; font-size: 11px; color: #555; }
+
+.bar { height: 7px; border-radius: 4px; background: #4a4f58; overflow: hidden; margin-top: 5px; }
+.bar > div { height: 100%; }
+.bar.hp > div { background: #3fc75a; }
+.bar.hp.mid > div { background: #f2c230; }
+.bar.hp.low > div { background: #e5463b; }
+.bar.exp { height: 4px; }
+.bar.exp > div { background: #3fa8f2; }
+
+.bag-line { margin: 12px 2px 0; font-size: 13px; color: #34495e; }
+
+/* ---------- Starter / spotlight ---------- */
+
+.starters {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 290px;
+}
+.starters figure { margin: 0; text-align: center; font-weight: 700; }
+.starters img { width: clamp(96px, 26vw, 160px); image-rendering: pixelated; }
+
+.spotlight {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 290px;
+}
+.big-sprite { width: clamp(160px, 45vw, 260px); image-rendering: pixelated; }
+.big-sprite.evolving { animation: evolve 0.4s ease-in-out infinite alternate; }
+.big-sprite.evolved { animation: glow 1s ease-out 1; }
+
+@keyframes evolve {
+  from { filter: brightness(1); transform: scale(1); }
+  to { filter: brightness(0) invert(1); transform: scale(0.85); }
+}
+@keyframes glow {
+  from { filter: brightness(0) invert(1); }
+  to { filter: none; }
+}

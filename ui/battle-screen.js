@@ -1,6 +1,12 @@
 // Battle screen
-// Depends on: everything in data/ and engine/, plus game/random-team.js and
-// game/opponent-ai.js.
+// Depends on: everything in data/ and engine/, plus ui/screen.js.
+//
+//   const result = await BattleScreen.run({
+//     p1: { name: "You", team: [...sets] }, p2: { name: "Youngster Ben", team: [...sets] },
+//     wild: false, exp: true, bag: { "poke-ball": 5 }, catchContext: {...},
+//     opponent: (battle) => choice
+//   });
+//   result.outcome   // "won" | "lost" | "caught" | "ran" | "draw"
 //
 // The screen never reads HP or status straight from the engine while events are
 // playing. It replays battle.events one at a time, updating its own copy of each
@@ -9,10 +15,17 @@
 (function () {
   "use strict";
 
-  const TEAM_SIZE = 3;
-  const LEVEL = 50;
-  const MESSAGE_MS = 1100;   // how long each message stays up (click to skip)
   const HP_ANIM_MS = 550;    // matches the .hp-fill transition in battle-screen.css
+  const SHAKE_MS = 750;      // one wobble of a thrown ball
+
+  const BALL_NAMES = {
+    "poke-ball": "Poké Ball", "great-ball": "Great Ball", "ultra-ball": "Ultra Ball", "master-ball": "Master Ball"
+  };
+  const ballName = (id) => BALL_NAMES[id] || id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const BREAK_FREE = [
+    "Oh no! The Pokémon broke free!", "Aww! It appeared to be caught!",
+    "Aargh! Almost had it!", "Gah! It was so close, too!"
+  ];
 
   // ---------- Message text ----------
   //
@@ -151,8 +164,8 @@
 
   const $ = (sel) => document.querySelector(sel);
   const el = {
-    textbox: $("#textbox"),
-    menu: $("#menu"),
+    field: $("#field"),
+    ball: $("#ball"),
     sides: {
       p1: { sprite: $("#sprite-player"), info: $("#info-player") },
       p2: { sprite: $("#sprite-foe"), info: $("#info-foe") }
@@ -162,18 +175,20 @@
   // ---------- State ----------
 
   let battle = null;
+  let config = null;
   let cursor = 0;       // index of the next battle event to play
   let view = null;      // what the screen currently shows for each side
-  let skipWait = null;  // resolves the current wait early (click / key press)
 
   const speciesId = (species) => (window.DEX[species] ? window.DEX[species].id : 0);
   const sideOf = (ident) => String(ident).slice(0, 2);
   const nameOf = (ident) => String(ident).replace(/^p\da: /, "");
   const otherSide = (side) => (side === "p1" ? "p2" : "p1");
+  const { message, ask, wait, say } = window.Screen;
 
-  // "Charizard" / "the opposing Blastoise"
+  // "Charizard" / "the opposing Blastoise" / "the wild Pidgey"
   function label(side, name) {
-    return side === "p1" ? name : "the opposing " + name;
+    if (side === "p1") return name;
+    return (battle.wild ? "the wild " : "the opposing ") + name;
   }
   const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -200,17 +215,7 @@
     return m ? { hp: +m[1], maxhp: +m[2], status: m[3] || "" } : null;
   }
 
-  function wait(ms) {
-    return new Promise((resolve) => {
-      const done = () => { clearTimeout(t); skipWait = null; resolve(); };
-      const t = setTimeout(done, ms);
-      skipWait = done;
-    });
-  }
-
   // ---------- Rendering ----------
-
-  function say(text) { el.textbox.textContent = text; }
 
   function renderSide(id) {
     const v = view[id];
@@ -224,7 +229,7 @@
     const src = folder + speciesId(v.species) + ".png";
     if (sprite.getAttribute("src") !== src) sprite.setAttribute("src", src);
     sprite.alt = v.name;
-    sprite.classList.remove("hidden");
+    sprite.classList.toggle("hidden", !!v.inBall);
     sprite.classList.toggle("fainted", v.fainted);
     info.classList.toggle("hidden", v.fainted);
 
@@ -235,12 +240,17 @@
     status.className = "status " + v.status;
 
     const pct = v.maxhp ? (v.hp / v.maxhp) * 100 : 0;
-    const fill = info.querySelector(".hp-fill");
-    fill.style.width = pct + "%";
-    fill.classList.toggle("mid", pct <= 50 && pct > 20);
-    fill.classList.toggle("low", pct <= 20);
+    const fillEl = info.querySelector(".hp-fill");
+    fillEl.style.width = pct + "%";
+    fillEl.classList.toggle("mid", pct <= 50 && pct > 20);
+    fillEl.classList.toggle("low", pct <= 20);
     const hpText = info.querySelector(".hp-text");
     if (hpText) hpText.textContent = v.hp + " / " + v.maxhp;
+    const exp = info.querySelector(".exp-row");
+    if (exp) {
+      exp.classList.toggle("hidden", v.exp == null);
+      exp.querySelector(".exp-fill").style.width = ((v.exp || 0) * 100) + "%";
+    }
   }
 
   function flash(id) {
@@ -261,10 +271,26 @@
     return true;
   }
 
+  // Updates the experience bar if `teamIndex` is the Pokémon on the field.
+  function setExp(teamIndex, pct, level, hpStr) {
+    const v = view.p1;
+    if (v.teamIndex !== +teamIndex) return;
+    if (level != null) v.level = level;
+    if (hpStr) Object.assign(v, parseHp(hpStr));
+    v.exp = pct === "" ? null : +pct;
+    renderSide("p1");
+  }
+
   // ---------- Event playback ----------
 
+  const teamName = (index) => {
+    const mon = battle.sides.p1.pokemon[+index];
+    return mon ? mon.name : "";
+  };
+
   // Applies one engine event to the view and returns what to show:
-  // a message string, { pause: ms } for a silent HP change, or null.
+  // a message string, { pause: ms } for a silent HP change, an async function
+  // for anything interactive or animated, or null.
   function applyEvent(ev) {
     const [type, a, b, c] = ev;
     const side = sideOf(a);
@@ -276,10 +302,13 @@
         const m = /^(.*?), L(\d+)/.exec(b) || [];
         const hp = parseHp(c) || { hp: 0, maxhp: 0, status: "" };
         view[side] = { name: nameOf(a), species: m[1] || nameOf(a), level: m[2] || "?",
-          hp: hp.hp, maxhp: hp.maxhp, status: hp.status, fainted: false };
+          hp: hp.hp, maxhp: hp.maxhp, status: hp.status, fainted: false,
+          exp: ev[4] === "" || ev[4] == null ? null : +ev[4], teamIndex: +ev[5] };
         renderSide(side);
         if (type === "drag") return fill("{who} was dragged out!", a);
-        return side === "p1" ? "Go! " + nameOf(a) + "!" : battle.sides.p2.name + " sent out " + nameOf(a) + "!";
+        if (side === "p1") return "Go! " + nameOf(a) + "!";
+        if (battle.wild) return "A wild " + nameOf(a) + " appeared!";
+        return battle.sides.p2.name + " sent out " + nameOf(a) + "!";
       }
       case "detailschange":
         v.species = b;
@@ -361,7 +390,62 @@
       case "-fieldstart": return lookup(FIELD_START, effectId(a), effectName(a) + " took effect!");
       case "-fieldend": return lookup(FIELD_END, effectId(a), effectName(a) + " wore off.");
       case "-fieldactivate": return effectId(a) === "perishsong" ? VOLATILE_START.perishsong : null;
-      case "win": return a === battle.sides.p1.name ? "You defeated " + battle.sides.p2.name + "!" : "You lost to " + battle.sides.p2.name + "...";
+
+      // ----- Progression -----
+      case "-exp":   // [ident, amount, teamIndex, progress]
+        return async () => {
+          setExp(c, ev[4]);
+          await message(teamName(c) + " gained " + b + " Exp. Points!");
+        };
+      case "-levelup":   // [ident, level, hp, teamIndex, progress]
+        return async () => {
+          // Empty the bar instantly (no backwards slide), then fill to the new progress.
+          const bar = el.sides.p1.info.querySelector(".exp-fill");
+          bar.style.transition = "none";
+          setExp(ev[4], 0, b, c);
+          void bar.offsetWidth;
+          bar.style.transition = "";
+          await wait(250);
+          setExp(ev[4], ev[5], b, c);
+          await message(teamName(ev[4]) + " grew to Lv. " + b + "!");
+        };
+      case "-learnmove":   // [ident, move, teamIndex]
+        return teamName(c) + " learned " + b + "!";
+      case "-trylearn":    // [ident, move, teamIndex]
+        return async () => {
+          const mon = battle.sides.p1.pokemon[+c];
+          const slot = await window.Screen.learnMovePrompt(mon.name, battle.ownMoves(mon).map((m) => m.name), b);
+          if (slot != null) battle.replaceMove("p1", +c, slot, b);
+        };
+
+      // ----- Wild battles -----
+      case "-ball":   // [side, ball, target, shakes, "caught"|""]
+        return async () => {
+          await message("You threw a " + ballName(b) + "!", 700);
+          el.ball.src = "assets/sprites/items/ball/" + b.replace(/-ball$/, "") + ".png";
+          el.ball.classList.remove("hidden", "shake", "caught");
+          view.p2.inBall = true;
+          renderSide("p2");
+          await wait(500);
+          for (let i = 0; i < +ev[4]; i++) {
+            el.ball.classList.remove("shake");
+            void el.ball.offsetWidth;
+            el.ball.classList.add("shake");
+            await wait(SHAKE_MS);
+          }
+          if (ev[5] === "caught") { el.ball.classList.add("caught"); return; }
+          el.ball.classList.add("hidden");
+          view.p2.inBall = false;
+          renderSide("p2");
+          await message(BREAK_FREE[+ev[4]] || BREAK_FREE[0]);
+        };
+      case "caught": return "Gotcha! " + nameOf(a) + " was caught!";
+      case "-run": return "Got away safely!";
+      case "-runfail": return "You couldn't get away!";
+
+      case "win":
+        if (a !== battle.sides.p1.name) return null; // the game layer handles losing
+        return battle.wild ? null : "You defeated " + battle.sides.p2.name + "!";
       case "tie": return "The battle ended in a draw!";
       default: return null; // "turn" and anything purely internal
     }
@@ -370,78 +454,76 @@
   async function playNewEvents() {
     while (cursor < battle.events.length) {
       const out = applyEvent(battle.events[cursor++]);
-      if (typeof out === "string") {
-        say(out);
-        await wait(MESSAGE_MS);
-      } else if (out && out.pause) {
-        await wait(out.pause);
-      }
+      if (typeof out === "string") await message(out);
+      else if (typeof out === "function") await out();
+      else if (out && out.pause) await wait(out.pause);
     }
   }
 
   // ---------- Menus ----------
 
-  const escapeHtml = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+  const escapeHtml = window.Screen.escapeHtml;
 
-  function button(html, className, onClick, disabled) {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = className || "";
-    b.innerHTML = html;
-    b.disabled = !!disabled;
-    b.addEventListener("click", onClick);
-    el.menu.appendChild(b);
-    return b;
+  function moveOption(m) {
+    return {
+      html: '<span class="move-name">' + escapeHtml(m.name) + "</span>" +
+        '<span class="move-meta"><span>' + m.type + "</span><span>PP " + m.pp + "/" + m.maxpp + "</span></span>",
+      className: "type-" + m.type, value: { type: "move", move: m.index }, disabled: m.disabled
+    };
   }
 
-  function clearMenu() { el.menu.innerHTML = ""; }
-
-  function focusFirstButton() {
-    const b = el.menu.querySelector("button:not(:disabled)");
-    if (b) b.focus();
-  }
-
-  function showMoveMenu(req) {
-    clearMenu();
-    const active = req.active;
-    say("What will " + active.name + " do?");
-    if (active.forced) {
-      button("Continue", "action wide", () => playerChoice({ type: "move", move: 0 }));
-    } else if (active.struggle) {
-      button("Struggle", "action wide", () => playerChoice({ type: "move", move: "Struggle" }));
-    } else {
-      for (const m of active.moves) {
-        const html = '<span class="move-name">' + escapeHtml(m.name) + "</span>" +
-          '<span class="move-meta"><span>' + m.type + "</span><span>PP " + m.pp + "/" + m.maxpp + "</span></span>";
-        button(html, "type-" + m.type, () => playerChoice({ type: "move", move: m.index }), m.disabled);
-      }
-    }
-    button("Pokémon", "action wide", () => showSwitchMenu(req, true), !req.switches.length);
-    focusFirstButton();
-  }
-
-  function showSwitchMenu(req, canCancel) {
-    clearMenu();
-    say(canCancel ? "Choose a Pokémon to switch in." : "Choose your next Pokémon.");
-    for (const p of req.team) {
-      const html = '<span class="move-name">' + escapeHtml(p.name) + "</span>" +
+  function partyOptions(req) {
+    return req.team.map((p) => ({
+      html: '<span class="move-name">' + escapeHtml(p.name) + " <small>Lv" + p.level + "</small></span>" +
         '<span class="party-hp">' + (p.fainted ? "Fainted" : "HP " + p.hp + "/" + p.maxhp) +
-        (p.active ? " · in battle" : "") + "</span>";
-      button(html, "", () => playerChoice({ type: "switch", index: p.index }), !req.switches.includes(p.index));
-    }
-    if (canCancel) button("Back", "action wide", () => showMoveMenu(req));
-    focusFirstButton();
+        (p.active ? " · in battle" : "") + "</span>",
+      value: p.index, disabled: !req.switches.includes(p.index)
+    }));
   }
 
-  function showEndMenu() {
-    clearMenu();
-    button("New battle", "action wide", newBattle);
-    focusFirstButton();
+  async function chooseSwitch(req, canCancel) {
+    const options = partyOptions(req);
+    if (canCancel) options.push({ label: "Back", value: null, className: "action", wide: true });
+    const index = await ask(canCancel ? "Choose a Pokémon to switch in." : "Choose your next Pokémon.", options);
+    return index == null ? null : { type: "switch", index };
+  }
+
+  async function chooseBall() {
+    const bag = config.bag || {};
+    const options = Object.keys(bag).map((id) => ({
+      label: ballName(id) + " ×" + bag[id], value: id, disabled: bag[id] <= 0
+    }));
+    options.push({ label: "Back", value: null, className: "action", wide: true });
+    const ball = await ask("Which ball will you throw?", options);
+    if (ball == null) return null;
+    bag[ball]--;
+    return { type: "ball", ball };
+  }
+
+  async function chooseAction(req) {
+    const active = req.active;
+    for (;;) {
+      const options = [];
+      if (active.forced) options.push({ label: "Continue", value: { type: "move", move: 0 }, className: "action", wide: true });
+      else if (active.struggle) options.push({ label: "Struggle", value: { type: "move", move: "Struggle" }, className: "action", wide: true });
+      else for (const m of active.moves) options.push(moveOption(m));
+      if (!active.forced) {
+        const small = battle.wild ? "action small" : "action wide";
+        if (active.canCatch) options.push({ label: "Bag", value: "bag", className: small });
+        options.push({ label: "Pokémon", value: "party", className: small, disabled: !req.switches.length });
+        if (battle.wild) options.push({ label: "Run", value: "run", className: small, disabled: !active.canRun });
+      }
+      const v = await ask("What will " + active.name + " do?", options);
+      if (v === "bag") { const c = await chooseBall(); if (c) return c; continue; }
+      if (v === "party") { const c = await chooseSwitch(req, true); if (c) return c; continue; }
+      if (v === "run") return { type: "run" };
+      return v;
+    }
   }
 
   // ---------- Turn flow ----------
 
-  // Engine bugs shouldn't freeze the screen: report them and offer a new battle.
+  // Engine bugs shouldn't freeze the screen: report them and end the battle.
   function choose(side, choice) {
     try {
       return battle.choose(side, choice);
@@ -451,63 +533,55 @@
     }
   }
 
-  function crashed() {
-    say("The battle engine hit an error (details in the browser console).");
-    showEndMenu();
-  }
-
-  function playerChoice(choice) {
-    const result = choose("p1", choice);
-    if (result.crashed) { crashed(); return; }
-    if (!result.ok) { say(result.error); return; }
-    clearMenu();
-    run();
-  }
-
-  // Plays any new events, then hands control to whoever has to choose next.
-  async function run() {
+  async function loop() {
     for (;;) {
       await playNewEvents();
-      if (battle.ended) { showEndMenu(); return; }
+      if (battle.ended) return;
       const p1 = battle.getRequest("p1");
-      if (p1.phase === "move") { showMoveMenu(p1); return; }
-      if (p1.phase === "switch") { showSwitchMenu(p1, false); return; }
-      const p2 = battle.getRequest("p2");
-      if (p2.phase === "move" || p2.phase === "switch") {
-        let aiChoice;
-        try { aiChoice = OpponentAI.choose(battle, "p2"); } catch (e) { console.error(e); crashed(); return; }
-        if (choose("p2", aiChoice).crashed) { crashed(); return; }
+      if (p1.phase === "move" || p1.phase === "switch") {
+        const choice = p1.phase === "move" ? await chooseAction(p1) : await chooseSwitch(p1, false);
+        const r = choose("p1", choice);
+        if (r.crashed) return "crashed";
+        if (!r.ok) await message(r.error);
         continue;
       }
-      say("Something went wrong: neither side can act.");
-      return;
+      const p2 = battle.getRequest("p2");
+      if (p2.phase === "move" || p2.phase === "switch") {
+        let choice;
+        try { choice = config.opponent(battle); } catch (e) { console.error(e); return "crashed"; }
+        if (choose("p2", choice).crashed) return "crashed";
+        continue;
+      }
+      await message("Something went wrong: neither side can act.");
+      return "crashed";
     }
   }
 
-  function newBattle() {
-    clearMenu();
+  // Runs one battle to the end. See the header for `cfg`.
+  async function run(cfg) {
+    config = cfg;
     battle = new Battle({
-      p1: { name: "You", team: RandomTeam.team(TEAM_SIZE, { level: LEVEL }) },
-      p2: { name: "Rival", team: RandomTeam.team(TEAM_SIZE, { level: LEVEL }) }
+      p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, exp: !!cfg.exp, catchContext: cfg.catchContext
     });
     cursor = 0;
     view = { p1: { species: null }, p2: { species: null } };
+    el.ball.classList.add("hidden");
     renderSide("p1");
     renderSide("p2");
-    say(battle.sides.p2.name + " wants to battle!");
+    if (!cfg.wild) await message(cfg.p2.name + " wants to battle!");
     battle.start();
-    wait(MESSAGE_MS).then(run);
+    const status = await loop();
+    let outcome;
+    if (status === "crashed") {
+      await message("The battle engine hit an error (details in the browser console).");
+      outcome = "crashed";
+    } else if (battle.caught) outcome = "caught";
+    else if (battle.escaped) outcome = "ran";
+    else if (battle.winner === "p1") outcome = "won";
+    else if (battle.winner === "p2") outcome = "lost";
+    else outcome = "draw";
+    return { outcome, battle };
   }
 
-  // Click the text box (or press Space/Enter while no menu is up) to skip ahead.
-  el.textbox.addEventListener("click", () => { if (skipWait) skipWait(); });
-  document.addEventListener("keydown", (e) => {
-    if ((e.key === " " || e.key === "Enter") && skipWait && !el.menu.children.length) {
-      e.preventDefault();
-      skipWait();
-    }
-  });
-
-  window.BattleScreen = { newBattle };
-  newBattle();
+  window.BattleScreen = { run, ballName };
 })();

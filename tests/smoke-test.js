@@ -20,7 +20,8 @@ for (const src of headless) {
 }
 
 for (const name of ["TYPE_CHART", "NATURES", "DEX", "MOVES", "ABILITIES", "ITEMS", "LEARNSETS_GEN6",
-  "Stats", "Damage", "CONDITIONS", "ITEM_EFFECTS", "BATTLE_MOVE_EFFECTS", "Battle", "RandomTeam", "OpponentAI"]) {
+  "Stats", "Damage", "CONDITIONS", "ITEM_EFFECTS", "BATTLE_MOVE_EFFECTS", "Battle", "RandomTeam", "OpponentAI",
+  "Experience", "Catching", "EVOLUTIONS", "Party", "Evolution", "Encounters"]) {
   assert(window[name], "missing global " + name);
 }
 
@@ -201,6 +202,191 @@ let aiWinRate;
   }
   assert(wins / games >= 0.7, "AI only won " + wins + "/" + games + " against random moves");
   aiWinRate = Math.round((100 * wins) / games);
+}
+
+// ---------- Experience ----------
+
+// Growth curves: totals at level 100 and a few spot values.
+for (const [group, level, exp] of [
+  ["Erratic", 100, 600000], ["Fast", 100, 800000], ["Medium Fast", 100, 1000000],
+  ["Medium Slow", 100, 1059860], ["Slow", 100, 1250000], ["Fluctuating", 100, 1640000],
+  ["Medium Slow", 2, 9], ["Medium Slow", 16, 2535], ["Erratic", 50, 125000], ["Fluctuating", 15, 1957]
+]) {
+  assert.strictEqual(Experience.expForLevel(group, level), exp, group + " level " + level);
+}
+for (const group of Object.keys(Experience.GROWTH)) {
+  assert.strictEqual(Experience.expForLevel(group, 1), 0);
+  for (let l = 2; l <= 100; l++) {
+    assert(Experience.expForLevel(group, l) > Experience.expForLevel(group, l - 1), group + " not increasing at " + l);
+    assert.strictEqual(Experience.levelForExp(group, Experience.expForLevel(group, l)), l);
+  }
+}
+// Gen 6 formula: base exp x level / 7, x1.5 for trainers, split between participants.
+assert.strictEqual(Experience.gain({ species: "Rattata", level: 12 }), 87);
+assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, trainer: true }), 130);
+assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants: 2 }), 43);
+{
+  const evs = { atk: 250 };
+  Experience.addEvs(evs, "Machop"); // yields 1 Atk
+  Experience.addEvs(evs, "Machop");
+  Experience.addEvs(evs, "Machop");
+  assert.strictEqual(evs.atk, 252, "EVs should cap at 252 per stat");
+}
+
+// Level-up mid-battle: new level, stats, HP, friendship and the move offer.
+{
+  const group = Experience.growthRate("Charmander");
+  const battle = new Battle({
+    seed: 3, exp: true, wild: true,
+    p1: { name: "P", team: [{ species: "Charmander", level: 15, exp: Experience.expForLevel(group, 16) - 5, hp: 30,
+      moves: ["Scratch", "Growl", "Ember", "Smokescreen"] }] },
+    p2: { name: "W", team: [{ species: "Rattata", level: 12, moves: ["Tackle"] }] }
+  });
+  battle.start();
+  const mon = battle.sides.p1.active;
+  assert.strictEqual(mon.hp, 30, "battle should start from saved HP");
+  const maxBefore = mon.maxhp;
+  for (let i = 0; i < 10 && !battle.ended; i++) {
+    battle.choose("p1", { type: "move", move: "Ember" });
+    battle.choose("p2", { type: "move", move: 0 });
+  }
+  assert.strictEqual(battle.winner, "p1");
+  assert.strictEqual(mon.level, 16);
+  assert(mon.leveledUp && mon.maxhp > maxBefore, "stats should go up on level-up");
+  assert(battle.events.some((e) => e[0] === "-exp" && e[2] === 87));
+  assert(battle.events.some((e) => e[0] === "-levelup" && e[2] === 16));
+  assert(battle.events.some((e) => e[0] === "-trylearn" && e[2] === "Dragon Rage"), "should offer Dragon Rage at 16");
+  assert(battle.replaceMove("p1", 0, 1, "Dragon Rage"));
+  assert.deepStrictEqual(mon.moves.map((m) => m.name), ["Scratch", "Dragon Rage", "Ember", "Smokescreen"]);
+}
+
+// ---------- Catching and running ----------
+{
+  const pidgey = { species: "Pidgey", level: 5, hp: 20, maxhp: 20, status: "", types: ["Normal", "Flying"] };
+  const full = Catching.chance(pidgey, "poke-ball", {});
+  assert(full > 0.35 && full < 0.55, "full-HP Pidgey in a Poké Ball: " + full);
+  assert(Catching.chance(Object.assign({}, pidgey, { hp: 1 }), "poke-ball", {}) > full, "lower HP should help");
+  assert(Catching.chance(Object.assign({}, pidgey, { status: "slp" }), "poke-ball", {}) > full, "sleep should help");
+  assert(Catching.chance(pidgey, "ultra-ball", {}) > Catching.chance(pidgey, "great-ball", {}));
+  assert.strictEqual(Catching.chance({ species: "Mewtwo", level: 70, hp: 300, maxhp: 300, status: "", types: ["Psychic"] }, "master-ball", {}), 1);
+
+  let caught = 0;
+  for (let seed = 1; seed <= 300; seed++) {
+    const battle = new Battle({ seed, wild: true, exp: true,
+      p1: { name: "P", team: [{ species: "Pikachu", level: 10, moves: ["Growl"] }] },
+      p2: { name: "W", team: [{ species: "Pidgey", level: 5, moves: ["Sand Attack"] }] } });
+    battle.start();
+    assert(battle.choose("p1", { type: "ball", ball: "poke-ball" }).ok);
+    battle.choose("p2", { type: "move", move: 0 });
+    if (battle.caught) {
+      caught++;
+      assert(battle.ended && battle.events.some((e) => e[0] === "caught"));
+      assert(battle.events.some((e) => e[0] === "-exp"), "Gen 6 gives experience for catching");
+    }
+  }
+  assert(Math.abs(caught / 300 - full) < 0.1, "catch rate " + caught / 300 + " vs predicted " + full);
+
+  const trainer = new Battle({ seed: 1,
+    p1: { name: "P", team: [{ species: "Pikachu", level: 10, moves: ["Growl"] }] },
+    p2: { name: "T", team: [{ species: "Pidgey", level: 5, moves: ["Growl"] }] } });
+  trainer.start();
+  assert(!trainer.choose("p1", { type: "ball" }).ok, "can't catch a trainer's Pokémon");
+  assert(!trainer.choose("p1", { type: "run" }).ok, "can't run from a trainer");
+
+  const fast = new Battle({ seed: 1, wild: true,
+    p1: { name: "P", team: [{ species: "Jolteon", level: 50, moves: ["Growl"] }] },
+    p2: { name: "W", team: [{ species: "Shuckle", level: 5, moves: ["Withdraw"] }] } });
+  fast.start();
+  fast.choose("p1", { type: "run" });
+  fast.choose("p2", { type: "move", move: 0 });
+  assert(fast.escaped && fast.ended, "a faster Pokémon always escapes");
+}
+
+// ---------- Party records ----------
+{
+  const rng = mulberry32(5);
+  const r = Party.create("Charmander", 15, { rng });
+  assert.strictEqual(r.hp, Party.maxHp(r));
+  assert.strictEqual(r.exp, Experience.expForLevel("Medium Slow", 15));
+  r.hp = 0;
+  const lead = Party.create("Squirtle", 15, { rng });
+  lead.status = "slp";
+  const battle = new Battle({ seed: 1, exp: true, wild: true,
+    p1: { name: "P", team: [Party.toBattleSet(r), Party.toBattleSet(lead)] },
+    p2: { name: "W", team: [Party.toBattleSet(Party.create("Pidgey", 3, { rng }))] } });
+  battle.start();
+  assert.strictEqual(battle.sides.p1.active.species, "Squirtle", "a fainted Pokémon can't lead");
+  assert.strictEqual(battle.sides.p1.active.status, "slp", "status carries into battle");
+  battle.sides.p1.active.moves[0].pp = 1;
+  Party.syncFromBattle(lead, battle.sides.p1.active);
+  assert.strictEqual(lead.moves[0].pp, 1, "PP carries out of battle");
+  Party.heal(lead);
+  assert.strictEqual(lead.status, "");
+  assert.strictEqual(lead.moves[0].pp, MOVES[lead.moves[0].name].pp);
+}
+
+// ---------- Evolution ----------
+{
+  const rng = mulberry32(9);
+  const evo = (species, level, edit, ctx) => {
+    const r = Party.create(species, level, { rng });
+    if (edit) edit(r);
+    const e = Evolution.find(r, Object.assign({ trigger: "level" }, ctx));
+    return e ? e.into : null;
+  };
+  assert.strictEqual(evo("Charmander", 15), null);
+  assert.strictEqual(evo("Charmander", 16), "Charmeleon");
+  assert.strictEqual(evo("Pichu", 10, (r) => { r.happiness = 220; }), "Pikachu");
+  assert.strictEqual(evo("Pichu", 10, (r) => { r.happiness = 219; }), null);
+  // (Eevee learns Baby-Doll Eyes, a Fairy move, at level 9, so set moves explicitly.)
+  const eevee = (moves) => (r) => { r.happiness = 220; r.moves = moves.map((name) => ({ name, pp: 10 })); };
+  assert.strictEqual(evo("Eevee", 10, eevee(["Tackle"]), { time: "day" }), "Espeon");
+  assert.strictEqual(evo("Eevee", 10, eevee(["Tackle"]), { time: "night" }), "Umbreon");
+  assert.strictEqual(evo("Eevee", 10, eevee(["Tackle", "Baby-Doll Eyes"]), { time: "day" }), "Sylveon");
+  assert.strictEqual(evo("Wurmple", 7, (r) => { r.personality = 0; }), "Silcoon");
+  assert.strictEqual(evo("Wurmple", 7, (r) => { r.personality = 7 << 16; }), "Cascoon");
+  assert.strictEqual(evo("Kirlia", 30, (r) => { r.gender = "M"; }), "Gardevoir");
+  assert.strictEqual(evo("Kadabra", 50), null, "trade evolutions don't happen on level-up");
+  assert.strictEqual(evo("Charmander", 20, (r) => { r.item = "everstone"; }), null);
+  assert.strictEqual(evo("Charmander", 20, (r) => { r.hp = 0; }), null, "fainted Pokémon don't evolve");
+  const pikachu = Party.create("Pikachu", 20, { rng });
+  assert.strictEqual(Evolution.find(pikachu, { trigger: "item", item: "thunder-stone" }).into, "Raichu");
+
+  // Evolving keeps damage taken and returns the moves learned on evolving.
+  const charmeleon = Party.create("Charmeleon", 36, { rng });
+  charmeleon.hp -= 20;
+  const learned = Evolution.evolve(charmeleon, "Charizard", { method: "level" });
+  assert.strictEqual(charmeleon.species, "Charizard");
+  assert.strictEqual(charmeleon.hp, Party.maxHp(charmeleon) - 20);
+  assert.deepStrictEqual(learned, ["Wing Attack"]);
+  assert.strictEqual(Evolution.shedinja(Party.create("Nincada", 20, { rng })).species, "Shedinja");
+
+  // Every evolution points at a real species, move and (Gen 6) item; the Ice
+  // Stone for Glaceon only arrived in Gen 7.
+  for (const [from, list] of Object.entries(EVOLUTIONS)) {
+    assert(DEX[from], "unknown species " + from);
+    for (const e of list) {
+      assert(DEX[e.into], from + " evolves into unknown " + e.into);
+      if (e.move) assert(MOVES[e.move], "unknown move " + e.move);
+      if (e.item && e.item !== "ice-stone") assert(ITEMS[e.item], "unknown item " + e.item);
+    }
+  }
+}
+
+// ---------- Encounters ----------
+{
+  const rng = mulberry32(11);
+  const early = Encounters.speciesFor(5);
+  assert(early.includes("Pidgey") && early.includes("Pikachu"));
+  assert(!early.includes("Charizard") && !early.includes("Mewtwo") && !early.includes("Pidgeot"));
+  assert(Encounters.speciesFor(36).includes("Charizard"));
+  assert(!Encounters.speciesFor(100).includes("Mewtwo"), "no legendaries in the wild");
+  for (let i = 0; i < 50; i++) {
+    const w = Encounters.wild(10, rng);
+    assert(w.level >= 7 && w.level <= 10 && w.moves.length >= 1);
+    const t = Encounters.trainer(10, rng);
+    assert(t.team.length >= 1 && t.team.length <= 3 && t.name);
+  }
 }
 
 console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns), AI beat random moves in " + aiWinRate + "% of games");

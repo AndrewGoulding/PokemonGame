@@ -21,6 +21,19 @@
 //   { type: "move", move: 0 | "Earthquake", mega: true? }
 //   { type: "switch", index: n }
 // When a side must switch (fainted, U-turn, ...), getRequest().phase is "switch".
+//
+// Saved state: a team set may also carry hp, status, pp (array, per move slot),
+// exp and happiness, so a Pokémon can enter battle hurt or poisoned.
+//
+// Progression options (p1 is always the player):
+//   exp: true    p1 earns experience, EVs and level-ups when a p2 Pokémon faints
+//                (or is caught). Level-ups happen mid-battle with new stats.
+//                Events: -exp, -levelup, -learnmove, and -trylearn when a move
+//                needs a free slot: answer with battle.replaceMove(...).
+//   wild: true   p2 is a wild Pokémon: p1 may also choose
+//                { type: "ball", ball: "great-ball" } or { type: "run" }.
+//                Ends with battle.caught (the Pokémon) or battle.escaped.
+//   catchContext: { night, caughtBefore(species) }   for Dusk / Repeat Balls
 
 (function () {
   "use strict";
@@ -30,6 +43,7 @@
   const toID = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const normItem = (s) => String(s || "").toLowerCase().replace(/[\s_']+/g, "-");
   const E = (effectType, id, name) => ({ effectType, id, name: name || id });
+  const newMoveSlot = (key) => ({ id: toID(key), name: key, pp: window.MOVES[key].pp, maxpp: window.MOVES[key].pp });
   const applyChain = (v, chain) => tr((tr(v * chain) + 2047) / 4096);
   const chainMult = (a, b) => (a * b + 2048) >> 12;
   const fp = (m) => tr(m * 4096);
@@ -152,6 +166,21 @@
         const maxpp = Math.floor(base * (5 + ppUps) / 5);
         this.moves.push({ id: toID(key), name: key, pp: maxpp, maxpp });
       }
+      this.teamIndex = index;
+      this.leveledUp = false;
+      // Saved state carried in from outside the battle.
+      if (set.pp) this.moves.forEach((m, i) => { if (set.pp[i] != null) m.pp = clamp(set.pp[i], 0, m.maxpp); });
+      if (set.hp != null) {
+        this.hp = clamp(set.hp, 0, this.maxhp);
+        this.fainted = this.hp === 0;
+      }
+      if (set.status && !this.fainted) {
+        this.status = set.status;
+        if (set.status === "slp") this.statusState.time = battle.randInt(1, 3);
+        if (set.status === "tox") this.statusState.stage = 0;
+      }
+      this.exp = set.exp != null ? set.exp
+        : window.Experience ? window.Experience.expForLevel(window.Experience.growthRate(speciesKey), this.level) : 0;
     }
     static rollGender(battle, forced, text) {
       if (forced) { const g = String(forced).toUpperCase()[0]; return g === "M" || g === "F" ? g : "N"; }
@@ -265,6 +294,12 @@
       this.switchSides = [];
       this.switchCause = null;
       this.pendingSwitch = null;
+      this.expEnabled = !!opts.exp;
+      this.wild = !!opts.wild;
+      this.catchContext = opts.catchContext || {};
+      this.runAttempts = 0;
+      this.caught = null;
+      this.escaped = false;
       this.sides = { p1: new Side(this, "p1", opts.p1 || {}), p2: new Side(this, "p2", opts.p2 || {}) };
       this.sides.p1.foe = this.sides.p2;
       this.sides.p2.foe = this.sides.p1;
@@ -329,6 +364,14 @@
         case "-sideend": return "  " + a + "'s " + b + " ended";
         case "-ability": return "  [" + nm(a) + "'s " + b + "]";
         case "cant": return nm(a) + " can't move (" + b + ")";
+        case "-exp": return "  " + nm(a) + " gained " + b + " Exp. Points!";
+        case "-levelup": return "  " + nm(a) + " grew to Lv. " + b + "!";
+        case "-learnmove": return "  " + nm(a) + " learned " + b + "!";
+        case "-trylearn": return "  " + nm(a) + " wants to learn " + b + ", but already knows four moves.";
+        case "-ball": return "Threw a " + b + " at " + nm(c) + "... " + d + " shake(s)";
+        case "caught": return "*** Gotcha! " + nm(a) + " was caught! ***";
+        case "-run": return "Got away safely!";
+        case "-runfail": return "Couldn't get away!";
         case "win": return "*** " + a + " wins! ***";
         case "tie": return "*** It's a tie! ***";
         default: return "  " + ev.join(" | ");
@@ -575,6 +618,7 @@
       if (mon.fainted) return;
       mon.hp = 0; mon.fainted = true; mon.side.faintedThisTurn = true;
       this.add("faint", mon);
+      if (this.expEnabled && mon.side.id === "p2") this.awardExp(mon);
       if (source && source !== mon && !source.fainted && effect && effect.effectType === "Move") {
         if (mon.volatiles.destinybond) {
           this.add("-activate", mon, "move: Destiny Bond");
@@ -730,7 +774,9 @@
       if (this.phase !== "init") return;
       const mons = [];
       for (const s of [this.sides.p1, this.sides.p2]) {
-        this.switchIn(s, 0, { deferStart: true, noHazards: true });
+        const lead = s.pokemon.findIndex((p) => !p.fainted);
+        if (lead < 0) throw new Error(s.id + " has no Pokemon that can battle");
+        this.switchIn(s, lead, { deferStart: true, noHazards: true });
         mons.push(s.active);
       }
       this.sortBySpeed(mons).forEach((m) => this.onSwitchInEvents(m));
@@ -783,7 +829,8 @@
         mon.boosts = carried.boosts;
         for (const id of Object.keys(carried.volatiles)) mon.volatiles[id] = carried.volatiles[id];
       }
-      this.add(o.drag ? "drag" : "switch", mon, mon.species + ", L" + mon.level, this.hpStr(mon));
+      this.markParticipants();
+      this.add(o.drag ? "drag" : "switch", mon, mon.species + ", L" + mon.level, this.hpStr(mon), this.expProgress(mon), mon.teamIndex);
       if (!o.noHazards) this.applyHazards(mon);
       if (!o.deferStart && !mon.fainted) { this.onSwitchInEvents(mon); this.runUpdates(); }
       return mon;
@@ -917,7 +964,7 @@
       const base = { phase: "wait", turn: this.turn, ended: this.ended, winner: this.winner };
       if (this.ended) return Object.assign(base, { phase: "ended" });
       const team = side.pokemon.map((p, i) => ({
-        index: i, species: p.species, name: p.name, hp: p.hp, maxhp: p.maxhp, status: p.status,
+        index: i, species: p.species, name: p.name, level: p.level, hp: p.hp, maxhp: p.maxhp, status: p.status,
         fainted: p.fainted, active: p.isActive && p === side.active, item: p.item, gender: p.gender
       }));
       base.team = team;
@@ -943,6 +990,9 @@
       };
       if (forced) { base.switches = []; return base; }
       base.active.trapped = this.isTrapped(mon);
+      base.active.canCatch = this.wild && sideId === "p1";
+      base.active.canRun = this.wild && sideId === "p1" &&
+        (!base.active.trapped || mon.item === "smoke-ball" || mon.hasAbility("Run Away"));
       base.switches = base.active.trapped ? [] : side.pokemon.map((p, i) => (!p.fainted && p !== side.active ? i : -1)).filter((i) => i >= 0);
       return base;
     }
@@ -965,6 +1015,12 @@
         } else if (choice && choice.type === "switch") {
           if (!req.switches.includes(choice.index)) return { ok: false, error: "Invalid switch" };
           side.choice = { type: "switch", index: choice.index };
+        } else if (choice && choice.type === "ball") {
+          if (!req.active.canCatch) return { ok: false, error: "You can't catch this Pokémon" };
+          side.choice = { type: "ball", ball: choice.ball || "poke-ball" };
+        } else if (choice && choice.type === "run") {
+          if (!req.active.canRun) return { ok: false, error: "You can't escape!" };
+          side.choice = { type: "run" };
         } else if (choice && choice.type === "move") {
           let slot = null;
           if (req.active.struggle && (choice.move === "Struggle" || choice.move === 0 || choice.move === "struggle")) {
@@ -1025,6 +1081,7 @@
       this.sides.p1.choice = null; this.sides.p2.choice = null;
       for (const s of [this.sides.p1, this.sides.p2]) { s.faintedLastTurn = s.faintedThisTurn; s.faintedThisTurn = false; }
       this.add("turn", this.turn);
+      this.markParticipants();
       this.autoFillForced();
       this.maybeCommit();
     }
@@ -1033,7 +1090,8 @@
       const actions = [];
       for (const s of [this.sides.p1, this.sides.p2]) {
         const c = s.choice, mon = s.active;
-        if (c.type === "switch") actions.push({ order: 1, type: "switch", mon, side: s, index: c.index, priority: 0, speed: this.getSpeed(mon) });
+        if (c.type === "run" || c.type === "ball") actions.push({ order: 0, type: c.type, ball: c.ball, mon, side: s, priority: 0, speed: this.getSpeed(mon) });
+        else if (c.type === "switch") actions.push({ order: 1, type: "switch", mon, side: s, index: c.index, priority: 0, speed: this.getSpeed(mon) });
         else if (c.type === "recharge") actions.push({ order: 3, type: "move", mon, side: s, recharge: true, priority: 0, speed: this.getSpeed(mon) });
         else {
           if (c.mega) actions.push({ order: 2, type: "mega", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
@@ -1155,6 +1213,127 @@
       else { const w = a ? this.sides.p1 : this.sides.p2; this.winner = w.id; this.add("win", w.name); }
     }
 
+    // ---------- Experience ----------
+    // Every p1 Pokémon that has faced a p2 Pokémon shares the experience for it.
+    markParticipants() {
+      if (!this.expEnabled) return;
+      const mine = this.sides.p1.active, foe = this.sides.p2.active;
+      if (!mine || !foe || mine.fainted || foe.fainted) return;
+      (foe.expParticipants || (foe.expParticipants = new Set())).add(mine);
+    }
+
+    // Share of the way to the next level, 0-1, for p1's experience bar ("" otherwise).
+    expProgress(mon) {
+      if (!this.expEnabled || mon.side.id !== "p1") return "";
+      const E = window.Experience;
+      return E.progress(E.growthRate(mon.baseSpecies), mon.level, mon.exp);
+    }
+
+    awardExp(foe) {
+      const E = window.Experience;
+      const receivers = [...(foe.expParticipants || [])].filter((m) => !m.fainted);
+      for (const mon of receivers) {
+        E.addEvs(mon.evs, foe.baseSpecies);
+        if (mon.level >= E.MAX_LEVEL) continue;
+        const amount = E.gain({ species: foe.baseSpecies, level: foe.level, trainer: !this.wild,
+          participants: receivers.length, luckyEgg: mon.item === "lucky-egg" });
+        this.gainExp(mon, amount);
+      }
+    }
+
+    gainExp(mon, amount) {
+      const E = window.Experience;
+      const group = E.growthRate(mon.baseSpecies);
+      mon.exp += amount;
+      const levelsUp = () => mon.level < E.MAX_LEVEL && mon.exp >= E.expForLevel(group, mon.level + 1);
+      this.add("-exp", mon, amount, mon.teamIndex, levelsUp() ? 1 : E.progress(group, mon.level, mon.exp));
+      while (levelsUp()) {
+        mon.level++;
+        mon.leveledUp = true;
+        mon.happiness = E.friendshipFromLevelUp(mon.happiness);
+        this.recalcStats(mon);
+        this.add("-levelup", mon, mon.level, this.hpStr(mon), mon.teamIndex, levelsUp() ? 1 : E.progress(group, mon.level, mon.exp));
+        this.learnLevelUpMoves(mon);
+      }
+      if (mon.level >= E.MAX_LEVEL) mon.exp = Math.min(mon.exp, E.expForLevel(group, E.MAX_LEVEL));
+    }
+
+    // New stats after a level-up; HP goes up by however much max HP did.
+    recalcStats(mon) {
+      const real = mon.transformed && mon.original ? mon.original : mon;
+      const species = mon.transformed && mon.original ? mon.original.species : mon.species;
+      const stats = window.Stats.calcAllStats(species, { level: mon.level, nature: mon.nature, ivs: mon.ivs, evs: mon.evs });
+      const oldMax = mon.maxhp;
+      real.stats = stats;
+      if (real !== mon) mon.stats = Object.assign({}, mon.stats, { hp: stats.hp });
+      mon.maxhp = mon.baseMaxhp = stats.hp;
+      if (!mon.fainted) mon.hp = Math.min(mon.maxhp, mon.hp + (mon.maxhp - oldMax));
+    }
+
+    // The real move list (not a Transform copy).
+    ownMoves(mon) { return mon.transformed && mon.original ? mon.original.moves : mon.moves; }
+
+    learnLevelUpMoves(mon) {
+      const learnset = window.LEARNSETS_GEN6 && window.LEARNSETS_GEN6[mon.baseSpecies];
+      if (!learnset) return;
+      for (const [lvl, name] of learnset.levelup) {
+        if (lvl !== mon.level) continue;
+        const key = MOVE_INDEX[toID(name)];
+        const moves = this.ownMoves(mon);
+        if (!key || moves.some((m) => m.id === toID(key))) continue;
+        if (moves.length < 4) {
+          moves.push(newMoveSlot(key));
+          this.add("-learnmove", mon, key, mon.teamIndex);
+        } else {
+          this.add("-trylearn", mon, key, mon.teamIndex);
+        }
+      }
+    }
+
+    // Answer to a -trylearn event: forget the move in `slot` for `moveName`.
+    replaceMove(sideId, teamIndex, slot, moveName) {
+      const mon = this.sides[sideId].pokemon[teamIndex];
+      const key = MOVE_INDEX[toID(moveName)];
+      const moves = mon && this.ownMoves(mon);
+      if (!moves || !key || slot < 0 || slot >= moves.length) return false;
+      moves[slot] = newMoveSlot(key);
+      return true;
+    }
+
+    // ---------- Wild battles ----------
+    // Escape chance: always if faster, otherwise (speed x 128 / foe speed + 30 x attempts) / 256.
+    tryRun(mon) {
+      if (mon.fainted) return;
+      this.runAttempts++;
+      const foe = mon.side.foe.active;
+      let escaped = mon.item === "smoke-ball" || mon.hasAbility("Run Away") || !foe || foe.fainted;
+      if (!escaped) {
+        const a = this.getSpeed(mon), b = this.getSpeed(foe);
+        escaped = a >= b || this.randInt(0, 255) < Math.floor((a * 128) / b) + 30 * this.runAttempts;
+      }
+      if (!escaped) { this.add("-runfail", mon); return; }
+      this.add("-run", mon);
+      this.escaped = true;
+      this.ended = true; this.phase = "ended"; this.winner = null;
+    }
+
+    throwBall(mon, ball) {
+      const target = mon.side.foe.active;
+      if (!target || target.fainted) return;
+      const ctx = this.catchContext;
+      const result = window.Catching.attempt(
+        { species: target.baseSpecies, level: target.level, hp: target.hp, maxhp: target.maxhp, status: target.status, types: target.types },
+        ball,
+        { turn: this.turn, night: !!ctx.night, caughtBefore: !!(ctx.caughtBefore && ctx.caughtBefore(target.baseSpecies)) },
+        () => this.random());
+      this.add("-ball", mon.side.id, ball, target, result.shakes, result.caught ? "caught" : "");
+      if (!result.caught) return;
+      this.add("caught", target, ball);
+      if (this.expEnabled) this.awardExp(target); // Gen 6 gives experience for catches
+      this.caught = target;
+      this.ended = true; this.phase = "ended"; this.winner = mon.side.id;
+    }
+
     // ---------- Actions ----------
     runAction(a) {
       switch (a.type) {
@@ -1176,6 +1355,8 @@
         }
         case "move": this.runMoveAction(a); break;
         case "residual": this.residual(); break;
+        case "run": this.tryRun(a.mon); break;
+        case "ball": this.throwBall(a.mon, a.ball); break;
         default: break;
       }
     }

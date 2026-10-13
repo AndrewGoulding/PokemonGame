@@ -26,6 +26,7 @@ body {
 
 /* ---------- Field ---------- */
 
+.field.hidden { display: none; }
 .field {
   position: relative;
   aspect-ratio: 3 / 2;
@@ -52,6 +53,25 @@ body {
 .sprite.hidden { opacity: 0; }
 .sprite.fainted { opacity: 0; transform: translateY(30%); }
 .sprite.hit { animation: blink 0.5s steps(2) 1; }
+
+/* A thrown ball sits where the wild Pokémon was */
+.ball {
+  position: absolute;
+  width: 8%;
+  right: 22%;
+  top: 30%;
+  image-rendering: pixelated;
+  transform-origin: 50% 90%;
+}
+.ball.hidden { display: none; }
+.ball.shake { animation: wobble 0.7s ease-in-out 1; }
+.ball.caught { filter: brightness(0.7); }
+
+@keyframes wobble {
+  20% { transform: rotate(-22deg); }
+  50% { transform: rotate(18deg); }
+  80% { transform: rotate(-8deg); }
+}
 
 @keyframes blink {
   50% { opacity: 0.2; }
@@ -120,6 +140,29 @@ body {
 .hp-fill.mid { background: #f2c230; }
 .hp-fill.low { background: #e5463b; }
 
+.exp-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 0.65em;
+  font-weight: 700;
+}
+.exp-row.hidden { display: none; }
+.exp-track {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: #4a4f58;
+  overflow: hidden;
+}
+.exp-fill {
+  height: 100%;
+  width: 0;
+  background: #3fa8f2;
+  transition: width 0.6s ease-out;
+}
+
 .hp-text {
   margin-top: 4px;
   text-align: right;
@@ -154,11 +197,13 @@ body {
 .menu {
   flex: 1 1 300px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(6, 1fr);
   gap: 6px;
 }
 .menu:empty { display: none; }
-.menu .wide { grid-column: 1 / -1; }
+.menu button { grid-column: span 3; }
+.menu button.small { grid-column: span 2; }
+.menu button.wide { grid-column: 1 / -1; }
 
 .menu button {
   padding: 8px 10px;
@@ -179,6 +224,7 @@ body {
 .move-meta { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; opacity: 0.85; }
 
 .menu button.action { text-align: center; background: #f4f1e6; }
+.menu small { font-weight: 600; opacity: 0.7; }
 
 /* Type colours for move buttons (text stays dark for contrast) */
 .type-Normal   { background: #c6c6a7 !important; }
