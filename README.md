@@ -5,31 +5,32 @@ no build step and no dependencies.
 
 ## Running it
 
-Open `index.html` in a browser. Start a **New game**, enter your name and pick
-Bulbasaur, Charmander or Squirtle. You start with ₽3,000, five Poké Balls and
-three Potions. From the party screen:
+Open `index.html` in a browser and start a **New game**: enter your name, pick
+boy or girl, and you wake up in your bedroom in Pallet Town. Head to PROF. OAK's
+lab (south of your house) and pick Bulbasaur, Squirtle or Charmander from the
+Poké Balls on his table. Your rival takes the one that beats yours and battles
+you on the way out. Then Route 1's tall grass, north of town, has FireRed's wild
+Pokémon. Mom heals your party, and the PC in your bedroom stores Pokémon.
 
-- **Find a wild Pokémon**: battle it, catch it from the **Bag**, or **Run**.
-- **Battle a trainer**: 1–3 Pokémon around your level, using the opponent AI.
-  Winning pays prize money; blacking out costs some.
-- **Pokémon Center**: heal everything.
-- **Poké Mart**: buy and sell items. Stock grows as your strongest Pokémon
-  levels up (standing in for gym badges until there's a map).
-- **Bag**: items by pocket. Use medicine, evolution stones, Rare Candy,
-  vitamins, PP Ups, mints and TMs/HMs on your Pokémon, give them held items,
-  or toss items.
-- **PC**: 8 boxes of 30. Deposit, withdraw and release.
-- **Pokédex**: every Pokémon you've seen or caught.
-- **Trainer card**: money, Pokédex, play time; save, download a save file, or
-  load one.
+**Controls**: arrow keys or WASD to walk, hold Shift (or X) to run, Z / Space /
+Enter to talk or read signs, Esc or M for the menu. On a phone, use the D-pad
+and A / Run / Menu buttons under the text box.
 
-Tap a Pokémon on the party screen for its summary (stats, EVs, nature, moves),
-to make it lead, or to use, give or take an item. In battle, the Bag also has
-your medicine. Click the text box (or press Space) to skip ahead.
+The **menu** has your Pokémon (tap one for its summary: stats, EVs, nature,
+moves; make it lead; use, give or take items), the Bag (medicine, evolution
+stones, Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items), the Pokédex,
+your trainer card (save, download or load a save file), and **Services**: the
+Pokémon Center, Poké Mart, PC and practice battles (a wild Pokémon or a trainer
+at your level), which move into real towns as the map grows.
 
-**Saving**: the game saves automatically to this browser after every battle
-and every change on the party screen, and **Continue** picks up where you left
-off. Browser storage can be wiped (private windows, clearing site data), so
+In battle you can fight, use items from the Bag, switch, and in wild battles
+throw balls or run. Pokémon gain experience and EVs, level up mid-battle, learn
+moves and evolve afterwards. Click the text box (or press Space) to skip ahead.
+
+**Saving**: the game saves automatically to this browser (including where you
+are on the map) after every battle, story event and menu change, and
+**Continue** picks up where you left off. Saves from before the overworld put
+you outside your house in Pallet Town. Browser storage can be wiped (private windows, clearing site data), so
 download a save file from the trainer card as a backup, or to move a game to
 another browser.
 
@@ -38,6 +39,34 @@ To run the tests (needs Node.js):
 ```sh
 npm test
 ```
+
+## Overworld maps
+
+The maps are FireRed's, converted from the [pret/pokefirered](https://github.com/pret/pokefirered)
+decompilation: Pallet Town, the player's house (both floors), the rival's house,
+PROF. OAK's lab and Route 1. Tiles, palettes and metatiles come from
+`assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
+come from a pokefirered checkout. `tools/build-maps.js` turns them into
+`data/world-maps.js` and the images in `assets/world/`:
+
+```sh
+git clone --depth 1 --filter=blob:none --sparse https://github.com/pret/pokefirered
+cd pokefirered && git sparse-checkout set --no-cone data/layouts/ data/maps/ data/text/ \
+  src/data/object_events/ src/data/wild_encounters.json graphics/object_events/pics/ && cd ..
+node tools/build-maps.js pokefirered     # or: POKEFIRERED=pokefirered npm run build:maps
+```
+
+To add maps, list them in `MAPS` at the top of `tools/build-maps.js` and rerun
+it; doors and map edges connect themselves when both sides are built.
+Walking off an edge toward a map that isn't built yet says so.
+
+Rules follow Gen 3: collision and elevation per block, solid doors you walk
+into, door mats you walk out through, stairs, ledges you can jump down,
+connected maps you walk straight into, and tall grass encounters at the map's
+rate (Random() % 2880 < rate × 16) using the 20/20/10/10/10/10/5/5/4/4/1/1
+encounter slots. Signs and people say their FireRed text; the few scripted
+events (Mom healing, the bedroom PC, the starter Poké Balls, OAK stopping you at
+the edge of town, the rival battle, the Route 1 Potion) are in `ui/game.js`.
 
 ## Progression rules (Gen 6)
 
@@ -81,12 +110,14 @@ npm test
 
 | Path | Contents |
 |---|---|
-| `data/` | Pokédex, moves, abilities, items, item sprite paths, learnsets, evolutions, natures, type chart, plus the battle hooks for conditions and moves |
+| `data/` | Pokédex, moves, abilities, items, item sprite paths, learnsets, evolutions, overworld maps, natures, type chart, plus the battle hooks for conditions and moves |
 | `engine/` | Stat, damage, experience, catch and item formulas, and the battle engine |
-| `game/` | Game logic around the engine: party records, the player and their save (`player.js`, `save.js`), bag and Poké Mart (`bag.js`), evolution, encounters, random teams and the opponent AI |
-| `ui/` | Text box and menus (`screen.js`), the battle screen, and the game flow and menus (`game.js`) |
-| `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`) |
-| `assets/sprites/` | Pokémon sprites (front, back, shiny) and item icons |
+| `game/` | Game logic around the engine: party records, the player and their save (`player.js`, `save.js`), bag and Poké Mart (`bag.js`), overworld rules (`world.js`), evolution, encounters, random teams and the opponent AI |
+| `ui/` | Text box and menus (`screen.js`), the battle screen, the overworld (`overworld.js`), and the game flow, story events and menus (`game.js`) |
+| `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`, `npm run build:maps`) |
+| `assets/sprites/` | Pokémon sprites (front, back, shiny), item icons, trainer and overworld sprites |
+| `assets/tilesets/` | FireRed's tilesets (tiles, palettes, metatiles), the source for the maps |
+| `assets/world/` | Generated map images and transparent overworld sprites |
 | `tests/` | Loads every non-UI script and checks formulas, engine regressions, progression rules and AI choices, plus 200 random battles |
 
 ## Script load order
@@ -103,25 +134,28 @@ and later files read those globals, so scripts must load in this order:
 7. `data/learnsets.js` → `LEARNSETS_GEN6`
 8. `data/evolutions.js` → `EVOLUTIONS`
 9. `data/item-sprites.js` → `ITEM_SPRITES`
-10. `engine/stat-calculator.js` → `Stats`
-11. `engine/experience.js` → `Experience`
-12. `engine/catching.js` → `Catching`
-13. `engine/item-use.js` → `ItemUse`
-14. `engine/damage-calculator.js` → `Damage`
-15. `data/conditions.js` → `CONDITIONS`, `ITEM_EFFECTS`
-16. `data/battle-moves.js` → `BATTLE_MOVE_EFFECTS`
-17. `engine/battle.js` → `Battle`
-18. `game/random-team.js` → `RandomTeam`
-19. `game/opponent-ai.js` → `OpponentAI`
-20. `game/party.js` → `Party`
-21. `game/evolution.js` → `Evolution`
-22. `game/encounters.js` → `Encounters`
-23. `game/player.js` → `Player`
-24. `game/bag.js` → `Bag`
-25. `game/save.js` → `Save`
-26. `ui/screen.js` → `Screen`
-27. `ui/battle-screen.js` → `BattleScreen`
-28. `ui/game.js` → `Game` (starts the game on load)
+10. `data/world-maps.js` → `WORLD_MAPS`
+11. `engine/stat-calculator.js` → `Stats`
+12. `engine/experience.js` → `Experience`
+13. `engine/catching.js` → `Catching`
+14. `engine/item-use.js` → `ItemUse`
+15. `engine/damage-calculator.js` → `Damage`
+16. `data/conditions.js` → `CONDITIONS`, `ITEM_EFFECTS`
+17. `data/battle-moves.js` → `BATTLE_MOVE_EFFECTS`
+18. `engine/battle.js` → `Battle`
+19. `game/random-team.js` → `RandomTeam`
+20. `game/opponent-ai.js` → `OpponentAI`
+21. `game/party.js` → `Party`
+22. `game/evolution.js` → `Evolution`
+23. `game/encounters.js` → `Encounters`
+24. `game/player.js` → `Player`
+25. `game/bag.js` → `Bag`
+26. `game/save.js` → `Save`
+27. `game/world.js` → `World`
+28. `ui/screen.js` → `Screen`
+29. `ui/battle-screen.js` → `BattleScreen`
+30. `ui/overworld.js` → `Overworld`
+31. `ui/game.js` → `Game` (starts the game on load)
 
 `index.html` is the source of truth for this order, and the smoke test reads its
 script list from there (skipping `ui/`, which needs a real page). If you add a

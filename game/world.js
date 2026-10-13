@@ -1,0 +1,159 @@
+// Overworld rules: what's at a position, where a step goes, doors, map edges
+// and wild encounters. No drawing here (see ui/overworld.js).
+// Depends on: window.WORLD_MAPS (data/world-maps.js, built by tools/build-maps.js)
+//
+//   World.step({ map, x, y }, "up", occupied)   // -> { ok, map, x, y, jump, warp, blocked }
+//   World.warpAt("PalletTown", 6, 7)            // the warp on a tile, if any
+//   World.wildEncounter("Route1", rng)          // -> { species, level } or null
+
+(function () {
+  "use strict";
+
+  const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+  const OPPOSITE = { up: "down", down: "up", left: "right", right: "left" };
+
+  // Metatile behaviours (pret include/constants/metatile_behaviors.h).
+  const MB = {
+    TALL_GRASS: 0x02,
+    JUMP_EAST: 0x38, JUMP_WEST: 0x39, JUMP_NORTH: 0x3a, JUMP_SOUTH: 0x3b,
+    CAVE_DOOR: 0x60, LADDER: 0x61, EAST_ARROW_WARP: 0x62, WEST_ARROW_WARP: 0x63,
+    NORTH_ARROW_WARP: 0x64, SOUTH_ARROW_WARP: 0x65, FALL_WARP: 0x66, REGULAR_WARP: 0x67,
+    WARP_DOOR: 0x69, UP_ESCALATOR: 0x6a, DOWN_ESCALATOR: 0x6b,
+    UP_RIGHT_STAIR_WARP: 0x6c, UP_LEFT_STAIR_WARP: 0x6d, DOWN_RIGHT_STAIR_WARP: 0x6e, DOWN_LEFT_STAIR_WARP: 0x6f,
+    COUNTER: 0x80, PC: 0x83
+  };
+  const LEDGE = { right: MB.JUMP_EAST, left: MB.JUMP_WEST, up: MB.JUMP_NORTH, down: MB.JUMP_SOUTH };
+  // Warps you trigger by stepping onto them (doors, stairs). Others, like the
+  // mats inside buildings, trigger by walking off the edge while standing on them.
+  const STEP_WARPS = new Set([MB.CAVE_DOOR, MB.LADDER, MB.FALL_WARP, MB.REGULAR_WARP, MB.WARP_DOOR,
+    MB.UP_ESCALATOR, MB.DOWN_ESCALATOR, MB.UP_RIGHT_STAIR_WARP, MB.UP_LEFT_STAIR_WARP,
+    MB.DOWN_RIGHT_STAIR_WARP, MB.DOWN_LEFT_STAIR_WARP]);
+  const ARROW_DIR = { [MB.EAST_ARROW_WARP]: "right", [MB.WEST_ARROW_WARP]: "left",
+    [MB.NORTH_ARROW_WARP]: "up", [MB.SOUTH_ARROW_WARP]: "down" };
+  const isWater = (b) => b >= 0x10 && b <= 0x15;
+
+  const map = (name) => window.WORLD_MAPS[name];
+
+  // Where a connected map sits relative to `m`, in m's block coordinates.
+  function connectionOrigin(m, c) {
+    const n = map(c.map);
+    if (c.direction === "up") return [c.offset, -n.height];
+    if (c.direction === "down") return [c.offset, m.height];
+    if (c.direction === "left") return [-n.width, c.offset];
+    return [m.width, c.offset];
+  }
+
+  // The block at (x, y) of `mapName`, looking into connected maps past the edge.
+  // Returns { map, x, y, collision, behavior, encounter } or a solid border block.
+  function blockAt(mapName, x, y) {
+    const m = map(mapName);
+    if (x >= 0 && y >= 0 && x < m.width && y < m.height) {
+      const i = y * m.width + x;
+      return { map: mapName, x, y, collision: m.collision[i], elevation: m.elevation[i], behavior: m.behavior[i], encounter: m.encounter[i] };
+    }
+    for (const c of m.connections) {
+      if (!c.map || !map(c.map)) continue;
+      const [ox, oy] = connectionOrigin(m, c);
+      const n = map(c.map), nx = x - ox, ny = y - oy;
+      if (nx >= 0 && ny >= 0 && nx < n.width && ny < n.height) return blockAt(c.map, nx, ny);
+    }
+    return { map: null, x, y, collision: 1, elevation: 0, behavior: 0, encounter: 0, edge: true };
+  }
+
+  function warpAt(mapName, x, y) {
+    const m = map(mapName);
+    return m && m.warps.find((w) => w.x === x && w.y === y) || null;
+  }
+
+  // Where a warp leads: its destination map and the destination warp's tile.
+  function warpTarget(w) {
+    const dest = w && w.map && map(w.map);
+    if (!dest) return null;
+    const to = dest.warps[w.warp] || dest.warps[0];
+    return { map: w.map, x: to.x, y: to.y, door: dest.behavior[to.y * dest.width + to.x] === MB.WARP_DOOR };
+  }
+
+  // The map edge you'd walk off of, for a better message than a bump.
+  function edgeConnection(mapName, x, y, dir) {
+    const m = map(mapName);
+    const side = { up: y === 0, down: y === m.height - 1, left: x === 0, right: x === m.width - 1 }[dir];
+    if (!side) return null;
+    return m.connections.find((c) => c.direction === dir) || null;
+  }
+
+  // One step from `pos` in `dir`. `occupied(map, x, y)` says whether a person stands there.
+  // Returns { ok: true, map, x, y, jump?, warp? } or { ok: false, warp?, unbuilt? }.
+  function step(pos, dir, occupied) {
+    const [dx, dy] = DIRS[dir];
+    const here = blockAt(pos.map, pos.x, pos.y);
+    const ahead = blockAt(pos.map, pos.x + dx, pos.y + dy);
+    // Gen 3 elevation: you can't step between different heights, except from or
+    // onto elevation 0 (transitions) and 15 (anything goes, e.g. bridges).
+    const level = (b) => b.elevation;
+    const sameHeight = (a, b) => level(a) === 0 || level(b) === 0 || level(a) === 15 || level(b) === 15 || level(a) === level(b);
+    const free = (b) => b.map && !b.collision && !isWater(b.behavior) && sameHeight(here, b) && !(occupied && occupied(b.map, b.x, b.y));
+
+    // Standing on a door mat (or another edge warp) and walking out through it:
+    // in the mat's arrow direction, down if it has none, into something solid.
+    const hereWarp = warpAt(pos.map, pos.x, pos.y);
+    const exitDir = ARROW_DIR[here.behavior] || "down";
+    if (hereWarp && !STEP_WARPS.has(here.behavior) && dir === exitDir && !free(ahead)) {
+      return { ok: false, warp: warpTarget(hereWarp) };
+    }
+
+    // Doors are solid: walking up into one opens it and goes inside.
+    const aheadWarp = ahead.map && warpAt(ahead.map, ahead.x, ahead.y);
+    if (aheadWarp && ahead.behavior === MB.WARP_DOOR && dir === "up") {
+      return { ok: false, warp: warpTarget(aheadWarp), door: true };
+    }
+
+    // Jumping down a ledge.
+    if (ahead.behavior === LEDGE[dir]) {
+      const land = blockAt(pos.map, pos.x + dx * 2, pos.y + dy * 2);
+      if (free(land)) return { ok: true, map: land.map, x: land.x, y: land.y, jump: true };
+      return { ok: false };
+    }
+
+    if (!ahead.map) {
+      const c = edgeConnection(pos.map, pos.x, pos.y, dir);
+      return { ok: false, unbuilt: c && !c.map ? c.mapConst : null };
+    }
+    if (!free(ahead)) return { ok: false };
+    const result = { ok: true, map: ahead.map, x: ahead.x, y: ahead.y };
+    const w = warpAt(ahead.map, ahead.x, ahead.y);
+    if (w && STEP_WARPS.has(ahead.behavior)) result.warp = warpTarget(w);
+    return result;
+  }
+
+  // ---------- Signs, people, triggers ----------
+
+  const signAt = (mapName, x, y) => (map(mapName).signs || []).find((s) => s.x === x && s.y === y) || null;
+  const triggersAt = (mapName, x, y) => (map(mapName).triggers || []).filter((t) => t.x === x && t.y === y);
+
+  // ---------- Wild Pokémon ----------
+
+  // Gen 3 encounter slots: 20, 20, 10, 10, 10, 10, 5, 5, 4, 4, 1, 1 percent.
+  const LAND_SLOT_WEIGHTS = [20, 20, 10, 10, 10, 10, 5, 5, 4, 4, 1, 1];
+
+  function isGrass(b) { return b.behavior === MB.TALL_GRASS || b.encounter === 1; }
+
+  // After a step onto (x, y): a wild Pokémon, or null. Gen 3: a land
+  // encounter happens if Random() % 2880 < rate * 16.
+  function wildEncounter(mapName, x, y, rng) {
+    rng = rng || Math.random;
+    const m = map(mapName);
+    const b = blockAt(mapName, x, y);
+    if (!m.wild || !isGrass(b)) return null;
+    if (Math.floor(rng() * 2880) >= m.wild.rate * 16) return null;
+    let roll = Math.floor(rng() * 100), slot = 0;
+    while (slot < LAND_SLOT_WEIGHTS.length - 1 && roll >= LAND_SLOT_WEIGHTS[slot]) roll -= LAND_SLOT_WEIGHTS[slot++];
+    const s = m.wild.slots[slot];
+    if (!s || !s.species) return null;
+    return { species: s.species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)) };
+  }
+
+  window.World = {
+    DIRS, OPPOSITE, MB, map, connectionOrigin, blockAt, warpAt, warpTarget, step,
+    signAt, triggersAt, isGrass, wildEncounter, LAND_SLOT_WEIGHTS
+  };
+})();

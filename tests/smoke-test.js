@@ -29,7 +29,7 @@ for (const src of headless) {
 for (const name of ["TYPE_CHART", "NATURES", "DEX", "MOVES", "ABILITIES", "ITEMS", "LEARNSETS_GEN6",
   "Stats", "Damage", "CONDITIONS", "ITEM_EFFECTS", "BATTLE_MOVE_EFFECTS", "Battle", "RandomTeam", "OpponentAI",
   "Experience", "Catching", "EVOLUTIONS", "Party", "Evolution", "Encounters",
-  "ItemUse", "ITEM_SPRITES", "Player", "Bag", "Save"]) {
+  "ItemUse", "ITEM_SPRITES", "Player", "Bag", "Save", "WORLD_MAPS", "World"]) {
   assert(window[name], "missing global " + name);
 }
 
@@ -636,6 +636,87 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
   const mints = Object.keys(ITEMS).filter((id) => Bag.mintNature(id));
   assert.strictEqual(mints.length, 21, "the 21 Sword and Shield mints");
   for (const id of mints) assert(ITEM_SPRITES[id], "no sprite for " + id);
+}
+
+// ---------- Overworld ----------
+{
+  const maps = ["PalletTown", "PalletTown_PlayersHouse_1F", "PalletTown_PlayersHouse_2F", "PalletTown_RivalsHouse",
+    "PalletTown_ProfessorOaksLab", "Route1"];
+  for (const name of maps) {
+    const m = WORLD_MAPS[name];
+    assert(m, "missing map " + name);
+    assert.strictEqual(m.collision.length, m.width * m.height);
+    for (const part of ["", "-border"].concat(m.top ? ["-top"] : [])) {
+      assert(fs.existsSync(path.join(root, "assets/world/maps", name + part + ".png")), "missing image " + name + part);
+    }
+    for (const person of m.people) assert(fs.existsSync(path.join(root, "assets/world/sprites", person.sprite + ".png")), "missing sprite " + person.sprite);
+  }
+  assert(fs.existsSync(path.join(root, "assets/world/sprites/player_red.png")));
+  assert.deepStrictEqual([WORLD_MAPS.PalletTown.width, WORLD_MAPS.PalletTown.height], [24, 20]);
+
+  const at = (r) => (r.warp ? r.warp : r).map + " " + (r.warp ? r.warp : r).x + "," + (r.warp ? r.warp : r).y;
+  // Walking up into a door goes inside; walking down off the mat comes back out of that door.
+  const inside = World.step({ map: "PalletTown", x: 6, y: 8 }, "up");
+  assert.strictEqual(at(inside), "PalletTown_PlayersHouse_1F 4,8");
+  const out = World.step({ map: "PalletTown_PlayersHouse_1F", x: 4, y: 8 }, "down");
+  assert.strictEqual(at(out), "PalletTown 6,7");
+  assert(out.warp.door, "arriving at a door steps you out of it");
+  assert.strictEqual(at(World.step({ map: "PalletTown", x: 16, y: 14 }, "up")), "PalletTown_ProfessorOaksLab 6,12");
+  // Stairs.
+  assert.strictEqual(at(World.step({ map: "PalletTown_PlayersHouse_1F", x: 9, y: 2 }, "right")), "PalletTown_PlayersHouse_2F 10,2");
+  // Pallet Town and Route 1 join at the top / bottom edge.
+  assert.strictEqual(at(World.step({ map: "PalletTown", x: 12, y: 0 }, "up")), "Route1 12,39");
+  assert.strictEqual(at(World.step({ map: "Route1", x: 12, y: 39 }, "down")), "PalletTown 12,0");
+  assert.strictEqual(World.step({ map: "Route1", x: 12, y: 0 }, "up").unbuilt, "MAP_VIRIDIAN_CITY");
+  // Walls, people and water block.
+  assert(!World.step({ map: "PalletTown", x: 6, y: 9 }, "left", () => true).ok, "people block");
+  const pond = WORLD_MAPS.PalletTown.behavior.findIndex((b) => b >= 0x10 && b <= 0x15);
+  const pw = WORLD_MAPS.PalletTown.width;
+  assert(pond >= 0 && !World.step({ map: "PalletTown", x: pond % pw, y: Math.floor(pond / pw) - 1 }, "down").ok, "can't walk into water");
+  // Ledges: jump down over them, but not up.
+  const R = WORLD_MAPS.Route1;
+  const ledge = R.behavior.findIndex((b, i) => b === World.MB.JUMP_SOUTH && i > R.width && !R.collision[i - R.width] && R.behavior[i - R.width] !== World.MB.JUMP_SOUTH);
+  const lx = ledge % R.width, ly = Math.floor(ledge / R.width);
+  const jump = World.step({ map: "Route1", x: lx, y: ly - 1 }, "down");
+  assert(jump.ok && jump.jump && jump.y === ly + 1, "jumps down a ledge");
+  assert(!World.step({ map: "Route1", x: lx, y: ly + 1 }, "up").ok, "can't climb a ledge");
+
+  // Route 1's FireRed encounters: only in grass, about rate x 16 / 2880 per step.
+  assert.strictEqual(R.wild.rate, 21);
+  const g = R.behavior.indexOf(World.MB.TALL_GRASS), gx = g % R.width, gy = Math.floor(g / R.width);
+  const rng = mulberry32(61);
+  let hits = 0;
+  const seen = new Set();
+  for (let i = 0; i < 20000; i++) {
+    const e = World.wildEncounter("Route1", gx, gy, rng);
+    if (!e) continue;
+    hits++;
+    seen.add(e.species);
+    assert(e.level >= 2 && e.level <= 5);
+  }
+  assert(Math.abs(hits / 20000 - 336 / 2880) < 0.01, "encounter rate " + hits / 20000);
+  assert.deepStrictEqual([...seen].sort(), ["Pidgey", "Rattata"]);
+  const path_ = R.behavior.findIndex((b, i) => b === 0 && !R.encounter[i] && !R.collision[i]);
+  assert.strictEqual(World.wildEncounter("Route1", path_ % R.width, Math.floor(path_ / R.width), () => 0), null, "no encounters off the grass");
+  assert.strictEqual(World.wildEncounter("PalletTown", 10, 10, () => 0), null, "no wild Pokémon in town");
+  assert.deepStrictEqual(WORLD_MAPS.PalletTown.signs.find((x) => x.x === 9 && x.y === 11).text,
+    ["PALLET TOWN\nShades of your journey await!"]);
+
+  // Saves: a new game starts in the bedroom with no Pokémon; old saves appear outside the house.
+  const fresh = Player.load(JSON.parse(Player.serialize(Player.create("Leaf", "green")))).player;
+  assert.strictEqual(fresh.location.map, "PalletTown_PlayersHouse_2F");
+  assert.strictEqual(fresh.party.length, 0);
+  assert.strictEqual(fresh.look, "green");
+  const old = JSON.parse(Player.serialize(Player.create("Old")));
+  delete old.location;
+  old.party = [Party.create("Squirtle", 12, { rng })];
+  const migrated = Player.load(old).player;
+  assert.deepStrictEqual([migrated.location.map, migrated.location.x, migrated.location.y], ["PalletTown", 6, 8]);
+  assert.strictEqual(migrated.flags.starter, "Squirtle");
+  for (const loc of [Player.NEW_GAME_LOCATION, Player.HOME]) {
+    const b = World.blockAt(loc.map, loc.x, loc.y);
+    assert(!b.collision, "spawn point is walkable: " + loc.map);
+  }
 }
 
 console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns), AI beat random moves in " + aiWinRate + "% of games");

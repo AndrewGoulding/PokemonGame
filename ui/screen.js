@@ -27,6 +27,16 @@
     });
   }
 
+  // Shows text until the player clicks or presses a key (for signs and people).
+  function read(text) {
+    say(text);
+    clearMenu();
+    return new Promise((resolve) => {
+      const done = () => { if (skipWait === done) skipWait = null; resolve(); };
+      skipWait = done;
+    });
+  }
+
   async function message(text, ms) {
     say(text);
     await wait(ms || MESSAGE_MS);
@@ -82,7 +92,7 @@
   // Click the text box (or press Space/Enter while no menu is up) to skip ahead.
   textbox.addEventListener("click", () => { if (skipWait) skipWait(); });
   document.addEventListener("keydown", (e) => {
-    if ((e.key === " " || e.key === "Enter") && skipWait && !menu.children.length) {
+    if ([" ", "Enter", "z", "Z", "x", "X"].includes(e.key) && !e.repeat && skipWait && !menu.children.length) {
       e.preventDefault();
       skipWait();
     }
@@ -107,5 +117,5 @@
     return '<img src="' + spriteUrl(species, form) + '"' + fallback + " " + (attrs || 'alt=""') + ">";
   }
 
-  window.Screen = { MESSAGE_MS, spriteUrl, setSprite, spriteTag, escapeHtml, say, wait, message, ask, clearMenu, learnMovePrompt };
+  window.Screen = { MESSAGE_MS, spriteUrl, setSprite, spriteTag, escapeHtml, say, wait, read, message, ask, clearMenu, learnMovePrompt };
 })();

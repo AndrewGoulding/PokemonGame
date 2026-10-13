@@ -10,6 +10,7 @@
 <body>
   <main class="game">
     <div id="scene" class="scene"></div>
+    <canvas id="world" class="world hidden" width="240" height="160"></canvas>
     <div id="field" class="field hidden">
       <div class="platform foe"></div>
       <div class="platform player"></div>
@@ -51,6 +52,7 @@
   <script src="data/learnsets.js"></script>
   <script src="data/evolutions.js"></script>
   <script src="data/item-sprites.js"></script>
+  <script src="data/world-maps.js"></script>
   <!-- Engine -->
   <script src="engine/stat-calculator.js"></script>
   <script src="engine/experience.js"></script>
@@ -69,9 +71,11 @@
   <script src="game/player.js"></script>
   <script src="game/bag.js"></script>
   <script src="game/save.js"></script>
+  <script src="game/world.js"></script>
   <!-- UI -->
   <script src="ui/screen.js"></script>
   <script src="ui/battle-screen.js"></script>
+  <script src="ui/overworld.js"></script>
   <script src="ui/game.js"></script>
 </body>
 </html>

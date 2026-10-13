@@ -1,6 +1,7 @@
-// Game flow: title screen, new game, the party screen and everything off it
-// (battles, Poké Mart, bag, PC, Pokédex, trainer card), and what happens after
-// battles (prize money, catching, blacking out, evolution).
+// Game flow: title screen, new game, the overworld and its story events, the
+// Start menu (party, bag, Pokédex, trainer card, and the services that will
+// move into towns: Pokémon Center, Poké Mart, PC, practice battles), and what
+// happens after battles (prize money, catching, blacking out, evolution).
 // Depends on: game/*.js, ui/screen.js, ui/battle-screen.js
 //
 // The game saves to this browser after every battle and every change made from
@@ -9,12 +10,11 @@
 (function () {
   "use strict";
 
-  const STARTERS = ["Bulbasaur", "Charmander", "Squirtle"];
   const STARTER_LEVEL = 5;
 
   const { message, ask, escapeHtml, clearMenu, spriteTag } = window.Screen;
   const $ = (sel) => document.querySelector(sel);
-  const field = $("#field"), scene = $("#scene"), fileInput = $("#file-input");
+  const field = $("#field"), scene = $("#scene"), world = $("#world"), fileInput = $("#file-input");
 
   let player = null;
   let lastTick = Date.now();
@@ -22,7 +22,7 @@
 
   // ---------- Helpers ----------
 
-  const partyLevel = () => Math.max(...player.party.map((r) => r.level));
+  const partyLevel = () => Math.max(1, ...player.party.map((r) => r.level));
   const canBattle = () => player.party.some((r) => !Party.isFainted(r));
   const money = (n) => "₽" + Math.floor(n).toLocaleString("en-US");
   const article = (word) => (/^[AEIOU]/i.test(word) ? "an " : "a ") + word;
@@ -35,8 +35,10 @@
   }
 
   function show(which) {
+    if (which !== "world") Overworld.hide();
     field.classList.toggle("hidden", which !== "field");
     scene.classList.toggle("hidden", which !== "scene");
+    world.classList.toggle("hidden", which !== "world");
   }
 
   // Shows `html` in the scene and a menu; resolves with a menu value, or
@@ -201,17 +203,16 @@
       clearMenu();
       name = input.value.trim().slice(0, 12);
     }
-    player = Player.create(name);
-    show("scene");
-    scene.innerHTML = '<div class="starters">' + STARTERS.map((s) =>
-      "<figure>" + spriteTag(s) + "<figcaption>" + s + "</figcaption></figure>").join("") + "</div>";
+    scene.innerHTML = '<div class="starters">' +
+      '<figure><img class="look" src="assets/world/sprites/player_red.png" alt=""><figcaption>Boy</figcaption></figure>' +
+      '<figure><img class="look" src="assets/world/sprites/player_green.png" alt=""><figcaption>Girl</figcaption></figure></div>';
+    const look = await ask("Are you a boy or a girl?", [
+      { label: "Boy", value: "red", className: "action" }, { label: "Girl", value: "green", className: "action" }]);
+    player = Player.create(name, look);
+    renderSprite("Pikachu");
     await message("Welcome to the world of Pokémon, " + name + "!");
-    const species = await ask("Which Pokémon will you choose as your partner?",
-      STARTERS.map((s) => ({ label: s, value: s })));
-    Player.receive(player, Party.create(species, STARTER_LEVEL));
-    renderSprite(species);
-    await message("You chose " + species + "! Take good care of it.");
-    await message("Here's " + money(player.money) + ", five Poké Balls and three Potions to get you started.");
+    await message("Your very own Pokémon legend is about to unfold!");
+    await message("PROF. OAK is waiting for you in his lab, south of your house.");
     await persist();
   }
 
@@ -226,9 +227,11 @@
     return { type: "move", move: choose(req.active.moves.filter((m) => !m.disabled)).index };
   };
 
-  async function battle(kind) {
+  // kind: "wild" or "trainer". opts: { foe: { name, team }, noBlackout }
+  async function battle(kind, opts) {
+    opts = opts || {};
     const wild = kind === "wild";
-    const foe = wild ? { name: "Wild", team: [Encounters.wild(partyLevel())] } : Encounters.trainer(partyLevel());
+    const foe = opts.foe || (wild ? { name: "Wild", team: [Encounters.wild(partyLevel())] } : Encounters.trainer(partyLevel()));
     show("field");
     const result = await BattleScreen.run({
       p1: { name: player.name, team: player.party.map(Party.toBattleSet) },
@@ -256,7 +259,9 @@
       await message("You got " + money(prize) + " for winning!");
     }
     if (result.outcome === "caught") await addCaught(Party.caught(foe.team[0], b.caught, ballUsed(b)));
-    if (result.outcome === "lost" || !canBattle()) {
+    if ((result.outcome === "lost" || !canBattle()) && opts.noBlackout) {
+      player.party.forEach(Party.heal);
+    } else if (result.outcome === "lost" || !canBattle()) {
       await blackout();
     } else {
       for (const record of leveledUp) {
@@ -286,9 +291,10 @@
     Player.addMoney(player, -lost);
     await message(lost ? "You panicked and dropped " + money(lost) + "..." : "You blacked out!");
     player.party.forEach(Party.heal);
+    player.location = Object.assign({}, Player.HOME);
     show("scene");
     scene.innerHTML = partyHtml();
-    await message("You rushed to the Pokémon Center, and your Pokémon were healed.");
+    await message("You hurried home to MOM, and your Pokémon were healed.");
   }
 
   // ---------- Evolution and moves ----------
@@ -712,34 +718,189 @@
     }
   }
 
-  // ---------- Party screen ----------
+  // ---------- Start menu ----------
 
-  async function hub() {
+  async function partyMenu() {
     for (;;) {
-      const html = partyHtml() + '<p class="bag-line">' + escapeHtml(player.name) + " · " + money(player.money) +
-        " · Pokédex " + player.pokedex.caught.length + " · Tap a Pokémon for its summary.</p>";
-      const action = await pick("What would you like to do?", html, [
-        { label: "Find a wild Pokémon", value: "wild", className: "action" },
-        { label: "Battle a trainer", value: "trainer", className: "action" },
+      if (!player.party.length) { await message("You don't have any Pokémon yet."); return; }
+      const v = await pick("Choose a Pokémon.", partyHtml() + '<p class="bag-line">Tap a Pokémon for its summary.</p>', [back("Close")]);
+      if (v === "back") return;
+      await summary(+v.pick);
+    }
+  }
+
+  // The Pokémon Center, Poké Mart and practice battles until those buildings
+  // exist on the map.
+  async function services() {
+    for (;;) {
+      const v = await ask("Services (these move into towns as the map grows).", [
         { label: "Pokémon Center", value: "heal", className: "action" },
         { label: "Poké Mart", value: "mart", className: "action" },
-        { label: "Bag", value: "bag", className: "action" },
         { label: "PC", value: "pc", className: "action" },
-        { label: "Pokédex", value: "dex", className: "action" },
-        { label: "Trainer card", value: "card", className: "action" }
-      ]);
-      if (action && action.pick != null) await summary(+action.pick);
-      else if (action === "heal") {
+        { label: "Practice: wild Pokémon", value: "wild", className: "action" },
+        { label: "Practice: trainer", value: "trainer", className: "action" },
+        back()]);
+      if (v === "back") return;
+      if (v === "heal") {
         player.party.forEach(Party.heal);
-        scene.innerHTML = partyHtml();
         await message("Your Pokémon are fighting fit! We hope to see you again!");
-      } else if (action === "mart") await mart();
-      else if (action === "bag") await bagScreen();
-      else if (action === "pc") await pc();
-      else if (action === "dex") await pokedex();
-      else if (action === "card") await trainerCard();
-      else if (!canBattle()) await message("Your Pokémon are too tired to battle. Visit the Pokémon Center first.");
-      else await battle(action);
+      } else if (v === "mart") await mart();
+      else if (v === "pc") await pc();
+      else if (!canBattle()) await message(player.party.length ? "Your Pokémon are too tired to battle." : "You don't have any Pokémon yet.");
+      else { await battle(v); return; }
+      await persist();
+    }
+  }
+
+  async function startMenu() {
+    for (;;) {
+      show("scene");
+      scene.innerHTML = (player.party.length ? partyHtml() : '<p class="empty">No Pokémon yet. PROF. OAK’s lab is south of your house.</p>') +
+        '<p class="bag-line">' + escapeHtml(player.name) + " · " + money(player.money) +
+        " · Pokédex " + player.pokedex.caught.length + "</p>";
+      const v = await ask("Menu", [
+        { label: "Pokémon", value: "party", className: "action" },
+        { label: "Bag", value: "bag", className: "action" },
+        { label: "Pokédex", value: "dex", className: "action" },
+        { label: "Trainer card", value: "card", className: "action" },
+        { label: "Save", value: "save", className: "action" },
+        { label: "Services", value: "services", className: "action" },
+        back("Close")]);
+      if (v === "back") return;
+      if (v === "party") await partyMenu();
+      else if (v === "bag") await bagScreen();
+      else if (v === "dex") await pokedex();
+      else if (v === "card") await trainerCard();
+      else if (v === "save") {
+        tick();
+        const r = Save.write(player);
+        await message(r.ok ? player.name + " saved the game." : r.error);
+      } else if (v === "services") {
+        await services();
+        if (scene.classList.contains("hidden")) return; // went into a battle
+      }
+      await persist();
+    }
+  }
+
+  // ---------- Pallet Town story ----------
+  //
+  // Most signs and people in the overworld just say their FireRed text. These
+  // scripts do more, so the overworld hands them to us.
+
+  const STARTER_BALLS = {
+    PalletTown_ProfessorOaksLab_EventScript_BulbasaurBall: { species: "Bulbasaur", kind: "Grass", flag: "FLAG_HIDE_BULBASAUR_BALL" },
+    PalletTown_ProfessorOaksLab_EventScript_SquirtleBall: { species: "Squirtle", kind: "Water", flag: "FLAG_HIDE_SQUIRTLE_BALL" },
+    PalletTown_ProfessorOaksLab_EventScript_CharmanderBall: { species: "Charmander", kind: "Fire", flag: "FLAG_HIDE_CHARMANDER_BALL" }
+  };
+  // The rival takes the starter that beats yours.
+  const RIVAL_PICK = { Bulbasaur: "Charmander", Charmander: "Squirtle", Squirtle: "Bulbasaur" };
+  const ballOf = (species) => Object.values(STARTER_BALLS).find((b) => b.species === species);
+
+  const SPECIAL = new Set([
+    "PalletTown_PlayersHouse_1F_EventScript_Mom",
+    "PalletTown_PlayersHouse_2F_EventScript_PC",
+    "PalletTown_EventScript_OakTriggerLeft", "PalletTown_EventScript_OakTriggerRight",
+    "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerLeft",
+    "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerMid",
+    "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerRight",
+    "Route1_EventScript_MartClerk"
+  ].concat(Object.keys(STARTER_BALLS)));
+
+  // Which people are around, from FireRed's event flags and this game's story flags.
+  function visible(person) {
+    const f = player.flags;
+    switch (person.flag) {
+      case "FLAG_HIDE_OAK_IN_PALLET_TOWN": return false;   // no walk-to-the-lab cutscene
+      case "FLAG_HIDE_POKEDEX": return false;              // the Pokédex is always yours here
+      case "FLAG_HIDE_RIVAL_IN_LAB": return !f.rivalLabBattle;
+      case "FLAG_HIDE_BULBASAUR_BALL": case "FLAG_HIDE_SQUIRTLE_BALL": case "FLAG_HIDE_CHARMANDER_BALL":
+        return !(f.starter && (ballOf(f.starter).flag === person.flag || ballOf(RIVAL_PICK[f.starter]).flag === person.flag));
+      default: return true;
+    }
+  }
+
+  const fill = (s) => s.replace(/\{PLAYER\}/g, player.name).replace(/\{RIVAL\}/g, player.rival);
+  async function say(pages) { for (const p of [].concat(pages)) await window.Screen.read(fill(p)); }
+
+  async function story(ev) {
+    const script = (ev.person || ev.sign || ev.trigger).script;
+    const f = player.flags;
+
+    if (STARTER_BALLS[script]) {
+      const ball = STARTER_BALLS[script];
+      if (f.starter) { await say("That's PROF. OAK's last Pokémon."); return; }
+      if (!(await confirm("So! You want the " + ball.kind + " Pokémon, " + ball.species + "?"))) return;
+      Player.receive(player, Party.create(ball.species, STARTER_LEVEL));
+      f.starter = ball.species;
+      await say(["{PLAYER} received the " + ball.species + " from PROF. OAK!",
+        "{RIVAL}: I'll take this one, then!", "{RIVAL} received the " + RIVAL_PICK[ball.species] + " from PROF. OAK!"]);
+      return;
+    }
+
+    switch (script) {
+      case "PalletTown_PlayersHouse_1F_EventScript_Mom":
+        if (!player.party.length) {
+          await say(["MOM: …Right.\nAll " + (player.look === "green" ? "girls" : "boys") + " leave home someday.\nIt said so on TV.",
+            "Oh, yes. PROF. OAK, next door, was\nlooking for you."]);
+          return;
+        }
+        await say("MOM: {PLAYER}! You should take a quick rest.");
+        player.party.forEach(Party.heal);
+        await say("MOM: Oh, good! You and your Pokémon are looking great.\nTake care now!");
+        return;
+
+      case "PalletTown_PlayersHouse_2F_EventScript_PC":
+        await say("{PLAYER} booted up the PC.");
+        await pc();
+        return;
+
+      case "PalletTown_EventScript_OakTriggerLeft":
+      case "PalletTown_EventScript_OakTriggerRight":
+        if (player.party.length) return;
+        await say(["OAK: Hey! Wait!\nDon't go out!",
+          "OAK: It's unsafe!\nWild Pokémon live in tall grass!",
+          "You need your own Pokémon for\nyour protection.",
+          "Come to my lab, just south of here.\nI'll give you one!"]);
+        Overworld.forceStep("down");
+        return;
+
+      case "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerLeft":
+      case "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerMid":
+      case "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerRight": {
+        if (!f.starter || f.rivalLabBattle || !player.party.length) return;
+        await say(["{RIVAL}: Wait, {PLAYER}!\nLet's check out our Pokémon!", "Come on, I'll take you on!"]);
+        f.rivalLabBattle = true;
+        const team = [Party.create(RIVAL_PICK[f.starter], STARTER_LEVEL)];
+        await battle("trainer", { foe: { name: "Rival " + player.rival, team }, noBlackout: true });
+        await say("{RIVAL}: Okay! I'll make my Pokémon battle to toughen it up!\n{PLAYER}! Gramps! Smell you later!");
+        return;
+      }
+
+      case "Route1_EventScript_MartClerk":
+        if (f.route1Potion) { await say("Please come see us if you need\nPoké Balls."); return; }
+        await say(ev.person.text);
+        Player.addItem(player, "potion");
+        f.route1Potion = true;
+        await say("{PLAYER} received a Potion.");
+        return;
+    }
+  }
+
+  // ---------- Exploring ----------
+
+  async function explore() {
+    for (;;) {
+      show("world");
+      const ev = await Overworld.explore({
+        player, rivalName: player.rival, visible,
+        special: (script) => SPECIAL.has(script)
+      });
+      if (ev.type === "menu") await startMenu();
+      else if (ev.type === "wild") {
+        if (!canBattle()) continue;
+        await battle("wild", { foe: { name: "Wild", team: [Party.create(ev.species, ev.level)] } });
+      } else await story(ev);
       await persist();
     }
   }
@@ -747,7 +908,7 @@
   async function main() {
     await title();
     lastTick = Date.now();
-    await hub();
+    await explore();
   }
 
   window.addEventListener("beforeunload", () => { if (player) { tick(); Save.write(player); } });

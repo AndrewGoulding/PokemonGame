@@ -21,6 +21,11 @@
   const STARTING_BAG = { "poke-ball": 5, "potion": 3 };
   const MAX_MONEY = 9999999;
   const MAX_ITEM_COUNT = 999;
+  // Where a new game starts (your bedroom) and where old saves from before the
+  // overworld appear (outside your house).
+  const NEW_GAME_LOCATION = { map: "PalletTown_PlayersHouse_2F", x: 6, y: 6, facing: "down" };
+  const OLD_SAVE_LOCATION = { map: "PalletTown", x: 6, y: 8, facing: "down" };
+  const HOME = { map: "PalletTown_PlayersHouse_1F", x: 8, y: 5, facing: "up" };
 
   // Prize money per trainer class: base x the level of the trainer's last Pokémon.
   const PRIZE_BASE = {
@@ -30,10 +35,13 @@
   // Money lost on blacking out: highest party level x this, by badge count (Gen 6).
   const BLACKOUT_BASE = [8, 16, 24, 36, 48, 64, 80, 100, 120];
 
-  function create(name) {
+  function create(name, look) {
     return {
       version: VERSION,
       name: String(name || "Red").slice(0, 12),
+      look: look === "green" ? "green" : "red",
+      rival: "Blue",
+      location: Object.assign({}, NEW_GAME_LOCATION),
       money: STARTING_MONEY,
       party: [],
       boxes: Array.from({ length: BOX_COUNT }, () => []),
@@ -195,15 +203,28 @@
     for (const s of dex.caught || []) markCaught(player, s);
     player.badges = Array.isArray(data.badges) ? data.badges.slice() : [];
     player.flags = Object.assign({}, data.flags);
+    player.look = data.look === "green" ? "green" : "red";
+    player.rival = String(data.rival || "Blue").slice(0, 12);
+    const loc = data.location;
+    const known = (m) => !window.WORLD_MAPS || !!window.WORLD_MAPS[m];
+    if (loc && known(loc.map)) {
+      player.location = { map: loc.map, x: loc.x | 0, y: loc.y | 0, facing: loc.facing || "down" };
+    } else {
+      // A save from before the overworld: the story so far is done.
+      player.location = Object.assign({}, OLD_SAVE_LOCATION);
+      if (player.party.length && !player.flags.starter) {
+        player.flags.starter = player.party[0].species;
+        player.flags.rivalLabBattle = true;
+      }
+    }
     player.playTimeMs = Math.max(0, +data.playTimeMs || 0);
     player.createdAt = data.createdAt || Date.now();
     player.savedAt = data.savedAt || null;
-    if (!player.party.length) throw new Error("This save has no usable Pokémon in its party.");
     return { player, warnings };
   }
 
   window.Player = {
-    VERSION, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG,
+    VERSION, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG, NEW_GAME_LOCATION, HOME,
     create, markSeen, markCaught, hasCaught, receive, deposit, withdraw, release,
     itemCount, addItem, removeItem, addMoney, prizeMoney, blackoutLoss, serialize, load
   };
