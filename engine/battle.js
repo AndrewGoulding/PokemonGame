@@ -34,6 +34,10 @@
 //                { type: "ball", ball: "great-ball" } or { type: "run" }.
 //                Ends with battle.caught (the Pokémon) or battle.escaped.
 //   catchContext: { night, caughtBefore(species) }   for Dusk / Repeat Balls
+//
+// Items from the bag (needs engine/item-use.js), either side, any battle:
+//   { type: "item", item: "potion", target: teamIndex, move: slot (Ether etc.) }
+// Used before moves; event: -useitem.
 
 (function () {
   "use strict";
@@ -368,6 +372,7 @@
         case "-levelup": return "  " + nm(a) + " grew to Lv. " + b + "!";
         case "-learnmove": return "  " + nm(a) + " learned " + b + "!";
         case "-trylearn": return "  " + nm(a) + " wants to learn " + b + ", but already knows four moves.";
+        case "-useitem": return "Used " + b + " on " + nm(c) + "  (" + ev[5] + ")";
         case "-ball": return "Threw a " + b + " at " + nm(c) + "... " + d + " shake(s)";
         case "caught": return "*** Gotcha! " + nm(a) + " was caught! ***";
         case "-run": return "Got away safely!";
@@ -1018,6 +1023,13 @@
         } else if (choice && choice.type === "ball") {
           if (!req.active.canCatch) return { ok: false, error: "You can't catch this Pokémon" };
           side.choice = { type: "ball", ball: choice.ball || "poke-ball" };
+        } else if (choice && choice.type === "item") {
+          const target = side.pokemon[choice.target];
+          if (!target || !window.ItemUse || !window.ItemUse.effect(choice.item)) return { ok: false, error: "You can't use that here." };
+          if (!window.ItemUse.canUse(this.itemView(target), choice.item, { inBattle: true, move: choice.move })) {
+            return { ok: false, error: "It won't have any effect." };
+          }
+          side.choice = { type: "item", item: choice.item, target: choice.target, move: choice.move };
         } else if (choice && choice.type === "run") {
           if (!req.active.canRun) return { ok: false, error: "You can't escape!" };
           side.choice = { type: "run" };
@@ -1090,7 +1102,10 @@
       const actions = [];
       for (const s of [this.sides.p1, this.sides.p2]) {
         const c = s.choice, mon = s.active;
-        if (c.type === "run" || c.type === "ball") actions.push({ order: 0, type: c.type, ball: c.ball, mon, side: s, priority: 0, speed: this.getSpeed(mon) });
+        if (c.type === "run" || c.type === "ball" || c.type === "item") {
+          actions.push({ order: 0, type: c.type, ball: c.ball, item: c.item, target: c.target, move: c.move,
+            mon, side: s, priority: 0, speed: this.getSpeed(mon) });
+        }
         else if (c.type === "switch") actions.push({ order: 1, type: "switch", mon, side: s, index: c.index, priority: 0, speed: this.getSpeed(mon) });
         else if (c.type === "recharge") actions.push({ order: 3, type: "move", mon, side: s, recharge: true, priority: 0, speed: this.getSpeed(mon) });
         else {
@@ -1300,6 +1315,27 @@
       return true;
     }
 
+    // ---------- Items from the bag ----------
+    // The shape engine/item-use.js works on. Moves are the real objects, so PP
+    // restored lands on the Pokémon.
+    itemView(mon) {
+      return { hp: mon.hp, maxhp: mon.maxhp, status: mon.status, fainted: mon.fainted,
+        confused: !!(mon.isActive && mon.volatiles.confusion), moves: this.ownMoves(mon), evs: mon.evs, level: mon.level };
+    }
+
+    useItem(side, item, teamIndex, move) {
+      const mon = side.pokemon[teamIndex];
+      const view = this.itemView(mon);
+      const r = window.ItemUse.apply(view, item, { move });
+      mon.hp = view.hp;
+      if (r.revived) mon.fainted = false;
+      if (r.cured) { mon.status = ""; mon.statusState = {}; }
+      if (r.confusionCured) delete mon.volatiles.confusion;
+      // [side, item, target, teamIndex, hp, healed, cured status, "confusion", "revive", pp restored]
+      this.add("-useitem", side.id, item, mon, teamIndex, this.hpStr(mon), r.healed || 0, r.cured || "",
+        r.confusionCured ? "confusion" : "", r.revived ? "revive" : "", r.pp || 0);
+    }
+
     // ---------- Wild battles ----------
     // Escape chance: always if faster, otherwise (speed x 128 / foe speed + 30 x attempts) / 256.
     tryRun(mon) {
@@ -1357,6 +1393,7 @@
         case "residual": this.residual(); break;
         case "run": this.tryRun(a.mon); break;
         case "ball": this.throwBall(a.mon, a.ball); break;
+        case "item": this.useItem(a.side, a.item, a.target, a.move); break;
         default: break;
       }
     }

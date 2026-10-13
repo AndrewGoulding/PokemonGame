@@ -18,10 +18,7 @@
   const HP_ANIM_MS = 550;    // matches the .hp-fill transition in battle-screen.css
   const SHAKE_MS = 750;      // one wobble of a thrown ball
 
-  const BALL_NAMES = {
-    "poke-ball": "Poké Ball", "great-ball": "Great Ball", "ultra-ball": "Ultra Ball", "master-ball": "Master Ball"
-  };
-  const ballName = (id) => BALL_NAMES[id] || id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const ballName = (id) => window.Bag.name(id);
   const BREAK_FREE = [
     "Oh no! The Pokémon broke free!", "Aww! It appeared to be caught!",
     "Aargh! Almost had it!", "Gah! It was so close, too!"
@@ -439,6 +436,22 @@
           await message(BREAK_FREE[+ev[4]] || BREAK_FREE[0]);
         };
       case "caught": return "Gotcha! " + nameOf(a) + " was caught!";
+
+      // ----- Items -----
+      case "-useitem":   // [side, item, target, teamIndex, hp, healed, cured, "confusion", "revive", pp]
+        return async () => {
+          const user = side === "p1" ? "You" : battle.sides.p2.name;
+          const itemName = ballName(b);
+          await message(user + " used " + (/^[AEIOU]/.test(itemName) ? "an " : "a ") + itemName + "!");
+          const index = +ev[4];
+          if (view[side].teamIndex === index) setHp(c, ev[5]);
+          const name = battle.sides[side].pokemon[index].name;
+          if (ev[9]) await message(name + " was revived!");
+          if (+ev[6] > 0) await message(name + "'s HP was restored by " + ev[6] + " point" + (+ev[6] === 1 ? "" : "s") + ".");
+          if (ev[7]) await message(fill(lookup(STATUS_CURE, ev[7], "{who} was cured!"), c));
+          if (ev[8]) await message(fill("{who} snapped out of its confusion!", c));
+          if (+ev[10] > 0) await message(name + "'s PP was restored.");
+        };
       case "-run": return "Got away safely!";
       case "-runfail": return "You couldn't get away!";
 
@@ -487,16 +500,60 @@
     return index == null ? null : { type: "switch", index };
   }
 
-  async function chooseBall() {
+  const itemOption = (id, count) => ({
+    html: '<span class="move-name">' + escapeHtml(window.Bag.name(id)) + "</span>" +
+      '<span class="move-meta"><span>' + escapeHtml(window.Bag.pocket(id)) + "</span><span>×" + count + "</span></span>",
+    value: id
+  });
+  const back = { label: "Back", value: null, className: "action", wide: true };
+
+  // Bag in battle: balls (wild battles only) and anything usable in battle.
+  // Returns a choice, or null to go back. The item leaves the bag once the
+  // engine accepts the choice (see loop()).
+  async function chooseBag() {
     const bag = config.bag || {};
-    const options = Object.keys(bag).map((id) => ({
-      label: ballName(id) + " ×" + bag[id], value: id, disabled: bag[id] <= 0
-    }));
-    options.push({ label: "Back", value: null, className: "action", wide: true });
-    const ball = await ask("Which ball will you throw?", options);
-    if (ball == null) return null;
-    bag[ball]--;
-    return { type: "ball", ball };
+    const usableHere = (id) => {
+      if (!(bag[id] > 0)) return false;
+      if (window.Bag.isBall(id)) return battle.wild;
+      const eff = window.ItemUse.effect(id);
+      return !!eff && !eff.outOfBattle;
+    };
+    for (;;) {
+      const items = Object.keys(bag).filter(usableHere);
+      if (!items.length) {
+        await message("There's nothing in your bag you can use right now.");
+        return null;
+      }
+      const item = await ask("Which item will you use?", items.map((id) => itemOption(id, bag[id])).concat([back]));
+      if (item == null) return null;
+      if (window.Bag.isBall(item)) return { type: "ball", ball: item };
+
+      const mons = battle.sides.p1.pokemon;
+      const target = await ask("Use " + window.Bag.name(item) + " on which Pokémon?", mons.map((m, i) => ({
+        html: '<span class="move-name">' + escapeHtml(m.name) + " <small>Lv" + m.level + "</small></span>" +
+          '<span class="party-hp">' + (m.fainted ? "Fainted" : "HP " + m.hp + "/" + m.maxhp) +
+          (m.status ? " · " + m.status.toUpperCase() : "") + "</span>",
+        value: i, disabled: !window.ItemUse.canUse(battle.itemView(m), item, { inBattle: true })
+      })).concat([back]));
+      if (target == null) continue;
+
+      let move;
+      if (window.ItemUse.effect(item).oneMove) {
+        move = await ask("Restore PP to which move?", battle.ownMoves(mons[target]).map((m, i) => ({
+          label: m.name + "  PP " + m.pp + "/" + m.maxpp, value: i, disabled: m.pp >= m.maxpp
+        })).concat([back]));
+        if (move == null) continue;
+      }
+      return { type: "item", item, target, move };
+    }
+  }
+
+  function useUpItem(choice) {
+    const bag = config.bag;
+    const id = choice.type === "ball" ? choice.ball : choice.type === "item" ? choice.item : null;
+    if (!bag || !id) return;
+    bag[id]--;
+    if (bag[id] <= 0) delete bag[id];
   }
 
   async function chooseAction(req) {
@@ -507,13 +564,13 @@
       else if (active.struggle) options.push({ label: "Struggle", value: { type: "move", move: "Struggle" }, className: "action", wide: true });
       else for (const m of active.moves) options.push(moveOption(m));
       if (!active.forced) {
-        const small = battle.wild ? "action small" : "action wide";
-        if (active.canCatch) options.push({ label: "Bag", value: "bag", className: small });
+        const small = battle.wild ? "action small" : "action";
+        if (config.bag) options.push({ label: "Bag", value: "bag", className: small });
         options.push({ label: "Pokémon", value: "party", className: small, disabled: !req.switches.length });
         if (battle.wild) options.push({ label: "Run", value: "run", className: small, disabled: !active.canRun });
       }
       const v = await ask("What will " + active.name + " do?", options);
-      if (v === "bag") { const c = await chooseBall(); if (c) return c; continue; }
+      if (v === "bag") { const c = await chooseBag(); if (c) return c; continue; }
       if (v === "party") { const c = await chooseSwitch(req, true); if (c) return c; continue; }
       if (v === "run") return { type: "run" };
       return v;
@@ -542,6 +599,7 @@
         const r = choose("p1", choice);
         if (r.crashed) return "crashed";
         if (!r.ok) await message(r.error);
+        else useUpItem(choice);
         continue;
       }
       const p2 = battle.getRequest("p2");

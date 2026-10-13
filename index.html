@@ -34,6 +34,7 @@
       <div id="menu" class="menu"></div>
     </div>
   </main>
+  <input type="file" id="file-input" accept=".json,application/json" hidden>
 
   <!--
     Load order matters: each file assigns a global on window that later files read.
@@ -49,10 +50,12 @@
   <script src="data/items.js"></script>
   <script src="data/learnsets.js"></script>
   <script src="data/evolutions.js"></script>
+  <script src="data/item-sprites.js"></script>
   <!-- Engine -->
   <script src="engine/stat-calculator.js"></script>
   <script src="engine/experience.js"></script>
   <script src="engine/catching.js"></script>
+  <script src="engine/item-use.js"></script>
   <script src="engine/damage-calculator.js"></script>
   <script src="data/conditions.js"></script>
   <script src="data/battle-moves.js"></script>
@@ -63,6 +66,9 @@
   <script src="game/party.js"></script>
   <script src="game/evolution.js"></script>
   <script src="game/encounters.js"></script>
+  <script src="game/player.js"></script>
+  <script src="game/bag.js"></script>
+  <script src="game/save.js"></script>
   <!-- UI -->
   <script src="ui/screen.js"></script>
   <script src="ui/battle-screen.js"></script>

@@ -5,21 +5,32 @@ no build step and no dependencies.
 
 ## Running it
 
-Open `index.html` in a browser. Pick Bulbasaur, Charmander or Squirtle, then
-from the party screen:
+Open `index.html` in a browser. Start a **New game**, enter your name and pick
+Bulbasaur, Charmander or Squirtle. You start with ₽3,000, five Poké Balls and
+three Potions. From the party screen:
 
-- **Find a wild Pokémon**: battle it, throw balls from the **Bag** to catch it,
-  or **Run**. Wild Pokémon are a little below your strongest Pokémon's level.
-- **Battle a trainer**: 1–3 Pokémon around your level, using the opponent AI
-  (`game/opponent-ai.js`). Trainer battles give 1.5× experience.
+- **Find a wild Pokémon**: battle it, catch it from the **Bag**, or **Run**.
+- **Battle a trainer**: 1–3 Pokémon around your level, using the opponent AI.
+  Winning pays prize money; blacking out costs some.
 - **Pokémon Center**: heal everything.
+- **Poké Mart**: buy and sell items. Stock grows as your strongest Pokémon
+  levels up (standing in for gym badges until there's a map).
+- **Bag**: items by pocket. Use medicine, evolution stones, Rare Candy and
+  vitamins on your Pokémon, give them held items, or toss items.
+- **PC**: 8 boxes of 30. Deposit, withdraw and release.
+- **Pokédex**: every Pokémon you've seen or caught.
+- **Trainer card**: money, Pokédex, play time; save, download a save file, or
+  load one.
 
-Pokémon gain experience and EVs, level up mid-battle, learn level-up moves
-(choosing one to forget when they already know four) and evolve after battle;
-press **Stop** to cancel an evolution. Tap a party card to make that Pokémon
-lead. Click the text box (or press Space) to skip ahead.
+Tap a Pokémon on the party screen for its summary (stats, EVs, nature, moves),
+to make it lead, or to use, give or take an item. In battle, the Bag also has
+your medicine. Click the text box (or press Space) to skip ahead.
 
-Progress isn't saved yet, so reloading starts a new game.
+**Saving**: the game saves automatically to this browser after every battle
+and every change on the party screen, and **Continue** picks up where you left
+off. Browser storage can be wiped (private windows, clearing site data), so
+download a save file from the trainer card as a backup, or to move a game to
+another browser.
 
 To run the tests (needs Node.js):
 
@@ -45,15 +56,22 @@ npm test
   model yet (Moss Rock, magnetic fields, rain, an upside-down console) are
   swapped for the nearest playable rule; each has a `note` explaining it.
 
+- **Items**: Gen 6 effects for potions and drinks, status cures, Revives, PP
+  restores, vitamins (10 EVs each, up to 100) and Rare Candy. In battle, using
+  an item takes your turn and happens before moves.
+- **Money**: trainers pay their class's base payout × their last Pokémon's
+  level. Blacking out costs your highest level × 8 (more with badges). Buying
+  10+ Poké Balls at once gets a free Premier Ball.
+
 ## Layout
 
 | Path | Contents |
 |---|---|
-| `data/` | Pokédex, moves, abilities, items, learnsets, evolutions, natures, type chart, plus the battle hooks for conditions and moves |
-| `engine/` | Stat, damage, experience and catch formulas, and the battle engine |
-| `game/` | Game logic around the engine: party records (`party.js`), evolution, wild and trainer encounters, random teams and the opponent AI |
-| `ui/` | Text box and menus (`screen.js`), the battle screen, and the game flow (`game.js`) |
-| `tools/` | Data generators |
+| `data/` | Pokédex, moves, abilities, items, item sprite paths, learnsets, evolutions, natures, type chart, plus the battle hooks for conditions and moves |
+| `engine/` | Stat, damage, experience, catch and item formulas, and the battle engine |
+| `game/` | Game logic around the engine: party records, the player and their save (`player.js`, `save.js`), bag and Poké Mart (`bag.js`), evolution, encounters, random teams and the opponent AI |
+| `ui/` | Text box and menus (`screen.js`), the battle screen, and the game flow and menus (`game.js`) |
+| `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`) |
 | `assets/sprites/` | Pokémon sprites (front, back, shiny) and item icons |
 | `tests/` | Loads every non-UI script and checks formulas, engine regressions, progression rules and AI choices, plus 200 random battles |
 
@@ -70,21 +88,26 @@ and later files read those globals, so scripts must load in this order:
 6. `data/items.js` → `ITEMS`
 7. `data/learnsets.js` → `LEARNSETS_GEN6`
 8. `data/evolutions.js` → `EVOLUTIONS`
-9. `engine/stat-calculator.js` → `Stats`
-10. `engine/experience.js` → `Experience`
-11. `engine/catching.js` → `Catching`
-12. `engine/damage-calculator.js` → `Damage`
-13. `data/conditions.js` → `CONDITIONS`, `ITEM_EFFECTS`
-14. `data/battle-moves.js` → `BATTLE_MOVE_EFFECTS`
-15. `engine/battle.js` → `Battle`
-16. `game/random-team.js` → `RandomTeam`
-17. `game/opponent-ai.js` → `OpponentAI`
-18. `game/party.js` → `Party`
-19. `game/evolution.js` → `Evolution`
-20. `game/encounters.js` → `Encounters`
-21. `ui/screen.js` → `Screen`
-22. `ui/battle-screen.js` → `BattleScreen`
-23. `ui/game.js` → `Game` (starts the game on load)
+9. `data/item-sprites.js` → `ITEM_SPRITES`
+10. `engine/stat-calculator.js` → `Stats`
+11. `engine/experience.js` → `Experience`
+12. `engine/catching.js` → `Catching`
+13. `engine/item-use.js` → `ItemUse`
+14. `engine/damage-calculator.js` → `Damage`
+15. `data/conditions.js` → `CONDITIONS`, `ITEM_EFFECTS`
+16. `data/battle-moves.js` → `BATTLE_MOVE_EFFECTS`
+17. `engine/battle.js` → `Battle`
+18. `game/random-team.js` → `RandomTeam`
+19. `game/opponent-ai.js` → `OpponentAI`
+20. `game/party.js` → `Party`
+21. `game/evolution.js` → `Evolution`
+22. `game/encounters.js` → `Encounters`
+23. `game/player.js` → `Player`
+24. `game/bag.js` → `Bag`
+25. `game/save.js` → `Save`
+26. `ui/screen.js` → `Screen`
+27. `ui/battle-screen.js` → `BattleScreen`
+28. `ui/game.js` → `Game` (starts the game on load)
 
 `index.html` is the source of truth for this order, and the smoke test reads its
 script list from there (skipping `ui/`, which needs a real page). If you add a

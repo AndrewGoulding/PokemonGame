@@ -1,107 +1,229 @@
-// Game flow: starter, party screen, battles and what happens after them
+// Game flow: title screen, new game, the party screen and everything off it
+// (battles, Poké Mart, bag, PC, Pokédex, trainer card), and what happens after
+// battles (prize money, catching, blacking out, evolution).
 // Depends on: game/*.js, ui/screen.js, ui/battle-screen.js
 //
-// Progress lives in memory only for now (saving is the next step), so
-// reloading the page starts a new game.
+// The game saves to this browser after every battle and every change made from
+// the party screen, and can download / load a save file as a backup.
 
 (function () {
   "use strict";
 
   const STARTERS = ["Bulbasaur", "Charmander", "Squirtle"];
   const STARTER_LEVEL = 5;
-  const PARTY_SIZE = 6;
-  const STARTING_BAG = { "poke-ball": 20, "great-ball": 10, "ultra-ball": 5, "master-ball": 1 };
 
-  const { message, ask, escapeHtml } = window.Screen;
+  const { message, ask, escapeHtml, clearMenu, spriteTag } = window.Screen;
   const $ = (sel) => document.querySelector(sel);
-  const field = $("#field"), scene = $("#scene");
+  const field = $("#field"), scene = $("#scene"), fileInput = $("#file-input");
 
-  const state = {
-    party: [],
-    box: [],            // overflow once the party is full (the PC comes later)
-    bag: Object.assign({}, STARTING_BAG),
-    caught: new Set()   // species caught or owned, for the Repeat Ball
-  };
+  let player = null;
+  let lastTick = Date.now();
+  let saveProblem = null;   // set when saving fails, so it's reported once
 
-  const partyLevel = () => Math.max(...state.party.map((r) => r.level));
-  const canBattle = () => state.party.some((r) => !Party.isFainted(r));
+  // ---------- Helpers ----------
+
+  const partyLevel = () => Math.max(...player.party.map((r) => r.level));
+  const canBattle = () => player.party.some((r) => !Party.isFainted(r));
+  const money = (n) => "₽" + Math.floor(n).toLocaleString("en-US");
+  const article = (word) => (/^[AEIOU]/i.test(word) ? "an " : "a ") + word;
+  const plural = (n, word) => n + " " + word + (n === 1 ? "" : "s");
+  const back = (label) => ({ label: label || "Back", value: "back", className: "action", wide: true });
+
+  function playTime(ms) {
+    const mins = Math.floor(ms / 60000);
+    return Math.floor(mins / 60) + ":" + String(mins % 60).padStart(2, "0");
+  }
 
   function show(which) {
     field.classList.toggle("hidden", which !== "field");
     scene.classList.toggle("hidden", which !== "scene");
   }
 
-  // ---------- Scenes ----------
+  // Shows `html` in the scene and a menu; resolves with a menu value, or
+  // { pick } when something with a data-pick attribute in the scene is clicked.
+  function pick(text, html, options) {
+    show("scene");
+    scene.innerHTML = html;
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = (v) => { if (done) return; done = true; clearMenu(); resolve(v); };
+      for (const el of scene.querySelectorAll("[data-pick]")) {
+        el.addEventListener("click", () => finish({ pick: el.dataset.pick }));
+      }
+      ask(text, options).then(finish);
+    });
+  }
+
+  const confirm = (text) => ask(text, [
+    { label: "Yes", value: true, className: "action" }, { label: "No", value: false, className: "action" }
+  ]);
+
+  // ---------- Saving ----------
+
+  function tick() {
+    const now = Date.now();
+    if (player) player.playTimeMs += now - lastTick;
+    lastTick = now;
+  }
+
+  async function persist() {
+    tick();
+    const r = Save.write(player);
+    if (!r.ok && saveProblem !== r.error) {
+      saveProblem = r.error;
+      await message(r.error + " Use “Download save file” on your trainer card to keep your progress.");
+    }
+  }
+
+  function downloadSave() {
+    tick();
+    const blob = new Blob([Save.toFile(player)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "pokemon-save-" + player.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  // Lets the player pick a save file. Resolves with a loaded player, or null.
+  async function loadSaveFile() {
+    fileInput.value = "";
+    const chosen = new Promise((resolve) => {
+      fileInput.onchange = () => resolve(fileInput.files[0] || null);
+    });
+    fileInput.click();
+    const file = await Promise.race([chosen, ask("Choose a save file to load.", [back("Cancel")]).then(() => null)]);
+    clearMenu();
+    if (!file) return null;
+    try {
+      const loaded = Save.fromFile(await file.text());
+      for (const w of loaded.warnings) await message(w);
+      return loaded.player;
+    } catch (e) {
+      await message(e.message);
+      return null;
+    }
+  }
+
+  // ---------- Party cards ----------
 
   function bar(pct, cls) {
     return '<div class="bar ' + cls + '"><div style="width:' + Math.round(pct * 100) + '%"></div></div>';
   }
+  const genderMark = (r) => (r.gender === "M" ? " ♂" : r.gender === "F" ? " ♀" : "");
+  const statusTag = (r) => (r.status ? '<span class="status ' + r.status + '">' + r.status + "</span>" : "");
+  const cloakName = (r) => (r.cloak ? r.cloak.charAt(0).toUpperCase() + r.cloak.slice(1) + " Cloak" : "");
 
-  function partyCard(r, i) {
+  function partyCard(r, i, extra) {
     const max = Party.maxHp(r);
     const hpPct = r.hp / max;
     const hpClass = hpPct <= 0.2 ? "low" : hpPct <= 0.5 ? "mid" : "";
-    const gender = r.gender === "M" ? " ♂" : r.gender === "F" ? " ♀" : "";
-    return '<button type="button" class="card' + (Party.isFainted(r) ? " fainted" : "") + '" data-index="' + i + '"' +
-      (i === 0 ? " disabled" : "") + ' title="' + (i === 0 ? "Leads the party" : "Make this Pokémon lead") + '">' +
-      window.Screen.spriteTag(r.species, Party.form(r)) +
+    return '<button type="button" class="card' + (Party.isFainted(r) ? " fainted" : "") + '" data-pick="' + i + '">' +
+      spriteTag(r.species, Party.form(r)) +
       '<div class="card-body">' +
-        '<div class="card-top"><b>' + escapeHtml(Party.displayName(r)) + gender + "</b>" +
-          (r.status ? '<span class="status ' + r.status + '">' + r.status + "</span>" : "") +
-          "<span>Lv" + r.level + "</span></div>" +
+        '<div class="card-top"><b>' + escapeHtml(Party.displayName(r)) + genderMark(r) + "</b>" +
+          statusTag(r) + "<span>Lv" + r.level + "</span></div>" +
         bar(hpPct, "hp " + hpClass) +
         '<div class="card-hp">' + r.hp + " / " + max + "</div>" +
         bar(Party.expProgress(r), "exp") +
-        (r.cloak ? '<div class="card-moves">' + r.cloak.charAt(0).toUpperCase() + r.cloak.slice(1) + " Cloak</div>" : "") +
-        '<div class="card-moves">' + r.moves.map((m) => escapeHtml(m.name)).join(" · ") + "</div>" +
+        (extra != null ? '<div class="card-note">' + extra + "</div>" :
+          (r.item ? '<div class="card-moves">Holding ' + escapeHtml(Bag.name(r.item)) + "</div>" : "") +
+          (r.cloak ? '<div class="card-moves">' + cloakName(r) + "</div>" : "") +
+          '<div class="card-moves">' + r.moves.map((m) => escapeHtml(m.name)).join(" · ") + "</div>") +
       "</div></button>";
   }
 
-  function renderParty() {
-    const balls = Object.keys(state.bag).map((id) => BattleScreen.ballName(id) + " ×" + state.bag[id]).join(" · ");
-    scene.innerHTML = '<div class="party">' + state.party.map(partyCard).join("") + "</div>" +
-      '<p class="bag-line">' + escapeHtml(balls) + (state.box.length ? " · PC: " + state.box.length + " Pokémon" : "") +
-      " · Tap a Pokémon to make it lead.</p>";
-    for (const card of scene.querySelectorAll(".card")) {
-      card.addEventListener("click", () => {
-        const i = +card.dataset.index;
-        state.party.unshift(state.party.splice(i, 1)[0]);
-        renderParty();
-      });
-    }
-  }
+  const partyHtml = (notes) => '<div class="party">' +
+    player.party.map((r, i) => partyCard(r, i, notes ? notes[i] : null)).join("") + "</div>";
 
   function renderSprite(species, extraClass, form) {
-    scene.innerHTML = '<div class="spotlight">' + window.Screen.spriteTag(species, form,
+    show("scene");
+    scene.innerHTML = '<div class="spotlight">' + spriteTag(species, form,
       'class="big-sprite ' + (extraClass || "") + '" alt="' + escapeHtml(species) + '"') + "</div>";
     return scene.querySelector(".big-sprite");
   }
 
-  // ---------- Starter ----------
+  const itemRow = (id, right, key) => '<button type="button" class="row" data-pick="' + (key || id) + '">' +
+    (Bag.sprite(id) ? '<img src="' + Bag.sprite(id) + '" alt="">' : '<span class="no-sprite"></span>') +
+    '<span class="row-main"><b>' + escapeHtml(Bag.name(id)) + "</b><small>" + escapeHtml(Bag.description(id)) + "</small></span>" +
+    '<span class="row-right">' + right + "</span></button>";
 
-  async function chooseStarter() {
+  // ---------- Title / new game ----------
+
+  async function title() {
+    for (;;) {
+      const saved = Save.read();
+      if (saved.error) await message(saved.error);
+      const p = saved.player;
+      const html = '<div class="title"><h1>Pokémon Game</h1>' + (p ?
+        '<div class="save-card"><b>' + escapeHtml(p.name) + "</b>" +
+        '<div class="save-party">' + p.party.map((r) => spriteTag(r.species, Party.form(r))).join("") + "</div>" +
+        "<div>Pokédex: " + p.pokedex.caught.length + " · Badges: " + p.badges.length +
+        " · Time: " + playTime(p.playTimeMs) + "</div></div>" : "") + "</div>";
+      const options = [];
+      if (p) options.push({ label: "Continue", value: "continue", className: "action", wide: true });
+      options.push({ label: "New game", value: "new", className: "action" });
+      options.push({ label: "Load save file", value: "file", className: "action" });
+      const v = await pick(p ? "Welcome back, " + p.name + "!" : "Welcome!", html, options);
+      if (v === "continue") {
+        player = p;
+        for (const w of saved.warnings) await message(w);
+        return;
+      }
+      if (v === "file") {
+        const loaded = await loadSaveFile();
+        if (loaded && (!p || await confirm("Replace the game saved in this browser with this file?"))) {
+          player = loaded;
+          await persist();
+          return;
+        }
+        continue;
+      }
+      if (p && !(await confirm("Start a new game? Your saved game in this browser will be overwritten."))) continue;
+      await newGame();
+      return;
+    }
+  }
+
+  async function newGame() {
+    let name = "";
+    while (!name) {
+      show("scene");
+      scene.innerHTML = '<div class="spotlight"><label class="name-entry">Your name' +
+        '<input id="name-input" maxlength="12" value="Red" autocomplete="off"></label></div>';
+      const input = $("#name-input");
+      input.focus();
+      input.select();
+      const typed = new Promise((resolve) => input.addEventListener("keydown", (e) => { if (e.key === "Enter") resolve(); }));
+      await Promise.race([typed, ask("What's your name?", [{ label: "OK", value: true, className: "action", wide: true }])]);
+      clearMenu();
+      name = input.value.trim().slice(0, 12);
+    }
+    player = Player.create(name);
     show("scene");
     scene.innerHTML = '<div class="starters">' + STARTERS.map((s) =>
-      "<figure>" + window.Screen.spriteTag(s) + "<figcaption>" + s + "</figcaption></figure>").join("") + "</div>";
-    await message("Welcome to the world of Pokémon!");
+      "<figure>" + spriteTag(s) + "<figcaption>" + s + "</figcaption></figure>").join("") + "</div>";
+    await message("Welcome to the world of Pokémon, " + name + "!");
     const species = await ask("Which Pokémon will you choose as your partner?",
       STARTERS.map((s) => ({ label: s, value: s })));
-    const record = Party.create(species, STARTER_LEVEL);
-    state.party.push(record);
-    state.caught.add(species);
+    Player.receive(player, Party.create(species, STARTER_LEVEL));
     renderSprite(species);
     await message("You chose " + species + "! Take good care of it.");
+    await message("Here's " + money(player.money) + ", five Poké Balls and three Potions to get you started.");
+    await persist();
   }
 
   // ---------- Battles ----------
 
   const randomMove = (battle) => {
     const req = battle.getRequest("p2");
-    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-    if (req.phase === "switch") return { type: "switch", index: pick(req.switches) };
+    const choose = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    if (req.phase === "switch") return { type: "switch", index: choose(req.switches) };
     if (req.active.forced) return { type: "move", move: 0 };
     if (req.active.struggle) return { type: "move", move: "Struggle" };
-    return { type: "move", move: pick(req.active.moves.filter((m) => !m.disabled)).index };
+    return { type: "move", move: choose(req.active.moves.filter((m) => !m.disabled)).index };
   };
 
   async function battle(kind) {
@@ -109,31 +231,40 @@
     const foe = wild ? { name: "Wild", team: [Encounters.wild(partyLevel())] } : Encounters.trainer(partyLevel());
     show("field");
     const result = await BattleScreen.run({
-      p1: { name: "You", team: state.party.map(Party.toBattleSet) },
+      p1: { name: player.name, team: player.party.map(Party.toBattleSet) },
       p2: { name: foe.name, team: foe.team.map(Party.toBattleSet) },
       wild,
       exp: true,
-      bag: state.bag,
-      catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => state.caught.has(s) },
+      bag: player.bag,
+      catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s) },
       opponent: wild ? randomMove : (b) => OpponentAI.choose(b, "p2")
     });
     const b = result.battle;
+    for (const e of b.events) {
+      if ((e[0] === "switch" || e[0] === "drag") && String(e[1]).startsWith("p2")) Player.markSeen(player, String(e[2]).split(", L")[0]);
+    }
     const leveledUp = [];
-    state.party.forEach((record, i) => {
+    player.party.forEach((record, i) => {
       const mon = b.sides.p1.pokemon[i];
       Party.syncFromBattle(record, mon);
       if (mon.leveledUp) leveledUp.push(record);
     });
 
+    if (result.outcome === "won" && !wild) {
+      const prize = Player.prizeMoney(foe.name, foe.team);
+      Player.addMoney(player, prize);
+      await message("You got " + money(prize) + " for winning!");
+    }
     if (result.outcome === "caught") await addCaught(Party.caught(foe.team[0], b.caught, ballUsed(b)));
     if (result.outcome === "lost" || !canBattle()) {
       await blackout();
-      return;
+    } else {
+      for (const record of leveledUp) {
+        const evo = Evolution.find(record, { trigger: "level", party: player.party });
+        if (evo) await evolve(record, evo, true);
+      }
     }
-    for (const record of leveledUp) {
-      const evo = Evolution.find(record, { trigger: "level", party: state.party });
-      if (evo) await evolve(record, evo);
-    }
+    await persist();
   }
 
   function ballUsed(b) {
@@ -142,39 +273,40 @@
   }
 
   async function addCaught(record) {
-    state.caught.add(record.species);
-    if (state.party.length < PARTY_SIZE) {
-      state.party.push(record);
-      await message(Party.displayName(record) + " was added to your party!");
-    } else {
-      state.box.push(record);
-      await message(Party.displayName(record) + " was sent to the PC.");
-    }
+    const where = Player.receive(player, record);
+    const name = Party.displayName(record);
+    if (where === "party") await message(name + " was added to your party!");
+    else if (where) await message(name + " was sent to " + where.replace("box", "Box") + " on the PC.");
+    else await message("There's no room left in your PC... " + name + " was released.");
   }
 
   async function blackout() {
     await message("You have no more Pokémon that can fight!");
-    await message("You blacked out!");
-    state.party.forEach(Party.heal);
+    const lost = Player.blackoutLoss(player);
+    Player.addMoney(player, -lost);
+    await message(lost ? "You panicked and dropped " + money(lost) + "..." : "You blacked out!");
+    player.party.forEach(Party.heal);
     show("scene");
-    renderParty();
+    scene.innerHTML = partyHtml();
     await message("You rushed to the Pokémon Center, and your Pokémon were healed.");
   }
 
-  // ---------- Evolution ----------
+  // ---------- Evolution and moves ----------
 
-  async function evolve(record, evo) {
+  async function evolve(record, evo, canStop) {
     const name = Party.displayName(record);
-    show("scene");
     const img = renderSprite(record.species, "", Party.form(record));
     await message("What? " + name + " is evolving!");
     img.classList.add("evolving");
-    // The player can press Stop while the animation plays.
     let stopped = false;
-    const stop = ask(name + " is evolving...", [{ label: "Stop", value: true, className: "action", wide: true }])
-      .then(() => { stopped = true; });
-    await Promise.race([stop, new Promise((r) => setTimeout(r, 3200))]);
-    window.Screen.clearMenu();
+    if (canStop) {
+      const stop = ask(name + " is evolving...", [{ label: "Stop", value: true, className: "action", wide: true }])
+        .then(() => { stopped = true; });
+      await Promise.race([stop, new Promise((r) => setTimeout(r, 3200))]);
+      clearMenu();
+    } else {
+      await message(name + " is evolving...", 3200);
+    }
     img.classList.remove("evolving");
     if (stopped) {
       await message("Huh? " + name + " stopped evolving!");
@@ -183,15 +315,13 @@
     const oldSpecies = record.species;
     const shed = Evolution.shedinja(record);
     const newMoves = Evolution.evolve(record, evo.into, evo);
-    renderSprite(record.species, "evolved");
+    renderSprite(record.species, "evolved", Party.form(record));
     await message("Congratulations! Your " + (record.nickname || Party.speciesName(oldSpecies)) + " evolved into " +
       Party.speciesName(record.species) + "!");
-    state.caught.add(record.species);
+    Player.markCaught(player, record.species);
     for (const move of newMoves) await learnMove(record, move);
-    if (shed && state.party.length < PARTY_SIZE && state.bag["poke-ball"] > 0) {
-      state.bag["poke-ball"]--;
-      state.party.push(shed);
-      state.caught.add("Shedinja");
+    if (shed && evo.into === "Ninjask" && player.party.length < Player.PARTY_SIZE && Player.removeItem(player, "poke-ball")) {
+      Player.receive(player, shed);
       renderSprite("Shedinja");
       await message("Something appeared in the empty Poké Ball... It's Shedinja!");
     }
@@ -207,36 +337,389 @@
     if (slot != null) Party.teachMove(record, move, slot);
   }
 
+  // ---------- Using and giving items ----------
+
+  // Uses `item` from the bag on `record`, with whatever follows (evolving, new moves).
+  async function useItemOn(record, item) {
+    const name = Party.displayName(record);
+    if (Bag.isStone(item)) {
+      const evo = Evolution.find(record, { trigger: "item", item, party: player.party });
+      if (!evo) { await message("It won't have any effect."); return; }
+      Player.removeItem(player, item);
+      await evolve(record, evo, false);
+      return;
+    }
+    if (item === "rare-candy") {
+      if (!Bag.canUseOn(record, item)) { await message("It won't have any effect."); return; }
+      Player.removeItem(player, item);
+      const newMoves = Bag.levelUp(record);
+      await message(name + " grew to Lv. " + record.level + "!");
+      for (const move of newMoves) await learnMove(record, move);
+      const evo = Evolution.find(record, { trigger: "level", party: player.party });
+      if (evo) await evolve(record, evo, true);
+      return;
+    }
+    let move;
+    const eff = ItemUse.effect(item);
+    if (eff && eff.oneMove) {
+      const v = await ask("Restore PP to which move?", record.moves.map((m, i) => ({
+        label: m.name + "  PP " + m.pp + "/" + MOVES[m.name].pp, value: i, disabled: m.pp >= MOVES[m.name].pp
+      })).concat([back()]));
+      if (v === "back") return;
+      move = v;
+    }
+    if (!Bag.canUseOn(record, item, { move })) { await message("It won't have any effect."); return; }
+    Player.removeItem(player, item);
+    const r = Bag.useOn(record, item, { move });
+    if (r.revived) await message(name + " was revived!");
+    if (r.healed) await message(name + "'s HP was restored by " + plural(r.healed, "point") + ".");
+    if (r.cured) await message(name + " was cured of its " + ({ psn: "poisoning", tox: "poisoning", par: "paralysis", slp: "sleep", brn: "burn", frz: "freezing" }[r.cured] || "status") + ".");
+    if (r.pp) await message(name + "'s PP was restored.");
+    if (r.ev) await message(name + "'s base stats rose.");
+  }
+
+  async function giveItem(record, item) {
+    Player.removeItem(player, item);
+    const old = Bag.give(record, item);
+    if (old) {
+      Player.addItem(player, old);
+      await message("Swapped " + Party.displayName(record) + "'s " + Bag.name(old) + " for the " + Bag.name(item) + ".");
+    } else {
+      await message(Party.displayName(record) + " is now holding the " + Bag.name(item) + ".");
+    }
+  }
+
+  // Party list for choosing who gets an item; notes say who can use it.
+  async function choosePartyFor(text, item) {
+    const notes = item ? player.party.map((r) => (Bag.canUseOn(r, item, { party: player.party }) ? "Able" : "Not able")) : null;
+    const v = await pick(text, partyHtml(notes), [back()]);
+    return v && v.pick != null ? player.party[+v.pick] : null;
+  }
+
+  const usableFromBag = (item) => Bag.isStone(item) || item === "rare-candy" || !!ItemUse.effect(item);
+
+  // ---------- Summary ----------
+
+  const STAT_LABELS = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
+
+  function summaryHtml(r) {
+    const stats = Party.stats(r);
+    const nature = NATURES[r.nature] || {};
+    const E = Experience;
+    const toNext = r.level >= 100 ? 0 : E.expForLevel(E.growthRate(r.species), r.level + 1) - r.exp;
+    const types = DEX[r.species].types.join(" / ");
+    return '<div class="summary">' +
+      '<div class="summary-head">' + spriteTag(r.species, Party.form(r), 'class="summary-sprite" alt=""') +
+        "<div><h2>" + escapeHtml(Party.displayName(r)) + genderMark(r) + " " + statusTag(r) + "</h2>" +
+        "<div>Lv" + r.level + " · " + escapeHtml(Party.speciesName(r.species)) + " · " + types + "</div>" +
+        "<div>" + escapeHtml(r.nature) + " nature · " + escapeHtml(r.ability) + "</div>" +
+        "<div>Holding: " + (r.item ? escapeHtml(Bag.name(r.item)) : "nothing") + (r.cloak ? " · " + cloakName(r) : "") + "</div>" +
+        "<div>HP " + r.hp + " / " + stats.hp + " · Exp. to next level: " + toNext.toLocaleString("en-US") + "</div>" +
+        "<div>Caught in " + article(Bag.name(r.ball || "poke-ball")) + " · Friendship " + r.happiness + "</div>" +
+      "</div></div>" +
+      '<table class="stats"><tr><th></th><th>Stat</th><th>EVs</th></tr>' +
+      Object.keys(STAT_LABELS).map((k) => "<tr><td>" + STAT_LABELS[k] +
+        (nature.plus === k ? ' <span class="up">▲</span>' : nature.minus === k ? ' <span class="down">▼</span>' : "") +
+        "</td><td>" + stats[k] + "</td><td>" + (r.evs[k] || 0) + "</td></tr>").join("") + "</table>" +
+      '<div class="summary-moves">' + r.moves.map((m) => {
+        const d = MOVES[m.name];
+        return '<div class="type-' + d.type + '"><b>' + escapeHtml(m.name) + "</b><span>" + d.type + " · " +
+          (d.cat === "Status" ? "Status" : d.cat + " " + (d.power || "—")) + " · PP " + m.pp + "/" + d.pp + "</span></div>";
+      }).join("") + "</div></div>";
+  }
+
+  async function summary(index) {
+    for (;;) {
+      const r = player.party[index];
+      const options = [];
+      if (index > 0) options.push({ label: "Make lead", value: "lead", className: "action" });
+      options.push({ label: "Use item", value: "use", className: "action" });
+      options.push({ label: "Give item", value: "give", className: "action" });
+      if (r.item) options.push({ label: "Take item", value: "take", className: "action" });
+      options.push(back());
+      const v = await pick(Party.displayName(r) + "'s summary.", summaryHtml(r), options);
+      if (v === "back" || (v && v.pick)) return;
+      if (v === "lead") {
+        player.party.unshift(player.party.splice(index, 1)[0]);
+        await message(Party.displayName(r) + " now leads your party.");
+        return;
+      }
+      if (v === "take") {
+        const old = Bag.take(r);
+        Player.addItem(player, old);
+        await message("Took the " + Bag.name(old) + " from " + Party.displayName(r) + ".");
+        continue;
+      }
+      const items = Object.keys(player.bag).filter((id) => (v === "use" ? usableFromBag(id) : !Bag.isBall(id)));
+      if (!items.length) { await message(v === "use" ? "You don't have anything to use." : "You don't have anything to give."); continue; }
+      const choice = await pick(v === "use" ? "Use which item on " + Party.displayName(r) + "?" : "Give which item?",
+        '<div class="rows">' + items.map((id) => itemRow(id, "×" + player.bag[id])).join("") + "</div>", [back()]);
+      if (!choice || !choice.pick) continue;
+      if (v === "use") await useItemOn(r, choice.pick);
+      else await giveItem(r, choice.pick);
+    }
+  }
+
+  // ---------- Bag ----------
+
+  async function bagScreen() {
+    let pocket = "Medicine";
+    for (;;) {
+      const items = Object.keys(player.bag).filter((id) => Bag.pocket(id) === pocket).sort((a, b) => Bag.name(a).localeCompare(Bag.name(b)));
+      const html = '<div class="tabs">' + Bag.POCKETS.map((p) =>
+        '<button type="button" class="tab' + (p === pocket ? " active" : "") + '" data-pick="tab:' + p + '">' + p + "</button>").join("") + "</div>" +
+        '<div class="rows">' + (items.length ? items.map((id) => itemRow(id, "×" + player.bag[id], "item:" + id)).join("")
+          : '<p class="empty">Nothing in this pocket.</p>') + "</div>";
+      const v = await pick("Your bag. " + money(player.money), html, [back("Close bag")]);
+      if (v === "back") return;
+      const [kind, id] = v.pick.split(/:(.*)/);
+      if (kind === "tab") { pocket = id; continue; }
+      const options = [];
+      if (usableFromBag(id)) options.push({ label: "Use", value: "use", className: "action" });
+      if (!Bag.isBall(id)) options.push({ label: "Give", value: "give", className: "action" });
+      options.push({ label: "Toss", value: "toss", className: "action" });
+      options.push(back());
+      const what = await ask(Bag.name(id) + ": " + Bag.description(id), options);
+      if (what === "use") {
+        const r = await choosePartyFor("Use the " + Bag.name(id) + " on which Pokémon?", id);
+        if (r) await useItemOn(r, id);
+      } else if (what === "give") {
+        const r = await choosePartyFor("Give the " + Bag.name(id) + " to which Pokémon?");
+        if (r) await giveItem(r, id);
+      } else if (what === "toss") {
+        const n = await chooseQuantity("Toss how many?", player.bag[id]);
+        if (n && await confirm("Throw away " + n + " × " + Bag.name(id) + "?")) {
+          Player.removeItem(player, id, n);
+          await message("Threw away " + n + " × " + Bag.name(id) + ".");
+        }
+      }
+      await persist();
+    }
+  }
+
+  async function chooseQuantity(text, max, unitPrice) {
+    const counts = [1, 5, 10, 25].filter((n) => n < max);
+    const label = (n) => "×" + n + (unitPrice ? "  " + money(n * unitPrice) : "");
+    const options = counts.map((n) => ({ label: label(n), value: n }));
+    if (max > 0) options.push({ label: "All " + label(max).slice(1), value: max });
+    options.push(back("Cancel"));
+    const v = await ask(text, options);
+    return v === "back" ? 0 : v;
+  }
+
+  // ---------- Poké Mart ----------
+
+  async function mart() {
+    for (;;) {
+      const v = await pick("Welcome to the Poké Mart! How may I serve you?",
+        '<div class="spotlight mart-sign"><b>POKé MART</b><div>' + money(player.money) + "</div></div>",
+        [{ label: "Buy", value: "buy", className: "action" }, { label: "Sell", value: "sell", className: "action" }, back("Leave")]);
+      if (v === "back") { await message("Please come again!"); return; }
+      if (v === "buy") await martBuy();
+      else await martSell();
+      await persist();
+    }
+  }
+
+  async function martBuy() {
+    for (;;) {
+      const stock = Bag.martStock(partyLevel());
+      const html = '<div class="rows">' + stock.map((s) =>
+        itemRow(s.item, money(s.price) + "<small>In bag: " + Player.itemCount(player, s.item) + "</small>")).join("") +
+        '</div><p class="bag-line">You have ' + money(player.money) + ". More stock arrives as your Pokémon grow stronger.</p>";
+      const v = await pick("What would you like to buy?", html, [back()]);
+      if (v === "back") return;
+      const item = v.pick, price = Bag.price(item);
+      const max = Math.min(99, Math.floor(player.money / price));
+      if (!max) { await message("You don't have enough money."); continue; }
+      const n = await chooseQuantity(Bag.name(item) + "? Certainly. How many would you like?", max, price);
+      if (!n) continue;
+      if (!(await confirm(n + " × " + Bag.name(item) + "? That will be " + money(n * price) + ". OK?"))) continue;
+      Player.addMoney(player, -n * price);
+      Player.addItem(player, item, n);
+      await message("Here you are! Thank you!");
+      if (item === "poke-ball" && n >= 10) {
+        Player.addItem(player, "premier-ball");
+        await message("You also get a Premier Ball as an added bonus.");
+      }
+    }
+  }
+
+  async function martSell() {
+    for (;;) {
+      const items = Object.keys(player.bag).filter((id) => Bag.sellPrice(id) > 0);
+      if (!items.length) { await message("You don't have anything I can buy."); return; }
+      const v = await pick("What would you like to sell?", '<div class="rows">' +
+        items.map((id) => itemRow(id, money(Bag.sellPrice(id)) + "<small>×" + player.bag[id] + "</small>")).join("") + "</div>", [back()]);
+      if (v === "back") return;
+      const item = v.pick;
+      const n = await chooseQuantity("How many " + Bag.name(item) + " would you like to sell?", player.bag[item], Bag.sellPrice(item));
+      if (!n || !(await confirm("I can pay " + money(n * Bag.sellPrice(item)) + ". Would that be OK?"))) continue;
+      Player.removeItem(player, item, n);
+      Player.addMoney(player, n * Bag.sellPrice(item));
+      await message("Turned over the " + Bag.name(item) + " and received " + money(n * Bag.sellPrice(item)) + ".");
+    }
+  }
+
+  // ---------- PC ----------
+
+  async function pc() {
+    let box = 0;
+    for (;;) {
+      const slots = player.boxes[box];
+      const mini = (r, key) => '<button type="button" class="mini' + (Party.isFainted(r) ? " fainted" : "") + '" data-pick="' + key + '" title="' +
+        escapeHtml(Party.displayName(r)) + " Lv" + r.level + '">' + spriteTag(r.species, Party.form(r)) +
+        "<span>" + escapeHtml(Party.displayName(r)) + "</span><small>Lv" + r.level + "</small></button>";
+      const html = '<div class="pc"><section><h3>Party</h3><div class="pc-grid">' +
+        player.party.map((r, i) => mini(r, "party:" + i)).join("") + "</div></section>" +
+        "<section><h3>Box " + (box + 1) + " <small>(" + slots.length + "/" + Player.BOX_SIZE + ")</small></h3>" +
+        '<div class="pc-grid">' + (slots.length ? slots.map((r, i) => mini(r, "box:" + i)).join("") : '<p class="empty">This box is empty.</p>') +
+        "</div></section></div>";
+      const v = await pick("Bill's PC. Choose a Pokémon to move it.", html, [
+        { label: "◀ Box " + (((box + Player.BOX_COUNT - 1) % Player.BOX_COUNT) + 1), value: "prev", className: "action" },
+        { label: "Box " + (((box + 1) % Player.BOX_COUNT) + 1) + " ▶", value: "next", className: "action" },
+        back("Log off")
+      ]);
+      if (v === "back") return;
+      if (v === "prev") { box = (box + Player.BOX_COUNT - 1) % Player.BOX_COUNT; continue; }
+      if (v === "next") { box = (box + 1) % Player.BOX_COUNT; continue; }
+      const [where, iStr] = v.pick.split(":");
+      const i = +iStr;
+      if (where === "party") {
+        const r = player.party[i];
+        const what = await ask(Party.displayName(r) + "?", [
+          { label: "Deposit in Box " + (box + 1), value: "deposit", className: "action" },
+          { label: "Summary", value: "summary", className: "action" }, back()]);
+        if (what === "deposit") {
+          const err = Player.deposit(player, i, box);
+          await message(err || Party.displayName(r) + " was stored in Box " + (box + 1) + ".");
+        } else if (what === "summary") await summary(i);
+      } else {
+        const r = slots[i];
+        const what = await ask(Party.displayName(r) + "?", [
+          { label: "Withdraw", value: "withdraw", className: "action" },
+          { label: "Release", value: "release", className: "action" }, back()]);
+        if (what === "withdraw") {
+          const err = Player.withdraw(player, box, i);
+          await message(err || Party.displayName(r) + " joined your party.");
+        } else if (what === "release" && await confirm("Release " + Party.displayName(r) + "? You won't see it again.")) {
+          const released = Player.release(player, box, i);
+          if (released && released.item) Player.addItem(player, released.item);
+          await message(Party.displayName(r) + " was released outside. Bye-bye, " + Party.displayName(r) + "!");
+        }
+      }
+      await persist();
+    }
+  }
+
+  // ---------- Pokédex ----------
+
+  let dexEntries = null;
+  function dexList() {
+    if (!dexEntries) {
+      const byId = {};
+      for (const [name, d] of Object.entries(DEX)) if (d.id < 10000 && !byId[d.id]) byId[d.id] = name;
+      dexEntries = Object.keys(byId).map(Number).sort((a, b) => a - b).map((id) => ({ id, species: byId[id] }));
+    }
+    return dexEntries;
+  }
+
+  async function pokedex() {
+    for (;;) {
+      const seen = new Set(player.pokedex.seen.map((s) => DEX[s].id));
+      const caught = new Set(player.pokedex.caught.map((s) => DEX[s].id));
+      const html = '<p class="dex-counts">Seen: <b>' + seen.size + "</b> · Caught: <b>" + caught.size + "</b> of " + dexList().length + "</p>" +
+        '<div class="dex">' + dexList().map((e) => {
+          const num = "#" + String(e.id).padStart(3, "0");
+          if (!seen.has(e.id)) return '<div class="dex-entry unseen"><span>' + num + "</span>?</div>";
+          return '<button type="button" class="dex-entry' + (caught.has(e.id) ? " caught" : " seen") + '" data-pick="' + e.species + '">' +
+            "<span>" + num + "</span>" + spriteTag(e.species, "", 'loading="lazy" alt=""') +
+            "<small>" + escapeHtml(Party.speciesName(e.species)) + "</small></button>";
+        }).join("") + "</div>";
+      const v = await pick("Pokédex. Tap a Pokémon for its entry.", html, [back("Close")]);
+      if (v === "back") return;
+      const d = DEX[v.pick];
+      await message("#" + String(d.id).padStart(3, "0") + " " + Party.speciesName(v.pick) + ": " + d.types.join("/") + " type. " +
+        "Height " + d.height + " m, weight " + d.weight + " kg." + (Player.hasCaught(player, v.pick) ? "" : " (Seen, not caught.)"), 2500);
+    }
+  }
+
+  // ---------- Trainer card ----------
+
+  async function trainerCard() {
+    for (;;) {
+      tick();
+      const html = '<div class="trainer-card"><h2>' + escapeHtml(player.name) + "</h2>" +
+        "<dl><dt>Money</dt><dd>" + money(player.money) + "</dd>" +
+        "<dt>Pokédex</dt><dd>" + player.pokedex.caught.length + " caught, " + player.pokedex.seen.length + " seen</dd>" +
+        "<dt>Badges</dt><dd>" + player.badges.length + " <small>(gyms come with the map)</small></dd>" +
+        "<dt>Play time</dt><dd>" + playTime(player.playTimeMs) + "</dd>" +
+        "<dt>Started</dt><dd>" + new Date(player.createdAt).toLocaleDateString() + "</dd>" +
+        "<dt>Last saved</dt><dd>" + (player.savedAt ? new Date(player.savedAt).toLocaleString() : "never") + "</dd></dl>" +
+        '<p class="bag-line">The game saves automatically in this browser. Download a save file as a backup, or to move your game to another browser.</p></div>';
+      const v = await pick("Your trainer card.", html, [
+        { label: "Save now", value: "save", className: "action" },
+        { label: "Download save file", value: "download", className: "action" },
+        { label: "Load save file", value: "load", className: "action" },
+        back()]);
+      if (v === "back") return;
+      if (v === "save") {
+        const r = (tick(), Save.write(player));
+        await message(r.ok ? player.name + " saved the game." : r.error);
+      } else if (v === "download") {
+        downloadSave();
+        await message("Your save file is downloading.");
+      } else if (v === "load") {
+        const loaded = await loadSaveFile();
+        if (loaded && await confirm("Load " + loaded.name + "'s game? Your current game will be replaced.")) {
+          player = loaded;
+          await persist();
+          await message("Loaded " + player.name + "'s game.");
+        }
+      }
+    }
+  }
+
   // ---------- Party screen ----------
 
   async function hub() {
     for (;;) {
-      show("scene");
-      renderParty();
-      const action = await ask("What would you like to do?", [
+      const html = partyHtml() + '<p class="bag-line">' + escapeHtml(player.name) + " · " + money(player.money) +
+        " · Pokédex " + player.pokedex.caught.length + " · Tap a Pokémon for its summary.</p>";
+      const action = await pick("What would you like to do?", html, [
         { label: "Find a wild Pokémon", value: "wild", className: "action" },
         { label: "Battle a trainer", value: "trainer", className: "action" },
-        { label: "Pokémon Center", value: "heal", className: "action", wide: true }
+        { label: "Pokémon Center", value: "heal", className: "action" },
+        { label: "Poké Mart", value: "mart", className: "action" },
+        { label: "Bag", value: "bag", className: "action" },
+        { label: "PC", value: "pc", className: "action" },
+        { label: "Pokédex", value: "dex", className: "action" },
+        { label: "Trainer card", value: "card", className: "action" }
       ]);
-      if (action === "heal") {
-        state.party.forEach(Party.heal);
-        renderParty();
+      if (action && action.pick != null) await summary(+action.pick);
+      else if (action === "heal") {
+        player.party.forEach(Party.heal);
+        scene.innerHTML = partyHtml();
         await message("Your Pokémon are fighting fit! We hope to see you again!");
-        continue;
-      }
-      if (!canBattle()) {
-        await message("Your Pokémon are too tired to battle. Visit the Pokémon Center first.");
-        continue;
-      }
-      await battle(action);
+      } else if (action === "mart") await mart();
+      else if (action === "bag") await bagScreen();
+      else if (action === "pc") await pc();
+      else if (action === "dex") await pokedex();
+      else if (action === "card") await trainerCard();
+      else if (!canBattle()) await message("Your Pokémon are too tired to battle. Visit the Pokémon Center first.");
+      else await battle(action);
+      await persist();
     }
   }
 
   async function main() {
-    await chooseStarter();
+    await title();
+    lastTick = Date.now();
     await hub();
   }
 
-  window.Game = { state };
+  window.addEventListener("beforeunload", () => { if (player) { tick(); Save.write(player); } });
+
+  window.Game = { get player() { return player; } };
   main();
 })();

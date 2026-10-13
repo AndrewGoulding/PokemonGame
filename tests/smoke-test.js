@@ -10,6 +10,13 @@ const assert = require("assert");
 
 const root = path.join(__dirname, "..");
 global.window = global;
+// A stand-in for the browser's localStorage, for game/save.js.
+const storage = {};
+global.localStorage = {
+  getItem: (k) => (k in storage ? storage[k] : null),
+  setItem: (k, v) => { storage[k] = String(v); },
+  removeItem: (k) => { delete storage[k]; }
+};
 
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const scripts = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]);
@@ -21,7 +28,8 @@ for (const src of headless) {
 
 for (const name of ["TYPE_CHART", "NATURES", "DEX", "MOVES", "ABILITIES", "ITEMS", "LEARNSETS_GEN6",
   "Stats", "Damage", "CONDITIONS", "ITEM_EFFECTS", "BATTLE_MOVE_EFFECTS", "Battle", "RandomTeam", "OpponentAI",
-  "Experience", "Catching", "EVOLUTIONS", "Party", "Evolution", "Encounters"]) {
+  "Experience", "Catching", "EVOLUTIONS", "Party", "Evolution", "Encounters",
+  "ItemUse", "ITEM_SPRITES", "Player", "Bag", "Save"]) {
   assert(window[name], "missing global " + name);
 }
 
@@ -408,6 +416,147 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
     const t = Encounters.trainer(10, rng);
     assert(t.team.length >= 1 && t.team.length <= 3 && t.name);
   }
+}
+
+// ---------- Items ----------
+{
+  const rng = mulberry32(21);
+  const r = Party.create("Pikachu", 20, { rng });
+  const max = Party.maxHp(r);
+  assert(!Bag.canUseOn(r, "potion"), "a Potion does nothing at full HP");
+  r.hp = 5;
+  assert.strictEqual(Bag.useOn(r, "potion").healed, 20);
+  assert.strictEqual(r.hp, 25);
+  Bag.useOn(r, "max-potion");
+  assert.strictEqual(r.hp, max);
+  r.status = "par";
+  assert(!Bag.canUseOn(r, "antidote") && Bag.canUseOn(r, "paralyze-heal") && Bag.canUseOn(r, "full-heal"));
+  Bag.useOn(r, "paralyze-heal");
+  assert.strictEqual(r.status, "");
+  r.hp = 0;
+  assert(!Bag.canUseOn(r, "potion") && Bag.canUseOn(r, "revive"));
+  Bag.useOn(r, "revive");
+  assert.strictEqual(r.hp, Math.floor(max / 2));
+  r.moves[0].pp = 0;
+  Bag.useOn(r, "ether", { move: 0 });
+  assert.strictEqual(r.moves[0].pp, 10);
+  Bag.useOn(r, "max-elixir");
+  assert(r.moves.every((m) => m.pp === MOVES[m.name].pp));
+  for (let i = 0; i < 12; i++) if (Bag.canUseOn(r, "protein")) Bag.useOn(r, "protein");
+  assert.strictEqual(r.evs.atk, 100, "vitamins stop at 100 EVs");
+
+  // Rare Candy: a level, the new level's moves, and friendship.
+  const c = Party.create("Charmander", 15, { rng });
+  const happy = c.happiness;
+  assert.deepStrictEqual(Bag.levelUp(c), ["Dragon Rage"]);
+  assert.strictEqual(c.level, 16);
+  assert(c.happiness > happy);
+  assert.strictEqual(Evolution.find(c, { trigger: "level" }).into, "Charmeleon");
+
+  // Stones only count as usable on Pokémon they evolve.
+  assert(Bag.canUseOn(Party.create("Eevee", 5, { rng }), "thunder-stone"));
+  assert(!Bag.canUseOn(Party.create("Pidgey", 5, { rng }), "thunder-stone"));
+
+  assert.strictEqual(Bag.name("poke-ball"), "Poké Ball");
+  assert.strictEqual(Bag.name("kings-rock"), "King's Rock");
+  assert.strictEqual(Bag.pocket("great-ball"), "Poké Balls");
+  assert.strictEqual(Bag.pocket("super-potion"), "Medicine");
+  assert.strictEqual(Bag.pocket("oran-berry"), "Berries");
+  assert.strictEqual(Bag.pocket("fire-stone"), "Items");
+  assert.strictEqual(Bag.sellPrice("potion"), 150);
+  assert.deepStrictEqual(Bag.martStock(5).map((s) => s.item).slice(0, 2), ["poke-ball", "potion"]);
+  assert(!Bag.martStock(5).some((s) => s.item === "ultra-ball") && Bag.martStock(25).some((s) => s.item === "ultra-ball"));
+  for (const { item } of Bag.martStock(100)) {
+    assert(ITEMS[item] && Bag.price(item) > 0, "mart item " + item);
+    assert(ITEM_SPRITES[item], "no sprite for mart item " + item);
+  }
+}
+
+// Items in battle: before moves, on benched and fainted Pokémon too.
+{
+  const battle = new Battle({ seed: 2,
+    p1: { name: "P", team: [{ species: "Pikachu", level: 20, moves: ["Thunder Shock", "Growl"], hp: 10, status: "par", pp: [2, 40] },
+                            { species: "Eevee", level: 20, moves: ["Tackle"], hp: 0 }] },
+    p2: { name: "T", team: [{ species: "Rattata", level: 3, moves: ["Tail Whip"] }] } });
+  battle.start();
+  const [pika, eevee] = battle.sides.p1.pokemon;
+  assert(!battle.choose("p1", { type: "item", item: "potion", target: 1 }).ok, "no Potions on fainted Pokémon");
+  assert(!battle.choose("p1", { type: "item", item: "rare-candy", target: 0 }).ok, "no Rare Candy in battle");
+  const turn = (choice) => { assert(battle.choose("p1", choice).ok); battle.choose("p2", { type: "move", move: 0 }); };
+  turn({ type: "item", item: "super-potion", target: 0 });
+  assert.strictEqual(pika.hp, Math.min(pika.maxhp, 60));
+  const order = battle.events.map((e) => e[0]);
+  assert(order.indexOf("-useitem") < order.lastIndexOf("move"), "items go before moves");
+  turn({ type: "item", item: "full-heal", target: 0 });
+  assert.strictEqual(pika.status, "");
+  turn({ type: "item", item: "revive", target: 1 });
+  assert(!eevee.fainted && eevee.hp === Math.floor(eevee.maxhp / 2));
+  turn({ type: "item", item: "ether", target: 0, move: 0 });
+  assert.strictEqual(pika.moves[0].pp, 12);
+}
+
+// ---------- Player, money, PC ----------
+{
+  const rng = mulberry32(31);
+  const p = Player.create("Ash");
+  assert.strictEqual(p.money, Player.STARTING_MONEY);
+  for (let i = 0; i < 7; i++) Player.receive(p, Party.create("Pidgey", 5, { rng }));
+  assert.strictEqual(p.party.length, 6);
+  assert.strictEqual(p.boxes[0].length, 1, "the seventh goes to the PC");
+  assert(Player.hasCaught(p, "Pidgey"));
+  assert.strictEqual(Player.withdraw(p, 0, 0), "Your party is full.");
+  assert.strictEqual(Player.deposit(p, 0, 0), null);
+  assert.strictEqual(Player.withdraw(p, 0, 0), null);
+  p.party.forEach((r, i) => { r.hp = i === 0 ? 10 : 0; });
+  assert(/no Pokémon left/.test(Player.deposit(p, 0, 1)), "can't deposit the last healthy Pokémon");
+
+  assert(!Player.removeItem(p, "ultra-ball"));
+  Player.addItem(p, "ultra-ball", 2);
+  assert(Player.removeItem(p, "ultra-ball", 2) && !("ultra-ball" in p.bag));
+
+  assert.strictEqual(Player.prizeMoney("Ace Trainer Vera", [{ level: 10 }, { level: 22 }]), 60 * 22);
+  assert.strictEqual(Player.prizeMoney("Youngster Ben", [{ level: 5 }]), 80);
+  p.money = 1000;
+  assert.strictEqual(Player.blackoutLoss(p), 8 * 5, "0 badges: 8 x highest level");
+  p.money = 10;
+  assert.strictEqual(Player.blackoutLoss(p), 10, "can't lose more than you have");
+}
+
+// ---------- Saving ----------
+{
+  const rng = mulberry32(41);
+  const p = Player.create("Misty");
+  Player.receive(p, Party.create("Staryu", 12, { rng }));
+  Player.receive(p, Party.create("Burmy", 10, { rng, cloak: "sandy" }));
+  Player.markSeen(p, "Onix");
+  Player.addItem(p, "fire-stone");
+  p.badges.push("Cascade");
+  assert(Save.write(p).ok);
+  const back = Save.read();
+  assert.strictEqual(back.error, null);
+  assert.deepStrictEqual(JSON.parse(Player.serialize(back.player)), JSON.parse(Player.serialize(p)), "save round-trips exactly");
+
+  const file = Save.fromFile(Save.toFile(p));
+  assert.strictEqual(file.player.party[1].cloak, "sandy");
+
+  // Damaged or edited saves load what they can.
+  const data = JSON.parse(Save.toFile(p));
+  data.party.push({ species: "Fakemon" });
+  data.party[0].level = 250;
+  data.party[0].moves.push({ name: "Not A Move", pp: 5 });
+  data.bag["not-an-item"] = 4;
+  delete data.flags;
+  const fixed = Player.load(data);
+  assert.strictEqual(fixed.player.party.length, 2);
+  assert.strictEqual(fixed.player.party[0].level, 100);
+  assert(!fixed.player.party[0].moves.some((m) => m.name === "Not A Move"));
+  assert(!("not-an-item" in fixed.player.bag));
+  assert.deepStrictEqual(fixed.player.flags, {});
+  assert(fixed.warnings.length === 1);
+  assert.throws(() => Save.fromFile("not json"), /isn't a save file/);
+  assert.throws(() => Player.load({ version: Player.VERSION + 1, party: [] }), /newer version/);
+  Save.clear();
+  assert.strictEqual(Save.read().player, null);
 }
 
 console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns), AI beat random moves in " + aiWinRate + "% of games");
