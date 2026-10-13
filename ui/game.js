@@ -53,6 +53,7 @@
         bar(hpPct, "hp " + hpClass) +
         '<div class="card-hp">' + r.hp + " / " + max + "</div>" +
         bar(Party.expProgress(r), "exp") +
+        (r.cloak ? '<div class="card-moves">' + r.cloak.charAt(0).toUpperCase() + r.cloak.slice(1) + " Cloak</div>" : "") +
         '<div class="card-moves">' + r.moves.map((m) => escapeHtml(m.name)).join(" · ") + "</div>" +
       "</div></button>";
   }
@@ -145,10 +146,10 @@
     state.caught.add(record.species);
     if (state.party.length < PARTY_SIZE) {
       state.party.push(record);
-      await message(record.species + " was added to your party!");
+      await message(Party.displayName(record) + " was added to your party!");
     } else {
       state.box.push(record);
-      await message(record.species + " was sent to the PC.");
+      await message(Party.displayName(record) + " was sent to the PC.");
     }
   }
 
@@ -184,7 +185,8 @@
     const shed = Evolution.shedinja(record);
     const newMoves = Evolution.evolve(record, evo.into, evo);
     renderSprite(record.species, "evolved");
-    await message("Congratulations! Your " + (record.nickname || oldSpecies) + " evolved into " + record.species + "!");
+    await message("Congratulations! Your " + (record.nickname || Party.speciesName(oldSpecies)) + " evolved into " +
+      Party.speciesName(record.species) + "!");
     state.caught.add(record.species);
     for (const move of newMoves) await learnMove(record, move);
     if (shed && state.party.length < PARTY_SIZE && state.bag["poke-ball"] > 0) {

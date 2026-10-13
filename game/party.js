@@ -27,6 +27,15 @@
 
   const maxPp = (move) => window.MOVES[move].pp;
 
+  // Burmy's cloak decides which Wormadam it becomes. In the main games it
+  // matches where Burmy last battled; with no map yet, each Burmy rolls one.
+  const CLOAKS = ["plant", "sandy", "trash"];
+
+  // "Wormadam-Sandy" -> "Wormadam", "Darmanitan-Standard" -> "Darmanitan".
+  // Names that really contain a hyphen (Ho-Oh, Porygon-Z, Nidoran-F) are kept.
+  const FORME_SUFFIX = /-(Plant|Sandy|Trash|Shield|Blade|Standard|Zen|Normal|Attack|Defense|Speed|Altered|Origin|Land|Sky|Incarnate|Therian|Ordinary|Resolute|Aria|Pirouette|Confined|Unbound|Average|Small|Large|Super)$/;
+  const speciesName = (species) => species.replace(FORME_SUFFIX, "");
+
   // opts: { rng, moves, ball, nickname }
   function create(species, level, opts) {
     opts = opts || {};
@@ -54,6 +63,7 @@
       hp: 0,
       status: ""
     };
+    if (species === "Burmy") record.cloak = opts.cloak || pick(CLOAKS, rng);
     record.hp = maxHp(record);
     return record;
   }
@@ -63,7 +73,7 @@
       { level: record.level, nature: record.nature, ivs: record.ivs, evs: record.evs });
   }
   const maxHp = (record) => stats(record).hp;
-  const displayName = (record) => record.nickname || record.species;
+  const displayName = (record) => record.nickname || speciesName(record.species);
   const isFainted = (record) => record.hp <= 0;
 
   function toBattleSet(record) {
@@ -153,7 +163,7 @@
   }
 
   window.Party = {
-    create, stats, maxHp, displayName, isFainted, toBattleSet, syncFromBattle, caught,
+    CLOAKS, create, stats, maxHp, speciesName, displayName, isFainted, toBattleSet, syncFromBattle, caught,
     heal, teachMove, movesLearnedAt, expProgress
   };
 })();

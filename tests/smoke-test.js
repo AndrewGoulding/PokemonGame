@@ -362,6 +362,25 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
   assert.deepStrictEqual(learned, ["Wing Attack"]);
   assert.strictEqual(Evolution.shedinja(Party.create("Nincada", 20, { rng })).species, "Shedinja");
 
+  // Burmy: females become the Wormadam matching their cloak, males Mothim.
+  for (const cloak of Party.CLOAKS) {
+    const burmy = Party.create("Burmy", 20, { rng, cloak });
+    burmy.gender = "F";
+    const e = Evolution.find(burmy, { trigger: "level" });
+    assert.strictEqual(e.into, "Wormadam-" + cloak.charAt(0).toUpperCase() + cloak.slice(1));
+    Evolution.evolve(burmy, e.into, e);
+    assert.strictEqual(Party.displayName(burmy), "Wormadam");
+    assert.strictEqual(burmy.cloak, undefined);
+    burmy.gender = "M";
+  }
+  const maleBurmy = Party.create("Burmy", 20, { rng, cloak: "trash" });
+  maleBurmy.gender = "M";
+  assert.strictEqual(Evolution.find(maleBurmy, { trigger: "level" }).into, "Mothim");
+  assert(Party.CLOAKS.includes(Party.create("Burmy", 5, { rng }).cloak), "every Burmy gets a cloak");
+  assert.strictEqual(Party.create("Pidgey", 5, { rng }).cloak, undefined);
+  assert.strictEqual(Party.speciesName("Porygon-Z"), "Porygon-Z");
+  assert.strictEqual(Party.speciesName("Darmanitan-Standard"), "Darmanitan");
+
   // Every evolution points at a real species, move and item.
   for (const [from, list] of Object.entries(EVOLUTIONS)) {
     assert(DEX[from], "unknown species " + from);
@@ -381,6 +400,8 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
   assert(!early.includes("Charizard") && !early.includes("Mewtwo") && !early.includes("Pidgeot"));
   assert(Encounters.speciesFor(36).includes("Charizard"));
   assert(!Encounters.speciesFor(100).includes("Mewtwo"), "no legendaries in the wild");
+  assert(Encounters.speciesFor(20).includes("Wormadam-Sandy") && !Encounters.speciesFor(19).includes("Wormadam-Trash"));
+  assert(!Encounters.speciesFor(100).includes("Charizard-Mega-X"), "no other alternate formes in the wild");
   for (let i = 0; i < 50; i++) {
     const w = Encounters.wild(10, rng);
     assert(w.level >= 7 && w.level <= 10 && w.moves.length >= 1);

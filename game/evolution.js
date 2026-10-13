@@ -32,6 +32,7 @@
     if (e.partyType && !party.some((p) => p !== record && window.DEX[p.species].types.includes(e.partyType))) return false;
     if (e.partySpecies && !party.some((p) => p !== record && p.species === e.partySpecies)) return false;
     if (e.moveType && !record.moves.some((m) => window.MOVES[m.name].type === e.moveType)) return false;
+    if (e.cloak && (record.cloak || "plant") !== e.cloak) return false;
     if (e.personality) {
       // Wurmple: the upper 16 bits of the personality value, mod 10, below 5 -> Silcoon.
       const low = ((record.personality >>> 16) % 10) < 5;
@@ -83,6 +84,7 @@
     const oldMax = window.Party.maxHp(record);
     const slot = Math.max(0, oldDex.abilities.indexOf(record.ability));
     record.species = into;
+    delete record.cloak; // only Burmy has one
     record.ability = newDex.abilities[Math.min(slot, newDex.abilities.length - 1)] || record.ability;
     record.hp = Math.max(record.hp > 0 ? 1 : 0, window.Party.maxHp(record) - (oldMax - record.hp));
     if (evo && (evo.method === "level-hold" || evo.method === "trade") && evo.item && record.item === evo.item) {
