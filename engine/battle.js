@@ -1462,7 +1462,7 @@
           else if (typeMod < 0) this.add("-resisted", target);
         }
         let dealt = 0;
-        if (sub) {
+        if (sub && target.volatiles.substitute) {
           const sv = target.volatiles.substitute;
           dealt = Math.min(dmg, sv.hp);
           sv.hp -= dealt;

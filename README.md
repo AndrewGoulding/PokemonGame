@@ -5,8 +5,9 @@ no build step and no dependencies.
 
 ## Running it
 
-Open `index.html` in a browser. It loads all the data and engine scripts, shows
-how much data was loaded, and plays a sample battle.
+Open `index.html` in a browser to play a 3-on-3 battle between two random teams
+at level 50. Pick moves or switch Pokémon from the menu; click the text box (or
+press Space) to skip ahead. The opponent currently picks random moves.
 
 To run the smoke test (needs Node.js):
 
@@ -20,8 +21,10 @@ npm test
 |---|---|
 | `data/` | Pokédex, moves, abilities, items, learnsets, natures, type chart, plus the battle hooks for conditions and moves |
 | `engine/` | Stat calculator, damage calculator and battle engine |
+| `game/` | Game logic outside battles (`random-team.js` builds random teams) |
+| `ui/` | The battle screen (`battle-screen.js`, `battle-screen.css`) |
 | `assets/sprites/` | Pokémon sprites (front, back, shiny) and item icons |
-| `tests/` | Smoke test that loads every script and runs a battle |
+| `tests/` | Smoke test: loads every non-UI script, checks random teams, plays 200 random battles |
 
 ## Script load order
 
@@ -40,9 +43,12 @@ and later files read those globals, so scripts must load in this order:
 10. `data/conditions.js` → `CONDITIONS`, `ITEM_EFFECTS`
 11. `data/battle-moves.js` → `BATTLE_MOVE_EFFECTS`
 12. `engine/battle.js` → `Battle`
+13. `game/random-team.js` → `RandomTeam`
+14. `ui/battle-screen.js` → `BattleScreen` (starts a battle on load)
 
 `index.html` is the source of truth for this order, and the smoke test reads its
-script list from there. If you add a script, add it to `index.html`.
+script list from there (skipping `ui/`, which needs a real page). If you add a
+script, add it to `index.html`.
 
 ## Using the battle engine
 

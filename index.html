@@ -4,23 +4,37 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Pokémon Game</title>
-  <style>
-    body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 48rem; padding: 0 1rem; }
-    .ok { color: #1a7f37; }
-    .error { color: #cf222e; }
-    pre { background: #f6f8fa; padding: 1rem; overflow-x: auto; }
-  </style>
+  <link rel="stylesheet" href="ui/battle-screen.css">
 </head>
 <body>
-  <h1>Pokémon Game</h1>
-  <p id="status">Loading…</p>
-  <ul id="counts"></ul>
-  <h2>Sample battle</h2>
-  <pre id="log"></pre>
+  <main class="game">
+    <div class="field">
+      <div class="platform foe"></div>
+      <div class="platform player"></div>
+      <img id="sprite-foe" class="sprite foe hidden" alt="">
+      <img id="sprite-player" class="sprite player hidden" alt="">
+
+      <div id="info-foe" class="info foe hidden">
+        <div class="info-top"><span class="info-name"></span><span class="status"></span><span class="info-level"></span></div>
+        <div class="hp-row">HP<div class="hp-track"><div class="hp-fill"></div></div></div>
+      </div>
+      <div id="info-player" class="info player hidden">
+        <div class="info-top"><span class="info-name"></span><span class="status"></span><span class="info-level"></span></div>
+        <div class="hp-row">HP<div class="hp-track"><div class="hp-fill"></div></div></div>
+        <div class="hp-text"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div id="textbox" class="textbox" aria-live="polite">Loading…</div>
+      <div id="menu" class="menu"></div>
+    </div>
+  </main>
 
   <!--
     Load order matters: each file assigns a global on window that later files read.
-    tests/smoke-test.js reads this list, so keep every game script here.
+    tests/smoke-test.js loads every script below except those in ui/, so keep
+    every game script here.
   -->
   <!-- Data -->
   <script src="data/type-chart.js"></script>
@@ -36,40 +50,9 @@
   <script src="data/conditions.js"></script>
   <script src="data/battle-moves.js"></script>
   <script src="engine/battle.js"></script>
-
-  <script>
-    (function () {
-      const status = document.getElementById("status");
-      const required = ["TYPE_CHART", "NATURES", "DEX", "MOVES", "ABILITIES", "ITEMS", "LEARNSETS_GEN6",
-        "Stats", "Damage", "CONDITIONS", "ITEM_EFFECTS", "BATTLE_MOVE_EFFECTS", "Battle"];
-      const missing = required.filter((name) => !window[name]);
-      if (missing.length) {
-        status.className = "error";
-        status.textContent = "Missing globals: " + missing.join(", ");
-        return;
-      }
-
-      const counts = { Pokémon: DEX, Moves: MOVES, Abilities: ABILITIES, Items: ITEMS, Learnsets: LEARNSETS_GEN6 };
-      document.getElementById("counts").innerHTML = Object.entries(counts)
-        .map(([label, table]) => "<li>" + label + ": " + Object.keys(table).length + "</li>").join("");
-
-      // Both sides always use their first move until the battle ends.
-      const battle = new Battle({
-        seed: Date.now(),
-        p1: { name: "Player", team: [{ species: "Charizard", level: 50, moves: ["Flamethrower", "Air Slash"] }] },
-        p2: { name: "Rival", team: [{ species: "Blastoise", level: 50, moves: ["Surf", "Bite"] }] }
-      });
-      battle.start();
-      for (let turn = 0; turn < 50 && !battle.ended; turn++) {
-        battle.choose("p1", { type: "move", move: 0 });
-        battle.choose("p2", { type: "move", move: 0 });
-      }
-      document.getElementById("log").textContent =
-        battle.events.map(Battle.formatEvent).filter(Boolean).join("\n");
-
-      status.className = "ok";
-      status.textContent = "All data and engine scripts loaded.";
-    })();
-  </script>
+  <!-- Game -->
+  <script src="game/random-team.js"></script>
+  <!-- UI -->
+  <script src="ui/battle-screen.js"></script>
 </body>
 </html>
