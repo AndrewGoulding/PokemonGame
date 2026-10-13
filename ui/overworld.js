@@ -55,7 +55,7 @@
     const list = [mapImage(name), mapImage(name, "border")];
     if (m.top) list.push(mapImage(name, "top"));
     for (const c of m.connections) if (c.map) list.push(mapImage(c.map), mapImage(c.map, "top"));
-    for (const p of m.people) list.push(spriteImage(p.sprite));
+    for (const p of m.people) { list.push(spriteImage(p.sprite)); if (p.alt) list.push(spriteImage(p.alt.sprite)); }
     return Promise.all(list.map((img) => img.loaded));
   }
 
@@ -141,7 +141,12 @@
 
   function loadPeople() {
     const m = World.map(me.map);
-    people = m.people.filter((p) => !ctx.visible || ctx.visible(p, me.map)).map((def) => ({
+    // ctx.visible says whether someone is there, or returns changes to where
+    // they stand and how they look (the old man lying in Viridian's road).
+    people = m.people.map((p) => {
+      const v = ctx.visible ? ctx.visible(p, me.map) : true;
+      return v && (v === true ? p : Object.assign({}, p, v));
+    }).filter(Boolean).map((def) => ({
       def, x: def.x, y: def.y, ox: def.x, oy: def.y, move: null,
       facing: { face_up: "up", face_left: "left", face_right: "right" }[def.movement] || "down",
       timer: 60 + Math.floor(Math.random() * 120)
@@ -218,6 +223,8 @@
       fadeDir = -1;
       afterFade = () => {
         paused = false;
+        // Scenes that start as you walk in (the Viridian Mart clerk's parcel).
+        if (ctx.special && ctx.special("enter:" + me.map)) return finish({ type: "trigger", trigger: { script: "enter:" + me.map }, map: me.map });
         // Coming out of a door: step out onto the street.
         if (target.door) {
           const r = World.step({ map: me.map, x: me.x, y: me.y }, "down", occupiedForPlayer);
@@ -266,7 +273,10 @@
     if (sign) {
       if (ctx.special && ctx.special(sign.script)) return finish({ type: "sign", sign, map: me.map });
       if (sign.text) read(sign.text);
+      return;
     }
+    // The PC in a Pokémon Center is part of the map, not an event.
+    if (World.blockAt(me.map, tx, ty).behavior === World.MB.PC) return finish({ type: "pc", map: me.map });
   }
 
   // ---------- Frame loop ----------
@@ -421,9 +431,14 @@
     me.map = loc.map; me.x = loc.x; me.y = loc.y; me.facing = loc.facing || me.facing || "down"; me.move = null;
     // Re-check who's visible (a story event may have changed that), keeping
     // people where they were if we never left the map.
-    const before = new Map(people.map((p) => [p.def, p]));
+    const before = new Map(people.map((p) => [p.def.id, p]));
     loadPeople();
-    if (sameMap) people = people.map((p) => before.get(p.def) || p);
+    if (sameMap) {
+      people = people.map((p) => {
+        const old = before.get(p.def.id);
+        return old && old.ox === p.ox && old.oy === p.oy ? Object.assign(old, { def: p.def }) : p;
+      });
+    }
     await preloadMap(me.map);
     showControls();
     hint();

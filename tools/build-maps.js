@@ -28,12 +28,33 @@ const TITLES = {
   PalletTown_PlayersHouse_1F: "Pallet Town · Home",
   PalletTown_PlayersHouse_2F: "Pallet Town · Your room",
   PalletTown_RivalsHouse: "Pallet Town · Rival's house",
-  PalletTown_ProfessorOaksLab: "Pallet Town · Prof. Oak's Lab"
+  PalletTown_ProfessorOaksLab: "Pallet Town · Prof. Oak's Lab",
+  ViridianCity_House: "Viridian City · Nickname house",
+  ViridianCity_School: "Viridian City · Trainer school",
+  ViridianCity_Mart: "Viridian City · Poké Mart",
+  ViridianCity_PokemonCenter_1F: "Viridian City · Pokémon Center",
+  ViridianCity_PokemonCenter_2F: "Viridian City · Pokémon Center 2F"
 };
 
 const MAPS = [
   "PalletTown", "PalletTown_PlayersHouse_1F", "PalletTown_PlayersHouse_2F",
-  "PalletTown_RivalsHouse", "PalletTown_ProfessorOaksLab", "Route1"
+  "PalletTown_RivalsHouse", "PalletTown_ProfessorOaksLab", "Route1",
+  "ViridianCity", "ViridianCity_House", "ViridianCity_School", "ViridianCity_Mart",
+  "ViridianCity_PokemonCenter_1F", "ViridianCity_PokemonCenter_2F"
+];
+// People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
+// look the game can switch to, e.g. the old man lying across Viridian's road.
+const VAR_GFX = { ViridianCity: { OBJ_EVENT_GFX_VAR_0: "OBJ_EVENT_GFX_OLD_MAN_1" } };
+const ALT_GFX = { ViridianCity_EventScript_TutorialOldMan: "OBJ_EVENT_GFX_OLD_MAN_LYING_DOWN" };
+// Scripts whose text is picked by code the converter can't follow.
+const SCRIPT_TEXT = {
+  ViridianCity_School_EventScript_PokemonJournal: "PokemonJournal_Text_SpecialFeatureBrock",
+  EventScript_CutTree: "Text_TreeCanBeCutDown"
+};
+// Shared text the game uses for story scenes, besides each built map's own text.
+const GAME_TEXT = [
+  "Text_WelcomeWantToHealPkmn", "Text_TakeYourPkmnForFewSeconds", "Text_RestoredPkmnToFullHealth",
+  "Text_WeHopeToSeeYouAgain", "Text_MayIHelpYou", "Text_PleaseComeAgain", "Text_WirelessClubUndergoingAdjustments"
 ];
 const PLAYER_SPRITES = { red: "red_normal.png", green: "green_normal.png" };
 
@@ -223,11 +244,15 @@ function parseTextFile(file, out) {
   return out;
 }
 
-// Text shared between maps (data/text/*.inc), if that folder was checked out.
 const sharedText = {};
-if (fs.existsSync(P("data/text"))) {
-  for (const f of fs.readdirSync(P("data/text"))) if (f.endsWith(".inc")) parseTextFile(P("data/text", f), sharedText);
+// Text shared between maps (data/text/*.inc, data/scripts/*.inc, data/event_scripts.s),
+// for whichever of those were checked out.
+const sharedFiles = [];
+for (const dir of ["data/text", "data/scripts"]) {
+  if (fs.existsSync(P(dir))) for (const f of fs.readdirSync(P(dir))) if (f.endsWith(".inc")) sharedFiles.push(P(dir, f));
 }
+if (fs.existsSync(P("data/event_scripts.s"))) sharedFiles.push(P("data/event_scripts.s"));
+for (const f of sharedFiles) parseTextFile(f, sharedText);
 
 const textCache = {};
 function texts(mapName) {
@@ -240,17 +265,35 @@ function texts(mapName) {
 }
 
 // FireRed text -> pages of plain text. {PLAYER} and {RIVAL} stay for the game to fill in.
+const KEEP_CAPS = new Set(["NES", "TV", "HP", "PP", "PC", "TM", "HM", "OK", "KO", "EXP", "ID", "SS", "HQ"]);
 function cleanText(s) {
   s = s.replace(/\$$/, "")
     .replace(/POKéMON/g, "Pokémon").replace(/POKéDEX/g, "Pokédex").replace(/POKé BALLS/g, "Poké Balls").replace(/POKé BALL/g, "Poké Ball")
     .replace(/POKé MART/g, "Poké Mart").replace(/POKé/g, "Poké")
     .replace(/\{(?!PLAYER\}|RIVAL\})[A-Z_0-9 ]+\}/g, "");
-  return s.split("\\p").map((page) => page.replace(/\\[nl]/g, "\n").trim()).filter(Boolean);
+  return s.split("\\p").map((page) => page.replace(/\\[nl]/g, "\n").replace(/ +\n/g, "\n").trim()
+    // FireRed writes names in capitals (PROF. OAK, VIRIDIAN CITY, GYM); use normal case.
+    .replace(/(?<!\{)\b[A-Z][A-Z'.]*[A-Z]\b(?!\})/g, (w) => KEEP_CAPS.has(w) ? w : w.charAt(0) + w.slice(1).toLowerCase())).filter(Boolean);
+}
+
+let sharedScriptCache = null;
+function sharedScripts() {
+  if (sharedScriptCache) return sharedScriptCache;
+  sharedScriptCache = {};
+  for (const f of sharedFiles) {
+    let label = null;
+    for (const line of fs.readFileSync(f, "utf8").split("\n")) {
+      const l = /^(\w+)::/.exec(line);
+      if (l) { label = l[1]; sharedScriptCache[label] = []; continue; }
+      if (label) sharedScriptCache[label].push(line.trim());
+    }
+  }
+  return sharedScriptCache;
 }
 
 function scriptLabels(mapName) {
   const file = P("data/maps", mapName, "scripts.inc");
-  const out = {};
+  const out = Object.assign({}, sharedScripts());
   if (!fs.existsSync(file)) return out;
   let label = null;
   for (const line of fs.readFileSync(file, "utf8").split("\n")) {
@@ -265,6 +308,7 @@ function scriptLabels(mapName) {
 function scriptText(mapName, script, depth) {
   depth = depth || 0;
   const scripts = scriptLabels(mapName), t = texts(mapName);
+  if (SCRIPT_TEXT[script]) return t[SCRIPT_TEXT[script]] || null;
   const lines = scripts[script];
   if (!lines || depth > 4) return null;
   for (const line of lines) {
@@ -279,6 +323,16 @@ function scriptText(mapName, script, depth) {
     }
   }
   return null;
+}
+
+// The item an item ball holds ("potion"), from its finditem line.
+function itemBall(mapName, script) {
+  const lines = scriptLabels(mapName)[script] || [];
+  for (const line of lines) {
+    const m = /^finditem\s+ITEM_(\w+)/.exec(line);
+    if (m) return m[1].toLowerCase().replace(/_/g, "-").replace(/^poke-/, "poke-");
+  }
+  return undefined;
 }
 
 // ---------- People sprites ----------
@@ -359,8 +413,10 @@ for (const name of MAPS) {
     id: i, x: o.x, y: o.y, movement: o.movement_type.replace(/^MOVEMENT_TYPE_/, "").toLowerCase(),
     rangeX: o.movement_range_x, rangeY: o.movement_range_y,
     script: o.script, flag: o.flag !== "0" ? o.flag : null,
-    text: scriptText(name, o.script)
-  }, objectSprite(o.graphics_id)));
+    text: scriptText(name, o.script),
+    item: itemBall(name, o.script),
+    alt: ALT_GFX[o.script] ? objectSprite(ALT_GFX[o.script]) : undefined
+  }, objectSprite((VAR_GFX[name] || {})[o.graphics_id] || o.graphics_id)));
 
   const land = wild.find((e) => e.map === map.id && /FireRed/.test(e.base_label));
   out[name] = {
@@ -380,6 +436,19 @@ for (const name of MAPS) {
   };
 }
 
+// Text by label for story scenes: each built map's own text plus GAME_TEXT.
+const gameText = {};
+for (const name of MAPS) {
+  const own = {};
+  const file = P("data/maps", name, "text.inc");
+  if (fs.existsSync(file)) parseTextFile(file, own);
+  for (const k of Object.keys(own)) gameText[k] = texts(name)[k];
+}
+for (const k of GAME_TEXT) {
+  if (!texts(MAPS[0])[k]) throw new Error("Missing shared text " + k);
+  gameText[k] = texts(MAPS[0])[k];
+}
+
 for (const [color, file] of Object.entries(PLAYER_SPRITES)) {
   const src = path.join(root, "assets/sprites/overworld", file);
   if (fs.existsSync(src)) writeSprite(readPng(src), path.join(outSprites, "player_" + color + ".png"));
@@ -387,5 +456,6 @@ for (const [color, file] of Object.entries(PLAYER_SPRITES)) {
 
 fs.writeFileSync(path.join(root, "data/world-maps.js"),
   "// Auto-generated by tools/build-maps.js from pret/pokefirered. Do not edit by hand.\n" +
-  "window.WORLD_MAPS = " + JSON.stringify(out) + ";\n");
+  "window.WORLD_MAPS = " + JSON.stringify(out) + ";\n" +
+  "window.WORLD_TEXT = " + JSON.stringify(gameText) + ";\n");
 console.log("wrote " + MAPS.length + " maps to data/world-maps.js and assets/world/");

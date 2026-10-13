@@ -212,7 +212,7 @@
     renderSprite("Pikachu");
     await message("Welcome to the world of Pokémon, " + name + "!");
     await message("Your very own Pokémon legend is about to unfold!");
-    await message("PROF. OAK is waiting for you in his lab, south of your house.");
+    await message("Prof. Oak is waiting for you in his lab, south of your house.");
     await persist();
   }
 
@@ -291,10 +291,13 @@
     Player.addMoney(player, -lost);
     await message(lost ? "You panicked and dropped " + money(lost) + "..." : "You blacked out!");
     player.party.forEach(Party.heal);
-    player.location = Object.assign({}, Player.HOME);
+    // Back to the last Pokémon Center you used, or home before you've used one.
+    const center = player.flags.lastCenter && Player.CENTERS[player.flags.lastCenter];
+    player.location = Object.assign({}, center || Player.HOME);
     show("scene");
     scene.innerHTML = partyHtml();
-    await message("You hurried home to MOM, and your Pokémon were healed.");
+    await message(center ? "You scurried to a Pokémon Center, protecting your exhausted Pokémon from any further harm."
+      : "You hurried home to Mom, and your Pokémon were healed.");
   }
 
   // ---------- Evolution and moves ----------
@@ -809,7 +812,7 @@
   async function startMenu() {
     for (;;) {
       show("scene");
-      scene.innerHTML = (player.party.length ? partyHtml() : '<p class="empty">No Pokémon yet. PROF. OAK’s lab is south of your house.</p>') +
+      scene.innerHTML = (player.party.length ? partyHtml() : '<p class="empty">No Pokémon yet. Prof. Oak’s lab is south of your house.</p>') +
         '<p class="bag-line">' + escapeHtml(player.name) + " · " + money(player.money) +
         " · Pokédex " + player.pokedex.caught.length + "</p>";
       const v = await ask("Menu", [
@@ -859,15 +862,33 @@
     "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerMid",
     "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerRight",
     "Route1_EventScript_MartClerk",
-    "PalletTown_ProfessorOaksLab_EventScript_Rival", "PalletTown_ProfessorOaksLab_EventScript_ProfOak"
+    "PalletTown_ProfessorOaksLab_EventScript_Rival", "PalletTown_ProfessorOaksLab_EventScript_ProfOak",
+    "ViridianCity_EventScript_RoadBlocked", "ViridianCity_EventScript_GymDoorLocked",
+    "ViridianCity_EventScript_TutorialTriggerLeft", "ViridianCity_EventScript_TutorialTriggerRight",
+    "ViridianCity_EventScript_TutorialOldMan", "ViridianCity_EventScript_Woman", "ViridianCity_EventScript_Youngster",
+    "ViridianCity_EventScript_DreamEaterTutor",
+    "enter:ViridianCity_Mart", "ViridianCity_Mart_EventScript_Clerk",
+    "ViridianCity_PokemonCenter_1F_EventScript_Nurse",
+    "Common_EventScript_UnionRoomAttendant", "Common_EventScript_WirelessClubAttendant", "Common_EventScript_DirectCornerAttendant"
   ].concat(Object.keys(STARTER_BALLS)));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
+  // Item balls on the map: picked up once, then gone.
+  const ITEM_BALLS = new Set();
+  for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) if (p.item) ITEM_BALLS.add(p.script);
+
   function visible(person) {
     const f = player.flags;
+    if (person.item) return !f[person.flag];
+    // Lying across the road north until Oak gets his parcel, then up and about.
+    if (person.script === "ViridianCity_EventScript_TutorialOldMan") {
+      return f.parcelDelivered ? { x: 21, y: 8, movement: "look_around" }
+        : Object.assign({}, person.alt, { x: 21, y: 11, movement: "face_down" });
+    }
     switch (person.flag) {
       case "FLAG_HIDE_OAK_IN_PALLET_TOWN": return false;   // no walk-to-the-lab cutscene
       case "FLAG_HIDE_POKEDEX": return false;              // the Pokédex is always yours here
+      case "FLAG_HIDE_MG_DELIVERYMEN": return false;       // no Mystery Gift
       case "FLAG_HIDE_RIVAL_IN_LAB": return !f.rivalLabBattle;
       case "FLAG_HIDE_BULBASAUR_BALL": case "FLAG_HIDE_SQUIRTLE_BALL": case "FLAG_HIDE_CHARMANDER_BALL":
         return !(f.starter && (ballOf(f.starter).flag === person.flag || ballOf(RIVAL_PICK[f.starter]).flag === person.flag));
@@ -875,34 +896,49 @@
     }
   }
 
+  const T = (label) => window.WORLD_TEXT[label];
   const fill = (s) => s.replace(/\{PLAYER\}/g, player.name).replace(/\{RIVAL\}/g, player.rival);
   async function say(pages) { for (const p of [].concat(pages)) await window.Screen.read(fill(p)); }
 
   async function story(ev) {
+    if (ev.type === "pc") {
+      await say("{PLAYER} booted up the PC.");
+      await pc();
+      return;
+    }
     const script = (ev.person || ev.sign || ev.trigger).script;
     const f = player.flags;
 
+    if (ev.person && ev.person.item) {
+      const item = ev.person.item;
+      Player.addItem(player, item);
+      f[ev.person.flag] = true;
+      Overworld.refreshPeople();
+      await say("{PLAYER} found a " + Bag.name(item) + "!");
+      return;
+    }
+
     if (STARTER_BALLS[script]) {
       const ball = STARTER_BALLS[script];
-      if (f.starter) { await say("That's PROF. OAK's last Pokémon."); return; }
+      if (f.starter) { await say("That's Prof. Oak's last Pokémon."); return; }
       if (!(await confirm("So! You want the " + ball.kind + " Pokémon, " + ball.species + "?"))) return;
       Player.receive(player, Party.create(ball.species, STARTER_LEVEL));
       f.starter = ball.species;
-      await say(["{PLAYER} received the " + ball.species + " from PROF. OAK!",
-        "{RIVAL}: I'll take this one, then!", "{RIVAL} received the " + RIVAL_PICK[ball.species] + " from PROF. OAK!"]);
+      await say(["{PLAYER} received the " + ball.species + " from Prof. Oak!",
+        "{RIVAL}: I'll take this one, then!", "{RIVAL} received the " + RIVAL_PICK[ball.species] + " from Prof. Oak!"]);
       return;
     }
 
     switch (script) {
       case "PalletTown_PlayersHouse_1F_EventScript_Mom":
         if (!player.party.length) {
-          await say(["MOM: …Right.\nAll " + (player.look === "green" ? "girls" : "boys") + " leave home someday.\nIt said so on TV.",
-            "Oh, yes. PROF. OAK, next door, was\nlooking for you."]);
+          await say(["Mom: …Right.\nAll " + (player.look === "green" ? "girls" : "boys") + " leave home someday.\nIt said so on TV.",
+            "Oh, yes. Prof. Oak, next door, was\nlooking for you."]);
           return;
         }
-        await say("MOM: {PLAYER}! You should take a quick rest.");
+        await say("Mom: {PLAYER}! You should take a quick rest.");
         player.party.forEach(Party.heal);
-        await say("MOM: Oh, good! You and your Pokémon are looking great.\nTake care now!");
+        await say("Mom: Oh, good! You and your Pokémon are looking great.\nTake care now!");
         return;
 
       case "PalletTown_PlayersHouse_2F_EventScript_PC":
@@ -914,8 +950,8 @@
       case "PalletTown_EventScript_OakTriggerLeft":
       case "PalletTown_EventScript_OakTriggerRight":
         if (player.party.length) return;
-        await say(["OAK: Hey! Wait!\nDon't go out!",
-          "OAK: It's unsafe!\nWild Pokémon live in tall grass!",
+        await say(["Oak: Hey! Wait!\nDon't go out!",
+          "Oak: It's unsafe!\nWild Pokémon live in tall grass!",
           "You need your own Pokémon for\nyour protection.",
           "Come to my lab, just south of here.\nI'll give you one!"]);
         Overworld.forceStep("down");
@@ -941,8 +977,80 @@
 
       case "PalletTown_ProfessorOaksLab_EventScript_ProfOak":
         if (!f.starter) await say(ev.person.text);
-        else if (!f.rivalLabBattle) await say(["OAK: If a wild Pokémon appears,\nyour Pokémon can battle it.", "With it at your side, you should be\nable to reach the next town."]);
-        else await say(["OAK: {PLAYER}, raise your young\nPokémon by making it battle.", "It has to battle for it to grow."]);
+        else if (f.oaksParcel && !f.parcelDelivered) {
+          await say(T("PalletTown_ProfessorOaksLab_Text_OakHaveSomethingForMe"));
+          await say(T("PalletTown_ProfessorOaksLab_Text_DeliveredOaksParcel"));
+          await say(T("PalletTown_ProfessorOaksLab_Text_OakCustomBallIOrdered"));
+          await say(T("PalletTown_ProfessorOaksLab_Text_OakCatchMonsForDataTakeThese"));
+          Player.addItem(player, "poke-ball", 5);
+          f.parcelDelivered = true;
+          await say(T("PalletTown_ProfessorOaksLab_Text_ReceivedFivePokeBalls"));
+          await say(T("PalletTown_ProfessorOaksLab_Text_OakExplainCatching"));
+        } else if (f.parcelDelivered) await say(T("PalletTown_ProfessorOaksLab_Text_OakMonsAroundWorldWait"));
+        else if (!f.rivalLabBattle) await say(T("PalletTown_ProfessorOaksLab_Text_OakCanReachNextTownWithMon"));
+        else await say(T("PalletTown_ProfessorOaksLab_Text_OakBattleMonForItToGrow"));
+        return;
+
+      // ---------- Viridian City ----------
+
+      case "ViridianCity_EventScript_RoadBlocked":
+        if (f.parcelDelivered) return;
+        await say(T("ViridianCity_Text_ThisIsPrivateProperty"));
+        Overworld.forceStep("down");
+        return;
+
+      case "ViridianCity_EventScript_TutorialTriggerLeft":
+      case "ViridianCity_EventScript_TutorialTriggerRight":
+        if (f.parcelDelivered && !f.catchTutorial) await catchTutorial();
+        return;
+
+      case "ViridianCity_EventScript_TutorialOldMan":
+        if (!f.parcelDelivered) await say(T("ViridianCity_Text_ThisIsPrivateProperty"));
+        else if (!f.catchTutorial) await catchTutorial();
+        else await say(T("ViridianCity_Text_WeakenMonsFirstToCatch"));
+        return;
+
+      case "ViridianCity_EventScript_Woman":
+        await say(f.parcelDelivered ? ev.person.text : T("ViridianCity_Text_GrandpaHasntHadCoffeeYet"));
+        return;
+
+      case "ViridianCity_EventScript_Youngster":
+        await say(T(await confirm(fill(T("ViridianCity_Text_WantToKnowAboutCaterpillarMons").join(" ")))
+          ? "ViridianCity_Text_ExplainCaterpieWeedle" : "ViridianCity_Text_OhOkayThen"));
+        return;
+
+      case "ViridianCity_EventScript_GymDoorLocked":
+        if (player.badges.length >= 7) return;
+        await say(T("ViridianCity_Text_GymDoorsAreLocked"));
+        Overworld.forceStep("down");
+        return;
+
+      case "ViridianCity_EventScript_DreamEaterTutor":
+        await dreamEaterTutor(ev.person.text);
+        return;
+
+      case "enter:ViridianCity_Mart":
+        if (f.oaksParcel) return;
+        await say(T("ViridianCity_Mart_Text_YouCameFromPallet"));
+        await say(T("ViridianCity_Mart_Text_TakeThisToProfOak"));
+        f.oaksParcel = true;
+        await say(T("ViridianCity_Mart_Text_ReceivedOaksParcelFromClerk"));
+        return;
+
+      case "ViridianCity_Mart_EventScript_Clerk":
+        if (!f.parcelDelivered) { await say(T("ViridianCity_Mart_Text_SayHiToOakForMe")); return; }
+        await say(T("Text_MayIHelpYou"));
+        await mart();
+        return;
+
+      case "ViridianCity_PokemonCenter_1F_EventScript_Nurse":
+        await nurse(ev.map);
+        return;
+
+      case "Common_EventScript_UnionRoomAttendant":
+      case "Common_EventScript_WirelessClubAttendant":
+      case "Common_EventScript_DirectCornerAttendant":
+        await say(T("Text_WirelessClubUndergoingAdjustments"));
         return;
 
       case "Route1_EventScript_MartClerk":
@@ -955,6 +1063,44 @@
     }
   }
 
+  // A Pokémon Center nurse. Blacking out later brings you back to this one.
+  async function nurse(mapName) {
+    const [welcome, ask] = T("Text_WelcomeWantToHealPkmn");
+    await say(welcome);
+    if (!(await confirm(fill(ask)))) { await say(T("Text_WeHopeToSeeYouAgain")); return; }
+    await say(T("Text_TakeYourPkmnForFewSeconds"));
+    player.party.forEach(Party.heal);
+    if (Player.CENTERS[mapName]) player.flags.lastCenter = mapName;
+    await say(T("Text_RestoredPkmnToFullHealth"));
+    await say(T("Text_WeHopeToSeeYouAgain"));
+  }
+
+  // The old man north of Viridian shows how to catch a Pokémon.
+  async function catchTutorial() {
+    await say(T("ViridianCity_Text_ShowYouHowToCatchMons"));
+    await say(["The old man weakened a wild Weedle,\nthen threw a Poké Ball…", "Gotcha!\nWeedle was caught!"]);
+    await say(T("ViridianCity_Text_WeakenMonsFirstToCatch").slice(-2));
+    player.flags.catchTutorial = true;
+  }
+
+  // The move tutor in Viridian teaches Dream Eater once.
+  async function dreamEaterTutor(onceText) {
+    const f = player.flags;
+    if (f.tutorDreamEater) { await say("Dream Eater…\nIt eats the dreams of sleeping foes. Use it well!"); return; }
+    if (!(await confirm("I can teach your Pokémon the move Dream Eater. Want me to?"))) { await say("Oh… Some other time, then."); return; }
+    if (!(await confirm(fill(onceText.join(" "))))) { await say("Oh… Some other time, then."); return; }
+    const v = await pick("Which Pokémon should learn Dream Eater?", partyHtml(), [back()]);
+    if (v === "back") { await say("Oh… Some other time, then."); return; }
+    const record = player.party[+v.pick];
+    const name = Party.displayName(record);
+    const set = window.LEARNSETS_GEN6[record.species] || {};
+    const learns = [].concat(set.tm || [], set.tutor || [], (set.levelup || []).map((l) => l[1])).includes("Dream Eater");
+    if (Party.knowsMove(record, "Dream Eater")) { await say(name + " already knows Dream Eater."); return; }
+    if (!learns) { await say(name + " can't learn Dream Eater."); return; }
+    await learnMove(record, "Dream Eater");
+    if (Party.knowsMove(record, "Dream Eater")) f.tutorDreamEater = true;
+  }
+
   // ---------- Exploring ----------
 
   async function explore() {
@@ -962,7 +1108,7 @@
       show("world");
       const ev = await Overworld.explore({
         player, rivalName: player.rival, visible,
-        special: (script) => SPECIAL.has(script)
+        special: (script) => SPECIAL.has(script) || ITEM_BALLS.has(script)
       });
       if (ev.type === "menu") await startMenu();
       else if (ev.type === "wild") {

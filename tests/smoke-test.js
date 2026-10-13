@@ -652,7 +652,8 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
 // ---------- Overworld ----------
 {
   const maps = ["PalletTown", "PalletTown_PlayersHouse_1F", "PalletTown_PlayersHouse_2F", "PalletTown_RivalsHouse",
-    "PalletTown_ProfessorOaksLab", "Route1"];
+    "PalletTown_ProfessorOaksLab", "Route1", "ViridianCity", "ViridianCity_House", "ViridianCity_School",
+    "ViridianCity_Mart", "ViridianCity_PokemonCenter_1F", "ViridianCity_PokemonCenter_2F"];
   for (const name of maps) {
     const m = WORLD_MAPS[name];
     assert(m, "missing map " + name);
@@ -660,7 +661,11 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
     for (const part of ["", "-border"].concat(m.top ? ["-top"] : [])) {
       assert(fs.existsSync(path.join(root, "assets/world/maps", name + part + ".png")), "missing image " + name + part);
     }
-    for (const person of m.people) assert(fs.existsSync(path.join(root, "assets/world/sprites", person.sprite + ".png")), "missing sprite " + person.sprite);
+    for (const person of m.people) {
+      for (const look of [person, person.alt].filter(Boolean)) {
+        assert(fs.existsSync(path.join(root, "assets/world/sprites", look.sprite + ".png")), "missing sprite " + look.sprite);
+      }
+    }
   }
   assert(fs.existsSync(path.join(root, "assets/world/sprites/player_red.png")));
   assert.deepStrictEqual([WORLD_MAPS.PalletTown.width, WORLD_MAPS.PalletTown.height], [24, 20]);
@@ -678,7 +683,33 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
   // Pallet Town and Route 1 join at the top / bottom edge.
   assert.strictEqual(at(World.step({ map: "PalletTown", x: 12, y: 0 }, "up")), "Route1 12,39");
   assert.strictEqual(at(World.step({ map: "Route1", x: 12, y: 39 }, "down")), "PalletTown 12,0");
-  assert.strictEqual(World.step({ map: "Route1", x: 12, y: 0 }, "up").unbuilt, "MAP_VIRIDIAN_CITY");
+  // Route 1 leads on to Viridian City; Route 2 and Route 22 aren't built yet.
+  assert.strictEqual(at(World.step({ map: "Route1", x: 12, y: 0 }, "up")), "ViridianCity 24,39");
+  assert.strictEqual(at(World.step({ map: "ViridianCity", x: 24, y: 39 }, "down")), "Route1 12,0");
+  assert.strictEqual(World.step({ map: "ViridianCity", x: 22, y: 0 }, "up").unbuilt, "MAP_ROUTE2");
+  assert.strictEqual(World.step({ map: "ViridianCity", x: 0, y: 12 }, "left").unbuilt, "MAP_ROUTE22");
+  // Viridian's buildings: in through each door and back out.
+  for (const [door, inside_] of [["26,27", "ViridianCity_PokemonCenter_1F"], ["36,20", "ViridianCity_Mart"],
+    ["25,19", "ViridianCity_School"], ["25,12", "ViridianCity_House"]]) {
+    const [x, y] = door.split(",").map(Number);
+    const r = World.step({ map: "ViridianCity", x, y }, "up");
+    assert.strictEqual(r.warp && r.warp.map, inside_, "door at " + door);
+    const back = World.step({ map: inside_, x: r.warp.x, y: r.warp.y }, "down");
+    assert.strictEqual(at(back), "ViridianCity " + x + "," + (y - 1));
+  }
+  assert(!World.step({ map: "ViridianCity", x: 36, y: 11 }, "up").warp, "the Gym (not built) stays shut");
+  assert.strictEqual(at(World.step({ map: "ViridianCity_PokemonCenter_1F", x: 2, y: 6 }, "left")), "ViridianCity_PokemonCenter_2F 1,6");
+  // You come back in front of the nurse after blacking out; the PC is part of the map.
+  const C = WORLD_MAPS.ViridianCity_PokemonCenter_1F, spot = Player.CENTERS.ViridianCity_PokemonCenter_1F;
+  assert(!C.collision[spot.y * C.width + spot.x], "blackout spot is walkable");
+  assert(C.behavior.includes(World.MB.PC));
+  // People whose look the story changes, item balls, and the text the story uses.
+  const oldMan = WORLD_MAPS.ViridianCity.people.find((p) => p.script === "ViridianCity_EventScript_TutorialOldMan");
+  assert.strictEqual(oldMan.sprite, "old_man_1");
+  assert.strictEqual(oldMan.alt.sprite, "old_man_lying_down");
+  assert.strictEqual(WORLD_MAPS.ViridianCity.people.find((p) => p.flag === "FLAG_HIDE_VIRIDIAN_CITY_POTION").item, "potion");
+  const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  for (const [, label] of gameJs.matchAll(/T\("(\w+)"\)/g)) assert(WORLD_TEXT[label], "missing story text " + label);
   // Walls, people and water block.
   assert(!World.step({ map: "PalletTown", x: 6, y: 9 }, "left", () => true).ok, "people block");
   const pond = WORLD_MAPS.PalletTown.behavior.findIndex((b) => b >= 0x10 && b <= 0x15);
@@ -711,7 +742,7 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
   assert.strictEqual(World.wildEncounter("Route1", path_ % R.width, Math.floor(path_ / R.width), () => 0), null, "no encounters off the grass");
   assert.strictEqual(World.wildEncounter("PalletTown", 10, 10, () => 0), null, "no wild Pokémon in town");
   assert.deepStrictEqual(WORLD_MAPS.PalletTown.signs.find((x) => x.x === 9 && x.y === 11).text,
-    ["PALLET TOWN\nShades of your journey await!"]);
+    ["Pallet Town\nShades of your journey await!"]);
 
   // Saves: a new game starts in the bedroom with no Pokémon; old saves appear outside the house.
   const fresh = Player.load(JSON.parse(Player.serialize(Player.create("Leaf", "green")))).player;

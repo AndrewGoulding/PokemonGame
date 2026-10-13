@@ -13,6 +13,14 @@ you on the way out. Then Route 1's tall grass, north of town, has FireRed's wild
 Pokémon. Mom heals your party, and the PC in your bedroom stores items (there's a
 Potion in it to start).
 
+North of Route 1 is **Viridian City**. The Poké Mart clerk hands you Oak's
+Parcel; take it back to PROF. OAK for five Poké Balls, and after that the Mart
+sells to you and the old man lying across the road north gets up and shows you
+how to catch Pokémon. The Pokémon Center's nurse heals your party (and is where
+you return if you black out), and its PC holds both Pokémon and items. There's
+also a move tutor who teaches Dream Eater once, a school and the Nickname house.
+Route 2, Route 22 and the Gym (locked until you have seven badges) aren't built yet.
+
 **Controls**: arrow keys or WASD to walk, hold Shift (or X) to run (indoors too), Z / Space /
 Enter to talk or read signs, Esc or M for the menu. On a phone, use the D-pad
 and A / Run / Menu buttons under the text box.
@@ -45,15 +53,16 @@ npm test
 
 The maps are FireRed's, converted from the [pret/pokefirered](https://github.com/pret/pokefirered)
 decompilation: Pallet Town, the player's house (both floors), the rival's house,
-PROF. OAK's lab and Route 1. Tiles, palettes and metatiles come from
+PROF. OAK's lab, Route 1, and Viridian City with its Pokémon Center (both
+floors), Poké Mart, school and Nickname house. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout. `tools/build-maps.js` turns them into
 `data/world-maps.js` and the images in `assets/world/`:
 
 ```sh
 git clone --depth 1 --filter=blob:none --sparse https://github.com/pret/pokefirered
-cd pokefirered && git sparse-checkout set --no-cone data/layouts/ data/maps/ data/text/ \
-  src/data/object_events/ src/data/wild_encounters.json graphics/object_events/pics/ && cd ..
+cd pokefirered && git sparse-checkout set --no-cone data/layouts/ data/maps/ data/text/ data/scripts/ \
+  data/event_scripts.s src/data/object_events/ src/data/wild_encounters.json graphics/object_events/pics/ && cd ..
 node tools/build-maps.js pokefirered     # or: POKEFIRERED=pokefirered npm run build:maps
 ```
 
@@ -65,9 +74,12 @@ Rules follow Gen 3: collision and elevation per block, solid doors you walk
 into, door mats you walk out through, stairs, ledges you can jump down,
 connected maps you walk straight into, and tall grass encounters at the map's
 rate (Random() % 2880 < rate × 16) using the 20/20/10/10/10/10/5/5/4/4/1/1
-encounter slots. Signs and people say their FireRed text; the few scripted
-events (Mom healing, the bedroom PC, the starter Poké Balls, OAK stopping you at
-the edge of town, the rival battle, the Route 1 Potion) are in `ui/game.js`.
+encounter slots. Signs and people say their FireRed text (with names in normal
+case: "Viridian City", not "VIRIDIAN CITY"), and item balls give their item.
+Scripted events (Mom healing, the PCs, the starter Poké Balls, OAK stopping you
+at the edge of town, the rival battle, the Route 1 Potion, Oak's Parcel, the
+Viridian old man, the nurse, the move tutor) are in `ui/game.js`; their FireRed
+lines come from `window.WORLD_TEXT`, which the converter writes alongside the maps.
 
 ## Progression rules (Gen 6)
 

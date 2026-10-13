@@ -28,6 +28,8 @@
   const NEW_GAME_LOCATION = { map: "PalletTown_PlayersHouse_2F", x: 6, y: 6, facing: "down" };
   const OLD_SAVE_LOCATION = { map: "PalletTown", x: 6, y: 8, facing: "down" };
   const HOME = { map: "PalletTown_PlayersHouse_1F", x: 8, y: 5, facing: "up" };
+  // Where you come back after blacking out: in front of each Pokémon Center's counter.
+  const CENTERS = { ViridianCity_PokemonCenter_1F: { map: "ViridianCity_PokemonCenter_1F", x: 7, y: 4, facing: "up" } };
 
   // Prize money per trainer class: base x the level of the trainer's last Pokémon.
   const PRIZE_BASE = {
@@ -248,7 +250,7 @@
   }
 
   window.Player = {
-    VERSION, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG, STARTING_PC_ITEMS, NEW_GAME_LOCATION, HOME,
+    VERSION, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG, STARTING_PC_ITEMS, NEW_GAME_LOCATION, HOME, CENTERS,
     create, markSeen, markCaught, hasCaught, receive, deposit, withdraw, release,
     itemCount, addItem, removeItem, depositItem, withdrawItem, addMoney, prizeMoney, blackoutLoss, serialize, load
   };
