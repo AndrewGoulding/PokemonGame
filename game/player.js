@@ -152,12 +152,19 @@
     r.moves = (Array.isArray(raw.moves) ? raw.moves : [])
       .filter((m) => m && window.MOVES[m.name])
       .slice(0, 4)
-      .map((m) => ({ name: m.name, pp: Math.max(0, Math.min(window.MOVES[m.name].pp, m.pp | 0)) }));
+      .map((m) => {
+        const slot = { name: m.name, pp: 0 };
+        const ups = Math.max(0, Math.min(3, m.ppUps | 0));
+        if (ups) slot.ppUps = ups;
+        slot.pp = Math.max(0, Math.min(window.Party.maxPp(slot), m.pp | 0));
+        return slot;
+      });
     if (!r.moves.length) r.moves = fresh.moves.length ? fresh.moves : [{ name: "Tackle", pp: 35 }];
     r.evs = Object.assign({}, raw.evs);
     r.ivs = Object.assign({}, fresh.ivs, raw.ivs);
     r.hp = Math.max(0, Math.min(window.Party.maxHp(r), r.hp | 0));
     if (r.item && !window.ITEMS[r.item]) r.item = "";
+    if (r.mint && !window.NATURES[r.mint]) delete r.mint;
     return r;
   }
 

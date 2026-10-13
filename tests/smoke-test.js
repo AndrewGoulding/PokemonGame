@@ -559,4 +559,77 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
   assert.strictEqual(Save.read().player, null);
 }
 
+// ---------- TMs, PP Ups and mints ----------
+{
+  const rng = mulberry32(51);
+  // X and Y's TM01-TM100 and HM01-HM05, plus ORAS's Secret Power and HM07 Dive.
+  const XY = ["Hone Claws", "Dragon Claw", "Psyshock", "Calm Mind", "Roar", "Toxic", "Hail", "Bulk Up", "Venoshock",
+    "Hidden Power", "Sunny Day", "Taunt", "Ice Beam", "Blizzard", "Hyper Beam", "Light Screen", "Protect", "Rain Dance",
+    "Roost", "Safeguard", "Frustration", "Solar Beam", "Smack Down", "Thunderbolt", "Thunder", "Earthquake", "Return",
+    "Dig", "Psychic", "Shadow Ball", "Brick Break", "Double Team", "Reflect", "Sludge Wave", "Flamethrower",
+    "Sludge Bomb", "Sandstorm", "Fire Blast", "Rock Tomb", "Aerial Ace", "Torment", "Facade", "Flame Charge", "Rest",
+    "Attract", "Thief", "Low Sweep", "Round", "Echoed Voice", "Overheat", "Steel Wing", "Focus Blast", "Energy Ball",
+    "False Swipe", "Scald", "Fling", "Charge Beam", "Sky Drop", "Incinerate", "Quash", "Will-O-Wisp", "Acrobatics",
+    "Embargo", "Explosion", "Shadow Claw", "Payback", "Retaliate", "Giga Impact", "Rock Polish", "Flash", "Stone Edge",
+    "Volt Switch", "Thunder Wave", "Gyro Ball", "Swords Dance", "Struggle Bug", "Psych Up", "Bulldoze", "Frost Breath",
+    "Rock Slide", "X-Scissor", "Dragon Tail", "Infestation", "Poison Jab", "Dream Eater", "Grass Knot", "Swagger",
+    "Sleep Talk", "U-turn", "Substitute", "Flash Cannon", "Trick Room", "Wild Charge", "Rock Smash", "Snarl",
+    "Nature Power", "Dark Pulse", "Power-Up Punch", "Dazzling Gleam", "Confide"];
+  XY.forEach((move, i) => assert.strictEqual(Bag.machineMove("tm" + String(i + 1).padStart(2, "0")), move, "TM" + (i + 1)));
+  ["Cut", "Fly", "Surf", "Strength", "Waterfall"].forEach((move, i) => assert.strictEqual(Bag.machineMove("hm0" + (i + 1)), move));
+  assert.strictEqual(Bag.machineMove("tm94-oras"), "Secret Power");
+  assert.strictEqual(Bag.machineMove("hm07"), "Dive");
+  assert(!Bag.machines().includes("hm06"), "ORAS's HM06 would be a second Rock Smash");
+  assert.strictEqual(Bag.machines().length, 107);
+  // Every machine move is something Pokémon learn by TM in the Gen 6 learnsets, and vice versa.
+  const tmMoves = new Set();
+  for (const l of Object.values(LEARNSETS_GEN6)) for (const m of l.tm || []) tmMoves.add(m);
+  assert.deepStrictEqual([...new Set(Bag.machines().map(Bag.machineMove))].sort(), [...tmMoves].sort());
+  assert.strictEqual(Bag.name("tm24"), "TM24 Thunderbolt");
+  assert.strictEqual(Bag.name("tm94-oras"), "TM94 (ORAS) Secret Power");
+  assert.strictEqual(Bag.pocket("hm03"), "TMs & HMs");
+  for (const id of Bag.machines()) assert(ITEM_SPRITES[id], "no sprite for " + id);
+
+  const c = Party.create("Charmander", 20, { rng });
+  assert(Bag.canUseOn(c, "tm35") && !Bag.canUseOn(c, "tm24"), "Charmander learns Flamethrower, not Thunderbolt");
+  assert(Bag.canUseOn(c, "tm94-oras") && !Bag.canUseOn(c, "hm07"));
+  Party.teachMove(c, "Flamethrower", 0);
+  assert(!Bag.canUseOn(c, "tm35"), "already knows it");
+
+  // PP Up: +20% of base PP per use, three at most; current PP rises too.
+  c.moves[1] = { name: "Ember", pp: 25 };
+  Bag.useOn(c, "pp-up", { move: 1 });
+  assert.deepStrictEqual(c.moves[1], { name: "Ember", pp: 30, ppUps: 1 });
+  Bag.useOn(c, "pp-max", { move: 1 });
+  assert.deepStrictEqual(c.moves[1], { name: "Ember", pp: 40, ppUps: 3 });
+  assert(!Bag.canUseOn(c, "pp-up", { move: 1 }));
+  const battle = new Battle({ seed: 1, p1: { name: "P", team: [Party.toBattleSet(c)] },
+    p2: { name: "W", team: [Party.toBattleSet(Party.create("Pidgey", 3, { rng }))] } });
+  battle.start();
+  assert.strictEqual(battle.sides.p1.active.moves[1].maxpp, 40, "PP Ups carry into battle");
+  battle.sides.p1.active.moves[1].pp = 7;
+  Party.syncFromBattle(c, battle.sides.p1.active);
+  assert.deepStrictEqual(c.moves[1], { name: "Ember", pp: 7, ppUps: 3 });
+  Party.heal(c);
+  assert.strictEqual(c.moves[1].pp, 40);
+  const saved = Player.load(JSON.parse(Player.serialize(Object.assign(Player.create("T"), { party: [c] }))));
+  assert.deepStrictEqual(saved.player.party[0].moves[1], { name: "Ember", pp: 40, ppUps: 3 }, "PP Ups survive saving");
+
+  // Mints: stats follow the mint's nature; the nature itself stays.
+  c.nature = "Modest";
+  delete c.mint;
+  const before = Party.stats(c);
+  assert(!Bag.canUseOn(c, "modest-mint") && Bag.canUseOn(c, "adamant-mint"));
+  Bag.useOn(c, "adamant-mint");
+  const after = Party.stats(c);
+  assert(after.atk > before.atk && after.spa < before.spa);
+  assert.strictEqual(c.nature, "Modest");
+  assert.strictEqual(Party.toBattleSet(c).nature, "Adamant");
+  Bag.useOn(c, "modest-mint");
+  assert.strictEqual(c.mint, undefined, "a mint for its own nature removes the effect");
+  const mints = Object.keys(ITEMS).filter((id) => Bag.mintNature(id));
+  assert.strictEqual(mints.length, 21, "the 21 Sword and Shield mints");
+  for (const id of mints) assert(ITEM_SPRITES[id], "no sprite for " + id);
+}
+
 console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns), AI beat random moves in " + aiWinRate + "% of games");

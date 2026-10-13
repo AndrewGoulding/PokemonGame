@@ -15,8 +15,9 @@ three Potions. From the party screen:
 - **Pokémon Center**: heal everything.
 - **Poké Mart**: buy and sell items. Stock grows as your strongest Pokémon
   levels up (standing in for gym badges until there's a map).
-- **Bag**: items by pocket. Use medicine, evolution stones, Rare Candy and
-  vitamins on your Pokémon, give them held items, or toss items.
+- **Bag**: items by pocket. Use medicine, evolution stones, Rare Candy,
+  vitamins, PP Ups, mints and TMs/HMs on your Pokémon, give them held items,
+  or toss items.
 - **PC**: 8 boxes of 30. Deposit, withdraw and release.
 - **Pokédex**: every Pokémon you've seen or caught.
 - **Trainer card**: money, Pokédex, play time; save, download a save file, or
@@ -59,6 +60,19 @@ npm test
 - **Items**: Gen 6 effects for potions and drinks, status cures, Revives, PP
   restores, vitamins (10 EVs each, up to 100) and Rare Candy. In battle, using
   an item takes your turn and happens before moves.
+- **TMs and HMs**: X and Y's TM01–TM100 and HM01–HM05, plus what Omega Ruby
+  and Alpha Sapphire added: Secret Power (ORAS's TM94, listed as "TM94 (ORAS)"
+  because X and Y's TM94 is Rock Smash) and HM07 Dive. ORAS's HM06 is Rock
+  Smash again, so it's left out. Compatibility comes from the Gen 6
+  learnsets. TMs are reusable (as in Gen 5+), can't be held, tossed or sold,
+  and HM moves can be forgotten like any other (there are no field moves yet).
+  The Poké Mart sells them: HMs ₽3,000 from level 10; TMs ₽10,000 / ₽20,000 /
+  ₽30,000 by the move's power, from levels 15 / 25 / 40.
+- **PP Up / PP Max**: +20% of a move's base PP per PP Up, three at most (PP
+  Max goes straight to three). Tracked per move; a forgotten move loses them.
+- **Mints** (from Sword and Shield): all 21. The Pokémon's stats follow the
+  mint's nature, while its own nature stays (the summary shows both). Using a
+  mint for its own nature removes the effect. ₽20,000 each from level 30.
 - **Money**: trainers pay their class's base payout × their last Pokémon's
   level. Blacking out costs your highest level × 8 (more with badges). Buying
   10+ Poké Balls at once gets a free Premier Ball.

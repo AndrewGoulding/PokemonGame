@@ -2,8 +2,9 @@
 // Depends on: nothing at load time.
 //
 // Works on any object shaped like { hp, maxhp, status, fainted, confused,
-// moves: [{ pp, maxpp }], evs, level }: the battle engine's Pokémon, or a
-// view of a party record (see game/bag.js).
+// moves: [{ pp, maxpp, base, ppUps }], evs, level }: the battle engine's
+// Pokémon, or a view of a party record (see game/bag.js). `base` and `ppUps`
+// are only needed for PP Up / PP Max, which only work outside battle.
 //
 //   ItemUse.canUse(target, "potion")              // -> true / false
 //   ItemUse.apply(target, "potion")               // mutates, returns what changed
@@ -41,6 +42,7 @@
     "leppa-berry": { pp: 10, oneMove: true },
     "elixir": { pp: 10 }, "max-elixir": { pp: Infinity },
     // Outside battle only
+    "pp-up": { ppUp: 1, oneMove: true, outOfBattle: true }, "pp-max": { ppUp: 3, oneMove: true, outOfBattle: true },
     "rare-candy": { levelUp: true, outOfBattle: true },
     "hp-up": { ev: "hp", outOfBattle: true }, "protein": { ev: "atk", outOfBattle: true },
     "iron": { ev: "def", outOfBattle: true }, "calcium": { ev: "spa", outOfBattle: true },
@@ -52,6 +54,8 @@
 
   const curable = (eff, t) =>
     (t.status && (eff.cure === ALL || (eff.cure && eff.cure.includes(t.status)))) || (eff.confusion && t.confused);
+  const MAX_PP_UPS = 3;
+  const ppWithUps = (base, ups) => Math.floor(base * (5 + ups) / 5);
   const evTotal = (evs) => Object.values(evs || {}).reduce((s, v) => s + (v || 0), 0);
 
   // Would using `item` on `target` do anything? opts: { inBattle, move }
@@ -64,6 +68,10 @@
     if (target.fainted) return false;
     if (eff.levelUp) return target.level < 100;
     if (eff.ev) return (target.evs[eff.ev] || 0) < VITAMIN_CAP && evTotal(target.evs) < EV_TOTAL;
+    if (eff.ppUp) {
+      const moves = opts.move != null ? [target.moves[opts.move]] : target.moves;
+      return moves.some((m) => m && m.base > 1 && (m.ppUps || 0) < MAX_PP_UPS);
+    }
     let useful = false;
     if ((eff.heal || eff.healFraction) && target.hp < target.maxhp) useful = true;
     if (curable(eff, target)) useful = true;
@@ -74,7 +82,7 @@
     return useful;
   }
 
-  // Applies the effect. Returns { healed, cured, confusionCured, revived, pp, ev }.
+  // Applies the effect. Returns { healed, cured, confusionCured, revived, pp, ppUp, ev }.
   // Level-ups aren't applied here; the caller handles Rare Candy (it needs
   // growth rates, learnsets and evolutions).
   function apply(target, item, opts) {
@@ -112,6 +120,14 @@
         m.pp += add;
         out.pp += add;
       }
+    }
+    if (eff.ppUp) {
+      const m = target.moves[opts.move];
+      const before = ppWithUps(m.base, m.ppUps || 0);
+      m.ppUps = Math.min(MAX_PP_UPS, (m.ppUps || 0) + eff.ppUp);
+      m.maxpp = ppWithUps(m.base, m.ppUps);
+      m.pp += m.maxpp - before;
+      out.ppUp = m.maxpp - before;
     }
     if (eff.ev) {
       const room = Math.min(VITAMIN_CAP - (target.evs[eff.ev] || 0), EV_TOTAL - evTotal(target.evs));

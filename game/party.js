@@ -8,7 +8,9 @@
 //
 // A record:
 //   { species, nickname, level, exp, nature, ability, gender, personality, ivs, evs,
-//     happiness, item, ball, moves: [{ name, pp }], hp, status }
+//     happiness, item, ball, moves: [{ name, pp, ppUps }], hp, status, mint? }
+// `ppUps` (0-3, from PP Up / PP Max) is left out when 0. `mint` is a nature
+// whose stat changes replace the Pokémon's own (its nature itself stays).
 // Max HP and other stats are always worked out from the record, never stored.
 
 (function () {
@@ -25,7 +27,11 @@
     return rng() * 100 < male ? "M" : "F";
   }
 
-  const maxPp = (move) => window.MOVES[move].pp;
+  // Max PP of a move slot: base PP, +20% of base per PP Up (up to 3).
+  const maxPp = (slot) => {
+    const base = window.MOVES[typeof slot === "string" ? slot : slot.name].pp;
+    return Math.floor(base * (5 + Math.min(3, (slot && slot.ppUps) || 0)) / 5);
+  };
 
   // Burmy's cloak decides which Wormadam it becomes. In the main games it
   // matches where Burmy last battled; with no map yet, each Burmy rolls one.
@@ -68,9 +74,12 @@
     return record;
   }
 
+  // The nature that sets the stats: a mint's, if one was used.
+  const statNature = (record) => record.mint || record.nature;
+
   function stats(record) {
     return window.Stats.calcAllStats(record.species,
-      { level: record.level, nature: record.nature, ivs: record.ivs, evs: record.evs });
+      { level: record.level, nature: statNature(record), ivs: record.ivs, evs: record.evs });
   }
   const maxHp = (record) => stats(record).hp;
   // Sprite variant for Pokémon whose look differs within one Pokédex entry:
@@ -85,7 +94,7 @@
       name: displayName(record),
       level: record.level,
       exp: record.exp,
-      nature: record.nature,
+      nature: statNature(record),
       ability: record.ability,
       gender: record.gender,
       ivs: record.ivs,
@@ -97,7 +106,7 @@
       hp: record.hp,
       status: record.status,
       form: form(record),   // display only; the engine ignores it
-      ppUps: 0
+      ppUps: record.moves.map((m) => m.ppUps || 0)
     };
   }
 
@@ -115,7 +124,15 @@
     record.happiness = mon.happiness;
     record.hp = Math.min(mon.hp, maxHp(record));
     record.status = mon.fainted ? "" : mon.status;
-    record.moves = battleMoves(mon).map((m) => ({ name: m.name, pp: Math.min(m.pp, maxPp(m.name)) }));
+    // PP Ups stay with the move they were used on (a move learned mid-battle has none).
+    const ups = {};
+    for (const m of record.moves) if (m.ppUps) ups[m.name] = m.ppUps;
+    record.moves = battleMoves(mon).map((m) => {
+      const slot = { name: m.name, pp: 0 };
+      if (ups[m.name]) slot.ppUps = ups[m.name];
+      slot.pp = Math.min(m.pp, maxPp(slot));
+      return slot;
+    });
     record.item = mon.item;
     return record;
   }
@@ -133,7 +150,7 @@
   function heal(record) {
     record.hp = maxHp(record);
     record.status = "";
-    for (const m of record.moves) m.pp = maxPp(m.name);
+    for (const m of record.moves) m.pp = maxPp(m);
     return record;
   }
 
@@ -148,6 +165,13 @@
     }
     return true;
   }
+
+  // Can this Pokémon learn `move` from a TM or HM? (Gen 6 learnsets, X/Y and ORAS.)
+  function canLearnMachine(record, move) {
+    const learnset = window.LEARNSETS_GEN6[record.species];
+    return !!learnset && (learnset.tm || []).includes(move);
+  }
+  const knowsMove = (record, move) => record.moves.some((m) => m.name === move);
 
   // Moves the species learns at exactly this level that the record doesn't know.
   function movesLearnedAt(record, level) {
@@ -167,7 +191,7 @@
   }
 
   window.Party = {
-    CLOAKS, create, stats, maxHp, speciesName, displayName, form, isFainted, toBattleSet, syncFromBattle, caught,
-    heal, teachMove, movesLearnedAt, expProgress
+    CLOAKS, create, maxPp, statNature, stats, maxHp, speciesName, displayName, form, isFainted, toBattleSet,
+    syncFromBattle, caught, heal, teachMove, canLearnMachine, knowsMove, movesLearnedAt, expProgress
   };
 })();

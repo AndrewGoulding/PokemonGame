@@ -12,7 +12,28 @@ const vm = require("vm");
 const root = path.join(__dirname, "..");
 const spriteDir = path.join(root, "assets/sprites/items");
 global.window = global;
-vm.runInThisContext(fs.readFileSync(path.join(root, "data/items.js"), "utf8"));
+for (const f of ["data/items.js", "data/moves.js", "data/natures.js"]) {
+  vm.runInThisContext(fs.readFileSync(path.join(root, f), "utf8"));
+}
+
+// TMs and HMs use a disc coloured by the move's type: tm/fire.png, hm/water.png.
+function machineSprite(id) {
+  const m = /^(tm|hm)\d+(-oras)?$/.exec(id);
+  const move = m && /^Teaches (.+?) to a compatible/.exec(window.ITEMS[id].effect || "");
+  if (!move || !window.MOVES[move[1]]) return null;
+  const file = m[1] + "/" + window.MOVES[move[1]].type.toLowerCase();
+  return exists(file.split("/")[0], file.split("/")[1]) ? file : null;
+}
+
+// Mints are coloured by the stat their nature raises: mint/attack.png, mint/neutral.png.
+const STAT_FILES = { atk: "attack", def: "defense", spa: "special-attack", spd: "special-defense", spe: "speed" };
+function mintSprite(id) {
+  const m = /^([a-z]+)-mint$/.exec(id);
+  const nature = m && window.NATURES[m[1].charAt(0).toUpperCase() + m[1].slice(1)];
+  if (!nature) return null;
+  const file = STAT_FILES[nature.plus] || "neutral";
+  return exists("mint", file) ? "mint/" + file : null;
+}
 
 // Folder -> the suffix its file names leave out.
 const SUFFIX_FOLDERS = {
@@ -25,9 +46,9 @@ const folders = fs.readdirSync(spriteDir).filter((d) => fs.statSync(path.join(sp
 
 const out = {};
 for (const id of Object.keys(window.ITEMS).sort()) {
-  let found = null;
+  let found = machineSprite(id) || mintSprite(id);
   for (const [folder, suffix] of Object.entries(SUFFIX_FOLDERS)) {
-    if (id.endsWith(suffix) && exists(folder, id.slice(0, -suffix.length))) {
+    if (!found && id.endsWith(suffix) && exists(folder, id.slice(0, -suffix.length))) {
       found = folder + "/" + id.slice(0, -suffix.length);
       break;
     }

@@ -349,6 +349,22 @@
       await evolve(record, evo, false);
       return;
     }
+    if (Bag.isMachine(item)) {
+      // TMs and HMs are reusable, so nothing leaves the bag.
+      const move = Bag.machineMove(item);
+      if (Party.knowsMove(record, move)) { await message(name + " already knows " + move + "."); return; }
+      if (!Party.canLearnMachine(record, move)) { await message(name + " can't learn " + move + "."); return; }
+      await message("You booted up the " + Bag.name(item).split(" ")[0] + ".");
+      await learnMove(record, move);
+      return;
+    }
+    if (Bag.mintNature(item)) {
+      if (!Bag.canUseOn(record, item)) { await message("It won't have any effect."); return; }
+      Player.removeItem(player, item);
+      Bag.useOn(record, item);
+      await message(name + "'s stats may have changed due to the effects of the " + Bag.name(item) + "!");
+      return;
+    }
     if (item === "rare-candy") {
       if (!Bag.canUseOn(record, item)) { await message("It won't have any effect."); return; }
       Player.removeItem(player, item);
@@ -362,8 +378,8 @@
     let move;
     const eff = ItemUse.effect(item);
     if (eff && eff.oneMove) {
-      const v = await ask("Restore PP to which move?", record.moves.map((m, i) => ({
-        label: m.name + "  PP " + m.pp + "/" + MOVES[m.name].pp, value: i, disabled: m.pp >= MOVES[m.name].pp
+      const v = await ask(eff.ppUp ? "Raise the max PP of which move?" : "Restore PP to which move?", record.moves.map((m, i) => ({
+        label: m.name + "  PP " + m.pp + "/" + Party.maxPp(m), value: i, disabled: !Bag.canUseOn(record, item, { move: i })
       })).concat([back()]));
       if (v === "back") return;
       move = v;
@@ -375,6 +391,7 @@
     if (r.healed) await message(name + "'s HP was restored by " + plural(r.healed, "point") + ".");
     if (r.cured) await message(name + " was cured of its " + ({ psn: "poisoning", tox: "poisoning", par: "paralysis", slp: "sleep", brn: "burn", frz: "freezing" }[r.cured] || "status") + ".");
     if (r.pp) await message(name + "'s PP was restored.");
+    if (r.ppUp) await message(record.moves[move].name + "'s PP increased.");
     if (r.ev) await message(name + "'s base stats rose.");
   }
 
@@ -391,12 +408,17 @@
 
   // Party list for choosing who gets an item; notes say who can use it.
   async function choosePartyFor(text, item) {
-    const notes = item ? player.party.map((r) => (Bag.canUseOn(r, item, { party: player.party }) ? "Able" : "Not able")) : null;
+    const note = (r) => (Bag.isMachine(item) && Party.knowsMove(r, Bag.machineMove(item)) ? "Learned"
+      : Bag.canUseOn(r, item, { party: player.party }) ? "Able" : "Not able");
+    const notes = item ? player.party.map(note) : null;
     const v = await pick(text, partyHtml(notes), [back()]);
     return v && v.pick != null ? player.party[+v.pick] : null;
   }
 
-  const usableFromBag = (item) => Bag.isStone(item) || item === "rare-candy" || !!ItemUse.effect(item);
+  const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
+    item === "rare-candy" || !!ItemUse.effect(item);
+  // TMs and HMs work like key items: they can't be held, tossed or sold.
+  const holdable = (item) => !Bag.isBall(item) && !Bag.isMachine(item);
 
   // ---------- Summary ----------
 
@@ -404,7 +426,7 @@
 
   function summaryHtml(r) {
     const stats = Party.stats(r);
-    const nature = NATURES[r.nature] || {};
+    const nature = NATURES[Party.statNature(r)] || {};
     const E = Experience;
     const toNext = r.level >= 100 ? 0 : E.expForLevel(E.growthRate(r.species), r.level + 1) - r.exp;
     const types = DEX[r.species].types.join(" / ");
@@ -412,7 +434,8 @@
       '<div class="summary-head">' + spriteTag(r.species, Party.form(r), 'class="summary-sprite" alt=""') +
         "<div><h2>" + escapeHtml(Party.displayName(r)) + genderMark(r) + " " + statusTag(r) + "</h2>" +
         "<div>Lv" + r.level + " · " + escapeHtml(Party.speciesName(r.species)) + " · " + types + "</div>" +
-        "<div>" + escapeHtml(r.nature) + " nature · " + escapeHtml(r.ability) + "</div>" +
+        "<div>" + escapeHtml(r.nature) + " nature" + (r.mint ? " (" + escapeHtml(r.mint) + " Mint)" : "") +
+          " · " + escapeHtml(r.ability) + "</div>" +
         "<div>Holding: " + (r.item ? escapeHtml(Bag.name(r.item)) : "nothing") + (r.cloak ? " · " + cloakName(r) : "") + "</div>" +
         "<div>HP " + r.hp + " / " + stats.hp + " · Exp. to next level: " + toNext.toLocaleString("en-US") + "</div>" +
         "<div>Caught in " + article(Bag.name(r.ball || "poke-ball")) + " · Friendship " + r.happiness + "</div>" +
@@ -424,7 +447,7 @@
       '<div class="summary-moves">' + r.moves.map((m) => {
         const d = MOVES[m.name];
         return '<div class="type-' + d.type + '"><b>' + escapeHtml(m.name) + "</b><span>" + d.type + " · " +
-          (d.cat === "Status" ? "Status" : d.cat + " " + (d.power || "—")) + " · PP " + m.pp + "/" + d.pp + "</span></div>";
+          (d.cat === "Status" ? "Status" : d.cat + " " + (d.power || "—")) + " · PP " + m.pp + "/" + Party.maxPp(m) + "</span></div>";
       }).join("") + "</div></div>";
   }
 
@@ -450,7 +473,7 @@
         await message("Took the " + Bag.name(old) + " from " + Party.displayName(r) + ".");
         continue;
       }
-      const items = Object.keys(player.bag).filter((id) => (v === "use" ? usableFromBag(id) : !Bag.isBall(id)));
+      const items = Object.keys(player.bag).filter((id) => (v === "use" ? usableFromBag(id) : holdable(id)));
       if (!items.length) { await message(v === "use" ? "You don't have anything to use." : "You don't have anything to give."); continue; }
       const choice = await pick(v === "use" ? "Use which item on " + Party.displayName(r) + "?" : "Give which item?",
         '<div class="rows">' + items.map((id) => itemRow(id, "×" + player.bag[id])).join("") + "</div>", [back()]);
@@ -465,10 +488,12 @@
   async function bagScreen() {
     let pocket = "Medicine";
     for (;;) {
-      const items = Object.keys(player.bag).filter((id) => Bag.pocket(id) === pocket).sort((a, b) => Bag.name(a).localeCompare(Bag.name(b)));
+      const order = (id) => (Bag.isMachine(id) ? Bag.machines().indexOf(id) : 0);
+      const items = Object.keys(player.bag).filter((id) => Bag.pocket(id) === pocket)
+        .sort((a, b) => order(a) - order(b) || Bag.name(a).localeCompare(Bag.name(b)));
       const html = '<div class="tabs">' + Bag.POCKETS.map((p) =>
         '<button type="button" class="tab' + (p === pocket ? " active" : "") + '" data-pick="tab:' + p + '">' + p + "</button>").join("") + "</div>" +
-        '<div class="rows">' + (items.length ? items.map((id) => itemRow(id, "×" + player.bag[id], "item:" + id)).join("")
+        '<div class="rows">' + (items.length ? items.map((id) => itemRow(id, Bag.isMachine(id) ? MOVES[Bag.machineMove(id)].type : "×" + player.bag[id], "item:" + id)).join("")
           : '<p class="empty">Nothing in this pocket.</p>') + "</div>";
       const v = await pick("Your bag. " + money(player.money), html, [back("Close bag")]);
       if (v === "back") return;
@@ -476,12 +501,13 @@
       if (kind === "tab") { pocket = id; continue; }
       const options = [];
       if (usableFromBag(id)) options.push({ label: "Use", value: "use", className: "action" });
-      if (!Bag.isBall(id)) options.push({ label: "Give", value: "give", className: "action" });
-      options.push({ label: "Toss", value: "toss", className: "action" });
+      if (holdable(id)) options.push({ label: "Give", value: "give", className: "action" });
+      if (!Bag.isMachine(id)) options.push({ label: "Toss", value: "toss", className: "action" });
       options.push(back());
       const what = await ask(Bag.name(id) + ": " + Bag.description(id), options);
       if (what === "use") {
-        const r = await choosePartyFor("Use the " + Bag.name(id) + " on which Pokémon?", id);
+        const r = await choosePartyFor(Bag.isMachine(id) ? "Teach " + Bag.machineMove(id) + " to which Pokémon?"
+          : "Use the " + Bag.name(id) + " on which Pokémon?", id);
         if (r) await useItemOn(r, id);
       } else if (what === "give") {
         const r = await choosePartyFor("Give the " + Bag.name(id) + " to which Pokémon?");
@@ -522,17 +548,24 @@
   }
 
   async function martBuy() {
+    let tab = "Items";
     for (;;) {
-      const stock = Bag.martStock(partyLevel());
-      const html = '<div class="rows">' + stock.map((s) =>
-        itemRow(s.item, money(s.price) + "<small>In bag: " + Player.itemCount(player, s.item) + "</small>")).join("") +
+      const stock = Bag.martStock(partyLevel()).filter((x) => (tab === "TMs & HMs") === Bag.isMachine(x.item));
+      const owned = (id) => Player.itemCount(player, id) > 0;
+      const html = '<div class="tabs">' + ["Items", "TMs & HMs"].map((t) =>
+        '<button type="button" class="tab' + (t === tab ? " active" : "") + '" data-pick="tab:' + t + '">' + t + "</button>").join("") + "</div>" +
+        '<div class="rows">' + (stock.length ? stock.map((x) => itemRow(x.item, money(x.price) + "<small>" +
+          (Bag.isMachine(x.item) ? (owned(x.item) ? "Owned" : MOVES[Bag.machineMove(x.item)].type) : "In bag: " + Player.itemCount(player, x.item)) +
+          "</small>")).join("") : '<p class="empty">Nothing here yet. Come back when your Pokémon are stronger!</p>') +
         '</div><p class="bag-line">You have ' + money(player.money) + ". More stock arrives as your Pokémon grow stronger.</p>";
       const v = await pick("What would you like to buy?", html, [back()]);
       if (v === "back") return;
+      if (v.pick.startsWith("tab:")) { tab = v.pick.slice(4); continue; }
       const item = v.pick, price = Bag.price(item);
-      const max = Math.min(99, Math.floor(player.money / price));
+      if (Bag.isMachine(item) && owned(item)) { await message("You already have that " + Bag.name(item).split(" ")[0] + ". TMs and HMs never run out."); continue; }
+      const max = Bag.isMachine(item) ? Math.min(1, Math.floor(player.money / price)) : Math.min(99, Math.floor(player.money / price));
       if (!max) { await message("You don't have enough money."); continue; }
-      const n = await chooseQuantity(Bag.name(item) + "? Certainly. How many would you like?", max, price);
+      const n = Bag.isMachine(item) ? 1 : await chooseQuantity(Bag.name(item) + "? Certainly. How many would you like?", max, price);
       if (!n) continue;
       if (!(await confirm(n + " × " + Bag.name(item) + "? That will be " + money(n * price) + ". OK?"))) continue;
       Player.addMoney(player, -n * price);
@@ -547,7 +580,7 @@
 
   async function martSell() {
     for (;;) {
-      const items = Object.keys(player.bag).filter((id) => Bag.sellPrice(id) > 0);
+      const items = Object.keys(player.bag).filter((id) => Bag.sellPrice(id) > 0 && !Bag.isMachine(id));
       if (!items.length) { await message("You don't have anything I can buy."); return; }
       const v = await pick("What would you like to sell?", '<div class="rows">' +
         items.map((id) => itemRow(id, money(Bag.sellPrice(id)) + "<small>×" + player.bag[id] + "</small>")).join("") + "</div>", [back()]);

@@ -161,13 +161,14 @@
       this.original = null;
       this.gender = Pokemon.rollGender(battle, set.gender, dex.gender);
       this._hit = { typeMod: 0, crit: false };
-      const ppUps = set.ppUps != null ? set.ppUps : 0; // PP Ups used on every move (0–3)
+      // PP Ups (0-3): one number for every move, or an array per move slot.
+      const ppUpsFor = (i) => (Array.isArray(set.ppUps) ? set.ppUps[i] || 0 : set.ppUps || 0);
       this.moves = [];
-      for (const n of (set.moves || []).slice(0, 4)) {
+      for (const [i, n] of (set.moves || []).slice(0, 4).entries()) {
         const key = MOVE_INDEX[toID(n)];
         if (!key) throw new Error("Unknown move: " + n);
         const base = window.MOVES[key].pp;
-        const maxpp = Math.floor(base * (5 + ppUps) / 5);
+        const maxpp = Math.floor(base * (5 + clamp(ppUpsFor(i), 0, 3)) / 5);
         this.moves.push({ id: toID(key), name: key, pp: maxpp, maxpp });
       }
       this.teamIndex = index;
