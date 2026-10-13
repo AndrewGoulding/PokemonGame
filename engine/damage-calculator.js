@@ -1,5 +1,5 @@
 // Damage calculator (Gen 6 mechanics)
-// Depends on (load these first): type-chart.js, dex.js, moves.js, abilities.js, stats.js
+// Depends on (load these first): type-chart.js, dex.js, moves.js, abilities.js, stat-calculator.js
 //
 // Quick start:
 //   const a = Damage.makePokemon("Garchomp", { level: 50, nature: "Jolly",
@@ -706,7 +706,7 @@
     opts = opts || {};
     const dex = window.DEX[speciesName];
     if (!dex) throw new Error("Unknown species: " + speciesName);
-    if (!window.Stats) throw new Error("stats.js must be loaded before damage.js");
+    if (!window.Stats) throw new Error("stat-calculator.js must be loaded before damage-calculator.js");
     const level = opts.level != null ? opts.level : 50;
     const stats = window.Stats.calcAllStats(speciesName, {
       level, nature: opts.nature, ivs: opts.ivs, evs: opts.evs

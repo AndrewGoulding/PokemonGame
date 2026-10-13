@@ -1,6 +1,7 @@
 // Battle engine (Gen 6 singles, headless)
 // Depends on (load these first): type-chart.js, natures.js, dex.js, moves.js,
-// abilities.js, items.js, stats.js, damage.js, conditions.js
+// abilities.js, items.js, stat-calculator.js, damage-calculator.js, conditions.js,
+// battle-moves.js. See index.html for the full load order.
 //
 //   const battle = new Battle({
 //     seed: 1234,

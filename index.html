@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pokémon Game</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 48rem; padding: 0 1rem; }
+    .ok { color: #1a7f37; }
+    .error { color: #cf222e; }
+    pre { background: #f6f8fa; padding: 1rem; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>Pokémon Game</h1>
+  <p id="status">Loading…</p>
+  <ul id="counts"></ul>
+  <h2>Sample battle</h2>
+  <pre id="log"></pre>
+
+  <!--
+    Load order matters: each file assigns a global on window that later files read.
+    tests/smoke-test.js reads this list, so keep every game script here.
+  -->
+  <!-- Data -->
+  <script src="data/type-chart.js"></script>
+  <script src="data/natures.js"></script>
+  <script src="data/dex.js"></script>
+  <script src="data/moves.js"></script>
+  <script src="data/abilities.js"></script>
+  <script src="data/items.js"></script>
+  <script src="data/learnsets.js"></script>
+  <!-- Engine -->
+  <script src="engine/stat-calculator.js"></script>
+  <script src="engine/damage-calculator.js"></script>
+  <script src="data/conditions.js"></script>
+  <script src="data/battle-moves.js"></script>
+  <script src="engine/battle.js"></script>
+
+  <script>
+    (function () {
+      const status = document.getElementById("status");
+      const required = ["TYPE_CHART", "NATURES", "DEX", "MOVES", "ABILITIES", "ITEMS", "LEARNSETS_GEN6",
+        "Stats", "Damage", "CONDITIONS", "ITEM_EFFECTS", "BATTLE_MOVE_EFFECTS", "Battle"];
+      const missing = required.filter((name) => !window[name]);
+      if (missing.length) {
+        status.className = "error";
+        status.textContent = "Missing globals: " + missing.join(", ");
+        return;
+      }
+
+      const counts = { Pokémon: DEX, Moves: MOVES, Abilities: ABILITIES, Items: ITEMS, Learnsets: LEARNSETS_GEN6 };
+      document.getElementById("counts").innerHTML = Object.entries(counts)
+        .map(([label, table]) => "<li>" + label + ": " + Object.keys(table).length + "</li>").join("");
+
+      // Both sides always use their first move until the battle ends.
+      const battle = new Battle({
+        seed: Date.now(),
+        p1: { name: "Player", team: [{ species: "Charizard", level: 50, moves: ["Flamethrower", "Air Slash"] }] },
+        p2: { name: "Rival", team: [{ species: "Blastoise", level: 50, moves: ["Surf", "Bite"] }] }
+      });
+      battle.start();
+      for (let turn = 0; turn < 50 && !battle.ended; turn++) {
+        battle.choose("p1", { type: "move", move: 0 });
+        battle.choose("p2", { type: "move", move: 0 });
+      }
+      document.getElementById("log").textContent =
+        battle.events.map(Battle.formatEvent).filter(Boolean).join("\n");
+
+      status.className = "ok";
+      status.textContent = "All data and engine scripts loaded.";
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "name": "pokemon-game",
+  "private": true,
+  "description": "A browser Pokémon game built on a Gen 6 battle engine.",
+  "scripts": {
+    "test": "node tests/smoke-test.js"
+  }
+}
