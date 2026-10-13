@@ -351,6 +351,7 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
   assert.strictEqual(evo("Charmander", 20, (r) => { r.hp = 0; }), null, "fainted Pokémon don't evolve");
   const pikachu = Party.create("Pikachu", 20, { rng });
   assert.strictEqual(Evolution.find(pikachu, { trigger: "item", item: "thunder-stone" }).into, "Raichu");
+  assert.strictEqual(Evolution.find(Party.create("Eevee", 20, { rng }), { trigger: "item", item: "ice-stone" }).into, "Glaceon");
 
   // Evolving keeps damage taken and returns the moves learned on evolving.
   const charmeleon = Party.create("Charmeleon", 36, { rng });
@@ -361,14 +362,13 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
   assert.deepStrictEqual(learned, ["Wing Attack"]);
   assert.strictEqual(Evolution.shedinja(Party.create("Nincada", 20, { rng })).species, "Shedinja");
 
-  // Every evolution points at a real species, move and (Gen 6) item; the Ice
-  // Stone for Glaceon only arrived in Gen 7.
+  // Every evolution points at a real species, move and item.
   for (const [from, list] of Object.entries(EVOLUTIONS)) {
     assert(DEX[from], "unknown species " + from);
     for (const e of list) {
       assert(DEX[e.into], from + " evolves into unknown " + e.into);
       if (e.move) assert(MOVES[e.move], "unknown move " + e.move);
-      if (e.item && e.item !== "ice-stone") assert(ITEMS[e.item], "unknown item " + e.item);
+      if (e.item) assert(ITEMS[e.item], "unknown item " + e.item);
     }
   }
 }
