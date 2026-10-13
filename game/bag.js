@@ -57,7 +57,7 @@
   // ---------- TMs and HMs ----------
   // X and Y's TM01-TM100 and HM01-HM05, plus what Omega Ruby and Alpha Sapphire
   // added: Secret Power (ORAS's TM94, which X and Y use for Rock Smash, so it's
-  // "tm94-oras" here) and HM07 Dive. ORAS's HM06 is Rock Smash again (TM94), so
+  // TM101 here) and HM07 Dive. ORAS's HM06 is Rock Smash again (TM94), so
   // it's left out. Like Gen 5+, TMs are reusable; HMs too, and with no map yet
   // there are no field moves, so HM moves can be forgotten like any other.
   const LEFT_OUT_MACHINES = ["hm06"];
@@ -67,14 +67,14 @@
     return m ? m[1] : null;
   };
   function machineName(item) {
-    const m = /^(tm|hm)(\d+)(-oras)?$/.exec(item);
-    return m[1].toUpperCase() + m[2].padStart(2, "0") + (m[3] ? " (ORAS)" : "") + " " + machineMove(item);
+    const m = /^(tm|hm)(\d+)$/.exec(item);
+    return m[1].toUpperCase() + m[2].padStart(2, "0") + " " + machineMove(item);
   }
-  // Sorted TM01..TM100 (ORAS's TM94 after X and Y's), then HMs.
+  // Sorted TM01..TM101, then HMs.
   let machineList = null;
   function machines() {
     if (!machineList) {
-      const key = (id) => { const m = /^(tm|hm)(\d+)(-oras)?$/.exec(id); return (m[1] === "hm" ? 1000 : 0) + +m[2] + (m[3] ? 0.5 : 0); };
+      const key = (id) => { const m = /^(tm|hm)(\d+)$/.exec(id); return (m[1] === "hm" ? 1000 : 0) + +m[2]; };
       machineList = Object.keys(window.ITEMS).filter(isMachine).sort((a, b) => key(a) - key(b));
     }
     return machineList;

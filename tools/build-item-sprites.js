@@ -18,7 +18,7 @@ for (const f of ["data/items.js", "data/moves.js", "data/natures.js"]) {
 
 // TMs and HMs use a disc coloured by the move's type: tm/fire.png, hm/water.png.
 function machineSprite(id) {
-  const m = /^(tm|hm)\d+(-oras)?$/.exec(id);
+  const m = /^(tm|hm)\d+$/.exec(id);
   const move = m && /^Teaches (.+?) to a compatible/.exec(window.ITEMS[id].effect || "");
   if (!move || !window.MOVES[move[1]]) return null;
   const file = m[1] + "/" + window.MOVES[move[1]].type.toLowerCase();

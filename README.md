@@ -61,8 +61,8 @@ npm test
   restores, vitamins (10 EVs each, up to 100) and Rare Candy. In battle, using
   an item takes your turn and happens before moves.
 - **TMs and HMs**: X and Y's TM01–TM100 and HM01–HM05, plus what Omega Ruby
-  and Alpha Sapphire added: Secret Power (ORAS's TM94, listed as "TM94 (ORAS)"
-  because X and Y's TM94 is Rock Smash) and HM07 Dive. ORAS's HM06 is Rock
+  and Alpha Sapphire added: Secret Power as TM101 (it's ORAS's TM94, but X and
+  Y's TM94 is Rock Smash) and HM07 Dive. ORAS's HM06 is Rock
   Smash again, so it's left out. Compatibility comes from the Gen 6
   learnsets. TMs are reusable (as in Gen 5+), can't be held, tossed or sold,
   and HM moves can be forgotten like any other (there are no field moves yet).

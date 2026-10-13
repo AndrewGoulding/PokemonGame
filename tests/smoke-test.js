@@ -577,7 +577,7 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
     "Nature Power", "Dark Pulse", "Power-Up Punch", "Dazzling Gleam", "Confide"];
   XY.forEach((move, i) => assert.strictEqual(Bag.machineMove("tm" + String(i + 1).padStart(2, "0")), move, "TM" + (i + 1)));
   ["Cut", "Fly", "Surf", "Strength", "Waterfall"].forEach((move, i) => assert.strictEqual(Bag.machineMove("hm0" + (i + 1)), move));
-  assert.strictEqual(Bag.machineMove("tm94-oras"), "Secret Power");
+  assert.strictEqual(Bag.machineMove("tm101"), "Secret Power");
   assert.strictEqual(Bag.machineMove("hm07"), "Dive");
   assert(!Bag.machines().includes("hm06"), "ORAS's HM06 would be a second Rock Smash");
   assert.strictEqual(Bag.machines().length, 107);
@@ -586,13 +586,16 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
   for (const l of Object.values(LEARNSETS_GEN6)) for (const m of l.tm || []) tmMoves.add(m);
   assert.deepStrictEqual([...new Set(Bag.machines().map(Bag.machineMove))].sort(), [...tmMoves].sort());
   assert.strictEqual(Bag.name("tm24"), "TM24 Thunderbolt");
-  assert.strictEqual(Bag.name("tm94-oras"), "TM94 (ORAS) Secret Power");
+  assert.strictEqual(Bag.name("tm101"), "TM101 Secret Power");
+  assert.deepStrictEqual(Bag.machines().slice(99, 102), ["tm100", "tm101", "hm01"]);
+  const oldSave = Object.assign(Player.create("T"), { party: [Party.create("Pidgey", 5, { rng })], bag: { "tm94-oras": 1 } });
+  assert.deepStrictEqual(Player.load(oldSave).player.bag, { tm101: 1 }, "old saves get TM101");
   assert.strictEqual(Bag.pocket("hm03"), "TMs & HMs");
   for (const id of Bag.machines()) assert(ITEM_SPRITES[id], "no sprite for " + id);
 
   const c = Party.create("Charmander", 20, { rng });
   assert(Bag.canUseOn(c, "tm35") && !Bag.canUseOn(c, "tm24"), "Charmander learns Flamethrower, not Thunderbolt");
-  assert(Bag.canUseOn(c, "tm94-oras") && !Bag.canUseOn(c, "hm07"));
+  assert(Bag.canUseOn(c, "tm101") && !Bag.canUseOn(c, "hm07"));
   Party.teachMove(c, "Flamethrower", 0);
   assert(!Bag.canUseOn(c, "tm35"), "already knows it");
 

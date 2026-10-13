@@ -185,7 +185,9 @@
     player.boxes = player.boxes.map((_, i) =>
       ((data.boxes && data.boxes[i]) || []).map((r) => cleanRecord(r, warnings)).filter(Boolean).slice(0, BOX_SIZE));
     player.bag = {};
-    for (const [item, n] of Object.entries(data.bag || {})) {
+    const RENAMED = { "tm94-oras": "tm101" };   // items whose ids changed
+    for (let [item, n] of Object.entries(data.bag || {})) {
+      item = RENAMED[item] || item;
       if (window.ITEMS[item] && n > 0) player.bag[item] = Math.min(MAX_ITEM_COUNT, n | 0);
     }
     const dex = data.pokedex || {};
