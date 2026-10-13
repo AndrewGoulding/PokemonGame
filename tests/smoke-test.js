@@ -615,18 +615,21 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
   const saved = Player.load(JSON.parse(Player.serialize(Object.assign(Player.create("T"), { party: [c] }))));
   assert.deepStrictEqual(saved.player.party[0].moves[1], { name: "Ember", pp: 40, ppUps: 3 }, "PP Ups survive saving");
 
-  // Mints: stats follow the mint's nature; the nature itself stays.
+  // Mints replace the nature, stats and all.
   c.nature = "Modest";
-  delete c.mint;
   const before = Party.stats(c);
   assert(!Bag.canUseOn(c, "modest-mint") && Bag.canUseOn(c, "adamant-mint"));
-  Bag.useOn(c, "adamant-mint");
+  assert.deepStrictEqual(Bag.useOn(c, "adamant-mint"), { nature: "Adamant", oldNature: "Modest" });
   const after = Party.stats(c);
   assert(after.atk > before.atk && after.spa < before.spa);
-  assert.strictEqual(c.nature, "Modest");
+  assert.strictEqual(c.nature, "Adamant");
   assert.strictEqual(Party.toBattleSet(c).nature, "Adamant");
-  Bag.useOn(c, "modest-mint");
-  assert.strictEqual(c.mint, undefined, "a mint for its own nature removes the effect");
+  assert(!Bag.canUseOn(c, "adamant-mint") && Bag.canUseOn(c, "modest-mint"));
+  // Saves from when mints only changed stats get the mint's nature.
+  const old = Object.assign(JSON.parse(JSON.stringify(c)), { nature: "Modest", mint: "Jolly" });
+  const migrated = Player.load(Object.assign(Player.create("T"), { party: [old] })).player.party[0];
+  assert.strictEqual(migrated.nature, "Jolly");
+  assert(!("mint" in migrated));
   const mints = Object.keys(ITEMS).filter((id) => Bag.mintNature(id));
   assert.strictEqual(mints.length, 21, "the 21 Sword and Shield mints");
   for (const id of mints) assert(ITEM_SPRITES[id], "no sprite for " + id);

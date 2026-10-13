@@ -164,7 +164,12 @@
     r.ivs = Object.assign({}, fresh.ivs, raw.ivs);
     r.hp = Math.max(0, Math.min(window.Party.maxHp(r), r.hp | 0));
     if (r.item && !window.ITEMS[r.item]) r.item = "";
-    if (r.mint && !window.NATURES[r.mint]) delete r.mint;
+    // Saves from before mints replaced the nature kept it separately.
+    if (r.mint) {
+      if (window.NATURES[r.mint]) r.nature = r.mint;
+      delete r.mint;
+    }
+    if (!window.NATURES[r.nature]) r.nature = fresh.nature;
     return r;
   }
 

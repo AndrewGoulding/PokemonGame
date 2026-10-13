@@ -70,9 +70,9 @@ npm test
   ₽30,000 by the move's power, from levels 15 / 25 / 40.
 - **PP Up / PP Max**: +20% of a move's base PP per PP Up, three at most (PP
   Max goes straight to three). Tracked per move; a forgotten move loses them.
-- **Mints** (from Sword and Shield): all 21. The Pokémon's stats follow the
-  mint's nature, while its own nature stays (the summary shows both). Using a
-  mint for its own nature removes the effect. ₽20,000 each from level 30.
+- **Mints** (from Sword and Shield): all 21. A mint changes the Pokémon's
+  nature to the mint's, replacing the old one (unlike Sword and Shield, where
+  only the stats change). ₽20,000 each from level 30.
 - **Money**: trainers pay their class's base payout × their last Pokémon's
   level. Blacking out costs your highest level × 8 (more with badges). Buying
   10+ Poké Balls at once gets a free Premier Ball.

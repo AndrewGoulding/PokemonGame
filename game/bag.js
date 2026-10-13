@@ -90,8 +90,8 @@
   const machineLevel = (item) => (/^hm/.test(item) ? 10 : { 10000: 15, 20000: 25, 30000: 40 }[machinePrice(item)]);
 
   // ---------- Mints ----------
-  // "adamant-mint" -> "Adamant". The stats follow the mint's nature from then on;
-  // the Pokémon's own nature stays what it was (as in Sword and Shield).
+  // "adamant-mint" -> "Adamant". Using a mint changes the Pokémon's nature to
+  // that one, replacing the old nature for good.
   const mintNature = (item) => {
     const m = /^([a-z]+)-mint$/.exec(item);
     const nature = m && m[1].charAt(0).toUpperCase() + m[1].slice(1);
@@ -148,7 +148,7 @@
     opts = opts || {};
     if (isStone(item)) return !!window.Evolution.find(record, { trigger: "item", item, party: opts.party });
     if (isMachine(item)) return window.Party.canLearnMachine(record, machineMove(item)) && !window.Party.knowsMove(record, machineMove(item));
-    if (mintNature(item)) return window.Party.statNature(record) !== mintNature(item);
+    if (mintNature(item)) return record.nature !== mintNature(item);
     return window.ItemUse.canUse(view(record), item, { move: opts.move });
   }
 
@@ -156,8 +156,9 @@
   // go through levelUp() and the evolution flow in the UI instead.
   function useOn(record, item, opts) {
     if (mintNature(item)) {
-      if (mintNature(item) === record.nature) delete record.mint; else record.mint = mintNature(item);
-      return { mint: mintNature(item) };
+      const old = record.nature;
+      record.nature = mintNature(item);
+      return { nature: record.nature, oldNature: old };
     }
     const v = view(record);
     const result = window.ItemUse.apply(v, item, opts);

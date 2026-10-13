@@ -8,9 +8,8 @@
 //
 // A record:
 //   { species, nickname, level, exp, nature, ability, gender, personality, ivs, evs,
-//     happiness, item, ball, moves: [{ name, pp, ppUps }], hp, status, mint? }
-// `ppUps` (0-3, from PP Up / PP Max) is left out when 0. `mint` is a nature
-// whose stat changes replace the Pokémon's own (its nature itself stays).
+//     happiness, item, ball, moves: [{ name, pp, ppUps }], hp, status }
+// `ppUps` (0-3, from PP Up / PP Max) is left out when 0.
 // Max HP and other stats are always worked out from the record, never stored.
 
 (function () {
@@ -74,12 +73,9 @@
     return record;
   }
 
-  // The nature that sets the stats: a mint's, if one was used.
-  const statNature = (record) => record.mint || record.nature;
-
   function stats(record) {
     return window.Stats.calcAllStats(record.species,
-      { level: record.level, nature: statNature(record), ivs: record.ivs, evs: record.evs });
+      { level: record.level, nature: record.nature, ivs: record.ivs, evs: record.evs });
   }
   const maxHp = (record) => stats(record).hp;
   // Sprite variant for Pokémon whose look differs within one Pokédex entry:
@@ -94,7 +90,7 @@
       name: displayName(record),
       level: record.level,
       exp: record.exp,
-      nature: statNature(record),
+      nature: record.nature,
       ability: record.ability,
       gender: record.gender,
       ivs: record.ivs,
@@ -191,7 +187,7 @@
   }
 
   window.Party = {
-    CLOAKS, create, maxPp, statNature, stats, maxHp, speciesName, displayName, form, isFainted, toBattleSet,
+    CLOAKS, create, maxPp, stats, maxHp, speciesName, displayName, form, isFainted, toBattleSet,
     syncFromBattle, caught, heal, teachMove, canLearnMachine, knowsMove, movesLearnedAt, expProgress
   };
 })();

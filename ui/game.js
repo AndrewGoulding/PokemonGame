@@ -361,8 +361,8 @@
     if (Bag.mintNature(item)) {
       if (!Bag.canUseOn(record, item)) { await message("It won't have any effect."); return; }
       Player.removeItem(player, item);
-      Bag.useOn(record, item);
-      await message(name + "'s stats may have changed due to the effects of the " + Bag.name(item) + "!");
+      const r = Bag.useOn(record, item);
+      await message(name + "'s nature changed from " + r.oldNature + " to " + r.nature + "!");
       return;
     }
     if (item === "rare-candy") {
@@ -426,7 +426,7 @@
 
   function summaryHtml(r) {
     const stats = Party.stats(r);
-    const nature = NATURES[Party.statNature(r)] || {};
+    const nature = NATURES[r.nature] || {};
     const E = Experience;
     const toNext = r.level >= 100 ? 0 : E.expForLevel(E.growthRate(r.species), r.level + 1) - r.exp;
     const types = DEX[r.species].types.join(" / ");
@@ -434,8 +434,7 @@
       '<div class="summary-head">' + spriteTag(r.species, Party.form(r), 'class="summary-sprite" alt=""') +
         "<div><h2>" + escapeHtml(Party.displayName(r)) + genderMark(r) + " " + statusTag(r) + "</h2>" +
         "<div>Lv" + r.level + " · " + escapeHtml(Party.speciesName(r.species)) + " · " + types + "</div>" +
-        "<div>" + escapeHtml(r.nature) + " nature" + (r.mint ? " (" + escapeHtml(r.mint) + " Mint)" : "") +
-          " · " + escapeHtml(r.ability) + "</div>" +
+        "<div>" + escapeHtml(r.nature) + " nature · " + escapeHtml(r.ability) + "</div>" +
         "<div>Holding: " + (r.item ? escapeHtml(Bag.name(r.item)) : "nothing") + (r.cloak ? " · " + cloakName(r) : "") + "</div>" +
         "<div>HP " + r.hp + " / " + stats.hp + " · Exp. to next level: " + toNext.toLocaleString("en-US") + "</div>" +
         "<div>Caught in " + article(Bag.name(r.ball || "poke-ball")) + " · Friendship " + r.happiness + "</div>" +
