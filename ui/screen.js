@@ -88,5 +88,24 @@
     }
   });
 
-  window.Screen = { MESSAGE_MS, escapeHtml, say, wait, message, ask, clearMenu, learnMovePrompt };
+  // Pokémon sprites: assets/sprites/pokemon/[back/]<dex id>[-<form>].png.
+  // A form sprite that hasn't been added yet falls back to the plain one.
+  function spriteUrl(species, form, back) {
+    const dex = window.DEX[species];
+    return "assets/sprites/pokemon/" + (back ? "back/" : "") + (dex ? dex.id : 0) + (form ? "-" + form : "") + ".png";
+  }
+  function setSprite(img, species, form, back) {
+    const src = spriteUrl(species, form, back);
+    if (img.getAttribute("src") === src || img.dataset.wanted === src) return;
+    img.dataset.wanted = src;
+    img.onerror = form ? () => { img.onerror = null; img.src = spriteUrl(species, "", back); } : null;
+    img.src = src;
+  }
+  // The same as an <img> tag, for HTML built as strings.
+  function spriteTag(species, form, attrs) {
+    const fallback = form ? ' onerror="this.onerror=null;this.src=\'' + spriteUrl(species, "") + '\'"' : "";
+    return '<img src="' + spriteUrl(species, form) + '"' + fallback + " " + (attrs || 'alt=""') + ">";
+  }
+
+  window.Screen = { MESSAGE_MS, spriteUrl, setSprite, spriteTag, escapeHtml, say, wait, message, ask, clearMenu, learnMovePrompt };
 })();

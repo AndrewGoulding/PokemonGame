@@ -73,6 +73,9 @@
       { level: record.level, nature: record.nature, ivs: record.ivs, evs: record.evs });
   }
   const maxHp = (record) => stats(record).hp;
+  // Sprite variant for Pokémon whose look differs within one Pokédex entry:
+  // "sandy" / "trash" for those Burmy (sprites named 412-sandy.png etc.).
+  const form = (record) => (record.cloak && record.cloak !== "plant" ? record.cloak : "");
   const displayName = (record) => record.nickname || speciesName(record.species);
   const isFainted = (record) => record.hp <= 0;
 
@@ -93,6 +96,7 @@
       pp: record.moves.map((m) => m.pp),
       hp: record.hp,
       status: record.status,
+      form: form(record),   // display only; the engine ignores it
       ppUps: 0
     };
   }
@@ -163,7 +167,7 @@
   }
 
   window.Party = {
-    CLOAKS, create, stats, maxHp, speciesName, displayName, isFainted, toBattleSet, syncFromBattle, caught,
+    CLOAKS, create, stats, maxHp, speciesName, displayName, form, isFainted, toBattleSet, syncFromBattle, caught,
     heal, teachMove, movesLearnedAt, expProgress
   };
 })();

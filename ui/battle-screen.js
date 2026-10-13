@@ -179,7 +179,6 @@
   let cursor = 0;       // index of the next battle event to play
   let view = null;      // what the screen currently shows for each side
 
-  const speciesId = (species) => (window.DEX[species] ? window.DEX[species].id : 0);
   const sideOf = (ident) => String(ident).slice(0, 2);
   const nameOf = (ident) => String(ident).replace(/^p\da: /, "");
   const otherSide = (side) => (side === "p1" ? "p2" : "p1");
@@ -225,9 +224,7 @@
       info.classList.add("hidden");
       return;
     }
-    const folder = id === "p1" ? "assets/sprites/pokemon/back/" : "assets/sprites/pokemon/";
-    const src = folder + speciesId(v.species) + ".png";
-    if (sprite.getAttribute("src") !== src) sprite.setAttribute("src", src);
+    window.Screen.setSprite(sprite, v.species, v.form, id === "p1");
     sprite.alt = v.name;
     sprite.classList.toggle("hidden", !!v.inBall);
     sprite.classList.toggle("fainted", v.fainted);
@@ -303,7 +300,8 @@
         const hp = parseHp(c) || { hp: 0, maxhp: 0, status: "" };
         view[side] = { name: nameOf(a), species: m[1] || nameOf(a), level: m[2] || "?",
           hp: hp.hp, maxhp: hp.maxhp, status: hp.status, fainted: false,
-          exp: ev[4] === "" || ev[4] == null ? null : +ev[4], teamIndex: +ev[5] };
+          exp: ev[4] === "" || ev[4] == null ? null : +ev[4], teamIndex: +ev[5],
+          form: (config[side].team[+ev[5]] || {}).form || "" };
         renderSide(side);
         if (type === "drag") return fill("{who} was dragged out!", a);
         if (side === "p1") return "Go! " + nameOf(a) + "!";
@@ -312,6 +310,7 @@
       }
       case "detailschange":
         v.species = b;
+        v.form = "";
         renderSide(side);
         return null;
       case "move": return fill("{who} used " + b + "!", a);

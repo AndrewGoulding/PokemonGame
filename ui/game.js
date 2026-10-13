@@ -23,7 +23,6 @@
     caught: new Set()   // species caught or owned, for the Repeat Ball
   };
 
-  const spriteUrl = (species) => "assets/sprites/pokemon/" + window.DEX[species].id + ".png";
   const partyLevel = () => Math.max(...state.party.map((r) => r.level));
   const canBattle = () => state.party.some((r) => !Party.isFainted(r));
 
@@ -45,7 +44,7 @@
     const gender = r.gender === "M" ? " ♂" : r.gender === "F" ? " ♀" : "";
     return '<button type="button" class="card' + (Party.isFainted(r) ? " fainted" : "") + '" data-index="' + i + '"' +
       (i === 0 ? " disabled" : "") + ' title="' + (i === 0 ? "Leads the party" : "Make this Pokémon lead") + '">' +
-      '<img src="' + spriteUrl(r.species) + '" alt="">' +
+      window.Screen.spriteTag(r.species, Party.form(r)) +
       '<div class="card-body">' +
         '<div class="card-top"><b>' + escapeHtml(Party.displayName(r)) + gender + "</b>" +
           (r.status ? '<span class="status ' + r.status + '">' + r.status + "</span>" : "") +
@@ -72,9 +71,9 @@
     }
   }
 
-  function renderSprite(species, extraClass) {
-    scene.innerHTML = '<div class="spotlight"><img class="big-sprite ' + (extraClass || "") + '" src="' +
-      spriteUrl(species) + '" alt="' + escapeHtml(species) + '"></div>';
+  function renderSprite(species, extraClass, form) {
+    scene.innerHTML = '<div class="spotlight">' + window.Screen.spriteTag(species, form,
+      'class="big-sprite ' + (extraClass || "") + '" alt="' + escapeHtml(species) + '"') + "</div>";
     return scene.querySelector(".big-sprite");
   }
 
@@ -83,7 +82,7 @@
   async function chooseStarter() {
     show("scene");
     scene.innerHTML = '<div class="starters">' + STARTERS.map((s) =>
-      '<figure><img src="' + spriteUrl(s) + '" alt=""><figcaption>' + s + "</figcaption></figure>").join("") + "</div>";
+      "<figure>" + window.Screen.spriteTag(s) + "<figcaption>" + s + "</figcaption></figure>").join("") + "</div>";
     await message("Welcome to the world of Pokémon!");
     const species = await ask("Which Pokémon will you choose as your partner?",
       STARTERS.map((s) => ({ label: s, value: s })));
@@ -167,7 +166,7 @@
   async function evolve(record, evo) {
     const name = Party.displayName(record);
     show("scene");
-    const img = renderSprite(record.species);
+    const img = renderSprite(record.species, "", Party.form(record));
     await message("What? " + name + " is evolving!");
     img.classList.add("evolving");
     // The player can press Stop while the animation plays.
