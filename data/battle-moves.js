@@ -196,6 +196,15 @@
     b.execMove(user, b.getActiveMove(b.sample(pool)), { bounced: true });
     return "done";
   };
+  // Nature Power: calls a move based on the terrain (Tri Attack with no terrain,
+  // as on Wi-Fi in Gen 6).
+  const NATURE_POWER = { ElectricTerrain: "Thunderbolt", GrassyTerrain: "Energy Ball", MistyTerrain: "Moonblast" };
+  status.naturepower = (b, user, target) => {
+    const name = NATURE_POWER[b.field.terrain] || "Tri Attack";
+    b.add("-activate", user, "move: Nature Power", name);
+    b.execMove(user, b.getActiveMove(name), { bounced: true, target });
+    return "done";
+  };
   status.copycat = (b, user) => {
     const id = b.lastMoveGlobal;
     if (!id) return false;

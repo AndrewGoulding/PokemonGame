@@ -143,7 +143,7 @@
       this.original = null;
       this.gender = Pokemon.rollGender(battle, set.gender, dex.gender);
       this._hit = { typeMod: 0, crit: false };
-      const ppUps = set.ppUps != null ? set.ppUps : 3;
+      const ppUps = set.ppUps != null ? set.ppUps : 0; // PP Ups used on every move (0–3)
       this.moves = [];
       for (const n of (set.moves || []).slice(0, 4)) {
         const key = MOVE_INDEX[toID(n)];

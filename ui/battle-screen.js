@@ -343,6 +343,7 @@
       }
       case "-end": return fill(lookup(VOLATILE_END, effectId(b), null), a);
       case "-activate":
+        if (effectId(b) === "naturepower") return "Nature Power turned into " + c + "!";
         return fill(lookup(ACTIVATE, effectId(b), "{who}'s " + effectName(b) + " activated!"), a);
       case "-prepare": return fill(lookup(PREPARE, effectId(b), "{who} is getting ready to use " + b + "!"), a);
       case "-singleturn": return effectId(b) === "focuspunch" ? fill("{who} is tightening its focus!", a) : null;

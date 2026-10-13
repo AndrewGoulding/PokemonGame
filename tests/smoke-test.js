@@ -88,4 +88,54 @@ for (let seed = 1; seed <= BATTLES; seed++) {
   assert(battle.ended, "second hit of Dual Chop should have knocked out Pikachu");
 }
 
+// Moves start at their base PP unless the set asks for PP Ups.
+{
+  const battle = new Battle({
+    seed: 1,
+    p1: { name: "A", team: [{ species: "Pelipper", level: 50, moves: ["Rain Dance"] },
+                            { species: "Pelipper", level: 50, moves: ["Rain Dance"], ppUps: 3 }] },
+    p2: { name: "B", team: [{ species: "Snorlax", level: 50, moves: ["Splash"] }] }
+  });
+  const [plain, boosted] = battle.sides.p1.pokemon;
+  assert.strictEqual(plain.moves[0].maxpp, 5, "Rain Dance should have 5 PP");
+  assert.strictEqual(boosted.moves[0].maxpp, 8, "Rain Dance with 3 PP Ups should have 8 PP");
+}
+
+// Nature Power calls Tri Attack with no terrain, and the terrain's move otherwise.
+for (const [setup, called] of [[null, "Tri Attack"], ["Electric Terrain", "Thunderbolt"],
+  ["Grassy Terrain", "Energy Ball"], ["Misty Terrain", "Moonblast"]]) {
+  const battle = new Battle({
+    seed: 1,
+    p1: { name: "A", team: [{ species: "Ludicolo", level: 50, moves: ["Nature Power"] }] },
+    p2: { name: "B", team: [{ species: "Snorlax", level: 50, moves: [setup || "Splash"] }] }
+  });
+  battle.start();
+  if (setup) {
+    battle.choose("p1", { type: "move", move: 0 });
+    battle.choose("p2", { type: "move", move: 0 });
+  }
+  const before = battle.events.length;
+  battle.choose("p1", { type: "move", move: 0 });
+  battle.choose("p2", { type: "move", move: 0 });
+  const turn = battle.events.slice(before);
+  assert(turn.some((ev) => ev[0] === "move" && ev[1] === "p1a: Ludicolo" && ev[2] === called),
+    "Nature Power should call " + called + (setup ? " in " + setup : ""));
+  assert(turn.some((ev) => ev[0] === "-damage" && ev[1] === "p2a: Snorlax"), "Nature Power did no damage");
+  assert(!turn.some((ev) => ev[0] === "-fail" && ev[1] === "p1a: Ludicolo"), "Nature Power failed");
+}
+
+// Wring Out works against a full-HP target (and hits hardest there).
+{
+  const battle = new Battle({
+    seed: 1,
+    p1: { name: "A", team: [{ species: "Tentacruel", level: 50, moves: ["Wring Out"] }] },
+    p2: { name: "B", team: [{ species: "Snorlax", level: 50, moves: ["Splash"] }] }
+  });
+  battle.start();
+  battle.choose("p1", { type: "move", move: 0 });
+  battle.choose("p2", { type: "move", move: 0 });
+  assert(battle.events.some((ev) => ev[0] === "-damage" && ev[1] === "p2a: Snorlax"), "Wring Out did no damage");
+  assert(!battle.events.some((ev) => ev[0] === "-fail" && ev[1] === "p1a: Tentacruel"), "Wring Out failed");
+}
+
 console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns)");
