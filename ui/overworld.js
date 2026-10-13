@@ -163,11 +163,11 @@
 
   function updatePerson(p) {
     if (p.move) {
-      p.move.t += WALK_SPEED;
+      p.move.t += p.move.speed || WALK_SPEED;
       if (p.move.t >= TILE) { p.x = p.move.tx; p.y = p.move.ty; p.move = null; }
       return;
     }
-    if (--p.timer > 0) return;
+    if (scene || --p.timer > 0) return;
     p.timer = 90 + Math.floor(Math.random() * 150);
     if (p.def.movement === "look_around") { p.facing = ["up", "down", "left", "right"][Math.floor(Math.random() * 4)]; return; }
     const dirs = WANDER_DIRS[p.def.movement];
@@ -186,8 +186,9 @@
   // ---------- Player movement ----------
 
   function startStep(r, dir) {
-    me.move = { tx: r.x, ty: r.y, tmap: r.map, dir, t: 0, jump: !!r.jump, warp: r.warp || null,
-      dist: r.jump ? TILE * 2 : TILE, speed: r.jump ? WALK_SPEED : (runHeld() ? RUN_SPEED : WALK_SPEED) };
+    const run = !r.jump && runHeld();
+    me.move = { tx: r.x, ty: r.y, tmap: r.map, dir, t: 0, jump: !!r.jump, warp: r.warp || null, run,
+      dist: r.jump ? TILE * 2 : TILE, speed: run ? RUN_SPEED : WALK_SPEED };
     me.parity ^= 1;
   }
 
@@ -241,6 +242,102 @@
     if (r.ok) { me.map = r.map; me.x = r.x; me.y = r.y; savePosition(); }
   }
 
+  // ---------- Cutscenes ----------
+  //
+  // FireRed movement scripts (walk_up, walk_in_place_faster_down, delay_16,
+  // emote_exclamation_mark, set_invisible ...) played for the player and people
+  // side by side, like applymovement ... waitmovement.
+
+  let scene = null;   // { tracks: [{ who, moves, i, wait }], resolve }
+
+  const actor = (who) => (who === "player" ? me : people.find((p) => p.def.localId === who));
+  const SPEEDS = { "": WALK_SPEED, fast_: 2, faster_: 4, fastest_: 8, slow_: 0.5 };
+
+  // Starts a movement command; returns how many frames to wait on top of any step.
+  function startCommand(who, cmd) {
+    const a = actor(who);
+    if (!a) return 0;
+    let m;
+    if ((m = /^walk_(fast_|faster_|fastest_|slow_)?(up|down|left|right)$/.exec(cmd))) {
+      const dir = m[2], [dx, dy] = World.DIRS[dir], speed = SPEEDS[m[1] || ""];
+      a.facing = dir;
+      if (a === me) { me.move = { tx: me.x + dx, ty: me.y + dy, tmap: me.map, dir, t: 0, dist: TILE, speed, scripted: true }; me.parity ^= 1; }
+      else a.move = { tx: a.x + dx, ty: a.y + dy, t: 0, speed };
+      return 0;
+    }
+    if ((m = /^jump_2_(up|down|left|right)$/.exec(cmd))) {
+      const dir = m[1], [dx, dy] = World.DIRS[dir];
+      a.facing = dir;
+      if (a === me) me.move = { tx: me.x + dx * 2, ty: me.y + dy * 2, tmap: me.map, dir, t: 0, dist: TILE * 2, speed: WALK_SPEED, jump: true, scripted: true };
+      else { a.x += dx * 2; a.y += dy * 2; }
+      return 0;
+    }
+    if ((m = /^walk_in_place_(fast_|faster_)?(up|down|left|right)$/.exec(cmd))) {
+      a.facing = m[2];
+      a.inPlace = { "": 16, fast_: 8, faster_: 4 }[m[1] || ""];
+      return a.inPlace;
+    }
+    if ((m = /^face_(up|down|left|right)$/.exec(cmd))) { a.facing = m[1]; return 0; }
+    if (cmd === "face_player" || cmd === "face_away_player") {
+      const dx = me.x - a.x, dy = me.y - a.y;
+      const toward = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up");
+      a.facing = cmd === "face_player" ? toward : World.OPPOSITE[toward];
+      return 0;
+    }
+    if ((m = /^delay_(\d+)$/.exec(cmd))) return +m[1];
+    if ((m = /^emote_(exclamation|question)_mark$/.exec(cmd))) { a.emote = { mark: m[1] === "question" ? "?" : "!" }; return 40; }
+    if (cmd === "set_invisible") { a.hidden = true; return 0; }
+    if (cmd === "set_visible") { a.hidden = false; return 0; }
+    return 0;   // anything else (sounds, door animations) is skipped
+  }
+
+  function runScene() {
+    let busy = false;
+    for (const t of scene.tracks) {
+      const a = actor(t.who);
+      if (a && a.inPlace > 0) a.inPlace--;
+      if (t.wait > 0 && --t.wait > 0) { busy = true; continue; }
+      if (a && a.emote && t.wait === 0 && t.emoting) { a.emote = null; t.emoting = false; }
+      if (a && a.move) { busy = true; continue; }
+      if (t.i >= t.moves.length) continue;
+      const cmd = t.moves[t.i++];
+      t.wait = startCommand(t.who, cmd);
+      t.emoting = /^emote_/.test(cmd);
+      busy = true;
+    }
+    if (!busy) { const done = scene.resolve; scene = null; done(); }
+  }
+
+  // Plays movement scripts side by side: act([{ who: "player" | localId, moves: [...] }]).
+  function act(list) {
+    return new Promise((resolve) => {
+      scene = { tracks: list.map((t) => ({ who: t.who, moves: [].concat(t.moves), i: 0, wait: 0 })), resolve };
+    });
+  }
+
+  // Someone a story flag normally hides, put on the map for a scene.
+  function addObject(localId, pos) {
+    const def = World.map(me.map).people.find((p) => p.localId === localId);
+    if (!def) return;
+    people = people.filter((p) => p.def.localId !== localId);
+    people.push({ def: Object.assign({}, def, { x: pos.x, y: pos.y }), x: pos.x, y: pos.y, ox: pos.x, oy: pos.y,
+      move: null, facing: pos.facing || "down", timer: 60 });
+  }
+  const removeObject = (localId) => { people = people.filter((p) => p.def.localId !== localId); };
+
+  // Fades to black, moves the player (a scene's warp), and fades back in.
+  function fadeOut() { return new Promise((resolve) => { fadeDir = 1; afterFade = resolve; }); }
+  async function teleport(loc) {
+    if (!fade) await fadeOut();
+    me.map = loc.map; me.x = loc.x; me.y = loc.y; me.facing = loc.facing || "down";
+    me.move = null; me.hidden = false; me.emote = null;
+    loadPeople();
+    await preloadMap(me.map);
+    savePosition();
+    hint();
+    await new Promise((resolve) => { fadeDir = -1; afterFade = resolve; });
+  }
+
   // ---------- Talking ----------
 
   const fillText = (s) => s.replace(/\{PLAYER\}/g, ctx.player.name).replace(/\{RIVAL\}/g, ctx.rivalName || "Blue");
@@ -292,17 +389,25 @@
       }
     }
     for (const p of people) updatePerson(p);
+    if (scene) runScene();
     if (me.move) {
       me.move.t += me.move.speed;
-      if (me.move.t >= me.move.dist) finishStep();
+      if (me.move.t >= me.move.dist) {
+        if (me.move.scripted) { me.x = me.move.tx; me.y = me.move.ty; me.move = null; savePosition(); }
+        else { finishStep(); me.moving = true; }
+      }
       return;
     }
+    // Still on the move from last frame: turning doesn't stop you (Gen 3).
+    const wasMoving = me.moving;
+    me.moving = false;
     if (paused || !resolveExplore) return;
     if (pressedMenu) { pressedMenu = false; return finish({ type: "menu" }); }
     if (pressedA) { pressedA = false; return interact(); }
     const dir = heldDir();
     if (!dir) { me.turnTimer = 0; return; }
-    if (dir !== me.facing) { me.facing = dir; me.turnTimer = TURN_FRAMES; return; }
+    if (dir !== me.facing && !wasMoving) { me.facing = dir; me.turnTimer = TURN_FRAMES; return; }
+    me.facing = dir;
     if (me.turnTimer > 0) { me.turnTimer--; return; }
     const r = World.step({ map: me.map, x: me.x, y: me.y }, dir, occupiedForPlayer);
     if (r.warp && !r.ok) { warpTo(r.warp); return; }
@@ -374,26 +479,45 @@
     }
 
     // People and the player, back to front.
-    const sprites = people.map((p) => {
+    const emotes = [];
+    const sprites = people.filter((p) => !p.hidden).map((p) => {
       let x = p.x * TILE, y = p.y * TILE;
       if (p.move) {
         const [dx, dy] = World.DIRS[p.facing];
         x = p.move.tx * TILE - dx * (TILE - p.move.t);
         y = p.move.ty * TILE - dy * (TILE - p.move.t);
       }
-      const walking = !!p.move && p.move.t < TILE / 2;
+      if (p.emote) emotes.push([p.emote, x - camX, y - camY - p.def.height + TILE]);
+      const walking = (!!p.move && p.move.t < TILE / 2) || (p.inPlace > 0 && p.inPlace % 16 >= 8);
       return { y, draw: () => drawSprite(p.def.sprite, p.def.width, p.def.height,
         frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), p.facing === "right", x - camX, y - camY) };
     });
-    const walking = !!me.move && (me.move.t % TILE) < TILE / 2;
-    sprites.push({ y: py, draw: () => drawSprite("player_" + (ctx.player.look || "red"), 16, 32,
-      frameFor(me.facing, walking, me.parity, 9), me.facing === "right", px - camX, py - camY - hop) });
+    if (me.emote) emotes.push([me.emote, px - camX, py - camY - 16]);
+    const look = "player_" + (ctx.player.look || "red");
+    let sheet = look, frame;
+    if (me.move && me.move.run) {
+      // FireRed's running sheet: a leaning pose for 5 frames, then a stride for 3.
+      sheet = look + "_run";
+      const pose = { down: 0, up: 3, left: 6, right: 6 }[me.facing];
+      frame = me.move.t / RUN_SPEED < 5 ? pose : pose + 1 + me.parity;
+    } else {
+      frame = frameFor(me.facing, !!me.move && (me.move.t % TILE) < TILE / 2, me.parity, 9);
+    }
+    if (!me.hidden) sprites.push({ y: py, draw: () => drawSprite(sheet, 16, 32, frame, me.facing === "right", px - camX, py - camY - hop) });
     sprites.sort((a, b) => a.y - b.y).forEach((s) => s.draw());
 
     for (const [name, ox, oy] of layers) {
       if (!World.map(name).top) continue;
       const img = mapImage(name, "top");
       if (ready(img)) g.drawImage(img, ox - camX, oy - camY);
+    }
+    // "!" and "?" bubbles over someone's head.
+    for (const [e, x, y] of emotes) {
+      g.fillStyle = "#fff"; g.strokeStyle = "#000"; g.lineWidth = 1;
+      g.fillRect(x + 3.5, y - 13.5, 10, 12); g.strokeRect(x + 3.5, y - 13.5, 10, 12);
+      g.fillStyle = e.mark === "!" ? "#d0302f" : "#2b6fd6";
+      g.font = "bold 10px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+      g.fillText(e.mark, x + 8.5, y - 7);
     }
     if (fade) {
       g.fillStyle = "rgba(0,0,0," + fade / FADE_FRAMES + ")";
@@ -429,6 +553,8 @@
     const loc = ctx.player.location;
     const sameMap = me.map === loc.map;
     me.map = loc.map; me.x = loc.x; me.y = loc.y; me.facing = loc.facing || me.facing || "down"; me.move = null;
+    me.hidden = false; me.emote = null;
+    if (fade && !fadeDir) fadeDir = -1;
     // Re-check who's visible (a story event may have changed that), keeping
     // people where they were if we never left the map.
     const before = new Map(people.map((p) => [p.def.id, p]));
@@ -439,7 +565,7 @@
         return old && old.ox === p.ox && old.oy === p.oy ? Object.assign(old, { def: p.def }) : p;
       });
     }
-    await preloadMap(me.map);
+    await Promise.all([preloadMap(me.map), spriteImage("player_" + (ctx.player.look || "red") + "_run").loaded]);
     showControls();
     hint();
     ignoreInputUntil = performance.now() + 200;
@@ -460,6 +586,7 @@
 
   window.Overworld = {
     explore, hide, read: (pages) => read(pages), forceStep, refreshPeople: () => loadPeople(),
+    act, addObject, removeObject, teleport,
     position: () => ({ map: me.map, x: me.x, y: me.y, facing: me.facing })
   };
 })();

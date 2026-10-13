@@ -708,7 +708,32 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
   assert.strictEqual(oldMan.sprite, "old_man_1");
   assert.strictEqual(oldMan.alt.sprite, "old_man_lying_down");
   assert.strictEqual(WORLD_MAPS.ViridianCity.people.find((p) => p.flag === "FLAG_HIDE_VIRIDIAN_CITY_POTION").item, "potion");
+  // Oak's walk to the lab, replayed from FireRed's movement scripts: Oak comes up
+  // to just below you, then you both end up at the lab door (16,13).
+  const replay = (pos, label) => {
+    const moves = WORLD_MOVEMENTS[label];
+    assert(moves, "missing movement " + label);
+    for (const cmd of moves) {
+      const m = /^walk_(up|down|left|right)$/.exec(cmd);
+      if (m) { pos.x += World.DIRS[m[1]][0]; pos.y += World.DIRS[m[1]][1]; }
+    }
+    return pos;
+  };
+  for (const [side, x] of [["Left", 12], ["Right", 13]]) {
+    const oak = replay({ x: 10, y: 8 }, "PalletTown_Movement_OakEnter" + side);
+    assert.deepStrictEqual(oak, { x, y: 2 }, "Oak stops below the player (" + side + ")");
+    replay(oak, "PalletTown_Movement_OakWalkToLab" + side);
+    const me_ = replay({ x, y: 1 }, "PalletTown_Movement_PlayerWalkToLab" + side);
+    assert.deepStrictEqual(replay(oak, "PalletTown_Movement_OakEnterLab"), { x: 16, y: 13 });
+    assert.deepStrictEqual(replay(me_, "PalletTown_Movement_PlayerEnterLab"), { x: 16, y: 13 });
+  }
+  assert.deepStrictEqual(replay({ x: 6, y: 12 }, "PalletTown_ProfessorOaksLab_Movement_PlayerEnter"), { x: 6, y: 4 }, "you end up in front of Oak's desk");
+  assert(WORLD_MAPS.PalletTown.people.some((p) => p.localId === "LOCALID_PALLET_PROF_OAK"));
+  for (const id of ["LOCALID_OAKS_LAB_PROF_OAK", "LOCALID_OAKS_LAB_RIVAL"]) assert(WORLD_MAPS.PalletTown_ProfessorOaksLab.people.some((p) => p.localId === id));
+  assert(fs.existsSync(path.join(root, "assets/world/sprites/player_red_run.png")), "running sprite sheet");
+
   const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  for (const [, label] of gameJs.matchAll(/M\("(\w+)"\)/g)) assert(WORLD_MOVEMENTS[label], "missing movement " + label);
   for (const [, label] of gameJs.matchAll(/T\("(\w+)"\)/g)) assert(WORLD_TEXT[label], "missing story text " + label);
   // Walls, people and water block.
   assert(!World.step({ map: "PalletTown", x: 6, y: 9 }, "left", () => true).ok, "people block");

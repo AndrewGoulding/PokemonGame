@@ -433,6 +433,8 @@
 
   const STAT_LABELS = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
 
+  const sum = (o) => Object.keys(STAT_LABELS).reduce((t, k) => t + ((o || {})[k] | 0), 0);
+
   function summaryHtml(r) {
     const stats = Party.stats(r);
     const nature = NATURES[r.nature] || {};
@@ -448,10 +450,12 @@
         "<div>HP " + r.hp + " / " + stats.hp + " · Exp. to next level: " + toNext.toLocaleString("en-US") + "</div>" +
         "<div>Caught in " + article(Bag.name(r.ball || "poke-ball")) + " · Friendship " + r.happiness + "</div>" +
       "</div></div>" +
-      '<table class="stats"><tr><th></th><th>Stat</th><th>EVs</th></tr>' +
+      '<table class="stats"><tr><th></th><th>Stat</th><th>IVs</th><th>EVs</th></tr>' +
       Object.keys(STAT_LABELS).map((k) => "<tr><td>" + STAT_LABELS[k] +
         (nature.plus === k ? ' <span class="up">▲</span>' : nature.minus === k ? ' <span class="down">▼</span>' : "") +
-        "</td><td>" + stats[k] + "</td><td>" + (r.evs[k] || 0) + "</td></tr>").join("") + "</table>" +
+        "</td><td>" + stats[k] + "</td><td" + ((r.ivs[k] | 0) === 31 ? ' class="max"' : "") + ">" + (r.ivs[k] | 0) +
+        "</td><td>" + (r.evs[k] || 0) + "</td></tr>").join("") +
+      '<tr class="total"><td>Total</td><td></td><td>' + sum(r.ivs) + "/186</td><td>" + sum(r.evs) + "/510</td></tr></table>" +
       '<div class="summary-moves">' + r.moves.map((m) => {
         const d = MOVES[m.name];
         return '<div class="type-' + d.type + '"><b>' + escapeHtml(m.name) + "</b><span>" + d.type + " · " +
@@ -861,7 +865,7 @@
     "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerLeft",
     "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerMid",
     "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerRight",
-    "Route1_EventScript_MartClerk",
+    "Route1_EventScript_MartClerk", "PalletTown_ProfessorOaksLab_EventScript_LeaveStarterSceneTrigger",
     "PalletTown_ProfessorOaksLab_EventScript_Rival", "PalletTown_ProfessorOaksLab_EventScript_ProfOak",
     "ViridianCity_EventScript_RoadBlocked", "ViridianCity_EventScript_GymDoorLocked",
     "ViridianCity_EventScript_TutorialTriggerLeft", "ViridianCity_EventScript_TutorialTriggerRight",
@@ -886,7 +890,8 @@
         : Object.assign({}, person.alt, { x: 21, y: 11, movement: "face_down" });
     }
     switch (person.flag) {
-      case "FLAG_HIDE_OAK_IN_PALLET_TOWN": return false;   // no walk-to-the-lab cutscene
+      case "FLAG_HIDE_OAK_IN_PALLET_TOWN": return false;   // only appears for his walk to the lab
+      case "FLAG_HIDE_OAK_IN_HIS_LAB": return !!(f.oakInLab || f.starter);
       case "FLAG_HIDE_POKEDEX": return false;              // the Pokédex is always yours here
       case "FLAG_HIDE_MG_DELIVERYMEN": return false;       // no Mystery Gift
       case "FLAG_HIDE_RIVAL_IN_LAB": return !f.rivalLabBattle;
@@ -921,6 +926,7 @@
     if (STARTER_BALLS[script]) {
       const ball = STARTER_BALLS[script];
       if (f.starter) { await say("That's Prof. Oak's last Pokémon."); return; }
+      if (!f.oakInLab) { await say(T("PalletTown_ProfessorOaksLab_Text_ThoseArePokeBalls")); return; }
       if (!(await confirm("So! You want the " + ball.kind + " Pokémon, " + ball.species + "?"))) return;
       Player.receive(player, Party.create(ball.species, STARTER_LEVEL));
       f.starter = ball.species;
@@ -949,14 +955,19 @@
 
       case "PalletTown_EventScript_OakTriggerLeft":
       case "PalletTown_EventScript_OakTriggerRight":
-        if (player.party.length) return;
-        await say(["Oak: Hey! Wait!\nDon't go out!",
-          "Oak: It's unsafe!\nWild Pokémon live in tall grass!",
-          "You need your own Pokémon for\nyour protection.",
-          "Come to my lab, just south of here.\nI'll give you one!"]);
-        Overworld.forceStep("down");
+        if (player.party.length || f.oakInLab) return;
+        await oakWalksYouToTheLab(script.endsWith("Left") ? "Left" : "Right");
         return;
 
+      // Leaving the lab before choosing a Pokémon.
+      case "PalletTown_ProfessorOaksLab_EventScript_LeaveStarterSceneTrigger":
+        if (f.oakInLab && !f.starter) {
+          await say(T("PalletTown_ProfessorOaksLab_Text_OakHeyDontGoAwayYet"));
+          Overworld.forceStep("up");
+          return;
+        }
+        // with a Pokémon, the rival battle trigger on the same tile takes over
+      // falls through
       case "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerLeft":
       case "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerMid":
       case "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerRight": {
@@ -971,7 +982,8 @@
 
       // In the lab, so not "Gramps isn't around" (that's from before Oak walks you there).
       case "PalletTown_ProfessorOaksLab_EventScript_Rival":
-        if (!f.starter) await say(["{RIVAL}: Heh, I don't need to be\ngreedy like you. I'm mature!", "Go ahead and choose, {PLAYER}!"]);
+        if (!f.oakInLab && !f.starter) await say(T("PalletTown_ProfessorOaksLab_Text_RivalGrampsIsntAround"));
+        else if (!f.starter) await say(["{RIVAL}: Heh, I don't need to be\ngreedy like you. I'm mature!", "Go ahead and choose, {PLAYER}!"]);
         else await say("{RIVAL}: My Pokémon looks a lot\ntougher than yours.");
         return;
 
@@ -1061,6 +1073,46 @@
         await say("{PLAYER} received a Potion.");
         return;
     }
+  }
+
+  // ---------- Prof. Oak's walk to the lab ----------
+  //
+  // FireRed's scene: stepping into the grass north of Pallet Town without a
+  // Pokémon, Oak calls out, walks up, and leads you to his lab, where your
+  // rival is waiting. Movements are FireRed's (window.WORLD_MOVEMENTS).
+
+  const M = (label) => window.WORLD_MOVEMENTS[label];
+  const OAK = "LOCALID_PALLET_PROF_OAK", LAB_OAK = "LOCALID_OAKS_LAB_PROF_OAK", LAB_RIVAL = "LOCALID_OAKS_LAB_RIVAL";
+
+  async function oakWalksYouToTheLab(side) {
+    await say(T("PalletTown_Text_OakDontGoOut"));
+    await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+    await Overworld.act([{ who: "player", moves: M("Common_Movement_ExclamationMark") }]);
+    Overworld.addObject(OAK, { x: 10, y: 8, facing: "up" });
+    await Overworld.act([{ who: OAK, moves: M("PalletTown_Movement_OakEnter" + side) }]);
+    await say(T("PalletTown_Text_OakGrassUnsafeNeedMon"));
+    await Overworld.act([
+      { who: OAK, moves: M("PalletTown_Movement_OakWalkToLab" + side) },
+      { who: "player", moves: M("PalletTown_Movement_PlayerWalkToLab" + side) }]);
+    await Overworld.act([
+      { who: OAK, moves: M("PalletTown_Movement_OakEnterLab") },
+      { who: "player", moves: M("PalletTown_Movement_PlayerEnterLab") }]);
+    player.flags.oakInLab = true;
+    await Overworld.teleport({ map: "PalletTown_ProfessorOaksLab", x: 6, y: 12, facing: "up" });
+
+    // In the lab: Oak walks in ahead of you to his desk.
+    Overworld.removeObject(LAB_OAK);
+    Overworld.addObject(LAB_OAK, { x: 6, y: 11, facing: "up" });
+    await Overworld.act([{ who: LAB_OAK, moves: M("PalletTown_ProfessorOaksLab_Movement_OakEnter") }]);
+    Overworld.removeObject(LAB_OAK);
+    Overworld.refreshPeople();
+    await Overworld.act([{ who: "player", moves: M("PalletTown_ProfessorOaksLab_Movement_PlayerEnter") }]);
+    await Overworld.act([{ who: LAB_RIVAL, moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
+    await say(T("PalletTown_ProfessorOaksLab_Text_RivalFedUpWithWaiting"));
+    await say(T("PalletTown_ProfessorOaksLab_Text_OakThreeMonsChooseOne"));
+    await Overworld.act([{ who: LAB_RIVAL, moves: M("PalletTown_ProfessorOaksLab_Movement_RivalReact") }]);
+    await say(T("PalletTown_ProfessorOaksLab_Text_RivalNoFairWhatAboutMe"));
+    await say(T("PalletTown_ProfessorOaksLab_Text_OakBePatientRival"));
   }
 
   // A Pokémon Center nurse. Blacking out later brings you back to this one.

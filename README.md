@@ -6,8 +6,9 @@ no build step and no dependencies.
 ## Running it
 
 Open `index.html` in a browser and start a **New game**: enter your name, pick
-boy or girl, and you wake up in your bedroom in Pallet Town. Head to PROF. OAK's
-lab (south of your house) and pick Bulbasaur, Squirtle or Charmander from the
+boy or girl, and you wake up in your bedroom in Pallet Town. Try to leave town
+through the tall grass to the north and Prof. Oak stops you and walks you to his
+lab, where your rival is waiting; pick Bulbasaur, Squirtle or Charmander from the
 Poké Balls on his table. Your rival takes the one that beats yours and battles
 you on the way out. Then Route 1's tall grass, north of town, has FireRed's wild
 Pokémon. Mom heals your party, and the PC in your bedroom stores items (there's a
@@ -21,11 +22,11 @@ you return if you black out), and its PC holds both Pokémon and items. There's
 also a move tutor who teaches Dream Eater once, a school and the Nickname house.
 Route 2, Route 22 and the Gym (locked until you have seven badges) aren't built yet.
 
-**Controls**: arrow keys or WASD to walk, hold Shift (or X) to run (indoors too), Z / Space /
+**Controls**: arrow keys or WASD to walk, hold Shift (or X / B) to run (indoors too, with FireRed's running animation), Z / Space /
 Enter to talk or read signs, Esc or M for the menu. On a phone, use the D-pad
 and A / Run / Menu buttons under the text box.
 
-The **menu** has your Pokémon (tap one for its summary: stats, EVs, nature,
+The **menu** has your Pokémon (tap one for its summary: stats, IVs, EVs, nature,
 moves; make it lead; use, give or take items), the Bag (medicine, evolution
 stones, Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items), the Pokédex,
 your trainer card (save, download or load a save file), and **Services**: the
@@ -76,10 +77,13 @@ connected maps you walk straight into, and tall grass encounters at the map's
 rate (Random() % 2880 < rate × 16) using the 20/20/10/10/10/10/5/5/4/4/1/1
 encounter slots. Signs and people say their FireRed text (with names in normal
 case: "Viridian City", not "VIRIDIAN CITY"), and item balls give their item.
-Scripted events (Mom healing, the PCs, the starter Poké Balls, OAK stopping you
-at the edge of town, the rival battle, the Route 1 Potion, Oak's Parcel, the
+Scripted events (Mom healing, the PCs, the starter Poké Balls, Oak walking you
+to his lab, the rival battle, the Route 1 Potion, Oak's Parcel, the
 Viridian old man, the nurse, the move tutor) are in `ui/game.js`; their FireRed
-lines come from `window.WORLD_TEXT`, which the converter writes alongside the maps.
+lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scripts
+(`walk_up`, `walk_in_place_faster_down`, `emote_exclamation_mark`, ...) from
+`window.WORLD_MOVEMENTS`; the converter writes both alongside the maps. Running
+uses the frames from `assets/sprites/overworld/<red|green>_surf_run.png`.
 
 ## Progression rules (Gen 6)
 
