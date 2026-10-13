@@ -10,9 +10,10 @@ boy or girl, and you wake up in your bedroom in Pallet Town. Head to PROF. OAK's
 lab (south of your house) and pick Bulbasaur, Squirtle or Charmander from the
 Poké Balls on his table. Your rival takes the one that beats yours and battles
 you on the way out. Then Route 1's tall grass, north of town, has FireRed's wild
-Pokémon. Mom heals your party, and the PC in your bedroom stores Pokémon.
+Pokémon. Mom heals your party, and the PC in your bedroom stores items (there's a
+Potion in it to start).
 
-**Controls**: arrow keys or WASD to walk, hold Shift (or X) to run, Z / Space /
+**Controls**: arrow keys or WASD to walk, hold Shift (or X) to run (indoors too), Z / Space /
 Enter to talk or read signs, Esc or M for the menu. On a phone, use the D-pad
 and A / Run / Menu buttons under the text box.
 

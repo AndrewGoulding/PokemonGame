@@ -514,6 +514,15 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
   Player.addItem(p, "ultra-ball", 2);
   assert(Player.removeItem(p, "ultra-ball", 2) && !("ultra-ball" in p.bag));
 
+  // PC item storage starts with a Potion.
+  assert.deepStrictEqual(p.pcItems, { potion: 1 });
+  assert(Player.withdrawItem(p, "potion", 1) && !("potion" in p.pcItems));
+  assert.strictEqual(p.bag.potion, Player.STARTING_BAG.potion + 1);
+  assert(!Player.withdrawItem(p, "potion", 1), "nothing left to withdraw");
+  assert(Player.depositItem(p, "potion", 2) && p.pcItems.potion === 2);
+  assert(!Player.depositItem(p, "ultra-ball", 1), "can't deposit what you don't have");
+  assert.deepStrictEqual(Player.load(JSON.parse(Player.serialize(p))).player.pcItems, { potion: 2 });
+
   assert.strictEqual(Player.prizeMoney("Ace Trainer Vera", [{ level: 10 }, { level: 22 }]), 60 * 22);
   assert.strictEqual(Player.prizeMoney("Youngster Ben", [{ level: 5 }]), 80);
   p.money = 1000;
@@ -589,6 +598,8 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
   assert.strictEqual(Bag.name("tm101"), "TM101 Secret Power");
   assert.deepStrictEqual(Bag.machines().slice(99, 102), ["tm100", "tm101", "hm01"]);
   const oldSave = Object.assign(Player.create("T"), { party: [Party.create("Pidgey", 5, { rng })], bag: { "tm94-oras": 1 } });
+  delete oldSave.pcItems;
+  assert.deepStrictEqual(Player.load(JSON.parse(JSON.stringify(oldSave))).player.pcItems, { potion: 1 }, "old saves get the PC Potion");
   assert.deepStrictEqual(Player.load(oldSave).player.bag, { tm101: 1 }, "old saves get TM101");
   assert.strictEqual(Bag.pocket("hm03"), "TMs & HMs");
   for (const id of Bag.machines()) assert(ITEM_SPRITES[id], "no sprite for " + id);

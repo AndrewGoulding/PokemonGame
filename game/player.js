@@ -21,6 +21,8 @@
   const STARTING_BAG = { "poke-ball": 5, "potion": 3 };
   const MAX_MONEY = 9999999;
   const MAX_ITEM_COUNT = 999;
+  // The item storage in your PC starts with a Potion, as in FireRed.
+  const STARTING_PC_ITEMS = { "potion": 1 };
   // Where a new game starts (your bedroom) and where old saves from before the
   // overworld appear (outside your house).
   const NEW_GAME_LOCATION = { map: "PalletTown_PlayersHouse_2F", x: 6, y: 6, facing: "down" };
@@ -46,6 +48,7 @@
       party: [],
       boxes: Array.from({ length: BOX_COUNT }, () => []),
       bag: Object.assign({}, STARTING_BAG),
+      pcItems: Object.assign({}, STARTING_PC_ITEMS),
       pokedex: { seen: [], caught: [] },
       badges: [],
       flags: {},
@@ -125,6 +128,21 @@
     return true;
   }
 
+  // PC item storage: moves items between the bag and the PC.
+  function depositItem(player, item, n) {
+    if (!removeItem(player, item, n)) return false;
+    player.pcItems[item] = Math.min(MAX_ITEM_COUNT, (player.pcItems[item] || 0) + n);
+    return true;
+  }
+
+  function withdrawItem(player, item, n) {
+    if ((player.pcItems[item] || 0) < n) return false;
+    player.pcItems[item] -= n;
+    if (player.pcItems[item] <= 0) delete player.pcItems[item];
+    addItem(player, item, n);
+    return true;
+  }
+
   function addMoney(player, amount) {
     player.money = Math.max(0, Math.min(MAX_MONEY, player.money + Math.floor(amount)));
   }
@@ -198,6 +216,12 @@
       item = RENAMED[item] || item;
       if (window.ITEMS[item] && n > 0) player.bag[item] = Math.min(MAX_ITEM_COUNT, n | 0);
     }
+    // Saves from before PC item storage get its starting Potion.
+    player.pcItems = {};
+    for (let [item, n] of Object.entries(data.pcItems || STARTING_PC_ITEMS)) {
+      item = RENAMED[item] || item;
+      if (window.ITEMS[item] && n > 0) player.pcItems[item] = Math.min(MAX_ITEM_COUNT, n | 0);
+    }
     const dex = data.pokedex || {};
     for (const s of dex.seen || []) markSeen(player, s);
     for (const s of dex.caught || []) markCaught(player, s);
@@ -224,8 +248,8 @@
   }
 
   window.Player = {
-    VERSION, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG, NEW_GAME_LOCATION, HOME,
+    VERSION, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG, STARTING_PC_ITEMS, NEW_GAME_LOCATION, HOME,
     create, markSeen, markCaught, hasCaught, receive, deposit, withdraw, release,
-    itemCount, addItem, removeItem, addMoney, prizeMoney, blackoutLoss, serialize, load
+    itemCount, addItem, removeItem, depositItem, withdrawItem, addMoney, prizeMoney, blackoutLoss, serialize, load
   };
 })();

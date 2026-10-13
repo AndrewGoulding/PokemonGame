@@ -601,7 +601,61 @@
 
   // ---------- PC ----------
 
+  // A PC: Pokémon storage (Bill's PC) and item storage (your own PC).
   async function pc() {
+    for (;;) {
+      const v = await ask("Which PC should be accessed?", [
+        { label: "Bill's PC", value: "boxes", className: "action" },
+        { label: player.name + "'s PC", value: "items", className: "action" },
+        back("Log off")]);
+      if (v === "back") return;
+      if (v === "boxes") await pokemonStorage();
+      else await itemStorage();
+    }
+  }
+
+  async function itemStorage() {
+    for (;;) {
+      const stored = Object.keys(player.pcItems).length;
+      const v = await ask("What would you like to do?", [
+        { label: "Withdraw item", value: "withdraw", className: "action" },
+        { label: "Deposit item", value: "deposit", className: "action" },
+        { label: "Toss item", value: "toss", className: "action" },
+        back("Log off")]);
+      if (v === "back") return;
+      if (v === "deposit") {
+        const items = Object.keys(player.bag).filter((id) => !Bag.isMachine(id));
+        if (!items.length) { await message("There are no items in your bag to store."); continue; }
+        const p = await pick("What would you like to deposit?", '<div class="rows">' +
+          items.map((id) => itemRow(id, "×" + player.bag[id])).join("") + "</div>", [back()]);
+        if (p === "back") continue;
+        const n = player.bag[p.pick] > 1 ? await chooseQuantity("Deposit how many?", player.bag[p.pick]) : 1;
+        if (!n) continue;
+        Player.depositItem(player, p.pick, n);
+        await message("Stored " + n + " × " + Bag.name(p.pick) + " in the PC.");
+      } else {
+        if (!stored) { await message("There are no items stored in the PC."); continue; }
+        const p = await pick(v === "toss" ? "What would you like to toss?" : "What would you like to withdraw?", '<div class="rows">' +
+          Object.keys(player.pcItems).map((id) => itemRow(id, "×" + player.pcItems[id])).join("") + "</div>", [back()]);
+        if (p === "back") continue;
+        const have = player.pcItems[p.pick];
+        const n = have > 1 ? await chooseQuantity((v === "toss" ? "Toss" : "Withdraw") + " how many?", have) : 1;
+        if (!n) continue;
+        if (v === "toss") {
+          if (!(await confirm("Throw away " + n + " × " + Bag.name(p.pick) + "?"))) continue;
+          player.pcItems[p.pick] -= n;
+          if (player.pcItems[p.pick] <= 0) delete player.pcItems[p.pick];
+          await message("Threw away " + n + " × " + Bag.name(p.pick) + ".");
+        } else {
+          Player.withdrawItem(player, p.pick, n);
+          await message("Withdrew " + n + " × " + Bag.name(p.pick) + ".");
+        }
+      }
+      await persist();
+    }
+  }
+
+  async function pokemonStorage() {
     let box = 0;
     for (;;) {
       const slots = player.boxes[box];
@@ -804,7 +858,8 @@
     "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerLeft",
     "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerMid",
     "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerRight",
-    "Route1_EventScript_MartClerk"
+    "Route1_EventScript_MartClerk",
+    "PalletTown_ProfessorOaksLab_EventScript_Rival", "PalletTown_ProfessorOaksLab_EventScript_ProfOak"
   ].concat(Object.keys(STARTER_BALLS)));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
@@ -851,8 +906,9 @@
         return;
 
       case "PalletTown_PlayersHouse_2F_EventScript_PC":
+        // Your own PC at home holds items, as in FireRed.
         await say("{PLAYER} booted up the PC.");
-        await pc();
+        await itemStorage();
         return;
 
       case "PalletTown_EventScript_OakTriggerLeft":
@@ -876,6 +932,18 @@
         await say("{RIVAL}: Okay! I'll make my Pokémon battle to toughen it up!\n{PLAYER}! Gramps! Smell you later!");
         return;
       }
+
+      // In the lab, so not "Gramps isn't around" (that's from before Oak walks you there).
+      case "PalletTown_ProfessorOaksLab_EventScript_Rival":
+        if (!f.starter) await say(["{RIVAL}: Heh, I don't need to be\ngreedy like you. I'm mature!", "Go ahead and choose, {PLAYER}!"]);
+        else await say("{RIVAL}: My Pokémon looks a lot\ntougher than yours.");
+        return;
+
+      case "PalletTown_ProfessorOaksLab_EventScript_ProfOak":
+        if (!f.starter) await say(ev.person.text);
+        else if (!f.rivalLabBattle) await say(["OAK: If a wild Pokémon appears,\nyour Pokémon can battle it.", "With it at your side, you should be\nable to reach the next town."]);
+        else await say(["OAK: {PLAYER}, raise your young\nPokémon by making it battle.", "It has to battle for it to grow."]);
+        return;
 
       case "Route1_EventScript_MartClerk":
         if (f.route1Potion) { await say("Please come see us if you need\nPoké Balls."); return; }

@@ -182,7 +182,7 @@
 
   function startStep(r, dir) {
     me.move = { tx: r.x, ty: r.y, tmap: r.map, dir, t: 0, jump: !!r.jump, warp: r.warp || null,
-      dist: r.jump ? TILE * 2 : TILE, speed: r.jump ? WALK_SPEED : (runHeld() && World.map(me.map).type !== "indoor" ? RUN_SPEED : WALK_SPEED) };
+      dist: r.jump ? TILE * 2 : TILE, speed: r.jump ? WALK_SPEED : (runHeld() ? RUN_SPEED : WALK_SPEED) };
     me.parity ^= 1;
   }
 
