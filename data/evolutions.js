@@ -9,7 +9,8 @@
 //           "trade"       trade (optionally holding `item`, or for `tradeWith`)
 //           "shed"        Shedinja: appears next to Ninjask if there's room and a Poké Ball
 //   conditions: time ("day"|"night"), gender ("M"|"F"), stats ("atk>def"|"atk<def"|"atk=def"),
-//               partyType, partySpecies, moveType, personality ("low"|"high")
+//               partyType, partySpecies, moveType, personality ("low"|"high"),
+//               cloak ("plant"|"sandy"|"trash", Burmy's cloak)
 //   note: how a condition this game can't model yet was approximated
 
 window.EVOLUTIONS = {
@@ -218,7 +219,7 @@ window.EVOLUTIONS = {
   "Budew": [{"into":"Roselia","time":"day","method":"friendship"}],
   "Cranidos": [{"into":"Rampardos","method":"level","level":30}],
   "Shieldon": [{"into":"Bastiodon","method":"level","level":30}],
-  "Burmy": [{"into":"Wormadam-Plant","gender":"F","method":"level","level":20},{"into":"Mothim","gender":"M","method":"level","level":20}],
+  "Burmy": [{"into":"Wormadam-Plant","gender":"F","method":"level","level":20,"cloak":"plant"},{"into":"Wormadam-Sandy","gender":"F","method":"level","level":20,"cloak":"sandy"},{"into":"Wormadam-Trash","gender":"F","method":"level","level":20,"cloak":"trash"},{"into":"Mothim","gender":"M","method":"level","level":20}],
   "Combee": [{"into":"Vespiquen","gender":"F","method":"level","level":21}],
   "Buizel": [{"into":"Floatzel","method":"level","level":26}],
   "Cherubi": [{"into":"Cherrim","method":"level","level":25}],

@@ -42,7 +42,8 @@
     };
     const out = {};
     for (const [name, dex] of Object.entries(window.DEX)) {
-      if (dex.id >= 10000 || dex.baseEggSteps >= LEGENDARY_EGG_STEPS) continue;
+      // Alternate formes only when something evolves into them (Wormadam's cloaks).
+      if ((dex.id >= 10000 && !prevo[name]) || dex.baseEggSteps >= LEGENDARY_EGG_STEPS) continue;
       if (!window.LEARNSETS_GEN6[name]) continue;
       out[name] = minLevel(name);
     }
