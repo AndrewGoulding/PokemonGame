@@ -166,14 +166,14 @@
       '<circle cx="8" cy="8" r="2.3" fill="#fff" stroke="#222" stroke-width="1.5"/></svg>';
   }
 
-  // Pokémon sprites: assets/sprites/pokemon/[back/]<dex id>[-<form>].png.
+  // Pokémon sprites: assets/sprites/pokemon/[back/][shiny/]<dex id>[-<form>].png.
   // A form sprite that hasn't been added yet falls back to the plain one.
-  function spriteUrl(species, form, back) {
+  function spriteUrl(species, form, back, shiny) {
     const dex = window.DEX[species];
-    return "assets/sprites/pokemon/" + (back ? "back/" : "") + (dex ? dex.id : 0) + (form ? "-" + form : "") + ".png";
+    return "assets/sprites/pokemon/" + (back ? "back/" : "") + (shiny ? "shiny/" : "") + (dex ? dex.id : 0) + (form ? "-" + form : "") + ".png";
   }
-  function setSprite(img, species, form, back) {
-    const src = spriteUrl(species, form, back);
+  function setSprite(img, species, form, back, shiny) {
+    const src = spriteUrl(species, form, back, shiny);
     if (img.getAttribute("src") === src || img.dataset.wanted === src) return;
     img.dataset.wanted = src;
     // Keep the old picture (the last Pokémon here) from showing while the new
@@ -186,7 +186,7 @@
         if (img.dataset.wanted === src) img.style.visibility = "";
       }, () => {
         if (img.dataset.wanted !== src) return;
-        if (form && url === src) show(spriteUrl(species, "", back));   // no art for this form: use the base one
+        if (form && url === src) show(spriteUrl(species, "", back, shiny));   // no art for this form: use the base one
         else img.style.visibility = "";
       });
     };
@@ -199,9 +199,9 @@
     img.style.visibility = "hidden";
   }
   // The same as an <img> tag, for HTML built as strings.
-  function spriteTag(species, form, attrs) {
-    const fallback = form ? ' onerror="this.onerror=null;this.src=\'' + spriteUrl(species, "") + '\'"' : "";
-    return '<img src="' + spriteUrl(species, form) + '"' + fallback + " " + (attrs || 'alt=""') + ">";
+  function spriteTag(species, form, attrs, shiny) {
+    const fallback = form ? ' onerror="this.onerror=null;this.src=\'' + spriteUrl(species, "", false, shiny) + '\'"' : "";
+    return '<img src="' + spriteUrl(species, form, false, shiny) + '"' + fallback + " " + (attrs || 'alt=""') + ">";
   }
 
   window.Screen = { MESSAGE_MS, spriteUrl, setSprite, clearSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, clearMenu, learnMovePrompt };

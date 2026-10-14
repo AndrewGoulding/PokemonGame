@@ -142,7 +142,7 @@
     const hpPct = r.hp / max;
     const hpClass = hpPct <= 0.2 ? "low" : hpPct <= 0.5 ? "mid" : "";
     return '<button type="button" class="card' + (Party.isFainted(r) ? " fainted" : "") + '" data-pick="' + i + '">' +
-      spriteTag(r.species, Party.form(r)) +
+      spriteTag(r.species, Party.form(r), undefined, r.shiny) +
       '<div class="card-body">' +
         '<div class="card-top"><b>' + escapeHtml(Party.displayName(r)) + genderMark(r) + "</b>" +
           statusTag(r) + "<span>Lv" + r.level + "</span></div>" +
@@ -159,10 +159,10 @@
   const partyHtml = (notes) => '<div class="party">' +
     player.party.map((r, i) => partyCard(r, i, notes ? notes[i] : null)).join("") + "</div>";
 
-  function renderSprite(species, extraClass, form) {
+  function renderSprite(species, extraClass, form, shiny) {
     show("scene");
     scene.innerHTML = '<div class="spotlight">' + spriteTag(species, form,
-      'class="big-sprite ' + (extraClass || "") + '" alt="' + escapeHtml(species) + '"') + "</div>";
+      'class="big-sprite ' + (extraClass || "") + '" alt="' + escapeHtml(species) + '"', shiny) + "</div>";
     return scene.querySelector(".big-sprite");
   }
 
@@ -180,7 +180,7 @@
       const p = saved.player;
       const html = '<div class="title"><h1>Pokémon Game</h1>' + (p ?
         '<div class="save-card"><b>' + escapeHtml(p.name) + "</b>" +
-        '<div class="save-party">' + p.party.map((r) => spriteTag(r.species, Party.form(r))).join("") + "</div>" +
+        '<div class="save-party">' + p.party.map((r) => spriteTag(r.species, Party.form(r), undefined, r.shiny)).join("") + "</div>" +
         "<div>Pokédex: " + p.pokedex.caught.length + " · Badges: " + p.badges.length +
         " · Time: " + playTime(p.playTimeMs) + "</div></div>" : "") + "</div>";
       const options = [];
@@ -244,6 +244,7 @@
     opts = opts || {};
     const wild = kind === "wild";
     const foe = opts.foe || (wild ? { name: "Wild", team: [Encounters.wild(partyLevel())] } : Encounters.trainer(partyLevel()));
+    if (!wild) for (const r of foe.team) delete r.shiny;   // trainers' Pokémon are never shiny
     // The battle theme (wild, trainer, or Gym Leader), and the one for winning.
     const leader = !wild && /^Leader /.test(foe.name);
     music(opts.music || (wild ? "mus_vs_wild" : leader ? "mus_vs_gym_leader" : "mus_vs_trainer"));
@@ -328,7 +329,7 @@
 
   async function evolve(record, evo, canStop) {
     const name = Party.displayName(record);
-    const img = renderSprite(record.species, "", Party.form(record));
+    const img = renderSprite(record.species, "", Party.form(record), record.shiny);
     music("mus_evolution");
     cry(record.species);
     await message("What? " + name + " is evolving!");
@@ -351,7 +352,7 @@
     const oldSpecies = record.species;
     const shed = Evolution.shedinja(record);
     const newMoves = Evolution.evolve(record, evo.into, evo);
-    renderSprite(record.species, "evolved", Party.form(record));
+    renderSprite(record.species, "evolved", Party.form(record), record.shiny);
     cry(record.species);
     const jingle = fanfare("mus_evolved");
     await message("Congratulations! Your " + (record.nickname || Party.speciesName(oldSpecies)) + " evolved into " +
@@ -565,8 +566,9 @@
     const toNext = r.level >= 100 ? 0 : E.expForLevel(E.growthRate(r.species), r.level + 1) - r.exp;
     const types = DEX[r.species].types.join(" / ");
     return '<div class="summary">' +
-      '<div class="summary-head">' + spriteTag(r.species, Party.form(r), 'class="summary-sprite" alt=""') +
-        "<div><h2>" + escapeHtml(Party.displayName(r)) + genderMark(r) + " " + statusTag(r) + "</h2>" +
+      '<div class="summary-head">' + spriteTag(r.species, Party.form(r), 'class="summary-sprite" alt=""', r.shiny) +
+        "<div><h2>" + escapeHtml(Party.displayName(r)) + genderMark(r) + (r.shiny ? ' <span class="shiny-star" title="Shiny">★</span>' : "") +
+          " " + statusTag(r) + "</h2>" +
         "<div>Lv" + r.level + " · " + escapeHtml(Party.speciesName(r.species)) + " · " + types + "</div>" +
         "<div>" + escapeHtml(r.nature) + " nature · " + escapeHtml(r.ability) + "</div>" +
         "<div>Holding: " + (r.item ? escapeHtml(Bag.name(r.item)) : "nothing") + (r.cloak ? " · " + cloakName(r) : "") + "</div>" +
@@ -840,7 +842,7 @@
     for (;;) {
       const slots = player.boxes[box];
       const mini = (r, key) => '<button type="button" class="mini' + (Party.isFainted(r) ? " fainted" : "") + '" data-pick="' + key + '" title="' +
-        escapeHtml(Party.displayName(r)) + " Lv" + r.level + '">' + spriteTag(r.species, Party.form(r)) +
+        escapeHtml(Party.displayName(r)) + " Lv" + r.level + '">' + spriteTag(r.species, Party.form(r), undefined, r.shiny) +
         "<span>" + escapeHtml(Party.displayName(r)) + "</span><small>Lv" + r.level + "</small></button>";
       const html = '<div class="pc"><section data-drop="party"><h3>Party</h3><div class="pc-grid">' +
         player.party.map((r, i) => mini(r, "party:" + i)).join("") + "</div></section>" +
@@ -964,7 +966,8 @@
     scene.innerHTML = '<div class="spotlight debug-add">' +
       '<label class="name-entry">Pokémon<input id="debug-species" list="debug-species-list" autocomplete="off" placeholder="e.g. Charizard"></label>' +
       '<datalist id="debug-species-list">' + debugSpecies().map((s) => '<option value="' + escapeHtml(s) + '">').join("") + "</datalist>" +
-      '<label class="name-entry">Level<input id="debug-level" type="number" min="1" max="100" value="50"></label></div>';
+      '<label class="name-entry">Level<input id="debug-level" type="number" min="1" max="100" value="50"></label>' +
+      '<label class="name-entry debug-shiny"><input id="debug-shiny" type="checkbox"> Shiny</label></div>';
     const input = $("#debug-species");
     for (;;) {
       const typed = new Promise((resolve) => scene.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.stopPropagation(); e.preventDefault(); resolve("add"); } }));
@@ -978,10 +981,10 @@
       const species = debugSpecies().find((s) => s.toLowerCase() === want);
       if (!species) { await message(input.value.trim() ? "There's no Pokémon called " + input.value.trim() + "." : "Type a Pokémon's name first."); continue; }
       const level = Math.max(1, Math.min(100, parseInt($("#debug-level").value, 10) || 50));
-      const record = Party.create(species, level);
+      const record = Party.create(species, level, $("#debug-shiny").checked ? { shiny: true } : {});
       const where = Player.receive(player, record);
       if (!where) { await message("Your party and PC boxes are full."); continue; }
-      await message(species + " (Lv" + level + ") was added to " + (where === "party" ? "your party." : where.replace("box", "Box") + " in the PC."));
+      await message((record.shiny ? "Shiny " : "") + species + " (Lv" + level + ") was added to " + (where === "party" ? "your party." : where.replace("box", "Box") + " in the PC."));
       await persist();
       input.select();
     }
@@ -1251,6 +1254,7 @@
     "Route1_EventScript_MartClerk", "PalletTown_RivalsHouse_EventScript_Daisy", "PalletTown_ProfessorOaksLab_EventScript_LeaveStarterSceneTrigger",
     "PalletTown_ProfessorOaksLab_EventScript_Rival", "PalletTown_ProfessorOaksLab_EventScript_ProfOak",
     "PalletTown_EventScript_SignLady", "PalletTown_EventScript_SignLadyTrigger", "PalletTown_EventScript_TrainerTips",
+    "MartUpstairs_EventScript_MoveRelearner", "MartUpstairs_EventScript_MoveDeleter",
     "ViridianCity_EventScript_RoadBlocked",
     "ViridianCity_EventScript_TutorialTriggerLeft", "ViridianCity_EventScript_TutorialTriggerRight",
     "ViridianCity_EventScript_TutorialOldMan", "ViridianCity_EventScript_Woman", "ViridianCity_EventScript_Youngster",
@@ -1391,6 +1395,8 @@
       case "PalletTown_EventScript_SignLady":
         await signLady(ev.person);
         return;
+      case "MartUpstairs_EventScript_MoveRelearner": await moveRelearner(); return;
+      case "MartUpstairs_EventScript_MoveDeleter": await moveDeleter(); return;
       case "PalletTown_EventScript_SignLadyTrigger":
         // Walking past her by the north exit, she shows you what she copied.
         if (!f.starter || f.signLady) return;
@@ -2129,6 +2135,65 @@
     music("mus_rival_exit");
     await Overworld.act([{ who: L, moves: ["walk_right", "walk_right", "walk_right", "walk_right", "set_invisible"] }]);
     Overworld.removeObject(L);
+  }
+
+  // ---------- Move Relearner and Move Deleter (each Poké Mart's 2F) ----------
+  //
+  // The Relearner teaches a Pokémon a move it could have learned by its level,
+  // for a Heart Scale (as in Gen 6); the Deleter makes it forget one, free.
+
+  // Level-up moves a Pokémon could know by now but doesn't.
+  function relearnable(record) {
+    const sets = window.LEARNSETS_GEN6 || {};
+    const set = sets[record.species] || sets[String(record.species).split("-")[0]];
+    const known = new Set(record.moves.map((m) => m.name));
+    const out = [];
+    for (const [lvl, move] of (set && set.levelup) || []) {
+      if (lvl <= record.level && window.MOVES[move] && !known.has(move) && !out.includes(move)) out.push(move);
+    }
+    return out;
+  }
+  async function moveRelearner() {
+    await say(["I'm the Move Relearner.", "I can make your Pokémon remember a\nmove it has forgotten, in exchange\nfor a Heart Scale."]);
+    if (!Player.itemCount(player, "heart-scale")) { await say("If you bring me a Heart Scale, I'll\nteach your Pokémon a move."); return; }
+    for (;;) {
+      if (!(await confirm("Shall I teach a Pokémon a move for a Heart Scale? (You have " + Player.itemCount(player, "heart-scale") + ".)"))) return;
+      const r = await choosePartyFor("Which Pokémon should remember a move?");
+      if (!r) continue;
+      const moves = relearnable(r);
+      if (!moves.length) { await say("Sorry… There's no move I can teach\nthat Pokémon."); continue; }
+      const move = await ask("Which move should " + Party.displayName(r) + " remember?", moves.map((m) => {
+        const d = MOVES[m];
+        return { html: '<span class="move-name">' + escapeHtml(m) + '</span><span class="move-meta"><span>' + d.type + "</span><span>" +
+          (d.cat === "Status" ? "Status" : d.cat + " " + (d.power || "—")) + "</span></span>", value: m, className: "type-" + d.type };
+      }).concat([back()]));
+      if (move === "back") continue;
+      await learnMove(r, move);
+      if (Party.knowsMove(r, move)) {
+        Player.removeItem(player, "heart-scale");
+        await say("{PLAYER} handed over a Heart Scale\nin exchange.");
+        await persist();
+      }
+      return;
+    }
+  }
+  async function moveDeleter() {
+    await say(["Uh… Oh, yes, I'm the Move Deleter.", "I can make Pokémon forget their\nmoves."]);
+    for (;;) {
+      if (!(await confirm("Would you like me to make a Pokémon forget a move?"))) return;
+      const r = await choosePartyFor("Which Pokémon should forget a move?");
+      if (!r) continue;
+      if (r.moves.length <= 1) { await say(Party.displayName(r) + " seems to know only\none move…"); continue; }
+      const i = await ask("Which move should be forgotten?", r.moves.map((m, k) => ({ label: m.name, value: k, className: "type-" + MOVES[m.name].type }))
+        .concat([back()]));
+      if (i === "back") continue;
+      const name = r.moves[i].name;
+      if (!(await confirm("Hm! " + Party.displayName(r) + "'s " + name + "? That move should be forgotten?"))) continue;
+      r.moves.splice(i, 1);
+      await say(["It worked to perfection!", Party.displayName(r) + " has forgotten\n" + name + " completely."]);
+      await persist();
+      return;
+    }
   }
 
   // ---------- Pallet Town's Sign Lady ----------

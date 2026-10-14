@@ -212,6 +212,7 @@
     }
     const fresh = window.Party.create(raw.species, Math.max(1, Math.min(100, raw.level | 0 || 1)));
     const r = Object.assign(fresh, raw);
+    if (raw.shiny) r.shiny = true; else delete r.shiny;   // (not the fresh record's roll)
     r.level = Math.max(1, Math.min(100, r.level | 0 || 1));
     r.exp = Math.max(+r.exp || 0, window.Experience.expForLevel(window.Experience.growthRate(r.species), r.level));
     r.moves = (Array.isArray(raw.moves) ? raw.moves : [])

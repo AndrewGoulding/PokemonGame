@@ -620,6 +620,81 @@ for (const [color, prefix] of Object.entries(PLAYER_SPRITES)) {
   if (fs.existsSync(run)) writeSprite(cropFrames(readPng(run), 16, 3, 9), path.join(outSprites, "player_" + color + "_run.png"));
 }
 
+// ---------- Poké Mart upstairs (not in FireRed) ----------
+//
+// Each Mart gets stairs in its bottom-left corner (the Pokémon Center's
+// staircase picture, on the Mart's floor, where the small display case was) up to a 2F, built
+// from the Pokémon Center 2F, where the Move Relearner and the Move Deleter
+// stand behind the counter (the link-cable attendants' places).
+const MART_UPSTAIRS = ["ViridianCity_Mart", "PewterCity_Mart"];
+const TEMPLATE_2F = "ViridianCity_PokemonCenter_2F", CENTER_1F = "ViridianCity_PokemonCenter_1F";
+function copyTiles(src, dst, tiles) {   // [[sx, sy, dx, dy], ...] 16x16 tiles from one map picture into another
+  for (const [sx, sy, dx, dy] of tiles) {
+    for (let y = 0; y < 16; y++) {
+      const from = ((sy * 16 + y) * src.width + sx * 16) * 4, to = ((dy * 16 + y) * dst.width + dx * 16) * 4;
+      dst.rgba.set(src.rgba.subarray(from, from + 64), to);
+    }
+  }
+}
+const personLike = (sprite) => Object.values(out).flatMap((m) => m.people).find((p) => p.sprite === sprite);
+for (const mart of MART_UPSTAIRS) {
+  if (!out[mart] || !out[TEMPLATE_2F] || !out[CENTER_1F]) continue;
+  const m = out[mart], up = mart + "_2F", W = m.width;
+  // The picture: floor over the display case's right half, then the stairs (2x3 tiles at x 0-1, y 5-7).
+  const below = readPng(path.join(outMaps, mart + ".png")), center = readPng(path.join(outMaps, CENTER_1F + ".png"));
+  copyTiles(below, below, [[4, 6, 2, 6], [6, 7, 2, 7]]);
+  // The steps (rows 6-7 of the Center's staircase), with the Center's floor
+  // around them swapped for the Mart's: a pixel in one of the Center floor's
+  // colours (from its plain floor, tiles 2-3 of rows 6-8) is floor.
+  const floor = { width: below.width, rgba: new Uint8ClampedArray(below.rgba) };
+  const floorColours = new Set();
+  for (let py = 6 * 16; py < 9 * 16; py++) for (let px = 32; px < 64; px++) {
+    const c = (py * center.width + px) * 4;
+    floorColours.add(center.rgba[c] + "," + center.rgba[c + 1] + "," + center.rgba[c + 2]);
+  }
+  for (const [tx, ty] of [[0, 6], [1, 6], [0, 7], [1, 7]]) {
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      const px = tx * 16 + x, py = ty * 16 + y;
+      const c = (py * center.width + px) * 4;
+      const d = (py * below.width + px) * 4, mf = (py * below.width + px + (ty === 7 ? 96 : 64)) * 4;   // Mart floor: 4 (or 6) tiles right
+      const isFloor = floorColours.has(center.rgba[c] + "," + center.rgba[c + 1] + "," + center.rgba[c + 2])
+        || (ty === 7 && y >= 9);   // (below the landing: the Center's darker floor edge)
+      below.rgba.set(isFloor ? floor.rgba.subarray(mf, mf + 4) : center.rgba.subarray(c, c + 4), d);
+    }
+  }
+  writePng(path.join(outMaps, mart + ".png"), below.width, below.height, below.rgba);
+  const topFile = path.join(outMaps, mart + "-top.png");
+  if (fs.existsSync(topFile)) {
+    const top = readPng(topFile);
+    for (let y = 5 * 16; y < 8 * 16; y++) top.rgba.fill(0, (y * top.width) * 4, (y * top.width + 3 * 16) * 4);
+    writePng(topFile, top.width, top.height, top.rgba);
+  }
+  // Walls of the staircase, the free floor, and the stair tile itself.
+  const at = (x, y) => y * W + x;
+  m.collision[at(0, 6)] = 1;   // (as in the Center: only the wall beside the steps)
+  for (const [x, y] of [[2, 6], [2, 7]]) { m.collision[at(x, y)] = 0; m.behavior[at(x, y)] = 0; }
+  m.collision[at(1, 6)] = 0;
+  m.behavior[at(1, 6)] = out[CENTER_1F].behavior[6 * out[CENTER_1F].width + 1];   // up escalator
+  m.warps.push({ x: 1, y: 6, map: up, warp: 0 });
+  // 2F: the Center's upstairs, its stairs leading back down.
+  const t = JSON.parse(JSON.stringify(out[TEMPLATE_2F]));
+  for (const f of ["", "-top", "-border"]) {
+    const src = path.join(outMaps, TEMPLATE_2F + f + ".png");
+    if (fs.existsSync(src)) fs.copyFileSync(src, path.join(outMaps, up + f + ".png"));
+  }
+  const tutor = (id, x, sprite, script, text) => Object.assign({}, personLike(sprite), {
+    id, x, y: 2, movement: "face_down", rangeX: 1, rangeY: 1, script, flag: null, text, localId: null, trainer: undefined });
+  out[up] = Object.assign(t, {
+    name: up, title: m.title.split(" · ")[0] + " · Poké Mart 2F",
+    warps: [{ x: 1, y: 6, map: mart, warp: m.warps.length - 1 }],
+    signs: [], triggers: [], hidden: [],
+    people: [
+      tutor(0, 2, "gentleman", "MartUpstairs_EventScript_MoveRelearner", ["I'm the Move Relearner."]),
+      tutor(1, 6, "old_man_2", "MartUpstairs_EventScript_MoveDeleter", ["I'm the Move Deleter."])
+    ]
+  });
+}
+
 // Yellow's Jessie & James, from FireRed's Rocket Grunt pictures.
 duoPic("jessie_james", "rocket_grunt_f", "rocket_grunt_m", 16);
 

@@ -244,6 +244,14 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   switch it off and on), each Pokémon that battled gets the full amount
   instead of a split, and the rest of the party (not fainted) gets half, plus
   EVs, as in X and Y.
+- **Shiny Pokémon**: any Pokémon you meet or are given is shiny 1 time in 4,096
+  (Gen 6's odds; trainers' never are). They use their shiny sprites
+  everywhere, sparkle as they come out in battle, and have a ★ on their
+  summary. (The debug menu's Add a Pokémon has a Shiny box.)
+- **Move Relearner and Move Deleter**: every Poké Mart has an upstairs (stairs
+  in its bottom-left corner). The Relearner teaches a Pokémon a level-up move
+  it could know by now, for a Heart Scale (dig them up with the Explorer Kit);
+  the Deleter makes it forget a move, free.
 - **Explorer Kit** (a key item you start with): use it from the bag in a cave
   (Mt. Moon) to dig in the wall, as in Diamond and Pearl's Underground. Hit
   tiles with the Pickaxe (1 energy) or the wider Hammer (2 energy) to clear

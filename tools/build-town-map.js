@@ -103,7 +103,9 @@ global.window = global;
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/world-maps.js"), "utf8"));
 const mapSections = {};
 for (const name of Object.keys(window.WORLD_MAPS)) {
-  const file = P("data/maps", name, "map.json");
+  // (Maps the game adds, like a Mart's 2F, are where the floor below is.)
+  let file = P("data/maps", name, "map.json");
+  if (!fs.existsSync(file)) file = P("data/maps", name.replace(/_\dF$/, ""), "map.json");
   if (!fs.existsSync(file)) continue;
   const sec = JSON.parse(fs.readFileSync(file, "utf8")).region_map_section;
   if (sec) mapSections[name] = sec.replace(/^MAPSEC_/, "");

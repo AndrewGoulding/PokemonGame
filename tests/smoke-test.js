@@ -1171,6 +1171,33 @@ for (const share of [false, true]) {
   assert(fs.existsSync(path.join(__dirname, "../assets/town-map/kanto.png")));
 }
 
+// Shiny Pokémon: 1 in 4096; kept through saving; trainers' never are.
+{
+  assert.strictEqual(Party.SHINY_ODDS, 4096);
+  const shiny = Party.create("Pikachu", 5, { shiny: true });
+  assert(shiny.shiny && Party.toBattleSet(shiny).shiny);
+  const p = Player.create("S");
+  Player.receive(p, shiny);
+  Player.receive(p, Party.create("Eevee", 5, { shiny: false }));
+  for (let i = 0; i < 50; i++) {
+    const back = Player.load(JSON.parse(Player.serialize(p))).player;
+    assert.deepStrictEqual(back.party.map((r) => !!r.shiny), [true, false], "a save keeps who's shiny (and no one else becomes it)");
+  }
+}
+
+// Each Poké Mart has an upstairs (2F, from the Pokémon Center's) with the Move
+// Relearner and Move Deleter; stairs in the Mart's corner lead up.
+for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
+  const m = WORLD_MAPS[mart], up = WORLD_MAPS[mart + "_2F"];
+  assert(up, mart + " has a 2F");
+  const stairs = m.warps.find((w) => w.map === mart + "_2F");
+  assert(stairs && !m.collision[stairs.y * m.width + stairs.x], "walkable stairs up");
+  assert.strictEqual(m.behavior[stairs.y * m.width + stairs.x], World.MB.UP_ESCALATOR);
+  assert.deepStrictEqual([up.warps.length, up.warps[0].map, m.warps[up.warps[0].warp]], [1, mart, stairs]);
+  assert.deepStrictEqual(up.people.map((q) => q.script).sort(), ["MartUpstairs_EventScript_MoveDeleter", "MartUpstairs_EventScript_MoveRelearner"]);
+  assert(fs.existsSync(path.join(root, "assets/world/maps", mart + "_2F.png")));
+}
+
 // Music and cries: FireRed's songs played by its sound engine (game/m4a.js).
 {
   vm.runInThisContext(fs.readFileSync(path.join(root, "assets/audio/music.js"), "utf8"), { filename: "assets/audio/music.js" });

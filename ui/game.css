@@ -321,3 +321,5 @@
 .tm-name { position: absolute; left: 0; right: 0; top: 0; height: 10%; display: flex; align-items: center; gap: 10px; padding: 0 3%;
   color: #fff; font-weight: 700; font-size: clamp(12px, 2.6vw, 18px); text-shadow: 1px 1px 0 #000; }
 .tm-name small { font-weight: 600; opacity: 0.85; }
+
+.shiny-star { color: #e0a800; text-shadow: 0 0 3px #fff3a0; }

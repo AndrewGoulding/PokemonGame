@@ -42,6 +42,8 @@
   const speciesName = (species) => species.replace(FORME_SUFFIX, "");
 
   // opts: { rng, moves, ball, nickname, ivs (a number for every stat: a trainer's Pokémon) }
+  const SHINY_ODDS = 4096;
+
   function create(species, level, opts) {
     opts = opts || {};
     const rng = opts.rng || Math.random;
@@ -69,6 +71,9 @@
       status: ""
     };
     if (species === "Burmy") record.cloak = opts.cloak || pick(CLOAKS, rng);
+    // Shiny: 1 in 4096 (Gen 6), unless opts.shiny says. (Its own roll, so the
+    // rest of a record made from a seeded rng stays the same.)
+    if (opts.shiny != null ? opts.shiny : Math.random() < 1 / SHINY_ODDS) record.shiny = true;
     record.hp = maxHp(record);
     return record;
   }
@@ -102,6 +107,7 @@
       hp: record.hp,
       status: record.status,
       form: form(record),   // display only; the engine ignores it
+      shiny: !!record.shiny,   // (display only too)
       ball: record.ball,    // display only: the ball it's thrown out in
       ppUps: record.moves.map((m) => m.ppUps || 0)
     };
@@ -189,7 +195,7 @@
     return E.progress(E.growthRate(record.species), record.level, record.exp);
   }
 
-  window.Party = {
+  window.Party = { SHINY_ODDS,
     CLOAKS, create, maxPp, stats, maxHp, speciesName, displayName, form, isFainted, toBattleSet,
     syncFromBattle, caught, heal, teachMove, canLearnMachine, knowsMove, movesLearnedAt, expProgress
   };

@@ -251,7 +251,7 @@
       info.classList.add("hidden");
       return;
     }
-    window.Screen.setSprite(sprite, v.species, v.form, id === "p1");
+    window.Screen.setSprite(sprite, v.species, v.form, id === "p1", v.shiny);
     placeSprite(sprite, v, id === "p1");
     sprite.alt = v.name;
     sprite.classList.toggle("hidden", !!v.inBall);
@@ -340,7 +340,7 @@
         view[side] = { name: nameOf(a), species: m[1] || nameOf(a), level: m[2] || "?",
           hp: hp.hp, maxhp: hp.maxhp, status: hp.status, fainted: false,
           exp: ev[4] === "" || ev[4] == null ? null : +ev[4], teamIndex: +ev[5],
-          form: (config[side].team[+ev[5]] || {}).form || "" };
+          form: (config[side].team[+ev[5]] || {}).form || "", shiny: !!(config[side].team[+ev[5]] || {}).shiny };
         const ball = (config[side].team[+ev[5]] || {}).ball;
         if (side === "p1") foeHpAtSwitchIn = view.p2.species ? view.p2.hp : null;
         else foeHpAtSwitchIn = hp.hp;   // a new foe: count from its HP now
@@ -826,6 +826,7 @@
     if (mon) {
       el.sides.p2.sprite.classList.remove("silhouette");
       cry("p2");
+      sparkle("p2");
       await wait(350);
       el.sides.p2.info.classList.remove("hidden");
       await message("A wild " + mon.name + " appeared!");
@@ -925,6 +926,22 @@
   // Throws `side`'s Pokémon out of its ball (after `delay` ms) and shows it.
   // A Pokémon's cry as it comes out (or, lower, as it faints).
   const cry = (side, opts) => { if (window.GameAudio && view[side] && view[side].species) window.GameAudio.cry(view[side].species, opts); };
+  // A shiny Pokémon sparkles as it comes out (FireRed's shiny animation).
+  function sparkle(side) {
+    if (!view[side] || !view[side].shiny) return;
+    const sprite = el.sides[side].sprite, box = sprite.getBoundingClientRect(), field = el.field.getBoundingClientRect();
+    for (let i = 0; i < 6; i++) {
+      const s = document.createElement("span");
+      s.className = "shiny-spark";
+      s.textContent = "✦";
+      const a = (i / 6) * Math.PI * 2;
+      s.style.left = (box.left - field.left + box.width / 2 + Math.cos(a) * box.width * 0.3) + "px";
+      s.style.top = (box.top - field.top + box.height * 0.55 + Math.sin(a) * box.height * 0.3) + "px";
+      s.style.animationDelay = (i * 70) + "ms";
+      el.field.appendChild(s);
+      setTimeout(() => s.remove(), 1400);
+    }
+  }
 
   async function sendOut(side, from, ball, delay) {
     const sprite = el.sides[side].sprite;
@@ -939,6 +956,7 @@
       { transform: "scale(1)", filter: "none", opacity: 1 }], { duration: POP_MS, easing: "ease-out" });
     sprite.classList.remove("in-ball");
     cry(side);
+    sparkle(side);
     await grow.finished;
     el.sides[side].info.classList.toggle("hidden", view[side].fainted);
   }
