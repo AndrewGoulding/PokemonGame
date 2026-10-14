@@ -21,7 +21,7 @@
   const STARTING_MONEY = 3000;
   // The Exp. Share (Gen 6, party-wide) is a key item you start with, switched on.
   // No Poké Balls: as in FireRed, the first ones come from Prof. Oak with the Pokédex.
-  const STARTING_BAG = { "potion": 3, "exp-share": 1 };
+  const STARTING_BAG = { "exp-share": 1 };
   const MAX_MONEY = 9999999;
   const MAX_ITEM_COUNT = 999;
   // The item storage in your PC starts with a Potion, as in FireRed.

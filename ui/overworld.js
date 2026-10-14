@@ -245,7 +245,7 @@
   // ---------- Player movement ----------
 
   function startStep(r, dir) {
-    // Running needs the Running Shoes (ctx.canRun), as in FireRed.
+    // (ctx.canRun can restrict running, e.g. to after FireRed's Running Shoes.)
     const run = !r.jump && runHeld() && (!ctx.canRun || ctx.canRun());
     me.move = { tx: r.x, ty: r.y, tmap: r.map, dir, t: 0, jump: !!r.jump, warp: r.warp || null, run,
       dist: r.jump ? TILE * 2 : TILE, speed: run ? RUN_SPEED : WALK_SPEED };

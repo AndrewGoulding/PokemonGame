@@ -32,7 +32,7 @@ also a move tutor who teaches Dream Eater once, a school and the Nickname house.
 Route 2, Route 22 and the Gym aren't built yet; walking into the Gym's door
 tells you it's locked (it opens at seven badges in FireRed).
 
-**Controls**: arrow keys or WASD to walk, hold Shift (or X / B) to run once you have the Running Shoes from Prof. Oak's Aide in Pewter City (indoors too, with FireRed's running animation), Z / Space /
+**Controls**: arrow keys or WASD to walk, hold Shift (or X / B) to run (from the start, indoors too, with FireRed's running animation), Z / Space /
 Enter to talk or read signs (or click / tap a person, sign or PC: you walk over
 and talk), Esc or M for the menu. In menus, the arrow keys
 move between choices, Z (A) picks one and X / Esc (B) goes back. On a phone, use the D-pad

@@ -648,6 +648,13 @@
     }
   }
 
+  // Redraws the list just picked from, so what was moved goes right away.
+  function showItems(items, empty) {
+    const ids = Object.keys(items).filter((id) => items === player.pcItems || (!Bag.isMachine(id) && !Bag.isKeyItem(id)));
+    scene.innerHTML = '<div class="rows">' + (ids.length ? ids.map((id) => itemRow(id, "×" + items[id])).join("")
+      : '<p class="empty">' + empty + "</p>") + "</div>";
+  }
+
   async function itemStorage() {
     for (;;) {
       const stored = Object.keys(player.pcItems).length;
@@ -666,6 +673,7 @@
         const n = player.bag[p.pick] > 1 ? await chooseQuantity("Deposit how many?", player.bag[p.pick]) : 1;
         if (!n) continue;
         Player.depositItem(player, p.pick, n);
+        showItems(player.bag, "Nothing left in your bag to store.");
         await message("Stored " + n + " × " + Bag.name(p.pick) + " in the PC.");
       } else {
         if (!stored) { await message("There are no items stored in the PC."); continue; }
@@ -679,9 +687,11 @@
           if (!(await confirm("Throw away " + n + " × " + Bag.name(p.pick) + "?"))) continue;
           player.pcItems[p.pick] -= n;
           if (player.pcItems[p.pick] <= 0) delete player.pcItems[p.pick];
+          showItems(player.pcItems, "No items stored in the PC.");
           await message("Threw away " + n + " × " + Bag.name(p.pick) + ".");
         } else {
           Player.withdrawItem(player, p.pick, n);
+          showItems(player.pcItems, "No items stored in the PC.");
           await message("Withdrew " + n + " × " + Bag.name(p.pick) + ".");
         }
       }
@@ -754,7 +764,6 @@
         { label: "Give Repels", value: "repels", className: "action" },
         { label: "Give Master Balls", value: "master", className: "action" },
         { label: "Wild battle", value: "wild", className: "action" },
-        { label: "Running Shoes: " + (player.flags.runningShoes ? "On" : "Off"), value: "shoes", className: "action" },
         back()]);
       if (v === "back") return;
       if (v === "add") await debugAddPokemon();
@@ -771,9 +780,6 @@
       } else if (v === "repels") {
         for (const id of Object.keys(REPEL_STEPS)) Player.addItem(player, id, 99);
         await message("Added 99 each of Repel, Super Repel and Max Repel to your bag.");
-      } else if (v === "shoes") {
-        player.flags.runningShoes = !player.flags.runningShoes;
-        await message(player.flags.runningShoes ? "You have the Running Shoes: hold B to run." : "No Running Shoes: you can't run.");
       } else if (v === "master") {
         Player.addItem(player, "master-ball", 99);
         await message("Added 99 Master Balls to your bag.");
@@ -1852,9 +1858,9 @@
 
   // ---------- Route 22's rival ----------
   //
-  // FireRed's Route22_EventScript_EarlyRival: he walks up from the left,
-  // battles (his Pidgey and the starter that beats yours, level 9), and heads
-  // off toward Viridian. Losing doesn't black you out.
+  // FireRed's Route22_EventScript_EarlyRival: Gary walks up from the left,
+  // battles (Pidgey and Eevee, level 9, as in Yellow), and heads off toward
+  // Viridian. Losing doesn't black you out.
   async function route22Rival(side) {
     const f = player.flags, R = "LOCALID_ROUTE22_RIVAL";
     Overworld.addObject(R, { x: 25, y: side === "Top" ? 4 : 5, facing: "right" });
@@ -1863,8 +1869,9 @@
       : [{ who: R, moves: M("Route22_Movement_RivalApproach") }]);
     await Overworld.act([{ who: R, moves: ["delay_6"] }]);
     await say(T("Route22_Text_EarlyRivalIntro"));
-    const theirs = RIVAL_PICK[f.starter] || "Squirtle";
-    const team = trainerTeam("TRAINER_RIVAL_ROUTE22_EARLY_" + theirs.toUpperCase());
+    // His team as in Yellow: Pidgey (FireRed's, with its moves) and Eevee, both level 9.
+    const pidgey = trainerTeam("TRAINER_RIVAL_ROUTE22_EARLY_SQUIRTLE")[0];
+    const team = [pidgey, Party.create("Eevee", 9, { ivs: pidgey.ivs.hp })];
     const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_early" },
       defeatText: T("Route22_Text_EarlyRivalDefeat"), noBlackout: true });
     show("world");
@@ -2016,7 +2023,7 @@
       const ev = await Overworld.explore({
         player, rivalName: player.rival, visible,
         special,
-        canRun: () => !!player.flags.runningShoes, onWarp,
+        onWarp,
         trainerWaiting, hiddenItem: (h) => !player.flags[h.flag],
         onStep: repelStep, allowWild: repelAllows
       });

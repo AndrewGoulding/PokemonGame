@@ -549,9 +549,10 @@ for (const share of [false, true]) {
   // PC item storage starts with a Potion.
   assert.deepStrictEqual(p.pcItems, { potion: 1 });
   assert(Player.withdrawItem(p, "potion", 1) && !("potion" in p.pcItems));
-  assert.strictEqual(p.bag.potion, Player.STARTING_BAG.potion + 1);
+  assert.strictEqual(p.bag.potion, 1);
   assert(!Player.withdrawItem(p, "potion", 1), "nothing left to withdraw");
-  assert(Player.depositItem(p, "potion", 2) && p.pcItems.potion === 2);
+  Player.addItem(p, "potion", 1);
+  assert(Player.depositItem(p, "potion", 2) && p.pcItems.potion === 2 && !("potion" in p.bag));
   assert(!Player.depositItem(p, "ultra-ball", 1), "can't deposit what you don't have");
   assert.deepStrictEqual(Player.load(JSON.parse(Player.serialize(p))).player.pcItems, { potion: 2 });
 
@@ -1044,8 +1045,9 @@ for (const share of [false, true]) {
   const grass = (() => { for (let y = 0; y < 20; y++) for (let x = 0; x < 108; x++) if (World.isGrass(World.blockAt("Route4", x, y))) return [x, y]; })();
   const roll = (coin) => { let i = 0; const seq = [0.0001, 0.42, coin, 0.5]; return World.wildEncounter("Route4", grass[0], grass[1], () => seq[i++]).species; };
   assert.deepStrictEqual([roll(0.9), roll(0.1)], ["Ekans", "Sandshrew"]);
-  // New games can't run until the Running Shoes.
-  assert(!Player.create("T").flags.runningShoes);
+  // New games start with no Potions in the bag (the one in the PC is all).
+  assert.strictEqual(Player.create("T").bag.potion, undefined);
+  assert.strictEqual(Player.create("T").pcItems.potion, 1);
 }
 
 // The player character: the custom one (Red and Leaf are rivals), with every
