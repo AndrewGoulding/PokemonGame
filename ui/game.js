@@ -255,7 +255,7 @@
 
     if (result.outcome === "won" && opts.trainerId) player.flags[opts.trainerId] = true;
     if (result.outcome === "won" && !wild) {
-      const prize = Player.prizeMoney(foe.name, foe.team);
+      const prize = opts.prize != null ? opts.prize : Player.prizeMoney(foe.name, foe.team);
       Player.addMoney(player, prize);
       await message("You got " + money(prize) + " for winning!");
     }
@@ -1746,14 +1746,14 @@
     Player.removeItem(player, "oaks-parcel");   // (a save made mid-scene gets it back: see Player.load)
     await say(T("PalletTown_ProfessorOaksLab_Text_DeliveredOaksParcel"));
     await say(T("PalletTown_ProfessorOaksLab_Text_OakCustomBallIOrdered"));
-    await say(T("PalletTown_ProfessorOaksLab_Text_RivalGramps"));
-    // In comes your rival, from the door.
+    // In comes Gary, from the door.
     Overworld.addObject(LAB_RIVAL, { x: north ? 5 : 6, y: 10, facing: "up" });
     await Overworld.act(north
       ? [{ who: "player", moves: L("WatchRivalEnterNorth") }, { who: LAB_RIVAL, moves: L("RivalEnter") }]
       : [{ who: LAB_OAK, moves: M("Common_Movement_WalkInPlaceFasterDown") },
         { who: LAB_RIVAL, moves: L("RivalEnter") }].concat(south ? [] : [{ who: "player", moves: L("WatchRivalEnterEastWest") }]));
-    await say(T("PalletTown_ProfessorOaksLab_Text_RivalWhatDidYouCallMeFor"));
+    // He hasn't met you: Oak introduces you.
+    await say(["{RIVAL}: Gramps! I almost forgot!\nWhat did you call me for?", "Wait? Who's this?"]);
     await Overworld.act([{ who: LAB_OAK, moves: ["delay_30"].concat(M("Common_Movement_ExclamationMark"), M("Common_Movement_Delay48")) }]);
     // Oak looks at you, then at your rival.
     if (north) await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
@@ -1762,6 +1762,7 @@
       await Overworld.act([{ who: LAB_OAK, moves: M("Common_Movement_WalkInPlaceFasterDown") }]
         .concat(south ? [] : [{ who: "player", moves: M(east ? "Common_Movement_WalkInPlaceFasterRight" : "Common_Movement_WalkInPlaceFasterLeft") }]));
     }
+    await say(["Oak: This is {PLAYER}. He's starting\nhis Pokémon journey."]);
     await say(T("PalletTown_ProfessorOaksLab_Text_OakHaveRequestForYouTwo"));
     // To the desk at the back, where the Pokédexes are.
     await Overworld.act(south
@@ -1789,7 +1790,7 @@
     await Overworld.act(north ? [{ who: LAB_RIVAL, moves: M("Common_Movement_FacePlayer") }, { who: "player", moves: M("Common_Movement_WalkInPlaceFasterLeft") }]
       : south ? [{ who: LAB_RIVAL, moves: M("Common_Movement_WalkInPlaceFasterUp") }, { who: "player", moves: M("Common_Movement_WalkInPlaceFasterDown") }]
         : [{ who: LAB_RIVAL, moves: M("Common_Movement_FacePlayer") }, { who: "player", moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    await say(T("PalletTown_ProfessorOaksLab_Text_RivalTellSisNotToGiveYouMap"));
+    await say(["{RIVAL}: I'll be at Route 22.\nLet me see how weak your Pokémon\nare."]);
     await Overworld.act([{ who: LAB_RIVAL, moves: L("RivalExit") }].concat(north ? [{ who: "player", moves: L("WatchRivalEnterEastWest") }] : []));
     Overworld.removeObject(LAB_RIVAL);
   }
@@ -1916,8 +1917,8 @@
   //
   // As in Yellow: heading down to the last ladder on B2F, Jessie and James
   // come up from it, recite their motto and battle with Ekans, Meowth and
-  // Koffing (level 14). Beaten, they blast off; beat you, and they wait there
-  // again.
+  // Koffing (level 14). Beaten, they pay ₽750 and blast off; beat you, and
+  // they wait there again.
   function jessieJamesStep() {
     const f = player.flags, at = Overworld.position();
     if (f.jessieJames || at.map !== "MtMoon_B2F") return null;
@@ -1938,7 +1939,7 @@
       "Meowth: Meowth! That's right!"]);
     const team = [Party.create("Ekans", 14), Party.create("Meowth", 14), Party.create("Koffing", 14)];
     const outcome = await battle("trainer", { foe: { name: "Rocket Jessie & James", team, pic: "jessie_james" },
-      defeatText: ["Jessie: We can't lose to a kid\nlike this!"] });
+      defeatText: ["Jessie: We can't lose to a kid\nlike this!"], prize: 750 });
     if (outcome !== "won") return;
     f.jessieJames = true;
     show("world");
