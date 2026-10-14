@@ -15,7 +15,7 @@ a girl, and has you name yourself and your rival (he suggests FireRed's names)
 before you shrink away into your bedroom in Pallet Town. Try to leave town
 through the tall grass to the north and Prof. Oak stops you and walks you to his
 lab, where your rival is waiting; pick Bulbasaur, Squirtle or Charmander from the
-Poké Balls on his table (each one shows you its Pokémon before you decide). Your
+Poké Balls on his table (each one shows you its Pokémon before you decide).
 Leaf walks over and takes the one that beats yours; on your way out she walks up
 to you for a practice battle, then heads off. Then Route 1's tall grass, north of town, has FireRed's wild
 Pokémon. Gary's older sister Daisy, at her table next door, introduces
