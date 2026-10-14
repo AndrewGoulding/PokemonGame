@@ -163,9 +163,11 @@
   }
 
   // Can this Pokémon learn `move` from a TM or HM? (Gen 6 learnsets, X/Y and ORAS.)
+  // X and Y's machine list, plus HMs from other generations (data/hm-learners.js).
   function canLearnMachine(record, move) {
     const learnset = window.LEARNSETS_GEN6[record.species];
-    return !!learnset && (learnset.tm || []).includes(move);
+    if (learnset && (learnset.tm || []).includes(move)) return true;
+    return ((window.HM_LEARNERS || {})[move] || []).includes(record.species);
   }
   const knowsMove = (record, move) => record.moves.some((m) => m.name === move);
 

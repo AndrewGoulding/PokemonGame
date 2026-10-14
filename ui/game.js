@@ -1306,13 +1306,11 @@
         await inGameTrade(TRADES.mimien);
         return;
 
-      // Prof. Oak's Aide: Flash for ten kinds of Pokémon caught. (FireRed's
-      // HM05 is Flash; in this game's Gen 6 machines, Flash is TM70.)
+      // Prof. Oak's Aide: HM05 Flash for ten kinds of Pokémon caught.
       case "Route2_EastBuilding_EventScript_Aide": {
-        const NEEDED = 10, item = "tm70", label = "TM70";
-        const fix = (pages) => pages.map((p) => p.replace(/HM05/g, label).replace(/the hidden move/g, "the move"));
-        if (f.gotFlash) { await say(fix(T("Route2_EastBuilding_Text_ExplainHM05"))); return; }
-        const ask = fix(T("Route2_EastBuilding_Text_GiveHM05IfSeen10Mons"));
+        const NEEDED = 10, item = "hm05", label = "HM05";
+        if (f.gotFlash) { await say(T("Route2_EastBuilding_Text_ExplainHM05")); return; }
+        const ask = T("Route2_EastBuilding_Text_GiveHM05IfSeen10Mons");
         await say(ask.slice(0, -1));
         if (!(await confirm(fill(ask[ask.length - 1])))) { await say(T("Aide_Text_GetEnoughMonsComeBackForItem"), [NEEDED, label]); return; }
         const count = player.pokedex.caught.length;
@@ -1320,8 +1318,8 @@
         await say(T("Route2_EastBuilding_Text_GreatHereYouGo"), [NEEDED, label, count]);
         Player.addItem(player, item);
         f.gotFlash = true;
-        await say(fix(T("Route2_EastBuilding_Text_ReceivedHM05FromAide")));
-        await say(fix(T("Route2_EastBuilding_Text_ExplainHM05")));
+        await say(T("Route2_EastBuilding_Text_ReceivedHM05FromAide"));
+        await say(T("Route2_EastBuilding_Text_ExplainHM05"));
         return;
       }
 

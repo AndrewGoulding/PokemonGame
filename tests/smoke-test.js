@@ -26,7 +26,7 @@ for (const src of headless) {
   vm.runInThisContext(fs.readFileSync(path.join(root, src), "utf8"), { filename: src });
 }
 
-for (const name of ["TYPE_CHART", "NATURES", "DEX", "MOVES", "ABILITIES", "ITEMS", "LEARNSETS_GEN6",
+for (const name of ["TYPE_CHART", "NATURES", "DEX", "MOVES", "ABILITIES", "ITEMS", "LEARNSETS_GEN6", "HM_LEARNERS",
   "Stats", "Damage", "CONDITIONS", "ITEM_EFFECTS", "BATTLE_MOVE_EFFECTS", "Battle", "RandomTeam", "OpponentAI",
   "Experience", "Catching", "EVOLUTIONS", "Party", "Evolution", "Encounters",
   "ItemUse", "ITEM_SPRITES", "Player", "Bag", "Save", "WORLD_MAPS", "World"]) {
@@ -603,7 +603,8 @@ for (const share of [false, true]) {
 // ---------- TMs, PP Ups and mints ----------
 {
   const rng = mulberry32(51);
-  // X and Y's TM01-TM100 and HM01-HM05, plus ORAS's Secret Power and HM07 Dive.
+  // TMs: X and Y's TM01-TM100 in order without Flash and Rock Smash (HMs here),
+  // then ORAS's Secret Power: TM01-TM99. HMs cover every region.
   const XY = ["Hone Claws", "Dragon Claw", "Psyshock", "Calm Mind", "Roar", "Toxic", "Hail", "Bulk Up", "Venoshock",
     "Hidden Power", "Sunny Day", "Taunt", "Ice Beam", "Blizzard", "Hyper Beam", "Light Screen", "Protect", "Rain Dance",
     "Roost", "Safeguard", "Frustration", "Solar Beam", "Smack Down", "Thunderbolt", "Thunder", "Earthquake", "Return",
@@ -616,23 +617,43 @@ for (const share of [false, true]) {
     "Rock Slide", "X-Scissor", "Dragon Tail", "Infestation", "Poison Jab", "Dream Eater", "Grass Knot", "Swagger",
     "Sleep Talk", "U-turn", "Substitute", "Flash Cannon", "Trick Room", "Wild Charge", "Rock Smash", "Snarl",
     "Nature Power", "Dark Pulse", "Power-Up Punch", "Dazzling Gleam", "Confide"];
-  XY.forEach((move, i) => assert.strictEqual(Bag.machineMove("tm" + String(i + 1).padStart(2, "0")), move, "TM" + (i + 1)));
-  ["Cut", "Fly", "Surf", "Strength", "Waterfall"].forEach((move, i) => assert.strictEqual(Bag.machineMove("hm0" + (i + 1)), move));
-  assert.strictEqual(Bag.machineMove("tm101"), "Secret Power");
-  assert.strictEqual(Bag.machineMove("hm07"), "Dive");
-  assert(!Bag.machines().includes("hm06"), "ORAS's HM06 would be a second Rock Smash");
-  assert.strictEqual(Bag.machines().length, 107);
-  // Every machine move is something Pokémon learn by TM in the Gen 6 learnsets, and vice versa.
+  const HMS = ["Cut", "Fly", "Surf", "Strength", "Flash", "Whirlpool", "Waterfall", "Rock Smash", "Dive", "Defog", "Rock Climb"];
+  const TMS = XY.filter((m) => !HMS.includes(m)).concat("Secret Power");
+  assert.strictEqual(TMS.length, 99);
+  TMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("tm" + String(i + 1).padStart(2, "0")), move, "TM" + (i + 1)));
+  HMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("hm" + String(i + 1).padStart(2, "0")), move, "HM" + (i + 1)));
+  assert.strictEqual(Bag.machines().length, 110);
+  assert(!ITEMS.tm100 && !ITEMS.tm101 && !ITEMS.hm12, "no machines past TM99 and HM11");
+  // Every move Pokémon learn by machine in Gen 6 is a TM or HM here; the HMs
+  // Gen 6 has no machine for (Whirlpool, Defog, Rock Climb) come from other generations.
   const tmMoves = new Set();
   for (const l of Object.values(LEARNSETS_GEN6)) for (const m of l.tm || []) tmMoves.add(m);
-  assert.deepStrictEqual([...new Set(Bag.machines().map(Bag.machineMove))].sort(), [...tmMoves].sort());
+  const machineMoves = Bag.machines().map(Bag.machineMove);
+  for (const m of tmMoves) assert(machineMoves.includes(m), "no machine for " + m);
+  assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Whirlpool", "Defog", "Rock Climb"]);
+  for (const m of ["Whirlpool", "Defog", "Rock Climb"]) assert(HM_LEARNERS[m].length > 50, "who can use " + m);
+  assert(Bag.canUseOn(Party.create("Gyarados", 30, { rng }), "hm06"), "Gyarados can use Whirlpool");
+  assert(Bag.canUseOn(Party.create("Pidgeot", 30, { rng }), "hm10"), "Pidgeot can use Defog");
+  assert(Bag.canUseOn(Party.create("Geodude", 30, { rng }), "hm11"), "Geodude can use Rock Climb");
+  assert(!Bag.canUseOn(Party.create("Pidgeot", 30, { rng }), "hm11"), "Pidgeot can't use Rock Climb");
   assert.strictEqual(Bag.name("tm24"), "TM24 Thunderbolt");
-  assert.strictEqual(Bag.name("tm101"), "TM101 Secret Power");
-  assert.deepStrictEqual(Bag.machines().slice(99, 102), ["tm100", "tm101", "hm01"]);
+  assert.strictEqual(Bag.name("tm99"), "TM99 Secret Power");
+  assert.strictEqual(Bag.name("hm11"), "HM11 Rock Climb");
+  assert.deepStrictEqual(Bag.machines().slice(98, 101), ["tm99", "hm01", "hm02"]);
+  // Saves from before keep their machines' moves under the new numbers.
   const oldSave = Object.assign(Player.create("T"), { party: [Party.create("Pidgey", 5, { rng })], bag: { "tm94-oras": 1 } });
   delete oldSave.pcItems;
   assert.deepStrictEqual(Player.load(JSON.parse(JSON.stringify(oldSave))).player.pcItems, { potion: 1 }, "old saves get the PC Potion");
-  assert.deepStrictEqual(Player.load(oldSave).player.bag, { tm101: 1, "exp-share": 1 }, "old saves get TM101 and the Exp. Share");
+  assert.deepStrictEqual(Player.load(oldSave).player.bag, { tm99: 1, "exp-share": 1 }, "old saves get Secret Power and the Exp. Share");
+  const v1 = Object.assign(Player.create("T"), { version: 1, party: [Object.assign(Party.create("Pidgey", 5, { rng }), { item: "tm71" })],
+    bag: { tm69: 1, tm70: 1, tm71: 1, tm93: 1, tm94: 1, tm95: 1, tm100: 1, tm101: 1, hm05: 1, hm07: 1 }, pcItems: { tm24: 2 } });
+  const fromV1 = Player.load(JSON.parse(JSON.stringify(v1))).player;
+  const moves = (bag) => Object.keys(bag).filter(Bag.isMachine).map(Bag.name).sort();
+  assert.deepStrictEqual(moves(fromV1.bag), ["HM05 Flash", "HM07 Waterfall", "HM08 Rock Smash", "HM09 Dive", "TM69 Rock Polish",
+    "TM70 Stone Edge", "TM92 Wild Charge", "TM93 Snarl", "TM98 Confide", "TM99 Secret Power"]);
+  assert.deepStrictEqual(fromV1.pcItems, { tm24: 2 });
+  assert.strictEqual(Bag.machineMove(fromV1.party[0].item), "Stone Edge");
+  assert.strictEqual(Player.load(JSON.parse(JSON.stringify(fromV1))).player.bag.hm05, 1, "a migrated save isn't migrated twice");
   // Key items: their own pocket; a save mid-errand gets Oak's Parcel back.
   for (const id of ["exp-share", "oaks-parcel", "town-map"]) {
     assert.strictEqual(Bag.pocket(id), "Key Items", id);
@@ -648,7 +669,7 @@ for (const share of [false, true]) {
 
   const c = Party.create("Charmander", 20, { rng });
   assert(Bag.canUseOn(c, "tm35") && !Bag.canUseOn(c, "tm24"), "Charmander learns Flamethrower, not Thunderbolt");
-  assert(Bag.canUseOn(c, "tm101") && !Bag.canUseOn(c, "hm07"));
+  assert(Bag.canUseOn(c, "tm99") && !Bag.canUseOn(c, "hm09"), "Charmander learns Secret Power, not Dive");
   Party.teachMove(c, "Flamethrower", 0);
   assert(!Bag.canUseOn(c, "tm35"), "already knows it");
 

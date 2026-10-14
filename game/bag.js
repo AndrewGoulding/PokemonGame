@@ -41,13 +41,15 @@
   const MINT_PRICE = 20000;
 
   // ---------- TMs and HMs ----------
-  // X and Y's TM01-TM100 and HM01-HM05, plus what Omega Ruby and Alpha Sapphire
-  // added: Secret Power (ORAS's TM94, which X and Y use for Rock Smash, so it's
-  // TM101 here) and HM07 Dive. ORAS's HM06 is Rock Smash again (TM94), so
-  // it's left out. Like Gen 5+, TMs are reusable; HMs too, and with no map yet
-  // there are no field moves, so HM moves can be forgotten like any other.
-  const LEFT_OUT_MACHINES = ["hm06"];
-  const isMachine = (item) => (window.ITEMS[item] || {}).category === "all-machines" && !LEFT_OUT_MACHINES.includes(item);
+  // HMs cover every region's field moves: HM01 Cut, HM02 Fly, HM03 Surf,
+  // HM04 Strength, HM05 Flash, HM06 Whirlpool, HM07 Waterfall, HM08 Rock Smash,
+  // HM09 Dive, HM10 Defog, HM11 Rock Climb. TMs are X and Y's TM01-TM100 in
+  // order, without the two that are HMs here (Flash, Rock Smash), then
+  // Secret Power from Omega Ruby and Alpha Sapphire: TM01-TM99. Which species
+  // can use an HM: data/hm-learners.js adds other generations to X and Y's.
+  // Like Gen 5+, TMs are reusable; HMs too, and with no field moves yet, HM
+  // moves can be forgotten like any other.
+  const isMachine = (item) => (window.ITEMS[item] || {}).category === "all-machines";
   const machineMove = (item) => {
     const m = isMachine(item) && /^Teaches (.+?) to a compatible/.exec(window.ITEMS[item].effect || "");
     return m ? m[1] : null;
@@ -56,7 +58,7 @@
     const m = /^(tm|hm)(\d+)$/.exec(item);
     return m[1].toUpperCase() + m[2].padStart(2, "0") + " " + machineMove(item);
   }
-  // Sorted TM01..TM101, then HMs.
+  // Sorted TM01..TM99, then HM01..HM11.
   let machineList = null;
   function machines() {
     if (!machineList) {

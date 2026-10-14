@@ -147,8 +147,8 @@ case: "Viridian City", not "VIRIDIAN CITY"), and item balls give their item.
 Scripted events (Mom healing, the PCs, the starter Poké Balls, Oak walking you
 to his lab, the rival battle, the Route 1 Potion, Oak's Parcel, the
 Viridian old man, the nurse, the move tutor, the Route 2 trade of Abra for
-Mr. Mime "Mimien", and Prof. Oak's Aide giving Flash for ten kinds caught —
-FireRed's HM05, which is TM70 among this game's Gen 6 machines) are in `ui/game.js`; their FireRed
+Mr. Mime "Mimien", and Prof. Oak's Aide giving HM05 Flash for ten kinds
+caught) are in `ui/game.js`; their FireRed
 lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scripts
 (`walk_up`, `walk_in_place_faster_down`, `emote_exclamation_mark`, ...) from
 `window.WORLD_MOVEMENTS`; the converter writes both alongside the maps. Running
@@ -179,14 +179,19 @@ uses the frames from `assets/sprites/overworld/<red|green>_surf_run.png`.
 - **Items**: Gen 6 effects for potions and drinks, status cures, Revives, PP
   restores, vitamins (10 EVs each, up to 100) and Rare Candy. In battle, using
   an item takes your turn and happens before moves.
-- **TMs and HMs**: X and Y's TM01–TM100 and HM01–HM05, plus what Omega Ruby
-  and Alpha Sapphire added: Secret Power as TM101 (it's ORAS's TM94, but X and
-  Y's TM94 is Rock Smash) and HM07 Dive. ORAS's HM06 is Rock
-  Smash again, so it's left out. Compatibility comes from the Gen 6
-  learnsets. TMs are reusable (as in Gen 5+), can't be held, tossed or sold,
-  and HM moves can be forgotten like any other (there are no field moves yet).
-  The Poké Mart sells them: HMs ₽3,000 from level 10; TMs ₽10,000 / ₽20,000 /
-  ₽30,000 by the move's power, from levels 15 / 25 / 40.
+- **HMs**: one set for every region: HM01 Cut, HM02 Fly, HM03 Surf, HM04
+  Strength, HM05 Flash, HM06 Whirlpool, HM07 Waterfall, HM08 Rock Smash,
+  HM09 Dive, HM10 Defog, HM11 Rock Climb.
+- **TMs**: X and Y's TM01–TM100 in order, minus Flash and Rock Smash (HMs
+  here), then Secret Power from Omega Ruby and Alpha Sapphire: TM01–TM99.
+  Compatibility comes from the Gen 6 learnsets; for HMs, also from any
+  generation that taught the move by machine (`data/hm-learners.js`, built by
+  `npm run build:hm-learners` from @pkmn/dex), which covers Whirlpool, Defog
+  and Rock Climb. TMs are reusable (as in Gen 5+), can't be held, tossed or
+  sold, and HM moves can be forgotten like any other (there are no field moves
+  yet). Prices: HMs ₽3,000; TMs ₽10,000 / ₽20,000 / ₽30,000 by the move's
+  power. Saves from before this numbering are converted on load, so each
+  machine keeps its move.
 - **PP Up / PP Max**: +20% of a move's base PP per PP Up, three at most (PP
   Max goes straight to three). Tracked per move; a forgotten move loses them.
 - **Mints** (from Sword and Shield): all 21. A mint changes the Pokémon's
@@ -204,7 +209,7 @@ uses the frames from `assets/sprites/overworld/<red|green>_surf_run.png`.
 | `engine/` | Stat, damage, experience, catch and item formulas, and the battle engine |
 | `game/` | Game logic around the engine: party records, the player and their save (`player.js`, `save.js`), bag and Poké Mart (`bag.js`), overworld rules (`world.js`), evolution, encounters, random teams and the opponent AI |
 | `ui/` | Text box and menus (`screen.js`), the battle screen, the overworld (`overworld.js`), FireRed's intro (`intro.js`), and the game flow, story events and menus (`game.js`) |
-| `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`, `npm run build:maps`, `npm run build:intro`, `npm run build:battle-bgs`) and their shared PNG/GBA/text helpers (`tools/lib/`) |
+| `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`, `npm run build:maps`, `npm run build:intro`, `npm run build:battle-bgs`, `npm run build:hm-learners`) and their shared PNG/GBA/text helpers (`tools/lib/`) |
 | `assets/sprites/` | Pokémon sprites (front, back, shiny), item icons, trainer and overworld sprites |
 | `assets/tilesets/` | FireRed's tilesets (tiles, palettes, metatiles), the source for the maps |
 | `assets/world/` | Generated map images and transparent overworld sprites |
@@ -224,32 +229,33 @@ and later files read those globals, so scripts must load in this order:
 5. `data/abilities.js` → `ABILITIES`
 6. `data/items.js` → `ITEMS`
 7. `data/learnsets.js` → `LEARNSETS_GEN6`
-8. `data/evolutions.js` → `EVOLUTIONS`
-9. `data/item-sprites.js` → `ITEM_SPRITES`
-10. `data/world-maps.js` → `WORLD_MAPS`
-11. `data/intro-text.js` → `INTRO_TEXT`
-12. `engine/stat-calculator.js` → `Stats`
-13. `engine/experience.js` → `Experience`
-14. `engine/catching.js` → `Catching`
-15. `engine/item-use.js` → `ItemUse`
-16. `engine/damage-calculator.js` → `Damage`
-17. `data/conditions.js` → `CONDITIONS`, `ITEM_EFFECTS`
-18. `data/battle-moves.js` → `BATTLE_MOVE_EFFECTS`
-19. `engine/battle.js` → `Battle`
-20. `game/random-team.js` → `RandomTeam`
-21. `game/opponent-ai.js` → `OpponentAI`
-22. `game/party.js` → `Party`
-23. `game/evolution.js` → `Evolution`
-24. `game/encounters.js` → `Encounters`
-25. `game/player.js` → `Player`
-26. `game/bag.js` → `Bag`
-27. `game/save.js` → `Save`
-28. `game/world.js` → `World`
-29. `ui/screen.js` → `Screen`
-30. `ui/battle-screen.js` → `BattleScreen`
-31. `ui/overworld.js` → `Overworld`
-32. `ui/intro.js` → `Intro`
-33. `ui/game.js` → `Game` (starts the game on load)
+8. `data/hm-learners.js` → `HM_LEARNERS`
+9. `data/evolutions.js` → `EVOLUTIONS`
+10. `data/item-sprites.js` → `ITEM_SPRITES`
+11. `data/world-maps.js` → `WORLD_MAPS`
+12. `data/intro-text.js` → `INTRO_TEXT`
+13. `engine/stat-calculator.js` → `Stats`
+14. `engine/experience.js` → `Experience`
+15. `engine/catching.js` → `Catching`
+16. `engine/item-use.js` → `ItemUse`
+17. `engine/damage-calculator.js` → `Damage`
+18. `data/conditions.js` → `CONDITIONS`, `ITEM_EFFECTS`
+19. `data/battle-moves.js` → `BATTLE_MOVE_EFFECTS`
+20. `engine/battle.js` → `Battle`
+21. `game/random-team.js` → `RandomTeam`
+22. `game/opponent-ai.js` → `OpponentAI`
+23. `game/party.js` → `Party`
+24. `game/evolution.js` → `Evolution`
+25. `game/encounters.js` → `Encounters`
+26. `game/player.js` → `Player`
+27. `game/bag.js` → `Bag`
+28. `game/save.js` → `Save`
+29. `game/world.js` → `World`
+30. `ui/screen.js` → `Screen`
+31. `ui/battle-screen.js` → `BattleScreen`
+32. `ui/overworld.js` → `Overworld`
+33. `ui/intro.js` → `Intro`
+34. `ui/game.js` → `Game` (starts the game on load)
 
 `index.html` is the source of truth for this order, and the smoke test reads its
 script list from there (skipping `ui/`, which needs a real page). If you add a

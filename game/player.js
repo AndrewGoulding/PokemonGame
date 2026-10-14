@@ -13,7 +13,8 @@
 (function () {
   "use strict";
 
-  const VERSION = 1;
+  // 2: TMs and HMs renumbered (Flash and Rock Smash became HMs; see game/bag.js).
+  const VERSION = 2;
   const PARTY_SIZE = 6;
   const BOX_COUNT = 8;
   const BOX_SIZE = 30;
@@ -204,6 +205,17 @@
     return r;
   }
 
+  // Item ids that changed since a save's version: old id -> new id.
+  function renamedItems(version) {
+    const out = { "tm94-oras": "tm99" };
+    if ((version || 1) < 2) {
+      // Version 1 had X and Y's TM01-TM100, TM101 Secret Power, HM05 Waterfall and HM07 Dive.
+      for (let n = 71; n <= 101; n++) if (n !== 94) out["tm" + n] = "tm" + String(n - (n > 94 ? 2 : 1)).padStart(2, "0");
+      Object.assign(out, { tm70: "hm05", tm94: "hm08", hm05: "hm07", hm07: "hm09" });
+    }
+    return out;
+  }
+
   // Turns parsed save data into a player, upgrading older versions.
   // Returns { player, warnings }; throws if it isn't a save at all.
   function load(data) {
@@ -216,7 +228,8 @@
     player.boxes = player.boxes.map((_, i) =>
       ((data.boxes && data.boxes[i]) || []).map((r) => cleanRecord(r, warnings)).filter(Boolean).slice(0, BOX_SIZE));
     player.bag = {};
-    const RENAMED = { "tm94-oras": "tm101" };   // items whose ids changed
+    const RENAMED = renamedItems(data.version);
+    for (const r of player.party.concat(...player.boxes)) if (r.item) r.item = RENAMED[r.item] || r.item;
     for (let [item, n] of Object.entries(data.bag || {})) {
       item = RENAMED[item] || item;
       if (window.ITEMS[item] && n > 0) player.bag[item] = Math.min(MAX_ITEM_COUNT, n | 0);
