@@ -2102,7 +2102,8 @@
   // ---------- Leaf, outside Pewter Gym ----------
   //
   // When you come out of the Gym with the Boulder Badge, Leaf comes over,
-  // happy for you: she has a Pokédex from Prof. Oak too, and wants a battle.
+  // happy for you: she has a Pokédex from Prof. Oak too, and wants a battle
+  // (healing your Pokémon first). Afterwards she heads off west, out of sight.
   // Her starter (level 15, the one weak against yours) and Jigglypuff (level
   // 13). Losing blacks you out, and she's waiting again next time you come
   // out of the Gym; beat her and she heads off.
@@ -2122,7 +2123,11 @@
     await say(["Leaf: {PLAYER}! I saw you go into the\nGym. You beat Brock? That's amazing!",
       "Guess what? I went back to see Prof.\nOak, and he gave me a Pokédex too!",
       "I've been filling it in all the way\nhere. Look, I even caught a\nJigglypuff on Route 3!",
-      "How about a battle? I want to see\nhow strong your Pokémon have gotten!"]);
+      "How about a battle? I want to see\nhow strong your Pokémon have gotten!",
+      "But your Pokémon must be tired after\nthe Gym. Let me heal them first!"]);
+    player.party.forEach(Party.heal);
+    await sayWithJingle("mus_heal", "{PLAYER}'s Pokémon were fully healed!");
+    await say("Leaf: There! Now let's battle!");
     const team = [Party.create(RIVAL_PICK[f.starter], 15), Party.create("Jigglypuff", 13)];
     const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green" },
       defeatText: ["Wow! You really are strong,\n{PLAYER}!"] });
@@ -2133,7 +2138,8 @@
     await say(["Leaf: That was a great battle!\nI'm going to keep working on my\nPokédex.",
       "Let's both try to fill ours in!\nSee you later, {PLAYER}!"]);
     music("mus_rival_exit");
-    await Overworld.act([{ who: L, moves: ["walk_right", "walk_right", "walk_right", "walk_right", "set_invisible"] }]);
+    // Off the other way (west, round you), until she's out of sight.
+    await Overworld.act([{ who: L, moves: ["walk_down"].concat(Array(9).fill("walk_left"), ["walk_up", "walk_up", "set_invisible"]) }]);
     Overworld.removeObject(L);
   }
 
