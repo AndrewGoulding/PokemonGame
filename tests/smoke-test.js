@@ -963,6 +963,9 @@ for (const share of [false, true]) {
   // Red, who meets you at the forest's north exit, has his own overworld look.
   assert.deepStrictEqual([WORLD_SPRITES.red.sprite, WORLD_SPRITES.red.width, WORLD_SPRITES.red.height], ["red_normal", 16, 32]);
   assert(fs.existsSync(path.join(__dirname, "../assets/world/sprites/red_normal.png")));
+  // Jessie & James at the end of Mt. Moon: Rocket Grunt looks, and one picture of both.
+  assert.deepStrictEqual([WORLD_SPRITES.jessie.sprite, WORLD_SPRITES.james.sprite], ["rocket_f", "rocket_m"]);
+  assert(fs.existsSync(path.join(__dirname, "../assets/sprites/trainers/front/jessie_james.png")));
   assert(forest.wild.slots.some((s) => s.species === "Pikachu"), "Pikachu in Viridian Forest");
   assert.deepStrictEqual(new Set(WORLD_MAPS.Route2.wild.slots.map((s) => s.species)), new Set(["Rattata", "Pidgey", "Caterpie", "Weedle"]));
   // Shared text keeps FireRed's {STR_VAR_n} slots for scripts to fill in.

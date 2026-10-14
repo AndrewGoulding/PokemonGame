@@ -175,7 +175,8 @@ and Museum guide walking you over, the Museum's ₽50 ticket, the Old Amber,
 the Seismic Toss tutor, Brock with the Boulder Badge and TM39, and the Aide
 bringing the Running Shoes, the Mega Punch and Mega Kick tutors (who teach
 again and again, for ₽1,000 each time), the
-Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils) are in `ui/game.js`; their FireRed
+Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils, and Jessie & James
+at the end of Mt. Moon as in Yellow) are in `ui/game.js`; their FireRed
 lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scripts
 (`walk_up`, `walk_in_place_faster_down`, `emote_exclamation_mark`, ...) from
 `window.WORLD_MOVEMENTS`; the converter writes both alongside the maps. Running

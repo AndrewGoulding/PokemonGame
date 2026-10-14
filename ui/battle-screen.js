@@ -781,6 +781,10 @@
     } else if (cfg.foeTrainer) {
       foeTrainer.src = "assets/sprites/trainers/front/" + cfg.foeTrainer + ".png";
       await foeTrainer.decode().catch(() => {});
+      // A wider picture (two trainers) keeps the same scale and centre (x 176 of 240).
+      const w = foeTrainer.naturalWidth || 64;
+      foeTrainer.style.width = (w / 240 * 100) + "%";
+      foeTrainer.style.right = ((64 - w / 2) / 240 * 100) + "%";
       foeTrainer.classList.remove("hidden");
       movers.push([foeTrainer, -shift]);
       foeTrainerOut = true;

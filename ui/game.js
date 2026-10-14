@@ -1376,19 +1376,7 @@
         return;
       }
 
-      // Super Nerd Miguel (trainerbattle_no_intro: his lines come first).
-  async function miguelBattle() {
-    await say(T("MtMoon_B2F_Text_MiguelIntro"));
-    if (!canBattle()) return;
-    const outcome = await battle("trainer", { foe: { name: "Super Nerd Miguel", team: trainerTeam("TRAINER_SUPER_NERD_MIGUEL"), pic: "super_nerd" },
-      defeatText: T("MtMoon_B2F_Text_MiguelDefeat"), trainerId: "TRAINER_SUPER_NERD_MIGUEL" });
-    if (outcome !== "won") return;
-    show("world");
-    await Overworld.resume();
-    await say(T("MtMoon_B2F_Text_WellEachTakeAFossil"));
-  }
-
-  // ---------- Pewter City ----------
+      // ---------- Pewter City ----------
 
       // Before you have Brock's badge, a boy marches you to the Gym if you
       // head for the east exit, or if you talk to him.
@@ -1924,6 +1912,44 @@
     Overworld.removeObject(R);
   }
 
+  // ---------- Jessie & James, at the end of Mt. Moon ----------
+  //
+  // As in Yellow: heading down to the last ladder on B2F, Jessie and James
+  // come up from it, recite their motto and battle with Ekans, Meowth and
+  // Koffing (level 14). Beaten, they blast off; beat you, and they wait there
+  // again.
+  function jessieJamesStep() {
+    const f = player.flags, at = Overworld.position();
+    if (f.jessieJames || at.map !== "MtMoon_B2F") return null;
+    return at.y === 7 && (at.x === 3 || at.x === 4) && at.facing === "down" && canBattle() ? { type: "jessie-james" } : null;
+  }
+  async function jessieJames() {
+    const f = player.flags, J = "LOCALID_JESSIE", K = "LOCALID_JAMES";
+    Overworld.addObject(J, { x: 3, y: 10, facing: "up" }, window.WORLD_SPRITES.jessie);
+    Overworld.addObject(K, { x: 4, y: 10, facing: "up" }, window.WORLD_SPRITES.james);
+    await Overworld.act([{ who: J, moves: ["walk_up", "walk_up"] }, { who: K, moves: ["walk_up", "walk_up"] }]);
+    await Overworld.act([{ who: "player", moves: ["emote_exclamation_mark"] }]);
+    await say(["Jessie: Hold it right there!", "James: Those fossils are ours, kid!",
+      "Jessie: Prepare for trouble!", "James: Make it double!",
+      "Jessie: To protect the world from\ndevastation!", "James: To unite all peoples within\nour nation!",
+      "Jessie: To denounce the evils of\ntruth and love!", "James: To extend our reach to the\nstars above!",
+      "Jessie: Jessie!", "James: James!",
+      "Jessie: Team Rocket, blast off at the\nspeed of light!", "James: Surrender now, or prepare to\nfight!",
+      "Meowth: Meowth! That's right!"]);
+    const team = [Party.create("Ekans", 14), Party.create("Meowth", 14), Party.create("Koffing", 14)];
+    const outcome = await battle("trainer", { foe: { name: "Rocket Jessie & James", team, pic: "jessie_james" },
+      defeatText: ["Jessie: We can't lose to a kid\nlike this!"] });
+    if (outcome !== "won") return;
+    f.jessieJames = true;
+    show("world");
+    await Overworld.resume();
+    await say(["James: This isn't over, twerp!",
+      "Jessie, James & Meowth: Looks like\nTeam Rocket's blasting off again!"]);
+    await Overworld.act([{ who: J, moves: ["walk_down", "set_invisible"] }, { who: K, moves: ["walk_down", "set_invisible"] }]);
+    Overworld.removeObject(J);
+    Overworld.removeObject(K);
+  }
+
   // Super Nerd Miguel (trainerbattle_no_intro: his lines come first).
   async function miguelBattle() {
     await say(T("MtMoon_B2F_Text_MiguelIntro"));
@@ -2068,11 +2094,12 @@
         special,
         onWarp,
         trainerWaiting, hiddenItem: (h) => !player.flags[h.flag],
-        onStep: () => redForestStep() || repelStep(), allowWild: repelAllows
+        onStep: () => redForestStep() || jessieJamesStep() || repelStep(), allowWild: repelAllows
       });
       if (ev.type === "menu") await startMenu();
       else if (ev.type === "repel-ended") await say("Repel's effect wore off…");
       else if (ev.type === "red-forest") await redForest();
+      else if (ev.type === "jessie-james") await jessieJames();
       else if (ev.type === "wild") {
         if (!canBattle()) continue;
         await battle("wild", { foe: { name: "Wild", team: [Party.create(ev.species, ev.level)] }, terrain: "grass" });
