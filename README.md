@@ -19,8 +19,8 @@ Leaf walks over and takes the one that's weak against yours; on your way out she
 to you for a practice battle, then heads off. Then Route 1's tall grass, north of town, has FireRed's wild
 Pokémon. Gary's older sister Daisy, at her table next door, introduces
 herself and gives you a Town Map the first time you talk to her (use it from the
-bag: FireRed's map of Kanto, with you on it; move the cursor or tap a place to
-see its name). Red's Mom heals your party, and the PC upstairs stores items (there's a
+bag: FireRed's map of Kanto, with you on it; move the cursor with the D-pad to
+see each place's name). Red's Mom heals your party, and the PC upstairs stores items (there's a
 Potion in it to start).
 
 North of Route 1 is **Viridian City**. The Poké Mart clerk hands you Oak's
@@ -29,8 +29,7 @@ start without any), and after that the Mart
 sells to you and the old man lying across the road north gets up and shows you
 how to catch Pokémon. The Pokémon Center's nurse heals your party (and is where
 you return if you black out), and its PC holds both Pokémon and items (in Bill's
-PC, drag a Pokémon onto another to swap them, or onto the other side to deposit
-or withdraw it). There's
+PC, press Select on a Pokémon and then on another to swap them). There's
 also a move tutor who teaches Dream Eater once, a school and the Nickname house.
 Route 2, Route 22 and the Gym aren't built yet; walking into the Gym's door
 tells you it's locked (it opens at seven badges in FireRed).
@@ -43,9 +42,9 @@ the menu. In menus, the D-pad moves between choices, A picks one and B goes back
 in the party, a summary's moves and Bill's PC, Select on one and then on another
 swaps them. On a keyboard: arrows / WASD, Z (A), X (B), Esc or M (Start).
 
-The **menu** has your Pokémon (tap one for its summary: stats, IVs, EVs, nature,
-moves; make it lead; use, give or take items; drag one card onto another to swap
-them, or press and hold first on a phone), the Bag (medicine, evolution
+The **menu** has your Pokémon (choose one for its summary: stats, IVs, EVs, nature,
+moves; make it lead; use, give or take items; press Select on one card and then
+another to swap them), the Bag (medicine, evolution
 stones, Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
 the Exp. Share, Oak's Parcel and the Town Map), the Pokédex (a red Poké Ball
 marks species you've caught, a gray one those you've only seen; wild Pokémon
@@ -65,7 +64,7 @@ Pokémon's Ball. Repels (from the bag) keep wild Pokémon below your lead's leve
 away for 100, 200 or 250 steps; when one wears off you're asked whether to use
 another of the same kind (as in Black and White). In battle you can fight, use items from the Bag, switch, and in wild battles
 throw balls or run. Pokémon gain experience and EVs, level up mid-battle, learn
-moves and evolve afterwards. Click the text box (or press Space) to skip ahead.
+moves and evolve afterwards. Press A to skip ahead.
 
 **Saving**: the game saves automatically to this browser (including where you
 are on the map) after every battle, story event and menu change, and
