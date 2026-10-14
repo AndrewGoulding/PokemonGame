@@ -389,6 +389,7 @@
 
   // Fades to black, moves the player (a scene's warp), and fades back in.
   function fadeOut() { return new Promise((resolve) => { fadeDir = 1; afterFade = resolve; }); }
+  function fadeIn() { return fade ? new Promise((resolve) => { fadeDir = -1; afterFade = resolve; }) : Promise.resolve(); }
   async function teleport(loc) {
     if (!fade) await fadeOut();
     me.map = loc.map; me.x = loc.x; me.y = loc.y; me.facing = loc.facing || "down";
@@ -470,7 +471,113 @@
     }
   }
 
+  // ---------- The Pokémon Center's healing machine ----------
+  //
+  // FireRed's FLDEFF_POKECENTER_HEAL (src/field_effect.c): a Poké Ball goes
+  // into the machine for each Pokémon, 25 frames apart (with SE_BALL); 32 frames
+  // later the heal jingle starts, the machine's screen flickers, and the balls
+  // flash yellow (colours 2, 3, 5, 6 and 8 of their palette, brightened in
+  // turn) three times round and once more; 30 frames after that, and once the
+  // jingle is over, it's done. The pictures are at FireRed's screen positions
+  // (the balls from (93, 36), the screen at (128, 24)), which are the same here
+  // as the camera is on the player, standing at the counter.
+  const BALL_OFFSETS = [[0, 0], [6, 0], [0, 4], [6, 4], [0, 8], [6, 8]];
+  const GLOW = [16, 12, 8, 0];                       // sPokeballGlowReds / Greens (blue stays)
+  const MONITOR_ANIM = [[1, 5], [2, 5], [3, 7], [2, 5], [1, 5], [0, 5]];   // played 4 times
+  let heal = null;
+  const fxCanvas = document.createElement("canvas");
+  const fxG = fxCanvas.getContext("2d");
+
+  function pokecenterHeal(count, playJingle) {
+    return new Promise((resolve) => {
+      const camX = me.x * TILE - PLAYER_X, camY = me.y * TILE - PLAYER_Y;
+      heal = { state: 0, timer: 0, counter: 0, flashed: 0, left: Math.max(1, Math.min(6, count)), balls: [],
+        x: camX + 93, y: camY + 36, monitor: { x: camX + 128 - 16, y: camY + 24 - 8, on: false, step: 0, t: 0, plays: 0 },
+        glow: {}, playJingle, jingleDone: false, resolve };
+    });
+  }
+
+  function updateHeal() {
+    const h = heal;
+    const glowAll = (phase) => { for (const i of [2, 3, 5, 6, 8]) h.glow[i] = phase; };
+    switch (h.state) {
+      case 0:   // PlaceBalls
+        if (h.timer === 0 || --h.timer === 0) {
+          h.timer = 25;
+          const [dx, dy] = BALL_OFFSETS[h.counter++];
+          h.balls.push([h.x + dx - 4, h.y + dy - 4]);
+          h.left--;
+          if (window.GameAudio) window.GameAudio.se("se_ball");
+        }
+        if (h.left === 0) { h.timer = 32; h.state = 1; }
+        break;
+      case 1:   // TryPlaySe
+        if (--h.timer === 0) {
+          h.state = 2; h.timer = 8; h.counter = 0; h.flashed = 0;
+          Promise.resolve(h.playJingle && h.playJingle()).then(() => { h.jingleDone = true; });
+          h.monitor.on = true;
+        }
+        break;
+      case 2:   // FlashFirstThree
+        if (--h.timer === 0) {
+          h.timer = 8;
+          h.counter = (h.counter + 1) & 3;
+          if (h.counter === 0) h.flashed++;
+        }
+        h.glow[8] = (h.counter + 3) & 3; h.glow[6] = (h.counter + 2) & 3; h.glow[2] = (h.counter + 1) & 3;
+        h.glow[5] = h.glow[3] = h.counter;
+        if (h.flashed >= 3) { h.state = 3; h.timer = 8; h.counter = 0; }
+        break;
+      case 3:   // FlashLast
+        if (--h.timer === 0) {
+          h.timer = 8;
+          h.counter = (h.counter + 1) & 3;
+          if (h.counter === 3) { h.state = 4; h.timer = 30; }
+        }
+        glowAll(h.counter);
+        break;
+      case 4:   // WaitAfterFlash (the balls are gone)
+        h.balls = [];
+        if (--h.timer === 0) h.state = 5;
+        break;
+      case 5:   // WaitForSound
+        if (h.jingleDone && !h.monitor.on) { heal = null; h.resolve(); }
+        break;
+    }
+    // The screen: frames 1, 2, 3, 2, 1, 0, four times, then it's put away.
+    const m = h.monitor;
+    if (m.on && ++m.t >= MONITOR_ANIM[m.step][1]) {
+      m.t = 0;
+      if (++m.step === MONITOR_ANIM.length) { m.step = 0; if (++m.plays === 4) m.on = false; }
+    }
+  }
+
+  function drawHeal(camX, camY) {
+    const fx = window.FIELD_EFFECTS;
+    if (!fx) return;
+    // The palette, with the glowing colours brightened (MultiplyInvertedPaletteRGBComponents).
+    const pal = fx.palette.map((c, i) => {
+      const k = heal.glow[i] != null ? GLOW[heal.glow[i]] : 0;
+      return [0, 1, 2].map((ch) => { const v = c[ch] >> 3, mul = ch === 2 ? 0 : k; return (v + (((31 - v) * mul) >> 4)) << 3; });
+    });
+    const blit = (pic, frame, x, y) => {
+      const w = pic.width, h = pic.height;
+      fxCanvas.width = w; fxCanvas.height = h;
+      const img = fxG.createImageData(w, h);
+      for (let i = 0; i < w * h; i++) {
+        const v = parseInt(pic.px[frame * w * h + i], 16);
+        if (!v) continue;
+        img.data.set(pal[v], i * 4); img.data[i * 4 + 3] = 255;
+      }
+      fxG.putImageData(img, 0, 0);
+      g.drawImage(fxCanvas, Math.round(x - camX), Math.round(y - camY));
+    };
+    if (heal.monitor.on) blit(fx.monitor, MONITOR_ANIM[heal.monitor.step][0], heal.monitor.x, heal.monitor.y);
+    for (const [x, y] of heal.balls) blit(fx.ball, 0, x, y);
+  }
+
   function update() {
+    if (heal) updateHeal();
     if (transition && ++transition.t > FLASH_FRAMES + SLICE_FRAMES + 4) {
       const done = transition.resolve;
       transition = null;
@@ -608,6 +715,7 @@
       frame = frameFor(me.facing, !!me.move && (me.move.t % TILE) < TILE / 2, me.parity, 9);
     }
     if (!me.hidden) sprites.push({ y: py, draw: () => drawSprite(sheet, 16, 32, frame, me.facing === "right", px - camX, py - camY - hop) });
+    if (heal) drawHeal(camX, camY);   // the healing machine's balls and screen, under people
     sprites.sort((a, b) => a.y - b.y).forEach((s) => s.draw());
 
     for (const [name, ox, oy] of layers) {
@@ -706,7 +814,8 @@
 
   window.Overworld = {
     explore, hide, read: (pages) => read(pages), forceStep, refreshPeople: () => loadPeople(),
-    act, addObject, removeObject, teleport, battleTransition, resume,
+    act, addObject, removeObject, teleport, battleTransition, resume, pokecenterHeal,
+    fadeToBlack: fadeOut, fadeFromBlack: fadeIn,
     position: () => ({ map: me.map, x: me.x, y: me.y, facing: me.facing })
   };
 })();

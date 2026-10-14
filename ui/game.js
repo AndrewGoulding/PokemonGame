@@ -1436,8 +1436,13 @@
           return;
         }
         await say("Red's Mom: Oh, {PLAYER}! You look worn out.\nYou and your Pokémon should take a\nquick rest.");
+        // EventScript_OutOfCenterPartyHeal: the screen goes black for the jingle.
+        Screen.say("");
+        await Overworld.fadeToBlack();
+        // (as long as the jingle, and a moment at least, for when the sound is off)
+        await Promise.all([fanfare("mus_heal"), new Promise((r) => setTimeout(r, 1500))]);
         player.party.forEach(Party.heal);
-        await fanfare("mus_heal");
+        await Overworld.fadeFromBlack();
         await say("Red's Mom: There! You and your Pokémon\nare looking great. Take care now!");
         return;
 
@@ -1572,7 +1577,7 @@
         return;
 
       case "ViridianCity_PokemonCenter_1F_EventScript_Nurse":
-        await nurse(ev.map);
+        await nurse(ev.map, ev.person);
         return;
 
       case "Common_EventScript_UnionRoomAttendant":
@@ -1711,7 +1716,7 @@
         return;
 
       case "PewterCity_PokemonCenter_1F_EventScript_Nurse":
-        await nurse(ev.map);
+        await nurse(ev.map, ev.person);
         return;
 
       case "MysteryEventClub_EventScript_Woman":   // no Mystery Events here
@@ -1728,7 +1733,7 @@
         return;
 
       case "Route4_PokemonCenter_1F_EventScript_Nurse":
-        await nurse(ev.map);
+        await nurse(ev.map, ev.person);
         return;
 
       // ₽500 for a Magikarp, once.
@@ -2021,13 +2026,19 @@
   }
 
   // A Pokémon Center nurse. Blacking out later brings you back to this one.
-  async function nurse(mapName) {
+  // She turns to the machine behind her, your Poké Balls go in and it heals
+  // them (FLDEFF_POKECENTER_HEAL), and she turns back.
+  async function nurse(mapName, who) {
     const [welcome, ask] = T("Text_WelcomeWantToHealPkmn");
     await say(welcome);
     if (!(await confirm(fill(ask)))) { await say(T("Text_WeHopeToSeeYouAgain")); return; }
     await say(T("Text_TakeYourPkmnForFewSeconds"));
+    Screen.say("");
+    const id = who && who.localId;
+    if (id) await Overworld.act([{ who: id, moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
+    await Overworld.pokecenterHeal(player.party.length, () => fanfare("mus_heal"));
+    if (id) await Overworld.act([{ who: id, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
     player.party.forEach(Party.heal);
-    await fanfare("mus_heal");
     if (Player.CENTERS[mapName]) player.flags.lastCenter = mapName;
     await say(T("Text_RestoredPkmnToFullHealth"));
     await say(T("Text_WeHopeToSeeYouAgain"));

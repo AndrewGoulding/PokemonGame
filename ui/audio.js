@@ -3,6 +3,7 @@
 //   GameAudio.music("mus_pallet")       // switch the music (no-op if it's already playing)
 //   await GameAudio.fanfare("mus_heal") // pause the music, play a jingle, then carry on
 //   GameAudio.cry("Pikachu", { faint: true })
+//   GameAudio.se("se_ball")             // a sound effect over the music
 //   GameAudio.setEnabled(false)         // the Sound option (remembered in this browser)
 //
 // Songs are FireRed's, played by its sound engine (game/m4a.js) from
@@ -117,6 +118,16 @@
       if (fanfareDepth) return;
       const next = wanted || (before && before.name);
       if (next) start(next, before && before.name === next ? before.at : 0, 0.05);
+    },
+    // A sound effect (one of tools/build-audio.js's SOUND_EFFECTS), over whatever is playing.
+    se(name) {
+      if (!enabled || !ctx || !window.MUSIC_DATA || ctx.state !== "running") return;
+      const s = song(name);
+      if (!s) return;
+      const source = ctx.createBufferSource();
+      source.buffer = s.buffer;
+      source.connect(master);
+      source.start();
     },
     cry(species, opts) {
       if (!enabled || !ctx) return;

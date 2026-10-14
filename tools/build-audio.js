@@ -5,7 +5,8 @@
 // It needs sound/ (the songs' MIDI files and midi.cfg, the voicegroups, key
 // split tables and samples) checked out. Writes:
 //
-//   assets/audio/music.js      window.MUSIC_DATA: every song (mus_*.mid, as
+//   assets/audio/music.js      window.MUSIC_DATA: every song (mus_*.mid, and the
+//                              few sound effects in SOUND_EFFECTS, as
 //                              note and controller events per track, with its
 //                              tempo changes, loop and settings from midi.cfg)
 //                              and the instruments they play (FireRed's
@@ -200,10 +201,14 @@ for (const line of fs.readFileSync(S("songs/midi/midi.cfg"), "utf8").split("\n")
   cfg[m[1]] = { group: opt("G"), vol: +(opt("V") || 127), reverb: +(opt("R") || 0), exact: /-E\b/.test(m[2]) };
 }
 
+// The sound effects the game plays (se_*.mid): the Poké Balls going into a
+// Pokémon Center's healing machine.
+const SOUND_EFFECTS = ["se_ball"];
+
 // Flat per-track event lists to keep the file small: [tick, kind, a, b, c] ...
 const songs = {};
 for (const [name, c] of Object.entries(cfg)) {
-  if (!/^mus_/.test(name)) continue;
+  if (!/^mus_/.test(name) && !SOUND_EFFECTS.includes(name)) continue;
   const file = S("songs/midi", name + ".mid");
   if (!fs.existsSync(file)) continue;
   const label = "voicegroup" + String(c.group).padStart(3, "0");
