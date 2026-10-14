@@ -1119,8 +1119,22 @@ for (const share of [false, true]) {
   }
   // Mining level: 1 to start, rising with treasures dug out; each level lets
   // rarer treasures be buried.
-  assert.deepStrictEqual([0, 4, 5, 11, 12, 124, 125, 999].map(Mining.level), [1, 1, 2, 2, 3, 8, 9, 9]);
-  assert.deepStrictEqual([Mining.toNext(0), Mining.toNext(7), Mining.toNext(125)], [5, 5, null]);
+  // Levels 1-100: one treasure a level up to 20, then 2, 3, 4 and 5 a level.
+  assert.strictEqual(Mining.MAX_LEVEL, 100);
+  assert.deepStrictEqual([0, 1, 19, 20, 21, 22, 298, 299, 999].map(Mining.level), [1, 2, 20, 20, 21, 21, 99, 100, 100]);
+  assert.deepStrictEqual([Mining.toNext(0), Mining.toNext(20), Mining.toNext(299)], [1, 1, null]);
+  // Rarer treasures unlock as before, spread over the 100 levels.
+  const unlock = (item) => Mining.TREASURES.find((t) => t[0] === item)[3];
+  assert.deepStrictEqual(["heart-scale", "revive", "fire-stone", "moon-stone", "heat-rock", "max-revive", "helix-fossil", "root-fossil", "flame-plate"]
+    .map(unlock), [1, 13, 26, 38, 51, 63, 75, 88, 100]);
+  // Mt. Moon only holds Kanto's fossils.
+  const fossils = (map) => Mining.available(100, map).map((t) => t[0]).filter((i) => /fossil|amber/.test(i));
+  assert.deepStrictEqual(fossils("MtMoon_B2F"), ["helix-fossil", "dome-fossil", "old-amber"]);
+  assert.strictEqual(fossils("SomeOtherCave").length, 7);
+  const moon = mulberry32(12);
+  for (let n = 0; n < 200; n++) {
+    for (const t of Mining.create(moon, 100, "MtMoon_1F").treasures) assert(!/^(root|claw|skull|armor)-fossil$/.test(t.item), t.item);
+  }
   assert.deepStrictEqual(Mining.available(1).map((t) => t[0]).sort(),
     ["blue-shard", "everstone", "green-shard", "hard-stone", "heart-scale", "red-shard", "yellow-shard"]);
   assert.strictEqual(Mining.available(Mining.MAX_LEVEL).length, Mining.TREASURES.length, "everything at the top level");

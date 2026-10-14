@@ -207,14 +207,15 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   tiles with the Pickaxe or the wider Hammer to clear the rock (1-6 layers;
   grey bedrock can't be dug) and uncover 2-4 buried treasures — Heart Scales,
   shards, evolution stones, Star Pieces, Revives, fossils, plates and more —
-  before the shaking brings the wall down. Your **mining level** (1-9, on the
-  trainer card) starts at 1, where only common treasures (Heart Scales, shards,
-  Hard Stones, Everstones) are buried, and rises with every treasure you dig
-  out (5, 12, 22, 35, 50, 70, 95 and 125 in all); each level adds rarer ones:
-  Revives, Star Pieces and Oval Stones at 2, the first evolution stones at 3,
-  Moon and Sun Stones and some held items at 4 and 5, Max Revives and Rare
-  Bones at 6, Kanto's fossils at 7, Sinnoh's at 8 and the plates at 9. The
-  rules are in `game/mining.js`, the screen in `ui/mining.js`.
+  before the shaking brings the wall down. Your **mining level** (1-100, on
+  the trainer card) starts at 1, where only common treasures (Heart Scales,
+  shards, Hard Stones, Everstones) are buried, and rises with every treasure
+  you dig out: one treasure a level up to level 20, then 2, 3, 4 and 5 a level
+  (299 in all for level 100). Rarer treasures unlock along the way: Revives,
+  Star Pieces and Oval Stones at 13, the first evolution stones at 26, Moon
+  and Sun Stones and some held items at 38 and 51, Max Revives and Rare Bones
+  at 63, Kanto's fossils at 75, Sinnoh's at 88 and the plates at 100. Mt. Moon
+  only holds Kanto's fossils (Helix, Dome, Old Amber). The rules are in `game/mining.js`, the screen in `ui/mining.js`.
 - **Catching**: the Gen 6 formula (HP, catch rate, ball and status bonuses,
   four shake checks). Poké, Great, Ultra, Master, Net, Nest, Repeat, Timer,
   Quick and Dusk Balls have their bonuses. No critical captures yet.

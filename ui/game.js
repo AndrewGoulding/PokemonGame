@@ -460,7 +460,7 @@
     clearMenu();
     window.Screen.say("Tap a tile to dig. The Hammer digs wider but shakes the wall more. (Keys: arrows, Z to dig, X to switch tools.)");
     const f = player.flags, before = Mining.level(f.miningDug);
-    const found = await MiningScreen.run(scene, Mining.create(Math.random, before));
+    const found = await MiningScreen.run(scene, Mining.create(Math.random, before, player.location.map));
     for (const id of found) {
       Player.addItem(player, id);
       await message(player.name + " obtained " + article(Bag.name(id)) + "!");
