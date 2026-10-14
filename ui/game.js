@@ -1240,9 +1240,14 @@
         return;
       }
 
-      // In the lab, so not "Gramps isn't around" (that's from before Oak walks you there).
+      // Leaf, waiting in the lab before Oak walks you there: she introduces
+      // herself, then wonders where he is.
       case "PalletTown_ProfessorOaksLab_EventScript_Rival":
-        if (!f.oakInLab && !f.starter) await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalGrampsIsntAround"));
+        if (!f.oakInLab && !f.starter && !f.metLeaf) {
+          await say(["Leaf: Oh, hey! What's your name?\n{PLAYER}?",
+            "Leaf: My name's Leaf! I'm here to get my\nstarter Pokémon, but Prof. Oak is not\naround."]);
+          f.metLeaf = true;
+        } else if (!f.oakInLab && !f.starter) await say(["Leaf: I wonder where he is?"]);
         else if (!f.starter) await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalGoChoosePlayer"));
         else await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalMyMonLooksTougher"));
         return;
