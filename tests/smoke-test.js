@@ -909,9 +909,9 @@ for (const share of [false, true]) {
   assert.deepStrictEqual(WORLD_MAPS.PalletTown.signs.find((x) => x.x === 9 && x.y === 11).text,
     ["Pallet Town\nShades of your journey await!"]);
 
-  // Saves: a new game starts in the bedroom with no Pokémon; old saves appear outside the house.
+  // Saves: a new game starts in Pallet Town, outside Red's house, with no Pokémon.
   const fresh = Player.load(JSON.parse(Player.serialize(Player.create("Ash")))).player;
-  assert.strictEqual(fresh.location.map, "PalletTown_PlayersHouse_2F");
+  assert.deepStrictEqual(fresh.location, { map: "PalletTown", x: 6, y: 8, facing: "down" });
   assert.strictEqual(fresh.party.length, 0);
   assert.strictEqual(fresh.look, "custom");
   const old = JSON.parse(Player.serialize(Player.create("Old")));

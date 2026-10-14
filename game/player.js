@@ -26,9 +26,9 @@
   const MAX_ITEM_COUNT = 999;
   // The item storage in your PC starts with a Potion, as in FireRed.
   const STARTING_PC_ITEMS = { "potion": 1 };
-  // Where a new game starts (your bedroom) and where old saves from before the
-  // overworld appear (outside your house).
-  const NEW_GAME_LOCATION = { map: "PalletTown_PlayersHouse_2F", x: 6, y: 6, facing: "down" };
+  // Where a new game starts (in Pallet Town, outside Red's house) and where old
+  // saves from before the overworld appear (the same spot).
+  const NEW_GAME_LOCATION = { map: "PalletTown", x: 6, y: 8, facing: "down" };
   const OLD_SAVE_LOCATION = { map: "PalletTown", x: 6, y: 8, facing: "down" };
   const HOME = { map: "PalletTown_PlayersHouse_1F", x: 8, y: 5, facing: "up" };
   // Where you come back after blacking out: in front of each Pokémon Center's counter.
