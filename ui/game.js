@@ -450,7 +450,8 @@
   }
 
   // Diamond and Pearl's Underground digging (game/mining.js, ui/mining.js), in
-  // any cave. Whatever is fully dug out goes in the bag.
+  // any cave. Whatever is fully dug out goes in the bag, and counts toward your
+  // mining level (flags.miningDug), which decides what can be buried.
   async function explorerKit() {
     const here = player.location && window.WORLD_MAPS[player.location.map];
     if (!here || here.type !== "underground") { await message("Oak: " + player.name + "! This isn't the time to use that!"); return false; }
@@ -458,12 +459,17 @@
     show("scene");
     clearMenu();
     window.Screen.say("Tap a tile to dig. The Hammer digs wider but shakes the wall more. (Keys: arrows, Z to dig, X to switch tools.)");
-    const found = await MiningScreen.run(scene, Mining.create());
+    const f = player.flags, before = Mining.level(f.miningDug);
+    const found = await MiningScreen.run(scene, Mining.create(Math.random, before));
     for (const id of found) {
       Player.addItem(player, id);
       await message(player.name + " obtained " + article(Bag.name(id)) + "!");
     }
     if (!found.length) await message("Nothing was dug up…");
+    // Every treasure dug out counts toward your mining level.
+    f.miningDug = (f.miningDug | 0) + found.length;
+    const after = Mining.level(f.miningDug);
+    if (after > before) await message("Your mining level rose to " + after + "! Rarer treasures may turn up now.");
     await persist();
     return true;
   }
@@ -882,6 +888,8 @@
         "<dl><dt>Money</dt><dd>" + money(player.money) + "</dd>" +
         "<dt>Pokédex</dt><dd>" + player.pokedex.caught.length + " caught, " + player.pokedex.seen.length + " seen</dd>" +
         "<dt>Badges</dt><dd>" + player.badges.length + " <small>(gyms come with the map)</small></dd>" +
+        "<dt>Mining</dt><dd>Lv. " + Mining.level(player.flags.miningDug) + (Mining.toNext(player.flags.miningDug) == null ? " (max)"
+          : " <small>(" + Mining.toNext(player.flags.miningDug) + " more treasures to the next level)</small>") + "</dd>" +
         "<dt>Play time</dt><dd>" + playTime(player.playTimeMs) + "</dd>" +
         "<dt>Started</dt><dd>" + new Date(player.createdAt).toLocaleDateString() + "</dd>" +
         "<dt>Last saved</dt><dd>" + (player.savedAt ? new Date(player.savedAt).toLocaleString() : "never") + "</dd></dl>" +

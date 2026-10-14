@@ -29,7 +29,8 @@
     for (let i = 0; i < W() * H(); i++) rock.push('<button type="button" class="dig-rock" data-i="' + i + '" aria-label="Dig"></button>');
 
     root.innerHTML = '<div class="dig">' +
-      '<div class="dig-wall" aria-label="Wall"><div class="dig-crack"></div></div>' +
+      '<div class="dig-top"><span class="dig-level">Mining Lv. ' + dig.level + '</span>' +
+        '<div class="dig-wall" aria-label="Wall"><div class="dig-crack"></div></div></div>' +
       '<div class="dig-board" style="aspect-ratio:' + W() + "/" + H() + '">' +
         '<div class="dig-layer under" style="grid-template-columns:repeat(' + W() + ',1fr)">' + under.join("") + "</div>" +
         '<div class="dig-layer over" style="grid-template-columns:repeat(' + W() + ',1fr)">' + rock.join("") + "</div>" +

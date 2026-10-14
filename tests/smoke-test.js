@@ -1117,9 +1117,21 @@ for (const share of [false, true]) {
     assert(window.ITEMS[item] && Bag.sprite(item), item);
     assert(shape.join("").includes("x") && shape.every((row) => row.length === shape[0].length), item + " shape");
   }
+  // Mining level: 1 to start, rising with treasures dug out; each level lets
+  // rarer treasures be buried.
+  assert.deepStrictEqual([0, 4, 5, 11, 12, 124, 125, 999].map(Mining.level), [1, 1, 2, 2, 3, 8, 9, 9]);
+  assert.deepStrictEqual([Mining.toNext(0), Mining.toNext(7), Mining.toNext(125)], [5, 5, null]);
+  assert.deepStrictEqual(Mining.available(1).map((t) => t[0]).sort(),
+    ["blue-shard", "everstone", "green-shard", "hard-stone", "heart-scale", "red-shard", "yellow-shard"]);
+  assert.strictEqual(Mining.available(Mining.MAX_LEVEL).length, Mining.TREASURES.length, "everything at the top level");
+  for (let lv = 1; lv <= Mining.MAX_LEVEL; lv++) assert(Mining.available(lv).length > 0);
+  const low = mulberry32(11);
+  for (let n = 0; n < 100; n++) {
+    for (const t of Mining.create(low, 1).treasures) assert(Mining.available(1).some((a) => a[0] === t.item), t.item + " at level 1");
+  }
   const r = mulberry32(7);
   for (let n = 0; n < 50; n++) {
-    const dig = Mining.create(r);
+    const dig = Mining.create(r, 1 + (n % Mining.MAX_LEVEL));
     assert(dig.treasures.length >= 1 && dig.treasures.length <= 4);
     assert(dig.rock.every((l) => l >= 2 && l <= 6));
     // Treasures and bedrock never overlap.

@@ -272,7 +272,9 @@
 
 /* ---------- Digging (Explorer Kit) ---------- */
 .dig { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: #3a2c1e; }
-.dig-wall { height: 12px; border: 2px solid #1d150d; border-radius: 6px; background: #6b8a3a; overflow: hidden; }
+.dig-top { display: flex; align-items: center; gap: 10px; }
+.dig-level { color: #f5ecd6; font-weight: 700; white-space: nowrap; }
+.dig-wall { flex: 1; height: 12px; border: 2px solid #1d150d; border-radius: 6px; background: #6b8a3a; overflow: hidden; }
 .dig-crack { height: 100%; width: 0; background: repeating-linear-gradient(90deg, #c0392b 0 6px, #8e2a1f 6px 9px); transition: width 0.2s; }
 .dig-board { position: relative; width: 100%; border: 3px solid #1d150d; border-radius: 4px; overflow: hidden; touch-action: manipulation; }
 .dig-layer { position: absolute; inset: 0; display: grid; }
