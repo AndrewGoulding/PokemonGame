@@ -747,7 +747,8 @@ for (const share of [false, true]) {
   assert.strictEqual(at(World.step({ map: "PalletTown", x: 12, y: 0 }, "up")), "Route1 12,39");
   assert.strictEqual(at(World.step({ map: "Route1", x: 12, y: 39 }, "down")), "PalletTown 12,0");
   // Route 1 leads on to Viridian City, then Route 2 and Pewter City; west of
-  // Viridian is Route 22, east of Pewter Route 3. Route 4 and Route 23 aren't built yet.
+  // Viridian is Route 22, east of Pewter Route 3, then Route 4 and Mt. Moon.
+  // Cerulean City and Route 23 aren't built yet.
   assert.strictEqual(at(World.step({ map: "Route1", x: 12, y: 0 }, "up")), "ViridianCity 24,39");
   assert.strictEqual(at(World.step({ map: "ViridianCity", x: 24, y: 39 }, "down")), "Route1 12,0");
   assert.strictEqual(at(World.step({ map: "ViridianCity", x: 22, y: 0 }, "up")), "Route2 10,79");
@@ -756,7 +757,16 @@ for (const share of [false, true]) {
   assert.strictEqual(at(World.step({ map: "ViridianCity", x: 0, y: 12 }, "left")), "Route22 47,2");
   assert.strictEqual(at(World.step({ map: "PewterCity", x: 47, y: 20 }, "right")), "Route3 0,10");
   assert.strictEqual(at(World.step({ map: "Route3", x: 0, y: 10 }, "left")), "PewterCity 47,20");
-  assert.strictEqual(World.step({ map: "Route3", x: 68, y: 0 }, "up").unbuilt, "MAP_ROUTE4");
+  assert.strictEqual(at(World.step({ map: "Route3", x: 68, y: 0 }, "up")), "Route4 8,19");
+  assert.strictEqual(World.step({ map: "Route4", x: 107, y: 3 }, "right").unbuilt, "MAP_CERULEAN_CITY");
+  // Into Mt. Moon and out the other side: Route 4 (19,5) -> 1F, ladders down,
+  // B1F's far ladder (45,4) -> Route 4's east side (32,5).
+  const into = (map, x, y, dir) => { const r = World.step({ map, x, y }, dir); return r.warp.map + " " + r.warp.x + "," + r.warp.y; };
+  assert.strictEqual(into("Route4", 19, 6, "up"), "MtMoon_1F 18,37");
+  assert.strictEqual(into("MtMoon_1F", 18, 37, "down"), "Route4 19,5");
+  assert.strictEqual(into("MtMoon_B1F", 45, 5, "up"), "Route4 32,5");
+  assert.strictEqual(into("Route4", 12, 6, "up"), "Route4_PokemonCenter_1F 7,8");
+  for (const w of WORLD_MAPS.MtMoon_1F.warps.concat(WORLD_MAPS.MtMoon_B1F.warps, WORLD_MAPS.MtMoon_B2F.warps)) assert(w.map, "every Mt. Moon ladder leads somewhere built");
   assert.strictEqual(World.step({ map: "Route22_NorthEntrance", x: 7, y: 2 }, "up").unbuilt, "MAP_ROUTE23");
   // Pewter's doors: the Gym, the Pokémon Center, the Mart; Route 22's League gate.
   const door = (map, x, y) => World.step({ map, x, y }, "up").warp.map;
@@ -1004,6 +1014,26 @@ for (const share of [false, true]) {
   for (const t of r3) assert(fs.existsSync(path.join(root, "assets/sprites/trainers/front", t.pic + ".png")), t.pic);
   assert.deepStrictEqual(WORLD_MAPS.Route3.hidden.map((h) => h.item), ["oran-berry"]);
   assert(WORLD_MAPS.Route3.wild.slots.some((s) => s.species === "Mankey"), "FireRed's Route 3 has Mankey");
+  // Route 4 and Mt. Moon: trainers, Team Rocket, Miguel's fossils, items.
+  const moonTrainers = ["MtMoon_1F", "MtMoon_B2F", "Route4"].flatMap((m) => WORLD_MAPS[m].people.filter((p) => p.trainer))
+    .map((p) => WORLD_TRAINERS[p.trainer.id].className + " " + WORLD_TRAINERS[p.trainer.id].name);
+  assert.strictEqual(moonTrainers.length, 12);
+  assert.strictEqual(moonTrainers.filter((t) => t === "Team Rocket Grunt").length, 4);
+  assert.deepStrictEqual(party("TRAINER_SUPER_NERD_MIGUEL"), ["Grimer 12", "Voltorb 12", "Koffing 12"]);
+  assert.deepStrictEqual(WORLD_MAPS.MtMoon_B2F.people.filter((p) => p.sprite === "fossil").map((p) => [p.x, p.y]), [[13, 7], [14, 7]]);
+  assert(WORLD_MAPS.MtMoon_1F.people.some((p) => p.item === "moon-stone"), "Mt. Moon's Moon Stone");
+  assert.deepStrictEqual(Player.CENTERS.Route4_PokemonCenter_1F.map, "Route4_PokemonCenter_1F");
+  // FireRed's machines become this game's machine for the same move: FireRed
+  // TM46 Thief is TM46 here; TM09 Bullet Seed has no machine here, so it stays TM09.
+  assert(WORLD_MAPS.MtMoon_B2F.people.some((p) => p.item === "tm46") && Bag.machineMove("tm46") === "Thief");
+  assert(WORLD_MAPS.Route4.people.some((p) => p.item === "tm05") && Bag.machineMove("tm05") === "Roar");
+  // Both versions: Route 4's Ekans slots also give LeafGreen's Sandshrew.
+  const ekans = WORLD_MAPS.Route4.wild.slots.filter((s) => s.species === "Ekans");
+  assert(ekans.length && ekans.every((s) => s.alt === "Sandshrew"));
+  // Random numbers in order: an encounter, slot 2 (Ekans), the version, the level.
+  const grass = (() => { for (let y = 0; y < 20; y++) for (let x = 0; x < 108; x++) if (World.isGrass(World.blockAt("Route4", x, y))) return [x, y]; })();
+  const roll = (coin) => { let i = 0; const seq = [0.0001, 0.42, coin, 0.5]; return World.wildEncounter("Route4", grass[0], grass[1], () => seq[i++]).species; };
+  assert.deepStrictEqual([roll(0.9), roll(0.1)], ["Ekans", "Sandshrew"]);
   // New games can't run until the Running Shoes.
   assert(!Player.create("T").flags.runningShoes);
 }

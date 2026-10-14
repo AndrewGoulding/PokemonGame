@@ -52,7 +52,10 @@ const TITLES = {
   PewterCity_House1: "Pewter City · House",
   PewterCity_House2: "Pewter City · House",
   PewterCity_PokemonCenter_1F: "Pewter City · Pokémon Center",
-  PewterCity_PokemonCenter_2F: "Pewter City · Pokémon Center 2F"
+  PewterCity_PokemonCenter_2F: "Pewter City · Pokémon Center 2F",
+  Route4_PokemonCenter_1F: "Route 4 · Pokémon Center",
+  Route4_PokemonCenter_2F: "Route 4 · Pokémon Center 2F",
+  MtMoon_1F: "Mt. Moon", MtMoon_B1F: "Mt. Moon · B1F", MtMoon_B2F: "Mt. Moon · B2F"
 };
 
 const MAPS = [
@@ -65,7 +68,7 @@ const MAPS = [
   "Route22", "Route22_NorthEntrance",
   "PewterCity", "PewterCity_Museum_1F", "PewterCity_Museum_2F", "PewterCity_Gym", "PewterCity_Mart",
   "PewterCity_House1", "PewterCity_House2", "PewterCity_PokemonCenter_1F", "PewterCity_PokemonCenter_2F",
-  "Route3"
+  "Route3", "Route4", "Route4_PokemonCenter_1F", "Route4_PokemonCenter_2F", "MtMoon_1F", "MtMoon_B1F", "MtMoon_B2F"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
@@ -103,6 +106,7 @@ fs.mkdirSync(outSprites, { recursive: true });
 global.window = global;
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex.js"), "utf8"));
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/moves.js"), "utf8"));
+vm.runInThisContext(fs.readFileSync(path.join(root, "data/items.js"), "utf8"));
 
 // ---------- Tilesets ----------
 
@@ -274,12 +278,32 @@ function martItems(mapName, script) {
   return undefined;
 }
 
+// FireRed's TMs and HMs are numbered differently from this game's (X and Y's,
+// plus the HMs in game/bag.js): a FireRed TM09 is Bullet Seed, here TM09 is
+// Venoshock. So a FireRed machine becomes this game's machine for the same move
+// (FireRed's sTMHMMoves, src/data/party_menu.h), or keeps its number when no
+// machine here teaches that move.
+let frMachineMoves = null;
+function itemId(frItem) {
+  const id = frItem.replace(/^ITEM_/, "").toLowerCase().replace(/_/g, "-");
+  const m = /^(tm|hm)(\d+)$/.exec(id);
+  if (!m) return id;
+  if (!frMachineMoves) {
+    const src = readHeader("src/data/party_menu.h");
+    frMachineMoves = [.../sTMHMMoves\[\]\s*=\s*\{([^}]*)\}/.exec(src)[1].matchAll(/MOVE_(\w+)/g)].map((x) => x[1]);
+  }
+  const move = frMachineMoves[(m[1] === "hm" ? 50 : 0) + +m[2] - 1];
+  const ours = Object.keys(window.ITEMS).find((k) => /^(tm|hm)\d+$/.test(k) &&
+    toID((/^Teaches (.+?) to a compatible/.exec(window.ITEMS[k].effect) || [])[1] || "") === toID(move));
+  return ours || id;
+}
+
 // The item an item ball holds ("potion"), from its finditem line.
 function itemBall(mapName, script) {
   const lines = scriptLabels(mapName)[script] || [];
   for (const line of lines) {
-    const m = /^finditem\s+ITEM_(\w+)/.exec(line);
-    if (m) return m[1].toLowerCase().replace(/_/g, "-").replace(/^poke-/, "poke-");
+    const m = /^finditem\s+(ITEM_\w+)/.exec(line);
+    if (m) return itemId(m[1]);
   }
   return undefined;
 }
@@ -446,6 +470,7 @@ for (const name of MAPS) {
   }, objectSprite((VAR_GFX[name] || {})[o.graphics_id] || o.graphics_id)));
 
   const land = wild.find((e) => e.map === map.id && /FireRed/.test(e.base_label));
+  const leafGreen = wild.find((e) => e.map === map.id && /LeafGreen/.test(e.base_label));
   out[name] = {
     name, title: TITLES[name] || name.replace(/_/g, " ").replace(/([a-z])([A-Z0-9])/g, "$1 $2"),
     width: w, height: h, type: map.map_type.replace(/^MAP_TYPE_/, "").toLowerCase(),
@@ -459,11 +484,18 @@ for (const name of MAPS) {
     signs: map.bg_events.filter((b) => b.type === "sign").map((b) => ({ x: b.x, y: b.y, script: b.script, text: scriptText(name, b.script) })),
     triggers: map.coord_events.map((c) => ({ x: c.x, y: c.y, script: c.script })),
     hidden: map.bg_events.filter((b) => b.type === "hidden_item").map((b) => ({
-      x: b.x, y: b.y, item: b.item.replace(/^ITEM_/, "").toLowerCase().replace(/_/g, "-"), flag: b.flag, quantity: b.quantity || 1 })),
+      x: b.x, y: b.y, item: itemId(b.item), flag: b.flag, quantity: b.quantity || 1 })),
     people,
     wild: land && land.land_mons ? {
       rate: land.land_mons.encounter_rate,
-      slots: land.land_mons.mons.map((m) => ({ species: dexByID[toID(m.species.replace(/^SPECIES_/, ""))], min: m.min_level, max: m.max_level }))
+      // Both versions: where LeafGreen has a different Pokémon in a slot
+      // (Sandshrew for FireRed's Ekans), `alt` is it, and each is as likely.
+      slots: land.land_mons.mons.map((m, i) => {
+        const lg = leafGreen && leafGreen.land_mons && leafGreen.land_mons.mons[i];
+        const species = dexByID[toID(m.species.replace(/^SPECIES_/, ""))];
+        const alt = lg && dexByID[toID(lg.species.replace(/^SPECIES_/, ""))];
+        return Object.assign({ species, min: m.min_level, max: m.max_level }, alt && alt !== species ? { alt } : {});
+      })
     } : null
   };
 }

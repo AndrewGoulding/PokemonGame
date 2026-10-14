@@ -1081,7 +1081,11 @@
     "PewterCity_Museum_1F_EventScript_OldAmberScientist", "PewterCity_Museum_1F_EventScript_SeismicTossTutor",
     "PewterCity_Museum_1F_EventScript_AerodactylFossil", "PewterCity_Museum_1F_EventScript_KabutopsFossil",
     "PewterCity_Gym_EventScript_Brock", "PewterCity_Gym_EventScript_GymGuy", "PewterCity_Gym_EventScript_GymStatue",
-    "PewterCity_Mart_EventScript_Clerk", "PewterCity_PokemonCenter_1F_EventScript_Nurse", "MysteryEventClub_EventScript_Woman"
+    "PewterCity_Mart_EventScript_Clerk", "PewterCity_PokemonCenter_1F_EventScript_Nurse", "MysteryEventClub_EventScript_Woman",
+    "Route4_EventScript_MegaPunchTutor", "Route4_EventScript_MegaKickTutor",
+    "Route4_PokemonCenter_1F_EventScript_Nurse", "Route4_PokemonCenter_1F_EventScript_MagikarpSalesman",
+    "MtMoon_B2F_EventScript_MiguelTrigger", "MtMoon_B2F_EventScript_Miguel",
+    "MtMoon_B2F_EventScript_DomeFossil", "MtMoon_B2F_EventScript_HelixFossil"
   ].concat(Object.keys(STARTER_BALLS)));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
@@ -1096,6 +1100,8 @@
   function visible(person) {
     const f = player.flags;
     if (person.item) return !f[person.flag];
+    // Miguel stays by the fossil he took (FireRed's copyobjectxytoperm).
+    if (person.script === "MtMoon_B2F_EventScript_Miguel" && f.mtMoonFossil) return { x: f.mtMoonFossil === "dome-fossil" ? 14 : 13, y: 8, movement: "face_up" };
     // Daisy sits at the table, before and after giving you the Town Map.
     if (person.script === "PalletTown_RivalsHouse_EventScript_Daisy") return { x: 5, y: 4, movement: "face_right" };
     if (person.flag === "FLAG_HIDE_TOWN_MAP") return !f.townMap;
@@ -1113,6 +1119,7 @@
       case "FLAG_HIDE_PEWTER_CITY_GYM_GUIDE": return !f.TRAINER_LEADER_BROCK;
       case "FLAG_HIDE_PEWTER_CITY_RUNNING_SHOES_GUY": return !!f.TRAINER_LEADER_BROCK && !f.runningShoes;
       case "FLAG_HIDE_OLD_AMBER": return !f.gotOldAmber;
+      case "FLAG_HIDE_DOME_FOSSIL": case "FLAG_HIDE_HELIX_FOSSIL": return !f.mtMoonFossil;
       // After you choose, your rival stands below the Poké Ball he took.
       case "FLAG_HIDE_RIVAL_IN_LAB":
         if (f.rivalLabBattle) return false;
@@ -1350,7 +1357,19 @@
         return;
       }
 
-      // ---------- Pewter City ----------
+      // Super Nerd Miguel (trainerbattle_no_intro: his lines come first).
+  async function miguelBattle() {
+    await say(T("MtMoon_B2F_Text_MiguelIntro"));
+    if (!canBattle()) return;
+    const outcome = await battle("trainer", { foe: { name: "Super Nerd Miguel", team: trainerTeam("TRAINER_SUPER_NERD_MIGUEL"), pic: "super_nerd" },
+      defeatText: T("MtMoon_B2F_Text_MiguelDefeat"), trainerId: "TRAINER_SUPER_NERD_MIGUEL" });
+    if (outcome !== "won") return;
+    show("world");
+    await Overworld.resume();
+    await say(T("MtMoon_B2F_Text_WellEachTakeAFossil"));
+  }
+
+  // ---------- Pewter City ----------
 
       // Before you have Brock's badge, a boy marches you to the Gym if you
       // head for the east exit, or if you talk to him.
@@ -1470,6 +1489,61 @@
       case "MysteryEventClub_EventScript_Woman":   // no Mystery Events here
         await say(T("Text_WirelessClubUndergoingAdjustments"));
         return;
+
+      // ---------- Route 4 and Mt. Moon ----------
+
+      case "Route4_EventScript_MegaPunchTutor":
+        await moveTutor("Mega Punch", "tutorMegaPunch", "Text_MegaPunch");
+        return;
+      case "Route4_EventScript_MegaKickTutor":
+        await moveTutor("Mega Kick", "tutorMegaKick", "Text_MegaKick");
+        return;
+
+      case "Route4_PokemonCenter_1F_EventScript_Nurse":
+        await nurse(ev.map);
+        return;
+
+      // ₽500 for a Magikarp, once.
+      case "Route4_PokemonCenter_1F_EventScript_MagikarpSalesman": {
+        if (f.boughtMagikarp) { await say(T("Route4_PokemonCenter_1F_Text_IDontGiveRefunds")); return; }
+        const pitch = T(player.look === "green" ? "Route4_PokemonCenter_1F_Text_SweetieBuyMagikarpForJust500" : "Route4_PokemonCenter_1F_Text_LaddieBuyMagikarpForJust500");
+        await say(pitch.slice(0, -1));
+        if (!(await confirm(fill(pitch[pitch.length - 1]) + "\n(You have " + money(player.money) + ".)"))) { await say(T("Route4_PokemonCenter_1F_Text_OnlyDoingThisAsFavorToYou")); return; }
+        if (player.money < 500) { await say(T("Route4_PokemonCenter_1F_Text_YoullNeedMoreMoney")); return; }
+        if (player.party.length >= Player.PARTY_SIZE && !player.boxes.some((b) => b.length < Player.BOX_SIZE)) { await say(T("Route4_PokemonCenter_1F_Text_NoRoomForMorePokemon")); return; }
+        Player.addMoney(player, -500);
+        f.boughtMagikarp = true;
+        await say(T("Route4_PokemonCenter_1F_Text_PaidOutrageouslyForMagikarp"));
+        await addCaught(Party.create("Magikarp", 5));
+        return;
+      }
+
+      // Super Nerd Miguel guards the fossils: beat him, then each of you takes one.
+      case "MtMoon_B2F_EventScript_MiguelTrigger":
+        if (f.TRAINER_SUPER_NERD_MIGUEL) return;
+        await Overworld.act([{ who: "LOCALID_MIGUEL", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
+        await miguelBattle();
+        return;
+      case "MtMoon_B2F_EventScript_Miguel":
+        if (f.mtMoonFossil) await say(T("MtMoon_B2F_Text_LabOnCinnabarRegeneratesFossils"));
+        else if (f.TRAINER_SUPER_NERD_MIGUEL) await say(T("MtMoon_B2F_Text_WellEachTakeAFossil"));
+        else await miguelBattle();
+        return;
+      case "MtMoon_B2F_EventScript_DomeFossil":
+      case "MtMoon_B2F_EventScript_HelixFossil": {
+        if (f.mtMoonFossil || !f.TRAINER_SUPER_NERD_MIGUEL) { if (!f.TRAINER_SUPER_NERD_MIGUEL) await say(T("MtMoon_B2F_Text_MiguelIntro")); return; }
+        const dome = script.endsWith("DomeFossil"), name = dome ? "Dome" : "Helix";
+        if (!(await confirm(fill(T("MtMoon_B2F_Text_YouWant" + name + "Fossil")[0])))) return;
+        Overworld.removeObject(dome ? "LOCALID_DOME_FOSSIL" : "LOCALID_HELIX_FOSSIL");
+        Player.addItem(player, dome ? "dome-fossil" : "helix-fossil");
+        f.mtMoonFossil = dome ? "dome-fossil" : "helix-fossil";
+        await say(T("MtMoon_B2F_Text_Obtained" + name + "Fossil"));
+        // He takes the other one.
+        await Overworld.act([{ who: "LOCALID_MIGUEL", moves: ["delay_10"].concat(M(dome ? "MtMoon_B2F_Movement_MiguelToHelixFossil" : "MtMoon_B2F_Movement_MiguelToDomeFossil")) }]);
+        await say(T("MtMoon_B2F_Text_ThenThisFossilIsMine"));
+        Overworld.removeObject(dome ? "LOCALID_HELIX_FOSSIL" : "LOCALID_DOME_FOSSIL");
+        return;
+      }
 
       // ---------- Route 2 ----------
 
@@ -1776,6 +1850,18 @@
     Overworld.removeObject(R);
   }
 
+  // Super Nerd Miguel (trainerbattle_no_intro: his lines come first).
+  async function miguelBattle() {
+    await say(T("MtMoon_B2F_Text_MiguelIntro"));
+    if (!canBattle()) return;
+    const outcome = await battle("trainer", { foe: { name: "Super Nerd Miguel", team: trainerTeam("TRAINER_SUPER_NERD_MIGUEL"), pic: "super_nerd" },
+      defeatText: T("MtMoon_B2F_Text_MiguelDefeat"), trainerId: "TRAINER_SUPER_NERD_MIGUEL" });
+    if (outcome !== "won") return;
+    show("world");
+    await Overworld.resume();
+    await say(T("MtMoon_B2F_Text_WellEachTakeAFossil"));
+  }
+
   // ---------- Pewter City ----------
 
   // The boy who takes you to the Gym (FireRed's GymGuideTrigger, or talking to
@@ -1870,6 +1956,9 @@
   function special(script) {
     // Coming back into Pewter City: the Museum ticket was for one visit (FireRed's OnTransition).
     if (script === "enter:PewterCity") { player.flags.museumTicket = false; return false; }
+    // Walking into the Route 4 Pokémon Center makes it where you go after
+    // blacking out (FireRed's setrespawn there).
+    if (script === "enter:Route4_PokemonCenter_1F") { player.flags.lastCenter = "Route4_PokemonCenter_1F"; return false; }
     return SPECIAL.has(script) || ITEM_BALLS.has(script) || TRAINER_SCRIPTS.has(script);
   }
 

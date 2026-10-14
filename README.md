@@ -82,7 +82,8 @@ PROF. OAK's lab, Route 1, Viridian City with its Pokémon Center (both
 floors), Poké Mart, school and Nickname house, Route 2 with its trade house
 and gate, Viridian Forest with both of its gates, Route 22 and its League
 gate, and Pewter City with its Gym, Museum (both floors), Poké Mart,
-Pokémon Center and houses, and Route 3 with its eight trainers. Tiles, palettes and metatiles come from
+Pokémon Center and houses, Route 3 with its eight trainers, Route 4 with
+its Pokémon Center, and Mt. Moon (1F, B1F, B2F). Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into
@@ -150,7 +151,10 @@ Rules follow Gen 3: collision and elevation per block, solid doors you walk
 into, door mats you walk out through, stairs, ledges you can jump down,
 connected maps you walk straight into, and tall grass encounters at the map's
 rate (Random() % 2880 < rate × 16) using the 20/20/10/10/10/10/5/5/4/4/1/1
-encounter slots. Trainers work as in FireRed: one you haven't beaten sees you
+encounter slots. Wild Pokémon come from both versions: where LeafGreen's table
+has a different Pokémon in a slot (Sandshrew for FireRed's Ekans on Route 4),
+either is as likely. FireRed's TMs found in item balls become this game's
+machine for the same move (TM09 Bullet Seed has none here, so it stays TM09). Trainers work as in FireRed: one you haven't beaten sees you
 straight ahead within their sight range (nothing in between), shows "!",
 walks up and battles with their FireRed party (fixed IVs, set moves where
 FireRed sets them); beaten, they say their after-battle line. Those that turn
@@ -167,7 +171,8 @@ Mr. Mime "Mimien", Prof. Oak's Aide giving HM05 Flash for ten kinds
 caught, your rival on Route 22, the League gate guard, Pewter's Gym guide
 and Museum guide walking you over, the Museum's ₽50 ticket, the Old Amber,
 the Seismic Toss tutor, Brock with the Boulder Badge and TM39, and the Aide
-bringing the Running Shoes) are in `ui/game.js`; their FireRed
+bringing the Running Shoes, the Mega Punch and Mega Kick tutors, the
+Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils) are in `ui/game.js`; their FireRed
 lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scripts
 (`walk_up`, `walk_in_place_faster_down`, `emote_exclamation_mark`, ...) from
 `window.WORLD_MOVEMENTS`; the converter writes both alongside the maps. Running

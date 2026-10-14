@@ -196,7 +196,14 @@
   function updatePerson(p) {
     if (p.move) {
       p.move.t += p.move.speed || WALK_SPEED;
-      if (p.move.t >= TILE) { p.x = p.move.tx; p.y = p.move.ty; p.move = null; }
+      if (p.move.t >= TILE) {
+        p.x = p.move.tx; p.y = p.move.ty; p.move = null;
+        // A trainer on the move can walk into seeing you.
+        if (!scene && !paused && resolveExplore && !me.move) {
+          const seen = trainerSees(p);
+          if (seen) finish(seen);
+        }
+      }
       return;
     }
     // Nobody wanders or looks around while you're talking or a scene plays
@@ -215,17 +222,23 @@
       }
       return;
     }
-    const dirs = WANDER_DIRS[p.def.movement];
-    if (!dirs) return;
-    const dir = dirs[Math.floor(Math.random() * dirs.length)];
+    // FireRed's walk sequences (walk_sequence_left_down_right_up): a loop of
+    // single steps, one after another, back to where they started.
+    const seq = /^walk_sequence_((?:up|down|left|right)(?:_(?:up|down|left|right))*)$/.exec(p.def.movement || "");
+    const dirs = seq ? null : WANDER_DIRS[p.def.movement];
+    if (!dirs && !seq) return;
+    const order = seq && seq[1].split("_");
+    const dir = seq ? order[(p.seq || 0) % order.length] : dirs[Math.floor(Math.random() * dirs.length)];
+    if (seq) p.timer = 8;
     p.facing = dir;
     const [dx, dy] = World.DIRS[dir];
     const tx = p.x + dx, ty = p.y + dy;
-    if (Math.abs(tx - p.ox) > (p.def.rangeX || 1) || Math.abs(ty - p.oy) > (p.def.rangeY || 1)) return;
+    if (!seq && (Math.abs(tx - p.ox) > (p.def.rangeX || 1) || Math.abs(ty - p.oy) > (p.def.rangeY || 1))) return;
     if ((tx === me.x && ty === me.y) || (me.move && me.move.tx === tx && me.move.ty === ty) || personAt(tx, ty)) return;
     const r = World.step({ map: me.map, x: p.x, y: p.y }, dir);
     if (!r.ok || r.map !== me.map || r.jump || r.warp || World.warpAt(me.map, tx, ty)) return;
     p.move = { tx, ty, t: 0 };
+    if (seq) p.seq = (p.seq || 0) + 1;
   }
 
   // ---------- Player movement ----------

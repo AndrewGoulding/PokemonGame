@@ -151,7 +151,9 @@
     while (slot < LAND_SLOT_WEIGHTS.length - 1 && roll >= LAND_SLOT_WEIGHTS[slot]) roll -= LAND_SLOT_WEIGHTS[slot++];
     const s = m.wild.slots[slot];
     if (!s || !s.species) return null;
-    return { species: s.species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)) };
+    // A slot where LeafGreen differs from FireRed: either version's Pokémon.
+    const species = s.alt && rng() < 0.5 ? s.alt : s.species;
+    return { species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)) };
   }
 
   window.World = {

@@ -34,7 +34,8 @@
   // Where you come back after blacking out: in front of each Pokémon Center's counter.
   const CENTERS = {
     ViridianCity_PokemonCenter_1F: { map: "ViridianCity_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
-    PewterCity_PokemonCenter_1F: { map: "PewterCity_PokemonCenter_1F", x: 7, y: 4, facing: "up" }
+    PewterCity_PokemonCenter_1F: { map: "PewterCity_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
+    Route4_PokemonCenter_1F: { map: "Route4_PokemonCenter_1F", x: 7, y: 4, facing: "up" }
   };
 
   // Prize money per trainer class: base x the level of the trainer's last Pokémon.
