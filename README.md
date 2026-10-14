@@ -170,7 +170,8 @@ Pokédex scene (your rival comes back, Oak fetches the two Pokédexes from the
 desk at the back; until then there's no Pokédex in the menu), the
 Viridian old man, the nurse, the move tutor, the Route 2 trade of Abra for
 Mr. Mime "Mimien", Prof. Oak's Aide giving HM05 Flash for ten kinds
-caught, your rival on Route 22, the League gate guard, Pewter's Gym guide
+caught, your rival Gary on Route 22 (Pidgey and Eevee, as in Yellow), Red
+waiting at the north end of Viridian Forest, the League gate guard, Pewter's Gym guide
 and Museum guide walking you over, the Museum's ₽50 ticket, the Old Amber,
 the Seismic Toss tutor, Brock with the Boulder Badge and TM39, and the Aide
 bringing the Running Shoes, the Mega Punch and Mega Kick tutors (who teach

@@ -16,6 +16,8 @@
 //                                 connections, hidden items and wild Pokémon
 //                                 window.WORLD_TRAINERS: the built maps' trainers
 //                                 (class, name, picture, FireRed party)
+//                                 window.WORLD_SPRITES: looks for people the
+//                                 game's scenes add (Red)
 //   assets/world/maps/<Map>.png   the map below sprites
 //   assets/world/maps/<Map>-top.png       the parts drawn over sprites
 //   assets/world/maps/<Map>-border.png    the 2x2 blocks repeated outside the map
@@ -79,6 +81,9 @@ const ALT_GFX = {
   // Gary again later, when Oak hands out the Pokédexes).
   PalletTown_ProfessorOaksLab_EventScript_Rival: "OBJ_EVENT_GFX_GREEN_NORMAL"
 };
+// Looks for people the game's own scenes put on a map (WORLD_SPRITES), e.g.
+// Red at the edge of Viridian Forest.
+const EXTRA_GFX = { red: "OBJ_EVENT_GFX_RED_NORMAL" };
 // Scripts whose text is picked by code the converter can't follow.
 const SCRIPT_TEXT = {
   ViridianCity_School_EventScript_PokemonJournal: "PokemonJournal_Text_SpecialFeatureBrock",
@@ -578,5 +583,6 @@ fs.writeFileSync(path.join(root, "data/world-maps.js"),
   "window.WORLD_MAPS = " + JSON.stringify(out) + ";\n" +
   "window.WORLD_TEXT = " + JSON.stringify(gameText) + ";\n" +
   "window.WORLD_MOVEMENTS = " + JSON.stringify(gameMovements) + ";\n" +
-  "window.WORLD_TRAINERS = " + JSON.stringify(buildTrainers([...usedTrainers].sort())) + ";\n");
+  "window.WORLD_TRAINERS = " + JSON.stringify(buildTrainers([...usedTrainers].sort())) + ";\n" +
+  "window.WORLD_SPRITES = " + JSON.stringify(Object.fromEntries(Object.entries(EXTRA_GFX).map(([k, g]) => [k, objectSprite(g)]))) + ";\n");
 console.log("wrote " + MAPS.length + " maps to data/world-maps.js and assets/world/");

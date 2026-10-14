@@ -1859,8 +1859,8 @@
   // ---------- Route 22's rival ----------
   //
   // FireRed's Route22_EventScript_EarlyRival: Gary walks up from the left,
-  // battles (Pidgey and Eevee, level 9, as in Yellow), and heads off toward
-  // Viridian. Losing doesn't black you out.
+  // battles (Pidgey, level 5, and Eevee, level 7, as in Yellow), and heads off
+  // toward Viridian. Losing doesn't black you out.
   async function route22Rival(side) {
     const f = player.flags, R = "LOCALID_ROUTE22_RIVAL";
     Overworld.addObject(R, { x: 25, y: side === "Top" ? 4 : 5, facing: "right" });
@@ -1869,9 +1869,9 @@
       : [{ who: R, moves: M("Route22_Movement_RivalApproach") }]);
     await Overworld.act([{ who: R, moves: ["delay_6"] }]);
     await say(T("Route22_Text_EarlyRivalIntro"));
-    // His team as in Yellow: Pidgey (FireRed's, with its moves) and Eevee, both level 9.
-    const pidgey = trainerTeam("TRAINER_RIVAL_ROUTE22_EARLY_SQUIRTLE")[0];
-    const team = [pidgey, Party.create("Eevee", 9, { ivs: pidgey.ivs.hp })];
+    // His team as in Yellow: Pidgey (level 5) and Eevee (level 7).
+    const ivs = trainerTeam("TRAINER_RIVAL_ROUTE22_EARLY_SQUIRTLE")[0].ivs.hp;
+    const team = [Party.create("Pidgey", 5, { ivs }), Party.create("Eevee", 7, { ivs })];
     const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_early" },
       defeatText: T("Route22_Text_EarlyRivalDefeat"), noBlackout: true });
     show("world");
@@ -1880,6 +1880,34 @@
     f.route22Rival = true;
     await say(T("Route22_Text_EarlyRivalPostBattle"));
     await Overworld.act([{ who: R, moves: ["delay_10"].concat(M(side === "Bottom" ? "Route22_Movement_EarlyRivalExitBottom" : "Route22_Movement_EarlyRivalExit")) }]);
+    Overworld.removeObject(R);
+  }
+
+  // ---------- Red, at the edge of Viridian Forest ----------
+  //
+  // Walking up the last stretch of the forest toward Pewter, Red comes in from
+  // the exit, says nothing much, and battles: the starter neither you nor Leaf
+  // took (level 8) and Pikachu (level 10). Losing blacks you out, and he waits
+  // there again.
+  function redForestStep() {
+    const f = player.flags, at = Overworld.position();
+    if (f.redForest || !f.starter || at.map !== "ViridianForest") return null;
+    return at.y === 12 && (at.x === 4 || at.x === 5) && at.facing === "up" && canBattle() ? { type: "red-forest" } : null;
+  }
+  async function redForest() {
+    const f = player.flags, R = "LOCALID_RED", at = Overworld.position();
+    Overworld.addObject(R, { x: at.x, y: 9, facing: "down" }, window.WORLD_SPRITES.red);
+    await Overworld.act([{ who: R, moves: ["walk_down", "walk_down"] }]);
+    await say("…");
+    const starter = Object.values(STARTER_BALLS).map((b) => b.species).find((sp) => sp !== f.starter && sp !== RIVAL_PICK[f.starter]);
+    const team = [Party.create(starter, 8), Party.create("Pikachu", 10)];
+    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer Red", team, pic: "red" }, defeatText: ["…"] });
+    if (outcome !== "won") return;
+    f.redForest = true;
+    show("world");
+    await Overworld.resume();
+    await say("…");
+    await Overworld.act([{ who: R, moves: ["walk_up", "walk_up", "set_invisible"] }]);
     Overworld.removeObject(R);
   }
 
@@ -2025,10 +2053,11 @@
         special,
         onWarp,
         trainerWaiting, hiddenItem: (h) => !player.flags[h.flag],
-        onStep: repelStep, allowWild: repelAllows
+        onStep: () => redForestStep() || repelStep(), allowWild: repelAllows
       });
       if (ev.type === "menu") await startMenu();
       else if (ev.type === "repel-ended") await say("Repel's effect wore off…");
+      else if (ev.type === "red-forest") await redForest();
       else if (ev.type === "wild") {
         if (!canBattle()) continue;
         await battle("wild", { foe: { name: "Wild", team: [Party.create(ev.species, ev.level)] }, terrain: "grass" });

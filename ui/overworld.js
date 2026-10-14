@@ -384,9 +384,11 @@
     });
   }
 
-  // Someone a story flag normally hides, put on the map for a scene.
-  function addObject(localId, pos) {
-    const def = World.map(me.map).people.find((p) => p.localId === localId);
+  // Someone a story flag normally hides, put on the map for a scene; or, with
+  // `look` (a WORLD_SPRITES entry), someone the map doesn't have at all.
+  function addObject(localId, pos, look) {
+    const def = World.map(me.map).people.find((p) => p.localId === localId) ||
+      (look && Object.assign({ localId, movement: "face_down", text: null }, look));
     if (!def) return;
     people = people.filter((p) => p.def.localId !== localId);
     people.push({ def: Object.assign({}, def, { x: pos.x, y: pos.y }), x: pos.x, y: pos.y, ox: pos.x, oy: pos.y,
