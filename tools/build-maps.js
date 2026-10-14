@@ -35,7 +35,7 @@ const { parseTextFile, cleanText } = require("./lib/text");
 const TITLES = {
   PalletTown_PlayersHouse_1F: "Pallet Town · Red's house",
   PalletTown_PlayersHouse_2F: "Pallet Town · Red's house 2F",
-  PalletTown_RivalsHouse: "Pallet Town · Rival's house",
+  PalletTown_RivalsHouse: "Pallet Town · Gary's house",
   PalletTown_ProfessorOaksLab: "Pallet Town · Prof. Oak's Lab",
   ViridianCity_House: "Viridian City · Nickname house",
   ViridianCity_School: "Viridian City · Trainer school",
