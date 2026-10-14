@@ -255,3 +255,9 @@
   background: #fff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
 .world-pic img { width: 100%; height: 100%; image-rendering: pixelated; object-fit: contain; }
 .world-pic.hidden { display: none; }
+
+/* FireRed's intro canvas (480x320: the 240x160 picture at 2x, so text stays sharp) */
+#intro { display: block; width: 100%; aspect-ratio: 3 / 2; image-rendering: pixelated; background: #000; }
+#intro.hidden { display: none; }
+.intro-name { grid-column: 1 / -1; display: flex; }
+.intro-name input { flex: 1; font: inherit; font-size: 20px; padding: 8px 10px; border: 3px solid #2c3550; border-radius: 8px; }

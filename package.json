@@ -6,7 +6,8 @@
     "test": "node tests/smoke-test.js",
     "build:evolutions": "node tools/build-evolutions.js",
     "build:item-sprites": "node tools/build-item-sprites.js",
-    "build:maps": "node tools/build-maps.js"
+    "build:maps": "node tools/build-maps.js",
+    "build:intro": "node tools/build-intro.js"
   },
   "devDependencies": {
     "@pkmn/dex": "0.10.11"

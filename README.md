@@ -5,8 +5,14 @@ no build step and no dependencies.
 
 ## Running it
 
-Open `index.html` in a browser and start a **New game**: enter your name, pick
-boy or girl, and you wake up in your bedroom in Pallet Town. Try to leave town
+Open `index.html` in a browser. FireRed's opening plays (the copyright screen,
+Game Freak's shooting star, then Gengar and Nidorino's fight; Enter, Z or a tap
+skips it) and leads to the title screen: Charizard, rising flames and PRESS
+START. Left alone for 45 seconds the title goes back to the opening. Start a
+**New game** and you get FireRed's new-game intro: the controls guide, the
+Pikachu pages, then Prof. Oak, who shows you a Nidoran♀, asks if you're a boy or
+a girl, and has you name yourself and your rival (he suggests FireRed's names)
+before you shrink away into your bedroom in Pallet Town. Try to leave town
 through the tall grass to the north and Prof. Oak stops you and walks you to his
 lab, where your rival is waiting; pick Bulbasaur, Squirtle or Charmander from the
 Poké Balls on his table (each one shows you its Pokémon before you decide). Your rival takes the one that beats yours and battles
@@ -73,6 +79,22 @@ cd pokefirered && git sparse-checkout set --no-cone data/layouts/ data/maps/ dat
   data/event_scripts.s src/data/object_events/ src/data/wild_encounters.json graphics/object_events/pics/ && cd ..
 node tools/build-maps.js pokefirered     # or: POKEFIRERED=pokefirered npm run build:maps
 ```
+
+### Intro
+
+The opening movie, title screen and Prof. Oak's speech use FireRed's own
+graphics and text, converted by `tools/build-intro.js` into `assets/intro/` and
+`data/intro-text.js` (it needs `graphics/intro/`, `graphics/title_screen/`,
+`graphics/oak_speech/` and `data/text/new_game_intro.inc` in the checkout):
+
+```sh
+cd pokefirered && git sparse-checkout add graphics/intro/ graphics/title_screen/ graphics/oak_speech/ && cd ..
+node tools/build-intro.js pokefirered     # or: POKEFIRERED=pokefirered npm run build:intro
+```
+
+`ui/intro.js` plays them on a 240x160 canvas, following the timing in pret's
+`src/intro.c`, `src/title_screen.c` and `src/oak_speech.c` (frame counts at 60
+a second). There's no music or cries.
 
 To add maps, list them in `MAPS` at the top of `tools/build-maps.js` and rerun
 it; doors and map edges connect themselves when both sides are built.
@@ -141,11 +163,12 @@ uses the frames from `assets/sprites/overworld/<red|green>_surf_run.png`.
 | `data/` | Pokédex, moves, abilities, items, item sprite paths, learnsets, evolutions, overworld maps, natures, type chart, plus the battle hooks for conditions and moves |
 | `engine/` | Stat, damage, experience, catch and item formulas, and the battle engine |
 | `game/` | Game logic around the engine: party records, the player and their save (`player.js`, `save.js`), bag and Poké Mart (`bag.js`), overworld rules (`world.js`), evolution, encounters, random teams and the opponent AI |
-| `ui/` | Text box and menus (`screen.js`), the battle screen, the overworld (`overworld.js`), and the game flow, story events and menus (`game.js`) |
-| `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`, `npm run build:maps`) |
+| `ui/` | Text box and menus (`screen.js`), the battle screen, the overworld (`overworld.js`), FireRed's intro (`intro.js`), and the game flow, story events and menus (`game.js`) |
+| `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`, `npm run build:maps`, `npm run build:intro`) and their shared PNG/text helpers (`tools/lib/`) |
 | `assets/sprites/` | Pokémon sprites (front, back, shiny), item icons, trainer and overworld sprites |
 | `assets/tilesets/` | FireRed's tilesets (tiles, palettes, metatiles), the source for the maps |
 | `assets/world/` | Generated map images and transparent overworld sprites |
+| `assets/intro/` | Generated opening movie, title screen and Oak's speech graphics |
 | `tests/` | Loads every non-UI script and checks formulas, engine regressions, progression rules and AI choices, plus 200 random battles |
 
 ## Script load order
@@ -163,27 +186,29 @@ and later files read those globals, so scripts must load in this order:
 8. `data/evolutions.js` → `EVOLUTIONS`
 9. `data/item-sprites.js` → `ITEM_SPRITES`
 10. `data/world-maps.js` → `WORLD_MAPS`
-11. `engine/stat-calculator.js` → `Stats`
-12. `engine/experience.js` → `Experience`
-13. `engine/catching.js` → `Catching`
-14. `engine/item-use.js` → `ItemUse`
-15. `engine/damage-calculator.js` → `Damage`
-16. `data/conditions.js` → `CONDITIONS`, `ITEM_EFFECTS`
-17. `data/battle-moves.js` → `BATTLE_MOVE_EFFECTS`
-18. `engine/battle.js` → `Battle`
-19. `game/random-team.js` → `RandomTeam`
-20. `game/opponent-ai.js` → `OpponentAI`
-21. `game/party.js` → `Party`
-22. `game/evolution.js` → `Evolution`
-23. `game/encounters.js` → `Encounters`
-24. `game/player.js` → `Player`
-25. `game/bag.js` → `Bag`
-26. `game/save.js` → `Save`
-27. `game/world.js` → `World`
-28. `ui/screen.js` → `Screen`
-29. `ui/battle-screen.js` → `BattleScreen`
-30. `ui/overworld.js` → `Overworld`
-31. `ui/game.js` → `Game` (starts the game on load)
+11. `data/intro-text.js` → `INTRO_TEXT`
+12. `engine/stat-calculator.js` → `Stats`
+13. `engine/experience.js` → `Experience`
+14. `engine/catching.js` → `Catching`
+15. `engine/item-use.js` → `ItemUse`
+16. `engine/damage-calculator.js` → `Damage`
+17. `data/conditions.js` → `CONDITIONS`, `ITEM_EFFECTS`
+18. `data/battle-moves.js` → `BATTLE_MOVE_EFFECTS`
+19. `engine/battle.js` → `Battle`
+20. `game/random-team.js` → `RandomTeam`
+21. `game/opponent-ai.js` → `OpponentAI`
+22. `game/party.js` → `Party`
+23. `game/evolution.js` → `Evolution`
+24. `game/encounters.js` → `Encounters`
+25. `game/player.js` → `Player`
+26. `game/bag.js` → `Bag`
+27. `game/save.js` → `Save`
+28. `game/world.js` → `World`
+29. `ui/screen.js` → `Screen`
+30. `ui/battle-screen.js` → `BattleScreen`
+31. `ui/overworld.js` → `Overworld`
+32. `ui/intro.js` → `Intro`
+33. `ui/game.js` → `Game` (starts the game on load)
 
 `index.html` is the source of truth for this order, and the smoke test reads its
 script list from there (skipping `ui/`, which needs a real page). If you add a

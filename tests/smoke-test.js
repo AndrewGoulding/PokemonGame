@@ -827,6 +827,18 @@ for (const share of [false, true]) {
   }
 }
 
+// FireRed's intro: every image ui/intro.js loads is built, and every text label it uses exists.
+{
+  const introJs = fs.readFileSync(path.join(root, "ui/intro.js"), "utf8");
+  const names = new Set();
+  for (const [, list] of introJs.matchAll(/_IMAGES = \[([^\]]+)\]/g)) for (const [, n] of list.matchAll(/"([\w-]+)"/g)) names.add(n);
+  assert(names.size > 30, "intro image lists");
+  for (const n of names) assert(fs.existsSync(path.join(root, "assets/intro", n + ".png")), "missing intro image " + n);
+  for (const [, label] of introJs.matchAll(/IT\("(\w+)"\)/g)) assert(INTRO_TEXT[label], "missing intro text " + label);
+  for (const n of ["Red", "Green", "Gary", "Leaf"]) assert(INTRO_TEXT["gNameChoice_" + n], "name choice " + n);
+  assert.deepStrictEqual(INTRO_TEXT.gOakSpeech_Text_ThisWorld, ["This world…"]);
+}
+
 // The debug menu can add any species but battle-only forms: each must make a
 // working party Pokémon (moves, stats, a battle set).
 {

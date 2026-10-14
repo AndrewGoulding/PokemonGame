@@ -36,6 +36,7 @@
 
   function show(which) {
     if (which !== "world") Overworld.hide();
+    if (which !== "intro" && window.Intro) Intro.stop();
     $("#world-pic").classList.add("hidden");
     field.classList.toggle("hidden", which !== "field");
     scene.classList.toggle("hidden", which !== "scene");
@@ -190,30 +191,13 @@
     }
   }
 
+  // A new game starts with FireRed's intro: the controls guide, then Prof. Oak
+  // asks whether you're a boy or a girl and names you and your rival.
   async function newGame() {
-    let name = "";
-    while (!name) {
-      show("scene");
-      scene.innerHTML = '<div class="spotlight"><label class="name-entry">Your name' +
-        '<input id="name-input" maxlength="12" value="Red" autocomplete="off"></label></div>';
-      const input = $("#name-input");
-      input.focus();
-      input.select();
-      const typed = new Promise((resolve) => input.addEventListener("keydown", (e) => { if (e.key === "Enter") resolve(); }));
-      await Promise.race([typed, ask("What's your name?", [{ label: "OK", value: true, className: "action", wide: true }])]);
-      clearMenu();
-      name = input.value.trim().slice(0, 12);
-    }
-    scene.innerHTML = '<div class="starters">' +
-      '<figure><img class="look" src="assets/world/sprites/player_red.png" alt=""><figcaption>Boy</figcaption></figure>' +
-      '<figure><img class="look" src="assets/world/sprites/player_green.png" alt=""><figcaption>Girl</figcaption></figure></div>';
-    const look = await ask("Are you a boy or a girl?", [
-      { label: "Boy", value: "red", className: "action" }, { label: "Girl", value: "green", className: "action" }]);
-    player = Player.create(name, look);
-    renderSprite("Pikachu");
-    await message("Welcome to the world of Pokémon, " + name + "!");
-    await message("Your very own Pokémon legend is about to unfold!");
-    await message("Prof. Oak is waiting for you in his lab, south of your house.");
+    show("intro");
+    const r = await Intro.oakSpeech();
+    player = Player.create(r.name, r.look);
+    player.rival = r.rival;
     await persist();
   }
 
@@ -1374,6 +1358,13 @@
   }
 
   async function main() {
+    // FireRed's opening movie and title screen; left alone, the title goes back to the movie.
+    show("intro");
+    for (;;) {
+      await Intro.movie();
+      if ((await Intro.titleScreen()) === "start") break;
+    }
+    Intro.stop();
     await title();
     lastTick = Date.now();
     await explore();
