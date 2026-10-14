@@ -746,13 +746,20 @@ for (const share of [false, true]) {
   // Pallet Town and Route 1 join at the top / bottom edge.
   assert.strictEqual(at(World.step({ map: "PalletTown", x: 12, y: 0 }, "up")), "Route1 12,39");
   assert.strictEqual(at(World.step({ map: "Route1", x: 12, y: 39 }, "down")), "PalletTown 12,0");
-  // Route 1 leads on to Viridian City, then Route 2; Route 22 and Pewter City aren't built yet.
+  // Route 1 leads on to Viridian City, then Route 2 and Pewter City; west of
+  // Viridian is Route 22. Route 3 and Route 23 aren't built yet.
   assert.strictEqual(at(World.step({ map: "Route1", x: 12, y: 0 }, "up")), "ViridianCity 24,39");
   assert.strictEqual(at(World.step({ map: "ViridianCity", x: 24, y: 39 }, "down")), "Route1 12,0");
   assert.strictEqual(at(World.step({ map: "ViridianCity", x: 22, y: 0 }, "up")), "Route2 10,79");
   assert.strictEqual(at(World.step({ map: "Route2", x: 10, y: 79 }, "down")), "ViridianCity 22,0");
-  assert.strictEqual(World.step({ map: "Route2", x: 10, y: 0 }, "up").unbuilt, "MAP_PEWTER_CITY");
-  assert.strictEqual(World.step({ map: "ViridianCity", x: 0, y: 12 }, "left").unbuilt, "MAP_ROUTE22");
+  assert.strictEqual(at(World.step({ map: "Route2", x: 10, y: 0 }, "up")), "PewterCity 22,39");
+  assert.strictEqual(at(World.step({ map: "ViridianCity", x: 0, y: 12 }, "left")), "Route22 47,2");
+  assert.strictEqual(World.step({ map: "PewterCity", x: 47, y: 20 }, "right").unbuilt, "MAP_ROUTE3");
+  assert.strictEqual(World.step({ map: "Route22_NorthEntrance", x: 7, y: 2 }, "up").unbuilt, "MAP_ROUTE23");
+  // Pewter's doors: the Gym, the Pokémon Center, the Mart; Route 22's League gate.
+  const door = (map, x, y) => World.step({ map, x, y }, "up").warp.map;
+  assert.deepStrictEqual([door("PewterCity", 15, 17), door("PewterCity", 17, 26), door("PewterCity", 28, 19), door("Route22", 8, 6)],
+    ["PewterCity_Gym", "PewterCity_PokemonCenter_1F", "PewterCity_Mart", "Route22_NorthEntrance"]);
   // A cave into a map that isn't built yet says so instead of letting you in.
   assert.strictEqual(World.step({ map: "Route2", x: 17, y: 12 }, "up").unbuilt, "MAP_DIGLETTS_CAVE_NORTH_ENTRANCE");
   // Through Viridian Forest: Route 2 -> south gate -> forest -> north gate -> Route 2's north end.
@@ -948,6 +955,47 @@ for (const share of [false, true]) {
   assert.strictEqual(SPRITE_METRICS.elevation.Gastly, 4);
   assert.strictEqual(SPRITE_METRICS.elevation.Pidgey, undefined);
   assert(Party.toBattleSet(Party.create("Pidgey", 5, { ball: "great-ball" })).ball === "great-ball", "battle sets carry their ball");
+}
+
+// Route 22 and Pewter City: FireRed's trainers and scripted walks.
+{
+  const replay = (pos, label) => {
+    assert(WORLD_MOVEMENTS[label], "missing movement " + label);
+    for (const cmd of WORLD_MOVEMENTS[label]) {
+      const m = /^walk_(up|down|left|right)$/.exec(cmd);
+      if (m) { pos.x += World.DIRS[m[1]][0]; pos.y += World.DIRS[m[1]][1]; }
+    }
+    return pos;
+  };
+  const party = (id) => WORLD_TRAINERS[id].party.map((m) => m.species + " " + m.level);
+  assert.deepStrictEqual(party("TRAINER_LEADER_BROCK"), ["Geodude 12", "Onix 14"]);
+  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_LEADER_BROCK.party[1].moves, ["Tackle", "Bind", "Rock Tomb"]);
+  assert.deepStrictEqual(party("TRAINER_CAMPER_LIAM"), ["Geodude 10", "Sandshrew 11"]);
+  for (const mon of ["Bulbasaur", "Charmander", "Squirtle"]) {
+    assert.deepStrictEqual(party("TRAINER_RIVAL_ROUTE22_EARLY_" + mon.toUpperCase()), ["Pidgey 9", mon + " 9"]);
+  }
+  for (const pic of ["leader_brock", "camper", "rival_early"]) assert(fs.existsSync(path.join(root, "assets/sprites/trainers/front", pic + ".png")), pic);
+  assert.strictEqual(WORLD_MAPS.PewterCity_Gym.battleScene, "gym");
+  assert(fs.existsSync(path.join(root, "assets/battle/gym.png")) && fs.existsSync(path.join(root, "assets/battle/leader.png")));
+  assert.strictEqual(Player.prizeMoney("Leader Brock", WORLD_TRAINERS.TRAINER_LEADER_BROCK.party), 100 * 14);
+  assert.deepStrictEqual(Player.CENTERS.PewterCity_PokemonCenter_1F, { map: "PewterCity_PokemonCenter_1F", x: 7, y: 4, facing: "up" });
+  assert(WORLD_MAPS.PewterCity_Mart.people.find((p) => p.mart).mart.length > 3, "Pewter Mart stock");
+  // The rival walks up beside you on Route 22 (you're at x 33, y 4-6).
+  assert.deepStrictEqual(replay({ x: 25, y: 4 }, "Route22_Movement_RivalApproach"), { x: 32, y: 4 });
+  assert.deepStrictEqual(replay({ x: 25, y: 5 }, "Route22_Movement_RivalApproach"), { x: 32, y: 5 });
+  assert.deepStrictEqual(replay({ x: 25, y: 5 }, "Route22_Movement_RivalApproachBottom"), { x: 33, y: 5 });
+  // The Gym guide leads you from the east exit to below the Gym door (15,16), whichever way it starts.
+  for (const [side, from] of [["Top", { x: 42, y: 21 }], ["Mid", { x: 42, y: 22 }], ["Bottom", { x: 42, y: 23 }], ["East", { x: 41, y: 20 }]]) {
+    assert.deepStrictEqual(replay(from, "PewterCity_Movement_PlayerWalkToGym" + side), { x: 15, y: 18 }, "to the Gym (" + side + ")");
+    const g = replay({ x: 42, y: 20 }, "PewterCity_Movement_GuideMoveToLead" + side);
+    assert.deepStrictEqual(replay(g, "PewterCity_Movement_GuideWalkToGym" + side), { x: 16, y: 18 }, "guide beside you (" + side + ")");
+  }
+  // The Museum guide (33,17) takes you to below the Museum's door.
+  for (const [side, from] of [["North", { x: 33, y: 18 }], ["South", { x: 33, y: 16 }], ["West", { x: 34, y: 17 }], ["East", { x: 32, y: 17 }]]) {
+    assert.deepStrictEqual(replay(from, "PewterCity_Movement_PlayerWalkToMuseum" + side), { x: 17, y: 9 }, "to the Museum (" + side + ")");
+  }
+  // New games can't run until the Running Shoes.
+  assert(!Player.create("T").flags.runningShoes);
 }
 
 // Battle backgrounds: every terrain ui/game.js can pick is built, at 512x112

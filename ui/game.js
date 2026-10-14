@@ -214,9 +214,11 @@
   // kind: "wild" or "trainer". opts: { foe: { name, team }, noBlackout }
   // FireRed's battle background (BattleSetup_GetTerrainId): tall grass for
   // grass encounters, else by the kind of map you're on.
+  // A map's own battle scene (a Gym) comes before its kind of map.
   function battleTerrain(opts) {
     if (opts.terrain) return opts.terrain;
     const here = player.location && window.WORLD_MAPS[player.location.map];
+    if (here && here.battleScene) return here.battleScene;
     const type = here ? here.type : "";
     return type === "indoor" ? "building" : type === "underground" ? "cave" : "plain";
   }
@@ -270,6 +272,7 @@
       }
     }
     await persist();
+    return result.outcome;
   }
 
   function ballUsed(b) {
@@ -751,6 +754,7 @@
         { label: "Give Repels", value: "repels", className: "action" },
         { label: "Give Master Balls", value: "master", className: "action" },
         { label: "Wild battle", value: "wild", className: "action" },
+        { label: "Running Shoes: " + (player.flags.runningShoes ? "On" : "Off"), value: "shoes", className: "action" },
         back()]);
       if (v === "back") return;
       if (v === "add") await debugAddPokemon();
@@ -767,6 +771,9 @@
       } else if (v === "repels") {
         for (const id of Object.keys(REPEL_STEPS)) Player.addItem(player, id, 99);
         await message("Added 99 each of Repel, Super Repel and Max Repel to your bag.");
+      } else if (v === "shoes") {
+        player.flags.runningShoes = !player.flags.runningShoes;
+        await message(player.flags.runningShoes ? "You have the Running Shoes: hold B to run." : "No Running Shoes: you can't run.");
       } else if (v === "master") {
         Player.addItem(player, "master-ball", 99);
         await message("Added 99 Master Balls to your bag.");
@@ -1062,7 +1069,19 @@
     "enter:ViridianCity_Mart", "ViridianCity_Mart_EventScript_Clerk",
     "ViridianCity_PokemonCenter_1F_EventScript_Nurse",
     "Common_EventScript_UnionRoomAttendant", "Common_EventScript_WirelessClubAttendant", "Common_EventScript_DirectCornerAttendant",
-    "Route2_House_EventScript_Reyley", "Route2_EastBuilding_EventScript_Aide"
+    "Route2_House_EventScript_Reyley", "Route2_EastBuilding_EventScript_Aide",
+    "Route22_EventScript_EarlyRivalTriggerTop", "Route22_EventScript_EarlyRivalTriggerMid", "Route22_EventScript_EarlyRivalTriggerBottom",
+    "Route22_NorthEntrance_EventScript_BoulderBadgeGuardTrigger", "Route22_NorthEntrance_EventScript_BoulderBadgeGuard",
+    "PewterCity_EventScript_GymGuideTriggerTop", "PewterCity_EventScript_GymGuideTriggerMid", "PewterCity_EventScript_GymGuideTriggerBottom",
+    "PewterCity_EventScript_GymGuide", "PewterCity_EventScript_MuseumGuide", "PewterCity_EventScript_BugCatcher",
+    "PewterCity_EventScript_RunningShoesAide", "PewterCity_EventScript_RunningShoesAideTriggerTop",
+    "PewterCity_EventScript_RunningShoesAideTriggerMid", "PewterCity_EventScript_RunningShoesAideTriggerBottom",
+    "PewterCity_Museum_1F_EventScript_EntranceTriggerLeft", "PewterCity_Museum_1F_EventScript_EntranceTriggerMid",
+    "PewterCity_Museum_1F_EventScript_EntranceTriggerRight", "PewterCity_Museum_1F_EventScript_Scientist1",
+    "PewterCity_Museum_1F_EventScript_OldAmberScientist", "PewterCity_Museum_1F_EventScript_SeismicTossTutor",
+    "PewterCity_Museum_1F_EventScript_AerodactylFossil", "PewterCity_Museum_1F_EventScript_KabutopsFossil",
+    "PewterCity_Gym_EventScript_Brock", "PewterCity_Gym_EventScript_GymGuy", "PewterCity_Gym_EventScript_GymStatue",
+    "PewterCity_Mart_EventScript_Clerk", "PewterCity_PokemonCenter_1F_EventScript_Nurse", "MysteryEventClub_EventScript_Woman"
   ].concat(Object.keys(STARTER_BALLS)));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
@@ -1090,6 +1109,10 @@
       case "FLAG_HIDE_OAK_IN_HIS_LAB": return !!(f.oakInLab || f.starter);
       case "FLAG_HIDE_POKEDEX": return !f.pokedex;         // on the desk until Oak hands them out
       case "FLAG_HIDE_MG_DELIVERYMEN": return false;       // no Mystery Gift
+      case "FLAG_HIDE_ROUTE_22_RIVAL": return false;       // only for his scene
+      case "FLAG_HIDE_PEWTER_CITY_GYM_GUIDE": return !f.TRAINER_LEADER_BROCK;
+      case "FLAG_HIDE_PEWTER_CITY_RUNNING_SHOES_GUY": return !!f.TRAINER_LEADER_BROCK && !f.runningShoes;
+      case "FLAG_HIDE_OLD_AMBER": return !f.gotOldAmber;
       // After you choose, your rival stands below the Poké Ball he took.
       case "FLAG_HIDE_RIVAL_IN_LAB":
         if (f.rivalLabBattle) return false;
@@ -1123,6 +1146,7 @@
     const script = (ev.person || ev.sign || ev.trigger).script;
     const f = player.flags;
 
+    if (script === "PewterCity_Gym_EventScript_Brock") { await brock(ev.person); return; }
     if (TRAINER_SCRIPTS.has(script)) {
       if (trainerWaiting(ev.person)) await trainerBattle(ev.person, null);
       else await say(ev.person.trainer.after || ev.person.text || []);
@@ -1264,7 +1288,7 @@
         return;
 
       case "ViridianCity_EventScript_DreamEaterTutor":
-        await dreamEaterTutor(ev.person.text);
+        await moveTutor("Dream Eater", "tutorDreamEater", "Text_DreamEater");
         return;
 
       // FireRed's parcel scene: the clerk calls out, you walk up to the counter.
@@ -1296,6 +1320,154 @@
       case "Common_EventScript_UnionRoomAttendant":
       case "Common_EventScript_WirelessClubAttendant":
       case "Common_EventScript_DirectCornerAttendant":
+        await say(T("Text_WirelessClubUndergoingAdjustments"));
+        return;
+
+      // ---------- Route 22 ----------
+
+      // Your rival is waiting on Route 22 once you have the Pokédex.
+      case "Route22_EventScript_EarlyRivalTriggerTop":
+      case "Route22_EventScript_EarlyRivalTriggerMid":
+      case "Route22_EventScript_EarlyRivalTriggerBottom":
+        if (f.pokedex && !f.route22Rival) await route22Rival(script.replace("Route22_EventScript_EarlyRivalTrigger", ""));
+        return;
+
+      // The League gate: the guard checks for the Boulder Badge (FireRed's
+      // Route23_EventScript_BadgeGuardTrigger and BadgeGuard).
+      case "Route22_NorthEntrance_EventScript_BoulderBadgeGuardTrigger":
+      case "Route22_NorthEntrance_EventScript_BoulderBadgeGuard": {
+        const badge = ["Boulder Badge"], trigger = script.endsWith("Trigger");
+        if (trigger && f.route23Guard) return;
+        if (trigger) await Overworld.act([{ who: "#" + 0, moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
+        if (hasBadge("boulder")) {
+          await say(T("Text_OhThatsBadgeGoRightAhead"), badge);
+          f.route23Guard = true;
+        } else {
+          await say(T("Text_OnlySkilledTrainersAllowedThrough"), badge);
+          await say(T("Text_CantLetYouPass"));
+          if (trigger) await Overworld.act([{ who: "player", moves: ["walk_down"] }, { who: "#0", moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+        }
+        return;
+      }
+
+      // ---------- Pewter City ----------
+
+      // Before you have Brock's badge, a boy marches you to the Gym if you
+      // head for the east exit, or if you talk to him.
+      case "PewterCity_EventScript_GymGuideTriggerTop":
+      case "PewterCity_EventScript_GymGuideTriggerMid":
+      case "PewterCity_EventScript_GymGuideTriggerBottom":
+        if (!f.TRAINER_LEADER_BROCK) await gymGuide(script.replace("PewterCity_EventScript_GymGuideTrigger", ""));
+        return;
+      case "PewterCity_EventScript_GymGuide":
+        await gymGuide(Overworld.position().facing === "right" ? "East" : "Top", true);
+        return;
+
+      case "PewterCity_EventScript_MuseumGuide": {
+        if (await confirm(fill(T("PewterCity_Text_DidYouCheckOutMuseum")[0]))) { await say(T("PewterCity_Text_WerentThoseFossilsAmazing")); return; }
+        await say(T("PewterCity_Text_ReallyYouHaveToGo"));
+        const side = { up: "North", down: "South", left: "West", right: "East" }[Overworld.position().facing];
+        const GUIDE = "LOCALID_PEWTER_MUSEUM_GUIDE";
+        await Overworld.act([{ who: GUIDE, moves: ["delay_10"].concat(M("PewterCity_Movement_GuideWalkToMuseum" + side)) },
+          { who: "player", moves: ["delay_10"].concat(M("PewterCity_Movement_PlayerWalkToMuseum" + side)) }]);
+        await say(T("PewterCity_Text_ThisIsTheMuseum"));
+        await Overworld.act([{ who: GUIDE, moves: ["delay_10"].concat(M("PewterCity_Movement_MuseumGuideExit")) }]);
+        Overworld.removeObject(GUIDE);
+        return;
+      }
+
+      case "PewterCity_EventScript_BugCatcher":
+        await say(T((await confirm(fill(T("PewterCity_Text_DoYouKnowWhatImDoing").join(" "))))
+          ? "PewterCity_Text_ThatsRightItsHardWork" : "PewterCity_Text_SprayingRepelToKeepWildMonsOut"));
+        return;
+
+      // After the Boulder Badge, Prof. Oak's Aide catches you at the east exit.
+      case "PewterCity_EventScript_RunningShoesAide":
+      case "PewterCity_EventScript_RunningShoesAideTriggerTop":
+      case "PewterCity_EventScript_RunningShoesAideTriggerMid":
+      case "PewterCity_EventScript_RunningShoesAideTriggerBottom":
+        if (f.TRAINER_LEADER_BROCK && !f.runningShoes) {
+          await runningShoesAide({ PewterCity_EventScript_RunningShoesAide: 0, PewterCity_EventScript_RunningShoesAideTriggerTop: 1,
+            PewterCity_EventScript_RunningShoesAideTriggerMid: 2, PewterCity_EventScript_RunningShoesAideTriggerBottom: 3 }[script]);
+        }
+        return;
+
+      // The Museum: ₽50 a visit, paid at the counter as you walk in.
+      case "PewterCity_Museum_1F_EventScript_EntranceTriggerLeft":
+      case "PewterCity_Museum_1F_EventScript_EntranceTriggerMid":
+      case "PewterCity_Museum_1F_EventScript_EntranceTriggerRight": {
+        if (f.museumTicket) return;
+        await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
+        const ask_ = T("PewterCity_Museum_1F_Text_Its50YForChildsTicket");
+        await say(ask_.slice(0, -1));
+        const yes = await confirm(fill(ask_[ask_.length - 1]) + "\n(You have " + money(player.money) + ".)");
+        if (yes && player.money >= 50) {
+          const side = script.replace("PewterCity_Museum_1F_EventScript_EntranceTrigger", "");
+          await Overworld.act([{ who: "player", moves: M("PewterCity_Museum_1F_Movement_ApproachCounter" + side) }]);
+          Player.addMoney(player, -50);
+          f.museumTicket = true;
+          await say(T("PewterCity_Museum_1F_Text_Right50YThankYou"));
+        } else {
+          await say(T(yes ? "PewterCity_Museum_1F_Text_DontHaveEnoughMoney" : "PewterCity_Museum_1F_Text_ComeAgain"));
+          await Overworld.act([{ who: "player", moves: M("PewterCity_Museum_1F_Movement_ForcePlayerExit") }]);
+        }
+        return;
+      }
+
+      // Behind the counter he tells you about Amber; at the counter, enjoy yourself.
+      case "PewterCity_Museum_1F_EventScript_Scientist1":
+        if (Overworld.position().facing === "right") { await say(T("PewterCity_Museum_1F_Text_PleaseEnjoyYourself")); return; }
+        await say(T("PewterCity_Museum_1F_Text_DoYouKnowWhatAmberIs").slice(0, -1));
+        await say(T((await confirm(fill(T("PewterCity_Museum_1F_Text_DoYouKnowWhatAmberIs").slice(-1)[0])))
+          ? "PewterCity_Museum_1F_Text_AmberContainsGeneticMatter" : "PewterCity_Museum_1F_Text_AmberIsFossilizedSap"));
+        await Overworld.act([{ who: "LOCALID_MUSEUM_SCIENTIST1", moves: ["face_left"] }]);
+        return;
+
+      case "PewterCity_Museum_1F_EventScript_OldAmberScientist":
+        if (f.gotOldAmber) { await say(T("PewterCity_Museum_1F_Text_GetOldAmberChecked")); return; }
+        await say(T("PewterCity_Museum_1F_Text_WantYouToGetAmberExamined"));
+        f.gotOldAmber = true;
+        Overworld.removeObject("LOCALID_OLD_AMBER");
+        Player.addItem(player, "old-amber");
+        await say(T("PewterCity_Museum_1F_Text_ReceivedOldAmberFromMan"));
+        return;
+
+      case "PewterCity_Museum_1F_EventScript_SeismicTossTutor":
+        await moveTutor("Seismic Toss", "tutorSeismicToss", "Text_SeismicToss");
+        return;
+
+      // The fossils, shown as FireRed does (OpenMuseumFossilPic).
+      case "PewterCity_Museum_1F_EventScript_AerodactylFossil":
+      case "PewterCity_Museum_1F_EventScript_KabutopsFossil": {
+        const species = script.endsWith("AerodactylFossil") ? "Aerodactyl" : "Kabutops";
+        showPicture(species);
+        await say(ev.sign.text);
+        hidePicture();
+        return;
+      }
+
+      case "PewterCity_Gym_EventScript_GymGuy":
+        if (f.TRAINER_LEADER_BROCK) { await say(T("PewterCity_Gym_Text_YoureChampMaterial")); return; }
+        await say(T("PewterCity_Gym_Text_LetMeTakeYouToTheTop").slice(0, -1));
+        await say(T((await confirm(fill(T("PewterCity_Gym_Text_LetMeTakeYouToTheTop").slice(-1)[0])))
+          ? "PewterCity_Gym_Text_LetsGetHappening" : "PewterCity_Gym_Text_ItsFreeLetsGetHappening"));
+        await say(T("PewterCity_Gym_Text_TryDifferentPartyOrders"));
+        return;
+
+      case "PewterCity_Gym_EventScript_GymStatue":
+        await say(T(hasBadge("boulder") ? "PewterCity_Gym_Text_GymStatuePlayerWon" : "PewterCity_Gym_Text_GymStatue"));
+        return;
+
+      case "PewterCity_Mart_EventScript_Clerk":
+        await say(T("Text_MayIHelpYou"));
+        await mart(ev.person.mart);
+        return;
+
+      case "PewterCity_PokemonCenter_1F_EventScript_Nurse":
+        await nurse(ev.map);
+        return;
+
+      case "MysteryEventClub_EventScript_Woman":   // no Mystery Events here
         await say(T("Text_WirelessClubUndergoingAdjustments"));
         return;
 
@@ -1424,9 +1596,15 @@
     }
     await say(t.intro);
     if (!canBattle()) return;
-    const team = data.party.map((m) => Party.create(m.species, m.level, { ivs: Math.floor(m.iv * 31 / 255), moves: m.moves }));
-    data.party.forEach((m, i) => { if (m.item) team[i].item = m.item; });
+    const team = trainerTeam(t.id);
     await battle("trainer", { foe: { name: data.className + " " + data.name, team, pic: data.pic }, defeatText: t.defeat, trainerId: t.id });
+  }
+
+  // A FireRed trainer's party as party records.
+  function trainerTeam(id) {
+    const data = window.WORLD_TRAINERS[id];
+    return data.party.map((m) => Object.assign(Party.create(m.species, m.level, { ivs: Math.floor(m.iv * 31 / 255), moves: m.moves }),
+      m.item ? { item: m.item } : {}));
   }
 
   // ---------- In-game trades ----------
@@ -1542,22 +1720,126 @@
     player.flags.catchTutorial = true;
   }
 
-  // The move tutor in Viridian teaches Dream Eater once.
-  async function dreamEaterTutor(onceText) {
+  // FireRed's move tutors (EventScript_DreamEaterTutor and the like): each
+  // teaches its move once, with its own lines (Text_<Move>Teach, ...Declined,
+  // ...WhichMon, ...Taught).
+  async function moveTutor(move, flag, text) {
     const f = player.flags;
-    if (f.tutorDreamEater) { await say("Dream Eater…\nIt eats the dreams of sleeping foes. Use it well!"); return; }
-    if (!(await confirm("I can teach your Pokémon the move Dream Eater. Want me to?"))) { await say("Oh… Some other time, then."); return; }
-    if (!(await confirm(fill(onceText.join(" "))))) { await say("Oh… Some other time, then."); return; }
-    const v = await pick("Which Pokémon should learn Dream Eater?", partyHtml(), [back()]);
-    if (v === "back") { await say("Oh… Some other time, then."); return; }
+    if (f[flag]) { await say(T(text + "Taught")); return; }
+    const teach = T(text + "Teach");
+    await say(teach.slice(0, -1));
+    const declined = () => say(T(text + "Declined"));
+    if (!(await confirm(fill(teach[teach.length - 1])))) { await declined(); return; }
+    if (!(await confirm(fill(T("Text_MoveCanOnlyBeLearnedOnce").join(" "))))) { await declined(); return; }
+    const v = await pick(fill(T(text + "WhichMon").join(" ")), partyHtml(), [back()]);
+    show("world");
+    if (v === "back") { await declined(); return; }
     const record = player.party[+v.pick];
     const name = Party.displayName(record);
     const set = window.LEARNSETS_GEN6[record.species] || {};
-    const learns = [].concat(set.tm || [], set.tutor || [], (set.levelup || []).map((l) => l[1])).includes("Dream Eater");
-    if (Party.knowsMove(record, "Dream Eater")) { await say(name + " already knows Dream Eater."); return; }
-    if (!learns) { await say(name + " can't learn Dream Eater."); return; }
-    await learnMove(record, "Dream Eater");
-    if (Party.knowsMove(record, "Dream Eater")) f.tutorDreamEater = true;
+    const learns = [].concat(set.tm || [], set.tutor || [], (set.levelup || []).map((l) => l[1])).includes(move);
+    if (Party.knowsMove(record, move)) { await say(name + " already knows " + move + "."); return; }
+    if (!learns) { await say(name + " can't learn " + move + "."); return; }
+    await learnMove(record, move);
+    if (!Party.knowsMove(record, move)) { await declined(); return; }
+    f[flag] = true;
+    await say(T(text + "Taught"));
+  }
+
+  // ---------- Badges ----------
+
+  const hasBadge = (id) => player.badges.includes(id);
+
+  // ---------- Route 22's rival ----------
+  //
+  // FireRed's Route22_EventScript_EarlyRival: he walks up from the left,
+  // battles (his Pidgey and the starter that beats yours, level 9), and heads
+  // off toward Viridian. Losing doesn't black you out.
+  async function route22Rival(side) {
+    const f = player.flags, R = "LOCALID_ROUTE22_RIVAL";
+    Overworld.addObject(R, { x: 25, y: side === "Top" ? 4 : 5, facing: "right" });
+    await Overworld.act(side === "Bottom"
+      ? [{ who: R, moves: M("Route22_Movement_RivalApproachBottom") }, { who: "player", moves: M("Route22_Movement_PlayerFaceRival") }]
+      : [{ who: R, moves: M("Route22_Movement_RivalApproach") }]);
+    await Overworld.act([{ who: R, moves: ["delay_6"] }]);
+    await say(T("Route22_Text_EarlyRivalIntro"));
+    const theirs = RIVAL_PICK[f.starter] || "Squirtle";
+    const team = trainerTeam("TRAINER_RIVAL_ROUTE22_EARLY_" + theirs.toUpperCase());
+    const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_early" },
+      defeatText: T("Route22_Text_EarlyRivalDefeat"), noBlackout: true });
+    show("world");
+    await Overworld.resume();
+    if (outcome === "lost") await say(T("Text_RivalVictory"));
+    f.route22Rival = true;
+    await say(T("Route22_Text_EarlyRivalPostBattle"));
+    await Overworld.act([{ who: R, moves: ["delay_10"].concat(M(side === "Bottom" ? "Route22_Movement_EarlyRivalExitBottom" : "Route22_Movement_EarlyRivalExit")) }]);
+    Overworld.removeObject(R);
+  }
+
+  // ---------- Pewter City ----------
+
+  // The boy who takes you to the Gym (FireRed's GymGuideTrigger, or talking to
+  // him from beside him: "East"). He leads, you follow, then he leaves.
+  async function gymGuide(side, talked) {
+    const G = "LOCALID_PEWTER_GYM_GUIDE";
+    await say(T("PewterCity_Text_BrocksLookingForChallengersFollowMe"));
+    if (side === "East") {
+      await Overworld.act([{ who: "player", moves: M("PewterCity_Movement_PlayerWaitForGuideEast") }, { who: G, moves: M("PewterCity_Movement_GuideMoveToLeadEast") }]);
+      await Overworld.act([{ who: "player", moves: M("PewterCity_Movement_PlayerWalkToGymEast") }, { who: G, moves: M("PewterCity_Movement_GuideWalkToGymEast") }]);
+    } else {
+      await Overworld.act([{ who: G, moves: M("PewterCity_Movement_GuideMoveToLead" + side) }]);
+      await Overworld.act([{ who: "player", moves: M("PewterCity_Movement_PlayerWalkToGym" + side) }, { who: G, moves: M("PewterCity_Movement_GuideWalkToGym" + side) }]);
+    }
+    await say(T("PewterCity_Text_GoTakeOnBrock"));
+    await Overworld.act([{ who: G, moves: M("PewterCity_Movement_GymGuideExit") }]);
+    Overworld.removeObject(G);
+  }
+
+  // Prof. Oak's Aide brings the Running Shoes (and a letter from Mom).
+  // `from`: 0 talking to him, 1-3 the trigger tiles from the top.
+  async function runningShoesAide(from) {
+    const A = "LOCALID_PEWTER_AIDE";
+    if (from) await Overworld.act([{ who: A, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+    await Overworld.act([{ who: A, moves: M("Common_Movement_ExclamationMark").concat(M("Common_Movement_Delay48")) }]);
+    await say(T("PewterCity_Text_OhPlayer"));
+    if (from === 0) await Overworld.act([{ who: A, moves: ["delay_20"] }]);
+    else {
+      if (from > 1) await Overworld.act([{ who: A, moves: M(from === 2 ? "PewterCity_Movement_AideApproachPlayerMid" : "PewterCity_Movement_AideApproachPlayerBottom") }]);
+      await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
+    }
+    await say(T("PewterCity_Text_AskedToDeliverThis"));
+    player.flags.runningShoes = true;
+    await say(T("PewterCity_Text_ReceivedRunningShoesFromAide"));
+    await say(T("PewterCity_Text_SwitchedShoesWithRunningShoes"));
+    await say(T("PewterCity_Text_ExplainRunningShoes"));
+    await say(T("PewterCity_Text_MustBeGoingBackToLab"));
+    await Overworld.act([{ who: A, moves: M("PewterCity_Movement_AideExit" + from).concat("delay_30") }]);
+    await say(T("PewterCity_Text_RunningShoesLetterFromMom"));
+    Overworld.removeObject(A);
+  }
+
+  // Brock: battle (talking to him), then the Boulder Badge and TM39.
+  async function brock(person) {
+    const f = player.flags;
+    if (!f.TRAINER_LEADER_BROCK) {
+      await say(person.trainer.intro);
+      if (!canBattle()) return;
+      const outcome = await battle("trainer", { foe: { name: "Leader Brock", team: trainerTeam("TRAINER_LEADER_BROCK"), pic: "leader_brock" },
+        defeatText: person.trainer.defeat, trainerId: "TRAINER_LEADER_BROCK", terrain: "leader" });
+      if (outcome !== "won") return;
+      if (!hasBadge("boulder")) player.badges.push("boulder");
+      show("world");
+      await Overworld.resume();
+    }
+    if (!f.gotTM39) {
+      await say(T("PewterCity_Gym_Text_TakeThisWithYou"));
+      Player.addItem(player, "tm39");
+      f.gotTM39 = true;
+      await say(T("PewterCity_Gym_Text_ReceivedTM39FromBrock"));
+      await say(T("PewterCity_Gym_Text_ExplainTM39"));
+      return;
+    }
+    await say(T("PewterCity_Gym_Text_BrockPostBattle"));
   }
 
   // ---------- Repels ----------
@@ -1585,12 +1867,19 @@
 
   // ---------- Exploring ----------
 
+  function special(script) {
+    // Coming back into Pewter City: the Museum ticket was for one visit (FireRed's OnTransition).
+    if (script === "enter:PewterCity") { player.flags.museumTicket = false; return false; }
+    return SPECIAL.has(script) || ITEM_BALLS.has(script) || TRAINER_SCRIPTS.has(script);
+  }
+
   async function explore() {
     for (;;) {
       show("world");
       const ev = await Overworld.explore({
         player, rivalName: player.rival, visible,
-        special: (script) => SPECIAL.has(script) || ITEM_BALLS.has(script) || TRAINER_SCRIPTS.has(script),
+        special,
+        canRun: () => !!player.flags.runningShoes,
         trainerWaiting, hiddenItem: (h) => !player.flags[h.flag],
         onStep: repelStep, allowWild: repelAllows
       });

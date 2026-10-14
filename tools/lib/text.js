@@ -18,12 +18,12 @@ function parseTextFile(file, out) {
 
 // FireRed text -> pages of plain text. {PLAYER}, {RIVAL} and {STR_VAR_1..3}
 // (a number, name or item a script fills in) stay for the game to fill in.
-const KEEP_CAPS = new Set(["NES", "TV", "HP", "PP", "PC", "TM", "HM", "OK", "KO", "EXP", "ID", "SS", "HQ"]);
+const KEEP_CAPS = new Set(["NES", "TV", "HP", "PP", "PC", "TM", "HM", "OK", "KO", "EXP", "ID", "SS", "HQ", "DNA"]);
 function cleanText(s) {
-  s = s.replace(/\$$/, "")
+  s = s.replace(/\$$/, "").replace(/¥/g, "₽")   // the game's money sign
     .replace(/POKéMON/g, "Pokémon").replace(/POKéDEX/g, "Pokédex").replace(/POKé BALLS/g, "Poké Balls").replace(/POKé BALL/g, "Poké Ball")
     .replace(/POKé MART/g, "Poké Mart").replace(/POKé/g, "Poké")
-    .replace(/\{(?!PLAYER\}|RIVAL\}|STR_VAR_\d\})[A-Z_0-9 ]+\}/g, "");
+    .replace(/\{(?!PLAYER\}|RIVAL\}|STR_VAR_\d\})[A-Za-z_0-9 ]+\}/g, "");   // control codes ({PAUSE 0x56}, colours)
   return s.split("\\p").map((page) => page.replace(/\\[nl]/g, "\n").replace(/ +\n/g, "\n").trim()
     // FireRed writes names in capitals (PROF. OAK, VIRIDIAN CITY, GYM); use normal case.
     .replace(/(?<!\{)\b[A-Z][A-Z'.]*[A-Z]\b(?!\})/g, (w) => KEEP_CAPS.has(w) ? w : w.charAt(0) + w.slice(1).toLowerCase())).filter(Boolean);

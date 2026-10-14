@@ -43,7 +43,16 @@ const TITLES = {
   Route2_ViridianForest_SouthEntrance: "Route 2 · Viridian Forest gate",
   Route2_ViridianForest_NorthEntrance: "Route 2 · Viridian Forest gate",
   Route2_House: "Route 2 · Trade house",
-  Route2_EastBuilding: "Route 2 · Gate"
+  Route2_EastBuilding: "Route 2 · Gate",
+  Route22_NorthEntrance: "Route 22 · Pokémon League gate",
+  PewterCity_Museum_1F: "Pewter City · Museum of Science",
+  PewterCity_Museum_2F: "Pewter City · Museum of Science 2F",
+  PewterCity_Gym: "Pewter City · Gym",
+  PewterCity_Mart: "Pewter City · Poké Mart",
+  PewterCity_House1: "Pewter City · House",
+  PewterCity_House2: "Pewter City · House",
+  PewterCity_PokemonCenter_1F: "Pewter City · Pokémon Center",
+  PewterCity_PokemonCenter_2F: "Pewter City · Pokémon Center 2F"
 };
 
 const MAPS = [
@@ -52,7 +61,10 @@ const MAPS = [
   "ViridianCity", "ViridianCity_House", "ViridianCity_School", "ViridianCity_Mart",
   "ViridianCity_PokemonCenter_1F", "ViridianCity_PokemonCenter_2F",
   "Route2", "Route2_ViridianForest_SouthEntrance", "ViridianForest", "Route2_ViridianForest_NorthEntrance",
-  "Route2_House", "Route2_EastBuilding"
+  "Route2_House", "Route2_EastBuilding",
+  "Route22", "Route22_NorthEntrance",
+  "PewterCity", "PewterCity_Museum_1F", "PewterCity_Museum_2F", "PewterCity_Gym", "PewterCity_Mart",
+  "PewterCity_House1", "PewterCity_House2", "PewterCity_PokemonCenter_1F", "PewterCity_PokemonCenter_2F"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
@@ -69,7 +81,8 @@ const GAME_TEXT = [
   "Text_WeHopeToSeeYouAgain", "Text_MayIHelpYou", "Text_PleaseComeAgain", "Text_WirelessClubUndergoingAdjustments",
   "Trade_Text_LookingForMonWannaTradeForMon", "Trade_Text_AwwOhWell", "Trade_Text_WhatThatsNoMon",
   "Trade_Text_HeyThanks", "Trade_Text_IsntMyOldMonGreat",
-  "Aide_Text_HaventCaughtEnoughMonsForItem", "Aide_Text_GetEnoughMonsComeBackForItem"
+  "Aide_Text_HaventCaughtEnoughMonsForItem", "Aide_Text_GetEnoughMonsComeBackForItem",
+  "Text_OnlySkilledTrainersAllowedThrough", "Text_CantLetYouPass", "Text_OhThatsBadgeGoRightAhead", "Text_MoveCanOnlyBeLearnedOnce"
 ];
 const PLAYER_SPRITES = { red: "red_normal.png", green: "green_normal.png" };
 
@@ -435,6 +448,9 @@ for (const name of MAPS) {
   out[name] = {
     name, title: TITLES[name] || name.replace(/_/g, " ").replace(/([a-z])([A-Z0-9])/g, "$1 $2"),
     width: w, height: h, type: map.map_type.replace(/^MAP_TYPE_/, "").toLowerCase(),
+    // FireRed's battle scene for the map ("gym", "indoor1", ...), unless normal.
+    battleScene: map.battle_scene && map.battle_scene !== "MAP_BATTLE_SCENE_NORMAL"
+      ? map.battle_scene.replace(/^MAP_BATTLE_SCENE_/, "").toLowerCase().replace(/_/g, "") : undefined,
     top: anyAbove, borderWidth: bw, borderHeight: bh,
     collision, elevation, behavior, encounter,
     connections: (map.connections || []).map((c) => ({ map: byConst[c.map] || null, mapConst: c.map, direction: c.direction, offset: c.offset })),
@@ -483,6 +499,14 @@ for (const name of MAPS) {
 if (fs.existsSync(P("data/scripts/movement.inc"))) {
   const common = movements(P("data/scripts/movement.inc"), {});
   for (const k of Object.keys(common)) if (k.startsWith("Common_Movement_")) gameMovements[k] = common[k];
+}
+
+// Every trainer a built map battles, however its script starts the battle
+// (trainerbattle_single for most, trainerbattle_earlyrival for the rival).
+for (const name of MAPS) {
+  const file = P("data/maps", name, "scripts.inc");
+  if (!fs.existsSync(file)) continue;
+  for (const [, id] of fs.readFileSync(file, "utf8").matchAll(/trainerbattle_\w+\s+(TRAINER_\w+)/g)) usedTrainers.add(id);
 }
 
 // Text by label for story scenes: each built map's own text plus GAME_TEXT.

@@ -18,7 +18,7 @@
 // ctx: { player (the save: location, name), special(script) -> bool,
 //        visible(person, mapName) -> bool, rivalName,
 //        trainerWaiting(person) -> bool (not beaten yet),
-//        hiddenItem(hidden) -> bool (not found yet) }
+//        hiddenItem(hidden) -> bool (not found yet), canRun() -> bool }
 //
 // Controls: arrows / WASD to move, hold Shift (or B / X) to run, Z / Space / Enter
 // to talk or read, Esc / M to open the menu. On touch screens, the D-pad and
@@ -231,7 +231,8 @@
   // ---------- Player movement ----------
 
   function startStep(r, dir) {
-    const run = !r.jump && runHeld();
+    // Running needs the Running Shoes (ctx.canRun), as in FireRed.
+    const run = !r.jump && runHeld() && (!ctx.canRun || ctx.canRun());
     me.move = { tx: r.x, ty: r.y, tmap: r.map, dir, t: 0, jump: !!r.jump, warp: r.warp || null, run,
       dist: r.jump ? TILE * 2 : TILE, speed: run ? RUN_SPEED : WALK_SPEED };
     me.parity ^= 1;
