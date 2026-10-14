@@ -143,6 +143,10 @@
 .summary-moves { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 6px; }
 .summary-moves div { padding: 6px 10px; border-radius: 8px; display: flex; flex-direction: column; }
 .summary-moves span { font-size: 12px; }
+.summary-moves .move-card { cursor: grab; user-select: none; touch-action: pan-y; }
+.summary-moves .move-card.dragging { position: relative; z-index: 5; pointer-events: none; opacity: 0.9; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3); }
+.summary-moves .move-card.held { outline: 3px solid #f3b400; }
+.summary-moves .move-card.drop-target { outline: 3px dashed #2b6fd6; outline-offset: 2px; }
 
 /* ---------- PC ---------- */
 

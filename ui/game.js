@@ -501,11 +501,13 @@
         "</td><td>" + stats[k] + "</td><td" + ((r.ivs[k] | 0) === 31 ? ' class="max"' : "") + ">" + (r.ivs[k] | 0) +
         "</td><td>" + (r.evs[k] || 0) + "</td></tr>").join("") +
       '<tr class="total"><td>Total</td><td></td><td>' + sum(r.ivs) + "/186</td><td>" + sum(r.evs) + "/510</td></tr></table>" +
-      '<div class="summary-moves">' + r.moves.map((m) => {
+      '<div class="summary-moves">' + r.moves.map((m, i) => {
         const d = MOVES[m.name];
-        return '<div class="type-' + d.type + '"><b>' + escapeHtml(m.name) + "</b><span>" + d.type + " · " +
+        return '<div class="move-card type-' + d.type + '" data-slot="' + i + '"><b>' + escapeHtml(m.name) + "</b><span>" + d.type + " · " +
           (d.cat === "Status" ? "Status" : d.cat + " " + (d.power || "—")) + " · PP " + m.pp + "/" + Party.maxPp(m) + "</span></div>";
-      }).join("") + "</div></div>";
+      }).join("") + "</div>" +
+      (r.moves.length > 1 ? '<p class="bag-line">Drag a move onto another to swap them (on a phone, press and hold first).</p>' : "") +
+      "</div>";
   }
 
   async function summary(index) {
@@ -517,7 +519,19 @@
       options.push({ label: "Give item", value: "give", className: "action" });
       if (r.item) options.push({ label: "Take item", value: "take", className: "action" });
       options.push(back());
-      const v = await pick(Party.displayName(r) + "'s summary.", summaryHtml(r), options);
+      // Dragging one move onto another swaps them (the order in battle).
+      let dropped;
+      const moved = new Promise((resolve) => { dropped = resolve; });
+      const picked = pick(Party.displayName(r) + "'s summary.", summaryHtml(r), options);
+      const stop = draggableCards(scene.querySelector(".summary-moves"), (a, b) => dropped([a, b]), ".move-card");
+      const v = await Promise.race([picked, moved]);
+      stop();
+      if (Array.isArray(v)) {
+        const [a, b] = v;
+        [r.moves[a], r.moves[b]] = [r.moves[b], r.moves[a]];
+        await persist();
+        continue;
+      }
       if (v === "back" || (v && v.pick)) return;
       if (v === "lead") {
         player.party.unshift(player.party.splice(index, 1)[0]);
@@ -782,13 +796,32 @@
   // Species you can add: everything in the Pokédex data except battle-only forms.
   const debugSpecies = () => Object.keys(DEX).filter((s) => !/-(Mega|Primal)/.test(s)).sort();
 
+  // The debug menu asks for a password the first time it's opened each session.
+  const DEBUG_PASSWORD = "1324";
+  let debugUnlocked = false;
+  async function debugPassword() {
+    show("scene");
+    scene.innerHTML = '<div class="spotlight"><label class="name-entry">Password' +
+      '<input id="debug-password" type="password" inputmode="numeric" autocomplete="off"></label></div>';
+    const input = $("#debug-password");
+    const typed = new Promise((resolve) => scene.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.stopPropagation(); resolve("ok"); } }));
+    const asked = ask("The debug menu needs a password.", [{ label: "OK", value: "ok", className: "action" }, back("Cancel")]);
+    input.focus();
+    const v = await Promise.race([typed, asked]);
+    clearMenu();
+    if (v !== "ok") return false;
+    if (input.value !== DEBUG_PASSWORD) { await message("That's not the password."); return false; }
+    return (debugUnlocked = true);
+  }
+
   async function debugMenu() {
+    if (!debugUnlocked && !(await debugPassword())) return;
     for (;;) {
       const v = await ask("Debug menu.", [
         { label: "Add a Pokémon", value: "add", className: "action" },
         { label: "Infinite Rare Candies: " + (player.flags.debugCandy ? "On" : "Off"), value: "candy", className: "action" },
         { label: "Give all TMs and HMs", value: "tms", className: "action" },
-        { label: "Give Repels", value: "repels", className: "action" },
+        { label: "Give Max Repels", value: "repels", className: "action" },
         { label: "Give Master Balls", value: "master", className: "action" },
         { label: "Wild battle", value: "wild", className: "action" },
         back()]);
@@ -805,8 +838,8 @@
         await battle("wild");
         return "battled";
       } else if (v === "repels") {
-        for (const id of Object.keys(REPEL_STEPS)) Player.addItem(player, id, 99);
-        await message("Added 99 each of Repel, Super Repel and Max Repel to your bag.");
+        Player.addItem(player, "max-repel", 99);
+        await message("Added 99 Max Repels to your bag.");
       } else if (v === "master") {
         Player.addItem(player, "master-ball", 99);
         await message("Added 99 Master Balls to your bag.");
@@ -826,7 +859,7 @@
       '<label class="name-entry">Level<input id="debug-level" type="number" min="1" max="100" value="50"></label></div>';
     const input = $("#debug-species");
     for (;;) {
-      const typed = new Promise((resolve) => scene.addEventListener("keydown", (e) => { if (e.key === "Enter") resolve("add"); }));
+      const typed = new Promise((resolve) => scene.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.stopPropagation(); resolve("add"); } }));
       const asked = ask("Which Pokémon, and at what level?", [
         { label: "Add", value: "add", className: "action" }, back("Done")]);
       input.focus();   // ask() highlights its first button; keep typing in the box
@@ -954,12 +987,14 @@
   // starts once the pointer moves a little; on touch you press and hold first,
   // so ordinary swipes still scroll. A drag doesn't count as a tap. Returns a
   // function that removes the listeners.
-  function draggableCards(container, onSwap) {
+  function draggableCards(container, onSwap, selector) {
+    selector = selector || ".card";
+    const slot = (card) => +(card.dataset.slot != null ? card.dataset.slot : card.dataset.pick);
     const HOLD_MS = 300, START_PX = 8;
     let drag = null, swallowClick = false;
     const cardAt = (x, y) => {
       const el = document.elementFromPoint(x, y);
-      const card = el && el.closest(".card");
+      const card = el && el.closest(selector);
       return card && container.contains(card) ? card : null;
     };
     const clearTargets = () => container.querySelectorAll(".drop-target").forEach((c) => c.classList.remove("drop-target"));
@@ -975,9 +1010,9 @@
     };
     const press = (target, x, y, touch) => {
       swallowClick = false;   // a new touch or click: whatever came before is done
-      const card = target.closest && target.closest(".card");
+      const card = target.closest && target.closest(selector);
       if (!card || !container.contains(card)) return;
-      drag = { card, from: +card.dataset.pick, x, y, active: false, touch, timer: null };
+      drag = { card, from: slot(card), x, y, active: false, touch, timer: null };
       if (touch) drag.timer = setTimeout(() => { if (drag) { drag.card.classList.add("held"); begin(); } }, HOLD_MS);
     };
     // Returns true while a drag is under way (so the caller can stop scrolling).
@@ -1008,7 +1043,7 @@
       setTimeout(() => { swallowClick = false; }, 0);
       const over = cardAt(x, y);
       end();
-      if (over && over !== d.card) onSwap(d.from, +over.dataset.pick);
+      if (over && over !== d.card) onSwap(d.from, slot(over));
     };
 
     // Mouse and pen.

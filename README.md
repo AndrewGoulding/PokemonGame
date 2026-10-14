@@ -45,9 +45,9 @@ the Exp. Share, Oak's Parcel and the Town Map), the Pokédex (a red Poké Ball
 marks species you've caught, a gray one those you've only seen; wild Pokémon
 show the same mark in battle),
 your trainer card (save, download or load a save file), and **Debug** (for
-testing): add any Pokémon at any level (type its name, e.g. `charizard` or
+testing; it asks for a password the first time each session): add any Pokémon at any level (type its name, e.g. `charizard` or
 `rotom-wash`; a full party sends it to the PC), infinite Rare Candies, every TM
-and HM, 99 of each Repel, 99 Master Balls, or a wild battle at your level.
+and HM, 99 Max Repels, 99 Master Balls, or a wild battle at your level.
 Healing, shopping and the PC are in the towns: each Poké Mart sells exactly
 what it does in FireRed (Viridian: Poké Balls, Potions, Antidotes and
 Paralyze Heals), at Gen 6 prices.
