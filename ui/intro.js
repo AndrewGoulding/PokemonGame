@@ -4,7 +4,7 @@
 //
 //   await Intro.movie();                  // copyright, Game Freak, Gengar vs Nidorino (A/Start skips)
 //   await Intro.titleScreen();            // -> "start", or "timeout" to replay the movie
-//   await Intro.oakSpeech()               // -> { name, look: "red" | "green", rival }
+//   await Intro.oakSpeech()               // -> { name, look }
 //
 // Frame counts are the GBA's (60 a second). There's no sound.
 // Depends on: window.Screen (text box and menus), window.WORLD_TEXT-style
@@ -719,7 +719,7 @@
 
   // ---------- Prof. Oak's speech (src/oak_speech.c) ----------
 
-  const SPEECH_IMAGES = ["oak-speech-bg", "oak-speech-oak", "oak-speech-red", "oak-speech-leaf", "oak-speech-player-character", "oak-speech-rival",
+  const SPEECH_IMAGES = ["oak-speech-bg", "oak-speech-oak", "oak-speech-player-character",
     "oak-speech-platform", "controls-page-2", "controls-page-3", "pikachu-page", "pikachu-body", "pikachu-ears", "pikachu-eyes"];
   const IT = (label) => window.INTRO_TEXT[label];
   const NAMES = (labels) => labels.map((l) => IT("gNameChoice_" + l)[0]);
@@ -880,7 +880,7 @@
       return until((t) => { s.picAlpha = from + (to - from) * Math.min(1, (t + 1) / frames); if (to === 0 && s.picAlpha < 0.5) s.platform = false; return t + 1 >= frames; });
     };
     const flash = async () => { for (const a of [0.6, 1, 0.6, 0.3, 0]) { s.flash = a; await wait(2); } };
-    const fill = (str, name, rival) => str.replace(/\{PLAYER\}/g, name || "").replace(/\{RIVAL\}/g, rival || "");
+    const fill = (str, name) => str.replace(/\{PLAYER\}/g, name || "");
 
     // Oak appears.
     await fadeTo("#000", 16, 0, 5);
@@ -938,28 +938,12 @@
         { label: "Yes", value: true, className: "action" }, { label: "No", value: false, className: "action" }])) break;
     }
     show("");
-    await fadePic(0, 48);
-    await wait(40);
 
-    // The rival.
-    s.pic = "oak-speech-rival"; s.picX = 0; s.platformX = 0; s.platform = true;
-    await fadePic(1, 24);
-    // His name is always Gary here: Oak remembers it without asking you.
-    const rival = Player.RIVAL_NAME;
-    const whatWas = IT("gOakSpeech_Text_WhatWasHisName");
-    await say(whatWas.slice(0, -1));
-    show(whatWas[whatWas.length - 1]);
-    await until((t) => { s.picX = s.platformX = Math.min(60, (t + 1) * 2); return t >= 29; });
-    await wait(40);
-    await say(IT("gOakSpeech_Text_RememberRivalsName").map((p) => fill(p, name, rival)));
-    show("");
-    await fadePic(0, 48);
-    await wait(40);
-
-    // The player again, and off you go.
-    s.pic = playerPic; s.picX = 0; s.platformX = 0; s.platform = true;
-    await fadePic(1, 24);
-    const letsGo = IT("gOakSpeech_Text_LetsGo").map((p) => fill(p, name, rival));
+    // No rival here (FireRed introduces him at this point): you slide back to
+    // the middle, and off you go.
+    await until((t) => { s.picX = s.platformX = Math.max(0, 60 - (t + 1) * 2); return t >= 29; });
+    await wait(20);
+    const letsGo = IT("gOakSpeech_Text_LetsGo").map((p) => fill(p, name));
     await say(letsGo.slice(0, -1));
     show(letsGo[letsGo.length - 1]);
     await wait(30);
@@ -981,7 +965,7 @@
     await Promise.all([darken, whiten, shrink]);
     show("");
     await fadeTo("#000", 0, 16, 2);
-    return { name, look, rival };
+    return { name, look };
   }
 
   async function oakSpeech() {

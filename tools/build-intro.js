@@ -50,7 +50,7 @@ const pngPal = (...p) => readPng(G(...p)).palette;
 // ---------- Prof. Oak's speech (graphics/oak_speech) ----------
 
 // Trainer pictures, 64x96, colour 0 transparent.
-for (const who of ["oak", "red", "leaf", "rival"]) save("oak-speech-" + who, renderSprite(G("oak_speech", who, "pic.png"), pal("oak_speech", who, "pal.pal")));
+for (const who of ["oak", "red", "leaf"]) save("oak-speech-" + who, renderSprite(G("oak_speech", who, "pic.png"), pal("oak_speech", who, "pal.pal")));
 
 // The platform under the picture: three 32x32 pieces (left, middle, right) side by side.
 {

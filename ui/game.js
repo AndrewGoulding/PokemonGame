@@ -195,8 +195,7 @@
   async function newGame() {
     show("intro");
     const r = await Intro.oakSpeech();
-    player = Player.create(r.name, r.look);
-    player.rival = r.rival;
+    player = Player.create(r.name, r.look);   // the rival is Gary (Player.RIVAL_NAME)
     await persist();
   }
 
