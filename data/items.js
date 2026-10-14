@@ -550,5 +550,9 @@ window.ITEMS = {
   "mach-bike": { name: "mach-bike", category: "gameplay", effect: "A bicycle with high speed and low acceleration. (ORAS only)" },
   "acro-bike": { name: "acro-bike", category: "gameplay", effect: "A bicycle with low speed and high acceleration, capable of bunny hops. (ORAS only)" },
   "eon-ticket": { name: "eon-ticket", category: "gameplay", effect: "Allows passage to Southern Island to obtain Latios or Latias. (ORAS only)" },
-  "aurora-ticket": { name: "aurora-ticket", category: "gameplay", effect: "Allows passage to Birth Island to obtain Deoxys. (ORAS only)" }
+  "aurora-ticket": { name: "aurora-ticket", category: "gameplay", effect: "Allows passage to Birth Island to obtain Deoxys. (ORAS only)" },
+  // --- Diamond and Pearl's Underground (added): the Explorer Kit and treasures dug up with it ---
+  "explorer-kit": { name: "explorer-kit", category: "key-items", effect: "A bag of tools for exploring. Used in a cave, it lets you dig in the walls for buried treasure." },
+  "rare-bone": { name: "rare-bone", category: "loot", effect: "A bone that is extremely valuable for Pokémon archaeology. It can be sold for a high price." },
+  "star-piece": { name: "star-piece", category: "loot", effect: "A shard of a pretty gem that sparkles in a red color. It can be sold at a high price." }
 };

@@ -202,6 +202,13 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   switch it off and on), each Pokémon that battled gets the full amount
   instead of a split, and the rest of the party (not fainted) gets half, plus
   EVs, as in X and Y.
+- **Explorer Kit** (a key item you start with): use it from the bag in a cave
+  (Mt. Moon) to dig in the wall, as in Diamond and Pearl's Underground. Hit
+  tiles with the Pickaxe or the wider Hammer to clear the rock (1-6 layers;
+  grey bedrock can't be dug) and uncover 2-4 buried treasures — Heart Scales,
+  shards, evolution stones, Star Pieces, Revives, fossils, plates and more —
+  before the shaking brings the wall down. The rules are in `game/mining.js`,
+  the screen in `ui/mining.js`.
 - **Catching**: the Gen 6 formula (HP, catch rate, ball and status bonuses,
   four shake checks). Poké, Great, Ultra, Master, Net, Nest, Repeat, Timer,
   Quick and Dusk Balls have their bonuses. No critical captures yet.

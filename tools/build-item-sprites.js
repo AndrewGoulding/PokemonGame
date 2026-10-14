@@ -45,7 +45,7 @@ const exists = (folder, name) => fs.existsSync(path.join(spriteDir, folder, name
 const folders = fs.readdirSync(spriteDir).filter((d) => fs.statSync(path.join(spriteDir, d)).isDirectory());
 
 // Items whose sprite file has a different name.
-const ALIASES = { "town-map": "key-item/town-map-gen3" };
+const ALIASES = { "town-map": "key-item/town-map-gen3", "old-amber": "fossil/old-amber" };
 
 const out = {};
 for (const id of Object.keys(window.ITEMS).sort()) {

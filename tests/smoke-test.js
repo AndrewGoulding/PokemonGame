@@ -655,7 +655,8 @@ for (const share of [false, true]) {
   const oldSave = Object.assign(Player.create("T"), { party: [Party.create("Pidgey", 5, { rng })], bag: { "tm94-oras": 1 } });
   delete oldSave.pcItems;
   assert.deepStrictEqual(Player.load(JSON.parse(JSON.stringify(oldSave))).player.pcItems, { potion: 1 }, "old saves get the PC Potion");
-  assert.deepStrictEqual(Player.load(oldSave).player.bag, { tm99: 1, "exp-share": 1 }, "old saves get Secret Power and the Exp. Share");
+  assert.deepStrictEqual(Player.load(oldSave).player.bag, { tm99: 1, "exp-share": 1, "explorer-kit": 1 },
+    "old saves get Secret Power, the Exp. Share and the Explorer Kit");
   const v1 = Object.assign(Player.create("T"), { version: 1, party: [Object.assign(Party.create("Pidgey", 5, { rng }), { item: "tm71" })],
     bag: { tm69: 1, tm70: 1, tm71: 1, tm93: 1, tm94: 1, tm95: 1, tm100: 1, tm101: 1, hm05: 1, hm07: 1 }, pcItems: { tm24: 2 } });
   const fromV1 = Player.load(JSON.parse(JSON.stringify(v1))).player;
@@ -1105,6 +1106,43 @@ for (const share of [false, true]) {
     } catch (e) { problems.push(species + ": " + e.message); }
   }
   assert.deepStrictEqual(problems, [], "debug species");
+}
+
+// Digging with the Explorer Kit (Diamond and Pearl's Underground).
+{
+  assert(window.ITEMS["explorer-kit"] && Bag.isKeyItem("explorer-kit") && Bag.sprite("explorer-kit"));
+  assert.strictEqual(Player.create("T").bag["explorer-kit"], 1, "you start with the Explorer Kit");
+  // Every treasure is a real item with a picture, and its shape has tiles.
+  for (const [item, , shape] of Mining.TREASURES) {
+    assert(window.ITEMS[item] && Bag.sprite(item), item);
+    assert(shape.join("").includes("x") && shape.every((row) => row.length === shape[0].length), item + " shape");
+  }
+  const r = mulberry32(7);
+  for (let n = 0; n < 50; n++) {
+    const dig = Mining.create(r);
+    assert(dig.treasures.length >= 1 && dig.treasures.length <= 4);
+    assert(dig.rock.every((l) => l >= 2 && l <= 6));
+    // Treasures and bedrock never overlap.
+    const seen = new Set();
+    for (const t of dig.treasures) for (const [x, y] of t.cells) { const k = y * 13 + x; assert(!seen.has(k) && !dig.bedrock[k]); seen.add(k); }
+  }
+  // The pickaxe takes 2 off the tile and 1 off the four beside it; the hammer
+  // also hits the corners and shakes the wall twice as much.
+  const dig = Mining.create(mulberry32(3));
+  dig.rock.fill(4); dig.bedrock.fill(false);
+  Mining.hit(dig, 5, 5, "pick");
+  assert.deepStrictEqual([dig.rock[5 * 13 + 5], dig.rock[4 * 13 + 5], dig.rock[4 * 13 + 4], dig.shaken], [2, 3, 4, 1]);
+  Mining.hit(dig, 5, 5, "hammer");
+  assert.deepStrictEqual([dig.rock[5 * 13 + 5], dig.rock[4 * 13 + 5], dig.rock[4 * 13 + 4], dig.shaken], [0, 2, 3, 3]);
+  // A treasure is found once all its tiles are cleared; all found ends the dig.
+  for (const t of dig.treasures) for (const [x, y] of t.cells) dig.rock[y * 13 + x] = 0;
+  assert.deepStrictEqual(Mining.hit(dig, 0, 0, "pick").found, dig.treasures.map((t) => t.item));
+  assert(dig.over && !dig.collapsed);
+  // Too much shaking and the wall collapses, keeping only what was dug out.
+  const wall = Mining.create(mulberry32(4));
+  for (let i = 0; i < Mining.WALL && !wall.over; i++) Mining.hit(wall, 12, 9, "pick");
+  assert(wall.over && wall.collapsed);
+  assert.deepStrictEqual(Mining.found(wall), wall.treasures.filter((t) => t.found).map((t) => t.item));
 }
 
 console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns), AI beat random moves in " + aiWinRate + "% of games");

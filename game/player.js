@@ -19,9 +19,10 @@
   const BOX_COUNT = 8;
   const BOX_SIZE = 30;
   const STARTING_MONEY = 3000;
-  // The Exp. Share (Gen 6, party-wide) is a key item you start with, switched on.
+  // The Exp. Share (Gen 6, party-wide) is a key item you start with, switched on,
+  // and so is the Explorer Kit (for digging in cave walls).
   // No Poké Balls: as in FireRed, the first ones come from Prof. Oak with the Pokédex.
-  const STARTING_BAG = { "exp-share": 1 };
+  const STARTING_BAG = { "exp-share": 1, "explorer-kit": 1 };
   const MAX_MONEY = 9999999;
   const MAX_ITEM_COUNT = 999;
   // The item storage in your PC starts with a Potion, as in FireRed.
@@ -253,6 +254,8 @@
       item = RENAMED[item] || item;
       if (window.ITEMS[item] && n > 0) player.bag[item] = Math.min(MAX_ITEM_COUNT, n | 0);
     }
+    // Everyone has the Explorer Kit, saves from before it too.
+    player.bag["explorer-kit"] = 1;
     // Saves from before PC item storage get its starting Potion.
     player.pcItems = {};
     for (let [item, n] of Object.entries(data.pcItems || STARTING_PC_ITEMS)) {

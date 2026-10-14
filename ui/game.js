@@ -427,7 +427,7 @@
     return v && v.pick != null ? player.party[+v.pick] : null;
   }
 
-  const KEY_ITEM_USES = ["exp-share", "town-map"];
+  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit"];
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
     item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS || item === "escape-rope";
   // TMs and HMs work like key items: they can't be held, tossed or sold.
@@ -435,8 +435,10 @@
   const expShareOn = () => Player.itemCount(player, "exp-share") > 0 && !player.flags.expShareOff;
 
   // Key items used from the bag: the Exp. Share switches on and off; the Town
-  // Map shows where you are.
+  // Map shows where you are; the Explorer Kit digs in a cave wall (and closes
+  // the bag afterwards, back to the map: "escaped").
   async function useKeyItem(item) {
+    if (item === "explorer-kit") return (await explorerKit()) ? "escaped" : null;
     if (item === "exp-share") {
       player.flags.expShareOff = !player.flags.expShareOff;
       await message(expShareOn() ? "The Exp. Share was turned on. Your whole party will gain Exp. Points from battles."
@@ -445,6 +447,25 @@
       const here = player.location && window.WORLD_MAPS[player.location.map];
       await message("Kanto. You are in " + (here ? here.title.split(" · ")[0] : "Kanto") + ".");
     }
+  }
+
+  // Diamond and Pearl's Underground digging (game/mining.js, ui/mining.js), in
+  // any cave. Whatever is fully dug out goes in the bag.
+  async function explorerKit() {
+    const here = player.location && window.WORLD_MAPS[player.location.map];
+    if (!here || here.type !== "underground") { await message("Oak: " + player.name + "! This isn't the time to use that!"); return false; }
+    await message(player.name + " used the Explorer Kit and started digging into the wall…");
+    show("scene");
+    clearMenu();
+    window.Screen.say("Tap a tile to dig. The Hammer digs wider but shakes the wall more. (Keys: arrows, Z to dig, X to switch tools.)");
+    const found = await MiningScreen.run(scene, Mining.create());
+    for (const id of found) {
+      Player.addItem(player, id);
+      await message(player.name + " obtained " + article(Bag.name(id)) + "!");
+    }
+    if (!found.length) await message("Nothing was dug up…");
+    await persist();
+    return true;
   }
 
   // ---------- Summary ----------
@@ -537,7 +558,7 @@
       options.push(back());
       const state = id === "exp-share" ? (expShareOn() ? " (On)" : " (Off)") : "";
       const what = await ask(Bag.name(id) + state + ": " + Bag.description(id), options);
-      if (what === "use" && Bag.isKeyItem(id)) await useKeyItem(id);
+      if (what === "use" && Bag.isKeyItem(id)) { if ((await useKeyItem(id)) === "escaped") return "escaped"; }
       else if (what === "use" && id in REPEL_STEPS) await useRepel(id);
       else if (what === "use" && id === "escape-rope") { if (await useEscapeRope()) return "escaped"; }
       else if (what === "use") {

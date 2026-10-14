@@ -35,7 +35,10 @@
     "fire-stone": 2100, "water-stone": 2100, "thunder-stone": 2100, "leaf-stone": 2100,
     "moon-stone": 2100, "sun-stone": 2100, "shiny-stone": 2100, "dusk-stone": 2100,
     "dawn-stone": 2100, "ice-stone": 2100, "everstone": 3000, "lucky-egg": 10000,
-    "pp-up": 9800, "pp-max": 29400
+    "pp-up": 9800, "pp-max": 29400,
+    // Treasures from digging (they sell for half, as in Gen 6).
+    "star-piece": 9800, "rare-bone": 10000, "heart-scale": 200, "red-shard": 400, "blue-shard": 400,
+    "yellow-shard": 400, "green-shard": 400, "hard-stone": 200, "oval-stone": 2100
   };
   // Not in Gen 6 shops; priced for this game. Mints are from Sword and Shield.
   const MINT_PRICE = 20000;
