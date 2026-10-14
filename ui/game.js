@@ -1191,7 +1191,7 @@
       await say("{PLAYER} received the " + ball.species + " from Prof. Oak!");
       // Your rival walks over to the Poké Ball that beats yours and takes it.
       const theirs = RIVAL_PICK[ball.species];
-      await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalIllTakeThisOneThen"));
+      await say(["Leaf: Then I'll take this one!\nI think we'll get along great."]);
       await Overworld.act([{ who: LAB_RIVAL, moves: M("PalletTown_ProfessorOaksLab_Movement_RivalWalksTo" + theirs) }]);
       Overworld.removeObject(ballOf(theirs).id);
       f.starter = ball.species;
@@ -1251,7 +1251,7 @@
           f.metLeaf = true;
         } else if (!f.oakInLab && !f.starter) await say(["Leaf: I wonder where he is?"]);
         else if (!f.starter) await say(["Leaf: You go ahead and choose first,\n{PLAYER}! I don't mind waiting."]);
-        else await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalMyMonLooksTougher"));
+        else await say(["Leaf: Your Pokémon looks really\ncute! Mine's pretty great, too."]);
         return;
 
       case "PalletTown_ProfessorOaksLab_EventScript_ProfOak":
@@ -1664,20 +1664,20 @@
     const theirs = RIVAL_PICK[f.starter];
     await Overworld.act([{ who: LAB_RIVAL, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
     await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-    await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalLetsCheckOutMons"));
+    await say(["Leaf: Wait, {PLAYER}!\nHow about a practice battle?", "Let's see what our Pokémon\ncan do!"]);
     const approach = theirs === "Charmander" ? "PalletTown_ProfessorOaksLab_Movement_ApproachForBattleCharmander" + side
       : "PalletTown_ProfessorOaksLab_Movement_RivalApproachForBattle" + theirs + side;
     await Overworld.act([{ who: LAB_RIVAL, moves: M(approach) }]);
     f.rivalLabBattle = true;
     const team = [Party.create(theirs, STARTER_LEVEL)];
     const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green" },
-      defeatText: leafT("PalletTown_ProfessorOaksLab_Text_RivalDefeat"), noBlackout: true });
+      defeatText: ["Wow, you're really good!\nThat was fun!"], noBlackout: true });
     // Back to the lab: everyone's healed, and she heads out.
     player.party.forEach(Party.heal);
     show("world");
     await Overworld.resume();
-    if (outcome === "lost") await say(leafT("Text_RivalVictory"));
-    await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalGoToughenMyMon"));
+    if (outcome === "lost") await say(["Leaf: Yay, I won!\nGood battle, {PLAYER}!"]);
+    await say(["Leaf: I'm going to train my Pokémon\nso we both get stronger!", "Thanks, Prof. Oak!\nSee you later, {PLAYER}!"]);
     await Overworld.act([
       { who: LAB_RIVAL, moves: M("PalletTown_ProfessorOaksLab_Movement_RivalExitAfterBattle" + side) },
       { who: "player", moves: M("PalletTown_ProfessorOaksLab_Movement_PlayerWatchRivalExitAfterBattle" + (side === "Right" ? "Right" : "")) }]);
