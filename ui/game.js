@@ -238,6 +238,7 @@
       p2: { name: foe.name, team: foe.team.map(Party.toBattleSet) },
       wild,
       exp: true,
+      expShare: expShareOn(),
       bag: player.bag,
       catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s) },
       opponent: wild ? randomMove : (b) => OpponentAI.choose(b, "p2")
@@ -424,10 +425,25 @@
     return v && v.pick != null ? player.party[+v.pick] : null;
   }
 
+  const KEY_ITEM_USES = ["exp-share", "town-map"];
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
-    item === "rare-candy" || !!ItemUse.effect(item);
+    item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item);
   // TMs and HMs work like key items: they can't be held, tossed or sold.
-  const holdable = (item) => !Bag.isBall(item) && !Bag.isMachine(item);
+  const holdable = (item) => !Bag.isBall(item) && !Bag.isMachine(item) && !Bag.isKeyItem(item);
+  const expShareOn = () => Player.itemCount(player, "exp-share") > 0 && !player.flags.expShareOff;
+
+  // Key items used from the bag: the Exp. Share switches on and off; the Town
+  // Map shows where you are.
+  async function useKeyItem(item) {
+    if (item === "exp-share") {
+      player.flags.expShareOff = !player.flags.expShareOff;
+      await message(expShareOn() ? "The Exp. Share was turned on. Your whole party will gain Exp. Points from battles."
+        : "The Exp. Share was turned off. Only Pokémon that battle will gain Exp. Points.");
+    } else if (item === "town-map") {
+      const here = player.location && window.WORLD_MAPS[player.location.map];
+      await message("Kanto. You are in " + (here ? here.title.split(" · ")[0] : "Kanto") + ".");
+    }
+  }
 
   // ---------- Summary ----------
 
@@ -505,7 +521,8 @@
         .sort((a, b) => order(a) - order(b) || Bag.name(a).localeCompare(Bag.name(b)));
       const html = '<div class="tabs">' + Bag.POCKETS.map((p) =>
         '<button type="button" class="tab' + (p === pocket ? " active" : "") + '" data-pick="tab:' + p + '">' + p + "</button>").join("") + "</div>" +
-        '<div class="rows">' + (items.length ? items.map((id) => itemRow(id, Bag.isMachine(id) ? MOVES[Bag.machineMove(id)].type : "×" + player.bag[id], "item:" + id)).join("")
+        '<div class="rows">' + (items.length ? items.map((id) => itemRow(id, Bag.isMachine(id) ? MOVES[Bag.machineMove(id)].type
+          : id === "exp-share" ? (expShareOn() ? "On" : "Off") : Bag.isKeyItem(id) ? "" : "×" + player.bag[id], "item:" + id)).join("")
           : '<p class="empty">Nothing in this pocket.</p>') + "</div>";
       const v = await pick("Your bag. " + money(player.money), html, [back("Close bag")]);
       if (v === "back") return;
@@ -514,10 +531,12 @@
       const options = [];
       if (usableFromBag(id)) options.push({ label: "Use", value: "use", className: "action" });
       if (holdable(id)) options.push({ label: "Give", value: "give", className: "action" });
-      if (!Bag.isMachine(id)) options.push({ label: "Toss", value: "toss", className: "action" });
+      if (!Bag.isMachine(id) && !Bag.isKeyItem(id)) options.push({ label: "Toss", value: "toss", className: "action" });
       options.push(back());
-      const what = await ask(Bag.name(id) + ": " + Bag.description(id), options);
-      if (what === "use") {
+      const state = id === "exp-share" ? (expShareOn() ? " (On)" : " (Off)") : "";
+      const what = await ask(Bag.name(id) + state + ": " + Bag.description(id), options);
+      if (what === "use" && Bag.isKeyItem(id)) await useKeyItem(id);
+      else if (what === "use") {
         const r = await choosePartyFor(Bag.isMachine(id) ? "Teach " + Bag.machineMove(id) + " to which Pokémon?"
           : "Use the " + Bag.name(id) + " on which Pokémon?", id);
         if (r) await useItemOn(r, id);
@@ -631,7 +650,7 @@
         back("Log off")]);
       if (v === "back") return;
       if (v === "deposit") {
-        const items = Object.keys(player.bag).filter((id) => !Bag.isMachine(id));
+        const items = Object.keys(player.bag).filter((id) => !Bag.isMachine(id) && !Bag.isKeyItem(id));
         if (!items.length) { await message("There are no items in your bag to store."); continue; }
         const p = await pick("What would you like to deposit?", '<div class="rows">' +
           items.map((id) => itemRow(id, "×" + player.bag[id])).join("") + "</div>", [back()]);
@@ -865,7 +884,7 @@
     "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerLeft",
     "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerMid",
     "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerRight",
-    "Route1_EventScript_MartClerk", "PalletTown_ProfessorOaksLab_EventScript_LeaveStarterSceneTrigger",
+    "Route1_EventScript_MartClerk", "PalletTown_RivalsHouse_EventScript_Daisy", "PalletTown_ProfessorOaksLab_EventScript_LeaveStarterSceneTrigger",
     "PalletTown_ProfessorOaksLab_EventScript_Rival", "PalletTown_ProfessorOaksLab_EventScript_ProfOak",
     "ViridianCity_EventScript_RoadBlocked", "ViridianCity_EventScript_GymDoorLocked",
     "ViridianCity_EventScript_TutorialTriggerLeft", "ViridianCity_EventScript_TutorialTriggerRight",
@@ -884,6 +903,11 @@
   function visible(person) {
     const f = player.flags;
     if (person.item) return !f[person.flag];
+    // Daisy sits at the table until she's given you the Town Map.
+    if (person.script === "PalletTown_RivalsHouse_EventScript_Daisy") {
+      return f.townMap ? true : { x: 5, y: 4, movement: "face_right" };
+    }
+    if (person.flag === "FLAG_HIDE_TOWN_MAP") return !f.townMap;
     // Lying across the road north until Oak gets his parcel, then up and about.
     if (person.script === "ViridianCity_EventScript_TutorialOldMan") {
       return f.parcelDelivered ? { x: 21, y: 8, movement: "look_around" }
@@ -991,6 +1015,7 @@
         if (!f.starter) await say(ev.person.text);
         else if (f.oaksParcel && !f.parcelDelivered) {
           await say(T("PalletTown_ProfessorOaksLab_Text_OakHaveSomethingForMe"));
+          Player.removeItem(player, "oaks-parcel");
           await say(T("PalletTown_ProfessorOaksLab_Text_DeliveredOaksParcel"));
           await say(T("PalletTown_ProfessorOaksLab_Text_OakCustomBallIOrdered"));
           await say(T("PalletTown_ProfessorOaksLab_Text_OakCatchMonsForDataTakeThese"));
@@ -1001,6 +1026,20 @@
         } else if (f.parcelDelivered) await say(T("PalletTown_ProfessorOaksLab_Text_OakMonsAroundWorldWait"));
         else if (!f.rivalLabBattle) await say(T("PalletTown_ProfessorOaksLab_Text_OakCanReachNextTownWithMon"));
         else await say(T("PalletTown_ProfessorOaksLab_Text_OakBattleMonForItToGrow"));
+        return;
+
+      case "PalletTown_RivalsHouse_EventScript_Daisy":
+        if (f.townMap) await say(T("PalletTown_RivalsHouse_Text_ExplainTownMap"));
+        else if (f.parcelDelivered) {
+          await say(T("PalletTown_RivalsHouse_Text_ErrandForGrandpaThisWillHelp"));
+          await Overworld.act([{ who: "LOCALID_DAISY", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
+          Overworld.removeObject("LOCALID_TOWN_MAP");
+          await Overworld.act([{ who: "LOCALID_DAISY", moves: M("Common_Movement_FacePlayer") }]);
+          Player.addItem(player, "town-map");
+          f.townMap = true;
+          await say(T("PalletTown_RivalsHouse_Text_ReceivedTownMapFromDaisy"));
+        } else if (f.rivalLabBattle) await say(T("PalletTown_RivalsHouse_Text_HeardYouBattledRival"));
+        else await say(T("PalletTown_RivalsHouse_Text_HiBrothersAtLab"));
         return;
 
       // ---------- Viridian City ----------
@@ -1046,6 +1085,7 @@
         await say(T("ViridianCity_Mart_Text_YouCameFromPallet"));
         await say(T("ViridianCity_Mart_Text_TakeThisToProfOak"));
         f.oaksParcel = true;
+        Player.addItem(player, "oaks-parcel");
         await say(T("ViridianCity_Mart_Text_ReceivedOaksParcelFromClerk"));
         return;
 

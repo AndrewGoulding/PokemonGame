@@ -30,6 +30,9 @@
 //                (or is caught). Level-ups happen mid-battle with new stats.
 //                Events: -exp, -levelup, -learnmove, and -trylearn when a move
 //                needs a free slot: answer with battle.replaceMove(...).
+//   expShare: true   Gen 6 Exp. Share (with exp): Pokémon that battled get the
+//                full amount, the rest of the party (not fainted) half, and all of
+//                them get EVs. Events: -expshare, then -exp marked "share".
 //   wild: true   p2 is a wild Pokémon: p1 may also choose
 //                { type: "ball", ball: "great-ball" } or { type: "run" }.
 //                Ends with battle.caught (the Pokémon) or battle.escaped.
@@ -300,6 +303,7 @@
       this.switchCause = null;
       this.pendingSwitch = null;
       this.expEnabled = !!opts.exp;
+      this.expShare = !!opts.expShare;
       this.wild = !!opts.wild;
       this.catchContext = opts.catchContext || {};
       this.runAttempts = 0;
@@ -370,6 +374,7 @@
         case "-ability": return "  [" + nm(a) + "'s " + b + "]";
         case "cant": return nm(a) + " can't move (" + b + ")";
         case "-exp": return "  " + nm(a) + " gained " + b + " Exp. Points!";
+        case "-expshare": return "  The rest of your team gained Exp. Points thanks to the Exp. Share!";
         case "-levelup": return "  " + nm(a) + " grew to Lv. " + b + "!";
         case "-learnmove": return "  " + nm(a) + " learned " + b + "!";
         case "-trylearn": return "  " + nm(a) + " wants to learn " + b + ", but already knows four moves.";
@@ -1248,21 +1253,29 @@
     awardExp(foe) {
       const E = window.Experience;
       const receivers = [...(foe.expParticipants || [])].filter((m) => !m.fainted);
-      for (const mon of receivers) {
+      // Gen 6: without the Exp. Share, Pokémon that battled split it; with it,
+      // each gets the full amount and the rest of the party half.
+      const give = (mon, divisor, share) => {
         E.addEvs(mon.evs, foe.baseSpecies);
-        if (mon.level >= E.MAX_LEVEL) continue;
+        if (mon.level >= E.MAX_LEVEL) return;
         const amount = E.gain({ species: foe.baseSpecies, level: foe.level, trainer: !this.wild,
-          participants: receivers.length, luckyEgg: mon.item === "lucky-egg" });
-        this.gainExp(mon, amount);
-      }
+          participants: divisor, luckyEgg: mon.item === "lucky-egg" });
+        this.gainExp(mon, amount, share);
+      };
+      for (const mon of receivers) give(mon, this.expShare ? 1 : receivers.length, false);
+      if (!this.expShare) return;
+      const rest = this.sides.p1.pokemon.filter((m) => !m.fainted && !receivers.includes(m));
+      if (!rest.length) return;
+      this.add("-expshare");
+      for (const mon of rest) give(mon, 2, true);
     }
 
-    gainExp(mon, amount) {
+    gainExp(mon, amount, share) {
       const E = window.Experience;
       const group = E.growthRate(mon.baseSpecies);
       mon.exp += amount;
       const levelsUp = () => mon.level < E.MAX_LEVEL && mon.exp >= E.expForLevel(group, mon.level + 1);
-      this.add("-exp", mon, amount, mon.teamIndex, levelsUp() ? 1 : E.progress(group, mon.level, mon.exp));
+      this.add("-exp", mon, amount, mon.teamIndex, levelsUp() ? 1 : E.progress(group, mon.level, mon.exp), share ? "share" : "");
       while (levelsUp()) {
         mon.level++;
         mon.leveledUp = true;

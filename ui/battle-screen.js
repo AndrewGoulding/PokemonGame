@@ -388,11 +388,14 @@
       case "-fieldactivate": return effectId(a) === "perishsong" ? VOLATILE_START.perishsong : null;
 
       // ----- Progression -----
-      case "-exp":   // [ident, amount, teamIndex, progress]
+      case "-exp":   // [ident, amount, teamIndex, progress, "share"?]
         return async () => {
           setExp(c, ev[4]);
-          await message(teamName(c) + " gained " + b + " Exp. Points!");
+          // The Exp. Share's half goes by quietly after one message, as in Gen 6.
+          if (ev[5] !== "share") await message(teamName(c) + " gained " + b + " Exp. Points!");
         };
+      case "-expshare":
+        return "The rest of your team gained Exp. Points thanks to the Exp. Share!";
       case "-levelup":   // [ident, level, hp, teamIndex, progress]
         return async () => {
           // Empty the bar instantly (no backwards slide), then fill to the new progress.
@@ -618,7 +621,7 @@
   async function run(cfg) {
     config = cfg;
     battle = new Battle({
-      p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, exp: !!cfg.exp, catchContext: cfg.catchContext
+      p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, exp: !!cfg.exp, expShare: !!cfg.expShare, catchContext: cfg.catchContext
     });
     cursor = 0;
     view = { p1: { species: null }, p2: { species: null } };

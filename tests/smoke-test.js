@@ -268,6 +268,36 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
   assert.deepStrictEqual(mon.moves.map((m) => m.name), ["Scratch", "Dragon Rage", "Ember", "Smokescreen"]);
 }
 
+// Gen 6 Exp. Share: the Pokémon that battled gets the full amount, the rest of
+// the party half (fainted ones nothing), and everyone gets EVs.
+for (const share of [false, true]) {
+  const battle = new Battle({
+    seed: 3, exp: true, wild: true, expShare: share,
+    p1: { name: "P", team: [{ species: "Charmander", level: 30, moves: ["Ember"] },
+      { species: "Pidgey", level: 5, moves: ["Tackle"] }, { species: "Rattata", level: 5, moves: ["Tackle"], hp: 0 }] },
+    p2: { name: "W", team: [{ species: "Machop", level: 12, moves: ["Leer"] }] }
+  });
+  battle.start();
+  for (let i = 0; i < 10 && !battle.ended; i++) {
+    battle.choose("p1", { type: "move", move: 0 });
+    battle.choose("p2", { type: "move", move: 0 });
+  }
+  assert.strictEqual(battle.winner, "p1");
+  const [lead, bench, fainted] = battle.sides.p1.pokemon;
+  const full = Experience.gain({ species: "Machop", level: 12 });
+  assert(battle.events.some((e) => e[0] === "-exp" && e[1] === lead.ident && e[2] === full), "the battler gets the full amount");
+  const benchExp = battle.events.find((e) => e[0] === "-exp" && e[1] === bench.ident);
+  if (share) {
+    assert.strictEqual(benchExp[2], Experience.gain({ species: "Machop", level: 12, participants: 2 }), "the rest get half");
+    assert.strictEqual(benchExp[5], "share");
+    assert(battle.events.some((e) => e[0] === "-expshare"));
+    assert.strictEqual(bench.evs.atk, 1, "EVs for the whole party");
+  } else {
+    assert(!benchExp && !bench.evs.atk, "without the Exp. Share only the battler gains");
+  }
+  assert(!battle.events.some((e) => e[0] === "-exp" && e[1] === fainted.ident), "fainted Pokémon gain nothing");
+}
+
 // ---------- Catching and running ----------
 {
   const pidgey = { species: "Pidgey", level: 5, hp: 20, maxhp: 20, status: "", types: ["Normal", "Flying"] };
@@ -600,7 +630,16 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
   const oldSave = Object.assign(Player.create("T"), { party: [Party.create("Pidgey", 5, { rng })], bag: { "tm94-oras": 1 } });
   delete oldSave.pcItems;
   assert.deepStrictEqual(Player.load(JSON.parse(JSON.stringify(oldSave))).player.pcItems, { potion: 1 }, "old saves get the PC Potion");
-  assert.deepStrictEqual(Player.load(oldSave).player.bag, { tm101: 1 }, "old saves get TM101");
+  assert.deepStrictEqual(Player.load(oldSave).player.bag, { tm101: 1, "exp-share": 1 }, "old saves get TM101 and the Exp. Share");
+  // Key items: their own pocket; a save mid-errand gets Oak's Parcel back.
+  for (const id of ["exp-share", "oaks-parcel", "town-map"]) {
+    assert.strictEqual(Bag.pocket(id), "Key Items", id);
+    assert(ITEM_SPRITES[id], "no sprite for " + id);
+    assert.strictEqual(Bag.sellPrice(id), 0, "key items can't be sold");
+  }
+  assert(Player.create("T").bag["exp-share"], "new games start with the Exp. Share");
+  const errand = Object.assign(Player.create("T"), { flags: { oaksParcel: true } });
+  assert.strictEqual(Player.load(JSON.parse(JSON.stringify(errand))).player.bag["oaks-parcel"], 1);
   assert.strictEqual(Bag.pocket("hm03"), "TMs & HMs");
   for (const id of Bag.machines()) assert(ITEM_SPRITES[id], "no sprite for " + id);
 
@@ -708,6 +747,8 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
   assert.strictEqual(oldMan.sprite, "old_man_1");
   assert.strictEqual(oldMan.alt.sprite, "old_man_lying_down");
   assert.strictEqual(WORLD_MAPS.ViridianCity.people.find((p) => p.flag === "FLAG_HIDE_VIRIDIAN_CITY_POTION").item, "potion");
+  assert(WORLD_MAPS.PalletTown_RivalsHouse.people.some((p) => p.localId === "LOCALID_DAISY"));
+  assert(WORLD_MAPS.PalletTown_RivalsHouse.people.some((p) => p.localId === "LOCALID_TOWN_MAP"));
   // Oak's walk to the lab, replayed from FireRed's movement scripts: Oak comes up
   // to just below you, then you both end up at the lab door (16,13).
   const replay = (pos, label) => {

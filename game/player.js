@@ -18,7 +18,8 @@
   const BOX_COUNT = 8;
   const BOX_SIZE = 30;
   const STARTING_MONEY = 3000;
-  const STARTING_BAG = { "poke-ball": 5, "potion": 3 };
+  // The Exp. Share (Gen 6, party-wide) is a key item you start with, switched on.
+  const STARTING_BAG = { "poke-ball": 5, "potion": 3, "exp-share": 1 };
   const MAX_MONEY = 9999999;
   const MAX_ITEM_COUNT = 999;
   // The item storage in your PC starts with a Potion, as in FireRed.
@@ -229,6 +230,9 @@
     for (const s of dex.caught || []) markCaught(player, s);
     player.badges = Array.isArray(data.badges) ? data.badges.slice() : [];
     player.flags = Object.assign({}, data.flags);
+    // Saves from before key items: the Exp. Share, and Oak's Parcel if it's still to deliver.
+    if (!player.bag["exp-share"]) player.bag["exp-share"] = 1;
+    if (player.flags.oaksParcel && !player.flags.parcelDelivered) player.bag["oaks-parcel"] = 1;
     player.look = data.look === "green" ? "green" : "red";
     player.rival = String(data.rival || "Blue").slice(0, 12);
     const loc = data.location;

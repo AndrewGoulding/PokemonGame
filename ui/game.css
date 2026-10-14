@@ -234,3 +234,6 @@
 .menu .pad-run.on { background: #3fa8f2; color: #fff; }
 /* Boy / girl choice: the first (standing) frame of each walking sheet */
 .starters img.look { width: 64px; height: 128px; object-fit: cover; object-position: 0 0; image-rendering: pixelated; }
+
+/* The highlighted choice when using the keyboard (arrows, Z to pick, X to go back). */
+#menu button:focus-visible, #scene [data-pick]:focus-visible { outline: 3px solid #f3b400; outline-offset: 2px; }

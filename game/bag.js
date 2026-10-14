@@ -12,11 +12,11 @@
 (function () {
   "use strict";
 
-  const POCKETS = ["Items", "Medicine", "Poké Balls", "TMs & HMs", "Berries"];
+  const POCKETS = ["Items", "Medicine", "Poké Balls", "TMs & HMs", "Berries", "Key Items"];
 
   const SPECIAL_NAMES = {
     "poke-ball": "Poké Ball", "kings-rock": "King's Rock", "up-grade": "Up-Grade", "hp-up": "HP Up",
-    "pp-up": "PP Up", "pp-max": "PP Max", "never-melt-ice": "Never-Melt Ice", "exp-share": "Exp. Share",
+    "pp-up": "PP Up", "pp-max": "PP Max", "never-melt-ice": "Never-Melt Ice", "exp-share": "Exp. Share", "oaks-parcel": "Oak's Parcel",
     "x-accuracy": "X Accuracy", "x-attack": "X Attack", "x-defense": "X Defense", "x-speed": "X Speed",
     "x-sp-atk": "X Sp. Atk", "x-sp-def": "X Sp. Def", "poke-doll": "Poké Doll", "oddish-ball": "Oddish Ball"
   };
@@ -109,7 +109,10 @@
   const isBall = (item) => /balls$/.test((window.ITEMS[item] || {}).category || "") || /-ball$/.test(item);
   const isStone = (item) => Object.values(window.EVOLUTIONS).some((l) => l.some((e) => e.method === "item" && e.item === item));
 
+  const isKeyItem = (item) => (window.ITEMS[item] || {}).category === "key-items";
+
   function pocket(item) {
+    if (isKeyItem(item)) return "Key Items";
     if (isBall(item)) return "Poké Balls";
     if (isMachine(item)) return "TMs & HMs";
     if (/-berry$/.test(item)) return "Berries";
@@ -198,7 +201,7 @@
   }
 
   window.Bag = {
-    POCKETS, PRICES, MART, name, description, sprite, price, sellPrice, pocket, isBall, isStone,
+    POCKETS, PRICES, MART, name, description, sprite, price, sellPrice, pocket, isBall, isStone, isKeyItem,
     isMachine, machineMove, machines, mintNature,
     martStock, canUseOn, useOn, levelUp, give, take
   };

@@ -15,7 +15,8 @@ Pokémon. Mom heals your party, and the PC in your bedroom stores items (there's
 Potion in it to start).
 
 North of Route 1 is **Viridian City**. The Poké Mart clerk hands you Oak's
-Parcel; take it back to PROF. OAK for five Poké Balls, and after that the Mart
+Parcel; take it back to Prof. Oak for five Poké Balls (and then see your rival's
+sister Daisy, at her table next door, for a Town Map), and after that the Mart
 sells to you and the old man lying across the road north gets up and shows you
 how to catch Pokémon. The Pokémon Center's nurse heals your party (and is where
 you return if you black out), and its PC holds both Pokémon and items. There's
@@ -23,12 +24,14 @@ also a move tutor who teaches Dream Eater once, a school and the Nickname house.
 Route 2, Route 22 and the Gym (locked until you have seven badges) aren't built yet.
 
 **Controls**: arrow keys or WASD to walk, hold Shift (or X / B) to run (indoors too, with FireRed's running animation), Z / Space /
-Enter to talk or read signs, Esc or M for the menu. On a phone, use the D-pad
+Enter to talk or read signs, Esc or M for the menu. In menus, the arrow keys
+move between choices, Z (A) picks one and X / Esc (B) goes back. On a phone, use the D-pad
 and A / Run / Menu buttons under the text box.
 
 The **menu** has your Pokémon (tap one for its summary: stats, IVs, EVs, nature,
 moves; make it lead; use, give or take items), the Bag (medicine, evolution
-stones, Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items), the Pokédex,
+stones, Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
+the Exp. Share, Oak's Parcel and the Town Map), the Pokédex,
 your trainer card (save, download or load a save file), and **Services**: the
 Pokémon Center, Poké Mart, PC and practice battles (a wild Pokémon or a trainer
 at your level), which move into real towns as the map grows.
@@ -90,6 +93,10 @@ uses the frames from `assets/sprites/overworld/<red|green>_surf_run.png`.
 - **Experience**: the six growth curves, and base exp × level / 7 split between
   the Pokémon that battled, ×1.5 from trainers and with a Lucky Egg. Catching a
   Pokémon also gives experience. EVs come from the defeated species' yield.
+  With the **Exp. Share** on (a key item you start with; use it from the bag to
+  switch it off and on), each Pokémon that battled gets the full amount
+  instead of a split, and the rest of the party (not fainted) gets half, plus
+  EVs, as in X and Y.
 - **Catching**: the Gen 6 formula (HP, catch rate, ball and status bonuses,
   four shake checks). Poké, Great, Ultra, Master, Net, Nest, Repeat, Timer,
   Quick and Dusk Balls have their bonuses. No critical captures yet.

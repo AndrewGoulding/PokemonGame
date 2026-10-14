@@ -50,6 +50,7 @@
     b.className = (opt.className || "") + (opt.wide ? " wide" : "");
     if (opt.html != null) b.innerHTML = opt.html; else b.textContent = opt.label;
     b.disabled = !!opt.disabled;
+    if (opt.value === "back" || opt.value === false) b.dataset.back = "";   // what X / Esc picks
     b.addEventListener("click", onClick);
     menu.appendChild(b);
     return b;
@@ -95,6 +96,57 @@
     if ([" ", "Enter", "z", "Z", "x", "X"].includes(e.key) && !e.repeat && skipWait && !menu.children.length) {
       e.preventDefault();
       skipWait();
+    }
+  });
+
+  // ---------- Keyboard menus ----------
+  //
+  // Whenever choices are on screen (menu buttons, party cards, bag rows, tabs):
+  // arrow keys move the highlight to the nearest choice that way, Z / Space /
+  // Enter (A) picks it, and X / Esc (B) picks Back, Cancel or No. The overworld
+  // has its own controls, so this stays out of its way.
+
+  const shown = (el) => el.offsetParent !== null;
+  const choices = () => [...document.querySelectorAll("#menu button:not(:disabled), #scene:not(.hidden) [data-pick]")].filter(shown);
+  const ARROWS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+
+  // The closest choice in direction [dx, dy] from `from`, favouring ones in line with it.
+  function nearest(from, list, [dx, dy]) {
+    const c = (el) => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+    const [fx, fy] = c(from);
+    let best = null, bestScore = Infinity;
+    for (const el of list) {
+      if (el === from) continue;
+      const [x, y] = c(el);
+      const along = (x - fx) * dx + (y - fy) * dy;          // distance in the arrow's direction
+      const across = Math.abs((x - fx) * dy) + Math.abs((y - fy) * dx);
+      if (along <= 1) continue;
+      const score = along + across * 2;
+      if (score < bestScore) { bestScore = score; best = el; }
+    }
+    return best;
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (menu.querySelector(".pad")) return;                        // the overworld is in charge
+    if (!menu.querySelector("button")) return;                     // a message: Z just moves the text on
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName)) return;
+    const list = choices();
+    if (!list.length) return;
+    const current = list.includes(document.activeElement) ? document.activeElement : null;
+    if (ARROWS[e.key]) {
+      e.preventDefault();
+      const next = current ? nearest(current, list, ARROWS[e.key]) : list.find((el) => menu.contains(el)) || list[0];
+      if (next) { next.focus(); next.scrollIntoView({ block: "nearest" }); }
+    } else if (["z", "Z", " ", "Enter"].includes(e.key)) {
+      if (e.repeat) return;
+      e.preventDefault();
+      if (current) current.click();
+      else (list.find((el) => menu.contains(el)) || list[0]).focus();
+    } else if (["x", "X", "Escape"].includes(e.key)) {
+      if (e.repeat) return;
+      const cancel = menu.querySelector("button[data-back]:not(:disabled)");
+      if (cancel) { e.preventDefault(); cancel.click(); }
     }
   });
 
