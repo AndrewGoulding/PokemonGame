@@ -49,9 +49,13 @@ Pokémon Center, Poké Mart, PC and practice battles (a wild Pokémon or a train
 at your level), which move into real towns as the map grows. **Debug** (for
 testing) adds any Pokémon at any level (type its name, e.g. `charizard` or
 `rotom-wash`; a full party sends it to the PC), makes Rare Candies infinite,
-and gives every TM and HM.
+and gives every TM and HM, 99 of each Repel, or 99 Master Balls.
 
-In battle you can fight, use items from the Bag, switch, and in wild battles
+Battles open as in FireRed: from the map the screen flashes white twice and
+slices away; the wild Pokémon slides in (in shadow) as your trainer does from
+the other side, it lights up and appears, and your trainer throws your first
+Pokémon's Ball. Repels (from the bag) keep wild Pokémon below your lead's level
+away for 100, 200 or 250 steps. In battle you can fight, use items from the Bag, switch, and in wild battles
 throw balls or run. Pokémon gain experience and EVs, level up mid-battle, learn
 moves and evolve afterwards. Click the text box (or press Space) to skip ahead.
 

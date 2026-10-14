@@ -217,6 +217,8 @@
     opts = opts || {};
     const wild = kind === "wild";
     const foe = opts.foe || (wild ? { name: "Wild", team: [Encounters.wild(partyLevel())] } : Encounters.trainer(partyLevel()));
+    // From the map: FireRed's flash-and-slice into battle.
+    if (!world.classList.contains("hidden")) await Overworld.battleTransition();
     show("field");
     const result = await BattleScreen.run({
       p1: { name: player.name, team: player.party.map(Party.toBattleSet) },
@@ -224,6 +226,7 @@
       wild,
       exp: true,
       expShare: expShareOn(),
+      trainer: player.look === "green" ? "leaf" : "red",
       bag: player.bag,
       catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s) },
       opponent: wild ? randomMove : (b) => OpponentAI.choose(b, "p2")
@@ -412,7 +415,7 @@
 
   const KEY_ITEM_USES = ["exp-share", "town-map"];
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
-    item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item);
+    item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS;
   // TMs and HMs work like key items: they can't be held, tossed or sold.
   const holdable = (item) => !Bag.isBall(item) && !Bag.isMachine(item) && !Bag.isKeyItem(item);
   const expShareOn = () => Player.itemCount(player, "exp-share") > 0 && !player.flags.expShareOff;
@@ -521,6 +524,7 @@
       const state = id === "exp-share" ? (expShareOn() ? " (On)" : " (Off)") : "";
       const what = await ask(Bag.name(id) + state + ": " + Bag.description(id), options);
       if (what === "use" && Bag.isKeyItem(id)) await useKeyItem(id);
+      else if (what === "use" && id in REPEL_STEPS) await useRepel(id);
       else if (what === "use") {
         const r = await choosePartyFor(Bag.isMachine(id) ? "Teach " + Bag.machineMove(id) + " to which Pokémon?"
           : "Use the " + Bag.name(id) + " on which Pokémon?", id);
@@ -728,6 +732,8 @@
         { label: "Add a Pokémon", value: "add", className: "action" },
         { label: "Infinite Rare Candies: " + (player.flags.debugCandy ? "On" : "Off"), value: "candy", className: "action" },
         { label: "Give all TMs and HMs", value: "tms", className: "action" },
+        { label: "Give Repels", value: "repels", className: "action" },
+        { label: "Give Master Balls", value: "master", className: "action" },
         back()]);
       if (v === "back") return;
       if (v === "add") await debugAddPokemon();
@@ -736,6 +742,12 @@
         if (player.flags.debugCandy) player.bag["rare-candy"] = Math.max(Player.itemCount(player, "rare-candy"), 999);
         await message(player.flags.debugCandy ? "Rare Candies are infinite: using one no longer uses it up."
           : "Rare Candies are used up again.");
+      } else if (v === "repels") {
+        for (const id of Object.keys(REPEL_STEPS)) Player.addItem(player, id, 99);
+        await message("Added 99 each of Repel, Super Repel and Max Repel to your bag.");
+      } else if (v === "master") {
+        Player.addItem(player, "master-ball", 99);
+        await message("Added 99 Master Balls to your bag.");
       } else if (v === "tms") {
         for (const id of Bag.machines()) if (!Player.itemCount(player, id)) Player.addItem(player, id);
         await message("Added all " + Bag.machines().length + " TMs and HMs to your bag.");
@@ -1365,6 +1377,29 @@
     if (Party.knowsMove(record, "Dream Eater")) f.tutorDreamEater = true;
   }
 
+  // ---------- Repels ----------
+  //
+  // For 100 / 200 / 250 steps, wild Pokémon weaker than the lead Pokémon (the
+  // first that can battle) stay away (Gen 3: below its level).
+
+  const REPEL_STEPS = { "repel": 100, "super-repel": 200, "max-repel": 250 };
+  function repelStep() {
+    if (!(player.repelSteps > 0)) return null;
+    player.repelSteps--;
+    return player.repelSteps === 0 ? { type: "repel-ended" } : null;
+  }
+  function repelAllows(wild) {
+    if (!(player.repelSteps > 0)) return true;
+    const lead = player.party.find((r) => !Party.isFainted(r));
+    return !lead || wild.level >= lead.level;
+  }
+  async function useRepel(item) {
+    if (player.repelSteps > 0) { await message("But the effects of a Repel lingered from earlier."); return; }
+    Player.removeItem(player, item);
+    player.repelSteps = REPEL_STEPS[item];
+    await message(player.name + " used the " + Bag.name(item) + ".");
+  }
+
   // ---------- Exploring ----------
 
   async function explore() {
@@ -1372,9 +1407,11 @@
       show("world");
       const ev = await Overworld.explore({
         player, rivalName: player.rival, visible,
-        special: (script) => SPECIAL.has(script) || ITEM_BALLS.has(script)
+        special: (script) => SPECIAL.has(script) || ITEM_BALLS.has(script),
+        onStep: repelStep, allowWild: repelAllows
       });
       if (ev.type === "menu") await startMenu();
+      else if (ev.type === "repel-ended") await say("Repel's effect wore off…");
       else if (ev.type === "wild") {
         if (!canBattle()) continue;
         await battle("wild", { foe: { name: "Wild", team: [Party.create(ev.species, ev.level)] } });

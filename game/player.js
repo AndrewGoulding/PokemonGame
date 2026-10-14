@@ -56,6 +56,7 @@
       pokedex: { seen: [], caught: [] },
       badges: [],
       flags: {},
+      repelSteps: 0,
       playTimeMs: 0,
       createdAt: Date.now(),
       savedAt: null
@@ -248,6 +249,7 @@
         player.flags.rivalLabBattle = true;
       }
     }
+    player.repelSteps = Math.max(0, data.repelSteps | 0);
     player.playTimeMs = Math.max(0, +data.playTimeMs || 0);
     player.createdAt = data.createdAt || Date.now();
     player.savedAt = data.savedAt || null;

@@ -251,3 +251,23 @@ body {
 .party-hp { font-size: 11px; font-weight: 600; opacity: 0.85; }
 
 .error { padding: 16px; color: #e5463b; font-weight: 700; }
+
+/* ---------- Opening: things slide in from the sides ---------- */
+.field .enter-left.platform { transform: translateX(-260%); }
+.field .enter-left.sprite { transform: translateX(-340%); }
+.field .enter-right.platform { transform: translateX(220%); }
+.field .enter-right.trainer-back { transform: translateX(330%); }
+.field.entering .platform, .field.entering .sprite, .field.entering .trainer-back { transition: transform 1s linear; }
+.sprite.silhouette { filter: brightness(0.2); }
+.field.no-anim .platform, .field.no-anim .sprite, .field.no-anim .trainer-back { transition: none !important; }
+.sprite { transition: opacity 0.4s, transform 0.4s, filter 0.3s; }
+
+/* Your trainer, from behind: 5 frames of 64x64 (standing, then throwing). */
+.trainer-back {
+  position: absolute; left: 12%; bottom: 3%; width: 27%; aspect-ratio: 1;
+  background-size: 100% 500%; background-repeat: no-repeat; background-position-x: 0;
+  image-rendering: pixelated;
+  transition: transform 0.35s ease-in, opacity 0.35s;
+}
+.trainer-back.leaving { transform: translateX(-150%); opacity: 0; }
+.trainer-back.hidden { display: none; }

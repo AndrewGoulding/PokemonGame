@@ -203,8 +203,11 @@
     for (const t of World.triggersAt(me.map, me.x, me.y)) {
       if (ctx.special && ctx.special(t.script)) return finish({ type: "trigger", trigger: t, map: me.map });
     }
+    // Each step (e.g. a Repel counting down) may have something to say.
+    const said = ctx.onStep && ctx.onStep();
+    if (said) return finish(said);
     const wild = World.wildEncounter(me.map, me.x, me.y);
-    if (wild) finish(Object.assign({ type: "wild" }, wild));
+    if (wild && (!ctx.allowWild || ctx.allowWild(wild))) finish(Object.assign({ type: "wild" }, wild));
   }
 
   function savePosition() {
@@ -432,7 +435,40 @@
 
   // ---------- Frame loop ----------
 
+  // ---------- Into battle ----------
+  //
+  // Before a battle: the screen flashes white twice, then slices away to black
+  // (bands sweeping in from alternate sides).
+
+  const FLASH_FRAMES = 24, SLICE_FRAMES = 40;
+  let transition = null;   // { t, resolve }
+  let blackedOut = false;  // stays black after the transition until exploring resumes
+  function battleTransition() {
+    if (!running) return Promise.resolve();
+    return new Promise((resolve) => { transition = { t: 0, resolve }; });
+  }
+  function drawTransition() {
+    const t = transition.t;
+    if (t < FLASH_FRAMES) {
+      g.fillStyle = "rgba(255,255,255," + Math.sin(((t % 12) / 12) * Math.PI).toFixed(3) + ")";
+      g.fillRect(0, 0, VIEW_W, VIEW_H);
+      return;
+    }
+    const k = Math.min(1, (t - FLASH_FRAMES) / SLICE_FRAMES), band = 8;
+    g.fillStyle = "#000";
+    for (let y = 0, i = 0; y < VIEW_H; y += band, i++) {
+      const w = Math.ceil(VIEW_W * k);
+      g.fillRect(i % 2 ? VIEW_W - w : 0, y, w, band);
+    }
+  }
+
   function update() {
+    if (transition && ++transition.t > FLASH_FRAMES + SLICE_FRAMES + 4) {
+      const done = transition.resolve;
+      transition = null;
+      blackedOut = true;
+      done();
+    }
     if (fadeDir) {
       fade = Math.max(0, Math.min(FADE_FRAMES, fade + fadeDir));
       if ((fadeDir > 0 && fade === FADE_FRAMES) || (fadeDir < 0 && fade === 0)) {
@@ -594,6 +630,8 @@
       g.font = "bold 10px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
       g.fillText(e.mark, x + 8.5, y - 7);
     }
+    if (transition) drawTransition();
+    else if (blackedOut) { g.fillStyle = "#000"; g.fillRect(0, 0, VIEW_W, VIEW_H); }
     if (fade) {
       g.fillStyle = "rgba(0,0,0," + fade / FADE_FRAMES + ")";
       g.fillRect(0, 0, VIEW_W, VIEW_H);
@@ -630,6 +668,7 @@
     const sameMap = me.map === loc.map;
     me.map = loc.map; me.x = loc.x; me.y = loc.y; me.facing = loc.facing || me.facing || "down"; me.move = null;
     me.hidden = false; me.emote = null;
+    blackedOut = false;
     if (fade && !fadeDir) fadeDir = -1;
     // Re-check who's visible (a story event may have changed that), keeping
     // people where they were if we never left the map.
@@ -662,7 +701,7 @@
 
   window.Overworld = {
     explore, hide, read: (pages) => read(pages), forceStep, refreshPeople: () => loadPeople(),
-    act, addObject, removeObject, teleport,
+    act, addObject, removeObject, teleport, battleTransition,
     position: () => ({ map: me.map, x: me.x, y: me.y, facing: me.facing })
   };
 })();

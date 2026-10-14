@@ -308,9 +308,15 @@
           hp: hp.hp, maxhp: hp.maxhp, status: hp.status, fainted: false,
           exp: ev[4] === "" || ev[4] == null ? null : +ev[4], teamIndex: +ev[5],
           form: (config[side].team[+ev[5]] || {}).form || "" };
+        // The first Pokémon out: your trainer throws its Ball first.
+        if (side === "p1" && trainerOut) {
+          trainerOut = false;
+          return async () => { await throwOut(); renderSide(side); await message("Go! " + nameOf(a) + "!"); };
+        }
         renderSide(side);
         if (type === "drag") return fill("{who} was dragged out!", a);
         if (side === "p1") return "Go! " + nameOf(a) + "!";
+        if (side === "p2" && foeAnnounced) { foeAnnounced = false; return null; }   // the opening said so
         if (battle.wild) return "A wild " + nameOf(a) + " appeared!";
         return battle.sides.p2.name + " sent out " + nameOf(a) + "!";
       }
@@ -630,6 +636,81 @@
     }
   }
 
+  // ---------- Opening ----------
+  //
+  // As in FireRed: the platforms slide in, the wild Pokémon (in shadow) from the
+  // left and your trainer, seen from behind, from the right; the Pokémon lights
+  // up and appears; then your trainer throws and slides away as your Pokémon
+  // comes out.
+
+  let trainerOut = false, foeAnnounced = false;
+  function trainerEl() {
+    let t = document.getElementById("trainer-back");
+    if (!t) {
+      t = document.createElement("div");
+      t.id = "trainer-back";
+      t.className = "trainer-back hidden";
+      el.field.appendChild(t);
+    }
+    return t;
+  }
+  // Waits (briefly) for a sprite's picture to be ready to show.
+  async function spriteReady(img) {
+    for (let i = 0; i < 30 && img.style.visibility === "hidden"; i++) await wait(20);
+  }
+
+  async function intro(cfg) {
+    trainerOut = false; foeAnnounced = false;
+    const trainer = trainerEl();
+    const foeParts = [el.field.querySelector(".platform.foe")];
+    const playerParts = [el.field.querySelector(".platform.player")];
+    if (cfg.trainer) {
+      trainer.style.backgroundImage = "url(assets/sprites/trainers/back/" + cfg.trainer + ".png)";
+      trainer.style.backgroundPositionY = "0%";
+      trainer.classList.remove("hidden", "leaving");
+      playerParts.push(trainer);
+      trainerOut = true;
+    } else trainer.classList.add("hidden");
+    let mon = null;
+    if (cfg.wild) {
+      mon = battle.sides.p2.pokemon[0];
+      view.p2 = { name: mon.name, species: mon.species, level: mon.level, hp: mon.hp, maxhp: mon.maxhp, status: "",
+        fainted: false, exp: null, teamIndex: 0, form: (cfg.p2.team[0] || {}).form || "" };
+      renderSide("p2");
+      el.sides.p2.info.classList.add("hidden");
+      el.sides.p2.sprite.classList.add("silhouette");
+      foeParts.push(el.sides.p2.sprite);
+    }
+    // Jump off-screen instantly (no transition), before anything is painted...
+    el.field.classList.add("no-anim");
+    for (const e of foeParts) e.classList.add("enter-left");
+    for (const e of playerParts) e.classList.add("enter-right");
+    void el.field.offsetWidth;
+    el.field.classList.remove("no-anim");
+    // ...then, once the wild Pokémon's picture is ready, slide in.
+    if (mon) await spriteReady(el.sides.p2.sprite);
+    el.field.classList.add("entering");
+    for (const e of foeParts.concat(playerParts)) e.classList.remove("enter-left", "enter-right");
+    await wait(1100);
+    el.field.classList.remove("entering");
+    if (mon) {
+      el.sides.p2.sprite.classList.remove("silhouette");
+      await wait(350);
+      el.sides.p2.info.classList.remove("hidden");
+      await message("A wild " + mon.name + " appeared!");
+      foeAnnounced = true;
+    }
+  }
+
+  // Your trainer's throw (frames 1-4 of the back sprite), then off to the left.
+  async function throwOut() {
+    const t = trainerEl();
+    for (const f of [1, 2, 3, 4]) { t.style.backgroundPositionY = (f * 25) + "%"; await wait(70); }
+    t.classList.add("leaving");
+    await wait(350);
+    t.classList.add("hidden");
+  }
+
   // Runs one battle to the end. See the header for `cfg`.
   async function run(cfg) {
     config = cfg;
@@ -641,6 +722,7 @@
     el.ball.classList.add("hidden");
     renderSide("p1");
     renderSide("p2");
+    await intro(cfg);
     if (!cfg.wild) await message(cfg.p2.name + " wants to battle!");
     battle.start();
     const status = await loop();
