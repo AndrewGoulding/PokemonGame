@@ -102,6 +102,7 @@
       hp: record.hp,
       status: record.status,
       form: form(record),   // display only; the engine ignores it
+      ball: record.ball,    // display only: the ball it's thrown out in
       ppUps: record.moves.map((m) => m.ppUps || 0)
     };
   }

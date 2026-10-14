@@ -125,7 +125,14 @@ node tools/build-battle-bgs.js pokefirered     # or: POKEFIRERED=pokefirered npm
 
 Each image is the 240x112 scene above the text box, platforms included, plus
 the same ground without platforms; the battle screen slides the foe's half in
-from the left and yours from the right, as FireRed does. `ui/game.js` picks
+from the left and yours from the right, as FireRed does. Your trainer then
+throws a Poké Ball (the one your Pokémon was caught in), which arcs over,
+pops open, and your Pokémon grows out of it; a trainer's Pokémon are thrown
+in from the right, and Pokémon switched in later from the side. Every
+Pokémon stands on its platform: `tools/build-sprite-metrics.js` measures the
+empty rows under each sprite into `data/sprite-metrics.js`, along with
+FireRed's `gEnemyMonElevation` for foes that float or fly (later Pokémon
+with Levitate float 8 pixels). `ui/game.js` picks
 the terrain like FireRed: tall grass for grass encounters, the building scene
 indoors, a cave underground, and the plain scene elsewhere.
 
@@ -209,7 +216,7 @@ uses the frames from `assets/sprites/overworld/<red|green>_surf_run.png`.
 | `engine/` | Stat, damage, experience, catch and item formulas, and the battle engine |
 | `game/` | Game logic around the engine: party records, the player and their save (`player.js`, `save.js`), bag and Poké Mart (`bag.js`), overworld rules (`world.js`), evolution, encounters, random teams and the opponent AI |
 | `ui/` | Text box and menus (`screen.js`), the battle screen, the overworld (`overworld.js`), FireRed's intro (`intro.js`), and the game flow, story events and menus (`game.js`) |
-| `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`, `npm run build:maps`, `npm run build:intro`, `npm run build:battle-bgs`, `npm run build:hm-learners`) and their shared PNG/GBA/text helpers (`tools/lib/`) |
+| `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`, `npm run build:maps`, `npm run build:intro`, `npm run build:battle-bgs`, `npm run build:hm-learners`, `npm run build:sprite-metrics`) and their shared PNG/GBA/text helpers (`tools/lib/`) |
 | `assets/sprites/` | Pokémon sprites (front, back, shiny), item icons, trainer and overworld sprites |
 | `assets/tilesets/` | FireRed's tilesets (tiles, palettes, metatiles), the source for the maps |
 | `assets/world/` | Generated map images and transparent overworld sprites |
@@ -232,30 +239,31 @@ and later files read those globals, so scripts must load in this order:
 8. `data/hm-learners.js` → `HM_LEARNERS`
 9. `data/evolutions.js` → `EVOLUTIONS`
 10. `data/item-sprites.js` → `ITEM_SPRITES`
-11. `data/world-maps.js` → `WORLD_MAPS`
-12. `data/intro-text.js` → `INTRO_TEXT`
-13. `engine/stat-calculator.js` → `Stats`
-14. `engine/experience.js` → `Experience`
-15. `engine/catching.js` → `Catching`
-16. `engine/item-use.js` → `ItemUse`
-17. `engine/damage-calculator.js` → `Damage`
-18. `data/conditions.js` → `CONDITIONS`, `ITEM_EFFECTS`
-19. `data/battle-moves.js` → `BATTLE_MOVE_EFFECTS`
-20. `engine/battle.js` → `Battle`
-21. `game/random-team.js` → `RandomTeam`
-22. `game/opponent-ai.js` → `OpponentAI`
-23. `game/party.js` → `Party`
-24. `game/evolution.js` → `Evolution`
-25. `game/encounters.js` → `Encounters`
-26. `game/player.js` → `Player`
-27. `game/bag.js` → `Bag`
-28. `game/save.js` → `Save`
-29. `game/world.js` → `World`
-30. `ui/screen.js` → `Screen`
-31. `ui/battle-screen.js` → `BattleScreen`
-32. `ui/overworld.js` → `Overworld`
-33. `ui/intro.js` → `Intro`
-34. `ui/game.js` → `Game` (starts the game on load)
+11. `data/sprite-metrics.js` → `SPRITE_METRICS`
+12. `data/world-maps.js` → `WORLD_MAPS`
+13. `data/intro-text.js` → `INTRO_TEXT`
+14. `engine/stat-calculator.js` → `Stats`
+15. `engine/experience.js` → `Experience`
+16. `engine/catching.js` → `Catching`
+17. `engine/item-use.js` → `ItemUse`
+18. `engine/damage-calculator.js` → `Damage`
+19. `data/conditions.js` → `CONDITIONS`, `ITEM_EFFECTS`
+20. `data/battle-moves.js` → `BATTLE_MOVE_EFFECTS`
+21. `engine/battle.js` → `Battle`
+22. `game/random-team.js` → `RandomTeam`
+23. `game/opponent-ai.js` → `OpponentAI`
+24. `game/party.js` → `Party`
+25. `game/evolution.js` → `Evolution`
+26. `game/encounters.js` → `Encounters`
+27. `game/player.js` → `Player`
+28. `game/bag.js` → `Bag`
+29. `game/save.js` → `Save`
+30. `game/world.js` → `World`
+31. `ui/screen.js` → `Screen`
+32. `ui/battle-screen.js` → `BattleScreen`
+33. `ui/overworld.js` → `Overworld`
+34. `ui/intro.js` → `Intro`
+35. `ui/game.js` → `Game` (starts the game on load)
 
 `index.html` is the source of truth for this order, and the smoke test reads its
 script list from there (skipping `ui/`, which needs a real page). If you add a

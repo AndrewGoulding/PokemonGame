@@ -26,7 +26,7 @@ for (const src of headless) {
   vm.runInThisContext(fs.readFileSync(path.join(root, src), "utf8"), { filename: src });
 }
 
-for (const name of ["TYPE_CHART", "NATURES", "DEX", "MOVES", "ABILITIES", "ITEMS", "LEARNSETS_GEN6", "HM_LEARNERS",
+for (const name of ["TYPE_CHART", "NATURES", "DEX", "MOVES", "ABILITIES", "ITEMS", "LEARNSETS_GEN6", "HM_LEARNERS", "SPRITE_METRICS",
   "Stats", "Damage", "CONDITIONS", "ITEM_EFFECTS", "BATTLE_MOVE_EFFECTS", "Battle", "RandomTeam", "OpponentAI",
   "Experience", "Catching", "EVOLUTIONS", "Party", "Evolution", "Encounters",
   "ItemUse", "ITEM_SPRITES", "Player", "Bag", "Save", "WORLD_MAPS", "World"]) {
@@ -920,6 +920,20 @@ for (const share of [false, true]) {
   assert.deepStrictEqual(new Set(WORLD_MAPS.Route2.wild.slots.map((s) => s.species)), new Set(["Rattata", "Pidgey", "Caterpie", "Weedle"]));
   // Shared text keeps FireRed's {STR_VAR_n} slots for scripts to fill in.
   assert.deepStrictEqual(WORLD_TEXT.Trade_Text_WhatThatsNoMon, ["What?\nThat's no {STR_VAR_1}!"]);
+}
+
+// Sprite feet: every Pokémon sprite is measured, so small ones stand on the
+// platform; FireRed's floating foes keep their elevation.
+{
+  for (const sub of ["", "back"]) {
+    const files = fs.readdirSync(path.join(root, "assets/sprites/pokemon", sub)).filter((f) => f.endsWith(".png"));
+    const table = SPRITE_METRICS[sub ? "back" : "front"];
+    for (const f of files) assert(Number.isInteger(table[f.slice(0, -4)]), "no metrics for " + sub + "/" + f);
+  }
+  assert(SPRITE_METRICS.front[DEX.Caterpie.id] > SPRITE_METRICS.front[DEX.Onix.id], "Caterpie leaves more room under it than Onix");
+  assert.strictEqual(SPRITE_METRICS.elevation.Gastly, 4);
+  assert.strictEqual(SPRITE_METRICS.elevation.Pidgey, undefined);
+  assert(Party.toBattleSet(Party.create("Pidgey", 5, { ball: "great-ball" })).ball === "great-ball", "battle sets carry their ball");
 }
 
 // Battle backgrounds: every terrain ui/game.js can pick is built, at 512x112

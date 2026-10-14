@@ -8,6 +8,8 @@ const zlib = require("zlib");
 // An indexed (or 4/8-bit grayscale) PNG -> { width, height, px, palette }.
 // px holds one palette index per pixel; grayscale samples are used as indices,
 // which is how pret stores graphics whose colours come from a separate .pal.
+// An 8-bit RGBA PNG also reads, with px 0 where transparent and 1 elsewhere
+// (and its colours in `rgba`).
 function readPng(file) {
   const buf = fs.readFileSync(file);
   let pos = 8, width, height, depth, type, palette = [];
@@ -20,16 +22,18 @@ function readPng(file) {
     if (kind === "IDAT") idat.push(data);
     pos += 12 + len;
   }
-  if (type !== 3 && type !== 0) throw new Error(file + ": expected an indexed or grayscale PNG");
+  const rgbaPng = type === 6 && depth === 8;
+  if (type !== 3 && type !== 0 && !rgbaPng) throw new Error(file + ": expected an indexed, grayscale or RGBA PNG");
   const raw = zlib.inflateSync(Buffer.concat(idat));
-  const stride = Math.ceil((width * depth) / 8);
+  const bpp = rgbaPng ? 4 : 1;   // bytes per pixel, for the filters (at least 1)
+  const stride = Math.ceil((width * depth * (rgbaPng ? 4 : 1)) / 8);
   const rows = [];
   let prev = Buffer.alloc(stride);
   for (let y = 0; y < height; y++) {
     const f = raw[y * (stride + 1)];
     const line = Buffer.from(raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1)));
     for (let i = 0; i < stride; i++) {
-      const a = i > 0 ? line[i - 1] : 0, b = prev[i], c = i > 0 ? prev[i - 1] : 0;
+      const a = i >= bpp ? line[i - bpp] : 0, b = prev[i], c = i >= bpp ? prev[i - bpp] : 0;
       if (f === 1) line[i] = (line[i] + a) & 255;
       else if (f === 2) line[i] = (line[i] + b) & 255;
       else if (f === 3) line[i] = (line[i] + ((a + b) >> 1)) & 255;
@@ -42,6 +46,12 @@ function readPng(file) {
     prev = line;
   }
   const px = new Uint8Array(width * height);
+  if (rgbaPng) {
+    const rgba = new Uint8ClampedArray(width * height * 4);
+    for (let y = 0; y < height; y++) rgba.set(rows[y], y * width * 4);
+    for (let i = 0; i < width * height; i++) px[i] = rgba[i * 4 + 3] ? 1 : 0;
+    return { width, height, px, palette: [[0, 0, 0], [255, 255, 255]], rgba };
+  }
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       px[y * width + x] = depth === 4 ? (rows[y][x >> 1] >> ((x & 1) ? 0 : 4)) & 15 : rows[y][x];

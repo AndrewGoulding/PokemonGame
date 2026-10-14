@@ -217,6 +217,27 @@
 
   // ---------- Rendering ----------
 
+  // ---------- Standing on the platform ----------
+  //
+  // The sprites leave empty rows under small Pokémon (data/sprite-metrics.js),
+  // so each moves down by its own gap to stand on the platform. Foes that float
+  // or fly sit higher by FireRed's elevation (gEnemyMonElevation; for later
+  // Pokémon, 8 pixels if they have Levitate). The foe's sprite is 72 GBA pixels
+  // tall for its 96, yours 96.
+  function placeSprite(sprite, v, back) {
+    const M = window.SPRITE_METRICS, dex = window.DEX[v.species];
+    if (!M || !dex) return;
+    const table = back ? M.back : M.front;
+    const key = dex.id + (v.form ? "-" + v.form : "");
+    let pct = ((table[key] != null ? table[key] : table[dex.id]) || 0) / 96 * 100;
+    if (!back) {
+      const lift = M.elevation[v.species] != null ? M.elevation[v.species]
+        : dex.id > 386 && (dex.abilities || []).includes("Levitate") ? 8 : 0;
+      pct -= lift / 72 * 100;
+    }
+    sprite.style.translate = "0 " + pct.toFixed(2) + "%";
+  }
+
   function renderSide(id) {
     const v = view[id];
     const { sprite, info } = el.sides[id];
@@ -229,6 +250,7 @@
       return;
     }
     window.Screen.setSprite(sprite, v.species, v.form, id === "p1");
+    placeSprite(sprite, v, id === "p1");
     sprite.alt = v.name;
     sprite.classList.toggle("hidden", !!v.inBall);
     sprite.classList.toggle("fainted", v.fainted);
@@ -312,19 +334,29 @@
           hp: hp.hp, maxhp: hp.maxhp, status: hp.status, fainted: false,
           exp: ev[4] === "" || ev[4] == null ? null : +ev[4], teamIndex: +ev[5],
           form: (config[side].team[+ev[5]] || {}).form || "" };
-        // The foe's first Pokémon: their trainer steps aside first.
+        const ball = (config[side].team[+ev[5]] || {}).ball;
+        // The foe's first Pokémon: their trainer steps aside, then throws it out.
         if (side === "p2" && foeTrainerOut) {
           foeTrainerOut = false;
-          return async () => { await foeTrainerSlide(true); renderSide(side); await message(battle.sides.p2.name + " sent out " + nameOf(a) + "!"); };
+          const text = battle.sides.p2.name + " sent out " + nameOf(a) + "!";
+          return async () => { await foeTrainerSlide(true); await Promise.all([message(text), sendOut(side, FOE_THROW_FROM, ball)]); };
         }
-        // The first Pokémon out: your trainer throws its Ball first.
+        // The first Pokémon out: your trainer throws its Ball.
         if (side === "p1" && trainerOut) {
           trainerOut = false;
-          return async () => { await throwOut(); renderSide(side); await message("Go! " + nameOf(a) + "!"); };
+          return async () => { await Promise.all([throwOut(), sendOut(side, THROW_FROM_HAND, ball, 210)]); await message("Go! " + nameOf(a) + "!"); };
+        }
+        if (type === "drag") { renderSide(side); return fill("{who} was dragged out!", a); }
+        // Later switch-ins: thrown in from off-screen, as in FireRed.
+        if (side === "p1") {
+          const text = "Go! " + nameOf(a) + "!";
+          return async () => { await Promise.all([message(text), sendOut(side, THROW_FROM_LEFT, ball)]); };
+        }
+        if (side === "p2" && !battle.wild && !foeAnnounced) {
+          const text = battle.sides.p2.name + " sent out " + nameOf(a) + "!";
+          return async () => { await Promise.all([message(text), sendOut(side, FOE_THROW_FROM, ball)]); };
         }
         renderSide(side);
-        if (type === "drag") return fill("{who} was dragged out!", a);
-        if (side === "p1") return "Go! " + nameOf(a) + "!";
         if (side === "p2" && foeAnnounced) { foeAnnounced = false; return null; }   // the opening said so
         if (battle.wild) return "A wild " + nameOf(a) + " appeared!";
         return battle.sides.p2.name + " sent out " + nameOf(a) + "!";
@@ -767,6 +799,64 @@
       await message("A wild " + mon.name + " appeared!");
       foeAnnounced = true;
     }
+  }
+
+  // ---------- Poké Ball throws ----------
+  //
+  // A ball arcs from `from` (field %, x and y) to where the Pokémon stands,
+  // spinning; it pops open and the Pokémon grows out of it in a white flash.
+  const BALL_LANDS = { p1: [21, 80], p2: [73.5, 50] };
+  const THROW_FROM_HAND = [44, 52], THROW_FROM_LEFT = [-6, 40], FOE_THROW_FROM = [106, 8];
+  const THROW_MS = 560, POP_MS = 420;
+
+  function throwBallEl() {
+    let b = document.getElementById("throw-ball");
+    if (!b) {
+      b = document.createElement("img");
+      b.id = "throw-ball";
+      b.className = "throw-ball hidden";
+      b.alt = "";
+      el.field.appendChild(b);
+    }
+    return b;
+  }
+  const ballUrl = (ball) => "assets/sprites/items/ball/" + (ball || "poke-ball").replace(/-ball$/, "") + ".png";
+
+  async function throwBall(side, from, ball) {
+    const b = throwBallEl();
+    b.src = ballUrl(ball);
+    await b.decode().catch(() => {});
+    const [x0, y0] = from, [x1, y1] = BALL_LANDS[side];
+    const frames = [];
+    for (let i = 0; i <= 16; i++) {
+      const t = i / 16;
+      frames.push({ left: (x0 + (x1 - x0) * t) + "%", top: (y0 + (y1 - y0) * t - 120 * t * (1 - t)) + "%",
+        transform: "translate(-50%, -50%) rotate(" + Math.round(t * 720) + "deg)" });
+    }
+    b.classList.remove("hidden");
+    await b.animate(frames, { duration: THROW_MS, easing: "linear" }).finished;
+    // Opening: a quick white burst where it landed.
+    await b.animate([{ left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(1)", filter: "brightness(1)", opacity: 1 },
+      { left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(1.6)", filter: "brightness(4)", opacity: 0 }],
+      { duration: 160, easing: "ease-out" }).finished;
+    b.classList.add("hidden");
+  }
+
+  // Throws `side`'s Pokémon out of its ball (after `delay` ms) and shows it.
+  async function sendOut(side, from, ball, delay) {
+    const sprite = el.sides[side].sprite;
+    sprite.classList.add("in-ball");   // hidden until the ball opens
+    renderSide(side);
+    el.sides[side].info.classList.add("hidden");
+    if (delay) await wait(delay);
+    await Promise.all([throwBall(side, from, ball), spriteReady(sprite)]);
+    const grow = sprite.animate([
+      { transform: "scale(0.1)", filter: "brightness(0) invert(1)", opacity: 1 },
+      { transform: "scale(1)", filter: "brightness(0) invert(1)", opacity: 1, offset: 0.55 },
+      { transform: "scale(1)", filter: "none", opacity: 1 }], { duration: POP_MS, easing: "ease-out" });
+    sprite.classList.remove("in-ball");
+    await grow.finished;
+    el.sides[side].info.classList.toggle("hidden", view[side].fainted);
   }
 
   // Your trainer's throw (frames 1-4 of the back sprite), then off to the left.

@@ -56,8 +56,20 @@ body {
   image-rendering: pixelated;
   transition: opacity 0.4s, transform 0.4s;
 }
-.sprite.foe { width: 30%; right: 11.5%; top: 0; }
-.sprite.player { width: 40%; left: 1%; bottom: -14%; }
+/* Each sprite's box is placed so that, moved down by its own empty rows
+   (ui/battle-screen.js placeSprite), the Pokémon's feet land on the platform:
+   the foe's at y 66 of 112, yours at y 103 (below the text box line, as in FireRed). */
+.sprite.foe { width: 30%; right: 11.5%; top: -5.3571%; transform-origin: 50% 90%; }
+.sprite.player { width: 40%; left: 1%; bottom: 8.0357%; transform-origin: 50% 90%; }
+.sprite.in-ball { opacity: 0 !important; transition: none; }
+
+/* The Poké Ball thrown out at the start and on switching in. */
+.throw-ball {
+  position: absolute; width: 6.5%; left: 0; top: 0;
+  image-rendering: pixelated; pointer-events: none; z-index: 2;
+  transform: translate(-50%, -50%);
+}
+.throw-ball.hidden { display: none; }
 .sprite.hidden { opacity: 0; }
 .sprite.fainted { opacity: 0; transform: translateY(30%); }
 .sprite.hit { animation: blink 0.5s steps(2) 1; }
