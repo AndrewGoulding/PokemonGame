@@ -2105,14 +2105,21 @@
   // exit and recites it to you. flags.signLady: 0 (or none), 1 just read, 2 done.
   const SIGN_LADY = "LOCALID_PALLET_SIGN_LADY";
   let signLadyAside = false;   // stepped aside this visit (FireRed's FLAG_TEMP_2)
+  // Where she is is decided when you arrive in Pallet Town (FireRed's
+  // OnTransition) and kept for the whole visit, so she stays put after her
+  // scene; signLadyVisit is cleared once you're on another map.
+  let signLadyVisit = null;
+  const leftPallet = (map) => { if (map !== "PalletTown") signLadyVisit = null; };
   function signLadyPlace() {
+    if (signLadyVisit) return signLadyVisit;
     const f = player.flags;
     signLadyAside = false;   // (a fresh visit: back in front of the sign)
     if (!f.signLady && f.starter && f.openedMenu) f.signLady = 1;
     if (f.signLady === 1) f.signLady = 2;
-    if (f.signLady >= 2) return true;                           // wandering, as on the map
-    if (f.starter) return { x: 12, y: 2, movement: "face_down" };   // by the north exit
-    return { x: 5, y: 15, movement: "face_up" };                  // in front of the sign
+    signLadyVisit = f.signLady >= 2 ? true                       // wandering, as on the map
+      : f.starter ? { x: 12, y: 2, movement: "face_down" }       // by the north exit
+        : { x: 5, y: 15, movement: "face_up" };                  // in front of the sign
+    return signLadyVisit;
   }
   async function signLadyShowSign() {
     await say(T("PalletTown_Text_LookCopiedTrainerTipsSign"));
@@ -2276,6 +2283,7 @@
 
   const OUTDOORS = ["town", "city", "route", "ocean_route"];
   function onWarp(from, to) {
+    leftPallet(to.map);
     const a = window.WORLD_MAPS[from.map], b = window.WORLD_MAPS[to.map];
     if (a && b && OUTDOORS.includes(a.type) && !OUTDOORS.includes(b.type)) player.flags.escapeWarp = { map: from.map, x: from.x, y: from.y };
   }
@@ -2343,7 +2351,7 @@
         special,
         onWarp,
         trainerWaiting, hiddenItem: (h) => !player.flags[h.flag],
-        onStep: () => redForestStep() || jessieJamesStep() || repelStep(), allowWild: repelAllows
+        onStep: () => { leftPallet(player.location.map); return redForestStep() || jessieJamesStep() || repelStep(); }, allowWild: repelAllows
       });
       if (ev.type === "menu") await startMenu();
       else if (ev.type === "repel-ended") await repelWoreOff();

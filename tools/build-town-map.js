@@ -5,7 +5,7 @@
 // Writes:
 //   assets/town-map/kanto.png     the map, 240x160: graphics/region_map's
 //                                 background layer with the Kanto map over it
-//   assets/town-map/player.png    the player's head icon (16x16)
+//   assets/town-map/player.png    the player character's head (16x16)
 //   assets/town-map/cursor.png    the cursor's two frames (16x16 each)
 //   data/town-map.js              window.TOWN_MAP: FireRed's 22 x 15 grid of map
 //                                 sections (towns and routes, and the dungeon
@@ -55,8 +55,26 @@ function sprite(png, pal, file) {
   }
   writePng(path.join(out, file), img.width, img.height, px);
 }
-sprite("player_icon_red.png", "player_icon_red.pal", "player.png");
 sprite("cursor.png", "cursor.pal", "cursor.png");
+
+// The player's icon: the head of the player character's overworld sprite
+// (assets/sprites/overworld/player_character_normal.png, facing down), in a
+// 16x16 box like FireRed's player_icon_red.png.
+{
+  const sheet = readPng(path.join(root, "assets/sprites/overworld/player_character_normal.png"));
+  const at = (x, y) => sheet.px[y * sheet.width + x];
+  let top = 0;
+  while (top < 32 && ![...Array(16).keys()].some((x) => at(x, top))) top++;
+  const HEAD = 14;   // rows from the top of the hat to the chin
+  const icon = new Uint8ClampedArray(16 * 16 * 4);
+  for (let y = 0; y < HEAD; y++) for (let x = 0; x < 16; x++) {
+    const v = at(x, top + y);
+    if (!v) continue;
+    const c = sheet.palette[v];
+    icon.set([c[0], c[1], c[2], 255], ((y + 1) * 16 + x) * 4);
+  }
+  writePng(path.join(out, "player.png"), 16, 16, icon);
+}
 
 // ---------- The grid and names ----------
 
