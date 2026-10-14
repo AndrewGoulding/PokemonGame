@@ -309,7 +309,8 @@
     img.classList.add("evolving");
     let stopped = false;
     if (canStop) {
-      const stop = ask(name + " is evolving...", [{ label: "Stop", value: true, className: "action", wide: true }])
+      // As in FireRed, B stops it (A doesn't); the button is for touch and mouse.
+      const stop = ask(name + " is evolving...", [{ label: "Stop (B)", value: true, className: "action", wide: true, bOnly: true }])
         .then(() => { stopped = true; });
       await Promise.race([stop, new Promise((r) => setTimeout(r, 3200))]);
       clearMenu();
@@ -1236,10 +1237,16 @@
         Overworld.forceStep("down");
         return;
 
+      // He turns to you and you to him (FireRed's TutorialTriggerLeft/Right).
       case "ViridianCity_EventScript_TutorialTriggerLeft":
-      case "ViridianCity_EventScript_TutorialTriggerRight":
-        if (f.parcelDelivered && !f.catchTutorial) await catchTutorial();
+      case "ViridianCity_EventScript_TutorialTriggerRight": {
+        if (!f.parcelDelivered || f.catchTutorial) return;
+        const left = script.endsWith("Left");
+        await Overworld.act([{ who: "LOCALID_TUTORIAL_MAN", moves: M(left ? "Common_Movement_WalkInPlaceFasterLeft" : "Common_Movement_WalkInPlaceFasterRight") }]);
+        await Overworld.act([{ who: "player", moves: M(left ? "Common_Movement_WalkInPlaceFasterRight" : "Common_Movement_WalkInPlaceFasterLeft") }]);
+        await catchTutorial();
         return;
+      }
 
       case "ViridianCity_EventScript_TutorialOldMan":
         if (!f.parcelDelivered) await say(T("ViridianCity_Text_ThisIsPrivateProperty"));

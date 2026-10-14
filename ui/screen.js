@@ -51,6 +51,8 @@
     if (opt.html != null) b.innerHTML = opt.html; else b.textContent = opt.label;
     b.disabled = !!opt.disabled;
     if (opt.value === "back" || opt.value === false) b.dataset.back = "";   // what X / Esc picks
+    // B only (stopping an evolution): X / Esc or a click picks it, never A.
+    if (opt.bOnly) { b.dataset.back = ""; b.dataset.bOnly = ""; }
     b.addEventListener("click", onClick);
     menu.appendChild(b);
     return b;
@@ -64,7 +66,7 @@
       for (const opt of options) {
         addButton(opt, () => { clearMenu(); resolve(opt.value); });
       }
-      const first = menu.querySelector("button:not(:disabled)");
+      const first = menu.querySelector("button:not(:disabled):not([data-b-only])");
       if (first) first.focus();
     });
   }
@@ -128,6 +130,9 @@
   }
 
   document.addEventListener("keydown", (e) => {
+    // A press that just moved a message on isn't also a pick in the menu that
+    // came up because of it (the first move, "Stop" on an evolution).
+    if (e.defaultPrevented) return;
     if (menu.querySelector(".pad")) return;                        // the overworld is in charge
     if (!menu.querySelector("button")) return;                     // a message: Z just moves the text on
     if (/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName)) return;
@@ -141,8 +146,9 @@
     } else if (["z", "Z", " ", "Enter"].includes(e.key)) {
       if (e.repeat) return;
       e.preventDefault();
-      if (current) current.click();
-      else (list.find((el) => menu.contains(el)) || list[0]).focus();
+      const pickable = (el) => !("bOnly" in el.dataset);
+      if (current) { if (pickable(current)) current.click(); }
+      else { const first = list.find((el) => menu.contains(el) && pickable(el)) || list.find(pickable); if (first) first.focus(); }
     } else if (["x", "X", "Escape"].includes(e.key)) {
       if (e.repeat) return;
       const cancel = menu.querySelector("button[data-back]:not(:disabled)");

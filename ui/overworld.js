@@ -199,7 +199,9 @@
       if (p.move.t >= TILE) { p.x = p.move.tx; p.y = p.move.ty; p.move = null; }
       return;
     }
-    if (scene || --p.timer > 0) return;
+    // Nobody wanders or looks around while you're talking or a scene plays
+    // (FireRed's lock), so whoever you talk to keeps facing you.
+    if (scene || paused || --p.timer > 0) return;
     p.timer = 90 + Math.floor(Math.random() * 150);
     // Standing and turning: all four ways, or two (face_down_and_up, ...).
     const turns = p.def.movement === "look_around" ? ["up", "down", "left", "right"]
