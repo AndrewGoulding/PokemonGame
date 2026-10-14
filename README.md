@@ -128,7 +128,11 @@ the same ground without platforms; the battle screen slides the foe's half in
 from the left and yours from the right, as FireRed does. Your trainer then
 throws a Poké Ball (the one your Pokémon was caught in), which arcs over,
 pops open, and your Pokémon grows out of it; a trainer's Pokémon are thrown
-in from the right, and Pokémon switched in later from the side. Every
+in from the right, and Pokémon switched in later from the side. A Pokémon
+switched out goes back first: its ball appears, it turns red and shrinks
+into it, with FireRed's words for how much of the foe's HP went while it was
+out ("that's enough!", "come back!", "OK!", "good!"), or "withdrew" for a
+trainer's. Every
 Pokémon stands on its platform: `tools/build-sprite-metrics.js` measures the
 empty rows under each sprite into `data/sprite-metrics.js`, along with
 FireRed's `gEnemyMonElevation` for foes that float or fly (later Pokémon

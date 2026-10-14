@@ -330,11 +330,18 @@
       case "drag": {
         const m = /^(.*?), L(\d+)/.exec(b) || [];
         const hp = parseHp(c) || { hp: 0, maxhp: 0, status: "" };
+        // A Pokémon still standing that's switched out goes back into its ball first.
+        const prev = view[side];
+        const back = type === "switch" && prev && prev.species && !prev.fainted && prev.hp > 0
+          ? { text: recallText(side, prev), ball: (config[side].team[prev.teamIndex] || {}).ball } : null;
+        const withdraw = () => (back ? recall(side, back.text, back.ball) : null);
         view[side] = { name: nameOf(a), species: m[1] || nameOf(a), level: m[2] || "?",
           hp: hp.hp, maxhp: hp.maxhp, status: hp.status, fainted: false,
           exp: ev[4] === "" || ev[4] == null ? null : +ev[4], teamIndex: +ev[5],
           form: (config[side].team[+ev[5]] || {}).form || "" };
         const ball = (config[side].team[+ev[5]] || {}).ball;
+        if (side === "p1") foeHpAtSwitchIn = view.p2.species ? view.p2.hp : null;
+        else foeHpAtSwitchIn = hp.hp;   // a new foe: count from its HP now
         // The foe's first Pokémon: their trainer steps aside, then throws it out.
         if (side === "p2" && foeTrainerOut) {
           foeTrainerOut = false;
@@ -350,11 +357,11 @@
         // Later switch-ins: thrown in from off-screen, as in FireRed.
         if (side === "p1") {
           const text = "Go! " + nameOf(a) + "!";
-          return async () => { await Promise.all([message(text), sendOut(side, THROW_FROM_LEFT, ball)]); };
+          return async () => { await withdraw(); await Promise.all([message(text), sendOut(side, THROW_FROM_LEFT, ball)]); };
         }
         if (side === "p2" && !battle.wild && !foeAnnounced) {
           const text = battle.sides.p2.name + " sent out " + nameOf(a) + "!";
-          return async () => { await Promise.all([message(text), sendOut(side, FOE_THROW_FROM, ball)]); };
+          return async () => { await withdraw(); await Promise.all([message(text), sendOut(side, FOE_THROW_FROM, ball)]); };
         }
         renderSide(side);
         if (side === "p2" && foeAnnounced) { foeAnnounced = false; return null; }   // the opening said so
@@ -743,7 +750,7 @@
   }
 
   async function intro(cfg) {
-    trainerOut = false; foeAnnounced = false; foeTrainerOut = false;
+    trainerOut = false; foeAnnounced = false; foeTrainerOut = false; foeHpAtSwitchIn = null;
     playedEarly = new Set();
     setTerrain(cfg.terrain);
     const foeTrainer = foeTrainerEl();
@@ -840,6 +847,54 @@
       { left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(1.6)", filter: "brightness(4)", opacity: 0 }],
       { duration: 160, easing: "ease-out" }).finished;
     b.classList.add("hidden");
+  }
+
+  // ---------- Recalling ----------
+  //
+  // FireRed's words when you call a Pokémon back depend on how much of the
+  // foe's HP went while it was out (gBattleStruct->hpScale): none, "that's
+  // enough!"; under 30%, "come back!"; under 70%, "OK!"; more, "good!".
+  // A trainer "withdrew" theirs.
+  let foeHpAtSwitchIn = null;
+  function recallText(side, prev) {
+    if (side === "p2") return battle.sides.p2.name + " withdrew " + prev.name + "!";
+    const foe = view.p2;
+    const lost = foe && foe.maxhp && foeHpAtSwitchIn != null ? (foeHpAtSwitchIn - foe.hp) * 100 / foe.maxhp : 0;
+    if (lost <= 0) return prev.name + ", that's enough!\nCome back!";
+    if (lost < 30) return prev.name + ", come back!";
+    if (lost < 70) return prev.name + ", OK!\nCome back!";
+    return prev.name + ", good!\nCome back!";
+  }
+
+  // The ball appears where the Pokémon stands; the Pokémon turns red and
+  // shrinks into it, and the ball goes.
+  const RECALL_RED = "brightness(0.55) sepia(1) saturate(12) hue-rotate(-38deg)";
+  async function recall(side, text, ball) {
+    const sprite = el.sides[side].sprite, b = throwBallEl();
+    const [x, y] = BALL_LANDS[side];
+    b.src = ballUrl(ball);
+    await b.decode().catch(() => {});
+    b.style.left = x + "%";
+    b.style.top = y + "%";
+    b.classList.remove("hidden");
+    el.sides[side].info.classList.add("hidden");
+    const said = message(text);
+    // Shrink toward the ball, wherever it sits on the sprite.
+    const sr = sprite.getBoundingClientRect(), br = b.getBoundingClientRect();
+    const origin = sr.width ? ((br.left + br.width / 2 - sr.left) / sr.width * 100).toFixed(1) + "% " +
+      ((br.top + br.height / 2 - sr.top) / sr.height * 100).toFixed(1) + "%" : "";
+    sprite.style.transformOrigin = origin;
+    await sprite.animate([
+      { transform: "scale(1)", filter: "none", opacity: 1 },
+      { transform: "scale(1)", filter: RECALL_RED, opacity: 1, offset: 0.3 },
+      { transform: "scale(0.05)", filter: RECALL_RED, opacity: 0.5 }],
+      { duration: 480, easing: "ease-in" }).finished;
+    sprite.style.transformOrigin = "";
+    sprite.classList.add("in-ball");
+    await wait(150);
+    await b.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160 }).finished;
+    b.classList.add("hidden");
+    await said;
   }
 
   // Throws `side`'s Pokémon out of its ball (after `delay` ms) and shows it.
