@@ -1137,7 +1137,8 @@ for (const share of [false, true]) {
     for (const t of Mining.create(moon, 100, "MtMoon_1F").treasures) assert(!/^(root|claw|skull|armor)-fossil$/.test(t.item), t.item);
   }
   assert.deepStrictEqual(Mining.available(1).map((t) => t[0]).sort(),
-    ["blue-shard", "everstone", "green-shard", "hard-stone", "heart-scale", "red-shard", "yellow-shard"]);
+    ["blue-shard", "green-shard", "heart-scale", "red-shard", "yellow-shard"]);
+  assert.deepStrictEqual(["everstone", "hard-stone"].map((i) => Mining.TREASURES.find((t) => t[0] === i)[3]), [5, 5]);
   // At the top level everything turns up, but fossils only in their own caves.
   assert.strictEqual(Mining.available(Mining.MAX_LEVEL, "MtMoon_1F").length, Mining.TREASURES.length - 4, "all but Sinnoh's fossils in Mt. Moon");
   for (let lv = 1; lv <= Mining.MAX_LEVEL; lv++) assert(Mining.available(lv).length > 0);

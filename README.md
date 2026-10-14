@@ -208,10 +208,11 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   grey bedrock can't be dug) and uncover 2-4 buried treasures — Heart Scales,
   shards, evolution stones, Star Pieces, Revives, fossils, plates and more —
   before the shaking brings the wall down. Your **mining level** (1-100, on
-  the trainer card) starts at 1, where only common treasures (Heart Scales,
-  shards, Hard Stones, Everstones) are buried, and rises with every treasure
+  the trainer card) starts at 1, where only common treasures (Heart Scales
+  and shards) are buried, and rises with every treasure
   you dig out: one treasure a level up to level 20, then 2, 3, 4 and 5 a level
-  (299 in all for level 100). Rarer treasures unlock along the way: Revives,
+  (299 in all for level 100). Rarer treasures unlock along the way: Hard
+  Stones and Everstones at 5, Revives,
   Star Pieces and Oval Stones at 10, the evolution stones at 20, every fossil
   at 30, some held items at 38 and 51, Max Revives and Rare Bones at 63 and
   the plates at 100. Each fossil is only found in its own caves: Kanto's
