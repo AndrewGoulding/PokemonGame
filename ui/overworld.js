@@ -21,7 +21,7 @@
 //        hiddenItem(hidden) -> bool (not found yet), canRun() -> bool,
 //        onWarp(from, to) when you go through a door, cave or stairs }
 //
-// Controls: arrows / WASD to move, hold Shift (or B / X) to run, Z / Space / Enter
+// Controls: arrows / WASD to move, Shift (or B / X) toggles running, Z / Space / Enter
 // to talk or read, Esc / M to open the menu. On touch screens, the D-pad and
 // buttons under the text box do the same.
 
@@ -82,7 +82,7 @@
   // ---------- Input ----------
 
   const held = new Set();
-  let touchDir = null, touchRun = false;
+  let touchDir = null, runOn = false;
   let pressedA = false, pressedMenu = false;
   let ignoreInputUntil = 0;
 
@@ -99,10 +99,19 @@
   document.addEventListener("keyup", (e) => { if (KEY_DIRS[e.key]) held.delete(KEY_DIRS[e.key]); });
   window.addEventListener("blur", () => { held.clear(); touchDir = null; });
 
-  const runHeld = () => touchRun || keyRun;
-  let keyRun = false;
-  document.addEventListener("keydown", (e) => { if (e.key === "Shift" || e.key === "x" || e.key === "X" || e.key === "b" || e.key === "B") keyRun = true; });
-  document.addEventListener("keyup", (e) => { if (e.key === "Shift" || e.key === "x" || e.key === "X" || e.key === "b" || e.key === "B") keyRun = false; });
+  // Running is a toggle: B (X or Shift on a keyboard, or the Run button)
+  // turns it on, and again turns it off.
+  const runHeld = () => runOn;
+  function toggleRun() {
+    runOn = !runOn;
+    const b = menu.querySelector(".pad-run");
+    if (b) { b.classList.toggle("on", runOn); b.setAttribute("aria-pressed", String(runOn)); }
+  }
+  document.addEventListener("keydown", (e) => {
+    if (!running || paused || e.repeat || !["Shift", "x", "X", "b", "B"].includes(e.key)) return;
+    toggleRun();
+    e.preventDefault();
+  });
 
   function heldDir() {
     if (touchDir) return touchDir;
@@ -131,13 +140,9 @@
     menu.querySelector(".pad-a").addEventListener("click", () => { if (!paused) pressedA = true; });
     menu.querySelector(".pad-menu").addEventListener("click", () => { if (!paused) pressedMenu = true; });
     const run = menu.querySelector(".pad-run");
-    run.classList.toggle("on", touchRun);
-    run.setAttribute("aria-pressed", String(touchRun));
-    run.addEventListener("click", () => {
-      touchRun = !touchRun;
-      run.classList.toggle("on", touchRun);
-      run.setAttribute("aria-pressed", String(touchRun));
-    });
+    run.classList.toggle("on", runOn);
+    run.setAttribute("aria-pressed", String(runOn));
+    run.addEventListener("click", toggleRun);
   }
 
   function hint() {

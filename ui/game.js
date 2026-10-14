@@ -1081,8 +1081,6 @@
     "Route22_NorthEntrance_EventScript_BoulderBadgeGuardTrigger", "Route22_NorthEntrance_EventScript_BoulderBadgeGuard",
     "PewterCity_EventScript_GymGuideTriggerTop", "PewterCity_EventScript_GymGuideTriggerMid", "PewterCity_EventScript_GymGuideTriggerBottom",
     "PewterCity_EventScript_GymGuide", "PewterCity_EventScript_MuseumGuide", "PewterCity_EventScript_BugCatcher",
-    "PewterCity_EventScript_RunningShoesAide", "PewterCity_EventScript_RunningShoesAideTriggerTop",
-    "PewterCity_EventScript_RunningShoesAideTriggerMid", "PewterCity_EventScript_RunningShoesAideTriggerBottom",
     "PewterCity_Museum_1F_EventScript_EntranceTriggerLeft", "PewterCity_Museum_1F_EventScript_EntranceTriggerMid",
     "PewterCity_Museum_1F_EventScript_EntranceTriggerRight", "PewterCity_Museum_1F_EventScript_Scientist1",
     "PewterCity_Museum_1F_EventScript_OldAmberScientist", "PewterCity_Museum_1F_EventScript_SeismicTossTutor",
@@ -1124,7 +1122,8 @@
       case "FLAG_HIDE_MG_DELIVERYMEN": return false;       // no Mystery Gift
       case "FLAG_HIDE_ROUTE_22_RIVAL": return false;       // only for his scene
       case "FLAG_HIDE_PEWTER_CITY_GYM_GUIDE": return !f.TRAINER_LEADER_BROCK;
-      case "FLAG_HIDE_PEWTER_CITY_RUNNING_SHOES_GUY": return !!f.TRAINER_LEADER_BROCK && !f.runningShoes;
+      // (No Running Shoes delivery: you can run from the start.)
+      case "FLAG_HIDE_PEWTER_CITY_RUNNING_SHOES_GUY": return false;
       case "FLAG_HIDE_OLD_AMBER": return !f.gotOldAmber;
       case "FLAG_HIDE_DOME_FOSSIL": case "FLAG_HIDE_HELIX_FOSSIL": return !f.mtMoonFossil;
       // After you choose, your rival stands below the Poké Ball he took.
@@ -1202,10 +1201,13 @@
     switch (script) {
       case "PalletTown_PlayersHouse_1F_EventScript_Mom":
         if (!player.party.length) {
-          // She's Red's mom: he's already on his way.
-          await say(["Red's Mom: …Right.\nAll boys leave home someday.\nIt said so on TV.",
+          // She's Red's mom: he's already on his way. After the first time,
+          // just the last part.
+          if (f.metRedsMom) await say(["Red's Mom: If you want a Pokémon of\nyour own, go see Prof. Oak."]);
+          else await say(["Red's Mom: …Right.\nAll boys leave home someday.\nIt said so on TV.",
             "My son Red has already begun his\njourney. He should be in Viridian\nForest by now.",
             "If you want a Pokémon of your own,\ngo see Prof. Oak."]);
+          f.metRedsMom = true;
           return;
         }
         await say("Red's Mom: Oh, {PLAYER}! You look worn out.\nYou and your Pokémon should take a\nquick rest.");
@@ -1405,17 +1407,6 @@
       case "PewterCity_EventScript_BugCatcher":
         await say(T((await confirm(fill(T("PewterCity_Text_DoYouKnowWhatImDoing").join(" "))))
           ? "PewterCity_Text_ThatsRightItsHardWork" : "PewterCity_Text_SprayingRepelToKeepWildMonsOut"));
-        return;
-
-      // After the Boulder Badge, Prof. Oak's Aide catches you at the east exit.
-      case "PewterCity_EventScript_RunningShoesAide":
-      case "PewterCity_EventScript_RunningShoesAideTriggerTop":
-      case "PewterCity_EventScript_RunningShoesAideTriggerMid":
-      case "PewterCity_EventScript_RunningShoesAideTriggerBottom":
-        if (f.TRAINER_LEADER_BROCK && !f.runningShoes) {
-          await runningShoesAide({ PewterCity_EventScript_RunningShoesAide: 0, PewterCity_EventScript_RunningShoesAideTriggerTop: 1,
-            PewterCity_EventScript_RunningShoesAideTriggerMid: 2, PewterCity_EventScript_RunningShoesAideTriggerBottom: 3 }[script]);
-        }
         return;
 
       // The Museum: ₽50 a visit, paid at the counter as you walk in.
@@ -1870,7 +1861,8 @@
       ? [{ who: R, moves: M("Route22_Movement_RivalApproachBottom") }, { who: "player", moves: M("Route22_Movement_PlayerFaceRival") }]
       : [{ who: R, moves: M("Route22_Movement_RivalApproach") }]);
     await Overworld.act([{ who: R, moves: ["delay_6"] }]);
-    await say(T("Route22_Text_EarlyRivalIntro"));
+    // FireRed's lines, but he ends with a jab instead of asking about your Pokémon.
+    await say(T("Route22_Text_EarlyRivalIntro").slice(0, -1).concat(["Let's see how weak your Pokémon\nare!"]));
     // His team as in Yellow: Pidgey (level 5) and Eevee (level 7).
     const ivs = trainerTeam("TRAINER_RIVAL_ROUTE22_EARLY_SQUIRTLE")[0].ivs.hp;
     const team = [Party.create("Pidgey", 5, { ivs }), Party.create("Eevee", 7, { ivs })];
@@ -1980,31 +1972,6 @@
     await say(T("PewterCity_Text_GoTakeOnBrock"));
     await Overworld.act([{ who: G, moves: M("PewterCity_Movement_GymGuideExit") }]);
     Overworld.removeObject(G);
-  }
-
-  // Prof. Oak's Aide brings the Running Shoes (and a letter from Red's Mom).
-  // `from`: 0 talking to him, 1-3 the trigger tiles from the top.
-  async function runningShoesAide(from) {
-    const A = "LOCALID_PEWTER_AIDE";
-    if (from) await Overworld.act([{ who: A, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    await Overworld.act([{ who: A, moves: M("Common_Movement_ExclamationMark").concat(M("Common_Movement_Delay48")) }]);
-    await say(T("PewterCity_Text_OhPlayer"));
-    if (from === 0) await Overworld.act([{ who: A, moves: ["delay_20"] }]);
-    else {
-      if (from > 1) await Overworld.act([{ who: A, moves: M(from === 2 ? "PewterCity_Movement_AideApproachPlayerMid" : "PewterCity_Movement_AideApproachPlayerBottom") }]);
-      await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-    }
-    await say(T("PewterCity_Text_AskedToDeliverThis"));
-    player.flags.runningShoes = true;
-    await say(T("PewterCity_Text_ReceivedRunningShoesFromAide"));
-    await say(T("PewterCity_Text_SwitchedShoesWithRunningShoes"));
-    await say(T("PewterCity_Text_ExplainRunningShoes"));
-    await say(T("PewterCity_Text_MustBeGoingBackToLab"));
-    await Overworld.act([{ who: A, moves: M("PewterCity_Movement_AideExit" + from).concat("delay_30") }]);
-    await say(["There's a letter attached…", "Dear {PLAYER},",
-      "Here is a pair of Running Shoes,\njust like the ones I gave Red.",
-      "Good luck on your journey! I'll be\ncheering for you, too!", "From Red's Mom"]);
-    Overworld.removeObject(A);
   }
 
   // Brock: battle (talking to him), then the Boulder Badge and TM39.
