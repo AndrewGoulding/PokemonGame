@@ -1160,6 +1160,17 @@ for (const share of [false, true]) {
   assert.deepStrictEqual(problems, [], "debug species");
 }
 
+// The Town Map: FireRed's Kanto grid, with every map in the game placed on it.
+{
+  assert(window.TOWN_MAP, "missing global TOWN_MAP");
+  const T = window.TOWN_MAP;
+  assert.deepStrictEqual([T.width, T.height, T.map.length, T.dungeon.length], [22, 15, 15, 15]);
+  assert.deepStrictEqual([T.map[11][4], T.names.PALLET_TOWN, T.dungeon[3][9], T.names.MT_MOON], ["PALLET_TOWN", "Pallet Town", "MT_MOON", "Mt. Moon"]);
+  const onMap = (sec) => T.map.some((r) => r.includes(sec)) || T.dungeon.some((r) => r.includes(sec));
+  for (const name of Object.keys(WORLD_MAPS)) assert(T.mapSections[name] && onMap(T.mapSections[name]), name + " is on the Town Map");
+  assert(fs.existsSync(path.join(__dirname, "../assets/town-map/kanto.png")));
+}
+
 // Digging with the Explorer Kit (Diamond and Pearl's Underground).
 {
   assert(window.ITEMS["explorer-kit"] && Bag.isKeyItem("explorer-kit") && Bag.sprite("explorer-kit"));

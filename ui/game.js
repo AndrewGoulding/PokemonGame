@@ -439,18 +439,60 @@
   const expShareOn = () => Player.itemCount(player, "exp-share") > 0 && !player.flags.expShareOff;
 
   // Key items used from the bag: the Exp. Share switches on and off; the Town
-  // Map shows where you are; the Explorer Kit digs in a cave wall (and closes
-  // the bag afterwards, back to the map: "escaped").
+  // Map opens the map of Kanto; the Explorer Kit digs in a cave wall (and
+  // closes the bag afterwards, back to the map: "escaped").
   async function useKeyItem(item) {
     if (item === "explorer-kit") return (await explorerKit()) ? "escaped" : null;
     if (item === "exp-share") {
       player.flags.expShareOff = !player.flags.expShareOff;
       await message(expShareOn() ? "The Exp. Share was turned on. Your whole party will gain Exp. Points from battles."
         : "The Exp. Share was turned off. Only Pokémon that battle will gain Exp. Points.");
-    } else if (item === "town-map") {
-      const here = player.location && window.WORLD_MAPS[player.location.map];
-      await message("Kanto. You are in " + (here ? here.title.split(" · ")[0] : "Kanto") + ".");
-    }
+    } else if (item === "town-map") await townMap();
+  }
+
+  // The Town Map: FireRed's Kanto map (tools/build-town-map.js) with your
+  // icon where you are. Move the cursor with the arrow keys, or tap a place,
+  // to see its name.
+  async function townMap() {
+    const T = window.TOWN_MAP;
+    const pct = (n, of) => (n / of * 100) + "%";
+    const sprite = (x, y) => "left:" + pct(28 + 8 * x, 240) + ";top:" + pct(28 + 8 * y, 160);
+    const cellOf = (sec) => {
+      for (const layer of [T.map, T.dungeon]) for (let y = 0; y < T.height; y++) for (let x = 0; x < T.width; x++) if (layer[y][x] === sec) return [x, y];
+      return null;
+    };
+    const here = cellOf(T.mapSections[player.location && player.location.map]) || cellOf("PALLET_TOWN");
+    let [cx, cy] = here;
+    show("scene");
+    scene.innerHTML = '<div class="town-map"><img class="tm-map" src="assets/town-map/kanto.png" alt="Map of Kanto">' +
+      '<div class="tm-name"><b></b><small></small></div>' +
+      '<img class="tm-player" src="assets/town-map/player.png" alt="You are here" style="' + sprite(here[0], here[1]) + '">' +
+      '<div class="tm-cursor"></div></div>';
+    const box = scene.querySelector(".town-map");
+    const draw = () => {
+      const place = T.map[cy][cx], cave = T.dungeon[cy][cx];
+      scene.querySelector(".tm-name b").textContent = T.names[place] || T.names[cave] || "";
+      scene.querySelector(".tm-name small").textContent = place && cave ? T.names[cave] : "";
+      scene.querySelector(".tm-cursor").setAttribute("style", sprite(cx, cy));
+    };
+    draw();
+    const move = (dx, dy) => { cx = Math.max(0, Math.min(T.width - 1, cx + dx)); cy = Math.max(0, Math.min(T.height - 1, cy + dy)); draw(); };
+    const onKey = (e) => {
+      const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
+      if (!d) return;
+      e.preventDefault(); e.stopPropagation();
+      move(d[0], d[1]);
+    };
+    const onClick = (e) => {
+      const r = box.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width * 240, py = (e.clientY - r.top) / r.height * 160;
+      const x = Math.floor((px - 32) / 8), y = Math.floor((py - 32) / 8);
+      if (x >= 0 && y >= 0 && x < T.width && y < T.height) { cx = x; cy = y; draw(); }
+    };
+    document.addEventListener("keydown", onKey, true);
+    box.addEventListener("click", onClick);
+    await ask("Town Map: Kanto. Use the arrows or tap a place to see its name.", [back("Close")]);
+    document.removeEventListener("keydown", onKey, true);
   }
 
   // Diamond and Pearl's Underground digging (game/mining.js, ui/mining.js), in

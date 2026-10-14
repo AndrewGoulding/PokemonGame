@@ -18,7 +18,9 @@ Poké Balls on his table (each one shows you its Pokémon before you decide).
 Leaf walks over and takes the one that's weak against yours; on your way out she walks up
 to you for a practice battle, then heads off. Then Route 1's tall grass, north of town, has FireRed's wild
 Pokémon. Gary's older sister Daisy, at her table next door, introduces
-herself and gives you a Town Map the first time you talk to her. Red's Mom heals your party, and the PC upstairs stores items (there's a
+herself and gives you a Town Map the first time you talk to her (use it from the
+bag: FireRed's map of Kanto, with you on it; move the cursor or tap a place to
+see its name). Red's Mom heals your party, and the PC upstairs stores items (there's a
 Potion in it to start).
 
 North of Route 1 is **Viridian City**. The Poké Mart clerk hands you Oak's
@@ -97,6 +99,17 @@ cd pokefirered && git sparse-checkout set --no-cone data/layouts/ data/maps/ dat
   data/event_scripts.s src/data/object_events/ src/data/wild_encounters.json graphics/object_events/pics/ \
   src/data/trainers.h src/data/trainer_parties.h src/data/text/trainer_class_names.h graphics/trainers/ && cd ..
 node tools/build-maps.js pokefirered     # or: POKEFIRERED=pokefirered npm run build:maps
+```
+
+### Town Map
+
+`tools/build-town-map.js` renders FireRed's Kanto region map into
+`assets/town-map/` and writes `data/town-map.js` (the grid of places, their
+names, and which place each map is in):
+
+```sh
+cd pokefirered && git sparse-checkout add graphics/region_map/ src/data/region_map/ && cd ..
+node tools/build-town-map.js pokefirered     # after build-maps.js
 ```
 
 ### Intro

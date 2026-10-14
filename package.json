@@ -10,7 +10,8 @@
     "build:intro": "node tools/build-intro.js",
     "build:battle-bgs": "node tools/build-battle-bgs.js",
     "build:machine-learners": "node tools/build-machine-learners.js",
-    "build:sprite-metrics": "node tools/build-sprite-metrics.js"
+    "build:sprite-metrics": "node tools/build-sprite-metrics.js",
+    "build:town-map": "node tools/build-town-map.js"
   },
   "devDependencies": {
     "@pkmn/dex": "0.10.11"

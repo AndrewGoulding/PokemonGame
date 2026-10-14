@@ -19,9 +19,12 @@ function paletteRam(pals) {
 // `rowWidth` reads the map as plain rows of that many entries instead (window
 // tilemaps copied with CopyToBgTilemapBufferRect).
 // `invertGray`: grayscale tile sheets that gbagfx inverts (index = 15 - gray).
-function renderBg({ tiles, map, widthTiles, heightTiles, ram, bpp, opaque, tileOffset, rowWidth, invertGray }) {
+// `lowNibble`: 4bpp sheets saved with full palette indices (only the low 4
+// bits are the colour; the tilemap picks the palette).
+function renderBg({ tiles, map, widthTiles, heightTiles, ram, bpp, opaque, tileOffset, rowWidth, invertGray, lowNibble }) {
   const sheet = readPng(tiles);
   if (invertGray) sheet.px = sheet.px.map((v) => 15 - v);
+  if (lowNibble) sheet.px = sheet.px.map((v) => v & 15);
   const entries = fs.readFileSync(map);
   const tilesPerRow = sheet.width / 8;
   const w = widthTiles * 8, h = heightTiles * 8;
