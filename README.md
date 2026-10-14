@@ -180,6 +180,12 @@ lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scrip
 (`walk_up`, `walk_in_place_faster_down`, `emote_exclamation_mark`, ...) from
 `window.WORLD_MOVEMENTS`; the converter writes both alongside the maps. Running
 uses the frames from `assets/sprites/overworld/<red|green>_surf_run.png`.
+A custom player character's sheets sit beside Red's and Leaf's:
+`assets/sprites/trainers/back/player_character.png` and
+`assets/sprites/overworld/player_character_<normal|bike|fish|item|surf|surf_run|vs_seeker_bike>.png`,
+the overworld ones recoloured from Red's by `tools/recolor-player-overworld.py`
+(black cap, silver hair, red shirt, black backpack). They aren't a choice in
+the game yet.
 
 ## Progression rules (Gen 6)
 
