@@ -18,13 +18,13 @@ lab, where your rival is waiting; pick Bulbasaur, Squirtle or Charmander from th
 Poké Balls on his table (each one shows you its Pokémon before you decide). Your
 rival walks over and takes the one that beats yours; on your way out he walks up
 to you and battles you, then heads off. Then Route 1's tall grass, north of town, has FireRed's wild
-Pokémon. Red's Mom heals your party, and the PC upstairs stores items (there's a
+Pokémon. Gary's older sister Daisy, at her table next door, introduces
+herself and gives you a Town Map the first time you talk to her. Red's Mom heals your party, and the PC upstairs stores items (there's a
 Potion in it to start).
 
 North of Route 1 is **Viridian City**. The Poké Mart clerk hands you Oak's
 Parcel; take it back to Prof. Oak for your first five Poké Balls (new games
-start without any; then see your rival's
-sister Daisy, at her table next door, for a Town Map), and after that the Mart
+start without any), and after that the Mart
 sells to you and the old man lying across the road north gets up and shows you
 how to catch Pokémon. The Pokémon Center's nurse heals your party (and is where
 you return if you black out), and its PC holds both Pokémon and items. There's

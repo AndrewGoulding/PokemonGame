@@ -1263,17 +1263,20 @@
         return;
 
       case "PalletTown_RivalsHouse_EventScript_Daisy":
+        // The first time you talk, she introduces herself and gives you the
+        // Town Map off the wall.
         if (f.townMap) await say(T("PalletTown_RivalsHouse_Text_ExplainTownMap"));
-        else if (f.parcelDelivered) {
-          await say(T("PalletTown_RivalsHouse_Text_ErrandForGrandpaThisWillHelp"));
+        else {
+          await say(["Daisy: Oh, hi! I don't think we've\nmet. I'm Daisy, {RIVAL}'s older\nsister.",
+            "Our grandpa is Prof. Oak. His lab\nis just down the road.",
+            "Here, take this.\nIt'll help you find your way around."]);
           await Overworld.act([{ who: "LOCALID_DAISY", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
           Overworld.removeObject("LOCALID_TOWN_MAP");
           await Overworld.act([{ who: "LOCALID_DAISY", moves: M("Common_Movement_FacePlayer") }]);
           Player.addItem(player, "town-map");
           f.townMap = true;
           await say(T("PalletTown_RivalsHouse_Text_ReceivedTownMapFromDaisy"));
-        } else if (f.rivalLabBattle) await say(leafT("PalletTown_RivalsHouse_Text_HeardYouBattledRival"));   // that was Leaf
-        else await say(T("PalletTown_RivalsHouse_Text_HiBrothersAtLab"));
+        }
         return;
 
       // ---------- Viridian City ----------
