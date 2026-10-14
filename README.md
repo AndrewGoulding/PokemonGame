@@ -34,7 +34,10 @@ stones, Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
 the Exp. Share, Oak's Parcel and the Town Map), the Pokédex,
 your trainer card (save, download or load a save file), and **Services**: the
 Pokémon Center, Poké Mart, PC and practice battles (a wild Pokémon or a trainer
-at your level), which move into real towns as the map grows.
+at your level), which move into real towns as the map grows. **Debug** (for
+testing) adds any Pokémon at any level (type its name, e.g. `charizard` or
+`rotom-wash`; a full party sends it to the PC), makes Rare Candies infinite,
+and gives every TM and HM.
 
 In battle you can fight, use items from the Bag, switch, and in wild battles
 throw balls or run. Pokémon gain experience and EVs, level up mid-battle, learn

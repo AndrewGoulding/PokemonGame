@@ -827,4 +827,19 @@ for (const share of [false, true]) {
   }
 }
 
+// The debug menu can add any species but battle-only forms: each must make a
+// working party Pokémon (moves, stats, a battle set).
+{
+  const problems = [];
+  for (const species of Object.keys(DEX).filter((s) => !/-(Mega|Primal)/.test(s))) {
+    try {
+      const r = Party.create(species, 50);
+      if (!r.moves.length) problems.push(species + ": no moves");
+      Party.stats(r);
+      Party.toBattleSet(r);
+    } catch (e) { problems.push(species + ": " + e.message); }
+  }
+  assert.deepStrictEqual(problems, [], "debug species");
+}
+
 console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns), AI beat random moves in " + aiWinRate + "% of games");

@@ -377,7 +377,7 @@
     }
     if (item === "rare-candy") {
       if (!Bag.canUseOn(record, item)) { await message("It won't have any effect."); return; }
-      Player.removeItem(player, item);
+      if (!player.flags.debugCandy) Player.removeItem(player, item);   // the debug menu makes them infinite
       const newMoves = Bag.levelUp(record);
       await message(name + " grew to Lv. " + record.level + "!");
       for (const move of newMoves) await learnMove(record, move);
@@ -730,6 +730,63 @@
     }
   }
 
+  // ---------- Debug ----------
+  //
+  // For testing: add any Pokémon at any level, infinite Rare Candies, every TM and HM.
+
+  // Species you can add: everything in the Pokédex data except battle-only forms.
+  const debugSpecies = () => Object.keys(DEX).filter((s) => !/-(Mega|Primal)/.test(s)).sort();
+
+  async function debugMenu() {
+    for (;;) {
+      const v = await ask("Debug menu.", [
+        { label: "Add a Pokémon", value: "add", className: "action" },
+        { label: "Infinite Rare Candies: " + (player.flags.debugCandy ? "On" : "Off"), value: "candy", className: "action" },
+        { label: "Give all TMs and HMs", value: "tms", className: "action" },
+        back()]);
+      if (v === "back") return;
+      if (v === "add") await debugAddPokemon();
+      else if (v === "candy") {
+        player.flags.debugCandy = !player.flags.debugCandy;
+        if (player.flags.debugCandy) player.bag["rare-candy"] = Math.max(Player.itemCount(player, "rare-candy"), 999);
+        await message(player.flags.debugCandy ? "Rare Candies are infinite: using one no longer uses it up."
+          : "Rare Candies are used up again.");
+      } else if (v === "tms") {
+        for (const id of Bag.machines()) if (!Player.itemCount(player, id)) Player.addItem(player, id);
+        await message("Added all " + Bag.machines().length + " TMs and HMs to your bag.");
+      }
+      await persist();
+    }
+  }
+
+  async function debugAddPokemon() {
+    show("scene");
+    scene.innerHTML = '<div class="spotlight debug-add">' +
+      '<label class="name-entry">Pokémon<input id="debug-species" list="debug-species-list" autocomplete="off" placeholder="e.g. Charizard"></label>' +
+      '<datalist id="debug-species-list">' + debugSpecies().map((s) => '<option value="' + escapeHtml(s) + '">').join("") + "</datalist>" +
+      '<label class="name-entry">Level<input id="debug-level" type="number" min="1" max="100" value="50"></label></div>';
+    const input = $("#debug-species");
+    for (;;) {
+      const typed = new Promise((resolve) => scene.addEventListener("keydown", (e) => { if (e.key === "Enter") resolve("add"); }));
+      const asked = ask("Which Pokémon, and at what level?", [
+        { label: "Add", value: "add", className: "action" }, back("Done")]);
+      input.focus();   // ask() highlights its first button; keep typing in the box
+      const v = await Promise.race([typed, asked]);
+      clearMenu();
+      if (v === "back") return;
+      const want = input.value.trim().toLowerCase();
+      const species = debugSpecies().find((s) => s.toLowerCase() === want);
+      if (!species) { await message(input.value.trim() ? "There's no Pokémon called " + input.value.trim() + "." : "Type a Pokémon's name first."); continue; }
+      const level = Math.max(1, Math.min(100, parseInt($("#debug-level").value, 10) || 50));
+      const record = Party.create(species, level);
+      const where = Player.receive(player, record);
+      if (!where) { await message("Your party and PC boxes are full."); continue; }
+      await message(species + " (Lv" + level + ") was added to " + (where === "party" ? "your party." : where.replace("box", "Box") + " in the PC."));
+      await persist();
+      input.select();
+    }
+  }
+
   // ---------- Pokédex ----------
 
   let dexEntries = null;
@@ -844,6 +901,7 @@
         { label: "Trainer card", value: "card", className: "action" },
         { label: "Save", value: "save", className: "action" },
         { label: "Services", value: "services", className: "action" },
+        { label: "Debug", value: "debug", className: "action" },
         back("Close")]);
       if (v === "back") return;
       if (v.pick != null) await summary(+v.pick);
@@ -851,6 +909,7 @@
       else if (v === "bag") await bagScreen();
       else if (v === "dex") await pokedex();
       else if (v === "card") await trainerCard();
+      else if (v === "debug") await debugMenu();
       else if (v === "save") {
         tick();
         const r = Save.write(player);

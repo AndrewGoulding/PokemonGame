@@ -237,3 +237,6 @@
 
 /* The highlighted choice when using the keyboard (arrows, Z to pick, X to go back). */
 #menu button:focus-visible, #scene [data-pick]:focus-visible { outline: 3px solid #f3b400; outline-offset: 2px; }
+
+.debug-add { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.debug-add #debug-level { width: 5em; }
