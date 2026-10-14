@@ -1045,6 +1045,17 @@ for (const share of [false, true]) {
   // TM46 Thief is TM46 here; TM09 Bullet Seed is TM100.
   assert(WORLD_MAPS.MtMoon_B2F.people.some((p) => p.item === "tm46") && Bag.machineMove("tm46") === "Thief");
   assert(WORLD_MAPS.Route4.people.some((p) => p.item === "tm05") && Bag.machineMove("tm05") === "Roar");
+  // Changed from FireRed: Route 22 and Viridian Forest (Bulbasaur in the forest).
+  const rates = (map) => {
+    const out = {};
+    WORLD_MAPS[map].wild.slots.forEach((s, i) => {
+      for (const [sp, share] of s.alt ? [[s.species, 0.5], [s.alt, 0.5]] : [[s.species, 1]]) out[sp] = (out[sp] || 0) + World.LAND_SLOT_WEIGHTS[i] * share;
+    });
+    return out;
+  };
+  assert.deepStrictEqual(rates("Route22"), { Rattata: 40, Mankey: 40, Spearow: 20 });
+  assert.deepStrictEqual(rates("ViridianForest"), { Caterpie: 30, Weedle: 30, Metapod: 12.5, Kakuna: 12.5, Pikachu: 10, Bulbasaur: 5 });
+  assert(WORLD_MAPS.ViridianForest.wild.slots.filter((s) => s.species === "Bulbasaur").every((s) => s.min === 5 && s.max === 5));
   // Both versions: Route 4's Ekans slots also give LeafGreen's Sandshrew.
   const ekans = WORLD_MAPS.Route4.wild.slots.filter((s) => s.species === "Ekans");
   assert(ekans.length && ekans.every((s) => s.alt === "Sandshrew"));

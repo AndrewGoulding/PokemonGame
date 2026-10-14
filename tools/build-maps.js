@@ -87,6 +87,18 @@ const ALT_GFX = {
 const EXTRA_GFX = { red: "OBJ_EVENT_GFX_RED_NORMAL", jessie: "OBJ_EVENT_GFX_ROCKET_F", james: "OBJ_EVENT_GFX_ROCKET_M" };
 // Signs that read differently here: the house FireRed gives the player is Red's.
 const SIGN_TEXT = { PalletTown_EventScript_PlayersHouseSign: ["Red's house"] };
+// Wild Pokémon changed from FireRed's: all 12 grass slots (they keep FireRed's
+// weights, 20 20 10 10 10 10 5 5 4 4 1 1 percent), as [species, min, max, alt].
+const WILD_SLOTS = {
+  // Rattata 40%, Mankey 40%, Spearow 20%.
+  Route22: [["Rattata", 2, 5], ["Rattata", 2, 5], ["Mankey", 2, 5], ["Mankey", 2, 5], ["Mankey", 2, 5], ["Mankey", 2, 5],
+    ["Spearow", 3, 5], ["Spearow", 3, 5], ["Spearow", 3, 5], ["Spearow", 3, 5], ["Spearow", 3, 5], ["Spearow", 3, 5]],
+  // Caterpie 30%, Weedle 30%, Metapod (FireRed) / Kakuna (LeafGreen) 12.5% each,
+  // Pikachu 10%, Bulbasaur 5%.
+  ViridianForest: [["Caterpie", 3, 5], ["Weedle", 3, 5], ["Caterpie", 3, 5], ["Weedle", 3, 5],
+    ["Metapod", 4, 6, "Kakuna"], ["Metapod", 4, 6, "Kakuna"], ["Metapod", 4, 6, "Kakuna"], ["Pikachu", 3, 5],
+    ["Pikachu", 3, 5], ["Bulbasaur", 5, 5], ["Pikachu", 3, 5], ["Bulbasaur", 5, 5]]
+};
 // Scripts whose text is picked by code the converter can't follow.
 const SCRIPT_TEXT = {
   ViridianCity_School_EventScript_PokemonJournal: "PokemonJournal_Text_SpecialFeatureBrock",
@@ -523,7 +535,8 @@ for (const name of MAPS) {
       rate: land.land_mons.encounter_rate,
       // Both versions: where LeafGreen has a different Pokémon in a slot
       // (Sandshrew for FireRed's Ekans), `alt` is it, and each is as likely.
-      slots: land.land_mons.mons.map((m, i) => {
+      slots: WILD_SLOTS[name] ? WILD_SLOTS[name].map(([species, min, max, alt]) => Object.assign({ species, min, max }, alt ? { alt } : {}))
+        : land.land_mons.mons.map((m, i) => {
         const lg = leafGreen && leafGreen.land_mons && leafGreen.land_mons.mons[i];
         const species = dexByID[toID(m.species.replace(/^SPECIES_/, ""))];
         const alt = lg && dexByID[toID(lg.species.replace(/^SPECIES_/, ""))];
