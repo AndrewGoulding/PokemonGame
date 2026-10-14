@@ -815,11 +815,10 @@
 
   async function startMenu() {
     for (;;) {
-      show("scene");
-      scene.innerHTML = (player.party.length ? partyHtml() : '<p class="empty">No Pokémon yet. Prof. Oak’s lab is south of your house.</p>') +
+      // Tapping a Pokémon card opens its summary.
+      const v = await pick("Menu", (player.party.length ? partyHtml() : '<p class="empty">No Pokémon yet. Prof. Oak’s lab is south of your house.</p>') +
         '<p class="bag-line">' + escapeHtml(player.name) + " · " + money(player.money) +
-        " · Pokédex " + player.pokedex.caught.length + "</p>";
-      const v = await ask("Menu", [
+        " · Pokédex " + player.pokedex.caught.length + "</p>", [
         { label: "Pokémon", value: "party", className: "action" },
         { label: "Bag", value: "bag", className: "action" },
         { label: "Pokédex", value: "dex", className: "action" },
@@ -828,7 +827,8 @@
         { label: "Services", value: "services", className: "action" },
         back("Close")]);
       if (v === "back") return;
-      if (v === "party") await partyMenu();
+      if (v.pick != null) await summary(+v.pick);
+      else if (v === "party") await partyMenu();
       else if (v === "bag") await bagScreen();
       else if (v === "dex") await pokedex();
       else if (v === "card") await trainerCard();
