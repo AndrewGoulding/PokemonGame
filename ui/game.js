@@ -1955,8 +1955,9 @@
   //
   // When you come out of the Gym with the Boulder Badge, Leaf comes over,
   // happy for you: she has a Pokédex from Prof. Oak too, and wants a battle.
-  // Her starter (level 14, the one weak against yours) and Jigglypuff (level
-  // 12). Losing doesn't black you out. Win or lose, she heads off after.
+  // Her starter (level 15, the one weak against yours) and Jigglypuff (level
+  // 13). Losing blacks you out, and she's waiting again next time you come
+  // out of the Gym; beat her and she heads off.
   function leafPewterDue() {
     const f = player.flags, at = player.location;
     const door = window.WORLD_MAPS.PewterCity.warps.find((w) => w.map === "PewterCity_Gym");
@@ -1973,13 +1974,13 @@
       "Guess what? I went back to see Prof.\nOak, and he gave me a Pokédex too!",
       "I've been filling it in all the way\nhere. Look, I even caught a\nJigglypuff on Route 3!",
       "How about a battle? I want to see\nhow strong your Pokémon have gotten!"]);
-    const team = [Party.create(RIVAL_PICK[f.starter], 14), Party.create("Jigglypuff", 12)];
+    const team = [Party.create(RIVAL_PICK[f.starter], 15), Party.create("Jigglypuff", 13)];
     const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green" },
-      defeatText: ["Wow! You really are strong,\n{PLAYER}!"], noBlackout: true });
+      defeatText: ["Wow! You really are strong,\n{PLAYER}!"] });
+    if (outcome !== "won") return;
     f.leafPewter = true;
     show("world");
     await Overworld.resume();
-    if (outcome === "lost") await say(["Leaf: Yay, I won! Your Pokémon were\ngreat too, {PLAYER}!"]);
     await say(["Leaf: That was a great battle!\nI'm going to keep working on my\nPokédex.",
       "Let's both try to fill ours in!\nSee you later, {PLAYER}!"]);
     await Overworld.act([{ who: L, moves: ["walk_right", "walk_right", "walk_right", "walk_right", "set_invisible"] }]);
