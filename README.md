@@ -18,7 +18,7 @@ lab, where your rival is waiting; pick Bulbasaur, Squirtle or Charmander from th
 Poké Balls on his table (each one shows you its Pokémon before you decide). Your
 rival walks over and takes the one that beats yours; on your way out he walks up
 to you and battles you, then heads off. Then Route 1's tall grass, north of town, has FireRed's wild
-Pokémon. Red's mom heals your party, and the PC upstairs stores items (there's a
+Pokémon. Red's Mom heals your party, and the PC upstairs stores items (there's a
 Potion in it to start).
 
 North of Route 1 is **Viridian City**. The Poké Mart clerk hands you Oak's
@@ -164,7 +164,7 @@ FireRed sets them); beaten, they say their after-battle line. Those that turn
 are found by pressing A facing their tile. Battles use the map's own FireRed
 battle scene where it has one (the Gym), and Gym Leaders the Leader one. Signs and people say their FireRed text (with names in normal
 case: "Viridian City", not "VIRIDIAN CITY"), and item balls give their item.
-Scripted events (Mom healing, the PCs, the starter Poké Balls, Oak walking you
+Scripted events (Red's Mom healing, the PCs, the starter Poké Balls, Oak walking you
 to his lab, the rival battle, the Route 1 Potion, Oak's Parcel and the
 Pokédex scene (your rival comes back, Oak fetches the two Pokédexes from the
 desk at the back; until then there's no Pokédex in the menu), the

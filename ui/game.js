@@ -299,7 +299,7 @@
     show("scene");
     scene.innerHTML = partyHtml();
     await message(center ? "You scurried to a Pokémon Center, protecting your exhausted Pokémon from any further harm."
-      : "You hurried home to Mom, and your Pokémon were healed.");
+      : "You hurried to Red's house, and Red's Mom healed your Pokémon.");
   }
 
   // ---------- Evolution and moves ----------
@@ -1203,14 +1203,14 @@
       case "PalletTown_PlayersHouse_1F_EventScript_Mom":
         if (!player.party.length) {
           // She's Red's mom: he's already on his way.
-          await say(["Mom: …Right.\nAll boys leave home someday.\nIt said so on TV.",
+          await say(["Red's Mom: …Right.\nAll boys leave home someday.\nIt said so on TV.",
             "My son Red has already begun his\njourney. He should be in Viridian\nForest by now.",
             "If you want a Pokémon of your own,\ngo see Prof. Oak."]);
           return;
         }
-        await say("Mom: {PLAYER}! You should take a quick rest.");
+        await say("Red's Mom: Oh, {PLAYER}! You look worn out.\nYou and your Pokémon should take a\nquick rest.");
         player.party.forEach(Party.heal);
-        await say("Mom: Oh, good! You and your Pokémon are looking great.\nTake care now!");
+        await say("Red's Mom: There! You and your Pokémon\nare looking great. Take care now!");
         return;
 
       case "PalletTown_PlayersHouse_2F_EventScript_PC":
@@ -1949,7 +1949,7 @@
     Overworld.removeObject(G);
   }
 
-  // Prof. Oak's Aide brings the Running Shoes (and a letter from Mom).
+  // Prof. Oak's Aide brings the Running Shoes (and a letter from Red's Mom).
   // `from`: 0 talking to him, 1-3 the trigger tiles from the top.
   async function runningShoesAide(from) {
     const A = "LOCALID_PEWTER_AIDE";
@@ -1968,7 +1968,9 @@
     await say(T("PewterCity_Text_ExplainRunningShoes"));
     await say(T("PewterCity_Text_MustBeGoingBackToLab"));
     await Overworld.act([{ who: A, moves: M("PewterCity_Movement_AideExit" + from).concat("delay_30") }]);
-    await say(T("PewterCity_Text_RunningShoesLetterFromMom"));
+    await say(["There's a letter attached…", "Dear {PLAYER},",
+      "Here is a pair of Running Shoes,\njust like the ones I gave Red.",
+      "Good luck on your journey! I'll be\ncheering for you, too!", "From Red's Mom"]);
     Overworld.removeObject(A);
   }
 
