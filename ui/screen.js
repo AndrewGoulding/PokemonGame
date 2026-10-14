@@ -169,15 +169,27 @@
     const src = spriteUrl(species, form, back);
     if (img.getAttribute("src") === src || img.dataset.wanted === src) return;
     img.dataset.wanted = src;
-    // Keep the old picture (the last Pokémon here) from showing while the new one loads.
+    // Keep the old picture (the last Pokémon here) from showing while the new
+    // one loads. "load" can fire before the picture is decoded, and browsers keep
+    // painting the old one until then, so wait for decode() before showing it.
     img.style.visibility = "hidden";
-    img.onload = () => { img.style.visibility = ""; };
-    img.onerror = () => {
-      img.onerror = null;
-      if (form) img.src = spriteUrl(species, "", back);   // no art for this form: use the base one
-      else img.style.visibility = "";
+    const show = (url) => {
+      img.src = url;
+      img.decode().then(() => {
+        if (img.dataset.wanted === src) img.style.visibility = "";
+      }, () => {
+        if (img.dataset.wanted !== src) return;
+        if (form && url === src) show(spriteUrl(species, "", back));   // no art for this form: use the base one
+        else img.style.visibility = "";
+      });
     };
-    img.src = src;
+    show(src);
+  }
+  // Forgets an <img>'s Pokémon (between battles), so nothing old can show.
+  function clearSprite(img) {
+    img.removeAttribute("src");
+    delete img.dataset.wanted;
+    img.style.visibility = "hidden";
   }
   // The same as an <img> tag, for HTML built as strings.
   function spriteTag(species, form, attrs) {
@@ -185,5 +197,5 @@
     return '<img src="' + spriteUrl(species, form) + '"' + fallback + " " + (attrs || 'alt=""') + ">";
   }
 
-  window.Screen = { MESSAGE_MS, spriteUrl, setSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, clearMenu, learnMovePrompt };
+  window.Screen = { MESSAGE_MS, spriteUrl, setSprite, clearSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, clearMenu, learnMovePrompt };
 })();

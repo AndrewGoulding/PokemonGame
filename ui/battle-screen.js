@@ -217,7 +217,10 @@
     const v = view[id];
     const { sprite, info } = el.sides[id];
     if (!v.species) {
+      // Between battles: no picture, no leftover fainted pose to animate back from.
       sprite.classList.add("hidden");
+      sprite.classList.remove("fainted", "hit");
+      window.Screen.clearSprite(sprite);
       info.classList.add("hidden");
       return;
     }

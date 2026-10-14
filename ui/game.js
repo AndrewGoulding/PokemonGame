@@ -845,29 +845,38 @@
   async function partyMenu() {
     for (;;) {
       if (!player.party.length) { await message("You don't have any Pokémon yet."); return; }
-      let dropped;
-      const moved = new Promise((resolve) => { dropped = resolve; });
-      const picked = pick("Choose a Pokémon.", partyHtml() +
+      const v = await pickParty("Choose a Pokémon.", partyHtml() +
         '<p class="bag-line">Tap a Pokémon for its summary. Drag one onto another to swap them' +
         " (on a phone, press and hold first).</p>", [back("Close")]);
-      const stop = draggableCards(scene.querySelector(".party"), (from, to) => dropped({ swap: [from, to] }));
-      const v = await Promise.race([picked, moved]);
-      stop();
       if (v === "back") return;
-      if (v.swap) {
-        const [a, b] = v.swap;
-        [player.party[a], player.party[b]] = [player.party[b], player.party[a]];
-        await persist();
-        continue;
-      }
+      if (v === "swapped") continue;
       await summary(+v.pick);
     }
   }
 
-  // Drag a party card onto another (mouse, pen or touch) to swap them.
-  // Mouse and pen drags start once the pointer moves a little; on touch you
-  // press and hold first, so ordinary swipes still scroll. A drag doesn't
-  // count as a tap. Returns a function that removes the listeners.
+  // pick() for screens showing the party cards: dragging one card onto another
+  // swaps those Pokémon (and resolves "swapped" so the screen redraws).
+  async function pickParty(text, html, options) {
+    let dropped;
+    const moved = new Promise((resolve) => { dropped = resolve; });
+    const picked = pick(text, html, options);
+    const cards = scene.querySelector(".party");
+    const stop = cards ? draggableCards(cards, (from, to) => dropped([from, to])) : () => {};
+    const v = await Promise.race([picked, moved]);
+    stop();
+    if (Array.isArray(v)) {
+      const [a, b] = v;
+      [player.party[a], player.party[b]] = [player.party[b], player.party[a]];
+      await persist();
+      return "swapped";
+    }
+    return v;
+  }
+
+  // Drag a party card onto another to swap them. With a mouse or pen the drag
+  // starts once the pointer moves a little; on touch you press and hold first,
+  // so ordinary swipes still scroll. A drag doesn't count as a tap. Returns a
+  // function that removes the listeners.
   function draggableCards(container, onSwap) {
     const HOLD_MS = 300, START_PX = 8;
     let drag = null, swallowClick = false;
@@ -887,57 +896,74 @@
       clearTargets();
       drag = null;
     };
-
-    const down = (e) => {
-      const card = e.target.closest(".card");
-      if (!card || e.button > 0) return;
-      drag = { card, from: +card.dataset.pick, id: e.pointerId, x: e.clientX, y: e.clientY, active: false,
-        touch: e.pointerType === "touch", timer: null };
-      if (drag.touch) drag.timer = setTimeout(() => { if (drag) { drag.card.classList.add("held"); begin(); } }, HOLD_MS);
+    const press = (target, x, y, touch) => {
+      swallowClick = false;   // a new touch or click: whatever came before is done
+      const card = target.closest && target.closest(".card");
+      if (!card || !container.contains(card)) return;
+      drag = { card, from: +card.dataset.pick, x, y, active: false, touch, timer: null };
+      if (touch) drag.timer = setTimeout(() => { if (drag) { drag.card.classList.add("held"); begin(); } }, HOLD_MS);
     };
-    const move = (e) => {
-      if (!drag || e.pointerId !== drag.id) return;
-      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    // Returns true while a drag is under way (so the caller can stop scrolling).
+    const moveTo = (x, y) => {
+      if (!drag) return false;
+      const dx = x - drag.x, dy = y - drag.y;
       if (!drag.active) {
-        if (Math.hypot(dx, dy) < START_PX) return;
-        if (drag.touch) { end(); return; }    // moved before the hold: it's a scroll
+        if (Math.hypot(dx, dy) < START_PX) return false;
+        if (drag.touch) {                           // moved before the hold: it's a scroll, not a tap
+          end();
+          swallowClick = true;
+          setTimeout(() => { swallowClick = false; }, 600);
+          return false;
+        }
         begin();
       }
-      e.preventDefault();
       drag.card.style.transform = "translate(" + dx + "px, " + dy + "px)";
       clearTargets();
-      const over = cardAt(e.clientX, e.clientY);
+      const over = cardAt(x, y);
       if (over && over !== drag.card) over.classList.add("drop-target");
+      return true;
     };
-    const up = (e) => {
-      if (!drag || e.pointerId !== drag.id) return;
+    const release = (x, y) => {
+      if (!drag) return;
       const d = drag;
-      if (d.active) {
-        swallowClick = true;
-        setTimeout(() => { swallowClick = false; }, 0);
-        const over = cardAt(e.clientX, e.clientY);
-        end();
-        if (over && over !== d.card) onSwap(d.from, +over.dataset.pick);
-      } else end();
+      if (!d.active) { end(); return; }
+      swallowClick = true;
+      setTimeout(() => { swallowClick = false; }, 0);
+      const over = cardAt(x, y);
+      end();
+      if (over && over !== d.card) onSwap(d.from, +over.dataset.pick);
     };
-    // While dragging by touch, stop the page from scrolling under the finger.
-    const touchMove = (e) => { if (drag && drag.active) e.preventDefault(); };
+
+    // Mouse and pen.
+    const down = (e) => { if (e.pointerType !== "touch" && e.button === 0) press(e.target, e.clientX, e.clientY, false); };
+    const move = (e) => { if (e.pointerType !== "touch" && moveTo(e.clientX, e.clientY)) e.preventDefault(); };
+    const up = (e) => { if (e.pointerType !== "touch") release(e.clientX, e.clientY); };
+    // Touch, with its own events: they let a held drag stop the page scrolling.
+    const tStart = (e) => { if (e.touches.length === 1) press(e.target, e.touches[0].clientX, e.touches[0].clientY, true); };
+    const tMove = (e) => { if (drag && e.touches.length === 1 && moveTo(e.touches[0].clientX, e.touches[0].clientY)) e.preventDefault(); };
+    const tEnd = (e) => { const t = e.changedTouches[0]; if (t) release(t.clientX, t.clientY); else end(); };
     const click = (e) => { if (swallowClick) { e.stopPropagation(); e.preventDefault(); swallowClick = false; } };
+    // Pictures and text in a card mustn't start the browser's own drag or menu.
+    const noNative = (e) => e.preventDefault();
     const noMenu = (e) => { if (drag) e.preventDefault(); };
 
     container.addEventListener("pointerdown", down);
     document.addEventListener("pointermove", move);
     document.addEventListener("pointerup", up);
-    document.addEventListener("pointercancel", end);
-    document.addEventListener("touchmove", touchMove, { passive: false });
+    container.addEventListener("touchstart", tStart, { passive: true });
+    document.addEventListener("touchmove", tMove, { passive: false });
+    document.addEventListener("touchend", tEnd);
+    document.addEventListener("touchcancel", end);
     container.addEventListener("click", click, true);
+    container.addEventListener("dragstart", noNative);
     container.addEventListener("contextmenu", noMenu);
     return () => {
       end();
       document.removeEventListener("pointermove", move);
       document.removeEventListener("pointerup", up);
-      document.removeEventListener("pointercancel", end);
-      document.removeEventListener("touchmove", touchMove);
+      document.removeEventListener("touchmove", tMove);
+      document.removeEventListener("touchend", tEnd);
+      document.removeEventListener("touchcancel", end);
     };
   }
 
@@ -966,8 +992,8 @@
 
   async function startMenu() {
     for (;;) {
-      // Tapping a Pokémon card opens its summary.
-      const v = await pick("Menu", (player.party.length ? partyHtml() : '<p class="empty">No Pokémon yet. Prof. Oak’s lab is south of your house.</p>') +
+      // Tapping a Pokémon card opens its summary; dragging swaps two.
+      const v = await pickParty("Menu", (player.party.length ? partyHtml() : '<p class="empty">No Pokémon yet. Prof. Oak’s lab is south of your house.</p>') +
         '<p class="bag-line">' + escapeHtml(player.name) + " · " + money(player.money) +
         " · Pokédex " + player.pokedex.caught.length + "</p>", [
         { label: "Pokémon", value: "party", className: "action" },
@@ -979,6 +1005,7 @@
         { label: "Debug", value: "debug", className: "action" },
         back("Close")]);
       if (v === "back") return;
+      if (v === "swapped") continue;
       if (v.pick != null) await summary(+v.pick);
       else if (v === "party") await partyMenu();
       else if (v === "bag") await bagScreen();
