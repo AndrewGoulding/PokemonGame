@@ -725,11 +725,22 @@ for (const share of [false, true]) {
   // Pallet Town and Route 1 join at the top / bottom edge.
   assert.strictEqual(at(World.step({ map: "PalletTown", x: 12, y: 0 }, "up")), "Route1 12,39");
   assert.strictEqual(at(World.step({ map: "Route1", x: 12, y: 39 }, "down")), "PalletTown 12,0");
-  // Route 1 leads on to Viridian City; Route 2 and Route 22 aren't built yet.
+  // Route 1 leads on to Viridian City, then Route 2; Route 22 and Pewter City aren't built yet.
   assert.strictEqual(at(World.step({ map: "Route1", x: 12, y: 0 }, "up")), "ViridianCity 24,39");
   assert.strictEqual(at(World.step({ map: "ViridianCity", x: 24, y: 39 }, "down")), "Route1 12,0");
-  assert.strictEqual(World.step({ map: "ViridianCity", x: 22, y: 0 }, "up").unbuilt, "MAP_ROUTE2");
+  assert.strictEqual(at(World.step({ map: "ViridianCity", x: 22, y: 0 }, "up")), "Route2 10,79");
+  assert.strictEqual(at(World.step({ map: "Route2", x: 10, y: 79 }, "down")), "ViridianCity 22,0");
+  assert.strictEqual(World.step({ map: "Route2", x: 10, y: 0 }, "up").unbuilt, "MAP_PEWTER_CITY");
   assert.strictEqual(World.step({ map: "ViridianCity", x: 0, y: 12 }, "left").unbuilt, "MAP_ROUTE22");
+  // A cave into a map that isn't built yet says so instead of letting you in.
+  assert.strictEqual(World.step({ map: "Route2", x: 17, y: 12 }, "up").unbuilt, "MAP_DIGLETTS_CAVE_NORTH_ENTRANCE");
+  // Through Viridian Forest: Route 2 -> south gate -> forest -> north gate -> Route 2's north end.
+  const wt = (r) => r.warp.map + " " + r.warp.x + "," + r.warp.y;
+  assert.strictEqual(wt(World.step({ map: "Route2", x: 5, y: 52 }, "up")), "Route2_ViridianForest_SouthEntrance 7,10");
+  assert.strictEqual(wt(World.step({ map: "Route2_ViridianForest_SouthEntrance", x: 7, y: 2 }, "up")), "ViridianForest 29,62");
+  assert.strictEqual(wt(World.step({ map: "ViridianForest", x: 5, y: 10 }, "up")), "Route2_ViridianForest_NorthEntrance 7,10");
+  assert.strictEqual(wt(World.step({ map: "Route2_ViridianForest_NorthEntrance", x: 7, y: 2 }, "up")), "Route2 5,13");
+  assert.strictEqual(wt(World.step({ map: "ViridianForest", x: 29, y: 62 }, "down")), "Route2_ViridianForest_SouthEntrance 7,1");
   // Viridian's buildings: in through each door and back out.
   for (const [door, inside_] of [["26,27", "ViridianCity_PokemonCenter_1F"], ["36,20", "ViridianCity_Mart"],
     ["25,19", "ViridianCity_School"], ["25,12", "ViridianCity_House"]]) {
@@ -860,6 +871,34 @@ for (const share of [false, true]) {
   for (const [, label] of introJs.matchAll(/IT\("(\w+)"\)/g)) assert(INTRO_TEXT[label], "missing intro text " + label);
   for (const n of ["Red", "Green", "Gary", "Leaf"]) assert(INTRO_TEXT["gNameChoice_" + n], "name choice " + n);
   assert.deepStrictEqual(INTRO_TEXT.gOakSpeech_Text_ThisWorld, ["This world…"]);
+}
+
+// Viridian Forest's trainers: FireRed's five Bug Catchers with their parties,
+// lines and sight ranges; hidden items; the forest's own wild Pokémon.
+{
+  const forest = WORLD_MAPS.ViridianForest;
+  const trainers = forest.people.filter((p) => p.trainer);
+  assert.deepStrictEqual(trainers.map((p) => WORLD_TRAINERS[p.trainer.id].name), ["Rick", "Doug", "Sammy", "Anthony", "Charlie"]);
+  for (const p of trainers) {
+    const t = WORLD_TRAINERS[p.trainer.id];
+    assert.strictEqual(t.className, "Bug Catcher");
+    assert(fs.existsSync(path.join(root, "assets/sprites/trainers/front", t.pic + ".png")), "trainer picture " + t.pic);
+    assert(p.trainer.intro.length && p.trainer.defeat.length && p.trainer.after.length, "trainer text " + t.name);
+    for (const m of t.party) {
+      assert(DEX[m.species], "species " + m.species);
+      const record = Party.create(m.species, m.level, { ivs: Math.floor(m.iv * 31 / 255), moves: m.moves });
+      assert.strictEqual(record.ivs.atk, 0, "FireRed trainers' Pokémon have set IVs");
+    }
+  }
+  const rick = trainers[0];
+  assert.deepStrictEqual([rick.trainer.sight, rick.movement], [5, "face_left"]);
+  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_BUG_CATCHER_RICK.party.map((m) => m.species + " " + m.level), ["Weedle 6", "Caterpie 6"]);
+  assert.strictEqual(Player.prizeMoney("Bug Catcher Rick", WORLD_TRAINERS.TRAINER_BUG_CATCHER_RICK.party), 16 * 6);
+  assert.deepStrictEqual(forest.hidden.map((h) => h.item), ["potion", "antidote"]);
+  assert(forest.wild.slots.some((s) => s.species === "Pikachu"), "Pikachu in Viridian Forest");
+  assert.deepStrictEqual(new Set(WORLD_MAPS.Route2.wild.slots.map((s) => s.species)), new Set(["Rattata", "Pidgey", "Caterpie", "Weedle"]));
+  // Shared text keeps FireRed's {STR_VAR_n} slots for scripts to fill in.
+  assert.deepStrictEqual(WORLD_TEXT.Trade_Text_WhatThatsNoMon, ["What?\nThat's no {STR_VAR_1}!"]);
 }
 
 // Battle backgrounds: every terrain ui/game.js can pick is built, at 512x112

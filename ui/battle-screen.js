@@ -6,6 +6,8 @@
 //     wild: false, exp: true, bag: { "poke-ball": 5 }, catchContext: {...},
 //     terrain: "grass",              // background, assets/battle/<terrain>.png
 //     trainer: "red",                // your back sprite in the opening
+//     foeTrainer: "bug_catcher",     // the opponent's picture (assets/sprites/trainers/front)
+//     defeatText: ["No!", ...],      // what they say when you win
 //     opponent: (battle) => choice
 //   });
 //   result.outcome   // "won" | "lost" | "caught" | "ran" | "draw"
@@ -310,6 +312,11 @@
           hp: hp.hp, maxhp: hp.maxhp, status: hp.status, fainted: false,
           exp: ev[4] === "" || ev[4] == null ? null : +ev[4], teamIndex: +ev[5],
           form: (config[side].team[+ev[5]] || {}).form || "" };
+        // The foe's first Pokémon: their trainer steps aside first.
+        if (side === "p2" && foeTrainerOut) {
+          foeTrainerOut = false;
+          return async () => { await foeTrainerSlide(true); renderSide(side); await message(battle.sides.p2.name + " sent out " + nameOf(a) + "!"); };
+        }
         // The first Pokémon out: your trainer throws its Ball first.
         if (side === "p1" && trainerOut) {
           trainerOut = false;
@@ -483,12 +490,24 @@
     }
   }
 
+  async function playEvent(ev) {
+    const out = applyEvent(ev);
+    if (typeof out === "string") await message(out);
+    else if (typeof out === "function") await out();
+    else if (out && out.pause) await wait(out.pause);
+  }
   async function playNewEvents() {
-    while (cursor < battle.events.length) {
-      const out = applyEvent(battle.events[cursor++]);
-      if (typeof out === "string") await message(out);
-      else if (typeof out === "function") await out();
-      else if (out && out.pause) await wait(out.pause);
+    const events = battle.events;
+    while (cursor < events.length) {
+      if (playedEarly.has(cursor)) { cursor++; continue; }
+      // As in FireRed, an opposing trainer sends out their Pokémon before you do.
+      const ev = events[cursor];
+      if (foeTrainerOut && ev[0] === "switch" && sideOf(ev[1]) === "p1") {
+        const j = events.findIndex((e, k) => k > cursor && e[0] === "switch" && sideOf(e[1]) === "p2");
+        if (j > 0) { playedEarly.add(j); await playEvent(events[j]); }
+      }
+      cursor++;
+      await playEvent(ev);
     }
   }
 
@@ -646,7 +665,29 @@
   // up and appears; then your trainer throws and slides away as your Pokémon
   // comes out.
 
-  let trainerOut = false, foeAnnounced = false;
+  let trainerOut = false, foeAnnounced = false, foeTrainerOut = false;
+  let playedEarly = new Set();   // events played ahead of their turn (the foe's first send-out)
+  // The opposing trainer's picture, where their Pokémon will stand.
+  function foeTrainerEl() {
+    let t = document.getElementById("foe-trainer");
+    if (!t) {
+      t = document.createElement("img");
+      t.id = "foe-trainer";
+      t.className = "foe-trainer hidden";
+      t.alt = "";
+      el.field.insertBefore(t, el.sides.p2.sprite);
+    }
+    return t;
+  }
+  // Slides the foe's picture off to the right (before their first Pokémon) or
+  // back in (when you've won).
+  async function foeTrainerSlide(out) {
+    const t = foeTrainerEl();
+    if (!out) { t.classList.add("leaving"); t.classList.remove("hidden"); void t.offsetWidth; }
+    t.classList.toggle("leaving", out);
+    await wait(400);
+    if (out) t.classList.add("hidden");
+  }
   function trainerEl() {
     let t = document.getElementById("trainer-back");
     if (!t) {
@@ -670,8 +711,12 @@
   }
 
   async function intro(cfg) {
-    trainerOut = false; foeAnnounced = false;
+    trainerOut = false; foeAnnounced = false; foeTrainerOut = false;
+    playedEarly = new Set();
     setTerrain(cfg.terrain);
+    const foeTrainer = foeTrainerEl();
+    foeTrainer.classList.add("hidden");
+    foeTrainer.classList.remove("leaving");
     const trainer = trainerEl();
     // Each half moves by half the background (256 of its 512 pixels), so the
     // platforms start off-screen and plain ground shows where they will be.
@@ -694,6 +739,12 @@
       el.sides.p2.info.classList.add("hidden");
       el.sides.p2.sprite.classList.add("silhouette");
       movers.push([el.sides.p2.sprite, -shift]);
+    } else if (cfg.foeTrainer) {
+      foeTrainer.src = "assets/sprites/trainers/front/" + cfg.foeTrainer + ".png";
+      await foeTrainer.decode().catch(() => {});
+      foeTrainer.classList.remove("hidden");
+      movers.push([foeTrainer, -shift]);
+      foeTrainerOut = true;
     }
     // Jump off-screen instantly (no transition), before anything is painted...
     el.field.classList.add("no-anim");
@@ -739,7 +790,7 @@
     renderSide("p1");
     renderSide("p2");
     await intro(cfg);
-    if (!cfg.wild) await message(cfg.p2.name + " wants to battle!");
+    if (!cfg.wild) await message(cfg.p2.name + " would like to battle!");
     battle.start();
     const status = await loop();
     let outcome;
@@ -748,7 +799,14 @@
       outcome = "crashed";
     } else if (battle.caught) outcome = "caught";
     else if (battle.escaped) outcome = "ran";
-    else if (battle.winner === "p1") outcome = "won";
+    else if (battle.winner === "p1") {
+      outcome = "won";
+      // The trainer comes back out to say their piece.
+      if (cfg.foeTrainer && !cfg.wild) {
+        await foeTrainerSlide(false);
+        for (const page of [].concat(cfg.defeatText || [])) await message(page);
+      }
+    }
     else if (battle.winner === "p2") outcome = "lost";
     else outcome = "draw";
     return { outcome, battle };

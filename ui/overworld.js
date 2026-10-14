@@ -9,10 +9,16 @@
 //   { type: "talk", person, map }             a person with a special script
 //   { type: "sign", sign, map }               a sign with a special script
 //   { type: "trigger", trigger, map }         stepped on a scripted tile
+//   { type: "trainer", person, map, approach, facing }
+//                                             a trainer saw you (approach: tiles
+//                                             to walk to you; null if you talked)
+//   { type: "hidden", hidden, map }           found a hidden item (A on its tile)
 // Plain signs and people just show their text here.
 //
 // ctx: { player (the save: location, name), special(script) -> bool,
-//        visible(person, mapName) -> bool, rivalName }
+//        visible(person, mapName) -> bool, rivalName,
+//        trainerWaiting(person) -> bool (not beaten yet),
+//        hiddenItem(hidden) -> bool (not found yet) }
 //
 // Controls: arrows / WASD to move, hold Shift (or B / X) to run, Z / Space / Enter
 // to talk or read, Esc / M to open the menu. On touch screens, the D-pad and
@@ -148,7 +154,7 @@
       return v && (v === true ? p : Object.assign({}, p, v));
     }).filter(Boolean).map((def) => ({
       def, x: def.x, y: def.y, ox: def.x, oy: def.y, move: null,
-      facing: { face_up: "up", face_left: "left", face_right: "right" }[def.movement] || "down",
+      facing: (/^face_(up|down|left|right)/.exec(def.movement || "") || [, "down"])[1],
       timer: 60 + Math.floor(Math.random() * 120)
     }));
   }
@@ -161,6 +167,32 @@
     wander_left_and_right: ["left", "right"]
   };
 
+  // ---------- Trainers ----------
+  //
+  // As in FireRed: a trainer you haven't beaten sees you when you're straight
+  // ahead of them, within their sight range, with nothing in between.
+
+  function trainerSees(p) {
+    const t = p.def.trainer;
+    if (!t || !t.sight || p.move || p.hidden || !ctx.trainerWaiting || !ctx.trainerWaiting(p.def)) return null;
+    const [dx, dy] = World.DIRS[p.facing];
+    const blocked = (mapName, x, y) => mapName === me.map && !!personAt(x, y);
+    for (let d = 1; d <= t.sight; d++) {
+      const x = p.x + dx * d, y = p.y + dy * d;
+      if (x === me.x && y === me.y) return { type: "trainer", person: p.def, map: me.map, approach: d - 1, facing: p.facing };
+      const r = World.step({ map: me.map, x: x - dx, y: y - dy }, p.facing, blocked);
+      if (!r.ok || r.jump || r.map !== me.map) return null;
+    }
+    return null;
+  }
+  function anyTrainerSees() {
+    for (const p of people) {
+      const seen = trainerSees(p);
+      if (seen) return seen;
+    }
+    return null;
+  }
+
   function updatePerson(p) {
     if (p.move) {
       p.move.t += p.move.speed || WALK_SPEED;
@@ -169,7 +201,18 @@
     }
     if (scene || --p.timer > 0) return;
     p.timer = 90 + Math.floor(Math.random() * 150);
-    if (p.def.movement === "look_around") { p.facing = ["up", "down", "left", "right"][Math.floor(Math.random() * 4)]; return; }
+    // Standing and turning: all four ways, or two (face_down_and_up, ...).
+    const turns = p.def.movement === "look_around" ? ["up", "down", "left", "right"]
+      : (/^face_(up|down|left|right)_and_(up|down|left|right)$/.exec(p.def.movement || "") || []).slice(1);
+    if (turns.length) {
+      p.facing = turns[Math.floor(Math.random() * turns.length)];
+      // A trainer turning your way sees you.
+      if (!paused && resolveExplore && !me.move) {
+        const seen = trainerSees(p);
+        if (seen) finish(seen);
+      }
+      return;
+    }
     const dirs = WANDER_DIRS[p.def.movement];
     if (!dirs) return;
     const dir = dirs[Math.floor(Math.random() * dirs.length)];
@@ -200,6 +243,8 @@
     if (changedMap) { loadPeople(); preloadMap(me.map); hint(); }
     savePosition();
     if (mv.warp) { warpTo(mv.warp); return; }
+    const seen = anyTrainerSees();
+    if (seen) return finish(seen);
     for (const t of World.triggersAt(me.map, me.x, me.y)) {
       if (ctx.special && ctx.special(t.script)) return finish({ type: "trigger", trigger: t, map: me.map });
     }
@@ -229,6 +274,8 @@
         paused = false;
         // Scenes that start as you walk in (the Viridian Mart clerk's parcel).
         if (ctx.special && ctx.special("enter:" + me.map)) return finish({ type: "trigger", trigger: { script: "enter:" + me.map }, map: me.map });
+        const seen = anyTrainerSees();
+        if (seen) return finish(seen);
         // Coming out of a door: step out onto the street.
         if (target.door) {
           const r = World.step({ map: me.map, x: me.x, y: me.y }, "down", occupiedForPlayer);
@@ -253,7 +300,8 @@
 
   let scene = null;   // { tracks: [{ who, moves, i, wait }], resolve }
 
-  const actor = (who) => (who === "player" ? me : people.find((p) => p.def.localId === who));
+  // "player", a person's local id, or "#<id>" (their place in the map's list).
+  const actor = (who) => (who === "player" ? me : people.find((p) => p.def.localId === who || "#" + p.def.id === who));
   const SPEEDS = { "": WALK_SPEED, fast_: 2, faster_: 4, fastest_: 8, slow_: 0.5 };
 
   // Starts a movement command; returns how many frames to wait on top of any step.
@@ -343,7 +391,7 @@
 
   // ---------- Talking ----------
 
-  const fillText = (s) => s.replace(/\{PLAYER\}/g, ctx.player.name).replace(/\{RIVAL\}/g, ctx.rivalName || "Blue");
+  const fillText = (s) => s.replace(/\{PLAYER\}/g, ctx.player.name).replace(/\{RIVAL\}/g, ctx.rivalName || "Blue").replace(/\{STR_VAR_\d\}/g, "");
 
   async function read(pages) {
     paused = true;
@@ -377,6 +425,9 @@
     }
     // The PC in a Pokémon Center is part of the map, not an event.
     if (World.blockAt(me.map, tx, ty).behavior === World.MB.PC) return finish({ type: "pc", map: me.map });
+    // Something hidden on the ground in front of you.
+    const hidden = (World.map(me.map).hidden || []).find((h) => h.x === tx && h.y === ty);
+    if (hidden && ctx.hiddenItem && ctx.hiddenItem(hidden)) return finish({ type: "hidden", hidden, map: me.map });
   }
 
   // ---------- Clicking to talk ----------

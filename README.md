@@ -78,16 +78,19 @@ npm test
 
 The maps are FireRed's, converted from the [pret/pokefirered](https://github.com/pret/pokefirered)
 decompilation: Pallet Town, the player's house (both floors), the rival's house,
-PROF. OAK's lab, Route 1, and Viridian City with its Pokémon Center (both
-floors), Poké Mart, school and Nickname house. Tiles, palettes and metatiles come from
+PROF. OAK's lab, Route 1, Viridian City with its Pokémon Center (both
+floors), Poké Mart, school and Nickname house, Route 2 with its trade house
+and gate, and Viridian Forest with both of its gates. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
-come from a pokefirered checkout. `tools/build-maps.js` turns them into
+come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
+`trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into
 `data/world-maps.js` and the images in `assets/world/`:
 
 ```sh
 git clone --depth 1 --filter=blob:none --sparse https://github.com/pret/pokefirered
 cd pokefirered && git sparse-checkout set --no-cone data/layouts/ data/maps/ data/text/ data/scripts/ \
-  data/event_scripts.s src/data/object_events/ src/data/wild_encounters.json graphics/object_events/pics/ && cd ..
+  data/event_scripts.s src/data/object_events/ src/data/wild_encounters.json graphics/object_events/pics/ \
+  src/data/trainers.h src/data/trainer_parties.h src/data/text/trainer_class_names.h graphics/trainers/ && cd ..
 node tools/build-maps.js pokefirered     # or: POKEFIRERED=pokefirered npm run build:maps
 ```
 
@@ -134,11 +137,18 @@ Rules follow Gen 3: collision and elevation per block, solid doors you walk
 into, door mats you walk out through, stairs, ledges you can jump down,
 connected maps you walk straight into, and tall grass encounters at the map's
 rate (Random() % 2880 < rate × 16) using the 20/20/10/10/10/10/5/5/4/4/1/1
-encounter slots. Signs and people say their FireRed text (with names in normal
+encounter slots. Trainers work as in FireRed: one you haven't beaten sees you
+straight ahead within their sight range (nothing in between), shows "!",
+walks up and battles with their FireRed party (fixed IVs, set moves where
+FireRed sets them); beaten, they say their after-battle line. Those that turn
+(`face_down_and_up`, `look_around`) can spot you as they turn. Hidden items
+are found by pressing A facing their tile. Signs and people say their FireRed text (with names in normal
 case: "Viridian City", not "VIRIDIAN CITY"), and item balls give their item.
 Scripted events (Mom healing, the PCs, the starter Poké Balls, Oak walking you
 to his lab, the rival battle, the Route 1 Potion, Oak's Parcel, the
-Viridian old man, the nurse, the move tutor) are in `ui/game.js`; their FireRed
+Viridian old man, the nurse, the move tutor, the Route 2 trade of Abra for
+Mr. Mime "Mimien", and Prof. Oak's Aide giving Flash for ten kinds caught —
+FireRed's HM05, which is TM70 among this game's Gen 6 machines) are in `ui/game.js`; their FireRed
 lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scripts
 (`walk_up`, `walk_in_place_faster_down`, `emote_exclamation_mark`, ...) from
 `window.WORLD_MOVEMENTS`; the converter writes both alongside the maps. Running

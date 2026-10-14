@@ -41,14 +41,14 @@
   const FORME_SUFFIX = /-(Plant|Sandy|Trash|Shield|Blade|Standard|Zen|Normal|Attack|Defense|Speed|Altered|Origin|Land|Sky|Incarnate|Therian|Ordinary|Resolute|Aria|Pirouette|Confined|Unbound|Average|Small|Large|Super)$/;
   const speciesName = (species) => species.replace(FORME_SUFFIX, "");
 
-  // opts: { rng, moves, ball, nickname }
+  // opts: { rng, moves, ball, nickname, ivs (a number for every stat: a trainer's Pokémon) }
   function create(species, level, opts) {
     opts = opts || {};
     const rng = opts.rng || Math.random;
     const dex = window.DEX[species];
     if (!dex) throw new Error("Unknown species: " + species);
     const ivs = {};
-    for (const k of STAT_KEYS) ivs[k] = Math.floor(rng() * 32);
+    for (const k of STAT_KEYS) ivs[k] = opts.ivs != null ? opts.ivs : Math.floor(rng() * 32);
     const moves = opts.moves || window.RandomTeam.levelUpMoves(species, level);
     const record = {
       species,

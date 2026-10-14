@@ -5,13 +5,17 @@
 //
 // Reads, from the pokefirered checkout: data/layouts (block layouts),
 // data/maps/<Map> (doors, signs, people, connections, text),
-// src/data/wild_encounters.json, and the people sprites. Tilesets come from
+// src/data/wild_encounters.json, trainers (src/data/trainers.h,
+// trainer_parties.h, trainer_class_names.h and their front pictures), and the
+// people sprites. Tilesets come from
 // this repo's assets/tilesets (FireRed's tiles, palettes and metatiles).
 //
 // Writes:
 //   data/world-maps.js            window.WORLD_MAPS: per map size, blocks
 //                                 (collision, behaviour), warps, signs, people,
-//                                 connections and wild Pokémon
+//                                 connections, hidden items and wild Pokémon
+//                                 window.WORLD_TRAINERS: the built maps' trainers
+//                                 (class, name, picture, FireRed party)
 //   assets/world/maps/<Map>.png   the map below sprites
 //   assets/world/maps/<Map>-top.png       the parts drawn over sprites
 //   assets/world/maps/<Map>-border.png    the 2x2 blocks repeated outside the map
@@ -35,14 +39,20 @@ const TITLES = {
   ViridianCity_School: "Viridian City · Trainer school",
   ViridianCity_Mart: "Viridian City · Poké Mart",
   ViridianCity_PokemonCenter_1F: "Viridian City · Pokémon Center",
-  ViridianCity_PokemonCenter_2F: "Viridian City · Pokémon Center 2F"
+  ViridianCity_PokemonCenter_2F: "Viridian City · Pokémon Center 2F",
+  Route2_ViridianForest_SouthEntrance: "Route 2 · Viridian Forest gate",
+  Route2_ViridianForest_NorthEntrance: "Route 2 · Viridian Forest gate",
+  Route2_House: "Route 2 · Trade house",
+  Route2_EastBuilding: "Route 2 · Gate"
 };
 
 const MAPS = [
   "PalletTown", "PalletTown_PlayersHouse_1F", "PalletTown_PlayersHouse_2F",
   "PalletTown_RivalsHouse", "PalletTown_ProfessorOaksLab", "Route1",
   "ViridianCity", "ViridianCity_House", "ViridianCity_School", "ViridianCity_Mart",
-  "ViridianCity_PokemonCenter_1F", "ViridianCity_PokemonCenter_2F"
+  "ViridianCity_PokemonCenter_1F", "ViridianCity_PokemonCenter_2F",
+  "Route2", "Route2_ViridianForest_SouthEntrance", "ViridianForest", "Route2_ViridianForest_NorthEntrance",
+  "Route2_House", "Route2_EastBuilding"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
@@ -56,7 +66,10 @@ const SCRIPT_TEXT = {
 // Shared text the game uses for story scenes, besides each built map's own text.
 const GAME_TEXT = [
   "Text_WelcomeWantToHealPkmn", "Text_TakeYourPkmnForFewSeconds", "Text_RestoredPkmnToFullHealth",
-  "Text_WeHopeToSeeYouAgain", "Text_MayIHelpYou", "Text_PleaseComeAgain", "Text_WirelessClubUndergoingAdjustments"
+  "Text_WeHopeToSeeYouAgain", "Text_MayIHelpYou", "Text_PleaseComeAgain", "Text_WirelessClubUndergoingAdjustments",
+  "Trade_Text_LookingForMonWannaTradeForMon", "Trade_Text_AwwOhWell", "Trade_Text_WhatThatsNoMon",
+  "Trade_Text_HeyThanks", "Trade_Text_IsntMyOldMonGreat",
+  "Aide_Text_HaventCaughtEnoughMonsForItem", "Aide_Text_GetEnoughMonsComeBackForItem"
 ];
 const PLAYER_SPRITES = { red: "red_normal.png", green: "green_normal.png" };
 
@@ -75,6 +88,7 @@ fs.mkdirSync(outSprites, { recursive: true });
 
 global.window = global;
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex.js"), "utf8"));
+vm.runInThisContext(fs.readFileSync(path.join(root, "data/moves.js"), "utf8"));
 
 // ---------- Tilesets ----------
 
@@ -256,6 +270,69 @@ function itemBall(mapName, script) {
   return undefined;
 }
 
+// A trainer's script: "trainerbattle_single TRAINER_X, Intro, Defeat" and the
+// message after ("msgbox PostBattle"), as { id, intro, defeat, after } text.
+function trainerScript(mapName, script) {
+  const lines = scriptLabels(mapName)[script] || [], t = texts(mapName);
+  for (let i = 0; i < lines.length; i++) {
+    const m = /^trainerbattle_single\s+(TRAINER_\w+),\s*(\w+),\s*(\w+)/.exec(lines[i]);
+    if (!m) continue;
+    const after = lines.slice(i + 1).map((l) => /^msgbox\s+(\w+)/.exec(l)).find(Boolean);
+    usedTrainers.add(m[1]);
+    return { id: m[1], intro: t[m[2]], defeat: t[m[3]], after: after ? t[after[1]] : null };
+  }
+  return undefined;
+}
+
+// ---------- Trainers ----------
+
+const usedTrainers = new Set();
+const constName = (s) => s.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+// { TRAINER_X: { className, name, pic, party: [{ species, level, iv, item, moves }] } }
+function buildTrainers(ids) {
+  const trainers = readHeader("src/data/trainers.h"), parties = readHeader("src/data/trainer_parties.h");
+  const classNames = readHeader("src/data/text/trainer_class_names.h");
+  const moveByID = {};
+  for (const k of Object.keys(window.MOVES)) moveByID[toID(k)] = k;
+  const out = {};
+  for (const id of ids) {
+    const block = new RegExp("\\[" + id + "\\] = \\{([\\s\\S]*?)\\n    \\},").exec(trainers)[1];
+    const cls = /\.trainerClass = (\w+)/.exec(block)[1];
+    const className = constName(new RegExp("\\[" + cls + "\\]\\s*= _\\(\"(.*?)\"\\)").exec(classNames)[1]).replace(/Poke/g, "Poké");
+    const pic = /\.trainerPic = TRAINER_PIC_(\w+)/.exec(block)[1].toLowerCase();
+    const partyName = /\.party = \w+\((\w+)\)/.exec(block)[1];
+    const list = new RegExp(partyName + "\\[\\] = \\{([\\s\\S]*?)\\n\\};").exec(parties)[1];
+    const party = [...list.matchAll(/\{([^{}]*(?:\{[^}]*\}[^{}]*)*)\}/g)].map(([, mon]) => {
+      const species = dexByID[toID(/\.species = SPECIES_(\w+)/.exec(mon)[1])];
+      const moves = /\.moves = \{([^}]*)\}/.exec(mon);
+      const item = /\.heldItem = ITEM_(\w+)/.exec(mon);
+      return {
+        species, level: +/\.lvl = (\d+)/.exec(mon)[1], iv: +/\.iv = (\d+)/.exec(mon)[1],
+        item: item && item[1] !== "NONE" ? item[1].toLowerCase().replace(/_/g, "-") : undefined,
+        moves: moves ? moves[1].split(",").map((x) => x.trim().replace(/^MOVE_/, "")).filter((x) => x && x !== "NONE")
+          .map((x) => moveByID[toID(x)]) : undefined
+      };
+    });
+    out[id] = { className, name: constName(/\.trainerName = _\("(.*?)"\)/.exec(block)[1]), pic: trainerPic(pic), party };
+  }
+  return out;
+}
+
+// A trainer's front picture in assets/sprites/trainers/front/<pic>.png,
+// converted from graphics/trainers if it isn't there yet.
+function trainerPic(pic) {
+  const file = path.join(root, "assets/sprites/trainers/front", pic + ".png");
+  if (!fs.existsSync(file)) {
+    const src = P("graphics/trainers/front_pics", pic + "_front_pic.png");
+    if (!fs.existsSync(src)) throw new Error("No front picture for " + pic + " (check out graphics/trainers/)");
+    const png = readPng(src);
+    const pal = P("graphics/trainers/palettes", pic + ".pal");
+    if (fs.existsSync(pal)) png.palette = readPal(pal);
+    writeSprite(png, file);
+  }
+  return pic;
+}
+
 // ---------- People sprites ----------
 
 function readHeader(rel) { return fs.readFileSync(P(rel), "utf8"); }
@@ -348,6 +425,8 @@ for (const name of MAPS) {
     text: scriptText(name, o.script),
     item: itemBall(name, o.script),
     mart: martItems(name, o.script),
+    trainer: o.trainer_type && o.trainer_type !== "TRAINER_TYPE_NONE" || /trainerbattle/.test((scriptLabels(name)[o.script] || []).join("\n"))
+      ? Object.assign(trainerScript(name, o.script) || {}, { sight: +o.trainer_sight_or_berry_tree_id || 0 }) : undefined,
     localId: o.local_id || undefined,
     alt: ALT_GFX[o.script] ? objectSprite(ALT_GFX[o.script]) : undefined
   }, objectSprite((VAR_GFX[name] || {})[o.graphics_id] || o.graphics_id)));
@@ -359,9 +438,11 @@ for (const name of MAPS) {
     top: anyAbove, borderWidth: bw, borderHeight: bh,
     collision, elevation, behavior, encounter,
     connections: (map.connections || []).map((c) => ({ map: byConst[c.map] || null, mapConst: c.map, direction: c.direction, offset: c.offset })),
-    warps: map.warp_events.map((wp) => ({ x: wp.x, y: wp.y, map: byConst[wp.dest_map] || null, warp: +wp.dest_warp_id })),
+    warps: map.warp_events.map((wp) => ({ x: wp.x, y: wp.y, map: byConst[wp.dest_map] || null, mapConst: byConst[wp.dest_map] ? undefined : wp.dest_map, warp: +wp.dest_warp_id })),
     signs: map.bg_events.filter((b) => b.type === "sign").map((b) => ({ x: b.x, y: b.y, script: b.script, text: scriptText(name, b.script) })),
     triggers: map.coord_events.map((c) => ({ x: c.x, y: c.y, script: c.script })),
+    hidden: map.bg_events.filter((b) => b.type === "hidden_item").map((b) => ({
+      x: b.x, y: b.y, item: b.item.replace(/^ITEM_/, "").toLowerCase().replace(/_/g, "-"), flag: b.flag, quantity: b.quantity || 1 })),
     people,
     wild: land && land.land_mons ? {
       rate: land.land_mons.encounter_rate,
@@ -430,5 +511,6 @@ fs.writeFileSync(path.join(root, "data/world-maps.js"),
   "// Auto-generated by tools/build-maps.js from pret/pokefirered. Do not edit by hand.\n" +
   "window.WORLD_MAPS = " + JSON.stringify(out) + ";\n" +
   "window.WORLD_TEXT = " + JSON.stringify(gameText) + ";\n" +
-  "window.WORLD_MOVEMENTS = " + JSON.stringify(gameMovements) + ";\n");
+  "window.WORLD_MOVEMENTS = " + JSON.stringify(gameMovements) + ";\n" +
+  "window.WORLD_TRAINERS = " + JSON.stringify(buildTrainers([...usedTrainers].sort())) + ";\n");
 console.log("wrote " + MAPS.length + " maps to data/world-maps.js and assets/world/");

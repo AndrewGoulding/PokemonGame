@@ -121,6 +121,8 @@
     if (!free(ahead)) return { ok: false };
     const result = { ok: true, map: ahead.map, x: ahead.x, y: ahead.y };
     const w = warpAt(ahead.map, ahead.x, ahead.y);
+    // A cave or doorway into a map that isn't built yet (Diglett's Cave).
+    if (w && STEP_WARPS.has(ahead.behavior) && !w.map) return { ok: false, unbuilt: w.mapConst };
     if (w && STEP_WARPS.has(ahead.behavior)) result.warp = warpTarget(w);
     return result;
   }

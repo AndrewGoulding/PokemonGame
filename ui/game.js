@@ -235,6 +235,7 @@
       exp: true,
       expShare: expShareOn(),
       trainer: player.look === "green" ? "leaf" : "red",
+      foeTrainer: foe.pic, defeatText: opts.defeatText && opts.defeatText.map((p) => fill(p)),
       terrain: battleTerrain(opts),
       bag: player.bag,
       catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s) },
@@ -251,6 +252,7 @@
       if (mon.leveledUp) leveledUp.push(record);
     });
 
+    if (result.outcome === "won" && opts.trainerId) player.flags[opts.trainerId] = true;
     if (result.outcome === "won" && !wild) {
       const prize = Player.prizeMoney(foe.name, foe.team);
       Player.addMoney(player, prize);
@@ -1057,13 +1059,18 @@
     "ViridianCity_EventScript_DreamEaterTutor",
     "enter:ViridianCity_Mart", "ViridianCity_Mart_EventScript_Clerk",
     "ViridianCity_PokemonCenter_1F_EventScript_Nurse",
-    "Common_EventScript_UnionRoomAttendant", "Common_EventScript_WirelessClubAttendant", "Common_EventScript_DirectCornerAttendant"
+    "Common_EventScript_UnionRoomAttendant", "Common_EventScript_WirelessClubAttendant", "Common_EventScript_DirectCornerAttendant",
+    "Route2_House_EventScript_Reyley", "Route2_EastBuilding_EventScript_Aide"
   ].concat(Object.keys(STARTER_BALLS)));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
   // Item balls on the map: picked up once, then gone.
   const ITEM_BALLS = new Set();
   for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) if (p.item) ITEM_BALLS.add(p.script);
+  // Trainers: battle until beaten (a flag named for the trainer, as in FireRed).
+  const TRAINER_SCRIPTS = new Set();
+  for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) if (p.trainer && p.trainer.id) TRAINER_SCRIPTS.add(p.script);
+  const trainerWaiting = (person) => !!(person.trainer && person.trainer.id && !player.flags[person.trainer.id]);
 
   function visible(person) {
     const f = player.flags;
@@ -1092,8 +1099,10 @@
   }
 
   const T = (label) => window.WORLD_TEXT[label];
-  const fill = (s) => s.replace(/\{PLAYER\}/g, player.name).replace(/\{RIVAL\}/g, player.rival);
-  async function say(pages) { for (const p of [].concat(pages)) await window.Screen.read(fill(p)); }
+  // {PLAYER}, {RIVAL}, and {STR_VAR_1..3} from `vars` (["Abra", "Mr. Mime"]).
+  const fill = (s, vars) => s.replace(/\{PLAYER\}/g, player.name).replace(/\{RIVAL\}/g, player.rival)
+    .replace(/\{STR_VAR_(\d)\}/g, (_, n) => (vars && vars[n - 1] != null ? vars[n - 1] : ""));
+  async function say(pages, vars) { for (const p of [].concat(pages)) await window.Screen.read(fill(p, vars)); }
 
   async function story(ev) {
     if (ev.type === "pc") {
@@ -1101,8 +1110,22 @@
       await pc();
       return;
     }
+    if (ev.type === "trainer") { await trainerBattle(ev.person, ev.approach, ev.facing); return; }
+    if (ev.type === "hidden") {
+      const h = ev.hidden;
+      Player.addItem(player, h.item, h.quantity);
+      player.flags[h.flag] = true;
+      await say("{PLAYER} found " + (h.quantity > 1 ? h.quantity + " " : "a ") + Bag.name(h.item) + "!");
+      return;
+    }
     const script = (ev.person || ev.sign || ev.trigger).script;
     const f = player.flags;
+
+    if (TRAINER_SCRIPTS.has(script)) {
+      if (trainerWaiting(ev.person)) await trainerBattle(ev.person, null);
+      else await say(ev.person.trainer.after || ev.person.text || []);
+      return;
+    }
 
     if (ev.person && ev.person.item) {
       const item = ev.person.item;
@@ -1277,6 +1300,31 @@
         await say(T("Text_WirelessClubUndergoingAdjustments"));
         return;
 
+      // ---------- Route 2 ----------
+
+      case "Route2_House_EventScript_Reyley":
+        await inGameTrade(TRADES.mimien);
+        return;
+
+      // Prof. Oak's Aide: Flash for ten kinds of Pokémon caught. (FireRed's
+      // HM05 is Flash; in this game's Gen 6 machines, Flash is TM70.)
+      case "Route2_EastBuilding_EventScript_Aide": {
+        const NEEDED = 10, item = "tm70", label = "TM70";
+        const fix = (pages) => pages.map((p) => p.replace(/HM05/g, label).replace(/the hidden move/g, "the move"));
+        if (f.gotFlash) { await say(fix(T("Route2_EastBuilding_Text_ExplainHM05"))); return; }
+        const ask = fix(T("Route2_EastBuilding_Text_GiveHM05IfSeen10Mons"));
+        await say(ask.slice(0, -1));
+        if (!(await confirm(fill(ask[ask.length - 1])))) { await say(T("Aide_Text_GetEnoughMonsComeBackForItem"), [NEEDED, label]); return; }
+        const count = player.pokedex.caught.length;
+        if (count < NEEDED) { await say(T("Aide_Text_HaventCaughtEnoughMonsForItem"), [NEEDED, label, count]); return; }
+        await say(T("Route2_EastBuilding_Text_GreatHereYouGo"), [NEEDED, label, count]);
+        Player.addItem(player, item);
+        f.gotFlash = true;
+        await say(fix(T("Route2_EastBuilding_Text_ReceivedHM05FromAide")));
+        await say(fix(T("Route2_EastBuilding_Text_ExplainHM05")));
+        return;
+      }
+
       case "Route1_EventScript_MartClerk":
         if (f.route1Potion) { await say("Please come see us if you need\nPoké Balls."); return; }
         await say(ev.person.text);
@@ -1352,7 +1400,7 @@
     await Overworld.act([{ who: LAB_RIVAL, moves: M(approach) }]);
     f.rivalLabBattle = true;
     const team = [Party.create(theirs, STARTER_LEVEL)];
-    await battle("trainer", { foe: { name: "Rival " + player.rival, team }, noBlackout: true });
+    await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_early" }, noBlackout: true });
     // Back to the lab: everyone's healed, and he heads out.
     player.party.forEach(Party.heal);
     show("world");
@@ -1362,6 +1410,55 @@
       { who: LAB_RIVAL, moves: M("PalletTown_ProfessorOaksLab_Movement_RivalExitAfterBattle" + side) },
       { who: "player", moves: M("PalletTown_ProfessorOaksLab_Movement_PlayerWatchRivalExitAfterBattle" + (side === "Right" ? "Right" : "")) }]);
     Overworld.removeObject(LAB_RIVAL);
+  }
+
+  // ---------- Trainers ----------
+  //
+  // A trainer who sees you: "!", walks up to you, you turn to face them, they
+  // speak, and battle. One you talk to just speaks and battles. Their party is
+  // FireRed's (data/world-maps.js, WORLD_TRAINERS), with FireRed's fixed IVs
+  // (0-255 there, so 0-31 here).
+  async function trainerBattle(person, approach, facing) {
+    const t = person.trainer, data = window.WORLD_TRAINERS[t.id];
+    const who = "#" + person.id;
+    if (approach != null) {
+      await Overworld.act([{ who, moves: ["emote_exclamation_mark"].concat(Array(approach).fill("walk_" + facing)) }]);
+      await Overworld.act([{ who: "player", moves: ["face_" + World.OPPOSITE[facing]] }]);
+    }
+    await say(t.intro);
+    if (!canBattle()) return;
+    const team = data.party.map((m) => Party.create(m.species, m.level, { ivs: Math.floor(m.iv * 31 / 255), moves: m.moves }));
+    data.party.forEach((m, i) => { if (m.item) team[i].item = m.item; });
+    await battle("trainer", { foe: { name: data.className + " " + data.name, team, pic: data.pic }, defeatText: t.defeat, trainerId: t.id });
+  }
+
+  // ---------- In-game trades ----------
+  //
+  // FireRed's sInGameTrades: what they want, what they give (nicknamed, with set
+  // IVs: HP, Attack, Defense, Speed, Sp. Atk, Sp. Def), at your Pokémon's level.
+  const TRADES = {
+    mimien: { flag: "tradedMimien", wants: "Abra", gives: "Mr. Mime", nickname: "Mimien",
+      ivs: { hp: 20, atk: 15, def: 17, spe: 24, spa: 23, spd: 22 } }
+  };
+  async function inGameTrade(trade) {
+    const f = player.flags;
+    if (f[trade.flag]) { await say(T("Trade_Text_IsntMyOldMonGreat"), [trade.wants, trade.gives]); return; }
+    const ask = T("Trade_Text_LookingForMonWannaTradeForMon");
+    await say(ask.slice(0, -1), [trade.wants, trade.gives]);
+    if (!(await confirm(fill(ask[ask.length - 1], [trade.wants, trade.gives])))) { await say(T("Trade_Text_AwwOhWell")); return; }
+    const v = await pick("Which Pokémon will you trade?", partyHtml(), [back()]);
+    show("world");
+    if (v === "back") { await say(T("Trade_Text_AwwOhWell")); return; }
+    const i = +v.pick, mine = player.party[i];
+    if (mine.species !== trade.wants) { await say(T("Trade_Text_WhatThatsNoMon"), [trade.wants, trade.gives]); return; }
+    const theirs = Party.create(trade.gives, mine.level, { nickname: trade.nickname });
+    theirs.ivs = Object.assign({}, trade.ivs);
+    theirs.hp = Party.maxHp(theirs);
+    player.party[i] = theirs;
+    Player.markCaught(player, trade.gives);
+    f[trade.flag] = true;
+    await say("{PLAYER} sent " + Party.displayName(mine) + " to the trainer.\nThe trainer sent back " + trade.nickname + "!");
+    await say(T("Trade_Text_HeyThanks"));
   }
 
   // A Pokémon Center nurse. Blacking out later brings you back to this one.
@@ -1432,7 +1529,8 @@
       show("world");
       const ev = await Overworld.explore({
         player, rivalName: player.rival, visible,
-        special: (script) => SPECIAL.has(script) || ITEM_BALLS.has(script),
+        special: (script) => SPECIAL.has(script) || ITEM_BALLS.has(script) || TRAINER_SCRIPTS.has(script),
+        trainerWaiting, hiddenItem: (h) => !player.flags[h.flag],
         onStep: repelStep, allowWild: repelAllows
       });
       if (ev.type === "menu") await startMenu();
