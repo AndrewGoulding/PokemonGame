@@ -507,15 +507,8 @@
       e.preventDefault(); e.stopPropagation();
       move(d[0], d[1]);
     };
-    const onClick = (e) => {
-      const r = box.getBoundingClientRect();
-      const px = (e.clientX - r.left) / r.width * 240, py = (e.clientY - r.top) / r.height * 160;
-      const x = Math.floor((px - 32) / 8), y = Math.floor((py - 32) / 8);
-      if (x >= 0 && y >= 0 && x < T.width && y < T.height) { cx = x; cy = y; draw(); }
-    };
     document.addEventListener("keydown", onKey, true);
-    box.addEventListener("click", onClick);
-    await ask("Town Map: Kanto. Use the arrows or tap a place to see its name.", [back("Close")]);
+    await ask("Town Map: Kanto. Move with the D-pad to see each place's name.", [back("Close")]);
     document.removeEventListener("keydown", onKey, true);
   }
 
@@ -536,7 +529,7 @@
     await message(player.name + " used the Explorer Kit and started digging into the wall…");
     show("scene");
     clearMenu();
-    window.Screen.say("Tap a tile to dig. The Hammer digs wider but uses twice the energy. (Keys: arrows, Z to dig, X to switch tools.)");
+    window.Screen.say("D-pad to aim, A to dig, B to switch tools. The Hammer digs wider but uses twice the energy.");
     const f = player.flags, xp = miningXp(), before = Mining.level(xp);
     const dig = Mining.create(Math.random, before, player.location.map);
     const found = await MiningScreen.run(scene, dig, xp);
@@ -600,10 +593,10 @@
       options.push({ label: "Give item", value: "give", className: "action" });
       if (r.item) options.push({ label: "Take item", value: "take", className: "action" });
       options.push(back());
-      // Dragging one move onto another swaps them (the order in battle).
+      // Swapping two moves (Select on one, then the other, or dragging) changes their order in battle.
       let dropped;
       const moved = new Promise((resolve) => { dropped = resolve; });
-      const picked = pick(Party.displayName(r) + "'s summary.", summaryHtml(r), options);
+      const picked = pick(Party.displayName(r) + "'s summary. Press Select on a move, then on another, to swap them.", summaryHtml(r), options);
       const stop = draggableCards(scene.querySelector(".summary-moves"), (a, b) => dropped([a, b]), ".move-card");
       const v = await Promise.race([picked, moved]);
       stop();
@@ -853,7 +846,7 @@
       // the other area to deposit or withdraw it.
       let dropped;
       const moved = new Promise((resolve) => { dropped = resolve; });
-      const picked = pick("Bill's PC. Choose a Pokémon, or drag it to move it.", html, [
+      const picked = pick("Bill's PC. Choose a Pokémon. Press Select on one, then on another, to swap them.", html, [
         { label: "◀ Box " + (((box + Player.BOX_COUNT - 1) % Player.BOX_COUNT) + 1), value: "prev", className: "action" },
         { label: "Box " + (((box + 1) % Player.BOX_COUNT) + 1) + " ▶", value: "next", className: "action" },
         back("Log off")
@@ -1014,7 +1007,7 @@
             "<span>" + num + "</span>" + spriteTag(e.species, "", 'loading="lazy" alt=""') +
             "<small>" + window.Screen.ballIcon(caught.has(e.id)) + escapeHtml(Party.speciesName(e.species)) + "</small></button>";
         }).join("") + "</div>";
-      const v = await pick("Pokédex. Tap a Pokémon for its entry.", html, [back("Close")]);
+      const v = await pick("Pokédex. Choose a Pokémon for its entry.", html, [back("Close")]);
       if (v === "back") return;
       const d = DEX[v.pick];
       await message("#" + String(d.id).padStart(3, "0") + " " + Party.speciesName(v.pick) + ": " + d.types.join("/") + " type. " +
@@ -1067,8 +1060,8 @@
     for (;;) {
       if (!player.party.length) { await message("You don't have any Pokémon yet."); return; }
       const v = await pickParty("Choose a Pokémon.", partyHtml() +
-        '<p class="bag-line">Tap a Pokémon for its summary. Drag one onto another to swap them' +
-        " (on a phone, press and hold first).</p>", [back("Close")]);
+        '<p class="bag-line">Choose a Pokémon for its summary. Press Select on one, then on another,' +
+        " to swap them.</p>", [back("Close")]);
       if (v === "back") return;
       if (v === "swapped") continue;
       await summary(+v.pick);
@@ -1094,10 +1087,11 @@
     return v;
   }
 
-  // Drag a party card onto another to swap them. With a mouse or pen the drag
-  // starts once the pointer moves a little; on touch you press and hold first,
-  // so ordinary swipes still scroll. A drag doesn't count as a tap. Returns a
-  // function that removes the listeners.
+  // Swapping two cards: press Select on one (it's held up), then Select or A on
+  // another; B puts it back down. Dragging one onto another works too: with a
+  // mouse or pen the drag starts once the pointer moves a little; on touch you
+  // press and hold first, so ordinary swipes still scroll. Returns a function
+  // that removes the listeners.
   function draggableCards(container, onSwap, selector) {
     selector = selector || ".card";
     // A card's key (data-slot or data-pick; a number when it is one). Areas
@@ -1106,6 +1100,25 @@
       const k = card.dataset.slot != null ? card.dataset.slot : card.dataset.pick != null ? card.dataset.pick : card.dataset.drop;
       return /^\d+$/.test(k) ? +k : k;
     };
+    // With the buttons. The cards are choices the D-pad moves between.
+    for (const c of container.querySelectorAll(selector)) { c.dataset.swap = ""; if (!c.matches("button")) c.tabIndex = -1; }
+    let marked = null;
+    const unmark = () => { if (marked) marked.classList.remove("held"); marked = null; };
+    const onKey = (e) => {
+      const at = document.activeElement, card = at && at.closest && at.closest(selector);
+      const here = card && container.contains(card) ? card : null;
+      const isA = ["z", "Z", " ", "Enter"].includes(e.key), isB = ["x", "X", "Escape"].includes(e.key);
+      if (e.key !== "Select" && !(marked && (isA || isB))) return;
+      if (isB) { e.preventDefault(); e.stopImmediatePropagation(); unmark(); return; }
+      if (!here) { if (isA) { e.preventDefault(); e.stopImmediatePropagation(); } return; }
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (!marked) { marked = here; here.classList.add("held"); return; }
+      const from = marked;
+      unmark();
+      if (from !== here) onSwap(slot(from), slot(here));
+    };
+    document.addEventListener("keydown", onKey, true);
+
     const HOLD_MS = 300, START_PX = 8;
     let drag = null, swallowClick = false;
     const cardAt = (x, y) => {
@@ -1187,6 +1200,8 @@
     container.addEventListener("contextmenu", noMenu);
     return () => {
       end();
+      unmark();
+      document.removeEventListener("keydown", onKey, true);
       document.removeEventListener("pointermove", move);
       document.removeEventListener("pointerup", up);
       document.removeEventListener("touchmove", tMove);

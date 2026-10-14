@@ -162,18 +162,14 @@
     if (!running || e.repeat) return;
     if (["z", "Z", " ", "Enter"].includes(e.key)) pressed.a = true;
     if (["x", "X", "Escape"].includes(e.key)) pressed.b = true;
-    if (e.key === "Enter") pressed.start = true;
+    if (e.key === "Enter" || e.key === "Start") pressed.start = true;
     if (skippable && (pressed.a || pressed.start)) skipped = true;
   });
-  canvas.addEventListener("click", () => { pressed.a = true; if (skippable) skipped = true; });
   const clearInput = () => { pressed.a = pressed.b = pressed.start = false; };
-  // Waits for A (key, click or tap on the picture or text box).
+  // Waits for A.
   function waitForA() {
     clearInput();
-    const box = document.getElementById("textbox");
-    const tap = () => { pressed.a = true; };
-    box.addEventListener("click", tap);
-    return until(() => pressed.a).finally(() => box.removeEventListener("click", tap));
+    return until(() => pressed.a);
   }
 
   // A tiny deterministic RNG like the GBA's (x * 1103515245 + 24691).
@@ -694,9 +690,7 @@
     });
 
     clearInput();
-    const tapBox = () => { pressed.a = true; };
-    document.getElementById("textbox").addEventListener("click", tapBox);
-    window.Screen.say("Press Start (Enter / Z or tap)");
+    window.Screen.say("Press Start");
     document.getElementById("menu").innerHTML = "";
     let result = null;
     await until(() => {
@@ -704,7 +698,6 @@
       else if (elapsed >= 2700) result = "timeout";
       return !!result;
     });
-    document.getElementById("textbox").removeEventListener("click", tapBox);
     s.slash.stopping = true;
     if (result === "start") {
       await wait(90);

@@ -35,11 +35,13 @@ also a move tutor who teaches Dream Eater once, a school and the Nickname house.
 Route 2, Route 22 and the Gym aren't built yet; walking into the Gym's door
 tells you it's locked (it opens at seven badges in FireRed).
 
-**Controls**: arrow keys or WASD to walk, press Shift (or X / B, or the Run button) to start running and again to stop (from the start, indoors too, with FireRed's running animation), Z / Space /
-Enter to talk or read signs (or click / tap a person, sign or PC: you walk over
-and talk), Esc or M for the menu. In menus, the arrow keys
-move between choices, Z (A) picks one and X / Esc (B) goes back. On a phone, use the D-pad
-and A / Run / Menu buttons under the text box.
+**Controls**: the game is played with the Game Boy buttons under the text box:
+the D-pad, A, B, Start and Select (tap or click them; tapping anything else does
+nothing). D-pad to walk, A to talk or read signs, B to start running and again to
+stop (from the start, indoors too, with FireRed's running animation), Start for
+the menu. In menus, the D-pad moves between choices, A picks one and B goes back;
+in the party, a summary's moves and Bill's PC, Select on one and then on another
+swaps them. On a keyboard: arrows / WASD, Z (A), X (B), Esc or M (Start).
 
 The **menu** has your Pokémon (tap one for its summary: stats, IVs, EVs, nature,
 moves; make it lead; use, give or take items; drag one card onto another to swap

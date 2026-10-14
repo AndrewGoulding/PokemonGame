@@ -2,9 +2,8 @@
 //
 //   const found = await MiningScreen.run(sceneElement, Mining.create(...), xpBefore);
 //
-// Tap or click a tile to hit it; the Pickaxe and Hammer buttons switch tools.
-// On a keyboard: arrows move the cursor, Z / Space / Enter hit, X / B / Shift
-// switch tools. Along the top: your mining level with a bar to the next one
+// The D-pad moves the cursor, A hits, B switches between the Pickaxe and the
+// Hammer. Along the top: your mining level with a bar to the next one
 // (it fills as you dig: XP for every hit and every treasure), and your energy.
 // Resolves with the ids of the treasures dug out once every treasure is out or
 // your energy runs out.
@@ -54,8 +53,8 @@
         '<div class="dig-layer over" style="grid-template-columns:repeat(' + W() + ',1fr)">' + rock.join("") + "</div>" +
       "</div>" +
       '<div class="dig-tools">' +
-        '<button type="button" class="dig-tool" data-tool="pick">⛏ Pickaxe</button>' +
-        '<button type="button" class="dig-tool" data-tool="hammer">🔨 Hammer</button>' +
+        '<span class="dig-tool" data-tool="pick">⛏ Pickaxe</span>' +
+        '<span class="dig-tool" data-tool="hammer">🔨 Hammer</span>' +
       "</div>" +
       '<p class="dig-status" aria-live="polite">Dig out the buried treasure before you run out of energy!</p>' +
     "</div>";
@@ -113,8 +112,6 @@
         e.preventDefault();
       }
       document.addEventListener("keydown", onKey);
-      tiles.forEach((el, i) => el.addEventListener("click", () => strike(i % W(), Math.floor(i / W()))));
-      for (const b of root.querySelectorAll(".dig-tool")) b.addEventListener("click", () => { tool = b.dataset.tool; draw(); });
     });
   }
 

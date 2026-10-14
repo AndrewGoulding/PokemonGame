@@ -27,7 +27,7 @@
   color: #222;
   font: inherit;
   text-align: left;
-  cursor: pointer;
+ 
 }
 .card:first-child { border-color: #c8a85a; background: #fff8e1; }
 .card:disabled { cursor: default; }
@@ -107,7 +107,7 @@
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
 .tab {
   padding: 6px 12px; border: 2px solid #3c4048; border-radius: 16px; background: #fbfbf2;
-  font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+  font: inherit; font-size: 14px; font-weight: 700;
 }
 .tab.active { background: #2b3a67; color: #fff; }
 
@@ -115,7 +115,7 @@
 .row {
   display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 10px;
   border: 2px solid #3c4048; border-radius: 10px; background: #fbfbf2; color: #222;
-  font: inherit; text-align: left; cursor: pointer;
+  font: inherit; text-align: left;
 }
 .row:hover { filter: brightness(1.04); }
 .row img, .row .no-sprite { width: 32px; height: 32px; image-rendering: pixelated; flex-shrink: 0; }
@@ -156,7 +156,7 @@
 .pc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; }
 .mini {
   display: flex; flex-direction: column; align-items: center; padding: 4px; border: 2px solid #3c4048;
-  border-radius: 8px; background: #fbfbf2; color: #222; font: inherit; font-size: 11px; cursor: pointer; min-width: 0;
+  border-radius: 8px; background: #fbfbf2; color: #222; font: inherit; font-size: 11px; min-width: 0;
 }
 .mini.fainted { background: #eadede; }
 .mini { touch-action: pan-y; user-select: none; }
@@ -177,7 +177,7 @@
 .dex-entry {
   display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 82px;
   padding: 2px; border: 1px solid #b8c4d0; border-radius: 6px; background: #fbfbf2; color: #222;
-  font: inherit; font-size: 10px; cursor: pointer; min-width: 0;
+  font: inherit; font-size: 10px; min-width: 0;
 }
 .dex-entry span { color: #667; }
 .dex-entry img { width: 48px; height: 48px; image-rendering: pixelated; }
@@ -211,43 +211,67 @@
 .world.hidden { display: none; }
 .textbox { white-space: pre-line; }
 
-/* On-screen controls: a D-pad and A / Run / Menu buttons */
-.menu .pad {
-  grid-column: span 3;
-  display: grid;
-  grid-template-columns: repeat(3, 44px);
-  grid-template-rows: repeat(3, 34px);
-  gap: 4px;
-  justify-content: center;
-  touch-action: none;
-}
-.menu .pad-btn {
-  padding: 0;
-  text-align: center;
-  font-size: 16px;
-  background: #e8e8e8;
-  touch-action: none;
-  user-select: none;
-}
-.menu .pad-btn.up { grid-area: 1 / 2; }
-.menu .pad-btn.left { grid-area: 2 / 1; }
-.menu .pad-btn.right { grid-area: 2 / 3; }
-.menu .pad-btn.down { grid-area: 3 / 2; }
-.menu .pad-actions {
-  grid-column: span 3;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  justify-content: center;
-}
-.menu .pad-actions button { text-align: center; }
-.menu .pad-a { background: #f2c230; font-size: 18px; }
-.menu .pad-run.on { background: #3fa8f2; color: #fff; }
 /* Boy / girl choice: the first (standing) frame of each walking sheet */
 .starters img.look { width: 64px; height: 128px; object-fit: cover; object-position: 0 0; image-rendering: pixelated; }
 
-/* The highlighted choice when using the keyboard (arrows, Z to pick, X to go back). */
-#menu button:focus-visible, #scene [data-pick]:focus-visible { outline: 3px solid #f3b400; outline-offset: 2px; }
+/* The highlighted choice (the D-pad moves it, A picks it, B goes back). */
+#menu button:focus, #scene [data-pick]:focus, #scene [data-swap]:focus { outline: 3px solid #f3b400; outline-offset: 2px; }
+/* A card picked up with Select, to swap with the next one. */
+#scene [data-swap].held { box-shadow: 0 0 0 4px #2b6fd6; }
+
+/* ---------- The buttons: D-pad, Select / Start, B / A ---------- */
+.gamepad {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas: "dpad ab" "sys sys";
+  align-items: center;
+  gap: 10px 8px;
+  padding: 16px 20px 14px;
+  background: #4b4f8f;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+}
+.gamepad button {
+  font: inherit; font-weight: 800; color: #eee; cursor: pointer;
+  border: none; padding: 0;
+  touch-action: none; -webkit-tap-highlight-color: transparent;
+}
+.gamepad button:focus { outline: none; }
+.dpad {
+  grid-area: dpad;
+  justify-self: start;
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  grid-template-rows: repeat(3, 44px);
+}
+.dpad button, .dpad-mid { background: #23252b; }
+.dpad button { font-size: 16px; }
+.dpad [data-btn="up"] { grid-area: 1 / 2; border-radius: 6px 6px 0 0; }
+.dpad [data-btn="left"] { grid-area: 2 / 1; border-radius: 6px 0 0 6px; }
+.dpad-mid { grid-area: 2 / 2; }
+.dpad [data-btn="right"] { grid-area: 2 / 3; border-radius: 0 6px 6px 0; }
+.dpad [data-btn="down"] { grid-area: 3 / 2; border-radius: 0 0 6px 6px; }
+.sys { grid-area: sys; display: flex; gap: 16px; justify-content: center; }
+.sys button {
+  width: 58px; height: 20px; border-radius: 10px; background: #23252b;
+  font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase;
+}
+.ab { grid-area: ab; justify-self: end; display: flex; gap: 14px; align-items: center; }
+.ab button {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: #a8243c; font-size: 20px;
+  box-shadow: 0 3px 0 #5e1222;
+}
+.ab [data-btn="a"] { transform: translateY(-14px); }
+.gamepad button.pressed { filter: brightness(1.5); }
+.ab button.pressed { box-shadow: 0 1px 0 #5e1222; }
+@media (max-width: 360px) {
+  .gamepad { padding: 14px 10px 12px; }
+  .dpad { grid-template-columns: repeat(3, 40px); grid-template-rows: repeat(3, 40px); }
+  .ab { gap: 8px; }
+  .ab button { width: 50px; height: 50px; }
+}
 
 .debug-add { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
 .debug-add #debug-level { width: 5em; }
@@ -292,7 +316,7 @@
 .dig-layer { position: absolute; inset: 0; display: grid; }
 .dig-ground { background: #d9c391; box-shadow: inset 0 0 0 1px rgba(80, 60, 30, 0.15); }
 .dig-ground.treasure { background-repeat: no-repeat; background-color: #d9c391; image-rendering: pixelated; }
-.dig-rock { border: 0; padding: 0; margin: 0; cursor: pointer; box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.18), inset -1px -1px 0 rgba(0, 0, 0, 0.3); }
+.dig-rock { border: 0; padding: 0; margin: 0; box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.18), inset -1px -1px 0 rgba(0, 0, 0, 0.3); }
 .dig-rock.l0 { background: transparent; box-shadow: none; }
 .dig-rock.l1 { background: #b58a55; }
 .dig-rock.l2 { background: #9e7646; }
@@ -307,12 +331,12 @@
 .dig-board.shake-hard { animation: dig-shake 0.25s 2; }
 @keyframes dig-shake { 25% { transform: translate(-2px, 1px); } 75% { transform: translate(2px, -1px); } }
 .dig-tools { display: flex; gap: 8px; }
-.dig-tool { flex: 1; padding: 8px; border: 2px solid #1d150d; border-radius: 8px; background: #e8dcc0; font: inherit; font-weight: 700; cursor: pointer; }
+.dig-tool { flex: 1; padding: 8px; border: 2px solid #1d150d; border-radius: 8px; background: #e8dcc0; font: inherit; font-weight: 700; text-align: center; }
 .dig-tool.on { background: #ffd34d; }
 .dig-status { margin: 0; color: #f5ecd6; font-weight: 600; min-height: 1.4em; }
 
 /* ---------- Town Map ---------- */
-.town-map { position: relative; width: 100%; max-width: 720px; margin: 0 auto; aspect-ratio: 240 / 160; user-select: none; cursor: pointer; }
+.town-map { position: relative; width: 100%; max-width: 720px; margin: 0 auto; aspect-ratio: 240 / 160; user-select: none; }
 .town-map img { image-rendering: pixelated; }
 .tm-map { display: block; width: 100%; height: 100%; }
 .tm-player, .tm-cursor { position: absolute; width: 6.6667%; height: 10%; pointer-events: none; }

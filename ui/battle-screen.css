@@ -216,7 +216,6 @@ body {
   border-radius: 8px;
   font-size: clamp(15px, 2.6vw, 19px);
   line-height: 1.4;
-  cursor: pointer;
   user-select: none;
 }
 
@@ -240,10 +239,7 @@ body {
   font: inherit;
   font-weight: 700;
   text-align: left;
-  cursor: pointer;
 }
-.menu button:hover:not(:disabled) { filter: brightness(1.08); }
-.menu button:focus-visible { outline: 3px solid #fff; outline-offset: 1px; }
 .menu button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .move-name { display: block; font-size: 15px; }

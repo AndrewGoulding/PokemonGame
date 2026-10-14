@@ -1,6 +1,6 @@
 // Shared text box and menu helpers
 //
-//   await Screen.message("It's super effective!");   // shows text, waits (click to skip)
+//   await Screen.message("It's super effective!");   // shows text, waits (A to skip)
 //   const v = await Screen.ask("What will Pikachu do?", [{ label: "Thunderbolt", value: 0 }, ...]);
 //
 // Option fields: label (text), html (instead of label), value, disabled,
@@ -9,7 +9,7 @@
 (function () {
   "use strict";
 
-  const MESSAGE_MS = 1100;   // how long each message stays up (click to skip)
+  const MESSAGE_MS = 1100;   // how long each message stays up (A to skip)
 
   const textbox = document.getElementById("textbox");
   const menu = document.getElementById("menu");
@@ -93,8 +93,7 @@
     }
   }
 
-  // Click the text box (or press Space/Enter while no menu is up) to skip ahead.
-  textbox.addEventListener("click", () => { if (skipWait) skipWait(); });
+  // A or B (Z / X, Space / Enter) while no menu is up moves the text on.
   document.addEventListener("keydown", (e) => {
     if ([" ", "Enter", "z", "Z", "x", "X"].includes(e.key) && !e.repeat && skipWait && !menu.children.length) {
       e.preventDefault();
@@ -110,7 +109,7 @@
   // has its own controls, so this stays out of its way.
 
   const shown = (el) => el.offsetParent !== null;
-  const choices = () => [...document.querySelectorAll("#menu button:not(:disabled), #scene:not(.hidden) [data-pick]")].filter(shown);
+  const choices = () => [...document.querySelectorAll("#menu button:not(:disabled), #scene:not(.hidden) [data-pick], #scene:not(.hidden) [data-swap]")].filter(shown);
   const ARROWS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
 
   // The closest choice in direction [dx, dy] from `from`, favouring ones in line with it.
@@ -134,7 +133,6 @@
     // A press that just moved a message on isn't also a pick in the menu that
     // came up because of it (the first move, "Stop" on an evolution).
     if (e.defaultPrevented) return;
-    if (menu.querySelector(".pad")) return;                        // the overworld is in charge
     if (!menu.querySelector("button")) return;                     // a message: Z just moves the text on
     if (/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName)) return;
     const list = choices();
