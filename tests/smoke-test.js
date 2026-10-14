@@ -1160,6 +1160,17 @@ for (const share of [false, true]) {
   assert.deepStrictEqual(problems, [], "debug species");
 }
 
+// The main menu and Option screen's font, frames and palettes.
+{
+  const M = window.GBA_MENUS;
+  assert(M, "missing global GBA_MENUS");
+  assert.deepStrictEqual([M.fonts.normal.widths.length, M.fonts.small.widths.length], [256, 256]);
+  assert.strictEqual(M.fonts.normal.glyphs.length, 256 * 16 * 16);
+  assert.deepStrictEqual([M.charmap.A, M.charmap["é"], M.charmap[" "]], [0xBB, 0x1B, 0x00]);
+  for (let i = 1; i <= 10; i++) assert.strictEqual(M.frames["type" + i].px.length, 24 * 24, "frame type" + i);
+  assert(M.icons.A_BUTTON && M.icons.DPAD_UPDOWN && M.palettes.mainMenuTextbox.length === 16);
+}
+
 // The Town Map: FireRed's Kanto grid, with every map in the game placed on it.
 {
   assert(window.TOWN_MAP, "missing global TOWN_MAP");

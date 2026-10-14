@@ -285,6 +285,8 @@
   }
 
   function flash(id) {
+    // BATTLE SCENE: OFF (the Option screen) leaves out the hit animation.
+    if (window.GameOptions && window.GameOptions.get().battleScene === 1) return;
     const sprite = el.sides[id].sprite;
     sprite.classList.remove("hit");
     void sprite.offsetWidth; // restart the animation

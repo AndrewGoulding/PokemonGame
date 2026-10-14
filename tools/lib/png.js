@@ -54,7 +54,8 @@ function readPng(file) {
   }
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      px[y * width + x] = depth === 4 ? (rows[y][x >> 1] >> ((x & 1) ? 0 : 4)) & 15 : rows[y][x];
+      px[y * width + x] = depth === 4 ? (rows[y][x >> 1] >> ((x & 1) ? 0 : 4)) & 15
+        : depth === 2 ? (rows[y][x >> 2] >> (6 - 2 * (x & 3))) & 3 : rows[y][x];
     }
   }
   return { width, height, px, palette };

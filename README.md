@@ -8,8 +8,14 @@ no build step and no dependencies.
 Open `index.html` in a browser. FireRed's opening plays (the copyright screen,
 Game Freak's shooting star, then Gengar and Nidorino's fight; Enter, Z or a tap
 skips it) and leads to the title screen: Charizard, rising flames and PRESS
-START. Left alone for 45 seconds the title goes back to the opening. Start a
-**New game** and you get FireRed's new-game intro: the controls guide, the
+START. Left alone for 45 seconds the title goes back to the opening. Press
+Start and FireRed's main menu comes up: CONTINUE (with your name, play time,
+Pokédex and badges), NEW GAME and OPTION (B goes back to the title). The
+Option screen is FireRed's too: TEXT SPEED (how long battle messages stay up),
+BATTLE SCENE (OFF leaves out the hit animation), SOUND (mono, stereo or off),
+FRAME (the text box's border, FireRed's ten window frames) and, from the main
+menu, SAVE FILE to load a downloaded save; it's also in the Start menu. Start a
+**NEW GAME** and you get FireRed's new-game intro: the controls guide, the
 Pikachu pages, then Prof. Oak, who shows you a Nidoran♀ and has you name
 yourself before you shrink away into Pallet Town, just outside Red's house. Try
 to leave town through the tall grass to the north and Prof. Oak stops you and
@@ -114,7 +120,7 @@ Oak's, the title screen, the opening movie and his speech all play; and the
 heal, level-up, item, catch and evolution jingles play over the music.
 Pokémon cry when they come out, faint (lower), evolve, or open their summary
 (FireRed's cries, for the first 386). Sound starts at your first key press or
-tap (browsers' rule), and can be turned off from the menu ("Sound").
+tap (browsers' rule), and can be turned off on the Option screen (SOUND: OFF).
 
 `tools/build-audio.js` packs the songs (their MIDI events and settings from
 `midi.cfg`), FireRed's instruments (voicegroups, key splits, samples and
@@ -135,6 +141,18 @@ names, and which place each map is in):
 ```sh
 cd pokefirered && git sparse-checkout add graphics/region_map/ src/data/region_map/ && cd ..
 node tools/build-town-map.js pokefirered     # after build-maps.js
+```
+
+### Main menu and Option screen
+
+`tools/build-menus.js` converts what they're drawn with into
+`data/gba-menus.js`: FireRed's fonts (with their letter widths from
+`src/text.c`), the character map, the button icons, the eleven window frames
+and the menus' palettes:
+
+```sh
+cd pokefirered && git sparse-checkout add graphics/fonts/ graphics/text_window/ graphics/main_menu/ graphics/misc/ src/text.c charmap.txt && cd ..
+node tools/build-menus.js pokefirered
 ```
 
 ### Intro

@@ -173,39 +173,62 @@
 
   // ---------- Title / new game ----------
 
+  // FireRed's main menu (CONTINUE / NEW GAME, and OPTION where FireRed has
+  // MYSTERY GIFT). Returns "back" when B goes back to the title screen.
   async function title() {
     for (;;) {
       const saved = Save.read();
       if (saved.error) await message(saved.error);
       const p = saved.player;
-      const html = '<div class="title"><h1>Pokémon Game</h1>' + (p ?
-        '<div class="save-card"><b>' + escapeHtml(p.name) + "</b>" +
-        '<div class="save-party">' + p.party.map((r) => spriteTag(r.species, Party.form(r), undefined, r.shiny)).join("") + "</div>" +
-        "<div>Pokédex: " + p.pokedex.caught.length + " · Badges: " + p.badges.length +
-        " · Time: " + playTime(p.playTimeMs) + "</div></div>" : "") + "</div>";
-      const options = [];
-      if (p) options.push({ label: "Continue", value: "continue", className: "action", wide: true });
-      options.push({ label: "New game", value: "new", className: "action" });
-      options.push({ label: "Load save file", value: "file", className: "action" });
-      const v = await pick(p ? "Welcome back, " + p.name + "!" : "Welcome!", html, options);
+      Screen.say("");
+      clearMenu();
+      show("intro");
+      const v = await GbaMenus.mainMenu($("#intro"), {
+        save: p && { name: p.name, timeMs: p.playTimeMs, dex: p.flags.pokedex ? p.pokedex.caught.length : null, badges: p.badges.length },
+        frame: GameOptions.get().frame
+      });
+      if (v === "back") return "back";
       if (v === "continue") {
         player = p;
         for (const w of saved.warnings) await message(w);
-        return;
+        return "play";
       }
-      if (v === "file") {
+      if (v === "option") {
+        if ((await optionScreen(true)) !== "load") continue;
         const loaded = await loadSaveFile();
         if (loaded && (!p || await confirm("Replace the game saved in this browser with this file?"))) {
           player = loaded;
           await persist();
-          return;
+          return "play";
         }
         continue;
       }
       if (p && !(await confirm("Start a new game? Your saved game in this browser will be overwritten."))) continue;
       await newGame();
-      return;
+      return "play";
     }
+  }
+
+  // FireRed's Option screen (GameOptions keeps the settings). From the main
+  // menu it also has SAVE FILE: LOAD, to load a downloaded save; returns "load"
+  // when that's picked.
+  async function optionScreen(fromTitle) {
+    const o = GameOptions.get();
+    const rows = [
+      { name: "TEXT SPEED", key: "textSpeed", values: ["SLOW", "MID", "FAST"], value: o.textSpeed },
+      { name: "BATTLE SCENE", key: "battleScene", values: ["ON", "OFF"], value: o.battleScene },
+      { name: "SOUND", key: "sound", values: ["MONO", "STEREO", "OFF"], value: o.sound },
+      { name: "FRAME", key: "frame", frame: true, values: [...Array(10).keys()].map((i) => "TYPE" + (i + 1)), value: o.frame }
+    ];
+    if (fromTitle) rows.push({ name: "SAVE FILE", values: ["LOAD"], value: 0, action: "load" });
+    rows.push({ name: "CANCEL" });
+    const wasShowing = !$("#scene").classList.contains("hidden") ? "scene" : null;
+    Screen.say("");
+    clearMenu();
+    show("intro");
+    const r = await GbaMenus.optionMenu($("#intro"), rows, (i, value) => GameOptions.set({ [rows[i].key]: value }));
+    if (wasShowing) show(wasShowing);
+    return r;
   }
 
   // A new game starts with FireRed's intro: the controls guide, then Prof. Oak
@@ -1223,7 +1246,7 @@
         ...(player.flags.pokedex ? [{ label: "Pokédex", value: "dex", className: "action" }] : []),
         { label: "Trainer card", value: "card", className: "action" },
         { label: "Save", value: "save", className: "action" },
-        { label: "Sound: " + (window.GameAudio && window.GameAudio.enabled() ? "On" : "Off"), value: "sound", className: "action" },
+        { label: "Option", value: "option", className: "action" },
         { label: "Debug", value: "debug", className: "action" },
         back("Close")]);
       if (v === "back") return;
@@ -1234,7 +1257,7 @@
       else if (v === "dex") await pokedex();
       else if (v === "card") await trainerCard();
       else if (v === "debug") { if ((await debugMenu()) === "battled") return; }
-      else if (v === "sound") { if (window.GameAudio) window.GameAudio.setEnabled(!window.GameAudio.enabled()); continue; }
+      else if (v === "option") { await optionScreen(false); continue; }
       else if (v === "save") {
         tick();
         const r = Save.write(player);
@@ -2507,13 +2530,17 @@
 
   async function main() {
     // FireRed's opening movie and title screen; left alone, the title goes back to the movie.
+    // B on the main menu goes back to the title screen.
     show("intro");
-    for (;;) {
+    play: for (;;) {
       await Intro.movie();
-      if ((await Intro.titleScreen()) === "start") break;
+      for (;;) {
+        if ((await Intro.titleScreen()) !== "start") continue play;
+        Intro.stop();
+        if ((await title()) !== "back") break play;
+        show("intro");
+      }
     }
-    Intro.stop();
-    await title();
     lastTick = Date.now();
     await explore();
   }

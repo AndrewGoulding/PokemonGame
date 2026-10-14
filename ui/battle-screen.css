@@ -229,6 +229,15 @@ body {
   overflow: hidden;
   user-select: none;
 }
+/* With FireRed's window frame (the Option screen's FRAME) as its border. */
+.textbox.framed {
+  height: 80px;
+  border: 12px solid transparent;
+  border-radius: 0;
+  padding: 0 6px;
+  background: none;
+  image-rendering: pixelated;
+}
 
 .menu {
   flex: 1;

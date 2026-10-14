@@ -20,6 +20,7 @@
   let current = null;               // { name, source, gain, startedAt, buffer, loopStart, loopEnd }
   let wanted = null;                // the song the game wants (played once sound can start)
   let fanfareDepth = 0;
+  let mono = false;                 // the Option screen's SOUND: MONO
 
   function loadData() {
     if (window.MUSIC_DATA) return Promise.resolve();
@@ -44,12 +45,21 @@
       ctx = new AC();
       master = ctx.createGain();
       master.gain.value = 0.7;
+      setChannels();
       master.connect(ctx.destination);
     }
     if (ctx.state === "suspended") ctx.resume();
     loadData().then(() => { if (wanted && (!current || current.name !== wanted)) start(wanted); });
   }
   for (const ev of ["keydown", "pointerdown", "touchstart"]) document.addEventListener(ev, unlock, { capture: true, passive: true });
+
+  // MONO mixes both sides together (the speakers then play the same).
+  function setChannels() {
+    if (!master) return;
+    master.channelCount = mono ? 1 : 2;
+    master.channelCountMode = "explicit";
+    master.channelInterpretation = "speakers";
+  }
 
   function song(name) {
     if (cache.has(name)) return cache.get(name);
@@ -146,6 +156,7 @@
       a.play().catch(() => {});
     },
     enabled: () => enabled,
+    setMono(on) { mono = !!on; setChannels(); },
     now: () => (current ? current.name : null),   // the song playing (or null)
     setEnabled(on) {
       enabled = !!on;

@@ -9,7 +9,8 @@
 (function () {
   "use strict";
 
-  const MESSAGE_MS = 1100;   // how long each message stays up (A to skip)
+  const MESSAGE_MS = 1100;   // how long each message stays up (A to skip), at MID text speed
+  let textSpeed = 1;         // the Option screen's TEXT SPEED: times MESSAGE_MS
 
   const textbox = document.getElementById("textbox");
   const menu = document.getElementById("menu");
@@ -46,7 +47,7 @@
 
   async function message(text, ms) {
     say(text);
-    await wait(ms || MESSAGE_MS);
+    await wait(ms || MESSAGE_MS * textSpeed);
   }
 
   function clearMenu() { menu.innerHTML = ""; }
@@ -209,5 +210,7 @@
     return '<img src="' + spriteUrl(species, form, false, shiny) + '"' + fallback + " " + (attrs || 'alt=""') + ">";
   }
 
-  window.Screen = { MESSAGE_MS, spriteUrl, setSprite, clearSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, clearMenu, learnMovePrompt };
+  const setTextSpeed = (f) => { textSpeed = f; };
+
+  window.Screen = { MESSAGE_MS, setTextSpeed, spriteUrl, setSprite, clearSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, clearMenu, learnMovePrompt };
 })();

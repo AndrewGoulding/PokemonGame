@@ -202,8 +202,8 @@ for (const line of fs.readFileSync(S("songs/midi/midi.cfg"), "utf8").split("\n")
 }
 
 // The sound effects the game plays (se_*.mid): the Poké Balls going into a
-// Pokémon Center's healing machine.
-const SOUND_EFFECTS = ["se_ball"];
+// Pokémon Center's healing machine, and the menus' select sound.
+const SOUND_EFFECTS = ["se_ball", "se_select"];
 
 // Flat per-track event lists to keep the file small: [tick, kind, a, b, c] ...
 const songs = {};
