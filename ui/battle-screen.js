@@ -4,6 +4,8 @@
 //   const result = await BattleScreen.run({
 //     p1: { name: "You", team: [...sets] }, p2: { name: "Youngster Ben", team: [...sets] },
 //     wild: false, exp: true, bag: { "poke-ball": 5 }, catchContext: {...},
+//     terrain: "grass",              // background, assets/battle/<terrain>.png
+//     trainer: "red",                // your back sprite in the opening
 //     opponent: (battle) => choice
 //   });
 //   result.outcome   // "won" | "lost" | "caught" | "ran" | "draw"
@@ -638,8 +640,9 @@
 
   // ---------- Opening ----------
   //
-  // As in FireRed: the platforms slide in, the wild Pokémon (in shadow) from the
-  // left and your trainer, seen from behind, from the right; the Pokémon lights
+  // As in FireRed: the two halves of the background slide in, the foe's (with
+  // the wild Pokémon, in shadow) from the left and yours (with your trainer,
+  // seen from behind) from the right; the Pokémon lights
   // up and appears; then your trainer throws and slides away as your Pokémon
   // comes out.
 
@@ -659,16 +662,27 @@
     for (let i = 0; i < 30 && img.style.visibility === "hidden"; i++) await wait(20);
   }
 
+  // The battle background for cfg.terrain (FireRed's battle terrains: "grass",
+  // "building", "plain", "cave", ...; see tools/build-battle-bgs.js).
+  function setTerrain(terrain) {
+    const url = "url(assets/battle/" + (terrain || "plain") + ".png)";
+    for (const t of el.field.querySelectorAll(".terrain")) t.style.backgroundImage = url;
+  }
+
   async function intro(cfg) {
     trainerOut = false; foeAnnounced = false;
+    setTerrain(cfg.terrain);
     const trainer = trainerEl();
-    const foeParts = [el.field.querySelector(".platform.foe")];
-    const playerParts = [el.field.querySelector(".platform.player")];
+    // Each half moves by half the background (256 of its 512 pixels), so the
+    // platforms start off-screen and plain ground shows where they will be.
+    const shift = el.field.clientWidth * 256 / 240;
+    const foeTerrain = el.field.querySelector(".terrain.foe"), playerTerrain = el.field.querySelector(".terrain.player");
+    const movers = [];
     if (cfg.trainer) {
       trainer.style.backgroundImage = "url(assets/sprites/trainers/back/" + cfg.trainer + ".png)";
       trainer.style.backgroundPositionY = "0%";
       trainer.classList.remove("hidden", "leaving");
-      playerParts.push(trainer);
+      movers.push([trainer, shift]);
       trainerOut = true;
     } else trainer.classList.add("hidden");
     let mon = null;
@@ -679,18 +693,20 @@
       renderSide("p2");
       el.sides.p2.info.classList.add("hidden");
       el.sides.p2.sprite.classList.add("silhouette");
-      foeParts.push(el.sides.p2.sprite);
+      movers.push([el.sides.p2.sprite, -shift]);
     }
     // Jump off-screen instantly (no transition), before anything is painted...
     el.field.classList.add("no-anim");
-    for (const e of foeParts) e.classList.add("enter-left");
-    for (const e of playerParts) e.classList.add("enter-right");
+    foeTerrain.style.backgroundPositionX = -shift + "px";
+    playerTerrain.style.backgroundPositionX = shift + "px";
+    for (const [e, dx] of movers) e.style.transform = "translateX(" + dx + "px)";
     void el.field.offsetWidth;
     el.field.classList.remove("no-anim");
     // ...then, once the wild Pokémon's picture is ready, slide in.
     if (mon) await spriteReady(el.sides.p2.sprite);
     el.field.classList.add("entering");
-    for (const e of foeParts.concat(playerParts)) e.classList.remove("enter-left", "enter-right");
+    for (const t of [foeTerrain, playerTerrain]) t.style.backgroundPositionX = "";
+    for (const [e] of movers) e.style.transform = "";
     await wait(1100);
     el.field.classList.remove("entering");
     if (mon) {

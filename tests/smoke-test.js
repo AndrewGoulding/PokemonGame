@@ -862,6 +862,21 @@ for (const share of [false, true]) {
   assert.deepStrictEqual(INTRO_TEXT.gOakSpeech_Text_ThisWorld, ["This world…"]);
 }
 
+// Battle backgrounds: every terrain ui/game.js can pick is built, at 512x112
+// (the 240x112 scene, then plain ground for the slide-in).
+{
+  const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  const terrains = new Set(["plain", "grass", "building", "cave"]);
+  for (const [, t] of gameJs.matchAll(/terrain: "(\w+)"/g)) terrains.add(t);
+  for (const t of terrains) {
+    const file = path.join(root, "assets/battle", t + ".png");
+    assert(fs.existsSync(file), "missing battle background " + t);
+    const png = fs.readFileSync(file);
+    assert.deepStrictEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [512, 112], "battle background size " + t);
+  }
+  assert.strictEqual(fs.readdirSync(path.join(root, "assets/battle")).length, 20, "all 20 FireRed battle terrains");
+}
+
 // The debug menu can add any species but battle-only forms: each must make a
 // working party Pokémon (moves, stats, a battle set).
 {

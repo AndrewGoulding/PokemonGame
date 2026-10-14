@@ -27,29 +27,37 @@ body {
 /* ---------- Field ---------- */
 
 .field.hidden { display: none; }
+/* FireRed's battle scene: 240x112, above the text box. Positions below are
+   FireRed's, as percentages of that. */
 .field {
   position: relative;
-  aspect-ratio: 3 / 2;
-  background:
-    linear-gradient(to bottom, #bfe6ff 0%, #e8f6ff 45%, #b5e08c 45%, #8fcf63 100%);
+  aspect-ratio: 240 / 112;
+  background: #fff;
   overflow: hidden;
 }
 
-.platform {
+/* The battle background (assets/battle/<terrain>.png, 512x112: the scene,
+   then the same ground with no platforms) in two halves, split at line 80 as
+   FireRed does, so the foe's half and yours can slide in from opposite sides.
+   It repeats sideways, like the GBA's wrapping background. */
+.terrain {
   position: absolute;
-  border-radius: 50%;
-  background: radial-gradient(ellipse at center, #a6d77a 0%, #7fbf55 70%, #6aa847 100%);
+  left: 0;
+  width: 100%;
+  background-repeat: repeat-x;
+  background-position-x: 0;
+  image-rendering: pixelated;
 }
-.platform.foe { width: 40%; height: 11%; right: 6%; top: 40%; }
-.platform.player { width: 48%; height: 13%; left: 2%; bottom: 3%; }
+.terrain.foe { top: 0; height: 71.4286%; background-size: 213.3333% 140%; background-position-y: 0; }
+.terrain.player { bottom: 0; height: 28.5714%; background-size: 213.3333% 350%; background-position-y: 100%; }
 
 .sprite {
   position: absolute;
   image-rendering: pixelated;
   transition: opacity 0.4s, transform 0.4s;
 }
-.sprite.foe { width: 30%; right: 11%; top: 8%; }
-.sprite.player { width: 40%; left: 6%; bottom: 0; }
+.sprite.foe { width: 30%; right: 11.5%; top: 0; }
+.sprite.player { width: 40%; left: 1%; bottom: -14%; }
 .sprite.hidden { opacity: 0; }
 .sprite.fainted { opacity: 0; transform: translateY(30%); }
 .sprite.hit { animation: blink 0.5s steps(2) 1; }
@@ -59,7 +67,7 @@ body {
   position: absolute;
   width: 8%;
   right: 22%;
-  top: 30%;
+  top: 38%;
   image-rendering: pixelated;
   transform-origin: 50% 90%;
 }
@@ -90,9 +98,15 @@ body {
   font-size: clamp(12px, 2.4vw, 16px);
   transition: opacity 0.3s;
 }
-.info.foe { left: 4%; top: 6%; }
-.info.player { right: 4%; bottom: 8%; }
+.info.foe { left: 3%; top: 8%; }
+.info.player { right: 2%; bottom: 4%; }
 .info.hidden { opacity: 0; }
+/* The scene is short on a phone: smaller boxes, as tight as FireRed's. */
+@media (max-width: 520px) {
+  .info { min-width: 0; width: 42%; padding: 3px 6px; font-size: 10px; border-width: 2px; }
+  .info .hp-row { margin-top: 2px; }
+  .info .hp-track { height: 5px; }
+}
 
 .info-top {
   display: flex;
@@ -253,18 +267,16 @@ body {
 .error { padding: 16px; color: #e5463b; font-weight: 700; }
 
 /* ---------- Opening: things slide in from the sides ---------- */
-.field .enter-left.platform { transform: translateX(-260%); }
-.field .enter-left.sprite { transform: translateX(-340%); }
-.field .enter-right.platform { transform: translateX(220%); }
-.field .enter-right.trainer-back { transform: translateX(330%); }
-.field.entering .platform, .field.entering .sprite, .field.entering .trainer-back { transition: transform 1s linear; }
+/* (ui/battle-screen.js sets the starting offsets) */
+.field.entering .terrain { transition: background-position-x 1s linear; }
+.field.entering .sprite, .field.entering .trainer-back { transition: transform 1s linear; }
 .sprite.silhouette { filter: brightness(0.2); }
-.field.no-anim .platform, .field.no-anim .sprite, .field.no-anim .trainer-back { transition: none !important; }
+.field.no-anim .terrain, .field.no-anim .sprite, .field.no-anim .trainer-back { transition: none !important; }
 .sprite { transition: opacity 0.4s, transform 0.4s, filter 0.3s; }
 
 /* Your trainer, from behind: 5 frames of 64x64 (standing, then throwing). */
 .trainer-back {
-  position: absolute; left: 12%; bottom: 3%; width: 27%; aspect-ratio: 1;
+  position: absolute; left: 20%; bottom: 0; width: 26.6667%; aspect-ratio: 1;
   background-size: 100% 500%; background-repeat: no-repeat; background-position-x: 0;
   image-rendering: pixelated;
   transition: transform 0.35s ease-in, opacity 0.35s;

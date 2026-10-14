@@ -212,6 +212,15 @@
   };
 
   // kind: "wild" or "trainer". opts: { foe: { name, team }, noBlackout }
+  // FireRed's battle background (BattleSetup_GetTerrainId): tall grass for
+  // grass encounters, else by the kind of map you're on.
+  function battleTerrain(opts) {
+    if (opts.terrain) return opts.terrain;
+    const here = player.location && window.WORLD_MAPS[player.location.map];
+    const type = here ? here.type : "";
+    return type === "indoor" ? "building" : type === "underground" ? "cave" : "plain";
+  }
+
   async function battle(kind, opts) {
     opts = opts || {};
     const wild = kind === "wild";
@@ -226,6 +235,7 @@
       exp: true,
       expShare: expShareOn(),
       trainer: player.look === "green" ? "leaf" : "red",
+      terrain: battleTerrain(opts),
       bag: player.bag,
       catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s) },
       opponent: wild ? randomMove : (b) => OpponentAI.choose(b, "p2")
@@ -1429,7 +1439,7 @@
       else if (ev.type === "repel-ended") await say("Repel's effect wore off…");
       else if (ev.type === "wild") {
         if (!canBattle()) continue;
-        await battle("wild", { foe: { name: "Wild", team: [Party.create(ev.species, ev.level)] } });
+        await battle("wild", { foe: { name: "Wild", team: [Party.create(ev.species, ev.level)] }, terrain: "grass" });
       } else await story(ev);
       await persist();
     }

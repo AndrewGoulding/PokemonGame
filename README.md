@@ -107,6 +107,25 @@ node tools/build-intro.js pokefirered     # or: POKEFIRERED=pokefirered npm run 
 `src/intro.c`, `src/title_screen.c` and `src/oak_speech.c` (frame counts at 60
 a second). There's no music or cries.
 
+### Battle backgrounds
+
+Battles use FireRed's battle terrains (`graphics/battle_terrain/`), drawn by
+`tools/build-battle-bgs.js` into `assets/battle/<terrain>.png`: grass, long
+grass, sand, water, pond, underwater, mountain, cave, building, plain, and the
+Link, Gym, Leader, indoor, Elite Four and Champion palettes, as in pret's
+`src/battle_bg.c`:
+
+```sh
+cd pokefirered && git sparse-checkout add graphics/battle_terrain/ && cd ..
+node tools/build-battle-bgs.js pokefirered     # or: POKEFIRERED=pokefirered npm run build:battle-bgs
+```
+
+Each image is the 240x112 scene above the text box, platforms included, plus
+the same ground without platforms; the battle screen slides the foe's half in
+from the left and yours from the right, as FireRed does. `ui/game.js` picks
+the terrain like FireRed: tall grass for grass encounters, the building scene
+indoors, a cave underground, and the plain scene elsewhere.
+
 To add maps, list them in `MAPS` at the top of `tools/build-maps.js` and rerun
 it; doors and map edges connect themselves when both sides are built.
 Walking off an edge toward a map that isn't built yet says so.
@@ -175,11 +194,12 @@ uses the frames from `assets/sprites/overworld/<red|green>_surf_run.png`.
 | `engine/` | Stat, damage, experience, catch and item formulas, and the battle engine |
 | `game/` | Game logic around the engine: party records, the player and their save (`player.js`, `save.js`), bag and Poké Mart (`bag.js`), overworld rules (`world.js`), evolution, encounters, random teams and the opponent AI |
 | `ui/` | Text box and menus (`screen.js`), the battle screen, the overworld (`overworld.js`), FireRed's intro (`intro.js`), and the game flow, story events and menus (`game.js`) |
-| `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`, `npm run build:maps`, `npm run build:intro`) and their shared PNG/text helpers (`tools/lib/`) |
+| `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`, `npm run build:maps`, `npm run build:intro`, `npm run build:battle-bgs`) and their shared PNG/GBA/text helpers (`tools/lib/`) |
 | `assets/sprites/` | Pokémon sprites (front, back, shiny), item icons, trainer and overworld sprites |
 | `assets/tilesets/` | FireRed's tilesets (tiles, palettes, metatiles), the source for the maps |
 | `assets/world/` | Generated map images and transparent overworld sprites |
 | `assets/intro/` | Generated opening movie, title screen and Oak's speech graphics |
+| `assets/battle/` | Generated battle backgrounds (FireRed's battle terrains) |
 | `tests/` | Loads every non-UI script and checks formulas, engine regressions, progression rules and AI choices, plus 200 random battles |
 
 ## Script load order
