@@ -150,6 +150,15 @@
     }
   });
 
+  // A small Poké Ball: red for a species you've caught, gray for one you haven't.
+  function ballIcon(caught) {
+    const top = caught ? "#e3350d" : "#9aa0a8";
+    return '<svg class="ball-icon' + (caught ? " caught" : "") + '" viewBox="0 0 16 16" width="12" height="12" role="img" aria-label="' +
+      (caught ? "Caught" : "Not caught") + '"><circle cx="8" cy="8" r="7" fill="#fff" stroke="#222" stroke-width="1.5"/>' +
+      '<path d="M1 8a7 7 0 0 1 14 0z" fill="' + top + '" stroke="#222" stroke-width="1.5"/>' +
+      '<circle cx="8" cy="8" r="2.3" fill="#fff" stroke="#222" stroke-width="1.5"/></svg>';
+  }
+
   // Pokémon sprites: assets/sprites/pokemon/[back/]<dex id>[-<form>].png.
   // A form sprite that hasn't been added yet falls back to the plain one.
   function spriteUrl(species, form, back) {
@@ -176,5 +185,5 @@
     return '<img src="' + spriteUrl(species, form) + '"' + fallback + " " + (attrs || 'alt=""') + ">";
   }
 
-  window.Screen = { MESSAGE_MS, spriteUrl, setSprite, spriteTag, escapeHtml, say, wait, read, message, ask, clearMenu, learnMovePrompt };
+  window.Screen = { MESSAGE_MS, spriteUrl, setSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, clearMenu, learnMovePrompt };
 })();

@@ -21,7 +21,8 @@ Pokémon. Mom heals your party, and the PC in your bedroom stores items (there's
 Potion in it to start).
 
 North of Route 1 is **Viridian City**. The Poké Mart clerk hands you Oak's
-Parcel; take it back to Prof. Oak for five Poké Balls (and then see your rival's
+Parcel; take it back to Prof. Oak for your first five Poké Balls (new games
+start without any; then see your rival's
 sister Daisy, at her table next door, for a Town Map), and after that the Mart
 sells to you and the old man lying across the road north gets up and shows you
 how to catch Pokémon. The Pokémon Center's nurse heals your party (and is where
@@ -30,7 +31,8 @@ also a move tutor who teaches Dream Eater once, a school and the Nickname house.
 Route 2, Route 22 and the Gym (locked until you have seven badges) aren't built yet.
 
 **Controls**: arrow keys or WASD to walk, hold Shift (or X / B) to run (indoors too, with FireRed's running animation), Z / Space /
-Enter to talk or read signs, Esc or M for the menu. In menus, the arrow keys
+Enter to talk or read signs (or click / tap a person, sign or PC: you walk over
+and talk), Esc or M for the menu. In menus, the arrow keys
 move between choices, Z (A) picks one and X / Esc (B) goes back. On a phone, use the D-pad
 and A / Run / Menu buttons under the text box.
 
@@ -38,7 +40,9 @@ The **menu** has your Pokémon (tap one for its summary: stats, IVs, EVs, nature
 moves; make it lead; use, give or take items; drag one card onto another to swap
 them, or press and hold first on a phone), the Bag (medicine, evolution
 stones, Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
-the Exp. Share, Oak's Parcel and the Town Map), the Pokédex,
+the Exp. Share, Oak's Parcel and the Town Map), the Pokédex (a red Poké Ball
+marks species you've caught, a gray one those you've only seen; wild Pokémon
+show the same mark in battle),
 your trainer card (save, download or load a save file), and **Services**: the
 Pokémon Center, Poké Mart, PC and practice battles (a wild Pokémon or a trainer
 at your level), which move into real towns as the map grows. **Debug** (for

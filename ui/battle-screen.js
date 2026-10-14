@@ -228,6 +228,12 @@
     info.classList.toggle("hidden", v.fainted);
 
     info.querySelector(".info-name").textContent = v.name;
+    // A wild Pokémon's box shows whether you've caught one before.
+    let owned = info.querySelector(".owned");
+    if (id === "p2" && battle.wild && config.catchContext && config.catchContext.caughtBefore) {
+      if (!owned) { owned = document.createElement("span"); owned.className = "owned"; info.querySelector(".info-name").after(owned); }
+      owned.innerHTML = window.Screen.ballIcon(config.catchContext.caughtBefore(v.species));
+    } else if (owned) owned.remove();
     info.querySelector(".info-level").textContent = "Lv" + v.level;
     const status = info.querySelector(".status");
     status.textContent = v.status;

@@ -376,6 +376,60 @@
     if (World.blockAt(me.map, tx, ty).behavior === World.MB.PC) return finish({ type: "pc", map: me.map });
   }
 
+  // ---------- Clicking to talk ----------
+  //
+  // Click (or tap) a person, sign or PC: next to you, you turn and talk; further
+  // away, you walk to the nearest spot beside it first, then talk.
+
+  // What's on tile (x, y) that you can talk to or check.
+  function talkTarget(x, y) {
+    const m = World.map(me.map);
+    if (x < 0 || y < 0 || x >= m.width || y >= m.height) return false;
+    return !!(personAt(x, y) || World.signAt(me.map, x, y) || World.blockAt(me.map, x, y).behavior === World.MB.PC);
+  }
+
+  // Spots you can talk to (tx, ty) from: beside it, or across a counter.
+  function talkSpots(tx, ty) {
+    const out = [];
+    for (const [dir, [dx, dy]] of Object.entries(World.DIRS)) {
+      out.push({ x: tx - dx, y: ty - dy, face: dir });
+      if (World.blockAt(me.map, tx - dx, ty - dy).behavior === World.MB.COUNTER) out.push({ x: tx - 2 * dx, y: ty - 2 * dy, face: dir });
+    }
+    return out;
+  }
+
+  // Shortest walk (directions) to any of `spots` on this map, or null.
+  function pathTo(spots) {
+    const key = (x, y) => x + "," + y;
+    const goal = new Map(spots.map((sp) => [key(sp.x, sp.y), sp]));
+    const seen = new Set([key(me.x, me.y)]);
+    const queue = [{ x: me.x, y: me.y, dirs: [] }];
+    while (queue.length && seen.size < 2000) {
+      const q = queue.shift();
+      const hit = goal.get(key(q.x, q.y));
+      if (hit) return { dirs: q.dirs, face: hit.face };
+      for (const dir of Object.keys(World.DIRS)) {
+        const r = World.step({ map: me.map, x: q.x, y: q.y }, dir, occupiedForPlayer);
+        if (!r.ok || r.warp || r.jump || r.map !== me.map || seen.has(key(r.x, r.y))) continue;
+        seen.add(key(r.x, r.y));
+        queue.push({ x: r.x, y: r.y, dirs: q.dirs.concat(dir) });
+      }
+    }
+    return null;
+  }
+
+  canvas.addEventListener("click", (e) => {
+    if (!running || paused || !resolveExplore || me.move) return;
+    const rect = canvas.getBoundingClientRect();
+    const cx = ((e.clientX - rect.left) / rect.width) * VIEW_W, cy = ((e.clientY - rect.top) / rect.height) * VIEW_H;
+    let tx = Math.floor((cx + me.x * TILE - PLAYER_X) / TILE), ty = Math.floor((cy + me.y * TILE - PLAYER_Y) / TILE);
+    // People are a tile taller than their tile: a click on someone's head counts.
+    if (!talkTarget(tx, ty) && personAt(tx, ty + 1)) ty += 1;
+    if (!talkTarget(tx, ty)) return;
+    const path = pathTo(talkSpots(tx, ty));
+    if (path) me.auto = path;
+  });
+
   // ---------- Frame loop ----------
 
   function update() {
@@ -403,13 +457,28 @@
     me.moving = false;
     if (paused || !resolveExplore) return;
     if (pressedMenu) { pressedMenu = false; return finish({ type: "menu" }); }
-    if (pressedA) { pressedA = false; return interact(); }
-    const dir = heldDir();
+    if (pressedA) { pressedA = false; me.auto = null; return interact(); }
+    // Walking to someone you clicked: keys or the D-pad take over.
+    if (me.auto && heldDir()) me.auto = null;
+    if (me.auto && !me.auto.dirs.length) {
+      const face = me.auto.face;
+      me.auto = null;
+      me.facing = face;
+      return interact();
+    }
+    const dir = heldDir() || (me.auto && me.auto.dirs[0]);
     if (!dir) { me.turnTimer = 0; return; }
     if (dir !== me.facing && !wasMoving) { me.facing = dir; me.turnTimer = TURN_FRAMES; return; }
     me.facing = dir;
     if (me.turnTimer > 0) { me.turnTimer--; return; }
     const r = World.step({ map: me.map, x: me.x, y: me.y }, dir, occupiedForPlayer);
+    if (me.auto) {
+      // Someone stepped into the path: give up rather than walk into them.
+      if (!r.ok || r.warp || r.map !== me.map) { me.auto = null; return; }
+      me.auto.dirs.shift();
+      startStep(r, dir);
+      return;
+    }
     if (r.warp && !r.ok) { warpTo(r.warp); return; }
     if (r.ok) { startStep(r, dir); return; }
     if (r.unbuilt && performance.now() - bumpMessageAt > 3000) {
@@ -536,6 +605,7 @@
   }
 
   function finish(event) {
+    me.auto = null;
     const r = resolveExplore;
     resolveExplore = null;
     paused = true;

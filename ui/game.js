@@ -794,7 +794,7 @@
           if (!seen.has(e.id)) return '<div class="dex-entry unseen"><span>' + num + "</span>?</div>";
           return '<button type="button" class="dex-entry' + (caught.has(e.id) ? " caught" : " seen") + '" data-pick="' + e.species + '">' +
             "<span>" + num + "</span>" + spriteTag(e.species, "", 'loading="lazy" alt=""') +
-            "<small>" + escapeHtml(Party.speciesName(e.species)) + "</small></button>";
+            "<small>" + window.Screen.ballIcon(caught.has(e.id)) + escapeHtml(Party.speciesName(e.species)) + "</small></button>";
         }).join("") + "</div>";
       const v = await pick("Pokédex. Tap a Pokémon for its entry.", html, [back("Close")]);
       if (v === "back") return;

@@ -638,6 +638,7 @@ for (const share of [false, true]) {
     assert.strictEqual(Bag.sellPrice(id), 0, "key items can't be sold");
   }
   assert(Player.create("T").bag["exp-share"], "new games start with the Exp. Share");
+  assert(!Player.create("T").bag["poke-ball"], "no Poké Balls until Prof. Oak gives you some");
   const errand = Object.assign(Player.create("T"), { flags: { oaksParcel: true } });
   assert.strictEqual(Player.load(JSON.parse(JSON.stringify(errand))).player.bag["oaks-parcel"], 1);
   assert.strictEqual(Bag.pocket("hm03"), "TMs & HMs");
