@@ -53,6 +53,7 @@
     if (opt.value === "back" || opt.value === false) b.dataset.back = "";   // what X / Esc picks
     // B only (stopping an evolution): X / Esc or a click picks it, never A.
     if (opt.bOnly) { b.dataset.back = ""; b.dataset.bOnly = ""; }
+    if (opt.focus) b.dataset.focus = "";   // highlighted first, instead of the first button
     b.addEventListener("click", onClick);
     menu.appendChild(b);
     return b;
@@ -66,7 +67,7 @@
       for (const opt of options) {
         addButton(opt, () => { clearMenu(); resolve(opt.value); });
       }
-      const first = menu.querySelector("button:not(:disabled):not([data-b-only])");
+      const first = menu.querySelector("button[data-focus]:not(:disabled)") || menu.querySelector("button:not(:disabled):not([data-b-only])");
       if (first) first.focus();
     });
   }

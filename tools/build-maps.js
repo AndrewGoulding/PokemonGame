@@ -112,7 +112,10 @@ const GAME_TEXT = [
   "Trade_Text_LookingForMonWannaTradeForMon", "Trade_Text_AwwOhWell", "Trade_Text_WhatThatsNoMon",
   "Trade_Text_HeyThanks", "Trade_Text_IsntMyOldMonGreat",
   "Aide_Text_HaventCaughtEnoughMonsForItem", "Aide_Text_GetEnoughMonsComeBackForItem",
-  "Text_OnlySkilledTrainersAllowedThrough", "Text_CantLetYouPass", "Text_OhThatsBadgeGoRightAhead", "Text_MoveCanOnlyBeLearnedOnce"
+  "Text_OnlySkilledTrainersAllowedThrough", "Text_CantLetYouPass", "Text_OhThatsBadgeGoRightAhead", "Text_MoveCanOnlyBeLearnedOnce",
+  // Pallet Town's Sign Lady (data/text/sign_lady.inc).
+  "PalletTown_Text_OhLookLook", "PalletTown_Text_ReadItReadIt", "PalletTown_Text_SignsAreUsefulArentThey",
+  "PalletTown_Text_LookCopiedTrainerTipsSign", "PalletTown_Text_PressStartToOpenMenuCopy"
 ];
 // The player character's overworld sheets (assets/sprites/overworld/<prefix>_normal.png
 // and <prefix>_surf_run.png), by look: player_<look>.png and player_<look>_run.png.

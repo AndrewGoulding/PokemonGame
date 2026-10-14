@@ -132,6 +132,19 @@
     return null;
   }
 
+  // PC: a party Pokémon and a box Pokémon trade places. Refuses to leave the
+  // party without a healthy Pokémon.
+  function swapWithBox(player, partyIndex, boxIndex, slot) {
+    const box = player.boxes[boxIndex];
+    const out = player.party[partyIndex], into = box && box[slot];
+    if (!out || !into) return "There's no Pokémon there.";
+    const after = player.party.map((r, i) => (i === partyIndex ? into : r));
+    if (!healthy(after)) return "You'd have no Pokémon left that can battle!";
+    player.party[partyIndex] = into;
+    box[slot] = out;
+    return null;
+  }
+
   function release(player, boxIndex, slot) {
     const box = player.boxes[boxIndex];
     if (!box || !box[slot]) return null;
@@ -295,7 +308,7 @@
 
   window.Player = {
     VERSION, LOOKS, PLAYER_LOOK, RIVAL_NAME, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG, STARTING_PC_ITEMS, NEW_GAME_LOCATION, HOME, CENTERS,
-    create, markSeen, markCaught, hasCaught, receive, deposit, withdraw, release,
+    create, markSeen, markCaught, hasCaught, receive, deposit, withdraw, swapWithBox, release,
     itemCount, addItem, removeItem, depositItem, withdrawItem, addMoney, prizeMoney, blackoutLoss, serialize, load
   };
 })();

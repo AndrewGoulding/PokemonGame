@@ -634,6 +634,7 @@
     if (bag[id] <= 0) delete bag[id];
   }
 
+  let lastMove = {};   // Pokémon name -> index of the move it used last, this battle
   async function chooseAction(req) {
     const active = req.active;
     for (;;) {
@@ -641,7 +642,9 @@
       if (active.forced) options.push({ label: "Continue", value: { type: "move", move: 0 }, className: "action", wide: true });
       else if (active.struggle) options.push({ label: "Struggle", value: { type: "move", move: "Struggle" }, className: "action", wide: true });
       else {
-        for (const m of active.moves) options.push(moveOption(m));
+        // The cursor starts on the move this Pokémon used last (once it has used one).
+        const last = lastMove[active.name];
+        for (const m of active.moves) options.push(Object.assign(moveOption(m), { focus: m.index === last }));
         // Always four move slots, so Bag / Pokémon / Run sit on their own row.
         for (let i = active.moves.length; i < 4; i++) options.push({ label: "—", value: null, disabled: true, className: "empty-move" });
       }
@@ -655,6 +658,7 @@
       if (v === "bag") { const c = await chooseBag(); if (c) return c; continue; }
       if (v === "party") { const c = await chooseSwitch(req, true); if (c) return c; continue; }
       if (v === "run") return { type: "run" };
+      if (v && v.type === "move" && typeof v.move === "number") lastMove[active.name] = v.move;
       return v;
     }
   }
@@ -750,7 +754,7 @@
   }
 
   async function intro(cfg) {
-    trainerOut = false; foeAnnounced = false; foeTrainerOut = false; foeHpAtSwitchIn = null;
+    trainerOut = false; foeAnnounced = false; foeTrainerOut = false; foeHpAtSwitchIn = null; lastMove = {};
     playedEarly = new Set();
     setTerrain(cfg.terrain);
     const foeTrainer = foeTrainerEl();

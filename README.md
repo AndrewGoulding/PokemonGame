@@ -26,7 +26,9 @@ Parcel; take it back to Prof. Oak for your first five Poké Balls (new games
 start without any), and after that the Mart
 sells to you and the old man lying across the road north gets up and shows you
 how to catch Pokémon. The Pokémon Center's nurse heals your party (and is where
-you return if you black out), and its PC holds both Pokémon and items. There's
+you return if you black out), and its PC holds both Pokémon and items (in Bill's
+PC, drag a Pokémon onto another to swap them, or onto the other side to deposit
+or withdraw it). There's
 also a move tutor who teaches Dream Eater once, a school and the Nickname house.
 Route 2, Route 22 and the Gym aren't built yet; walking into the Gym's door
 tells you it's locked (it opens at seven badges in FireRed).

@@ -159,6 +159,11 @@
   border-radius: 8px; background: #fbfbf2; color: #222; font: inherit; font-size: 11px; cursor: pointer; min-width: 0;
 }
 .mini.fainted { background: #eadede; }
+.mini { touch-action: pan-y; user-select: none; }
+.mini.dragging { position: relative; z-index: 5; pointer-events: none; opacity: 0.9; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3); }
+.mini.held { outline: 3px solid #f3b400; }
+.mini.drop-target, .pc section.drop-target { outline: 3px dashed #2b6fd6; outline-offset: 2px; }
+.pc section { border-radius: 8px; padding: 2px; }
 .mini img { width: 56px; height: 56px; image-rendering: pixelated; }
 .mini span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
 

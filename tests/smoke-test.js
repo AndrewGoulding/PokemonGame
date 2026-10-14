@@ -542,6 +542,18 @@ for (const share of [false, true]) {
   p.party.forEach((r, i) => { r.hp = i === 0 ? 10 : 0; });
   assert(/no Pokémon left/.test(Player.deposit(p, 0, 1)), "can't deposit the last healthy Pokémon");
 
+  // A party Pokémon and a box Pokémon can trade places, but not to leave the
+  // party with nothing that can battle.
+  {
+    const q = Player.create("Q");
+    Player.receive(q, Party.create("Pidgey", 5, { rng }));
+    q.boxes[0].push(Object.assign(Party.create("Rattata", 5, { rng }), { hp: 0 }));
+    assert(/no Pokémon left/.test(Player.swapWithBox(q, 0, 0, 0)));
+    q.boxes[0][0].hp = 5;
+    assert.strictEqual(Player.swapWithBox(q, 0, 0, 0), null);
+    assert.deepStrictEqual([q.party[0].species, q.boxes[0][0].species], ["Rattata", "Pidgey"]);
+  }
+
   assert(!Player.removeItem(p, "ultra-ball"));
   Player.addItem(p, "ultra-ball", 2);
   assert(Player.removeItem(p, "ultra-ball", 2) && !("ultra-ball" in p.bag));

@@ -54,6 +54,10 @@
         el.addEventListener("click", () => finish({ pick: el.dataset.pick }));
       }
       ask(text, options).then(finish);
+      // A list (bag, Mart, PC items): the cursor starts on its first row, not
+      // on Back.
+      const row = scene.querySelector(".rows .row[data-pick]");
+      if (row) row.focus();
     });
   }
 
@@ -749,6 +753,22 @@
     }
   }
 
+  // A drag in Bill's PC from one Pokémon ("party:2", "box:5") onto another, or
+  // onto the party or box area. Returns an error message, or null.
+  function pcDrop(box, from, to) {
+    const [fa, fi] = from.split(":"), [ta, ti] = to.split(":");
+    const i = +fi, j = ti == null ? null : +ti;
+    const list = (a) => (a === "party" ? player.party : player.boxes[box]);
+    if (fa === ta) {
+      const l = list(fa);
+      if (j == null) l.push(l.splice(i, 1)[0]);            // to the end
+      else [l[i], l[j]] = [l[j], l[i]];
+      return null;
+    }
+    if (fa === "party") return j == null ? Player.deposit(player, i, box) : Player.swapWithBox(player, i, box, j);
+    return j == null ? Player.withdraw(player, box, i) : Player.swapWithBox(player, j, box, i);
+  }
+
   async function pokemonStorage() {
     let box = 0;
     for (;;) {
@@ -756,16 +776,29 @@
       const mini = (r, key) => '<button type="button" class="mini' + (Party.isFainted(r) ? " fainted" : "") + '" data-pick="' + key + '" title="' +
         escapeHtml(Party.displayName(r)) + " Lv" + r.level + '">' + spriteTag(r.species, Party.form(r)) +
         "<span>" + escapeHtml(Party.displayName(r)) + "</span><small>Lv" + r.level + "</small></button>";
-      const html = '<div class="pc"><section><h3>Party</h3><div class="pc-grid">' +
+      const html = '<div class="pc"><section data-drop="party"><h3>Party</h3><div class="pc-grid">' +
         player.party.map((r, i) => mini(r, "party:" + i)).join("") + "</div></section>" +
-        "<section><h3>Box " + (box + 1) + " <small>(" + slots.length + "/" + Player.BOX_SIZE + ")</small></h3>" +
+        '<section data-drop="box"><h3>Box ' + (box + 1) + " <small>(" + slots.length + "/" + Player.BOX_SIZE + ")</small></h3>" +
         '<div class="pc-grid">' + (slots.length ? slots.map((r, i) => mini(r, "box:" + i)).join("") : '<p class="empty">This box is empty.</p>') +
         "</div></section></div>";
-      const v = await pick("Bill's PC. Choose a Pokémon to move it.", html, [
+      // Drag a Pokémon onto another to swap them (party and box alike), or onto
+      // the other area to deposit or withdraw it.
+      let dropped;
+      const moved = new Promise((resolve) => { dropped = resolve; });
+      const picked = pick("Bill's PC. Choose a Pokémon, or drag it to move it.", html, [
         { label: "◀ Box " + (((box + Player.BOX_COUNT - 1) % Player.BOX_COUNT) + 1), value: "prev", className: "action" },
         { label: "Box " + (((box + 1) % Player.BOX_COUNT) + 1) + " ▶", value: "next", className: "action" },
         back("Log off")
       ]);
+      const stop = draggableCards(scene.querySelector(".pc"), (from, to) => dropped([from, to]), ".mini");
+      const v = await Promise.race([picked, moved]);
+      stop();
+      if (Array.isArray(v)) {
+        const err = pcDrop(box, v[0], v[1]);
+        if (err) await message(err);
+        await persist();
+        continue;
+      }
       if (v === "back") return;
       if (v === "prev") { box = (box + Player.BOX_COUNT - 1) % Player.BOX_COUNT; continue; }
       if (v === "next") { box = (box + 1) % Player.BOX_COUNT; continue; }
@@ -998,12 +1031,17 @@
   // function that removes the listeners.
   function draggableCards(container, onSwap, selector) {
     selector = selector || ".card";
-    const slot = (card) => +(card.dataset.slot != null ? card.dataset.slot : card.dataset.pick);
+    // A card's key (data-slot or data-pick; a number when it is one). Areas
+    // marked data-drop take drops too (onto the area, not onto a card in it).
+    const slot = (card) => {
+      const k = card.dataset.slot != null ? card.dataset.slot : card.dataset.pick != null ? card.dataset.pick : card.dataset.drop;
+      return /^\d+$/.test(k) ? +k : k;
+    };
     const HOLD_MS = 300, START_PX = 8;
     let drag = null, swallowClick = false;
     const cardAt = (x, y) => {
       const el = document.elementFromPoint(x, y);
-      const card = el && el.closest(selector);
+      const card = el && (el.closest(selector) || el.closest("[data-drop]"));
       return card && container.contains(card) ? card : null;
     };
     const clearTargets = () => container.querySelectorAll(".drop-target").forEach((c) => c.classList.remove("drop-target"));
@@ -1089,6 +1127,7 @@
   }
 
   async function startMenu() {
+    player.flags.openedMenu = true;   // (FireRed's FLAG_OPENED_START_MENU: the Sign Lady's scene)
     for (;;) {
       // Tapping a Pokémon card opens its summary; dragging swaps two.
       const v = await pickParty("Menu", (player.party.length ? partyHtml() : '<p class="empty">No Pokémon yet. Prof. Oak’s lab is south of your house.</p>') +
@@ -1143,6 +1182,7 @@
     "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerRight",
     "Route1_EventScript_MartClerk", "PalletTown_RivalsHouse_EventScript_Daisy", "PalletTown_ProfessorOaksLab_EventScript_LeaveStarterSceneTrigger",
     "PalletTown_ProfessorOaksLab_EventScript_Rival", "PalletTown_ProfessorOaksLab_EventScript_ProfOak",
+    "PalletTown_EventScript_SignLady", "PalletTown_EventScript_SignLadyTrigger", "PalletTown_EventScript_TrainerTips",
     "ViridianCity_EventScript_RoadBlocked",
     "ViridianCity_EventScript_TutorialTriggerLeft", "ViridianCity_EventScript_TutorialTriggerRight",
     "ViridianCity_EventScript_TutorialOldMan", "ViridianCity_EventScript_Woman", "ViridianCity_EventScript_Youngster",
@@ -1189,6 +1229,7 @@
       return f.parcelDelivered ? { x: 21, y: 8, movement: "look_around" }
         : Object.assign({}, person.alt, { x: 21, y: 11, movement: "face_down" });
     }
+    if (person.script === "PalletTown_EventScript_SignLady") return signLadyPlace();
     switch (person.flag) {
       case "FLAG_HIDE_OAK_IN_PALLET_TOWN": return false;   // only appears for his walk to the lab
       case "FLAG_HIDE_OAK_IN_HIS_LAB": return !!(f.oakInLab || f.starter);
@@ -1278,6 +1319,21 @@
     }
 
     switch (script) {
+      case "PalletTown_EventScript_SignLady":
+        await signLady(ev.person);
+        return;
+      case "PalletTown_EventScript_SignLadyTrigger":
+        // Walking past her by the north exit, she shows you what she copied.
+        if (!f.starter || f.signLady) return;
+        await Overworld.act([{ who: SIGN_LADY, moves: M("Common_Movement_WalkInPlaceFasterRight") },
+          { who: "player", moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
+        await signLadyShowSign();
+        return;
+      case "PalletTown_EventScript_TrainerTips":
+        await say(ev.sign.text);
+        if (!f.signLady) f.signLady = 1;
+        return;
+
       case "PalletTown_PlayersHouse_1F_EventScript_Mom":
         if (!player.party.length) {
           // She's Red's mom: he's already on his way. After the first time,
@@ -1994,6 +2050,49 @@
       "Let's both try to fill ours in!\nSee you later, {PLAYER}!"]);
     await Overworld.act([{ who: L, moves: ["walk_right", "walk_right", "walk_right", "walk_right", "set_invisible"] }]);
     Overworld.removeObject(L);
+  }
+
+  // ---------- Pallet Town's Sign Lady ----------
+  //
+  // FireRed's: at first she stands in front of the Trainer Tips sign, reading
+  // it ("Hmm… Is that right…"). Talk to her and she notices you ("Oh! Look,
+  // look!") and steps aside; until you read it, "Read it, read it!". Once you
+  // have, "Signs are useful, aren't they?", and next time you come to Pallet
+  // Town she's done: she wanders, raising Pokémon. If you get your starter
+  // without having read the sign or opened the menu, she waits by the north
+  // exit and recites it to you. flags.signLady: 0 (or none), 1 just read, 2 done.
+  const SIGN_LADY = "LOCALID_PALLET_SIGN_LADY";
+  let signLadyAside = false;   // stepped aside this visit (FireRed's FLAG_TEMP_2)
+  function signLadyPlace() {
+    const f = player.flags;
+    signLadyAside = false;   // (a fresh visit: back in front of the sign)
+    if (!f.signLady && f.starter && f.openedMenu) f.signLady = 1;
+    if (f.signLady === 1) f.signLady = 2;
+    if (f.signLady >= 2) return true;                           // wandering, as on the map
+    if (f.starter) return { x: 12, y: 2, movement: "face_down" };   // by the north exit
+    return { x: 5, y: 15, movement: "face_up" };                  // in front of the sign
+  }
+  async function signLadyShowSign() {
+    await say(T("PalletTown_Text_LookCopiedTrainerTipsSign"));
+    await say(T("PalletTown_Text_PressStartToOpenMenuCopy"));
+    player.flags.openedMenu = true;
+    player.flags.signLady = 1;
+  }
+  async function signLady(person) {
+    const f = player.flags;
+    const facePlayer = () => Overworld.act([{ who: SIGN_LADY, moves: M("Common_Movement_FacePlayer") }]);
+    if (f.signLady >= 2) { await facePlayer(); await say(T("PalletTown_Text_RaisingMonsToo")); return; }
+    if (f.signLady === 1) { await facePlayer(); await say(T("PalletTown_Text_SignsAreUsefulArentThey")); return; }
+    if (f.starter) { await facePlayer(); await signLadyShowSign(); return; }
+    if (signLadyAside) { await facePlayer(); await say(T("PalletTown_Text_ReadItReadIt")); return; }
+    await say(person.text);
+    await facePlayer();
+    await Overworld.act([{ who: SIGN_LADY, moves: M("Common_Movement_ExclamationMark").concat(M("Common_Movement_Delay48")) }]);
+    await say(T("PalletTown_Text_OhLookLook"));
+    // Out of your way: to the right if you're facing right, otherwise left.
+    const right = Overworld.position().facing === "right";
+    await Overworld.act([{ who: SIGN_LADY, moves: right ? ["walk_right", "walk_in_place_faster_left"] : ["walk_left", "walk_in_place_faster_right"] }]);
+    signLadyAside = true;
   }
 
   // ---------- Red, at the edge of Viridian Forest ----------
