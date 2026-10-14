@@ -1,7 +1,9 @@
 /* Party screen, starter choice and evolution */
 
 .scene {
-  min-height: 320px;
+  /* The same size as the map: whatever doesn't fit scrolls. */
+  height: calc(100cqw * 2 / 3);
+  overflow-y: auto;
   padding: 14px;
   background: linear-gradient(to bottom, #e8f6ff, #cdeaf9);
 }

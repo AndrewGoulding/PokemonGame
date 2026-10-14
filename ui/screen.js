@@ -17,7 +17,14 @@
 
   const escapeHtml = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
 
-  function say(text) { textbox.textContent = text; }
+  // The text box is a fixed size: text that would run past it (long lines
+  // wrapping on a narrow screen) gets a smaller font until it fits.
+  function say(text) {
+    textbox.textContent = text;
+    textbox.style.fontSize = "";
+    let size = parseFloat(getComputedStyle(textbox).fontSize);
+    while (textbox.scrollHeight > textbox.clientHeight + 1 && size > 10) textbox.style.fontSize = (size -= 1) + "px";
+  }
 
   function wait(ms) {
     return new Promise((resolve) => {
