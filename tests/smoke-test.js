@@ -1048,6 +1048,23 @@ for (const share of [false, true]) {
   assert(!Player.create("T").flags.runningShoes);
 }
 
+// The player characters: Red, Leaf and the custom one, each with every picture the game shows.
+{
+  assert.deepStrictEqual(Object.keys(Player.LOOKS), ["red", "green", "custom"]);
+  for (const [look, l] of Object.entries(Player.LOOKS)) {
+    assert.strictEqual(Player.create("T", look).look, look);
+    for (const file of ["assets/sprites/trainers/back/" + l.back + ".png", "assets/sprites/trainers/front/" + l.front + ".png",
+      "assets/intro/" + l.speech + ".png", "assets/world/sprites/player_" + look + ".png", "assets/world/sprites/player_" + look + "_run.png"]) {
+      assert(fs.existsSync(path.join(root, file)), "missing " + file);
+    }
+  }
+  assert.strictEqual(Player.create("T", "nobody").look, "red", "unknown looks fall back to Red");
+  const saved = Object.assign(Player.create("T", "custom"), { party: [Party.create("Pidgey", 5)] });
+  assert.strictEqual(Player.load(JSON.parse(JSON.stringify(saved))).player.look, "custom", "the custom look survives saving");
+  // Every picture Oak's speech uses is built (or added by hand, like the custom portrait).
+  assert(fs.readFileSync(path.join(root, "ui/intro.js"), "utf8").includes('"oak-speech-player-character"'));
+}
+
 // Battle backgrounds: every terrain ui/game.js can pick is built, at 512x112
 // (the 240x112 scene, then plain ground for the slide-in).
 {

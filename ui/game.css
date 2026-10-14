@@ -184,6 +184,8 @@
   background: linear-gradient(135deg, #fff8e1, #fbfbf2);
 }
 .trainer-card h2 { margin: 0 0 8px; }
+/* The player's trainer picture (64x64), on the right as in FireRed. */
+.trainer-card-pic { float: right; width: 128px; height: 128px; image-rendering: pixelated; margin: 0 0 8px 12px; }
 .trainer-card dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0; }
 .trainer-card dt { font-weight: 700; }
 .trainer-card dd { margin: 0; }

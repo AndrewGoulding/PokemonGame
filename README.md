@@ -184,8 +184,11 @@ A custom player character's sheets sit beside Red's and Leaf's:
 `assets/sprites/trainers/back/player_character.png` and
 `assets/sprites/overworld/player_character_<normal|bike|fish|item|surf|surf_run|vs_seeker_bike>.png`,
 the overworld ones recoloured from Red's by `tools/recolor-player-overworld.py`
-(black cap, silver hair, red shirt, black backpack). They aren't a choice in
-the game yet.
+(black cap, silver hair, red shirt, black backpack), and its trainer-card picture
+(`assets/sprites/trainers/front/player_character.png`) and Oak's-speech portrait
+(`assets/intro/oak-speech-player-character.png`) by `tools/recolor-player-fronts.py`.
+Oak's speech offers Boy, Girl or Custom; `Player.LOOKS` in `game/player.js`
+lists each character's pictures.
 
 ## Progression rules (Gen 6)
 

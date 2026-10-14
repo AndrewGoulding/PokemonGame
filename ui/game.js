@@ -236,7 +236,7 @@
       wild,
       exp: true,
       expShare: expShareOn(),
-      trainer: player.look === "green" ? "leaf" : "red",
+      trainer: Player.LOOKS[player.look].back,
       foeTrainer: foe.pic, defeatText: opts.defeatText && opts.defeatText.map((p) => fill(p)),
       terrain: battleTerrain(opts),
       bag: player.bag,
@@ -851,7 +851,8 @@
   async function trainerCard() {
     for (;;) {
       tick();
-      const html = '<div class="trainer-card"><h2>' + escapeHtml(player.name) + "</h2>" +
+      const html = '<div class="trainer-card"><img class="trainer-card-pic" alt="" src="assets/sprites/trainers/front/' +
+        Player.LOOKS[player.look].front + '.png"><h2>' + escapeHtml(player.name) + "</h2>" +
         "<dl><dt>Money</dt><dd>" + money(player.money) + "</dd>" +
         "<dt>Pokédex</dt><dd>" + player.pokedex.caught.length + " caught, " + player.pokedex.seen.length + " seen</dd>" +
         "<dt>Badges</dt><dd>" + player.badges.length + " <small>(gyms come with the map)</small></dd>" +
@@ -1194,7 +1195,7 @@
     switch (script) {
       case "PalletTown_PlayersHouse_1F_EventScript_Mom":
         if (!player.party.length) {
-          await say(["Mom: …Right.\nAll " + (player.look === "green" ? "girls" : "boys") + " leave home someday.\nIt said so on TV.",
+          await say(["Mom: …Right.\nAll " + (Player.LOOKS[player.look].girl ? "girls" : "boys") + " leave home someday.\nIt said so on TV.",
             "Oh, yes. Prof. Oak, next door, was\nlooking for you."]);
           return;
         }
@@ -1507,7 +1508,7 @@
       // ₽500 for a Magikarp, once.
       case "Route4_PokemonCenter_1F_EventScript_MagikarpSalesman": {
         if (f.boughtMagikarp) { await say(T("Route4_PokemonCenter_1F_Text_IDontGiveRefunds")); return; }
-        const pitch = T(player.look === "green" ? "Route4_PokemonCenter_1F_Text_SweetieBuyMagikarpForJust500" : "Route4_PokemonCenter_1F_Text_LaddieBuyMagikarpForJust500");
+        const pitch = T(Player.LOOKS[player.look].girl ? "Route4_PokemonCenter_1F_Text_SweetieBuyMagikarpForJust500" : "Route4_PokemonCenter_1F_Text_LaddieBuyMagikarpForJust500");
         await say(pitch.slice(0, -1));
         if (!(await confirm(fill(pitch[pitch.length - 1]) + "\n(You have " + money(player.money) + ".)"))) { await say(T("Route4_PokemonCenter_1F_Text_OnlyDoingThisAsFavorToYou")); return; }
         if (player.money < 500) { await say(T("Route4_PokemonCenter_1F_Text_YoullNeedMoreMoney")); return; }

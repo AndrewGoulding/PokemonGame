@@ -88,7 +88,9 @@ const GAME_TEXT = [
   "Aide_Text_HaventCaughtEnoughMonsForItem", "Aide_Text_GetEnoughMonsComeBackForItem",
   "Text_OnlySkilledTrainersAllowedThrough", "Text_CantLetYouPass", "Text_OhThatsBadgeGoRightAhead", "Text_MoveCanOnlyBeLearnedOnce"
 ];
-const PLAYER_SPRITES = { red: "red_normal.png", green: "green_normal.png" };
+// The player characters' overworld sheets (assets/sprites/overworld/<prefix>_normal.png
+// and <prefix>_surf_run.png), by look: player_<look>.png and player_<look>_run.png.
+const PLAYER_SPRITES = { red: "red", green: "green", custom: "player_character" };
 
 const root = path.join(__dirname, "..");
 const pret = process.argv[2] || process.env.POKEFIRERED;
@@ -557,12 +559,12 @@ for (const k of GAME_TEXT) {
   gameText[k] = texts(MAPS[0])[k];
 }
 
-for (const [color, file] of Object.entries(PLAYER_SPRITES)) {
-  const src = path.join(root, "assets/sprites/overworld", file);
+for (const [color, prefix] of Object.entries(PLAYER_SPRITES)) {
+  const src = path.join(root, "assets/sprites/overworld", prefix + "_normal.png");
   if (fs.existsSync(src)) writeSprite(readPng(src), path.join(outSprites, "player_" + color + ".png"));
   // Running: frames 3-11 of the surf/run sheet, laid out like the walking
   // sheet's poses (down, two strides, up, two strides, left, two strides).
-  const run = path.join(root, "assets/sprites/overworld", color + "_surf_run.png");
+  const run = path.join(root, "assets/sprites/overworld", prefix + "_surf_run.png");
   if (fs.existsSync(run)) writeSprite(cropFrames(readPng(run), 16, 3, 9), path.join(outSprites, "player_" + color + "_run.png"));
 }
 

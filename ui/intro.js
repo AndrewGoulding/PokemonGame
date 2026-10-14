@@ -719,7 +719,7 @@
 
   // ---------- Prof. Oak's speech (src/oak_speech.c) ----------
 
-  const SPEECH_IMAGES = ["oak-speech-bg", "oak-speech-oak", "oak-speech-red", "oak-speech-leaf", "oak-speech-rival",
+  const SPEECH_IMAGES = ["oak-speech-bg", "oak-speech-oak", "oak-speech-red", "oak-speech-leaf", "oak-speech-player-character", "oak-speech-rival",
     "oak-speech-platform", "controls-page-2", "controls-page-3", "pikachu-page", "pikachu-body", "pikachu-ears", "pikachu-eyes"];
   const IT = (label) => window.INTRO_TEXT[label];
   const NAMES = (labels) => labels.map((l) => IT("gNameChoice_" + l)[0]);
@@ -910,11 +910,11 @@
     await fadePic(0, 48);
     await wait(48);
 
-    // Boy or girl?
-    const look = await choose(IT("gOakSpeech_Text_AskPlayerGender")[0], [
-      { label: "Boy", value: "red", className: "action" }, { label: "Girl", value: "green", className: "action" }]);
+    // Boy, girl, or the custom character (Player.LOOKS)?
+    const look = await choose(IT("gOakSpeech_Text_AskPlayerGender")[0],
+      Object.entries(Player.LOOKS).map(([value, l]) => ({ label: l.label, value, className: "action" })));
     show("");
-    const playerPic = look === "green" ? "oak-speech-leaf" : "oak-speech-red";
+    const playerPic = Player.LOOKS[look].speech;
     s.pic = playerPic; s.picX = 0; s.platform = true; s.platformX = 0;
     await fadePic(1, 24);
     await wait(32);
@@ -933,7 +933,7 @@
     let name;
     await say(IT("gOakSpeech_Text_YourNameWhatIsIt"));
     for (;;) {
-      name = await nameScreen("Your name?", pickFrom(look === "green" ? GIRL_NAMES : BOY_NAMES), "player_" + look);
+      name = await nameScreen("Your name?", pickFrom(Player.LOOKS[look].girl ? GIRL_NAMES : BOY_NAMES), "player_" + look);
       s.picX = 60; s.platformX = 60;
       await fadeTo("#000", 16, 0, 0);
       show(fill(IT("gOakSpeech_Text_SoYourNameIsPlayer")[0], name));
