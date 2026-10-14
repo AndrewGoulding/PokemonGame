@@ -1005,10 +1005,11 @@
       // Tapping a Pokémon card opens its summary; dragging swaps two.
       const v = await pickParty("Menu", (player.party.length ? partyHtml() : '<p class="empty">No Pokémon yet. Prof. Oak’s lab is south of your house.</p>') +
         '<p class="bag-line">' + escapeHtml(player.name) + " · " + money(player.money) +
-        " · Pokédex " + player.pokedex.caught.length + "</p>", [
+        (player.flags.pokedex ? " · Pokédex " + player.pokedex.caught.length : "") + "</p>", [
         { label: "Pokémon", value: "party", className: "action" },
         { label: "Bag", value: "bag", className: "action" },
-        { label: "Pokédex", value: "dex", className: "action" },
+        // Only once Prof. Oak has given you one, as in FireRed.
+        ...(player.flags.pokedex ? [{ label: "Pokédex", value: "dex", className: "action" }] : []),
         { label: "Trainer card", value: "card", className: "action" },
         { label: "Save", value: "save", className: "action" },
         { label: "Debug", value: "debug", className: "action" },
@@ -1086,7 +1087,7 @@
     switch (person.flag) {
       case "FLAG_HIDE_OAK_IN_PALLET_TOWN": return false;   // only appears for his walk to the lab
       case "FLAG_HIDE_OAK_IN_HIS_LAB": return !!(f.oakInLab || f.starter);
-      case "FLAG_HIDE_POKEDEX": return false;              // the Pokédex is always yours here
+      case "FLAG_HIDE_POKEDEX": return !f.pokedex;         // on the desk until Oak hands them out
       case "FLAG_HIDE_MG_DELIVERYMEN": return false;       // no Mystery Gift
       // After you choose, your rival stands below the Poké Ball he took.
       case "FLAG_HIDE_RIVAL_IN_LAB":
@@ -1207,17 +1208,8 @@
 
       case "PalletTown_ProfessorOaksLab_EventScript_ProfOak":
         if (!f.starter) await say(ev.person.text);
-        else if (f.oaksParcel && !f.parcelDelivered) {
-          await say(T("PalletTown_ProfessorOaksLab_Text_OakHaveSomethingForMe"));
-          Player.removeItem(player, "oaks-parcel");
-          await say(T("PalletTown_ProfessorOaksLab_Text_DeliveredOaksParcel"));
-          await say(T("PalletTown_ProfessorOaksLab_Text_OakCustomBallIOrdered"));
-          await say(T("PalletTown_ProfessorOaksLab_Text_OakCatchMonsForDataTakeThese"));
-          Player.addItem(player, "poke-ball", 5);
-          f.parcelDelivered = true;
-          await say(T("PalletTown_ProfessorOaksLab_Text_ReceivedFivePokeBalls"));
-          await say(T("PalletTown_ProfessorOaksLab_Text_OakExplainCatching"));
-        } else if (f.parcelDelivered) await say(T("PalletTown_ProfessorOaksLab_Text_OakMonsAroundWorldWait"));
+        else if (f.oaksParcel && !f.parcelDelivered) await pokedexScene();
+        else if (f.parcelDelivered) await say(T("PalletTown_ProfessorOaksLab_Text_OakMonsAroundWorldWait"));
         else if (!f.rivalLabBattle) await say(T("PalletTown_ProfessorOaksLab_Text_OakCanReachNextTownWithMon"));
         else await say(T("PalletTown_ProfessorOaksLab_Text_OakBattleMonForItToGrow"));
         return;
@@ -1457,6 +1449,70 @@
     f[trade.flag] = true;
     await say("{PLAYER} sent " + Party.displayName(mine) + " to the trainer.\nThe trainer sent back " + trade.nickname + "!");
     await say(T("Trade_Text_HeyThanks"));
+  }
+
+  // ---------- Oak's parcel and the Pokédex ----------
+  //
+  // FireRed's PalletTown_ProfessorOaksLab_EventScript_ReceiveDexScene: you hand
+  // over the parcel, your rival comes in, Oak fetches the two Pokédexes from
+  // the desk at the back and gives you one and five Poké Balls, and your rival
+  // heads off. Who moves where depends on which side of Oak you're standing
+  // (the way you face him: up, down, left or right).
+  async function pokedexScene() {
+    const f = player.flags;
+    const L = (name) => M("PalletTown_ProfessorOaksLab_Movement_" + name);
+    const facing = Overworld.position().facing;
+    const north = facing === "up", south = facing === "down", east = facing === "right";
+    await say(T("PalletTown_ProfessorOaksLab_Text_OakHaveSomethingForMe"));
+    Player.removeItem(player, "oaks-parcel");   // (a save made mid-scene gets it back: see Player.load)
+    await say(T("PalletTown_ProfessorOaksLab_Text_DeliveredOaksParcel"));
+    await say(T("PalletTown_ProfessorOaksLab_Text_OakCustomBallIOrdered"));
+    await say(T("PalletTown_ProfessorOaksLab_Text_RivalGramps"));
+    // In comes your rival, from the door.
+    Overworld.addObject(LAB_RIVAL, { x: north ? 5 : 6, y: 10, facing: "up" });
+    await Overworld.act(north
+      ? [{ who: "player", moves: L("WatchRivalEnterNorth") }, { who: LAB_RIVAL, moves: L("RivalEnter") }]
+      : [{ who: LAB_OAK, moves: M("Common_Movement_WalkInPlaceFasterDown") },
+        { who: LAB_RIVAL, moves: L("RivalEnter") }].concat(south ? [] : [{ who: "player", moves: L("WatchRivalEnterEastWest") }]));
+    await say(T("PalletTown_ProfessorOaksLab_Text_RivalWhatDidYouCallMeFor"));
+    await Overworld.act([{ who: LAB_OAK, moves: ["delay_30"].concat(M("Common_Movement_ExclamationMark"), M("Common_Movement_Delay48")) }]);
+    // Oak looks at you, then at your rival.
+    if (north) await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
+    else {
+      await Overworld.act([{ who: LAB_OAK, moves: M("Common_Movement_FacePlayer").concat("delay_15") }]);
+      await Overworld.act([{ who: LAB_OAK, moves: M("Common_Movement_WalkInPlaceFasterDown") }]
+        .concat(south ? [] : [{ who: "player", moves: M(east ? "Common_Movement_WalkInPlaceFasterRight" : "Common_Movement_WalkInPlaceFasterLeft") }]));
+    }
+    await say(T("PalletTown_ProfessorOaksLab_Text_OakHaveRequestForYouTwo"));
+    // To the desk at the back, where the Pokédexes are.
+    await Overworld.act(south
+      ? [{ who: LAB_OAK, moves: L("OakWalkToDeskSouth") }, { who: "player", moves: L("WatchOakWalkToDesk") }, { who: LAB_RIVAL, moves: L("WatchOakWalkToDesk") }]
+      : [{ who: LAB_OAK, moves: L("OakWalkToDesk") }].concat(east ? [{ who: "player", moves: L("WatchOakWalkToDeskEast") }] : []));
+    await say(T("PalletTown_ProfessorOaksLab_Text_OakPokedexOnDesk"));
+    await Overworld.act([{ who: LAB_OAK, moves: ["delay_40"] }]);
+    await say(T("PalletTown_ProfessorOaksLab_Text_OakTakeTheseWithYou"));
+    await Overworld.act([{ who: LAB_OAK, moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
+    Overworld.removeObject("LOCALID_POKEDEX_1");
+    await Overworld.act([{ who: LAB_OAK, moves: ["delay_10"] }]);
+    Overworld.removeObject("LOCALID_POKEDEX_2");
+    await Overworld.act([{ who: LAB_OAK, moves: ["delay_25"] }]);
+    await Overworld.act([{ who: LAB_OAK, moves: L(south ? "OakBringDexesOverSouth" : "OakBringDexesOver") }]
+      .concat(east ? [{ who: "player", moves: L("PlayerFaceOakForDexEast") }] : []));
+    await Overworld.act([{ who: LAB_OAK, moves: ["delay_10"] }]);
+    f.pokedex = f.parcelDelivered = true;
+    await say(T("PalletTown_ProfessorOaksLab_Text_ReceivedPokedexFromOak"));
+    await say(T("PalletTown_ProfessorOaksLab_Text_OakCatchMonsForDataTakeThese"));
+    Player.addItem(player, "poke-ball", 5);
+    await say(T("PalletTown_ProfessorOaksLab_Text_ReceivedFivePokeBalls"));
+    await say(T("PalletTown_ProfessorOaksLab_Text_OakExplainCatching"));
+    await say(T("PalletTown_ProfessorOaksLab_Text_OakCompleteMonGuideWasMyDream"));
+    await say(T("PalletTown_ProfessorOaksLab_Text_RivalLeaveItToMeGramps"));
+    await Overworld.act(north ? [{ who: LAB_RIVAL, moves: M("Common_Movement_FacePlayer") }, { who: "player", moves: M("Common_Movement_WalkInPlaceFasterLeft") }]
+      : south ? [{ who: LAB_RIVAL, moves: M("Common_Movement_WalkInPlaceFasterUp") }, { who: "player", moves: M("Common_Movement_WalkInPlaceFasterDown") }]
+        : [{ who: LAB_RIVAL, moves: M("Common_Movement_FacePlayer") }, { who: "player", moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+    await say(T("PalletTown_ProfessorOaksLab_Text_RivalTellSisNotToGiveYouMap"));
+    await Overworld.act([{ who: LAB_RIVAL, moves: L("RivalExit") }].concat(north ? [{ who: "player", moves: L("WatchRivalEnterEastWest") }] : []));
+    Overworld.removeObject(LAB_RIVAL);
   }
 
   // A Pokémon Center nurse. Blacking out later brings you back to this one.

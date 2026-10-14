@@ -156,7 +156,9 @@ FireRed sets them); beaten, they say their after-battle line. Those that turn
 are found by pressing A facing their tile. Signs and people say their FireRed text (with names in normal
 case: "Viridian City", not "VIRIDIAN CITY"), and item balls give their item.
 Scripted events (Mom healing, the PCs, the starter Poké Balls, Oak walking you
-to his lab, the rival battle, the Route 1 Potion, Oak's Parcel, the
+to his lab, the rival battle, the Route 1 Potion, Oak's Parcel and the
+Pokédex scene (your rival comes back, Oak fetches the two Pokédexes from the
+desk at the back; until then there's no Pokédex in the menu), the
 Viridian old man, the nurse, the move tutor, the Route 2 trade of Abra for
 Mr. Mime "Mimien", and Prof. Oak's Aide giving HM05 Flash for ten kinds
 caught) are in `ui/game.js`; their FireRed

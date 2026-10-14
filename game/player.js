@@ -248,6 +248,8 @@
     // Saves from before key items: the Exp. Share, and Oak's Parcel if it's still to deliver.
     if (!player.bag["exp-share"]) player.bag["exp-share"] = 1;
     if (player.flags.oaksParcel && !player.flags.parcelDelivered) player.bag["oaks-parcel"] = 1;
+    // Saves from before the Pokédex scene: Oak gave it with the parcel.
+    if (player.flags.parcelDelivered && player.flags.pokedex === undefined) player.flags.pokedex = true;
     player.look = data.look === "green" ? "green" : "red";
     player.rival = String(data.rival || "Blue").slice(0, 12);
     const loc = data.location;
