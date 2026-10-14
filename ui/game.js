@@ -1250,7 +1250,7 @@
             "Leaf: My name's Leaf! I'm here to get my\nstarter Pokémon, but Prof. Oak is not\naround."]);
           f.metLeaf = true;
         } else if (!f.oakInLab && !f.starter) await say(["Leaf: I wonder where he is?"]);
-        else if (!f.starter) await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalGoChoosePlayer"));
+        else if (!f.starter) await say(["Leaf: You go ahead and choose first,\n{PLAYER}! I don't mind waiting."]);
         else await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalMyMonLooksTougher"));
         return;
 
@@ -1644,11 +1644,14 @@
     Overworld.refreshPeople();
     await Overworld.act([{ who: "player", moves: M("PalletTown_ProfessorOaksLab_Movement_PlayerEnter") }]);
     await Overworld.act([{ who: LAB_RIVAL, moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-    await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalFedUpWithWaiting"));
+    // Leaf is friendlier than FireRed's rival: glad to see you both, and
+    // happy to wait her turn.
+    await say(["Leaf: Prof. Oak! There you are!", player.flags.metLeaf ? "Oh, and you brought {PLAYER}, too!\nHi again!"
+      : "Oh, hi! I'm Leaf. Nice to meet you,\n{PLAYER}!"]);
     await say(leafT("PalletTown_ProfessorOaksLab_Text_OakThreeMonsChooseOne"));
     await Overworld.act([{ who: LAB_RIVAL, moves: M("PalletTown_ProfessorOaksLab_Movement_RivalReact") }]);
-    await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalNoFairWhatAboutMe"));
-    await say(leafT("PalletTown_ProfessorOaksLab_Text_OakBePatientRival"));
+    await say(["Leaf: Um, Prof. Oak?\nCould I have one, too?"]);
+    await say(["Oak: Of course, Leaf!\nYou can have one, too!"]);
   }
 
   // Leaf stops you on the way out of the lab (FireRed's RivalBattle): she
