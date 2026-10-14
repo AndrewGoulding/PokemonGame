@@ -747,14 +747,16 @@ for (const share of [false, true]) {
   assert.strictEqual(at(World.step({ map: "PalletTown", x: 12, y: 0 }, "up")), "Route1 12,39");
   assert.strictEqual(at(World.step({ map: "Route1", x: 12, y: 39 }, "down")), "PalletTown 12,0");
   // Route 1 leads on to Viridian City, then Route 2 and Pewter City; west of
-  // Viridian is Route 22. Route 3 and Route 23 aren't built yet.
+  // Viridian is Route 22, east of Pewter Route 3. Route 4 and Route 23 aren't built yet.
   assert.strictEqual(at(World.step({ map: "Route1", x: 12, y: 0 }, "up")), "ViridianCity 24,39");
   assert.strictEqual(at(World.step({ map: "ViridianCity", x: 24, y: 39 }, "down")), "Route1 12,0");
   assert.strictEqual(at(World.step({ map: "ViridianCity", x: 22, y: 0 }, "up")), "Route2 10,79");
   assert.strictEqual(at(World.step({ map: "Route2", x: 10, y: 79 }, "down")), "ViridianCity 22,0");
   assert.strictEqual(at(World.step({ map: "Route2", x: 10, y: 0 }, "up")), "PewterCity 22,39");
   assert.strictEqual(at(World.step({ map: "ViridianCity", x: 0, y: 12 }, "left")), "Route22 47,2");
-  assert.strictEqual(World.step({ map: "PewterCity", x: 47, y: 20 }, "right").unbuilt, "MAP_ROUTE3");
+  assert.strictEqual(at(World.step({ map: "PewterCity", x: 47, y: 20 }, "right")), "Route3 0,10");
+  assert.strictEqual(at(World.step({ map: "Route3", x: 0, y: 10 }, "left")), "PewterCity 47,20");
+  assert.strictEqual(World.step({ map: "Route3", x: 68, y: 0 }, "up").unbuilt, "MAP_ROUTE4");
   assert.strictEqual(World.step({ map: "Route22_NorthEntrance", x: 7, y: 2 }, "up").unbuilt, "MAP_ROUTE23");
   // Pewter's doors: the Gym, the Pokémon Center, the Mart; Route 22's League gate.
   const door = (map, x, y) => World.step({ map, x, y }, "up").warp.map;
@@ -994,6 +996,14 @@ for (const share of [false, true]) {
   for (const [side, from] of [["North", { x: 33, y: 18 }], ["South", { x: 33, y: 16 }], ["West", { x: 34, y: 17 }], ["East", { x: 32, y: 17 }]]) {
     assert.deepStrictEqual(replay(from, "PewterCity_Movement_PlayerWalkToMuseum" + side), { x: 17, y: 9 }, "to the Museum (" + side + ")");
   }
+  // Route 3's eight trainers, with FireRed's parties.
+  const r3 = WORLD_MAPS.Route3.people.filter((p) => p.trainer).map((p) => WORLD_TRAINERS[p.trainer.id]);
+  assert.deepStrictEqual(r3.map((t) => t.className + " " + t.name), ["Lass Robin", "Bug Catcher James", "Lass Sally", "Bug Catcher Greg",
+    "Youngster Calvin", "Lass Janice", "Bug Catcher Colton", "Youngster Ben"]);
+  assert.deepStrictEqual(party("TRAINER_BUG_CATCHER_GREG"), ["Weedle 9", "Kakuna 9", "Caterpie 9", "Metapod 9"]);
+  for (const t of r3) assert(fs.existsSync(path.join(root, "assets/sprites/trainers/front", t.pic + ".png")), t.pic);
+  assert.deepStrictEqual(WORLD_MAPS.Route3.hidden.map((h) => h.item), ["oran-berry"]);
+  assert(WORLD_MAPS.Route3.wild.slots.some((s) => s.species === "Mankey"), "FireRed's Route 3 has Mankey");
   // New games can't run until the Running Shoes.
   assert(!Player.create("T").flags.runningShoes);
 }

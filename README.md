@@ -82,7 +82,7 @@ PROF. OAK's lab, Route 1, Viridian City with its Pokémon Center (both
 floors), Poké Mart, school and Nickname house, Route 2 with its trade house
 and gate, Viridian Forest with both of its gates, Route 22 and its League
 gate, and Pewter City with its Gym, Museum (both floors), Poké Mart,
-Pokémon Center and houses. Tiles, palettes and metatiles come from
+Pokémon Center and houses, and Route 3 with its eight trainers. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into

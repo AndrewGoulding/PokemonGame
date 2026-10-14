@@ -64,7 +64,8 @@ const MAPS = [
   "Route2_House", "Route2_EastBuilding",
   "Route22", "Route22_NorthEntrance",
   "PewterCity", "PewterCity_Museum_1F", "PewterCity_Museum_2F", "PewterCity_Gym", "PewterCity_Mart",
-  "PewterCity_House1", "PewterCity_House2", "PewterCity_PokemonCenter_1F", "PewterCity_PokemonCenter_2F"
+  "PewterCity_House1", "PewterCity_House2", "PewterCity_PokemonCenter_1F", "PewterCity_PokemonCenter_2F",
+  "Route3"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
