@@ -18,15 +18,26 @@
     const name = (id) => window.Bag.name(id);
 
     // The ground under the rock: each tile of a treasure shows its part of the
-    // treasure's picture; the rest is bare earth.
+    // treasure's picture, cropped to the item itself (data/item-sprites.js
+    // ITEM_SPRITE_BOXES) and stretched over its shape; the rest is bare earth.
+    // Background percentages: the picture is scaled so the item spans the
+    // shape, and each tile is shifted to its part of it.
+    const slice = (t, sx, sy) => {
+      const box = (window.ITEM_SPRITE_BOXES || {})[t.item];
+      const [bx, by, bw, bh, iw, ih] = box || [0, 0, 1, 1, 1, 1];
+      const axis = (b, bs, is, n, s) => {
+        const span = bs / n;   // picture pixels per tile
+        return { size: is / bs * n * 100, pos: is - span > 0 ? (b + s * span) / (is - span) * 100 : 0 };
+      };
+      const ax = axis(bx, bw, iw, t.w, sx), ay = axis(by, bh, ih, t.h, sy);
+      return "background-size:" + ax.size + "% " + ay.size + "%;background-position:" + ax.pos + "% " + ay.pos + "%";
+    };
     const under = [];
     for (let y = 0; y < H(); y++) for (let x = 0; x < W(); x++) {
       const t = dig.treasures.find((tr) => tr.cells.some(([a, b]) => a === x && b === y));
       if (!t) { under.push('<div class="dig-ground"></div>'); continue; }
-      const sx = x - t.x, sy = y - t.y;
       under.push('<div class="dig-ground treasure" style="background-image:url(' + window.Bag.sprite(t.item) + ");" +
-        "background-size:" + (t.w * 100) + "% " + (t.h * 100) + "%;" +
-        "background-position:" + (t.w > 1 ? sx / (t.w - 1) * 100 : 0) + "% " + (t.h > 1 ? sy / (t.h - 1) * 100 : 0) + '%"></div>');
+        slice(t, x - t.x, y - t.y) + '"></div>');
     }
     const rock = [];
     for (let i = 0; i < W() * H(); i++) rock.push('<button type="button" class="dig-rock" data-i="' + i + '" aria-label="Dig"></button>');

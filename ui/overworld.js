@@ -228,23 +228,35 @@
       }
       return;
     }
-    // FireRed's walk sequences (walk_sequence_left_down_right_up): a loop of
-    // single steps, one after another, back to where they started.
+    // FireRed's walk sequences (walk_sequence_left_down_right_up): walk one
+    // way until the edge of the range, then turn to the next direction; back at
+    // the start after the last one, begin again. With a range of 5 x 3 that's a
+    // loop 5 tiles across and 3 down.
     const seq = /^walk_sequence_((?:up|down|left|right)(?:_(?:up|down|left|right))*)$/.exec(p.def.movement || "");
     const dirs = seq ? null : WANDER_DIRS[p.def.movement];
     if (!dirs && !seq) return;
     const order = seq && seq[1].split("_");
+    if (seq && (p.seq || 0) % order.length === order.length - 1 && p.x === p.ox && p.y === p.oy) p.seq = 0;
+    // A leg heading back the way an earlier one went stops level with the
+    // start (FireRed's per-sequence rule): left, down, then right only back to
+    // the starting column, and up to the start.
+    if (seq) {
+      const i = (p.seq || 0) % order.length, d = order[i];
+      const back = order.slice(0, i).includes(World.OPPOSITE[d]);
+      if (i < order.length - 1 && back && ((d === "left" || d === "right") ? p.x === p.ox : p.y === p.oy)) p.seq = (p.seq || 0) + 1;
+    }
     const dir = seq ? order[(p.seq || 0) % order.length] : dirs[Math.floor(Math.random() * dirs.length)];
     if (seq) p.timer = 8;
     p.facing = dir;
     const [dx, dy] = World.DIRS[dir];
     const tx = p.x + dx, ty = p.y + dy;
-    if (!seq && (Math.abs(tx - p.ox) > (p.def.rangeX || 1) || Math.abs(ty - p.oy) > (p.def.rangeY || 1))) return;
+    // (Only the edge of the range turns a walk sequence; anything else in the
+    // way, they wait.)
+    if (Math.abs(tx - p.ox) > (p.def.rangeX || 1) || Math.abs(ty - p.oy) > (p.def.rangeY || 1)) { if (seq) p.seq = (p.seq || 0) + 1; return; }
     if ((tx === me.x && ty === me.y) || (me.move && me.move.tx === tx && me.move.ty === ty) || personAt(tx, ty)) return;
     const r = World.step({ map: me.map, x: p.x, y: p.y }, dir);
     if (!r.ok || r.map !== me.map || r.jump || r.warp || World.warpAt(me.map, tx, ty)) return;
     p.move = { tx, ty, t: 0 };
-    if (seq) p.seq = (p.seq || 0) + 1;
   }
 
   // ---------- Player movement ----------

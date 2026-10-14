@@ -25,7 +25,7 @@
   // and the mining level it takes to find it. Shapes follow Diamond and
   // Pearl's where they're known, and are close otherwise.
   const TREASURES = [
-    ["heart-scale", 20, ["x.", "xx"], 1],
+    ["heart-scale", 20, ["xx", "xx"], 1],
     ["red-shard", 8, ["xxx", "xx.", "x.x"], 1],
     ["blue-shard", 8, ["xxx", "xxx", "xx."], 1],
     ["yellow-shard", 8, ["x.x.", "xxx.", "xxxx"], 1],

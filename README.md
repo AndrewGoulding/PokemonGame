@@ -56,7 +56,8 @@ Battles open as in FireRed: from the map the screen flashes white twice and
 slices away; the wild Pokémon slides in (in shadow) as your trainer does from
 the other side, it lights up and appears, and your trainer throws your first
 Pokémon's Ball. Repels (from the bag) keep wild Pokémon below your lead's level
-away for 100, 200 or 250 steps. In battle you can fight, use items from the Bag, switch, and in wild battles
+away for 100, 200 or 250 steps; when one wears off you're asked whether to use
+another of the same kind (as in Black and White). In battle you can fight, use items from the Bag, switch, and in wild battles
 throw balls or run. Pokémon gain experience and EVs, level up mid-battle, learn
 moves and evolve afterwards. Click the text box (or press Space) to skip ahead.
 

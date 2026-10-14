@@ -2169,7 +2169,17 @@
     if (player.repelSteps > 0) { await message("But the effects of a Repel lingered from earlier."); return; }
     Player.removeItem(player, item);
     player.repelSteps = REPEL_STEPS[item];
+    player.flags.lastRepel = item;
     await message(player.name + " used the " + Bag.name(item) + ".");
+  }
+  // When a Repel wears off you're offered another of the same kind, if you
+  // have one (as in Black and White).
+  async function repelWoreOff() {
+    const item = player.flags.lastRepel;
+    if (!item || !Player.itemCount(player, item)) { await say("Repel's effect wore off…"); return; }
+    if (await confirm("Repel's effect wore off… Would you like to use another " + Bag.name(item) + "? (" +
+      Player.itemCount(player, item) + " left)")) await useRepel(item);
+    await persist();
   }
 
   // ---------- Exploring ----------
@@ -2195,12 +2205,15 @@
         onStep: () => redForestStep() || jessieJamesStep() || repelStep(), allowWild: repelAllows
       });
       if (ev.type === "menu") await startMenu();
-      else if (ev.type === "repel-ended") await say("Repel's effect wore off…");
+      else if (ev.type === "repel-ended") await repelWoreOff();
       else if (ev.type === "red-forest") await redForest();
       else if (ev.type === "jessie-james") await jessieJames();
       else if (ev.type === "wild") {
         if (!canBattle()) continue;
-        await battle("wild", { foe: { name: "Wild", team: [Party.create(ev.species, ev.level)] }, terrain: "grass" });
+        // Grass on routes; caves (and other maps) use their own scene.
+        const here = window.WORLD_MAPS[player.location.map];
+        await battle("wild", { foe: { name: "Wild", team: [Party.create(ev.species, ev.level)] },
+          terrain: here && ["route", "town", "city"].includes(here.type) ? "grass" : undefined });
       } else await story(ev);
       await persist();
     }
