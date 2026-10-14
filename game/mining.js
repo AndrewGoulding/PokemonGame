@@ -4,17 +4,22 @@
 // treasures are buried in it, plus some bedrock that can't be dug. Each hit
 // takes layers off: the pickaxe 2 from the tile hit and 1 from the four
 // beside it; the hammer 2 from the tile and 1 from all eight around it, but
-// it shakes the wall twice as much. A treasure is yours once every tile over
-// it is cleared. When the wall has taken too much, it collapses and the dig
-// is over; anything not fully dug out stays buried.
+// it takes twice the energy. A treasure is yours once every tile over it is
+// cleared. The dig ends when every treasure is out, or when you run out of
+// energy (anything not fully dug out stays buried). The higher your mining
+// level, the more energy you have.
 //
-//   const dig = Mining.create(rng, Mining.level(treasuresDugSoFar), mapName);
-//   Mining.hit(dig, x, y, "pick");    // -> { found: [item ids uncovered by this hit] }
-//   dig.over, dig.collapsed, Mining.found(dig)
+// Mining XP: 1 for every hit, 10 more for every treasure dug out.
+//
+//   const dig = Mining.create(rng, Mining.level(xp), mapName);
+//   Mining.hit(dig, x, y, "pick");    // -> { found: [item ids uncovered by this hit], xp }
+//   dig.over, dig.tired (out of energy), dig.xp, Mining.found(dig)
 (function () {
   const WIDTH = 13, HEIGHT = 10;
-  const WALL = 50;                          // how much shaking the wall takes
-  const SHAKE = { pick: 1, hammer: 2 };
+  const ENERGY_COST = { pick: 1, hammer: 2 };
+  const XP_PER_HIT = 1, XP_PER_TREASURE = 10;
+  // Energy for a dig: 40 at level 1, up to 100 at level 100.
+  const maxEnergy = (lv) => 40 + Math.floor(((lv || 1) - 1) * 60 / 99);
 
   // What can be buried: item id, how common, its shape ("x" = a tile of it),
   // and the mining level it takes to find it. Shapes follow Diamond and
@@ -54,16 +59,21 @@
   ].concat(["flame", "splash", "zap", "meadow", "icicle", "fist", "toxic", "earth", "sky", "mind", "insect",
     "stone", "spooky", "draco", "dread", "iron"].map((p) => [p + "-plate", 0.5, ["xxxx", "xxxx", "xxxx"], 100]));
 
-  // Mining level, 1 to 100: it starts at 1 and rises with the treasures you've
-  // dug out. Going from level L to L + 1 takes 1 + floor(L / 20) more (1 each
-  // up to level 20, then 2, 3, 4 and 5; 299 in all for level 100). LEVELS[L - 1]
-  // is the total needed for level L.
+  // Mining level, 1 to 100, from your mining XP. Going from level L to L + 1
+  // takes 20 x (1 + floor(L / 20)) XP (20 each up to level 20, then 40, 60, 80
+  // and 100; 5,980 in all for level 100). LEVELS[L - 1] is the XP for level L.
   const MAX_LEVEL = 100;
   const LEVELS = [0];
-  for (let L = 1; L < MAX_LEVEL; L++) LEVELS.push(LEVELS[L - 1] + 1 + Math.floor(L / 20));
-  const level = (dug) => LEVELS.filter((n) => (dug | 0) >= n).length;
-  // Treasures dug out to reach the next level (null at the top).
-  const toNext = (dug) => (level(dug) >= MAX_LEVEL ? null : LEVELS[level(dug)] - (dug | 0));
+  for (let L = 1; L < MAX_LEVEL; L++) LEVELS.push(LEVELS[L - 1] + 20 * (1 + Math.floor(L / 20)));
+  const level = (xp) => LEVELS.filter((n) => (xp | 0) >= n).length;
+  // XP still needed for the next level (null at the top).
+  const toNext = (xp) => (level(xp) >= MAX_LEVEL ? null : LEVELS[level(xp)] - (xp | 0));
+  // How far into the current level: { level, into, need } (need 0 at the top).
+  function progress(xp) {
+    const lv = level(xp);
+    if (lv >= MAX_LEVEL) return { level: lv, into: 0, need: 0 };
+    return { level: lv, into: (xp | 0) - LEVELS[lv - 1], need: LEVELS[lv] - LEVELS[lv - 1] };
+  }
 
   // Fossils are all found from the same level, but each only in its own caves:
   // Kanto's in Mt. Moon. (Later regions' fossils will get their own caves; until
@@ -132,12 +142,13 @@
       const at = place(BEDROCK[Math.floor(rng() * BEDROCK.length)], taken, rng);
       if (at) for (const [x, y] of at.cells) bedrock[y * WIDTH + x] = true;
     }
-    return { width: WIDTH, height: HEIGHT, level: lv, rock, bedrock, treasures, shaken: 0, wall: WALL, over: false, collapsed: false };
+    const energy = maxEnergy(lv);
+    return { width: WIDTH, height: HEIGHT, level: lv, rock, bedrock, treasures, energy, maxEnergy: energy, xp: 0, over: false, tired: false };
   }
 
   // One hit with "pick" or "hammer" at (x, y).
   function hit(dig, x, y, tool) {
-    if (dig.over || x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT) return { found: [] };
+    if (dig.over || x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT) return { found: [], xp: 0 };
     const around = tool === "hammer"
       ? [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]
       : [[0, -1], [-1, 0], [1, 0], [0, 1]];
@@ -148,17 +159,20 @@
     };
     dent(x, y, 2);
     for (const [dx, dy] of around) dent(x + dx, y + dy, 1);
-    dig.shaken = Math.min(dig.wall, dig.shaken + SHAKE[tool === "hammer" ? "hammer" : "pick"]);
+    dig.energy = Math.max(0, dig.energy - ENERGY_COST[tool === "hammer" ? "hammer" : "pick"]);
     const found = [];
     for (const t of dig.treasures) {
       if (!t.found && t.cells.every(([cx, cy]) => dig.rock[cy * WIDTH + cx] === 0)) { t.found = true; found.push(t.item); }
     }
+    const xp = XP_PER_HIT + XP_PER_TREASURE * found.length;
+    dig.xp += xp;
     if (dig.treasures.every((t) => t.found)) dig.over = true;
-    else if (dig.shaken >= dig.wall) dig.over = dig.collapsed = true;
-    return { found };
+    else if (dig.energy <= 0) dig.over = dig.tired = true;
+    return { found, xp };
   }
 
   const found = (dig) => dig.treasures.filter((t) => t.found).map((t) => t.item);
 
-  window.Mining = { WIDTH, HEIGHT, WALL, SHAKE, TREASURES, LEVELS, MAX_LEVEL, FOSSIL_CAVES, level, toNext, available, create, hit, found };
+  window.Mining = { WIDTH, HEIGHT, ENERGY_COST, XP_PER_HIT, XP_PER_TREASURE, TREASURES, LEVELS, MAX_LEVEL, FOSSIL_CAVES,
+    maxEnergy, level, toNext, progress, available, create, hit, found };
 })();

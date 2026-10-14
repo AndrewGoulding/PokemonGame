@@ -1130,10 +1130,15 @@ for (const share of [false, true]) {
   }
   // Mining level: 1 to start, rising with treasures dug out; each level lets
   // rarer treasures be buried.
-  // Levels 1-100: one treasure a level up to 20, then 2, 3, 4 and 5 a level.
+  // Levels 1-100 from mining XP: 20 a level up to 20, then 40, 60, 80 and 100.
   assert.strictEqual(Mining.MAX_LEVEL, 100);
-  assert.deepStrictEqual([0, 1, 19, 20, 21, 22, 298, 299, 999].map(Mining.level), [1, 2, 20, 20, 21, 21, 99, 100, 100]);
-  assert.deepStrictEqual([Mining.toNext(0), Mining.toNext(20), Mining.toNext(299)], [1, 1, null]);
+  assert.deepStrictEqual([0, 19, 20, 380, 400, 420, 5979, 5980, 99999].map(Mining.level), [1, 1, 2, 20, 20, 21, 99, 100, 100]);
+  assert.deepStrictEqual([Mining.toNext(0), Mining.toNext(25), Mining.toNext(5980)], [20, 15, null]);
+  assert.deepStrictEqual(Mining.progress(25), { level: 2, into: 5, need: 20 });
+  assert.deepStrictEqual(Mining.progress(5980), { level: 100, into: 0, need: 0 });
+  // More energy at higher levels.
+  assert.deepStrictEqual([Mining.maxEnergy(1), Mining.maxEnergy(100)], [40, 100]);
+  assert(Mining.maxEnergy(50) > Mining.maxEnergy(10));
   // Rarer treasures unlock with levels; all fossils at 30.
   const unlock = (item) => Mining.TREASURES.find((t) => t[0] === item)[3];
   assert.deepStrictEqual(["heart-scale", "revive", "star-piece", "oval-stone", "fire-stone", "moon-stone", "helix-fossil", "root-fossil", "max-revive", "flame-plate"]
@@ -1166,23 +1171,27 @@ for (const share of [false, true]) {
     const seen = new Set();
     for (const t of dig.treasures) for (const [x, y] of t.cells) { const k = y * 13 + x; assert(!seen.has(k) && !dig.bedrock[k]); seen.add(k); }
   }
-  // The pickaxe takes 2 off the tile and 1 off the four beside it; the hammer
-  // also hits the corners and shakes the wall twice as much.
-  const dig = Mining.create(mulberry32(3));
+  // The pickaxe takes 2 off the tile and 1 off the four beside it, for 1
+  // energy; the hammer also hits the corners, for 2. Each hit is 1 XP.
+  const dig = Mining.create(mulberry32(3), 1);
+  assert.deepStrictEqual([dig.energy, dig.maxEnergy, dig.xp], [40, 40, 0]);
   dig.rock.fill(4); dig.bedrock.fill(false);
   Mining.hit(dig, 5, 5, "pick");
-  assert.deepStrictEqual([dig.rock[5 * 13 + 5], dig.rock[4 * 13 + 5], dig.rock[4 * 13 + 4], dig.shaken], [2, 3, 4, 1]);
+  assert.deepStrictEqual([dig.rock[5 * 13 + 5], dig.rock[4 * 13 + 5], dig.rock[4 * 13 + 4], dig.energy, dig.xp], [2, 3, 4, 39, 1]);
   Mining.hit(dig, 5, 5, "hammer");
-  assert.deepStrictEqual([dig.rock[5 * 13 + 5], dig.rock[4 * 13 + 5], dig.rock[4 * 13 + 4], dig.shaken], [0, 2, 3, 3]);
-  // A treasure is found once all its tiles are cleared; all found ends the dig.
+  assert.deepStrictEqual([dig.rock[5 * 13 + 5], dig.rock[4 * 13 + 5], dig.rock[4 * 13 + 4], dig.energy, dig.xp], [0, 2, 3, 37, 2]);
+  // A treasure is found once all its tiles are cleared (10 XP more each); all
+  // found ends the dig.
   for (const t of dig.treasures) for (const [x, y] of t.cells) dig.rock[y * 13 + x] = 0;
-  assert.deepStrictEqual(Mining.hit(dig, 0, 0, "pick").found, dig.treasures.map((t) => t.item));
-  assert(dig.over && !dig.collapsed);
-  // Too much shaking and the wall collapses, keeping only what was dug out.
-  const wall = Mining.create(mulberry32(4));
-  for (let i = 0; i < Mining.WALL && !wall.over; i++) Mining.hit(wall, 12, 9, "pick");
-  assert(wall.over && wall.collapsed);
-  assert.deepStrictEqual(Mining.found(wall), wall.treasures.filter((t) => t.found).map((t) => t.item));
+  const last = Mining.hit(dig, 0, 0, "pick");
+  assert.deepStrictEqual(last.found, dig.treasures.map((t) => t.item));
+  assert.strictEqual(last.xp, 1 + 10 * dig.treasures.length);
+  assert(dig.over && !dig.tired);
+  // Out of energy, the dig ends, keeping only what was dug out.
+  const tired = Mining.create(mulberry32(4), 1);
+  for (let i = 0; i < 100 && !tired.over; i++) Mining.hit(tired, 12, 9, "pick");
+  assert(tired.over && tired.tired && tired.energy === 0);
+  assert.deepStrictEqual(Mining.found(tired), tired.treasures.filter((t) => t.found).map((t) => t.item));
 }
 
 console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns), AI beat random moves in " + aiWinRate + "% of games");

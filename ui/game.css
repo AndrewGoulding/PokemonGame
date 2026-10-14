@@ -276,10 +276,13 @@
 
 /* ---------- Digging (Explorer Kit) ---------- */
 .dig { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: #3a2c1e; }
-.dig-top { display: flex; align-items: center; gap: 10px; }
-.dig-level { color: #f5ecd6; font-weight: 700; white-space: nowrap; }
-.dig-wall { flex: 1; height: 12px; border: 2px solid #1d150d; border-radius: 6px; background: #6b8a3a; overflow: hidden; }
-.dig-crack { height: 100%; width: 0; background: repeating-linear-gradient(90deg, #c0392b 0 6px, #8e2a1f 6px 9px); transition: width 0.2s; }
+.dig-top { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 4px 10px; }
+.dig-label { color: #f5ecd6; font-weight: 700; white-space: nowrap; font-size: 14px; font-variant-numeric: tabular-nums; }
+.dig-bar { height: 12px; border: 2px solid #1d150d; border-radius: 6px; background: #2a1f14; overflow: hidden; }
+.dig-fill { height: 100%; width: 0; transition: width 0.2s, background-color 0.2s; }
+.dig-bar.xp .dig-fill { background: #3fa8f2; }
+.dig-bar.energy .dig-fill { background: #6cc24a; }
+.dig-bar.energy .dig-fill.low { background: #e5463b; }
 .dig-board { position: relative; width: 100%; border: 3px solid #1d150d; border-radius: 4px; overflow: hidden; touch-action: manipulation; }
 .dig-layer { position: absolute; inset: 0; display: grid; }
 .dig-ground { background: #d9c391; box-shadow: inset 0 0 0 1px rgba(80, 60, 30, 0.15); }

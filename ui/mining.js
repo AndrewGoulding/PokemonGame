@@ -1,16 +1,19 @@
 // The cave wall you dig with the Explorer Kit (game/mining.js has the rules).
 //
-//   const found = await MiningScreen.run(sceneElement, Mining.create());
+//   const found = await MiningScreen.run(sceneElement, Mining.create(...), xpBefore);
 //
 // Tap or click a tile to hit it; the Pickaxe and Hammer buttons switch tools.
 // On a keyboard: arrows move the cursor, Z / Space / Enter hit, X / B / Shift
-// switch tools. Resolves with the ids of the treasures dug out once every
-// treasure is out or the wall collapses.
+// switch tools. Along the top: your mining level with a bar to the next one
+// (it fills as you dig: XP for every hit and every treasure), and your energy.
+// Resolves with the ids of the treasures dug out once every treasure is out or
+// your energy runs out.
 (function () {
   const W = () => window.Mining.WIDTH, H = () => window.Mining.HEIGHT;
   const pct = (n, of) => (n / of * 100) + "%";
 
-  function run(root, dig) {
+  function run(root, dig, xpBefore) {
+    xpBefore = xpBefore | 0;
     let tool = "pick", cx = Math.floor(W() / 2), cy = Math.floor(H() / 2);
     const name = (id) => window.Bag.name(id);
 
@@ -29,8 +32,12 @@
     for (let i = 0; i < W() * H(); i++) rock.push('<button type="button" class="dig-rock" data-i="' + i + '" aria-label="Dig"></button>');
 
     root.innerHTML = '<div class="dig">' +
-      '<div class="dig-top"><span class="dig-level">Mining Lv. ' + dig.level + '</span>' +
-        '<div class="dig-wall" aria-label="Wall"><div class="dig-crack"></div></div></div>' +
+      '<div class="dig-top">' +
+        '<span class="dig-label dig-level"></span><div class="dig-bar xp" aria-hidden="true"><div class="dig-fill"></div></div>' +
+        '<span class="dig-label dig-xp"></span>' +
+        '<span class="dig-label">Energy</span><div class="dig-bar energy" aria-hidden="true"><div class="dig-fill"></div></div>' +
+        '<span class="dig-label dig-energy"></span>' +
+      "</div>" +
       '<div class="dig-board" style="aspect-ratio:' + W() + "/" + H() + '">' +
         '<div class="dig-layer under" style="grid-template-columns:repeat(' + W() + ',1fr)">' + under.join("") + "</div>" +
         '<div class="dig-layer over" style="grid-template-columns:repeat(' + W() + ',1fr)">' + rock.join("") + "</div>" +
@@ -39,7 +46,7 @@
         '<button type="button" class="dig-tool" data-tool="pick">⛏ Pickaxe</button>' +
         '<button type="button" class="dig-tool" data-tool="hammer">🔨 Hammer</button>' +
       "</div>" +
-      '<p class="dig-status" aria-live="polite">Dig out the buried treasure before the wall collapses!</p>' +
+      '<p class="dig-status" aria-live="polite">Dig out the buried treasure before you run out of energy!</p>' +
     "</div>";
     const board = root.querySelector(".dig-board");
     const tiles = [...root.querySelectorAll(".dig-rock")];
@@ -49,7 +56,14 @@
       tiles.forEach((el, i) => {
         el.className = "dig-rock" + (dig.bedrock[i] ? " bedrock" : " l" + dig.rock[i]) + (i === cy * W() + cx ? " cursor" : "");
       });
-      root.querySelector(".dig-crack").style.width = pct(dig.shaken, dig.wall);
+      const p = window.Mining.progress(xpBefore + dig.xp);
+      root.querySelector(".dig-level").textContent = "Mining Lv. " + p.level;
+      root.querySelector(".xp .dig-fill").style.width = p.need ? pct(p.into, p.need) : "100%";
+      root.querySelector(".dig-xp").textContent = p.need ? p.into + " / " + p.need + " XP" : "Max";
+      const energy = root.querySelector(".energy .dig-fill");
+      energy.style.width = pct(dig.energy, dig.maxEnergy);
+      energy.classList.toggle("low", dig.energy <= dig.maxEnergy / 4);
+      root.querySelector(".dig-energy").textContent = dig.energy + " / " + dig.maxEnergy;
       for (const b of root.querySelectorAll(".dig-tool")) {
         b.classList.toggle("on", b.dataset.tool === tool);
         b.setAttribute("aria-pressed", String(b.dataset.tool === tool));
@@ -73,7 +87,7 @@
       function end() {
         finished = true;
         document.removeEventListener("keydown", onKey);
-        status.textContent = dig.collapsed ? "The wall collapsed!" : "Everything was dug up!";
+        status.textContent = dig.tired ? "You're out of energy!" : "Everything was dug up!";
         setTimeout(() => resolve(window.Mining.found(dig)), 900);
       }
       function onKey(e) {

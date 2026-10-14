@@ -450,26 +450,35 @@
   }
 
   // Diamond and Pearl's Underground digging (game/mining.js, ui/mining.js), in
-  // any cave. Whatever is fully dug out goes in the bag, and counts toward your
-  // mining level (flags.miningDug), which decides what can be buried.
+  // any cave. Whatever is fully dug out goes in the bag. Digging earns mining
+  // XP (flags.miningXp): your mining level decides your energy and what can be
+  // buried.
+  const miningXp = () => {
+    const f = player.flags;
+    // Saves from when the level counted treasures (each worth 20 XP now: the same level).
+    if (f.miningXp == null && f.miningDug) f.miningXp = f.miningDug * 20;
+    delete f.miningDug;
+    return f.miningXp | 0;
+  };
   async function explorerKit() {
     const here = player.location && window.WORLD_MAPS[player.location.map];
     if (!here || here.type !== "underground") { await message("Oak: " + player.name + "! This isn't the time to use that!"); return false; }
     await message(player.name + " used the Explorer Kit and started digging into the wall…");
     show("scene");
     clearMenu();
-    window.Screen.say("Tap a tile to dig. The Hammer digs wider but shakes the wall more. (Keys: arrows, Z to dig, X to switch tools.)");
-    const f = player.flags, before = Mining.level(f.miningDug);
-    const found = await MiningScreen.run(scene, Mining.create(Math.random, before, player.location.map));
+    window.Screen.say("Tap a tile to dig. The Hammer digs wider but uses twice the energy. (Keys: arrows, Z to dig, X to switch tools.)");
+    const f = player.flags, xp = miningXp(), before = Mining.level(xp);
+    const dig = Mining.create(Math.random, before, player.location.map);
+    const found = await MiningScreen.run(scene, dig, xp);
+    f.miningXp = xp + dig.xp;
     for (const id of found) {
       Player.addItem(player, id);
       await message(player.name + " obtained " + article(Bag.name(id)) + "!");
     }
     if (!found.length) await message("Nothing was dug up…");
-    // Every treasure dug out counts toward your mining level.
-    f.miningDug = (f.miningDug | 0) + found.length;
-    const after = Mining.level(f.miningDug);
-    if (after > before) await message("Your mining level rose to " + after + "! Rarer treasures may turn up now.");
+    await message("Gained " + dig.xp + " mining XP.");
+    const after = Mining.level(f.miningXp);
+    if (after > before) await message("Your mining level rose to " + after + "! You have more energy, and rarer treasures may turn up now.");
     await persist();
     return true;
   }
@@ -921,8 +930,8 @@
         "<dl><dt>Money</dt><dd>" + money(player.money) + "</dd>" +
         "<dt>Pokédex</dt><dd>" + player.pokedex.caught.length + " caught, " + player.pokedex.seen.length + " seen</dd>" +
         "<dt>Badges</dt><dd>" + player.badges.length + "</dd>" +
-        "<dt>Mining</dt><dd>Lv. " + Mining.level(player.flags.miningDug) + (Mining.toNext(player.flags.miningDug) == null ? " (max)"
-          : " <small>(" + Mining.toNext(player.flags.miningDug) + " more treasures to the next level)</small>") + "</dd>" +
+        "<dt>Mining</dt><dd>Lv. " + Mining.level(miningXp()) + (Mining.toNext(miningXp()) == null ? " (max)"
+          : " <small>(" + Mining.toNext(miningXp()) + " XP to the next level)</small>") + "</dd>" +
         "<dt>Play time</dt><dd>" + playTime(player.playTimeMs) + "</dd>" +
         "<dt>Started</dt><dd>" + new Date(player.createdAt).toLocaleDateString() + "</dd>" +
         "<dt>Last saved</dt><dd>" + (player.savedAt ? new Date(player.savedAt).toLocaleString() : "never") + "</dd></dl>" +

@@ -206,20 +206,20 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   EVs, as in X and Y.
 - **Explorer Kit** (a key item you start with): use it from the bag in a cave
   (Mt. Moon) to dig in the wall, as in Diamond and Pearl's Underground. Hit
-  tiles with the Pickaxe or the wider Hammer to clear the rock (1-6 layers;
-  grey bedrock can't be dug) and uncover 2-4 buried treasures — Heart Scales,
-  shards, evolution stones, Star Pieces, Revives, fossils, plates and more —
-  before the shaking brings the wall down. Your **mining level** (1-100, on
-  the trainer card) starts at 1, where only common treasures (Heart Scales
-  and shards) are buried, and rises with every treasure
-  you dig out: one treasure a level up to level 20, then 2, 3, 4 and 5 a level
-  (299 in all for level 100). Rarer treasures unlock along the way: Hard
-  Stones and Everstones at 5, Revives,
-  Star Pieces and Oval Stones at 10, the evolution stones at 20, every fossil
-  at 30, some held items at 38 and 51, Max Revives and Rare Bones at 63 and
-  the plates at 100. Each fossil is only found in its own caves: Kanto's
-  (Helix, Dome, Old Amber) in Mt. Moon; later regions' fossils will get caves
-  of their own. The rules are in `game/mining.js`, the screen in `ui/mining.js`.
+  tiles with the Pickaxe (1 energy) or the wider Hammer (2 energy) to clear
+  the rock (1-6 layers; grey bedrock can't be dug) and uncover 2-4 buried
+  treasures. The dig ends when every treasure is out (they go in your bag) or
+  your energy runs out (40 at mining level 1, rising to 100 at level 100).
+  Every hit earns 1 mining XP and every treasure 10 more; the top of the
+  screen shows your mining level, a bar to the next one, and your energy.
+  Levels take 20 XP each up to level 20, then 40, 60, 80 and 100 (5,980 XP in
+  all for level 100). Only common treasures (Heart Scales and shards) turn up
+  at first; rarer ones unlock along the way: Hard Stones and Everstones at 5,
+  Revives, Star Pieces and Oval Stones at 10, the evolution stones at 20,
+  every fossil at 30, some held items at 38 and 51, Max Revives and Rare Bones
+  at 63 and the plates at 100. Each fossil is only found in its own caves:
+  Kanto's (Helix, Dome, Old Amber) in Mt. Moon; later regions' fossils will
+  get caves of their own. The rules are in `game/mining.js`, the screen in `ui/mining.js`.
 - **Catching**: the Gen 6 formula (HP, catch rate, ball and status bonuses,
   four shake checks). Poké, Great, Ultra, Master, Net, Nest, Repeat, Timer,
   Quick and Dusk Balls have their bonuses. No critical captures yet.
