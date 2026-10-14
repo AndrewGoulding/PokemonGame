@@ -33,8 +33,8 @@ const { parseTextFile, cleanText } = require("./lib/text");
 
 // Names shown on entering a map; the rest come from the map name.
 const TITLES = {
-  PalletTown_PlayersHouse_1F: "Pallet Town · Home",
-  PalletTown_PlayersHouse_2F: "Pallet Town · Your room",
+  PalletTown_PlayersHouse_1F: "Pallet Town · Red's house",
+  PalletTown_PlayersHouse_2F: "Pallet Town · Red's house 2F",
   PalletTown_RivalsHouse: "Pallet Town · Rival's house",
   PalletTown_ProfessorOaksLab: "Pallet Town · Prof. Oak's Lab",
   ViridianCity_House: "Viridian City · Nickname house",
@@ -84,6 +84,8 @@ const ALT_GFX = {
 // Looks for people the game's own scenes put on a map (WORLD_SPRITES), e.g.
 // Red at the edge of Viridian Forest.
 const EXTRA_GFX = { red: "OBJ_EVENT_GFX_RED_NORMAL" };
+// Signs that read differently here: the house FireRed gives the player is Red's.
+const SIGN_TEXT = { PalletTown_EventScript_PlayersHouseSign: ["Red's house"] };
 // Scripts whose text is picked by code the converter can't follow.
 const SCRIPT_TEXT = {
   ViridianCity_School_EventScript_PokemonJournal: "PokemonJournal_Text_SpecialFeatureBrock",
@@ -495,7 +497,7 @@ for (const name of MAPS) {
     collision, elevation, behavior, encounter,
     connections: (map.connections || []).map((c) => ({ map: byConst[c.map] || null, mapConst: c.map, direction: c.direction, offset: c.offset })),
     warps: map.warp_events.map((wp) => ({ x: wp.x, y: wp.y, map: byConst[wp.dest_map] || null, mapConst: byConst[wp.dest_map] ? undefined : wp.dest_map, warp: +wp.dest_warp_id })),
-    signs: map.bg_events.filter((b) => b.type === "sign").map((b) => ({ x: b.x, y: b.y, script: b.script, text: scriptText(name, b.script) })),
+    signs: map.bg_events.filter((b) => b.type === "sign").map((b) => ({ x: b.x, y: b.y, script: b.script, text: SIGN_TEXT[b.script] || scriptText(name, b.script) })),
     triggers: map.coord_events.map((c) => ({ x: c.x, y: c.y, script: c.script })),
     hidden: map.bg_events.filter((b) => b.type === "hidden_item").map((b) => ({
       x: b.x, y: b.y, item: itemId(b.item), flag: b.flag, quantity: b.quantity || 1 })),

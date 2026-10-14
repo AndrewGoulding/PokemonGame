@@ -1202,8 +1202,10 @@
     switch (script) {
       case "PalletTown_PlayersHouse_1F_EventScript_Mom":
         if (!player.party.length) {
-          await say(["Mom: …Right.\nAll " + (Player.LOOKS[player.look].girl ? "girls" : "boys") + " leave home someday.\nIt said so on TV.",
-            "Oh, yes. Prof. Oak, next door, was\nlooking for you."]);
+          // She's Red's mom: he's already on his way.
+          await say(["Mom: …Right.\nAll boys leave home someday.\nIt said so on TV.",
+            "My son Red has already begun his\njourney. He should be in Viridian\nForest by now.",
+            "If you want a Pokémon of your own,\ngo see Prof. Oak."]);
           return;
         }
         await say("Mom: {PLAYER}! You should take a quick rest.");
