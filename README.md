@@ -179,7 +179,7 @@ Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils) are in `ui/game.j
 lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scripts
 (`walk_up`, `walk_in_place_faster_down`, `emote_exclamation_mark`, ...) from
 `window.WORLD_MOVEMENTS`; the converter writes both alongside the maps. Running
-uses the frames from `assets/sprites/overworld/<red|green>_surf_run.png`.
+uses the frames from `assets/sprites/overworld/player_character_surf_run.png`.
 You play as a custom character (Red and Leaf aren't playable: they're rivals
 in this game), and your rival is always Gary: Oak's speech asks only your
 name. The character's pictures: `assets/sprites/trainers/back/player_character.png`,
