@@ -843,6 +843,16 @@
       this.markParticipants();
       this.add(o.drag ? "drag" : "switch", mon, mon.species + ", L" + mon.level, this.hpStr(mon), this.expProgress(mon), mon.teamIndex);
       if (!o.noHazards) this.applyHazards(mon);
+      // A Healing Wish / Lunar Dance waiting for this side: full HP, no status
+      // (and full PP for Lunar Dance).
+      if (side.healingWish && !mon.fainted) {
+        const hw = side.healingWish;
+        side.healingWish = null;
+        this.cureStatus(mon, true);
+        if (hw.lunar) for (const m of mon.moves) m.pp = m.maxpp;
+        mon.hp = mon.maxhp;
+        this.add("-heal", mon, this.hpStr(mon), "[from] " + hw.name);
+      }
       if (!o.deferStart && !mon.fainted) { this.onSwitchInEvents(mon); this.runUpdates(); }
       return mon;
     }
@@ -1846,6 +1856,14 @@
         }
         this.field.pseudo[id] = { turns: id === "trickroom" ? 5 : id === "gravity" ? 5 : 5 };
         this.add("-fieldstart", id);
+        did = true;
+      }
+      // Healing Wish / Lunar Dance: the user faints and whoever comes in next
+      // is healed. Fails with no one left to come in (a wild Pokémon, or the
+      // last one standing).
+      if (move.slotCondition === "healingwish" || move.slotCondition === "lunardance") {
+        if (!user.side.pokemon.some((p) => p !== user && !p.fainted)) { this.add("-fail", user); return false; }
+        user.side.healingWish = { lunar: move.slotCondition === "lunardance", name: move.name };
         did = true;
       }
       if (move.slotCondition === "Wish" || move.slotCondition === "wish") {

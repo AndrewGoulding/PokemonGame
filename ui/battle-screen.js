@@ -69,7 +69,8 @@
     heal: "{who} regained health!", drain: "{foe} had its energy drained!", leechseed: null,
     aquaring: "A veil of water restored {whom}'s HP!", ingrain: "{who} absorbed nutrients with its roots!",
     grassyterrain: "{who}'s HP was restored by the grassy terrain.", wish: "{who}'s wish came true!",
-    rest: "{who} slept and became healthy!"
+    rest: "{who} slept and became healthy!", healingwish: "The healing wish came true for {whom}!",
+    lunardance: "{who} became cloaked in mystical moonlight!"
   };
   const VOLATILE_START = {
     confusion: "{who} became confused!", substitute: "{who} put in a substitute!",

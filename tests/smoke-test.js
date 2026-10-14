@@ -97,6 +97,35 @@ for (let seed = 1; seed <= BATTLES; seed++) {
   assert(battle.ended, "second hit of Dual Chop should have knocked out Pikachu");
 }
 
+// Healing Wish: fails with no one to come in (a wild Pokémon); otherwise the
+// user faints and the next Pokémon in is fully healed.
+{
+  const wild = new Battle({
+    seed: 2, wild: true,
+    p1: { name: "A", team: [{ species: "Pidgey", level: 20, moves: ["Growl"] }] },
+    p2: { name: "Wild", team: [{ species: "Jirachi", level: 20, moves: ["Healing Wish"] }] }
+  });
+  wild.start();
+  wild.choose("p1", { type: "move", move: 0 });
+  wild.choose("p2", { type: "move", move: 0 });
+  assert(!wild.sides.p2.active.fainted && !wild.ended, "a lone wild Pokémon's Healing Wish fails");
+  assert(wild.events.some((ev) => ev[0] === "-fail"));
+
+  const b = new Battle({
+    seed: 3,
+    p1: { name: "A", team: [{ species: "Jirachi", level: 50, moves: ["Healing Wish"] }, { species: "Pidgey", level: 50, moves: ["Growl"] }] },
+    p2: { name: "B", team: [{ species: "Pidgey", level: 5, moves: ["Growl"] }] }
+  });
+  b.start();
+  const pidgey = b.sides.p1.pokemon[1];
+  pidgey.hp = 1; pidgey.status = "par";
+  b.choose("p1", { type: "move", move: 0 });
+  b.choose("p2", { type: "move", move: 0 });
+  assert(b.sides.p1.pokemon[0].fainted, "Healing Wish's user faints");
+  b.choose("p1", { type: "switch", index: 1 });
+  assert.deepStrictEqual([pidgey.hp, pidgey.status], [pidgey.maxhp, ""], "the next Pokémon in is healed");
+}
+
 // Moves start at their base PP unless the set asks for PP Ups.
 {
   const battle = new Battle({
