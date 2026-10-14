@@ -212,10 +212,11 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   shards, Hard Stones, Everstones) are buried, and rises with every treasure
   you dig out: one treasure a level up to level 20, then 2, 3, 4 and 5 a level
   (299 in all for level 100). Rarer treasures unlock along the way: Revives,
-  Star Pieces and Oval Stones at 13, the first evolution stones at 26, Moon
-  and Sun Stones and some held items at 38 and 51, Max Revives and Rare Bones
-  at 63, Kanto's fossils at 75, Sinnoh's at 88 and the plates at 100. Mt. Moon
-  only holds Kanto's fossils (Helix, Dome, Old Amber). The rules are in `game/mining.js`, the screen in `ui/mining.js`.
+  Star Pieces and Oval Stones at 10, the evolution stones at 20, every fossil
+  at 30, some held items at 38 and 51, Max Revives and Rare Bones at 63 and
+  the plates at 100. Each fossil is only found in its own caves: Kanto's
+  (Helix, Dome, Old Amber) in Mt. Moon; later regions' fossils will get caves
+  of their own. The rules are in `game/mining.js`, the screen in `ui/mining.js`.
 - **Catching**: the Gen 6 formula (HP, catch rate, ball and status bonuses,
   four shake checks). Poké, Great, Ultra, Master, Net, Nest, Repeat, Timer,
   Quick and Dusk Balls have their bonuses. No critical captures yet.

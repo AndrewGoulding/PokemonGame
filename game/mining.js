@@ -25,17 +25,17 @@
     ["blue-shard", 8, ["xxx", "xxx", "xx."], 1],
     ["yellow-shard", 8, ["x.x.", "xxx.", "xxxx"], 1],
     ["green-shard", 8, ["xxxx", "xxxx", "xx.x"], 1],
-    ["fire-stone", 4, ["xxx", "xxx", "xxx"], 26],
-    ["water-stone", 4, ["xxx", "xxx", "xx."], 26],
-    ["thunder-stone", 4, [".xx", "xxx", "xx."], 26],
-    ["leaf-stone", 4, [".x.", "xxx", "xxx", ".x."], 26],
-    ["moon-stone", 3, [".xxx", "xxx."], 38],
-    ["sun-stone", 3, [".x.", "xxx", "xxx"], 38],
-    ["oval-stone", 4, ["xxx", "xxx", "xxx"], 13],
+    ["fire-stone", 4, ["xxx", "xxx", "xxx"], 20],
+    ["water-stone", 4, ["xxx", "xxx", "xx."], 20],
+    ["thunder-stone", 4, [".xx", "xxx", "xx."], 20],
+    ["leaf-stone", 4, [".x.", "xxx", "xxx", ".x."], 20],
+    ["moon-stone", 3, [".xxx", "xxx."], 20],
+    ["sun-stone", 3, [".x.", "xxx", "xxx"], 20],
+    ["oval-stone", 4, ["xxx", "xxx", "xxx"], 10],
     ["everstone", 5, ["xxxx", "xxxx"], 1],
     ["hard-stone", 5, ["xx", "xx"], 1],
-    ["star-piece", 5, [".x.", "xxx", ".x."], 13],
-    ["revive", 5, [".x.", "xxx", ".x."], 13],
+    ["star-piece", 5, [".x.", "xxx", ".x."], 10],
+    ["revive", 5, [".x.", "xxx", ".x."], 10],
     ["max-revive", 1, ["xxx", "xxx", "xxx"], 63],
     ["rare-bone", 2, ["x....x", "xxxxxx", "x....x"], 63],
     ["iron-ball", 2, ["xxx", "xxx", "xxx"], 38],
@@ -44,13 +44,13 @@
     ["heat-rock", 2, ["x.x.", "xxxx", "xxxx"], 51],
     ["icy-rock", 2, [".xx.", "xxxx", "xxxx", "x..x"], 51],
     ["smooth-rock", 2, ["..x.", "xxx.", ".xxx", ".x.."], 38],
-    ["helix-fossil", 1, [".xxx", "xxxx", "xxxx", "xxx."], 75],
-    ["dome-fossil", 1, ["xxxxx", "xxxxx", ".xxx."], 75],
-    ["old-amber", 1, [".xxx", "xxxx", "xxxx", "xxx."], 75],
-    ["root-fossil", 1, ["xxxx.", "xxxxx", "xx.xx", "...xx"], 88],
-    ["claw-fossil", 1, ["..xxx", ".xxxx", "xxxx.", "xx..."], 88],
-    ["skull-fossil", 1, ["xxxx", "xxxx", "xxxx", ".xx."], 88],
-    ["armor-fossil", 1, [".xxx.", ".xxx.", "xxxxx", ".xxx."], 88]
+    ["helix-fossil", 1, [".xxx", "xxxx", "xxxx", "xxx."], 30],
+    ["dome-fossil", 1, ["xxxxx", "xxxxx", ".xxx."], 30],
+    ["old-amber", 1, [".xxx", "xxxx", "xxxx", "xxx."], 30],
+    ["root-fossil", 1, ["xxxx.", "xxxxx", "xx.xx", "...xx"], 30],
+    ["claw-fossil", 1, ["..xxx", ".xxxx", "xxxx.", "xx..."], 30],
+    ["skull-fossil", 1, ["xxxx", "xxxx", "xxxx", ".xx."], 30],
+    ["armor-fossil", 1, [".xxx.", ".xxx.", "xxxxx", ".xxx."], 30]
   ].concat(["flame", "splash", "zap", "meadow", "icicle", "fist", "toxic", "earth", "sky", "mind", "insect",
     "stone", "spooky", "draco", "dread", "iron"].map((p) => [p + "-plate", 0.5, ["xxxx", "xxxx", "xxxx"], 100]));
 
@@ -65,16 +65,16 @@
   // Treasures dug out to reach the next level (null at the top).
   const toNext = (dug) => (level(dug) >= MAX_LEVEL ? null : LEVELS[level(dug)] - (dug | 0));
 
-  // Some caves only hold certain fossils: Mt. Moon has Kanto's (Helix, Dome,
-  // Old Amber). A cave not listed can have any.
-  const CAVE_FOSSILS = { MtMoon: ["helix-fossil", "dome-fossil", "old-amber"] };
-  const isFossil = (item) => /-fossil$/.test(item) || item === "old-amber";
-  const caveOf = (map) => Object.keys(CAVE_FOSSILS).find((c) => String(map || "").startsWith(c + "_"));
-  // What can be buried at level `lv`, in map `map` (optional).
-  const available = (lv, map) => {
-    const only = CAVE_FOSSILS[caveOf(map)];
-    return TREASURES.filter((t) => t[3] <= lv && !(only && isFossil(t[0]) && !only.includes(t[0])));
+  // Fossils are all found from the same level, but each only in its own caves:
+  // Kanto's in Mt. Moon. (Later regions' fossils will get their own caves; until
+  // then they aren't found anywhere.) Caves are map name prefixes.
+  const FOSSIL_CAVES = {
+    "helix-fossil": ["MtMoon"], "dome-fossil": ["MtMoon"], "old-amber": ["MtMoon"],
+    "root-fossil": [], "claw-fossil": [], "skull-fossil": [], "armor-fossil": []
   };
+  const inCave = (map, caves) => caves.some((c) => String(map || "").startsWith(c + "_"));
+  // What can be buried at level `lv` in map `map`.
+  const available = (lv, map) => TREASURES.filter((t) => t[3] <= lv && (!FOSSIL_CAVES[t[0]] || inCave(map, FOSSIL_CAVES[t[0]])));
 
   // Bedrock: shapes that can't be dug.
   const BEDROCK = [["xx", "xx"], ["xxx"], ["x", "x", "x"], ["xxx", ".x."], ["xx.", ".xx"], ["xxxx"]];
@@ -160,5 +160,5 @@
 
   const found = (dig) => dig.treasures.filter((t) => t.found).map((t) => t.item);
 
-  window.Mining = { WIDTH, HEIGHT, WALL, SHAKE, TREASURES, LEVELS, MAX_LEVEL, CAVE_FOSSILS, level, toNext, available, create, hit, found };
+  window.Mining = { WIDTH, HEIGHT, WALL, SHAKE, TREASURES, LEVELS, MAX_LEVEL, FOSSIL_CAVES, level, toNext, available, create, hit, found };
 })();
