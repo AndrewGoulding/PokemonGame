@@ -1120,8 +1120,9 @@
     PalletTown_ProfessorOaksLab_EventScript_SquirtleBall: { species: "Squirtle", kind: "Water", flag: "FLAG_HIDE_SQUIRTLE_BALL", x: 9, id: "LOCALID_SQUIRTLE_BALL" },
     PalletTown_ProfessorOaksLab_EventScript_CharmanderBall: { species: "Charmander", kind: "Fire", flag: "FLAG_HIDE_CHARMANDER_BALL", x: 10, id: "LOCALID_CHARMANDER_BALL" }
   };
-  // Leaf, in the lab, takes the starter that beats yours.
-  const RIVAL_PICK = { Bulbasaur: "Charmander", Charmander: "Squirtle", Squirtle: "Bulbasaur" };
+  // Leaf, in the lab, takes the starter that's weak against yours, leaving the
+  // one that beats yours for Red (in Viridian Forest).
+  const RIVAL_PICK = { Bulbasaur: "Squirtle", Charmander: "Bulbasaur", Squirtle: "Charmander" };
   const ballOf = (species) => Object.values(STARTER_BALLS).find((b) => b.species === species);
 
   const SPECIAL = new Set([
@@ -1252,10 +1253,15 @@
       Player.receive(player, Party.create(ball.species, STARTER_LEVEL));
       Overworld.removeObject(ball.id);
       await say("{PLAYER} received the " + ball.species + " from Prof. Oak!");
-      // Your rival walks over to the Poké Ball that beats yours and takes it.
+      // Leaf walks over to the Poké Ball that's weak against yours and takes it.
+      // (FireRed's walk to Squirtle runs along the row you stand in, past
+      // Bulbasaur's ball: with you there, she goes round, a row lower.)
       const theirs = RIVAL_PICK[ball.species];
       await say(["Leaf: Then I'll take this one!\nI think we'll get along great."]);
-      await Overworld.act([{ who: LAB_RIVAL, moves: M("PalletTown_ProfessorOaksLab_Movement_RivalWalksTo" + theirs) }]);
+      const walk = theirs === "Squirtle" && ball.species === "Bulbasaur"
+        ? ["walk_down", "walk_down", "walk_right", "walk_right", "walk_right", "walk_right", "walk_up"]
+        : M("PalletTown_ProfessorOaksLab_Movement_RivalWalksTo" + theirs);
+      await Overworld.act([{ who: LAB_RIVAL, moves: walk }]);
       Overworld.removeObject(ballOf(theirs).id);
       f.starter = ball.species;
       await say(LAB_RIVAL_NAME + " received the " + theirs + " from Prof. Oak!");
@@ -1943,10 +1949,11 @@
 
   // ---------- Red, at the edge of Viridian Forest ----------
   //
-  // Walking up the last stretch of the forest toward Pewter, Red comes in from
-  // the exit, says nothing much, and battles: the starter neither you nor Leaf
-  // took (level 8) and Pikachu (level 10). Losing blacks you out, and he waits
-  // there again.
+  // Walking up the last stretch of the forest toward Pewter, Red catches up
+  // with you from behind, says nothing much, and battles: the starter neither
+  // you nor Leaf took, the one that beats yours (level 8), and Pikachu (level
+  // 10). Then he goes on past you to Pewter. Losing blacks you out, and he
+  // catches up with you there again.
   function redForestStep() {
     const f = player.flags, at = Overworld.position();
     if (f.redForest || !f.starter || at.map !== "ViridianForest") return null;
@@ -1954,8 +1961,9 @@
   }
   async function redForest() {
     const f = player.flags, R = "LOCALID_RED", at = Overworld.position();
-    Overworld.addObject(R, { x: at.x, y: 9, facing: "down" }, window.WORLD_SPRITES.red);
-    await Overworld.act([{ who: R, moves: ["walk_down", "walk_down"] }]);
+    Overworld.addObject(R, { x: at.x, y: at.y + 5, facing: "up" }, window.WORLD_SPRITES.red);
+    await Overworld.act([{ who: R, moves: ["walk_up", "walk_up", "walk_up", "walk_up"] }]);
+    await Overworld.act([{ who: "player", moves: M("Common_Movement_ExclamationMark").concat(M("Common_Movement_WalkInPlaceFasterDown")) }]);
     await say("…");
     const starter = Object.values(STARTER_BALLS).map((b) => b.species).find((sp) => sp !== f.starter && sp !== RIVAL_PICK[f.starter]);
     const team = [Party.create(starter, 8), Party.create("Pikachu", 10)];
@@ -1965,7 +1973,8 @@
     show("world");
     await Overworld.resume();
     await say("…");
-    await Overworld.act([{ who: R, moves: ["walk_up", "walk_up", "set_invisible"] }]);
+    // Past you (by the other side of the path) and out toward Pewter.
+    await Overworld.act([{ who: R, moves: [at.x === 4 ? "walk_right" : "walk_left", "walk_up", "walk_up", "walk_up", "walk_up", "set_invisible"] }]);
     Overworld.removeObject(R);
   }
 
@@ -2038,13 +2047,20 @@
     Overworld.removeObject(G);
   }
 
+  // Brock's team: FireRed's Geodude and Onix, plus Zubat (level 11), which he
+  // leads with, and Vulpix (level 13).
+  function brockTeam() {
+    const [geodude, onix] = trainerTeam("TRAINER_LEADER_BROCK");
+    return [Party.create("Zubat", 11, { ivs: 0 }), geodude, Party.create("Vulpix", 13, { ivs: 0 }), onix];
+  }
+
   // Brock: battle (talking to him), then the Boulder Badge and TM39.
   async function brock(person) {
     const f = player.flags;
     if (!f.TRAINER_LEADER_BROCK) {
       await say(person.trainer.intro);
       if (!canBattle()) return;
-      const outcome = await battle("trainer", { foe: { name: "Leader Brock", team: trainerTeam("TRAINER_LEADER_BROCK"), pic: "leader_brock" },
+      const outcome = await battle("trainer", { foe: { name: "Leader Brock", team: brockTeam(), pic: "leader_brock" },
         defeatText: person.trainer.defeat, trainerId: "TRAINER_LEADER_BROCK", terrain: "leader" });
       if (outcome !== "won") return;
       if (!hasBadge("boulder")) player.badges.push("boulder");

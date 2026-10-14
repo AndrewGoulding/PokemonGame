@@ -15,7 +15,7 @@ yourself before you shrink away into Pallet Town, just outside Red's house. Try
 to leave town through the tall grass to the north and Prof. Oak stops you and
 walks you to his lab, where Leaf is waiting; pick Bulbasaur, Squirtle or Charmander from the
 Poké Balls on his table (each one shows you its Pokémon before you decide).
-Leaf walks over and takes the one that beats yours; on your way out she walks up
+Leaf walks over and takes the one that's weak against yours; on your way out she walks up
 to you for a practice battle, then heads off. Then Route 1's tall grass, north of town, has FireRed's wild
 Pokémon. Gary's older sister Daisy, at her table next door, introduces
 herself and gives you a Town Map the first time you talk to her. Red's Mom heals your party, and the PC upstairs stores items (there's a
@@ -170,9 +170,10 @@ desk at the back; until then there's no Pokédex in the menu), the
 Viridian old man, the nurse, the move tutor, the Route 2 trade of Abra for
 Mr. Mime "Mimien", Prof. Oak's Aide giving HM05 Flash for ten kinds
 caught, your rival Gary on Route 22 (Pidgey and Eevee, as in Yellow), Red
-waiting at the north end of Viridian Forest, the League gate guard, Pewter's Gym guide
+catching up with you at the north end of Viridian Forest (with the starter
+that beats yours and Pikachu), the League gate guard, Pewter's Gym guide
 and Museum guide walking you over, the Museum's ₽50 ticket, the Old Amber,
-the Seismic Toss tutor, Brock with the Boulder Badge and TM39, the Mega Punch and Mega Kick tutors (who teach
+the Seismic Toss tutor, Brock (Zubat, Geodude, Vulpix and Onix) with the Boulder Badge and TM39, the Mega Punch and Mega Kick tutors (who teach
 again and again, for ₽1,000 each time), the
 Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils, and Jessie & James
 at the end of Mt. Moon as in Yellow) are in `ui/game.js`; their FireRed
