@@ -1236,14 +1236,21 @@
         await dreamEaterTutor(ev.person.text);
         return;
 
-      case "enter:ViridianCity_Mart":
+      // FireRed's parcel scene: the clerk calls out, you walk up to the counter.
+      case "enter:ViridianCity_Mart": {
         if (f.oaksParcel) return;
+        const CLERK = "LOCALID_VIRIDIAN_MART_CLERK";
+        await Overworld.act([{ who: CLERK, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
         await say(T("ViridianCity_Mart_Text_YouCameFromPallet"));
+        await Overworld.act([
+          { who: CLERK, moves: M("ViridianCity_Mart_Movement_FacePlayer") },
+          { who: "player", moves: M("ViridianCity_Mart_Movement_ApproachCounter") }]);
         await say(T("ViridianCity_Mart_Text_TakeThisToProfOak"));
         f.oaksParcel = true;
         Player.addItem(player, "oaks-parcel");
         await say(T("ViridianCity_Mart_Text_ReceivedOaksParcelFromClerk"));
         return;
+      }
 
       case "ViridianCity_Mart_EventScript_Clerk":
         if (!f.parcelDelivered) { await say(T("ViridianCity_Mart_Text_SayHiToOakForMe")); return; }

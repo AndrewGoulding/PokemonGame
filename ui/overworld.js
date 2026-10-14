@@ -305,7 +305,7 @@
       t.emoting = /^emote_/.test(cmd);
       busy = true;
     }
-    if (!busy) { const done = scene.resolve; scene = null; done(); }
+    if (!busy) { const done = scene.resolve; scene = null; savePosition(); done(); }   // keep any turn in place
   }
 
   // Plays movement scripts side by side: act([{ who: "player" | localId, moves: [...] }]).
@@ -360,7 +360,7 @@
     if (World.blockAt(me.map, tx, ty).behavior === World.MB.COUNTER) { tx += dx; ty += dy; }
     const person = personAt(tx, ty);
     if (person && !person.move) {
-      person.facing = World.OPPOSITE[me.facing];
+      if (!person.def.inanimate) person.facing = World.OPPOSITE[me.facing];
       person.timer = 180;
       if (ctx.special && ctx.special(person.def.script)) return finish({ type: "talk", person: person.def, map: me.map });
       if (person.def.text) read(person.def.text);

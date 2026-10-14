@@ -258,7 +258,9 @@ function objectSprite(gfx) {
   const name = path.basename(file, ".png");
   const png = readPng(P(file));
   writeSprite(png, path.join(outSprites, name + ".png"));
-  return (spriteInfo[gfx] = { sprite: name, width, height, frames: Math.max(1, Math.floor(png.width / width)) });
+  // Objects (cut trees, item balls, the Town Map) don't turn to face you.
+  const inanimate = /\.inanimate = TRUE/.test(block) || undefined;
+  return (spriteInfo[gfx] = { sprite: name, width, height, frames: Math.max(1, Math.floor(png.width / width)), inanimate });
 }
 
 // `count` frames of `frameWidth` pixels from an indexed sheet, starting at frame `first`.
