@@ -28,7 +28,8 @@ sells to you and the old man lying across the road north gets up and shows you
 how to catch Pokémon. The Pokémon Center's nurse heals your party (and is where
 you return if you black out), and its PC holds both Pokémon and items. There's
 also a move tutor who teaches Dream Eater once, a school and the Nickname house.
-Route 2, Route 22 and the Gym (locked until you have seven badges) aren't built yet.
+Route 2, Route 22 and the Gym aren't built yet; walking into the Gym's door
+tells you it's locked (it opens at seven badges in FireRed).
 
 **Controls**: arrow keys or WASD to walk, hold Shift (or X / B) to run (indoors too, with FireRed's running animation), Z / Space /
 Enter to talk or read signs (or click / tap a person, sign or PC: you walk over

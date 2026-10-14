@@ -1047,7 +1047,7 @@
     "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerRight",
     "Route1_EventScript_MartClerk", "PalletTown_RivalsHouse_EventScript_Daisy", "PalletTown_ProfessorOaksLab_EventScript_LeaveStarterSceneTrigger",
     "PalletTown_ProfessorOaksLab_EventScript_Rival", "PalletTown_ProfessorOaksLab_EventScript_ProfOak",
-    "ViridianCity_EventScript_RoadBlocked", "ViridianCity_EventScript_GymDoorLocked",
+    "ViridianCity_EventScript_RoadBlocked",
     "ViridianCity_EventScript_TutorialTriggerLeft", "ViridianCity_EventScript_TutorialTriggerRight",
     "ViridianCity_EventScript_TutorialOldMan", "ViridianCity_EventScript_Woman", "ViridianCity_EventScript_Youngster",
     "ViridianCity_EventScript_DreamEaterTutor",
@@ -1064,10 +1064,8 @@
   function visible(person) {
     const f = player.flags;
     if (person.item) return !f[person.flag];
-    // Daisy sits at the table until she's given you the Town Map.
-    if (person.script === "PalletTown_RivalsHouse_EventScript_Daisy") {
-      return f.townMap ? true : { x: 5, y: 4, movement: "face_right" };
-    }
+    // Daisy sits at the table, before and after giving you the Town Map.
+    if (person.script === "PalletTown_RivalsHouse_EventScript_Daisy") return { x: 5, y: 4, movement: "face_right" };
     if (person.flag === "FLAG_HIDE_TOWN_MAP") return !f.townMap;
     // Lying across the road north until Oak gets his parcel, then up and about.
     if (person.script === "ViridianCity_EventScript_TutorialOldMan") {
@@ -1232,12 +1230,6 @@
       case "ViridianCity_EventScript_Youngster":
         await say(T(await confirm(fill(T("ViridianCity_Text_WantToKnowAboutCaterpillarMons").join(" ")))
           ? "ViridianCity_Text_ExplainCaterpieWeedle" : "ViridianCity_Text_OhOkayThen"));
-        return;
-
-      case "ViridianCity_EventScript_GymDoorLocked":
-        if (player.badges.length >= 7) return;
-        await say(T("ViridianCity_Text_GymDoorsAreLocked"));
-        Overworld.forceStep("down");
         return;
 
       case "ViridianCity_EventScript_DreamEaterTutor":

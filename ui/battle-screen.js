@@ -574,7 +574,11 @@
       const options = [];
       if (active.forced) options.push({ label: "Continue", value: { type: "move", move: 0 }, className: "action", wide: true });
       else if (active.struggle) options.push({ label: "Struggle", value: { type: "move", move: "Struggle" }, className: "action", wide: true });
-      else for (const m of active.moves) options.push(moveOption(m));
+      else {
+        for (const m of active.moves) options.push(moveOption(m));
+        // Always four move slots, so Bag / Pokémon / Run sit on their own row.
+        for (let i = active.moves.length; i < 4; i++) options.push({ label: "—", value: null, disabled: true, className: "empty-move" });
+      }
       if (!active.forced) {
         const small = battle.wild ? "action small" : "action";
         if (config.bag) options.push({ label: "Bag", value: "bag", className: small });

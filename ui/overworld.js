@@ -481,6 +481,12 @@
     }
     if (r.warp && !r.ok) { warpTo(r.warp); return; }
     if (r.ok) { startStep(r, dir); return; }
+    // A door that leads nowhere yet (a locked Gym): its sign says why.
+    if (r.door && performance.now() - bumpMessageAt > 3000) {
+      const [dx, dy] = World.DIRS[dir];
+      const sign = World.signAt(me.map, me.x + dx, me.y + dy);
+      if (sign && sign.text) { bumpMessageAt = performance.now(); read(sign.text); return; }
+    }
     if (r.unbuilt && performance.now() - bumpMessageAt > 3000) {
       bumpMessageAt = performance.now();
       const place = r.unbuilt.replace(/^MAP_/, "").toLowerCase().replace(/(^|_)(\w)/g, (_, s, c) => (s ? " " : "") + c.toUpperCase());

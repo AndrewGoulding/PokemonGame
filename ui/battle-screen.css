@@ -224,6 +224,8 @@ body {
 .move-meta { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; opacity: 0.85; }
 
 .menu button.action { text-align: center; background: #f4f1e6; }
+.menu button.empty-move { text-align: center; color: #888; background: #e9e6dc; }
+.menu button.empty-move:disabled { opacity: 0.6; cursor: default; }
 .menu small { font-weight: 600; opacity: 0.7; }
 
 /* Type colours for move buttons (text stays dark for contrast) */
