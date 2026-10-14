@@ -173,7 +173,8 @@ caught, your rival Gary on Route 22 (Pidgey and Eevee, as in Yellow), Red
 catching up with you at the north end of Viridian Forest (with the starter
 that beats yours and Pikachu), the League gate guard, Pewter's Gym guide
 and Museum guide walking you over, the Museum's ₽50 ticket, the Old Amber,
-the Seismic Toss tutor, Brock (Zubat, Geodude, Vulpix and Onix) with the Boulder Badge and TM39, the Mega Punch and Mega Kick tutors (who teach
+the Seismic Toss tutor, Brock (Zubat, Geodude, Vulpix and Onix) with the Boulder Badge and TM39, Leaf waiting outside the Gym
+afterwards for a battle (her starter and a Jigglypuff), the Mega Punch and Mega Kick tutors (who teach
 again and again, for ₽1,000 each time), the
 Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils, and Jessie & James
 at the end of Mt. Moon as in Yellow) are in `ui/game.js`; their FireRed

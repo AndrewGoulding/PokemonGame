@@ -118,7 +118,7 @@
     unnerve: "{team} is too nervous to eat Berries!", turboblaze: "{who} is radiating a blazing aura!",
     teravolt: "{who} is radiating a bursting aura!", darkaura: "{who} is radiating a dark aura!",
     fairyaura: "{who} is radiating a fairy aura!", aurabreak: "{who} reversed all other Pokémon's auras!",
-    sturdy: "{who} endured the hit!", anticipation: "{who} shuddered!",
+    sturdy: "{who} held on with its sturdiness!", anticipation: "{who} shuddered!",
     airlock: "The effects of the weather disappeared.", cloudnine: "The effects of the weather disappeared."
   };
   const SIDE_START = {

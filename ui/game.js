@@ -920,7 +920,7 @@
         Player.LOOKS[player.look].front + '.png"><h2>' + escapeHtml(player.name) + "</h2>" +
         "<dl><dt>Money</dt><dd>" + money(player.money) + "</dd>" +
         "<dt>Pokédex</dt><dd>" + player.pokedex.caught.length + " caught, " + player.pokedex.seen.length + " seen</dd>" +
-        "<dt>Badges</dt><dd>" + player.badges.length + " <small>(gyms come with the map)</small></dd>" +
+        "<dt>Badges</dt><dd>" + player.badges.length + "</dd>" +
         "<dt>Mining</dt><dd>Lv. " + Mining.level(player.flags.miningDug) + (Mining.toNext(player.flags.miningDug) == null ? " (max)"
           : " <small>(" + Mining.toNext(player.flags.miningDug) + " more treasures to the next level)</small>") + "</dd>" +
         "<dt>Play time</dt><dd>" + playTime(player.playTimeMs) + "</dd>" +
@@ -1390,6 +1390,10 @@
         return;
 
       // FireRed's parcel scene: the clerk calls out, you walk up to the counter.
+      case "enter:PewterCity":
+        await leafPewter();
+        return;
+
       case "enter:ViridianCity_Mart": {
         if (f.oaksParcel) return;
         const CLERK = "LOCALID_VIRIDIAN_MART_CLERK";
@@ -1947,6 +1951,41 @@
     Overworld.removeObject(R);
   }
 
+  // ---------- Leaf, outside Pewter Gym ----------
+  //
+  // When you come out of the Gym with the Boulder Badge, Leaf comes over,
+  // happy for you: she has a Pokédex from Prof. Oak too, and wants a battle.
+  // Her starter (level 14, the one weak against yours) and Jigglypuff (level
+  // 12). Losing doesn't black you out. Win or lose, she heads off after.
+  function leafPewterDue() {
+    const f = player.flags, at = player.location;
+    const door = window.WORLD_MAPS.PewterCity.warps.find((w) => w.map === "PewterCity_Gym");
+    return !!(f.TRAINER_LEADER_BROCK && f.starter && !f.leafPewter && door && at.x === door.x && at.y === door.y && canBattle());
+  }
+  async function leafPewter() {
+    const f = player.flags, L = "LOCALID_LEAF";
+    await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
+    const at = Overworld.position();
+    Overworld.addObject(L, { x: at.x + 5, y: at.y, facing: "left" }, window.WORLD_SPRITES.leaf);
+    await Overworld.act([{ who: L, moves: ["walk_left", "walk_left", "walk_left", "walk_left"] }]);
+    await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
+    await say(["Leaf: {PLAYER}! I saw you go into the\nGym. You beat Brock? That's amazing!",
+      "Guess what? I went back to see Prof.\nOak, and he gave me a Pokédex too!",
+      "I've been filling it in all the way\nhere. Look, I even caught a\nJigglypuff on Route 3!",
+      "How about a battle? I want to see\nhow strong your Pokémon have gotten!"]);
+    const team = [Party.create(RIVAL_PICK[f.starter], 14), Party.create("Jigglypuff", 12)];
+    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green" },
+      defeatText: ["Wow! You really are strong,\n{PLAYER}!"], noBlackout: true });
+    f.leafPewter = true;
+    show("world");
+    await Overworld.resume();
+    if (outcome === "lost") await say(["Leaf: Yay, I won! Your Pokémon were\ngreat too, {PLAYER}!"]);
+    await say(["Leaf: That was a great battle!\nI'm going to keep working on my\nPokédex.",
+      "Let's both try to fill ours in!\nSee you later, {PLAYER}!"]);
+    await Overworld.act([{ who: L, moves: ["walk_right", "walk_right", "walk_right", "walk_right", "set_invisible"] }]);
+    Overworld.removeObject(L);
+  }
+
   // ---------- Red, at the edge of Viridian Forest ----------
   //
   // Walking up the last stretch of the forest toward Pewter, Red catches up
@@ -2127,7 +2166,8 @@
 
   function special(script) {
     // Coming back into Pewter City: the Museum ticket was for one visit (FireRed's OnTransition).
-    if (script === "enter:PewterCity") { player.flags.museumTicket = false; return false; }
+    // Coming out of the Gym with the Boulder Badge, Leaf is waiting.
+    if (script === "enter:PewterCity") { player.flags.museumTicket = false; return leafPewterDue(); }
     // Walking into the Route 4 Pokémon Center makes it where you go after
     // blacking out (FireRed's setrespawn there).
     if (script === "enter:Route4_PokemonCenter_1F") { player.flags.lastCenter = "Route4_PokemonCenter_1F"; return false; }
