@@ -218,6 +218,7 @@
   }
 
   async function gameFreak() {
+    if (window.GameAudio) window.GameAudio.music("mus_game_freak");
     const parts = [];          // sparkles: { x, y, vx, vy, age, life, kind, blink }
     const scene = { open: 0, star: null, nameAlpha: 0, logoAlpha: 0, logoShown: false, allAlpha: 1, big: [] };
     fade.level = 0;   // the backdrop stays black; the letterbox opening reveals the scene
@@ -296,6 +297,7 @@
 
   // Scene 1: rushing through the grass (IntroCB_Scene1).
   async function scene1() {
+    if (window.GameAudio) window.GameAudio.music("mus_intro_fight");
     const s = { grass: 0, bg: 0, grassY: 0, scroll: 0 };
     paint = () => letterbox(() => {
       bg("movie-s1-bg", 0, 128 * s.bg, 256, 512);
@@ -569,6 +571,7 @@
   }
 
   async function titleScreen() {
+    if (window.GameAudio) window.GameAudio.music("mus_title");
     await preload(TITLE_IMAGES);
     start();
     skipped = false;
@@ -764,6 +767,7 @@
 
   // 1. The controls guide (three pages, A forward, B back).
   async function controlsGuide() {
+    if (window.GameAudio) window.GameAudio.music("mus_new_game_instruct");
     let page = 1;
     const s = { page: 1, dim: 0 };
     paint = () => {
@@ -837,6 +841,7 @@
 
   // 3. Prof. Oak.
   async function speech() {
+    if (window.GameAudio) window.GameAudio.music("mus_new_game_intro");
     const s = {
       pic: "oak-speech-oak", picAlpha: 1, picX: 0, platform: true, platformX: 0,
       ball: null, mon: null, monAlpha: 1, flash: 0, naming: null,
@@ -892,6 +897,7 @@
     await wait(20);
     await flash();
     s.ball = null; s.mon = { dy: 0 }; s.monAlpha = 1;
+    if (window.GameAudio) window.GameAudio.cry("Nidoran-F");
     await wait(32);
     await say(IT("gOakSpeech_Text_IsInhabitedFarAndWide"));
     await say(IT("gOakSpeech_Text_IStudyPokemon"));
@@ -948,7 +954,9 @@
     show(letsGo[letsGo.length - 1]);
     await wait(30);
 
-    // The player turns white and shrinks away as everything goes dark.
+    // The player turns white and shrinks away as everything goes dark (to
+    // FireRed's closing jingle).
+    if (window.GameAudio) { window.GameAudio.music(null); window.GameAudio.fanfare("mus_new_game_exit"); }
     const darken = until((t) => (s.bgDark = Math.min(1, (t + 1) / 45)) >= 1).then(() => { s.platform = false; });
     const whiten = (async () => {
       await wait(8);

@@ -382,7 +382,11 @@ function buildTrainers(ids) {
           .map((x) => moveByID[toID(x)]) : undefined
       };
     });
-    out[id] = { className, name: constName(/\.trainerName = _\("(.*?)"\)/.exec(block)[1]), pic: trainerPic(pic), party };
+    // The music when they spot you (FireRed's PlayTrainerEncounterMusic).
+    const enc = (/\.encounterMusic_gender = (?:F_TRAINER_FEMALE \| )?TRAINER_ENCOUNTER_MUSIC_(\w+)/.exec(block) || [])[1];
+    const music = ["FEMALE", "GIRL", "TWINS"].includes(enc) ? "mus_encounter_girl"
+      : ["AQUA", "MAGMA", "SUSPICIOUS"].includes(enc) ? "mus_encounter_rocket" : "mus_encounter_boy";
+    out[id] = { className, name: constName(/\.trainerName = _\("(.*?)"\)/.exec(block)[1]), pic: trainerPic(pic), party, music };
   }
   return out;
 }
@@ -521,6 +525,8 @@ for (const name of MAPS) {
   out[name] = {
     name, title: TITLES[name] || name.replace(/_/g, " ").replace(/([a-z])([A-Z0-9])/g, "$1 $2"),
     width: w, height: h, type: map.map_type.replace(/^MAP_TYPE_/, "").toLowerCase(),
+    // Its song (assets/audio/music.js), e.g. "mus_pallet".
+    music: map.music ? map.music.toLowerCase() : undefined,
     // FireRed's battle scene for the map ("gym", "indoor1", ...), unless normal.
     // Where an Escape Rope works (caves, Viridian Forest).
     allowEscaping: map.allow_escaping || undefined,

@@ -11,6 +11,7 @@
 //     opponent: (battle) => choice
 //   });
 //   result.outcome   // "won" | "lost" | "caught" | "ran" | "draw"
+//   (cfg.victoryMusic: the song to play when you win, e.g. "mus_victory_wild")
 //
 // The screen never reads HP or status straight from the engine while events are
 // playing. It replays battle.events one at a time, updating its own copy of each
@@ -392,6 +393,11 @@
         setHp(c, ev[4]);
         return "The battlers shared their pain!";
       case "faint":
+        cry(side, { faint: true });
+        // The foe's last Pokémon down: the victory theme (over the Exp. messages).
+        if (side === "p2" && config.victoryMusic && window.GameAudio && battle.sides.p2.pokemon.every((m) => m.fainted)) {
+          window.GameAudio.music(config.victoryMusic);
+        }
         v.fainted = true;
         v.hp = 0;
         renderSide(side);
@@ -470,7 +476,9 @@
           bar.style.transition = "";
           await wait(250);
           setExp(ev[4], ev[5], b, c);
+          const jingle = window.GameAudio ? window.GameAudio.fanfare("mus_level_up") : null;
           await message(teamName(ev[4]) + " grew to Lv. " + b + "!");
+          await jingle;
         };
       case "-learnmove":   // [ident, move, teamIndex]
         return teamName(c) + " learned " + b + "!";
@@ -502,7 +510,14 @@
           renderSide("p2");
           await message(BREAK_FREE[+ev[4]] || BREAK_FREE[0]);
         };
-      case "caught": return "Gotcha! " + nameOf(a) + " was caught!";
+      case "caught":   // FireRed's catch jingle, then the caught theme
+        return async () => {
+          const GA = window.GameAudio;
+          if (GA) GA.music("mus_caught");
+          const jingle = GA ? GA.fanfare("mus_caught_intro") : null;
+          await message("Gotcha! " + nameOf(a) + " was caught!");
+          await jingle;
+        };
 
       // ----- Items -----
       case "-useitem":   // [side, item, target, teamIndex, hp, healed, cured, "confusion", "revive", pp]
@@ -810,6 +825,7 @@
     el.field.classList.remove("entering");
     if (mon) {
       el.sides.p2.sprite.classList.remove("silhouette");
+      cry("p2");
       await wait(350);
       el.sides.p2.info.classList.remove("hidden");
       await message("A wild " + mon.name + " appeared!");
@@ -907,6 +923,9 @@
   }
 
   // Throws `side`'s Pokémon out of its ball (after `delay` ms) and shows it.
+  // A Pokémon's cry as it comes out (or, lower, as it faints).
+  const cry = (side, opts) => { if (window.GameAudio && view[side] && view[side].species) window.GameAudio.cry(view[side].species, opts); };
+
   async function sendOut(side, from, ball, delay) {
     const sprite = el.sides[side].sprite;
     sprite.classList.add("in-ball");   // hidden until the ball opens
@@ -919,6 +938,7 @@
       { transform: "scale(1)", filter: "brightness(0) invert(1)", opacity: 1, offset: 0.55 },
       { transform: "scale(1)", filter: "none", opacity: 1 }], { duration: POP_MS, easing: "ease-out" });
     sprite.classList.remove("in-ball");
+    cry(side);
     await grow.finished;
     el.sides[side].info.classList.toggle("hidden", view[side].fainted);
   }

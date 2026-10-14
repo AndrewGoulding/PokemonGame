@@ -1171,6 +1171,38 @@ for (const share of [false, true]) {
   assert(fs.existsSync(path.join(__dirname, "../assets/town-map/kanto.png")));
 }
 
+// Music and cries: FireRed's songs played by its sound engine (game/m4a.js).
+{
+  vm.runInThisContext(fs.readFileSync(path.join(root, "assets/audio/music.js"), "utf8"), { filename: "assets/audio/music.js" });
+  const { songs, bank } = window.MUSIC_DATA;
+  // Every song the game asks for exists: each map's, and the ones named in the UI.
+  const named = new Set(Object.values(WORLD_MAPS).map((m) => m.music).filter(Boolean));
+  for (const t of Object.values(WORLD_TRAINERS)) named.add(t.music);
+  for (const f of ["ui/game.js", "ui/battle-screen.js", "ui/intro.js"]) {
+    for (const m of fs.readFileSync(path.join(root, f), "utf8").matchAll(/"(mus_[a-z0-9_]+)"/g)) named.add(m[1]);
+  }
+  for (const name of named) assert(songs[name], "missing song " + name);
+  // Pallet Town: a loop, seamless (the loop part is the second time through), and in range.
+  const r = M4A.render(songs.mus_pallet, bank);
+  assert.strictEqual(r.rate, 13379);
+  assert(r.loopStart > 0 && r.loopEnd > r.loopStart, "Pallet Town loops");
+  assert(r.left.every((v) => v >= -1 && v <= 1) && r.right.every((v) => !Number.isNaN(v)));
+  // A jingle doesn't loop; and A4 on a square and on a sample comes out at 440 Hz.
+  assert.strictEqual(M4A.render(songs.mus_heal, bank).loopStart, null);
+  const hz = (prog) => {
+    const g = songs.mus_pallet.group;
+    const out = M4A.render({ group: g, vol: 127, reverb: 0, division: 24, tempos: [[0, 500000]], loop: null, end: 96,
+      tracks: [[0, 1, prog, 0, 2, 7, 127, 0, 0, 69, 127, 96]] }, bank);
+    let z = 0; const a = out.left, s0 = Math.floor(0.2 * out.rate), s1 = Math.floor(0.8 * out.rate);
+    for (let i = s0 + 1; i < s1; i++) if ((a[i - 1] < 0) !== (a[i] < 0)) z++;
+    return z / 2 / 0.6;
+  };
+  assert(Math.abs(hz(0) - 440) < 3, "square A4: " + hz(0));
+  assert(Math.abs(hz(4) - 440) < 3, "sample A4: " + hz(4));
+  // A cry for each of the first 386.
+  for (let n = 1; n <= 386; n++) assert(fs.existsSync(path.join(root, "assets/audio/cries", n + ".wav")), "cry " + n);
+}
+
 // Digging with the Explorer Kit (Diamond and Pearl's Underground).
 {
   assert(window.ITEMS["explorer-kit"] && Bag.isKeyItem("explorer-kit") && Bag.sprite("explorer-kit"));

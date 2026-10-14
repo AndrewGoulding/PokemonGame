@@ -16,7 +16,7 @@
 // Plain signs and people just show their text here.
 //
 // ctx: { player (the save: location, name), special(script) -> bool,
-//        visible(person, mapName) -> bool, rivalName,
+//        visible(person, mapName) -> bool, rivalName, onMap(mapName) (each time a map's people load: its music),
 //        trainerWaiting(person) -> bool (not beaten yet),
 //        hiddenItem(hidden) -> bool (not found yet), canRun() -> bool,
 //        onWarp(from, to) when you go through a door, cave or stairs }
@@ -152,6 +152,8 @@
   // ---------- People ----------
 
   function loadPeople() {
+    // (Arriving on a map, or back from an event: the game picks the music.)
+    if (ctx && ctx.onMap) ctx.onMap(me.map);
     const m = World.map(me.map);
     // ctx.visible says whether someone is there, or returns changes to where
     // they stand and how they look (the old man lying in Viridian's road).

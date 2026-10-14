@@ -101,6 +101,30 @@ cd pokefirered && git sparse-checkout set --no-cone data/layouts/ data/maps/ dat
 node tools/build-maps.js pokefirered     # or: POKEFIRERED=pokefirered npm run build:maps
 ```
 
+### Music and cries
+
+FireRed's own music, played by a re-creation of its sound engine
+(`game/m4a.js`: the m4a / MusicPlayer2000 engine from pret's `src/m4a.c` and
+`src/m4a_1.s`, at 13,379 Hz with its envelopes, vibrato, five sample channels,
+the Game Boy square / wave / noise channels and its reverb). Each map plays its
+song; wild, trainer and Gym Leader battles have their themes and victory
+music; trainers' "eyes meet" themes, the rival and Team Rocket themes, Prof.
+Oak's, the title screen, the opening movie and his speech all play; and the
+heal, level-up, item, catch and evolution jingles play over the music.
+Pokémon cry when they come out, faint (lower), evolve, or open their summary
+(FireRed's cries, for the first 386). Sound starts at your first key press or
+tap (browsers' rule), and can be turned off from the menu ("Sound").
+
+`tools/build-audio.js` packs the songs (their MIDI events and settings from
+`midi.cfg`), FireRed's instruments (voicegroups, key splits, samples and
+programmable waves) into `assets/audio/music.js`, loaded only once sound is
+needed, and copies the cries into `assets/audio/cries/`:
+
+```sh
+cd pokefirered && git sparse-checkout add sound/ && cd ..
+node tools/build-audio.js pokefirered
+```
+
 ### Town Map
 
 `tools/build-town-map.js` renders FireRed's Kanto region map into

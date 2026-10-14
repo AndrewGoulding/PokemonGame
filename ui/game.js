@@ -25,6 +25,20 @@
   const canBattle = () => player.party.some((r) => !Party.isFainted(r));
   const money = (n) => "₽" + Math.floor(n).toLocaleString("en-US");
   const article = (word) => (/^[AEIOU]/i.test(word) ? "an " : "a ") + word;
+
+  // ---------- Sound (ui/audio.js) ----------
+  const GA = window.GameAudio;
+  const music = (name) => { if (GA) GA.music(name); };
+  const fanfare = (name) => (GA ? GA.fanfare(name) : Promise.resolve());
+  const cry = (species, opts) => { if (GA) GA.cry(species, opts); };
+  // The jingle for getting an item: TMs and HMs, key items, or anything else.
+  const itemJingle = (item) => (Bag.isMachine(item) ? "mus_obtain_tmhm" : Bag.isKeyItem(item) ? "mus_obtain_key_item" : "mus_obtain_item");
+  // A message with a jingle under it; carries on once both are done.
+  async function sayWithJingle(jingle, pages) {
+    const j = fanfare(jingle);
+    await say(pages);
+    await j;
+  }
   const plural = (n, word) => n + " " + word + (n === 1 ? "" : "s");
   const back = (label) => ({ label: label || "Back", value: "back", className: "action", wide: true });
 
@@ -230,6 +244,9 @@
     opts = opts || {};
     const wild = kind === "wild";
     const foe = opts.foe || (wild ? { name: "Wild", team: [Encounters.wild(partyLevel())] } : Encounters.trainer(partyLevel()));
+    // The battle theme (wild, trainer, or Gym Leader), and the one for winning.
+    const leader = !wild && /^Leader /.test(foe.name);
+    music(opts.music || (wild ? "mus_vs_wild" : leader ? "mus_vs_gym_leader" : "mus_vs_trainer"));
     // From the map: FireRed's flash-and-slice into battle.
     if (!world.classList.contains("hidden")) await Overworld.battleTransition();
     show("field");
@@ -241,6 +258,7 @@
       expShare: expShareOn(),
       trainer: Player.LOOKS[player.look].back,
       foeTrainer: foe.pic, defeatText: opts.defeatText && opts.defeatText.map((p) => fill(p)),
+      victoryMusic: wild ? "mus_victory_wild" : leader ? "mus_victory_gym_leader" : "mus_victory_trainer",
       terrain: battleTerrain(opts),
       bag: player.bag,
       catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s) },
@@ -311,6 +329,8 @@
   async function evolve(record, evo, canStop) {
     const name = Party.displayName(record);
     const img = renderSprite(record.species, "", Party.form(record));
+    music("mus_evolution");
+    cry(record.species);
     await message("What? " + name + " is evolving!");
     img.classList.add("evolving");
     let stopped = false;
@@ -332,8 +352,11 @@
     const shed = Evolution.shedinja(record);
     const newMoves = Evolution.evolve(record, evo.into, evo);
     renderSprite(record.species, "evolved", Party.form(record));
+    cry(record.species);
+    const jingle = fanfare("mus_evolved");
     await message("Congratulations! Your " + (record.nickname || Party.speciesName(oldSpecies)) + " evolved into " +
       Party.speciesName(record.species) + "!");
+    await jingle;
     Player.markCaught(player, record.species);
     for (const move of newMoves) await learnMove(record, move);
     if (shed && evo.into === "Ninjask" && player.party.length < Player.PARTY_SIZE && Player.removeItem(player, "poke-ball")) {
@@ -566,6 +589,7 @@
   }
 
   async function summary(index) {
+    cry(player.party[index].species);
     for (;;) {
       const r = player.party[index];
       const options = [];
@@ -888,7 +912,7 @@
     scene.innerHTML = '<div class="spotlight"><label class="name-entry">Password' +
       '<input id="debug-password" type="password" inputmode="numeric" autocomplete="off"></label></div>';
     const input = $("#debug-password");
-    const typed = new Promise((resolve) => scene.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.stopPropagation(); resolve("ok"); } }));
+    const typed = new Promise((resolve) => scene.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.stopPropagation(); e.preventDefault(); resolve("ok"); } }));
     const asked = ask("The debug menu needs a password.", [{ label: "OK", value: "ok", className: "action" }, back("Cancel")]);
     input.focus();
     const v = await Promise.race([typed, asked]);
@@ -943,7 +967,7 @@
       '<label class="name-entry">Level<input id="debug-level" type="number" min="1" max="100" value="50"></label></div>';
     const input = $("#debug-species");
     for (;;) {
-      const typed = new Promise((resolve) => scene.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.stopPropagation(); resolve("add"); } }));
+      const typed = new Promise((resolve) => scene.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.stopPropagation(); e.preventDefault(); resolve("add"); } }));
       const asked = ask("Which Pokémon, and at what level?", [
         { label: "Add", value: "add", className: "action" }, back("Done")]);
       input.focus();   // ask() highlights its first button; keep typing in the box
@@ -1181,6 +1205,7 @@
         ...(player.flags.pokedex ? [{ label: "Pokédex", value: "dex", className: "action" }] : []),
         { label: "Trainer card", value: "card", className: "action" },
         { label: "Save", value: "save", className: "action" },
+        { label: "Sound: " + (window.GameAudio && window.GameAudio.enabled() ? "On" : "Off"), value: "sound", className: "action" },
         { label: "Debug", value: "debug", className: "action" },
         back("Close")]);
       if (v === "back") return;
@@ -1191,6 +1216,7 @@
       else if (v === "dex") await pokedex();
       else if (v === "card") await trainerCard();
       else if (v === "debug") { if ((await debugMenu()) === "battled") return; }
+      else if (v === "sound") { if (window.GameAudio) window.GameAudio.setEnabled(!window.GameAudio.enabled()); continue; }
       else if (v === "save") {
         tick();
         const r = Save.write(player);
@@ -1312,7 +1338,7 @@
       const h = ev.hidden;
       Player.addItem(player, h.item, h.quantity);
       player.flags[h.flag] = true;
-      await say("{PLAYER} found " + (h.quantity > 1 ? h.quantity + " " : "a ") + Bag.name(h.item) + "!");
+      await sayWithJingle(itemJingle(h.item), "{PLAYER} found " + (h.quantity > 1 ? h.quantity + " " : "a ") + Bag.name(h.item) + "!");
       return;
     }
     const script = (ev.person || ev.sign || ev.trigger).script;
@@ -1330,7 +1356,7 @@
       Player.addItem(player, item);
       f[ev.person.flag] = true;
       Overworld.refreshPeople();
-      await say("{PLAYER} found a " + Bag.name(item) + "!");
+      await sayWithJingle(itemJingle(item), "{PLAYER} found a " + Bag.name(item) + "!");
       return;
     }
 
@@ -1339,6 +1365,7 @@
       if (f.starter) { await say("That's Prof. Oak's last Pokémon."); return; }
       if (!f.oakInLab) { await say(T("PalletTown_ProfessorOaksLab_Text_ThoseArePokeBalls")); return; }
       showPicture(ball.species);
+      cry(ball.species);
       const yes = await confirm("So! You want the " + ball.kind + " Pokémon, " + ball.species + "?");
       hidePicture();
       if (!yes) return;
@@ -1389,6 +1416,7 @@
         }
         await say("Red's Mom: Oh, {PLAYER}! You look worn out.\nYou and your Pokémon should take a\nquick rest.");
         player.party.forEach(Party.heal);
+        await fanfare("mus_heal");
         await say("Red's Mom: There! You and your Pokémon\nare looking great. Take care now!");
         return;
 
@@ -1784,6 +1812,7 @@
     .replace(/Gramps/g, "Prof. Oak").replace(/Smell you later!/g, "See you later!"));
 
   async function oakWalksYouToTheLab(side) {
+    music("mus_oak");
     await say(T("PalletTown_Text_OakDontGoOut"));
     await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
     await Overworld.act([{ who: "player", moves: M("Common_Movement_ExclamationMark") }]);
@@ -1822,6 +1851,7 @@
   // leaves. Which path she takes depends on where you are (x 5, 6 or 7) and
   // which Pokémon she has.
   async function rivalLabBattle(x) {
+    music("mus_encounter_rival");
     const f = player.flags;
     const side = { 5: "Left", 6: "Mid", 7: "Right" }[x] || "Mid";
     const theirs = RIVAL_PICK[f.starter];
@@ -1841,6 +1871,7 @@
     await Overworld.resume();
     if (outcome === "lost") await say(["Leaf: Yay, I won!\nGood battle, {PLAYER}!"]);
     await say(["Leaf: I'm going to train my Pokémon\nso we both get stronger!", "Thanks, Prof. Oak!\nSee you later, {PLAYER}!"]);
+    music("mus_rival_exit");
     await Overworld.act([
       { who: LAB_RIVAL, moves: M("PalletTown_ProfessorOaksLab_Movement_RivalExitAfterBattle" + side) },
       { who: "player", moves: M("PalletTown_ProfessorOaksLab_Movement_PlayerWatchRivalExitAfterBattle" + (side === "Right" ? "Right" : "")) }]);
@@ -1856,6 +1887,7 @@
   async function trainerBattle(person, approach, facing) {
     const t = person.trainer, data = window.WORLD_TRAINERS[t.id];
     const who = "#" + person.id;
+    music(data.music || "mus_encounter_boy");   // their "eyes meet" theme
     if (approach != null) {
       await Overworld.act([{ who, moves: ["emote_exclamation_mark"].concat(Array(approach).fill("walk_" + facing)) }]);
       await Overworld.act([{ who: "player", moves: ["face_" + World.OPPOSITE[facing]] }]);
@@ -1974,6 +2006,7 @@
     if (!(await confirm(fill(ask)))) { await say(T("Text_WeHopeToSeeYouAgain")); return; }
     await say(T("Text_TakeYourPkmnForFewSeconds"));
     player.party.forEach(Party.heal);
+    await fanfare("mus_heal");
     if (Player.CENTERS[mapName]) player.flags.lastCenter = mapName;
     await say(T("Text_RestoredPkmnToFullHealth"));
     await say(T("Text_WeHopeToSeeYouAgain"));
@@ -2036,6 +2069,7 @@
   // battles (Pidgey, level 5, and Eevee, level 7, as in Yellow), and heads off
   // toward Viridian. Losing doesn't black you out.
   async function route22Rival(side) {
+    music("mus_encounter_rival");
     const f = player.flags, R = "LOCALID_ROUTE22_RIVAL";
     Overworld.addObject(R, { x: 25, y: side === "Top" ? 4 : 5, facing: "right" });
     await Overworld.act(side === "Bottom"
@@ -2054,6 +2088,7 @@
     if (outcome === "lost") await say(T("Text_RivalVictory"));
     f.route22Rival = true;
     await say(T("Route22_Text_EarlyRivalPostBattle"));
+    music("mus_rival_exit");
     await Overworld.act([{ who: R, moves: ["delay_10"].concat(M(side === "Bottom" ? "Route22_Movement_EarlyRivalExitBottom" : "Route22_Movement_EarlyRivalExit")) }]);
     Overworld.removeObject(R);
   }
@@ -2071,6 +2106,7 @@
     return !!(f.TRAINER_LEADER_BROCK && f.starter && !f.leafPewter && door && at.x === door.x && at.y === door.y && canBattle());
   }
   async function leafPewter() {
+    music("mus_encounter_rival");
     const f = player.flags, L = "LOCALID_LEAF";
     await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
     const at = Overworld.position();
@@ -2090,6 +2126,7 @@
     await Overworld.resume();
     await say(["Leaf: That was a great battle!\nI'm going to keep working on my\nPokédex.",
       "Let's both try to fill ours in!\nSee you later, {PLAYER}!"]);
+    music("mus_rival_exit");
     await Overworld.act([{ who: L, moves: ["walk_right", "walk_right", "walk_right", "walk_right", "set_invisible"] }]);
     Overworld.removeObject(L);
   }
@@ -2157,6 +2194,7 @@
     return at.y === 12 && (at.x === 4 || at.x === 5) && at.facing === "up" && canBattle() ? { type: "red-forest" } : null;
   }
   async function redForest() {
+    music("mus_encounter_rival");
     const f = player.flags, R = "LOCALID_RED", at = Overworld.position();
     Overworld.addObject(R, { x: at.x, y: at.y + 5, facing: "up" }, window.WORLD_SPRITES.red);
     await Overworld.act([{ who: R, moves: ["walk_up", "walk_up", "walk_up", "walk_up"] }]);
@@ -2187,6 +2225,7 @@
     return at.y === 7 && (at.x === 3 || at.x === 4) && at.facing === "down" && canBattle() ? { type: "jessie-james" } : null;
   }
   async function jessieJames() {
+    music("mus_encounter_rocket");
     const f = player.flags, J = "LOCALID_JESSIE", K = "LOCALID_JAMES";
     Overworld.addObject(J, { x: 3, y: 10, facing: "up" }, window.WORLD_SPRITES.jessie);
     Overworld.addObject(K, { x: 4, y: 10, facing: "up" }, window.WORLD_SPRITES.james);
@@ -2351,7 +2390,8 @@
         special,
         onWarp,
         trainerWaiting, hiddenItem: (h) => !player.flags[h.flag],
-        onStep: () => { leftPallet(player.location.map); return redForestStep() || jessieJamesStep() || repelStep(); }, allowWild: repelAllows
+        onStep: () => { leftPallet(player.location.map); return redForestStep() || jessieJamesStep() || repelStep(); }, allowWild: repelAllows,
+        onMap: (m) => music((window.WORLD_MAPS[m] || {}).music)
       });
       if (ev.type === "menu") await startMenu();
       else if (ev.type === "repel-ended") await repelWoreOff();
