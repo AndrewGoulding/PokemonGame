@@ -1,6 +1,5 @@
 // Game flow: title screen, new game, the overworld and its story events, the
-// Start menu (party, bag, Pokédex, trainer card, and the services that will
-// move into towns: Pokémon Center, Poké Mart, PC, practice battles), and what
+// Start menu (party, bag, Pokédex, trainer card, save, debug), and what
 // happens after battles (prize money, catching, blacking out, evolution).
 // Depends on: game/*.js, ui/screen.js, ui/battle-screen.js
 //
@@ -555,29 +554,33 @@
 
   // ---------- Poké Mart ----------
 
-  async function mart() {
+  // A Poké Mart, selling `stock` (its FireRed list of item ids).
+  async function mart(stock) {
     for (;;) {
       const v = await pick("Welcome to the Poké Mart! How may I serve you?",
         '<div class="spotlight mart-sign"><b>POKé MART</b><div>' + money(player.money) + "</div></div>",
         [{ label: "Buy", value: "buy", className: "action" }, { label: "Sell", value: "sell", className: "action" }, back("Leave")]);
       if (v === "back") { await message("Please come again!"); return; }
-      if (v === "buy") await martBuy();
+      if (v === "buy") await martBuy(stock);
       else await martSell();
       await persist();
     }
   }
 
-  async function martBuy() {
+  async function martBuy(items) {
+    const all = Bag.martStock(items);
+    const hasMachines = all.some((x) => Bag.isMachine(x.item));
     let tab = "Items";
     for (;;) {
-      const stock = Bag.martStock(partyLevel()).filter((x) => (tab === "TMs & HMs") === Bag.isMachine(x.item));
+      const stock = all.filter((x) => (tab === "TMs & HMs") === Bag.isMachine(x.item));
       const owned = (id) => Player.itemCount(player, id) > 0;
-      const html = '<div class="tabs">' + ["Items", "TMs & HMs"].map((t) =>
-        '<button type="button" class="tab' + (t === tab ? " active" : "") + '" data-pick="tab:' + t + '">' + t + "</button>").join("") + "</div>" +
+      const tabs = hasMachines ? '<div class="tabs">' + ["Items", "TMs & HMs"].map((t) =>
+        '<button type="button" class="tab' + (t === tab ? " active" : "") + '" data-pick="tab:' + t + '">' + t + "</button>").join("") + "</div>" : "";
+      const html = tabs +
         '<div class="rows">' + (stock.length ? stock.map((x) => itemRow(x.item, money(x.price) + "<small>" +
           (Bag.isMachine(x.item) ? (owned(x.item) ? "Owned" : MOVES[Bag.machineMove(x.item)].type) : "In bag: " + Player.itemCount(player, x.item)) +
-          "</small>")).join("") : '<p class="empty">Nothing here yet. Come back when your Pokémon are stronger!</p>') +
-        '</div><p class="bag-line">You have ' + money(player.money) + ". More stock arrives as your Pokémon grow stronger.</p>";
+          "</small>")).join("") : '<p class="empty">Nothing for sale.</p>') +
+        '</div><p class="bag-line">You have ' + money(player.money) + ".</p>";
       const v = await pick("What would you like to buy?", html, [back()]);
       if (v === "back") return;
       if (v.pick.startsWith("tab:")) { tab = v.pick.slice(4); continue; }
@@ -734,6 +737,7 @@
         { label: "Give all TMs and HMs", value: "tms", className: "action" },
         { label: "Give Repels", value: "repels", className: "action" },
         { label: "Give Master Balls", value: "master", className: "action" },
+        { label: "Wild battle", value: "wild", className: "action" },
         back()]);
       if (v === "back") return;
       if (v === "add") await debugAddPokemon();
@@ -742,6 +746,11 @@
         if (player.flags.debugCandy) player.bag["rare-candy"] = Math.max(Player.itemCount(player, "rare-candy"), 999);
         await message(player.flags.debugCandy ? "Rare Candies are infinite: using one no longer uses it up."
           : "Rare Candies are used up again.");
+      } else if (v === "wild") {
+        // A random wild Pokémon near your party's level (back to the map after).
+        if (!canBattle()) { await message("Your Pokémon are too tired to battle."); continue; }
+        await battle("wild");
+        return "battled";
       } else if (v === "repels") {
         for (const id of Object.keys(REPEL_STEPS)) Player.addItem(player, id, 99);
         await message("Added 99 each of Repel, Super Repel and Max Repel to your bag.");
@@ -979,29 +988,6 @@
     };
   }
 
-  // The Pokémon Center, Poké Mart and practice battles until those buildings
-  // exist on the map.
-  async function services() {
-    for (;;) {
-      const v = await ask("Services (these move into towns as the map grows).", [
-        { label: "Pokémon Center", value: "heal", className: "action" },
-        { label: "Poké Mart", value: "mart", className: "action" },
-        { label: "PC", value: "pc", className: "action" },
-        { label: "Practice: wild Pokémon", value: "wild", className: "action" },
-        { label: "Practice: trainer", value: "trainer", className: "action" },
-        back()]);
-      if (v === "back") return;
-      if (v === "heal") {
-        player.party.forEach(Party.heal);
-        await message("Your Pokémon are fighting fit! We hope to see you again!");
-      } else if (v === "mart") await mart();
-      else if (v === "pc") await pc();
-      else if (!canBattle()) await message(player.party.length ? "Your Pokémon are too tired to battle." : "You don't have any Pokémon yet.");
-      else { await battle(v); return; }
-      await persist();
-    }
-  }
-
   async function startMenu() {
     for (;;) {
       // Tapping a Pokémon card opens its summary; dragging swaps two.
@@ -1013,7 +999,6 @@
         { label: "Pokédex", value: "dex", className: "action" },
         { label: "Trainer card", value: "card", className: "action" },
         { label: "Save", value: "save", className: "action" },
-        { label: "Services", value: "services", className: "action" },
         { label: "Debug", value: "debug", className: "action" },
         back("Close")]);
       if (v === "back") return;
@@ -1023,14 +1008,11 @@
       else if (v === "bag") await bagScreen();
       else if (v === "dex") await pokedex();
       else if (v === "card") await trainerCard();
-      else if (v === "debug") await debugMenu();
+      else if (v === "debug") { if ((await debugMenu()) === "battled") return; }
       else if (v === "save") {
         tick();
         const r = Save.write(player);
         await message(r.ok ? player.name + " saved the game." : r.error);
-      } else if (v === "services") {
-        await services();
-        if (scene.classList.contains("hidden")) return; // went into a battle
       }
       await persist();
     }
@@ -1042,9 +1024,9 @@
   // scripts do more, so the overworld hands them to us.
 
   const STARTER_BALLS = {
-    PalletTown_ProfessorOaksLab_EventScript_BulbasaurBall: { species: "Bulbasaur", kind: "Grass", flag: "FLAG_HIDE_BULBASAUR_BALL" },
-    PalletTown_ProfessorOaksLab_EventScript_SquirtleBall: { species: "Squirtle", kind: "Water", flag: "FLAG_HIDE_SQUIRTLE_BALL" },
-    PalletTown_ProfessorOaksLab_EventScript_CharmanderBall: { species: "Charmander", kind: "Fire", flag: "FLAG_HIDE_CHARMANDER_BALL" }
+    PalletTown_ProfessorOaksLab_EventScript_BulbasaurBall: { species: "Bulbasaur", kind: "Grass", flag: "FLAG_HIDE_BULBASAUR_BALL", x: 8, id: "LOCALID_BULBASAUR_BALL" },
+    PalletTown_ProfessorOaksLab_EventScript_SquirtleBall: { species: "Squirtle", kind: "Water", flag: "FLAG_HIDE_SQUIRTLE_BALL", x: 9, id: "LOCALID_SQUIRTLE_BALL" },
+    PalletTown_ProfessorOaksLab_EventScript_CharmanderBall: { species: "Charmander", kind: "Fire", flag: "FLAG_HIDE_CHARMANDER_BALL", x: 10, id: "LOCALID_CHARMANDER_BALL" }
   };
   // The rival takes the starter that beats yours.
   const RIVAL_PICK = { Bulbasaur: "Charmander", Charmander: "Squirtle", Squirtle: "Bulbasaur" };
@@ -1089,7 +1071,10 @@
       case "FLAG_HIDE_OAK_IN_HIS_LAB": return !!(f.oakInLab || f.starter);
       case "FLAG_HIDE_POKEDEX": return false;              // the Pokédex is always yours here
       case "FLAG_HIDE_MG_DELIVERYMEN": return false;       // no Mystery Gift
-      case "FLAG_HIDE_RIVAL_IN_LAB": return !f.rivalLabBattle;
+      // After you choose, your rival stands below the Poké Ball he took.
+      case "FLAG_HIDE_RIVAL_IN_LAB":
+        if (f.rivalLabBattle) return false;
+        return f.starter ? { x: ballOf(RIVAL_PICK[f.starter]).x, y: 5, movement: "face_up" } : true;
       case "FLAG_HIDE_BULBASAUR_BALL": case "FLAG_HIDE_SQUIRTLE_BALL": case "FLAG_HIDE_CHARMANDER_BALL":
         return !(f.starter && (ballOf(f.starter).flag === person.flag || ballOf(RIVAL_PICK[f.starter]).flag === person.flag));
       default: return true;
@@ -1127,9 +1112,15 @@
       hidePicture();
       if (!yes) return;
       Player.receive(player, Party.create(ball.species, STARTER_LEVEL));
+      Overworld.removeObject(ball.id);
+      await say("{PLAYER} received the " + ball.species + " from Prof. Oak!");
+      // Your rival walks over to the Poké Ball that beats yours and takes it.
+      const theirs = RIVAL_PICK[ball.species];
+      await say(T("PalletTown_ProfessorOaksLab_Text_RivalIllTakeThisOneThen"));
+      await Overworld.act([{ who: LAB_RIVAL, moves: M("PalletTown_ProfessorOaksLab_Movement_RivalWalksTo" + theirs) }]);
+      Overworld.removeObject(ballOf(theirs).id);
       f.starter = ball.species;
-      await say(["{PLAYER} received the " + ball.species + " from Prof. Oak!",
-        "{RIVAL}: I'll take this one, then!", "{RIVAL} received the " + RIVAL_PICK[ball.species] + " from Prof. Oak!"]);
+      await say("{RIVAL} received the " + theirs + " from Prof. Oak!");
       return;
     }
 
@@ -1170,11 +1161,7 @@
       case "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerMid":
       case "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerRight": {
         if (!f.starter || f.rivalLabBattle || !player.party.length) return;
-        await say(["{RIVAL}: Wait, {PLAYER}!\nLet's check out our Pokémon!", "Come on, I'll take you on!"]);
-        f.rivalLabBattle = true;
-        const team = [Party.create(RIVAL_PICK[f.starter], STARTER_LEVEL)];
-        await battle("trainer", { foe: { name: "Rival " + player.rival, team }, noBlackout: true });
-        await say("{RIVAL}: Okay! I'll make my Pokémon battle to toughen it up!\n{PLAYER}! Gramps! Smell you later!");
+        await rivalLabBattle(ev.trigger.x);
         return;
       }
 
@@ -1267,7 +1254,7 @@
       case "ViridianCity_Mart_EventScript_Clerk":
         if (!f.parcelDelivered) { await say(T("ViridianCity_Mart_Text_SayHiToOakForMe")); return; }
         await say(T("Text_MayIHelpYou"));
-        await mart();
+        await mart(ev.person.mart);
         return;
 
       case "ViridianCity_PokemonCenter_1F_EventScript_Nurse":
@@ -1337,6 +1324,34 @@
     await Overworld.act([{ who: LAB_RIVAL, moves: M("PalletTown_ProfessorOaksLab_Movement_RivalReact") }]);
     await say(T("PalletTown_ProfessorOaksLab_Text_RivalNoFairWhatAboutMe"));
     await say(T("PalletTown_ProfessorOaksLab_Text_OakBePatientRival"));
+  }
+
+  // Your rival stops you on the way out of the lab (FireRed's RivalBattle):
+  // he turns, calls out, walks down to you from his Poké Ball, battles, then
+  // leaves. Which path he takes depends on where you are (x 5, 6 or 7) and
+  // which Pokémon he has.
+  async function rivalLabBattle(x) {
+    const f = player.flags;
+    const side = { 5: "Left", 6: "Mid", 7: "Right" }[x] || "Mid";
+    const theirs = RIVAL_PICK[f.starter];
+    await Overworld.act([{ who: LAB_RIVAL, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+    await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
+    await say(T("PalletTown_ProfessorOaksLab_Text_RivalLetsCheckOutMons"));
+    const approach = theirs === "Charmander" ? "PalletTown_ProfessorOaksLab_Movement_ApproachForBattleCharmander" + side
+      : "PalletTown_ProfessorOaksLab_Movement_RivalApproachForBattle" + theirs + side;
+    await Overworld.act([{ who: LAB_RIVAL, moves: M(approach) }]);
+    f.rivalLabBattle = true;
+    const team = [Party.create(theirs, STARTER_LEVEL)];
+    await battle("trainer", { foe: { name: "Rival " + player.rival, team }, noBlackout: true });
+    // Back to the lab: everyone's healed, and he heads out.
+    player.party.forEach(Party.heal);
+    show("world");
+    await Overworld.resume();
+    await say(T("PalletTown_ProfessorOaksLab_Text_RivalGoToughenMyMon"));
+    await Overworld.act([
+      { who: LAB_RIVAL, moves: M("PalletTown_ProfessorOaksLab_Movement_RivalExitAfterBattle" + side) },
+      { who: "player", moves: M("PalletTown_ProfessorOaksLab_Movement_PlayerWatchRivalExitAfterBattle" + (side === "Right" ? "Right" : "")) }]);
+    Overworld.removeObject(LAB_RIVAL);
   }
 
   // A Pokémon Center nurse. Blacking out later brings you back to this one.

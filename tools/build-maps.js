@@ -227,6 +227,25 @@ function scriptText(mapName, script, depth) {
   return null;
 }
 
+// What a Poké Mart clerk sells (["poke-ball", "potion", ...]), from the
+// script's "pokemart <label>" and that label's ".2byte ITEM_..." list.
+function martItems(mapName, script) {
+  const scripts = scriptLabels(mapName);
+  const lines = scripts[script] || [];
+  for (const line of lines) {
+    const m = /^pokemart\s+(\w+)/.exec(line);
+    if (!m || !scripts[m[1]]) continue;
+    const items = [];
+    for (const l of scripts[m[1]]) {
+      const it = /^\.2byte\s+ITEM_(\w+)/.exec(l);
+      if (!it || it[1] === "NONE") continue;
+      items.push(it[1].toLowerCase().replace(/_/g, "-"));
+    }
+    return items;
+  }
+  return undefined;
+}
+
 // The item an item ball holds ("potion"), from its finditem line.
 function itemBall(mapName, script) {
   const lines = scriptLabels(mapName)[script] || [];
@@ -328,6 +347,7 @@ for (const name of MAPS) {
     script: o.script, flag: o.flag !== "0" ? o.flag : null,
     text: scriptText(name, o.script),
     item: itemBall(name, o.script),
+    mart: martItems(name, o.script),
     localId: o.local_id || undefined,
     alt: ALT_GFX[o.script] ? objectSprite(ALT_GFX[o.script]) : undefined
   }, objectSprite((VAR_GFX[name] || {})[o.graphics_id] || o.graphics_id)));

@@ -5,7 +5,7 @@
 //
 //   Bag.name("poke-ball")                 // "Poké Ball"
 //   Bag.pocket("oran-berry")              // "Berries"
-//   Bag.martStock(partyLevel)             // [{ item, price }]
+//   Bag.martStock(["poke-ball", ...])     // [{ item, price }] for a Mart's list
 //   Bag.canUseOn(record, "fire-stone")    // true if it would do something
 //   Bag.useOn(record, "potion")           // { healed: 20 } etc.
 
@@ -40,20 +40,6 @@
   // Not in Gen 6 shops; priced for this game. Mints are from Sword and Shield.
   const MINT_PRICE = 20000;
 
-  // What the Mart sells. The main games unlock stock with badges; until there
-  // are gyms, it unlocks with your strongest Pokémon's level.
-  const MART = [
-    [1, ["poke-ball", "potion", "antidote", "paralyze-heal", "awakening", "burn-heal", "ice-heal"]],
-    [10, ["great-ball", "super-potion"]],
-    [15, ["revive", "full-heal", "everstone"]],
-    [20, ["fire-stone", "water-stone", "thunder-stone", "leaf-stone", "moon-stone", "sun-stone",
-          "shiny-stone", "dusk-stone", "dawn-stone", "ice-stone"]],
-    [25, ["ultra-ball", "hyper-potion", "net-ball", "nest-ball", "dusk-ball", "quick-ball", "timer-ball", "repeat-ball"]],
-    [25, ["pp-up"]],
-    [30, ["hp-up", "protein", "iron", "calcium", "zinc", "carbos"]],
-    [40, ["max-potion", "full-restore", "pp-max"]]
-  ];
-
   // ---------- TMs and HMs ----------
   // X and Y's TM01-TM100 and HM01-HM05, plus what Omega Ruby and Alpha Sapphire
   // added: Secret Power (ORAS's TM94, which X and Y use for Rock Smash, so it's
@@ -87,7 +73,6 @@
     return power >= 100 ? 30000 : power >= 80 ? 20000 : 10000;
   }
   // HMs at level 10; TMs as their price tier unlocks (levels 15, 25, 40).
-  const machineLevel = (item) => (/^hm/.test(item) ? 10 : { 10000: 15, 20000: 25, 30000: 40 }[machinePrice(item)]);
 
   // ---------- Mints ----------
   // "adamant-mint" -> "Adamant". Using a mint changes the Pokémon's nature to
@@ -121,18 +106,10 @@
     return "Items";
   }
 
-  const MINT_LEVEL = 30;
-
-  function martStock(partyLevel) {
-    const out = [];
-    for (const [level, items] of MART) {
-      if (partyLevel >= level) for (const item of items) out.push({ item, price: price(item) });
-    }
-    if (partyLevel >= MINT_LEVEL) {
-      for (const item of Object.keys(window.ITEMS)) if (mintNature(item)) out.push({ item, price: MINT_PRICE });
-    }
-    for (const item of machines()) if (partyLevel >= machineLevel(item)) out.push({ item, price: price(item) });
-    return out;
+  // A Poké Mart's shelves: each Mart sells its fixed FireRed list (from the
+  // clerk's script, see tools/build-maps.js), at Gen 6 prices.
+  function martStock(items) {
+    return (items || []).filter((item) => price(item) > 0).map((item) => ({ item, price: price(item) }));
   }
 
   // ---------- Using items on party records ----------
@@ -201,7 +178,7 @@
   }
 
   window.Bag = {
-    POCKETS, PRICES, MART, name, description, sprite, price, sellPrice, pocket, isBall, isStone, isKeyItem,
+    POCKETS, PRICES, name, description, sprite, price, sellPrice, pocket, isBall, isStone, isKeyItem,
     isMachine, machineMove, machines, mintNature,
     martStock, canUseOn, useOn, levelUp, give, take
   };

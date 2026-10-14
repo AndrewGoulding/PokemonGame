@@ -494,9 +494,11 @@ for (const share of [false, true]) {
   assert.strictEqual(Bag.pocket("oran-berry"), "Berries");
   assert.strictEqual(Bag.pocket("fire-stone"), "Items");
   assert.strictEqual(Bag.sellPrice("potion"), 150);
-  assert.deepStrictEqual(Bag.martStock(5).map((s) => s.item).slice(0, 2), ["poke-ball", "potion"]);
-  assert(!Bag.martStock(5).some((s) => s.item === "ultra-ball") && Bag.martStock(25).some((s) => s.item === "ultra-ball"));
-  for (const { item } of Bag.martStock(100)) {
+  // Each Mart sells FireRed's list for it, read from the clerk's script.
+  const viridian = WORLD_MAPS.ViridianCity_Mart.people.find((p) => p.mart).mart;
+  assert.deepStrictEqual(viridian, ["poke-ball", "potion", "antidote", "paralyze-heal"]);
+  assert.deepStrictEqual(Bag.martStock(viridian).map((s) => s.price), [200, 300, 100, 200]);
+  for (const m of Object.values(WORLD_MAPS)) for (const p of m.people) for (const { item } of Bag.martStock(p.mart)) {
     assert(ITEMS[item] && Bag.price(item) > 0, "mart item " + item);
     assert(ITEM_SPRITES[item], "no sprite for mart item " + item);
   }
@@ -770,6 +772,21 @@ for (const share of [false, true]) {
     assert.deepStrictEqual(replay(me_, "PalletTown_Movement_PlayerEnterLab"), { x: 16, y: 13 });
   }
   assert.deepStrictEqual(replay({ x: 6, y: 12 }, "PalletTown_ProfessorOaksLab_Movement_PlayerEnter"), { x: 6, y: 4 }, "you end up in front of Oak's desk");
+  // The rival in the lab: from (5,4) he walks to the Poké Ball he takes (below it,
+  // at y 5); when you reach the exit row (x 5-7, y 8) he walks to just above you,
+  // and after the battle he walks out to the door mat (6,12).
+  const ballX = { Bulbasaur: 8, Squirtle: 9, Charmander: 10 };
+  for (const [mon, bx] of Object.entries(ballX)) {
+    assert.deepStrictEqual(replay({ x: 5, y: 4 }, "PalletTown_ProfessorOaksLab_Movement_RivalWalksTo" + mon), { x: bx, y: 5 }, "rival to the " + mon + " ball");
+    for (const [side, px] of [["Left", 5], ["Mid", 6], ["Right", 7]]) {
+      const label = mon === "Charmander" ? "PalletTown_ProfessorOaksLab_Movement_ApproachForBattleCharmander" + side
+        : "PalletTown_ProfessorOaksLab_Movement_RivalApproachForBattle" + mon + side;
+      const rival = replay({ x: bx, y: 5 }, label);
+      assert.deepStrictEqual(rival, { x: px, y: 7 }, "rival with " + mon + " walks above the player (" + side + ")");
+      assert.deepStrictEqual(replay(rival, "PalletTown_ProfessorOaksLab_Movement_RivalExitAfterBattle" + side), { x: 6, y: 12 }, "rival leaves (" + side + ")");
+    }
+  }
+
   // The Viridian Mart clerk calls you over: from the doormat (4,7) to the counter (4,3), across from him at (2,3).
   assert.strictEqual(at(World.step({ map: "ViridianCity", x: 36, y: 20 }, "up")), "ViridianCity_Mart 4,7");
   assert.deepStrictEqual(replay({ x: 4, y: 7 }, "ViridianCity_Mart_Movement_ApproachCounter"), { x: 4, y: 3 });

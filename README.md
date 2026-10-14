@@ -15,8 +15,9 @@ a girl, and has you name yourself and your rival (he suggests FireRed's names)
 before you shrink away into your bedroom in Pallet Town. Try to leave town
 through the tall grass to the north and Prof. Oak stops you and walks you to his
 lab, where your rival is waiting; pick Bulbasaur, Squirtle or Charmander from the
-Poké Balls on his table (each one shows you its Pokémon before you decide). Your rival takes the one that beats yours and battles
-you on the way out. Then Route 1's tall grass, north of town, has FireRed's wild
+Poké Balls on his table (each one shows you its Pokémon before you decide). Your
+rival walks over and takes the one that beats yours; on your way out he walks up
+to you and battles you, then heads off. Then Route 1's tall grass, north of town, has FireRed's wild
 Pokémon. Mom heals your party, and the PC in your bedroom stores items (there's a
 Potion in it to start).
 
@@ -44,12 +45,13 @@ stones, Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
 the Exp. Share, Oak's Parcel and the Town Map), the Pokédex (a red Poké Ball
 marks species you've caught, a gray one those you've only seen; wild Pokémon
 show the same mark in battle),
-your trainer card (save, download or load a save file), and **Services**: the
-Pokémon Center, Poké Mart, PC and practice battles (a wild Pokémon or a trainer
-at your level), which move into real towns as the map grows. **Debug** (for
-testing) adds any Pokémon at any level (type its name, e.g. `charizard` or
-`rotom-wash`; a full party sends it to the PC), makes Rare Candies infinite,
-and gives every TM and HM, 99 of each Repel, or 99 Master Balls.
+your trainer card (save, download or load a save file), and **Debug** (for
+testing): add any Pokémon at any level (type its name, e.g. `charizard` or
+`rotom-wash`; a full party sends it to the PC), infinite Rare Candies, every TM
+and HM, 99 of each Repel, 99 Master Balls, or a wild battle at your level.
+Healing, shopping and the PC are in the towns: each Poké Mart sells exactly
+what it does in FireRed (Viridian: Poké Balls, Potions, Antidotes and
+Paralyze Heals), at Gen 6 prices.
 
 Battles open as in FireRed: from the map the screen flashes white twice and
 slices away; the wild Pokémon slides in (in shadow) as your trainer does from

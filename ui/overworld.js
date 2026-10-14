@@ -693,6 +693,20 @@
     return new Promise((resolve) => { resolveExplore = resolve; });
   }
 
+  // Shows the map again (after a battle in the middle of a scene) without
+  // handing control back: the scene carries on, then explore() resumes.
+  function resume() {
+    blackedOut = false;
+    paused = true;
+    if (!running) {
+      running = true;
+      last = 0;
+      requestAnimationFrame(frame);
+    }
+    hint();
+    return preloadMap(me.map);
+  }
+
   // Stops drawing (while a battle or menu has the screen).
   function hide() {
     running = false;
@@ -701,7 +715,7 @@
 
   window.Overworld = {
     explore, hide, read: (pages) => read(pages), forceStep, refreshPeople: () => loadPeople(),
-    act, addObject, removeObject, teleport, battleTransition,
+    act, addObject, removeObject, teleport, battleTransition, resume,
     position: () => ({ map: me.map, x: me.x, y: me.y, facing: me.facing })
   };
 })();
