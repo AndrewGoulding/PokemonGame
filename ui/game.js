@@ -36,6 +36,7 @@
 
   function show(which) {
     if (which !== "world") Overworld.hide();
+    $("#world-pic").classList.add("hidden");
     field.classList.toggle("hidden", which !== "field");
     scene.classList.toggle("hidden", which !== "scene");
     world.classList.toggle("hidden", which !== "world");
@@ -860,10 +861,100 @@
   async function partyMenu() {
     for (;;) {
       if (!player.party.length) { await message("You don't have any Pokémon yet."); return; }
-      const v = await pick("Choose a Pokémon.", partyHtml() + '<p class="bag-line">Tap a Pokémon for its summary.</p>', [back("Close")]);
+      let dropped;
+      const moved = new Promise((resolve) => { dropped = resolve; });
+      const picked = pick("Choose a Pokémon.", partyHtml() +
+        '<p class="bag-line">Tap a Pokémon for its summary. Drag one onto another to swap them' +
+        " (on a phone, press and hold first).</p>", [back("Close")]);
+      const stop = draggableCards(scene.querySelector(".party"), (from, to) => dropped({ swap: [from, to] }));
+      const v = await Promise.race([picked, moved]);
+      stop();
       if (v === "back") return;
+      if (v.swap) {
+        const [a, b] = v.swap;
+        [player.party[a], player.party[b]] = [player.party[b], player.party[a]];
+        await persist();
+        continue;
+      }
       await summary(+v.pick);
     }
+  }
+
+  // Drag a party card onto another (mouse, pen or touch) to swap them.
+  // Mouse and pen drags start once the pointer moves a little; on touch you
+  // press and hold first, so ordinary swipes still scroll. A drag doesn't
+  // count as a tap. Returns a function that removes the listeners.
+  function draggableCards(container, onSwap) {
+    const HOLD_MS = 300, START_PX = 8;
+    let drag = null, swallowClick = false;
+    const cardAt = (x, y) => {
+      const el = document.elementFromPoint(x, y);
+      const card = el && el.closest(".card");
+      return card && container.contains(card) ? card : null;
+    };
+    const clearTargets = () => container.querySelectorAll(".drop-target").forEach((c) => c.classList.remove("drop-target"));
+    const begin = () => { drag.active = true; drag.card.classList.add("dragging"); container.classList.add("reordering"); };
+    const end = () => {
+      if (!drag) return;
+      clearTimeout(drag.timer);
+      drag.card.classList.remove("dragging", "held");
+      drag.card.style.transform = "";
+      container.classList.remove("reordering");
+      clearTargets();
+      drag = null;
+    };
+
+    const down = (e) => {
+      const card = e.target.closest(".card");
+      if (!card || e.button > 0) return;
+      drag = { card, from: +card.dataset.pick, id: e.pointerId, x: e.clientX, y: e.clientY, active: false,
+        touch: e.pointerType === "touch", timer: null };
+      if (drag.touch) drag.timer = setTimeout(() => { if (drag) { drag.card.classList.add("held"); begin(); } }, HOLD_MS);
+    };
+    const move = (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (!drag.active) {
+        if (Math.hypot(dx, dy) < START_PX) return;
+        if (drag.touch) { end(); return; }    // moved before the hold: it's a scroll
+        begin();
+      }
+      e.preventDefault();
+      drag.card.style.transform = "translate(" + dx + "px, " + dy + "px)";
+      clearTargets();
+      const over = cardAt(e.clientX, e.clientY);
+      if (over && over !== drag.card) over.classList.add("drop-target");
+    };
+    const up = (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const d = drag;
+      if (d.active) {
+        swallowClick = true;
+        setTimeout(() => { swallowClick = false; }, 0);
+        const over = cardAt(e.clientX, e.clientY);
+        end();
+        if (over && over !== d.card) onSwap(d.from, +over.dataset.pick);
+      } else end();
+    };
+    // While dragging by touch, stop the page from scrolling under the finger.
+    const touchMove = (e) => { if (drag && drag.active) e.preventDefault(); };
+    const click = (e) => { if (swallowClick) { e.stopPropagation(); e.preventDefault(); swallowClick = false; } };
+    const noMenu = (e) => { if (drag) e.preventDefault(); };
+
+    container.addEventListener("pointerdown", down);
+    document.addEventListener("pointermove", move);
+    document.addEventListener("pointerup", up);
+    document.addEventListener("pointercancel", end);
+    document.addEventListener("touchmove", touchMove, { passive: false });
+    container.addEventListener("click", click, true);
+    container.addEventListener("contextmenu", noMenu);
+    return () => {
+      end();
+      document.removeEventListener("pointermove", move);
+      document.removeEventListener("pointerup", up);
+      document.removeEventListener("pointercancel", end);
+      document.removeEventListener("touchmove", touchMove);
+    };
   }
 
   // The Pokémon Center, Poké Mart and practice battles until those buildings
@@ -1010,7 +1101,10 @@
       const ball = STARTER_BALLS[script];
       if (f.starter) { await say("That's Prof. Oak's last Pokémon."); return; }
       if (!f.oakInLab) { await say(T("PalletTown_ProfessorOaksLab_Text_ThoseArePokeBalls")); return; }
-      if (!(await confirm("So! You want the " + ball.kind + " Pokémon, " + ball.species + "?"))) return;
+      showPicture(ball.species);
+      const yes = await confirm("So! You want the " + ball.kind + " Pokémon, " + ball.species + "?");
+      hidePicture();
+      if (!yes) return;
       Player.receive(player, Party.create(ball.species, STARTER_LEVEL));
       f.starter = ball.species;
       await say(["{PLAYER} received the " + ball.species + " from Prof. Oak!",
@@ -1173,6 +1267,15 @@
         return;
     }
   }
+
+  // A Pokémon's picture in a box over the map, as FireRed shows the starters.
+  function showPicture(species) {
+    const box = $("#world-pic");
+    box.querySelector("img").src = window.Screen.spriteUrl(species, "");
+    box.querySelector("img").alt = species;
+    box.classList.remove("hidden");
+  }
+  const hidePicture = () => $("#world-pic").classList.add("hidden");
 
   // ---------- Prof. Oak's walk to the lab ----------
   //

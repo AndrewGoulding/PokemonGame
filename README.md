@@ -9,7 +9,7 @@ Open `index.html` in a browser and start a **New game**: enter your name, pick
 boy or girl, and you wake up in your bedroom in Pallet Town. Try to leave town
 through the tall grass to the north and Prof. Oak stops you and walks you to his
 lab, where your rival is waiting; pick Bulbasaur, Squirtle or Charmander from the
-Poké Balls on his table. Your rival takes the one that beats yours and battles
+Poké Balls on his table (each one shows you its Pokémon before you decide). Your rival takes the one that beats yours and battles
 you on the way out. Then Route 1's tall grass, north of town, has FireRed's wild
 Pokémon. Mom heals your party, and the PC in your bedroom stores items (there's a
 Potion in it to start).
@@ -29,7 +29,8 @@ move between choices, Z (A) picks one and X / Esc (B) goes back. On a phone, use
 and A / Run / Menu buttons under the text box.
 
 The **menu** has your Pokémon (tap one for its summary: stats, IVs, EVs, nature,
-moves; make it lead; use, give or take items), the Bag (medicine, evolution
+moves; make it lead; use, give or take items; drag one card onto another to swap
+them, or press and hold first on a phone), the Bag (medicine, evolution
 stones, Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
 the Exp. Share, Oak's Parcel and the Town Map), the Pokédex,
 your trainer card (save, download or load a save file), and **Services**: the

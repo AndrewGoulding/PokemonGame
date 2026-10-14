@@ -240,3 +240,18 @@
 
 .debug-add { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
 .debug-add #debug-level { width: 5em; }
+
+/* Dragging party cards to swap them */
+.party .card { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.party .card.dragging { position: relative; z-index: 5; pointer-events: none; opacity: 0.9;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25); transition: none; }
+.party .card.held { outline: 3px solid #f3b400; }
+.party .card.drop-target { outline: 3px dashed #2b6fd6; outline-offset: 2px; }
+
+/* A Pokémon's picture over the map, e.g. the starter you're looking at in Oak's lab */
+.game { position: relative; }
+.world-pic { position: absolute; top: 6%; left: 50%; transform: translateX(-50%); z-index: 4;
+  width: 28%; aspect-ratio: 1; padding: 6px; border: 4px solid #2c3550; border-radius: 10px;
+  background: #fff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+.world-pic img { width: 100%; height: 100%; image-rendering: pixelated; object-fit: contain; }
+.world-pic.hidden { display: none; }
