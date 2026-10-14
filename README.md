@@ -182,7 +182,10 @@ lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scrip
 uses the frames from `assets/sprites/overworld/player_character_surf_run.png`.
 You play as a custom character (Red and Leaf aren't playable: they're rivals
 in this game), and your rival is always Gary. Oak's speech asks only your
-name, and doesn't introduce your rival. The character's pictures: `assets/sprites/trainers/back/player_character.png`,
+name, and doesn't introduce your rival. At the start, Leaf is in Oak's lab
+instead of Gary: she takes the starter that beats yours and battles you on
+the way out, with Gary's FireRed lines in her name ("Prof. Oak" for his
+"Gramps"). Gary turns up later, from the Pokédex scene on. The character's pictures: `assets/sprites/trainers/back/player_character.png`,
 `assets/sprites/overworld/player_character_<normal|bike|fish|item|surf|surf_run|vs_seeker_bike>.png`
 (recoloured from Red's by `tools/recolor-player-overworld.py`: black cap,
 silver hair, red shirt, black backpack), and its trainer-card picture

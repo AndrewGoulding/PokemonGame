@@ -1050,7 +1050,7 @@
     PalletTown_ProfessorOaksLab_EventScript_SquirtleBall: { species: "Squirtle", kind: "Water", flag: "FLAG_HIDE_SQUIRTLE_BALL", x: 9, id: "LOCALID_SQUIRTLE_BALL" },
     PalletTown_ProfessorOaksLab_EventScript_CharmanderBall: { species: "Charmander", kind: "Fire", flag: "FLAG_HIDE_CHARMANDER_BALL", x: 10, id: "LOCALID_CHARMANDER_BALL" }
   };
-  // The rival takes the starter that beats yours.
+  // Leaf, in the lab, takes the starter that beats yours.
   const RIVAL_PICK = { Bulbasaur: "Charmander", Charmander: "Squirtle", Squirtle: "Bulbasaur" };
   const ballOf = (species) => Object.values(STARTER_BALLS).find((b) => b.species === species);
 
@@ -1122,9 +1122,11 @@
       case "FLAG_HIDE_OLD_AMBER": return !f.gotOldAmber;
       case "FLAG_HIDE_DOME_FOSSIL": case "FLAG_HIDE_HELIX_FOSSIL": return !f.mtMoonFossil;
       // After you choose, your rival stands below the Poké Ball he took.
+      // Leaf (the lab rival's other look) until she leaves after your battle;
+      // after you choose, she stands below the Poké Ball she took.
       case "FLAG_HIDE_RIVAL_IN_LAB":
         if (f.rivalLabBattle) return false;
-        return f.starter ? { x: ballOf(RIVAL_PICK[f.starter]).x, y: 5, movement: "face_up" } : true;
+        return Object.assign({}, person.alt, f.starter ? { x: ballOf(RIVAL_PICK[f.starter]).x, y: 5, movement: "face_up" } : {});
       case "FLAG_HIDE_BULBASAUR_BALL": case "FLAG_HIDE_SQUIRTLE_BALL": case "FLAG_HIDE_CHARMANDER_BALL":
         return !(f.starter && (ballOf(f.starter).flag === person.flag || ballOf(RIVAL_PICK[f.starter]).flag === person.flag));
       default: return true;
@@ -1183,11 +1185,11 @@
       await say("{PLAYER} received the " + ball.species + " from Prof. Oak!");
       // Your rival walks over to the Poké Ball that beats yours and takes it.
       const theirs = RIVAL_PICK[ball.species];
-      await say(T("PalletTown_ProfessorOaksLab_Text_RivalIllTakeThisOneThen"));
+      await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalIllTakeThisOneThen"));
       await Overworld.act([{ who: LAB_RIVAL, moves: M("PalletTown_ProfessorOaksLab_Movement_RivalWalksTo" + theirs) }]);
       Overworld.removeObject(ballOf(theirs).id);
       f.starter = ball.species;
-      await say("{RIVAL} received the " + theirs + " from Prof. Oak!");
+      await say(LAB_RIVAL_NAME + " received the " + theirs + " from Prof. Oak!");
       return;
     }
 
@@ -1234,9 +1236,9 @@
 
       // In the lab, so not "Gramps isn't around" (that's from before Oak walks you there).
       case "PalletTown_ProfessorOaksLab_EventScript_Rival":
-        if (!f.oakInLab && !f.starter) await say(T("PalletTown_ProfessorOaksLab_Text_RivalGrampsIsntAround"));
-        else if (!f.starter) await say(["{RIVAL}: Heh, I don't need to be\ngreedy like you. I'm mature!", "Go ahead and choose, {PLAYER}!"]);
-        else await say("{RIVAL}: My Pokémon looks a lot\ntougher than yours.");
+        if (!f.oakInLab && !f.starter) await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalGrampsIsntAround"));
+        else if (!f.starter) await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalGoChoosePlayer"));
+        else await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalMyMonLooksTougher"));
         return;
 
       case "PalletTown_ProfessorOaksLab_EventScript_ProfOak":
@@ -1257,7 +1259,7 @@
           Player.addItem(player, "town-map");
           f.townMap = true;
           await say(T("PalletTown_RivalsHouse_Text_ReceivedTownMapFromDaisy"));
-        } else if (f.rivalLabBattle) await say(T("PalletTown_RivalsHouse_Text_HeardYouBattledRival"));
+        } else if (f.rivalLabBattle) await say(leafT("PalletTown_RivalsHouse_Text_HeardYouBattledRival"));   // that was Leaf
         else await say(T("PalletTown_RivalsHouse_Text_HiBrothersAtLab"));
         return;
 
@@ -1597,6 +1599,14 @@
   const M = (label) => window.WORLD_MOVEMENTS[label];
   const OAK = "LOCALID_PALLET_PROF_OAK", LAB_OAK = "LOCALID_OAKS_LAB_PROF_OAK", LAB_RIVAL = "LOCALID_OAKS_LAB_RIVAL";
 
+  // At the start, Leaf is in Oak's lab instead of Gary: she waits for her
+  // Pokémon, takes the one that beats yours and battles you. Gary's FireRed
+  // lines, with her name, "Prof. Oak" for his "Gramps" (she isn't Oak's
+  // grandchild), and without his "Smell you later!".
+  const LAB_RIVAL_NAME = "Leaf";
+  const leafT = (label) => [].concat(T(label)).map((p) => p.replace(/\{RIVAL\}/g, LAB_RIVAL_NAME)
+    .replace(/Gramps/g, "Prof. Oak").replace(/Smell you later!/g, "See you later!"));
+
   async function oakWalksYouToTheLab(side) {
     await say(T("PalletTown_Text_OakDontGoOut"));
     await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
@@ -1621,35 +1631,37 @@
     Overworld.refreshPeople();
     await Overworld.act([{ who: "player", moves: M("PalletTown_ProfessorOaksLab_Movement_PlayerEnter") }]);
     await Overworld.act([{ who: LAB_RIVAL, moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-    await say(T("PalletTown_ProfessorOaksLab_Text_RivalFedUpWithWaiting"));
-    await say(T("PalletTown_ProfessorOaksLab_Text_OakThreeMonsChooseOne"));
+    await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalFedUpWithWaiting"));
+    await say(leafT("PalletTown_ProfessorOaksLab_Text_OakThreeMonsChooseOne"));
     await Overworld.act([{ who: LAB_RIVAL, moves: M("PalletTown_ProfessorOaksLab_Movement_RivalReact") }]);
-    await say(T("PalletTown_ProfessorOaksLab_Text_RivalNoFairWhatAboutMe"));
-    await say(T("PalletTown_ProfessorOaksLab_Text_OakBePatientRival"));
+    await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalNoFairWhatAboutMe"));
+    await say(leafT("PalletTown_ProfessorOaksLab_Text_OakBePatientRival"));
   }
 
-  // Your rival stops you on the way out of the lab (FireRed's RivalBattle):
-  // he turns, calls out, walks down to you from his Poké Ball, battles, then
-  // leaves. Which path he takes depends on where you are (x 5, 6 or 7) and
-  // which Pokémon he has.
+  // Leaf stops you on the way out of the lab (FireRed's RivalBattle): she
+  // turns, calls out, walks down to you from her Poké Ball, battles, then
+  // leaves. Which path she takes depends on where you are (x 5, 6 or 7) and
+  // which Pokémon she has.
   async function rivalLabBattle(x) {
     const f = player.flags;
     const side = { 5: "Left", 6: "Mid", 7: "Right" }[x] || "Mid";
     const theirs = RIVAL_PICK[f.starter];
     await Overworld.act([{ who: LAB_RIVAL, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
     await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-    await say(T("PalletTown_ProfessorOaksLab_Text_RivalLetsCheckOutMons"));
+    await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalLetsCheckOutMons"));
     const approach = theirs === "Charmander" ? "PalletTown_ProfessorOaksLab_Movement_ApproachForBattleCharmander" + side
       : "PalletTown_ProfessorOaksLab_Movement_RivalApproachForBattle" + theirs + side;
     await Overworld.act([{ who: LAB_RIVAL, moves: M(approach) }]);
     f.rivalLabBattle = true;
     const team = [Party.create(theirs, STARTER_LEVEL)];
-    await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_early" }, noBlackout: true });
-    // Back to the lab: everyone's healed, and he heads out.
+    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green" },
+      defeatText: leafT("PalletTown_ProfessorOaksLab_Text_RivalDefeat"), noBlackout: true });
+    // Back to the lab: everyone's healed, and she heads out.
     player.party.forEach(Party.heal);
     show("world");
     await Overworld.resume();
-    await say(T("PalletTown_ProfessorOaksLab_Text_RivalGoToughenMyMon"));
+    if (outcome === "lost") await say(leafT("Text_RivalVictory"));
+    await say(leafT("PalletTown_ProfessorOaksLab_Text_RivalGoToughenMyMon"));
     await Overworld.act([
       { who: LAB_RIVAL, moves: M("PalletTown_ProfessorOaksLab_Movement_RivalExitAfterBattle" + side) },
       { who: "player", moves: M("PalletTown_ProfessorOaksLab_Movement_PlayerWatchRivalExitAfterBattle" + (side === "Right" ? "Right" : "")) }]);

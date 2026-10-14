@@ -73,7 +73,12 @@ const MAPS = [
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
 const VAR_GFX = { ViridianCity: { OBJ_EVENT_GFX_VAR_0: "OBJ_EVENT_GFX_OLD_MAN_1" } };
-const ALT_GFX = { ViridianCity_EventScript_TutorialOldMan: "OBJ_EVENT_GFX_OLD_MAN_LYING_DOWN" };
+const ALT_GFX = {
+  ViridianCity_EventScript_TutorialOldMan: "OBJ_EVENT_GFX_OLD_MAN_LYING_DOWN",
+  // Leaf stands in for Gary in Oak's lab at the start (the same lab object is
+  // Gary again later, when Oak hands out the Pokédexes).
+  PalletTown_ProfessorOaksLab_EventScript_Rival: "OBJ_EVENT_GFX_GREEN_NORMAL"
+};
 // Scripts whose text is picked by code the converter can't follow.
 const SCRIPT_TEXT = {
   ViridianCity_School_EventScript_PokemonJournal: "PokemonJournal_Text_SpecialFeatureBrock",
