@@ -154,7 +154,9 @@ rate (Random() % 2880 < rate × 16) using the 20/20/10/10/10/10/5/5/4/4/1/1
 encounter slots. Wild Pokémon come from both versions: where LeafGreen's table
 has a different Pokémon in a slot (Sandshrew for FireRed's Ekans on Route 4),
 either is as likely. FireRed's TMs found in item balls become this game's
-machine for the same move (TM09 Bullet Seed has none here, so it stays TM09). Trainers work as in FireRed: one you haven't beaten sees you
+machine for the same move (TM09 Bullet Seed is TM100 here). An Escape Rope works
+where FireRed allows it (caves, Viridian Forest) and takes you back to where
+you last went from outdoors through a door or cave entrance. Trainers work as in FireRed: one you haven't beaten sees you
 straight ahead within their sight range (nothing in between), shows "!",
 walks up and battles with their FireRed party (fixed IVs, set moves where
 FireRed sets them); beaten, they say their after-battle line. Those that turn
@@ -171,7 +173,8 @@ Mr. Mime "Mimien", Prof. Oak's Aide giving HM05 Flash for ten kinds
 caught, your rival on Route 22, the League gate guard, Pewter's Gym guide
 and Museum guide walking you over, the Museum's ₽50 ticket, the Old Amber,
 the Seismic Toss tutor, Brock with the Boulder Badge and TM39, and the Aide
-bringing the Running Shoes, the Mega Punch and Mega Kick tutors, the
+bringing the Running Shoes, the Mega Punch and Mega Kick tutors (who teach
+again and again, for ₽1,000 each time), the
 Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils) are in `ui/game.js`; their FireRed
 lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scripts
 (`walk_up`, `walk_in_place_faster_down`, `emote_exclamation_mark`, ...) from
@@ -207,11 +210,15 @@ uses the frames from `assets/sprites/overworld/<red|green>_surf_run.png`.
   Strength, HM05 Flash, HM06 Whirlpool, HM07 Waterfall, HM08 Rock Smash,
   HM09 Dive, HM10 Defog, HM11 Rock Climb.
 - **TMs**: X and Y's TM01–TM100 in order, minus Flash and Rock Smash (HMs
-  here), then Secret Power from Omega Ruby and Alpha Sapphire: TM01–TM99.
-  Compatibility comes from the Gen 6 learnsets; for HMs, also from any
-  generation that taught the move by machine (`data/hm-learners.js`, built by
-  `npm run build:hm-learners` from @pkmn/dex), which covers Whirlpool, Defog
-  and Rock Climb. TMs are reusable (as in Gen 5+), can't be held, tossed or
+  here), then Secret Power from Omega Ruby and Alpha Sapphire (TM99) and
+  Bullet Seed (TM100, FireRed's TM09). Compatibility comes from the Gen 6
+  learnsets; for HMs and for machines Gen 6 never had (Bullet Seed), also from
+  any generation that taught the move by machine (`data/machine-learners.js`,
+  built by `npm run build:machine-learners` from @pkmn/dex), which covers
+  Bullet Seed, Whirlpool, Defog and Rock Climb. The same file has
+  `TUTOR_LEARNERS`: who FireRed's move tutors can teach (Gen 6 had no tutor
+  for Mega Punch, Mega Kick, Seismic Toss or Dream Eater), from any
+  generation's tutors. TMs are reusable (as in Gen 5+), can't be held, tossed or
   sold, and HM moves can be forgotten like any other (there are no field moves
   yet). Prices: HMs ₽3,000; TMs ₽10,000 / ₽20,000 / ₽30,000 by the move's
   power. Saves from before this numbering are converted on load, so each
@@ -233,7 +240,7 @@ uses the frames from `assets/sprites/overworld/<red|green>_surf_run.png`.
 | `engine/` | Stat, damage, experience, catch and item formulas, and the battle engine |
 | `game/` | Game logic around the engine: party records, the player and their save (`player.js`, `save.js`), bag and Poké Mart (`bag.js`), overworld rules (`world.js`), evolution, encounters, random teams and the opponent AI |
 | `ui/` | Text box and menus (`screen.js`), the battle screen, the overworld (`overworld.js`), FireRed's intro (`intro.js`), and the game flow, story events and menus (`game.js`) |
-| `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`, `npm run build:maps`, `npm run build:intro`, `npm run build:battle-bgs`, `npm run build:hm-learners`, `npm run build:sprite-metrics`) and their shared PNG/GBA/text helpers (`tools/lib/`) |
+| `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`, `npm run build:maps`, `npm run build:intro`, `npm run build:battle-bgs`, `npm run build:machine-learners`, `npm run build:sprite-metrics`) and their shared PNG/GBA/text helpers (`tools/lib/`) |
 | `assets/sprites/` | Pokémon sprites (front, back, shiny), item icons, trainer and overworld sprites |
 | `assets/tilesets/` | FireRed's tilesets (tiles, palettes, metatiles), the source for the maps |
 | `assets/world/` | Generated map images and transparent overworld sprites |
@@ -253,7 +260,7 @@ and later files read those globals, so scripts must load in this order:
 5. `data/abilities.js` → `ABILITIES`
 6. `data/items.js` → `ITEMS`
 7. `data/learnsets.js` → `LEARNSETS_GEN6`
-8. `data/hm-learners.js` → `HM_LEARNERS`
+8. `data/machine-learners.js` → `MACHINE_LEARNERS`
 9. `data/evolutions.js` → `EVOLUTIONS`
 10. `data/item-sprites.js` → `ITEM_SPRITES`
 11. `data/sprite-metrics.js` → `SPRITE_METRICS`

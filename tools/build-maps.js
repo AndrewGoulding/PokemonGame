@@ -475,6 +475,8 @@ for (const name of MAPS) {
     name, title: TITLES[name] || name.replace(/_/g, " ").replace(/([a-z])([A-Z0-9])/g, "$1 $2"),
     width: w, height: h, type: map.map_type.replace(/^MAP_TYPE_/, "").toLowerCase(),
     // FireRed's battle scene for the map ("gym", "indoor1", ...), unless normal.
+    // Where an Escape Rope works (caves, Viridian Forest).
+    allowEscaping: map.allow_escaping || undefined,
     battleScene: map.battle_scene && map.battle_scene !== "MAP_BATTLE_SCENE_NORMAL"
       ? map.battle_scene.replace(/^MAP_BATTLE_SCENE_/, "").toLowerCase().replace(/_/g, "") : undefined,
     top: anyAbove, borderWidth: bw, borderHeight: bh,

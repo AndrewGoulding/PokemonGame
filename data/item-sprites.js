@@ -395,6 +395,7 @@ window.ITEM_SPRITES = {
   "tm08": "assets/sprites/items/tm/fighting.png",
   "tm09": "assets/sprites/items/tm/poison.png",
   "tm10": "assets/sprites/items/tm/normal.png",
+  "tm100": "assets/sprites/items/tm/grass.png",
   "tm11": "assets/sprites/items/tm/fire.png",
   "tm12": "assets/sprites/items/tm/dark.png",
   "tm13": "assets/sprites/items/tm/ice.png",

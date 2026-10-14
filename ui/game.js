@@ -430,7 +430,7 @@
 
   const KEY_ITEM_USES = ["exp-share", "town-map"];
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
-    item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS;
+    item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS || item === "escape-rope";
   // TMs and HMs work like key items: they can't be held, tossed or sold.
   const holdable = (item) => !Bag.isBall(item) && !Bag.isMachine(item) && !Bag.isKeyItem(item);
   const expShareOn = () => Player.itemCount(player, "exp-share") > 0 && !player.flags.expShareOff;
@@ -540,6 +540,7 @@
       const what = await ask(Bag.name(id) + state + ": " + Bag.description(id), options);
       if (what === "use" && Bag.isKeyItem(id)) await useKeyItem(id);
       else if (what === "use" && id in REPEL_STEPS) await useRepel(id);
+      else if (what === "use" && id === "escape-rope") { if (await useEscapeRope()) return "escaped"; }
       else if (what === "use") {
         const r = await choosePartyFor(Bag.isMachine(id) ? "Teach " + Bag.machineMove(id) + " to which Pokémon?"
           : "Use the " + Bag.name(id) + " on which Pokémon?", id);
@@ -1026,7 +1027,7 @@
       if (v === "swapped") continue;
       if (v.pick != null) await summary(+v.pick);
       else if (v === "party") await partyMenu();
-      else if (v === "bag") await bagScreen();
+      else if (v === "bag") { if ((await bagScreen()) === "escaped") return; }
       else if (v === "dex") await pokedex();
       else if (v === "card") await trainerCard();
       else if (v === "debug") { if ((await debugMenu()) === "battled") return; }
@@ -1493,10 +1494,10 @@
       // ---------- Route 4 and Mt. Moon ----------
 
       case "Route4_EventScript_MegaPunchTutor":
-        await moveTutor("Mega Punch", "tutorMegaPunch", "Text_MegaPunch");
+        await moveTutor("Mega Punch", "tutorMegaPunch", "Text_MegaPunch", TUTOR_PRICE);
         return;
       case "Route4_EventScript_MegaKickTutor":
-        await moveTutor("Mega Kick", "tutorMegaKick", "Text_MegaKick");
+        await moveTutor("Mega Kick", "tutorMegaKick", "Text_MegaKick", TUTOR_PRICE);
         return;
 
       case "Route4_PokemonCenter_1F_EventScript_Nurse":
@@ -1797,28 +1798,41 @@
   // FireRed's move tutors (EventScript_DreamEaterTutor and the like): each
   // teaches its move once, with its own lines (Text_<Move>Teach, ...Declined,
   // ...WhichMon, ...Taught).
-  async function moveTutor(move, flag, text) {
+  // `price`: this tutor teaches again and again, for that much each time
+  // (instead of FireRed's once only).
+  async function moveTutor(move, flag, text, price) {
     const f = player.flags;
-    if (f[flag]) { await say(T(text + "Taught")); return; }
+    if (f[flag] && !price) { await say(T(text + "Taught")); return; }
     const teach = T(text + "Teach");
     await say(teach.slice(0, -1));
     const declined = () => say(T(text + "Declined"));
     if (!(await confirm(fill(teach[teach.length - 1])))) { await declined(); return; }
-    if (!(await confirm(fill(T("Text_MoveCanOnlyBeLearnedOnce").join(" "))))) { await declined(); return; }
+    if (price) {
+      if (!(await confirm("It'll cost " + money(price) + ". Is that okay?\n(You have " + money(player.money) + ".)"))) { await declined(); return; }
+      if (player.money < price) { await say("You don't have enough money."); return; }
+    } else if (!(await confirm(fill(T("Text_MoveCanOnlyBeLearnedOnce").join(" "))))) { await declined(); return; }
     const v = await pick(fill(T(text + "WhichMon").join(" ")), partyHtml(), [back()]);
     show("world");
     if (v === "back") { await declined(); return; }
     const record = player.party[+v.pick];
     const name = Party.displayName(record);
     const set = window.LEARNSETS_GEN6[record.species] || {};
-    const learns = [].concat(set.tm || [], set.tutor || [], (set.levelup || []).map((l) => l[1])).includes(move);
+    const learns = [].concat(set.tm || [], set.tutor || [], (set.levelup || []).map((l) => l[1])).includes(move) ||
+      ((window.TUTOR_LEARNERS || {})[move] || []).includes(record.species);
     if (Party.knowsMove(record, move)) { await say(name + " already knows " + move + "."); return; }
     if (!learns) { await say(name + " can't learn " + move + "."); return; }
     await learnMove(record, move);
     if (!Party.knowsMove(record, move)) { await declined(); return; }
+    if (price) {
+      Player.addMoney(player, -price);
+      await say(player.name + " paid " + money(price) + ".");
+    }
     f[flag] = true;
     await say(T(text + "Taught"));
   }
+
+  // What the Route 4 tutors charge each time.
+  const TUTOR_PRICE = 1000;
 
   // ---------- Badges ----------
 
@@ -1928,6 +1942,28 @@
     await say(T("PewterCity_Gym_Text_BrockPostBattle"));
   }
 
+  // ---------- Escape Rope ----------
+  //
+  // As in FireRed: it works only where the map allows escaping (caves, Viridian
+  // Forest), and takes you back to where you last went from outdoors (a town,
+  // city or route) through a door or cave entrance: the "escape warp".
+
+  const OUTDOORS = ["town", "city", "route", "ocean_route"];
+  function onWarp(from, to) {
+    const a = window.WORLD_MAPS[from.map], b = window.WORLD_MAPS[to.map];
+    if (a && b && OUTDOORS.includes(a.type) && !OUTDOORS.includes(b.type)) player.flags.escapeWarp = { map: from.map, x: from.x, y: from.y };
+  }
+  async function useEscapeRope() {
+    const here = player.location && window.WORLD_MAPS[player.location.map];
+    const to = player.flags.escapeWarp;
+    if (!here || !here.allowEscaping || !to) { await message("Oak: " + player.name + "! This isn't the time to use that!"); return false; }
+    Player.removeItem(player, "escape-rope");
+    await message(player.name + " used the Escape Rope.");
+    player.location = { map: to.map, x: to.x, y: to.y, facing: "down" };
+    await persist();
+    return true;
+  }
+
   // ---------- Repels ----------
   //
   // For 100 / 200 / 250 steps, wild Pokémon weaker than the lead Pokémon (the
@@ -1968,7 +2004,7 @@
       const ev = await Overworld.explore({
         player, rivalName: player.rival, visible,
         special,
-        canRun: () => !!player.flags.runningShoes,
+        canRun: () => !!player.flags.runningShoes, onWarp,
         trainerWaiting, hiddenItem: (h) => !player.flags[h.flag],
         onStep: repelStep, allowWild: repelAllows
       });

@@ -45,8 +45,9 @@
   // HM04 Strength, HM05 Flash, HM06 Whirlpool, HM07 Waterfall, HM08 Rock Smash,
   // HM09 Dive, HM10 Defog, HM11 Rock Climb. TMs are X and Y's TM01-TM100 in
   // order, without the two that are HMs here (Flash, Rock Smash), then
-  // Secret Power from Omega Ruby and Alpha Sapphire: TM01-TM99. Which species
-  // can use an HM: data/hm-learners.js adds other generations to X and Y's.
+  // Secret Power from Omega Ruby and Alpha Sapphire: TM01-TM99; then TM100 Bullet
+  // Seed (FireRed's TM09, found in Mt. Moon). Which species can use a machine:
+  // data/machine-learners.js adds other generations to X and Y's.
   // Like Gen 5+, TMs are reusable; HMs too, and with no field moves yet, HM
   // moves can be forgotten like any other.
   const isMachine = (item) => (window.ITEMS[item] || {}).category === "all-machines";
@@ -58,7 +59,7 @@
     const m = /^(tm|hm)(\d+)$/.exec(item);
     return m[1].toUpperCase() + m[2].padStart(2, "0") + " " + machineMove(item);
   }
-  // Sorted TM01..TM99, then HM01..HM11.
+  // Sorted TM01..TM100, then HM01..HM11.
   let machineList = null;
   function machines() {
     if (!machineList) {

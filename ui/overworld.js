@@ -18,7 +18,8 @@
 // ctx: { player (the save: location, name), special(script) -> bool,
 //        visible(person, mapName) -> bool, rivalName,
 //        trainerWaiting(person) -> bool (not beaten yet),
-//        hiddenItem(hidden) -> bool (not found yet), canRun() -> bool }
+//        hiddenItem(hidden) -> bool (not found yet), canRun() -> bool,
+//        onWarp(from, to) when you go through a door, cave or stairs }
 //
 // Controls: arrows / WASD to move, hold Shift (or B / X) to run, Z / Space / Enter
 // to talk or read, Esc / M to open the menu. On touch screens, the D-pad and
@@ -277,6 +278,7 @@
 
   function warpTo(target) {
     paused = true;
+    if (ctx.onWarp) ctx.onWarp({ map: me.map, x: me.x, y: me.y }, target);
     fadeDir = 1;
     afterFade = async () => {
       me.map = target.map; me.x = target.x; me.y = target.y;

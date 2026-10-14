@@ -26,7 +26,7 @@ for (const src of headless) {
   vm.runInThisContext(fs.readFileSync(path.join(root, src), "utf8"), { filename: src });
 }
 
-for (const name of ["TYPE_CHART", "NATURES", "DEX", "MOVES", "ABILITIES", "ITEMS", "LEARNSETS_GEN6", "HM_LEARNERS", "SPRITE_METRICS",
+for (const name of ["TYPE_CHART", "NATURES", "DEX", "MOVES", "ABILITIES", "ITEMS", "LEARNSETS_GEN6", "MACHINE_LEARNERS", "SPRITE_METRICS",
   "Stats", "Damage", "CONDITIONS", "ITEM_EFFECTS", "BATTLE_MOVE_EFFECTS", "Battle", "RandomTeam", "OpponentAI",
   "Experience", "Catching", "EVOLUTIONS", "Party", "Evolution", "Encounters",
   "ItemUse", "ITEM_SPRITES", "Player", "Bag", "Save", "WORLD_MAPS", "World"]) {
@@ -604,7 +604,8 @@ for (const share of [false, true]) {
 {
   const rng = mulberry32(51);
   // TMs: X and Y's TM01-TM100 in order without Flash and Rock Smash (HMs here),
-  // then ORAS's Secret Power: TM01-TM99. HMs cover every region.
+  // then ORAS's Secret Power: TM01-TM99, then TM100 Bullet Seed (FireRed's TM09).
+  // HMs cover every region.
   const XY = ["Hone Claws", "Dragon Claw", "Psyshock", "Calm Mind", "Roar", "Toxic", "Hail", "Bulk Up", "Venoshock",
     "Hidden Power", "Sunny Day", "Taunt", "Ice Beam", "Blizzard", "Hyper Beam", "Light Screen", "Protect", "Rain Dance",
     "Roost", "Safeguard", "Frustration", "Solar Beam", "Smack Down", "Thunderbolt", "Thunder", "Earthquake", "Return",
@@ -618,20 +619,29 @@ for (const share of [false, true]) {
     "Sleep Talk", "U-turn", "Substitute", "Flash Cannon", "Trick Room", "Wild Charge", "Rock Smash", "Snarl",
     "Nature Power", "Dark Pulse", "Power-Up Punch", "Dazzling Gleam", "Confide"];
   const HMS = ["Cut", "Fly", "Surf", "Strength", "Flash", "Whirlpool", "Waterfall", "Rock Smash", "Dive", "Defog", "Rock Climb"];
-  const TMS = XY.filter((m) => !HMS.includes(m)).concat("Secret Power");
-  assert.strictEqual(TMS.length, 99);
+  const TMS = XY.filter((m) => !HMS.includes(m)).concat("Secret Power", "Bullet Seed");
+  assert.strictEqual(TMS.length, 100);
   TMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("tm" + String(i + 1).padStart(2, "0")), move, "TM" + (i + 1)));
   HMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("hm" + String(i + 1).padStart(2, "0")), move, "HM" + (i + 1)));
-  assert.strictEqual(Bag.machines().length, 110);
-  assert(!ITEMS.tm100 && !ITEMS.tm101 && !ITEMS.hm12, "no machines past TM99 and HM11");
-  // Every move Pokémon learn by machine in Gen 6 is a TM or HM here; the HMs
-  // Gen 6 has no machine for (Whirlpool, Defog, Rock Climb) come from other generations.
+  assert.strictEqual(Bag.machines().length, 111);
+  assert(!ITEMS.tm101 && !ITEMS.hm12, "no machines past TM100 and HM11");
+  // Every move Pokémon learn by machine in Gen 6 is a TM or HM here; the
+  // machines Gen 6 had none for (Bullet Seed, Whirlpool, Defog, Rock Climb)
+  // take their compatibility from other generations.
   const tmMoves = new Set();
   for (const l of Object.values(LEARNSETS_GEN6)) for (const m of l.tm || []) tmMoves.add(m);
   const machineMoves = Bag.machines().map(Bag.machineMove);
   for (const m of tmMoves) assert(machineMoves.includes(m), "no machine for " + m);
-  assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Whirlpool", "Defog", "Rock Climb"]);
-  for (const m of ["Whirlpool", "Defog", "Rock Climb"]) assert(HM_LEARNERS[m].length > 50, "who can use " + m);
+  assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Bullet Seed", "Whirlpool", "Defog", "Rock Climb"]);
+  for (const m of ["Whirlpool", "Defog", "Rock Climb", "Bullet Seed"]) assert(MACHINE_LEARNERS[m].length > 50, "who can use " + m);
+  assert(!MACHINE_LEARNERS.Thief, "TMs Gen 6 had keep Gen 6's compatibility");
+  assert(Bag.canUseOn(Party.create("Oddish", 20, { rng }), "tm100") && !Bag.canUseOn(Party.create("Pidgey", 20, { rng }), "tm100"), "Bullet Seed: Oddish yes, Pidgey no");
+  assert.strictEqual(Bag.name("tm100"), "TM100 Bullet Seed");
+  // The move tutors teach as in FireRed: Charmander can learn Mega Punch.
+  assert(TUTOR_LEARNERS["Mega Punch"].includes("Charmander") && TUTOR_LEARNERS["Seismic Toss"].includes("Charmander"));
+  // Escape Ropes work where FireRed allows escaping.
+  assert.deepStrictEqual(Object.keys(WORLD_MAPS).filter((m) => WORLD_MAPS[m].allowEscaping), ["ViridianForest", "MtMoon_1F", "MtMoon_B1F", "MtMoon_B2F"]);
+  assert(WORLD_MAPS.MtMoon_1F.people.some((p) => p.item === "tm100"), "FireRed's TM09 in Mt. Moon is TM100 Bullet Seed here");
   assert(Bag.canUseOn(Party.create("Gyarados", 30, { rng }), "hm06"), "Gyarados can use Whirlpool");
   assert(Bag.canUseOn(Party.create("Pidgeot", 30, { rng }), "hm10"), "Pidgeot can use Defog");
   assert(Bag.canUseOn(Party.create("Geodude", 30, { rng }), "hm11"), "Geodude can use Rock Climb");
@@ -639,7 +649,7 @@ for (const share of [false, true]) {
   assert.strictEqual(Bag.name("tm24"), "TM24 Thunderbolt");
   assert.strictEqual(Bag.name("tm99"), "TM99 Secret Power");
   assert.strictEqual(Bag.name("hm11"), "HM11 Rock Climb");
-  assert.deepStrictEqual(Bag.machines().slice(98, 101), ["tm99", "hm01", "hm02"]);
+  assert.deepStrictEqual(Bag.machines().slice(98, 102), ["tm99", "tm100", "hm01", "hm02"]);
   // Saves from before keep their machines' moves under the new numbers.
   const oldSave = Object.assign(Player.create("T"), { party: [Party.create("Pidgey", 5, { rng })], bag: { "tm94-oras": 1 } });
   delete oldSave.pcItems;
@@ -1024,7 +1034,7 @@ for (const share of [false, true]) {
   assert(WORLD_MAPS.MtMoon_1F.people.some((p) => p.item === "moon-stone"), "Mt. Moon's Moon Stone");
   assert.deepStrictEqual(Player.CENTERS.Route4_PokemonCenter_1F.map, "Route4_PokemonCenter_1F");
   // FireRed's machines become this game's machine for the same move: FireRed
-  // TM46 Thief is TM46 here; TM09 Bullet Seed has no machine here, so it stays TM09.
+  // TM46 Thief is TM46 here; TM09 Bullet Seed is TM100.
   assert(WORLD_MAPS.MtMoon_B2F.people.some((p) => p.item === "tm46") && Bag.machineMove("tm46") === "Thief");
   assert(WORLD_MAPS.Route4.people.some((p) => p.item === "tm05") && Bag.machineMove("tm05") === "Roar");
   // Both versions: Route 4's Ekans slots also give LeafGreen's Sandshrew.

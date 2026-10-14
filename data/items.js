@@ -508,6 +508,7 @@ window.ITEMS = {
   "tm97": { name: "tm97", category: "all-machines", effect: "Teaches Dazzling Gleam to a compatible Pokémon." },
   "tm98": { name: "tm98", category: "all-machines", effect: "Teaches Confide to a compatible Pokémon." },
   "tm99": { name: "tm99", category: "all-machines", effect: "Teaches Secret Power to a compatible Pokémon." },
+  "tm100": { name: "tm100", category: "all-machines", effect: "Teaches Bullet Seed to a compatible Pokémon." },
   "tmv-pass": { name: "tmv-pass", category: "gameplay", effect: "Permits access to Kiloude City." },
   "town-map": { name: "town-map", category: "key-items", effect: "A very convenient map that can be viewed anytime. It even shows where you are." },
   "toxic-orb": { name: "toxic-orb", category: "bad-held-items", effect: "Held: Inflicts Toxic on the holder at the end of the turn. Activates after Poison damage would occur." },
