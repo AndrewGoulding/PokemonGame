@@ -46,25 +46,27 @@
   // Money lost on blacking out: highest party level x this, by badge count (Gen 6).
   const BLACKOUT_BASE = [8, 16, 24, 36, 48, 64, 80, 100, 120];
 
-  // The player characters: Red, Leaf, and a custom one (sprites recoloured to
-  // match assets/sprites/trainers/back/player_character.png). For each: its
-  // battle back sprite and trainer-card picture (assets/sprites/trainers/),
-  // Oak's-speech portrait (assets/intro/), and overworld sprites
-  // (assets/world/sprites/player_<look>*.png). `girl` picks FireRed's lines
-  // for girls (Mom, the Magikarp salesman).
+  // The player character: the custom one (sprites recoloured to match
+  // assets/sprites/trainers/back/player_character.png). Red and Leaf aren't
+  // playable: they're rivals in this game. A look lists its battle back sprite
+  // and trainer-card picture (assets/sprites/trainers/), Oak's-speech portrait
+  // (assets/intro/), and overworld sprites (assets/world/sprites/player_<look>*.png);
+  // `girl` would pick FireRed's lines for girls (Mom, the Magikarp salesman).
   const LOOKS = {
-    red: { label: "Boy", back: "red", front: "red", speech: "oak-speech-red" },
-    green: { label: "Girl", back: "leaf", front: "green", speech: "oak-speech-leaf", girl: true },
     custom: { label: "Custom", back: "player_character", front: "player_character", speech: "oak-speech-player-character" }
   };
-  const lookOf = (look) => (LOOKS[look] ? look : "red");
+  const PLAYER_LOOK = "custom";
+  // Saves from when you could play as Red or Leaf become the custom character.
+  const lookOf = (look) => (LOOKS[look] ? look : PLAYER_LOOK);
+  // Your rival's name, no longer chosen in Oak's speech.
+  const RIVAL_NAME = "Gary";
 
   function create(name, look) {
     return {
       version: VERSION,
       name: String(name || "Red").slice(0, 12),
       look: lookOf(look),
-      rival: "Blue",
+      rival: RIVAL_NAME,
       location: Object.assign({}, NEW_GAME_LOCATION),
       money: STARTING_MONEY,
       party: [],
@@ -268,7 +270,7 @@
     // Saves from before the Pokédex scene: Oak gave it with the parcel.
     if (player.flags.parcelDelivered && player.flags.pokedex === undefined) player.flags.pokedex = true;
     player.look = lookOf(data.look);
-    player.rival = String(data.rival || "Blue").slice(0, 12);
+    player.rival = String(data.rival || RIVAL_NAME).slice(0, 12);
     const loc = data.location;
     const known = (m) => !window.WORLD_MAPS || !!window.WORLD_MAPS[m];
     if (loc && known(loc.map)) {
@@ -289,7 +291,7 @@
   }
 
   window.Player = {
-    VERSION, LOOKS, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG, STARTING_PC_ITEMS, NEW_GAME_LOCATION, HOME, CENTERS,
+    VERSION, LOOKS, PLAYER_LOOK, RIVAL_NAME, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG, STARTING_PC_ITEMS, NEW_GAME_LOCATION, HOME, CENTERS,
     create, markSeen, markCaught, hasCaught, receive, deposit, withdraw, release,
     itemCount, addItem, removeItem, depositItem, withdrawItem, addMoney, prizeMoney, blackoutLoss, serialize, load
   };

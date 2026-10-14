@@ -88,9 +88,9 @@ const GAME_TEXT = [
   "Aide_Text_HaventCaughtEnoughMonsForItem", "Aide_Text_GetEnoughMonsComeBackForItem",
   "Text_OnlySkilledTrainersAllowedThrough", "Text_CantLetYouPass", "Text_OhThatsBadgeGoRightAhead", "Text_MoveCanOnlyBeLearnedOnce"
 ];
-// The player characters' overworld sheets (assets/sprites/overworld/<prefix>_normal.png
+// The player character's overworld sheets (assets/sprites/overworld/<prefix>_normal.png
 // and <prefix>_surf_run.png), by look: player_<look>.png and player_<look>_run.png.
-const PLAYER_SPRITES = { red: "red", green: "green", custom: "player_character" };
+const PLAYER_SPRITES = { custom: "player_character" };
 
 const root = path.join(__dirname, "..");
 const pret = process.argv[2] || process.env.POKEFIRERED;

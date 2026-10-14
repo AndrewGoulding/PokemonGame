@@ -740,7 +740,7 @@ for (const share of [false, true]) {
       }
     }
   }
-  assert(fs.existsSync(path.join(root, "assets/world/sprites/player_red.png")));
+  assert(fs.existsSync(path.join(root, "assets/world/sprites/player_custom.png")));
   assert.deepStrictEqual([WORLD_MAPS.PalletTown.width, WORLD_MAPS.PalletTown.height], [24, 20]);
 
   const at = (r) => (r.warp ? r.warp : r).map + " " + (r.warp ? r.warp : r).x + "," + (r.warp ? r.warp : r).y;
@@ -869,7 +869,7 @@ for (const share of [false, true]) {
   assert(WORLD_MAPS.ViridianCity.people.filter((p) => p.sprite === "cut_tree").every((p) => p.inanimate), "cut trees don't turn to face you");
   assert(WORLD_MAPS.PalletTown.people.some((p) => p.localId === "LOCALID_PALLET_PROF_OAK"));
   for (const id of ["LOCALID_OAKS_LAB_PROF_OAK", "LOCALID_OAKS_LAB_RIVAL"]) assert(WORLD_MAPS.PalletTown_ProfessorOaksLab.people.some((p) => p.localId === id));
-  assert(fs.existsSync(path.join(root, "assets/world/sprites/player_red_run.png")), "running sprite sheet");
+  assert(fs.existsSync(path.join(root, "assets/world/sprites/player_custom_run.png")), "running sprite sheet");
 
   const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
   for (const [, label] of gameJs.matchAll(/M\("(\w+)"\)/g)) assert(WORLD_MOVEMENTS[label], "missing movement " + label);
@@ -909,10 +909,10 @@ for (const share of [false, true]) {
     ["Pallet Town\nShades of your journey await!"]);
 
   // Saves: a new game starts in the bedroom with no Pokémon; old saves appear outside the house.
-  const fresh = Player.load(JSON.parse(Player.serialize(Player.create("Leaf", "green")))).player;
+  const fresh = Player.load(JSON.parse(Player.serialize(Player.create("Ash")))).player;
   assert.strictEqual(fresh.location.map, "PalletTown_PlayersHouse_2F");
   assert.strictEqual(fresh.party.length, 0);
-  assert.strictEqual(fresh.look, "green");
+  assert.strictEqual(fresh.look, "custom");
   const old = JSON.parse(Player.serialize(Player.create("Old")));
   delete old.location;
   old.party = [Party.create("Squirtle", 12, { rng })];
@@ -1048,9 +1048,11 @@ for (const share of [false, true]) {
   assert(!Player.create("T").flags.runningShoes);
 }
 
-// The player characters: Red, Leaf and the custom one, each with every picture the game shows.
+// The player character: the custom one (Red and Leaf are rivals), with every
+// picture the game shows; the rival is Gary.
 {
-  assert.deepStrictEqual(Object.keys(Player.LOOKS), ["red", "green", "custom"]);
+  assert.deepStrictEqual(Object.keys(Player.LOOKS), ["custom"]);
+  assert.deepStrictEqual([Player.create("T").look, Player.create("T").rival], ["custom", "Gary"]);
   for (const [look, l] of Object.entries(Player.LOOKS)) {
     assert.strictEqual(Player.create("T", look).look, look);
     for (const file of ["assets/sprites/trainers/back/" + l.back + ".png", "assets/sprites/trainers/front/" + l.front + ".png",
@@ -1058,7 +1060,9 @@ for (const share of [false, true]) {
       assert(fs.existsSync(path.join(root, file)), "missing " + file);
     }
   }
-  assert.strictEqual(Player.create("T", "nobody").look, "red", "unknown looks fall back to Red");
+  assert.strictEqual(Player.create("T", "nobody").look, "custom", "unknown looks fall back to the custom character");
+  const asRed = Object.assign(Player.create("T"), { look: "red", party: [Party.create("Pidgey", 5)] });
+  assert.strictEqual(Player.load(JSON.parse(JSON.stringify(asRed))).player.look, "custom", "saves as Red or Leaf become the custom character");
   const saved = Object.assign(Player.create("T", "custom"), { party: [Party.create("Pidgey", 5)] });
   assert.strictEqual(Player.load(JSON.parse(JSON.stringify(saved))).player.look, "custom", "the custom look survives saving");
   // Every picture Oak's speech uses is built (or added by hand, like the custom portrait).

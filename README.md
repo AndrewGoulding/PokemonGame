@@ -180,15 +180,15 @@ lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scrip
 (`walk_up`, `walk_in_place_faster_down`, `emote_exclamation_mark`, ...) from
 `window.WORLD_MOVEMENTS`; the converter writes both alongside the maps. Running
 uses the frames from `assets/sprites/overworld/<red|green>_surf_run.png`.
-A custom player character's sheets sit beside Red's and Leaf's:
-`assets/sprites/trainers/back/player_character.png` and
-`assets/sprites/overworld/player_character_<normal|bike|fish|item|surf|surf_run|vs_seeker_bike>.png`,
-the overworld ones recoloured from Red's by `tools/recolor-player-overworld.py`
-(black cap, silver hair, red shirt, black backpack), and its trainer-card picture
+You play as a custom character (Red and Leaf aren't playable: they're rivals
+in this game), and your rival is always Gary: Oak's speech asks only your
+name. The character's pictures: `assets/sprites/trainers/back/player_character.png`,
+`assets/sprites/overworld/player_character_<normal|bike|fish|item|surf|surf_run|vs_seeker_bike>.png`
+(recoloured from Red's by `tools/recolor-player-overworld.py`: black cap,
+silver hair, red shirt, black backpack), and its trainer-card picture
 (`assets/sprites/trainers/front/player_character.png`) and Oak's-speech portrait
-(`assets/intro/oak-speech-player-character.png`) by `tools/recolor-player-fronts.py`.
-Oak's speech offers Boy, Girl or Custom; `Player.LOOKS` in `game/player.js`
-lists each character's pictures.
+(`assets/intro/oak-speech-player-character.png`), by `tools/recolor-player-fronts.py`.
+`Player.LOOKS` in `game/player.js` lists them.
 
 ## Progression rules (Gen 6)
 

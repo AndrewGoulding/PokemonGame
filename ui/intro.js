@@ -725,9 +725,6 @@
   const NAMES = (labels) => labels.map((l) => IT("gNameChoice_" + l)[0]);
   const BOY_NAMES = NAMES(["Red", "Fire", "Ash", "Kene", "Geki", "Jak", "Janne", "Jonn", "Kamon", "Karl", "Taylor", "Oscar",
     "Hiro", "Max", "Jon", "Ralph", "Kay", "Tosh", "Roak"]);
-  const GIRL_NAMES = NAMES(["Red", "Fire", "Omi", "Jodi", "Amanda", "Hillary", "Makey", "Michi", "Paula", "June", "Cassie",
-    "Rey", "Seda", "Kiko", "Mina", "Norie", "Sai", "Momo", "Suzi"]);
-  const RIVAL_NAMES = NAMES(["Green", "Gary", "Kaz", "Toru"]);
 
   // Text drawn on the picture (the controls guide and Pikachu pages).
   function text(str, x, y, opts) {
@@ -910,10 +907,9 @@
     await fadePic(0, 48);
     await wait(48);
 
-    // Boy, girl, or the custom character (Player.LOOKS)?
-    const look = await choose(IT("gOakSpeech_Text_AskPlayerGender")[0],
-      Object.entries(Player.LOOKS).map(([value, l]) => ({ label: l.label, value, className: "action" })));
-    show("");
+    // You're always the custom character (Red and Leaf are rivals in this
+    // game), so FireRed's "Are you a boy? Or are you a girl?" is skipped.
+    const look = Player.PLAYER_LOOK;
     const playerPic = Player.LOOKS[look].speech;
     s.pic = playerPic; s.picX = 0; s.platform = true; s.platformX = 0;
     await fadePic(1, 24);
@@ -933,7 +929,7 @@
     let name;
     await say(IT("gOakSpeech_Text_YourNameWhatIsIt"));
     for (;;) {
-      name = await nameScreen("Your name?", pickFrom(Player.LOOKS[look].girl ? GIRL_NAMES : BOY_NAMES), "player_" + look);
+      name = await nameScreen("Your name?", pickFrom(BOY_NAMES), "player_" + look);
       s.picX = 60; s.platformX = 60;
       await fadeTo("#000", 16, 0, 0);
       show(fill(IT("gOakSpeech_Text_SoYourNameIsPlayer")[0], name));
@@ -948,23 +944,13 @@
     // The rival.
     s.pic = "oak-speech-rival"; s.picX = 0; s.platformX = 0; s.platform = true;
     await fadePic(1, 24);
+    // His name is always Gary here: Oak remembers it without asking you.
+    const rival = Player.RIVAL_NAME;
     const whatWas = IT("gOakSpeech_Text_WhatWasHisName");
     await say(whatWas.slice(0, -1));
     show(whatWas[whatWas.length - 1]);
     await until((t) => { s.picX = s.platformX = Math.min(60, (t + 1) * 2); return t >= 29; });
-    let rival;
-    let prompt = whatWas[whatWas.length - 1];
-    for (;;) {
-      const v = await choose(prompt, [{ label: IT("gOtherText_NewName")[0], value: "", className: "action", wide: true }]
-        .concat(RIVAL_NAMES.map((n) => ({ label: n, value: n, className: "action" }))));
-      rival = v || await nameScreen("Rival's name?", RIVAL_NAMES[0], null);
-      if (!v) await fadeTo("#000", 16, 0, 0);
-      show(fill(IT("gOakSpeech_Text_ConfirmRivalName")[0], name, rival));
-      await wait(25);
-      if (await choose(fill(IT("gOakSpeech_Text_ConfirmRivalName")[0], name, rival), [
-        { label: "Yes", value: true, className: "action" }, { label: "No", value: false, className: "action" }])) break;
-      prompt = IT("gOakSpeech_Text_YourRivalsNameWhatWasIt")[0];
-    }
+    await wait(40);
     await say(IT("gOakSpeech_Text_RememberRivalsName").map((p) => fill(p, name, rival)));
     show("");
     await fadePic(0, 48);

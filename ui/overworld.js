@@ -409,7 +409,7 @@
 
   // ---------- Talking ----------
 
-  const fillText = (s) => s.replace(/\{PLAYER\}/g, ctx.player.name).replace(/\{RIVAL\}/g, ctx.rivalName || "Blue").replace(/\{STR_VAR_\d\}/g, "");
+  const fillText = (s) => s.replace(/\{PLAYER\}/g, ctx.player.name).replace(/\{RIVAL\}/g, ctx.rivalName || "Gary").replace(/\{STR_VAR_\d\}/g, "");
 
   async function read(pages) {
     paused = true;
@@ -673,7 +673,7 @@
         frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), p.facing === "right", x - camX, y - camY) };
     });
     if (me.emote) emotes.push([me.emote, px - camX, py - camY - 16]);
-    const look = "player_" + (ctx.player.look || "red");
+    const look = "player_" + (ctx.player.look || "custom");
     let sheet = look, frame;
     if (me.move && me.move.run) {
       // FireRed's running sheet: a leaning pose for 5 frames, then a stride for 3.
@@ -749,7 +749,7 @@
         return old && old.ox === p.ox && old.oy === p.oy ? Object.assign(old, { def: p.def }) : p;
       });
     }
-    await Promise.all([preloadMap(me.map), spriteImage("player_" + (ctx.player.look || "red") + "_run").loaded]);
+    await Promise.all([preloadMap(me.map), spriteImage("player_" + (ctx.player.look || "custom") + "_run").loaded]);
     showControls();
     hint();
     ignoreInputUntil = performance.now() + 200;
