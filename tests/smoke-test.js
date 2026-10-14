@@ -1173,7 +1173,7 @@ for (const share of [false, true]) {
 
 // Shiny Pokémon: 1 in 4096; kept through saving; trainers' never are.
 {
-  assert.strictEqual(Party.SHINY_ODDS, 4096);
+  assert.strictEqual(Party.SHINY_ODDS, 1000);
   const shiny = Party.create("Pikachu", 5, { shiny: true });
   assert(shiny.shiny && Party.toBattleSet(shiny).shiny);
   const p = Player.create("S");

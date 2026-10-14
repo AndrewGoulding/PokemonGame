@@ -245,8 +245,8 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   switch it off and on), each Pokémon that battled gets the full amount
   instead of a split, and the rest of the party (not fainted) gets half, plus
   EVs, as in X and Y.
-- **Shiny Pokémon**: any Pokémon you meet or are given is shiny 1 time in 4,096
-  (Gen 6's odds; trainers' never are). They use their shiny sprites
+- **Shiny Pokémon**: any Pokémon you meet or are given is shiny 1 time in 1,000
+  (trainers' never are). They use their shiny sprites
   everywhere, sparkle as they come out in battle, and have a ★ on their
   summary. (The debug menu's Add a Pokémon has a Shiny box.)
 - **Move Relearner and Move Deleter**: every Poké Mart has an upstairs (stairs

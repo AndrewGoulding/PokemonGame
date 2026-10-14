@@ -42,7 +42,7 @@
   const speciesName = (species) => species.replace(FORME_SUFFIX, "");
 
   // opts: { rng, moves, ball, nickname, ivs (a number for every stat: a trainer's Pokémon) }
-  const SHINY_ODDS = 4096;
+  const SHINY_ODDS = 1000;   // 1 in 1,000 (Gen 6 is 1 in 4,096)
 
   function create(species, level, opts) {
     opts = opts || {};
