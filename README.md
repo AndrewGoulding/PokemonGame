@@ -18,7 +18,7 @@ lab, where your rival is waiting; pick Bulbasaur, Squirtle or Charmander from th
 Poké Balls on his table (each one shows you its Pokémon before you decide). Your
 rival walks over and takes the one that beats yours; on your way out he walks up
 to you and battles you, then heads off. Then Route 1's tall grass, north of town, has FireRed's wild
-Pokémon. Mom heals your party, and the PC in your bedroom stores items (there's a
+Pokémon. Red's mom heals your party, and the PC upstairs stores items (there's a
 Potion in it to start).
 
 North of Route 1 is **Viridian City**. The Poké Mart clerk hands you Oak's
@@ -77,7 +77,7 @@ npm test
 ## Overworld maps
 
 The maps are FireRed's, converted from the [pret/pokefirered](https://github.com/pret/pokefirered)
-decompilation: Pallet Town, the player's house (both floors), the rival's house,
+decompilation: Pallet Town, Red's house (both floors), the rival's house,
 PROF. OAK's lab, Route 1, Viridian City with its Pokémon Center (both
 floors), Poké Mart, school and Nickname house, Route 2 with its trade house
 and gate, Viridian Forest with both of its gates, Route 22 and its League
