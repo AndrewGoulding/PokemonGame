@@ -179,6 +179,16 @@ cd expansion && git sparse-checkout set --no-cone '/graphics/pokemon/**/icon*.pn
 node tools/build-party-menu.js pokefirered expansion
 ```
 
+`tools/order-learnsets.js` puts moves learned at the same level in
+`data/learnsets.js` in the games' order (X and Y's, from the expansion's
+`src/data/pokemon/level_up_learnsets/gen_6.h`), so a new Charmander knows
+Scratch, then Growl:
+
+```sh
+cd expansion && git sparse-checkout add '/src/data/pokemon/level_up_learnsets/*' && cd ..
+node tools/order-learnsets.js expansion
+```
+
 ### Main menu and Option screen
 
 `tools/build-menus.js` converts what they're drawn with into

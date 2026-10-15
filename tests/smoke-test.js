@@ -1166,6 +1166,14 @@ for (const share of [false, true]) {
   assert.deepStrictEqual(problems, [], "debug species");
 }
 
+// Moves learned at the same level come in the games' order
+// (tools/order-learnsets.js): a new Charmander knows Scratch, then Growl.
+{
+  const Party = window.Party;
+  assert.deepStrictEqual(Party.create("Charmander", 5).moves.map((m) => m.name), ["Scratch", "Growl"]);
+  assert.deepStrictEqual(Party.create("Pikachu", 5).moves.map((m) => m.name).slice(0, 2), ["Tail Whip", "Thunder Shock"]);
+}
+
 // FireRed's party screen (tools/build-party-menu.js): its graphics, and a
 // party icon for every Pokémon.
 {
