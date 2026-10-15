@@ -116,6 +116,15 @@ const WILD_SLOTS = {
     ["Metapod", 4, 6, "Kakuna"], ["Metapod", 4, 6, "Kakuna"], ["Metapod", 4, 6, "Kakuna"], ["Pikachu", 3, 5],
     ["Pikachu", 3, 5], ["Bulbasaur", 5, 5], ["Pikachu", 3, 5], ["Bulbasaur", 5, 5]]
 };
+// Single slots changed from FireRed's (both versions'), by slot number: the
+// starters out in the wild, 5% each (slots 9 and 11, 4% and 1%, as the
+// Bulbasaur in Viridian Forest; Squirtle in Kakuna / Metapod's 8 and 10).
+// Charmander takes two of Jigglypuff's slots on Route 3 (it's 5% now), and
+// Squirtle the Kakuna and Metapod on Route 24, at those slots' levels.
+const WILD_SLOT_CHANGES = {
+  Route3: { 9: ["Charmander", 5, 5], 11: ["Charmander", 7, 7] },
+  Route24: { 8: ["Squirtle", 8, 8], 10: ["Squirtle", 8, 8] }
+};
 // Scripts whose text is picked by code the converter can't follow.
 const SCRIPT_TEXT = {
   ViridianCity_School_EventScript_PokemonJournal: "PokemonJournal_Text_SpecialFeatureBrock",
@@ -569,6 +578,8 @@ for (const name of MAPS) {
         const lg = leafGreen && leafGreen.land_mons && leafGreen.land_mons.mons[i];
         const species = dexByID[toID(m.species.replace(/^SPECIES_/, ""))];
         const alt = lg && dexByID[toID(lg.species.replace(/^SPECIES_/, ""))];
+        const change = (WILD_SLOT_CHANGES[name] || {})[i];
+        if (change) return { species: change[0], min: change[1], max: change[2] };
         return Object.assign({ species, min: m.min_level, max: m.max_level }, alt && alt !== species ? { alt } : {});
       })
     } : null

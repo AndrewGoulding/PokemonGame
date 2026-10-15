@@ -28,7 +28,9 @@
   // finishes it at once. `printed()` resolves once it's all there.
   let printing = null;   // { finish, done } while a text is being written out
   let asking = 0;        // counts up when the text box or menu changes (see ask)
-  function say(text) {
+  // `from`: how much of `text` is already on screen (after a scroll), so only
+  // the rest is written out.
+  function say(text, from) {
     asking++;
     text = String(text == null ? "" : text);
     if (printing) printing.finish();
@@ -39,7 +41,7 @@
     let size = parseFloat(getComputedStyle(textbox).fontSize);
     while (textbox.scrollHeight > textbox.clientHeight + 1 && size > 10) textbox.style.fontSize = (size -= 1) + "px";
     if (!text.trim() || !charMs) return;
-    let n = 0, resolve;
+    let n = Math.min(from || 0, text.length), resolve;
     const state = { done: new Promise((r) => { resolve = r; }) };
     const timer = setInterval(() => { textbox.textContent = text.slice(0, ++n); if (n >= text.length) state.finish(); }, charMs);
     state.finish = () => {
@@ -48,7 +50,7 @@
       if (printing === state) printing = null;
       resolve();
     };
-    textbox.textContent = "";
+    textbox.textContent = text.slice(0, n);
     printing = state;
   }
   const printed = () => (printing ? printing.done : Promise.resolve());
@@ -64,26 +66,43 @@
     });
   }
 
+  // The text box holds two lines, as FireRed's does: a longer text scrolls
+  // up a line at a time, each time A is pressed (FireRed's \l). -> the
+  // steps: [text on screen, how much of it was already there].
+  function scrollSteps(text) {
+    const lines = String(text == null ? "" : text).split("\n");
+    if (lines.length <= 2) return [[lines.join("\n"), 0]];
+    const steps = [[lines[0] + "\n" + lines[1], 0]];
+    for (let i = 2; i < lines.length; i++) steps.push([lines[i - 1] + "\n" + lines[i], lines[i - 1].length + 1]);
+    return steps;
+  }
+  const waitForA = () => new Promise((resolve) => {
+    const done = () => { if (skipWait === done) skipWait = null; resolve(); };
+    skipWait = done;
+  });
+
   // Shows text until the player presses A (for signs and people).
   async function read(text) {
-    say(text);
     clearMenu();
-    await printed();
-    more(true);
-    await new Promise((resolve) => {
-      const done = () => { if (skipWait === done) skipWait = null; resolve(); };
-      skipWait = done;
-    });
-    more(false);
+    for (const [shown, from] of scrollSteps(text)) {
+      say(shown, from);
+      await printed();
+      more(true);
+      await waitForA();
+      more(false);
+    }
   }
 
   // Shows text, written out, then a moment more (A moves it on).
   async function message(text, ms) {
-    say(text);
-    await printed();
-    more(true);
-    await wait(ms || MESSAGE_MS * textSpeed);
-    more(false);
+    const steps = scrollSteps(text);
+    for (let i = 0; i < steps.length; i++) {
+      say(steps[i][0], steps[i][1]);
+      await printed();
+      more(true);
+      if (i < steps.length - 1) await waitForA(); else await wait(ms || MESSAGE_MS * textSpeed);
+      more(false);
+    }
   }
 
   function clearMenu() { asking++; menu.innerHTML = ""; }
@@ -108,7 +127,11 @@
   // it). If something else takes the text box or menu first, this one is
   // dropped.
   async function ask(text, options) {
-    say(text);
+    // (A question longer than the box: its first lines scroll by, then the
+    // last two stay up with the choices.)
+    const steps = scrollSteps(text);
+    for (const [shown, from] of steps.slice(0, -1)) await read1(shown, from);
+    say(steps[steps.length - 1][0], steps[steps.length - 1][1]);
     clearMenu();
     const id = asking;
     await printed();
@@ -124,10 +147,21 @@
     });
   }
 
+  async function read1(shown, from) {
+    clearMenu();
+    say(shown, from);
+    await printed();
+    more(true);
+    await waitForA();
+    more(false);
+  }
+
   // FireRed's YES / NO box (GbaMenus.yesNo) once `text` is written out:
   // resolves true for YES, false for NO or B.
   async function yesNo(text, defaultNo) {
-    say(text);
+    const steps = scrollSteps(text);
+    for (const [shown, from] of steps.slice(0, -1)) await read1(shown, from);
+    say(steps[steps.length - 1][0], steps[steps.length - 1][1]);
     clearMenu();
     await printed();
     const frame = window.GameOptions ? window.GameOptions.get().frame : 0;

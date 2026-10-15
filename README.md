@@ -286,7 +286,7 @@ connected maps you walk straight into, and tall grass encounters at the map's
 rate (Random() % 2880 < rate × 16) using the 20/20/10/10/10/10/5/5/4/4/1/1
 encounter slots. Wild Pokémon come from both versions: where LeafGreen's table
 has a different Pokémon in a slot (Sandshrew for FireRed's Ekans on Route 4),
-either is as likely. FireRed's TMs found in item balls become this game's
+either is as likely. The three starters are out in the wild, 5% each: Bulbasaur in Viridian Forest, Charmander on Route 3 and Squirtle on Route 24. FireRed's TMs found in item balls become this game's
 machine for the same move (TM09 Bullet Seed is TM100 here). An Escape Rope works
 where FireRed allows it (caves, Viridian Forest) and takes you back to where
 you last went from outdoors through a door or cave entrance. Trainers work as in FireRed: one you haven't beaten sees you

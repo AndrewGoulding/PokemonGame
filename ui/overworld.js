@@ -194,6 +194,9 @@
     // Nobody wanders or looks around while you're talking or a scene plays
     // (FireRed's lock), so whoever you talk to keeps facing you.
     if (scene || paused || --p.timer > 0) return;
+    // Trees, rocks and item balls never turn (FireRed's inanimate objects;
+    // turning would show a cut tree's other frames).
+    if (p.def.inanimate) return;
     p.timer = 90 + Math.floor(Math.random() * 150);
     // Standing and turning: all four ways, or two (face_down_and_up, ...).
     const turns = p.def.movement === "look_around" ? ["up", "down", "left", "right"]
