@@ -17,7 +17,7 @@ FRAME (the menus' windows: FireRed's ten window frames; the text box is always
 FireRed's message box, as in FireRed) and, from the main
 menu, SAVE FILE to load a downloaded save; it's also in the Start menu. Start a
 **NEW GAME** and you get FireRed's new-game intro: the controls guide, the
-Pikachu pages, then Prof. Oak, who shows you a Nidoran♀ and has you name
+Pikachu pages (A turns the page, B goes back), then Prof. Oak, who shows you a Nidoran♀ and has you name
 yourself before you shrink away into Pallet Town, just outside Red's house. Try
 to leave town through the tall grass to the north and Prof. Oak stops you and
 walks you to his lab, where Leaf is waiting; pick Bulbasaur, Squirtle or Charmander from the
@@ -101,7 +101,8 @@ Pokémon's Ball. Repels (from the bag) keep wild Pokémon below your lead's leve
 away for 100, 200 or 250 steps; when one wears off you're asked whether to use
 another of the same kind (as in Black and White). In battle you can fight, use items from the Bag, switch, and in wild battles
 throw balls or run. Pokémon gain experience and EVs, level up mid-battle, learn
-moves and evolve afterwards. Press A to skip ahead.
+moves (with four already, FireRed's "Delete a move to make room for …?" and the
+Summary screen's move list to pick one to forget) and evolve afterwards. Press A to skip ahead.
 
 **Saving**: the game saves automatically to this browser (including where you
 are on the map) after every battle, story event and menu change, and
