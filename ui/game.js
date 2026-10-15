@@ -2024,7 +2024,7 @@
     if (SILPH_WORKERS[script]) { await say(T(SILPH_WORKERS[script][silphFreed() ? 1 : 0])); return; }
     if (SILPH_DOORS.includes(script)) { await silphDoor(script); return; }
     if (/^enter:/.test(script) && megaAideDue(script.slice(6))) { await megaAide(); return; }
-    if (script === "enter:PokemonTower_7F" && megaTowerDue()) { await megaTower(); return; }
+    if ((script === "enter:PokemonTower_7F" || script === "Game_EventScript_MegaTower") && megaTowerDue()) { await megaTower(); return; }
     const can = /^VermilionCity_Gym_EventScript_TrashCan(\d+)$/.exec(script);
     if (can) { await trashCan(+can[1]); return; }
     const slots = /^CeladonCity_GameCorner_EventScript_SlotMachine(\d+)$/.exec(script);
@@ -4114,12 +4114,15 @@
   //
   // With four badges and Pokémon Tower put to rest, one of Prof. Oak's aides
   // finds you as you come out (of the Gym or the Volunteer House, whichever
-  // came second) and sends you up the Tower, where Oak, Mr. Fuji, Red, Leaf
-  // and Gary are waiting. Oak is studying Mega Evolution, and tests everyone:
-  // you battle Gary, Red and Leaf (healed before each; the others battle off
-  // screen). Lose one and you black out as usual, and the test starts over
-  // when you come back. Win all three and Oak gives you the Mega Ring and the
-  // Kanto starters' Mega Stones, and Mr. Fuji the Gengarite.
+  // came second) and sends you up the Tower, where Oak and Mr. Fuji wait at
+  // the top, and Leaf, Gary and Red in a line before them. Oak is studying
+  // Mega Evolution, and tests everyone: Leaf, then Gary, then Red comes over
+  // to battle you (healed before each; the others battle off screen), and
+  // goes back to their place. Lose one and you black out as usual, and the
+  // test starts over when you come back. Win all three and you go up to Oak
+  // for the Mega Ring and the Kanto starters' Mega Stones; then Red, Leaf,
+  // Gary and Oak leave down the stairs, and Mr. Fuji, last, comes over with
+  // the Gengarite.
   const MEGA_AIDE = "LOCALID_MEGA_AIDE";
   const MEGA_CAST = { oak: "LOCALID_MEGA_OAK", fuji: "LOCALID_MEGA_FUJI", gary: "LOCALID_MEGA_GARY", red: "LOCALID_MEGA_RED", leaf: "LOCALID_MEGA_LEAF" };
   // An overworld look (sprite, size, frames) someone on some map already has.
@@ -4130,6 +4133,49 @@
       if (p) return { sprite: p.sprite, width: p.width, height: p.height, frames: p.frames };
     }
     return null;
+  }
+  // The steps for someone ("player" or a local id) to walk from where they
+  // stand to `to`, along tiles anyone can walk on (World.walkable) and round
+  // everyone else; null when there's no way there.
+  function pathTo(who, to) {
+    const me = Overworld.position(), from = who === "player" ? me : Overworld.personPosition(who);
+    if (!from) return null;
+    const others = Overworld.people().filter((q) => who === "player" || q.def.localId !== who);
+    const occupied = (m, x, y) => (who !== "player" && me.x === x && me.y === y) || others.some((q) => q.x === x && q.y === y);
+    const tree = World.walkable({ map: me.map, x: from.x, y: from.y }, occupied, 80), key = to.x + "," + to.y;
+    if (!tree.has(key)) return null;
+    return World.pathBack(tree, key).reverse().map((d) => World.OPPOSITE[d]);
+  }
+  // Walks someone there (`speed`: "" or "fast_"), and turns them to `face`.
+  async function walkTo(who, to, face, speed) {
+    const path = pathTo(who, to) || [];
+    await Overworld.act([{ who, moves: path.map((d) => "walk_" + (speed || "") + d).concat(face ? ["face_" + face] : []) }]);
+  }
+  // Someone not on the map comes from `from` (out of sight) to the first of
+  // `spots` ({ x, y, face }) they can reach, and faces that way: they appear
+  // on the last tile of the way there that's off the screen. Returns that
+  // tile (to go back out by), or null.
+  async function walkIn(who, look, from, spots, speed) {
+    const me = Overworld.position();
+    Overworld.addObject(who, { x: from.x, y: from.y, facing: "down" }, look);
+    let path = null, face = null;
+    for (const s of spots) if (s && (path = pathTo(who, s))) { face = s.face; break; }
+    if (!path) { Overworld.removeObject(who); return null; }
+    const tiles = [{ x: from.x, y: from.y }];
+    for (const d of path) { const t = tiles[tiles.length - 1], [dx, dy] = World.DIRS[d]; tiles.push({ x: t.x + dx, y: t.y + dy }); }
+    // (A person's picture is two tiles tall: one just below the screen still shows.)
+    const offScreen = (t) => t.x < me.x - 7 || t.x > me.x + 7 || t.y < me.y - 4 || t.y > me.y + 6;
+    let k = 0;
+    tiles.forEach((t, i) => { if (i < tiles.length - 1 && offScreen(t)) k = i; });
+    Overworld.addObject(who, { x: tiles[k].x, y: tiles[k].y, facing: path[k] || face }, look);
+    await Overworld.act([{ who, moves: path.slice(k).map((d) => "walk_" + (speed || "") + d).concat(["face_" + face]) }]);
+    return tiles[k];
+  }
+  // ... and back out that way, out of sight.
+  async function walkOut(who, to, speed) {
+    await walkTo(who, to, null, speed);
+    await Overworld.act([{ who, moves: ["set_invisible"] }]);
+    Overworld.removeObject(who);
   }
   const megaReady = () => player.badges.length >= 4 && !!player.flags.rescuedMrFuji;
   // Stepping out of a building onto a town or route, once both are done.
@@ -4169,16 +4215,29 @@
     Overworld.removeObject(MEGA_AIDE);
   }
   const megaTowerDue = () => !!player.flags.megaAideMet && !player.flags.megaTowerDone;
-  // Who's at the top of the Tower, waiting.
+  // Who's at the top of the Tower, waiting: Prof. Oak and Mr. Fuji at the
+  // top, and Leaf, Gary and Red in a line, facing them, with a place left in
+  // the middle for you (MEGA_SPOT), two steps before Oak.
+  const MEGA_SPOT = { x: 11, y: 7 };
+  const MEGA_PLACES = { oak: [11, 4, "down"], fuji: [12, 4, "down"], leaf: [9, 7, "up"], gary: [10, 7, "up"], red: [12, 7, "up"] };
   function megaTowerPeople() {
-    const spots = [["oak", "prof_oak", 11, 5, "down"], ["fuji", "mr_fuji", 12, 5, "down"], ["gary", "blue", 9, 7, "right"],
-      ["red", "red", 13, 7, "left"], ["leaf", "leaf", 10, 9, "right"]];
-    return spots.map(([who, sprite, x, y, facing], i) => Object.assign({ id: 910 + i, localId: MEGA_CAST[who], script: "Game_EventScript_MegaTower",
-      x, y, movement: "face_" + facing, text: null }, lookOf(sprite)));
+    const sprites = { oak: "prof_oak", fuji: "mr_fuji", gary: "blue", red: "red", leaf: "leaf" };
+    return Object.entries(MEGA_PLACES).map(([who, [x, y, facing]], i) => Object.assign({ id: 910 + i, localId: MEGA_CAST[who],
+      script: "Game_EventScript_MegaTower", x, y, movement: "face_" + facing, text: null }, lookOf(sprites[who])));
   }
   // Leaf's team: her lab starter (second stage) and the Pokémon that covers its weakness.
   const LEAF_FOURTH = { Bulbasaur: "Vulpix", Squirtle: "Gloom", Charmander: "Poliwhirl" };
+  const leafMegaTeam = () => {
+    const starter = RIVAL_PICK[player.flags.starter] || "Bulbasaur";
+    return [["Butterfree", 27], ["Wigglytuff", 28], ["Nidorina", 29], [LEAF_FOURTH[starter], 30], [STAGE_TWO[starter], 31]];
+  };
+  // In the order you battle them.
   const MEGA_RIVALS = [
+    { key: "leaf", name: () => "Pokémon Trainer " + LAB_RIVAL_NAME, pic: "green", music: "mus_encounter_rival",
+      team: leafMegaTeam,
+      intro: ["Leaf: My turn, {PLAYER}! I've been\ntraining really hard since\nVermilion!", "This time I'm going to win!"],
+      defeat: ["Leaf: Aww! You're amazing,\n{PLAYER}!"],
+      after: ["Leaf: That was so much fun!\nI can't wait to see what Mega\nEvolution is!"] },
     { key: "gary", name: () => "Rival " + player.rival, pic: "rival_late", music: "mus_encounter_rival",
       team: () => [["Pidgeotto", 27], ["Growlithe", 28], ["Gyarados", 29], ["Exeggutor", 30], ["Umbreon", 31]],
       intro: ["{RIVAL}: Heh! Gramps called you too,\nhuh, {PLAYER}?", "Doesn't matter. I'll pass his test\nby beating you first! Let's go!"],
@@ -4188,22 +4247,22 @@
       team: () => [["Pikachu", 27], ["Charmeleon", 28], ["Wartortle", 29], ["Ivysaur", 30], ["Espeon", 31]],
       intro: ["Red: …", "Red stepped forward, ready to battle!"],
       defeat: ["…"],
-      after: ["Red: …", "Red gave a small nod."] },
-    { key: "leaf", name: () => "Pokémon Trainer " + LAB_RIVAL_NAME, pic: "green", music: "mus_encounter_rival",
-      team: () => {
-        const starter = RIVAL_PICK[player.flags.starter];
-        return [["Butterfree", 27], ["Wigglytuff", 28], ["Nidorina", 29], [LEAF_FOURTH[starter], 30], [STAGE_TWO[starter], 31]];
-      },
-      intro: ["Leaf: My turn, {PLAYER}! I've been\ntraining really hard since\nVermilion!", "This time I'm going to win!"],
-      defeat: ["Leaf: Aww! You're amazing,\n{PLAYER}!"],
-      after: ["Leaf: That was so much fun!\nI can't wait to see what Mega\nEvolution is!"] }
+      after: ["Red: …", "Red gave a small nod."] }
   ];
+  // Someone at the top of the Tower walks down to the stairs and is gone.
+  async function megaLeaves(who) {
+    await walkTo(who, { x: 11, y: 15 });
+    await Overworld.act([{ who, moves: ["walk_down", "set_invisible"] }]);
+    sfx("se_exit");
+    Overworld.removeObject(who);
+  }
   async function megaTower() {
     const f = player.flags, beaten = f.megaBeaten || (f.megaBeaten = {});
-    const OAK_ = MEGA_CAST.oak;
+    const OAK_ = MEGA_CAST.oak, FUJI = MEGA_CAST.fuji;
     music("mus_oak");
-    // Up the middle to Prof. Oak.
-    await Overworld.act([{ who: "player", moves: Array(Math.max(0, Overworld.position().y - 7)).fill("walk_up") }]);
+    // Up the aisle, to stand before Prof. Oak, and everyone looks to him.
+    await walkTo("player", MEGA_SPOT, "up");
+    await Overworld.act(MEGA_RIVALS.map((r) => ({ who: MEGA_CAST[r.key], moves: ["face_up"] })));
     if (!f.megaTalked) {
       await say(["Oak: Ah, {PLAYER}! There you are!\nThank you for coming.",
         "Mr. Fuji was kind enough to let us\nmeet here, at the top of the Tower.",
@@ -4219,23 +4278,29 @@
     } else {
       await say(["Oak: Ah, {PLAYER}! Ready to try my\ntest again?", "You'll have to win all three battles.\nI'll heal your Pokémon. Good luck!"]);
     }
+    // One at a time, each steps out of the line to battle you, and back.
     for (const r of MEGA_RIVALS) {
       if (beaten[r.key]) continue;
-      const who = MEGA_CAST[r.key];
+      const who = MEGA_CAST[r.key], [hx, hy] = MEGA_PLACES[r.key];
       player.party.forEach(Party.heal);
       await sayWithJingle("mus_heal", "Prof. Oak healed {PLAYER}'s Pokémon!");
       music(r.music);
-      await Overworld.act([{ who, moves: ["face_player", "emote_exclamation_mark"] }, { who: "player", moves: ["face_" + (Overworld.personPosition(who).x < 11 ? "left" : "right")] }]);
+      // (Out of the line, to stand in front of you.)
+      await walkTo(who, { x: MEGA_SPOT.x, y: MEGA_SPOT.y - 1 }, "down");
+      await Overworld.act([{ who: "player", moves: ["face_up"] }]);
       await say(r.intro);
       const team = r.team().map(([sp, lv]) => Party.create(sp, lv));
       const outcome = await battle("trainer", { foe: { name: r.name(), team, pic: r.pic }, defeatText: r.defeat,
         prize: 36 * team[team.length - 1].level });
       // (Blacked out: the whole test again next time.)
-      if (outcome !== "won") { delete f.megaBeaten; return; }
+      if (outcome !== "won") { delete f.megaBeaten; await persist(); return; }
       show("world");
       await Overworld.resume();
       beaten[r.key] = true;
       await say(r.after);
+      music("mus_oak");
+      await walkTo(who, { x: hx, y: hy }, "up");
+      await Overworld.act([{ who: "player", moves: ["face_up"] }]);
     }
     player.party.forEach(Party.heal);
     music("mus_oak");
@@ -4243,7 +4308,11 @@
       "While you were battling, Red, Leaf and\n{RIVAL} had quite the battles among\nthemselves, too.",
       "You've all passed my test! Each of\nyou shares a real bond with your\nPokémon.",
       "And {PLAYER}, you won every one of\nyour battles! I knew I could count\non you.",
-      "Here! I want you to have this.\nIt's a Mega Ring."]);
+      "Come here a moment, {PLAYER}."]);
+    // Up to Prof. Oak for the Mega Ring and the Mega Stones, then back.
+    const [ox, oy] = MEGA_PLACES.oak;
+    await walkTo("player", { x: ox, y: oy + 1 }, "up");
+    await say(["Oak: Here! I want you to have this.\nIt's a Mega Ring."]);
     Player.addItem(player, "mega-ring");
     await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the Mega Ring\nfrom Prof. Oak!");
     await say(["Oak: The Key Stone set in the ring\nresonates with a Mega Stone held\nby a Pokémon.",
@@ -4255,22 +4324,46 @@
     }
     await say(["Oak: Venusaurite for Venusaur,\nCharizardite X and Y for Charizard,\nand Blastoisinite for Blastoise.",
       "Have your Pokémon hold one, and\npress START when you choose a move\nto Mega Evolve!"]);
-    const FUJI = MEGA_CAST.fuji;
-    await Overworld.act([{ who: FUJI, moves: ["face_player"] }]);
+    const back = Array(MEGA_SPOT.y - oy - 1).fill("walk_down");
+    await Overworld.act([{ who: "player", moves: ["lock_facing_direction"].concat(back, ["unlock_facing_direction"]) }]);
+    // Off they go: Red without a word, Leaf and Gary with one.
+    const RED = MEGA_CAST.red, LEAF_ = MEGA_CAST.leaf, GARY = MEGA_CAST.gary;
+    await Overworld.act([{ who: RED, moves: ["face_player"] }]);
+    await say(["Red: …"]);
+    await megaLeaves(RED);
+    await Overworld.act([{ who: LEAF_, moves: ["face_player"] }]);
+    await say(["Leaf: A Mega Ring! Congratulations,\n{PLAYER}! You totally earned it!",
+      "I'll keep training with my Pokémon,\ntoo. Maybe one day we'll find some\nMega Stones of our own!",
+      "See you around, {PLAYER}! Take\ncare of yourself!"]);
+    await megaLeaves(LEAF_);
+    music("mus_rival_exit");
+    await Overworld.act([{ who: GARY, moves: ["face_player"] }]);
+    await say(["{RIVAL}: Hmph! So Gramps gave you\nthe Mega Ring. Enjoy it while you\ncan.",
+      "Next time we battle, I'll be the one\nwho comes out on top. Count on it!",
+      "Smell ya later, {PLAYER}!"]);
+    await megaLeaves(GARY);
+    music("mus_oak");
+    await say(["Oak: Well! I must get back to my\nresearch. There's still so much to\nlearn about Mega Evolution!",
+      "{PLAYER}, keep training, and keep\nfilling in that Pokédex! I'll be\ncalling on you again.",
+      "Oh! And let me heal your Pokémon\nbefore I go."]);
+    player.party.forEach(Party.heal);
+    await sayWithJingle("mus_heal", "Prof. Oak healed {PLAYER}'s Pokémon!");
+    await megaLeaves(OAK_);
+    music((window.WORLD_MAPS[player.location.map] || {}).music);
+    // Mr. Fuji, last: he comes over to you.
+    const [fx, fy] = [MEGA_SPOT.x, MEGA_SPOT.y - 1];
+    await walkTo(FUJI, { x: fx, y: fy }, "down");
+    await Overworld.act([{ who: "player", moves: ["face_up"] }]);
     await say(["Mr. Fuji: Young one… I have watched\nmany Trainers come and go from\nthis Tower.",
       "But the way you battle alongside your\nPokémon… I was truly impressed.",
       "Please, take this. A Pokémon that\nonce called this Tower home would\nsurely want you to have it."]);
     Player.addItem(player, "gengarite");
     await sayWithJingle("mus_obtain_item", "{PLAYER} received the Gengarite\nfrom Mr. Fuji!");
-    await say(["Mr. Fuji: It is the Mega Stone for\nGengar. Treat it kindly."]);
-    await say(["Oak: I'll need a little more time with\nmy research. When I'm ready, I'll be\ncalling on all of you!",
-      "Until then, keep training, and keep\nfilling in that Pokédex!"]);
-    await sayWithJingle("mus_heal", "Prof. Oak healed {PLAYER}'s Pokémon!");
+    await say(["Mr. Fuji: It is the Mega Stone for\nGengar. Treat it kindly.",
+      "Now, I must return to the Pokémon\nHouse. The little ones will be\nwaiting for me."]);
+    await megaLeaves(FUJI);
     f.megaTowerDone = true;
-    await Overworld.fadeToBlack();
-    for (const id of Object.values(MEGA_CAST)) Overworld.removeObject(id);
-    await Overworld.fadeFromBlack();
-    music((window.WORLD_MAPS[player.location.map] || {}).music);
+    await persist();
   }
 
   // 6F: the restless ghost (PokemonTower_6F_EventScript_MarowakGhost). Without
@@ -5030,22 +5123,102 @@
 
   // ---------- The Rocket Hideout ----------
   //
-  // Giovanni, on B4F: beaten, he leaves, and the Silph Scope is left behind.
+  // Giovanni, on B4F (this game's own: a tag battle). As you speak to him,
+  // Leaf comes in from the elevator's side to battle him with you: her
+  // Butterfree, Wigglytuff and starter as at the top of Pokémon Tower, and
+  // three of yours. Beaten, he leaves, and the Silph Scope is left behind;
+  // then Leaf goes back the way she came.
+  const HIDEOUT_LEAF = "LOCALID_HIDEOUT_LEAF";
+  // FireRed's team (Onix, Rhyhorn, Kangaskhan), with three more (his
+  // Dugtrio, Nidorino and Persian) against the two of you.
+  const HIDEOUT_GIOVANNI_EXTRA = [["Dugtrio", 26], ["Nidorino", 26], ["Persian", 28]];
+  let hideoutLeafFrom = null;   // (the tile Leaf came in by, to leave by)
+  // Which way to face from one tile to look at another.
+  const toward = (from, to) => (to.x < from.x ? "left" : to.x > from.x ? "right" : to.y < from.y ? "up" : "down");
+  // Someone and you turn to each other.
+  const faceEachOther = (who) => Overworld.act([{ who, moves: ["face_player"] },
+    { who: "player", moves: ["face_" + toward(Overworld.position(), Overworld.personPosition(who))] }]);
+  // The free tiles beside you (not in front): to your sides, then behind.
+  function besideYou(skip) {
+    const out = [];
+    const me = Overworld.position(), people = Overworld.people();
+    const order = { up: ["left", "right", "down"], down: ["right", "left", "up"], left: ["up", "down", "right"], right: ["up", "down", "left"] }[me.facing];
+    for (const d of order) {
+      const [dx, dy] = World.DIRS[d], t = { x: me.x + dx, y: me.y + dy };
+      if ((skip || []).some((q) => q.x === t.x && q.y === t.y)) continue;
+      const r = World.step({ map: me.map, x: me.x, y: me.y }, d, (m, x, y) => people.some((q) => q.x === x && q.y === y));
+      if (r.ok && !r.warp && !r.jump && r.x === t.x && r.y === t.y) out.push(t);
+    }
+    return out;
+  }
   async function giovanniHideout(person) {
-    const f = player.flags, ID = "TRAINER_BOSS_GIOVANNI";
+    const f = player.flags, ID = "TRAINER_BOSS_GIOVANNI", L = HIDEOUT_LEAF;
+    if (!canBattle()) {
+      music("mus_encounter_rocket");
+      await say(T("RocketHideout_B4F_Text_GiovanniIntro"));
+      return;
+    }
+    // Leaf comes running in, from the elevator's side.
+    music("mus_encounter_rival");
+    await say(["{PLAYER}! Wait!"]);
+    const me = Overworld.position();
+    // (Beside you, not where the Silph Scope will be.)
+    hideoutLeafFrom = await walkIn(L, lookOf("leaf"), { x: 20, y: 24 }, besideYou([{ x: 20, y: 5 }]).map((t) => Object.assign(t, { face: me.facing })), "fast_");
+    const spot = Overworld.personPosition(L);
+    if (spot) await Overworld.act([{ who: "player", moves: ["face_" + toward(me, spot)] }]);
+    if (!f.leafHideout) {
+      await say(["Leaf: Phew, I made it! {PLAYER}!\nYou found their hideout, too?",
+        "I've been looking into Team Rocket\never since I heard rumors about the\nGame Corner.",
+        "They've been stealing people's\nPokémon… I couldn't just sit back\nand do nothing!",
+        "So that's their boss… Let's take\nhim on together, {PLAYER}!"]);
+      f.leafHideout = true;
+    } else {
+      await say(["Leaf: Ready this time, {PLAYER}?\nWe can beat him if we work\ntogether!"]);
+    }
+    await Overworld.act([{ who: "player", moves: ["face_" + me.facing] }]);
     music("mus_encounter_rocket");
     await say(T("RocketHideout_B4F_Text_GiovanniIntro"));
-    if (!canBattle()) return;
-    const outcome = await battle("trainer", { foe: { name: "Boss Giovanni", team: trainerTeam(ID), pic: "leader_giovanni" },
-      defeatText: T("RocketHideout_B4F_Text_GiovanniDefeat"), trainerId: ID, prizeClass: "Boss" });
+    await say(["Leaf: Choose three of your Pokémon,\n{PLAYER}! I'm with you!"]);
+    const own = trainerTeam(ID);
+    const extra = HIDEOUT_GIOVANNI_EXTRA.map(([sp, lv]) => Party.create(sp, lv, { ivs: own[0].ivs.hp }));
+    const team = own.slice(0, 2).concat(extra, own.slice(2));
+    const starter = RIVAL_PICK[f.starter] || "Bulbasaur";
+    const leafTeam = leafMegaTeam().filter(([sp]) => sp === "Butterfree" || sp === "Wigglytuff" || sp === STAGE_TWO[starter])
+      .map(([sp, lv]) => Party.create(sp, lv));
+    const outcome = await battle("trainer", { foe: { name: "Boss Giovanni", team, pic: "leader_giovanni" },
+      defeatText: T("RocketHideout_B4F_Text_GiovanniDefeat"), trainerId: ID, prizeClass: "Boss",
+      prize: Player.prizeMoney("Boss Giovanni", team, "Boss"),
+      partner: { name: LAB_RIVAL_NAME, team: leafTeam, pic: "leaf" } });
+    if (outcome === "cancelled") {
+      // (She keeps watch out of sight, and comes back when you speak to him again.)
+      await faceEachOther(L);
+      await say(["Leaf: Not ready yet? That's OK!\nI'll keep watch nearby.", "Just talk to him again when you're\nready, and I'll be right there!"]);
+      if (hideoutLeafFrom) await walkOut(L, hideoutLeafFrom, "fast_");
+      Overworld.removeObject(L);
+      music((window.WORLD_MAPS[player.location.map] || {}).music);
+      return;
+    }
     if (outcome !== "won") return;
     show("world");
     await Overworld.resume();
     await say(T("RocketHideout_B4F_Text_GiovanniPostBattle"));
+    const at = Overworld.personPosition(L);
     await Overworld.fadeToBlack();
     Overworld.removePerson(person);
     Overworld.refreshPeople();
+    if (at) Overworld.addObject(L, at, lookOf("leaf"));
     await Overworld.fadeFromBlack();
+    music("mus_encounter_rival");
+    if (at) await faceEachOther(L);
+    await say(["Leaf: We did it, {PLAYER}! We beat\nthe boss of Team Rocket!",
+      "Huh? He left something behind…\nYou should take it, {PLAYER}!",
+      "I'm going to go and make sure the\nPokémon they stole get back to\ntheir Trainers.",
+      "Thanks for having my back! See\nyou later, {PLAYER}!"]);
+    music("mus_rival_exit");
+    if (at && hideoutLeafFrom) await walkOut(L, hideoutLeafFrom, "fast_");
+    Overworld.removeObject(L);
+    hideoutLeafFrom = null;
+    music((window.WORLD_MAPS[player.location.map] || {}).music);
   }
   // What happens once you've beaten some of the Game Corner's and Hideout's
   // Rockets: the poster guard leaves; the barriers on B1F and B4F open; the
@@ -5154,9 +5327,11 @@
     sfx("se_unlock");
   }
 
-  // 7F: Gary (SilphCo_7F_EventScript_RivalScene): FireRed's team, with his
-  // Eevee, by now a Vaporeon, in place of a starter (as in Pokémon Tower).
+  // 7F: Gary (SilphCo_7F_EventScript_RivalScene). This game's own team, at
+  // about FireRed's levels: Pidgeot, Growlithe, Gyarados, Exeggutor, Umbreon
+  // (his Eevee) and Alakazam, which holds its Alakazite and Mega Evolves.
   // Then he's off by the warp pad.
+  const SILPH_RIVAL_TEAM = [["Pidgeot", 37], ["Growlithe", 35], ["Gyarados", 38], ["Exeggutor", 35], ["Umbreon", 40], ["Alakazam", 35, "alakazite"]];
   async function silphRival(top) {
     const f = player.flags, R = "LOCALID_SILPH_CO_RIVAL";
     music("mus_encounter_rival");
@@ -5165,12 +5340,13 @@
     await say(T("SilphCo_7F_Text_RivalWhatKeptYou"));
     if (top) await Overworld.act([{ who: R, moves: M("SilphCo_7F_Movement_RivalApproachTop") }]);
     await say(T("SilphCo_7F_Text_RivalIntro"));
-    const base = trainerTeam("TRAINER_RIVAL_SILPH_SQUIRTLE");
-    const last = base[base.length - 1];
-    const team = base.slice(0, -1).concat(Party.create("Vaporeon", last.level, { ivs: last.ivs.hp }));
+    // (FireRed's IVs: 100, and 150 for his starter, here Umbreon.)
+    const team = SILPH_RIVAL_TEAM.map(([sp, lv, item]) => Object.assign(Party.create(sp, lv, { ivs: Math.floor((sp === "Umbreon" ? 150 : 100) * 31 / 255) }),
+      item ? { item } : {}));
+    const ace = Math.max(...team.map((r) => r.level));
     const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_late" },
       defeatText: T("SilphCo_7F_Text_RivalDefeat"), trainerId: "TRAINER_RIVAL_SILPH_SQUIRTLE",
-      prize: 36 * last.level });   // (FireRed's TRAINER_CLASS_RIVAL_LATE: 9, x4 as this game's prizes are)
+      prize: 36 * ace });   // (FireRed's TRAINER_CLASS_RIVAL_LATE: 9, x4 as this game's prizes are)
     if (outcome !== "won") return;
     f.silphRival = true;
     show("world");
@@ -5184,10 +5360,19 @@
     music((window.WORLD_MAPS[player.location.map] || {}).music);
   }
 
-  // 11F: Giovanni (SilphCo_11F_EventScript_BattleGiovanni). Beaten, he's
-  // gone, and so is Team Rocket, from Silph Co. and from Saffron.
+  // 11F: Giovanni (SilphCo_11F_EventScript_BattleGiovanni). This game's
+  // own: a tag battle. Red comes down by the warp pad from 7F and stands
+  // beside you, without a word; he brings Charizard (holding its Charizardite
+  // X: it Mega Evolves), Snorlax and Pikachu, and Giovanni's Kangaskhan holds
+  // its Kangaskhanite. Beaten, Giovanni's gone, and so is Team Rocket, from
+  // Silph Co. and from Saffron; and Red goes back the way he came.
+  const SILPH_RED = "LOCALID_SILPH_CO_RED";
+  // Red's Pokémon now: those he had at the top of Pokémon Tower, all fully
+  // evolved, and a Snorlax, all at Lv. 36; for the tag battle he picks three.
+  const RED_SILPH_ROSTER = [["Pikachu", 36], ["Charizard", 36, "charizardite-x"], ["Blastoise", 36], ["Venusaur", 36], ["Espeon", 36], ["Snorlax", 36]];
+  const RED_SILPH_PICK = ["Charizard", "Snorlax", "Pikachu"];
   async function giovanniSilph(left) {
-    const G = "LOCALID_SILPH_CO_GIOVANNI", ID = "TRAINER_BOSS_GIOVANNI_2";
+    const G = "LOCALID_SILPH_CO_GIOVANNI", ID = "TRAINER_BOSS_GIOVANNI_2", R = SILPH_RED;
     await Overworld.act([{ who: G, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
     await sleep(400);
     await say(T("SilphCo_11F_Text_GiovanniIntro"));
@@ -5196,16 +5381,49 @@
     if (left) approach.push({ who: "player", moves: M("SilphCo_11F_Movement_PlayerFaceGiovanni") });
     await Overworld.act(approach);
     if (!canBattle()) return;
-    const outcome = await battle("trainer", { foe: { name: "Boss Giovanni", team: trainerTeam(ID), pic: "leader_giovanni" },
-      defeatText: T("SilphCo_11F_Text_GiovanniDefeat"), trainerId: ID, prizeClass: "Boss" });
+    // Red, from the warp pad.
+    const me = Overworld.position();
+    // (Beside you; or, coming at you from the left, the way round to you
+    // is past Giovanni: below him, then.)
+    const spots = left ? [{ x: 6, y: 16, face: "up" }] : besideYou().map((t) => Object.assign(t, { face: me.facing }));
+    sfx("se_warp_in");
+    const from = await walkIn(R, lookOf("red"), { x: 2, y: 5 }, spots, "fast_");
+    if (Overworld.personPosition(R)) await faceEachOther(R);
+    await say(["Red: …"]);
+    await Overworld.act([{ who: R, moves: ["face_up"] }, { who: "player", moves: ["face_" + me.facing] }]);
+    await say(["Red joined {PLAYER}, ready\nto battle!",
+      "Giovanni: Hm? Another child…\nHow tiresome.",
+      "No matter. I'll crush the two of you\ntogether!"]);
+    const team = trainerTeam(ID).map((r) => (r.species === "Kangaskhan" ? Object.assign(r, { item: "kangaskhanite" }) : r));
+    const redTeam = RED_SILPH_PICK.map((sp) => RED_SILPH_ROSTER.find((m) => m[0] === sp))
+      .map(([sp, lv, item]) => Object.assign(Party.create(sp, lv), item ? { item } : {}));
+    const outcome = await battle("trainer", { foe: { name: "Boss Giovanni", team, pic: "leader_giovanni" },
+      defeatText: T("SilphCo_11F_Text_GiovanniDefeat"), trainerId: ID, prizeClass: "Boss",
+      prize: Player.prizeMoney("Boss Giovanni", team, "Boss"),
+      partner: { name: "Red", team: redTeam, pic: "red" } });
+    if (outcome === "cancelled") {
+      // (Backed out: Giovanni goes back to his place, and Red with him out of sight.)
+      await say(["Giovanni: Hmph. Lost your nerve?\nI'll be waiting."]);
+      await Overworld.fadeToBlack();
+      Overworld.refreshPeople();
+      await Overworld.fadeFromBlack();
+      return;
+    }
     if (outcome !== "won") return;
     show("world");
     await Overworld.resume();
     await say(T("SilphCo_11F_Text_GiovanniPostBattle"));
     Screen.say("");
+    const at = Overworld.personPosition(R);
     await Overworld.fadeToBlack();
     Overworld.refreshPeople();
+    if (at) Overworld.addObject(R, at, lookOf("red"));
     await Overworld.fadeFromBlack();
+    if (!at) return;
+    await faceEachOther(R);
+    await say(["Red: …", "Red gave a small nod."]);
+    if (from) await walkOut(R, from, "fast_");
+    Overworld.removeObject(R);
   }
 
   // ---------- Route 12 to Fuchsia City ----------
@@ -5866,7 +6084,7 @@
     // Coming out of the Gym with the Boulder Badge, Leaf is waiting.
     // Prof. Oak's aide, then his test at the top of Pokémon Tower (this game's own).
     if (/^enter:/.test(script) && megaAideDue(script.slice(6))) return true;
-    if (script === "enter:PokemonTower_7F" && megaTowerDue()) return true;
+    if ((script === "enter:PokemonTower_7F" || script === "Game_EventScript_MegaTower") && megaTowerDue()) return true;
     if (script === "enter:PewterCity") { player.flags.museumTicket = false; return leafPewterDue(); }
     // Walking into the Route 4 Pokémon Center makes it where you go after
     // blacking out (FireRed's setrespawn there).

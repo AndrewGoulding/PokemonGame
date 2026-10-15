@@ -232,8 +232,14 @@ Down) or held items, each counter's prizes in FireRed's list with your Coins
 in their box. Beat the Rocket guarding the poster and the switch behind
 it opens the stairs to the Rocket Hideout (B1F-B4F: its trainers, items and
 spinning arrow floors; FireRed's TM49 Snatch, TM107 here; the barriers that open once their guards are beaten; the
-Lift Key a Rocket drops on B4F, which works the elevator; and Giovanni, who
-leaves the Silph Scope behind once beaten, which lets you finish Pokémon Tower).
+Lift Key a Rocket drops on B4F, which works the elevator; and Giovanni: as you
+speak to him Leaf comes running in from the elevator's side, investigating Team
+Rocket since she heard about the Game Corner, and the two of you take him on in
+a tag battle (she brings her Butterfree, Wigglytuff and starter from the top of
+Pokémon Tower, you three of yours; Giovanni has FireRed's Onix, Rhyhorn and
+Kangaskhan and, against two, a Dugtrio, Nidorino and Persian too). Beaten, he
+leaves the Silph Scope behind, which lets you finish Pokémon Tower, and Leaf
+heads back out).
 Through any of the four gates you reach Saffron City, Team Rocket's town until
 Silph Co. is freed (Rockets stand in the doorways of the Copycat's house, the
 house and the Gym, and a "security guard" in Silph's own until Mr. Fuji's
@@ -246,9 +252,14 @@ Sabrina's Gym, a maze of warp pads you spin away on (the Marsh Badge and TM04
 Calm Mind). Silph Co., 1F to 11F: its Rockets and scientists, its items, the
 warp pads between floors and rooms, the elevator, and locked doors that the Card
 Key from 5F opens for good; the Thunder Wave tutor on 2F, a nap on 9F, Gary on 7F
-(his Eevee a Vaporeon by now) and the Silph worker there who gives you a Lapras,
-Lv. 25; and Giovanni in the boardroom on 11F: beat him and Team Rocket leaves
-Silph and Saffron, the townsfolk come back out, and the President gives you the
+(Pidgeot, Growlithe, Gyarados, Exeggutor, Umbreon and an Alakazam holding its
+Alakazite, which Mega Evolves; Lv. 35-40) and the Silph worker there who gives
+you a Lapras, Lv. 25; and Giovanni in the boardroom on 11F, where Red comes down
+by the warp pad and, without a word, stands beside you for a tag battle (his
+Charizard, holding Charizardite X, Snorlax and Pikachu, Lv. 36; Giovanni has
+FireRed's team, his Kangaskhan holding its Kangaskhanite, and both Mega
+Evolve): beat him and Team Rocket leaves Silph and Saffron, Red heads back the
+way he came, the townsfolk come back out, and the President gives you the
 Master Ball. The Silph Co. 5F TM01 (Focus Punch) is TM105 here.
 South of Lavender Town, Route 12 (its gate, with TM27 Return from the girl
 upstairs; the fishermen along the pier; the Fishing Guru's younger brother's
@@ -658,8 +669,9 @@ once a battle. When Pokémon faint, the party screen asks for a replacement for
 each empty slot at the end of the turn. Experience goes to each of yours that
 was out while the fainted foe was. (There's no Shift in a double battle.)
 
-In a **tag battle** (the debug menu's Tag battle, for now: no story event
-uses one yet) you fight beside a partner, against two trainers. First choose
+In a **tag battle** (Giovanni in the Rocket Hideout, with Leaf, and in Silph
+Co., with Red; and the debug menu's Tag battle) you fight beside a partner,
+against one trainer or two. First choose
 three of your Pokémon on FireRed's party screen for choosing several: A on a
 Pokémon gives ENTER (NO ENTRY takes it back), SUMMARY and CANCEL; the chosen
 ones say FIRST, SECOND and THIRD, the rest ABLE or NOT ABLE; choosing the
@@ -681,16 +693,22 @@ This game's own story beat. Once you have four badges and Pokémon Tower is put
 to rest (Mr. Fuji rescued), one of Prof. Oak's aides finds you as you next come
 out of a building (outside the Gym or Mr. Fuji's house, whichever came second):
 he comes along the paths from just off the screen, and goes back the way he
-came, and sends you to the top of Pokémon Tower. There Prof. Oak, Mr. Fuji, Red, Leaf
-and Gary are waiting: Oak has been studying Mega Evolution and tests everyone.
-You battle Gary (Pidgeotto, Growlithe, Gyarados, Exeggutor, Umbreon; Lv. 27-31),
-Red (Pikachu, Charmeleon, Wartortle, Ivysaur, Espeon) and Leaf
-(Butterfree, Wigglytuff, Nidorina, then Vulpix, Gloom or Poliwhirl by her
-starter, then her starter's second stage), healed before each battle. You have
-to win all three: lose one and you black out as usual, and the test starts
-over when you come back. Win them all and Oak gives you the Mega Ring and the
-Kanto starters' Mega Stones (Venusaurite, Charizardite X and Y, Blastoisinite),
-and Mr. Fuji, impressed by your battling, the Gengarite.
+came, and sends you to the top of Pokémon Tower. There Prof. Oak and Mr. Fuji
+stand at the top, and Leaf, Gary and Red wait in a line before them; you walk
+up the middle to stand before Oak, and everyone faces him as he explains: he
+has been studying Mega Evolution and tests everyone. One at a time, each steps
+out of the line, walks over to you and battles you, then goes back to their
+place: Leaf (Butterfree, Wigglytuff, Nidorina, then Vulpix, Gloom or Poliwhirl
+by her starter, then her starter's second stage; Lv. 27-31), Gary (Pidgeotto,
+Growlithe, Gyarados, Exeggutor, Umbreon) and Red (Pikachu, Charmeleon,
+Wartortle, Ivysaur, Espeon), and you're healed before each battle. You have to
+win all three: lose one and you black out as usual, and the test starts over
+when you come back. Win them all and you step up to Oak for the Mega Ring and
+the Kanto starters' Mega Stones (Venusaurite, Charizardite X and Y,
+Blastoisinite), and step back. Then Red (without a word), Leaf and Gary (each
+with a parting word) go down the stairs, Oak heads back to his research, and
+only then does Mr. Fuji come over: impressed by your battling, he gives you the
+Gengarite and goes home to the Pokémon House.
 
 With the Mega Ring, a Pokémon holding its Mega Stone can Mega Evolve once a
 battle: in the move menu, START switches Mega Evolution on ("MEGA EVOLVE: ON")

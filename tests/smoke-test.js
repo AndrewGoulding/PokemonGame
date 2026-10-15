@@ -2581,6 +2581,19 @@ assert.deepStrictEqual([WORLD_MAPS.RockTunnel_1F.floor, WORLD_MAPS.RockTunnel_B1
     if (req && (req.phase === "move" || req.phase === "switch") && req.open.length) b.choose(id, OpponentAI.choose(b, id));
   }
   assert(b.ended && b.winner === "p1", "the tag battle ends");
+  // A tag battle against one trainer (Giovanni in Silph Co., with Red): the
+  // partner's Charizard and the foe's Kangaskhan each Mega Evolve (the foe's
+  // Alakazam can't too: once a trainer).
+  {
+    const held = (s, item) => Object.assign(Party.toBattleSet(Party.create(s, 36)), { item });
+    const t = new Battle({ seed: 3, format: "doubles",
+      p1: { name: "Red", team: [Party.toBattleSet(mk("Pikachu"))], partner: { name: "Red", team: [held("Charizard", "charizardite-x")] } },
+      p2: { name: "Giovanni", team: [held("Kangaskhan", "kangaskhanite"), held("Alakazam", "alakazite"), Party.toBattleSet(Party.create("Rhyhorn", 37))] } });
+    t.start();
+    for (const id of ["p1", "p1b", "p2"]) t.choose(id, OpponentAI.choose(t, id));
+    const megas = t.events.filter((e) => e[0] === "-mega").map((e) => e[1].replace(/:.*/, ""));
+    assert.deepStrictEqual(megas.sort(), ["p1b", "p2a"], "the partner's and the foe's Mega Evolution: " + megas);
+  }
   const before = JSON.stringify(party[2]);
   const synced = D.syncBack(party, chosen, b.sides.p1.pokemon, (r, mon) => Party.syncFromBattle(r, mon));
   assert.deepStrictEqual(synced.map((r) => r.species), ["Bulbasaur", "Pikachu", "Squirtle"]);

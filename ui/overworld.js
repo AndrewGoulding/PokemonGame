@@ -527,7 +527,7 @@
     let m;
     if ((m = /^walk_(fast_|faster_|fastest_|slow_)?(up|down|left|right)$/.exec(cmd))) {
       const dir = m[2], [dx, dy] = World.DIRS[dir], speed = SPEEDS[m[1] || ""];
-      a.facing = dir;
+      if (!a.lockFacing) a.facing = dir;
       if (a === me) { me.move = { tx: me.x + dx, ty: me.y + dy, tmap: me.map, dir, t: 0, dist: TILE, speed, scripted: true }; me.parity ^= 1; }
       else a.move = { tx: a.x + dx, ty: a.y + dy, t: 0, speed };
       return 0;
@@ -562,6 +562,9 @@
     if ((m = /^delay_(\d+)$/.exec(cmd))) return +m[1];
     if ((m = /^emote_(exclamation|question|double_excl)_mark$/.exec(cmd))) { a.emote = { mark: { question: "?", exclamation: "!", double_excl: "!!" }[m[1]] }; return 40; }
     if (cmd === "emote_x") { a.emote = { mark: "×" }; return 40; }
+    // (FireRed's lock_facing_direction: stepping back while still facing ahead.)
+    if (cmd === "lock_facing_direction") { a.lockFacing = true; return 0; }
+    if (cmd === "unlock_facing_direction") { a.lockFacing = false; return 0; }
     if (cmd === "set_invisible") { a.hidden = true; return 0; }
     if (cmd === "set_visible") { a.hidden = false; return 0; }
     return 0;   // anything else (sounds, door animations) is skipped
