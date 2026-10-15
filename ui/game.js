@@ -637,13 +637,14 @@
       await say(["The other Trainers don't appear\nto be ready for battle.", "Let's wait till later."]);
     }
   }
-  // Every 128 steps, each Pokémon in the party grows a little friendlier half
-  // the time (FireRed's UpdateFriendshipStepCounter).
+  // Every 250 steps, each Pokémon in the party grows a little friendlier
+  // (FireRed's UpdateFriendshipStepCounter is every 128 steps, half the time).
+  const FRIENDSHIP_STEPS = 250;
   function friendshipStep() {
     const f = player.flags;
-    f.friendshipSteps = ((f.friendshipSteps | 0) + 1) % 128;
+    f.friendshipSteps = ((f.friendshipSteps | 0) + 1) % FRIENDSHIP_STEPS;
     if (f.friendshipSteps) return;
-    for (const r of player.party) if (Math.random() < 0.5) Party.adjustFriendship(r, "walking", player.location.map);
+    for (const r of player.party) Party.adjustFriendship(r, "walking", player.location.map);
   }
   function vsSeekerStep() {
     const f = player.flags;

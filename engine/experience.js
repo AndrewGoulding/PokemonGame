@@ -87,7 +87,7 @@
   // sFriendshipEventDeltas): by how friendly it is now (under 100, under
   // 200, 200 and up). A level up (doubled here); a vitamin, PP Up or PP Max; an X item in
   // battle; a battle with a Gym Leader, the Elite Four or the Champion; a TM
-  // or HM learned; every 128 steps (half the time; doubled here); fainting (worse against a
+  // or HM learned; every 250 steps (FireRed: 128, half the time; doubled here); fainting (worse against a
   // foe 30 levels higher).
   // (Level ups and walking count double here: FireRed's are 5/3/2 and 1.)
   const FRIENDSHIP_EVENTS = {
