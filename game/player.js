@@ -41,7 +41,8 @@
     Route4_PokemonCenter_1F: { map: "Route4_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
     CeruleanCity_PokemonCenter_1F: { map: "CeruleanCity_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
     VermilionCity_PokemonCenter_1F: { map: "VermilionCity_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
-    Route10_PokemonCenter_1F: { map: "Route10_PokemonCenter_1F", x: 7, y: 4, facing: "up" }
+    Route10_PokemonCenter_1F: { map: "Route10_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
+    LavenderTown_PokemonCenter_1F: { map: "LavenderTown_PokemonCenter_1F", x: 7, y: 4, facing: "up" }
   };
 
   // Prize money per trainer class: base x the level of the trainer's last Pokémon.

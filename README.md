@@ -176,8 +176,11 @@ Route 12 beyond it isn't built), Diglett's Cave from Route 11 to Route 2's
 east side, and Route 10 east of Route 9: its trainers, its Pokémon Center (Prof.
 Oak's aide gives the Everstone for twenty kinds caught; Fly can land outside
 it), and Rock Tunnel (1F and B1F, dark without Flash, with its fifteen trainers,
-items, Rock Smash rocks and the Rock Slide tutor). Lavender Town and the Power
-Plant beyond it aren't built yet. Tiles, palettes and metatiles come from
+items, Rock Smash rocks and the Rock Slide tutor), and Lavender Town: its
+Pokémon Center, Poké Mart (Super Repels and Revives), the Name Rater (renames
+a Pokémon you caught yourself; one you traded for keeps its name), Cubone's
+house and the Volunteer Pokémon House (Mr. Fuji is away until Pokémon Tower).
+Pokémon Tower, the Power Plant and Routes 8 and 12 aren't built yet. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into

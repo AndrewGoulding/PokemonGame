@@ -1527,7 +1527,10 @@
     "VermilionCity_House3_EventScript_Pidgey", "VermilionCity_PokemonFanClub_EventScript_Pikachu",
     "VermilionCity_PokemonFanClub_EventScript_Seel", "VermilionCity_PokemonFanClub_EventScript_Chairman",
     "SSAnne_1F_Room6_EventScript_Woman", "VermilionCity_PokemonCenter_1F_EventScript_VSSeekerWoman",
-    "Route10_PokemonCenter_1F_EventScript_Nurse", "Route10_PokemonCenter_1F_EventScript_Aide", "RockTunnel_B1F_EventScript_RockSlideTutor"
+    "Route10_PokemonCenter_1F_EventScript_Nurse", "Route10_PokemonCenter_1F_EventScript_Aide", "RockTunnel_B1F_EventScript_RockSlideTutor",
+    "LavenderTown_PokemonCenter_1F_EventScript_Nurse", "LavenderTown_Mart_EventScript_Clerk", "LavenderTown_EventScript_LittleGirl",
+    "LavenderTown_House2_EventScript_NameRater", "LavenderTown_House1_EventScript_Cubone",
+    "LavenderTown_VolunteerPokemonHouse_EventScript_Nidorino", "LavenderTown_VolunteerPokemonHouse_EventScript_Psyduck"
   ].concat(Object.keys(STARTER_BALLS)).concat(Array.from({ length: 15 }, (_, i) => "VermilionCity_Gym_EventScript_TrashCan" + (i + 1))));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
@@ -1592,6 +1595,7 @@
       // (Where his walk out of the Teleporter ended, until you leave.)
       case "FLAG_HIDE_BILL_HUMAN_SEA_COTTAGE": return f.billHelped ? (billJustOut ? { x: 7, y: 6 } : true) : false;
       case "FLAG_HIDE_POSTGAME_GOSSIPERS": return false;
+      case "FLAG_HIDE_POKEHOUSE_FUJI": return !!f.rescuedMrFuji;   // (in Pokémon Tower until you rescue him)
       case "FLAG_HIDE_DOME_FOSSIL": case "FLAG_HIDE_HELIX_FOSSIL": return !f.mtMoonFossil;
       // After you choose, your rival stands below the Poké Ball he took.
       // Leaf (the lab rival's other look) until she leaves after your battle;
@@ -1843,6 +1847,14 @@
 
       case "ViridianCity_EventScript_DreamEaterTutor":
         await moveTutor("Dream Eater", "tutorDreamEater", "Text_DreamEater");
+        return;
+      // Lavender Town: the girl asking whether you believe in ghosts.
+      case "LavenderTown_EventScript_LittleGirl":
+        await say(T(await confirm(T("LavenderTown_Text_DoYouBelieveInGhosts")[0])
+          ? "LavenderTown_Text_SoThereAreBelievers" : "LavenderTown_Text_JustImaginingWhiteHand"));
+        return;
+      case "LavenderTown_House2_EventScript_NameRater":
+        await nameRater();
         return;
       // Rock Tunnel B1F's Rock Slide tutor.
       case "RockTunnel_B1F_EventScript_RockSlideTutor":
@@ -2099,6 +2111,7 @@
 
       case "Route4_PokemonCenter_1F_EventScript_Nurse":
       case "Route10_PokemonCenter_1F_EventScript_Nurse":
+      case "LavenderTown_PokemonCenter_1F_EventScript_Nurse":
         await nurse(ev.map, ev.person);
         return;
 
@@ -2261,6 +2274,7 @@
         await nurse(ev.map, ev.person);
         return;
       case "VermilionCity_Mart_EventScript_Clerk":
+      case "LavenderTown_Mart_EventScript_Clerk":
         await mart(ev.person.mart);
         return;
       case "VermilionCity_Gym_EventScript_LtSurge":
@@ -2290,6 +2304,9 @@
         return;
       // Pokémon that cry when you talk to them.
       case "VermilionCity_House3_EventScript_Pidgey":
+      case "LavenderTown_House1_EventScript_Cubone":
+      case "LavenderTown_VolunteerPokemonHouse_EventScript_Nidorino":
+      case "LavenderTown_VolunteerPokemonHouse_EventScript_Psyduck":
       case "VermilionCity_PokemonFanClub_EventScript_Pikachu":
       case "VermilionCity_PokemonFanClub_EventScript_Seel":
       case "SSAnne_1F_Room3_EventScript_Wigglytuff":
@@ -2730,6 +2747,30 @@
 
   // What the Route 4 tutors charge each time.
   const TUTOR_PRICE = 1000;
+
+  // Lavender Town's Name Rater (LavenderTown_House2_EventScript_NameRater):
+  // renames a Pokémon you caught yourself; one from a trade keeps its name.
+  async function nameRater() {
+    const N = (k) => T("LavenderTown_House2_Text_" + k);
+    const q = N("WantMeToRateNicknames");
+    await say(q.slice(0, -1));
+    if (!(await confirm(q[q.length - 1]))) { await say(N("ISeeComeVisitAgain")); return; }
+    await say(N("CritiqueWhichMonsNickname"));
+    const r = await choosePartyFor("Rate which {PKMN}'s nickname?");
+    show("world");
+    if (!r) { await say(N("ISeeComeVisitAgain")); return; }
+    const name = Party.displayName(r);
+    const traded = (r.met && r.met.traded) || (r.ot && (r.ot.id !== player.trainerId || r.ot.name !== player.name));
+    if (traded) { await say(N("TrulyImpeccableName"), [name]); return; }
+    const g = N("GiveItANicerName");
+    await say(g.slice(0, -1), [name]);
+    if (!(await confirm(fill(g[g.length - 1], [name])))) { await say(N("ISeeComeVisitAgain")); return; }
+    await say(N("WhatShallNewNicknameBe"));
+    const typed = await enterText(Party.speciesName(r.species) + "'s nickname?", name, 10);
+    const next = typed || name;
+    if (next === Party.speciesName(r.species)) delete r.nickname; else r.nickname = next;
+    await say(N(next === name ? "FromNowOnShallBeKnownAsSameName" : "FromNowOnShallBeKnownAsName"), [next]);
+  }
 
   // Prof. Oak's Aides (FireRed's Aide_EventScript_*): an item for so many kinds
   // of Pokémon caught.

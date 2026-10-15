@@ -103,7 +103,9 @@ const MAPS = [
   "SSAnne_B1F_Room2", "SSAnne_B1F_Room3", "SSAnne_B1F_Room4", "SSAnne_B1F_Room5", "SSAnne_Kitchen",
   "Route11", "Route11_EastEntrance_1F", "Route11_EastEntrance_2F",
   "DiglettsCave_NorthEntrance", "DiglettsCave_B1F", "DiglettsCave_SouthEntrance",
-  "Route10", "Route10_PokemonCenter_1F", "Route10_PokemonCenter_2F", "RockTunnel_1F", "RockTunnel_B1F"
+  "Route10", "Route10_PokemonCenter_1F", "Route10_PokemonCenter_2F", "RockTunnel_1F", "RockTunnel_B1F",
+  "LavenderTown", "LavenderTown_PokemonCenter_1F", "LavenderTown_PokemonCenter_2F", "LavenderTown_Mart",
+  "LavenderTown_House1", "LavenderTown_House2", "LavenderTown_VolunteerPokemonHouse"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
