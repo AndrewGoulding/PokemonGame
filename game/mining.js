@@ -22,40 +22,41 @@
   const maxEnergy = (lv) => 40 + Math.floor(((lv || 1) - 1) * 60 / 99);
 
   // What can be buried: item id, how common, its shape ("x" = a tile of it),
-  // and the mining level it takes to find it. Shapes follow Diamond and
-  // Pearl's where they're known, and are close otherwise.
+  // and the mining level it takes to find it. Each shape is its picture's:
+  // a tile is part of the treasure where the item's sprite covers at least a
+  // fifth of it (so no part of the picture is left buried, or cut off).
   const TREASURES = [
     ["heart-scale", 20, ["xx", "xx"], 1],
-    ["red-shard", 8, ["xxx", "xx.", "x.x"], 1],
-    ["blue-shard", 8, ["xxx", "xxx", "xx."], 1],
-    ["yellow-shard", 8, ["x.x.", "xxx.", "xxxx"], 1],
-    ["green-shard", 8, ["xxxx", "xxxx", "xx.x"], 1],
+    ["red-shard", 8, [".xx", "xxx", "xx."], 1],
+    ["blue-shard", 8, [".xx", "xxx", "xx."], 1],
+    ["yellow-shard", 8, [".xxx", "xxxx", "xxx."], 1],
+    ["green-shard", 8, [".xxx", "xxxx", "xxx."], 1],
     ["fire-stone", 4, ["xxx", "xxx", "xxx"], 20],
     ["water-stone", 4, ["xxx", "xxx", "xx."], 20],
-    ["thunder-stone", 4, [".xx", "xxx", "xx."], 20],
-    ["leaf-stone", 4, [".x.", "xxx", "xxx", ".x."], 20],
-    ["moon-stone", 3, [".xxx", "xxx."], 20],
-    ["sun-stone", 3, [".x.", "xxx", "xxx"], 20],
+    ["thunder-stone", 4, ["xxx", "xxx", "xxx"], 20],
+    ["leaf-stone", 4, ["xxx", "xxx", "xxx", "xxx"], 20],
+    ["moon-stone", 3, ["xxxx", "xxxx"], 20],
+    ["sun-stone", 3, ["xxx", "xxx", "xxx"], 20],
     ["oval-stone", 4, ["xxx", "xxx", "xxx"], 10],
     ["everstone", 5, ["xxxx", "xxxx"], 5],
     ["hard-stone", 5, ["xx", "xx"], 5],
-    ["star-piece", 5, [".x.", "xxx", ".x."], 10],
-    ["revive", 5, [".x.", "xxx", ".x."], 10],
-    ["max-revive", 1, ["xxx", "xxx", "xxx"], 63],
-    ["rare-bone", 2, ["x....x", "xxxxxx", "x....x"], 63],
+    ["star-piece", 5, ["xxx", "xxx", "xxx"], 10],
+    ["revive", 5, ["xxx", "xxx", "xxx"], 10],
+    ["max-revive", 1, ["xxx", "xxx", "xx."], 63],
+    ["rare-bone", 2, ["...xxx", ".xxxx.", "xxx..."], 63],
     ["iron-ball", 2, ["xxx", "xxx", "xxx"], 38],
-    ["light-clay", 2, ["x.x.", "xxx.", "xxxx", ".x.x"], 51],
-    ["damp-rock", 2, ["xxx", "xxx", "x.x"], 38],
-    ["heat-rock", 2, ["x.x.", "xxxx", "xxxx"], 51],
-    ["icy-rock", 2, [".xx.", "xxxx", "xxxx", "x..x"], 51],
-    ["smooth-rock", 2, ["..x.", "xxx.", ".xxx", ".x.."], 38],
-    ["helix-fossil", 1, [".xxx", "xxxx", "xxxx", "xxx."], 30],
-    ["dome-fossil", 1, ["xxxxx", "xxxxx", ".xxx."], 30],
+    ["light-clay", 2, ["xxxx", "xxxx", "xxxx", "xxxx"], 51],
+    ["damp-rock", 2, ["xxx", "xxx", "xxx"], 38],
+    ["heat-rock", 2, ["xxxx", "xxxx", "xxxx"], 51],
+    ["icy-rock", 2, [".xx.", ".xxx", "xxxx", "xxxx"], 51],
+    ["smooth-rock", 2, ["..xx", "xxxx", "xxxx", ".xxx"], 38],
+    ["helix-fossil", 1, ["xxxx", "xxxx", "xxxx", "xxx."], 30],
+    ["dome-fossil", 1, [".xxxx", "xxxxx", "xxxxx"], 30],
     ["old-amber", 1, [".xxx", "xxxx", "xxxx", "xxx."], 30],
-    ["root-fossil", 1, ["xxxx.", "xxxxx", "xx.xx", "...xx"], 30],
-    ["claw-fossil", 1, ["..xxx", ".xxxx", "xxxx.", "xx..."], 30],
-    ["skull-fossil", 1, ["xxxx", "xxxx", "xxxx", ".xx."], 30],
-    ["armor-fossil", 1, [".xxx.", ".xxx.", "xxxxx", ".xxx."], 30]
+    ["root-fossil", 1, [".xxx.", "xxxxx", "xxxxx", "xxxxx"], 30],
+    ["claw-fossil", 1, ["xxxxx", "xxxxx", "xxxxx", "xxxx."], 30],
+    ["skull-fossil", 1, ["xxxx", "xxxx", "xxxx", "xxxx"], 30],
+    ["armor-fossil", 1, ["xxxxx", "xxxxx", "xxxxx", "xxxxx"], 30]
   ].concat(["flame", "splash", "zap", "meadow", "icicle", "fist", "toxic", "earth", "sky", "mind", "insect",
     "stone", "spooky", "draco", "dread", "iron"].map((p) => [p + "-plate", 0.5, ["xxxx", "xxxx", "xxxx"], 100]));
 

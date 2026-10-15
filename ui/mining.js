@@ -4,7 +4,8 @@
 //
 // The D-pad moves the cursor, A hits, B switches between the Pickaxe and the
 // Hammer. Along the top: your mining level with a bar to the next one
-// (it fills as you dig: XP for every hit and every treasure), and your energy.
+// (it fills as you dig: XP for every hit and every treasure), your energy and
+// the tool in hand. What you dig up is told in the text box.
 // Resolves with the ids of the treasures dug out once every treasure is out or
 // your energy runs out.
 (function () {
@@ -45,6 +46,7 @@
       '<div class="dig-top">' +
         '<span class="dig-label dig-level"></span><div class="dig-bar xp" aria-hidden="true"><div class="dig-fill"></div></div>' +
         '<span class="dig-label dig-xp"></span>' +
+        '<span class="dig-tool"></span>' +
         '<span class="dig-label">Energy</span><div class="dig-bar energy" aria-hidden="true"><div class="dig-fill"></div></div>' +
         '<span class="dig-label dig-energy"></span>' +
       "</div>" +
@@ -52,15 +54,10 @@
         '<div class="dig-layer under" style="grid-template-columns:repeat(' + W() + ',1fr)">' + under.join("") + "</div>" +
         '<div class="dig-layer over" style="grid-template-columns:repeat(' + W() + ',1fr)">' + rock.join("") + "</div>" +
       "</div>" +
-      '<div class="dig-tools">' +
-        '<span class="dig-tool" data-tool="pick">⛏ Pickaxe</span>' +
-        '<span class="dig-tool" data-tool="hammer">🔨 Hammer</span>' +
-      "</div>" +
-      '<p class="dig-status" aria-live="polite">Dig out the buried treasure before you run out of energy!</p>' +
     "</div>";
     const board = root.querySelector(".dig-board");
     const tiles = [...root.querySelectorAll(".dig-rock")];
-    const status = root.querySelector(".dig-status");
+    const say = (text) => window.Screen.say(text);
 
     function draw() {
       tiles.forEach((el, i) => {
@@ -74,10 +71,7 @@
       energy.style.width = pct(dig.energy, dig.maxEnergy);
       energy.classList.toggle("low", dig.energy <= dig.maxEnergy / 4);
       root.querySelector(".dig-energy").textContent = dig.energy + " / " + dig.maxEnergy;
-      for (const b of root.querySelectorAll(".dig-tool")) {
-        b.classList.toggle("on", b.dataset.tool === tool);
-        b.setAttribute("aria-pressed", String(b.dataset.tool === tool));
-      }
+      root.querySelector(".dig-tool").textContent = tool === "pick" ? "⛏ Pickaxe" : "🔨 Hammer";
     }
     draw();
 
@@ -91,13 +85,13 @@
         board.classList.remove("shake", "shake-hard");
         void board.offsetWidth;   // restart the animation
         board.classList.add(tool === "hammer" ? "shake-hard" : "shake");
-        if (r.found.length) status.textContent = "You found " + r.found.map((id) => "a " + name(id)).join(" and ") + "!";
+        if (r.found.length) say("You dug up " + r.found.map((id) => "a " + name(id)).join(" and ") + "!");
         if (dig.over) end();
       }
       function end() {
         finished = true;
         document.removeEventListener("keydown", onKey);
-        status.textContent = dig.tired ? "You're out of energy!" : "Everything was dug up!";
+        say(dig.tired ? "You're out of energy!" : "Everything was dug up!");
         setTimeout(() => resolve(window.Mining.found(dig)), 900);
       }
       function onKey(e) {
