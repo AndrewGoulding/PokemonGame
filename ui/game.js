@@ -2695,6 +2695,15 @@
     return [Party.create("Zubat", 11, { ivs: 0 }), geodude, Party.create("Vulpix", 13, { ivs: 0 }), onix];
   }
 
+  // Misty's team: Psyduck (level 18, in Staryu's place), which she leads
+  // with, Togepi (level 19, with Dazzling Gleam from a TM, its only real
+  // attack besides Metronome), then FireRed's Starmie.
+  function mistyTeam() {
+    const [, starmie] = trainerTeam("TRAINER_LEADER_MISTY");
+    return [Party.create("Psyduck", 18, { ivs: 0 }),
+      Party.create("Togepi", 19, { ivs: 0, moves: ["Dazzling Gleam", "Metronome", "Sweet Kiss", "Yawn"] }), starmie];
+  }
+
   // Brock: battle (talking to him), then the Boulder Badge and TM39.
   async function brock(person) {
     const f = player.flags;
@@ -2727,7 +2736,7 @@
     if (!f.TRAINER_LEADER_MISTY) {
       await say(person.trainer.intro);
       if (!canBattle()) return;
-      const outcome = await battle("trainer", { foe: { name: "Leader Misty", team: trainerTeam("TRAINER_LEADER_MISTY"), pic: "leader_misty" },
+      const outcome = await battle("trainer", { foe: { name: "Leader Misty", team: mistyTeam(), pic: "leader_misty" },
         defeatText: person.trainer.defeat, trainerId: "TRAINER_LEADER_MISTY", terrain: "leader" });
       if (outcome !== "won") return;
       if (!hasBadge("cascade")) player.badges.push("cascade");

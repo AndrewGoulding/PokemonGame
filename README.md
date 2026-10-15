@@ -133,8 +133,8 @@ and gate, Viridian Forest with both of its gates, Route 22 and its League
 gate, and Pewter City with its Gym, Museum (both floors), Poké Mart,
 Pokémon Center and houses, Route 3 with its eight trainers, Route 4 with
 its Pokémon Center, Mt. Moon (1F, B1F, B2F), Cerulean City with its
-Pokémon Center, Gym (Misty, the Cascade Badge and TM101 Water Pulse, FireRed's
-TM03), Poké Mart, Bike Shop and houses (the Badge describer, Dontae's trade
+Pokémon Center, Gym (Misty, with Psyduck, Togepi and Starmie, the Cascade Badge and TM101
+Water Pulse, FireRed's TM03), Poké Mart, Bike Shop and houses (the Badge describer, Dontae's trade
 of Zynx the Jynx for a Poliwhirl, the robbed house), Route 24 (Nugget
 Bridge), and Route 25 with Bill's Sea Cottage. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon

@@ -8,6 +8,9 @@
 // let it learn that move from a TM or HM (@pkmn/dex learnsets, sources like
 // "4M"). Formes without their own learnset use their base species'.
 //
+// GAME_EXTRA adds species this game lets use a machine besides (Fly for
+// Butterfree, Beedrill, Gyarados and Venomoth).
+//
 // Also window.TUTOR_LEARNERS: who the game's move tutors (FireRed's) can teach,
 // since Gen 6 had no tutor for most of their moves (Mega Punch, Mega Kick,
 // Seismic Toss, Dream Eater): any species a tutor taught in some generation
@@ -32,6 +35,11 @@ for (const l of Object.values(window.LEARNSETS_GEN6)) for (const m of l.tm || []
 const moveOf = (id) => /^Teaches (.+?) to a compatible/.exec(window.ITEMS[id].effect)[1];
 const machineList = Object.keys(window.ITEMS).filter((id) => /^hm\d+$/.test(id) || (/^tm\d+$/.test(id) && !gen6Machine.has(moveOf(id))))
   .sort().map(moveOf);
+
+// This game's own additions: species that can use a machine no game let them.
+const GAME_EXTRA = {
+  "Fly": ["Butterfree", "Beedrill", "Gyarados", "Venomoth"]   // HM02, for the bug and Gyarados lines
+};
 
 // FireRed's move tutors (src/data/pokemon/tutor_learnsets.h).
 const TUTOR_MOVES = ["Mega Punch", "Swords Dance", "Mega Kick", "Body Slam", "Double-Edge", "Counter", "Seismic Toss",
@@ -58,7 +66,7 @@ const TUTOR_MOVES = ["Mega Punch", "Swords Dance", "Mega Kick", "Body Slam", "Do
   for (const move of machineList) {
     const extra = Object.keys(window.DEX).filter((species) => {
       const gen6 = (window.LEARNSETS_GEN6[species] || {}).tm || [];
-      return !gen6.includes(move) && machineMoves[species].has(toID(move));
+      return !gen6.includes(move) && (machineMoves[species].has(toID(move)) || (GAME_EXTRA[move] || []).includes(species));
     }).sort();
     if (extra.length) out[move] = extra;
   }

@@ -30,9 +30,12 @@ window.MACHINE_LEARNERS = {
   "Fly": [
    "Aerodactyl-Mega",
    "Altaria-Mega",
+   "Beedrill",
+   "Butterfree",
    "Charizard-Mega-X",
    "Charizard-Mega-Y",
    "Drifloon",
+   "Gyarados",
    "Landorus-Therian",
    "Latias-Mega",
    "Latios-Mega",
@@ -40,7 +43,8 @@ window.MACHINE_LEARNERS = {
    "Rayquaza-Mega",
    "Salamence-Mega",
    "Thundurus-Therian",
-   "Tornadus-Therian"
+   "Tornadus-Therian",
+   "Venomoth"
   ],
   "Surf": [
    "Aggron-Mega",
