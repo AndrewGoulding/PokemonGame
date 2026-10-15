@@ -130,6 +130,35 @@ const battle = {
   writePng(path.join(root, "assets/battle-interface/message-box.png"), W, H, rgba);
 }
 
+// ---------- The party summary bar (src/battle_interface.c, CreatePartyStatusSummarySprites) ----------
+//
+// In a trainer battle, a bar with a ball for each of a side's six slots:
+// assets/battle-interface/party-bar.png (graphics/battle_interface/
+// party_summary_bar.png, 128x8, in healthbox.pal) and party-balls.png (the
+// four ball tiles, 66-69 of healthbox_elements.png, in healthbar.pal: a
+// Pokémon, an empty slot, one with a status problem, a fainted one).
+{
+  const paint = (img, pal, sx, sy, w, h) => {
+    const rgba = new Uint8ClampedArray(w * h * 4);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const v = img.px[(sy + y) * img.width + sx + x] & 15;
+      if (v) rgba.set([...pal[v], 255], (y * w + x) * 4);
+    }
+    return rgba;
+  };
+  const bar = readPng(P("graphics/battle_interface/party_summary_bar.png"));
+  writePng(path.join(root, "assets/battle-interface/party-bar.png"), 128, 8,
+    paint(bar, readPal(P("graphics/battle_interface/healthbox.pal")), 0, 0, 128, 8));
+  const el = readPng(P("graphics/battle_interface/healthbox_elements.png"));
+  const perRow = el.width / 8, t = 66;
+  const balls = new Uint8ClampedArray(32 * 8 * 4), pal = readPal(P("graphics/battle_interface/healthbar.pal"));
+  for (let k = 0; k < 4; k++) {
+    const tile = paint(el, pal, ((t + k) % perRow) * 8, Math.floor((t + k) / perRow) * 8, 8, 8);
+    for (let y = 0; y < 8; y++) balls.set(tile.subarray(y * 32, y * 32 + 32), (y * 32 + k * 8) * 4);
+  }
+  writePng(path.join(root, "assets/battle-interface/party-balls.png"), 32, 8, balls);
+}
+
 // ---------- The text box's ▼ (src/text.c TextPrinterDrawDownArrow) ----------
 //
 // assets/text/down-arrow.png: the red arrow's three positions (10x12 each, side

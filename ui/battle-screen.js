@@ -175,6 +175,77 @@
     }
   };
 
+  // ---------- The party summary bars (src/battle_interface.c) ----------
+  //
+  // In a trainer battle, FireRed shows each side's party as a row of balls on
+  // a bar: both sides as the battle starts, and the trainer's again when they
+  // send out their next Pokémon. A ball for each Pokémon (the status ball for
+  // one with a status problem, the dark one once fainted), the empty ball for
+  // each empty slot of six. Yours slide in from the right below your
+  // Pokémon, theirs from the left above theirs (the trainer's first Pokémon
+  // is the rightmost ball). They fade out as the Pokémon are sent out.
+  const barLayer = document.createElement("canvas");
+  barLayer.className = "party-bars";
+  barLayer.width = 240; barLayer.height = 112;
+  el.field.appendChild(barLayer);
+  const barImg = Object.assign(new Image(), { src: "assets/battle-interface/party-bar.png" });
+  const ballsImg = Object.assign(new Image(), { src: "assets/battle-interface/party-balls.png" });
+  let bars = {}, barRaf = 0;   // side -> { balls: [frame x6], t (frames shown), fade (0-16) }
+  function ballFrames(side) {
+    const team = battle.sides[side].pokemon;
+    const frames = [];
+    for (let i = 0; i < 6; i++) {
+      const m = team[i];
+      frames.push(!m ? 1 : m.fainted || m.hp <= 0 ? 3 : m.status ? 2 : 0);
+    }
+    return frames;
+  }
+  function drawBars() {
+    const g = barLayer.getContext("2d");
+    g.clearRect(0, 0, 240, 112);
+    g.imageSmoothingEnabled = false;
+    for (const side of Object.keys(bars)) {
+      const b = bars[side], foe = side === "p2";
+      g.globalAlpha = Math.max(0, 1 - b.fade / 16);
+      // The bar slides 100 pixels in, 5 a frame; each ball 120, 7 frames apart.
+      const barOff = Math.max(0, 100 - b.t * 5);
+      g.save();
+      if (foe) { g.translate(-8 + 128 - barOff, 36); g.scale(-1, 1); g.drawImage(barImg, 0, 0); }
+      else g.drawImage(barImg, 120 + barOff, 92);
+      g.restore();
+      b.balls.forEach((f, i) => {
+        const wait = foe ? (6 - i) * 7 + 10 : i * 7 + 10;
+        const off = Math.max(0, 120 - Math.max(0, b.t - wait) * 12);
+        const x = foe ? 26 + 10 * i - off : 156 + 10 * i + off;
+        g.drawImage(ballsImg, f * 8, 0, 8, 8, x, foe ? 32 : 88, 8, 8);
+      });
+      g.globalAlpha = 1;
+    }
+  }
+  function tickBars() {
+    let alive = false;
+    for (const side of Object.keys(bars)) {
+      const b = bars[side];
+      b.t++;
+      if (b.leaving) b.fade++;
+      if (b.fade >= 16) delete bars[side]; else alive = true;
+    }
+    drawBars();
+    barRaf = alive ? requestAnimationFrame(tickBars) : 0;
+  }
+  // Shows `side`'s bar (the foe's balls in reverse: their lead is rightmost).
+  function showBar(side) {
+    const frames = ballFrames(side);
+    bars[side] = { balls: side === "p2" ? frames.slice().reverse() : frames, t: 0, fade: 0, leaving: false };
+    if (window.GameAudio && window.GameAudio.se) window.GameAudio.se("se_ball_tray_enter");
+    if (!barRaf) barRaf = requestAnimationFrame(tickBars);
+    return new Promise((r) => setTimeout(r, 600));
+  }
+  function hideBars() {
+    for (const b of Object.values(bars)) b.leaving = true;
+    if (!barRaf && Object.keys(bars).length) barRaf = requestAnimationFrame(tickBars);
+  }
+
   // ---------- State ----------
 
   let battle = null;
@@ -455,7 +526,13 @@
         }
         if (side === "p2" && !battle.wild && !foeAnnounced) {
           const text = battle.sides.p2.name + " sent out " + nameOf(a) + "!";
-          return async () => { await withdraw(); await Promise.all([message(text), sendOut(side, FOE_THROW_FROM, ball)]); };
+          // After one of theirs faints, their party's balls show first.
+          const fainted = prev && prev.species && (prev.fainted || prev.hp <= 0);
+          return async () => {
+            await withdraw();
+            if (fainted) await showBar("p2");
+            await Promise.all([message(text), sendOut(side, FOE_THROW_FROM, ball).then(hideBars)]);
+          };
         }
         renderSide(side);
         if (side === "p2" && foeAnnounced) { foeAnnounced = false; return null; }   // the opening said so
@@ -786,13 +863,15 @@
   // cursor stays where it was; the moves' starts on the move this Pokémon
   // used last (once it has used one). B goes back from the moves.
   let lastMove = {};   // Pokémon name -> index of the move it used last, this battle
-  let actionCursor = 0;
   const overlay = () => document.getElementById("overlay");
   const frame = () => (window.GameOptions ? window.GameOptions.get().frame : 0);
   async function chooseAction(req) {
     const active = req.active;
     // Locked into a move (Outrage, recharging): no menu, as in FireRed.
     if (active.forced) return { type: "move", move: 0 };
+    // Each turn the ▶ starts on FIGHT; the moves' ▶ starts on the first move,
+    // then on the one it used last.
+    let actionCursor = 0;
     for (;;) {
       say("");
       clearMenu();
@@ -1138,7 +1217,11 @@
     renderSide("p1");
     renderSide("p2");
     await intro(cfg);
-    if (!cfg.wild) await message(cfg.p2.name + " would like to battle!");
+    if (!cfg.wild) {
+      showBar("p2"); showBar("p1");
+      await message(cfg.p2.name + " would like to battle!");
+      hideBars();
+    }
     battle.start();
     const status = await loop();
     let outcome;
