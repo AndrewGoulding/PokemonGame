@@ -18,8 +18,8 @@
   const WIDTH = 13, HEIGHT = 10;
   const ENERGY_COST = { pick: 1, hammer: 2 };
   const XP_PER_HIT = 1, XP_PER_TREASURE = 10;
-  // Energy for a dig: 40 at level 1, up to 100 at level 100.
-  const maxEnergy = (lv) => 40 + Math.floor(((lv || 1) - 1) * 60 / 99);
+  // Energy for a dig: 40 at level 1, and 2 more each level (238 at level 100).
+  const maxEnergy = (lv) => 40 + 2 * ((lv || 1) - 1);
 
   // What can be buried: item id, how common, its shape ("x" = a tile of it),
   // and the mining level it takes to find it. Each shape is its picture's:

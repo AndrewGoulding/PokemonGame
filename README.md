@@ -79,9 +79,10 @@ icon, which hops when chosen and moves faster the more HP it has, held item,
 status, level and HP bar; A on one opens SUMMARY / SWITCH / ITEM / CANCEL:
 SUMMARY is FireRed's Summary screen: POKéMON INFO (number, type, OT, ID
 No., held item and the Trainer Memo: its nature and where it was met),
-POKéMON SKILLS (HP and EXP bars, stats, ability) and KNOWN MOVES, whose
+POKéMON SKILLS (HP and EXP bars, stats, ability), KNOWN MOVES, whose
 details show each move's power, accuracy and description, and swap two
-moves with A; up / down go through your party; SWITCH asks "Move to
+moves with A, and a page of this game's after it, EVs AND IVs (each stat's EV
+and IV, the EV and IV totals and the nature); up / down go through your party; SWITCH asks "Move to
 where?"; ITEM gives or takes a held item). The
 same screen picks a Pokémon for an item (ABLE / NOT ABLE for TMs and
 evolution stones), a trade or a tutor, and for switching in battle (SHIFT).
@@ -422,10 +423,12 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   the Deleter makes it forget a move, free.
 - **Explorer Kit** (a key item you start with): use it from the bag in a cave
   (Mt. Moon) to dig in the wall, as in Diamond and Pearl's Underground. Hit
-  tiles with the Pickaxe (1 energy) or the wider Hammer (2 energy) to clear
+  tiles (the D-pad and A, or tap / click them; B or tapping the tool switches
+  it) with the Pickaxe (1 energy) or the wider Hammer (2 energy) to clear
   the rock (1-6 layers; grey bedrock can't be dug) and uncover 2-4 buried
   treasures. The dig ends when every treasure is out (they go in your bag) or
-  your energy runs out (40 at mining level 1, rising to 100 at level 100).
+  your energy runs out (40 at mining level 1, and 2 more each level: 238 at
+  level 100). What a hit dug up is told under the board until the next hit.
   Every hit earns 1 mining XP and every treasure 10 more; the top of the
   screen shows your mining level, a bar to the next one, and your energy.
   Levels take 20 XP each up to level 20, then 40, 60, 80 and 100 (5,980 XP in

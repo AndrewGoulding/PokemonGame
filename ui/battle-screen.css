@@ -179,7 +179,9 @@ body {
    while the text waits for A: positions 0, 1, 2, 1, eight frames each. */
 .textbox.more::after {
   content: ""; position: absolute;
-  right: calc(100cqw * 16 / 240); bottom: calc(100cqw * 9 / 240);
+  /* (Just past the text window's right edge, x 224-234, so a line that runs
+     the window's whole width isn't hidden under it.) */
+  right: calc(100cqw * 6 / 240); bottom: calc(100cqw * 9 / 240);
   width: calc(100cqw * 10 / 240); height: calc(100cqw * 12 / 240);
   background: url(../assets/text/down-arrow.png) 0 0 / 300% 100% no-repeat;
   image-rendering: pixelated;

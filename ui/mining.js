@@ -3,7 +3,7 @@
 //   const found = await MiningScreen.run(sceneElement, Mining.create(...), xpBefore);
 //
 // The D-pad moves the cursor, A hits, B switches between the Pickaxe and the
-// Hammer. Along the top: your mining level with a bar to the next one
+// Hammer; or tap / click a tile to hit it, and the tool to switch. Along the top: your mining level with a bar to the next one
 // (it fills as you dig: XP for every hit and every treasure), your energy and
 // the tool in hand. What you dig up is told in a text box in the panel under
 // the screen (not over the board); MiningScreen.message() puts the dig's
@@ -73,6 +73,7 @@
       function strike(x, y) {
         if (finished) return;
         cx = x; cy = y;
+        say("");   // (what the last hit dug up goes once you dig again)
         const r = window.Mining.hit(dig, x, y, tool);
         draw();
         board.classList.remove("shake", "shake-hard");
@@ -84,10 +85,11 @@
       function end() {
         finished = true;
         document.removeEventListener("keydown", onKey);
+        board.removeEventListener("pointerdown", onPoint);
+        toolEl.removeEventListener("pointerdown", switchTool);
         say(dig.tired ? "You're out of energy!" : "Everything was dug up!");
         setTimeout(() => resolve(window.Mining.found(dig)), 900);
       }
-      say("D-pad to aim, A to dig, B to switch tools.\nThe Hammer digs wider but uses twice the energy.");
       function onKey(e) {
         const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
         if (d) {
@@ -95,11 +97,23 @@
           cy = Math.max(0, Math.min(H() - 1, cy + d[1]));
           draw();
         } else if (["z", "Z", " ", "Enter"].includes(e.key)) strike(cx, cy);
-        else if (["x", "X", "b", "B", "Shift"].includes(e.key)) { tool = tool === "pick" ? "hammer" : "pick"; draw(); }
+        else if (["x", "X", "b", "B", "Shift"].includes(e.key)) switchTool();
         else return;
         e.preventDefault();
       }
+      function switchTool(e) { if (e) e.preventDefault(); tool = tool === "pick" ? "hammer" : "pick"; draw(); }
+      // Tapping or clicking a tile hits it there.
+      function onPoint(e) {
+        const t = e.target.closest && e.target.closest(".dig-rock");
+        if (!t) return;
+        e.preventDefault();
+        const i = +t.dataset.i;
+        strike(i % W(), Math.floor(i / W()));
+      }
+      const toolEl = root.querySelector(".dig-tool");
       document.addEventListener("keydown", onKey);
+      board.addEventListener("pointerdown", onPoint);
+      toolEl.addEventListener("pointerdown", switchTool);
     });
   }
 

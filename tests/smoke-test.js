@@ -1361,7 +1361,7 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
   assert.deepStrictEqual(Mining.progress(25), { level: 2, into: 5, need: 20 });
   assert.deepStrictEqual(Mining.progress(5980), { level: 100, into: 0, need: 0 });
   // More energy at higher levels.
-  assert.deepStrictEqual([Mining.maxEnergy(1), Mining.maxEnergy(100)], [40, 100]);
+  assert.deepStrictEqual([Mining.maxEnergy(1), Mining.maxEnergy(2), Mining.maxEnergy(100)], [40, 42, 238]);
   assert(Mining.maxEnergy(50) > Mining.maxEnergy(10));
   // Rarer treasures unlock with levels; all fossils at 30.
   const unlock = (item) => Mining.TREASURES.find((t) => t[0] === item)[3];

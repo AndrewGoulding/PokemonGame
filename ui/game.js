@@ -611,7 +611,6 @@
   async function explorerKit() {
     const here = player.location && window.WORLD_MAPS[player.location.map];
     if (!here || here.type !== "underground") { await message("Oak: " + player.name + "! This isn't the time to use that!"); return false; }
-    await message(player.name + " used the Explorer Kit and started digging into the wall…");
     show("scene");
     clearMenu();
     const f = player.flags, xp = miningXp(), before = Mining.level(xp);
@@ -655,6 +654,7 @@
       name: Party.displayName(r), species: Party.speciesName(r.species), dexNo: (DEX[Party.speciesName(r.species)] || dex).id,
       level: r.level, gender: r.gender, types: dex.types, ot: ot.name, otId: ot.id & 0xffff,
       item: r.item ? Bag.name(r.item) : "", memo, hp: r.hp, maxhp: stats.hp,
+      evs: Object.assign({}, r.evs), ivs: Object.assign({}, r.ivs), nature: r.nature,
       stats: { atk: stats.atk, def: stats.def, spa: stats.spa, spd: stats.spd, spe: stats.spe },
       exp: r.exp, toNext: Math.max(0, next - r.exp), expFrac: next > here ? (r.exp - here) / (next - here) : 0,
       ability, abilityText: (window.SUMMARY_SCREEN.abilityText || {})[ability] || "",
