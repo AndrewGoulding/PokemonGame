@@ -184,7 +184,9 @@ body {
   overflow: hidden;
   user-select: none;
 }
-.textbox.empty { display: none; }
+/* (Not game.css's .empty, the "nothing here" note: its margin would lift the
+   empty battle message box over the bottom of your healthbox, the EXP bar.) */
+.textbox.empty { display: none; margin: 0; font-style: normal; }
 /* FireRed's ▼ (assets/text/down-arrow.png: its three positions), bobbing
    while the text waits for A: positions 0, 1, 2, 1, eight frames each. */
 .textbox.more::after {
@@ -203,7 +205,8 @@ body {
 }
 .screen:has(> .field:not(.hidden)) > .textbox.empty,
 .screen:has(> .scene.evo:not(.hidden)) > .textbox.empty { display: block; }
-.screen:has(> .party-menu:not(.hidden)) > .textbox.empty { display: none; }
+/* (Over the evolution scene too: the Summary screen picking a move to forget.) */
+.screen:has(> .party-menu.party-menu:not(.hidden)) > .textbox.empty { display: none; }
 .screen:has(> .field:not(.hidden)) > .textbox.more::after,
 .screen:has(> .scene.evo:not(.hidden)) > .textbox.more::after { right: calc(100cqw * 10 / 240); bottom: calc(100cqw * 5 / 240); }   /* (the party screen has its own) */
 /* In a battle, FireRed's message box (graphics/battle_interface/textbox: the
