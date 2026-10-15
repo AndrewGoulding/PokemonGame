@@ -10,7 +10,7 @@
 //     // onChange(rowIndex, value) as values change; -> null, or the action row picked
 //   const n = await GbaMenus.quantity(overlay, { max, unitPrice, inBag, frame })
 //     // FireRed's "How many?" window: -> the number chosen, or 0 (B)
-//   const yes = await GbaMenus.yesNo(overlay, { frame, cursor })
+//   const yes = await GbaMenus.yesNo(overlay, { frame, cursor, left, top })   // (left, top: tiles; 21, 9)
 //     // FireRed's YES / NO box: -> true (YES) or false (NO, or B)
 //   const a = await GbaMenus.battleAction(overlay, { name, cursor, frame })
 //     // FIGHT / BAG / POKéMON / RUN (B moves to RUN) -> { action: "fight" | "bag" | "pokemon" | "run", cursor }
@@ -46,7 +46,8 @@
     // the button icons, drawn in `iconPal`; {LV} and {PKMN} are the font's
     // "Lv" and "PKMN" symbols.
     // Returns the width drawn.
-    function text(str, x, y, fg, shadow, fontName, iconPal) {
+    function text(str, x, y, fg, shadow, fontName, iconPal, spacing) {
+      spacing = spacing || 0;   // (letterSpacing: extra pixels after each letter)
       const font = G().fonts[fontName || "normal"];
       const start = x;
       for (const part of String(str).split(/(\{[A-Z_]+\})/)) {
@@ -65,8 +66,8 @@
         }
         for (const ch of part) {
           const code = G().charmap[ch];
-          if (code == null) { x += 6; continue; }
-          x += glyph(code, x);
+          if (code == null) { x += 6 + spacing; continue; }
+          x += glyph(code, x) + spacing;
         }
       }
       return x - start;
@@ -384,13 +385,14 @@
   async function yesNo(canvas, opts) {
     const std = G().palettes.std2, frame = "type" + ((opts.frame || 0) + 1);
     let cursor = opts.cursor ? 1 : 0;
+    const tx = opts.left != null ? opts.left : 21, ty = opts.top != null ? opts.top : 9;   // (tiles)
     const draw = () => {
-      const s = Surface();
-      s.frame(frame, G().frames[frame].palette, 21, 9, 6, 4);
-      s.fill(168, 72, 48, 32, std[1]);
-      s.text("YES", 168 + 8, 72 + 2, std[2], std[3]);
-      s.text("NO", 168 + 8, 72 + 2 + 14, std[2], std[3]);
-      s.text("▶", 168, 72 + 2 + cursor * 14, std[2], std[3]);
+      const s = Surface(), x = tx * 8, y = ty * 8;
+      s.frame(frame, G().frames[frame].palette, tx, ty, 6, 4);
+      s.fill(x, y, 48, 32, std[1]);
+      s.text("YES", x + 8, y + 2, std[2], std[3]);
+      s.text("NO", x + 8, y + 2 + 14, std[2], std[3]);
+      s.text("▶", x, y + 2 + cursor * 14, std[2], std[3]);
       s.show(canvas);
     };
     canvas.classList.remove("hidden");

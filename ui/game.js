@@ -2419,14 +2419,16 @@
       if (!r) continue;
       const moves = relearnable(r);
       if (!moves.length) { await say("Sorry… There's no move I can teach\nthat Pokémon."); continue; }
-      const move = await ask("Which move should " + Party.displayName(r) + " remember?", moves.map((m) => {
-        const d = MOVES[m];
-        return { html: '<span class="move-name">' + escapeHtml(m) + '</span><span class="move-meta"><span>' + d.type + "</span><span>" +
-          (d.cat === "Status" ? "Status" : d.cat + " " + (d.power || "—")) + "</span></span>", value: m, className: "type-" + d.type };
-      }).concat([back()]));
-      if (move === "back") continue;
-      await learnMove(r, move);
-      if (Party.knowsMove(r, move)) {
+      // FireRed's Move Relearner screen (ui/move-relearner.js); forgetting a
+      // move picks it on the Summary screen's move list.
+      Screen.say("");
+      clearMenu();
+      const move = await MoveRelearner.open({
+        name: Party.displayName(r), moves, known: r.moves.map((m) => m.name), frame: GameOptions.get().frame,
+        forget: (m) => chooseMoveToForget(r, m),
+        teach: (m, slot) => Party.teachMove(r, m, slot == null ? undefined : slot)
+      });
+      if (move && Party.knowsMove(r, move)) {
         Player.removeItem(player, "heart-scale");
         await say("{PLAYER} handed over a Heart Scale\nin exchange.");
         await persist();
@@ -2434,6 +2436,15 @@
       return;
     }
   }
+  // Which of `record`'s moves to forget for `move`: FireRed's Summary screen
+  // in its move-choosing mode (the new move below the four). -> slot or null.
+  async function chooseMoveToForget(record, move) {
+    if (window.SummaryScreen) return SummaryScreen.chooseMove(record, move, summaryContext());
+    const slot = await ask("Which move should be forgotten?", record.moves.map((m, k) => ({ label: m.name, value: k }))
+      .concat([{ label: "Keep them", value: null, className: "action", wide: true }]));
+    return slot;
+  }
+
   async function moveDeleter() {
     await say(["Uh… Oh, yes, I'm the Move Deleter.", "I can make Pokémon forget their\nmoves."]);
     for (;;) {

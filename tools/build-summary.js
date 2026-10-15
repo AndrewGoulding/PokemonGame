@@ -12,7 +12,8 @@
 //            status (the status icons), shinyStar, pokerus, cursorLeft,
 //            cursorRight (the move cursor), menuInfo (graphics/interface/
 //            menu_info.png: type icons and the like), learnMove
-//            (graphics/interface/learn_move.png)
+//            (graphics/interface/learn_move.png), scrollArrows (graphics/
+//            learn_move/interface_sprites.png: the list's ▼ and ▲, tiles 4-5 and 6-7)
 //   maps:    { <name>: [tile entries] }: the tilemaps (tile | hflip 0x400 |
 //            vflip 0x800 | palette << 12), 32 wide: pageInfo, pageSkills,
 //            pageMoves, pageMovesInfo, pageEgg, movesPage, movesInfoPage,
@@ -60,7 +61,8 @@ const data = {
     bg: sheet(S("bg.png")), hpBar: sheet(S("hp_bar.png")), expBar: sheet(S("exp_bar.png")),
     status: sheet(S("status_ailment_icons.png")), shinyStar: sheet(S("shiny_star.png")), pokerus: sheet(S("pokerus_cured.png")),
     cursorLeft: sheet(S("move_selection_cursor_left.png")), cursorRight: sheet(S("move_selection_cursor_right.png")),
-    menuInfo: sheet("interface/menu_info.png"), learnMove: sheet("interface/learn_move.png")
+    menuInfo: sheet("interface/menu_info.png"), learnMove: sheet("interface/learn_move.png"),
+    scrollArrows: sheet("learn_move/interface_sprites.png")
   },
   maps: {
     pageInfo: map(S("page_info.bin")), pageSkills: map(S("page_skills.bin")), pageMoves: map(S("page_moves.bin")),
