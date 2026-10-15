@@ -1486,3 +1486,17 @@ console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random 
   assert.strictEqual(WORLD_MAPS.SSAnne_2F_Corridor.triggers.length, 3);
   for (const m of ss) for (const w of WORLD_MAPS[m].warps) assert(w.map, m + " leads somewhere built");
 }
+
+// An X Attack in battle: the Pokémon in battle's Attack goes up a stage.
+{
+  const battle = new Battle({
+    seed: 3,
+    p1: { name: "A", team: [{ species: "Pikachu", level: 20, moves: ["Growl"] }] },
+    p2: { name: "B", team: [{ species: "Pidgey", level: 20, moves: ["Growl"] }] }
+  });
+  battle.start();
+  assert(battle.choose("p1", { type: "item", item: "x-attack", target: 0 }).ok, "X Attack rejected");
+  battle.choose("p2", { type: "move", move: "Growl" });
+  assert(battle.events.some((ev) => ev[0] === "-useitem" && ev[2] === "x-attack"));
+  assert(battle.events.some((ev) => ev[0] === "-boost"), "no -boost after X Attack");
+}
