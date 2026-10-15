@@ -556,14 +556,16 @@
     const dig = Mining.create(Math.random, before, player.location.map);
     const found = await MiningScreen.run(scene, dig, xp);
     f.miningXp = xp + dig.xp;
+    // (In the dig's text box, under the screen.)
     for (const id of found) {
       Player.addItem(player, id);
-      await message(player.name + " obtained " + article(Bag.name(id)) + "!");
+      await MiningScreen.message(player.name + " obtained " + article(Bag.name(id)) + "!");
     }
-    if (!found.length) await message("Nothing was dug up…");
-    await message("Gained " + dig.xp + " mining XP.");
+    if (!found.length) await MiningScreen.message("Nothing was dug up…");
+    await MiningScreen.message("Gained " + dig.xp + " mining XP.");
     const after = Mining.level(f.miningXp);
-    if (after > before) await message("Your mining level rose to " + after + "! You have more energy, and rarer treasures may turn up now.");
+    if (after > before) await MiningScreen.message("Your mining level rose to " + after + "! You have more energy, and rarer treasures may turn up now.");
+    MiningScreen.clear();
     await persist();
     return true;
   }
@@ -1238,13 +1240,13 @@
   // FireRed. Each choice opens its screen and comes back to the menu.
   let startCursor = 0;
   const START_HELP = {
-    dex: "A device that records POKéMON secrets\nupon meeting or catching them.",
-    party: "Check and organize POKéMON that are\ntraveling with you in your party.",
+    dex: "A device that records Pokémon secrets\nupon meeting or catching them.",
+    party: "Check and organize Pokémon that are\ntraveling with you in your party.",
     bag: "Equipped with pockets for storing items\nyou bought, received, or found.",
     card: "Check your money and other game data.",
     save: "Save your game with a complete record\nof your progress to take a break.",
     option: "Adjust various game settings such as text\nspeed, game rules, etc.",
-    exit: "Close this MENU window."
+    exit: "Close this menu window."
   };
   async function startMenu() {
     player.flags.openedMenu = true;   // (FireRed's FLAG_OPENED_START_MENU: the Sign Lady's scene)
@@ -1254,10 +1256,10 @@
       clearMenu();
       // POKéDEX once Prof. Oak has given you one, POKéMON once you have one.
       const items = [];
-      if (player.flags.pokedex) items.push({ key: "dex", label: "POKéDEX" });
-      if (player.party.length) items.push({ key: "party", label: "POKéMON" });
-      items.push({ key: "bag", label: "BAG" }, { key: "card", label: player.name }, { key: "save", label: "SAVE" },
-        { key: "option", label: "OPTION" }, { key: "exit", label: "EXIT" });
+      if (player.flags.pokedex) items.push({ key: "dex", label: "Pokédex" });
+      if (player.party.length) items.push({ key: "party", label: "Pokémon" });
+      items.push({ key: "bag", label: "Bag" }, { key: "card", label: player.name }, { key: "save", label: "Save" },
+        { key: "option", label: "Option" }, { key: "exit", label: "Exit" });
       for (const it of items) it.help = START_HELP[it.key];
       const r = await GbaMenus.startMenu($("#overlay"), { items, cursor: startCursor, frame: GameOptions.get().frame });
       startCursor = r.cursor;

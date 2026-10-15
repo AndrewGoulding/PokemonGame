@@ -306,6 +306,9 @@
 
 /* ---------- Digging (Explorer Kit) ---------- */
 .scene:has(> .dig) { padding: 0 !important; overflow: hidden; }
+/* The dig's text box: in the panel under the screen. */
+.panel-text { grid-column: 1 / -1; min-height: 64px; padding: 6px 12px; background: #fff; border: 3px solid #c8a85a;
+  border-radius: 6px; font-size: 14px; line-height: 1.35; white-space: pre-line; }
 /* The whole dig fits the screen: the board is as big as the height left
    under the bars allows (13 x 10 tiles), and centred. */
 .dig { display: flex; flex-direction: column; gap: 6px; height: 100%; padding: 8px; background: #3a2c1e; }

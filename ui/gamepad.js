@@ -2,7 +2,7 @@
 // Start and Select. They're the game's controls: each one presses the key the
 // game already listens for (arrows, Z for A, X for B), so a keyboard works the
 // same way. Start and Select send the keys "Start" and "Select"; on a keyboard,
-// Esc / M is Start.
+// Enter (or Esc / M) is Start and Backspace is Select.
 //
 // Taps and clicks anywhere else (menu choices, people on the map, the text
 // box) do nothing: only the buttons control the game. Typing a name, the
@@ -70,6 +70,18 @@
     b.addEventListener("pointercancel", release);
     b.addEventListener("lostpointercapture", release);
     b.addEventListener("contextmenu", (e) => e.preventDefault());
+  }
+
+  // On a keyboard, Enter is Start and Backspace is Select (as on an emulator),
+  // except while typing a name or a password, where they're themselves.
+  const KEYBOARD = { Enter: "Start", Backspace: "Select" };
+  for (const type of ["keydown", "keyup"]) {
+    document.addEventListener(type, (e) => {
+      if (!e.isTrusted || !KEYBOARD[e.key] || typing(e.target)) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      e.target.dispatchEvent(new KeyboardEvent(type, { key: KEYBOARD[e.key], repeat: e.repeat, bubbles: true, cancelable: true }));
+    }, true);
   }
 
   // Only the buttons control the game: a real tap or click on anything else

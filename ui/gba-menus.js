@@ -10,6 +10,10 @@
 //     // onChange(rowIndex, value) as values change; -> null, or the action row picked
 //   const n = await GbaMenus.quantity(overlay, { max, unitPrice, inBag, frame })
 //     // FireRed's "How many?" window: -> the number chosen, or 0 (B)
+//   const a = await GbaMenus.battleAction(overlay, { name, cursor, frame })
+//     // FIGHT / BAG / POKéMON / RUN -> { action: "fight" | "bag" | "pokemon" | "run", cursor }
+//   const m = await GbaMenus.battleMoves(overlay, { moves, cursor, frame })
+//     // moves: [{ name, type, pp, maxpp }] -> { index, cursor } or null (B)
 //   const r = await GbaMenus.startMenu(overlay, { items, cursor, frame })
 //     // items: [{ key, label, help }]; drawn over the map (the rest of the
 //     // canvas clear) -> { key (or "exit"), cursor }
@@ -353,7 +357,120 @@
     return r;
   }
 
+  // ---------- The battle menus (src/battle_controller_player.c) ----------
+  //
+  // The bottom panel (48 lines) as FireRed draws it: its tiles and tilemap
+  // (graphics/battle_interface/textbox), the boxes on the right in your window
+  // frame (LoadBattleMenuWindowGfx: tiles 0x12 and 0x22, palette 1), and the
+  // ▶ cursor (tiles 1-2). Text windows and colours from src/battle_bg.c and
+  // battle_message.c: palette 5 is dark text (9, 9, 9) on white with a
+  // (26, 26, 25) shadow; the PP line takes its colour from how much is left.
+  const P5 = { fg: [72, 72, 72], bg: [248, 248, 248], shadow: [208, 208, 200] };
+  function battlePanel(s, which, frameName) {
+    const B = G().battle, fr = G().frames[frameName];
+    const tileAt = (src, w, t, hf, vf, x0, y0, pal) => {
+      const sx = (t % (w / 8)) * 8, sy = Math.floor(t / (w / 8)) * 8;
+      for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+        const v = parseInt(src[(sy + (vf ? 7 - y : y)) * w + sx + (hf ? 7 - x : x)], 16);
+        if (v) s.put(x0 + x, y0 + y, pal[v]);
+      }
+    };
+    s.fill(0, 112, 240, 48, B.palette[0]);
+    B.panels[which].forEach((e, i) => {
+      const t = e & 0x3ff, hf = e & 0x400, vf = e & 0x800, pal = e >> 12;
+      const x0 = (i % 30) * 8, y0 = 112 + Math.floor(i / 30) * 8;
+      const frameTile = pal === 1 && ((t >= 0x12 && t <= 0x1a) || (t >= 0x22 && t <= 0x2a));
+      if (frameTile) tileAt(fr.px, 24, t - (t >= 0x22 ? 0x22 : 0x12), hf, vf, x0, y0, fr.palette);
+      else tileAt(B.tiles, B.tilesWidth, t, hf, vf, x0, y0, B.palette);
+    });
+  }
+  // The ▶ (two tiles, palette 1: your frame's) at tile (tx, ty) of the screen.
+  function battleCursor(s, frameName, tx, ty) {
+    const B = G().battle, pal = G().frames[frameName].palette;
+    [1, 2].forEach((t, k) => {
+      const sx = (t % (B.tilesWidth / 8)) * 8, sy = Math.floor(t / (B.tilesWidth / 8)) * 8;
+      for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+        const v = parseInt(B.tiles[(sy + y) * B.tilesWidth + sx + x], 16);
+        s.put(tx * 8 + x, (ty + k) * 8 + y, v === 1 ? P5.bg : pal[v]);
+      }
+    });
+  }
+
+  async function battleAction(canvas, opts) {
+    const frame = "type" + ((opts.frame || 0) + 1), msg = G().battle.palette;
+    let cursor = opts.cursor || 0;
+    const LABELS = ["FIGHT", "BAG", "POKéMON", "RUN"];
+    const draw = () => {
+      const s = Surface();
+      battlePanel(s, "action", frame);
+      // B_WIN_ACTION_PROMPT (tiles 1, 15): "What will\n… do?", white on the message box.
+      s.text("What will", 8 + 2, 120 + 2, msg[1], msg[6]);
+      s.text(opts.name + " do?", 8 + 2, 120 + 2 + 16, msg[1], msg[6]);
+      // B_WIN_ACTION_MENU (tiles 17, 15): FIGHT BAG / POKéMON RUN, 56 apart.
+      LABELS.forEach((l, i) => s.text(l, 136 + (i & 1) * 56, 120 + 2 + (i & 2) * 8, P5.fg, P5.shadow));
+      battleCursor(s, frame, 16 + 7 * (cursor & 1), 15 + (cursor & 2));
+      s.show(canvas);
+    };
+    canvas.classList.remove("hidden");
+    draw();
+    const r = await keys((k) => {
+      if (k === "left" || k === "right") { cursor ^= 1; draw(); }
+      else if (k === "up" || k === "down") { cursor ^= 2; draw(); }
+      else if (k === "a") { se(); return ["fight", "bag", "pokemon", "run"][cursor]; }
+      return undefined;
+    });
+    canvas.classList.add("hidden");
+    return { action: r, cursor };
+  }
+
+  async function battleMoves(canvas, opts) {
+    const frame = "type" + ((opts.frame || 0) + 1), moves = opts.moves, pp = G().battle.pp;
+    let cursor = Math.min(opts.cursor || 0, Math.max(0, moves.length - 1));
+    // GetCurrentPpToMaxPpState: 3 full / over half, 0 half or less, 1 a quarter or less, 2 none.
+    const ppState = (cur, max) => {
+      if (max === cur) return 3;
+      if (max <= 2) return cur > 1 ? 3 : 2 - cur;
+      if (max <= 7) return cur > 2 ? 3 : 2 - cur;
+      if (cur === 0) return 2;
+      if (cur <= Math.floor(max / 4)) return 1;
+      return cur > Math.floor(max / 2) ? 3 : 0;
+    };
+    const draw = () => {
+      const s = Surface();
+      battlePanel(s, "move", frame);
+      // B_WIN_MOVE_NAME_1-4 (tiles 2 / 11, rows 15 / 17), small font.
+      for (let i = 0; i < 4; i++) {
+        const x = (i & 1 ? 11 : 2) * 8, y = (i & 2 ? 17 : 15) * 8 + 1;
+        s.text(moves[i] ? moves[i].name : "-", x, y, P5.fg, P5.shadow, "small");
+      }
+      battleCursor(s, frame, 9 * (cursor & 1) + 1, 15 + (cursor & 2));
+      const m = moves[cursor];
+      if (m) {
+        const st = ppState(m.pp, m.maxpp), col = [pp[st * 2], pp[st * 2 + 1]];
+        s.text("PP ", 21 * 8, 15 * 8 + 2, col[0], col[1], "small");
+        const num = m.pp + "/" + m.maxpp;
+        s.text(num, 24 * 8 + 40 - s.textWidth(num, "small") - 2, 15 * 8 + 2, col[0], col[1], "small");
+        s.text("TYPE/" + m.type.toUpperCase(), 21 * 8, 17 * 8 + 2, P5.fg, P5.shadow, "small");
+      }
+      s.show(canvas);
+    };
+    canvas.classList.remove("hidden");
+    draw();
+    const r = await keys((k) => {
+      const go = (c) => { if (c < moves.length && c !== cursor) { cursor = c; draw(); } };
+      if (k === "left" || k === "right") go(cursor ^ 1);
+      else if (k === "up" || k === "down") go(cursor ^ 2);
+      else if (k === "a") { se(); return { index: cursor, cursor }; }
+      else if (k === "b") { se(); return null; }
+      return undefined;
+    });
+    canvas.classList.add("hidden");
+    return r;
+  }
+
   window.GbaMenus = {
+    battleAction: (canvas, ...a) => during("battle", battleAction(canvas, ...a)),
+    battleMoves: (canvas, ...a) => during("moves", battleMoves(canvas, ...a)),
     quantity: (canvas, ...a) => during("quantity", quantity(canvas, ...a)),
     startMenu: (canvas, ...a) => during("start", startMenu(canvas, ...a)),
     mainMenu: (canvas, ...a) => { canvas.classList.remove("hidden"); return during("main", mainMenu(canvas, ...a)); },

@@ -185,7 +185,7 @@
   const sideOf = (ident) => String(ident).slice(0, 2);
   const nameOf = (ident) => String(ident).replace(/^p\da: /, "");
   const otherSide = (side) => (side === "p1" ? "p2" : "p1");
-  const { message, ask, wait, say } = window.Screen;
+  const { message, ask, wait, say, clearMenu } = window.Screen;
 
   // "Charizard" / "the opposing Blastoise" / "the wild Pidgey"
   function label(side, name) {
@@ -572,14 +572,6 @@
 
   const escapeHtml = window.Screen.escapeHtml;
 
-  function moveOption(m) {
-    return {
-      html: '<span class="move-name">' + escapeHtml(m.name) + "</span>" +
-        '<span class="move-meta"><span>' + m.type + "</span><span>PP " + m.pp + "/" + m.maxpp + "</span></span>",
-      className: "type-" + m.type, value: { type: "move", move: m.index }, disabled: m.disabled
-    };
-  }
-
   function partyOptions(req) {
     return req.team.map((p) => ({
       html: '<span class="move-name">' + escapeHtml(p.name) + " <small>Lv" + p.level + "</small></span>" +
@@ -652,32 +644,52 @@
     if (bag[id] <= 0) delete bag[id];
   }
 
+  // FireRed's battle menus (ui/gba-menus.js) in the bottom panel: FIGHT /
+  // BAG / POKéMON / RUN, then the moves with their PP and type. The menu's
+  // cursor stays where it was; the moves' starts on the move this Pokémon
+  // used last (once it has used one). B goes back from the moves.
   let lastMove = {};   // Pokémon name -> index of the move it used last, this battle
+  let actionCursor = 0;
+  const overlay = () => document.getElementById("overlay");
+  const frame = () => (window.GameOptions ? window.GameOptions.get().frame : 0);
   async function chooseAction(req) {
     const active = req.active;
+    // Locked into a move (Outrage, recharging): no menu, as in FireRed.
+    if (active.forced) return { type: "move", move: 0 };
     for (;;) {
-      const options = [];
-      if (active.forced) options.push({ label: "Continue", value: { type: "move", move: 0 }, className: "action", wide: true });
-      else if (active.struggle) options.push({ label: "Struggle", value: { type: "move", move: "Struggle" }, className: "action", wide: true });
-      else {
-        // The cursor starts on the move this Pokémon used last (once it has used one).
+      say("");
+      clearMenu();
+      const a = await window.GbaMenus.battleAction(overlay(), { name: active.name, cursor: actionCursor, frame: frame() });
+      actionCursor = a.cursor;
+      if (a.action === "fight") {
+        if (active.struggle) { await message(active.name + " has no moves left!"); return { type: "move", move: "Struggle" }; }
+        const moves = active.moves.map((m) => ({ name: m.name, type: m.type, pp: m.pp, maxpp: m.maxpp, index: m.index, disabled: m.disabled }));
         const last = lastMove[active.name];
-        for (const m of active.moves) options.push(Object.assign(moveOption(m), { focus: m.index === last }));
-        // Always four move slots, so Bag / Pokémon / Run sit on their own row.
-        for (let i = active.moves.length; i < 4; i++) options.push({ label: "—", value: null, disabled: true, className: "empty-move" });
+        const at = Math.max(0, moves.findIndex((m) => m.index === last));
+        for (;;) {
+          const pick = await window.GbaMenus.battleMoves(overlay(), { moves, cursor: at, frame: frame() });
+          if (!pick) break;
+          const m = moves[pick.index];
+          if (!m.pp) { await message("There's no PP left for\nthis move!"); continue; }
+          if (m.disabled) { await message(m.name + " can't be used right now!"); continue; }
+          lastMove[active.name] = m.index;
+          return { type: "move", move: m.index };
+        }
+        continue;
       }
-      if (!active.forced) {
-        const small = battle.wild ? "action small" : "action";
-        if (config.bag) options.push({ label: "Bag", value: "bag", className: small });
-        options.push({ label: "Pokémon", value: "party", className: small, disabled: !req.switches.length });
-        if (battle.wild) options.push({ label: "Run", value: "run", className: small, disabled: !active.canRun });
+      if (a.action === "bag") {
+        if (!config.bag) { await message("Items can't be used now."); continue; }
+        const c = await chooseBag(); if (c) return c; continue;
       }
-      const v = await ask("What will " + active.name + " do?", options);
-      if (v === "bag") { const c = await chooseBag(); if (c) return c; continue; }
-      if (v === "party") { const c = await chooseSwitch(req, true); if (c) return c; continue; }
-      if (v === "run") return { type: "run" };
-      if (v && v.type === "move" && typeof v.move === "number") lastMove[active.name] = v.move;
-      return v;
+      if (a.action === "pokemon") {
+        if (!req.switches.length) { await message("There's no one else to switch in!"); continue; }
+        const c = await chooseSwitch(req, true); if (c) return c; continue;
+      }
+      if (a.action === "run") {
+        if (!battle.wild) { await message("No! There's no running\nfrom a Trainer battle!"); continue; }
+        if (!active.canRun) { await message("Can't escape!"); continue; }
+        return { type: "run" };
+      }
     }
   }
 

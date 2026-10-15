@@ -106,7 +106,7 @@
 
   // A or B (Z / X, Space / Enter) while no menu is up moves the text on.
   document.addEventListener("keydown", (e) => {
-    if ([" ", "Enter", "z", "Z", "x", "X"].includes(e.key) && !e.repeat && skipWait && !menu.children.length) {
+    if ([" ", "Enter", "z", "Z", "x", "X"].includes(e.key) && !e.repeat && skipWait && !menu.querySelector("button")) {
       e.preventDefault();
       skipWait();
     }

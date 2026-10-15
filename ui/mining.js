@@ -5,7 +5,9 @@
 // The D-pad moves the cursor, A hits, B switches between the Pickaxe and the
 // Hammer. Along the top: your mining level with a bar to the next one
 // (it fills as you dig: XP for every hit and every treasure), your energy and
-// the tool in hand. What you dig up is told in the text box.
+// the tool in hand. What you dig up is told in a text box in the panel under
+// the screen (not over the board); MiningScreen.message() puts the dig's
+// results there too, and MiningScreen.clear() empties it.
 // Resolves with the ids of the treasures dug out once every treasure is out or
 // your energy runs out.
 (function () {
@@ -48,14 +50,7 @@
     "</div>";
     const board = root.querySelector(".dig-board");
     const tiles = [...root.querySelectorAll(".dig-rock")];
-    // Messages go in the text box, which covers the bottom of the board: each
-    // goes away again after a moment.
-    let clearAt = null;
-    const say = (text, ms) => {
-      window.Screen.say(text);
-      clearTimeout(clearAt);
-      if (ms) clearAt = setTimeout(() => window.Screen.say(""), ms);
-    };
+    const say = panel;
 
     function draw() {
       tiles.forEach((el, i) => {
@@ -83,7 +78,7 @@
         board.classList.remove("shake", "shake-hard");
         void board.offsetWidth;   // restart the animation
         board.classList.add(tool === "hammer" ? "shake-hard" : "shake");
-        if (r.found.length) say("You dug up " + r.found.map((id) => "a " + name(id)).join(" and ") + "!", 1600);
+        if (r.found.length) say("You dug up " + r.found.map((id) => "a " + name(id)).join(" and ") + "!");
         if (dig.over) end();
       }
       function end() {
@@ -92,7 +87,7 @@
         say(dig.tired ? "You're out of energy!" : "Everything was dug up!");
         setTimeout(() => resolve(window.Mining.found(dig)), 900);
       }
-      say("D-pad to aim, A to dig, B to switch tools. The Hammer digs wider but uses twice the energy.", 3000);
+      say("D-pad to aim, A to dig, B to switch tools.\nThe Hammer digs wider but uses twice the energy.");
       function onKey(e) {
         const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
         if (d) {
@@ -108,5 +103,17 @@
     });
   }
 
-  window.MiningScreen = { run };
+  // The text box in the panel under the screen.
+  function panel(text) {
+    const menu = document.getElementById("menu");
+    menu.innerHTML = text ? '<div class="panel-text"></div>' : "";
+    if (text) menu.firstChild.textContent = text;
+  }
+  // A message there, staying up a while (A moves it on).
+  async function message(text) {
+    panel(text);
+    await window.Screen.wait(window.Screen.MESSAGE_MS * 1.5);
+  }
+
+  window.MiningScreen = { run, message, clear: () => panel("") };
 })();

@@ -231,6 +231,19 @@ body {
 }
 .textbox.empty { display: none; }
 .screen:has(> .field:not(.hidden)) > .textbox.empty { display: block; }
+/* In a battle, FireRed's message box (graphics/battle_interface/textbox: the
+   dark box, white text with a purple-gray shadow; the text window is tiles
+   1-28 of rows 15-18). */
+.screen:has(> .field:not(.hidden)) > .textbox {
+  border: none !important;
+  border-image: none !important;
+  border-radius: 0;
+  background: url(../assets/battle-interface/message-box.png) 0 0 / 100% 100%;
+  image-rendering: pixelated;
+  padding: calc(100cqw * 9 / 240) calc(100cqw * 10 / 240) 0;
+  color: #fff;
+  text-shadow: calc(100cqw / 240) calc(100cqw / 240) 0 #6a5a73;
+}
 /* With FireRed's window frame (the Option screen's FRAME) as its border: 8 of 240. */
 .textbox.framed {
   border: calc(100cqw * 8 / 240) solid transparent;

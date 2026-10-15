@@ -46,7 +46,9 @@ nothing). D-pad to walk, A to talk or read signs, B to start running and again t
 stop (from the start, indoors too, with FireRed's running animation), Start for
 the menu. In menus, the D-pad moves between choices, A picks one and B goes back;
 in the party, a summary's moves and Bill's PC, Select on one and then on another
-swaps them. On a keyboard: arrows / WASD, Z (A), X (B), Esc or M (Start).
+swaps them. On a keyboard: arrows / WASD, Z or Space (A), X (B), Enter, Esc or M (Start),
+Backspace (Select). In battle, FireRed's own menus: FIGHT / BAG / POKéMON / RUN,
+then your moves with their PP (coloured as it runs low) and type; B goes back.
 
 Start opens FireRed's **menu**, a window over the map with a help bar along
 the bottom (as is the text box, which is only on screen while someone's
