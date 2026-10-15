@@ -49,8 +49,8 @@ scrolling and release. A Pokémon put in a box (or sent there when your party
 is full) is fully healed, as from Gen 4 on. Your own PC is item storage: Withdraw item on FireRed's
 item list, Deposit item from the Bag. There's
 also a move tutor who teaches Dream Eater once, a school and the Nickname house.
-Route 2, Route 22 and the Gym aren't built yet; walking into the Gym's door
-tells you it's locked (it opens at seven badges in FireRed).
+Viridian's Gym is locked ("Viridian Gym's doors are locked…") until you have
+the Cascade to the Volcano Badges, as in FireRed (see below).
 
 **Controls**: the game is played with the Game Boy buttons under the text box:
 the D-pad, A, B, Start and Select (tap or click them; tapping anything else does
@@ -331,8 +331,37 @@ opens it too). Blaine gives the Volcano Badge and TM38 Fire Blast, and beating
 him beats his Gym's trainers. (In FireRed, Bill then waits on Cinnabar to take
 you to the Sevii Islands, which aren't built: he isn't there.) From Cinnabar,
 Route 21 runs north across the sea, its fishermen and swimmers, to Pallet Town.
-The Power Plant, Viridian City's Gym, Route 23, Victory Road, the Indigo
-Plateau and the Pokémon League, and Cerulean Cave aren't built yet. Tiles, palettes and metatiles come from
+Off Route 10's waterway, the Power Plant (Surf along the river to its doors): its wild
+Pikachu, Voltorb, Magnemite, Magneton and Electabuzz, its items (TM17 Protect, TM25
+Thunder, a Thunder Stone, two hidden), two "item balls" that are Electrode
+(a wild Lv. 34 Electrode with its cry; gone once fought), and Zapdos, a wild
+Lv. 50 Zapdos as Articuno is. With the Cascade to the Volcano Badges, Viridian
+City's Gym opens (FireRed's TryUnlockGym doesn't check the Boulder Badge) and
+the old man outside says its Leader has returned: FireRed's spinning-arrow
+maze, its Tamers, Black Belts and Cooltrainers, and Giovanni, its Leader all
+along (FireRed's team). Beaten, he gives the Earth Badge and TM26 Earthquake,
+his Gym's trainers count as beaten, and the Rockets left around Kanto are gone;
+talk to him again and he says Team Rocket is finished forever, and he's gone
+too. On Route 22, Gary is waiting once more on your way to the League (FireRed's
+late rival, with the same triggers): his Silph Co. team at FireRed's levels here,
+Pidgeot (47), Growlithe (45), Gyarados (45), Exeggutor (45), Umbreon (53, his
+ace) and Alakazam (47), which Mega Evolves with its Alakazite; losing blacks you
+out. Past the League gate's guard (Boulder Badge), Route 23's seven guards each
+check one Badge in order, Cascade to Earth: walk up to the next one and he
+stops you (and sends you back a step) until you've shown it (FireRed's
+VAR_MAP_SCENE_ROUTE23; talking to a guard checks his Badge), up to the Victory
+Road gate (its hidden berries and items, its wild Pokémon). Victory Road (1F to
+3F): its Cooltrainers, Black Belt, Jugglers, PokéManiac, Tamer and Cool Couple
+Ray & Tyra (a double battle), its items (TM02 Dragon Claw, TM07 Hail, TM37
+Sandstorm, TM50 Overheat among them), the Double-Edge tutor, and FireRed's
+Strength puzzle: push a boulder onto a floor switch and that floor's rock
+barrier crumbles (FireRed's setmetatile, as patches); the boulders go back
+where they were when you leave a floor, the barriers stay down until you pass
+through Route 23 again, and 3F's boulder drops through a hole to 2F
+(`game/league-road.js`). Out the far side and up Route 23 is the Indigo
+Plateau: its Pokémon Center (a respawn point and Fly spot, its Mart, the
+nurse); the guard at the Elite Four's door wishes you luck, but the Pokémon
+League beyond isn't built yet, nor is Cerulean Cave. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into

@@ -17,6 +17,8 @@
   // Metatile behaviours (pret include/constants/metatile_behaviors.h).
   const MB = {
     TALL_GRASS: 0x02,
+    // A floor switch a Strength boulder presses (Victory Road).
+    STRENGTH_BUTTON: 0x20,
     JUMP_EAST: 0x38, JUMP_WEST: 0x39, JUMP_NORTH: 0x3a, JUMP_SOUTH: 0x3b,
     CAVE_DOOR: 0x60, LADDER: 0x61, EAST_ARROW_WARP: 0x62, WEST_ARROW_WARP: 0x63,
     NORTH_ARROW_WARP: 0x64, SOUTH_ARROW_WARP: 0x65, FALL_WARP: 0x66, REGULAR_WARP: 0x67,

@@ -139,7 +139,9 @@ const MAPS = [
   "CinnabarIsland_Gym", "CinnabarIsland_PokemonLab_Entrance", "CinnabarIsland_PokemonLab_Lounge",
   "CinnabarIsland_PokemonLab_ResearchRoom", "CinnabarIsland_PokemonLab_ExperimentRoom",
   "PokemonMansion_1F", "PokemonMansion_2F", "PokemonMansion_3F", "PokemonMansion_B1F",
-  "Route21_North", "Route21_South"
+  "Route21_North", "Route21_South",
+  "PowerPlant", "ViridianCity_Gym", "Route23", "VictoryRoad_1F", "VictoryRoad_2F", "VictoryRoad_3F",
+  "IndigoPlateau_Exterior", "IndigoPlateau_PokemonCenter_1F", "IndigoPlateau_PokemonCenter_2F"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
@@ -257,6 +259,8 @@ const GAME_TEXT = [
   "Trade_Text_ThanksYoureAPal", "Trade_Text_HowIsMyOldMon", "Text_CutTreeDown", "Text_TreeCanBeCutDown",
   "Aide_Text_HaventCaughtEnoughMonsForItem", "Aide_Text_GetEnoughMonsComeBackForItem",
   "Text_OnlySkilledTrainersAllowedThrough", "Text_CantLetYouPass", "Text_OhThatsBadgeGoRightAhead", "Text_MoveCanOnlyBeLearnedOnce",
+  // Route 23's badge guards (data/text/route23.inc).
+  "Text_OnlyPassWithBadgeDontHaveYet", "Text_OnlyPassWithBadgeOhGoAhead",
   "Text_WantWhichFloor", "Text_GiveNicknameToThisMon", "Text_PlayerObtainedTheMon", "Text_NoMoreRoomForPokemon",
   // Waking up after blacking out (data/text/white_out.inc).
   "Text_FirstShouldRestoreMonsHealth", "Text_MonsHealedShouldBuyPotions", "Text_MonsHealed",
@@ -718,6 +722,15 @@ scriptPatches("data/maps/CinnabarIsland_Gym/scripts.inc", (label) => {
   const l = /^CinnabarIsland_Gym_EventScript_OpenDoor(\d)$/.exec(label);
   return l && ["CinnabarIsland_Gym", "door" + l[1]];
 });
+// Victory Road's rock barriers (VictoryRoad_<floor>_EventScript_SetRockBarrier,
+// and 2F's SetRockBarrier1 and 2): up until a boulder's pushed onto the
+// floor switch that opens it ("barrier", "barrier1", "barrier2").
+for (const floor of ["1F", "2F", "3F"]) {
+  scriptPatches("data/maps/VictoryRoad_" + floor + "/scripts.inc", (label) => {
+    const l = /^VictoryRoad_\w+_EventScript_SetRockBarrier(\d?)$/.exec(label);
+    return l && ["VictoryRoad_" + floor, "barrier" + l[1]];
+  });
+}
 // Seafoam Islands B4F: calm water by the stairs once both boulders are down
 // there (SeafoamIslands_B4F_EventScript_SetCalmWaterNearStairs).
 scriptPatches("data/maps/SeafoamIslands_B4F/scripts.inc", (label) => label === "SeafoamIslands_B4F_EventScript_SetCalmWaterNearStairs" && ["SeafoamIslands_B4F", "calm"]);

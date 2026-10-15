@@ -743,7 +743,8 @@ for (const share of [false, true]) {
     "RocketHideout_B1F", "RocketHideout_B2F", "RocketHideout_B3F", "RocketHideout_B4F",
     "SaffronCity_Gym", "SilphCo_1F", "SilphCo_2F", "SilphCo_3F", "SilphCo_4F", "SilphCo_5F", "SilphCo_6F", "SilphCo_7F",
     "SilphCo_8F", "SilphCo_9F", "SilphCo_10F", "SilphCo_11F", "SeafoamIslands_1F", "SeafoamIslands_B1F", "SeafoamIslands_B2F",
-    "SeafoamIslands_B3F", "SeafoamIslands_B4F", "PokemonMansion_1F", "PokemonMansion_2F", "PokemonMansion_3F", "PokemonMansion_B1F"]);
+    "SeafoamIslands_B3F", "SeafoamIslands_B4F", "PokemonMansion_1F", "PokemonMansion_2F", "PokemonMansion_3F", "PokemonMansion_B1F",
+    "PowerPlant", "VictoryRoad_1F", "VictoryRoad_2F", "VictoryRoad_3F"]);
   assert(WORLD_MAPS.MtMoon_1F.people.some((p) => p.item === "tm100"), "FireRed's TM09 in Mt. Moon is TM100 Bullet Seed here");
   assert(Bag.canUseOn(Party.create("Gyarados", 30, { rng }), "hm06"), "Gyarados can use Whirlpool");
   assert(Bag.canUseOn(Party.create("Pidgeot", 30, { rng }), "hm10"), "Pidgeot can use Defog");
@@ -938,7 +939,7 @@ for (const share of [false, true]) {
   assert.strictEqual(into("MtMoon_B1F", 45, 5, "up"), "Route4 32,5");
   assert.strictEqual(into("Route4", 12, 6, "up"), "Route4_PokemonCenter_1F 7,8");
   for (const w of WORLD_MAPS.MtMoon_1F.warps.concat(WORLD_MAPS.MtMoon_B1F.warps, WORLD_MAPS.MtMoon_B2F.warps)) assert(w.map, "every Mt. Moon ladder leads somewhere built");
-  assert.strictEqual(World.step({ map: "Route22_NorthEntrance", x: 7, y: 2 }, "up").unbuilt, "MAP_ROUTE23");
+  { const r = World.step({ map: "Route22_NorthEntrance", x: 7, y: 2 }, "up"); assert.strictEqual(r.warp.map + " " + r.warp.x + "," + r.warp.y, "Route23 8,153"); }
   // Pewter's doors: the Gym, the Pokémon Center, the Mart; Route 22's League gate.
   const door = (map, x, y) => World.step({ map, x, y }, "up").warp.map;
   const wtD = (r) => r.warp.map + " " + r.warp.x + "," + r.warp.y;
@@ -964,7 +965,9 @@ for (const share of [false, true]) {
     const back = World.step({ map: inside_, x: r.warp.x, y: r.warp.y }, "down");
     assert.strictEqual(at(back), "ViridianCity " + x + "," + (y - 1));
   }
-  assert(!World.step({ map: "ViridianCity", x: 36, y: 11 }, "up").warp, "the Gym (not built) stays shut");
+  // The Gym's door (its lock is a trigger on the step in front: ViridianCity_EventScript_GymDoorLocked).
+  assert.strictEqual(World.step({ map: "ViridianCity", x: 36, y: 11 }, "up").warp.map, "ViridianCity_Gym");
+  assert(WORLD_MAPS.ViridianCity.triggers.some((t) => t.script === "ViridianCity_EventScript_GymDoorLocked" && t.x === 36 && t.y === 11));
   assert.strictEqual(at(World.step({ map: "ViridianCity_PokemonCenter_1F", x: 2, y: 6 }, "left")), "ViridianCity_PokemonCenter_2F 1,6");
   // You come back in front of the nurse after blacking out; the PC is part of the map.
   const C = WORLD_MAPS.ViridianCity_PokemonCenter_1F, spot = Player.CENTERS.ViridianCity_PokemonCenter_1F;
@@ -2529,6 +2532,74 @@ console.log("ok: doubles regressions, " + DOUBLES + " random doubles battles fin
   assert(Player.CENTERS.CinnabarIsland_PokemonCenter_1F && window.TOWN_MAP.fly.CINNABAR_ISLAND.center === "CinnabarIsland_PokemonCenter_1F");
   assert.deepStrictEqual(W("CinnabarIsland_Mart").people.find((p) => p.mart).mart,
     ["ultra-ball", "great-ball", "hyper-potion", "revive", "full-heal", "escape-rope", "max-repel"]);
+
+  // The Power Plant: in from Route 10, Zapdos, and the two "item balls" that are Electrode.
+  assert(W("Route10").warps.filter((w) => w.map === "PowerPlant").length === 2);
+  assert(W("PowerPlant").people.some((p) => p.script === "PowerPlant_EventScript_Zapdos" && p.flag === "FLAG_HIDE_ZAPDOS"));
+  for (const n of [1, 2]) {
+    const e = W("PowerPlant").people.find((p) => p.script === "PowerPlant_EventScript_Electrode" + n);
+    assert(e && e.sprite === "item_ball" && !e.item, "Electrode " + n + " looks like an item ball");
+  }
+  assert.deepStrictEqual(["tm17", "tm25"].map((t) => W("PowerPlant").people.some((p) => p.item === t)), [true, true]);
+  assert.deepStrictEqual([Bag.machineMove("tm17"), Bag.machineMove("tm25")], ["Protect", "Thunder"]);
+
+  // Viridian Gym: locked until the Cascade to Volcano Badges (FireRed doesn't
+  // check the Boulder Badge); its spin tiles; Giovanni's team and TM26 Earthquake.
+  const seven = ["cascade", "thunder", "rainbow", "soul", "marsh", "volcano"];
+  assert(LeagueRoad.gymOpen(seven) && !LeagueRoad.gymOpen(["boulder"].concat(seven.slice(0, 5))) && LeagueRoad.gymOpen(["boulder"].concat(seven)));
+  assert([MB.SPIN_RIGHT, MB.SPIN_LEFT, MB.SPIN_UP, MB.SPIN_DOWN, MB.STOP_SPINNING].every((b) => W("ViridianCity_Gym").behavior.includes(b)), "spin tiles");
+  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_LEADER_GIOVANNI.party.map((m) => m.species + m.level), ["Rhyhorn45", "Dugtrio42", "Nidoqueen44", "Nidoking45", "Rhyhorn50"]);
+  assert(Bag.machines().some((m) => Bag.machineMove(m) === "Earthquake"));
+  assert.strictEqual(W("ViridianCity_Gym").people.filter((p) => p.trainer && !/LEADER/.test(p.trainer.id)).length, 8);
+
+  // Route 22's late rival trigger, and Route 23: the gate, seven guards (one
+  // Badge each, in order), Victory Road and the Indigo Plateau north.
+  assert(W("Route22").triggers.some((t) => t.script === "Route22_EventScript_LateRivalTriggerBottom" && t.x === 33 && t.y === 6));
+  const guards = W("Route23").people.filter((p) => /BadgeGuard$/.test(p.script)).map((p) => p.script.replace(/^Route23_EventScript_|BadgeGuard$/g, ""));
+  assert.deepStrictEqual(guards, LeagueRoad.NAMES.slice(1));
+  const fl = {}, badges = [];
+  assert(LeagueRoad.guardStops(fl, 1) && !LeagueRoad.guardStops(fl, 2), "only the gate's guard, first");
+  assert(!LeagueRoad.show(fl, badges, 1) && LeagueRoad.guardStops(fl, 1), "no Boulder Badge: stopped");
+  for (let k = 1; k <= 8; k++) {
+    badges.push(LeagueRoad.BADGES[k - 1]);
+    assert(LeagueRoad.guardStops(fl, k) && LeagueRoad.show(fl, badges, k) && !LeagueRoad.guardStops(fl, k), "guard " + k);
+    if (k < 8) assert(LeagueRoad.guardStops(fl, k + 1), "the next guard stops you");
+  }
+  assert.strictEqual(LeagueRoad.scene({ route23Guard: true }), 1, "an older save's gate guard");
+  assert.deepStrictEqual([W("Route23").connections.find((c) => c.direction === "up").map, W("Route23").warps.slice(0, 2).map((w) => w.map)],
+    ["IndigoPlateau_Exterior", ["VictoryRoad_1F", "VictoryRoad_2F"]]);
+
+  // Victory Road: a boulder on a floor switch opens that floor's rock barrier
+  // (patches up until then); Route 23 puts them back.
+  assert.deepStrictEqual([1, 2, 3].map((n) => Object.keys(W("VictoryRoad_" + n + "F").patches).sort()), [["barrier"], ["barrier1", "barrier2"], ["barrier"]]);
+  assert(patched("VictoryRoad_1F", ["barrier"]).at(12, 14).collision && !patched("VictoryRoad_1F", []).at(12, 14).collision);
+  for (const [m, x, y] of [["VictoryRoad_1F", 20, 16], ["VictoryRoad_2F", 2, 19], ["VictoryRoad_2F", 14, 19], ["VictoryRoad_3F", 7, 7]]) {
+    assert.strictEqual(World.blockAt(m, x, y).behavior, MB.STRENGTH_BUTTON, m + " switch");
+    assert(W(m).triggers.some((t) => t.x === x && t.y === y && /FloorSwitch/.test(t.script)));
+  }
+  const vr = {}, sw = (m, x, y) => W(m).triggers.find((t) => t.x === x && t.y === y);
+  const names = (m) => Object.keys(W(m).patches);
+  assert.deepStrictEqual(LeagueRoad.barriers(vr, "VictoryRoad_2F", names("VictoryRoad_2F")), ["barrier1", "barrier2"]);
+  assert(LeagueRoad.pressSwitch(vr, "VictoryRoad_2F", sw("VictoryRoad_2F", 14, 19)) && !LeagueRoad.pressSwitch(vr, "VictoryRoad_2F", sw("VictoryRoad_2F", 14, 19)));
+  assert.deepStrictEqual(LeagueRoad.barriers(vr, "VictoryRoad_2F", names("VictoryRoad_2F")), ["barrier1"]);
+  assert(LeagueRoad.pressSwitch(vr, "VictoryRoad_1F", sw("VictoryRoad_1F", 20, 16)));
+  assert.deepStrictEqual(LeagueRoad.barriers(vr, "VictoryRoad_1F", names("VictoryRoad_1F")), []);
+  assert.strictEqual(World.blockAt("VictoryRoad_3F", 34, 18).behavior, MB.FALL_WARP);
+  assert.strictEqual(boulder("VictoryRoad_3F", "FLAG_HIDE_VICTORY_ROAD_3F_BOULDER").reveal, "FLAG_HIDE_VICTORY_ROAD_2F_BOULDER");
+  LeagueRoad.dropBoulder(vr);
+  assert(LeagueRoad.dropped(vr));
+  LeagueRoad.reset(vr);
+  assert(!LeagueRoad.dropped(vr) && LeagueRoad.barriers(vr, "VictoryRoad_1F", names("VictoryRoad_1F")).length === 1);
+  assert.deepStrictEqual(["tm02", "tm07", "tm37", "tm50"].map(Bag.machineMove), ["Dragon Claw", "Hail", "Sandstorm", "Overheat"]);
+  assert(W("VictoryRoad_3F").people.filter((p) => p.trainer && p.trainer.id === "TRAINER_COOL_COUPLE_RAY_TYRA").every((p) => p.trainer.double));
+  assert.strictEqual(Player.prizeMoney("Cool Couple Ray & Tyra", [{ level: 45 }], "Cool Couple"), 24 * 45);
+
+  // The Indigo Plateau: its Pokémon Center (respawn, Fly spot, the Mart);
+  // the Elite Four's door isn't built yet.
+  const ic = W("IndigoPlateau_PokemonCenter_1F"), ispot = Player.CENTERS.IndigoPlateau_PokemonCenter_1F;
+  assert(!ic.collision[ispot.y * ic.width + ispot.x] && window.TOWN_MAP.fly.INDIGO_PLATEAU.center === "IndigoPlateau_PokemonCenter_1F");
+  assert.deepStrictEqual(ic.people.find((p) => p.mart).mart, ["ultra-ball", "great-ball", "full-restore", "max-potion", "revive", "full-heal", "max-repel"]);
+  assert(ic.warps.some((w) => !w.map && w.mapConst === "MAP_POKEMON_LEAGUE_LORELEIS_ROOM"));
 }
 
 // Held items whose names end in "Ball" aren't Poké Balls.

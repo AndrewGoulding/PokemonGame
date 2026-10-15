@@ -24,6 +24,7 @@
 //        hiddenItem(hidden) -> bool (not found yet), canRun() -> bool,
 //        onWarp(from, to) when you go through a door, cave or stairs,
 //        canSurf() -> bool, strength() -> bool (boulders can be pushed),
+//        boulderFell(def) (pushed into a hole), boulderSwitch(map, x, y) (pushed onto a floor switch),
 //        onAvatar(mode) when you get on or off the Bicycle or the water }
 //
 // The player is walking, on the Bicycle or surfing (Overworld.setAvatar;
@@ -276,6 +277,8 @@
           if (ctx.boulderFell) ctx.boulderFell(p.def);
           return;
         }
+        // One pushed onto a floor switch presses it (HandleBoulderActivateVictoryRoadSwitch).
+        if (isBoulder(p) && World.blockAt(me.map, p.x, p.y).behavior === World.MB.STRENGTH_BUTTON && ctx.boulderSwitch) ctx.boulderSwitch(me.map, p.x, p.y);
         // A trainer on the move can walk into seeing you.
         if (!scene && !paused && resolveExplore && !me.move) {
           const seen = trainerSees(p);

@@ -1677,6 +1677,8 @@
     FuchsiaCity_EventScript_LaprasSign: "Lapras"
   };
 
+  // The Badges in order, as Route 23's guards (and the League gate's) check them.
+  const ROUTE23_BADGES = LeagueRoad.NAMES;
   const SPECIAL = new Set([
     "PalletTown_PlayersHouse_1F_EventScript_Mom",
     "PalletTown_PlayersHouse_2F_EventScript_PC",
@@ -1800,8 +1802,15 @@
       "CinnabarIsland_PokemonLab_Lounge_EventScript_Clifton", "CinnabarIsland_PokemonLab_Lounge_EventScript_Norma",
       "CinnabarIsland_PokemonLab_ResearchRoom_EventScript_MetronomeTutor",
       "PokemonMansion_1F_EventScript_Statue", "PokemonMansion_2F_EventScript_Statue", "PokemonMansion_3F_EventScript_Statue",
-      "PokemonMansion_B1F_EventScript_Statue"
-    ]).concat([1, 2, 3, 4, 5, 6].flatMap((n) => ["Left", "Right"].map((s) => "CinnabarIsland_Gym_EventScript_Quiz" + n + s))).concat(CYCLING_ROAD_GATES.flatMap((g) => ["Top", "MidTop", "Mid", "MidBottom", "Bottom"].map((k) => g + "_EventScript_NeedBikeTrigger" + k))));
+      "PokemonMansion_B1F_EventScript_Statue",
+      "PowerPlant_EventScript_Zapdos", "PowerPlant_EventScript_Electrode1", "PowerPlant_EventScript_Electrode2",
+      "ViridianCity_EventScript_GymDoorLocked", "ViridianCity_EventScript_OldMan",
+      "ViridianCity_Gym_EventScript_Giovanni", "ViridianCity_Gym_EventScript_GymGuy", "ViridianCity_Gym_EventScript_GymStatue",
+      "Route22_EventScript_LateRivalTriggerTop", "Route22_EventScript_LateRivalTriggerMid", "Route22_EventScript_LateRivalTriggerBottom",
+      "VictoryRoad_2F_EventScript_DoubleEdgeTutor", "enter:IndigoPlateau_PokemonCenter_1F",
+      "IndigoPlateau_PokemonCenter_1F_EventScript_Nurse", "IndigoPlateau_PokemonCenter_1F_EventScript_Clerk",
+      "IndigoPlateau_PokemonCenter_1F_EventScript_DoorGuard"
+    ]).concat(ROUTE23_BADGES.slice(1).flatMap((b) => ["", "Trigger"].map((t) => "Route23_EventScript_" + b + "BadgeGuard" + t))).concat([1, 2, 3, 4, 5, 6].flatMap((n) => ["Left", "Right"].map((s) => "CinnabarIsland_Gym_EventScript_Quiz" + n + s))).concat(CYCLING_ROAD_GATES.flatMap((g) => ["Top", "MidTop", "Mid", "MidBottom", "Bottom"].map((k) => g + "_EventScript_NeedBikeTrigger" + k))));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
   // Item balls on the map: picked up once, then gone.
@@ -1912,6 +1921,22 @@
       // Articuno, deep in the Seafoam Islands, until you've fought it
       // (SeafoamIslands_B4F_OnTransition); if you ran, it flew away until you come back.
       case "FLAG_HIDE_ARTICUNO": return !f.foughtArticuno;
+      // In the Power Plant: Zapdos, and the two Electrode that look like item
+      // balls, until you've fought them (PowerPlant_OnTransition).
+      case "FLAG_HIDE_ZAPDOS": return !f.foughtZapdos;
+      case "FLAG_HIDE_POWER_PLANT_ELECTRODE_1": return !f.foughtPowerPlantElectrode1;
+      case "FLAG_HIDE_POWER_PLANT_ELECTRODE_2": return !f.foughtPowerPlantElectrode2;
+      // Giovanni in Viridian Gym, until he's gone after telling you Team
+      // Rocket's finished; then the Rockets left around Kanto are gone too
+      // (FLAG_HIDE_MISC_KANTO_ROCKETS, set on beating him).
+      case "FLAG_HIDE_VIRIDIAN_GIOVANNI": return !f.giovanniLeft;
+      case "FLAG_HIDE_MISC_KANTO_ROCKETS": return !f.TRAINER_LEADER_GIOVANNI;
+      // Victory Road: the boulder on 3F until it drops through the hole, and
+      // then the one it becomes on 2F (Route23_OnTransition puts them back).
+      case "FLAG_HIDE_VICTORY_ROAD_3F_BOULDER": return !LeagueRoad.dropped(f);
+      case "FLAG_HIDE_VICTORY_ROAD_2F_BOULDER": return LeagueRoad.dropped(f);
+      // (Only for the credits, once you're Champion.)
+      case "FLAG_HIDE_CREDITS_RIVAL": case "FLAG_HIDE_CREDITS_OAK": return false;
       // Bill waits on Cinnabar after the Volcano Badge to take you to the Sevii
       // Islands, which aren't built: he and the Seagallop stay away.
       case "FLAG_HIDE_CINNABAR_BILL": case "FLAG_HIDE_CINNABAR_SEAGALLOP": case "FLAG_HIDE_CINNABAR_POKECENTER_BILL": return false;
@@ -1964,6 +1989,8 @@
     if (script === "SaffronCity_Gym_EventScript_Sabrina") { await sabrina(ev.person); return; }
     if (script === "FuchsiaCity_Gym_EventScript_Koga") { await koga(ev.person); return; }
     if (script === "CinnabarIsland_Gym_EventScript_Blaine") { await blaine(ev.person); return; }
+    if (script === "ViridianCity_Gym_EventScript_Giovanni") { await giovanniGym(ev.person); return; }
+    { const g = /^Route23_EventScript_(\w+)BadgeGuard(Trigger)?$/.exec(script); if (g) { await badgeGuard(ROUTE23_BADGES.indexOf(g[1]) + 1, !!g[2], "LOCALID_" + g[1].toUpperCase() + "_BADGE_GUARD"); return; } }
     { const q = /^CinnabarIsland_Gym_EventScript_Quiz(\d)(Left|Right)$/.exec(script); if (q) { await cinnabarQuiz(+q[1], q[2]); return; } }
     if (FUCHSIA_SIGN_MONS[script]) { await monSign(FUCHSIA_SIGN_MONS[script], ev.sign.text); return; }
     if (script === "Game_EventScript_Leaf") {
@@ -2256,22 +2283,66 @@
         return;
 
       // The League gate: the guard checks for the Boulder Badge (FireRed's
-      // Route23_EventScript_BadgeGuardTrigger and BadgeGuard).
+      // Route22_NorthEntrance_EventScript_BadgeGuard, as Route 23's guards).
       case "Route22_NorthEntrance_EventScript_BoulderBadgeGuardTrigger":
-      case "Route22_NorthEntrance_EventScript_BoulderBadgeGuard": {
-        const badge = ["Boulder Badge"], trigger = script.endsWith("Trigger");
-        if (trigger && f.route23Guard) return;
-        if (trigger) await Overworld.act([{ who: "#" + 0, moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
-        if (hasBadge("boulder")) {
-          await say(T("Text_OhThatsBadgeGoRightAhead"), badge);
-          f.route23Guard = true;
-        } else {
-          await say(T("Text_OnlySkilledTrainersAllowedThrough"), badge);
-          await say(T("Text_CantLetYouPass"));
-          if (trigger) await Overworld.act([{ who: "player", moves: ["walk_down"] }, { who: "#0", moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-        }
+      case "Route22_NorthEntrance_EventScript_BoulderBadgeGuard":
+        await badgeGuard(1, script.endsWith("Trigger"), "#0");
         return;
-      }
+
+      // Gary again, on your way to the League with all eight Badges.
+      case "Route22_EventScript_LateRivalTriggerTop":
+      case "Route22_EventScript_LateRivalTriggerMid":
+      case "Route22_EventScript_LateRivalTriggerBottom":
+        await route22LateRival(script.replace("Route22_EventScript_LateRivalTrigger", ""));
+        return;
+
+      // ---------- Viridian City's Gym ----------
+      // Locked until you have the other Badges (ViridianCity_OnTransition's
+      // TryUnlockGym: the Cascade to the Volcano Badge).
+      case "ViridianCity_EventScript_GymDoorLocked":
+        await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
+        await sleep(333);
+        await say(T("ViridianCity_Text_GymDoorsAreLocked"));
+        Screen.say("");
+        await Overworld.act([{ who: "player", moves: M("ViridianCity_Movement_JumpDownLedge") }]);
+        return;
+      case "ViridianCity_EventScript_OldMan":
+        if (viridianGymOpen()) { await say(T("ViridianCity_Text_ViridiansGymLeaderReturned")); return; }
+        await say(T("ViridianCity_Text_GymClosedWonderWhoLeaderIs"));
+        Screen.say("");
+        await faceBack(ev.person);
+        return;
+      case "ViridianCity_Gym_EventScript_GymGuy":
+        await say(T(f.TRAINER_LEADER_GIOVANNI ? "ViridianCity_Gym_Text_GymGuyPostVictory" : "ViridianCity_Gym_Text_GymGuyAdvice"));
+        return;
+      case "ViridianCity_Gym_EventScript_GymStatue":
+        await say(T(hasBadge("earth") ? "ViridianCity_Gym_Text_GymStatuePlayerWon" : "ViridianCity_Gym_Text_GymStatue"));
+        return;
+
+      // ---------- The Power Plant ----------
+      case "PowerPlant_EventScript_Zapdos":
+        await legendaryBird(ev.person, "Zapdos", "foughtZapdos");
+        return;
+      case "PowerPlant_EventScript_Electrode1":
+      case "PowerPlant_EventScript_Electrode2":
+        await powerPlantElectrode(ev.person, script.slice(-1));
+        return;
+
+      // ---------- Victory Road and Indigo Plateau ----------
+      case "VictoryRoad_2F_EventScript_DoubleEdgeTutor":
+        await moveTutor("Double-Edge", "tutorDoubleEdge", "Text_DoubleEdge");
+        return;
+      case "IndigoPlateau_PokemonCenter_1F_EventScript_Nurse":
+        await nurse(ev.map, ev.person);
+        return;
+      case "IndigoPlateau_PokemonCenter_1F_EventScript_Clerk":
+        await mart(ev.person.mart);
+        return;
+      // (The Elite Four's door: with no National Pokédex here, she always
+      // wishes you luck.)
+      case "IndigoPlateau_PokemonCenter_1F_EventScript_DoorGuard":
+        await say(T("IndigoPlateau_PokemonCenter_1F_Text_FaceEliteFourGoodLuck"));
+        return;
 
       // ---------- Pewter City ----------
 
@@ -2938,7 +3009,7 @@
         await seafoamFall(ev.map);
         return;
       case "SeafoamIslands_B4F_EventScript_Articuno":
-        await articuno(ev.person);
+        await legendaryBird(ev.person, "Articuno", "foughtArticuno");
         return;
 
       // ---------- Cinnabar Island ----------
@@ -5617,16 +5688,17 @@
     }
   }
 
-  // Articuno (SeafoamIslands_B4F_EventScript_Articuno): a wild Lv. 50 Articuno,
-  // to the legendary battle music. Beaten or caught, it's gone for good; run
-  // from, it flies away, and is back the next time you come.
-  async function articuno(person) {
+  // The legendary birds: Articuno (SeafoamIslands_B4F_EventScript_Articuno)
+  // and Zapdos (PowerPlant_EventScript_Zapdos), wild at Lv. 50, to the
+  // legendary battle music. Beaten or caught, it's gone for good; run from,
+  // it flies away, and is back the next time you come.
+  async function legendaryBird(person, species, flag) {
     if (!canBattle()) return;
-    cry("Articuno");
+    cry(species);
     await say(T("Text_Gyaoo"));
     music("mus_encounter_gym_leader");
     await sleep(300);
-    const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create("Articuno", 50)] }, music: "mus_vs_legend" });
+    const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create(species, 50)] }, music: "mus_vs_legend" });
     if (outcome === "lost") return;
     show("world");
     await Overworld.resume();
@@ -5635,12 +5707,169 @@
       tempFlags.add(player.location.map + ":" + person.flag);
       Overworld.removePerson(person);
       await Overworld.fadeFromBlack();
-      await say(T("Text_MonFlewAway"), ["Articuno"]);
+      await say(T("Text_MonFlewAway"), [species]);
       return;
     }
-    player.flags.foughtArticuno = true;
+    player.flags[flag] = true;
     if (outcome === "won") { await Overworld.fadeToBlack(); Overworld.removePerson(person); await Overworld.fadeFromBlack(); }
     else Overworld.removePerson(person);
+  }
+
+  // ---------- The Power Plant ----------
+  //
+  // The two "item balls" that are Electrode (PowerPlant_EventScript_Electrode1
+  // and 2): a wild Lv. 34 Electrode, with its cry and no words. Whatever
+  // happens (but blacking out), it's gone for good.
+  async function powerPlantElectrode(person, n) {
+    if (!canBattle()) return;
+    cry("Electrode");
+    await sleep(900);
+    const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create("Electrode", 34)] } });
+    if (outcome === "lost") return;
+    player.flags["foughtPowerPlantElectrode" + n] = true;
+    show("world");
+    await Overworld.resume();
+    if (outcome === "caught") { Overworld.removePerson(person); return; }
+    await Overworld.fadeToBlack();
+    Overworld.removePerson(person);
+    await Overworld.fadeFromBlack();
+  }
+
+  // ---------- Viridian City's Gym ----------
+
+  // Open once you have the Cascade, Thunder, Rainbow, Soul, Marsh and Volcano
+  // Badges (ViridianCity_EventScript_TryUnlockGym: FireRed doesn't check the
+  // Boulder Badge).
+  const viridianGymOpen = () => LeagueRoad.gymOpen(player.badges);
+
+  // Giovanni (ViridianCity_Gym_EventScript_Giovanni): back at his Gym, the
+  // Leader all along. Battle, then the Earth Badge and TM26 Earthquake;
+  // beating him also beats his Gym's trainers, sends Gary to wait on Route 22
+  // (VAR_MAP_SCENE_ROUTE22, 3) and the Rockets left around Kanto away. Talk
+  // to him again and he tells you Team Rocket is finished, and he's gone.
+  async function giovanniGym(person) {
+    const f = player.flags, ID = "TRAINER_LEADER_GIOVANNI";
+    const tm = machineFor("Earthquake");
+    if (!f[ID]) {
+      const intro = person.trainer.intro;
+      await say(intro.slice(0, -1));
+      music("mus_encounter_rocket");
+      await say(intro.slice(-1));
+      if (!canBattle()) return;
+      const outcome = await battle("trainer", { foe: { name: "Leader Giovanni", team: trainerTeam(ID), pic: "leader_giovanni" },
+        defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
+      if (outcome !== "won") return;
+      if (!hasBadge("earth")) player.badges.push("earth");
+      for (const t of ["TAMER_JASON", "TAMER_COLE", "BLACK_BELT_ATSUSHI", "BLACK_BELT_KIYO", "BLACK_BELT_TAKASHI",
+        "COOLTRAINER_SAMUEL", "COOLTRAINER_YUJI", "COOLTRAINER_WARREN"]) f["TRAINER_" + t] = true;
+      player.flags.lastCenter = "ViridianCity_PokemonCenter_1F";
+      show("world");
+      await Overworld.resume();
+    }
+    if (!f.gotTM26FromGiovanni) {
+      await say(T("ViridianCity_Gym_Text_ExplainEarthBadgeTakeThis"));
+      Player.addItem(player, tm);
+      f.gotTM26FromGiovanni = true;
+      await sayWithJingle(itemJingle(tm), tmText(T("ViridianCity_Gym_Text_ReceivedTM26FromGiovanni"), 26, tm));
+      await say(tmText(T("ViridianCity_Gym_Text_ExplainTM26"), 26, tm));
+      return;
+    }
+    await say(T("ViridianCity_Gym_Text_GiovanniPostBattle"));
+    Screen.say("");
+    await Overworld.fadeToBlack();
+    f.giovanniLeft = true;
+    Overworld.removePerson(person);
+    await Overworld.fadeFromBlack();
+  }
+
+  // ---------- Route 22's rival, late ----------
+  //
+  // FireRed's Route22_EventScript_LateRival: once you've beaten Giovanni,
+  // Gary comes up from the left on your way to the League. This game's own
+  // team for him (as on Silph Co.'s 7F) at FireRed's levels here: Pidgeot,
+  // Growlithe, Gyarados (in Rhyhorn's place), Exeggutor, Alakazam (holding
+  // its Alakazite: it Mega Evolves) and Umbreon (his Eevee) as his ace.
+  const ROUTE22_LATE_RIVAL_TEAM = [["Pidgeot", 47], ["Growlithe", 45], ["Gyarados", 45], ["Exeggutor", 45], ["Umbreon", 53], ["Alakazam", 47, "alakazite"]];
+  const route22LateRivalDue = () => !!(player.flags.TRAINER_LEADER_GIOVANNI && !player.flags.route22LateRival);
+  async function route22LateRival(side) {
+    if (!route22LateRivalDue()) return;
+    const f = player.flags, R = "LOCALID_ROUTE22_RIVAL";
+    music("mus_encounter_rival");
+    Overworld.addObject(R, { x: 25, y: side === "Top" ? 4 : 5, facing: "right" });
+    await Overworld.act(side === "Bottom"
+      ? [{ who: R, moves: M("Route22_Movement_RivalApproachBottom") }, { who: "player", moves: M("Route22_Movement_PlayerFaceRival") }]
+      : [{ who: R, moves: M("Route22_Movement_RivalApproach") }]);
+    await say(T("Route22_Text_LateRivalIntro"));
+    // (FireRed's IVs: 150, and 250 for his starter, here Umbreon.)
+    const team = ROUTE22_LATE_RIVAL_TEAM.map(([sp, lv, item]) => Object.assign(Party.create(sp, lv, { ivs: Math.floor((sp === "Umbreon" ? 250 : 150) * 31 / 255) }),
+      item ? { item } : {}));
+    const ace = Math.max(...team.map((r) => r.level));
+    const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_late" },
+      defeatText: T("Route22_Text_LateRivalDefeat"), trainerId: "TRAINER_RIVAL_ROUTE22_LATE_SQUIRTLE",
+      prize: 36 * ace });   // (TRAINER_CLASS_RIVAL_LATE: 9, x4)
+    if (outcome !== "won") { if (outcome === "cancelled") Overworld.removeObject(R); return; }
+    f.route22LateRival = true;
+    show("world");
+    await Overworld.resume();
+    await say(T("Route22_Text_LateRivalPostBattle"));
+    Screen.say("");
+    await sleep(170);
+    music("mus_rival_exit");
+    await Overworld.act([{ who: R, moves: M("Route22_Movement_LateRivalExit") }]);
+    Overworld.removeObject(R);
+    music((window.WORLD_MAPS[player.location.map] || {}).music);
+  }
+
+  // ---------- Route 23's badge guards ----------
+  //
+  // FireRed's Route23_EventScript_BadgeGuard and ..Trigger (and the League
+  // gate's on Route 22): each guard checks one Badge, in order from the
+  // Boulder Badge at the gate to the Earth Badge by Victory Road; walking up
+  // to the next guard stops you until he's seen his (VAR_MAP_SCENE_ROUTE23,
+  // the last Badge shown). Talking to one, he checks his Badge whatever
+  // you've shown before.
+  const route23Scene = () => LeagueRoad.scene(player.flags);
+  async function badgeGuard(k, trigger, who) {
+    const f = player.flags, name = [ROUTE23_BADGES[k - 1] + " Badge"];
+    if (trigger && !LeagueRoad.guardStops(f, k)) return;
+    if (trigger) await Overworld.act([{ who, moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
+    const ok = () => {
+      const t = T(k === 1 ? "Text_OhThatsBadgeGoRightAhead" : "Text_OnlyPassWithBadgeOhGoAhead");
+      // (The "Oh! That is the …" page has the level-up jingle.)
+      const at = t.findIndex((p) => /^Oh!/.test(p));
+      return say(t.slice(0, at), name).then(() => sayWithJingle("mus_level_up", fill(t[at], name))).then(() => say(t.slice(at + 1), name));
+    };
+    if (!trigger && route23Scene() >= k) { await ok(); return; }
+    if (LeagueRoad.show(f, player.badges, k)) { await ok(); return; }
+    if (k === 1) {
+      await say(T("Text_OnlySkilledTrainersAllowedThrough"), name);
+      sfx("se_boo");
+      await say(T("Text_CantLetYouPass"));
+    } else {
+      const t = T("Text_OnlyPassWithBadgeDontHaveYet");
+      await say(t.slice(0, -1), name);
+      sfx("se_boo");
+      await say(t.slice(-1), name);
+    }
+    Screen.say("");
+    if (trigger) await Overworld.act([{ who: "player", moves: ["walk_down"] }, { who, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+  }
+
+  // ---------- Victory Road ----------
+  //
+  // Each floor's rock barrier is up until a Strength boulder's pushed onto
+  // its floor switch (VictoryRoad_<floor>_EventScript_FloorSwitch, by
+  // HandleBoulderActivateVictoryRoadSwitch); the boulders go back where they
+  // were whenever you leave the floor, and the barriers stay down until you
+  // come back through Route 23 (Route23_OnTransition), which also puts 3F's
+  // boulder back that drops through the hole to 2F.
+  // (FireRed's VAR_MAP_SCENE_VICTORY_ROAD_1F, .._2F_BOULDER1/2 and .._3F, and
+  // FLAG_HIDE_VICTORY_ROAD_2F/3F_BOULDER: flags.victoryRoad here.)
+  function victoryRoadSwitch(map, x, y) {
+    const t = ((window.WORLD_MAPS[map] || {}).triggers || []).find((q) => q.x === x && q.y === y);
+    if (!LeagueRoad.pressSwitch(player.flags, map, t)) return;
+    applyPatches(map);
+    sfx("se_ice_break");
   }
 
   // ---------- Cinnabar Island ----------
@@ -5916,6 +6145,8 @@
     if (map === "RocketHideout_B4F" && !(f.TRAINER_TEAM_ROCKET_GRUNT_16 && f.TRAINER_TEAM_ROCKET_GRUNT_17)) return ["barrier"];
     // The Seafoam Islands' currents (game/seafoam.js).
     if (/^SeafoamIslands_B[34]F$/.test(map)) return Seafoam.patches(f, map);
+    // Victory Road's rock barriers, until their floor switches are pressed.
+    if (/^VictoryRoad_\dF$/.test(map)) return LeagueRoad.barriers(f, map, Object.keys((window.WORLD_MAPS[map] || {}).patches || {}));
     // The Pokémon Mansion's doors, by its switch.
     if (/^PokemonMansion_/.test(map)) return f.mansionSwitch ? ["pressed"] : [];
     // Cinnabar Gym's quiz doors: each open once answered (or its trainer
@@ -6119,6 +6350,17 @@
       const at = player.location;
       return seafoamFell === at.map && World.isSurfable(World.blockAt(at.map, at.x, at.y).behavior);
     }
+    // Viridian Gym's door, locked until you've the other Badges.
+    if (script === "ViridianCity_EventScript_GymDoorLocked") return !viridianGymOpen();
+    // Route 22: Gary, once Giovanni's beaten; the gate's and Route 23's
+    // guards stop you at the next one whose Badge you haven't shown.
+    if (/^Route22_EventScript_EarlyRivalTrigger/.test(script)) return !!(player.flags.pokedex && !player.flags.route22Rival);
+    if (/^Route22_EventScript_LateRivalTrigger/.test(script)) return route22LateRivalDue();
+    if (script === "Route22_NorthEntrance_EventScript_BoulderBadgeGuardTrigger") return LeagueRoad.guardStops(player.flags, 1);
+    { const g = /^Route23_EventScript_(\w+)BadgeGuardTrigger$/.exec(script); if (g) return LeagueRoad.guardStops(player.flags, ROUTE23_BADGES.indexOf(g[1]) + 1); }
+    // Walking into the Indigo Plateau's Pokémon Center makes it where you go
+    // after blacking out (FireRed's setrespawn there).
+    if (script === "enter:IndigoPlateau_PokemonCenter_1F") { player.flags.lastCenter = "IndigoPlateau_PokemonCenter_1F"; return false; }
     // Cinnabar Gym's door, locked until you've the Secret Key.
     if (script === "CinnabarIsland_EventScript_GymDoorLocked") return !player.flags.FLAG_HIDE_POKEMON_MANSION_B1F_SECRET_KEY;
     // Back in the Pokémon Lab, a fossil you left with the doctor is ready.
@@ -6151,7 +6393,12 @@
         trainerWaiting: (person) => trainerWaiting(person) && !(person.trainer.double && !canDouble()),
         hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, extraPeople,
         canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
-        boulderFell: (def) => Seafoam.drop(player.flags, def),
+        boulderFell: (def) => {
+          // (3F's boulder through the hole: it's on 2F now.)
+          if (def.flag === "FLAG_HIDE_VICTORY_ROAD_3F_BOULDER") LeagueRoad.dropBoulder(player.flags);
+          else Seafoam.drop(player.flags, def);
+        },
+        boulderSwitch: victoryRoadSwitch,
         onAvatar: (mode) => music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music),
         onStep: () => { leftPallet(player.location.map); DayCare.step(player.flags.dayCare); vsSeekerStep(); friendshipStep(); return redForestStep() || leafVermilionStep() || jessieJamesStep() || safariStep() || repelStep(); }, allowWild: repelAllows,
         onMap: (m) => {
@@ -6167,6 +6414,8 @@
           // The Seafoam Islands' boulders and currents (Route20_OnTransition,
           // SeafoamIslands_B3F/B4F_OnTransition).
           if (m !== tempFlagsMap) { if (m === "Route20") Seafoam.route20(player.flags); Seafoam.transition(player.flags, m); }
+          // Route 23 puts Victory Road back as it was: barriers up, boulders back (Route23_OnTransition).
+          if (m !== tempFlagsMap && m === "Route23") LeagueRoad.reset(player.flags);
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
           music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }
       });
