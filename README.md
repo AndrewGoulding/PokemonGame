@@ -753,7 +753,8 @@ Stone already could.)
 - **Types**: Gen 6's, except Aerodactyl (Dragon/Rock), Gyarados and Mega
   Gyarados (Dragon/Water), Psyduck and Golduck (Water/Psychic), and Blastoise
   and Mega Blastoise (Water/Steel).
-- **Moves**: Gen 6's, except Leech Life, which is Gen 7's (80 power, 10 PP).
+- **Moves**: Gen 6's, except Leech Life, which is Gen 7's (80 power, 10 PP), plus
+  Gen 7's Instruct and Spotlight for double battles (no Pokémon learns them).
 - **X items**: X Attack, Defense, Sp. Atk, Sp. Def, Speed and Accuracy raise
   that stat of the Pokémon in battle one stage (Gen 6).
 - **Items**: Gen 6 effects for potions and drinks, status cures, Revives, PP
@@ -971,14 +972,45 @@ slot, screens at 2/3 in doubles, wild doubles (a ball only once one wild
 Pokémon is left), and experience for every p1 Pokémon that was out while the
 fainted foe was.
 
-Not implemented (or approximated) in doubles: triple / rotation battles;
-choosing which slot gets the last bench Pokémon when two fainted (slot a gets
-it); Mat Block, Crafty Shield, After You, Quash, Instruct, Spotlight-style
-moves, Aromatic Mist / Hold Hands effects, Acupressure on an ally; Flower Veil,
-Sweet Veil, Aroma Veil, Flower Gift, Symbiosis, Unnerve, Soundproof /
-Sap Sipper / Magic Bounce on ally side moves (the `onAlly…` ability hooks) and
-Mold Breaker ignoring redirection; Sky Drop; a doubles Shift; Wide Guard,
-Pursuit-on-switch and Beat Up's party count in singles (left as they were, to
-keep singles unchanged). The spread multiplier counts the targets when the move
-starts (a protected or missed target still counts). Speed order is fixed at the
-start of the turn (Gen 6).
+Doubles moves: Mat Block (on the user's first turn out its side is safe from
+damaging moves) and Crafty Shield (from status moves aimed at it), both failing
+if the user moves last; After You (the target moves right after the user; it
+fails if the target would move next anyway, so always in singles); Quash (the
+target moves after everyone else); Instruct (Gen 7: the target repeats its last
+move at once, at the same target, with the Gen 7 failures: no last move, no PP,
+recharging / charging / locking / move-calling moves, Bide, Focus Punch, Beak
+Blast, Shell Trap, Transform, Sketch, Struggle, Instruct, a target in Bide or
+carried by Sky Drop; it works in singles too); Spotlight (Gen 7, ahead of
+Follow Me); Acupressure, Aromatic Mist and Hold Hands on the ally. Instruct and
+Spotlight were added to `data/moves.js` by hand (no Pokémon learns them here).
+**Sky Drop** (both formats, Gen 6): the user carries the target up (both
+semi-invulnerable, as with Fly; the target can't move, switch or be forced out)
+and drops it next turn; it fails on an ally, a substitute, 200 kg and up and
+under Gravity, a Flying-type target takes no damage, and the target is let go
+if the user faints, switches out, can't move on the second turn or is brought
+down by Gravity.
+
+Abilities on a side: Flower Veil (Grass types on its side, itself included,
+keep their stats and dodge status and Yawn from others), Sweet Veil (no one on
+its side falls asleep; Yawn and Rest fail), Aroma Veil (no Taunt, Torment,
+Encore, Disable, Heal Block or infatuation on its side), Flower Gift (Cherrim
+in the sun: 1.5× Attack and Sp. Def for it and its ally), Symbiosis (it hands
+its item to the ally that has just used up its own) and Unnerve (foes can't eat
+Berries, resist Berries included); these work in singles too where they apply.
+Abilities act on each target of a spread move (Hyper Voice fails only on the
+Soundproof foe, Petal Blizzard feeds a Sap Sipper ally), a reflectable side
+move (Stealth Rock, Spikes, ...) bounces off either foe's Magic Bounce, ally
+Aromatherapy feeds Sap Sipper, and Mold Breaker ignores Lightning Rod / Storm
+Drain's pull. When two slots fainted and one Pokémon is left to send in, the
+side picks the slot: the request's `forceSwitch` marks both, `switchCount` is
+1 and `open` names the default (slot a); `[null, { type: "switch", index }]`
+fills slot b.
+
+Not implemented (or approximated) in doubles: triple / rotation battles; a
+doubles Shift; Wide Guard, Pursuit-on-switch, Beat Up's party count and
+Acupressure in singles (left as they were, to keep singles unchanged:
+Acupressure still fails there); Gravity cancelling Fly / Bounce (only Sky Drop);
+Cherrim's Sunshine Form (Flower Gift's boost works, the forme doesn't change).
+The spread multiplier counts the targets when the move starts (a protected or
+missed target still counts). Speed order is fixed at the start of the turn (Gen
+6).

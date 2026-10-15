@@ -71,7 +71,11 @@
 // Evolution a side per battle; forced slots (recharge, Fly's second turn, ...)
 // fill themselves. Fainted slots are refilled at the end of the turn (phase
 // "switch" with forceSwitch, both sides at once); U-turn / Baton Pass ask for
-// the user's slot mid-turn. Wild doubles (wild: true with two wild Pokémon):
+// the user's slot mid-turn. With fewer Pokémon left to send in than fainted
+// slots, the request has switchCount (how many), forceSwitch marks every
+// slot that may take one and open the default (slot a first): choose
+// [null, { type: "switch", index }] to fill slot b instead; the rest stay
+// empty. Wild doubles (wild: true with two wild Pokémon):
 // a ball only while one wild Pokémon is left (canCatch), run as usual.
 //
 // Targeting follows moves.js `target`: normal/any/adjacentFoe (chosen; a
@@ -81,11 +85,27 @@
 // allAdjacent (spread: Earthquake, Surf and Explosion hit the ally too; 0.75x
 // each with more than one target), randomNormal (Outrage, Struggle: a random
 // foe), scripted (Counter: the last attacker), self/allySide/allyTeam/all
-// (the user or the field), foeSide (the foes' side). Follow Me / Rage Powder
-// and Lightning Rod / Storm Drain redirect single-target moves (Stalwart
-// ignores it). Event extras: "move" gets a 5th "[spread] p2a: X,p2b: Y" for
-// spread moves; "-notarget" (no one left to hit); "swap" (Ally Switch:
-// [old identity, new slot]).
+// (the user or the field), foeSide (the foes' side; a reflectable one
+// bounces off either foe's Magic Bounce / Magic Coat). Spotlight, Follow Me /
+// Rage Powder and Lightning Rod / Storm Drain redirect single-target moves
+// (Stalwart ignores all of them, Mold Breaker the abilities). Abilities act
+// per target of a spread move (Soundproof, Sap Sipper, ...). Event extras:
+// "move" gets a 5th "[spread] p2a: X,p2b: Y" for spread moves; "-notarget"
+// (no one left to hit); "swap" (Ally Switch: [old identity, new slot]).
+//
+// Doubles moves: Mat Block (first turn out; the side is safe from damaging
+// moves) and Crafty Shield (from status moves aimed at it), both failing
+// when the user moves last; After You (the target moves next; fails if it
+// would anyway, so always in singles) and Quash (the target moves last);
+// Instruct and Spotlight (Gen 7, added to moves.js; Instruct works in
+// singles too); Acupressure / Aromatic Mist / Hold Hands on the ally. Sky
+// Drop (both formats): the target is carried up (both semi-invulnerable; it
+// can't move or switch) and dropped next turn; fails on 200 kg and up,
+// Flying types take no damage, and fainting, switching out, failing to move
+// or Gravity ends it ("-prepare" with the target, "-end" Sky Drop
+// "[interrupt]"). Side abilities: Flower Veil, Sweet Veil, Aroma Veil (the
+// holder and its ally; `onAlly…` hooks via runAllyHooks), Flower Gift,
+// Symbiosis, Unnerve.
 //
 // Tag battles (doubles only): a side may be two trainers, each with up to 3
 // Pokémon:  p1: { name: "Red", team: [...], partner: { name: "Leaf", team: [...] } }
@@ -149,7 +169,7 @@
   const SPREAD_TARGETS = new Set(["allAdjacentFoes", "allAdjacent"]);
   const REDIRECTABLE = new Set(["normal", "any", "adjacentFoe", "randomNormal"]);
   // One-turn doubles effects, cleared at the end of each turn.
-  const TURN_VOLATILES = ["helpinghand", "followme", "ragepowder"];
+  const TURN_VOLATILES = ["helpinghand", "followme", "ragepowder", "spotlight"];
   const STALL_MOVES = new Set(["protect", "detect", "endure", "kingsshield", "spikyshield", "quickguard", "wideguard", "matblock", "craftyshield"]);
 
   // Indexes
@@ -525,7 +545,7 @@
       if (!only || only === "item") {
         const it = window.ITEM_EFFECTS[mon.item];
         if (it && typeof it[name] === "function" && !mon.volatiles.embargo && !mon.hasAbility("Klutz")
-            && (!o.accSide || it.accSide === o.accSide)) {
+            && (!o.accSide || it.accSide === o.accSide) && !(/-berry$/.test(mon.item) && this.isUnnerved(mon))) {
           hs.push({ fn: it[name], thisObj: it, effect: E("Item", mon.item, mon.item), state: {} });
         }
       }
@@ -626,6 +646,44 @@
       const ctx = this.makeCtx(mon, h, o || {});
       try { return ab[hookName].apply(ab, [ctx].concat(args)); }
       catch (e) { if (this.debug) throw e; return undefined; }
+    }
+
+    // Ability hooks a Pokémon's side shares (Sweet Veil, Aroma Veil, Flower
+    // Veil): `onAlly<name>` of the Pokémon itself and of its ally (doubles),
+    // with ctx.pokemon the ability's holder and ctx.target `mon`. Mold
+    // Breaker (o.breakAbility) skips the breakable ones. Returns false if
+    // one of them blocked the event.
+    runAllyHooks(name, mon, o) {
+      const ally = this.allyOf(mon);
+      for (const holder of ally ? [mon, ally] : [mon]) {
+        const ab = window.ABILITIES[holder.ability];
+        const fn = ab && ab["onAlly" + name];
+        if (typeof fn !== "function" || holder.volatiles.gastroacid) continue;
+        if (o.breakAbility && ab.flags && ab.flags.breakable) continue;
+        const h = { fn, thisObj: ab, effect: E("Ability", toID(ab.name), ab.name), state: holder.abilityState };
+        const ctx = this.makeCtx(holder, h, Object.assign({}, o, { target: mon }));
+        let r;
+        try { r = fn.apply(ab, [ctx, o.relay].concat(o.args || [])); }
+        catch (e) { if (this.debug) throw e; continue; }
+        if (r === false) return false;
+      }
+      return true;
+    }
+    // Unnerve: a foe out with it stops a Pokémon from eating its Berry.
+    isUnnerved(mon) {
+      const foe = mon.side.foe.active;
+      const foes = this.doubles ? this.foesOf(mon) : foe && !foe.fainted && foe.isActive ? [foe] : [];
+      return foes.some((f) => f.hasAbility("Unnerve"));
+    }
+    // Flower Gift on a Pokémon's side (itself or its ally); only Cherrim's works.
+    flowerGift(mon) {
+      return [mon, this.allyOf(mon)].some((m) => m && !m.fainted && m.hasAbility("Flower Gift") && /^Cherrim/.test(m.baseSpecies));
+    }
+    // Sweet Veil on a Pokémon's side (itself or its ally): it can't fall asleep.
+    sweetVeiled(mon, effect) {
+      if (this._breakFor(mon, effect)) return null;
+      const ally = this.allyOf(mon);
+      return [mon, ally].find((m) => m && m.hasAbility("Sweet Veil")) || null;
     }
 
     getActives() { return this.sides.p1.actives.concat(this.sides.p2.actives).filter((m) => m && !m.fainted); }
@@ -785,7 +843,22 @@
         this.runEvent("onSourceAfterFaint", source, { source, target: mon, effect, only: "ability" });
       }
       this.runEvent("onEnd", mon, { only: "ability" });
+      this.endSkyDrop(mon);
       mon.volatiles = {}; mon.status = ""; mon.statusState = {};
+    }
+
+    // Sky Drop: the user (fainting, switching out, failing to move on the
+    // second turn, or brought down by Gravity) lets go of the Pokémon it
+    // carried.
+    endSkyDrop(user) {
+      const tt = user.volatiles.twoturnmove;
+      const t = tt && tt.skyDrop;
+      if (!t) return;
+      delete user.volatiles.twoturnmove;
+      if (t.volatiles.skydrop && t.volatiles.skydrop.source === user) {
+        delete t.volatiles.skydrop;
+        if (!t.fainted) this.add("-end", t, "Sky Drop", "[interrupt]");
+      }
     }
 
     // ---------- Status / volatiles / boosts ----------
@@ -819,6 +892,8 @@
       const sobj = { id };
       const r = this.runEvent("onSetStatus", mon, { source, effect, relay: sobj, args: [], breakAbility: this._breakFor(mon, effect) });
       if (r === false) return false;
+      // (Sweet Veil, Flower Veil: the holder's side.)
+      if (this.runAllyHooks("SetStatus", mon, { source, effect, relay: sobj, args: [effect], breakAbility: this._breakFor(mon, effect) }) === false) return false;
       mon.status = id;
       mon.statusState = { source };
       if (id === "slp") mon.statusState.time = this.randInt(2, 4);
@@ -838,6 +913,8 @@
       const cond = getCondition(id) || {};
       const r = this.runEvent("onTryAddVolatile", mon, { source, effect, relay: { id }, breakAbility: this._breakFor(mon, effect) });
       if (r === false) return false;
+      // (Aroma Veil, Sweet Veil, Flower Veil: the holder's side.)
+      if (this.runAllyHooks("TryAddVolatile", mon, { source, effect, relay: { id }, args: [effect], breakAbility: this._breakFor(mon, effect) }) === false) return false;
       const st = { id, source, duration: cond.duration };
       mon.volatiles[id] = st;
       if (typeof cond.onStart === "function") {
@@ -874,6 +951,8 @@
         if (blocked) this.add("-activate", mon, "move: Mist");
       }
       if (this.runEvent("onTryBoost", mon, o) === false) return false;
+      // (Flower Veil: Grass types on the holder's side.)
+      if (this.runAllyHooks("TryBoost", mon, Object.assign({}, o, { breakAbility: this._breakFor(mon, effect) })) === false) return false;
       let changed = false;
       for (const k of Object.keys(boosts)) {
         const delta = boosts[k];
@@ -902,6 +981,15 @@
       mon.lastItem = mon.item; mon.item = ""; mon.usedItemThisTurn = true;
       delete mon.volatiles.choicelock;
       this.runEvent("onAfterUseItem", mon, { only: "ability" });
+      // Symbiosis (doubles): the ally hands over its own item.
+      const ally = this.allyOf(mon);
+      if (ally && !mon.fainted && !mon.item && ally.item && ally.hasAbility("Symbiosis") && !MEGA_MAP[ally.item]) {
+        const it = ally.item;
+        ally.item = ""; ally.lastItem = it;
+        delete ally.volatiles.choicelock;
+        mon.item = it;
+        this.add("-activate", ally, "ability: Symbiosis", it, "[of] " + mon.ident);
+      }
     }
 
     restoreTypes(mon) { mon.types = mon.baseTypes.slice(); }
@@ -978,6 +1066,7 @@
       let carried = null;
       if (side.tag && old && !old.fainted && old.isActive && !o.drag) this.add("-withdraw", old, side.trainers[old.owner]);
       if (old && !old.fainted && old.isActive) {
+        this.endSkyDrop(old);
         this.runEvent("onSwitchOut", old, { only: "ability" });
         this.runEvent("onEnd", old, { only: "ability" });
         if (o.copy) carried = { boosts: Object.assign({}, old.boosts), volatiles: {} };
@@ -1173,7 +1262,7 @@
         const foe = mon.side.foe.active;
         if (foe && !foe.fainted) this.callAbility(foe, "onFoeTrapPokemon", { source: foe }, mon);
       }
-      if (mon.volatiles.ingrain) mon.trapped = true;
+      if (mon.volatiles.ingrain || mon.volatiles.skydrop) mon.trapped = true;
       const pt = mon.volatiles.partiallytrapped;
       if (pt && pt.source && pt.source.isActive && !pt.source.fainted) mon.trapped = true;
       return mon.trapped;
@@ -1368,12 +1457,20 @@
     }
 
     // Doubles: once every needed slot has a choice, the side has chosen.
+    // (Replacements: once switchCount slots have one, the rest stay empty.)
     completeSide(side) {
       if (side.choice) return;
       const need = this.neededSlots(side);
-      if (!need.length || !need.every((i) => side.partial[i] !== undefined)) return;
-      side.choice = side.actives.map((m, i) => (need.includes(i) ? side.partial[i] : null));
+      if (!need.length) return;
+      if (this.phase === "switch") {
+        if (need.filter((i) => side.partial[i]).length < this.switchCountOf(side)) return;
+      } else if (!need.every((i) => side.partial[i] !== undefined)) return;
+      side.choice = side.actives.map((m, i) => (need.includes(i) ? side.partial[i] || null : null));
       side.partial = [];
+    }
+    switchCountOf(side) {
+      const n = (side.switchSlots || []).length;
+      return side.switchCount != null ? Math.min(side.switchCount, n) : n;
     }
 
     megaUsedFor(side, mon) { return side.tag ? !!side.megaUsedBy[mon.owner] : side.megaUsed; }
@@ -1392,13 +1489,22 @@
       }));
       const partial = side.partial || [];
       const need = this.neededSlots(side).filter((i) => ctl.slots.includes(i));
-      const open = side.choice ? [] : need.filter((i) => partial[i] === undefined);
+      let open = side.choice ? [] : need.filter((i) => partial[i] === undefined);
+      // Replacements: fewer bench Pokémon than fainted slots leaves
+      // `switchCount` to send in; `open` names the default slots (slot a
+      // first) and forceSwitch every slot that may take one.
+      let cands = open, count = open.length;
+      if (this.phase === "switch" && open.length) {
+        count = Math.max(0, this.switchCountOf(side) - this.neededSlots(side).filter((i) => partial[i]).length);
+        open = open.slice(0, count);
+      }
       base.chosen = !!side.choice || (need.length > 0 && !open.length);
       base.open = open;   // slots still waiting for this controller's choice
       if (!open.length) return base;
       if (this.phase === "switch") {
         base.phase = "switch";
-        base.forceSwitch = side.actives.map((m, i) => open.includes(i));
+        base.forceSwitch = side.actives.map((m, i) => cands.includes(i));
+        base.switchCount = count;
         // (Per slot in a tag team: each trainer's own party.)
         base.switches = side.bench(ctl.slots[0]);
         return base;
@@ -1443,15 +1549,22 @@
       const megaBy = new Set(partial.map((c, i) => (c && c.mega ? (side.tag ? i : 0) : -1)).filter((x) => x >= 0));
       let ball = partial.some((c) => c && c.type === "ball");
       let any = false;
-      for (const slot of req.open) {
+      // (Replacements: any slot in forceSwitch may take one, `spare` of them
+      // may be left out when there are fewer to send in than slots.)
+      const slots = req.phase === "switch" ? req.forceSwitch.map((f, i) => (f ? i : -1)).filter((i) => i >= 0) : req.open;
+      const spare = req.phase === "switch" ? slots.length - req.switchCount : 0;
+      let skipped = 0, picks = 0;
+      for (const slot of slots) {
         const c = pick(slot);
         if (c === undefined && !Array.isArray(choice)) continue;
         const err = (e) => ({ ok: false, error: e + " (slot " + slot + ")" });
         if (req.phase === "switch") {
-          if (!c || c.type !== "switch" || !req.switches.includes(c.index) || used.has(c.index)) return err("Invalid switch");
+          if (c == null && skipped < spare) { skipped++; continue; }
+          if (!c || c.type !== "switch" || !req.switches.includes(c.index) || used.has(c.index) || picks >= req.switchCount) return err("Invalid switch");
           used.add(c.index);
           partial[slot] = { type: "switch", index: c.index };
           any = true;
+          picks++;
           continue;
         }
         const a = req.actives[slot], mon = side.actives[slot];
@@ -1615,6 +1728,7 @@
             this.switchSides = [side.id];
             this.switchCause = { type: "midturn", copy: p.copy };
             side.switchSlots = [p.slot || 0];
+            side.switchCount = 1;
             side.choice = null; side.partial = [];
             return;
           }
@@ -1630,7 +1744,9 @@
     }
 
     // Doubles: the slots of each side whose Pokémon fainted and can be
-    // replaced (as many as the bench allows, slot a first).
+    // replaced, and how many replacements there are (switchCount). With
+    // fewer bench Pokémon than fainted slots, the side picks which slots
+    // get them (slot a first by default).
     faintedSlots() {
       const need = [];
       for (const s of [this.sides.p1, this.sides.p2]) {
@@ -1638,8 +1754,9 @@
         s.switchSlots = [];
         s.actives.forEach((m, i) => {
           // (A tag team's slot is refilled only from that trainer's party.)
-          if (m && m.fainted && (s.tag ? s.bench(i).length > 0 : s.switchSlots.length < bench)) s.switchSlots.push(i);
+          if (m && m.fainted && (s.tag ? s.bench(i).length > 0 : bench > 0)) s.switchSlots.push(i);
         });
+        s.switchCount = s.tag ? s.switchSlots.length : Math.min(bench, s.switchSlots.length);
         if (s.switchSlots.length) need.push(s.id);
       }
       return need;
@@ -1698,6 +1815,7 @@
           const ch = s.choice;
           s.choice = null;
           for (const slot of s.switchSlots) {
+            if (!ch[slot]) continue;   // (a slot left empty: fewer replacements than fainted slots)
             mons.push(this.switchIn(s, ch[slot].index, { slot, copy: cause.type === "midturn" && cause.copy, deferStart: true }));
           }
           s.switchSlots = [];
@@ -2016,6 +2134,11 @@
         mon.removeVolatile("mustrecharge");
         return;
       }
+      // (Carried off by a foe's Sky Drop: it can't move.)
+      if (mon.volatiles.skydrop) {
+        delete mon.volatiles.twoturnmove; delete mon.volatiles.lockedmove;
+        return;
+      }
       const move = this.getActiveMove(a.moveName);
       if (move.id === "focuspunch" && mon.volatiles.focuspunch && mon.volatiles.focuspunch.lostFocus) {
         this.add("cant", mon, "Focus Punch", "Focus Punch");
@@ -2023,10 +2146,14 @@
       }
       const ok = this.runEvent("onBeforeMove", mon, { relay: move, move });
       if (ok === false) {
+        this.endSkyDrop(mon);
         delete mon.volatiles.twoturnmove; delete mon.volatiles.lockedmove;
         return;
       }
       const o = { slot: a.slot, forced: a.forced, secondTurn: a.forced && a.forced.secondTurn };
+      // (Sky Drop's second turn: it drops the Pokémon it carried.)
+      const tt = mon.volatiles.twoturnmove;
+      if (o.secondTurn && tt && tt.skyDrop) o.target = tt.skyDrop;
       if (this.doubles) {
         o.targetLoc = a.targetLoc;
         if (a.pursuitTarget) { o.target = a.pursuitTarget; o.pursuitSwitch = true; }
@@ -2087,6 +2214,8 @@
       if (this.doubles) {
         targets = this.getMoveTargets(user, move, o);
         target = targets[0] || null;
+        // (Where it aimed, for Instruct.)
+        if (target && target !== user && CHOSEN_TARGETS.has(move.target)) user.lastTargetLoc = this.locOf(target, user);
       } else {
         const selfTarget = ["self", "allySide", "allyTeam", "adjacentAllyOrSelf", "all", "foeSide"].includes(move.target);
         target = o.target || (selfTarget && move.target !== "foeSide" ? user : foe);
@@ -2124,6 +2253,9 @@
         return;
       }
 
+      // Sky Drop's first turn: it carries the target up (see skyDropLift).
+      if (move.id === "skydrop" && !o.secondTurn) { this.skyDropLift(user, target, move); return; }
+
       // Charging moves
       if (move.flags.charge && !o.secondTurn) {
         const w = this.getWeather();
@@ -2142,6 +2274,15 @@
 
       if (this.doubles && !target) { this.add("-notarget", user); return; }
       if (!target || target.fainted) { this.add("-fail", user); return; }
+
+      // Sky Drop's second turn: the target comes down with the blow (Flying
+      // types take none, Gen 6; accuracy is checked now, as in Showdown).
+      let dropped = null;
+      if (move.id === "skydrop" && o.secondTurn) {
+        delete target.volatiles.skydrop;
+        if (target.hasType("Flying")) { this.add("-immune", target); this.add("-end", target, "Sky Drop"); return; }
+        dropped = target;
+      }
 
       // Magnitude rolls its size before anything else (FireRed's
       // magnitudedamagecalculation): 4-10, 5/10/20/30/20/10/5%.
@@ -2167,6 +2308,7 @@
         if (this.doubles) o.spread = 1;
         success = this.resolveMove(user, target, move, o);
       }
+      if (dropped && !dropped.fainted) this.add("-end", dropped, "Sky Drop");
 
       // Locked moves (Outrage etc.)
       if (move.self && move.self.volatileStatus === "lockedmove") {
@@ -2197,7 +2339,13 @@
       const ally = this.allyOf(user);
       switch (t) {
         case "self": case "allySide": case "allyTeam": case "all": return [user];
-        case "foeSide": return [foes[0] || user];
+        case "foeSide": {
+          // (A reflectable side move bounces off whichever foe has Magic
+          // Coat up or Magic Bounce: Stealth Rock, Spikes, ...)
+          const bouncer = move.flags.reflectable && !move.hasBounced
+            ? foes.find((f) => f.volatiles.magiccoat) || (!move.ignoreAbility && foes.find((f) => f.hasAbility("Magic Bounce"))) : null;
+          return [bouncer || foes[0] || user];
+        }
         case "adjacentAlly": return ally ? [ally] : [];
         case "adjacentAllyOrSelf": return [o.targetLoc && ally && this.atLoc(user, o.targetLoc) === ally ? ally : user];
         case "allAdjacentFoes": return foes;
@@ -2226,16 +2374,20 @@
       return target ? [target] : [];
     }
 
-    // Follow Me / Rage Powder on a foe, then Lightning Rod / Storm Drain on
-    // anyone else, draw single-target moves.
+    // Spotlight, then Follow Me / Rage Powder on a foe, then Lightning Rod /
+    // Storm Drain on anyone else (not against Mold Breaker), draw
+    // single-target moves.
     redirectTarget(user, move, target) {
       if (!target || !REDIRECTABLE.has(move.target) || user.hasAbility("Stalwart")) return target;
+      const foes = this.foesOf(user);
+      const lit = foes.find((f) => f.volatiles.spotlight && !f.volatiles.skydrop);
+      if (lit) return lit;
       const powderProof = user.hasType("Grass") || user.hasAbility("Overcoat") || user.item === "safety-goggles";
-      for (const f of this.foesOf(user)) {
-        if (f.volatiles.followme || (f.volatiles.ragepowder && !powderProof)) return f;
+      for (const f of foes) {
+        if (!f.volatiles.skydrop && (f.volatiles.followme || (f.volatiles.ragepowder && !powderProof))) return f;
       }
       const ab = move.type === "Electric" ? "Lightning Rod" : move.type === "Water" ? "Storm Drain" : null;
-      if (ab && !target.hasAbility(ab)) {
+      if (ab && !move.ignoreAbility && !target.hasAbility(ab)) {
         const rod = this.getActives().find((m) => m !== user && m.hasAbility(ab));
         if (rod) { this._redirectedBy = [rod, ab]; return rod; }
       }
@@ -2259,13 +2411,50 @@
 
     isInvulnerable(target, move) {
       const tt = target.volatiles.twoturnmove;
-      if (!tt || !tt.invuln) return false;
+      // (Carried up by Sky Drop: in the air, like Fly.)
+      const invuln = tt && tt.invuln || (target.volatiles.skydrop ? "fly" : null);
+      if (!invuln) return false;
       if (move.target === "self") return false;
       for (const m of this.getActives()) {
         const r = this.callAbility(m, "onAnyInvulnerability", { source: m }, move);
         if (r === 0) return false;
       }
-      return !(INVULN_HITS[tt.invuln] || []).includes(move.id);
+      return !(INVULN_HITS[invuln] || []).includes(move.id);
+    }
+
+    // Sky Drop's first turn (Gen 6): it fails on an ally, a substitute, a
+    // Pokémon of 200 kg or more and under Gravity; Protect, Mat Block and
+    // semi-invulnerability stop it; otherwise the user and the target go up
+    // (both semi-invulnerable; the target can't move or switch) and the
+    // blow lands next turn (execMove). Like Showdown, it doesn't check
+    // accuracy until then.
+    skyDropLift(user, target, move) {
+      if (this.doubles && !target) { this.add("-notarget", user); return; }
+      if (!target || target.fainted || target === user || target.side === user.side
+          || target.volatiles.substitute || this.field.pseudo.gravity) { this.add("-fail", user); return; }
+      if (this.isInvulnerable(target, move)) { this.add("-miss", user, target); return; }
+      if (this.isProtected(target, user, move) || this.sideGuarded(target, user, move)) return;
+      const weight = target.weight * (target.hasAbility("Heavy Metal") ? 2 : target.hasAbility("Light Metal") ? 0.5 : 1);
+      if (weight >= 200) { this.add("-fail", target, "move: Sky Drop", "[heavy]"); return; }
+      this.add("-prepare", user, move.name, target);
+      user.volatiles.twoturnmove = { id: "twoturnmove", move: move.name, invuln: "fly", skyDrop: target };
+      if (this.doubles) user.volatiles.twoturnmove.targetLoc = this.locOf(target, user);
+      target.volatiles.skydrop = { id: "skydrop", source: user };
+    }
+
+    // Mat Block (damaging moves) and Crafty Shield (status moves aimed at a
+    // Pokémon) on the target's side, against anyone's moves, allies' too.
+    sideGuarded(target, user, move) {
+      const c = target.side.conditions;
+      if (c.matblock && move.flags.protect && move.category !== "Status" && !move.breaksProtect) {
+        this.add("-activate", target, "move: Mat Block", move.name);
+        return true;
+      }
+      if (c.craftyshield && move.category === "Status" && !["self", "all", "foeSide", "allySide", "allyTeam"].includes(move.target)) {
+        this.add("-activate", target, "move: Crafty Shield");
+        return true;
+      }
+      return false;
     }
 
     isProtected(target, user, move) {
@@ -2329,6 +2518,7 @@
         if (!isSelf) {
           if (this.isInvulnerable(target, move)) { this.add("-miss", user, target); return false; }
           if (move.flags.protect && !move.breaksProtect && this.isProtected(target, user, move)) return false;
+          if (this.sideGuarded(target, user, move)) return false;
           if (move.flags.reflectable && target.volatiles.magiccoat && !move.hasBounced) {
             this.add("-activate", target, "move: Magic Coat");
             const nm = this.getActiveMove(move.name);
@@ -2421,6 +2611,14 @@
           movesAfterTarget: target.moveThisTurn, allyFainted: user.side.faintedLastTurn, targetSwitching: !!o.pursuitSwitch,
           magnitude: this.magnitude
         };
+        // Flower Gift (Cherrim in the sun): 1.5x Attack for the user's side,
+        // 1.5x Sp. Def for the target's (Mold Breaker ignores that one).
+        if (field.weather === "SunnyDay" || field.weather === "DesolateLand") {
+          if (this.flowerGift(user)) opts.flowerGiftAtk = true;
+          if (!move.ignoreAbility && this.flowerGift(target)) opts.flowerGiftSpD = true;
+        }
+        // (Unnerve: no resist Berry either.)
+        if (/-berry$/.test(target.item) && this.isUnnerved(target)) opts.unnerved = true;
         if (this.doubles) {
           opts.targets = o.spread || 1;
           if (beatUp) opts.beatUpPower = beatUp[i];
@@ -2530,6 +2728,7 @@
       const side = target.side;
       const opts = side.bench(target.slot);
       if (!opts.length || target.volatiles.ingrain || target.hasAbility("Suction Cups")) return;
+      if (target.volatiles.skydrop || (target.volatiles.twoturnmove && target.volatiles.twoturnmove.skyDrop)) return;
       if (this.callAbility(target, "onDragOut", { source: user }) === false) return;
       this.switchIn(side, this.sample(opts), { drag: true, slot: target.slot });
     }
@@ -2612,6 +2811,12 @@
         }
         this.field.pseudo[id] = { turns: id === "trickroom" ? 5 : id === "gravity" ? 5 : 5 };
         this.add("-fieldstart", id);
+        // (Gravity brings down a Sky Drop and the Pokémon it carries.)
+        if (id === "gravity") {
+          for (const m of this.getActives()) {
+            if (m.volatiles.twoturnmove && m.volatiles.twoturnmove.skyDrop) { this.add("-activate", m, "move: Gravity"); this.endSkyDrop(m); }
+          }
+        }
         did = true;
       }
       // Healing Wish / Lunar Dance: the user faints and whoever comes in next

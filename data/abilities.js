@@ -1865,7 +1865,7 @@ window.ABILITIES = {
     flags: { breakable: 1 },
     onAllyTryAddVolatile(ctx, status, effect) {
       if (["attract","disable","encore","healblock","taunt","torment"].includes(status.id)) {
-        if (effect && effect.effectType === "Move") ctx.add("-block", ctx.target, "ability: Aroma Veil", "[of] " + ctx.pokemon);
+        if (effect && effect.effectType === "Move") ctx.add("-block", ctx.target, "ability: Aroma Veil", "[of] " + ctx.pokemon.ident);
         return false;
       }
     },
@@ -1880,18 +1880,18 @@ window.ABILITIES = {
       let showMsg = false;
       for (const k in boost) if (boost[k] < 0) { delete boost[k]; showMsg = true; }
       if (showMsg && !(effect && effect.secondaries))
-        ctx.add("-block", ctx.target, "ability: Flower Veil", "[of] " + ctx.pokemon);
+        ctx.add("-block", ctx.target, "ability: Flower Veil", "[of] " + ctx.pokemon.ident);
     },
     onAllySetStatus(ctx, status, effect) {
       if (ctx.target.hasType("Grass") && ctx.source && ctx.target !== ctx.source && effect && effect.id !== "yawn") {
         if (effect.name === "Synchronize" || (effect.effectType === "Move" && !effect.secondaries))
-          ctx.add("-block", ctx.target, "ability: Flower Veil", "[of] " + ctx.pokemon);
+          ctx.add("-block", ctx.target, "ability: Flower Veil", "[of] " + ctx.pokemon.ident);
         return false;
       }
     },
     onAllyTryAddVolatile(ctx, status) {
       if (ctx.target.hasType("Grass") && status.id === "yawn") {
-        ctx.add("-block", ctx.target, "ability: Flower Veil", "[of] " + ctx.pokemon);
+        ctx.add("-block", ctx.target, "ability: Flower Veil", "[of] " + ctx.pokemon.ident);
         return false;
       }
     },
@@ -1994,11 +1994,11 @@ window.ABILITIES = {
     flags: { breakable: 1 },
     onAllySetStatus(ctx, status) {
       if (status.id === "slp") {
-        ctx.add("-block", ctx.target, "ability: Sweet Veil", "[of] " + ctx.pokemon); return false;
+        ctx.add("-block", ctx.target, "ability: Sweet Veil", "[of] " + ctx.pokemon.ident); return false;
       }
     },
     onAllyTryAddVolatile(ctx, status) {
-      if (status.id === "yawn") { ctx.add("-block", ctx.target, "ability: Sweet Veil", "[of] " + ctx.pokemon); return false; }
+      if (status.id === "yawn") { ctx.add("-block", ctx.target, "ability: Sweet Veil", "[of] " + ctx.pokemon.ident); return false; }
     },
   },
 

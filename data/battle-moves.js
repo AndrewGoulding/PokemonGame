@@ -23,7 +23,7 @@
   const afterHit = {};
 
   // ---- No-effect moves ----
-  for (const id of ["splash", "celebrate", "holdhands"]) status[id] = () => true;
+  for (const id of ["splash", "celebrate"]) status[id] = () => true;
 
   // ---- Healing ----
   const heal50 = (b, user) => (b.heal(user, Math.floor(user.maxhp / 2), user, E("Move", "heal", "heal")) ? true : false);
@@ -45,7 +45,7 @@
   for (const id of ["moonlight", "synthesis", "morningsun"]) status[id] = weatherHeal;
   status.rest = (b, user) => {
     if (user.hp >= user.maxhp || user.status === "slp") return false;
-    if (user.hasAbility(["Insomnia", "Vital Spirit"])) return false;
+    if (user.hasAbility(["Insomnia", "Vital Spirit"]) || b.sweetVeiled(user)) return false;
     const g = b.field.terrain;
     if (b.isGrounded(user) && (g === "ElectricTerrain" || g === "MistyTerrain")) return false;
     user.status = ""; user.statusState = {};
@@ -62,9 +62,14 @@
     b.add("-sethp", user, b.hpStr(user), target, b.hpStr(target), "[from] move: Pain Split");
     return true;
   };
-  status.healbell = status.aromatherapy = (b, user) => {
+  status.healbell = status.aromatherapy = (b, user, target, move) => {
     for (const m of user.side.pokemon) if (!m.fainted && m.status) { m.status = ""; m.statusState = {}; }
     b.add("-activate", user, "move: Heal Bell");
+    // (Doubles: Aromatherapy, a Grass move, feeds the ally's Sap Sipper.)
+    const ally = b.allyOf(user);
+    if (move.id === "aromatherapy" && ally && ally.hasAbility("Sap Sipper") && !move.ignoreAbility) {
+      b.boost(ally, { atk: 1 }, ally, E("Ability", "sapsipper", "Sap Sipper"));
+    }
     return true;
   };
   status.refresh = (b, user) => (user.status && ["brn", "par", "psn", "tox"].includes(user.status) ? b.cureStatus(user) : false);
@@ -251,6 +256,93 @@
     b.add("-singleturn", target, "Helping Hand", "[of] " + user.ident);
     return "done";
   };
+  // Spotlight (Gen 7): foes' single-target moves are drawn to the target
+  // this turn, ahead of Follow Me. Fails in singles.
+  status.spotlight = (b, user, target) => {
+    if (!b.doubles || !target || target.fainted) return false;
+    target.volatiles.spotlight = { id: "spotlight", source: user };
+    b.add("-singleturn", target, "move: Spotlight");
+    return "done";
+  };
+  // Hold Hands and Aromatic Mist need an ally (they fail in singles).
+  status.holdhands = (b, user, target) => {
+    if (!b.doubles || !target || target === user || target.side !== user.side) return false;
+    b.add("-activate", user, "move: Hold Hands", "[of] " + target.ident);
+    return "done";
+  };
+  status.aromaticmist = (b, user, target) => !!(b.doubles && target && target !== user && target.side === user.side);
+  // Acupressure (doubles): +2 to a random stat (not one already at +6) of
+  // the user or its ally (fails on an ally behind a substitute). In singles
+  // it still fails, as it always has here, to keep singles unchanged.
+  status.acupressure = (b, user, target) => {
+    if (!b.doubles) return false;
+    if (!target || target.fainted || (target !== user && target.volatiles.substitute)) return false;
+    const stats = Object.keys(target.boosts).filter((k) => target.boosts[k] < 6);
+    if (!stats.length) return false;
+    b.boost(target, { [b.sample(stats)]: 2 }, user, E("Move", "acupressure", "Acupressure"));
+    return "done";
+  };
+
+  // Mat Block and Crafty Shield (side conditions from moves.js, checked in
+  // Battle.sideGuarded) fail if the user moves last this turn; Mat Block
+  // also after the user's first turn out.
+  const movesLast = (b) => !b.queue.some((a) => a.type === "move" && a.mon && !a.mon.fainted && a.mon.isActive);
+  status.matblock = (b, user) => user.activeTurns === 0 && !movesLast(b);
+  status.craftyshield = (b) => !movesLast(b);
+
+  // ---- Turn order ----
+  // The index in the queue of `mon`'s move still to come this turn, or -1.
+  const queuedMove = (b, mon) => b.queue.findIndex((a) => a.type === "move" && a.mon === mon);
+  // After You: the target moves right after the user. Fails if it has
+  // already moved or would move next anyway (Gen 6), so it always fails in
+  // singles.
+  status.afteryou = (b, user, target) => {
+    const i = queuedMove(b, target);
+    const next = b.queue.findIndex((a) => a.type !== "move" || (a.mon && !a.mon.fainted && a.mon.isActive));
+    if (i < 0 || i <= next) return false;
+    b.queue.unshift(b.queue.splice(i, 1)[0]);
+    b.add("-activate", target, "move: After You");
+    return "done";
+  };
+  // Quash: the target moves after everyone else this turn (after any
+  // Pokémon quashed before it). Fails if it has already moved.
+  status.quash = (b, user, target) => {
+    const i = queuedMove(b, target);
+    if (i < 0) return false;
+    const act = b.queue.splice(i, 1)[0];
+    const end = b.queue.findIndex((a) => a.type === "residual");
+    b.queue.splice(end < 0 ? b.queue.length : end, 0, act);
+    b.add("-activate", target, "move: Quash");
+    return "done";
+  };
+  // Instruct (Gen 7): the target uses its last move again at once (taking
+  // PP, at the same target). Fails (as in Gen 7) if it has no last move, or
+  // that move isn't one of its own with PP left, can't be chosen now
+  // (Disable, Taunt, ...), recharges, charges or locks it in, calls or
+  // copies other moves, or is Instruct, Bide, Focus Punch, Beak Blast,
+  // Shell Trap, Struggle, Transform or Sketch; or if the target is in
+  // Bide, carried by Sky Drop, or about to use Focus Punch / Beak Blast /
+  // Shell Trap this turn.
+  const INSTRUCT_BANNED = new Set(["instruct", "metronome", "sleeptalk", "naturepower", "assist", "mefirst", "copycat",
+    "mimic", "mirrormove", "transform", "sketch", "bide", "focuspunch", "beakblast", "shelltrap", "struggle"]);
+  status.instruct = (b, user, target) => {
+    if (!target || target === user || target.fainted) return false;
+    const index = target.moves.findIndex((m) => m.id === target.lastMove);
+    const slot = target.moves[index];
+    if (!slot || slot.pp <= 0) return false;
+    const data = window.MOVES[slot.name];
+    if (INSTRUCT_BANNED.has(slot.id) || data.flags.failinstruct || data.flags.charge
+        || (data.self && data.self.volatileStatus === "mustrecharge")) return false;
+    if (target.volatiles.bide || target.volatiles.skydrop || target.volatiles.twoturnmove || target.volatiles.mustrecharge) return false;
+    if (b.queue.some((a) => a.type === "move" && a.mon === target && /^(focuspunch|beakblast|shelltrap)$/.test(toID(a.moveName)))) return false;
+    if (b.getMoveSlots(target)[index].disabled) return false;
+    b.add("-singleturn", target, "move: Instruct", "[of] " + user.ident);
+    const move = b.getActiveMove(slot.name);
+    if (b.runEvent("onBeforeMove", target, { relay: move, move }) === false) return "done";
+    b.execMove(target, move, { slot: index, targetLoc: b.doubles ? target.lastTargetLoc : undefined });
+    return "done";
+  };
+
   // Ally Switch: the user and its ally trade slots (doubles only).
   status.allyswitch = (b, user) => {
     if (!b.doubles || user.side.tag) return false;   // (not in a tag team: slots belong to trainers)

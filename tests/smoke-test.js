@@ -1801,6 +1801,280 @@ const armored = (species, moves, level) => ({ species, level: level || 50, abili
   assert(b.sides.p1.actives[0].fainted && b.turn >= 4);
 }
 
+// ---- Doubles moves: Mat Block, Crafty Shield, After You, Quash, Instruct,
+// Spotlight, Sky Drop, Acupressure / Aromatic Mist / Hold Hands ----
+const moveOrder = (evs) => evs.filter((e) => e[0] === "move").map((e) => e[1]);
+
+// Mat Block: on the user's first turn out its side is safe from damaging
+// moves (not status moves); after that it fails, and it fails moving last.
+{
+  const b = doubles({ team: [{ species: "Jolteon", level: 50, moves: ["Mat Block"] }, armored("Snorlax")] },
+    { team: [armored("Snorlax", ["Tackle"]), armored("Snorlax", ["Growl"])] });
+  let evs = play(b, { p1: [mv(0), mv(0)], p2: [mv(0, 2), mv(0)] });
+  const ally = b.sides.p1.actives[1];
+  assert(evs.some((e) => e[0] === "-activate" && e[1] === "p1b: Snorlax" && e[2] === "move: Mat Block"));
+  assert.strictEqual(hpLost(ally), 0, "Mat Block stops Tackle");
+  assert.strictEqual(ally.boosts.atk, -1, "but not Growl");
+  evs = play(b, { p1: [mv(0), mv(0)], p2: [mv(0, 2), mv(0)] });
+  assert(evs.some((e) => e[0] === "-fail" && e[1] === "p1a: Jolteon"), "only on the first turn out");
+  assert(hpLost(ally) > 0);
+  // Singles: it protects the user; the slower user, moving last, fails.
+  const s = new Battle({ seed: 1, p1: { team: [{ species: "Jolteon", level: 50, moves: ["Mat Block"] }] }, p2: { team: [armored("Snorlax", ["Tackle"])] } });
+  s.start();
+  s.choose("p1", mv(0)); s.choose("p2", mv(0));
+  assert.strictEqual(hpLost(s.sides.p1.active), 0);
+  const slow = new Battle({ seed: 1, p1: { team: [armored("Snorlax", ["Mat Block"])] }, p2: { team: [{ species: "Jolteon", level: 50, moves: ["Splash"] }] } });
+  slow.start();
+  slow.choose("p1", mv(0)); slow.choose("p2", mv(0));
+  assert(slow.events.some((e) => e[0] === "-fail" && e[1] === "p1a: Snorlax"));
+}
+
+// Crafty Shield: the user's side is safe from status moves aimed at it, not
+// from attacks.
+{
+  const b = doubles({ team: [{ species: "Jolteon", level: 50, moves: ["Crafty Shield"] }, armored("Snorlax")] },
+    { team: [armored("Snorlax", ["Toxic"]), armored("Snorlax", ["Tackle"])] });
+  const evs = play(b, { p1: [mv(0), mv(0)], p2: [mv(0, 2), mv(0, 2)] });
+  const ally = b.sides.p1.actives[1];
+  assert(evs.some((e) => e[0] === "-activate" && e[1] === "p1b: Snorlax" && e[2] === "move: Crafty Shield"));
+  assert.strictEqual(ally.status, "");
+  assert(hpLost(ally) > 0, "Tackle still hits");
+}
+
+// After You: the target moves right after the user (Shuckle, the slowest,
+// goes second); it fails if the target would move next anyway, so always in
+// singles. Quash: the target moves after everyone else.
+{
+  const b = doubles({ team: [{ species: "Jolteon", level: 50, moves: ["After You"] }, armored("Shuckle", ["Splash"])] },
+    { team: [armored("Snorlax"), armored("Snorlax")] });
+  let evs = play(b, { p1: [mv(0, -2), mv(0)], p2: [mv(0), mv(0)] });
+  assert.deepStrictEqual(moveOrder(evs).slice(0, 2), ["p1a: Jolteon", "p1b: Shuckle"]);
+  assert(evs.some((e) => e[0] === "-activate" && e[1] === "p1b: Shuckle" && e[2] === "move: After You"));
+  const s = new Battle({ seed: 1, p1: { team: [{ species: "Jolteon", level: 50, moves: ["After You"] }] }, p2: { team: [armored("Snorlax")] } });
+  s.start();
+  s.choose("p1", mv(0)); s.choose("p2", mv(0));
+  assert(s.events.some((e) => e[0] === "-fail" && e[1] === "p1a: Jolteon"), "After You fails in singles");
+
+  const q = doubles({ team: [{ species: "Jolteon", level: 50, moves: ["Quash"] }, armored("Shuckle", ["Splash"])] },
+    { team: [{ species: "Pikachu", level: 50, moves: ["Splash"] }, armored("Snorlax")] });
+  evs = play(q, { p1: [mv(0, 1), mv(0)], p2: [mv(0), mv(0)] });
+  assert(evs.some((e) => e[0] === "-activate" && e[1] === "p2a: Pikachu" && e[2] === "move: Quash"));
+  assert.deepStrictEqual(moveOrder(evs), ["p1a: Jolteon", "p2b: Snorlax", "p1b: Shuckle", "p2a: Pikachu"]);
+}
+
+// Instruct (Gen 7): the target repeats its last move at once, at the same
+// target, using PP; it fails for a target with no last move or a banned one
+// (Hyper Beam recharges). It works in singles too.
+{
+  const b = doubles({ team: [armored("Slowpoke", ["Instruct"]), { species: "Garchomp", level: 50, moves: ["Dragon Claw", "Hyper Beam"] }] },
+    { team: [armored("Snorlax"), armored("Snorlax")] });
+  let evs = play(b, { p1: [mv(0, -2), mv(0, 1)], p2: [mv(0), mv(0)] });
+  assert(evs.some((e) => e[0] === "-singleturn" && e[1] === "p1b: Garchomp" && e[2] === "move: Instruct"));
+  assert.strictEqual(evs.filter((e) => e[0] === "move" && e[2] === "Dragon Claw").length, 2);
+  assert.strictEqual(damageTo(evs, "p2a: Snorlax").length, 2, "the same target twice");
+  assert.strictEqual(b.sides.p1.actives[1].moves[0].pp, b.sides.p1.actives[1].moves[0].maxpp - 2);
+  evs = play(b, { p1: [mv(0, -2), mv(1, 1)], p2: [mv(0), mv(0)] });
+  assert(evs.some((e) => e[0] === "-fail" && e[1] === "p1a: Slowpoke"), "Hyper Beam can't be instructed");
+  const fresh = doubles({ team: [armored("Slowpoke", ["Instruct"]), armored("Shuckle")] }, { team: [armored("Snorlax"), armored("Snorlax")] });
+  evs = play(fresh, { p1: [mv(0, -2), mv(0)], p2: [mv(0), mv(0)] });
+  assert(evs.some((e) => e[0] === "-fail" && e[1] === "p1a: Slowpoke"), "no last move");
+  const s = new Battle({ seed: 1, p1: { team: [armored("Slowpoke", ["Instruct"])] }, p2: { team: [{ species: "Garchomp", level: 50, moves: ["Dragon Claw"] }] } });
+  s.start();
+  s.choose("p1", mv(0)); s.choose("p2", mv(0));
+  assert.strictEqual(s.events.filter((e) => e[0] === "move" && e[2] === "Dragon Claw").length, 2);
+}
+
+// Spotlight (Gen 7): the target draws its foes' single-target moves; it
+// fails in singles.
+{
+  const b = doubles({ team: [{ species: "Garchomp", level: 50, moves: ["Dragon Claw"] }, armored("Snorlax")] },
+    { team: [armored("Snorlax", ["Spotlight"]), armored("Blissey")] });
+  const evs = play(b, { p1: [mv(0, 1), mv(0)], p2: [mv(0, -2), mv(0)] });
+  assert(evs.some((e) => e[0] === "-singleturn" && e[1] === "p2b: Blissey" && e[2] === "move: Spotlight"));
+  assert.strictEqual(damageTo(evs, "p2b: Blissey").length, 1);
+  assert.strictEqual(hpLost(b.sides.p2.actives[0]), 0);
+  const s = new Battle({ seed: 1, p1: { team: [armored("Snorlax", ["Spotlight"])] }, p2: { team: [armored("Snorlax")] } });
+  s.start();
+  s.choose("p1", mv(0)); s.choose("p2", mv(0));
+  assert(s.events.some((e) => e[0] === "-fail" && e[1] === "p1a: Snorlax"));
+}
+
+// Acupressure and Aromatic Mist on an ally; Hold Hands needs one.
+{
+  const b = doubles({ team: [armored("Snorlax", ["Acupressure", "Aromatic Mist", "Hold Hands"]), armored("Blissey")] },
+    { team: [armored("Snorlax"), armored("Snorlax")] });
+  play(b, { p1: [mv(0, -2), mv(0)], p2: [mv(0), mv(0)] });
+  const ally = b.sides.p1.actives[1];
+  assert.strictEqual(Object.values(ally.boosts).filter((v) => v === 2).length, 1, "Acupressure: +2 to one stat");
+  const before = ally.boosts.spd;
+  let evs = play(b, { p1: [mv(1, -2), mv(0)], p2: [mv(0), mv(0)] });
+  assert.strictEqual(ally.boosts.spd, Math.min(6, before + 1));
+  evs = play(b, { p1: [mv(2, -2), mv(0)], p2: [mv(0), mv(0)] });
+  assert(evs.some((e) => e[0] === "-activate" && e[2] === "move: Hold Hands"));
+  const s = new Battle({ seed: 1, p1: { team: [armored("Snorlax", ["Aromatic Mist", "Hold Hands"])] }, p2: { team: [armored("Snorlax")] } });
+  s.start();
+  s.choose("p1", mv(0)); s.choose("p2", mv(0));
+  s.choose("p1", mv(1)); s.choose("p2", mv(0));
+  assert.strictEqual(s.events.filter((e) => e[0] === "-fail" && e[1] === "p1a: Snorlax").length, 2, "no ally in singles");
+  assert.strictEqual(s.sides.p2.active.boosts.spd, 0);
+}
+
+// Sky Drop: the target goes up with the user (it can't move or switch, and
+// both dodge most moves); the blow lands next turn. It fails on 200 kg and
+// up, Flying types take no damage, and Gravity brings both down.
+{
+  const lifter = { species: "Aerodactyl", level: 50, ability: "Rock Head", moves: ["Sky Drop"] };
+  const s = new Battle({ seed: 1, p1: { team: [lifter] }, p2: { team: [{ species: "Machamp", level: 50, ability: "Guts", moves: ["Bulk Up"] }, armored("Snorlax")] } });
+  s.start();
+  s.choose("p1", mv(0)); s.choose("p2", mv(0));
+  const machamp = s.sides.p2.active;
+  assert(s.events.some((e) => e[0] === "-prepare" && e[2] === "Sky Drop" && e[3] === "p2a: Machamp"));
+  assert(!s.events.some((e) => e[0] === "move" && e[1] === "p2a: Machamp"), "the lifted target can't move");
+  assert(machamp.volatiles.skydrop);
+  const req = s.getRequest("p2");
+  assert(req.active.trapped && !req.switches.length, "nor switch");
+  assert.strictEqual(s.sides.p1.choice.forced.move, "Sky Drop", "the second turn is forced");
+  const from = s.events.length;
+  s.choose("p2", mv(0));
+  const evs = s.events.slice(from);
+  assert(hpLost(machamp) > 0 && !machamp.volatiles.skydrop);
+  assert(evs.some((e) => e[0] === "-end" && e[1] === "p2a: Machamp" && e[2] === "Sky Drop"));
+  assert(evs.some((e) => e[0] === "move" && e[1] === "p2a: Machamp"), "back down, it moves again");
+
+  const heavy = new Battle({ seed: 1, p1: { team: [lifter] }, p2: { team: [armored("Snorlax")] } });
+  heavy.start();
+  heavy.choose("p1", mv(0)); heavy.choose("p2", mv(0));
+  assert(heavy.events.some((e) => e[0] === "-fail" && e[2] === "move: Sky Drop" && e[3] === "[heavy]"));
+  assert(!heavy.sides.p1.active.volatiles.twoturnmove);
+
+  const bird = new Battle({ seed: 1, p1: { team: [lifter] }, p2: { team: [armored("Pidgeot")] } });
+  bird.start();
+  for (let i = 0; i < 2; i++) { bird.choose("p1", mv(0)); bird.choose("p2", mv(0)); }
+  assert(bird.events.some((e) => e[0] === "-immune" && e[1] === "p2a: Pidgeot"));
+  assert.strictEqual(hpLost(bird.sides.p2.active), 0);
+
+  // Doubles: the foes' moves miss the two in the air; the ally's Gravity
+  // brings them down.
+  const b = doubles({ team: [lifter, { species: "Jolteon", level: 100, moves: ["Splash", "Gravity"] }] },
+    { team: [{ species: "Machamp", level: 50, ability: "Guts", moves: ["Bulk Up"] }, armored("Snorlax", ["Tackle"])] });
+  let d = play(b, { p1: [mv(0, 1), mv(0)], p2: [mv(0), mv(0, -1)] });
+  assert(d.some((e) => e[0] === "-miss" && e[1] === "p2b: Snorlax"), "Tackle misses the user in the air");
+  d = play(b, { p2: [mv(0), mv(0, -1)], p1: [null, mv(1)] });
+  assert(d.some((e) => e[0] === "-activate" && e[1] === "p1a: Aerodactyl" && e[2] === "move: Gravity"));
+  assert(d.some((e) => e[0] === "-end" && e[1] === "p2a: Machamp" && e[3] === "[interrupt]"));
+  assert(!b.sides.p2.actives[0].volatiles.skydrop && !b.sides.p1.actives[0].volatiles.twoturnmove);
+}
+
+// ---- Ally-side abilities ----
+
+// Flower Veil: Grass types on its side keep their stats and dodge status
+// from others; Sweet Veil: no one on its side falls asleep (Yawn fails);
+// Aroma Veil: no Taunt (and Encore, Disable, Torment, Attract, Heal Block)
+// on its side. Each also covers the holder itself, in singles too.
+{
+  const b = doubles({ team: [armored("Florges"), armored("Venusaur")] }, { team: [armored("Snorlax", ["Growl"]), armored("Snorlax", ["Thunder Wave"])] });
+  b.sides.p1.actives[0].ability = "Flower Veil";
+  let evs = play(b, { p1: [mv(0), mv(0)], p2: [mv(0), mv(0, 2)] });
+  const [florges, venusaur] = b.sides.p1.actives;
+  assert.strictEqual(venusaur.boosts.atk, 0);
+  assert.strictEqual(florges.boosts.atk, -1, "Florges isn't Grass");
+  assert.strictEqual(venusaur.status, "");
+  assert(evs.some((e) => e[0] === "-block" && e[1] === "p1b: Venusaur" && e[2] === "ability: Flower Veil" && e[3] === "[of] p1a: Florges"));
+
+  const sv = doubles({ team: [{ species: "Slurpuff", level: 50, ability: "Sweet Veil", moves: ["Splash"] }, armored("Snorlax")] },
+    { team: [armored("Snorlax", ["Spore"]), armored("Snorlax", ["Yawn"])] });
+  evs = play(sv, { p1: [mv(0), mv(0)], p2: [mv(0, 2), mv(0, 2)] });
+  assert.strictEqual(sv.sides.p1.actives[1].status, "");
+  assert(!sv.sides.p1.actives[1].volatiles.yawn);
+  assert.strictEqual(evs.filter((e) => e[0] === "-block" && e[2] === "ability: Sweet Veil").length, 2);
+  const svs = new Battle({ seed: 1, p1: { team: [{ species: "Slurpuff", level: 50, ability: "Sweet Veil", moves: ["Splash"] }] }, p2: { team: [armored("Snorlax", ["Spore"])] } });
+  svs.start();
+  svs.choose("p1", mv(0)); svs.choose("p2", mv(0));
+  assert.strictEqual(svs.sides.p1.active.status, "", "Sweet Veil covers its holder");
+
+  const av = doubles({ team: [{ species: "Aromatisse", level: 50, ability: "Aroma Veil", moves: ["Splash"] }, armored("Snorlax", ["Tackle"])] },
+    { team: [armored("Snorlax", ["Taunt"]), armored("Snorlax")] });
+  evs = play(av, { p1: [mv(0), mv(0, 1)], p2: [mv(0, 2), mv(0)] });
+  assert(!av.sides.p1.actives[1].volatiles.taunt);
+  assert(evs.some((e) => e[0] === "-block" && e[1] === "p1b: Snorlax" && e[2] === "ability: Aroma Veil"));
+}
+
+// Flower Gift: in the sun, Cherrim and its ally hit 1.5x as hard with
+// physical moves.
+{
+  const b = doubles({ team: [{ species: "Cherrim", level: 50, ability: "Flower Gift", moves: ["Splash"] }, { species: "Garchomp", level: 50, moves: ["Dragon Claw"] }] },
+    { team: [armored("Snorlax"), armored("Snorlax")] });
+  Object.assign(b.field, { weather: "SunnyDay", weatherTurns: 5 });
+  play(b, { p1: [mv(0), mv(0, 1)], p2: [mv(0), mv(0)] });
+  const [att, def] = [b.sides.p1.actives[1], b.sides.p2.actives[0]];
+  const opts = { targets: 1 }, field = { isDoubles: true, weather: "SunnyDay" };
+  const boosted = Damage.calc(att, def, "Dragon Claw", field, Object.assign({ flowerGiftAtk: true }, opts)).damage;
+  const plain = Damage.calc(att, def, "Dragon Claw", field, opts).damage;
+  assert(boosted.includes(hpLost(def)) && Math.max(...boosted) > Math.max(...plain));
+}
+
+// Symbiosis: the ally that eats its Berry gets the holder's item. Unnerve:
+// foes can't eat Berries.
+{
+  const b = doubles({ team: [{ species: "Florges", level: 50, ability: "Symbiosis", item: "Leftovers", moves: ["Splash"] },
+    Object.assign(armored("Snorlax"), { item: "Sitrus Berry", hp: 50 })] }, { team: [armored("Snorlax"), armored("Snorlax")] });
+  const [florges, snorlax] = b.sides.p1.actives;
+  assert.strictEqual(snorlax.item, "leftovers");
+  assert.strictEqual(florges.item, "");
+  assert(b.events.some((e) => e[0] === "-activate" && e[1] === "p1a: Florges" && e[2] === "ability: Symbiosis"));
+  const s = new Battle({ seed: 1, p1: { team: [Object.assign(armored("Snorlax"), { item: "Sitrus Berry", hp: 50 })] },
+    p2: { team: [{ species: "Tyranitar", level: 50, ability: "Unnerve", moves: ["Splash"] }, armored("Pidgey")] } });
+  s.start();
+  assert.strictEqual(s.sides.p1.active.item, "sitrus-berry", "Unnerve: no Berry");
+  s.choose("p1", mv(0)); s.choose("p2", { type: "switch", index: 1 });
+  assert.strictEqual(s.sides.p1.active.item, "", "eaten once Unnerve is gone");
+}
+
+// Abilities against spread and side moves, per target: Hyper Voice fails only
+// on the Soundproof foe; Petal Blizzard feeds the ally's Sap Sipper; Stealth
+// Rock bounces off either foe's Magic Bounce; Mold Breaker ignores Lightning
+// Rod's pull.
+{
+  const b = doubles({ team: [{ species: "Exploud", level: 50, moves: ["Hyper Voice", "Petal Blizzard", "Stealth Rock"] }, { species: "Sawsbuck", level: 50, ability: "Sap Sipper", moves: ["Splash"] }] },
+    { team: [{ species: "Electrode", level: 50, ability: "Soundproof", moves: ["Splash"] }, { species: "Espeon", level: 50, ability: "Magic Bounce", moves: ["Splash"] }] });
+  let evs = play(b, { p1: [mv(0), mv(0)], p2: [mv(0), mv(0)] });
+  assert(evs.some((e) => e[0] === "-immune" && e[1] === "p2a: Electrode" && /Soundproof/.test(e[2])));
+  assert.strictEqual(damageTo(evs, "p2b: Espeon").length, 1);
+  evs = play(b, { p1: [mv(1), mv(0)], p2: [mv(0), mv(0)] });
+  assert.strictEqual(b.sides.p1.actives[1].boosts.atk, 1);
+  assert.strictEqual(damageTo(evs, "p1b: Sawsbuck").length, 0);
+  assert.strictEqual(damageTo(evs, "p2a: Electrode").length + damageTo(evs, "p2b: Espeon").length, 2);
+  play(b, { p1: [mv(2), mv(0)], p2: [mv(0), mv(0)] });
+  assert(b.sides.p1.conditions.stealthrock && !b.sides.p2.conditions.stealthrock, "bounced by p2b's Magic Bounce");
+
+  const m = doubles({ team: [{ species: "Pinsir", level: 50, ability: "Mold Breaker", moves: ["Thunder Punch"] }, armored("Snorlax")] },
+    { team: [armored("Snorlax"), { species: "Raichu", level: 50, ability: "Lightning Rod", moves: ["Splash"] }] });
+  evs = play(m, { p1: [mv(0, 1), mv(0)], p2: [mv(0), mv(0)] });
+  assert.strictEqual(damageTo(evs, "p2a: Snorlax").length, 1);
+  assert(!evs.some((e) => e[0] === "-activate" && /Lightning Rod/.test(e[2])));
+}
+
+// Two fainted and one Pokémon left to send in: the side picks the slot
+// (forceSwitch lists both, open the default slot a; one choice settles it).
+{
+  const b = doubles({ team: [{ species: "Garchomp", level: 100, moves: ["Earthquake"] }, armored("Pidgey")] },
+    { team: [armored("Magikarp", ["Splash"], 2), armored("Magikarp", ["Splash"], 2), armored("Pidgey")] });
+  play(b, { p1: [mv(0), mv(0)], p2: [mv(0), mv(0)] });
+  let req = b.getRequest("p2");
+  assert.strictEqual(req.phase, "switch");
+  assert.deepStrictEqual(req.forceSwitch, [true, true]);
+  assert.deepStrictEqual(req.open, [0]);
+  assert.strictEqual(req.switchCount, 1);
+  assert(!b.choose("p2", [{ type: "switch", index: 2 }, { type: "switch", index: 2 }]).ok);
+  assert(!b.choose("p2", [null, null]).ok);
+  play(b, { p2: [null, { type: "switch", index: 2 }] });
+  assert.strictEqual(b.sides.p2.actives[1].species, "Pidgey");
+  assert(b.sides.p2.actives[0].fainted);
+  req = b.getRequest("p2");
+  assert.strictEqual(req.phase, "move");
+  assert.deepStrictEqual(req.actives.map((a) => a && a.slot), [null, 1]);
+}
+
 // Seeded random doubles battles (some tag battles), random choices against the
 // AI, all finish without errors or stuck states.
 const DOUBLES = 120;

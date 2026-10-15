@@ -28,7 +28,10 @@
 //            movesAfterTarget (Payback), allyFainted (Retaliate),
 //            targetSwitching (Pursuit), magnitude, stockpile, ppLeft,
 //            beatUpPower (one Beat Up hit), plusMinus (1.5x SpA: an ally with
-//            Plus/Minus), friendGuard (0.75x: the defender's ally has Friend Guard) }
+//            Plus/Minus), friendGuard (0.75x: the defender's ally has Friend Guard),
+//            flowerGiftAtk / flowerGiftSpD (1.5x Attack / Sp. Def: Flower Gift
+//            in the sun on that side), unnerved (the defender can't eat its
+//            resist Berry) }
 //   targets: how many Pokémon a spread move is hitting (0.75x when > 1).
 
 (function () {
@@ -543,6 +546,7 @@
     if (oi === "deep-sea-tooth" && offStat === "spa" && offensiveMon.species === "Clamperl") atkChain = chainMult(atkChain, fp(2));
     if (oi === "soul-dew" && offStat === "spa" && ["Latios", "Latias"].includes(offensiveMon.species)) atkChain = chainMult(atkChain, fp(1.5));
     if (opts.plusMinus && offStat === "spa") atkChain = chainMult(atkChain, fp(1.5));
+    if (opts.flowerGiftAtk && offStat === "atk") atkChain = chainMult(atkChain, fp(1.5));
     attack = Math.max(1, applyChain(attack, atkChain));
 
     // Defense-side modifier chain
@@ -561,6 +565,7 @@
     if (di === "deep-sea-scale" && D.species === "Clamperl" && defStat === "spd") defChain = chainMult(defChain, fp(2));
     if (di === "soul-dew" && defStat === "spd" && ["Latios", "Latias"].includes(D.species)) defChain = chainMult(defChain, fp(1.5));
     if (weather === "Sandstorm" && D.hasType("Rock") && defStat === "spd") defChain = chainMult(defChain, fp(1.5));
+    if (opts.flowerGiftSpD && defStat === "spd") defChain = chainMult(defChain, fp(1.5));
     defense = Math.max(1, applyChain(defense, defChain));
 
     // ---- Base damage ----
@@ -578,7 +583,7 @@
     if (screenUp) pushF(field.isDoubles ? 2732 / 4096 : 0.5);
 
     const berryType = RESIST_BERRIES[D.item];
-    if (berryType && berryType === move.type && (eff > 1 || berryType === "Normal")) {
+    if (berryType && !opts.unnerved && berryType === move.type && (eff > 1 || berryType === "Normal")) {
       pushF(0.5);
       result.notes.push(D.item + " would be consumed");
     }
