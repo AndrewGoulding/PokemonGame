@@ -329,8 +329,53 @@ Secret Key lies in the basement. Blaine's Gym is locked until you have it.
 Inside, at each quiz machine answer FireRed's question right and the door ahead
 opens; get it wrong and its trainer comes over to battle you (beating them
 opens it too). Blaine gives the Volcano Badge and TM38 Fire Blast, and beating
-him beats his Gym's trainers. (In FireRed, Bill then waits on Cinnabar to take
-you to the Sevii Islands, which aren't built: he isn't there.) From Cinnabar,
+him beats his Gym's trainers. Then Bill is waiting outside: he'd like you to
+come with him to One Island (say no and he waits in the Pokémon Center, ready
+when you are). His friend's Seagallop pulls in and you board it together, and
+FireRed's ferry ride plays (`ui/seagallop.js`: the sea rushing past between
+black bars, the ferry crossing the screen east or west with its wake, SE_SHIP,
+the fade out; its pictures from `tools/build-seagallop.js`). **The Sevii
+Islands, part 1** (`game/sevii.js` has the ports, menus and story flags): on
+One Island Bill takes you to the Pokémon Net Center to meet Celio, whose PCs
+can't link with Kanto's; Bill stays to help (meanwhile the PCs can't reach
+Pokémon storage) and gives you a Meteorite for the Game Corner's owner on Two
+Island; Celio gives you the Tri-Pass and the Town Map's Sevii page. The
+islands' harbors each have a Seagallop sailor with FireRed's menus: the other
+islands of One, Two and Three with the Tri-Pass (and Vermilion once you've
+been home), and Vermilion's dock sails to them too once the S.S. Anne's gone.
+One Island: its houses, Kindle Road (its swimmers, fishermen, Crush Girls,
+Black Belts, a camper and picnicker, Crush Kin Mik & Kia (a double battle),
+Rock Smash rocks, items and wild Pokémon on land and water) and the Ember Spa,
+whose hot spring heals your Pokémon and whose old man gives you HM08 Rock Smash
+(FireRed's HM06); Treasure Beach and its hidden items; Mt. Ember (its Pokémon
+Rangers and Crush Girl, the Explosion tutor, Strength boulders and Rock Smash
+rocks, the summit paths up to Moltres, a wild Lv. 50 Moltres as Articuno and
+Zapdos are). Two Island: the shop (more for sale as the story goes on), the
+Move Maniac (a move a Pokémon has forgotten, for two Tinymushrooms or a Big
+Mushroom), and the Joyful Game Corner, where Lostelle's dad asks you to find
+his daughter while a lost biker barges in looking for Three Island; Cape Brink
+and its old woman, who teaches a fully evolved starter in the lead, if it's as
+fond of you as can be, its ultimate move (Venusaur Frenzy Plant, Charizard
+Blast Burn, Blastoise Hydro Cannon; each once). Three Island: bikers face down
+two islanders in the road north; once the biker's been to Two Island their boss
+Paxton turns up, and walking past them you take on three Biker Goons and then
+Cue Ball Paxton, and the gang leaves; Bond Bridge (its swimmers, tubers, Aroma
+Ladies and the twins Joy & Meg) to Berry Forest, where Lostelle's in trouble: a
+wild Lv. 30 Hypno, then her Iapapa Berry, and she takes you home to her dad,
+who swaps the Meteorite for a Moon Stone. Three Isle Port (its bikers, the
+Dunsparce Tunnel, dug out with a Nugget for you once you're Champion) and the
+islands' marts and Pokémon Centers (respawn points and Fly spots). Back at One
+Island Bill's done, and the Seagallop takes you both home to Cinnabar, where he
+says goodbye. Once you're Champion (FireRed asks for the National Pokédex,
+which this game hasn't got) Celio asks you to find a gem for his Network
+Machine, and two Team Rocket grunts outside Mt. Ember let slip the Rocket
+Warehouse's passwords ("Goldeen need log", "Yes, nah, Chansey"); beat them and
+the Ruby Path opens (its floors down to B5F, FireRed's Braille on its walls),
+the Ruby at the bottom. Celio puts it in the machine, trades your Tri-Pass for
+the Rainbow Pass (the ferries' two-page menu, Four to Seven Island on it) and
+asks you to find the Sapphire too. The Town Map turns to the Sevii Islands'
+map (SWITCH, or R) once you have its page, opening on wherever you are, and Fly
+goes there. From Cinnabar,
 Route 21 runs north across the sea, its fishermen and swimmers, to Pallet Town.
 Off Route 10's waterway, the Power Plant (Surf along the river to its doors): its wild
 Pikachu, Voltorb, Magnemite, Magneton and Electabuzz, its items (TM17 Protect, TM25
@@ -389,8 +434,9 @@ home again until you use another Pokémon Center), and Red's Mom has heard the
 news. The League can be challenged again (Gary's and the others' rematch words
 once you're Champion; FireRed's rematch teams, Lorelei's to Lance's from its
 data and Gary's at its levels, once the Sevii Islands' story sets
-FLAG_SYS_CAN_LINK_WITH_RS, which they'll do once they're built). Cerulean
-Cave isn't built yet. Tiles, palettes and metatiles come from
+FLAG_SYS_CAN_LINK_WITH_RS, with the Sapphire). Four, Five, Six and Seven
+Island (the Seagallop says it doesn't sail there yet), the Rocket Warehouse,
+the Sapphire and Cerulean Cave aren't built yet. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into
@@ -430,13 +476,24 @@ node tools/build-audio.js pokefirered
 
 ### Town Map
 
-`tools/build-town-map.js` renders FireRed's Kanto region map into
-`assets/town-map/` and writes `data/town-map.js` (the grid of places, their
-names, and which place each map is in):
+`tools/build-town-map.js` renders FireRed's Kanto region map and its three
+Sevii Islands maps (1-2-3, 4-5, 6-7) into `assets/town-map/` and writes
+`data/town-map.js` (the grids of places, their names, which place each map is
+in, and where Fly lands):
 
 ```sh
 cd pokefirered && git sparse-checkout add graphics/region_map/ src/data/region_map/ && cd ..
 node tools/build-town-map.js pokefirered     # after build-maps.js
+```
+
+### Seagallop ferry
+
+`tools/build-seagallop.js` converts the ferry ride's sea, ferry and wake
+(`graphics/seagallop/`) into `assets/seagallop/`:
+
+```sh
+cd pokefirered && git sparse-checkout add graphics/seagallop/ && cd ..
+node tools/build-seagallop.js pokefirered
 ```
 
 ### Party screen

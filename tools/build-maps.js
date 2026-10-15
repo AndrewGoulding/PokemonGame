@@ -79,7 +79,13 @@ const TITLES = {
   PokemonLeague_AgathasRoom: "Pokémon League · Agatha's room",
   PokemonLeague_LancesRoom: "Pokémon League · Lance's room",
   PokemonLeague_ChampionsRoom: "Pokémon League · Champion's room",
-  PokemonLeague_HallOfFame: "Pokémon League · Hall of Fame"
+  PokemonLeague_HallOfFame: "Pokémon League · Hall of Fame",
+  OneIsland_PokemonCenter_1F: "One Island · Pokémon Net Center",
+  OneIsland_PokemonCenter_2F: "One Island · Pokémon Net Center 2F",
+  OneIsland_Harbor: "One Island · Harbor", TwoIsland_Harbor: "Two Island · Harbor", ThreeIsland_Harbor: "Three Isle Port · Harbor",
+  OneIsland_KindleRoad_EmberSpa: "Kindle Road · Ember Spa",
+  TwoIsland_JoyfulGameCorner: "Two Island · Joyful Game Corner", TwoIsland_House: "Two Island · Move Maniac's house",
+  TwoIsland_CapeBrink_House: "Cape Brink · House"
 };
 
 const MAPS = [
@@ -149,7 +155,18 @@ const MAPS = [
   "PowerPlant", "ViridianCity_Gym", "Route23", "VictoryRoad_1F", "VictoryRoad_2F", "VictoryRoad_3F",
   "IndigoPlateau_Exterior", "IndigoPlateau_PokemonCenter_1F", "IndigoPlateau_PokemonCenter_2F",
   "PokemonLeague_LoreleisRoom", "PokemonLeague_BrunosRoom", "PokemonLeague_AgathasRoom", "PokemonLeague_LancesRoom",
-  "PokemonLeague_ChampionsRoom", "PokemonLeague_HallOfFame"
+  "PokemonLeague_ChampionsRoom", "PokemonLeague_HallOfFame",
+  // The Sevii Islands, part 1: One, Two and Three Island (Seagallop harbors).
+  "OneIsland", "OneIsland_Harbor", "OneIsland_House1", "OneIsland_House2", "OneIsland_PokemonCenter_1F",
+  "OneIsland_PokemonCenter_2F", "OneIsland_KindleRoad", "OneIsland_KindleRoad_EmberSpa", "OneIsland_TreasureBeach",
+  "MtEmber_Exterior", "MtEmber_Summit", "MtEmber_SummitPath_1F", "MtEmber_SummitPath_2F", "MtEmber_SummitPath_3F",
+  "MtEmber_RubyPath_1F", "MtEmber_RubyPath_B1F", "MtEmber_RubyPath_B1F_Stairs", "MtEmber_RubyPath_B2F",
+  "MtEmber_RubyPath_B2F_Stairs", "MtEmber_RubyPath_B3F", "MtEmber_RubyPath_B4F", "MtEmber_RubyPath_B5F",
+  "TwoIsland", "TwoIsland_Harbor", "TwoIsland_House", "TwoIsland_JoyfulGameCorner", "TwoIsland_PokemonCenter_1F",
+  "TwoIsland_PokemonCenter_2F", "TwoIsland_CapeBrink", "TwoIsland_CapeBrink_House",
+  "ThreeIsland", "ThreeIsland_Port", "ThreeIsland_Harbor", "ThreeIsland_House1", "ThreeIsland_House2", "ThreeIsland_House3",
+  "ThreeIsland_House4", "ThreeIsland_House5", "ThreeIsland_Mart", "ThreeIsland_PokemonCenter_1F", "ThreeIsland_PokemonCenter_2F",
+  "ThreeIsland_BondBridge", "ThreeIsland_BerryForest", "ThreeIsland_DunsparceTunnel"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
@@ -280,6 +297,10 @@ const GAME_TEXT = [
   "Text_CardKeyOpenedDoor", "Text_ItNeedsCardKey", "Text_TheDoorIsOpen",
   // The legendary birds (Articuno in Seafoam Islands: data/event_scripts.s).
   "Text_Gyaoo", "Text_MonFlewAway",
+  // The Seagallop ferries (data/text/seagallop.inc).
+  "Text_AllAboardSeagallopNum",
+  // The Joyful Game Corner's minigames, played over the wireless link (data/scripts/cable_club.inc).
+  "Text_WelcomeCanYouWait", "Text_AdapterNotConnectedMinigame",
   // Rock Tunnel's Rock Slide tutor (in Seafoam Islands B4F's text.inc).
   "Text_RockSlideTeach", "Text_RockSlideDeclined", "Text_RockSlideWhichMon", "Text_RockSlideTaught",
   // Pallet Town's Sign Lady (data/text/sign_lady.inc).
@@ -627,7 +648,8 @@ function buildTrainers(ids) {
   for (const id of ids) {
     const block = new RegExp("\\[" + id + "\\] = \\{([\\s\\S]*?)\\n    \\},").exec(trainers)[1];
     const cls = /\.trainerClass = (\w+)/.exec(block)[1];
-    const className = constName(new RegExp("\\[" + cls + "\\]\\s*= _\\(\"(.*?)\"\\)").exec(classNames)[1]).replace(/Poke/g, "Poké");
+    // ("{PKMN} RANGER": Pokémon Ranger.)
+    const className = constName(new RegExp("\\[" + cls + "\\]\\s*= _\\(\"(.*?)\"\\)").exec(classNames)[1]).replace(/Poke/g, "Poké").replace(/\{Pkmn\}/g, "Pokémon");
     const pic = /\.trainerPic = TRAINER_PIC_(\w+)/.exec(block)[1].toLowerCase();
     const partyName = /\.party = \w+\((\w+)\)/.exec(block)[1];
     const list = new RegExp(partyName + "\\[\\] = \\{([\\s\\S]*?)\\n\\};").exec(parties)[1];
@@ -756,8 +778,21 @@ scriptPatches("data/maps/SeafoamIslands_B4F/scripts.inc", (label) => label === "
 // Seafoam Islands B3F and B4F with the current stopped (FireRed swaps in
 // LAYOUT_SEAFOAM_ISLANDS_B3F/B4F_CURRENT_STOPPED): the blocks that layout
 // changes, as a "stopped" patch.
+// (And the Dunsparce Tunnel dug out once you're Champion: FireRed's
+// LAYOUT_THREE_ISLAND_DUNSPARCE_TUNNEL_DUG_OUT, with the National Pokédex.)
 const LAYOUT_PATCHES = { SeafoamIslands_B3F: { stopped: "LAYOUT_SEAFOAM_ISLANDS_B3F_CURRENT_STOPPED" },
-  SeafoamIslands_B4F: { stopped: "LAYOUT_SEAFOAM_ISLANDS_B4F_CURRENT_STOPPED" } };
+  SeafoamIslands_B4F: { stopped: "LAYOUT_SEAFOAM_ISLANDS_B4F_CURRENT_STOPPED" },
+  ThreeIsland_DunsparceTunnel: { dugout: "LAYOUT_THREE_ISLAND_DUNSPARCE_TUNNEL_DUG_OUT" } };
+// One Island's Pokémon Center: Celio's Network Machine with the Ruby in it
+// ("ruby"), the Sapphire ("sapphire") and its screens on ("on")
+// (OneIsland_PokemonCenter_1F_EventScript_SetRubyMetatile and the like).
+scriptPatches("data/maps/OneIsland_PokemonCenter_1F/scripts.inc", (label) => {
+  const l = /^OneIsland_PokemonCenter_1F_EventScript_Set(Ruby|Sapphire|NetworkMachineOn)(?:Metatile)?$/.exec(label);
+  return l && ["OneIsland_PokemonCenter_1F", { Ruby: "ruby", Sapphire: "sapphire", NetworkMachineOn: "on" }[l[1]]];
+});
+// Mt. Ember: the Ruby Path's mouth, rocks until Celio asks for the Ruby
+// (MtEmber_Exterior_EventScript_OpenCave: "cave").
+scriptPatches("data/maps/MtEmber_Exterior/scripts.inc", (label) => label === "MtEmber_Exterior_EventScript_OpenCave" && ["MtEmber_Exterior", "cave"]);
 const pointers = readHeader("src/data/object_events/object_event_graphics_info_pointers.h");
 const infos = readHeader("src/data/object_events/object_event_graphics_info.h");
 const picTables = readHeader("src/data/object_events/object_event_pic_tables.h");

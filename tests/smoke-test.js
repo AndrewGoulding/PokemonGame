@@ -744,7 +744,10 @@ for (const share of [false, true]) {
     "SaffronCity_Gym", "SilphCo_1F", "SilphCo_2F", "SilphCo_3F", "SilphCo_4F", "SilphCo_5F", "SilphCo_6F", "SilphCo_7F",
     "SilphCo_8F", "SilphCo_9F", "SilphCo_10F", "SilphCo_11F", "SeafoamIslands_1F", "SeafoamIslands_B1F", "SeafoamIslands_B2F",
     "SeafoamIslands_B3F", "SeafoamIslands_B4F", "PokemonMansion_1F", "PokemonMansion_2F", "PokemonMansion_3F", "PokemonMansion_B1F",
-    "PowerPlant", "VictoryRoad_1F", "VictoryRoad_2F", "VictoryRoad_3F"]);
+    "PowerPlant", "VictoryRoad_1F", "VictoryRoad_2F", "VictoryRoad_3F",
+    "MtEmber_Summit", "MtEmber_SummitPath_1F", "MtEmber_SummitPath_2F", "MtEmber_SummitPath_3F", "MtEmber_RubyPath_1F",
+    "MtEmber_RubyPath_B1F", "MtEmber_RubyPath_B1F_Stairs", "MtEmber_RubyPath_B2F", "MtEmber_RubyPath_B2F_Stairs",
+    "MtEmber_RubyPath_B3F", "MtEmber_RubyPath_B4F", "MtEmber_RubyPath_B5F", "ThreeIsland_BerryForest", "ThreeIsland_DunsparceTunnel"]);
   assert(WORLD_MAPS.MtMoon_1F.people.some((p) => p.item === "tm100"), "FireRed's TM09 in Mt. Moon is TM100 Bullet Seed here");
   assert(Bag.canUseOn(Party.create("Gyarados", 30, { rng }), "hm06"), "Gyarados can use Whirlpool");
   assert(Bag.canUseOn(Party.create("Pidgeot", 30, { rng }), "hm10"), "Pidgeot can use Defog");
@@ -1324,11 +1327,18 @@ for (const share of [false, true]) {
   const T = window.TOWN_MAP;
   assert.deepStrictEqual([T.width, T.height, T.map.length, T.dungeon.length], [22, 15, 15, 15]);
   assert.deepStrictEqual([T.map[11][4], T.names.PALLET_TOWN, T.dungeon[3][9], T.names.MT_MOON], ["PALLET_TOWN", "Pallet Town", "MT_MOON", "Mt. Moon"]);
-  const onMap = (sec) => T.map.some((r) => r.includes(sec)) || T.dungeon.some((r) => r.includes(sec));
-  // (FireRed gives the Underground Path, the S.S. Anne, the Rocket Hideout, Silph Co. and the Pokémon League no square of their own.)
+  const onGrid = (R, sec) => R.map.some((r) => r.includes(sec)) || R.dungeon.some((r) => r.includes(sec));
+  const onMap = (sec) => onGrid(T, sec) || T.sevii.some((R) => onGrid(R, sec));
+  // (FireRed gives the Underground Path, the S.S. Anne, the Rocket Hideout, Silph Co., the Pokémon League,
+  // the Ember Spa and the Dunsparce Tunnel (Three Isle Path) no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
-    assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "UNDERGROUND_PATH_2", "S_S_ANNE", "ROCKET_HIDEOUT", "SILPH_CO", "POKEMON_LEAGUE"].includes(T.mapSections[name])), name + " is on the Town Map");
+    assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "UNDERGROUND_PATH_2", "S_S_ANNE", "ROCKET_HIDEOUT", "SILPH_CO",
+      "POKEMON_LEAGUE", "EMBER_SPA", "THREE_ISLE_PATH"].includes(T.mapSections[name])), name + " is on the Town Map");
   }
+  // The Sevii Islands' maps: One, Two and Three Island on the first (FireRed's REGIONMAP_SEVII123).
+  assert.deepStrictEqual(T.sevii.map((R) => [R.id, R.map.length, R.map[0].length]), [["SEVII_123", 15, 22], ["SEVII_45", 15, 22], ["SEVII_67", 15, 22]]);
+  assert(onGrid(T.sevii[0], "ONE_ISLAND") && onGrid(T.sevii[0], "THREE_ISLE_PORT") && onGrid(T.sevii[0], "MT_EMBER") && !onGrid(T, "ONE_ISLAND"));
+  for (const f of ["sevii-123", "sevii-45", "sevii-67"]) assert(fs.existsSync(path.join(__dirname, "../assets/town-map/" + f + ".png")), f);
   assert(fs.existsSync(path.join(__dirname, "../assets/town-map/kanto.png")));
 }
 
@@ -2743,3 +2753,63 @@ assert.deepStrictEqual(["Nidoran-F", "Nidoran-M", "Ho-Oh", "Wormadam-Sandy"].map
 assert.strictEqual(Party.toBattleSet(Party.create("Nidoran-M", 5, { rng })).name, "Nidoran♂");
 // Lil & Ian on Route 21 have their lines (FireRed keeps them in Route 21 South's text).
 for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test(q.script))) assert(p.trainer.intro && p.trainer.defeat && p.trainer.notEnough, p.script);
+
+// The Sevii Islands, part 1 (game/sevii.js, ui/game.js): One, Two and Three
+// Island, Mt. Ember and the Seagallop ferries.
+{
+  const W = (m) => { assert(WORLD_MAPS[m], m + " is built"); return WORLD_MAPS[m]; };
+  for (const m of ["OneIsland", "OneIsland_Harbor", "OneIsland_PokemonCenter_1F", "OneIsland_KindleRoad", "OneIsland_KindleRoad_EmberSpa",
+    "OneIsland_TreasureBeach", "MtEmber_Exterior", "MtEmber_Summit", "MtEmber_RubyPath_B5F", "TwoIsland", "TwoIsland_JoyfulGameCorner",
+    "TwoIsland_CapeBrink", "TwoIsland_CapeBrink_House", "ThreeIsland", "ThreeIsland_Port", "ThreeIsland_BondBridge", "ThreeIsland_BerryForest"]) W(m);
+  // The Seagallop's ports, where it leaves you, and its numbers.
+  for (const port of ["VERMILION_CITY", "ONE_ISLAND", "TWO_ISLAND", "THREE_ISLAND", "CINNABAR_ISLAND"]) {
+    const p = Sevii.port(port), m = W(p.map);
+    assert(Sevii.built(port) && !m.collision[p.y * m.width + p.x], port + ": the Seagallop lands on open ground");
+  }
+  for (const port of ["FOUR_ISLAND", "FIVE_ISLAND", "SIX_ISLAND", "SEVEN_ISLAND"]) assert(!Sevii.built(port), port + " isn't built yet");
+  assert.deepStrictEqual([Sevii.ferryNumber("CINNABAR_ISLAND", "ONE_ISLAND"), Sevii.ferryNumber("VERMILION_CITY", "TWO_ISLAND"),
+    Sevii.ferryNumber("ONE_ISLAND", "THREE_ISLAND"), Sevii.ferryNumber("FOUR_ISLAND", "FIVE_ISLAND"), Sevii.ferryNumber("SIX_ISLAND", "SEVEN_ISLAND")], [1, 7, 2, 3, 5]);
+  // The ferry heads east from Cinnabar to One Island, west from One Island back to Vermilion.
+  assert(Sevii.eastbound("CINNABAR_ISLAND", "ONE_ISLAND") && !Sevii.eastbound("ONE_ISLAND", "VERMILION_CITY") && Sevii.eastbound("VERMILION_CITY", "ONE_ISLAND"));
+  // The harbors' menus: the Tri-Pass's islands (and Vermilion once Bill's gone home); the Rainbow Pass's two pages.
+  assert.deepStrictEqual(Sevii.menu({ celioScene: 1 }, "ONE_ISLAND").items, ["TWO_ISLAND", "THREE_ISLAND", "EXIT"]);
+  assert.deepStrictEqual(Sevii.menu({ celioScene: 3, cinnabarScene: 4 }, "TWO_ISLAND").items, ["VERMILION_CITY", "ONE_ISLAND", "THREE_ISLAND", "EXIT"]);
+  assert.deepStrictEqual(Sevii.menu({ celioScene: 1 }, "VERMILION_CITY").items, ["ONE_ISLAND", "TWO_ISLAND", "THREE_ISLAND", "EXIT"]);
+  assert.deepStrictEqual(Sevii.menu({ celioScene: 5 }, "VERMILION_CITY").items, ["ONE_ISLAND", "TWO_ISLAND", "THREE_ISLAND", "FOUR_ISLAND", "MORE", "EXIT"]);
+  assert.deepStrictEqual(Sevii.menu({ celioScene: 5 }, "ONE_ISLAND", 1).items, ["FIVE_ISLAND", "SIX_ISLAND", "SEVEN_ISLAND", "MORE", "EXIT"]);
+  assert.deepStrictEqual(Sevii.menu({ celioScene: 5 }, "SIX_ISLAND", 1).items, ["FOUR_ISLAND", "FIVE_ISLAND", "SEVEN_ISLAND", "MORE", "EXIT"]);
+  assert.deepStrictEqual(Sevii.menu({ celioScene: 5 }, "ONE_ISLAND").labels, ["Vermilion", "Two Island", "Three Island", "Four Island", "Other", "Exit"]);
+  // Cape Brink: a fully evolved starter, as fond of you as can be, in the lead; each move once.
+  const venusaur = Object.assign(Party.create("Venusaur", 50, { rng }), { happiness: 255 });
+  assert.deepStrictEqual(Sevii.capeBrinkMove(venusaur, {}), { move: "Frenzy Plant", flag: "tutorFrenzyPlant" });
+  assert(!Sevii.capeBrinkMove(Object.assign({}, venusaur, { happiness: 254 }), {}), "not fond enough");
+  assert(!Sevii.capeBrinkMove(venusaur, { tutorFrenzyPlant: true }) && !Sevii.capeBrinkMove(Party.create("Ivysaur", 30, { rng }), {}));
+  assert.strictEqual(Sevii.capeBrinkMove(Object.assign(Party.create("Blastoise", 50, { rng }), { happiness: 255 }), {}).move, "Hydro Cannon");
+  assert(Sevii.capeBrinkDone({ tutorFrenzyPlant: true, tutorBlastBurn: true, tutorHydroCannon: true }) && !Sevii.capeBrinkDone({ tutorBlastBurn: true }));
+  // The key items, the Pokémon Centers (respawn and Fly), the story's people and patches.
+  for (const item of ["meteorite", "tri-pass", "rainbow-pass", "ruby", "sapphire"]) assert(Bag.isKeyItem(item) && Bag.sprite(item), item);
+  for (const [sec, center] of [["ONE_ISLAND", "OneIsland_PokemonCenter_1F"], ["TWO_ISLAND", "TwoIsland_PokemonCenter_1F"], ["THREE_ISLAND", "ThreeIsland_PokemonCenter_1F"]]) {
+    assert(Player.CENTERS[center] && window.TOWN_MAP.fly[sec].center === center, sec);
+    const c = Player.CENTERS[center], cm = W(center);
+    assert(!cm.collision[c.y * cm.width + c.x], center + " respawn spot");
+  }
+  assert.deepStrictEqual(Object.keys(W("OneIsland_PokemonCenter_1F").patches), ["ruby", "sapphire", "on"]);
+  assert.deepStrictEqual(Object.keys(W("MtEmber_Exterior").patches), ["cave"]);
+  assert(W("ThreeIsland_DunsparceTunnel").patches.dugout, "the tunnel dug out");
+  assert(W("MtEmber_Summit").people.some((p) => p.script === "MtEmber_Summit_EventScript_Moltres" && p.flag === "FLAG_HIDE_MOLTRES"));
+  assert(W("MtEmber_RubyPath_B5F").people.some((p) => p.localId === "LOCALID_RUBY"));
+  assert(W("ThreeIsland_BerryForest").people.some((p) => p.localId === "LOCALID_BERRY_FOREST_LOSTELLE"));
+  assert.strictEqual(W("ThreeIsland").people.filter((p) => p.flag === "FLAG_HIDE_THREE_ISLAND_BIKERS").length, 6);
+  for (const id of ["TRAINER_BIKER_GOON", "TRAINER_BIKER_GOON_2", "TRAINER_BIKER_GOON_3", "TRAINER_CUE_BALL_PAXTON", "TRAINER_TEAM_ROCKET_GRUNT_43",
+    "TRAINER_TEAM_ROCKET_GRUNT_44"]) assert(WORLD_TRAINERS[id], id);
+  assert.strictEqual(WORLD_TRAINERS.TRAINER_PKMN_RANGER_LOGAN.className, "Pokémon Ranger");
+  for (const cls of ["Crush Girl", "Pokémon Ranger", "Aroma Lady", "Tuber"]) assert(Player.prizeMoney(cls + " X", [{ level: 10 }]) > 0, cls);
+  // Kindle Road's Crush Kin and Bond Bridge's twins are double battles; wild Pokémon on land and water.
+  assert(W("OneIsland_KindleRoad").people.filter((p) => p.trainer && p.trainer.id === "TRAINER_CRUSH_KIN_MIK_KIA").every((p) => p.trainer.double));
+  assert(W("OneIsland_KindleRoad").wild && W("OneIsland_KindleRoad").water && W("MtEmber_Exterior").wild && W("ThreeIsland_BerryForest").wild);
+  // The ferry ride's pictures.
+  for (const f of ["sea-west", "sea-east", "ferry", "wake"]) assert(fs.existsSync(path.join(root, "assets/seagallop/" + f + ".png")), f);
+  // Text the scenes use.
+  for (const label of ["Text_AllAboardSeagallopNum", "Text_WhereDoYouWantToSail", "OneIsland_PokemonCenter_1F_Text_UsualPCServicesUnavailable",
+    "CinnabarIsland_Text_ComeWithMeToOneIsland", "MtEmber_Exterior_Text_FirstPasswordGoldeen", "Text_UltimateMoveThatMon"]) assert(WORLD_TEXT[label], label);
+}

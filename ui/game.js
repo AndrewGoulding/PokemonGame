@@ -763,68 +763,95 @@
   // The Town Map (with { fly: true }, for Fly: the places you can fly to are
   // marked, and A on one resolves with where Fly lands there; B, null): FireRed's Kanto map (tools/build-town-map.js) with your
   // icon where you are. Move the cursor with the arrow keys, or tap a place,
-  // to see its name.
+  // to see its name. With the Sevii Islands' pages (One Island's Pokémon
+  // Center: FLAG_SYS_SEVII_MAP_123, then _4567 with the Rainbow Pass), SWITCH
+  // (or R) turns to the Sevii Islands' maps, as FireRed's switch menu does:
+  // Kanto, Sevii 1-2-3, 4-5 and 6-7. It opens on the map you're on.
   async function townMap(opts) {
-    const T = window.TOWN_MAP, flying = !!(opts && opts.fly);
+    const T = window.TOWN_MAP, flying = !!(opts && opts.fly), f = player.flags;
     const pct = (n, of) => (n / of * 100) + "%";
     const sprite = (x, y) => "left:" + pct(28 + 8 * x, 240) + ";top:" + pct(28 + 8 * y, 160);
-    const cellOf = (sec) => {
-      for (const layer of [T.map, T.dungeon]) for (let y = 0; y < T.height; y++) for (let x = 0; x < T.width; x++) if (layer[y][x] === sec) return [x, y];
+    // The maps you can turn to: Kanto, and the Sevii pages you have.
+    const regions = [{ id: "KANTO", label: "Kanto", image: "assets/town-map/kanto.png", map: T.map, dungeon: T.dungeon }]
+      .concat((T.sevii || []).filter((r) => r.id === "SEVII_123" ? f.seviiMap123 || f.seviiMap4567 : f.seviiMap4567)
+        .map((r) => Object.assign({ label: { SEVII_123: "Sevii Islands 1-2-3", SEVII_45: "Sevii Islands 4-5", SEVII_67: "Sevii Islands 6-7" }[r.id] }, r)));
+    const cellIn = (R, sec) => {
+      if (!sec) return null;
+      for (const layer of [R.map, R.dungeon]) for (let y = 0; y < T.height; y++) for (let x = 0; x < T.width; x++) if (layer[y][x] === sec) return [x, y];
       return null;
     };
+    const find = (sec) => { for (let i = 0; i < regions.length; i++) { const c = cellIn(regions[i], sec); if (c) return { region: i, cell: c }; } return null; };
     // (Somewhere with no square of its own, the Underground Path or the S.S. Anne:
     // where you came in from outdoors.)
-    const here = cellOf(T.mapSections[player.location && player.location.map]) ||
-      cellOf(T.mapSections[(player.flags.escapeWarp || {}).map]) || cellOf("PALLET_TOWN");
-    let [cx, cy] = here;
+    const here = find(T.mapSections[player.location && player.location.map]) ||
+      find(T.mapSections[(f.escapeWarp || {}).map]) || { region: 0, cell: cellIn(regions[0], "PALLET_TOWN") };
+    let region = here.region, [cx, cy] = here.cell;
     visitSection(player.location && player.location.map);
-    // FireRed's small icons on the caves and forests (CreateDungeonIcons): lit
-    // once you've been there. Cerulean Cave's shows only after the League, as
-    // its entrance opens then. On a town's square the icon sits 2 pixels lower
-    // and to the right.
-    const visited = player.flags.visitedSections || [];
-    let icons = "";
-    for (let y = 0; y < T.height; y++) for (let x = 0; x < T.width; x++) {
-      const sec = T.dungeon[y][x];
-      if (!sec || (sec === "CERULEAN_CAVE" && !player.flags.gameClear)) continue;
-      const off = T.towns.includes(T.map[y][x]) ? 2 : 0;
-      icons += '<div class="tm-dungeon' + (visited.includes(sec) ? " visited" : "") + '" style="left:' + pct(32 + 8 * x + off, 240) +
-        ";top:" + pct(32 + 8 * y + off, 160) + '"></div>';
-    }
+    const visited = f.visitedSections || [];
     // Fly's places: visited, with somewhere to land.
     const flyTo = (sec) => (flying && sec && visited.includes(sec) && (T.fly || {})[sec]) || null;
-    if (flying) {
-      const marked = new Set();
-      for (let y = 0; y < T.height; y++) for (let x = 0; x < T.width; x++) {
-        const sec = T.map[y][x];
-        if (!flyTo(sec) || marked.has(sec)) continue;
-        marked.add(sec);
-        icons += '<div class="tm-fly" style="left:' + pct(32 + 8 * x, 240) + ";top:" + pct(32 + 8 * y, 160) + '"></div>';
-      }
-    }
     show("scene");
-    scene.innerHTML = '<div class="town-map' + (flying ? " flying" : "") + '"><img class="tm-map" src="assets/town-map/kanto.png" alt="Map of Kanto">' + icons +
-      '<div class="tm-name"><b></b><small></small></div>' +
-      '<img class="tm-player" src="assets/town-map/player.png" alt="You are here" style="' + sprite(here[0], here[1]) + '">' +
-      '<div class="tm-cursor"></div></div>';
-    const box = scene.querySelector(".town-map");
+    const render = () => {
+      const R = regions[region];
+      // FireRed's small icons on the caves and forests (CreateDungeonIcons): lit
+      // once you've been there. Cerulean Cave's shows only after the League, as
+      // its entrance opens then. On a town's square the icon sits 2 pixels lower
+      // and to the right.
+      let icons = "";
+      for (let y = 0; y < T.height; y++) for (let x = 0; x < T.width; x++) {
+        const sec = R.dungeon[y][x];
+        if (!sec || (sec === "CERULEAN_CAVE" && !f.gameClear)) continue;
+        const off = T.towns.includes(R.map[y][x]) ? 2 : 0;
+        icons += '<div class="tm-dungeon' + (visited.includes(sec) ? " visited" : "") + '" style="left:' + pct(32 + 8 * x + off, 240) +
+          ";top:" + pct(32 + 8 * y + off, 160) + '"></div>';
+      }
+      if (flying) {
+        const marked = new Set();
+        for (let y = 0; y < T.height; y++) for (let x = 0; x < T.width; x++) {
+          const sec = R.map[y][x];
+          if (!flyTo(sec) || marked.has(sec)) continue;
+          marked.add(sec);
+          icons += '<div class="tm-fly" style="left:' + pct(32 + 8 * x, 240) + ";top:" + pct(32 + 8 * y, 160) + '"></div>';
+        }
+      }
+      scene.innerHTML = '<div class="town-map' + (flying ? " flying" : "") + '"><img class="tm-map" src="' + R.image + '" alt="Map of ' + R.label + '">' + icons +
+        '<div class="tm-name"><b></b><small></small></div>' +
+        (region === here.region ? '<img class="tm-player" src="assets/town-map/player.png" alt="You are here" style="' + sprite(here.cell[0], here.cell[1]) + '">' : "") +
+        '<div class="tm-cursor"></div></div>';
+      draw();
+    };
     const draw = () => {
-      const place = T.map[cy][cx], cave = T.dungeon[cy][cx];
+      const R = regions[region], place = R.map[cy][cx], cave = R.dungeon[cy][cx];
       scene.querySelector(".tm-name b").textContent = T.names[place] || T.names[cave] || (flying ? "Where do you want to fly?" : "");
       scene.querySelector(".tm-name small").textContent = place && cave ? T.names[cave] : "";
       scene.querySelector(".tm-cursor").setAttribute("style", sprite(cx, cy));
     };
-    draw();
+    render();
     const move = (dx, dy) => { cx = Math.max(0, Math.min(T.width - 1, cx + dx)); cy = Math.max(0, Math.min(T.height - 1, cy + dy)); draw(); };
+    // SWITCH: the next map, the cursor on the place you're at there (or the
+    // map's first town).
+    const switchMap = () => {
+      if (regions.length < 2) return;
+      sfx("se_select");
+      region = (region + 1) % regions.length;
+      const R = regions[region];
+      const at = region === here.region ? here.cell : (() => {
+        for (let y = 0; y < T.height; y++) for (let x = 0; x < T.width; x++) if (T.towns.includes(R.map[y][x])) return [x, y];
+        return [cx, cy];
+      })();
+      [cx, cy] = at;
+      render();
+    };
     let picked = null;
     const choose = new Promise((resolve) => { picked = resolve; });
     const onKey = (e) => {
       if (flying && ["z", "Z", " ", "Enter"].includes(e.key)) {
         e.preventDefault(); e.stopPropagation();
-        const spot = flyTo(T.map[cy][cx]);
+        const spot = flyTo(regions[region].map[cy][cx]);
         if (spot) { sfx("se_select"); picked(spot); }
         return;
       }
+      if (e.key === "r" || e.key === "R") { e.preventDefault(); e.stopPropagation(); switchMap(); return; }
       const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
       if (!d) return;
       e.preventDefault(); e.stopPropagation();
@@ -832,7 +859,13 @@
     };
     document.addEventListener("keydown", onKey, true);
     // (no text over the map)
-    const r = await Promise.race([ask("", [back(flying ? "Cancel" : "Close")]).then(() => null), choose]);
+    const buttons = (regions.length > 1 ? [{ label: "Switch", value: "switch", className: "action" }] : []).concat([back(flying ? "Cancel" : "Close")]);
+    let r;
+    for (;;) {
+      r = await Promise.race([ask("", buttons).then((v) => (v === "switch" ? "switch" : null)), choose]);
+      if (r !== "switch") break;
+      switchMap();
+    }
     clearMenu();
     document.removeEventListener("keydown", onKey, true);
     if (flying) show("world");
@@ -1685,6 +1718,21 @@
     FuchsiaCity_EventScript_LaprasSign: "Lapras"
   };
 
+  // The Ruby Path's Braille (MtEmber_RubyPath_B4F/B5F): FireRed's braille
+  // messages, in Braille (Unicode's Braille patterns).
+  const BRAILLE = { A: 1, B: 3, C: 9, D: 25, E: 17, F: 11, G: 27, H: 19, I: 10, J: 26, K: 5, L: 7, M: 13, N: 29, O: 21, P: 15, Q: 31,
+    R: 23, S: 14, T: 30, U: 37, V: 39, W: 58, X: 45, Y: 61, Z: 53, ".": 50, ",": 2, " ": 0 };
+  const braille = (s) => [...s].map((c) => String.fromCharCode(0x2800 + (BRAILLE[c] || 0))).join("");
+  const BRAILLE_SIGNS = {
+    MtEmber_RubyPath_B4F_EventScript_BrailleABC: ["ABC"], MtEmber_RubyPath_B4F_EventScript_BrailleDEF: ["DEF"],
+    MtEmber_RubyPath_B4F_EventScript_BrailleGHI: ["GHI"], MtEmber_RubyPath_B4F_EventScript_BrailleJKL: ["JKL"],
+    MtEmber_RubyPath_B4F_EventScript_BrailleMNO: ["MNO"], MtEmber_RubyPath_B4F_EventScript_BraillePQRS: ["PQRS"],
+    MtEmber_RubyPath_B4F_EventScript_BrailleTUV: ["TUV"], MtEmber_RubyPath_B4F_EventScript_BrailleWXYZ: ["WXYZ"],
+    MtEmber_RubyPath_B4F_EventScript_BraillePeriod: ["."], MtEmber_RubyPath_B4F_EventScript_BrailleComma: [","],
+    MtEmber_RubyPath_B5F_EventScript_BrailleMessage: ["EVERYTHING", "HAS MEANING", "EXISTENCE", "HAS MEANING", "BEING ALIVE",
+      "HAS MEANING", "HAVE DREAMS", "USE POWER."]
+  };
+
   // The Badges in order, as Route 23's guards (and the League gate's) check them.
   const ROUTE23_BADGES = LeagueRoad.NAMES;
   const SPECIAL = new Set([
@@ -1819,8 +1867,23 @@
       "IndigoPlateau_PokemonCenter_1F_EventScript_Nurse", "IndigoPlateau_PokemonCenter_1F_EventScript_Clerk",
       "IndigoPlateau_PokemonCenter_1F_EventScript_DoorGuard",
       "PokemonLeague_LoreleisRoom_EventScript_Lorelei", "PokemonLeague_BrunosRoom_EventScript_Bruno",
-      "PokemonLeague_AgathasRoom_EventScript_Agatha", "PokemonLeague_LancesRoom_EventScript_Lance"
-    ]).concat(League.ROOMS.map((r) => "enter:" + r.map), ["enter:" + League.HALL_OF_FAME]).concat(ROUTE23_BADGES.slice(1).flatMap((b) => ["", "Trigger"].map((t) => "Route23_EventScript_" + b + "BadgeGuard" + t))).concat([1, 2, 3, 4, 5, 6].flatMap((n) => ["Left", "Right"].map((s) => "CinnabarIsland_Gym_EventScript_Quiz" + n + s))).concat(CYCLING_ROAD_GATES.flatMap((g) => ["Top", "MidTop", "Mid", "MidBottom", "Bottom"].map((k) => g + "_EventScript_NeedBikeTrigger" + k))));
+      "PokemonLeague_AgathasRoom_EventScript_Agatha", "PokemonLeague_LancesRoom_EventScript_Lance",
+      // The Sevii Islands (part 1).
+      "CinnabarIsland_PokemonCenter_1F_EventScript_Bill", "VermilionCity_EventScript_FerrySailor",
+      "OneIsland_Harbor_EventScript_Sailor", "TwoIsland_Harbor_EventScript_Sailor", "ThreeIsland_Harbor_EventScript_Sailor",
+      "OneIsland_PokemonCenter_1F_EventScript_Nurse", "TwoIsland_PokemonCenter_1F_EventScript_Nurse", "ThreeIsland_PokemonCenter_1F_EventScript_Nurse",
+      "OneIsland_PokemonCenter_1F_EventScript_Celio", "OneIsland_PokemonCenter_1F_EventScript_Bill",
+      "OneIsland_PokemonCenter_1F_EventScript_NetworkMachine", "OneIsland_PokemonCenter_1F_EventScript_CrushGirl", "OneIsland_EventScript_OldMan",
+      "OneIsland_KindleRoad_EmberSpa_EventScript_RockSmashMan", "TwoIsland_EventScript_Clerk",
+      "TwoIsland_JoyfulGameCorner_EventScript_LostellesDaddy", "TwoIsland_JoyfulGameCorner_EventScript_InfoMan",
+      "TwoIsland_JoyfulGameCorner_EventScript_Lostelle", "TwoIsland_CapeBrink_House_EventScript_StarterTutor",
+      "TwoIsland_House_EventScript_MoveManiac", "ThreeIsland_EventScript_Biker", "ThreeIsland_EventScript_AntiBiker1",
+      "ThreeIsland_EventScript_AntiBiker2", "ThreeIsland_EventScript_Doduo", "ThreeIsland_Port_EventScript_Woman",
+      "ThreeIsland_House1_EventScript_Lostelle", "ThreeIsland_House5_EventScript_LittleGirl", "ThreeIsland_Mart_EventScript_Clerk",
+      "ThreeIsland_BerryForest_EventScript_Lostelle", "ThreeIsland_DunsparceTunnel_EventScript_Prospector",
+      "MtEmber_Exterior_EventScript_Grunt1", "MtEmber_Exterior_EventScript_Grunt2", "MtEmber_Exterior_EventScript_ExplosionTutor",
+      "MtEmber_Summit_EventScript_Moltres", "MtEmber_RubyPath_B5F_EventScript_Ruby"
+    ]).concat(Object.keys(BRAILLE_SIGNS)).concat(League.ROOMS.map((r) => "enter:" + r.map), ["enter:" + League.HALL_OF_FAME]).concat(ROUTE23_BADGES.slice(1).flatMap((b) => ["", "Trigger"].map((t) => "Route23_EventScript_" + b + "BadgeGuard" + t))).concat([1, 2, 3, 4, 5, 6].flatMap((n) => ["Left", "Right"].map((s) => "CinnabarIsland_Gym_EventScript_Quiz" + n + s))).concat(CYCLING_ROAD_GATES.flatMap((g) => ["Top", "MidTop", "Mid", "MidBottom", "Bottom"].map((k) => g + "_EventScript_NeedBikeTrigger" + k))));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
   // Item balls on the map: picked up once, then gone.
@@ -1868,6 +1931,10 @@
     }
     // The Seafoam Islands' boulders: where they are now (game/seafoam.js).
     if (Seafoam.isBoulderFlag(person.flag)) return !Seafoam.hidden(f, person.flag);
+    // Lostelle's dad stands by the counter once he's thanked you (TwoIsland_JoyfulGameCorner_OnTransition);
+    // the Dunsparce Tunnel's prospector digs at the wall until it's dug out.
+    if (person.script === "TwoIsland_JoyfulGameCorner_EventScript_LostellesDaddy" && f.gotMoonStoneFromDaddy) return { x: 6, y: 2, movement: "face_down" };
+    if (person.script === "ThreeIsland_DunsparceTunnel_EventScript_Prospector" && !f.gameClear) return { x: 6, y: 3, movement: "face_right" };
     switch (person.flag) {
       case "FLAG_HIDE_OAK_IN_PALLET_TOWN": return false;   // only appears for his walk to the lab
       case "FLAG_HIDE_OAK_IN_HIS_LAB": return !!(f.oakInLab || f.starter);
@@ -1950,12 +2017,47 @@
       // Prof. Oak, until he comes into the Champion's room after the battle.
       case "FLAG_HIDE_OAK_IN_CHAMP_ROOM": return false;
       // Bill waits on Cinnabar after the Volcano Badge to take you to the Sevii
-      // Islands, which aren't built: he and the Seagallop stay away.
-      // (For the Sevii Islands: FireRed's VAR_MAP_SCENE_CINNABAR_ISLAND is set
-      // by beating Blaine; once you're Champion player.flags.gameClear is set
-      // (FLAG_SYS_GAME_CLEAR), and FLAG_SYS_CAN_LINK_WITH_RS, set at the end of
-      // their story, is player.flags.canLinkWithRS: the League's rematch teams.)
-      case "FLAG_HIDE_CINNABAR_BILL": case "FLAG_HIDE_CINNABAR_SEAGALLOP": case "FLAG_HIDE_CINNABAR_POKECENTER_BILL": return false;
+      // Islands (flags.cinnabarScene, FireRed's VAR_MAP_SCENE_CINNABAR_ISLAND:
+      // game/sevii.js), or in its Pokémon Center if you weren't ready; the
+      // Seagallop comes in only to take you. (Once you're Champion
+      // player.flags.gameClear is set (FLAG_SYS_GAME_CLEAR), and
+      // FLAG_SYS_CAN_LINK_WITH_RS, set at the end of the islands' story (the
+      // Sapphire: celioSapphire()), is player.flags.canLinkWithRS: the
+      // League's rematch teams.)
+      case "FLAG_HIDE_CINNABAR_BILL": return f.cinnabarScene === 1;
+      case "FLAG_HIDE_CINNABAR_SEAGALLOP": return false;
+      case "FLAG_HIDE_CINNABAR_POKECENTER_BILL": return !!f.cinnabarBillInCenter;
+      // One Island: Bill at the harbor to take you to Celio; in the Pokémon
+      // Center, where the scenes put him and Celio, until he goes home.
+      case "FLAG_HIDE_ONE_ISLAND_BILL": return f.oneHarborScene === 2;
+      case "FLAG_HIDE_ONE_ISLAND_POKECENTER_BILL":
+        if ((f.celioScene || 0) >= 3) return false;
+        return !f.celioScene ? { x: 9, y: 8, movement: "face_up" } : f.celioScene === 2 ? { x: 14, y: 7, movement: "face_left" } : true;
+      case "FLAG_HIDE_ONE_ISLAND_POKECENTER_CELIO": return f.celioScene === 2 ? { x: 14, y: 8, movement: "face_left" } : true;
+      // Two Island: more people about as its shop grows (TwoIsland_EventScript_SetShopExpanded*);
+      // Lostelle at the Joyful Game Corner once you've found her, at home on
+      // Three Island once Bill's gone home; the biker only for his scene.
+      case "FLAG_HIDE_TWO_ISLAND_WOMAN": return (f.twoIslandShopMax || 1) >= 2;
+      case "FLAG_HIDE_TWO_ISLAND_BEAUTY": return (f.twoIslandShopMax || 1) >= 3;
+      case "FLAG_HIDE_TWO_ISLAND_POKE_MANIAC": return (f.twoIslandShopMax || 1) >= 4;
+      case "FLAG_HIDE_TWO_ISLAND_GAME_CORNER_BIKER": return false;
+      case "FLAG_HIDE_TWO_ISLAND_GAME_CORNER_LOSTELLE":
+        if (!f.rescuedLostelle || (f.cinnabarScene || 0) >= 4) return false;
+        return f.gotMoonStoneFromDaddy ? { movement: "look_around" } : true;
+      case "FLAG_HIDE_LOSTELLE_IN_HER_HOME": return !!f.rescuedLostelle && (f.cinnabarScene || 0) >= 4;
+      case "FLAG_HIDE_LOSTELLE_IN_BERRY_FOREST": return !f.rescuedLostelle;
+      // Three Island: the bikers until they're beaten (Paxton once a biker's
+      // been to Two Island); the islanders standing up to them until Lostelle's found.
+      case "FLAG_HIDE_THREE_ISLAND_ANTIBIKERS": return f.rescuedLostelle ? false : f.threeIslandScene === 4 ? { movement: "look_around" } : true;
+      case "FLAG_HIDE_THREE_ISLAND_LONE_BIKER": return f.threeIslandScene === 2 || f.threeIslandScene === 3;
+      case "FLAG_HIDE_THREE_ISLAND_BIKERS": return (f.threeIslandScene || 0) < 4;
+      // Mt. Ember: Team Rocket outside the Ruby Path until both are beaten;
+      // Moltres at the summit until you've fought it; the Ruby until you take it.
+      case "FLAG_HIDE_MT_EMBER_EXTERIOR_ROCKETS":
+        if (EMBER_GRUNTS.every((t) => f[t])) return false;
+        return f.mtEmberScene === 2 ? { movement: "face_down" } : true;
+      case "FLAG_HIDE_MOLTRES": return !f.foughtMoltres;
+      case "FLAG_HIDE_RUBY": return !f.gotRuby;
       // After you choose, your rival stands below the Poké Ball he took.
       // Leaf (the lab rival's other look) until she leaves after your battle;
       // after you choose, she stands below the Poké Ball she took.
@@ -1976,6 +2078,8 @@
 
   async function story(ev) {
     if (ev.type === "pc") {
+      // (While Bill's helping Celio on One Island, the PCs can't reach his storage: FLAG_SYS_PC_STORAGE_DISABLED.)
+      if (player.flags.pcStorageDisabled) { await say(T("OneIsland_PokemonCenter_1F_Text_UsualPCServicesUnavailable")); return; }
       sfx("se_pc_on");
       await say("{PLAYER} booted up the PC.");
       await pc();
@@ -2011,6 +2115,7 @@
     { const g = /^Route23_EventScript_(\w+)BadgeGuard(Trigger)?$/.exec(script); if (g) { await badgeGuard(ROUTE23_BADGES.indexOf(g[1]) + 1, !!g[2], "LOCALID_" + g[1].toUpperCase() + "_BADGE_GUARD"); return; } }
     { const q = /^CinnabarIsland_Gym_EventScript_Quiz(\d)(Left|Right)$/.exec(script); if (q) { await cinnabarQuiz(+q[1], q[2]); return; } }
     if (FUCHSIA_SIGN_MONS[script]) { await monSign(FUCHSIA_SIGN_MONS[script], ev.sign.text); return; }
+    if (BRAILLE_SIGNS[script]) { await say(BRAILLE_SIGNS[script].map(braille)); return; }
     if (script === "Game_EventScript_Leaf") {
       if (!canBattle()) return;
       if (ev.map === "PewterCity") await leafPewter(true); else await leafVermilion();
@@ -3037,6 +3142,114 @@
         await legendaryBird(ev.person, "Articuno", "foughtArticuno");
         return;
 
+      // ---------- The Sevii Islands ----------
+      case "enter:CinnabarIsland": case "arrive:CinnabarIsland":
+        if (f.cinnabarScene === 1) await cinnabarBill();
+        return;
+      case "CinnabarIsland_PokemonCenter_1F_EventScript_Bill": await cinnabarCenterBill(ev.person); return;
+      // The Seagallop: Vermilion's dock and the islands' harbors.
+      case "VermilionCity_EventScript_FerrySailor":
+        if (!f.ssAnneDeparted) { await say(T("VermilionCity_Text_WelcomeToTheSSAnne")); return; }
+        await vermilionSeagallop(Overworld.position().x < 24);
+        return;
+      case "OneIsland_Harbor_EventScript_Sailor": await harborSailor("ONE_ISLAND"); return;
+      case "TwoIsland_Harbor_EventScript_Sailor": await harborSailor("TWO_ISLAND"); return;
+      case "ThreeIsland_Harbor_EventScript_Sailor": await harborSailor("THREE_ISLAND"); return;
+      case "OneIsland_PokemonCenter_1F_EventScript_Nurse": case "TwoIsland_PokemonCenter_1F_EventScript_Nurse":
+      case "ThreeIsland_PokemonCenter_1F_EventScript_Nurse":
+        await nurse(ev.map, ev.person);
+        return;
+      case "enter:OneIsland_PokemonCenter_1F": await meetCelio(); return;
+      case "enter:OneIsland": await billToCelio(); return;
+      case "OneIsland_PokemonCenter_1F_EventScript_Celio": await celio(); return;
+      case "OneIsland_PokemonCenter_1F_EventScript_Bill": await oneIslandCenterBill(); return;
+      case "OneIsland_PokemonCenter_1F_EventScript_NetworkMachine": await networkMachine(); return;
+      case "OneIsland_PokemonCenter_1F_EventScript_CrushGirl":
+        await say(T(f.canLinkWithRS ? "OneIsland_PokemonCenter_1F_Text_TradedWithFarAwayBoyfriend" : "OneIsland_PokemonCenter_1F_Text_WishICouldTradeWithBoyfriend"));
+        return;
+      case "OneIsland_EventScript_OldMan":
+        await say(T(f.canLinkWithRS ? "OneIsland_Text_HavePCLinkageWithHoenn" : f.seviiDetourDone ? "OneIsland_Text_HavePCLinkageWithKanto" : "OneIsland_Text_LuckyToHaveCelioHere"));
+        return;
+      case "OneIsland_PokemonCenter_1F_EventScript_LeaveOneIslandTriggerTop": await leaveOneIsland(1); return;
+      case "OneIsland_PokemonCenter_1F_EventScript_LeaveOneIslandTriggerMidTop": await leaveOneIsland(2); return;
+      case "OneIsland_PokemonCenter_1F_EventScript_LeaveOneIslandTriggerMidBottom": await leaveOneIsland(3); return;
+      case "OneIsland_PokemonCenter_1F_EventScript_LeaveOneIslandTriggerBottom": await leaveOneIsland(4); return;
+      // The Ember Spa: the man who made it with Rock Smash gives you the HM
+      // (FireRed's HM06; HM08 here); the hot spring heals.
+      case "OneIsland_KindleRoad_EmberSpa_EventScript_RockSmashMan": {
+        const E = (k) => T("OneIsland_KindleRoad_EmberSpa_Text_" + k), hm = FieldMoves.hmFor("Rock Smash");
+        if (!f.gotHM06) {
+          await say(E("UsedThisToMakeEmberSpa"));
+          Player.addItem(player, hm);
+          f.gotHM06 = true;
+          await sayWithJingle(itemJingle(hm), "{PLAYER} received " + Bag.name(hm) + "!");
+        }
+        await say(E("ExplainHM06").map((p) => p.replace(/HM06/g, Bag.name(hm).split(" ")[0])));
+        return;
+      }
+      case "OneIsland_KindleRoad_EmberSpa_EventScript_SpaHeal": await emberSpa(); return;
+      case "MtEmber_Exterior_EventScript_ExplosionTutor": await moveTutor("Explosion", "tutorExplosion", "Text_Explosion"); return;
+      case "MtEmber_Exterior_EventScript_RocketPasswordScene": await emberPassword(); return;
+      case "MtEmber_Exterior_EventScript_Grunt1": await emberGrunt(1); return;
+      case "MtEmber_Exterior_EventScript_Grunt2": await emberGrunt(2); return;
+      case "MtEmber_Summit_EventScript_Moltres": await legendaryBird(ev.person, "Moltres", "foughtMoltres"); return;
+      case "MtEmber_RubyPath_B5F_EventScript_Ruby":
+        f.gotRuby = true;
+        Overworld.removePerson(ev.person);
+        Player.addItem(player, "ruby");
+        await sayWithJingle("mus_obtain_key_item", T("MtEmber_RubyPath_B3F_Text_FoundARuby"));
+        return;
+      // Two Island.
+      case "TwoIsland_EventScript_Clerk": await twoIslandClerk(); return;
+      case "enter:TwoIsland_JoyfulGameCorner": await gameCornerHelp(); return;
+      case "TwoIsland_JoyfulGameCorner_EventScript_LostellesDaddy": await lostellesDaddy(); return;
+      case "TwoIsland_JoyfulGameCorner_EventScript_InfoMan":
+        if ((f.gameCornerScene || 0) >= 4) { await say(T("Text_WelcomeCanYouWait")); await say(T("Text_AdapterNotConnectedMinigame")); return; }
+        await say(T(f.rescuedLostelle ? "TwoIsland_JoyfulGameCorner_Text_GetGamesGoingSoon" : "TwoIsland_JoyfulGameCorner_Text_NotRunningAnyGamesToday"));
+        return;
+      case "TwoIsland_JoyfulGameCorner_EventScript_Lostelle": await say(T("TwoIsland_JoyfulGameCorner_Text_PleaseShowMeYouBeingCool")); return;
+      case "TwoIsland_CapeBrink_House_EventScript_StarterTutor": await capeBrinkTutor(); return;
+      case "TwoIsland_House_EventScript_MoveManiac": await moveManiac(); return;
+      // Three Island.
+      case "ThreeIsland_EventScript_Biker": await bikerArgument(2); return;
+      case "ThreeIsland_EventScript_AntiBiker1": await antiBiker(1); return;
+      case "ThreeIsland_EventScript_AntiBiker2": await antiBiker(2); return;
+      case "ThreeIsland_EventScript_BikerBossIntroTrigger": await bikerBossIntro(); return;
+      case "ThreeIsland_EventScript_BattleBikersTriggerLeft": await bikerBattles(0); return;
+      case "ThreeIsland_EventScript_BattleBikersTriggerMidLeft": await bikerBattles(1); return;
+      case "ThreeIsland_EventScript_BattleBikersTriggerMid": await bikerBattles(2); return;
+      case "ThreeIsland_EventScript_BattleBikersTriggerMidRight": await bikerBattles(3); return;
+      case "ThreeIsland_EventScript_BattleBikersTriggerRight": await bikerBattles(4); return;
+      case "ThreeIsland_EventScript_Doduo": cry("Doduo"); await say(T("ThreeIsland_Text_Doduo")); return;
+      case "ThreeIsland_Port_EventScript_Woman":
+        await say(T((f.gameCornerScene || 0) >= 2 ? "ThreeIsland_Port_Text_EverythingTurnedOutForBest"
+          : f.threeIslandScene === 4 ? "ThreeIsland_Port_Text_ThankGoodnessBikersGone" : "ThreeIsland_Port_Text_IllCallThePolice"));
+        return;
+      case "ThreeIsland_House1_EventScript_Lostelle": await say(T("ThreeIsland_House1_Text_YoureAlwaysSoCool"), bigGuy()); return;
+      case "ThreeIsland_House5_EventScript_LittleGirl":
+        await say(T(f.rescuedLostelle ? "ThreeIsland_House5_Text_IllGoPlayWithLostelle" : "ThreeIsland_House5_Text_ImNotLostelle"));
+        return;
+      case "ThreeIsland_Mart_EventScript_Clerk": await mart(ev.person.mart); return;
+      case "ThreeIsland_BerryForest_EventScript_Lostelle": await berryForestLostelle(ev.person); return;
+      // The Dunsparce Tunnel's prospector strikes gold once it's dug out
+      // (FireRed: with the National Pokédex; here, once you're Champion).
+      case "ThreeIsland_DunsparceTunnel_EventScript_Prospector": {
+        const D = (k) => T("ThreeIsland_DunsparceTunnel_Text_" + k);
+        if (f.gotNuggetFromProspector) { await say(D("ThatsANugget")); return; }
+        if (!f.gameClear) {
+          await say(D("ProspectingForGold"));
+          Screen.say("");
+          await Overworld.act([{ who: "LOCALID_PROSPECTOR", moves: ["face_right"] }]);
+          return;
+        }
+        await say(D("StruckGoldThisIsForYou"));
+        Player.addItem(player, "nugget");
+        f.gotNuggetFromProspector = true;
+        await sayWithJingle("mus_obtain_item", "{PLAYER} received a " + Bag.name("nugget") + "!");
+        await say(D("ThatsANugget"));
+        return;
+      }
+
       // ---------- Cinnabar Island ----------
       // The Gym's door, locked until you have the Secret Key (VAR_TEMP_1, from
       // FLAG_HIDE_POKEMON_MANSION_B1F_SECRET_KEY: CinnabarIsland_EventScript_CheckUnlockGym).
@@ -3146,10 +3359,11 @@
       case "VermilionCity_EventScript_CheckTicketRight":
         if (ticketChecked) return;
         if (f.ssAnneDeparted) {
+          // (Then the Seagallop sails from here, with a Tri-Pass or Rainbow Pass:
+          // VermilionCity_EventScript_CheckSeagallopPresentTrigger.)
           await Overworld.act([{ who: "LOCALID_VERMILION_FERRY_SAILOR", moves: M("Common_Movement_WalkInPlaceFasterLeft") },
             { who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
-          await say(T("VermilionCity_Text_TheShipSetSail"));
-          await Overworld.act([{ who: "player", moves: ["walk_up"] }]);
+          await vermilionSeagallop(true);
           return;
         }
         await Overworld.act([{ who: "LOCALID_VERMILION_FERRY_SAILOR", moves: M("Common_Movement_WalkInPlaceFasterLeft") },
@@ -4701,6 +4915,8 @@
     sfx("se_m_fly");
     Overworld.setAvatar("walk");
     await Overworld.teleport({ map: spot.map, x: spot.x, y: spot.y, facing: "down" });
+    // (A scene that starts on arriving: Bill waiting on Cinnabar Island.)
+    if (spot.map === "CinnabarIsland" && special("enter:" + spot.map)) await story({ type: "trigger", trigger: { script: "enter:" + spot.map }, map: spot.map });
   }
 
   // The Bicycle (from the Bag, or Select once registered): on and off,
@@ -6100,12 +6316,839 @@
     await persist();
   }
 
+  // ---------- The Sevii Islands: the Seagallop ferries ----------
+  //
+  // FireRed's EventScript_SetSail (data/scripts/seagallop.inc): "All aboard
+  // SEAGALLOP HI-SPEED 7!", the screen goes dark and the ferry crosses the sea
+  // (ui/seagallop.js: DoSeagallopFerryScene), and you're at the other harbor.
+  // game/sevii.js has the ports, the menus and the story's flags.
+  async function setSail(from, to, announce) {
+    if (announce !== false) {
+      await say(from === "VERMILION_CITY" && to !== "CINNABAR_ISLAND" ? T("VermilionCity_Text_Seagallop7Departing") : T("Text_AllAboardSeagallopNum"),
+        [String(Sevii.ferryNumber(from, to))]);
+    }
+    Screen.say("");
+    clearMenu();
+    await sleep(333);
+    await Overworld.fadeToBlack();
+    const o = $("#overlay");
+    await Seagallop.ride(o, { eastbound: Sevii.eastbound(from, to), sfx, fadeMusic: () => music(null) }).catch((e) => console.error(e));
+    o.classList.add("hidden");
+    sfx("se_exit");
+    const p = Sevii.port(to);
+    Overworld.setAvatar("walk");
+    await Overworld.teleport({ map: p.map, x: p.x, y: p.y, facing: to === "CINNABAR_ISLAND" ? "down" : "up" });
+    music((window.WORLD_MAPS[p.map] || {}).music);
+    // Landing on One Island the first time (OneIsland_Harbor's ON_FRAME), or
+    // back on Cinnabar with Bill (CinnabarIsland_EventScript_ReturnFromSeviiIslands).
+    if (to === "ONE_ISLAND" && player.flags.oneHarborScene === 1) await oneIslandArrival();
+    else if (to === "CINNABAR_ISLAND" && player.flags.cinnabarScene === 3) await cinnabarBillReturns();
+    await persist();
+  }
+
+  // A Seagallop sailor (a harbor's, or Vermilion's by the dock): where to?
+  // `from`: the harbor (SEAGALLOP_*). `question`: what he asks.
+  // (Four to Seven Island are on the Rainbow Pass's menu, as in FireRed, but
+  // their islands aren't in the game yet: the sailor says so.)
+  async function seagallopMenu(from, question, onCancel) {
+    let page = 0;
+    for (;;) {
+      const m = Sevii.menu(player.flags, from, page);
+      const pages = m.items.includes("MORE");
+      // (FireRed's windows: the two-page menu at the top right, the others lower down.)
+      const [left, top] = pages ? [17, page ? 2 : 0] : [19, m.items.length >= 4 ? 5 : 6];
+      const i = await multichoice(fill(question[question.length - 1]), left, top, m.labels);
+      const pick = i < 0 ? "EXIT" : m.items[i];
+      if (pick === "MORE") { page = 1 - page; continue; }
+      if (pick === "EXIT") { Screen.say(""); if (onCancel) await onCancel(); return; }
+      if (!Sevii.built(pick)) {
+        await say(["Sorry, the Seagallop doesn't sail\nto " + Sevii.port(pick).label + " yet.", "(" + Sevii.port(pick).label + " isn't in\nthis game yet.)"]);
+        return;
+      }
+      await setSail(from, pick);
+      return;
+    }
+  }
+  // The harbor sailors on One, Two and Three Island.
+  async function harborSailor(from) {
+    const q = T("Text_WhereDoYouWantToSail");
+    await say(q.slice(0, -1));
+    await seagallopMenu(from, q);
+  }
+  // Vermilion's dock (VermilionCity_EventScript_CheckSeagallopPresent): once
+  // the S.S. Anne's gone, the Seagallop sails from here for whoever has a pass.
+  async function vermilionSeagallop(walkBack) {
+    const f = player.flags, scene = f.celioScene || 0;
+    const back = async () => { if (walkBack) await Overworld.act([{ who: "player", moves: ["walk_up"] }]); };
+    if (scene < 1) { await say(T("VermilionCity_Text_TheShipSetSail")); await back(); return; }
+    const q = T(scene >= 5 ? "VermilionCity_Text_BoardSeagallopRainbowPass" : "VermilionCity_Text_BoardSeagallopTriPass");
+    await say(q.slice(0, -1));
+    await seagallopMenu("VERMILION_CITY", q, back);
+  }
+
+  // ---------- The Sevii Islands: Bill's trip ----------
+  //
+  // Beat Blaine and Bill's waiting outside his Gym (VAR_MAP_SCENE_CINNABAR_ISLAND
+  // 1: flags.cinnabarScene): he'd like you to come with him to One Island. Say
+  // no and he waits in Cinnabar's Pokémon Center. His pal's Seagallop takes
+  // you to One Island, where he introduces you to Celio; you take a Meteorite
+  // to Lostelle's dad on Two Island, find Lostelle in Three Island's Berry
+  // Forest past the bikers, and Bill takes you home to Cinnabar.
+  const CINNABAR_BILL = "LOCALID_CINNABAR_BILL", CINNABAR_SEAGALLOP = "LOCALID_CINNABAR_SEAGALLOP";
+  // Bill and the boat at Cinnabar (CinnabarIsland_EventScript_BillScene):
+  // coming out of the Gym he's right there and walks up; coming out of the
+  // Pokémon Center he comes over from the east (FLAG_TEMP_2); anywhere else
+  // he walks over to you.
+  async function cinnabarBill() {
+    const f = player.flags, C = (k) => T("CinnabarIsland_Text_" + k), Cm = (k) => M("CinnabarIsland_Movement_" + k);
+    let at = Overworld.position();
+    if (at.x === 20 && at.y === 4) { await Overworld.act([{ who: "player", moves: ["walk_down"] }]); at = Overworld.position(); }
+    const gym = at.x === 20 && at.y === 5, center = at.x === 14 && at.y === 12;
+    if (center) Overworld.addObject(CINNABAR_BILL, { x: 18, y: 12, facing: "up" });
+    await Overworld.act([{ who: CINNABAR_BILL, moves: gym ? M("Common_Movement_WalkInPlaceFasterUp") : ["face_player"] }]);
+    sfx("se_pin");
+    await Overworld.act([{ who: CINNABAR_BILL, moves: ["emote_exclamation_mark", "delay_16", "delay_16", "delay_16"] }]);
+    if (gym) await Overworld.act([{ who: CINNABAR_BILL, moves: Cm("BillApproachPlayer1") }]);
+    else if (center) {
+      await Overworld.act([{ who: CINNABAR_BILL, moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
+      await Overworld.act([{ who: CINNABAR_BILL, moves: Cm("BillApproachPlayer2") }]);
+      await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
+    } else {
+      // (Next to you, whichever side he can get to.)
+      const spots = [[1, 0, "left"], [-1, 0, "right"], [0, 1, "up"], [0, -1, "down"]].map(([dx, dy, face]) => ({ x: at.x + dx, y: at.y + dy, face }));
+      for (const s of spots) { const path = pathTo(CINNABAR_BILL, s); if (path) { await walkTo(CINNABAR_BILL, s, s.face); break; } }
+      await Overworld.act([{ who: "player", moves: ["face_" + (() => { const b = Overworld.personPosition(CINNABAR_BILL) || at; return b.x > at.x ? "right" : b.x < at.x ? "left" : b.y > at.y ? "down" : "up"; })()] }]);
+    }
+    await say(C("HeyIfItIsntPlayer"));
+    const q = C("ComeWithMeToOneIsland");
+    await say(q.slice(0, -1));
+    if (await confirm(fill(q[q.length - 1]))) {
+      await say(C("AllRightLetsGo"));
+      Screen.say("");
+      await cinnabarSailWithBill(gym ? "gym" : center ? "shore" : "walk");
+      return;
+    }
+    await say(C("IllBeWaitingInPokeCenter"));
+    Screen.say("");
+    if (gym) await Overworld.act([{ who: CINNABAR_BILL, moves: Cm("BillExitToPokeCenter").concat(["set_invisible"]) }]);
+    else if (center) {
+      await Overworld.act([{ who: "player", moves: Cm("PlayerWatchBillExit") }, { who: CINNABAR_BILL, moves: Cm("BillApproachDoor") }]);
+      sfx("se_door");
+      await Overworld.act([{ who: CINNABAR_BILL, moves: Cm("BillReEnterPokeCenter") }]);
+    } else {
+      await walkTo(CINNABAR_BILL, { x: 14, y: 12 }, "up");
+      sfx("se_door");
+      await Overworld.act([{ who: CINNABAR_BILL, moves: ["walk_up", "set_invisible"] }]);
+    }
+    Overworld.removeObject(CINNABAR_BILL);
+    f.cinnabarScene = 2;
+    f.cinnabarBillInCenter = true;   // (FLAG_HIDE_CINNABAR_POKECENTER_BILL cleared)
+  }
+  // CinnabarIsland_EventScript_SailToOneIsland: the Seagallop pulls in, and
+  // you board it with Bill. `how`: "gym" (outside the Gym), "shore" (out of
+  // the Pokémon Center, along the shore), or "walk" (from anywhere else).
+  async function cinnabarSailWithBill(how) {
+    const f = player.flags, C = (k) => T("CinnabarIsland_Text_" + k), Cm = (k) => M("CinnabarIsland_Movement_" + k);
+    if (how === "shore") await Overworld.act([{ who: CINNABAR_BILL, moves: Cm("ApproachShore") }, { who: "player", moves: Cm("ApproachShore") }]);
+    if (how === "walk") {
+      await walkTo(CINNABAR_BILL, { x: 21, y: 8 }, "right");
+      await walkTo("player", { x: 20, y: 8 }, "right");
+    }
+    const row = how === "shore" ? 12 : 8;
+    Overworld.addObject(CINNABAR_SEAGALLOP, { x: 30, y: row, facing: "left" });
+    await Overworld.act(how === "gym" ? [{ who: CINNABAR_BILL, moves: Cm("BillFaceBoat") }, { who: CINNABAR_SEAGALLOP, moves: Cm("BoatArrive") }]
+      : [{ who: CINNABAR_SEAGALLOP, moves: Cm("BoatArrive") }]);
+    await say(C("MyPalsBoatArrived"));
+    Screen.say("");
+    if (how === "gym") await Overworld.act([{ who: CINNABAR_BILL, moves: Cm("BillBoardBoat") }, { who: "player", moves: Cm("PlayerBoardBoat") }]);
+    else if (how === "shore") await Overworld.act([{ who: CINNABAR_BILL, moves: Cm("BillBoardBoatFromShore") }, { who: "player", moves: Cm("PlayerBoardBoatFromShore") }]);
+    else await Overworld.act([{ who: CINNABAR_BILL, moves: ["walk_right", "delay_4", "set_invisible"] }, { who: "player", moves: ["walk_right", "delay_4", "walk_right", "delay_4", "set_invisible"] }]);
+    f.cinnabarScene = 2;
+    delete f.cinnabarExitWithBill;
+    delete f.cinnabarBillInCenter;
+    Overworld.removeObject(CINNABAR_BILL);
+    await sleep(667);
+    f.oneHarborScene = 1;
+    await setSail("CINNABAR_ISLAND", "ONE_ISLAND", false);
+  }
+  // Bill in Cinnabar's Pokémon Center (..._PokemonCenter_1F_EventScript_Bill):
+  // ready? Then out you go together, along the shore to the boat.
+  async function cinnabarCenterBill(person) {
+    const f = player.flags, P = (k) => T("CinnabarIsland_PokemonCenter_1F_Text_" + k), Pm = (k) => M("CinnabarIsland_PokemonCenter_1F_Movement_" + k);
+    const q = P("ReadyToSailToOneIsland");
+    await say(q.slice(0, -1));
+    if (!(await confirm(fill(q[q.length - 1])))) { await say(P("OhNotDoneYet")); return; }
+    await say(P("LetsGo"));
+    Screen.say("");
+    music("mus_follow_me");
+    await sleep(333);
+    const facing = Overworld.position().facing, id = "LOCALID_CINNABAR_POKEMON_CENTER_BILL";
+    // (By the way you face him: from below, from his left or right.)
+    const moves = facing === "left" ? [Pm("BillExit"), Pm("PlayerExitWest")] : facing === "right" ? [Pm("BillExitEast"), Pm("PlayerExitEast")] : [Pm("BillExit"), Pm("PlayerExitSouth")];
+    await Overworld.act([{ who: id, moves: moves[0] }, { who: "player", moves: moves[1] }]);
+    Overworld.removeObject(id);
+    delete f.cinnabarBillInCenter;
+    f.cinnabarExitWithBill = true;   // VAR_MAP_SCENE_CINNABAR_ISLAND_2, 1
+    sfx("se_exit");
+    await Overworld.teleport({ map: "CinnabarIsland", x: 14, y: 12, facing: "down" });
+    music("mus_follow_me");
+    Overworld.addObject(CINNABAR_BILL, { x: 15, y: 12, facing: "left" });
+    await sleep(333);
+    await cinnabarSailWithBill("shore");
+  }
+  // Back from One Island (CinnabarIsland_EventScript_ReturnFromSeviiIslands):
+  // Bill says goodbye and goes home; Lostelle's back home on Three Island.
+  async function cinnabarBillReturns() {
+    const f = player.flags;
+    Overworld.addObject(CINNABAR_BILL, { x: 21, y: 8, facing: "up" });
+    await say(T("CinnabarIsland_Text_IfYouHaveTriPassYouCanGoAgain"));
+    Screen.say("");
+    await Overworld.act([{ who: CINNABAR_BILL, moves: M("CinnabarIsland_Movement_BillExit").concat(["set_invisible"]) }]);
+    Overworld.removeObject(CINNABAR_BILL);
+    f.cinnabarScene = 4;
+  }
+
+  // Off the boat at One Island (OneIsland_Harbor's and OneIsland's ON_FRAME
+  // scenes): up out of the harbor, and Bill takes you to the Pokémon Center.
+  const ONE_BILL = "LOCALID_ONE_ISLAND_BILL";
+  async function oneIslandArrival() {
+    const f = player.flags;
+    await Overworld.act([{ who: "player", moves: M("OneIsland_Harbor_Movement_PlayerExitHarbor") }]);
+    f.oneHarborScene = 2;
+    sfx("se_exit");
+    await Overworld.teleport({ map: "OneIsland", x: 12, y: 18, facing: "up" });
+    await billToCelio();
+  }
+  // OneIsland_EventScript_EnterOneIslandFirstTime: out of the harbor, Bill
+  // walks you up to the Pokémon Center.
+  async function billToCelio() {
+    const f = player.flags, O = (k) => M("OneIsland_Movement_" + k);
+    await Overworld.act([{ who: "player", moves: O("PlayerExitHarbor") }]);
+    await say(T("OneIsland_Text_BillLetsGoSeeCelio"));
+    Screen.say("");
+    await Overworld.act([{ who: ONE_BILL, moves: O("BillWalkToPokeCenter") }, { who: "player", moves: O("PlayerWalkToPokeCenter") }]);
+    sfx("se_door");
+    await Overworld.act([{ who: ONE_BILL, moves: O("BillEnterPokeCenter") }, { who: "player", moves: O("PlayerEnterPokeCenter") }]);
+    Overworld.removeObject(ONE_BILL);
+    f.oneHarborScene = 3;
+    await Overworld.teleport({ map: "OneIsland_PokemonCenter_1F", x: 9, y: 9, facing: "up" });
+    player.flags.lastCenter = "OneIsland_PokemonCenter_1F";   // (setrespawn HEAL_LOCATION_ONE_ISLAND)
+    await meetCelio();
+  }
+
+  // One Island's Pokémon Net Center (OneIsland_PokemonCenter_1F_EventScript_MeetCelioScene):
+  // Bill introduces you to Celio, who can't get his PCs to link with Kanto's.
+  // Bill stays to help, and gives you the Meteorite for Lostelle's dad on Two
+  // Island; Celio gives you the Tri-Pass, and the Town Map's page of the
+  // Sevii Islands. The PCs can't reach Bill's storage meanwhile.
+  const PC_BILL = "LOCALID_ONE_ISLAND_POKEMON_CENTER_BILL", CELIO = "LOCALID_CELIO";
+  async function meetCelio() {
+    const f = player.flags, X = (k) => T("OneIsland_PokemonCenter_1F_Text_" + k), Xm = (k) => M("OneIsland_PokemonCenter_1F_Movement_" + k);
+    const turn = (who, dir) => Overworld.act([{ who, moves: M("Common_Movement_WalkInPlaceFaster" + dir) }]);
+    await Overworld.act([{ who: "player", moves: Xm("PlayerWalkToCelio") }, { who: PC_BILL, moves: Xm("BillWalkToCelio") }]);
+    await say(X("BillHeyThereCelio"));
+    await turn("player", "Right");
+    sfx("se_pin");
+    await Overworld.act([{ who: CELIO, moves: ["emote_exclamation_mark"] }]);
+    await turn(CELIO, "Left");
+    await sleep(800);
+    await say(X("CelioCantBelieveYouCameOut"));
+    await say(X("BillHowsYourResearchComing"));
+    await Overworld.act([{ who: PC_BILL, moves: M("Common_Movement_WalkInPlaceFasterDown") }, { who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
+    await say(X("ThisIsMyBuddyCelio"));
+    await turn(PC_BILL, "Right");
+    await turn("player", "Right");
+    await say(X(f.gameClear ? "PlayerIsReigningPokemonChamp" : "PlayerIsRisingPokemonChamp"));
+    await turn(CELIO, "Down");
+    await say(X("CelioThatsReallyImpressive"));
+    await say(X("BillBringMeUpToSpeed"));
+    await turn(CELIO, "Left");
+    await say(X("CelioPCsCantLinkWithYours"));
+    Screen.say("");
+    await turn(PC_BILL, "Up");
+    await say(X("BillLetMeHelpYou"));
+    await turn(PC_BILL, "Down");
+    await turn("player", "Up");
+    await say(X("CanYouDeliverThisMeteoritePlayer"));
+    Player.addItem(player, "meteorite");
+    await sayWithJingle("mus_obtain_key_item", X("AcceptedMeteoriteFromBill"));
+    await turn(CELIO, "Down");
+    await say(X("CelioPleaseTakeThis"));
+    Player.addItem(player, "tri-pass");
+    await sayWithJingle("mus_obtain_key_item", X("ObtainedTriPass"));
+    await say(X("PassLetsYouTravelBetweenIslands"));
+    // The Town Map's page for the islands (or the Town Map, if Daisy hasn't given you one).
+    if (f.townMap) await sayWithJingle("mus_obtain_key_item", X("ReceivedExtraPageForTownMap"));
+    else {
+      Player.addItem(player, "town-map");
+      f.townMap = true;
+      await sayWithJingle("mus_obtain_key_item", X("ReceivedTownMap"));
+    }
+    f.seviiMap123 = true;
+    await say(X("BillCatchYouLater"));
+    Screen.say("");
+    await turn(PC_BILL, "Up");
+    await turn(CELIO, "Up");
+    f.pcStorageDisabled = true;
+    f.celioScene = 1;
+  }
+
+  // Celio (OneIsland_PokemonCenter_1F_EventScript_Celio): what he says as
+  // the story goes on. Once you're Champion (FireRed: with the National
+  // Pokédex, which this game hasn't got) he asks you to find a gem for his
+  // Network Machine, and Team Rocket turns up on Mt. Ember; bring him the
+  // Ruby and he trades your Tri-Pass for the Rainbow Pass and asks for the
+  // Sapphire (the rest of the islands: still to come).
+  async function celio() {
+    const f = player.flags, X = (k) => T("OneIsland_PokemonCenter_1F_Text_" + k), scene = f.celioScene || 0;
+    if (scene >= 7) {
+      await say(X("CelioHearingRumorsAboutYou"));
+      await say(X(["BillsFirstMonWasAbra", "BillsHometownInGoldenrod", "BillCantStomachMilk"][Math.floor(Math.random() * 3)]));
+      return;
+    }
+    if (scene === 6) { await say(X("WishYouBestOfLuck")); return; }
+    if (f.recoveredSapphire && Player.itemCount(player, "sapphire")) { await celioSapphire(); return; }
+    if (scene === 5) { await say(X("PassLetYouGetToAllIslands")); return; }
+    if (f.gotRuby && Player.itemCount(player, "ruby")) { await celioRuby(); return; }
+    if (scene === 4) { await say(X("TryingToFindGem")); return; }
+    if (f.gameClear && scene >= 3) {
+      await say(X("CelioCaughtMoreMonMaybeICanBeUseful"));
+      await Overworld.act([{ who: CELIO, moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
+      await say(X("YoullBeTradingFromTrainersFarAway"));
+      await Overworld.act([{ who: CELIO, moves: ["face_player"] }]);
+      await say(X("NeedsSpecialGemstone"));
+      f.mtEmberScene = 1;
+      f.celioScene = 4;
+      applyPatches("OneIsland_PokemonCenter_1F");
+      return;
+    }
+    if (scene === 3) { await say(X("CelioImModifyingMyNetworkMachine")); return; }
+    await say(X("SorryForBeingPoorHost"));
+    Screen.say("");
+    await Overworld.act([{ who: CELIO, moves: ["face_up"] }]);
+  }
+  // The Ruby into the machine (..._EventScript_GiveCelioRuby), and one more
+  // favour: the Rainbow Pass for your Tri-Pass, and the Town Map's pages for
+  // Four to Seven Island.
+  async function celioRuby() {
+    const f = player.flags, X = (k) => T("OneIsland_PokemonCenter_1F_Text_" + k);
+    await say(X("OhThats"));
+    await sayWithJingle("mus_obtain_tmhm", X("HandedRubyToCelio"));
+    Screen.say("");
+    await Overworld.act([{ who: CELIO, moves: M("OneIsland_PokemonCenter_1F_Movement_CelioPutGemInMachine") }]);
+    sfx("se_select");
+    f.celioRubyIn = true;
+    applyPatches("OneIsland_PokemonCenter_1F");
+    await sleep(500);
+    await Overworld.act([{ who: CELIO, moves: ["face_player"] }]);
+    const q = X("MayIAskOneMoreFavor");
+    await say(q.slice(0, -1));
+    if (!(await confirm(fill(q[q.length - 1])))) {
+      for (;;) {
+        const p = X("PleaseINeedYourHelp");
+        await say(p.slice(0, -1));
+        if (await confirm(fill(p[p.length - 1]))) break;
+      }
+    }
+    await say(X("AnotherGemstoneInSeviiIslands"));
+    Player.removeItem(player, "ruby");
+    Player.removeItem(player, "tri-pass");
+    f.celioScene = 5;
+    Player.addItem(player, "rainbow-pass");
+    f.seviiMap4567 = true;
+    await sayWithJingle("mus_obtain_key_item", X("ReturnedTriPassForRainbowPass"));
+    await sayWithJingle("mus_obtain_key_item", X("ObtainedExtraMapPage"));
+    await say(X("PassLetYouGetToAllIslands"));
+  }
+  // The Sapphire (..._EventScript_GiveCelioSapphire): the hook for the rest
+  // of the islands. Bring it back (flags.recoveredSapphire, and the item) and
+  // the Network Machine links with Hoenn: FLAG_SYS_CAN_LINK_WITH_RS
+  // (flags.canLinkWithRS, the League's rematch teams).
+  async function celioSapphire() {
+    const f = player.flags, X = (k) => T("OneIsland_PokemonCenter_1F_Text_" + k);
+    await sayWithJingle("mus_obtain_tmhm", X("HandedSapphireToCelio"));
+    Player.removeItem(player, "sapphire");
+    await say(X("ThankYouGiveMeTime"));
+    Screen.say("");
+    await Overworld.act([{ who: CELIO, moves: M("OneIsland_PokemonCenter_1F_Movement_CelioPutGemInMachine") }]);
+    sfx("se_select");
+    f.celioSapphireIn = true;
+    applyPatches("OneIsland_PokemonCenter_1F");
+    await say(X("OkayThisIsGood"));
+    Screen.say("");
+    await sleep(1000);
+    await Overworld.act([{ who: CELIO, moves: M("OneIsland_PokemonCenter_1F_Movement_CelioCheckMachine") }]);
+    await sleep(500);
+    await Overworld.act([{ who: CELIO, moves: M("OneIsland_PokemonCenter_1F_Movement_CelioCheckMachine") }]);
+    await sleep(667);
+    sfx("se_pc_on");
+    f.canLinkWithRS = true;
+    applyPatches("OneIsland_PokemonCenter_1F");
+    await say(X("LinkedUpWithLanette"));
+    await Overworld.act([{ who: CELIO, moves: ["face_player"] }]);
+    await say(X("ManagedToLinkWithHoennThankYou"));
+    f.celioScene = 6;
+  }
+  // Bill, helping Celio (..._EventScript_Bill).
+  async function oneIslandCenterBill() {
+    const X = (k) => T("OneIsland_PokemonCenter_1F_Text_" + k);
+    if (player.flags.seviiDetourDone) {
+      await Overworld.act([{ who: PC_BILL, moves: ["face_player"] }]);
+      await say(X("GotPCWorkingStrollAWhileMore"));
+    } else await say(X("HmmHowAboutLikeThis"));
+  }
+  // Lostelle's back and the Meteorite delivered: walking in, Bill's done and
+  // takes you back to Kanto (..._EventScript_LeaveOneIslandScene). `row`: 1-4,
+  // which of the triggers (top to bottom).
+  async function leaveOneIsland(row) {
+    const f = player.flags, X = (k) => T("OneIsland_PokemonCenter_1F_Text_" + k), Xm = (k) => M("OneIsland_PokemonCenter_1F_Movement_" + k);
+    const turn = (who, dir) => Overworld.act([{ who, moves: M("Common_Movement_WalkInPlaceFaster" + dir) }]);
+    sfx("se_pin");
+    await Overworld.act([{ who: PC_BILL, moves: ["emote_exclamation_mark"] }]);
+    await say(X("BillOhHeyPlayer"));
+    Screen.say("");
+    await Overworld.act([{ who: "player", moves: Xm(["PlayerWalkToBillTop", "PlayerWalkToBillMidTop", "PlayerWalkToBillMidBottom", "PlayerWalkToBillBottom"][row - 1]) }]);
+    await sleep(167);
+    await say(X("BillWeGotItDone"));
+    await turn("player", "Down");
+    await say(X("CelioJobWentQuick"));
+    await turn(PC_BILL, "Down");
+    await turn(CELIO, "Up");
+    await say(X("BillYouveLearnedALot"));
+    await say(X("CelioOhReallyEhehe"));
+    Screen.say("");
+    await turn(PC_BILL, "Left");
+    await sleep(167);
+    await turn("player", "Right");
+    await sleep(250);
+    await say(X("BillWeShouldHeadBackToKanto"));
+    Screen.say("");
+    await turn(PC_BILL, "Down");
+    await sleep(250);
+    await turn(CELIO, "Left");
+    await turn("player", "Down");
+    await say(X("CelioPromiseIllShowYouAroundSometime"));
+    Screen.say("");
+    await sleep(417);
+    await Overworld.act([{ who: "player", moves: Xm("PlayerExit") }, { who: PC_BILL, moves: Xm("BillExit") }]);
+    sfx("se_exit");
+    f.celioScene = 3;
+    f.cinnabarScene = 3;
+    await setSail("ONE_ISLAND", "CINNABAR_ISLAND", false);
+  }
+
+  // The Network Machine (..._EventScript_NetworkMachine).
+  async function networkMachine() {
+    const f = player.flags, X = (k) => T("OneIsland_PokemonCenter_1F_Text_" + k);
+    await say(X(f.canLinkWithRS ? "MachineLinkedWithKantoAndHoenn" : f.seviiDetourDone ? "MachineLinkedWithKanto" : "MachineUnderAdjustment"));
+  }
+
+  // ---------- Two Island ----------
+
+  // The shop (TwoIsland_EventScript_SetShopState): more for sale as Lostelle's
+  // found, you become Champion, and Kanto links with Hoenn.
+  function twoIslandShop() {
+    const f = player.flags;
+    if (f.canLinkWithRS) return !f.twoIslandShopIntro ? 1 : !f.twoIslandShop1 ? 2 : !f.twoIslandShop2 ? 3 : 4;
+    if (f.gameClear) return !f.twoIslandShopIntro || !f.rescuedLostelle ? 1 : !f.twoIslandShop1 ? 2 : 3;
+    if (f.rescuedLostelle) return !f.twoIslandShopIntro ? 1 : 2;
+    return 1;
+  }
+  const TWO_ISLAND_STOCK = {
+    1: ["great-ball", "fresh-water"],
+    2: ["ultra-ball", "great-ball", "soda-pop", "fresh-water"],
+    3: ["ultra-ball", "great-ball", "lemonade", "soda-pop", "fresh-water", "moomoo-milk"],
+    4: ["ultra-ball", "repeat-ball", "timer-ball", "lemonade", "soda-pop", "fresh-water", "moomoo-milk", "lava-cookie"]
+  };
+  async function twoIslandClerk() {
+    const f = player.flags, state = f.twoIslandShopState || twoIslandShop();
+    const intro = { 1: ["twoIslandShopIntro", "WelcomeToShopMerchandiseLimited"], 2: ["twoIslandShop1", "AddedMerchandiseForLostelle"],
+      3: ["twoIslandShop2", "HopeYouGiveItYourBest"], 4: ["twoIslandShop3", "BringingItemsFromDistantLands"] }[state];
+    if (!f[intro[0]]) {
+      f[intro[0]] = true;
+      await say(T("TwoIsland_Text_" + intro[1]));
+      await mart(TWO_ISLAND_STOCK[state]);
+      return;
+    }
+    await mart(TWO_ISLAND_STOCK[state]);
+  }
+
+  // The Joyful Game Corner: Lostelle's dad, the biker, and Lostelle home.
+  const GC_DADDY = "LOCALID_JOYFUL_GAME_CORNER_DADDY", GC_BIKER = "LOCALID_JOYFUL_GAME_CORNER_BIKER", GC_LOSTELLE = "LOCALID_JOYFUL_GAME_CORNER_LOSTELLE";
+  const bigGuy = () => [Player.LOOKS[player.look] && Player.LOOKS[player.look].girl ? "big girl" : "big guy"];
+  async function gameCornerHelp() {
+    const f = player.flags, J = (k) => T("TwoIsland_JoyfulGameCorner_Text_" + k), Jm = (k) => M("TwoIsland_JoyfulGameCorner_Movement_" + k);
+    await Overworld.act([{ who: GC_DADDY, moves: Jm("DaddyPacing") }]);
+    await say(J("WhereHasLostelleGottenTo"));
+    Screen.say("");
+    await Overworld.act([{ who: GC_DADDY, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+    sfx("se_pin");
+    await Overworld.act([{ who: GC_DADDY, moves: ["emote_exclamation_mark", "delay_16", "delay_16", "delay_16"] }]);
+    await Overworld.act([{ who: GC_DADDY, moves: Jm("DaddyApproachPlayer") }]);
+    await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
+    await say(J("PleaseHelpFindLostelle"));
+    Screen.say("");
+    sfx("se_rs_door");
+    await sleep(300);
+    await Overworld.act([{ who: "player", moves: Jm("PlayerFaceDaddy") }]);
+    music("mus_encounter_boy");
+    Overworld.addObject(GC_BIKER, { x: 5, y: 8, facing: "up" });
+    await Overworld.act([{ who: GC_BIKER, moves: Jm("BikerLookAround") }]);
+    await say(J("IsThisOnlyThreeIsland"));
+    await Overworld.act([{ who: GC_BIKER, moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
+    await say(J("ThisIsTwoIslandMoveIt"));
+    await say(J("TheseIslandsAreConfusing"));
+    Screen.say("");
+    await Overworld.act([{ who: GC_BIKER, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+    sfx("se_exit");
+    Overworld.removeObject(GC_BIKER);
+    music((window.WORLD_MAPS.TwoIsland_JoyfulGameCorner || {}).music);
+    await sleep(1000);
+    await say(J("PunkScuffedUpMyFloor"));
+    f.threeIslandScene = 2;
+    f.gameCornerScene = 1;
+  }
+  async function gameCornerLostelleHome() {
+    const f = player.flags, J = (k) => T("TwoIsland_JoyfulGameCorner_Text_" + k);
+    await say(J("YouRescuedLostelle"));
+    await say(J("LostelleItsOkayDaddy"), bigGuy());
+    Screen.say("");
+    await Overworld.act([{ who: GC_LOSTELLE, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+    f.gameCornerScene = 3;
+  }
+  async function lostellesDaddy() {
+    const f = player.flags, J = (k) => T("TwoIsland_JoyfulGameCorner_Text_" + k);
+    if ((f.gameCornerScene || 0) >= 4) {
+      // (The minigames are played over FireRed's wireless link.)
+      await say(T("Text_WelcomeCanYouWait"));
+      await say(T("Text_AdapterNotConnectedMinigame"));
+      return;
+    }
+    if (f.gotMoonStoneFromDaddy) { await say(J("IllGetGameCornerRunning")); return; }
+    if (f.gameCornerScene !== 3) { await say(J("PleaseGoToThreeIsland")); return; }
+    if (!f.noRoomForMoonStone) {
+      await say(J("ThisIsForMe"));
+      f.celioScene = Math.max(f.celioScene || 0, 2);
+      Player.removeItem(player, "meteorite");
+      await sayWithJingle("mus_obtain_tmhm", J("HandedMeteoriteToLostellesDaddy"));
+      await say(J("OhThisIsFromBill"));
+    }
+    Player.addItem(player, "moon-stone");
+    f.gotMoonStoneFromDaddy = true;
+    delete f.noRoomForMoonStone;
+    await sayWithJingle("mus_obtain_item", J("ReceivedMoonStoneFromLostellesDaddy"));
+  }
+
+  // Cape Brink's tutor (TwoIsland_CapeBrink_House_EventScript_StarterTutor):
+  // the ultimate move of a fully evolved starter you lead with that's as fond
+  // of you as can be — Frenzy Plant, Blast Burn or Hydro Cannon, each once.
+  async function capeBrinkTutor() {
+    const f = player.flags, lead = player.party[0];
+    if (f.capeBrinkDone) { await say(T("Text_FeelRejuvenated")); return; }
+    if (capeBrinkJustTaught) { await say(T("Text_MakeBestUseOfMove")); return; }
+    const species = lead ? Party.speciesName(lead.species) : "";
+    await say(T("Text_UltimateMoveThatMon"), [species]);
+    const m = Sevii.capeBrinkMove(lead, f);
+    if (!m) { await say(T("Text_JustMistaken")); return; }
+    const vars = [species, m.move];
+    await Overworld.act([{ who: "LOCALID_CAPE_BRINK_TUTOR", moves: ["jump_in_place_" + World.OPPOSITE[Overworld.position().facing]] }]);
+    const q = T("Text_AllowMeToTeachMonUltimateMove");
+    await say(q.slice(0, -1), vars);
+    if (!(await confirm(fill(q[q.length - 1], vars)))) { await say(T("Text_YouRejectIt")); return; }
+    if (!(await confirm(fill(T("Text_MoveCanOnlyBeLearnedOnce").join(" "))))) { await say(T("Text_YouRejectIt")); return; }
+    await say(T("Text_LetMeConferUltimateMove"), vars);
+    Screen.say("");
+    await Overworld.fadeToBlack();
+    await learnMove(lead, m.move);
+    show("world");
+    await Overworld.fadeFromBlack();
+    if (!Party.knowsMove(lead, m.move)) { await say(T("Text_YouRejectIt")); return; }
+    f[m.flag] = true;
+    if (Sevii.capeBrinkDone(f)) { await say(T("Text_PassedOnEverythingIKnow")); f.capeBrinkDone = true; return; }
+    await say(T("Text_TaughtMove"));
+    capeBrinkJustTaught = true;   // (FLAG_TEMP_2, until you leave)
+  }
+  let capeBrinkJustTaught = false;
+
+  // The Move Maniac (TwoIsland_House_EventScript_MoveManiac): a move a
+  // Pokémon has forgotten (or could have learned by now), for two Tiny
+  // Mushrooms or a Big Mushroom.
+  let moveManiacMet = false;
+  async function moveManiac() {
+    const H = (k) => T("TwoIsland_House_Text_" + k);
+    if (!moveManiacMet) { await say(H("TeachMonMoveForMushroom")); moveManiacMet = true; }
+    const big = Player.itemCount(player, "big-mushroom") >= 1, tiny = Player.itemCount(player, "tiny-mushroom") >= 2;
+    if (!big && !tiny) { await say(H("NeedMushroomOrTwoToLearnMove")); return; }
+    const q = H("WantMeToTeachMove");
+    await say(q.slice(0, -1));
+    if (!(await confirm(fill(q[q.length - 1])))) { await say(H("NeedMushroomOrTwoToLearnMove")); return; }
+    for (;;) {
+      await say(H("TutorWhichMon"));
+      const r = await choosePartyFor("Choose a POKéMON.");
+      show("world");
+      if (!r) { await say(H("NeedMushroomOrTwoToLearnMove")); return; }
+      const moves = relearnable(r);
+      if (!moves.length) { await say(H("NoMoveICanTeachThatMon")); continue; }
+      await say(H("TeachWhichMove"));
+      Screen.say("");
+      clearMenu();
+      const move = await MoveRelearner.open({
+        name: Party.displayName(r), moves, known: r.moves.map((m) => m.name), frame: GameOptions.get().frame,
+        forget: (m) => chooseMoveToForget(r, m),
+        teach: (m, slot) => Party.teachMove(r, m, slot == null ? undefined : slot)
+      });
+      show("world");
+      if (!move || !Party.knowsMove(r, move)) continue;
+      let useBig = big && !tiny;
+      if (big && tiny) {
+        // (FireRed's MULTICHOICE_MUSHROOMS ignores B.)
+        let i;
+        do i = await multichoice(H("IllNeedMushroomOrTwo")[0], 0, 0, ["Tinymushroom", "Big Mushroom"]); while (i < 0);
+        Screen.say("");
+        useBig = i === 1;
+      }
+      if (useBig) { Player.removeItem(player, "big-mushroom"); await say(H("HandedOverOneBigMushroom")); }
+      else { Player.removeItem(player, "tiny-mushroom", 2); await say(H("HandedOverTwoTinyMushrooms")); }
+      await say(H("NeedMushroomOrTwoToLearnMove"));
+      return;
+    }
+  }
+
+  // ---------- Three Island ----------
+  //
+  // The bikers (ThreeIsland_EventScript_BikerArgumentScene and the rest): two
+  // islanders face down a gang of bikers in the road north. Once a biker's
+  // been to Two Island (the Joyful Game Corner), their boss Paxton turns up;
+  // walk past and the gang takes you on, three bikers and then Paxton, and
+  // they leave the island.
+  const TB = { anti1: "LOCALID_THREE_ISLAND_ANTIBIKER1", anti2: "LOCALID_THREE_ISLAND_ANTIBIKER2", paxton: "LOCALID_PAXTON",
+    b1: "LOCALID_THREE_ISLAND_BIKER1", b2: "LOCALID_THREE_ISLAND_BIKER2", b3: "LOCALID_THREE_ISLAND_BIKER3",
+    b4: "LOCALID_THREE_ISLAND_BIKER4", b5: "LOCALID_THREE_ISLAND_BIKER5", b6: "LOCALID_THREE_ISLAND_BIKER6" };
+  // `who`: 0 the first islander, 1 the second, 2 a biker (VAR_TEMP_1).
+  async function bikerArgument(who) {
+    const I = (k) => T("ThreeIsland_Text_" + k), Im = (k) => M("ThreeIsland_Movement_" + k);
+    const face = (dir) => Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFaster" + dir) }]);
+    const atRight = Overworld.position().x >= 9;
+    if (who !== 0) await face("Left");
+    await Overworld.act([{ who: TB.anti1, moves: Im("SpeakRight") }]);
+    await say(I("GoBackToKanto"));
+    await face(who === 2 ? (atRight ? "Up" : "Right") : "Right");
+    await Overworld.act([{ who: TB.b1, moves: Im("SpeakLeft") }]);
+    await say(I("BossIsOnHisWay"));
+    await face(who === 2 ? (atRight ? "Left" : "Up") : "Up");
+    await Overworld.act([{ who: TB.anti2, moves: Im("SpeakRight") }]);
+    await say(I("GetOffIslandNow"));
+    await face(who === 2 ? (atRight ? "Up" : "Right") : "Right");
+    await Overworld.act([{ who: TB.b3, moves: Im("SpeakLeft") }]);
+    await say(I("WhosGonnaMakeMe"));
+  }
+  async function antiBiker(n) {
+    const f = player.flags, I = (k) => T("ThreeIsland_Text_" + k);
+    if (n === 1) {
+      if (f.gotFullRestoreFromDefender) { await Overworld.act([{ who: TB.anti1, moves: ["face_player"] }]); await say(I("YouveGotImpressiveMons")); return; }
+      if (f.threeIslandScene === 4) {
+        await Overworld.act([{ who: TB.anti1, moves: ["face_player"] }]);
+        await say(I("ThankYouOhYourMonGotHurt"));
+        Player.addItem(player, "full-restore");
+        f.gotFullRestoreFromDefender = true;
+        await sayWithJingle("mus_obtain_item", I("GivenFullRestore"));
+        await say(I("YouveGotImpressiveMons"));
+        return;
+      }
+      await bikerArgument(0);
+      return;
+    }
+    if (f.threeIslandScene === 4) { await Overworld.act([{ who: TB.anti2, moves: ["face_player"] }]); await say(I("LostelleWentOffTowardsBondBridge")); return; }
+    await bikerArgument(1);
+  }
+  // Paxton arrives (ThreeIsland_EventScript_BikerBossIntroTrigger).
+  async function bikerBossIntro() {
+    const I = (k) => T("ThreeIsland_Text_" + k), Im = (k) => M("ThreeIsland_Movement_" + k);
+    const speak = async (who, dir, text) => { await Overworld.act([{ who, moves: Im("Speak" + dir) }]); await say(I(text)); };
+    await speak(TB.anti1, "Right", "AreYouBossGoBackToKanto");
+    await speak(TB.paxton, "Left", "JustGotHerePal");
+    await speak(TB.anti1, "Right", "FollowersRaisingHavoc");
+    await speak(TB.paxton, "Left", "OughtToBeThankingUs");
+    await speak(TB.anti1, "Right", "YouCowardsToughInPack");
+    player.flags.threeIslandScene = 3;
+  }
+  // The gang takes you on (ThreeIsland_EventScript_BattleBikersScene). `col`:
+  // 0-4, which trigger (left to right).
+  async function bikerBattles(col) {
+    const f = player.flags, I = (k) => T("ThreeIsland_Text_" + k), Im = (k) => M("ThreeIsland_Movement_" + k);
+    const fight = async (id, who, intro, defeat, post, after) => {
+      music("mus_encounter_boy");
+      if (intro) await say(I(intro));
+      if (!canBattle()) return false;
+      const data = window.WORLD_TRAINERS[id];
+      const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(id), pic: data.pic },
+        defeatText: I(defeat), trainerId: id, prizeClass: data.className });
+      if (outcome !== "won") return false;
+      show("world");
+      await Overworld.resume();
+      if (after) await Overworld.act(after);
+      await say(I(post));
+      Screen.say("");
+      return true;
+    };
+    await Overworld.act([{ who: TB.b1, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+    sfx("se_pin");
+    await Overworld.act([{ who: TB.b1, moves: ["emote_exclamation_mark", "delay_16", "delay_16", "delay_16"] }]);
+    await Overworld.act([{ who: TB.b1, moves: Im("BikerApproach") }]);
+    music("mus_encounter_boy");
+    const q = I("WannaMakeSomethingOfYourStaring");
+    await say(q.slice(0, -1));
+    if (!(await confirm(fill(q[q.length - 1])))) {
+      await say(I("ThatsSmart"));
+      Screen.say("");
+      await Overworld.act([{ who: "player", moves: Im("PlayerLeaveBikers") }]);
+      await Overworld.act([{ who: TB.b1, moves: Im("Biker1ReturnToPack") }]);
+      music((window.WORLD_MAPS.ThreeIsland || {}).music);
+      return;
+    }
+    if (!(await fight("TRAINER_BIKER_GOON", TB.b1, "Biker1Intro", "Biker1Defeat", "Biker1PostBattle", [{ who: TB.b1, moves: Im("BikerSpeak") }]))) return;
+    await Overworld.act([{ who: TB.b2, moves: Im("BikerApproach") }]);
+    if (!(await fight("TRAINER_BIKER_GOON_2", TB.b2, "Biker2Intro", "Biker2Defeat", "Biker2PostBattle", [{ who: TB.b2, moves: Im("BikerSpeak") }]))) return;
+    await Overworld.act([{ who: TB.b3, moves: Im("BikerApproach") }]);
+    if (!(await fight("TRAINER_BIKER_GOON_3", TB.b3, "Biker3Intro", "Biker3Defeat", "Biker3PostBattle",
+      [{ who: TB.b3, moves: M("Common_Movement_WalkInPlaceFasterLeft") }, { who: TB.b4, moves: M("Common_Movement_WalkInPlaceFasterDown") },
+        { who: TB.b5, moves: M("Common_Movement_WalkInPlaceFasterDown") }]))) return;
+    await sleep(750);
+    const approach = ["Left", "MidLeft", "Mid", "MidRight", "Right"][col];
+    const tracks = [{ who: TB.b3, moves: M("Common_Movement_WalkInPlaceFasterDown") }, { who: TB.paxton, moves: Im("PaxtonApproach" + approach) }];
+    if (col >= 2) tracks.push({ who: "player", moves: Im("PlayerFacePaxton") });
+    await Overworld.act(tracks);
+    if (!(await fight("TRAINER_CUE_BALL_PAXTON", TB.paxton, "PaxtonIntro", "PaxtonDefeat", "PaxtonPostBattle"))) return;
+    await Overworld.fadeToBlack();
+    for (const id of [TB.paxton, TB.b1, TB.b2, TB.b3, TB.b4, TB.b5, TB.b6]) Overworld.removeObject(id);
+    f.threeIslandScene = 4;
+    Overworld.refreshPeople();
+    await Overworld.fadeFromBlack();
+    music((window.WORLD_MAPS.ThreeIsland || {}).music);
+  }
+
+  // Lostelle in Berry Forest (ThreeIsland_BerryForest_EventScript_Lostelle):
+  // a wild Hypno (Lv. 30) comes for her; then she gives you an Iapapa Berry
+  // and you take her home to the Joyful Game Corner.
+  async function berryForestLostelle(person) {
+    const f = player.flags, B = (k) => T("ThreeIsland_BerryForest_Text_" + k), L = "LOCALID_BERRY_FOREST_LOSTELLE";
+    await say(B("HelpScaryPokemon"));
+    sfx("se_pin");
+    await Overworld.act([{ who: L, moves: ["emote_exclamation_mark"] }]);
+    await Overworld.act([{ who: L, moves: M("ThreeIsland_BerryForest_Movement_LostelleLookAround") }]);
+    await say(B("HereItComesAgain"));
+    if (!canBattle()) return;
+    cry("Hypno");
+    await sleep(900);
+    const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create("Hypno", 30)] } });
+    if (outcome === "lost") return;
+    show("world");
+    await Overworld.resume();
+    await Overworld.act([{ who: L, moves: ["face_player"] }]);
+    await say(B("ThankYouHaveThis"));
+    Player.addItem(player, "iapapa-berry");
+    await sayWithJingle("mus_obtain_item", "{PLAYER} received an " + Bag.name("iapapa-berry") + "!");
+    await say(B("LetsGoHome"), bigGuy());
+    Screen.say("");
+    f.rescuedLostelle = true;
+    f.gameCornerScene = 2;
+    sfx("se_exit");
+    await Overworld.teleport({ map: "TwoIsland_JoyfulGameCorner", x: 6, y: 6, facing: "up" });
+    await gameCornerLostelleHome();
+  }
+
+  // ---------- Mt. Ember ----------
+  //
+  // Team Rocket's two grunts outside the Ruby Path: "We'll try digging here"
+  // until Celio asks for the Ruby; then you overhear the Rocket Warehouse's
+  // passwords ("Goldeen need log", "Yes, nah, Chansey") and they battle you,
+  // and the way in opens. Moltres waits at the summit.
+  const EMBER_GRUNTS = ["TRAINER_TEAM_ROCKET_GRUNT_43", "TRAINER_TEAM_ROCKET_GRUNT_44"];
+  async function emberPassword() {
+    const E = (k) => T("MtEmber_Exterior_Text_" + k);
+    await say(E("PunchedThroughAtLast"));
+    const q = E("WhatsPasswordAgain");
+    await say(q.slice(0, -1));
+    sfx("se_pin");
+    await Overworld.act([{ who: "LOCALID_MT_EMBER_GRUNT2", moves: ["emote_question_mark"] }]);
+    await say(q.slice(-1));
+    await say(E("FirstPasswordGoldeen"));
+    await Overworld.act([{ who: "LOCALID_MT_EMBER_GRUNT1", moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+    sfx("se_pin");
+    await Overworld.act([{ who: "LOCALID_MT_EMBER_GRUNT1", moves: ["emote_exclamation_mark", "delay_16", "delay_16", "delay_16"] }]);
+    await Overworld.act([{ who: "LOCALID_MT_EMBER_GRUNT2", moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+    await say(E("SnoopsBeenListeningIn"));
+    player.flags.mtEmberScene = 2;
+  }
+  async function emberGrunt(n) {
+    const f = player.flags, E = (k) => T("MtEmber_Exterior_Text_" + k), id = EMBER_GRUNTS[n - 1], who = "LOCALID_MT_EMBER_GRUNT" + n;
+    if (f[id]) { await say(E("Grunt" + n + "PostBattle")); return; }
+    if (f.celioScene !== 4) {
+      if (n === 1) { await say(E("WellTryDiggingHere")); return; }
+      await say(E("YoureInTheWayGetLost"));
+      Screen.say("");
+      await Overworld.act([{ who, moves: [f.mtEmberScene === 2 ? "face_down" : "face_left"] }]);
+      return;
+    }
+    await Overworld.act([{ who, moves: ["face_player"] }]);
+    music("mus_encounter_rocket");
+    await say(E("Grunt" + n + "Intro"));
+    if (!canBattle()) return;
+    const data = window.WORLD_TRAINERS[id];
+    const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(id), pic: data.pic },
+      defeatText: E("Grunt" + n + "Defeat"), trainerId: id, prizeClass: data.className });
+    if (outcome !== "won") return;
+    show("world");
+    await Overworld.resume();
+    await say(E("Grunt" + n + "PostBattle"));
+    if (!EMBER_GRUNTS.every((t) => f[t])) return;
+    await say(E("WellRegroupDontStepInsideThere"));
+    Screen.say("");
+    await Overworld.fadeToBlack();
+    Overworld.removeObject("LOCALID_MT_EMBER_GRUNT1");
+    Overworld.removeObject("LOCALID_MT_EMBER_GRUNT2");
+    await Overworld.fadeFromBlack();
+  }
+
+  // The Ember Spa's hot spring (OneIsland_KindleRoad_EmberSpa_EventScript_SpaHeal):
+  // stepping in heals your Pokémon, once each visit.
+  async function emberSpa() {
+    await Overworld.fadeToBlack();
+    player.party.forEach(Party.heal);
+    await Overworld.fadeFromBlack();
+    await say(T("OneIsland_KindleRoad_EmberSpa_Text_WaterExquisiteFullyRefreshed"));
+    tempFlags.add("OneIsland_KindleRoad_EmberSpa:spa");
+  }
+
+  // The islands' ON_TRANSITION scripts, arriving on map `m`.
+  function seviiTransition(m) {
+    const f = player.flags;
+    // (Saves from before the islands were built, Blaine already beaten: Bill's waiting.)
+    if (m === "CinnabarIsland" && f.TRAINER_LEADER_BLAINE && !f.cinnabarScene) f.cinnabarScene = 1;
+    // Three Isle Port: the trip's done, and the PCs work again
+    // (ThreeIsland_Port_OnTransition: FLAG_SEVII_DETOUR_FINISHED).
+    if (m === "ThreeIsland_Port") { f.seviiDetourDone = true; delete f.pcStorageDisabled; }
+    // Two Island's shop (TwoIsland_EventScript_SetShopState).
+    if (m === "TwoIsland") { f.twoIslandShopState = twoIslandShop(); f.twoIslandShopMax = Math.max(f.twoIslandShopMax || 1, f.twoIslandShopState); }
+    // Lostelle's dad back at the counter, the games on (SetLostelleReturnedPos).
+    if (m === "TwoIsland_JoyfulGameCorner" && f.gotMoonStoneFromDaddy) f.gameCornerScene = 4;
+    // Celio, his work done (OneIsland_PokemonCenter_1F_EventScript_SetCelioQuestDone).
+    if (m === "OneIsland_PokemonCenter_1F" && f.celioScene === 6) f.celioScene = 7;
+    // An Escape Rope in Berry Forest takes you to Bond Bridge (setescapewarp).
+    if (m === "ThreeIsland_BerryForest") f.escapeWarp = { map: "ThreeIsland_BondBridge", x: 12, y: 6 };
+  }
+  // Walking about Cinnabar while Bill's waiting there: he comes over.
+  function cinnabarBillStep() {
+    return player.location.map === "CinnabarIsland" && player.flags.cinnabarScene === 1
+      ? { type: "trigger", trigger: { script: "enter:CinnabarIsland" }, map: "CinnabarIsland" } : null;
+  }
+
   // ---------- Cinnabar Island ----------
 
   // Blaine: battle (talking to him), then the Volcano Badge and TM38 Fire
   // Blast. Beating him also beats his Gym's trainers and opens all its doors.
-  // (FireRed then has Bill waiting outside to sail to the Sevii Islands,
-  // which aren't built.)
+  // Bill's then waiting outside to take you to the Sevii Islands
+  // (VAR_MAP_SCENE_CINNABAR_ISLAND 1: flags.cinnabarScene).
   async function blaine(person) {
     const f = player.flags, ID = "TRAINER_LEADER_BLAINE";
     if (!f[ID]) {
@@ -6117,6 +7160,7 @@
       if (!hasBadge("volcano")) player.badges.push("volcano");
       for (const t of ["SUPER_NERD_ERIK", "SUPER_NERD_AVERY", "SUPER_NERD_DEREK", "SUPER_NERD_ZAC", "BURGLAR_QUINN", "BURGLAR_RAMON", "BURGLAR_DUSTY"]) f["TRAINER_" + t] = true;
       player.flags.lastCenter = "CinnabarIsland_PokemonCenter_1F";
+      if (!f.cinnabarScene) f.cinnabarScene = 1;
       applyPatches("CinnabarIsland_Gym");
       show("world");
       await Overworld.resume();
@@ -6378,6 +7422,15 @@
     if (/^PokemonLeague_/.test(map)) return League.patches(f, map);
     // Victory Road's rock barriers, until their floor switches are pressed.
     if (/^VictoryRoad_\dF$/.test(map)) return LeagueRoad.barriers(f, map, Object.keys((window.WORLD_MAPS[map] || {}).patches || {}));
+    // One Island's Network Machine: the Ruby in it (OneIsland_PokemonCenter_1F_OnLoad),
+    // then the Sapphire and its screens on. Mt. Ember's Ruby Path opens once
+    // Celio's asked for the Ruby; the Dunsparce Tunnel's dug out once you're Champion.
+    if (map === "OneIsland_PokemonCenter_1F") {
+      return [].concat((f.celioScene || 0) >= 5 || f.celioRubyIn ? ["ruby"] : [], f.canLinkWithRS || f.celioSapphireIn ? ["sapphire"] : [],
+        f.canLinkWithRS ? ["on"] : []);
+    }
+    if (map === "MtEmber_Exterior") return (f.celioScene || 0) >= 4 ? ["cave"] : [];
+    if (map === "ThreeIsland_DunsparceTunnel") return f.gameClear ? ["dugout"] : [];
     // The Pokémon Mansion's doors, by its switch.
     if (/^PokemonMansion_/.test(map)) return f.mansionSwitch ? ["pressed"] : [];
     // Cinnabar Gym's quiz doors: each open once answered (or its trainer
@@ -6602,6 +7655,24 @@
       if (player.flags.fossilRevive) player.flags.fossilRevive.ready = true;
       return false;
     }
+    // The Sevii Islands: Bill waiting outside Blaine's Gym (on arriving
+    // however you come, or walking about); the Pokémon Centers where you'll
+    // be after blacking out (FireRed's setrespawn on entering them); the
+    // Joyful Game Corner's scene; Bill ready to leave One Island; the Ember
+    // Spa's spring, once a visit; the bikers; the Rockets' password.
+    if (script === "enter:CinnabarIsland" || script === "arrive:CinnabarIsland") return player.flags.cinnabarScene === 1;
+    if (/^enter:(One|Two|Three)Island_PokemonCenter_1F$/.test(script)) {
+      player.flags.lastCenter = script.slice(6);
+      // (Celio's not been met: OneIsland_PokemonCenter_1F_OnFrame.)
+      return script === "enter:OneIsland_PokemonCenter_1F" && !player.flags.celioScene && (player.flags.oneHarborScene || 0) >= 2;
+    }
+    if (script === "enter:TwoIsland_JoyfulGameCorner") return !player.flags.gameCornerScene;
+    if (script === "enter:OneIsland") return player.flags.oneHarborScene === 2;
+    if (/^OneIsland_PokemonCenter_1F_EventScript_LeaveOneIslandTrigger/.test(script)) return player.flags.celioScene === 2;
+    if (script === "OneIsland_KindleRoad_EmberSpa_EventScript_SpaHeal") return !tempFlags.has("OneIsland_KindleRoad_EmberSpa:spa");
+    if (script === "ThreeIsland_EventScript_BikerBossIntroTrigger") return player.flags.threeIslandScene === 2;
+    if (/^ThreeIsland_EventScript_BattleBikersTrigger/.test(script)) return player.flags.threeIslandScene === 3;
+    if (script === "MtEmber_Exterior_EventScript_RocketPasswordScene") return player.flags.mtEmberScene === 1;
     // The guards stop you only until you have a Bicycle (VAR_TEMP_1).
     if (/_EventScript_NeedBikeTrigger/.test(script)) return !Player.itemCount(player, "bicycle");
     // The Saffron gates' guards, until they've had the Tea.
@@ -6634,7 +7705,7 @@
         },
         boulderSwitch: victoryRoadSwitch,
         onAvatar: (mode) => music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music),
-        onStep: () => { leftPallet(player.location.map); DayCare.step(player.flags.dayCare); vsSeekerStep(); friendshipStep(); return redForestStep() || leafVermilionStep() || jessieJamesStep() || safariStep() || repelStep(); }, allowWild: repelAllows,
+        onStep: () => { leftPallet(player.location.map); DayCare.step(player.flags.dayCare); vsSeekerStep(); friendshipStep(); return redForestStep() || leafVermilionStep() || jessieJamesStep() || safariStep() || cinnabarBillStep() || repelStep(); }, allowWild: repelAllows,
         onMap: (m) => {
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
           if (m !== "VermilionCity") ticketChecked = false;
@@ -6648,6 +7719,8 @@
           // The Seafoam Islands' boulders and currents (Route20_OnTransition,
           // SeafoamIslands_B3F/B4F_OnTransition).
           if (m !== tempFlagsMap) { if (m === "Route20") Seafoam.route20(player.flags); Seafoam.transition(player.flags, m); }
+          // The Sevii Islands' ON_TRANSITION scripts (game/sevii.js has the flags).
+          if (m !== tempFlagsMap) { seviiTransition(m); capeBrinkJustTaught = false; moveManiacMet = false; }
           // Route 23 puts Victory Road back as it was: barriers up, boulders back (Route23_OnTransition).
           if (m !== tempFlagsMap && m === "Route23") LeagueRoad.reset(player.flags);
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);

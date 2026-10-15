@@ -428,6 +428,9 @@
     }
     savePosition();
     if (mv.warp) { me.spinDir = null; warpTo(mv.warp); return; }
+    // Walking or surfing over the edge onto another map: its scenes that
+    // start on arriving (FireRed's ON_FRAME scripts: Bill on Cinnabar Island).
+    if (changedMap && ctx.special && ctx.special("arrive:" + me.map)) return finish({ type: "trigger", trigger: { script: "arrive:" + me.map }, map: me.map });
     // The Rocket Hideout's arrows (FireRed's TryUpdatePlayerSpinDirection): an
     // arrow spins you off its way, and you keep going until a stop tile or
     // something in the way (another arrow turns you).
@@ -521,14 +524,15 @@
 
   // "player", a person's local id, or "#<id>" (their place in the map's list).
   const actor = (who) => (who === "player" ? me : people.find((p) => p.def.localId === who || "#" + p.def.id === who));
-  const SPEEDS = { "": WALK_SPEED, fast_: 2, faster_: 4, fastest_: 8, slow_: 0.5 };
+  // (walk_slower_*: the Seagallop pulling in at Cinnabar.)
+  const SPEEDS = { "": WALK_SPEED, fast_: 2, faster_: 4, fastest_: 8, slow_: 0.5, slower_: 0.5 };
 
   // Starts a movement command; returns how many frames to wait on top of any step.
   function startCommand(who, cmd) {
     const a = actor(who);
     if (!a) return 0;
     let m;
-    if ((m = /^walk_(fast_|faster_|fastest_|slow_)?(up|down|left|right)$/.exec(cmd))) {
+    if ((m = /^walk_(fast_|faster_|fastest_|slow_|slower_)?(up|down|left|right)$/.exec(cmd))) {
       const dir = m[2], [dx, dy] = World.DIRS[dir], speed = SPEEDS[m[1] || ""];
       if (!a.lockFacing) a.facing = dir;
       if (a === me) { me.move = { tx: me.x + dx, ty: me.y + dy, tmap: me.map, dir, t: 0, dist: TILE, speed, scripted: true }; me.parity ^= 1; }
