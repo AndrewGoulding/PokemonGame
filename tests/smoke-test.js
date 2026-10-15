@@ -1166,12 +1166,27 @@ for (const share of [false, true]) {
   assert.deepStrictEqual(problems, [], "debug species");
 }
 
+// FireRed's party screen (tools/build-party-menu.js): its graphics, and a
+// party icon for every Pokémon.
+{
+  const D = window.PARTY_MENU;
+  assert(D, "missing global PARTY_MENU");
+  assert.strictEqual(D.tiles.length, 64 * 64);
+  assert.strictEqual(D.palette.length, 176);
+  assert.strictEqual(D.bg.length, 32 * 20);
+  assert.deepStrictEqual([D.slots.main.length, D.slots.wide.length, D.slots.wideEmpty.length], [70, 54, 54]);
+  assert.deepStrictEqual([D.pokeball.width, D.pokeball.height, D.status.width], [32, 64, 256]);
+  const missing = Object.entries(window.DEX).filter(([, d]) => !fs.existsSync(path.join(root, "assets/sprites/icons", d.id + ".png"))).map(([n]) => n);
+  assert.deepStrictEqual(missing, [], "Pokémon with no party icon");
+}
+
 // The main menu and Option screen's font, frames and palettes.
 {
   const M = window.GBA_MENUS;
   assert(M, "missing global GBA_MENUS");
-  assert.deepStrictEqual([M.fonts.normal.widths.length, M.fonts.small.widths.length], [256, 256]);
-  assert.strictEqual(M.fonts.normal.glyphs.length, 256 * 16 * 16);
+  // (512 characters: 0x100 and up are the extra symbols, like 0x105, the "Lv")
+  assert.deepStrictEqual([M.fonts.normal.widths.length, M.fonts.small.widths.length], [512, 512]);
+  assert.strictEqual(M.fonts.normal.glyphs.length, 512 * 16 * 16);
   assert.deepStrictEqual([M.charmap.A, M.charmap["é"], M.charmap[" "]], [0xBB, 0x1B, 0x00]);
   for (let i = 1; i <= 10; i++) assert.strictEqual(M.frames["type" + i].px.length, 24 * 24, "frame type" + i);
   assert(M.icons.A_BUTTON && M.icons.DPAD_UPDOWN && M.palettes.mainMenuTextbox.length === 16);

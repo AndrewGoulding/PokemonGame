@@ -237,6 +237,11 @@
     const dex = window.DEX[species];
     return "assets/sprites/pokemon/" + (back ? "back/" : "") + (shiny ? "shiny/" : "") + (dex ? dex.id : 0) + (form ? "-" + form : "") + ".png";
   }
+  // Party icons (tools/build-party-menu.js): assets/sprites/icons/<dex id>[-<form>].png.
+  function iconUrl(species, form) {
+    const dex = window.DEX[species];
+    return "assets/sprites/icons/" + (dex ? dex.id : 0) + (form ? "-" + form : "") + ".png";
+  }
   function setSprite(img, species, form, back, shiny) {
     const src = spriteUrl(species, form, back, shiny);
     if (img.getAttribute("src") === src || img.dataset.wanted === src) return;
@@ -272,5 +277,5 @@
   const setTextSpeed = (f) => { textSpeed = f; };
   const setCharDelay = (ms) => { charMs = ms; };
 
-  window.Screen = { MESSAGE_MS, setTextSpeed, setCharDelay, printed, spriteUrl, setSprite, clearSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, yesNo, clearMenu, learnMovePrompt };
+  window.Screen = { MESSAGE_MS, setTextSpeed, setCharDelay, printed, spriteUrl, iconUrl, setSprite, clearSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, yesNo, clearMenu, learnMovePrompt };
 })();

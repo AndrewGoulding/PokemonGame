@@ -45,7 +45,7 @@ the D-pad, A, B, Start and Select (tap or click them; tapping anything else does
 nothing). D-pad to walk, A to talk or read signs, B to start running and again to
 stop (from the start, indoors too, with FireRed's running animation), Start for
 the menu. In menus, the D-pad moves between choices, A picks one and B goes back;
-in the party, a summary's moves and Bill's PC, Select on one and then on another
+in a summary's moves and Bill's PC, Select on one and then on another
 swaps them. On a keyboard: arrows / WASD, Z or Space (A), X (B), Enter, Esc or M (Start),
 Backspace (Select). In battle, FireRed's own menus: FIGHT / BAG / POKéMON / RUN,
 then your moves with their PP (coloured as it runs low) and type; B goes back.
@@ -57,9 +57,14 @@ written out a letter at a time at your TEXT SPEED (A finishes it), and FireRed's
 
 Start opens FireRed's **menu**, a window over the map with a help bar along
 the bottom (as is the text box, which is only on screen while someone's
-talking). It has your Pokémon (choose one for its summary: stats, IVs, EVs, nature,
-moves; make it lead; use, give or take items; press Select on one card and then
-another to swap them), the Bag (medicine, evolution
+talking). It has your Pokémon, on FireRed's party screen (each box with its
+icon, which hops when chosen and moves faster the more HP it has, held item,
+status, level and HP bar; A on one opens SUMMARY / SWITCH / ITEM / CANCEL:
+the summary has stats, IVs, EVs, nature and moves, making it lead and using
+items; SWITCH asks "Move to where?"; ITEM gives or takes a held item). The
+same screen picks a Pokémon for an item (ABLE / NOT ABLE for TMs and
+evolution stones), a trade or a tutor, and for switching in battle (SHIFT).
+Then the Bag (medicine, evolution
 stones, Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
 the Exp. Share, Oak's Parcel and the Town Map), the Pokédex (a red Poké Ball
 marks species you've caught, a gray one those you've only seen; wild Pokémon
@@ -153,6 +158,24 @@ names, and which place each map is in):
 ```sh
 cd pokefirered && git sparse-checkout add graphics/region_map/ src/data/region_map/ && cd ..
 node tools/build-town-map.js pokefirered     # after build-maps.js
+```
+
+### Party screen
+
+`tools/build-party-menu.js` converts FireRed's party screen
+(`graphics/party_menu/`, the status icons) into `data/party-menu.js`, and
+writes every Pokémon's party icon to `assets/sprites/icons/`: FireRed's own for
+the first 386, in their icon palettes, and the later ones and alternate forms
+(Megas, Rotom's appliances, ...) from pokeemerald-expansion, which has them
+in the same style:
+
+```sh
+cd pokefirered && git sparse-checkout add graphics/party_menu/ graphics/interface/ graphics/pokemon/icon_palettes/ \
+  /src/pokemon_icon.c '/graphics/pokemon/*/icon.png' '/graphics/pokemon/*/*/icon.png' && cd ..
+git clone --depth 1 --filter=blob:none --sparse https://github.com/rh-hideout/pokeemerald-expansion expansion
+cd expansion && git sparse-checkout set --no-cone '/graphics/pokemon/**/icon*.png' '/graphics/pokemon/icon_palettes/*' \
+  '/src/data/pokemon/species_info/*' '/src/data/graphics/pokemon.h' && cd ..
+node tools/build-party-menu.js pokefirered expansion
 ```
 
 ### Main menu and Option screen

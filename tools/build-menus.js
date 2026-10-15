@@ -4,8 +4,9 @@
 //   node tools/build-menus.js <path to pokefirered>   (or set POKEFIRERED)
 //
 // Writes data/gba-menus.js: window.GBA_MENUS = {
-//   fonts:   { normal, small }: each { cellW, cellH, widths[256], glyphs }, the
-//            glyphs being one character a pixel per character code (0-255),
+//   fonts:   { normal, small }: each { cellW, cellH, widths[512], glyphs }, the
+//            glyphs being one character a pixel per character code (0-511:
+//            0x100 and up are FireRed's extra symbols, like 0x105, the "Lv"),
 //            cell after cell: "1" the letter, "2" its shadow, anything else
 //            clear. From graphics/fonts/latin_{normal,small}.png and the width
 //            tables in src/text.c.
@@ -46,14 +47,15 @@ const root = path.join(__dirname, "..");
 const textC = fs.readFileSync(P("src/text.c"), "utf8");
 function widths(name) {
   const m = new RegExp(name + "\\[\\]\\s*=\\s*\\{([^}]*)\\}").exec(textC);
-  return m[1].split(",").map((s) => s.trim()).filter(Boolean).map(Number).slice(0, 256);
+  return m[1].split(",").map((s) => s.trim()).filter(Boolean).map(Number).slice(0, 512);
 }
 // A sheet of cellW x cellH glyphs, 256 / cellW to a row, glyph n at cell n.
+// Codes 0x100 and up are the extra symbols ({LV_2}, written F9 05, is 0x105).
 function font(file, cellW, cellH, widthTable) {
   const img = readPng(P("graphics/fonts", file));
   const perRow = img.width / cellW;
   let glyphs = "";
-  for (let n = 0; n < 256; n++) {
+  for (let n = 0; n < 512; n++) {
     const gx = (n % perRow) * cellW, gy = Math.floor(n / perRow) * cellH;
     for (let y = 0; y < cellH; y++) for (let x = 0; x < cellW; x++) {
       const v = gy + y < img.height ? img.px[(gy + y) * img.width + gx + x] : 0;

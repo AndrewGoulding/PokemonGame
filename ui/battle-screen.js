@@ -690,20 +690,30 @@
 
   const escapeHtml = window.Screen.escapeHtml;
 
-  function partyOptions(req) {
-    return req.team.map((p) => ({
-      html: '<span class="move-name">' + escapeHtml(p.name) + " <small>Lv" + p.level + "</small></span>" +
-        '<span class="party-hp">' + (p.fainted ? "Fainted" : "HP " + p.hp + "/" + p.maxhp) +
-        (p.active ? " · in battle" : "") + "</span>",
-      value: p.index, disabled: !req.switches.includes(p.index)
-    }));
-  }
-
+  // FireRed's party screen (ui/party-menu.js): A on a Pokémon opens SHIFT /
+  // CANCEL. One that's fainted or already out says so; B goes back unless
+  // a Pokémon has to be sent out.
   async function chooseSwitch(req, canCancel) {
-    const options = partyOptions(req);
-    if (canCancel) options.push({ label: "Back", value: null, className: "action", wide: true });
-    const index = await ask(canCancel ? "Choose a Pokémon to switch in." : "Choose your next Pokémon.", options);
-    return index == null ? null : { type: "switch", index };
+    const mons = req.team.map((p) => ({
+      name: p.name, icon: window.Screen.iconUrl(p.species), level: p.level, gender: p.gender,
+      hp: p.hp, maxhp: p.maxhp, status: p.status, item: !!p.item
+    }));
+    let cursor = 0;
+    for (;;) {
+      say("");
+      clearMenu();
+      const frame = window.GameOptions ? window.GameOptions.get().frame : 0;
+      const r = await window.PartyMenu.open({ mons, cursor, frame, canCancel,
+        actions: () => [{ label: canCancel ? "SHIFT" : "SEND OUT", value: "shift" }, { label: "CANCEL", value: "cancel" }] });
+      if (!r) { window.PartyMenu.close(); return null; }
+      cursor = r.cursor;
+      const p = req.team[r.slot];
+      if (p.fainted || p.hp <= 0) { await message(p.name + " has no energy left to battle!"); continue; }
+      if (p.active) { await message(p.name + " is already in battle!"); continue; }
+      if (!req.switches.includes(p.index)) { await message(p.name + " can't be switched in now!"); continue; }
+      window.PartyMenu.close();
+      return { type: "switch", index: p.index };
+    }
   }
 
   const itemOption = (id, count) => ({
@@ -734,13 +744,22 @@
       if (item == null) return null;
       if (window.Bag.isBall(item)) return { type: "ball", ball: item };
 
+      // Which Pokémon: FireRed's party screen ("Use on which POKéMON?").
       const mons = battle.sides.p1.pokemon;
-      const target = await ask("Use " + window.Bag.name(item) + " on which Pokémon?", mons.map((m, i) => ({
-        html: '<span class="move-name">' + escapeHtml(m.name) + " <small>Lv" + m.level + "</small></span>" +
-          '<span class="party-hp">' + (m.fainted ? "Fainted" : "HP " + m.hp + "/" + m.maxhp) +
-          (m.status ? " · " + m.status.toUpperCase() : "") + "</span>",
-        value: i, disabled: !window.ItemUse.canUse(battle.itemView(m), item, { inBattle: true })
-      })).concat([back]));
+      let target = null;
+      for (;;) {
+        say("");
+        clearMenu();
+        const r = await window.PartyMenu.open({ message: "Use on which {PKMN}?", cursor: target || 0,
+          frame: window.GameOptions ? window.GameOptions.get().frame : 0,
+          mons: mons.map((m) => ({ name: m.name, icon: window.Screen.iconUrl(m.species), level: m.level, gender: m.gender,
+            hp: m.fainted ? 0 : m.hp, maxhp: m.maxhp, status: m.status, item: !!m.item })) });
+        if (!r) { target = null; break; }
+        target = r.slot;
+        if (window.ItemUse.canUse(battle.itemView(mons[target]), item, { inBattle: true })) break;
+        await message("It won't have any effect.");
+      }
+      window.PartyMenu.close();
       if (target == null) continue;
 
       let move;

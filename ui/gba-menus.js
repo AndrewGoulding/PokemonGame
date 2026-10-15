@@ -29,6 +29,10 @@
 
   // ---------- Drawing into a 240x160 picture ----------
 
+  // FireRed's symbols written as {NAME}: the "Lv" ({LV_2}: F9 05) and the
+  // narrow PKMN (two characters, 53 54).
+  const EXTRA = { LV: [0x105], PKMN: [0x53, 0x54] };
+
   function Surface() {
     const px = new Uint8ClampedArray(W * H * 4);
     const put = (x, y, c) => {
@@ -39,13 +43,16 @@
     const fill = (x, y, w, h, c) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) put(x + i, y + j, c); };
 
     // Text in FireRed's font ("normal" or "small"): {A_BUTTON}-style names are
-    // the button icons, drawn in `iconPal`. Returns the width drawn.
+    // the button icons, drawn in `iconPal`; {LV} and {PKMN} are the font's
+    // "Lv" and "PKMN" symbols.
+    // Returns the width drawn.
     function text(str, x, y, fg, shadow, fontName, iconPal) {
       const font = G().fonts[fontName || "normal"];
       const start = x;
       for (const part of String(str).split(/(\{[A-Z_]+\})/)) {
         if (!part) continue;
         const icon = /^\{([A-Z_]+)\}$/.exec(part);
+        if (icon && EXTRA[icon[1]]) { for (const code of EXTRA[icon[1]]) x += glyph(code, x); continue; }
         if (icon) {
           const ic = G().icons[icon[1]];
           if (!ic) continue;
@@ -59,22 +66,26 @@
         for (const ch of part) {
           const code = G().charmap[ch];
           if (code == null) { x += 6; continue; }
-          const base = code * font.cellW * font.cellH;
-          for (let j = 0; j < font.cellH; j++) for (let i = 0; i < font.cellW; i++) {
-            const v = font.glyphs[base + j * font.cellW + i];
-            if (v === "1") put(x + i, y + j, fg);
-            else if (v === "2") put(x + i, y + j, shadow);
-          }
-          x += font.widths[code];
+          x += glyph(code, x);
         }
       }
       return x - start;
+      function glyph(code, gx) {
+        const base = code * font.cellW * font.cellH;
+        for (let j = 0; j < font.cellH; j++) for (let i = 0; i < font.cellW; i++) {
+          const v = font.glyphs[base + j * font.cellW + i];
+          if (v === "1") put(gx + i, y + j, fg);
+          else if (v === "2") put(gx + i, y + j, shadow);
+        }
+        return font.widths[code];
+      }
     }
     const textWidth = (str, fontName) => {
       const font = G().fonts[fontName || "normal"];
       let w = 0;
       for (const part of String(str).split(/(\{[A-Z_]+\})/)) {
-        if (/^\{[A-Z_]+\}$/.test(part)) { w += 8; continue; }
+        const icon = /^\{([A-Z_]+)\}$/.exec(part);
+        if (icon) { w += EXTRA[icon[1]] ? EXTRA[icon[1]].reduce((a, c) => a + font.widths[c], 0) : 8; continue; }
         for (const ch of part) { const code = G().charmap[ch]; w += code == null ? 6 : font.widths[code]; }
       }
       return w;
@@ -130,7 +141,14 @@
       g.drawImage(off, 0, 0, canvas.width, canvas.height);
       g.restore();
     }
-    return { px, put, fill, text, textWidth, frame, effect, show };
+    // As a 240x160 canvas of its own (to draw onto another canvas).
+    function canvas() {
+      const c = document.createElement("canvas");
+      c.width = W; c.height = H;
+      c.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(px), W, H), 0, 0);
+      return c;
+    }
+    return { px, put, fill, text, textWidth, frame, effect, show, canvas };
   }
 
   // ---------- Input and fades ----------
@@ -508,7 +526,9 @@
     startMenu: (canvas, ...a) => during("start", startMenu(canvas, ...a)),
     mainMenu: (canvas, ...a) => { canvas.classList.remove("hidden"); return during("main", mainMenu(canvas, ...a)); },
     optionMenu: (canvas, ...a) => { canvas.classList.remove("hidden"); return during("option", optionMenu(canvas, ...a)); },
-    showing: null   // "main" or "option" while one is up
+    showing: null,   // "main" or "option" while one is up
+    // For other FireRed screens drawn the same way (ui/party-menu.js).
+    Surface, keys, se: () => se()
   };
   // (The canvas is the intro's: show it. The next show() of another screen hides it again.)
   function during(name, promise) {

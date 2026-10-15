@@ -226,6 +226,9 @@ body {
 /* FireRed's windows drawn over the map (ui/gba-menus.js: the Start menu). */
 .overlay { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 6; image-rendering: pixelated; pointer-events: none; }
 .overlay.hidden { display: none; }
+/* FireRed's party screen (ui/party-menu.js): over everything but the text box and the overlay. */
+.party-menu { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; image-rendering: pixelated; pointer-events: none; }
+.party-menu.hidden { display: none; }
 
 /* The text box: along the bottom of the screen, as FireRed's (48 of the 160
    lines), and only while there's something to read; in a battle it's always
@@ -267,6 +270,7 @@ body {
   50% { background-position-x: 100%; } 75% { background-position-x: 50%; }
 }
 .screen:has(> .field:not(.hidden)) > .textbox.empty { display: block; }
+.screen:has(> .party-menu:not(.hidden)) > .textbox.empty { display: none; }   /* (the party screen has its own) */
 /* In a battle, FireRed's message box (graphics/battle_interface/textbox: the
    dark box, white text with a purple-gray shadow; the text window is tiles
    1-28 of rows 15-18). */

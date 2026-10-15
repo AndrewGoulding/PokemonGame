@@ -467,13 +467,30 @@
     }
   }
 
-  // Party list for choosing who gets an item; notes say who can use it.
-  async function choosePartyFor(text, item) {
-    const note = (r) => (Bag.isMachine(item) && Party.knowsMove(r, Bag.machineMove(item)) ? "Learned"
-      : Bag.canUseOn(r, item, { party: player.party }) ? "Able" : "Not able");
-    const notes = item ? player.party.map(note) : null;
-    const v = await pick(text, partyHtml(notes), [back()]);
-    return v && v.pick != null ? player.party[+v.pick] : null;
+  // ---------- FireRed's party screen (ui/party-menu.js) ----------
+
+  const partyMons = (notes) => player.party.map((r, i) => ({
+    name: Party.displayName(r), icon: Screen.iconUrl(r.species, Party.form(r)), level: r.level, gender: r.gender,
+    hp: r.hp, maxhp: Party.maxHp(r), status: r.status, item: !!r.item, desc: notes ? notes[i] : null
+  }));
+  // Opens it on the party (Screen.say("") first: no old text over it).
+  function openParty(opts) {
+    Screen.say("");
+    clearMenu();
+    return PartyMenu.open(Object.assign({ mons: partyMons(opts.notes), frame: GameOptions.get().frame }, opts));
+  }
+
+  // Choosing a Pokémon for something (an item, a trade, a tutor): FireRed's
+  // party screen with `message` ("Use on which POKéMON?"). For a TM or an
+  // evolution stone each box says whether it can be used (ABLE / NOT ABLE /
+  // LEARNED), as in FireRed. Resolves with the record, or null (B).
+  async function choosePartyFor(message, item) {
+    const note = (r) => (Bag.isMachine(item) && Party.knowsMove(r, Bag.machineMove(item)) ? "LEARNED"
+      : Bag.canUseOn(r, item, { party: player.party }) ? "ABLE" : "NOT ABLE");
+    const notes = item && (Bag.isMachine(item) || Bag.isStone(item)) ? player.party.map(note) : null;
+    const r = await openParty({ message, notes });
+    PartyMenu.close();
+    return r ? player.party[r.slot] : null;
   }
 
   const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit"];
@@ -692,11 +709,10 @@
       else if (what === "use" && id in REPEL_STEPS) await useRepel(id);
       else if (what === "use" && id === "escape-rope") { if (await useEscapeRope()) return "escaped"; }
       else if (what === "use") {
-        const r = await choosePartyFor(Bag.isMachine(id) ? "Teach " + Bag.machineMove(id) + " to which Pokémon?"
-          : "Use the " + Bag.name(id) + " on which Pokémon?", id);
+        const r = await choosePartyFor(Bag.isMachine(id) ? "Teach which {PKMN}?" : "Use on which {PKMN}?", id);
         if (r) await useItemOn(r, id);
       } else if (what === "give") {
-        const r = await choosePartyFor("Give the " + Bag.name(id) + " to which Pokémon?");
+        const r = await choosePartyFor("Give to which {PKMN}?");
         if (r) await giveItem(r, id);
       } else if (what === "toss") {
         const n = await chooseQuantity("Toss how many?", player.bag[id]);
@@ -1115,35 +1131,43 @@
 
   // ---------- The Start menu's screens ----------
 
+  // The Start menu's POKéMON: FireRed's party screen. A on a Pokémon opens
+  // SUMMARY / SWITCH / ITEM / CANCEL; SWITCH asks "Move to where?" and swaps
+  // the two; ITEM gives or takes a held item.
   async function partyMenu() {
+    if (!player.party.length) { await message("You don't have any Pokémon yet."); return; }
+    let cursor = 0;
     for (;;) {
-      if (!player.party.length) { await message("You don't have any Pokémon yet."); return; }
-      const v = await pickParty("Choose a Pokémon.", partyHtml() +
-        '<p class="bag-line">Choose a Pokémon for its summary. Press Select on one, then on another,' +
-        " to swap them.</p>", [back("Close")]);
-      if (v === "back") return;
-      if (v === "swapped") continue;
-      await summary(+v.pick);
+      const r = await openParty({ cursor, actions: () => [
+        { label: "SUMMARY", value: "summary" }, { label: "SWITCH", value: "switch" },
+        { label: "ITEM", value: "item" }, { label: "CANCEL", value: "cancel" }] });
+      if (!r) { PartyMenu.close(); return; }
+      cursor = r.cursor;
+      const mon = player.party[r.slot];
+      if (r.action === "summary") { PartyMenu.close(); await summary(r.slot); continue; }
+      if (r.action === "switch") {
+        if (r.to !== r.slot && player.party[r.to]) {
+          [player.party[r.slot], player.party[r.to]] = [player.party[r.to], player.party[r.slot]];
+          await persist();
+        }
+        continue;
+      }
+      if (r.action === "take") {
+        if (!mon.item) { await message(Party.displayName(mon) + " isn't holding anything."); continue; }
+        const old = Bag.take(mon);
+        Player.addItem(player, old);
+        await message("Received the " + Bag.name(old) + " from " + Party.displayName(mon) + ".");
+        continue;
+      }
+      if (r.action === "give") {
+        PartyMenu.close();
+        const items = Object.keys(player.bag).filter(holdable);
+        if (!items.length) { await message("You don't have anything to give."); continue; }
+        const choice = await pick("Give which item?",
+          '<div class="rows">' + items.map((id) => itemRow(id, "×" + player.bag[id])).join("") + "</div>", [back()]);
+        if (choice && choice.pick) await giveItem(mon, choice.pick);
+      }
     }
-  }
-
-  // pick() for screens showing the party cards: dragging one card onto another
-  // swaps those Pokémon (and resolves "swapped" so the screen redraws).
-  async function pickParty(text, html, options) {
-    let dropped;
-    const moved = new Promise((resolve) => { dropped = resolve; });
-    const picked = pick(text, html, options);
-    const cards = scene.querySelector(".party");
-    const stop = cards ? draggableCards(cards, (from, to) => dropped([from, to])) : () => {};
-    const v = await Promise.race([picked, moved]);
-    stop();
-    if (Array.isArray(v)) {
-      const [a, b] = v;
-      [player.party[a], player.party[b]] = [player.party[b], player.party[a]];
-      await persist();
-      return "swapped";
-    }
-    return v;
   }
 
   // Swapping two cards: press Select on one (it's held up), then Select or A on
@@ -2060,10 +2084,10 @@
     const ask = T("Trade_Text_LookingForMonWannaTradeForMon");
     await say(ask.slice(0, -1), [trade.wants, trade.gives]);
     if (!(await confirm(fill(ask[ask.length - 1], [trade.wants, trade.gives])))) { await say(T("Trade_Text_AwwOhWell")); return; }
-    const v = await pick("Which Pokémon will you trade?", partyHtml(), [back()]);
+    const mine = await choosePartyFor("Choose a POKéMON.");
     show("world");
-    if (v === "back") { await say(T("Trade_Text_AwwOhWell")); return; }
-    const i = +v.pick, mine = player.party[i];
+    if (!mine) { await say(T("Trade_Text_AwwOhWell")); return; }
+    const i = player.party.indexOf(mine);
     if (mine.species !== trade.wants) { await say(T("Trade_Text_WhatThatsNoMon"), [trade.wants, trade.gives]); return; }
     const theirs = Party.create(trade.gives, mine.level, { nickname: trade.nickname });
     theirs.ivs = Object.assign({}, trade.ivs);
@@ -2183,10 +2207,10 @@
       if (!(await confirm("It'll cost " + money(price) + ". Is that okay?\n(You have " + money(player.money) + ".)"))) { await declined(); return; }
       if (player.money < price) { await say("You don't have enough money."); return; }
     } else if (!(await confirm(fill(T("Text_MoveCanOnlyBeLearnedOnce").join(" "))))) { await declined(); return; }
-    const v = await pick(fill(T(text + "WhichMon").join(" ")), partyHtml(), [back()]);
+    await say(T(text + "WhichMon"));
+    const record = await choosePartyFor("Teach which {PKMN}?");
     show("world");
-    if (v === "back") { await declined(); return; }
-    const record = player.party[+v.pick];
+    if (!record) { await declined(); return; }
     const name = Party.displayName(record);
     const set = window.LEARNSETS_GEN6[record.species] || {};
     const learns = [].concat(set.tm || [], set.tutor || [], (set.levelup || []).map((l) => l[1])).includes(move) ||
@@ -2305,7 +2329,7 @@
     if (!Player.itemCount(player, "heart-scale")) { await say("If you bring me a Heart Scale, I'll\nteach your Pokémon a move."); return; }
     for (;;) {
       if (!(await confirm("Shall I teach a Pokémon a move for a Heart Scale? (You have " + Player.itemCount(player, "heart-scale") + ".)"))) return;
-      const r = await choosePartyFor("Which Pokémon should remember a move?");
+      const r = await choosePartyFor("Choose a POKéMON.");
       if (!r) continue;
       const moves = relearnable(r);
       if (!moves.length) { await say("Sorry… There's no move I can teach\nthat Pokémon."); continue; }
@@ -2328,7 +2352,7 @@
     await say(["Uh… Oh, yes, I'm the Move Deleter.", "I can make Pokémon forget their\nmoves."]);
     for (;;) {
       if (!(await confirm("Would you like me to make a Pokémon forget a move?"))) return;
-      const r = await choosePartyFor("Which Pokémon should forget a move?");
+      const r = await choosePartyFor("Choose a POKéMON.");
       if (!r) continue;
       if (r.moves.length <= 1) { await say(Party.displayName(r) + " seems to know only\none move…"); continue; }
       const i = await ask("Which move should be forgotten?", r.moves.map((m, k) => ({ label: m.name, value: k, className: "type-" + MOVES[m.name].type }))
