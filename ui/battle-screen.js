@@ -842,7 +842,11 @@
       case "-prepare": return fill(lookup(PREPARE, effectId(b), "{who} is getting ready to use " + b + "!"), a);
       case "-singleturn": return effectId(b) === "focuspunch" ? fill("{who} is tightening its focus!", a) : null;
       case "-ability": return fill(lookup(ABILITY, effectId(b), "{who}'s " + b + "!"), a);
-      case "-mega": return fill("{who} has Mega Evolved into " + b + "!", a);
+      case "-mega": {
+        // (Into the Mega Evolution its stone names: "Mega Charizard X".)
+        const into = /into (Mega [^.]+)\./.exec(((window.ITEMS || {})[c] || {}).effect || "");
+        return fill("{who} has Mega Evolved into " + (into ? into[1] : "Mega " + b) + "!", a);
+      }
       case "-transform": return fill("{who} transformed into " + nameOf(b) + "!", a);
       case "-enditem": return fill("{who} used its " + b + "!", a);
       case "-weather":
@@ -1215,8 +1219,10 @@
           else if (lastMove[active.name] === b) lastMove[active.name] = a;
           return (moves = slots());
         };
+        // Mega Evolution (with the Mega Ring, a Mega Stone held, once a battle).
+        const mega = active.canMega && config.megaRing ? { on: false } : null;
         for (;;) {
-          const pick = await window.GbaMenus.battleMoves(overlay(), { moves, cursor: at, frame: frame(), swap });
+          const pick = await window.GbaMenus.battleMoves(overlay(), { moves, cursor: at, frame: frame(), swap, mega });
           if (pick) at = pick.cursor;
           if (!pick) break;
           const m = moves[pick.index];
@@ -1227,7 +1233,7 @@
             continue;
           }
           lastMove[active.name] = m.index;
-          return { type: "move", move: m.index };
+          return mega && mega.on ? { type: "move", move: m.index, mega: true } : { type: "move", move: m.index };
         }
         continue;
       }

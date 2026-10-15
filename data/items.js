@@ -245,7 +245,7 @@ window.ITEMS = {
   "medal-box": { name: "medal-box", category: "gameplay", effect: "Holds medals received in the medal rally." },
   "medichamite": { name: "medichamite", category: "mega-stones", effect: "Held: Allows Medicham to Mega Evolve into Mega Medicham." },
   "mega-bracelet": { name: "mega-bracelet", category: "gameplay", effect: "Allows the player's Pokémon to Mega Evolve." },
-  "mega-ring": { name: "mega-ring", category: "gameplay", effect: "Allows the player's Pokémon to Mega Evolve." },
+  "mega-ring": { name: "mega-ring", category: "key-items", effect: "Allows the player's Pokémon to Mega Evolve." },
   "mental-herb": { name: "mental-herb", category: "held-items", effect: "Held: Consumed to cure infatuation. Gen V: Also removes Taunt, Encore, Torment, Disable, and Cursed Body." },
   "metagrossite": { name: "metagrossite", category: "mega-stones", effect: "Held: Allows Metagross to Mega Evolve into Mega Metagross." },
   "metal-coat": { name: "metal-coat", category: "type-enhancement", effect: "Held: Steel-Type moves from holder do 20% more damage." },

@@ -600,6 +600,15 @@
         return;
       }
       battleCursor(s, frame, ...at(cursor));
+      // (This game's own) Mega Evolution, with the Mega Ring: START switches
+      // it on for the move you pick, shown above the move box.
+      if (opts.mega) {
+        const label = opts.mega.on ? "MEGA EVOLVE: ON" : "START: MEGA EVOLVE";
+        const w = s.textWidth(label, "small") + 8, x = 3, y = 14 * 8 - 17;
+        s.fill(x - 1, y - 1, w + 2, 16, P5.fg);
+        s.fill(x, y, w, 14, opts.mega.on ? [248, 200, 96] : P5.bg);
+        s.text(label, x + 4, y + 1, P5.fg, P5.shadow, "small");
+      }
       const m = moves[cursor];
       if (m) {
         const st = ppState(m.pp, m.maxpp), col = [pp[st * 2], pp[st * 2 + 1]];
@@ -626,6 +635,7 @@
       else if (k === "select" && opts.swap && moves.length > 1) {
         swapping = cursor; cursor = cursor !== 0 ? 0 : 1; draw();
       }
+      else if (k === "start" && opts.mega) { se(); opts.mega.on = !opts.mega.on; draw(); }
       else if (k === "a") { se(); return { index: cursor, cursor }; }
       else if (k === "b") { se(); return null; }
       return undefined;

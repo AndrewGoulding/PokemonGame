@@ -609,8 +609,16 @@ and Gary are waiting: Oak has been studying Mega Evolution and tests everyone.
 You battle Gary (Pidgeotto, Growlithe, Gyarados, Exeggutor, Umbreon; Lv. 27-31),
 Red (Pikachu, Charmeleon, Wartortle, Ivysaur, Espeon) and Leaf
 (Butterfree, Wigglytuff, Nidorina, then Vulpix, Gloom or Poliwhirl by her
-starter, then her starter's second stage), healed before each battle. Lose one
-and you don't black out: come back up and carry on where you left off.
+starter, then her starter's second stage), healed before each battle. You have
+to win all three: lose one and you black out as usual, and the test starts
+over when you come back. Win them all and Oak gives you the Mega Ring and the
+Kanto starters' Mega Stones (Venusaurite, Charizardite X and Y, Blastoisinite),
+and Mr. Fuji, impressed by your battling, the Gengarite.
+
+With the Mega Ring, a Pokémon holding its Mega Stone can Mega Evolve once a
+battle: in the move menu, START switches Mega Evolution on ("MEGA EVOLVE: ON")
+for the move you pick. (FireRed has no Mega Evolution; trainers holding a Mega
+Stone already could.)
 
 ## Progression rules (Gen 6)
 

@@ -294,6 +294,7 @@
       // (Pokémon Tower's unidentified Ghost goes by "Ghost".)
       p2: { name: foe.name, team: foe.team.map((r) => Object.assign(Party.toBattleSet(r), opts.ghost ? { name: "Ghost" } : {})) },
       ghost: !!opts.ghost, noCatch: !!opts.noCatch,
+      megaRing: Player.itemCount(player, "mega-ring") > 0,
       safari: opts.safari ? { balls: player.flags.safari.balls } : undefined,
       wild,
       exp: !opts.safari,
@@ -3958,7 +3959,9 @@
   // came second) and sends you up the Tower, where Oak, Mr. Fuji, Red, Leaf
   // and Gary are waiting. Oak is studying Mega Evolution, and tests everyone:
   // you battle Gary, Red and Leaf (healed before each; the others battle off
-  // screen). Lose one and you can come back to carry on where you left off.
+  // screen). Lose one and you black out as usual, and the test starts over
+  // when you come back. Win all three and Oak gives you the Mega Ring and the
+  // Kanto starters' Mega Stones, and Mr. Fuji the Gengarite.
   const MEGA_AIDE = "LOCALID_MEGA_AIDE";
   const MEGA_CAST = { oak: "LOCALID_MEGA_OAK", fuji: "LOCALID_MEGA_FUJI", gary: "LOCALID_MEGA_GARY", red: "LOCALID_MEGA_RED", leaf: "LOCALID_MEGA_LEAF" };
   // An overworld look (sprite, size, frames) someone on some map already has.
@@ -4039,7 +4042,7 @@
         "That is the heart of all of this.\nI am eager to see it."]);
       f.megaTalked = true;
     } else {
-      await say(["Oak: Ah, {PLAYER}! Ready to carry\non with the test?", "I'll heal your Pokémon. Good luck!"]);
+      await say(["Oak: Ah, {PLAYER}! Ready to try my\ntest again?", "You'll have to win all three battles.\nI'll heal your Pokémon. Good luck!"]);
     }
     for (const r of MEGA_RIVALS) {
       if (beaten[r.key]) continue;
@@ -4051,15 +4054,11 @@
       await say(r.intro);
       const team = r.team().map(([sp, lv]) => Party.create(sp, lv));
       const outcome = await battle("trainer", { foe: { name: r.name(), team, pic: r.pic }, defeatText: r.defeat,
-        prize: 36 * team[team.length - 1].level, noBlackout: true });
+        prize: 36 * team[team.length - 1].level });
+      // (Blacked out: the whole test again next time.)
+      if (outcome !== "won") { delete f.megaBeaten; return; }
       show("world");
       await Overworld.resume();
-      if (outcome !== "won") {
-        music("mus_oak");
-        await say(["Oak: Hmm! Not quite, {PLAYER}.",
-          "Train your Pokémon a little more,\nthen come back and we'll carry on\nwhere we left off."]);
-        return;
-      }
       beaten[r.key] = true;
       await say(r.after);
     }
@@ -4068,7 +4067,28 @@
     await say(["Oak: Splendid! Simply splendid!",
       "While you were battling, Red, Leaf and\n{RIVAL} had quite the battles among\nthemselves, too.",
       "You've all passed my test! Each of\nyou shares a real bond with your\nPokémon.",
-      "I'll need a little more time with my\nresearch. When I'm ready, I'll be\ncalling on all of you!",
+      "And {PLAYER}, you won every one of\nyour battles! I knew I could count\non you.",
+      "Here! I want you to have this.\nIt's a Mega Ring."]);
+    Player.addItem(player, "mega-ring");
+    await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the Mega Ring\nfrom Prof. Oak!");
+    await say(["Oak: The Key Stone set in the ring\nresonates with a Mega Stone held\nby a Pokémon.",
+      "When the bond between you is strong\nenough, that Pokémon can Mega\nEvolve in battle! Once a battle.",
+      "And these are the Mega Stones for\nthe three Pokémon I give to new\nTrainers in Pallet Town."]);
+    for (const stone of ["venusaurite", "charizardite-x", "charizardite-y", "blastoisinite"]) {
+      Player.addItem(player, stone);
+      await sayWithJingle("mus_obtain_item", "{PLAYER} received " + article(Bag.name(stone)) + "!");
+    }
+    await say(["Oak: Venusaurite for Venusaur,\nCharizardite X and Y for Charizard,\nand Blastoisinite for Blastoise.",
+      "Have your Pokémon hold one, and\npress START when you choose a move\nto Mega Evolve!"]);
+    const FUJI = MEGA_CAST.fuji;
+    await Overworld.act([{ who: FUJI, moves: ["face_player"] }]);
+    await say(["Mr. Fuji: Young one… I have watched\nmany Trainers come and go from\nthis Tower.",
+      "But the way you battle alongside your\nPokémon… I was truly impressed.",
+      "Please, take this. A Pokémon that\nonce called this Tower home would\nsurely want you to have it."]);
+    Player.addItem(player, "gengarite");
+    await sayWithJingle("mus_obtain_item", "{PLAYER} received the Gengarite\nfrom Mr. Fuji!");
+    await say(["Mr. Fuji: It is the Mega Stone for\nGengar. Treat it kindly."]);
+    await say(["Oak: I'll need a little more time with\nmy research. When I'm ready, I'll be\ncalling on all of you!",
       "Until then, keep training, and keep\nfilling in that Pokédex!"]);
     await sayWithJingle("mus_heal", "Prof. Oak healed {PLAYER}'s Pokémon!");
     f.megaTowerDone = true;
