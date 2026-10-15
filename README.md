@@ -170,7 +170,9 @@ Saffron, and Vermilion City: its Pokémon Center, Poké Mart, Gym (behind a Cut
 tree, as in FireRed), the Fishing Guru's house, Elyssa's trade house, the
 Pidgey house, the Pokémon Fan Club and the S.S. Anne: all its decks and cabins
 (1F, 2F, 3F, B1F, the kitchen, the deck and the Captain's office) with their
-trainers and items. Tiles, palettes and metatiles come from
+trainers and items, Route 11 with its ten trainers and its gate (Snorlax's
+Route 12 beyond it isn't built), and Diglett's Cave from Route 11 to Route 2's
+east side. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into
@@ -438,7 +440,11 @@ Shop's Bicycle for it (there's no riding yet), Leaf waiting where the road from
 Route 6 comes into Vermilion (Butterfree 18, Wigglytuff 20, Nidorina 21 and her
 second-stage starter 22), Red on the S.S. Anne where FireRed has Gary (Pikachu
 24, Charmeleon, Wartortle and Ivysaur 25), the seasick Captain's HM01 Cut, the
-ship sailing off when you next step onto the dock, the Tradeback Guy upstairs
+ship sailing off when you next step onto the dock, Turner's trade in Route 11's
+gate (Nina the Nidorina for a Nidorino), Prof. Oak's aide there with the
+Itemfinder for thirty kinds of Pokémon caught (use it from the Bag: within 7
+steps across and 5 up or down of a hidden item it responds and you turn toward
+the nearest; standing on one, you dig it up), the Tradeback Guy upstairs
 in every Pokémon Center (he trades your Pokémon and straight back, so trade
 evolutions happen), and Bill: a
 Clefairy until you run his Teleporter's Cell Separator, then he gives you the
