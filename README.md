@@ -252,7 +252,23 @@ by FireRed's catch and escape factors and each species' Safari flee rate
 out of steps or balls, the PA calls time and you're back at the gate, and
 walking back into the gate early, you're asked if you're leaving. FireRed's
 Route 12 TM48 (Skill Swap) is TM106 here.
-The Power Plant and Routes 16 to 21 (Cycling Road and the sea routes) aren't built yet. Tiles, palettes and metatiles come from
+West of Celadon City, Route 16 is blocked by a second sleeping Snorlax (the
+Poké Flute again, a wild Lv. 30 Snorlax, and Leftovers hidden where it slept);
+past a Cut tree to the north, a girl's secret retreat, with her Fearow, where she
+gives you HM02 Fly; and Route 16's gate, where upstairs Prof. Oak's Aide has the
+Amulet Coin for forty kinds caught (held by a Pokémon that battles, it doubles the
+prize money) and the binoculars look out over Celadon and the sea. Its lower
+passage is Cycling Road's: without a Bicycle the guard calls you back to the
+counter ("No pedestrians are allowed on Cycling Road!"), and with one you're put
+on it as you ride out, and can't get off until you leave the road through a gate
+(or Fly away). Cycling Road runs from Route 16's Bikers and Cue Balls down the
+whole of Route 17, a slope as in FireRed: on it you coast downhill at full speed
+unless you press another way (you pedal that way at walking pace) or hold B (you
+stay where you are); its trainers, signs and hidden items (Rare Candy, Full
+Restore, PP Up, Max Revive, Max Elixir) along the way. At the bottom, Route 18
+(its Bird Keepers) and its gate, where Haden upstairs trades his Lickitung, Marc,
+for a Golduck, lead east into Fuchsia City.
+The Power Plant and Routes 19 to 21 (the sea routes) aren't built yet. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into

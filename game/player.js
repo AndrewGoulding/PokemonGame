@@ -54,7 +54,7 @@
     "Psychic": 32, "Sailor": 32, "Fisherman": 40, "Hiker": 40, "PokéManiac": 48, "Engineer": 48,
     "Super Nerd": 24, "Team Rocket": 32, "Channeler": 32, "Biker": 20, "Swimmer♂": 4, "Twins": 12, "Gamer": 72, "Ace Trainer": 60, "Gentleman": 72, "Leader": 100,
     "Beauty": 72, "Cooltrainer": 36, "Boss": 100, "Black Belt": 24, "Juggler": 40, "Scientist": 48,
-    "Bird Keeper": 24, "Rocker": 24, "Tamer": 40, "Young Couple": 28, "Crush Kin": 24
+    "Bird Keeper": 24, "Rocker": 24, "Tamer": 40, "Young Couple": 28, "Crush Kin": 24, "Cue Ball": 24
   };
   // Money lost on blacking out: highest party level x this, by badge count (Gen 6).
   const BLACKOUT_BASE = [8, 16, 24, 36, 48, 64, 80, 100, 120];

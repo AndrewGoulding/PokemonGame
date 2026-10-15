@@ -161,11 +161,17 @@
   // turns it off.
   const runHeld = () => runOn;
   function toggleRun() { runOn = !runOn; }
+  // (B held down, as it is: on Cycling Road's slope it keeps you in place.)
+  const B_KEYS = ["Shift", "x", "X", "b", "B"];
+  let bDown = false;
   document.addEventListener("keydown", (e) => {
-    if (!running || paused || e.repeat || !["Shift", "x", "X", "b", "B"].includes(e.key)) return;
+    if (B_KEYS.includes(e.key)) bDown = true;
+    if (!running || paused || e.repeat || !B_KEYS.includes(e.key)) return;
     toggleRun();
     e.preventDefault();
   });
+  document.addEventListener("keyup", (e) => { if (B_KEYS.includes(e.key)) bDown = false; });
+  window.addEventListener("blur", () => { bDown = false; });
 
   function heldDir() {
     const order = ["up", "down", "left", "right"];
@@ -318,14 +324,14 @@
 
   // ---------- Player movement ----------
 
-  function startStep(r, dir, spin) {
+  function startStep(r, dir, spin, speedOverride) {
     // (ctx.canRun can restrict running, e.g. to after FireRed's Running Shoes.)
     const run = !spin && !r.jump && me.avatar === "walk" && runHeld() && (!ctx.canRun || ctx.canRun());
     if (me.avatar === "bike") { me.bikeRun = dir === me.bikeDir ? (me.bikeRun || 0) + 1 : 0; me.bikeDir = dir; }
     const speed = me.avatar === "bike" ? BIKE_SPEEDS[Math.min(me.bikeRun, BIKE_SPEEDS.length - 1)]
       : me.avatar === "surf" ? SURF_SPEED : run ? RUN_SPEED : WALK_SPEED;
     me.move = { tx: r.x, ty: r.y, tmap: r.map, dir, t: 0, jump: !!r.jump, warp: r.warp || null, run, spin: !!spin,
-      dismount: !!r.dismount, dist: r.jump ? TILE * 2 : TILE, speed: spin ? SPIN_SPEED : r.dismount ? WALK_SPEED * 2 : speed };
+      dismount: !!r.dismount, dist: r.jump ? TILE * 2 : TILE, speed: speedOverride || (spin ? SPIN_SPEED : r.dismount ? WALK_SPEED * 2 : speed) };
     me.parity ^= 1;
   }
 
@@ -821,6 +827,7 @@
     if (pressedSelect) { pressedSelect = false; return finish({ type: "select" }); }
     if (pressedA) { pressedA = false; return interact(); }
     const dir = heldDir();
+    if (me.avatar === "bike" && World.isPullDown(World.blockAt(me.map, me.x, me.y).behavior)) return slope(dir);
     if (!dir) { me.turnTimer = 0; me.bikeDir = null; return; }
     if (dir !== me.facing && !wasMoving) { me.facing = dir; me.turnTimer = TURN_FRAMES; return; }
     me.facing = dir;
@@ -841,6 +848,19 @@
       const place = r.unbuilt.replace(/^MAP_/, "").toLowerCase().replace(/(^|_)(\w)/g, (_, s, c) => (s ? " " : "") + c.toUpperCase());
       read(["The way to " + place + " isn't built yet."]);
     }
+  }
+
+  // Cycling Road's slope on the Bicycle (World.slopeMove): downhill unless you
+  // press another way or hold B.
+  function slope(dir) {
+    const s = World.slopeMove(dir, bDown);
+    me.turnTimer = 0; me.bikeDir = null;
+    if (!s) return;
+    const r = World.step({ map: me.map, x: me.x, y: me.y }, s.dir, occupiedForPlayer);
+    // (Coasting into something stops you without turning you; pedalling into it turns you.)
+    if (!s.downhill || r.ok) me.facing = s.dir;
+    if (r.warp && !r.ok && dir) { warpTo(r.warp); return; }
+    if (r.ok) startStep(r, s.dir, false, r.jump ? null : s.speed);
   }
 
   // Frame index in a FireRed overworld sheet: 0-2 standing (down, up, left),

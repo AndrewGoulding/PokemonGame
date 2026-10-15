@@ -1828,12 +1828,11 @@ console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random 
   assert(!ran.choose("p1", { type: "move", move: 0 }).ok);
 
   // The maps: Route 12 joins Lavender Town and Route 11; Routes 13-15 lead to
-  // Fuchsia City; Routes 18 and 19 (Cycling Road, the sea) aren't built yet.
+  // Fuchsia City; Route 19 (the sea) isn't built yet.
   const conn = (m, dir) => (WORLD_MAPS[m].connections.find((c) => c.direction === dir) || {}).map;
   assert.deepStrictEqual([conn("LavenderTown", "down"), conn("Route11", "right"), conn("Route12", "down"), conn("Route13", "left"),
     conn("Route14", "left"), conn("Route15", "left")], ["Route12", "Route12", "Route13", "Route14", "Route15", "FuchsiaCity"]);
-  assert(!conn("FuchsiaCity", "left") && !conn("FuchsiaCity", "down"), "Routes 18 and 19 aren't built yet");
-  assert.strictEqual(World.step({ map: "FuchsiaCity", x: 0, y: 22 }, "left").unbuilt, "MAP_ROUTE18");
+  assert(!conn("FuchsiaCity", "down"), "Route 19 isn't built yet");
   // The Snorlax on Route 12; FireRed's TM48 (Skill Swap) there is the new TM106.
   assert(WORLD_MAPS.Route12.people.some((p) => p.script === "Route12_EventScript_Snorlax" && p.flag === "FLAG_HIDE_ROUTE_12_SNORLAX"));
   assert(WORLD_MAPS.Route12.people.some((p) => p.item === "tm106") && Bag.machineMove("tm106") === "Skill Swap");
@@ -1845,4 +1844,64 @@ console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random 
   assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_LEADER_KOGA.party.map((m) => m.species), ["Koffing", "Muk", "Koffing", "Weezing"]);
   assert(Player.CENTERS.FuchsiaCity_PokemonCenter_1F && window.TOWN_MAP.fly.FUCHSIA_CITY.center === "FuchsiaCity_PokemonCenter_1F");
   assert(FieldMoves.info("Surf").badge === "soul" && FieldMoves.hmFor("Surf") === "hm03" && FieldMoves.hmFor("Strength") === "hm04");
+}
+
+// ---------- Routes 16-18: Cycling Road ----------
+{
+  const conn = (m, dir) => (WORLD_MAPS[m].connections.find((c) => c.direction === dir) || {}).map;
+  // Celadon's west edge is Route 16; Routes 16, 17 and 18 run south to Fuchsia's west edge.
+  assert.deepStrictEqual([conn("CeladonCity", "left"), conn("Route16", "right"), conn("Route16", "down"), conn("Route17", "down"),
+    conn("Route18", "right"), conn("FuchsiaCity", "left")], ["Route16", "CeladonCity", "Route17", "Route18", "FuchsiaCity", "Route18"]);
+  const west = World.step({ map: "FuchsiaCity", x: 0, y: 19 }, "left"), east = World.step({ map: "CeladonCity", x: 0, y: 23 }, "left");
+  assert(east.ok && east.map === "Route16" && east.y === 13, "Celadon's west edge leads onto Route 16");
+  assert(west.ok && west.map === "Route18", "Fuchsia's west edge leads onto Route 18");
+  // Both gates, both floors; the secret house; the second Snorlax and the Leftovers under it.
+  assert.strictEqual(World.warpTarget(World.warpAt("Route16", 20, 13)).map, "Route16_NorthEntrance_1F");
+  assert.strictEqual(World.warpTarget(World.warpAt("Route16_NorthEntrance_1F", 9, 16)).map, "Route16_NorthEntrance_2F");
+  assert.strictEqual(World.warpTarget(World.warpAt("Route18", 41, 9)).map, "Route18_EastEntrance_1F");
+  assert.strictEqual(World.warpTarget(World.warpAt("Route18_EastEntrance_1F", 9, 10)).map, "Route18_EastEntrance_2F");
+  assert.strictEqual(World.warpTarget(World.warpAt("Route16", 10, 5)).map, "Route16_House");
+  assert(WORLD_MAPS.Route16.people.some((p) => p.script === "Route16_EventScript_Snorlax" && p.flag === "FLAG_HIDE_ROUTE_16_SNORLAX"));
+  assert(WORLD_MAPS.Route16.people.some((p) => p.script === "EventScript_CutTree"));
+  assert(WORLD_MAPS.Route16.hidden.some((h) => h.item === "leftovers" && h.x === 31 && h.y === 13));
+  assert(FieldMoves.hmFor("Fly") === "hm02" && FieldMoves.info("Fly").badge === "thunder");
+  // The guards' triggers: a column across each gate's Cycling Road side.
+  for (const g of ["Route16_NorthEntrance_1F", "Route18_EastEntrance_1F"]) {
+    const t = WORLD_MAPS[g].triggers.filter((t) => /NeedBikeTrigger/.test(t.script));
+    assert.strictEqual(t.length, 5, g);
+    assert(t.every((x) => x.x === 6));
+    assert(WORLD_MAPS[g].cycling, g + " allows the Bicycle");
+  }
+  // Route 17 is the slope: most of it pulls you down.
+  const pull = WORLD_MAPS.Route17.behavior.filter(World.isPullDown).length;
+  assert(pull > 1000, "Route 17's slope: " + pull);
+  assert(World.isPullDown(World.MB.CYCLING_ROAD_PULL_DOWN_GRASS) && World.isGrass({ behavior: World.MB.CYCLING_ROAD_PULL_DOWN_GRASS }));
+  // On the slope: coasting south fast with nothing (or down) pressed; another
+  // way pedals that way at walking pace; B holds you still.
+  assert.deepStrictEqual(World.slopeMove(null, false), { dir: "down", speed: 4, downhill: true });
+  assert.deepStrictEqual(World.slopeMove("down", false), { dir: "down", speed: 4, downhill: true });
+  assert.deepStrictEqual(World.slopeMove("up", false), { dir: "up", speed: 1, downhill: false });
+  assert.deepStrictEqual(World.slopeMove("left", false), { dir: "left", speed: 1, downhill: false });
+  assert.strictEqual(World.slopeMove(null, true), null);
+  assert.deepStrictEqual(World.slopeMove("down", true), { dir: "down", speed: 1, downhill: false });
+  // Coasting from the top of Route 17 a step at a time ends up on Route 18 (the slope runs out at the bottom).
+  {
+    const R = WORLD_MAPS.Route17;
+    let x = -1;
+    for (let i = 0; i < R.width && x < 0; i++) if (World.isPullDown(R.behavior[i]) && !R.collision[i]) x = i;
+    let pos = { map: "Route17", x, y: 0 }, steps = 0;
+    while (World.isPullDown(World.blockAt(pos.map, pos.x, pos.y).behavior) && steps < 400) {
+      const s = World.slopeMove(null, false), r = World.step(pos, s.dir);
+      if (!r.ok) break;
+      pos = { map: r.map, x: r.x, y: r.y }; steps++;
+    }
+    assert(steps > 100, "coasted " + steps + " tiles down Cycling Road from x=" + x);
+  }
+  // The trainers: Bikers and Cue Balls; Haden's trade.
+  const classes = new Set(["Route16", "Route17", "Route18"].flatMap((m) => WORLD_MAPS[m].people.filter((p) => p.trainer && p.trainer.id)
+    .map((p) => WORLD_TRAINERS[p.trainer.id].className)));
+  for (const c of ["Biker", "Cue Ball", "Bird Keeper", "Young Couple"]) assert(classes.has(c), c);
+  assert.strictEqual(Player.prizeMoney("Cue Ball Koji", [{ level: 28 }]), 24 * 28);
+  assert(WORLD_MAPS.Route18_EastEntrance_2F.people.some((p) => p.script === "Route18_EastEntrance_2F_EventScript_Haden"));
+  assert(WORLD_MAPS.Route17.hidden.length === 5);
 }

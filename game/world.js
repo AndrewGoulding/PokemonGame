@@ -25,7 +25,9 @@
     WATERFALL: 0x13,
     // The Rocket Hideout's spinning arrows (MB_SPIN_*) and the tile that stops you.
     SPIN_RIGHT: 0x54, SPIN_LEFT: 0x55, SPIN_UP: 0x56, SPIN_DOWN: 0x57, STOP_SPINNING: 0x58,
-    COUNTER: 0x80, PC: 0x83
+    COUNTER: 0x80, PC: 0x83,
+    // Cycling Road's slope (MB_CYCLING_ROAD_PULL_DOWN, and its grass).
+    CYCLING_ROAD_PULL_DOWN: 0xd0, CYCLING_ROAD_PULL_DOWN_GRASS: 0xd1
   };
   const LEDGE = { right: MB.JUMP_EAST, left: MB.JUMP_WEST, up: MB.JUMP_NORTH, down: MB.JUMP_SOUTH };
   // Warps you trigger by stepping onto them (doors, stairs). Others, like the
@@ -180,6 +182,22 @@
       !(occupied && occupied(ahead.map, ahead.x, ahead.y));
   }
 
+  // ---------- Cycling Road ----------
+  //
+  // On the slope on the Bicycle (FireRed's bike.c, BikeInputHandler_Normal and
+  // _Slope): you're pulled downhill. Pressing nothing or down, you coast south
+  // fast (BikeTransition_Downhill: PlayerWalkFaster); pressing another way you
+  // pedal that way at walking pace (BikeTransition_Uphill). Holding B you stay
+  // put, or pedal at walking pace whichever way you press.
+  // -> { dir, speed (pixels a frame), downhill } or null (stay where you are).
+  const isPullDown = (b) => b === MB.CYCLING_ROAD_PULL_DOWN || b === MB.CYCLING_ROAD_PULL_DOWN_GRASS;
+  const SLOPE_SPEED = 4, UPHILL_SPEED = 1;   // (MOVE_SPEED_FASTER, MOVE_SPEED_NORMAL)
+  function slopeMove(dir, bHeld) {
+    if (!bHeld && (!dir || dir === "down")) return { dir: "down", speed: SLOPE_SPEED, downhill: true };
+    if (!dir) return null;
+    return { dir, speed: UPHILL_SPEED, downhill: false };
+  }
+
   // ---------- Signs, people, triggers ----------
 
   const signAt = (mapName, x, y) => (map(mapName).signs || []).find((s) => s.x === x && s.y === y) || null;
@@ -190,7 +208,7 @@
   // Gen 3 encounter slots: 20, 20, 10, 10, 10, 10, 5, 5, 4, 4, 1, 1 percent.
   const LAND_SLOT_WEIGHTS = [20, 20, 10, 10, 10, 10, 5, 5, 4, 4, 1, 1];
 
-  function isGrass(b) { return b.behavior === MB.TALL_GRASS || b.encounter === 1; }
+  function isGrass(b) { return b.behavior === MB.TALL_GRASS || b.behavior === MB.CYCLING_ROAD_PULL_DOWN_GRASS || b.encounter === 1; }
 
   // After a step onto (x, y): a wild Pokémon, or null. Gen 3: a land
   // encounter happens if Random() % 2880 < rate * 16.
@@ -262,6 +280,6 @@
 
   window.World = {
     DIRS, OPPOSITE, MB, map, connectionOrigin, blockAt, warpAt, warpTarget, setDynamicWarp, step, facingWater, isSurfable,
-    signAt, triggersAt, isGrass, wildEncounter, stepEncounter, pickWild, LAND_SLOT_WEIGHTS, WATER_SLOT_WEIGHTS
+    isPullDown, slopeMove, signAt, triggersAt, isGrass, wildEncounter, stepEncounter, pickWild, LAND_SLOT_WEIGHTS, WATER_SLOT_WEIGHTS
   };
 })();

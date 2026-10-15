@@ -131,7 +131,9 @@ const MAPS = [
   "FuchsiaCity_SafariZone_Entrance", "FuchsiaCity_SafariZone_Office", "FuchsiaCity_Gym",
   "SafariZone_Center", "SafariZone_Center_RestHouse", "SafariZone_East", "SafariZone_East_RestHouse",
   "SafariZone_North", "SafariZone_North_RestHouse", "SafariZone_West", "SafariZone_West_RestHouse",
-  "SafariZone_SecretHouse"
+  "SafariZone_SecretHouse",
+  "Route16", "Route16_NorthEntrance_1F", "Route16_NorthEntrance_2F", "Route16_House",
+  "Route17", "Route18", "Route18_EastEntrance_1F", "Route18_EastEntrance_2F"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.

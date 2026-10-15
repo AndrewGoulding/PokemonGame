@@ -32,6 +32,9 @@
   const fanfare = (name) => (GA ? GA.fanfare(name) : Promise.resolve());
   const cry = (species, opts) => { if (GA) GA.cry(species, opts); };
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  // Cycling Road: Route 16's and Route 18's gates, and the maps you ride in between.
+  const CYCLING_ROAD_GATES = ["Route16_NorthEntrance_1F", "Route18_EastEntrance_1F"];
+  const CYCLING_ROAD_MAPS = ["Route16", "Route17", "Route18"].concat(CYCLING_ROAD_GATES);
   // The jingle for getting an item: TMs and HMs, key items, or anything else.
   const itemJingle = (item) => (Bag.isMachine(item) ? "mus_obtain_tmhm" : Bag.isKeyItem(item) ? "mus_obtain_key_item" : "mus_obtain_item");
   // A message with a jingle under it; carries on once both are done.
@@ -332,7 +335,9 @@
       if (player.flags.vsRematch) delete player.flags.vsRematch[opts.trainerId];
     }
     if (result.outcome === "won" && !wild) {
-      const prize = opts.prize != null ? opts.prize : Player.prizeMoney(foe.name, foe.team, opts.prizeClass);
+      let prize = opts.prize != null ? opts.prize : Player.prizeMoney(foe.name, foe.team, opts.prizeClass);
+      // An Amulet Coin held by a Pokémon that battled doubles it (FireRed's moneyMultiplier).
+      if (b.sides.p2.pokemon.some((m) => [...(m.expParticipants || [])].some((p) => p.item === "amulet-coin"))) prize *= 2;
       Player.addMoney(player, prize);
       await message("You got " + money(prize) + " for winning!");
     }
@@ -1638,8 +1643,10 @@
       "FuchsiaCity_House3_EventScript_MoveDeleter", "FuchsiaCity_Gym_EventScript_GymGuy", "FuchsiaCity_Gym_EventScript_GymStatue",
       "FuchsiaCity_SafariZone_Entrance_EventScript_InfoAttendant", "FuchsiaCity_SafariZone_Entrance_EventScript_EntryTriggerMid",
       "FuchsiaCity_SafariZone_Entrance_EventScript_EntryTriggerRight", "FuchsiaCity_SafariZone_Entrance_EventScript_EntryTriggerLeft",
-      "enter:FuchsiaCity_SafariZone_Entrance", "SafariZone_SecretHouse_EventScript_Attendant"
-    ]));
+      "enter:FuchsiaCity_SafariZone_Entrance", "SafariZone_SecretHouse_EventScript_Attendant",
+      "Route16_EventScript_Snorlax", "Route16_NorthEntrance_2F_EventScript_Aide", "Route16_House_EventScript_Woman",
+      "Route16_House_EventScript_Fearow", "Route18_EastEntrance_2F_EventScript_Haden"
+    ]).concat(CYCLING_ROAD_GATES.flatMap((g) => ["Top", "MidTop", "Mid", "MidBottom", "Bottom"].map((k) => g + "_EventScript_NeedBikeTrigger" + k))));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
   // Item balls on the map: picked up once, then gone.
@@ -1743,6 +1750,8 @@
       case "FLAG_HIDE_DOJO_HITMONCHAN_BALL": return f.dojoHitmon !== "Hitmonchan";
       // The Snorlax asleep across Route 12, until you wake it with the Poké Flute.
       case "FLAG_HIDE_ROUTE_12_SNORLAX": return !f.wokeRoute12Snorlax;
+      // And the one on Route 16.
+      case "FLAG_HIDE_ROUTE_16_SNORLAX": return !f.wokeRoute16Snorlax;
       // After you choose, your rival stands below the Poké Ball he took.
       // Leaf (the lab rival's other look) until she leaves after your battle;
       // after you choose, she stands below the Poké Ball she took.
@@ -2679,7 +2688,7 @@
 
       // ---------- Route 12 to Route 15 ----------
       case "Route12_EventScript_Snorlax":
-        await route12Snorlax(ev.person);
+        await snorlax(ev.person, 12);
         return;
       // The girl upstairs in the gate: FireRed's TM27 (Return).
       case "Route12_NorthEntrance_2F_EventScript_Lass": {
@@ -2710,6 +2719,48 @@
       // The binoculars: a large, shining bird (Articuno, seen in the Pokédex).
       case "Route15_WestEntrance_2F_EventScript_LeftBinoculars":
         await monSign("Articuno", T("Route15_WestEntrance_2F_Text_LargeShiningBird"));
+        return;
+
+      // ---------- Routes 16, 17 and 18: Cycling Road ----------
+      case "Route16_EventScript_Snorlax":
+        await snorlax(ev.person, 16);
+        return;
+      // Prof. Oak's Aide upstairs in Route 16's gate: the Amulet Coin for forty kinds caught.
+      case "Route16_NorthEntrance_2F_EventScript_Aide":
+        await aideGift({ needed: 40, item: "amulet-coin", flag: "gotAmuletCoinFromAide", text: "Route16_NorthEntrance_2F_Text_",
+          ask: "GiveAmuletCoinIfCaught40", received: "ReceivedAmuletCoinFromAide", explain: "ExplainAmuletCoin" });
+        return;
+      // The girl in her secret retreat behind the tree: HM02 Fly.
+      case "Route16_House_EventScript_Woman":
+        if (!f.gotHM02) {
+          await say(T("Route16_House_Text_FoundMySecretRetreat"));
+          Player.addItem(player, "hm02");
+          f.gotHM02 = true;
+          await sayWithJingle(itemJingle("hm02"), T("Route16_House_Text_ReceivedHM02FromGirl"));
+        }
+        await say(T("Route16_House_Text_ExplainHM02"));
+        return;
+      case "Route16_House_EventScript_Fearow":
+        cry("Fearow");
+        await say(T("Route16_House_Text_Fearow"));
+        return;
+      // The Cycling Road gates: without a Bicycle, the guard calls you back
+      // to the counter and turns you away.
+      case "Route16_NorthEntrance_1F_EventScript_NeedBikeTriggerTop":
+      case "Route16_NorthEntrance_1F_EventScript_NeedBikeTriggerMidTop":
+      case "Route16_NorthEntrance_1F_EventScript_NeedBikeTriggerMid":
+      case "Route16_NorthEntrance_1F_EventScript_NeedBikeTriggerMidBottom":
+      case "Route16_NorthEntrance_1F_EventScript_NeedBikeTriggerBottom":
+      case "Route18_EastEntrance_1F_EventScript_NeedBikeTriggerTop":
+      case "Route18_EastEntrance_1F_EventScript_NeedBikeTriggerMidTop":
+      case "Route18_EastEntrance_1F_EventScript_NeedBikeTriggerMid":
+      case "Route18_EastEntrance_1F_EventScript_NeedBikeTriggerMidBottom":
+      case "Route18_EastEntrance_1F_EventScript_NeedBikeTriggerBottom":
+        await needBike(script);
+        return;
+      // Upstairs in Route 18's gate, Haden trades his Lickitung, Marc, for a Golduck.
+      case "Route18_EastEntrance_2F_EventScript_Haden":
+        await inGameTrade(TRADES.marc);
         return;
 
       // ---------- Fuchsia City ----------
@@ -3161,6 +3212,9 @@
     // Turner, upstairs in Route 11's gate (FireRed's INGAME_TRADE_NIDORINOA).
     nina: { flag: "tradedNina", wants: "Nidorino", gives: "Nidorina", nickname: "Nina",
       ivs: { hp: 22, atk: 25, def: 18, spe: 19, spa: 22, spd: 15 }, ot: { name: "TURNER", id: 13637 } },
+    // Haden, upstairs in Route 18's gate (FireRed's INGAME_TRADE_LICKITUNG).
+    marc: { flag: "tradedMarc", wants: "Golduck", gives: "Lickitung", nickname: "Marc",
+      ivs: { hp: 24, atk: 19, def: 21, spe: 15, spa: 23, spd: 21 }, ot: { name: "HADEN", id: 1239 } },
     msNido: { flag: "tradedMsNido", wants: "Nidoran-M", gives: "Nidoran-F", nickname: "Ms. Nido",
       ivs: { hp: 22, atk: 18, def: 25, spe: 19, spa: 15, spd: 22 }, ot: { name: "SAIGE", id: 63184 },
       text: { ask: "Trade_Text_DoYouHaveMonWantToTradeForMon", no: "Trade_Text_ThatsTooBad",
@@ -4048,10 +4102,31 @@
   async function bicycle() {
     const here = window.WORLD_MAPS[player.location.map] || {};
     const mode = Overworld.avatar();
+    if (mode === "bike" && onCyclingRoad()) { await say("You can't dismount your Bike here."); return; }
     if (mode === "bike") { Overworld.setAvatar("walk"); return; }
     if (mode === "surf" || !here.cycling) { await say("Oak: " + player.name + "! This isn't the time to use that!"); return; }
     Overworld.setAvatar("bike");
   }
+  // ---------- Cycling Road ----------
+  //
+  // (Route 16's and Route 18's gates, and the maps between: CYCLING_ROAD_MAPS.)
+  // FireRed's FLAG_SYS_ON_CYCLING_ROAD: out on the road (not in a gate), where
+  // you can't get off the Bicycle.
+  const onCyclingRoad = () => !!player.flags.cyclingRoad && ["Route16", "Route17", "Route18"].includes(player.location.map);
+  // A gate's guard without a Bicycle (FireRed's NeedBikeTrigger): "Excuse me!",
+  // you face him, walk up to the counter, and are turned back the way you came.
+  async function needBike(script) {
+    const [, gate, row] = /^(\w+_1F)_EventScript_NeedBikeTrigger(\w+)$/.exec(script);
+    await say(T(gate + (gate === "Route16_NorthEntrance_1F" ? "_Text_ExcuseMeWaitUp" : "_Text_ExcuseMe")));
+    await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
+    await sleep(333);
+    const up = { MidTop: "WalkUp", Mid: "WalkUp2", MidBottom: "WalkUp3", Bottom: "WalkUp4" }[row];
+    if (up) await Overworld.act([{ who: "player", moves: M(gate + "_Movement_" + up) }]);
+    await say(T(gate + (gate === "Route16_NorthEntrance_1F" ? "_Text_NoPedestriansOnCyclingRoad" : "_Text_NeedBicycleForCyclingRoad")));
+    Screen.say("");
+    await Overworld.act([{ who: "player", moves: M(gate + "_Movement_WalkRight") }]);
+  }
+
   // Getting on or off the Bicycle or the water: its music, or the map's again.
   function avatarMusic(mode) {
     return mode === "bike" ? "mus_cycling" : mode === "surf" ? "mus_surf" : null;
@@ -4694,16 +4769,17 @@
   // the Poké Flute it wakes up and attacks, a wild Snorlax (Lv. 30) you can
   // catch. Beaten, run from or not, it's gone; it lumbers back to the
   // mountains if you didn't catch it.
-  async function route12Snorlax(person) {
+  // (Route 16's is the same: Route16_EventScript_Snorlax.)
+  async function snorlax(person, route) {
     const f = player.flags;
-    if (!f.gotPokeFlute) { await say(T("Route12_Text_MonSprawledOutInSlumber")); return; }
+    if (!f.gotPokeFlute) { await say(T("Route" + route + "_Text_MonSprawledOutInSlumber")); return; }
     if (!canBattle()) return;
     if (!(await confirm(fill(T("Text_WantToUsePokeFlute")[0])))) return;
     await sayWithJingle("mus_poke_flute", T("Text_PlayedPokeFlute"));
     await say(T("Text_SnorlaxWokeUp"));
     cry("Snorlax");
     await sleep(700);
-    f.wokeRoute12Snorlax = true;
+    f["wokeRoute" + route + "Snorlax"] = true;
     Overworld.removePerson(person);
     const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create("Snorlax", 30)] }, terrain: "grass" });
     if (outcome === "won" || outcome === "ran") {
@@ -5153,6 +5229,17 @@
     if (/^SilphCo_11F_EventScript_GiovanniTrigger/.test(script)) return !silphFreed();
     // Back in the Safari Zone's gate during the Safari Game: leaving early?
     if (script === "enter:" + SAFARI_GATE) return safariOn();
+    // Cycling Road (FireRed's VAR_MAP_SCENE_ROUTE16): which side of a gate's
+    // guard you're on; coming out onto Route 16 or 18 on the Cycling Road
+    // side, you're put on your Bicycle (ForcePlayerOntoBike).
+    if (script === "EventScript_SetEnteringCyclingRoad") { player.flags.cyclingRoad = true; return false; }
+    if (script === "EventScript_SetExitingCyclingRoad") { delete player.flags.cyclingRoad; return false; }
+    if (script === "enter:Route16" || script === "enter:Route18") {
+      if (player.flags.cyclingRoad && Overworld.avatar() === "walk") Overworld.setAvatar("bike");
+      return false;
+    }
+    // The guards stop you only until you have a Bicycle (VAR_TEMP_1).
+    if (/_EventScript_NeedBikeTrigger/.test(script)) return !Player.itemCount(player, "bicycle");
     // The Saffron gates' guards, until they've had the Tea.
     if (/^Route[5-8]_\w+Entrance_EventScript_GuardTrigger/.test(script)) return !player.flags.gatesOpen;
     return SPECIAL.has(script) || ITEM_BALLS.has(script) || TRAINER_SCRIPTS.has(script);
@@ -5183,6 +5270,8 @@
           // (Flying, blacking out or teleporting out of the Safari Zone ends the
           // Safari Game: Overworld_ResetStateAfterFly and the like.)
           if (player.flags.safari && !/^SafariZone_/.test(m) && m !== SAFARI_GATE) delete player.flags.safari;
+          // (And off Cycling Road: VAR_MAP_SCENE_ROUTE16 back to 0.)
+          if (player.flags.cyclingRoad && !CYCLING_ROAD_MAPS.includes(m)) delete player.flags.cyclingRoad;
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
           music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }
       });
