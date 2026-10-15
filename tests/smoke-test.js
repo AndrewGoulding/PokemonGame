@@ -126,6 +126,38 @@ for (let seed = 1; seed <= BATTLES; seed++) {
   assert.deepStrictEqual([pidgey.hp, pidgey.status], [pidgey.maxhp, ""], "the next Pokémon in is healed");
 }
 
+// False Swipe leaves the target at 1 HP, however hard it hits, and at 1 HP
+// it does nothing more.
+{
+  const b = new Battle({
+    seed: 4, wild: true,
+    p1: { name: "A", team: [{ species: "Scyther", level: 60, moves: ["False Swipe"] }] },
+    p2: { name: "Wild", team: [{ species: "Caterpie", level: 3, moves: ["String Shot"] }] }
+  });
+  b.start();
+  for (let i = 0; i < 3; i++) { b.choose("p1", { type: "move", move: 0 }); b.choose("p2", { type: "move", move: 0 }); }
+  assert.strictEqual(b.sides.p2.active.hp, 1, "False Swipe leaves 1 HP");
+  assert(!b.ended && !b.sides.p2.active.fainted);
+}
+
+// SHIFT: when only the opponent has a Pokémon to send out, you may switch first, free.
+{
+  const b = new Battle({
+    seed: 5,
+    p1: { name: "A", team: [{ species: "Machamp", level: 60, moves: ["Cross Chop"] }, { species: "Pidgey", level: 10, moves: ["Growl"] }] },
+    p2: { name: "B", team: [{ species: "Rattata", level: 3, moves: ["Tackle"] }, { species: "Pidgey", level: 3, moves: ["Growl"] }] }
+  });
+  b.start();
+  b.choose("p1", { type: "move", move: 0 }); b.choose("p2", { type: "move", move: 0 });
+  assert(b.sides.p2.active.fainted && b.canShift("p1"), "SHIFT is offered when the foe must send out");
+  assert(b.shift("p1", 1));
+  assert.strictEqual(b.sides.p1.active.species, "Pidgey");
+  b.choose("p2", { type: "switch", index: 1 });
+  assert.strictEqual(b.getRequest("p1").phase, "move");
+  assert(!new Battle({ seed: 1, wild: true, p1: { name: "A", team: [{ species: "Pidgey", level: 5, moves: ["Growl"] }] },
+    p2: { name: "W", team: [{ species: "Pidgey", level: 5, moves: ["Growl"] }] } }).canShift("p1"), "not in a wild battle");
+}
+
 // Moves start at their base PP unless the set asks for PP Ups.
 {
   const battle = new Battle({

@@ -1205,6 +1205,24 @@
       this.beginTurn();
     }
 
+    // SHIFT (FireRed's battle style): while only the opponent has a fainted
+    // Pokémon to replace, you may switch yours first, for free.
+    canShift(sideId) {
+      const side = this.sides[sideId], foe = this.sides[sideId === "p1" ? "p2" : "p1"];
+      return this.phase === "switch" && !this.wild && this.switchCause && this.switchCause.type === "faint"
+        && this.switchSides.length === 1 && this.switchSides[0] === foe.id
+        && !side.active.fainted && side.pokemon.some((m) => !m.fainted && m !== side.active);
+    }
+    shift(sideId, index) {
+      if (!this.canShift(sideId)) return false;
+      const side = this.sides[sideId], next = side.pokemon[index];
+      if (!next || next.fainted || next === side.active) return false;
+      const mon = this.switchIn(side, index, { deferStart: true });
+      this.onSwitchInEvents(mon);
+      this.runUpdates();
+      return true;
+    }
+
     commitSwitches() {
       const cause = this.switchCause;
       const mons = [];
@@ -1728,7 +1746,10 @@
           this.add("-activate", target, "Substitute", "[damage]");
           if (sv.hp <= 0) { delete target.volatiles.substitute; this.add("-end", target, "Substitute"); }
         } else {
-          dealt = this.damage(target, dmg, user, moveEffect);
+          // False Swipe (and Hold Back) always leave the target at least 1 HP.
+          const holdsOn = move.id === "falseswipe" || move.id === "holdback";
+          if (holdsOn) dmg = Math.min(dmg, Math.max(0, target.hp - 1));
+          dealt = holdsOn && dmg <= 0 ? 0 : this.damage(target, dmg, user, moveEffect);
           if (target.volatiles.focuspunch) target.volatiles.focuspunch.lostFocus = true;
           if (dealt > 0) {
             target.lastDamage = { amount: dealt, category: move.category, source: user };

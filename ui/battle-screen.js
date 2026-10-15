@@ -629,6 +629,19 @@
 
   // ---------- Event playback ----------
 
+  // Whether the move just announced gets as far as its animation: not when the
+  // next thing that happens is a miss, "But it failed!", no effect or Protect.
+  function moveLands() {
+    const events = battle.events;
+    let i = cursor;
+    while (events[i] && events[i][0] === "-magnitude") i++;
+    const next = events[i];
+    if (!next) return true;
+    if (next[0] === "-miss" || next[0] === "-fail" || next[0] === "-immune") return false;
+    if (next[0] === "-activate" && /Protect|Quick Guard/.test(String(next[2]))) return false;
+    return true;
+  }
+
   const teamName = (index) => {
     const mon = battle.sides.p1.pokemon[+index];
     return mon ? mon.name : "";
@@ -699,10 +712,15 @@
       case "move": {
         hitNotes = []; hitSound = null;
         const text = fill("{who} used " + b + "!", a);
-        // (Magnitude's animation waits for "Magnitude n!".)
-        return async () => { await message(text, 400); if (b !== "Magnitude") await animateMove(side, b); };
+        // (Magnitude's animation waits for "Magnitude n!"; a move that misses,
+        // fails or is blocked has none, as in FireRed.)
+        const lands = moveLands();
+        return async () => { await message(text, 400); if (b !== "Magnitude" && lands) await animateMove(side, b); };
       }
-      case "-magnitude": return async () => { await message("Magnitude " + b + "!", 400); await animateMove(side, "Magnitude"); };
+      case "-magnitude": {
+        const lands = moveLands();
+        return async () => { await message("Magnitude " + b + "!", 400); if (lands) await animateMove(side, "Magnitude"); };
+      }
       case "-damage": {
         const changed = setHp(a, b);
         if (!c) {
@@ -1150,6 +1168,21 @@
       if (p2.phase === "move" || p2.phase === "switch") {
         let choice;
         try { choice = config.opponent(battle); } catch (e) { console.error(e); return "crashed"; }
+        // SHIFT (the Option screen's BATTLE STYLE): "… is about to use …. Will
+        // … change Pokémon?", and a free switch first if so.
+        if (p2.phase === "switch" && choice && choice.type === "switch" && battle.canShift("p1")
+            && !(window.GameOptions && window.GameOptions.get().battleStyle === 1)) {
+          const next = battle.sides.p2.pokemon[choice.index];
+          await message(battle.sides.p2.name + " is\nabout to use " + next.name + ".");
+          say("Will " + battle.sides.p1.name + " change\nPokémon?");
+          await window.Screen.printed();
+          if (await window.GbaMenus.battleYesNo(overlay(), { frame: frame() })) {
+            const req = battle.getRequest("p1");
+            req.switches = battle.sides.p1.pokemon.map((m, i) => (!m.fainted && m !== battle.sides.p1.active ? i : -1)).filter((i) => i >= 0);
+            const c = await chooseSwitch(req, true);
+            if (c && c.type === "switch") { battle.shift("p1", c.index); await playNewEvents(); }
+          }
+        }
         if (choose("p2", choice).crashed) return "crashed";
         continue;
       }

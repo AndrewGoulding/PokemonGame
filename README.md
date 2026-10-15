@@ -12,7 +12,9 @@ START. Left alone for 45 seconds the title goes back to the opening. Press
 Start and FireRed's main menu comes up: CONTINUE (with your name, play time,
 Pokédex and badges), NEW GAME and OPTION (B goes back to the title). The
 Option screen is FireRed's too: TEXT SPEED (how long battle messages stay up),
-BATTLE SCENE (OFF leaves out the hit animation), SOUND (mono, stereo or off),
+BATTLE SCENE (OFF leaves out the hit animation), BATTLE STYLE (SHIFT: when a
+trainer is about to send out their next Pokémon you may switch first; SET: no
+switching), SOUND (mono, stereo or off),
 FRAME (the menus' windows: FireRed's ten window frames; the text box is always
 FireRed's message box, as in FireRed) and, from the main
 menu, SAVE FILE to load a downloaded save; it's also in the Start menu. Start a
@@ -65,7 +67,8 @@ frame as FireRed's do, your box bobs while you choose, a box shakes when its
 Pokémon is hit, and its frame flashes when yours levels up.
 Moves animate by kind and type with FireRed's sound effects (its own, for the
 moves FireRed has one for), and so do hits, fainting, stat changes, the balls
-and running (BATTLE SCENE: OFF on the Option screen turns them off). Text is
+and running (BATTLE SCENE: OFF on the Option screen turns them off); a move
+that misses, fails or is blocked has no animation, as in FireRed. Text is
 written out a letter at a time at your TEXT SPEED (A finishes it), and FireRed's
 ▼ shows when it's waiting for you.
 
