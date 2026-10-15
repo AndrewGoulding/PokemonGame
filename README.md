@@ -92,11 +92,13 @@ Balls, TMs & HMs, Berries, Key Items; left / right between them, and each
 pocket remembers where its ▶ was), with FireRed's descriptions under the list
 (its own words and line breaks, for the items FireRed has). A opens Use / Give / Toss; Toss asks how
 many and throws them away right there. It holds medicine, evolution
-stones, Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
+stones (each item for evolving says "Evolves certain Pokémon when used."), Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
 the Exp. Share, Oak's Parcel and the Town Map. After the Bag come FireRed's Pokédex (its
 table of contents with Seen / Owned; the numerical list, with the caught ball and
 types; the nine habitats' pages, up to four Pokémon a page in their circles;
-searching A to Z, by type, lightest and smallest; each entry's category,
+this game's Area mode: every place with wild Pokémon (----- until you've been
+there) with how many of its Pokémon you've caught and a gold crown once you've
+caught them all, and A on one lists them FireRed-style; each entry's category,
 height and weight in feet and pounds, footprint, picture and description, with
 Up / Down to the next one and Start for its cry; and the Area / Size page:
 where it lives on the map of Kanto and how big it is next to you. Catching a

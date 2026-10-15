@@ -94,9 +94,12 @@
   const titleCase = (id) => id.split("-").filter(Boolean)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   const name = (item) => SPECIAL_NAMES[item] || (isMachine(item) ? machineName(item) : titleCase(item));
-  // FireRed's own text where it has the item (data/item-descriptions.js, its
-  // lines broken as FireRed breaks them), else data/items.js's.
-  const description = (item) => (window.ITEM_DESCRIPTIONS && window.ITEM_DESCRIPTIONS[item]) ||
+  // Evolution stones and items all say the same; otherwise FireRed's own text
+  // where it has the item (data/item-descriptions.js, its lines broken as
+  // FireRed breaks them), else data/items.js's.
+  const EVOLUTION_ITEM_TEXT = "Evolves certain Pok\u00e9mon\nwhen used.";
+  const description = (item) => ((window.ITEMS[item] || {}).category === "evolution" ? EVOLUTION_ITEM_TEXT : "") ||
+    (window.ITEM_DESCRIPTIONS && window.ITEM_DESCRIPTIONS[item]) ||
     (window.ITEMS[item] && window.ITEMS[item].effect) || "";
   const sprite = (item) => (window.ITEM_SPRITES && window.ITEM_SPRITES[item]) || "";
   const price = (item) => PRICES[item] || (isMachine(item) ? machinePrice(item) : mintNature(item) ? MINT_PRICE : 0);

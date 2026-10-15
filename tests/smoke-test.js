@@ -552,6 +552,8 @@ for (const share of [false, true]) {
   assert.strictEqual(Bag.name("kings-rock"), "King's Rock");
   // FireRed's descriptions, three lines at most, in mixed case.
   assert.strictEqual(Bag.description("potion"), "A spray-type wound medicine.\nIt restores the HP of one Pokémon\nby 20 points.");
+  assert.strictEqual(Bag.description("fire-stone"), "Evolves certain Pokémon\nwhen used.");
+  assert.strictEqual(Bag.description("up-grade"), "Evolves certain Pokémon\nwhen used.");
   for (const [id, d] of Object.entries(window.ITEM_DESCRIPTIONS)) assert(d.split("\n").length <= 3 && !/POK/.test(d), id);
   assert.strictEqual(Bag.pocket("great-ball"), "Poké Balls");
   assert.strictEqual(Bag.pocket("super-potion"), "Medicine");

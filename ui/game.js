@@ -1130,6 +1130,7 @@
     return Object.assign({
       entries: dexList().map((e) => ({ id: e.id, species: e.species, seen: seen.has(e.species), caught: caught.has(e.species) })),
       areas: speciesAreas,
+      areaList: dexAreaList(),
       trainer: "assets/sprites/trainers/front/" + Player.LOOKS[player.look].front + ".png",
       cry: (sp) => cry(sp)
     }, extra);
@@ -1138,6 +1139,25 @@
     Screen.say("");
     clearMenu();
     return PokedexScreen.open(dexOptions());
+  }
+  // AREA MODE's places: each map section with wild Pokémon, in the order the
+  // maps come in (the order you reach them), with the species found there and
+  // whether you've been.
+  function dexAreaList() {
+    const secs = (window.TOWN_MAP || {}).mapSections || {}, names = (window.TOWN_MAP || {}).names || {};
+    const visited = player.flags.visitedSections || [], bySec = new Map();
+    const walk = (o, out) => {
+      if (!o || typeof o !== "object") return;
+      if (o.species) out.add(o.species);
+      for (const v of Object.values(o)) walk(v, out);
+    };
+    for (const [name, m] of Object.entries(window.WORLD_MAPS)) {
+      const sec = secs[name];
+      if (!sec || !m.wild) continue;
+      if (!bySec.has(sec)) bySec.set(sec, new Set());
+      walk(m.wild, bySec.get(sec));
+    }
+    return [...bySec].map(([sec, species]) => ({ name: names[sec] || sec, visited: visited.includes(sec), species: [...species] }));
   }
   // Where a species can be found: the map sections of the maps whose wild
   // Pokémon (grass, water, fishing, rocks) include it.
@@ -2775,7 +2795,8 @@
   // city or route) through a door or cave entrance: the "escape warp".
 
   const OUTDOORS = ["town", "city", "route", "ocean_route"];
-  // The Town Map's sections you've been to (for its dungeon icons).
+  // The Town Map's sections you've been to (for its dungeon icons and the
+  // Pokédex's AREA MODE).
   function visitSection(map) {
     const sec = window.TOWN_MAP && window.TOWN_MAP.mapSections[map];
     if (!sec) return;
@@ -2860,7 +2881,7 @@
         onWarp,
         trainerWaiting, hiddenItem: (h) => !player.flags[h.flag],
         onStep: () => { leftPallet(player.location.map); return redForestStep() || jessieJamesStep() || repelStep(); }, allowWild: repelAllows,
-        onMap: (m) => { forgetTrainerSpots(m); music((window.WORLD_MAPS[m] || {}).music); }
+        onMap: (m) => { forgetTrainerSpots(m); visitSection(m); music((window.WORLD_MAPS[m] || {}).music); }
       });
       if (ev.type === "menu") await startMenu();
       else if (ev.type === "repel-ended") await repelWoreOff();

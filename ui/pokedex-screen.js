@@ -1,11 +1,14 @@
 // FireRed's Pokédex (src/pokedex_screen.c), drawn the way the game draws it at
 // 240x160 (assets/pokedex/, data/pokedex-screen.js, tools/build-pokedex-screen.js):
 //
-//   the table of contents   POKéMON LIST (numerical), the nine habitats, SEARCH
-//                           (A to Z, type, lightest, smallest) and CLOSE, with
-//                           each choice's picture and the Seen / Owned counts
+//   the table of contents   POKéMON LIST (numerical), the nine habitats, this
+//                           game's AREA MODE and CLOSE, with each choice's
+//                           picture and the Seen / Owned counts
 //   a list                  "No001", the caught ball, the name (----- if unseen)
 //                           and, caught, its types
+//   AREA MODE               the places with wild Pokémon (----- until you've
+//                           been), how many of theirs you've caught, and a gold
+//                           crown once that's all of them; A lists them
 //   a habitat's pages       up to four Pokémon a page in their circles, with cards
 //   an entry                number, name, category, height, weight, footprint,
 //                           picture and description (caught: all of it; seen:
@@ -16,6 +19,7 @@
 //   await PokedexScreen.open({
 //     entries,     // [{ id, species, seen, caught }] in National Dex order
 //     areas,       // (species) => [MAPSEC, ...] where it can be found
+//     areaList,    // [{ name, visited, species: [...] }] the places with wild Pokémon, in order
 //     trainer,     // your front picture's URL (the size comparison)
 //     cry,         // (species) => void
 //     register     // a species: just caught; show its habitat page, then its entry ({A}NEXT)
@@ -155,8 +159,7 @@
     const it = [{ head: "Pokémon list" }, { label: "Numerical mode", act: "numerical", icon: "numerical" }, { head: "Pokémon habitats" }];
     D().habitats.forEach((h, i) => it.push({ label: h.name + " Pokémon", act: "habitat", habitat: i, icon: h.icon,
       locked: !h.pages.some((p) => p.some((sp) => seen.has(sp))) }));
-    it.push({ head: "Search" }, { label: "A to Z mode", act: "abc", icon: "abc" }, { label: "Type mode", act: "type", icon: "type" },
-      { label: "Lightest mode", act: "lightest", icon: "lightest" }, { label: "Smallest mode", act: "smallest", icon: "smallest" },
+    it.push({ head: "Pokémon areas" }, { label: "Area mode", act: "areas", icon: "areas", locked: !areaRows().some((a) => a.visited) },
       { head: "Other" }, { label: "Close Pokédex", act: "close", icon: "cancel" });
     return it;
   }
@@ -171,8 +174,9 @@
       else s.text(it.label, 20, y, it.locked ? LOCKED[0] : BLACK, it.locked ? LOCKED[1] : BEIGE);
       if (m.top + r === m.cursor) s.text("▶", 12, y, BLACK, BEIGE);
     }
-    const cur = items[m.cursor], icon = cur && cur.icon && A("cat-" + cur.icon);
-    if (ready(icon)) g.drawImage(icon, 168, 88);
+    const cur = items[m.cursor], icon = cur && cur.icon && cur.icon !== "areas" && A("cat-" + cur.icon);
+    if (cur && cur.icon === "areas") areaIcon(168, 88);
+    else if (ready(icon)) g.drawImage(icon, 168, 88);
     const seen = st.entries.filter((e) => e.seen).length, owned = st.entries.filter((e) => e.caught).length;
     s.text("Seen:", 168, 25, BLACK, BEIGE);
     s.text(String(seen).padStart(3, " "), 200, 37, ORANGE, RED);
@@ -195,18 +199,10 @@
 
   // ---------- Lists ----------
 
-  function makeList(mode) {
-    const seen = st.entries.filter((e) => e.seen), caught = st.entries.filter((e) => e.caught);
-    let rows, header = "Search";
-    if (mode === "numerical") {
-      const last = Math.max(0, ...seen.map((e) => e.id));
-      rows = st.entries.filter((e) => e.id <= last);
-      header = "Pokémon list";
-    } else if (mode === "abc") rows = seen.slice().sort((a, b) => nameOf(a.species).localeCompare(nameOf(b.species)));
-    else if (mode === "type") rows = caught.slice().sort((a, b) => TYPES.indexOf(DEX(a.species).types[0]) - TYPES.indexOf(DEX(b.species).types[0]) || a.id - b.id);
-    else if (mode === "lightest") rows = caught.slice().sort((a, b) => DEX(a.species).weight - DEX(b.species).weight || a.id - b.id);
-    else rows = caught.slice().sort((a, b) => DEX(a.species).height - DEX(b.species).height || a.id - b.id);
-    return { mode, rows, header, cursor: 0, top: 0 };
+  function makeList() {
+    const seen = st.entries.filter((e) => e.seen);
+    const last = Math.max(0, ...seen.map((e) => e.id));
+    return { mode: "numerical", rows: st.entries.filter((e) => e.id <= last), header: "Pokémon list", cursor: 0, top: 0 };
   }
   function drawList() {
     const L = st.list, s = S();
@@ -229,6 +225,71 @@
     bars(s, L.header, "{DPAD_UPDOWN}Pick {A_BUTTON}OK {B_BUTTON}Cancel");
     g.drawImage(s.canvas(), 0, 0);
     arrows(L.top > 0, L.top + 9 < L.rows.length, 200, 19, 141);
+  }
+
+  // ---------- Area mode (this game's) ----------
+
+  // The places with wild Pokémon: { name, visited, rows (dex entries), caught, complete }.
+  function areaRows() {
+    if (st.areaRows) return st.areaRows;
+    const byName = {};
+    for (const e of st.entries) byName[e.species] = e;
+    return (st.areaRows = (st.opts.areaList || []).map((a) => {
+      const rows = [...new Set(a.species)].map((sp) => byName[sp]).filter(Boolean).sort((x, y) => x.id - y.id);
+      const caught = rows.filter((e) => e.caught).length;
+      return { name: a.name, visited: !!a.visited, rows, caught, complete: rows.length > 0 && caught === rows.length };
+    }));
+  }
+  // A gold crown, 11x8 (a place whose Pokémon you've all caught).
+  const CROWN = ["#....#....#", "##..###..##", "#Y#.#Y#.#Y#", "#YY#YYY#YY#", "#YYYYYYYYY#", "#YRYYBYYRY#", "#YYYYYYYYY#", "###########"];
+  const CROWN_COLOURS = { "#": [123, 82, 0], Y: [255, 205, 41], R: [230, 49, 41], B: [57, 106, 238] };
+  function crown(s, x, y) {
+    CROWN.forEach((row, j) => [...row].forEach((c, i) => { if (CROWN_COLOURS[c]) s.put(x + i, y + j, CROWN_COLOURS[c]); }));
+  }
+  // The menu's picture for AREA MODE: the Kanto map (map_kanto.png), shrunk into the pictures' oval.
+  function areaIcon(x, y) {
+    const img = A("map-kanto");
+    if (!ready(img)) return;
+    g.save();
+    g.beginPath(); g.ellipse(x + 32, y + 24, 32, 24, 0, 0, 2 * Math.PI); g.clip();
+    g.drawImage(img, 0, 0, 96, 72, x, y, 64, 48);
+    g.restore();
+  }
+  function drawAreas() {
+    const L = st.areas, s = S();
+    if (ready(A("wallpaper"))) g.drawImage(A("wallpaper"), 0, 0);
+    for (let r = 0; r < 9; r++) {
+      const a = L.rows[L.top + r];
+      if (!a) continue;
+      const y = 18 + 14 * r;
+      if (L.top + r === L.cursor) s.text("▶", 20, y, BLACK, BEIGE);
+      if (!a.visited) { s.text("-----", 28, y, BLACK, BEIGE); continue; }
+      s.text(a.name, 28, y, BLACK, BEIGE);
+      if (a.complete) crown(s, 140, y + 3);
+      const n = a.caught + "/" + a.rows.length;
+      s.text(n, 216 - s.textWidth(n), y, BLACK, BEIGE);
+    }
+    bars(s, "Area mode", "{DPAD_UPDOWN}Pick {A_BUTTON}OK {B_BUTTON}Cancel");
+    g.drawImage(s.canvas(), 0, 0);
+    arrows(L.top > 0, L.top + 9 < L.rows.length, 200, 19, 141);
+  }
+  async function openAreas() {
+    st.areas = st.areas || { rows: areaRows(), cursor: 0, top: 0 };
+    if (!st.areas.rows.length) return;
+    await go("areas");
+    for (;;) {
+      const k = await keys((key) => {
+        const L = st.areas;
+        if (key === "up" || key === "down") { if (listMove(L, key === "up" ? -1 : 1, L.rows.length)) se("se_select"); }
+        else if (key === "a" || key === "b") return key;
+        return undefined;
+      });
+      if (k === "b") { await go("menu"); return; }
+      const a = st.areas.rows[st.areas.cursor];
+      if (!a.visited) continue;
+      se("se_select");
+      await openList("area", { mode: "area", rows: a.rows, header: a.name, cursor: 0, top: 0 }, "areas");
+    }
   }
 
   // ---------- An entry ----------
@@ -354,6 +415,7 @@
     g.fillStyle = "#9c9cbd"; g.fillRect(0, 0, W, H);
     if (st.view === "menu") drawMenu();
     else if (st.view === "list") drawList();
+    else if (st.view === "areas") drawAreas();
     else if (st.view === "entry") drawEntry();
     else if (st.view === "area") drawArea();
     else if (st.view === "habitat") drawHabitat();
@@ -394,9 +456,9 @@
     }
   }
 
-  async function openList(mode) {
-    st.list = st.lists[mode] && mode === "numerical" ? st.lists[mode] : makeList(mode);
-    st.lists[mode] = st.list;
+  // A list of Pokémon: the numerical one, or a place's (AREA MODE). B goes back to `back`.
+  async function openList(mode, list, back) {
+    st.list = list || st.lists[mode] || (st.lists[mode] = makeList());
     if (!st.list.rows.length) return;
     await go("list");
     for (;;) {
@@ -413,17 +475,12 @@
         } else if (key === "a" || key === "b") return key;
         return undefined;
       });
-      if (k === "b") { await go("menu"); return; }
+      if (k === "b") { await go(back || "menu"); return; }
       const e = st.list.rows[st.list.cursor];
       if (!e.seen) continue;
-      if (mode !== "numerical") {
-        // Search lists go to the habitat page it's on.
-        const h = D().habitats.findIndex((hb) => hb.pages.some((p) => p.includes(e.species)));
-        if (h >= 0) { await openHabitat(h, e.species, "list"); continue; }
-      }
       st.entryHeader = st.list.header;
       await fade(1); st.entry = e; st.view = "entry"; cry(e.species); await fade(0);
-      await showEntry(e, mode === "numerical" ? "list" : "search");
+      await showEntry(e, "list");
       await go("list");
     }
   }
@@ -495,6 +552,7 @@
       const it = st.menu.items[st.menu.cursor];
       if (k === "b" || it.act === "close") break;
       if (it.act === "habitat") { if (!it.locked) await openHabitat(it.habitat, null, "menu"); }
+      else if (it.act === "areas") { if (!it.locked) await openAreas(); }
       else await openList(it.act);
     }
     await fade(1, "rgba(0,0,0,");
