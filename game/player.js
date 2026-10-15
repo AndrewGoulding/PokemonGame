@@ -81,6 +81,7 @@
       repelSteps: 0,
       playTimeMs: 0,
       createdAt: Date.now(),
+      trainerId: Math.floor(Math.random() * 65536),   // the ID No. on your Pokémon's summaries
       savedAt: null
     };
   }
@@ -98,8 +99,11 @@
 
   // Adds a Pokémon to the party, or the first PC box with room.
   // Returns "party", "box N" (1-based) or null if everything is full.
+  // (A new Pokémon is yours, met here at its level: its summary says so.)
   function receive(player, record) {
     markCaught(player, record.species);
+    if (!record.ot) record.ot = { name: player.name, id: player.trainerId };
+    if (!record.met) record.met = { level: record.level, map: player.location ? player.location.map : null };
     if (player.party.length < PARTY_SIZE) {
       player.party.push(record);
       return "party";
@@ -311,6 +315,8 @@
     player.repelSteps = Math.max(0, data.repelSteps | 0);
     player.playTimeMs = Math.max(0, +data.playTimeMs || 0);
     player.createdAt = data.createdAt || Date.now();
+    // (Saves from before trainer IDs get one from when the game was started.)
+    player.trainerId = data.trainerId != null ? data.trainerId & 0xffff : player.createdAt % 65536;
     player.savedAt = data.savedAt || null;
     return { player, warnings };
   }

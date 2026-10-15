@@ -2145,10 +2145,10 @@
   // IVs: HP, Attack, Defense, Speed, Sp. Atk, Sp. Def), at your Pokémon's level.
   const TRADES = {
     mimien: { flag: "tradedMimien", wants: "Abra", gives: "Mr. Mime", nickname: "Mimien",
-      ivs: { hp: 20, atk: 15, def: 17, spe: 24, spa: 23, spd: 22 } },
+      ivs: { hp: 20, atk: 15, def: 17, spe: 24, spa: 23, spd: 22 }, ot: { name: "REYLEY", id: 1985 } },
     // Dontae, in Cerulean (FireRed's INGAME_TRADE_JYNX), with the other trade texts.
     zynx: { flag: "tradedZynx", wants: "Poliwhirl", gives: "Jynx", nickname: "Zynx",
-      ivs: { hp: 18, atk: 17, def: 18, spe: 22, spa: 25, spd: 21 },
+      ivs: { hp: 18, atk: 17, def: 18, spe: 22, spa: 25, spd: 21 }, ot: { name: "DONTAE", id: 36728 },
       text: { ask: "Trade_Text_DoYouHaveMonWouldYouTradeForMon", no: "Trade_Text_WellIfYouDontWantTo",
         wrong: "Trade_Text_ThisIsntMon", thanks: "Trade_Text_Thanks", after: "Trade_Text_HasTradedMonGrownStronger" } }
   };
@@ -2167,6 +2167,8 @@
     if (mine.species !== trade.wants) { await say(T(X.wrong), vars); return; }
     const theirs = Party.create(trade.gives, mine.level, { nickname: trade.nickname });
     theirs.ivs = Object.assign({}, trade.ivs);
+    if (trade.ot) theirs.ot = Object.assign({}, trade.ot);
+    theirs.met = { level: theirs.level, map: player.location.map, traded: true };
     theirs.hp = Party.maxHp(theirs);
     player.party[i] = theirs;
     Player.markCaught(player, trade.gives);
