@@ -14,6 +14,7 @@
 //     // FireRed's YES / NO box: -> true (YES) or false (NO, or B)
 //   const a = await GbaMenus.battleAction(overlay, { name, cursor, frame })
 //     // FIGHT / BAG / POKéMON / RUN (B moves to RUN) -> { action: "fight" | "bag" | "pokemon" | "run", cursor }
+//     // (opts.labels and opts.prompt: other choices and words, e.g. the Safari Zone's)
 //   const m = await GbaMenus.battleMoves(overlay, { moves, cursor, frame })
 //     // moves: [{ name, type, pp, maxpp }] -> { index, cursor } or null (B)
 //   const r = await GbaMenus.startMenu(overlay, { items, cursor, frame })
@@ -316,6 +317,13 @@
         }
       }
       String(items[cursor].help || "").split("\n").forEach((line, i) => s.text(line, 2, 120 + 5 + i * 14, std[10], std[2]));
+      // In the Safari Zone, your steps and Safari Balls in a window at the
+      // top left (DrawSafariZoneStatsWindow: tiles 1, 1, 10 x 4).
+      if (opts.stats) {
+        s.frame(frame, G().frames[frame].palette, 1, 1, 10, 4);
+        s.fill(8, 8, 80, 32, std[1]);
+        opts.stats.forEach((line, i) => s.text(line, 8 + 4, 8 + 3 + i * 14, std[2], std[3]));
+      }
       s.show(canvas);
     };
     canvas.classList.remove("hidden");
@@ -531,13 +539,15 @@
   async function battleAction(canvas, opts) {
     const frame = "type" + ((opts.frame || 0) + 1), msg = G().battle.palette;
     let cursor = opts.cursor || 0;
-    const LABELS = ["FIGHT", "BAG", "POKéMON", "RUN"];
+    // (The Safari Zone's: BALL BAIT / ROCK RUN, "What will …\nthrow?".)
+    const LABELS = opts.labels || ["FIGHT", "BAG", "POKéMON", "RUN"];
+    const prompt = opts.prompt || ["What will", opts.name + " do?"];
     const draw = () => {
       const s = Surface();
       battlePanel(s, "action", frame);
       // B_WIN_ACTION_PROMPT (tiles 1, 15): "What will\n… do?", white on the message box.
-      s.text("What will", 8 + 2, 120 + 2, msg[1], msg[6]);
-      s.text(opts.name + " do?", 8 + 2, 120 + 2 + 16, msg[1], msg[6]);
+      s.text(prompt[0], 8 + 2, 120 + 2, msg[1], msg[6]);
+      s.text(prompt[1], 8 + 2, 120 + 2 + 16, msg[1], msg[6]);
       // B_WIN_ACTION_MENU (tiles 17, 15): FIGHT BAG / POKéMON RUN, 56 apart.
       LABELS.forEach((l, i) => s.text(l, 136 + (i & 1) * 56, 120 + 2 + (i & 2) * 8, P5.fg, P5.shadow));
       battleCursor(s, frame, 16 + 7 * (cursor & 1), 15 + (cursor & 2));

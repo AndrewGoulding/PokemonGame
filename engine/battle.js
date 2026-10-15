@@ -319,6 +319,18 @@
       this.sides = { p1: new Side(this, "p1", opts.p1 || {}), p2: new Side(this, "p2", opts.p2 || {}) };
       this.sides.p1.foe = this.sides.p2;
       this.sides.p2.foe = this.sides.p1;
+      // The Safari Zone (FireRed's BATTLE_TYPE_SAFARI, engine/safari.js): your
+      // Pokémon stay in their balls; each turn you throw a Safari Ball, Bait
+      // or a Rock, or run, and the wild Pokémon watches you or runs away.
+      // opts.safari: { balls } (how many Safari Balls you have).
+      this.safari = null;
+      if (opts.safari) {
+        this.wild = true;
+        this.expEnabled = false;
+        this.safari = Object.assign(window.Safari.encounter(this.sides.p2.pokemon[0].baseSpecies), { balls: opts.safari.balls | 0 });
+        this.safariOut = false;   // (the last Safari Ball missed: "Game over!")
+        this.fled = false;
+      }
       this.field = {
         weather: "", weatherTurns: 0, weatherSource: null,
         terrain: "", terrainTurns: 0,
@@ -800,6 +812,13 @@
     // ---------- Start ----------
     start() {
       if (this.phase !== "init") return;
+      // (In the Safari Zone no one comes out of a ball and no Ability stirs.)
+      if (this.safari) {
+        this.switchIn(this.sides.p1, Math.max(0, this.sides.p1.pokemon.findIndex((p) => !p.fainted)), { deferStart: true, noHazards: true });
+        this.switchIn(this.sides.p2, 0, { deferStart: true, noHazards: true });
+        this.beginTurn();
+        return;
+      }
       const mons = [];
       for (const s of [this.sides.p1, this.sides.p2]) {
         const lead = s.pokemon.findIndex((p) => !p.fainted);
@@ -1024,6 +1043,7 @@
       if (this.phase !== "move" || side.choice) return base;
       const mon = side.active;
       base.phase = "move";
+      if (this.safari) { base.safari = { balls: this.safari.balls }; base.switches = []; return base; }
       const forced = this.forcedAction(mon);
       const slots = this.getMoveSlots(mon);
       const usable = slots.filter((s) => !s.disabled);
@@ -1049,7 +1069,11 @@
       if (this.ended) return { ok: false, error: "Battle is over" };
       const req = this.getRequest(sideId);
       if (req.phase === "wait") return { ok: false, error: "Not waiting for a choice from " + sideId };
-      if (req.phase === "switch") {
+      if (this.safari) {
+        if (!choice || !["ball", "bait", "rock", "run"].includes(choice.type)) return { ok: false, error: "Invalid choice" };
+        if (choice.type === "ball" && this.safari.balls <= 0) return { ok: false, error: "You have no Safari Balls left!" };
+        side.choice = { type: choice.type };
+      } else if (req.phase === "switch") {
         if (!choice || choice.type !== "switch" || !req.switches.includes(choice.index))
           return { ok: false, error: "Invalid switch" };
         side.choice = { type: "switch", index: choice.index };
@@ -1098,6 +1122,9 @@
     // A side that has no real decision (forced) is filled in automatically.
     autoFillForced() {
       if (this.phase !== "move") return;
+      // The wild Pokémon in the Safari Zone makes up its mind as the turn
+      // starts (FireRed's AI_Safari): run, or watch you.
+      if (this.safari) { this.sides.p2.choice = { type: window.Safari.flees(this.safari, () => this.random()) ? "flee" : "watch" }; return; }
       for (const s of [this.sides.p1, this.sides.p2]) {
         if (s.choice) continue;
         const f = this.forcedAction(s.active);
@@ -1140,6 +1167,7 @@
     }
 
     commitTurn() {
+      if (this.safari) return this.safariTurn();
       const actions = [];
       for (const s of [this.sides.p1, this.sides.p2]) {
         const c = s.choice, mon = s.active;
@@ -1442,6 +1470,51 @@
       if (this.expEnabled) this.awardExp(target); // Gen 6 gives experience for catches
       this.caught = target;
       this.ended = true; this.phase = "ended"; this.winner = mon.side.id;
+    }
+
+    // A turn in the Safari Zone: your throw (or running away), then the wild
+    // Pokémon's turn: it runs, or it watches (angry, eating, or carefully).
+    safariTurn() {
+      const s = this.safari, me = this.sides.p1, foe = this.sides.p2.active, rng = () => this.random();
+      const c = me.choice;
+      this.phase = "running";
+      const end = () => { this.ended = true; this.phase = "ended"; this.winner = null; };
+      if (c.type === "run") {
+        this.add("-run", me.active);
+        this.escaped = true;
+        return end();
+      }
+      if (c.type === "ball") {
+        s.balls--;
+        const r = window.Safari.attempt(s, { hp: foe.hp, maxhp: foe.maxhp, status: foe.status }, rng);
+        // [side, ball, target, shakes (0-3), "caught"|"", balls left]
+        this.add("-ball", "p1", "safari-ball", foe, Math.min(3, r.shakes), r.caught ? "caught" : "", s.balls);
+        if (r.caught) {
+          this.add("caught", foe, "safari-ball");
+          this.caught = foe;
+          end();
+          this.winner = "p1";
+          return;
+        }
+        if (s.balls <= 0) {
+          this.add("-safariout");
+          this.safariOut = true;
+          return end();
+        }
+      } else if (c.type === "bait") {
+        window.Safari.throwBait(s, rng);
+        this.add("-safaribait", foe);
+      } else if (c.type === "rock") {
+        window.Safari.throwRock(s, rng);
+        this.add("-safarirock", foe);
+      }
+      if (this.sides.p2.choice && this.sides.p2.choice.type === "flee") {
+        this.add("-safarifled", foe);
+        this.fled = true;
+        return end();
+      }
+      this.add("-safariwatch", foe, window.Safari.watch(s));
+      this.beginTurn();
     }
 
     // ---------- Actions ----------

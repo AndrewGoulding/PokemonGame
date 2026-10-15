@@ -171,8 +171,8 @@ Saffron, and Vermilion City: its Pokémon Center, Poké Mart, Gym (behind a Cut
 tree, as in FireRed), the Fishing Guru's house, Elyssa's trade house, the
 Pidgey house, the Pokémon Fan Club and the S.S. Anne: all its decks and cabins
 (1F, 2F, 3F, B1F, the kitchen, the deck and the Captain's office) with their
-trainers and items, Route 11 with its ten trainers and its gate (Snorlax's
-Route 12 beyond it isn't built), Diglett's Cave from Route 11 to Route 2's
+trainers and items, Route 11 with its ten trainers and its gate (on to Route
+12, below the sleeping Snorlax), Diglett's Cave from Route 11 to Route 2's
 east side, and Route 10 east of Route 9: its trainers, its Pokémon Center (Prof.
 Oak's aide gives the Everstone for twenty kinds caught; Fly can land outside
 it), and Rock Tunnel (1F and B1F, dark without Flash, with its fifteen trainers,
@@ -228,7 +228,31 @@ Key from 5F opens for good; the Thunder Wave tutor on 2F, a nap on 9F, Gary on 7
 Lv. 25; and Giovanni in the boardroom on 11F: beat him and Team Rocket leaves
 Silph and Saffron, the townsfolk come back out, and the President gives you the
 Master Ball. The Silph Co. 5F TM01 (Focus Punch) is TM105 here.
-The Power Plant and Route 12 aren't built yet. Tiles, palettes and metatiles come from
+South of Lavender Town, Route 12 (its gate, with TM27 Return from the girl
+upstairs; the fishermen along the pier; the Fishing Guru's younger brother's
+house, with the Super Rod and his Magikarp size record, FireRed's, for a Net Ball)
+is blocked by a sleeping Snorlax: play the Poké Flute to wake it, and it attacks,
+a wild Snorlax, Lv. 30, you can catch; beaten or not, it's gone. Routes 13, 14 and
+15 (their trainers, Cut trees and hidden items; Route 15's gate, where Prof.
+Oak's Aide has the Exp. Share for fifty kinds caught and the binoculars show
+Articuno) lead west to Fuchsia City: its Pokémon Center, the Poké Mart, the
+Substitute tutor, the Pokémon statues' signs, the Fishing Guru's older brother
+(the Good Rod), Bill's grandfather's house, the Move Deleter, the Safari Zone
+office, the Warden's house (bring back his Gold Teeth, lost in the Safari Zone,
+for HM04 Strength) and Koga's Gym, its invisible walls between you and him (the
+Soul Badge, which lets you Surf, and TM06 Toxic). The Safari Zone: ₽500 at the
+gate buys the Safari Game, 30 Safari Balls and 600 steps in its four areas
+(Center, East, North, West) and their rest houses, with their items and the
+Secret House's prize, HM03 Surf. Every wild Pokémon there is a Safari battle,
+as in FireRed: your Pokémon stay in their balls and each turn you throw a
+Safari Ball, Bait (it's less likely to flee, but harder to catch) or a Rock
+(more likely to flee, easier to catch), or run; it watches you, or runs away,
+by FireRed's catch and escape factors and each species' Safari flee rate
+(`engine/safari.js`). The Start menu shows your steps and balls and can RETIRE;
+out of steps or balls, the PA calls time and you're back at the gate, and
+walking back into the gate early, you're asked if you're leaving. FireRed's
+Route 12 TM48 (Skill Swap) is TM106 here.
+The Power Plant and Routes 16 to 21 (Cycling Road and the sea routes) aren't built yet. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into
@@ -569,6 +593,13 @@ silver hair, red shirt, black backpack), and its trainer-card picture
 - **Catching**: the Gen 6 formula (HP, catch rate, ball and status bonuses,
   four shake checks). Poké, Great, Ultra, Master, Net, Nest, Repeat, Timer,
   Quick and Dusk Balls have their bonuses. No critical captures yet.
+- **The Safari Zone** (`engine/safari.js`, FireRed's): a species' catch factor
+  is its catch rate × 100 / 1275 and its escape factor its Safari flee rate ×
+  100 / 1275 (at least 2). Bait halves the catch factor (at least 3) and makes
+  it eat for 2-6 turns, fleeing at a quarter the rate; a Rock doubles it (at
+  most 20) and angers it for 2-6 turns, fleeing at twice the rate (at most 20);
+  it flees with the rate × 5 percent each turn, deciding as the turn starts.
+  A Safari Ball (×1.5) uses FireRed's catch odds and four shake checks.
 - **Running**: always escapes if faster; otherwise speed × 128 / foe speed +
   30 per attempt, out of 256.
 - **Happiness** (friendship, 0-255; engine/experience.js `adjustFriendship`):
@@ -691,25 +722,26 @@ and later files read those globals, so scripts must load in this order:
 14. `engine/stat-calculator.js` → `Stats`
 15. `engine/experience.js` → `Experience`
 16. `engine/catching.js` → `Catching`
-17. `engine/item-use.js` → `ItemUse`
-18. `engine/damage-calculator.js` → `Damage`
-19. `data/conditions.js` → `CONDITIONS`, `ITEM_EFFECTS`
-20. `data/battle-moves.js` → `BATTLE_MOVE_EFFECTS`
-21. `engine/battle.js` → `Battle`
-22. `game/random-team.js` → `RandomTeam`
-23. `game/opponent-ai.js` → `OpponentAI`
-24. `game/party.js` → `Party`
-25. `game/evolution.js` → `Evolution`
-26. `game/encounters.js` → `Encounters`
-27. `game/player.js` → `Player`
-28. `game/bag.js` → `Bag`
-29. `game/save.js` → `Save`
-30. `game/world.js` → `World`
-31. `ui/screen.js` → `Screen`
-32. `ui/battle-screen.js` → `BattleScreen`
-33. `ui/overworld.js` → `Overworld`
-34. `ui/intro.js` → `Intro`
-35. `ui/game.js` → `Game` (starts the game on load)
+17. `engine/safari.js` → `Safari`
+18. `engine/item-use.js` → `ItemUse`
+19. `engine/damage-calculator.js` → `Damage`
+20. `data/conditions.js` → `CONDITIONS`, `ITEM_EFFECTS`
+21. `data/battle-moves.js` → `BATTLE_MOVE_EFFECTS`
+22. `engine/battle.js` → `Battle`
+23. `game/random-team.js` → `RandomTeam`
+24. `game/opponent-ai.js` → `OpponentAI`
+25. `game/party.js` → `Party`
+26. `game/evolution.js` → `Evolution`
+27. `game/encounters.js` → `Encounters`
+28. `game/player.js` → `Player`
+29. `game/bag.js` → `Bag`
+30. `game/save.js` → `Save`
+31. `game/world.js` → `World`
+32. `ui/screen.js` → `Screen`
+33. `ui/battle-screen.js` → `BattleScreen`
+34. `ui/overworld.js` → `Overworld`
+35. `ui/intro.js` → `Intro`
+36. `ui/game.js` → `Game` (starts the game on load)
 
 `index.html` is the source of truth for this order, and the smoke test reads its
 script list from there (skipping `ui/`, which needs a real page). If you add a

@@ -267,6 +267,8 @@
     return type === "indoor" ? "building" : type === "underground" ? "cave" : "plain";
   }
 
+  // opts.safari: a Safari Zone battle (engine/safari.js), with the Safari
+  // Balls you have left (player.flags.safari).
   async function battle(kind, opts) {
     opts = opts || {};
     const wild = kind === "wild";
@@ -289,8 +291,9 @@
       // (Pokémon Tower's unidentified Ghost goes by "Ghost".)
       p2: { name: foe.name, team: foe.team.map((r) => Object.assign(Party.toBattleSet(r), opts.ghost ? { name: "Ghost" } : {})) },
       ghost: !!opts.ghost, noCatch: !!opts.noCatch,
+      safari: opts.safari ? { balls: player.flags.safari.balls } : undefined,
       wild,
-      exp: true,
+      exp: !opts.safari,
       expShare: expShareOn(),
       trainer: Player.LOOKS[player.look].back,
       foeTrainer: foe.pic, defeatText: opts.defeatText && opts.defeatText.map((p) => fill(p)),
@@ -333,8 +336,11 @@
       Player.addMoney(player, prize);
       await message("You got " + money(prize) + " for winning!");
     }
+    if (opts.safari && player.flags.safari) player.flags.safari.balls = b.safari.balls;
     if (result.outcome === "caught") await addCaught(Party.caught(foe.team[0], b.caught, ballUsed(b)));
-    if ((result.outcome === "lost" || !canBattle()) && opts.noBlackout) {
+    if (opts.safari) {
+      // (No one fought: no blacking out, no evolving.)
+    } else if ((result.outcome === "lost" || !canBattle()) && opts.noBlackout) {
       player.party.forEach(Party.heal);
     } else if (result.outcome === "lost" || !canBattle()) {
       await blackout();
@@ -1427,7 +1433,8 @@
     card: "Check your money and other game data.",
     save: "Save your game with a complete record\nof your progress to take a break.",
     option: "Adjust various game settings such as text\nspeed, game rules, etc.",
-    exit: "Close this menu window."
+    exit: "Close this menu window.",
+    retire: "Retire from the Safari Game and return to\nthe registration counter."
   };
   async function startMenu() {
     player.flags.openedMenu = true;   // (FireRed's FLAG_OPENED_START_MENU: the Sign Lady's scene)
@@ -1436,16 +1443,24 @@
       Screen.say("");
       clearMenu();
       // POKéDEX once Prof. Oak has given you one, POKéMON once you have one.
-      const items = [];
+      // In the Safari Zone: RETIRE first, and no SAVE (SetUpStartMenu_SafariZone).
+      const items = [], safari = player.flags.safari;
+      if (safari) items.push({ key: "retire", label: "Retire" });
       if (player.flags.pokedex) items.push({ key: "dex", label: "Pokédex" });
       if (player.party.length) items.push({ key: "party", label: "Pokémon" });
-      items.push({ key: "bag", label: "Bag" }, { key: "card", label: player.name }, { key: "save", label: "Save" },
-        { key: "option", label: "Option" }, { key: "exit", label: "Exit" });
+      items.push({ key: "bag", label: "Bag" }, { key: "card", label: player.name });
+      if (!safari) items.push({ key: "save", label: "Save" });
+      items.push({ key: "option", label: "Option" }, { key: "exit", label: "Exit" });
       for (const it of items) it.help = START_HELP[it.key];
-      const r = await GbaMenus.startMenu($("#overlay"), { items, cursor: startCursor, frame: GameOptions.get().frame });
+      const stats = safari ? [String(safari.steps).padStart(3, " ") + "/" + Safari.STEPS, "Balls  " + String(safari.balls).padStart(2, " ")] : null;
+      const r = await GbaMenus.startMenu($("#overlay"), { items, cursor: startCursor, frame: GameOptions.get().frame, stats });
       startCursor = r.cursor;
       const v = r.key;
       if (v === "exit") return;
+      if (v === "retire") {
+        if (await confirm(fill(T("SafariZone_Text_WouldYouLikeToExit")[0]))) { await safariOver(null, false); return; }
+        continue;
+      }
       if (v === "party") { if ((await partyMenu()) === "escaped") return; }
       else if (v === "bag") { if ((await bagScreen()) === "escaped") return; }
       else if (v === "dex") await pokedex();
@@ -1502,6 +1517,13 @@
   for (const [name, m] of Object.entries(window.WORLD_MAPS)) {
     if (/^SilphCo_\d+F$/.test(name)) for (const sg of m.signs) if (/_EventScript_Door\d*$/.test(sg.script) && !SILPH_DOORS.includes(sg.script)) SILPH_DOORS.push(sg.script);
   }
+  // Fuchsia City's signs by its Pokémon statues: the Pokémon's picture (and
+  // it's seen in the Pokédex) with the sign.
+  const FUCHSIA_SIGN_MONS = {
+    FuchsiaCity_EventScript_ChanseySign: "Chansey", FuchsiaCity_EventScript_VoltorbSign: "Voltorb",
+    FuchsiaCity_EventScript_KangaskhanSign: "Kangaskhan", FuchsiaCity_EventScript_SlowpokeSign: "Slowpoke",
+    FuchsiaCity_EventScript_LaprasSign: "Lapras"
+  };
 
   const SPECIAL = new Set([
     "PalletTown_PlayersHouse_1F_EventScript_Mom",
@@ -1605,7 +1627,19 @@
     "SilphCo_11F_EventScript_President", "SilphCo_11F_EventScript_GiovanniTriggerLeft", "SilphCo_11F_EventScript_GiovanniTriggerRight"
   ].concat(Object.keys(STARTER_BALLS)).concat(Array.from({ length: 15 }, (_, i) => "VermilionCity_Gym_EventScript_TrashCan" + (i + 1)))
     .concat(Array.from({ length: 22 }, (_, i) => "CeladonCity_GameCorner_EventScript_SlotMachine" + i))
-    .concat(Object.keys(SILPH_WORKERS)).concat(SILPH_DOORS));
+    .concat(Object.keys(SILPH_WORKERS)).concat(SILPH_DOORS)
+    .concat(Object.keys(FUCHSIA_SIGN_MONS)).concat([
+      "Route12_EventScript_Snorlax", "Route12_NorthEntrance_2F_EventScript_Lass",
+      "Route12_FishingHouse_EventScript_FishingGuruBrother", "Route12_FishingHouse_EventScript_MagikarpRecordSign",
+      "Route15_WestEntrance_2F_EventScript_Aide", "Route15_WestEntrance_2F_EventScript_LeftBinoculars",
+      "FuchsiaCity_EventScript_FossilMonSign", "FuchsiaCity_EventScript_SubstituteTutor",
+      "FuchsiaCity_PokemonCenter_1F_EventScript_Nurse", "FuchsiaCity_Mart_EventScript_Clerk",
+      "FuchsiaCity_WardensHouse_EventScript_Warden", "FuchsiaCity_House2_EventScript_FishingGurusBrother",
+      "FuchsiaCity_House3_EventScript_MoveDeleter", "FuchsiaCity_Gym_EventScript_GymGuy", "FuchsiaCity_Gym_EventScript_GymStatue",
+      "FuchsiaCity_SafariZone_Entrance_EventScript_InfoAttendant", "FuchsiaCity_SafariZone_Entrance_EventScript_EntryTriggerMid",
+      "FuchsiaCity_SafariZone_Entrance_EventScript_EntryTriggerRight", "FuchsiaCity_SafariZone_Entrance_EventScript_EntryTriggerLeft",
+      "enter:FuchsiaCity_SafariZone_Entrance", "SafariZone_SecretHouse_EventScript_Attendant"
+    ]));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
   // Item balls on the map: picked up once, then gone.
@@ -1638,6 +1672,9 @@
         : Object.assign({}, person.alt, { x: 21, y: 11, movement: "face_down" });
     }
     if (person.script === "PalletTown_EventScript_SignLady") return signLadyPlace();
+    // Fuchsia's fossil Pokémon statue: a Kabuto, or an Omanyte once you've
+    // taken the Dome Fossil (FuchsiaCity_OnTransition).
+    if (person.alt && person.sprite === "kabuto") return f.mtMoonFossil === "dome-fossil" ? Object.assign({}, person.alt) : true;
     // (Silph 7F's pacing worker stands still once Team Rocket's gone.)
     if (person.script === "SilphCo_7F_EventScript_WorkerM2" && silphFreed()) return { movement: "face_up" };
     // Until Bill gives you the S.S. Ticket, the policeman stands in the
@@ -1704,6 +1741,8 @@
       // The Dojo's prized Pokémon: the one you take goes; the other stays.
       case "FLAG_HIDE_DOJO_HITMONLEE_BALL": return f.dojoHitmon !== "Hitmonlee";
       case "FLAG_HIDE_DOJO_HITMONCHAN_BALL": return f.dojoHitmon !== "Hitmonchan";
+      // The Snorlax asleep across Route 12, until you wake it with the Poké Flute.
+      case "FLAG_HIDE_ROUTE_12_SNORLAX": return !f.wokeRoute12Snorlax;
       // After you choose, your rival stands below the Poké Ball he took.
       // Leaf (the lab rival's other look) until she leaves after your battle;
       // after you choose, she stands below the Poké Ball she took.
@@ -1751,6 +1790,8 @@
     if (script === "VermilionCity_Gym_EventScript_LtSurge") { await ltSurge(ev.person); return; }
     if (script === "CeladonCity_Gym_EventScript_Erika") { await erika(ev.person); return; }
     if (script === "SaffronCity_Gym_EventScript_Sabrina") { await sabrina(ev.person); return; }
+    if (script === "FuchsiaCity_Gym_EventScript_Koga") { await koga(ev.person); return; }
+    if (FUCHSIA_SIGN_MONS[script]) { await monSign(FUCHSIA_SIGN_MONS[script], ev.sign.text); return; }
     if (script === "Game_EventScript_Leaf") {
       if (!canBattle()) return;
       if (ev.map === "PewterCity") await leafPewter(true); else await leafVermilion();
@@ -2636,6 +2677,96 @@
         return;
       }
 
+      // ---------- Route 12 to Route 15 ----------
+      case "Route12_EventScript_Snorlax":
+        await route12Snorlax(ev.person);
+        return;
+      // The girl upstairs in the gate: FireRed's TM27 (Return).
+      case "Route12_NorthEntrance_2F_EventScript_Lass": {
+        const tm = machineFor("Return"), L = (k) => T("Route12_NorthEntrance_2F_Text_" + k);
+        if (!f.gotTM27) {
+          await say(L(isGirl() ? "TakeTMDontNeedAnymoreFemale" : "TakeTMDontNeedAnymoreMale"));
+          Player.addItem(player, tm);
+          f.gotTM27 = true;
+          await sayWithJingle(itemJingle(tm), tmText(L("ReceivedTM27FromLittleGirl"), 27, tm));
+        }
+        await say(tmText(L("ExplainTM27"), 27, tm));
+        return;
+      }
+      // The Fishing Guru's brother: the Super Rod, then the Magikarp record.
+      case "Route12_FishingHouse_EventScript_FishingGuruBrother":
+        if (f.gotSuperRod) { await magikarpRecord(); return; }
+        await rodGift("super-rod", "gotSuperRod", "Route12_FishingHouse_Text_", "TakeThisAndFish", "ReceivedSuperRod", "IfYouCatchBigMagikarpShowMe");
+        return;
+      case "Route12_FishingHouse_EventScript_MagikarpRecordSign":
+        await say(f.magikarpRecord != null ? T("Route12_FishingHouse_Text_MostGiganticMagikarpXInches")
+          : T("Route12_FishingHouse_Text_BlankChartOfSomeSort"), [null, null, f.magikarpRecord != null ? magikarpInches(f.magikarpRecord) : ""]);
+        return;
+      // Prof. Oak's Aide in Route 15's gate: the Exp. Share for fifty kinds caught.
+      case "Route15_WestEntrance_2F_EventScript_Aide":
+        await aideGift({ needed: 50, item: "exp-share", flag: "gotExpShareFromAide", text: "Route15_WestEntrance_2F_Text_",
+          ask: "GiveItemIfCaughtEnough", received: "ReceivedItemFromAide", explain: "ExplainExpShare" });
+        return;
+      // The binoculars: a large, shining bird (Articuno, seen in the Pokédex).
+      case "Route15_WestEntrance_2F_EventScript_LeftBinoculars":
+        await monSign("Articuno", T("Route15_WestEntrance_2F_Text_LargeShiningBird"));
+        return;
+
+      // ---------- Fuchsia City ----------
+      case "FuchsiaCity_PokemonCenter_1F_EventScript_Nurse":
+        await nurse(ev.map, ev.person);
+        return;
+      case "FuchsiaCity_Mart_EventScript_Clerk":
+        await mart(ev.person.mart);
+        return;
+      case "FuchsiaCity_EventScript_FossilMonSign":
+        if (f.mtMoonFossil === "dome-fossil") await monSign("Omanyte", T("FuchsiaCity_Text_OmanyteSign"));
+        else await monSign("Kabuto", T("FuchsiaCity_Text_KabutoSign"));
+        return;
+      case "FuchsiaCity_EventScript_SubstituteTutor":
+        await moveTutor("Substitute", "tutorSubstitute", "Text_Substitute");
+        return;
+      case "FuchsiaCity_WardensHouse_EventScript_Warden":
+        await warden();
+        return;
+      // The Fishing Guru's other brother: the Good Rod.
+      case "FuchsiaCity_House2_EventScript_FishingGurusBrother":
+        if (f.gotGoodRod) { await say(T("FuchsiaCity_House2_Text_HowAreTheFishBiting")); return; }
+        await rodGift("good-rod", "gotGoodRod", "FuchsiaCity_House2_Text_", "LikeYourStyleTakeThis", "ReceivedGoodRod", "GoodRodCanCatchBetterMons");
+        return;
+      case "FuchsiaCity_House3_EventScript_MoveDeleter":
+        await fuchsiaMoveDeleter();
+        return;
+      case "FuchsiaCity_Gym_EventScript_GymGuy":
+        await say(T(f.TRAINER_LEADER_KOGA ? "FuchsiaCity_Gym_Text_GymGuyPostVictory" : "FuchsiaCity_Gym_Text_GymGuyAdvice"));
+        return;
+      case "FuchsiaCity_Gym_EventScript_GymStatue":
+        await say(T(hasBadge("soul") ? "FuchsiaCity_Gym_Text_GymStatuePlayerWon" : "FuchsiaCity_Gym_Text_GymStatue"));
+        return;
+
+      // ---------- The Safari Zone ----------
+      case "FuchsiaCity_SafariZone_Entrance_EventScript_InfoAttendant":
+        await say(T(await confirm(fill(T("FuchsiaCity_SafariZone_Entrance_Text_FirstTimeAtSafariZone")[0]))
+          ? "FuchsiaCity_SafariZone_Entrance_Text_ExplainSafariZone" : "FuchsiaCity_SafariZone_Entrance_Text_SorryYoureARegularHere"));
+        return;
+      case "FuchsiaCity_SafariZone_Entrance_EventScript_EntryTriggerMid":
+      case "FuchsiaCity_SafariZone_Entrance_EventScript_EntryTriggerRight":
+      case "FuchsiaCity_SafariZone_Entrance_EventScript_EntryTriggerLeft":
+        await safariEntry(script.replace("FuchsiaCity_SafariZone_Entrance_EventScript_EntryTrigger", ""));
+        return;
+      case "enter:FuchsiaCity_SafariZone_Entrance":
+        await safariGateArrival();
+        return;
+      case "SafariZone_SecretHouse_EventScript_Attendant":
+        if (!f.gotHM03) {
+          await say(T("SafariZone_SecretHouse_Text_CongratsYouveWon"));
+          Player.addItem(player, "hm03");
+          f.gotHM03 = true;
+          await sayWithJingle(itemJingle("hm03"), T("SafariZone_SecretHouse_Text_ReceivedHM03FromAttendant"));
+        }
+        await say(T("SafariZone_SecretHouse_Text_ExplainSurf"));
+        return;
+
       // ---------- Vermilion City ----------
       // The sailor at the pier checks for an S.S. Ticket (once, until you step back).
       case "VermilionCity_EventScript_CheckTicketLeft":
@@ -3229,7 +3360,8 @@
     if (!(await confirm(fill(ask[ask.length - 1], vars())))) { await say(T("Aide_Text_GetEnoughMonsComeBackForItem"), vars()); return; }
     if (player.pokedex.caught.length < o.needed) { await say(T("Aide_Text_HaventCaughtEnoughMonsForItem"), vars()); return; }
     await say(A("GreatHereYouGo"), vars());
-    Player.addItem(player, o.item);
+    // (A key item you have already stays one: the Exp. Share, which this game starts you with.)
+    if (!(Bag.isKeyItem(o.item) && Player.itemCount(player, o.item))) Player.addItem(player, o.item);
     f[o.flag] = true;
     await sayWithJingle(itemJingle(o.item), A(o.received).map((p) => fill(p, vars())));
     await say(A(o.explain), vars());
@@ -4545,6 +4677,258 @@
     await Overworld.fadeFromBlack();
   }
 
+  // ---------- Route 12 to Fuchsia City ----------
+
+  const isGirl = () => !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl);
+
+  // A sign by a Pokémon statue: its picture with the sign's words (and it's
+  // seen in the Pokédex).
+  async function monSign(species, text) {
+    Player.markSeen(player, species);
+    showPicture(species);
+    await say(text);
+    hidePicture();
+  }
+
+  // The Snorlax asleep across Route 12 (Route12_EventScript_Snorlax): with
+  // the Poké Flute it wakes up and attacks, a wild Snorlax (Lv. 30) you can
+  // catch. Beaten, run from or not, it's gone; it lumbers back to the
+  // mountains if you didn't catch it.
+  async function route12Snorlax(person) {
+    const f = player.flags;
+    if (!f.gotPokeFlute) { await say(T("Route12_Text_MonSprawledOutInSlumber")); return; }
+    if (!canBattle()) return;
+    if (!(await confirm(fill(T("Text_WantToUsePokeFlute")[0])))) return;
+    await sayWithJingle("mus_poke_flute", T("Text_PlayedPokeFlute"));
+    await say(T("Text_SnorlaxWokeUp"));
+    cry("Snorlax");
+    await sleep(700);
+    f.wokeRoute12Snorlax = true;
+    Overworld.removePerson(person);
+    const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create("Snorlax", 30)] }, terrain: "grass" });
+    if (outcome === "won" || outcome === "ran") {
+      show("world");
+      await Overworld.resume();
+      await say(T("Text_SnorlaxReturnedToMountains"));
+    }
+  }
+
+  // A fishing rod from one of the Fishing Guru's brothers ("Do you like to fish?").
+  async function rodGift(rod, flag, prefix, takeThis, received, explain) {
+    const L = (k) => T(prefix + k);
+    const like = L("DoYouLikeToFish");
+    await say(like.slice(0, -1));
+    if (!(await confirm(fill(like[like.length - 1])))) { await say(L("OhThatsDisappointing")); return; }
+    await say(L(takeThis));
+    Player.addItem(player, rod);
+    player.flags[flag] = true;
+    await sayWithJingle(itemJingle(rod), L(received));
+    await say(L(explain));
+  }
+
+  // The Magikarp size record (src/pokemon_size_record.c): a Magikarp's size
+  // comes from its personality and IVs (GetMonSizeHash), through
+  // sBigMonSizeTable, times its Pokédex height; shown in inches, to a tenth.
+  const BIG_MON_SIZES = [[290, 1, 0], [300, 1, 10], [400, 2, 110], [500, 4, 310], [600, 20, 710], [700, 50, 2710],
+    [800, 100, 7710], [900, 150, 17710], [1000, 150, 32710], [1100, 100, 47710], [1200, 50, 57710], [1300, 20, 62710],
+    [1400, 5, 64710], [1500, 2, 65210], [1600, 1, 65410], [1700, 1, 65510]];
+  function magikarpSizeHash(r) {
+    const p = (r.personality >>> 0) & 0xffff, iv = (k) => ((r.ivs && r.ivs[k]) | 0) & 0xf;
+    const hi = ((iv("atk") ^ iv("def")) * iv("hp")) ^ (p & 0xff);
+    const lo = ((iv("spa") ^ iv("spd")) * iv("spe")) ^ (p >> 8);
+    return ((hi << 8) + lo) & 0xffff;
+  }
+  function magikarpSize(hash) {
+    let i = 1;
+    while (i < 15 && !(hash < BIG_MON_SIZES[i][2])) i++;
+    const [base, div, from] = BIG_MON_SIZES[i < 15 ? i - 1 : 15];
+    const height = Math.round(window.DEX.Magikarp.height * 10);
+    return Math.floor(height * (base + Math.floor((hash - from) / div)) / 10);
+  }
+  const magikarpInches = (hash) => { const n = Math.floor(magikarpSize(hash) * 100 / 254); return Math.floor(n / 10) + "." + (n % 10); };
+  async function magikarpRecord() {
+    const f = player.flags, L = (k) => T("Route12_FishingHouse_Text_" + k);
+    if (!player.party.some((r) => r.species === "Magikarp")) { await say(L("TryFishingBringMeMagikarp")); return; }
+    await say(L("OhMagikarpAllowMeToSee"));
+    const r = await choosePartyFor("Choose a {PKMN}.");
+    if (!r) return;
+    if (r.species !== "Magikarp") { await say(L("DoesntLookLikeMagikarp")); return; }
+    const hash = magikarpSizeHash(r), record = f.magikarpRecord != null ? f.magikarpRecord : 0;
+    const now = magikarpSize(hash), best = magikarpSize(record), vars = [null, magikarpInches(hash), magikarpInches(record)];
+    if (f.magikarpRecord == null || now > best) {
+      f.magikarpRecord = hash;
+      await say(L("WhoaXInchesTakeThis"), vars);
+      Player.addItem(player, "net-ball");
+      await sayWithJingle(itemJingle("net-ball"), "{PLAYER} received a Net Ball!");
+      await say(L("LookForwardToGreaterRecords"));
+      return;
+    }
+    await say(L(now === best ? "HuhXInchesSameSizeAsLast" : "HmmXInchesDoesntMeasureUp"), vars);
+  }
+
+  // The Move Deleter in Fuchsia City (FuchsiaCity_House3_EventScript_MoveDeleter).
+  async function fuchsiaMoveDeleter() {
+    const D = (k) => T("FuchsiaCity_House3_Text_" + k);
+    const intro = D("WouldYouLikeToForgetMove");
+    await say(intro.slice(0, -1));
+    if (!(await confirm(fill(intro[intro.length - 1])))) { await say(D("ComeAgainToForgetOtherMoves")); return; }
+    for (;;) {
+      await say(D("WhichMonShouldForgetMove"));
+      const r = await choosePartyFor("Choose a {PKMN}.");
+      if (!r) { await say(D("ComeAgainToForgetOtherMoves")); return; }
+      const name = Party.displayName(r);
+      if (r.moves.length <= 1) { await say(D("MonOnlyKnowsOneMove"), [name]); return; }
+      const i = await ask(fill(D("WhichMoveShouldBeForgotten")[0]), r.moves.map((m, k) => ({ label: m.name, value: k, className: "type-" + MOVES[m.name].type }))
+        .concat([back()]));
+      if (i === "back") continue;
+      const move = r.moves[i].name;
+      if (!(await confirm(fill(D("MonsMoveShouldBeForgotten")[0], [name, move])))) { await say(D("ComeAgainToForgetOtherMoves")); return; }
+      r.moves.splice(i, 1);
+      await sayWithJingle("mus_move_deleted", D("MonHasForgottenMoveCompletely").map((p) => fill(p, [name, move])));
+      await persist();
+      return;
+    }
+  }
+
+  // The Safari Zone's Warden: without his teeth no one understands him; give
+  // them back (the Gold Teeth from the Safari Zone's west area) and he gives
+  // you HM04 Strength.
+  async function warden() {
+    const f = player.flags, W = (k) => T("FuchsiaCity_WardensHouse_Text_" + k);
+    if (f.gotHM04) { await say(W("ExplainStrength")); return; }
+    if (!Player.itemCount(player, "gold-teeth")) {
+      const huh = W("HifFuffHefifoo");
+      await say(huh.slice(0, -1));
+      await say(W(await confirm(fill(huh[huh.length - 1])) ? "AhHowheeHoHoo" : "HeOhayHeHaHoo"));
+      return;
+    }
+    await sayWithJingle("mus_obtain_tmhm", W("GaveGoldTeethToWarden"));
+    Player.removeItem(player, "gold-teeth");
+    await say(W("WardenPoppedInHisTeeth"));
+    await say(W(isGirl() ? "ThanksLassieGiveYouSomething" : "ThanksSonGiveYouSomething"));
+    Player.addItem(player, "hm04");
+    f.gotHM04 = true;
+    await sayWithJingle(itemJingle("hm04"), W("ReceivedHM04FromWarden"));
+  }
+
+  // Koga: battle (talking to him), then the Soul Badge and TM06 Toxic
+  // (FireRed's TM06: the TM with Toxic here). Beating him also beats his
+  // Gym's trainers.
+  async function koga(person) {
+    const f = player.flags, ID = "TRAINER_LEADER_KOGA";
+    if (!f[ID]) {
+      await say(person.trainer.intro);
+      if (!canBattle()) return;
+      const outcome = await battle("trainer", { foe: { name: "Leader Koga", team: trainerTeam(ID), pic: "leader_koga" },
+        defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
+      if (outcome !== "won") return;
+      if (!hasBadge("soul")) player.badges.push("soul");
+      for (const t of ["TAMER_PHIL", "TAMER_EDGAR", "JUGGLER_KIRK", "JUGGLER_SHAWN", "JUGGLER_KAYDEN", "JUGGLER_NATE"]) f["TRAINER_" + t] = true;
+      player.flags.lastCenter = "FuchsiaCity_PokemonCenter_1F";
+      show("world");
+      await Overworld.resume();
+    }
+    const tm = machineFor("Toxic");
+    if (!f.gotTM06FromKoga) {
+      await say(T("FuchsiaCity_Gym_Text_KogaExplainSoulBadge"));
+      Player.addItem(player, tm);
+      f.gotTM06FromKoga = true;
+      await sayWithJingle(itemJingle(tm), tmText(T("FuchsiaCity_Gym_Text_ReceivedTM06FromKoga"), 6, tm));
+      await say(tmText(T("FuchsiaCity_Gym_Text_KogaExplainTM06"), 6, tm));
+      return;
+    }
+    await say(T("FuchsiaCity_Gym_Text_KogaPostBattle"));
+  }
+
+  // ---------- The Safari Game ----------
+  //
+  // FireRed's (src/safari_zone.c, FuchsiaCity_SafariZone_Entrance's scripts):
+  // ₽500 at the gate for 30 Safari Balls and 600 steps in the Safari Zone.
+  // While it lasts (player.flags.safari: { balls, steps }, FLAG_SYS_SAFARI_MODE)
+  // every wild Pokémon is a Safari battle (engine/safari.js), and the Start
+  // menu can RETIRE. Out of steps or balls, the PA calls time and you're
+  // back at the gate; walking back into the gate, you're asked if you're
+  // leaving early.
+  const SAFARI_GATE = "FuchsiaCity_SafariZone_Entrance";
+  const safariOn = () => !!player.flags.safari;
+  const G = (k) => T("FuchsiaCity_SafariZone_Entrance_Text_" + k);
+  function safariStep() {
+    const s = player.flags.safari;
+    if (!s || !/^SafariZone_/.test(player.location.map)) return null;
+    s.steps = Math.max(0, s.steps - 1);
+    return s.steps === 0 ? { type: "safari-over", text: "SafariZone_Text_TimesUp" } : null;
+  }
+  // Talking to the attendant as you step up to the counter.
+  async function safariEntry(side) {
+    if (safariOn()) return;
+    const back = async () => { Screen.say(""); await Overworld.act([{ who: "player", moves: M("FuchsiaCity_SafariZone_Entrance_Movement_ForceBack") }]); };
+    await say(G("WelcomeToSafariZone"));
+    await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
+    const pitch = G("PlaySafariGameFor500");
+    await say(pitch.slice(0, -1));
+    if (!(await confirm(fill(pitch[pitch.length - 1]) + "\n(You have " + money(player.money) + ".)"))) {
+      await say(G("OkayPleaseComeAgain"));
+      await back();
+      return;
+    }
+    if (player.party.length >= Player.PARTY_SIZE && !player.boxes.some((b) => Player.firstEmpty(b) >= 0)) {
+      await say(T("SafariZone_Text_ExcuseMeYourPCBoxIsFull"));
+      await back();
+      return;
+    }
+    if (player.money < Safari.ENTRY_FEE) { await say(G("OopsNotEnoughMoney")); await back(); return; }
+    Player.addMoney(player, -Safari.ENTRY_FEE);
+    await say(G("ThatllBe500WeOnlyUseSpecialBalls"));
+    await sayWithJingle("mus_level_up", G("PlayerReceived30SafariBalls"));
+    await say(G("CallYouOnPAWhenYouRunOut"));
+    Screen.say("");
+    await Overworld.act([{ who: "player", moves: M("FuchsiaCity_SafariZone_Entrance_Movement_EnterSafariZone" + side) }]);
+    player.flags.safari = { balls: Safari.BALLS, steps: Safari.STEPS };
+    await Overworld.teleport({ map: "SafariZone_Center", x: 26, y: 30, facing: "up" });
+  }
+  // Back in the gate: leaving early? (Or, sent back, on your way out.)
+  async function safariGateArrival() {
+    if (!safariOn()) return;
+    if (await confirm(fill(G("GoingToLeaveSafariZoneEarly")[0]))) {
+      await say(G("PleaseReturnSafariBalls"));
+      Screen.say("");
+      delete player.flags.safari;
+      await Overworld.act([{ who: "player", moves: M("FuchsiaCity_SafariZone_Entrance_Movement_Exit") }]);
+      return;
+    }
+    await say(G("GoodLuck"));
+    Screen.say("");
+    await Overworld.act([{ who: "player", moves: M("FuchsiaCity_SafariZone_Entrance_Movement_ReEnter") }]);
+    await Overworld.teleport({ map: "SafariZone_Center", x: 26, y: 30, facing: "up" });
+  }
+  // The game's over: the PA (`text`, if any), then you're at the gate's
+  // counter and on your way out. `walkIn`: the last Safari Ball missed in a
+  // battle (FireRed's ExitWalkIn: you come in a step first).
+  async function safariOver(text, walkIn) {
+    if (text) { sfx("se_ding_dong"); await say(T(text)); }
+    Screen.say("");
+    delete player.flags.safari;
+    await Overworld.teleport({ map: SAFARI_GATE, x: 4, y: 1, facing: "down" });
+    if (walkIn) await Overworld.act([{ who: "player", moves: M("FuchsiaCity_SafariZone_Entrance_Movement_ApproachCounter") }]);
+    await say(G("CatchFairShareComeAgain"));
+    Screen.say("");
+    await Overworld.act([{ who: "player", moves: M(walkIn ? "FuchsiaCity_SafariZone_Entrance_Movement_Exit2" : "FuchsiaCity_SafariZone_Entrance_Movement_Exit") }]);
+  }
+  // A wild Pokémon in the Safari Zone.
+  async function safariBattle(species, level, terrain) {
+    const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create(species, level)] }, terrain, safari: true });
+    const s = player.flags.safari;
+    if (outcome === "noballs") {
+      show("world");
+      await Overworld.resume();
+      await safariOver(null, true);
+    } else if (s && s.balls <= 0) {
+      show("world");
+      await Overworld.resume();
+      await safariOver("SafariZone_Text_OutOfBalls", false);
+    }
+  }
+
   // Vermilion Gym's trash cans (VermilionCity_Gym_EventScript_TrashCan): a
   // switch is under one of the fifteen, and the second under one next to it
   // (SetVermilionTrashCans). Find the first and one beam goes off; then the
@@ -4767,6 +5151,8 @@
     if (/^SaffronCity_Dojo_EventScript_TriggerMasterBattle/.test(script)) return !player.flags.TRAINER_BLACK_BELT_KOICHI;
     if (/^SilphCo_7F_EventScript_RivalTrigger/.test(script)) return !player.flags.silphRival;
     if (/^SilphCo_11F_EventScript_GiovanniTrigger/.test(script)) return !silphFreed();
+    // Back in the Safari Zone's gate during the Safari Game: leaving early?
+    if (script === "enter:" + SAFARI_GATE) return safariOn();
     // The Saffron gates' guards, until they've had the Tea.
     if (/^Route[5-8]_\w+Entrance_EventScript_GuardTrigger/.test(script)) return !player.flags.gatesOpen;
     return SPECIAL.has(script) || ITEM_BALLS.has(script) || TRAINER_SCRIPTS.has(script);
@@ -4788,12 +5174,15 @@
         trainerWaiting, hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, extraPeople,
         canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
         onAvatar: (mode) => music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music),
-        onStep: () => { leftPallet(player.location.map); DayCare.step(player.flags.dayCare); vsSeekerStep(); friendshipStep(); return redForestStep() || leafVermilionStep() || jessieJamesStep() || repelStep(); }, allowWild: repelAllows,
+        onStep: () => { leftPallet(player.location.map); DayCare.step(player.flags.dayCare); vsSeekerStep(); friendshipStep(); return redForestStep() || leafVermilionStep() || jessieJamesStep() || safariStep() || repelStep(); }, allowWild: repelAllows,
         onMap: (m) => {
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
           if (m !== "VermilionCity") ticketChecked = false;
           if (m !== tempFlagsMap) delete player.flags.vsRematch;   // (rematches last while you stay on the map)
           if (m !== tempFlagsMap) strengthOn = false;
+          // (Flying, blacking out or teleporting out of the Safari Zone ends the
+          // Safari Game: Overworld_ResetStateAfterFly and the like.)
+          if (player.flags.safari && !/^SafariZone_/.test(m) && m !== SAFARI_GATE) delete player.flags.safari;
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
           music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }
       });
@@ -4808,15 +5197,17 @@
       else if (ev.type === "red-forest") await redForest();
       else if (ev.type === "leaf-vermilion") await leafVermilion();
       else if (ev.type === "jessie-james") await jessieJames();
+      else if (ev.type === "safari-over") await safariOver(ev.text, false);
       else if (ev.type === "wild") {
-        if (!canBattle()) continue;
+        if (!canBattle() && !safariOn()) continue;
         // Grass on routes; caves (and other maps) use their own scene.
         const here = window.WORLD_MAPS[player.location.map];
         // (On the water: FireRed's pond or sea.)
         const at = player.location, b = World.blockAt(at.map, at.x, at.y).behavior;
         const terrain = Overworld.avatar() === "surf" ? (b === 0x10 ? "pond" : "water")
           : here && ["route", "town", "city"].includes(here.type) ? "grass" : undefined;
-        await battle("wild", { foe: { name: "Wild", team: [Party.create(ev.species, ev.level)] }, terrain, ghost: towerGhost() });
+        if (safariOn()) await safariBattle(ev.species, ev.level, terrain);
+        else await battle("wild", { foe: { name: "Wild", team: [Party.create(ev.species, ev.level)] }, terrain, ghost: towerGhost() });
       } else await story(ev);
       await persist();
     }

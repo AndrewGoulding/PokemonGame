@@ -18,7 +18,7 @@ function parseTextFile(file, out) {
 
 // FireRed text -> pages of plain text. {PLAYER}, {RIVAL} and {STR_VAR_1..3}
 // (a number, name or item a script fills in) stay for the game to fill in.
-const KEEP_CAPS = new Set(["NES", "TV", "HP", "PP", "PC", "TM", "HM", "OK", "KO", "EXP", "ID", "SS", "S.S", "HQ", "DNA"]);
+const KEEP_CAPS = new Set(["NES", "TV", "HP", "PP", "PC", "TM", "HM", "OK", "KO", "EXP", "ID", "SS", "S.S", "HQ", "DNA", "PA"]);
 function cleanText(s) {
   s = s.replace(/\$$/, "").replace(/¥/g, "₽")   // the game's money sign
     .replace(/POKéMON/g, "Pokémon").replace(/POKéDEX/g, "Pokédex").replace(/POKé BALLS/g, "Poké Balls").replace(/POKé BALL/g, "Poké Ball")

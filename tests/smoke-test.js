@@ -713,12 +713,12 @@ for (const share of [false, true]) {
     "Sleep Talk", "U-turn", "Substitute", "Flash Cannon", "Trick Room", "Wild Charge", "Rock Smash", "Snarl",
     "Nature Power", "Dark Pulse", "Power-Up Punch", "Dazzling Gleam", "Confide"];
   const HMS = ["Cut", "Fly", "Surf", "Strength", "Flash", "Whirlpool", "Waterfall", "Rock Smash", "Dive", "Defog", "Rock Climb"];
-  const TMS = XY.filter((m) => !HMS.includes(m)).concat("Secret Power", "Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail", "Focus Punch");
-  assert.strictEqual(TMS.length, 105);
+  const TMS = XY.filter((m) => !HMS.includes(m)).concat("Secret Power", "Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail", "Focus Punch", "Skill Swap");
+  assert.strictEqual(TMS.length, 106);
   TMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("tm" + String(i + 1).padStart(2, "0")), move, "TM" + (i + 1)));
   HMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("hm" + String(i + 1).padStart(2, "0")), move, "HM" + (i + 1)));
-  assert.strictEqual(Bag.machines().length, 116);
-  assert(!ITEMS.tm106 && !ITEMS.hm12, "no machines past TM105 and HM11");
+  assert.strictEqual(Bag.machines().length, 117);
+  assert(!ITEMS.tm107 && !ITEMS.hm12, "no machines past TM106 and HM11");
   // Every move Pokémon learn by machine in Gen 6 is a TM or HM here; the
   // machines Gen 6 had none for (Bullet Seed, Whirlpool, Defog, Rock Climb)
   // take their compatibility from other generations.
@@ -726,7 +726,7 @@ for (const share of [false, true]) {
   for (const l of Object.values(LEARNSETS_GEN6)) for (const m of l.tm || []) tmMoves.add(m);
   const machineMoves = Bag.machines().map(Bag.machineMove);
   for (const m of tmMoves) assert(machineMoves.includes(m), "no machine for " + m);
-  assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail", "Focus Punch", "Whirlpool", "Defog", "Rock Climb"]);
+  assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail", "Focus Punch", "Skill Swap", "Whirlpool", "Defog", "Rock Climb"]);
   for (const m of ["Whirlpool", "Defog", "Rock Climb", "Bullet Seed"]) assert(MACHINE_LEARNERS[m].length > 50, "who can use " + m);
   assert(!MACHINE_LEARNERS.Thief, "TMs Gen 6 had keep Gen 6's compatibility");
   assert(Bag.canUseOn(Party.create("Oddish", 20, { rng }), "tm100") && !Bag.canUseOn(Party.create("Pidgey", 20, { rng }), "tm100"), "Bullet Seed: Oddish yes, Pidgey no");
@@ -748,10 +748,11 @@ for (const share of [false, true]) {
   assert.strictEqual(Bag.name("tm24"), "TM24 Thunderbolt");
   assert.strictEqual(Bag.name("tm99"), "TM99 Secret Power");
   assert.strictEqual(Bag.name("hm11"), "HM11 Rock Climb");
-  assert.deepStrictEqual(Bag.machines().slice(98, 107), ["tm99", "tm100", "tm101", "tm102", "tm103", "tm104", "tm105", "hm01", "hm02"]);
+  assert.deepStrictEqual(Bag.machines().slice(98, 108), ["tm99", "tm100", "tm101", "tm102", "tm103", "tm104", "tm105", "tm106", "hm01", "hm02"]);
   assert.strictEqual(Bag.name("tm103"), "TM103 Giga Drain");
   assert.strictEqual(Bag.name("tm104"), "TM104 Iron Tail");
   assert.strictEqual(Bag.name("tm105"), "TM105 Focus Punch");
+  assert.strictEqual(Bag.name("tm106"), "TM106 Skill Swap");
   // Saves from before keep their machines' moves under the new numbers.
   const oldSave = Object.assign(Player.create("T"), { party: [Party.create("Pidgey", 5, { rng })], bag: { "tm94-oras": 1 } });
   delete oldSave.pcItems;
@@ -1744,4 +1745,104 @@ console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random 
   assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_LEADER_SABRINA.party.map((m) => m.species), ["Kadabra", "Mr. Mime", "Venomoth", "Alakazam"]);
   assert(WORLD_TRAINERS.TRAINER_RIVAL_SILPH_SQUIRTLE && WORLD_TRAINERS.TRAINER_BOSS_GIOVANNI_2);
   assert(Player.CENTERS.SaffronCity_PokemonCenter_1F && window.TOWN_MAP.fly.SAFFRON_CITY.center === "SaffronCity_PokemonCenter_1F");
+}
+
+// Routes 12-15, Fuchsia City and the Safari Zone
+{
+  // The Safari Game's numbers (engine/safari.js, FireRed's): catch factor =
+  // catch rate x 100 / 1275, escape factor = Safari flee rate x 100 / 1275 (at least 2).
+  assert.deepStrictEqual([Safari.ENTRY_FEE, Safari.BALLS, Safari.STEPS], [500, 30, 600]);
+  const chansey = Safari.encounter("Chansey");
+  assert.deepStrictEqual([chansey.catchFactor, chansey.escapeFactor, chansey.bait, chansey.rock], [2, 9, 0, 0]);
+  assert.strictEqual(Safari.encounter("Rhyhorn").escapeFactor, 5);
+  assert.strictEqual(Safari.encounter("Venonat").escapeFactor, 3);
+  assert.strictEqual(Safari.encounter("Pidgey").escapeFactor, 2, "no flee rate: 2");
+  // Watching: 9 x 5 = 45%; angry (a Rock): doubled, at most 20 -> 90%; eating (Bait): a quarter -> 10%.
+  assert.strictEqual(Safari.fleeChance(chansey), 45);
+  assert.strictEqual(Safari.fleeChance(Object.assign({}, chansey, { rock: 3 })), 90);
+  assert.strictEqual(Safari.fleeChance(Object.assign({}, chansey, { bait: 3 })), 10);
+  assert.strictEqual(Safari.fleeChance(Object.assign(Safari.encounter("Pidgey"), { bait: 2 })), 5, "a quarter of 2 is 0: at least 1");
+  // A Rock doubles the catch factor (at most 20) for 2-6 turns and ends the eating;
+  // Bait halves it (at least 3) and ends the anger.
+  const rng = mulberry32(7);
+  const s = Safari.encounter("Kangaskhan");   // catch rate 45: factor 3
+  assert.strictEqual(s.catchFactor, 3);
+  Safari.throwRock(s, rng);
+  assert(s.catchFactor === 6 && s.rock >= 2 && s.rock <= 6 && s.bait === 0);
+  for (let i = 0; i < 5; i++) Safari.throwRock(s, rng);
+  assert(s.catchFactor === 20 && s.rock === 6, "a Rock: at most 20, at most 6 turns");
+  Safari.throwBait(s, rng);
+  assert(s.catchFactor === 10 && s.rock === 0 && s.bait >= 2 && s.bait <= 6);
+  for (let i = 0; i < 5; i++) Safari.throwBait(s, rng);
+  assert(s.catchFactor === 3 && s.bait === 6, "Bait: at least 3");
+  assert.strictEqual(Safari.throwBait(Object.assign(Safari.encounter("Chansey")), rng), undefined);
+  const c2 = Safari.encounter("Chansey"); Safari.throwBait(c2, rng);
+  assert.strictEqual(c2.catchFactor, 3, "Chansey's factor of 2 halves to 1: raised to 3");
+  // Watching wears the anger or eating off a turn at a time; the anger gone,
+  // the catch factor is the species' own again.
+  const w = Object.assign(Safari.encounter("Kangaskhan"), { rock: 2, catchFactor: 12 });
+  assert.strictEqual(Safari.watch(w), "angry");
+  assert.strictEqual(Safari.watch(w), "watching");
+  assert.strictEqual(w.catchFactor, 3);
+  const e = Object.assign(Safari.encounter("Kangaskhan"), { bait: 2, catchFactor: 3 });
+  assert.deepStrictEqual([Safari.watch(e), Safari.watch(e), Safari.watch(e)], ["eating", "watching", "watching"]);
+  // A Safari Ball (x1.5) at full HP: Chansey's catch rate 25 -> odds 12; each
+  // shake passes below 1048560 / sqrt(sqrt(16711680 / 12)) = 30840 of 65536.
+  const full = { hp: 100, maxhp: 100, status: "" };
+  assert.strictEqual(Safari.odds(chansey, full), 12);
+  assert.strictEqual(Safari.shakeOdds(12), 30840);
+  assert(Math.abs(Safari.chance(chansey, full) - Math.pow(30840 / 65536, 4)) < 1e-12);
+  assert.strictEqual(Safari.odds(Object.assign({}, chansey, { catchFactor: 20 }), full), 127);
+  assert.deepStrictEqual(Safari.attempt(Object.assign({}, chansey, { catchFactor: 20 }), { hp: 1, maxhp: 100, status: "slp" }, rng), { caught: true, shakes: 4 });
+  let caught = 0;
+  for (let i = 0; i < 20000; i++) if (Safari.attempt(chansey, full, rng).caught) caught++;
+  assert(Math.abs(caught / 20000 - Safari.chance(chansey, full)) < 0.01, "Safari Ball catches as often as its odds say");
+
+  // A Safari battle: no one comes out, and each turn is a throw (or running);
+  // the balls run out and it's game over.
+  const mon = (sp) => Party.toBattleSet(Party.create(sp, 30, { rng }));
+  let outcomes = {};
+  for (let seed = 1; seed <= 300; seed++) {
+    const b = new Battle({ seed, wild: true, safari: { balls: 3 }, p1: { name: "A", team: [mon("Pikachu")] }, p2: { name: "Wild", team: [mon("Tauros")] } });
+    b.start();
+    assert(!b.events.some((ev) => ev[0] === "-ability"), "no Ability stirs (Intimidate) in the Safari Zone");
+    for (let turn = 0; turn < 50 && !b.ended; turn++) {
+      const req = b.getRequest("p1");
+      assert(req.safari && req.safari.balls === b.safari.balls);
+      const pick = ["ball", "ball", "rock", "bait"][turn % 4];
+      assert(b.choose("p1", { type: pick }).ok);
+    }
+    assert(b.ended);
+    const out = b.caught ? "caught" : b.safariOut ? "noballs" : b.fled ? "fled" : "?";
+    assert.notStrictEqual(out, "?");
+    if (out === "noballs") assert(b.safari.balls === 0 && b.events.some((ev) => ev[0] === "-safariout"));
+    if (out === "caught") assert(b.events.some((ev) => ev[0] === "caught" && ev[2] === "safari-ball"));
+    assert(!b.events.some((ev) => ev[0] === "-exp"), "no Exp. in the Safari Zone");
+    assert(!b.events.some((ev) => ev[0] === "move"), "no moves in the Safari Zone");
+    outcomes[out] = (outcomes[out] || 0) + 1;
+  }
+  assert(outcomes.caught && outcomes.noballs && outcomes.fled, "Safari battles end all three ways: " + JSON.stringify(outcomes));
+  const ran = new Battle({ seed: 3, wild: true, safari: { balls: 30 }, p1: { name: "A", team: [mon("Pikachu")] }, p2: { name: "Wild", team: [mon("Chansey")] } });
+  ran.start();
+  if (!ran.ended) { ran.choose("p1", { type: "run" }); assert(ran.escaped && ran.ended, "running from a Safari battle always works"); }
+  assert(!ran.choose("p1", { type: "move", move: 0 }).ok);
+
+  // The maps: Route 12 joins Lavender Town and Route 11; Routes 13-15 lead to
+  // Fuchsia City; Routes 18 and 19 (Cycling Road, the sea) aren't built yet.
+  const conn = (m, dir) => (WORLD_MAPS[m].connections.find((c) => c.direction === dir) || {}).map;
+  assert.deepStrictEqual([conn("LavenderTown", "down"), conn("Route11", "right"), conn("Route12", "down"), conn("Route13", "left"),
+    conn("Route14", "left"), conn("Route15", "left")], ["Route12", "Route12", "Route13", "Route14", "Route15", "FuchsiaCity"]);
+  assert(!conn("FuchsiaCity", "left") && !conn("FuchsiaCity", "down"), "Routes 18 and 19 aren't built yet");
+  assert.strictEqual(World.step({ map: "FuchsiaCity", x: 0, y: 22 }, "left").unbuilt, "MAP_ROUTE18");
+  // The Snorlax on Route 12; FireRed's TM48 (Skill Swap) there is the new TM106.
+  assert(WORLD_MAPS.Route12.people.some((p) => p.script === "Route12_EventScript_Snorlax" && p.flag === "FLAG_HIDE_ROUTE_12_SNORLAX"));
+  assert(WORLD_MAPS.Route12.people.some((p) => p.item === "tm106") && Bag.machineMove("tm106") === "Skill Swap");
+  // The Safari Zone: its four areas' wild Pokémon, the Gold Teeth, the Secret House.
+  for (const a of ["Center", "East", "North", "West"]) assert(WORLD_MAPS["SafariZone_" + a].wild.slots.length === 12, a);
+  assert(WORLD_MAPS.SafariZone_West.people.some((p) => p.item === "gold-teeth") && Bag.isKeyItem("gold-teeth"));
+  assert.strictEqual(World.warpTarget(World.warpAt("SafariZone_West", 12, 7)).map, "SafariZone_SecretHouse");
+  // Koga's Gym; the Fuchsia Center; Fly to Fuchsia.
+  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_LEADER_KOGA.party.map((m) => m.species), ["Koffing", "Muk", "Koffing", "Weezing"]);
+  assert(Player.CENTERS.FuchsiaCity_PokemonCenter_1F && window.TOWN_MAP.fly.FUCHSIA_CITY.center === "FuchsiaCity_PokemonCenter_1F");
+  assert(FieldMoves.info("Surf").badge === "soul" && FieldMoves.hmFor("Surf") === "hm03" && FieldMoves.hmFor("Strength") === "hm04");
 }

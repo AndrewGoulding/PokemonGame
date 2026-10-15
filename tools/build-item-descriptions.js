@@ -28,7 +28,7 @@ const norm = (s) => s.toLowerCase().replace(/é/g, "e").replace(/[^a-z0-9]/g, ""
 const byNorm = {};
 for (const id of Object.keys(window.ITEMS)) byNorm[norm(id)] = id;
 const KEEP = new Set(["HP", "PP", "TM", "HM"]);
-const mixedCase = (text) => text.replace(/[A-Zé]{2,}/g, (w) => (KEEP.has(w) ? w : w.charAt(0) + w.slice(1).toLowerCase()));
+const mixedCase = (text) => text.replace(/[A-Zé]{2,}(?:'[A-Z]+)?/g, (w) => (KEEP.has(w) ? w : w.charAt(0) + w.slice(1).toLowerCase()));
 
 const out = {
   "exp-share": "When it's on, your whole party\ngets Exp. Points from battles."   // (ui/game.js adds whether it's on)

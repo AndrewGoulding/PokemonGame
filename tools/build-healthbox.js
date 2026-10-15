@@ -8,6 +8,8 @@
 //                            side (healthbox_singles_player.png's tiles 0-63 and
 //                            64-127, 1D-mapped), in healthbox.pal, 128x64
 //   healthbox-opponent.png   the opponent's, 64x32 twice, 128x32
+//   healthbox-safari.png     the player's in the Safari Zone (healthbox_safari.png,
+//                            tiles 0-63 and 64-127), 128x64
 //   healthbox-*-frame.png    just the box's colour 6 (its dark frame), in the
 //                            level-up flash's colour, RGB(20, 27, 31)
 //   healthbar.png            healthbox_elements.png in healthbar.pal (the "HP"
@@ -42,7 +44,7 @@ function tileOf(img, i) {
   return t;
 }
 // A box: two sprites, `w` tiles wide and `h` high, the second from tile `other`.
-function box(file, h, other, name) {
+function box(file, h, other, name, noFrame) {
   const img = readPng(P(file)), W = 128, H = h * 8;
   const rgba = new Uint8ClampedArray(W * H * 4), frame = new Uint8ClampedArray(W * H * 4);
   for (let half = 0; half < 2; half++) {
@@ -57,10 +59,11 @@ function box(file, h, other, name) {
     }
   }
   writePng(path.join(out, "healthbox-" + name + ".png"), W, H, rgba);
-  writePng(path.join(out, "healthbox-" + name + "-frame.png"), W, H, frame);
+  if (!noFrame) writePng(path.join(out, "healthbox-" + name + "-frame.png"), W, H, frame);
 }
 box("healthbox_singles_player.png", 8, 64, "player");
 box("healthbox_singles_opponent.png", 4, 32, "opponent");
+box("healthbox_safari.png", 8, 64, "safari", true);
 
 // The elements sheet, whole, in each palette (colour 0 clear).
 const el = readPng(P("healthbox_elements.png"));

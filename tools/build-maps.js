@@ -123,16 +123,28 @@ const MAPS = [
   "SaffronCity_CopycatsHouse_1F", "SaffronCity_CopycatsHouse_2F", "SaffronCity_MrPsychicsHouse", "SaffronCity_House",
   "SaffronCity_PokemonTrainerFanClub", "SaffronCity_Dojo", "SaffronCity_Gym",
   "SilphCo_1F", "SilphCo_2F", "SilphCo_3F", "SilphCo_4F", "SilphCo_5F", "SilphCo_6F", "SilphCo_7F",
-  "SilphCo_8F", "SilphCo_9F", "SilphCo_10F", "SilphCo_11F", "SilphCo_Elevator"
+  "SilphCo_8F", "SilphCo_9F", "SilphCo_10F", "SilphCo_11F", "SilphCo_Elevator",
+  "Route12", "Route12_NorthEntrance_1F", "Route12_NorthEntrance_2F", "Route12_FishingHouse",
+  "Route13", "Route14", "Route15", "Route15_WestEntrance_1F", "Route15_WestEntrance_2F",
+  "FuchsiaCity", "FuchsiaCity_PokemonCenter_1F", "FuchsiaCity_PokemonCenter_2F", "FuchsiaCity_Mart",
+  "FuchsiaCity_WardensHouse", "FuchsiaCity_House1", "FuchsiaCity_House2", "FuchsiaCity_House3",
+  "FuchsiaCity_SafariZone_Entrance", "FuchsiaCity_SafariZone_Office", "FuchsiaCity_Gym",
+  "SafariZone_Center", "SafariZone_Center_RestHouse", "SafariZone_East", "SafariZone_East_RestHouse",
+  "SafariZone_North", "SafariZone_North_RestHouse", "SafariZone_West", "SafariZone_West_RestHouse",
+  "SafariZone_SecretHouse"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
-const VAR_GFX = { ViridianCity: { OBJ_EVENT_GFX_VAR_0: "OBJ_EVENT_GFX_OLD_MAN_1" } };
+// (Fuchsia's fossil Pokémon statue is a Kabuto, or an Omanyte once you've
+// taken the Dome Fossil: FuchsiaCity_OnTransition.)
+const VAR_GFX = { ViridianCity: { OBJ_EVENT_GFX_VAR_0: "OBJ_EVENT_GFX_OLD_MAN_1" }, FuchsiaCity: { OBJ_EVENT_GFX_VAR_0: "OBJ_EVENT_GFX_KABUTO" } };
 const ALT_GFX = {
   ViridianCity_EventScript_TutorialOldMan: "OBJ_EVENT_GFX_OLD_MAN_LYING_DOWN",
   // Leaf stands in for Gary in Oak's lab at the start (the same lab object is
   // Gary again later, when Oak hands out the Pokédexes).
-  PalletTown_ProfessorOaksLab_EventScript_Rival: "OBJ_EVENT_GFX_GREEN_NORMAL"
+  PalletTown_ProfessorOaksLab_EventScript_Rival: "OBJ_EVENT_GFX_GREEN_NORMAL",
+  // (By map and look, for people with no script of their own.)
+  "FuchsiaCity:OBJ_EVENT_GFX_VAR_0": "OBJ_EVENT_GFX_OMANYTE"
 };
 // Looks for people the game's own scenes put on a map (WORLD_SPRITES), e.g.
 // Red at the edge of Viridian Forest, Leaf outside Pewter Gym, Jessie and James (as Rocket Grunts) in
@@ -229,6 +241,9 @@ const GAME_TEXT = [
   "Aide_Text_HaventCaughtEnoughMonsForItem", "Aide_Text_GetEnoughMonsComeBackForItem",
   "Text_OnlySkilledTrainersAllowedThrough", "Text_CantLetYouPass", "Text_OhThatsBadgeGoRightAhead", "Text_MoveCanOnlyBeLearnedOnce",
   "Text_WantWhichFloor", "Text_GiveNicknameToThisMon", "Text_PlayerObtainedTheMon", "Text_NoMoreRoomForPokemon",
+  // The Safari Zone's PA and the RETIRE prompt (data/text/safari_zone.inc).
+  "SafariZone_Text_WouldYouLikeToExit", "SafariZone_Text_TimesUp", "SafariZone_Text_OutOfBalls",
+  "SafariZone_Text_ExcuseMeYourPCBoxIsFull",
   // Silph Co.'s card-key doors (data/event_scripts.s).
   "Text_CardKeyOpenedDoor", "Text_ItNeedsCardKey", "Text_TheDoorIsOpen",
   // Rock Tunnel's Rock Slide tutor (in Seafoam Islands B4F's text.inc).
@@ -747,7 +762,8 @@ for (const name of MAPS) {
     trainer: o.trainer_type && o.trainer_type !== "TRAINER_TYPE_NONE" || /trainerbattle/.test((scriptLabels(name)[o.script] || []).join("\n"))
       ? Object.assign(trainerScript(name, o.script) || {}, { sight: +o.trainer_sight_or_berry_tree_id || 0 }) : undefined,
     localId: o.local_id || undefined,
-    alt: ALT_GFX[o.script] ? objectSprite(ALT_GFX[o.script]) : undefined
+    alt: ALT_GFX[o.script] ? objectSprite(ALT_GFX[o.script])
+      : ALT_GFX[name + ":" + o.graphics_id] ? objectSprite(ALT_GFX[name + ":" + o.graphics_id]) : undefined
   }, objectSprite((VAR_GFX[name] || {})[o.graphics_id] || o.graphics_id)));
 
   const land = wild.find((e) => e.map === map.id && /FireRed/.test(e.base_label));

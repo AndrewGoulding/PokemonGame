@@ -11,6 +11,9 @@
 //     opponent: (battle) => choice
 //   });
 //   result.outcome   // "won" | "lost" | "caught" | "ran" | "draw"
+//                    // (the Safari Zone, cfg.safari = { balls }: also "fled",
+//                    // and "noballs" when the last Safari Ball missed;
+//                    // result.battle.safari.balls is how many are left)
 //   (cfg.victoryMusic: the song to play when you win, e.g. "mus_victory_wild")
 //
 // The screen never reads HP or status straight from the engine while events are
@@ -196,6 +199,10 @@
     p2: { box: hbImg("healthbox-opponent"), frame: hbImg("healthbox-opponent-frame"), x: 12, y: 14, h: 32, slideFrom: -115 }
   };
   const hbBar = hbImg("healthbar"), hbElements = hbImg("healthbox-elements"), hbStatus = hbImg("status-icons");
+  // In the Safari Zone your box is FireRed's Safari one (healthbox_safari):
+  // "SAFARI BALLS" and how many are left (UpdateSafariBallsTextOnHealthbox,
+  // UpdateLeftNoOfBallsTextOnHealthbox).
+  const hbSafari = hbImg("healthbox-safari");
   const HB_CREAM = [255, 255, 222], HB_TEXT = [65, 65, 65], HB_SHADOW = [222, 213, 180];
   const HB_MALE = [65, 205, 255], HB_FEMALE = [255, 156, 148];
   const HB_STATUS = { psn: 0, tox: 0, par: 1, slp: 2, frz: 3, brn: 4 };
@@ -217,8 +224,26 @@
   const hbTile = (g, img, t, x, y) => g.drawImage(img, (t % 40) * 8, Math.floor(t / 40) * 8, 8, 8, x, y, 8, 8);
 
   // The box and its text, redrawn when what it shows changes (box-relative).
+  function safariLayer(b) {
+    const key = "safari|" + b.data.balls;
+    if (b.layer && b.layerKey === key) return b.layer;
+    b.layerKey = key;
+    const s = window.GbaMenus.Surface();
+    s.text("SAFARI BALLS", 16, 3, HB_TEXT, HB_SHADOW, "small");
+    const left = "Left: " + b.data.balls;
+    s.text(left, 96 - s.textWidth(left, "small"), 19, HB_TEXT, HB_SHADOW, "small");
+    const c = document.createElement("canvas");
+    c.width = 128; c.height = 64;
+    const g = c.getContext("2d");
+    g.imageSmoothingEnabled = false;
+    if (hbSafari.complete) g.drawImage(hbSafari, 0, 0);
+    g.drawImage(s.canvas(), 0, 0);
+    b.layer = c;
+    return c;
+  }
   function hbLayerFor(side) {
     const b = hb[side], d = b.data, cfg = HB[side], foe = side === "p2";
+    if (b.data.safari) return safariLayer(b);
     const shownHp = b.hp < b.hpTo ? Math.floor(b.hp) : Math.ceil(b.hp);
     const key = [d.name, d.gender, d.level, d.status, d.caught, shownHp, b.maxhp].join("|");
     if (b.layer && b.layerKey === key) return b.layer;
@@ -268,6 +293,7 @@
       if (!b.shown || !b.data.name) continue;
       const ox = cfg.x + b.x2, oy = cfg.y + b.y2;
       g.drawImage(hbLayerFor(side), ox, oy);
+      if (b.data.safari) continue;
       if (b.flash >= 0 && cfg.frame.complete) {
         // (Colour 6 blends toward RGB(20, 27, 31) and back, 2/16 a frame.)
         g.globalAlpha = (b.flash <= 8 ? b.flash : 16 - b.flash) * 2 / 16;
@@ -323,6 +349,12 @@
     const b = hb[side];
     if (on && !b.shown) b.x2 = HB[side].slideFrom;
     b.shown = !!on;
+  }
+  // Your Safari box, sliding in as the battle starts; then the count of balls.
+  function showSafariBox(balls) {
+    hb.p1.data = { safari: true, name: "safari", balls };
+    hbShow("p1", true);
+    hbStart();
   }
   const hbInfo = (side) => ({
     classList: {
@@ -681,6 +713,12 @@
           const text = battle.sides.p2.name + " sent out " + nameOf(a) + "!";
           return async () => { await foeTrainerSlide(true); await Promise.all([message(text), sendOut(side, FOE_THROW_FROM, ball)]); };
         }
+        // In the Safari Zone you stay out there yourself, with your box of Safari Balls.
+        if (side === "p1" && battle.safari) {
+          trainerOut = false;
+          showSafariBox(battle.safari.balls);
+          return null;
+        }
         // The first Pokémon out: your trainer throws its Ball.
         if (side === "p1" && trainerOut) {
           trainerOut = false;
@@ -887,8 +925,9 @@
         };
 
       // ----- Wild battles -----
-      case "-ball":   // [side, ball, target, shakes, "caught"|""]
+      case "-ball":   // [side, ball, target, shakes, "caught"|"", (Safari Balls left)]
         return async () => {
+          if (ev[6] != null) showSafariBox(+ev[6]);
           await message("You threw a " + ballName(b) + "!", 700);
           sfx("se_ball_throw");
           el.ball.src = "assets/sprites/items/ball/" + b.replace(/-ball$/, "") + ".png";
@@ -936,6 +975,31 @@
           if (ev[7]) await message(fill(lookup(STATUS_CURE, ev[7], "{who} was cured!"), c));
           if (ev[8]) await message(fill("{who} snapped out of its confusion!", c));
           if (+ev[10] > 0) await message(name + "'s PP was restored.");
+        };
+      // ----- The Safari Zone (FireRed's battle_message.c) -----
+      case "-safaribait":
+        return battle.sides.p1.name + " threw some Bait\nat the " + nameOf(a) + "!";
+      case "-safarirock":
+        return async () => {
+          await message(battle.sides.p1.name + " threw a Rock\nat the " + nameOf(a) + "!", 400);
+          sfx("se_m_rock_throw");
+          flash("p2");
+          await wait(300);
+        };
+      case "-safariwatch":
+        return b === "angry" ? nameOf(a) + " is angry!" : b === "eating" ? nameOf(a) + " is eating!"
+          : nameOf(a) + " is watching\ncarefully!";
+      case "-safarifled":
+        return async () => {
+          sfx("se_flee");
+          el.sides.p2.sprite.classList.add("hidden");
+          el.sides.p2.info.classList.add("hidden");
+          await message("Wild " + nameOf(a) + " fled!");
+        };
+      case "-safariout":
+        return async () => {
+          sfx("se_ding_dong");
+          await message("Announcer: You're out of\nSafari Balls! Game over!");
         };
       case "-run": sfx("se_flee"); return "Got away safely!";
       case "-runfail": return "You couldn't get away!";
@@ -1095,6 +1159,7 @@
   }
 
   function useUpItem(choice) {
+    if (battle.safari) return;   // (Safari Balls aren't in the Bag)
     const bag = config.bag;
     const id = choice.type === "ball" ? choice.ball : choice.type === "item" ? choice.item : null;
     if (!bag || !id) return;
@@ -1109,7 +1174,19 @@
   let lastMove = {};   // Pokémon name -> index of the move it used last, this battle
   const overlay = () => document.getElementById("overlay");
   const frame = () => (window.GameOptions ? window.GameOptions.get().frame : 0);
+  // The Safari Zone's menu (FireRed's gText_SafariZoneMenu): BALL / BAIT /
+  // ROCK / RUN, "What will … throw?".
+  async function chooseSafariAction() {
+    say("");
+    clearMenu();
+    const a = await window.GbaMenus.battleAction(overlay(), { name: battle.sides.p1.name, cursor: safariCursor, frame: frame(),
+      labels: ["BALL", "BAIT", "ROCK", "RUN"], prompt: ["What will " + battle.sides.p1.name, "throw?"] });
+    safariCursor = a.cursor;
+    return { type: ["ball", "bait", "rock", "run"][a.cursor] };
+  }
+  let safariCursor = 0;
   async function chooseAction(req) {
+    if (req.safari) return chooseSafariAction();
     const active = req.active;
     // Locked into a move (Outrage, recharging): no menu, as in FireRed.
     if (active.forced) return { type: "move", move: 0 };
@@ -1488,8 +1565,10 @@
   async function run(cfg) {
     config = cfg;
     battle = new Battle({
-      p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, ghost: !!cfg.ghost, noCatch: !!cfg.noCatch, exp: !!cfg.exp, expShare: !!cfg.expShare, catchContext: cfg.catchContext
+      p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, ghost: !!cfg.ghost, noCatch: !!cfg.noCatch, exp: !!cfg.exp, expShare: !!cfg.expShare, catchContext: cfg.catchContext,
+      safari: cfg.safari
     });
+    safariCursor = 0;
     cursor = 0;
     hbStop();
     view = { p1: { species: null }, p2: { species: null } };
@@ -1510,6 +1589,8 @@
       outcome = "crashed";
     } else if (battle.caught) outcome = "caught";
     else if (battle.escaped) outcome = "ran";
+    else if (battle.safari && battle.safariOut) outcome = "noballs";
+    else if (battle.safari && battle.fled) outcome = "fled";
     else if (battle.winner === "p1") {
       outcome = "won";
       // The trainer comes back out to say their piece.
