@@ -43,7 +43,7 @@
     // Treasures from digging (they sell for half, as in Gen 6).
     "star-piece": 9800, "rare-bone": 10000, "heart-scale": 200, "red-shard": 400, "blue-shard": 400,
     "yellow-shard": 400, "green-shard": 400, "hard-stone": 200, "oval-stone": 2100,
-    "nugget": 10000, "bluk-berry": 20
+    "nugget": 10000, "pearl": 1400, "big-pearl": 7500, "tiny-mushroom": 500, "big-mushroom": 5000, "razz-berry": 20, "nanab-berry": 20, "bluk-berry": 20
   };
   // Not in Gen 6 shops; priced for this game. Mints are from Sword and Shield.
   const MINT_PRICE = 20000;

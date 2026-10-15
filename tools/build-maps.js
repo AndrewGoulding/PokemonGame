@@ -102,7 +102,8 @@ const MAPS = [
   "SSAnne_3F_Corridor", "SSAnne_Deck", "SSAnne_CaptainsOffice", "SSAnne_B1F_Corridor", "SSAnne_B1F_Room1",
   "SSAnne_B1F_Room2", "SSAnne_B1F_Room3", "SSAnne_B1F_Room4", "SSAnne_B1F_Room5", "SSAnne_Kitchen",
   "Route11", "Route11_EastEntrance_1F", "Route11_EastEntrance_2F",
-  "DiglettsCave_NorthEntrance", "DiglettsCave_B1F", "DiglettsCave_SouthEntrance"
+  "DiglettsCave_NorthEntrance", "DiglettsCave_B1F", "DiglettsCave_SouthEntrance",
+  "Route10", "Route10_PokemonCenter_1F", "Route10_PokemonCenter_2F", "RockTunnel_1F", "RockTunnel_B1F"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
@@ -190,6 +191,8 @@ const GAME_TEXT = [
   "Trade_Text_ThanksYoureAPal", "Trade_Text_HowIsMyOldMon", "Text_CutTreeDown", "Text_TreeCanBeCutDown",
   "Aide_Text_HaventCaughtEnoughMonsForItem", "Aide_Text_GetEnoughMonsComeBackForItem",
   "Text_OnlySkilledTrainersAllowedThrough", "Text_CantLetYouPass", "Text_OhThatsBadgeGoRightAhead", "Text_MoveCanOnlyBeLearnedOnce",
+  // Rock Tunnel's Rock Slide tutor (in Seafoam Islands B4F's text.inc).
+  "Text_RockSlideTeach", "Text_RockSlideDeclined", "Text_RockSlideWhichMon", "Text_RockSlideTaught",
   // Pallet Town's Sign Lady (data/text/sign_lady.inc).
   "PalletTown_Text_OhLookLook", "PalletTown_Text_ReadItReadIt", "PalletTown_Text_SignsAreUsefulArentThey",
   "PalletTown_Text_LookCopiedTrainerTipsSign", "PalletTown_Text_PressStartToOpenMenuCopy"
@@ -370,6 +373,10 @@ for (const dir of ["data/text", "data/scripts"]) {
 }
 if (fs.existsSync(P("data/event_scripts.s"))) sharedFiles.push(P("data/event_scripts.s"));
 for (const f of sharedFiles) parseTextFile(f, sharedText);
+// (FireRed keeps some move tutors' lines in another map's text: the Rock
+// Slide tutor in Rock Tunnel speaks text from Seafoam Islands B4F's.)
+const TUTOR_TEXT_MAPS = ["SeafoamIslands_B4F"];
+for (const m of TUTOR_TEXT_MAPS) if (fs.existsSync(P("data/maps", m, "text.inc"))) parseTextFile(P("data/maps", m, "text.inc"), sharedText);
 
 const textCache = {};
 function texts(mapName) {

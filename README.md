@@ -172,8 +172,12 @@ tree, as in FireRed), the Fishing Guru's house, Elyssa's trade house, the
 Pidgey house, the Pokémon Fan Club and the S.S. Anne: all its decks and cabins
 (1F, 2F, 3F, B1F, the kitchen, the deck and the Captain's office) with their
 trainers and items, Route 11 with its ten trainers and its gate (Snorlax's
-Route 12 beyond it isn't built), and Diglett's Cave from Route 11 to Route 2's
-east side. Tiles, palettes and metatiles come from
+Route 12 beyond it isn't built), Diglett's Cave from Route 11 to Route 2's
+east side, and Route 10 east of Route 9: its trainers, its Pokémon Center (Prof.
+Oak's aide gives the Everstone for twenty kinds caught; Fly can land outside
+it), and Rock Tunnel (1F and B1F, dark without Flash, with its fifteen trainers,
+items, Rock Smash rocks and the Rock Slide tutor). Lavender Town and the Power
+Plant beyond it aren't built yet. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into

@@ -1526,7 +1526,8 @@
     "VermilionCity_House1_EventScript_FishingGuru", "VermilionCity_House2_EventScript_Elyssa",
     "VermilionCity_House3_EventScript_Pidgey", "VermilionCity_PokemonFanClub_EventScript_Pikachu",
     "VermilionCity_PokemonFanClub_EventScript_Seel", "VermilionCity_PokemonFanClub_EventScript_Chairman",
-    "SSAnne_1F_Room6_EventScript_Woman", "VermilionCity_PokemonCenter_1F_EventScript_VSSeekerWoman"
+    "SSAnne_1F_Room6_EventScript_Woman", "VermilionCity_PokemonCenter_1F_EventScript_VSSeekerWoman",
+    "Route10_PokemonCenter_1F_EventScript_Nurse", "Route10_PokemonCenter_1F_EventScript_Aide", "RockTunnel_B1F_EventScript_RockSlideTutor"
   ].concat(Object.keys(STARTER_BALLS)).concat(Array.from({ length: 15 }, (_, i) => "VermilionCity_Gym_EventScript_TrashCan" + (i + 1))));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
@@ -1843,6 +1844,15 @@
       case "ViridianCity_EventScript_DreamEaterTutor":
         await moveTutor("Dream Eater", "tutorDreamEater", "Text_DreamEater");
         return;
+      // Rock Tunnel B1F's Rock Slide tutor.
+      case "RockTunnel_B1F_EventScript_RockSlideTutor":
+        await moveTutor("Rock Slide", "tutorRockSlide", "Text_RockSlide");
+        return;
+      // Prof. Oak's Aide in Route 10's Pokémon Center: the Everstone for twenty kinds caught.
+      case "Route10_PokemonCenter_1F_EventScript_Aide":
+        await aideGift({ needed: 20, item: "everstone", flag: "gotEverstone", text: "Route10_PokemonCenter_1F_Text_",
+          ask: "GiveEverstoneIfCaught20Mons", received: "ReceivedEverstoneFromAide", explain: "ExplainEverstone" });
+        return;
 
       // FireRed's parcel scene: the clerk calls out, you walk up to the counter.
       case "enter:PewterCity":
@@ -2088,6 +2098,7 @@
         return;
 
       case "Route4_PokemonCenter_1F_EventScript_Nurse":
+      case "Route10_PokemonCenter_1F_EventScript_Nurse":
         await nurse(ev.map, ev.person);
         return;
 
@@ -2719,6 +2730,22 @@
 
   // What the Route 4 tutors charge each time.
   const TUTOR_PRICE = 1000;
+
+  // Prof. Oak's Aides (FireRed's Aide_EventScript_*): an item for so many kinds
+  // of Pokémon caught.
+  async function aideGift(o) {
+    const f = player.flags, label = Bag.name(o.item), A = (k) => T(o.text + k), vars = () => [o.needed, label, player.pokedex.caught.length];
+    if (f[o.flag]) { await say(A(o.explain), vars()); return; }
+    const ask = A(o.ask);
+    await say(ask.slice(0, -1), vars());
+    if (!(await confirm(fill(ask[ask.length - 1], vars())))) { await say(T("Aide_Text_GetEnoughMonsComeBackForItem"), vars()); return; }
+    if (player.pokedex.caught.length < o.needed) { await say(T("Aide_Text_HaventCaughtEnoughMonsForItem"), vars()); return; }
+    await say(A("GreatHereYouGo"), vars());
+    Player.addItem(player, o.item);
+    f[o.flag] = true;
+    await sayWithJingle(itemJingle(o.item), A(o.received).map((p) => fill(p, vars())));
+    await say(A(o.explain), vars());
+  }
 
   // ---------- Badges ----------
 
