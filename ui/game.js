@@ -3444,7 +3444,7 @@
         wrong: "Trade_Text_ThisIsNoMon", thanks: "Trade_Text_ThanksYoureAPal", after: "Trade_Text_HowIsMyOldMon" } }
   };
   async function inGameTrade(trade) {
-    const f = player.flags, vars = [trade.wants, trade.gives];
+    const f = player.flags, vars = [Party.speciesName(trade.wants), Party.speciesName(trade.gives)];
     const X = Object.assign({ ask: "Trade_Text_LookingForMonWannaTradeForMon", no: "Trade_Text_AwwOhWell",
       wrong: "Trade_Text_WhatThatsNoMon", thanks: "Trade_Text_HeyThanks", after: "Trade_Text_IsntMyOldMonGreat" }, trade.text);
     if (f[trade.flag]) { await say(T(X.after), vars); return; }

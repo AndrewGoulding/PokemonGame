@@ -451,10 +451,16 @@ for (const dir of ["data/text", "data/scripts"]) {
 }
 if (fs.existsSync(P("data/event_scripts.s"))) sharedFiles.push(P("data/event_scripts.s"));
 for (const f of sharedFiles) parseTextFile(f, sharedText);
-// (FireRed keeps some move tutors' lines in another map's text: the Rock
-// Slide tutor in Rock Tunnel speaks text from Seafoam Islands B4F's.)
-const TUTOR_TEXT_MAPS = ["SeafoamIslands_B4F"];
-for (const m of TUTOR_TEXT_MAPS) if (fs.existsSync(P("data/maps", m, "text.inc"))) parseTextFile(P("data/maps", m, "text.inc"), sharedText);
+// FireRed keeps some lines in another map's text.inc: the Rock Slide tutor in
+// Rock Tunnel speaks text from Seafoam Islands B4F's, Lil & Ian on Route 21
+// North from Route 21 South's. pret's labels are unique across the project, so
+// every map can also use any (checked out) map's text, its own first.
+const otherMapText = {};
+for (const m of fs.existsSync(P("data/maps")) ? fs.readdirSync(P("data/maps")) : []) {
+  const file = P("data/maps", m, "text.inc");
+  if (fs.existsSync(file)) parseTextFile(file, otherMapText);
+}
+for (const k of Object.keys(otherMapText)) otherMapText[k] = cleanText(otherMapText[k]);
 
 const textCache = {};
 function texts(mapName) {
@@ -463,7 +469,7 @@ function texts(mapName) {
   const file = P("data/maps", mapName, "text.inc");
   if (fs.existsSync(file)) parseTextFile(file, out);
   for (const k of Object.keys(out)) out[k] = cleanText(out[k]);
-  return (textCache[mapName] = out);
+  return (textCache[mapName] = Object.assign({}, otherMapText, out));
 }
 
 let sharedScriptCache = null;

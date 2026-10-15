@@ -37,9 +37,11 @@
   const CLOAKS = ["plant", "sandy", "trash"];
 
   // "Wormadam-Sandy" -> "Wormadam", "Darmanitan-Standard" -> "Darmanitan".
-  // Names that really contain a hyphen (Ho-Oh, Porygon-Z, Nidoran-F) are kept.
+  // Names that really contain a hyphen (Ho-Oh, Porygon-Z) are kept.
   const FORME_SUFFIX = /-(Plant|Sandy|Trash|Shield|Blade|Standard|Zen|Normal|Attack|Defense|Speed|Altered|Origin|Land|Sky|Incarnate|Therian|Ordinary|Resolute|Aria|Pirouette|Confined|Unbound|Average|Small|Large|Super)$/;
-  const speciesName = (species) => species.replace(FORME_SUFFIX, "");
+  // (And the Nidoran, as the games write them: Nidoran♀ and Nidoran♂.)
+  const GENDERED_NAMES = { "Nidoran-F": "Nidoran♀", "Nidoran-M": "Nidoran♂" };
+  const speciesName = (species) => GENDERED_NAMES[species] || species.replace(FORME_SUFFIX, "");
 
   // opts: { rng, moves, ball, nickname, ivs (a number for every stat: a trainer's Pokémon) }
   const SHINY_ODDS = 1000;   // 1 in 1,000 (Gen 6 is 1 in 4,096)

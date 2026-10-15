@@ -1471,8 +1471,8 @@ for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
 
 // Disable names the move it disabled; Leech Life is Gen 7's.
 {
-  const b = new Battle({ seed: 5, p1: { name: "A", team: [Object.assign(Party.toBattleSet(Party.create("Pikachu", 50)), { moves: ["Disable"] })] },
-    p2: { name: "B", team: [Object.assign(Party.toBattleSet(Party.create("Snorlax", 50)), { moves: ["Tackle"] })] } });
+  const b = new Battle({ seed: 5, p1: { name: "A", team: [Object.assign(Party.toBattleSet(Party.create("Pikachu", 50, { rng: mulberry32(51) })), { moves: ["Disable"] })] },
+    p2: { name: "B", team: [Object.assign(Party.toBattleSet(Party.create("Snorlax", 50, { rng: mulberry32(52) })), { moves: ["Tackle"] })] } });
   b.start();
   b.choose("p1", { type: "move", move: 0 }); b.choose("p2", { type: "move", move: 0 });
   b.choose("p1", { type: "move", move: 0 }); b.choose("p2", { type: "move", move: 0 });
@@ -1686,6 +1686,17 @@ const armored = (species, moves, level) => ({ species, level: level || 50, abili
   assert.strictEqual(b.sides.p2.actives[0].species, "Pidgey");
   assert(b.events.some((e) => e[0] === "switch" && e[1] === "p2a: Pidgey"));
   assert.strictEqual(b.getRequest("p1").phase, "move");
+}
+
+// Aimed at an ally that fainted earlier in the turn, a move goes to the foe
+// opposite the user instead (FireRed's HandleAction_UseMove).
+{
+  const b = doubles({ team: [{ species: "Snorlax", level: 50, ability: "Shell Armor", moves: ["Tackle"] }, armored("Magikarp", ["Splash"], 2), armored("Pidgey")] },
+    { team: [{ species: "Jolteon", level: 100, moves: ["Thunderbolt"] }, armored("Snorlax")] });
+  const evs = play(b, { p1: [mv(0, -2), mv(0)], p2: [mv(0, 2), mv(0)] });
+  assert(evs.some((e) => e[0] === "faint" && e[1] === "p1b: Magikarp"));
+  assert(!evs.some((e) => e[0] === "-notarget"), "no 'no target'");
+  assert.strictEqual(damageTo(evs, "p2a: Jolteon").length, 1, "Tackle at the fainted ally hits the foe opposite");
 }
 
 // Both sides replace at the end of the turn, each into the right slot.
@@ -2286,3 +2297,9 @@ assert.deepStrictEqual([WORLD_MAPS.RockTunnel_1F.floor, WORLD_MAPS.RockTunnel_B1
   assert.strictEqual(D.prize([{ name: "Twins Eli & Anne", prizeClass: "Twins", team: [{ level: 22 }, { level: 22 }] }], prizeOf, true), 12 * 22 * 2);
   assert.strictEqual(D.prize([{ name: "Youngster Ben", team: [{ level: 11 }] }], prizeOf, false), Player.prizeMoney("Youngster Ben", [{ level: 11 }]));
 }
+
+// The Nidoran are written Nidoran♀ and Nidoran♂, in battle and everywhere else.
+assert.deepStrictEqual(["Nidoran-F", "Nidoran-M", "Ho-Oh", "Wormadam-Sandy"].map(Party.speciesName), ["Nidoran♀", "Nidoran♂", "Ho-Oh", "Wormadam"]);
+assert.strictEqual(Party.toBattleSet(Party.create("Nidoran-M", 5, { rng })).name, "Nidoran♂");
+// Lil & Ian on Route 21 have their lines (FireRed keeps them in Route 21 South's text).
+for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test(q.script))) assert(p.trainer.intro && p.trainer.defeat && p.trainer.notEnough, p.script);

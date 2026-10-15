@@ -75,7 +75,8 @@
 // a ball only while one wild Pokémon is left (canCatch), run as usual.
 //
 // Targeting follows moves.js `target`: normal/any/adjacentFoe (chosen; a
-// fainted foe is replaced by the other foe, a fainted ally fails),
+// fainted foe is replaced by the other foe, a fainted ally by the foe opposite
+// the user, as FireRed does),
 // adjacentAlly (Helping Hand), adjacentAllyOrSelf, allAdjacentFoes and
 // allAdjacent (spread: Earthquake, Surf and Explosion hit the ally too; 0.75x
 // each with more than one target), randomNormal (Outrage, Struggle: a random
@@ -2216,7 +2217,9 @@
       if (t !== "randomNormal" && o.targetLoc) {
         const m = this.atLoc(user, o.targetLoc);
         if (m && m !== user && m.isActive && !m.fainted) target = m;
-        else if (m && m.side === user.side) return [];   // (a fainted ally: no retargeting)
+        // (Aimed at an ally that's gone: FireRed's HandleAction_UseMove turns it
+        // on the foe opposite the user, or else the other foe.)
+        else if (m && m.side === user.side) target = foes.find((f) => f.slot === user.slot) || foes[0] || null;
       }
       if (!target) target = foes.length > 1 ? this.sample(foes) : foes[0] || null;
       target = this.redirectTarget(user, move, target);
