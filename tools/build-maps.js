@@ -119,10 +119,11 @@ const WILD_SLOTS = {
 // Single slots changed from FireRed's (both versions'), by slot number: the
 // starters out in the wild, 5% each (slots 9 and 11, 4% and 1%, as the
 // Bulbasaur in Viridian Forest; Squirtle in Kakuna / Metapod's 8 and 10).
-// Charmander takes two of Jigglypuff's slots on Route 3 (it's 5% now), and
-// Squirtle the Kakuna and Metapod on Route 24, at those slots' levels.
+// Charmander takes two of Jigglypuff's slots on Route 3, and Jigglypuff one of
+// Spearow's (slot 6, 5%: Spearow 30%, Jigglypuff still 10%); Squirtle takes
+// the Kakuna and Metapod on Route 24, at those slots' levels.
 const WILD_SLOT_CHANGES = {
-  Route3: { 9: ["Charmander", 5, 5], 11: ["Charmander", 7, 7] },
+  Route3: { 6: ["Jigglypuff", 5, 5], 9: ["Charmander", 5, 5], 11: ["Charmander", 7, 7] },
   Route24: { 8: ["Squirtle", 8, 8], 10: ["Squirtle", 8, 8] }
 };
 // Scripts whose text is picked by code the converter can't follow.
