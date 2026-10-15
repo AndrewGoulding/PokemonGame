@@ -89,7 +89,22 @@
   const displayName = (record) => record.nickname || speciesName(record.species);
   const isFainted = (record) => record.hp <= 0;
 
-  function toBattleSet(record) {
+  // FireRed's friendship bonuses for a record: its held item, its ball, and
+  // whether it was met in the area of `here` (a map name).
+  function friendshipOpts(record, here) {
+    const secs = (window.TOWN_MAP || {}).mapSections || {};
+    const met = record.met && !record.met.traded && record.met.map;
+    return { item: record.item, ball: record.ball, metHere: !!(met && here && secs[met] && secs[met] === secs[here]) };
+  }
+  // Changes its friendship for a FireRed event ("walking", "tm", ...) or an
+  // item's [low, mid, high] (engine/experience.js adjustFriendship).
+  function adjustFriendship(record, change, here) {
+    record.happiness = window.Experience.adjustFriendship(record.happiness, change, friendshipOpts(record, here));
+    return record.happiness;
+  }
+
+  // (`here`, the map you're on: for the friendship bonus where it was met.)
+  function toBattleSet(record, here) {
     return {
       species: record.species,
       name: displayName(record),
@@ -108,7 +123,8 @@
       status: record.status,
       form: form(record),   // display only; the engine ignores it
       shiny: !!record.shiny,   // (display only too)
-      ball: record.ball,    // display only: the ball it's thrown out in
+      ball: record.ball,    // the ball it's thrown out in (and a Luxury Ball's friendship)
+      metHere: friendshipOpts(record, here).metHere,
       ppUps: record.moves.map((m) => m.ppUps || 0)
     };
   }
@@ -196,7 +212,7 @@
   }
 
   window.Party = { SHINY_ODDS,
-    CLOAKS, create, maxPp, stats, maxHp, speciesName, displayName, form, isFainted, toBattleSet,
+    CLOAKS, create, maxPp, stats, maxHp, speciesName, displayName, form, isFainted, toBattleSet, friendshipOpts, adjustFriendship,
     syncFromBattle, caught, heal, teachMove, canLearnMachine, knowsMove, movesLearnedAt, expProgress
   };
 })();

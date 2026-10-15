@@ -278,9 +278,15 @@
     // From the map: FireRed's flash-and-slice into battle.
     if (!world.classList.contains("hidden")) await Overworld.battleTransition();
     show("field");
+    const here = player.location && player.location.map;
+    // A Gym Leader, the Elite Four or the Champion: the whole party is pleased
+    // to be in a battle that matters (FireRed's FRIENDSHIP_EVENT_LEAGUE_BATTLE).
+    if (!wild && /^TRAINER_(LEADER|ELITE_FOUR|CHAMPION)/.test(opts.trainerId || "")) {
+      for (const r of player.party) Party.adjustFriendship(r, "leagueBattle", here);
+    }
     const result = await BattleScreen.run({
-      p1: { name: player.name, team: player.party.map(Party.toBattleSet) },
-      p2: { name: foe.name, team: foe.team.map(Party.toBattleSet) },
+      p1: { name: player.name, team: player.party.map((r) => Party.toBattleSet(r, here)) },
+      p2: { name: foe.name, team: foe.team.map((r) => Party.toBattleSet(r)) },
       wild,
       exp: true,
       expShare: expShareOn(),
@@ -467,6 +473,8 @@
       if (!Party.canLearnMachine(record, move)) { await message(name + " can't learn " + move + "."); return; }
       await message("You booted up the " + Bag.name(item).split(" ")[0] + ".");
       await learnMove(record, move);
+      // (Learning from a TM or HM pleases it a little, as in FireRed.)
+      if (Party.knowsMove(record, move)) Party.adjustFriendship(record, "tm", player.location && player.location.map);
       return;
     }
     if (Bag.mintNature(item)) {
@@ -479,7 +487,7 @@
     if (item === "rare-candy") {
       if (!Bag.canUseOn(record, item)) { await message("It won't have any effect."); return; }
       if (!player.flags.debugCandy) Player.removeItem(player, item);   // the debug menu makes them infinite
-      const newMoves = Bag.levelUp(record);
+      const newMoves = Bag.levelUp(record, { here: player.location && player.location.map });
       await message(name + " grew to Lv. " + record.level + "!");
       for (const move of newMoves) await learnMove(record, move);
       const evo = Evolution.find(record, { trigger: "level", party: player.party });
@@ -497,7 +505,7 @@
     }
     if (!Bag.canUseOn(record, item, { move })) { await message("It won't have any effect."); return; }
     Player.removeItem(player, item);
-    const r = Bag.useOn(record, item, { move });
+    const r = Bag.useOn(record, item, { move, here: player.location && player.location.map });
     if (r.revived) await message(name + " was revived!");
     if (r.healed) await message(name + "'s HP was restored by " + plural(r.healed, "point") + ".");
     if (r.cured) await message(name + " was cured of its " + ({ psn: "poisoning", tox: "poisoning", par: "paralysis", slp: "sleep", brn: "burn", frz: "freezing" }[r.cured] || "status") + ".");
@@ -626,6 +634,14 @@
     if (!ready.length && !near.some((p) => !f[p.def.trainer.id] || rematch[p.def.trainer.id])) {
       await say(["The other Trainers don't appear\nto be ready for battle.", "Let's wait till later."]);
     }
+  }
+  // Every 128 steps, each Pokémon in the party grows a little friendlier half
+  // the time (FireRed's UpdateFriendshipStepCounter).
+  function friendshipStep() {
+    const f = player.flags;
+    f.friendshipSteps = ((f.friendshipSteps | 0) + 1) % 128;
+    if (f.friendshipSteps) return;
+    for (const r of player.party) if (Math.random() < 0.5) Party.adjustFriendship(r, "walking", player.location.map);
   }
   function vsSeekerStep() {
     const f = player.flags;
@@ -3773,7 +3789,7 @@
         trainerWaiting, hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, extraPeople,
         canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
         onAvatar: (mode) => music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music),
-        onStep: () => { leftPallet(player.location.map); DayCare.step(player.flags.dayCare); vsSeekerStep(); return redForestStep() || leafVermilionStep() || jessieJamesStep() || repelStep(); }, allowWild: repelAllows,
+        onStep: () => { leftPallet(player.location.map); DayCare.step(player.flags.dayCare); vsSeekerStep(); friendshipStep(); return redForestStep() || leafVermilionStep() || jessieJamesStep() || repelStep(); }, allowWild: repelAllows,
         onMap: (m) => {
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
           if (m !== "VermilionCity") ticketChecked = false;

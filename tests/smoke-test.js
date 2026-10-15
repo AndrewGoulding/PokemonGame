@@ -1380,6 +1380,50 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
   for (const l of ["TakeAShortRest", "GladEveryoneIsRefreshed", "SorryYouLookLikeMyBrother", "SorryYouLookLikeMySister"]) assert(window.WORLD_TEXT["SSAnne_1F_Room6_Text_" + l], l);
 }
 
+// Friendship, as in FireRed (AdjustFriendship): by how friendly it is now,
+// half again with a Soothe Bell, +1 in a Luxury Ball or where it was met.
+{
+  const E = window.Experience;
+  assert.strictEqual(E.adjustFriendship(70, "levelUp"), 75);
+  assert.strictEqual(E.adjustFriendship(150, "levelUp"), 153);
+  assert.strictEqual(E.adjustFriendship(210, "levelUp"), 212);
+  assert.strictEqual(E.adjustFriendship(70, "levelUp", { item: "soothe-bell" }), 77);   // 5 * 1.5, rounded down
+  assert.strictEqual(E.adjustFriendship(70, "levelUp", { ball: "luxury-ball", metHere: true }), 77);
+  assert.strictEqual(E.adjustFriendship(210, "tm"), 210);                                // nothing at 200+
+  assert.strictEqual(E.adjustFriendship(210, "faintLarge", { ball: "luxury-ball" }), 200); // (no bonus on a loss)
+  assert.strictEqual(E.adjustFriendship(0, "faintSmall"), 0);
+  assert.strictEqual(E.adjustFriendship(255, "walking"), 255);
+  // A vitamin pleases it; the bitter herbs don't.
+  const r = Party.create("Pikachu", 20);
+  r.happiness = 70;
+  Bag.useOn(r, "protein");
+  assert.strictEqual(r.happiness, 75);
+  r.hp = 1;
+  Bag.useOn(r, "energy-root");
+  assert.strictEqual(r.happiness, 65);
+  // A Rare Candy's level up: +5; the Day-Care's levels: nothing.
+  Bag.levelUp(r);
+  assert.strictEqual(r.happiness, 70);
+  Bag.levelUp(r, { noFriendship: true });
+  assert.strictEqual(r.happiness, 70);
+  // Met here: one more.
+  r.met = { map: "Route1", level: 3 };
+  Party.adjustFriendship(r, "walking", "Route1");
+  assert.strictEqual(r.happiness, 72);
+  Party.adjustFriendship(r, "walking", "PalletTown");
+  assert.strictEqual(r.happiness, 73);
+  // Fainting in battle: -1, or -5 against a foe 30 levels higher; the foe's don't change.
+  for (const [foeLevel, want] of [[40, 69], [60, 65]]) {
+    const b = new Battle({ seed: 1, p1: { name: "A", team: [Object.assign(Party.toBattleSet(Party.create("Pikachu", 20)), { happiness: 70 })] },
+      p2: { name: "B", team: [Object.assign(Party.toBattleSet(Party.create("Rattata", foeLevel)), { happiness: 70 })] } });
+    b.start();
+    b.faint(b.sides.p1.active);
+    assert.strictEqual(b.sides.p1.pokemon[0].happiness, want, "fainting against Lv. " + foeLevel);
+    b.faint(b.sides.p2.active);
+    assert.strictEqual(b.sides.p2.pokemon[0].happiness, 70);
+  }
+}
+
 // HMs outside battle (game/field-moves.js): known, or learnable with the HM
 // in the Bag, and the badge either way.
 {

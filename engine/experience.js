@@ -83,14 +83,39 @@
     return evs;
   }
 
-  // Friendship gained from levelling up in battle.
-  function friendshipFromLevelUp(friendship) {
-    const add = friendship < 100 ? 5 : friendship < 200 ? 3 : 2;
-    return Math.min(MAX_FRIENDSHIP, friendship + add);
+  // FireRed's friendship changes (src/pokemon.c, AdjustFriendship and
+  // sFriendshipEventDeltas): by how friendly it is now (under 100, under
+  // 200, 200 and up). A level up; a vitamin, PP Up or PP Max; an X item in
+  // battle; a battle with a Gym Leader, the Elite Four or the Champion; a TM
+  // or HM learned; every 128 steps (half the time); fainting (worse against a
+  // foe 30 levels higher).
+  const FRIENDSHIP_EVENTS = {
+    levelUp: [5, 3, 2], vitamin: [5, 3, 2], battleItem: [1, 1, 0], leagueBattle: [3, 2, 1], tm: [1, 1, 0],
+    walking: [1, 1, 1], massage: [3, 3, 3], faintSmall: [-1, -1, -1], faintOutsideBattle: [-5, -5, -10], faintLarge: [-5, -5, -10]
+  };
+  // -> the new friendship. `change`: an event above, or an item's own
+  // [low, mid, high] (the bitter herbs lower it). opts: { item (held), ball,
+  // metHere (it was met in the area you're in) }: a gain is half again with a
+  // Soothe Bell, and one more each in a Luxury Ball or where it was met.
+  function adjustFriendship(friendship, change, opts) {
+    opts = opts || {};
+    const table = typeof change === "string" ? FRIENDSHIP_EVENTS[change] : change;
+    if (!table) return friendship;
+    let delta = table[friendship >= 200 ? 2 : friendship >= 100 ? 1 : 0];
+    if (delta > 0 && opts.item === "soothe-bell") delta = Math.floor(150 * delta / 100);
+    let f = friendship + delta;
+    if (delta > 0) {
+      if (opts.ball === "luxury-ball") f++;
+      if (opts.metHere) f++;
+    }
+    return Math.max(0, Math.min(MAX_FRIENDSHIP, f));
   }
+  // Friendship gained from a level up.
+  const friendshipFromLevelUp = (friendship, opts) => adjustFriendship(friendship, "levelUp", opts);
 
   window.Experience = {
     MAX_LEVEL, MAX_FRIENDSHIP, GROWTH,
-    growthRate, expForLevel, levelForExp, progress, gain, addEvs, friendshipFromLevelUp
+    growthRate, expForLevel, levelForExp, progress, gain, addEvs, friendshipFromLevelUp,
+    FRIENDSHIP_EVENTS, adjustFriendship
   };
 })();

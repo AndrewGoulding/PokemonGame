@@ -32,7 +32,7 @@
       const target = levelAfter(dc);
       r.exp += dc.steps;
       while (r.level < target) {
-        for (const move of window.Bag.levelUp(r)) {
+        for (const move of window.Bag.levelUp(r, { noFriendship: true })) {
           if (!window.Party.teachMove(r, move)) { r.moves.shift(); window.Party.teachMove(r, move); }
         }
       }

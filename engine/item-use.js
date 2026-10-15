@@ -51,6 +51,18 @@
     "iron": { ev: "def", outOfBattle: true }, "calcium": { ev: "spa", outOfBattle: true },
     "zinc": { ev: "spd", outOfBattle: true }, "carbos": { ev: "spe", outOfBattle: true }
   };
+  // How each changes friendship (FireRed's src/data/pokemon/item_effects.h:
+  // [under 100, under 200, 200 and up]): vitamins and PP Ups please it, X
+  // items a little, the bitter herbal medicines don't. (Rare Candy's is its
+  // level up's.)
+  const VITAMIN = [5, 3, 2], BATTLE_ITEM = [1, 1, 0];
+  const FRIENDSHIP = {
+    "hp-up": VITAMIN, "protein": VITAMIN, "iron": VITAMIN, "calcium": VITAMIN, "zinc": VITAMIN, "carbos": VITAMIN,
+    "pp-up": VITAMIN, "pp-max": VITAMIN,
+    "x-attack": BATTLE_ITEM, "x-defense": BATTLE_ITEM, "x-sp-atk": BATTLE_ITEM, "x-sp-def": BATTLE_ITEM,
+    "x-speed": BATTLE_ITEM, "x-accuracy": BATTLE_ITEM, "guard-spec": BATTLE_ITEM, "dire-hit": BATTLE_ITEM,
+    "energy-powder": [-5, -5, -10], "heal-powder": [-5, -5, -10], "energy-root": [-10, -10, -15], "revival-herb": [-15, -15, -20]
+  };
 
   // Vitamins add 10 EVs, but only up to 100 in that stat (and 510 in total).
   const VITAMIN_EVS = 10, VITAMIN_CAP = 100, EV_TOTAL = 510;
@@ -94,6 +106,7 @@
     const eff = EFFECTS[item];
     const out = {};
     if (!eff) return out;
+    if (FRIENDSHIP[item]) out.friendship = FRIENDSHIP[item];
     if (eff.boost) { out.boost = eff.boost; return out; }
     if (eff.revive) {
       target.fainted = false;

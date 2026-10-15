@@ -158,6 +158,8 @@
     }
     const v = view(record);
     const result = window.ItemUse.apply(v, item, opts);
+    // (Vitamins and PP Ups please it; the bitter herbs don't.)
+    if (result.friendship) window.Party.adjustFriendship(record, result.friendship, opts && opts.here);
     record.hp = v.hp;
     record.status = v.status;
     record.moves.forEach((m, i) => {
@@ -170,12 +172,14 @@
   }
 
   // Rare Candy: one level, as if from experience. Returns the moves learned at the new level.
-  function levelUp(record) {
+  // opts: { here (the map you're on, for friendship), noFriendship (the Day-Care's levels) }
+  function levelUp(record, opts) {
+    opts = opts || {};
     const E = window.Experience;
     const oldMax = window.Party.maxHp(record);
     record.level = Math.min(E.MAX_LEVEL, record.level + 1);
     record.exp = Math.max(record.exp, E.expForLevel(E.growthRate(record.species), record.level));
-    record.happiness = E.friendshipFromLevelUp(record.happiness);
+    if (!opts.noFriendship) window.Party.adjustFriendship(record, "levelUp", opts.here);
     if (record.hp > 0) record.hp = Math.min(window.Party.maxHp(record), record.hp + window.Party.maxHp(record) - oldMax);
     return window.Party.movesLearnedAt(record, record.level);
   }

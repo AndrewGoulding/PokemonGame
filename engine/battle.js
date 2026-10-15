@@ -135,6 +135,8 @@
       this.ivs = Object.assign({ hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }, set.ivs);
       this.evs = Object.assign({}, set.evs);
       this.happiness = set.happiness != null ? set.happiness : 70;
+      this.ball = set.ball;
+      this.metHere = !!set.metHere;
       this.isNFE = !!set.isNFE;
       this.stats = window.Stats.calcAllStats(speciesKey, { level: this.level, nature: this.nature, ivs: this.ivs, evs: this.evs });
       this.maxhp = this.baseMaxhp = this.stats.hp;
@@ -625,9 +627,19 @@
       return amount;
     }
 
+    // FireRed's AdjustFriendship for your Pokémon (engine/experience.js).
+    friendship(mon, change) {
+      if (mon.side.id !== "p1") return;
+      mon.happiness = window.Experience.adjustFriendship(mon.happiness, change, { item: mon.item, ball: mon.ball, metHere: mon.metHere });
+    }
+
     faint(mon, source, effect) {
       if (mon.fainted) return;
       mon.hp = 0; mon.fainted = true; mon.side.faintedThisTurn = true;
+      // Fainting upsets it: more so against a foe 30 levels higher (FireRed's
+      // battle_util2.c: the opposing Pokémon's level).
+      const foe = mon.side.foe.active;
+      this.friendship(mon, foe && foe.level - mon.level > 29 ? "faintLarge" : "faintSmall");
       this.add("faint", mon);
       if (this.expEnabled && mon.side.id === "p2") this.awardExp(mon);
       if (source && source !== mon && !source.fainted && effect && effect.effectType === "Move") {
@@ -1315,7 +1327,7 @@
       while (levelsUp()) {
         mon.level++;
         mon.leveledUp = true;
-        mon.happiness = E.friendshipFromLevelUp(mon.happiness);
+        this.friendship(mon, "levelUp");
         this.recalcStats(mon);
         this.add("-levelup", mon, mon.level, this.hpStr(mon), mon.teamIndex, levelsUp() ? 1 : E.progress(group, mon.level, mon.exp));
         this.learnLevelUpMoves(mon);
@@ -1386,6 +1398,7 @@
       this.add("-useitem", side.id, item, mon, teamIndex, this.hpStr(mon), r.healed || 0, r.cured || "",
         r.confusionCured ? "confusion" : "", r.revived ? "revive" : "", r.pp || 0);
       if (r.boost) this.boost(mon, { [r.boost]: 1 }, mon, null);
+      if (r.friendship) this.friendship(mon, r.friendship);
     }
 
     // ---------- Wild battles ----------
