@@ -1466,3 +1466,23 @@ console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random 
   assert.deepStrictEqual(["Aerodactyl", "Gyarados", "Gyarados-Mega", "Psyduck", "Golduck", "Blastoise", "Blastoise-Mega"].map(types),
     ["Dragon/Rock", "Dragon/Water", "Dragon/Water", "Water/Psychic", "Water/Psychic", "Water/Steel", "Water/Steel"]);
 }
+
+// X items: one stage up, only for the Pokémon in battle; in the Items pocket.
+{
+  const active = { hp: 10, maxhp: 20, fainted: false, isActive: true, boosts: { atk: 0 }, moves: [], evs: {}, level: 5 };
+  assert(ItemUse.canUse(active, "x-attack", { inBattle: true }));
+  assert(!ItemUse.canUse(active, "x-attack", {}) && !ItemUse.canUse(Object.assign({}, active, { isActive: false }), "x-attack", { inBattle: true }));
+  assert(!ItemUse.canUse(Object.assign({}, active, { boosts: { atk: 6 } }), "x-attack", { inBattle: true }));
+  assert.strictEqual(ItemUse.apply(active, "x-speed", { inBattle: true }).boost, "spe");
+  assert.strictEqual(Bag.pocket("x-attack"), "Items");
+  assert.strictEqual(Bag.sellPrice("stardust"), 1000);
+}
+
+// The S.S. Anne: every deck and cabin, the Captain (HM01) and Red's corridor.
+{
+  const ss = Object.keys(WORLD_MAPS).filter((m) => /^SSAnne/.test(m));
+  assert.strictEqual(ss.length, 26);
+  assert(WORLD_MAPS.SSAnne_CaptainsOffice.people.some((p) => p.script === "SSAnne_CaptainsOffice_EventScript_Captain"));
+  assert.strictEqual(WORLD_MAPS.SSAnne_2F_Corridor.triggers.length, 3);
+  for (const m of ss) for (const w of WORLD_MAPS[m].warps) assert(w.map, m + " leads somewhere built");
+}

@@ -1038,8 +1038,15 @@
       }
       if (window.Bag.isBall(item)) return { type: "ball", ball: item };
 
-      // Which Pokémon: FireRed's party screen ("Use on which POKéMON?").
       const mons = battle.sides.p1.pokemon;
+      // An X item: on the Pokémon in battle.
+      if (window.ItemUse.effect(item).boost) {
+        const active = mons.indexOf(battle.sides.p1.active);
+        if (window.ItemUse.canUse(battle.itemView(mons[active]), item, { inBattle: true })) return { type: "item", item, target: active };
+        await message("It won't have any effect.");
+        continue;
+      }
+      // Which Pokémon: FireRed's party screen ("Use on which POKéMON?").
       let target = null;
       for (;;) {
         say("");

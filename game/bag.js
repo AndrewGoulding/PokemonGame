@@ -26,6 +26,7 @@
     "poke-ball": 200, "great-ball": 600, "ultra-ball": 1200, "net-ball": 1000, "nest-ball": 1000,
     "dusk-ball": 1000, "quick-ball": 1000, "timer-ball": 1000, "repeat-ball": 1000, "dive-ball": 1000,
     "luxury-ball": 1000, "heal-ball": 300, "premier-ball": 200,
+    "x-attack": 500, "x-defense": 550, "x-sp-atk": 350, "x-sp-def": 350, "x-speed": 350, "x-accuracy": 950, "stardust": 2000,
     "potion": 300, "super-potion": 700, "hyper-potion": 1200, "max-potion": 2500, "full-restore": 3000,
     "revive": 1500, "max-revive": 4000, "antidote": 100, "paralyze-heal": 200, "awakening": 250,
     "burn-heal": 250, "ice-heal": 250, "full-heal": 600, "fresh-water": 200, "soda-pop": 300,
@@ -116,6 +117,7 @@
     if (isMachine(item)) return "TMs & HMs";
     if (/-berry$/.test(item)) return "Berries";
     const cat = (window.ITEMS[item] || {}).category;
+    if ((window.ItemUse.effect(item) || {}).boost) return "Items";   // (the X items)
     if (window.ItemUse.effect(item) || ["healing", "status-cures", "revival", "pp-recovery", "vitamins"].includes(cat)) return "Medicine";
     return "Items";
   }

@@ -1370,7 +1370,8 @@
     // restored lands on the Pokémon.
     itemView(mon) {
       return { hp: mon.hp, maxhp: mon.maxhp, status: mon.status, fainted: mon.fainted,
-        confused: !!(mon.isActive && mon.volatiles.confusion), moves: this.ownMoves(mon), evs: mon.evs, level: mon.level };
+        confused: !!(mon.isActive && mon.volatiles.confusion), moves: this.ownMoves(mon), evs: mon.evs, level: mon.level,
+        isActive: !!mon.isActive, boosts: mon.boosts };
     }
 
     useItem(side, item, teamIndex, move) {
@@ -1384,6 +1385,7 @@
       // [side, item, target, teamIndex, hp, healed, cured status, "confusion", "revive", pp restored]
       this.add("-useitem", side.id, item, mon, teamIndex, this.hpStr(mon), r.healed || 0, r.cured || "",
         r.confusionCured ? "confusion" : "", r.revived ? "revive" : "", r.pp || 0);
+      if (r.boost) this.boost(mon, { [r.boost]: 1 }, mon, null);
     }
 
     // ---------- Wild battles ----------

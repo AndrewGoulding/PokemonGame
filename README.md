@@ -80,7 +80,8 @@ status, level and HP bar; A on one opens SUMMARY / SWITCH / ITEM / CANCEL:
 SUMMARY is FireRed's Summary screen: POKéMON INFO (number, type, OT, ID
 No., held item and the Trainer Memo: its nature and where it was met),
 POKéMON SKILLS (HP and EXP bars, stats, ability), KNOWN MOVES, whose
-details show each move's power, accuracy and description, and swap two
+details show each move's power, accuracy, category (Physical / Special /
+Status, this game's) and description, and swap two
 moves with A, and a page of this game's after it, with a fourth dot in the
 page tabs: POKéMON EVs, each stat's EVs, and A switches it to POKéMON IVs and
 back; up / down go through your party; SWITCH asks "Move to
@@ -165,8 +166,9 @@ trainers (behind a small tree you need Cut for, as in FireRed), the Underground
 Path's tunnel and south entrance, Route 6 with its six trainers and its gate to
 Saffron, and Vermilion City: its Pokémon Center, Poké Mart, Gym (behind a Cut
 tree, as in FireRed), the Fishing Guru's house, Elyssa's trade house, the
-Pidgey house, the Pokémon Fan Club and the S.S. Anne's dock (the ship itself
-isn't built yet). Tiles, palettes and metatiles come from
+Pidgey house, the Pokémon Fan Club and the S.S. Anne: all its decks and cabins
+(1F, 2F, 3F, B1F, the kitchen, the deck and the Captain's office) with their
+trainers and items. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into
@@ -412,7 +414,7 @@ catching up with you at the north end of Viridian Forest (with the starter
 that beats yours and Pikachu), the League gate guard, Pewter's Gym guide
 and Museum guide walking you over, the Museum's ₽50 ticket, the Old Amber,
 the Seismic Toss tutor, Brock (Zubat, Geodude, Vulpix and Onix) with the Boulder Badge and TM39, Leaf waiting outside the Gym
-afterwards for a battle (her starter and a Jigglypuff; beat her and she gives you TM54 False Swipe), the Mega Punch and Mega Kick tutors (who teach
+afterwards (she waits a few steps from the door, sees you and walks over) for a battle (Butterfree, her starter and a Jigglypuff; beat her and she gives you TM54 False Swipe), the Mega Punch and Mega Kick tutors (who teach
 again and again, for ₽1,000 each time), the
 Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils, Jessie & James
 climbing down the last ladder in Mt. Moon as in Yellow, Gary in Cerulean (FireRed's team, with
@@ -429,7 +431,13 @@ from `MAP_PATCHES` in `tools/build-maps.js`) with Lt. Surge (Voltorb, Pikachu an
 Raichu, the Thunder Badge and TM34 Shock Wave, this game's TM102), the Fishing
 Guru's Old Rod (there's no fishing yet), Elyssa's trade (Ch'Ding the
 Farfetch'd for a Spearow), the Fan Club Chairman's Bike Voucher and the Bike
-Shop's Bicycle for it (there's no riding yet), and Bill: a
+Shop's Bicycle for it (there's no riding yet), Leaf waiting where the road from
+Route 6 comes into Vermilion (Butterfree 18, Wigglytuff 20, Nidorina 21 and her
+second-stage starter 22), Red on the S.S. Anne where FireRed has Gary (Pikachu
+24, Charmeleon, Wartortle and Ivysaur 25), the seasick Captain's HM01 Cut, the
+ship sailing off when you next step onto the dock, the Tradeback Guy upstairs
+in every Pokémon Center (he trades your Pokémon and straight back, so trade
+evolutions happen), and Bill: a
 Clefairy until you run his Teleporter's Cell Separator, then he gives you the
 S.S. Ticket and his PC shows his favourite Pokémon) are in `ui/game.js`; their FireRed
 lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scripts
@@ -499,6 +507,11 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   model yet (Moss Rock, magnetic fields, rain, an upside-down console) are
   swapped for the nearest playable rule; each has a `note` explaining it.
 
+- **Types**: Gen 6's, except Aerodactyl (Dragon/Rock), Gyarados and Mega
+  Gyarados (Dragon/Water), Psyduck and Golduck (Water/Psychic), and Blastoise
+  and Mega Blastoise (Water/Steel).
+- **X items**: X Attack, Defense, Sp. Atk, Sp. Def, Speed and Accuracy raise
+  that stat of the Pokémon in battle one stage (Gen 6).
 - **Items**: Gen 6 effects for potions and drinks, status cures, Revives, PP
   restores, vitamins (10 EVs each, up to 100) and Rare Candy. In battle, using
   an item takes your turn and happens before moves.

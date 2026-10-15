@@ -1367,7 +1367,12 @@
     "EventScript_CutTree", "Route5_PokemonDayCare_EventScript_DaycareMan", "UndergroundPath_NorthEntrance_EventScript_Saige",
     "Route5_SouthEntrance_EventScript_GuardTriggerLeft", "Route5_SouthEntrance_EventScript_GuardTriggerMid",
     "Route5_SouthEntrance_EventScript_GuardTriggerRight",
-    "Game_EventScript_Leaf", "Game_EventScript_TradebackGuy", "Route6_NorthEntrance_EventScript_GuardTriggerLeft", "Route6_NorthEntrance_EventScript_GuardTriggerMid",
+    "Game_EventScript_Leaf", "Game_EventScript_TradebackGuy",
+    "SSAnne_2F_Corridor_EventScript_RivalTriggerLeft", "SSAnne_2F_Corridor_EventScript_RivalTriggerMid",
+    "SSAnne_2F_Corridor_EventScript_RivalTriggerRight", "SSAnne_CaptainsOffice_EventScript_Captain",
+    "SSAnne_2F_Room1_EventScript_Gentleman", "SSAnne_1F_Room3_EventScript_Wigglytuff", "SSAnne_B1F_Room5_EventScript_Machoke",
+    "SSAnne_Kitchen_EventScript_Chef1", "SSAnne_Kitchen_EventScript_Chef2", "SSAnne_Kitchen_EventScript_Chef3",
+    "SSAnne_Kitchen_EventScript_Chef4", "Route6_NorthEntrance_EventScript_GuardTriggerLeft", "Route6_NorthEntrance_EventScript_GuardTriggerMid",
     "Route6_NorthEntrance_EventScript_GuardTriggerRight",
     "VermilionCity_EventScript_CheckTicketLeft", "VermilionCity_EventScript_CheckTicketRight",
     "VermilionCity_EventScript_ExitedTicketCheck", "VermilionCity_EventScript_OaksAide",
@@ -1424,6 +1429,8 @@
       case "FLAG_HIDE_OLD_AMBER": return !f.gotOldAmber;
       case "FLAG_HIDE_CERULEAN_RIVAL": return false;        // only for his scene
       case "FLAG_HIDE_CERULEAN_ROCKET": return !f.gotTM28;
+      case "FLAG_HIDE_SS_ANNE_RIVAL": return false;          // only for his scene (Red, here)
+      case "FLAG_HIDE_SS_ANNE": return !f.ssAnneDeparted;
       // Prof. Oak's aide comes to Vermilion after Lt. Surge, to send you to his
       // colleague on Route 2 (unless you've had HM05 Flash from him already).
       case "FLAG_HIDE_VERMILION_CITY_OAKS_AIDE": return !!(f.TRAINER_LEADER_LT_SURGE && !f.gotFlash && !f.talkedToVermilionAide);  // in the robbed house's yard until he gives back TM28
@@ -1994,6 +2001,13 @@
       case "VermilionCity_EventScript_CheckTicketLeft":
       case "VermilionCity_EventScript_CheckTicketRight":
         if (ticketChecked) return;
+        if (f.ssAnneDeparted) {
+          await Overworld.act([{ who: "LOCALID_VERMILION_FERRY_SAILOR", moves: M("Common_Movement_WalkInPlaceFasterLeft") },
+            { who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
+          await say(T("VermilionCity_Text_TheShipSetSail"));
+          await Overworld.act([{ who: "player", moves: ["walk_up"] }]);
+          return;
+        }
         await Overworld.act([{ who: "LOCALID_VERMILION_FERRY_SAILOR", moves: M("Common_Movement_WalkInPlaceFasterLeft") },
           { who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
         await say(T("VermilionCity_Text_DoYouHaveATicket"));
@@ -2028,6 +2042,32 @@
         await say("There you go! Come back anytime!");
         return;
       }
+      // ---------- The S.S. Anne ----------
+      case "SSAnne_2F_Corridor_EventScript_RivalTriggerLeft":
+      case "SSAnne_2F_Corridor_EventScript_RivalTriggerMid":
+      case "SSAnne_2F_Corridor_EventScript_RivalTriggerRight":
+        if (!f.ssAnneRed && canBattle()) await ssAnneRed(script.replace("SSAnne_2F_Corridor_EventScript_RivalTrigger", ""));
+        return;
+      case "SSAnne_CaptainsOffice_EventScript_Captain":
+        await ssAnneCaptain();
+        return;
+      // A gentleman shows you the sleeping Pokémon he saw: Snorlax (seen in the Pokédex).
+      case "SSAnne_2F_Room1_EventScript_Gentleman":
+        Player.markSeen(player, "Snorlax");
+        showPicture("Snorlax");
+        await say(T("SSAnne_2F_Room1_Text_SleepingMonLookedLikeThis"));
+        hidePicture();
+        return;
+      // The head chef: tonight's main course is one of three.
+      case "SSAnne_Kitchen_EventScript_Chef1": case "SSAnne_Kitchen_EventScript_Chef2":
+      case "SSAnne_Kitchen_EventScript_Chef3": case "SSAnne_Kitchen_EventScript_Chef4": {
+        await say(T("SSAnne_Kitchen_Text_IAmLeChefMainCourseIs"));
+        await say(T(["SSAnne_Kitchen_Text_SalmonDuSalad", "SSAnne_Kitchen_Text_EelsAuBarbecue", "SSAnne_Kitchen_Text_PrimeBeefsteak"][Math.floor(Math.random() * 3)]));
+        return;
+      }
+      case "enter:SSAnne_Exterior":
+        await ssAnneDeparts();
+        return;
       case "VermilionCity_EventScript_OaksAide":
         f.talkedToVermilionAide = true;
         await say(T("VermilionCity_Text_Route2AideHasPackageForYou"));
@@ -2067,7 +2107,9 @@
       case "VermilionCity_House3_EventScript_Pidgey":
       case "VermilionCity_PokemonFanClub_EventScript_Pikachu":
       case "VermilionCity_PokemonFanClub_EventScript_Seel":
-        cry(/Pidgey$/.test(script) ? "Pidgey" : /Pikachu$/.test(script) ? "Pikachu" : "Seel");
+      case "SSAnne_1F_Room3_EventScript_Wigglytuff":
+      case "SSAnne_B1F_Room5_EventScript_Machoke":
+        cry(/_EventScript_(\w+)$/.exec(script)[1]);
         await say(ev.person.text || []);
         return;
       // The Fan Club's Chairman: hear him out about his Rapidash and get a Bike Voucher.
@@ -3217,6 +3259,66 @@
     for (const p of mapPatches(map)) for (const [x, y, c] of m.patches[p].collision) m.collision[y * m.width + x] = c;
   }
 
+  // ---------- The S.S. Anne ----------
+  //
+  // Red (where FireRed has Gary) comes out of a cabin on 2F and battles you:
+  // Pikachu (24), Charmeleon, Wartortle and Ivysaur (25 each). The Captain,
+  // seasick, gives you HM01 Cut once you've rubbed his back; the next time you
+  // step out onto the dock, the ship sets sail and is gone.
+  async function ssAnneRed(side) {
+    const f = player.flags, R = "LOCALID_SS_ANNE_RIVAL";
+    sfx("se_exit");
+    music("mus_encounter_rival");
+    Overworld.addObject(R, { x: 30, y: 2, facing: "down" }, window.WORLD_SPRITES.red);
+    await Overworld.act([{ who: R, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+    const approach = [{ who: R, moves: M("SSAnne_2F_Corridor_Movement_RivalApproach" + side) }];
+    if (side !== "Left") approach.push({ who: "player", moves: M("SSAnne_2F_Corridor_Movement_PlayerFaceRival" + side) });
+    await Overworld.act(approach);
+    if (side === "Left") await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
+    await say("…");
+    const team = [Party.create("Pikachu", 24), Party.create("Charmeleon", 25), Party.create("Wartortle", 25), Party.create("Ivysaur", 25)];
+    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer Red", team, pic: "red" }, defeatText: ["…"] });
+    if (outcome !== "won") return;
+    f.ssAnneRed = true;
+    show("world");
+    await Overworld.resume();
+    await say(["…", "Red nodded, and headed off."]);
+    music("mus_rival_exit");
+    await Overworld.act([{ who: R, moves: M("SSAnne_2F_Corridor_Movement_RivalExit" + side).concat(["set_invisible"]) }]);
+    Overworld.removeObject(R);
+    music((window.WORLD_MAPS.SSAnne_2F_Corridor || {}).music);
+  }
+  async function ssAnneCaptain() {
+    const f = player.flags, C = "SSAnne_CaptainsOffice_Text_";
+    if (f.gotHM01) {
+      await Overworld.act([{ who: "LOCALID_SS_ANNE_CAPTAIN", moves: ["face_player"] }]);
+      await say(T(C + "SSAnneWillSetSailSoon"));
+      return;
+    }
+    await say(T(C + "CaptainIFeelSeasick"));
+    await sayWithJingle("mus_heal", T(C + "RubbedCaptainsBack"));
+    await Overworld.act([{ who: "LOCALID_SS_ANNE_CAPTAIN", moves: ["face_player"] }]);
+    await say(T(C + "ThankYouHaveHMForCut"));
+    Player.addItem(player, "hm01");
+    f.gotHM01 = true;
+    await sayWithJingle("mus_obtain_key_item", T(C + "ObtainedHM01FromCaptain"));
+    await say(T(C + "ExplainCut"));
+  }
+  // Out on the dock with HM01: the ship sails off, and you head back up the pier.
+  function ssAnneDeparting() { return !!(player.flags.gotHM01 && !player.flags.ssAnneDeparted); }
+  async function ssAnneDeparts() {
+    const f = player.flags, at = Overworld.position();
+    await Overworld.act([{ who: "player", moves: at.y <= 6 ? M("SSAnne_Exterior_Movement_WalkDown") : M("Common_Movement_WalkInPlaceFasterDown") }]);
+    music("mus_surf");
+    await new Promise((r) => setTimeout(r, 800));
+    await Overworld.act([{ who: "LOCALID_SS_ANNE", moves: Array(12).fill("walk_slow_left") }]);
+    Overworld.removeObject("LOCALID_SS_ANNE");
+    f.ssAnneDeparted = true;
+    await Overworld.act([{ who: "player", moves: M("SSAnne_Exterior_Movement_Exit") }]);
+    await Overworld.teleport({ map: "VermilionCity", x: 23, y: 34, facing: "up" });
+    await Overworld.act([{ who: "player", moves: M("VermilionCity_Movement_ExitSSAnne") }]);
+  }
+
   // ---------- Escape Rope ----------
   //
   // As in FireRed: it works only where the map allows escaping (caves, Viridian
@@ -3292,6 +3394,7 @@
     // blacking out (FireRed's setrespawn there).
     if (script === "enter:Route4_PokemonCenter_1F") { player.flags.lastCenter = "Route4_PokemonCenter_1F"; return false; }
     // (FireRed's FLAG_TEMP_2 and 3: Bill in the Teleporter, back after the ticket.)
+    if (script === "enter:SSAnne_Exterior") return ssAnneDeparting();
     if (script === "enter:Route25_SeaCottage") { billInTeleporter = billJustOut = false; seaCottageReturn = !!player.flags.gotSSTicket; return false; }
     return SPECIAL.has(script) || ITEM_BALLS.has(script) || TRAINER_SCRIPTS.has(script);
   }

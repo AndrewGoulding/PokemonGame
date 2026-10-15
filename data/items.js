@@ -560,6 +560,13 @@ window.ITEMS = {
   // --- From FireRed's Nugget Bridge and Route 25 (added) ---
   "nugget": { name: "nugget", category: "loot", effect: "A nugget of pure gold that gives off a lustrous gleam. It can be sold at a high price." },
   "ss-ticket": { name: "ss-ticket", category: "key-items", effect: "The ticket required for sailing on the ship S.S. Anne. It has a drawing of the ship on it." },
+  "x-attack": { name: "x-attack", category: "stat-boosts", effect: "Raises the Attack of the Pokémon in battle by one stage." },
+  "x-defense": { name: "x-defense", category: "stat-boosts", effect: "Raises the Defense of the Pokémon in battle by one stage." },
+  "x-sp-atk": { name: "x-sp-atk", category: "stat-boosts", effect: "Raises the Special Attack of the Pokémon in battle by one stage." },
+  "x-sp-def": { name: "x-sp-def", category: "stat-boosts", effect: "Raises the Special Defense of the Pokémon in battle by one stage." },
+  "x-speed": { name: "x-speed", category: "stat-boosts", effect: "Raises the Speed of the Pokémon in battle by one stage." },
+  "x-accuracy": { name: "x-accuracy", category: "stat-boosts", effect: "Raises the accuracy of the Pokémon in battle by one stage." },
+  "stardust": { name: "stardust", category: "loot", effect: "Lovely, red-colored sand with a loose, silky feel. It can be sold at a high price." },
   "bike-voucher": { name: "bike-voucher", category: "key-items", effect: "A voucher for obtaining a Bicycle from the Bike Shop." },
   "bluk-berry": { name: "bluk-berry", category: "baking-only", effect: "Can be ground into a powder as an ingredient for medicine." }
 };

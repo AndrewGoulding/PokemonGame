@@ -95,7 +95,12 @@ const MAPS = [
   "UndergroundPath_NorthSouthTunnel", "UndergroundPath_SouthEntrance", "Route6", "Route6_NorthEntrance",
   "VermilionCity", "VermilionCity_PokemonCenter_1F", "VermilionCity_PokemonCenter_2F", "VermilionCity_Mart",
   "VermilionCity_Gym", "VermilionCity_House1", "VermilionCity_House2", "VermilionCity_House3",
-  "VermilionCity_PokemonFanClub", "SSAnne_Exterior"
+  "VermilionCity_PokemonFanClub", "SSAnne_Exterior",
+  "SSAnne_1F_Corridor", "SSAnne_1F_Room1", "SSAnne_1F_Room2", "SSAnne_1F_Room3", "SSAnne_1F_Room4",
+  "SSAnne_1F_Room5", "SSAnne_1F_Room6", "SSAnne_1F_Room7", "SSAnne_2F_Corridor", "SSAnne_2F_Room1",
+  "SSAnne_2F_Room2", "SSAnne_2F_Room3", "SSAnne_2F_Room4", "SSAnne_2F_Room5", "SSAnne_2F_Room6",
+  "SSAnne_3F_Corridor", "SSAnne_Deck", "SSAnne_CaptainsOffice", "SSAnne_B1F_Corridor", "SSAnne_B1F_Room1",
+  "SSAnne_B1F_Room2", "SSAnne_B1F_Room3", "SSAnne_B1F_Room4", "SSAnne_B1F_Room5", "SSAnne_Kitchen"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
@@ -215,7 +220,8 @@ const NUM_PRIMARY_TILES = 640, NUM_PRIMARY_METATILES = 640, NUM_PRIMARY_PALS = 7
 
 
 function tilesetDir(symbol) {
-  const snake = symbol.replace(/^gTileset_/, "").replace(/([a-z])([A-Z0-9])/g, "$1_$2").replace(/([0-9])([A-Z])/g, "$1_$2").toLowerCase();
+  const snake = { gTileset_SSAnne: "ss_anne" }[symbol] ||
+    symbol.replace(/^gTileset_/, "").replace(/([a-z])([A-Z0-9])/g, "$1_$2").replace(/([0-9])([A-Z])/g, "$1_$2").toLowerCase();
   for (const kind of ["primary", "secondary"]) {
     const dir = path.join(root, "assets/tilesets", kind, snake);
     if (fs.existsSync(dir)) return dir;

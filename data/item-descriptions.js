@@ -152,6 +152,7 @@ window.ITEM_DESCRIPTIONS = {
   "spell-tag": "An item to be held by a Pokémon.\nA sinister, eerie tag that boosts\nGhost-type moves.",
   "ss-ticket": "The ticket required for sailing on\nthe ferry S.S. Anne.\nIt has a drawing of a ship on it.",
   "star-piece": "A shard of a pretty gem that\nsparkles in a red color.\nIt can be sold at a high price.",
+  "stardust": "A pretty red sand with a loose,\nsilky feel.\nIt can be sold at a high price.",
   "starf-berry": "When held by a Pokémon, it sharply\nraises one stat in a pinch.",
   "stick": "A stick of leek to be held by a\nFarfetch'D. It raises Farfetch'D's\ncritical-hit ratio.",
   "sun-stone": "A peculiar stone that makes certain\nspecies of Pokémon evolve.\nIt is as red as the sun.",
@@ -171,6 +172,9 @@ window.ITEM_DESCRIPTIONS = {
   "white-flute": "A white glass flute.\nWhen blown, it makes wild Pokémon\nmore likely to appear.",
   "white-herb": "An item to be held by a Pokémon.\nIt restores any lowered stat in\nbattle. It can be used only once.",
   "wiki-berry": "A hold item that restores HP but\nmay cause confusion when used.",
+  "x-accuracy": "Raises the accuracy stat of\nPokémon in battle. Wears off if the\nPokémon is withdrawn.",
+  "x-attack": "Raises the Attack stat of Pokémon\nin battle. Wears off if the Pokémon\nis withdrawn.",
+  "x-speed": "Raises the Speed stat of Pokémon\nin battle. Wears off if the Pokémon\nis withdrawn.",
   "yellow-flute": "A yellow glass flute that snaps one\nPokémon out of confusion.",
   "yellow-shard": "A small yellow shard.\nIt appears to be from some sort of\na tool made long ago.",
   "zinc": "A nutritious drink for Pokémon.\nIt raises the base Sp. Def stat\nof one Pokémon."

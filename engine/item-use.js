@@ -41,6 +41,9 @@
     "ether": { pp: 10, oneMove: true }, "max-ether": { pp: Infinity, oneMove: true },
     "leppa-berry": { pp: 10, oneMove: true },
     "elixir": { pp: 10 }, "max-elixir": { pp: Infinity },
+    // Battle items: one stage up for the Pokémon in battle (Gen 6).
+    "x-attack": { boost: "atk" }, "x-defense": { boost: "def" }, "x-sp-atk": { boost: "spa" },
+    "x-sp-def": { boost: "spd" }, "x-speed": { boost: "spe" }, "x-accuracy": { boost: "accuracy" },
     // Outside battle only
     "pp-up": { ppUp: 1, oneMove: true, outOfBattle: true }, "pp-max": { ppUp: 3, oneMove: true, outOfBattle: true },
     "rare-candy": { levelUp: true, outOfBattle: true },
@@ -64,6 +67,7 @@
     const eff = EFFECTS[item];
     if (!eff) return false;
     if (eff.outOfBattle && opts.inBattle) return false;
+    if (eff.boost) return !!opts.inBattle && !!target.isActive && !target.fainted && ((target.boosts || {})[eff.boost] || 0) < 6;
     if (eff.revive) return !!target.fainted;
     if (target.fainted) return false;
     if (eff.levelUp) return target.level < 100;
@@ -90,6 +94,7 @@
     const eff = EFFECTS[item];
     const out = {};
     if (!eff) return out;
+    if (eff.boost) { out.boost = eff.boost; return out; }
     if (eff.revive) {
       target.fainted = false;
       target.hp = Math.max(1, Math.floor(target.maxhp * eff.revive));
