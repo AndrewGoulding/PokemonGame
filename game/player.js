@@ -289,8 +289,15 @@
     if (player.flags.parcelDelivered && player.flags.pokedex === undefined) player.flags.pokedex = true;
     player.look = lookOf(data.look);
     player.rival = String(data.rival || RIVAL_NAME).slice(0, 12);
-    const loc = data.location;
+    let loc = data.location;
     const known = (m) => !window.WORLD_MAPS || !!window.WORLD_MAPS[m];
+    // Saves made upstairs in a Poké Mart (its 2F is gone: the Move Relearner and
+    // Deleter are upstairs in the Pokémon Centers now): just inside its door.
+    const mart1F = loc && /_Mart_2F$/.test(loc.map) && loc.map.replace(/_2F$/, "");
+    if (mart1F && window.WORLD_MAPS && window.WORLD_MAPS[mart1F]) {
+      const door = window.WORLD_MAPS[mart1F].warps[0];
+      loc = { map: mart1F, x: door.x, y: door.y - 1, facing: "up" };
+    }
     if (loc && known(loc.map)) {
       player.location = { map: loc.map, x: loc.x | 0, y: loc.y | 0, facing: loc.facing || "down" };
     } else {

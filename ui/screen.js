@@ -9,8 +9,9 @@
 (function () {
   "use strict";
 
-  const MESSAGE_MS = 1100;   // how long each message stays up (A to skip), at MID text speed
+  const MESSAGE_MS = 1100;   // how long each message stays up once written (A to skip), at MID text speed
   let textSpeed = 1;         // the Option screen's TEXT SPEED: times MESSAGE_MS
+  let charMs = 4000 / 60;    // ...and the time per letter: FireRed's 8, 4 or 1 frames (SLOW, MID, FAST)
 
   const textbox = document.getElementById("textbox");
   const menu = document.getElementById("menu");
@@ -22,13 +23,35 @@
   // wrapping on a narrow screen) gets a smaller font until it fits.
   // The box is only on screen while it has something to say (in a battle
   // it always is: see the CSS).
+  // As in FireRed, the text is written out a letter at a time; A (or B)
+  // finishes it at once. `printed()` resolves once it's all there.
+  let printing = null;   // { finish, done } while a text is being written out
   function say(text) {
+    text = String(text == null ? "" : text);
+    if (printing) printing.finish();
+    textbox.classList.remove("more");
     textbox.textContent = text;
-    textbox.classList.toggle("empty", !String(text || "").trim());
+    textbox.classList.toggle("empty", !text.trim());
     textbox.style.fontSize = "";
     let size = parseFloat(getComputedStyle(textbox).fontSize);
     while (textbox.scrollHeight > textbox.clientHeight + 1 && size > 10) textbox.style.fontSize = (size -= 1) + "px";
+    if (!text.trim() || !charMs) return;
+    let n = 0, resolve;
+    const state = { done: new Promise((r) => { resolve = r; }) };
+    const timer = setInterval(() => { textbox.textContent = text.slice(0, ++n); if (n >= text.length) state.finish(); }, charMs);
+    state.finish = () => {
+      clearInterval(timer);
+      textbox.textContent = text;
+      if (printing === state) printing = null;
+      resolve();
+    };
+    textbox.textContent = "";
+    printing = state;
   }
+  const printed = () => (printing ? printing.done : Promise.resolve());
+
+  // Waiting for A once the text is all there: FireRed's ▼ bobs in the corner.
+  function more(on) { textbox.classList.toggle("more", on); }
 
   function wait(ms) {
     return new Promise((resolve) => {
@@ -38,19 +61,26 @@
     });
   }
 
-  // Shows text until the player clicks or presses a key (for signs and people).
-  function read(text) {
+  // Shows text until the player presses A (for signs and people).
+  async function read(text) {
     say(text);
     clearMenu();
-    return new Promise((resolve) => {
+    await printed();
+    more(true);
+    await new Promise((resolve) => {
       const done = () => { if (skipWait === done) skipWait = null; resolve(); };
       skipWait = done;
     });
+    more(false);
   }
 
+  // Shows text, written out, then a moment more (A moves it on).
   async function message(text, ms) {
     say(text);
+    await printed();
+    more(true);
     await wait(ms || MESSAGE_MS * textSpeed);
+    more(false);
   }
 
   function clearMenu() { menu.innerHTML = ""; }
@@ -106,9 +136,9 @@
 
   // A or B (Z / X, Space / Enter) while no menu is up moves the text on.
   document.addEventListener("keydown", (e) => {
-    if ([" ", "Enter", "z", "Z", "x", "X"].includes(e.key) && !e.repeat && skipWait && !menu.querySelector("button")) {
+    if ([" ", "Enter", "z", "Z", "x", "X"].includes(e.key) && !e.repeat && (printing || skipWait) && !menu.querySelector("button")) {
       e.preventDefault();
-      skipWait();
+      if (printing) printing.finish(); else skipWait();
     }
   });
 
@@ -214,6 +244,7 @@
   }
 
   const setTextSpeed = (f) => { textSpeed = f; };
+  const setCharDelay = (ms) => { charMs = ms; };
 
-  window.Screen = { MESSAGE_MS, setTextSpeed, spriteUrl, setSprite, clearSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, clearMenu, learnMovePrompt };
+  window.Screen = { MESSAGE_MS, setTextSpeed, setCharDelay, printed, spriteUrl, setSprite, clearSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, clearMenu, learnMovePrompt };
 })();

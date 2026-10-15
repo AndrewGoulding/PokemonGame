@@ -68,10 +68,10 @@
         el.addEventListener("click", () => finish({ pick: el.dataset.pick }));
       }
       ask(text, options).then(finish);
-      // A list (bag, Mart, PC items): the cursor starts on its first row, not
-      // on Back.
-      const row = scene.querySelector(".rows .row[data-pick]");
-      if (row) row.focus();
+      // A list (bag, Mart, PC items, the Pokédex): the cursor starts on its
+      // first row (or the one marked data-focus), not on Back.
+      const row = ["[data-pick][data-focus]", ".rows .row[data-pick]", ".dex [data-pick]"].map((q) => scene.querySelector(q)).find(Boolean);
+      if (row) { row.focus(); row.scrollIntoView({ block: "nearest" }); }
     });
   }
 
@@ -1019,23 +1019,45 @@
   }
 
   async function pokedex() {
+    let last = null;   // back on the one you looked at
     for (;;) {
       const seen = new Set(player.pokedex.seen.map((s) => DEX[s].id));
       const caught = new Set(player.pokedex.caught.map((s) => DEX[s].id));
       const html = '<p class="dex-counts">Seen: <b>' + seen.size + "</b> · Caught: <b>" + caught.size + "</b> of " + dexList().length + "</p>" +
         '<div class="dex">' + dexList().map((e) => {
           const num = "#" + String(e.id).padStart(3, "0");
-          if (!seen.has(e.id)) return '<div class="dex-entry unseen"><span>' + num + "</span>?</div>";
-          return '<button type="button" class="dex-entry' + (caught.has(e.id) ? " caught" : " seen") + '" data-pick="' + e.species + '">' +
+          // (Unseen ones take the cursor too, so the D-pad goes row by row; A does nothing on them.)
+          if (!seen.has(e.id)) return '<div class="dex-entry unseen" tabindex="-1" data-pick="unseen:' + e.species + '"' +
+            (e.species === last ? " data-focus" : "") + "><span>" + num + "</span>?</div>";
+          return '<button type="button" class="dex-entry' + (caught.has(e.id) ? " caught" : " seen") + '" data-pick="' + e.species + '"' +
+            (e.species === last ? " data-focus" : "") + ">" +
             "<span>" + num + "</span>" + spriteTag(e.species, "", 'loading="lazy" alt=""') +
             "<small>" + window.Screen.ballIcon(caught.has(e.id)) + escapeHtml(Party.speciesName(e.species)) + "</small></button>";
         }).join("") + "</div>";
-      const v = await pick("Pokédex. Choose a Pokémon for its entry.", html, [back("Close")]);
+      const v = await pick("", html, [back("Close")]);
       if (v === "back") return;
-      const d = DEX[v.pick];
-      await message("#" + String(d.id).padStart(3, "0") + " " + Party.speciesName(v.pick) + ": " + d.types.join("/") + " type. " +
-        "Height " + d.height + " m, weight " + d.weight + " kg." + (Player.hasCaught(player, v.pick) ? "" : " (Seen, not caught.)"), 2500);
+      if (v.pick.startsWith("unseen:")) { last = v.pick.slice(7); continue; }
+      last = v.pick;
+      await pokedexEntry(v.pick);
     }
+  }
+
+  // A species' page, as FireRed's Pokédex shows it: number and name, its
+  // category, height and weight, picture and description
+  // (data/pokedex-text.js). One you've only seen shows its name and picture.
+  async function pokedexEntry(species) {
+    const d = DEX[species], caught = Player.hasCaught(player, species);
+    const text = (window.POKEDEX_TEXT || {})[d.id] || {};
+    const html = '<div class="dex-page">' +
+      '<div class="dex-page-top">' + spriteTag(species, "", 'class="dex-page-pic" alt=""') +
+        '<div class="dex-page-info"><b>No. ' + String(d.id).padStart(3, "0") + " " + escapeHtml(Party.speciesName(species)) + "</b>" +
+        "<div>" + (caught && text.category ? escapeHtml(text.category) + " Pokémon" : "????? Pokémon") + "</div>" +
+        "<div>Type: " + (caught ? d.types.join(" / ") : "?????") + "</div>" +
+        "<div>HT " + (caught ? d.height + " m" : "??? m") + "</div>" +
+        "<div>WT " + (caught ? d.weight + " kg" : "??? kg") + "</div></div></div>" +
+      (caught && text.description ? '<p class="dex-page-text">' + escapeHtml(text.description) + "</p>" : "") +
+      "</div>";
+    await pick("", html, [back("Back")]);
   }
 
   // ---------- Trainer card ----------
@@ -1306,7 +1328,7 @@
     "Route1_EventScript_MartClerk", "PalletTown_RivalsHouse_EventScript_Daisy", "PalletTown_ProfessorOaksLab_EventScript_LeaveStarterSceneTrigger",
     "PalletTown_ProfessorOaksLab_EventScript_Rival", "PalletTown_ProfessorOaksLab_EventScript_ProfOak",
     "PalletTown_EventScript_SignLady", "PalletTown_EventScript_SignLadyTrigger", "PalletTown_EventScript_TrainerTips",
-    "MartUpstairs_EventScript_MoveRelearner", "MartUpstairs_EventScript_MoveDeleter",
+    "CenterUpstairs_EventScript_MoveRelearner", "CenterUpstairs_EventScript_MoveDeleter",
     "ViridianCity_EventScript_RoadBlocked",
     "ViridianCity_EventScript_TutorialTriggerLeft", "ViridianCity_EventScript_TutorialTriggerRight",
     "ViridianCity_EventScript_TutorialOldMan", "ViridianCity_EventScript_Woman", "ViridianCity_EventScript_Youngster",
@@ -1467,8 +1489,8 @@
       case "PalletTown_EventScript_SignLady":
         await signLady(ev.person);
         return;
-      case "MartUpstairs_EventScript_MoveRelearner": await moveRelearner(); return;
-      case "MartUpstairs_EventScript_MoveDeleter": await moveDeleter(); return;
+      case "CenterUpstairs_EventScript_MoveRelearner": await moveRelearner(); return;
+      case "CenterUpstairs_EventScript_MoveDeleter": await moveDeleter(); return;
       case "PalletTown_EventScript_SignLadyTrigger":
         // Walking past her by the north exit, she shows you what she copied.
         if (!f.starter || f.signLady) return;

@@ -126,6 +126,24 @@ const battle = {
   writePng(path.join(root, "assets/battle-interface/message-box.png"), W, H, rgba);
 }
 
+// ---------- The text box's ▼ (src/text.c TextPrinterDrawDownArrow) ----------
+//
+// assets/text/down-arrow.png: the red arrow's three positions (10x12 each, side
+// by side), from graphics/fonts/down_arrows.png at x 0, 16 and 32; FireRed
+// shows them in the order 0, 1, 2, 1, eight frames each.
+{
+  const img = readPng(P("graphics/fonts/down_arrows.png"));
+  const W = 30, H = 12, rgba = new Uint8ClampedArray(W * H * 4);
+  for (let f = 0; f < 3; f++) for (let y = 0; y < H; y++) for (let x = 0; x < 10; x++) {
+    const v = img.px[y * img.width + f * 16 + x];
+    if (!v) continue;
+    const c = img.palette[v];
+    rgba.set([c[0], c[1], c[2], 255], (y * W + f * 10 + x) * 4);
+  }
+  fs.mkdirSync(path.join(root, "assets/text"), { recursive: true });
+  writePng(path.join(root, "assets/text/down-arrow.png"), W, H, rgba);
+}
+
 // ---------- Palettes ----------
 
 const palettes = {

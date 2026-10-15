@@ -13,6 +13,7 @@
   const KEY = "pokemon-options";
   const DEFAULTS = { textSpeed: 1, battleScene: 0, sound: 1, frame: 0 };
   const TEXT_SPEED = [1.5, 1, 0.6];   // SLOW, MID, FAST: times the usual message time
+  const CHAR_FRAMES = [8, 4, 1];      // ...and frames per letter as the text is written (sTextSpeedFrameDelays)
 
   let opts = Object.assign({}, DEFAULTS);
   try { Object.assign(opts, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) { /* storage blocked */ }
@@ -38,7 +39,10 @@
   }
 
   function apply() {
-    if (window.Screen && window.Screen.setTextSpeed) window.Screen.setTextSpeed(TEXT_SPEED[opts.textSpeed] || 1);
+    if (window.Screen && window.Screen.setTextSpeed) {
+      window.Screen.setTextSpeed(TEXT_SPEED[opts.textSpeed] || 1);
+      window.Screen.setCharDelay((CHAR_FRAMES[opts.textSpeed] || 4) * 1000 / 60);
+    }
     if (window.GameAudio) {
       window.GameAudio.setMono(opts.sound === 0);
       if (window.GameAudio.enabled() !== (opts.sound !== 2)) window.GameAudio.setEnabled(opts.sound !== 2);

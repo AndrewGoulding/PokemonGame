@@ -284,9 +284,99 @@
     }
   }
 
+  // ---------- Animations and sound effects ----------
+  //
+  // FireRed's sound effects (ui/audio.js GameAudio.se): a move's own (se_m_*,
+  // when FireRed has one by its name) or one for its type, the hit by how
+  // effective it was, fainting, stat changes, the balls, running, Exp. Each
+  // move animates by its kind, in its type's colour: a physical move lunges at
+  // the target, a special one sends an orb over, a status move rings the
+  // target or glows round the user. BATTLE SCENE: OFF (the Option screen)
+  // leaves the animations, and their sounds, out.
+  const sceneOn = () => !(window.GameOptions && window.GameOptions.get().battleScene === 1);
+  const sfx = (name) => { if (name && window.GameAudio && window.GameAudio.se) window.GameAudio.se(name); };
+  const TYPE_SE = {   // [physical, special / status]
+    Normal: ["se_m_comet_punch", "se_m_swift"], Fire: ["se_m_fire_punch", "se_m_flamethrower"], Water: ["se_m_crabhammer", "se_m_surf"],
+    Electric: ["se_m_thunder_wave", "se_m_thunderbolt"], Grass: ["se_m_cut", "se_m_absorb"], Ice: ["se_m_icy_wind", "se_m_blizzard"],
+    Fighting: ["se_m_mega_kick", "se_m_vital_throw"], Poison: ["se_m_toxic", "se_m_toxic"], Ground: ["se_m_dig", "se_m_earthquake"],
+    Flying: ["se_m_wing_attack", "se_m_gust"], Psychic: ["se_m_psybeam", "se_m_psybeam"], Bug: ["se_m_string_shot", "se_m_string_shot"],
+    Rock: ["se_m_rock_throw", "se_m_rock_throw"], Ghost: ["se_m_lick", "se_m_nightmare"], Dragon: ["se_m_dragon_rage", "se_m_dragon_rage"],
+    Dark: ["se_m_bite", "se_m_faint_attack"], Steel: ["se_m_vicegrip", "se_m_harden"], Fairy: ["se_m_charm", "se_m_moonlight"]
+  };
+  const TYPE_COLOR = {
+    Normal: "#c6c6a7", Fire: "#f08030", Water: "#6890f0", Electric: "#f8d030", Grass: "#78c850", Ice: "#98d8d8",
+    Fighting: "#c03028", Poison: "#a040a0", Ground: "#e0c068", Flying: "#a890f0", Psychic: "#f85888", Bug: "#a8b820",
+    Rock: "#b8a038", Ghost: "#705898", Dragon: "#7038f8", Dark: "#705848", Steel: "#b8b8d0", Fairy: "#ee99ac"
+  };
+  function moveSound(name, data) {
+    const own = "se_m_" + name.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+    if (window.MUSIC_DATA && window.MUSIC_DATA.songs[own]) return own;
+    const t = TYPE_SE[data.type] || TYPE_SE.Normal;
+    return data.cat === "Physical" ? t[0] : t[1];
+  }
+  // Where a side's Pokémon is, in % of the field (its picture's middle).
+  function centerOf(side) {
+    const f = el.field.getBoundingClientRect(), r = el.sides[side].sprite.getBoundingClientRect();
+    return [((r.left + r.width / 2) - f.left) / f.width * 100, ((r.top + r.height / 2) - f.top) / f.height * 100];
+  }
+  async function animateMove(side, name) {
+    const data = window.MOVES && window.MOVES[name];
+    if (!data || !sceneOn()) return;
+    const foeSide = side === "p1" ? "p2" : "p1";
+    const user = el.sides[side].sprite, target = el.sides[foeSide].sprite;
+    const color = TYPE_COLOR[data.type] || "#fff";
+    const self = data.cat === "Status" && /^(self|allySide|allies|adjacentAllyOrSelf|all)$/.test(data.target);
+    sfx(moveSound(name, data));
+    if (data.cat === "Physical") {
+      // A lunge at the target and back.
+      const [dx, dy] = side === "p1" ? [14, -10] : [-14, 10];
+      await user.animate([{ transform: "translate(0, 0)" }, { transform: "translate(" + dx + "%, " + dy + "%)", offset: 0.4 },
+        { transform: "translate(0, 0)" }], { duration: 380, easing: "ease-in-out" }).finished;
+      return;
+    }
+    if (self) {
+      // A glow round the user, twice.
+      await user.animate([{ filter: "none" }, { filter: "drop-shadow(0 0 6px " + color + ") brightness(1.4)" }, { filter: "none" },
+        { filter: "drop-shadow(0 0 6px " + color + ") brightness(1.4)" }, { filter: "none" }], { duration: 700 }).finished;
+      return;
+    }
+    const fx = document.createElement("div");
+    fx.className = "move-fx";
+    fx.style.setProperty("--fx", color);
+    el.field.appendChild(fx);
+    const [x1, y1] = centerOf(foeSide);
+    if (data.cat === "Special") {
+      // An orb from the user to the target.
+      const [x0, y0] = centerOf(side);
+      fx.classList.add("orb");
+      await fx.animate([{ left: x0 + "%", top: y0 + "%", transform: "translate(-50%, -50%) scale(0.6)" },
+        { left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(1.2)" }], { duration: 380, easing: "ease-in" }).finished;
+      await fx.animate([{ left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(1.2)", opacity: 1 },
+        { left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(2.4)", opacity: 0 }], { duration: 200 }).finished;
+    } else {
+      // Rings closing in on the target.
+      fx.classList.add("ring");
+      await fx.animate([{ left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(2)", opacity: 0 },
+        { left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(1)", opacity: 1, offset: 0.5 },
+        { left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(0.4)", opacity: 0 }], { duration: 600 }).finished;
+    }
+    fx.remove();
+    void target;
+  }
+  // A stat rising (red) or falling (blue) on a Pokémon, with FireRed's sound.
+  async function animateStat(side, up) {
+    if (!sceneOn()) return;
+    sfx(up ? "se_m_stat_increase" : "se_m_stat_decrease");
+    const c = up ? "#ff5040" : "#4080ff";
+    await el.sides[side].sprite.animate([{ filter: "none" }, { filter: "drop-shadow(0 0 4px " + c + ") brightness(1.2)" }, { filter: "none" },
+      { filter: "drop-shadow(0 0 4px " + c + ") brightness(1.2)" }, { filter: "none" }], { duration: 600 }).finished;
+  }
+  // FireRed puts "A critical hit!" and how effective it was after the hit.
+  let hitNotes = [], hitSound = null;
+
   function flash(id) {
     // BATTLE SCENE: OFF (the Option screen) leaves out the hit animation.
-    if (window.GameOptions && window.GameOptions.get().battleScene === 1) return;
+    if (!sceneOn()) return;
     const sprite = el.sides[id].sprite;
     sprite.classList.remove("hit");
     void sprite.offsetWidth; // restart the animation
@@ -377,10 +467,23 @@
         v.form = "";
         renderSide(side);
         return null;
-      case "move": return fill("{who} used " + b + "!", a);
+      case "move": {
+        hitNotes = []; hitSound = null;
+        const text = fill("{who} used " + b + "!", a);
+        return async () => { await message(text, 400); await animateMove(side, b); };
+      }
       case "-damage": {
         const changed = setHp(a, b);
-        if (!c) return changed ? { pause: HP_ANIM_MS } : null;
+        if (!c) {
+          // A move's hit: its sound by how effective it was, the HP going down,
+          // then "A critical hit!" / "It's super effective!".
+          const notes = hitNotes, sound = hitSound || "se_effective";
+          hitNotes = []; hitSound = null;
+          return async () => {
+            if (changed) { sfx(sound); await wait(HP_ANIM_MS); }
+            for (const n of notes) await message(n);
+          };
+        }
         const msg = fill(lookup(DAMAGE_FROM, effectId(c), "{who} was hurt by " + effectName(c) + "!"), a);
         return msg || (changed ? { pause: HP_ANIM_MS } : null);
       }
@@ -396,6 +499,7 @@
         return "The battlers shared their pain!";
       case "faint":
         cry(side, { faint: true });
+        setTimeout(() => sfx("se_faint"), 300);
         // The foe's last Pokémon down: the victory theme (over the Exp. messages).
         if (side === "p2" && config.victoryMusic && window.GameAudio && battle.sides.p2.pokemon.every((m) => m.fainted)) {
           window.GameAudio.music(config.victoryMusic);
@@ -405,9 +509,9 @@
         renderSide(side);
         return fill("{who} fainted!", a);
       case "-miss": return fill("{who}'s attack missed!", a);
-      case "-crit": return "A critical hit!";
-      case "-supereffective": return "It's super effective!";
-      case "-resisted": return "It's not very effective...";
+      case "-crit": hitNotes.push("A critical hit!"); return null;
+      case "-supereffective": hitNotes.push("It's super effective!"); hitSound = "se_super_effective"; return null;
+      case "-resisted": hitNotes.push("It's not very effective..."); hitSound = "se_not_effective"; return null;
       case "-immune":
         if (/^\[from\] ability: /.test(b || "")) return fill("{who}'s " + effectName(b) + " made the move fail!", a);
         return fill("It doesn't affect {whom}...", a);
@@ -425,8 +529,9 @@
       case "-unboost": {
         const stat = STAT_NAMES[b] || b;
         const big = (+c || 1) > 1;
-        if (type === "-boost") return fill("{who}'s " + stat + (big ? " rose sharply!" : " rose!"), a);
-        return fill("{who}'s " + stat + (big ? " harshly fell!" : " fell!"), a);
+        const text = type === "-boost" ? fill("{who}'s " + stat + (big ? " rose sharply!" : " rose!"), a)
+          : fill("{who}'s " + stat + (big ? " harshly fell!" : " fell!"), a);
+        return async () => { await animateStat(side, type === "-boost"); await message(text); };
       }
       case "-setboost": return fill("{who} cut its own HP and maximized its " + (STAT_NAMES[b] || b) + "!", a);
       case "-clearallboost": return "All stat changes were eliminated!";
@@ -462,6 +567,7 @@
       // ----- Progression -----
       case "-exp":   // [ident, amount, teamIndex, progress, "share"?]
         return async () => {
+          if (ev[5] !== "share" && view.p1.teamIndex === +c) sfx("se_exp");   // the bar filling
           setExp(c, ev[4]);
           // The Exp. Share's half goes by quietly after one message, as in Gen 6.
           if (ev[5] !== "share") await message(teamName(c) + " gained " + b + " Exp. Points!");
@@ -495,18 +601,24 @@
       case "-ball":   // [side, ball, target, shakes, "caught"|""]
         return async () => {
           await message("You threw a " + ballName(b) + "!", 700);
+          sfx("se_ball_throw");
           el.ball.src = "assets/sprites/items/ball/" + b.replace(/-ball$/, "") + ".png";
           el.ball.classList.remove("hidden", "shake", "caught");
           view.p2.inBall = true;
           renderSide("p2");
+          // In it goes (FireRed: SE_BALL_TRADE), then the ball drops and bounces.
+          setTimeout(() => sfx("se_ball_trade"), 150);
+          setTimeout(() => sfx("se_ball_bounce_1"), 380);
           await wait(500);
           for (let i = 0; i < +ev[4]; i++) {
             el.ball.classList.remove("shake");
             void el.ball.offsetWidth;
             el.ball.classList.add("shake");
+            sfx("se_ball");
             await wait(SHAKE_MS);
           }
           if (ev[5] === "caught") { el.ball.classList.add("caught"); return; }
+          sfx("se_ball_trade");
           el.ball.classList.add("hidden");
           view.p2.inBall = false;
           renderSide("p2");
@@ -536,7 +648,7 @@
           if (ev[8]) await message(fill("{who} snapped out of its confusion!", c));
           if (+ev[10] > 0) await message(name + "'s PP was restored.");
         };
-      case "-run": return "Got away safely!";
+      case "-run": sfx("se_flee"); return "Got away safely!";
       case "-runfail": return "You couldn't get away!";
 
       case "win":
@@ -548,6 +660,12 @@
   }
 
   async function playEvent(ev) {
+    // (A critical hit or effectiveness with no hit after it, e.g. on a Substitute.)
+    if (hitNotes.length && !["-damage", "-crit", "-supereffective", "-resisted"].includes(ev[0])) {
+      const notes = hitNotes;
+      hitNotes = []; hitSound = null;
+      for (const n of notes) await message(n);
+    }
     const out = applyEvent(ev);
     if (typeof out === "string") await message(out);
     else if (typeof out === "function") await out();
@@ -966,7 +1084,9 @@
     renderSide(side);
     el.sides[side].info.classList.add("hidden");
     if (delay) await wait(delay);
+    sfx("se_ball_throw");
     await Promise.all([throwBall(side, from, ball), spriteReady(sprite)]);
+    sfx("se_ball_trade");   // out it comes (FireRed's sound for the ball opening)
     const grow = sprite.animate([
       { transform: "scale(0.1)", filter: "brightness(0) invert(1)", opacity: 1 },
       { transform: "scale(1)", filter: "brightness(0) invert(1)", opacity: 1, offset: 0.55 },

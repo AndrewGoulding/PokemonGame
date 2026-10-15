@@ -201,14 +201,19 @@ for (const line of fs.readFileSync(S("songs/midi/midi.cfg"), "utf8").split("\n")
   cfg[m[1]] = { group: opt("G"), vol: +(opt("V") || 127), reverb: +(opt("R") || 0), exact: /-E\b/.test(m[2]) };
 }
 
-// The sound effects the game plays (se_*.mid): the Poké Balls going into a
-// Pokémon Center's healing machine, and the menus' select sound.
-const SOUND_EFFECTS = ["se_ball", "se_select"];
+// The sound effects the game plays (se_*.mid): the menus' select sound, the
+// Poké Balls (the healing machine, throwing, a Pokémon going in or coming out,
+// bouncing and shaking), hits by how effective they are, fainting, running,
+// Exp., stat changes, and every move sound FireRed has (se_m_*).
+const SOUND_EFFECTS = ["se_ball", "se_select", "se_ball_throw", "se_ball_trade", "se_ball_bounce_1", "se_ball_bounce_2",
+  "se_ball_bounce_3", "se_ball_bounce_4", "se_effective", "se_super_effective", "se_not_effective", "se_faint", "se_flee",
+  "se_exp"];
+const isSoundEffect = (name) => SOUND_EFFECTS.includes(name) || /^se_m_/.test(name);
 
 // Flat per-track event lists to keep the file small: [tick, kind, a, b, c] ...
 const songs = {};
 for (const [name, c] of Object.entries(cfg)) {
-  if (!/^mus_/.test(name) && !SOUND_EFFECTS.includes(name)) continue;
+  if (!/^mus_/.test(name) && !isSoundEffect(name)) continue;
   const file = S("songs/midi", name + ".mid");
   if (!fs.existsSync(file)) continue;
   const label = "voicegroup" + String(c.group).padStart(3, "0");

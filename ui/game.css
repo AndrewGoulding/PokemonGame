@@ -1,13 +1,17 @@
 /* Party screen, starter choice and evolution */
 
 .scene {
-  /* The same size as the map: whatever doesn't fit scrolls. */
+  /* The same size as the map: whatever doesn't fit scrolls with the cursor
+     (the D-pad), with no scroll bars. */
+  scrollbar-width: none;
   height: 100%;
   overflow-y: auto;
   padding: 14px;
   background: linear-gradient(to bottom, #e8f6ff, #cdeaf9);
 }
 .scene.hidden { display: none; }
+.scene::-webkit-scrollbar, .scene *::-webkit-scrollbar, .menu::-webkit-scrollbar { display: none; }
+.scene *, .menu { scrollbar-width: none; }
 
 /* ---------- Party ---------- */
 
@@ -174,8 +178,16 @@
 .dex-counts { margin: 0 0 8px; }
 .dex {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 4px;
-  max-height: 440px; overflow-y: auto;
 }
+/* A species' page. */
+.dex-page { display: flex; flex-direction: column; gap: 10px; }
+.dex-page-top { display: flex; gap: 14px; align-items: center; }
+.dex-page-pic { width: 40%; max-width: 180px; image-rendering: pixelated; background: #fbfbf2;
+  border: 3px solid #3c4048; border-radius: 10px; }
+.dex-page-info { display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
+.dex-page-info b { font-size: 18px; }
+.dex-page-text { margin: 0; padding: 8px 12px; background: #fbfbf2; border: 3px solid #3c4048; border-radius: 10px;
+  white-space: pre-line; font-size: 14px; line-height: 1.4; }
 .dex-entry {
   display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 82px;
   padding: 2px; border: 1px solid #b8c4d0; border-radius: 6px; background: #fbfbf2; color: #222;

@@ -61,7 +61,10 @@
     master.channelInterpretation = "speakers";
   }
 
+  const seCache = new Map();        // sound effects: small, and played again and again
   function song(name) {
+    const isSe = /^se_/.test(name);
+    if (isSe && seCache.has(name)) return seCache.get(name);
     if (cache.has(name)) return cache.get(name);
     const data = window.MUSIC_DATA && window.MUSIC_DATA.songs[name];
     if (!data || !ctx) return null;
@@ -70,6 +73,7 @@
     buffer.copyToChannel(r.left, 0);
     buffer.copyToChannel(r.right, 1);
     const s = { buffer, loopStart: r.loopStart != null ? r.loopStart / r.rate : null, loopEnd: r.loopEnd != null ? r.loopEnd / r.rate : null };
+    if (isSe) { seCache.set(name, s); return s; }
     cache.set(name, s);
     if (cache.size > 10) cache.delete(cache.keys().next().value);
     return s;

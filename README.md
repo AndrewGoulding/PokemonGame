@@ -49,6 +49,11 @@ in the party, a summary's moves and Bill's PC, Select on one and then on another
 swaps them. On a keyboard: arrows / WASD, Z or Space (A), X (B), Enter, Esc or M (Start),
 Backspace (Select). In battle, FireRed's own menus: FIGHT / BAG / POKéMON / RUN,
 then your moves with their PP (coloured as it runs low) and type; B goes back.
+Moves animate by kind and type with FireRed's sound effects (its own, for the
+moves FireRed has one for), and so do hits, fainting, stat changes, the balls
+and running (BATTLE SCENE: OFF on the Option screen turns them off). Text is
+written out a letter at a time at your TEXT SPEED (A finishes it), and FireRed's
+▼ shows when it's waiting for you.
 
 Start opens FireRed's **menu**, a window over the map with a help bar along
 the bottom (as is the text box, which is only on screen while someone's
@@ -58,7 +63,8 @@ another to swap them), the Bag (medicine, evolution
 stones, Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
 the Exp. Share, Oak's Parcel and the Town Map), the Pokédex (a red Poké Ball
 marks species you've caught, a gray one those you've only seen; wild Pokémon
-show the same mark in battle),
+show the same mark in battle; the D-pad moves through it, and A opens a
+species' page with FireRed's category, height, weight and description),
 your trainer card (under your name: save, download or load a save file, and **Debug**, for
 testing; it asks for a password the first time each session): add any Pokémon at any level (type its name, e.g. `charizard` or
 `rotom-wash`; a full party sends it to the PC), infinite Rare Candies, every TM
@@ -153,12 +159,17 @@ node tools/build-town-map.js pokefirered     # after build-maps.js
 
 `tools/build-menus.js` converts what they're drawn with into
 `data/gba-menus.js`: FireRed's fonts (with their letter widths from
-`src/text.c`), the character map, the button icons, the eleven window frames
-and the menus' palettes:
+`src/text.c`), the character map, the button icons, the eleven window frames,
+the Start menu's help bar, the battle menus' panels and the menus' palettes;
+it also writes the battle message box (`assets/battle-interface/`) and the
+text box's ▼ (`assets/text/`). `tools/build-pokedex.js` writes
+`data/pokedex-text.js`, the Pokédex's categories and FireRed descriptions:
 
 ```sh
-cd pokefirered && git sparse-checkout add graphics/fonts/ graphics/text_window/ graphics/main_menu/ graphics/misc/ src/text.c charmap.txt && cd ..
+cd pokefirered && git sparse-checkout add graphics/fonts/ graphics/text_window/ graphics/main_menu/ graphics/misc/ \
+  graphics/help_system/ graphics/battle_interface/ graphics/interface/ src/text.c src/data/pokemon/ charmap.txt && cd ..
 node tools/build-menus.js pokefirered
+node tools/build-pokedex.js pokefirered
 ```
 
 ### Intro
@@ -276,8 +287,8 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   (trainers' never are). They use their shiny sprites
   everywhere, sparkle as they come out in battle, and have a ★ on their
   summary. (The debug menu's Add a Pokémon has a Shiny box.)
-- **Move Relearner and Move Deleter**: every Poké Mart has an upstairs (stairs
-  in its bottom-left corner). The Relearner teaches a Pokémon a level-up move
+- **Move Relearner and Move Deleter**: they sit on the cushions upstairs in
+  every Pokémon Center. The Relearner teaches a Pokémon a level-up move
   it could know by now, for a Heart Scale (dig them up with the Explorer Kit);
   the Deleter makes it forget a move, free.
 - **Explorer Kit** (a key item you start with): use it from the bag in a cave

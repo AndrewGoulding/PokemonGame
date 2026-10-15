@@ -1202,17 +1202,21 @@ for (const share of [false, true]) {
   }
 }
 
-// Each Poké Mart has an upstairs (2F, from the Pokémon Center's) with the Move
-// Relearner and Move Deleter; stairs in the Mart's corner lead up.
+// The Move Relearner and Move Deleter sit on the cushions upstairs in every
+// Pokémon Center; the Marts have no upstairs, and a save made up there loads
+// just inside the Mart's door.
+for (const name of Object.keys(WORLD_MAPS).filter((n) => /_PokemonCenter_2F$/.test(n))) {
+  const m = WORLD_MAPS[name];
+  const tutors = m.people.filter((q) => /^CenterUpstairs_/.test(q.script)).map((q) => q.script + "@" + q.x + "," + q.y).sort();
+  assert.deepStrictEqual(tutors, ["CenterUpstairs_EventScript_MoveDeleter@10,7", "CenterUpstairs_EventScript_MoveRelearner@6,7"], name);
+  assert(new Set(m.people.map((q) => q.id)).size === m.people.length, name + ": people's ids are distinct");
+}
 for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
-  const m = WORLD_MAPS[mart], up = WORLD_MAPS[mart + "_2F"];
-  assert(up, mart + " has a 2F");
-  const stairs = m.warps.find((w) => w.map === mart + "_2F");
-  assert(stairs && !m.collision[stairs.y * m.width + stairs.x], "walkable stairs up");
-  assert.strictEqual(m.behavior[stairs.y * m.width + stairs.x], World.MB.UP_ESCALATOR);
-  assert.deepStrictEqual([up.warps.length, up.warps[0].map, m.warps[up.warps[0].warp]], [1, mart, stairs]);
-  assert.deepStrictEqual(up.people.map((q) => q.script).sort(), ["MartUpstairs_EventScript_MoveDeleter", "MartUpstairs_EventScript_MoveRelearner"]);
-  assert(fs.existsSync(path.join(root, "assets/world/maps", mart + "_2F.png")));
+  assert(!WORLD_MAPS[mart + "_2F"] && !WORLD_MAPS[mart].warps.some((w) => /_2F$/.test(w.map || "")), mart + " has no upstairs");
+  const old = Player.create("U");
+  old.location = { map: mart + "_2F", x: 6, y: 7, facing: "down" };
+  const loaded = Player.load(JSON.parse(Player.serialize(old))).player.location;
+  assert.strictEqual(loaded.map, mart);
 }
 
 // Music and cries: FireRed's songs played by its sound engine (game/m4a.js).

@@ -76,6 +76,11 @@ body {
 .sprite.hidden { opacity: 0; }
 .sprite.fainted { opacity: 0; transform: translateY(30%); }
 .sprite.hit { animation: blink 0.5s steps(2) 1; }
+/* A move's effect (ui/battle-screen.js animateMove), in its type's colour. */
+.move-fx { position: absolute; pointer-events: none; z-index: 3; }
+.move-fx.orb { width: 9%; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 25%, var(--fx) 55%, transparent 72%); }
+.move-fx.ring { width: 22%; aspect-ratio: 1; border-radius: 50%; border: 0.8cqw solid var(--fx); box-shadow: 0 0 1cqw var(--fx); }
 
 /* A thrown ball sits where the wild Pokémon was */
 .ball {
@@ -230,6 +235,20 @@ body {
   user-select: none;
 }
 .textbox.empty { display: none; }
+/* FireRed's ▼ (assets/text/down-arrow.png: its three positions), bobbing
+   while the text waits for A: positions 0, 1, 2, 1, eight frames each. */
+.textbox.more::after {
+  content: ""; position: absolute;
+  right: calc(100cqw * 10 / 240); bottom: calc(100cqw * 5 / 240);
+  width: calc(100cqw * 10 / 240); height: calc(100cqw * 12 / 240);
+  background: url(../assets/text/down-arrow.png) 0 0 / 300% 100% no-repeat;
+  image-rendering: pixelated;
+  animation: down-arrow 0.533s steps(1) infinite;
+}
+@keyframes down-arrow {
+  0% { background-position-x: 0%; } 25% { background-position-x: 50%; }
+  50% { background-position-x: 100%; } 75% { background-position-x: 50%; }
+}
 .screen:has(> .field:not(.hidden)) > .textbox.empty { display: block; }
 /* In a battle, FireRed's message box (graphics/battle_interface/textbox: the
    dark box, white text with a purple-gray shadow; the text window is tiles
