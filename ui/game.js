@@ -978,6 +978,7 @@
         { label: "Give Max Repels", value: "repels", className: "action" },
         { label: "Give Master Balls", value: "master", className: "action" },
         { label: "Wild battle", value: "wild", className: "action" },
+        { label: "Go to the last Pokémon Center", value: "center", className: "action" },
         back()]);
       if (v === "back") return;
       if (v === "add") await debugAddPokemon();
@@ -991,6 +992,13 @@
         if (!canBattle()) { await message("Your Pokémon are too tired to battle."); continue; }
         await battle("wild");
         return "battled";
+      } else if (v === "center") {
+        // In front of the counter of the Center you last used (home before
+        // you've used one), as blacking out takes you.
+        const center = player.flags.lastCenter && Player.CENTERS[player.flags.lastCenter];
+        player.location = Object.assign({}, center || Player.HOME);
+        await persist();
+        return "battled";   // (back to the map, at the new place)
       } else if (v === "repels") {
         Player.addItem(player, "max-repel", 99);
         await message("Added 99 Max Repels to your bag.");

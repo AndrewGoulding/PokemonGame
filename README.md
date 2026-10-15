@@ -74,7 +74,8 @@ species' page with FireRed's category, height, weight and description),
 your trainer card (under your name: save, download or load a save file, and **Debug**, for
 testing; it asks for a password the first time each session): add any Pokémon at any level (type its name, e.g. `charizard` or
 `rotom-wash`; a full party sends it to the PC), infinite Rare Candies, every TM
-and HM, 99 Max Repels, 99 Master Balls, or a wild battle at your level.
+and HM, 99 Max Repels, 99 Master Balls, a wild battle at your level, or a trip
+back to the last Pokémon Center you used (home before you've used one).
 Healing, shopping and the PC are in the towns: each Poké Mart sells exactly
 what it does in FireRed (Viridian: Poké Balls, Potions, Antidotes and
 Paralyze Heals), at Gen 6 prices.
