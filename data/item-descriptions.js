@@ -67,6 +67,7 @@ window.ITEM_DESCRIPTIONS = {
   "iapapa-berry": "A hold item that restores HP but\nmay cause confusion when used.",
   "ice-heal": "A spray-type medicine.\nIt defrosts a frozen Pokémon.",
   "iron": "A nutritious drink for Pokémon.\nIt raises the base Defense stat of\none Pokémon.",
+  "itemfinder": "A device used for finding items.\nIf there is a hidden item nearby\nwhen it is used, it emits a signal.",
   "kelpsy-berry": "Can be ground up into a powder as\nan ingredient for medicine.",
   "kings-rock": "An item to be held by a Pokémon.\nIt may cause the foe to flinch\nupon taking damage.",
   "lansat-berry": "When held by a Pokémon, it raises\nthe critical-hit ratio in a pinch.",

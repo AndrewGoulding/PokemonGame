@@ -540,7 +540,7 @@
     return r ? player.party[r.slot] : null;
   }
 
-  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit"];
+  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "itemfinder"];
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
     item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS || item === "escape-rope";
   // TMs and HMs work like key items: they can't be held, tossed or sold.
@@ -552,11 +552,39 @@
   // closes the bag afterwards, back to the map: "escaped").
   async function useKeyItem(item) {
     if (item === "explorer-kit") return (await explorerKit()) ? "escaped" : null;
+    if (item === "itemfinder") { fieldAction = itemfinder; return "escaped"; }
     if (item === "exp-share") {
       player.flags.expShareOff = !player.flags.expShareOff;
       await message(expShareOn() ? "The Exp. Share was turned on. Your whole party will gain Exp. Points from battles."
         : "The Exp. Share was turned off. Only Pokémon that battle will gain Exp. Points.");
     } else if (item === "town-map") await townMap();
+  }
+
+  // Something to do on the map once the menus close (the Itemfinder).
+  let fieldAction = null;
+  // The Itemfinder (FireRed's src/itemfinder.c): a hidden item within 7 steps
+  // across and 5 up or down makes it respond, and you turn toward the nearest;
+  // one right underfoot is dug up.
+  async function itemfinder() {
+    const at = Overworld.position(), m = window.WORLD_MAPS[at.map] || {};
+    const hidden = (m.hidden || []).filter((h) => !player.flags[h.flag]);
+    const under = hidden.find((h) => h.x === at.x && h.y === at.y);
+    if (under) {
+      await say(["Oh!\nThe Itemfinder's shaking wildly!", "There's an item buried underfoot!", "‥ ‥ ‥ ‥ ‥ ‥"]);
+      Player.addItem(player, under.item, under.quantity);
+      player.flags[under.flag] = true;
+      await sayWithJingle(itemJingle(under.item), "{PLAYER} found " + (under.quantity > 1 ? under.quantity + " " : "a ") + Bag.name(under.item) + "!");
+      return;
+    }
+    let best = null;
+    for (const h of hidden) {
+      const dx = h.x - at.x, dy = h.y - at.y;
+      if (Math.abs(dx) <= 7 && Math.abs(dy) <= 5 && (!best || Math.abs(dx) + Math.abs(dy) < Math.abs(best.dx) + Math.abs(best.dy))) best = { dx, dy };
+    }
+    if (!best) { await say("‥ ‥ ‥ ‥Nope!\nThere's no response."); return; }
+    const face = Math.abs(best.dx) >= Math.abs(best.dy) ? (best.dx > 0 ? "right" : "left") : (best.dy > 0 ? "down" : "up");
+    await Overworld.act([{ who: "player", moves: ["face_" + face] }]);
+    await say(["Huh?\nThe Itemfinder's responding!", "There's an item buried around here!"]);
   }
 
   // The Town Map: FireRed's Kanto map (tools/build-town-map.js) with your
@@ -1378,6 +1406,7 @@
     "Route5_SouthEntrance_EventScript_GuardTriggerLeft", "Route5_SouthEntrance_EventScript_GuardTriggerMid",
     "Route5_SouthEntrance_EventScript_GuardTriggerRight",
     "Game_EventScript_Leaf", "Game_EventScript_TradebackGuy",
+    "Route11_EastEntrance_2F_EventScript_Aide", "Route11_EastEntrance_2F_EventScript_Turner",
     "SSAnne_2F_Corridor_EventScript_RivalTriggerLeft", "SSAnne_2F_Corridor_EventScript_RivalTriggerMid",
     "SSAnne_2F_Corridor_EventScript_RivalTriggerRight", "SSAnne_CaptainsOffice_EventScript_Captain",
     "SSAnne_2F_Room1_EventScript_Gentleman", "SSAnne_1F_Room3_EventScript_Wigglytuff", "SSAnne_B1F_Room5_EventScript_Machoke",
@@ -2170,6 +2199,25 @@
         await inGameTrade(TRADES.mimien);
         return;
 
+      // Prof. Oak's Aide in Route 11's gate: the Itemfinder for thirty kinds caught.
+      case "Route11_EastEntrance_2F_EventScript_Aide": {
+        const NEEDED = 30, item = "itemfinder", label = "Itemfinder", A = (k) => T("Route11_EastEntrance_2F_Text_" + k);
+        if (f.gotItemfinder) { await say(A("ExplainItemfinder"), [NEEDED, label]); return; }
+        const ask = A("GiveItemfinderIfCaught30");
+        await say(ask.slice(0, -1), [NEEDED, label]);
+        if (!(await confirm(fill(ask[ask.length - 1], [NEEDED, label])))) { await say(T("Aide_Text_GetEnoughMonsComeBackForItem"), [NEEDED, label]); return; }
+        const count = player.pokedex.caught.length;
+        if (count < NEEDED) { await say(T("Aide_Text_HaventCaughtEnoughMonsForItem"), [NEEDED, label, count]); return; }
+        await say(A("GreatHereYouGo"), [NEEDED, label, count]);
+        Player.addItem(player, item);
+        f.gotItemfinder = true;
+        await sayWithJingle("mus_obtain_key_item", A("ReceivedItemfinderFromAide").map((p) => fill(p, [NEEDED, label])));
+        await say(A("ExplainItemfinder"), [NEEDED, label]);
+        return;
+      }
+      case "Route11_EastEntrance_2F_EventScript_Turner":
+        await inGameTrade(TRADES.nina);
+        return;
       // Prof. Oak's Aide: HM05 Flash for ten kinds of Pokémon caught.
       case "Route2_EastBuilding_EventScript_Aide": {
         const NEEDED = 10, item = "hm05", label = "HM05";
@@ -2362,6 +2410,9 @@
       text: { ask: "VermilionCity_House2_Text_DoYouHaveMonWantToTradeForMyMon", no: "VermilionCity_House2_Text_ThatsTooBad",
         wrong: "VermilionCity_House2_Text_ThisIsNoMon", thanks: "VermilionCity_House2_Text_ThankYou",
         after: "VermilionCity_House2_Text_HowIsMyOldMon" } },
+    // Turner, upstairs in Route 11's gate (FireRed's INGAME_TRADE_NIDORINOA).
+    nina: { flag: "tradedNina", wants: "Nidorino", gives: "Nidorina", nickname: "Nina",
+      ivs: { hp: 22, atk: 25, def: 18, spe: 19, spa: 22, spd: 15 }, ot: { name: "TURNER", id: 13637 } },
     msNido: { flag: "tradedMsNido", wants: "Nidoran-M", gives: "Nidoran-F", nickname: "Ms. Nido",
       ivs: { hp: 22, atk: 18, def: 25, spe: 19, spa: 15, spd: 22 }, ot: { name: "SAIGE", id: 63184 },
       text: { ask: "Trade_Text_DoYouHaveMonWantToTradeForMon", no: "Trade_Text_ThatsTooBad",
@@ -3442,7 +3493,10 @@
           if (m !== "VermilionCity") ticketChecked = false;
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m); music((window.WORLD_MAPS[m] || {}).music); }
       });
-      if (ev.type === "menu") await startMenu();
+      if (ev.type === "menu") {
+        await startMenu();
+        if (fieldAction) { const act = fieldAction; fieldAction = null; await act(); }
+      }
       else if (ev.type === "repel-ended") await repelWoreOff();
       else if (ev.type === "red-forest") await redForest();
       else if (ev.type === "leaf-vermilion") await leafVermilion();

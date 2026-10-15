@@ -100,7 +100,9 @@ const MAPS = [
   "SSAnne_1F_Room5", "SSAnne_1F_Room6", "SSAnne_1F_Room7", "SSAnne_2F_Corridor", "SSAnne_2F_Room1",
   "SSAnne_2F_Room2", "SSAnne_2F_Room3", "SSAnne_2F_Room4", "SSAnne_2F_Room5", "SSAnne_2F_Room6",
   "SSAnne_3F_Corridor", "SSAnne_Deck", "SSAnne_CaptainsOffice", "SSAnne_B1F_Corridor", "SSAnne_B1F_Room1",
-  "SSAnne_B1F_Room2", "SSAnne_B1F_Room3", "SSAnne_B1F_Room4", "SSAnne_B1F_Room5", "SSAnne_Kitchen"
+  "SSAnne_B1F_Room2", "SSAnne_B1F_Room3", "SSAnne_B1F_Room4", "SSAnne_B1F_Room5", "SSAnne_Kitchen",
+  "Route11", "Route11_EastEntrance_1F", "Route11_EastEntrance_2F",
+  "DiglettsCave_NorthEntrance", "DiglettsCave_B1F", "DiglettsCave_SouthEntrance"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
@@ -452,8 +454,11 @@ function martItems(mapName, script) {
 // (FireRed's sTMHMMoves, src/data/party_menu.h), or keeps its number when no
 // machine here teaches that move.
 let frMachineMoves = null;
+// FireRed's item names this game's items go by differently.
+const ITEM_ALIASES = { "x-defend": "x-defense", "x-special": "x-sp-atk", "parlyz-heal": "paralyze-heal" };
 function itemId(frItem) {
-  const id = frItem.replace(/^ITEM_/, "").toLowerCase().replace(/_/g, "-");
+  const raw = frItem.replace(/^ITEM_/, "").toLowerCase().replace(/_/g, "-");
+  const id = ITEM_ALIASES[raw] || raw;
   const m = /^(tm|hm)(\d+)$/.exec(id);
   if (!m) return id;
   if (!frMachineMoves) {

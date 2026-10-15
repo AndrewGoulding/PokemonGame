@@ -734,7 +734,8 @@ for (const share of [false, true]) {
   // The move tutors teach as in FireRed: Charmander can learn Mega Punch.
   assert(TUTOR_LEARNERS["Mega Punch"].includes("Charmander") && TUTOR_LEARNERS["Seismic Toss"].includes("Charmander"));
   // Escape Ropes work where FireRed allows escaping.
-  assert.deepStrictEqual(Object.keys(WORLD_MAPS).filter((m) => WORLD_MAPS[m].allowEscaping), ["ViridianForest", "MtMoon_1F", "MtMoon_B1F", "MtMoon_B2F"]);
+  assert.deepStrictEqual(Object.keys(WORLD_MAPS).filter((m) => WORLD_MAPS[m].allowEscaping), ["ViridianForest", "MtMoon_1F", "MtMoon_B1F", "MtMoon_B2F",
+    "DiglettsCave_NorthEntrance", "DiglettsCave_B1F", "DiglettsCave_SouthEntrance"]);
   assert(WORLD_MAPS.MtMoon_1F.people.some((p) => p.item === "tm100"), "FireRed's TM09 in Mt. Moon is TM100 Bullet Seed here");
   assert(Bag.canUseOn(Party.create("Gyarados", 30, { rng }), "hm06"), "Gyarados can use Whirlpool");
   assert(Bag.canUseOn(Party.create("Pidgeot", 30, { rng }), "hm10"), "Pidgeot can use Defog");
@@ -897,10 +898,13 @@ for (const share of [false, true]) {
   assert.strictEqual(World.step({ map: "Route22_NorthEntrance", x: 7, y: 2 }, "up").unbuilt, "MAP_ROUTE23");
   // Pewter's doors: the Gym, the Pokémon Center, the Mart; Route 22's League gate.
   const door = (map, x, y) => World.step({ map, x, y }, "up").warp.map;
+  const wtD = (r) => r.warp.map + " " + r.warp.x + "," + r.warp.y;
   assert.deepStrictEqual([door("PewterCity", 15, 17), door("PewterCity", 17, 26), door("PewterCity", 28, 19), door("Route22", 8, 6)],
     ["PewterCity_Gym", "PewterCity_PokemonCenter_1F", "PewterCity_Mart", "Route22_NorthEntrance"]);
-  // A cave into a map that isn't built yet says so instead of letting you in.
-  assert.strictEqual(World.step({ map: "Route2", x: 17, y: 12 }, "up").unbuilt, "MAP_DIGLETTS_CAVE_NORTH_ENTRANCE");
+  // Diglett's Cave: Route 2 -> north entrance -> B1F -> south entrance -> Route 11.
+  assert.strictEqual(wtD(World.step({ map: "Route2", x: 17, y: 12 }, "up")), "DiglettsCave_NorthEntrance 4,6");
+  assert(WORLD_MAPS.DiglettsCave_SouthEntrance.warps.some((w) => w.map === "Route11") && WORLD_MAPS.DiglettsCave_B1F.warps.every((w) => w.map));
+  assert.strictEqual(at(World.step({ map: "VermilionCity", x: 47, y: 16 }, "right")), "Route11 0,6");
   // Through Viridian Forest: Route 2 -> south gate -> forest -> north gate -> Route 2's north end.
   const wt = (r) => r.warp.map + " " + r.warp.x + "," + r.warp.y;
   assert.strictEqual(wt(World.step({ map: "Route2", x: 5, y: 52 }, "up")), "Route2_ViridianForest_SouthEntrance 7,10");

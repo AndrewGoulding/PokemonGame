@@ -567,6 +567,7 @@ window.ITEMS = {
   "x-speed": { name: "x-speed", category: "stat-boosts", effect: "Raises the Speed of the Pokémon in battle by one stage." },
   "x-accuracy": { name: "x-accuracy", category: "stat-boosts", effect: "Raises the accuracy of the Pokémon in battle by one stage." },
   "stardust": { name: "stardust", category: "loot", effect: "Lovely, red-colored sand with a loose, silky feel. It can be sold at a high price." },
+  "itemfinder": { name: "itemfinder", category: "key-items", effect: "A device that responds to items hidden nearby." },
   "bike-voucher": { name: "bike-voucher", category: "key-items", effect: "A voucher for obtaining a Bicycle from the Bike Shop." },
   "bluk-berry": { name: "bluk-berry", category: "baking-only", effect: "Can be ground into a powder as an ingredient for medicine." }
 };
