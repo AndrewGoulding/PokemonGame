@@ -212,7 +212,23 @@ it opens the stairs to the Rocket Hideout (B1F-B4F: its trainers, items and
 spinning arrow floors; the barriers that open once their guards are beaten; the
 Lift Key a Rocket drops on B4F, which works the elevator; and Giovanni, who
 leaves the Silph Scope behind once beaten, which lets you finish Pokémon Tower).
-The Power Plant, Route 12 and Saffron City aren't built yet. Tiles, palettes and metatiles come from
+Through any of the four gates you reach Saffron City, Team Rocket's town until
+Silph Co. is freed (Rockets stand in the doorways of the Copycat's house, the
+house and the Gym, and a "security guard" in Silph's own until Mr. Fuji's
+rescued, then naps beside it): its Pokémon Center, the Poké Mart, the Copycat's
+house (bring her a Poké Doll and she teaches Mimic), Mr. Psychic (TM29 Psychic),
+the Pokémon Trainer Fan Club, the Fighting Dojo (its Black Belts and the Karate
+Master, who turns to face you as you pass him; beaten, he lets you take
+Hitmonlee or Hitmonchan, Lv. 25, and the other stays on its shelf), and
+Sabrina's Gym, a maze of warp pads you spin away on (the Marsh Badge and TM04
+Calm Mind). Silph Co., 1F to 11F: its Rockets and scientists, its items, the
+warp pads between floors and rooms, the elevator, and locked doors that the Card
+Key from 5F opens for good; the Thunder Wave tutor on 2F, a nap on 9F, Gary on 7F
+(his Eevee a Vaporeon by now) and the Silph worker there who gives you a Lapras,
+Lv. 25; and Giovanni in the boardroom on 11F: beat him and Team Rocket leaves
+Silph and Saffron, the townsfolk come back out, and the President gives you the
+Master Ball. The Silph Co. 5F TM01 (Focus Punch) is TM105 here.
+The Power Plant and Route 12 aren't built yet. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into

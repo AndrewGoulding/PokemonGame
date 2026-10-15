@@ -118,7 +118,12 @@ const MAPS = [
   "CeladonCity_Condominiums_Roof", "CeladonCity_Condominiums_RoofRoom",
   "CeladonCity_GameCorner", "CeladonCity_GameCorner_PrizeRoom", "CeladonCity_Gym",
   "CeladonCity_Restaurant", "CeladonCity_Hotel", "CeladonCity_House1",
-  "RocketHideout_B1F", "RocketHideout_B2F", "RocketHideout_B3F", "RocketHideout_B4F", "RocketHideout_Elevator"
+  "RocketHideout_B1F", "RocketHideout_B2F", "RocketHideout_B3F", "RocketHideout_B4F", "RocketHideout_Elevator",
+  "SaffronCity", "SaffronCity_Connection", "SaffronCity_PokemonCenter_1F", "SaffronCity_PokemonCenter_2F", "SaffronCity_Mart",
+  "SaffronCity_CopycatsHouse_1F", "SaffronCity_CopycatsHouse_2F", "SaffronCity_MrPsychicsHouse", "SaffronCity_House",
+  "SaffronCity_PokemonTrainerFanClub", "SaffronCity_Dojo", "SaffronCity_Gym",
+  "SilphCo_1F", "SilphCo_2F", "SilphCo_3F", "SilphCo_4F", "SilphCo_5F", "SilphCo_6F", "SilphCo_7F",
+  "SilphCo_8F", "SilphCo_9F", "SilphCo_10F", "SilphCo_11F", "SilphCo_Elevator"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
@@ -224,6 +229,8 @@ const GAME_TEXT = [
   "Aide_Text_HaventCaughtEnoughMonsForItem", "Aide_Text_GetEnoughMonsComeBackForItem",
   "Text_OnlySkilledTrainersAllowedThrough", "Text_CantLetYouPass", "Text_OhThatsBadgeGoRightAhead", "Text_MoveCanOnlyBeLearnedOnce",
   "Text_WantWhichFloor", "Text_GiveNicknameToThisMon", "Text_PlayerObtainedTheMon", "Text_NoMoreRoomForPokemon",
+  // Silph Co.'s card-key doors (data/event_scripts.s).
+  "Text_CardKeyOpenedDoor", "Text_ItNeedsCardKey", "Text_TheDoorIsOpen",
   // Rock Tunnel's Rock Slide tutor (in Seafoam Islands B4F's text.inc).
   "Text_RockSlideTeach", "Text_RockSlideDeclined", "Text_RockSlideWhichMon", "Text_RockSlideTaught",
   // Pallet Town's Sign Lady (data/text/sign_lady.inc).
@@ -619,6 +626,29 @@ function duoPic(name, left, right, overlap) {
 // ---------- People sprites ----------
 
 function readHeader(rel) { return fs.readFileSync(P(rel), "utf8"); }
+
+// Silph Co.'s card-key doors (data/scripts/silphco_doors.inc): each floor's
+// EventScript_Close<n>FDoor<k> and ..Open.. setmetatile lists become that
+// floor's "closed<k>" and "open<k>" patches (SilphCo_<n>F_OnLoad closes the
+// doors you haven't opened).
+{
+  const labels = {};
+  for (const [, name, val] of readHeader("include/constants/metatile_labels.h").matchAll(/#define\s+(METATILE_\w+)\s+(0x[0-9A-Fa-f]+)/g)) labels[name] = parseInt(val, 16);
+  let patch = null;
+  for (const line of fs.readFileSync(P("data/scripts/silphco_doors.inc"), "utf8").split("\n")) {
+    const l = /^EventScript_(Close|Open)(\d+)FDoor(\d*)::/.exec(line);
+    if (l) {
+      const map = "SilphCo_" + l[2] + "F";
+      patch = (MAP_PATCHES[map] || (MAP_PATCHES[map] = {}))[l[1].toLowerCase() + (l[3] || "1")] = [];
+      continue;
+    }
+    const m = /^\s*setmetatile\s+(\d+),\s*(\d+),\s*(METATILE_\w+),\s*(\d)/.exec(line);
+    if (m && patch) {
+      if (labels[m[3]] == null) throw new Error("Unknown metatile " + m[3]);
+      patch.push([+m[1], +m[2], labels[m[3]], +m[4]]);
+    } else if (/^\s*return/.test(line)) patch = null;
+  }
+}
 const pointers = readHeader("src/data/object_events/object_event_graphics_info_pointers.h");
 const infos = readHeader("src/data/object_events/object_event_graphics_info.h");
 const picTables = readHeader("src/data/object_events/object_event_pic_tables.h");
@@ -747,7 +777,9 @@ for (const name of MAPS) {
     collision, elevation, behavior, encounter,
     connections: (map.connections || []).map((c) => ({ map: byConst[c.map] || null, mapConst: c.map, direction: c.direction, offset: c.offset })),
     warps: map.warp_events.map((wp) => ({ x: wp.x, y: wp.y, map: byConst[wp.dest_map] || null, mapConst: byConst[wp.dest_map] ? undefined : wp.dest_map, warp: +wp.dest_warp_id })),
-    signs: map.bg_events.filter((b) => b.type === "sign").map((b) => ({ x: b.x, y: b.y, script: b.script, text: SIGN_TEXT[b.script] || scriptText(name, b.script) })),
+    // (Silph Co.'s card-key doors say nothing when you bump into them.)
+    signs: map.bg_events.filter((b) => b.type === "sign").map((b) => ({ x: b.x, y: b.y, script: b.script,
+      text: /^SilphCo_\w+_EventScript_Door\d*$/.test(b.script) ? undefined : SIGN_TEXT[b.script] || scriptText(name, b.script) })),
     triggers: map.coord_events.map((c) => ({ x: c.x, y: c.y, script: c.script })),
     // (ITEM_NONE: coins on the Game Corner's floor, `quantity` of them.)
     hidden: map.bg_events.filter((b) => b.type === "hidden_item").map((b) => ({

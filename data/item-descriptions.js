@@ -23,6 +23,7 @@ window.ITEM_DESCRIPTIONS = {
   "burn-heal": "A spray-type medicine.\nIt heals one Pokémon of a burn.",
   "calcium": "A nutritious drink for Pokémon.\nIt raises the base Sp. Atk stat\nof one Pokémon.",
   "carbos": "A nutritious drink for Pokémon.\nIt raises the base Speed stat of\none Pokémon.",
+  "card-key": "A card-type key that unlocks doors\nin Silph Co.'s Head Office in\nSaffron City.",
   "charcoal": "An item to be held by a Pokémon.\nA combustible fuel that boosts the\npower of Fire-type moves.",
   "cheri-berry": "When held by a Pokémon, it will be\nused in battle to heal paralysis.",
   "chesto-berry": "When held by a Pokémon, it will be\nused in battle to wake up.",

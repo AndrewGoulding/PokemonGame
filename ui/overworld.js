@@ -433,8 +433,21 @@
     ctx.player.location = { map: me.map, x: me.x, y: me.y, facing: me.facing };
   }
 
+  // A warp pad (FireRed's DoTeleportWarp): you spin away with SE_WARP_IN,
+  // and spin in at the other end with SE_WARP_OUT.
+  const PAD_SPIN_MS = 500;
+  let padSpinUntil = 0;
+  function padSpin(se) {
+    if (window.GameAudio) window.GameAudio.se(se);
+    padSpinUntil = performance.now() + PAD_SPIN_MS;
+    return new Promise((resolve) => setTimeout(resolve, PAD_SPIN_MS));
+  }
   function warpTo(target) {
     paused = true;
+    if (target.pad && !target.spun) {
+      padSpin("se_warp_in").then(() => warpTo(Object.assign({}, target, { spun: true })));
+      return;
+    }
     if (ctx.onWarp) ctx.onWarp({ map: me.map, x: me.x, y: me.y }, target);
     fadeDir = 1;
     afterFade = async () => {
@@ -447,8 +460,10 @@
       await preloadMap(me.map);
       savePosition();
       hint();
+      if (target.pad) padSpin("se_warp_out");
       fadeDir = -1;
-      afterFade = () => {
+      afterFade = async () => {
+        if (target.pad) { await new Promise((r) => setTimeout(r, Math.max(0, padSpinUntil - performance.now()))); me.facing = "down"; }
         paused = false;
         // Scenes that start as you walk in (the Viridian Mart clerk's parcel).
         if (ctx.special && ctx.special("enter:" + me.map)) return finish({ type: "trigger", trigger: { script: "enter:" + me.map }, map: me.map });
@@ -784,6 +799,7 @@
         if (next) next();
       }
     }
+    if (padSpinUntil > performance.now()) me.facing = SPIN_FACINGS[Math.floor(performance.now() / 67) % 4];
     if (light != null && light < lightTarget) light = Math.min(lightTarget, light + 4);
     for (const p of people) updatePerson(p);
     if (scene) runScene();

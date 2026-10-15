@@ -150,6 +150,8 @@
     // A cave or doorway into a map that isn't built yet (Diglett's Cave).
     if (w && STEP_WARPS.has(ahead.behavior) && !w.map && w.mapConst !== "MAP_DYNAMIC") return { ok: false, unbuilt: w.mapConst };
     if (w && STEP_WARPS.has(ahead.behavior)) result.warp = warpTarget(w);
+    // (A warp pad, MB_REGULAR_WARP: Saffron Gym's and Silph Co.'s teleporters.)
+    if (result.warp && ahead.behavior === MB.REGULAR_WARP) result.warp.pad = true;
     return result;
   }
 

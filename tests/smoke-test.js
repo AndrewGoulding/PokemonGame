@@ -713,12 +713,12 @@ for (const share of [false, true]) {
     "Sleep Talk", "U-turn", "Substitute", "Flash Cannon", "Trick Room", "Wild Charge", "Rock Smash", "Snarl",
     "Nature Power", "Dark Pulse", "Power-Up Punch", "Dazzling Gleam", "Confide"];
   const HMS = ["Cut", "Fly", "Surf", "Strength", "Flash", "Whirlpool", "Waterfall", "Rock Smash", "Dive", "Defog", "Rock Climb"];
-  const TMS = XY.filter((m) => !HMS.includes(m)).concat("Secret Power", "Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail");
-  assert.strictEqual(TMS.length, 104);
+  const TMS = XY.filter((m) => !HMS.includes(m)).concat("Secret Power", "Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail", "Focus Punch");
+  assert.strictEqual(TMS.length, 105);
   TMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("tm" + String(i + 1).padStart(2, "0")), move, "TM" + (i + 1)));
   HMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("hm" + String(i + 1).padStart(2, "0")), move, "HM" + (i + 1)));
-  assert.strictEqual(Bag.machines().length, 115);
-  assert(!ITEMS.tm105 && !ITEMS.hm12, "no machines past TM104 and HM11");
+  assert.strictEqual(Bag.machines().length, 116);
+  assert(!ITEMS.tm106 && !ITEMS.hm12, "no machines past TM105 and HM11");
   // Every move Pokémon learn by machine in Gen 6 is a TM or HM here; the
   // machines Gen 6 had none for (Bullet Seed, Whirlpool, Defog, Rock Climb)
   // take their compatibility from other generations.
@@ -726,7 +726,7 @@ for (const share of [false, true]) {
   for (const l of Object.values(LEARNSETS_GEN6)) for (const m of l.tm || []) tmMoves.add(m);
   const machineMoves = Bag.machines().map(Bag.machineMove);
   for (const m of tmMoves) assert(machineMoves.includes(m), "no machine for " + m);
-  assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail", "Whirlpool", "Defog", "Rock Climb"]);
+  assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail", "Focus Punch", "Whirlpool", "Defog", "Rock Climb"]);
   for (const m of ["Whirlpool", "Defog", "Rock Climb", "Bullet Seed"]) assert(MACHINE_LEARNERS[m].length > 50, "who can use " + m);
   assert(!MACHINE_LEARNERS.Thief, "TMs Gen 6 had keep Gen 6's compatibility");
   assert(Bag.canUseOn(Party.create("Oddish", 20, { rng }), "tm100") && !Bag.canUseOn(Party.create("Pidgey", 20, { rng }), "tm100"), "Bullet Seed: Oddish yes, Pidgey no");
@@ -737,7 +737,9 @@ for (const share of [false, true]) {
   assert.deepStrictEqual(Object.keys(WORLD_MAPS).filter((m) => WORLD_MAPS[m].allowEscaping), ["ViridianForest", "MtMoon_1F", "MtMoon_B1F", "MtMoon_B2F",
     "DiglettsCave_NorthEntrance", "DiglettsCave_B1F", "DiglettsCave_SouthEntrance", "RockTunnel_1F", "RockTunnel_B1F",
     "PokemonTower_1F", "PokemonTower_2F", "PokemonTower_3F", "PokemonTower_4F", "PokemonTower_5F", "PokemonTower_6F", "PokemonTower_7F",
-    "RocketHideout_B1F", "RocketHideout_B2F", "RocketHideout_B3F", "RocketHideout_B4F"]);
+    "RocketHideout_B1F", "RocketHideout_B2F", "RocketHideout_B3F", "RocketHideout_B4F",
+    "SaffronCity_Gym", "SilphCo_1F", "SilphCo_2F", "SilphCo_3F", "SilphCo_4F", "SilphCo_5F", "SilphCo_6F", "SilphCo_7F",
+    "SilphCo_8F", "SilphCo_9F", "SilphCo_10F", "SilphCo_11F"]);
   assert(WORLD_MAPS.MtMoon_1F.people.some((p) => p.item === "tm100"), "FireRed's TM09 in Mt. Moon is TM100 Bullet Seed here");
   assert(Bag.canUseOn(Party.create("Gyarados", 30, { rng }), "hm06"), "Gyarados can use Whirlpool");
   assert(Bag.canUseOn(Party.create("Pidgeot", 30, { rng }), "hm10"), "Pidgeot can use Defog");
@@ -746,9 +748,10 @@ for (const share of [false, true]) {
   assert.strictEqual(Bag.name("tm24"), "TM24 Thunderbolt");
   assert.strictEqual(Bag.name("tm99"), "TM99 Secret Power");
   assert.strictEqual(Bag.name("hm11"), "HM11 Rock Climb");
-  assert.deepStrictEqual(Bag.machines().slice(98, 106), ["tm99", "tm100", "tm101", "tm102", "tm103", "tm104", "hm01", "hm02"]);
+  assert.deepStrictEqual(Bag.machines().slice(98, 107), ["tm99", "tm100", "tm101", "tm102", "tm103", "tm104", "tm105", "hm01", "hm02"]);
   assert.strictEqual(Bag.name("tm103"), "TM103 Giga Drain");
   assert.strictEqual(Bag.name("tm104"), "TM104 Iron Tail");
+  assert.strictEqual(Bag.name("tm105"), "TM105 Focus Punch");
   // Saves from before keep their machines' moves under the new numbers.
   const oldSave = Object.assign(Player.create("T"), { party: [Party.create("Pidgey", 5, { rng })], bag: { "tm94-oras": 1 } });
   delete oldSave.pcItems;
@@ -1293,9 +1296,9 @@ for (const share of [false, true]) {
   assert.deepStrictEqual([T.width, T.height, T.map.length, T.dungeon.length], [22, 15, 15, 15]);
   assert.deepStrictEqual([T.map[11][4], T.names.PALLET_TOWN, T.dungeon[3][9], T.names.MT_MOON], ["PALLET_TOWN", "Pallet Town", "MT_MOON", "Mt. Moon"]);
   const onMap = (sec) => T.map.some((r) => r.includes(sec)) || T.dungeon.some((r) => r.includes(sec));
-  // (FireRed gives the Underground Path, the S.S. Anne and the Rocket Hideout no square of their own.)
+  // (FireRed gives the Underground Path, the S.S. Anne, the Rocket Hideout and Silph Co. no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
-    assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "UNDERGROUND_PATH_2", "S_S_ANNE", "ROCKET_HIDEOUT"].includes(T.mapSections[name])), name + " is on the Town Map");
+    assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "UNDERGROUND_PATH_2", "S_S_ANNE", "ROCKET_HIDEOUT", "SILPH_CO"].includes(T.mapSections[name])), name + " is on the Town Map");
   }
   assert(fs.existsSync(path.join(__dirname, "../assets/town-map/kanto.png")));
 }
@@ -1711,4 +1714,34 @@ console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random 
   assert(sevens.length && sevens.every((ps) => Slots.evaluate(ps, 1).payout === 300), "three 7s in the middle pay 300");
   assert(all.some((ps) => Slots.evaluate(ps, 1).payout === 2), "a cherry pays 2");
   assert(all.every((ps) => Slots.evaluate(ps, 3).payout >= Slots.evaluate(ps, 1).payout), "more lines never pay less");
+}
+
+// Saffron City and Silph Co.
+{
+  // The four gates lead into Saffron City now.
+  for (const [gate, x, y] of [["Route5_SouthEntrance", 4, 9], ["Route6_NorthEntrance", 4, 1], ["Route7_EastEntrance", 11, 5], ["Route8_WestEntrance", 1, 5]]) {
+    assert.strictEqual(World.warpTarget(World.warpAt(gate, x, y)).map, "SaffronCity", gate + " leads into Saffron");
+  }
+  // Sabrina's Gym: stepping onto a warp pad warps you, as a pad, within the Gym.
+  const pad = World.step({ map: "SaffronCity_Gym", x: 17, y: 20 }, "right");
+  assert(pad.warp && pad.warp.pad && pad.warp.map === "SaffronCity_Gym", "Saffron Gym warp pad");
+  assert(!World.step({ map: "SaffronCity", x: 33, y: 31 }, "up").warp.pad, "a door isn't a warp pad");
+  // Silph Co.'s twenty card-key doors, each a pair of patches (shut and open).
+  let doors = 0;
+  for (let n = 2; n <= 11; n++) {
+    const p = WORLD_MAPS["SilphCo_" + n + "F"].patches || {};
+    const shut = Object.keys(p).filter((k) => /^close\d+$/.test(k));
+    for (const k of shut) assert(p["open" + k.slice(5)] && p[k].collision.some((c) => c[2] === 1), "SilphCo_" + n + "F " + k);
+    doors += shut.length;
+  }
+  assert.strictEqual(doors, 20);
+  assert.strictEqual(WORLD_MAPS.SilphCo_Elevator.warps[0].mapConst, "MAP_DYNAMIC");
+  // Items: the Card Key on 5F, and FireRed's TM01 (Focus Punch) as TM105.
+  assert(WORLD_MAPS.SilphCo_5F.people.some((p) => p.item === "card-key") && WORLD_MAPS.SilphCo_5F.people.some((p) => p.item === "tm105"));
+  assert.strictEqual(Bag.machineMove("tm105"), "Focus Punch");
+  assert(ITEMS["card-key"] && ITEMS["master-ball"] && ITEMS["poke-doll"]);
+  // Sabrina, the rival on 7F, Giovanni on 11F; the Saffron Center; Fly to Saffron.
+  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_LEADER_SABRINA.party.map((m) => m.species), ["Kadabra", "Mr. Mime", "Venomoth", "Alakazam"]);
+  assert(WORLD_TRAINERS.TRAINER_RIVAL_SILPH_SQUIRTLE && WORLD_TRAINERS.TRAINER_BOSS_GIOVANNI_2);
+  assert(Player.CENTERS.SaffronCity_PokemonCenter_1F && window.TOWN_MAP.fly.SAFFRON_CITY.center === "SaffronCity_PokemonCenter_1F");
 }

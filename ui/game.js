@@ -1477,6 +1477,32 @@
   const RIVAL_PICK = { Bulbasaur: "Squirtle", Charmander: "Bulbasaur", Squirtle: "Charmander" };
   const ballOf = (species) => Object.values(STARTER_BALLS).find((b) => b.species === species);
 
+  // Silph Co.'s staff: one thing to say while Team Rocket holds the building
+  // and another once Giovanni's gone (VAR_MAP_SCENE_SILPH_CO_11F), and the
+  // Saffron Center's boy, who hopes for the Elite Four.
+  const SILPH_WORKERS = {
+    SilphCo_3F_EventScript_WorkerM: ["SilphCo_3F_Text_WhatAmIToDo", "SilphCo_3F_Text_YouAndYourMonsSavedUs"],
+    SilphCo_4F_EventScript_WorkerM: ["SilphCo_4F_Text_CantYouSeeImHiding", "SilphCo_4F_Text_TeamRocketIsGone"],
+    SilphCo_5F_EventScript_WorkerM: ["SilphCo_5F_Text_RocketsInUproarAboutIntruder", "SilphCo_5F_Text_YoureOurHeroThankYou"],
+    SilphCo_6F_EventScript_WorkerM1: ["SilphCo_6F_Text_HelpMePlease", "SilphCo_6F_Text_WeGotEngaged"],
+    SilphCo_6F_EventScript_WorkerM2: ["SilphCo_6F_Text_TargetedSilphForOurMonProducts", "SilphCo_6F_Text_ComeWorkForSilphWhenYoureOlder"],
+    SilphCo_6F_EventScript_WorkerM3: ["SilphCo_6F_Text_RocketsTookOverBuilding", "SilphCo_6F_Text_BetterGetBackToWork"],
+    SilphCo_6F_EventScript_WorkerF1: ["SilphCo_6F_Text_ThatManIsSuchACoward", "SilphCo_6F_Text_NeedsMeToLookAfterHim"],
+    SilphCo_6F_EventScript_WorkerF2: ["SilphCo_6F_Text_RocketsTryingToConquerWorld", "SilphCo_6F_Text_RocketsRanAwayBecauseOfYou"],
+    SilphCo_7F_EventScript_WorkerM1: ["SilphCo_7F_Text_RocketsAfterMasterBall", "SilphCo_7F_Text_CanceledMasterBallProject"],
+    SilphCo_7F_EventScript_WorkerM2: ["SilphCo_7F_Text_BadIfTeamRocketTookOver", "SilphCo_7F_Text_WowYouChasedOffTeamRocket"],
+    SilphCo_7F_EventScript_WorkerF: ["SilphCo_7F_Text_ReallyDangerousHere", "SilphCo_7F_Text_ThankYouSoMuch"],
+    SilphCo_8F_EventScript_WorkerM: ["SilphCo_8F_Text_WonderIfSilphIsFinished", "SilphCo_8F_Text_ThanksForSavingUs"],
+    SilphCo_10F_EventScript_WorkerF: ["SilphCo_10F_Text_WaaaImScared", "SilphCo_10F_Text_KeepMeCryingASecret"],
+    SaffronCity_PokemonCenter_1F_EventScript_Youngster: ["SaffronCity_PokemonCenter_1F_Text_GreatIfEliteFourCameBeatRockets",
+      "SaffronCity_PokemonCenter_1F_Text_TeamRocketTookOff"]
+  };
+  // Silph Co.'s card-key doors (the bg events on their barriers).
+  const SILPH_DOORS = [];
+  for (const [name, m] of Object.entries(window.WORLD_MAPS)) {
+    if (/^SilphCo_\d+F$/.test(name)) for (const sg of m.signs) if (/_EventScript_Door\d*$/.test(sg.script) && !SILPH_DOORS.includes(sg.script)) SILPH_DOORS.push(sg.script);
+  }
+
   const SPECIAL = new Set([
     "PalletTown_PlayersHouse_1F_EventScript_Mom",
     "PalletTown_PlayersHouse_2F_EventScript_PC",
@@ -1564,9 +1590,22 @@
     "CeladonCity_PokemonCenter_1F_EventScript_Nurse", "CeladonCity_Restaurant_EventScript_CoinCaseMan", "RocketHideout_B4F_EventScript_Giovanni",
     "RocketHideout_B4F_EventScript_LiftKey", "RocketHideout_B4F_EventScript_SilphScope", "RocketHideout_Elevator_EventScript_FloorSelect",
     "Route7_EastEntrance_EventScript_GuardTriggerBottom", "Route7_EastEntrance_EventScript_GuardTriggerMid",
-    "Route7_EastEntrance_EventScript_GuardTriggerTop", "CeladonCity_Gym_EventScript_Erika"
+    "Route7_EastEntrance_EventScript_GuardTriggerTop", "CeladonCity_Gym_EventScript_Erika",
+    "SaffronCity_EventScript_DoorGuardGrunt", "SaffronCity_EventScript_Pidgeot", "SaffronCity_PokemonCenter_1F_EventScript_Nurse",
+    "SaffronCity_PokemonCenter_1F_EventScript_Youngster", "SaffronCity_Mart_EventScript_Clerk", "SaffronCity_House_EventScript_Pidgey",
+    "SaffronCity_CopycatsHouse_1F_EventScript_Chansey", "SaffronCity_CopycatsHouse_2F_EventScript_Doduo",
+    "SaffronCity_CopycatsHouse_2F_EventScript_Copycat", "SaffronCity_MrPsychicsHouse_EventScript_MrPsychic",
+    "SaffronCity_Gym_EventScript_Sabrina", "SaffronCity_Gym_EventScript_GymGuy", "SaffronCity_Gym_EventScript_GymStatue",
+    "SaffronCity_Dojo_EventScript_HitmonleeBall", "SaffronCity_Dojo_EventScript_HitmonchanBall",
+    "SaffronCity_Dojo_EventScript_TriggerMasterBattleLeft", "SaffronCity_Dojo_EventScript_TriggerMasterBattleRight",
+    "SaffronCity_PokemonTrainerFanClub_EventScript_CrushGirl", "SaffronCity_PokemonTrainerFanClub_EventScript_LittleGirl",
+    "SaffronCity_PokemonTrainerFanClub_EventScript_Youngster", "SaffronCity_PokemonTrainerFanClub_EventScript_Gentleman",
+    "SilphCo_Elevator_EventScript_FloorSelect", "SilphCo_2F_EventScript_ThunderWaveTutor", "SilphCo_7F_EventScript_LaprasGuy",
+    "SilphCo_7F_EventScript_RivalTriggerTop", "SilphCo_7F_EventScript_RivalTriggerBottom", "SilphCo_9F_EventScript_HealWoman",
+    "SilphCo_11F_EventScript_President", "SilphCo_11F_EventScript_GiovanniTriggerLeft", "SilphCo_11F_EventScript_GiovanniTriggerRight"
   ].concat(Object.keys(STARTER_BALLS)).concat(Array.from({ length: 15 }, (_, i) => "VermilionCity_Gym_EventScript_TrashCan" + (i + 1)))
-    .concat(Array.from({ length: 22 }, (_, i) => "CeladonCity_GameCorner_EventScript_SlotMachine" + i)));
+    .concat(Array.from({ length: 22 }, (_, i) => "CeladonCity_GameCorner_EventScript_SlotMachine" + i))
+    .concat(Object.keys(SILPH_WORKERS)).concat(SILPH_DOORS));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
   // Item balls on the map: picked up once, then gone.
@@ -1599,6 +1638,8 @@
         : Object.assign({}, person.alt, { x: 21, y: 11, movement: "face_down" });
     }
     if (person.script === "PalletTown_EventScript_SignLady") return signLadyPlace();
+    // (Silph 7F's pacing worker stands still once Team Rocket's gone.)
+    if (person.script === "SilphCo_7F_EventScript_WorkerM2" && silphFreed()) return { movement: "face_up" };
     // Until Bill gives you the S.S. Ticket, the policeman stands in the
     // robbed house's doorway and Slowbro and the Lass are in the way south
     // (FireRed's CeruleanCity_EventScript_BlockExits).
@@ -1647,6 +1688,22 @@
       case "FLAG_HIDE_SILPH_SCOPE": return !!f.TRAINER_BOSS_GIOVANNI && !f.gotSilphScope;
       case "FLAG_HIDE_LIFT_KEY": return !!f.TRAINER_TEAM_ROCKET_GRUNT_18 && !f.gotLiftKey;
       case "FLAG_HIDE_EEVEE_BALL": return !f.gotEevee;
+      // Saffron: Team Rocket in the streets (and in Silph Co.) until Giovanni's
+      // beaten on Silph's 11F; then the townsfolk come back out. The guard at
+      // Silph's door stands in it until Mr. Fuji's rescued, then dozes off
+      // beside it (SaffronCity_OnTransition).
+      case "FLAG_HIDE_SAFFRON_ROCKETS":
+        if (silphFreed()) return false;
+        return person.script === "SaffronCity_EventScript_DoorGuardGrunt" && !f.rescuedMrFuji ? { x: 33, y: 31 } : true;
+      case "FLAG_HIDE_SAFFRON_CIVILIANS": return silphFreed();
+      case "FLAG_HIDE_SILPH_ROCKETS": return !silphFreed();
+      case "FLAG_HIDE_SILPH_RIVAL": return !f.silphRival;
+      // (The Fan Club's other members turn up once you're Champion.)
+      case "FLAG_HIDE_SAFFRON_FAN_CLUB_BLACK_BELT": case "FLAG_HIDE_SAFFRON_FAN_CLUB_ROCKER":
+      case "FLAG_HIDE_SAFFRON_FAN_CLUB_WOMAN": case "FLAG_HIDE_SAFFRON_FAN_CLUB_BEAUTY": return false;
+      // The Dojo's prized Pokémon: the one you take goes; the other stays.
+      case "FLAG_HIDE_DOJO_HITMONLEE_BALL": return f.dojoHitmon !== "Hitmonlee";
+      case "FLAG_HIDE_DOJO_HITMONCHAN_BALL": return f.dojoHitmon !== "Hitmonchan";
       // After you choose, your rival stands below the Poké Ball he took.
       // Leaf (the lab rival's other look) until she leaves after your battle;
       // after you choose, she stands below the Poké Ball she took.
@@ -1693,9 +1750,15 @@
     if (script === "CeruleanCity_Gym_EventScript_Misty") { await misty(ev.person); return; }
     if (script === "VermilionCity_Gym_EventScript_LtSurge") { await ltSurge(ev.person); return; }
     if (script === "CeladonCity_Gym_EventScript_Erika") { await erika(ev.person); return; }
+    if (script === "SaffronCity_Gym_EventScript_Sabrina") { await sabrina(ev.person); return; }
     if (script === "Game_EventScript_Leaf") {
       if (!canBattle()) return;
       if (ev.map === "PewterCity") await leafPewter(true); else await leafVermilion();
+      return;
+    }
+    // The Karate Master, beaten: choose a prized Pokémon (or train with them).
+    if (script === "SaffronCity_Dojo_EventScript_MasterKoichi" && !trainerWaiting(ev.person)) {
+      await say(T(f.dojoHitmon ? "SaffronCity_Dojo_Text_StayAndTrainWithUs" : "SaffronCity_Dojo_Text_ChoosePrizedFightingMon"));
       return;
     }
     if (TRAINER_SCRIPTS.has(script)) {
@@ -1743,6 +1806,8 @@
       return;
     }
 
+    if (SILPH_WORKERS[script]) { await say(T(SILPH_WORKERS[script][silphFreed() ? 1 : 0])); return; }
+    if (SILPH_DOORS.includes(script)) { await silphDoor(script); return; }
     const can = /^VermilionCity_Gym_EventScript_TrashCan(\d+)$/.exec(script);
     if (can) { await trashCan(+can[1]); return; }
     const slots = /^CeladonCity_GameCorner_EventScript_SlotMachine(\d+)$/.exec(script);
@@ -2239,9 +2304,6 @@
       case "UndergroundPath_NorthEntrance_EventScript_Saige":
         await inGameTrade(TRADES.msNido);
         return;
-      // The guards in the gates to Saffron City are thirsty and turn you back
-      // (FireRed lets you by once you bring them a drink; Saffron isn't here yet).
-
       // ---------- Pokémon Tower ----------
       case "PokemonTower_2F_EventScript_RivalTriggerRight":
       case "PokemonTower_2F_EventScript_RivalTriggerDown":
@@ -2451,6 +2513,126 @@
         Player.addItem(player, item);
         f[item === "lift-key" ? "gotLiftKey" : "gotSilphScope"] = true;
         await sayWithJingle("mus_obtain_key_item", "{PLAYER} found a " + Bag.name(item) + "!");
+        return;
+      }
+
+      // ---------- Saffron City ----------
+      case "SaffronCity_PokemonCenter_1F_EventScript_Nurse":
+        await nurse(ev.map, ev.person);
+        return;
+      case "SaffronCity_Mart_EventScript_Clerk":
+        await mart(ev.person.mart);
+        return;
+      case "SaffronCity_EventScript_Pidgeot":
+      case "SaffronCity_House_EventScript_Pidgey":
+      case "SaffronCity_CopycatsHouse_1F_EventScript_Chansey":
+      case "SaffronCity_CopycatsHouse_2F_EventScript_Doduo":
+        cry(/_EventScript_(\w+)$/.exec(script)[1]);
+        await say(ev.person.text || []);
+        return;
+      // Silph Co.'s "security guard": asleep once Mr. Fuji's safe.
+      case "SaffronCity_EventScript_DoorGuardGrunt":
+        if (!f.rescuedMrFuji) { await say(T("SaffronCity_Text_ImASecurityGuard")); return; }
+        await faceBack(ev.person);
+        await say(T("SaffronCity_Text_HesTakingASnooze"));
+        return;
+      // The Copycat mimics you, unless you've a Poké Doll for her: then she
+      // teaches Mimic (FireRed's EventScript_MimicTutor), once.
+      case "SaffronCity_CopycatsHouse_2F_EventScript_Copycat": {
+        const girl = !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl);
+        if (!Player.itemCount(player, "poke-doll")) {
+          await say(T(girl ? "SaffronCity_CopycatsHouse_2F_Text_MimickingFavoriteHobbyFemale" : "SaffronCity_CopycatsHouse_2F_Text_MimickingFavoriteHobbyMale"));
+          return;
+        }
+        if (await moveTutor("Mimic", "tutorMimic", "Text_Mimic", null, girl ? "Text_MimicTaughtFemale" : "Text_MimicTaughtMale")) Player.removeItem(player, "poke-doll");
+        return;
+      }
+      // Mr. Psychic: FireRed's TM29, Psychic (the TM with that move here).
+      case "SaffronCity_MrPsychicsHouse_EventScript_MrPsychic": {
+        const tm = machineFor("Psychic");
+        if (!f.gotTM29) {
+          await say(T("SaffronCity_MrPsychicsHouse_Text_YouWantedThis"));
+          Player.addItem(player, tm);
+          f.gotTM29 = true;
+          await sayWithJingle(itemJingle(tm), tmText(T("SaffronCity_MrPsychicsHouse_Text_ReceivedTM29FromMrPsychic"), 29, tm));
+        }
+        await say(tmText(T("SaffronCity_MrPsychicsHouse_Text_ExplainTM29"), 29, tm));
+        return;
+      }
+      case "SaffronCity_Gym_EventScript_GymGuy":
+        await say(T(f.TRAINER_LEADER_SABRINA ? "SaffronCity_Gym_Text_GymGuyPostVictory" : "SaffronCity_Gym_Text_GymGuyAdvice"));
+        return;
+      case "SaffronCity_Gym_EventScript_GymStatue":
+        await say(T(hasBadge("marsh") ? "SaffronCity_Gym_Text_GymStatuePlayerWon" : "SaffronCity_Gym_Text_GymStatue"));
+        return;
+      // The Fighting Dojo: walk up beside the Karate Master and he turns to
+      // face you, and fights; beaten, he lets you take one of his two prized
+      // Pokémon.
+      case "SaffronCity_Dojo_EventScript_TriggerMasterBattleLeft":
+      case "SaffronCity_Dojo_EventScript_TriggerMasterBattleRight": {
+        const master = window.WORLD_MAPS.SaffronCity_Dojo.people.find((p) => p.localId === "LOCALID_KARATE_MASTER");
+        await Overworld.act([{ who: "LOCALID_KARATE_MASTER", moves: M(script.endsWith("Left") ? "Common_Movement_WalkInPlaceFasterLeft" : "Common_Movement_WalkInPlaceFasterRight") }]);
+        await Overworld.act([{ who: "player", moves: [script.endsWith("Left") ? "face_right" : "face_left"] }]);
+        await trainerBattle(master, null);
+        return;
+      }
+      case "SaffronCity_Dojo_EventScript_HitmonleeBall":
+      case "SaffronCity_Dojo_EventScript_HitmonchanBall":
+        await dojoBall(ev.person, script.includes("Hitmonlee") ? "Hitmonlee" : "Hitmonchan");
+        return;
+      // The Fan Club, before you're Champion: everyone's a fan of someone else.
+      case "SaffronCity_PokemonTrainerFanClub_EventScript_CrushGirl":
+        await say(T("SaffronCity_PokemonTrainerFanClub_Text_TrainersCoolWhenBattling"));
+        return;
+      case "SaffronCity_PokemonTrainerFanClub_EventScript_LittleGirl":
+        await say(T("SaffronCity_PokemonTrainerFanClub_Text_CanIBecomeCoolTrainerOneDay"));
+        return;
+      case "SaffronCity_PokemonTrainerFanClub_EventScript_Youngster":
+        await say(T("SaffronCity_PokemonTrainerFanClub_Text_BrocksLastWordOnCool"));
+        return;
+      case "SaffronCity_PokemonTrainerFanClub_EventScript_Gentleman":
+        await say(T("SaffronCity_PokemonTrainerFanClub_Text_YoullBeTalkedAboutIfYouKeepWinning"));
+        return;
+
+      // ---------- Silph Co. ----------
+      case "SilphCo_Elevator_EventScript_FloorSelect":
+        await elevator(SILPH_FLOORS.map(([label, x]) => ({ label, map: "SilphCo_" + label, x, y: 3 })));
+        return;
+      case "SilphCo_2F_EventScript_ThunderWaveTutor":
+        await moveTutor("Thunder Wave", "tutorThunderWave", "Text_ThunderWave");
+        return;
+      case "SilphCo_7F_EventScript_RivalTriggerTop":
+      case "SilphCo_7F_EventScript_RivalTriggerBottom":
+        await silphRival(script.endsWith("Top"));
+        return;
+      // A Lapras, from the worker you rescue on 7F.
+      case "SilphCo_7F_EventScript_LaprasGuy":
+        if (f.gotLapras) { await say(T("SilphCo_7F_Text_RocketBossWentToBoardroom")); return; }
+        await say(T("SilphCo_7F_Text_HaveMonForSavingUs"));
+        if (await giftMon("Lapras", 25, T("SilphCo_7F_Text_ObtainedLaprasFromEmployee"), null, () => { f.gotLapras = true; })) {
+          await say(T("SilphCo_7F_Text_ExplainLapras"));
+        }
+        return;
+      // 9F: a nap on the bed while Team Rocket's about.
+      case "SilphCo_9F_EventScript_HealWoman":
+        if (silphFreed()) { await say(T("SilphCo_9F_Text_ThankYouSoMuch")); return; }
+        await say(T("SilphCo_9F_Text_YouShouldTakeQuickNap"));
+        await outOfCenterHeal();
+        await say(T("SilphCo_9F_Text_DontGiveUp"));
+        return;
+      case "SilphCo_11F_EventScript_GiovanniTriggerLeft":
+      case "SilphCo_11F_EventScript_GiovanniTriggerRight":
+        await giovanniSilph(script.endsWith("Left"));
+        return;
+      // The President's thanks: the Master Ball.
+      case "SilphCo_11F_EventScript_President": {
+        if (f.gotMasterBall) { await say(T("SilphCo_11F_Text_ThatsOurSecretPrototype")); return; }
+        const girl = !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl);
+        await say(T(girl ? "SilphCo_11F_Text_ThanksForSavingMeDearGirl" : "SilphCo_11F_Text_ThanksForSavingMeDearBoy"));
+        Player.addItem(player, "master-ball");
+        f.gotMasterBall = true;
+        await sayWithJingle("mus_obtain_key_item", T("SilphCo_11F_Text_ObtainedMasterBallFromPresident"));
+        await say(T("SilphCo_11F_Text_ThatsOurSecretPrototype"));
         return;
       }
 
@@ -2975,9 +3157,12 @@
   // ...WhichMon, ...Taught).
   // `price`: this tutor teaches again and again, for that much each time
   // (instead of FireRed's once only).
-  async function moveTutor(move, flag, text, price) {
+  // `taught`: the label of what they say once it's taught, if not <text>Taught.
+  // True when it's taught this time.
+  async function moveTutor(move, flag, text, price, taught) {
     const f = player.flags;
-    if (f[flag] && !price) { await say(T(text + "Taught")); return; }
+    taught = taught || text + "Taught";
+    if (f[flag] && !price) { await say(T(taught)); return false; }
     const teach = T(text + "Teach");
     await say(teach.slice(0, -1));
     const declined = () => say(T(text + "Declined"));
@@ -3003,7 +3188,8 @@
       await say(player.name + " paid " + money(price) + ".");
     }
     f[flag] = true;
-    await say(T(text + "Taught"));
+    await say(T(taught));
+    return true;
   }
 
   // What the Route 4 tutors charge each time.
@@ -4225,6 +4411,140 @@
     }
   }
 
+  // ---------- Saffron City ----------
+
+  // Team Rocket's out of Saffron once Giovanni's beaten on Silph Co.'s 11F
+  // (FireRed's VAR_MAP_SCENE_SILPH_CO_11F, FLAG_HIDE_SAFFRON_ROCKETS).
+  const silphFreed = () => !!player.flags.TRAINER_BOSS_GIOVANNI_2;
+
+  // FireRed's text about one of its TMs, with this game's number for the TM
+  // with that move ("TM29" -> "TM29" or whatever it is here).
+  const tmText = (pages, frNumber, item) => [].concat(pages).map((p) =>
+    p.replace(new RegExp("TM" + String(frNumber).padStart(2, "0"), "g"), Bag.name(item).split(" ")[0]));
+
+  // Sabrina: battle (talking to her), then the Marsh Badge and TM04 Calm
+  // Mind (FireRed's TM04: the TM with Calm Mind here). Beating her also beats
+  // her Gym's trainers.
+  async function sabrina(person) {
+    const f = player.flags, ID = "TRAINER_LEADER_SABRINA";
+    if (!f[ID]) {
+      await say(person.trainer.intro);
+      if (!canBattle()) return;
+      const outcome = await battle("trainer", { foe: { name: "Leader Sabrina", team: trainerTeam(ID), pic: "leader_sabrina" },
+        defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
+      if (outcome !== "won") return;
+      if (!hasBadge("marsh")) player.badges.push("marsh");
+      for (const t of ["PSYCHIC_JOHAN", "PSYCHIC_TYRON", "PSYCHIC_CAMERON", "PSYCHIC_PRESTON", "CHANNELER_AMANDA", "CHANNELER_STACY",
+        "CHANNELER_TASHA"]) f["TRAINER_" + t] = true;
+      player.flags.lastCenter = "SaffronCity_PokemonCenter_1F";
+      show("world");
+      await Overworld.resume();
+    }
+    const tm = machineFor("Calm Mind");
+    if (!f.gotTM04) {
+      await say(T("SaffronCity_Gym_Text_ExplainMarshBadgeTakeThis"));
+      Player.addItem(player, tm);
+      f.gotTM04 = true;
+      await sayWithJingle(itemJingle(tm), tmText(T("SaffronCity_Gym_Text_ReceivedTM04FromSabrina"), 4, tm));
+      await say(T("SaffronCity_Gym_Text_SabrinaPostBattle"));
+      return;
+    }
+    await say(tmText(T("SaffronCity_Gym_Text_ExplainTM04"), 4, tm));
+  }
+
+  // The Fighting Dojo's prized Pokémon (SaffronCity_Dojo_EventScript_HitmonleeBall):
+  // its picture, the Karate Master looks up, and it's yours if you like
+  // (Lv. 25); its Poké Ball goes, and the other's yours no longer to take.
+  async function dojoBall(person, species) {
+    const f = player.flags;
+    if (f.dojoHitmon) { await say(T("SaffronCity_Dojo_Text_BetterNotGetGreedy")); return; }
+    showPicture(species);
+    cry(species);
+    await Overworld.act([{ who: "LOCALID_KARATE_MASTER", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
+    const yes = await confirm(fill(T("SaffronCity_Dojo_Text_YouWant" + species)[0]));
+    hidePicture();
+    if (!yes) return;
+    await giftMon(species, 25, T("SaffronCity_Dojo_Text_ReceivedMonFromKarateMaster"), [Party.speciesName(species)], () => {
+      Overworld.removePerson(person);
+      f.dojoHitmon = species;
+    });
+  }
+
+  // ---------- Silph Co. ----------
+
+  // The elevator's floors, top down, and where its doors open on each
+  // (SilphCo_Elevator_EventScript_To<n>F's setdynamicwarp).
+  const SILPH_FLOORS = [["11F", 13], ["10F", 13], ["9F", 24], ["8F", 22], ["7F", 23], ["6F", 20], ["5F", 22], ["4F", 22],
+    ["3F", 22], ["2F", 22], ["1F", 22]];
+
+  // A card-key door (FireRed's SilphCo_<n>F_EventScript_Door<k>): with the
+  // Card Key from 5F it opens for good (FLAG_SILPH_<n>F_DOOR_<k>).
+  const silphDoorFlag = (n, k, single) => "FLAG_SILPH_" + n + "F_DOOR" + (single ? "" : "_" + k);
+  async function silphDoor(script) {
+    const f = player.flags, [, n, k] = /^SilphCo_(\d+)F_EventScript_Door(\d*)$/.exec(script);
+    const flag = silphDoorFlag(n, k || 1, !k);
+    if (f[flag]) { await say(T("Text_TheDoorIsOpen")); return; }
+    if (!f.FLAG_HIDE_SILPH_CO_5F_CARD_KEY) { await say(T("Text_ItNeedsCardKey")); return; }
+    await sayWithJingle("mus_level_up", T("Text_CardKeyOpenedDoor"));
+    f[flag] = true;
+    applyPatches(player.location.map);
+    sfx("se_unlock");
+  }
+
+  // 7F: Gary (SilphCo_7F_EventScript_RivalScene): FireRed's team, with his
+  // Eevee, by now a Vaporeon, in place of a starter (as in Pokémon Tower).
+  // Then he's off by the warp pad.
+  async function silphRival(top) {
+    const f = player.flags, R = "LOCALID_SILPH_CO_RIVAL";
+    music("mus_encounter_rival");
+    await Overworld.act([{ who: R, moves: M("Common_Movement_ExclamationMark") }]);
+    await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterDown") }, { who: R, moves: M("Common_Movement_Delay48") }]);
+    await say(T("SilphCo_7F_Text_RivalWhatKeptYou"));
+    if (top) await Overworld.act([{ who: R, moves: M("SilphCo_7F_Movement_RivalApproachTop") }]);
+    await say(T("SilphCo_7F_Text_RivalIntro"));
+    const base = trainerTeam("TRAINER_RIVAL_SILPH_SQUIRTLE");
+    const last = base[base.length - 1];
+    const team = base.slice(0, -1).concat(Party.create("Vaporeon", last.level, { ivs: last.ivs.hp }));
+    const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_late" },
+      defeatText: T("SilphCo_7F_Text_RivalDefeat"), trainerId: "TRAINER_RIVAL_SILPH_SQUIRTLE",
+      prize: 36 * last.level });   // (FireRed's TRAINER_CLASS_RIVAL_LATE: 9, x4 as this game's prizes are)
+    if (outcome !== "won") return;
+    f.silphRival = true;
+    show("world");
+    await Overworld.resume();
+    await say(T("SilphCo_7F_Text_RivalPostBattle"));
+    music("mus_rival_exit");
+    await Overworld.act([{ who: R, moves: M(top ? "SilphCo_7F_Movement_RivalExitTop" : "SilphCo_7F_Movement_RivalExitBottom") }]);
+    sfx("se_warp_in");
+    await Overworld.act([{ who: R, moves: ["set_invisible"] }]);
+    Overworld.removeObject(R);
+    music((window.WORLD_MAPS[player.location.map] || {}).music);
+  }
+
+  // 11F: Giovanni (SilphCo_11F_EventScript_BattleGiovanni). Beaten, he's
+  // gone, and so is Team Rocket, from Silph Co. and from Saffron.
+  async function giovanniSilph(left) {
+    const G = "LOCALID_SILPH_CO_GIOVANNI", ID = "TRAINER_BOSS_GIOVANNI_2";
+    await Overworld.act([{ who: G, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+    await sleep(400);
+    await say(T("SilphCo_11F_Text_GiovanniIntro"));
+    Screen.say("");
+    const approach = [{ who: G, moves: M(left ? "SilphCo_11F_Movement_GiovanniApproachLeft" : "SilphCo_11F_Movement_GiovanniApproachRight") }];
+    if (left) approach.push({ who: "player", moves: M("SilphCo_11F_Movement_PlayerFaceGiovanni") });
+    await Overworld.act(approach);
+    if (!canBattle()) return;
+    const outcome = await battle("trainer", { foe: { name: "Boss Giovanni", team: trainerTeam(ID), pic: "leader_giovanni" },
+      defeatText: T("SilphCo_11F_Text_GiovanniDefeat"), trainerId: ID, prizeClass: "Boss" });
+    if (outcome !== "won") return;
+    show("world");
+    await Overworld.resume();
+    await say(T("SilphCo_11F_Text_GiovanniPostBattle"));
+    Screen.say("");
+    await Overworld.fadeToBlack();
+    Overworld.refreshPeople();
+    await Overworld.fadeFromBlack();
+  }
+
   // Vermilion Gym's trash cans (VermilionCity_Gym_EventScript_TrashCan): a
   // switch is under one of the fifteen, and the second under one next to it
   // (SetVermilionTrashCans). Find the first and one beam goes off; then the
@@ -4270,6 +4590,12 @@
     if (map === "CeladonCity_GameCorner" && !f.openedRocketHideout) return ["hidden"];
     if (map === "RocketHideout_B1F" && !f.TRAINER_TEAM_ROCKET_GRUNT_12) return ["barrier"];
     if (map === "RocketHideout_B4F" && !(f.TRAINER_TEAM_ROCKET_GRUNT_16 && f.TRAINER_TEAM_ROCKET_GRUNT_17)) return ["barrier"];
+    // Silph Co.: each card-key door shut until you open it.
+    const silph = /^SilphCo_(\d+)F$/.exec(map), patches = (window.WORLD_MAPS[map] || {}).patches;
+    if (silph && patches) {
+      const doors = Object.keys(patches).filter((p) => /^close\d+$/.test(p)).map((p) => +p.slice(5));
+      return doors.map((k) => (f[silphDoorFlag(silph[1], k, doors.length === 1)] ? "open" : "close") + k);
+    }
     return [];
   }
   // Sets a map's collision and behaviours for the patches on now (the rest as built).
@@ -4436,6 +4762,11 @@
     if (script === "PokemonTower_6F_EventScript_MarowakGhost") return !player.flags.marowakCalmed;
     if (script === "PokemonTower_5F_EventScript_PurifiedZone") return !inPurifiedZone;
     if (script === "PokemonTower_5F_EventScript_ExitPurifiedZone") { inPurifiedZone = false; return false; }
+    // The Karate Master turns to you until he's beaten; Gary waits on Silph's
+    // 7F, and Giovanni on 11F, until you've battled them.
+    if (/^SaffronCity_Dojo_EventScript_TriggerMasterBattle/.test(script)) return !player.flags.TRAINER_BLACK_BELT_KOICHI;
+    if (/^SilphCo_7F_EventScript_RivalTrigger/.test(script)) return !player.flags.silphRival;
+    if (/^SilphCo_11F_EventScript_GiovanniTrigger/.test(script)) return !silphFreed();
     // The Saffron gates' guards, until they've had the Tea.
     if (/^Route[5-8]_\w+Entrance_EventScript_GuardTrigger/.test(script)) return !player.flags.gatesOpen;
     return SPECIAL.has(script) || ITEM_BALLS.has(script) || TRAINER_SCRIPTS.has(script);
