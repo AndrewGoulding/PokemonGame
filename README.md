@@ -384,8 +384,8 @@ puts a sticker on your Trainer Card, a better one each tier), and the Day-Care,
 FireRed's two-Pokémon one: the Day-Care Lady takes up to two Pokémon, each
 growing a point of Exp. a step, and her husband outside says how they're
 doing (this game has no Eggs, so the couple never find one). Lorelei's house,
-her stuffed dolls (more of them the more often you've entered the Hall of
-Fame). Icefall Cave (Surf to it, Waterfall inside: HM07 Waterfall is on 1F):
+her stuffed dolls (six always there, and one more for every 25 times you've
+entered the Hall of Fame, up to 200: FireRed's UpdateLoreleiDollCollection). Icefall Cave (Surf to it, Waterfall inside: HM07 Waterfall is on 1F):
 on 1F the thin ice cracks the first time you step on it and breaks the next,
 dropping you to B1F (FireRed's sIcefallCaveIceCoords; whole again when you
 come back), and on B1F the ice is slippery: step onto it and you slide on the
@@ -461,7 +461,9 @@ on the water and under rocks, signs and the Town Map's Six and Seven Island
 page. Gideon's Sapphire goes to Celio, whose machine then links with Hoenn
 (FLAG_SYS_CAN_LINK_WITH_RS): the League's rematch teams, Lorelei back at the
 League, and (FireRed's FLAG_HIDE_CERULEAN_CAVE_GUARD, `Sevii.ceruleanCaveOpen`)
-Cerulean Cave's guard steps aside, once the cave's built. From Cinnabar,
+Cerulean Cave's guard steps aside; and Celio, as thanks, gives you two
+Seagallop tickets he found in his machine (this game's own: FireRed's came by
+Mystery Gift; see below). From Cinnabar,
 Route 21 runs north across the sea, its fishermen and swimmers, to Pallet Town.
 Off Route 10's waterway, the Power Plant (Surf along the river to its doors): its wild
 Pikachu, Voltorb, Magnemite, Magneton and Electabuzz, its items (TM17 Protect, TM25
@@ -492,7 +494,10 @@ where they were when you leave a floor, the barriers stay down until you pass
 through Route 23 again, and 3F's boulder drops through a hole to 2F
 (`game/league-road.js`). Out the far side and up Route 23 is the Indigo
 Plateau: its Pokémon Center (a respawn point and Fly spot, its Mart, the
-nurse); the guard at the Elite Four's door wishes you luck, and through it
+nurse); the guard at the Elite Four's door wishes you luck (once you're
+Champion, FireRed's door check, with the National Pokédex standing for
+Champion here: she stands in the doorway, "Lorelei of the Elite Four is
+absent", until the Sapphire is in Celio's machine), and through it
 is the **Pokémon League** (FireRed's rooms and scripts, `game/pokemon-league.js`):
 walk into Lorelei's room and you're walked up to her as the way in shuts
 behind you; there's no way out but on, through the door at the back that opens
@@ -520,7 +525,41 @@ home again until you use another Pokémon Center), and Red's Mom has heard the
 news. The League can be challenged again (Gary's and the others' rematch words
 once you're Champion; FireRed's rematch teams, Lorelei's to Lance's from its
 data and Gary's at its levels, once the Sevii Islands' story sets
-FLAG_SYS_CAN_LINK_WITH_RS, with the Sapphire). Cerulean Cave isn't built yet. Tiles, palettes and metatiles come from
+FLAG_SYS_CAN_LINK_WITH_RS, with the Sapphire). **Cerulean Cave**, once its
+guard has stepped aside: 1F, 2F and B1F, their ladders, water to Surf and Rock
+Smash rocks, FireRed's wild Pokémon (Ditto, Wobbuffet, Kadabra, Electrode and
+the rest; Psyduck and Golduck on the water, Geodude and Graveler under the
+rocks), its items (a Nugget, Full Restores, a Max Elixir, PP Up, Ultra Balls,
+a Max Revive, one hidden), and deep in B1F Mewtwo: "Mew!", its cry, and a wild
+Lv. 70 Mewtwo to its own battle music; caught or beaten it's gone, run from
+it flies away and is back the next time you come (FireRed's
+CeruleanCave_B1F_EventScript_Mewtwo). Its icon shows on the Town Map from then
+on. **Navel Rock and Birth Island**, FireRed's Mystery Gift islands: there's
+no Mystery Gift here, so Celio gives you the Mystic Ticket and the Aurora
+Ticket once his machine links with Hoenn, and Vermilion's Seagallop sailor,
+surprised the first time he sees each, offers "Sevii Islands", "Navel Rock"
+and "Birth Island" (FireRed's VermilionCity_EventScript_HasMysticTicket and
+the rest: Seagallop Hi-Speed 10 and 12). Navel Rock: its harbor and the
+Seagallop back to Vermilion, the rock, and inside the fork: up the Summit
+path's floors to the Summit, where Ho-Oh waits in the shaded sky; step up and
+the view rises to it, its wings beating, the shade lifts, it cries and swoops
+down to battle (Lv. 70; a hidden Sacred Ash there); down the Base path's
+eleven floors to the Base, where thunder shakes the cave and Lugia (Lv. 70)
+cries. Birth Island: the triangle on its rocky hill: touch it and it jumps to
+another spot, a shade redder; dawdle too many steps before touching it again
+and it's back where it began (FireRed's DoDeoxysTriangleInteraction, its
+spots, step limits and colours: `Sevii.deoxysTouch`); touch it at its tenth
+spot and it shatters and Deoxys comes down to you, a Lv. 30 Deoxys in its
+Attack Forme as in FireRed (`Deoxys-Attack`; its Normal Forme on the island),
+to its own music. Caught, each is gone; beaten, it flies away for good; run
+from, it's back (and the triangle starts over) the next time you come. The
+islands go on the Town Map's pages once you've been (FireRed draws sea there
+till then). With that, **Kanto and the Sevii Islands are complete**. Left out
+on purpose: the link rooms (the Pokémon Centers' Battle Colosseum, Trade
+Center, Record Corner and Union Room), FireRed's unused and prototype maps,
+fishing, breeding and Eggs (the Day-Cares never find one), e-Reader content
+(Seven Island's visiting trainers) and the National Pokédex (being Champion
+stands in for it where FireRed asks for it). Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into

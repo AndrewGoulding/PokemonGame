@@ -537,6 +537,8 @@ window.ITEMS = {
   "rainbow-pass": { name: "rainbow-pass", category: "key-items", effect: "A pass for the Seagallop ferries between Vermilion and all of the Sevii Islands." },
   "ruby": { name: "ruby", category: "key-items", effect: "A gem with a red glow, found deep in Mt. Ember's Ruby Path. Celio needs it for his Network Machine." },
   "sapphire": { name: "sapphire", category: "key-items", effect: "A gem with a blue glow. Celio needs it for his Network Machine." },
+  "mystic-ticket": { name: "mystic-ticket", category: "key-items", effect: "A ticket for the Seagallop ferry from Vermilion to Navel Rock. Celio found it while setting up his Network Machine." },
+  "aurora-ticket": { name: "aurora-ticket", category: "key-items", effect: "A ticket for the Seagallop ferry from Vermilion to Birth Island. Celio found it while setting up his Network Machine." },
   "gold-teeth": { name: "gold-teeth", category: "key-items", effect: "Gold dentures lost by the Safari Zone's Warden." },
   "lift-key": { name: "lift-key", category: "key-items", effect: "An elevator key used in Team Rocket's Hideout." },
   "tea": { name: "tea", category: "key-items", effect: "A thirst-quenching tea prepared by an old lady." },
@@ -574,7 +576,6 @@ window.ITEMS = {
   "mach-bike": { name: "mach-bike", category: "gameplay", effect: "A bicycle with high speed and low acceleration. (ORAS only)" },
   "acro-bike": { name: "acro-bike", category: "gameplay", effect: "A bicycle with low speed and high acceleration, capable of bunny hops. (ORAS only)" },
   "eon-ticket": { name: "eon-ticket", category: "gameplay", effect: "Allows passage to Southern Island to obtain Latios or Latias. (ORAS only)" },
-  "aurora-ticket": { name: "aurora-ticket", category: "gameplay", effect: "Allows passage to Birth Island to obtain Deoxys. (ORAS only)" },
   // --- Diamond and Pearl's Underground (added): the Explorer Kit and treasures dug up with it ---
   "explorer-kit": { name: "explorer-kit", category: "key-items", effect: "A bag of tools for exploring. Used in a cave, it lets you dig in the walls for buried treasure." },
   "rare-bone": { name: "rare-bone", category: "loot", effect: "A bone that is extremely valuable for Pokémon archaeology. It can be sold for a high price." },

@@ -23,6 +23,7 @@ function cleanText(s) {
   s = s.replace(/\$$/, "").replace(/¥/g, "₽")   // the game's money sign
     .replace(/POKéMON/g, "Pokémon").replace(/POKéDEX/g, "Pokédex").replace(/POKé BALLS/g, "Poké Balls").replace(/POKé BALL/g, "Poké Ball")
     .replace(/POKé MART/g, "Poké Mart").replace(/POKé/g, "Poké")
+    .replace(/(MYSTIC|AURORA)TICKET/g, "$1 TICKET")   // (FireRed squeezes the names: MYSTICTICKET)
     .replace(/\{(?!PLAYER\}|RIVAL\}|STR_VAR_\d\})[A-Za-z_0-9 ]+\}/g, "");   // control codes ({PAUSE 0x56}, colours)
   return s.split("\\p").map((page) => page.replace(/\\[nl]/g, "\n").replace(/ +\n/g, "\n").trim()
     // FireRed writes names in capitals (PROF. OAK, VIRIDIAN CITY, GYM); use normal case.

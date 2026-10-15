@@ -48,11 +48,25 @@ for (let i = 0; i < rgba.length; i += 4) if (kanto.rgba[i + 3]) rgba.set(kanto.r
 writePng(path.join(out, "kanto.png"), back.width, back.height, rgba);
 // The Sevii Islands' maps (sevii_123.bin, sevii_45.bin, sevii_67.bin), drawn
 // the same way: the map you switch to on the Town Map once you have its page.
+// Navel Rock and Birth Island are sea until you've been (src/region_map.c's
+// BufferRegionMapBg: FillBgTilemapBufferRect_Palette0(0, 0x003, 13, 11, 3, 2)
+// on 4-5 without FLAG_WORLD_MAP_NAVEL_ROCK_EXTERIOR, and (21, 16, 3, 3) on
+// 6-7 without FLAG_WORLD_MAP_BIRTH_ISLAND_EXTERIOR):
+// sevii-45-no-navel.png and sevii-67-no-birth.png.
+const HIDE = { "sevii_45.bin": ["sevii-45-no-navel.png", 13, 11, 3, 2], "sevii_67.bin": ["sevii-67-no-birth.png", 21, 16, 3, 3] };
 for (const [bin, file] of [["sevii_123.bin", "sevii-123.png"], ["sevii_45.bin", "sevii-45.png"], ["sevii_67.bin", "sevii-67.png"]]) {
-  const islands = renderBg({ tiles: G("region_map.png"), map: G(bin), widthTiles: 30, heightTiles: 20, rowWidth: 30, ram, lowNibble: true });
-  const px = new Uint8ClampedArray(back.rgba);
-  for (let i = 0; i < px.length; i += 4) if (islands.rgba[i + 3]) px.set(islands.rgba.subarray(i, i + 4), i);
-  writePng(path.join(out, file), back.width, back.height, px);
+  const draw = (tilemap, name) => {
+    const islands = renderBg({ tiles: G("region_map.png"), map: tilemap, widthTiles: 30, heightTiles: 20, rowWidth: 30, ram, lowNibble: true });
+    const px = new Uint8ClampedArray(back.rgba);
+    for (let i = 0; i < px.length; i += 4) if (islands.rgba[i + 3]) px.set(islands.rgba.subarray(i, i + 4), i);
+    writePng(path.join(out, name), back.width, back.height, px);
+  };
+  draw(G(bin), file);
+  if (HIDE[bin]) {
+    const [name, x0, y0, w, h] = HIDE[bin], tilemap = Buffer.from(fs.readFileSync(G(bin)));
+    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) tilemap.writeUInt16LE(0x003, (y * 30 + x) * 2);
+    draw(tilemap, name);
+  }
 }
 
 // Sprites: colour 0 is transparent.
@@ -106,7 +120,11 @@ const map = layer("LAYER_MAP"), dungeon = layer("LAYER_DUNGEON");
 const sevii = [["SEVII_123", "region_map_layout_sevii_123.h", "sevii-123.png"], ["SEVII_45", "region_map_layout_sevii_45.h", "sevii-45.png"],
   ["SEVII_67", "region_map_layout_sevii_67.h", "sevii-67.png"]].map(([id, file, png]) => {
   layout = layoutOf(file);
-  return { id, image: "assets/town-map/" + png, map: layer("LAYER_MAP"), dungeon: layer("LAYER_DUNGEON") };
+  // (`hidden`: the picture while the island's hidden, and the player.flags
+  // flag that shows it: FLAG_WORLD_MAP_NAVEL_ROCK_EXTERIOR, _BIRTH_ISLAND_EXTERIOR.)
+  const hidden = { SEVII_45: { section: "NAVEL_ROCK", image: "assets/town-map/sevii-45-no-navel.png", flag: "worldMapNavelRock" },
+    SEVII_67: { section: "BIRTH_ISLAND", image: "assets/town-map/sevii-67-no-birth.png", flag: "worldMapBirthIsland" } }[id];
+  return Object.assign({ id, image: "assets/town-map/" + png, map: layer("LAYER_MAP"), dungeon: layer("LAYER_DUNGEON") }, hidden ? { hidden } : {});
 });
 
 // "PALLET TOWN" -> "Pallet Town", "MT. MOON" -> "Mt. Moon", "POKéMON TOWER" -> "Pokémon Tower".

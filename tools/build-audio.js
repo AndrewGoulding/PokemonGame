@@ -204,14 +204,15 @@ for (const line of fs.readFileSync(S("songs/midi/midi.cfg"), "utf8").split("\n")
 // The sound effects the game plays (se_*.mid): the menus' select sound, the
 // Poké Balls (the healing machine, throwing, a Pokémon going in or coming out,
 // bouncing and shaking), hits by how effective they are, fainting, running,
-// Exp., stat changes, elevators, doors and warp pads, and every move sound FireRed has (se_m_*).
+// Exp., stat changes, elevators, doors and warp pads, Birth Island's triangle and Lugia's thunder,
+// and every move sound FireRed has (se_m_*).
 const SOUND_EFFECTS = ["se_ball", "se_select", "se_ball_throw", "se_ball_trade", "se_ball_bounce_1", "se_ball_bounce_2",
   "se_ball_bounce_3", "se_ball_bounce_4", "se_effective", "se_super_effective", "se_not_effective", "se_faint", "se_flee",
   "se_exp", "se_ball_tray_enter", "se_ball_tray_ball", "se_ball_tray_exit", "se_bag_cursor", "se_bag_pocket",
   "se_pc_on", "se_pc_login", "se_pc_off", "se_failure", "se_win_open", "se_exp_max", "se_shop", "se_shiny", "se_pin", "se_unlock",
   "se_elevator", "se_ding_dong", "se_exit", "se_door", "se_warp_in", "se_warp_out", "se_fall", "se_boo",
   "se_rs_door", "se_save", "se_applause", "se_ship", "se_ice_crack", "se_ice_break", "se_rs_shop",
-  "se_bang", "se_truck_move", "se_lavaridge_fall_warp", "se_click"];
+  "se_bang", "se_truck_move", "se_lavaridge_fall_warp", "se_click", "se_deoxys_move", "se_thunderstorm_stop"];
 const isSoundEffect = (name) => SOUND_EFFECTS.includes(name) || /^se_m_/.test(name);
 
 // Flat per-track event lists to keep the file small: [tick, kind, a, b, c] ...

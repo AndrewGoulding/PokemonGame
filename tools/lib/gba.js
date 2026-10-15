@@ -25,7 +25,7 @@ function renderBg({ tiles, map, widthTiles, heightTiles, ram, bpp, opaque, tileO
   const sheet = readPng(tiles);
   if (invertGray) sheet.px = sheet.px.map((v) => 15 - v);
   if (lowNibble) sheet.px = sheet.px.map((v) => v & 15);
-  const entries = fs.readFileSync(map);
+  const entries = Buffer.isBuffer(map) ? map : fs.readFileSync(map);   // (a file, or the tilemap itself)
   const tilesPerRow = sheet.width / 8;
   const w = widthTiles * 8, h = heightTiles * 8;
   const rgba = new Uint8ClampedArray(w * h * 4);
