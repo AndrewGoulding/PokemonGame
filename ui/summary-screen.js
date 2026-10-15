@@ -203,6 +203,9 @@
       // Each stat's EV (or IV) where the stats are.
       const vals = (st.ivs ? v.ivs : v.evs) || {};
       ["hp", "atk", "def", "spa", "spd", "spe"].forEach((k, i) => right(String(vals[k] || 0), i ? 210 : 174, i ? 27 : 63, i ? 38 + (i - 1) * 13 : 20));
+      // And its happiness (friendship, 0-255), below them on both.
+      dark("HAPPINESS", 74, 103);
+      right((v.happiness || 0) + "/255", 175, 63, 103);
     } else {
       const rows = v.moves.slice(0, 4);
       while (rows.length < 4) rows.push(null);

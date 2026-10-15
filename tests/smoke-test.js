@@ -1371,6 +1371,15 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
   for (let n = 1; n <= 386; n++) assert(fs.existsSync(path.join(root, "assets/audio/cries", n + ".wav")), "cry " + n);
 }
 
+// The VS Seeker: a key item with FireRed's picture and description, given in
+// Vermilion's Pokémon Center; the S.S. Anne's resting woman's lines are there too.
+{
+  assert(window.ITEMS["vs-seeker"] && Bag.isKeyItem("vs-seeker") && Bag.sprite("vs-seeker") && window.ITEM_DESCRIPTIONS["vs-seeker"]);
+  assert.strictEqual(Bag.name("vs-seeker"), "VS Seeker");
+  for (const l of ["UrgeToBattleSomeoneAgain", "UseDeviceForRematches", "ExplainVSSeeker"]) assert(window.WORLD_TEXT["VermilionCity_PokemonCenter_1F_Text_" + l], l);
+  for (const l of ["TakeAShortRest", "GladEveryoneIsRefreshed", "SorryYouLookLikeMyBrother", "SorryYouLookLikeMySister"]) assert(window.WORLD_TEXT["SSAnne_1F_Room6_Text_" + l], l);
+}
+
 // Digging with the Explorer Kit (Diamond and Pearl's Underground).
 {
   assert(window.ITEMS["explorer-kit"] && Bag.isKeyItem("explorer-kit") && Bag.sprite("explorer-kit"));

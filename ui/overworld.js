@@ -417,7 +417,8 @@
       return 0;
     }
     if ((m = /^delay_(\d+)$/.exec(cmd))) return +m[1];
-    if ((m = /^emote_(exclamation|question)_mark$/.exec(cmd))) { a.emote = { mark: m[1] === "question" ? "?" : "!" }; return 40; }
+    if ((m = /^emote_(exclamation|question|double_excl)_mark$/.exec(cmd))) { a.emote = { mark: { question: "?", exclamation: "!", double_excl: "!!" }[m[1]] }; return 40; }
+    if (cmd === "emote_x") { a.emote = { mark: "×" }; return 40; }
     if (cmd === "set_invisible") { a.hidden = true; return 0; }
     if (cmd === "set_visible") { a.hidden = false; return 0; }
     return 0;   // anything else (sounds, door animations) is skipped
@@ -742,6 +743,8 @@
   function areaName(mapName) {
     const T = window.TOWN_MAP || {}, m = World.map(mapName) || {};
     const sec = (T.mapSections || {})[mapName];
+    // (The S.S. Anne: "S.S. Anne Exterior" on the dock, "S.S. Anne" in every room.)
+    if (sec === "S_S_ANNE") return mapName === "SSAnne_Exterior" ? "S.S. Anne Exterior" : "S.S. Anne";
     let name = (sec && T.names && T.names[sec]) || String(m.title || mapName).split(" · ")[0];
     if (m.floor) name += " " + (m.floor === 127 ? "Rooftop" : (m.floor < 0 ? "B" + -m.floor : m.floor) + "F");
     return name;
@@ -859,11 +862,11 @@
       if (ready(img)) g.drawImage(img, ox - camX, oy - camY);
       drawPatches(name, ox - camX, oy - camY, "-top");
     }
-    // "!" and "?" bubbles over someone's head.
+    // "!", "!!", "?" and "×" bubbles over someone's head.
     for (const [e, x, y] of emotes) {
       g.fillStyle = "#fff"; g.strokeStyle = "#000"; g.lineWidth = 1;
       g.fillRect(x + 3.5, y - 13.5, 10, 12); g.strokeRect(x + 3.5, y - 13.5, 10, 12);
-      g.fillStyle = e.mark === "!" ? "#d0302f" : "#2b6fd6";
+      g.fillStyle = e.mark === "!" || e.mark === "!!" ? "#d0302f" : e.mark === "×" ? "#404040" : "#2b6fd6";
       g.font = "bold 10px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
       g.fillText(e.mark, x + 8.5, y - 7);
     }
@@ -955,6 +958,8 @@
     act, addObject, removeObject, removePerson, teleport, battleTransition, resume, pokecenterHeal,
     fadeToBlack: fadeOut, fadeFromBlack: fadeIn,
     position: () => ({ map: me.map, x: me.x, y: me.y, facing: me.facing }),
+    // Everyone on the map now, where they stand (the VS Seeker looks around).
+    people: () => people.filter((p) => !p.hidden).map((p) => ({ def: p.def, x: p.x, y: p.y })),
     // Where someone on the map (by local id) stands, or null.
     personPosition: (localId) => { const p = people.find((q) => q.def.localId === localId); return p ? { x: p.x, y: p.y, facing: p.facing } : null; }
   };

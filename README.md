@@ -56,7 +56,8 @@ the D-pad, A, B, Start and Select (tap or click them; tapping anything else does
 nothing). D-pad to walk, A to talk or read signs, B to start running and again to
 stop (from the start, indoors too, with FireRed's running animation), Start for
 the menu. Walking into a new area (or arriving at a town, route or cave through a door),
-its name hangs down from the top left for a couple of seconds, as in FireRed. In menus, the D-pad moves between choices, A picks one and B goes back;
+its name hangs down from the top left for a couple of seconds, as in FireRed (the S.S. Anne's
+dock reads "S.S. Anne Exterior", and every room aboard just "S.S. Anne"). In menus, the D-pad moves between choices, A picks one and B goes back;
 in a summary's moves, A on one and then on another swaps them. On a keyboard: arrows / WASD, Z or Space (A), X (B), Enter, Esc or M (Start),
 Backspace (Select). In battle, FireRed's own menus: FIGHT / BAG / POKéMON / RUN,
 then your moves with their PP (coloured as it runs low) and type; B goes back,
@@ -85,7 +86,7 @@ details show each move's power, accuracy, category (Diamond and Pearl's
 Physical / Special / Status icon, this game's) and description, and swap two
 moves with A, and a page of this game's after it, with a fourth dot in the
 page tabs: POKéMON EVs, each stat's EVs, and A switches it to POKéMON IVs and
-back; up / down go through your party; SWITCH asks "Move to
+back, with the Pokémon's happiness (out of 255) under both; up / down go through your party; SWITCH asks "Move to
 where?"; ITEM gives or takes a held item). The
 same screen picks a Pokémon for an item (ABLE / NOT ABLE for TMs and
 evolution stones), a trade or a tutor, and for switching in battle (SHIFT, or
@@ -444,7 +445,13 @@ ship sailing off when you next step onto the dock, Turner's trade in Route 11's
 gate (Nina the Nidorina for a Nidorino), Prof. Oak's aide there with the
 Itemfinder for thirty kinds of Pokémon caught (use it from the Bag: within 7
 steps across and 5 up or down of a hidden item it responds and you turn toward
-the nearest; standing on one, you dig it up), the Tradeback Guy upstairs
+the nearest; standing on one, you dig it up), the woman in Vermilion's
+Pokémon Center with the VS Seeker (use it from the Bag once charged by 100
+steps: trainers on screen you haven't beaten show "!", ones you have want a
+rematch seven times in ten, "!!", or don't, "×"; those who want one battle you
+again, with the same team, until you beat them or leave the map), the woman on
+the S.S. Anne who lets you rest (the screen goes black while the healing jingle
+plays, as with Red's Mom), the Tradeback Guy upstairs
 in every Pokémon Center (he trades your Pokémon and straight back, so trade
 evolutions happen), and Bill: a
 Clefairy until you run his Teleporter's Cell Separator, then he gives you the

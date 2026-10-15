@@ -315,7 +315,10 @@
       if (mon.leveledUp) leveledUp.push(record);
     });
 
-    if (result.outcome === "won" && opts.trainerId) player.flags[opts.trainerId] = true;
+    if (result.outcome === "won" && opts.trainerId) {
+      player.flags[opts.trainerId] = true;
+      if (player.flags.vsRematch) delete player.flags.vsRematch[opts.trainerId];
+    }
     if (result.outcome === "won" && !wild) {
       const prize = opts.prize != null ? opts.prize : Player.prizeMoney(foe.name, foe.team);
       Player.addMoney(player, prize);
@@ -540,7 +543,7 @@
     return r ? player.party[r.slot] : null;
   }
 
-  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "itemfinder"];
+  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "itemfinder", "vs-seeker"];
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
     item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS || item === "escape-rope";
   // TMs and HMs work like key items: they can't be held, tossed or sold.
@@ -553,6 +556,7 @@
   async function useKeyItem(item) {
     if (item === "explorer-kit") return (await explorerKit()) ? "escaped" : null;
     if (item === "itemfinder") { fieldAction = itemfinder; return "escaped"; }
+    if (item === "vs-seeker") { fieldAction = vsSeeker; return "escaped"; }
     if (item === "exp-share") {
       player.flags.expShareOff = !player.flags.expShareOff;
       await message(expShareOn() ? "The Exp. Share was turned on. Your whole party will gain Exp. Points from battles."
@@ -585,6 +589,44 @@
     const face = Math.abs(best.dx) >= Math.abs(best.dy) ? (best.dx > 0 ? "right" : "left") : (best.dy > 0 ? "down" : "up");
     await Overworld.act([{ who: "player", moves: ["face_" + face] }]);
     await say(["Huh?\nThe Itemfinder's responding!", "There's an item buried around here!"]);
+  }
+
+  // The VS Seeker (FireRed's src/vs_seeker.c): charged by 100 steps, it
+  // signals the trainers on screen. One you haven't beaten shows "!"; one you
+  // have wants a rematch ("!!") seven times in ten, otherwise "×". Those who
+  // want one battle you again (with the same team, for now) until you beat
+  // them or leave the map.
+  const VS_SEEKER_CHARGE = 100;
+  async function vsSeeker() {
+    const f = player.flags;
+    const steps = f.vsSeekerSteps == null ? VS_SEEKER_CHARGE : f.vsSeekerSteps;
+    if (steps < VS_SEEKER_CHARGE) {
+      await say(["The battery isn't charged enough.", "No. of steps required to fully\ncharge the battery: " + (VS_SEEKER_CHARGE - steps)]);
+      return;
+    }
+    const at = Overworld.position();
+    const near = Overworld.people().filter((p) => p.def.trainer && p.def.trainer.id && TRAINER_SCRIPTS.has(p.def.script) &&
+      Math.abs(p.x - at.x) <= 7 && Math.abs(p.y - at.y) <= 5);
+    if (!near.length) { await say(["There are no Trainers within range\nwho can battle…", "The VS Seeker was turned off."]); return; }
+    const rematch = f.vsRematch || (f.vsRematch = {});
+    const tracks = [], ready = [];
+    for (const p of near) {
+      const id = p.def.trainer.id, who = "#" + p.def.id;
+      if (!f[id] || rematch[id]) tracks.push({ who, moves: [f[id] ? "emote_double_excl_mark" : "emote_exclamation_mark"] });
+      else if (Math.random() < 0.7) { ready.push(id); tracks.push({ who, moves: ["walk_in_place_faster_down", "emote_double_excl_mark"] }); }
+      else tracks.push({ who, moves: ["emote_x"] });
+    }
+    sfx("se_pin");
+    ready.forEach((id) => { rematch[id] = true; });
+    if (ready.length) f.vsSeekerSteps = 0;
+    await Overworld.act(tracks);
+    if (!ready.length && !near.some((p) => !f[p.def.trainer.id] || rematch[p.def.trainer.id])) {
+      await say(["The other Trainers don't appear\nto be ready for battle.", "Let's wait till later."]);
+    }
+  }
+  function vsSeekerStep() {
+    const f = player.flags;
+    if (f.vsSeekerSteps != null && f.vsSeekerSteps < VS_SEEKER_CHARGE) f.vsSeekerSteps++;
   }
 
   // The Town Map: FireRed's Kanto map (tools/build-town-map.js) with your
@@ -699,7 +741,7 @@
       name: Party.displayName(r), species: Party.speciesName(r.species), dexNo: (DEX[Party.speciesName(r.species)] || dex).id,
       level: r.level, gender: r.gender, types: dex.types, ot: ot.name, otId: ot.id & 0xffff,
       item: r.item ? Bag.name(r.item) : "", memo, hp: r.hp, maxhp: stats.hp,
-      evs: Object.assign({}, r.evs), ivs: Object.assign({}, r.ivs), nature: r.nature,
+      evs: Object.assign({}, r.evs), ivs: Object.assign({}, r.ivs), nature: r.nature, happiness: r.happiness,
       stats: { atk: stats.atk, def: stats.def, spa: stats.spa, spd: stats.spd, spe: stats.spe },
       exp: r.exp, toNext: Math.max(0, next - r.exp), expFrac: next > here ? (r.exp - here) / (next - here) : 0,
       ability, abilityText: (window.SUMMARY_SCREEN.abilityText || {})[ability] || "",
@@ -1419,7 +1461,8 @@
     "VermilionCity_Gym_EventScript_LtSurge", "VermilionCity_Gym_EventScript_GymGuy", "VermilionCity_Gym_EventScript_GymStatue",
     "VermilionCity_House1_EventScript_FishingGuru", "VermilionCity_House2_EventScript_Elyssa",
     "VermilionCity_House3_EventScript_Pidgey", "VermilionCity_PokemonFanClub_EventScript_Pikachu",
-    "VermilionCity_PokemonFanClub_EventScript_Seel", "VermilionCity_PokemonFanClub_EventScript_Chairman"
+    "VermilionCity_PokemonFanClub_EventScript_Seel", "VermilionCity_PokemonFanClub_EventScript_Chairman",
+    "SSAnne_1F_Room6_EventScript_Woman", "VermilionCity_PokemonCenter_1F_EventScript_VSSeekerWoman"
   ].concat(Object.keys(STARTER_BALLS)).concat(Array.from({ length: 15 }, (_, i) => "VermilionCity_Gym_EventScript_TrashCan" + (i + 1))));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
@@ -1429,7 +1472,9 @@
   // Trainers: battle until beaten (a flag named for the trainer, as in FireRed).
   const TRAINER_SCRIPTS = new Set();
   for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) if (p.trainer && p.trainer.id) TRAINER_SCRIPTS.add(p.script);
-  const trainerWaiting = (person) => !!(person.trainer && person.trainer.id && !player.flags[person.trainer.id]);
+  // (or, signalled by the VS Seeker, want a rematch)
+  const trainerWaiting = (person) => !!(person.trainer && person.trainer.id &&
+    (!player.flags[person.trainer.id] || (player.flags.vsRematch && player.flags.vsRematch[person.trainer.id])));
 
   function visible(person, map) {
     const f = player.flags;
@@ -1599,15 +1644,32 @@
           return;
         }
         await say("Red's Mom: Oh, {PLAYER}! You look worn out.\nYou and your Pokémon should take a\nquick rest.");
-        // EventScript_OutOfCenterPartyHeal: the screen goes black for the jingle.
-        Screen.say("");
-        await Overworld.fadeToBlack();
-        // (as long as the jingle, and a moment at least, for when the sound is off)
-        await Promise.all([fanfare("mus_heal"), new Promise((r) => setTimeout(r, 1500))]);
-        player.party.forEach(Party.heal);
-        await Overworld.fadeFromBlack();
+        await outOfCenterHeal();
         await say("Red's Mom: There! You and your Pokémon\nare looking great. Take care now!");
         return;
+
+      // The woman on the S.S. Anne who lets you rest.
+      case "SSAnne_1F_Room6_EventScript_Woman":
+        if (!(await confirm(T("SSAnne_1F_Room6_Text_TakeAShortRest")[0]))) {
+          await say(T(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl
+            ? "SSAnne_1F_Room6_Text_SorryYouLookLikeMySister" : "SSAnne_1F_Room6_Text_SorryYouLookLikeMyBrother"));
+          return;
+        }
+        await outOfCenterHeal();
+        await say(T("SSAnne_1F_Room6_Text_GladEveryoneIsRefreshed"));
+        return;
+
+      // The woman in Vermilion's Pokémon Center who gives you the VS Seeker.
+      case "VermilionCity_PokemonCenter_1F_EventScript_VSSeekerWoman": {
+        const V = (label) => T("VermilionCity_PokemonCenter_1F_Text_" + label);
+        if (f.gotVsSeeker) { await say(V("ExplainVSSeeker")); return; }
+        await say(V("UrgeToBattleSomeoneAgain"));
+        Player.addItem(player, "vs-seeker");
+        f.gotVsSeeker = true;
+        await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the VS Seeker!");
+        await say(V("UseDeviceForRematches"));
+        return;
+      }
 
       case "PalletTown_PlayersHouse_2F_EventScript_PC":
         // Your own PC at home holds items, as in FireRed (BedroomPC).
@@ -2336,6 +2398,17 @@
       { who: LAB_RIVAL, moves: M("PalletTown_ProfessorOaksLab_Movement_RivalExitAfterBattle" + side) },
       { who: "player", moves: M("PalletTown_ProfessorOaksLab_Movement_PlayerWatchRivalExitAfterBattle" + (side === "Right" ? "Right" : "")) }]);
     Overworld.removeObject(LAB_RIVAL);
+  }
+
+  // EventScript_OutOfCenterPartyHeal: the screen goes black while the healing
+  // jingle plays, and the party is healed.
+  async function outOfCenterHeal() {
+    Screen.say("");
+    await Overworld.fadeToBlack();
+    // (as long as the jingle, and a moment at least, for when the sound is off)
+    await Promise.all([fanfare("mus_heal"), new Promise((r) => setTimeout(r, 1500))]);
+    player.party.forEach(Party.heal);
+    await Overworld.fadeFromBlack();
   }
 
   // ---------- Trainers ----------
@@ -3487,10 +3560,11 @@
         special,
         onWarp,
         trainerWaiting, hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, extraPeople,
-        onStep: () => { leftPallet(player.location.map); DayCare.step(player.flags.dayCare); return redForestStep() || leafVermilionStep() || jessieJamesStep() || repelStep(); }, allowWild: repelAllows,
+        onStep: () => { leftPallet(player.location.map); DayCare.step(player.flags.dayCare); vsSeekerStep(); return redForestStep() || leafVermilionStep() || jessieJamesStep() || repelStep(); }, allowWild: repelAllows,
         onMap: (m) => {
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
           if (m !== "VermilionCity") ticketChecked = false;
+          if (m !== tempFlagsMap) delete player.flags.vsRematch;   // (rematches last while you stay on the map)
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m); music((window.WORLD_MAPS[m] || {}).music); }
       });
       if (ev.type === "menu") {
