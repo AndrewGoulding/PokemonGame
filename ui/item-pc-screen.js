@@ -63,12 +63,12 @@
     const s = window.GbaMenus.Surface(), G = GM(), userFrame = "type" + ((st.frame || 0) + 1);
     const items = entries(), m = memory, shown = Math.min(items.length, 6), menuOpen = !!st.menu;
     // "WITHDRAW / ITEM" (window 2, small font).
-    s.text("WITHDRAW", 8, 9, WHITE, DARK, "small");
-    s.text("ITEM", 8, 23, WHITE, DARK, "small");
+    s.text("Withdraw", 8, 9, WHITE, DARK, "small");
+    s.text("Item", 8, 23, WHITE, DARK, "small");
     // The list (window 0 at 56, 8): names at 65, ×quantities at 166, rows 16 apart.
     for (let r = 0; r < shown; r++) {
       const it = items[m.top + r], y = 10 + 16 * r;
-      s.text(it ? it.name : "CANCEL", 65, y, DARK, LIGHT);
+      s.text(it ? it.name : "Cancel", 65, y, DARK, LIGHT);
       if (it) s.text("×" + String(it.qty).padStart(3, " "), 166, y, DARK, LIGHT, "small");
       if (m.top + r === m.cursor) s.text("▶", 57, y, menuOpen ? LIGHT : DARK, menuOpen ? DARK : LIGHT);
     }
@@ -192,7 +192,7 @@
       se("se_select");
       if (key === "b" || !it) return null;
       st.prompt = { width: 14, text: it.name + " is\nselected." };
-      st.menu = { kind: "actions", cursor: 0, items: [{ label: "WITHDRAW", value: "withdraw" }, { label: "GIVE", value: "give" }, { label: "CANCEL", value: "cancel" }] };
+      st.menu = { kind: "actions", cursor: 0, items: [{ label: "Withdraw", value: "withdraw" }, { label: "Give", value: "give" }, { label: "Cancel", value: "cancel" }] };
       paint();
       const v = await menuKeys();
       if (v === "give") { st.menu = null; st.prompt = null; paint(); return { action: "give", id: it.id }; }

@@ -819,25 +819,25 @@
       Screen.say("Which PC should be accessed?");
       await Screen.printed();
       clearMenu();
-      const items = [f.billHelped ? "BILL'S PC" : "SOMEONE'S PC", player.name + "'s PC"]
-        .concat(f.pokedex ? ["PROF. OAK's PC"] : [], ["LOG OFF"]);
+      const items = [f.billHelped ? "Bill's PC" : "Someone's PC", player.name + "'s PC"]
+        .concat(f.pokedex ? ["Prof. Oak's PC"] : [], ["Log off"]);
       const { index } = await pcMenu(items, { width: f.pokedex || player.name.length > 6 ? 14 : 13 });
-      const v = index < 0 ? "LOG OFF" : items[index];
-      if (v === "LOG OFF") { sfx("se_pc_off"); Screen.say(""); return; }
+      const v = index < 0 ? "Log off" : items[index];
+      if (v === "Log off") { sfx("se_pc_off"); Screen.say(""); return; }
       sfx("se_pc_login");
       if (index === 0) {
-        await say(f.billHelped ? "Accessed BILL's PC." : "Accessed Someone's PC.");
-        await say("POKéMON Storage System opened.");
+        await say(f.billHelped ? "Accessed Bill's PC." : "Accessed Someone's PC.");
+        await say("Pokémon Storage System opened.");
         await billsPc();
       } else if (index === 1) {
         await say("Accessed {PLAYER}'s PC.");
         await playersPc();
       } else {
-        await say(["Accessed PROF. OAK's PC…", "Accessed the POKéDEX Rating\nSystem…"]);
-        if (await confirm("Would you like to have your\nPOKéDEX rated?")) {
-          await say("Prof. Oak: {PLAYER}, you've seen " + player.pokedex.seen.length + "\nPOKéMON, and caught " + player.pokedex.caught.length + "!");
+        await say(["Accessed Prof. Oak's PC…", "Accessed the Pokédex Rating\nSystem…"]);
+        if (await confirm("Would you like to have your\nPokédex rated?")) {
+          await say("Prof. Oak: {PLAYER}, you've seen " + player.pokedex.seen.length + "\nPokémon, and caught " + player.pokedex.caught.length + "!");
         }
-        await say("Closed link to PROF. OAK's PC.");
+        await say("Closed link to Prof. Oak's PC.");
       }
     }
   }
@@ -846,11 +846,11 @@
   // text box, as the ▶ moves.
   let billsPcCursor = 0, lastBox = 0;
   const BILLS_PC = [
-    ["WITHDRAW POKéMON", "withdraw", "You can withdraw a POKéMON if you\nhave any in a BOX."],
-    ["DEPOSIT POKéMON", "deposit", "You can deposit your party\nPOKéMON in any BOX."],
-    ["MOVE POKéMON", "move", "You can move POKéMON that are\nstored in any BOX."],
-    ["MOVE ITEMS", "items", "You can move items held by any\nPOKéMON in a BOX or your party."],
-    ["SEE YA!", null, "See you later!"]
+    ["Withdraw Pokémon", "withdraw", "You can withdraw a Pokémon if you\nhave any in a box."],
+    ["Deposit Pokémon", "deposit", "You can deposit your party\nPokémon in any box."],
+    ["Move Pokémon", "move", "You can move Pokémon that are\nstored in any box."],
+    ["Move items", "items", "You can move items held by any\nPokémon in a box or your party."],
+    ["See ya!", null, "See you later!"]
   ];
   async function billsPc() {
     for (;;) {
@@ -860,8 +860,8 @@
       billsPcCursor = cursor;
       const mode = index < 0 ? null : BILLS_PC[index][1];
       if (!mode) { Screen.say(""); return; }
-      if (mode === "withdraw" && player.party.length >= Player.PARTY_SIZE) { await say("Can't take any more POKéMON."); continue; }
-      if (mode === "deposit" && player.party.length <= 1) { await say("Can't deposit the last POKéMON!"); continue; }
+      if (mode === "withdraw" && player.party.length >= Player.PARTY_SIZE) { await say("Can't take any more Pokémon."); continue; }
+      if (mode === "deposit" && player.party.length <= 1) { await say("Can't deposit the last Pokémon!"); continue; }
       Screen.say("");
       lastBox = await storage(mode);
       await persist();
@@ -897,7 +897,7 @@
         Player.addItem(player, id);
         return true;
       },
-      rename: (name) => enterText("BOX NAME?", name, 8),
+      rename: (name) => enterText("Box name?", name, 8),
       changed: () => persist()
     });
   }
@@ -928,17 +928,17 @@
       Screen.say("What would you like to do?");
       await Screen.printed();
       clearMenu();
-      const { index } = await pcMenu(["ITEM STORAGE", "MAILBOX", "TURN OFF"], { width: 13 });
+      const { index } = await pcMenu(["Item storage", "Mailbox", "Turn off"], { width: 13 });
       if (index === 0) await itemStorage();
-      else if (index === 1) await say("There's no MAIL here.");
+      else if (index === 1) await say("There's no mail here.");
       else { Screen.say(""); return; }
     }
   }
 
   // ITEM STORAGE: WITHDRAW ITEM (the item list, ui/item-pc-screen.js) and
   // DEPOSIT ITEM (the Bag), each said in the text box under the ▶.
-  const ITEM_STORAGE = [["WITHDRAW ITEM", "Take out items from the PC."], ["DEPOSIT ITEM", "Store items in the PC."],
-    ["CANCEL", "Go back to the\nprevious menu."]];
+  const ITEM_STORAGE = [["Withdraw item", "Take out items from the PC."], ["Deposit item", "Store items in the PC."],
+    ["Cancel", "Go back to the\nprevious menu."]];
   async function itemStorage() {
     let cursor = 0;
     for (;;) {
@@ -960,7 +960,7 @@
         frame: GameOptions.get().frame,
         items: () => Object.keys(player.pcItems).map((id) => ({ id, name: Bag.name(id), qty: player.pcItems[id], desc: Bag.description(id), icon: Bag.sprite(id) })),
         withdraw: (id, n) => {
-          if (Player.itemCount(player, id) + n > 999) return "There is no more\nroom in the BAG.";
+          if (Player.itemCount(player, id) + n > 999) return "There is no more\nroom in the Bag.";
           Player.withdrawItem(player, id, n);
           persist();
           return null;
@@ -969,7 +969,7 @@
       ItemPcScreen.close();
       if (!r) return;
       // GIVE: straight from the PC to a Pokémon.
-      if (!player.party.length) { await say("There is no\nPOKéMON."); continue; }
+      if (!player.party.length) { await say("There is no\nPokémon."); continue; }
       const mon = await choosePartyFor("Give to which {PKMN}?");
       if (mon) {
         Player.withdrawItem(player, r.id, 1);

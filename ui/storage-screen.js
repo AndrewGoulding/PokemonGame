@@ -23,7 +23,7 @@
 //
 // Hand: the D-pad moves it round the box (left / right go round the row, up from
 // the top row is the box's name, down from the bottom row the buttons), A opens
-// FireRed's menu for what's under it, B asks "Continue BOX operations?". Left /
+// FireRed's menu for what's under it, B asks "Continue box operations?". Left /
 // right on the box's name change boxes; A there is JUMP / WALLPAPER / NAME.
 (function () {
   "use strict";
@@ -47,14 +47,14 @@
     return images[url];
   }
   const PC = (n) => image("assets/pc/" + n + ".png");
-  ["menu", "pkmn-data", "close-box", "party-panel", "party-slot-empty", "scrolling-bg", "scrolling-bg-items", "cursor",
+  ["menu", "pkmn-data", "close-box", "party-panel", "party-slot-empty", "party-slot-filled", "scrolling-bg", "scrolling-bg-items", "cursor",
     "cursor-shadow", "box-arrows", "choose-box", "waveform"].forEach(PC);
   const ready = (img) => img && img.complete && img.naturalWidth;
 
   const BOX_SIZE = 30, BOXES = 14;
-  const WALLPAPER_NAMES = ["FOREST", "CITY", "DESERT", "SAVANNA", "CRAG", "VOLCANO", "SNOW", "CAVE",
-    "BEACH", "SEAFLOOR", "RIVER", "SKY", "STARS", "POKéCENTER", "TILES", "SIMPLE"];
-  const THEMES = ["SCENERY 1", "SCENERY 2", "SCENERY 3", "ETCETERA"];
+  const WALLPAPER_NAMES = ["Forest", "City", "Desert", "Savanna", "Crag", "Volcano", "Snow", "Cave",
+    "Beach", "Seafloor", "River", "Sky", "Stars", "Poké Center", "Tiles", "Simple"];
+  const THEMES = ["Scenery 1", "Scenery 2", "Scenery 3", "Etcetera"];
 
   // Text colours: the message box's (standard), and PKMN DATA's (scrolling_bg's
   // palette: white on blue-grey with a black shadow; ♂ blue, ♀ pink).
@@ -116,6 +116,11 @@
     g.save();
     g.beginPath(); g.rect(80, 16, 160, 144); g.clip();
     if (ready(wp)) g.drawImage(wp, 80 + dx, 16);
+    // The hand's shadow, under the box's Pokémon (subpriority 21 to their 14-19).
+    if (b === st.box && !st.scroll && st.cursor.area === "box" && !st.moving && ready(PC("cursor-shadow"))) {
+      const [hx, hy] = st.handPos || handXY(st.cursor);
+      g.drawImage(PC("cursor-shadow"), hx - 8, hy + 20 - 8);
+    }
     st.opts.boxes[b].forEach((r, i) => {
       if (!r || (st.releasing && st.releasing.r === r)) return;
       const cx = 100 + 24 * (i % 6) + dx, cy = 44 + 24 * Math.floor(i / 6);
@@ -159,8 +164,12 @@
       const k = st.partyRows;   // 0 (hidden: the button) to 20 (shown)
       g.drawImage(panel, 0, (20 - k) * 8, 96, (k + 2) * 8, 80, 0, 96, (k + 2) * 8);
       if (k > 0) {
-        const empty = PC("party-slot-empty"), shift = (k - 20) * 8;
-        for (let i = 1; i < 6; i++) if (!st.party[i] && ready(empty)) g.drawImage(empty, 136, 8 + 24 * (i - 1) + shift);
+        // (SetPartySlotTilemaps: each slot blue with a Pokémon in it, grey without.)
+        const empty = PC("party-slot-empty"), filled = PC("party-slot-filled"), shift = (k - 20) * 8;
+        for (let i = 1; i < 6; i++) {
+          const img = st.party[i] ? filled : empty;
+          if (ready(img)) g.drawImage(img, 136, 8 + 24 * (i - 1) + shift);
+        }
         st.party.forEach((r, i) => {
           if (!r || (st.releasing && st.releasing.r === r)) return;
           const [x, y] = partyIconXY(i);
@@ -241,7 +250,6 @@
     // (BOUNCE: frames 0 and 1, 30 each; OPEN 2; FIST 3.)
     const frame = st.handFrame != null ? st.handFrame : st.moving ? 0 : Math.floor(st.tick / 30) % 2;
     const y2 = st.handY2 || 0;
-    if (st.cursor.area === "box" && !st.moving && ready(PC("cursor-shadow"))) g.drawImage(PC("cursor-shadow"), x - 8, y + 20 - 8);
     if (st.held) drawIcon(st.held.r, x, y + y2 + 4);
     if (st.heldItem) drawItemIcon(st.heldItem, x, y + y2 + 16);
     if (!ready(cur)) return;
@@ -265,7 +273,7 @@
   // ---------- Windows (BG0) ----------
 
   // The message box (window 1: 88-232, 136-152, its frame round it), the menu
-  // above it, a Yes / No, or the "which BOX?" popup.
+  // above it, a Yes / No, or the "which box?" popup.
   function windows() {
     const s = window.GbaMenus.Surface(), G = GM(), userFrame = "type" + ((st.frame || 0) + 1);
     if (st.message != null) {
@@ -343,7 +351,7 @@
     return yes;
   }
 
-  // "… in which BOX?": left / right through the boxes. -> box, or null.
+  // "… in which box?": left / right through the boxes. -> box, or null.
   async function chooseBox(text, from) {
     say(text);
     st.popup = { box: from };
@@ -430,9 +438,9 @@
   }
 
   async function release(r) {
-    if (st.cursor.area === "party" && !partyOk(r)) { await note("That's your last POKéMON!", true); return; }
-    if (r.item === "mail") { await note("Please remove the MAIL.", true); return; }
-    if (!(await yesNo("Release this POKéMON?"))) { say(null); return; }
+    if (st.cursor.area === "party" && !partyOk(r)) { await note("That's your last Pokémon!", true); return; }
+    if (r.item === "mail") { await note("Please remove the mail.", true); return; }
+    if (!(await yesNo("Release this Pokémon?"))) { say(null); return; }
     const name = st.opts.view(r).name;
     const xy = st.cursor.area === "box" ? [100 + 24 * (st.cursor.pos % 6), 44 + 24 * Math.floor(st.cursor.pos / 6)] : partyIconXY(st.cursor.pos);
     st.releasing = { r, xy, scale: 1 };
@@ -448,12 +456,12 @@
   }
 
   async function store(r) {
-    if (!partyOk(r)) { await note("That's your last POKéMON!", true); return; }
+    if (!partyOk(r)) { await note("That's your last Pokémon!", true); return; }
     for (;;) {
-      const b = await chooseBox("Deposit in which BOX?", st.depositBox);
+      const b = await chooseBox("Deposit in which box?", st.depositBox);
       if (b == null) { say(null); return; }
       const slot = st.opts.boxes[b].findIndex((x) => !x);
-      if (slot < 0) { await note("The BOX is full."); continue; }
+      if (slot < 0) { await note("The box is full."); continue; }
       st.depositBox = b;
       say(null);
       await handDip(() => { setSlot(st.cursor, null); });
@@ -484,13 +492,13 @@
   // MOVE POKéMON: pick up, put down, or swap with what's held.
   async function pickUp() {
     const r = slotOf(st.cursor);
-    if (st.cursor.area === "party" && !partyOk(r)) { await note("That's your last POKéMON!", true); return; }
+    if (st.cursor.area === "party" && !partyOk(r)) { await note("That's your last Pokémon!", true); return; }
     await handDip(() => { setSlot(st.cursor, null); st.held = { r }; });
   }
   async function putDown() {
     const target = slotOf(st.cursor), held = st.held.r;
     if (st.cursor.area === "party" && target && !st.party.some((x) => x && x !== target && healthy(x)) && !healthy(held)) {
-      await note("That's your last POKéMON!", true); return;
+      await note("That's your last Pokémon!", true); return;
     }
     await handDip(() => {
       setSlot(st.cursor, held);
@@ -508,16 +516,16 @@
   async function itemAction(r) {
     const name = (id) => st.opts.itemName(id);
     let items;
-    if (!st.heldItem) items = r.item ? [["TAKE", "take"], ["BAG", "bag"], ["INFO", "info"]] : [["GIVE", "give"]];
-    else items = r.item ? [["SWITCH", "switch"]] : [["GIVE", "give"]];
+    if (!st.heldItem) items = r.item ? [["Take", "take"], ["Bag", "bag"], ["Info", "info"]] : [["Give", "give"]];
+    else items = r.item ? [["Switch", "switch"]] : [["Give", "give"]];
     const what = st.heldItem || r.item;
-    const v = await menu(items.concat([["CANCEL", null]]).map(([label, value]) => ({ label, value })),
-      what ? name(what) + " is selected." : "GIVE to a POKéMON?");
+    const v = await menu(items.concat([["Cancel", null]]).map(([label, value]) => ({ label, value })),
+      what ? name(what) + " is selected." : "Give to a Pokémon?");
     say(null);
     if (v === "take") { st.heldItem = r.item; r.item = ""; }
     else if (v === "bag") {
-      if (st.opts.toBag(r.item)) { r.item = ""; await note("Placed item in the BAG."); }
-      else await note("The BAG is full.", true);
+      if (st.opts.toBag(r.item)) { r.item = ""; await note("Placed item in the Bag."); }
+      else await note("The Bag is full.", true);
     } else if (v === "info") {
       st.info = wrapText(st.opts.itemDesc(r.item), 176);
       redraw();
@@ -558,13 +566,13 @@
     if (!r && !st.held) return;
     const L = (label, value) => ({ label, value });
     let items;
-    if (st.mode === "deposit") items = [L("STORE", "store"), L("SUMMARY", "summary"), L("RELEASE", "release")];
-    else if (st.mode === "withdraw") items = [L("WITHDRAW", "withdraw"), L("SUMMARY", "summary"), L("RELEASE", "release")];
-    else if (!st.held) items = [L("MOVE", "move"), L("SUMMARY", "summary"), inParty ? L("STORE", "store") : L("WITHDRAW", "withdraw"), L("RELEASE", "release")];
-    else if (r) items = [L("SHIFT", "shift"), L("SUMMARY", "summary")];
-    else items = [L("PLACE", "place"), L("SUMMARY", "summary")];
+    if (st.mode === "deposit") items = [L("Store", "store"), L("Summary", "summary"), L("Release", "release")];
+    else if (st.mode === "withdraw") items = [L("Withdraw", "withdraw"), L("Summary", "summary"), L("Release", "release")];
+    else if (!st.held) items = [L("Move", "move"), L("Summary", "summary"), inParty ? L("Store", "store") : L("Withdraw", "withdraw"), L("Release", "release")];
+    else if (r) items = [L("Shift", "shift"), L("Summary", "summary")];
+    else items = [L("Place", "place"), L("Summary", "summary")];
     const name = st.opts.view(r || st.held.r).name;
-    const v = await menu(items.concat([L("CANCEL", null)]), name + " is selected.");
+    const v = await menu(items.concat([L("Cancel", null)]), name + " is selected.");
     say(null);
     if (v === "summary") await doSummary(r);
     else if (v === "store") await store(r);
@@ -577,17 +585,17 @@
   // A on the box's name: JUMP / WALLPAPER / NAME.
   async function boxMenu() {
     const L = (label, value) => ({ label, value });
-    const v = await menu([L("JUMP", "jump"), L("WALLPAPER", "wallpaper"), L("NAME", "name"), L("CANCEL", null)], "What do you want to do?");
+    const v = await menu([L("Jump", "jump"), L("Wallpaper", "wallpaper"), L("Name", "name"), L("Cancel", null)], "What do you want to do?");
     say(null);
     if (v === "jump") {
-      const b = await chooseBox("Jump to which BOX?", st.box);
+      const b = await chooseBox("Jump to which box?", st.box);
       say(null);
       if (b != null) await scrollTo(b);
     } else if (v === "wallpaper") {
       for (;;) {
-        const theme = await menu(THEMES.map((t, i) => L(t, i)).concat([L("CANCEL", null)]), "Please pick a theme.");
+        const theme = await menu(THEMES.map((t, i) => L(t, i)).concat([L("Cancel", null)]), "Please pick a theme.");
         if (theme == null) break;
-        const w = await menu(WALLPAPER_NAMES.slice(theme * 4, theme * 4 + 4).map((n, i) => L(n, theme * 4 + i)).concat([L("CANCEL", null)]), "Pick the wallpaper.");
+        const w = await menu(WALLPAPER_NAMES.slice(theme * 4, theme * 4 + 4).map((n, i) => L(n, theme * 4 + i)).concat([L("Cancel", null)]), "Pick the wallpaper.");
         if (w == null) continue;
         say(null);
         await frames(16, (i) => { st.fade = (i + 1) / 16; });
@@ -606,16 +614,16 @@
     }
   }
 
-  // Leaving: CLOSE BOX ("Exit from the BOX.") or B ("Continue BOX operations?").
+  // Leaving: CLOSE BOX ("Exit from the box.") or B ("Continue box operations?").
   async function leave(viaClose) {
-    if (st.held) { await note("You're holding a POKéMON!", true); return false; }
+    if (st.held) { await note("You're holding a Pokémon!", true); return false; }
     if (st.heldItem) {
-      if (!(await yesNo("Put this item in the BAG?"))) { say(null); return false; }
-      if (!st.opts.toBag(st.heldItem)) { await note("The BAG is full.", true); return false; }
+      if (!(await yesNo("Put this item in the Bag?"))) { say(null); return false; }
+      if (!st.opts.toBag(st.heldItem)) { await note("The Bag is full.", true); return false; }
       st.heldItem = null;
       changed();
     }
-    const yes = await yesNo(viaClose ? "Exit from the BOX." : "Continue BOX operations?");
+    const yes = await yesNo(viaClose ? "Exit from the box." : "Continue box operations?");
     say(null);
     return viaClose ? yes : !yes;
   }

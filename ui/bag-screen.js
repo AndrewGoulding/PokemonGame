@@ -44,9 +44,9 @@
   const ready = (img) => img && img.complete && img.naturalWidth;
 
   const WHITE = [255, 255, 255], DARK = [98, 98, 98], LIGHT = [213, 213, 205];
-  // The bag's frame for each of this game's pockets (bag_*.png: 1 POKé BALLS,
-  // 2 ITEMS, 3 KEY ITEMS).
-  const BAG_FRAME = { "ITEMS": 2, "MEDICINE": 2, "POKé BALLS": 1, "TMs & HMs": 3, "BERRIES": 2, "KEY ITEMS": 3 };
+  // The bag's frame for each pocket: its pockets open in turn, left, middle,
+  // right, then round again (bag_*.png: 2 the left pocket, 3 the middle, 1 the right).
+  const BAG_FRAMES = [2, 3, 1];
   const memory = {};   // pocket name -> { cursor, top }
 
   // ---------- State ----------
@@ -140,7 +140,7 @@
     // and FireRed's shake when the ▶ moves (sAffineAnim_BagShake).
     const bag = A(st.female ? "bag-female" : "bag-male");
     if (ready(bag)) {
-      const f = st.hop > 0 ? 0 : BAG_FRAME[pocket().name] != null ? BAG_FRAME[pocket().name] : 2;
+      const f = st.hop > 0 ? 0 : BAG_FRAMES[st.pocket % 3];
       const SHAKE = [-1, -2, -1, 0, 1, 2, 1, 0, -1, -2, -1, 0];
       const angle = st.shake >= 0 && st.shake < 12 ? SHAKE[st.shake] * 2.8125 : 0;
       g.save();

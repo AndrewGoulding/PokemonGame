@@ -36,14 +36,14 @@ start without any), and after that the Mart
 sells to you and the old man lying across the road north gets up and shows you
 how to catch Pokémon. The Pokémon Center's nurse heals your party (and is where
 you return if you black out), and its PC is FireRed's: "Which PC should be
-accessed?" (SOMEONE'S PC, which becomes BILL'S PC once you've helped him; your
-own; PROF. OAK's PC once you have a Pokédex). Bill's PC is the Pokémon Storage
+accessed?" (Someone's PC, which becomes Bill's PC once you've helped him; your
+own; Prof. Oak's PC once you have a Pokédex). Bill's PC is the Pokémon Storage
 System: 14 boxes of 30 (BOX1-BOX14, each with a name and one of FireRed's 16
-wallpapers), WITHDRAW, DEPOSIT, MOVE POKéMON (pick a Pokémon up with the hand
-and put it down anywhere, in a box or your party) and MOVE ITEMS (take, give and
+wallpapers), Withdraw, Deposit, Move Pokémon (pick a Pokémon up with the hand
+and put it down anywhere, in a box or your party) and Move items (take, give and
 swap held items), with FireRed's hand, party panel, "which BOX?" popup, box
-scrolling and release. Your own PC is item storage: WITHDRAW ITEM on FireRed's
-item list, DEPOSIT ITEM from the Bag. There's
+scrolling and release. Your own PC is item storage: Withdraw item on FireRed's
+item list, Deposit item from the Bag. There's
 also a move tutor who teaches Dream Eater once, a school and the Nickname house.
 Route 2, Route 22 and the Gym aren't built yet; walking into the Gym's door
 tells you it's locked (it opens at seven badges in FireRed).

@@ -12,6 +12,7 @@
 //   party-panel.png       the party panel (party_menu.bin, party_menu.pal), 96x176;
 //                         its bottom 16 rows are the PARTY POKéMON button
 //   party-slot-empty.png  an empty party slot (party_slot_empty.bin), 32x24
+//   party-slot-filled.png a slot with a Pokémon in it (party_slot_filled.bin), 32x24
 //   scrolling-bg.png,     the drifting backdrop (scrolling_bg.png, .bin), 256x256,
 //   scrolling-bg-items.png  and its MOVE ITEMS colours
 //   wallpaper-<n>.png     the 16 wallpapers (wallpapers/*/), in FireRed's order, 160x144
@@ -60,6 +61,7 @@ save("pkmn-data.png", bg1Map(S("pkmn_data.bin"), 8, 4));
 save("close-box.png", bg1Map(S("close_box_button.bin"), 9, 4));
 save("party-panel.png", bg1Map(S("party_menu.bin"), 12, 22));
 save("party-slot-empty.png", bg1Map(S("party_slot_empty.bin"), 4, 3));
+save("party-slot-filled.png", bg1Map(S("party_slot_filled.bin"), 4, 3));
 
 // The backdrop, palette 3 (its tilemap's).
 for (const [file, pal] of [["scrolling-bg.png", readPng(S("scrolling_bg.png")).palette.slice(0, 16)], ["scrolling-bg-items.png", readPal(S("scrolling_bg_move_items.pal"))]]) {
