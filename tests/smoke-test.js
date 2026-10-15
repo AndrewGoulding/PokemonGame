@@ -811,7 +811,13 @@ for (const share of [false, true]) {
   assert.strictEqual(at(World.step({ map: "PewterCity", x: 47, y: 20 }, "right")), "Route3 0,10");
   assert.strictEqual(at(World.step({ map: "Route3", x: 0, y: 10 }, "left")), "PewterCity 47,20");
   assert.strictEqual(at(World.step({ map: "Route3", x: 68, y: 0 }, "up")), "Route4 8,19");
-  assert.strictEqual(World.step({ map: "Route4", x: 107, y: 3 }, "right").unbuilt, "MAP_CERULEAN_CITY");
+  // East into Cerulean City; north from there to Nugget Bridge, then east along
+  // Route 25 to Bill's Sea Cottage.
+  assert.strictEqual(at(World.step({ map: "Route4", x: 107, y: 3 }, "right")), "CeruleanCity 0,13");
+  assert.strictEqual(at(World.step({ map: "CeruleanCity", x: 22, y: 0 }, "up")), "Route24 10,39");
+  assert.strictEqual(at(World.step({ map: "Route24", x: 23, y: 3 }, "right")), "Route25 0,3");
+  assert.strictEqual(World.step({ map: "Route25", x: 51, y: 5 }, "up").warp.map, "Route25_SeaCottage");
+  assert.strictEqual(World.step({ map: "CeruleanCity", x: 47, y: 13 }, "right").unbuilt, "MAP_ROUTE9");
   // Into Mt. Moon and out the other side: Route 4 (19,5) -> 1F, ladders down,
   // B1F's far ladder (45,4) -> Route 4's east side (32,5).
   const into = (map, x, y, dir) => { const r = World.step({ map, x, y }, dir); return r.warp.map + " " + r.warp.x + "," + r.warp.y; };

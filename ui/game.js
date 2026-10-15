@@ -1326,7 +1326,11 @@
     "Route4_EventScript_MegaPunchTutor", "Route4_EventScript_MegaKickTutor",
     "Route4_PokemonCenter_1F_EventScript_Nurse", "Route4_PokemonCenter_1F_EventScript_MagikarpSalesman",
     "MtMoon_B2F_EventScript_MiguelTrigger", "MtMoon_B2F_EventScript_Miguel",
-    "MtMoon_B2F_EventScript_DomeFossil", "MtMoon_B2F_EventScript_HelixFossil"
+    "MtMoon_B2F_EventScript_DomeFossil", "MtMoon_B2F_EventScript_HelixFossil",
+    "CeruleanCity_EventScript_RivalTriggerLeft", "CeruleanCity_EventScript_RivalTriggerMid", "CeruleanCity_EventScript_RivalTriggerRight",
+    "CeruleanCity_PokemonCenter_1F_EventScript_Nurse",
+    "Route24_EventScript_Rocket", "Route24_EventScript_RocketTriggerLeft", "Route24_EventScript_RocketTriggerRight",
+    "Route25_SeaCottage_EventScript_Bill", "Route25_SeaCottage_EventScript_Computer"
   ].concat(Object.keys(STARTER_BALLS)));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
@@ -1352,6 +1356,14 @@
         : Object.assign({}, person.alt, { x: 21, y: 11, movement: "face_down" });
     }
     if (person.script === "PalletTown_EventScript_SignLady") return signLadyPlace();
+    // Until Bill gives you the S.S. Ticket, the policeman stands in the
+    // robbed house's doorway and Slowbro and the Lass are in the way south
+    // (FireRed's CeruleanCity_EventScript_BlockExits).
+    if (!f.gotSSTicket) {
+      if (person.script === "CeruleanCity_EventScript_Policeman") return { x: 30, y: 12 };
+      if (person.script === "CeruleanCity_EventScript_Slowbro") return { x: 26, y: 31 };
+      if (person.script === "CeruleanCity_EventScript_Lass") return { x: 27, y: 31 };
+    }
     switch (person.flag) {
       case "FLAG_HIDE_OAK_IN_PALLET_TOWN": return false;   // only appears for his walk to the lab
       case "FLAG_HIDE_OAK_IN_HIS_LAB": return !!(f.oakInLab || f.starter);
@@ -1362,6 +1374,14 @@
       // (No Running Shoes delivery: you can run from the start.)
       case "FLAG_HIDE_PEWTER_CITY_RUNNING_SHOES_GUY": return false;
       case "FLAG_HIDE_OLD_AMBER": return !f.gotOldAmber;
+      case "FLAG_HIDE_CERULEAN_RIVAL": return false;        // only for his scene
+      case "FLAG_HIDE_CERULEAN_ROCKET": return false;       // (in the robbed house's yard: not built yet)
+      case "FLAG_HIDE_NUGGET_BRIDGE_ROCKET": return !f.gotSSTicket;
+      // Bill: a Clefairy until you run his Cell Separator, then himself.
+      case "FLAG_HIDE_BILL_CLEFAIRY": return !f.billHelped && !billInTeleporter;
+      // (Where his walk out of the Teleporter ended, until you leave.)
+      case "FLAG_HIDE_BILL_HUMAN_SEA_COTTAGE": return f.billHelped ? (billJustOut ? { x: 7, y: 6 } : true) : false;
+      case "FLAG_HIDE_POSTGAME_GOSSIPERS": return false;
       case "FLAG_HIDE_DOME_FOSSIL": case "FLAG_HIDE_HELIX_FOSSIL": return !f.mtMoonFossil;
       // After you choose, your rival stands below the Poké Ball he took.
       // Leaf (the lab rival's other look) until she leaves after your battle;
@@ -1785,6 +1805,30 @@
         await addCaught(Party.create("Magikarp", 5));
         return;
       }
+
+      // ---------- Cerulean City, Routes 24 and 25 ----------
+      case "CeruleanCity_EventScript_RivalTriggerLeft":
+      case "CeruleanCity_EventScript_RivalTriggerMid":
+      case "CeruleanCity_EventScript_RivalTriggerRight":
+        if (!f.ceruleanRival && canBattle()) await ceruleanRival(script.replace("CeruleanCity_EventScript_RivalTrigger", ""));
+        return;
+      case "CeruleanCity_PokemonCenter_1F_EventScript_Nurse":
+        await nurse(ev.map, ev.person);
+        return;
+      case "Route24_EventScript_Rocket":
+        if (f.nuggetBridgeRocket) await say(T("Route24_Text_YoudBecomeTopRocketLeader"));
+        else await nuggetBridgeRocket(null);
+        return;
+      case "Route24_EventScript_RocketTriggerLeft":
+      case "Route24_EventScript_RocketTriggerRight":
+        if (!f.nuggetBridgeRocket && canBattle()) await nuggetBridgeRocket(/Left$/.test(script) ? "left" : "right");
+        return;
+      case "Route25_SeaCottage_EventScript_Bill":
+        await bill(ev.person);
+        return;
+      case "Route25_SeaCottage_EventScript_Computer":
+        await billsComputer();
+        return;
 
       // Super Nerd Miguel guards the fossils: beat him, then each of you takes one.
       case "MtMoon_B2F_EventScript_MiguelTrigger":
@@ -2384,6 +2428,138 @@
     Overworld.removeObject(K);
   }
 
+  // ---------- Cerulean City: your rival ----------
+  //
+  // Heading north out of Cerulean, Gary comes down from Nugget Bridge for a
+  // battle (CeruleanCity_EventScript_Rival): FireRed's Cerulean team, with
+  // his Eevee (this game's rival) in place of a starter. Then he walks off
+  // round you, south. (FireRed's Fame Checker, which he'd give you, isn't in
+  // this game.) Lose and you black out, and he's waiting next time.
+  async function ceruleanRival(side) {
+    music("mus_encounter_rival");
+    const f = player.flags, R = "LOCALID_CERULEAN_RIVAL";
+    const x = { Left: 22, Mid: 23, Right: 24 }[side];
+    Overworld.addObject(R, { x, y: 0, facing: "down" });
+    await Overworld.act([{ who: R, moves: M("CeruleanCity_Movement_RivalEnter") }]);
+    await say(T("CeruleanCity_Text_RivalIntro"));
+    const base = trainerTeam("TRAINER_RIVAL_CERULEAN_SQUIRTLE");
+    const last = base[base.length - 1];
+    const team = base.slice(0, -1).concat(Party.create("Eevee", last.level, { ivs: last.ivs.hp }));
+    const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_early" },
+      defeatText: T("CeruleanCity_Text_RivalDefeat"), trainerId: "TRAINER_RIVAL_CERULEAN_SQUIRTLE" });
+    if (outcome !== "won") return;
+    f.ceruleanRival = true;
+    show("world");
+    await Overworld.resume();
+    await say(T("CeruleanCity_Text_RivalPostBattle"));
+    music("mus_rival_exit");
+    // Round you and away south (the first half of FireRed's walk: he'd come
+    // back with the Fame Checker).
+    const right = side === "Right";
+    const walk = M(right ? "CeruleanCity_Movement_RivalStartExitRight" : "CeruleanCity_Movement_RivalStartExit").slice(0, 8);
+    await Overworld.act([{ who: "player", moves: M(right ? "CeruleanCity_Movement_PlayerWatchRivalExitRight" : "CeruleanCity_Movement_PlayerWatchRivalExit") },
+      { who: R, moves: walk.concat(["walk_down", "walk_down", "set_invisible"]) }]);
+    Overworld.removeObject(R);
+    music("mus_fuchsia");
+  }
+
+  // ---------- Route 24: Nugget Bridge ----------
+  //
+  // At the end of the bridge a man congratulates you on beating the five
+  // contest Trainers, gives you a Nugget, then asks you to join Team Rocket,
+  // and won't take no for an answer (Route24_EventScript_BattleRocket).
+  // `side`: the trigger you stepped on ("left": he walks over to you), or null
+  // when you talked to him.
+  async function nuggetBridgeRocket(side) {
+    const f = player.flags, R = "LOCALID_ROUTE24_ROCKET";
+    if (side === "left") await Overworld.act([{ who: R, moves: M("Route24_Movement_RocketApproachPlayer") }]);
+    else if (side === "right") await Overworld.act([{ who: R, moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
+    if (side) await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
+    await say(T("Route24_Text_JustEarnedFabulousPrize"));
+    if (!f.gotNugget) {
+      Player.addItem(player, "nugget");
+      f.gotNugget = true;
+      await sayWithJingle(itemJingle("nugget"), T("Route24_Text_ReceivedNuggetFromMysteryTrainer"));
+    }
+    music("mus_encounter_rocket");
+    await say(T("Route24_Text_JoinTeamRocket"));
+    if (!canBattle()) return;
+    const data = window.WORLD_TRAINERS.TRAINER_TEAM_ROCKET_GRUNT_6;
+    const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam("TRAINER_TEAM_ROCKET_GRUNT_6"), pic: data.pic },
+      defeatText: T("Route24_Text_RocketDefeat"), trainerId: "TRAINER_TEAM_ROCKET_GRUNT_6" });
+    if (outcome !== "won") return;
+    f.nuggetBridgeRocket = true;
+    show("world");
+    await Overworld.resume();
+    await say(T("Route24_Text_YoudBecomeTopRocketLeader"));
+  }
+
+  // ---------- Route 25: Bill's Sea Cottage ----------
+  //
+  // Bill has got himself mixed up with a Clefairy. He walks into his
+  // Teleporter; you run the Cell Separation System on his PC; out he comes as
+  // himself, and gives you the S.S. Ticket (Route25_SeaCottage_EventScript_*).
+  // Afterwards his PC shows his favourite Pokémon. (Leaving while he's in the
+  // Teleporter, he's a Clefairy again when you come back, as in FireRed.)
+  let billInTeleporter = false, seaCottageReturn = false, billJustOut = false;
+  async function bill(person) {
+    const f = player.flags;
+    if (f.gotSSTicket) {
+      await say(T(seaCottageReturn ? "Route25_SeaCottage_Text_CheckOutRareMonsOnPC" : "Route25_SeaCottage_Text_SSAnnePartyYouGoInstead"));
+      return;
+    }
+    if (f.billHelped) {
+      await say(T("Route25_SeaCottage_Text_ThanksBudTakeThis"));
+      Player.addItem(player, "ss-ticket");
+      f.gotSSTicket = true;
+      await sayWithJingle(itemJingle("ss-ticket"), T("Route25_SeaCottage_Text_ReceivedSSTicketFromBill"));
+      await say(T("Route25_SeaCottage_Text_SSAnnePartyYouGoInstead"));
+      return;
+    }
+    if (billInTeleporter) return;
+    const ask = T("Route25_SeaCottage_Text_ImBillHelpMeOutPal");
+    await say(ask.slice(0, -1));
+    if (!(await confirm(fill(ask[ask.length - 1])))) await say(T("Route25_SeaCottage_Text_NoPleaseChief"));
+    await say(T("Route25_SeaCottage_Text_RunCellSeparationOnPC"));
+    // Into the Teleporter (round you, if you're in the way above him).
+    const C = "LOCALID_BILL_CLEFAIRY", at = Overworld.position();
+    await Overworld.act([{ who: C, moves: M(at.facing === "down" ? "Route25_SeaCottage_Movement_BillWalkToTeleporterSouth" : "Route25_SeaCottage_Movement_BillWalkToTeleporter") }]);
+    await Overworld.act([{ who: C, moves: M("Route25_SeaCottage_Movement_BillEnterTeleporter").concat(["set_invisible"]) }]);
+    Overworld.removeObject(C);
+    billInTeleporter = true;
+  }
+  async function billsComputer() {
+    const f = player.flags;
+    if (f.gotSSTicket && seaCottageReturn) {
+      await say(T("Route25_SeaCottage_Text_BillsFavoriteMonList"));
+      for (;;) {
+        const species = await ask(T("Route25_SeaCottage_Text_SeeWhichMon")[0],
+          ["Eevee", "Flareon", "Jolteon", "Vaporeon"].map((s) => ({ label: s, value: s, className: "action" })).concat([back("Cancel")]));
+        if (species === "back") return;
+        Player.markSeen(player, species);
+        showPicture(species);
+        await say(" ");
+        hidePicture();
+      }
+    }
+    if (!billInTeleporter) { await say(T("Route25_SeaCottage_Text_TeleporterIsDisplayed")); return; }
+    // The Cell Separator: the Teleporter beeps away, and out comes Bill.
+    music(null);
+    await say(T("Route25_SeaCottage_Text_InitiatedTeleportersCellSeparator"));
+    billInTeleporter = false;
+    f.billHelped = true;
+    const beep = () => new Promise((r) => { if (window.GameAudio) window.GameAudio.se("se_ball"); setTimeout(r, 500); });
+    for (let i = 0; i < 12; i++) await beep();
+    music("mus_fuchsia");
+    const B = "LOCALID_BILL_HUMAN";
+    Overworld.addObject(B, { x: 3, y: 3, facing: "down" });
+    const jingle = fanfare("mus_level_up");
+    await Overworld.act([{ who: B, moves: M("Route25_SeaCottage_Movement_BillExitTeleporter") }]);
+    await jingle;
+    await Overworld.act([{ who: B, moves: M("Route25_SeaCottage_Movement_BillWalkToMiddleOfRoom") }]);
+    billJustOut = true;
+  }
+
   // Super Nerd Miguel (trainerbattle_no_intro: his lines come first).
   async function miguelBattle() {
     await say(T("MtMoon_B2F_Text_MiguelIntro"));
@@ -2511,6 +2687,8 @@
     // Walking into the Route 4 Pokémon Center makes it where you go after
     // blacking out (FireRed's setrespawn there).
     if (script === "enter:Route4_PokemonCenter_1F") { player.flags.lastCenter = "Route4_PokemonCenter_1F"; return false; }
+    // (FireRed's FLAG_TEMP_2 and 3: Bill in the Teleporter, back after the ticket.)
+    if (script === "enter:Route25_SeaCottage") { billInTeleporter = billJustOut = false; seaCottageReturn = !!player.flags.gotSSTicket; return false; }
     return SPECIAL.has(script) || ITEM_BALLS.has(script) || TRAINER_SCRIPTS.has(script);
   }
 

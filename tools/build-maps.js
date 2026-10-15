@@ -57,7 +57,11 @@ const TITLES = {
   PewterCity_PokemonCenter_2F: "Pewter City · Pokémon Center 2F",
   Route4_PokemonCenter_1F: "Route 4 · Pokémon Center",
   Route4_PokemonCenter_2F: "Route 4 · Pokémon Center 2F",
-  MtMoon_1F: "Mt. Moon", MtMoon_B1F: "Mt. Moon · B1F", MtMoon_B2F: "Mt. Moon · B2F"
+  MtMoon_1F: "Mt. Moon", MtMoon_B1F: "Mt. Moon · B1F", MtMoon_B2F: "Mt. Moon · B2F",
+  CeruleanCity_PokemonCenter_1F: "Cerulean City · Pokémon Center",
+  CeruleanCity_PokemonCenter_2F: "Cerulean City · Pokémon Center 2F",
+  Route24: "Route 24 · Nugget Bridge",
+  Route25_SeaCottage: "Route 25 · Sea Cottage"
 };
 
 const MAPS = [
@@ -70,7 +74,9 @@ const MAPS = [
   "Route22", "Route22_NorthEntrance",
   "PewterCity", "PewterCity_Museum_1F", "PewterCity_Museum_2F", "PewterCity_Gym", "PewterCity_Mart",
   "PewterCity_House1", "PewterCity_House2", "PewterCity_PokemonCenter_1F", "PewterCity_PokemonCenter_2F",
-  "Route3", "Route4", "Route4_PokemonCenter_1F", "Route4_PokemonCenter_2F", "MtMoon_1F", "MtMoon_B1F", "MtMoon_B2F"
+  "Route3", "Route4", "Route4_PokemonCenter_1F", "Route4_PokemonCenter_2F", "MtMoon_1F", "MtMoon_B1F", "MtMoon_B2F",
+  "CeruleanCity", "CeruleanCity_PokemonCenter_1F", "CeruleanCity_PokemonCenter_2F",
+  "Route24", "Route25", "Route25_SeaCottage"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
@@ -507,7 +513,8 @@ for (const name of MAPS) {
     encounter.push(mt.encounter);
   }
 
-  const people = map.object_events.filter((o) => o.type === "object").map((o, i) => Object.assign({
+  // (People with no look, graphics_id 0, are FireRed's post-game gossipers: left out.)
+  const people = map.object_events.filter((o) => o.type === "object" && o.graphics_id !== "0").map((o, i) => Object.assign({
     id: i, x: o.x, y: o.y, movement: o.movement_type.replace(/^MOVEMENT_TYPE_/, "").toLowerCase(),
     rangeX: o.movement_range_x, rangeY: o.movement_range_y,
     script: o.script, flag: o.flag !== "0" ? o.flag : null,

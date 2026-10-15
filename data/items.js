@@ -554,5 +554,9 @@ window.ITEMS = {
   // --- Diamond and Pearl's Underground (added): the Explorer Kit and treasures dug up with it ---
   "explorer-kit": { name: "explorer-kit", category: "key-items", effect: "A bag of tools for exploring. Used in a cave, it lets you dig in the walls for buried treasure." },
   "rare-bone": { name: "rare-bone", category: "loot", effect: "A bone that is extremely valuable for Pokémon archaeology. It can be sold for a high price." },
-  "star-piece": { name: "star-piece", category: "loot", effect: "A shard of a pretty gem that sparkles in a red color. It can be sold at a high price." }
+  "star-piece": { name: "star-piece", category: "loot", effect: "A shard of a pretty gem that sparkles in a red color. It can be sold at a high price." },
+  // --- From FireRed's Nugget Bridge and Route 25 (added) ---
+  "nugget": { name: "nugget", category: "loot", effect: "A nugget of pure gold that gives off a lustrous gleam. It can be sold at a high price." },
+  "ss-ticket": { name: "ss-ticket", category: "key-items", effect: "The ticket required for sailing on the ship S.S. Anne. It has a drawing of the ship on it." },
+  "bluk-berry": { name: "bluk-berry", category: "baking-only", effect: "Can be ground into a powder as an ingredient for medicine." }
 };

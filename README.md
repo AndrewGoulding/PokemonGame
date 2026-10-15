@@ -96,7 +96,9 @@ floors), Poké Mart, school and Nickname house, Route 2 with its trade house
 and gate, Viridian Forest with both of its gates, Route 22 and its League
 gate, and Pewter City with its Gym, Museum (both floors), Poké Mart,
 Pokémon Center and houses, Route 3 with its eight trainers, Route 4 with
-its Pokémon Center, and Mt. Moon (1F, B1F, B2F). Tiles, palettes and metatiles come from
+its Pokémon Center, Mt. Moon (1F, B1F, B2F), Cerulean City's streets and
+Pokémon Center (its Gym, Mart and houses aren't open yet), Route 24 (Nugget
+Bridge), and Route 25 with Bill's Sea Cottage. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into
@@ -237,8 +239,11 @@ and Museum guide walking you over, the Museum's ₽50 ticket, the Old Amber,
 the Seismic Toss tutor, Brock (Zubat, Geodude, Vulpix and Onix) with the Boulder Badge and TM39, Leaf waiting outside the Gym
 afterwards for a battle (her starter and a Jigglypuff), the Mega Punch and Mega Kick tutors (who teach
 again and again, for ₽1,000 each time), the
-Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils, and Jessie & James
-at the end of Mt. Moon as in Yellow) are in `ui/game.js`; their FireRed
+Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils, Jessie & James
+at the end of Mt. Moon as in Yellow, Gary in Cerulean (FireRed's team, with
+his Eevee), the Nugget Bridge Rocket (a Nugget, then a battle), and Bill: a
+Clefairy until you run his Teleporter's Cell Separator, then he gives you the
+S.S. Ticket and his PC shows his favourite Pokémon) are in `ui/game.js`; their FireRed
 lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scripts
 (`walk_up`, `walk_in_place_faster_down`, `emote_exclamation_mark`, ...) from
 `window.WORLD_MOVEMENTS`; the converter writes both alongside the maps. Running
