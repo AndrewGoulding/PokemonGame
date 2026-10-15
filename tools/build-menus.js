@@ -26,6 +26,8 @@
 //   palettes: mainMenuBg, mainMenuTextbox (graphics/main_menu/), optionMenu
 //            (graphics/misc/option_menu.pal), std0..std4 (text window palettes)
 // }
+// It also writes assets/battle-interface/message-box.png (the battle's text
+// box), assets/text/message-box.png (everywhere else's) and the ▼.
 "use strict";
 
 const fs = require("fs");
@@ -144,6 +146,41 @@ const battle = {
   }
   fs.mkdirSync(path.join(root, "assets/text"), { recursive: true });
   writePng(path.join(root, "assets/text/down-arrow.png"), W, H, rgba);
+}
+
+// ---------- The field message box (src/new_menu_helpers.c, WindowFunc_DrawDialogueFrame) ----------
+//
+// assets/text/message-box.png, 240x48: what people, signs and every other
+// message are written in. The window is tiles 2-27 of rows 15-18 (white,
+// colour 1), framed with graphics/text_window/menu_message.png's tiles
+// (0-13: two columns at each side, a row above and below, the bottom half
+// the top's flipped) in text window palette 0. It's rows 14-19 of the screen.
+{
+  const img = readPng(P("graphics/text_window/menu_message.png"));
+  const pal = readPal(P("graphics/text_window/stdpal_0.pal"));
+  const W = 240, H = 48, rgba = new Uint8ClampedArray(W * H * 4);
+  const tile = (t, tx, ty, vflip) => {
+    const sx = (t % (img.width / 8)) * 8, sy = Math.floor(t / (img.width / 8)) * 8;
+    for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+      const v = img.px[(sy + (vflip ? 7 - y : y)) * img.width + sx + x] & 15;
+      if (!v) continue;
+      rgba.set([...pal[v], 255], ((ty * 8 + y) * W + tx * 8 + x) * 4);
+    }
+  };
+  const left = 2, width = 26;   // (row 0 here is the screen's row 14)
+  const row = (y, ts, vflip) => {
+    tile(ts[0], left - 2, y, vflip); tile(ts[1], left - 1, y, vflip);
+    if (ts[2] != null) for (let i = 0; i < width; i++) tile(ts[2], left + i, y, vflip);
+    tile(ts[3], left + width, y, vflip); tile(ts[4], left + width + 1, y, vflip);
+  };
+  row(0, [0, 1, 2, 3, 4]);
+  row(1, [5, 6, null, 8, 9]);
+  row(2, [10, 11, null, 12, 13]);
+  row(3, [10, 11, null, 12, 13], true);
+  row(4, [5, 6, null, 8, 9], true);
+  row(5, [0, 1, 2, 3, 4], true);
+  for (let y = 8; y < 40; y++) for (let x = left * 8; x < (left + width) * 8; x++) rgba.set([...pal[1], 255], (y * W + x) * 4);
+  writePng(path.join(root, "assets/text/message-box.png"), W, H, rgba);
 }
 
 // ---------- Palettes ----------

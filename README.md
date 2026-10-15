@@ -13,7 +13,8 @@ Start and FireRed's main menu comes up: CONTINUE (with your name, play time,
 Pokédex and badges), NEW GAME and OPTION (B goes back to the title). The
 Option screen is FireRed's too: TEXT SPEED (how long battle messages stay up),
 BATTLE SCENE (OFF leaves out the hit animation), SOUND (mono, stereo or off),
-FRAME (the text box's border, FireRed's ten window frames) and, from the main
+FRAME (the menus' windows: FireRed's ten window frames; the text box is always
+FireRed's message box, as in FireRed) and, from the main
 menu, SAVE FILE to load a downloaded save; it's also in the Start menu. Start a
 **NEW GAME** and you get FireRed's new-game intro: the controls guide, the
 Pikachu pages, then Prof. Oak, who shows you a Nidoran♀ and has you name
@@ -184,8 +185,8 @@ node tools/build-party-menu.js pokefirered expansion
 `data/gba-menus.js`: FireRed's fonts (with their letter widths from
 `src/text.c`), the character map, the button icons, the eleven window frames,
 the Start menu's help bar, the battle menus' panels and the menus' palettes;
-it also writes the battle message box (`assets/battle-interface/`) and the
-text box's ▼ (`assets/text/`). `tools/build-pokedex.js` writes
+it also writes the battle message box (`assets/battle-interface/`), the
+field message box every other text is written in and its ▼ (`assets/text/`). `tools/build-pokedex.js` writes
 `data/pokedex-text.js`, the Pokédex's categories and FireRed descriptions:
 
 ```sh

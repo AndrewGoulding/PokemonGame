@@ -241,10 +241,11 @@ body {
   bottom: 0;
   height: 30%;
   z-index: 5;
-  padding: 4px 12px;
-  background: #fff;
-  border: 3px solid #c8a85a;
-  border-radius: 6px;
+  /* FireRed's field message box (assets/text/message-box.png, tools/build-menus.js):
+     the text window is x 16-224 of 240, from line 1 of its 32, two 16-line rows. */
+  padding: calc(100cqw * 9 / 240) calc(100cqw * 16 / 240) 0;
+  background: url(../assets/text/message-box.png) 0 0 / 100% 100% no-repeat;
+  image-rendering: pixelated;
   font-size: calc(100cqw * 16 / 240);
   font-size-adjust: none;
   line-height: 1;
@@ -259,7 +260,7 @@ body {
    while the text waits for A: positions 0, 1, 2, 1, eight frames each. */
 .textbox.more::after {
   content: ""; position: absolute;
-  right: calc(100cqw * 10 / 240); bottom: calc(100cqw * 5 / 240);
+  right: calc(100cqw * 16 / 240); bottom: calc(100cqw * 9 / 240);
   width: calc(100cqw * 10 / 240); height: calc(100cqw * 12 / 240);
   background: url(../assets/text/down-arrow.png) 0 0 / 300% 100% no-repeat;
   image-rendering: pixelated;
@@ -270,27 +271,17 @@ body {
   50% { background-position-x: 100%; } 75% { background-position-x: 50%; }
 }
 .screen:has(> .field:not(.hidden)) > .textbox.empty { display: block; }
-.screen:has(> .party-menu:not(.hidden)) > .textbox.empty { display: none; }   /* (the party screen has its own) */
+.screen:has(> .party-menu:not(.hidden)) > .textbox.empty { display: none; }
+.screen:has(> .field:not(.hidden)) > .textbox.more::after { right: calc(100cqw * 10 / 240); bottom: calc(100cqw * 5 / 240); }   /* (the party screen has its own) */
 /* In a battle, FireRed's message box (graphics/battle_interface/textbox: the
    dark box, white text with a purple-gray shadow; the text window is tiles
    1-28 of rows 15-18). */
 .screen:has(> .field:not(.hidden)) > .textbox {
-  border: none !important;
-  border-image: none !important;
-  border-radius: 0;
   background: url(../assets/battle-interface/message-box.png) 0 0 / 100% 100%;
   image-rendering: pixelated;
   padding: calc(100cqw * 10 / 240) calc(100cqw * 10 / 240) 0;
   color: #fff;
   text-shadow: calc(100cqw / 240) calc(100cqw / 240) 0 #6a5a73;
-}
-/* With FireRed's window frame (the Option screen's FRAME) as its border: 8 of 240. */
-.textbox.framed {
-  border: calc(100cqw * 8 / 240) solid transparent;
-  border-radius: 0;
-  padding: 0 calc(100cqw * 2 / 240);
-  background: none;
-  image-rendering: pixelated;
 }
 
 /* Under the screen, the choices (FIGHT's moves, Yes / No, a list's options):

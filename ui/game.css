@@ -319,8 +319,12 @@
 /* ---------- Digging (Explorer Kit) ---------- */
 .scene:has(> .dig) { padding: 0 !important; overflow: hidden; }
 /* The dig's text box: in the panel under the screen. */
-.panel-text { grid-column: 1 / -1; min-height: 64px; padding: 6px 12px; background: #fff; border: 3px solid #c8a85a;
-  border-radius: 6px; font-size: 14px; line-height: 1.35; white-space: pre-line; }
+/* (FireRed's message box too: assets/text/message-box.png, its window x 16-224 of 240.) */
+.panel-text { grid-column: 1 / -1; aspect-ratio: 240 / 48; padding: 3.75% 6.667% 0; overflow: hidden;
+  background: url(../assets/text/message-box.png) 0 0 / 100% 100% no-repeat; image-rendering: pixelated;
+  container-type: inline-size; white-space: pre-line; color: #626262; }
+.panel-text > span { display: block; font-size: calc(100cqw * 16 / 240); font-size-adjust: none; line-height: 1;
+  text-shadow: calc(100cqw / 240) calc(100cqw / 240) 0 #d5d5cd; }
 /* The whole dig fits the screen: the board is as big as the height left
    under the bars allows (13 x 10 tiles), and centred. */
 .dig { display: flex; flex-direction: column; gap: 6px; height: 100%; padding: 8px; background: #3a2c1e; }

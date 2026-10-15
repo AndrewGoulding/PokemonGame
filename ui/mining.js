@@ -106,8 +106,8 @@
   // The text box in the panel under the screen.
   function panel(text) {
     const menu = document.getElementById("menu");
-    menu.innerHTML = text ? '<div class="panel-text"></div>' : "";
-    if (text) menu.firstChild.textContent = text;
+    menu.innerHTML = text ? '<div class="panel-text"><span></span></div>' : "";
+    if (text) menu.firstChild.firstChild.textContent = text;
   }
   // A message there, staying up a while (A moves it on).
   async function message(text) {
