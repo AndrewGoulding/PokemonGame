@@ -482,8 +482,8 @@
   // flash yellow (colours 2, 3, 5, 6 and 8 of their palette, brightened in
   // turn) three times round and once more; 30 frames after that, and once the
   // jingle is over, it's done. The pictures are at FireRed's screen positions
-  // (the balls from (93, 36), the screen at (128, 24)), which are the same here
-  // as the camera is on the player, standing at the counter.
+  // (the balls from (93, 36), the screen at (128, 24)), less the 8 lines
+  // FireRed's camera sits lower; the camera is on the player, at the counter.
   const BALL_OFFSETS = [[0, 0], [6, 0], [0, 4], [6, 4], [0, 8], [6, 8]];
   const GLOW = [16, 12, 8, 0];                       // sPokeballGlowReds / Greens (blue stays)
   const MONITOR_ANIM = [[1, 5], [2, 5], [3, 7], [2, 5], [1, 5], [0, 5]];   // played 4 times
@@ -493,7 +493,9 @@
 
   function pokecenterHeal(count, playJingle) {
     return new Promise((resolve) => {
-      const camX = me.x * TILE - PLAYER_X, camY = me.y * TILE - PLAYER_Y;
+      // FireRed's camera has the player 8 lines lower on the screen than ours
+      // (PLAYER_Y), so its screen positions are 8 lines higher here.
+      const camX = me.x * TILE - PLAYER_X, camY = me.y * TILE - PLAYER_Y - 8;
       heal = { state: 0, timer: 0, counter: 0, flashed: 0, left: Math.max(1, Math.min(6, count)), balls: [],
         x: camX + 93, y: camY + 36, monitor: { x: camX + 128 - 16, y: camY + 24 - 8, on: false, step: 0, t: 0, plays: 0 },
         glow: {}, playJingle, jingleDone: false, resolve };

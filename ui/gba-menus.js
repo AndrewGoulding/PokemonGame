@@ -8,6 +8,8 @@
 //   const action = await GbaMenus.optionMenu(canvas, rows, onChange)
 //     // rows: [{ name, values: [...], value }, ..., { name, action }]
 //     // onChange(rowIndex, value) as values change; -> null, or the action row picked
+//   const n = await GbaMenus.quantity(overlay, { max, unitPrice, inBag, frame })
+//     // FireRed's "How many?" window: -> the number chosen, or 0 (B)
 //   const r = await GbaMenus.startMenu(overlay, { items, cursor, frame })
 //     // items: [{ key, label, help }]; drawn over the map (the rest of the
 //     // canvas clear) -> { key (or "exit"), cursor }
@@ -300,7 +302,59 @@
     return { key, cursor };
   }
 
+  // ---------- How many (src/shop.c, AdjustQuantityAccordingToDPadInput) ----------
+  //
+  // Over the screen, above the text box: how many you have (IN BAG) on the
+  // left, and ×NN with its price on the right. Up / down add or take one
+  // (going round past either end), right / left ten (stopping at the ends).
+  async function quantity(canvas, opts) {
+    const max = Math.max(1, opts.max), std = G().palettes.std2;
+    const frame = "type" + ((opts.frame || 0) + 1), fpal = G().frames[frame].palette;
+    const money = (n) => "¥" + n.toLocaleString("en-US");
+    let n = 1;
+    const draw = () => {
+      const s = Surface();
+      if (opts.inBag != null) {
+        s.frame(frame, fpal, 1, 11, 9, 2);
+        s.fill(8, 88, 72, 16, std[1]);
+        s.text("IN BAG:", 8 + 2, 88 + 1, std[2], std[3]);
+        const num = String(opts.inBag);
+        s.text(num, 8 + 70 - s.textWidth(num), 88 + 1, std[2], std[3]);
+      }
+      s.frame(frame, fpal, 17, 11, 12, 2);
+      s.fill(136, 88, 96, 16, std[1]);
+      s.text("×" + String(n).padStart(2, "0"), 136 + 2, 88 + 1, std[2], std[3]);
+      if (opts.unitPrice != null) {
+        const price = money(n * opts.unitPrice);
+        s.text(price, 136 + 94 - s.textWidth(price), 88 + 1, std[2], std[3]);
+      }
+      // Arrows above and below, while there's more than one to choose from.
+      if (max > 1) {
+        // (rows 7, 5, 3, 1 wide: pointing up, the wide row is at the bottom)
+        const arrow = (x, y, up) => { for (let r = 0; r < 4; r++) s.fill(x + r, y + (up ? 3 - r : r), 7 - 2 * r, 1, std[2]); };
+        arrow(136 + 12, 80 - 5, true); arrow(136 + 12, 104 + 2, false);
+      }
+      s.show(canvas);
+    };
+    canvas.classList.remove("hidden");
+    draw();
+    const r = await keys((k) => {
+      const before = n;
+      if (k === "up") n = n === max ? 1 : n + 1;
+      else if (k === "down") n = n === 1 ? max : n - 1;
+      else if (k === "right") n = Math.min(max, n + 10);
+      else if (k === "left") n = Math.max(1, n - 10);
+      else if (k === "a") { se(); return n; }
+      else if (k === "b") { se(); return 0; }
+      if (n !== before) draw();
+      return undefined;
+    });
+    canvas.classList.add("hidden");
+    return r;
+  }
+
   window.GbaMenus = {
+    quantity: (canvas, ...a) => during("quantity", quantity(canvas, ...a)),
     startMenu: (canvas, ...a) => during("start", startMenu(canvas, ...a)),
     mainMenu: (canvas, ...a) => { canvas.classList.remove("hidden"); return during("main", mainMenu(canvas, ...a)); },
     optionMenu: (canvas, ...a) => { canvas.classList.remove("hidden"); return during("option", optionMenu(canvas, ...a)); },

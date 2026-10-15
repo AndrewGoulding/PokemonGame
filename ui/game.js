@@ -695,14 +695,13 @@
     }
   }
 
-  async function chooseQuantity(text, max, unitPrice) {
-    const counts = [1, 5, 10, 25].filter((n) => n < max);
-    const label = (n) => "×" + n + (unitPrice ? "  " + money(n * unitPrice) : "");
-    const options = counts.map((n) => ({ label: label(n), value: n }));
-    if (max > 0) options.push({ label: "All " + label(max).slice(1), value: max });
-    options.push(back("Cancel"));
-    const v = await ask(text, options);
-    return v === "back" ? 0 : v;
+  // FireRed's "How many?": the question in the text box and the quantity
+  // window over the screen (D-pad up / down by one, left / right by ten).
+  // Returns the number chosen, or 0.
+  async function chooseQuantity(text, max, unitPrice, inBag) {
+    Screen.say(text);
+    clearMenu();
+    return GbaMenus.quantity($("#overlay"), { max, unitPrice, inBag, frame: GameOptions.get().frame });
   }
 
   // ---------- Poké Mart ----------
@@ -741,7 +740,7 @@
       if (Bag.isMachine(item) && owned(item)) { await message("You already have that " + Bag.name(item).split(" ")[0] + ". TMs and HMs never run out."); continue; }
       const max = Bag.isMachine(item) ? Math.min(1, Math.floor(player.money / price)) : Math.min(99, Math.floor(player.money / price));
       if (!max) { await message("You don't have enough money."); continue; }
-      const n = Bag.isMachine(item) ? 1 : await chooseQuantity(Bag.name(item) + "? Certainly. How many would you like?", max, price);
+      const n = Bag.isMachine(item) ? 1 : await chooseQuantity(Bag.name(item) + "? Certainly.\nHow many would you like?", max, price, Player.itemCount(player, item));
       if (!n) continue;
       if (!(await confirm(n + " × " + Bag.name(item) + "? That will be " + money(n * price) + ". OK?"))) continue;
       Player.addMoney(player, -n * price);

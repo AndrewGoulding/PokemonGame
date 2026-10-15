@@ -841,7 +841,10 @@
   // A ball arcs from `from` (field %, x and y) to where the Pokémon stands,
   // spinning; it pops open and the Pokémon grows out of it in a white flash.
   const BALL_LANDS = { p1: [21, 80], p2: [73.5, 50] };
-  const THROW_FROM_HAND = [44, 52], THROW_FROM_LEFT = [-6, 40], FOE_THROW_FROM = [106, 8];
+  // Your trainer's throw starts where FireRed's does (pokeball.c: the ball at
+  // (32, 80) of the 240x112 scene), behind and left of where your Pokémon
+  // comes out, so it flies forward.
+  const THROW_FROM_HAND = [32 / 240 * 100, 80 / 112 * 100], THROW_FROM_LEFT = [-6, 40], FOE_THROW_FROM = [106, 8];
   const THROW_MS = 560, POP_MS = 420;
 
   function throwBallEl() {
