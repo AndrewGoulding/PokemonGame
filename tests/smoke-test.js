@@ -1459,3 +1459,10 @@ console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random 
   assert.strictEqual(back.moves.length, 4);
   assert.deepStrictEqual(back.moves.map((m) => m.name), ["Growl", "Ember", "Leer", "Smokescreen"]);   // Smokescreen at 10
 }
+
+// This game's own types.
+{
+  const types = (sp) => DEX[sp].types.join("/");
+  assert.deepStrictEqual(["Aerodactyl", "Gyarados", "Gyarados-Mega", "Psyduck", "Golduck", "Blastoise", "Blastoise-Mega"].map(types),
+    ["Dragon/Rock", "Dragon/Water", "Dragon/Water", "Water/Psychic", "Water/Psychic", "Water/Steel", "Water/Steel"]);
+}

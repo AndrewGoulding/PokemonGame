@@ -100,7 +100,7 @@
     if (m.top) list.push(mapImage(name, "top"));
     if (m.anim) list.push(mapImage(name, "anim"));
     for (const p of Object.keys(m.patches || {})) list.push(mapImage(name, "patch-" + p));
-    for (const c of m.connections) if (c.map) list.push(mapImage(c.map), mapImage(c.map, "top"));
+    for (const c of m.connections) if (c.map && World.map(c.map)) list.push(mapImage(c.map), ...(World.map(c.map).top ? [mapImage(c.map, "top")] : []));
     for (const p of m.people) { list.push(spriteImage(p.sprite)); if (p.alt) list.push(spriteImage(p.alt.sprite)); }
     return Promise.all(list.map((img) => img.loaded));
   }
@@ -173,7 +173,9 @@
     const m = World.map(me.map);
     // ctx.visible says whether someone is there, or returns changes to where
     // they stand and how they look (the old man lying in Viridian's road).
-    people = m.people.map((p) => {
+    // (ctx.extraPeople: people the game's scenes put on the map, e.g. Leaf
+    // waiting outside a Gym.)
+    people = m.people.concat(ctx.extraPeople ? ctx.extraPeople(me.map) : []).map((p) => {
       const v = ctx.visible ? ctx.visible(p, me.map) : true;
       return v && (v === true ? p : Object.assign({}, p, v));
     }).filter(Boolean).map((def) => ({
@@ -181,10 +183,27 @@
       facing: (/^face_(up|down|left|right)/.exec(def.movement || "") || [, "down"])[1],
       timer: 60 + Math.floor(Math.random() * 120)
     }));
+    // The people on the maps joined to this one, standing where they are (a
+    // cut tree at the edge of the next route is there before you cross):
+    // { map, def, x, y, ox, oy } with (ox, oy) that map's origin in this one's tiles.
+    neighbours = [];
+    for (const c of m.connections) {
+      if (!c.map || !World.map(c.map)) continue;
+      const [ox, oy] = World.connectionOrigin(m, c);
+      for (const p of World.map(c.map).people) {
+        const v = ctx.visible ? ctx.visible(p, c.map) : true;
+        if (!v) continue;
+        const def = v === true ? p : Object.assign({}, p, v);
+        neighbours.push({ map: c.map, def, x: def.x, y: def.y, ox, oy,
+          facing: (/^face_(up|down|left|right)/.exec(def.movement || "") || [, "down"])[1] });
+      }
+    }
   }
+  let neighbours = [];
 
   const personAt = (x, y) => people.find((p) => (p.x === x && p.y === y) || (p.move && p.move.tx === x && p.move.ty === y));
-  const occupiedForPlayer = (mapName, x, y) => mapName === me.map && !!personAt(x, y);
+  const occupiedForPlayer = (mapName, x, y) => (mapName === me.map ? !!personAt(x, y)
+    : neighbours.some((n) => n.map === mapName && n.x === x && n.y === y));
 
   const WANDER_DIRS = {
     wander_around: ["up", "down", "left", "right"], wander_up_and_down: ["up", "down"],
@@ -812,6 +831,12 @@
       return { y, draw: () => drawSprite(p.def.sprite, p.def.width, p.def.height,
         frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), p.facing === "right", x - camX, y - camY) };
     });
+    for (const n of neighbours) {
+      const x = (n.ox + n.x) * TILE, y = (n.oy + n.y) * TILE;
+      if (x - camX < -TILE * 2 || x - camX > VIEW_W + TILE || y - camY < -TILE * 2 || y - camY > VIEW_H + TILE * 2) continue;
+      sprites.push({ y, draw: () => drawSprite(n.def.sprite, n.def.width, n.def.height,
+        frameFor(n.facing, false, 0, n.def.frames), n.facing === "right", x - camX, y - camY) });
+    }
     if (me.emote) emotes.push([me.emote, px - camX, py - camY - 16]);
     const look = "player_" + (ctx.player.look || "custom");
     let sheet = look, frame;
@@ -928,6 +953,8 @@
     explore, hide, read: (pages) => read(pages), showAreaName, forceStep, refreshPeople: () => loadPeople(),
     act, addObject, removeObject, removePerson, teleport, battleTransition, resume, pokecenterHeal,
     fadeToBlack: fadeOut, fadeFromBlack: fadeIn,
-    position: () => ({ map: me.map, x: me.x, y: me.y, facing: me.facing })
+    position: () => ({ map: me.map, x: me.x, y: me.y, facing: me.facing }),
+    // Where someone on the map (by local id) stands, or null.
+    personPosition: (localId) => { const p = people.find((q) => q.def.localId === localId); return p ? { x: p.x, y: p.y, facing: p.facing } : null; }
   };
 })();

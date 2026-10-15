@@ -1367,7 +1367,7 @@
     "EventScript_CutTree", "Route5_PokemonDayCare_EventScript_DaycareMan", "UndergroundPath_NorthEntrance_EventScript_Saige",
     "Route5_SouthEntrance_EventScript_GuardTriggerLeft", "Route5_SouthEntrance_EventScript_GuardTriggerMid",
     "Route5_SouthEntrance_EventScript_GuardTriggerRight",
-    "Route6_NorthEntrance_EventScript_GuardTriggerLeft", "Route6_NorthEntrance_EventScript_GuardTriggerMid",
+    "Game_EventScript_Leaf", "Game_EventScript_TradebackGuy", "Route6_NorthEntrance_EventScript_GuardTriggerLeft", "Route6_NorthEntrance_EventScript_GuardTriggerMid",
     "Route6_NorthEntrance_EventScript_GuardTriggerRight",
     "VermilionCity_EventScript_CheckTicketLeft", "VermilionCity_EventScript_CheckTicketRight",
     "VermilionCity_EventScript_ExitedTicketCheck", "VermilionCity_EventScript_OaksAide",
@@ -1387,10 +1387,10 @@
   for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) if (p.trainer && p.trainer.id) TRAINER_SCRIPTS.add(p.script);
   const trainerWaiting = (person) => !!(person.trainer && person.trainer.id && !player.flags[person.trainer.id]);
 
-  function visible(person) {
+  function visible(person, map) {
     const f = player.flags;
     if (person.item) return !f[person.flag];
-    if (person.flag && tempFlags.has(person.flag)) return false;   // (a tree you've cut)
+    if (person.flag && tempFlags.has((map || player.location.map) + ":" + person.flag)) return false;   // (a tree you've cut)
     const spot = person.trainer && f.trainerSpots && f.trainerSpots[person.trainer.id];
     if (spot) return { x: spot.x, y: spot.y, movement: "face_" + spot.facing };
     // Miguel stays by the fossil he took (FireRed's copyobjectxytoperm).
@@ -1473,6 +1473,11 @@
     if (script === "PewterCity_Gym_EventScript_Brock") { await brock(ev.person); return; }
     if (script === "CeruleanCity_Gym_EventScript_Misty") { await misty(ev.person); return; }
     if (script === "VermilionCity_Gym_EventScript_LtSurge") { await ltSurge(ev.person); return; }
+    if (script === "Game_EventScript_Leaf") {
+      if (!canBattle()) return;
+      if (ev.map === "PewterCity") await leafPewter(true); else await leafVermilion();
+      return;
+    }
     if (TRAINER_SCRIPTS.has(script)) {
       if (trainerWaiting(ev.person)) await trainerBattle(ev.person, null);
       else await say(ev.person.trainer.after || ev.person.text || []);
@@ -2003,6 +2008,26 @@
       case "VermilionCity_EventScript_ExitedTicketCheck":
         ticketChecked = false;
         return;
+      // The Tradeback Guy (this game's): he trades with you and straight back,
+      // so a Pokémon that evolves by trading does (Kadabra, Machoke, Graveler,
+      // Haunter, and those holding their item: Onix with a Metal Coat, ...).
+      case "Game_EventScript_TradebackGuy": {
+        await say(["Hi! I'm the Tradeback Guy!", "Some Pokémon only evolve when\nthey're traded. Nobody to trade\nwith? Leave it to me!",
+          "I'll trade with you, and then\ntrade your Pokémon right back!"]);
+        if (!(await confirm("Want to trade a Pokémon with me?"))) { await say("Okay! Come back anytime!"); return; }
+        const mine = await choosePartyFor("Choose a POKéMON.");
+        show("world");
+        if (!mine) { await say("Okay! Come back anytime!"); return; }
+        const name = Party.displayName(mine);
+        await say("{PLAYER} traded " + name + "…\n… … … … …\nand got it back!");
+        const evo = Evolution.find(mine, { trigger: "trade", party: player.party });
+        if (!evo) { await say("Hmm… Nothing happened.\nHere's your " + name + " back!"); return; }
+        await evolve(mine, evo, false);
+        show("world");
+        await Overworld.resume();
+        await say("There you go! Come back anytime!");
+        return;
+      }
       case "VermilionCity_EventScript_OaksAide":
         f.talkedToVermilionAide = true;
         await say(T("VermilionCity_Text_Route2AideHasPackageForYou"));
@@ -2242,8 +2267,8 @@
         { map: player.location.map, x: person.x + dx * approach, y: person.y + dy * approach, facing };
     }
   }
-  // FireRed's temporary flags (FLAG_TEMP_*: the trees you've cut), cleared
-  // when you go to another map.
+  // FireRed's temporary flags (FLAG_TEMP_*: the trees you've cut, as
+  // "map:flag"), cleared when you go to another map.
   const tempFlags = new Set();
   let tempFlagsMap = null;
   function clearTempFlags(map) {
@@ -2480,27 +2505,75 @@
     Overworld.removeObject(R);
   }
 
-  // ---------- Leaf, outside Pewter Gym ----------
+  // ---------- Leaf, outside Pewter Gym and in Vermilion City ----------
   //
-  // When you come out of the Gym with the Boulder Badge, Leaf comes over,
+  // Leaf waits a few steps from Pewter Gym's door once you have the Boulder
+  // Badge. Coming out (or talking to her), she sees you ("!"), comes over,
   // happy for you: she has a Pokédex from Prof. Oak too, and wants a battle
-  // (healing your Pokémon first). Afterwards she heads off west, out of sight.
-  // Her starter (level 15, the one weak against yours) and Jigglypuff (level
-  // 13). Losing blacks you out, and she's waiting again next time you come
-  // out of the Gym; beat her and she gives you TM54 False Swipe and heads off.
-  function leafPewterDue() {
-    const f = player.flags, at = player.location;
-    const door = window.WORLD_MAPS.PewterCity.warps.find((w) => w.map === "PewterCity_Gym");
-    return !!(f.TRAINER_LEADER_BROCK && f.starter && !f.leafPewter && door && at.x === door.x && at.y === door.y && canBattle());
+  // (healing your Pokémon first). Butterfree (level 14), her starter (level 15,
+  // the one weak against yours) and Jigglypuff (level 13). Losing blacks you
+  // out and she's waiting again; beat her and she gives you TM54 False Swipe
+  // and heads off west, out of sight.
+  //
+  // In Vermilion City she waits where the road from Route 6 comes in, and
+  // battles you as you come down it: Butterfree (18), Wigglytuff (20),
+  // Nidorina (21) and her starter's evolution (22).
+  const LEAF = "LOCALID_LEAF";
+  const LEAF_SPOTS = { PewterCity: { x: 19, y: 17, facing: "left" }, VermilionCity: { x: 23, y: 10, facing: "up" } };
+  function leafWaiting(map) {
+    const f = player.flags;
+    if (!f.starter) return false;
+    if (map === "PewterCity") return !!(f.TRAINER_LEADER_BROCK && !f.leafPewter);
+    if (map === "VermilionCity") return !f.leafVermilion;
+    return false;
   }
-  async function leafPewter() {
-    music("mus_encounter_rival");
-    const f = player.flags, L = "LOCALID_LEAF";
-    await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
+  // People the game's scenes add to a map (Overworld's ctx.extraPeople).
+  function extraPeople(map) {
+    const out = [];
+    // The Tradeback Guy, upstairs in every Pokémon Center.
+    if (/_PokemonCenter_2F$/.test(map)) {
+      out.push(Object.assign({ id: 901, localId: "LOCALID_TRADEBACK_GUY", script: "Game_EventScript_TradebackGuy", x: 12, y: 5,
+        movement: "face_down", text: null }, window.WORLD_SPRITES.tradeback));
+    }
+    if (leafWaiting(map)) {
+      const at = LEAF_SPOTS[map];
+      out.push(Object.assign({ id: 900, localId: LEAF, script: "Game_EventScript_Leaf", x: at.x, y: at.y,
+        movement: "face_" + at.facing, text: null }, window.WORLD_SPRITES.leaf));
+    }
+    return out;
+  }
+  function leafPewterDue() {
+    const at = player.location;
+    const door = window.WORLD_MAPS.PewterCity.warps.find((w) => w.map === "PewterCity_Gym");
+    return !!(leafWaiting("PewterCity") && door && at.x === door.x && at.y === door.y && canBattle());
+  }
+  // Coming down the road from Route 6 into Vermilion City, she sees you.
+  function leafVermilionStep() {
     const at = Overworld.position();
-    Overworld.addObject(L, { x: at.x + 5, y: at.y, facing: "left" }, window.WORLD_SPRITES.leaf);
-    await Overworld.act([{ who: L, moves: ["walk_left", "walk_left", "walk_left", "walk_left"] }]);
-    await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
+    return at.map === "VermilionCity" && leafWaiting("VermilionCity") && at.x >= 22 && at.x <= 24 && at.y >= 4 && at.y <= 7 &&
+      canBattle() ? { type: "leaf-vermilion" } : null;
+  }
+  // Leaf sees you ("!") and walks over to stand next to you.
+  async function leafComesOver() {
+    const me = Overworld.position(), leaf = Overworld.personPosition(LEAF);
+    if (!leaf) return;
+    await Overworld.act([{ who: LEAF, moves: M("Common_Movement_ExclamationMark") }]);
+    const moves = [];
+    let x = leaf.x, y = leaf.y;
+    // Along the row first, then the column, to the tile beside you.
+    const target = Math.abs(leaf.y - me.y) <= Math.abs(leaf.x - me.x) && leaf.y === me.y
+      ? { x: me.x + Math.sign(leaf.x - me.x), y: me.y } : { x: me.x, y: me.y + Math.sign(leaf.y - me.y || 1) };
+    while (x !== target.x) { moves.push(x < target.x ? "walk_right" : "walk_left"); x += Math.sign(target.x - x); }
+    while (y !== target.y) { moves.push(y < target.y ? "walk_down" : "walk_up"); y += Math.sign(target.y - y); }
+    if (moves.length) await Overworld.act([{ who: LEAF, moves }]);
+    const face = target.x > me.x ? "right" : target.x < me.x ? "left" : target.y > me.y ? "down" : "up";
+    await Overworld.act([{ who: LEAF, moves: ["face_" + World.OPPOSITE[face]] }, { who: "player", moves: ["face_" + face] }]);
+  }
+  async function leafPewter(talked) {
+    music("mus_encounter_rival");
+    const f = player.flags;
+    if (!talked) await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
+    await leafComesOver();
     await say(["Leaf: {PLAYER}! I saw you go into the\nGym. You beat Brock? That's amazing!",
       "Guess what? I went back to see Prof.\nOak, and he gave me a Pokédex too!",
       "I've been filling it in all the way\nhere. Look, I even caught a\nJigglypuff on Route 3!",
@@ -2509,7 +2582,7 @@
     player.party.forEach(Party.heal);
     await sayWithJingle("mus_heal", "{PLAYER}'s Pokémon were fully healed!");
     await say("Leaf: There! Now let's battle!");
-    const team = [Party.create(RIVAL_PICK[f.starter], 15), Party.create("Jigglypuff", 13)];
+    const team = [Party.create("Butterfree", 14), Party.create(RIVAL_PICK[f.starter], 15), Party.create("Jigglypuff", 13)];
     const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green" },
       defeatText: ["Wow! You really are strong,\n{PLAYER}!"] });
     if (outcome !== "won") return;
@@ -2523,10 +2596,39 @@
     await say(["Leaf: TM54 is False Swipe! It never\nknocks a Pokémon out. It always\nleaves it with at least 1 HP.",
       "I'm going to keep working on my\nPokédex. Let's both try to fill ours in!",
       "See you later, {PLAYER}!"]);
+    await leafLeaves();
+  }
+  // Off the way she came (west, round you, in Pewter; back up the road in
+  // Vermilion), until she's out of sight.
+  async function leafLeaves() {
     music("mus_rival_exit");
-    // Off the other way (west, round you), until she's out of sight.
-    await Overworld.act([{ who: L, moves: ["walk_down"].concat(Array(9).fill("walk_left"), ["walk_up", "walk_up", "set_invisible"]) }]);
-    Overworld.removeObject(L);
+    const me = Overworld.position(), leaf = Overworld.personPosition(LEAF);
+    const away = me.map === "PewterCity" ? ["walk_down"].concat(Array(9).fill("walk_left"), ["walk_up", "walk_up"])
+      : (leaf && leaf.x === me.x ? [leaf.x < 24 ? "walk_right" : "walk_left"] : []).concat(Array(8).fill("walk_down"));
+    await Overworld.act([{ who: LEAF, moves: away.concat(["set_invisible"]) }]);
+    Overworld.removeObject(LEAF);
+  }
+  // The second-stage starter her lab Pokémon has become by Vermilion.
+  const STAGE_TWO = { Bulbasaur: "Ivysaur", Charmander: "Charmeleon", Squirtle: "Wartortle" };
+  async function leafVermilion() {
+    music("mus_encounter_rival");
+    const f = player.flags;
+    await leafComesOver();
+    await say(["Leaf: {PLAYER}! Over here!",
+      "I came through the Underground\nPath too. Isn't Vermilion pretty?\nYou can smell the sea!",
+      "My Pokémon have gotten a lot\nstronger since Pewter. Want to see?"]);
+    const team = [Party.create("Butterfree", 18), Party.create("Wigglytuff", 20), Party.create("Nidorina", 21),
+      Party.create(STAGE_TWO[RIVAL_PICK[f.starter]], 22)];
+    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green" },
+      defeatText: ["Oh, no! You're still a step ahead\nof me, {PLAYER}!"] });
+    if (outcome !== "won") return;
+    f.leafVermilion = true;
+    show("world");
+    await Overworld.resume();
+    await say(["Leaf: You're really something,\n{PLAYER}!",
+      "I heard Lt. Surge's Gym is here.\nHe uses Electric Pokémon, so be\ncareful!",
+      "I'm going to go look at the big\nship in the harbor. See you!"]);
+    await leafLeaves();
   }
 
   // ---------- Move Relearner and Move Deleter (each Poké Mart's 2F) ----------
@@ -2833,7 +2935,7 @@
     if (!(await confirm(fill(q[q.length - 1])))) return;
     await say(Party.displayName(mon) + " used Cut!");
     sfx("se_m_cut");
-    if (person.flag) tempFlags.add(person.flag);
+    if (person.flag) tempFlags.add(player.location.map + ":" + person.flag);
     Overworld.removePerson(person);
   }
 
@@ -3206,8 +3308,8 @@
         player, rivalName: player.rival, visible,
         special,
         onWarp,
-        trainerWaiting, hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches,
-        onStep: () => { leftPallet(player.location.map); DayCare.step(player.flags.dayCare); return redForestStep() || jessieJamesStep() || repelStep(); }, allowWild: repelAllows,
+        trainerWaiting, hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, extraPeople,
+        onStep: () => { leftPallet(player.location.map); DayCare.step(player.flags.dayCare); return redForestStep() || leafVermilionStep() || jessieJamesStep() || repelStep(); }, allowWild: repelAllows,
         onMap: (m) => {
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
           if (m !== "VermilionCity") ticketChecked = false;
@@ -3216,6 +3318,7 @@
       if (ev.type === "menu") await startMenu();
       else if (ev.type === "repel-ended") await repelWoreOff();
       else if (ev.type === "red-forest") await redForest();
+      else if (ev.type === "leaf-vermilion") await leafVermilion();
       else if (ev.type === "jessie-james") await jessieJames();
       else if (ev.type === "wild") {
         if (!canBattle()) continue;

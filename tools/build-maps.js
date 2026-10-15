@@ -107,10 +107,10 @@ const ALT_GFX = {
   PalletTown_ProfessorOaksLab_EventScript_Rival: "OBJ_EVENT_GFX_GREEN_NORMAL"
 };
 // Looks for people the game's own scenes put on a map (WORLD_SPRITES), e.g.
-// Red at the edge of Viridian Forest, Leaf outside Pewter Gym, or Jessie and James (as Rocket Grunts) in
-// Mt. Moon.
+// Red at the edge of Viridian Forest, Leaf outside Pewter Gym, Jessie and James (as Rocket Grunts) in
+// Mt. Moon, or the Tradeback Guy upstairs in every Pokémon Center.
 const EXTRA_GFX = { red: "OBJ_EVENT_GFX_RED_NORMAL", leaf: "OBJ_EVENT_GFX_GREEN_NORMAL", jessie: "OBJ_EVENT_GFX_ROCKET_F",
-  james: "OBJ_EVENT_GFX_ROCKET_M" };
+  james: "OBJ_EVENT_GFX_ROCKET_M", tradeback: "OBJ_EVENT_GFX_COOLTRAINER_M" };
 // Signs that read differently here: the house FireRed gives the player is Red's.
 const SIGN_TEXT = { PalletTown_EventScript_PlayersHouseSign: ["Red's house"] };
 // Wild Pokémon changed from FireRed's: all 12 grass slots (they keep FireRed's
