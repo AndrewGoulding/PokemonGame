@@ -530,6 +530,7 @@ window.ITEMS = {
   "venusaurite": { name: "venusaurite", category: "mega-stones", effect: "Held: Allows Venusaur to Mega Evolve into Mega Venusaur." },
   "coin-case": { name: "coin-case", category: "key-items", effect: "A case for holding Coins obtained at the Game Corner." },
   "card-key": { name: "card-key", category: "key-items", effect: "A card-type door key used in Silph Co's office." },
+  "secret-key": { name: "secret-key", category: "key-items", effect: "The key to the Cinnabar Island Gym's entrance. It is old and decrepit." },
   "gold-teeth": { name: "gold-teeth", category: "key-items", effect: "Gold dentures lost by the Safari Zone's Warden." },
   "lift-key": { name: "lift-key", category: "key-items", effect: "An elevator key used in Team Rocket's Hideout." },
   "tea": { name: "tea", category: "key-items", effect: "A thirst-quenching tea prepared by an old lady." },

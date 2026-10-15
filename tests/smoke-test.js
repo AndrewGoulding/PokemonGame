@@ -739,7 +739,8 @@ for (const share of [false, true]) {
     "PokemonTower_1F", "PokemonTower_2F", "PokemonTower_3F", "PokemonTower_4F", "PokemonTower_5F", "PokemonTower_6F", "PokemonTower_7F",
     "RocketHideout_B1F", "RocketHideout_B2F", "RocketHideout_B3F", "RocketHideout_B4F",
     "SaffronCity_Gym", "SilphCo_1F", "SilphCo_2F", "SilphCo_3F", "SilphCo_4F", "SilphCo_5F", "SilphCo_6F", "SilphCo_7F",
-    "SilphCo_8F", "SilphCo_9F", "SilphCo_10F", "SilphCo_11F"]);
+    "SilphCo_8F", "SilphCo_9F", "SilphCo_10F", "SilphCo_11F", "SeafoamIslands_1F", "SeafoamIslands_B1F", "SeafoamIslands_B2F",
+    "SeafoamIslands_B3F", "SeafoamIslands_B4F", "PokemonMansion_1F", "PokemonMansion_2F", "PokemonMansion_3F", "PokemonMansion_B1F"]);
   assert(WORLD_MAPS.MtMoon_1F.people.some((p) => p.item === "tm100"), "FireRed's TM09 in Mt. Moon is TM100 Bullet Seed here");
   assert(Bag.canUseOn(Party.create("Gyarados", 30, { rng }), "hm06"), "Gyarados can use Whirlpool");
   assert(Bag.canUseOn(Party.create("Pidgeot", 30, { rng }), "hm10"), "Pidgeot can use Defog");
@@ -1828,11 +1829,11 @@ console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random 
   assert(!ran.choose("p1", { type: "move", move: 0 }).ok);
 
   // The maps: Route 12 joins Lavender Town and Route 11; Routes 13-15 lead to
-  // Fuchsia City; Route 19 (the sea) isn't built yet.
+  // Fuchsia City (and Route 19, the sea, south of it).
   const conn = (m, dir) => (WORLD_MAPS[m].connections.find((c) => c.direction === dir) || {}).map;
   assert.deepStrictEqual([conn("LavenderTown", "down"), conn("Route11", "right"), conn("Route12", "down"), conn("Route13", "left"),
     conn("Route14", "left"), conn("Route15", "left")], ["Route12", "Route12", "Route13", "Route14", "Route15", "FuchsiaCity"]);
-  assert(!conn("FuchsiaCity", "down"), "Route 19 isn't built yet");
+  assert.strictEqual(conn("FuchsiaCity", "down"), "Route19");
   // The Snorlax on Route 12; FireRed's TM48 (Skill Swap) there is the new TM106.
   assert(WORLD_MAPS.Route12.people.some((p) => p.script === "Route12_EventScript_Snorlax" && p.flag === "FLAG_HIDE_ROUTE_12_SNORLAX"));
   assert(WORLD_MAPS.Route12.people.some((p) => p.item === "tm106") && Bag.machineMove("tm106") === "Skill Swap");
@@ -1904,4 +1905,110 @@ console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random 
   assert.strictEqual(Player.prizeMoney("Cue Ball Koji", [{ level: 28 }]), 24 * 28);
   assert(WORLD_MAPS.Route18_EastEntrance_2F.people.some((p) => p.script === "Route18_EastEntrance_2F_EventScript_Haden"));
   assert(WORLD_MAPS.Route17.hidden.length === 5);
+}
+
+// ---------- Routes 19-21, the Seafoam Islands, Cinnabar Island ----------
+{
+  const conn = (m, dir) => (WORLD_MAPS[m].connections.find((c) => c.direction === dir) || {}).map;
+  // The sea routes: Fuchsia south to Route 19, west along Route 20 to Cinnabar,
+  // and Route 21 north to Pallet Town.
+  assert.deepStrictEqual([conn("FuchsiaCity", "down"), conn("Route19", "left"), conn("Route20", "left"), conn("CinnabarIsland", "up"),
+    conn("Route21_South", "up"), conn("Route21_North", "up"), conn("PalletTown", "down")],
+  ["Route19", "Route20", "CinnabarIsland", "Route21_South", "Route21_North", "PalletTown", "Route21_North"]);
+  assert(WORLD_MAPS.Route19.water && WORLD_MAPS.Route21_North.water && WORLD_MAPS.Route20.water, "surfing Pokémon on the sea routes");
+  assert(WORLD_MAPS.SeafoamIslands_B4F.people.some((p) => p.script === "SeafoamIslands_B4F_EventScript_Articuno" && p.flag === "FLAG_HIDE_ARTICUNO"));
+  // A map with some of its patches on (as ui/game.js applyPatches does).
+  const patched = (name, on) => {
+    const m = WORLD_MAPS[name], collision = m.collision.slice(), behavior = m.behavior.slice();
+    for (const p of on) for (const [x, y, c, b] of m.patches[p].collision) { collision[y * m.width + x] = c; behavior[y * m.width + x] = b; }
+    return { at: (x, y) => ({ collision: collision[y * m.width + x], behavior: behavior[y * m.width + x] }) };
+  };
+
+  // Seafoam's boulders: the holes they drop through, and the boulder each one
+  // turns into on the floor below (FireRed's reveal flags).
+  const { MB } = World;
+  for (const [m, x, y] of [["SeafoamIslands_1F", 21, 8], ["SeafoamIslands_1F", 30, 8], ["SeafoamIslands_B1F", 23, 8], ["SeafoamIslands_B1F", 28, 8],
+    ["SeafoamIslands_B2F", 24, 8], ["SeafoamIslands_B2F", 27, 8], ["SeafoamIslands_B3F", 6, 18], ["SeafoamIslands_B3F", 9, 18]]) {
+    assert.strictEqual(World.blockAt(m, x, y).behavior, MB.FALL_WARP, m + " hole at " + x + "," + y);
+  }
+  const boulder = (m, flag) => WORLD_MAPS[m].people.find((p) => p.flag === flag);
+  const B = Seafoam.BOULDER;
+  assert.strictEqual(boulder("SeafoamIslands_1F", B("1F", 1)).reveal, B("B1F", 1));
+  assert.strictEqual(boulder("SeafoamIslands_B2F", B("B2F", 2)).reveal, B("B3F", 2));
+  assert.strictEqual(boulder("SeafoamIslands_B3F", B("B3F", 3)).reveal, B("B4F", 1));
+  assert(!boulder("SeafoamIslands_B3F", B("B3F", 4)).reveal, "B3F's other boulders are only in the way");
+  assert(!WORLD_MAPS.SeafoamIslands_1F.people.some((p) => p.trainer), "boulders aren't trainers");
+  // A boulder pushed into a hole: it's gone, and the one below appears.
+  const f = {};
+  assert(!Seafoam.hidden(f, B("1F", 1)) && Seafoam.hidden(f, B("B1F", 1)) && !Seafoam.hidden(f, B("B3F", 3)) && Seafoam.hidden(f, B("B4F", 2)));
+  for (const [m, fl] of [["SeafoamIslands_1F", "1F"], ["SeafoamIslands_B1F", "B1F"], ["SeafoamIslands_B2F", "B2F"]]) {
+    for (const n of [1, 2]) Seafoam.drop(f, boulder(m, B(fl, n)));
+  }
+  assert(Seafoam.hidden(f, B("1F", 1)) && Seafoam.hidden(f, B("B2F", 2)) && !Seafoam.hidden(f, B("B3F", 1)) && !Seafoam.hidden(f, B("B3F", 2)));
+  // B3F's current: until you come back in with both boulders down, it runs,
+  // and falling in from B2F rides it down to B4F (FireRed's moves, then the warp).
+  const W = (m) => WORLD_MAPS[m];
+  assert.strictEqual(World.currentStep({ map: "SeafoamIslands_B3F", x: 23, y: 9 }).dir, "down");
+  const ride = Seafoam.fallRide({}, "SeafoamIslands_B3F", 23);
+  assert.deepStrictEqual(ride.warp, { map: "SeafoamIslands_B4F", x: 27, y: 21 });
+  let pos = { x: 23, y: 9 };
+  for (const mv of ride.moves) {
+    const [dx, dy] = World.DIRS[/(up|down|left|right)$/.exec(mv)[1]];
+    pos = { x: pos.x + dx, y: pos.y + dy };
+    assert(World.isSurfable(W("SeafoamIslands_B3F").behavior[pos.y * 38 + pos.x]), "the ride stays on the water at " + JSON.stringify(pos));
+  }
+  assert.deepStrictEqual(Seafoam.patches(f, "SeafoamIslands_B3F"), []);
+  Seafoam.transition(f, "SeafoamIslands_B3F");
+  assert(Seafoam.stopped(f, "B3F") && Seafoam.fallRide(f, "SeafoamIslands_B3F", 23) === null, "both boulders down: the current's stopped");
+  assert.deepStrictEqual(Seafoam.patches(f, "SeafoamIslands_B3F"), ["stopped"]);
+  const b3f = patched("SeafoamIslands_B3F", ["stopped"]);
+  assert(!World.currentDir(b3f.at(23, 9).behavior) && World.isSurfable(b3f.at(23, 9).behavior), "calm water where the current ran");
+  // B4F: B3F's own two boulders drop through its holes; its current stops too.
+  Seafoam.route20(f);
+  assert(Seafoam.hidden(f, B("1F", 1)) && !Seafoam.hidden(f, B("B3F", 2)), "B3F's current stopped: Route 20 leaves its boulders be");
+  assert(!Seafoam.hidden(f, B("B3F", 1)) && !Seafoam.hidden(f, B("B3F", 3)) && Seafoam.hidden(f, B("B4F", 1)));
+  const fall = Seafoam.fallRide(f, "SeafoamIslands_B4F", 8);
+  assert.strictEqual(fall.dismount, "up");
+  pos = { x: 8, y: 17 };
+  for (const mv of fall.moves) { const [dx, dy] = World.DIRS[/(up|down|left|right)$/.exec(mv)[1]]; pos = { x: pos.x + dx, y: pos.y + dy }; }
+  assert.deepStrictEqual(pos, { x: 12, y: 13 });
+  assert(!W("SeafoamIslands_B4F").collision[12 * 38 + 12] && !World.isSurfable(W("SeafoamIslands_B4F").behavior[12 * 38 + 12]), "climbing out onto the shore");
+  for (const n of [3, 5]) Seafoam.drop(f, boulder("SeafoamIslands_B3F", B("B3F", n)));
+  assert(!Seafoam.hidden(f, B("B4F", 1)) && !Seafoam.hidden(f, B("B4F", 2)));
+  assert.deepStrictEqual(Seafoam.patches(f, "SeafoamIslands_B4F"), ["calm"], "calm water by the stairs before the current's stopped");
+  Seafoam.transition(f, "SeafoamIslands_B4F");
+  assert.deepStrictEqual(Seafoam.patches(f, "SeafoamIslands_B4F"), ["stopped", "calm"]);
+  assert(!World.currentDir(patched("SeafoamIslands_B4F", ["stopped"]).at(8, 17).behavior));
+  // Route 20 puts the boulders back only while a current still runs.
+  const g = {};
+  Seafoam.drop(g, boulder("SeafoamIslands_1F", B("1F", 1)));
+  Seafoam.route20(g);
+  assert(!Seafoam.hidden(g, B("1F", 1)) && Seafoam.hidden(g, B("B1F", 1)), "back up on 1F");
+  // Currents carry you their way while surfing, until something's in the way.
+  assert.deepStrictEqual([0x50, 0x51, 0x52, 0x53].map(World.currentDir), ["right", "left", "up", "down"]);
+  assert.strictEqual(World.currentStep({ map: "SeafoamIslands_B4F", x: 27, y: 19 }).dir, "up");
+  assert.strictEqual(World.currentStep({ map: "SeafoamIslands_B4F", x: 4, y: 1 }), null, "into the wall: you're free to move");
+
+  // The Pokémon Mansion's switch: one for the whole house, its doors swapped on every floor.
+  for (const fl of ["1F", "2F", "3F", "B1F"]) assert(W("PokemonMansion_" + fl).patches.pressed, fl);
+  const m1 = patched("PokemonMansion_1F", ["pressed"]), base1 = patched("PokemonMansion_1F", []);
+  assert(base1.at(22, 10).collision && !m1.at(22, 10).collision, "pressed: the door at 22,10 opens");
+  assert(!base1.at(31, 18).collision && m1.at(31, 18).collision, "pressed: the one at 31,18 shuts");
+  assert(W("PokemonMansion_B1F").people.some((p) => p.item === "secret-key") && Bag.isKeyItem("secret-key"));
+  assert(W("PokemonMansion_B1F").people.some((p) => p.item === "tm14") && Bag.machineMove("tm14") === "Blizzard");
+  assert(W("PokemonMansion_B1F").people.some((p) => p.item === "tm22") && Bag.machineMove("tm22") === "Solar Beam");
+
+  // Cinnabar: the Gym's six quiz doors, Blaine, and the locked door outside.
+  assert.deepStrictEqual(Object.keys(W("CinnabarIsland_Gym").patches).sort(), ["door1", "door2", "door3", "door4", "door5", "door6"]);
+  const gym = patched("CinnabarIsland_Gym", ["door1"]);
+  assert(patched("CinnabarIsland_Gym", []).at(26, 9).collision && !gym.at(26, 9).collision, "quiz 1 opens its door");
+  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_LEADER_BLAINE.party.map((m) => m.species), ["Growlithe", "Ponyta", "Rapidash", "Arcanine"]);
+  assert.strictEqual(Bag.machineMove("tm38"), "Fire Blast");
+  assert(W("CinnabarIsland").triggers.some((t) => t.script === "CinnabarIsland_EventScript_GymDoorLocked" && t.x === 20 && t.y === 5));
+  for (const id of ["TRAINER_BURGLAR_QUINN", "TRAINER_SUPER_NERD_AVERY", "TRAINER_BURGLAR_RAMON", "TRAINER_SUPER_NERD_DEREK",
+    "TRAINER_BURGLAR_DUSTY", "TRAINER_SUPER_NERD_ZAC"]) assert(W("CinnabarIsland_Gym").people.some((p) => p.trainer && p.trainer.id === id), id);
+  assert.strictEqual(Player.prizeMoney("Burglar Quinn", [{ level: 36 }]), 88 * 36);
+  assert(Player.CENTERS.CinnabarIsland_PokemonCenter_1F && window.TOWN_MAP.fly.CINNABAR_ISLAND.center === "CinnabarIsland_PokemonCenter_1F");
+  assert.deepStrictEqual(W("CinnabarIsland_Mart").people.find((p) => p.mart).mart,
+    ["ultra-ball", "great-ball", "hyper-potion", "revive", "full-heal", "escape-rope", "max-repel"]);
 }

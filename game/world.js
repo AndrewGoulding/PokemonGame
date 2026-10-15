@@ -27,7 +27,9 @@
     SPIN_RIGHT: 0x54, SPIN_LEFT: 0x55, SPIN_UP: 0x56, SPIN_DOWN: 0x57, STOP_SPINNING: 0x58,
     COUNTER: 0x80, PC: 0x83,
     // Cycling Road's slope (MB_CYCLING_ROAD_PULL_DOWN, and its grass).
-    CYCLING_ROAD_PULL_DOWN: 0xd0, CYCLING_ROAD_PULL_DOWN_GRASS: 0xd1
+    CYCLING_ROAD_PULL_DOWN: 0xd0, CYCLING_ROAD_PULL_DOWN_GRASS: 0xd1,
+    // The Seafoam Islands' fast currents (MB_*_CURRENT).
+    EAST_CURRENT: 0x50, WEST_CURRENT: 0x51, NORTH_CURRENT: 0x52, SOUTH_CURRENT: 0x53
   };
   const LEDGE = { right: MB.JUMP_EAST, left: MB.JUMP_WEST, up: MB.JUMP_NORTH, down: MB.JUMP_SOUTH };
   // Warps you trigger by stepping onto them (doors, stairs). Others, like the
@@ -198,6 +200,22 @@
     return { dir, speed: UPHILL_SPEED, downhill: false };
   }
 
+  // ---------- Currents ----------
+  //
+  // Surfing on a current (FireRed's ForcedMovement_Pushed*ByCurrent), you're
+  // carried along its way (PlayerRideWaterCurrent, MOVE_SPEED_FAST_2) until
+  // something stops you; then you can go where you like.
+  const CURRENTS = { [MB.EAST_CURRENT]: "right", [MB.WEST_CURRENT]: "left", [MB.NORTH_CURRENT]: "up", [MB.SOUTH_CURRENT]: "down" };
+  const CURRENT_SPEED = 3;
+  const currentDir = (b) => CURRENTS[b] || null;
+  // -> the step the current carries you from `pos`, or null (not on one, or stopped).
+  function currentStep(pos, occupied) {
+    const dir = currentDir(blockAt(pos.map, pos.x, pos.y).behavior);
+    if (!dir) return null;
+    const r = surfStep(pos, dir, occupied);
+    return r.ok && !r.dismount ? Object.assign(r, { dir }) : null;
+  }
+
   // ---------- Signs, people, triggers ----------
 
   const signAt = (mapName, x, y) => (map(mapName).signs || []).find((s) => s.x === x && s.y === y) || null;
@@ -280,6 +298,6 @@
 
   window.World = {
     DIRS, OPPOSITE, MB, map, connectionOrigin, blockAt, warpAt, warpTarget, setDynamicWarp, step, facingWater, isSurfable,
-    isPullDown, slopeMove, signAt, triggersAt, isGrass, wildEncounter, stepEncounter, pickWild, LAND_SLOT_WEIGHTS, WATER_SLOT_WEIGHTS
+    isPullDown, slopeMove, currentDir, currentStep, CURRENT_SPEED, signAt, triggersAt, isGrass, wildEncounter, stepEncounter, pickWild, LAND_SLOT_WEIGHTS, WATER_SLOT_WEIGHTS
   };
 })();

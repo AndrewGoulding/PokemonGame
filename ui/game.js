@@ -1645,8 +1645,16 @@
       "FuchsiaCity_SafariZone_Entrance_EventScript_EntryTriggerRight", "FuchsiaCity_SafariZone_Entrance_EventScript_EntryTriggerLeft",
       "enter:FuchsiaCity_SafariZone_Entrance", "SafariZone_SecretHouse_EventScript_Attendant",
       "Route16_EventScript_Snorlax", "Route16_NorthEntrance_2F_EventScript_Aide", "Route16_House_EventScript_Woman",
-      "Route16_House_EventScript_Fearow", "Route18_EastEntrance_2F_EventScript_Haden"
-    ]).concat(CYCLING_ROAD_GATES.flatMap((g) => ["Top", "MidTop", "Mid", "MidBottom", "Bottom"].map((k) => g + "_EventScript_NeedBikeTrigger" + k))));
+      "Route16_House_EventScript_Fearow", "Route18_EastEntrance_2F_EventScript_Haden",
+      "enter:SeafoamIslands_B3F", "enter:SeafoamIslands_B4F", "SeafoamIslands_B4F_EventScript_Articuno",
+      "CinnabarIsland_EventScript_GymDoorLocked", "CinnabarIsland_PokemonCenter_1F_EventScript_Nurse", "CinnabarIsland_Mart_EventScript_Clerk",
+      "CinnabarIsland_Gym_EventScript_Blaine", "CinnabarIsland_Gym_EventScript_GymGuy", "CinnabarIsland_Gym_EventScript_GymStatue",
+      "CinnabarIsland_PokemonLab_ExperimentRoom_EventScript_Garett", "CinnabarIsland_PokemonLab_ExperimentRoom_EventScript_FossilScientist",
+      "CinnabarIsland_PokemonLab_Lounge_EventScript_Clifton", "CinnabarIsland_PokemonLab_Lounge_EventScript_Norma",
+      "CinnabarIsland_PokemonLab_ResearchRoom_EventScript_MetronomeTutor",
+      "PokemonMansion_1F_EventScript_Statue", "PokemonMansion_2F_EventScript_Statue", "PokemonMansion_3F_EventScript_Statue",
+      "PokemonMansion_B1F_EventScript_Statue"
+    ]).concat([1, 2, 3, 4, 5, 6].flatMap((n) => ["Left", "Right"].map((s) => "CinnabarIsland_Gym_EventScript_Quiz" + n + s))).concat(CYCLING_ROAD_GATES.flatMap((g) => ["Top", "MidTop", "Mid", "MidBottom", "Bottom"].map((k) => g + "_EventScript_NeedBikeTrigger" + k))));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
   // Item balls on the map: picked up once, then gone.
@@ -1692,6 +1700,8 @@
       if (person.script === "CeruleanCity_EventScript_Slowbro") return { x: 26, y: 31 };
       if (person.script === "CeruleanCity_EventScript_Lass") return { x: 27, y: 31 };
     }
+    // The Seafoam Islands' boulders: where they are now (game/seafoam.js).
+    if (Seafoam.isBoulderFlag(person.flag)) return !Seafoam.hidden(f, person.flag);
     switch (person.flag) {
       case "FLAG_HIDE_OAK_IN_PALLET_TOWN": return false;   // only appears for his walk to the lab
       case "FLAG_HIDE_OAK_IN_HIS_LAB": return !!(f.oakInLab || f.starter);
@@ -1752,6 +1762,12 @@
       case "FLAG_HIDE_ROUTE_12_SNORLAX": return !f.wokeRoute12Snorlax;
       // And the one on Route 16.
       case "FLAG_HIDE_ROUTE_16_SNORLAX": return !f.wokeRoute16Snorlax;
+      // Articuno, deep in the Seafoam Islands, until you've fought it
+      // (SeafoamIslands_B4F_OnTransition); if you ran, it flew away until you come back.
+      case "FLAG_HIDE_ARTICUNO": return !f.foughtArticuno;
+      // Bill waits on Cinnabar after the Volcano Badge to take you to the Sevii
+      // Islands, which aren't built: he and the Seagallop stay away.
+      case "FLAG_HIDE_CINNABAR_BILL": case "FLAG_HIDE_CINNABAR_SEAGALLOP": case "FLAG_HIDE_CINNABAR_POKECENTER_BILL": return false;
       // After you choose, your rival stands below the Poké Ball he took.
       // Leaf (the lab rival's other look) until she leaves after your battle;
       // after you choose, she stands below the Poké Ball she took.
@@ -1800,6 +1816,8 @@
     if (script === "CeladonCity_Gym_EventScript_Erika") { await erika(ev.person); return; }
     if (script === "SaffronCity_Gym_EventScript_Sabrina") { await sabrina(ev.person); return; }
     if (script === "FuchsiaCity_Gym_EventScript_Koga") { await koga(ev.person); return; }
+    if (script === "CinnabarIsland_Gym_EventScript_Blaine") { await blaine(ev.person); return; }
+    { const q = /^CinnabarIsland_Gym_EventScript_Quiz(\d)(Left|Right)$/.exec(script); if (q) { await cinnabarQuiz(+q[1], q[2]); return; } }
     if (FUCHSIA_SIGN_MONS[script]) { await monSign(FUCHSIA_SIGN_MONS[script], ev.sign.text); return; }
     if (script === "Game_EventScript_Leaf") {
       if (!canBattle()) return;
@@ -2763,6 +2781,64 @@
         await inGameTrade(TRADES.marc);
         return;
 
+      // ---------- The Seafoam Islands ----------
+      // Fallen through a hole onto B3F's or B4F's water: the current may carry you off.
+      case "enter:SeafoamIslands_B3F":
+      case "enter:SeafoamIslands_B4F":
+        await seafoamFall(ev.map);
+        return;
+      case "SeafoamIslands_B4F_EventScript_Articuno":
+        await articuno(ev.person);
+        return;
+
+      // ---------- Cinnabar Island ----------
+      // The Gym's door, locked until you have the Secret Key (VAR_TEMP_1, from
+      // FLAG_HIDE_POKEMON_MANSION_B1F_SECRET_KEY: CinnabarIsland_EventScript_CheckUnlockGym).
+      case "CinnabarIsland_EventScript_GymDoorLocked":
+        await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
+        await sleep(333);
+        await say(T("CinnabarIsland_Text_DoorIsLocked"));
+        Screen.say("");
+        await Overworld.act([{ who: "player", moves: M("CinnabarIsland_Movement_ForcePlayerFromDoor") }]);
+        return;
+      case "CinnabarIsland_PokemonCenter_1F_EventScript_Nurse":
+        await nurse(ev.map, ev.person);
+        return;
+      case "CinnabarIsland_Mart_EventScript_Clerk":
+        await mart(ev.person.mart);
+        return;
+      case "CinnabarIsland_Gym_EventScript_GymGuy":
+        await say(T(f.TRAINER_LEADER_BLAINE ? "CinnabarIsland_Gym_Text_GymGuyPostVictory" : "CinnabarIsland_Gym_Text_GymGuyAdvice"));
+        return;
+      case "CinnabarIsland_Gym_EventScript_GymStatue":
+        await say(T(hasBadge("volcano") ? "CinnabarIsland_Gym_Text_GymStatuePlayerWon" : "CinnabarIsland_Gym_Text_GymStatue"));
+        return;
+      // The Pokémon Lab: Garett's Seel (for a Ponyta), Clifton's Electrode (for
+      // a Raichu), Norma's Tangela (for a Venonat), the fossil doctor and the
+      // Metronome tutor.
+      case "CinnabarIsland_PokemonLab_ExperimentRoom_EventScript_Garett":
+        await inGameTrade(TRADES.seelor);
+        return;
+      case "CinnabarIsland_PokemonLab_Lounge_EventScript_Clifton":
+        await inGameTrade(TRADES.esphere);
+        return;
+      case "CinnabarIsland_PokemonLab_Lounge_EventScript_Norma":
+        await inGameTrade(TRADES.tangeny);
+        return;
+      case "CinnabarIsland_PokemonLab_ExperimentRoom_EventScript_FossilScientist":
+        await fossilScientist();
+        return;
+      case "CinnabarIsland_PokemonLab_ResearchRoom_EventScript_MetronomeTutor":
+        await moveTutor("Metronome", "tutorMetronome", "Text_Metronome");
+        return;
+      // The Pokémon Mansion's statues: each hides the switch for its doors.
+      case "PokemonMansion_1F_EventScript_Statue":
+      case "PokemonMansion_2F_EventScript_Statue":
+      case "PokemonMansion_3F_EventScript_Statue":
+      case "PokemonMansion_B1F_EventScript_Statue":
+        await mansionSwitch();
+        return;
+
       // ---------- Fuchsia City ----------
       case "FuchsiaCity_PokemonCenter_1F_EventScript_Nurse":
         await nurse(ev.map, ev.person);
@@ -3215,6 +3291,18 @@
     // Haden, upstairs in Route 18's gate (FireRed's INGAME_TRADE_LICKITUNG).
     marc: { flag: "tradedMarc", wants: "Golduck", gives: "Lickitung", nickname: "Marc",
       ivs: { hp: 24, atk: 19, def: 21, spe: 15, spa: 23, spd: 21 }, ot: { name: "HADEN", id: 1239 } },
+    // In the Pokémon Lab on Cinnabar Island: Garett (FireRed's INGAME_TRADE_SEEL),
+    // Clifton (INGAME_TRADE_ELECTRODE) and Norma (INGAME_TRADE_TANGELA, holding Stardust).
+    seelor: { flag: "tradedSeelor", wants: "Ponyta", gives: "Seel", nickname: "Seelor",
+      ivs: { hp: 24, atk: 15, def: 22, spe: 16, spa: 23, spd: 22 }, ot: { name: "GARETT", id: 9853 } },
+    esphere: { flag: "tradedEsphere", wants: "Raichu", gives: "Electrode", nickname: "Esphere",
+      ivs: { hp: 19, atk: 16, def: 18, spe: 25, spa: 25, spd: 19 }, ot: { name: "CLIFTON", id: 50298 },
+      text: { ask: "Trade_Text_DoYouHaveMonWouldYouTradeForMon", no: "Trade_Text_WellIfYouDontWantTo",
+        wrong: "Trade_Text_ThisIsntMon", thanks: "Trade_Text_Thanks", after: "Trade_Text_HasTradedMonGrownStronger" } },
+    tangeny: { flag: "tradedTangeny", wants: "Venonat", gives: "Tangela", nickname: "Tangeny", item: "stardust",
+      ivs: { hp: 22, atk: 17, def: 25, spe: 16, spa: 23, spd: 20 }, ot: { name: "NORMA", id: 60042 },
+      text: { ask: "Trade_Text_DoYouHaveMonWantToTradeForMon", no: "Trade_Text_ThatsTooBad",
+        wrong: "Trade_Text_ThisIsNoMon", thanks: "Trade_Text_ThanksYoureAPal", after: "Trade_Text_HowIsMyOldMon" } },
     msNido: { flag: "tradedMsNido", wants: "Nidoran-M", gives: "Nidoran-F", nickname: "Ms. Nido",
       ivs: { hp: 22, atk: 18, def: 25, spe: 19, spa: 15, spd: 22 }, ot: { name: "SAIGE", id: 63184 },
       text: { ask: "Trade_Text_DoYouHaveMonWantToTradeForMon", no: "Trade_Text_ThatsTooBad",
@@ -3236,6 +3324,7 @@
     const theirs = Party.create(trade.gives, mine.level, { nickname: trade.nickname });
     theirs.ivs = Object.assign({}, trade.ivs);
     if (trade.ot) theirs.ot = Object.assign({}, trade.ot);
+    if (trade.item) theirs.item = trade.item;   // (what it holds: FireRed's heldItem)
     theirs.met = { level: theirs.level, map: player.location.map, traded: true };
     theirs.hp = Party.maxHp(theirs);
     player.party[i] = theirs;
@@ -4600,6 +4689,10 @@
   // Lift Key's dropped.
   async function afterRocket(person) {
     const f = player.flags, id = person.trainer.id;
+    // A Cinnabar Gym trainer beaten opens the door by their quiz machine
+    // (CinnabarIsland_Gym_EventScript_DefeatedQuinn and the like).
+    const quiz = Object.keys(CINNABAR_QUIZ).find((n) => CINNABAR_QUIZ[n].trainer === id);
+    if (quiz && f[id]) { show("world"); await Overworld.resume(); openQuizDoor(+quiz); return; }
     if (!f[id] || !/^TRAINER_TEAM_ROCKET_GRUNT_(7|12|16|17|18)$/.test(id)) return;
     show("world");
     await Overworld.resume();
@@ -4916,6 +5009,196 @@
     await say(T("FuchsiaCity_Gym_Text_KogaPostBattle"));
   }
 
+  // ---------- The Seafoam Islands ----------
+  //
+  // (game/seafoam.js has the boulders and currents.) Through a hole onto the
+  // water of B3F or B4F, you're surfing (FallWarpEffect_7) and, unless both of
+  // the floor's boulders block it, the current carries you off: from B3F
+  // down to B4F, where you come up its current from below; on B4F to the
+  // shore, where you climb out.
+  let seafoamFell = null;   // (FireRed's VAR_TEMP_1 on B3F and B4F: arrived by falling)
+  async function seafoamFall(map) {
+    seafoamFell = null;
+    const at = Overworld.position();
+    Overworld.setAvatar("surf");
+    const ride = Seafoam.fallRide(player.flags, map, at.x);
+    if (!ride) return;
+    await Overworld.act([{ who: "player", moves: ride.moves }]);
+    if (ride.warp) {
+      await Overworld.teleport(Object.assign({ facing: "up" }, ride.warp));
+      Overworld.setAvatar("surf");
+      await Overworld.act([{ who: "player", moves: Seafoam.ENTER_B4F_ON_CURRENT }]);
+      return;
+    }
+    if (ride.dismount) {
+      await Overworld.act([{ who: "player", moves: ["jump_" + ride.dismount] }]);
+      Overworld.setAvatar("walk");
+    }
+  }
+
+  // Articuno (SeafoamIslands_B4F_EventScript_Articuno): a wild Lv. 50 Articuno,
+  // to the legendary battle music. Beaten or caught, it's gone for good; run
+  // from, it flies away, and is back the next time you come.
+  async function articuno(person) {
+    if (!canBattle()) return;
+    cry("Articuno");
+    await say(T("Text_Gyaoo"));
+    music("mus_encounter_gym_leader");
+    await sleep(300);
+    const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create("Articuno", 50)] }, music: "mus_vs_legend" });
+    if (outcome === "lost") return;
+    show("world");
+    await Overworld.resume();
+    if (outcome === "ran") {
+      await Overworld.fadeToBlack();
+      tempFlags.add(player.location.map + ":" + person.flag);
+      Overworld.removePerson(person);
+      await Overworld.fadeFromBlack();
+      await say(T("Text_MonFlewAway"), ["Articuno"]);
+      return;
+    }
+    player.flags.foughtArticuno = true;
+    if (outcome === "won") { await Overworld.fadeToBlack(); Overworld.removePerson(person); await Overworld.fadeFromBlack(); }
+    else Overworld.removePerson(person);
+  }
+
+  // ---------- Cinnabar Island ----------
+
+  // Blaine: battle (talking to him), then the Volcano Badge and TM38 Fire
+  // Blast. Beating him also beats his Gym's trainers and opens all its doors.
+  // (FireRed then has Bill waiting outside to sail to the Sevii Islands,
+  // which aren't built.)
+  async function blaine(person) {
+    const f = player.flags, ID = "TRAINER_LEADER_BLAINE";
+    if (!f[ID]) {
+      await say(person.trainer.intro);
+      if (!canBattle()) return;
+      const outcome = await battle("trainer", { foe: { name: "Leader Blaine", team: trainerTeam(ID), pic: "leader_blaine" },
+        defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
+      if (outcome !== "won") return;
+      if (!hasBadge("volcano")) player.badges.push("volcano");
+      for (const t of ["SUPER_NERD_ERIK", "SUPER_NERD_AVERY", "SUPER_NERD_DEREK", "SUPER_NERD_ZAC", "BURGLAR_QUINN", "BURGLAR_RAMON", "BURGLAR_DUSTY"]) f["TRAINER_" + t] = true;
+      player.flags.lastCenter = "CinnabarIsland_PokemonCenter_1F";
+      applyPatches("CinnabarIsland_Gym");
+      show("world");
+      await Overworld.resume();
+    }
+    const tm = machineFor("Fire Blast");
+    if (!f.gotTM38FromBlaine) {
+      await say(T("CinnabarIsland_Gym_Text_ExplainVolcanoBadge"));
+      Player.addItem(player, tm);
+      f.gotTM38FromBlaine = true;
+      await sayWithJingle(itemJingle(tm), tmText(T("CinnabarIsland_Gym_Text_ReceivedTM38FromBlaine"), 38, tm));
+      await say(tmText(T("CinnabarIsland_Gym_Text_FireBlastIsUltimateFireMove"), 38, tm));
+      return;
+    }
+    await say(tmText(T("CinnabarIsland_Gym_Text_BlainePostBattle"), 38, tm));
+  }
+
+  // The Gym's quiz machines (CinnabarIsland_Gym_EventScript_Quiz1..6): answer
+  // right and the door past them opens; wrong, and the trainer guarding it
+  // comes over to battle (once beaten, nobody comes), and beating them opens it too.
+  // Each machine's answer (YES or NO), the trainer by it, and how they come over
+  // from the left machine or the right one.
+  const CINNABAR_QUIZ = {
+    1: { yes: true, trainer: "TRAINER_BURGLAR_QUINN", who: "LOCALID_QUINN", name: "Quinn" },
+    2: { yes: false, trainer: "TRAINER_SUPER_NERD_AVERY", who: "LOCALID_AVERY", name: "Avery" },
+    3: { yes: false, trainer: "TRAINER_BURGLAR_RAMON", who: "LOCALID_RAMON", name: "Ramon" },
+    4: { yes: false, trainer: "TRAINER_SUPER_NERD_DEREK", who: "LOCALID_DEREK", name: "Derek" },
+    5: { yes: true, trainer: "TRAINER_BURGLAR_DUSTY", who: "LOCALID_DUSTY", name: "Dusty" },
+    6: { yes: false, trainer: "TRAINER_SUPER_NERD_ZAC", who: "LOCALID_ZAC", name: "Zac" }
+  };
+  const quizDoorOpen = (n) => !!(player.flags.cinnabarQuiz && player.flags.cinnabarQuiz[n]);
+  function openQuizDoor(n) {
+    if (quizDoorOpen(n)) return;
+    sfx("se_unlock");
+    (player.flags.cinnabarQuiz || (player.flags.cinnabarQuiz = {}))[n] = true;
+    applyPatches("CinnabarIsland_Gym");
+  }
+  async function cinnabarQuiz(n, side) {
+    const q = CINNABAR_QUIZ[n], G = (k) => T("CinnabarIsland_Gym_Text_" + k);
+    await say(G("PokemonQuizRules"));
+    const answer = await confirm(G("QuizQuestion" + n).join("\n"));
+    if (answer === q.yes) {
+      await sayWithJingle("mus_level_up", G("CorrectGoOnThrough"));
+      openQuizDoor(n);
+      return;
+    }
+    sfx("se_boo");
+    await say(G("SorryBadCall"));
+    Screen.say("");
+    if (player.flags[q.trainer]) return;
+    // (Avery comes round the machine; the others walk over.)
+    const L = (k) => M("CinnabarIsland_Gym_Movement_" + k);
+    await Overworld.act([{ who: "player", moves: n === 2 ? L("PlayerFaceAvery") : M("Common_Movement_WalkInPlaceFasterRight") },
+      { who: q.who, moves: L(q.name + "Approach" + side) }]);
+    const data = window.WORLD_TRAINERS[q.trainer];
+    music(data.music || "mus_encounter_boy");
+    await say(G(q.name + "Intro"));
+    if (!canBattle()) return;
+    const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(q.trainer), pic: data.pic },
+      defeatText: G(q.name + "Defeat"), trainerId: q.trainer, prizeClass: data.className });
+    if (outcome !== "won") return;
+    show("world");
+    await Overworld.resume();
+    openQuizDoor(n);
+  }
+
+  // The fossil doctor in the Lab's experiment room
+  // (..._ExperimentRoom_EventScript_FossilScientist): show him a fossil (the
+  // Helix or Dome Fossil from Mt. Moon, or the Old Amber) and he revives it;
+  // it's ready once you've left and come back to the Lab (the entrance's
+  // OnTransition: VAR_MAP_SCENE_..._REVIVE_STATE 1 -> 2). A Lv. 5 Omanyte,
+  // Kabuto or Aerodactyl.
+  const FOSSILS = [
+    { item: "helix-fossil", species: "Omanyte", has: (f) => f.mtMoonFossil === "helix-fossil", flag: "revivedHelix" },
+    { item: "dome-fossil", species: "Kabuto", has: (f) => f.mtMoonFossil === "dome-fossil", flag: "revivedDome" },
+    { item: "old-amber", species: "Aerodactyl", has: (f) => !!f.gotOldAmber, flag: "revivedAmber" }
+  ];
+  async function fossilScientist() {
+    const f = player.flags, X = (k) => T("CinnabarIsland_PokemonLab_ExperimentRoom_Text_" + k);
+    const mtMoon = FOSSILS.slice(0, 2).find((fo) => fo.has(f));
+    if (f.revivedAmber && mtMoon && f[mtMoon.flag]) { await say(X("YouComeAgain")); return; }
+    const reviving = f.fossilRevive;
+    if (reviving && reviving.ready) {
+      const fo = FOSSILS.find((x) => x.item === reviving.item), name = Party.speciesName(fo.species);
+      await say(X("FossilMonBackToLife"), [name]);
+      const given = await giftMon(fo.species, 5, X("ReceivedMonFromDoctor"), [name], () => { f[fo.flag] = true; delete f.fossilRevive; });
+      if (!given) return;
+      return;
+    }
+    if (reviving) { await say(X("TakesTimeGoForWalk")); return; }
+    const can = FOSSILS.filter((fo) => fo.has(f) && !f[fo.flag] && Player.itemCount(player, fo.item));
+    const ask1 = X("HaveYouAFossilForMe");
+    if (!can.length) { await say(ask1); await say(X("NoIsTooBad")); return; }
+    await say(ask1.slice(0, -1));
+    const v = await ask(fill(ask1[ask1.length - 1]), can.map((fo) => ({ label: Bag.name(fo.item), value: fo.item })).concat([back("Cancel")]));
+    Screen.say("");
+    if (v === "back") { await say(X("NoIsTooBad")); return; }
+    const fo = FOSSILS.find((x) => x.item === v), vars = [Party.speciesName(fo.species), Bag.name(fo.item)];
+    const make = X("ThatFossilIsOfMonMakeItLiveAgain");
+    await say(make.slice(0, -1), vars);
+    if (!(await confirm(fill(make[make.length - 1], vars)))) { await say(X("YouComeAgain")); return; }
+    await say(X("HandedFossilToWeirdDoctor"), vars);
+    Player.removeItem(player, fo.item);
+    f.fossilRevive = { item: fo.item };
+    await say(X("TakesTimeGoForWalk"));
+  }
+
+  // The Pokémon Mansion's statues (PokemonMansion_EventScript_SecretSwitch):
+  // one switch for the whole house (FLAG_POKEMON_MANSION_SWITCH_STATE), which
+  // swaps which of its doors are open on every floor (the "pressed" patches).
+  async function mansionSwitch() {
+    const q = T("PokemonMansion_Text_PressSecretSwitch");
+    await say(q.slice(0, -1));
+    if (!(await confirm(q[q.length - 1]))) { await say(T("PokemonMansion_Text_NotQuiteYet")); return; }
+    await say(T("PokemonMansion_Text_WhoWouldnt"));
+    Screen.say("");
+    if (player.flags.mansionSwitch) delete player.flags.mansionSwitch; else player.flags.mansionSwitch = true;
+    applyPatches(player.location.map);
+    sfx("se_unlock");
+  }
+
   // ---------- The Safari Game ----------
   //
   // FireRed's (src/safari_zone.c, FuchsiaCity_SafariZone_Entrance's scripts):
@@ -5050,6 +5333,13 @@
     if (map === "CeladonCity_GameCorner" && !f.openedRocketHideout) return ["hidden"];
     if (map === "RocketHideout_B1F" && !f.TRAINER_TEAM_ROCKET_GRUNT_12) return ["barrier"];
     if (map === "RocketHideout_B4F" && !(f.TRAINER_TEAM_ROCKET_GRUNT_16 && f.TRAINER_TEAM_ROCKET_GRUNT_17)) return ["barrier"];
+    // The Seafoam Islands' currents (game/seafoam.js).
+    if (/^SeafoamIslands_B[34]F$/.test(map)) return Seafoam.patches(f, map);
+    // The Pokémon Mansion's doors, by its switch.
+    if (/^PokemonMansion_/.test(map)) return f.mansionSwitch ? ["pressed"] : [];
+    // Cinnabar Gym's quiz doors: each open once answered (or its trainer
+    // beaten); all of them once Blaine's beaten (CinnabarIsland_Gym_OnLoad).
+    if (map === "CinnabarIsland_Gym") return [1, 2, 3, 4, 5, 6].filter((n) => f.TRAINER_LEADER_BLAINE || quizDoorOpen(n)).map((n) => "door" + n);
     // Silph Co.: each card-key door shut until you open it.
     const silph = /^SilphCo_(\d+)F$/.exec(map), patches = (window.WORLD_MAPS[map] || {}).patches;
     if (silph && patches) {
@@ -5153,6 +5443,8 @@
     for (const [k, spot] of Object.entries(window.TOWN_MAP.fly || {})) if (spot.center === map && !list.includes(k)) list.push(k);
   }
   function onWarp(from, to) {
+    // (Through a hole: FireRed's fall warp.)
+    seafoamFell = World.blockAt(from.map, from.x, from.y).behavior === World.MB.FALL_WARP ? to.map : null;
     leftPallet(to.map);
     visitSection(to.map);
     const a = window.WORLD_MAPS[from.map], b = window.WORLD_MAPS[to.map];
@@ -5238,6 +5530,18 @@
       if (player.flags.cyclingRoad && Overworld.avatar() === "walk") Overworld.setAvatar("bike");
       return false;
     }
+    // The Seafoam Islands: fallen onto B3F's or B4F's water (FallWarpEffect_7).
+    if (script === "enter:SeafoamIslands_B3F" || script === "enter:SeafoamIslands_B4F") {
+      const at = player.location;
+      return seafoamFell === at.map && World.isSurfable(World.blockAt(at.map, at.x, at.y).behavior);
+    }
+    // Cinnabar Gym's door, locked until you've the Secret Key.
+    if (script === "CinnabarIsland_EventScript_GymDoorLocked") return !player.flags.FLAG_HIDE_POKEMON_MANSION_B1F_SECRET_KEY;
+    // Back in the Pokémon Lab, a fossil you left with the doctor is ready.
+    if (script === "enter:CinnabarIsland_PokemonLab_Entrance") {
+      if (player.flags.fossilRevive) player.flags.fossilRevive.ready = true;
+      return false;
+    }
     // The guards stop you only until you have a Bicycle (VAR_TEMP_1).
     if (/_EventScript_NeedBikeTrigger/.test(script)) return !Player.itemCount(player, "bicycle");
     // The Saffron gates' guards, until they've had the Tea.
@@ -5260,6 +5564,7 @@
         onWarp,
         trainerWaiting, hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, extraPeople,
         canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
+        boulderFell: (def) => Seafoam.drop(player.flags, def),
         onAvatar: (mode) => music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music),
         onStep: () => { leftPallet(player.location.map); DayCare.step(player.flags.dayCare); vsSeekerStep(); friendshipStep(); return redForestStep() || leafVermilionStep() || jessieJamesStep() || safariStep() || repelStep(); }, allowWild: repelAllows,
         onMap: (m) => {
@@ -5272,6 +5577,9 @@
           if (player.flags.safari && !/^SafariZone_/.test(m) && m !== SAFARI_GATE) delete player.flags.safari;
           // (And off Cycling Road: VAR_MAP_SCENE_ROUTE16 back to 0.)
           if (player.flags.cyclingRoad && !CYCLING_ROAD_MAPS.includes(m)) delete player.flags.cyclingRoad;
+          // The Seafoam Islands' boulders and currents (Route20_OnTransition,
+          // SeafoamIslands_B3F/B4F_OnTransition).
+          if (m !== tempFlagsMap) { if (m === "Route20") Seafoam.route20(player.flags); Seafoam.transition(player.flags, m); }
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
           music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }
       });

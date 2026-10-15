@@ -133,7 +133,13 @@ const MAPS = [
   "SafariZone_North", "SafariZone_North_RestHouse", "SafariZone_West", "SafariZone_West_RestHouse",
   "SafariZone_SecretHouse",
   "Route16", "Route16_NorthEntrance_1F", "Route16_NorthEntrance_2F", "Route16_House",
-  "Route17", "Route18", "Route18_EastEntrance_1F", "Route18_EastEntrance_2F"
+  "Route17", "Route18", "Route18_EastEntrance_1F", "Route18_EastEntrance_2F",
+  "Route19", "Route20", "SeafoamIslands_1F", "SeafoamIslands_B1F", "SeafoamIslands_B2F", "SeafoamIslands_B3F", "SeafoamIslands_B4F",
+  "CinnabarIsland", "CinnabarIsland_PokemonCenter_1F", "CinnabarIsland_PokemonCenter_2F", "CinnabarIsland_Mart",
+  "CinnabarIsland_Gym", "CinnabarIsland_PokemonLab_Entrance", "CinnabarIsland_PokemonLab_Lounge",
+  "CinnabarIsland_PokemonLab_ResearchRoom", "CinnabarIsland_PokemonLab_ExperimentRoom",
+  "PokemonMansion_1F", "PokemonMansion_2F", "PokemonMansion_3F", "PokemonMansion_B1F",
+  "Route21_North", "Route21_South"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
@@ -218,8 +224,13 @@ function renderPatches(name, blocks, w, primary, secondary) {
     const r = renderBlocks(sub, pw, ph, primary, secondary, false);
     writePng(path.join(outMaps, name + "-patch-" + pname + ".png"), pw * 16, ph * 16, r.below);
     if (r.anyAbove) writePng(path.join(outMaps, name + "-patch-" + pname + "-top.png"), pw * 16, ph * 16, r.above);
+    // Its animated cells (water), as the map's (<Map>-patch-<name>-anim.png).
+    const anim = animCells(sub, pw, ph, primary, secondary), animFile = path.join(outMaps, name + "-patch-" + pname + "-anim.png");
+    if (anim.pics.length) writeAnimSheet(animFile, anim.pics);
+    else if (fs.existsSync(animFile)) fs.unlinkSync(animFile);
     // (Each cell's collision and behaviour: a staircase swapped for floor no longer warps.)
     out[pname] = { x: x0, y: y0, w: pw, h: ph, top: r.anyAbove || undefined,
+      anim: anim.cells.length ? { cells: anim.cells, anims: primary.anims.map((a) => a.name) } : undefined,
       collision: cells.map(([x, y, mt, c]) => [x, y, c, metatile(primary, secondary, mt).behavior]) };
   }
   return Object.keys(out).length ? out : undefined;
@@ -248,6 +259,8 @@ const GAME_TEXT = [
   "SafariZone_Text_ExcuseMeYourPCBoxIsFull",
   // Silph Co.'s card-key doors (data/event_scripts.s).
   "Text_CardKeyOpenedDoor", "Text_ItNeedsCardKey", "Text_TheDoorIsOpen",
+  // The legendary birds (Articuno in Seafoam Islands: data/event_scripts.s).
+  "Text_Gyaoo", "Text_MonFlewAway",
   // Rock Tunnel's Rock Slide tutor (in Seafoam Islands B4F's text.inc).
   "Text_RockSlideTeach", "Text_RockSlideDeclined", "Text_RockSlideWhichMon", "Text_RockSlideTaught",
   // Pallet Town's Sign Lady (data/text/sign_lady.inc).
@@ -644,28 +657,55 @@ function duoPic(name, left, right, overlap) {
 
 function readHeader(rel) { return fs.readFileSync(P(rel), "utf8"); }
 
-// Silph Co.'s card-key doors (data/scripts/silphco_doors.inc): each floor's
-// EventScript_Close<n>FDoor<k> and ..Open.. setmetatile lists become that
-// floor's "closed<k>" and "open<k>" patches (SilphCo_<n>F_OnLoad closes the
-// doors you haven't opened).
-{
-  const labels = {};
-  for (const [, name, val] of readHeader("include/constants/metatile_labels.h").matchAll(/#define\s+(METATILE_\w+)\s+(0x[0-9A-Fa-f]+)/g)) labels[name] = parseInt(val, 16);
+// Patches from FireRed's setmetatile lists: each label's setmetatile lines
+// (until its return) become a patch of `map` named by `name(label)` (or skipped
+// when it gives nothing).
+const metatileLabels = {};
+for (const [, mname, val] of readHeader("include/constants/metatile_labels.h").matchAll(/#define\s+(METATILE_\w+)\s+(0x[0-9A-Fa-f]+)/g)) metatileLabels[mname] = parseInt(val, 16);
+function scriptPatches(file, which) {
   let patch = null;
-  for (const line of fs.readFileSync(P("data/scripts/silphco_doors.inc"), "utf8").split("\n")) {
-    const l = /^EventScript_(Close|Open)(\d+)FDoor(\d*)::/.exec(line);
+  for (const line of fs.readFileSync(P(file), "utf8").split("\n")) {
+    const l = /^(\w+)::/.exec(line);
     if (l) {
-      const map = "SilphCo_" + l[2] + "F";
-      patch = (MAP_PATCHES[map] || (MAP_PATCHES[map] = {}))[l[1].toLowerCase() + (l[3] || "1")] = [];
+      const w = which(l[1]);
+      patch = w ? ((MAP_PATCHES[w[0]] || (MAP_PATCHES[w[0]] = {}))[w[1]] = []) : null;
       continue;
     }
     const m = /^\s*setmetatile\s+(\d+),\s*(\d+),\s*(METATILE_\w+),\s*(\d)/.exec(line);
     if (m && patch) {
-      if (labels[m[3]] == null) throw new Error("Unknown metatile " + m[3]);
-      patch.push([+m[1], +m[2], labels[m[3]], +m[4]]);
+      if (metatileLabels[m[3]] == null) throw new Error("Unknown metatile " + m[3]);
+      patch.push([+m[1], +m[2], metatileLabels[m[3]], +m[4]]);
     } else if (/^\s*return/.test(line)) patch = null;
   }
 }
+// Silph Co.'s card-key doors (data/scripts/silphco_doors.inc): each floor's
+// EventScript_Close<n>FDoor<k> and ..Open.. setmetatile lists become that
+// floor's "closed<k>" and "open<k>" patches (SilphCo_<n>F_OnLoad closes the
+// doors you haven't opened).
+scriptPatches("data/scripts/silphco_doors.inc", (label) => {
+  const l = /^EventScript_(Close|Open)(\d+)FDoor(\d*)$/.exec(label);
+  return l && ["SilphCo_" + l[2] + "F", l[1].toLowerCase() + (l[3] || "1")];
+});
+// The Pokémon Mansion's secret switches (data/scripts/pokemon_mansion.inc):
+// each floor's PokemonMansion_EventScript_PressSwitch_<floor> is its "pressed"
+// patch (the layout as built is the switch's other state).
+scriptPatches("data/scripts/pokemon_mansion.inc", (label) => {
+  const l = /^PokemonMansion_EventScript_PressSwitch_(\w+)$/.exec(label);
+  return l && ["PokemonMansion_" + l[1], "pressed"];
+});
+// Cinnabar Gym's quiz doors: CinnabarIsland_Gym_EventScript_OpenDoor<k> is "door<k>".
+scriptPatches("data/maps/CinnabarIsland_Gym/scripts.inc", (label) => {
+  const l = /^CinnabarIsland_Gym_EventScript_OpenDoor(\d)$/.exec(label);
+  return l && ["CinnabarIsland_Gym", "door" + l[1]];
+});
+// Seafoam Islands B4F: calm water by the stairs once both boulders are down
+// there (SeafoamIslands_B4F_EventScript_SetCalmWaterNearStairs).
+scriptPatches("data/maps/SeafoamIslands_B4F/scripts.inc", (label) => label === "SeafoamIslands_B4F_EventScript_SetCalmWaterNearStairs" && ["SeafoamIslands_B4F", "calm"]);
+// Seafoam Islands B3F and B4F with the current stopped (FireRed swaps in
+// LAYOUT_SEAFOAM_ISLANDS_B3F/B4F_CURRENT_STOPPED): the blocks that layout
+// changes, as a "stopped" patch.
+const LAYOUT_PATCHES = { SeafoamIslands_B3F: { stopped: "LAYOUT_SEAFOAM_ISLANDS_B3F_CURRENT_STOPPED" },
+  SeafoamIslands_B4F: { stopped: "LAYOUT_SEAFOAM_ISLANDS_B4F_CURRENT_STOPPED" } };
 const pointers = readHeader("src/data/object_events/object_event_graphics_info_pointers.h");
 const infos = readHeader("src/data/object_events/object_event_graphics_info.h");
 const picTables = readHeader("src/data/object_events/object_event_pic_tables.h");
@@ -733,6 +773,12 @@ for (const name of MAPS) {
   const { below, above, anyAbove } = renderBlocks(blocks, w, h, primary, secondary, false);
   writePng(path.join(outMaps, name + ".png"), w * 16, h * 16, below);
   if (anyAbove) writePng(path.join(outMaps, name + "-top.png"), w * 16, h * 16, above);
+  for (const [pname, lid] of Object.entries(LAYOUT_PATCHES[name] || {})) {
+    const alt = fs.readFileSync(P(layouts[lid].blockdata_filepath));
+    const cells = [];
+    blocks.forEach((b, i) => { const a = alt.readUInt16LE(i * 2); if (a !== b) cells.push([i % w, Math.floor(i / w), a & 0x3ff, (a >> 10) & 3]); });
+    (MAP_PATCHES[name] || (MAP_PATCHES[name] = {}))[pname] = cells;
+  }
   const patches = renderPatches(name, blocks, w, primary, secondary);
   const anim = animCells(blocks, w, h, primary, secondary);
   const animFile = path.join(outMaps, name + "-anim.png");
@@ -761,9 +807,13 @@ for (const name of MAPS) {
     text: scriptText(name, o.script),
     item: itemBall(name, o.script),
     mart: martItems(name, o.script),
-    trainer: o.trainer_type && o.trainer_type !== "TRAINER_TYPE_NONE" || /trainerbattle/.test((scriptLabels(name)[o.script] || []).join("\n"))
+    trainer: o.trainer_type && /^TRAINER_TYPE_/.test(o.trainer_type) && o.trainer_type !== "TRAINER_TYPE_NONE" || /trainerbattle/.test((scriptLabels(name)[o.script] || []).join("\n"))
       ? Object.assign(trainerScript(name, o.script) || {}, { sight: +o.trainer_sight_or_berry_tree_id || 0 }) : undefined,
     localId: o.local_id || undefined,
+    // A Strength boulder's flag for the boulder that appears on the floor
+    // below once it drops through a hole (FireRed keeps it in trainer_type:
+    // GetBoulderRevealFlagByLocalIdAndMap).
+    reveal: /^FLAG_/.test(o.trainer_type || "") ? o.trainer_type : undefined,
     alt: ALT_GFX[o.script] ? objectSprite(ALT_GFX[o.script])
       : ALT_GFX[name + ":" + o.graphics_id] ? objectSprite(ALT_GFX[name + ":" + o.graphics_id]) : undefined
   }, objectSprite((VAR_GFX[name] || {})[o.graphics_id] || o.graphics_id)));

@@ -268,7 +268,38 @@ stay where you are); its trainers, signs and hidden items (Rare Candy, Full
 Restore, PP Up, Max Revive, Max Elixir) along the way. At the bottom, Route 18
 (its Bird Keepers) and its gate, where Haden upstairs trades his Lickitung, Marc,
 for a Golduck, lead east into Fuchsia City.
-The Power Plant and Routes 19 to 21 (the sea routes) aren't built yet. Tiles, palettes and metatiles come from
+South of Fuchsia City, Route 19's beach and its swimmers lead out to sea (Surf
+from here on), west along Route 20 (its swimmers, picnickers and hidden
+Stardust) past the Seafoam Islands to Cinnabar Island. The Seafoam Islands (1F
+to B4F, their wild Pokémon on land and water, and their items) are FireRed's
+puzzle: with Strength, push a boulder into a hole and it drops through, turning
+up on the floor below (FireRed's reveal flags; you can drop after it); on B3F
+and B4F fast currents carry you along while you surf (MB_*_CURRENT), and fall
+in through a hole and the current sweeps you off, from B3F down to B4F, and on
+B4F to the shore, until two boulders have been dropped into each current's way:
+come back to that floor and the current has stopped for good (FireRed's
+current-stopped layouts). Until then, passing through Route 20 puts the
+boulders back where they started (`game/seafoam.js`). Deep inside, Articuno
+waits, a wild Lv. 50 Articuno to the legendary battle music: beat it or catch
+it and it's gone; run, and it flies away until you come back. Cinnabar Island:
+its Pokémon Center (a respawn point and Fly spot), Poké Mart, and the Pokémon
+Lab, where the fossil doctor revives a Helix Fossil, Dome Fossil or Old Amber
+into a Lv. 5 Omanyte, Kabuto or Aerodactyl once you've left the room and come
+back, the Metronome tutor, and three trades (Garett's Seel, Seelor, for a
+Ponyta; Clifton's Electrode, Esphere, for a Raichu; Norma's Tangela, Tangeny,
+holding Stardust, for a Venonat; FireRed's IVs and trainers). The Pokémon
+Mansion (1F to 3F and B1F: its burglars and scientists, its diaries, its items,
+TM14 Blizzard and TM22 Solar Beam among them): every statue hides the one
+switch that swaps which of the house's doors are open, on every floor, and the
+Secret Key lies in the basement. Blaine's Gym is locked until you have it.
+Inside, at each quiz machine answer FireRed's question right and the door ahead
+opens; get it wrong and its trainer comes over to battle you (beating them
+opens it too). Blaine gives the Volcano Badge and TM38 Fire Blast, and beating
+him beats his Gym's trainers. (In FireRed, Bill then waits on Cinnabar to take
+you to the Sevii Islands, which aren't built: he isn't there.) From Cinnabar,
+Route 21 runs north across the sea, its fishermen and swimmers, to Pallet Town.
+The Power Plant, Viridian City's Gym, Route 23, Victory Road, the Indigo
+Plateau and the Pokémon League, and Cerulean Cave aren't built yet. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into

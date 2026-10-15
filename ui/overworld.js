@@ -84,11 +84,14 @@
   }
   // A map's animated 8x8 cells (tools/build-maps.js animCells) over its picture
   // at (x0, y0) on screen, in their current frames.
-  function drawAnimCells(name, x0, y0) {
-    const m = World.map(name), sheet = m && m.anim && mapImage(name, "anim");
-    if (!sheet || !ready(sheet)) return;
-    const frames = m.anim.anims.map(animFrame), counts = m.anim.anims.map((n) => (TILE_ANIMS[n] || { frames: 1 }).frames);
-    const cells = m.anim.cells;
+  // (Or a patch's: its anim and picture.)
+  function drawAnimCells(name, x0, y0, anim, sheet) {
+    const m = World.map(name);
+    anim = anim || (m && m.anim);
+    sheet = sheet || (anim && mapImage(name, "anim"));
+    if (!anim || !sheet || !ready(sheet)) return;
+    const frames = anim.anims.map(animFrame), counts = anim.anims.map((n) => (TILE_ANIMS[n] || { frames: 1 }).frames);
+    const cells = anim.cells;
     for (let i = 0; i < cells.length; i += 4) {
       const x = x0 + cells[i] * 8, y = y0 + cells[i + 1] * 8;
       if (x <= -8 || y <= -8 || x >= VIEW_W || y >= VIEW_H) continue;
@@ -107,6 +110,7 @@
       if (!pt || (part && !pt.top)) continue;
       const img = mapImage(name, "patch-" + p + part);
       if (ready(img)) g.drawImage(img, x0 + pt.x * TILE, y0 + pt.y * TILE);
+      if (!part && pt.anim) drawAnimCells(name, x0 + pt.x * TILE, y0 + pt.y * TILE, pt.anim, mapImage(name, "patch-" + p + "-anim"));
     }
   }
 
@@ -115,7 +119,7 @@
     const list = [mapImage(name), mapImage(name, "border")];
     if (m.top) list.push(mapImage(name, "top"));
     if (m.anim) list.push(mapImage(name, "anim"));
-    for (const p of Object.keys(m.patches || {})) list.push(mapImage(name, "patch-" + p));
+    for (const p of Object.keys(m.patches || {})) list.push(mapImage(name, "patch-" + p), ...(m.patches[p].anim ? [mapImage(name, "patch-" + p + "-anim")] : []));
     for (const c of m.connections) if (c.map && World.map(c.map)) list.push(mapImage(c.map), ...(World.map(c.map).top ? [mapImage(c.map, "top")] : []));
     for (const p of m.people) { list.push(spriteImage(p.sprite)); if (p.alt) list.push(spriteImage(p.alt.sprite)); }
     return Promise.all(list.map((img) => img.loaded));
@@ -264,6 +268,13 @@
       p.move.t += p.move.speed || WALK_SPEED;
       if (p.move.t >= TILE) {
         p.x = p.move.tx; p.y = p.move.ty; p.move = null;
+        // A boulder pushed into a hole drops through to the floor below.
+        if (isBoulder(p) && World.blockAt(me.map, p.x, p.y).behavior === World.MB.FALL_WARP) {
+          if (window.GameAudio) window.GameAudio.se("se_fall");
+          people = people.filter((q) => q !== p);
+          if (ctx.boulderFell) ctx.boulderFell(p.def);
+          return;
+        }
         // A trainer on the move can walk into seeing you.
         if (!scene && !paused && resolveExplore && !me.move) {
           const seen = trainerSees(p);
@@ -362,7 +373,9 @@
     const b = personAt(me.x + dx, me.y + dy);
     if (!isBoulder(b) || b.move) return false;
     const r = World.step({ map: me.map, x: b.x, y: b.y }, dir, (mapName, x, y) => mapName !== me.map || !!personAt(x, y) || (x === me.x && y === me.y));
-    if (!r.ok || r.jump || r.warp || r.map !== me.map) return false;
+    // (Into a hole is fine: it falls through, HandleBoulderFallThroughHole.)
+    const hole = r.ok && World.blockAt(me.map, r.x, r.y).behavior === World.MB.FALL_WARP;
+    if (!r.ok || r.jump || (r.warp && !hole) || r.map !== me.map) return false;
     b.move = { tx: r.x, ty: r.y, t: 0, speed: WALK_SPEED };
     b.facing = dir;
     if (window.GameAudio) window.GameAudio.se("se_m_strength");
@@ -828,6 +841,11 @@
     if (pressedA) { pressedA = false; return interact(); }
     const dir = heldDir();
     if (me.avatar === "bike" && World.isPullDown(World.blockAt(me.map, me.x, me.y).behavior)) return slope(dir);
+    // On a current, it carries you (World.currentStep) wherever you press.
+    if (me.avatar === "surf") {
+      const c = World.currentStep({ map: me.map, x: me.x, y: me.y }, occupiedForPlayer);
+      if (c) { me.facing = c.dir; me.turnTimer = 0; startStep(c, c.dir, false, World.CURRENT_SPEED); return; }
+    }
     if (!dir) { me.turnTimer = 0; me.bikeDir = null; return; }
     if (dir !== me.facing && !wasMoving) { me.facing = dir; me.turnTimer = TURN_FRAMES; return; }
     me.facing = dir;

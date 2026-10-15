@@ -151,6 +151,7 @@ window.ITEM_DESCRIPTIONS = {
   "salac-berry": "When held by a Pokémon, it raises\nthe Speed stat in a pinch.",
   "scope-lens": "An item to be held by a Pokémon.\nA lens that boosts the critical-hit\nratio of the holding Pokémon.",
   "sea-incense": "An item to be held by a Pokémon.\nIt slightly boosts the power of\nWater-type moves.",
+  "secret-key": "The key to Cinnabar Island Gym's\nfront door. It is colored red and\ndecorated.",
   "sharp-beak": "An item to be held by a Pokémon.\nA long, sharp beak that boosts the\npower of Flying-type moves.",
   "shell-bell": "An item to be held by a Pokémon.\nThe holding Pokémon regains some\nHP upon striking the foe.",
   "shoal-salt": "Pure salt obtained from deep inside\nthe Shoal Cave. It is extremely\nsalty.",
