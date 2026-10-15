@@ -933,8 +933,7 @@
       await fadeTo("#000", 16, 0, 0);
       show(fill(IT("gOakSpeech_Text_SoYourNameIsPlayer")[0], name));
       await wait(25);
-      if (await choose(fill(IT("gOakSpeech_Text_SoYourNameIsPlayer")[0], name), [
-        { label: "Yes", value: true, className: "action" }, { label: "No", value: false, className: "action" }])) break;
+      if (await window.Screen.yesNo(fill(IT("gOakSpeech_Text_SoYourNameIsPlayer")[0], name))) break;
     }
     show("");
 

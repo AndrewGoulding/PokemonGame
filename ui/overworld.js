@@ -225,7 +225,7 @@
       if (i < order.length - 1 && back && ((d === "left" || d === "right") ? p.x === p.ox : p.y === p.oy)) p.seq = (p.seq || 0) + 1;
     }
     const dir = seq ? order[(p.seq || 0) % order.length] : dirs[Math.floor(Math.random() * dirs.length)];
-    if (seq) p.timer = 8;
+    if (seq) p.timer = 1;   // (a walk sequence walks on without stopping)
     p.facing = dir;
     const [dx, dy] = World.DIRS[dir];
     const tx = p.x + dx, ty = p.y + dy;

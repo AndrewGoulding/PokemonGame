@@ -10,8 +10,10 @@
 //     // onChange(rowIndex, value) as values change; -> null, or the action row picked
 //   const n = await GbaMenus.quantity(overlay, { max, unitPrice, inBag, frame })
 //     // FireRed's "How many?" window: -> the number chosen, or 0 (B)
+//   const yes = await GbaMenus.yesNo(overlay, { frame, cursor })
+//     // FireRed's YES / NO box: -> true (YES) or false (NO, or B)
 //   const a = await GbaMenus.battleAction(overlay, { name, cursor, frame })
-//     // FIGHT / BAG / POKéMON / RUN -> { action: "fight" | "bag" | "pokemon" | "run", cursor }
+//     // FIGHT / BAG / POKéMON / RUN (B moves to RUN) -> { action: "fight" | "bag" | "pokemon" | "run", cursor }
 //   const m = await GbaMenus.battleMoves(overlay, { moves, cursor, frame })
 //     // moves: [{ name, type, pp, maxpp }] -> { index, cursor } or null (B)
 //   const r = await GbaMenus.startMenu(overlay, { items, cursor, frame })
@@ -357,6 +359,34 @@
     return r;
   }
 
+  // ---------- YES / NO (src/menu.c, CreateYesNoMenu) ----------
+  //
+  // The standard window at tiles (21, 9), 6 x 4, in your frame: YES and NO
+  // 14 pixels apart, the ▶ beside them. A picks, B is NO.
+  async function yesNo(canvas, opts) {
+    const std = G().palettes.std2, frame = "type" + ((opts.frame || 0) + 1);
+    let cursor = opts.cursor ? 1 : 0;
+    const draw = () => {
+      const s = Surface();
+      s.frame(frame, G().frames[frame].palette, 21, 9, 6, 4);
+      s.fill(168, 72, 48, 32, std[1]);
+      s.text("YES", 168 + 8, 72 + 2, std[2], std[3]);
+      s.text("NO", 168 + 8, 72 + 2 + 14, std[2], std[3]);
+      s.text("▶", 168, 72 + 2 + cursor * 14, std[2], std[3]);
+      s.show(canvas);
+    };
+    canvas.classList.remove("hidden");
+    draw();
+    const r = await keys((k) => {
+      if ((k === "up" && cursor) || (k === "down" && !cursor)) { cursor ^= 1; draw(); }
+      else if (k === "a") { se(); return cursor === 0; }
+      else if (k === "b") { se(); return false; }
+      return undefined;
+    });
+    canvas.classList.add("hidden");
+    return r;
+  }
+
   // ---------- The battle menus (src/battle_controller_player.c) ----------
   //
   // The bottom panel (48 lines) as FireRed draws it: its tiles and tilemap
@@ -418,6 +448,7 @@
       if (k === "left" || k === "right") { cursor ^= 1; draw(); }
       else if (k === "up" || k === "down") { cursor ^= 2; draw(); }
       else if (k === "a") { se(); return ["fight", "bag", "pokemon", "run"][cursor]; }
+      else if (k === "b" && cursor !== 3) { cursor = 3; draw(); }   // B goes to RUN
       return undefined;
     });
     canvas.classList.add("hidden");
@@ -473,6 +504,7 @@
     battleAction: (canvas, ...a) => during("battle", battleAction(canvas, ...a)),
     battleMoves: (canvas, ...a) => during("moves", battleMoves(canvas, ...a)),
     quantity: (canvas, ...a) => during("quantity", quantity(canvas, ...a)),
+    yesNo: (canvas, ...a) => during("yesno", yesNo(canvas, ...a)),
     startMenu: (canvas, ...a) => during("start", startMenu(canvas, ...a)),
     mainMenu: (canvas, ...a) => { canvas.classList.remove("hidden"); return during("main", mainMenu(canvas, ...a)); },
     optionMenu: (canvas, ...a) => { canvas.classList.remove("hidden"); return during("option", optionMenu(canvas, ...a)); },

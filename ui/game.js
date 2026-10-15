@@ -75,9 +75,7 @@
     });
   }
 
-  const confirm = (text) => ask(text, [
-    { label: "Yes", value: true, className: "action" }, { label: "No", value: false, className: "action" }
-  ]);
+  const confirm = (text) => Screen.yesNo(text);
 
   // ---------- Saving ----------
 

@@ -2,6 +2,7 @@
 //
 //   await Screen.message("It's super effective!");   // shows text, waits (A to skip)
 //   const v = await Screen.ask("What will Pikachu do?", [{ label: "Thunderbolt", value: 0 }, ...]);
+//   if (await Screen.yesNo("Save the game?")) ...     // FireRed's YES / NO box
 //
 // Option fields: label (text), html (instead of label), value, disabled,
 // className, wide (spans the full menu width).
@@ -26,7 +27,9 @@
   // As in FireRed, the text is written out a letter at a time; A (or B)
   // finishes it at once. `printed()` resolves once it's all there.
   let printing = null;   // { finish, done } while a text is being written out
+  let asking = 0;        // counts up when the text box or menu changes (see ask)
   function say(text) {
+    asking++;
     text = String(text == null ? "" : text);
     if (printing) printing.finish();
     textbox.classList.remove("more");
@@ -83,7 +86,7 @@
     more(false);
   }
 
-  function clearMenu() { menu.innerHTML = ""; }
+  function clearMenu() { asking++; menu.innerHTML = ""; }
 
   function addButton(opt, onClick) {
     const b = document.createElement("button");
@@ -100,17 +103,35 @@
     return b;
   }
 
-  // Shows `text` and a menu, resolves with the chosen option's value.
-  function ask(text, options) {
+  // Shows `text` and a menu, resolves with the chosen option's value. As in
+  // FireRed, the choices come up once the text is all written out (A finishes
+  // it). If something else takes the text box or menu first, this one is
+  // dropped.
+  async function ask(text, options) {
     say(text);
     clearMenu();
+    const id = asking;
+    await printed();
+    if (id !== asking) return new Promise(() => {});
     return new Promise((resolve) => {
       for (const opt of options) {
         addButton(opt, () => { clearMenu(); resolve(opt.value); });
       }
+      // (Not while typing in a field: a name, the debug menu's.)
+      if (/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName)) return;
       const first = menu.querySelector("button[data-focus]:not(:disabled)") || menu.querySelector("button:not(:disabled):not([data-b-only])");
       if (first) first.focus();
     });
+  }
+
+  // FireRed's YES / NO box (GbaMenus.yesNo) once `text` is written out:
+  // resolves true for YES, false for NO or B.
+  async function yesNo(text, defaultNo) {
+    say(text);
+    clearMenu();
+    await printed();
+    const frame = window.GameOptions ? window.GameOptions.get().frame : 0;
+    return window.GbaMenus.yesNo(document.getElementById("overlay"), { frame, cursor: defaultNo ? 1 : 0 });
   }
 
   // "X wants to learn M..." Resolves with the slot to overwrite, or null to skip.
@@ -121,8 +142,7 @@
       const slot = await ask("Should a move be forgotten to make space for " + move + "?",
         moveNames.map((m, i) => ({ label: m, value: i })).concat([{ label: "Don't learn " + move, value: null, className: "action", wide: true }]));
       if (slot == null) {
-        const sure = await ask("Stop trying to teach " + move + "?",
-          [{ label: "Yes", value: true, className: "action" }, { label: "No", value: false, className: "action" }]);
+        const sure = await yesNo("Stop trying to teach " + move + "?");
         if (!sure) continue;
         await message(name + " did not learn " + move + ".");
         return null;
@@ -252,5 +272,5 @@
   const setTextSpeed = (f) => { textSpeed = f; };
   const setCharDelay = (ms) => { charMs = ms; };
 
-  window.Screen = { MESSAGE_MS, setTextSpeed, setCharDelay, printed, spriteUrl, setSprite, clearSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, clearMenu, learnMovePrompt };
+  window.Screen = { MESSAGE_MS, setTextSpeed, setCharDelay, printed, spriteUrl, setSprite, clearSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, yesNo, clearMenu, learnMovePrompt };
 })();
