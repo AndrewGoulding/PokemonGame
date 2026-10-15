@@ -602,12 +602,12 @@
     await say(["Huh?\nThe Itemfinder's responding!", "There's an item buried around here!"]);
   }
 
-  // The VS Seeker (FireRed's src/vs_seeker.c): charged by 100 steps, it
-  // signals the trainers on screen. One you haven't beaten shows "!"; one you
-  // have wants a rematch ("!!") seven times in ten, otherwise "×". Those who
-  // want one battle you again (with the same team, for now) until you beat
-  // them or leave the map.
-  const VS_SEEKER_CHARGE = 100;
+  // The VS Seeker (FireRed's src/vs_seeker.c, but charged by 50 steps, not
+  // 100): it signals the trainers on screen. One you haven't beaten shows
+  // "!"; one you have always wants a rematch ("!!") and stays put, facing the
+  // way they were, until you beat them or leave the map (with the same team,
+  // for now).
+  const VS_SEEKER_CHARGE = 50;
   async function vsSeeker() {
     const f = player.flags;
     const steps = f.vsSeekerSteps == null ? VS_SEEKER_CHARGE : f.vsSeekerSteps;
@@ -623,12 +623,14 @@
     const tracks = [], ready = [];
     for (const p of near) {
       const id = p.def.trainer.id, who = "#" + p.def.id;
-      if (!f[id] || rematch[id]) tracks.push({ who, moves: [f[id] ? "emote_double_excl_mark" : "emote_exclamation_mark"] });
-      else if (Math.random() < 0.7) { ready.push(id); tracks.push({ who, moves: ["walk_in_place_faster_down", "emote_double_excl_mark"] }); }
-      else tracks.push({ who, moves: ["emote_x"] });
+      if (!f[id] || rematch[id]) { tracks.push({ who, moves: [f[id] ? "emote_double_excl_mark" : "emote_exclamation_mark"] }); continue; }
+      // (Kept by facing, so they stay that way after a battle or the menu.)
+      ready.push(id);
+      rematch[id] = p.facing || "down";
+      Overworld.lockPerson(p.def.id, rematch[id]);
+      tracks.push({ who, moves: ["walk_in_place_faster_" + rematch[id], "emote_double_excl_mark"] });
     }
     sfx("se_pin");
-    ready.forEach((id) => { rematch[id] = true; });
     if (ready.length) f.vsSeekerSteps = 0;
     await Overworld.act(tracks);
     if (!ready.length && !near.some((p) => !f[p.def.trainer.id] || rematch[p.def.trainer.id])) {
@@ -1543,6 +1545,9 @@
     if (person.flag && tempFlags.has((map || player.location.map) + ":" + person.flag)) return false;   // (a tree you've cut)
     const spot = person.trainer && f.trainerSpots && f.trainerSpots[person.trainer.id];
     if (spot) return { x: spot.x, y: spot.y, movement: "face_" + spot.facing };
+    // Waiting for a rematch from the VS Seeker: standing still, facing one way.
+    const rematchFacing = person.trainer && f.vsRematch && f.vsRematch[person.trainer.id];
+    if (rematchFacing) return { movement: "face_" + (rematchFacing === true ? "down" : rematchFacing) };
     // Miguel stays by the fossil he took (FireRed's copyobjectxytoperm).
     if (person.script === "MtMoon_B2F_EventScript_Miguel" && f.mtMoonFossil) return { x: f.mtMoonFossil === "dome-fossil" ? 14 : 13, y: 8, movement: "face_up" };
     // Daisy sits at the table, before and after giving you the Town Map.

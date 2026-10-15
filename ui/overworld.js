@@ -1077,7 +1077,13 @@
     },
     position: () => ({ map: me.map, x: me.x, y: me.y, facing: me.facing }),
     // Everyone on the map now, where they stand (the VS Seeker looks around).
-    people: () => people.filter((p) => !p.hidden).map((p) => ({ def: p.def, x: p.x, y: p.y })),
+    people: () => people.filter((p) => !p.hidden).map((p) => ({ def: p.def, x: p.x, y: p.y, facing: p.facing })),
+    // Stops someone where they stand, facing `facing` (a trainer the VS Seeker
+    // found wanting a rematch: FireRed turns their movement into facing one way).
+    lockPerson: (id, facing) => {
+      const p = people.find((q) => q.def.id === id);
+      if (p) { p.def = Object.assign({}, p.def, { movement: "face_" + facing }); p.facing = facing; }
+    },
     // Where someone on the map (by local id) stands, or null.
     personPosition: (localId) => { const p = people.find((q) => q.def.localId === localId); return p ? { x: p.x, y: p.y, facing: p.facing } : null; }
   };
