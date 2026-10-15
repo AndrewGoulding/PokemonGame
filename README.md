@@ -176,11 +176,11 @@ trainers and items, Route 11 with its ten trainers and its gate (on to Route
 east side, and Route 10 east of Route 9: its trainers, its Pokémon Center (Prof.
 Oak's aide gives the Everstone for twenty kinds caught; Fly can land outside
 it), and Rock Tunnel (1F and B1F, dark without Flash, with its fifteen trainers,
-items, Rock Smash rocks and the Rock Slide tutor), and Lavender Town: its
+items, Rock Smash rocks and the Rock Slide tutor, ₽1,000 a time as often as you like; its floors are numbered in the area name popup), and Lavender Town: its
 Pokémon Center, Poké Mart (Super Repels and Revives), the Name Rater (renames
 a Pokémon you caught yourself; one you traded for keeps its name), Cubone's
 house and the Volunteer Pokémon House (Mr. Fuji is away until Pokémon Tower),
-Pokémon Tower (1F-7F: Gary on 2F, with FireRed's team and his Eevee; the
+Pokémon Tower (1F-7F: Gary on 2F, with FireRed's team, a Gyarados in Kadabra's place and his Eevee, now an Umbreon; the
 Channelers; 5F's purified zone, which heals you each time you step in; without
 the Silph Scope its wild Pokémon are unidentified Ghosts (FireRed's
 BATTLE_TYPE_GHOST: "A wild Ghost appeared!", your Pokémon are too scared to
@@ -379,7 +379,9 @@ node tools/order-learnsets.js expansion
 `tools/build-summary.js` converts FireRed's Summary screen and Move Relearner
 (`graphics/summary_screen/`, `graphics/interface/`) into `data/summary-screen.js`,
 with short descriptions for every move and ability (FireRed's, and the
-expansion's for later ones):
+expansion's for later ones), and a Fairy type icon (FireRed has none: lettered
+from the expansion's `graphics/types/fairy.png`, in FireRed's style, in place of
+its "???" icon):
 
 ```sh
 cd pokefirered && git sparse-checkout add graphics/summary_screen/ graphics/learn_move/ /src/move_descriptions.c \
@@ -724,8 +726,9 @@ Stone already could.)
   area pages and route crowns for now), and walking onto land hops you off.
 - **The Bicycle** (from the Bag, or Select once it's registered: key items
   you can use on the map can be registered to Select, Backspace on a
-  keyboard): riding sprite and cycling music, Emerald's Mach Bike speed (it picks up
-  speed going straight: walking pace, running pace, then a tile in 4 frames;
+  keyboard): riding sprite and cycling music, Emerald's Mach Bike speed, half as
+  fast again (it picks up speed going straight: 1.5 times walking pace, then running
+  pace, then 6 pixels a frame;
   stopping, turning or bumping into something starts over), wild Pokémon 80% as often (FireRed's rate on a bike), and only
   where FireRed allows cycling (`allow_cycling`): going indoors gets you off,
   and using it indoors gets "Oak: ...! This isn't the time to use that!"

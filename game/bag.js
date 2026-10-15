@@ -110,7 +110,8 @@
   const price = (item) => PRICES[item] || (isMachine(item) ? machinePrice(item) : mintNature(item) ? MINT_PRICE : 0);
   const sellPrice = (item) => Math.floor(price(item) / 2);
 
-  const isBall = (item) => /balls$/.test((window.ITEMS[item] || {}).category || "") || /-ball$/.test(item);
+  // (By category: an Iron Ball, Light Ball or Smoke Ball is held, not thrown.)
+  const isBall = (item) => /balls$/.test((window.ITEMS[item] || {}).category || "");
   const isStone = (item) => Object.values(window.EVOLUTIONS).some((l) => l.some((e) => e.method === "item" && e.item === item));
 
   const isKeyItem = (item) => (window.ITEMS[item] || {}).category === "key-items";

@@ -192,6 +192,10 @@ const WILD_SLOT_CHANGES = {
 // Vermilion Gym's electric beams across the way to Lt. Surge: half off after
 // the first switch, off after both (VermilionCity_Gym_EventScript_SetOneBeamOff,
 // _SetBeamsOff, labels in include/constants/metatile_labels.h).
+// Floors FireRed's maps don't number, which this game does (the area name
+// popup: "Rock Tunnel B1F").
+const FLOOR_NUMBERS = { RockTunnel_1F: 1, RockTunnel_B1F: -1 };
+
 const MAP_PATCHES = {
   VermilionCity_Gym: {
     half: [[3, 6, 0x2BB, 1], [4, 6, 0x2BC, 1], [5, 6, 0x2BD, 1], [6, 6, 0x2BE, 1], [7, 6, 0x2BF, 1],
@@ -833,9 +837,10 @@ for (const name of MAPS) {
     cycling: map.allow_cycling || undefined,
     dark: map.requires_flash || undefined,
     // Whether the area's name pops up on arriving by a door or warp
-    // (show_map_name), and its floor (Silph Co. 2F, Rocket Hideout B1F).
+    // (show_map_name), and its floor (Silph Co. 2F, Rocket Hideout B1F; and
+    // this game's FLOOR_NUMBERS for places FireRed gives none).
     showName: map.show_map_name || undefined,
-    floor: map.floor_number || undefined,
+    floor: map.floor_number || FLOOR_NUMBERS[name] || undefined,
     battleScene: map.battle_scene && map.battle_scene !== "MAP_BATTLE_SCENE_NORMAL"
       ? map.battle_scene.replace(/^MAP_BATTLE_SCENE_/, "").toLowerCase().replace(/_/g, "") : undefined,
     top: anyAbove, borderWidth: bw, borderHeight: bh,

@@ -2012,3 +2012,11 @@ console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random 
   assert.deepStrictEqual(W("CinnabarIsland_Mart").people.find((p) => p.mart).mart,
     ["ultra-ball", "great-ball", "hyper-potion", "revive", "full-heal", "escape-rope", "max-repel"]);
 }
+
+// Held items whose names end in "Ball" aren't Poké Balls.
+for (const item of ["iron-ball", "light-ball", "smoke-ball"]) {
+  assert(!Bag.isBall(item) && Bag.pocket(item) === "Items", item + " goes in Items");
+}
+assert(Bag.isBall("poke-ball") && Bag.isBall("safari-ball"));
+// Rock Tunnel's floors are numbered.
+assert.deepStrictEqual([WORLD_MAPS.RockTunnel_1F.floor, WORLD_MAPS.RockTunnel_B1F.floor], [1, -1]);

@@ -11,7 +11,9 @@
 //            a row; its palette is the screen's 7 BG palettes), hpBar, expBar,
 //            status (the status icons), shinyStar, pokerus, cursorLeft,
 //            cursorRight (the move cursor), menuInfo (graphics/interface/
-//            menu_info.png: type icons and the like), learnMove
+//            menu_info.png: type icons and the like; its "???" icon becomes a
+//            Fairy icon, lettered as the expansion's graphics/types/fairy.png,
+//            in FireRed's style), learnMove
 //            (graphics/interface/learn_move.png), scrollArrows (graphics/
 //            learn_move/interface_sprites.png: the list's ▼ and ▲, tiles 4-5 and 6-7),
 //            categoryIcons (the expansion's graphics/interface/category_icons.png:
@@ -119,6 +121,22 @@ for (const block of xAbilities.split(/\n    \[ABILITY_/).slice(1)) {
   const name = /\.name = _\("([^"]+)"/.exec(block), desc = /\.description = COMPOUND_STRING\(([\s\S]*?)\),\n/.exec(block);
   const ours = name && ourAbilities[key(name[1])];
   if (ours && desc && !data.abilityText[ours]) data.abilityText[ours] = strings(desc[1]);
+}
+
+// Fairy, which FireRed hasn't got: its "???" icon (tile 0xA4, 32x12) redrawn in
+// pink (pokemon_types.pal colour 12) with white letters and a dark shadow (15,
+// 14), the letters from the expansion's 32x16 graphics/types/fairy.png (its
+// rows 4-11; there 15 is a letter and 14 its shadow).
+{
+  const sh = data.sheets.menuInfo, px = Buffer.from(sh.px, "base64");
+  const fairy = readPng(X("graphics/types/fairy.png"));
+  const sx = (0xA4 % 16) * 8, sy = Math.floor(0xA4 / 16) * 8;
+  for (let j = 0; j < 12; j++) for (let i = 0; i < 32; i++) {
+    const corner = (j === 0 || j === 11) && (i === 0 || i === 31);
+    const src = j >= 2 && j <= 9 ? fairy.px[(j + 2) * fairy.width + i] : 0;
+    px[(sy + j) * sh.width + sx + i] = corner ? 0 : 0x10 | (src === 15 ? 15 : src === 14 ? 14 : 12);
+  }
+  sh.px = px.toString("base64");
 }
 
 fs.writeFileSync(path.join(root, "data/summary-screen.js"),

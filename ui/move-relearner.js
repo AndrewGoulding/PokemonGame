@@ -52,7 +52,7 @@
 
   // sMenuInfoIcons (src/list_menu.c): each type's 32x12 icon and the 40x12
   // labels, by tile in graphics/interface/menu_info.png. (Fairy, which FireRed
-  // doesn't have, shows its "???".)
+  // doesn't have, is the expansion's, in its "???" slot.)
   const TYPE_TILE = { Normal: 0x20, Fighting: 0x64, Flying: 0x60, Poison: 0x80, Ground: 0x48, Rock: 0x44, Bug: 0x6C,
     Ghost: 0x68, Steel: 0x88, Fire: 0x24, Water: 0x28, Grass: 0x2C, Electric: 0x40, Psychic: 0x84, Ice: 0x4C,
     Dragon: 0xA0, Dark: 0x8C, Fairy: 0xA4 };

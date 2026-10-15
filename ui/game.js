@@ -2056,7 +2056,8 @@
         return;
       // Rock Tunnel B1F's Rock Slide tutor.
       case "RockTunnel_B1F_EventScript_RockSlideTutor":
-        await moveTutor("Rock Slide", "tutorRockSlide", "Text_RockSlide");
+        // (Again and again, for money, like the Route 4 tutors.)
+        await moveTutor("Rock Slide", "tutorRockSlide", "Text_RockSlide", TUTOR_PRICE);
         return;
       // Prof. Oak's Aide in Route 10's Pokémon Center: the Everstone for twenty kinds caught.
       case "Route10_PokemonCenter_1F_EventScript_Aide":
@@ -3925,8 +3926,9 @@
   let inPurifiedZone = false;
   const towerGhost = () => /^PokemonTower_/.test(player.location.map) && !Player.itemCount(player, "silph-scope");
 
-  // 2F: Gary (PokemonTower_2F_EventScript_Rival): FireRed's team, with his
-  // Eevee in place of a starter, as in Cerulean. Then he heads off down the stairs.
+  // 2F: Gary (PokemonTower_2F_EventScript_Rival): FireRed's team, with
+  // Gyarados in Kadabra's place, and his Eevee, an Umbreon by now, in place of
+  // a starter. Then he heads off down the stairs.
   async function towerRival(right) {
     const f = player.flags, R = "LOCALID_POKEMON_TOWER_RIVAL";
     music("mus_encounter_rival");
@@ -3936,7 +3938,8 @@
     await say(T("PokemonTower_2F_Text_RivalIntro"));
     const base = trainerTeam("TRAINER_RIVAL_POKEMON_TOWER_SQUIRTLE");
     const last = base[base.length - 1];
-    const team = base.slice(0, -1).concat(Party.create("Eevee", last.level, { ivs: last.ivs.hp }));
+    const team = base.slice(0, -1).map((r) => (r.species === "Kadabra" ? Party.create("Gyarados", r.level, { ivs: r.ivs.hp }) : r))
+      .concat(Party.create("Umbreon", last.level, { ivs: last.ivs.hp }));
     const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_late" },
       defeatText: T("PokemonTower_2F_Text_RivalDefeat"), trainerId: "TRAINER_RIVAL_POKEMON_TOWER_SQUIRTLE",
       prize: 36 * last.level });   // (FireRed's TRAINER_CLASS_RIVAL_LATE: 9, x4 as this game's prizes are)

@@ -45,8 +45,9 @@
   const SPIN_FACINGS = ["down", "left", "up", "right"];
   // The Bicycle goes like Emerald's Mach Bike (sMachBikeSpeedCallbacks): it
   // picks up speed tile by tile going straight, walking pace, then running,
-  // then a tile in 4 frames, and starts over when you stop or turn.
-  const BIKE_SPEEDS = [1, 2, 4];
+  // then a tile in 4 frames, and starts over when you stop or turn. (Here,
+  // half as fast again: 1.5, 3 and 6 pixels a frame.)
+  const BIKE_SPEEDS = [1.5, 3, 6];
   const TURN_FRAMES = 6;                 // tapping a direction turns without moving
   const FADE_FRAMES = 12;
 
@@ -341,7 +342,10 @@
     if (me.avatar === "bike") { me.bikeRun = dir === me.bikeDir ? (me.bikeRun || 0) + 1 : 0; me.bikeDir = dir; }
     const speed = me.avatar === "bike" ? BIKE_SPEEDS[Math.min(me.bikeRun, BIKE_SPEEDS.length - 1)]
       : me.avatar === "surf" ? SURF_SPEED : run ? RUN_SPEED : WALK_SPEED;
-    me.move = { tx: r.x, ty: r.y, tmap: r.map, dir, t: 0, jump: !!r.jump, warp: r.warp || null, run, spin: !!spin,
+    // (Speeds that don't divide a tile: what's left over goes into the next step.)
+    const carry = me.carry || 0;
+    me.carry = 0;
+    me.move = { tx: r.x, ty: r.y, tmap: r.map, dir, t: carry, jump: !!r.jump, warp: r.warp || null, run, spin: !!spin,
       dismount: !!r.dismount, dist: r.jump ? TILE * 2 : TILE, speed: speedOverride || (spin ? SPIN_SPEED : r.dismount ? WALK_SPEED * 2 : speed) };
     me.parity ^= 1;
   }
@@ -828,7 +832,7 @@
       if (me.move.spin) me.facing = SPIN_FACINGS[Math.floor(performance.now() / 67) % 4];
       if (me.move.t >= me.move.dist) {
         if (me.move.scripted) { me.x = me.move.tx; me.y = me.move.ty; me.move = null; savePosition(); }
-        else { finishStep(); me.moving = true; }
+        else { me.carry = Math.min(me.move.t - me.move.dist, TILE - 1); finishStep(); me.moving = true; }
       }
       return;
     }
@@ -846,7 +850,7 @@
       const c = World.currentStep({ map: me.map, x: me.x, y: me.y }, occupiedForPlayer);
       if (c) { me.facing = c.dir; me.turnTimer = 0; startStep(c, c.dir, false, World.CURRENT_SPEED); return; }
     }
-    if (!dir) { me.turnTimer = 0; me.bikeDir = null; return; }
+    if (!dir) { me.turnTimer = 0; me.bikeDir = null; me.carry = 0; return; }
     if (dir !== me.facing && !wasMoving) { me.facing = dir; me.turnTimer = TURN_FRAMES; return; }
     me.facing = dir;
     if (me.turnTimer > 0) { me.turnTimer--; return; }
