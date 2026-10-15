@@ -108,7 +108,17 @@ const MAPS = [
   "LavenderTown_House1", "LavenderTown_House2", "LavenderTown_VolunteerPokemonHouse",
   "PokemonTower_1F", "PokemonTower_2F", "PokemonTower_3F", "PokemonTower_4F", "PokemonTower_5F",
   "PokemonTower_6F", "PokemonTower_7F",
-  "Route8", "Route8_WestEntrance", "UndergroundPath_EastEntrance", "UndergroundPath_EastWestTunnel"
+  "Route8", "Route8_WestEntrance", "UndergroundPath_EastEntrance", "UndergroundPath_EastWestTunnel",
+  "UndergroundPath_WestEntrance", "Route7", "Route7_EastEntrance",
+  "CeladonCity", "CeladonCity_PokemonCenter_1F", "CeladonCity_PokemonCenter_2F",
+  "CeladonCity_DepartmentStore_1F", "CeladonCity_DepartmentStore_2F", "CeladonCity_DepartmentStore_3F",
+  "CeladonCity_DepartmentStore_4F", "CeladonCity_DepartmentStore_5F", "CeladonCity_DepartmentStore_Roof",
+  "CeladonCity_DepartmentStore_Elevator",
+  "CeladonCity_Condominiums_1F", "CeladonCity_Condominiums_2F", "CeladonCity_Condominiums_3F",
+  "CeladonCity_Condominiums_Roof", "CeladonCity_Condominiums_RoofRoom",
+  "CeladonCity_GameCorner", "CeladonCity_GameCorner_PrizeRoom", "CeladonCity_Gym",
+  "CeladonCity_Restaurant", "CeladonCity_Hotel", "CeladonCity_House1",
+  "RocketHideout_B1F", "RocketHideout_B2F", "RocketHideout_B3F", "RocketHideout_B4F", "RocketHideout_Elevator"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
@@ -163,6 +173,19 @@ const MAP_PATCHES = {
       [3, 7, 0x2C3, 1], [4, 7, 0x2C4, 1], [5, 7, 0x2C5, 1], [6, 7, 0x2C6, 1], [7, 7, 0x2C7, 1]],
     off: [[3, 6, 0x293, 1], [4, 6, 0x294, 0], [5, 6, 0x281, 0], [6, 6, 0x295, 0], [7, 6, 0x296, 1],
       [3, 7, 0x29B, 1], [4, 7, 0x29C, 0], [5, 7, 0x281, 0], [6, 7, 0x29D, 0], [7, 7, 0x29E, 1]]
+  },
+  // The Game Corner's stairs down to the Rocket Hideout, behind the poster:
+  // floor and wall until you press the switch (CeladonCity_GameCorner_EventScript_HideRocketHideout).
+  CeladonCity_GameCorner: {
+    hidden: [[15, 2, 0x292, 0], [16, 2, 0x292, 0], [17, 2, 0x292, 0], [16, 3, 0x2CF, 1], [17, 3, 0x2CF, 1]]
+  },
+  // The Rocket Hideout's barriers (RocketHideout_B1F/B4F_EventScript_SetBarrier),
+  // up until the Rockets guarding them are beaten.
+  RocketHideout_B1F: {
+    barrier: [[20, 19, 0x2CE, 1], [21, 19, 0x2CF, 1], [20, 20, 0x2D6, 1], [21, 20, 0x2D7, 1], [20, 21, 0x282, 0], [21, 21, 0x282, 0]]
+  },
+  RocketHideout_B4F: {
+    barrier: [[17, 12, 0x2CE, 1], [18, 12, 0x2CF, 1], [17, 13, 0x2D6, 1], [18, 13, 0x2D7, 1], [17, 14, 0x282, 0], [18, 14, 0x282, 0]]
   }
 };
 function renderPatches(name, blocks, w, primary, secondary) {
@@ -176,7 +199,9 @@ function renderPatches(name, blocks, w, primary, secondary) {
     const r = renderBlocks(sub, pw, ph, primary, secondary, false);
     writePng(path.join(outMaps, name + "-patch-" + pname + ".png"), pw * 16, ph * 16, r.below);
     if (r.anyAbove) writePng(path.join(outMaps, name + "-patch-" + pname + "-top.png"), pw * 16, ph * 16, r.above);
-    out[pname] = { x: x0, y: y0, w: pw, h: ph, top: r.anyAbove || undefined, collision: cells.map(([x, y, , c]) => [x, y, c]) };
+    // (Each cell's collision and behaviour: a staircase swapped for floor no longer warps.)
+    out[pname] = { x: x0, y: y0, w: pw, h: ph, top: r.anyAbove || undefined,
+      collision: cells.map(([x, y, mt, c]) => [x, y, c, metatile(primary, secondary, mt).behavior]) };
   }
   return Object.keys(out).length ? out : undefined;
 }
@@ -198,6 +223,7 @@ const GAME_TEXT = [
   "Trade_Text_ThanksYoureAPal", "Trade_Text_HowIsMyOldMon", "Text_CutTreeDown", "Text_TreeCanBeCutDown",
   "Aide_Text_HaventCaughtEnoughMonsForItem", "Aide_Text_GetEnoughMonsComeBackForItem",
   "Text_OnlySkilledTrainersAllowedThrough", "Text_CantLetYouPass", "Text_OhThatsBadgeGoRightAhead", "Text_MoveCanOnlyBeLearnedOnce",
+  "Text_WantWhichFloor", "Text_GiveNicknameToThisMon", "Text_PlayerObtainedTheMon", "Text_NoMoreRoomForPokemon",
   // Rock Tunnel's Rock Slide tutor (in Seafoam Islands B4F's text.inc).
   "Text_RockSlideTeach", "Text_RockSlideDeclined", "Text_RockSlideWhichMon", "Text_RockSlideTaught",
   // Pallet Town's Sign Lady (data/text/sign_lady.inc).
@@ -242,19 +268,23 @@ function tilesetDir(symbol) {
   throw new Error("No tileset folder for " + symbol + " (looked for " + snake + ")");
 }
 
+// Tilesets drawn with another's tiles and palettes (src/data/tilesets/headers.h:
+// gTileset_SilphCo uses gTilesetTiles_Condominiums), by folder.
+const SHARED_GRAPHICS = { silph_co: "condominiums" };
 function loadTileset(symbol) {
   const dir = tilesetDir(symbol);
+  const gfx = SHARED_GRAPHICS[path.basename(dir)] ? path.join(path.dirname(dir), SHARED_GRAPHICS[path.basename(dir)]) : dir;
   const meta = fs.readFileSync(path.join(dir, "metatiles.bin"));
   const attrs = fs.readFileSync(path.join(dir, "metatile_attributes.bin"));
   const palettes = [];
   for (let i = 0; i < 16; i++) {
-    const f = path.join(dir, "palettes", String(i).padStart(2, "0") + ".pal");
+    const f = path.join(gfx, "palettes", String(i).padStart(2, "0") + ".pal");
     palettes.push(fs.existsSync(f) ? readPal(f) : null);
   }
   const anims = (TILE_ANIMS[path.basename(dir)] || []).map((a) => Object.assign({}, a, {
     frames: Array.from({ length: a.frames }, (_, k) => readPng(path.join(dir, "anim", a.dir, k + ".png")))
   }));
-  return { tiles: readPng(path.join(dir, "tiles.png")), meta, attrs, palettes, anims };
+  return { tiles: readPng(path.join(gfx, "tiles.png")), meta, attrs, palettes, anims };
 }
 
 // FireRed's tile animations (src/tileset_anims.c) on the General tileset:
@@ -456,7 +486,9 @@ function martItems(mapName, script) {
     for (const l of scripts[m[1]]) {
       const it = /^\.2byte\s+ITEM_(\w+)/.exec(l);
       if (!it || it[1] === "NONE") continue;
-      items.push(it[1].toLowerCase().replace(/_/g, "-"));
+      // (This game's names and machine numbers; Mail, which it hasn't got, is left out.)
+      const id = itemId("ITEM_" + it[1]);
+      if (window.ITEMS[id]) items.push(id);
     }
     return items;
   }
@@ -552,13 +584,16 @@ function buildTrainers(ids) {
 
 // A trainer's front picture in assets/sprites/trainers/front/<pic>.png,
 // converted from graphics/trainers if it isn't there yet.
+// (Pictures whose files FireRed names differently from their TRAINER_PIC_*.)
+const PIC_FILES = { cooltrainer_f: "cool_trainer_f", cooltrainer_m: "cool_trainer_m" };
 function trainerPic(pic) {
   const file = path.join(root, "assets/sprites/trainers/front", pic + ".png");
   if (!fs.existsSync(file)) {
-    const src = P("graphics/trainers/front_pics", pic + "_front_pic.png");
+    const name = PIC_FILES[pic] || pic;
+    const src = P("graphics/trainers/front_pics", name + "_front_pic.png");
     if (!fs.existsSync(src)) throw new Error("No front picture for " + pic + " (check out graphics/trainers/)");
     const png = readPng(src);
-    const pal = P("graphics/trainers/palettes", pic + ".pal");
+    const pal = P("graphics/trainers/palettes", name + ".pal");
     if (fs.existsSync(pal)) png.palette = readPal(pal);
     writeSprite(png, file);
   }
@@ -714,8 +749,9 @@ for (const name of MAPS) {
     warps: map.warp_events.map((wp) => ({ x: wp.x, y: wp.y, map: byConst[wp.dest_map] || null, mapConst: byConst[wp.dest_map] ? undefined : wp.dest_map, warp: +wp.dest_warp_id })),
     signs: map.bg_events.filter((b) => b.type === "sign").map((b) => ({ x: b.x, y: b.y, script: b.script, text: SIGN_TEXT[b.script] || scriptText(name, b.script) })),
     triggers: map.coord_events.map((c) => ({ x: c.x, y: c.y, script: c.script })),
+    // (ITEM_NONE: coins on the Game Corner's floor, `quantity` of them.)
     hidden: map.bg_events.filter((b) => b.type === "hidden_item").map((b) => ({
-      x: b.x, y: b.y, item: itemId(b.item), flag: b.flag, quantity: b.quantity || 1 })),
+      x: b.x, y: b.y, item: b.item === "ITEM_NONE" ? "coins" : itemId(b.item), flag: b.flag, quantity: b.quantity || 1 })),
     people,
     wild: land && land.land_mons ? {
       rate: land.land_mons.encounter_rate,

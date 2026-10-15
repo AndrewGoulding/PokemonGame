@@ -23,6 +23,8 @@
     WARP_DOOR: 0x69, UP_ESCALATOR: 0x6a, DOWN_ESCALATOR: 0x6b,
     UP_RIGHT_STAIR_WARP: 0x6c, UP_LEFT_STAIR_WARP: 0x6d, DOWN_RIGHT_STAIR_WARP: 0x6e, DOWN_LEFT_STAIR_WARP: 0x6f,
     WATERFALL: 0x13,
+    // The Rocket Hideout's spinning arrows (MB_SPIN_*) and the tile that stops you.
+    SPIN_RIGHT: 0x54, SPIN_LEFT: 0x55, SPIN_UP: 0x56, SPIN_DOWN: 0x57, STOP_SPINNING: 0x58,
     COUNTER: 0x80, PC: 0x83
   };
   const LEDGE = { right: MB.JUMP_EAST, left: MB.JUMP_WEST, up: MB.JUMP_NORTH, down: MB.JUMP_SOUTH };
@@ -72,8 +74,18 @@
     return m && m.warps.find((w) => w.x === x && w.y === y) || null;
   }
 
+  // FireRed's dynamic warp (MAP_DYNAMIC: an elevator's way out), set by the
+  // game: { map, x, y } — where you came in, or the floor you picked.
+  let dynamicWarp = null;
+  const setDynamicWarp = (t) => { dynamicWarp = t || null; };
   // Where a warp leads: its destination map and the destination warp's tile.
   function warpTarget(w) {
+    if (w && w.mapConst === "MAP_DYNAMIC") {
+      const d = dynamicWarp && map(dynamicWarp.map);
+      if (!d) return null;
+      const b = d.behavior[dynamicWarp.y * d.width + dynamicWarp.x];
+      return { map: dynamicWarp.map, x: dynamicWarp.x, y: dynamicWarp.y, door: b === MB.WARP_DOOR || b === MB.CAVE_DOOR };
+    }
     const dest = w && w.map && map(w.map);
     if (!dest) return null;
     const to = dest.warps[w.warp] || dest.warps[0];
@@ -136,7 +148,7 @@
     const result = { ok: true, map: ahead.map, x: ahead.x, y: ahead.y };
     const w = warpAt(ahead.map, ahead.x, ahead.y);
     // A cave or doorway into a map that isn't built yet (Diglett's Cave).
-    if (w && STEP_WARPS.has(ahead.behavior) && !w.map) return { ok: false, unbuilt: w.mapConst };
+    if (w && STEP_WARPS.has(ahead.behavior) && !w.map && w.mapConst !== "MAP_DYNAMIC") return { ok: false, unbuilt: w.mapConst };
     if (w && STEP_WARPS.has(ahead.behavior)) result.warp = warpTarget(w);
     return result;
   }
@@ -247,7 +259,7 @@
   }
 
   window.World = {
-    DIRS, OPPOSITE, MB, map, connectionOrigin, blockAt, warpAt, warpTarget, step, facingWater, isSurfable,
+    DIRS, OPPOSITE, MB, map, connectionOrigin, blockAt, warpAt, warpTarget, setDynamicWarp, step, facingWater, isSurfable,
     signAt, triggersAt, isGrass, wildEncounter, stepEncounter, pickWild, LAND_SLOT_WEIGHTS, WATER_SLOT_WEIGHTS
   };
 })();

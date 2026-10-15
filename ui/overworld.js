@@ -41,6 +41,8 @@
   const PLAYER_X = 112, PLAYER_Y = 64;   // where the player stands on screen (top-left of its tile)
   const WALK_SPEED = 1, RUN_SPEED = 2;   // pixels per frame (60 frames a second)
   const SURF_SPEED = 2;   // (PLAYER_SPEED_FAST)
+  const SPIN_SPEED = 2;   // (an arrow tile spins you along, MOVEMENT_ACTION_SPIN_*)
+  const SPIN_FACINGS = ["down", "left", "up", "right"];
   // The Bicycle goes like Emerald's Mach Bike (sMachBikeSpeedCallbacks): it
   // picks up speed tile by tile going straight, walking pace, then running,
   // then a tile in 4 frames, and starts over when you stop or turn.
@@ -316,14 +318,14 @@
 
   // ---------- Player movement ----------
 
-  function startStep(r, dir) {
+  function startStep(r, dir, spin) {
     // (ctx.canRun can restrict running, e.g. to after FireRed's Running Shoes.)
-    const run = !r.jump && me.avatar === "walk" && runHeld() && (!ctx.canRun || ctx.canRun());
+    const run = !spin && !r.jump && me.avatar === "walk" && runHeld() && (!ctx.canRun || ctx.canRun());
     if (me.avatar === "bike") { me.bikeRun = dir === me.bikeDir ? (me.bikeRun || 0) + 1 : 0; me.bikeDir = dir; }
     const speed = me.avatar === "bike" ? BIKE_SPEEDS[Math.min(me.bikeRun, BIKE_SPEEDS.length - 1)]
       : me.avatar === "surf" ? SURF_SPEED : run ? RUN_SPEED : WALK_SPEED;
-    me.move = { tx: r.x, ty: r.y, tmap: r.map, dir, t: 0, jump: !!r.jump, warp: r.warp || null, run,
-      dismount: !!r.dismount, dist: r.jump ? TILE * 2 : TILE, speed: r.dismount ? WALK_SPEED * 2 : speed };
+    me.move = { tx: r.x, ty: r.y, tmap: r.map, dir, t: 0, jump: !!r.jump, warp: r.warp || null, run, spin: !!spin,
+      dismount: !!r.dismount, dist: r.jump ? TILE * 2 : TILE, speed: spin ? SPIN_SPEED : r.dismount ? WALK_SPEED * 2 : speed };
     me.parity ^= 1;
   }
 
@@ -399,7 +401,20 @@
       if (!mv.warp && areaOf(from) !== areaOf(me.map)) showAreaName(me.map);
     }
     savePosition();
-    if (mv.warp) { warpTo(mv.warp); return; }
+    if (mv.warp) { me.spinDir = null; warpTo(mv.warp); return; }
+    // The Rocket Hideout's arrows (FireRed's TryUpdatePlayerSpinDirection): an
+    // arrow spins you off its way, and you keep going until a stop tile or
+    // something in the way (another arrow turns you).
+    const b = World.blockAt(me.map, me.x, me.y).behavior, MB = World.MB;
+    const arrow = { [MB.SPIN_RIGHT]: "right", [MB.SPIN_LEFT]: "left", [MB.SPIN_UP]: "up", [MB.SPIN_DOWN]: "down" }[b];
+    if (arrow) { if (!me.spinDir && window.GameAudio) window.GameAudio.se("se_m_rock_throw"); me.spinDir = arrow; }
+    else if (b === MB.STOP_SPINNING && me.spinDir) { me.facing = me.spinDir; me.spinDir = null; }
+    if (me.spinDir) {
+      const r = World.step({ map: me.map, x: me.x, y: me.y }, me.spinDir, occupiedForPlayer);
+      if (r.ok && !r.jump) { startStep(r, me.spinDir, true); return; }
+      me.facing = me.spinDir;
+      me.spinDir = null;
+    }
     const seen = anyTrainerSees();
     if (seen) return finish(seen);
     for (const t of World.triggersAt(me.map, me.x, me.y)) {
@@ -774,6 +789,8 @@
     if (scene) runScene();
     if (me.move) {
       me.move.t += me.move.speed;
+      // (Spinning round as you go.)
+      if (me.move.spin) me.facing = SPIN_FACINGS[Math.floor(performance.now() / 67) % 4];
       if (me.move.t >= me.move.dist) {
         if (me.move.scripted) { me.x = me.move.tx; me.y = me.move.ty; me.move = null; savePosition(); }
         else { finishStep(); me.moving = true; }

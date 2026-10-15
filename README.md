@@ -190,9 +190,29 @@ Scope she's a Marowak (Lv. 30, can't be caught) whose spirit you calm, then the
 Rockets on 7F and Mr. Fuji, who takes you home and gives you the Poké Flute,
 which wakes sleeping Pokémon), Route 8 (its trainers; the twins Eli & Anne,
 a double battle in FireRed, battle one on one), its gate to Saffron (a thirsty
-guard), and the Underground Path's east entrance and tunnel. The Silph Scope is
-in the Rocket Hideout under Celadon, which isn't built yet, so the Tower can't
-be finished; the Power Plant, Route 7, Route 12 and Saffron City aren't built either. Tiles, palettes and metatiles come from
+guard), and the Underground Path's east entrance and tunnel, and its west
+entrance onto Route 7, with its gate to Saffron, and Celadon City: its Pokémon
+Center, the Department Store (five floors and the roof; the elevator takes you
+to any floor; the 2F TM counter, the 4F toys and stones, the 5F drugstore; the
+Counter tutor on 3F; on the roof, vending machines with Fresh Water, Soda Pop
+and Lemonade, and a thirsty girl who swaps TM16 Light Screen, TM20 Safeguard or
+TM33 Reflect for a drink she hasn't had), the Condominiums (the old lady's Tea:
+give it to any of the thirsty gate guards and all four gates to Saffron open;
+the game designer's diploma for a complete Kanto Pokédex; an Eevee, Lv. 25, in
+a Poké Ball in the rooftop room), the restaurant (the Coin Case), the hotel and
+houses, the Soft-Boiled tutor, Erika's Gym (behind a Cut tree; the Rainbow Badge
+and TM19 Giga Drain, TM103 here), and the Game Corner: buy Coins (50 for ₽1,000,
+500 for ₽10,000; up to 9,999 in the Coin Case), get a few from the gamblers,
+find them on the floor, and play FireRed's slot machines (its reels, odds,
+lines and payouts, from `src/slot_machine.c`); spend them in the Prize Room on
+Abra, Clefairy, Dratini, Scyther or Porygon, TMs (Ice Beam, Thunderbolt, Shadow
+Ball, Flamethrower, and Iron Tail, TM104 here, since this game's TM23 is Smack
+Down) or held items. Beat the Rocket guarding the poster and the switch behind
+it opens the stairs to the Rocket Hideout (B1F-B4F: its trainers, items and
+spinning arrow floors; the barriers that open once their guards are beaten; the
+Lift Key a Rocket drops on B4F, which works the elevator; and Giovanni, who
+leaves the Silph Scope behind once beaten, which lets you finish Pokémon Tower).
+The Power Plant, Route 12 and Saffron City aren't built yet. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into
@@ -626,7 +646,7 @@ silver hair, red shirt, black backpack), and its trainer-card picture
 | `engine/` | Stat, damage, experience, catch and item formulas, and the battle engine |
 | `game/` | Game logic around the engine: party records, the player and their save (`player.js`, `save.js`), bag and Poké Mart (`bag.js`), overworld rules (`world.js`), evolution, encounters, random teams and the opponent AI |
 | `ui/` | Text box and menus (`screen.js`), the battle screen, the overworld (`overworld.js`), FireRed's intro (`intro.js`), and the game flow, story events and menus (`game.js`) |
-| `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`, `npm run build:maps`, `npm run build:intro`, `npm run build:battle-bgs`, `npm run build:machine-learners`, `npm run build:sprite-metrics`) and their shared PNG/GBA/text helpers (`tools/lib/`) |
+| `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`, `npm run build:maps`, `npm run build:intro`, `npm run build:battle-bgs`, `npm run build:machine-learners`, `npm run build:sprite-metrics`, `node tools/build-slot-machine.js pokefirered` for the Game Corner slot machine graphics) and their shared PNG/GBA/text helpers (`tools/lib/`) |
 | `assets/sprites/` | Pokémon sprites (front, back, shiny), item icons, trainer and overworld sprites |
 | `assets/tilesets/` | FireRed's tilesets (tiles, palettes, metatiles), the source for the maps |
 | `assets/world/` | Generated map images and transparent overworld sprites |

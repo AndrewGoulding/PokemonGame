@@ -42,14 +42,16 @@
     CeruleanCity_PokemonCenter_1F: { map: "CeruleanCity_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
     VermilionCity_PokemonCenter_1F: { map: "VermilionCity_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
     Route10_PokemonCenter_1F: { map: "Route10_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
-    LavenderTown_PokemonCenter_1F: { map: "LavenderTown_PokemonCenter_1F", x: 7, y: 4, facing: "up" }
+    LavenderTown_PokemonCenter_1F: { map: "LavenderTown_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
+    CeladonCity_PokemonCenter_1F: { map: "CeladonCity_PokemonCenter_1F", x: 7, y: 4, facing: "up" }
   };
 
   // Prize money per trainer class: base x the level of the trainer's last Pokémon.
   const PRIZE_BASE = {
     "Youngster": 16, "Lass": 16, "Bug Catcher": 16, "Picnicker": 16, "Camper": 16, "Swimmer": 16,
     "Psychic": 32, "Sailor": 32, "Fisherman": 40, "Hiker": 40, "PokéManiac": 48, "Engineer": 48,
-    "Super Nerd": 24, "Team Rocket": 32, "Channeler": 32, "Biker": 20, "Swimmer♂": 4, "Twins": 12, "Gamer": 72, "Ace Trainer": 60, "Gentleman": 72, "Leader": 100
+    "Super Nerd": 24, "Team Rocket": 32, "Channeler": 32, "Biker": 20, "Swimmer♂": 4, "Twins": 12, "Gamer": 72, "Ace Trainer": 60, "Gentleman": 72, "Leader": 100,
+    "Beauty": 72, "Cooltrainer": 36, "Boss": 100
   };
   // Money lost on blacking out: highest party level x this, by badge count (Gen 6).
   const BLACKOUT_BASE = [8, 16, 24, 36, 48, 64, 80, 100, 120];

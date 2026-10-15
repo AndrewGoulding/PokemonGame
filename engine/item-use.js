@@ -44,6 +44,8 @@
     // Battle items: one stage up for the Pokémon in battle (Gen 6).
     "x-attack": { boost: "atk" }, "x-defense": { boost: "def" }, "x-sp-atk": { boost: "spa" },
     "x-sp-def": { boost: "spd" }, "x-speed": { boost: "spe" }, "x-accuracy": { boost: "accuracy" },
+    // Dire Hit: Focus Energy's critical-hit boost; Guard Spec.: Mist on your side for five turns.
+    "dire-hit": { battleEffect: "focusenergy" }, "guard-spec": { battleEffect: "mist" },
     // Outside battle only
     "pp-up": { ppUp: 1, oneMove: true, outOfBattle: true }, "pp-max": { ppUp: 3, oneMove: true, outOfBattle: true },
     "rare-candy": { levelUp: true, outOfBattle: true },
@@ -80,6 +82,7 @@
     if (!eff) return false;
     if (eff.outOfBattle && opts.inBattle) return false;
     if (eff.boost) return !!opts.inBattle && !!target.isActive && !target.fainted && ((target.boosts || {})[eff.boost] || 0) < 6;
+    if (eff.battleEffect) return !!opts.inBattle && !!target.isActive && !target.fainted && !(target.effects || {})[eff.battleEffect];
     if (eff.revive) return !!target.fainted;
     if (target.fainted) return false;
     if (eff.levelUp) return target.level < 100;
@@ -108,6 +111,7 @@
     if (!eff) return out;
     if (FRIENDSHIP[item]) out.friendship = FRIENDSHIP[item];
     if (eff.boost) { out.boost = eff.boost; return out; }
+    if (eff.battleEffect) { out.battleEffect = eff.battleEffect; return out; }
     if (eff.revive) {
       target.fainted = false;
       target.hp = Math.max(1, Math.floor(target.maxhp * eff.revive));

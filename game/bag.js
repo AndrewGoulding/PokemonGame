@@ -16,7 +16,7 @@
 
   const SPECIAL_NAMES = {
     "poke-ball": "Poké Ball", "kings-rock": "King's Rock", "up-grade": "Up-Grade", "hp-up": "HP Up",
-    "pp-up": "PP Up", "pp-max": "PP Max", "never-melt-ice": "Never-Melt Ice", "exp-share": "Exp. Share", "oaks-parcel": "Oak's Parcel", "ss-ticket": "S.S. Ticket", "vs-seeker": "VS Seeker", "poke-flute": "Poké Flute",
+    "pp-up": "PP Up", "pp-max": "PP Max", "never-melt-ice": "Never-Melt Ice", "exp-share": "Exp. Share", "oaks-parcel": "Oak's Parcel", "ss-ticket": "S.S. Ticket", "vs-seeker": "VS Seeker", "poke-flute": "Poké Flute", "guard-spec": "Guard Spec.",
     "x-accuracy": "X Accuracy", "x-attack": "X Attack", "x-defense": "X Defense", "x-speed": "X Speed",
     "x-sp-atk": "X Sp. Atk", "x-sp-def": "X Sp. Def", "poke-doll": "Poké Doll", "oddish-ball": "Oddish Ball"
   };
@@ -39,6 +39,7 @@
     "pp-up": 9800, "pp-max": 29400,
     // (FireRed's: without a price an item can't be bought, so a Mart that
     // stocks it leaves it out.)
+    "guard-spec": 700, "dire-hit": 650,
     "repel": 350, "super-repel": 500, "max-repel": 700, "escape-rope": 550, "poke-doll": 1000, "lava-cookie": 200,
     // Treasures from digging (they sell for half, as in Gen 6).
     "star-piece": 9800, "rare-bone": 10000, "heart-scale": 200, "red-shard": 400, "blue-shard": 400,
@@ -120,7 +121,8 @@
     if (isMachine(item)) return "TMs & HMs";
     if (/-berry$/.test(item)) return "Berries";
     const cat = (window.ITEMS[item] || {}).category;
-    if ((window.ItemUse.effect(item) || {}).boost) return "Items";   // (the X items)
+    const eff = window.ItemUse.effect(item) || {};
+    if (eff.boost || eff.battleEffect) return "Items";   // (the X items, Dire Hit, Guard Spec.)
     if (window.ItemUse.effect(item) || ["healing", "status-cures", "revival", "pp-recovery", "vitamins"].includes(cat)) return "Medicine";
     return "Items";
   }

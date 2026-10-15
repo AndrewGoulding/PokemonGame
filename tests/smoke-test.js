@@ -713,12 +713,12 @@ for (const share of [false, true]) {
     "Sleep Talk", "U-turn", "Substitute", "Flash Cannon", "Trick Room", "Wild Charge", "Rock Smash", "Snarl",
     "Nature Power", "Dark Pulse", "Power-Up Punch", "Dazzling Gleam", "Confide"];
   const HMS = ["Cut", "Fly", "Surf", "Strength", "Flash", "Whirlpool", "Waterfall", "Rock Smash", "Dive", "Defog", "Rock Climb"];
-  const TMS = XY.filter((m) => !HMS.includes(m)).concat("Secret Power", "Bullet Seed", "Water Pulse", "Shock Wave");
-  assert.strictEqual(TMS.length, 102);
+  const TMS = XY.filter((m) => !HMS.includes(m)).concat("Secret Power", "Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail");
+  assert.strictEqual(TMS.length, 104);
   TMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("tm" + String(i + 1).padStart(2, "0")), move, "TM" + (i + 1)));
   HMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("hm" + String(i + 1).padStart(2, "0")), move, "HM" + (i + 1)));
-  assert.strictEqual(Bag.machines().length, 113);
-  assert(!ITEMS.tm103 && !ITEMS.hm12, "no machines past TM102 and HM11");
+  assert.strictEqual(Bag.machines().length, 115);
+  assert(!ITEMS.tm105 && !ITEMS.hm12, "no machines past TM104 and HM11");
   // Every move Pokémon learn by machine in Gen 6 is a TM or HM here; the
   // machines Gen 6 had none for (Bullet Seed, Whirlpool, Defog, Rock Climb)
   // take their compatibility from other generations.
@@ -726,7 +726,7 @@ for (const share of [false, true]) {
   for (const l of Object.values(LEARNSETS_GEN6)) for (const m of l.tm || []) tmMoves.add(m);
   const machineMoves = Bag.machines().map(Bag.machineMove);
   for (const m of tmMoves) assert(machineMoves.includes(m), "no machine for " + m);
-  assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Bullet Seed", "Water Pulse", "Shock Wave", "Whirlpool", "Defog", "Rock Climb"]);
+  assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail", "Whirlpool", "Defog", "Rock Climb"]);
   for (const m of ["Whirlpool", "Defog", "Rock Climb", "Bullet Seed"]) assert(MACHINE_LEARNERS[m].length > 50, "who can use " + m);
   assert(!MACHINE_LEARNERS.Thief, "TMs Gen 6 had keep Gen 6's compatibility");
   assert(Bag.canUseOn(Party.create("Oddish", 20, { rng }), "tm100") && !Bag.canUseOn(Party.create("Pidgey", 20, { rng }), "tm100"), "Bullet Seed: Oddish yes, Pidgey no");
@@ -736,7 +736,8 @@ for (const share of [false, true]) {
   // Escape Ropes work where FireRed allows escaping.
   assert.deepStrictEqual(Object.keys(WORLD_MAPS).filter((m) => WORLD_MAPS[m].allowEscaping), ["ViridianForest", "MtMoon_1F", "MtMoon_B1F", "MtMoon_B2F",
     "DiglettsCave_NorthEntrance", "DiglettsCave_B1F", "DiglettsCave_SouthEntrance", "RockTunnel_1F", "RockTunnel_B1F",
-    "PokemonTower_1F", "PokemonTower_2F", "PokemonTower_3F", "PokemonTower_4F", "PokemonTower_5F", "PokemonTower_6F", "PokemonTower_7F"]);
+    "PokemonTower_1F", "PokemonTower_2F", "PokemonTower_3F", "PokemonTower_4F", "PokemonTower_5F", "PokemonTower_6F", "PokemonTower_7F",
+    "RocketHideout_B1F", "RocketHideout_B2F", "RocketHideout_B3F", "RocketHideout_B4F"]);
   assert(WORLD_MAPS.MtMoon_1F.people.some((p) => p.item === "tm100"), "FireRed's TM09 in Mt. Moon is TM100 Bullet Seed here");
   assert(Bag.canUseOn(Party.create("Gyarados", 30, { rng }), "hm06"), "Gyarados can use Whirlpool");
   assert(Bag.canUseOn(Party.create("Pidgeot", 30, { rng }), "hm10"), "Pidgeot can use Defog");
@@ -745,7 +746,9 @@ for (const share of [false, true]) {
   assert.strictEqual(Bag.name("tm24"), "TM24 Thunderbolt");
   assert.strictEqual(Bag.name("tm99"), "TM99 Secret Power");
   assert.strictEqual(Bag.name("hm11"), "HM11 Rock Climb");
-  assert.deepStrictEqual(Bag.machines().slice(98, 104), ["tm99", "tm100", "tm101", "tm102", "hm01", "hm02"]);
+  assert.deepStrictEqual(Bag.machines().slice(98, 106), ["tm99", "tm100", "tm101", "tm102", "tm103", "tm104", "hm01", "hm02"]);
+  assert.strictEqual(Bag.name("tm103"), "TM103 Giga Drain");
+  assert.strictEqual(Bag.name("tm104"), "TM104 Iron Tail");
   // Saves from before keep their machines' moves under the new numbers.
   const oldSave = Object.assign(Player.create("T"), { party: [Party.create("Pidgey", 5, { rng })], bag: { "tm94-oras": 1 } });
   delete oldSave.pcItems;
@@ -1290,9 +1293,9 @@ for (const share of [false, true]) {
   assert.deepStrictEqual([T.width, T.height, T.map.length, T.dungeon.length], [22, 15, 15, 15]);
   assert.deepStrictEqual([T.map[11][4], T.names.PALLET_TOWN, T.dungeon[3][9], T.names.MT_MOON], ["PALLET_TOWN", "Pallet Town", "MT_MOON", "Mt. Moon"]);
   const onMap = (sec) => T.map.some((r) => r.includes(sec)) || T.dungeon.some((r) => r.includes(sec));
-  // (FireRed gives the Underground Path and the S.S. Anne no square of their own.)
+  // (FireRed gives the Underground Path, the S.S. Anne and the Rocket Hideout no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
-    assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "UNDERGROUND_PATH_2", "S_S_ANNE"].includes(T.mapSections[name])), name + " is on the Town Map");
+    assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "UNDERGROUND_PATH_2", "S_S_ANNE", "ROCKET_HIDEOUT"].includes(T.mapSections[name])), name + " is on the Town Map");
   }
   assert(fs.existsSync(path.join(__dirname, "../assets/town-map/kanto.png")));
 }
@@ -1671,4 +1674,41 @@ console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random 
   const hurt = Party.create("Zubat", 5, { rng }); hurt.hp = 2;
   assert.strictEqual(Player.receive(pl, hurt), "box 1");
   assert.strictEqual(hurt.hp, Party.maxHp(hurt));
+}
+
+// Celadon and the Rocket Hideout.
+{
+  // Elevators: their doors lead wherever the dynamic warp says (the floor you
+  // got in on, or the one you chose); with none set, nowhere.
+  const exit = WORLD_MAPS.CeladonCity_DepartmentStore_Elevator.warps[0];
+  World.setDynamicWarp(null);
+  assert.strictEqual(World.warpTarget(exit), null);
+  World.setDynamicWarp({ map: "CeladonCity_DepartmentStore_5F", x: 6, y: 1 });
+  assert.deepStrictEqual(World.warpTarget(exit), { map: "CeladonCity_DepartmentStore_5F", x: 6, y: 1, door: true });
+  World.setDynamicWarp(null);
+  // The Hideout's arrows and stop tiles, and its barriers and the Game Corner's hidden stairs as patches.
+  const b2 = WORLD_MAPS.RocketHideout_B2F, at = (m, x, y) => m.behavior[y * m.width + x];
+  assert.strictEqual(at(b2, 16, 5), World.MB.SPIN_LEFT);
+  assert.strictEqual(at(b2, 13, 7), World.MB.STOP_SPINNING);
+  for (const [m, p] of [["CeladonCity_GameCorner", "hidden"], ["RocketHideout_B1F", "barrier"], ["RocketHideout_B4F", "barrier"]]) {
+    assert(WORLD_MAPS[m].patches[p].collision.length >= 5, m + " " + p);
+  }
+  // Erika and Giovanni, and the Celadon Center as a respawn point.
+  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_LEADER_ERIKA.party.map((m) => m.species), ["Victreebel", "Tangela", "Vileplume"]);
+  assert.strictEqual(WORLD_TRAINERS.TRAINER_BOSS_GIOVANNI.className, "Boss");
+  assert(Player.CENTERS.CeladonCity_PokemonCenter_1F);
+  // Every Prize Room TM is one of this game's machines.
+  for (const move of ["Ice Beam", "Iron Tail", "Thunderbolt", "Shadow Ball", "Flamethrower"]) {
+    assert(Bag.machines().some((m) => Bag.machineMove(m) === move), "no TM for " + move);
+  }
+  for (const item of ["coin-case", "lift-key", "silph-scope", "tea", "fresh-water", "soda-pop", "lemonade", "smoke-ball", "yellow-flute"]) assert(ITEMS[item], item);
+  // The slot machine's payouts (FireRed's CalcPayout): three 7s in the middle
+  // pays 300; a cherry on the left reel pays 2.
+  const Slots = require("../ui/slot-machine.js");
+  const all = [];
+  for (let i = 0; i < Slots.REEL_LENGTH; i++) for (let j = 0; j < Slots.REEL_LENGTH; j++) for (let k = 0; k < Slots.REEL_LENGTH; k++) all.push([i, j, k]);
+  const sevens = all.filter((ps) => Slots.evaluate(ps, 1).rank === Slots.PAYOUT.SEVEN || Slots.evaluate(ps, 1).payout === 300);
+  assert(sevens.length && sevens.every((ps) => Slots.evaluate(ps, 1).payout === 300), "three 7s in the middle pay 300");
+  assert(all.some((ps) => Slots.evaluate(ps, 1).payout === 2), "a cherry pays 2");
+  assert(all.every((ps) => Slots.evaluate(ps, 3).payout >= Slots.evaluate(ps, 1).payout), "more lines never pay less");
 }

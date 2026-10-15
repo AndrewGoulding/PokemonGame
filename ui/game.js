@@ -554,7 +554,7 @@
     return r ? player.party[r.slot] : null;
   }
 
-  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "itemfinder", "vs-seeker", "bicycle", "poke-flute"];
+  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case"];
   // Key items Select can use (registered from the Bag, as in FireRed).
   const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map"];
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
@@ -583,6 +583,7 @@
       await message(expShareOn() ? "The Exp. Share was turned on. Your whole party will gain Exp. Points from battles."
         : "The Exp. Share was turned off. Only Pokémon that battle will gain Exp. Points.");
     } else if (item === "town-map") await townMap();
+    else if (item === "coin-case") await message("Your Coins:\n" + plainCoins(coins()));
   }
 
   // Something to do on the map once the menus close (the Itemfinder).
@@ -1545,8 +1546,27 @@
     "PokemonTower_5F_EventScript_PurifiedZone", "PokemonTower_6F_EventScript_MarowakGhost", "PokemonTower_7F_EventScript_MrFuji",
     "LavenderTown_VolunteerPokemonHouse_EventScript_MrFuji",
     "Route8_WestEntrance_EventScript_GuardTriggerTop", "Route8_WestEntrance_EventScript_GuardTriggerMid",
-    "Route8_WestEntrance_EventScript_GuardTriggerBottom"
-  ].concat(Object.keys(STARTER_BALLS)).concat(Array.from({ length: 15 }, (_, i) => "VermilionCity_Gym_EventScript_TrashCan" + (i + 1))));
+    "Route8_WestEntrance_EventScript_GuardTriggerBottom",
+    "CeladonCity_Condominiums_1F_EventScript_Clefairy", "CeladonCity_Condominiums_1F_EventScript_Meowth",
+    "CeladonCity_Condominiums_1F_EventScript_Nidoran", "CeladonCity_Condominiums_1F_EventScript_TeaWoman",
+    "CeladonCity_Condominiums_3F_EventScript_Designer", "CeladonCity_Condominiums_RoofRoom_EventScript_Blackboard",
+    "CeladonCity_Condominiums_RoofRoom_EventScript_EeveeBall", "CeladonCity_DepartmentStore_2F_EventScript_ClerkItems",
+    "CeladonCity_DepartmentStore_2F_EventScript_ClerkTMs", "CeladonCity_DepartmentStore_3F_EventScript_CounterTutor",
+    "CeladonCity_DepartmentStore_4F_EventScript_Clerk", "CeladonCity_DepartmentStore_5F_EventScript_ClerkVitamins",
+    "CeladonCity_DepartmentStore_5F_EventScript_ClerkXItems", "CeladonCity_DepartmentStore_Elevator_EventScript_FloorSelect",
+    "CeladonCity_DepartmentStore_Roof_EventScript_ThirstyGirl", "CeladonCity_DepartmentStore_Roof_EventScript_VendingMachine",
+    "CeladonCity_EventScript_Poliwrath", "CeladonCity_EventScript_SoftboiledTutor", "CeladonCity_GameCorner_EventScript_BaldingMan",
+    "CeladonCity_GameCorner_EventScript_CoinsClerk", "CeladonCity_GameCorner_EventScript_Fisher", "CeladonCity_GameCorner_EventScript_Gentleman",
+    "CeladonCity_GameCorner_EventScript_GymGuy", "CeladonCity_GameCorner_EventScript_OldMan", "CeladonCity_GameCorner_EventScript_Poster",
+    "CeladonCity_GameCorner_EventScript_Scientist", "CeladonCity_GameCorner_EventScript_Woman1", "CeladonCity_GameCorner_EventScript_Woman2",
+    "CeladonCity_GameCorner_PrizeRoom_EventScript_PrizeClerkItems", "CeladonCity_GameCorner_PrizeRoom_EventScript_PrizeClerkMons",
+    "CeladonCity_GameCorner_PrizeRoom_EventScript_PrizeClerkTMs", "CeladonCity_Gym_EventScript_GymStatue",
+    "CeladonCity_PokemonCenter_1F_EventScript_Nurse", "CeladonCity_Restaurant_EventScript_CoinCaseMan", "RocketHideout_B4F_EventScript_Giovanni",
+    "RocketHideout_B4F_EventScript_LiftKey", "RocketHideout_B4F_EventScript_SilphScope", "RocketHideout_Elevator_EventScript_FloorSelect",
+    "Route7_EastEntrance_EventScript_GuardTriggerBottom", "Route7_EastEntrance_EventScript_GuardTriggerMid",
+    "Route7_EastEntrance_EventScript_GuardTriggerTop", "CeladonCity_Gym_EventScript_Erika"
+  ].concat(Object.keys(STARTER_BALLS)).concat(Array.from({ length: 15 }, (_, i) => "VermilionCity_Gym_EventScript_TrashCan" + (i + 1)))
+    .concat(Array.from({ length: 22 }, (_, i) => "CeladonCity_GameCorner_EventScript_SlotMachine" + i)));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
   // Item balls on the map: picked up once, then gone.
@@ -1618,6 +1638,15 @@
       case "FLAG_HIDE_TOWER_ROCKET_1": case "FLAG_HIDE_TOWER_ROCKET_2": case "FLAG_HIDE_TOWER_ROCKET_3":
         return !(person.trainer && f[person.trainer.id]);
       case "FLAG_HIDE_DOME_FOSSIL": case "FLAG_HIDE_HELIX_FOSSIL": return !f.mtMoonFossil;
+      // Celadon: the Rockets (and the Silph scientist) until Giovanni's beaten
+      // in the Hideout, where he leaves the Silph Scope behind; the Lift Key's
+      // dropped by the Rocket on B4F; Eevee in its Poké Ball on the roof.
+      case "FLAG_HIDE_CELADON_ROCKETS": return !f.TRAINER_BOSS_GIOVANNI;
+      case "FLAG_HIDE_GAME_CORNER_ROCKET": return !f.TRAINER_TEAM_ROCKET_GRUNT_7;
+      case "FLAG_HIDE_HIDEOUT_GIOVANNI": return !f.TRAINER_BOSS_GIOVANNI;
+      case "FLAG_HIDE_SILPH_SCOPE": return !!f.TRAINER_BOSS_GIOVANNI && !f.gotSilphScope;
+      case "FLAG_HIDE_LIFT_KEY": return !!f.TRAINER_TEAM_ROCKET_GRUNT_18 && !f.gotLiftKey;
+      case "FLAG_HIDE_EEVEE_BALL": return !f.gotEevee;
       // After you choose, your rival stands below the Poké Ball he took.
       // Leaf (the lab rival's other look) until she leaves after your battle;
       // after you choose, she stands below the Poké Ball she took.
@@ -1643,9 +1672,15 @@
       await pc();
       return;
     }
-    if (ev.type === "trainer") { await trainerBattle(ev.person, ev.approach, ev.facing); return; }
+    if (ev.type === "trainer") {
+      const beaten = !!player.flags[ev.person.trainer.id];
+      await trainerBattle(ev.person, ev.approach, ev.facing);
+      if (!beaten) await afterRocket(ev.person);
+      return;
+    }
     if (ev.type === "hidden") {
       const h = ev.hidden;
+      if (h.item === "coins") { await hiddenCoins(h); return; }
       Player.addItem(player, h.item, h.quantity);
       player.flags[h.flag] = true;
       await sayWithJingle(itemJingle(h.item), "{PLAYER} found " + (h.quantity > 1 ? h.quantity + " " : "a ") + Bag.name(h.item) + "!");
@@ -1657,14 +1692,18 @@
     if (script === "PewterCity_Gym_EventScript_Brock") { await brock(ev.person); return; }
     if (script === "CeruleanCity_Gym_EventScript_Misty") { await misty(ev.person); return; }
     if (script === "VermilionCity_Gym_EventScript_LtSurge") { await ltSurge(ev.person); return; }
+    if (script === "CeladonCity_Gym_EventScript_Erika") { await erika(ev.person); return; }
     if (script === "Game_EventScript_Leaf") {
       if (!canBattle()) return;
       if (ev.map === "PewterCity") await leafPewter(true); else await leafVermilion();
       return;
     }
     if (TRAINER_SCRIPTS.has(script)) {
-      if (trainerWaiting(ev.person)) await trainerBattle(ev.person, null);
-      else await say(ev.person.trainer.after || ev.person.text || []);
+      if (trainerWaiting(ev.person)) {
+        const beaten = !!f[ev.person.trainer.id];
+        await trainerBattle(ev.person, null);
+        if (!beaten) await afterRocket(ev.person);
+      } else await say(ev.person.trainer.after || ev.person.text || []);
       return;
     }
 
@@ -1706,6 +1745,8 @@
 
     const can = /^VermilionCity_Gym_EventScript_TrashCan(\d+)$/.exec(script);
     if (can) { await trashCan(+can[1]); return; }
+    const slots = /^CeladonCity_GameCorner_EventScript_SlotMachine(\d+)$/.exec(script);
+    if (slots) { await slotMachine(+slots[1]); return; }
 
     switch (script) {
       case "PalletTown_EventScript_SignLady":
@@ -2200,20 +2241,6 @@
         return;
       // The guards in the gates to Saffron City are thirsty and turn you back
       // (FireRed lets you by once you bring them a drink; Saffron isn't here yet).
-      case "Route5_SouthEntrance_EventScript_GuardTriggerLeft":
-      case "Route5_SouthEntrance_EventScript_GuardTriggerMid":
-      case "Route5_SouthEntrance_EventScript_GuardTriggerRight":
-        await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
-        await say(T("Route5_SouthEntrance_Text_ThirstyOnGuardDuty"));
-        await Overworld.act([{ who: "player", moves: ["walk_up"] }]);
-        return;
-      case "Route8_WestEntrance_EventScript_GuardTriggerTop":
-      case "Route8_WestEntrance_EventScript_GuardTriggerMid":
-      case "Route8_WestEntrance_EventScript_GuardTriggerBottom":
-        await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-        await say(T("Route8_WestEntrance_Text_ThirstyOnGuardDuty"));
-        await Overworld.act([{ who: "player", moves: ["walk_right"] }]);
-        return;
 
       // ---------- Pokémon Tower ----------
       case "PokemonTower_2F_EventScript_RivalTriggerRight":
@@ -2249,13 +2276,183 @@
         return;
       }
 
+
+      // ---------- Route 7 and the Saffron gates ----------
+      // The guards are thirsty: give one the Tea and all four let you through
+      // (FireRed's VAR_MAP_SCENE_ROUTE5_ROUTE6_ROUTE7_ROUTE8_GATES).
+      case "Route5_SouthEntrance_EventScript_GuardTriggerLeft":
+      case "Route5_SouthEntrance_EventScript_GuardTriggerMid":
+      case "Route5_SouthEntrance_EventScript_GuardTriggerRight":
       case "Route6_NorthEntrance_EventScript_GuardTriggerLeft":
       case "Route6_NorthEntrance_EventScript_GuardTriggerMid":
       case "Route6_NorthEntrance_EventScript_GuardTriggerRight":
-        await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
-        await say(T("Route6_NorthEntrance_Text_ThirstyOnGuardDuty"));
-        await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
+      case "Route7_EastEntrance_EventScript_GuardTriggerTop":
+      case "Route7_EastEntrance_EventScript_GuardTriggerMid":
+      case "Route7_EastEntrance_EventScript_GuardTriggerBottom":
+      case "Route8_WestEntrance_EventScript_GuardTriggerTop":
+      case "Route8_WestEntrance_EventScript_GuardTriggerMid":
+      case "Route8_WestEntrance_EventScript_GuardTriggerBottom": {
+        const [, gate, side] = /^(\w+?)_EventScript_GuardTrigger(\w+)$/.exec(script);
+        const face = { Route5_SouthEntrance: "Left", Route6_NorthEntrance: "Right", Route7_EastEntrance: "Up", Route8_WestEntrance: "Up" }[gate];
+        await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFaster" + face) }]);
+        if (f.gotTea && Player.itemCount(player, "tea")) {
+          Player.removeItem(player, "tea");
+          await say(T(gate + "_Text_ThatTeaLooksTasty"));
+          await Overworld.act([{ who: "player", moves: M(gate + "_Movement_WalkToGuard" + side) }]);
+          await say(T(gate + "_Text_ThanksIllShareTeaWithGuards"));
+          f.gatesOpen = true;
+          return;
+        }
+        await say(T(gate + "_Text_ThirstyOnGuardDuty"));
+        await Overworld.act([{ who: "player", moves: M(gate + "_Movement_BlockPlayerEntry") }]);
         return;
+      }
+
+      // ---------- Celadon City ----------
+      case "CeladonCity_PokemonCenter_1F_EventScript_Nurse":
+        await nurse(ev.map, ev.person);
+        return;
+      case "CeladonCity_DepartmentStore_2F_EventScript_ClerkItems":
+      case "CeladonCity_DepartmentStore_2F_EventScript_ClerkTMs":
+      case "CeladonCity_DepartmentStore_4F_EventScript_Clerk":
+      case "CeladonCity_DepartmentStore_5F_EventScript_ClerkXItems":
+      case "CeladonCity_DepartmentStore_5F_EventScript_ClerkVitamins":
+        await mart(ev.person.mart);
+        return;
+      case "CeladonCity_EventScript_SoftboiledTutor":
+        await moveTutor("Soft-Boiled", "tutorSoftboiled", "Text_Softboiled");
+        return;
+      case "CeladonCity_DepartmentStore_3F_EventScript_CounterTutor":
+        await moveTutor("Counter", "tutorCounter", "Text_Counter");
+        return;
+      case "CeladonCity_EventScript_Poliwrath":
+      case "CeladonCity_Condominiums_1F_EventScript_Meowth":
+      case "CeladonCity_Condominiums_1F_EventScript_Clefairy":
+        cry(/_EventScript_(\w+)$/.exec(script)[1]);
+        await say(ev.person.text || []);
+        return;
+      case "CeladonCity_Condominiums_1F_EventScript_Nidoran":
+        cry("Nidoran-F");
+        await say(ev.person.text || []);
+        return;
+      case "CeladonCity_DepartmentStore_Elevator_EventScript_FloorSelect":
+        await elevator(["5F", "4F", "3F", "2F", "1F"].map((n) => ({ label: n, map: "CeladonCity_DepartmentStore_" + n, x: 6, y: 1 })));
+        return;
+      // The little girl on the roof swaps a TM for a drink she hasn't had.
+      case "CeladonCity_DepartmentStore_Roof_EventScript_ThirstyGirl":
+        await thirstyGirl();
+        return;
+      case "CeladonCity_DepartmentStore_Roof_EventScript_VendingMachine":
+        await vendingMachine();
+        return;
+      case "CeladonCity_Condominiums_1F_EventScript_TeaWoman":
+        if (f.gotTea) { await say(T("CeladonCity_Condominiums_1F_Text_MyDearMonsKeepMeCompany")); return; }
+        await say(T("CeladonCity_Condominiums_1F_Text_TryThisDrinkInstead"));
+        Player.addItem(player, "tea");
+        f.gotTea = true;
+        await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the Tea.");
+        await say(T("CeladonCity_Condominiums_1F_Text_NothingBeatsThirstLikeTea"));
+        return;
+      // The game designer: a diploma for a complete Kanto Pokédex (Mew aside).
+      case "CeladonCity_Condominiums_3F_EventScript_Designer": {
+        const caught = new Set(player.pokedex.caught.map((s) => (window.DEX[s] || {}).id));
+        if (!Array.from({ length: 150 }, (_, i) => i + 1).every((id) => caught.has(id))) {
+          await say(T("CeladonCity_Condominiums_3F_Text_ImGameDesignerShowMeFinishedPokedex"));
+          return;
+        }
+        await say(T("CeladonCity_Condominiums_3F_Text_CompletedPokedexCongratulations"));
+        await say(["Diploma", "{PLAYER}\nCongratulations! This diploma\ncertifies that you have completed\nyour Pokédex.", "Game Freak"]);
+        return;
+      }
+      case "CeladonCity_Condominiums_RoofRoom_EventScript_EeveeBall":
+        await giftMon("Eevee", 25, T("CeladonCity_Condominiums_RoofRoom_Text_ObtainedAnEevee"), null, () => {
+          Overworld.removePerson(ev.person);
+          f.gotEevee = true;
+        });
+        return;
+      case "CeladonCity_Condominiums_RoofRoom_EventScript_Blackboard": {
+        const R = (k) => T("CeladonCity_Condominiums_RoofRoom_Text_" + k);
+        await say(R("WirelessAdapterLecture"));
+        for (;;) {
+          const v = await ask(R("ReadWhichHeading")[0], [["Wireless Club", "ExplainWirelessClub"], ["Direct Corner", "ExplainDirectCorner"],
+            ["Union Room", "ExplainUnionRoom"]].map(([label, value]) => ({ label, value })).concat([back("Exit")]));
+          if (v === "back") break;
+          await say(R(v));
+        }
+        Screen.say("");
+        return;
+      }
+      case "CeladonCity_Restaurant_EventScript_CoinCaseMan":
+        if (f.gotCoinCase) { await say(T("CeladonCity_Restaurant_Text_ThoughtIdWinItBack")); return; }
+        await say(T("CeladonCity_Restaurant_Text_TakeThisImBusted"));
+        Player.addItem(player, "coin-case");
+        f.gotCoinCase = true;
+        await sayWithJingle("mus_obtain_key_item", T("CeladonCity_Restaurant_Text_ReceivedCoinCaseFromMan"));
+        return;
+      case "CeladonCity_Gym_EventScript_GymStatue":
+        await say(T(hasBadge("rainbow") ? "CeladonCity_Gym_Text_GymStatuePlayerWon" : "CeladonCity_Gym_Text_GymStatue"));
+        return;
+
+      // ---------- Celadon Game Corner ----------
+      case "CeladonCity_GameCorner_EventScript_CoinsClerk":
+        await coinsClerk();
+        return;
+      // Three gamblers give you a few Coins, once each.
+      case "CeladonCity_GameCorner_EventScript_Fisher":
+        await gambler(ev.person, { flag: "got10CoinsFromGambler", coins: 10, ask: "DoYouWantToPlay", got: "Received10CoinsFromMan",
+          full: "DontNeedMyCoins", after: "WinsComeAndGo" });
+        return;
+      case "CeladonCity_GameCorner_EventScript_Scientist":
+        await gambler(ev.person, { flag: "got20CoinsFromGambler", coins: 20, ask: "WantSomeCoins", got: "Received20CoinsFromNiceGuy",
+          full: "YouHaveLotsOfCoins", after: "NeedMoreCoinsForMonIWant" });
+        return;
+      case "CeladonCity_GameCorner_EventScript_Gentleman":
+        await gambler(ev.person, { flag: "got20CoinsFromGambler2", coins: 20, ask: "HereAreSomeCoinsShoo", got: "Received20CoinsFromMan",
+          full: "YouveGotPlentyCoins", after: "WatchReelsClosely" });
+        return;
+      case "CeladonCity_GameCorner_EventScript_GymGuy":
+        await say(T(f.TRAINER_LEADER_ERIKA ? "CeladonCity_GameCorner_Text_RareMonsForCoins" : "CeladonCity_GameCorner_Text_GymGuyAdvice"));
+        await faceBack(ev.person);
+        return;
+      case "CeladonCity_GameCorner_EventScript_BaldingMan":
+      case "CeladonCity_GameCorner_EventScript_Woman1":
+      case "CeladonCity_GameCorner_EventScript_Woman2":
+      case "CeladonCity_GameCorner_EventScript_OldMan":
+        await say(ev.person.text || []);
+        await faceBack(ev.person);
+        return;
+      case "CeladonCity_GameCorner_EventScript_Poster":
+        await say(T("CeladonCity_GameCorner_Text_SwitchBehindPosterPushIt"));
+        if (!f.openedRocketHideout) {
+          sfx("se_unlock");
+          f.openedRocketHideout = true;
+          applyPatches("CeladonCity_GameCorner");
+        }
+        return;
+      case "CeladonCity_GameCorner_PrizeRoom_EventScript_PrizeClerkMons":
+      case "CeladonCity_GameCorner_PrizeRoom_EventScript_PrizeClerkTMs":
+      case "CeladonCity_GameCorner_PrizeRoom_EventScript_PrizeClerkItems":
+        await prizeClerk(script.replace("CeladonCity_GameCorner_PrizeRoom_EventScript_PrizeClerk", ""));
+        return;
+
+      // ---------- Rocket Hideout ----------
+      case "RocketHideout_Elevator_EventScript_FloorSelect":
+        if (!Player.itemCount(player, "lift-key")) { await say(T("RocketHideout_Elevator_Text_AppearsToNeedAKey")); return; }
+        await elevator([{ label: "B1F", map: "RocketHideout_B1F", x: 24, y: 25 }, { label: "B2F", map: "RocketHideout_B2F", x: 28, y: 16 },
+          { label: "B4F", map: "RocketHideout_B4F", x: 20, y: 23 }]);
+        return;
+      case "RocketHideout_B4F_EventScript_Giovanni":
+        await giovanniHideout(ev.person);
+        return;
+      case "RocketHideout_B4F_EventScript_LiftKey":
+      case "RocketHideout_B4F_EventScript_SilphScope": {
+        const item = script.endsWith("LiftKey") ? "lift-key" : "silph-scope";
+        Overworld.removePerson(ev.person);
+        Player.addItem(player, item);
+        f[item === "lift-key" ? "gotLiftKey" : "gotSilphScope"] = true;
+        await sayWithJingle("mus_obtain_key_item", "{PLAYER} found a " + Bag.name(item) + "!");
+        return;
+      }
 
       // ---------- Vermilion City ----------
       // The sailor at the pier checks for an S.S. Ticket (once, until you step back).
@@ -3775,6 +3972,259 @@
     await say(T("VermilionCity_Gym_Text_LtSurgePostBattle"));
   }
 
+  // Erika: battle (talking to her), then the Rainbow Badge and TM19 Giga
+  // Drain (this game's TM103). Beating her also beats her Gym's trainers.
+  async function erika(person) {
+    const f = player.flags, ID = "TRAINER_LEADER_ERIKA";
+    if (!f[ID]) {
+      await say(person.trainer.intro);
+      if (!canBattle()) return;
+      const outcome = await battle("trainer", { foe: { name: "Leader Erika", team: trainerTeam(ID), pic: "leader_erika" },
+        defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
+      if (outcome !== "won") return;
+      if (!hasBadge("rainbow")) player.badges.push("rainbow");
+      for (const t of ["LASS_KAY", "LASS_LISA", "PICNICKER_TINA", "BEAUTY_BRIDGET", "BEAUTY_TAMIA", "BEAUTY_LORI", "COOLTRAINER_MARY"]) f["TRAINER_" + t] = true;
+      player.flags.lastCenter = "CeladonCity_PokemonCenter_1F";
+      show("world");
+      await Overworld.resume();
+    }
+    if (!f.gotTM19) {
+      await say(T("CeladonCity_Gym_Text_ExplainRainbowBadgeTakeThis"));
+      Player.addItem(player, "tm103");
+      f.gotTM19 = true;
+      await sayWithJingle(itemJingle("tm103"), "{PLAYER} received TM103\nfrom Erika.");
+      await say(T("CeladonCity_Gym_Text_ExplainTM19").map((p) => p.replace(/TM19/g, "TM103")));
+      return;
+    }
+    await say(T("CeladonCity_Gym_Text_ErikaPostBattle"));
+  }
+
+  // ---------- Celadon City ----------
+
+  // An elevator's floor select (FireRed's ..._EventScript_FloorSelect): choose
+  // a floor and the car hums, then dings; its doors open onto that floor (the
+  // dynamic warp, World.setDynamicWarp).
+  async function elevator(floors) {
+    const f = player.flags, here = floors.findIndex((fl) => f.dynamicWarp && fl.map === f.dynamicWarp.map);
+    const v = await ask(T("Text_WantWhichFloor")[0] + (here >= 0 ? "\n(Now on " + floors[here].label + ".)" : ""),
+      floors.map((fl, i) => ({ label: fl.label, value: i, focus: i === here })).concat([back("Exit")]));
+    Screen.say("");
+    if (v === "back" || v === here) return;
+    setDynamicWarp({ map: floors[v].map, x: floors[v].x, y: floors[v].y });
+    sfx("se_elevator");
+    await sleep(1600);
+    sfx("se_ding_dong");
+    await sleep(400);
+  }
+  // Where an elevator's doors let out (FireRed's dynamic warp): the floor you
+  // got in on, or the one you chose. Saved, so it survives a reload.
+  function setDynamicWarp(t) {
+    player.flags.dynamicWarp = t;
+    World.setDynamicWarp(t);
+  }
+
+  // A Pokémon given to you (FireRed's givemon): the fanfare, then a nickname
+  // if you like. False when there's no room for it anywhere.
+  // `given` runs once it's yours (before the nickname): paying for it, the
+  // Poké Ball it was in going.
+  async function giftMon(species, level, obtained, vars, given) {
+    const room = player.party.length < Player.PARTY_SIZE || player.boxes.some((b) => Player.firstEmpty(b) >= 0);
+    if (!room) { await say(T("Text_NoMoreRoomForPokemon")); return false; }
+    const record = Party.create(species, level);
+    const where = Player.receive(player, record);
+    if (given) given();
+    Player.markSeen(player, species);
+    await sayWithJingle("mus_level_up", [].concat(obtained).map((p) => fill(p, vars)));
+    const name = Party.speciesName(species);
+    if (await confirm(fill(T("Text_GiveNicknameToThisMon")[0], [name]))) {
+      const typed = await enterText(name + "'s nickname?", name, 10);
+      if (typed && typed !== name) record.nickname = typed;
+      show("world");
+    }
+    if (where !== "party") await say(Party.displayName(record) + " was transferred to " + where.replace("box", "Box") + " on the PC.");
+    return true;
+  }
+
+  // Back to the way they faced before you spoke to them (Common_Movement_FaceOriginalDirection).
+  async function faceBack(person) {
+    if (/^face_/.test(person.movement || "")) await Overworld.act([{ who: "#" + person.id, moves: [person.movement] }]);
+  }
+
+  // ---------- The Department Store roof ----------
+
+  const DRINKS = [["fresh-water", "tm16", "gotTM16FromThirstyGirl", "YayFreshWaterHaveThis", "ExplainTM16", 200],
+    ["soda-pop", "tm20", "gotTM20FromThirstyGirl", "YaySodaPopHaveThis", "ExplainTM20", 300],
+    ["lemonade", "tm33", "gotTM33FromThirstyGirl", "YayLemonadeHaveThis", "ExplainTM33", 350]];
+  async function thirstyGirl() {
+    const f = player.flags, R = (k) => T("CeladonCity_DepartmentStore_Roof_Text_" + k);
+    const have = DRINKS.filter(([drink]) => Player.itemCount(player, drink));
+    if (!have.length) { await say(R("ImThirstyIWantDrink")); return; }
+    const q = R("ImThirstyGiveHerDrink");
+    await say(q.slice(0, -1));
+    if (!(await confirm(fill(q[q.length - 1])))) return;
+    const v = await ask(R("GiveWhichDrink")[0], have.map(([drink], i) => ({ label: Bag.name(drink), value: i })).concat([back("Exit")]));
+    Screen.say("");
+    if (v === "back") return;
+    const [drink, tm, flag, yay, explain] = have[v];
+    if (f[flag]) { await say(R("ImNotThirstyAfterAll")); return; }
+    await say(R(yay));
+    Player.removeItem(player, drink);
+    Player.addItem(player, tm);
+    f[flag] = true;
+    await sayWithJingle("mus_level_up", "{PLAYER} received a " + Bag.name(tm) + "\nfrom the little girl.");
+    await say(R(explain));
+  }
+  // Fresh Water ₽200, Soda Pop ₽300, Lemonade ₽350, as many as you like.
+  async function vendingMachine() {
+    const R = (k) => T("CeladonCity_DepartmentStore_Roof_Text_" + k);
+    for (;;) {
+      const v = await ask(R("VendingMachineWhatDoesItHave")[0].replace("\n", " ") + "\n(You have " + money(player.money) + ".)",
+        DRINKS.map(([drink, , , , , price], i) => ({ label: Bag.name(drink) + "  " + money(price), value: i })).concat([back("Exit")]));
+      if (v === "back") { await say(R("NotThirsty")); return; }
+      const [drink, , , , , price] = DRINKS[v];
+      if (player.money < price) { await say(R("NotEnoughMoney")); return; }
+      Player.addMoney(player, -price);
+      Player.addItem(player, drink);
+      sfx("se_shop");
+      await say(R("DrinkCanPoppedOut"), [Bag.name(drink)]);
+    }
+  }
+
+  // ---------- The Game Corner ----------
+  //
+  // Coins (in the Coin Case, up to 9,999): bought from the clerk, given by a
+  // few gamblers, found on the floor, and won at the slots; spent next door
+  // in the Prize Room.
+  const MAX_COINS = 9999;
+  const coins = () => player.flags.coins || 0;
+  const addCoins = (n) => { player.flags.coins = Math.max(0, Math.min(MAX_COINS, coins() + n)); };
+  const plainCoins = (n) => n.toLocaleString("en-US");
+
+  async function coinsClerk() {
+    const G = (k) => T("CeladonCity_GameCorner_Text_" + k);
+    const q = G("WelcomeBuySomeCoins");
+    await say(q.slice(0, -1));
+    const v = await ask(q[q.length - 1] + "\n(" + money(player.money) + ", " + plainCoins(coins()) + " Coins.)", [
+      { label: "50 Coins  " + money(1000), value: 50 }, { label: "500 Coins  " + money(10000), value: 500 }, back("No thanks")]);
+    if (v === "back") { await say(G("ComePlaySometime")); return; }
+    if (!player.flags.gotCoinCase) { await say(G("SorryDontHaveCoinCase")); return; }
+    if (coins() + v > MAX_COINS) { await say(G("CoinCaseIsFull")); return; }
+    if (player.money < v * 20) { await say(G("CantAffordCoins")); return; }
+    addCoins(v);
+    Player.addMoney(player, -v * 20);
+    sfx("se_shop");
+    await say(G("HereAreYourCoins"));
+  }
+  async function gambler(person, o) {
+    const f = player.flags, G = (k) => T("CeladonCity_GameCorner_Text_" + k);
+    if (f[o.flag]) { await say(G(o.after)); await faceBack(person); return; }
+    await say(G(o.ask));
+    if (!f.gotCoinCase) await say(G("DontHaveCoinCase"));
+    else if (coins() + o.coins > MAX_COINS) await say(G(o.full));
+    else {
+      addCoins(o.coins);
+      await say(G(o.got));
+      sfx("se_shop");
+      f[o.flag] = true;
+    }
+    await faceBack(person);
+  }
+  // Coins found on the floor go in the Coin Case (FireRed's EventScript_TryPickUpHiddenCoins).
+  async function hiddenCoins(h) {
+    const found = "{PLAYER} found\n" + h.quantity + " Coins!";
+    if (!player.flags.gotCoinCase) { await say([found, "But {PLAYER} has nothing to put\nthem in."]); return; }
+    if (coins() + h.quantity > MAX_COINS) { await say([found, "Too bad!\nThe Coin Case is full…"]); return; }
+    addCoins(h.quantity);
+    player.flags[h.flag] = true;
+    await sayWithJingle("mus_obtain_item", found);
+    await say("{PLAYER} put the Coins away in\nthe Coin Case.");
+  }
+  // A slot machine (ui/slot-machine.js): FireRed picks how generous it is.
+  async function slotMachine(id) {
+    const G = (k) => T("CeladonCity_GameCorner_Text_" + k);
+    if (!player.flags.gotCoinCase) { await say(G("CoinCaseIsRequired")); return; }
+    if (!(await confirm(fill(G("SlotMachineWantToPlay").join("\n"))))) return;
+    Screen.say("");
+    player.flags.coins = await window.SlotMachine.play({ machineId: id, coins: coins(), maxCoins: MAX_COINS, sfx, fanfare });
+    show("world");
+    await Overworld.resume();
+  }
+
+  // The Prize Room's three counters (FireRed's prizes and prices). A TM
+  // prize is the TM of this game with that move.
+  const PRIZES = {
+    Mons: [["Abra", 180, 9], ["Clefairy", 500, 8], ["Dratini", 2800, 18], ["Scyther", 5500, 25], ["Porygon", 9999, 26]],
+    TMs: [["Ice Beam", 4000], ["Iron Tail", 3500], ["Thunderbolt", 4000], ["Shadow Ball", 4500], ["Flamethrower", 4000]],
+    Items: [["smoke-ball", 800], ["miracle-seed", 1000], ["charcoal", 1000], ["mystic-water", 1000], ["yellow-flute", 1600]]
+  };
+  const machineFor = (move) => Bag.machines().find((m) => Bag.machineMove(m) === move);
+  async function prizeClerk(counter) {
+    const P = (k) => T("CeladonCity_GameCorner_PrizeRoom_Text_" + k);
+    if (!player.flags.gotCoinCase) { await say(P("CoinCaseRequired")); return; }
+    await say(P("WeExchangeCoinsForPrizes"));
+    const list = PRIZES[counter];
+    const label = ([what]) => counter === "Mons" ? Party.speciesName(what) : counter === "TMs" ? Bag.name(machineFor(what)) : Bag.name(what);
+    const v = await ask(P("WhichPrize")[0] + "\n(" + plainCoins(coins()) + " Coins.)",
+      list.map((p, i) => ({ label: label(p) + "  " + plainCoins(p[1]) + "C", value: i })).concat([back("No thanks")]));
+    Screen.say("");
+    if (v === "back") return;
+    const [what, price, level] = list[v];
+    const name = label(list[v]);
+    const ok = counter === "TMs" ? await confirm(fill(P("YouWantTM")[0], ["", what])) : await confirm(fill(P("YouWantPrize")[0], [name]));
+    if (!ok) return;
+    if (coins() < price) { await say(P("NeedMoreCoins")); return; }
+    if (counter === "Mons") {
+      await giftMon(what, level, T("Text_PlayerObtainedTheMon"), [name], () => addCoins(-price));
+      return;
+    }
+    const item = counter === "TMs" ? machineFor(what) : what;
+    addCoins(-price);
+    Player.addItem(player, item);
+    await sayWithJingle(itemJingle(item), "{PLAYER} received " + article(Bag.name(item)) + "!");
+  }
+
+  // ---------- The Rocket Hideout ----------
+  //
+  // Giovanni, on B4F: beaten, he leaves, and the Silph Scope is left behind.
+  async function giovanniHideout(person) {
+    const f = player.flags, ID = "TRAINER_BOSS_GIOVANNI";
+    music("mus_encounter_rocket");
+    await say(T("RocketHideout_B4F_Text_GiovanniIntro"));
+    if (!canBattle()) return;
+    const outcome = await battle("trainer", { foe: { name: "Boss Giovanni", team: trainerTeam(ID), pic: "leader_giovanni" },
+      defeatText: T("RocketHideout_B4F_Text_GiovanniDefeat"), trainerId: ID, prizeClass: "Boss" });
+    if (outcome !== "won") return;
+    show("world");
+    await Overworld.resume();
+    await say(T("RocketHideout_B4F_Text_GiovanniPostBattle"));
+    await Overworld.fadeToBlack();
+    Overworld.removePerson(person);
+    Overworld.refreshPeople();
+    await Overworld.fadeFromBlack();
+  }
+  // What happens once you've beaten some of the Game Corner's and Hideout's
+  // Rockets: the poster guard leaves; the barriers on B1F and B4F open; the
+  // Lift Key's dropped.
+  async function afterRocket(person) {
+    const f = player.flags, id = person.trainer.id;
+    if (!f[id] || !/^TRAINER_TEAM_ROCKET_GRUNT_(7|12|16|17|18)$/.test(id)) return;
+    show("world");
+    await Overworld.resume();
+    if (id === "TRAINER_TEAM_ROCKET_GRUNT_7") {
+      await say(T("CeladonCity_GameCorner_Text_GruntPostBattle"));
+      const west = Overworld.position().facing === "left";
+      await Overworld.act([{ who: "#" + person.id, moves: M(west ? "CeladonCity_GameCorner_Movement_GruntExitWest" : "CeladonCity_GameCorner_Movement_GruntExit") }]);
+      Overworld.removePerson(person);
+    } else if (id === "TRAINER_TEAM_ROCKET_GRUNT_12" ||
+      ((id === "TRAINER_TEAM_ROCKET_GRUNT_16" || id === "TRAINER_TEAM_ROCKET_GRUNT_17") && f.TRAINER_TEAM_ROCKET_GRUNT_16 && f.TRAINER_TEAM_ROCKET_GRUNT_17)) {
+      applyPatches(player.location.map);
+      sfx("se_unlock");
+    } else if (id === "TRAINER_TEAM_ROCKET_GRUNT_18") {
+      await say(T("RocketHideout_B4F_Text_Grunt1PostBattle"));
+      Overworld.refreshPeople();
+    }
+  }
+
   // Vermilion Gym's trash cans (VermilionCity_Gym_EventScript_TrashCan): a
   // switch is under one of the fifteen, and the second under one next to it
   // (SetVermilionTrashCans). Find the first and one beam goes off; then the
@@ -3812,20 +4262,31 @@
   }
   // Which of a map's patches (WORLD_MAPS[..].patches) are on now.
   function mapPatches(map) {
+    const f = player.flags;
     if (map === "VermilionCity_Gym") {
-      if (player.flags.vermilionGymLocksOpen) return ["off"];
+      if (f.vermilionGymLocksOpen) return ["off"];
       if (gymCans && gymCans.foundFirst) return ["half"];
     }
+    if (map === "CeladonCity_GameCorner" && !f.openedRocketHideout) return ["hidden"];
+    if (map === "RocketHideout_B1F" && !f.TRAINER_TEAM_ROCKET_GRUNT_12) return ["barrier"];
+    if (map === "RocketHideout_B4F" && !(f.TRAINER_TEAM_ROCKET_GRUNT_16 && f.TRAINER_TEAM_ROCKET_GRUNT_17)) return ["barrier"];
     return [];
   }
-  // Sets a map's collision for the patches on now (the rest as built).
-  const baseCollision = {};
+  // Sets a map's collision and behaviours for the patches on now (the rest as built).
+  const baseCollision = {}, baseBehavior = {};
   function applyPatches(map) {
     const m = window.WORLD_MAPS[map];
     if (!m || !m.patches) return;
     const base = baseCollision[map] || (baseCollision[map] = m.collision.slice());
-    for (const pt of Object.values(m.patches)) for (const [x, y] of pt.collision) m.collision[y * m.width + x] = base[y * m.width + x];
-    for (const p of mapPatches(map)) for (const [x, y, c] of m.patches[p].collision) m.collision[y * m.width + x] = c;
+    const baseB = baseBehavior[map] || (baseBehavior[map] = m.behavior.slice());
+    for (const pt of Object.values(m.patches)) for (const [x, y] of pt.collision) {
+      m.collision[y * m.width + x] = base[y * m.width + x];
+      m.behavior[y * m.width + x] = baseB[y * m.width + x];
+    }
+    for (const p of mapPatches(map)) for (const [x, y, c, b] of m.patches[p].collision) {
+      m.collision[y * m.width + x] = c;
+      if (b != null) m.behavior[y * m.width + x] = b;
+    }
   }
 
   // ---------- The S.S. Anne ----------
@@ -3910,6 +4371,8 @@
     visitSection(to.map);
     const a = window.WORLD_MAPS[from.map], b = window.WORLD_MAPS[to.map];
     if (a && b && OUTDOORS.includes(a.type) && !OUTDOORS.includes(b.type)) player.flags.escapeWarp = { map: from.map, x: from.x, y: from.y };
+    // Into an elevator: its doors open back where you got in until you choose a floor.
+    if (/_Elevator$/.test(to.map) && !/_Elevator$/.test(from.map)) setDynamicWarp({ map: from.map, x: from.x, y: from.y });
   }
   async function useEscapeRope() {
     const here = player.location && window.WORLD_MAPS[player.location.map];
@@ -3973,10 +4436,13 @@
     if (script === "PokemonTower_6F_EventScript_MarowakGhost") return !player.flags.marowakCalmed;
     if (script === "PokemonTower_5F_EventScript_PurifiedZone") return !inPurifiedZone;
     if (script === "PokemonTower_5F_EventScript_ExitPurifiedZone") { inPurifiedZone = false; return false; }
+    // The Saffron gates' guards, until they've had the Tea.
+    if (/^Route[5-8]_\w+Entrance_EventScript_GuardTrigger/.test(script)) return !player.flags.gatesOpen;
     return SPECIAL.has(script) || ITEM_BALLS.has(script) || TRAINER_SCRIPTS.has(script);
   }
 
   async function explore() {
+    World.setDynamicWarp(player.flags.dynamicWarp);
     for (;;) {
       show("world");
       // (Continuing a save, the area's name shows: FieldCB_ShowMapNameOnContinue.)
