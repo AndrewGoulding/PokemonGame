@@ -14,6 +14,8 @@
 //   slots:    the slot pictures, as tile numbers into `tiles` (src/data/party_menu.h):
 //             main (10x7, the first Pokémon's), mainNoHp, wide (18x3, the
 //             others), wideNoHp, wideEmpty
+//   buttons:  confirm_button.bin and cancel_button.bin, 7x2 BG1 tile entries each:
+//             CONFIRM and CANCEL when choosing several Pokémon (DrawCancelConfirmButtons)
 //   pokeball, pokeballSmall, hold, status: sprite sheets ({ width, height, px, palette })
 //             from graphics/party_menu/ and graphics/interface/status_icons.png
 // }
@@ -64,6 +66,10 @@ const data = {
     main: bytes("slot_main.bin"), mainNoHp: bytes("slot_main_no_hp.bin"),
     wide: bytes("slot_wide.bin"), wideNoHp: bytes("slot_wide_no_hp.bin"), wideEmpty: bytes("slot_wide_empty.bin")
   },
+  buttons: Object.fromEntries(["confirm", "cancel"].map((n) => {
+    const b = fs.readFileSync(P("graphics/party_menu", n + "_button.bin"));
+    return [n, Array.from({ length: 14 }, (_, i) => b.readUInt16LE(i * 2))];
+  })),
   pokeball: sheet(P("graphics/party_menu/pokeball.png")),
   pokeballSmall: sheet(P("graphics/party_menu/pokeball_small.png")),
   hold: sheet(P("graphics/party_menu/hold_icons.png")),

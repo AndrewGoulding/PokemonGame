@@ -1,7 +1,7 @@
 # Pokémon Game
 
-A browser Pokémon game built on a Gen 6 battle engine (singles in the game; the
-engine also runs double and tag battles). Plain JavaScript,
+A browser Pokémon game built on a Gen 6 battle engine (single, double and tag
+battles). Plain JavaScript,
 no build step and no dependencies.
 
 ## Running it
@@ -111,8 +111,13 @@ new kind shows its habitat page and entry, as in FireRed),
 your trainer card (under your name: save, download or load a save file, and **Debug**, for
 testing; it asks for a password the first time each session): add any Pokémon at any level (type its name, e.g. `charizard` or
 `rotom-wash`; a full party sends it to the PC), infinite Rare Candies, every TM
-and HM, 99 Max Repels, 99 Master Balls, a wild battle at your level, or a trip
-back to the last Pokémon Center you used (home before you've used one).
+and HM, 99 Max Repels, 99 Master Balls, a wild battle at your level, a
+**Double battle** against one of FireRed's double battle trainers picked at
+random (you need two Pokémon that can fight), a **Tag battle** with Leaf
+against two trainers near your party's level (Leaf brings her starter, grown
+with your party, Jigglypuff or Wigglytuff and Butterfree; you choose three of
+yours), or a trip back to the last Pokémon Center you used (home before
+you've used one).
 Healing, shopping and the PC are in the towns: each Poké Mart sells exactly
 what it does in FireRed (Viridian: Poké Balls, Potions, Antidotes and
 Paralyze Heals), at Gen 6 prices, through FireRed's Mart: Buy / Sell / See
@@ -129,7 +134,8 @@ another of the same kind (as in Black and White). In battle you can fight, use i
 can be used right now), switch, and in wild battles
 throw balls or run. Pokémon gain experience and EVs, level up mid-battle, learn
 moves (with four already, FireRed's "Delete a move to make room for …?" and the
-Summary screen's move list to pick one to forget) and evolve afterwards, in FireRed's
+Summary screen's move list to pick one to forget) and evolve afterwards (see
+**Double and tag battles** below for two-on-two), in FireRed's
 evolution scene: the battle background fades to black for its swirling blue one,
 sparkles spiral up and rain down, the old and new Pokémon trade places as white
 shapes faster and faster, and a flash shows the new one. Hold B while they trade
@@ -190,7 +196,7 @@ works), and on 6F the ghost of Cubone's mother pushes you back; with the Silph
 Scope she's a Marowak (Lv. 30, can't be caught) whose spirit you calm, then the
 Rockets on 7F and Mr. Fuji, who takes you home and gives you the Poké Flute,
 which wakes sleeping Pokémon), Route 8 (its trainers; the twins Eli & Anne,
-a double battle in FireRed, battle one on one), its gate to Saffron (a thirsty
+a double battle, as in FireRed), its gate to Saffron (a thirsty
 guard), and the Underground Path's east entrance and tunnel, and its west
 entrance onto Route 7, with its gate to Saffron, and Celadon City: its Pokémon
 Center, the Department Store (five floors and the roof; the elevator takes you
@@ -352,7 +358,8 @@ node tools/build-town-map.js pokefirered     # after build-maps.js
 ### Party screen
 
 `tools/build-party-menu.js` converts FireRed's party screen
-(`graphics/party_menu/`, the status icons) into `data/party-menu.js`, and
+(`graphics/party_menu/`, the status icons, the CONFIRM / CANCEL buttons for
+choosing several Pokémon) into `data/party-menu.js`, and
 writes every Pokémon's party icon to `assets/sprites/icons/`: FireRed's own for
 the first 386, in their icon palettes, and the later ones and alternate forms
 (Megas, Rotom's appliances, ...) from pokeemerald-expansion, which has them
@@ -401,7 +408,8 @@ node tools/build-pc.js pokefirered
 ```
 
 `tools/build-healthbox.js` converts FireRed's battle healthboxes
-(`graphics/battle_interface/healthbox_*`) into `assets/battle-interface/`:
+(`graphics/battle_interface/healthbox_*`, the singles, Safari Zone and smaller
+double battle ones) into `assets/battle-interface/`:
 
 ```sh
 node tools/build-healthbox.js pokefirered
@@ -601,6 +609,56 @@ silver hair, red shirt, black backpack), and its trainer-card picture
 (`assets/sprites/trainers/front/player_character.png`) and Oak's-speech portrait
 (`assets/intro/oak-speech-player-character.png`), by `tools/recolor-player-fronts.py`.
 `Player.LOOKS` in `game/player.js` lists them.
+
+### Double and tag battles
+
+FireRed's double battle trainers (its `trainerbattle_double`: Route 8's twins
+Eli & Anne, Route 12's and Route 16's young couples, Route 14's twins Kiri &
+Jan, Route 15's Crush Kin Ron & Mya, Route 19's and Route 21's Sis and Bro)
+battle you two on two, with your whole party. They need you to have two
+Pokémon that can fight: without them, talking to one gets their "not enough
+Pokémon" line (Eli: "We can't battle if you don't have two Pokémon.") and they
+don't come after you when they see you. Win and you get their prize money
+doubled, as in FireRed.
+
+A double battle looks as FireRed's: the trainer's picture slides away and both
+their Pokémon come out ("Twins Eli & Anne sent out Clefairy and Jigglypuff!"),
+then yours ("Go! Pikachu and Charizard!"), at FireRed's double battle places
+(yours left and right in front, theirs side by side further back), each with
+FireRed's smaller double battle healthbox (name, level and HP bar; no HP
+numbers or EXP bar, as in FireRed). Each turn it asks "What will … do?" for
+each of your Pokémon in turn, its box bobbing; B on the second goes back to
+the first (not after the first chose an item). A move that aims at one
+Pokémon brings up FireRed's target cursor: the target blinks and its box
+bobs, Left / Up and Right / Down step round the Pokémon it can reach (your
+left one, your right one, their right one, their left one; the cursor starts
+on their left one), A picks and B goes back to the moves. While a move that
+hits several Pokémon (Surf, Earthquake, Discharge, Heat Wave, Rock Slide, ...)
+or your side or the field is chosen in the move menu, the Pokémon it will hit
+flash white. A move with only one Pokémon it could hit just goes. POKéMON
+switches that slot's Pokémon (one your other Pokémon is already switching to
+"has already been selected"), BAG uses an item (an X item on that Pokémon),
+and Mega Evolution (START in the move menu) is for one of your two a turn,
+once a battle. When Pokémon faint, the party screen asks for a replacement for
+each empty slot at the end of the turn. Experience goes to each of yours that
+was out while the fainted foe was. (There's no Shift in a double battle.)
+
+In a **tag battle** (the debug menu's Tag battle, for now: no story event
+uses one yet) you fight beside a partner, against two trainers. First choose
+three of your Pokémon on FireRed's party screen for choosing several: A on a
+Pokémon gives ENTER (NO ENTRY takes it back), SUMMARY and CANCEL; the chosen
+ones say FIRST, SECOND and THIRD, the rest ABLE or NOT ABLE; choosing the
+third (or START) moves the cursor to OK, and OK with too few says "Three
+POKéMON are needed." B or CANCEL asks "Cancel the battle?". Your partner stands
+beside you and sends out theirs as you send yours ("Leaf sent out Ivysaur!
+Go! Pikachu!"); you choose for your Pokémon only, your partner picks their own
+moves, and each side's slots are refilled from their own trainer's party
+(someone with no Pokémon left "is out of usable Pokémon!" and their slot stays
+empty). Two opposing trainers slide in side by side ("Youngster Ben and Lass
+Janice would like to battle!"), each sends out their own, and each says their
+piece when you win, and you get each one's prize. Only the three you chose
+are changed by the battle (HP, PP, experience, levels); the rest of your party
+is left as it was.
 
 ### Prof. Oak's Mega Evolution test
 
@@ -809,11 +867,12 @@ and later files read those globals, so scripts must load in this order:
 29. `game/bag.js` → `Bag`
 30. `game/save.js` → `Save`
 31. `game/world.js` → `World`
-32. `ui/screen.js` → `Screen`
-33. `ui/battle-screen.js` → `BattleScreen`
-34. `ui/overworld.js` → `Overworld`
-35. `ui/intro.js` → `Intro`
-36. `ui/game.js` → `Game` (starts the game on load)
+32. `game/double-battle.js` → `DoubleBattle` (the game's rules for double and tag battles)
+33. `ui/screen.js` → `Screen`
+34. `ui/battle-screen.js` → `BattleScreen`
+35. `ui/overworld.js` → `Overworld`
+36. `ui/intro.js` → `Intro`
+37. `ui/game.js` → `Game` (starts the game on load)
 
 `index.html` is the source of truth for this order, and the smoke test reads its
 script list from there (skipping `ui/`, which needs a real page). If you add a
@@ -877,6 +936,12 @@ empty, while the partner fights on. `getRequest("p1")` / `choose("p1", …)` cov
 the trainer's slot, `"p1b"` the partner's — the game drives it with
 `OpponentAI.choose(battle, "p1b")`. `switch` events carry the trainer's name,
 `-withdraw` marks a Pokémon called back. Only p1's own Pokémon earn experience.
+
+In the game, `BattleScreen.run({ format: "doubles", ... })` shows a double
+battle (the header of `ui/battle-screen.js` has the options for a tag partner
+and a second opposing trainer), and the game's `battle("trainer", { double:
+true, partner: { name, team, pic }, foe2: { name, team, pic } })` starts one
+(see **Double and tag battles** above).
 
 The opponent AI handles doubles too: each slot aims its best single-target
 attack at the foe it hurts most (never its ally), counts spread moves against

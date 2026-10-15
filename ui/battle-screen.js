@@ -16,6 +16,17 @@
 //                    // result.battle.safari.balls is how many are left)
 //   (cfg.victoryMusic: the song to play when you win, e.g. "mus_victory_wild")
 //
+// Double battles (FireRed's BATTLE_TYPE_DOUBLE): cfg.format = "doubles". Two
+// Pokémon a side at FireRed's double battle positions, the smaller doubles
+// healthboxes, "What will … do?" for each of yours in turn (B on the second
+// goes back to the first), FireRed's target cursor for moves aimed at one
+// Pokémon, and a replacement for each fainted slot at the end of the turn.
+// Tag battles: cfg.p1.partner = { name, team } (with cfg.partnerTrainer, the
+// partner's back picture); the partner's slot b is chosen by
+// cfg.partnerAI(battle) (OpponentAI.choose(battle, "p1b") by default). Two
+// opposing trainers: cfg.p2.partner = { name, team }, cfg.foeTrainer2 (their
+// picture) and cfg.defeatText2, chosen by cfg.opponent2(battle) ("p2b").
+//
 // The screen never reads HP or status straight from the engine while events are
 // playing. It replays battle.events one at a time, updating its own copy of each
 // side's active Pokémon, so the HP bars move in step with the text box.
@@ -171,11 +182,22 @@
   const el = {
     field: $("#field"),
     ball: $("#ball"),
+    // Keyed by position: "p1" / "p2" are slot a (the only one in singles),
+    // "p1b" / "p2b" slot b of a double battle.
     sides: {
       p1: { sprite: $("#sprite-player") },
       p2: { sprite: $("#sprite-foe") }
     }
   };
+  // Slot b's pictures: the foe's behind theirs in slot a, yours in front.
+  {
+    const mk = (cls) => Object.assign(document.createElement("img"), { className: "sprite " + cls + " slot-b hidden", alt: "" });
+    el.sides.p2b = { sprite: mk("foe") };
+    el.sides.p1b = { sprite: mk("player") };
+    el.field.insertBefore(el.sides.p2b.sprite, el.sides.p2.sprite);
+    el.sides.p1.sprite.after(el.sides.p1b.sprite);
+  }
+  const POSITIONS = ["p1", "p2", "p1b", "p2b"];
 
   // ---------- The healthboxes (src/battle_interface.c) ----------
   //
@@ -198,6 +220,30 @@
     p1: { box: hbImg("healthbox-player"), frame: hbImg("healthbox-player-frame"), x: 126, y: 72, h: 64, slideFrom: 115 },
     p2: { box: hbImg("healthbox-opponent"), frame: hbImg("healthbox-opponent-frame"), x: 12, y: 14, h: 32, slideFrom: -115 }
   };
+  // A double battle's smaller boxes (healthbox_doubles_*.png), at FireRed's
+  // InitBattlerHealthboxCoords for each position (the sprite's centre less
+  // 32, 16): yours at (159, 75) and (171, 100), the opponent's at (44, 19)
+  // and (32, 44). Yours show the name, level and HP bar like the
+  // opponent's (no HP numbers or EXP bar in a double battle), the status
+  // icon over "HP" (tile 0x12).
+  const dpBox = hbImg("healthbox-doubles-player"), dpFrame = hbImg("healthbox-doubles-player-frame");
+  const doBox = hbImg("healthbox-doubles-opponent"), doFrame = hbImg("healthbox-doubles-opponent-frame");
+  const HB_DOUBLES = {
+    p1: { box: dpBox, frame: dpFrame, x: 127, y: 59, h: 32, slideFrom: 115, mine: true },
+    p1b: { box: dpBox, frame: dpFrame, x: 139, y: 84, h: 32, slideFrom: 115, mine: true },
+    p2: { box: doBox, frame: doFrame, x: 12, y: 3, h: 32, slideFrom: -115 },
+    p2b: { box: doBox, frame: doFrame, x: 0, y: 28, h: 32, slideFrom: -115 }
+  };
+  let doublesLayout = false;
+  const hbCfg = (pos) => (doublesLayout ? HB_DOUBLES[pos] : HB[pos]);
+  // How a box is laid out: the singles player's (name at 16, HP numbers, EXP
+  // bar) or the opponent's style (name at 8, the status over "HP"), which a
+  // double battle's player boxes share with the name at 16.
+  const hbStyle = (pos) => {
+    const singlesPlayer = !doublesLayout && pos === "p1", mine = sideOf(pos) === "p1";
+    return { singlesPlayer, foe: !singlesPlayer, nameX: mine ? 16 : 8, lvX: mine ? 72 : 64, barX: mine ? 48 : 40,
+      status: singlesPlayer ? [16, 24] : mine ? [16, 16] : [8, 16] };
+  };
   const hbBar = hbImg("healthbar"), hbElements = hbImg("healthbox-elements"), hbStatus = hbImg("status-icons");
   // In the Safari Zone your box is FireRed's Safari one (healthbox_safari):
   // "SAFARI BALLS" and how many are left (UpdateSafariBallsTextOnHealthbox,
@@ -209,7 +255,7 @@
   let hb = {}, hbRaf = 0, hbWaiters = [];
   function hbReset() {
     hb = {};
-    for (const side of ["p1", "p2"]) {
+    for (const side of POSITIONS) {
       hb[side] = { shown: false, x2: 0, y2: 0, shake: 0, bounce: false, bounceIdx: 128, key: null,
         hp: 0, hpTo: 0, maxhp: 1, exp: 0, expTo: 0, expDelay: 0, flash: -1, data: {}, layer: null, layerKey: null };
     }
@@ -242,25 +288,26 @@
     return c;
   }
   function hbLayerFor(side) {
-    const b = hb[side], d = b.data, cfg = HB[side], foe = side === "p2";
+    const b = hb[side], d = b.data, cfg = hbCfg(side), st = hbStyle(side);
     if (b.data.safari) return safariLayer(b);
     const shownHp = b.hp < b.hpTo ? Math.floor(b.hp) : Math.ceil(b.hp);
-    const key = [d.name, d.gender, d.level, d.status, d.caught, shownHp, b.maxhp].join("|");
+    const key = [d.name, d.gender, d.level, d.status, d.caught, shownHp, b.maxhp, doublesLayout].join("|");
     if (b.layer && b.layerKey === key) return b.layer;
     b.layerKey = key;
     const s = window.GbaMenus.Surface();
     // The windows FireRed prints into (filled cream, then rows 5-15 copied in).
-    const win = foe ? [[8, 5, 56, 11], [64, 5, 24, 11]] : [[16, 5, 56, 11], [72, 5, 24, 11], [56, 21, 40, 11]];
+    const win = st.singlesPlayer ? [[16, 5, 56, 11], [72, 5, 24, 11], [56, 21, 40, 11]]
+      : [[st.nameX, 5, 56, 11], [st.lvX, 5, 24, 11]];
     win.forEach(([x, y, w, h]) => s.fill(x, y, w, h, HB_CREAM));
     // Name, then the gender symbol after it (FONT_SMALL at window (0, 3)).
-    const nx = foe ? 8 : 16;
+    const nx = st.nameX;
     const w = s.text(d.name || "", nx, 3, HB_TEXT, HB_SHADOW, "small");
     if (d.gender === "M" || d.gender === "F") s.text(d.gender === "M" ? "♂" : "♀", nx + w, 3, d.gender === "M" ? HB_MALE : HB_FEMALE, HB_SHADOW, "small");
     // "Lv" and the level, right-aligned in 24 pixels.
     const lv = String(d.level || "");
-    s.text("{LV}" + lv, (foe ? 64 : 72) + 5 * (3 - lv.length), 3, HB_TEXT, HB_SHADOW, "small");
+    s.text("{LV}" + lv, st.lvX + 5 * (3 - lv.length), 3, HB_TEXT, HB_SHADOW, "small");
     // Your HP: "cur/" at (60, 21) and "max" at (80, 21), each right-aligned to 3.
-    if (!foe) {
+    if (st.singlesPlayer) {
       const cur = String(Math.max(0, shownHp)), max = String(b.maxhp);
       s.text(cur + "/", 60 + 5 * (3 - cur.length), 21, HB_TEXT, HB_SHADOW, "small");
       s.text(max, 80 + 5 * (3 - max.length), 21, HB_TEXT, HB_SHADOW, "small");
@@ -278,8 +325,8 @@
     g.drawImage(s.canvas(), 0, 0);
     g.restore();
     // The status icon: yours left of the HP numbers, theirs over "HP".
-    const st = HB_STATUS[d.status];
-    if (st != null && hbStatus.complete) g.drawImage(hbStatus, 0, ((foe ? 5 : 0) + st) * 8, 24, 8, foe ? 8 : 16, foe ? 16 : 24, 24, 8);
+    const stIcon = HB_STATUS[d.status];
+    if (stIcon != null && hbStatus.complete) g.drawImage(hbStatus, 0, ((sideOf(side) === "p2" ? 5 : 0) + stIcon) * 8, 24, 8, st.status[0], st.status[1], 24, 8);
     b.layer = c;
     return c;
   }
@@ -288,9 +335,10 @@
     const g = hbLayer.getContext("2d");
     g.clearRect(0, 0, 240, 112);
     g.imageSmoothingEnabled = false;
-    for (const side of ["p1", "p2"]) {
-      const b = hb[side], cfg = HB[side], foe = side === "p2";
-      if (!b.shown || !b.data.name) continue;
+    for (const side of POSITIONS) {
+      const b = hb[side], cfg = hbCfg(side);
+      if (!cfg || !b.shown || !b.data.name) continue;
+      const st = hbStyle(side), foe = st.foe;
       const ox = cfg.x + b.x2, oy = cfg.y + b.y2;
       g.drawImage(hbLayerFor(side), ox, oy);
       if (b.data.safari) continue;
@@ -302,7 +350,7 @@
       }
       if (!hbBar.complete) continue;
       // The healthbar: (the caught ball,) "HP", then the bar's six tiles.
-      const bx = ox + (foe ? 40 : 48), by = oy + 16;
+      const bx = ox + st.barX, by = oy + 16;
       const status = HB_STATUS[b.data.status] != null;
       if (!foe || !status) { hbTile(g, hbBar, 1, bx - 16, by); hbTile(g, hbBar, 2, bx - 8, by); }
       else hbTile(g, hbBar, 65, bx - 8, by);
@@ -310,7 +358,7 @@
       const px = hpPixels(b.hp, b.maxhp), base = px > 24 ? 3 : px > 9 ? 47 : 56;
       for (let i = 0; i < 6; i++) hbTile(g, hbBar, base + Math.max(0, Math.min(8, px - 8 * i)), bx + 8 * i, by);
       // Your EXP bar (64 pixels at 32, 32).
-      if (!foe && hbElements.complete) {
+      if (st.singlesPlayer && hbElements.complete) {
         const e = Math.round(b.exp);
         for (let i = 0; i < 8; i++) hbTile(g, hbElements, 12 + Math.max(0, Math.min(8, e - 8 * i)), ox + 32 + 8 * i, oy + 32);
       }
@@ -318,7 +366,7 @@
   }
 
   function tickHealthboxes() {
-    for (const side of ["p1", "p2"]) {
+    for (const side of POSITIONS) {
       const b = hb[side];
       if (b.x2) b.x2 = b.x2 > 0 ? Math.max(0, b.x2 - 5) : Math.min(0, b.x2 + 5);
       // HP: 1 HP a frame, or 1 pixel's worth when the max is under 48.
@@ -331,11 +379,16 @@
       if (b.flash >= 0 && ++b.flash > 16) b.flash = -1;
       // DoHitAnimHealthboxEffect: +1, -1, ... for 21 frames.
       if (b.shake > 0) { b.shake--; b.y2 = b.shake ? (b.shake % 2 ? 1 : -1) : 0; }
-      else if (b.bounce) { b.y2 = (b.bounceIdx === 64 ? 2 : b.bounceIdx <= 128 ? 1 : 0); b.bounceIdx = (b.bounceIdx + 7) & 255; }
+      else if (b.bounce) {
+        // DoBounceEffect: yours while you choose (7, 1); a move's target while
+        // you aim it (15, 1: twice as fast).
+        b.y2 = (b.bounceIdx === 64 ? 2 : b.bounceIdx <= 128 ? 1 : 0);
+        b.bounceIdx = (b.bounceIdx + (b.bounce === "target" ? 15 : 7)) & 255;
+      }
       else b.y2 = 0;
     }
     drawHealthboxes();
-    const busy = ["p1", "p2"].some((sd) => { const b = hb[sd]; return b.hp !== b.hpTo || b.exp !== b.expTo || b.flash >= 0 || b.x2; });
+    const busy = POSITIONS.some((sd) => { const b = hb[sd]; return b.hp !== b.hpTo || b.exp !== b.expTo || b.flash >= 0 || b.x2; });
     if (!busy && hbWaiters.length) { const w = hbWaiters; hbWaiters = []; w.forEach((r) => r()); }
     hbRaf = requestAnimationFrame(tickHealthboxes);
   }
@@ -347,7 +400,7 @@
   // it slides in.
   function hbShow(side, on) {
     const b = hb[side];
-    if (on && !b.shown) b.x2 = HB[side].slideFrom;
+    if (on && !b.shown) b.x2 = hbCfg(side).slideFrom;
     b.shown = !!on;
   }
   // Your Safari box, sliding in as the battle starts; then the count of balls.
@@ -363,8 +416,7 @@
       toggle: (c, on) => { if (c === "hidden") hbShow(side, !on); }
     }
   });
-  el.sides.p1.info = hbInfo("p1");
-  el.sides.p2.info = hbInfo("p2");
+  for (const pos of POSITIONS) el.sides[pos].info = hbInfo(pos);
 
   // ---------- The party summary bars (src/battle_interface.c) ----------
   //
@@ -401,14 +453,14 @@
       // The bar slides 100 pixels in, 5 a frame; each ball 120, 7 frames apart.
       const barOff = Math.max(0, 100 - b.t * 5);
       g.save();
-      if (foe) { g.translate(-8 + 128 - barOff, 36); g.scale(-1, 1); g.drawImage(barImg, 0, 0); }
+      if (foe) { g.translate(-8 + 128 - barOff, 36 + b.dy); g.scale(-1, 1); g.drawImage(barImg, 0, 0); }
       else g.drawImage(barImg, 120 + barOff, 92);
       g.restore();
       b.balls.forEach((f, i) => {
         const wait = foe ? (6 - i) * 7 + 10 : i * 7 + 10;
         const off = Math.max(0, 120 - Math.max(0, b.t - wait) * 12);
         const x = foe ? 26 + 10 * i - off : 156 + 10 * i + off;
-        g.drawImage(ballsImg, f * 8, 0, 8, 8, x, foe ? 32 : 88, 8, 8);
+        g.drawImage(ballsImg, f * 8, 0, 8, 8, x, foe ? 32 + b.dy : 88, 8, 8);
       });
       g.globalAlpha = 1;
     }
@@ -425,9 +477,12 @@
     barRaf = alive ? requestAnimationFrame(tickBars) : 0;
   }
   // Shows `side`'s bar (the foe's balls in reverse: their lead is rightmost).
-  function showBar(side) {
+  // (In a double battle the foe's comes 24 pixels higher once the battle is
+  // under way, at y 16: CreatePartyStatusSummarySprites.)
+  function showBar(side, midBattle) {
     const frames = ballFrames(side);
-    bars[side] = { balls: side === "p2" ? frames.slice().reverse() : frames, t: 0, fade: 0, leaving: false };
+    bars[side] = { balls: side === "p2" ? frames.slice().reverse() : frames, t: 0, fade: 0, leaving: false,
+      dy: midBattle && battle.doubles && side === "p2" ? -24 : 0 };
     if (window.GameAudio && window.GameAudio.se) window.GameAudio.se("se_ball_tray_enter");
     if (!barRaf) barRaf = requestAnimationFrame(tickBars);
     return new Promise((r) => setTimeout(r, 600));
@@ -446,8 +501,28 @@
   let view = null;      // what the screen currently shows for each side
 
   const sideOf = (ident) => String(ident).slice(0, 2);
-  const nameOf = (ident) => String(ident).replace(/^p\da: /, "");
+  const nameOf = (ident) => String(ident).replace(/^p\d[ab]?: /, "");
   const otherSide = (side) => (side === "p1" ? "p2" : "p1");
+  // The screen position an engine identity stands in: "p1" / "p2" for slot a
+  // (all of singles), "p1b" / "p2b" for slot b.
+  const posOf = (ident) => { const m = /^(p\d)(b)?/.exec(String(ident)); return m ? m[1] + (m[2] ? "b" : "") : String(ident); };
+  const slotOf = (pos) => (pos.length > 2 ? 1 : 0);
+  const posAt = (side, slot) => side + (slot ? "b" : "");
+  // The Pokémon standing across from `pos` (the one opposite, else the other foe).
+  const foeView = (pos) => {
+    const o = otherSide(sideOf(pos)), a = view[posAt(o, slotOf(pos))], b = view[posAt(o, 1 - slotOf(pos))];
+    return a && a.species && !a.fainted ? a : b && b.species && !b.fainted ? b : a;
+  };
+  // A side's trainer for a Pokémon (tag battles: its own trainer).
+  const trainerName = (side, teamIndex) => {
+    const s = battle.sides[side], m = s.pokemon[teamIndex];
+    return s.trainers && m && s.trainers[m.owner] ? s.trainers[m.owner] : s.name;
+  };
+  // The team set behind a team index (a tag side: the trainer's 3, then the partner's).
+  const setOf = (side, teamIndex) => {
+    const c = config[side], all = c.partner && battle.sides[side].tag ? (c.team || []).slice(0, 3).concat((c.partner.team || []).slice(0, 3)) : c.team;
+    return all[teamIndex] || {};
+  };
   const { message, ask, wait, say, clearMenu } = window.Screen;
 
   // "Charizard" / "the opposing Blastoise" / "the wild Pidgey"
@@ -462,7 +537,7 @@
     if (template == null) return null;
     const side = /^p\d$/.test(ident) ? ident : sideOf(ident);
     const name = /^p\d$/.test(ident) ? "" : label(side, nameOf(ident));
-    const foe = view[otherSide(side)];
+    const foe = battle.doubles && !/^p\d$/.test(ident) ? foeView(posOf(ident)) : view[otherSide(side)];
     const team = side === "p1" ? "your team" : "the opposing team";
     return template
       .replace(/\{who\}/g, capitalize(name)).replace(/\{whom\}/g, name)
@@ -514,10 +589,11 @@
       info.classList.add("hidden");
       return;
     }
+    const side = sideOf(id);
     // (Pokémon Tower's unidentified Ghost: FireRed's gGhostFrontPic.)
     if (id === "p2" && config && config.ghost) { if (sprite.getAttribute("src") !== GHOST_PIC) { sprite.src = GHOST_PIC; sprite.style.visibility = ""; } }
-    else window.Screen.setSprite(sprite, v.species, v.form, id === "p1", v.shiny);
-    placeSprite(sprite, v, id === "p1");
+    else window.Screen.setSprite(sprite, v.species, v.form, side === "p1", v.shiny);
+    placeSprite(sprite, v, side === "p1");
     sprite.alt = v.name;
     sprite.classList.toggle("hidden", !!v.inBall);
     sprite.classList.toggle("fainted", v.fainted);
@@ -525,19 +601,20 @@
 
     // The box: a new Pokémon's shows its HP and EXP at once; after that the
     // bars move to what changed.
-    const b = hb[id], mon = battle.sides[id].pokemon[v.teamIndex] || {};
+    const b = hb[id], mon = battle.sides[side].pokemon[v.teamIndex] || {};
     const key = v.teamIndex + ":" + v.species;
     b.data = {
       name: v.name, level: v.level, status: v.status,
       gender: /^Nidoran/.test(v.species) || (id === "p2" && config && config.ghost) ? "" : mon.gender,
       // (A wild Pokémon's box shows a ball if you've caught its kind before.)
-      caught: id === "p2" && battle.wild && config.catchContext && config.catchContext.caughtBefore
+      caught: side === "p2" && battle.wild && config.catchContext && config.catchContext.caughtBefore
         ? !!config.catchContext.caughtBefore(v.species) : false
     };
     b.maxhp = v.maxhp || 1;
     b.hpTo = v.hp;
     const expPx = v.exp == null ? 0 : Math.floor(v.exp * 64);
     if (b.key !== key) { b.key = key; b.hp = v.hp; b.exp = b.expTo = expPx; }
+    else if (!hbStyle(id).singlesPlayer) b.exp = b.expTo = expPx;   // (no EXP bar to fill)
     else if (expPx !== b.expTo) { b.expTo = expPx; b.expDelay = 13; }
     hbStart();
   }
@@ -577,17 +654,20 @@
     const f = el.field.getBoundingClientRect(), r = el.sides[side].sprite.getBoundingClientRect();
     return [((r.left + r.width / 2) - f.left) / f.width * 100, ((r.top + r.height / 2) - f.top) / f.height * 100];
   }
-  async function animateMove(side, name) {
+  // `side` is the user's position; `targets`, in a double battle, the
+  // positions it aims at (the Pokémon opposite otherwise, as in singles).
+  async function animateMove(side, name, targets) {
     const data = window.MOVES && window.MOVES[name];
     if (!data || !sceneOn()) return;
-    const foeSide = side === "p1" ? "p2" : "p1";
-    const user = el.sides[side].sprite, target = el.sides[foeSide].sprite;
+    const foeSide = posAt(otherSide(sideOf(side)), slotOf(side));
+    const aims = targets && targets.length ? targets : [battle.doubles ? foeSide : (side === "p1" ? "p2" : "p1")];
+    const user = el.sides[side].sprite;
     const color = TYPE_COLOR[data.type] || "#fff";
     const self = data.cat === "Status" && /^(self|allySide|allies|adjacentAllyOrSelf|all)$/.test(data.target);
     sfx(moveSound(name, data));
     if (data.cat === "Physical") {
       // A lunge at the target and back.
-      const [dx, dy] = side === "p1" ? [14, -10] : [-14, 10];
+      const [dx, dy] = sideOf(side) === "p1" ? [14, -10] : [-14, 10];
       await user.animate([{ transform: "translate(0, 0)" }, { transform: "translate(" + dx + "%, " + dy + "%)", offset: 0.4 },
         { transform: "translate(0, 0)" }], { duration: 380, easing: "ease-in-out" }).finished;
       return;
@@ -598,28 +678,29 @@
         { filter: "drop-shadow(0 0 6px " + color + ") brightness(1.4)" }, { filter: "none" }], { duration: 700 }).finished;
       return;
     }
-    const fx = document.createElement("div");
-    fx.className = "move-fx";
-    fx.style.setProperty("--fx", color);
-    el.field.appendChild(fx);
-    const [x1, y1] = centerOf(foeSide);
-    if (data.cat === "Special") {
-      // An orb from the user to the target.
-      const [x0, y0] = centerOf(side);
-      fx.classList.add("orb");
-      await fx.animate([{ left: x0 + "%", top: y0 + "%", transform: "translate(-50%, -50%) scale(0.6)" },
-        { left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(1.2)" }], { duration: 380, easing: "ease-in" }).finished;
-      await fx.animate([{ left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(1.2)", opacity: 1 },
-        { left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(2.4)", opacity: 0 }], { duration: 200 }).finished;
-    } else {
-      // Rings closing in on the target.
-      fx.classList.add("ring");
-      await fx.animate([{ left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(2)", opacity: 0 },
-        { left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(1)", opacity: 1, offset: 0.5 },
-        { left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(0.4)", opacity: 0 }], { duration: 600 }).finished;
-    }
-    fx.remove();
-    void target;
+    await Promise.all(aims.map(async (aim) => {
+      const fx = document.createElement("div");
+      fx.className = "move-fx";
+      fx.style.setProperty("--fx", color);
+      el.field.appendChild(fx);
+      const [x1, y1] = centerOf(aim);
+      if (data.cat === "Special") {
+        // An orb from the user to the target.
+        const [x0, y0] = centerOf(side);
+        fx.classList.add("orb");
+        await fx.animate([{ left: x0 + "%", top: y0 + "%", transform: "translate(-50%, -50%) scale(0.6)" },
+          { left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(1.2)" }], { duration: 380, easing: "ease-in" }).finished;
+        await fx.animate([{ left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(1.2)", opacity: 1 },
+          { left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(2.4)", opacity: 0 }], { duration: 200 }).finished;
+      } else {
+        // Rings closing in on the target.
+        fx.classList.add("ring");
+        await fx.animate([{ left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(2)", opacity: 0 },
+          { left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(1)", opacity: 1, offset: 0.5 },
+          { left: x1 + "%", top: y1 + "%", transform: "translate(-50%, -50%) scale(0.4)", opacity: 0 }], { duration: 600 }).finished;
+      }
+      fx.remove();
+    }));
   }
   // A stat rising (red) or falling (blue) on a Pokémon, with FireRed's sound.
   async function animateStat(side, up) {
@@ -644,7 +725,7 @@
   function setHp(ident, hpStr) {
     const hp = parseHp(hpStr);
     if (!hp) return false;
-    const side = sideOf(ident);
+    const side = posOf(ident);
     const hurt = hp.hp < view[side].hp;
     Object.assign(view[side], hp);
     renderSide(side);
@@ -652,17 +733,30 @@
     return true;
   }
 
+  // Where your Pokémon `teamIndex` stands, if it's on the field.
+  const fieldPos = (teamIndex) => ["p1", "p1b"].find((k) => view[k] && view[k].species && view[k].teamIndex === +teamIndex);
   // Updates the experience bar if `teamIndex` is the Pokémon on the field.
   function setExp(teamIndex, pct, level, hpStr) {
-    const v = view.p1;
-    if (v.teamIndex !== +teamIndex) return;
+    const k = fieldPos(teamIndex);
+    if (!k) return;
+    const v = view[k];
     if (level != null) v.level = level;
     if (hpStr) Object.assign(v, parseHp(hpStr));
     v.exp = pct === "" ? null : +pct;
-    renderSide("p1");
+    renderSide(k);
   }
 
   // ---------- Event playback ----------
+
+  // A double battle's move: the positions it aims at, from the "[spread] …"
+  // list or its one target (null for none, e.g. the user itself).
+  let lastAims = null;
+  function moveAims(ev) {
+    const list = /^\[spread\] (.*)$/.exec(ev[4] || "");
+    const ids = list ? list[1].split(/,(?=p\d[ab]: )/) : /^p\d[ab]: /.test(ev[3] || "") ? [ev[3]] : [];
+    const aims = ids.map(posOf).filter((k) => k !== posOf(ev[1]) && view[k] && view[k].species);
+    return aims.length ? aims : null;
+  }
 
   // Whether the move just announced gets as far as its animation: not when the
   // next thing that happens is a miss, "But it failed!", no effect or Protect.
@@ -688,7 +782,8 @@
   function applyEvent(ev) {
     const [type, a, b, c] = ev;
     const side = sideOf(a);
-    const v = view[side];
+    const pos = posOf(a);
+    const v = view[pos];
 
     switch (type) {
       case "switch":
@@ -696,22 +791,26 @@
         const m = /^(.*?), L(\d+)/.exec(b) || [];
         const hp = parseHp(c) || { hp: 0, maxhp: 0, status: "" };
         // A Pokémon still standing that's switched out goes back into its ball first.
-        const prev = view[side];
+        const prev = view[pos];
         const back = type === "switch" && prev && prev.species && !prev.fainted && prev.hp > 0
-          ? { text: recallText(side, prev), ball: (config[side].team[prev.teamIndex] || {}).ball } : null;
-        const withdraw = () => (back ? recall(side, back.text, back.ball) : null);
-        view[side] = { name: nameOf(a), species: m[1] || nameOf(a), level: m[2] || "?",
+          ? { text: recallText(pos, prev), ball: setOf(side, prev.teamIndex).ball } : null;
+        const withdraw = () => (back ? recall(pos, back.text, back.ball) : null);
+        const set = setOf(side, +ev[5]);
+        view[pos] = { name: nameOf(a), species: m[1] || nameOf(a), level: m[2] || "?",
           hp: hp.hp, maxhp: hp.maxhp, status: hp.status, fainted: false,
           exp: ev[4] === "" || ev[4] == null ? null : +ev[4], teamIndex: +ev[5],
-          form: (config[side].team[+ev[5]] || {}).form || "", shiny: !!(config[side].team[+ev[5]] || {}).shiny };
-        const ball = (config[side].team[+ev[5]] || {}).ball;
-        if (side === "p1") foeHpAtSwitchIn = view.p2.species ? view.p2.hp : null;
+          form: set.form || "", shiny: !!set.shiny };
+        const ball = set.ball;
+        if (battle.doubles) noteSwitchIn(pos);
+        else if (side === "p1") foeHpAtSwitchIn = view.p2.species ? view.p2.hp : null;
         else foeHpAtSwitchIn = hp.hp;   // a new foe: count from its HP now
+        // (Who sent it out: a tag battle's switch names its trainer.)
+        const sender = ev[6] || trainerName(side, +ev[5]);
         // The foe's first Pokémon: their trainer steps aside, then throws it out.
         if (side === "p2" && foeTrainerOut) {
           foeTrainerOut = false;
           const text = battle.sides.p2.name + " sent out " + nameOf(a) + "!";
-          return async () => { await foeTrainerSlide(true); await Promise.all([message(text), sendOut(side, FOE_THROW_FROM, ball)]); };
+          return async () => { await foeTrainerSlide(true); await Promise.all([message(text), sendOut(pos, FOE_THROW_FROM, ball)]); };
         }
         // In the Safari Zone you stay out there yourself, with your box of Safari Balls.
         if (side === "p1" && battle.safari) {
@@ -722,25 +821,26 @@
         // The first Pokémon out: your trainer throws its Ball.
         if (side === "p1" && trainerOut) {
           trainerOut = false;
-          return async () => { await Promise.all([throwOut(), sendOut(side, THROW_FROM_HAND, ball, 210)]); await message("Go! " + nameOf(a) + "!"); };
+          return async () => { await Promise.all([throwOut(), sendOut(pos, THROW_FROM_HAND, ball, 210)]); await message("Go! " + nameOf(a) + "!"); };
         }
-        if (type === "drag") { renderSide(side); return fill("{who} was dragged out!", a); }
-        // Later switch-ins: thrown in from off-screen, as in FireRed.
+        if (type === "drag") { renderSide(pos); return fill("{who} was dragged out!", a); }
+        // Later switch-ins: thrown in from off-screen, as in FireRed. (A tag
+        // partner's: "Leaf sent out …!")
         if (side === "p1") {
-          const text = "Go! " + nameOf(a) + "!";
-          return async () => { await withdraw(); await Promise.all([message(text), sendOut(side, THROW_FROM_LEFT, ball)]); };
+          const text = pos === "p1b" && battle.sides.p1.tag ? sender + " sent out " + nameOf(a) + "!" : "Go! " + nameOf(a) + "!";
+          return async () => { await withdraw(); await Promise.all([message(text), sendOut(pos, THROW_FROM_LEFT, ball)]); };
         }
         if (side === "p2" && !battle.wild && !foeAnnounced) {
-          const text = battle.sides.p2.name + " sent out " + nameOf(a) + "!";
+          const text = (battle.doubles ? sender : battle.sides.p2.name) + " sent out " + nameOf(a) + "!";
           // After one of theirs faints, their party's balls show first.
           const fainted = prev && prev.species && (prev.fainted || prev.hp <= 0);
           return async () => {
             await withdraw();
-            if (fainted) await showBar("p2");
-            await Promise.all([message(text), sendOut(side, FOE_THROW_FROM, ball).then(hideBars)]);
+            if (fainted) await showBar("p2", true);
+            await Promise.all([message(text), sendOut(pos, FOE_THROW_FROM, ball).then(hideBars)]);
           };
         }
-        renderSide(side);
+        renderSide(pos);
         if (side === "p2" && foeAnnounced) { foeAnnounced = false; return null; }   // the opening said so
         if (battle.wild) return "A wild " + nameOf(a) + " appeared!";
         return battle.sides.p2.name + " sent out " + nameOf(a) + "!";
@@ -748,7 +848,7 @@
       case "detailschange":
         v.species = b;
         v.form = "";
-        renderSide(side);
+        renderSide(pos);
         return null;
       case "move": {
         hitNotes = []; hitSound = null;
@@ -756,11 +856,27 @@
         // (Magnitude's animation waits for "Magnitude n!"; a move that misses,
         // fails or is blocked has none, as in FireRed.)
         const lands = moveLands();
-        return async () => { await message(text, 400); if (b !== "Magnitude" && lands) await animateMove(side, b); };
+        // In a double battle it aims at its target, or each of a spread
+        // move's ("[spread] p2a: X,p2b: Y").
+        lastAims = battle.doubles ? moveAims(ev) : null;
+        const aims = lastAims;
+        return async () => { await message(text, 400); if (b !== "Magnitude" && lands) await animateMove(pos, b, aims); };
       }
       case "-magnitude": {
-        const lands = moveLands();
-        return async () => { await message("Magnitude " + b + "!", 400); if (lands) await animateMove(side, "Magnitude"); };
+        const lands = moveLands(), aims = lastAims;
+        return async () => { await message("Magnitude " + b + "!", 400); if (lands) await animateMove(pos, "Magnitude", aims); };
+      }
+      case "-notarget": return "But there was no target…";
+      case "-withdraw": return null;   // (the switch that follows calls it back)
+      case "-trainerout":   // [side, trainer, slot]: a tag team's trainer with no one left
+        return b + " is out of\nusable Pokémon!";
+      case "swap": {   // Ally Switch: [old identity, new slot]; both come one after the other
+        if (+b !== 1) return null;
+        const other = posAt(side, 1), mine = posAt(side, 0);
+        const t = view[mine];
+        view[mine] = view[other]; view[other] = t;
+        for (const k of [mine, other]) { hb[k].key = null; hb[k].layer = null; renderSide(k); }
+        return fill("{who} and " + label(side, (view[mine] && view[mine].name) || "its ally") + " switched places!", a);
       }
       case "-damage": {
         const changed = setHp(a, b);
@@ -779,8 +895,11 @@
       }
       case "-heal": {
         const changed = setHp(a, b);
-        const msg = fill(c ? lookup(HEAL_FROM, effectId(c), "{who} restored HP using its " + effectName(c) + "!")
-          : HEAL_FROM.heal, a);
+        let tpl = c ? lookup(HEAL_FROM, effectId(c), "{who} restored HP using its " + effectName(c) + "!") : HEAL_FROM.heal;
+        // (A double battle's drain: the one the move hit.)
+        const hit = battle.doubles && effectId(c) === "drain" && lastAims && view[lastAims[0]];
+        if (hit && tpl) tpl = tpl.replace("{foe}", capitalize(label(sideOf(lastAims[0]), hit.name)));
+        const msg = fill(tpl, a);
         return async () => { if (changed) await hbSettled(); if (msg) await message(msg); };
       }
       case "-sethp": // Pain Split: [user, userHp, target, targetHp]
@@ -788,7 +907,7 @@
         setHp(c, ev[4]);
         return async () => { await hbSettled(); await message("The battlers shared their pain!"); };
       case "faint":
-        cry(side, { faint: true });
+        cry(pos, { faint: true });
         setTimeout(() => sfx("se_faint"), 300);
         // The foe's last Pokémon down: the victory theme (over the Exp. messages).
         if (side === "p2" && config.victoryMusic && window.GameAudio && battle.sides.p2.pokemon.every((m) => m.fainted)) {
@@ -796,7 +915,7 @@
         }
         v.fainted = true;
         v.hp = 0;
-        renderSide(side);
+        renderSide(pos);
         return fill("{who} fainted!", a);
       case "-miss": return fill("{who}'s attack missed!", a);
       case "-crit": hitNotes.push("A critical hit!"); return null;
@@ -809,11 +928,11 @@
       case "-hitcount": return "Hit " + b + " time" + (b > 1 ? "s" : "") + "!";
       case "-status":
         v.status = b;
-        renderSide(side);
+        renderSide(pos);
         return fill(lookup(STATUS_START, b, "{who} was afflicted by " + b + "!"), a);
       case "-curestatus":
         v.status = "";
-        renderSide(side);
+        renderSide(pos);
         return fill(lookup(STATUS_CURE, b, "{who} was cured!"), a);
       case "-boost":
       case "-unboost": {
@@ -821,7 +940,7 @@
         const big = (+c || 1) > 1;
         const text = type === "-boost" ? fill("{who}'s " + stat + (big ? " rose sharply!" : " rose!"), a)
           : fill("{who}'s " + stat + (big ? " harshly fell!" : " fell!"), a);
-        return async () => { await animateStat(side, type === "-boost"); await message(text); };
+        return async () => { await animateStat(pos, type === "-boost"); await message(text); };
       }
       case "-setboost": return fill("{who} cut its own HP and maximized its " + (STAT_NAMES[b] || b) + "!", a);
       case "-clearallboost": return "All stat changes were eliminated!";
@@ -866,7 +985,8 @@
           // The Exp. Share's half goes by quietly after one message, as in Gen 6.
           if (ev[5] !== "share") await message(teamName(c) + " gained " + b + " Exp. Points!");
           setExp(c, ev[4]);
-          if (ev[5] !== "share" && view.p1.teamIndex === +c && hb.p1.exp !== hb.p1.expTo) { sfx("se_exp"); await hbSettled(); }
+          const k = fieldPos(c);
+          if (ev[5] !== "share" && k && hb[k].exp !== hb[k].expTo) { sfx("se_exp"); await hbSettled(); }
         };
       case "-expshare":
         return "The rest of your team gained Exp. Points thanks to the Exp. Share!";
@@ -875,15 +995,15 @@
         // new level and HP and an empty bar; "… grew to Lv. …!", then the
         // bar fills with what's left.
         return async () => {
-          const onField = view.p1.teamIndex === +ev[4];
-          if (onField) { sfx("se_exp_max"); hb.p1.flash = 0; await hbSettled(); }
+          const k = fieldPos(ev[4]), onField = !!k, box = k ? hb[k] : null;
+          if (onField) { sfx("se_exp_max"); box.flash = 0; await hbSettled(); }
           setExp(ev[4], 0, b, c);
-          if (onField) { hb.p1.hp = hb.p1.hpTo; hb.p1.exp = hb.p1.expTo = 0; hb.p1.expDelay = 0; }
+          if (onField) { box.hp = box.hpTo; box.exp = box.expTo = 0; box.expDelay = 0; }
           const jingle = window.GameAudio ? window.GameAudio.fanfare("mus_level_up") : null;
           await message(teamName(ev[4]) + " grew to Lv. " + b + "!");
           await jingle;
           setExp(ev[4], ev[5], b, c);
-          if (onField && hb.p1.exp !== hb.p1.expTo) { sfx("se_exp"); await hbSettled(); }
+          if (onField && box.exp !== box.expTo) { sfx("se_exp"); await hbSettled(); }
         };
       case "-learnmove":   // [ident, move, teamIndex]
         return teamName(c) + " learned " + b + "!";
@@ -972,7 +1092,7 @@
           const itemName = ballName(b);
           await message(user + " used " + (/^[AEIOU]/.test(itemName) ? "an " : "a ") + itemName + "!");
           const index = +ev[4];
-          if (view[side].teamIndex === index) setHp(c, ev[5]);
+          if ([side, side + "b"].some((k) => view[k] && view[k].species && view[k].teamIndex === index)) setHp(c, ev[5]);
           const name = battle.sides[side].pokemon[index].name;
           if (ev[9]) await message(name + " was revived!");
           if (+ev[6] > 0) await message(name + "'s HP was restored by " + ev[6] + " point" + (+ev[6] === 1 ? "" : "s") + ".");
@@ -1010,7 +1130,8 @@
 
       case "win":
         if (a !== battle.sides.p1.name) return null; // the game layer handles losing
-        return battle.wild ? null : "You defeated " + battle.sides.p2.name + "!";
+        // (Two trainers: "You defeated … and …!")
+        return battle.wild ? null : "You defeated " + (battle.sides.p2.trainers || [battle.sides.p2.name]).join(" and ") + "!";
       case "tie": return "The battle ended in a draw!";
       default: return null; // "turn" and anything purely internal
     }
@@ -1032,6 +1153,7 @@
     const events = battle.events;
     while (cursor < events.length) {
       if (playedEarly.has(cursor)) { cursor++; continue; }
+      if (doublesOpening && events[cursor][0] === "switch") { await playDoublesOpening(); continue; }
       // As in FireRed, an opposing trainer sends out their Pokémon before you do.
       const ev = events[cursor];
       if (foeTrainerOut && ev[0] === "switch" && sideOf(ev[1]) === "p1") {
@@ -1051,8 +1173,10 @@
   // SUMMARY / CANCEL (cfg.summary shows its Summary screen as it is now in
   // battle). One that's fainted or already out says so; B goes back unless a
   // Pokémon has to be sent out.
-  async function chooseSwitch(req, canCancel) {
-    const mons = req.team.map((p) => ({
+  async function chooseSwitch(req, canCancel, taken) {
+    // (A tag battle: only your own Pokémon.)
+    const team = req.team.filter((p) => p.mine !== false);
+    const mons = team.map((p) => ({
       name: p.name, icon: window.Screen.iconUrl(p.species), level: p.level, gender: p.gender,
       hp: p.hp, maxhp: p.maxhp, status: p.status, item: !!p.item
     }));
@@ -1066,7 +1190,7 @@
           .concat(config.summary ? [{ label: "SUMMARY", value: "summary" }] : [], [{ label: "CANCEL", value: "cancel" }]) });
       if (!r) { window.PartyMenu.close(); return null; }
       cursor = r.cursor;
-      const p = req.team[r.slot];
+      const p = team[r.slot];
       if (r.action === "summary") {
         window.PartyMenu.close();
         await config.summary(p.index, battle.sides.p1.pokemon);
@@ -1074,6 +1198,8 @@
       }
       if (p.fainted || p.hp <= 0) { await message(p.name + " has no energy left to battle!"); continue; }
       if (p.active) { await message(p.name + " is already in battle!"); continue; }
+      // (A double battle: the one your other Pokémon is switching to.)
+      if (taken && taken.includes(p.index)) { await message(p.name + " has already been\nselected."); continue; }
       if (!req.switches.includes(p.index)) { await message(p.name + " can't be switched in now!"); continue; }
       window.PartyMenu.close();
       return { type: "switch", index: p.index };
@@ -1093,7 +1219,9 @@
   // BAG: FireRed's Bag screen (ui/bag-screen.js, cfg.bagPockets). Use is
   // there for what can be used right now; the pocket is remembered.
   let battlePocket = null;
-  async function chooseBag() {
+  // (activeIndex: in a double battle, the team index of the Pokémon choosing,
+  // for X items.)
+  async function chooseBag(activeIndex) {
     const bag = config.bag || {};
     const usableHere = (id) => {
       if (!(bag[id] > 0)) return false;
@@ -1126,10 +1254,11 @@
       }
       if (window.Bag.isBall(item)) return { type: "ball", ball: item };
 
-      const mons = battle.sides.p1.pokemon;
+      // (A tag battle: your own Pokémon, the first three.)
+      const mons = battle.sides.p1.pokemon.filter((m) => !battle.sides.p1.tag || m.owner === 0);
       // An X item: on the Pokémon in battle.
       if (window.ItemUse.effect(item).boost) {
-        const active = mons.indexOf(battle.sides.p1.active);
+        const active = activeIndex != null ? activeIndex : mons.indexOf(battle.sides.p1.active);
         if (window.ItemUse.canUse(battle.itemView(mons[active]), item, { inBattle: true })) return { type: "item", item, target: active };
         await message("It won't have any effect.");
         continue;
@@ -1170,6 +1299,14 @@
     bag[id]--;
     if (bag[id] <= 0) delete bag[id];
   }
+  // (Back in the bag: a double battle's choice taken back.)
+  function returnItem(choice) {
+    if (battle.safari || !choice) return;
+    const bag = config.bag;
+    const id = choice.type === "ball" ? choice.ball : choice.type === "item" ? choice.item : null;
+    if (!bag || !id) return;
+    bag[id] = (bag[id] || 0) + 1;
+  }
 
   // FireRed's battle menus (ui/gba-menus.js) in the bottom panel: FIGHT /
   // BAG / POKéMON / RUN, then the moves with their PP and type. The menu's
@@ -1189,9 +1326,12 @@
     return { type: ["ball", "bait", "rock", "run"][a.cursor] };
   }
   let safariCursor = 0;
+  // req: the singles request, or (a double battle) the slot's: { active,
+  // switches, team, slot, doubles: { back, megaTaken, taken } }. Returns a
+  // choice, or "back" (B on your second Pokémon: back to the first).
   async function chooseAction(req) {
     if (req.safari) return chooseSafariAction();
-    const active = req.active;
+    const active = req.active, dbl = req.doubles, pos = dbl ? posAt("p1", req.slot) : "p1";
     // Locked into a move (Outrage, recharging): no menu, as in FireRed.
     if (active.forced) return { type: "move", move: 0 };
     // Each turn the ▶ starts on FIGHT; the moves' ▶ starts on the first move,
@@ -1201,49 +1341,67 @@
       say("");
       clearMenu();
       // (Your box bobs while you choose: DoBounceEffect(BOUNCE_HEALTHBOX, 7, 1).)
-      hb.p1.bounce = true; hb.p1.bounceIdx = 128;
-      const a = await window.GbaMenus.battleAction(overlay(), { name: active.name, cursor: actionCursor, frame: frame() });
-      hb.p1.bounce = false;
+      hb[pos].bounce = true; hb[pos].bounceIdx = 128;
+      const a = await window.GbaMenus.battleAction(overlay(), { name: active.name, cursor: actionCursor, frame: frame(), canBack: !!(dbl && dbl.back) });
+      hb[pos].bounce = false;
       actionCursor = a.cursor;
+      if (a.action === "back") return "back";
       if (a.action === "fight") {
         if (active.struggle) { await message(active.name + " has no moves left!"); return { type: "move", move: "Struggle" }; }
-        const slots = () => active.moves.map((m) => ({ name: m.name, type: m.type, pp: m.pp, maxpp: m.maxpp, index: m.index, disabled: m.disabled }));
+        const slots = () => active.moves.map((m) => ({ name: m.name, type: m.type, pp: m.pp, maxpp: m.maxpp, index: m.index, disabled: m.disabled,
+          target: m.target, targets: m.targets }));
         let moves = slots();
         const last = lastMove[active.name];
         let at = Math.max(0, moves.findIndex((m) => m.index === last));
         // SELECT swaps two moves, in the battle and on the Pokémon.
+        const mon = battle.sides.p1.actives[dbl ? req.slot : 0];
         const swap = (a, b) => {
-          battle.swapMoves("p1", a, b);
-          active.moves = battle.getMoveSlots(battle.sides.p1.active);
+          battle.swapMoves("p1", a, b, dbl ? req.slot : 0);
+          active.moves = battle.getMoveSlots(mon);
+          if (dbl) for (const m of active.moves) m.targets = battle.targetLocs(mon, m.target);
           if (lastMove[active.name] === a) lastMove[active.name] = b;
           else if (lastMove[active.name] === b) lastMove[active.name] = a;
           return (moves = slots());
         };
-        // Mega Evolution (with the Mega Ring, a Mega Stone held, once a battle).
-        const mega = active.canMega && config.megaRing ? { on: false } : null;
+        // Mega Evolution (with the Mega Ring, a Mega Stone held, once a battle;
+        // in a double battle, one of your two only).
+        const mega = active.canMega && config.megaRing && !(dbl && dbl.megaTaken) ? { on: false } : null;
+        // (A double battle: the Pokémon a spread or field move will hit
+        // flash, PreviewDeterminativeMoveTargets.)
+        const onCursor = dbl ? (c) => previewTargets(pos, moves[c]) : null;
         for (;;) {
-          const pick = await window.GbaMenus.battleMoves(overlay(), { moves, cursor: at, frame: frame(), swap, mega });
+          const pick = await window.GbaMenus.battleMoves(overlay(), { moves, cursor: at, frame: frame(), swap, mega, onCursor, keep: !!dbl });
+          previewTargets(null);
           if (pick) at = pick.cursor;
           if (!pick) break;
           const m = moves[pick.index];
-          if (!m.pp) { await message("There's no PP left for\nthis move!"); continue; }
+          if (!m.pp) { overlay().classList.add("hidden"); await message("There's no PP left for\nthis move!"); continue; }
           if (m.disabled) {
-            const dis = battle.sides.p1.active.volatiles.disable;
+            overlay().classList.add("hidden");
+            const dis = mon.volatiles.disable;
             await message(dis && m.name.toLowerCase().replace(/[^a-z0-9]/g, "") === dis.moveId ? active.name + "'s " + m.name + " is disabled!" : m.name + " can't be used right now!");
             continue;
           }
+          let target;
+          if (dbl) {
+            target = await chooseTarget(pos, m);
+            overlay().classList.add("hidden");
+            if (target === null) continue;   // B: back to the moves
+          }
           lastMove[active.name] = m.index;
-          return mega && mega.on ? { type: "move", move: m.index, mega: true } : { type: "move", move: m.index };
+          const choice = mega && mega.on ? { type: "move", move: m.index, mega: true } : { type: "move", move: m.index };
+          if (target !== undefined) choice.target = target;
+          return choice;
         }
         continue;
       }
       if (a.action === "bag") {
         if (!config.bag) { await message("Items can't be used now."); continue; }
-        const c = await chooseBag(); if (c) return c; continue;
+        const c = await chooseBag(dbl ? active.teamIndex : undefined); if (c) return c; continue;
       }
       if (a.action === "pokemon") {
         if (!req.switches.length) { await message("There's no one else to switch in!"); continue; }
-        const c = await chooseSwitch(req, true); if (c) return c; continue;
+        const c = await chooseSwitch(req, true, dbl && dbl.taken); if (c) return c; continue;
       }
       if (a.action === "run") {
         if (!battle.wild) { await message("No! There's no running\nfrom a Trainer battle!"); continue; }
@@ -1251,6 +1409,107 @@
         return { type: "run" };
       }
     }
+  }
+
+  // ---------- Aiming a move (a double battle) ----------
+  //
+  // FireRed's HandleInputChooseTarget: after a move that aims at one Pokémon,
+  // the target's picture blinks (8 frames on, 8 off) and its box bobs;
+  // left / up and right / down step round your left, your right, their right
+  // and their left Pokémon (skipping any it can't aim at), A picks, B goes
+  // back to the moves. The cursor starts on their left Pokémon (their right
+  // if that one's gone), or on the user for a move that may aim at itself.
+  // With only one Pokémon it could hit, it just goes.
+  // Returns the engine's target location (1 / 2 foes, -1 / -2 yours),
+  // undefined for a move that needs none, or null (B).
+  const TARGET_ORDER = [-1, -2, 2, 1];
+  const locPos = (userPos, loc) => posAt(loc > 0 ? otherSide(sideOf(userPos)) : sideOf(userPos), Math.abs(loc) - 1);
+  async function chooseTarget(userPos, m) {
+    const targets = m.targets || [];
+    if (!targets.length) return undefined;
+    if (targets.length === 1) return targets[0];
+    const self = -(slotOf(userPos) + 1);
+    let loc = targets.includes(self) && m.target === "adjacentAllyOrSelf" ? self : targets.includes(1) ? 1 : targets.includes(2) ? 2 : targets[0];
+    let blink = null, blinking = null;
+    const stop = () => {
+      clearInterval(blink);
+      if (blinking) blinking.style.visibility = "";
+      blinking = null;
+      for (const k of POSITIONS) hb[k].bounce = false;
+    };
+    const show = () => {
+      stop();
+      const p = locPos(userPos, loc);
+      hb[p].bounce = "target"; hb[p].bounceIdx = 128;
+      blinking = el.sides[p].sprite;
+      let on = true;
+      blink = setInterval(() => { on = !on; if (blinking) blinking.style.visibility = on ? "" : "hidden"; }, 8 * 1000 / 60);
+    };
+    show();
+    const r = await window.GbaMenus.keys((k) => {
+      if (k === "a") { window.GbaMenus.se(); return loc; }
+      if (k === "b") { window.GbaMenus.se(); return null; }
+      const step = k === "left" || k === "up" ? -1 : k === "right" || k === "down" ? 1 : 0;
+      if (!step) return undefined;
+      let i = TARGET_ORDER.indexOf(loc);
+      for (let n = 0; n < 4; n++) {
+        i = (i + step + 4) % 4;
+        if (targets.includes(TARGET_ORDER[i])) break;
+      }
+      if (TARGET_ORDER[i] !== loc) { loc = TARGET_ORDER[i]; window.GbaMenus.se(); show(); }
+      return undefined;
+    });
+    stop();
+    return r;
+  }
+
+  // The Pokémon a move will hit, flashing toward white while the move menu's
+  // cursor is on it (PreviewDeterminativeMoveTargets: spread moves, moves on
+  // your side or the whole field; none for a move you aim). null stops it.
+  const FIELD_WIDE = /^(Haze|Sandstorm|Perish Song|Rain Dance|Sunny Day|Hail|Mud Sport|Water Sport)$/;
+  // (BeginNormalPaletteFade(targets, 8, 8, 0, white): from 8/16 white back
+  // to none, a step every 9 frames, over and over. SVG filters do the blend.)
+  let previewTimer = 0, previewLevel = 8;
+  {
+    const ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("width", "0"); svg.setAttribute("height", "0");
+    svg.style.position = "absolute";
+    for (let k = 1; k <= 8; k++) {
+      const f = document.createElementNS(ns, "filter"), cm = document.createElementNS(ns, "feColorMatrix");
+      f.id = "fade-white-" + k;
+      f.setAttribute("color-interpolation-filters", "sRGB");
+      const a = 1 - k / 16, b = k / 16;
+      cm.setAttribute("type", "matrix");
+      cm.setAttribute("values", [a, 0, 0, 0, b, 0, a, 0, 0, b, 0, 0, a, 0, b, 0, 0, 0, 1, 0].join(" "));
+      f.appendChild(cm);
+      svg.appendChild(f);
+    }
+    el.field.appendChild(svg);
+  }
+  function previewTick() {
+    previewLevel = previewLevel <= 0 ? 8 : previewLevel - 1;
+    for (const k of POSITIONS) {
+      const sp = el.sides[k].sprite;
+      sp.style.filter = sp.classList.contains("preview") && previewLevel ? "url(#fade-white-" + previewLevel + ")" : "";
+    }
+  }
+  function previewTargets(userPos, m) {
+    for (const k of POSITIONS) { el.sides[k].sprite.classList.remove("preview"); el.sides[k].sprite.style.filter = ""; }
+    clearInterval(previewTimer); previewTimer = 0;
+    if (!userPos || !m) return;
+    const own = sideOf(userPos), foe = otherSide(own), ally = posAt(own, 1 - slotOf(userPos));
+    let hit = [];
+    switch (m.target) {
+      case "allAdjacentFoes": case "foeSide": hit = [foe, foe + "b"]; break;
+      case "allAdjacent": hit = [foe, foe + "b", ally]; break;
+      case "allySide": case "allyTeam": case "allies": hit = [userPos, ally]; break;
+      case "adjacentAlly": hit = [ally]; break;
+      case "all": hit = POSITIONS.slice(); break;
+      case "self": hit = FIELD_WIDE.test(m.name) ? POSITIONS.slice() : [userPos]; break;
+      default: hit = [];
+    }
+    for (const k of hit) if (view[k] && view[k].species && !view[k].fainted) el.sides[k].sprite.classList.add("preview");
+    if (hit.length) { previewLevel = 9; previewTick(); previewTimer = setInterval(previewTick, 9 * 1000 / 60); }
   }
 
   // ---------- Turn flow ----------
@@ -1269,6 +1528,7 @@
     for (;;) {
       await playNewEvents();
       if (battle.ended) return;
+      if (battle.doubles) { const r = await doublesStep(); if (r === "crashed") return r; continue; }
       const p1 = battle.getRequest("p1");
       if (p1.phase === "move" || p1.phase === "switch") {
         const choice = p1.phase === "move" ? await chooseAction(p1) : await chooseSwitch(p1, false);
@@ -1305,6 +1565,66 @@
     }
   }
 
+  // One decision in a double battle: yours (both slots, or in a tag battle
+  // your one), then your partner's, the opponent's and their partner's.
+  async function doublesStep() {
+    const p1 = battle.getRequest("p1");
+    if (p1 && (p1.phase === "move" || p1.phase === "switch") && p1.open.length) {
+      const choices = p1.phase === "move" ? await chooseDoublesMoves(p1) : await chooseDoublesSwitches(p1);
+      const r = choose("p1", choices);
+      if (r.crashed) return "crashed";
+      if (!r.ok) { choices.forEach((c) => c && returnItem(c)); await message(r.error); }
+      return null;
+    }
+    const ais = [["p1b", config.partnerAI], ["p2", config.opponent], ["p2b", config.opponent2]];
+    for (const [id, ai] of ais) {
+      const req = battle.getRequest(id);
+      if (!req || !(req.phase === "move" || req.phase === "switch") || !req.open.length) continue;
+      let choice;
+      try { choice = ai ? ai(battle) : window.OpponentAI.choose(battle, id); } catch (e) { console.error(e); return "crashed"; }
+      if (choose(id, choice).crashed) return "crashed";
+      return null;
+    }
+    await message("Something went wrong: neither side can act.");
+    return "crashed";
+  }
+
+  // "What will … do?" for each of your Pokémon in turn (FireRed's
+  // HandleInputChooseAction): B on the second goes back to the first, unless
+  // the first is using an item (B_ACTION_CANCEL_PARTNER). Items leave the bag
+  // as they're chosen (and come back if the turn is refused).
+  async function chooseDoublesMoves(req) {
+    const slots = req.open.slice(), choices = [null, null];
+    let k = 0;
+    while (k < slots.length) {
+      const slot = slots[k], a = req.actives[slot];
+      const earlier = slots.slice(0, k).map((s) => choices[s]);
+      const prev = k > 0 ? choices[slots[k - 1]] : null;
+      const canBack = k > 0 && !req.actives[slots[k - 1]].forced && !(prev && prev.type === "item");
+      const taken = earlier.filter((c) => c && c.type === "switch").map((c) => c.index);
+      const sub = { active: a, slot, team: req.team, switches: (a.switches || []).filter((i) => !taken.includes(i)),
+        doubles: { back: canBack, megaTaken: earlier.some((c) => c && c.mega), taken } };
+      const c = await chooseAction(sub);
+      if (c === "back") { k--; returnItem(choices[slots[k]]); choices[slots[k]] = null; continue; }
+      choices[slot] = c;
+      useUpItem(c);
+      k++;
+    }
+    return choices;
+  }
+
+  // A fainted slot's replacement each (FireRed: the party screen for each in
+  // turn; one already picked can't be picked again).
+  async function chooseDoublesSwitches(req) {
+    const choices = [null, null], taken = [];
+    for (const slot of req.open) {
+      const c = await chooseSwitch({ team: req.team, switches: req.switches.filter((i) => !taken.includes(i)) }, false, taken);
+      choices[slot] = c;
+      taken.push(c.index);
+    }
+    return choices;
+  }
+
   // ---------- Opening ----------
   //
   // As in FireRed: the two halves of the background slide in, the foe's (with
@@ -1315,33 +1635,39 @@
 
   let trainerOut = false, foeAnnounced = false, foeTrainerOut = false;
   let playedEarly = new Set();   // events played ahead of their turn (the foe's first send-out)
-  // The opposing trainer's picture, where their Pokémon will stand.
-  function foeTrainerEl() {
-    let t = document.getElementById("foe-trainer");
+  let doublesOpening = false;    // a double battle's first send-outs still to come
+  // The opposing trainer's picture, where their Pokémon will stand. (A
+  // second trainer's, cfg.foeTrainer2, beside them: id "foe-trainer-2".)
+  function foeTrainerEl(second) {
+    const id = second ? "foe-trainer-2" : "foe-trainer";
+    let t = document.getElementById(id);
     if (!t) {
       t = document.createElement("img");
-      t.id = "foe-trainer";
+      t.id = id;
       t.className = "foe-trainer hidden";
       t.alt = "";
-      el.field.insertBefore(t, el.sides.p2.sprite);
+      el.field.insertBefore(t, el.sides.p2b.sprite);
     }
     return t;
   }
+  const foeTrainerEls = () => [foeTrainerEl()].concat(config && config.foeTrainer2 ? [foeTrainerEl(true)] : []);
   // Slides the foe's picture off to the right (before their first Pokémon) or
   // back in (when you've won).
   async function foeTrainerSlide(out) {
-    const t = foeTrainerEl();
-    if (!out) { t.classList.add("leaving"); t.classList.remove("hidden"); void t.offsetWidth; }
-    t.classList.toggle("leaving", out);
+    for (const t of foeTrainerEls()) {
+      if (!out) { t.classList.add("leaving"); t.classList.remove("hidden"); void t.offsetWidth; }
+      t.classList.toggle("leaving", out);
+    }
     await wait(400);
-    if (out) t.classList.add("hidden");
+    if (out) for (const t of foeTrainerEls()) t.classList.add("hidden");
   }
-  function trainerEl() {
-    let t = document.getElementById("trainer-back");
+  function trainerEl(partner) {
+    const id = partner ? "partner-back" : "trainer-back";
+    let t = document.getElementById(id);
     if (!t) {
       t = document.createElement("div");
-      t.id = "trainer-back";
-      t.className = "trainer-back hidden";
+      t.id = id;
+      t.className = "trainer-back hidden" + (partner ? " partner" : "");
       el.field.appendChild(t);
     }
     return t;
@@ -1360,12 +1686,13 @@
 
   async function intro(cfg) {
     trainerOut = false; foeAnnounced = false; foeTrainerOut = false; foeHpAtSwitchIn = null; lastMove = {};
+    foeHpAt = {}; lastAims = null;
     playedEarly = new Set();
+    doublesOpening = !!battle.doubles;
     setTerrain(cfg.terrain);
-    const foeTrainer = foeTrainerEl();
-    foeTrainer.classList.add("hidden");
-    foeTrainer.classList.remove("leaving");
-    const trainer = trainerEl();
+    const foeTrainer = foeTrainerEl(), foeTrainer2 = foeTrainerEl(true);
+    for (const t of [foeTrainer, foeTrainer2]) { t.classList.add("hidden"); t.classList.remove("leaving"); }
+    const trainer = trainerEl(), partner = trainerEl(true);
     // Each half moves by half the background (256 of its 512 pixels), so the
     // platforms start off-screen and plain ground shows where they will be.
     const shift = el.field.clientWidth * 256 / 240;
@@ -1378,6 +1705,14 @@
       movers.push([trainer, shift]);
       trainerOut = true;
     } else trainer.classList.add("hidden");
+    // A tag battle: your partner beside you (PlayerHandleDrawTrainerPic: you
+    // at x 32, them at 90).
+    if (battle.sides.p1.tag && cfg.partnerTrainer) {
+      partner.style.backgroundImage = "url(assets/sprites/trainers/back/" + cfg.partnerTrainer + ".png)";
+      partner.style.backgroundPositionY = "0%";
+      partner.classList.remove("hidden", "leaving");
+      movers.push([partner, shift]);
+    } else partner.classList.add("hidden");
     let mon = null;
     if (cfg.wild) {
       mon = battle.sides.p2.pokemon[0];
@@ -1388,14 +1723,19 @@
       el.sides.p2.sprite.classList.add("silhouette");
       movers.push([el.sides.p2.sprite, -shift]);
     } else if (cfg.foeTrainer) {
-      foeTrainer.src = "assets/sprites/trainers/front/" + cfg.foeTrainer + ".png";
-      await foeTrainer.decode().catch(() => {});
-      // A wider picture (two trainers) keeps the same scale and centre (x 176 of 240).
-      const w = foeTrainer.naturalWidth || 64;
-      foeTrainer.style.width = (w / 240 * 100) + "%";
-      foeTrainer.style.right = ((64 - w / 2) / 240 * 100) + "%";
-      foeTrainer.classList.remove("hidden");
-      movers.push([foeTrainer, -shift]);
+      // (Two trainers: the first at x 200, the second at 152, where their
+      // Pokémon will stand, as Emerald places them.)
+      const pics = [[foeTrainer, cfg.foeTrainer, cfg.foeTrainer2 ? 200 : 176]].concat(cfg.foeTrainer2 ? [[foeTrainer2, cfg.foeTrainer2, 152]] : []);
+      for (const [t, pic, cx] of pics) {
+        t.src = "assets/sprites/trainers/front/" + pic + ".png";
+        await t.decode().catch(() => {});
+        // A wider picture (two trainers) keeps the same scale and centre (x 176 of 240).
+        const w = t.naturalWidth || 64;
+        t.style.width = (w / 240 * 100) + "%";
+        t.style.right = ((240 - cx - w / 2) / 240 * 100) + "%";
+        t.classList.remove("hidden");
+        movers.push([t, -shift]);
+      }
       foeTrainerOut = true;
     }
     // Jump off-screen instantly (no transition), before anything is painted...
@@ -1423,22 +1763,87 @@
     }
   }
 
+  // A double battle's first send-outs, all at once (as FireRed's
+  // BattleIntroOpponentSendsOutMonAnimation / BattleIntroPlayerSendsOutMonAnimation):
+  // the trainer steps aside and throws both — "Twins Eli & Anne sent out
+  // Clefairy and Jigglypuff!" (two trainers: each sends out their own, one
+  // after the other); then you throw yours, "Go! Pikachu and Squirtle!" (a
+  // tag partner: "Leaf sent out Pikachu! Go! Squirtle!").
+  async function playDoublesOpening() {
+    const events = battle.events, evs = [];
+    while (cursor < events.length && (events[cursor][0] === "switch" || playedEarly.has(cursor))) {
+      if (!playedEarly.has(cursor)) evs.push(events[cursor]);
+      cursor++;
+    }
+    doublesOpening = false;
+    const out = { p1: [], p2: [] };
+    for (const ev of evs) {
+      const pos = posOf(ev[1]), side = sideOf(pos);
+      const m = /^(.*?), L(\d+)/.exec(ev[2]) || [];
+      const hp = parseHp(ev[3]) || { hp: 0, maxhp: 0, status: "" };
+      const set = setOf(side, +ev[5]);
+      view[pos] = { name: nameOf(ev[1]), species: m[1] || nameOf(ev[1]), level: m[2] || "?",
+        hp: hp.hp, maxhp: hp.maxhp, status: hp.status, fainted: false,
+        exp: ev[4] === "" || ev[4] == null ? null : +ev[4], teamIndex: +ev[5], form: set.form || "", shiny: !!set.shiny };
+      out[side].push({ pos, name: nameOf(ev[1]), ball: set.ball, sender: ev[6] || trainerName(side, +ev[5]) });
+    }
+    for (const k of ["p1", "p1b"]) if (view[k].species) noteSwitchIn(k);
+    // Theirs.
+    const foes = out.p2;
+    if (foes.length) {
+      if (foeTrainerOut) { foeTrainerOut = false; await foeTrainerSlide(true); }
+      const two = battle.sides.p2.tag && foes.length > 1 && foes[0].sender !== foes[1].sender;
+      if (two) {
+        for (const f of foes) await Promise.all([message(f.sender + " sent out " + f.name + "!"), sendOut(f.pos, FOE_THROW_FROM, f.ball)]);
+      } else {
+        const text = foes[0].sender + " sent out " + foes.map((f) => f.name).join(" and ") + "!";
+        await Promise.all([message(text)].concat(foes.map((f) => sendOut(f.pos, FOE_THROW_FROM, f.ball))));
+      }
+    }
+    // Yours.
+    const mine = out.p1;
+    if (!mine.length) return;
+    const tag = battle.sides.p1.tag;
+    const own = mine.filter((f) => !tag || f.pos === "p1"), theirs = mine.filter((f) => tag && f.pos === "p1b");
+    const text = (theirs.length ? theirs[0].sender + " sent out " + theirs[0].name + "!\n" : "") +
+      (own.length ? "Go! " + own.map((f) => f.name).join(" and ") + "!" : "");
+    const from = (f) => (tag ? (f.pos === "p1b" ? THROW_FROM_PARTNER : THROW_FROM_TAG) : THROW_FROM_HAND);
+    if (trainerOut) {
+      trainerOut = false;
+      const throws = [throwOut()].concat(tag && config.partnerTrainer ? [throwOut(trainerEl(true))] : []);
+      await Promise.all(throws.concat(mine.map((f) => sendOut(f.pos, from(f), f.ball, 210))));
+      await message(text);
+    } else {
+      await Promise.all([message(text)].concat(mine.map((f) => sendOut(f.pos, THROW_FROM_LEFT, f.ball))));
+    }
+  }
+
   // ---------- Poké Ball throws ----------
   //
   // A ball arcs from `from` (field %, x and y) to where the Pokémon stands,
   // spinning; it pops open and the Pokémon grows out of it in a white flash.
   const BALL_LANDS = { p1: [21, 80], p2: [73.5, 50] };
+  // A double battle's (sBattlerCoords: yours at x 32 and 90, y 80 and 88;
+  // theirs at x 200 and 152, y 40 and 32), placed as the singles ones are.
+  const BALL_LANDS_DOUBLES = { p1: [(50.4 - 40) / 2.4, 80], p1b: [(50.4 + 18) / 2.4, 80 + 8 / 1.12],
+    p2: [200 / 2.4, 50], p2b: [152 / 2.4, 50 - 8 / 1.12] };
+  const ballLand = (pos) => (battle && battle.doubles ? BALL_LANDS_DOUBLES : BALL_LANDS)[pos];
   // Your trainer's throw starts where FireRed's does (pokeball.c: the ball at
   // (32, 80) of the 240x112 scene), behind and left of where your Pokémon
   // comes out, so it flies forward.
   const THROW_FROM_HAND = [32 / 240 * 100, 80 / 112 * 100], THROW_FROM_LEFT = [-6, 40], FOE_THROW_FROM = [106, 8];
+  // (A tag battle: from your hand and your partner's, 48 pixels left of the
+  // usual and 10 right of it.)
+  const THROW_FROM_TAG = [(32 - 48) / 240 * 100, 80 / 112 * 100], THROW_FROM_PARTNER = [(32 + 10) / 240 * 100, 80 / 112 * 100];
   const THROW_MS = 560, POP_MS = 420;
 
-  function throwBallEl() {
-    let b = document.getElementById("throw-ball");
+  // (One for each slot, so a double battle's two can fly at once.)
+  function throwBallEl(pos) {
+    const id = pos && pos.length > 2 ? "throw-ball-b" : "throw-ball";
+    let b = document.getElementById(id);
     if (!b) {
       b = document.createElement("img");
-      b.id = "throw-ball";
+      b.id = id;
       b.className = "throw-ball hidden";
       b.alt = "";
       el.field.appendChild(b);
@@ -1448,10 +1853,10 @@
   const ballUrl = (ball) => "assets/sprites/items/ball/" + (ball || "poke-ball").replace(/-ball$/, "") + ".png";
 
   async function throwBall(side, from, ball) {
-    const b = throwBallEl();
+    const b = throwBallEl(side);
     b.src = ballUrl(ball);
     await b.decode().catch(() => {});
-    const [x0, y0] = from, [x1, y1] = BALL_LANDS[side];
+    const [x0, y0] = from, [x1, y1] = ballLand(side);
     const frames = [];
     for (let i = 0; i <= 16; i++) {
       const t = i / 16;
@@ -1474,10 +1879,25 @@
   // enough!"; under 30%, "come back!"; under 70%, "OK!"; more, "good!".
   // A trainer "withdrew" theirs.
   let foeHpAtSwitchIn = null;
+  // (A double battle: per position of yours, the foes' HP together.)
+  let foeHpAt = {};
+  const foesHp = () => ["p2", "p2b"].reduce((t, k) => (view[k] && view[k].species ? [t[0] + Math.max(0, view[k].hp), t[1] + view[k].maxhp] : t), [0, 0]);
+  function noteSwitchIn(pos) {
+    if (sideOf(pos) === "p2") { for (const k of ["p1", "p1b"]) foeHpAt[k] = foesHp()[0]; return; }
+    foeHpAt[pos] = foesHp()[0];
+  }
   function recallText(side, prev) {
-    if (side === "p2") return battle.sides.p2.name + " withdrew " + prev.name + "!";
-    const foe = view.p2;
-    const lost = foe && foe.maxhp && foeHpAtSwitchIn != null ? (foeHpAtSwitchIn - foe.hp) * 100 / foe.maxhp : 0;
+    // (A tag battle: "Leaf withdrew …!" for your partner's; a trainer "withdrew" theirs.)
+    if (sideOf(side) === "p2") return trainerName("p2", prev.teamIndex) + " withdrew " + prev.name + "!";
+    if (battle.sides.p1.tag && side === "p1b") return trainerName("p1", prev.teamIndex) + " withdrew " + prev.name + "!";
+    let lost;
+    if (battle.doubles) {
+      const [hp, max] = foesHp();
+      lost = max && foeHpAt[side] != null ? (foeHpAt[side] - hp) * 100 / max : 0;
+    } else {
+      const foe = view.p2;
+      lost = foe && foe.maxhp && foeHpAtSwitchIn != null ? (foeHpAtSwitchIn - foe.hp) * 100 / foe.maxhp : 0;
+    }
     if (lost <= 0) return prev.name + ", that's enough!\nCome back!";
     if (lost < 30) return prev.name + ", come back!";
     if (lost < 70) return prev.name + ", OK!\nCome back!";
@@ -1488,8 +1908,8 @@
   // shrinks into it, and the ball goes.
   const RECALL_RED = "brightness(0.55) sepia(1) saturate(12) hue-rotate(-38deg)";
   async function recall(side, text, ball) {
-    const sprite = el.sides[side].sprite, b = throwBallEl();
-    const [x, y] = BALL_LANDS[side];
+    const sprite = el.sides[side].sprite, b = throwBallEl(side);
+    const [x, y] = ballLand(side);
     b.src = ballUrl(ball);
     await b.decode().catch(() => {});
     b.style.left = x + "%";
@@ -1559,8 +1979,9 @@
   }
 
   // Your trainer's throw (frames 1-4 of the back sprite), then off to the left.
-  async function throwOut() {
-    const t = trainerEl();
+  // (`t`: a tag partner's picture instead.)
+  async function throwOut(t) {
+    t = t || trainerEl();
     for (const f of [1, 2, 3, 4]) { t.style.backgroundPositionY = (f * 25) + "%"; await wait(70); }
     t.classList.add("leaving");
     await wait(350);
@@ -1570,21 +1991,25 @@
   // Runs one battle to the end. See the header for `cfg`.
   async function run(cfg) {
     config = cfg;
-    battle = new Battle({
+    battle = new Battle(Object.assign({
       p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, ghost: !!cfg.ghost, noCatch: !!cfg.noCatch, exp: !!cfg.exp, expShare: !!cfg.expShare, catchContext: cfg.catchContext,
       safari: cfg.safari
-    });
+    }, cfg.format === "doubles" ? { format: "doubles" } : {}));
     safariCursor = 0;
     cursor = 0;
     hbStop();
-    view = { p1: { species: null }, p2: { species: null } };
+    doublesLayout = !!battle.doubles;
+    el.field.classList.toggle("doubles", !!battle.doubles);
+    el.field.classList.toggle("tag", !!battle.sides.p1.tag);
+    view = { p1: { species: null }, p2: { species: null }, p1b: { species: null }, p2b: { species: null } };
     el.ball.classList.add("hidden");
-    renderSide("p1");
-    renderSide("p2");
+    for (const k of POSITIONS) renderSide(k);
     await intro(cfg);
     if (!cfg.wild) {
       showBar("p2"); showBar("p1");
-      await message(cfg.p2.name + " would like to battle!");
+      // (Two trainers: "… and … would like to battle!")
+      const names = battle.sides.p2.tag ? battle.sides.p2.trainers : [cfg.p2.name];
+      await message(names.join(" and ") + (names.length > 1 ? "\nwould like to battle!" : " would like to battle!"));
       hideBars();
     }
     battle.start();
@@ -1602,7 +2027,7 @@
       // The trainer comes back out to say their piece.
       if (cfg.foeTrainer && !cfg.wild) {
         await foeTrainerSlide(false);
-        for (const page of [].concat(cfg.defeatText || [])) await message(page);
+        for (const page of [].concat(cfg.defeatText || [], cfg.defeatText2 || [])) await message(page);
       }
     }
     else if (battle.winner === "p2") outcome = "lost";

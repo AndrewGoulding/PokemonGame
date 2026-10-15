@@ -14,9 +14,12 @@
 //     // FireRed's YES / NO box: -> true (YES) or false (NO, or B)
 //   const a = await GbaMenus.battleAction(overlay, { name, cursor, frame })
 //     // FIGHT / BAG / POKéMON / RUN (B moves to RUN) -> { action: "fight" | "bag" | "pokemon" | "run", cursor }
-//     // (opts.labels and opts.prompt: other choices and words, e.g. the Safari Zone's)
+//     // (opts.labels and opts.prompt: other choices and words, e.g. the Safari Zone's;
+//     // opts.canBack: B gives { action: "back" }, a double battle's second Pokémon)
 //   const m = await GbaMenus.battleMoves(overlay, { moves, cursor, frame })
 //     // moves: [{ name, type, pp, maxpp }] -> { index, cursor } or null (B)
+//     // (opts.onCursor(cursor) as the cursor moves; opts.keep leaves the menu
+//     // showing after A, for a double battle's target cursor)
 //   const r = await GbaMenus.startMenu(overlay, { items, cursor, frame })
 //     // items: [{ key, label, help }]; drawn over the map (the rest of the
 //     // canvas clear) -> { key (or "exit"), cursor }
@@ -559,6 +562,7 @@
       if (k === "left" || k === "right") { cursor ^= 1; draw(); }
       else if (k === "up" || k === "down") { cursor ^= 2; draw(); }
       else if (k === "a") { se(); return ["fight", "bag", "pokemon", "run"][cursor]; }
+      else if (k === "b" && opts.canBack) { se(); return "back"; }   // (B_ACTION_CANCEL_PARTNER)
       else if (k === "b" && cursor !== 3) { cursor = 3; draw(); }   // B goes to RUN
       return undefined;
     });
@@ -584,6 +588,7 @@
     let swapping = null;   // the cursor of the move being moved
     const at = (c) => [9 * (c & 1) + 1, 15 + (c & 2)];
     const draw = () => {
+      if (opts.onCursor) opts.onCursor(cursor);
       const s = Surface();
       battlePanel(s, "move", frame);
       // B_WIN_MOVE_NAME_1-4 (tiles 2 / 11, rows 15 / 17), small font.
@@ -640,7 +645,7 @@
       else if (k === "b") { se(); return null; }
       return undefined;
     });
-    canvas.classList.add("hidden");
+    if (!(opts.keep && r)) canvas.classList.add("hidden");
     return r;
   }
 

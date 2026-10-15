@@ -571,16 +571,19 @@ function itemBall(mapName, script) {
 
 // A trainer's script: "trainerbattle_single TRAINER_X, Intro, Defeat" and the
 // message after ("msgbox PostBattle"), as { id, intro, defeat, after } text.
+// A double battle ("trainerbattle_double TRAINER_X, Intro, Defeat,
+// NotEnoughMons", like Route 8's twins Eli & Anne) adds double: true and
+// notEnough, what they say when you haven't two Pokémon that can fight.
 function trainerScript(mapName, script) {
   const lines = scriptLabels(mapName)[script] || [], t = texts(mapName);
   for (let i = 0; i < lines.length; i++) {
-    // (A double battle, like Route 8's twins Eli & Anne, is fought one on one
-    // here: this game's battles are singles.)
-    const m = /^trainerbattle_(?:single|double)\s+(TRAINER_\w+),\s*(\w+),\s*(\w+)/.exec(lines[i]);
+    const m = /^trainerbattle_(single|double)\s+(TRAINER_\w+),\s*(\w+),\s*(\w+)(?:,\s*(\w+))?/.exec(lines[i]);
     if (!m) continue;
     const after = lines.slice(i + 1).map((l) => /^msgbox\s+(\w+)/.exec(l)).find(Boolean);
-    usedTrainers.add(m[1]);
-    return { id: m[1], intro: t[m[2]], defeat: t[m[3]], after: after ? t[after[1]] : null };
+    usedTrainers.add(m[2]);
+    const out = { id: m[2], intro: t[m[3]], defeat: t[m[4]], after: after ? t[after[1]] : null };
+    if (m[1] === "double") Object.assign(out, { double: true, notEnough: m[5] ? t[m[5]] : null });
+    return out;
   }
   return undefined;
 }

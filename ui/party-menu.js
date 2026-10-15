@@ -14,7 +14,10 @@
 //                    // opens on a Pokémon (SUMMARY / SWITCH / ITEM / CANCEL);
 //                    // without it A picks the Pokémon. Field moves (`field`)
 //                    // are in blue, with `desc` in a box while chosen
-//     canCancel      // B and CANCEL close it (true unless false)
+//     canCancel,     // B and CANCEL close it (true unless false)
+//     chooseMultiple // choosing several (FireRed's PARTY_MENU_TYPE_CHOOSE_MULTIPLE_MONS):
+//                    // a CONFIRM button ("OK") above a smaller CANCEL; START
+//                    // jumps to it, and A there gives { action: "confirm" }
 //   })
 //   // -> null (cancelled), or { slot, action, cursor }: action is the chosen
 //   //    menu entry's value. A "switch" entry asks "Move to where?" first and
@@ -54,6 +57,7 @@
     [104, 66, 108, 76, 144, 75, 102, 73], [104, 90, 108, 100, 144, 99, 102, 97], [104, 114, 108, 124, 144, 123, 102, 121]
   ];
   const CANCEL = 7;   // (SLOT_CANCEL)
+  const CONFIRM = 6;  // (SLOT_CONFIRM)
 
   // ---------- Colours (LoadPartyBoxPalette) ----------
   //
@@ -112,7 +116,14 @@
       let pal = e >> 12;
       // The CANCEL button lights up in palette 2 when chosen (AnimatePartySlot).
       if (tx >= 23 && ty >= 17 && ty <= 18) pal = st.cursor === CANCEL ? 2 : 1;
-      const t = e & 0x3ff, hf = e & 0x400, vf = e & 0x800;
+      let t = e & 0x3ff, hf = e & 0x400, vf = e & 0x800;
+      // Choosing several: CONFIRM (rows 16-17) and CANCEL (18-19) instead
+      // (DrawCancelConfirmButtons), each lit when chosen.
+      if (st.multiple && tx >= 23 && ty >= 16) {
+        const b = d.buttons[ty < 18 ? "confirm" : "cancel"][(ty - (ty < 18 ? 16 : 18)) * 7 + tx - 23];
+        t = b & 0x3ff; hf = b & 0x400; vf = b & 0x800;
+        pal = st.cursor === (ty < 18 ? CONFIRM : CANCEL) ? 2 : 1;
+      }
       for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
         const v = tilePx(t, hf ? 7 - x : x, vf ? 7 - y : y);
         if (v) s.put(tx * 8 + x, ty * 8 + y, all[pal * 16 + v]);
@@ -120,15 +131,23 @@
     }
     BOXES.forEach((box, i) => drawBox(s, st, box, i));
     // CANCEL (sCancelButtonWindowTemplate: tiles 24, 17; small font, centred).
+    // (Choosing several: "OK" at tiles 24, 16 and CANCEL at 24, 18.)
     const base = all.slice(48, 64), cw = s.textWidth("CANCEL", "small");
-    s.text("CANCEL", 24 * 8 + 3 + Math.floor((48 - cw) / 2), 17 * 8 + 1, base[3], base[2], "small");
+    if (st.multiple) {
+      s.text("OK", 24 * 8 + Math.floor((48 - s.textWidth("OK", "small")) / 2), 16 * 8 + 1, base[3], base[2], "small");
+      s.text("CANCEL", 24 * 8 + Math.floor((48 - cw) / 2), 18 * 8 + 1, base[3], base[2], "small");
+    } else s.text("CANCEL", 24 * 8 + 3 + Math.floor((48 - cw) / 2), 17 * 8 + 1, base[3], base[2], "small");
     // Poké Balls: open on the chosen box (and the CANCEL button).
     st.mons.forEach((m, i) => {
       if (!m) return;
       const [, , , , , , bx, by] = SPRITES[i];
       sprite(s, d.pokeball, 0, st.cursor === i ? 32 : 0, 32, 32, bx - 16, by - 16);
     });
-    sprite(s, d.pokeball, 0, st.cursor === CANCEL ? 32 : 0, 32, 32, 198 - 16, 148 - 16);
+    if (st.multiple) {
+      // (Small Poké Balls at 191, 136 and 191, 152: CreateSmallPokeballButtonSprite.)
+      sprite(s, d.pokeballSmall, 0, st.cursor === CONFIRM ? 16 : 0, 16, 16, 191 - 8, 136 - 8);
+      sprite(s, d.pokeballSmall, 0, st.cursor === CANCEL ? 16 : 0, 16, 16, 191 - 8, 152 - 8);
+    } else sprite(s, d.pokeball, 0, st.cursor === CANCEL ? 32 : 0, 32, 32, 198 - 16, 148 - 16);
     return s.canvas();
   }
 
@@ -311,13 +330,14 @@
     redraw(); compose();
   }
 
-  // UpdatePartySelectionSingleLayout.
+  // UpdatePartySelectionSingleLayout (with CONFIRM between the last Pokémon
+  // and CANCEL when choosing several).
   function move(dir) {
     const n = st.mons.filter(Boolean).length, c = st.cursor;
-    if (dir === "up") setCursor(c === 0 ? CANCEL : c === CANCEL ? n - 1 : c - 1);
-    else if (dir === "down") setCursor(c === CANCEL ? 0 : c === n - 1 ? CANCEL : c + 1);
+    if (dir === "up") setCursor(c === 0 ? CANCEL : c === CONFIRM ? n - 1 : c === CANCEL ? (st.multiple ? CONFIRM : n - 1) : c - 1);
+    else if (dir === "down") setCursor(c === CANCEL ? 0 : c === CONFIRM ? CANCEL : c === n - 1 ? (st.multiple ? CONFIRM : CANCEL) : c + 1);
     else if (dir === "right") { if (n > 1 && c === 0) setCursor(st.lastRight || 1); }
-    else if (dir === "left") { if (c !== 0 && c !== CANCEL) { st.lastRight = c; setCursor(0); } }
+    else if (dir === "left") { if (c !== 0 && c !== CANCEL && c !== CONFIRM) { st.lastRight = c; setCursor(0); } }
   }
 
   // A menu window: up / down (round past either end), A picks, B cancels.
@@ -349,11 +369,11 @@
   function show(opts) {
     const mons = opts.mons.slice(0, 6);
     while (mons.length < 6) mons.push(null);
-    let cursor = opts.cursor === "cancel" ? CANCEL : opts.cursor || 0;
-    if (cursor !== CANCEL && !mons[cursor]) cursor = 0;
+    let cursor = opts.cursor === "cancel" ? CANCEL : opts.cursor === "confirm" && opts.chooseMultiple ? CONFIRM : opts.cursor || 0;
+    if (cursor !== CANCEL && cursor !== CONFIRM && !mons[cursor]) cursor = 0;
     const keep = st && st.lastRight;
     st = {
-      mons, cursor, frame: opts.frame, lastRight: keep || 0, menu: null, switchFrom: null,
+      mons, cursor, frame: opts.frame, lastRight: keep || 0, menu: null, switchFrom: null, multiple: !!opts.chooseMultiple,
       message: opts.message || "Choose a POKéMON.",
       icons: mons.map((m) => (m ? iconState(m) : null))
     };
@@ -372,9 +392,12 @@
       const key = await window.GbaMenus.keys((k) => {
         if (k === "a" || k === "b") return k;
         if (["up", "down", "left", "right"].includes(k)) move(k);
+        // (START: to CONFIRM, when choosing several.)
+        if (k === "start" && st.multiple && st.cursor !== CONFIRM) setCursor(CONFIRM);
         return undefined;
       });
       const slot = st.cursor;
+      if (key === "a" && slot === CONFIRM) { window.GbaMenus.se(); return { slot, action: "confirm", cursor: "confirm" }; }
       if (key === "b" || slot === CANCEL) {
         if (st.switchFrom != null) {
           // Backing out of "Move to where?".

@@ -23,6 +23,8 @@
 
   const partyLevel = () => Math.max(1, ...player.party.map((r) => r.level));
   const canBattle = () => player.party.some((r) => !Party.isFainted(r));
+  // Two Pokémon that can fight, for a double battle (FireRed's GetMonsStateToDoubles).
+  const canDouble = () => player.party.filter((r) => !Party.isFainted(r)).length >= 2;
   const money = (n) => "₽" + Math.floor(n).toLocaleString("en-US");
   const article = (word) => (/^[AEIOU]/i.test(word) ? "an " : "a ") + word;
 
@@ -272,11 +274,26 @@
 
   // opts.safari: a Safari Zone battle (engine/safari.js), with the Safari
   // Balls you have left (player.flags.safari).
+  // Double battles: opts.double (FireRed's trainerbattle_double: the whole
+  // party, two at a time). A tag battle: opts.partner = { name, team (party
+  // records), pic (their back picture) }: you choose three of yours first
+  // (FireRed's party screen, ENTER / CONFIRM; or opts.chosen, party indexes),
+  // and only those are changed by the battle. opts.foe2 = { name, team, pic,
+  // defeatText, prizeClass }: a second opposing trainer beside the first.
+  // Returns the outcome ("cancelled" when you back out of choosing).
   async function battle(kind, opts) {
     opts = opts || {};
     const wild = kind === "wild";
     const foe = opts.foe || (wild ? { name: "Wild", team: [Encounters.wild(partyLevel())] } : Encounters.trainer(partyLevel()));
-    if (!wild) for (const r of foe.team) delete r.shiny;   // trainers' Pokémon are never shiny
+    const foe2 = !wild && opts.foe2 || null;
+    const double = !wild && !opts.safari && !!(opts.double || opts.partner || foe2);
+    if (!wild) for (const r of foe.team.concat(foe2 ? foe2.team : [])) delete r.shiny;   // trainers' Pokémon are never shiny
+    let chosen = null;
+    if (opts.partner) {
+      chosen = opts.chosen || await chooseBattleTeam(3);
+      if (!chosen) return "cancelled";
+    }
+    const own = DoubleBattle.team(player.party, chosen);
     // The battle theme (wild, trainer, or Gym Leader), and the one for winning.
     const leader = !wild && /^Leader /.test(foe.name);
     music(opts.music || (wild ? "mus_vs_wild" : leader ? "mus_vs_gym_leader" : "mus_vs_trainer"));
@@ -289,10 +306,15 @@
     if (!wild && /^TRAINER_(LEADER|ELITE_FOUR|CHAMPION)/.test(opts.trainerId || "")) {
       for (const r of player.party) Party.adjustFriendship(r, "leagueBattle", here);
     }
+    const foeSets = (f) => f.team.map((r) => Object.assign(Party.toBattleSet(r), opts.ghost ? { name: "Ghost" } : {}));
     const result = await BattleScreen.run({
-      p1: { name: player.name, team: player.party.map((r) => Party.toBattleSet(r, here)) },
+      p1: Object.assign({ name: player.name, team: own.map((r) => Party.toBattleSet(r, here)) },
+        opts.partner ? { partner: { name: opts.partner.name, team: opts.partner.team.map((r) => Party.toBattleSet(r)) } } : {}),
       // (Pokémon Tower's unidentified Ghost goes by "Ghost".)
-      p2: { name: foe.name, team: foe.team.map((r) => Object.assign(Party.toBattleSet(r), opts.ghost ? { name: "Ghost" } : {})) },
+      p2: Object.assign({ name: foe.name, team: foeSets(foe) }, foe2 ? { partner: { name: foe2.name, team: foeSets(foe2) } } : {}),
+      format: double ? "doubles" : undefined,
+      partnerTrainer: opts.partner && opts.partner.pic,
+      foeTrainer2: foe2 && foe2.pic, defeatText2: foe2 && foe2.defeatText && foe2.defeatText.map((p) => fill(p)),
       ghost: !!opts.ghost, noCatch: !!opts.noCatch,
       megaRing: Player.itemCount(player, "mega-ring") > 0,
       safari: opts.safari ? { balls: player.flags.safari.balls } : undefined,
@@ -310,11 +332,11 @@
       opponent: wild ? randomMove : (b) => OpponentAI.choose(b, "p2"),
       // A new move with four known: the Summary screen picks the one to forget
       // (the record caught up with the battle first: level, moves, PP).
-      forgetMove: (i, mon, move) => chooseMoveToForget(Party.syncFromBattle(player.party[i], mon), move),
+      forgetMove: (i, mon, move) => chooseMoveToForget(Party.syncFromBattle(own[i], mon), move),
       // The Summary screen from the party screen in battle: each Pokémon as it
       // is now (HP, status, PP, Exp.), from copies, so nothing changes.
       summary: (i, mons) => {
-        const now = player.party.map((r, k) => (mons[k] ? Party.syncFromBattle(JSON.parse(JSON.stringify(r)), mons[k]) : r));
+        const now = own.map((r, k) => (mons[k] ? Party.syncFromBattle(JSON.parse(JSON.stringify(r)), mons[k]) : r));
         cry(now[i].species);
         return SummaryScreen.open(now.map(summaryView), i, { frame: GameOptions.get().frame, cry: (sp) => cry(sp) });
       }
@@ -324,9 +346,9 @@
       if (opts.ghost) break;   // (an unidentified Ghost isn't seen)
       if ((e[0] === "switch" || e[0] === "drag") && String(e[1]).startsWith("p2")) Player.markSeen(player, String(e[2]).split(", L")[0]);
     }
+    // (A tag battle: only the three you chose; your partner's are theirs.)
     const leveledUp = [];
-    player.party.forEach((record, i) => {
-      const mon = b.sides.p1.pokemon[i];
+    DoubleBattle.syncBack(player.party, chosen, b.sides.p1.pokemon, (record, mon) => {
       Party.syncFromBattle(record, mon);
       if (mon.leveledUp) leveledUp.push(record);
     });
@@ -336,7 +358,9 @@
       if (player.flags.vsRematch) delete player.flags.vsRematch[opts.trainerId];
     }
     if (result.outcome === "won" && !wild) {
-      let prize = opts.prize != null ? opts.prize : Player.prizeMoney(foe.name, foe.team, opts.prizeClass);
+      // (Each opposing trainer's, doubled in a double battle, as FireRed's.)
+      let prize = opts.prize != null ? opts.prize : DoubleBattle.prize([foe].concat(foe2 ? [foe2] : []),
+        (f) => Player.prizeMoney(f.name, f.team, f === foe ? opts.prizeClass : f.prizeClass), double);
       // An Amulet Coin held by a Pokémon that battled doubles it (FireRed's moneyMultiplier).
       if (b.sides.p2.pokemon.some((m) => [...(m.expParticipants || [])].some((p) => p.item === "amulet-coin"))) prize *= 2;
       Player.addMoney(player, prize);
@@ -358,6 +382,52 @@
     }
     await persist();
     return result.outcome;
+  }
+
+  // Choosing `max` of your Pokémon for a battle (a tag battle's three):
+  // FireRed's party screen for choosing several. A on a Pokémon: ENTER (or NO
+  // ENTRY to take it back) / SUMMARY / CANCEL; each chosen one says FIRST,
+  // SECOND, THIRD; the last one chosen takes the cursor to CONFIRM ("OK",
+  // also START). B or CANCEL: "Cancel the battle?". Returns the party
+  // indexes in order, or null.
+  async function chooseBattleTeam(max) {
+    const party = player.party;
+    let order = [], cursor = 0, note = null;
+    for (;;) {
+      Screen.say("");
+      clearMenu();
+      // (What went wrong shows in the screen's own message box, as FireRed's
+      // DisplayPartyMenuStdMessage, until the next choice.)
+      const shown = note;
+      note = null;
+      const r = await PartyMenu.open({ mons: partyMons(DoubleBattle.descs(party, order)), cursor, chooseMultiple: true,
+        frame: GameOptions.get().frame, message: shown || "Choose POKéMON and confirm.",
+        actions: (slot) => {
+          const st = DoubleBattle.entryStatus(party, order, slot);
+          return (st === "able" ? [{ label: "ENTER", value: "enter" }] : st === "selected" ? [{ label: "NO ENTRY", value: "noentry" }] : [])
+            .concat([{ label: "SUMMARY", value: "summary" }, { label: "CANCEL", value: "cancel" }]);
+        } });
+      if (!r) {
+        PartyMenu.close();
+        if (await confirm("Cancel the battle?")) return null;
+        continue;
+      }
+      cursor = r.cursor;
+      if (r.action === "confirm") {
+        const err = DoubleBattle.confirmError(party, order, max);
+        if (err) { sfx("se_failure"); note = err; continue; }
+        PartyMenu.close();
+        return order;
+      }
+      if (r.action === "summary") { PartyMenu.close(); await summary(r.slot); continue; }
+      if (r.action === "noentry") { order = DoubleBattle.noEntry(order, r.slot); continue; }
+      if (r.action === "enter") {
+        const res = DoubleBattle.enter(party, order, r.slot, max);
+        if (res.error) { sfx("se_failure"); if (/\n/.test(res.error)) await message(res.error); else note = res.error; continue; }
+        order = res.order;
+        if (order.length === max) cursor = "confirm";
+      }
+    }
   }
 
   function ballUsed(b) {
@@ -1205,6 +1275,8 @@
         { label: "Give Max Repels", value: "repels", className: "action" },
         { label: "Give Master Balls", value: "master", className: "action" },
         { label: "Wild battle", value: "wild", className: "action" },
+        { label: "Double battle", value: "double", className: "action" },
+        { label: "Tag battle", value: "tag", className: "action" },
         { label: "Go to the last Pokémon Center", value: "center", className: "action" },
         back()]);
       if (v === "back") return;
@@ -1218,6 +1290,13 @@
         // A random wild Pokémon near your party's level (back to the map after).
         if (!canBattle()) { await message("Your Pokémon are too tired to battle."); continue; }
         await battle("wild");
+        return "battled";
+      } else if (v === "double" || v === "tag") {
+        // A double battle against one of FireRed's double battle trainers,
+        // or a tag battle with Leaf against two trainers (you choose three).
+        if (!canBattle()) { await message("Your Pokémon are too tired to battle."); continue; }
+        if (v === "double" && !canDouble()) { await message("You need two Pokémon that can fight for a double battle."); continue; }
+        if ((v === "double" ? await debugDoubleBattle() : await debugTagBattle()) === "cancelled") continue;
         return "battled";
       } else if (v === "center") {
         // In front of the counter of the Center you last used (home before
@@ -1238,6 +1317,49 @@
       }
       await persist();
     }
+  }
+
+  // FireRed's trainers on the maps built so far: [person's trainer, data].
+  function mapTrainers(pick) {
+    const out = [], seen = new Set();
+    for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
+      const t = p.trainer, data = t && window.WORLD_TRAINERS[t.id];
+      if (!data || seen.has(t.id) || !pick(t, data)) continue;
+      seen.add(t.id);
+      out.push([t, data]);
+    }
+    return out;
+  }
+  const randomOf = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  async function debugDoubleBattle() {
+    const [t, data] = randomOf(mapTrainers((t) => t.double));
+    await say(t.intro || []);
+    return battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(t.id), pic: data.pic },
+      defeatText: t.defeat, prizeClass: data.className, double: true, music: "mus_vs_trainer" });
+  }
+  // Leaf's team as it is about now: her starter (grown with your party),
+  // Jigglypuff (Wigglytuff from Vermilion on) and Butterfree, at your
+  // party's level.
+  function leafTagTeam() {
+    const f = player.flags, level = Math.max(10, Math.min(100, partyLevel()));
+    const base = RIVAL_PICK[f.starter] || "Bulbasaur";
+    const FINAL = { Bulbasaur: "Venusaur", Charmander: "Charizard", Squirtle: "Blastoise" };
+    const starter = level >= 32 ? FINAL[base] : level >= 16 ? STAGE_TWO[base] : base;
+    return [Party.create(starter, level), Party.create(f.leafVermilion || level >= 20 ? "Wigglytuff" : "Jigglypuff", level - 1),
+      Party.create("Butterfree", level - 2)];
+  }
+  async function debugTagBattle() {
+    // Two trainers whose teams are nearest your party's level.
+    const lvl = partyLevel(), top = (d) => Math.max(...d.party.map((m) => m.level));
+    const all = mapTrainers((t, d) => !t.double && !/^(Leader|Rival|Boss|Pokémon Trainer)/.test(d.className) && /^TRAINER_/.test(t.id))
+      .sort((a, b) => Math.abs(top(a[1]) - lvl) - Math.abs(top(b[1]) - lvl)).slice(0, 12);
+    const one = randomOf(all), two = randomOf(all.filter((x) => x !== one));
+    const foeOf = ([t, d]) => ({ name: d.className + " " + d.name, team: trainerTeam(t.id).slice(0, 3), pic: d.pic,
+      defeatText: t.defeat, prizeClass: d.className });
+    const foe = foeOf(one), foe2 = foeOf(two);
+    await say(["Leaf: {PLAYER}! Two Trainers want\nto battle us together!", "Let's team up! Choose three\nPokémon to bring!"]);
+    return battle("trainer", { foe, foe2, defeatText: foe.defeatText, prizeClass: foe.prizeClass, music: "mus_vs_trainer",
+      partner: { name: LAB_RIVAL_NAME, team: leafTagTeam(), pic: "leaf" } });
   }
 
   async function debugAddPokemon() {
@@ -3222,9 +3344,18 @@
   // speak, and battle. One you talk to just speaks and battles. Their party is
   // FireRed's (data/world-maps.js, WORLD_TRAINERS), with FireRed's fixed IVs
   // (0-255 there, so 0-31 here).
+  // A double battle's trainers (FireRed's trainerbattle_double: Route 8's
+  // twins Eli & Anne, the couples, Sis and Bro) fight with two Pokémon each
+  // side, after one of them speaks; without two Pokémon that can fight you
+  // hear why not instead (EventScript_NotEnoughMonsForDoubleBattle), and
+  // they don't come after you.
   async function trainerBattle(person, approach, facing) {
     const t = person.trainer, data = window.WORLD_TRAINERS[t.id];
     const who = "#" + person.id;
+    if (t.double && approach == null && !canDouble()) {
+      await say(t.notEnough || ["You need two Pokémon to battle us!"]);
+      return;
+    }
     music(data.music || "mus_encounter_boy");   // their "eyes meet" theme
     if (approach != null) {
       await Overworld.act([{ who, moves: ["emote_exclamation_mark"].concat(Array(approach).fill("walk_" + facing)) }]);
@@ -3234,7 +3365,7 @@
     if (!canBattle()) return;
     const team = trainerTeam(t.id);
     await battle("trainer", { foe: { name: data.className + " " + data.name, team, pic: data.pic }, defeatText: t.defeat, trainerId: t.id,
-      prizeClass: data.className });
+      prizeClass: data.className, double: !!t.double });
     // A beaten trainer who walked over to you stays where they stopped (see
     // visible()) while you're on the map: back in their spot they could shut
     // you in, as Route 25's Hiker Flint does the TM43 corner. Leave the map
@@ -5718,7 +5849,10 @@
         player, rivalName: player.rival, visible,
         special,
         onWarp,
-        trainerWaiting, hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, extraPeople,
+        // (A double battle's trainers don't see you without two Pokémon that
+        // can fight: FireRed's CheckTrainer.)
+        trainerWaiting: (person) => trainerWaiting(person) && !(person.trainer.double && !canDouble()),
+        hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, extraPeople,
         canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
         boulderFell: (def) => Seafoam.drop(player.flags, def),
         onAvatar: (mode) => music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music),

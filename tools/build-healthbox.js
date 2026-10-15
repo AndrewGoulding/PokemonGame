@@ -10,6 +10,9 @@
 //   healthbox-opponent.png   the opponent's, 64x32 twice, 128x32
 //   healthbox-safari.png     the player's in the Safari Zone (healthbox_safari.png,
 //                            tiles 0-63 and 64-127), 128x64
+//   healthbox-doubles-player.png / healthbox-doubles-opponent.png
+//                            the smaller boxes of a double battle (healthbox_doubles_*.png:
+//                            two 64x32 sprites, tiles 0-31 and 32-63), 128x32
 //   healthbox-*-frame.png    just the box's colour 6 (its dark frame), in the
 //                            level-up flash's colour, RGB(20, 27, 31)
 //   healthbar.png            healthbox_elements.png in healthbar.pal (the "HP"
@@ -64,6 +67,8 @@ function box(file, h, other, name, noFrame) {
 box("healthbox_singles_player.png", 8, 64, "player");
 box("healthbox_singles_opponent.png", 4, 32, "opponent");
 box("healthbox_safari.png", 8, 64, "safari", true);
+box("healthbox_doubles_player.png", 4, 32, "doubles-player");
+box("healthbox_doubles_opponent.png", 4, 32, "doubles-opponent");
 
 // The elements sheet, whole, in each palette (colour 0 clear).
 const el = readPng(P("healthbox_elements.png"));

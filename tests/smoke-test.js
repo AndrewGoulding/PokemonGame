@@ -2229,3 +2229,57 @@ for (const item of ["iron-ball", "light-ball", "smoke-ball"]) {
 assert(Bag.isBall("poke-ball") && Bag.isBall("safari-ball"));
 // Rock Tunnel's floors are numbered.
 assert.deepStrictEqual([WORLD_MAPS.RockTunnel_1F.floor, WORLD_MAPS.RockTunnel_B1F.floor], [1, -1]);
+
+// Double battles in the game: FireRed's trainerbattle_double trainers fight as
+// doubles, with their "not enough Pokémon" text; and the game's rules for
+// double and tag battles (game/double-battle.js).
+{
+  const eli = WORLD_MAPS.Route8.people.find((p) => p.script === "Route8_EventScript_Eli").trainer;
+  assert(eli.double && eli.id === "TRAINER_TWINS_ELI_ANNE", "Eli & Anne are a double battle");
+  assert.deepStrictEqual(eli.notEnough, ["Eli: We can't battle if you don't\nhave two Pokémon."]);
+  for (const [map, id] of [["Route12", "TRAINER_YOUNG_COUPLE_GIA_JES"], ["Route14", "TRAINER_TWINS_KIRI_JAN"], ["Route15", "TRAINER_CRUSH_KIN_RON_MYA"],
+    ["Route16", "TRAINER_YOUNG_COUPLE_LEA_JED"], ["Route19", "TRAINER_SIS_AND_BRO_LIA_LUC"]]) {
+    const both = WORLD_MAPS[map].people.filter((p) => p.trainer && p.trainer.id === id);
+    assert(both.length === 2 && both.every((p) => p.trainer.double && p.trainer.notEnough), id + " is a double battle");
+  }
+  assert(!WORLD_MAPS.Route8.people.some((p) => p.trainer && p.trainer.id !== "TRAINER_TWINS_ELI_ANNE" && p.trainer.double), "singles stay singles");
+  const D = DoubleBattle;
+  const mk = (s, hp) => Object.assign(Party.create(s, 20), hp === 0 ? { hp: 0 } : {});
+  const party = [mk("Pikachu"), mk("Rattata", 0), mk("Pidgey"), mk("Bulbasaur"), mk("Squirtle")];
+  assert(D.canDouble(party) && !D.canDouble([mk("Pikachu"), mk("Rattata", 0)]) && !D.canDouble([mk("Pikachu")]));
+  let order = [];
+  assert.deepStrictEqual(D.descs(party, order), ["ABLE", "NOT ABLE", "ABLE", "ABLE", "ABLE"]);
+  assert.strictEqual(D.entryStatus(party, order, 1), "notable");
+  assert(D.enter(party, order, 1, 3).error, "a fainted Pokémon can't enter");
+  for (const i of [3, 0]) order = D.enter(party, order, i, 3).order;
+  assert.strictEqual(D.confirmError(party, order, 3), "Three POKéMON are needed.");
+  order = D.enter(party, order, 4, 3).order;
+  assert.deepStrictEqual(order, [3, 0, 4]);
+  assert.deepStrictEqual(D.descs(party, order), ["SECOND", "NOT ABLE", "ABLE", "FIRST", "THIRD"]);
+  assert(/No more than three/.test(D.enter(party, order, 2, 3).error));
+  assert.strictEqual(D.confirmError(party, order, 3), null);
+  order = D.noEntry(order, 0);
+  assert.deepStrictEqual(order, [3, 4]);
+  assert.strictEqual(D.confirmError([mk("Pikachu"), mk("Pidgey"), mk("Rattata", 0)], [0, 1], 3), null, "as many as can fight");
+  // A tag battle: only the chosen three are synced, in the order chosen.
+  const chosen = [3, 0, 4];
+  const b = new Battle({ seed: 5, format: "doubles", exp: true,
+    p1: { name: "Red", team: D.team(party, chosen).map((r) => Party.toBattleSet(r)), partner: { name: "Leaf", team: [Party.toBattleSet(mk("Ivysaur"))] } },
+    p2: { name: "Twins", team: [Party.toBattleSet(Party.create("Magikarp", 5)), Party.toBattleSet(Party.create("Magikarp", 5))] } });
+  b.start();
+  for (let i = 0; i < 200 && !b.ended; i++) for (const id of ["p1", "p1b", "p2"]) {
+    const req = b.getRequest(id);
+    if (req && (req.phase === "move" || req.phase === "switch") && req.open.length) b.choose(id, OpponentAI.choose(b, id));
+  }
+  assert(b.ended && b.winner === "p1", "the tag battle ends");
+  const before = JSON.stringify(party[2]);
+  const synced = D.syncBack(party, chosen, b.sides.p1.pokemon, (r, mon) => Party.syncFromBattle(r, mon));
+  assert.deepStrictEqual(synced.map((r) => r.species), ["Bulbasaur", "Pikachu", "Squirtle"]);
+  assert(party[3].exp > Party.create("Bulbasaur", 20).exp || party[0].exp > Party.create("Pikachu", 20).exp, "the chosen ones gained exp");
+  assert.strictEqual(JSON.stringify(party[2]), before, "an unchosen one is untouched");
+  assert.strictEqual(D.team(party, null).length, 5);
+  // Prize money: each trainer's, doubled in a double battle (FireRed's getmoneyreward).
+  const prizeOf = (f) => Player.prizeMoney(f.name, f.team, f.prizeClass);
+  assert.strictEqual(D.prize([{ name: "Twins Eli & Anne", prizeClass: "Twins", team: [{ level: 22 }, { level: 22 }] }], prizeOf, true), 12 * 22 * 2);
+  assert.strictEqual(D.prize([{ name: "Youngster Ben", team: [{ level: 11 }] }], prizeOf, false), Player.prizeMoney("Youngster Ben", [{ level: 11 }]));
+}
