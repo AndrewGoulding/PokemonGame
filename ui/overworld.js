@@ -83,6 +83,8 @@
 
   const held = new Set();
   let runOn = false;
+  // FireRed's encounter state from step to step (World.stepEncounter).
+  const wildState = { steps: 0, buff: 0, prev: null };
   let pressedA = false, pressedMenu = false;
   let ignoreInputUntil = 0;
 
@@ -262,8 +264,9 @@
     // Each step (e.g. a Repel counting down) may have something to say.
     const said = ctx.onStep && ctx.onStep();
     if (said) return finish(said);
-    const wild = World.wildEncounter(me.map, me.x, me.y);
-    if (wild && (!ctx.allowWild || ctx.allowWild(wild))) finish(Object.assign({ type: "wild" }, wild));
+    const wild = World.stepEncounter(wildState, me.map, me.x, me.y, {
+      allow: ctx.allowWild, repel: !!(ctx.player && ctx.player.repelSteps > 0) });
+    if (wild) finish(Object.assign({ type: "wild" }, wild));
   }
 
   function savePosition() {

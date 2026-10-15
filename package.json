@@ -1,7 +1,7 @@
 {
   "name": "pokemon-game",
   "private": true,
-  "description": "A browser Pok\u00e9mon game built on a Gen 6 battle engine.",
+  "description": "A browser Pokémon game built on a Gen 6 battle engine.",
   "scripts": {
     "test": "node tests/smoke-test.js",
     "build:evolutions": "node tools/build-evolutions.js",
@@ -12,9 +12,11 @@
     "build:machine-learners": "node tools/build-machine-learners.js",
     "build:sprite-metrics": "node tools/build-sprite-metrics.js",
     "build:town-map": "node tools/build-town-map.js",
-    "build:audio": "node tools/build-audio.js"
+    "build:audio": "node tools/build-audio.js",
+    "build:font": "node tools/build-font.js"
   },
   "devDependencies": {
-    "@pkmn/dex": "0.10.11"
+    "@pkmn/dex": "0.10.11",
+    "opentype.js": "^1.3.4"
   }
 }

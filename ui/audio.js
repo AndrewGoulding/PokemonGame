@@ -49,7 +49,9 @@
       master.connect(ctx.destination);
     }
     if (ctx.state === "suspended") ctx.resume();
-    loadData().then(() => { if (wanted && (!current || current.name !== wanted)) start(wanted); });
+    // (Starting the music the game wants, if it isn't on yet; never over a
+    // jingle, which plays to its end, A or no A.)
+    loadData().then(() => { if (wanted && !fanfareDepth && (!current || current.name !== wanted)) start(wanted); });
   }
   for (const ev of ["keydown", "pointerdown", "touchstart"]) document.addEventListener(ev, unlock, { capture: true, passive: true });
 

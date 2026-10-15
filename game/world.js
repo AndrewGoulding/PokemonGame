@@ -4,7 +4,8 @@
 //
 //   World.step({ map, x, y }, "up", occupied)   // -> { ok, map, x, y, jump, warp, blocked }
 //   World.warpAt("PalletTown", 6, 7)            // the warp on a tile, if any
-//   World.wildEncounter("Route1", rng)          // -> { species, level } or null
+//   World.wildEncounter("Route1", rng)          // -> { species, level } or null (one roll)
+//   World.stepEncounter(state, "MtMoon_1F", x, y, { allow })   // FireRed's check for a step (below)
 
 (function () {
   "use strict";
@@ -70,7 +71,10 @@
     const dest = w && w.map && map(w.map);
     if (!dest) return null;
     const to = dest.warps[w.warp] || dest.warps[0];
-    return { map: w.map, x: to.x, y: to.y, door: dest.behavior[to.y * dest.width + to.x] === MB.WARP_DOOR };
+    // Coming out through a door or a cave's mouth, you step out of it
+    // (FireRed's door exit and Task_ExitNonAnimDoor).
+    const behavior = dest.behavior[to.y * dest.width + to.x];
+    return { map: w.map, x: to.x, y: to.y, door: behavior === MB.WARP_DOOR || behavior === MB.CAVE_DOOR };
   }
 
   // The map edge you'd walk off of, for a better message than a bump.
@@ -147,6 +151,10 @@
     const b = blockAt(mapName, x, y);
     if (!m.wild || !isGrass(b)) return null;
     if (Math.floor(rng() * 2880) >= m.wild.rate * 16) return null;
+    return pickWild(m, rng);
+  }
+  // A Pokémon from the map's slots (and its level).
+  function pickWild(m, rng) {
     let roll = Math.floor(rng() * 100), slot = 0;
     while (slot < LAND_SLOT_WEIGHTS.length - 1 && roll >= LAND_SLOT_WEIGHTS[slot]) roll -= LAND_SLOT_WEIGHTS[slot++];
     const s = m.wild.slots[slot];
@@ -156,8 +164,47 @@
     return { species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)) };
   }
 
+  // FireRed's check for a step (src/wild_encounter.c TryStandardWildEncounter),
+  // keeping `state` ({ steps, buff, prev }: steps since the last encounter, the
+  // rate built up by steps that didn't find one, and the last tile's
+  // behaviour) from step to step:
+  //  - a cooldown: until 8 - rate/10 steps (8 under a rate of 10, none from
+  //    80) have passed since the last encounter, each step has only a 5%
+  //    chance of going on;
+  //  - stepping onto a different kind of ground, a 60% chance of going on;
+  //  - then Random() % 1600 < rate * 16 + buff * 16 / 200;
+  //  - a step that fails that roll, or whose Pokémon `allow` turns away (a
+  //    Repel), adds the rate to the buff (or, with a Repel going, clears it);
+  //    an encounter clears the buff and the steps.
+  const MAX_ENCOUNTER_RATE = 1600;
+  function stepEncounter(state, mapName, x, y, opts) {
+    opts = opts || {};
+    const rng = opts.rng || Math.random;
+    const m = map(mapName), b = blockAt(mapName, x, y);
+    const prev = state.prev;
+    state.prev = b.behavior;
+    if (!m.wild || !isGrass(b)) return null;
+    const rate = m.wild.rate;
+    // HandleWildEncounterCooldown
+    const minSteps = rate >= 80 ? 0 : rate < 10 ? 8 : 8 - Math.floor(rate / 10);
+    if ((state.steps | 0) < minSteps) {
+      state.steps = (state.steps | 0) + 1;
+      if (Math.floor(rng() * 100) >= 5) return null;
+    }
+    // StandardWildEncounter: a new kind of ground, then the rate test.
+    if (prev != null && prev !== b.behavior && Math.floor(rng() * 100) >= 60) return null;
+    const buffAdd = () => { state.buff = opts.repel ? 0 : (state.buff | 0) + rate; };
+    const chance = Math.min(MAX_ENCOUNTER_RATE, rate * 16 + Math.floor((state.buff | 0) * 16 / 200));
+    if (Math.floor(rng() * MAX_ENCOUNTER_RATE) >= chance) { buffAdd(); return null; }
+    const mon = pickWild(m, rng);
+    if (!mon || (opts.allow && !opts.allow(mon))) { buffAdd(); return null; }
+    state.buff = 0;
+    state.steps = 0;
+    return mon;
+  }
+
   window.World = {
     DIRS, OPPOSITE, MB, map, connectionOrigin, blockAt, warpAt, warpTarget, step,
-    signAt, triggersAt, isGrass, wildEncounter, LAND_SLOT_WEIGHTS
+    signAt, triggersAt, isGrass, wildEncounter, stepEncounter, LAND_SLOT_WEIGHTS
   };
 })();

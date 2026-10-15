@@ -1,5 +1,14 @@
 /* Battle screen */
 
+/* FireRed's text font (tools/build-font.js): 16px of it is a game pixel a
+   pixel, so sizes go in steps of the screen's scale where they can. Anything
+   FireRed's font hasn't got comes from the next font. */
+@font-face {
+  font-family: "FireRed";
+  src: url(../assets/fonts/firered.otf) format("opentype");
+  font-display: block;
+}
+
 * { box-sizing: border-box; }
 
 body {
@@ -11,7 +20,12 @@ body {
   padding: 16px;
   background: #1d2330;
   color: #222;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "FireRed", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-synthesis: none;   /* (a pixel font: no made-up bold or italics) */
+  /* FireRed's letters are small for their size (lowercase: 5 of 16): this
+     scales them so they read as large as the sizes the UI asks for. The text
+     box sets its own size, a game pixel a pixel (below). */
+  font-size-adjust: 0.5;
 }
 
 .game {
@@ -228,8 +242,11 @@ body {
   background: #fff;
   border: 3px solid #c8a85a;
   border-radius: 6px;
-  font-size: clamp(10px, 3.4cqw, 22px);
-  line-height: 1.3;
+  font-size: calc(100cqw * 16 / 240);
+  font-size-adjust: none;
+  line-height: 1;
+  color: #626262;
+  text-shadow: calc(100cqw / 240) calc(100cqw / 240) 0 #d5d5cd;
   white-space: pre-line;
   overflow: hidden;
   user-select: none;
@@ -259,7 +276,7 @@ body {
   border-radius: 0;
   background: url(../assets/battle-interface/message-box.png) 0 0 / 100% 100%;
   image-rendering: pixelated;
-  padding: calc(100cqw * 9 / 240) calc(100cqw * 10 / 240) 0;
+  padding: calc(100cqw * 10 / 240) calc(100cqw * 10 / 240) 0;
   color: #fff;
   text-shadow: calc(100cqw / 240) calc(100cqw / 240) 0 #6a5a73;
 }
@@ -267,7 +284,7 @@ body {
 .textbox.framed {
   border: calc(100cqw * 8 / 240) solid transparent;
   border-radius: 0;
-  padding: 0 1.5cqw;
+  padding: 0 calc(100cqw * 2 / 240);
   background: none;
   image-rendering: pixelated;
 }
@@ -303,13 +320,13 @@ body {
   background: #e8e8e8;
   color: #111;
   font: inherit;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 20px;
+  line-height: 1.1;
   text-align: left;
 }
 .menu button:disabled { opacity: 0.45; cursor: not-allowed; }
 
-.move-name { display: block; font-size: 14px; }
+.move-name { display: block; font-size: 20px; }
 .move-meta { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; opacity: 0.85; }
 
 .menu button.action { text-align: center; background: #f4f1e6; }

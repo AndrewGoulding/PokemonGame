@@ -635,7 +635,7 @@ const personLike = (sprite) => Object.values(out).flatMap((m) => m.people).find(
 for (const name of Object.keys(out).filter((n) => /_PokemonCenter_2F$/.test(n))) {
   const m = out[name], next = m.people.length;
   const tutor = (k, x, sprite, script, text) => Object.assign({}, personLike(sprite), {
-    id: next + k, x, y: 7, movement: "face_down", rangeX: 1, rangeY: 1, script, flag: null, text, localId: null, trainer: undefined, item: undefined, mart: undefined });
+    id: next + k, x, y: 7, movement: "face_up", rangeX: 1, rangeY: 1, script, flag: null, text, localId: null, trainer: undefined, item: undefined, mart: undefined });
   m.people.push(
     tutor(0, 6, "gentleman", "CenterUpstairs_EventScript_MoveRelearner", ["I'm the Move Relearner."]),
     tutor(1, 10, "old_man_2", "CenterUpstairs_EventScript_MoveDeleter", ["I'm the Move Deleter."]));

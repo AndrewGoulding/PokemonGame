@@ -170,7 +170,12 @@ cd pokefirered && git sparse-checkout add graphics/fonts/ graphics/text_window/ 
   graphics/help_system/ graphics/battle_interface/ graphics/interface/ src/text.c src/data/pokemon/ charmap.txt && cd ..
 node tools/build-menus.js pokefirered
 node tools/build-pokedex.js pokefirered
+node tools/build-font.js          # FireRed's text font as assets/fonts/firered.otf (needs npm install: opentype.js)
 ```
+
+All the game's text is in FireRed's own font (`tools/build-font.js` turns its
+glyphs, a pixel a square with FireRed's letter widths, into a web font); the
+text box is FireRed's size, a game pixel a pixel, with its shadow.
 
 ### Intro
 

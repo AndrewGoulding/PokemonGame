@@ -1202,6 +1202,28 @@ for (const share of [false, true]) {
   }
 }
 
+// FireRed's encounter check (World.stepEncounter): after an encounter, Mt. Moon
+// (rate 7) waits out its cooldown of 8 steps, each only a 5% chance of going on,
+// and a missed roll builds up the buff. Coming out of Mt. Moon, you step out
+// of the cave's mouth.
+{
+  const st = { steps: 0, buff: 0, prev: null };
+  const m = WORLD_MAPS.MtMoon_1F;
+  let gx = 0, gy = 0;
+  for (let i = 0; i < m.width * m.height; i++) {
+    if (World.isGrass(World.blockAt("MtMoon_1F", i % m.width, Math.floor(i / m.width))) && !m.collision[i]) { gx = i % m.width; gy = Math.floor(i / m.width); break; }
+  }
+  for (let i = 0; i < 8; i++) assert.strictEqual(World.stepEncounter(st, "MtMoon_1F", gx, gy, { rng: () => 0.5 }), null, "cooldown step " + i);
+  assert.strictEqual(st.steps, 8);
+  assert.strictEqual(World.stepEncounter(st, "MtMoon_1F", gx, gy, { rng: () => 0.5 }), null, "a missed roll");
+  assert.strictEqual(st.buff, 7);
+  const seq = [0, 0, 0.5]; let k = 0;
+  assert(World.stepEncounter(st, "MtMoon_1F", gx, gy, { rng: () => seq[k++] || 0 }), "past the cooldown: an encounter");
+  assert.deepStrictEqual([st.steps, st.buff], [0, 0]);
+  const out = World.warpTarget(WORLD_MAPS.MtMoon_1F.warps.find((w) => w.map === "Route4"));
+  assert(out.door, "out of Mt. Moon: step out of the cave's mouth");
+}
+
 // The Move Relearner and Move Deleter sit on the cushions upstairs in every
 // Pokémon Center; the Marts have no upstairs, and a save made up there loads
 // just inside the Mart's door.
