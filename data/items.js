@@ -510,6 +510,7 @@ window.ITEMS = {
   "tm99": { name: "tm99", category: "all-machines", effect: "Teaches Secret Power to a compatible Pokémon." },
   "tm100": { name: "tm100", category: "all-machines", effect: "Teaches Bullet Seed to a compatible Pokémon." },
   "tm101": { name: "tm101", category: "all-machines", effect: "Teaches Water Pulse to a compatible Pokémon." },
+  "tm102": { name: "tm102", category: "all-machines", effect: "Teaches Shock Wave to a compatible Pokémon." },
   "tmv-pass": { name: "tmv-pass", category: "gameplay", effect: "Permits access to Kiloude City." },
   "town-map": { name: "town-map", category: "key-items", effect: "A very convenient map that can be viewed anytime. It even shows where you are." },
   "toxic-orb": { name: "toxic-orb", category: "bad-held-items", effect: "Held: Inflicts Toxic on the holder at the end of the turn. Activates after Poison damage would occur." },
@@ -559,5 +560,6 @@ window.ITEMS = {
   // --- From FireRed's Nugget Bridge and Route 25 (added) ---
   "nugget": { name: "nugget", category: "loot", effect: "A nugget of pure gold that gives off a lustrous gleam. It can be sold at a high price." },
   "ss-ticket": { name: "ss-ticket", category: "key-items", effect: "The ticket required for sailing on the ship S.S. Anne. It has a drawing of the ship on it." },
+  "bike-voucher": { name: "bike-voucher", category: "key-items", effect: "A voucher for obtaining a Bicycle from the Bike Shop." },
   "bluk-berry": { name: "bluk-berry", category: "baking-only", effect: "Can be ground into a powder as an ingredient for medicine." }
 };

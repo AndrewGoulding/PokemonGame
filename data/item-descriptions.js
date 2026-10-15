@@ -10,6 +10,7 @@ window.ITEM_DESCRIPTIONS = {
   "awakening": "A spray-type medicine.\nIt awakens a sleeping Pokémon.",
   "berry-juice": "A 100% pure juice.\nIt restores the HP of one Pokémon\nby 20 points.",
   "bicycle": "A folding bicycle that allows\nfaster movement than the Running\nShoes.",
+  "bike-voucher": "Take this voucher to the Bike Shop\nin Cerulean City and exchange it\nfor a bicycle.",
   "black-belt": "An item to be held by a Pokémon.\nA belt that boosts determination\nand Fighting-type moves.",
   "black-flute": "A black glass flute.\nWhen blown, it makes wild Pokémon\nless likely to appear.",
   "black-glasses": "An item to be held by a Pokémon.\nA shady-looking pair of glasses\nthat boosts Dark-type moves.",

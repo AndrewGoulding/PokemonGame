@@ -713,12 +713,12 @@ for (const share of [false, true]) {
     "Sleep Talk", "U-turn", "Substitute", "Flash Cannon", "Trick Room", "Wild Charge", "Rock Smash", "Snarl",
     "Nature Power", "Dark Pulse", "Power-Up Punch", "Dazzling Gleam", "Confide"];
   const HMS = ["Cut", "Fly", "Surf", "Strength", "Flash", "Whirlpool", "Waterfall", "Rock Smash", "Dive", "Defog", "Rock Climb"];
-  const TMS = XY.filter((m) => !HMS.includes(m)).concat("Secret Power", "Bullet Seed", "Water Pulse");
-  assert.strictEqual(TMS.length, 101);
+  const TMS = XY.filter((m) => !HMS.includes(m)).concat("Secret Power", "Bullet Seed", "Water Pulse", "Shock Wave");
+  assert.strictEqual(TMS.length, 102);
   TMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("tm" + String(i + 1).padStart(2, "0")), move, "TM" + (i + 1)));
   HMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("hm" + String(i + 1).padStart(2, "0")), move, "HM" + (i + 1)));
-  assert.strictEqual(Bag.machines().length, 112);
-  assert(!ITEMS.tm102 && !ITEMS.hm12, "no machines past TM101 and HM11");
+  assert.strictEqual(Bag.machines().length, 113);
+  assert(!ITEMS.tm103 && !ITEMS.hm12, "no machines past TM102 and HM11");
   // Every move Pokémon learn by machine in Gen 6 is a TM or HM here; the
   // machines Gen 6 had none for (Bullet Seed, Whirlpool, Defog, Rock Climb)
   // take their compatibility from other generations.
@@ -726,7 +726,7 @@ for (const share of [false, true]) {
   for (const l of Object.values(LEARNSETS_GEN6)) for (const m of l.tm || []) tmMoves.add(m);
   const machineMoves = Bag.machines().map(Bag.machineMove);
   for (const m of tmMoves) assert(machineMoves.includes(m), "no machine for " + m);
-  assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Bullet Seed", "Water Pulse", "Whirlpool", "Defog", "Rock Climb"]);
+  assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Bullet Seed", "Water Pulse", "Shock Wave", "Whirlpool", "Defog", "Rock Climb"]);
   for (const m of ["Whirlpool", "Defog", "Rock Climb", "Bullet Seed"]) assert(MACHINE_LEARNERS[m].length > 50, "who can use " + m);
   assert(!MACHINE_LEARNERS.Thief, "TMs Gen 6 had keep Gen 6's compatibility");
   assert(Bag.canUseOn(Party.create("Oddish", 20, { rng }), "tm100") && !Bag.canUseOn(Party.create("Pidgey", 20, { rng }), "tm100"), "Bullet Seed: Oddish yes, Pidgey no");
@@ -743,7 +743,7 @@ for (const share of [false, true]) {
   assert.strictEqual(Bag.name("tm24"), "TM24 Thunderbolt");
   assert.strictEqual(Bag.name("tm99"), "TM99 Secret Power");
   assert.strictEqual(Bag.name("hm11"), "HM11 Rock Climb");
-  assert.deepStrictEqual(Bag.machines().slice(98, 103), ["tm99", "tm100", "tm101", "hm01", "hm02"]);
+  assert.deepStrictEqual(Bag.machines().slice(98, 104), ["tm99", "tm100", "tm101", "tm102", "hm01", "hm02"]);
   // Saves from before keep their machines' moves under the new numbers.
   const oldSave = Object.assign(Player.create("T"), { party: [Party.create("Pidgey", 5, { rng })], bag: { "tm94-oras": 1 } });
   delete oldSave.pcItems;
@@ -879,6 +879,13 @@ for (const share of [false, true]) {
   assert.strictEqual(intoR5("Route5", 31, 32, "up"), "UndergroundPath_NorthEntrance 6,8");
   assert(WORLD_MAPS.Route5.warps.some((w) => w.x === 24 && w.y === 32 && w.map === "Route5_SouthEntrance"));
   assert(WORLD_MAPS.Route9.people.filter((p) => p.trainer && p.trainer.id).length === 9, "Route 9's nine trainers");
+  // Through the Underground Path to Route 6, then Vermilion City; its Gym's
+  // beams are drawn and walked through by the switches' patches.
+  assert.strictEqual(intoR5("Route6", 19, 14, "up"), "UndergroundPath_SouthEntrance 6,8");
+  assert.strictEqual(at(World.step({ map: "Route6", x: 10, y: 39 }, "down")), "VermilionCity 22,0");
+  const beams = WORLD_MAPS.VermilionCity_Gym.patches;
+  assert.deepStrictEqual(Object.keys(beams), ["half", "off"]);
+  assert(beams.off.collision.some(([x, y, c]) => x === 5 && y === 6 && c === 0) && beams.half.collision.every(([, , c]) => c === 1));
   // Into Mt. Moon and out the other side: Route 4 (19,5) -> 1F, ladders down,
   // B1F's far ladder (45,4) -> Route 4's east side (32,5).
   const into = (map, x, y, dir) => { const r = World.step({ map, x, y }, dir); return r.warp.map + " " + r.warp.x + "," + r.warp.y; };
@@ -1268,9 +1275,9 @@ for (const share of [false, true]) {
   assert.deepStrictEqual([T.width, T.height, T.map.length, T.dungeon.length], [22, 15, 15, 15]);
   assert.deepStrictEqual([T.map[11][4], T.names.PALLET_TOWN, T.dungeon[3][9], T.names.MT_MOON], ["PALLET_TOWN", "Pallet Town", "MT_MOON", "Mt. Moon"]);
   const onMap = (sec) => T.map.some((r) => r.includes(sec)) || T.dungeon.some((r) => r.includes(sec));
-  // (FireRed gives the Underground Path's entrances no square of their own.)
+  // (FireRed gives the Underground Path and the S.S. Anne no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
-    assert(T.mapSections[name] && (onMap(T.mapSections[name]) || T.mapSections[name] === "UNDERGROUND_PATH"), name + " is on the Town Map");
+    assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "S_S_ANNE"].includes(T.mapSections[name])), name + " is on the Town Map");
   }
   assert(fs.existsSync(path.join(__dirname, "../assets/town-map/kanto.png")));
 }

@@ -21,6 +21,7 @@
 //   assets/world/maps/<Map>.png   the map below sprites
 //   assets/world/maps/<Map>-top.png       the parts drawn over sprites
 //   assets/world/maps/<Map>-border.png    the 2x2 blocks repeated outside the map
+//   assets/world/maps/<Map>-patch-<name>.png   metatiles its scripts swap in (MAP_PATCHES)
 //   assets/world/maps/<Map>-anim.png      the map's animated 8x8 cells (water,
 //                                 the sand's and land's water edges, flowers) in
 //                                 every frame, 64 to a row (WORLD_MAPS[..].anim)
@@ -90,7 +91,11 @@ const MAPS = [
   "CeruleanCity_Gym", "CeruleanCity_Mart", "CeruleanCity_BikeShop", "CeruleanCity_House1", "CeruleanCity_House2",
   "CeruleanCity_House3", "CeruleanCity_House4", "CeruleanCity_House5",
   "Route24", "Route25", "Route25_SeaCottage",
-  "Route5", "Route5_PokemonDayCare", "Route5_SouthEntrance", "UndergroundPath_NorthEntrance", "Route9"
+  "Route5", "Route5_PokemonDayCare", "Route5_SouthEntrance", "UndergroundPath_NorthEntrance", "Route9",
+  "UndergroundPath_NorthSouthTunnel", "UndergroundPath_SouthEntrance", "Route6", "Route6_NorthEntrance",
+  "VermilionCity", "VermilionCity_PokemonCenter_1F", "VermilionCity_PokemonCenter_2F", "VermilionCity_Mart",
+  "VermilionCity_Gym", "VermilionCity_House1", "VermilionCity_House2", "VermilionCity_House3",
+  "VermilionCity_PokemonFanClub", "SSAnne_Exterior"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
@@ -130,6 +135,37 @@ const WILD_SLOT_CHANGES = {
   Route3: { 6: ["Jigglypuff", 5, 5], 9: ["Charmander", 5, 5], 11: ["Charmander", 7, 7] },
   Route24: { 8: ["Squirtle", 8, 8], 10: ["Squirtle", 8, 8] }
 };
+// Metatiles a map's scripts swap in while you're there (FireRed's setmetatile):
+// name -> [[x, y, metatile, impassable]]. Each is drawn as its own picture,
+// <Map>-patch-<name>.png (and -top), and listed in WORLD_MAPS[..].patches with
+// the collision it gives; ui/game.js says which are on.
+// Vermilion Gym's electric beams across the way to Lt. Surge: half off after
+// the first switch, off after both (VermilionCity_Gym_EventScript_SetOneBeamOff,
+// _SetBeamsOff, labels in include/constants/metatile_labels.h).
+const MAP_PATCHES = {
+  VermilionCity_Gym: {
+    half: [[3, 6, 0x2BB, 1], [4, 6, 0x2BC, 1], [5, 6, 0x2BD, 1], [6, 6, 0x2BE, 1], [7, 6, 0x2BF, 1],
+      [3, 7, 0x2C3, 1], [4, 7, 0x2C4, 1], [5, 7, 0x2C5, 1], [6, 7, 0x2C6, 1], [7, 7, 0x2C7, 1]],
+    off: [[3, 6, 0x293, 1], [4, 6, 0x294, 0], [5, 6, 0x281, 0], [6, 6, 0x295, 0], [7, 6, 0x296, 1],
+      [3, 7, 0x29B, 1], [4, 7, 0x29C, 0], [5, 7, 0x281, 0], [6, 7, 0x29D, 0], [7, 7, 0x29E, 1]]
+  }
+};
+function renderPatches(name, blocks, w, primary, secondary) {
+  const out = {};
+  for (const [pname, cells] of Object.entries(MAP_PATCHES[name] || {})) {
+    const xs = cells.map((c) => c[0]), ys = cells.map((c) => c[1]);
+    const x0 = Math.min(...xs), y0 = Math.min(...ys), pw = Math.max(...xs) - x0 + 1, ph = Math.max(...ys) - y0 + 1;
+    const sub = [];
+    for (let y = 0; y < ph; y++) for (let x = 0; x < pw; x++) sub.push(blocks[(y0 + y) * w + x0 + x]);
+    for (const [x, y, mt] of cells) sub[(y - y0) * pw + x - x0] = mt;
+    const r = renderBlocks(sub, pw, ph, primary, secondary, false);
+    writePng(path.join(outMaps, name + "-patch-" + pname + ".png"), pw * 16, ph * 16, r.below);
+    if (r.anyAbove) writePng(path.join(outMaps, name + "-patch-" + pname + "-top.png"), pw * 16, ph * 16, r.above);
+    out[pname] = { x: x0, y: y0, w: pw, h: ph, top: r.anyAbove || undefined, collision: cells.map(([x, y, , c]) => [x, y, c]) };
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
 // Scripts whose text is picked by code the converter can't follow.
 const SCRIPT_TEXT = {
   ViridianCity_School_EventScript_PokemonJournal: "PokemonJournal_Text_SpecialFeatureBrock",
@@ -587,6 +623,7 @@ for (const name of MAPS) {
   const { below, above, anyAbove } = renderBlocks(blocks, w, h, primary, secondary, false);
   writePng(path.join(outMaps, name + ".png"), w * 16, h * 16, below);
   if (anyAbove) writePng(path.join(outMaps, name + "-top.png"), w * 16, h * 16, above);
+  const patches = renderPatches(name, blocks, w, primary, secondary);
   const anim = animCells(blocks, w, h, primary, secondary);
   const animFile = path.join(outMaps, name + "-anim.png");
   if (anim.pics.length) writeAnimSheet(animFile, anim.pics);
@@ -639,6 +676,7 @@ for (const name of MAPS) {
     top: anyAbove, borderWidth: bw, borderHeight: bh,
     // Its animated cells (animCells; the pictures in <Map>-anim.png).
     anim: anim.cells.length ? { cells: anim.cells, anims: primary.anims.map((a) => a.name) } : undefined,
+    patches,
     collision, elevation, behavior, encounter,
     connections: (map.connections || []).map((c) => ({ map: byConst[c.map] || null, mapConst: c.map, direction: c.direction, offset: c.offset })),
     warps: map.warp_events.map((wp) => ({ x: wp.x, y: wp.y, map: byConst[wp.dest_map] || null, mapConst: byConst[wp.dest_map] ? undefined : wp.dest_map, warp: +wp.dest_warp_id })),

@@ -39,13 +39,14 @@
     ViridianCity_PokemonCenter_1F: { map: "ViridianCity_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
     PewterCity_PokemonCenter_1F: { map: "PewterCity_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
     Route4_PokemonCenter_1F: { map: "Route4_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
-    CeruleanCity_PokemonCenter_1F: { map: "CeruleanCity_PokemonCenter_1F", x: 7, y: 4, facing: "up" }
+    CeruleanCity_PokemonCenter_1F: { map: "CeruleanCity_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
+    VermilionCity_PokemonCenter_1F: { map: "VermilionCity_PokemonCenter_1F", x: 7, y: 4, facing: "up" }
   };
 
   // Prize money per trainer class: base x the level of the trainer's last Pokémon.
   const PRIZE_BASE = {
     "Youngster": 16, "Lass": 16, "Bug Catcher": 16, "Picnicker": 16, "Camper": 16, "Swimmer": 16,
-    "Psychic": 32, "Fisherman": 40, "Hiker": 40, "Ace Trainer": 60, "Leader": 100
+    "Psychic": 32, "Sailor": 32, "Fisherman": 40, "Hiker": 40, "Engineer": 48, "Ace Trainer": 60, "Gentleman": 72, "Leader": 100
   };
   // Money lost on blacking out: highest party level x this, by badge count (Gen 6).
   const BLACKOUT_BASE = [8, 16, 24, 36, 48, 64, 80, 100, 120];

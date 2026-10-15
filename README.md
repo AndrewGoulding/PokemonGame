@@ -160,8 +160,13 @@ Bridge), Route 25 with Bill's Sea Cottage, Route 5 (reached as in FireRed: throu
 the hole in the robbed house's back wall, past the Rocket in its yard) with the
 Day-Care, the Underground Path's north entrance (Saige trades Ms. Nido, a
 Nidoran♀, for a Nidoran♂; the tunnel itself isn't built) and the gate to
-Saffron City (its thirsty guard turns you back), and Route 9 with its nine
-trainers (behind a small tree you need Cut for, as in FireRed). Tiles, palettes and metatiles come from
+Saffron City (its thirsty guard turns you back), Route 9 with its nine
+trainers (behind a small tree you need Cut for, as in FireRed), the Underground
+Path's tunnel and south entrance, Route 6 with its six trainers and its gate to
+Saffron, and Vermilion City: its Pokémon Center, Poké Mart, Gym (behind a Cut
+tree, as in FireRed), the Fishing Guru's house, Elyssa's trade house, the
+Pidgey house, the Pokémon Fan Club and the S.S. Anne's dock (the ship itself
+isn't built yet). Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into
@@ -416,7 +421,15 @@ the robbed house's yard (beat him and he gives back TM28 Dig), the Day-Care
 Man (`game/daycare.js`: one Pokémon gains 1 Exp. Point a step, learning its
 new moves; ₽100 plus ₽100 a level to take it back), Cut (with the Cascade
 Badge and a Pokémon that knows it, a small tree can be cut down until you
-leave the map), and Bill: a
+leave the map), Vermilion's pier sailor checking for your S.S. Ticket, Lt.
+Surge's Gym (the switches under its fifteen trash cans: the first is under any
+of them, the second under one next to it, and a wrong second can resets both;
+the electric beams are FireRed's metatiles, swapped in as `<Map>-patch-*.png`
+from `MAP_PATCHES` in `tools/build-maps.js`) with Lt. Surge (Voltorb, Pikachu and
+Raichu, the Thunder Badge and TM34 Shock Wave, this game's TM102), the Fishing
+Guru's Old Rod (there's no fishing yet), Elyssa's trade (Ch'Ding the
+Farfetch'd for a Spearow), the Fan Club Chairman's Bike Voucher and the Bike
+Shop's Bicycle for it (there's no riding yet), and Bill: a
 Clefairy until you run his Teleporter's Cell Separator, then he gives you the
 S.S. Ticket and his PC shows his favourite Pokémon) are in `ui/game.js`; their FireRed
 lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scripts
@@ -494,8 +507,10 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   HM09 Dive, HM10 Defog, HM11 Rock Climb.
 - **TMs**: X and Y's TM01–TM100 in order, minus Flash and Rock Smash (HMs
   here), then Secret Power from Omega Ruby and Alpha Sapphire (TM99) and
-  Bullet Seed (TM100, FireRed's TM09). Compatibility comes from the Gen 6
-  learnsets; for HMs and for machines Gen 6 never had (Bullet Seed), also from
+  Bullet Seed (TM100, FireRed's TM09), Water Pulse (TM101, FireRed's TM03) and
+  Shock Wave (TM102, FireRed's TM34). Compatibility comes from the Gen 6
+  learnsets; for HMs and for machines Gen 6 never had (Bullet Seed, Water
+  Pulse, Shock Wave), also from
   any generation that taught the move by machine (`data/machine-learners.js`,
   built by `npm run build:machine-learners` from @pkmn/dex), which covers
   Bullet Seed, Whirlpool, Defog and Rock Climb. The same file has

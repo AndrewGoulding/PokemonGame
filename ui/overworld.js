@@ -82,11 +82,24 @@
     }
   }
 
+  // Metatiles the game has swapped in on a map (tools/build-maps.js
+  // MAP_PATCHES; ctx.patches(map) names those on), over its picture at (x0, y0).
+  function drawPatches(name, x0, y0, part) {
+    const m = World.map(name), on = m && m.patches && ctx.patches ? ctx.patches(name) : [];
+    for (const p of on) {
+      const pt = m.patches[p];
+      if (!pt || (part && !pt.top)) continue;
+      const img = mapImage(name, "patch-" + p + part);
+      if (ready(img)) g.drawImage(img, x0 + pt.x * TILE, y0 + pt.y * TILE);
+    }
+  }
+
   function preloadMap(name) {
     const m = World.map(name);
     const list = [mapImage(name), mapImage(name, "border")];
     if (m.top) list.push(mapImage(name, "top"));
     if (m.anim) list.push(mapImage(name, "anim"));
+    for (const p of Object.keys(m.patches || {})) list.push(mapImage(name, "patch-" + p));
     for (const c of m.connections) if (c.map) list.push(mapImage(c.map), mapImage(c.map, "top"));
     for (const p of m.people) { list.push(spriteImage(p.sprite)); if (p.alt) list.push(spriteImage(p.alt.sprite)); }
     return Promise.all(list.map((img) => img.loaded));
@@ -782,6 +795,7 @@
       const img = mapImage(name);
       if (ready(img)) g.drawImage(img, ox - camX, oy - camY);
       drawAnimCells(name, ox - camX, oy - camY);
+      drawPatches(name, ox - camX, oy - camY, "");
     }
 
     // People and the player, back to front.
@@ -817,6 +831,7 @@
       if (!World.map(name).top) continue;
       const img = mapImage(name, "top");
       if (ready(img)) g.drawImage(img, ox - camX, oy - camY);
+      drawPatches(name, ox - camX, oy - camY, "-top");
     }
     // "!" and "?" bubbles over someone's head.
     for (const [e, x, y] of emotes) {

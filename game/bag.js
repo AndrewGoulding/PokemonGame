@@ -50,8 +50,8 @@
   // HM09 Dive, HM10 Defog, HM11 Rock Climb. TMs are X and Y's TM01-TM100 in
   // order, without the two that are HMs here (Flash, Rock Smash), then
   // Secret Power from Omega Ruby and Alpha Sapphire: TM01-TM99; then TM100 Bullet
-  // Seed (FireRed's TM09, found in Mt. Moon) and TM101 Water Pulse (FireRed's
-  // TM03, Misty's). Which species can use a machine:
+  // Seed (FireRed's TM09, found in Mt. Moon), TM101 Water Pulse (FireRed's
+  // TM03, Misty's) and TM102 Shock Wave (FireRed's TM34, Lt. Surge's). Which species can use a machine:
   // data/machine-learners.js adds other generations to X and Y's.
   // Like Gen 5+, TMs are reusable; HMs too, and with no field moves yet, HM
   // moves can be forgotten like any other.

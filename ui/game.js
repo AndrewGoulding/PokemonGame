@@ -563,7 +563,7 @@
       for (const layer of [T.map, T.dungeon]) for (let y = 0; y < T.height; y++) for (let x = 0; x < T.width; x++) if (layer[y][x] === sec) return [x, y];
       return null;
     };
-    // (Somewhere with no square of its own, the Underground Path's entrances:
+    // (Somewhere with no square of its own, the Underground Path or the S.S. Anne:
     // where you came in from outdoors.)
     const here = cellOf(T.mapSections[player.location && player.location.map]) ||
       cellOf(T.mapSections[(player.flags.escapeWarp || {}).map]) || cellOf("PALLET_TOWN");
@@ -1366,8 +1366,17 @@
     "CeruleanCity_EventScript_Grunt", "CeruleanCity_EventScript_GruntTriggerTop", "CeruleanCity_EventScript_GruntTriggerBottom",
     "EventScript_CutTree", "Route5_PokemonDayCare_EventScript_DaycareMan", "UndergroundPath_NorthEntrance_EventScript_Saige",
     "Route5_SouthEntrance_EventScript_GuardTriggerLeft", "Route5_SouthEntrance_EventScript_GuardTriggerMid",
-    "Route5_SouthEntrance_EventScript_GuardTriggerRight"
-  ].concat(Object.keys(STARTER_BALLS)));
+    "Route5_SouthEntrance_EventScript_GuardTriggerRight",
+    "Route6_NorthEntrance_EventScript_GuardTriggerLeft", "Route6_NorthEntrance_EventScript_GuardTriggerMid",
+    "Route6_NorthEntrance_EventScript_GuardTriggerRight",
+    "VermilionCity_EventScript_CheckTicketLeft", "VermilionCity_EventScript_CheckTicketRight",
+    "VermilionCity_EventScript_ExitedTicketCheck", "VermilionCity_EventScript_OaksAide",
+    "VermilionCity_PokemonCenter_1F_EventScript_Nurse", "VermilionCity_Mart_EventScript_Clerk",
+    "VermilionCity_Gym_EventScript_LtSurge", "VermilionCity_Gym_EventScript_GymGuy", "VermilionCity_Gym_EventScript_GymStatue",
+    "VermilionCity_House1_EventScript_FishingGuru", "VermilionCity_House2_EventScript_Elyssa",
+    "VermilionCity_House3_EventScript_Pidgey", "VermilionCity_PokemonFanClub_EventScript_Pikachu",
+    "VermilionCity_PokemonFanClub_EventScript_Seel", "VermilionCity_PokemonFanClub_EventScript_Chairman"
+  ].concat(Object.keys(STARTER_BALLS)).concat(Array.from({ length: 15 }, (_, i) => "VermilionCity_Gym_EventScript_TrashCan" + (i + 1))));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
   // Item balls on the map: picked up once, then gone.
@@ -1414,7 +1423,10 @@
       case "FLAG_HIDE_PEWTER_CITY_RUNNING_SHOES_GUY": return false;
       case "FLAG_HIDE_OLD_AMBER": return !f.gotOldAmber;
       case "FLAG_HIDE_CERULEAN_RIVAL": return false;        // only for his scene
-      case "FLAG_HIDE_CERULEAN_ROCKET": return !f.gotTM28;  // in the robbed house's yard until he gives back TM28
+      case "FLAG_HIDE_CERULEAN_ROCKET": return !f.gotTM28;
+      // Prof. Oak's aide comes to Vermilion after Lt. Surge, to send you to his
+      // colleague on Route 2 (unless you've had HM05 Flash from him already).
+      case "FLAG_HIDE_VERMILION_CITY_OAKS_AIDE": return !!(f.TRAINER_LEADER_LT_SURGE && !f.gotFlash && !f.talkedToVermilionAide);  // in the robbed house's yard until he gives back TM28
       case "FLAG_HIDE_NUGGET_BRIDGE_ROCKET": return !f.gotSSTicket;
       // Bill: a Clefairy until you run his Cell Separator, then himself.
       case "FLAG_HIDE_BILL_CLEFAIRY": return !f.billHelped && !billInTeleporter;
@@ -1460,6 +1472,7 @@
 
     if (script === "PewterCity_Gym_EventScript_Brock") { await brock(ev.person); return; }
     if (script === "CeruleanCity_Gym_EventScript_Misty") { await misty(ev.person); return; }
+    if (script === "VermilionCity_Gym_EventScript_LtSurge") { await ltSurge(ev.person); return; }
     if (TRAINER_SCRIPTS.has(script)) {
       if (trainerWaiting(ev.person)) await trainerBattle(ev.person, null);
       else await say(ev.person.trainer.after || ev.person.text || []);
@@ -1501,6 +1514,9 @@
       await say(LAB_RIVAL_NAME + " received the " + theirs + " from Prof. Oak!");
       return;
     }
+
+    const can = /^VermilionCity_Gym_EventScript_TrashCan(\d+)$/.exec(script);
+    if (can) { await trashCan(+can[1]); return; }
 
     switch (script) {
       case "PalletTown_EventScript_SignLady":
@@ -1845,6 +1861,16 @@
       // The Bike Shop: a Bicycle is ¥1,000,000 (and FireRed never sells you one).
       case "CeruleanCity_BikeShop_EventScript_Clerk": {
         if (f.gotBicycle) { await say(T("CeruleanCity_BikeShop_Text_HowDoYouLikeNewBicycle")); return; }
+        // With the Fan Club Chairman's Bike Voucher, it's free.
+        if (Player.itemCount(player, "bike-voucher")) {
+          await say(T("CeruleanCity_BikeShop_Text_OhBikeVoucherHereYouGo"));
+          Player.removeItem(player, "bike-voucher");
+          Player.addItem(player, "bicycle");
+          f.gotBicycle = true;
+          await sayWithJingle("mus_obtain_key_item", T("CeruleanCity_BikeShop_Text_ExchangedVoucherForBicycle"));
+          await say(T("CeruleanCity_BikeShop_Text_ThankYouComeAgain"));
+          return;
+        }
         await say(T("CeruleanCity_BikeShop_Text_WelcomeToBikeShop"));
         const v = await ask("", [{ label: "Bicycle  ¥1,000,000", value: "bike", className: "action", wide: true },
           { label: "Cancel", value: "back", className: "action", wide: true }]);
@@ -1941,8 +1967,8 @@
       case "UndergroundPath_NorthEntrance_EventScript_Saige":
         await inGameTrade(TRADES.msNido);
         return;
-      // The guard in the gate to Saffron City is thirsty and turns you back
-      // (FireRed lets you by once you bring him a drink; Saffron isn't here yet).
+      // The guards in the gates to Saffron City are thirsty and turn you back
+      // (FireRed lets you by once you bring them a drink; Saffron isn't here yet).
       case "Route5_SouthEntrance_EventScript_GuardTriggerLeft":
       case "Route5_SouthEntrance_EventScript_GuardTriggerMid":
       case "Route5_SouthEntrance_EventScript_GuardTriggerRight":
@@ -1950,6 +1976,89 @@
         await say(T("Route5_SouthEntrance_Text_ThirstyOnGuardDuty"));
         await Overworld.act([{ who: "player", moves: ["walk_up"] }]);
         return;
+      case "Route6_NorthEntrance_EventScript_GuardTriggerLeft":
+      case "Route6_NorthEntrance_EventScript_GuardTriggerMid":
+      case "Route6_NorthEntrance_EventScript_GuardTriggerRight":
+        await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
+        await say(T("Route6_NorthEntrance_Text_ThirstyOnGuardDuty"));
+        await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
+        return;
+
+      // ---------- Vermilion City ----------
+      // The sailor at the pier checks for an S.S. Ticket (once, until you step back).
+      case "VermilionCity_EventScript_CheckTicketLeft":
+      case "VermilionCity_EventScript_CheckTicketRight":
+        if (ticketChecked) return;
+        await Overworld.act([{ who: "LOCALID_VERMILION_FERRY_SAILOR", moves: M("Common_Movement_WalkInPlaceFasterLeft") },
+          { who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
+        await say(T("VermilionCity_Text_DoYouHaveATicket"));
+        if (!f.gotSSTicket || !Player.itemCount(player, "ss-ticket")) {
+          await say(T("VermilionCity_Text_DontHaveNeededSSTicket"));
+          await Overworld.act([{ who: "player", moves: ["walk_up"] }]);
+          return;
+        }
+        await say(T("VermilionCity_Text_FlashedSSTicket"));
+        ticketChecked = true;
+        return;
+      case "VermilionCity_EventScript_ExitedTicketCheck":
+        ticketChecked = false;
+        return;
+      case "VermilionCity_EventScript_OaksAide":
+        f.talkedToVermilionAide = true;
+        await say(T("VermilionCity_Text_Route2AideHasPackageForYou"));
+        return;
+      case "VermilionCity_PokemonCenter_1F_EventScript_Nurse":
+        await nurse(ev.map, ev.person);
+        return;
+      case "VermilionCity_Mart_EventScript_Clerk":
+        await mart(ev.person.mart);
+        return;
+      case "VermilionCity_Gym_EventScript_LtSurge":
+        await ltSurge(ev.person);
+        return;
+      case "VermilionCity_Gym_EventScript_GymGuy":
+        await say(T(f.TRAINER_LEADER_LT_SURGE ? "VermilionCity_Gym_Text_GymGuyPostVictory" : "VermilionCity_Gym_Text_GymGuyAdvice"));
+        return;
+      case "VermilionCity_Gym_EventScript_GymStatue":
+        await say(T(hasBadge("thunder") ? "VermilionCity_Gym_Text_GymStatuePlayerWon" : "VermilionCity_Gym_Text_GymStatue"));
+        return;
+      // The Fishing Guru gives you an Old Rod.
+      case "VermilionCity_House1_EventScript_FishingGuru": {
+        if (f.gotOldRod) { await say(T("VermilionCity_House1_Text_HowAreTheFishBiting")); return; }
+        const q = T("VermilionCity_House1_Text_ImFishingGuruDoYouLikeToFish");
+        await say(q.slice(0, -1));
+        if (!(await confirm(fill(q[q.length - 1])))) { await say(T("VermilionCity_House1_Text_OhThatsSoDisappointing")); return; }
+        await say(T("VermilionCity_House1_Text_TakeThisAndFish"));
+        Player.addItem(player, "old-rod");
+        f.gotOldRod = true;
+        await sayWithJingle(itemJingle("old-rod"), T("VermilionCity_House1_Text_ReceivedOldRodFromFishingGuru"));
+        await say(T("VermilionCity_House1_Text_FishingIsAWayOfLife"));
+        return;
+      }
+      case "VermilionCity_House2_EventScript_Elyssa":
+        await inGameTrade(TRADES.chDing);
+        return;
+      // Pokémon that cry when you talk to them.
+      case "VermilionCity_House3_EventScript_Pidgey":
+      case "VermilionCity_PokemonFanClub_EventScript_Pikachu":
+      case "VermilionCity_PokemonFanClub_EventScript_Seel":
+        cry(/Pidgey$/.test(script) ? "Pidgey" : /Pikachu$/.test(script) ? "Pikachu" : "Seel");
+        await say(ev.person.text || []);
+        return;
+      // The Fan Club's Chairman: hear him out about his Rapidash and get a Bike Voucher.
+      case "VermilionCity_PokemonFanClub_EventScript_Chairman": {
+        const C = (k) => T("VermilionCity_PokemonFanClub_Text_" + k);
+        if (f.gotBikeVoucher) { await say(C("DidntComeToSeeAboutMonsAgain")); return; }
+        const q = C("DidYouComeToHearAboutMyMons");
+        await say(q.slice(0, -1));
+        if (!(await confirm(fill(q[q.length - 1])))) { await say(C("ComeBackToHearStory")); return; }
+        await say(C("ChairmansStory"));
+        Player.addItem(player, "bike-voucher");
+        f.gotBikeVoucher = true;
+        await sayWithJingle("mus_obtain_key_item", C("ReceivedBikeVoucherFromChairman"));
+        await say(C("ExplainBikeVoucher"));
+        return;
+      }
 
       // Super Nerd Miguel guards the fossils: beat him, then each of you takes one.
       case "MtMoon_B2F_EventScript_MiguelTrigger":
@@ -2170,6 +2279,12 @@
         wrong: "Trade_Text_ThisIsntMon", thanks: "Trade_Text_Thanks", after: "Trade_Text_HasTradedMonGrownStronger" } },
     // Saige, at the Underground Path's north entrance on Route 5 (FireRed's
     // INGAME_TRADE_NIDORAN; FireRed's holds a Tiny Mushroom, which this game hasn't got).
+    // Elyssa, in Vermilion City (FireRed's INGAME_TRADE_FARFETCHD).
+    chDing: { flag: "tradedChDing", wants: "Spearow", gives: "Farfetch'd", nickname: "Ch'Ding",
+      ivs: { hp: 20, atk: 25, def: 21, spe: 24, spa: 15, spd: 20 }, ot: { name: "ELYSSA", id: 8810 },
+      text: { ask: "VermilionCity_House2_Text_DoYouHaveMonWantToTradeForMyMon", no: "VermilionCity_House2_Text_ThatsTooBad",
+        wrong: "VermilionCity_House2_Text_ThisIsNoMon", thanks: "VermilionCity_House2_Text_ThankYou",
+        after: "VermilionCity_House2_Text_HowIsMyOldMon" } },
     msNido: { flag: "tradedMsNido", wants: "Nidoran-M", gives: "Nidoran-F", nickname: "Ms. Nido",
       ivs: { hp: 22, atk: 18, def: 25, spe: 19, spa: 15, spd: 22 }, ot: { name: "SAIGE", id: 63184 },
       text: { ask: "Trade_Text_DoYouHaveMonWantToTradeForMon", no: "Trade_Text_ThatsTooBad",
@@ -2920,6 +3035,86 @@
     await say(T("CeruleanCity_Gym_Text_ExplainTM03").map((p) => p.replace(/TM03/g, "TM101")));
   }
 
+  // Lt. Surge: battle (talking to him), then the Thunder Badge and TM34 Shock
+  // Wave (this game's TM102). Beating him also beats his Gym's trainers.
+  async function ltSurge(person) {
+    const f = player.flags, ID = "TRAINER_LEADER_LT_SURGE";
+    if (!f[ID]) {
+      await say(person.trainer.intro);
+      if (!canBattle()) return;
+      const outcome = await battle("trainer", { foe: { name: "Leader Lt. Surge", team: trainerTeam(ID), pic: "leader_lt_surge" },
+        defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
+      if (outcome !== "won") return;
+      if (!hasBadge("thunder")) player.badges.push("thunder");
+      f.TRAINER_ENGINEER_BAILY = f.TRAINER_SAILOR_DWAYNE = f.TRAINER_GENTLEMAN_TUCKER = true;
+      player.flags.lastCenter = "VermilionCity_PokemonCenter_1F";
+      show("world");
+      await Overworld.resume();
+    }
+    if (!f.gotTM34) {
+      await say(T("VermilionCity_Gym_Text_ExplainThunderBadgeTakeThis"));
+      Player.addItem(player, "tm102");
+      f.gotTM34 = true;
+      await sayWithJingle(itemJingle("tm102"), "{PLAYER} received TM102\nfrom Lt. Surge.");
+      await say(T("VermilionCity_Gym_Text_ExplainTM34").map((p) => p.replace(/TM34/g, "TM102")));
+      return;
+    }
+    await say(T("VermilionCity_Gym_Text_LtSurgePostBattle"));
+  }
+
+  // Vermilion Gym's trash cans (VermilionCity_Gym_EventScript_TrashCan): a
+  // switch is under one of the fifteen, and the second under one next to it
+  // (SetVermilionTrashCans). Find the first and one beam goes off; then the
+  // second, or both are hidden somewhere new. Both found, the way to Lt. Surge
+  // stays open. Leaving the Gym hides them again.
+  let gymCans = null, ticketChecked = false;
+  function hideVermilionSwitches() {
+    // Cans 1-15, five a row in three rows: the second is a neighbour of the first.
+    const first = 1 + Math.floor(Math.random() * 15), col = (first - 1) % 5;
+    const next = [first - 5, first + 5, col > 0 ? first - 1 : 0, col < 4 ? first + 1 : 0].filter((c) => c >= 1 && c <= 15);
+    gymCans = { first, second: next[Math.floor(Math.random() * next.length)], foundFirst: false };
+  }
+  async function trashCan(n) {
+    const f = player.flags;
+    if (!gymCans) hideVermilionSwitches();
+    if (f.vermilionGymLocksOpen) { await say(T("VermilionCity_Gym_Text_NopeOnlyTrashHere")); return; }
+    if (!gymCans.foundFirst) {
+      if (n !== gymCans.first) { await say(T("VermilionCity_Gym_Text_NopeOnlyTrashHere")); return; }
+      await say(T("VermilionCity_Gym_Text_SwitchUnderTrashFirstLockOpened"));
+      sfx("se_pin");
+      gymCans.foundFirst = true;
+      applyPatches("VermilionCity_Gym");
+      return;
+    }
+    if (n !== gymCans.second) {
+      await say(T("VermilionCity_Gym_Text_OnlyTrashLocksWereReset"));
+      hideVermilionSwitches();
+      applyPatches("VermilionCity_Gym");
+      return;
+    }
+    await say(T("VermilionCity_Gym_Text_SecondLockOpened"));
+    f.vermilionGymLocksOpen = true;
+    applyPatches("VermilionCity_Gym");
+    sfx("se_unlock");
+  }
+  // Which of a map's patches (WORLD_MAPS[..].patches) are on now.
+  function mapPatches(map) {
+    if (map === "VermilionCity_Gym") {
+      if (player.flags.vermilionGymLocksOpen) return ["off"];
+      if (gymCans && gymCans.foundFirst) return ["half"];
+    }
+    return [];
+  }
+  // Sets a map's collision for the patches on now (the rest as built).
+  const baseCollision = {};
+  function applyPatches(map) {
+    const m = window.WORLD_MAPS[map];
+    if (!m || !m.patches) return;
+    const base = baseCollision[map] || (baseCollision[map] = m.collision.slice());
+    for (const pt of Object.values(m.patches)) for (const [x, y] of pt.collision) m.collision[y * m.width + x] = base[y * m.width + x];
+    for (const p of mapPatches(map)) for (const [x, y, c] of m.patches[p].collision) m.collision[y * m.width + x] = c;
+  }
+
   // ---------- Escape Rope ----------
   //
   // As in FireRed: it works only where the map allows escaping (caves, Viridian
@@ -3011,9 +3206,12 @@
         player, rivalName: player.rival, visible,
         special,
         onWarp,
-        trainerWaiting, hiddenItem: (h) => !player.flags[h.flag],
+        trainerWaiting, hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches,
         onStep: () => { leftPallet(player.location.map); DayCare.step(player.flags.dayCare); return redForestStep() || jessieJamesStep() || repelStep(); }, allowWild: repelAllows,
-        onMap: (m) => { forgetTrainerSpots(m); clearTempFlags(m); visitSection(m); music((window.WORLD_MAPS[m] || {}).music); }
+        onMap: (m) => {
+          if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
+          if (m !== "VermilionCity") ticketChecked = false;
+          forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m); music((window.WORLD_MAPS[m] || {}).music); }
       });
       if (ev.type === "menu") await startMenu();
       else if (ev.type === "repel-ended") await repelWoreOff();
