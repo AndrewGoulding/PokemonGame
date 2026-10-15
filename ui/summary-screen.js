@@ -111,18 +111,14 @@
   const PAGE_NAME = ["POKéMON INFO", "POKéMON SKILLS", "KNOWN MOVES", "KNOWN MOVES", "POKéMON EVs"];
   const pageName = (page) => (page === 4 && st.ivs ? "POKéMON IVs" : PAGE_NAME[page]);
 
-  // The move's category beside EFFECT (this game's; FireRed has none): a pill
-  // in Gen 4's colours, red-orange Physical, blue Special, grey Status.
-  const CATEGORY_COLOURS = { Physical: [[232, 80, 48], [144, 40, 24]], Special: [[64, 104, 216], [32, 48, 120]], Status: [[148, 148, 148], [80, 80, 80]] };
-  function categoryPill(s, cat, x, y) {
-    const c = CATEGORY_COLOURS[cat];
-    if (!c) return;
-    const w = 46, h = 11;
-    s.fill(x + 1, y, w - 2, h, c[1]);
-    s.fill(x, y + 1, w, h - 2, c[1]);
-    s.fill(x + 1, y + 1, w - 2, h - 2, c[0]);
-    const label = cat.toUpperCase();
-    s.text(label, x + Math.floor((w - s.textWidth(label, "small")) / 2), y, [255, 255, 255], c[1], "small");
+  // The move's category beside EFFECT (this game's; FireRed has none):
+  // Diamond and Pearl's icons, 16x16 (data sheet categoryIcons: Physical,
+  // Special, Status, top to bottom).
+  const CATEGORIES = ["Physical", "Special", "Status"];
+  function categoryIcon(s, cat, x, y) {
+    const i = CATEGORIES.indexOf(cat), sh = D().sheets.categoryIcons;
+    if (i < 0 || !sh) return;
+    blit(s, "categoryIcons", 0, i * 16, 16, 16, x, y, sh.palette);
   }
 
   // ---------- Drawing ----------
@@ -232,7 +228,7 @@
           const pow = mv.cat === "Status" || !mv.power || mv.power <= 1 ? "---" : String(mv.power).padStart(3, " ");
           const acc = mv.acc === true || !mv.acc ? "---" : String(mv.acc).padStart(3, " ");
           dark(pow, 57, 57); dark(acc, 57, 71);
-          categoryPill(top, mv.cat, 50, 84);
+          categoryIcon(top, mv.cat, 48, 79);
           wrap(top, (d.moveText || {})[m.name] || mv.shortDesc || "", 112).slice(0, 4).forEach((l, i) => dark(l, 7, 98 + i * 14));
         }
       }

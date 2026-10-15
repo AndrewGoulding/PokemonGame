@@ -893,6 +893,7 @@
       if (mode === "deposit" && player.party.length <= 1) { await say("Can't deposit the last Pokémon!"); continue; }
       Screen.say("");
       lastBox = await storage(mode);
+      Player.healBoxes(player);
       await persist();
     }
   }
@@ -908,6 +909,7 @@
         pic: Screen.spriteUrl(r.species, Party.form(r), false, r.shiny),
         picEmpty: ((window.SPRITE_METRICS || {}).front || {})[(window.DEX[r.species] || {}).id] || 0
       }),
+      heal: (r) => Party.heal(r),   // (Pokémon in the PC are fully healed)
       itemIcon: (id) => Bag.sprite(id), itemName: (id) => Bag.name(id), itemDesc: (id) => Bag.description(id),
       summary: (records, i) => SummaryScreen.open(records.map(summaryView), i, summaryContext(records)),
       pickItem: async () => {

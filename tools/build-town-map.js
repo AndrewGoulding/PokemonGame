@@ -95,12 +95,6 @@ const map = layer("LAYER_MAP"), dungeon = layer("LAYER_DUNGEON");
 const titleCase = (s) => s.toLowerCase().replace(/(^|[\s.])([a-z])/g, (m, a, b) => a + b.toUpperCase());
 const sections = JSON.parse(fs.readFileSync(P("src/data/region_map/region_map_sections.json"), "utf8")).map_sections;
 const used = new Set([...map.flat(), ...dungeon.flat()].filter(Boolean));
-const names = {};
-for (const s of sections) {
-  const id = s.id.replace(/^MAPSEC_/, "");
-  if (used.has(id) && s.name) names[id] = titleCase(s.name);
-}
-
 // Which section each of the game's maps is in (its map.json).
 global.window = global;
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/world-maps.js"), "utf8"));
@@ -112,6 +106,15 @@ for (const name of Object.keys(window.WORLD_MAPS)) {
   if (!fs.existsSync(file)) continue;
   const sec = JSON.parse(fs.readFileSync(file, "utf8")).region_map_section;
   if (sec) mapSections[name] = sec.replace(/^MAPSEC_/, "");
+}
+
+// Names for the sections on the grid and those the game's maps are in (the
+// Underground Path and the S.S. Anne have no square of their own).
+for (const id of Object.values(mapSections)) used.add(id);
+const names = {};
+for (const s of sections) {
+  const id = s.id.replace(/^MAPSEC_/, "");
+  if (used.has(id) && s.name) names[id] = titleCase(s.name).replace(/^S\.s\. /, "S.S. ");
 }
 
 // The towns (src/region_map.c's GetMapsecType: the sections that are visited

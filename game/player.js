@@ -122,7 +122,7 @@
     }
     const i = player.boxes.findIndex((box) => firstEmpty(box) >= 0);
     if (i < 0) return null;
-    player.boxes[i][firstEmpty(player.boxes[i])] = record;
+    player.boxes[i][firstEmpty(player.boxes[i])] = window.Party.heal(record);
     return "box " + (i + 1);
   }
 
@@ -139,7 +139,7 @@
     const at = slot != null ? slot : firstEmpty(box);
     if (at < 0 || box[at]) return "That box is full.";
     player.party.splice(partyIndex, 1);
-    box[at] = record;
+    box[at] = window.Party.heal(record);
     return null;
   }
 
@@ -162,8 +162,14 @@
     const after = player.party.map((r, i) => (i === partyIndex ? into : r));
     if (!healthy(after)) return "You'd have no Pokémon left that can battle!";
     player.party[partyIndex] = into;
-    box[slot] = out;
+    box[slot] = window.Party.heal(out);
     return null;
+  }
+
+  // Pokémon in the PC are fully healed (as from Gen 4 on): each as it goes in.
+  // (healBoxes catches any left hurt, e.g. from a save before this.)
+  function healBoxes(player) {
+    for (const box of player.boxes) for (const r of box) if (r) window.Party.heal(r);
   }
 
   function release(player, boxIndex, slot) {
@@ -350,7 +356,7 @@
 
   window.Player = {
     VERSION, LOOKS, PLAYER_LOOK, RIVAL_NAME, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG, STARTING_PC_ITEMS, NEW_GAME_LOCATION, HOME, CENTERS,
-    create, markSeen, markCaught, hasCaught, receive, deposit, withdraw, swapWithBox, release, boxCount, firstEmpty, boxed,
+    create, markSeen, markCaught, hasCaught, receive, deposit, withdraw, swapWithBox, healBoxes, release, boxCount, firstEmpty, boxed,
     itemCount, addItem, removeItem, depositItem, withdrawItem, addMoney, prizeMoney, blackoutLoss, serialize, load
   };
 })();

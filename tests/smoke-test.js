@@ -1500,3 +1500,17 @@ console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random 
   assert(battle.events.some((ev) => ev[0] === "-useitem" && ev[2] === "x-attack"));
   assert(battle.events.some((ev) => ev[0] === "-boost"), "no -boost after X Attack");
 }
+
+// Pokémon going into the PC are fully healed.
+{
+  const pl = Player.create("T");
+  for (const sp of ["Pidgey", "Rattata"]) Player.receive(pl, Party.create(sp, 10, { rng }));
+  pl.party[1].hp = 1; pl.party[1].status = "psn"; pl.party[1].moves[0].pp = 0;
+  assert.strictEqual(Player.deposit(pl, 1, 0), null);
+  const r = pl.boxes[0][0];
+  assert.deepStrictEqual([r.hp, r.status, r.moves[0].pp], [Party.maxHp(r), "", Party.maxPp(r.moves[0])]);
+  while (pl.party.length < 6) Player.receive(pl, Party.create("Pidgey", 5, { rng }));
+  const hurt = Party.create("Zubat", 5, { rng }); hurt.hp = 2;
+  assert.strictEqual(Player.receive(pl, hurt), "box 1");
+  assert.strictEqual(hurt.hp, Party.maxHp(hurt));
+}

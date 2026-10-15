@@ -44,7 +44,8 @@ System: 14 boxes of 30 (BOX1-BOX14, each with a name and one of FireRed's 16
 wallpapers), Withdraw, Deposit, Move Pokémon (pick a Pokémon up with the hand
 and put it down anywhere, in a box or your party) and Move items (take, give and
 swap held items), with FireRed's hand, party panel, "which BOX?" popup, box
-scrolling and release. Your own PC is item storage: Withdraw item on FireRed's
+scrolling and release. A Pokémon put in a box (or sent there when your party
+is full) is fully healed, as from Gen 4 on. Your own PC is item storage: Withdraw item on FireRed's
 item list, Deposit item from the Bag. There's
 also a move tutor who teaches Dream Eater once, a school and the Nickname house.
 Route 2, Route 22 and the Gym aren't built yet; walking into the Gym's door
@@ -80,8 +81,8 @@ status, level and HP bar; A on one opens SUMMARY / SWITCH / ITEM / CANCEL:
 SUMMARY is FireRed's Summary screen: POKéMON INFO (number, type, OT, ID
 No., held item and the Trainer Memo: its nature and where it was met),
 POKéMON SKILLS (HP and EXP bars, stats, ability), KNOWN MOVES, whose
-details show each move's power, accuracy, category (Physical / Special /
-Status, this game's) and description, and swap two
+details show each move's power, accuracy, category (Diamond and Pearl's
+Physical / Special / Status icon, this game's) and description, and swap two
 moves with A, and a page of this game's after it, with a fourth dot in the
 page tabs: POKéMON EVs, each stat's EVs, and A switches it to POKéMON IVs and
 back; up / down go through your party; SWITCH asks "Move to
@@ -254,7 +255,8 @@ expansion's for later ones):
 ```sh
 cd pokefirered && git sparse-checkout add graphics/summary_screen/ graphics/learn_move/ /src/move_descriptions.c \
   /src/data/text/abilities.h && cd ..
-cd expansion && git sparse-checkout add /src/data/moves_info.h /src/data/abilities.h && cd ..
+cd expansion && git sparse-checkout add /src/data/moves_info.h /src/data/abilities.h \
+  /graphics/interface/category_icons.png && cd ..
 node tools/build-summary.js pokefirered expansion
 ```
 

@@ -75,7 +75,8 @@
   // Where the hand is: { area: "box" | "party" | "title" | "buttons", pos }.
   const slotOf = (c) => (c.area === "box" ? st.opts.boxes[st.box][c.pos] : c.area === "party" && c.pos < 6 ? st.party[c.pos] : null);
   function setSlot(c, r) {
-    if (c.area === "box") st.opts.boxes[st.box][c.pos] = r || null;
+    // (Pokémon put in a box are healed: opts.heal.)
+    if (c.area === "box") st.opts.boxes[st.box][c.pos] = (r && st.opts.heal ? st.opts.heal(r) : r) || null;
     else st.party[c.pos] = r || null;
   }
   // GetCursorCoordsByPos: the hand's point.
@@ -465,7 +466,7 @@
       st.depositBox = b;
       say(null);
       await handDip(() => { setSlot(st.cursor, null); });
-      st.opts.boxes[b][slot] = r;
+      st.opts.boxes[b][slot] = st.opts.heal ? st.opts.heal(r) : r;
       compactParty();
       if (b !== st.box) await scrollTo(b);
       changed();
