@@ -869,7 +869,16 @@ for (const share of [false, true]) {
   assert.strictEqual(at(World.step({ map: "CeruleanCity", x: 22, y: 0 }, "up")), "Route24 10,39");
   assert.strictEqual(at(World.step({ map: "Route24", x: 23, y: 3 }, "right")), "Route25 0,3");
   assert.strictEqual(World.step({ map: "Route25", x: 51, y: 5 }, "up").warp.map, "Route25_SeaCottage");
-  assert.strictEqual(World.step({ map: "CeruleanCity", x: 47, y: 13 }, "right").unbuilt, "MAP_ROUTE9");
+  // East to Route 9 (Rock Tunnel's Route 10 isn't built), south to Route 5,
+  // its Day-Care, the Underground Path's entrance and the gate to Saffron.
+  assert.strictEqual(at(World.step({ map: "CeruleanCity", x: 47, y: 11 }, "right")), "Route9 0,1");
+  assert.strictEqual(World.step({ map: "Route9", x: 71, y: 3 }, "right").unbuilt, "MAP_ROUTE10");
+  assert.strictEqual(at(World.step({ map: "CeruleanCity", x: 16, y: 39 }, "down")), "Route5 16,0");
+  const intoR5 = (map, x, y, dir) => { const r = World.step({ map, x, y }, dir); return r.warp.map + " " + r.warp.x + "," + r.warp.y; };
+  assert.strictEqual(intoR5("Route5", 23, 26, "up"), "Route5_PokemonDayCare 4,7");
+  assert.strictEqual(intoR5("Route5", 31, 32, "up"), "UndergroundPath_NorthEntrance 6,8");
+  assert(WORLD_MAPS.Route5.warps.some((w) => w.x === 24 && w.y === 32 && w.map === "Route5_SouthEntrance"));
+  assert(WORLD_MAPS.Route9.people.filter((p) => p.trainer && p.trainer.id).length === 9, "Route 9's nine trainers");
   // Into Mt. Moon and out the other side: Route 4 (19,5) -> 1F, ladders down,
   // B1F's far ladder (45,4) -> Route 4's east side (32,5).
   const into = (map, x, y, dir) => { const r = World.step({ map, x, y }, dir); return r.warp.map + " " + r.warp.x + "," + r.warp.y; };
@@ -1259,7 +1268,10 @@ for (const share of [false, true]) {
   assert.deepStrictEqual([T.width, T.height, T.map.length, T.dungeon.length], [22, 15, 15, 15]);
   assert.deepStrictEqual([T.map[11][4], T.names.PALLET_TOWN, T.dungeon[3][9], T.names.MT_MOON], ["PALLET_TOWN", "Pallet Town", "MT_MOON", "Mt. Moon"]);
   const onMap = (sec) => T.map.some((r) => r.includes(sec)) || T.dungeon.some((r) => r.includes(sec));
-  for (const name of Object.keys(WORLD_MAPS)) assert(T.mapSections[name] && onMap(T.mapSections[name]), name + " is on the Town Map");
+  // (FireRed gives the Underground Path's entrances no square of their own.)
+  for (const name of Object.keys(WORLD_MAPS)) {
+    assert(T.mapSections[name] && (onMap(T.mapSections[name]) || T.mapSections[name] === "UNDERGROUND_PATH"), name + " is on the Town Map");
+  }
   assert(fs.existsSync(path.join(__dirname, "../assets/town-map/kanto.png")));
 }
 
@@ -1425,3 +1437,18 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
 }
 
 console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns), AI beat random moves in " + aiWinRate + "% of games");
+
+// The Route 5 Day-Care: 1 Exp. Point a step; ¥100 plus ¥100 a level to take it
+// back; it learns its new moves, forgetting its first with four already.
+{
+  const mon = Party.create("Charmander", 5, { moves: ["Scratch", "Growl", "Ember", "Leer"] });
+  const dc = DayCare.deposit(mon);
+  assert.deepStrictEqual([DayCare.levelsGained(dc), DayCare.cost(dc)], [0, 100]);
+  const target = Experience.expForLevel(Experience.growthRate("Charmander"), 10);
+  while (mon.exp + dc.steps < target) DayCare.step(dc);
+  assert.deepStrictEqual([DayCare.levelsGained(dc), DayCare.cost(dc)], [5, 600]);
+  const back = DayCare.withdraw(dc);
+  assert.strictEqual(back.level, 10);
+  assert.strictEqual(back.moves.length, 4);
+  assert.deepStrictEqual(back.moves.map((m) => m.name), ["Growl", "Ember", "Leer", "Smokescreen"]);   // Smokescreen at 10
+}

@@ -563,7 +563,10 @@
       for (const layer of [T.map, T.dungeon]) for (let y = 0; y < T.height; y++) for (let x = 0; x < T.width; x++) if (layer[y][x] === sec) return [x, y];
       return null;
     };
-    const here = cellOf(T.mapSections[player.location && player.location.map]) || cellOf("PALLET_TOWN");
+    // (Somewhere with no square of its own, the Underground Path's entrances:
+    // where you came in from outdoors.)
+    const here = cellOf(T.mapSections[player.location && player.location.map]) ||
+      cellOf(T.mapSections[(player.flags.escapeWarp || {}).map]) || cellOf("PALLET_TOWN");
     let [cx, cy] = here;
     visitSection(player.location && player.location.map);
     // FireRed's small icons on the caves and forests (CreateDungeonIcons): lit
@@ -1359,7 +1362,11 @@
     "CeruleanCity_BikeShop_EventScript_Clerk", "CeruleanCity_House5_EventScript_BerryPowderMan",
     "CeruleanCity_House5_EventScript_BerryCrushRankings",
     "Route24_EventScript_Rocket", "Route24_EventScript_RocketTriggerLeft", "Route24_EventScript_RocketTriggerRight",
-    "Route25_SeaCottage_EventScript_Bill", "Route25_SeaCottage_EventScript_Computer"
+    "Route25_SeaCottage_EventScript_Bill", "Route25_SeaCottage_EventScript_Computer",
+    "CeruleanCity_EventScript_Grunt", "CeruleanCity_EventScript_GruntTriggerTop", "CeruleanCity_EventScript_GruntTriggerBottom",
+    "EventScript_CutTree", "Route5_PokemonDayCare_EventScript_DaycareMan", "UndergroundPath_NorthEntrance_EventScript_Saige",
+    "Route5_SouthEntrance_EventScript_GuardTriggerLeft", "Route5_SouthEntrance_EventScript_GuardTriggerMid",
+    "Route5_SouthEntrance_EventScript_GuardTriggerRight"
   ].concat(Object.keys(STARTER_BALLS)));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
@@ -1374,6 +1381,7 @@
   function visible(person) {
     const f = player.flags;
     if (person.item) return !f[person.flag];
+    if (person.flag && tempFlags.has(person.flag)) return false;   // (a tree you've cut)
     const spot = person.trainer && f.trainerSpots && f.trainerSpots[person.trainer.id];
     if (spot) return { x: spot.x, y: spot.y, movement: "face_" + spot.facing };
     // Miguel stays by the fossil he took (FireRed's copyobjectxytoperm).
@@ -1406,7 +1414,7 @@
       case "FLAG_HIDE_PEWTER_CITY_RUNNING_SHOES_GUY": return false;
       case "FLAG_HIDE_OLD_AMBER": return !f.gotOldAmber;
       case "FLAG_HIDE_CERULEAN_RIVAL": return false;        // only for his scene
-      case "FLAG_HIDE_CERULEAN_ROCKET": return false;       // (in the robbed house's yard: not built yet)
+      case "FLAG_HIDE_CERULEAN_ROCKET": return !f.gotTM28;  // in the robbed house's yard until he gives back TM28
       case "FLAG_HIDE_NUGGET_BRIDGE_ROCKET": return !f.gotSSTicket;
       // Bill: a Clefairy until you run his Cell Separator, then himself.
       case "FLAG_HIDE_BILL_CLEFAIRY": return !f.billHelped && !billInTeleporter;
@@ -1916,6 +1924,33 @@
         await billsComputer();
         return;
 
+      // ---------- Cerulean's robbed house, Routes 5 and 9 ----------
+      case "CeruleanCity_EventScript_Grunt":
+        await ceruleanGrunt(null);
+        return;
+      case "CeruleanCity_EventScript_GruntTriggerTop":
+      case "CeruleanCity_EventScript_GruntTriggerBottom":
+        if (!f.gotTM28 && canBattle()) await ceruleanGrunt(/Top$/.test(script) ? "top" : "bottom");
+        return;
+      case "EventScript_CutTree":
+        await cutTree(ev.person);
+        return;
+      case "Route5_PokemonDayCare_EventScript_DaycareMan":
+        await dayCareMan();
+        return;
+      case "UndergroundPath_NorthEntrance_EventScript_Saige":
+        await inGameTrade(TRADES.msNido);
+        return;
+      // The guard in the gate to Saffron City is thirsty and turns you back
+      // (FireRed lets you by once you bring him a drink; Saffron isn't here yet).
+      case "Route5_SouthEntrance_EventScript_GuardTriggerLeft":
+      case "Route5_SouthEntrance_EventScript_GuardTriggerMid":
+      case "Route5_SouthEntrance_EventScript_GuardTriggerRight":
+        await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
+        await say(T("Route5_SouthEntrance_Text_ThirstyOnGuardDuty"));
+        await Overworld.act([{ who: "player", moves: ["walk_up"] }]);
+        return;
+
       // Super Nerd Miguel guards the fossils: beat him, then each of you takes one.
       case "MtMoon_B2F_EventScript_MiguelTrigger":
         if (f.TRAINER_SUPER_NERD_MIGUEL) return;
@@ -2098,6 +2133,14 @@
         { map: player.location.map, x: person.x + dx * approach, y: person.y + dy * approach, facing };
     }
   }
+  // FireRed's temporary flags (FLAG_TEMP_*: the trees you've cut), cleared
+  // when you go to another map.
+  const tempFlags = new Set();
+  let tempFlagsMap = null;
+  function clearTempFlags(map) {
+    if (map !== tempFlagsMap) tempFlags.clear();
+    tempFlagsMap = map;
+  }
   function forgetTrainerSpots(map) {
     const spots = player.flags.trainerSpots;
     if (!spots) return;
@@ -2124,7 +2167,13 @@
     zynx: { flag: "tradedZynx", wants: "Poliwhirl", gives: "Jynx", nickname: "Zynx",
       ivs: { hp: 18, atk: 17, def: 18, spe: 22, spa: 25, spd: 21 }, ot: { name: "DONTAE", id: 36728 },
       text: { ask: "Trade_Text_DoYouHaveMonWouldYouTradeForMon", no: "Trade_Text_WellIfYouDontWantTo",
-        wrong: "Trade_Text_ThisIsntMon", thanks: "Trade_Text_Thanks", after: "Trade_Text_HasTradedMonGrownStronger" } }
+        wrong: "Trade_Text_ThisIsntMon", thanks: "Trade_Text_Thanks", after: "Trade_Text_HasTradedMonGrownStronger" } },
+    // Saige, at the Underground Path's north entrance on Route 5 (FireRed's
+    // INGAME_TRADE_NIDORAN; FireRed's holds a Tiny Mushroom, which this game hasn't got).
+    msNido: { flag: "tradedMsNido", wants: "Nidoran-M", gives: "Nidoran-F", nickname: "Ms. Nido",
+      ivs: { hp: 22, atk: 18, def: 25, spe: 19, spa: 15, spd: 22 }, ot: { name: "SAIGE", id: 63184 },
+      text: { ask: "Trade_Text_DoYouHaveMonWantToTradeForMon", no: "Trade_Text_ThatsTooBad",
+        wrong: "Trade_Text_ThisIsNoMon", thanks: "Trade_Text_ThanksYoureAPal", after: "Trade_Text_HowIsMyOldMon" } }
   };
   async function inGameTrade(trade) {
     const f = player.flags, vars = [trade.wants, trade.gives];
@@ -2625,6 +2674,89 @@
     await say(T("Route24_Text_YoudBecomeTopRocketLeader"));
   }
 
+  // ---------- Cerulean City: the robbed house's yard ----------
+  //
+  // The Rocket who robbed the house waits in its yard (out through the hole in
+  // its back wall). Beat him and he gives back TM28 (Dig) and runs off
+  // (CeruleanCity_EventScript_Grunt). `side`: the trigger you stepped on
+  // ("top" or "bottom", he turns to you), or null when you talked to him.
+  async function ceruleanGrunt(side) {
+    const f = player.flags, G = "LOCALID_CERULEAN_GRUNT", ID = "TRAINER_TEAM_ROCKET_GRUNT_5";
+    if (side) {
+      await Overworld.act([{ who: G, moves: M(side === "top" ? "Common_Movement_WalkInPlaceFasterUp" : "Common_Movement_WalkInPlaceFasterDown") }]);
+      await Overworld.act([{ who: "player", moves: M(side === "top" ? "Common_Movement_WalkInPlaceFasterDown" : "Common_Movement_WalkInPlaceFasterUp") }]);
+    }
+    if (!f[ID]) {
+      music("mus_encounter_rocket");
+      await say(T("CeruleanCity_Text_GruntIntro"));
+      if (!canBattle()) return;
+      const data = window.WORLD_TRAINERS[ID];
+      const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(ID), pic: data.pic },
+        defeatText: T("CeruleanCity_Text_GruntDefeat"), trainerId: ID });
+      if (outcome !== "won") return;
+      show("world");
+      await Overworld.resume();
+    }
+    await say(T("CeruleanCity_Text_OkayIllReturnStolenTM"));
+    Player.addItem(player, "tm28");
+    f.gotTM28 = true;
+    await sayWithJingle(itemJingle("tm28"), T("CeruleanCity_Text_RecoveredTM28FromGrunt"));
+    await say(T("CeruleanCity_Text_BetterGetMovingBye"));
+    Overworld.removeObject(G);
+  }
+
+  // ---------- Cut ----------
+  //
+  // A small tree: with the Cascade Badge and a Pokémon in your party that
+  // knows Cut, you can cut it down (EventScript_CutTree). It grows back when
+  // you come back to the map, as in FireRed.
+  async function cutTree(person) {
+    const mon = hasBadge("cascade") && player.party.find((r) => Party.knowsMove(r, "Cut"));
+    if (!mon) { await say(T("Text_TreeCanBeCutDown")); return; }
+    const q = T("Text_CutTreeDown");
+    await say(q.slice(0, -1));
+    if (!(await confirm(fill(q[q.length - 1])))) return;
+    await say(Party.displayName(mon) + " used Cut!");
+    sfx("se_m_cut");
+    if (person.flag) tempFlags.add(person.flag);
+    Overworld.removePerson(person);
+  }
+
+  // ---------- Route 5: the Day-Care (game/daycare.js) ----------
+  async function dayCareMan() {
+    const f = player.flags, D = (k) => T("Route5_PokemonDayCare_Text_" + k);
+    const dc = f.dayCare;
+    if (dc) {
+      const name = Party.displayName(dc.mon), grew = DayCare.levelsGained(dc), cost = DayCare.cost(dc);
+      await say(D(grew ? "MonHasGrownByXLevels" : "MonNeedsToSpendMoreTime"), [name, String(grew)]);
+      if (!(await confirm(fill(D("OweMeXForMonsReturn").join(" "), [name, cost.toLocaleString("en-US")])))) { await say(D("ComeAnytimeYouLike")); return; }
+      if (player.party.length >= Player.PARTY_SIZE) { await say(D("YouveGotNoRoomForIt")); return; }
+      if (player.money < cost) { await say(D("DontHaveEnoughMoney")); return; }
+      Player.addMoney(player, -cost);
+      const mon = DayCare.withdraw(dc);
+      f.dayCare = null;
+      player.party.push(mon);
+      await say(D("ThankYouHeresMon"));
+      cry(mon.species);
+      await say(D("PlayerGotMonBack"), [name]);
+      return;
+    }
+    const q = D("WantMeToRaiseMon");
+    await say(q.slice(0, -1));
+    if (!(await confirm(fill(q[q.length - 1])))) { await say(D("ComeAgain")); return; }
+    if (player.party.length === 1) { await say(D("OnlyHaveOneMonWithYou")); return; }
+    await say(D("WhichMonShouldIRaise"));
+    const mine = await choosePartyFor("Choose a POKéMON.");
+    show("world");
+    if (!mine) { await say(D("ComeAnytimeYouLike")); return; }
+    if (!player.party.some((r) => r !== mine && !Party.isFainted(r))) { await say(D("WhatWillYouBattleWith")); return; }
+    player.party.splice(player.party.indexOf(mine), 1);
+    f.dayCare = DayCare.deposit(mine);
+    await say(D("LookAfterMonForAWhile"), [Party.displayName(mine)]);
+    cry(mine.species);
+    await say(D("ComeSeeMeInAWhile"));
+  }
+
   // ---------- Route 25: Bill's Sea Cottage ----------
   //
   // Bill has got himself mixed up with a Clefairy. He walks into his
@@ -2880,8 +3012,8 @@
         special,
         onWarp,
         trainerWaiting, hiddenItem: (h) => !player.flags[h.flag],
-        onStep: () => { leftPallet(player.location.map); return redForestStep() || jessieJamesStep() || repelStep(); }, allowWild: repelAllows,
-        onMap: (m) => { forgetTrainerSpots(m); visitSection(m); music((window.WORLD_MAPS[m] || {}).music); }
+        onStep: () => { leftPallet(player.location.map); DayCare.step(player.flags.dayCare); return redForestStep() || jessieJamesStep() || repelStep(); }, allowWild: repelAllows,
+        onMap: (m) => { forgetTrainerSpots(m); clearTempFlags(m); visitSection(m); music((window.WORLD_MAPS[m] || {}).music); }
       });
       if (ev.type === "menu") await startMenu();
       else if (ev.type === "repel-ended") await repelWoreOff();

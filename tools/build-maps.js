@@ -89,7 +89,8 @@ const MAPS = [
   "CeruleanCity", "CeruleanCity_PokemonCenter_1F", "CeruleanCity_PokemonCenter_2F",
   "CeruleanCity_Gym", "CeruleanCity_Mart", "CeruleanCity_BikeShop", "CeruleanCity_House1", "CeruleanCity_House2",
   "CeruleanCity_House3", "CeruleanCity_House4", "CeruleanCity_House5",
-  "Route24", "Route25", "Route25_SeaCottage"
+  "Route24", "Route25", "Route25_SeaCottage",
+  "Route5", "Route5_PokemonDayCare", "Route5_SouthEntrance", "UndergroundPath_NorthEntrance", "Route9"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
@@ -142,6 +143,8 @@ const GAME_TEXT = [
   "Trade_Text_HeyThanks", "Trade_Text_IsntMyOldMonGreat",
   "Trade_Text_DoYouHaveMonWouldYouTradeForMon", "Trade_Text_WellIfYouDontWantTo", "Trade_Text_ThisIsntMon",
   "Trade_Text_Thanks", "Trade_Text_HasTradedMonGrownStronger",
+  "Trade_Text_DoYouHaveMonWantToTradeForMon", "Trade_Text_ThatsTooBad", "Trade_Text_ThisIsNoMon",
+  "Trade_Text_ThanksYoureAPal", "Trade_Text_HowIsMyOldMon", "Text_CutTreeDown", "Text_TreeCanBeCutDown",
   "Aide_Text_HaventCaughtEnoughMonsForItem", "Aide_Text_GetEnoughMonsComeBackForItem",
   "Text_OnlySkilledTrainersAllowedThrough", "Text_CantLetYouPass", "Text_OhThatsBadgeGoRightAhead", "Text_MoveCanOnlyBeLearnedOnce",
   // Pallet Town's Sign Lady (data/text/sign_lady.inc).

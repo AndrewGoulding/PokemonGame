@@ -156,7 +156,12 @@ its Pokémon Center, Mt. Moon (1F, B1F, B2F), Cerulean City with its
 Pokémon Center, Gym (Misty, with Psyduck, Togepi and Starmie, the Cascade Badge and TM101
 Water Pulse, FireRed's TM03), Poké Mart, Bike Shop and houses (the Badge describer, Dontae's trade
 of Zynx the Jynx for a Poliwhirl, the robbed house), Route 24 (Nugget
-Bridge), and Route 25 with Bill's Sea Cottage. Tiles, palettes and metatiles come from
+Bridge), Route 25 with Bill's Sea Cottage, Route 5 (reached as in FireRed: through
+the hole in the robbed house's back wall, past the Rocket in its yard) with the
+Day-Care, the Underground Path's north entrance (Saige trades Ms. Nido, a
+Nidoran♀, for a Nidoran♂; the tunnel itself isn't built) and the gate to
+Saffron City (its thirsty guard turns you back), and Route 9 with its nine
+trainers (behind a small tree you need Cut for, as in FireRed). Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into
@@ -406,7 +411,12 @@ afterwards for a battle (her starter and a Jigglypuff; beat her and she gives yo
 again and again, for ₽1,000 each time), the
 Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils, Jessie & James
 climbing down the last ladder in Mt. Moon as in Yellow, Gary in Cerulean (FireRed's team, with
-his Eevee), the Nugget Bridge Rocket (a Nugget, then a battle), and Bill: a
+his Eevee), the Nugget Bridge Rocket (a Nugget, then a battle), the Rocket in
+the robbed house's yard (beat him and he gives back TM28 Dig), the Day-Care
+Man (`game/daycare.js`: one Pokémon gains 1 Exp. Point a step, learning its
+new moves; ₽100 plus ₽100 a level to take it back), Cut (with the Cascade
+Badge and a Pokémon that knows it, a small tree can be cut down until you
+leave the map), and Bill: a
 Clefairy until you run his Teleporter's Cell Separator, then he gives you the
 S.S. Ticket and his PC shows his favourite Pokémon) are in `ui/game.js`; their FireRed
 lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scripts
@@ -492,8 +502,8 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   `TUTOR_LEARNERS`: who FireRed's move tutors can teach (Gen 6 had no tutor
   for Mega Punch, Mega Kick, Seismic Toss or Dream Eater), from any
   generation's tutors. TMs are reusable (as in Gen 5+), can't be held, tossed or
-  sold, and HM moves can be forgotten like any other (there are no field moves
-  yet). Prices: HMs ₽3,000; TMs ₽10,000 / ₽20,000 / ₽30,000 by the move's
+  sold, and HM moves can be forgotten like any other (of the field moves, only
+  Cut works so far). Prices: HMs ₽3,000; TMs ₽10,000 / ₽20,000 / ₽30,000 by the move's
   power. Saves from before this numbering are converted on load, so each
   machine keeps its move.
 - **PP Up / PP Max**: +20% of a move's base PP per PP Up, three at most (PP
