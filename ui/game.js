@@ -543,7 +543,9 @@
     return r ? player.party[r.slot] : null;
   }
 
-  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "itemfinder", "vs-seeker"];
+  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "itemfinder", "vs-seeker", "bicycle"];
+  // Key items Select can use (registered from the Bag, as in FireRed).
+  const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map"];
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
     item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS || item === "escape-rope";
   // TMs and HMs work like key items: they can't be held, tossed or sold.
@@ -557,6 +559,7 @@
     if (item === "explorer-kit") return (await explorerKit()) ? "escaped" : null;
     if (item === "itemfinder") { fieldAction = itemfinder; return "escaped"; }
     if (item === "vs-seeker") { fieldAction = vsSeeker; return "escaped"; }
+    if (item === "bicycle") { fieldAction = bicycle; return "escaped"; }
     if (item === "exp-share") {
       player.flags.expShareOff = !player.flags.expShareOff;
       await message(expShareOn() ? "The Exp. Share was turned on. Your whole party will gain Exp. Points from battles."
@@ -629,11 +632,12 @@
     if (f.vsSeekerSteps != null && f.vsSeekerSteps < VS_SEEKER_CHARGE) f.vsSeekerSteps++;
   }
 
-  // The Town Map: FireRed's Kanto map (tools/build-town-map.js) with your
+  // The Town Map (with { fly: true }, for Fly: the places you can fly to are
+  // marked, and A on one resolves with where Fly lands there; B, null): FireRed's Kanto map (tools/build-town-map.js) with your
   // icon where you are. Move the cursor with the arrow keys, or tap a place,
   // to see its name.
-  async function townMap() {
-    const T = window.TOWN_MAP;
+  async function townMap(opts) {
+    const T = window.TOWN_MAP, flying = !!(opts && opts.fly);
     const pct = (n, of) => (n / of * 100) + "%";
     const sprite = (x, y) => "left:" + pct(28 + 8 * x, 240) + ";top:" + pct(28 + 8 * y, 160);
     const cellOf = (sec) => {
@@ -659,29 +663,52 @@
       icons += '<div class="tm-dungeon' + (visited.includes(sec) ? " visited" : "") + '" style="left:' + pct(32 + 8 * x + off, 240) +
         ";top:" + pct(32 + 8 * y + off, 160) + '"></div>';
     }
+    // Fly's places: visited, with somewhere to land.
+    const flyTo = (sec) => (flying && sec && visited.includes(sec) && (T.fly || {})[sec]) || null;
+    if (flying) {
+      const marked = new Set();
+      for (let y = 0; y < T.height; y++) for (let x = 0; x < T.width; x++) {
+        const sec = T.map[y][x];
+        if (!flyTo(sec) || marked.has(sec)) continue;
+        marked.add(sec);
+        icons += '<div class="tm-fly" style="left:' + pct(32 + 8 * x, 240) + ";top:" + pct(32 + 8 * y, 160) + '"></div>';
+      }
+    }
     show("scene");
-    scene.innerHTML = '<div class="town-map"><img class="tm-map" src="assets/town-map/kanto.png" alt="Map of Kanto">' + icons +
+    scene.innerHTML = '<div class="town-map' + (flying ? " flying" : "") + '"><img class="tm-map" src="assets/town-map/kanto.png" alt="Map of Kanto">' + icons +
       '<div class="tm-name"><b></b><small></small></div>' +
       '<img class="tm-player" src="assets/town-map/player.png" alt="You are here" style="' + sprite(here[0], here[1]) + '">' +
       '<div class="tm-cursor"></div></div>';
     const box = scene.querySelector(".town-map");
     const draw = () => {
       const place = T.map[cy][cx], cave = T.dungeon[cy][cx];
-      scene.querySelector(".tm-name b").textContent = T.names[place] || T.names[cave] || "";
+      scene.querySelector(".tm-name b").textContent = T.names[place] || T.names[cave] || (flying ? "Where do you want to fly?" : "");
       scene.querySelector(".tm-name small").textContent = place && cave ? T.names[cave] : "";
       scene.querySelector(".tm-cursor").setAttribute("style", sprite(cx, cy));
     };
     draw();
     const move = (dx, dy) => { cx = Math.max(0, Math.min(T.width - 1, cx + dx)); cy = Math.max(0, Math.min(T.height - 1, cy + dy)); draw(); };
+    let picked = null;
+    const choose = new Promise((resolve) => { picked = resolve; });
     const onKey = (e) => {
+      if (flying && ["z", "Z", " ", "Enter"].includes(e.key)) {
+        e.preventDefault(); e.stopPropagation();
+        const spot = flyTo(T.map[cy][cx]);
+        if (spot) { sfx("se_select"); picked(spot); }
+        return;
+      }
       const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
       if (!d) return;
       e.preventDefault(); e.stopPropagation();
       move(d[0], d[1]);
     };
     document.addEventListener("keydown", onKey, true);
-    await ask("", [back("Close")]);   // (no text over the map)
+    // (no text over the map)
+    const r = await Promise.race([ask("", [back(flying ? "Cancel" : "Close")]).then(() => null), choose]);
+    clearMenu();
     document.removeEventListener("keydown", onKey, true);
+    if (flying) show("world");
+    return r;
   }
 
   // Diamond and Pearl's Underground digging (game/mining.js, ui/mining.js), in
@@ -806,6 +833,7 @@
           if (usableFromBag(it.id)) a.push({ label: "Use", value: "use" });
           if (holdable(it.id)) a.push({ label: "Give", value: "give" });
           if (!Bag.isMachine(it.id) && !Bag.isKeyItem(it.id)) a.push({ label: "Toss", value: "toss" });
+          if (REGISTERABLE.includes(it.id)) a.push({ label: player.flags.registered === it.id ? "Deselect" : "Register", value: "register" });
           return a;
         },
         toss: (id, n) => { Player.removeItem(player, id, n); persist(); }
@@ -814,7 +842,12 @@
       bagPocket = r.pocket;
       const id = r.id, what = r.action;
       BagScreen.close();
-      if (what === "use" && Bag.isKeyItem(id)) { if ((await useKeyItem(id)) === "escaped") return "escaped"; }
+      if (what === "register") {
+        const on = player.flags.registered !== id;
+        player.flags.registered = on ? id : undefined;
+        await message(on ? "The " + Bag.name(id) + " was registered to Select." : "The " + Bag.name(id) + " is no longer registered.");
+      }
+      else if (what === "use" && Bag.isKeyItem(id)) { if ((await useKeyItem(id)) === "escaped") return "escaped"; }
       else if (what === "use" && id in REPEL_STEPS) await useRepel(id);
       else if (what === "use" && id === "escape-rope") { if (await useEscapeRope()) return "escaped"; }
       else if (what === "use") {
@@ -1303,19 +1336,31 @@
   // ---------- The Start menu's screens ----------
 
   // The Start menu's POKéMON: FireRed's party screen. A on a Pokémon opens
-  // SUMMARY / SWITCH / ITEM / CANCEL; SWITCH asks "Move to where?" and swaps
-  // the two; ITEM gives or takes a held item.
+  // SUMMARY, its field moves, SWITCH / ITEM / CANCEL; SWITCH asks "Move to
+  // where?" and swaps the two; ITEM gives or takes a held item. The field
+  // moves are the HM moves it knows or could learn (game/field-moves.js);
+  // one that works here closes the menus and is used ("escaped").
   async function partyMenu() {
     if (!player.party.length) { await message("You don't have any Pokémon yet."); return; }
     let cursor = 0;
     for (;;) {
-      const r = await openParty({ cursor, actions: () => [
-        { label: "SUMMARY", value: "summary" }, { label: "SWITCH", value: "switch" },
-        { label: "ITEM", value: "item" }, { label: "CANCEL", value: "cancel" }] });
+      const r = await openParty({ cursor, actions: (slot) => [{ label: "SUMMARY", value: "summary" }]
+        .concat(FieldMoves.forMon(player.party[slot]).map((m) =>
+          ({ label: m.toUpperCase(), value: "field:" + m, field: true, desc: FieldMoves.info(m).desc })))
+        .concat([{ label: "SWITCH", value: "switch" }, { label: "ITEM", value: "item" }, { label: "CANCEL", value: "cancel" }]) });
       if (!r) { PartyMenu.close(); return; }
       cursor = r.cursor;
       const mon = player.party[r.slot];
       if (r.action === "summary") { PartyMenu.close(); await summary(r.slot); continue; }
+      if (r.action.startsWith("field:")) {
+        const move = r.action.slice(6);
+        const blocked = fieldMoveBlocked(mon, move);
+        const act = blocked || fieldMoveHere(move, mon);
+        if (typeof act === "string") { await message(act); continue; }
+        PartyMenu.close();
+        fieldAction = act;
+        return "escaped";
+      }
       if (r.action === "switch") {
         if (r.to !== r.slot && player.party[r.to]) {
           [player.party[r.slot], player.party[r.to]] = [player.party[r.to], player.party[r.slot]];
@@ -1371,7 +1416,7 @@
       startCursor = r.cursor;
       const v = r.key;
       if (v === "exit") return;
-      if (v === "party") await partyMenu();
+      if (v === "party") { if ((await partyMenu()) === "escaped") return; }
       else if (v === "bag") { if ((await bagScreen()) === "escaped") return; }
       else if (v === "dex") await pokedex();
       else if (v === "card") { if ((await trainerCard()) === "battled") return; }
@@ -1444,7 +1489,7 @@
     "Route24_EventScript_Rocket", "Route24_EventScript_RocketTriggerLeft", "Route24_EventScript_RocketTriggerRight",
     "Route25_SeaCottage_EventScript_Bill", "Route25_SeaCottage_EventScript_Computer",
     "CeruleanCity_EventScript_Grunt", "CeruleanCity_EventScript_GruntTriggerTop", "CeruleanCity_EventScript_GruntTriggerBottom",
-    "EventScript_CutTree", "Route5_PokemonDayCare_EventScript_DaycareMan", "UndergroundPath_NorthEntrance_EventScript_Saige",
+    "EventScript_CutTree", "EventScript_RockSmash", "EventScript_StrengthBoulder", "Route5_PokemonDayCare_EventScript_DaycareMan", "UndergroundPath_NorthEntrance_EventScript_Saige",
     "Route5_SouthEntrance_EventScript_GuardTriggerLeft", "Route5_SouthEntrance_EventScript_GuardTriggerMid",
     "Route5_SouthEntrance_EventScript_GuardTriggerRight",
     "Game_EventScript_Leaf", "Game_EventScript_TradebackGuy",
@@ -2073,6 +2118,12 @@
         return;
       case "EventScript_CutTree":
         await cutTree(ev.person);
+        return;
+      case "EventScript_RockSmash":
+        await rockSmash(ev.person);
+        return;
+      case "EventScript_StrengthBoulder":
+        await strengthBoulder();
         return;
       case "Route5_PokemonDayCare_EventScript_DaycareMan":
         await dayCareMan();
@@ -3112,21 +3163,179 @@
     Overworld.removeObject(G);
   }
 
-  // ---------- Cut ----------
+  // ---------- HMs outside battle (game/field-moves.js) ----------
   //
-  // A small tree: with the Cascade Badge and a Pokémon in your party that
-  // knows Cut, you can cut it down (EventScript_CutTree). It grows back when
-  // you come back to the map, as in FireRed.
+  // A field move can be used by a Pokémon that knows it, or that could learn
+  // it from its HM while you have the HM, once you have the badge it needs
+  // (FireRed's sFieldMoves). From the party screen, or by A in front of a
+  // tree, a rock, a boulder, the water or a waterfall (FireRed's scripts).
+  const usedMove = (mon, move) => Party.displayName(mon) + " used " + move + "!";
+  const facingScript = (script) => { const a = Overworld.ahead(); return a.person && a.person.script === script ? a.person : null; };
+  let strengthOn = false;   // (FLAG_SYS_USE_STRENGTH: until you leave the map)
+
+  // From the party screen: why it can't be used here (FireRed's messages), or
+  // what to do once the menus close.
+  function fieldMoveHere(move, mon) {
+    const here = window.WORLD_MAPS[player.location.map] || {}, a = Overworld.ahead(), surfing = Overworld.avatar() === "surf";
+    switch (move) {
+      case "Flash":
+        if (!Overworld.isDark()) return "Can't use that here.";
+        return async () => { await say(usedMove(mon, "Flash")); sfx("se_m_reflect"); Overworld.flash(); };
+      case "Cut": {
+        const tree = facingScript("EventScript_CutTree");
+        if (!tree) return "There's nothing to Cut.";
+        return async () => { await say(usedMove(mon, "Cut")); cutDown(tree); };
+      }
+      case "Fly":
+        if (!OUTDOORS.includes(here.type)) return "Can't use that here.";
+        return () => fly();
+      case "Strength": {
+        if (!facingScript("EventScript_StrengthBoulder")) return "Can't use that here.";
+        return () => useStrength(mon);
+      }
+      case "Surf":
+        if (surfing) return "You're already surfing.";
+        if (!a.water) return "No surfing here!";
+        return () => startSurfing(mon);
+      case "Rock Smash": {
+        const rock = facingScript("EventScript_RockSmash");
+        if (!rock) return "Can't use that here.";
+        return async () => { await say(usedMove(mon, "Rock Smash")); await smashRock(rock); };
+      }
+      case "Waterfall":
+        if (!surfing || a.behavior !== World.MB.WATERFALL) return "Can't use that here.";
+        return async () => { await say(Party.displayName(mon) + " used Waterfall."); await climbWaterfall(); };
+    }
+    return "Can't use that here.";
+  }
+  // The party screen's answer when a Pokémon can't use it at all yet.
+  function fieldMoveBlocked(mon, move) {
+    const why = FieldMoves.check(player, mon, move);
+    if (why === "badge") return "This can't be used until a new\nBadge is obtained.";
+    if (why === "hm") return "You need " + Bag.name(FieldMoves.hmFor(move)) + " to use " + move + ".";
+    if (why) return Party.displayName(mon) + " can't use " + move + ".";
+    return null;
+  }
+
+  // Cut: a small tree, cut down; it grows back when you come back to the
+  // map, as in FireRed (EventScript_CutTree).
   async function cutTree(person) {
-    const mon = hasBadge("cascade") && player.party.find((r) => Party.knowsMove(r, "Cut"));
+    const mon = FieldMoves.user(player, "Cut");
     if (!mon) { await say(T("Text_TreeCanBeCutDown")); return; }
     const q = T("Text_CutTreeDown");
     await say(q.slice(0, -1));
     if (!(await confirm(fill(q[q.length - 1])))) return;
-    await say(Party.displayName(mon) + " used Cut!");
+    await say(usedMove(mon, "Cut"));
+    cutDown(person);
+  }
+  function cutDown(person) {
     sfx("se_m_cut");
     if (person.flag) tempFlags.add(player.location.map + ":" + person.flag);
     Overworld.removePerson(person);
+  }
+
+  // Rock Smash (EventScript_RockSmash): the rock breaks (back when you return),
+  // and a Pokémon may be hiding under it (RockSmashWildEncounter: the map's
+  // Rock Smash Pokémon, at its rate out of 100).
+  async function rockSmash(person) {
+    const mon = FieldMoves.user(player, "Rock Smash");
+    if (!mon) { await say("It's a rugged rock, but a Pokémon\nmay be able to smash it."); return; }
+    if (!(await confirm("This rock appears to be breakable.\nWould you like to use Rock Smash?"))) return;
+    await say(usedMove(mon, "Rock Smash"));
+    await smashRock(person);
+  }
+  async function smashRock(person) {
+    sfx("se_m_rock_throw");
+    if (person.flag) tempFlags.add(player.location.map + ":" + person.flag);
+    Overworld.removePerson(person);
+    const m = window.WORLD_MAPS[player.location.map];
+    if (m && m.rockSmash && Math.floor(Math.random() * 1600) < m.rockSmash.rate * 16 && canBattle()) {
+      const w = World.pickWild(m, Math.random, m.rockSmash);
+      if (w) await battle("wild", { foe: { name: "Wild", team: [Party.create(w.species, w.level)] } });
+    }
+  }
+
+  // Strength (EventScript_StrengthBoulder): once used, boulders on the map
+  // can be pushed until you leave it.
+  async function strengthBoulder() {
+    const mon = FieldMoves.user(player, "Strength");
+    if (!mon) { await say(["It's a big boulder, but a Pokémon\nmay be able to push it aside."]); return; }
+    if (strengthOn) { await say("Strength made it possible to move\nboulders around."); return; }
+    await say("It's a big boulder, but a Pokémon\nmay be able to push it aside.");
+    if (!(await confirm("Would you like to use Strength?"))) return;
+    await useStrength(mon);
+  }
+  async function useStrength(mon) {
+    strengthOn = true;
+    cry(mon.species);
+    await say([usedMove(mon, "Strength"), Party.displayName(mon) + "'s Strength made it\npossible to move boulders around!"]);
+  }
+
+  // Surf (EventScript_UseSurf): A in front of the water with a Pokémon that
+  // can; you hop on and the surfing music plays.
+  async function surfPrompt() {
+    const mon = FieldMoves.user(player, "Surf");
+    if (!mon) return;
+    if (!(await confirm("The water is dyed a deep blue…\nWould you like to Surf?"))) return;
+    await startSurfing(mon);
+  }
+  async function startSurfing(mon) {
+    await say(usedMove(mon, "Surf"));
+    Screen.say("");
+    cry(mon.species);
+    sfx("se_m_surf");
+    const dir = Overworld.ahead().facing;
+    Overworld.setAvatar("surf");
+    await Overworld.act([{ who: "player", moves: ["jump_" + dir] }]);
+  }
+
+  // Waterfall (EventScript_Waterfall): surfing, up the falls to the top.
+  async function waterfall() {
+    const mon = FieldMoves.user(player, "Waterfall");
+    if (!mon) { await say("A wall of water is crashing down\nwith a mighty roar."); return; }
+    if (!(await confirm("It's a large waterfall.\nWould you like to use Waterfall?"))) return;
+    await say(Party.displayName(mon) + " used Waterfall.");
+    await climbWaterfall();
+  }
+  async function climbWaterfall() {
+    const a = Overworld.ahead(), [dx, dy] = World.DIRS[a.facing];
+    let n = 0;
+    while (World.blockAt(a.map, a.x + dx * n, a.y + dy * n).behavior === World.MB.WATERFALL) n++;
+    sfx("se_m_waterfall");
+    await Overworld.act([{ who: "player", moves: Array(n + 1).fill("walk_slow_" + a.facing) }]);
+  }
+
+  // Fly: pick a town you've been to on the Town Map, and off you go, landing
+  // outside its Pokémon Center (FireRed's heal locations).
+  async function fly() {
+    const spot = await townMap({ fly: true });
+    await Overworld.resume();   // (the map was put away for the Town Map)
+    if (!spot) return;
+    sfx("se_m_fly");
+    Overworld.setAvatar("walk");
+    await Overworld.teleport({ map: spot.map, x: spot.x, y: spot.y, facing: "down" });
+  }
+
+  // The Bicycle (from the Bag, or Select once registered): on and off,
+  // where the map allows cycling (FireRed's ItemUseOutOfBattle_Bike).
+  async function bicycle() {
+    const here = window.WORLD_MAPS[player.location.map] || {};
+    const mode = Overworld.avatar();
+    if (mode === "bike") { Overworld.setAvatar("walk"); return; }
+    if (mode === "surf" || !here.cycling) { await say("Oak: " + player.name + "! This isn't the time to use that!"); return; }
+    Overworld.setAvatar("bike");
+  }
+  // Getting on or off the Bicycle or the water: its music, or the map's again.
+  function avatarMusic(mode) {
+    return mode === "bike" ? "mus_cycling" : mode === "surf" ? "mus_surf" : null;
+  }
+
+  // Select: the key item registered from the Bag (FireRed's registered item).
+  async function useRegistered() {
+    const id = player.flags.registered;
+    if (!id || !Player.itemCount(player, id)) { await say("An item in the Bag can be\nregistered to Select for easy use."); return; }
+    await useKeyItem(id);
+    if (fieldAction) { const act = fieldAction; fieldAction = null; await act(); }
   }
 
   // ---------- Route 5: the Day-Care (game/daycare.js) ----------
@@ -3481,6 +3690,8 @@
     if (!sec) return;
     const list = player.flags.visitedSections || (player.flags.visitedSections = []);
     if (!list.includes(sec)) list.push(sec);
+    // (Going into a place's Pokémon Center counts for Fly: Route 4's.)
+    for (const [k, spot] of Object.entries(window.TOWN_MAP.fly || {})) if (spot.center === map && !list.includes(k)) list.push(k);
   }
   function onWarp(from, to) {
     leftPallet(to.map);
@@ -3560,17 +3771,24 @@
         special,
         onWarp,
         trainerWaiting, hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, extraPeople,
+        canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
+        onAvatar: (mode) => music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music),
         onStep: () => { leftPallet(player.location.map); DayCare.step(player.flags.dayCare); vsSeekerStep(); return redForestStep() || leafVermilionStep() || jessieJamesStep() || repelStep(); }, allowWild: repelAllows,
         onMap: (m) => {
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
           if (m !== "VermilionCity") ticketChecked = false;
           if (m !== tempFlagsMap) delete player.flags.vsRematch;   // (rematches last while you stay on the map)
-          forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m); music((window.WORLD_MAPS[m] || {}).music); }
+          if (m !== tempFlagsMap) strengthOn = false;
+          forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
+          music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }
       });
       if (ev.type === "menu") {
         await startMenu();
         if (fieldAction) { const act = fieldAction; fieldAction = null; await act(); }
       }
+      else if (ev.type === "select") await useRegistered();
+      else if (ev.type === "water") await surfPrompt();
+      else if (ev.type === "waterfall") await waterfall();
       else if (ev.type === "repel-ended") await repelWoreOff();
       else if (ev.type === "red-forest") await redForest();
       else if (ev.type === "leaf-vermilion") await leafVermilion();
@@ -3579,8 +3797,11 @@
         if (!canBattle()) continue;
         // Grass on routes; caves (and other maps) use their own scene.
         const here = window.WORLD_MAPS[player.location.map];
-        await battle("wild", { foe: { name: "Wild", team: [Party.create(ev.species, ev.level)] },
-          terrain: here && ["route", "town", "city"].includes(here.type) ? "grass" : undefined });
+        // (On the water: FireRed's pond or sea.)
+        const at = player.location, b = World.blockAt(at.map, at.x, at.y).behavior;
+        const terrain = Overworld.avatar() === "surf" ? (b === 0x10 ? "pond" : "water")
+          : here && ["route", "town", "city"].includes(here.type) ? "grass" : undefined;
+        await battle("wild", { foe: { name: "Wild", team: [Party.create(ev.species, ev.level)] }, terrain });
       } else await story(ev);
       await persist();
     }

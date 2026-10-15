@@ -1380,6 +1380,61 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
   for (const l of ["TakeAShortRest", "GladEveryoneIsRefreshed", "SorryYouLookLikeMyBrother", "SorryYouLookLikeMySister"]) assert(window.WORLD_TEXT["SSAnne_1F_Room6_Text_" + l], l);
 }
 
+// HMs outside battle (game/field-moves.js): known, or learnable with the HM
+// in the Bag, and the badge either way.
+{
+  const pl = Player.create("T");
+  const paras = Party.create("Paras", 20), squirtle = Party.create("Squirtle", 20);
+  pl.party.push(paras, squirtle);
+  assert.deepStrictEqual(FieldMoves.forMon(paras).filter((m) => ["Cut", "Flash", "Rock Smash"].includes(m)), ["Flash", "Cut", "Rock Smash"]);
+  assert(FieldMoves.forMon(squirtle).includes("Surf") && !FieldMoves.forMon(squirtle).includes("Fly"));
+  assert.strictEqual(FieldMoves.hmFor("Cut"), "hm01");
+  assert.strictEqual(FieldMoves.hmFor("Rock Smash"), "hm08");
+  assert.strictEqual(FieldMoves.check(pl, paras, "Cut"), "hm");          // no HM01
+  Player.addItem(pl, "hm01");
+  assert.strictEqual(FieldMoves.check(pl, paras, "Cut"), "badge");       // no Cascade Badge
+  pl.badges.push("cascade");
+  assert.strictEqual(FieldMoves.check(pl, paras, "Cut"), null);
+  assert.strictEqual(FieldMoves.user(pl, "Cut"), paras);
+  assert.strictEqual(FieldMoves.check(pl, squirtle, "Fly"), "unable");
+  // Knowing the move does without the HM, but not without the badge.
+  Party.teachMove(squirtle, "Surf", 0);
+  assert.strictEqual(FieldMoves.check(pl, squirtle, "Surf"), "badge");
+  pl.badges.push("soul");
+  assert.strictEqual(FieldMoves.user(pl, "Surf"), squirtle);
+}
+
+// Surfing (game/world.js): over water, off onto the shore, not up a
+// waterfall; the water's Pokémon while surfing.
+{
+  const m = window.WORLD_MAPS.Route24;
+  assert(m.water && m.water.slots.length === 5, "Route 24 has water Pokémon");
+  assert(m.cycling && !window.WORLD_MAPS.PewterCity_PokemonCenter_1F.cycling, "cycling outdoors only");
+  assert(World.facingWater({ map: "Route24", x: 5, y: 16 }, "right"));
+  assert(!World.step({ map: "Route24", x: 5, y: 16 }, "right").ok, "can't walk onto water");
+  const on = World.step({ map: "Route24", x: 6, y: 16 }, "right", null, { surf: true });
+  assert(on.ok && !on.dismount, "surf along the water");
+  const off = World.step({ map: "Route24", x: 6, y: 16 }, "left", null, { surf: true });
+  assert(off.ok && off.dismount, "hop off onto the shore");
+  // A waterfall stops you (only Waterfall goes up it).
+  const fake = { name: "Fall", width: 1, height: 3, collision: [0, 0, 0], elevation: [1, 1, 1], behavior: [0x10, 0x13, 0x10],
+    encounter: [0, 0, 0], connections: [], warps: [], people: [] };
+  window.WORLD_MAPS.Fall = fake;
+  assert(World.step({ map: "Fall", x: 0, y: 2 }, "up", null, { surf: true }).waterfall);
+  delete window.WORLD_MAPS.Fall;
+  // Encounters: the water's table while surfing, none on land then.
+  let mon = null;
+  for (let i = 0; i < 2000 && !mon; i++) mon = World.stepEncounter({ steps: 99, buff: 0 }, "Route24", 7, 16, { surf: true });
+  assert(mon && mon.species === "Tentacool", "a Tentacool on the water");
+  assert(!World.stepEncounter({ steps: 99, buff: 0 }, "Route24", 7, 16, {}), "no grass Pokémon on water");
+  // Fly's landing spots are on the maps.
+  for (const [sec, spot] of Object.entries(window.TOWN_MAP.fly)) {
+    const fm = window.WORLD_MAPS[spot.map];
+    assert(fm && !fm.collision[spot.y * fm.width + spot.x], "Fly lands on open ground in " + sec);
+  }
+  assert(Bag.isKeyItem("bicycle") && Bag.sprite("bicycle"), "the Bicycle is a key item");
+}
+
 // Digging with the Explorer Kit (Diamond and Pearl's Underground).
 {
   assert(window.ITEMS["explorer-kit"] && Bag.isKeyItem("explorer-kit") && Bag.sprite("explorer-kit"));

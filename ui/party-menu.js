@@ -10,9 +10,10 @@
 //     cursor,        // the box chosen at first (0-5, or "cancel")
 //     frame,         // the Option screen's FRAME (0-9)
 //     message,       // "Choose a POKéMON." (the default)
-//     actions,       // (slot) => [{ label, value }]: the menu A opens on a
-//                    // Pokémon (SUMMARY / SWITCH / ITEM / CANCEL); without
-//                    // it A picks the Pokémon
+//     actions,       // (slot) => [{ label, value, field, desc }]: the menu A
+//                    // opens on a Pokémon (SUMMARY / SWITCH / ITEM / CANCEL);
+//                    // without it A picks the Pokémon. Field moves (`field`)
+//                    // are in blue, with `desc` in a box while chosen
 //     canCancel      // B and CANCEL close it (true unless false)
 //   })
 //   // -> null (cancelled), or { slot, action, cursor }: action is the chosen
@@ -204,14 +205,30 @@
     }
     if (st.menu) {
       // The actions window (tiles 19, 19 - 2n; 10 wide) or GIVE / TAKE (22, 13; 7 x 6),
-      // in your frame; text in text window palette 0.
+      // in your frame; text in text window palette 0, field moves in blue
+      // (sFontColorTable[4]). More than fit (a Pokémon with many field
+      // moves) scroll, with arrows.
       const frame = "type" + ((st.frame || 0) + 1), pal = G.palettes.std0;
-      const n = st.menu.items.length;
-      const [left, top, w, h] = st.menu.kind === "item" ? [22, 13, 7, 6] : [19, 19 - n * 2, 10, n * 2];
+      const m = st.menu, rows = Math.min(m.items.length, MAX_ROWS), off = m.offset || 0;
+      const [left, top, w, h] = m.kind === "item" ? [22, 13, 7, 6] : [19, 19 - rows * 2, 10, rows * 2];
       s.frame(frame, G.frames[frame].palette, left, top, w, h);
       s.fill(left * 8, top * 8, w * 8, h * 8, pal[1]);
-      st.menu.items.forEach((it, i) => s.text(it.label, left * 8 + 8, top * 8 + i * 16 + 2, pal[2], pal[3]));
-      s.text("▶", left * 8, top * 8 + st.menu.cursor * 16 + 2, pal[2], pal[3]);
+      m.items.slice(off, off + rows).forEach((it, i) =>
+        s.text(it.label, left * 8 + 8, top * 8 + i * 16 + 2, it.field ? pal[8] : pal[2], it.field ? pal[9] : pal[3]));
+      s.text("▶", left * 8, top * 8 + (m.cursor - off) * 16 + 2, pal[2], pal[3]);
+      // (Little triangles, 7 wide, at the window's right edge.)
+      const arrow = (x, y, up) => { for (let i = 0; i < 4; i++) s.fill(x + i, y + (up ? 3 - i : i), 7 - 2 * i, 1, pal[2]); };
+      if (off > 0) arrow((left + w) * 8 - 10, top * 8 + 2, true);
+      if (off + rows < m.items.length) arrow((left + w) * 8 - 10, (top + h) * 8 - 6, false);
+      // A field move's line (sFieldMoveDescriptionTable), in the help box at
+      // tiles (0, 13), 18 x 3: white on dark grey.
+      const it = m.items[m.cursor];
+      if (it && it.desc) {
+        s.fill(0, 13 * 8, 18 * 8, 3 * 8, [74, 74, 74]);
+        s.fill(0, 13 * 8, 18 * 8, 1, [41, 41, 41]);
+        s.fill(0, 16 * 8 - 1, 18 * 8, 1, [41, 41, 41]);
+        s.text(it.desc, 3, 13 * 8 + 6, [255, 255, 255], [98, 98, 98]);
+      }
     }
     return s.canvas();
   }
@@ -304,14 +321,20 @@
   }
 
   // A menu window: up / down (round past either end), A picks, B cancels.
+  // (The most rows the actions window shows: from tile 1 down.)
+  const MAX_ROWS = 9;
   function menu(kind, items, message) {
     const saved = st.message;
-    st.menu = { kind, items, cursor: 0 };
+    st.menu = { kind, items, cursor: 0, offset: 0 };
     st.message = message;
     redraw(); compose();
     return window.GbaMenus.keys((k) => {
       const m = st.menu, n = m.items.length;
-      if (k === "up" || k === "down") { m.cursor = (m.cursor + (k === "up" ? n - 1 : 1)) % n; window.GbaMenus.se(); redraw(); compose(); }
+      if (k === "up" || k === "down") {
+        m.cursor = (m.cursor + (k === "up" ? n - 1 : 1)) % n;
+        m.offset = Math.max(Math.min(m.offset, m.cursor), m.cursor - MAX_ROWS + 1);
+        window.GbaMenus.se(); redraw(); compose();
+      }
       else if (k === "a" || k === "b") {
         window.GbaMenus.se();
         const v = k === "a" ? m.items[m.cursor].value : null;

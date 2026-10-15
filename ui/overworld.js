@@ -13,13 +13,22 @@
 //                                             a trainer saw you (approach: tiles
 //                                             to walk to you; null if you talked)
 //   { type: "hidden", hidden, map }           found a hidden item (A on its tile)
+//   { type: "water", map }                    A facing water you could Surf on (ctx.canSurf)
+//   { type: "waterfall", map }                A facing a waterfall, surfing
+//   { type: "select" }                        Select (the registered key item)
 // Plain signs and people just show their text here.
 //
 // ctx: { player (the save: location, name), special(script) -> bool,
 //        visible(person, mapName) -> bool, rivalName, onMap(mapName) (each time a map's people load: its music),
 //        trainerWaiting(person) -> bool (not beaten yet),
 //        hiddenItem(hidden) -> bool (not found yet), canRun() -> bool,
-//        onWarp(from, to) when you go through a door, cave or stairs }
+//        onWarp(from, to) when you go through a door, cave or stairs,
+//        canSurf() -> bool, strength() -> bool (boulders can be pushed),
+//        onAvatar(mode) when you get on or off the Bicycle or the water }
+//
+// The player is walking, on the Bicycle or surfing (Overworld.setAvatar;
+// kept in player.flags.avatar). The Bicycle goes faster and only where the
+// map allows cycling; surfing goes over water, and onto land you hop off.
 //
 // Controls: arrows / WASD to move, Shift (or B / X) toggles running, Z / Space / Enter
 // to talk or read, Esc / M (Start) to open the menu. The on-screen buttons
@@ -31,6 +40,7 @@
   const TILE = 16, VIEW_W = 240, VIEW_H = 160;
   const PLAYER_X = 112, PLAYER_Y = 64;   // where the player stands on screen (top-left of its tile)
   const WALK_SPEED = 1, RUN_SPEED = 2;   // pixels per frame (60 frames a second)
+  const SURF_SPEED = 2, BIKE_SPEED = 8 / 3;   // (PLAYER_SPEED_FAST; the Bicycle: a tile in 6 frames)
   const TURN_FRAMES = 6;                 // tapping a direction turns without moving
   const FADE_FRAMES = 12;
 
@@ -113,7 +123,7 @@
   let running = false;
 
   // The player: tile position, facing, and the step in progress.
-  const me = { map: null, x: 0, y: 0, facing: "down", move: null, turnTimer: 0, parity: 0 };
+  const me = { map: null, x: 0, y: 0, facing: "down", move: null, turnTimer: 0, parity: 0, avatar: "walk" };
   let people = [];          // people on the current map: { def, x, y, facing, move, timer }
   let fade = 0, fadeDir = 0, afterFade = null;
   let bumpMessageAt = 0;
@@ -124,7 +134,7 @@
   let runOn = false;
   // FireRed's encounter state from step to step (World.stepEncounter).
   const wildState = { steps: 0, buff: 0, prev: null };
-  let pressedA = false, pressedMenu = false;
+  let pressedA = false, pressedMenu = false, pressedSelect = false;
   let ignoreInputUntil = 0;
 
   const KEY_DIRS = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
@@ -136,6 +146,7 @@
     if (performance.now() < ignoreInputUntil || e.repeat) return;
     if (["z", "Z", " ", "Enter"].includes(e.key)) { pressedA = true; e.preventDefault(); }
     if (["Escape", "m", "M", "Start"].includes(e.key)) { pressedMenu = true; e.preventDefault(); }
+    if (e.key === "Select") { pressedSelect = true; e.preventDefault(); }
   });
   document.addEventListener("keyup", (e) => { if (KEY_DIRS[e.key]) held.delete(KEY_DIRS[e.key]); });
   window.addEventListener("blur", () => held.clear());
@@ -303,18 +314,81 @@
 
   function startStep(r, dir) {
     // (ctx.canRun can restrict running, e.g. to after FireRed's Running Shoes.)
-    const run = !r.jump && runHeld() && (!ctx.canRun || ctx.canRun());
+    const run = !r.jump && me.avatar === "walk" && runHeld() && (!ctx.canRun || ctx.canRun());
+    const speed = me.avatar === "bike" ? BIKE_SPEED : me.avatar === "surf" ? SURF_SPEED : run ? RUN_SPEED : WALK_SPEED;
     me.move = { tx: r.x, ty: r.y, tmap: r.map, dir, t: 0, jump: !!r.jump, warp: r.warp || null, run,
-      dist: r.jump ? TILE * 2 : TILE, speed: run ? RUN_SPEED : WALK_SPEED };
+      dismount: !!r.dismount, dist: r.jump ? TILE * 2 : TILE, speed: r.dismount ? WALK_SPEED * 2 : speed };
     me.parity ^= 1;
+  }
+
+  // ---------- Walking, cycling, surfing ----------
+
+  function setAvatar(mode) {
+    if (me.avatar === mode) return;
+    me.avatar = mode;
+    if (ctx && ctx.player) ctx.player.flags.avatar = mode === "walk" ? undefined : mode;
+    if (ctx && ctx.onAvatar) ctx.onAvatar(mode);
+  }
+  // Off the Bicycle where cycling isn't allowed (going indoors), and off the
+  // water when you aren't on any (a warp, a scene's teleport).
+  function checkAvatar() {
+    const m = World.map(me.map);
+    if (me.avatar === "bike" && !(m && m.cycling)) setAvatar("walk");
+    if (me.avatar === "surf" && !World.isSurfable(World.blockAt(me.map, me.x, me.y).behavior)) setAvatar("walk");
+  }
+
+  // ---------- Strength: pushing boulders ----------
+  //
+  // With Strength on, walking into a boulder pushes it a tile ahead if
+  // there's room (not water, nobody there) (FireRed's TryPushBoulder).
+  const isBoulder = (p) => p && p.def.script === "EventScript_StrengthBoulder";
+  function tryPushBoulder(dir) {
+    if (!ctx.strength || !ctx.strength()) return false;
+    const [dx, dy] = World.DIRS[dir];
+    const b = personAt(me.x + dx, me.y + dy);
+    if (!isBoulder(b) || b.move) return false;
+    const r = World.step({ map: me.map, x: b.x, y: b.y }, dir, (mapName, x, y) => mapName !== me.map || !!personAt(x, y) || (x === me.x && y === me.y));
+    if (!r.ok || r.jump || r.warp || r.map !== me.map) return false;
+    b.move = { tx: r.x, ty: r.y, t: 0, speed: WALK_SPEED };
+    b.facing = dir;
+    if (window.GameAudio) window.GameAudio.se("se_m_strength");
+    return true;
+  }
+
+  // ---------- Darkness and Flash ----------
+  //
+  // A cave that needs Flash is dark but for a circle around you (FireRed's
+  // sFlashLevelToRadius: 24 pixels at its darkest); Flash opens it to 200.
+  const DARK_RADIUS = 24, FLASH_RADIUS = 200;
+  let light = null, lightTarget = null, flashOn = false;
+  function checkLight() {
+    const m = World.map(me.map);
+    if (!(m && m.dark)) { light = lightTarget = null; flashOn = false; return; }
+    light = lightTarget = flashOn ? FLASH_RADIUS : DARK_RADIUS;
+  }
+  function flash() {
+    flashOn = true;
+    if (light != null) lightTarget = FLASH_RADIUS;
+  }
+  function drawDarkness(px, py) {
+    if (light == null || light >= FLASH_RADIUS) return;
+    g.save();
+    g.fillStyle = "#000";
+    g.beginPath();
+    g.rect(0, 0, VIEW_W, VIEW_H);
+    g.arc(px + TILE / 2, py + TILE / 2, light, 0, Math.PI * 2, true);
+    g.fill("evenodd");
+    g.restore();
   }
 
   function finishStep() {
     const mv = me.move;
     me.move = null;
+    if (mv.dismount) setAvatar("walk");
     const changedMap = mv.tmap !== me.map, from = me.map;
     me.map = mv.tmap; me.x = mv.tx; me.y = mv.ty;
     if (changedMap) {
+      checkAvatar(); checkLight();
       loadPeople(); preloadMap(me.map); hint();
       if (!mv.warp && areaOf(from) !== areaOf(me.map)) showAreaName(me.map);
     }
@@ -329,7 +403,8 @@
     const said = ctx.onStep && ctx.onStep();
     if (said) return finish(said);
     const wild = World.stepEncounter(wildState, me.map, me.x, me.y, {
-      allow: ctx.allowWild, repel: !!(ctx.player && ctx.player.repelSteps > 0) });
+      allow: ctx.allowWild, repel: !!(ctx.player && ctx.player.repelSteps > 0),
+      surf: me.avatar === "surf", bike: me.avatar === "bike" });
     if (wild) finish(Object.assign({ type: "wild" }, wild));
   }
 
@@ -346,6 +421,7 @@
       if (target.door) me.facing = "down";
       hideAreaName();
       if (World.map(me.map).showName) showAreaName(me.map);
+      checkAvatar(); checkLight();
       loadPeople();
       await preloadMap(me.map);
       savePosition();
@@ -395,6 +471,14 @@
       a.facing = dir;
       if (a === me) { me.move = { tx: me.x + dx, ty: me.y + dy, tmap: me.map, dir, t: 0, dist: TILE, speed, scripted: true }; me.parity ^= 1; }
       else a.move = { tx: a.x + dx, ty: a.y + dy, t: 0, speed };
+      return 0;
+    }
+    // A hop one tile (FireRed's jump_*: onto the water to Surf).
+    if ((m = /^jump_(up|down|left|right)$/.exec(cmd))) {
+      const dir = m[1], [dx, dy] = World.DIRS[dir];
+      a.facing = dir;
+      if (a === me) me.move = { tx: me.x + dx, ty: me.y + dy, tmap: me.map, dir, t: 0, dist: TILE, speed: WALK_SPEED * 2, hop: true, scripted: true };
+      else { a.x += dx; a.y += dy; }
       return 0;
     }
     if ((m = /^jump_2_(up|down|left|right)$/.exec(cmd))) {
@@ -470,6 +554,7 @@
     if (!fade) await fadeOut();
     me.map = loc.map; me.x = loc.x; me.y = loc.y; me.facing = loc.facing || "down";
     me.move = null; me.hidden = false; me.emote = null;
+    checkAvatar(); checkLight();
     loadPeople();
     await preloadMap(me.map);
     savePosition();
@@ -516,6 +601,12 @@
     // Something hidden on the ground in front of you.
     const hidden = (World.map(me.map).hidden || []).find((h) => h.x === tx && h.y === ty);
     if (hidden && ctx.hiddenItem && ctx.hiddenItem(hidden)) return finish({ type: "hidden", hidden, map: me.map });
+    // Water you could Surf on, or (surfing) a waterfall.
+    if (me.avatar === "surf") {
+      if (World.blockAt(me.map, me.x + dx, me.y + dy).behavior === World.MB.WATERFALL) return finish({ type: "waterfall", map: me.map });
+    } else if (World.facingWater({ map: me.map, x: me.x, y: me.y }, me.facing, occupiedForPlayer) && ctx.canSurf && ctx.canSurf()) {
+      return finish({ type: "water", map: me.map });
+    }
   }
 
   // ---------- Frame loop ----------
@@ -672,6 +763,7 @@
         if (next) next();
       }
     }
+    if (light != null && light < lightTarget) light = Math.min(lightTarget, light + 4);
     for (const p of people) updatePerson(p);
     if (scene) runScene();
     if (me.move) {
@@ -687,15 +779,17 @@
     me.moving = false;
     if (paused || !resolveExplore) return;
     if (pressedMenu) { pressedMenu = false; return finish({ type: "menu" }); }
+    if (pressedSelect) { pressedSelect = false; return finish({ type: "select" }); }
     if (pressedA) { pressedA = false; return interact(); }
     const dir = heldDir();
     if (!dir) { me.turnTimer = 0; return; }
     if (dir !== me.facing && !wasMoving) { me.facing = dir; me.turnTimer = TURN_FRAMES; return; }
     me.facing = dir;
     if (me.turnTimer > 0) { me.turnTimer--; return; }
-    const r = World.step({ map: me.map, x: me.x, y: me.y }, dir, occupiedForPlayer);
+    const r = World.step({ map: me.map, x: me.x, y: me.y }, dir, occupiedForPlayer, { surf: me.avatar === "surf" });
     if (r.warp && !r.ok) { warpTo(r.warp); return; }
     if (r.ok) { startStep(r, dir); return; }
+    if (tryPushBoulder(dir)) { me.turnTimer = TILE; return; }
     // A door that leads nowhere yet (a locked Gym): its sign says why.
     if (r.door && performance.now() - bumpMessageAt > 3000) {
       const [dx, dy] = World.DIRS[dir];
@@ -795,7 +889,7 @@
       const sy = me.move.tmap === me.map ? me.move.ty : me.y + dy * (me.move.jump ? 2 : 1);
       px = (sx * TILE) - dx * (me.move.dist - t);
       py = (sy * TILE) - dy * (me.move.dist - t);
-      if (me.move.jump) hop = Math.sin((t / me.move.dist) * Math.PI) * 10;
+      if (me.move.jump || me.move.dismount || me.move.hop) hop = Math.sin((t / me.move.dist) * Math.PI) * (me.move.jump ? 10 : 6);
     }
     const camX = px - PLAYER_X, camY = py - PLAYER_Y;
 
@@ -852,7 +946,18 @@
     } else {
       frame = frameFor(me.facing, !!me.move && (me.move.t % TILE) < TILE / 2, me.parity, 9);
     }
-    if (!me.hidden) sprites.push({ y: py, draw: () => drawSprite(sheet, 16, 32, frame, me.facing === "right", px - camX, py - camY - hop) });
+    let w = 16, dx = 0, bob = 0;
+    if (me.avatar === "bike") {
+      // The Bicycle's sheet (32 wide): standing, and pedalling while moving.
+      sheet = look + "_bike"; w = 32; dx = -8;
+      frame = frameFor(me.facing, !!me.move && (me.move.t % TILE) < TILE / 2, me.parity, 9);
+    } else if (me.avatar === "surf") {
+      // On the water: down, up or left, bobbing up and down a pixel.
+      sheet = look + "_surf"; w = 32; dx = -8;
+      frame = { down: 0, up: 2, left: 4, right: 4 }[me.facing];
+      bob = Math.floor(performance.now() / 500) % 2;
+    }
+    if (!me.hidden) sprites.push({ y: py, draw: () => drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob) });
     if (heal) drawHeal(camX, camY);   // the healing machine's balls and screen, under people
     sprites.sort((a, b) => a.y - b.y).forEach((s) => s.draw());
 
@@ -862,6 +967,7 @@
       if (ready(img)) g.drawImage(img, ox - camX, oy - camY);
       drawPatches(name, ox - camX, oy - camY, "-top");
     }
+    drawDarkness(px - camX, py - camY);
     // "!", "!!", "?" and "×" bubbles over someone's head.
     for (const [e, x, y] of emotes) {
       g.fillStyle = "#fff"; g.strokeStyle = "#000"; g.lineWidth = 1;
@@ -895,7 +1001,7 @@
     resolveExplore = null;
     paused = true;
     held.clear();
-    pressedA = pressedMenu = false;
+    pressedA = pressedMenu = pressedSelect = false;
     if (r) r(event);
   }
 
@@ -908,6 +1014,9 @@
     const sameMap = me.map === loc.map;
     me.map = loc.map; me.x = loc.x; me.y = loc.y; me.facing = loc.facing || me.facing || "down"; me.move = null;
     me.hidden = false; me.emote = null;
+    me.avatar = (ctx.player.flags && ctx.player.flags.avatar) || "walk";
+    checkAvatar();
+    if (!sameMap) checkLight();
     blackedOut = false;
     if (fade && !fadeDir) fadeDir = -1;
     // Re-check who's visible (a story event may have changed that), keeping
@@ -920,7 +1029,8 @@
         return old && old.ox === p.ox && old.oy === p.oy ? Object.assign(old, { def: p.def }) : p;
       });
     }
-    await Promise.all([preloadMap(me.map), spriteImage("player_" + (ctx.player.look || "custom") + "_run").loaded]);
+    const look = "player_" + (ctx.player.look || "custom");
+    await Promise.all([preloadMap(me.map), ...["_run", "_bike", "_surf"].map((k) => spriteImage(look + k).loaded)]);
     showControls();
     hint();
     ignoreInputUntil = performance.now() + 200;
@@ -957,6 +1067,14 @@
     explore, hide, read: (pages) => read(pages), showAreaName, forceStep, refreshPeople: () => loadPeople(),
     act, addObject, removeObject, removePerson, teleport, battleTransition, resume, pokecenterHeal,
     fadeToBlack: fadeOut, fadeFromBlack: fadeIn,
+    setAvatar, avatar: () => me.avatar, flash, isDark: () => light != null && !flashOn,
+    // What's in front of you: the tile, whoever stands there, and whether
+    // it's water you could start surfing on.
+    ahead: () => {
+      const [dx, dy] = World.DIRS[me.facing], x = me.x + dx, y = me.y + dy, p = personAt(x, y);
+      return { map: me.map, x, y, facing: me.facing, person: p ? p.def : null, behavior: World.blockAt(me.map, x, y).behavior,
+        water: me.avatar !== "surf" && World.facingWater({ map: me.map, x: me.x, y: me.y }, me.facing, occupiedForPlayer) };
+    },
     position: () => ({ map: me.map, x: me.x, y: me.y, facing: me.facing }),
     // Everyone on the map now, where they stand (the VS Seeker looks around).
     people: () => people.filter((p) => !p.hidden).map((p) => ({ def: p.def, x: p.x, y: p.y })),

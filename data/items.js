@@ -25,7 +25,7 @@ window.ITEMS = {
   "banettite": { name: "banettite", category: "mega-stones", effect: "Held: Allows Banette to Mega Evolve into Mega Banette." },
   "beedrillite": { name: "beedrillite", category: "mega-stones", effect: "Held: Allows Beedrill to Mega Evolve into Mega Beedrill." },
   "berry-juice": { name: "berry-juice", category: "healing", effect: "Restores 20 HP." },
-  "bicycle": { name: "bicycle", category: "gameplay", effect: "Use for fast transit." },
+  "bicycle": { name: "bicycle", category: "key-items", effect: "Use for fast transit." },
   "big-root": { name: "big-root", category: "held-items", effect: "Held: Increases HP recovered from draining moves, Ingrain, and Aqua Ring by 3/10 (30%)." },
   "binding-band": { name: "binding-band", category: "held-items", effect: "Held: Doubles the per-turn damage of multi-turn trapping moves." },
   "black-belt": { name: "black-belt", category: "type-enhancement", effect: "Held: Fighting-Type moves from holder do 20% more damage." },

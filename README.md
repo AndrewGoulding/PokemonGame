@@ -427,9 +427,8 @@ climbing down the last ladder in Mt. Moon as in Yellow, Gary in Cerulean (FireRe
 his Eevee), the Nugget Bridge Rocket (a Nugget, then a battle), the Rocket in
 the robbed house's yard (beat him and he gives back TM28 Dig), the Day-Care
 Man (`game/daycare.js`: one Pokémon gains 1 Exp. Point a step, learning its
-new moves; ₽100 plus ₽100 a level to take it back), Cut (with the Cascade
-Badge and a Pokémon that knows it, a small tree can be cut down until you
-leave the map), Vermilion's pier sailor checking for your S.S. Ticket, Lt.
+new moves; ₽100 plus ₽100 a level to take it back), small trees you can Cut
+down until you leave the map, Vermilion's pier sailor checking for your S.S. Ticket, Lt.
 Surge's Gym (the switches under its fifteen trash cans: the first is under any
 of them, the second under one next to it, and a wrong second can resets both;
 the electric beams are FireRed's metatiles, swapped in as `<Map>-patch-*.png`
@@ -437,7 +436,7 @@ from `MAP_PATCHES` in `tools/build-maps.js`) with Lt. Surge (Voltorb, Pikachu an
 Raichu, the Thunder Badge and TM34 Shock Wave, this game's TM102), the Fishing
 Guru's Old Rod (there's no fishing yet), Elyssa's trade (Ch'Ding the
 Farfetch'd for a Spearow), the Fan Club Chairman's Bike Voucher and the Bike
-Shop's Bicycle for it (there's no riding yet), Leaf waiting where the road from
+Shop's Bicycle for it, Leaf waiting where the road from
 Route 6 comes into Vermilion (Butterfree 18, Wigglytuff 20, Nidorina 21 and her
 second-stage starter 22), Red on the S.S. Anne where FireRed has Gary (Pikachu
 24, Charmeleon, Wartortle and Ivysaur 25), the seasick Captain's HM01 Cut, the
@@ -535,6 +534,33 @@ silver hair, red shirt, black backpack), and its trainer-card picture
 - **HMs**: one set for every region: HM01 Cut, HM02 Fly, HM03 Surf, HM04
   Strength, HM05 Flash, HM06 Whirlpool, HM07 Waterfall, HM08 Rock Smash,
   HM09 Dive, HM10 Defog, HM11 Rock Climb.
+- **Field moves** (`game/field-moves.js`): FireRed's seven, Flash, Cut, Fly,
+  Strength, Surf, Rock Smash and Waterfall, each with the Gym Badge FireRed asks
+  for (Boulder, Cascade, Thunder, Rainbow, Soul, Marsh, Volcano). A Pokémon can
+  use one if it knows the move, or if you have the HM in the Bag and it could
+  learn the move from it, so nothing has to give up a move slot. On the party
+  screen a Pokémon's menu lists every one of them it knows or could learn, in
+  FireRed's blue, with FireRed's line about it ("Travel on water.") while it's
+  chosen (more than fit scroll). Picking one says why not ("This can't be used
+  until a new Badge is obtained.", "You need HM03 Surf to use Surf.", "No
+  surfing here!", "There's nothing to Cut.") or uses it: Cut a tree in front of
+  you, Flash in a dark cave (`requires_flash`: dark but for a circle around you,
+  which opens up), Fly from outdoors to any town you've been to (the Town Map,
+  with the places marked; you land outside its Pokémon Center, FireRed's heal
+  locations, and Route 4's Center counts once you've been in), Strength (push
+  boulders until you leave the map), Surf onto the water in front of you, Rock
+  Smash a rock in front of you (a Pokémon may be hiding under it), Waterfall up
+  the falls while surfing. A in front of a tree, a rock, a boulder, the water
+  or a waterfall asks as FireRed does when someone in the party can.
+  Surfing: the surfing music and sprite, twice walking speed, the map's water
+  Pokémon (FireRed's `water_mons`, 60/30/5/4/1%, kept out of the Pokédex's
+  area pages and route crowns for now), and walking onto land hops you off.
+- **The Bicycle** (from the Bag, or Select once it's registered: key items
+  you can use on the map can be registered to Select, Backspace on a
+  keyboard): riding sprite and cycling music, a tile in 6 frames (running is 8,
+  walking 16), wild Pokémon 80% as often (FireRed's rate on a bike), and only
+  where FireRed allows cycling (`allow_cycling`): going indoors gets you off,
+  and using it indoors gets "Oak: ...! This isn't the time to use that!"
 - **TMs**: X and Y's TM01–TM100 in order, minus Flash and Rock Smash (HMs
   here), then Secret Power from Omega Ruby and Alpha Sapphire (TM99) and
   Bullet Seed (TM100, FireRed's TM09), Water Pulse (TM101, FireRed's TM03) and
@@ -547,8 +573,7 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   `TUTOR_LEARNERS`: who FireRed's move tutors can teach (Gen 6 had no tutor
   for Mega Punch, Mega Kick, Seismic Toss or Dream Eater), from any
   generation's tutors. TMs are reusable (as in Gen 5+), can't be held, tossed or
-  sold, and HM moves can be forgotten like any other (of the field moves, only
-  Cut works so far). Prices: HMs ₽3,000; TMs ₽10,000 / ₽20,000 / ₽30,000 by the move's
+  sold, and HM moves can be forgotten like any other. Prices: HMs ₽3,000; TMs ₽10,000 / ₽20,000 / ₽30,000 by the move's
   power. Saves from before this numbering are converted on load, so each
   machine keeps its move.
 - **PP Up / PP Max**: +20% of a move's base PP per PP Up, three at most (PP

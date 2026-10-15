@@ -194,8 +194,9 @@ const GAME_TEXT = [
   "PalletTown_Text_OhLookLook", "PalletTown_Text_ReadItReadIt", "PalletTown_Text_SignsAreUsefulArentThey",
   "PalletTown_Text_LookCopiedTrainerTipsSign", "PalletTown_Text_PressStartToOpenMenuCopy"
 ];
-// The player character's overworld sheets (assets/sprites/overworld/<prefix>_normal.png
-// and <prefix>_surf_run.png), by look: player_<look>.png and player_<look>_run.png.
+// The player character's overworld sheets (assets/sprites/overworld/<prefix>_normal.png,
+// <prefix>_surf_run.png, _bike.png and _surf.png), by look: player_<look>.png,
+// player_<look>_run.png, _bike.png and _surf.png.
 const PLAYER_SPRITES = { custom: "player_character" };
 
 const root = path.join(__dirname, "..");
@@ -678,6 +679,10 @@ for (const name of MAPS) {
     // FireRed's battle scene for the map ("gym", "indoor1", ...), unless normal.
     // Where an Escape Rope works (caves, Viridian Forest).
     allowEscaping: map.allow_escaping || undefined,
+    // Where the Bicycle can be ridden (allow_cycling), and a cave too dark to
+    // see far without Flash (requires_flash).
+    cycling: map.allow_cycling || undefined,
+    dark: map.requires_flash || undefined,
     // Whether the area's name pops up on arriving by a door or warp
     // (show_map_name), and its floor (Silph Co. 2F, Rocket Hideout B1F).
     showName: map.show_map_name || undefined,
@@ -709,8 +714,18 @@ for (const name of MAPS) {
         if (change) return { species: change[0], min: change[1], max: change[2] };
         return Object.assign({ species, min: m.min_level, max: m.max_level }, alt && alt !== species ? { alt } : {});
       })
-    } : null
+    } : null,
+    // Surfing (water_mons, slots 60/30/5/4/1 percent) and Rock Smash
+    // (rock_smash_mons): kept apart from `wild` (the grass), which the
+    // Pokédex's area pages and route crowns go by.
+    water: slotsOf(land, "water_mons"),
+    rockSmash: slotsOf(land, "rock_smash_mons")
   };
+}
+function slotsOf(enc, kind) {
+  const e = enc && enc[kind];
+  if (!e) return undefined;
+  return { rate: e.encounter_rate, slots: e.mons.map((m) => ({ species: dexByID[toID(m.species.replace(/^SPECIES_/, ""))], min: m.min_level, max: m.max_level })) };
 }
 
 // Movement scripts (walk_up, walk_in_place_faster_down, ...) by label, for the
@@ -775,6 +790,12 @@ for (const [color, prefix] of Object.entries(PLAYER_SPRITES)) {
   // sheet's poses (down, two strides, up, two strides, left, two strides).
   const run = path.join(root, "assets/sprites/overworld", prefix + "_surf_run.png");
   if (fs.existsSync(run)) writeSprite(cropFrames(readPng(run), 16, 3, 9), path.join(outSprites, "player_" + color + "_run.png"));
+  // On the Bicycle (32x32, the walking sheet's poses) and surfing (32x32:
+  // down, up and left, two frames each, the second a bob lower).
+  const bike = path.join(root, "assets/sprites/overworld", prefix + "_bike.png");
+  if (fs.existsSync(bike)) writeSprite(readPng(bike), path.join(outSprites, "player_" + color + "_bike.png"));
+  const surf = path.join(root, "assets/sprites/overworld", prefix + "_surf.png");
+  if (fs.existsSync(surf)) writeSprite(cropFrames(readPng(surf), 32, 0, 6), path.join(outSprites, "player_" + color + "_surf.png"));
 }
 
 // ---------- The Move Relearner and Move Deleter (not in FireRed) ----------

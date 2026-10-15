@@ -6,6 +6,7 @@
 //   World.warpAt("PalletTown", 6, 7)            // the warp on a tile, if any
 //   World.wildEncounter("Route1", rng)          // -> { species, level } or null (one roll)
 //   World.stepEncounter(state, "MtMoon_1F", x, y, { allow })   // FireRed's check for a step (below)
+//   World.step(pos, "left", occupied, { surf: true })   // surfing: water, or { dismount } onto land
 
 (function () {
   "use strict";
@@ -21,6 +22,7 @@
     NORTH_ARROW_WARP: 0x64, SOUTH_ARROW_WARP: 0x65, FALL_WARP: 0x66, REGULAR_WARP: 0x67,
     WARP_DOOR: 0x69, UP_ESCALATOR: 0x6a, DOWN_ESCALATOR: 0x6b,
     UP_RIGHT_STAIR_WARP: 0x6c, UP_LEFT_STAIR_WARP: 0x6d, DOWN_RIGHT_STAIR_WARP: 0x6e, DOWN_LEFT_STAIR_WARP: 0x6f,
+    WATERFALL: 0x13,
     COUNTER: 0x80, PC: 0x83
   };
   const LEDGE = { right: MB.JUMP_EAST, left: MB.JUMP_WEST, up: MB.JUMP_NORTH, down: MB.JUMP_SOUTH };
@@ -32,6 +34,10 @@
   const ARROW_DIR = { [MB.EAST_ARROW_WARP]: "right", [MB.WEST_ARROW_WARP]: "left",
     [MB.NORTH_ARROW_WARP]: "up", [MB.SOUTH_ARROW_WARP]: "down" };
   const isWater = (b) => b >= 0x10 && b <= 0x15;
+  // What you can Surf on (sBehaviorSurfable: the waters, the waterfall, the
+  // currents), and the waterfall, which only Waterfall goes up.
+  const SURFABLE = new Set([0x10, 0x11, 0x12, 0x13, 0x15, 0x1a, 0x1b, 0x50, 0x51, 0x52, 0x53]);
+  const isSurfable = (b) => SURFABLE.has(b);
 
   const map = (name) => window.WORLD_MAPS[name];
 
@@ -87,7 +93,11 @@
 
   // One step from `pos` in `dir`. `occupied(map, x, y)` says whether a person stands there.
   // Returns { ok: true, map, x, y, jump?, warp? } or { ok: false, warp?, unbuilt? }.
-  function step(pos, dir, occupied) {
+  // Surfing (opts.surf): onto water, or { ok, dismount: true } onto land you
+  // can step onto (FireRed's CanStopSurfing); a waterfall ahead is
+  // { ok: false, waterfall: true }.
+  function step(pos, dir, occupied, opts) {
+    if (opts && opts.surf) return surfStep(pos, dir, occupied);
     const [dx, dy] = DIRS[dir];
     const here = blockAt(pos.map, pos.x, pos.y);
     const ahead = blockAt(pos.map, pos.x + dx, pos.y + dy);
@@ -131,6 +141,31 @@
     return result;
   }
 
+  function surfStep(pos, dir, occupied) {
+    const [dx, dy] = DIRS[dir];
+    const here = blockAt(pos.map, pos.x, pos.y);
+    const ahead = blockAt(pos.map, pos.x + dx, pos.y + dy);
+    if (!ahead.map) {
+      const c = edgeConnection(pos.map, pos.x, pos.y, dir);
+      return { ok: false, unbuilt: c && !c.map ? c.mapConst : null };
+    }
+    if (ahead.collision || (occupied && occupied(ahead.map, ahead.x, ahead.y))) return { ok: false };
+    if (ahead.behavior === MB.WATERFALL) return { ok: false, waterfall: true };
+    const sameHeight = here.elevation === ahead.elevation || [0, 15].includes(here.elevation) || [0, 15].includes(ahead.elevation);
+    if (isSurfable(ahead.behavior)) return sameHeight ? { ok: true, map: ahead.map, x: ahead.x, y: ahead.y } : { ok: false };
+    // Onto the shore: land at the height you walk at (3), or a tile with no height.
+    if (ahead.elevation === 3 || ahead.elevation === 0 || ahead.elevation === 15) return { ok: true, map: ahead.map, x: ahead.x, y: ahead.y, dismount: true };
+    return { ok: false };
+  }
+  // The water in front of `pos` you could start surfing on (FireRed's
+  // IsPlayerFacingSurfableFishableWater), or false.
+  function facingWater(pos, dir, occupied) {
+    const [dx, dy] = DIRS[dir];
+    const ahead = blockAt(pos.map, pos.x + dx, pos.y + dy);
+    return !!ahead.map && !ahead.collision && isSurfable(ahead.behavior) && ahead.behavior !== MB.WATERFALL &&
+      !(occupied && occupied(ahead.map, ahead.x, ahead.y));
+  }
+
   // ---------- Signs, people, triggers ----------
 
   const signAt = (mapName, x, y) => (map(mapName).signs || []).find((s) => s.x === x && s.y === y) || null;
@@ -153,11 +188,15 @@
     if (Math.floor(rng() * 2880) >= m.wild.rate * 16) return null;
     return pickWild(m, rng);
   }
-  // A Pokémon from the map's slots (and its level).
-  function pickWild(m, rng) {
+  // Water and Rock Smash slots: 60, 30, 5, 4, 1 percent.
+  const WATER_SLOT_WEIGHTS = [60, 30, 5, 4, 1];
+  // A Pokémon from the map's slots (and its level): the grass's, or `table`'s
+  // (the water's, the rocks').
+  function pickWild(m, rng, table) {
+    const t = table || m.wild, weights = table ? WATER_SLOT_WEIGHTS : LAND_SLOT_WEIGHTS;
     let roll = Math.floor(rng() * 100), slot = 0;
-    while (slot < LAND_SLOT_WEIGHTS.length - 1 && roll >= LAND_SLOT_WEIGHTS[slot]) roll -= LAND_SLOT_WEIGHTS[slot++];
-    const s = m.wild.slots[slot];
+    while (slot < weights.length - 1 && roll >= weights[slot]) roll -= weights[slot++];
+    const s = t.slots[slot];
     if (!s || !s.species) return null;
     // A slot where LeafGreen differs from FireRed: either version's Pokémon.
     const species = s.alt && rng() < 0.5 ? s.alt : s.species;
@@ -176,6 +215,8 @@
   //  - a step that fails that roll, or whose Pokémon `allow` turns away (a
   //    Repel), adds the rate to the buff (or, with a Repel going, clears it);
   //    an encounter clears the buff and the steps.
+  // Surfing (opts.surf), it's the map's water Pokémon on water; on the
+  // Bicycle (opts.bike), the rate is 80% (DoWildEncounterRateTest).
   const MAX_ENCOUNTER_RATE = 1600;
   function stepEncounter(state, mapName, x, y, opts) {
     opts = opts || {};
@@ -183,8 +224,9 @@
     const m = map(mapName), b = blockAt(mapName, x, y);
     const prev = state.prev;
     state.prev = b.behavior;
-    if (!m.wild || !isGrass(b)) return null;
-    const rate = m.wild.rate;
+    const table = opts.surf ? m.water : m.wild;
+    if (!table || !(opts.surf ? isSurfable(b.behavior) : isGrass(b))) return null;
+    const rate = table.rate;
     // HandleWildEncounterCooldown
     const minSteps = rate >= 80 ? 0 : rate < 10 ? 8 : 8 - Math.floor(rate / 10);
     if ((state.steps | 0) < minSteps) {
@@ -194,9 +236,10 @@
     // StandardWildEncounter: a new kind of ground, then the rate test.
     if (prev != null && prev !== b.behavior && Math.floor(rng() * 100) >= 60) return null;
     const buffAdd = () => { state.buff = opts.repel ? 0 : (state.buff | 0) + rate; };
-    const chance = Math.min(MAX_ENCOUNTER_RATE, rate * 16 + Math.floor((state.buff | 0) * 16 / 200));
+    const base = opts.bike ? Math.floor(rate * 16 * 80 / 100) : rate * 16;
+    const chance = Math.min(MAX_ENCOUNTER_RATE, base + Math.floor((state.buff | 0) * 16 / 200));
     if (Math.floor(rng() * MAX_ENCOUNTER_RATE) >= chance) { buffAdd(); return null; }
-    const mon = pickWild(m, rng);
+    const mon = pickWild(m, rng, opts.surf ? m.water : null);
     if (!mon || (opts.allow && !opts.allow(mon))) { buffAdd(); return null; }
     state.buff = 0;
     state.steps = 0;
@@ -204,7 +247,7 @@
   }
 
   window.World = {
-    DIRS, OPPOSITE, MB, map, connectionOrigin, blockAt, warpAt, warpTarget, step,
-    signAt, triggersAt, isGrass, wildEncounter, stepEncounter, LAND_SLOT_WEIGHTS
+    DIRS, OPPOSITE, MB, map, connectionOrigin, blockAt, warpAt, warpTarget, step, facingWater, isSurfable,
+    signAt, triggersAt, isGrass, wildEncounter, stepEncounter, pickWild, LAND_SLOT_WEIGHTS, WATER_SLOT_WEIGHTS
   };
 })();
