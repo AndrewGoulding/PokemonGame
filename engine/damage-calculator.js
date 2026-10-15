@@ -26,7 +26,10 @@
 //            lastDamageTaken (Counter/Mirror Coat/Metal Burst),
 //            targetDamagedThisTurn (Assurance), hitByTarget (Avalanche/Revenge),
 //            movesAfterTarget (Payback), allyFainted (Retaliate),
-//            targetSwitching (Pursuit), magnitude, stockpile, ppLeft }
+//            targetSwitching (Pursuit), magnitude, stockpile, ppLeft,
+//            beatUpPower (one Beat Up hit), plusMinus (1.5x SpA: an ally with
+//            Plus/Minus), friendGuard (0.75x: the defender's ally has Friend Guard) }
+//   targets: how many Pokémon a spread move is hitting (0.75x when > 1).
 
 (function () {
   "use strict";
@@ -313,6 +316,7 @@
       case "payback": if (opts.movesAfterTarget) bp *= 2; break;
       case "retaliate": if (opts.allyFainted) bp *= 2; break;
       case "pursuit": if (opts.targetSwitching) bp *= 2; break;
+      case "beatup": if (opts.beatUpPower) bp = opts.beatUpPower; break;
       default: break;
     }
     return bp;
@@ -538,6 +542,7 @@
     if (oi === "thick-club" && offStat === "atk" && ["Cubone", "Marowak"].includes(offensiveMon.species)) atkChain = chainMult(atkChain, fp(2));
     if (oi === "deep-sea-tooth" && offStat === "spa" && offensiveMon.species === "Clamperl") atkChain = chainMult(atkChain, fp(2));
     if (oi === "soul-dew" && offStat === "spa" && ["Latios", "Latias"].includes(offensiveMon.species)) atkChain = chainMult(atkChain, fp(1.5));
+    if (opts.plusMinus && offStat === "spa") atkChain = chainMult(atkChain, fp(1.5));
     attack = Math.max(1, applyChain(attack, atkChain));
 
     // Defense-side modifier chain
@@ -577,6 +582,8 @@
       pushF(0.5);
       result.notes.push(D.item + " would be consumed");
     }
+
+    if (opts.friendGuard) pushF(0.75);
 
     const ra = runHook(A.ability, "onModifyDamage", env, A, base, move);
     finalChain = chainMult(finalChain, ra.mult);

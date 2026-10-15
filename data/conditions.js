@@ -108,8 +108,15 @@
     },
     leechseed: {
       name: "Leech Seed",
+      onStart(ctx) { if (ctx.source && ctx.source.side) ctx.effectState.sourceSlot = ctx.source.slot; },
       onResidual(ctx) {
-        const src = ctx.effectState.source;
+        let src = ctx.effectState.source;
+        if (ctx.battle.doubles && src && src.side) {
+          // Doubles: it saps into whoever now stands in the seeder's slot
+          // (nothing at all if that slot is empty).
+          src = src.side.actives[ctx.effectState.sourceSlot];
+          if (!src || src.fainted || !src.isActive) return;
+        }
         const dealt = ctx.damage(ctx.pokemon, hpFrac(ctx.pokemon, 1, 8), src, E("Volatile", "leechseed", "Leech Seed"));
         if (dealt && src && src.isActive && !src.fainted) ctx.heal(src, dealt, ctx.pokemon, E("Volatile", "leechseed", "Leech Seed"));
       }
@@ -223,7 +230,7 @@
         const p = ctx.pokemon, st = ctx.effectState;
         if (st.duration !== 1) { ctx.add("-activate", p, "move: Bide"); return false; }
         const dealt = (st.damage || 0) * 2;
-        const foe = p.side.foe.active;
+        const foe = ctx.battle.doubles ? ctx.battle.foesOf(p)[0] : p.side.foe.active;
         const src = st.lastSource && st.lastSource.isActive && !st.lastSource.fainted ? st.lastSource : foe;
         p.removeVolatile("bide");
         ctx.add("-end", p, "move: Bide");

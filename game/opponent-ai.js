@@ -10,6 +10,15 @@
 // a turn are marked down. If nothing does damage, it uses a random status move.
 // Switch choice (after a faint): the Pokémon with the best matchup against the
 // current foe. The AI never switches by choice.
+//
+// Doubles (battle.format "doubles"): OpponentAI.choose(battle, id) answers for
+// every slot the controller id ("p1"/"p2", or "p1b"/"p2b" for a tag partner)
+// must fill, as an array indexed by slot. Each slot scores its moves against
+// each foe and aims single-target attacks at the foe it hurts most (never at
+// its ally); spread moves add up what they do to every foe (0.75x each with
+// more than one target), and Earthquake-style moves lose what they would do
+// to the ally (and a lot more if it would knock the ally out). Replacements
+// go by the best average matchup against the foes still standing.
 
 (function () {
   "use strict";
@@ -22,7 +31,7 @@
     const conds = defender.side.conditions;
     return {
       weather: battle.getWeather(), terrain: battle.field.terrain, gravity: !!battle.field.pseudo.gravity,
-      isDoubles: false, reflect: !!conds.reflect, lightScreen: !!conds.lightscreen
+      isDoubles: !!battle.doubles, reflect: !!conds.reflect, lightScreen: !!conds.lightscreen
     };
   }
 
@@ -38,7 +47,7 @@
     const data = window.MOVES[moveName];
     if (!data || data.cat === "Status") return 0;
     let r;
-    try { r = window.Damage.calc(attacker, defender, moveName, fieldFor(battle, defender), {}); }
+    try { r = window.Damage.calc(attacker, defender, moveName, fieldFor(battle, defender), battle.doubles ? { targets: 1 } : {}); }
     catch (e) { return 0; }
     const perHit = r.damage.reduce((sum, d) => sum + d, 0) / r.damage.length;
     return perHit * expectedHits(data, attacker);
@@ -96,8 +105,83 @@
     return dealt - taken / 2;
   }
 
+  const SPREAD = ["allAdjacentFoes", "allAdjacent"];
+  const SINGLE = ["normal", "any", "adjacentFoe"];
+
+  function chooseDoubles(battle, id, rng) {
+    const pick = (arr) => arr[Math.floor(rng() * arr.length)];
+    const req = battle.getRequest(id);
+    if (!req) return null;
+    const side = battle.sides[id.slice(0, 2)];
+    const out = [];
+    if (req.phase === "switch") {
+      const pool = req.switches.slice();
+      const foes = side.foe.actives.filter((m) => m && !m.fainted);
+      req.forceSwitch.forEach((f, slot) => {
+        if (!f || !pool.length) return;
+        let best = pool[0], bestScore = -Infinity;
+        for (const i of pool) {
+          const mon = side.pokemon[i];
+          const s = foes.length ? foes.reduce((sum, foe) => sum + matchup(battle, mon, foe), 0) / foes.length : mon.hp / mon.maxhp;
+          if (s > bestScore) { best = i; bestScore = s; }
+        }
+        pool.splice(pool.indexOf(best), 1);
+        out[slot] = { type: "switch", index: best };
+      });
+      return out;
+    }
+    if (req.phase !== "move") return null;
+    let mega = false;
+    req.actives.forEach((a, slot) => {
+      if (!a) return;
+      if (a.forced) { out[slot] = { type: "move", move: 0 }; return; }
+      if (a.struggle) { out[slot] = { type: "move", move: "Struggle" }; return; }
+      const attacker = side.actives[slot];
+      const foes = battle.foesOf(attacker);
+      const ally = battle.allyOf(attacker);
+      const usable = a.moves.filter((m) => !m.disabled);
+      let best = null, bestScore = 0, bestTarget = null;
+      for (const m of usable) {
+        const data = window.MOVES[m.name];
+        if (!data || data.cat === "Status" || !foes.length) continue;
+        let score = 0, target = null;
+        if (SPREAD.includes(data.target)) {
+          const hitAlly = data.target === "allAdjacent" && ally && !(ally.ability === "Telepathy");
+          const mult = foes.length + (hitAlly ? 1 : 0) > 1 ? 0.75 : 1;
+          for (const foe of foes) score += scoreMove(battle, attacker, foe, m.name) * mult;
+          if (hitAlly) {
+            const dmg = expectedDamage(battle, attacker, ally, m.name) * mult * hitChance(data, attacker, ally);
+            if (dmg > 0) score -= Math.min(dmg, ally.hp) * 1.5 + (dmg >= ally.hp ? ally.maxhp : 0);
+          }
+        } else if (SINGLE.includes(data.target)) {
+          for (const foe of foes) {
+            const s = scoreMove(battle, attacker, foe, m.name);
+            if (s > score) { score = s; target = foe.slot + 1; }
+          }
+        } else {
+          // Random target (Outrage, ...) or the last attacker (Counter, ...).
+          for (const foe of foes) score += scoreMove(battle, attacker, foe, m.name) / foes.length;
+        }
+        if (score > bestScore) { best = m; bestScore = score; bestTarget = target; }
+      }
+      if (!best) {
+        // Nothing does damage: a status move that has someone to work on.
+        const status = usable.filter((m) => m.category === "Status" && (m.target !== "adjacentAlly" || ally));
+        best = pick(status.length ? status : usable);
+        const foeLocs = best.targets.filter((l) => l > 0);
+        if (best.targets.length) bestTarget = pick(best.target === "adjacentAllyOrSelf" || !foeLocs.length ? best.targets : foeLocs);
+      }
+      const choice = { type: "move", move: best.index };
+      if (bestTarget) choice.target = bestTarget;
+      if (a.canMega && !mega) { choice.mega = true; mega = true; }
+      out[slot] = choice;
+    });
+    return out;
+  }
+
   function choose(battle, sideId, rng) {
     rng = rng || Math.random;
+    if (battle.doubles) return chooseDoubles(battle, sideId, rng);
     const pick = (arr) => arr[Math.floor(rng() * arr.length)];
     const req = battle.getRequest(sideId);
     const side = battle.sides[sideId];

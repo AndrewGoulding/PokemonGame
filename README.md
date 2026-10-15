@@ -1,6 +1,7 @@
 # Pokémon Game
 
-A browser Pokémon game built on a Gen 6 singles battle engine. Plain JavaScript,
+A browser Pokémon game built on a Gen 6 battle engine (singles in the game; the
+engine also runs double and tag battles). Plain JavaScript,
 no build step and no dependencies.
 
 ## Running it
@@ -838,3 +839,75 @@ For progression, pass `exp: true` (p1 earns experience) and `wild: true` (p1 may
 also choose `{ type: "ball", ball: "great-ball" }` or `{ type: "run" }`). Team sets
 can carry saved `hp`, `status`, `pp` and `exp`. See the header comment in
 `engine/battle.js` for the full API.
+
+### Double battles
+
+Pass `format: "doubles"` (the default is `"singles"`, which behaves exactly as
+before). Each side leads with its first two healthy Pokémon in slots a and b
+(`side.actives[0]`, `side.actives[1]`; `side.active` is still slot a). A side
+with only one Pokémon that can fight uses one slot (`side.actives[1]` is
+`null`). Events name the slot: `p1a: Garchomp`, `p1b: Pikachu`.
+
+```js
+const battle = new Battle({ format: "doubles", seed: 1, p1: { team: [...] }, p2: { team: [...] } });
+battle.start();
+const req = battle.getRequest("p1");
+// req.actives[slot] (null if the slot has nothing to choose):
+//   { moves: [{ name, target: "normal", targets: [1, 2, -2], ... }], canMega, forced, switches, ... }
+battle.choose("p1", [
+  { type: "move", move: "Dragon Claw", target: 2 },   // the foe in slot b
+  { type: "move", move: "Earthquake" }                // spread: no target
+]);
+// End of turn, after faints: req.phase "switch", req.forceSwitch [true, false]
+battle.choose("p2", [{ type: "switch", index: 3 }, null]);
+```
+
+Target locations are relative, as in Showdown: `1` and `2` are the foes in
+slots a and b, `-1` and `-2` your own slots a and b. Each move slot lists the
+legal `targets`; a move that aims at one Pokémon and is given no target hits a
+random foe. A single (non-array) choice fills the first slot still open, so a
+UI can choose slot by slot.
+
+**Tag battles** (doubles only): `p1: { name: "Red", team, partner: { name: "Leaf",
+team } }` makes p1 two trainers with up to 3 Pokémon each. The trainer holds
+slot a, the partner slot b; the partner's Pokémon follow the trainer's in
+`side.pokemon` (`owner` 0 / 1). A slot is refilled only from its own trainer's
+party; a trainer with nothing left is out (`-trainerout`) and their slot stays
+empty, while the partner fights on. `getRequest("p1")` / `choose("p1", …)` cover
+the trainer's slot, `"p1b"` the partner's — the game drives it with
+`OpponentAI.choose(battle, "p1b")`. `switch` events carry the trainer's name,
+`-withdraw` marks a Pokémon called back. Only p1's own Pokémon earn experience.
+
+The opponent AI handles doubles too: each slot aims its best single-target
+attack at the foe it hurts most (never its ally), counts spread moves against
+both foes, and marks down Earthquake-style moves by what they would do to the
+ally.
+
+What doubles does: spread moves at 0.75× (accuracy, crits, secondary effects
+and abilities per target; recoil and Life Orb once), Earthquake / Surf /
+Explosion hitting the ally, random targets for Outrage / Thrash / Petal Dance /
+Struggle, retargeting when the chosen foe has fainted, turn order across all
+four Pokémon, end-of-turn replacements for both sides, U-turn / Baton Pass per
+slot, Helping Hand, Follow Me / Rage Powder, Lightning Rod / Storm Drain
+redirection, Wide Guard (doubles only) and Quick Guard, Protect per Pokémon,
+Ally Switch, Intimidate / Frisk / Anticipation / Forewarn / Bad Dreams on both
+foes, Trace copying a random foe, Imposter copying the foe opposite, Pressure
+per targeted foe, Shadow Tag / Arena Trap / Magnet Pull from either foe, Friend
+Guard, Plus / Minus, Telepathy, Healer, Pursuit hitting a switching foe first at
+double power, Beat Up hitting once per healthy party member, Leech Seed healing
+whoever stands in the seeder's slot, Perish Song on everyone, Wish healing its
+slot, screens at 2/3 in doubles, wild doubles (a ball only once one wild
+Pokémon is left), and experience for every p1 Pokémon that was out while the
+fainted foe was.
+
+Not implemented (or approximated) in doubles: triple / rotation battles;
+choosing which slot gets the last bench Pokémon when two fainted (slot a gets
+it); Mat Block, Crafty Shield, After You, Quash, Instruct, Spotlight-style
+moves, Aromatic Mist / Hold Hands effects, Acupressure on an ally; Flower Veil,
+Sweet Veil, Aroma Veil, Flower Gift, Symbiosis, Unnerve, Soundproof /
+Sap Sipper / Magic Bounce on ally side moves (the `onAlly…` ability hooks) and
+Mold Breaker ignoring redirection; Sky Drop; a doubles Shift; Wide Guard,
+Pursuit-on-switch and Beat Up's party count in singles (left as they were, to
+keep singles unchanged). The spread multiplier counts the targets when the move
+starts (a protected or missed target still counts). Speed order is fixed at the
+start of the turn (Gen 6).

@@ -1,4 +1,4 @@
-// Battle engine (Gen 6 singles, headless)
+// Battle engine (Gen 6 singles and doubles, headless)
 // Depends on (load these first): type-chart.js, natures.js, dex.js, moves.js,
 // abilities.js, items.js, stat-calculator.js, damage-calculator.js, conditions.js,
 // battle-moves.js. See index.html for the full load order.
@@ -41,6 +41,63 @@
 // Items from the bag (needs engine/item-use.js), either side, any battle:
 //   { type: "item", item: "potion", target: teamIndex, move: slot (Ether etc.) }
 // Used before moves; event: -useitem.
+//
+// ---- Double battles ----
+//   new Battle({ ..., format: "doubles" })      ("singles" is the default)
+// Two active slots a side: side.actives[0..1] (slot a, slot b). side.active is
+// still slot a's Pokémon (the only one in singles). Each side leads with its
+// first two healthy Pokémon; a side with only one that can fight leaves
+// side.actives[1] null and fights with one slot. Events name slots the
+// Showdown way: "p1a: Name" / "p1b: Name" (singles stays "p1a: Name"); a
+// Pokémon on the bench keeps the letter of the slot it last stood in.
+//
+// Target locations (relative, as in Showdown): 1 = the foe in slot a, 2 = the
+// foe in slot b, -1 = your own slot a, -2 = your own slot b.
+//
+// getRequest(id) in doubles (id is a controller, see tag battles below):
+//   { phase: "move", format: "doubles", slots: [0, 1], open: [slots still to
+//     choose], switches: [bench team indexes], team: [... slot, owner, mine],
+//     actives: [ per slot, null for an empty / fainted / already chosen slot:
+//       { slot, teamIndex, species, hp, ..., moves: [{ ..., target: "normal",
+//         targets: [legal target locations] }], struggle, canMega, forced,
+//         trapped, switches, canCatch, canRun } ] }
+//   { phase: "switch", forceSwitch: [bool per slot], switches: [...] }
+// choose(id, [choice0, choice1]): one choice per slot (null for slots that
+// need none). A single (non-array) choice fills the first open slot, so slots
+// may also be chosen one call at a time. Moves that aim at one Pokémon take a
+// target: { type: "move", move: 0, target: 2, mega: true? } (left out: a
+// random foe). Spread, self, side, field and random moves need none.
+// Switches can't bring in the same Pokémon twice or one already out; one Mega
+// Evolution a side per battle; forced slots (recharge, Fly's second turn, ...)
+// fill themselves. Fainted slots are refilled at the end of the turn (phase
+// "switch" with forceSwitch, both sides at once); U-turn / Baton Pass ask for
+// the user's slot mid-turn. Wild doubles (wild: true with two wild Pokémon):
+// a ball only while one wild Pokémon is left (canCatch), run as usual.
+//
+// Targeting follows moves.js `target`: normal/any/adjacentFoe (chosen; a
+// fainted foe is replaced by the other foe, a fainted ally fails),
+// adjacentAlly (Helping Hand), adjacentAllyOrSelf, allAdjacentFoes and
+// allAdjacent (spread: Earthquake, Surf and Explosion hit the ally too; 0.75x
+// each with more than one target), randomNormal (Outrage, Struggle: a random
+// foe), scripted (Counter: the last attacker), self/allySide/allyTeam/all
+// (the user or the field), foeSide (the foes' side). Follow Me / Rage Powder
+// and Lightning Rod / Storm Drain redirect single-target moves (Stalwart
+// ignores it). Event extras: "move" gets a 5th "[spread] p2a: X,p2b: Y" for
+// spread moves; "-notarget" (no one left to hit); "swap" (Ally Switch:
+// [old identity, new slot]).
+//
+// Tag battles (doubles only): a side may be two trainers, each with up to 3
+// Pokémon:  p1: { name: "Red", team: [...], partner: { name: "Leaf", team: [...] } }
+// The trainer holds slot a and the partner slot b; the partner's Pokémon come
+// after the trainer's in side.pokemon (Pokemon.owner: 0 trainer, 1 partner).
+// Each slot is refilled only from its owner's party; a trainer with nothing
+// left is out ("-trainerout", side, name, slot) and the slot stays empty; the
+// side loses when both are out. Controllers: getRequest/choose("p1") cover the
+// trainer's slot only, ("p1b") the partner's (drive it with
+// OpponentAI.choose(battle, "p1b") or your own choice). "switch"/"drag" events
+// carry the trainer's name as a 7th element, and "-withdraw" [Pokémon,
+// trainer] marks a Pokémon called back. Experience goes only to p1's own
+// (owner 0) Pokémon. Ally Switch fails in tag battles.
 
 (function () {
   "use strict";
@@ -85,6 +142,13 @@
     dive: ["surf", "whirlpool"],
     shadow: []
   };
+  // Doubles targeting (moves.js `target`): moves aimed at one chosen Pokémon,
+  // moves that hit several, and those Follow Me / Lightning Rod can redirect.
+  const CHOSEN_TARGETS = new Set(["normal", "any", "adjacentFoe", "adjacentAlly", "adjacentAllyOrSelf"]);
+  const SPREAD_TARGETS = new Set(["allAdjacentFoes", "allAdjacent"]);
+  const REDIRECTABLE = new Set(["normal", "any", "adjacentFoe", "randomNormal"]);
+  // One-turn doubles effects, cleared at the end of each turn.
+  const TURN_VOLATILES = ["helpinghand", "followme", "ragepowder"];
   const STALL_MOVES = new Set(["protect", "detect", "endure", "kingsshield", "spikyshield", "quickguard", "wideguard", "matblock", "craftyshield"]);
 
   // Indexes
@@ -127,6 +191,7 @@
       this.battle = battle;
       this.side = side;
       this.position = index;
+      this.slot = 0;          // which active slot it stands in (0, or 1 in doubles)
       this.species = speciesKey;
       this.baseSpecies = speciesKey;
       this.name = set.name || speciesKey;
@@ -154,6 +219,7 @@
       this.volatiles = {};
       this.abilityState = {};
       this.fainted = false;
+      this.owner = 0;         // tag battles: 0 = the side's trainer, 1 = the partner
       this.isActive = false;
       this.activeTurns = 0;
       this.trapped = false;
@@ -201,7 +267,9 @@
       if (pct <= 0) return "F";
       return battle.random() * 100 < pct ? "M" : "F";
     }
-    get ident() { return this.side.id + "a: " + this.name; }
+    // "p1a: Name" (slot 0) or "p1b: Name" (slot 1, doubles only). A Pokémon
+    // on the bench keeps the letter of the slot it last stood in.
+    get ident() { return this.side.id + (this.slot === 1 ? "b" : "a") + ": " + this.name; }
     hasType(t) { return this.types.includes(t); }
     getTypes() { return this.types.slice(); }
     setType(t) { this.types = [].concat(t); return true; }
@@ -240,7 +308,7 @@
     get speciesData() { return window.DEX[this.species]; }
     get moveSlots() { return this.moves.map((m) => ({ id: m.id, move: m.name, name: m.name, pp: m.pp, maxpp: m.maxpp })); }
     get hpType() { return window.Damage.hiddenPowerType(this.ivs) || "Dark"; }
-    adjacentAllies() { return []; }
+    adjacentAllies() { const a = this.battle.allyOf(this); return a ? [a] : []; }
     hasItem(i) { return (Array.isArray(i) ? i : [i]).map(normItem).includes(this.item); }
     getUpdatedDetails() { return this.species + ", L" + this.level; }
     runEffectiveness(move) {
@@ -271,9 +339,21 @@
       this.battle = battle;
       this.id = id;
       this.name = opts.name || id;
-      this.pokemon = (opts.team || []).slice(0, 6).map((s, i) => new Pokemon(battle, this, s, i));
+      // Tag battle (doubles only): a partner trainer with their own party
+      // controls slot b. Each party is up to 3; the partner's Pokémon follow
+      // the trainer's in `pokemon` (Pokemon.owner 0 = trainer, 1 = partner).
+      this.tag = !!(battle.doubles && opts.partner);
+      this.trainers = this.tag ? [this.name, opts.partner.name || id + " partner"] : [this.name];
+      const sets = this.tag ? (opts.team || []).slice(0, 3).map((s) => [s, 0]).concat((opts.partner.team || []).slice(0, 3).map((s) => [s, 1]))
+        : (opts.team || []).slice(0, 6).map((s) => [s, 0]);
+      this.pokemon = sets.map(([s, owner], i) => { const p = new Pokemon(battle, this, s, i); p.owner = owner; return p; });
+      this.megaUsedBy = [false, false];
+      this.partial = [];
+      this.switchSlots = [];
       if (!this.pokemon.length) throw new Error(id + " has no Pokemon");
-      this.active = null;
+      // The Pokémon in each active slot (one in singles, two in doubles; a slot
+      // is null when no one ever stood in it, e.g. a team of one in doubles).
+      this.actives = new Array(battle.activePerSide).fill(null);
       this.conditions = {};
       this.choice = null;
       this.foe = null;
@@ -282,6 +362,15 @@
       this.faintedThisTurn = false;
     }
     get remaining() { return this.pokemon.filter((p) => !p.fainted).length; }
+    // Slot 0's Pokémon (the only one in singles).
+    get active() { return this.actives[0]; }
+    set active(mon) { this.actives[0] = mon; }
+    // Team indexes of the Pokémon that could come in (not fainted, not out).
+    // In a tag team, `slot` narrows it to that slot's trainer's party.
+    bench(slot) {
+      const own = (p) => !this.tag || slot == null || p.owner === slot;
+      return this.pokemon.map((p, i) => (!p.fainted && !this.actives.includes(p) && own(p) ? i : -1)).filter((i) => i >= 0);
+    }
   }
 
   // ---------------------------------------------------------------
@@ -316,6 +405,10 @@
       this.runAttempts = 0;
       this.caught = null;
       this.escaped = false;
+      // "singles" (default) or "doubles": two active Pokémon a side.
+      this.format = opts.format === "doubles" && !opts.safari && !opts.ghost ? "doubles" : "singles";
+      this.doubles = this.format === "doubles";
+      this.activePerSide = this.doubles ? 2 : 1;
       this.sides = { p1: new Side(this, "p1", opts.p1 || {}), p2: new Side(this, "p2", opts.p2 || {}) };
       this.sides.p1.foe = this.sides.p2;
       this.sides.p2.foe = this.sides.p1;
@@ -367,7 +460,7 @@
 
     static formatEvent(ev) {
       const [t, a, b, c, d] = ev;
-      const nm = (s) => String(s || "").replace(/^p\da: /, "");
+      const nm = (s) => String(s || "").replace(/^p\d[ab]?: /, "");
       switch (t) {
         case "turn": return "=== Turn " + a + " ===";
         case "switch": return nm(a) + " was sent out!  (" + b + ")";
@@ -376,6 +469,10 @@
         case "-damage": return "  " + nm(a) + " -> " + b + (c ? "  " + c : "");
         case "-heal": return "  " + nm(a) + " healed -> " + b + (c ? "  " + c : "");
         case "faint": return nm(a) + " fainted!";
+        case "-notarget": return "  But there was no target...";
+        case "-withdraw": return b + " withdrew " + nm(a) + "!";
+        case "-trainerout": return b + " is out of usable Pokémon!";
+        case "swap": return nm(a) + " switched places!";
         case "-miss": return "  " + nm(a) + "'s attack missed!";
         case "-crit": return "  A critical hit!";
         case "-supereffective": return "  It's super effective!";
@@ -475,8 +572,9 @@
         randomChance: (n, d) => b.randomChance(n, d),
         sample: (a) => b.sample(a),
         random: (a, c) => (a === undefined ? b.random() : c === undefined ? Math.floor(b.random() * a) : b.randInt(a, c - 1)),
-        foes: () => (holder.side.foe.active && !holder.side.foe.active.fainted ? [holder.side.foe.active] : []),
-        allies: () => [],
+        foes: () => (b.doubles ? b.foesOf(holder)
+          : holder.side.foe.active && !holder.side.foe.active.fainted ? [holder.side.foe.active] : []),
+        allies: () => holder.adjacentAllies(),
         getAllActive: () => b.getActives(),
         checkMoveMakesContact: (move, attacker, defender) => !!(move && move.flags && move.flags.contact)
           && !(attacker && attacker.item === "protective-pads"),
@@ -529,7 +627,22 @@
       catch (e) { if (this.debug) throw e; return undefined; }
     }
 
-    getActives() { return [this.sides.p1.active, this.sides.p2.active].filter((m) => m && !m.fainted); }
+    getActives() { return this.sides.p1.actives.concat(this.sides.p2.actives).filter((m) => m && !m.fainted); }
+    // Doubles helpers (in singles: the one foe, no ally).
+    foesOf(mon) { return mon.side.foe.actives.filter((m) => m && !m.fainted); }
+    allyOf(mon) {
+      if (!this.doubles || !mon.side) return null;
+      const a = mon.side.actives[1 - mon.slot];
+      return a && a !== mon && !a.fainted && a.isActive ? a : null;
+    }
+    // The Pokémon at a relative target location seen from `mon`: 1/2 are the
+    // foe's slots a/b, -1/-2 its own side's slots a/b.
+    atLoc(mon, loc) {
+      if (!loc) return null;
+      const side = loc > 0 ? mon.side.foe : mon.side;
+      return side.actives[Math.abs(loc) - 1] || null;
+    }
+    locOf(mon, from) { return (mon.side === from.side ? -1 : 1) * (mon.slot + 1); }
 
     // ---------- Stats ----------
     getBoostedStat(mon, stat) {
@@ -655,9 +768,13 @@
       mon.hp = 0; mon.fainted = true; mon.side.faintedThisTurn = true;
       // Fainting upsets it: more so against a foe 30 levels higher (FireRed's
       // battle_util2.c: the opposing Pokémon's level).
-      const foe = mon.side.foe.active;
+      const foe = this.doubles ? this.foesOf(mon)[0] : mon.side.foe.active;
       this.friendship(mon, foe && foe.level - mon.level > 29 ? "faintLarge" : "faintSmall");
       this.add("faint", mon);
+      // A tag-team trainer with nothing left is out; their slot stays empty.
+      if (mon.side.tag && !mon.side.pokemon.some((p) => p.owner === mon.owner && !p.fainted)) {
+        this.add("-trainerout", mon.side.id, mon.side.trainers[mon.owner], mon.slot);
+      }
       if (this.expEnabled && mon.side.id === "p2") this.awardExp(mon);
       if (source && source !== mon && !source.fainted && effect && effect.effectType === "Move") {
         if (mon.volatiles.destinybond) {
@@ -821,10 +938,23 @@
       }
       const mons = [];
       for (const s of [this.sides.p1, this.sides.p2]) {
+        if (s.tag) {
+          // Tag team: each trainer leads with their first healthy Pokémon.
+          for (const slot of [0, 1]) {
+            const i = s.pokemon.findIndex((p) => p.owner === slot && !p.fainted);
+            if (i >= 0) mons.push(this.switchIn(s, i, { deferStart: true, noHazards: true, slot }));
+          }
+          if (!mons.some((m) => m.side === s)) throw new Error(s.id + " has no Pokemon that can battle");
+          continue;
+        }
         const lead = s.pokemon.findIndex((p) => !p.fainted);
         if (lead < 0) throw new Error(s.id + " has no Pokemon that can battle");
         this.switchIn(s, lead, { deferStart: true, noHazards: true });
         mons.push(s.active);
+        // Doubles: the next healthy Pokémon leads in slot b (a team with only
+        // one that can fight leaves slot b empty).
+        const second = this.doubles ? s.pokemon.findIndex((p, i) => i > lead && !p.fainted) : -1;
+        if (second >= 0) mons.push(this.switchIn(s, second, { deferStart: true, noHazards: true, slot: 1 }));
       }
       this.sortBySpeed(mons).forEach((m) => this.onSwitchInEvents(m));
       this.runUpdates();
@@ -842,8 +972,10 @@
     switchIn(side, index, o) {
       o = o || {};
       const mon = side.pokemon[index];
-      const old = side.active;
+      const slot = o.slot || 0;
+      const old = side.actives[slot];
       let carried = null;
+      if (side.tag && old && !old.fainted && old.isActive && !o.drag) this.add("-withdraw", old, side.trainers[old.owner]);
       if (old && !old.fainted && old.isActive) {
         this.runEvent("onSwitchOut", old, { only: "ability" });
         this.runEvent("onEnd", old, { only: "ability" });
@@ -865,7 +997,8 @@
       } else if (old) {
         old.isActive = false;
       }
-      side.active = mon;
+      side.actives[slot] = mon;
+      mon.slot = slot;
       mon.isActive = true;
       mon.activeTurns = 0;
       mon.lastMove = "";
@@ -877,7 +1010,8 @@
         for (const id of Object.keys(carried.volatiles)) mon.volatiles[id] = carried.volatiles[id];
       }
       this.markParticipants();
-      this.add(o.drag ? "drag" : "switch", mon, mon.species + ", L" + mon.level, this.hpStr(mon), this.expProgress(mon), mon.teamIndex);
+      if (side.tag) this.add(o.drag ? "drag" : "switch", mon, mon.species + ", L" + mon.level, this.hpStr(mon), this.expProgress(mon), mon.teamIndex, side.trainers[mon.owner]);
+      else this.add(o.drag ? "drag" : "switch", mon, mon.species + ", L" + mon.level, this.hpStr(mon), this.expProgress(mon), mon.teamIndex);
       if (!o.noHazards) this.applyHazards(mon);
       // A Healing Wish / Lunar Dance waiting for this side: full HP, no status
       // (and full PP for Lunar Dance).
@@ -900,11 +1034,23 @@
         this.formeChange(mon, mon.species + "-Primal");
       }
       if (mon.ability === "Imposter" && !mon.transformed) {
-        const foe = mon.side.foe.active;
+        // (Doubles: the foe standing opposite.)
+        const foe = this.doubles ? mon.side.foe.actives[1 - mon.slot] : mon.side.foe.active;
         if (foe && !foe.fainted) this.transformInto(mon, foe);
       }
       this.runEvent("onStart", mon, { only: "ability" });
       this.runEvent("onSwitchIn", mon, { only: "ability" });
+    }
+
+    // Doubles: the two Pokémon of a side trade slots (Ally Switch).
+    swapSlots(side, from) {
+      const [a, b] = side.actives;
+      const ids = [a.ident, b.ident];
+      side.actives = [b, a];
+      a.slot = 1; b.slot = 0;
+      // ["swap", old identity, new slot], for each of the two
+      this.add("swap", ids[0], 1, "[from] " + from);
+      this.add("swap", ids[1], 0, "[from] " + from);
     }
 
     // Transform / Mimic support
@@ -983,8 +1129,9 @@
     // ---------- Requests / choices ----------
     // SELECT on the move menu: two of the active Pokémon's moves trade places
     // (and their PP; the party's order follows, as in FireRed).
-    swapMoves(sideId, a, b) {
-      const mon = this.sides[sideId].active, m = mon.moves;
+    swapMoves(sideId, a, b, slot) {
+      const mon = this.sides[sideId].actives[slot || 0], m = mon && mon.moves;
+      if (!m) return;
       if (!m[a] || !m[b] || a === b) return;
       [m[a], m[b]] = [m[b], m[a]];
     }
@@ -999,14 +1146,17 @@
         if (!disabled && mon.volatiles.encore && mon.volatiles.encore.moveId && mon.volatiles.encore.moveId !== m.id) disabled = true;
         if (!disabled && mon.item.indexOf("choice-") === 0 && mon.volatiles.choicelock && mon.volatiles.choicelock.moveId !== m.id) disabled = true;
         if (!disabled && mon.item === "assault-vest" && data.cat === "Status") disabled = true;
-        return { index: i, id: m.id, name: m.name, pp: m.pp, maxpp: m.maxpp, disabled, type: data.type, category: data.cat, power: data.power };
+        return { index: i, id: m.id, name: m.name, pp: m.pp, maxpp: m.maxpp, disabled, type: data.type, category: data.cat, power: data.power, target: data.target };
       });
       return slots;
     }
 
     forcedAction(mon) {
       if (mon.volatiles.mustrecharge) return { recharge: true };
-      if (mon.volatiles.twoturnmove) return { move: mon.volatiles.twoturnmove.move, secondTurn: true };
+      if (mon.volatiles.twoturnmove) {
+        const tt = mon.volatiles.twoturnmove;
+        return tt.targetLoc ? { move: tt.move, secondTurn: true, targetLoc: tt.targetLoc } : { move: tt.move, secondTurn: true };
+      }
       if (mon.volatiles.lockedmove) return { move: mon.volatiles.lockedmove.moveName, locked: true };
       if (mon.volatiles.bide) return { move: "Bide", secondTurn: true, locked: true };
       return null;
@@ -1016,8 +1166,12 @@
       if (mon.hasType("Ghost")) return false;
       if (mon.item === "shed-shell") return false;
       mon.trapped = false;
-      const foe = mon.side.foe.active;
-      if (foe && !foe.fainted) this.callAbility(foe, "onFoeTrapPokemon", { source: foe }, mon);
+      if (this.doubles) {
+        for (const foe of this.foesOf(mon)) this.callAbility(foe, "onFoeTrapPokemon", { source: foe }, mon);
+      } else {
+        const foe = mon.side.foe.active;
+        if (foe && !foe.fainted) this.callAbility(foe, "onFoeTrapPokemon", { source: foe }, mon);
+      }
       if (mon.volatiles.ingrain) mon.trapped = true;
       const pt = mon.volatiles.partiallytrapped;
       if (pt && pt.source && pt.source.isActive && !pt.source.fainted) mon.trapped = true;
@@ -1025,6 +1179,7 @@
     }
 
     getRequest(sideId) {
+      if (this.doubles) return this.controller(sideId) ? this.getRequestDoubles(sideId) : null;
       const side = this.sides[sideId];
       const base = { phase: "wait", turn: this.turn, ended: this.ended, winner: this.winner };
       if (this.ended) return Object.assign(base, { phase: "ended" });
@@ -1064,6 +1219,7 @@
     }
 
     choose(sideId, choice) {
+      if (this.doubles && !this.ended) return this.chooseDoubles(sideId, choice);
       const side = this.sides[sideId];
       if (!side) return { ok: false, error: "No such side" };
       if (this.ended) return { ok: false, error: "Battle is over" };
@@ -1127,6 +1283,15 @@
       if (this.safari) { this.sides.p2.choice = { type: window.Safari.flees(this.safari, () => this.random()) ? "flee" : "watch" }; return; }
       for (const s of [this.sides.p1, this.sides.p2]) {
         if (s.choice) continue;
+        if (this.doubles) {
+          // Slots with no real decision (recharging, mid-Fly, ...) choose themselves.
+          for (const i of this.neededSlots(s)) {
+            const f = s.partial[i] === undefined && this.forcedAction(s.actives[i]);
+            if (f) s.partial[i] = this.forcedChoice(s.actives[i], f);
+          }
+          this.completeSide(s);
+          continue;
+        }
         const f = this.forcedAction(s.active);
         if (f) s.choice = f.recharge ? { type: "recharge" } : { type: "move", forced: f };
       }
@@ -1141,6 +1306,7 @@
     }
 
     randomChoice(sideId) {
+      if (this.doubles) return this.randomChoiceDoubles(sideId);
       const req = this.getRequest(sideId);
       if (req.phase === "switch") return { type: "switch", index: this.sample(req.switches) };
       if (req.phase !== "move") return null;
@@ -1154,11 +1320,229 @@
       return c;
     }
 
+    // ---------- Doubles: requests and choices ----------
+    // Target locations a doubles move may be aimed at (see the header comment):
+    // 1/2 = the foe in slot a/b, -1/-2 = your own slot a/b. Empty for moves
+    // that need no chosen target (spread, self, side, field, random).
+    targetLocs(mon, moveTarget) {
+      if (!CHOSEN_TARGETS.has(moveTarget)) return [];
+      const foes = this.foesOf(mon).map((f) => f.slot + 1);
+      const ally = this.allyOf(mon);
+      const allyLoc = ally ? [-(ally.slot + 1)] : [];
+      switch (moveTarget) {
+        case "adjacentFoe": return foes;
+        case "adjacentAlly": return allyLoc;
+        case "adjacentAllyOrSelf": return [-(mon.slot + 1)].concat(allyLoc);
+        default: return foes.concat(allyLoc);
+      }
+    }
+
+    forcedChoice(mon, f) {
+      return f.recharge ? { type: "recharge" } : { type: "move", forced: f, targetLoc: f.targetLoc };
+    }
+
+    // Checks a bag item choice; returns an error message or null.
+    itemError(side, choice) {
+      const target = side.pokemon[choice.target];
+      if (!target || !window.ItemUse || !window.ItemUse.effect(choice.item)) return "You can't use that here.";
+      if (!window.ItemUse.canUse(this.itemView(target), choice.item, { inBattle: true, move: choice.move })) return "It won't have any effect.";
+      return null;
+    }
+
+    // A doubles controller: "p1"/"p2" (the side's trainer: both slots, or
+    // only slot a when the side is a tag team) or "p1b"/"p2b" (a tag
+    // partner: slot b). Returns { side, slots } or null.
+    controller(id) {
+      const side = this.sides[String(id).slice(0, 2)];
+      if (!side) return null;
+      if (id.length > 2) return id.slice(2) === "b" && side.tag ? { side, slots: [1] } : null;
+      return { side, slots: side.tag ? [0] : side.actives.map((m, i) => i) };
+    }
+
+    // Doubles: the slots of a side that need a choice in the current phase.
+    neededSlots(side) {
+      if (this.phase === "switch") return this.switchSides.includes(side.id) ? (side.switchSlots || []).slice() : [];
+      if (this.phase !== "move") return [];
+      return side.actives.map((m, i) => (m && !m.fainted ? i : -1)).filter((i) => i >= 0);
+    }
+
+    // Doubles: once every needed slot has a choice, the side has chosen.
+    completeSide(side) {
+      if (side.choice) return;
+      const need = this.neededSlots(side);
+      if (!need.length || !need.every((i) => side.partial[i] !== undefined)) return;
+      side.choice = side.actives.map((m, i) => (need.includes(i) ? side.partial[i] : null));
+      side.partial = [];
+    }
+
+    megaUsedFor(side, mon) { return side.tag ? !!side.megaUsedBy[mon.owner] : side.megaUsed; }
+
+    getRequestDoubles(id) {
+      const ctl = this.controller(id);
+      const side = ctl.side;
+      const base = { phase: "wait", format: "doubles", turn: this.turn, ended: this.ended, winner: this.winner, slots: ctl.slots.slice() };
+      if (side.tag) base.trainer = side.trainers[ctl.slots[0]];
+      if (this.ended) return Object.assign(base, { phase: "ended" });
+      const mine = (p) => !side.tag || p.owner === ctl.slots[0];
+      base.team = side.pokemon.map((p, i) => ({
+        index: i, species: p.species, name: p.name, level: p.level, hp: p.hp, maxhp: p.maxhp, status: p.status,
+        fainted: p.fainted, active: p.isActive && side.actives.includes(p), slot: p.isActive ? side.actives.indexOf(p) : -1,
+        item: p.item, gender: p.gender, owner: p.owner, mine: mine(p)
+      }));
+      const partial = side.partial || [];
+      const need = this.neededSlots(side).filter((i) => ctl.slots.includes(i));
+      const open = side.choice ? [] : need.filter((i) => partial[i] === undefined);
+      base.chosen = !!side.choice || (need.length > 0 && !open.length);
+      base.open = open;   // slots still waiting for this controller's choice
+      if (!open.length) return base;
+      if (this.phase === "switch") {
+        base.phase = "switch";
+        base.forceSwitch = side.actives.map((m, i) => open.includes(i));
+        // (Per slot in a tag team: each trainer's own party.)
+        base.switches = side.bench(ctl.slots[0]);
+        return base;
+      }
+      base.phase = "move";
+      base.switches = side.bench(ctl.slots[0]);
+      base.actives = side.actives.map((mon, slot) => {
+        if (!mon || mon.fainted || !open.includes(slot)) return null;
+        const forced = this.forcedAction(mon);
+        const moves = this.getMoveSlots(mon);
+        for (const m of moves) m.targets = this.targetLocs(mon, m.target);
+        const r = {
+          slot, teamIndex: mon.teamIndex, species: mon.species, name: mon.name, hp: mon.hp, maxhp: mon.maxhp,
+          status: mon.status, item: mon.item, ability: mon.ability, boosts: Object.assign({}, mon.boosts),
+          moves, struggle: !forced && !moves.some((m) => !m.disabled),
+          canMega: !forced && !this.megaUsedFor(side, mon) && !mon.mega && !!MEGA_MAP[mon.item],
+          trapped: false, forced, switches: []
+        };
+        if (forced) return r;
+        r.trapped = this.isTrapped(mon);
+        r.switches = r.trapped ? [] : side.bench(slot);
+        // (A ball only while one wild Pokémon is left, as in Gen 5+.)
+        r.canCatch = this.wild && side.id === "p1" && this.foesOf(mon).length === 1;
+        r.canRun = this.wild && side.id === "p1" && (!r.trapped || mon.item === "smoke-ball" || mon.hasAbility("Run Away"));
+        return r;
+      });
+      return base;
+    }
+
+    chooseDoubles(id, choice) {
+      const ctl = this.controller(id);
+      if (!ctl) return { ok: false, error: "No such side" };
+      const side = ctl.side;
+      const req = this.getRequestDoubles(id);
+      if (req.phase !== "move" && req.phase !== "switch") return { ok: false, error: "Not waiting for a choice from " + id };
+      // An array is indexed by slot; a single choice goes to the first open slot.
+      const pick = (slot) => (Array.isArray(choice) ? choice[slot] : slot === req.open[0] ? choice : undefined);
+      const partial = side.partial.slice();
+      // Bench Pokémon already picked to come in, and a Mega Evolution already
+      // chosen this turn (per trainer in a tag team).
+      const used = new Set(partial.filter((c) => c && c.type === "switch").map((c) => c.index));
+      const megaBy = new Set(partial.map((c, i) => (c && c.mega ? (side.tag ? i : 0) : -1)).filter((x) => x >= 0));
+      let ball = partial.some((c) => c && c.type === "ball");
+      let any = false;
+      for (const slot of req.open) {
+        const c = pick(slot);
+        if (c === undefined && !Array.isArray(choice)) continue;
+        const err = (e) => ({ ok: false, error: e + " (slot " + slot + ")" });
+        if (req.phase === "switch") {
+          if (!c || c.type !== "switch" || !req.switches.includes(c.index) || used.has(c.index)) return err("Invalid switch");
+          used.add(c.index);
+          partial[slot] = { type: "switch", index: c.index };
+          any = true;
+          continue;
+        }
+        const a = req.actives[slot], mon = side.actives[slot];
+        if (a.forced) { partial[slot] = this.forcedChoice(mon, a.forced); any = true; continue; }
+        if (!c) return err("Missing choice");
+        if (c.type === "switch") {
+          if (!a.switches.includes(c.index) || used.has(c.index)) return err("Invalid switch");
+          used.add(c.index);
+          partial[slot] = { type: "switch", index: c.index };
+        } else if (c.type === "ball") {
+          if (!a.canCatch || ball) return err("You can't catch this Pokémon");
+          ball = true;
+          partial[slot] = { type: "ball", ball: c.ball || "poke-ball" };
+        } else if (c.type === "item") {
+          const t = side.pokemon[c.target];
+          // (Not the partner's Pokémon, nor one lying fainted in a slot.)
+          const e = t && ((side.tag && t.owner !== slot) || (t.fainted && side.actives.includes(t))) ? "You can't use that here."
+            : this.itemError(side, c);
+          if (e) return err(e);
+          partial[slot] = { type: "item", item: c.item, target: c.target, move: c.move };
+        } else if (c.type === "run") {
+          if (!a.canRun) return err("You can't escape!");
+          partial[slot] = { type: "run" };
+        } else if (c.type === "move") {
+          let picked;
+          if (a.struggle && (c.move === "Struggle" || c.move === 0 || c.move === "struggle")) {
+            picked = { type: "move", moveName: "Struggle", slot: -1 };
+          } else {
+            const ms = typeof c.move === "number" ? a.moves[c.move] : a.moves.find((x) => x.id === toID(c.move));
+            if (!ms) return err("Unknown move");
+            if (ms.disabled) return err(ms.name + " is disabled or out of PP");
+            picked = { type: "move", moveName: ms.name, slot: ms.index };
+            if (c.target != null && c.target !== 0) {
+              if (!ms.targets.includes(c.target)) return err("Invalid target " + c.target + " for " + ms.name);
+              picked.targetLoc = c.target;
+            }
+          }
+          if (c.mega) {
+            const who = side.tag ? slot : 0;
+            if (!a.canMega || megaBy.has(who)) return err("Cannot Mega Evolve");
+            megaBy.add(who);
+            picked.mega = true;
+          }
+          partial[slot] = picked;
+        } else return err("Invalid choice");
+        any = true;
+      }
+      if (!any) return { ok: false, error: "No choice given" };
+      side.partial = partial;
+      this.completeSide(side);
+      this.maybeCommit();
+      return { ok: true };
+    }
+
+    randomChoiceDoubles(id) {
+      const req = this.getRequestDoubles(id);
+      const out = [];
+      if (req.phase === "switch") {
+        const pool = req.switches.slice();
+        req.forceSwitch.forEach((f, i) => { if (f && pool.length) out[i] = { type: "switch", index: pool.splice(Math.floor(this.random() * pool.length), 1)[0] }; });
+        return out;
+      }
+      if (req.phase !== "move") return null;
+      const side = this.controller(id).side;
+      const used = new Set((side.partial || []).filter((c) => c && c.type === "switch").map((c) => c.index));
+      let mega = false;
+      req.actives.forEach((a, slot) => {
+        if (!a) return;
+        if (a.forced) { out[slot] = { type: "move", move: 0 }; return; }
+        if (a.struggle) { out[slot] = { type: "move", move: "Struggle" }; return; }
+        const opts = [];
+        for (const m of a.moves) if (!m.disabled) for (let k = 0; k < 3; k++) opts.push({ type: "move", move: m.index });
+        for (const i of a.switches) if (!used.has(i)) opts.push({ type: "switch", index: i });
+        const c = Object.assign({}, this.sample(opts));
+        if (c.type === "switch") used.add(c.index);
+        if (c.type === "move") {
+          const locs = a.moves[c.move].targets;
+          const foes = locs.filter((l) => l > 0);
+          if (locs.length) c.target = this.sample(foes.length ? foes : locs);
+          if (a.canMega && !mega && this.random() < 0.7) { c.mega = true; mega = true; }
+        }
+        out[slot] = c;
+      });
+      return out;
+    }
+
     // ---------- Turn flow ----------
     beginTurn() {
       this.turn++;
       this.phase = "move";
       this.sides.p1.choice = null; this.sides.p2.choice = null;
+      this.sides.p1.partial = []; this.sides.p2.partial = [];
       for (const s of [this.sides.p1, this.sides.p2]) { s.faintedLastTurn = s.faintedThisTurn; s.faintedThisTurn = false; }
       this.add("turn", this.turn);
       this.markParticipants();
@@ -1170,25 +1554,31 @@
       if (this.safari) return this.safariTurn();
       const actions = [];
       for (const s of [this.sides.p1, this.sides.p2]) {
-        const c = s.choice, mon = s.active;
-        if (c.type === "run" || c.type === "ball" || c.type === "item") {
-          actions.push({ order: 0, type: c.type, ball: c.ball, item: c.item, target: c.target, move: c.move,
-            mon, side: s, priority: 0, speed: this.getSpeed(mon) });
-        }
-        else if (c.type === "switch") actions.push({ order: 1, type: "switch", mon, side: s, index: c.index, priority: 0, speed: this.getSpeed(mon) });
-        else if (c.type === "recharge") actions.push({ order: 3, type: "move", mon, side: s, recharge: true, priority: 0, speed: this.getSpeed(mon) });
-        else {
-          if (c.mega) actions.push({ order: 2, type: "mega", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
-          const f = c.forced;
-          const name = f ? f.move : c.moveName;
-          const mv = this.getActiveMove(name);
-          let pri = mv.priority;
-          const pr = this.runEvent("onModifyPriority", mon, { relay: pri, args: [mv] });
-          if (typeof pr === "number") pri = pr;
-          let frac = 0;
-          if (mon.item === "quick-claw" && this.randomChance(1, 5)) frac = 1;
-          actions.push({ order: 3, type: "move", mon, side: s, moveName: name, slot: c.slot, forced: f, priority: pri, frac, speed: this.getSpeed(mon) });
-          if (name && toID(name) === "focuspunch" && !f) { mon.volatiles.focuspunch = { duration: 1 }; this.add("-singleturn", mon, "move: Focus Punch"); }
+        // (Doubles: one choice per slot, in slot order.)
+        const entries = this.doubles ? s.choice.map((c, i) => [c, s.actives[i]]).filter(([c, m]) => c && m && !m.fainted)
+          : [[s.choice, s.active]];
+        for (const [c, mon] of entries) {
+          if (c.type === "run" || c.type === "ball" || c.type === "item") {
+            actions.push({ order: 0, type: c.type, ball: c.ball, item: c.item, target: c.target, move: c.move,
+              mon, side: s, priority: 0, speed: this.getSpeed(mon) });
+          }
+          else if (c.type === "switch") actions.push({ order: 1, type: "switch", mon, side: s, index: c.index, priority: 0, speed: this.getSpeed(mon) });
+          else if (c.type === "recharge") actions.push({ order: 3, type: "move", mon, side: s, recharge: true, priority: 0, speed: this.getSpeed(mon) });
+          else {
+            if (c.mega) actions.push({ order: 2, type: "mega", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
+            const f = c.forced;
+            const name = f ? f.move : c.moveName;
+            const mv = this.getActiveMove(name);
+            let pri = mv.priority;
+            const pr = this.runEvent("onModifyPriority", mon, { relay: pri, args: [mv] });
+            if (typeof pr === "number") pri = pr;
+            let frac = 0;
+            if (mon.item === "quick-claw" && this.randomChance(1, 5)) frac = 1;
+            const act = { order: 3, type: "move", mon, side: s, moveName: name, slot: c.slot, forced: f, priority: pri, frac, speed: this.getSpeed(mon) };
+            if (this.doubles) act.targetLoc = c.targetLoc;
+            actions.push(act);
+            if (name && toID(name) === "focuspunch" && !f) { mon.volatiles.focuspunch = { duration: 1 }; this.add("-singleturn", mon, "move: Focus Punch"); }
+          }
         }
       }
       const tr_ = !!this.field.pseudo.trickroom;
@@ -1204,7 +1594,9 @@
         if (a.speed !== b.speed) return b.speed - a.speed;
         return a.rand - b.rand;
       });
-      for (const s of [this.sides.p1, this.sides.p2]) { s.active.moveThisTurn = false; s.active.usedItemThisTurn = false; s.active.lastDamage = null; }
+      for (const s of [this.sides.p1, this.sides.p2]) {
+        for (const m of s.actives) if (m) { m.moveThisTurn = false; m.usedItemThisTurn = false; m.lastDamage = null; }
+      }
       this.queue = actions;
       this.queue.push({ type: "residual", order: 9 });
       this.phase = "running";
@@ -1217,11 +1609,12 @@
           const p = this.pendingSwitch;
           this.pendingSwitch = null;
           const side = p.side;
-          if (side.pokemon.some((m) => !m.fainted && m !== side.active)) {
+          if (side.bench(p.slot).length) {
             this.phase = "switch";
             this.switchSides = [side.id];
             this.switchCause = { type: "midturn", copy: p.copy };
-            side.choice = null;
+            side.switchSlots = [p.slot || 0];
+            side.choice = null; side.partial = [];
             return;
           }
         }
@@ -1235,7 +1628,33 @@
       if (!this.ended) this.afterTurn();
     }
 
+    // Doubles: the slots of each side whose Pokémon fainted and can be
+    // replaced (as many as the bench allows, slot a first).
+    faintedSlots() {
+      const need = [];
+      for (const s of [this.sides.p1, this.sides.p2]) {
+        const bench = s.bench().length;
+        s.switchSlots = [];
+        s.actives.forEach((m, i) => {
+          // (A tag team's slot is refilled only from that trainer's party.)
+          if (m && m.fainted && (s.tag ? s.bench(i).length > 0 : s.switchSlots.length < bench)) s.switchSlots.push(i);
+        });
+        if (s.switchSlots.length) need.push(s.id);
+      }
+      return need;
+    }
+
     afterTurn() {
+      if (this.doubles) {
+        const need = this.faintedSlots();
+        if (need.length) {
+          this.phase = "switch"; this.switchSides = need; this.switchCause = { type: "faint" };
+          this.sides.p1.choice = null; this.sides.p2.choice = null;
+          this.sides.p1.partial = []; this.sides.p2.partial = [];
+          return;
+        }
+        return this.beginTurn();
+      }
       const need = [];
       for (const s of [this.sides.p1, this.sides.p2]) {
         if (s.active.fainted && s.pokemon.some((m) => !m.fainted)) need.push(s.id);
@@ -1253,6 +1672,7 @@
     // SHIFT (FireRed's battle style): while only the opponent has a fainted
     // Pokémon to replace, you may switch yours first, for free.
     canShift(sideId) {
+      if (this.doubles) return false;
       const side = this.sides[sideId], foe = this.sides[sideId === "p1" ? "p2" : "p1"];
       return this.phase === "switch" && !this.wild && this.switchCause && this.switchCause.type === "faint"
         && this.switchSides.length === 1 && this.switchSides[0] === foe.id
@@ -1273,6 +1693,15 @@
       const mons = [];
       const order = this.switchSides.map((id) => this.sides[id]);
       for (const s of order) {
+        if (this.doubles) {
+          const ch = s.choice;
+          s.choice = null;
+          for (const slot of s.switchSlots) {
+            mons.push(this.switchIn(s, ch[slot].index, { slot, copy: cause.type === "midturn" && cause.copy, deferStart: true }));
+          }
+          s.switchSlots = [];
+          continue;
+        }
         const idx = s.choice.index;
         s.choice = null;
         const mon = this.switchIn(s, idx, { copy: cause.type === "midturn" && cause.copy, deferStart: true });
@@ -1289,6 +1718,15 @@
 
     afterTurn2() {
       // After faint replacements: a replacement might itself have fainted to hazards
+      if (this.doubles) {
+        const need = this.faintedSlots();
+        if (need.length) {
+          this.phase = "switch"; this.switchSides = need; this.switchCause = { type: "faint" };
+          this.sides.p1.partial = []; this.sides.p2.partial = [];
+          return;
+        }
+        return this.beginTurn();
+      }
       const need = [];
       for (const s of [this.sides.p1, this.sides.p2]) {
         if (s.active.fainted && s.pokemon.some((m) => !m.fainted)) need.push(s.id);
@@ -1319,6 +1757,16 @@
     // Every p1 Pokémon that has faced a p2 Pokémon shares the experience for it.
     markParticipants() {
       if (!this.expEnabled) return;
+      if (this.doubles) {
+        // Each p2 Pokémon out now has faced every p1 Pokémon out now.
+        for (const foe of this.sides.p2.actives) {
+          if (!foe || foe.fainted || !foe.isActive) continue;
+          for (const mine of this.sides.p1.actives) {
+            if (mine && !mine.fainted && mine.isActive && mine.owner === 0) (foe.expParticipants || (foe.expParticipants = new Set())).add(mine);
+          }
+        }
+        return;
+      }
       const mine = this.sides.p1.active, foe = this.sides.p2.active;
       if (!mine || !foe || mine.fainted || foe.fainted) return;
       (foe.expParticipants || (foe.expParticipants = new Set())).add(mine);
@@ -1345,7 +1793,7 @@
       };
       for (const mon of receivers) give(mon, this.expShare ? 1 : receivers.length, false);
       if (!this.expShare) return;
-      const rest = this.sides.p1.pokemon.filter((m) => !m.fainted && !receivers.includes(m));
+      const rest = this.sides.p1.pokemon.filter((m) => !m.fainted && !receivers.includes(m) && m.owner === 0);
       if (!rest.length) return;
       this.add("-expshare");
       for (const mon of rest) give(mon, 2, true);
@@ -1442,7 +1890,7 @@
     tryRun(mon) {
       if (mon.fainted) return;
       this.runAttempts++;
-      const foe = mon.side.foe.active;
+      const foe = this.doubles ? this.foesOf(mon)[0] : mon.side.foe.active;
       let escaped = this.ghost || mon.item === "smoke-ball" || mon.hasAbility("Run Away") || !foe || foe.fainted;
       if (!escaped) {
         const a = this.getSpeed(mon), b = this.getSpeed(foe);
@@ -1455,7 +1903,7 @@
     }
 
     throwBall(mon, ball) {
-      const target = mon.side.foe.active;
+      const target = this.doubles ? this.foesOf(mon)[0] : mon.side.foe.active;
       if (!target || target.fainted) return;
       if (this.ghost || this.noCatch) { this.add("-ghostdodge", mon.side.id, ball); return; }
       const ctx = this.catchContext;
@@ -1521,15 +1969,24 @@
     runAction(a) {
       switch (a.type) {
         case "switch": {
+          if (this.doubles) {
+            const next = a.side.pokemon[a.index];
+            if (a.mon.fainted || a.side.actives[a.mon.slot] !== a.mon || next.fainted || a.side.actives.includes(next)) return;
+            this.runPursuit(a.mon);
+            if (a.mon.fainted || this.ended) return;
+            this.switchIn(a.side, a.index, { slot: a.mon.slot });
+            break;
+          }
           if (a.mon.fainted || a.side.active !== a.mon) return;
           this.switchIn(a.side, a.index);
           break;
         }
         case "mega": {
-          if (a.mon.fainted || a.side.megaUsed) return;
+          if (a.mon.fainted || this.megaUsedFor(a.side, a.mon)) return;
           const forme = MEGA_MAP[a.mon.item];
           if (!forme) return;
-          a.side.megaUsed = true;
+          if (a.side.tag) a.side.megaUsedBy[a.mon.owner] = true;
+          else a.side.megaUsed = true;
           this.add("-mega", a.mon, a.mon.species, a.mon.item);
           this.formeChange(a.mon, forme);
           this.runEvent("onStart", a.mon, { only: "ability" });
@@ -1547,7 +2004,7 @@
 
     runMoveAction(a) {
       const mon = a.mon;
-      if (mon.fainted || !mon.isActive || mon.side.active !== mon) return;
+      if (mon.fainted || !mon.isActive || mon.side.actives[mon.slot] !== mon) return;
       if (this.ghost) {
         if (mon.side.id === "p1") this.add("cant", mon, "scared");
         else this.add("-ghostgetout", mon);
@@ -1568,7 +2025,28 @@
         delete mon.volatiles.twoturnmove; delete mon.volatiles.lockedmove;
         return;
       }
-      this.execMove(mon, move, { slot: a.slot, forced: a.forced, secondTurn: a.forced && a.forced.secondTurn });
+      const o = { slot: a.slot, forced: a.forced, secondTurn: a.forced && a.forced.secondTurn };
+      if (this.doubles) {
+        o.targetLoc = a.targetLoc;
+        if (a.pursuitTarget) { o.target = a.pursuitTarget; o.pursuitSwitch = true; }
+      }
+      this.execMove(mon, move, o);
+    }
+
+    // Doubles: a foe's Pursuit aimed at a Pokémon about to switch out hits it
+    // first, at double power.
+    runPursuit(mon) {
+      for (const q of this.queue.slice()) {
+        if (q.type !== "move" || q.recharge || q.forced || toID(q.moveName) !== "pursuit") continue;
+        if (q.mon.fainted || !q.mon.isActive || q.mon.side === mon.side) continue;
+        if (q.targetLoc && this.atLoc(q.mon, q.targetLoc) !== mon) continue;
+        if (!q.targetLoc && this.foesOf(q.mon).length > 1) continue;
+        this.queue.splice(this.queue.indexOf(q), 1);
+        q.pursuitTarget = mon;
+        this.runMoveAction(q);
+        this.runUpdates();
+        if (mon.fainted || this.ended) return;
+      }
     }
 
     // ---------- Move execution ----------
@@ -1577,6 +2055,17 @@
       const slot = user.moves.find((m) => m.id === move.id);
       if (!slot) return;
       let amount = 1;
+      if (Array.isArray(target)) {
+        // Doubles: one more for each Pressure foe the move is aimed at (every
+        // foe for moves that affect their side or the whole field).
+        const wide = move.flags.mustpressure || move.target === "all" || move.target === "foeSide";
+        for (const t of wide ? this.foesOf(user) : target.filter((m) => m.side !== user.side)) {
+          const extra = this.callAbility(t, "onDeductPP", { source: user, target: t });
+          if (typeof extra === "number") amount += extra;
+        }
+        slot.pp = Math.max(0, slot.pp - amount);
+        return;
+      }
       if (target && target !== user) {
         const extra = this.callAbility(target, "onDeductPP", { source: user, target });
         if (typeof extra === "number") amount += extra;
@@ -1593,12 +2082,23 @@
         if (typeof ab.onModifyMove === "function") { try { ab.onModifyMove.call(ab, move, user); } catch (e) { if (this.debug) throw e; } }
         if (typeof ab.onModifyType === "function") this.callAbility(user, "onModifyType", { move }, move);
       }
-      const selfTarget = ["self", "allySide", "allyTeam", "adjacentAllyOrSelf", "all", "foeSide"].includes(move.target);
-      let target = o.target || (selfTarget && move.target !== "foeSide" ? user : foe);
-      if (move.target === "foeSide" || move.target === "all") target = foe;
+      let target, targets = null;
+      if (this.doubles) {
+        targets = this.getMoveTargets(user, move, o);
+        target = targets[0] || null;
+      } else {
+        const selfTarget = ["self", "allySide", "allyTeam", "adjacentAllyOrSelf", "all", "foeSide"].includes(move.target);
+        target = o.target || (selfTarget && move.target !== "foeSide" ? user : foe);
+        if (move.target === "foeSide" || move.target === "all") target = foe;
+      }
 
-      if (!o.secondTurn && !o.bounced) this.deductPP(user, move, foe);
-      this.add("move", user, move.name, target || user);
+      if (!o.secondTurn && !o.bounced) this.deductPP(user, move, this.doubles ? targets : foe);
+      if (this.doubles && targets.length > 1) this.add("move", user, move.name, target, "[spread] " + targets.map((t) => t.ident).join(","));
+      else this.add("move", user, move.name, target || user);
+      if (this._redirectedBy) {
+        this.add("-activate", this._redirectedBy[0], "ability: " + this._redirectedBy[1]);
+        this._redirectedBy = null;
+      }
       user.lastMove = move.id;
       user.moveThisTurn = true;
       if (user.item.indexOf("choice-") === 0 && !o.bounced && move.id !== "struggle") {
@@ -1608,10 +2108,12 @@
       if (user.volatiles.disable && !user.volatiles.disable.moveId) user.volatiles.disable.moveId = move.id;
 
       // Snatch: the foe steals a beneficial self-targeting move before it takes effect
-      if (move.category === "Status" && move.flags.snatch && !o.snatched && foe && !foe.fainted && foe.volatiles.snatch) {
-        this.removeVolatile(foe, "snatch");
-        this.add("-activate", foe, "move: Snatch", "[of] " + user.ident);
-        this.execMove(foe, this.getActiveMove(move.name), { bounced: true, snatched: true });
+      const snatcher = this.doubles ? this.getActives().find((m) => m !== user && m.volatiles.snatch)
+        : foe && !foe.fainted && foe.volatiles.snatch ? foe : null;
+      if (move.category === "Status" && move.flags.snatch && !o.snatched && snatcher) {
+        this.removeVolatile(snatcher, "snatch");
+        this.add("-activate", snatcher, "move: Snatch", "[of] " + user.ident);
+        this.execMove(snatcher, this.getActiveMove(move.name), { bounced: true, snatched: true });
         return;
       }
 
@@ -1630,11 +2132,14 @@
         else {
           this.add("-prepare", user, move.name);
           user.volatiles.twoturnmove = { id: "twoturnmove", move: move.name, invuln: INVULN[move.id] || null };
+          // (Doubles: it strikes the same position next turn.)
+          if (this.doubles && target && target !== user) user.volatiles.twoturnmove.targetLoc = this.locOf(target, user);
           return;
         }
       }
       if (o.secondTurn) delete user.volatiles.twoturnmove;
 
+      if (this.doubles && !target) { this.add("-notarget", user); return; }
       if (!target || target.fainted) { this.add("-fail", user); return; }
 
       // Magnitude rolls its size before anything else (FireRed's
@@ -1645,7 +2150,22 @@
         this.add("-magnitude", user, this.magnitude);
       }
 
-      const success = this.resolveMove(user, target, move, o);
+      let success;
+      if (this.doubles && targets.length > 1) {
+        // Spread move: each target in turn (0.75x damage each), then the
+        // user's once-per-move effects (recoil, Life Orb, self boosts).
+        o.spread = targets.length;
+        o.deferSelf = { dealt: 0, hit: false };
+        success = false;
+        for (const t of targets) {
+          if (t.fainted || !t.isActive) continue;
+          if (this.resolveMove(user, t, move, o)) success = true;
+        }
+        this.afterSpread(user, move, o.deferSelf);
+      } else {
+        if (this.doubles) o.spread = 1;
+        success = this.resolveMove(user, target, move, o);
+      }
 
       // Locked moves (Outrage etc.)
       if (move.self && move.self.volatileStatus === "lockedmove") {
@@ -1663,9 +2183,75 @@
         if (!user.fainted) this.faint(user, user, E("Move", move.id, move.name));
       }
       if (success && !user.fainted && move.selfSwitch) {
-        this.pendingSwitch = { side: user.side, copy: move.selfSwitch === "copyvolatile" };
+        this.pendingSwitch = { side: user.side, copy: move.selfSwitch === "copyvolatile", slot: user.slot };
       }
       if (!user.fainted) this.runEvent("onAfterMove", user, { only: "ability" });
+    }
+
+    // Doubles: who a move hits, from its target type and the chosen target
+    // location (o.targetLoc), after retargeting and redirection.
+    getMoveTargets(user, move, o) {
+      const t = move.target;
+      const foes = this.foesOf(user);
+      const ally = this.allyOf(user);
+      switch (t) {
+        case "self": case "allySide": case "allyTeam": case "all": return [user];
+        case "foeSide": return [foes[0] || user];
+        case "adjacentAlly": return ally ? [ally] : [];
+        case "adjacentAllyOrSelf": return [o.targetLoc && ally && this.atLoc(user, o.targetLoc) === ally ? ally : user];
+        case "allAdjacentFoes": return foes;
+        case "allAdjacent": return ally ? foes.concat([ally]) : foes;
+        case "scripted": {
+          const src = user.lastDamage && user.lastDamage.source;
+          if (src && src.isActive && !src.fainted && src.side !== user.side) return [src];
+          return foes.length ? [foes.length > 1 ? this.sample(foes) : foes[0]] : [];
+        }
+        default: break;
+      }
+      let target = null;
+      if (o.target) {
+        if (o.target.fainted || !o.target.isActive) return [];
+        return [o.target];
+      }
+      if (t !== "randomNormal" && o.targetLoc) {
+        const m = this.atLoc(user, o.targetLoc);
+        if (m && m !== user && m.isActive && !m.fainted) target = m;
+        else if (m && m.side === user.side) return [];   // (a fainted ally: no retargeting)
+      }
+      if (!target) target = foes.length > 1 ? this.sample(foes) : foes[0] || null;
+      target = this.redirectTarget(user, move, target);
+      return target ? [target] : [];
+    }
+
+    // Follow Me / Rage Powder on a foe, then Lightning Rod / Storm Drain on
+    // anyone else, draw single-target moves.
+    redirectTarget(user, move, target) {
+      if (!target || !REDIRECTABLE.has(move.target) || user.hasAbility("Stalwart")) return target;
+      const powderProof = user.hasType("Grass") || user.hasAbility("Overcoat") || user.item === "safety-goggles";
+      for (const f of this.foesOf(user)) {
+        if (f.volatiles.followme || (f.volatiles.ragepowder && !powderProof)) return f;
+      }
+      const ab = move.type === "Electric" ? "Lightning Rod" : move.type === "Water" ? "Storm Drain" : null;
+      if (ab && !target.hasAbility(ab)) {
+        const rod = this.getActives().find((m) => m !== user && m.hasAbility(ab));
+        if (rod) { this._redirectedBy = [rod, ab]; return rod; }
+      }
+      return target;
+    }
+
+    // Doubles: the once-per-move effects of a spread move on its user.
+    afterSpread(user, move, d) {
+      if (user.fainted) return;
+      const moveEffect = Object.assign(E("Move", move.id, move.name), { ignoreAbility: move.ignoreAbility, status: move.status });
+      if (move.recoil && d.dealt > 0) {
+        this.damage(user, Math.max(1, Math.round((d.dealt * move.recoil[0]) / move.recoil[1])), user, E("Recoil", "recoil", "Recoil"));
+      }
+      if (!d.hit || user.fainted) return;
+      if (move.self) {
+        if (move.self.boosts && !user.hasAbility("Sheer Force")) this.boost(user, move.self.boosts, user, moveEffect);
+        if (move.self.volatileStatus === "mustrecharge") this.addVolatile(user, "mustrecharge", user, moveEffect);
+      }
+      this.runEvent("onAfterMoveSecondarySelf", user, { relay: move, args: [d.dealt], move });
     }
 
     isInvulnerable(target, move) {
@@ -1681,6 +2267,10 @@
 
     isProtected(target, user, move) {
       const v = target.volatiles;
+      if (this.doubles && SPREAD_TARGETS.has(move.target) && target.side.conditions.wideguard) {
+        this.add("-activate", target, "move: Wide Guard");
+        return true;
+      }
       if (v.protect || v.kingsshield || v.spikyshield) {
         this.add("-activate", target, "move: Protect");
         if (move.flags.contact) {
@@ -1797,6 +2387,14 @@
         if (lo === 2 && hi === 5) { const r = this.random(); hits = r < 0.35 ? 2 : r < 0.7 ? 3 : r < 0.85 ? 4 : 5; }
         else hits = this.randInt(lo, hi);
       }
+      // Beat Up (doubles; Gen 5+): one hit for each party member that can
+      // fight and has no status, each with its own base power.
+      let beatUp = null;
+      if (this.doubles && move.id === "beatup") {
+        beatUp = user.side.pokemon.filter((p) => p === user || (!p.fainted && !p.status))
+          .map((p) => Math.floor((window.DEX[p.species] || {}).atk / 10) + 5);
+        hits = beatUp.length;
+      }
       const luckyChant = target.side.conditions.luckychant;
       let totalDealt = 0, hitCount = 0, connected = false, lastResult = null;
       const sub = target.volatiles.substitute && !move.flags.bypasssub && !user.hasAbility("Infiltrator");
@@ -1809,16 +2407,24 @@
           crit = chance >= 1 || this.random() < chance;
         }
         const field = {
-          weather: this.getWeather(), terrain: this.field.terrain, gravity: !!this.field.pseudo.gravity, isDoubles: false,
+          weather: this.getWeather(), terrain: this.field.terrain, gravity: !!this.field.pseudo.gravity, isDoubles: this.doubles,
           reflect: !!target.side.conditions.reflect, lightScreen: !!target.side.conditions.lightscreen
         };
         const opts = {
-          crit, hits: 1, charge: !!user.volatiles.charge, stockpile: stockLayers, helpingHand: !!o.meFirst,
+          crit, hits: 1, charge: !!user.volatiles.charge, stockpile: stockLayers,
+          helpingHand: !!o.meFirst || (this.doubles && !!user.volatiles.helpinghand),
           lastDamageTaken: user.lastDamage ? user.lastDamage.amount : 0,
           targetDamagedThisTurn: !!target.lastDamage, hitByTarget: !!(user.lastDamage && user.lastDamage.source === target),
-          movesAfterTarget: target.moveThisTurn, allyFainted: user.side.faintedLastTurn, targetSwitching: false,
+          movesAfterTarget: target.moveThisTurn, allyFainted: user.side.faintedLastTurn, targetSwitching: !!o.pursuitSwitch,
           magnitude: this.magnitude
         };
+        if (this.doubles) {
+          opts.targets = o.spread || 1;
+          if (beatUp) opts.beatUpPower = beatUp[i];
+          const uAlly = this.allyOf(user), tAlly = this.allyOf(target);
+          opts.plusMinus = user.hasAbility(["Plus", "Minus"]) && !!uAlly && uAlly.hasAbility(["Plus", "Minus"]);
+          opts.friendGuard = !!tAlly && tAlly !== user && tAlly.hasAbility("Friend Guard") && !move.ignoreAbility;
+        }
         let r;
         try { r = window.Damage.calc(user, target, move.name, field, opts); }
         catch (e) { if (this.debug) throw e; r = { max: 0, damage: [0], notes: ["error"], typeEffectiveness: 1, crit: false }; }
@@ -1877,7 +2483,9 @@
         if (user.item === "big-root") amt = Math.floor(amt * 1.3);
         this.heal(user, amt, target, E("Drain", "drain", "drain"));
       }
-      if (move.recoil && totalDealt > 0 && !user.fainted) {
+      const d = o.deferSelf;   // (doubles spread moves: once per move, in afterSpread)
+      if (d) { d.dealt += totalDealt; d.hit = true; }
+      if (move.recoil && totalDealt > 0 && !user.fainted && !d) {
         this.damage(user, Math.max(1, Math.round((totalDealt * move.recoil[0]) / move.recoil[1])), user, E("Recoil", "recoil", "Recoil"));
       }
       if (move.id === "struggle" && !user.fainted) this.damage(user, Math.max(1, Math.floor(user.maxhp / 4)), user, E("Recoil", "recoil", "Recoil"));
@@ -1900,7 +2508,7 @@
           if (sec.self && sec.self.boosts) this.boost(user, sec.self.boosts, user, moveEffect);
         }
       }
-      if (move.self && !user.fainted) {
+      if (move.self && !user.fainted && !d) {
         if (move.self.boosts && !user.hasAbility("Sheer Force")) this.boost(user, move.self.boosts, user, moveEffect);
         if (move.self.volatileStatus === "mustrecharge") this.addVolatile(user, "mustrecharge", user, moveEffect);
       }
@@ -1910,17 +2518,17 @@
         }
       }
       if (move.forceSwitch && !target.fainted && !sub) this.forceOut(target, user);
-      if (!user.fainted) this.runEvent("onAfterMoveSecondarySelf", user, { relay: move, args: [totalDealt], move });
+      if (!user.fainted && !d) this.runEvent("onAfterMoveSecondarySelf", user, { relay: move, args: [totalDealt], move });
       if (!target.fainted) this.runEvent("onAfterMoveSecondary", target, { source: user, relay: move, only: "ability" });
       return true;
     }
 
     forceOut(target, user) {
       const side = target.side;
-      const opts = side.pokemon.map((p, i) => (!p.fainted && p !== side.active ? i : -1)).filter((i) => i >= 0);
+      const opts = side.bench(target.slot);
       if (!opts.length || target.volatiles.ingrain || target.hasAbility("Suction Cups")) return;
       if (this.callAbility(target, "onDragOut", { source: user }) === false) return;
-      this.switchIn(side, this.sample(opts), { drag: true });
+      this.switchIn(side, this.sample(opts), { drag: true, slot: target.slot });
     }
 
     // ---------- Status moves ----------
@@ -2013,7 +2621,7 @@
       }
       if (move.slotCondition === "Wish" || move.slotCondition === "wish") {
         if (user.side.wish) { this.add("-fail", user); return false; }
-        user.side.wish = { turns: 2, hp: Math.floor(user.maxhp / 2) };
+        user.side.wish = { turns: 2, hp: Math.floor(user.maxhp / 2), slot: user.slot };
         did = true;
       }
       if (move.forceSwitch) { this.forceOut(target, user); did = true; }
@@ -2081,7 +2689,8 @@
         if (s.wish) {
           s.wish.turns--;
           if (s.wish.turns <= 0) {
-            if (s.active && !s.active.fainted) this.heal(s.active, s.wish.hp, s.active, E("Move", "wish", "Wish"));
+            const m = s.actives[s.wish.slot || 0];
+            if (m && !m.fainted) this.heal(m, s.wish.hp, m, E("Move", "wish", "Wish"));
             s.wish = null;
           }
         }
@@ -2106,6 +2715,7 @@
         if (f.pseudo[id].turns <= 0) { delete f.pseudo[id]; this.add("-fieldend", id); }
       }
       for (const m of this.getActives()) {
+        if (this.doubles) for (const id of TURN_VOLATILES) delete m.volatiles[id];
         for (const id of Object.keys(m.volatiles)) {
           const v = m.volatiles[id];
           if (v.duration !== undefined) {

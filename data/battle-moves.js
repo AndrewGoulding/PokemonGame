@@ -240,6 +240,26 @@
     return "done";
   };
 
+  // ---- Doubles ----
+  // Helping Hand: the ally's move this turn is 1.5x as strong. Fails unless
+  // the ally has yet to move. (Singles: unchanged, the data effects only.)
+  status.helpinghand = (b, user, target) => {
+    if (!b.doubles) return true;
+    if (!target || target === user || target.fainted || target.side !== user.side) return false;
+    if (!b.queue.some((a) => a.type === "move" && a.mon === target && !a.recharge)) return false;
+    target.volatiles.helpinghand = { id: "helpinghand", source: user };
+    b.add("-singleturn", target, "Helping Hand", "[of] " + user.ident);
+    return "done";
+  };
+  // Ally Switch: the user and its ally trade slots (doubles only).
+  status.allyswitch = (b, user) => {
+    if (!b.doubles || user.side.tag) return false;   // (not in a tag team: slots belong to trainers)
+    const other = user.side.actives[1 - user.slot];
+    if (!other || other.fainted || !other.isActive) return false;
+    b.swapSlots(user.side, "move: Ally Switch");
+    return "done";
+  };
+
   // ---- After-hit effects for damaging moves ----
   afterHit.rapidspin = (b, user) => {
     for (const id of ["spikes", "toxicspikes", "stealthrock", "stickyweb"]) b.removeSideCondition(user.side, id);

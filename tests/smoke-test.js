@@ -1609,7 +1609,216 @@ for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
   assert.deepStrictEqual(Mining.found(tired), tired.treasures.filter((t) => t.found).map((t) => t.item));
 }
 
+// ---------- Double battles ----------
+
+// A doubles battle: teams, then per-turn choices { p1: [...], p2: [...], p1b: ... }.
+function doubles(p1, p2, opts) {
+  const b = new Battle(Object.assign({ seed: 1, format: "doubles", debug: true, p1: Object.assign({ name: "A" }, p1), p2: Object.assign({ name: "B" }, p2) }, opts));
+  b.start();
+  return b;
+}
+function play(b, choices) {
+  const from = b.events.length;
+  for (const id of Object.keys(choices)) {
+    const r = b.choose(id, choices[id]);
+    assert(r.ok, "choice for " + id + " rejected: " + r.error);
+  }
+  return b.events.slice(from);
+}
+const mv = (move, target) => (target ? { type: "move", move, target } : { type: "move", move });
+const damageTo = (evs, ident) => evs.filter((e) => e[0] === "-damage" && e[1] === ident && !e[3]);
+const hpLost = (mon) => mon.maxhp - mon.hp;
+const armored = (species, moves, level) => ({ species, level: level || 50, ability: "Shell Armor", moves: moves || ["Splash"] });
+
+// Format: singles stays the default; doubles leads with two of each team,
+// and events name the slots p1a/p1b/p2a/p2b.
+{
+  assert.strictEqual(new Battle({ p1: { team: [armored("Snorlax")] }, p2: { team: [armored("Snorlax")] } }).format, "singles");
+  const b = doubles({ team: [armored("Snorlax"), armored("Blissey"), armored("Chansey")] },
+    { team: [armored("Pidgey"), armored("Rattata")] });
+  assert.deepStrictEqual(b.sides.p1.actives.map((m) => m.species), ["Snorlax", "Blissey"]);
+  assert(b.events.some((e) => e[0] === "switch" && e[1] === "p2b: Rattata"));
+  const req = b.getRequest("p1");
+  assert.strictEqual(req.phase, "move");
+  assert.strictEqual(req.actives.length, 2);
+  assert.deepStrictEqual(req.switches, [2]);
+  assert(!b.choose("p1", [{ type: "switch", index: 2 }, { type: "switch", index: 2 }]).ok, "the same Pokémon can't come in twice");
+  assert(!b.choose("p1", [{ type: "switch", index: 1 }, mv(0)]).ok, "an active Pokémon can't be switched in");
+}
+
+// Spread moves do 0.75x to each target, and Earthquake hits the ally too.
+{
+  const b = doubles({ team: [{ species: "Garchomp", level: 50, moves: ["Earthquake"] }, armored("Snorlax")] },
+    { team: [armored("Snorlax"), armored("Snorlax")] });
+  const evs = play(b, { p1: [mv(0), mv(0)], p2: [mv(0), mv(0)] });
+  const [ally, foeA, foeB] = [b.sides.p1.actives[1], ...b.sides.p2.actives];
+  assert(evs.some((e) => e[0] === "move" && e[2] === "Earthquake" && /^\[spread\]/.test(e[4] || "")));
+  for (const t of [ally, foeA, foeB]) assert(hpLost(t) > 0, "Earthquake missed " + t.ident);
+  const att = b.sides.p1.actives[0];
+  const field = { isDoubles: true };
+  const spread = Damage.calc(att, foeA, "Earthquake", field, { targets: 3 }).damage;
+  const single = Damage.calc(att, foeA, "Earthquake", field, { targets: 1 }).damage;
+  assert(spread.includes(hpLost(foeA)), "spread damage is one of the 0.75x rolls");
+  assert(Math.max(...spread) < Math.min(...single));
+  // With one foe left and no ally, no reduction.
+  const lone = doubles({ team: [{ species: "Garchomp", level: 50, moves: ["Earthquake"] }] }, { team: [armored("Snorlax")] });
+  play(lone, { p1: mv(0), p2: mv(0) });
+  const t = lone.sides.p2.actives[0];
+  assert(Damage.calc(lone.sides.p1.actives[0], t, "Earthquake", field, { targets: 1 }).damage.includes(hpLost(t)));
+}
+
+// A single-target move aimed at a foe that fainted earlier in the turn hits
+// the other foe; the fainted slot is refilled at the end of the turn.
+{
+  const b = doubles({ team: [{ species: "Jolteon", level: 100, moves: ["Thunderbolt"] }, { species: "Snorlax", level: 50, moves: ["Tackle"] }] },
+    { team: [armored("Magikarp", ["Splash"], 5), armored("Snorlax"), armored("Pidgey")] });
+  const evs = play(b, { p1: [mv(0, 1), mv(0, 1)], p2: [mv(0), mv(0)] });
+  assert(evs.some((e) => e[0] === "faint" && e[1] === "p2a: Magikarp"));
+  assert(damageTo(evs, "p2b: Snorlax").length === 1, "Tackle retargets at the other foe");
+  const req = b.getRequest("p2");
+  assert.strictEqual(req.phase, "switch");
+  assert.deepStrictEqual(req.forceSwitch, [true, false]);
+  assert.strictEqual(b.getRequest("p1").phase, "wait");
+  play(b, { p2: [{ type: "switch", index: 2 }] });
+  assert.strictEqual(b.sides.p2.actives[0].species, "Pidgey");
+  assert(b.events.some((e) => e[0] === "switch" && e[1] === "p2a: Pidgey"));
+  assert.strictEqual(b.getRequest("p1").phase, "move");
+}
+
+// Both sides replace at the end of the turn, each into the right slot.
+{
+  const b = doubles({ team: [armored("Magikarp", ["Splash"], 2), { species: "Garchomp", level: 100, moves: ["Dragon Claw"] }, armored("Pidgey")] },
+    { team: [{ species: "Garchomp", level: 100, moves: ["Dragon Claw"] }, armored("Magikarp", ["Splash"], 2), armored("Rattata")] });
+  play(b, { p1: [mv(0), mv(0, 2)], p2: [mv(0, 1), mv(0)] });
+  assert.deepStrictEqual([b.getRequest("p1").forceSwitch, b.getRequest("p2").forceSwitch], [[true, false], [false, true]]);
+  play(b, { p1: [{ type: "switch", index: 2 }], p2: [null, { type: "switch", index: 2 }] });
+  assert.deepStrictEqual([b.sides.p1.actives[0].ident, b.sides.p2.actives[1].ident], ["p1a: Pidgey", "p2b: Rattata"]);
+  assert.strictEqual(b.getRequest("p1").phase, "move");
+}
+
+// Follow Me draws single-target moves to the user; Helping Hand makes the
+// ally's attack 1.5x.
+{
+  const b = doubles({ team: [{ species: "Garchomp", level: 30, moves: ["Dragon Claw"] }, { species: "Pikachu", level: 50, moves: ["Helping Hand"] }] },
+    { team: [armored("Snorlax", ["Splash"]), armored("Blissey", ["Follow Me"])] });
+  const evs = play(b, { p1: [mv(0, 1), mv(0)], p2: [mv(0), mv(0)] });
+  assert(evs.some((e) => e[0] === "-singleturn" && e[2] === "Helping Hand"));
+  const [snorlax, blissey] = b.sides.p2.actives;
+  assert.strictEqual(hpLost(snorlax), 0, "Follow Me drew the attack away");
+  const att = b.sides.p1.actives[0];
+  const boosted = Damage.calc(att, blissey, "Dragon Claw", { isDoubles: true }, { targets: 1, helpingHand: true }).damage;
+  const plain = Damage.calc(att, blissey, "Dragon Claw", { isDoubles: true }, { targets: 1 }).damage;
+  assert(boosted.includes(hpLost(blissey)) && hpLost(blissey) > Math.max(...plain), "Helping Hand boost");
+}
+
+// Protect only protects its user; Wide Guard protects the whole side from
+// spread moves (but not from single-target ones).
+{
+  const b = doubles({ team: [{ species: "Garchomp", level: 50, moves: ["Earthquake", "Rock Slide", "Dragon Claw"] }, armored("Snorlax")] },
+    { team: [armored("Snorlax", ["Protect", "Wide Guard"]), armored("Snorlax", ["Splash"])] });
+  let evs = play(b, { p1: [mv(0), mv(0)], p2: [mv(0), mv(0)] });
+  const [a, c] = b.sides.p2.actives;
+  assert(evs.some((e) => e[0] === "-activate" && e[1] === "p2a: Snorlax" && e[2] === "move: Protect"));
+  assert(hpLost(a) === 0 && hpLost(c) > 0, "Protect shields only its user");
+  const before = [a.hp, c.hp];
+  evs = play(b, { p1: [mv(1), mv(0)], p2: [mv(1), mv(0)] });
+  assert(evs.filter((e) => e[0] === "-activate" && e[2] === "move: Wide Guard").length === 2);
+  assert.deepStrictEqual([a.hp, c.hp], before, "Wide Guard blocks Rock Slide for both");
+  evs = play(b, { p1: [mv(2, 2), mv(0)], p2: [mv(1), mv(0)] });
+  assert(c.hp < before[1], "Wide Guard doesn't block single-target moves");
+}
+
+// Intimidate lowers both foes' Attack.
+{
+  const b = doubles({ team: [armored("Snorlax"), armored("Blissey")] }, { team: [{ species: "Gyarados", level: 50, ability: "Intimidate", moves: ["Splash"] }, armored("Pidgey")] });
+  assert.deepStrictEqual(b.sides.p1.actives.map((m) => m.boosts.atk), [-1, -1]);
+}
+
+// Experience: a fainted foe's exp goes to the p1 Pokémon that were out
+// while it was, not the bench.
+{
+  const b = doubles({ team: [{ species: "Garchomp", level: 50, moves: ["Dragon Claw"] }, armored("Pidgey", ["Splash"], 10), armored("Rattata", ["Splash"], 10)] },
+    { team: [armored("Magikarp", ["Splash"], 10), armored("Snorlax"), armored("Pidgey")] }, { exp: true });
+  const evs = play(b, { p1: [mv(0, 1), mv(0)], p2: [mv(0), mv(0)] });
+  const got = evs.filter((e) => e[0] === "-exp").map((e) => e[1]);
+  assert.deepStrictEqual(got.sort(), ["p1a: Garchomp", "p1b: Pidgey"]);
+}
+
+// A team with one Pokémon that can fight uses one slot.
+{
+  const b = doubles({ team: [{ species: "Garchomp", level: 50, moves: ["Dragon Claw"] }, Object.assign(armored("Pidgey"), { hp: 0 })] },
+    { team: [armored("Snorlax"), armored("Snorlax")] });
+  assert.strictEqual(b.sides.p1.actives[1], null);
+  const req = b.getRequest("p1");
+  assert(req.actives[0] && req.actives[1] === null && req.switches.length === 0);
+  play(b, { p1: mv(0, 2), p2: [mv(0), mv(0)] });
+  assert.strictEqual(b.turn, 2);
+}
+
+// Tag battles: two trainers a side, each with their own party and slot.
+{
+  const b = doubles({ name: "Red", team: [armored("Magikarp", ["Splash"], 5), armored("Pidgey", ["Splash"], 5)],
+    partner: { name: "Leaf", team: [{ species: "Mewtwo", level: 100, moves: ["Psychic"] }, armored("Rattata")] } },
+  { team: [{ species: "Garchomp", level: 100, moves: ["Dragon Claw"] }, armored("Snorlax", ["Splash"], 20), armored("Snorlax", ["Splash"], 20)] }, { exp: true });
+  assert.deepStrictEqual(b.sides.p1.actives.map((m) => m.species), ["Magikarp", "Mewtwo"]);
+  assert(b.events.some((e) => e[0] === "switch" && e[1] === "p1b: Mewtwo" && e[6] === "Leaf"));
+  const red = b.getRequest("p1"), leaf = b.getRequest("p1b");
+  assert(red.actives[0] && !red.actives[1] && !leaf.actives[0] && leaf.actives[1]);
+  assert.deepStrictEqual([red.switches, leaf.switches], [[1], [3]]);
+  // Garchomp knocks out Red's Magikarp; Leaf's Mewtwo knocks out a Snorlax:
+  // only Red's Pokémon gets experience.
+  let evs = play(b, { p1: mv(0), p1b: mv(0, 2), p2: [mv(0, 1), mv(0)] });
+  assert(evs.some((e) => e[0] === "faint" && e[1] === "p1a: Magikarp"));
+  assert(evs.some((e) => e[0] === "faint" && e[1] === "p2b: Snorlax"));
+  assert(!evs.some((e) => e[0] === "-exp" && /Mewtwo|Rattata/.test(e[1])), "no exp for the partner's Pokémon");
+  // Red replaces from Red's own party only.
+  const sw = b.getRequest("p1");
+  assert.deepStrictEqual([sw.phase, sw.switches], ["switch", [1]]);
+  assert(!b.choose("p1", { type: "switch", index: 3 }).ok, "can't send out the partner's Pokémon");
+  play(b, { p1: { type: "switch", index: 1 }, p2: [null, { type: "switch", index: 2 }] });
+  assert.strictEqual(b.sides.p1.actives[0].ident, "p1a: Pidgey");
+  // Red's last Pokémon faints: Red is out, the slot stays empty and Leaf fights on.
+  evs = play(b, { p1: mv(0), p1b: mv(0, 2), p2: [mv(0, 1), mv(0)] });
+  assert(evs.some((e) => e[0] === "-trainerout" && e[2] === "Red"));
+  assert(!b.ended);
+  assert.strictEqual(b.getRequest("p1").phase, "wait");
+  assert.strictEqual(b.getRequest("p1b").phase, "move");
+  play(b, { p1b: mv(0, 1), p2: [mv(0, 2), null] });
+  assert(b.sides.p1.actives[0].fainted && b.turn >= 4);
+}
+
+// Seeded random doubles battles (some tag battles), random choices against the
+// AI, all finish without errors or stuck states.
+const DOUBLES = 120;
+let doublesTurns = 0;
+for (let seed = 1; seed <= DOUBLES; seed++) {
+  const teamRng = mulberry32(seed * 104729);
+  const team = (n) => RandomTeam.team(n, { level: 50, rng: teamRng });
+  const tag = seed % 4 === 0;
+  const p1 = tag ? { name: "A", team: team(3), partner: { name: "A2", team: team(1 + (seed % 3)) } } : { name: "A", team: team(1 + (seed % 6)) };
+  const p2 = tag && seed % 8 === 0 ? { name: "B", team: team(2), partner: { name: "B2", team: team(3) } } : { name: "B", team: team(1 + ((seed * 5) % 6)) };
+  const battle = new Battle({ seed, format: "doubles", exp: seed % 3 === 0, p1, p2 });
+  const rng = mulberry32(seed);
+  const ids = ["p1", "p2"].concat(p1.partner ? ["p1b"] : [], p2.partner ? ["p2b"] : []);
+  battle.start();
+  for (let step = 0; step < 3000 && !battle.ended; step++) {
+    let acted = false;
+    for (const id of ids) {
+      const req = battle.getRequest(id);
+      if (req.phase !== "move" && req.phase !== "switch") continue;
+      const c = (seed + step) % 2 ? OpponentAI.choose(battle, id, rng) : battle.randomChoice(id);
+      const r = battle.choose(id, c);
+      assert(r.ok, "doubles choice rejected in battle " + seed + ": " + r.error);
+      acted = true;
+    }
+    assert(acted || battle.ended, "doubles battle " + seed + " is stuck");
+  }
+  assert(battle.ended, "doubles battle " + seed + " did not finish");
+  doublesTurns += battle.turn;
+}
+
 console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns), AI beat random moves in " + aiWinRate + "% of games");
+console.log("ok: doubles regressions, " + DOUBLES + " random doubles battles finished (" + doublesTurns + " turns)");
 
 // The Route 5 Day-Care: 1 Exp. Point a step; ¥100 plus ¥100 a level to take it
 // back; it learns its new moves, forgetting its first with four already.
