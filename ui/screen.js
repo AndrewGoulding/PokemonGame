@@ -153,18 +153,24 @@
   const choices = () => [...document.querySelectorAll("#menu button:not(:disabled), #scene:not(.hidden) [data-pick], #scene:not(.hidden) [data-swap]")].filter(shown);
   const ARROWS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
 
-  // The closest choice in direction [dx, dy] from `from`, favouring ones in line with it.
+  // The closest choice in direction [dx, dy] from `from`. Ones in line with
+  // it come first: on the same row (overlapping it) for left and right, in
+  // the same column for up and down, so a wide button underneath doesn't win
+  // over the one beside you. Distance is from edge to edge.
   function nearest(from, list, [dx, dy]) {
-    const c = (el) => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
-    const [fx, fy] = c(from);
+    const a = from.getBoundingClientRect();
+    const mid = (r) => [r.left + r.width / 2, r.top + r.height / 2];
+    const [fx, fy] = mid(a);
     let best = null, bestScore = Infinity;
     for (const el of list) {
       if (el === from) continue;
-      const [x, y] = c(el);
-      const along = (x - fx) * dx + (y - fy) * dy;          // distance in the arrow's direction
-      const across = Math.abs((x - fx) * dy) + Math.abs((y - fy) * dx);
-      if (along <= 1) continue;
-      const score = along + across * 2;
+      const r = el.getBoundingClientRect();
+      const [x, y] = mid(r);
+      if ((x - fx) * dx + (y - fy) * dy <= 1) continue;   // not that way
+      const gap = dx > 0 ? r.left - a.right : dx < 0 ? a.left - r.right : dy > 0 ? r.top - a.bottom : a.top - r.bottom;
+      const inLine = dx ? r.top < a.bottom - 1 && r.bottom > a.top + 1 : r.left < a.right - 1 && r.right > a.left + 1;
+      const across = dx ? Math.abs(y - fy) : Math.abs(x - fx);
+      const score = (inLine ? 0 : 1e6) + Math.max(0, gap) + across * 2;
       if (score < bestScore) { bestScore = score; best = el; }
     }
     return best;

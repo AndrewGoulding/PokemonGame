@@ -384,9 +384,10 @@
       else tileAt(B.tiles, B.tilesWidth, t, hf, vf, x0, y0, B.palette);
     });
   }
-  // The ▶ (two tiles, palette 1: your frame's) at tile (tx, ty) of the screen.
+  // The ▶ (two tiles) at tile (tx, ty) of the screen: FireRed's dark arrow
+  // with its light shadow (colours 9 and 7 of the battle text box's palette).
   function battleCursor(s, frameName, tx, ty) {
-    const B = G().battle, pal = G().frames[frameName].palette;
+    const B = G().battle, pal = B.palette;
     [1, 2].forEach((t, k) => {
       const sx = (t % (B.tilesWidth / 8)) * 8, sy = Math.floor(t / (B.tilesWidth / 8)) * 8;
       for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {

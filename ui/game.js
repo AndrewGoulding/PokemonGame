@@ -510,8 +510,22 @@
     };
     const here = cellOf(T.mapSections[player.location && player.location.map]) || cellOf("PALLET_TOWN");
     let [cx, cy] = here;
+    visitSection(player.location && player.location.map);
+    // FireRed's small icons on the caves and forests (CreateDungeonIcons): lit
+    // once you've been there. Cerulean Cave's shows only after the League, as
+    // its entrance opens then. On a town's square the icon sits 2 pixels lower
+    // and to the right.
+    const visited = player.flags.visitedSections || [];
+    let icons = "";
+    for (let y = 0; y < T.height; y++) for (let x = 0; x < T.width; x++) {
+      const sec = T.dungeon[y][x];
+      if (!sec || (sec === "CERULEAN_CAVE" && !player.flags.hallOfFame)) continue;
+      const off = T.towns.includes(T.map[y][x]) ? 2 : 0;
+      icons += '<div class="tm-dungeon' + (visited.includes(sec) ? " visited" : "") + '" style="left:' + pct(32 + 8 * x + off, 240) +
+        ";top:" + pct(32 + 8 * y + off, 160) + '"></div>';
+    }
     show("scene");
-    scene.innerHTML = '<div class="town-map"><img class="tm-map" src="assets/town-map/kanto.png" alt="Map of Kanto">' +
+    scene.innerHTML = '<div class="town-map"><img class="tm-map" src="assets/town-map/kanto.png" alt="Map of Kanto">' + icons +
       '<div class="tm-name"><b></b><small></small></div>' +
       '<img class="tm-player" src="assets/town-map/player.png" alt="You are here" style="' + sprite(here[0], here[1]) + '">' +
       '<div class="tm-cursor"></div></div>';
@@ -531,7 +545,7 @@
       move(d[0], d[1]);
     };
     document.addEventListener("keydown", onKey, true);
-    await ask("Town Map: Kanto. Move with the D-pad to see each place's name.", [back("Close")]);
+    await ask("", [back("Close")]);   // (no text over the map)
     document.removeEventListener("keydown", onKey, true);
   }
 
@@ -2653,8 +2667,16 @@
   // city or route) through a door or cave entrance: the "escape warp".
 
   const OUTDOORS = ["town", "city", "route", "ocean_route"];
+  // The Town Map's sections you've been to (for its dungeon icons).
+  function visitSection(map) {
+    const sec = window.TOWN_MAP && window.TOWN_MAP.mapSections[map];
+    if (!sec) return;
+    const list = player.flags.visitedSections || (player.flags.visitedSections = []);
+    if (!list.includes(sec)) list.push(sec);
+  }
   function onWarp(from, to) {
     leftPallet(to.map);
+    visitSection(to.map);
     const a = window.WORLD_MAPS[from.map], b = window.WORLD_MAPS[to.map];
     if (a && b && OUTDOORS.includes(a.type) && !OUTDOORS.includes(b.type)) player.flags.escapeWarp = { map: from.map, x: from.x, y: from.y };
   }
