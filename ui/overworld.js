@@ -57,10 +57,36 @@
   const mapImage = (name, part) => image("assets/world/maps/" + name + (part ? "-" + part : "") + ".png");
   const spriteImage = (name) => image("assets/world/sprites/" + name + ".png");
 
+  // FireRed's tile animations (TilesetAnim_General): a counter of frames
+  // (60 a second) going round 640; the sand's water edge takes its next frame
+  // every 8, the water every 16 (one frame later), the flowers every 16 (two
+  // later). -> each anim's frame now.
+  const TILE_ANIMS = { water: { every: 16, at: 1, frames: 8 }, sand: { every: 8, at: 0, frames: 8 }, flower: { every: 16, at: 2, frames: 5 } };
+  function animFrame(name) {
+    const a = TILE_ANIMS[name], c = Math.floor(performance.now() / (1000 / 60)) % 640;
+    return a ? Math.floor(((c - a.at + 640) % 640) / a.every) % a.frames : 0;
+  }
+  // A map's animated 8x8 cells (tools/build-maps.js animCells) over its picture
+  // at (x0, y0) on screen, in their current frames.
+  function drawAnimCells(name, x0, y0) {
+    const m = World.map(name), sheet = m && m.anim && mapImage(name, "anim");
+    if (!sheet || !ready(sheet)) return;
+    const frames = m.anim.anims.map(animFrame), counts = m.anim.anims.map((n) => (TILE_ANIMS[n] || { frames: 1 }).frames);
+    const cells = m.anim.cells;
+    for (let i = 0; i < cells.length; i += 4) {
+      const x = x0 + cells[i] * 8, y = y0 + cells[i + 1] * 8;
+      if (x <= -8 || y <= -8 || x >= VIEW_W || y >= VIEW_H) continue;
+      let pic = cells[i + 2], stride = 1;
+      for (let a = 0; a < frames.length; a++) if (cells[i + 3] >> a & 1) { pic += frames[a] * stride; stride *= counts[a]; }
+      g.drawImage(sheet, (pic % 64) * 8, Math.floor(pic / 64) * 8, 8, 8, x, y, 8, 8);
+    }
+  }
+
   function preloadMap(name) {
     const m = World.map(name);
     const list = [mapImage(name), mapImage(name, "border")];
     if (m.top) list.push(mapImage(name, "top"));
+    if (m.anim) list.push(mapImage(name, "anim"));
     for (const c of m.connections) if (c.map) list.push(mapImage(c.map), mapImage(c.map, "top"));
     for (const p of m.people) { list.push(spriteImage(p.sprite)); if (p.alt) list.push(spriteImage(p.alt.sprite)); }
     return Promise.all(list.map((img) => img.loaded));
@@ -755,6 +781,7 @@
     for (const [name, ox, oy] of layers) {
       const img = mapImage(name);
       if (ready(img)) g.drawImage(img, ox - camX, oy - camY);
+      drawAnimCells(name, ox - camX, oy - camY);
     }
 
     // People and the player, back to front.

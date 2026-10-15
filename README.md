@@ -386,7 +386,9 @@ FireRed sets them); beaten, they say their after-battle line, and one that walke
 where they stopped until you leave the map; come back and they're home again,
 doing what they did before. Those that turn
 (`face_down_and_up`, `look_around`) can spot you as they turn. Hidden items
-are found by pressing A facing their tile. Battles use the map's own FireRed
+are found by pressing A facing their tile. Water, its edges and the flowers move as in FireRed (its General tileset's
+animations and timing; `tools/build-maps.js` draws each animated 8x8 cell in
+every frame into `assets/world/maps/<Map>-anim.png`). Battles use the map's own FireRed
 battle scene where it has one (the Gym), and Gym Leaders the Leader one. Signs and people say their FireRed text (with names in normal
 case: "Viridian City", not "VIRIDIAN CITY"), and item balls give their item.
 Scripted events (Red's Mom healing, the PCs, the starter Poké Balls, Oak walking you

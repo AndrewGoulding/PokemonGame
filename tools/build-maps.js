@@ -21,6 +21,9 @@
 //   assets/world/maps/<Map>.png   the map below sprites
 //   assets/world/maps/<Map>-top.png       the parts drawn over sprites
 //   assets/world/maps/<Map>-border.png    the 2x2 blocks repeated outside the map
+//   assets/world/maps/<Map>-anim.png      the map's animated 8x8 cells (water,
+//                                 the sand's and land's water edges, flowers) in
+//                                 every frame, 64 to a row (WORLD_MAPS[..].anim)
 //   assets/world/sprites/<name>.png       people and the player, background transparent
 "use strict";
 
@@ -190,7 +193,26 @@ function loadTileset(symbol) {
     const f = path.join(dir, "palettes", String(i).padStart(2, "0") + ".pal");
     palettes.push(fs.existsSync(f) ? readPal(f) : null);
   }
-  return { tiles: readPng(path.join(dir, "tiles.png")), meta, attrs, palettes };
+  const anims = (TILE_ANIMS[path.basename(dir)] || []).map((a) => Object.assign({}, a, {
+    frames: Array.from({ length: a.frames }, (_, k) => readPng(path.join(dir, "anim", a.dir, k + ".png")))
+  }));
+  return { tiles: readPng(path.join(dir, "tiles.png")), meta, attrs, palettes, anims };
+}
+
+// FireRed's tile animations (src/tileset_anims.c) on the General tileset:
+// frames of anim/<dir>/<k>.png copied over tiles first.. (VRAM tile numbers),
+// as ui/overworld.js times them.
+const TILE_ANIMS = {
+  general: [
+    { name: "water", dir: "water_current_landwatersedge", first: 416, count: 48, frames: 8 },
+    { name: "sand", dir: "sandwatersedge", first: 464, count: 18, frames: 8 },
+    { name: "flower", dir: "flower", first: 508, count: 4, frames: 5 }
+  ]
+};
+// The animation (index into the primary tileset's anims) a tile entry belongs to, or -1.
+function tileAnim(entry, primary) {
+  const idx = entry & 0x3ff;
+  return idx < NUM_PRIMARY_TILES ? primary.anims.findIndex((a) => idx >= a.first && idx < a.first + a.count) : -1;
 }
 
 // A metatile's 8 tiles (4 below, 4 above), behaviour and layer type.
@@ -203,19 +225,22 @@ function metatile(primary, secondary, id) {
   return { tiles, behavior: attr & 0x1ff, encounter: (attr >> 24) & 7, layer: (attr >>> 29) & 3 };
 }
 
-// Draws one 8x8 tile into an RGBA image.
-function drawTile(img, imgW, x0, y0, entry, primary, secondary, opaqueBackground) {
+// Draws one 8x8 tile into an RGBA image. `frames`: an animated tile's frame
+// per primary anim (else the tileset's own tile).
+function drawTile(img, imgW, x0, y0, entry, primary, secondary, opaqueBackground, frames) {
   const idx = entry & 0x3ff, hflip = entry & 0x400, vflip = entry & 0x800, pal = entry >> 12;
-  const ts = idx < NUM_PRIMARY_TILES ? primary : secondary;
-  const t = idx < NUM_PRIMARY_TILES ? idx : idx - NUM_PRIMARY_TILES;
+  let sheet = (idx < NUM_PRIMARY_TILES ? primary : secondary).tiles;
+  let t = idx < NUM_PRIMARY_TILES ? idx : idx - NUM_PRIMARY_TILES;
+  const a = frames ? tileAnim(entry, primary) : -1;
+  if (a >= 0) { sheet = primary.anims[a].frames[frames[a]]; t = idx - primary.anims[a].first; }
   const palette = (pal < NUM_PRIMARY_PALS ? primary : secondary).palettes[pal] || primary.palettes[0];
-  const perRow = ts.tiles.width / 8;
+  const perRow = sheet.width / 8;
   const tx = (t % perRow) * 8, ty = Math.floor(t / perRow) * 8;
-  if (ty >= ts.tiles.height) return;
+  if (ty >= sheet.height) return;
   for (let y = 0; y < 8; y++) {
     for (let x = 0; x < 8; x++) {
       const sx = tx + (hflip ? 7 - x : x), sy = ty + (vflip ? 7 - y : y);
-      const c = ts.tiles.px[sy * ts.tiles.width + sx];
+      const c = sheet.px[sy * sheet.width + sx] & 15;
       const o = ((y0 + y) * imgW + x0 + x) * 4;
       if (c === 0 && !opaqueBackground) continue;
       const rgb = c === 0 ? primary.palettes[0][0] : palette[c];
@@ -244,6 +269,45 @@ function renderBlocks(blocks, w, h, primary, secondary, flatten) {
     }
   }
   return { below, above, anyAbove };
+}
+
+// The animated 8x8 cells of the part under sprites: each cell whose tiles
+// (a metatile's bottom ones, and its top ones when they're drawn under
+// sprites too) include animated ones, drawn in every combination of its anims'
+// frames. -> { cells: [x, y, first, mask, ...] (x, y in 8x8 tiles; first:
+// its first picture; mask: which anims, bit n = anim n), pics: the pictures }
+function animCells(blocks, w, h, primary, secondary) {
+  const cells = [], pics = [];
+  if (!primary.anims.length) return { cells, pics };
+  for (let by = 0; by < h; by++) for (let bx = 0; bx < w; bx++) {
+    const mt = metatile(primary, secondary, blocks[by * w + bx] & 0x3ff);
+    for (let q = 0; q < 4; q++) {
+      const entries = [mt.tiles[q]].concat(mt.layer === 1 ? [mt.tiles[4 + q]] : []);
+      const used = [...new Set(entries.map((e) => tileAnim(e, primary)).filter((a) => a >= 0))].sort();
+      if (!used.length) continue;
+      const mask = used.reduce((m, a) => m | (1 << a), 0);
+      cells.push(bx * 2 + (q & 1), by * 2 + (q >> 1), pics.length, mask);
+      // Every combination, the first anim's frame changing fastest.
+      const combos = used.reduce((n, a) => n * primary.anims[a].frames.length, 1);
+      for (let c = 0; c < combos; c++) {
+        const frames = primary.anims.map(() => 0);
+        let rest = c;
+        for (const a of used) { const n = primary.anims[a].frames.length; frames[a] = rest % n; rest = Math.floor(rest / n); }
+        const pic = new Uint8ClampedArray(8 * 8 * 4);
+        entries.forEach((e, i) => drawTile(pic, 8, 0, 0, e, primary, secondary, i === 0, frames));
+        pics.push(pic);
+      }
+    }
+  }
+  return { cells, pics };
+}
+function writeAnimSheet(file, pics) {
+  const perRow = 64, rows = Math.ceil(pics.length / perRow), W = perRow * 8, rgba = new Uint8ClampedArray(W * rows * 8 * 4);
+  pics.forEach((pic, i) => {
+    const x0 = (i % perRow) * 8, y0 = Math.floor(i / perRow) * 8;
+    for (let y = 0; y < 8; y++) rgba.set(pic.subarray(y * 32, y * 32 + 32), ((y0 + y) * W + x0) * 4);
+  });
+  writePng(file, W, rows * 8, rgba);
 }
 
 // ---------- Text and scripts ----------
@@ -520,6 +584,10 @@ for (const name of MAPS) {
   const { below, above, anyAbove } = renderBlocks(blocks, w, h, primary, secondary, false);
   writePng(path.join(outMaps, name + ".png"), w * 16, h * 16, below);
   if (anyAbove) writePng(path.join(outMaps, name + "-top.png"), w * 16, h * 16, above);
+  const anim = animCells(blocks, w, h, primary, secondary);
+  const animFile = path.join(outMaps, name + "-anim.png");
+  if (anim.pics.length) writeAnimSheet(animFile, anim.pics);
+  else if (fs.existsSync(animFile)) fs.unlinkSync(animFile);
   const borderBin = fs.readFileSync(P(layout.border_filepath));
   const bw = layout.border_width || 2, bh = layout.border_height || 2;
   const border = Array.from({ length: bw * bh }, (_, i) => borderBin.readUInt16LE(i * 2));
@@ -566,6 +634,8 @@ for (const name of MAPS) {
     battleScene: map.battle_scene && map.battle_scene !== "MAP_BATTLE_SCENE_NORMAL"
       ? map.battle_scene.replace(/^MAP_BATTLE_SCENE_/, "").toLowerCase().replace(/_/g, "") : undefined,
     top: anyAbove, borderWidth: bw, borderHeight: bh,
+    // Its animated cells (animCells; the pictures in <Map>-anim.png).
+    anim: anim.cells.length ? { cells: anim.cells, anims: primary.anims.map((a) => a.name) } : undefined,
     collision, elevation, behavior, encounter,
     connections: (map.connections || []).map((c) => ({ map: byConst[c.map] || null, mapConst: c.map, direction: c.direction, offset: c.offset })),
     warps: map.warp_events.map((wp) => ({ x: wp.x, y: wp.y, map: byConst[wp.dest_map] || null, mapConst: byConst[wp.dest_map] ? undefined : wp.dest_map, warp: +wp.dest_warp_id })),
