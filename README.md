@@ -557,6 +557,7 @@ silver hair, red shirt, black backpack), and its trainer-card picture
 - **Types**: Gen 6's, except Aerodactyl (Dragon/Rock), Gyarados and Mega
   Gyarados (Dragon/Water), Psyduck and Golduck (Water/Psychic), and Blastoise
   and Mega Blastoise (Water/Steel).
+- **Moves**: Gen 6's, except Leech Life, which is Gen 7's (80 power, 10 PP).
 - **X items**: X Attack, Defense, Sp. Atk, Sp. Def, Speed and Accuracy raise
   that stat of the Pokémon in battle one stage (Gen 6).
 - **Items**: Gen 6 effects for potions and drinks, status cures, Revives, PP
@@ -588,8 +589,9 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   area pages and route crowns for now), and walking onto land hops you off.
 - **The Bicycle** (from the Bag, or Select once it's registered: key items
   you can use on the map can be registered to Select, Backspace on a
-  keyboard): riding sprite and cycling music, a tile in 6 frames (running is 8,
-  walking 16), wild Pokémon 80% as often (FireRed's rate on a bike), and only
+  keyboard): riding sprite and cycling music, Emerald's Mach Bike speed (it picks up
+  speed going straight: walking pace, running pace, then a tile in 4 frames;
+  stopping, turning or bumping into something starts over), wild Pokémon 80% as often (FireRed's rate on a bike), and only
   where FireRed allows cycling (`allow_cycling`): going indoors gets you off,
   and using it indoors gets "Oak: ...! This isn't the time to use that!"
 - **TMs**: X and Y's TM01–TM100 in order, minus Flash and Rock Smash (HMs

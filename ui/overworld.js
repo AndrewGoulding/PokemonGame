@@ -40,7 +40,11 @@
   const TILE = 16, VIEW_W = 240, VIEW_H = 160;
   const PLAYER_X = 112, PLAYER_Y = 64;   // where the player stands on screen (top-left of its tile)
   const WALK_SPEED = 1, RUN_SPEED = 2;   // pixels per frame (60 frames a second)
-  const SURF_SPEED = 2, BIKE_SPEED = 8 / 3;   // (PLAYER_SPEED_FAST; the Bicycle: a tile in 6 frames)
+  const SURF_SPEED = 2;   // (PLAYER_SPEED_FAST)
+  // The Bicycle goes like Emerald's Mach Bike (sMachBikeSpeedCallbacks): it
+  // picks up speed tile by tile going straight, walking pace, then running,
+  // then a tile in 4 frames, and starts over when you stop or turn.
+  const BIKE_SPEEDS = [1, 2, 4];
   const TURN_FRAMES = 6;                 // tapping a direction turns without moving
   const FADE_FRAMES = 12;
 
@@ -315,7 +319,9 @@
   function startStep(r, dir) {
     // (ctx.canRun can restrict running, e.g. to after FireRed's Running Shoes.)
     const run = !r.jump && me.avatar === "walk" && runHeld() && (!ctx.canRun || ctx.canRun());
-    const speed = me.avatar === "bike" ? BIKE_SPEED : me.avatar === "surf" ? SURF_SPEED : run ? RUN_SPEED : WALK_SPEED;
+    if (me.avatar === "bike") { me.bikeRun = dir === me.bikeDir ? (me.bikeRun || 0) + 1 : 0; me.bikeDir = dir; }
+    const speed = me.avatar === "bike" ? BIKE_SPEEDS[Math.min(me.bikeRun, BIKE_SPEEDS.length - 1)]
+      : me.avatar === "surf" ? SURF_SPEED : run ? RUN_SPEED : WALK_SPEED;
     me.move = { tx: r.x, ty: r.y, tmap: r.map, dir, t: 0, jump: !!r.jump, warp: r.warp || null, run,
       dismount: !!r.dismount, dist: r.jump ? TILE * 2 : TILE, speed: r.dismount ? WALK_SPEED * 2 : speed };
     me.parity ^= 1;
@@ -782,13 +788,14 @@
     if (pressedSelect) { pressedSelect = false; return finish({ type: "select" }); }
     if (pressedA) { pressedA = false; return interact(); }
     const dir = heldDir();
-    if (!dir) { me.turnTimer = 0; return; }
+    if (!dir) { me.turnTimer = 0; me.bikeDir = null; return; }
     if (dir !== me.facing && !wasMoving) { me.facing = dir; me.turnTimer = TURN_FRAMES; return; }
     me.facing = dir;
     if (me.turnTimer > 0) { me.turnTimer--; return; }
     const r = World.step({ map: me.map, x: me.x, y: me.y }, dir, occupiedForPlayer, { surf: me.avatar === "surf" });
     if (r.warp && !r.ok) { warpTo(r.warp); return; }
     if (r.ok) { startStep(r, dir); return; }
+    me.bikeDir = null;   // (a bump stops the Bicycle)
     if (tryPushBoulder(dir)) { me.turnTimer = TILE; return; }
     // A door that leads nowhere yet (a locked Gym): its sign says why.
     if (r.door && performance.now() - bumpMessageAt > 3000) {

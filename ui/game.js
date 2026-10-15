@@ -1603,7 +1603,8 @@
       case "FLAG_HIDE_SS_ANNE": return !f.ssAnneDeparted;
       // Prof. Oak's aide comes to Vermilion after Lt. Surge, to send you to his
       // colleague on Route 2 (unless you've had HM05 Flash from him already).
-      case "FLAG_HIDE_VERMILION_CITY_OAKS_AIDE": return !!(f.TRAINER_LEADER_LT_SURGE && !f.gotFlash && !f.talkedToVermilionAide);  // in the robbed house's yard until he gives back TM28
+      // (FireRed has him gone once you've talked to him; here he stays.)
+      case "FLAG_HIDE_VERMILION_CITY_OAKS_AIDE": return !!f.TRAINER_LEADER_LT_SURGE;
       case "FLAG_HIDE_NUGGET_BRIDGE_ROCKET": return !f.gotSSTicket;
       // Bill: a Clefairy until you run his Cell Separator, then himself.
       case "FLAG_HIDE_BILL_CLEFAIRY": return !f.billHelped && !billInTeleporter;

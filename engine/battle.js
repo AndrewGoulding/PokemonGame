@@ -1893,7 +1893,12 @@
             vs === "magnetrise" || vs === "destinybond" || vs === "charge" || vs === "perishsong") {
           if (!this.addVolatile(tgt, vs, user, moveEffect)) { this.add("-fail", user); return false; }
           if (vs === "encore") tgt.volatiles.encore.moveId = tgt.lastMove;
-          if (vs === "disable") tgt.volatiles.disable.moveId = tgt.lastMove;
+          if (vs === "disable") {
+            tgt.volatiles.disable.moveId = tgt.lastMove;
+            // (Name the move in the "-start" just added: "Foe's Tackle was disabled!")
+            const ev = [...this.events].reverse().find((e) => e[0] === "-start" && /disable/i.test(e[2]));
+            if (ev) ev[3] = MOVE_INDEX[toID(tgt.lastMove)] || tgt.lastMove;
+          }
         } else if (!this.addVolatile(tgt, vs, user, moveEffect)) {
           this.add("-fail", user); return false;
         }

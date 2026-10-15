@@ -1458,6 +1458,18 @@ for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
   assert(Bag.isKeyItem("silph-scope") && Bag.sprite("silph-scope") && Bag.isKeyItem("poke-flute") && Bag.sprite("poke-flute"));
 }
 
+// Disable names the move it disabled; Leech Life is Gen 7's.
+{
+  const b = new Battle({ seed: 5, p1: { name: "A", team: [Object.assign(Party.toBattleSet(Party.create("Pikachu", 50)), { moves: ["Disable"] })] },
+    p2: { name: "B", team: [Object.assign(Party.toBattleSet(Party.create("Snorlax", 50)), { moves: ["Tackle"] })] } });
+  b.start();
+  b.choose("p1", { type: "move", move: 0 }); b.choose("p2", { type: "move", move: 0 });
+  b.choose("p1", { type: "move", move: 0 }); b.choose("p2", { type: "move", move: 0 });
+  assert(b.events.some((e) => e[0] === "-start" && /disable/i.test(e[2]) && e[3] === "Tackle"), "Disable names the move");
+  assert.deepStrictEqual([MOVES["Leech Life"].power, MOVES["Leech Life"].pp], [80, 10]);
+  assert(WORLD_MAPS.Route10.wild.slots.some((s) => s.species === "Magnemite"), "Magnemite on Route 10");
+}
+
 // HMs outside battle (game/field-moves.js): known, or learnable with the HM
 // in the Bag, and the badge either way.
 {

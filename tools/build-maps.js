@@ -146,7 +146,9 @@ const WILD_SLOTS = {
 // the Kakuna and Metapod on Route 24, at those slots' levels.
 const WILD_SLOT_CHANGES = {
   Route3: { 6: ["Jigglypuff", 5, 5], 9: ["Charmander", 5, 5], 11: ["Charmander", 7, 7] },
-  Route24: { 8: ["Squirtle", 8, 8], 10: ["Squirtle", 8, 8] }
+  Route24: { 8: ["Squirtle", 8, 8], 10: ["Squirtle", 8, 8] },
+  // Magnemite on Route 10, as in Red and Blue (two of Voltorb's slots: 10% and 5%).
+  Route10: { 5: ["Magnemite", 14, 14], 7: ["Magnemite", 17, 17] }
 };
 // Metatiles a map's scripts swap in while you're there (FireRed's setmetatile):
 // name -> [[x, y, metatile, impassable]]. Each is drawn as its own picture,

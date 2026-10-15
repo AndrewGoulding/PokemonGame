@@ -794,6 +794,7 @@
         if (perish) return fill("{who}'s perish count fell to " + perish[1] + ".", a);
         const stock = /^stockpile(\d)$/.exec(id);
         if (stock) return fill("{who} stockpiled " + stock[1] + "!", a);
+        if (id === "disable" && c) return fill("{who}'s " + c + " was disabled!", a);
         return fill(lookup(VOLATILE_START, id, null), a);
       }
       case "-end": return fill(lookup(VOLATILE_END, effectId(b), null), a);
@@ -1143,7 +1144,11 @@
           if (!pick) break;
           const m = moves[pick.index];
           if (!m.pp) { await message("There's no PP left for\nthis move!"); continue; }
-          if (m.disabled) { await message(m.name + " can't be used right now!"); continue; }
+          if (m.disabled) {
+            const dis = battle.sides.p1.active.volatiles.disable;
+            await message(dis && m.name.toLowerCase().replace(/[^a-z0-9]/g, "") === dis.moveId ? active.name + "'s " + m.name + " is disabled!" : m.name + " can't be used right now!");
+            continue;
+          }
           lastMove[active.name] = m.index;
           return { type: "move", move: m.index };
         }
