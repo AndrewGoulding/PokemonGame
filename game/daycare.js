@@ -5,6 +5,11 @@
 // first to make room (DeleteFirstMoveAndGiveMoveToMon), as in FireRed.
 //
 // The Day-Care's state is { mon: party record, steps } (or null).
+//
+// Four Island's Day-Care (FireRed's two-Pokémon Day-Care, src/daycare.c's
+// sDayCare) keeps two of these (player.flags.dayCare2), each growing the same
+// way and priced the same. (FireRed's couple there also find Eggs: this game
+// has no Eggs, so none turn up.)
 (function () {
   "use strict";
 
@@ -21,9 +26,10 @@
   function deposit(record) {
     return { mon: record, steps: 0 };
   }
-  // Counts a step (call once a step on the map).
+  // Counts a step (call once a step on the map). A list: each of them.
   function step(dc) {
-    if (dc) dc.steps++;
+    if (Array.isArray(dc)) dc.forEach(step);
+    else if (dc) dc.steps++;
   }
   // The Pokémon, grown: -> its record.
   function withdraw(dc) {

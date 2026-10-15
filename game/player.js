@@ -52,7 +52,9 @@
     // The Sevii Islands' (One Island's Pokémon Net Center has its nurse at 5,2).
     OneIsland_PokemonCenter_1F: { map: "OneIsland_PokemonCenter_1F", x: 5, y: 4, facing: "up" },
     TwoIsland_PokemonCenter_1F: { map: "TwoIsland_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
-    ThreeIsland_PokemonCenter_1F: { map: "ThreeIsland_PokemonCenter_1F", x: 7, y: 4, facing: "up" }
+    ThreeIsland_PokemonCenter_1F: { map: "ThreeIsland_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
+    FourIsland_PokemonCenter_1F: { map: "FourIsland_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
+    FiveIsland_PokemonCenter_1F: { map: "FiveIsland_PokemonCenter_1F", x: 7, y: 4, facing: "up" }
   };
 
   // Prize money per trainer class: base x the level of the trainer's last Pokémon.
@@ -64,7 +66,8 @@
     "Bird Keeper": 24, "Rocker": 24, "Tamer": 40, "Young Couple": 28, "Crush Kin": 24, "Cue Ball": 24,
     "Swimmer♀": 4, "Sis And Bro": 4, "Burglar": 88,
     "Cool Couple": 24, "Elite Four": 100, "Champion": 100,
-    "Crush Girl": 24, "Tuber": 4, "Pokémon Ranger": 36, "Aroma Lady": 28
+    "Crush Girl": 24, "Tuber": 4, "Pokémon Ranger": 36, "Aroma Lady": 28,
+    "Pokémon Breeder": 28, "Ruin Maniac": 48, "Lady": 200, "Painter": 16
   };
   // Money lost on blacking out: highest party level x this, by badge count (Gen 6).
   const BLACKOUT_BASE = [8, 16, 24, 36, 48, 64, 80, 100, 120];

@@ -31,7 +31,10 @@
     // Cycling Road's slope (MB_CYCLING_ROAD_PULL_DOWN, and its grass).
     CYCLING_ROAD_PULL_DOWN: 0xd0, CYCLING_ROAD_PULL_DOWN_GRASS: 0xd1,
     // The Seafoam Islands' fast currents (MB_*_CURRENT).
-    EAST_CURRENT: 0x50, WEST_CURRENT: 0x51, NORTH_CURRENT: 0x52, SOUTH_CURRENT: 0x53
+    EAST_CURRENT: 0x50, WEST_CURRENT: 0x51, NORTH_CURRENT: 0x52, SOUTH_CURRENT: 0x53,
+    // Icefall Cave: ice you slip along (MB_ICE), and the thin ice that cracks
+    // under you and the cracked ice that breaks (MB_THIN_ICE, MB_CRACKED_ICE).
+    ICE: 0x23, THIN_ICE: 0x26, CRACKED_ICE: 0x27
   };
   const LEDGE = { right: MB.JUMP_EAST, left: MB.JUMP_WEST, up: MB.JUMP_NORTH, down: MB.JUMP_SOUTH };
   // Warps you trigger by stepping onto them (doors, stairs). Others, like the

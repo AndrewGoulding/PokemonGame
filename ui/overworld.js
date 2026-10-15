@@ -43,6 +43,7 @@
   const WALK_SPEED = 1, RUN_SPEED = 2;   // pixels per frame (60 frames a second)
   const SURF_SPEED = 2;   // (PLAYER_SPEED_FAST)
   const SPIN_SPEED = 2;   // (an arrow tile spins you along, MOVEMENT_ACTION_SPIN_*)
+  const SLIP_SPEED = 2;   // (slipping on ice: PlayerWalkFast)
   const SPIN_FACINGS = ["down", "left", "up", "right"];
   // The Bicycle goes like Emerald's Mach Bike (sMachBikeSpeedCallbacks): it
   // picks up speed tile by tile going straight, walking pace, then running,
@@ -341,7 +342,7 @@
 
   function startStep(r, dir, spin, speedOverride) {
     // (ctx.canRun can restrict running, e.g. to after FireRed's Running Shoes.)
-    const run = !spin && !r.jump && me.avatar === "walk" && runHeld() && (!ctx.canRun || ctx.canRun());
+    const run = !spin && !speedOverride && !r.jump && me.avatar === "walk" && runHeld() && (!ctx.canRun || ctx.canRun());
     if (me.avatar === "bike") { me.bikeRun = dir === me.bikeDir ? (me.bikeRun || 0) + 1 : 0; me.bikeDir = dir; }
     const speed = me.avatar === "bike" ? BIKE_SPEEDS[Math.min(me.bikeRun, BIKE_SPEEDS.length - 1)]
       : me.avatar === "surf" ? SURF_SPEED : run ? RUN_SPEED : WALK_SPEED;
@@ -443,6 +444,13 @@
       if (r.ok && !r.jump) { startStep(r, me.spinDir, true); return; }
       me.facing = me.spinDir;
       me.spinDir = null;
+    }
+    // Icefall Cave's ice (FireRed's ForcedMovement_Slip, MB_ICE): you slip on
+    // the way you were going, fast and without a stride (or over a ledge),
+    // until something stops you; then you can walk again.
+    if (b === MB.ICE && !mv.warp) {
+      const r = World.step({ map: me.map, x: me.x, y: me.y }, mv.dir, occupiedForPlayer);
+      if (r.ok && r.map === me.map) { me.facing = mv.dir; startStep(r, mv.dir, false, r.jump ? null : SLIP_SPEED); me.move.slip = !r.jump; return; }
     }
     const seen = anyTrainerSees();
     if (seen) return finish(seen);
@@ -1122,7 +1130,7 @@
       const pose = { down: 0, up: 3, left: 6, right: 6 }[me.facing];
       frame = me.move.t / RUN_SPEED < 5 ? pose : pose + 1 + me.parity;
     } else {
-      frame = frameFor(me.facing, !!me.move && (me.move.t % TILE) < TILE / 2, me.parity, 9);
+      frame = frameFor(me.facing, !!me.move && !me.move.slip && (me.move.t % TILE) < TILE / 2, me.parity, 9);
     }
     let w = 16, dx = 0, bob = 0;
     if (me.avatar === "bike") {

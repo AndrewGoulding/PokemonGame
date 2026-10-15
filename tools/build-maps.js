@@ -85,7 +85,19 @@ const TITLES = {
   OneIsland_Harbor: "One Island · Harbor", TwoIsland_Harbor: "Two Island · Harbor", ThreeIsland_Harbor: "Three Isle Port · Harbor",
   OneIsland_KindleRoad_EmberSpa: "Kindle Road · Ember Spa",
   TwoIsland_JoyfulGameCorner: "Two Island · Joyful Game Corner", TwoIsland_House: "Two Island · Move Maniac's house",
-  TwoIsland_CapeBrink_House: "Cape Brink · House"
+  TwoIsland_CapeBrink_House: "Cape Brink · House",
+  FourIsland_Harbor: "Four Island · Harbor", FourIsland_PokemonCenter_1F: "Four Island · Pokémon Center",
+  FourIsland_PokemonCenter_2F: "Four Island · Pokémon Center 2F", FourIsland_Mart: "Four Island · Poké Mart",
+  FourIsland_PokemonDayCare: "Four Island · Pokémon Day Care", FourIsland_LoreleisHouse: "Four Island · Lorelei's house",
+  FourIsland_House1: "Four Island · House", FourIsland_House2: "Four Island · Sticker house",
+  FourIsland_IcefallCave_Entrance: "Icefall Cave", FourIsland_IcefallCave_1F: "Icefall Cave · 1F",
+  FourIsland_IcefallCave_B1F: "Icefall Cave · B1F", FourIsland_IcefallCave_Back: "Icefall Cave · Back",
+  FiveIsland_Harbor: "Five Island · Harbor", FiveIsland_PokemonCenter_1F: "Five Island · Pokémon Center",
+  FiveIsland_PokemonCenter_2F: "Five Island · Pokémon Center 2F", FiveIsland_House1: "Five Island · House",
+  FiveIsland_House2: "Five Island · House", FiveIsland_Meadow: "Five Isle Meadow", FiveIsland_RocketWarehouse: "Rocket Warehouse",
+  FiveIsland_MemorialPillar: "Memorial Pillar", FiveIsland_WaterLabyrinth: "Water Labyrinth", FiveIsland_ResortGorgeous: "Resort Gorgeous",
+  FiveIsland_ResortGorgeous_House: "Resort Gorgeous · Selphy's house", FiveIsland_LostCave_Entrance: "Lost Cave",
+  ...Object.fromEntries(Array.from({ length: 14 }, (_, i) => ["FiveIsland_LostCave_Room" + (i + 1), "Lost Cave"]))
 };
 
 const MAPS = [
@@ -166,8 +178,15 @@ const MAPS = [
   "TwoIsland_PokemonCenter_2F", "TwoIsland_CapeBrink", "TwoIsland_CapeBrink_House",
   "ThreeIsland", "ThreeIsland_Port", "ThreeIsland_Harbor", "ThreeIsland_House1", "ThreeIsland_House2", "ThreeIsland_House3",
   "ThreeIsland_House4", "ThreeIsland_House5", "ThreeIsland_Mart", "ThreeIsland_PokemonCenter_1F", "ThreeIsland_PokemonCenter_2F",
-  "ThreeIsland_BondBridge", "ThreeIsland_BerryForest", "ThreeIsland_DunsparceTunnel"
-];
+  "ThreeIsland_BondBridge", "ThreeIsland_BerryForest", "ThreeIsland_DunsparceTunnel",
+  // The Sevii Islands, part 2: Four and Five Island.
+  "FourIsland", "FourIsland_Harbor", "FourIsland_House1", "FourIsland_House2", "FourIsland_Mart", "FourIsland_PokemonCenter_1F",
+  "FourIsland_PokemonCenter_2F", "FourIsland_PokemonDayCare", "FourIsland_LoreleisHouse", "FourIsland_IcefallCave_Entrance",
+  "FourIsland_IcefallCave_1F", "FourIsland_IcefallCave_B1F", "FourIsland_IcefallCave_Back",
+  "FiveIsland", "FiveIsland_Harbor", "FiveIsland_House1", "FiveIsland_House2", "FiveIsland_PokemonCenter_1F", "FiveIsland_PokemonCenter_2F",
+  "FiveIsland_Meadow", "FiveIsland_RocketWarehouse", "FiveIsland_MemorialPillar", "FiveIsland_WaterLabyrinth", "FiveIsland_ResortGorgeous",
+  "FiveIsland_ResortGorgeous_House", "FiveIsland_LostCave_Entrance"
+].concat(Array.from({ length: 14 }, (_, i) => "FiveIsland_LostCave_Room" + (i + 1)));
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
 // (Fuchsia's fossil Pokémon statue is a Kabuto, or an Omanyte once you've
@@ -301,6 +320,21 @@ const GAME_TEXT = [
   "Text_AllAboardSeagallopNum",
   // The Joyful Game Corner's minigames, played over the wireless link (data/scripts/cable_club.inc).
   "Text_WelcomeCanYouWait", "Text_AdapterNotConnectedMinigame",
+  // Four Island's Day-Care (data/text/day_care.inc).
+  "DayCare_Text_ImDaycareManSpeakToMyWife", "DayCare_Text_YourMonIsDoingFine", "DayCare_Text_YourMonsAreDoingFine",
+  "DayCare_Text_WouldYouLikeUsToRaiseMon", "DayCare_Text_WhichMonShouldWeRaise", "DayCare_Text_WellRaiseYourMon",
+  "DayCare_Text_WeCanRaiseOneMore", "DayCare_Text_FineThenComeAgain", "DayCare_Text_NotEnoughMoney", "DayCare_Text_TakeOtherOneBackToo",
+  "DayCare_Text_ComeAgain", "DayCare_Text_GoodToSeeYou", "DayCare_Text_YourMonHasGrownXLevels", "DayCare_Text_YourPartyIsFull",
+  "DayCare_Text_ItWillCostX", "DayCare_Text_HeresYourMon", "DayCare_Text_TookBackMon", "DayCare_Text_YouHaveJustOneMon",
+  "DayCare_Text_TakeYourMonBack", "DayCare_Text_WhatWillYouBattleWith",
+  // Four Island's sticker man (data/text/trainer_card.inc).
+  "FourIsland_House2_Text_WishICouldShowOffStickers", "FourIsland_House2_Text_GiveYouStickerIfYouBrag",
+  "FourIsland_House2_Text_BragAboutWhatToday", "FourIsland_House2_Text_BragAboutSomethingForMe",
+  "FourIsland_House2_Text_WowHoFLowest", "FourIsland_House2_Text_WowHoFLow", "FourIsland_House2_Text_WowHoFHigh",
+  "FourIsland_House2_Text_WowHoFHighest", "FourIsland_House2_Text_ComeBackWithBetterStoryHoF", "FourIsland_House2_Text_LivingLegendHoF",
+  "FourIsland_House2_Text_HoFStickerApplied",
+  // The Pokémon Journals and the Fame Checker's islanders (data/text/fame_checker.inc).
+  "PokemonJournal_Text_SpecialFeatureDaisyOak", "PokemonJournal_Text_SpecialFeatureBlaine", "PokemonJournal_Text_SpecialFeatureLorelei",
   // Rock Tunnel's Rock Slide tutor (in Seafoam Islands B4F's text.inc).
   "Text_RockSlideTeach", "Text_RockSlideDeclined", "Text_RockSlideWhichMon", "Text_RockSlideTaught",
   // Pallet Town's Sign Lady (data/text/sign_lady.inc).
@@ -793,6 +827,21 @@ scriptPatches("data/maps/OneIsland_PokemonCenter_1F/scripts.inc", (label) => {
 // Mt. Ember: the Ruby Path's mouth, rocks until Celio asks for the Ruby
 // (MtEmber_Exterior_EventScript_OpenCave: "cave").
 scriptPatches("data/maps/MtEmber_Exterior/scripts.inc", (label) => label === "MtEmber_Exterior_EventScript_OpenCave" && ["MtEmber_Exterior", "cave"]);
+// Five Isle Meadow: the Rocket Warehouse's door unlocked with both passwords
+// (FiveIsland_Meadow_EventScript_SetWarehouseDoorUnlocked: "unlocked"); in the
+// Warehouse, the arrows the Admin turns round once she's beaten, so you can
+// come back through (FiveIsland_RocketWarehouse_EventScript_SetArrowsForReEntry: "arrows").
+scriptPatches("data/maps/FiveIsland_Meadow/scripts.inc", (label) => label === "FiveIsland_Meadow_EventScript_SetWarehouseDoorUnlocked" && ["FiveIsland_Meadow", "unlocked"]);
+scriptPatches("data/maps/FiveIsland_RocketWarehouse/scripts.inc", (label) => label === "FiveIsland_RocketWarehouse_EventScript_SetArrowsForReEntry" && ["FiveIsland_RocketWarehouse", "arrows"]);
+// Icefall Cave 1F's thin ice (src/field_tasks.c, sIcefallCaveIceCoords): each
+// spot cracks the first time you step on it ("crack<i>") and breaks into a
+// hole the next ("hole<i>"), dropping you to B1F.
+const ICEFALL_ICE = [[8, 3], [10, 5], [15, 5], [8, 9], [9, 9], [16, 9], [8, 10], [9, 10], [8, 14]];
+MAP_PATCHES.FourIsland_IcefallCave_1F = {};
+ICEFALL_ICE.forEach(([x, y], i) => {
+  MAP_PATCHES.FourIsland_IcefallCave_1F["crack" + i] = [[x, y, metatileLabels.METATILE_SeafoamIslands_CrackedIce, 0]];
+  MAP_PATCHES.FourIsland_IcefallCave_1F["hole" + i] = [[x, y, metatileLabels.METATILE_SeafoamIslands_IceHole, 0]];
+});
 const pointers = readHeader("src/data/object_events/object_event_graphics_info_pointers.h");
 const infos = readHeader("src/data/object_events/object_event_graphics_info.h");
 const picTables = readHeader("src/data/object_events/object_event_pic_tables.h");

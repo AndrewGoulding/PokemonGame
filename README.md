@@ -375,7 +375,45 @@ the Ruby at the bottom. Celio puts it in the machine, trades your Tri-Pass for
 the Rainbow Pass (the ferries' two-page menu, Four to Seven Island on it) and
 asks you to find the Sapphire too. The Town Map turns to the Sevii Islands'
 map (SWITCH, or R) once you have its page, opening on wherever you are, and Fly
-goes there. From Cinnabar,
+goes there. **The Sevii Islands, part 2**: with the Rainbow Pass the Seagallop
+sails on to Four and Five Island. Four Island: Gary's waiting off the boat the
+first time, already done with the island and off with his Pokémon Egg; the
+Pokémon Center (a respawn point and Fly spot), the Poké Mart, the Body Slam
+tutor's house, the sticker man (brag about your Hall of Fame entries and he
+puts a sticker on your Trainer Card, a better one each tier), and the Day-Care,
+FireRed's two-Pokémon one: the Day-Care Lady takes up to two Pokémon, each
+growing a point of Exp. a step, and her husband outside says how they're
+doing (this game has no Eggs, so the couple never find one). Lorelei's house,
+her stuffed dolls (more of them the more often you've entered the Hall of
+Fame). Icefall Cave (Surf to it, Waterfall inside: HM07 Waterfall is on 1F):
+on 1F the thin ice cracks the first time you step on it and breaks the next,
+dropping you to B1F (FireRed's sIcefallCaveIceCoords; whole again when you
+come back), and on B1F the ice is slippery: step onto it and you slide on the
+way you were going until something stops you (FireRed's MB_ICE). Up the
+waterfall at the back, Lorelei, home from the League, is facing down Team
+Rocket poaching the cave's Pokémon; she asks you to take one of them on, then
+her Lapras gets the truth out of him (the Pokémon are in the Rocket Warehouse
+on Five Island) and they run; she's at home on Four Island after that.
+Five Island: its houses and Pokémon Center; Five Isle Meadow, Team Rocket's
+grunts, Cut trees and the Rocket Warehouse's door, which takes two passwords:
+"Goldeen need log" and "Yes, nah, Chansey" (the second still to come, in the
+Dotted Hole on Six Island). Inside, FireRed's spinning-arrow floor, its grunts
+and two Admins: the one by the arrows turns them round when she's beaten so
+you can come back through, and beating the one by the computer (he turns to
+face you as you come up) sends Team Rocket packing for good (the pens are
+open, the Pokémon gone; Lorelei's glad to hear it). Scientist Gideon,
+who stole the Sapphire, hands it over once beaten, for Celio. The Memorial
+Pillar: leave a Lemonade on Tectonix's grave and its owner gives you TM42
+Facade; its Bird Keepers, items and hidden berries. The Water Labyrinth: a
+gentleman gives his Egg to a Trainer whose lead Pokémon is as fond of them as
+can be (it hatches straight away here, a Lv. 5 Togepi). Resort Gorgeous (its
+Painters, Ladies, Youngster and swimmer) and the Lost Cave, a maze of
+fog-filled rooms with its Ruin Maniac and Psychic: Lady Selphy is lost in it,
+battles you and asks you to take her home; at home she'd like to see a
+Pokémon you've seen (FireRed's SampleResortGorgeousMon; she tires of waiting
+after 250 steps), and when you show her one, her butler thanks you with a
+Luxury Ball or, sometimes, something finer. Trainers, items, hidden items,
+wild Pokémon, signs and the Town Map's Four and Five Island page. From Cinnabar,
 Route 21 runs north across the sea, its fishermen and swimmers, to Pallet Town.
 Off Route 10's waterway, the Power Plant (Surf along the river to its doors): its wild
 Pikachu, Voltorb, Magnemite, Magneton and Electabuzz, its items (TM17 Protect, TM25
@@ -434,9 +472,10 @@ home again until you use another Pokémon Center), and Red's Mom has heard the
 news. The League can be challenged again (Gary's and the others' rematch words
 once you're Champion; FireRed's rematch teams, Lorelei's to Lance's from its
 data and Gary's at its levels, once the Sevii Islands' story sets
-FLAG_SYS_CAN_LINK_WITH_RS, with the Sapphire). Four, Five, Six and Seven
-Island (the Seagallop says it doesn't sail there yet), the Rocket Warehouse,
-the Sapphire and Cerulean Cave aren't built yet. Tiles, palettes and metatiles come from
+FLAG_SYS_CAN_LINK_WITH_RS, with the Sapphire). Six and Seven Island (the
+Seagallop says it doesn't sail there yet), with the Dotted Hole where the
+Sapphire is and the Warehouse's second password comes from, and Cerulean Cave
+aren't built yet. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into

@@ -747,7 +747,9 @@ for (const share of [false, true]) {
     "PowerPlant", "VictoryRoad_1F", "VictoryRoad_2F", "VictoryRoad_3F",
     "MtEmber_Summit", "MtEmber_SummitPath_1F", "MtEmber_SummitPath_2F", "MtEmber_SummitPath_3F", "MtEmber_RubyPath_1F",
     "MtEmber_RubyPath_B1F", "MtEmber_RubyPath_B1F_Stairs", "MtEmber_RubyPath_B2F", "MtEmber_RubyPath_B2F_Stairs",
-    "MtEmber_RubyPath_B3F", "MtEmber_RubyPath_B4F", "MtEmber_RubyPath_B5F", "ThreeIsland_BerryForest", "ThreeIsland_DunsparceTunnel"]);
+    "MtEmber_RubyPath_B3F", "MtEmber_RubyPath_B4F", "MtEmber_RubyPath_B5F", "ThreeIsland_BerryForest", "ThreeIsland_DunsparceTunnel",
+    "FourIsland_IcefallCave_Entrance", "FourIsland_IcefallCave_1F", "FourIsland_IcefallCave_B1F", "FourIsland_IcefallCave_Back",
+    "FiveIsland_RocketWarehouse", "FiveIsland_LostCave_Entrance"].concat(Array.from({ length: 14 }, (_, i) => "FiveIsland_LostCave_Room" + (i + 1))));
   assert(WORLD_MAPS.MtMoon_1F.people.some((p) => p.item === "tm100"), "FireRed's TM09 in Mt. Moon is TM100 Bullet Seed here");
   assert(Bag.canUseOn(Party.create("Gyarados", 30, { rng }), "hm06"), "Gyarados can use Whirlpool");
   assert(Bag.canUseOn(Party.create("Pidgeot", 30, { rng }), "hm10"), "Pidgeot can use Defog");
@@ -1330,10 +1332,10 @@ for (const share of [false, true]) {
   const onGrid = (R, sec) => R.map.some((r) => r.includes(sec)) || R.dungeon.some((r) => r.includes(sec));
   const onMap = (sec) => onGrid(T, sec) || T.sevii.some((R) => onGrid(R, sec));
   // (FireRed gives the Underground Path, the S.S. Anne, the Rocket Hideout, Silph Co., the Pokémon League,
-  // the Ember Spa and the Dunsparce Tunnel (Three Isle Path) no square of their own.)
+  // the Ember Spa, the Dunsparce Tunnel (Three Isle Path) and the Rocket Warehouse no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
     assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "UNDERGROUND_PATH_2", "S_S_ANNE", "ROCKET_HIDEOUT", "SILPH_CO",
-      "POKEMON_LEAGUE", "EMBER_SPA", "THREE_ISLE_PATH"].includes(T.mapSections[name])), name + " is on the Town Map");
+      "POKEMON_LEAGUE", "EMBER_SPA", "THREE_ISLE_PATH", "ROCKET_WAREHOUSE"].includes(T.mapSections[name])), name + " is on the Town Map");
   }
   // The Sevii Islands' maps: One, Two and Three Island on the first (FireRed's REGIONMAP_SEVII123).
   assert.deepStrictEqual(T.sevii.map((R) => [R.id, R.map.length, R.map[0].length]), [["SEVII_123", 15, 22], ["SEVII_45", 15, 22], ["SEVII_67", 15, 22]]);
@@ -2762,11 +2764,11 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
     "OneIsland_TreasureBeach", "MtEmber_Exterior", "MtEmber_Summit", "MtEmber_RubyPath_B5F", "TwoIsland", "TwoIsland_JoyfulGameCorner",
     "TwoIsland_CapeBrink", "TwoIsland_CapeBrink_House", "ThreeIsland", "ThreeIsland_Port", "ThreeIsland_BondBridge", "ThreeIsland_BerryForest"]) W(m);
   // The Seagallop's ports, where it leaves you, and its numbers.
-  for (const port of ["VERMILION_CITY", "ONE_ISLAND", "TWO_ISLAND", "THREE_ISLAND", "CINNABAR_ISLAND"]) {
+  for (const port of ["VERMILION_CITY", "ONE_ISLAND", "TWO_ISLAND", "THREE_ISLAND", "FOUR_ISLAND", "FIVE_ISLAND", "CINNABAR_ISLAND"]) {
     const p = Sevii.port(port), m = W(p.map);
     assert(Sevii.built(port) && !m.collision[p.y * m.width + p.x], port + ": the Seagallop lands on open ground");
   }
-  for (const port of ["FOUR_ISLAND", "FIVE_ISLAND", "SIX_ISLAND", "SEVEN_ISLAND"]) assert(!Sevii.built(port), port + " isn't built yet");
+  for (const port of ["SIX_ISLAND", "SEVEN_ISLAND"]) assert(!Sevii.built(port), port + " isn't built yet");
   assert.deepStrictEqual([Sevii.ferryNumber("CINNABAR_ISLAND", "ONE_ISLAND"), Sevii.ferryNumber("VERMILION_CITY", "TWO_ISLAND"),
     Sevii.ferryNumber("ONE_ISLAND", "THREE_ISLAND"), Sevii.ferryNumber("FOUR_ISLAND", "FIVE_ISLAND"), Sevii.ferryNumber("SIX_ISLAND", "SEVEN_ISLAND")], [1, 7, 2, 3, 5]);
   // The ferry heads east from Cinnabar to One Island, west from One Island back to Vermilion.
@@ -2812,4 +2814,74 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
   // Text the scenes use.
   for (const label of ["Text_AllAboardSeagallopNum", "Text_WhereDoYouWantToSail", "OneIsland_PokemonCenter_1F_Text_UsualPCServicesUnavailable",
     "CinnabarIsland_Text_ComeWithMeToOneIsland", "MtEmber_Exterior_Text_FirstPasswordGoldeen", "Text_UltimateMoveThatMon"]) assert(WORLD_TEXT[label], label);
+}
+
+// The Sevii Islands, part 2 (game/sevii.js, ui/game.js): Four and Five Island.
+{
+  const W = (m) => { assert(WORLD_MAPS[m], m + " is built"); return WORLD_MAPS[m]; };
+  for (const m of ["FourIsland", "FourIsland_Harbor", "FourIsland_PokemonDayCare", "FourIsland_LoreleisHouse", "FourIsland_IcefallCave_Entrance",
+    "FourIsland_IcefallCave_1F", "FourIsland_IcefallCave_B1F", "FourIsland_IcefallCave_Back", "FiveIsland", "FiveIsland_Harbor", "FiveIsland_Meadow",
+    "FiveIsland_RocketWarehouse", "FiveIsland_MemorialPillar", "FiveIsland_WaterLabyrinth", "FiveIsland_ResortGorgeous",
+    "FiveIsland_ResortGorgeous_House", "FiveIsland_LostCave_Entrance", "FiveIsland_LostCave_Room10", "FiveIsland_LostCave_Room14"]) W(m);
+  // The ferry sails to Four and Five Island now; they're on the Rainbow Pass's menu.
+  assert(Sevii.built("FOUR_ISLAND") && Sevii.built("FIVE_ISLAND"));
+  assert.deepStrictEqual(Sevii.menu({ celioScene: 5 }, "FOUR_ISLAND").items, ["VERMILION_CITY", "ONE_ISLAND", "TWO_ISLAND", "THREE_ISLAND", "MORE", "EXIT"]);
+  assert.deepStrictEqual(Sevii.menu({ celioScene: 5 }, "FIVE_ISLAND", 1).items, ["FOUR_ISLAND", "SIX_ISLAND", "SEVEN_ISLAND", "MORE", "EXIT"]);
+  // Icefall Cave 1F's thin ice: nine spots, each cracking and then breaking
+  // through to open floor on B1F; B1F's slippery ice.
+  const ice = W("FourIsland_IcefallCave_1F"), b1f = W("FourIsland_IcefallCave_B1F");
+  assert.strictEqual(Sevii.ICEFALL_ICE.length, 9);
+  for (const [x, y] of Sevii.ICEFALL_ICE) {
+    assert.strictEqual(ice.behavior[y * ice.width + x], World.MB.THIN_ICE, "thin ice at " + x + "," + y);
+    assert(!b1f.collision[y * b1f.width + x], "B1F below " + x + "," + y + " is open");
+  }
+  for (let i = 0; i < 9; i++) {
+    assert.strictEqual(ice.patches["crack" + i].collision[0][3], World.MB.CRACKED_ICE);
+    assert(ice.patches["hole" + i], "hole" + i);
+  }
+  assert.deepStrictEqual(Sevii.icefallPatches({ "8,3": 1, "10,5": 2 }), ["crack0", "hole1"]);
+  assert(b1f.behavior.filter((b) => b === World.MB.ICE).length > 50, "B1F's ice floor");
+  // The Rocket Warehouse: its door in the Meadow, the arrows the Admin turns, its spin tiles.
+  assert.deepStrictEqual(W("FiveIsland_Meadow").patches.unlocked.collision[0].slice(0, 2), [12, 21]);
+  assert.strictEqual(W("FiveIsland_Meadow").patches.unlocked.collision[0][3], World.MB.WARP_DOOR);
+  assert.deepStrictEqual(W("FiveIsland_RocketWarehouse").patches.arrows.collision.map((c) => c[3]), [World.MB.SPIN_UP, World.MB.SPIN_UP]);
+  assert(W("FiveIsland_RocketWarehouse").behavior.some((b) => b === World.MB.SPIN_LEFT));
+  for (const id of ["TRAINER_TEAM_ROCKET_ADMIN", "TRAINER_TEAM_ROCKET_ADMIN_2", "TRAINER_SCIENTIST_GIDEON", "TRAINER_TEAM_ROCKET_GRUNT_45",
+    "TRAINER_LADY_SELPHY", "TRAINER_RUIN_MANIAC_LAWSON", "TRAINER_PSYCHIC_LAURA", "TRAINER_PAINTER_DAISY", "TRAINER_PKMN_BREEDER_ALIZE"]) assert(WORLD_TRAINERS[id], id);
+  for (const cls of ["Lady", "Painter", "Ruin Maniac", "Pokémon Breeder"]) assert(Player.prizeMoney(cls + " X", [{ level: 10 }]) > 0, cls);
+  // Selphy's wish: a Pokémon you've seen (of FireRed's 386), and her thanks; she tires after 250 steps.
+  const seen = ["Pikachu", "Togekiss"], req = Sevii.resortRequest(seen, () => 0.1);
+  assert.strictEqual(req.species, "Pikachu");
+  assert(["luxury-ball"].concat(Sevii.RESORT_DELUXE).includes(req.reward) && Sevii.resortRequest(seen, () => 0.9).reward === "luxury-ball");
+  for (const item of Sevii.RESORT_DELUXE.concat(["luxury-ball", "lemonade", "sapphire"])) assert(window.ITEMS[item], item);
+  for (let i = 0; i < 249; i++) assert(!Sevii.resortStep(req));
+  assert(Sevii.resortStep(req) && req.expired);
+  // The sticker man's tiers; the Water Labyrinth's test.
+  assert.deepStrictEqual([1, 39, 40, 99, 100, 200].map(Sevii.hofBrag), [1, 1, 2, 2, 3, 4]);
+  assert(Sevii.leadFriendshipMax([{ happiness: 255 }]) && !Sevii.leadFriendshipMax([{ happiness: 254 }, { happiness: 255 }]));
+  // Four Island's Day-Care keeps two, each growing.
+  const pair = [DayCare.deposit(Party.create("Rattata", 5, { rng })), DayCare.deposit(Party.create("Pidgey", 5, { rng }))];
+  for (let i = 0; i < 500; i++) DayCare.step(pair);
+  assert(pair.every((d) => d.steps === 500 && DayCare.levelsGained(d) > 0));
+  // The Pokémon Centers (respawn and Fly), the story's people.
+  for (const [sec, center] of [["FOUR_ISLAND", "FourIsland_PokemonCenter_1F"], ["FIVE_ISLAND", "FiveIsland_PokemonCenter_1F"]]) {
+    assert(Player.CENTERS[center] && window.TOWN_MAP.fly[sec].center === center, sec);
+    const c = Player.CENTERS[center], cm = W(center);
+    assert(!cm.collision[c.y * cm.width + c.x], center + " respawn spot");
+  }
+  assert(onGridSevii("FOUR_ISLAND") && onGridSevii("ICEFALL_CAVE") && onGridSevii("LOST_CAVE") && onGridSevii("RESORT_GORGEOUS"));
+  function onGridSevii(sec) { const R = window.TOWN_MAP.sevii[1]; return R.map.some((r) => r.includes(sec)) || R.dungeon.some((r) => r.includes(sec)); }
+  assert(W("FourIsland").people.some((p) => p.localId === "LOCALID_FOUR_ISLAND_RIVAL" && p.flag === "FLAG_HIDE_FOUR_ISLAND_RIVAL"));
+  assert.strictEqual(W("FourIsland_IcefallCave_Back").people.filter((p) => p.flag === "FLAG_HIDE_ICEFALL_CAVE_ROCKETS").length, 3);
+  assert(W("FourIsland_IcefallCave_1F").people.some((p) => p.item === FieldMoves.hmFor("Waterfall")), "HM Waterfall in Icefall Cave");
+  assert(W("FiveIsland_LostCave_Room10").people.some((p) => p.localId === "LOCALID_LOST_CAVE_SELPHY"));
+  assert(W("FiveIsland_ResortGorgeous_House").people.some((p) => p.localId === "LOCALID_RESORT_GORGEOUS_HOUSE_BUTLER"));
+  assert(W("FiveIsland_RocketWarehouse").people.some((p) => p.item === "tm36" || /^tm\d+$/.test(p.item)), "the Warehouse's TM");
+  assert(W("FourIsland_IcefallCave_1F").wild && W("FiveIsland_LostCave_Room1").wild && W("FiveIsland_ResortGorgeous").water && W("FiveIsland_Meadow").wild);
+  for (const label of ["FourIsland_Text_RivalAlreadyGotEggBeSmellingYa", "DayCare_Text_WeCanRaiseOneMore", "FourIsland_House2_Text_HoFStickerApplied",
+    "FourIsland_IcefallCave_Back_Text_LoreleiPlayerHelpMeKickPoachersOut", "FiveIsland_Meadow_Text_EnteredPasswordDoorOpened",
+    "FiveIsland_MemorialPillar_Text_ThankYouPleaseTakeThis", "FiveIsland_WaterLabyrinth_Text_ReceivedEggFromMan",
+    "FiveIsland_ResortGorgeous_House_Text_WishToSeeMonPlease", "FiveIsland_LostCave_Room10_Text_MayIAskYouToTakeMeHome", "Text_BodySlamTeach"]) assert(WORLD_TEXT[label], label);
+  for (const m of ["FourIsland_Movement_RivalApproach", "FourIsland_IcefallCave_Back_Movement_PlayerToRockets", "FourIsland_PokemonDayCare_Movement_RetrieveMon",
+    "FiveIsland_ResortGorgeous_House_Movement_ButlerApproachPlayerNorth", "FiveIsland_LostCave_Room10_Movement_SelphyApproach"]) assert(WORLD_MOVEMENTS[m], m);
 }

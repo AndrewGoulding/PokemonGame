@@ -9,6 +9,12 @@
 //                                      //   "EXIT"], labels, page } (EventScript_ChooseDestFrom*)
 //   Sevii.capeBrinkMove(record)        // the move Cape Brink's tutor teaches it, or null
 //   Sevii.CAPE_BRINK_MOVES             // { species: [move, flag] }
+//   Sevii.ICEFALL_ICE                  // Icefall Cave 1F's thin ice: [[x, y], ...]
+//   Sevii.icefallPatches(state)        // its patches ("crack3", "hole5") from { "x,y": 1 cracked | 2 broken }
+//   Sevii.resortRequest(seen, rng)     // Selphy's wish: { species, reward } (SampleResortGorgeousMonAndReward)
+//   Sevii.resortStep(request)          // a step while she waits (IncrementResortGorgeousStepCounter)
+//   Sevii.hofBrag(count)               // the sticker man's Hall of Fame tier, 1-4
+//   Sevii.leadFriendshipMax(party)     // the Water Labyrinth's test (GetLeadMonFriendship == 6)
 //
 // FireRed keeps the trip in event variables; here they're player.flags:
 //   cinnabarScene      VAR_MAP_SCENE_CINNABAR_ISLAND: 1 Bill waits outside
@@ -32,6 +38,37 @@
 //   (FLAG_SEVII_DETOUR_FINISHED), pcStorageDisabled (FLAG_SYS_PC_STORAGE_DISABLED),
 //   seviiMap123 / seviiMap4567 (FLAG_SYS_SEVII_MAP_123 / _4567: the Town
 //   Map's pages), gotRuby (FLAG_GOT_RUBY), recoveredSapphire (FLAG_RECOVERED_SAPPHIRE).
+//
+// Four and Five Island (part 2):
+//   fourIslandScene    VAR_MAP_SCENE_FOUR_ISLAND: 1 Gary's been and gone (his
+//                      "I already got my EGG" scene on arriving). Part 3: Six
+//                      Island's Pokémon Center scene sets it to 1 too.
+//   icefallScene       VAR_MAP_SCENE_ICEFALL_CAVE_BACK: 1 Lorelei and you ran
+//                      off the poachers. Lorelei's then at home on Four Island
+//                      (FLAG_HIDE_LORELEI_IN_HER_HOUSE cleared) until the
+//                      Sapphire's in Celio's machine (canLinkWithRS). Part 3:
+//                      it also hides Ruin Valley's scientist (FLAG_HIDE_RUIN_VALLEY_SCIENTIST).
+//   talkedToLoreleiAfterWarehouse (FLAG_TALKED_TO_LORELEI_AFTER_WAREHOUSE)
+//   learnedYesNahChansey  FLAG_LEARNED_YES_NAH_CHANSEY, the Warehouse's second
+//                      password: part 3 sets it, in the Dotted Hole's Sapphire
+//                      room (SixIsland_DottedHole_SapphireRoom), when the thief
+//                      lets it slip. (The first, "GOLDEEN need log", is
+//                      mtEmberScene's; FireRed's door doesn't check for it.)
+//   unlockedRocketWarehouse  FLAG_UNLOCKED_ROCKET_WAREHOUSE
+//   warehouseScene     VAR_MAP_SCENE_ROCKET_WAREHOUSE: 1 the Admin's turned round
+//   defeatedRocketsInWarehouse  FLAG_DEFEATED_ROCKETS_IN_WAREHOUSE (and
+//                      FLAG_HIDE_FIVE_ISLAND_ROCKETS: the Meadow's and, part 3,
+//                      Outcast Island's grunts are gone)
+//   gotTM42AtMemorialPillar / noRoomForTM42 (FLAG_GOT_TM42_AT_MEMORIAL_PILLAR, ..._NO_ROOM_..)
+//   gotTogepiEgg / noRoomForTogepiEgg (FLAG_GOT_TOGEPI_EGG, FLAG_NO_ROOM_FOR_TOGEPI_EGG)
+//   lostCaveScene      VAR_MAP_SCENE_FIVE_ISLAND_LOST_CAVE_ROOM10: 1 Selphy found
+//   resortScene        VAR_MAP_SCENE_FIVE_ISLAND_RESORT_GORGEOUS: 1 taking her
+//                      home, 2 she's home (FLAG_HIDE_RESORT_GORGEOUS_INSIDE_SELPHY cleared)
+//   resortRequest      { species, reward, steps } (VAR_RESORT_GORGEOUS_REQUESTED_MON,
+//                      _REWARD, _STEP_COUNTER); species "expired" after 250 steps (0xFFFF)
+//   metStickerMan, hofBragState (FLAG_MET_STICKER_MAN, VAR_HOF_BRAG_STATE)
+//   dayCare2           Four Island's Day-Care: [{ mon, steps }, ...] (up to two;
+//                      game/daycare.js)
 (function () {
   "use strict";
 
@@ -50,7 +87,7 @@
   ];
   const ids = PORTS.map((p) => p.id);
   const port = (id) => PORTS.find((p) => p.id === id) || null;
-  // (The islands still to come — Four to Seven Island — sail nowhere yet.)
+  // (The islands still to come — Six and Seven Island — sail nowhere yet.)
   const built = (id, maps) => { const p = port(id); return !!(p && (maps || window.WORLD_MAPS || {})[p.map]); };
 
   // sTravelDirectionMatrix (src/seagallop.c): bit `to` of the row for `from`
@@ -116,5 +153,53 @@
   }
   const capeBrinkDone = (flags) => Object.values(CAPE_BRINK_MOVES).every(([, f]) => flags[f]);
 
-  window.Sevii = { PORTS, port, built, ferryNumber, eastbound, menu, CAPE_BRINK_MOVES, capeBrinkMove, capeBrinkDone };
+  // ---------- Four Island ----------
+
+  // Icefall Cave 1F's thin ice (src/field_tasks.c's sIcefallCaveIceCoords):
+  // stepping on a spot cracks it (SE_ICE_CRACK), stepping on it again breaks
+  // it (SE_ICE_BREAK) and you fall through to B1F. FireRed keeps which have
+  // cracked in FLAG_TEMP_1..9, so they're whole again when you come back.
+  const ICEFALL_ICE = [[8, 3], [10, 5], [15, 5], [8, 9], [9, 9], [16, 9], [8, 10], [9, 10], [8, 14]];
+  function icefallPatches(state) {
+    const out = [];
+    ICEFALL_ICE.forEach(([x, y], i) => {
+      const v = state && state[x + "," + y];
+      if (v === 1) out.push("crack" + i); else if (v === 2) out.push("hole" + i);
+    });
+    return out;
+  }
+
+  // The sticker man's Hall of Fame tiers (FourIsland_House2_EventScript_BragHoF):
+  // up to 39 entries, 99, 199, then 200 and more.
+  const hofBrag = (n) => (n <= 39 ? 1 : n <= 99 ? 2 : n <= 199 ? 3 : 4);
+
+  // ---------- Five Island ----------
+
+  // Resort Gorgeous: Selphy wants to see a Pokémon you've seen (FireRed's
+  // SampleResortGorgeousMon: one of the national Pokédex's 386, seen), and
+  // her butler thanks you with a Luxury Ball, or 30% of the time one of
+  // sResortGorgeousDeluxeRewards. She tires of waiting after 250 steps.
+  const RESORT_DELUXE = ["big-pearl", "pearl", "stardust", "star-piece", "nugget", "rare-candy"];
+  const RESORT_PATIENCE = 250;
+  function resortRequest(seen, rng) {
+    rng = rng || Math.random;
+    const dex = window.DEX || {};
+    const pool = (seen || []).filter((sp) => dex[sp] && dex[sp].id >= 1 && dex[sp].id <= 386);
+    const species = pool.length ? pool[Math.floor(rng() * pool.length)] : "Bulbasaur";
+    const reward = rng() * 100 >= 30 ? "luxury-ball" : RESORT_DELUXE[Math.floor(rng() * RESORT_DELUXE.length)];
+    return { species, reward, steps: 0 };
+  }
+  // -> true when she's tired of waiting (the request's then expired).
+  function resortStep(req) {
+    if (!req || req.expired) return false;
+    if (++req.steps >= RESORT_PATIENCE) { req.expired = true; req.steps = 0; return true; }
+    return false;
+  }
+
+  // The Water Labyrinth's gentleman gives his Egg (Togepi) only for a lead
+  // Pokémon as fond of you as can be (GetLeadMonFriendship: 255).
+  const leadFriendshipMax = (party) => { const lead = (party || [])[0]; return !!lead && (lead.happiness | 0) >= 255; };
+
+  window.Sevii = { PORTS, port, built, ferryNumber, eastbound, menu, CAPE_BRINK_MOVES, capeBrinkMove, capeBrinkDone,
+    ICEFALL_ICE, icefallPatches, hofBrag, RESORT_DELUXE, RESORT_PATIENCE, resortRequest, resortStep, leadFriendshipMax };
 })();
