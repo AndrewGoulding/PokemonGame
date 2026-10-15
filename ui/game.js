@@ -4007,7 +4007,7 @@
       defeat: ["{RIVAL}: What!? Not again!"],
       after: ["{RIVAL}: Tch… Fine. You passed.\nBut I'm not done getting stronger!"] },
     { key: "red", name: () => "Pokémon Trainer Red", pic: "red", music: "mus_encounter_rival",
-      team: () => [["Pidgeot", 27], ["Pikachu", 27], ["Charmeleon", 28], ["Wartortle", 29], ["Ivysaur", 30], ["Espeon", 31]],
+      team: () => [["Pikachu", 27], ["Charmeleon", 28], ["Wartortle", 29], ["Ivysaur", 30], ["Espeon", 31]],
       intro: ["Red: …", "Red stepped forward, ready to battle!"],
       defeat: ["…"],
       after: ["Red: …", "Red gave a small nod."] },

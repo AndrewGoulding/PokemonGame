@@ -607,7 +607,7 @@ out of a building (outside the Gym or Mr. Fuji's house, whichever came second)
 and sends you to the top of Pokémon Tower. There Prof. Oak, Mr. Fuji, Red, Leaf
 and Gary are waiting: Oak has been studying Mega Evolution and tests everyone.
 You battle Gary (Pidgeotto, Growlithe, Gyarados, Exeggutor, Umbreon; Lv. 27-31),
-Red (Pidgeot, Pikachu, Charmeleon, Wartortle, Ivysaur, Espeon) and Leaf
+Red (Pikachu, Charmeleon, Wartortle, Ivysaur, Espeon) and Leaf
 (Butterfree, Wigglytuff, Nidorina, then Vulpix, Gloom or Poliwhirl by her
 starter, then her starter's second stage), healed before each battle. Lose one
 and you don't black out: come back up and carry on where you left off.
