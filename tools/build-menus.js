@@ -84,7 +84,7 @@ for (const line of fs.readFileSync(P("charmap.txt"), "utf8").split("\n")) {
 // ---------- Button icons (src/text.c sKeypadIcons: first 8x8 tile, 8 wide, 12 tall) ----------
 
 const keypad = readPng(P("graphics/fonts/keypad_icons.png"));
-const ICONS = { A_BUTTON: 0x0, B_BUTTON: 0x1, DPAD_UPDOWN: 0x20, DPAD_LEFTRIGHT: 0x21 };
+const ICONS = { A_BUTTON: 0x0, B_BUTTON: 0x1, DPAD_LEFT: 0xE, DPAD_RIGHT: 0xF, DPAD_UPDOWN: 0x20, DPAD_LEFTRIGHT: 0x21 };
 const icons = {};
 for (const [name, tile] of Object.entries(ICONS)) {
   const tx = (tile % 16) * 8, ty = Math.floor(tile / 16) * 8;

@@ -61,8 +61,12 @@ the bottom (as is the text box, which is only on screen while someone's
 talking). It has your Pokémon, on FireRed's party screen (each box with its
 icon, which hops when chosen and moves faster the more HP it has, held item,
 status, level and HP bar; A on one opens SUMMARY / SWITCH / ITEM / CANCEL:
-the summary has stats, IVs, EVs, nature and moves, making it lead and using
-items; SWITCH asks "Move to where?"; ITEM gives or takes a held item). The
+SUMMARY is FireRed's Summary screen: POKéMON INFO (number, type, OT, ID
+No., held item and the Trainer Memo: its nature and where it was met),
+POKéMON SKILLS (HP and EXP bars, stats, ability) and KNOWN MOVES, whose
+details show each move's power, accuracy and description, and swap two
+moves with A; up / down go through your party; SWITCH asks "Move to
+where?"; ITEM gives or takes a held item). The
 same screen picks a Pokémon for an item (ABLE / NOT ABLE for TMs and
 evolution stones), a trade or a tutor, and for switching in battle (SHIFT).
 Then the Bag (medicine, evolution
@@ -190,6 +194,18 @@ Scratch, then Growl:
 ```sh
 cd expansion && git sparse-checkout add '/src/data/pokemon/level_up_learnsets/*' && cd ..
 node tools/order-learnsets.js expansion
+```
+
+`tools/build-summary.js` converts FireRed's Summary screen and Move Relearner
+(`graphics/summary_screen/`, `graphics/interface/`) into `data/summary-screen.js`,
+with short descriptions for every move and ability (FireRed's, and the
+expansion's for later ones):
+
+```sh
+cd pokefirered && git sparse-checkout add graphics/summary_screen/ graphics/learn_move/ /src/move_descriptions.c \
+  /src/data/text/abilities.h && cd ..
+cd expansion && git sparse-checkout add /src/data/moves_info.h /src/data/abilities.h && cd ..
+node tools/build-summary.js pokefirered expansion
 ```
 
 ### Main menu and Option screen
@@ -331,7 +347,9 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   summary. (The debug menu's Add a Pokémon has a Shiny box.)
 - **Move Relearner and Move Deleter**: they sit on the cushions upstairs in
   every Pokémon Center. The Relearner teaches a Pokémon a level-up move
-  it could know by now, for a Heart Scale (dig them up with the Explorer Kit);
+  it could know by now, for a Heart Scale (dig them up with the Explorer Kit),
+  on FireRed's Move Relearner screen; with four moves already, you pick one to
+  forget on the Summary screen's move list, as for TMs and tutors;
   the Deleter makes it forget a move, free.
 - **Explorer Kit** (a key item you start with): use it from the bag in a cave
   (Mt. Moon) to dig in the wall, as in Diamond and Pearl's Underground. Hit

@@ -394,8 +394,24 @@
       await message(name + " learned " + move + "!");
       return;
     }
-    const slot = await window.Screen.learnMovePrompt(name, record.moves.map((m) => m.name), move);
-    if (slot != null) Party.teachMove(record, move, slot);
+    // FireRed's way: the Summary screen's move list to pick one to forget.
+    for (;;) {
+      await message(name + " is trying to learn " + move + ".");
+      await message("But " + name + " can't learn more than four moves.");
+      if (await confirm("Delete an older move to make room for " + move + "?")) {
+        await say("Which move should be forgotten?");
+        const slot = await chooseMoveToForget(record, move);
+        if (slot != null) {
+          const old = record.moves[slot].name;
+          Party.teachMove(record, move, slot);
+          await message("1, 2, and… … … Poof!");
+          await message(name + " forgot " + old + ".");
+          await message("And… " + name + " learned " + move + "!");
+          return;
+        }
+      }
+      if (await confirm("Stop learning " + move + "?")) { await message(name + " did not learn " + move + "."); return; }
+    }
   }
 
   // ---------- Using and giving items ----------
@@ -600,85 +616,58 @@
   }
 
   // ---------- Summary ----------
+  //
+  // FireRed's Summary screen (ui/summary-screen.js): POKéMON INFO, POKéMON
+  // SKILLS and KNOWN MOVES for each of `records` (up / down go through them).
 
-  const STAT_LABELS = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
-
-  const sum = (o) => Object.keys(STAT_LABELS).reduce((t, k) => t + ((o || {})[k] | 0), 0);
-
-  function summaryHtml(r) {
-    const stats = Party.stats(r);
-    const nature = NATURES[r.nature] || {};
-    const E = Experience;
-    const toNext = r.level >= 100 ? 0 : E.expForLevel(E.growthRate(r.species), r.level + 1) - r.exp;
-    const types = DEX[r.species].types.join(" / ");
-    return '<div class="summary">' +
-      '<div class="summary-head">' + spriteTag(r.species, Party.form(r), 'class="summary-sprite" alt=""', r.shiny) +
-        "<div><h2>" + escapeHtml(Party.displayName(r)) + genderMark(r) + (r.shiny ? ' <span class="shiny-star" title="Shiny">★</span>' : "") +
-          " " + statusTag(r) + "</h2>" +
-        "<div>Lv" + r.level + " · " + escapeHtml(Party.speciesName(r.species)) + " · " + types + "</div>" +
-        "<div>" + escapeHtml(r.nature) + " nature · " + escapeHtml(r.ability) + "</div>" +
-        "<div>Holding: " + (r.item ? escapeHtml(Bag.name(r.item)) : "nothing") + (r.cloak ? " · " + cloakName(r) : "") + "</div>" +
-        "<div>HP " + r.hp + " / " + stats.hp + " · Exp. to next level: " + toNext.toLocaleString("en-US") + "</div>" +
-        "<div>Caught in " + article(Bag.name(r.ball || "poke-ball")) + " · Friendship " + r.happiness + "</div>" +
-      "</div></div>" +
-      '<table class="stats"><tr><th></th><th>Stat</th><th>IVs</th><th>EVs</th></tr>' +
-      Object.keys(STAT_LABELS).map((k) => "<tr><td>" + STAT_LABELS[k] +
-        (nature.plus === k ? ' <span class="up">▲</span>' : nature.minus === k ? ' <span class="down">▼</span>' : "") +
-        "</td><td>" + stats[k] + "</td><td" + ((r.ivs[k] | 0) === 31 ? ' class="max"' : "") + ">" + (r.ivs[k] | 0) +
-        "</td><td>" + (r.evs[k] || 0) + "</td></tr>").join("") +
-      '<tr class="total"><td>Total</td><td></td><td>' + sum(r.ivs) + "/186</td><td>" + sum(r.evs) + "/510</td></tr></table>" +
-      '<div class="summary-moves">' + r.moves.map((m, i) => {
-        const d = MOVES[m.name];
-        return '<div class="move-card type-' + d.type + '" data-slot="' + i + '"><b>' + escapeHtml(m.name) + "</b><span>" + d.type + " · " +
-          (d.cat === "Status" ? "Status" : d.cat + " " + (d.power || "—")) + " · PP " + m.pp + "/" + Party.maxPp(m) + "</span></div>";
-      }).join("") + "</div>" +
-      (r.moves.length > 1 ? '<p class="bag-line">Drag a move onto another to swap them (on a phone, press and hold first).</p>' : "") +
-      "</div>";
+  // Where a Pokémon was met, for the Trainer Memo: the Town Map's name for
+  // the place (Route 1, Viridian Forest, ...).
+  const placeName = (map) => {
+    const T = window.TOWN_MAP, sec = T && T.mapSections[map];
+    return (sec && T.names[sec]) || null;
+  };
+  function summaryView(r) {
+    const dex = DEX[r.species], stats = Party.stats(r), E = Experience, rate = E.growthRate(r.species);
+    const here = E.expForLevel(rate, r.level), next = r.level >= 100 ? here : E.expForLevel(rate, r.level + 1);
+    const ot = r.ot || { name: player.name, id: player.trainerId };
+    const met = r.met || null, place = met && placeName(met.map);
+    const memo = r.nature + " nature." + (met && met.traded ? "\nMet in a trade." :
+      met ? "\nMet in " + (place || "a faraway place") + " at {LV}" + met.level + "." : "");
+    const ability = (window.ABILITIES[r.ability] || {}).name || r.ability;
+    return {
+      name: Party.displayName(r), species: Party.speciesName(r.species), dexNo: (DEX[Party.speciesName(r.species)] || dex).id,
+      level: r.level, gender: r.gender, types: dex.types, ot: ot.name, otId: ot.id & 0xffff,
+      item: r.item ? Bag.name(r.item) : "", memo, hp: r.hp, maxhp: stats.hp,
+      stats: { atk: stats.atk, def: stats.def, spa: stats.spa, spd: stats.spd, spe: stats.spe },
+      exp: r.exp, toNext: Math.max(0, next - r.exp), expFrac: next > here ? (r.exp - here) / (next - here) : 0,
+      ability, abilityText: (window.SUMMARY_SCREEN.abilityText || {})[ability] || "",
+      moves: r.moves.map((m) => ({ name: m.name, pp: m.pp, maxpp: Party.maxPp(m) })),
+      status: r.status, shiny: !!r.shiny,
+      pic: Screen.spriteUrl(r.species, Party.form(r), false, r.shiny),
+      picEmpty: ((window.SPRITE_METRICS || {}).front || {})[dex.id] || 0,
+      icon: Screen.iconUrl(r.species, Party.form(r)),
+      ball: "assets/sprites/items/ball/" + (r.ball || "poke-ball").replace(/-ball$/, "") + ".png"
+    };
   }
-
-  async function summary(index) {
-    cry(player.party[index].species);
-    for (;;) {
-      const r = player.party[index];
-      const options = [];
-      if (index > 0) options.push({ label: "Make lead", value: "lead", className: "action" });
-      options.push({ label: "Use item", value: "use", className: "action" });
-      options.push({ label: "Give item", value: "give", className: "action" });
-      if (r.item) options.push({ label: "Take item", value: "take", className: "action" });
-      options.push(back());
-      // Swapping two moves (Select on one, then the other, or dragging) changes their order in battle.
-      let dropped;
-      const moved = new Promise((resolve) => { dropped = resolve; });
-      const picked = pick(Party.displayName(r) + "'s summary. Press Select on a move, then on another, to swap them.", summaryHtml(r), options);
-      const stop = draggableCards(scene.querySelector(".summary-moves"), (a, b) => dropped([a, b]), ".move-card");
-      const v = await Promise.race([picked, moved]);
-      stop();
-      if (Array.isArray(v)) {
-        const [a, b] = v;
+  // Swapping two moves on KNOWN MOVES' details changes their order in battle.
+  function summaryContext(records) {
+    return {
+      frame: GameOptions.get().frame,
+      cry: (species) => cry(species),
+      swapMoves: (i, a, b) => {
+        const r = records[i];
         [r.moves[a], r.moves[b]] = [r.moves[b], r.moves[a]];
-        await persist();
-        continue;
+        persist();
+        return summaryView(r);
       }
-      if (v === "back" || (v && v.pick)) return;
-      if (v === "lead") {
-        player.party.unshift(player.party.splice(index, 1)[0]);
-        await message(Party.displayName(r) + " now leads your party.");
-        return;
-      }
-      if (v === "take") {
-        const old = Bag.take(r);
-        Player.addItem(player, old);
-        await message("Took the " + Bag.name(old) + " from " + Party.displayName(r) + ".");
-        continue;
-      }
-      const items = Object.keys(player.bag).filter((id) => (v === "use" ? usableFromBag(id) : holdable(id)));
-      if (!items.length) { await message(v === "use" ? "You don't have anything to use." : "You don't have anything to give."); continue; }
-      const choice = await pick(v === "use" ? "Use which item on " + Party.displayName(r) + "?" : "Give which item?",
-        '<div class="rows">' + items.map((id) => itemRow(id, "×" + player.bag[id])).join("") + "</div>", [back()]);
-      if (!choice || !choice.pick) continue;
-      if (v === "use") await useItemOn(r, choice.pick);
-      else await giveItem(r, choice.pick);
-    }
+    };
+  }
+  async function summary(index, records) {
+    records = records || player.party;
+    Screen.say("");
+    clearMenu();
+    cry(records[index].species);
+    return SummaryScreen.open(records.map(summaryView), index, summaryContext(records));
   }
 
   // ---------- Bag ----------
@@ -2438,11 +2427,10 @@
   }
   // Which of `record`'s moves to forget for `move`: FireRed's Summary screen
   // in its move-choosing mode (the new move below the four). -> slot or null.
-  async function chooseMoveToForget(record, move) {
-    if (window.SummaryScreen) return SummaryScreen.chooseMove(record, move, summaryContext());
-    const slot = await ask("Which move should be forgotten?", record.moves.map((m, k) => ({ label: m.name, value: k }))
-      .concat([{ label: "Keep them", value: null, className: "action", wide: true }]));
-    return slot;
+  function chooseMoveToForget(record, move) {
+    Screen.say("");
+    clearMenu();
+    return SummaryScreen.chooseMove(summaryView(record), move, { frame: GameOptions.get().frame });
   }
 
   async function moveDeleter() {
