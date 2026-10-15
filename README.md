@@ -97,7 +97,10 @@ and HM, 99 Max Repels, 99 Master Balls, a wild battle at your level, or a trip
 back to the last Pokémon Center you used (home before you've used one).
 Healing, shopping and the PC are in the towns: each Poké Mart sells exactly
 what it does in FireRed (Viridian: Poké Balls, Potions, Antidotes and
-Paralyze Heals), at Gen 6 prices.
+Paralyze Heals), at Gen 6 prices, through FireRed's Mart: Buy / Sell / See
+ya!, the buy screen with the stock and prices on the right, your money and
+the map round you on the left and the item below (how many, then "That will
+be ¥… Okay?"), and selling from the Bag for half price.
 
 Battles open as in FireRed: from the map the screen flashes white twice and
 slices away; the wild Pokémon slides in (in shadow) as your trainer does from
@@ -238,6 +241,14 @@ node tools/build-pc.js pokefirered
 
 ```sh
 node tools/build-healthbox.js pokefirered
+```
+
+`tools/build-shop.js` converts FireRed's Poké Mart buy screen
+(`graphics/shop_menu/`) into `assets/shop/`:
+
+```sh
+cd pokefirered && git sparse-checkout add graphics/shop_menu/ && cd ..
+node tools/build-shop.js pokefirered
 ```
 
 `tools/build-bag.js` converts FireRed's Bag screen (`graphics/item_menu/`, the

@@ -741,67 +741,67 @@
 
   // ---------- Poké Mart ----------
 
-  // A Poké Mart, selling `stock` (its FireRed list of item ids).
+  // A Poké Mart (src/shop.c), selling `stock` (its FireRed list of item ids):
+  // "Hi, there! May I help you?" with Buy / Sell / See ya! in a window at the
+  // top left; Buy opens FireRed's buy screen (ui/shop-screen.js), Sell the Bag.
   async function mart(stock) {
+    let text = T("Text_MayIHelpYou")[0];
     for (;;) {
-      const v = await pick("Welcome to the Poké Mart! How may I serve you?",
-        '<div class="spotlight mart-sign"><b>POKé MART</b><div>' + money(player.money) + "</div></div>",
-        [{ label: "Buy", value: "buy", className: "action" }, { label: "Sell", value: "sell", className: "action" }, back("Leave")]);
-      if (v === "back") { await message("Please come again!"); return; }
-      if (v === "buy") await martBuy(stock);
-      else await martSell();
+      Screen.say(fill(text));
+      await Screen.printed();
+      clearMenu();
+      const { index } = await pcMenu(["Buy", "Sell", "See ya!"], { left: 2, top: 1, width: 12 });
+      if (index === 0) await martBuy(stock);
+      else if (index === 1) await martSell();
+      else { await say("Please come again!"); return; }
       await persist();
+      text = "Is there anything else I can do?";
     }
   }
 
-  async function martBuy(items) {
-    const all = Bag.martStock(items);
-    const hasMachines = all.some((x) => Bag.isMachine(x.item));
-    let tab = "Items";
-    for (;;) {
-      const stock = all.filter((x) => (tab === "TMs & HMs") === Bag.isMachine(x.item));
-      const owned = (id) => Player.itemCount(player, id) > 0;
-      const tabs = hasMachines ? '<div class="tabs">' + ["Items", "TMs & HMs"].map((t) =>
-        '<button type="button" class="tab' + (t === tab ? " active" : "") + '" data-pick="tab:' + t + '">' + t + "</button>").join("") + "</div>" : "";
-      const html = tabs +
-        '<div class="rows">' + (stock.length ? stock.map((x) => itemRow(x.item, money(x.price) + "<small>" +
-          (Bag.isMachine(x.item) ? (owned(x.item) ? "Owned" : MOVES[Bag.machineMove(x.item)].type) : "In bag: " + Player.itemCount(player, x.item)) +
-          "</small>")).join("") : '<p class="empty">Nothing for sale.</p>') +
-        '</div><p class="bag-line">You have ' + money(player.money) + ".</p>";
-      const v = await pick("What would you like to buy?", html, [back()]);
-      if (v === "back") return;
-      if (v.pick.startsWith("tab:")) { tab = v.pick.slice(4); continue; }
-      const item = v.pick, price = Bag.price(item);
-      if (Bag.isMachine(item) && owned(item)) { await message("You already have that " + Bag.name(item).split(" ")[0] + ". TMs and HMs never run out."); continue; }
-      const max = Bag.isMachine(item) ? Math.min(1, Math.floor(player.money / price)) : Math.min(99, Math.floor(player.money / price));
-      if (!max) { await message("You don't have enough money."); continue; }
-      const n = Bag.isMachine(item) ? 1 : await chooseQuantity(Bag.name(item) + "? Certainly.\nHow many would you like?", max, price, Player.itemCount(player, item));
-      if (!n) continue;
-      if (!(await confirm(n + " × " + Bag.name(item) + "? That will be " + money(n * price) + ". OK?"))) continue;
-      Player.addMoney(player, -n * price);
-      Player.addItem(player, item, n);
-      await message("Here you are! Thank you!");
-      if (item === "poke-ball" && n >= 10) {
-        Player.addItem(player, "premier-ball");
-        await message("You also get a Premier Ball as an added bonus.");
+  // The buy screen: the map round you shows at its left.
+  function martBuy(stock) {
+    Screen.say("");
+    const at = Overworld.position(), d = World.DIRS ? World.DIRS[at.facing] : null;
+    const [dx, dy] = d || ({ up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] })[at.facing] || [0, -1];
+    return ShopScreen.open({
+      frame: GameOptions.get().frame,
+      items: Bag.martStock(stock).map((x) => ({ id: x.item, name: Bag.name(x.item), price: x.price, desc: Bag.description(x.item), icon: Bag.sprite(x.item) })),
+      money: () => player.money,
+      inBag: (id) => Player.itemCount(player, id),
+      // (TMs and HMs: one each, and never twice.)
+      limit: (id) => (!Bag.isMachine(id) ? { max: 99 }
+        : Player.itemCount(player, id) > 0 ? { max: 0, why: "You already have that " + Bag.name(id).split(" ")[0] + ".\nTMs and HMs never run out." } : { max: 1 }),
+      buy: (id, n) => {
+        const price = Bag.price(id) * n;
+        if (Player.itemCount(player, id) + n > 999) return { error: "You have no more room for this\nitem." };
+        Player.addMoney(player, -price);
+        Player.addItem(player, id, n);
+        persist();
+        // (A Premier Ball with ten Poké Balls, as from Ruby and Sapphire on.)
+        if (id === "poke-ball" && n >= 10) {
+          Player.addItem(player, "premier-ball");
+          return { bonus: "I'll throw in a Premier Ball,\ntoo." };
+        }
+        return null;
+      },
+      map: { canvas: $("#world"), x: 112 + 16 * dx, y: 64 + 16 * dy }
+    });
+  }
+
+  // SELL: the Bag, A on an item to sell it (half its price).
+  function martSell() {
+    Screen.say("");
+    return BagScreen.open({
+      pockets: bagPockets, pocketName: bagPocket, frame: GameOptions.get().frame,
+      female: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
+      actions: () => [],
+      sell: {
+        price: (id) => (Bag.isMachine(id) || Bag.isKeyItem(id) ? 0 : Bag.sellPrice(id)),
+        sell: (id, n) => { Player.removeItem(player, id, n); Player.addMoney(player, n * Bag.sellPrice(id)); persist(); },
+        money: () => player.money
       }
-    }
-  }
-
-  async function martSell() {
-    for (;;) {
-      const items = Object.keys(player.bag).filter((id) => Bag.sellPrice(id) > 0 && !Bag.isMachine(id));
-      if (!items.length) { await message("You don't have anything I can buy."); return; }
-      const v = await pick("What would you like to sell?", '<div class="rows">' +
-        items.map((id) => itemRow(id, money(Bag.sellPrice(id)) + "<small>×" + player.bag[id] + "</small>")).join("") + "</div>", [back()]);
-      if (v === "back") return;
-      const item = v.pick;
-      const n = await chooseQuantity("How many " + Bag.name(item) + " would you like to sell?", player.bag[item], Bag.sellPrice(item));
-      if (!n || !(await confirm("I can pay " + money(n * Bag.sellPrice(item)) + ". Would that be OK?"))) continue;
-      Player.removeItem(player, item, n);
-      Player.addMoney(player, n * Bag.sellPrice(item));
-      await message("Turned over the " + Bag.name(item) + " and received " + money(n * Bag.sellPrice(item)) + ".");
-    }
+    }).then((r) => { BagScreen.close(); return r; });
   }
 
   // ---------- PC ----------
@@ -1634,7 +1634,6 @@
 
       case "ViridianCity_Mart_EventScript_Clerk":
         if (!f.parcelDelivered) { await say(T("ViridianCity_Mart_Text_SayHiToOakForMe")); return; }
-        await say(T("Text_MayIHelpYou"));
         await mart(ev.person.mart);
         return;
 
@@ -1773,7 +1772,6 @@
         return;
 
       case "PewterCity_Mart_EventScript_Clerk":
-        await say(T("Text_MayIHelpYou"));
         await mart(ev.person.mart);
         return;
 
@@ -1786,7 +1784,6 @@
         await say(T(hasBadge("cascade") ? "CeruleanCity_Gym_Text_GymStatuePlayerWon" : "CeruleanCity_Gym_Text_GymStatue"));
         return;
       case "CeruleanCity_Mart_EventScript_Clerk":
-        await say(T("Text_MayIHelpYou"));
         await mart(ev.person.mart);
         return;
       // The Badge guy: which of the eight Badges should he describe?

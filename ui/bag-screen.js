@@ -12,6 +12,8 @@
 //     actions,   // (item) => [{ label: "Use", value: "use" }, ...]: the menu A
 //                //   opens (CANCEL is added)
 //     toss,      // (id, n): throw n away (TOSS is handled here, as FireRed does)
+//     sell,      // { price(id) (each, 0: can't), sell(id, n), money() }: a
+//                //   Poké Mart's SELL instead of the menu
 //     deposit    // instead of the menu (the PC's DEPOSIT ITEM): A asks "Deposit
 //                //   how many?" and calls deposit(id, n), which returns an error
 //                //   message or null
@@ -106,10 +108,11 @@
     } else {
       // The prompt (std frame) and the menu or number box (your frame).
       if (st.prompt) {
-        const pw = st.prompt.width;
-        s.frame("std", G.palettes.std3, 6, 15, pw, 4);
-        s.fill(48, 120, pw * 8, 32, WHITE);
-        st.prompt.text.split("\n").forEach((l, i) => s.text(l, 48, 122 + 14 * i, DARK, LIGHT, "normal", null, 1));
+        // (A prompt beside the icon, or the whole message box: left 2.)
+        const pw = st.prompt.width, pl = st.prompt.left || 6;
+        s.frame("std", G.palettes.std3, pl, 15, pw, 4);
+        s.fill(pl * 8, 120, pw * 8, 32, WHITE);
+        st.prompt.text.split("\n").forEach((l, i) => s.text(l, pl * 8, 122 + 14 * i, DARK, LIGHT, "normal", null, pl === 2 ? 0 : 1));
       }
       if (st.menu.kind === "actions") {
         const n = st.menu.items.length, top = 19 - 2 * n;
@@ -117,11 +120,26 @@
         s.fill(176, top * 8, 56, n * 16, WHITE);
         st.menu.items.forEach((it, i) => s.text(it.label, 184, top * 8 + 2 + 16 * i, DARK, LIGHT, "normal", null, 1));
         s.text("▶", 176, top * 8 + 2 + 16 * st.menu.cursor, DARK, LIGHT);
+      } else if (st.menu.kind === "count" && st.menu.price != null) {
+        // Selling: ×NN and what it's worth (sWindowTemplates[1]: 17, 9, 12 x 4).
+        s.frame(userFrame, G.frames[userFrame].palette, 17, 9, 12, 4);
+        s.fill(136, 72, 96, 32, WHITE);
+        s.text("×" + String(st.menu.n).padStart(2, "0"), 140, 82, DARK, LIGHT, "small");
+        const p = "¥" + st.menu.n * st.menu.price;
+        s.text(p, 228 - s.textWidth(p, "small"), 82, DARK, LIGHT, "small");
       } else if (st.menu.kind === "count") {
         s.frame(userFrame, G.frames[userFrame].palette, 24, 15, 5, 4);
         s.fill(192, 120, 40, 32, WHITE);
         s.text("×" + String(st.menu.n).padStart(3, "0"), 196, 130, DARK, LIGHT, "small");
       }
+    }
+    if (st.showMoney && st.opts.sell) {
+      // Your money (1, 1, 8 x 3), over the pocket's name, once a sale starts.
+      s.frame("std", G.palettes.std3, 1, 1, 8, 3);
+      s.fill(8, 8, 64, 24, WHITE);
+      s.text("Money", 8, 8, DARK, LIGHT);
+      const m = "¥" + st.opts.sell.money();
+      s.text(m, 72 - s.textWidth(m, "small"), 20, DARK, LIGHT, "small");
     }
     st.layer = s.canvas();
     compose();
@@ -258,6 +276,40 @@
     await waitA();
   }
 
+  // SELL: "How many would you like to sell?", "I can pay ¥… Would that be
+  // okay?", "Turned over the …". Half the price; nothing for what has none.
+  async function sell(it) {
+    const wide = (text) => ({ left: 2, width: 26, text });
+    st.menu = { kind: "none" };
+    const unit = st.opts.sell.price(it.id);
+    if (!unit) {
+      st.prompt = wide(it.name + "? Oh, no.\nI can't buy that.");
+      paint();
+      await waitA();
+      return;
+    }
+    st.showMoney = true;
+    let n = 1;
+    if (it.qty > 1) {
+      st.prompt = wide(it.name + "?\nHow many would you like to sell?");
+      st.menu = { kind: "count", n: 1, max: Math.min(it.qty, 99), price: unit };
+      paint();
+      n = await menuKeys();
+      st.menu = { kind: "none" };
+      if (!n) return;
+    }
+    st.prompt = wide("I can pay ¥" + unit * n + ".\nWould that be okay?");
+    paint();
+    if (!(await window.GbaMenus.yesNo(overlayEl, { frame: st.frame, left: 21, top: 9 }))) return;
+    st.opts.sell.sell(it.id, n);
+    se("se_shop");
+    st.prompt = wide("Turned over the " + it.name + "(s)\nworth ¥" + unit * n + ".");
+    st.pockets = st.opts.pockets();
+    clampMem();
+    paint();
+    await waitA();
+  }
+
   // TOSS: "Toss out how many …?", "Throw away … of this item?", "Threw away …".
   async function toss(it) {
     const n = await howMany("Toss out how many\n" + it.name + "(s)?", it);
@@ -294,6 +346,13 @@
       const it = entries()[mem().cursor];
       se("se_select");
       if (key === "b" || !it) return null;
+      if (opts.sell) {
+        // (A Poké Mart's SELL: Task_ItemContext_Sell.)
+        await sell(it);
+        st.menu = null; st.prompt = null; st.showMoney = false;
+        paint();
+        continue;
+      }
       if (opts.deposit) {
         // (Item storage: "Deposit how many?", then "Deposited …".)
         st.menu = { kind: "none" };
