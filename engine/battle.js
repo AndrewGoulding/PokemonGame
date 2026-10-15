@@ -945,6 +945,14 @@
     }
 
     // ---------- Requests / choices ----------
+    // SELECT on the move menu: two of the active Pokémon's moves trade places
+    // (and their PP; the party's order follows, as in FireRed).
+    swapMoves(sideId, a, b) {
+      const mon = this.sides[sideId].active, m = mon.moves;
+      if (!m[a] || !m[b] || a === b) return;
+      [m[a], m[b]] = [m[b], m[a]];
+    }
+
     getMoveSlots(mon) {
       const slots = mon.moves.map((m, i) => {
         const data = window.MOVES[m.name];
@@ -1509,6 +1517,14 @@
 
       if (!target || target.fainted) { this.add("-fail", user); return; }
 
+      // Magnitude rolls its size before anything else (FireRed's
+      // magnitudedamagecalculation): 4-10, 5/10/20/30/20/10/5%.
+      if (move.id === "magnitude") {
+        const r = this.randInt(0, 99);
+        this.magnitude = r < 5 ? 4 : r < 15 ? 5 : r < 35 ? 6 : r < 65 ? 7 : r < 85 ? 8 : r < 95 ? 9 : 10;
+        this.add("-magnitude", user, this.magnitude);
+      }
+
       const success = this.resolveMove(user, target, move, o);
 
       // Locked moves (Outrage etc.)
@@ -1680,7 +1696,8 @@
           crit, hits: 1, charge: !!user.volatiles.charge, stockpile: stockLayers, helpingHand: !!o.meFirst,
           lastDamageTaken: user.lastDamage ? user.lastDamage.amount : 0,
           targetDamagedThisTurn: !!target.lastDamage, hitByTarget: !!(user.lastDamage && user.lastDamage.source === target),
-          movesAfterTarget: target.moveThisTurn, allyFainted: user.side.faintedLastTurn, targetSwitching: false
+          movesAfterTarget: target.moveThisTurn, allyFainted: user.side.faintedLastTurn, targetSwitching: false,
+          magnitude: this.magnitude
         };
         let r;
         try { r = window.Damage.calc(user, target, move.name, field, opts); }

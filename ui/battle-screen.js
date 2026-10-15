@@ -547,8 +547,10 @@
       case "move": {
         hitNotes = []; hitSound = null;
         const text = fill("{who} used " + b + "!", a);
-        return async () => { await message(text, 400); await animateMove(side, b); };
+        // (Magnitude's animation waits for "Magnitude n!".)
+        return async () => { await message(text, 400); if (b !== "Magnitude") await animateMove(side, b); };
       }
+      case "-magnitude": return async () => { await message("Magnitude " + b + "!", 400); await animateMove(side, "Magnitude"); };
       case "-damage": {
         const changed = setHp(a, b);
         if (!c) {
@@ -879,11 +881,21 @@
       actionCursor = a.cursor;
       if (a.action === "fight") {
         if (active.struggle) { await message(active.name + " has no moves left!"); return { type: "move", move: "Struggle" }; }
-        const moves = active.moves.map((m) => ({ name: m.name, type: m.type, pp: m.pp, maxpp: m.maxpp, index: m.index, disabled: m.disabled }));
+        const slots = () => active.moves.map((m) => ({ name: m.name, type: m.type, pp: m.pp, maxpp: m.maxpp, index: m.index, disabled: m.disabled }));
+        let moves = slots();
         const last = lastMove[active.name];
-        const at = Math.max(0, moves.findIndex((m) => m.index === last));
+        let at = Math.max(0, moves.findIndex((m) => m.index === last));
+        // SELECT swaps two moves, in the battle and on the Pokémon.
+        const swap = (a, b) => {
+          battle.swapMoves("p1", a, b);
+          active.moves = battle.getMoveSlots(battle.sides.p1.active);
+          if (lastMove[active.name] === a) lastMove[active.name] = b;
+          else if (lastMove[active.name] === b) lastMove[active.name] = a;
+          return (moves = slots());
+        };
         for (;;) {
-          const pick = await window.GbaMenus.battleMoves(overlay(), { moves, cursor: at, frame: frame() });
+          const pick = await window.GbaMenus.battleMoves(overlay(), { moves, cursor: at, frame: frame(), swap });
+          if (pick) at = pick.cursor;
           if (!pick) break;
           const m = moves[pick.index];
           if (!m.pp) { await message("There's no PP left for\nthis move!"); continue; }

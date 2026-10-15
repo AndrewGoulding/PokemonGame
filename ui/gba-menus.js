@@ -163,7 +163,7 @@
   // something other than undefined; resolves with that.
   function keys(onKey) {
     const KEY = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
-      z: "a", Z: "a", " ": "a", Enter: "a", x: "b", X: "b", Escape: "b", Start: "start", m: "start", M: "start" };
+      z: "a", Z: "a", " ": "a", Enter: "a", x: "b", X: "b", Escape: "b", Start: "start", m: "start", M: "start", Select: "select" };
     return new Promise((resolve) => {
       const handler = (e) => {
         const k = KEY[e.key];
@@ -436,9 +436,11 @@
   }
   // The ▶ (two tiles) at tile (tx, ty) of the screen: FireRed's dark arrow
   // with its light shadow (colours 9 and 7 of the battle text box's palette).
-  function battleCursor(s, frameName, tx, ty) {
+  // (base: MoveSelectionCreateCursorAt's: 0 the ▶, 27 the one moving while
+  // you pick a move to switch with, 29 the one left on the first move.)
+  function battleCursor(s, frameName, tx, ty, base) {
     const B = G().battle, pal = B.palette;
-    [1, 2].forEach((t, k) => {
+    [(base || 0) + 1, (base || 0) + 2].forEach((t, k) => {
       const sx = (t % (B.tilesWidth / 8)) * 8, sy = Math.floor(t / (B.tilesWidth / 8)) * 8;
       for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
         const v = parseInt(B.tiles[(sy + y) * B.tilesWidth + sx + x], 16);
@@ -476,7 +478,8 @@
   }
 
   async function battleMoves(canvas, opts) {
-    const frame = "type" + ((opts.frame || 0) + 1), moves = opts.moves, pp = G().battle.pp;
+    const frame = "type" + ((opts.frame || 0) + 1), pp = G().battle.pp;
+    let moves = opts.moves;
     let cursor = Math.min(opts.cursor || 0, Math.max(0, moves.length - 1));
     // GetCurrentPpToMaxPpState: 3 full / over half, 0 half or less, 1 a quarter or less, 2 none.
     const ppState = (cur, max) => {
@@ -487,6 +490,10 @@
       if (cur <= Math.floor(max / 4)) return 1;
       return cur > Math.floor(max / 2) ? 3 : 0;
     };
+    // SELECT: "Switch which?" (HandleMoveSwitching): a second cursor picks the
+    // move to trade places with; A or SELECT swaps them, B stops.
+    let swapping = null;   // the cursor of the move being moved
+    const at = (c) => [9 * (c & 1) + 1, 15 + (c & 2)];
     const draw = () => {
       const s = Surface();
       battlePanel(s, "move", frame);
@@ -495,7 +502,15 @@
         const x = (i & 1 ? 11 : 2) * 8, y = (i & 2 ? 17 : 15) * 8 + 1;
         s.text(moves[i] ? moves[i].name : "-", x, y, P5.fg, P5.shadow, "small");
       }
-      battleCursor(s, frame, 9 * (cursor & 1) + 1, 15 + (cursor & 2));
+      if (swapping != null) {
+        if (swapping !== cursor) battleCursor(s, frame, ...at(swapping), 29);
+        battleCursor(s, frame, ...at(cursor), swapping === cursor ? 0 : 27);
+        s.text("Switch", 21 * 8, 15 * 8 + 2, P5.fg, P5.shadow);
+        s.text("which?", 21 * 8, 15 * 8 + 18, P5.fg, P5.shadow);
+        s.show(canvas);
+        return;
+      }
+      battleCursor(s, frame, ...at(cursor));
       const m = moves[cursor];
       if (m) {
         const st = ppState(m.pp, m.maxpp), col = [pp[st * 2], pp[st * 2 + 1]];
@@ -509,9 +524,19 @@
     canvas.classList.remove("hidden");
     draw();
     const r = await keys((k) => {
-      const go = (c) => { if (c < moves.length && c !== cursor) { cursor = c; draw(); } };
+      const go = (c) => { if (c < moves.length && c !== cursor) { cursor = c; if (swapping != null) se(); draw(); } };
       if (k === "left" || k === "right") go(cursor ^ 1);
       else if (k === "up" || k === "down") go(cursor ^ 2);
+      else if (swapping != null) {
+        if (k === "a" || k === "select") {
+          se();
+          if (cursor !== swapping) moves = opts.swap(swapping, cursor);
+          swapping = null; draw();
+        } else if (k === "b") { se(); cursor = swapping; swapping = null; draw(); }
+      }
+      else if (k === "select" && opts.swap && moves.length > 1) {
+        swapping = cursor; cursor = cursor !== 0 ? 0 : 1; draw();
+      }
       else if (k === "a") { se(); return { index: cursor, cursor }; }
       else if (k === "b") { se(); return null; }
       return undefined;

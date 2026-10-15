@@ -2357,7 +2357,7 @@
   // (healing your Pokémon first). Afterwards she heads off west, out of sight.
   // Her starter (level 15, the one weak against yours) and Jigglypuff (level
   // 13). Losing blacks you out, and she's waiting again next time you come
-  // out of the Gym; beat her and she heads off.
+  // out of the Gym; beat her and she gives you TM54 False Swipe and heads off.
   function leafPewterDue() {
     const f = player.flags, at = player.location;
     const door = window.WORLD_MAPS.PewterCity.warps.find((w) => w.map === "PewterCity_Gym");
@@ -2386,8 +2386,13 @@
     f.leafPewter = true;
     show("world");
     await Overworld.resume();
-    await say(["Leaf: That was a great battle!\nI'm going to keep working on my\nPokédex.",
-      "Let's both try to fill ours in!\nSee you later, {PLAYER}!"]);
+    await say(["Leaf: That was a great battle!\nHere, I want you to have this.",
+      "It'll help you catch Pokémon for\nyour Pokédex!"]);
+    Player.addItem(player, "tm54");
+    await sayWithJingle(itemJingle("tm54"), "{PLAYER} received TM54\nfrom Leaf.");
+    await say(["Leaf: TM54 is False Swipe! It never\nknocks a Pokémon out. It always\nleaves it with at least 1 HP.",
+      "I'm going to keep working on my\nPokédex. Let's both try to fill ours in!",
+      "See you later, {PLAYER}!"]);
     music("mus_rival_exit");
     // Off the other way (west, round you), until she's out of sight.
     await Overworld.act([{ who: L, moves: ["walk_down"].concat(Array(9).fill("walk_left"), ["walk_up", "walk_up", "set_invisible"]) }]);
@@ -2548,7 +2553,7 @@
   // ---------- Jessie & James, at the end of Mt. Moon ----------
   //
   // As in Yellow: heading down to the last ladder on B2F, Jessie and James
-  // come up from it, recite their motto and battle with Ekans, Meowth and
+  // climb down it, recite their motto and battle with Ekans, Meowth and
   // Koffing (level 14). Beaten, they pay ₽750 and blast off; beat you, and
   // they wait there again.
   function jessieJamesStep() {
@@ -2559,9 +2564,11 @@
   async function jessieJames() {
     music("mus_encounter_rocket");
     const f = player.flags, J = "LOCALID_JESSIE", K = "LOCALID_JAMES";
-    Overworld.addObject(J, { x: 3, y: 10, facing: "up" }, window.WORLD_SPRITES.jessie);
-    Overworld.addObject(K, { x: 4, y: 10, facing: "up" }, window.WORLD_SPRITES.james);
-    await Overworld.act([{ who: J, moves: ["walk_up", "walk_up"] }, { who: K, moves: ["walk_up", "walk_up"] }]);
+    // Down the ladder (5, 10), one after the other, and round in front of you.
+    Overworld.addObject(J, { x: 5, y: 10, facing: "down" }, window.WORLD_SPRITES.jessie);
+    await Overworld.act([{ who: J, moves: ["walk_left", "walk_left", "walk_up", "walk_up"] }]);
+    Overworld.addObject(K, { x: 5, y: 10, facing: "down" }, window.WORLD_SPRITES.james);
+    await Overworld.act([{ who: K, moves: ["walk_left", "walk_up", "walk_up"] }]);
     await Overworld.act([{ who: "player", moves: ["emote_exclamation_mark"] }]);
     await say(["Jessie: Hold it right there!", "James: Those fossils are ours, kid!",
       "Jessie: Prepare for trouble!", "James: Make it double!",
@@ -2579,7 +2586,9 @@
     await Overworld.resume();
     await say(["James: This isn't over, twerp!",
       "Jessie, James & Meowth: Looks like\nTeam Rocket's blasting off again!"]);
-    await Overworld.act([{ who: J, moves: ["walk_down", "set_invisible"] }, { who: K, moves: ["walk_down", "set_invisible"] }]);
+    // Back up the ladder.
+    await Overworld.act([{ who: K, moves: ["walk_down", "walk_down", "walk_right", "set_invisible"] }]);
+    await Overworld.act([{ who: J, moves: ["walk_down", "walk_down", "walk_right", "walk_right", "set_invisible"] }]);
     Overworld.removeObject(J);
     Overworld.removeObject(K);
   }

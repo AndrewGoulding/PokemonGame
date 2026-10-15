@@ -49,7 +49,8 @@ the menu. In menus, the D-pad moves between choices, A picks one and B goes back
 in a summary's moves and Bill's PC, Select on one and then on another
 swaps them. On a keyboard: arrows / WASD, Z or Space (A), X (B), Enter, Esc or M (Start),
 Backspace (Select). In battle, FireRed's own menus: FIGHT / BAG / POKéMON / RUN,
-then your moves with their PP (coloured as it runs low) and type; B goes back.
+then your moves with their PP (coloured as it runs low) and type; B goes back,
+and Select there ("Switch which?") swaps two moves, for good, as in FireRed.
 Moves animate by kind and type with FireRed's sound effects (its own, for the
 moves FireRed has one for), and so do hits, fainting, stat changes, the balls
 and running (BATTLE SCENE: OFF on the Option screen turns them off). Text is
@@ -319,10 +320,10 @@ catching up with you at the north end of Viridian Forest (with the starter
 that beats yours and Pikachu), the League gate guard, Pewter's Gym guide
 and Museum guide walking you over, the Museum's ₽50 ticket, the Old Amber,
 the Seismic Toss tutor, Brock (Zubat, Geodude, Vulpix and Onix) with the Boulder Badge and TM39, Leaf waiting outside the Gym
-afterwards for a battle (her starter and a Jigglypuff), the Mega Punch and Mega Kick tutors (who teach
+afterwards for a battle (her starter and a Jigglypuff; beat her and she gives you TM54 False Swipe), the Mega Punch and Mega Kick tutors (who teach
 again and again, for ₽1,000 each time), the
 Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils, Jessie & James
-at the end of Mt. Moon as in Yellow, Gary in Cerulean (FireRed's team, with
+climbing down the last ladder in Mt. Moon as in Yellow, Gary in Cerulean (FireRed's team, with
 his Eevee), the Nugget Bridge Rocket (a Nugget, then a battle), and Bill: a
 Clefairy until you run his Teleporter's Cell Separator, then he gives you the
 S.S. Ticket and his PC shows his favourite Pokémon) are in `ui/game.js`; their FireRed
