@@ -69,9 +69,12 @@ moves with A; up / down go through your party; SWITCH asks "Move to
 where?"; ITEM gives or takes a held item). The
 same screen picks a Pokémon for an item (ABLE / NOT ABLE for TMs and
 evolution stones), a trade or a tutor, and for switching in battle (SHIFT).
-Then the Bag (medicine, evolution
+Then the Bag, FireRed's Bag screen with six pockets (ITEMS, MEDICINE, POKé
+BALLS, TMs & HMs, BERRIES, KEY ITEMS; left / right between them, and each
+pocket remembers where its ▶ was). A opens USE / GIVE / TOSS; TOSS asks how
+many and throws them away right there. It holds medicine, evolution
 stones, Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
-the Exp. Share, Oak's Parcel and the Town Map), the Pokédex (a red Poké Ball
+the Exp. Share, Oak's Parcel and the Town Map. After the Bag come the Pokédex (a red Poké Ball
 marks species you've caught, a gray one those you've only seen; wild Pokémon
 show the same mark in battle; the D-pad moves through it, and A opens a
 species' page with FireRed's category, height, weight and description),
@@ -206,6 +209,14 @@ cd pokefirered && git sparse-checkout add graphics/summary_screen/ graphics/lear
   /src/data/text/abilities.h && cd ..
 cd expansion && git sparse-checkout add /src/data/moves_info.h /src/data/abilities.h && cd ..
 node tools/build-summary.js pokefirered expansion
+```
+
+`tools/build-bag.js` converts FireRed's Bag screen (`graphics/item_menu/`, the
+bag and arrow sprites in `graphics/interface/`) into `assets/bag/`:
+
+```sh
+cd pokefirered && git sparse-checkout add graphics/item_menu/ && cd ..
+node tools/build-bag.js pokefirered
 ```
 
 ### Main menu and Option screen

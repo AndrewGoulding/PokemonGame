@@ -672,43 +672,54 @@
 
   // ---------- Bag ----------
 
+  // FireRed's Bag screen (ui/bag-screen.js), with this game's six pockets.
+  // USE and GIVE close it for the party screen or the text box and open it
+  // again after; TOSS happens on the bag screen itself.
+  const BAG_POCKET_NAMES = { "Items": "ITEMS", "Medicine": "MEDICINE", "Poké Balls": "POKé BALLS", "TMs & HMs": "TMs & HMs", "Berries": "BERRIES", "Key Items": "KEY ITEMS" };
+  let bagPocket = "MEDICINE";
+  function bagPockets() {
+    const order = (id) => (Bag.isMachine(id) ? Bag.machines().indexOf(id) : 0);
+    return Bag.POCKETS.map((p) => ({
+      name: BAG_POCKET_NAMES[p],
+      items: Object.keys(player.bag).filter((id) => Bag.pocket(id) === p)
+        .sort((a, b) => order(a) - order(b) || Bag.name(a).localeCompare(Bag.name(b)))
+        .map((id) => ({
+          id, name: Bag.name(id), icon: Bag.sprite(id),
+          qty: Bag.isMachine(id) || Bag.isKeyItem(id) ? null : player.bag[id],
+          desc: Bag.description(id) + (id === "exp-share" ? (expShareOn() ? " (On)" : " (Off)") : "")
+        }))
+    }));
+  }
   async function bagScreen() {
-    let pocket = "Medicine";
     for (;;) {
-      const order = (id) => (Bag.isMachine(id) ? Bag.machines().indexOf(id) : 0);
-      const items = Object.keys(player.bag).filter((id) => Bag.pocket(id) === pocket)
-        .sort((a, b) => order(a) - order(b) || Bag.name(a).localeCompare(Bag.name(b)));
-      const html = '<div class="tabs">' + Bag.POCKETS.map((p) =>
-        '<button type="button" class="tab' + (p === pocket ? " active" : "") + '" data-pick="tab:' + p + '">' + p + "</button>").join("") + "</div>" +
-        '<div class="rows">' + (items.length ? items.map((id) => itemRow(id, Bag.isMachine(id) ? MOVES[Bag.machineMove(id)].type
-          : id === "exp-share" ? (expShareOn() ? "On" : "Off") : Bag.isKeyItem(id) ? "" : "×" + player.bag[id], "item:" + id)).join("")
-          : '<p class="empty">Nothing in this pocket.</p>') + "</div>";
-      const v = await pick("Your bag. " + money(player.money), html, [back("Close bag")]);
-      if (v === "back") return;
-      const [kind, id] = v.pick.split(/:(.*)/);
-      if (kind === "tab") { pocket = id; continue; }
-      const options = [];
-      if (usableFromBag(id)) options.push({ label: "Use", value: "use", className: "action" });
-      if (holdable(id)) options.push({ label: "Give", value: "give", className: "action" });
-      if (!Bag.isMachine(id) && !Bag.isKeyItem(id)) options.push({ label: "Toss", value: "toss", className: "action" });
-      options.push(back());
-      const state = id === "exp-share" ? (expShareOn() ? " (On)" : " (Off)") : "";
-      const what = await ask(Bag.name(id) + state + ": " + Bag.description(id), options);
+      Screen.say("");
+      clearMenu();
+      const r = await BagScreen.open({
+        pockets: bagPockets, pocketName: bagPocket,
+        female: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
+        frame: GameOptions.get().frame,
+        actions: (it) => {
+          const a = [];
+          if (usableFromBag(it.id)) a.push({ label: "USE", value: "use" });
+          if (holdable(it.id)) a.push({ label: "GIVE", value: "give" });
+          if (!Bag.isMachine(it.id) && !Bag.isKeyItem(it.id)) a.push({ label: "TOSS", value: "toss" });
+          return a;
+        },
+        toss: (id, n) => { Player.removeItem(player, id, n); persist(); }
+      });
+      if (!r) { BagScreen.close(); return; }
+      bagPocket = r.pocket;
+      const id = r.id, what = r.action;
+      BagScreen.close();
       if (what === "use" && Bag.isKeyItem(id)) { if ((await useKeyItem(id)) === "escaped") return "escaped"; }
       else if (what === "use" && id in REPEL_STEPS) await useRepel(id);
       else if (what === "use" && id === "escape-rope") { if (await useEscapeRope()) return "escaped"; }
       else if (what === "use") {
-        const r = await choosePartyFor(Bag.isMachine(id) ? "Teach which {PKMN}?" : "Use on which {PKMN}?", id);
-        if (r) await useItemOn(r, id);
+        const t = await choosePartyFor(Bag.isMachine(id) ? "Teach which {PKMN}?" : "Use on which {PKMN}?", id);
+        if (t) await useItemOn(t, id);
       } else if (what === "give") {
-        const r = await choosePartyFor("Give to which {PKMN}?");
-        if (r) await giveItem(r, id);
-      } else if (what === "toss") {
-        const n = await chooseQuantity("Toss how many?", player.bag[id]);
-        if (n && await confirm("Throw away " + n + " × " + Bag.name(id) + "?")) {
-          Player.removeItem(player, id, n);
-          await message("Threw away " + n + " × " + Bag.name(id) + ".");
-        }
+        const t = await choosePartyFor("Give to which {PKMN}?");
+        if (t) await giveItem(t, id);
       }
       await persist();
     }

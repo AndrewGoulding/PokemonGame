@@ -1,0 +1,311 @@
+// FireRed's Bag screen (src/item_menu.c), drawn the way the game draws it at
+// 240x160 (assets/bag/, tools/build-bag.js): the bag on the left under its
+// pocket's name, the items in the cream list on the right, and the chosen
+// item's icon and description along the bottom. This game's six pockets,
+// left / right between them.
+//
+//   const r = await BagScreen.open({
+//     pockets,   // () => [{ name: "ITEMS", items: [{ id, name, qty (null for
+//                //   key items and machines), desc, icon }] }]: read again after a toss
+//     female,    // the bag's colours
+//     frame,     // the Option screen's FRAME (0-9)
+//     actions,   // (item) => [{ label: "USE", value: "use" }, ...]: the menu A
+//                //   opens (CANCEL is added)
+//     toss       // (id, n): throw n away (TOSS is handled here, as FireRed does)
+//   })
+//   // -> null (B, or CANCEL), or { action, id, pocket }
+//   BagScreen.close()   // hides it (it stays up after open() for messages)
+//
+// The ▶ and the list's scroll remember where they were in each pocket.
+(function () {
+  "use strict";
+
+  const W = 240, H = 160;
+  const GM = () => window.GBA_MENUS;
+
+  const canvas = document.createElement("canvas");
+  canvas.className = "party-menu hidden";
+  canvas.width = W * 2; canvas.height = H * 2;
+  const overlayEl = document.getElementById("overlay");
+  overlayEl.parentNode.insertBefore(canvas, overlayEl);
+  const out = canvas.getContext("2d");
+
+  const images = {};
+  function image(url) {
+    if (!url) return null;
+    if (!images[url]) { const img = new Image(); img.src = url; img.onload = () => st && paint(); images[url] = img; }
+    return images[url];
+  }
+  ["bg-male", "bg-female", "desc-dim", "bag-male", "bag-female", "arrows", "return-arrow"].forEach((n) => image("assets/bag/" + n + ".png"));
+  const A = (n) => image("assets/bag/" + n + ".png");
+  const ready = (img) => img && img.complete && img.naturalWidth;
+
+  const WHITE = [255, 255, 255], DARK = [98, 98, 98], LIGHT = [213, 213, 205];
+  // The bag's frame for each of this game's pockets (bag_*.png: 1 POKé BALLS,
+  // 2 ITEMS, 3 KEY ITEMS).
+  const BAG_FRAME = { "ITEMS": 2, "MEDICINE": 2, "POKé BALLS": 1, "TMs & HMs": 3, "BERRIES": 2, "KEY ITEMS": 3 };
+  const memory = {};   // pocket name -> { cursor, top }
+
+  // ---------- State ----------
+
+  let st = null, raf = 0, frameNo = 0;
+
+  function pocket() { return st.pockets[st.pocket]; }
+  function entries() { return pocket().items.concat([null]); }   // (null: CANCEL)
+  function mem() { const n = pocket().name; return memory[n] || (memory[n] = { cursor: 0, top: 0 }); }
+  function clampMem() {
+    const m = mem(), n = entries().length, shown = Math.min(n, 6);
+    m.cursor = Math.max(0, Math.min(m.cursor, n - 1));
+    m.top = Math.max(0, Math.min(m.top, n - shown, m.cursor));
+    if (m.cursor >= m.top + shown) m.top = m.cursor - shown + 1;
+  }
+
+  // Lines of `text` at most `width` wide (letter spacing `sp`).
+  function wrap(s, text, width, sp) {
+    const w = (t) => s.textWidth(t) + sp * t.length;
+    const outl = [];
+    for (const para of String(text || "").split("\n")) {
+      let line = "";
+      for (const word of para.split(/\s+/)) {
+        const next = line ? line + " " + word : word;
+        if (line && w(next) > width) { outl.push(line); line = word; } else line = next;
+      }
+      outl.push(line);
+    }
+    return outl;
+  }
+
+  // ---------- Drawing ----------
+
+  function paint() {
+    if (!st) return;
+    const s = window.GbaMenus.Surface(), G = GM();
+    const userFrame = "type" + ((st.frame || 0) + 1);
+    const items = entries(), m = mem(), shown = Math.min(items.length, 6);
+    const menuOpen = !!st.menu;
+
+    // The pocket's name, centred in its banner (white, as FireRed's).
+    const name = pocket().name, nw = s.textWidth(name);
+    s.text(name, 8 + Math.floor((72 - nw) / 2), 9, WHITE, DARK);
+
+    // The list: names at x 97, ×quantities at 198 (small font), rows 16 apart.
+    for (let r = 0; r < shown; r++) {
+      const it = items[m.top + r], y = 10 + 16 * r;
+      s.text(it ? it.name : "CANCEL", 97, y, DARK, LIGHT);
+      if (it && it.qty != null) s.text("×" + String(it.qty).padStart(3, " "), 198, y, DARK, LIGHT, "small");
+      if (m.top + r === m.cursor) s.text("▶", 89, y, menuOpen ? LIGHT : DARK, menuOpen ? DARK : LIGHT);
+    }
+
+    // The description (or the prompts and menus over it).
+    const cur = items[m.cursor];
+    if (!menuOpen) {
+      wrap(s, cur ? cur.desc : "CLOSE BAG", 200, 2).slice(0, 3).forEach((l, i) => s.text(l, 40, 115 + 14 * i, WHITE, DARK, "normal", null, 2));
+    } else {
+      // The prompt (std frame) and the menu or number box (your frame).
+      if (st.prompt) {
+        const pw = st.prompt.width;
+        s.frame("std", G.palettes.std3, 6, 15, pw, 4);
+        s.fill(48, 120, pw * 8, 32, WHITE);
+        st.prompt.text.split("\n").forEach((l, i) => s.text(l, 48, 122 + 14 * i, DARK, LIGHT, "normal", null, 1));
+      }
+      if (st.menu.kind === "actions") {
+        const n = st.menu.items.length, top = 19 - 2 * n;
+        s.frame(userFrame, G.frames[userFrame].palette, 22, top, 7, 2 * n);
+        s.fill(176, top * 8, 56, n * 16, WHITE);
+        st.menu.items.forEach((it, i) => s.text(it.label, 184, top * 8 + 2 + 16 * i, DARK, LIGHT, "normal", null, 1));
+        s.text("▶", 176, top * 8 + 2 + 16 * st.menu.cursor, DARK, LIGHT);
+      } else if (st.menu.kind === "count") {
+        s.frame(userFrame, G.frames[userFrame].palette, 24, 15, 5, 4);
+        s.fill(192, 120, 40, 32, WHITE);
+        s.text("×" + String(st.menu.n).padStart(3, "0"), 196, 130, DARK, LIGHT, "small");
+      }
+    }
+    st.layer = s.canvas();
+    compose();
+  }
+
+  // The bag sprite, arrows and item icon go between the background and the text.
+  function compose() {
+    const off = compose.c || (compose.c = Object.assign(document.createElement("canvas"), { width: W, height: H }));
+    const g = off.getContext("2d");
+    g.imageSmoothingEnabled = false;
+    g.clearRect(0, 0, W, H);
+    const bg = A(st.female ? "bg-female" : "bg-male");
+    if (ready(bg)) g.drawImage(bg, 0, 0);
+    if (st.menu && ready(A("desc-dim"))) g.drawImage(A("desc-dim"), 0, 112);
+    // The bag (64x64 at 8, 36): its pocket's frame, after a hop (y2 -5 back to 0)
+    // and FireRed's shake when the ▶ moves (sAffineAnim_BagShake).
+    const bag = A(st.female ? "bag-female" : "bag-male");
+    if (ready(bag)) {
+      const f = st.hop > 0 ? 0 : BAG_FRAME[pocket().name] != null ? BAG_FRAME[pocket().name] : 2;
+      const SHAKE = [-1, -2, -1, 0, 1, 2, 1, 0, -1, -2, -1, 0];
+      const angle = st.shake >= 0 && st.shake < 12 ? SHAKE[st.shake] * 2.8125 : 0;
+      g.save();
+      g.translate(40, 68 - Math.max(0, st.hopY));
+      g.rotate(-angle * Math.PI / 180);
+      g.drawImage(bag, 0, f * 64, 64, 64, -32, -32, 64, 64);
+      g.restore();
+    }
+    // The item's icon in the box at the bottom left.
+    const items = entries(), cur = items[mem().cursor];
+    const icon = cur ? image(cur.icon) : A("return-arrow");
+    if (ready(icon)) {
+      const box = cur && window.ITEM_SPRITE_BOXES && window.ITEM_SPRITE_BOXES[cur.id];
+      if (box) {
+        const [bx, by, bw, bh] = box;
+        const sc = Math.min(1, 24 / Math.max(bw, bh));
+        const dw = Math.round(bw * sc), dh = Math.round(bh * sc);
+        g.drawImage(icon, bx, by, bw, bh, 20 - Math.floor(dw / 2), 136 - Math.floor(dh / 2), dw, dh);
+      } else g.drawImage(icon, 8, 124, 24, 24);
+    }
+    // Arrows: left / right for the pockets (8, 72 and 72, 72), up / down for a
+    // list longer than six (160, 8 and 160, 104), bouncing 2 pixels.
+    const arrows = A("arrows");
+    if (ready(arrows) && !st.menu) {
+      const bounce = Math.trunc(Math.sin(((frameNo * 8) & 255) / 256 * 2 * Math.PI) * 2);
+      if (st.pocket > 0) g.drawImage(arrows, 0, 0, 16, 16, 0 - bounce, 64, 16, 16);
+      if (st.pocket < st.pockets.length - 1) {
+        g.save(); g.translate(64 + 16 + bounce, 64); g.scale(-1, 1); g.drawImage(arrows, 0, 0, 16, 16, 0, 0, 16, 16); g.restore();
+      }
+      const m = mem(), n = items.length;
+      if (m.top > 0) g.drawImage(arrows, 0, 16, 16, 16, 152, 0 - bounce, 16, 16);
+      if (m.top + 6 < n) { g.save(); g.translate(152, 96 + 16 + bounce); g.scale(1, -1); g.drawImage(arrows, 0, 16, 16, 16, 0, 0, 16, 16); g.restore(); }
+    }
+    if (st.layer) g.drawImage(st.layer, 0, 0);
+    out.save();
+    out.setTransform(1, 0, 0, 1, 0, 0);
+    out.imageSmoothingEnabled = false;
+    out.clearRect(0, 0, canvas.width, canvas.height);
+    out.drawImage(off, 0, 0, canvas.width, canvas.height);
+    out.restore();
+  }
+
+  function loop() {
+    if (!st) return;
+    frameNo++;
+    if (st.hop > 0) st.hop--;
+    if (st.hopY > 0) st.hopY--;
+    if (st.shake >= 0 && st.shake < 12) st.shake++;
+    compose();
+    raf = requestAnimationFrame(loop);
+  }
+
+  const se = (n) => { if (window.GameAudio && window.GameAudio.se) window.GameAudio.se(n); };
+
+  // ---------- Input ----------
+
+  function moveCursor(dir) {
+    const m = mem(), n = entries().length, shown = Math.min(n, 6);
+    const c = m.cursor + dir;
+    if (c < 0 || c >= n) return;
+    m.cursor = c;
+    // (ListMenu: the ▶ stops at row 3 going down and row 2 going up while it scrolls.)
+    if (dir > 0 && m.cursor - m.top > Math.ceil(shown / 2) && m.top + shown < n) m.top++;
+    if (dir < 0 && m.cursor - m.top < shown - Math.ceil(shown / 2) - 1 && m.top > 0) m.top--;
+    st.shake = 0;
+    se("se_bag_cursor");
+    paint();
+  }
+  function switchPocket(dir) {
+    const p = st.pocket + dir;
+    if (p < 0 || p >= st.pockets.length) return;
+    st.pocket = p;
+    clampMem();
+    st.hop = 5; st.hopY = 5;
+    se("se_bag_pocket");
+    paint();
+  }
+
+  function menuKeys(onA) {
+    return window.GbaMenus.keys((k) => {
+      const mn = st.menu;
+      if (mn.kind === "actions") {
+        if (k === "up" && mn.cursor > 0) { mn.cursor--; se("se_select"); paint(); }
+        else if (k === "down" && mn.cursor < mn.items.length - 1) { mn.cursor++; se("se_select"); paint(); }
+        else if (k === "a") { se("se_select"); return mn.items[mn.cursor].value; }
+        else if (k === "b") { se("se_select"); return "cancel"; }
+      } else if (mn.kind === "count") {
+        const before = mn.n;
+        if (k === "up") mn.n = mn.n >= mn.max ? 1 : mn.n + 1;
+        else if (k === "down") mn.n = mn.n <= 1 ? mn.max : mn.n - 1;
+        else if (k === "right") mn.n = Math.min(mn.max, mn.n + 10);
+        else if (k === "left") mn.n = Math.max(1, mn.n - 10);
+        else if (k === "a") { se("se_select"); return mn.n; }
+        else if (k === "b") { se("se_select"); return 0; }
+        if (mn.n !== before) { se("se_select"); paint(); }
+      }
+      return undefined;
+    });
+  }
+  const waitA = () => window.GbaMenus.keys((k) => (k === "a" || k === "b" ? (se("se_select"), true) : undefined));
+
+  // TOSS: "Toss out how many …?", "Throw away … of this item?", "Threw away …".
+  async function toss(it) {
+    let n = 1;
+    if (it.qty > 1) {
+      st.prompt = { width: 16, text: "Toss out how many\n" + it.name + "(s)?" };
+      st.menu = { kind: "count", n: 1, max: it.qty };
+      paint();
+      n = await menuKeys();
+      if (!n) return;
+    }
+    st.prompt = { width: 15, text: "Throw away " + n + " of\nthis item?" };
+    st.menu = { kind: "none" };
+    paint();
+    const yes = await window.GbaMenus.yesNo(overlayEl, { frame: st.frame, left: 23, top: 15 });
+    if (!yes) return;
+    st.prompt = { width: 23, text: "Threw away " + n + "\n" + it.name + "(s)." };
+    paint();
+    await waitA();
+    st.opts.toss(it.id, n);
+    st.pockets = st.opts.pockets();
+    clampMem();
+  }
+
+  async function open(opts) {
+    st = { opts, pockets: opts.pockets(), pocket: Math.max(0, opts.pocket || 0), female: !!opts.female, frame: opts.frame,
+      menu: null, prompt: null, hop: 5, hopY: 5, shake: -1 };
+    if (opts.pocketName) { const i = st.pockets.findIndex((p) => p.name === opts.pocketName); if (i >= 0) st.pocket = i; }
+    clampMem();
+    canvas.classList.remove("hidden");
+    paint();
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(loop);
+    for (;;) {
+      const key = await window.GbaMenus.keys((k) => {
+        if (k === "up" || k === "down") moveCursor(k === "up" ? -1 : 1);
+        else if (k === "left" || k === "right") switchPocket(k === "left" ? -1 : 1);
+        else if (k === "a" || k === "b") return k;
+        return undefined;
+      });
+      const it = entries()[mem().cursor];
+      se("se_select");
+      if (key === "b" || !it) return null;
+      // A: the menu, with "… is selected." beside it; the description dims.
+      const items = (opts.actions(it) || []).concat([{ label: "CANCEL", value: "cancel" }]);
+      st.prompt = { width: 14, text: it.name + " is\nselected." };
+      st.menu = { kind: "actions", items, cursor: 0 };
+      paint();
+      const v = await menuKeys();
+      st.menu = null; st.prompt = null;
+      if (v === "toss") {
+        st.menu = { kind: "none" };
+        await toss(it);
+        st.menu = null; st.prompt = null;
+        paint();
+        continue;
+      }
+      paint();
+      if (v === "cancel") continue;
+      return { action: v, id: it.id, pocket: pocket().name };
+    }
+  }
+
+  function close() {
+    st = null;
+    cancelAnimationFrame(raf);
+    canvas.classList.add("hidden");
+  }
+
+  window.BagScreen = { open, close };
+})();
