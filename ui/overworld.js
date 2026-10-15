@@ -102,7 +102,7 @@
   // Running is a toggle: B (X or Shift on a keyboard) turns it on, and again
   // turns it off.
   const runHeld = () => runOn;
-  function toggleRun() { runOn = !runOn; hint(); }
+  function toggleRun() { runOn = !runOn; }
   document.addEventListener("keydown", (e) => {
     if (!running || paused || e.repeat || !["Shift", "x", "X", "b", "B"].includes(e.key)) return;
     toggleRun();
@@ -117,9 +117,12 @@
   // The menu area is empty while you walk: the buttons under it are the controls.
   function showControls() { menu.innerHTML = ""; }
 
+  // Walking about, the text box is off the screen (FireRed's is only up
+  // while someone's talking).
   function hint() {
-    window.Screen.say(World.map(me.map).title + "\nD-pad: walk · A: talk · B: " + (runOn ? "walk" : "run") + " · Start: menu");
+    window.Screen.say("");
   }
+
 
   // ---------- People ----------
 

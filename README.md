@@ -48,14 +48,16 @@ the menu. In menus, the D-pad moves between choices, A picks one and B goes back
 in the party, a summary's moves and Bill's PC, Select on one and then on another
 swaps them. On a keyboard: arrows / WASD, Z (A), X (B), Esc or M (Start).
 
-The **menu** has your Pokémon (choose one for its summary: stats, IVs, EVs, nature,
+Start opens FireRed's **menu**, a window over the map with a help bar along
+the bottom (as is the text box, which is only on screen while someone's
+talking). It has your Pokémon (choose one for its summary: stats, IVs, EVs, nature,
 moves; make it lead; use, give or take items; press Select on one card and then
 another to swap them), the Bag (medicine, evolution
 stones, Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
 the Exp. Share, Oak's Parcel and the Town Map), the Pokédex (a red Poké Ball
 marks species you've caught, a gray one those you've only seen; wild Pokémon
 show the same mark in battle),
-your trainer card (save, download or load a save file), and **Debug** (for
+your trainer card (under your name: save, download or load a save file, and **Debug**, for
 testing; it asks for a password the first time each session): add any Pokémon at any level (type its name, e.g. `charizard` or
 `rotom-wash`; a full party sends it to the PC), infinite Rare Candies, every TM
 and HM, 99 Max Repels, 99 Master Balls, or a wild battle at your level.

@@ -9,31 +9,36 @@
 </head>
 <body>
   <main class="game">
-    <div id="scene" class="scene"></div>
-    <canvas id="world" class="world hidden" width="240" height="160"></canvas>
-    <canvas id="intro" class="world hidden" width="480" height="320"></canvas>
-    <div id="world-pic" class="world-pic hidden"><img alt=""></div>
-    <div id="field" class="field hidden">
-      <div class="terrain foe"></div>
-      <div class="terrain player"></div>
-      <img id="sprite-foe" class="sprite foe hidden" alt="">
-      <img id="sprite-player" class="sprite player hidden" alt="">
-      <img id="ball" class="ball hidden" alt="">
+    <!-- The 240x160 screen: the map, a battle, a menu scene or the intro, with
+         the text box along its bottom (only while there's something to read)
+         and FireRed's windows (the Start menu) drawn over it. -->
+    <div class="screen">
+      <div id="scene" class="scene"></div>
+      <canvas id="world" class="world hidden" width="240" height="160"></canvas>
+      <canvas id="intro" class="world hidden" width="480" height="320"></canvas>
+      <div id="world-pic" class="world-pic hidden"><img alt=""></div>
+      <div id="field" class="field hidden">
+        <div class="terrain foe"></div>
+        <div class="terrain player"></div>
+        <img id="sprite-foe" class="sprite foe hidden" alt="">
+        <img id="sprite-player" class="sprite player hidden" alt="">
+        <img id="ball" class="ball hidden" alt="">
 
-      <div id="info-foe" class="info foe hidden">
-        <div class="info-top"><span class="info-name"></span><span class="status"></span><span class="info-level"></span></div>
-        <div class="hp-row">HP<div class="hp-track"><div class="hp-fill"></div></div></div>
+        <div id="info-foe" class="info foe hidden">
+          <div class="info-top"><span class="info-name"></span><span class="status"></span><span class="info-level"></span></div>
+          <div class="hp-row">HP<div class="hp-track"><div class="hp-fill"></div></div></div>
+        </div>
+        <div id="info-player" class="info player hidden">
+          <div class="info-top"><span class="info-name"></span><span class="status"></span><span class="info-level"></span></div>
+          <div class="hp-row">HP<div class="hp-track"><div class="hp-fill"></div></div></div>
+          <div class="hp-text"></div>
+          <div class="exp-row hidden">EXP<div class="exp-track"><div class="exp-fill"></div></div></div>
+        </div>
       </div>
-      <div id="info-player" class="info player hidden">
-        <div class="info-top"><span class="info-name"></span><span class="status"></span><span class="info-level"></span></div>
-        <div class="hp-row">HP<div class="hp-track"><div class="hp-fill"></div></div></div>
-        <div class="hp-text"></div>
-        <div class="exp-row hidden">EXP<div class="exp-track"><div class="exp-fill"></div></div></div>
-      </div>
-    </div>
-
-    <div class="panel">
+      <canvas id="overlay" class="overlay hidden" width="480" height="320"></canvas>
       <div id="textbox" class="textbox" aria-live="polite">Loading…</div>
+    </div>
+    <div class="panel">
       <div id="menu" class="menu"></div>
     </div>
   </main>

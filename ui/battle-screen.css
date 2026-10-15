@@ -199,49 +199,58 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- Bottom panel ---------- */
+/* ---------- The screen and the panel under it ---------- */
 
-.panel {
-  /* Always the same height: the text box (three lines), then the menu, which
-     scrolls when it has more choices than fit. A battle's scene is shorter
-     than the map (240x112), so in a battle the panel gets the rest of the
-     screen's height: room for the moves. */
-  --panel-h: 168px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  height: var(--panel-h);
-  padding: 8px 10px;
-  background: #2e3440;
-  overflow: hidden;
-}
-.game:has(#field:not(.hidden)) .panel { --panel-h: calc(168px + 100cqw * 48 / 240); }
+/* The screen: 240x160 (3:2), whatever is on it. */
+.screen { position: relative; aspect-ratio: 3 / 2; overflow: hidden; background: #000; }
 
+/* FireRed's windows drawn over the map (ui/gba-menus.js: the Start menu). */
+.overlay { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 6; image-rendering: pixelated; pointer-events: none; }
+.overlay.hidden { display: none; }
+
+/* The text box: along the bottom of the screen, as FireRed's (48 of the 160
+   lines), and only while there's something to read; in a battle it's always
+   there, under the battle scene (which is the other 112). Text that would run
+   past it gets a smaller font (ui/screen.js). */
 .textbox {
-  flex: none;
-  height: 74px;
-  padding: 7px 12px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 30%;
+  z-index: 5;
+  padding: 4px 12px;
   background: #fff;
   border: 3px solid #c8a85a;
-  border-radius: 8px;
-  font-size: 14px;
-  line-height: 1.35;
+  border-radius: 6px;
+  font-size: clamp(10px, 3.4cqw, 22px);
+  line-height: 1.3;
+  white-space: pre-line;
   overflow: hidden;
   user-select: none;
 }
-/* With FireRed's window frame (the Option screen's FRAME) as its border. */
+.textbox.empty { display: none; }
+.screen:has(> .field:not(.hidden)) > .textbox.empty { display: block; }
+/* With FireRed's window frame (the Option screen's FRAME) as its border: 8 of 240. */
 .textbox.framed {
-  height: 80px;
-  border: 12px solid transparent;
+  border: calc(100cqw * 8 / 240) solid transparent;
   border-radius: 0;
-  padding: 0 6px;
+  padding: 0 1.5cqw;
   background: none;
   image-rendering: pixelated;
 }
 
+/* Under the screen, the choices (FIGHT's moves, Yes / No, a list's options):
+   always the same height; more choices than fit scroll. */
+.panel {
+  height: 150px;
+  padding: 8px 10px;
+  background: #2e3440;
+  overflow: hidden;
+}
+
 .menu {
-  flex: 1;
-  min-height: 0;
+  height: 100%;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   grid-auto-rows: min-content;

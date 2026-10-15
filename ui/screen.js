@@ -20,8 +20,11 @@
 
   // The text box is a fixed size: text that would run past it (long lines
   // wrapping on a narrow screen) gets a smaller font until it fits.
+  // The box is only on screen while it has something to say (in a battle
+  // it always is: see the CSS).
   function say(text) {
     textbox.textContent = text;
+    textbox.classList.toggle("empty", !String(text || "").trim());
     textbox.style.fontSize = "";
     let size = parseFloat(getComputedStyle(textbox).fontSize);
     while (textbox.scrollHeight > textbox.clientHeight + 1 && size > 10) textbox.style.fontSize = (size -= 1) + "px";

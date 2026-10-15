@@ -552,7 +552,6 @@
     await message(player.name + " used the Explorer Kit and started digging into the wall…");
     show("scene");
     clearMenu();
-    window.Screen.say("D-pad to aim, A to dig, B to switch tools. The Hammer digs wider but uses twice the energy.");
     const f = player.flags, xp = miningXp(), before = Mining.level(xp);
     const dig = Mining.create(Math.random, before, player.location.map);
     const found = await MiningScreen.run(scene, dig, xp);
@@ -1058,8 +1057,10 @@
         { label: "Save now", value: "save", className: "action" },
         { label: "Download save file", value: "download", className: "action" },
         { label: "Load save file", value: "load", className: "action" },
+        { label: "Debug", value: "debug", className: "action" },
         back()]);
       if (v === "back") return;
+      if (v === "debug") { if ((await debugMenu()) === "battled") return "battled"; continue; }
       if (v === "save") {
         const r = (tick(), Save.write(player));
         await message(r.ok ? player.name + " saved the game." : r.error);
@@ -1077,7 +1078,7 @@
     }
   }
 
-  // ---------- Start menu ----------
+  // ---------- The Start menu's screens ----------
 
   async function partyMenu() {
     for (;;) {
@@ -1233,39 +1234,51 @@
     };
   }
 
+  // FireRed's Start menu: a window over the map (GbaMenus.startMenu), with
+  // the help bar along the bottom. The cursor stays where it was, as in
+  // FireRed. Each choice opens its screen and comes back to the menu.
+  let startCursor = 0;
+  const START_HELP = {
+    dex: "A device that records POKéMON secrets\nupon meeting or catching them.",
+    party: "Check and organize POKéMON that are\ntraveling with you in your party.",
+    bag: "Equipped with pockets for storing items\nyou bought, received, or found.",
+    card: "Check your money and other game data.",
+    save: "Save your game with a complete record\nof your progress to take a break.",
+    option: "Adjust various game settings such as text\nspeed, game rules, etc.",
+    exit: "Close this MENU window."
+  };
   async function startMenu() {
     player.flags.openedMenu = true;   // (FireRed's FLAG_OPENED_START_MENU: the Sign Lady's scene)
     for (;;) {
-      // Tapping a Pokémon card opens its summary; dragging swaps two.
-      const v = await pickParty("Menu", (player.party.length ? partyHtml() : '<p class="empty">No Pokémon yet. Prof. Oak’s lab is south of your house.</p>') +
-        '<p class="bag-line">' + escapeHtml(player.name) + " · " + money(player.money) +
-        (player.flags.pokedex ? " · Pokédex " + player.pokedex.caught.length : "") + "</p>", [
-        { label: "Pokémon", value: "party", className: "action" },
-        { label: "Bag", value: "bag", className: "action" },
-        // Only once Prof. Oak has given you one, as in FireRed.
-        ...(player.flags.pokedex ? [{ label: "Pokédex", value: "dex", className: "action" }] : []),
-        { label: "Trainer card", value: "card", className: "action" },
-        { label: "Save", value: "save", className: "action" },
-        { label: "Option", value: "option", className: "action" },
-        { label: "Debug", value: "debug", className: "action" },
-        back("Close")]);
-      if (v === "back") return;
-      if (v === "swapped") continue;
-      if (v.pick != null) await summary(+v.pick);
-      else if (v === "party") await partyMenu();
+      show("world");
+      Screen.say("");
+      clearMenu();
+      // POKéDEX once Prof. Oak has given you one, POKéMON once you have one.
+      const items = [];
+      if (player.flags.pokedex) items.push({ key: "dex", label: "POKéDEX" });
+      if (player.party.length) items.push({ key: "party", label: "POKéMON" });
+      items.push({ key: "bag", label: "BAG" }, { key: "card", label: player.name }, { key: "save", label: "SAVE" },
+        { key: "option", label: "OPTION" }, { key: "exit", label: "EXIT" });
+      for (const it of items) it.help = START_HELP[it.key];
+      const r = await GbaMenus.startMenu($("#overlay"), { items, cursor: startCursor, frame: GameOptions.get().frame });
+      startCursor = r.cursor;
+      const v = r.key;
+      if (v === "exit") return;
+      if (v === "party") await partyMenu();
       else if (v === "bag") { if ((await bagScreen()) === "escaped") return; }
       else if (v === "dex") await pokedex();
-      else if (v === "card") await trainerCard();
-      else if (v === "debug") { if ((await debugMenu()) === "battled") return; }
+      else if (v === "card") { if ((await trainerCard()) === "battled") return; }
       else if (v === "option") { await optionScreen(false); continue; }
       else if (v === "save") {
+        if (!(await confirm("Would you like to save the game?"))) continue;
         tick();
-        const r = Save.write(player);
-        await message(r.ok ? player.name + " saved the game." : r.error);
+        const w = Save.write(player);
+        await message(w.ok ? player.name + " saved the game." : w.error);
       }
       await persist();
     }
   }
+
 
   // ---------- Pallet Town story ----------
   //

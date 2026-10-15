@@ -690,7 +690,7 @@
     });
 
     clearInput();
-    window.Screen.say("Press Start");
+    window.Screen.say("");   // (PRESS START is on the picture)
     document.getElementById("menu").innerHTML = "";
     let result = null;
     await until(() => {

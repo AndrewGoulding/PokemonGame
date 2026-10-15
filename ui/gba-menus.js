@@ -8,6 +8,9 @@
 //   const action = await GbaMenus.optionMenu(canvas, rows, onChange)
 //     // rows: [{ name, values: [...], value }, ..., { name, action }]
 //     // onChange(rowIndex, value) as values change; -> null, or the action row picked
+//   const r = await GbaMenus.startMenu(overlay, { items, cursor, frame })
+//     // items: [{ key, label, help }]; drawn over the map (the rest of the
+//     // canvas clear) -> { key (or "exit"), cursor }
 //
 // The D-pad moves, A picks and B goes back (Z / X on a keyboard).
 (function () {
@@ -114,6 +117,7 @@
       off.getContext("2d").putImageData(img, 0, 0);
       g.save();
       g.setTransform(1, 0, 0, 1, 0, 0);   // (the intro leaves its own scale set)
+      g.clearRect(0, 0, canvas.width, canvas.height);
       g.imageSmoothingEnabled = false;
       g.drawImage(off, 0, 0, canvas.width, canvas.height);
       g.restore();
@@ -132,7 +136,7 @@
   // something other than undefined; resolves with that.
   function keys(onKey) {
     const KEY = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
-      z: "a", Z: "a", " ": "a", Enter: "a", x: "b", X: "b", Escape: "b" };
+      z: "a", Z: "a", " ": "a", Enter: "a", x: "b", X: "b", Escape: "b", Start: "start", m: "start", M: "start" };
     return new Promise((resolve) => {
       const handler = (e) => {
         const k = KEY[e.key];
@@ -256,7 +260,48 @@
     return result;
   }
 
+  // ---------- The Start menu (src/start_menu.c) ----------
+  //
+  // A window at tiles 22-28 from row 1, two rows a choice, in your frame, with
+  // the ▶ cursor; along the bottom, the help bar (src/help_message.c) says
+  // what the chosen one is for. B or Start closes it, as EXIT does.
+  async function startMenu(canvas, opts) {
+    const items = opts.items, std = G().palettes.std2, help = G().helpBar;
+    const frame = "type" + ((opts.frame || 0) + 1);
+    let cursor = Math.min(opts.cursor || 0, items.length - 1);
+    const draw = () => {
+      const s = Surface();
+      const h = items.length * 2 - 1;
+      s.frame(frame, G().frames[frame].palette, 22, 1, 7, h);
+      s.fill(176, 8, 56, h * 8, std[1]);
+      items.forEach((it, i) => s.text(it.label, 176 + 8, 8 + i * 15, std[2], std[3]));
+      s.text("▶", 176, 8 + cursor * 15, std[2], std[3]);
+      // The help bar: rows 15-19, tile 0 on top, 5 in the middle, 14 at the bottom.
+      for (let row = 0; row < 5; row++) {
+        const t = row === 0 ? 0 : row === 4 ? 14 : 5, tx = (t % (help.width / 8)) * 8, ty = Math.floor(t / (help.width / 8)) * 8;
+        for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+          const c = help.palette[parseInt(help.px[(ty + y) * help.width + tx + x], 16)];
+          for (let col = 0; col < 30; col++) s.put(col * 8 + x, 120 + row * 8 + y, c);
+        }
+      }
+      String(items[cursor].help || "").split("\n").forEach((line, i) => s.text(line, 2, 120 + 5 + i * 14, std[10], std[2]));
+      s.show(canvas);
+    };
+    canvas.classList.remove("hidden");
+    draw();
+    const key = await keys((k) => {
+      if (k === "up") { cursor = (cursor + items.length - 1) % items.length; draw(); }
+      else if (k === "down") { cursor = (cursor + 1) % items.length; draw(); }
+      else if (k === "a") { se(); return items[cursor].key; }
+      else if (k === "b" || k === "start") return "exit";
+      return undefined;
+    });
+    canvas.classList.add("hidden");
+    return { key, cursor };
+  }
+
   window.GbaMenus = {
+    startMenu: (canvas, ...a) => during("start", startMenu(canvas, ...a)),
     mainMenu: (canvas, ...a) => { canvas.classList.remove("hidden"); return during("main", mainMenu(canvas, ...a)); },
     optionMenu: (canvas, ...a) => { canvas.classList.remove("hidden"); return during("option", optionMenu(canvas, ...a)); },
     showing: null   // "main" or "option" while one is up

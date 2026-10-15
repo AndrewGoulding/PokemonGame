@@ -19,7 +19,7 @@
   // From before the Option screen: the Sound setting was on / off.
   try { if (localStorage.getItem(KEY) == null && localStorage.getItem("pokemon-sound") === "off") opts.sound = 2; } catch (e) { /* storage blocked */ }
 
-  // The text box's border: the frame's 3x3 tiles, drawn at twice their size.
+  // The text box's border: the frame's 3x3 tiles, at the screen's scale.
   function frameUrl(index) {
     const G = window.GBA_MENUS;
     const f = G && G.frames["type" + (index + 1)];
@@ -46,7 +46,7 @@
     const url = frameUrl(opts.frame);
     const box = document.getElementById("textbox");
     if (box && url) {
-      box.style.borderImage = "url(" + url + ") 8 fill / 12px round";
+      box.style.borderImage = "url(" + url + ") 8 fill / calc(100cqw * 8 / 240) round";
       box.classList.add("framed");
     }
   }
