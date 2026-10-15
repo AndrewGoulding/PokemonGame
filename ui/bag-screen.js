@@ -5,11 +5,11 @@
 // left / right between them.
 //
 //   const r = await BagScreen.open({
-//     pockets,   // () => [{ name: "ITEMS", items: [{ id, name, qty (null for
+//     pockets,   // () => [{ name: "Items", items: [{ id, name, qty (null for
 //                //   key items and machines), desc, icon }] }]: read again after a toss
 //     female,    // the bag's colours
 //     frame,     // the Option screen's FRAME (0-9)
-//     actions,   // (item) => [{ label: "USE", value: "use" }, ...]: the menu A
+//     actions,   // (item) => [{ label: "Use", value: "use" }, ...]: the menu A
 //                //   opens (CANCEL is added)
 //     toss,      // (id, n): throw n away (TOSS is handled here, as FireRed does)
 //     deposit    // instead of the menu (the PC's DEPOSIT ITEM): A asks "Deposit
@@ -94,7 +94,7 @@
     // The list: names at x 97, ×quantities at 198 (small font), rows 16 apart.
     for (let r = 0; r < shown; r++) {
       const it = items[m.top + r], y = 10 + 16 * r;
-      s.text(it ? it.name : "CANCEL", 97, y, DARK, LIGHT);
+      s.text(it ? it.name : "Cancel", 97, y, DARK, LIGHT);
       if (it && it.qty != null) s.text("×" + String(it.qty).padStart(3, " "), 198, y, DARK, LIGHT, "small");
       if (m.top + r === m.cursor) s.text("▶", 89, y, menuOpen ? LIGHT : DARK, menuOpen ? DARK : LIGHT);
     }
@@ -102,7 +102,7 @@
     // The description (or the prompts and menus over it).
     const cur = items[m.cursor];
     if (!menuOpen) {
-      wrap(s, cur ? cur.desc : "CLOSE BAG", 200, 2).slice(0, 3).forEach((l, i) => s.text(l, 40, 115 + 14 * i, WHITE, DARK, "normal", null, 2));
+      wrap(s, cur ? cur.desc : "Close bag", 200, 2).slice(0, 3).forEach((l, i) => s.text(l, 40, 115 + 14 * i, WHITE, DARK, "normal", null, 2));
     } else {
       // The prompt (std frame) and the menu or number box (your frame).
       if (st.prompt) {
@@ -312,7 +312,7 @@
         continue;
       }
       // A: the menu, with "… is selected." beside it; the description dims.
-      const items = (opts.actions(it) || []).concat([{ label: "CANCEL", value: "cancel" }]);
+      const items = (opts.actions(it) || []).concat([{ label: "Cancel", value: "cancel" }]);
       st.prompt = { width: 14, text: it.name + " is\nselected." };
       st.menu = { kind: "actions", items, cursor: 0 };
       paint();

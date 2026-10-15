@@ -679,12 +679,11 @@
   // FireRed's Bag screen (ui/bag-screen.js), with this game's six pockets.
   // USE and GIVE close it for the party screen or the text box and open it
   // again after; TOSS happens on the bag screen itself.
-  const BAG_POCKET_NAMES = { "Items": "ITEMS", "Medicine": "MEDICINE", "Poké Balls": "POKé BALLS", "TMs & HMs": "TMs & HMs", "Berries": "BERRIES", "Key Items": "KEY ITEMS" };
-  let bagPocket = "MEDICINE";
+  let bagPocket = "Medicine";
   function bagPockets() {
     const order = (id) => (Bag.isMachine(id) ? Bag.machines().indexOf(id) : 0);
     return Bag.POCKETS.map((p) => ({
-      name: BAG_POCKET_NAMES[p],
+      name: p,
       items: Object.keys(player.bag).filter((id) => Bag.pocket(id) === p)
         .sort((a, b) => order(a) - order(b) || Bag.name(a).localeCompare(Bag.name(b)))
         .map((id) => ({
@@ -704,9 +703,9 @@
         frame: GameOptions.get().frame,
         actions: (it) => {
           const a = [];
-          if (usableFromBag(it.id)) a.push({ label: "USE", value: "use" });
-          if (holdable(it.id)) a.push({ label: "GIVE", value: "give" });
-          if (!Bag.isMachine(it.id) && !Bag.isKeyItem(it.id)) a.push({ label: "TOSS", value: "toss" });
+          if (usableFromBag(it.id)) a.push({ label: "Use", value: "use" });
+          if (holdable(it.id)) a.push({ label: "Give", value: "give" });
+          if (!Bag.isMachine(it.id) && !Bag.isKeyItem(it.id)) a.push({ label: "Toss", value: "toss" });
           return a;
         },
         toss: (id, n) => { Player.removeItem(player, id, n); persist(); }
@@ -885,7 +884,7 @@
         const r = await BagScreen.open({
           pockets: bagPockets, pocketName: bagPocket, frame: GameOptions.get().frame,
           female: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
-          actions: (it) => (holdable(it.id) ? [{ label: "GIVE", value: "give" }] : [])
+          actions: (it) => (holdable(it.id) ? [{ label: "Give", value: "give" }] : [])
         });
         BagScreen.close();
         if (!r) return null;
@@ -982,7 +981,7 @@
   function depositItems() {
     Screen.say("");
     return BagScreen.open({
-      pockets: bagPockets, pocketName: "ITEMS", frame: GameOptions.get().frame,
+      pockets: bagPockets, pocketName: "Items", frame: GameOptions.get().frame,
       female: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
       actions: () => [],
       deposit: (id, n) => {

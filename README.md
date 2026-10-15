@@ -81,9 +81,9 @@ moves with A; up / down go through your party; SWITCH asks "Move to
 where?"; ITEM gives or takes a held item). The
 same screen picks a Pokémon for an item (ABLE / NOT ABLE for TMs and
 evolution stones), a trade or a tutor, and for switching in battle (SHIFT).
-Then the Bag, FireRed's Bag screen with six pockets (ITEMS, MEDICINE, POKé
-BALLS, TMs & HMs, BERRIES, KEY ITEMS; left / right between them, and each
-pocket remembers where its ▶ was). A opens USE / GIVE / TOSS; TOSS asks how
+Then the Bag, FireRed's Bag screen with six pockets (Items, Medicine, Poké
+Balls, TMs & HMs, Berries, Key Items; left / right between them, and each
+pocket remembers where its ▶ was). A opens Use / Give / Toss; Toss asks how
 many and throws them away right there. It holds medicine, evolution
 stones, Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
 the Exp. Share, Oak's Parcel and the Town Map. After the Bag come the Pokédex (a red Poké Ball
