@@ -518,11 +518,11 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   30 per attempt, out of 256.
 - **Happiness** (friendship, 0-255; engine/experience.js `adjustFriendship`):
   FireRed's AdjustFriendship. Each change depends on how friendly the Pokémon
-  is now (under 100 / under 200 / 200+): a level up +5/+3/+2 (in battle or by
-  Rare Candy; not the Day-Care's), a vitamin, PP Up or PP Max +5/+3/+2, an X
+  is now (under 100 / under 200 / 200+): a level up +10/+6/+4 (double
+  FireRed's; in battle or by Rare Candy, not the Day-Care's), a vitamin, PP Up or PP Max +5/+3/+2, an X
   item in battle +1/+1/0, a TM or HM learned +1/+1/0, a battle with a Gym
   Leader, the Elite Four or the Champion +3/+2/+1 for the whole party, every
-  128 steps +1 for each Pokémon half the time, fainting in battle −1 (−5/−5/−10
+  128 steps +2 for each Pokémon half the time (double FireRed's), fainting in battle −1 (−5/−5/−10
   against a foe 30+ levels higher), and the bitter herbs (Energy Powder and
   Heal Powder −5/−5/−10, Energy Root −10/−10/−15, Revival Herb −15/−15/−20). A
   gain is half again with a Soothe Bell held, and one more in a Luxury Ball and

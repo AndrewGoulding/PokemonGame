@@ -1384,11 +1384,12 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
 // half again with a Soothe Bell, +1 in a Luxury Ball or where it was met.
 {
   const E = window.Experience;
-  assert.strictEqual(E.adjustFriendship(70, "levelUp"), 75);
-  assert.strictEqual(E.adjustFriendship(150, "levelUp"), 153);
-  assert.strictEqual(E.adjustFriendship(210, "levelUp"), 212);
-  assert.strictEqual(E.adjustFriendship(70, "levelUp", { item: "soothe-bell" }), 77);   // 5 * 1.5, rounded down
-  assert.strictEqual(E.adjustFriendship(70, "levelUp", { ball: "luxury-ball", metHere: true }), 77);
+  // (Level ups and walking count double here.)
+  assert.strictEqual(E.adjustFriendship(70, "levelUp"), 80);
+  assert.strictEqual(E.adjustFriendship(150, "levelUp"), 156);
+  assert.strictEqual(E.adjustFriendship(210, "levelUp"), 214);
+  assert.strictEqual(E.adjustFriendship(70, "levelUp", { item: "soothe-bell" }), 85);   // 10 * 1.5
+  assert.strictEqual(E.adjustFriendship(70, "levelUp", { ball: "luxury-ball", metHere: true }), 82);
   assert.strictEqual(E.adjustFriendship(210, "tm"), 210);                                // nothing at 200+
   assert.strictEqual(E.adjustFriendship(210, "faintLarge", { ball: "luxury-ball" }), 200); // (no bonus on a loss)
   assert.strictEqual(E.adjustFriendship(0, "faintSmall"), 0);
@@ -1401,17 +1402,17 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
   r.hp = 1;
   Bag.useOn(r, "energy-root");
   assert.strictEqual(r.happiness, 65);
-  // A Rare Candy's level up: +5; the Day-Care's levels: nothing.
+  // A Rare Candy's level up: +10; the Day-Care's levels: nothing.
   Bag.levelUp(r);
-  assert.strictEqual(r.happiness, 70);
+  assert.strictEqual(r.happiness, 75);
   Bag.levelUp(r, { noFriendship: true });
-  assert.strictEqual(r.happiness, 70);
-  // Met here: one more.
+  assert.strictEqual(r.happiness, 75);
+  // Walking: +2, and one more where it was met.
   r.met = { map: "Route1", level: 3 };
   Party.adjustFriendship(r, "walking", "Route1");
-  assert.strictEqual(r.happiness, 72);
+  assert.strictEqual(r.happiness, 78);
   Party.adjustFriendship(r, "walking", "PalletTown");
-  assert.strictEqual(r.happiness, 73);
+  assert.strictEqual(r.happiness, 80);
   // Fainting in battle: -1, or -5 against a foe 30 levels higher; the foe's don't change.
   for (const [foeLevel, want] of [[40, 69], [60, 65]]) {
     const b = new Battle({ seed: 1, p1: { name: "A", team: [Object.assign(Party.toBattleSet(Party.create("Pikachu", 20)), { happiness: 70 })] },
