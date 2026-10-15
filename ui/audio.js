@@ -5,6 +5,7 @@
 //   GameAudio.cry("Pikachu", { faint: true })
 //   GameAudio.se("se_ball")             // a sound effect over the music
 //   GameAudio.setEnabled(false)         // the Sound option (remembered in this browser)
+//   GameAudio.setVolume(0.5)            // the Volume option, 0-1 (music, sound effects and cries)
 //
 // Songs are FireRed's, played by its sound engine (game/m4a.js) from
 // assets/audio/music.js, which loads once the game first wants sound. Browsers
@@ -12,7 +13,8 @@
 // plays before that; the music then starts where the game is.
 (function () {
   const KEY = "pokemon-sound";
-  let enabled = true;
+  let enabled = true, volume = 1;
+  const MASTER = 0.7;   // (the mix's level at full volume)
   try { enabled = localStorage.getItem(KEY) !== "off"; } catch (e) { /* storage blocked */ }
 
   let ctx = null, master = null, dataLoading = null;
@@ -44,7 +46,7 @@
       if (!AC) return;
       ctx = new AC();
       master = ctx.createGain();
-      master.gain.value = 0.7;
+      master.gain.value = MASTER * volume;
       setChannels();
       master.connect(ctx.destination);
     }
@@ -157,12 +159,16 @@
       }
       if (!id || id > 386) return;   // FireRed only has the first 386
       const a = new window.Audio("assets/audio/cries/" + id + ".wav");
-      a.volume = 0.8;
+      a.volume = 0.8 * volume;
       if (opts && opts.faint) { a.preservesPitch = false; a.mozPreservesPitch = false; a.playbackRate = 0.75; }
       a.play().catch(() => {});
     },
     enabled: () => enabled,
     setMono(on) { mono = !!on; setChannels(); },
+    setVolume(v) {
+      volume = Math.max(0, Math.min(1, +v || 0));
+      if (master) master.gain.setValueAtTime(MASTER * volume, ctx.currentTime);
+    },
     now: () => (current ? current.name : null),   // the song playing (or null)
     setEnabled(on) {
       enabled = !!on;

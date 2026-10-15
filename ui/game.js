@@ -220,6 +220,7 @@
       { name: "BATTLE SCENE", key: "battleScene", values: ["ON", "OFF"], value: o.battleScene },
       { name: "BATTLE STYLE", key: "battleStyle", values: ["SHIFT", "SET"], value: o.battleStyle },
       { name: "SOUND", key: "sound", values: ["MONO", "STEREO", "OFF"], value: o.sound },
+      { name: "VOLUME", key: "volume", values: [...Array(11).keys()].map(String), value: o.volume },
       { name: "FRAME", key: "frame", frame: true, values: [...Array(10).keys()].map((i) => "TYPE" + (i + 1)), value: o.frame }
     ];
     if (fromTitle) rows.push({ name: "SAVE FILE", values: ["LOAD"], value: 0, action: "load" });

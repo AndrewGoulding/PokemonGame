@@ -243,6 +243,8 @@
       return "type" + ((f ? f.value : 0) + 1);
     };
     const LINE = 13;   // a row: the font's tallest letter (14) less one
+    const SHOWN = 7;
+    let top = 0;
 
     const draw = (fadeColor, fadeLevel) => {
       const s = Surface();
@@ -259,13 +261,15 @@
       const fr = frameName();
       s.frame(fr, G().frames[fr].palette, 2, 7, 26, 12);
       s.fill(16, 56, 208, 96, op[1]);
-      rows.forEach((r, i) => {
+      // (Seven rows fit; with more, the list scrolls to keep the chosen one in view.)
+      top = Math.max(0, Math.min(top, cursor, rows.length - SHOWN), cursor - SHOWN + 1);
+      rows.slice(top, top + SHOWN).forEach((r, i) => {
         const y = 56 + i * LINE + 2;
         s.text(r.name, 16 + 8, y, op[2], op[3]);
         if (r.values) s.text(r.values[r.value], 16 + 0x82, y, op[5], op[4]);
       });
       // Window 0 on the chosen row; the options window is lightened (BLDY 2) everywhere else.
-      const y = cursor * LINE + 0x3A;
+      const y = (cursor - top) * LINE + 0x3A;
       s.effect([0x10, 0xE0, y, y + 14], "lighten", 2, (x, yy) => x >= 16 && x < 224 && yy >= 56 && yy < 152);
       s.show(canvas, fadeColor, fadeLevel);
     };

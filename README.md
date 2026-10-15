@@ -14,7 +14,7 @@ Pokédex and badges), NEW GAME and OPTION (B goes back to the title). The
 Option screen is FireRed's too: TEXT SPEED (how long battle messages stay up),
 BATTLE SCENE (OFF leaves out the hit animation), BATTLE STYLE (SHIFT: when a
 trainer is about to send out their next Pokémon you may switch first; SET: no
-switching), SOUND (mono, stereo or off),
+switching), SOUND (mono, stereo or off), VOLUME (0 to 10: music, sound effects and cries),
 FRAME (the menus' windows: FireRed's ten window frames; the text box is always
 FireRed's message box, as in FireRed) and, from the main
 menu, SAVE FILE to load a downloaded save; it's also in the Start menu. Start a
