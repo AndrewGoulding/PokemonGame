@@ -90,10 +90,14 @@ Balls, TMs & HMs, Berries, Key Items; left / right between them, and each
 pocket remembers where its ▶ was). A opens Use / Give / Toss; Toss asks how
 many and throws them away right there. It holds medicine, evolution
 stones, Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
-the Exp. Share, Oak's Parcel and the Town Map. After the Bag come the Pokédex (a red Poké Ball
-marks species you've caught, a gray one those you've only seen; wild Pokémon
-show the same mark in battle; the D-pad moves through it, and A opens a
-species' page with FireRed's category, height, weight and description),
+the Exp. Share, Oak's Parcel and the Town Map. After the Bag come FireRed's Pokédex (its
+table of contents with Seen / Owned; the numerical list, with the caught ball and
+types; the nine habitats' pages, up to four Pokémon a page in their circles;
+searching A to Z, by type, lightest and smallest; each entry's category,
+height and weight in feet and pounds, footprint, picture and description, with
+Up / Down to the next one and Start for its cry; and the Area / Size page:
+where it lives on the map of Kanto and how big it is next to you. Catching a
+new kind shows its habitat page and entry, as in FireRed),
 your trainer card (under your name: save, download or load a save file, and **Debug**, for
 testing; it asks for a password the first time each session): add any Pokémon at any level (type its name, e.g. `charizard` or
 `rotom-wash`; a full party sends it to the PC), infinite Rare Candies, every TM
@@ -253,6 +257,16 @@ node tools/build-healthbox.js pokefirered
 ```sh
 cd pokefirered && git sparse-checkout add graphics/shop_menu/ && cd ..
 node tools/build-shop.js pokefirered
+```
+
+`tools/build-pokedex-screen.js` converts FireRed's Pokédex screens
+(`graphics/pokedex/`, the footprints, `src/data/pokemon/pokedex_categories.h`,
+the size comparisons and area markers) into `assets/pokedex/` and
+`data/pokedex-screen.js`:
+
+```sh
+cd pokefirered && git sparse-checkout add graphics/pokedex/ graphics/interface/ && cd ..
+node tools/build-pokedex-screen.js pokefirered
 ```
 
 `tools/build-bag.js` converts FireRed's Bag screen (`graphics/item_menu/`, the

@@ -333,6 +333,13 @@
   }
 
   async function addCaught(record) {
+    // A new kind: "…'s data was added to the Pokédex." and its page (once you have one).
+    if (!Player.hasCaught(player, record.species) && player.flags.pokedex) {
+      Player.markCaught(player, record.species);
+      await message(Party.speciesName(record.species) + "'s data was\nadded to the Pokédex.");
+      Screen.say("");
+      await PokedexScreen.open(dexOptions({ register: record.species }));
+    }
     const where = Player.receive(player, record);
     const name = Party.displayName(record);
     if (where === "party") await message(name + " was added to your party!");
@@ -1109,46 +1116,36 @@
     return dexEntries;
   }
 
-  async function pokedex() {
-    let last = null;   // back on the one you looked at
-    for (;;) {
-      const seen = new Set(player.pokedex.seen.map((s) => DEX[s].id));
-      const caught = new Set(player.pokedex.caught.map((s) => DEX[s].id));
-      const html = '<p class="dex-counts">Seen: <b>' + seen.size + "</b> · Caught: <b>" + caught.size + "</b> of " + dexList().length + "</p>" +
-        '<div class="dex">' + dexList().map((e) => {
-          const num = "#" + String(e.id).padStart(3, "0");
-          // (Unseen ones take the cursor too, so the D-pad goes row by row; A does nothing on them.)
-          if (!seen.has(e.id)) return '<div class="dex-entry unseen" tabindex="-1" data-pick="unseen:' + e.species + '"' +
-            (e.species === last ? " data-focus" : "") + "><span>" + num + "</span>?</div>";
-          return '<button type="button" class="dex-entry' + (caught.has(e.id) ? " caught" : " seen") + '" data-pick="' + e.species + '"' +
-            (e.species === last ? " data-focus" : "") + ">" +
-            "<span>" + num + "</span>" + spriteTag(e.species, "", 'loading="lazy" alt=""') +
-            "<small>" + window.Screen.ballIcon(caught.has(e.id)) + escapeHtml(Party.speciesName(e.species)) + "</small></button>";
-        }).join("") + "</div>";
-      const v = await pick("", html, [back("Close")]);
-      if (v === "back") return;
-      if (v.pick.startsWith("unseen:")) { last = v.pick.slice(7); continue; }
-      last = v.pick;
-      await pokedexEntry(v.pick);
-    }
+  // FireRed's Pokédex (ui/pokedex-screen.js).
+  function dexOptions(extra) {
+    const seen = new Set(player.pokedex.seen), caught = new Set(player.pokedex.caught);
+    return Object.assign({
+      entries: dexList().map((e) => ({ id: e.id, species: e.species, seen: seen.has(e.species), caught: caught.has(e.species) })),
+      areas: speciesAreas,
+      trainer: "assets/sprites/trainers/front/" + Player.LOOKS[player.look].front + ".png",
+      cry: (sp) => cry(sp)
+    }, extra);
   }
-
-  // A species' page, as FireRed's Pokédex shows it: number and name, its
-  // category, height and weight, picture and description
-  // (data/pokedex-text.js). One you've only seen shows its name and picture.
-  async function pokedexEntry(species) {
-    const d = DEX[species], caught = Player.hasCaught(player, species);
-    const text = (window.POKEDEX_TEXT || {})[d.id] || {};
-    const html = '<div class="dex-page">' +
-      '<div class="dex-page-top">' + spriteTag(species, "", 'class="dex-page-pic" alt=""') +
-        '<div class="dex-page-info"><b>No. ' + String(d.id).padStart(3, "0") + " " + escapeHtml(Party.speciesName(species)) + "</b>" +
-        "<div>" + (caught && text.category ? escapeHtml(text.category) + " Pokémon" : "????? Pokémon") + "</div>" +
-        "<div>Type: " + (caught ? d.types.join(" / ") : "?????") + "</div>" +
-        "<div>HT " + (caught ? d.height + " m" : "??? m") + "</div>" +
-        "<div>WT " + (caught ? d.weight + " kg" : "??? kg") + "</div></div></div>" +
-      (caught && text.description ? '<p class="dex-page-text">' + escapeHtml(text.description) + "</p>" : "") +
-      "</div>";
-    await pick("", html, [back("Back")]);
+  function pokedex() {
+    Screen.say("");
+    clearMenu();
+    return PokedexScreen.open(dexOptions());
+  }
+  // Where a species can be found: the map sections of the maps whose wild
+  // Pokémon (grass, water, fishing, rocks) include it.
+  let areaIndex = null;
+  function speciesAreas(species) {
+    if (!areaIndex) {
+      areaIndex = {};
+      const secs = (window.TOWN_MAP || {}).mapSections || {};
+      const walk = (o, sec) => {
+        if (!o || typeof o !== "object") return;
+        if (o.species) (areaIndex[o.species] = areaIndex[o.species] || new Set()).add(sec);
+        for (const v of Object.values(o)) walk(v, sec);
+      };
+      for (const [name, m] of Object.entries(window.WORLD_MAPS)) if (secs[name] && m.wild) walk(m.wild, secs[name]);
+    }
+    return [...(areaIndex[species] || [])];
   }
 
   // ---------- Trainer card ----------

@@ -31,7 +31,7 @@
 
   // FireRed's symbols written as {NAME}: the "Lv" ({LV_2}: F9 05), "PP"
   // (F9 06) and the narrow PKMN (two characters, 53 54).
-  const EXTRA = { LV: [0x105], PP: [0x106], PKMN: [0x53, 0x54] };
+  const EXTRA = { LV: [0x105], PP: [0x106], PKMN: [0x53, 0x54], NO: [0x108], PLUS: [0x104] };
 
   function Surface() {
     const px = new Uint8ClampedArray(W * H * 4);

@@ -84,13 +84,15 @@ for (const line of fs.readFileSync(P("charmap.txt"), "utf8").split("\n")) {
 // ---------- Button icons (src/text.c sKeypadIcons: first 8x8 tile, 8 wide, 12 tall) ----------
 
 const keypad = readPng(P("graphics/fonts/keypad_icons.png"));
-const ICONS = { A_BUTTON: 0x0, B_BUTTON: 0x1, DPAD_LEFT: 0xE, DPAD_RIGHT: 0xF, DPAD_UPDOWN: 0x20, DPAD_LEFTRIGHT: 0x21 };
+const ICONS = { A_BUTTON: 0x0, B_BUTTON: 0x1, DPAD_LEFT: 0xE, DPAD_RIGHT: 0xF, DPAD_UPDOWN: 0x20, DPAD_LEFTRIGHT: 0x21,
+  START_BUTTON: [0x6, 24] };
 const icons = {};
-for (const [name, tile] of Object.entries(ICONS)) {
+for (const [name, def] of Object.entries(ICONS)) {
+  const [tile, width] = Array.isArray(def) ? def : [def, 8];
   const tx = (tile % 16) * 8, ty = Math.floor(tile / 16) * 8;
   let px = "";
-  for (let y = 0; y < 12; y++) for (let x = 0; x < 8; x++) px += keypad.px[(ty + y) * keypad.width + tx + x].toString(16);
-  icons[name] = { width: 8, height: 12, px };
+  for (let y = 0; y < 12; y++) for (let x = 0; x < width; x++) px += keypad.px[(ty + y) * keypad.width + tx + x].toString(16);
+  icons[name] = { width, height: 12, px };
 }
 
 // ---------- Window frames ----------
