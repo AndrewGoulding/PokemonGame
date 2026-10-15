@@ -749,7 +749,10 @@ for (const share of [false, true]) {
     "MtEmber_RubyPath_B1F", "MtEmber_RubyPath_B1F_Stairs", "MtEmber_RubyPath_B2F", "MtEmber_RubyPath_B2F_Stairs",
     "MtEmber_RubyPath_B3F", "MtEmber_RubyPath_B4F", "MtEmber_RubyPath_B5F", "ThreeIsland_BerryForest", "ThreeIsland_DunsparceTunnel",
     "FourIsland_IcefallCave_Entrance", "FourIsland_IcefallCave_1F", "FourIsland_IcefallCave_B1F", "FourIsland_IcefallCave_Back",
-    "FiveIsland_RocketWarehouse", "FiveIsland_LostCave_Entrance"].concat(Array.from({ length: 14 }, (_, i) => "FiveIsland_LostCave_Room" + (i + 1))));
+    "FiveIsland_RocketWarehouse", "FiveIsland_LostCave_Entrance"].concat(Array.from({ length: 14 }, (_, i) => "FiveIsland_LostCave_Room" + (i + 1)),
+    ["SixIsland_DottedHole_1F", "SixIsland_DottedHole_B1F", "SixIsland_DottedHole_B2F", "SixIsland_DottedHole_B3F", "SixIsland_DottedHole_B4F",
+      "SixIsland_DottedHole_SapphireRoom", "SixIsland_PatternBush", "SixIsland_AlteringCave", "SevenIsland_SevaultCanyon_TanobyKey"],
+    ["Monean", "Liptoo", "Weepth", "Dilford", "Scufib", "Rixy", "Viapois"].map((c) => "SevenIsland_TanobyRuins_" + c + "Chamber")));
   assert(WORLD_MAPS.MtMoon_1F.people.some((p) => p.item === "tm100"), "FireRed's TM09 in Mt. Moon is TM100 Bullet Seed here");
   assert(Bag.canUseOn(Party.create("Gyarados", 30, { rng }), "hm06"), "Gyarados can use Whirlpool");
   assert(Bag.canUseOn(Party.create("Pidgeot", 30, { rng }), "hm10"), "Pidgeot can use Defog");
@@ -1332,10 +1335,10 @@ for (const share of [false, true]) {
   const onGrid = (R, sec) => R.map.some((r) => r.includes(sec)) || R.dungeon.some((r) => r.includes(sec));
   const onMap = (sec) => onGrid(T, sec) || T.sevii.some((R) => onGrid(R, sec));
   // (FireRed gives the Underground Path, the S.S. Anne, the Rocket Hideout, Silph Co., the Pokémon League,
-  // the Ember Spa, the Dunsparce Tunnel (Three Isle Path) and the Rocket Warehouse no square of their own.)
+  // the Ember Spa, the Dunsparce Tunnel (Three Isle Path), the Rocket Warehouse, Trainer Tower's inside, the Tanoby Key and the Tanoby chambers no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
     assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "UNDERGROUND_PATH_2", "S_S_ANNE", "ROCKET_HIDEOUT", "SILPH_CO",
-      "POKEMON_LEAGUE", "EMBER_SPA", "THREE_ISLE_PATH", "ROCKET_WAREHOUSE"].includes(T.mapSections[name])), name + " is on the Town Map");
+      "POKEMON_LEAGUE", "EMBER_SPA", "THREE_ISLE_PATH", "ROCKET_WAREHOUSE", "TRAINER_TOWER_2", "TANOBY_KEY"].includes(T.mapSections[name]) || /_CHAMBER$/.test(T.mapSections[name])), name + " is on the Town Map");
   }
   // The Sevii Islands' maps: One, Two and Three Island on the first (FireRed's REGIONMAP_SEVII123).
   assert.deepStrictEqual(T.sevii.map((R) => [R.id, R.map.length, R.map[0].length]), [["SEVII_123", 15, 22], ["SEVII_45", 15, 22], ["SEVII_67", 15, 22]]);
@@ -2764,11 +2767,10 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
     "OneIsland_TreasureBeach", "MtEmber_Exterior", "MtEmber_Summit", "MtEmber_RubyPath_B5F", "TwoIsland", "TwoIsland_JoyfulGameCorner",
     "TwoIsland_CapeBrink", "TwoIsland_CapeBrink_House", "ThreeIsland", "ThreeIsland_Port", "ThreeIsland_BondBridge", "ThreeIsland_BerryForest"]) W(m);
   // The Seagallop's ports, where it leaves you, and its numbers.
-  for (const port of ["VERMILION_CITY", "ONE_ISLAND", "TWO_ISLAND", "THREE_ISLAND", "FOUR_ISLAND", "FIVE_ISLAND", "CINNABAR_ISLAND"]) {
+  for (const port of ["VERMILION_CITY", "ONE_ISLAND", "TWO_ISLAND", "THREE_ISLAND", "FOUR_ISLAND", "FIVE_ISLAND", "SIX_ISLAND", "SEVEN_ISLAND", "CINNABAR_ISLAND"]) {
     const p = Sevii.port(port), m = W(p.map);
     assert(Sevii.built(port) && !m.collision[p.y * m.width + p.x], port + ": the Seagallop lands on open ground");
   }
-  for (const port of ["SIX_ISLAND", "SEVEN_ISLAND"]) assert(!Sevii.built(port), port + " isn't built yet");
   assert.deepStrictEqual([Sevii.ferryNumber("CINNABAR_ISLAND", "ONE_ISLAND"), Sevii.ferryNumber("VERMILION_CITY", "TWO_ISLAND"),
     Sevii.ferryNumber("ONE_ISLAND", "THREE_ISLAND"), Sevii.ferryNumber("FOUR_ISLAND", "FIVE_ISLAND"), Sevii.ferryNumber("SIX_ISLAND", "SEVEN_ISLAND")], [1, 7, 2, 3, 5]);
   // The ferry heads east from Cinnabar to One Island, west from One Island back to Vermilion.
@@ -2884,4 +2886,133 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
     "FiveIsland_ResortGorgeous_House_Text_WishToSeeMonPlease", "FiveIsland_LostCave_Room10_Text_MayIAskYouToTakeMeHome", "Text_BodySlamTeach"]) assert(WORLD_TEXT[label], label);
   for (const m of ["FourIsland_Movement_RivalApproach", "FourIsland_IcefallCave_Back_Movement_PlayerToRockets", "FourIsland_PokemonDayCare_Movement_RetrieveMon",
     "FiveIsland_ResortGorgeous_House_Movement_ButlerApproachPlayerNorth", "FiveIsland_LostCave_Room10_Movement_SelphyApproach"]) assert(WORLD_MOVEMENTS[m], m);
+}
+
+// The Sevii Islands, part 3 (game/sevii.js, game/trainer-tower.js, ui/game.js): Six and Seven Island.
+{
+  const W = (m) => { assert(WORLD_MAPS[m], m + " is built"); return WORLD_MAPS[m]; };
+  for (const m of ["SixIsland", "SixIsland_Harbor", "SixIsland_PokemonCenter_1F", "SixIsland_WaterPath", "SixIsland_WaterPath_House1",
+    "SixIsland_RuinValley", "SixIsland_DottedHole_1F", "SixIsland_DottedHole_B4F", "SixIsland_DottedHole_SapphireRoom", "SixIsland_GreenPath",
+    "SixIsland_PatternBush", "SixIsland_OutcastIsland", "SixIsland_AlteringCave", "SevenIsland", "SevenIsland_Harbor", "SevenIsland_TrainerTower",
+    "TrainerTower_Lobby", "TrainerTower_1F", "TrainerTower_8F", "TrainerTower_Roof", "TrainerTower_Elevator", "SevenIsland_SevaultCanyon_Entrance",
+    "SevenIsland_SevaultCanyon", "SevenIsland_SevaultCanyon_House", "SevenIsland_SevaultCanyon_TanobyKey", "SevenIsland_TanobyRuins"]
+    .concat(Sevii.TANOBY_CHAMBERS)) W(m);
+  // The ferry sails everywhere now; Six and Seven Island's page of the menu.
+  for (const port of Sevii.PORTS) assert(Sevii.built(port.id), port.id);
+  assert.deepStrictEqual(Sevii.menu({ celioScene: 5 }, "SIX_ISLAND", 1).items, ["FOUR_ISLAND", "FIVE_ISLAND", "SEVEN_ISLAND", "MORE", "EXIT"]);
+  assert.deepStrictEqual(Sevii.menu({ celioScene: 5 }, "SEVEN_ISLAND", 1).items, ["FOUR_ISLAND", "FIVE_ISLAND", "SIX_ISLAND", "MORE", "EXIT"]);
+  // Ruin Valley: the Dotted Hole's door shut (no way in) until Cut opens it, from below, facing it.
+  const rv = W("SixIsland_RuinValley"), door = 24 * rv.width + 24;
+  assert(rv.collision[door] && rv.patches.open.collision[0][2] === 0 && rv.warps.some((w) => w.x === 24 && w.y === 24 && w.map === "SixIsland_DottedHole_1F"));
+  assert(Sevii.cutOpensDottedHole({}, { map: "SixIsland_RuinValley", x: 24, y: 25, facing: "up" }));
+  assert(!Sevii.cutOpensDottedHole({}, { map: "SixIsland_RuinValley", x: 24, y: 25, facing: "left" }));
+  assert(!Sevii.cutOpensDottedHole({ usedCutOnRuinValleyBraille: true }, { map: "SixIsland_RuinValley", x: 24, y: 25, facing: "up" }));
+  assert(rv.people.some((p) => p.localId === "LOCALID_RUIN_VALLEY_SCIENTIST" && p.x === 24 && p.y === 25 && p.flag === "FLAG_HIDE_RUIN_VALLEY_SCIENTIST"));
+  // The Dotted Hole: holes down a floor at a time (the Braille's way), the rest back up to 1F; B4F's down to the Sapphire.
+  const hole = (m, x, y) => { const M = W(m); return M.behavior[y * M.width + x] === World.MB.FALL_WARP && M.warps.find((w) => w.x === x && w.y === y).map; };
+  assert.strictEqual(hole("SixIsland_DottedHole_1F", 6, 5), "SixIsland_DottedHole_B1F");
+  assert.deepStrictEqual([hole("SixIsland_DottedHole_B1F", 6, 1), hole("SixIsland_DottedHole_B2F", 1, 5), hole("SixIsland_DottedHole_B3F", 11, 5),
+    hole("SixIsland_DottedHole_B4F", 6, 9)], ["SixIsland_DottedHole_B2F", "SixIsland_DottedHole_B3F", "SixIsland_DottedHole_B4F", "SixIsland_DottedHole_SapphireRoom"]);
+  assert.strictEqual(hole("SixIsland_DottedHole_B2F", 6, 1), "SixIsland_DottedHole_1F");
+  assert(W("SixIsland_DottedHole_SapphireRoom").people.some((p) => p.localId === "LOCALID_SAPPHIRE" && p.flag === "FLAG_HIDE_SAPPHIRE"));
+  // Outcast Island's grunt goes with the Warehouse's Rockets.
+  assert(W("SixIsland_OutcastIsland").people.some((p) => p.flag === "FLAG_HIDE_FIVE_ISLAND_ROCKETS" && p.trainer && p.trainer.id === "TRAINER_TEAM_ROCKET_GRUNT_46"));
+  // Altering Cave: FireRed's first table, Zubat only.
+  assert(W("SixIsland_AlteringCave").wild.slots.every((s) => s.species === "Zubat" && !s.alt));
+  // Wild Pokémon: Pattern Bush (Heracross), the Water Path's water, Sevault Canyon's rocks.
+  assert(W("SixIsland_PatternBush").wild.slots.some((s) => s.species === "Heracross"));
+  assert(W("SixIsland_WaterPath").water && W("SevenIsland_SevaultCanyon").rockSmash && W("SevenIsland_TanobyRuins").water);
+  // The Tanoby chambers: Unown, by slot (sUnownLetterSlots), only once the Tanoby Key's solved.
+  for (const c of Sevii.TANOBY_CHAMBERS) assert(W(c).wild.slots.every((s) => s.species === "Unown"), c);
+  assert.deepStrictEqual(Array.from({ length: 12 }, (_, i) => Sevii.unownLetter("SevenIsland_TanobyRuins_MoneanChamber", i)),
+    Array(11).fill("a").concat(["question"]));
+  assert.strictEqual(Sevii.unownLetter("SevenIsland_TanobyRuins_ViapoisChamber", 11), "exclamation");
+  assert.strictEqual(Sevii.unownLetter("SevenIsland_TanobyRuins_RixyChamber", 10), "b");
+  assert.strictEqual(Sevii.unownLetter("SixIsland_PatternBush", 3), null);
+  assert(Sevii.tanobyLocked({}, "SevenIsland_TanobyRuins_DilfordChamber") && !Sevii.tanobyLocked({ unlockedTanobyRuins: true }, "SevenIsland_TanobyRuins_DilfordChamber"));
+  assert(!Sevii.tanobyLocked({}, "SevenIsland_TanobyRuins"));
+  assert.strictEqual(World.pickWild(W("SevenIsland_TanobyRuins_MoneanChamber"), () => 0.999).slot, 11);
+  const unown = Party.create("Unown", 25, { rng, unown: "question" });
+  assert.strictEqual(Party.form(unown), "question");
+  assert.strictEqual(Party.toBattleSet(unown).form, "question");
+  assert.strictEqual(Party.form(Party.create("Unown", 25, { rng, unown: "a" })), "");
+  for (const form of ["b", "z", "exclamation", "question"]) {
+    for (const dir of ["", "back/", "shiny/", "back/shiny/"]) assert(fs.existsSync(path.join(root, "assets/sprites/pokemon", dir, "201-" + form + ".png")), dir + "201-" + form);
+    assert(fs.existsSync(path.join(root, "assets/sprites/icons/201-" + form + ".png")));
+  }
+  // The Tanoby Key: seven switches, the boulders to push onto them.
+  const tk = W("SevenIsland_SevaultCanyon_TanobyKey");
+  assert.strictEqual(tk.triggers.length, 7);
+  assert(tk.triggers.every((q) => tk.behavior[q.y * tk.width + q.x] === World.MB.STRENGTH_BUTTON));
+  assert.deepStrictEqual(Object.values(Sevii.TANOBY_BOULDERS_SOLVED).map(([x, y]) => x + "," + y).sort(), tk.triggers.map((q) => q.x + "," + q.y).sort());
+  // The Pokémon Centers (respawn and Fly).
+  for (const [sec, center] of [["SIX_ISLAND", "SixIsland_PokemonCenter_1F"], ["SEVEN_ISLAND", "SevenIsland_PokemonCenter_1F"]]) {
+    assert(Player.CENTERS[center] && window.TOWN_MAP.fly[sec].center === center, sec);
+    const c = Player.CENTERS[center], cm = W(center);
+    assert(!cm.collision[c.y * cm.width + c.x], center + " respawn spot");
+  }
+  const onGrid67 = (sec) => { const R = window.TOWN_MAP.sevii[2]; return R.map.some((r) => r.includes(sec)) || R.dungeon.some((r) => r.includes(sec)); };
+  for (const sec of ["SIX_ISLAND", "SEVEN_ISLAND", "RUIN_VALLEY", "WATER_PATH", "GREEN_PATH", "OUTCAST_ISLAND", "TRAINER_TOWER", "SEVAULT_CANYON",
+    "TANOBY_RUINS", "CANYON_ENTRANCE"]) assert(onGrid67(sec), sec);
+  // Trainers (doubles automatic) and their classes' prize money.
+  for (const id of ["TRAINER_TWINS_MIU_MIA", "TRAINER_SIS_AND_BRO_AVA_GEB", "TRAINER_YOUNG_COUPLE_EVE_JON", "TRAINER_COOL_COUPLE_LEX_NYA"]) {
+    assert(Object.values(WORLD_MAPS).some((m) => m.people.some((p) => p.trainer && p.trainer.id === id && p.trainer.double)), id + " is a double battle");
+  }
+  // Text and movements the scenes use.
+  for (const label of ["SixIsland_PokemonCenter_1F_Text_RivalImpossibleToGetAllMonsAroundHere", "SixIsland_DottedHole_SapphireRoom_Text_SellToTeamRocketTellPassword",
+    "SixIsland_WaterPath_House1_Text_ItsXInchesDeserveReward", "SevenIsland_SevaultCanyon_TanobyKey_Text_MysteriousRumbleFarAway",
+    "TrainerTower_Lobby_Text_ExplainTrainerTower", "TrainerTower_Roof_Text_DoneItInRecordTime", "TrainerTower_Text_XMinYZSec", "Text_SwordsDanceTeach",
+    "SevenIsland_SevaultCanyon_House_Text_YoureAllChipperNow"]) assert(WORLD_TEXT[label], label);
+  for (const m of ["SixIsland_PokemonCenter_1F_Movement_RivalApproach", "SixIsland_DottedHole_SapphireRoom_Movement_ThiefExitNorth",
+    "SixIsland_DottedHole_SapphireRoom_Movement_ThiefGetSapphireFromBelow"]) assert(WORLD_MOVEMENTS[m], m);
+  // After the islands: the hook for Cerulean Cave's guard.
+  assert(Sevii.ceruleanCaveOpen({ gameClear: true, canLinkWithRS: true }) && !Sevii.ceruleanCaveOpen({ gameClear: true }));
+
+  // Trainer Tower: FireRed's built-in challenges, eight floors each.
+  const TT = window.TRAINER_TOWER;
+  assert.deepStrictEqual(TT.challenges.map((c) => c.length), [8, 8, 8, 8]);
+  assert.deepStrictEqual(TrainerTower.MODES, ["Single", "Double", "Knockout", "Mixed"]);
+  for (let mode = 0; mode < 4; mode++) for (let n = 1; n <= 8; n++) {
+    const fl = TrainerTower.floor(mode, n);
+    if (mode < 3) assert.strictEqual(fl.type, ["single", "double", "knockout"][mode]);
+    assert.strictEqual(fl.trainers.length, { single: 1, double: 2, knockout: 3 }[fl.type]);
+    for (const t of fl.trainers) {
+      assert(t.mons.length === 6 && t.intro && t.lose && t.after && fs.existsSync(path.join(root, "assets/sprites/trainers/front", t.pic + ".png")), t.name);
+      for (const m of t.mons) assert(DEX[m.species] && m.moves.every((mv) => MOVES[mv]) && NATURES[m.nature], t.name + " " + m.species);
+    }
+    for (const look of fl.looks) assert(WORLD_SPRITES[look], look);
+    assert(WORLD_MAPS["TrainerTower_" + n + "F"].patches.doubles && WORLD_MAPS["TrainerTower_" + n + "F"].patches.knockout);
+  }
+  assert.deepStrictEqual(TrainerTower.MODES.map((_, m) => TrainerTower.prize(m)), ["up-grade", "dragon-scale", "metal-coat", "kings-rock"]);
+  assert.strictEqual(TrainerTower.floor(3, 4), TT.floors.Double_8);
+  assert.strictEqual(TT.floors.Single_4.trainers[0].intro, "Ahaha you're not\ngoing anywhere!");
+  // Their Pokémon (BuildEnemyParty): at your best's level, by floors cleared.
+  const tf = TrainerTower.floor(0, 1), lvl = TrainerTower.partyLevel([{ level: 12 }, { level: 57 }]);
+  assert.strictEqual(lvl, 57);
+  const single = TrainerTower.team(tf, 0, 0, lvl);
+  assert.deepStrictEqual(single.map((r) => [r.species, r.level]), [[tf.trainers[0].mons[0].species, 57], [tf.trainers[0].mons[2].species, 57]]);
+  assert.strictEqual(single[0].item, tf.trainers[0].mons[0].item || "");
+  assert.deepStrictEqual(single[0].evs, tf.trainers[0].mons[0].evs);
+  const df = TrainerTower.floor(1, 3), dbl = TrainerTower.team(df, 0, 2, 50);
+  assert.deepStrictEqual(dbl.map((r) => r.species), [df.trainers[0].mons[2].species, df.trainers[1].mons[0].species]);
+  const kf = TrainerTower.floor(2, 8);
+  assert.deepStrictEqual([0, 1, 2].map((i) => TrainerTower.team(kf, i, 7, 50)[0].species), [kf.trainers[0].mons[1].species, kf.trainers[1].mons[4].species, kf.trainers[2].mons[5].species]);
+  // The challenge: floors in turn, the clock, the record.
+  const tflags = {};
+  TrainerTower.start(tflags, 2);
+  assert(!TrainerTower.floorCleared(tflags, 1) && TrainerTower.floorCleared(tflags, 2));
+  tflags.tower.floorsCleared = 1;
+  assert(TrainerTower.floorCleared(tflags, 1) && !TrainerTower.floorCleared(tflags, 2));
+  TrainerTower.tick(tflags, 61000);
+  assert.strictEqual(tflags.tower.frames, 3660);
+  assert.deepStrictEqual(TrainerTower.time(3660), [" 1", " 1", "00"]);
+  assert.deepStrictEqual(TrainerTower.time(TrainerTower.MAX_TIME), ["59", "59", "99"]);
+  assert.strictEqual(TrainerTower.finalTime(tflags), 0);
+  assert.strictEqual(TrainerTower.best(tflags, 2), 3660);
+  assert.strictEqual(TrainerTower.finalTime(tflags), 2);
+  TrainerTower.start(tflags, 2); TrainerTower.tick(tflags, 99000);
+  assert.strictEqual(TrainerTower.finalTime(tflags), 1);
+  assert.strictEqual(TrainerTower.best(tflags, 2), 3660);
+  tflags.tower.running = false; TrainerTower.tick(tflags, 5000);
+  assert.strictEqual(tflags.tower.frames, 5940);
 }

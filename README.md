@@ -396,8 +396,8 @@ her Lapras gets the truth out of him (the Pokémon are in the Rocket Warehouse
 on Five Island) and they run; she's at home on Four Island after that.
 Five Island: its houses and Pokémon Center; Five Isle Meadow, Team Rocket's
 grunts, Cut trees and the Rocket Warehouse's door, which takes two passwords:
-"Goldeen need log" and "Yes, nah, Chansey" (the second still to come, in the
-Dotted Hole on Six Island). Inside, FireRed's spinning-arrow floor, its grunts
+"Goldeen need log" and "Yes, nah, Chansey" (the second from the Dotted Hole on
+Six Island). Inside, FireRed's spinning-arrow floor, its grunts
 and two Admins: the one by the arrows turns them round when she's beaten so
 you can come back through, and beating the one by the computer (he turns to
 face you as you come up) sends Team Rocket packing for good (the pens are
@@ -413,7 +413,55 @@ battles you and asks you to take her home; at home she'd like to see a
 Pokémon you've seen (FireRed's SampleResortGorgeousMon; she tires of waiting
 after 250 steps), and when you show her one, her butler thanks you with a
 Luxury Ball or, sometimes, something finer. Trainers, items, hidden items,
-wild Pokémon, signs and the Town Map's Four and Five Island page. From Cinnabar,
+wild Pokémon, signs and the Town Map's Four and Five Island page. **The Sevii
+Islands, part 3**: the Seagallop sails to Six and Seven Island too. Six
+Island: Gary's in its Pokémon Center the first time you come (he can't find
+all the Pokémon around here, and goes home; he's not on Four Island after
+that), its Poké Mart and house; the Water Path (its trainers, among them the
+twins Miu & Mia, a double battle, items and hidden berries) and its houses,
+one of them the Heracross fan's, who measures a Heracross (FireRed's size
+record, as the Magikarp's) and gives you a Nest Ball for the biggest yet;
+Ruin Valley (Ruin Maniacs and Hikers, Strength boulders, items), where a
+scientist stands puzzling at the Dotted Hole's door until you've been to
+Icefall Cave: its six dots spell "CUT" in Braille, and Cut used on it from
+below opens it (FireRed's CutMoveRuinValleyCheck). The Dotted Hole: on each
+floor a Braille sign says which hole takes you down (UP, LEFT, RIGHT, DOWN);
+any other drops you back to the top. At the bottom you find the Sapphire, and
+the man who's been following you drops in, snatches it to sell to Team Rocket
+and lets slip the Warehouse's second password as he runs (he's Scientist
+Gideon, in the Rocket Warehouse); the Sapphire room's Braille poem. Green Path,
+Pattern Bush (its Pokémon Breeders, Bug Catchers and the rest; Heracross in
+its grass; an Escape Rope takes you out by the way you came in), Outcast Island
+(its Team Rocket grunt, gone with the Warehouse's Rockets, swimmers and Sis
+and Bro Ava & Geb) and Altering Cave (FireRed's Zubat: the others came with
+Mystery Gift events). Seven Island: its Pokémon Center, Poké Mart, the Swords
+Dance tutor, and the house whose old woman would like to watch battles (her
+visiting trainers came on FireRed's e-Reader cards, so none come here).
+**Trainer Tower** (`game/trainer-tower.js`, its challenges from FireRed's
+built-in sets, `tools/build-trainer-tower.js`): at the lobby's counter
+choose Single, Double, Knockout or Mixed and the clock starts; up the stairs
+each of the eight floors has its battle, laid out for it (FireRed's floor
+layouts for each kind): a trainer who walks up to you with two of their six
+Pokémon, a pair waiting for a double battle (not without two Pokémon that can
+fight), or three trainers one after another, each with one; their Pokémon are
+at your best Pokémon's level, what they say is FireRed's Easy Chat, and there's
+no Exp. or money and no healing on the way but the lobby's nurse. Lose and
+you're back at the counter. The tower's owner on the roof stops the clock,
+gives the challenge's prize (once: Up-Grade, Dragon Scale, Metal Coat, King's
+Rock) and says whether you've set a record; the best times are on the lobby's
+Time Board, and the elevator takes you back down. Canyon Entrance and Sevault
+Canyon (Cooltrainers, Young Couple Eve & Jon and Cool Couple Lex & Nya, Rock
+Smash rocks, the Chansey dance man's house, where dancing along heals your
+Pokémon), the Tanoby Key (push a boulder over each of its seven switches and
+far away the Tanoby Ruins rumble) and the Tanoby Ruins: their seven chambers
+stay dark and empty until then, and after have Unown, each chamber its
+letters (FireRed's sUnownLetterSlots; the letters' pictures from FireRed's,
+`tools/build-unown.js`). Trainers, items, hidden items, wild Pokémon on land,
+on the water and under rocks, signs and the Town Map's Six and Seven Island
+page. Gideon's Sapphire goes to Celio, whose machine then links with Hoenn
+(FLAG_SYS_CAN_LINK_WITH_RS): the League's rematch teams, Lorelei back at the
+League, and (FireRed's FLAG_HIDE_CERULEAN_CAVE_GUARD, `Sevii.ceruleanCaveOpen`)
+Cerulean Cave's guard steps aside, once the cave's built. From Cinnabar,
 Route 21 runs north across the sea, its fishermen and swimmers, to Pallet Town.
 Off Route 10's waterway, the Power Plant (Surf along the river to its doors): its wild
 Pikachu, Voltorb, Magnemite, Magneton and Electabuzz, its items (TM17 Protect, TM25
@@ -472,10 +520,7 @@ home again until you use another Pokémon Center), and Red's Mom has heard the
 news. The League can be challenged again (Gary's and the others' rematch words
 once you're Champion; FireRed's rematch teams, Lorelei's to Lance's from its
 data and Gary's at its levels, once the Sevii Islands' story sets
-FLAG_SYS_CAN_LINK_WITH_RS, with the Sapphire). Six and Seven Island (the
-Seagallop says it doesn't sail there yet), with the Dotted Hole where the
-Sapphire is and the Warehouse's second password comes from, and Cerulean Cave
-aren't built yet. Tiles, palettes and metatiles come from
+FLAG_SYS_CAN_LINK_WITH_RS, with the Sapphire). Cerulean Cave isn't built yet. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into
@@ -533,6 +578,21 @@ node tools/build-town-map.js pokefirered     # after build-maps.js
 ```sh
 cd pokefirered && git sparse-checkout add graphics/seagallop/ && cd ..
 node tools/build-seagallop.js pokefirered
+```
+
+### Trainer Tower and Unown
+
+`tools/build-trainer-tower.js` converts Trainer Tower's built-in challenges
+(`src/trainer_tower_sets.c`: each floor's trainers, their Easy Chat words and
+Pokémon, the prizes) into `data/trainer-tower.js`; `tools/build-unown.js`
+converts Unown's letters B to Z, ! and ? (`graphics/pokemon/unown/`) into form
+sprites (`assets/sprites/pokemon/[back/][shiny/]201-<letter>.png` and the party
+icons), then `tools/build-sprite-metrics.js` places them:
+
+```sh
+cd pokefirered && git sparse-checkout add src/ include/ graphics/pokemon/unown/ && cd ..
+node tools/build-trainer-tower.js pokefirered     # after build-maps.js (the trainers' pictures)
+node tools/build-unown.js pokefirered && node tools/build-sprite-metrics.js pokefirered
 ```
 
 ### Party screen

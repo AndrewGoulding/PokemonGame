@@ -54,7 +54,9 @@
     TwoIsland_PokemonCenter_1F: { map: "TwoIsland_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
     ThreeIsland_PokemonCenter_1F: { map: "ThreeIsland_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
     FourIsland_PokemonCenter_1F: { map: "FourIsland_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
-    FiveIsland_PokemonCenter_1F: { map: "FiveIsland_PokemonCenter_1F", x: 7, y: 4, facing: "up" }
+    FiveIsland_PokemonCenter_1F: { map: "FiveIsland_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
+    SixIsland_PokemonCenter_1F: { map: "SixIsland_PokemonCenter_1F", x: 7, y: 4, facing: "up" },
+    SevenIsland_PokemonCenter_1F: { map: "SevenIsland_PokemonCenter_1F", x: 7, y: 4, facing: "up" }
   };
 
   // Prize money per trainer class: base x the level of the trainer's last Pokémon.

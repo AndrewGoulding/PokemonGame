@@ -97,7 +97,24 @@ const TITLES = {
   FiveIsland_House2: "Five Island · House", FiveIsland_Meadow: "Five Isle Meadow", FiveIsland_RocketWarehouse: "Rocket Warehouse",
   FiveIsland_MemorialPillar: "Memorial Pillar", FiveIsland_WaterLabyrinth: "Water Labyrinth", FiveIsland_ResortGorgeous: "Resort Gorgeous",
   FiveIsland_ResortGorgeous_House: "Resort Gorgeous · Selphy's house", FiveIsland_LostCave_Entrance: "Lost Cave",
-  ...Object.fromEntries(Array.from({ length: 14 }, (_, i) => ["FiveIsland_LostCave_Room" + (i + 1), "Lost Cave"]))
+  ...Object.fromEntries(Array.from({ length: 14 }, (_, i) => ["FiveIsland_LostCave_Room" + (i + 1), "Lost Cave"])),
+  SixIsland_Harbor: "Six Island · Harbor", SixIsland_PokemonCenter_1F: "Six Island · Pokémon Center",
+  SixIsland_PokemonCenter_2F: "Six Island · Pokémon Center 2F", SixIsland_Mart: "Six Island · Poké Mart", SixIsland_House: "Six Island · House",
+  SixIsland_WaterPath_House1: "Water Path · Heracross house", SixIsland_WaterPath_House2: "Water Path · House",
+  SixIsland_DottedHole_1F: "Dotted Hole", SixIsland_DottedHole_B1F: "Dotted Hole", SixIsland_DottedHole_B2F: "Dotted Hole",
+  SixIsland_DottedHole_B3F: "Dotted Hole", SixIsland_DottedHole_B4F: "Dotted Hole", SixIsland_DottedHole_SapphireRoom: "Dotted Hole",
+  SixIsland_RuinValley: "Ruin Valley", SixIsland_GreenPath: "Green Path", SixIsland_PatternBush: "Pattern Bush",
+  SixIsland_OutcastIsland: "Outcast Island", SixIsland_AlteringCave: "Altering Cave", SixIsland_WaterPath: "Water Path",
+  SevenIsland_Harbor: "Seven Island · Harbor", SevenIsland_PokemonCenter_1F: "Seven Island · Pokémon Center",
+  SevenIsland_PokemonCenter_2F: "Seven Island · Pokémon Center 2F", SevenIsland_Mart: "Seven Island · Poké Mart",
+  SevenIsland_House_Room1: "Seven Island · House", SevenIsland_House_Room2: "Seven Island · House",
+  SevenIsland_TrainerTower: "Trainer Tower", TrainerTower_Lobby: "Trainer Tower · Lobby", TrainerTower_Roof: "Trainer Tower · Rooftop",
+  TrainerTower_Elevator: "Trainer Tower · Elevator",
+  ...Object.fromEntries(Array.from({ length: 8 }, (_, i) => ["TrainerTower_" + (i + 1) + "F", "Trainer Tower · " + (i + 1) + "F"])),
+  SevenIsland_SevaultCanyon_Entrance: "Canyon Entrance", SevenIsland_SevaultCanyon: "Sevault Canyon",
+  SevenIsland_SevaultCanyon_House: "Sevault Canyon · Chansey house", SevenIsland_SevaultCanyon_TanobyKey: "Tanoby Key",
+  SevenIsland_TanobyRuins: "Tanoby Ruins",
+  ...Object.fromEntries(["Monean", "Liptoo", "Weepth", "Dilford", "Scufib", "Rixy", "Viapois"].map((c) => ["SevenIsland_TanobyRuins_" + c + "Chamber", c + " Chamber"]))
 };
 
 const MAPS = [
@@ -186,12 +203,31 @@ const MAPS = [
   "FiveIsland", "FiveIsland_Harbor", "FiveIsland_House1", "FiveIsland_House2", "FiveIsland_PokemonCenter_1F", "FiveIsland_PokemonCenter_2F",
   "FiveIsland_Meadow", "FiveIsland_RocketWarehouse", "FiveIsland_MemorialPillar", "FiveIsland_WaterLabyrinth", "FiveIsland_ResortGorgeous",
   "FiveIsland_ResortGorgeous_House", "FiveIsland_LostCave_Entrance"
-].concat(Array.from({ length: 14 }, (_, i) => "FiveIsland_LostCave_Room" + (i + 1)));
+].concat(Array.from({ length: 14 }, (_, i) => "FiveIsland_LostCave_Room" + (i + 1)), [
+  // The Sevii Islands, part 3: Six and Seven Island.
+  "SixIsland", "SixIsland_Harbor", "SixIsland_House", "SixIsland_Mart", "SixIsland_PokemonCenter_1F", "SixIsland_PokemonCenter_2F",
+  "SixIsland_WaterPath", "SixIsland_WaterPath_House1", "SixIsland_WaterPath_House2", "SixIsland_RuinValley", "SixIsland_DottedHole_1F",
+  "SixIsland_DottedHole_B1F", "SixIsland_DottedHole_B2F", "SixIsland_DottedHole_B3F", "SixIsland_DottedHole_B4F",
+  "SixIsland_DottedHole_SapphireRoom", "SixIsland_GreenPath", "SixIsland_PatternBush", "SixIsland_OutcastIsland", "SixIsland_AlteringCave",
+  "SevenIsland", "SevenIsland_Harbor", "SevenIsland_House_Room1", "SevenIsland_House_Room2", "SevenIsland_Mart",
+  "SevenIsland_PokemonCenter_1F", "SevenIsland_PokemonCenter_2F", "SevenIsland_TrainerTower", "TrainerTower_Lobby",
+  "TrainerTower_1F", "TrainerTower_2F", "TrainerTower_3F", "TrainerTower_4F", "TrainerTower_5F", "TrainerTower_6F", "TrainerTower_7F",
+  "TrainerTower_8F", "TrainerTower_Roof", "TrainerTower_Elevator", "SevenIsland_SevaultCanyon_Entrance", "SevenIsland_SevaultCanyon",
+  "SevenIsland_SevaultCanyon_House", "SevenIsland_SevaultCanyon_TanobyKey", "SevenIsland_TanobyRuins",
+  "SevenIsland_TanobyRuins_MoneanChamber", "SevenIsland_TanobyRuins_LiptooChamber", "SevenIsland_TanobyRuins_WeepthChamber",
+  "SevenIsland_TanobyRuins_DilfordChamber", "SevenIsland_TanobyRuins_ScufibChamber", "SevenIsland_TanobyRuins_RixyChamber",
+  "SevenIsland_TanobyRuins_ViapoisChamber"
+]);
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
 // (Fuchsia's fossil Pokémon statue is a Kabuto, or an Omanyte once you've
 // taken the Dome Fossil: FuchsiaCity_OnTransition.)
-const VAR_GFX = { ViridianCity: { OBJ_EVENT_GFX_VAR_0: "OBJ_EVENT_GFX_OLD_MAN_1" }, FuchsiaCity: { OBJ_EVENT_GFX_VAR_0: "OBJ_EVENT_GFX_KABUTO" } };
+const VAR_GFX = { ViridianCity: { OBJ_EVENT_GFX_VAR_0: "OBJ_EVENT_GFX_OLD_MAN_1" }, FuchsiaCity: { OBJ_EVENT_GFX_VAR_0: "OBJ_EVENT_GFX_KABUTO" },
+  // (Trainer Tower's trainers look like whoever the floor has: ui/game.js
+  // picks their look; the e-Reader trainer upstairs in Seven Island's house
+  // never visits here.)
+  SevenIsland_House_Room2: { OBJ_EVENT_GFX_VAR_0: "OBJ_EVENT_GFX_YOUNGSTER" } };
+for (let n = 1; n <= 8; n++) VAR_GFX["TrainerTower_" + n + "F"] = Object.fromEntries([0, 1, 2, 3].map((k) => ["OBJ_EVENT_GFX_VAR_" + k, "OBJ_EVENT_GFX_YOUNGSTER"]));
 const ALT_GFX = {
   ViridianCity_EventScript_TutorialOldMan: "OBJ_EVENT_GFX_OLD_MAN_LYING_DOWN",
   // Leaf stands in for Gary in Oak's lab at the start (the same lab object is
@@ -205,6 +241,13 @@ const ALT_GFX = {
 // Mt. Moon, or the Tradeback Guy upstairs in every Pokémon Center.
 const EXTRA_GFX = { red: "OBJ_EVENT_GFX_RED_NORMAL", leaf: "OBJ_EVENT_GFX_GREEN_NORMAL", jessie: "OBJ_EVENT_GFX_ROCKET_F",
   james: "OBJ_EVENT_GFX_ROCKET_M", tradeback: "OBJ_EVENT_GFX_COOLTRAINER_M" };
+// (And every look Trainer Tower's trainers can have, by OBJ_EVENT_GFX_* name:
+// src/trainer_tower.c's sSingleBattleTrainerInfo and sDoubleBattleTrainerInfo.)
+const TRAINER_TOWER_C = path.join(process.argv[2] || process.env.POKEFIRERED || "", "src/trainer_tower.c");
+if (fs.existsSync(TRAINER_TOWER_C)) {
+  const src = fs.readFileSync(TRAINER_TOWER_C, "utf8");
+  for (const [g] of src.slice(src.indexOf("sSingleBattleTrainerInfo[]"), src.indexOf("sTrainerEncounterMusicLUT")).matchAll(/OBJ_EVENT_GFX_\w+/g)) EXTRA_GFX[g] = g;
+}
 // Signs that read differently here: the house FireRed gives the player is Red's.
 const SIGN_TEXT = { PalletTown_EventScript_PlayersHouseSign: ["Red's house"] };
 // Wild Pokémon changed from FireRed's: all 12 grass slots (they keep FireRed's
@@ -842,6 +885,17 @@ ICEFALL_ICE.forEach(([x, y], i) => {
   MAP_PATCHES.FourIsland_IcefallCave_1F["crack" + i] = [[x, y, metatileLabels.METATILE_SeafoamIslands_CrackedIce, 0]];
   MAP_PATCHES.FourIsland_IcefallCave_1F["hole" + i] = [[x, y, metatileLabels.METATILE_SeafoamIslands_IceHole, 0]];
 });
+// Ruin Valley: the Dotted Hole's door, opened with Cut (SixIsland_RuinValley_EventScript_OpenDottedHoleDoor: "open").
+scriptPatches("data/maps/SixIsland_RuinValley/scripts.inc", (label) => label === "SixIsland_RuinValley_EventScript_OpenDottedHoleDoor" && ["SixIsland_RuinValley", "open"]);
+// Trainer Tower's lobby: the counter's barrier open as you come out of the
+// elevator (TrainerTower_Lobby_OpenCounterBarrier: "counter").
+scriptPatches("data/maps/TrainerTower_Lobby/scripts.inc", (label) => label === "TrainerTower_Lobby_OpenCounterBarrier" && ["TrainerTower_Lobby", "counter"]);
+// Trainer Tower's floors are laid out for the challenge's battles (FireRed
+// swaps in LAYOUT_TRAINER_TOWER_<n>F_DOUBLES / _KNOCKOUT: sFloorLayouts):
+// "doubles" and "knockout" patches.
+for (let n = 1; n <= 8; n++) {
+  LAYOUT_PATCHES["TrainerTower_" + n + "F"] = { doubles: "LAYOUT_TRAINER_TOWER_" + n + "F_DOUBLES", knockout: "LAYOUT_TRAINER_TOWER_" + n + "F_KNOCKOUT" };
+}
 const pointers = readHeader("src/data/object_events/object_event_graphics_info_pointers.h");
 const infos = readHeader("src/data/object_events/object_event_graphics_info.h");
 const picTables = readHeader("src/data/object_events/object_event_pic_tables.h");

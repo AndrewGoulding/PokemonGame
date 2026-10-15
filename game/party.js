@@ -73,6 +73,9 @@
       status: ""
     };
     if (species === "Burmy") record.cloak = opts.cloak || pick(CLOAKS, rng);
+    // Unown's letter (FireRed: from its personality; here kept as itself):
+    // "a" to "z", "exclamation" or "question" (opts.unown, else A).
+    if (species === "Unown" && opts.unown && opts.unown !== "a") record.unown = opts.unown;
     // Shiny: 1 in 4096 (Gen 6), unless opts.shiny says. (Its own roll, so the
     // rest of a record made from a seeded rng stays the same.)
     if (opts.shiny != null ? opts.shiny : Math.random() < 1 / SHINY_ODDS) record.shiny = true;
@@ -86,8 +89,10 @@
   }
   const maxHp = (record) => stats(record).hp;
   // Sprite variant for Pokémon whose look differs within one Pokédex entry:
-  // "sandy" / "trash" for those Burmy (sprites named 412-sandy.png etc.).
-  const form = (record) => (record.cloak && record.cloak !== "plant" ? record.cloak : "");
+  // "sandy" / "trash" for those Burmy (sprites named 412-sandy.png etc.), and
+  // Unown's letters ("b" ... "z", "exclamation", "question": 201-b.png ...).
+  const form = (record) => (record.cloak && record.cloak !== "plant" ? record.cloak
+    : record.species === "Unown" && record.unown ? record.unown : "");
   const displayName = (record) => record.nickname || speciesName(record.species);
   const isFainted = (record) => record.hp <= 0;
 

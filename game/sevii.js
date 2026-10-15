@@ -69,6 +69,25 @@
 //   metStickerMan, hofBragState (FLAG_MET_STICKER_MAN, VAR_HOF_BRAG_STATE)
 //   dayCare2           Four Island's Day-Care: [{ mon, steps }, ...] (up to two;
 //                      game/daycare.js)
+//
+// Six and Seven Island (part 3):
+//   sixCenterScene     VAR_MAP_SCENE_SIX_ISLAND_POKEMON_CENTER_1F: 1 Gary's been
+//                      ("impossible to get all the Pokémon"; it sets
+//                      fourIslandScene too, so he's not on Four Island after)
+//   usedCutOnRuinValleyBraille  FLAG_USED_CUT_ON_RUIN_VALLEY_BRAILLE: the Dotted
+//                      Hole's door open (Cut, facing it from below)
+//   learnedYesNahChansey  set in the Dotted Hole's Sapphire room: the thief
+//                      (Gideon) takes the Sapphire there, and the Sapphire's
+//                      gone (FLAG_HIDE_SAPPHIRE)
+//   heracrossRecord    VAR_HERACROSS_SIZE_RECORD (its size hash), and
+//   gotNestBallFromWaterPathHouse1 (FLAG_GOT_NEST_BALL_FROM_WATER_PATH_HOUSE_1)
+//   unlockedTanobyRuins  FLAG_SYS_UNLOCKED_TANOBY_RUINS: the Tanoby Key's seven
+//                      switches pressed; Unown in the chambers from then on
+//   tower, towerRecords  Trainer Tower (game/trainer-tower.js); towerScene
+//                      VAR_MAP_SCENE_TRAINER_TOWER (1: a challenge on)
+//   tutorSwordsDance   FLAG_TUTOR_SWORDS_DANCE
+// and from Celio, once the Sapphire's in his machine: canLinkWithRS, which
+// in FireRed also sets FLAG_HIDE_CERULEAN_CAVE_GUARD (Sevii.ceruleanCaveOpen).
 (function () {
   "use strict";
 
@@ -87,7 +106,6 @@
   ];
   const ids = PORTS.map((p) => p.id);
   const port = (id) => PORTS.find((p) => p.id === id) || null;
-  // (The islands still to come — Six and Seven Island — sail nowhere yet.)
   const built = (id, maps) => { const p = port(id); return !!(p && (maps || window.WORLD_MAPS || {})[p.map]); };
 
   // sTravelDirectionMatrix (src/seagallop.c): bit `to` of the row for `from`
@@ -200,6 +218,48 @@
   // Pokémon as fond of you as can be (GetLeadMonFriendship: 255).
   const leadFriendshipMax = (party) => { const lead = (party || [])[0]; return !!lead && (lead.happiness | 0) >= 255; };
 
-  window.Sevii = { PORTS, port, built, ferryNumber, eastbound, menu, CAPE_BRINK_MOVES, capeBrinkMove, capeBrinkDone,
+  // ---------- Six Island ----------
+
+  // The Dotted Hole's door opens to Cut used on it, standing below it
+  // (CutMoveRuinValleyCheck: 24, 25 facing up), until it's open.
+  const DOTTED_HOLE_CUT = { map: "SixIsland_RuinValley", x: 24, y: 25, facing: "up" };
+  const cutOpensDottedHole = (flags, at) => !flags.usedCutOnRuinValleyBraille && !!at && at.map === DOTTED_HOLE_CUT.map &&
+    at.x === DOTTED_HOLE_CUT.x && at.y === DOTTED_HOLE_CUT.y && at.facing === DOTTED_HOLE_CUT.facing;
+
+  // ---------- Seven Island ----------
+
+  // The Tanoby Ruins' chambers (MAP_SEVEN_ISLAND_TANOBY_RUINS_*_CHAMBER, in
+  // FireRed's order), and the Unown in each by encounter slot
+  // (src/wild_encounter.c's sUnownLetterSlots: 0-25 A to Z, 26 !, 27 ?).
+  const TANOBY_CHAMBERS = ["Monean", "Liptoo", "Weepth", "Dilford", "Scufib", "Rixy", "Viapois"].map((c) => "SevenIsland_TanobyRuins_" + c + "Chamber");
+  const UNOWN_LETTER_SLOTS = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 27], [2, 2, 2, 3, 3, 3, 7, 7, 7, 20, 20, 14], [13, 13, 13, 13, 18, 18, 18, 18, 8, 8, 4, 4],
+    [15, 15, 11, 11, 9, 9, 17, 17, 17, 16, 16, 16], [24, 24, 19, 19, 6, 6, 6, 5, 5, 5, 10, 10], [21, 21, 21, 22, 22, 22, 23, 23, 12, 12, 1, 1],
+    [25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 26]];
+  // An Unown's letter, as Party's form: "a" ... "z", "exclamation", "question".
+  const unownForm = (n) => (n === 26 ? "exclamation" : n === 27 ? "question" : String.fromCharCode(97 + n));
+  // The letter of the Unown in `slot` of chamber map `map` (GenerateWildMon), or null.
+  function unownLetter(map, slot) {
+    const c = TANOBY_CHAMBERS.indexOf(map);
+    return c < 0 || slot == null ? null : unownForm(UNOWN_LETTER_SLOTS[c][slot]);
+  }
+  // No wild Pokémon in the chambers until the Tanoby Key's puzzle is solved
+  // (UnlockedTanobyOrAreNotInTanoby), and they're dark till then (EventScript_TryDarkenRuins).
+  const tanobyLocked = (flags, map) => TANOBY_CHAMBERS.includes(map) && !flags.unlockedTanobyRuins;
+  // The Tanoby Key's boulders, once solved (..._EventScript_MoveBouldersToSolvedPos), by local id.
+  const TANOBY_BOULDERS_SOLVED = { LOCALID_TANOBY_KEY_BOULDER1: [7, 2], LOCALID_TANOBY_KEY_BOULDER2: [4, 4], LOCALID_TANOBY_KEY_BOULDER3: [10, 4],
+    LOCALID_TANOBY_KEY_BOULDER4: [5, 6], LOCALID_TANOBY_KEY_BOULDER5: [9, 6], LOCALID_TANOBY_KEY_BOULDER6: [5, 8], LOCALID_TANOBY_KEY_BOULDER7: [9, 8] };
+
+  // ---------- After the islands ----------
+
+  // FireRed's Cerulean Cave guard steps aside once Celio has the Sapphire
+  // (OneIsland_PokemonCenter_1F: FLAG_SYS_CAN_LINK_WITH_RS sets
+  // FLAG_HIDE_CERULEAN_CAVE_GUARD; FireRed also wants the National Pokédex,
+  // which this game hasn't got: you're Champion instead, as Celio asks).
+  const ceruleanCaveOpen = (flags) => !!(flags && flags.gameClear && flags.canLinkWithRS);
+
+  window.Sevii = { DOTTED_HOLE_CUT, cutOpensDottedHole, TANOBY_CHAMBERS, UNOWN_LETTER_SLOTS, unownForm, unownLetter, tanobyLocked,
+    TANOBY_BOULDERS_SOLVED, ceruleanCaveOpen,
+    PORTS, port, built, ferryNumber, eastbound, menu, CAPE_BRINK_MOVES, capeBrinkMove, capeBrinkDone,
     ICEFALL_ICE, icefallPatches, hofBrag, RESORT_DELUXE, RESORT_PATIENCE, resortRequest, resortStep, leadFriendshipMax };
 })();

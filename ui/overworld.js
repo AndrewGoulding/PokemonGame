@@ -24,7 +24,8 @@
 //        hiddenItem(hidden) -> bool (not found yet), canRun() -> bool,
 //        onWarp(from, to) when you go through a door, cave or stairs,
 //        canSurf() -> bool, strength() -> bool (boulders can be pushed),
-//        boulderFell(def) (pushed into a hole), boulderSwitch(map, x, y) (pushed onto a floor switch),
+//        boulderFell(def) (pushed into a hole), boulderSwitch(map, x, y) (pushed onto a floor switch;
+//        may return an event to finish with, once you're standing still), weather(map) (overrides the map's),
 //        onAvatar(mode) when you get on or off the Bicycle or the water }
 //
 // The player is walking, on the Bicycle or surfing (Overworld.setAvatar;
@@ -230,6 +231,7 @@
     }
   }
   let neighbours = [];
+  let pendingEvent = null;   // (a scene something set off, to start once you're standing still)
 
   const personAt = (x, y) => people.find((p) => (p.x === x && p.y === y) || (p.move && p.move.tx === x && p.move.ty === y));
   const occupiedForPlayer = (mapName, x, y) => (mapName === me.map ? !!personAt(x, y)
@@ -279,7 +281,11 @@
           return;
         }
         // One pushed onto a floor switch presses it (HandleBoulderActivateVictoryRoadSwitch).
-        if (isBoulder(p) && World.blockAt(me.map, p.x, p.y).behavior === World.MB.STRENGTH_BUTTON && ctx.boulderSwitch) ctx.boulderSwitch(me.map, p.x, p.y);
+        // (It can start a scene: the Tanoby Key's switches. That waits till you're still.)
+        if (isBoulder(p) && World.blockAt(me.map, p.x, p.y).behavior === World.MB.STRENGTH_BUTTON && ctx.boulderSwitch) {
+          const ev = ctx.boulderSwitch(me.map, p.x, p.y);
+          if (ev && typeof ev === "object") pendingEvent = ev;
+        }
         // A trainer on the move can walk into seeing you.
         if (!scene && !paused && resolveExplore && !me.move) {
           const seen = trainerSees(p);
@@ -834,7 +840,8 @@
   //   (Weather_UpdateBlend: a step every 4 frames, EVA and EVB in turn).
   // - "shade" (Viridian Forest, Pokémon Mansion): the map and people darker
   //   (Shade_InitVars: gamma shift 3, each colour x 13/16).
-  const weatherOf = (mapName) => (World.map(mapName) || {}).weather;
+  // (ctx.weather(map) can change it: the Tanoby Ruins' chambers stay dark until their puzzle's solved.)
+  const weatherOf = (mapName) => (ctx && ctx.weather && ctx.weather(mapName)) || (World.map(mapName) || {}).weather;
   const fogState = { on: false, offset: 0, counter: 0, eva: 0, evb: 16, step: 0, steps: 0 };
   // (Drawn with the canvas's own blending, so nothing is read back from it: a
   // canvas with the map's pictures on it can't be read from file://. The map
@@ -890,16 +897,20 @@
 
   // The screen shaking a pixel up and down (FireRed's Task_ElevatorShake:
   // SetCameraPanning(0, ±1), the other way every 3 frames, `count` times).
-  let pan = null, panY = 0;
-  function shake(count) {
-    return new Promise((resolve) => { pan = { count, n: 0, t: 0, dy: 1, resolve }; });
+  let pan = null, panY = 0, panX = 0;
+  // (FireRed's ShakeScreen too: `opts` { x, y (pixels each way), delay (frames) }.)
+  function shake(count, opts) {
+    opts = opts || {};
+    return new Promise((resolve) => { pan = { count, n: 0, t: 0, dy: opts.y != null ? opts.y : 1, dx: opts.x || 0, delay: opts.delay || 3, resolve }; });
   }
   function updatePan() {
-    if (++pan.t % 3) return;
+    if (++pan.t % pan.delay) return;
     pan.n++;
     pan.dy = -pan.dy;
+    pan.dx = -pan.dx;
     panY = pan.dy;
-    if (pan.n >= pan.count) { const done = pan.resolve; pan = null; panY = 0; done(); }
+    panX = pan.dx;
+    if (pan.n >= pan.count) { const done = pan.resolve; pan = null; panY = 0; panX = 0; done(); }
   }
 
   function update() {
@@ -940,6 +951,7 @@
     const wasMoving = me.moving;
     me.moving = false;
     if (paused || !resolveExplore) return;
+    if (pendingEvent) { const ev = pendingEvent; pendingEvent = null; return finish(ev); }
     if (pressedMenu) { pressedMenu = false; return finish({ type: "menu" }); }
     if (pressedSelect) { pressedSelect = false; return finish({ type: "select" }); }
     if (pressedA) { pressedA = false; return interact(); }
@@ -1073,7 +1085,7 @@
       py = (sy * TILE) - dy * (me.move.dist - t);
       if (me.move.jump || me.move.dismount || me.move.hop) hop = Math.sin((t / me.move.dist) * Math.PI) * (me.move.jump ? 10 : 6);
     }
-    const camX = px - PLAYER_X, camY = py - PLAYER_Y + panY;
+    const camX = px - PLAYER_X + panX, camY = py - PLAYER_Y + panY;
 
     g.fillStyle = "#000";
     g.fillRect(0, 0, VIEW_W, VIEW_H);

@@ -255,7 +255,8 @@
     if (!s || !s.species) return null;
     // A slot where LeafGreen differs from FireRed: either version's Pokémon.
     const species = s.alt && rng() < 0.5 ? s.alt : s.species;
-    return { species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)) };
+    // (`slot`: which one, for Tanoby's Unown, whose letter goes by it.)
+    return { species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)), slot };
   }
 
   // FireRed's check for a step (src/wild_encounter.c TryStandardWildEncounter),
