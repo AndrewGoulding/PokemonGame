@@ -14,9 +14,11 @@
   "use strict";
 
   // 2: TMs and HMs renumbered (Flash and Rock Smash became HMs; see game/bag.js).
-  const VERSION = 2;
+  // 3: FireRed's PC: 14 boxes of 30 fixed slots (null where empty), with names
+  //    and wallpapers.
+  const VERSION = 3;
   const PARTY_SIZE = 6;
-  const BOX_COUNT = 8;
+  const BOX_COUNT = 14;
   const BOX_SIZE = 30;
   const STARTING_MONEY = 3000;
   // The Exp. Share (Gen 6, party-wide) is a key item you start with, switched on,
@@ -63,6 +65,12 @@
   // Your rival's name, no longer chosen in Oak's speech.
   const RIVAL_NAME = "Gary";
 
+  const emptyBox = () => new Array(BOX_SIZE).fill(null);
+  const boxCount = (box) => box.filter(Boolean).length;
+  const firstEmpty = (box) => box.findIndex((r) => !r);
+  // Every Pokémon in the PC.
+  const boxed = (player) => [].concat(...player.boxes).filter(Boolean);
+
   function create(name, look) {
     return {
       version: VERSION,
@@ -72,7 +80,10 @@
       location: Object.assign({}, NEW_GAME_LOCATION),
       money: STARTING_MONEY,
       party: [],
-      boxes: Array.from({ length: BOX_COUNT }, () => []),
+      boxes: Array.from({ length: BOX_COUNT }, emptyBox),
+      boxNames: Array.from({ length: BOX_COUNT }, (_, i) => "BOX" + (i + 1)),
+      // (FireRed's: FOREST, CITY, DESERT, SAVANNA, round again.)
+      boxWallpapers: Array.from({ length: BOX_COUNT }, (_, i) => i % 4),
       bag: Object.assign({}, STARTING_BAG),
       pcItems: Object.assign({}, STARTING_PC_ITEMS),
       pokedex: { seen: [], caught: [] },
@@ -108,23 +119,26 @@
       player.party.push(record);
       return "party";
     }
-    const i = player.boxes.findIndex((box) => box.length < BOX_SIZE);
+    const i = player.boxes.findIndex((box) => firstEmpty(box) >= 0);
     if (i < 0) return null;
-    player.boxes[i].push(record);
+    player.boxes[i][firstEmpty(player.boxes[i])] = record;
     return "box " + (i + 1);
   }
 
   const healthy = (party) => party.filter((r) => r.hp > 0).length;
 
-  // PC: party -> box. Refuses to leave the party without a healthy Pokémon.
-  function deposit(player, partyIndex, boxIndex) {
+  // PC: party -> box (its first empty slot, or `slot`). Refuses to leave the
+  // party without a healthy Pokémon.
+  function deposit(player, partyIndex, boxIndex, slot) {
     const record = player.party[partyIndex];
     if (!record) return "There's no Pokémon there.";
     if (player.party.length <= 1) return "That's your last Pokémon!";
     if (record.hp > 0 && healthy(player.party) <= 1) return "You'd have no Pokémon left that can battle!";
-    if (player.boxes[boxIndex].length >= BOX_SIZE) return "That box is full.";
+    const box = player.boxes[boxIndex];
+    const at = slot != null ? slot : firstEmpty(box);
+    if (at < 0 || box[at]) return "That box is full.";
     player.party.splice(partyIndex, 1);
-    player.boxes[boxIndex].push(record);
+    box[at] = record;
     return null;
   }
 
@@ -133,7 +147,8 @@
     const box = player.boxes[boxIndex];
     if (!box || !box[slot]) return "There's no Pokémon there.";
     if (player.party.length >= PARTY_SIZE) return "Your party is full.";
-    player.party.push(box.splice(slot, 1)[0]);
+    player.party.push(box[slot]);
+    box[slot] = null;
     return null;
   }
 
@@ -153,7 +168,9 @@
   function release(player, boxIndex, slot) {
     const box = player.boxes[boxIndex];
     if (!box || !box[slot]) return null;
-    return box.splice(slot, 1)[0];
+    const r = box[slot];
+    box[slot] = null;
+    return r;
   }
 
   // ---------- Bag and money ----------
@@ -264,11 +281,20 @@
     const player = create(data.name);
     player.money = Math.max(0, Math.min(MAX_MONEY, data.money | 0));
     player.party = data.party.map((r) => cleanRecord(r, warnings)).filter(Boolean).slice(0, PARTY_SIZE);
-    player.boxes = player.boxes.map((_, i) =>
-      ((data.boxes && data.boxes[i]) || []).map((r) => cleanRecord(r, warnings)).filter(Boolean).slice(0, BOX_SIZE));
+    // (Saves before version 3 had 8 boxes, packed from the start.)
+    player.boxes = player.boxes.map((_, i) => {
+      const box = emptyBox();
+      ((data.boxes && data.boxes[i]) || []).slice(0, BOX_SIZE).forEach((r, j) => { if (r) box[j] = cleanRecord(r, warnings); });
+      return box;
+    });
+    player.boxNames = player.boxNames.map((n, i) => (data.boxNames && data.boxNames[i] != null ? String(data.boxNames[i]).slice(0, 8) : n));
+    player.boxWallpapers = player.boxWallpapers.map((w, i) => {
+      const v = data.boxWallpapers && data.boxWallpapers[i];
+      return Number.isInteger(v) && v >= 0 && v < 16 ? v : w;
+    });
     player.bag = {};
     const RENAMED = renamedItems(data.version);
-    for (const r of player.party.concat(...player.boxes)) if (r.item) r.item = RENAMED[r.item] || r.item;
+    for (const r of player.party.concat(boxed(player))) if (r.item) r.item = RENAMED[r.item] || r.item;
     for (let [item, n] of Object.entries(data.bag || {})) {
       item = RENAMED[item] || item;
       if (window.ITEMS[item] && n > 0) player.bag[item] = Math.min(MAX_ITEM_COUNT, n | 0);
@@ -323,7 +349,7 @@
 
   window.Player = {
     VERSION, LOOKS, PLAYER_LOOK, RIVAL_NAME, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG, STARTING_PC_ITEMS, NEW_GAME_LOCATION, HOME, CENTERS,
-    create, markSeen, markCaught, hasCaught, receive, deposit, withdraw, swapWithBox, release,
+    create, markSeen, markCaught, hasCaught, receive, deposit, withdraw, swapWithBox, release, boxCount, firstEmpty, boxed,
     itemCount, addItem, removeItem, depositItem, withdrawItem, addMoney, prizeMoney, blackoutLoss, serialize, load
   };
 })();

@@ -76,6 +76,7 @@
   }
 
   const confirm = (text) => Screen.yesNo(text);
+  const sfx = (name) => { if (window.GameAudio && window.GameAudio.se) window.GameAudio.se(name); };
 
   // ---------- Saving ----------
 
@@ -800,147 +801,194 @@
   }
 
   // ---------- PC ----------
+  //
+  // FireRed's PC (data/scripts/pc.inc): "Which PC should be accessed?" with
+  // SOMEONE'S PC (BILL'S PC once you've met him: the Pokémon Storage System),
+  // {PLAYER}'s PC (item storage), PROF. OAK's PC (once you have a Pokédex) and
+  // LOG OFF, in a window at the top left with the question in the text box.
+  const overlayCanvas = () => $("#overlay");
+  const instant = (text) => { Screen.say(text, text.length); clearMenu(); };
+  const pcMenu = (items, opts) => GbaMenus.listMenu(overlayCanvas(), Object.assign({ left: 1, top: 1, frame: GameOptions.get().frame, items }, opts));
 
-  // A PC: Pokémon storage (Bill's PC) and item storage (your own PC).
   async function pc() {
+    const f = player.flags;
     for (;;) {
-      const v = await ask("Which PC should be accessed?", [
-        { label: "Bill's PC", value: "boxes", className: "action" },
-        { label: player.name + "'s PC", value: "items", className: "action" },
-        back("Log off")]);
-      if (v === "back") return;
-      if (v === "boxes") await pokemonStorage();
-      else await itemStorage();
+      Screen.say("Which PC should be accessed?");
+      await Screen.printed();
+      clearMenu();
+      const items = [f.billHelped ? "BILL'S PC" : "SOMEONE'S PC", player.name + "'s PC"]
+        .concat(f.pokedex ? ["PROF. OAK's PC"] : [], ["LOG OFF"]);
+      const { index } = await pcMenu(items, { width: f.pokedex || player.name.length > 6 ? 14 : 13 });
+      const v = index < 0 ? "LOG OFF" : items[index];
+      if (v === "LOG OFF") { sfx("se_pc_off"); Screen.say(""); return; }
+      sfx("se_pc_login");
+      if (index === 0) {
+        await say(f.billHelped ? "Accessed BILL's PC." : "Accessed Someone's PC.");
+        await say("POKéMON Storage System opened.");
+        await billsPc();
+      } else if (index === 1) {
+        await say("Accessed {PLAYER}'s PC.");
+        await playersPc();
+      } else {
+        await say(["Accessed PROF. OAK's PC…", "Accessed the POKéDEX Rating\nSystem…"]);
+        if (await confirm("Would you like to have your\nPOKéDEX rated?")) {
+          await say("Prof. Oak: {PLAYER}, you've seen " + player.pokedex.seen.length + "\nPOKéMON, and caught " + player.pokedex.caught.length + "!");
+        }
+        await say("Closed link to PROF. OAK's PC.");
+      }
     }
   }
 
-  // Redraws the list just picked from, so what was moved goes right away.
-  function showItems(items, empty) {
-    const ids = Object.keys(items).filter((id) => items === player.pcItems || (!Bag.isMachine(id) && !Bag.isKeyItem(id)));
-    scene.innerHTML = '<div class="rows">' + (ids.length ? ids.map((id) => itemRow(id, "×" + items[id])).join("")
-      : '<p class="empty">' + empty + "</p>") + "</div>";
+  // Bill's PC (src/pokemon_storage_system_menu.c): what each choice does, in the
+  // text box, as the ▶ moves.
+  let billsPcCursor = 0, lastBox = 0;
+  const BILLS_PC = [
+    ["WITHDRAW POKéMON", "withdraw", "You can withdraw a POKéMON if you\nhave any in a BOX."],
+    ["DEPOSIT POKéMON", "deposit", "You can deposit your party\nPOKéMON in any BOX."],
+    ["MOVE POKéMON", "move", "You can move POKéMON that are\nstored in any BOX."],
+    ["MOVE ITEMS", "items", "You can move items held by any\nPOKéMON in a BOX or your party."],
+    ["SEE YA!", null, "See you later!"]
+  ];
+  async function billsPc() {
+    for (;;) {
+      const { index, cursor } = await pcMenu(BILLS_PC.map((x) => x[0]), {
+        width: 17, cursor: billsPcCursor, wrap: true, onMove: (c) => instant(BILLS_PC[c][2])
+      });
+      billsPcCursor = cursor;
+      const mode = index < 0 ? null : BILLS_PC[index][1];
+      if (!mode) { Screen.say(""); return; }
+      if (mode === "withdraw" && player.party.length >= Player.PARTY_SIZE) { await say("Can't take any more POKéMON."); continue; }
+      if (mode === "deposit" && player.party.length <= 1) { await say("Can't deposit the last POKéMON!"); continue; }
+      Screen.say("");
+      lastBox = await storage(mode);
+      await persist();
+    }
   }
 
+  // The Pokémon Storage System (ui/storage-screen.js).
+  function storage(mode) {
+    return StorageScreen.open({
+      mode, boxes: player.boxes, names: player.boxNames, wallpapers: player.boxWallpapers, party: player.party,
+      box: lastBox, frame: GameOptions.get().frame,
+      view: (r) => ({
+        name: Party.displayName(r), species: r.species, level: r.level, gender: r.gender,
+        item: r.item ? Bag.name(r.item) : "", icon: Screen.iconUrl(r.species, Party.form(r)),
+        pic: Screen.spriteUrl(r.species, Party.form(r), false, r.shiny),
+        picEmpty: ((window.SPRITE_METRICS || {}).front || {})[(window.DEX[r.species] || {}).id] || 0
+      }),
+      itemIcon: (id) => Bag.sprite(id), itemName: (id) => Bag.name(id), itemDesc: (id) => Bag.description(id),
+      summary: (records, i) => SummaryScreen.open(records.map(summaryView), i, summaryContext(records)),
+      pickItem: async () => {
+        const r = await BagScreen.open({
+          pockets: bagPockets, pocketName: bagPocket, frame: GameOptions.get().frame,
+          female: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
+          actions: (it) => (holdable(it.id) ? [{ label: "GIVE", value: "give" }] : [])
+        });
+        BagScreen.close();
+        if (!r) return null;
+        Player.removeItem(player, r.id);
+        return r.id;
+      },
+      toBag: (id) => {
+        if (Player.itemCount(player, id) >= 999) return false;
+        Player.addItem(player, id);
+        return true;
+      },
+      rename: (name) => enterText("BOX NAME?", name, 8),
+      changed: () => persist()
+    });
+  }
+
+  // A line of text typed in the text box (Enter: done, Esc: never mind).
+  function enterText(prompt, value, max) {
+    Screen.say(prompt, prompt.length);
+    const menu = $("#menu");
+    menu.innerHTML = '<div class="intro-name"><input id="enter-text" maxlength="' + max + '" autocomplete="off" aria-label="' + escapeHtml(prompt) + '"></div>';
+    const input = $("#enter-text");
+    input.value = value || "";
+    input.focus(); input.select();
+    return new Promise((resolve) => {
+      input.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" && e.key !== "Escape") return;
+        e.preventDefault(); e.stopPropagation();
+        const v = input.value.trim();
+        menu.innerHTML = "";
+        Screen.say("");
+        resolve(e.key === "Enter" && v ? v.slice(0, max) : null);
+      });
+    });
+  }
+
+  // {PLAYER}'s PC (src/player_pc.c): ITEM STORAGE / MAILBOX / TURN OFF.
+  async function playersPc() {
+    for (;;) {
+      Screen.say("What would you like to do?");
+      await Screen.printed();
+      clearMenu();
+      const { index } = await pcMenu(["ITEM STORAGE", "MAILBOX", "TURN OFF"], { width: 13 });
+      if (index === 0) await itemStorage();
+      else if (index === 1) await say("There's no MAIL here.");
+      else { Screen.say(""); return; }
+    }
+  }
+
+  // ITEM STORAGE: WITHDRAW ITEM (the item list, ui/item-pc-screen.js) and
+  // DEPOSIT ITEM (the Bag), each said in the text box under the ▶.
+  const ITEM_STORAGE = [["WITHDRAW ITEM", "Take out items from the PC."], ["DEPOSIT ITEM", "Store items in the PC."],
+    ["CANCEL", "Go back to the\nprevious menu."]];
   async function itemStorage() {
+    let cursor = 0;
     for (;;) {
-      const stored = Object.keys(player.pcItems).length;
-      const v = await ask("What would you like to do?", [
-        { label: "Withdraw item", value: "withdraw", className: "action" },
-        { label: "Deposit item", value: "deposit", className: "action" },
-        { label: "Toss item", value: "toss", className: "action" },
-        back("Log off")]);
-      if (v === "back") return;
-      if (v === "deposit") {
-        const items = Object.keys(player.bag).filter((id) => !Bag.isMachine(id) && !Bag.isKeyItem(id));
-        if (!items.length) { await message("There are no items in your bag to store."); continue; }
-        const p = await pick("What would you like to deposit?", '<div class="rows">' +
-          items.map((id) => itemRow(id, "×" + player.bag[id])).join("") + "</div>", [back()]);
-        if (p === "back") continue;
-        const n = player.bag[p.pick] > 1 ? await chooseQuantity("Deposit how many?", player.bag[p.pick]) : 1;
-        if (!n) continue;
-        Player.depositItem(player, p.pick, n);
-        showItems(player.bag, "Nothing left in your bag to store.");
-        await message("Stored " + n + " × " + Bag.name(p.pick) + " in the PC.");
-      } else {
-        if (!stored) { await message("There are no items stored in the PC."); continue; }
-        const p = await pick(v === "toss" ? "What would you like to toss?" : "What would you like to withdraw?", '<div class="rows">' +
-          Object.keys(player.pcItems).map((id) => itemRow(id, "×" + player.pcItems[id])).join("") + "</div>", [back()]);
-        if (p === "back") continue;
-        const have = player.pcItems[p.pick];
-        const n = have > 1 ? await chooseQuantity((v === "toss" ? "Toss" : "Withdraw") + " how many?", have) : 1;
-        if (!n) continue;
-        if (v === "toss") {
-          if (!(await confirm("Throw away " + n + " × " + Bag.name(p.pick) + "?"))) continue;
-          player.pcItems[p.pick] -= n;
-          if (player.pcItems[p.pick] <= 0) delete player.pcItems[p.pick];
-          showItems(player.pcItems, "No items stored in the PC.");
-          await message("Threw away " + n + " × " + Bag.name(p.pick) + ".");
-        } else {
-          Player.withdrawItem(player, p.pick, n);
-          showItems(player.pcItems, "No items stored in the PC.");
-          await message("Withdrew " + n + " × " + Bag.name(p.pick) + ".");
-        }
-      }
+      const r = await pcMenu(ITEM_STORAGE.map((x) => x[0]), { width: 14, cursor, onMove: (c) => instant(ITEM_STORAGE[c][1]) });
+      cursor = r.cursor;
+      if (r.index === 0) {
+        if (!Object.keys(player.pcItems).length) { await say("There are no items."); continue; }
+        await withdrawItems();
+      } else if (r.index === 1) await depositItems();
+      else return;
       await persist();
     }
   }
-
-  // A drag in Bill's PC from one Pokémon ("party:2", "box:5") onto another, or
-  // onto the party or box area. Returns an error message, or null.
-  function pcDrop(box, from, to) {
-    const [fa, fi] = from.split(":"), [ta, ti] = to.split(":");
-    const i = +fi, j = ti == null ? null : +ti;
-    const list = (a) => (a === "party" ? player.party : player.boxes[box]);
-    if (fa === ta) {
-      const l = list(fa);
-      if (j == null) l.push(l.splice(i, 1)[0]);            // to the end
-      else [l[i], l[j]] = [l[j], l[i]];
-      return null;
-    }
-    if (fa === "party") return j == null ? Player.deposit(player, i, box) : Player.swapWithBox(player, i, box, j);
-    return j == null ? Player.withdraw(player, box, i) : Player.swapWithBox(player, j, box, i);
-  }
-
-  async function pokemonStorage() {
-    let box = 0;
+  async function withdrawItems() {
+    Screen.say("");
     for (;;) {
-      const slots = player.boxes[box];
-      const mini = (r, key) => '<button type="button" class="mini' + (Party.isFainted(r) ? " fainted" : "") + '" data-pick="' + key + '" title="' +
-        escapeHtml(Party.displayName(r)) + " Lv" + r.level + '">' + spriteTag(r.species, Party.form(r), undefined, r.shiny) +
-        "<span>" + escapeHtml(Party.displayName(r)) + "</span><small>Lv" + r.level + "</small></button>";
-      const html = '<div class="pc"><section data-drop="party"><h3>Party</h3><div class="pc-grid">' +
-        player.party.map((r, i) => mini(r, "party:" + i)).join("") + "</div></section>" +
-        '<section data-drop="box"><h3>Box ' + (box + 1) + " <small>(" + slots.length + "/" + Player.BOX_SIZE + ")</small></h3>" +
-        '<div class="pc-grid">' + (slots.length ? slots.map((r, i) => mini(r, "box:" + i)).join("") : '<p class="empty">This box is empty.</p>') +
-        "</div></section></div>";
-      // Drag a Pokémon onto another to swap them (party and box alike), or onto
-      // the other area to deposit or withdraw it.
-      let dropped;
-      const moved = new Promise((resolve) => { dropped = resolve; });
-      const picked = pick("Bill's PC. Choose a Pokémon. Press Select on one, then on another, to swap them.", html, [
-        { label: "◀ Box " + (((box + Player.BOX_COUNT - 1) % Player.BOX_COUNT) + 1), value: "prev", className: "action" },
-        { label: "Box " + (((box + 1) % Player.BOX_COUNT) + 1) + " ▶", value: "next", className: "action" },
-        back("Log off")
-      ]);
-      const stop = draggableCards(scene.querySelector(".pc"), (from, to) => dropped([from, to]), ".mini");
-      const v = await Promise.race([picked, moved]);
-      stop();
-      if (Array.isArray(v)) {
-        const err = pcDrop(box, v[0], v[1]);
-        if (err) await message(err);
-        await persist();
-        continue;
-      }
-      if (v === "back") return;
-      if (v === "prev") { box = (box + Player.BOX_COUNT - 1) % Player.BOX_COUNT; continue; }
-      if (v === "next") { box = (box + 1) % Player.BOX_COUNT; continue; }
-      const [where, iStr] = v.pick.split(":");
-      const i = +iStr;
-      if (where === "party") {
-        const r = player.party[i];
-        const what = await ask(Party.displayName(r) + "?", [
-          { label: "Deposit in Box " + (box + 1), value: "deposit", className: "action" },
-          { label: "Summary", value: "summary", className: "action" }, back()]);
-        if (what === "deposit") {
-          const err = Player.deposit(player, i, box);
-          await message(err || Party.displayName(r) + " was stored in Box " + (box + 1) + ".");
-        } else if (what === "summary") await summary(i);
-      } else {
-        const r = slots[i];
-        const what = await ask(Party.displayName(r) + "?", [
-          { label: "Withdraw", value: "withdraw", className: "action" },
-          { label: "Release", value: "release", className: "action" }, back()]);
-        if (what === "withdraw") {
-          const err = Player.withdraw(player, box, i);
-          await message(err || Party.displayName(r) + " joined your party.");
-        } else if (what === "release" && await confirm("Release " + Party.displayName(r) + "? You won't see it again.")) {
-          const released = Player.release(player, box, i);
-          if (released && released.item) Player.addItem(player, released.item);
-          await message(Party.displayName(r) + " was released outside. Bye-bye, " + Party.displayName(r) + "!");
+      sfx("se_pc_login");
+      const r = await ItemPcScreen.open({
+        frame: GameOptions.get().frame,
+        items: () => Object.keys(player.pcItems).map((id) => ({ id, name: Bag.name(id), qty: player.pcItems[id], desc: Bag.description(id), icon: Bag.sprite(id) })),
+        withdraw: (id, n) => {
+          if (Player.itemCount(player, id) + n > 999) return "There is no more\nroom in the BAG.";
+          Player.withdrawItem(player, id, n);
+          persist();
+          return null;
         }
+      });
+      ItemPcScreen.close();
+      if (!r) return;
+      // GIVE: straight from the PC to a Pokémon.
+      if (!player.party.length) { await say("There is no\nPOKéMON."); continue; }
+      const mon = await choosePartyFor("Give to which {PKMN}?");
+      if (mon) {
+        Player.withdrawItem(player, r.id, 1);
+        await giveItem(mon, r.id);
       }
       await persist();
+      if (!Object.keys(player.pcItems).length) return;
     }
+  }
+  function depositItems() {
+    Screen.say("");
+    return BagScreen.open({
+      pockets: bagPockets, pocketName: "ITEMS", frame: GameOptions.get().frame,
+      female: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
+      actions: () => [],
+      deposit: (id, n) => {
+        if ((player.pcItems[id] || 0) + n > 999) return "There's no room to\nstore items.";
+        Player.depositItem(player, id, n);
+        persist();
+        return null;
+      }
+    }).then(() => BagScreen.close());
   }
 
   // ---------- Debug ----------
@@ -1178,129 +1226,6 @@
     }
   }
 
-  // Swapping two cards: press Select on one (it's held up), then Select or A on
-  // another; B puts it back down. Dragging one onto another works too: with a
-  // mouse or pen the drag starts once the pointer moves a little; on touch you
-  // press and hold first, so ordinary swipes still scroll. Returns a function
-  // that removes the listeners.
-  function draggableCards(container, onSwap, selector) {
-    selector = selector || ".card";
-    // A card's key (data-slot or data-pick; a number when it is one). Areas
-    // marked data-drop take drops too (onto the area, not onto a card in it).
-    const slot = (card) => {
-      const k = card.dataset.slot != null ? card.dataset.slot : card.dataset.pick != null ? card.dataset.pick : card.dataset.drop;
-      return /^\d+$/.test(k) ? +k : k;
-    };
-    // With the buttons. The cards are choices the D-pad moves between.
-    for (const c of container.querySelectorAll(selector)) { c.dataset.swap = ""; if (!c.matches("button")) c.tabIndex = -1; }
-    let marked = null;
-    const unmark = () => { if (marked) marked.classList.remove("held"); marked = null; };
-    const onKey = (e) => {
-      const at = document.activeElement, card = at && at.closest && at.closest(selector);
-      const here = card && container.contains(card) ? card : null;
-      const isA = ["z", "Z", " ", "Enter"].includes(e.key), isB = ["x", "X", "Escape"].includes(e.key);
-      if (e.key !== "Select" && !(marked && (isA || isB))) return;
-      if (isB) { e.preventDefault(); e.stopImmediatePropagation(); unmark(); return; }
-      if (!here) { if (isA) { e.preventDefault(); e.stopImmediatePropagation(); } return; }
-      e.preventDefault(); e.stopImmediatePropagation();
-      if (!marked) { marked = here; here.classList.add("held"); return; }
-      const from = marked;
-      unmark();
-      if (from !== here) onSwap(slot(from), slot(here));
-    };
-    document.addEventListener("keydown", onKey, true);
-
-    const HOLD_MS = 300, START_PX = 8;
-    let drag = null, swallowClick = false;
-    const cardAt = (x, y) => {
-      const el = document.elementFromPoint(x, y);
-      const card = el && (el.closest(selector) || el.closest("[data-drop]"));
-      return card && container.contains(card) ? card : null;
-    };
-    const clearTargets = () => container.querySelectorAll(".drop-target").forEach((c) => c.classList.remove("drop-target"));
-    const begin = () => { drag.active = true; drag.card.classList.add("dragging"); container.classList.add("reordering"); };
-    const end = () => {
-      if (!drag) return;
-      clearTimeout(drag.timer);
-      drag.card.classList.remove("dragging", "held");
-      drag.card.style.transform = "";
-      container.classList.remove("reordering");
-      clearTargets();
-      drag = null;
-    };
-    const press = (target, x, y, touch) => {
-      swallowClick = false;   // a new touch or click: whatever came before is done
-      const card = target.closest && target.closest(selector);
-      if (!card || !container.contains(card)) return;
-      drag = { card, from: slot(card), x, y, active: false, touch, timer: null };
-      if (touch) drag.timer = setTimeout(() => { if (drag) { drag.card.classList.add("held"); begin(); } }, HOLD_MS);
-    };
-    // Returns true while a drag is under way (so the caller can stop scrolling).
-    const moveTo = (x, y) => {
-      if (!drag) return false;
-      const dx = x - drag.x, dy = y - drag.y;
-      if (!drag.active) {
-        if (Math.hypot(dx, dy) < START_PX) return false;
-        if (drag.touch) {                           // moved before the hold: it's a scroll, not a tap
-          end();
-          swallowClick = true;
-          setTimeout(() => { swallowClick = false; }, 600);
-          return false;
-        }
-        begin();
-      }
-      drag.card.style.transform = "translate(" + dx + "px, " + dy + "px)";
-      clearTargets();
-      const over = cardAt(x, y);
-      if (over && over !== drag.card) over.classList.add("drop-target");
-      return true;
-    };
-    const release = (x, y) => {
-      if (!drag) return;
-      const d = drag;
-      if (!d.active) { end(); return; }
-      swallowClick = true;
-      setTimeout(() => { swallowClick = false; }, 0);
-      const over = cardAt(x, y);
-      end();
-      if (over && over !== d.card) onSwap(d.from, slot(over));
-    };
-
-    // Mouse and pen.
-    const down = (e) => { if (e.pointerType !== "touch" && e.button === 0) press(e.target, e.clientX, e.clientY, false); };
-    const move = (e) => { if (e.pointerType !== "touch" && moveTo(e.clientX, e.clientY)) e.preventDefault(); };
-    const up = (e) => { if (e.pointerType !== "touch") release(e.clientX, e.clientY); };
-    // Touch, with its own events: they let a held drag stop the page scrolling.
-    const tStart = (e) => { if (e.touches.length === 1) press(e.target, e.touches[0].clientX, e.touches[0].clientY, true); };
-    const tMove = (e) => { if (drag && e.touches.length === 1 && moveTo(e.touches[0].clientX, e.touches[0].clientY)) e.preventDefault(); };
-    const tEnd = (e) => { const t = e.changedTouches[0]; if (t) release(t.clientX, t.clientY); else end(); };
-    const click = (e) => { if (swallowClick) { e.stopPropagation(); e.preventDefault(); swallowClick = false; } };
-    // Pictures and text in a card mustn't start the browser's own drag or menu.
-    const noNative = (e) => e.preventDefault();
-    const noMenu = (e) => { if (drag) e.preventDefault(); };
-
-    container.addEventListener("pointerdown", down);
-    document.addEventListener("pointermove", move);
-    document.addEventListener("pointerup", up);
-    container.addEventListener("touchstart", tStart, { passive: true });
-    document.addEventListener("touchmove", tMove, { passive: false });
-    document.addEventListener("touchend", tEnd);
-    document.addEventListener("touchcancel", end);
-    container.addEventListener("click", click, true);
-    container.addEventListener("dragstart", noNative);
-    container.addEventListener("contextmenu", noMenu);
-    return () => {
-      end();
-      unmark();
-      document.removeEventListener("keydown", onKey, true);
-      document.removeEventListener("pointermove", move);
-      document.removeEventListener("pointerup", up);
-      document.removeEventListener("touchmove", tMove);
-      document.removeEventListener("touchend", tEnd);
-      document.removeEventListener("touchcancel", end);
-    };
-  }
-
   // FireRed's Start menu: a window over the map (GbaMenus.startMenu), with
   // the help bar along the bottom. The cursor stays where it was, as in
   // FireRed. Each choice opens its screen and comes back to the menu.
@@ -1477,6 +1402,7 @@
 
   async function story(ev) {
     if (ev.type === "pc") {
+      sfx("se_pc_on");
       await say("{PLAYER} booted up the PC.");
       await pc();
       return;
@@ -1577,9 +1503,11 @@
         return;
 
       case "PalletTown_PlayersHouse_2F_EventScript_PC":
-        // Your own PC at home holds items, as in FireRed.
+        // Your own PC at home holds items, as in FireRed (BedroomPC).
+        sfx("se_pc_on");
         await say("{PLAYER} booted up the PC.");
-        await itemStorage();
+        await playersPc();
+        sfx("se_pc_off");
         return;
 
       case "PalletTown_EventScript_OakTriggerLeft":
@@ -1927,7 +1855,7 @@
         await say(pitch.slice(0, -1));
         if (!(await confirm(fill(pitch[pitch.length - 1]) + "\n(You have " + money(player.money) + ".)"))) { await say(T("Route4_PokemonCenter_1F_Text_OnlyDoingThisAsFavorToYou")); return; }
         if (player.money < 500) { await say(T("Route4_PokemonCenter_1F_Text_YoullNeedMoreMoney")); return; }
-        if (player.party.length >= Player.PARTY_SIZE && !player.boxes.some((b) => b.length < Player.BOX_SIZE)) { await say(T("Route4_PokemonCenter_1F_Text_NoRoomForMorePokemon")); return; }
+        if (player.party.length >= Player.PARTY_SIZE && !player.boxes.some((b) => Player.firstEmpty(b) >= 0)) { await say(T("Route4_PokemonCenter_1F_Text_NoRoomForMorePokemon")); return; }
         Player.addMoney(player, -500);
         f.boughtMagikarp = true;
         await say(T("Route4_PokemonCenter_1F_Text_PaidOutrageouslyForMagikarp"));

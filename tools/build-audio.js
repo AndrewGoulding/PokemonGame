@@ -207,7 +207,8 @@ for (const line of fs.readFileSync(S("songs/midi/midi.cfg"), "utf8").split("\n")
 // Exp., stat changes, and every move sound FireRed has (se_m_*).
 const SOUND_EFFECTS = ["se_ball", "se_select", "se_ball_throw", "se_ball_trade", "se_ball_bounce_1", "se_ball_bounce_2",
   "se_ball_bounce_3", "se_ball_bounce_4", "se_effective", "se_super_effective", "se_not_effective", "se_faint", "se_flee",
-  "se_exp", "se_ball_tray_enter", "se_ball_tray_ball", "se_ball_tray_exit", "se_bag_cursor", "se_bag_pocket"];
+  "se_exp", "se_ball_tray_enter", "se_ball_tray_ball", "se_ball_tray_exit", "se_bag_cursor", "se_bag_pocket",
+  "se_pc_on", "se_pc_login", "se_pc_off", "se_failure", "se_win_open"];
 const isSoundEffect = (name) => SOUND_EFFECTS.includes(name) || /^se_m_/.test(name);
 
 // Flat per-track event lists to keep the file small: [tick, kind, a, b, c] ...

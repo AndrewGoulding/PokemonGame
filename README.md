@@ -35,8 +35,15 @@ Parcel; take it back to Prof. Oak for your first five Poké Balls (new games
 start without any), and after that the Mart
 sells to you and the old man lying across the road north gets up and shows you
 how to catch Pokémon. The Pokémon Center's nurse heals your party (and is where
-you return if you black out), and its PC holds both Pokémon and items (in Bill's
-PC, press Select on a Pokémon and then on another to swap them). There's
+you return if you black out), and its PC is FireRed's: "Which PC should be
+accessed?" (SOMEONE'S PC, which becomes BILL'S PC once you've helped him; your
+own; PROF. OAK's PC once you have a Pokédex). Bill's PC is the Pokémon Storage
+System: 14 boxes of 30 (BOX1-BOX14, each with a name and one of FireRed's 16
+wallpapers), WITHDRAW, DEPOSIT, MOVE POKéMON (pick a Pokémon up with the hand
+and put it down anywhere, in a box or your party) and MOVE ITEMS (take, give and
+swap held items), with FireRed's hand, party panel, "which BOX?" popup, box
+scrolling and release. Your own PC is item storage: WITHDRAW ITEM on FireRed's
+item list, DEPOSIT ITEM from the Bag. There's
 also a move tutor who teaches Dream Eater once, a school and the Nickname house.
 Route 2, Route 22 and the Gym aren't built yet; walking into the Gym's door
 tells you it's locked (it opens at seven badges in FireRed).
@@ -46,8 +53,7 @@ the D-pad, A, B, Start and Select (tap or click them; tapping anything else does
 nothing). D-pad to walk, A to talk or read signs, B to start running and again to
 stop (from the start, indoors too, with FireRed's running animation), Start for
 the menu. In menus, the D-pad moves between choices, A picks one and B goes back;
-in a summary's moves and Bill's PC, Select on one and then on another
-swaps them. On a keyboard: arrows / WASD, Z or Space (A), X (B), Enter, Esc or M (Start),
+in a summary's moves, A on one and then on another swaps them. On a keyboard: arrows / WASD, Z or Space (A), X (B), Enter, Esc or M (Start),
 Backspace (Select). In battle, FireRed's own menus: FIGHT / BAG / POKéMON / RUN,
 then your moves with their PP (coloured as it runs low) and type; B goes back,
 and Select there ("Switch which?") swaps two moves, for good, as in FireRed.
@@ -210,6 +216,14 @@ cd pokefirered && git sparse-checkout add graphics/summary_screen/ graphics/lear
   /src/data/text/abilities.h && cd ..
 cd expansion && git sparse-checkout add /src/data/moves_info.h /src/data/abilities.h && cd ..
 node tools/build-summary.js pokefirered expansion
+```
+
+`tools/build-pc.js` converts FireRed's PC screens (`graphics/pokemon_storage/`,
+with its 16 wallpapers, and `graphics/item_pc/`) into `assets/pc/`:
+
+```sh
+cd pokefirered && git sparse-checkout add graphics/pokemon_storage/ graphics/item_pc/ && cd ..
+node tools/build-pc.js pokefirered
 ```
 
 `tools/build-bag.js` converts FireRed's Bag screen (`graphics/item_menu/`, the

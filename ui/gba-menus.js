@@ -327,6 +327,40 @@
     return { key, cursor };
   }
 
+  // ---------- A list window (multichoice, Menu_InitCursor) ----------
+  //
+  // Your frame round a white window at tiles (left, top), `width` tiles wide,
+  // two rows a choice: the text at x 8, the ▶ at x 0, 16 apart. Up / down
+  // move (round the ends if `wrap`), calling onMove(cursor); A picks, B gives -1.
+  // -> { index, cursor }
+  async function listMenu(canvas, opts) {
+    const std = G().palettes.std2, frame = "type" + ((opts.frame || 0) + 1);
+    const items = opts.items, n = items.length;
+    let cursor = Math.min(opts.cursor || 0, n - 1);
+    const draw = () => {
+      const s = Surface(), x = opts.left * 8, y = opts.top * 8;
+      s.frame(frame, G().frames[frame].palette, opts.left, opts.top, opts.width, n * 2);
+      s.fill(x, y, opts.width * 8, n * 16, std[1]);
+      items.forEach((it, i) => s.text(it, x + 8, y + 2 + 16 * i, std[2], std[3]));
+      s.text("▶", x, y + 2 + 16 * cursor, std[2], std[3]);
+      s.show(canvas);
+    };
+    canvas.classList.remove("hidden");
+    draw();
+    if (opts.onMove) opts.onMove(cursor);
+    const index = await keys((k) => {
+      const to = k === "up" ? cursor - 1 : k === "down" ? cursor + 1 : null;
+      if (to != null) {
+        const c = opts.wrap ? (to + n) % n : to;
+        if (c >= 0 && c < n && c !== cursor) { cursor = c; se(); draw(); if (opts.onMove) opts.onMove(cursor); }
+      } else if (k === "a") { se(); return cursor; }
+      else if (k === "b") { se(); return -1; }
+      return undefined;
+    });
+    canvas.classList.add("hidden");
+    return { index, cursor };
+  }
+
   // ---------- How many (src/shop.c, AdjustQuantityAccordingToDPadInput) ----------
   //
   // Over the screen, above the text box: how many you have (IN BAG) on the
@@ -549,6 +583,7 @@
     battleAction: (canvas, ...a) => during("battle", battleAction(canvas, ...a)),
     battleMoves: (canvas, ...a) => during("moves", battleMoves(canvas, ...a)),
     quantity: (canvas, ...a) => during("quantity", quantity(canvas, ...a)),
+    listMenu: (canvas, ...a) => during("list", listMenu(canvas, ...a)),
     yesNo: (canvas, ...a) => during("yesno", yesNo(canvas, ...a)),
     startMenu: (canvas, ...a) => during("start", startMenu(canvas, ...a)),
     mainMenu: (canvas, ...a) => { canvas.classList.remove("hidden"); return during("main", mainMenu(canvas, ...a)); },

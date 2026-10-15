@@ -563,7 +563,9 @@ for (const share of [false, true]) {
   assert.strictEqual(p.money, Player.STARTING_MONEY);
   for (let i = 0; i < 7; i++) Player.receive(p, Party.create("Pidgey", 5, { rng }));
   assert.strictEqual(p.party.length, 6);
-  assert.strictEqual(p.boxes[0].length, 1, "the seventh goes to the PC");
+  assert.strictEqual(Player.boxCount(p.boxes[0]), 1, "the seventh goes to the PC");
+  assert.strictEqual(p.boxes.length, 14);
+  assert.strictEqual(p.boxes[0].length, 30);
   assert(Player.hasCaught(p, "Pidgey"));
   assert.strictEqual(Player.withdraw(p, 0, 0), "Your party is full.");
   assert.strictEqual(Player.deposit(p, 0, 0), null);
@@ -576,11 +578,24 @@ for (const share of [false, true]) {
   {
     const q = Player.create("Q");
     Player.receive(q, Party.create("Pidgey", 5, { rng }));
-    q.boxes[0].push(Object.assign(Party.create("Rattata", 5, { rng }), { hp: 0 }));
+    q.boxes[0][0] = Object.assign(Party.create("Rattata", 5, { rng }), { hp: 0 });
     assert(/no Pokémon left/.test(Player.swapWithBox(q, 0, 0, 0)));
     q.boxes[0][0].hp = 5;
     assert.strictEqual(Player.swapWithBox(q, 0, 0, 0), null);
     assert.deepStrictEqual([q.party[0].species, q.boxes[0][0].species], ["Rattata", "Pidgey"]);
+  }
+
+  // Saves from before FireRed's PC: 8 packed boxes become 14 of 30 slots.
+  {
+    const old = JSON.parse(Player.serialize(p));
+    old.version = 2; old.boxes = [[p.party[0]]]; delete old.boxNames; delete old.boxWallpapers;
+    const { player: o } = Player.load(old);
+    assert.strictEqual(o.boxes.length, 14);
+    assert.strictEqual(o.boxes[0][0].species, "Pidgey");
+    assert.strictEqual(o.boxes[0][1], null);
+    assert.deepStrictEqual([o.boxNames[13], o.boxWallpapers[5]], ["BOX14", 1]);
+    assert.strictEqual(Player.deposit(o, 1, 3, 7), null);
+    assert(o.boxes[3][7] && Player.boxCount(o.boxes[3]) === 1, "deposit into a chosen slot");
   }
 
   assert(!Player.removeItem(p, "ultra-ball"));

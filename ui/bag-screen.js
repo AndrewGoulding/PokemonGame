@@ -11,7 +11,10 @@
 //     frame,     // the Option screen's FRAME (0-9)
 //     actions,   // (item) => [{ label: "USE", value: "use" }, ...]: the menu A
 //                //   opens (CANCEL is added)
-//     toss       // (id, n): throw n away (TOSS is handled here, as FireRed does)
+//     toss,      // (id, n): throw n away (TOSS is handled here, as FireRed does)
+//     deposit    // instead of the menu (the PC's DEPOSIT ITEM): A asks "Deposit
+//                //   how many?" and calls deposit(id, n), which returns an error
+//                //   message or null
 //   })
 //   // -> null (B, or CANCEL), or { action, id, pocket }
 //   BagScreen.close()   // hides it (it stays up after open() for messages)
@@ -239,16 +242,26 @@
   }
   const waitA = () => window.GbaMenus.keys((k) => (k === "a" || k === "b" ? (se("se_select"), true) : undefined));
 
+  // "… how many?" with the ×001 box: the number, or 0.
+  async function howMany(text, it) {
+    if (!(it.qty > 1)) return 1;
+    st.prompt = { width: 16, text };
+    st.menu = { kind: "count", n: 1, max: it.qty };
+    paint();
+    return menuKeys();
+  }
+  // A message in the prompt window, until A or B.
+  async function note(text) {
+    st.prompt = { width: 23, text };
+    st.menu = { kind: "none" };
+    paint();
+    await waitA();
+  }
+
   // TOSS: "Toss out how many …?", "Throw away … of this item?", "Threw away …".
   async function toss(it) {
-    let n = 1;
-    if (it.qty > 1) {
-      st.prompt = { width: 16, text: "Toss out how many\n" + it.name + "(s)?" };
-      st.menu = { kind: "count", n: 1, max: it.qty };
-      paint();
-      n = await menuKeys();
-      if (!n) return;
-    }
+    const n = await howMany("Toss out how many\n" + it.name + "(s)?", it);
+    if (!n) return;
     st.prompt = { width: 15, text: "Throw away " + n + " of\nthis item?" };
     st.menu = { kind: "none" };
     paint();
@@ -281,6 +294,23 @@
       const it = entries()[mem().cursor];
       se("se_select");
       if (key === "b" || !it) return null;
+      if (opts.deposit) {
+        // (Item storage: "Deposit how many?", then "Deposited …".)
+        st.menu = { kind: "none" };
+        if (it.qty == null) await note("That can't be stored\nin the PC.");
+        else {
+          const n = await howMany("Deposit how many\n" + it.name + "(s)?", it);
+          if (n) {
+            const err = opts.deposit(it.id, n);
+            await note(err || "Deposited " + n + "\n" + it.name + "(s).");
+            st.pockets = opts.pockets();
+            clampMem();
+          }
+        }
+        st.menu = null; st.prompt = null;
+        paint();
+        continue;
+      }
       // A: the menu, with "… is selected." beside it; the description dims.
       const items = (opts.actions(it) || []).concat([{ label: "CANCEL", value: "cancel" }]);
       st.prompt = { width: 14, text: it.name + " is\nselected." };
