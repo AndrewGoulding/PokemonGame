@@ -285,7 +285,10 @@
       terrain: battleTerrain(opts),
       bag: player.bag,
       catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s) },
-      opponent: wild ? randomMove : (b) => OpponentAI.choose(b, "p2")
+      opponent: wild ? randomMove : (b) => OpponentAI.choose(b, "p2"),
+      // A new move with four known: the Summary screen picks the one to forget
+      // (the record caught up with the battle first: level, moves, PP).
+      forgetMove: (i, mon, move) => chooseMoveToForget(Party.syncFromBattle(player.party[i], mon), move)
     });
     const b = result.battle;
     for (const e of b.events) {

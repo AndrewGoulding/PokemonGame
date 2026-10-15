@@ -483,6 +483,47 @@
     });
   }
 
+  // The battle's Yes / No (Cmd_yesnoboxlearnmove): HandleBattleWindow(23, 8,
+  // 29, 13) in the battle text box's tiles, "Yes / No" at (25, 9), the ▶ at
+  // tile 24. Up / down move, A picks, B is No.
+  // (Tiles 0x22-0x2A are your window frame's, loaded there as for the panels.)
+  async function battleYesNo(canvas, opts) {
+    opts = opts || {};
+    const fr = G().frames["type" + ((opts.frame || 0) + 1)];
+    let cursor = opts.cursor ? 1 : 0;
+    const tile = (s, t, tx, ty) => {
+      t -= 0x22;
+      const sx = (t % 3) * 8, sy = Math.floor(t / 3) * 8;
+      for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+        const v = parseInt(fr.px[(sy + y) * 24 + sx + x], 16);
+        if (v) s.put(tx * 8 + x, ty * 8 + y, fr.palette[v]);
+      }
+    };
+    const draw = () => {
+      const s = Surface();
+      for (let ty = 8; ty <= 13; ty++) for (let tx = 23; tx <= 29; tx++) {
+        const row = ty === 8 ? 0 : ty === 13 ? 2 : 1, col = tx === 23 ? 0 : tx === 29 ? 2 : 1;
+        tile(s, 0x22 + row * 3 + col, tx, ty);
+      }
+      s.fill(25 * 8, 9 * 8, 32, 32, P5.bg);
+      s.text("Yes", 25 * 8, 9 * 8 + 2, P5.fg, P5.shadow, "normal", null, 1);
+      s.text("No", 25 * 8, 9 * 8 + 18, P5.fg, P5.shadow, "normal", null, 1);
+      battleCursor(s, null, 24, 9 + 2 * cursor);
+      s.show(canvas);
+    };
+    canvas.classList.remove("hidden");
+    draw();
+    const yes = await keys((k) => {
+      if (k === "up" && cursor) { cursor = 0; se(); draw(); }
+      else if (k === "down" && !cursor) { cursor = 1; se(); draw(); }
+      else if (k === "a") { se(); return cursor === 0; }
+      else if (k === "b") { se(); return false; }
+      return undefined;
+    });
+    canvas.classList.add("hidden");
+    return yes;
+  }
+
   async function battleAction(canvas, opts) {
     const frame = "type" + ((opts.frame || 0) + 1), msg = G().battle.palette;
     let cursor = opts.cursor || 0;
@@ -582,6 +623,7 @@
   window.GbaMenus = {
     battleAction: (canvas, ...a) => during("battle", battleAction(canvas, ...a)),
     battleMoves: (canvas, ...a) => during("moves", battleMoves(canvas, ...a)),
+    battleYesNo: (canvas, ...a) => during("battleyesno", battleYesNo(canvas, ...a)),
     quantity: (canvas, ...a) => during("quantity", quantity(canvas, ...a)),
     listMenu: (canvas, ...a) => during("list", listMenu(canvas, ...a)),
     yesNo: (canvas, ...a) => during("yesno", yesNo(canvas, ...a)),

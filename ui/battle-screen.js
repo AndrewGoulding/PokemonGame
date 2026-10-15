@@ -670,10 +670,35 @@
       case "-learnmove":   // [ident, move, teamIndex]
         return teamName(c) + " learned " + b + "!";
       case "-trylearn":    // [ident, move, teamIndex]
+        // FireRed's (BattleScript_TryLearnMoveLoop): "Delete a move to make
+        // room for …?", the Summary screen to pick it (cfg.forgetMove), "Stop
+        // learning …?" if not.
         return async () => {
-          const mon = battle.sides.p1.pokemon[+c];
-          const slot = await window.Screen.learnMovePrompt(mon.name, battle.ownMoves(mon).map((m) => m.name), b);
-          if (slot != null) battle.replaceMove("p1", +c, slot, b);
+          const mon = battle.sides.p1.pokemon[+c], name = teamName(c);
+          await message(name + " is trying to\nlearn " + b + ".");
+          await message("But, " + name + " can't learn\nmore than four moves.");
+          for (;;) {
+            say("Delete a move to make\nroom for " + b + "?");
+            await window.Screen.printed();
+            if (await window.GbaMenus.battleYesNo(overlay(), { frame: frame() })) {
+              const moves = battle.ownMoves(mon).map((m) => m.name);
+              const slot = config.forgetMove ? await config.forgetMove(+c, mon, b)
+                : await window.Screen.learnMovePrompt(mon.name, moves, b);
+              if (slot != null) {
+                battle.replaceMove("p1", +c, slot, b);
+                if (config.forgetMove) {
+                  await message("1, 2, and… … … Poof!");
+                  await message(name + " forgot\n" + moves[slot] + ".");
+                  await message("And…");
+                  await message(name + " learned\n" + b + "!");
+                }
+                return;
+              }
+            }
+            say("Stop learning\n" + b + "?");
+            await window.Screen.printed();
+            if (await window.GbaMenus.battleYesNo(overlay(), { frame: frame() })) { await message(name + " did not learn\n" + b + "."); return; }
+          }
         };
 
       // ----- Wild battles -----

@@ -736,7 +736,6 @@
   // The text box and menu under the picture.
   const say = (pages) => (async () => { for (const p of [].concat(pages)) await window.Screen.read(p); })();
   const show = (page) => window.Screen.say(page);
-  const choose = (prompt, options) => window.Screen.ask(prompt, options);
 
   // Asks for a name in the menu area, pre-filled with `suggestion`.
   function askName(prompt, suggestion) {
@@ -753,6 +752,19 @@
       const done = () => { const v = input.value.trim(); if (!v) return; menu.innerHTML = ""; resolve(v.slice(0, 10)); };
       ok.addEventListener("click", done);
       input.addEventListener("keydown", (e) => { if (e.key === "Enter") done(); });
+    });
+  }
+
+  // The guide's pages turn with the buttons, as in FireRed: A forward, B back
+  // (not on the first page). Nothing in the text box.
+  function turnPage(page) {
+    show("");
+    window.Screen.clearMenu();
+    return window.GbaMenus.keys((k) => {
+      const se = () => { if (window.GameAudio && window.GameAudio.se) window.GameAudio.se("se_select"); };
+      if (k === "a") { se(); return "next"; }
+      if (k === "b" && page > 1) { se(); return "back"; }
+      return undefined;
     });
   }
 
@@ -785,8 +797,7 @@
     };
     await fadeTo("#000", 16, 0, 0);
     for (;;) {
-      const v = await choose("Controls (" + page + "/3)", [{ label: "Next", value: "next", className: "action" }]
-        .concat(page > 1 ? [{ label: "Back", value: "back", className: "action" }] : []));
+      const v = await turnPage(page);
       const next = v === "next" ? page + 1 : page - 1;
       if (next > 3) break;
       await until((t) => (s.dim = Math.min(1, (t + 1) / 6)) >= 1);
@@ -818,8 +829,7 @@
     await fadeTo("#000", 16, 0, 2);
     let page = 1;
     for (;;) {
-      const v = await choose("Page " + page + " of 3", [{ label: "Next", value: "next", className: "action" }]
-        .concat(page > 1 ? [{ label: "Back", value: "back", className: "action" }] : []));
+      const v = await turnPage(page);
       const next = v === "next" ? page + 1 : page - 1;
       if (next > 3) break;
       await until((t) => (s.textAlpha = Math.max(0, 1 - (t + 1) / 8)) <= 0);
