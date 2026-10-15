@@ -313,8 +313,6 @@
 
 /* Caught / not-caught Poké Ball icons (Pokédex, wild Pokémon's battle box) */
 .ball-icon { display: inline-block; width: 12px; height: 12px; vertical-align: -1px; margin-right: 3px; flex-shrink: 0; }
-.info .owned { display: inline-flex; align-items: center; margin-left: 4px; margin-right: auto; }
-.info .info-name:has(+ .owned) { flex: 0 1 auto; }
 
 /* ---------- Digging (Explorer Kit) ---------- */
 .scene:has(> .dig) { padding: 0 !important; overflow: hidden; }

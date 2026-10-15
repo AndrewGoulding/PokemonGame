@@ -57,6 +57,11 @@ in a summary's moves, A on one and then on another swaps them. On a keyboard: ar
 Backspace (Select). In battle, FireRed's own menus: FIGHT / BAG / POKéMON / RUN,
 then your moves with their PP (coloured as it runs low) and type; B goes back,
 and Select there ("Switch which?") swaps two moves, for good, as in FireRed.
+The Pokémon's boxes are FireRed's healthboxes: name, gender, level, status icon
+and HP bar (and on yours the HP in numbers and the EXP bar), sliding in as each
+Pokémon comes out; the HP bar moves 1 HP a frame and the EXP bar 1 pixel a
+frame as FireRed's do, your box bobs while you choose, a box shakes when its
+Pokémon is hit, and its frame flashes when yours levels up.
 Moves animate by kind and type with FireRed's sound effects (its own, for the
 moves FireRed has one for), and so do hits, fainting, stat changes, the balls
 and running (BATTLE SCENE: OFF on the Option screen turns them off). Text is
@@ -225,6 +230,13 @@ with its 16 wallpapers, and `graphics/item_pc/`) into `assets/pc/`:
 ```sh
 cd pokefirered && git sparse-checkout add graphics/pokemon_storage/ graphics/item_pc/ && cd ..
 node tools/build-pc.js pokefirered
+```
+
+`tools/build-healthbox.js` converts FireRed's battle healthboxes
+(`graphics/battle_interface/healthbox_*`) into `assets/battle-interface/`:
+
+```sh
+node tools/build-healthbox.js pokefirered
 ```
 
 `tools/build-bag.js` converts FireRed's Bag screen (`graphics/item_menu/`, the

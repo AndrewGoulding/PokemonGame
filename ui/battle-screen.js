@@ -20,7 +20,6 @@
 (function () {
   "use strict";
 
-  const HP_ANIM_MS = 550;    // matches the .hp-fill transition in battle-screen.css
   const SHAKE_MS = 750;      // one wobble of a thrown ball
 
   const ballName = (id) => window.Bag.name(id);
@@ -170,10 +169,170 @@
     field: $("#field"),
     ball: $("#ball"),
     sides: {
-      p1: { sprite: $("#sprite-player"), info: $("#info-player") },
-      p2: { sprite: $("#sprite-foe"), info: $("#info-foe") }
+      p1: { sprite: $("#sprite-player") },
+      p2: { sprite: $("#sprite-foe") }
     }
   };
+
+  // ---------- The healthboxes (src/battle_interface.c) ----------
+  //
+  // FireRed's boxes, drawn on a canvas over the field (assets/battle-interface/,
+  // tools/build-healthbox.js): the opponent's at the top left (its sprites at
+  // 44, 30), yours at the bottom right (158, 88), each made of the box, the
+  // name and gender, "Lv" and the level, the HP bar (48 pixels; green, yellow
+  // below half, red below a fifth), and on yours the HP as numbers and the EXP
+  // bar (64 pixels). The HP bar moves 1 HP a frame (or 1 pixel, under 48 max
+  // HP), the EXP bar 1 pixel a frame after 13 frames, both as FireRed's do. A
+  // box slides in 115 pixels, 5 a frame, as its Pokémon comes out; yours bobs
+  // a pixel while you choose what to do, and a box shakes when its Pokémon is
+  // hit. At a level up your box's frame flashes light blue.
+  const hbLayer = document.createElement("canvas");
+  hbLayer.className = "party-bars healthboxes";
+  hbLayer.width = 240; hbLayer.height = 112;
+  el.field.appendChild(hbLayer);
+  const hbImg = (n) => Object.assign(new Image(), { src: "assets/battle-interface/" + n + ".png" });
+  const HB = {
+    p1: { box: hbImg("healthbox-player"), frame: hbImg("healthbox-player-frame"), x: 126, y: 72, h: 64, slideFrom: 115 },
+    p2: { box: hbImg("healthbox-opponent"), frame: hbImg("healthbox-opponent-frame"), x: 12, y: 14, h: 32, slideFrom: -115 }
+  };
+  const hbBar = hbImg("healthbar"), hbElements = hbImg("healthbox-elements"), hbStatus = hbImg("status-icons");
+  const HB_CREAM = [255, 255, 222], HB_TEXT = [65, 65, 65], HB_SHADOW = [222, 213, 180];
+  const HB_MALE = [65, 205, 255], HB_FEMALE = [255, 156, 148];
+  const HB_STATUS = { psn: 0, tox: 0, par: 1, slp: 2, frz: 3, brn: 4 };
+  let hb = {}, hbRaf = 0, hbWaiters = [];
+  function hbReset() {
+    hb = {};
+    for (const side of ["p1", "p2"]) {
+      hb[side] = { shown: false, x2: 0, y2: 0, shake: 0, bounce: false, bounceIdx: 128, key: null,
+        hp: 0, hpTo: 0, maxhp: 1, exp: 0, expTo: 0, expDelay: 0, flash: -1, data: {}, layer: null, layerKey: null };
+    }
+  }
+  hbReset();
+  // The pixels of HP bar the HP fills (CalcBarFilledPixels).
+  function hpPixels(hp, max) {
+    const px = Math.floor(hp * 48 / Math.max(1, max));
+    return px === 0 && hp > 0 ? 1 : px;
+  }
+  // An 8x8 tile of a 40-tile-wide sheet.
+  const hbTile = (g, img, t, x, y) => g.drawImage(img, (t % 40) * 8, Math.floor(t / 40) * 8, 8, 8, x, y, 8, 8);
+
+  // The box and its text, redrawn when what it shows changes (box-relative).
+  function hbLayerFor(side) {
+    const b = hb[side], d = b.data, cfg = HB[side], foe = side === "p2";
+    const shownHp = b.hp < b.hpTo ? Math.floor(b.hp) : Math.ceil(b.hp);
+    const key = [d.name, d.gender, d.level, d.status, d.caught, shownHp, b.maxhp].join("|");
+    if (b.layer && b.layerKey === key) return b.layer;
+    b.layerKey = key;
+    const s = window.GbaMenus.Surface();
+    // The windows FireRed prints into (filled cream, then rows 5-15 copied in).
+    const win = foe ? [[8, 5, 56, 11], [64, 5, 24, 11]] : [[16, 5, 56, 11], [72, 5, 24, 11], [56, 21, 40, 11]];
+    win.forEach(([x, y, w, h]) => s.fill(x, y, w, h, HB_CREAM));
+    // Name, then the gender symbol after it (FONT_SMALL at window (0, 3)).
+    const nx = foe ? 8 : 16;
+    const w = s.text(d.name || "", nx, 3, HB_TEXT, HB_SHADOW, "small");
+    if (d.gender === "M" || d.gender === "F") s.text(d.gender === "M" ? "♂" : "♀", nx + w, 3, d.gender === "M" ? HB_MALE : HB_FEMALE, HB_SHADOW, "small");
+    // "Lv" and the level, right-aligned in 24 pixels.
+    const lv = String(d.level || "");
+    s.text("{LV}" + lv, (foe ? 64 : 72) + 5 * (3 - lv.length), 3, HB_TEXT, HB_SHADOW, "small");
+    // Your HP: "cur/" at (60, 21) and "max" at (80, 21), each right-aligned to 3.
+    if (!foe) {
+      const cur = String(Math.max(0, shownHp)), max = String(b.maxhp);
+      s.text(cur + "/", 60 + 5 * (3 - cur.length), 21, HB_TEXT, HB_SHADOW, "small");
+      s.text(max, 80 + 5 * (3 - max.length), 21, HB_TEXT, HB_SHADOW, "small");
+    }
+    const c = document.createElement("canvas");
+    c.width = 128; c.height = cfg.h;
+    const g = c.getContext("2d");
+    g.imageSmoothingEnabled = false;
+    if (cfg.box.complete) g.drawImage(cfg.box, 0, 0);
+    // (Only the windows' rows 5-15 reach the box.)
+    g.save();
+    g.beginPath();
+    win.forEach(([x, y, ww, hh]) => g.rect(x, y, ww, hh));
+    g.clip();
+    g.drawImage(s.canvas(), 0, 0);
+    g.restore();
+    // The status icon: yours left of the HP numbers, theirs over "HP".
+    const st = HB_STATUS[d.status];
+    if (st != null && hbStatus.complete) g.drawImage(hbStatus, 0, ((foe ? 5 : 0) + st) * 8, 24, 8, foe ? 8 : 16, foe ? 16 : 24, 24, 8);
+    b.layer = c;
+    return c;
+  }
+
+  function drawHealthboxes() {
+    const g = hbLayer.getContext("2d");
+    g.clearRect(0, 0, 240, 112);
+    g.imageSmoothingEnabled = false;
+    for (const side of ["p1", "p2"]) {
+      const b = hb[side], cfg = HB[side], foe = side === "p2";
+      if (!b.shown || !b.data.name) continue;
+      const ox = cfg.x + b.x2, oy = cfg.y + b.y2;
+      g.drawImage(hbLayerFor(side), ox, oy);
+      if (b.flash >= 0 && cfg.frame.complete) {
+        // (Colour 6 blends toward RGB(20, 27, 31) and back, 2/16 a frame.)
+        g.globalAlpha = (b.flash <= 8 ? b.flash : 16 - b.flash) * 2 / 16;
+        g.drawImage(cfg.frame, ox, oy);
+        g.globalAlpha = 1;
+      }
+      if (!hbBar.complete) continue;
+      // The healthbar: (the caught ball,) "HP", then the bar's six tiles.
+      const bx = ox + (foe ? 40 : 48), by = oy + 16;
+      const status = HB_STATUS[b.data.status] != null;
+      if (!foe || !status) { hbTile(g, hbBar, 1, bx - 16, by); hbTile(g, hbBar, 2, bx - 8, by); }
+      else hbTile(g, hbBar, 65, bx - 8, by);
+      if (foe && b.data.caught && !status) hbTile(g, hbBar, 70, ox + 8, by);
+      const px = hpPixels(b.hp, b.maxhp), base = px > 24 ? 3 : px > 9 ? 47 : 56;
+      for (let i = 0; i < 6; i++) hbTile(g, hbBar, base + Math.max(0, Math.min(8, px - 8 * i)), bx + 8 * i, by);
+      // Your EXP bar (64 pixels at 32, 32).
+      if (!foe && hbElements.complete) {
+        const e = Math.round(b.exp);
+        for (let i = 0; i < 8; i++) hbTile(g, hbElements, 12 + Math.max(0, Math.min(8, e - 8 * i)), ox + 32 + 8 * i, oy + 32);
+      }
+    }
+  }
+
+  function tickHealthboxes() {
+    for (const side of ["p1", "p2"]) {
+      const b = hb[side];
+      if (b.x2) b.x2 = b.x2 > 0 ? Math.max(0, b.x2 - 5) : Math.min(0, b.x2 + 5);
+      // HP: 1 HP a frame, or 1 pixel's worth when the max is under 48.
+      if (b.hp !== b.hpTo) {
+        const step = b.maxhp >= 48 ? 1 : b.maxhp / 48;
+        b.hp = b.hp < b.hpTo ? Math.min(b.hpTo, b.hp + step) : Math.max(b.hpTo, b.hp - step);
+      }
+      if (b.expDelay > 0) b.expDelay--;
+      else if (b.exp !== b.expTo) b.exp = b.exp < b.expTo ? Math.min(b.expTo, b.exp + 1) : b.expTo;
+      if (b.flash >= 0 && ++b.flash > 16) b.flash = -1;
+      // DoHitAnimHealthboxEffect: +1, -1, ... for 21 frames.
+      if (b.shake > 0) { b.shake--; b.y2 = b.shake ? (b.shake % 2 ? 1 : -1) : 0; }
+      else if (b.bounce) { b.y2 = (b.bounceIdx === 64 ? 2 : b.bounceIdx <= 128 ? 1 : 0); b.bounceIdx = (b.bounceIdx + 7) & 255; }
+      else b.y2 = 0;
+    }
+    drawHealthboxes();
+    const busy = ["p1", "p2"].some((sd) => { const b = hb[sd]; return b.hp !== b.hpTo || b.exp !== b.expTo || b.flash >= 0 || b.x2; });
+    if (!busy && hbWaiters.length) { const w = hbWaiters; hbWaiters = []; w.forEach((r) => r()); }
+    hbRaf = requestAnimationFrame(tickHealthboxes);
+  }
+  // Resolves when the bars have stopped moving (and boxes sliding in).
+  const hbSettled = () => new Promise((r) => hbWaiters.push(r));
+  function hbStart() { if (!hbRaf) hbRaf = requestAnimationFrame(tickHealthboxes); }
+  function hbStop() { cancelAnimationFrame(hbRaf); hbRaf = 0; hbWaiters.splice(0).forEach((r) => r()); hbReset(); drawHealthboxes(); }
+  // Showing or hiding a box (what the old info boxes' classList did): shown,
+  // it slides in.
+  function hbShow(side, on) {
+    const b = hb[side];
+    if (on && !b.shown) b.x2 = HB[side].slideFrom;
+    b.shown = !!on;
+  }
+  const hbInfo = (side) => ({
+    classList: {
+      add: (c) => { if (c === "hidden") hbShow(side, false); },
+      remove: (c) => { if (c === "hidden") hbShow(side, true); },
+      toggle: (c, on) => { if (c === "hidden") hbShow(side, !on); }
+    }
+  });
+  el.sides.p1.info = hbInfo("p1");
+  el.sides.p2.info = hbInfo("p2");
 
   // ---------- The party summary bars (src/battle_interface.c) ----------
   //
@@ -329,30 +488,23 @@
     sprite.classList.toggle("fainted", v.fainted);
     info.classList.toggle("hidden", v.fainted);
 
-    info.querySelector(".info-name").textContent = v.name;
-    // A wild Pokémon's box shows whether you've caught one before.
-    let owned = info.querySelector(".owned");
-    if (id === "p2" && battle.wild && config.catchContext && config.catchContext.caughtBefore) {
-      if (!owned) { owned = document.createElement("span"); owned.className = "owned"; info.querySelector(".info-name").after(owned); }
-      owned.innerHTML = window.Screen.ballIcon(config.catchContext.caughtBefore(v.species));
-    } else if (owned) owned.remove();
-    info.querySelector(".info-level").textContent = "Lv" + v.level;
-    const status = info.querySelector(".status");
-    status.textContent = v.status;
-    status.className = "status " + v.status;
-
-    const pct = v.maxhp ? (v.hp / v.maxhp) * 100 : 0;
-    const fillEl = info.querySelector(".hp-fill");
-    fillEl.style.width = pct + "%";
-    fillEl.classList.toggle("mid", pct <= 50 && pct > 20);
-    fillEl.classList.toggle("low", pct <= 20);
-    const hpText = info.querySelector(".hp-text");
-    if (hpText) hpText.textContent = v.hp + " / " + v.maxhp;
-    const exp = info.querySelector(".exp-row");
-    if (exp) {
-      exp.classList.toggle("hidden", v.exp == null);
-      exp.querySelector(".exp-fill").style.width = ((v.exp || 0) * 100) + "%";
-    }
+    // The box: a new Pokémon's shows its HP and EXP at once; after that the
+    // bars move to what changed.
+    const b = hb[id], mon = battle.sides[id].pokemon[v.teamIndex] || {};
+    const key = v.teamIndex + ":" + v.species;
+    b.data = {
+      name: v.name, level: v.level, status: v.status,
+      gender: /^Nidoran/.test(v.species) ? "" : mon.gender,
+      // (A wild Pokémon's box shows a ball if you've caught its kind before.)
+      caught: id === "p2" && battle.wild && config.catchContext && config.catchContext.caughtBefore
+        ? !!config.catchContext.caughtBefore(v.species) : false
+    };
+    b.maxhp = v.maxhp || 1;
+    b.hpTo = v.hp;
+    const expPx = v.exp == null ? 0 : Math.floor(v.exp * 64);
+    if (b.key !== key) { b.key = key; b.hp = v.hp; b.exp = b.expTo = expPx; }
+    else if (expPx !== b.expTo) { b.expTo = expPx; b.expDelay = 13; }
+    hbStart();
   }
 
   // ---------- Animations and sound effects ----------
@@ -461,7 +613,7 @@
     const hurt = hp.hp < view[side].hp;
     Object.assign(view[side], hp);
     renderSide(side);
-    if (hurt) flash(side);
+    if (hurt) { flash(side); if (sceneOn()) hb[side].shake = 21; }
     return true;
   }
 
@@ -559,23 +711,23 @@
           const notes = hitNotes, sound = hitSound || "se_effective";
           hitNotes = []; hitSound = null;
           return async () => {
-            if (changed) { sfx(sound); await wait(HP_ANIM_MS); }
+            if (changed) { sfx(sound); await hbSettled(); }
             for (const n of notes) await message(n);
           };
         }
         const msg = fill(lookup(DAMAGE_FROM, effectId(c), "{who} was hurt by " + effectName(c) + "!"), a);
-        return msg || (changed ? { pause: HP_ANIM_MS } : null);
+        return async () => { if (changed) await hbSettled(); if (msg) await message(msg); };
       }
       case "-heal": {
         const changed = setHp(a, b);
         const msg = fill(c ? lookup(HEAL_FROM, effectId(c), "{who} restored HP using its " + effectName(c) + "!")
           : HEAL_FROM.heal, a);
-        return msg || (changed ? { pause: HP_ANIM_MS } : null);
+        return async () => { if (changed) await hbSettled(); if (msg) await message(msg); };
       }
       case "-sethp": // Pain Split: [user, userHp, target, targetHp]
         setHp(a, b);
         setHp(c, ev[4]);
-        return "The battlers shared their pain!";
+        return async () => { await hbSettled(); await message("The battlers shared their pain!"); };
       case "faint":
         cry(side, { faint: true });
         setTimeout(() => sfx("se_faint"), 300);
@@ -645,27 +797,29 @@
 
       // ----- Progression -----
       case "-exp":   // [ident, amount, teamIndex, progress, "share"?]
+        // "… gained … Exp. Points!", then the bar fills (SE_EXP while it does).
         return async () => {
-          if (ev[5] !== "share" && view.p1.teamIndex === +c) sfx("se_exp");   // the bar filling
-          setExp(c, ev[4]);
           // The Exp. Share's half goes by quietly after one message, as in Gen 6.
           if (ev[5] !== "share") await message(teamName(c) + " gained " + b + " Exp. Points!");
+          setExp(c, ev[4]);
+          if (ev[5] !== "share" && view.p1.teamIndex === +c && hb.p1.exp !== hb.p1.expTo) { sfx("se_exp"); await hbSettled(); }
         };
       case "-expshare":
         return "The rest of your team gained Exp. Points thanks to the Exp. Share!";
       case "-levelup":   // [ident, level, hp, teamIndex, progress]
+        // The full bar: the box's frame flashes (SE_EXP_MAX), the box shows the
+        // new level and HP and an empty bar; "… grew to Lv. …!", then the
+        // bar fills with what's left.
         return async () => {
-          // Empty the bar instantly (no backwards slide), then fill to the new progress.
-          const bar = el.sides.p1.info.querySelector(".exp-fill");
-          bar.style.transition = "none";
+          const onField = view.p1.teamIndex === +ev[4];
+          if (onField) { sfx("se_exp_max"); hb.p1.flash = 0; await hbSettled(); }
           setExp(ev[4], 0, b, c);
-          void bar.offsetWidth;
-          bar.style.transition = "";
-          await wait(250);
-          setExp(ev[4], ev[5], b, c);
+          if (onField) { hb.p1.hp = hb.p1.hpTo; hb.p1.exp = hb.p1.expTo = 0; hb.p1.expDelay = 0; }
           const jingle = window.GameAudio ? window.GameAudio.fanfare("mus_level_up") : null;
           await message(teamName(ev[4]) + " grew to Lv. " + b + "!");
           await jingle;
+          setExp(ev[4], ev[5], b, c);
+          if (onField && hb.p1.exp !== hb.p1.expTo) { sfx("se_exp"); await hbSettled(); }
         };
       case "-learnmove":   // [ident, move, teamIndex]
         return teamName(c) + " learned " + b + "!";
@@ -902,7 +1056,10 @@
     for (;;) {
       say("");
       clearMenu();
+      // (Your box bobs while you choose: DoBounceEffect(BOUNCE_HEALTHBOX, 7, 1).)
+      hb.p1.bounce = true; hb.p1.bounceIdx = 128;
       const a = await window.GbaMenus.battleAction(overlay(), { name: active.name, cursor: actionCursor, frame: frame() });
+      hb.p1.bounce = false;
       actionCursor = a.cursor;
       if (a.action === "fight") {
         if (active.struggle) { await message(active.name + " has no moves left!"); return { type: "move", move: "Struggle" }; }
@@ -1249,6 +1406,7 @@
       p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, exp: !!cfg.exp, expShare: !!cfg.expShare, catchContext: cfg.catchContext
     });
     cursor = 0;
+    hbStop();
     view = { p1: { species: null }, p2: { species: null } };
     el.ball.classList.add("hidden");
     renderSide("p1");
@@ -1277,6 +1435,7 @@
     }
     else if (battle.winner === "p2") outcome = "lost";
     else outcome = "draw";
+    hbStop();
     return { outcome, battle };
   }
 

@@ -121,36 +121,7 @@ body {
   50% { opacity: 0.2; }
 }
 
-/* ---------- Info boxes ---------- */
-
-.info {
-  position: absolute;
-  width: 44%;
-  min-width: 190px;
-  padding: 8px 12px;
-  background: #fbfbf2;
-  border: 3px solid #3c4048;
-  border-radius: 10px 4px 10px 4px;
-  font-size: clamp(12px, 2.4vw, 16px);
-  transition: opacity 0.3s;
-}
-.info.foe { left: 3%; top: 8%; }
-.info.player { right: 2%; bottom: 4%; }
-.info.hidden { opacity: 0; }
-/* The scene is short on a phone: smaller boxes, as tight as FireRed's. */
-@media (max-width: 520px) {
-  .info { min-width: 0; width: 42%; padding: 3px 6px; font-size: 10px; border-width: 2px; }
-  .info .hp-row { margin-top: 2px; }
-  .info .hp-track { height: 5px; }
-}
-
-.info-top {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  font-weight: 700;
-}
-.info-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* ---------- Status tags (the PC and Pokédex lists) ---------- */
 
 .status {
   padding: 1px 5px;
@@ -165,60 +136,6 @@ body {
 .status.slp { background: #8c8c8c; }
 .status.frz { background: #4bb3d6; }
 .status.psn, .status.tox { background: #9a4fb5; }
-
-.hp-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-  font-size: 0.75em;
-  font-weight: 700;
-}
-.hp-track {
-  flex: 1;
-  height: 8px;
-  border-radius: 4px;
-  background: #4a4f58;
-  overflow: hidden;
-}
-.hp-fill {
-  height: 100%;
-  width: 100%;
-  background: #3fc75a;
-  transition: width 0.5s ease-out, background-color 0.5s;
-}
-.hp-fill.mid { background: #f2c230; }
-.hp-fill.low { background: #e5463b; }
-
-.exp-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-  font-size: 0.65em;
-  font-weight: 700;
-}
-.exp-row.hidden { display: none; }
-.exp-track {
-  flex: 1;
-  height: 5px;
-  border-radius: 3px;
-  background: #4a4f58;
-  overflow: hidden;
-}
-.exp-fill {
-  height: 100%;
-  width: 0;
-  background: #3fa8f2;
-  transition: width 0.6s ease-out;
-}
-
-.hp-text {
-  margin-top: 4px;
-  text-align: right;
-  font-size: 0.85em;
-  font-variant-numeric: tabular-nums;
-}
 
 /* ---------- The screen and the panel under it ---------- */
 
