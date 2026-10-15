@@ -107,8 +107,9 @@
   }
   const MOVE_COLOURS = [[7, 8], [1, 2], [3, 4], [5, 6]];
   const STATUS_FRAME = { psn: 0, tox: 0, par: 1, slp: 2, frz: 3, brn: 4, fnt: 6 };
-  // (Page 4, after KNOWN MOVES, is this game's: each stat's EVs and IVs.)
-  const PAGE_NAME = ["POKéMON INFO", "POKéMON SKILLS", "KNOWN MOVES", "KNOWN MOVES", "EVs AND IVs"];
+  // (Page 4, after KNOWN MOVES, is this game's: each stat's EVs, or with A its IVs.)
+  const PAGE_NAME = ["POKéMON INFO", "POKéMON SKILLS", "KNOWN MOVES", "KNOWN MOVES", "POKéMON EVs"];
+  const pageName = (page) => (page === 4 && st.ivs ? "POKéMON IVs" : PAGE_NAME[page]);
 
   // ---------- Drawing ----------
 
@@ -117,7 +118,7 @@
   function controls() {
     if (st.mode === "choose") return "{DPAD_UPDOWN}PICK {A_BUTTON}SELECT";
     return ["{DPAD_RIGHT}PAGE {A_BUTTON}CANCEL", "{DPAD_LEFTRIGHT}PAGE", "{DPAD_LEFTRIGHT}PAGE {A_BUTTON}DETAIL",
-      "{DPAD_UPDOWN}PICK {A_BUTTON}SWITCH", "{DPAD_LEFT}PAGE"][st.page];
+      "{DPAD_UPDOWN}PICK {A_BUTTON}SWITCH", "{DPAD_LEFT}PAGE {A_BUTTON}" + (st.ivs ? "EVs" : "IVs")][st.page];
   }
 
   // Everything but the pictures (BGs and text; the bars, icons and cursors).
@@ -133,16 +134,26 @@
     // moves card and the details card.)
     layer(base, page === 3 ? d.maps.movesPage : d.maps.movesInfoPage, true, pal0);
     if (page === 3) { layer(base, d.maps.pageMoves, false, pal0); layer(base, d.maps.pageMovesInfo, false, pal0); }
-    else layer(base, [d.maps.pageInfo, d.maps.pageSkills, d.maps.pageMoves, null, d.maps.pageSkills][page], false, pal0);
-    // The page tabs (PokeSum_DrawPageProgressTiles): tiles 345 + n on rows 0-1, columns 13-18.
-    const TABS = [[[17, 33], [16, 32], [18, 34], [20, 36], [18, 34], [21, 37]],
-      [[49, 65], [1, 19], [17, 33], [16, 32], [18, 34], [21, 37]],
-      [[49, 65], [1, 19], [49, 65], [1, 19], [17, 33], [48, 64]],
-      st.mode === "choose" ? [[1, 19], [1, 19], [1, 19], [1, 19], [50, 66], [48, 64]]
-        : [[49, 65], [1, 19], [49, 65], [1, 19], [50, 66], [48, 64]],
-      [[49, 65], [1, 19], [49, 65], [1, 19], [49, 65], [1, 19]]][page];
+    // (The EV / IV page: the SKILLS page's stats, without its lower panel.)
+    else if (page === 4) layer(base, d.maps.pageSkills.map((e, i) => (i >= 32 * 13 ? 0 : e)), false, pal0);
+    else layer(base, [d.maps.pageInfo, d.maps.pageSkills, d.maps.pageMoves][page], false, pal0);
+    // The page tabs (PokeSum_DrawPageProgressTiles): tiles 345 + n on rows 0-1,
+    // two columns a tab: those before this page's are dots on the bar, this
+    // one's is the white dot, those after it are on the lighter part, which
+    // ends in a curve. FireRed has three, on columns 13-18; with this game's
+    // fourth (EVs and IVs) they're on 11-18. Choosing a move to forget shows
+    // only the KNOWN MOVES tab.
+    const TABS = [];
+    const active = page === 4 ? 3 : Math.min(page, 2);
+    for (let i = 0; i < 4; i++) {
+      const last = i === 3;
+      if (st.mode === "choose") TABS.push(...(last ? [[50, 66], [48, 64]] : [[1, 19], [1, 19]]));
+      else if (i < active) TABS.push([49, 65], [1, 19]);
+      else if (i === active) TABS.push([page === 3 ? 50 : 17, page === 3 ? 66 : 33], last ? [48, 64] : [16, 32]);
+      else TABS.push([18, 34], last ? [21, 37] : [20, 36]);
+    }
     const tabMap = new Array(32 * 20).fill(0);
-    TABS.forEach(([a, b], i) => { tabMap[13 + i] = 345 + a; tabMap[32 + 13 + i] = 345 + b; });
+    TABS.forEach(([a, b], i) => { tabMap[11 + i] = 345 + a; tabMap[32 + 11 + i] = 345 + b; });
     layer(base, tabMap, false, pal0);
 
     const th = d.pals.textHeader, tm = d.pals.textMoves, ty = d.pals.types;
@@ -151,7 +162,7 @@
     const right = (str, x, len, y) => dark(str, x + len - String(str).length * 6, y);
 
     // The header: page name, the buttons, and Lv / name / gender.
-    T(PAGE_NAME[page], 4, 1, th, 1, 2);
+    T(pageName(page), 4, 1, th, 1, 2);
     const c = controls(), cw = top.textWidth(c, "small");
     T(c, 152 + 0x54 - cw, 0, th, 1, 2, "small");
     if (page !== 3) T("{LV}" + v.level, 4, 18, th, 1, 2);
@@ -179,21 +190,9 @@
       dark(v.ability, 74, 129);
       dark(wrap(top, v.abilityText, 220)[0] || "", 10, 143);
     } else if (page === 4) {
-      // Each stat's EVs and IVs where the stats are ("EV / IV"), then the total and the nature.
-      const KEYS = ["hp", "atk", "def", "spa", "spd", "spe"], evs = v.evs || {}, ivs = v.ivs || {};
-      KEYS.forEach((k, i) => right((evs[k] || 0) + " / " + (ivs[k] != null ? ivs[k] : 0), 174, 63, i ? 38 + (i - 1) * 13 : 20));
-      dark("EV TOTAL", 74, 103);
-      right(KEYS.reduce((t, k) => t + (evs[k] || 0), 0) + "/510", 175, 63, 103);
-      dark("IV TOTAL", 74, 116);
-      right(KEYS.reduce((t, k) => t + (ivs[k] || 0), 0) + "/186", 175, 63, 116);
-      dark(String(v.nature || "").toUpperCase(), 74, 129);
-      // (The SKILLS page's EXP. and ABILITY labels, relabelled.)
-      const pill = (label, y) => {
-        top.fill(6, y, 64, 9, [123, 131, 148]);
-        top.text(label, 38 - Math.floor(top.textWidth(label, "small") / 2), y - 2, [255, 255, 255], [82, 90, 99], "small");
-      };
-      pill("EV/IV", 106);
-      pill("NATURE", 130);
+      // Each stat's EV (or IV) where the stats are.
+      const vals = (st.ivs ? v.ivs : v.evs) || {};
+      ["hp", "atk", "def", "spa", "spd", "spe"].forEach((k, i) => right(String(vals[k] || 0), i ? 210 : 174, i ? 27 : 63, i ? 38 + (i - 1) * 13 : 20));
     } else {
       const rows = v.moves.slice(0, 4);
       while (rows.length < 4) rows.push(null);
@@ -357,7 +356,8 @@
         }
         if (k === "right" && st.page < 2) { se(); st.page++; redraw(); }
         else if (k === "right" && st.page === 2) { se(); st.page = 4; redraw(); }
-        else if (k === "left" && st.page === 4) { se(); st.page = 2; redraw(); }
+        else if (k === "left" && st.page === 4) { se(); st.page = 2; st.ivs = false; redraw(); }
+        else if (k === "a" && st.page === 4) { se(); st.ivs = !st.ivs; redraw(); }
         else if (k === "left" && st.page > 0) { se(); st.page--; redraw(); }
         else if ((k === "up" || k === "down") && st.views.length > 1) {
           const i = st.index + (k === "up" ? -1 : 1);

@@ -81,8 +81,9 @@ SUMMARY is FireRed's Summary screen: POKéMON INFO (number, type, OT, ID
 No., held item and the Trainer Memo: its nature and where it was met),
 POKéMON SKILLS (HP and EXP bars, stats, ability), KNOWN MOVES, whose
 details show each move's power, accuracy and description, and swap two
-moves with A, and a page of this game's after it, EVs AND IVs (each stat's EV
-and IV, the EV and IV totals and the nature); up / down go through your party; SWITCH asks "Move to
+moves with A, and a page of this game's after it, with a fourth dot in the
+page tabs: POKéMON EVs, each stat's EVs, and A switches it to POKéMON IVs and
+back; up / down go through your party; SWITCH asks "Move to
 where?"; ITEM gives or takes a held item). The
 same screen picks a Pokémon for an item (ABLE / NOT ABLE for TMs and
 evolution stones), a trade or a tutor, and for switching in battle (SHIFT).
