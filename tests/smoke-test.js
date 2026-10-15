@@ -1425,6 +1425,11 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
   }
 }
 
+// Everything the built maps' Marts stock can be bought (has a price).
+for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
+  for (const item of p.mart || []) assert(Bag.price(item) > 0, m.name + "'s Mart sells " + item + " for nothing");
+}
+
 // HMs outside battle (game/field-moves.js): known, or learnable with the HM
 // in the Bag, and the badge either way.
 {

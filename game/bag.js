@@ -37,6 +37,9 @@
     "moon-stone": 2100, "sun-stone": 2100, "shiny-stone": 2100, "dusk-stone": 2100,
     "dawn-stone": 2100, "ice-stone": 2100, "everstone": 3000, "lucky-egg": 10000,
     "pp-up": 9800, "pp-max": 29400,
+    // (FireRed's: without a price an item can't be bought, so a Mart that
+    // stocks it leaves it out.)
+    "repel": 350, "super-repel": 500, "max-repel": 700, "escape-rope": 550, "poke-doll": 1000, "lava-cookie": 200,
     // Treasures from digging (they sell for half, as in Gen 6).
     "star-piece": 9800, "rare-bone": 10000, "heart-scale": 200, "red-shard": 400, "blue-shard": 400,
     "yellow-shard": 400, "green-shard": 400, "hard-stone": 200, "oval-stone": 2100,
