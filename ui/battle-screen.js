@@ -967,8 +967,9 @@
   const escapeHtml = window.Screen.escapeHtml;
 
   // FireRed's party screen (ui/party-menu.js): A on a Pokémon opens SHIFT /
-  // CANCEL. One that's fainted or already out says so; B goes back unless
-  // a Pokémon has to be sent out.
+  // SUMMARY / CANCEL (cfg.summary shows its Summary screen as it is now in
+  // battle). One that's fainted or already out says so; B goes back unless a
+  // Pokémon has to be sent out.
   async function chooseSwitch(req, canCancel) {
     const mons = req.team.map((p) => ({
       name: p.name, icon: window.Screen.iconUrl(p.species), level: p.level, gender: p.gender,
@@ -980,10 +981,16 @@
       clearMenu();
       const frame = window.GameOptions ? window.GameOptions.get().frame : 0;
       const r = await window.PartyMenu.open({ mons, cursor, frame, canCancel,
-        actions: () => [{ label: canCancel ? "SHIFT" : "SEND OUT", value: "shift" }, { label: "CANCEL", value: "cancel" }] });
+        actions: () => [{ label: canCancel ? "SHIFT" : "SEND OUT", value: "shift" }]
+          .concat(config.summary ? [{ label: "SUMMARY", value: "summary" }] : [], [{ label: "CANCEL", value: "cancel" }]) });
       if (!r) { window.PartyMenu.close(); return null; }
       cursor = r.cursor;
       const p = req.team[r.slot];
+      if (r.action === "summary") {
+        window.PartyMenu.close();
+        await config.summary(p.index, battle.sides.p1.pokemon);
+        continue;
+      }
       if (p.fainted || p.hp <= 0) { await message(p.name + " has no energy left to battle!"); continue; }
       if (p.active) { await message(p.name + " is already in battle!"); continue; }
       if (!req.switches.includes(p.index)) { await message(p.name + " can't be switched in now!"); continue; }

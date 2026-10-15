@@ -295,7 +295,14 @@
       opponent: wild ? randomMove : (b) => OpponentAI.choose(b, "p2"),
       // A new move with four known: the Summary screen picks the one to forget
       // (the record caught up with the battle first: level, moves, PP).
-      forgetMove: (i, mon, move) => chooseMoveToForget(Party.syncFromBattle(player.party[i], mon), move)
+      forgetMove: (i, mon, move) => chooseMoveToForget(Party.syncFromBattle(player.party[i], mon), move),
+      // The Summary screen from the party screen in battle: each Pokémon as it
+      // is now (HP, status, PP, Exp.), from copies, so nothing changes.
+      summary: (i, mons) => {
+        const now = player.party.map((r, k) => (mons[k] ? Party.syncFromBattle(JSON.parse(JSON.stringify(r)), mons[k]) : r));
+        cry(now[i].species);
+        return SummaryScreen.open(now.map(summaryView), i, { frame: GameOptions.get().frame, cry: (sp) => cry(sp) });
+      }
     });
     const b = result.battle;
     for (const e of b.events) {
@@ -1152,6 +1159,7 @@
     const walk = (o, out) => {
       if (!o || typeof o !== "object") return;
       if (o.species) out.add(o.species);
+      if (o.alt) out.add(o.alt);   // (a slot's LeafGreen Pokémon, as likely as its FireRed one)
       for (const v of Object.values(o)) walk(v, out);
     };
     for (const [name, m] of Object.entries(window.WORLD_MAPS)) {
@@ -1171,7 +1179,7 @@
       const secs = (window.TOWN_MAP || {}).mapSections || {};
       const walk = (o, sec) => {
         if (!o || typeof o !== "object") return;
-        if (o.species) (areaIndex[o.species] = areaIndex[o.species] || new Set()).add(sec);
+        for (const sp of [o.species, o.alt]) if (sp) (areaIndex[sp] = areaIndex[sp] || new Set()).add(sec);
         for (const v of Object.values(o)) walk(v, sec);
       };
       for (const [name, m] of Object.entries(window.WORLD_MAPS)) if (secs[name] && m.wild) walk(m.wild, secs[name]);
@@ -2678,14 +2686,28 @@
   // The Relearner teaches a Pokémon a move it could have learned by its level,
   // for a Heart Scale (as in Gen 6); the Deleter makes it forget one, free.
 
-  // Level-up moves a Pokémon could know by now but doesn't.
+  // Level-up moves a Pokémon could know by now but doesn't: its own, and (so
+  // no move is missed by evolving early) those its earlier forms learn by its
+  // level, e.g. a level 30 Venusaur can relearn Ivysaur's moves up to level 30.
+  let preEvolutions = null;
+  function evolutionLine(species) {
+    if (!preEvolutions) {
+      preEvolutions = {};
+      for (const [from, list] of Object.entries(window.EVOLUTIONS || {})) for (const e of list) preEvolutions[e.into] = preEvolutions[e.into] || from;
+    }
+    const line = [species];
+    for (let sp = species; preEvolutions[sp] && !line.includes(preEvolutions[sp]); sp = preEvolutions[sp]) line.push(preEvolutions[sp]);
+    return line;
+  }
   function relearnable(record) {
     const sets = window.LEARNSETS_GEN6 || {};
-    const set = sets[record.species] || sets[String(record.species).split("-")[0]];
     const known = new Set(record.moves.map((m) => m.name));
     const out = [];
-    for (const [lvl, move] of (set && set.levelup) || []) {
-      if (lvl <= record.level && window.MOVES[move] && !known.has(move) && !out.includes(move)) out.push(move);
+    for (const species of evolutionLine(record.species)) {
+      const set = sets[species] || sets[String(species).split("-")[0]];
+      for (const [lvl, move] of (set && set.levelup) || []) {
+        if (lvl <= record.level && window.MOVES[move] && !known.has(move) && !out.includes(move)) out.push(move);
+      }
     }
     return out;
   }

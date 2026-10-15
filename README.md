@@ -87,7 +87,8 @@ page tabs: POKéMON EVs, each stat's EVs, and A switches it to POKéMON IVs and
 back; up / down go through your party; SWITCH asks "Move to
 where?"; ITEM gives or takes a held item). The
 same screen picks a Pokémon for an item (ABLE / NOT ABLE for TMs and
-evolution stones), a trade or a tutor, and for switching in battle (SHIFT).
+evolution stones), a trade or a tutor, and for switching in battle (SHIFT, or
+SUMMARY to look at a Pokémon as it is in the battle).
 Then the Bag, FireRed's Bag screen with six pockets (Items, Medicine, Poké
 Balls, TMs & HMs, Berries, Key Items; left / right between them, and each
 pocket remembers where its ▶ was), with FireRed's descriptions under the list
@@ -97,7 +98,7 @@ stones (each item for evolving says "Evolves certain Pokémon when used."), Rare
 the Exp. Share, Oak's Parcel and the Town Map. After the Bag come FireRed's Pokédex (its
 table of contents with Seen / Owned; the numerical list, with the caught ball and
 types; the nine habitats' pages, up to four Pokémon a page in their circles;
-this game's Area mode: every place with wild Pokémon (----- until you've been
+this game's Area mode: every place with wild Pokémon (FireRed's and LeafGreen's alike; ----- until you've been
 there) with how many of its Pokémon you've caught and a gold crown once you've
 caught them all, and A on one lists them FireRed-style; each entry's category,
 height and weight in feet and pounds, footprint, picture and description, with
@@ -472,7 +473,8 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   summary. (The debug menu's Add a Pokémon has a Shiny box.)
 - **Move Relearner and Move Deleter**: they sit on the cushions upstairs in
   every Pokémon Center. The Relearner teaches a Pokémon a level-up move
-  it could know by now, for a Heart Scale (dig them up with the Explorer Kit),
+  it could know by now (its own, or one its earlier forms learn by its level,
+  so evolving early never loses a move), for a Heart Scale (dig them up with the Explorer Kit),
   on FireRed's Move Relearner screen; with four moves already, you pick one to
   forget on the Summary screen's move list, as for TMs and tutors;
   the Deleter makes it forget a move, free.
