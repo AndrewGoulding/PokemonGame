@@ -392,6 +392,8 @@
       move: null, facing: pos.facing || "down", timer: 60 });
   }
   const removeObject = (localId) => { people = people.filter((p) => p.def.localId !== localId); };
+  // Takes one person (an item ball once picked up) off the map, by its object id.
+  const removePerson = (def) => { people = people.filter((p) => !(p.def.id === def.id && p.def.script === def.script)); };
 
   // Fades to black, moves the player (a scene's warp), and fades back in.
   function fadeOut() { return new Promise((resolve) => { fadeDir = 1; afterFade = resolve; }); }
@@ -822,7 +824,7 @@
 
   window.Overworld = {
     explore, hide, read: (pages) => read(pages), forceStep, refreshPeople: () => loadPeople(),
-    act, addObject, removeObject, teleport, battleTransition, resume, pokecenterHeal,
+    act, addObject, removeObject, removePerson, teleport, battleTransition, resume, pokecenterHeal,
     fadeToBlack: fadeOut, fadeFromBlack: fadeIn,
     position: () => ({ map: me.map, x: me.x, y: me.y, facing: me.facing })
   };

@@ -661,12 +661,12 @@ for (const share of [false, true]) {
     "Sleep Talk", "U-turn", "Substitute", "Flash Cannon", "Trick Room", "Wild Charge", "Rock Smash", "Snarl",
     "Nature Power", "Dark Pulse", "Power-Up Punch", "Dazzling Gleam", "Confide"];
   const HMS = ["Cut", "Fly", "Surf", "Strength", "Flash", "Whirlpool", "Waterfall", "Rock Smash", "Dive", "Defog", "Rock Climb"];
-  const TMS = XY.filter((m) => !HMS.includes(m)).concat("Secret Power", "Bullet Seed");
-  assert.strictEqual(TMS.length, 100);
+  const TMS = XY.filter((m) => !HMS.includes(m)).concat("Secret Power", "Bullet Seed", "Water Pulse");
+  assert.strictEqual(TMS.length, 101);
   TMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("tm" + String(i + 1).padStart(2, "0")), move, "TM" + (i + 1)));
   HMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("hm" + String(i + 1).padStart(2, "0")), move, "HM" + (i + 1)));
-  assert.strictEqual(Bag.machines().length, 111);
-  assert(!ITEMS.tm101 && !ITEMS.hm12, "no machines past TM100 and HM11");
+  assert.strictEqual(Bag.machines().length, 112);
+  assert(!ITEMS.tm102 && !ITEMS.hm12, "no machines past TM101 and HM11");
   // Every move Pokémon learn by machine in Gen 6 is a TM or HM here; the
   // machines Gen 6 had none for (Bullet Seed, Whirlpool, Defog, Rock Climb)
   // take their compatibility from other generations.
@@ -674,7 +674,7 @@ for (const share of [false, true]) {
   for (const l of Object.values(LEARNSETS_GEN6)) for (const m of l.tm || []) tmMoves.add(m);
   const machineMoves = Bag.machines().map(Bag.machineMove);
   for (const m of tmMoves) assert(machineMoves.includes(m), "no machine for " + m);
-  assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Bullet Seed", "Whirlpool", "Defog", "Rock Climb"]);
+  assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Bullet Seed", "Water Pulse", "Whirlpool", "Defog", "Rock Climb"]);
   for (const m of ["Whirlpool", "Defog", "Rock Climb", "Bullet Seed"]) assert(MACHINE_LEARNERS[m].length > 50, "who can use " + m);
   assert(!MACHINE_LEARNERS.Thief, "TMs Gen 6 had keep Gen 6's compatibility");
   assert(Bag.canUseOn(Party.create("Oddish", 20, { rng }), "tm100") && !Bag.canUseOn(Party.create("Pidgey", 20, { rng }), "tm100"), "Bullet Seed: Oddish yes, Pidgey no");
@@ -691,7 +691,7 @@ for (const share of [false, true]) {
   assert.strictEqual(Bag.name("tm24"), "TM24 Thunderbolt");
   assert.strictEqual(Bag.name("tm99"), "TM99 Secret Power");
   assert.strictEqual(Bag.name("hm11"), "HM11 Rock Climb");
-  assert.deepStrictEqual(Bag.machines().slice(98, 102), ["tm99", "tm100", "hm01", "hm02"]);
+  assert.deepStrictEqual(Bag.machines().slice(98, 103), ["tm99", "tm100", "tm101", "hm01", "hm02"]);
   // Saves from before keep their machines' moves under the new numbers.
   const oldSave = Object.assign(Player.create("T"), { party: [Party.create("Pidgey", 5, { rng })], bag: { "tm94-oras": 1 } });
   delete oldSave.pcItems;

@@ -1389,6 +1389,10 @@
     "MtMoon_B2F_EventScript_DomeFossil", "MtMoon_B2F_EventScript_HelixFossil",
     "CeruleanCity_EventScript_RivalTriggerLeft", "CeruleanCity_EventScript_RivalTriggerMid", "CeruleanCity_EventScript_RivalTriggerRight",
     "CeruleanCity_PokemonCenter_1F_EventScript_Nurse",
+    "CeruleanCity_Gym_EventScript_Misty", "CeruleanCity_Gym_EventScript_GymGuy", "CeruleanCity_Gym_EventScript_GymStatue",
+    "CeruleanCity_Mart_EventScript_Clerk", "CeruleanCity_House1_EventScript_BadgeGuy", "CeruleanCity_House3_EventScript_Dontae",
+    "CeruleanCity_BikeShop_EventScript_Clerk", "CeruleanCity_House5_EventScript_BerryPowderMan",
+    "CeruleanCity_House5_EventScript_BerryCrushRankings",
     "Route24_EventScript_Rocket", "Route24_EventScript_RocketTriggerLeft", "Route24_EventScript_RocketTriggerRight",
     "Route25_SeaCottage_EventScript_Bill", "Route25_SeaCottage_EventScript_Computer"
   ].concat(Object.keys(STARTER_BALLS)));
@@ -1405,6 +1409,8 @@
   function visible(person) {
     const f = player.flags;
     if (person.item) return !f[person.flag];
+    const spot = person.trainer && f.trainerSpots && f.trainerSpots[person.trainer.id];
+    if (spot) return { x: spot.x, y: spot.y, movement: "face_" + spot.facing };
     // Miguel stays by the fossil he took (FireRed's copyobjectxytoperm).
     if (person.script === "MtMoon_B2F_EventScript_Miguel" && f.mtMoonFossil) return { x: f.mtMoonFossil === "dome-fossil" ? 14 : 13, y: 8, movement: "face_up" };
     // Daisy sits at the table, before and after giving you the Town Map.
@@ -1479,6 +1485,7 @@
     const f = player.flags;
 
     if (script === "PewterCity_Gym_EventScript_Brock") { await brock(ev.person); return; }
+    if (script === "CeruleanCity_Gym_EventScript_Misty") { await misty(ev.person); return; }
     if (TRAINER_SCRIPTS.has(script)) {
       if (trainerWaiting(ev.person)) await trainerBattle(ev.person, null);
       else await say(ev.person.trainer.after || ev.person.text || []);
@@ -1489,7 +1496,7 @@
       const item = ev.person.item;
       Player.addItem(player, item);
       f[ev.person.flag] = true;
-      Overworld.refreshPeople();
+      Overworld.removePerson(ev.person);   // (just the ball: everyone else stays where they are)
       await sayWithJingle(itemJingle(item), "{PLAYER} found a " + Bag.name(item) + "!");
       return;
     }
@@ -1830,6 +1837,60 @@
         await mart(ev.person.mart);
         return;
 
+      // ---------- Cerulean City ----------
+
+      case "CeruleanCity_Gym_EventScript_GymGuy":
+        await say(T(f.TRAINER_LEADER_MISTY ? "CeruleanCity_Gym_Text_WeMakePrettyGoodTeam" : "CeruleanCity_Gym_Text_GymGuyAdvice"));
+        return;
+      case "CeruleanCity_Gym_EventScript_GymStatue":
+        await say(T(hasBadge("cascade") ? "CeruleanCity_Gym_Text_GymStatuePlayerWon" : "CeruleanCity_Gym_Text_GymStatue"));
+        return;
+      case "CeruleanCity_Mart_EventScript_Clerk":
+        await say(T("Text_MayIHelpYou"));
+        await mart(ev.person.mart);
+        return;
+      // The Badge guy: which of the eight Badges should he describe?
+      case "CeruleanCity_House1_EventScript_BadgeGuy": {
+        await say(T("CeruleanCity_House1_Text_BadgesHaveAmazingSecrets"));
+        const BADGES = [["Boulder", "AttackStatFlash"], ["Cascade", "ObeyLv30Cut"], ["Thunder", "SpeedStatFly"],
+          ["Rainbow", "ObeyLv50Strength"], ["Soul", "DefenseStatSurf"], ["Marsh", "ObeyLv70RockSmash"],
+          ["Volcano", "SpStatsWaterfall"], ["Earth", "AllMonsWillObeyYou"]];
+        const which = T("CeruleanCity_House1_Text_DescribeWhichBadge");
+        await say(which.slice(0, -1));
+        for (;;) {
+          const v = await ask(which[which.length - 1], BADGES.map(([b], i) => ({ label: b + " Badge", value: i }))
+            .concat([{ label: "Cancel", value: "back", className: "action", wide: true }]));
+          if (v === "back") break;
+          await say(T("CeruleanCity_House1_Text_" + BADGES[v][1]));
+        }
+        await say(T("CeruleanCity_House1_Text_ComeVisitAnytime"));
+        return;
+      }
+      case "CeruleanCity_House3_EventScript_Dontae":
+        await inGameTrade(TRADES.zynx);
+        return;
+      // The Bike Shop: a Bicycle is ¥1,000,000 (and FireRed never sells you one).
+      case "CeruleanCity_BikeShop_EventScript_Clerk": {
+        if (f.gotBicycle) { await say(T("CeruleanCity_BikeShop_Text_HowDoYouLikeNewBicycle")); return; }
+        await say(T("CeruleanCity_BikeShop_Text_WelcomeToBikeShop"));
+        const v = await ask("", [{ label: "Bicycle  ¥1,000,000", value: "bike", className: "action", wide: true },
+          { label: "Cancel", value: "back", className: "action", wide: true }]);
+        if (v === "bike") await say(T("CeruleanCity_BikeShop_Text_SorryYouCantAffordIt"));
+        await say(T("CeruleanCity_BikeShop_Text_ThankYouComeAgain"));
+        return;
+      }
+      // The Berry Powder man: without FireRed's Berry Pouch, you've no Berries.
+      case "CeruleanCity_House5_EventScript_BerryPowderMan": {
+        const q = T("CeruleanCity_House1_Text_AnyInterestInBerries");
+        await say(q.slice(0, -1));
+        await say(T((await confirm(fill(q[q.length - 1]))) ? "CeruleanCity_House1_Text_WhyMustYouLieNoBerries"
+          : "CeruleanCity_House1_Text_TakeInterestInAllSortsOfThings"));
+        return;
+      }
+      case "CeruleanCity_House5_EventScript_BerryCrushRankings":
+        await say("BERRY CRUSH rankings.\nNo one has crushed any Berries yet.");
+        return;
+
       case "PewterCity_PokemonCenter_1F_EventScript_Nurse":
         await nurse(ev.map, ev.person);
         return;
@@ -2061,6 +2122,14 @@
     if (!canBattle()) return;
     const team = trainerTeam(t.id);
     await battle("trainer", { foe: { name: data.className + " " + data.name, team, pic: data.pic }, defeatText: t.defeat, trainerId: t.id });
+    // A beaten trainer who walked over to you stays where they stopped (see
+    // visible()): back in their spot they could shut you in, as Route 25's
+    // Hiker Flint does the TM43 corner.
+    if (approach && player.flags[t.id]) {
+      const [dx, dy] = World.DIRS[facing];
+      (player.flags.trainerSpots || (player.flags.trainerSpots = {}))[t.id] =
+        { x: person.x + dx * approach, y: person.y + dy * approach, facing };
+    }
   }
 
   // A FireRed trainer's party as party records.
@@ -2076,19 +2145,26 @@
   // IVs: HP, Attack, Defense, Speed, Sp. Atk, Sp. Def), at your Pokémon's level.
   const TRADES = {
     mimien: { flag: "tradedMimien", wants: "Abra", gives: "Mr. Mime", nickname: "Mimien",
-      ivs: { hp: 20, atk: 15, def: 17, spe: 24, spa: 23, spd: 22 } }
+      ivs: { hp: 20, atk: 15, def: 17, spe: 24, spa: 23, spd: 22 } },
+    // Dontae, in Cerulean (FireRed's INGAME_TRADE_JYNX), with the other trade texts.
+    zynx: { flag: "tradedZynx", wants: "Poliwhirl", gives: "Jynx", nickname: "Zynx",
+      ivs: { hp: 18, atk: 17, def: 18, spe: 22, spa: 25, spd: 21 },
+      text: { ask: "Trade_Text_DoYouHaveMonWouldYouTradeForMon", no: "Trade_Text_WellIfYouDontWantTo",
+        wrong: "Trade_Text_ThisIsntMon", thanks: "Trade_Text_Thanks", after: "Trade_Text_HasTradedMonGrownStronger" } }
   };
   async function inGameTrade(trade) {
-    const f = player.flags;
-    if (f[trade.flag]) { await say(T("Trade_Text_IsntMyOldMonGreat"), [trade.wants, trade.gives]); return; }
-    const ask = T("Trade_Text_LookingForMonWannaTradeForMon");
-    await say(ask.slice(0, -1), [trade.wants, trade.gives]);
-    if (!(await confirm(fill(ask[ask.length - 1], [trade.wants, trade.gives])))) { await say(T("Trade_Text_AwwOhWell")); return; }
+    const f = player.flags, vars = [trade.wants, trade.gives];
+    const X = Object.assign({ ask: "Trade_Text_LookingForMonWannaTradeForMon", no: "Trade_Text_AwwOhWell",
+      wrong: "Trade_Text_WhatThatsNoMon", thanks: "Trade_Text_HeyThanks", after: "Trade_Text_IsntMyOldMonGreat" }, trade.text);
+    if (f[trade.flag]) { await say(T(X.after), vars); return; }
+    const ask = T(X.ask);
+    await say(ask.slice(0, -1), vars);
+    if (!(await confirm(fill(ask[ask.length - 1], vars)))) { await say(T(X.no)); return; }
     const mine = await choosePartyFor("Choose a POKéMON.");
     show("world");
-    if (!mine) { await say(T("Trade_Text_AwwOhWell")); return; }
+    if (!mine) { await say(T(X.no)); return; }
     const i = player.party.indexOf(mine);
-    if (mine.species !== trade.wants) { await say(T("Trade_Text_WhatThatsNoMon"), [trade.wants, trade.gives]); return; }
+    if (mine.species !== trade.wants) { await say(T(X.wrong), vars); return; }
     const theirs = Party.create(trade.gives, mine.level, { nickname: trade.nickname });
     theirs.ivs = Object.assign({}, trade.ivs);
     theirs.hp = Party.maxHp(theirs);
@@ -2096,7 +2172,7 @@
     Player.markCaught(player, trade.gives);
     f[trade.flag] = true;
     await say("{PLAYER} sent " + Party.displayName(mine) + " to the trainer.\nThe trainer sent back " + trade.nickname + "!");
-    await say(T("Trade_Text_HeyThanks"));
+    await say(T(X.thanks));
   }
 
   // ---------- Oak's parcel and the Pokédex ----------
@@ -2680,6 +2756,32 @@
       return;
     }
     await say(T("PewterCity_Gym_Text_BrockPostBattle"));
+  }
+
+  // Misty: battle (talking to her), then the Cascade Badge and TM03 Water
+  // Pulse (this game's TM101). Beating her also beats her Gym's trainers
+  // (FireRed's set_gym_trainers).
+  async function misty(person) {
+    const f = player.flags;
+    if (!f.TRAINER_LEADER_MISTY) {
+      await say(person.trainer.intro);
+      if (!canBattle()) return;
+      const outcome = await battle("trainer", { foe: { name: "Leader Misty", team: trainerTeam("TRAINER_LEADER_MISTY"), pic: "leader_misty" },
+        defeatText: person.trainer.defeat, trainerId: "TRAINER_LEADER_MISTY", terrain: "leader" });
+      if (outcome !== "won") return;
+      if (!hasBadge("cascade")) player.badges.push("cascade");
+      f.TRAINER_PICNICKER_DIANA = f.TRAINER_SWIMMER_MALE_LUIS = true;
+      player.flags.lastCenter = "CeruleanCity_PokemonCenter_1F";
+      show("world");
+      await Overworld.resume();
+    }
+    if (!f.gotTM03) {
+      await say(T("CeruleanCity_Gym_Text_ExplainCascadeBadge"));
+      Player.addItem(player, "tm101");
+      f.gotTM03 = true;
+      await sayWithJingle(itemJingle("tm101"), "{PLAYER} received TM101\nfrom Misty.");
+    }
+    await say(T("CeruleanCity_Gym_Text_ExplainTM03").map((p) => p.replace(/TM03/g, "TM101")));
   }
 
   // ---------- Escape Rope ----------

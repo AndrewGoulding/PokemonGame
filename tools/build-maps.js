@@ -60,6 +60,14 @@ const TITLES = {
   MtMoon_1F: "Mt. Moon", MtMoon_B1F: "Mt. Moon · B1F", MtMoon_B2F: "Mt. Moon · B2F",
   CeruleanCity_PokemonCenter_1F: "Cerulean City · Pokémon Center",
   CeruleanCity_PokemonCenter_2F: "Cerulean City · Pokémon Center 2F",
+  CeruleanCity_Gym: "Cerulean City · Gym",
+  CeruleanCity_Mart: "Cerulean City · Poké Mart",
+  CeruleanCity_BikeShop: "Cerulean City · Bike Shop",
+  CeruleanCity_House1: "Cerulean City · Badge house",
+  CeruleanCity_House2: "Cerulean City · Robbed house",
+  CeruleanCity_House3: "Cerulean City · Trade house",
+  CeruleanCity_House4: "Cerulean City · House",
+  CeruleanCity_House5: "Cerulean City · Berry house",
   Route24: "Route 24 · Nugget Bridge",
   Route25_SeaCottage: "Route 25 · Sea Cottage"
 };
@@ -76,6 +84,8 @@ const MAPS = [
   "PewterCity_House1", "PewterCity_House2", "PewterCity_PokemonCenter_1F", "PewterCity_PokemonCenter_2F",
   "Route3", "Route4", "Route4_PokemonCenter_1F", "Route4_PokemonCenter_2F", "MtMoon_1F", "MtMoon_B1F", "MtMoon_B2F",
   "CeruleanCity", "CeruleanCity_PokemonCenter_1F", "CeruleanCity_PokemonCenter_2F",
+  "CeruleanCity_Gym", "CeruleanCity_Mart", "CeruleanCity_BikeShop", "CeruleanCity_House1", "CeruleanCity_House2",
+  "CeruleanCity_House3", "CeruleanCity_House4", "CeruleanCity_House5",
   "Route24", "Route25", "Route25_SeaCottage"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
@@ -117,6 +127,8 @@ const GAME_TEXT = [
   "Text_WeHopeToSeeYouAgain", "Text_MayIHelpYou", "Text_PleaseComeAgain", "Text_WirelessClubUndergoingAdjustments",
   "Trade_Text_LookingForMonWannaTradeForMon", "Trade_Text_AwwOhWell", "Trade_Text_WhatThatsNoMon",
   "Trade_Text_HeyThanks", "Trade_Text_IsntMyOldMonGreat",
+  "Trade_Text_DoYouHaveMonWouldYouTradeForMon", "Trade_Text_WellIfYouDontWantTo", "Trade_Text_ThisIsntMon",
+  "Trade_Text_Thanks", "Trade_Text_HasTradedMonGrownStronger",
   "Aide_Text_HaventCaughtEnoughMonsForItem", "Aide_Text_GetEnoughMonsComeBackForItem",
   "Text_OnlySkilledTrainersAllowedThrough", "Text_CantLetYouPass", "Text_OhThatsBadgeGoRightAhead", "Text_MoveCanOnlyBeLearnedOnce",
   // Pallet Town's Sign Lady (data/text/sign_lady.inc).
