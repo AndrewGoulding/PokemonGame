@@ -258,6 +258,9 @@ const GAME_TEXT = [
   "Aide_Text_HaventCaughtEnoughMonsForItem", "Aide_Text_GetEnoughMonsComeBackForItem",
   "Text_OnlySkilledTrainersAllowedThrough", "Text_CantLetYouPass", "Text_OhThatsBadgeGoRightAhead", "Text_MoveCanOnlyBeLearnedOnce",
   "Text_WantWhichFloor", "Text_GiveNicknameToThisMon", "Text_PlayerObtainedTheMon", "Text_NoMoreRoomForPokemon",
+  // Waking up after blacking out (data/text/white_out.inc).
+  "Text_FirstShouldRestoreMonsHealth", "Text_MonsHealedShouldBuyPotions", "Text_MonsHealed",
+  "Text_HadQuiteAnExperienceTakeRest", "Text_MomExplainHPGetPotions",
   // The Safari Zone's PA and the RETIRE prompt (data/text/safari_zone.inc).
   "SafariZone_Text_WouldYouLikeToExit", "SafariZone_Text_TimesUp", "SafariZone_Text_OutOfBalls",
   "SafariZone_Text_ExcuseMeYourPCBoxIsFull",
@@ -849,6 +852,9 @@ for (const name of MAPS) {
     // see far without Flash (requires_flash).
     cycling: map.allow_cycling || undefined,
     dark: map.requires_flash || undefined,
+    // Its weather, where FireRed draws one ("fog_horizontal", "shade"; not
+    // WEATHER_SUNNY, which is just the usual clear sky): ui/overworld.js.
+    weather: map.weather && !["WEATHER_NONE", "WEATHER_SUNNY"].includes(map.weather) ? map.weather.replace(/^WEATHER_/, "").toLowerCase() : undefined,
     // Whether the area's name pops up on arriving by a door or warp
     // (show_map_name), and its floor (Silph Co. 2F, Rocket Hideout B1F; and
     // this game's FLOOR_NUMBERS for places FireRed gives none).

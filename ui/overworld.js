@@ -804,8 +804,90 @@
     for (const [x, y] of heal.balls) blit(fx.ball, 0, x, y);
   }
 
+  // ---------- Weather (src/field_weather.c, field_weather_effects.c) ----------
+  //
+  // A map's FireRed weather (WORLD_MAPS[map].weather):
+  // - "fog_horizontal" (Pokémon Tower 3F-7F): FireRed's 64x64 fog sprites
+  //   (graphics/weather/fog_horizontal.png, data/field-effects.js) tiled over
+  //   the map, under people and the map's top layer, moving with the map and
+  //   drifting left a pixel every 4 frames (FogHorizontal_Main), blended in
+  //   as the GBA does (BLDALPHA: fog x 12/16 + the map x 8/16, in 5-bit
+  //   colour), which it fades up to from 0/16 and 16/16 on arriving
+  //   (Weather_UpdateBlend: a step every 4 frames, EVA and EVB in turn).
+  // - "shade" (Viridian Forest, Pokémon Mansion): the map and people darker
+  //   (Shade_InitVars: gamma shift 3, each colour x 13/16).
+  const weatherOf = (mapName) => (World.map(mapName) || {}).weather;
+  const fogState = { on: false, offset: 0, counter: 0, eva: 0, evb: 16, step: 0, steps: 0 };
+  // (Drawn with the canvas's own blending, so nothing is read back from it: a
+  // canvas with the map's pictures on it can't be read from file://. The map
+  // under the fog is multiplied by EVB/16, then the fog x EVA/16 added.)
+  let fogBase = null;
+  const fogTiles = {};
+  function fogTile(kind, ev) {
+    const key = kind + ev;
+    if (fogTiles[key]) return fogTiles[key];
+    const f = (window.FIELD_EFFECTS || {}).fog;
+    if (!f) return null;
+    if (!fogBase) fogBase = { w: f.width, h: f.height, px: Array.from(f.px, (c) => parseInt(c, 16)), pal: f.palette };
+    const c = document.createElement("canvas");
+    c.width = fogBase.w; c.height = fogBase.h;
+    const cg = c.getContext("2d"), img = cg.createImageData(c.width, c.height);
+    fogBase.px.forEach((v, i) => {
+      for (let k = 0; k < 3; k++) {
+        img.data[i * 4 + k] = kind === "mul" ? (v ? Math.round(255 * ev / 16) : 255)
+          : v ? Math.min(31, ((fogBase.pal[v][k] >> 3) * ev) >> 4) << 3 : 0;
+      }
+      img.data[i * 4 + 3] = kind === "mul" || v ? 255 : 0;
+    });
+    cg.putImageData(img, 0, 0);
+    return (fogTiles[key] = c);
+  }
+  function updateWeather() {
+    const fog = weatherOf(me.map) === "fog_horizontal";
+    if (fog && !fogState.on) Object.assign(fogState, { on: true, eva: 0, evb: 16, step: 0, steps: 0 });
+    if (!fog) { fogState.on = false; return; }
+    if (++fogState.counter > 3) { fogState.counter = 0; fogState.offset++; }
+    if ((fogState.eva !== 12 || fogState.evb !== 8) && ++fogState.step > 3) {
+      fogState.step = 0;
+      if (++fogState.steps & 1) { if (fogState.eva < 12) fogState.eva++; }
+      else if (fogState.evb > 8) fogState.evb--;
+    }
+  }
+  function drawFog(camX, camY) {
+    if (!fogState.on) return;
+    const mul = fogTile("mul", fogState.evb), add = fogTile("add", fogState.eva);
+    if (!mul || !add) return;
+    const w = mul.width, h = mul.height;
+    const ox = (((-camX - fogState.offset) % w) + w) % w, oy = (((-camY) % h) + h) % h;
+    g.save();
+    g.translate(ox - w, oy - h);
+    for (const [tile, op] of [[mul, "multiply"], [add, "lighter"]]) {
+      g.globalCompositeOperation = op;
+      g.fillStyle = g.createPattern(tile, "repeat");
+      g.fillRect(0, 0, VIEW_W + w, VIEW_H + h);
+    }
+    g.restore();
+  }
+  const SHADE = "brightness(" + 13 / 16 + ")";
+
+  // The screen shaking a pixel up and down (FireRed's Task_ElevatorShake:
+  // SetCameraPanning(0, ±1), the other way every 3 frames, `count` times).
+  let pan = null, panY = 0;
+  function shake(count) {
+    return new Promise((resolve) => { pan = { count, n: 0, t: 0, dy: 1, resolve }; });
+  }
+  function updatePan() {
+    if (++pan.t % 3) return;
+    pan.n++;
+    pan.dy = -pan.dy;
+    panY = pan.dy;
+    if (pan.n >= pan.count) { const done = pan.resolve; pan = null; panY = 0; done(); }
+  }
+
   function update() {
     updatePopup();
+    if (pan) updatePan();
+    updateWeather();
     if (heal) updateHeal();
     if (transition && ++transition.t > FLASH_FRAMES + SLICE_FRAMES + 4) {
       const done = transition.resolve;
@@ -973,11 +1055,13 @@
       py = (sy * TILE) - dy * (me.move.dist - t);
       if (me.move.jump || me.move.dismount || me.move.hop) hop = Math.sin((t / me.move.dist) * Math.PI) * (me.move.jump ? 10 : 6);
     }
-    const camX = px - PLAYER_X, camY = py - PLAYER_Y;
+    const camX = px - PLAYER_X, camY = py - PLAYER_Y + panY;
 
     g.fillStyle = "#000";
     g.fillRect(0, 0, VIEW_W, VIEW_H);
     // The border pattern fills everything outside the maps.
+    const shade = weatherOf(me.map) === "shade";
+    if (shade) g.filter = SHADE;
     const border = mapImage(me.map, "border");
     if (ready(border)) {
       const bw = border.naturalWidth, bh = border.naturalHeight;
@@ -996,6 +1080,8 @@
       drawAnimCells(name, ox - camX, oy - camY);
       drawPatches(name, ox - camX, oy - camY, "");
     }
+    g.filter = "none";
+    drawFog(camX, camY);
 
     // People and the player, back to front.
     const emotes = [];
@@ -1008,8 +1094,8 @@
       }
       if (p.emote) emotes.push([p.emote, x - camX, y - camY - p.def.height + TILE]);
       const walking = (!!p.move && p.move.t < TILE / 2) || (p.inPlace > 0 && p.inPlace % 16 >= 8);
-      return { y, draw: () => drawSprite(p.def.sprite, p.def.width, p.def.height,
-        frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), p.facing === "right", x - camX, y - camY) };
+      return { y, draw: () => { if (shade) g.filter = SHADE; drawSprite(p.def.sprite, p.def.width, p.def.height,
+        frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), p.facing === "right", x - camX, y - camY); g.filter = "none"; } };
     });
     for (const n of neighbours) {
       const x = (n.ox + n.x) * TILE, y = (n.oy + n.y) * TILE;
@@ -1043,12 +1129,14 @@
     if (heal) drawHeal(camX, camY);   // the healing machine's balls and screen, under people
     sprites.sort((a, b) => a.y - b.y).forEach((s) => s.draw());
 
+    if (shade) g.filter = SHADE;
     for (const [name, ox, oy] of layers) {
       if (!World.map(name).top) continue;
       const img = mapImage(name, "top");
       if (ready(img)) g.drawImage(img, ox - camX, oy - camY);
       drawPatches(name, ox - camX, oy - camY, "-top");
     }
+    g.filter = "none";
     drawDarkness(px - camX, py - camY);
     // "!", "!!", "?" and "×" bubbles over someone's head.
     for (const [e, x, y] of emotes) {
@@ -1079,6 +1167,9 @@
 
   function finish(event) {
     hideAreaName();
+    // (Where you stand and which way you face now: a turn on the spot isn't a
+    // step, and explore() would otherwise turn you back the old way after.)
+    if (ctx && me.map && !me.move) savePosition();
     const r = resolveExplore;
     resolveExplore = null;
     paused = true;
@@ -1148,7 +1239,7 @@
   window.Overworld = {
     explore, hide, read: (pages) => read(pages), showAreaName, forceStep, refreshPeople: () => loadPeople(),
     act, addObject, removeObject, removePerson, teleport, battleTransition, resume, pokecenterHeal,
-    fadeToBlack: fadeOut, fadeFromBlack: fadeIn,
+    fadeToBlack: fadeOut, fadeFromBlack: fadeIn, shake,
     setAvatar, avatar: () => me.avatar, flash, isDark: () => light != null && !flashOn,
     // What's in front of you: the tile, whoever stands there, and whether
     // it's water you could start surfing on.

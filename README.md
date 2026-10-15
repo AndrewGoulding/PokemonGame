@@ -98,7 +98,8 @@ pocket remembers where its ▶ was), with FireRed's descriptions under the list
 (its own words and line breaks, for the items FireRed has). A opens Use / Give / Toss; Toss asks how
 many and throws them away right there. It holds medicine, evolution
 stones (each item for evolving says "Evolves certain Pokémon when used."), Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
-the Exp. Share, Oak's Parcel and the Town Map. After the Bag come FireRed's Pokédex (its
+the Exp. Share, Oak's Parcel, the Town Map and the fishing rods (there's no
+fishing yet). After the Bag come FireRed's Pokédex (its
 table of contents with Seen / Owned; the numerical list, with the caught ball and
 types; the nine habitats' pages, up to four Pokémon a page in their circles;
 this game's Area mode: every place with wild Pokémon (FireRed's and LeafGreen's alike; ----- until you've been
@@ -140,6 +141,15 @@ evolution scene: the battle background fades to black for its swirling blue one,
 sparkles spiral up and rain down, the old and new Pokémon trade places as white
 shapes faster and faster, and a flash shows the new one. Hold B while they trade
 places to stop it (not when a stone does it). Press A to skip ahead.
+Lose (no Pokémon left that can fight) and it goes as in FireRed: in the
+battle's text box, "… is out of usable Pokémon!", the money you lose (to a
+trainer: "… lost against …!" and the prize money you pay) and "… blacked
+out!"; the screen fades to black and, on the black screen, you scurry to the
+last Pokémon Center you used (or back to Red's house before you've used one),
+protecting your exhausted Pokémon; then you're there, and the nurse heals them
+at the counter ("First, you should restore your Pokémon to full health.", the
+healing machine, and until you've beaten Brock her advice about Potions), or
+at home Red's Mom does.
 
 **Saving**: the game saves automatically to this browser (including where you
 are on the map) after every battle, story event and menu change, and
@@ -160,7 +170,7 @@ The maps are FireRed's, converted from the [pret/pokefirered](https://github.com
 decompilation: Pallet Town, Red's house (both floors), the rival's house,
 PROF. OAK's lab, Route 1, Viridian City with its Pokémon Center (both
 floors), Poké Mart, school and Nickname house, Route 2 with its trade house
-and gate, Viridian Forest with both of its gates, Route 22 and its League
+and gate, Viridian Forest (in FireRed's shade, a little darker) with both of its gates, Route 22 and its League
 gate, and Pewter City with its Gym, Museum (both floors), Poké Mart,
 Pokémon Center and houses, Route 3 with its eight trainers, Route 4 with
 its Pokémon Center, Mt. Moon (1F, B1F, B2F), Cerulean City with its
@@ -187,34 +197,39 @@ items, Rock Smash rocks and the Rock Slide tutor, ₽1,000 a time as often as yo
 Pokémon Center, Poké Mart (Super Repels and Revives), the Name Rater (renames
 a Pokémon you caught yourself; one you traded for keeps its name), Cubone's
 house and the Volunteer Pokémon House (Mr. Fuji is away until Pokémon Tower),
-Pokémon Tower (1F-7F: Gary on 2F, with FireRed's team, a Gyarados in Kadabra's place and his Eevee, now an Umbreon; the
+Pokémon Tower (1F-7F, FireRed's mist drifting over 3F-7F: Gary on 2F, with FireRed's team, a Gyarados in Kadabra's place and his Eevee, now an Umbreon; the
 Channelers; 5F's purified zone, which heals you each time you step in; without
 the Silph Scope its wild Pokémon are unidentified Ghosts (FireRed's
 BATTLE_TYPE_GHOST: "A wild Ghost appeared!", your Pokémon are too scared to
 move, the Ghost says "Get out…… Get out……", balls are dodged and running always
 works), and on 6F the ghost of Cubone's mother pushes you back; with the Silph
-Scope she's a Marowak (Lv. 30, can't be caught) whose spirit you calm, then the
+Scope she's a Marowak (Lv. 30) whose spirit you calm (or, this game's own,
+catch: she's at rest all the same and the way up is clear), then the
 Rockets on 7F and Mr. Fuji, who takes you home and gives you the Poké Flute,
 which wakes sleeping Pokémon), Route 8 (its trainers; the twins Eli & Anne,
 a double battle, as in FireRed), its gate to Saffron (a thirsty
 guard), and the Underground Path's east entrance and tunnel, and its west
 entrance onto Route 7, with its gate to Saffron, and Celadon City: its Pokémon
 Center, the Department Store (five floors and the roof; the elevator takes you
-to any floor; the 2F TM counter, the 4F toys and stones, the 5F drugstore; the
+to any floor: FireRed's floor list and its "Now on:" window, and the car shakes
+while it hums, then dings; the 2F TM counter, the 4F toys and stones, the 5F drugstore; the
 Counter tutor on 3F; on the roof, vending machines with Fresh Water, Soda Pop
-and Lemonade, and a thirsty girl who swaps TM16 Light Screen, TM20 Safeguard or
+and Lemonade (FireRed's list with the prices, and your money in its box at the
+top left), and a thirsty girl who swaps TM16 Light Screen, TM20 Safeguard or
 TM33 Reflect for a drink she hasn't had), the Condominiums (the old lady's Tea:
 give it to any of the thirsty gate guards and all four gates to Saffron open;
 the game designer's diploma for a complete Kanto Pokédex; an Eevee, Lv. 25, in
 a Poké Ball in the rooftop room), the restaurant (the Coin Case), the hotel and
 houses, the Soft-Boiled tutor, Erika's Gym (behind a Cut tree; the Rainbow Badge
 and TM19 Giga Drain, TM103 here), and the Game Corner: buy Coins (50 for ₽1,000,
-500 for ₽10,000; up to 9,999 in the Coin Case), get a few from the gamblers,
+500 for ₽10,000, in FireRed's list, with your money and Coins in their boxes at
+the top left; up to 9,999 in the Coin Case), get a few from the gamblers,
 find them on the floor, and play FireRed's slot machines (its reels, odds,
 lines and payouts, from `src/slot_machine.c`); spend them in the Prize Room on
 Abra, Clefairy, Dratini, Scyther or Porygon, TMs (Ice Beam, Thunderbolt, Shadow
 Ball, Flamethrower, and Iron Tail, TM104 here, since this game's TM23 is Smack
-Down) or held items. Beat the Rocket guarding the poster and the switch behind
+Down) or held items, each counter's prizes in FireRed's list with your Coins
+in their box. Beat the Rocket guarding the poster and the switch behind
 it opens the stairs to the Rocket Hideout (B1F-B4F: its trainers, items and
 spinning arrow floors; FireRed's TM49 Snatch, TM107 here; the barriers that open once their guards are beaten; the
 Lift Key a Rocket drops on B4F, which works the elevator; and Giovanni, who
@@ -295,7 +310,7 @@ into a Lv. 5 Omanyte, Kabuto or Aerodactyl once you've left the room and come
 back, the Metronome tutor, and three trades (Garett's Seel, Seelor, for a
 Ponyta; Clifton's Electrode, Esphere, for a Raichu; Norma's Tangela, Tangeny,
 holding Stardust, for a Venonat; FireRed's IVs and trainers). The Pokémon
-Mansion (1F to 3F and B1F: its burglars and scientists, its diaries, its items,
+Mansion (1F to 3F and B1F, in FireRed's shade: its burglars and scientists, its diaries, its items,
 TM14 Blizzard and TM22 Solar Beam among them): every statue hides the one
 switch that swaps which of the house's doors are open, on every floor, and the
 Secret Key lies in the basement. Blaine's Gym is locked until you have it.
@@ -664,8 +679,9 @@ is left as it was.
 
 This game's own story beat. Once you have four badges and Pokémon Tower is put
 to rest (Mr. Fuji rescued), one of Prof. Oak's aides finds you as you next come
-out of a building (outside the Gym or Mr. Fuji's house, whichever came second)
-and sends you to the top of Pokémon Tower. There Prof. Oak, Mr. Fuji, Red, Leaf
+out of a building (outside the Gym or Mr. Fuji's house, whichever came second):
+he comes along the paths from just off the screen, and goes back the way he
+came, and sends you to the top of Pokémon Tower. There Prof. Oak, Mr. Fuji, Red, Leaf
 and Gary are waiting: Oak has been studying Mega Evolution and tests everyone.
 You battle Gary (Pidgeotto, Growlithe, Gyarados, Exeggutor, Umbreon; Lv. 27-31),
 Red (Pikachu, Charmeleon, Wartortle, Ivysaur, Espeon) and Leaf

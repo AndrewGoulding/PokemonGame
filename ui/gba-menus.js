@@ -20,6 +20,12 @@
 //     // moves: [{ name, type, pp, maxpp }] -> { index, cursor } or null (B)
 //     // (opts.onCursor(cursor) as the cursor moves; opts.keep leaves the menu
 //     // showing after A, for a double battle's target cursor)
+//   const i = await GbaMenus.multichoice(overlay, { left, top, items, cursor, frame })
+//     // a script's multichoice window (tiles left, top as FireRed's script
+//     // gives them) -> the index, or -1 (B)
+//   await GbaMenus.blackScreen(overlay, text)   // blacking out: fade to black, the text, A
+//   GbaMenus.fieldWindow("money" | "coins" | "floor", spec or null)
+//     // the money box, coins box or elevator's floor window, up until taken down
 //   const r = await GbaMenus.startMenu(overlay, { items, cursor, frame })
 //     // items: [{ key, label, help }]; drawn over the map (the rest of the
 //     // canvas clear) -> { key (or "exit"), cursor }
@@ -376,6 +382,184 @@
     return { index, cursor };
   }
 
+  // ---------- A script's multichoice (src/script_menu.c) ----------
+  //
+  // DrawVerticalMultichoiceMenu: a window in your frame at tiles (left + 1,
+  // top + 1) (CreateWindowFromRect), as wide as its longest choice
+  // ((width + 9) / 8 + 1 tiles, kept left of tile 28) and as tall as
+  // GetMCWindowHeight says; the choices at x 8, 14 pixels apart from y 2, the
+  // ▶ at x 0. With more than three it wraps round (Menu_ProcessInput). A
+  // choice can switch to the small font and jump to a column part way
+  // ("{FONT_SMALL}", "{CLEAR_TO 72}"), as FireRed's prices do.
+  // opts.shown: a scrolling list of that many rows instead (the ListMenu
+  // special, Silph Co.'s floors: 14 pixels a row, arrows when there's more).
+  // -> the index chosen, or -1 (B, unless opts.ignoreB)
+  const MC_HEIGHT = [1, 2, 4, 6, 7, 9, 11, 13, 14];
+  function richParts(str) {
+    const parts = [];
+    let font = "normal", at = null;
+    for (const piece of String(str).split(/(\{FONT_SMALL\}|\{FONT_NORMAL\}|\{CLEAR_TO \w+\})/)) {
+      if (!piece) continue;
+      if (piece === "{FONT_SMALL}") font = "small";
+      else if (piece === "{FONT_NORMAL}") font = "normal";
+      else if (/^\{CLEAR_TO/.test(piece)) at = Number(piece.slice(10, -1));
+      else { parts.push({ text: piece, font, at }); at = null; }
+    }
+    return parts;
+  }
+  function richWidth(s, str) {
+    let x = 0;
+    for (const p of richParts(str)) { if (p.at != null) x = Math.max(x, p.at); x += s.textWidth(p.text, p.font); }
+    return x;
+  }
+  function richText(s, str, x0, y, fg, shadow) {
+    let x = 0;
+    for (const p of richParts(str)) {
+      if (p.at != null) x = Math.max(x, p.at);
+      // (The small font sits a pixel lower in a line, as FireRed's does.)
+      x += s.text(p.text, x0 + x, y + (p.font === "small" ? 1 : 0), fg, shadow, p.font);
+    }
+  }
+  async function multichoice(canvas, opts) {
+    const std = G().palettes.std2, frame = "type" + ((opts.frame || 0) + 1);
+    const items = opts.items, n = items.length, shown = opts.shown ? Math.min(opts.shown, n) : n;
+    let cursor = Math.max(0, Math.min(opts.cursor || 0, n - 1)), top = 0;
+    const measure = Surface();
+    const width = Math.floor((Math.max(...items.map((it) => richWidth(measure, it))) + 9) / 8) + 1;
+    const left = Math.min(opts.left || 0, 28 - width) + 1, wtop = (opts.top || 0) + 1;
+    const height = opts.shown ? Math.floor((shown * 14 + 2) / 8) : MC_HEIGHT[Math.min(n, 8)];   // (Silph Co.'s: 12 tiles)
+    const wrap = !opts.shown && n > 3;
+    const draw = () => {
+      const s = Surface(), x = left * 8, y = wtop * 8;
+      if (opts.under) opts.under(s);
+      s.frame(frame, G().frames[frame].palette, left, wtop, width, height);
+      s.fill(x, y, width * 8, height * 8, std[1]);
+      top = Math.max(0, Math.min(top, cursor), cursor - shown + 1);
+      items.slice(top, top + shown).forEach((it, i) => richText(s, it, x + 8, y + 2 + 14 * i, std[2], std[3]));
+      s.text("▶", x, y + 2 + 14 * (cursor - top), std[2], std[3]);
+      if (opts.shown && n > shown) {
+        // The list's scroll arrows above and below the window, while there's more that way.
+        const arrow = (ax, ay, up) => { for (let r = 0; r < 4; r++) s.fill(ax + r, ay + (up ? 3 - r : r), 7 - 2 * r, 1, std[2]); };
+        const mid = x + width * 4 - 4;
+        if (top > 0) arrow(mid, y - 6, true);
+        if (top + shown < n) arrow(mid, y + height * 8 + 2, false);
+      }
+      s.show(canvas);
+    };
+    canvas.classList.remove("hidden");
+    draw();
+    const index = await keys((k) => {
+      const to = k === "up" ? cursor - 1 : k === "down" ? cursor + 1 : null;
+      if (to != null) {
+        const c = wrap ? (to + n) % n : to;
+        if (c >= 0 && c < n && c !== cursor) { cursor = c; if (opts.shown) se(); draw(); }
+      } else if (k === "a") { se(); return cursor; }
+      else if (k === "b" && !opts.ignoreB) { se(); return -1; }
+      return undefined;
+    });
+    canvas.classList.add("hidden");
+    return index;
+  }
+
+  // ---------- Field windows that stay up (money, coins, the elevator's floor) ----------
+  //
+  // In the standard frame (LoadStdWindowGfx: graphics/text_window/std, its
+  // palette), on a canvas of their own under the menus, until taken down:
+  //   GbaMenus.fieldWindow("money", { x, y, amount })   // showmoneybox x, y
+  //   GbaMenus.fieldWindow("coins", { x, y, amount })   // showcoinsbox x, y
+  //   GbaMenus.fieldWindow("floor", { label })          // DrawElevatorCurrentFloorWindow
+  //   GbaMenus.fieldWindow("money", null)                // hidemoneybox
+  // DrawMoneyBox / ShowCoinsWindow: 8 x 3 tiles at (x + 1, y + 1), "MONEY" or
+  // "COINS" (as this game writes them, "Money" and "Coins") at the top left,
+  // the amount in the small font right-aligned to
+  // 64 at y 12. The floor window: 7 x 4 tiles at (22, 1), "Now on:" at
+  // (0, 2), the floor right-aligned to 56 at y 16.
+  const fieldWins = {};
+  function fieldCanvas() {
+    let c = document.getElementById("field-windows");
+    if (!c) {
+      const overlay = document.getElementById("overlay");
+      c = document.createElement("canvas");
+      c.id = "field-windows"; c.className = "overlay hidden"; c.width = overlay.width; c.height = overlay.height;
+      overlay.parentNode.insertBefore(c, overlay);
+    }
+    return c;
+  }
+  function drawFieldWindows(s) {
+    const pal = G().palettes.std3;
+    const win = (l, t, w, h) => { s.frame("std", pal, l, t, w, h); s.fill(l * 8, t * 8, w * 8, h * 8, pal[1]); };
+    for (const [name, w] of Object.entries(fieldWins)) {
+      if (name === "floor") {
+        win(22, 1, 7, 4);
+        s.text("Now on:", 176, 8 + 2, pal[2], pal[3]);
+        s.text(w.label, 176 + 56 - s.textWidth(w.label), 8 + 16, pal[2], pal[3]);
+        continue;
+      }
+      const l = w.x + 1, t = w.y + 1, x = l * 8, y = t * 8;
+      win(l, t, 8, 3);
+      s.text(name === "money" ? "Money" : "Coins", x, y, pal[2], pal[3]);
+      const amount = name === "money" ? "¥" + w.amount : String(w.amount) + " Coins";
+      s.text(amount, x + 64 - s.textWidth(amount, "small"), y + 12, pal[2], pal[3], "small");
+    }
+  }
+  function fieldWindow(name, spec) {
+    if (spec) fieldWins[name] = spec; else delete fieldWins[name];
+    const c = fieldCanvas();
+    if (!Object.keys(fieldWins).length) { c.classList.add("hidden"); return; }
+    const s = Surface();
+    drawFieldWindows(s);
+    s.show(c);
+    c.classList.remove("hidden");
+  }
+
+  // ---------- Blacking out (src/field_screen_effect.c) ----------
+  //
+  // The screen fades to black; then Task_RushInjuredPokemonToCenter's text on
+  // the black screen (sWindowTemplate_WhiteoutText: tiles 0, 5, 30 x 11; the
+  // text at 2, 8, white with a dark gray shadow, a pixel between letters),
+  // written out a letter a frame (A doesn't hurry it), until A. The canvas is
+  // left black (and showing) for whatever comes next.
+  async function blackScreen(canvas, text) {
+    const g = canvas.getContext("2d");
+    canvas.classList.remove("hidden");
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, canvas.width, canvas.height);
+    for (let f = 1; f <= 16; f++) {
+      g.clearRect(0, 0, canvas.width, canvas.height);
+      g.fillStyle = "rgba(0, 0, 0, " + f / 16 + ")";
+      g.fillRect(0, 0, canvas.width, canvas.height);
+      await nextFrame(); await nextFrame();
+    }
+    // (FireRed's line breaks, unless a line runs off the screen: a longer
+    // name, or this game's lower-case letters, are wider than FireRed's.)
+    const m = Surface(), wide = (t) => m.textWidth(t) + t.length;   // (a pixel between letters)
+    let lines = String(text).split("\n");
+    if (lines.some((l) => 2 + wide(l) > W)) {
+      const words = lines.join(" ").split(" ");
+      lines = [""];
+      for (const word of words) {
+        const cur = lines[lines.length - 1], next = cur ? cur + " " + word : word;
+        if (cur && 2 + wide(next) > W) lines.push(word); else lines[lines.length - 1] = next;
+      }
+    }
+    const total = lines.reduce((n, l) => n + l.length, 0);
+    const draw = (shown) => {
+      const s = Surface();
+      s.fill(0, 0, W, H, [0, 0, 0]);
+      let left = shown;
+      lines.forEach((line, i) => {
+        const part = line.slice(0, Math.max(0, left));
+        left -= line.length;
+        if (part) s.text(part, 2, 40 + 8 + 16 * i, [255, 255, 255], [98, 98, 98], "normal", null, 1);
+      });
+      s.show(canvas);
+    };
+    for (let n = 0; n <= total; n++) { draw(n); await nextFrame(); }
+    await keys((k) => (k === "a" || k === "b" ? true : undefined));
+    se();
+    draw(0);
+  }
+
   // ---------- How many (src/shop.c, AdjustQuantityAccordingToDPadInput) ----------
   //
   // Over the screen, above the text box: how many you have (IN BAG) on the
@@ -655,6 +839,9 @@
     battleYesNo: (canvas, ...a) => during("battleyesno", battleYesNo(canvas, ...a)),
     quantity: (canvas, ...a) => during("quantity", quantity(canvas, ...a)),
     listMenu: (canvas, ...a) => during("list", listMenu(canvas, ...a)),
+    multichoice: (canvas, ...a) => during("multichoice", multichoice(canvas, ...a)),
+    blackScreen: (canvas, ...a) => during("blackscreen", blackScreen(canvas, ...a)),
+    fieldWindow,
     yesNo: (canvas, ...a) => during("yesno", yesNo(canvas, ...a)),
     startMenu: (canvas, ...a) => during("start", startMenu(canvas, ...a)),
     mainMenu: (canvas, ...a) => { canvas.classList.remove("hidden"); return during("main", mainMenu(canvas, ...a)); },

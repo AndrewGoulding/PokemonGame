@@ -560,6 +560,9 @@ for (const share of [false, true]) {
   assert.strictEqual(Bag.pocket("oran-berry"), "Berries");
   assert.strictEqual(Bag.pocket("fire-stone"), "Items");
   assert.strictEqual(Bag.sellPrice("potion"), 150);
+  // The fishing rods are key items; the weather rocks and the like sell for Gen 6's ₽100.
+  for (const rod of ["old-rod", "good-rod", "super-rod"]) assert.strictEqual(Bag.pocket(rod), "Key Items", rod);
+  for (const id of ["smooth-rock", "heat-rock", "damp-rock", "icy-rock", "iron-ball", "light-clay"]) assert.strictEqual(Bag.sellPrice(id), 100, id);
   // Each Mart sells FireRed's list for it, read from the clerk's script.
   const viridian = WORLD_MAPS.ViridianCity_Mart.people.find((p) => p.mart).mart;
   assert.deepStrictEqual(viridian, ["poke-ball", "potion", "antidote", "paralyze-heal"]);
@@ -852,6 +855,24 @@ for (const share of [false, true]) {
   assert.deepStrictEqual([WORLD_MAPS.PalletTown.width, WORLD_MAPS.PalletTown.height], [24, 20]);
 
   const at = (r) => (r.warp ? r.warp : r).map + " " + (r.warp ? r.warp : r).x + "," + (r.warp ? r.warp : r).y;
+  // FireRed's weather where it draws one: the Tower's mist, the forest's shade.
+  assert.strictEqual(WORLD_MAPS.PokemonTower_3F.weather, "fog_horizontal");
+  assert.strictEqual(WORLD_MAPS.PokemonTower_2F.weather, undefined);
+  assert.strictEqual(WORLD_MAPS.ViridianForest.weather, "shade");
+  assert.strictEqual(WORLD_MAPS.PalletTown.weather, undefined);
+  // Walking routes (Prof. Oak's aide): every tile reached is walkable, and the
+  // way back from it leads step by step to where the search began (here a
+  // door you've come out of: the last step, onto it, isn't walked).
+  const tree = World.walkable({ map: "LavenderTown", x: 10, y: 11 }, null, 10);
+  assert(tree.size > 20);
+  for (const [key, t] of tree) {
+    let pos = { map: "LavenderTown", x: t.x, y: t.y };
+    const dirs = World.pathBack(tree, key);
+    assert.strictEqual(dirs.length, t.dist);
+    for (const d of dirs.slice(0, -1)) { const r = World.step(pos, d); assert(r.ok && !r.warp, key + " " + d); pos = { map: r.map, x: r.x, y: r.y }; }
+    if (dirs.length) { const [dx, dy] = World.DIRS[dirs[dirs.length - 1]]; pos = { x: pos.x + dx, y: pos.y + dy }; }
+    assert.strictEqual(pos.x + "," + pos.y, "10,11");
+  }
   // Walking up into a door goes inside; walking down off the mat comes back out of that door.
   const inside = World.step({ map: "PalletTown", x: 6, y: 8 }, "up");
   assert.strictEqual(at(inside), "PalletTown_PlayersHouse_1F 4,8");

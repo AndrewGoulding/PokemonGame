@@ -154,14 +154,21 @@
     more(false);
   }
 
-  // FireRed's YES / NO box (GbaMenus.yesNo) once `text` is written out:
-  // resolves true for YES, false for NO or B.
-  async function yesNo(text, defaultNo) {
+  // A question before a menu drawn over the screen (FireRed's message then
+  // waitmessage): its first lines scroll by, the last two stay up; resolves
+  // once they're written out.
+  async function prompt(text) {
     const steps = scrollSteps(text);
     for (const [shown, from] of steps.slice(0, -1)) await read1(shown, from);
     say(steps[steps.length - 1][0], steps[steps.length - 1][1]);
     clearMenu();
     await printed();
+  }
+
+  // FireRed's YES / NO box (GbaMenus.yesNo) once `text` is written out:
+  // resolves true for YES, false for NO or B.
+  async function yesNo(text, defaultNo) {
+    await prompt(text);
     const frame = window.GameOptions ? window.GameOptions.get().frame : 0;
     return window.GbaMenus.yesNo(document.getElementById("overlay"), { frame, cursor: defaultNo ? 1 : 0 });
   }
@@ -308,5 +315,5 @@
   const setTextSpeed = (f) => { textSpeed = f; };
   const setCharDelay = (ms) => { charMs = ms; };
 
-  window.Screen = { MESSAGE_MS, setTextSpeed, setCharDelay, printed, spriteUrl, iconUrl, setSprite, clearSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, yesNo, clearMenu, learnMovePrompt };
+  window.Screen = { MESSAGE_MS, setTextSpeed, setCharDelay, printed, spriteUrl, iconUrl, setSprite, clearSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, prompt, yesNo, clearMenu, learnMovePrompt };
 })();

@@ -296,7 +296,40 @@
     return mon;
   }
 
+  // Where someone could walk from `pos` on its own map, at most `maxDist`
+  // steps (a breadth-first search over step(): no ledges, warps or other
+  // maps; `occupied(map, x, y)` for tiles people stand on). -> a Map of
+  // "x,y" -> { x, y, dist, prev ("x,y" of the tile before, or null) }.
+  function walkable(pos, occupied, maxDist) {
+    const seen = new Map([[pos.x + "," + pos.y, { x: pos.x, y: pos.y, dist: 0, prev: null }]]);
+    const queue = [seen.get(pos.x + "," + pos.y)];
+    while (queue.length) {
+      const t = queue.shift();
+      if (t.dist >= maxDist) continue;
+      for (const dir of ["up", "down", "left", "right"]) {
+        const r = step({ map: pos.map, x: t.x, y: t.y }, dir, occupied);
+        if (!r.ok || r.jump || r.warp || r.map !== pos.map) continue;
+        const key = r.x + "," + r.y;
+        if (seen.has(key)) continue;
+        const n = { x: r.x, y: r.y, dist: t.dist + 1, prev: t.x + "," + t.y };
+        seen.set(key, n);
+        queue.push(n);
+      }
+    }
+    return seen;
+  }
+  // The steps ("up", "left", ...) along a walkable() tree from tile `key` back to its start.
+  function pathBack(tree, key) {
+    const dirs = [];
+    for (let t = tree.get(key); t && t.prev; t = tree.get(t.prev)) {
+      const p = tree.get(t.prev), dx = p.x - t.x, dy = p.y - t.y;
+      dirs.push(dx > 0 ? "right" : dx < 0 ? "left" : dy > 0 ? "down" : "up");
+    }
+    return dirs;
+  }
+
   window.World = {
+    walkable, pathBack,
     DIRS, OPPOSITE, MB, map, connectionOrigin, blockAt, warpAt, warpTarget, setDynamicWarp, step, facingWater, isSurfable,
     isPullDown, slopeMove, currentDir, currentStep, CURRENT_SPEED, signAt, triggersAt, isGrass, wildEncounter, stepEncounter, pickWild, LAND_SLOT_WEIGHTS, WATER_SLOT_WEIGHTS
   };

@@ -134,37 +134,6 @@
     }
   }
 
-  // ---------- Party cards ----------
-
-  function bar(pct, cls) {
-    return '<div class="bar ' + cls + '"><div style="width:' + Math.round(pct * 100) + '%"></div></div>';
-  }
-  const genderMark = (r) => (r.gender === "M" ? " ♂" : r.gender === "F" ? " ♀" : "");
-  const statusTag = (r) => (r.status ? '<span class="status ' + r.status + '">' + r.status + "</span>" : "");
-  const cloakName = (r) => (r.cloak ? r.cloak.charAt(0).toUpperCase() + r.cloak.slice(1) + " Cloak" : "");
-
-  function partyCard(r, i, extra) {
-    const max = Party.maxHp(r);
-    const hpPct = r.hp / max;
-    const hpClass = hpPct <= 0.2 ? "low" : hpPct <= 0.5 ? "mid" : "";
-    return '<button type="button" class="card' + (Party.isFainted(r) ? " fainted" : "") + '" data-pick="' + i + '">' +
-      spriteTag(r.species, Party.form(r), undefined, r.shiny) +
-      '<div class="card-body">' +
-        '<div class="card-top"><b>' + escapeHtml(Party.displayName(r)) + genderMark(r) + "</b>" +
-          statusTag(r) + "<span>Lv" + r.level + "</span></div>" +
-        bar(hpPct, "hp " + hpClass) +
-        '<div class="card-hp">' + r.hp + " / " + max + "</div>" +
-        bar(Party.expProgress(r), "exp") +
-        (extra != null ? '<div class="card-note">' + extra + "</div>" :
-          (r.item ? '<div class="card-moves">Holding ' + escapeHtml(Bag.name(r.item)) + "</div>" : "") +
-          (r.cloak ? '<div class="card-moves">' + cloakName(r) + "</div>" : "") +
-          '<div class="card-moves">' + r.moves.map((m) => escapeHtml(m.name)).join(" · ") + "</div>") +
-      "</div></button>";
-  }
-
-  const partyHtml = (notes) => '<div class="party">' +
-    player.party.map((r, i) => partyCard(r, i, notes ? notes[i] : null)).join("") + "</div>";
-
   function renderSprite(species, extraClass, form, shiny) {
     show("scene");
     scene.innerHTML = '<div class="spotlight">' + spriteTag(species, form,
@@ -373,7 +342,7 @@
     } else if ((result.outcome === "lost" || !canBattle()) && opts.noBlackout) {
       player.party.forEach(Party.heal);
     } else if (result.outcome === "lost" || !canBattle()) {
-      await blackout();
+      await blackout(wild ? null : foe);
     } else {
       for (const record of leveledUp) {
         const evo = Evolution.find(record, { trigger: "level", party: player.party });
@@ -450,19 +419,63 @@
     else await message("There's no room left in your PC... " + name + " was released.");
   }
 
-  async function blackout() {
-    await message("You have no more Pokémon that can fight!");
+  // Losing (FireRed's BattleScript_LocalBattleLost, then
+  // Task_RushInjuredPokemonToCenter and EventScript_AfterWhiteOutHeal): in
+  // the battle's text box, "… is out of usable Pokémon!" and the money lost
+  // (to a trainer: "… lost against …!" and the prize money paid); the screen
+  // fades to black, and on the black screen you scurry to the last Pokémon
+  // Center you used (or Red's house before you've used one). There, the
+  // nurse heals your Pokémon at the counter, or Red's Mom does at home.
+  // (`foe`: the trainer you lost to; null in a wild battle.)
+  async function blackout(foe) {
     const lost = Player.blackoutLoss(player);
     Player.addMoney(player, -lost);
-    await message(lost ? "You panicked and dropped " + money(lost) + "..." : "You blacked out!");
+    await message(fill("{PLAYER} is out of\nusable Pokémon!"));
+    if (foe) await message(fill("{PLAYER} lost against\n" + foe.name + "!"));
+    if (lost) {
+      await message(fill(foe ? "{PLAYER} paid " + money(lost) + " as the prize\nmoney…" : "{PLAYER} panicked and lost " + money(lost) + "…"));
+      await message("… … … …");
+    }
+    await say("{PLAYER} blacked out!");
+    // (DoWhiteOut heals the party as you go.)
     player.party.forEach(Party.heal);
-    // Back to the last Pokémon Center you used, or home before you've used one.
     const center = player.flags.lastCenter && Player.CENTERS[player.flags.lastCenter];
-    player.location = Object.assign({}, center || Player.HOME);
-    show("scene");
-    scene.innerHTML = partyHtml();
-    await message(center ? "You scurried to a Pokémon Center, protecting your exhausted Pokémon from any further harm."
-      : "You hurried to Red's house, and Red's Mom healed your Pokémon.");
+    const to = Object.assign({}, center || Player.HOME);
+    music(null);
+    Screen.say("");
+    await GbaMenus.blackScreen($("#overlay"), fill(center
+      ? "{PLAYER} scurried to a Pokémon Center,\nprotecting the exhausted and fainted\nPokémon from further harm‥"
+      : "{PLAYER} scurried back home, protecting\nthe exhausted and fainted Pokémon from\nfurther harm‥"));
+    // Back on the map, faded in from black where you wake up.
+    show("world");
+    await Overworld.resume();
+    await Overworld.fadeToBlack();
+    $("#overlay").classList.add("hidden");
+    await Overworld.teleport(to);
+    if (center) await afterBlackoutNurse(to.map);
+    else await afterBlackoutMom();
+  }
+  // EventScript_AfterWhiteOutHeal: the nurse behind the counter heals them
+  // (the machine, as when you ask her), with the advice about Potions until
+  // you've beaten Brock.
+  async function afterBlackoutNurse(mapName) {
+    const nurseDef = ((window.WORLD_MAPS[mapName] || {}).people || []).find((p) => /_EventScript_Nurse$/.test(p.script || ""));
+    const id = nurseDef && nurseDef.localId;
+    await say(T("Text_FirstShouldRestoreMonsHealth"));
+    Screen.say("");
+    if (id) await Overworld.act([{ who: id, moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
+    await Overworld.pokecenterHeal(player.party.length, () => fanfare("mus_heal"));
+    if (id) await Overworld.act([{ who: id, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+    player.party.forEach(Party.heal);
+    await say(T(player.flags.TRAINER_LEADER_BROCK ? "Text_MonsHealed" : "Text_MonsHealedShouldBuyPotions"));
+  }
+  // EventScript_AfterWhiteOutMomHeal: (Red's) Mom turns to you, and heals them.
+  async function afterBlackoutMom() {
+    const mom = (p) => [].concat(p).map((t) => t.replace(/^Mom: /, "Red's Mom: ").replace("Welcome home.", "Welcome back.").replace("Make me proud, honey!", "Make us proud!"));
+    await Overworld.act([{ who: "LOCALID_MOM", moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+    await say(mom(T("Text_HadQuiteAnExperienceTakeRest")));
+    await outOfCenterHeal();
+    await say(mom(T("Text_MomExplainHPGetPotions")));
   }
 
   // ---------- Evolution and moves ----------
@@ -1056,6 +1069,17 @@
   const overlayCanvas = () => $("#overlay");
   const instant = (text) => { Screen.say(text, text.length); clearMenu(); };
   const pcMenu = (items, opts) => GbaMenus.listMenu(overlayCanvas(), Object.assign({ left: 1, top: 1, frame: GameOptions.get().frame, items }, opts));
+  // A script's multichoice (FireRed's `multichoice left, top, ...`) after
+  // `question` (message + waitmessage, its last two lines staying up):
+  // -> the index chosen, or -1 (B).
+  async function multichoice(question, left, top, items, opts) {
+    if (question != null) await Screen.prompt(fill(question));
+    clearMenu();
+    return GbaMenus.multichoice(overlayCanvas(), Object.assign({ left, top, items, frame: GameOptions.get().frame }, opts));
+  }
+  // The money box and coins box (showmoneybox / showcoinsbox x, y; null takes it down).
+  const moneyBox = (x, y) => GbaMenus.fieldWindow("money", x == null ? null : { x, y, amount: player.money });
+  const coinsBox = (x, y) => GbaMenus.fieldWindow("coins", x == null ? null : { x, y, amount: coins() });
 
   async function pc() {
     const f = player.flags;
@@ -2629,11 +2653,11 @@
       case "CeladonCity_Condominiums_RoofRoom_EventScript_Blackboard": {
         const R = (k) => T("CeladonCity_Condominiums_RoofRoom_Text_" + k);
         await say(R("WirelessAdapterLecture"));
+        // (MULTICHOICE_LINKED_DIRECT_UNION: LINKED GAME PLAY / DIRECT CORNER / UNION ROOM / QUIT.)
         for (;;) {
-          const v = await ask(R("ReadWhichHeading")[0], [["Wireless Club", "ExplainWirelessClub"], ["Direct Corner", "ExplainDirectCorner"],
-            ["Union Room", "ExplainUnionRoom"]].map(([label, value]) => ({ label, value })).concat([back("Exit")]));
-          if (v === "back") break;
-          await say(R(v));
+          const v = await multichoice(R("ReadWhichHeading")[0], 0, 0, ["Linked Game Play", "Direct Corner", "Union Room", "Quit"]);
+          if (v < 0 || v > 2) break;
+          await say(R(["ExplainWirelessClub", "ExplainDirectCorner", "ExplainUnionRoom"][v]));
         }
         Screen.say("");
         return;
@@ -2790,7 +2814,7 @@
 
       // ---------- Silph Co. ----------
       case "SilphCo_Elevator_EventScript_FloorSelect":
-        await elevator(SILPH_FLOORS.map(([label, x]) => ({ label, map: "SilphCo_" + label, x, y: 3 })));
+        await elevator(SILPH_FLOORS.map(([label, x]) => ({ label, map: "SilphCo_" + label, x, y: 3 })), true);
         return;
       case "SilphCo_2F_EventScript_ThunderWaveTutor":
         await moveTutor("Thunder Wave", "tutorThunderWave", "Text_ThunderWave");
@@ -4113,18 +4137,35 @@
     const m = window.WORLD_MAPS[map];
     return megaReady() && !player.flags.megaAideMet && !!m && OUTDOORS.includes(m.type) && canBattle();
   }
+  // He comes from just off the screen (within 10 steps), or else from 5 to 7
+  // steps away, along tiles he can walk on (World.walkable), and goes back
+  // the way he came.
+  function megaAideRoute() {
+    const at = Overworld.position();
+    const people = Overworld.people();
+    const tree = World.walkable(at, (m, x, y) => people.some((q) => q.x === x && q.y === y), 10);
+    const offScreen = (t) => t.x < at.x - 7 || t.x > at.x + 7 || t.y < at.y - 4 || t.y > at.y + 5;
+    const score = (t) => (offScreen(t) && t.dist >= 5 ? 300 - t.dist : t.dist >= 5 && t.dist <= 7 ? 100 + t.dist : t.dist <= 7 ? t.dist : 0);
+    let best = null;
+    for (const [key, t] of tree) if (t.dist >= 1 && (!best || score(t) > score(best[1]))) best = [key, t];
+    if (!best) return null;
+    const toPlayer = World.pathBack(tree, best[0]);   // (the last step would be onto you)
+    return { from: best[1], walk: toPlayer.slice(0, -1), face: toPlayer[toPlayer.length - 1] };
+  }
   async function megaAide() {
-    const me = Overworld.position();
-    await Overworld.act([{ who: "player", moves: ["face_down"] }]);
-    Overworld.addObject(MEGA_AIDE, { x: me.x, y: me.y + 4, facing: "up" }, lookOf("scientist"));
+    const route = megaAideRoute();
+    if (!route) return;
+    const back = route.walk.slice().reverse().map((d) => "walk_fast_" + World.OPPOSITE[d]);
+    Overworld.addObject(MEGA_AIDE, { x: route.from.x, y: route.from.y, facing: route.walk[0] || route.face }, lookOf("scientist"));
     await say("Hey! {PLAYER}! Wait up!");
-    await Overworld.act([{ who: MEGA_AIDE, moves: ["walk_fast_up", "walk_fast_up", "walk_fast_up"] }]);
+    await Overworld.act([{ who: MEGA_AIDE, moves: route.walk.map((d) => "walk_fast_" + d).concat(["face_" + route.face]) }]);
+    await Overworld.act([{ who: "player", moves: ["face_" + World.OPPOSITE[route.face]] }]);
     await say(["Phew… I've been looking all over\nfor you!",
       "I'm one of Prof. Oak's aides.\nThe Professor has a message for you.",
       "He says he's waiting for you at the\ntop of Pokémon Tower in Lavender\nTown.",
       "He said it was important, so please\nhurry! I'll let him know you're\non your way!"]);
     player.flags.megaAideMet = true;
-    await Overworld.act([{ who: MEGA_AIDE, moves: ["walk_fast_down", "walk_fast_down", "walk_fast_down", "walk_fast_down", "set_invisible"] }]);
+    await Overworld.act([{ who: MEGA_AIDE, moves: back.concat(["set_invisible"]) }]);
     Overworld.removeObject(MEGA_AIDE);
   }
   const megaTowerDue = () => !!player.flags.megaAideMet && !player.flags.megaTowerDone;
@@ -4234,21 +4275,24 @@
 
   // 6F: the restless ghost (PokemonTower_6F_EventScript_MarowakGhost). Without
   // the Silph Scope it's a Ghost you can only run from, and it pushes you
-  // back; with it, it's Cubone's mother, a Marowak (Lv. 30) that can't be
-  // caught: beat it and its spirit is calmed.
+  // back; with it, it's Cubone's mother, a Marowak (Lv. 30): beat it and its
+  // spirit is calmed. (This game's own: she can be caught, too, as any wild
+  // Pokémon; caught, she's at rest all the same, and the way up is clear.)
   async function marowakGhost() {
     const f = player.flags, scope = !!Player.itemCount(player, "silph-scope");
     await say(T("PokemonTower_6F_Text_BeGoneIntruders"));
     if (!canBattle()) return;
     if (scope) await say(["Silph Scope unveiled the Ghost's\nidentity!", "The Ghost was Marowak!"]);
     const mon = Party.create("Marowak", 30);
-    const outcome = await battle("wild", { foe: { name: "Wild", team: [mon] }, ghost: !scope, noCatch: scope, noBlackout: false });
+    const outcome = await battle("wild", { foe: { name: "Wild", team: [mon] }, ghost: !scope, noBlackout: false });
     show("world");
     await Overworld.resume();
-    if (scope && outcome === "won") {
+    if (scope && (outcome === "won" || outcome === "caught")) {
       await say(T("PokemonTower_6F_Text_GhostWasCubonesMother"));
-      cry("Marowak");
-      await say(T("PokemonTower_6F_Text_MothersSpiritWasCalmed"));
+      if (outcome === "won") {
+        cry("Marowak");
+        await say(T("PokemonTower_6F_Text_MothersSpiritWasCalmed"));
+      }
       f.marowakCalmed = true;
       return;
     }
@@ -4767,20 +4811,32 @@
 
   // ---------- Celadon City ----------
 
-  // An elevator's floor select (FireRed's ..._EventScript_FloorSelect): choose
-  // a floor and the car hums, then dings; its doors open onto that floor (the
-  // dynamic warp, World.setDynamicWarp).
-  async function elevator(floors) {
+  // An elevator's floor select (FireRed's ..._EventScript_FloorSelect): the
+  // "Now on:" window at the top right (DrawElevatorCurrentFloorWindow), "Which
+  // floor do you want?" and the floors in a multichoice at the top left (the
+  // floor you're on chosen to begin with; Silph Co.'s eleven floors are a
+  // list of seven at a time, `list`). Another floor: the window closes, the
+  // car shakes while SE_ELEVATOR plays (AnimateElevator: longer the further it
+  // goes), then SE_DING_DONG; its doors open onto that floor (the dynamic
+  // warp, World.setDynamicWarp).
+  // FireRed's floor numbers (sFloorNamePointers: B4F is 0, 1F is 4).
+  const floorNumber = (label) => { const m = /^(B?)(\d+)F$/.exec(label); return m ? (m[1] ? 4 - +m[2] : 3 + +m[2]) : 4; };
+  const ELEVATOR_SHAKES = [8, 16, 24, 32, 38, 46, 53, 56, 57];   // sElevatorAnimationDuration
+  async function elevator(floors, list) {
     const f = player.flags, here = floors.findIndex((fl) => f.dynamicWarp && fl.map === f.dynamicWarp.map);
-    const v = await ask(T("Text_WantWhichFloor")[0] + (here >= 0 ? "\n(Now on " + floors[here].label + ".)" : ""),
-      floors.map((fl, i) => ({ label: fl.label, value: i, focus: i === here })).concat([back("Exit")]));
+    if (here >= 0) GbaMenus.fieldWindow("floor", { label: floors[here].label });
+    await Screen.prompt(T("Text_WantWhichFloor")[0]);
+    const v = await GbaMenus.multichoice($("#overlay"), { left: 0, top: 0, items: floors.map((fl) => fl.label).concat(["Exit"]),
+      cursor: Math.max(0, here), frame: GameOptions.get().frame, shown: list ? 7 : undefined });
+    GbaMenus.fieldWindow("floor", null);
     Screen.say("");
-    if (v === "back" || v === here) return;
+    if (v < 0 || v >= floors.length || v === here) return;
     setDynamicWarp({ map: floors[v].map, x: floors[v].x, y: floors[v].y });
+    const from = here >= 0 ? floorNumber(floors[here].label) : floorNumber(floors[v].label);
+    const n = Math.min(8, Math.abs(floorNumber(floors[v].label) - from));
     sfx("se_elevator");
-    await sleep(1600);
+    await Overworld.shake(ELEVATOR_SHAKES[n]);
     sfx("se_ding_dong");
-    await sleep(400);
   }
   // Where an elevator's doors let out (FireRed's dynamic warp): the floor you
   // got in on, or the one you chose. Saved, so it survives a reload.
@@ -4828,9 +4884,10 @@
     const q = R("ImThirstyGiveHerDrink");
     await say(q.slice(0, -1));
     if (!(await confirm(fill(q[q.length - 1])))) return;
-    const v = await ask(R("GiveWhichDrink")[0], have.map(([drink], i) => ({ label: Bag.name(drink), value: i })).concat([back("Exit")]));
+    // (MULTICHOICE_THIRSTY_GIRL_...: the drinks you have, then EXIT.)
+    const v = await multichoice(R("GiveWhichDrink")[0], 0, 0, have.map(([drink]) => Bag.name(drink)).concat(["Exit"]));
     Screen.say("");
-    if (v === "back") return;
+    if (v < 0 || v >= have.length) return;
     const [drink, tm, flag, yay, explain] = have[v];
     if (f[flag]) { await say(R("ImNotThirstyAfterAll")); return; }
     await say(R(yay));
@@ -4840,20 +4897,26 @@
     await sayWithJingle("mus_level_up", "{PLAYER} received a " + Bag.name(tm) + "\nfrom the little girl.");
     await say(R(explain));
   }
-  // Fresh Water ₽200, Soda Pop ₽300, Lemonade ₽350, as many as you like.
+  // Fresh Water ₽200, Soda Pop ₽300, Lemonade ₽350, as many as you like:
+  // the money box at the top left, the drinks in MULTICHOICE_CELADON_VENDING_MACHINE.
   async function vendingMachine() {
     const R = (k) => T("CeladonCity_DepartmentStore_Roof_Text_" + k);
-    for (;;) {
-      const v = await ask(R("VendingMachineWhatDoesItHave")[0].replace("\n", " ") + "\n(You have " + money(player.money) + ".)",
-        DRINKS.map(([drink, , , , , price], i) => ({ label: Bag.name(drink) + "  " + money(price), value: i })).concat([back("Exit")]));
-      if (v === "back") { await say(R("NotThirsty")); return; }
-      const [drink, , , , , price] = DRINKS[v];
-      if (player.money < price) { await say(R("NotEnoughMoney")); return; }
-      Player.addMoney(player, -price);
-      Player.addItem(player, drink);
-      sfx("se_shop");
-      await say(R("DrinkCanPoppedOut"), [Bag.name(drink)]);
-    }
+    await Screen.prompt(R("VendingMachineWhatDoesItHave")[0]);
+    moneyBox(0, 0);
+    try {
+      for (;;) {
+        const v = await multichoice(null, 12, 0, DRINKS.map(([drink, , , , , price]) => Bag.name(drink) + "{CLEAR_TO 87}{FONT_SMALL}¥" + price).concat(["Exit"]));
+        if (v < 0 || v >= DRINKS.length) { await say(R("NotThirsty")); return; }
+        const [drink, , , , , price] = DRINKS[v];
+        if (player.money < price) { await say(R("NotEnoughMoney")); return; }
+        Player.addMoney(player, -price);
+        moneyBox(0, 0);
+        sfx("se_shop");
+        await say(R("DrinkCanPoppedOut"), [Bag.name(drink)]);
+        Player.addItem(player, drink);
+        await Screen.prompt(R("VendingMachineWhatDoesItHave")[0]);
+      }
+    } finally { moneyBox(null); }
   }
 
   // ---------- The Game Corner ----------
@@ -4866,20 +4929,27 @@
   const addCoins = (n) => { player.flags.coins = Math.max(0, Math.min(MAX_COINS, coins() + n)); };
   const plainCoins = (n) => n.toLocaleString("en-US");
 
+  // The clerk (CeladonCity_GameCorner_EventScript_CoinsClerk): the money box
+  // and coins box at the top left, 50 or 500 Coins in
+  // MULTICHOICE_GAME_CORNER_COIN_PURCHASE_COUNTER at the top right.
   async function coinsClerk() {
     const G = (k) => T("CeladonCity_GameCorner_Text_" + k);
-    const q = G("WelcomeBuySomeCoins");
-    await say(q.slice(0, -1));
-    const v = await ask(q[q.length - 1] + "\n(" + money(player.money) + ", " + plainCoins(coins()) + " Coins.)", [
-      { label: "50 Coins  " + money(1000), value: 50 }, { label: "500 Coins  " + money(10000), value: 500 }, back("No thanks")]);
-    if (v === "back") { await say(G("ComePlaySometime")); return; }
-    if (!player.flags.gotCoinCase) { await say(G("SorryDontHaveCoinCase")); return; }
-    if (coins() + v > MAX_COINS) { await say(G("CoinCaseIsFull")); return; }
-    if (player.money < v * 20) { await say(G("CantAffordCoins")); return; }
-    addCoins(v);
-    Player.addMoney(player, -v * 20);
-    sfx("se_shop");
-    await say(G("HereAreYourCoins"));
+    moneyBox(0, 0); coinsBox(0, 5);
+    try {
+      const q = G("WelcomeBuySomeCoins");
+      await say(q.slice(0, -1));
+      const i = await multichoice(q[q.length - 1], 13, 0, ["{FONT_SMALL} 50 Coins{CLEAR_TO 69}¥1,000", "{FONT_SMALL}500 Coins{CLEAR_TO 64}¥10,000", "Exit"]);
+      if (i < 0 || i > 1) { await say(G("ComePlaySometime")); return; }
+      const v = i ? 500 : 50;
+      if (!player.flags.gotCoinCase) { await say(G("SorryDontHaveCoinCase")); return; }
+      if (coins() + v > MAX_COINS) { await say(G("CoinCaseIsFull")); return; }
+      if (player.money < v * 20) { await say(G("CantAffordCoins")); return; }
+      addCoins(v);
+      Player.addMoney(player, -v * 20);
+      moneyBox(0, 0); coinsBox(0, 5);
+      sfx("se_shop");
+      await say(G("HereAreYourCoins"));
+    } finally { moneyBox(null); coinsBox(null); }
   }
   async function gambler(person, o) {
     const f = player.flags, G = (k) => T("CeladonCity_GameCorner_Text_" + k);
@@ -4924,29 +4994,38 @@
     Items: [["smoke-ball", 800], ["miracle-seed", 1000], ["charcoal", 1000], ["mystic-water", 1000], ["yellow-flute", 1600]]
   };
   const machineFor = (move) => Bag.machines().find((m) => Bag.machineMove(m) === move);
+  // Each counter's multichoice (MULTICHOICE_GAME_CORNER_POKEMON_PRIZES,
+  // _TMPRIZES, _BATTLE_ITEM_PRIZES: where FireRed puts each one and its
+  // prices' column), with the coins box at the top left.
+  const PRIZE_MENU = { Mons: { left: 11, at: (i) => (i < 2 ? 85 : 75) }, TMs: { left: 11, at: () => 72 }, Items: { left: 10, at: (i) => (i ? 80 : 90) } };
   async function prizeClerk(counter) {
     const P = (k) => T("CeladonCity_GameCorner_PrizeRoom_Text_" + k);
     if (!player.flags.gotCoinCase) { await say(P("CoinCaseRequired")); return; }
-    await say(P("WeExchangeCoinsForPrizes"));
-    const list = PRIZES[counter];
-    const label = ([what]) => counter === "Mons" ? Party.speciesName(what) : counter === "TMs" ? Bag.name(machineFor(what)) : Bag.name(what);
-    const v = await ask(P("WhichPrize")[0] + "\n(" + plainCoins(coins()) + " Coins.)",
-      list.map((p, i) => ({ label: label(p) + "  " + plainCoins(p[1]) + "C", value: i })).concat([back("No thanks")]));
-    Screen.say("");
-    if (v === "back") return;
-    const [what, price, level] = list[v];
-    const name = label(list[v]);
-    const ok = counter === "TMs" ? await confirm(fill(P("YouWantTM")[0], ["", what])) : await confirm(fill(P("YouWantPrize")[0], [name]));
-    if (!ok) return;
-    if (coins() < price) { await say(P("NeedMoreCoins")); return; }
-    if (counter === "Mons") {
-      await giftMon(what, level, T("Text_PlayerObtainedTheMon"), [name], () => addCoins(-price));
-      return;
-    }
-    const item = counter === "TMs" ? machineFor(what) : what;
-    addCoins(-price);
-    Player.addItem(player, item);
-    await sayWithJingle(itemJingle(item), "{PLAYER} received " + article(Bag.name(item)) + "!");
+    coinsBox(0, 0);
+    try {
+      await say(P("WeExchangeCoinsForPrizes"));
+      const list = PRIZES[counter], menu = PRIZE_MENU[counter];
+      const label = ([what]) => counter === "Mons" ? Party.speciesName(what) : counter === "TMs" ? Bag.name(machineFor(what)) : Bag.name(what);
+      const short = (p) => (counter === "TMs" ? label(p).split(" ")[0] : label(p));
+      const v = await multichoice(P("WhichPrize")[0], menu.left, 0, list.map((p, i) => short(p) + "{CLEAR_TO " + menu.at(i) + "}{FONT_SMALL}" +
+        (counter === "Mons" ? " " : "") + plainCoins(p[1]) + " Coins").concat(["No thanks"]));
+      Screen.say("");
+      if (v < 0 || v >= list.length) return;
+      const [what, price, level] = list[v];
+      const name = label(list[v]);
+      const ok = counter === "TMs" ? await confirm(fill(P("YouWantTM")[0], ["", what])) : await confirm(fill(P("YouWantPrize")[0], [name]));
+      if (!ok) return;
+      if (coins() < price) { await say(P("NeedMoreCoins")); return; }
+      if (counter === "Mons") {
+        await giftMon(what, level, T("Text_PlayerObtainedTheMon"), [name], () => { addCoins(-price); coinsBox(0, 0); });
+        return;
+      }
+      const item = counter === "TMs" ? machineFor(what) : what;
+      addCoins(-price);
+      coinsBox(0, 0);
+      Player.addItem(player, item);
+      await sayWithJingle(itemJingle(item), "{PLAYER} received " + article(Bag.name(item)) + "!");
+    } finally { coinsBox(null); }
   }
 
   // ---------- The Rocket Hideout ----------
