@@ -179,8 +179,20 @@ it), and Rock Tunnel (1F and B1F, dark without Flash, with its fifteen trainers,
 items, Rock Smash rocks and the Rock Slide tutor), and Lavender Town: its
 Pokémon Center, Poké Mart (Super Repels and Revives), the Name Rater (renames
 a Pokémon you caught yourself; one you traded for keeps its name), Cubone's
-house and the Volunteer Pokémon House (Mr. Fuji is away until Pokémon Tower).
-Pokémon Tower, the Power Plant and Routes 8 and 12 aren't built yet. Tiles, palettes and metatiles come from
+house and the Volunteer Pokémon House (Mr. Fuji is away until Pokémon Tower),
+Pokémon Tower (1F-7F: Gary on 2F, with FireRed's team and his Eevee; the
+Channelers; 5F's purified zone, which heals you each time you step in; without
+the Silph Scope its wild Pokémon are unidentified Ghosts (FireRed's
+BATTLE_TYPE_GHOST: "A wild Ghost appeared!", your Pokémon are too scared to
+move, the Ghost says "Get out…… Get out……", balls are dodged and running always
+works), and on 6F the ghost of Cubone's mother pushes you back; with the Silph
+Scope she's a Marowak (Lv. 30, can't be caught) whose spirit you calm, then the
+Rockets on 7F and Mr. Fuji, who takes you home and gives you the Poké Flute,
+which wakes sleeping Pokémon), Route 8 (its trainers; the twins Eli & Anne,
+a double battle in FireRed, battle one on one), its gate to Saffron (a thirsty
+guard), and the Underground Path's east entrance and tunnel. The Silph Scope is
+in the Rocket Hideout under Celadon, which isn't built yet, so the Tower can't
+be finished; the Power Plant, Route 7, Route 12 and Saffron City aren't built either. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into
@@ -529,7 +541,7 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   FireRed's; in battle or by Rare Candy, not the Day-Care's), a vitamin, PP Up or PP Max +5/+3/+2, an X
   item in battle +1/+1/0, a TM or HM learned +1/+1/0, a battle with a Gym
   Leader, the Elite Four or the Champion +3/+2/+1 for the whole party, every
-  250 steps +2 for each Pokémon (FireRed: +1 every 128 steps, half the time), fainting in battle −1 (−5/−5/−10
+  200 steps +2 for each Pokémon (FireRed: +1 every 128 steps, half the time), fainting in battle −1 (−5/−5/−10
   against a foe 30+ levels higher), and the bitter herbs (Energy Powder and
   Heal Powder −5/−5/−10, Energy Root −10/−10/−15, Revival Herb −15/−15/−20). A
   gain is half again with a Soothe Bell held, and one more in a Luxury Ball and

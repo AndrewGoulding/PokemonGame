@@ -16,7 +16,7 @@
 
   const SPECIAL_NAMES = {
     "poke-ball": "Poké Ball", "kings-rock": "King's Rock", "up-grade": "Up-Grade", "hp-up": "HP Up",
-    "pp-up": "PP Up", "pp-max": "PP Max", "never-melt-ice": "Never-Melt Ice", "exp-share": "Exp. Share", "oaks-parcel": "Oak's Parcel", "ss-ticket": "S.S. Ticket", "vs-seeker": "VS Seeker",
+    "pp-up": "PP Up", "pp-max": "PP Max", "never-melt-ice": "Never-Melt Ice", "exp-share": "Exp. Share", "oaks-parcel": "Oak's Parcel", "ss-ticket": "S.S. Ticket", "vs-seeker": "VS Seeker", "poke-flute": "Poké Flute",
     "x-accuracy": "X Accuracy", "x-attack": "X Attack", "x-defense": "X Defense", "x-speed": "X Speed",
     "x-sp-atk": "X Sp. Atk", "x-sp-def": "X Sp. Def", "poke-doll": "Poké Doll", "oddish-ball": "Oddish Ball"
   };

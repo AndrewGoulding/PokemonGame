@@ -735,7 +735,8 @@ for (const share of [false, true]) {
   assert(TUTOR_LEARNERS["Mega Punch"].includes("Charmander") && TUTOR_LEARNERS["Seismic Toss"].includes("Charmander"));
   // Escape Ropes work where FireRed allows escaping.
   assert.deepStrictEqual(Object.keys(WORLD_MAPS).filter((m) => WORLD_MAPS[m].allowEscaping), ["ViridianForest", "MtMoon_1F", "MtMoon_B1F", "MtMoon_B2F",
-    "DiglettsCave_NorthEntrance", "DiglettsCave_B1F", "DiglettsCave_SouthEntrance", "RockTunnel_1F", "RockTunnel_B1F"]);
+    "DiglettsCave_NorthEntrance", "DiglettsCave_B1F", "DiglettsCave_SouthEntrance", "RockTunnel_1F", "RockTunnel_B1F",
+    "PokemonTower_1F", "PokemonTower_2F", "PokemonTower_3F", "PokemonTower_4F", "PokemonTower_5F", "PokemonTower_6F", "PokemonTower_7F"]);
   assert(WORLD_MAPS.MtMoon_1F.people.some((p) => p.item === "tm100"), "FireRed's TM09 in Mt. Moon is TM100 Bullet Seed here");
   assert(Bag.canUseOn(Party.create("Gyarados", 30, { rng }), "hm06"), "Gyarados can use Whirlpool");
   assert(Bag.canUseOn(Party.create("Pidgeot", 30, { rng }), "hm10"), "Pidgeot can use Defog");
@@ -878,9 +879,11 @@ for (const share of [false, true]) {
   assert.strictEqual(World.warpTarget(World.warpAt("Route10", 8, 19)).map, "RockTunnel_1F");
   assert.strictEqual(World.warpTarget(World.warpAt("Route10", 8, 57)).map, "RockTunnel_1F");
   assert(WORLD_MAPS.RockTunnel_1F.dark && WORLD_MAPS.RockTunnel_B1F.dark, "Rock Tunnel needs Flash");
-  // South down Route 10 to Lavender Town (Pokémon Tower, Routes 8 and 12 aren't built).
+  // South down Route 10 to Lavender Town, Pokémon Tower, and west along Route 8
+  // (Route 12 and Saffron City aren't built).
   assert.strictEqual(at(World.step({ map: "Route10", x: 8, y: WORLD_MAPS.Route10.height - 1 }, "down")), "LavenderTown 8,0");
-  assert.strictEqual(World.step({ map: "LavenderTown", x: 18, y: 7 }, "up").unbuilt || World.warpAt("LavenderTown", 18, 6).mapConst, "MAP_POKEMON_TOWER_1F");
+  assert.strictEqual(World.warpTarget(World.warpAt("LavenderTown", 18, 6)).map, "PokemonTower_1F");
+  assert.strictEqual(at(World.step({ map: "LavenderTown", x: 0, y: 9 }, "left")), "Route8 71,9");
   assert(window.TOWN_MAP.fly.LAVENDER_TOWN && Player.CENTERS.LavenderTown_PokemonCenter_1F);
   assert.strictEqual(at(World.step({ map: "CeruleanCity", x: 16, y: 39 }, "down")), "Route5 16,0");
   const intoR5 = (map, x, y, dir) => { const r = World.step({ map, x, y }, dir); return r.warp.map + " " + r.warp.x + "," + r.warp.y; };
@@ -1289,7 +1292,7 @@ for (const share of [false, true]) {
   const onMap = (sec) => T.map.some((r) => r.includes(sec)) || T.dungeon.some((r) => r.includes(sec));
   // (FireRed gives the Underground Path and the S.S. Anne no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
-    assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "S_S_ANNE"].includes(T.mapSections[name])), name + " is on the Town Map");
+    assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "UNDERGROUND_PATH_2", "S_S_ANNE"].includes(T.mapSections[name])), name + " is on the Town Map");
   }
   assert(fs.existsSync(path.join(__dirname, "../assets/town-map/kanto.png")));
 }
@@ -1436,6 +1439,23 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
 // Everything the built maps' Marts stock can be bought (has a price).
 for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
   for (const item of p.mart || []) assert(Bag.price(item) > 0, m.name + "'s Mart sells " + item + " for nothing");
+}
+
+// Pokémon Tower's Ghost (no Silph Scope): too scared to move, "Get out…",
+// balls dodged, and running always works.
+{
+  const b = new Battle({ seed: 3, wild: true, ghost: true, p1: { name: "A", team: [Party.toBattleSet(Party.create("Pikachu", 5))] },
+    p2: { name: "B", team: [Object.assign(Party.toBattleSet(Party.create("Gastly", 30)), { name: "Ghost" })] } });
+  b.start();
+  const p1 = b.sides.p1.active, foeHp = b.sides.p2.active.hp, hp = p1.hp;
+  b.choose("p1", { type: "move", move: 0 }); b.choose("p2", { type: "move", move: 0 });
+  assert(b.events.some((e) => e[0] === "cant" && e[2] === "scared") && b.events.some((e) => e[0] === "-ghostgetout"));
+  assert.strictEqual(b.sides.p2.active.hp, foeHp); assert.strictEqual(p1.hp, hp);
+  b.choose("p1", { type: "ball", ball: "poke-ball" }); b.choose("p2", { type: "move", move: 0 });
+  assert(b.events.some((e) => e[0] === "-ghostdodge") && !b.ended);
+  b.choose("p1", { type: "run" }); b.choose("p2", { type: "move", move: 0 });
+  assert(b.ended && b.escaped, "you always get away from the Ghost");
+  assert(Bag.isKeyItem("silph-scope") && Bag.sprite("silph-scope") && Bag.isKeyItem("poke-flute") && Bag.sprite("poke-flute"));
 }
 
 // HMs outside battle (game/field-moves.js): known, or learnable with the HM

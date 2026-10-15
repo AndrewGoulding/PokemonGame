@@ -307,6 +307,11 @@
       this.expEnabled = !!opts.exp;
       this.expShare = !!opts.expShare;
       this.wild = !!opts.wild;
+      // Pokémon Tower without the Silph Scope (FireRed's BATTLE_TYPE_GHOST):
+      // your Pokémon are too scared to move, the Ghost only says "Get out…",
+      // balls miss, and running away always works.
+      this.ghost = !!opts.ghost;
+      this.noCatch = !!opts.noCatch;   // (the Ghost, seen through the Silph Scope: still dodges balls)
       this.catchContext = opts.catchContext || {};
       this.runAttempts = 0;
       this.caught = null;
@@ -1407,7 +1412,7 @@
       if (mon.fainted) return;
       this.runAttempts++;
       const foe = mon.side.foe.active;
-      let escaped = mon.item === "smoke-ball" || mon.hasAbility("Run Away") || !foe || foe.fainted;
+      let escaped = this.ghost || mon.item === "smoke-ball" || mon.hasAbility("Run Away") || !foe || foe.fainted;
       if (!escaped) {
         const a = this.getSpeed(mon), b = this.getSpeed(foe);
         escaped = a >= b || this.randInt(0, 255) < Math.floor((a * 128) / b) + 30 * this.runAttempts;
@@ -1421,6 +1426,7 @@
     throwBall(mon, ball) {
       const target = mon.side.foe.active;
       if (!target || target.fainted) return;
+      if (this.ghost || this.noCatch) { this.add("-ghostdodge", mon.side.id, ball); return; }
       const ctx = this.catchContext;
       const result = window.Catching.attempt(
         { species: target.baseSpecies, level: target.level, hp: target.hp, maxhp: target.maxhp, status: target.status, types: target.types },
@@ -1466,6 +1472,11 @@
     runMoveAction(a) {
       const mon = a.mon;
       if (mon.fainted || !mon.isActive || mon.side.active !== mon) return;
+      if (this.ghost) {
+        if (mon.side.id === "p1") this.add("cant", mon, "scared");
+        else this.add("-ghostgetout", mon);
+        return;
+      }
       if (a.recharge) {
         this.add("cant", mon, "recharge");
         mon.removeVolatile("mustrecharge");

@@ -52,7 +52,7 @@
   };
   const CANT = {
     par: "{who} is paralyzed! It can't move!", slp: "{who} is fast asleep.", frz: "{who} is frozen solid!",
-    recharge: "{who} must recharge!", flinch: "{who} flinched and couldn't move!",
+    recharge: "{who} must recharge!", scared: "{who} is too scared to move!", flinch: "{who} flinched and couldn't move!",
     attract: "{who} is immobilized by love!", truant: "{who} is loafing around!",
     focuspunch: "{who} lost its focus and couldn't move!"
   };
@@ -409,6 +409,7 @@
 
   let battle = null;
   let config = null;
+  const GHOST_PIC = "assets/battle-interface/ghost.png";
   let cursor = 0;       // index of the next battle event to play
   let view = null;      // what the screen currently shows for each side
 
@@ -481,7 +482,9 @@
       info.classList.add("hidden");
       return;
     }
-    window.Screen.setSprite(sprite, v.species, v.form, id === "p1", v.shiny);
+    // (Pokémon Tower's unidentified Ghost: FireRed's gGhostFrontPic.)
+    if (id === "p2" && config && config.ghost) { if (sprite.getAttribute("src") !== GHOST_PIC) { sprite.src = GHOST_PIC; sprite.style.visibility = ""; } }
+    else window.Screen.setSprite(sprite, v.species, v.form, id === "p1", v.shiny);
     placeSprite(sprite, v, id === "p1");
     sprite.alt = v.name;
     sprite.classList.toggle("hidden", !!v.inBall);
@@ -494,7 +497,7 @@
     const key = v.teamIndex + ":" + v.species;
     b.data = {
       name: v.name, level: v.level, status: v.status,
-      gender: /^Nidoran/.test(v.species) ? "" : mon.gender,
+      gender: /^Nidoran/.test(v.species) || (id === "p2" && config && config.ghost) ? "" : mon.gender,
       // (A wild Pokémon's box shows a ball if you've caught its kind before.)
       caught: id === "p2" && battle.wild && config.catchContext && config.catchContext.caughtBefore
         ? !!config.catchContext.caughtBefore(v.species) : false
@@ -871,6 +874,15 @@
             await window.Screen.printed();
             if (await window.GbaMenus.battleYesNo(overlay(), { frame: frame() })) { await message(name + " did not learn\n" + b + "."); return; }
           }
+        };
+
+      // ----- Pokémon Tower's Ghost -----
+      case "-ghostgetout": return "Ghost: Get out…… Get out……";
+      case "-ghostdodge":   // [side, ball]
+        return async () => {
+          await message("You threw a " + ballName(b) + "!", 700);
+          sfx("se_ball_throw");
+          await message("It dodged the thrown Ball!\nThis Pokémon can't be caught!");
         };
 
       // ----- Wild battles -----
@@ -1417,7 +1429,10 @@
 
   // Throws `side`'s Pokémon out of its ball (after `delay` ms) and shows it.
   // A Pokémon's cry as it comes out (or, lower, as it faints).
-  const cry = (side, opts) => { if (window.GameAudio && view[side] && view[side].species) window.GameAudio.cry(view[side].species, opts); };
+  const cry = (side, opts) => {
+    if (side === "p2" && config && config.ghost) return;   // (the Ghost makes no sound)
+    if (window.GameAudio && view[side] && view[side].species) window.GameAudio.cry(view[side].species, opts);
+  };
   // A shiny Pokémon sparkles as it comes out (FireRed's shiny animation).
   function sparkle(side) {
     if (!view[side] || !view[side].shiny) return;
@@ -1468,7 +1483,7 @@
   async function run(cfg) {
     config = cfg;
     battle = new Battle({
-      p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, exp: !!cfg.exp, expShare: !!cfg.expShare, catchContext: cfg.catchContext
+      p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, ghost: !!cfg.ghost, noCatch: !!cfg.noCatch, exp: !!cfg.exp, expShare: !!cfg.expShare, catchContext: cfg.catchContext
     });
     cursor = 0;
     hbStop();

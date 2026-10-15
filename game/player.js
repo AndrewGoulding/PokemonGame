@@ -48,7 +48,8 @@
   // Prize money per trainer class: base x the level of the trainer's last Pokémon.
   const PRIZE_BASE = {
     "Youngster": 16, "Lass": 16, "Bug Catcher": 16, "Picnicker": 16, "Camper": 16, "Swimmer": 16,
-    "Psychic": 32, "Sailor": 32, "Fisherman": 40, "Hiker": 40, "PokéManiac": 48, "Engineer": 48, "Gamer": 72, "Ace Trainer": 60, "Gentleman": 72, "Leader": 100
+    "Psychic": 32, "Sailor": 32, "Fisherman": 40, "Hiker": 40, "PokéManiac": 48, "Engineer": 48,
+    "Super Nerd": 24, "Team Rocket": 32, "Channeler": 32, "Biker": 20, "Swimmer♂": 4, "Twins": 12, "Gamer": 72, "Ace Trainer": 60, "Gentleman": 72, "Leader": 100
   };
   // Money lost on blacking out: highest party level x this, by badge count (Gen 6).
   const BLACKOUT_BASE = [8, 16, 24, 36, 48, 64, 80, 100, 120];
@@ -217,8 +218,9 @@
     player.money = Math.max(0, Math.min(MAX_MONEY, player.money + Math.floor(amount)));
   }
 
-  function prizeMoney(trainerName, team) {
-    const cls = String(trainerName).split(" ").slice(0, -1).join(" ");
+  // (`cls`: the trainer class, when the name has more than one word: "Eli & Anne".)
+  function prizeMoney(trainerName, team, cls) {
+    cls = cls || String(trainerName).split(" ").slice(0, -1).join(" ");
     const last = team[team.length - 1];
     return (PRIZE_BASE[cls] || 16) * (last ? last.level : 1);
   }

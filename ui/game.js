@@ -286,7 +286,9 @@
     }
     const result = await BattleScreen.run({
       p1: { name: player.name, team: player.party.map((r) => Party.toBattleSet(r, here)) },
-      p2: { name: foe.name, team: foe.team.map((r) => Party.toBattleSet(r)) },
+      // (Pokémon Tower's unidentified Ghost goes by "Ghost".)
+      p2: { name: foe.name, team: foe.team.map((r) => Object.assign(Party.toBattleSet(r), opts.ghost ? { name: "Ghost" } : {})) },
+      ghost: !!opts.ghost, noCatch: !!opts.noCatch,
       wild,
       exp: true,
       expShare: expShareOn(),
@@ -312,6 +314,7 @@
     });
     const b = result.battle;
     for (const e of b.events) {
+      if (opts.ghost) break;   // (an unidentified Ghost isn't seen)
       if ((e[0] === "switch" || e[0] === "drag") && String(e[1]).startsWith("p2")) Player.markSeen(player, String(e[2]).split(", L")[0]);
     }
     const leveledUp = [];
@@ -326,7 +329,7 @@
       if (player.flags.vsRematch) delete player.flags.vsRematch[opts.trainerId];
     }
     if (result.outcome === "won" && !wild) {
-      const prize = opts.prize != null ? opts.prize : Player.prizeMoney(foe.name, foe.team);
+      const prize = opts.prize != null ? opts.prize : Player.prizeMoney(foe.name, foe.team, opts.prizeClass);
       Player.addMoney(player, prize);
       await message("You got " + money(prize) + " for winning!");
     }
@@ -551,7 +554,7 @@
     return r ? player.party[r.slot] : null;
   }
 
-  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "itemfinder", "vs-seeker", "bicycle"];
+  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "itemfinder", "vs-seeker", "bicycle", "poke-flute"];
   // Key items Select can use (registered from the Bag, as in FireRed).
   const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map"];
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
@@ -568,6 +571,13 @@
     if (item === "itemfinder") { fieldAction = itemfinder; return "escaped"; }
     if (item === "vs-seeker") { fieldAction = vsSeeker; return "escaped"; }
     if (item === "bicycle") { fieldAction = bicycle; return "escaped"; }
+    if (item === "poke-flute") {
+      // FireRed's Poké Flute outside battle: it wakes your sleeping Pokémon.
+      const asleep = player.party.filter((r) => r.status === "slp");
+      asleep.forEach((r) => { r.status = ""; });
+      await message(asleep.length ? "Played the Poké Flute.\nAll sleeping Pokémon woke up." : "Played the Poké Flute.\nNow, that's a catchy tune!");
+      return;
+    }
     if (item === "exp-share") {
       player.flags.expShareOff = !player.flags.expShareOff;
       await message(expShareOn() ? "The Exp. Share was turned on. Your whole party will gain Exp. Points from battles."
@@ -637,9 +647,9 @@
       await say(["The other Trainers don't appear\nto be ready for battle.", "Let's wait till later."]);
     }
   }
-  // Every 250 steps, each Pokémon in the party grows a little friendlier
+  // Every 200 steps, each Pokémon in the party grows a little friendlier
   // (FireRed's UpdateFriendshipStepCounter is every 128 steps, half the time).
-  const FRIENDSHIP_STEPS = 250;
+  const FRIENDSHIP_STEPS = 200;
   function friendshipStep() {
     const f = player.flags;
     f.friendshipSteps = ((f.friendshipSteps | 0) + 1) % FRIENDSHIP_STEPS;
@@ -1530,7 +1540,12 @@
     "Route10_PokemonCenter_1F_EventScript_Nurse", "Route10_PokemonCenter_1F_EventScript_Aide", "RockTunnel_B1F_EventScript_RockSlideTutor",
     "LavenderTown_PokemonCenter_1F_EventScript_Nurse", "LavenderTown_Mart_EventScript_Clerk", "LavenderTown_EventScript_LittleGirl",
     "LavenderTown_House2_EventScript_NameRater", "LavenderTown_House1_EventScript_Cubone",
-    "LavenderTown_VolunteerPokemonHouse_EventScript_Nidorino", "LavenderTown_VolunteerPokemonHouse_EventScript_Psyduck"
+    "LavenderTown_VolunteerPokemonHouse_EventScript_Nidorino", "LavenderTown_VolunteerPokemonHouse_EventScript_Psyduck",
+    "PokemonTower_2F_EventScript_RivalTriggerRight", "PokemonTower_2F_EventScript_RivalTriggerDown",
+    "PokemonTower_5F_EventScript_PurifiedZone", "PokemonTower_6F_EventScript_MarowakGhost", "PokemonTower_7F_EventScript_MrFuji",
+    "LavenderTown_VolunteerPokemonHouse_EventScript_MrFuji",
+    "Route8_WestEntrance_EventScript_GuardTriggerTop", "Route8_WestEntrance_EventScript_GuardTriggerMid",
+    "Route8_WestEntrance_EventScript_GuardTriggerBottom"
   ].concat(Object.keys(STARTER_BALLS)).concat(Array.from({ length: 15 }, (_, i) => "VermilionCity_Gym_EventScript_TrashCan" + (i + 1))));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
@@ -1596,6 +1611,11 @@
       case "FLAG_HIDE_BILL_HUMAN_SEA_COTTAGE": return f.billHelped ? (billJustOut ? { x: 7, y: 6 } : true) : false;
       case "FLAG_HIDE_POSTGAME_GOSSIPERS": return false;
       case "FLAG_HIDE_POKEHOUSE_FUJI": return !!f.rescuedMrFuji;   // (in Pokémon Tower until you rescue him)
+      case "FLAG_HIDE_TOWER_FUJI": return !f.rescuedMrFuji;
+      case "FLAG_HIDE_TOWER_RIVAL": return !f.towerRival;
+      // The Rockets on 7F leave once beaten.
+      case "FLAG_HIDE_TOWER_ROCKET_1": case "FLAG_HIDE_TOWER_ROCKET_2": case "FLAG_HIDE_TOWER_ROCKET_3":
+        return !(person.trainer && f[person.trainer.id]);
       case "FLAG_HIDE_DOME_FOSSIL": case "FLAG_HIDE_HELIX_FOSSIL": return !f.mtMoonFossil;
       // After you choose, your rival stands below the Poké Ball he took.
       // Leaf (the lab rival's other look) until she leaves after your battle;
@@ -2186,6 +2206,48 @@
         await say(T("Route5_SouthEntrance_Text_ThirstyOnGuardDuty"));
         await Overworld.act([{ who: "player", moves: ["walk_up"] }]);
         return;
+      case "Route8_WestEntrance_EventScript_GuardTriggerTop":
+      case "Route8_WestEntrance_EventScript_GuardTriggerMid":
+      case "Route8_WestEntrance_EventScript_GuardTriggerBottom":
+        await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
+        await say(T("Route8_WestEntrance_Text_ThirstyOnGuardDuty"));
+        await Overworld.act([{ who: "player", moves: ["walk_right"] }]);
+        return;
+
+      // ---------- Pokémon Tower ----------
+      case "PokemonTower_2F_EventScript_RivalTriggerRight":
+      case "PokemonTower_2F_EventScript_RivalTriggerDown":
+        await towerRival(script.endsWith("Right"));
+        return;
+      // 5F: the purified zone heals your party (each time you step back in).
+      case "PokemonTower_5F_EventScript_PurifiedZone":
+        inPurifiedZone = true;
+        Screen.say("");
+        await Overworld.fadeToBlack();
+        player.party.forEach(Party.heal);
+        await Overworld.fadeFromBlack();
+        await say(T("PokemonTower_5F_Text_PurifiedZoneMonsFullyHealed"));
+        return;
+      case "PokemonTower_6F_EventScript_MarowakGhost":
+        await marowakGhost();
+        return;
+      case "PokemonTower_7F_EventScript_MrFuji":
+        await say(T("PokemonTower_7F_Text_MrFujiThankYouFollowMe"));
+        f.rescuedMrFuji = true;
+        await Overworld.teleport({ map: "LavenderTown_VolunteerPokemonHouse", x: 4, y: 7, facing: "up" });
+        return;
+      // Back home, Mr. Fuji gives you the Poké Flute.
+      case "LavenderTown_VolunteerPokemonHouse_EventScript_MrFuji": {
+        const V = (k) => T("LavenderTown_VolunteerPokemonHouse_Text_" + k);
+        if (f.gotPokeFlute) { await say(V("HasPokeFluteHelpedYou")); return; }
+        await say(V("IdLikeYouToHaveThis"));
+        Player.addItem(player, "poke-flute");
+        f.gotPokeFlute = true;
+        await sayWithJingle("mus_obtain_key_item", V("ReceivedPokeFluteFromMrFuji"));
+        await say(V("ExplainPokeFlute"));
+        return;
+      }
+
       case "Route6_NorthEntrance_EventScript_GuardTriggerLeft":
       case "Route6_NorthEntrance_EventScript_GuardTriggerMid":
       case "Route6_NorthEntrance_EventScript_GuardTriggerRight":
@@ -2529,7 +2591,8 @@
     await say(t.intro);
     if (!canBattle()) return;
     const team = trainerTeam(t.id);
-    await battle("trainer", { foe: { name: data.className + " " + data.name, team, pic: data.pic }, defeatText: t.defeat, trainerId: t.id });
+    await battle("trainer", { foe: { name: data.className + " " + data.name, team, pic: data.pic }, defeatText: t.defeat, trainerId: t.id,
+      prizeClass: data.className });
     // A beaten trainer who walked over to you stays where they stopped (see
     // visible()) while you're on the map: back in their spot they could shut
     // you in, as Route 25's Hiker Flint does the TM43 corner. Leave the map
@@ -3191,6 +3254,64 @@
     music("mus_fuchsia");
   }
 
+  // ---------- Pokémon Tower ----------
+  //
+  // Without the Silph Scope, the wild Pokémon in Pokémon Tower are ghosts
+  // nobody can identify (FireRed's CheckSilphScopeInPokemonTower): your
+  // Pokémon are too scared to fight, so you run.
+  let inPurifiedZone = false;
+  const towerGhost = () => /^PokemonTower_/.test(player.location.map) && !Player.itemCount(player, "silph-scope");
+
+  // 2F: Gary (PokemonTower_2F_EventScript_Rival): FireRed's team, with his
+  // Eevee in place of a starter, as in Cerulean. Then he heads off down the stairs.
+  async function towerRival(right) {
+    const f = player.flags, R = "LOCALID_POKEMON_TOWER_RIVAL";
+    music("mus_encounter_rival");
+    await Overworld.act([{ who: R, moves: [right ? "walk_in_place_faster_right" : "walk_in_place_faster_down"] },
+      { who: "player", moves: [right ? "walk_in_place_faster_left" : "walk_in_place_faster_up"] }]);
+    await Overworld.act([{ who: R, moves: ["emote_exclamation_mark", "delay_48"] }]);
+    await say(T("PokemonTower_2F_Text_RivalIntro"));
+    const base = trainerTeam("TRAINER_RIVAL_POKEMON_TOWER_SQUIRTLE");
+    const last = base[base.length - 1];
+    const team = base.slice(0, -1).concat(Party.create("Eevee", last.level, { ivs: last.ivs.hp }));
+    const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_late" },
+      defeatText: T("PokemonTower_2F_Text_RivalDefeat"), trainerId: "TRAINER_RIVAL_POKEMON_TOWER_SQUIRTLE",
+      prize: 36 * last.level });   // (FireRed's TRAINER_CLASS_RIVAL_LATE: 9, x4 as this game's prizes are)
+    if (outcome !== "won") return;
+    f.towerRival = true;
+    show("world");
+    await Overworld.resume();
+    await say(T("PokemonTower_2F_Text_RivalPostBattle"));
+    music("mus_rival_exit");
+    await Overworld.act([{ who: R, moves: M(right ? "PokemonTower_2F_Movement_RivalExitRight" : "PokemonTower_2F_Movement_RivalExitDown").concat(["set_invisible"]) }]);
+    sfx("se_exit");
+    Overworld.removeObject(R);
+    music((window.WORLD_MAPS[player.location.map] || {}).music);
+  }
+
+  // 6F: the restless ghost (PokemonTower_6F_EventScript_MarowakGhost). Without
+  // the Silph Scope it's a Ghost you can only run from, and it pushes you
+  // back; with it, it's Cubone's mother, a Marowak (Lv. 30) that can't be
+  // caught: beat it and its spirit is calmed.
+  async function marowakGhost() {
+    const f = player.flags, scope = !!Player.itemCount(player, "silph-scope");
+    await say(T("PokemonTower_6F_Text_BeGoneIntruders"));
+    if (!canBattle()) return;
+    if (scope) await say(["Silph Scope unveiled the Ghost's\nidentity!", "The Ghost was Marowak!"]);
+    const mon = Party.create("Marowak", 30);
+    const outcome = await battle("wild", { foe: { name: "Wild", team: [mon] }, ghost: !scope, noCatch: scope, noBlackout: false });
+    show("world");
+    await Overworld.resume();
+    if (scope && outcome === "won") {
+      await say(T("PokemonTower_6F_Text_GhostWasCubonesMother"));
+      cry("Marowak");
+      await say(T("PokemonTower_6F_Text_MothersSpiritWasCalmed"));
+      f.marowakCalmed = true;
+      return;
+    }
+    if (outcome !== "lost") await Overworld.act([{ who: "player", moves: ["walk_up"] }]);
+  }
+
   // ---------- Route 24: Nugget Bridge ----------
   //
   // At the end of the bridge a man congratulates you on beating the five
@@ -3845,6 +3966,12 @@
     // (FireRed's FLAG_TEMP_2 and 3: Bill in the Teleporter, back after the ticket.)
     if (script === "enter:SSAnne_Exterior") return ssAnneDeparting();
     if (script === "enter:Route25_SeaCottage") { billInTeleporter = billJustOut = false; seaCottageReturn = !!player.flags.gotSSTicket; return false; }
+    // Pokémon Tower: Gary on 2F until you've battled him, the ghost on 6F
+    // until it's at rest, and 5F's purified zone each time you step in.
+    if (/^PokemonTower_2F_EventScript_RivalTrigger/.test(script)) return !player.flags.towerRival;
+    if (script === "PokemonTower_6F_EventScript_MarowakGhost") return !player.flags.marowakCalmed;
+    if (script === "PokemonTower_5F_EventScript_PurifiedZone") return !inPurifiedZone;
+    if (script === "PokemonTower_5F_EventScript_ExitPurifiedZone") { inPurifiedZone = false; return false; }
     return SPECIAL.has(script) || ITEM_BALLS.has(script) || TRAINER_SCRIPTS.has(script);
   }
 
@@ -3891,7 +4018,7 @@
         const at = player.location, b = World.blockAt(at.map, at.x, at.y).behavior;
         const terrain = Overworld.avatar() === "surf" ? (b === 0x10 ? "pond" : "water")
           : here && ["route", "town", "city"].includes(here.type) ? "grass" : undefined;
-        await battle("wild", { foe: { name: "Wild", team: [Party.create(ev.species, ev.level)] }, terrain });
+        await battle("wild", { foe: { name: "Wild", team: [Party.create(ev.species, ev.level)] }, terrain, ghost: towerGhost() });
       } else await story(ev);
       await persist();
     }

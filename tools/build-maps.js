@@ -105,7 +105,10 @@ const MAPS = [
   "DiglettsCave_NorthEntrance", "DiglettsCave_B1F", "DiglettsCave_SouthEntrance",
   "Route10", "Route10_PokemonCenter_1F", "Route10_PokemonCenter_2F", "RockTunnel_1F", "RockTunnel_B1F",
   "LavenderTown", "LavenderTown_PokemonCenter_1F", "LavenderTown_PokemonCenter_2F", "LavenderTown_Mart",
-  "LavenderTown_House1", "LavenderTown_House2", "LavenderTown_VolunteerPokemonHouse"
+  "LavenderTown_House1", "LavenderTown_House2", "LavenderTown_VolunteerPokemonHouse",
+  "PokemonTower_1F", "PokemonTower_2F", "PokemonTower_3F", "PokemonTower_4F", "PokemonTower_5F",
+  "PokemonTower_6F", "PokemonTower_7F",
+  "Route8", "Route8_WestEntrance", "UndergroundPath_EastEntrance", "UndergroundPath_EastWestTunnel"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
@@ -496,7 +499,9 @@ function itemBall(mapName, script) {
 function trainerScript(mapName, script) {
   const lines = scriptLabels(mapName)[script] || [], t = texts(mapName);
   for (let i = 0; i < lines.length; i++) {
-    const m = /^trainerbattle_single\s+(TRAINER_\w+),\s*(\w+),\s*(\w+)/.exec(lines[i]);
+    // (A double battle, like Route 8's twins Eli & Anne, is fought one on one
+    // here: this game's battles are singles.)
+    const m = /^trainerbattle_(?:single|double)\s+(TRAINER_\w+),\s*(\w+),\s*(\w+)/.exec(lines[i]);
     if (!m) continue;
     const after = lines.slice(i + 1).map((l) => /^msgbox\s+(\w+)/.exec(l)).find(Boolean);
     usedTrainers.add(m[1]);

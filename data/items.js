@@ -522,6 +522,8 @@ window.ITEMS = {
   "ultra-ball": { name: "ultra-ball", category: "standard-balls", effect: "Tries to catch a wild Pokémon. Success rate is 2×." },
   "up-grade": { name: "up-grade", category: "evolution", effect: "Traded on a Porygon: Holder evolves into Porygon2." },
   "venusaurite": { name: "venusaurite", category: "mega-stones", effect: "Held: Allows Venusaur to Mega Evolve into Mega Venusaur." },
+  "silph-scope": { name: "silph-scope", category: "key-items", effect: "A scope that makes unseeable Pokémon visible. It is made by Silph Co." },
+  "poke-flute": { name: "poke-flute", category: "key-items", effect: "A sweet-sounding flute that awakens Pokémon." },
   "vs-seeker": { name: "vs-seeker", category: "gameplay", effect: "Allows rebattling of on-screen trainers. 100 steps to recharge." },
   "wacan-berry": { name: "wacan-berry", category: "type-protection", effect: "Held: Consumed when struck by a super-effective Electric-type attack to halve the damage." },
   "water-gem": { name: "water-gem", category: "jewels", effect: "Held: When the holder uses a damaging Water-type move, the move has 1.5× power and this item is consumed." },
@@ -574,6 +576,8 @@ window.ITEMS = {
   "x-accuracy": { name: "x-accuracy", category: "stat-boosts", effect: "Raises the accuracy of the Pokémon in battle by one stage." },
   "stardust": { name: "stardust", category: "loot", effect: "Lovely, red-colored sand with a loose, silky feel. It can be sold at a high price." },
   "itemfinder": { name: "itemfinder", category: "key-items", effect: "A device that responds to items hidden nearby." },
+  "silph-scope": { name: "silph-scope", category: "key-items", effect: "A scope that makes unseeable Pokémon visible. It is made by Silph Co." },
+  "poke-flute": { name: "poke-flute", category: "key-items", effect: "A sweet-sounding flute that awakens Pokémon." },
   "vs-seeker": { name: "vs-seeker", category: "key-items", effect: "A device that signals Trainers you've battled who want a rematch." },
   "bike-voucher": { name: "bike-voucher", category: "key-items", effect: "A voucher for obtaining a Bicycle from the Bike Shop." },
   "bluk-berry": { name: "bluk-berry", category: "baking-only", effect: "Can be ground into a powder as an ingredient for medicine." }
