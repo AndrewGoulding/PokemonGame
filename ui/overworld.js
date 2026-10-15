@@ -254,9 +254,12 @@
   function finishStep() {
     const mv = me.move;
     me.move = null;
-    const changedMap = mv.tmap !== me.map;
+    const changedMap = mv.tmap !== me.map, from = me.map;
     me.map = mv.tmap; me.x = mv.tx; me.y = mv.ty;
-    if (changedMap) { loadPeople(); preloadMap(me.map); hint(); }
+    if (changedMap) {
+      loadPeople(); preloadMap(me.map); hint();
+      if (!mv.warp && areaOf(from) !== areaOf(me.map)) showAreaName(me.map);
+    }
     savePosition();
     if (mv.warp) { warpTo(mv.warp); return; }
     const seen = anyTrainerSees();
@@ -283,6 +286,8 @@
     afterFade = async () => {
       me.map = target.map; me.x = target.x; me.y = target.y;
       if (target.door) me.facing = "down";
+      hideAreaName();
+      if (World.map(me.map).showName) showAreaName(me.map);
       loadPeople();
       await preloadMap(me.map);
       savePosition();
@@ -590,6 +595,7 @@
   }
 
   function update() {
+    updatePopup();
     if (heal) updateHeal();
     if (transition && ++transition.t > FLASH_FRAMES + SLICE_FRAMES + 4) {
       const done = transition.resolve;
@@ -664,6 +670,55 @@
     } else {
       g.drawImage(img, frame * w, 0, w, h, x, y, w, h);
     }
+  }
+
+  // ---------- The area's name (src/map_name_popup.c) ----------
+  //
+  // Arriving through a door or warp on a map that shows its name, or walking
+  // into a different area, its name hangs down from the top left in the std
+  // window: 2 pixels a frame down (12 frames), 121 frames there, 2 a frame
+  // back up. Another area meanwhile: it goes up and comes back with the new
+  // name. Anything that stops you walking (talking, the menu) takes it away.
+  let popup = null;   // { canvas, pos 0-24, state "in" | "hold" | "out", t, next }
+  function areaName(mapName) {
+    const T = window.TOWN_MAP || {}, m = World.map(mapName) || {};
+    const sec = (T.mapSections || {})[mapName];
+    let name = (sec && T.names && T.names[sec]) || String(m.title || mapName).split(" · ")[0];
+    if (m.floor) name += " " + (m.floor === 127 ? "Rooftop" : (m.floor < 0 ? "B" + -m.floor : m.floor) + "F");
+    return name;
+  }
+  const areaOf = (mapName) => ((window.TOWN_MAP || {}).mapSections || {})[mapName] || areaName(mapName);
+  function popupCanvas(name, mapName) {
+    const m = World.map(mapName) || {};
+    const W = !m.floor ? 112 : m.floor !== 127 ? 152 : 176;
+    const s = window.GbaMenus.Surface(), pal = window.GBA_MENUS.palettes.std3;
+    s.frame("std", pal, 1, 1, W / 8, 2);
+    s.fill(8, 8, W, 16, [255, 255, 255]);
+    const tw = s.textWidth(name) + String(name).length;
+    s.text(name, 8 + Math.floor((W - tw) / 2), 10, [98, 98, 98], [213, 213, 205], "normal", null, 1);
+    return s.canvas();
+  }
+  function showAreaName(mapName) {
+    mapName = mapName || me.map;
+    const name = areaName(mapName);
+    if (popup) { popup.next = [name, mapName]; popup.state = "out"; return; }
+    popup = { canvas: popupCanvas(name, mapName), pos: 0, state: "in", t: 0, next: null };
+  }
+  function hideAreaName() { popup = null; }
+  function updatePopup() {
+    if (!popup) return;
+    if (popup.state === "in") { popup.pos += 2; if (popup.pos >= 24) { popup.state = "hold"; popup.t = 0; } }
+    else if (popup.state === "hold") { if (++popup.t > 120) popup.state = "out"; }
+    else if (popup.state === "out") {
+      popup.pos -= 2;
+      if (popup.pos <= 0) {
+        if (popup.next) popup = { canvas: popupCanvas(...popup.next), pos: 0, state: "in", t: 0, next: null };
+        else popup = null;
+      }
+    }
+  }
+  function drawPopup() {
+    if (popup) g.drawImage(popup.canvas, 0, 0, 240, 32, 0, popup.pos - 32, 240, 32);
   }
 
   function draw() {
@@ -744,6 +799,7 @@
       g.font = "bold 10px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
       g.fillText(e.mark, x + 8.5, y - 7);
     }
+    drawPopup();
     if (transition) drawTransition();
     else if (blackedOut) { g.fillStyle = "#000"; g.fillRect(0, 0, VIEW_W, VIEW_H); }
     if (fade) {
@@ -763,6 +819,7 @@
   }
 
   function finish(event) {
+    hideAreaName();
     const r = resolveExplore;
     resolveExplore = null;
     paused = true;
@@ -826,7 +883,7 @@
   }
 
   window.Overworld = {
-    explore, hide, read: (pages) => read(pages), forceStep, refreshPeople: () => loadPeople(),
+    explore, hide, read: (pages) => read(pages), showAreaName, forceStep, refreshPeople: () => loadPeople(),
     act, addObject, removeObject, removePerson, teleport, battleTransition, resume, pokecenterHeal,
     fadeToBlack: fadeOut, fadeFromBlack: fadeIn,
     position: () => ({ map: me.map, x: me.x, y: me.y, facing: me.facing })

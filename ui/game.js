@@ -76,6 +76,7 @@
   }
 
   const confirm = (text) => Screen.yesNo(text);
+  let continued = false;   // (just continued a saved game: the area's name shows)
   const sfx = (name) => { if (window.GameAudio && window.GameAudio.se) window.GameAudio.se(name); };
 
   // ---------- Saving ----------
@@ -190,6 +191,7 @@
       if (v === "continue") {
         player = p;
         for (const w of saved.warnings) await message(w);
+        continued = true;
         return "play";
       }
       if (v === "option") {
@@ -2832,6 +2834,11 @@
   async function explore() {
     for (;;) {
       show("world");
+      // (Continuing a save, the area's name shows: FieldCB_ShowMapNameOnContinue.)
+      if (continued) {
+        continued = false;
+        if ((window.WORLD_MAPS[player.location.map] || {}).showName) Overworld.showAreaName(player.location.map);
+      }
       const ev = await Overworld.explore({
         player, rivalName: player.rival, visible,
         special,

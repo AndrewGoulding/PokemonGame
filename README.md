@@ -52,7 +52,8 @@ tells you it's locked (it opens at seven badges in FireRed).
 the D-pad, A, B, Start and Select (tap or click them; tapping anything else does
 nothing). D-pad to walk, A to talk or read signs, B to start running and again to
 stop (from the start, indoors too, with FireRed's running animation), Start for
-the menu. In menus, the D-pad moves between choices, A picks one and B goes back;
+the menu. Walking into a new area (or arriving at a town, route or cave through a door),
+its name hangs down from the top left for a couple of seconds, as in FireRed. In menus, the D-pad moves between choices, A picks one and B goes back;
 in a summary's moves, A on one and then on another swaps them. On a keyboard: arrows / WASD, Z or Space (A), X (B), Enter, Esc or M (Start),
 Backspace (Select). In battle, FireRed's own menus: FIGHT / BAG / POKéMON / RUN,
 then your moves with their PP (coloured as it runs low) and type; B goes back,

@@ -559,6 +559,10 @@ for (const name of MAPS) {
     // FireRed's battle scene for the map ("gym", "indoor1", ...), unless normal.
     // Where an Escape Rope works (caves, Viridian Forest).
     allowEscaping: map.allow_escaping || undefined,
+    // Whether the area's name pops up on arriving by a door or warp
+    // (show_map_name), and its floor (Silph Co. 2F, Rocket Hideout B1F).
+    showName: map.show_map_name || undefined,
+    floor: map.floor_number || undefined,
     battleScene: map.battle_scene && map.battle_scene !== "MAP_BATTLE_SCENE_NORMAL"
       ? map.battle_scene.replace(/^MAP_BATTLE_SCENE_/, "").toLowerCase().replace(/_/g, "") : undefined,
     top: anyAbove, borderWidth: bw, borderHeight: bh,
