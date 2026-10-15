@@ -191,13 +191,16 @@ body {
   0% { background-position-x: 0%; } 25% { background-position-x: 50%; }
   50% { background-position-x: 100%; } 75% { background-position-x: 50%; }
 }
-.screen:has(> .field:not(.hidden)) > .textbox.empty { display: block; }
+.screen:has(> .field:not(.hidden)) > .textbox.empty,
+.screen:has(> .scene.evo:not(.hidden)) > .textbox.empty { display: block; }
 .screen:has(> .party-menu:not(.hidden)) > .textbox.empty { display: none; }
-.screen:has(> .field:not(.hidden)) > .textbox.more::after { right: calc(100cqw * 10 / 240); bottom: calc(100cqw * 5 / 240); }   /* (the party screen has its own) */
+.screen:has(> .field:not(.hidden)) > .textbox.more::after,
+.screen:has(> .scene.evo:not(.hidden)) > .textbox.more::after { right: calc(100cqw * 10 / 240); bottom: calc(100cqw * 5 / 240); }   /* (the party screen has its own) */
 /* In a battle, FireRed's message box (graphics/battle_interface/textbox: the
    dark box, white text with a purple-gray shadow; the text window is tiles
-   1-28 of rows 15-18). */
-.screen:has(> .field:not(.hidden)) > .textbox {
+   1-28 of rows 15-18). The evolution scene has it too. */
+.screen:has(> .field:not(.hidden)) > .textbox,
+.screen:has(> .scene.evo:not(.hidden)) > .textbox {
   background: url(../assets/battle-interface/message-box.png) 0 0 / 100% 100%;
   image-rendering: pixelated;
   padding: calc(100cqw * 10 / 240) calc(100cqw * 10 / 240) 0;

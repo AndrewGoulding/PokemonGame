@@ -1,4 +1,4 @@
-/* Party screen, starter choice and evolution */
+/* Party screen and starter choice */
 
 .scene {
   /* The same size as the map: whatever doesn't fit scrolls with the cursor
@@ -10,6 +10,8 @@
   background: linear-gradient(to bottom, #e8f6ff, #cdeaf9);
 }
 .scene.hidden { display: none; }
+/* The evolution scene (ui/evolution-scene.js): the whole screen is its canvas. */
+.scene.evo { padding: 0 !important; overflow: hidden; background: #000; }
 .scene::-webkit-scrollbar, .scene *::-webkit-scrollbar, .menu::-webkit-scrollbar { display: none; }
 .scene *, .menu { scrollbar-width: none; }
 
@@ -76,17 +78,7 @@
   min-height: 290px;
 }
 .big-sprite { width: clamp(160px, 45vw, 260px); image-rendering: pixelated; }
-.big-sprite.evolving { animation: evolve 0.4s ease-in-out infinite alternate; }
-.big-sprite.evolved { animation: glow 1s ease-out 1; }
 
-@keyframes evolve {
-  from { filter: brightness(1); transform: scale(1); }
-  to { filter: brightness(0) invert(1); transform: scale(0.85); }
-}
-@keyframes glow {
-  from { filter: brightness(0) invert(1); }
-  to { filter: none; }
-}
 
 .card-note { margin-top: 4px; font-size: 12px; font-weight: 700; color: #2f6f3e; }
 .empty { color: #667; font-style: italic; margin: 12px 4px; }

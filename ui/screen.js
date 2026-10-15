@@ -114,8 +114,6 @@
     if (opt.html != null) b.innerHTML = opt.html; else b.textContent = opt.label;
     b.disabled = !!opt.disabled;
     if (opt.value === "back" || opt.value === false) b.dataset.back = "";   // what X / Esc picks
-    // B only (stopping an evolution): X / Esc or a click picks it, never A.
-    if (opt.bOnly) { b.dataset.back = ""; b.dataset.bOnly = ""; }
     if (opt.focus) b.dataset.focus = "";   // highlighted first, instead of the first button
     b.addEventListener("click", onClick);
     menu.appendChild(b);
@@ -246,9 +244,8 @@
     } else if (["z", "Z", " ", "Enter"].includes(e.key)) {
       if (e.repeat) return;
       e.preventDefault();
-      const pickable = (el) => !("bOnly" in el.dataset);
-      if (current) { if (pickable(current)) current.click(); }
-      else { const first = list.find((el) => menu.contains(el) && pickable(el)) || list.find(pickable); if (first) first.focus(); }
+      if (current) current.click();
+      else { const first = list.find((el) => menu.contains(el)) || list[0]; if (first) first.focus(); }
     } else if (["x", "X", "Escape"].includes(e.key)) {
       if (e.repeat) return;
       const cancel = menu.querySelector("button[data-back]:not(:disabled)");

@@ -65,9 +65,9 @@
     if (m.cursor >= m.top + shown) m.top = m.cursor - shown + 1;
   }
 
-  // Lines of `text` at most `width` wide (letter spacing `sp`).
-  function wrap(s, text, width, sp) {
-    const w = (t) => s.textWidth(t) + sp * t.length;
+  // Lines of `text` at most `width` wide.
+  function wrap(s, text, width) {
+    const w = (t) => s.textWidth(t);
     const outl = [];
     for (const para of String(text || "").split("\n")) {
       let line = "";
@@ -104,7 +104,7 @@
     // The description (or the prompts and menus over it).
     const cur = items[m.cursor];
     if (!menuOpen) {
-      wrap(s, cur ? cur.desc : "Close bag", 200, 2).slice(0, 3).forEach((l, i) => s.text(l, 40, 115 + 14 * i, WHITE, DARK, "normal", null, 2));
+      wrap(s, cur ? cur.desc : "Close bag", 200).slice(0, 3).forEach((l, i) => s.text(l, 40, 115 + 14 * i, WHITE, DARK));
     } else {
       // The prompt (std frame) and the menu or number box (your frame).
       if (st.prompt) {
@@ -112,13 +112,13 @@
         const pw = st.prompt.width, pl = st.prompt.left || 6;
         s.frame("std", G.palettes.std3, pl, 15, pw, 4);
         s.fill(pl * 8, 120, pw * 8, 32, WHITE);
-        st.prompt.text.split("\n").forEach((l, i) => s.text(l, pl * 8, 122 + 14 * i, DARK, LIGHT, "normal", null, pl === 2 ? 0 : 1));
+        st.prompt.text.split("\n").forEach((l, i) => s.text(l, pl * 8, 122 + 14 * i, DARK, LIGHT));
       }
       if (st.menu.kind === "actions") {
         const n = st.menu.items.length, top = 19 - 2 * n;
         s.frame(userFrame, G.frames[userFrame].palette, 22, top, 7, 2 * n);
         s.fill(176, top * 8, 56, n * 16, WHITE);
-        st.menu.items.forEach((it, i) => s.text(it.label, 184, top * 8 + 2 + 16 * i, DARK, LIGHT, "normal", null, 1));
+        st.menu.items.forEach((it, i) => s.text(it.label, 184, top * 8 + 2 + 16 * i, DARK, LIGHT));
         s.text("▶", 176, top * 8 + 2 + 16 * st.menu.cursor, DARK, LIGHT);
       } else if (st.menu.kind === "count" && st.menu.price != null) {
         // Selling: ×NN and what it's worth (sWindowTemplates[1]: 17, 9, 12 x 4).

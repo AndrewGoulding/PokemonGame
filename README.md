@@ -88,7 +88,8 @@ same screen picks a Pokémon for an item (ABLE / NOT ABLE for TMs and
 evolution stones), a trade or a tutor, and for switching in battle (SHIFT).
 Then the Bag, FireRed's Bag screen with six pockets (Items, Medicine, Poké
 Balls, TMs & HMs, Berries, Key Items; left / right between them, and each
-pocket remembers where its ▶ was). A opens Use / Give / Toss; Toss asks how
+pocket remembers where its ▶ was), with FireRed's descriptions under the list
+(its own words and line breaks, for the items FireRed has). A opens Use / Give / Toss; Toss asks how
 many and throws them away right there. It holds medicine, evolution
 stones, Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
 the Exp. Share, Oak's Parcel and the Town Map. After the Bag come FireRed's Pokédex (its
@@ -120,7 +121,11 @@ another of the same kind (as in Black and White). In battle you can fight, use i
 can be used right now), switch, and in wild battles
 throw balls or run. Pokémon gain experience and EVs, level up mid-battle, learn
 moves (with four already, FireRed's "Delete a move to make room for …?" and the
-Summary screen's move list to pick one to forget) and evolve afterwards. Press A to skip ahead.
+Summary screen's move list to pick one to forget) and evolve afterwards, in FireRed's
+evolution scene: the battle background fades to black for its swirling blue one,
+sparkles spiral up and rain down, the old and new Pokémon trade places as white
+shapes faster and faster, and a flash shows the new one. Hold B while they trade
+places to stop it (not when a stone does it). Press A to skip ahead.
 
 **Saving**: the game saves automatically to this browser (including where you
 are on the map) after every battle, story event and menu change, and
@@ -271,11 +276,23 @@ node tools/build-pokedex-screen.js pokefirered
 ```
 
 `tools/build-bag.js` converts FireRed's Bag screen (`graphics/item_menu/`, the
-bag and arrow sprites in `graphics/interface/`) into `assets/bag/`:
+bag and arrow sprites in `graphics/interface/`) into `assets/bag/`, and
+`tools/build-item-descriptions.js` FireRed's item descriptions
+(`src/data/items.json`) into `data/item-descriptions.js`:
 
 ```sh
-cd pokefirered && git sparse-checkout add graphics/item_menu/ && cd ..
+cd pokefirered && git sparse-checkout add graphics/item_menu/ /src/data/items.json && cd ..
 node tools/build-bag.js pokefirered
+node tools/build-item-descriptions.js pokefirered
+```
+
+`tools/build-evolution.js` converts FireRed's evolution scene
+(`graphics/evolution_scene/`: the swirling background's tiles and tilemaps, and
+the sparkle) into `data/evolution-scene.js` and `assets/evolution/`:
+
+```sh
+cd pokefirered && git sparse-checkout add graphics/evolution_scene/ && cd ..
+node tools/build-evolution.js pokefirered
 ```
 
 ### Main menu and Option screen
@@ -362,7 +379,9 @@ where FireRed allows it (caves, Viridian Forest) and takes you back to where
 you last went from outdoors through a door or cave entrance. Trainers work as in FireRed: one you haven't beaten sees you
 straight ahead within their sight range (nothing in between), shows "!",
 walks up and battles with their FireRed party (fixed IVs, set moves where
-FireRed sets them); beaten, they say their after-battle line. Those that turn
+FireRed sets them); beaten, they say their after-battle line, and one that walked over to you stays
+where they stopped until you leave the map; come back and they're home again,
+doing what they did before. Those that turn
 (`face_down_and_up`, `look_around`) can spot you as they turn. Hidden items
 are found by pressing A facing their tile. Battles use the map's own FireRed
 battle scene where it has one (the Gym), and Gym Leaders the Leader one. Signs and people say their FireRed text (with names in normal
@@ -425,8 +444,8 @@ silver hair, red shirt, black backpack), and its trainer-card picture
   (Mt. Moon) to dig in the wall, as in Diamond and Pearl's Underground. Hit
   tiles (the D-pad and A, or tap / click them; B or tapping the tool switches
   it) with the Pickaxe (1 energy) or the wider Hammer (2 energy) to clear
-  the rock (1-6 layers; grey bedrock can't be dug) and uncover 2-4 buried
-  treasures. The dig ends when every treasure is out (they go in your bag) or
+  the rock (1-6 layers; grey bedrock can't be dug) and uncover buried
+  treasures (2 up to mining level 10, 3 up to 20, then 4). The dig ends when every treasure is out (they go in your bag) or
   your energy runs out (40 at mining level 1, and 2 more each level: 238 at
   level 100). What a hit dug up is told under the board until the next hit.
   Every hit earns 1 mining XP and every treasure 10 more; the top of the

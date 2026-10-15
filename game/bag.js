@@ -94,7 +94,10 @@
   const titleCase = (id) => id.split("-").filter(Boolean)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   const name = (item) => SPECIAL_NAMES[item] || (isMachine(item) ? machineName(item) : titleCase(item));
-  const description = (item) => (window.ITEMS[item] && window.ITEMS[item].effect) || "";
+  // FireRed's own text where it has the item (data/item-descriptions.js, its
+  // lines broken as FireRed breaks them), else data/items.js's.
+  const description = (item) => (window.ITEM_DESCRIPTIONS && window.ITEM_DESCRIPTIONS[item]) ||
+    (window.ITEMS[item] && window.ITEMS[item].effect) || "";
   const sprite = (item) => (window.ITEM_SPRITES && window.ITEM_SPRITES[item]) || "";
   const price = (item) => PRICES[item] || (isMachine(item) ? machinePrice(item) : mintNature(item) ? MINT_PRICE : 0);
   const sellPrice = (item) => Math.floor(price(item) / 2);

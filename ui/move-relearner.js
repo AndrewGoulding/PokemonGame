@@ -115,14 +115,14 @@
     for (let r = 0; r < 7 && st.top + r < st.items.length; r++) {
       const it = st.items[st.top + r];
       const y = 8 + r * 14;
-      if (y + 14 > 104) { s.text(it || "CANCEL", 160, y, STD[2], STD[3], "normal", null, 1); continue; }
-      s.text(it || "CANCEL", 160, y, STD[2], STD[3], "normal", null, 1);
+      if (y + 14 > 104) { s.text(it || "CANCEL", 160, y, STD[2], STD[3]); continue; }
+      s.text(it || "CANCEL", 160, y, STD[2], STD[3]);
       if (st.top + r === st.cursor) s.text("▶", 152, y, STD[2], STD[3]);
     }
     // The message box (W7, in your frame).
     s.frame(frame, GM().frames[frame].palette, 2, 15, 26, 4);
     s.fill(16, 120, 208, 32, STD[1]);
-    String(st.shown || "").split("\n").slice(0, 2).forEach((line, i) => s.text(line, 16, 122 + i * 15, STD[2], STD[3], "normal", null, 1));
+    String(st.shown || "").split("\n").slice(0, 2).forEach((line, i) => s.text(line, 16, 122 + i * 15, STD[2], STD[3]));
     // ▼ (the list goes on): FireRed's bobbing arrow at (192, 104), shown with 7 or more entries.
     if (st.items.length >= 7 && !st.asking) {
       const bob = Math.round(Math.sin((st.tick * 10 & 255) / 256 * 2 * Math.PI));

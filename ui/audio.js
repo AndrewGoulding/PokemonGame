@@ -137,7 +137,8 @@
       const next = wanted || (before && before.name);
       if (next) start(next, before && before.name === next ? before.at : 0, 0.05);
     },
-    // A sound effect (one of tools/build-audio.js's SOUND_EFFECTS), over whatever is playing.
+    // A sound effect (one of tools/build-audio.js's SOUND_EFFECTS), over whatever is
+    // playing; returns how long it lasts (seconds), or nothing if it isn't played.
     se(name) {
       if (!enabled || !ctx || !window.MUSIC_DATA || ctx.state !== "running") return;
       const s = song(name);
@@ -146,6 +147,7 @@
       source.buffer = s.buffer;
       source.connect(master);
       source.start();
+      return s.buffer.duration;   // (seconds)
     },
     cry(species, opts) {
       if (!enabled || !ctx) return;

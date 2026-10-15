@@ -31,6 +31,7 @@
   const music = (name) => { if (GA) GA.music(name); };
   const fanfare = (name) => (GA ? GA.fanfare(name) : Promise.resolve());
   const cry = (species, opts) => { if (GA) GA.cry(species, opts); };
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   // The jingle for getting an item: TMs and HMs, key items, or anything else.
   const itemJingle = (item) => (Bag.isMachine(item) ? "mus_obtain_tmhm" : Bag.isKeyItem(item) ? "mus_obtain_key_item" : "mus_obtain_item");
   // A message with a jingle under it; carries on once both are done.
@@ -365,43 +366,49 @@
 
   // ---------- Evolution and moves ----------
 
+  // FireRed's evolution scene (ui/evolution-scene.js). As in FireRed, holding
+  // B while the two shapes trade places stops it (when it can be stopped).
   async function evolve(record, evo, canStop) {
     const name = Party.displayName(record);
-    const img = renderSprite(record.species, "", Party.form(record), record.shiny);
-    music("mus_evolution");
-    cry(record.species);
-    await message("What? " + name + " is evolving!");
-    img.classList.add("evolving");
-    let stopped = false;
-    if (canStop) {
-      // As in FireRed, B stops it (A doesn't); the button is for touch and mouse.
-      const stop = ask(name + " is evolving...", [{ label: "Stop (B)", value: true, className: "action", wide: true, bOnly: true }])
-        .then(() => { stopped = true; });
-      await Promise.race([stop, new Promise((r) => setTimeout(r, 3200))]);
-      clearMenu();
-    } else {
-      await message(name + " is evolving...", 3200);
-    }
-    img.classList.remove("evolving");
-    if (stopped) {
-      await message("Huh? " + name + " stopped evolving!");
-      return;
-    }
-    const oldSpecies = record.species;
-    const shed = Evolution.shedinja(record);
-    const newMoves = Evolution.evolve(record, evo.into, evo);
-    renderSprite(record.species, "evolved", Party.form(record), record.shiny);
-    cry(record.species);
-    const jingle = fanfare("mus_evolved");
-    await message("Congratulations! Your " + (record.nickname || Party.speciesName(oldSpecies)) + " evolved into " +
-      Party.speciesName(record.species) + "!");
-    await jingle;
-    Player.markCaught(player, record.species);
-    for (const move of newMoves) await learnMove(record, move);
-    if (shed && evo.into === "Ninjask" && player.party.length < Player.PARTY_SIZE && Player.removeItem(player, "poke-ball")) {
-      Player.receive(player, shed);
-      renderSprite("Shedinja");
-      await message("Something appeared in the empty Poké Ball... It's Shedinja!");
+    const url = (r) => Screen.spriteUrl(r.species, Party.form(r), false, r.shiny);
+    show("scene");
+    Screen.say("");
+    clearMenu();
+    const evoScene = await EvolutionScene.open(scene, { from: url(record), into: url(Object.assign({}, record, { species: evo.into })) });
+    try {
+      music(null);
+      await evoScene.fadeIn();
+      Screen.say("What? " + name + " is evolving!");
+      await Screen.printed();
+      cry(record.species);
+      await sleep(1000);
+      const intro = GA && GA.se("mus_evolution_intro");
+      await sleep(intro ? intro * 1000 : 1700);
+      music("mus_evolution");
+      const evolved = await evoScene.run({ canStop, onStop: () => music(null), onEvolved: () => music(null) });
+      if (!evolved) {
+        cry(record.species);
+        await message("Huh? " + name + " stopped evolving!");
+        return;
+      }
+      const oldSpecies = record.species;
+      const shed = Evolution.shedinja(record);
+      const newMoves = Evolution.evolve(record, evo.into, evo);
+      cry(record.species);
+      await sleep(600);
+      const jingle = fanfare("mus_evolved");
+      await message("Congratulations! Your " + (record.nickname || Party.speciesName(oldSpecies)) + " evolved into " +
+        Party.speciesName(record.species) + "!");
+      await jingle;
+      Player.markCaught(player, record.species);
+      for (const move of newMoves) await learnMove(record, move);
+      if (shed && evo.into === "Ninjask" && player.party.length < Player.PARTY_SIZE && Player.removeItem(player, "poke-ball")) {
+        Player.receive(player, shed);
+        await evoScene.show(url(shed));
+        await message("Something appeared in the empty Poké Ball... It's Shedinja!");
+      }
+    } finally {
+      evoScene.close();
     }
   }
 
@@ -702,7 +709,7 @@
         .map((id) => ({
           id, name: Bag.name(id), icon: Bag.sprite(id),
           qty: Bag.isMachine(id) || Bag.isKeyItem(id) ? null : player.bag[id],
-          desc: Bag.description(id) + (id === "exp-share" ? (expShareOn() ? " (On)" : " (Off)") : "")
+          desc: Bag.description(id) + (id === "exp-share" ? (expShareOn() ? "\nIt's on." : "\nIt's off.") : "")
         }))
     }));
   }
@@ -2061,13 +2068,22 @@
     const team = trainerTeam(t.id);
     await battle("trainer", { foe: { name: data.className + " " + data.name, team, pic: data.pic }, defeatText: t.defeat, trainerId: t.id });
     // A beaten trainer who walked over to you stays where they stopped (see
-    // visible()): back in their spot they could shut you in, as Route 25's
-    // Hiker Flint does the TM43 corner.
+    // visible()) while you're on the map: back in their spot they could shut
+    // you in, as Route 25's Hiker Flint does the TM43 corner. Leave the map
+    // and come back and they're home again, doing what they did before, as
+    // in FireRed.
     if (approach && player.flags[t.id]) {
       const [dx, dy] = World.DIRS[facing];
       (player.flags.trainerSpots || (player.flags.trainerSpots = {}))[t.id] =
-        { x: person.x + dx * approach, y: person.y + dy * approach, facing };
+        { map: player.location.map, x: person.x + dx * approach, y: person.y + dy * approach, facing };
     }
+  }
+  function forgetTrainerSpots(map) {
+    const spots = player.flags.trainerSpots;
+    if (!spots) return;
+    // (Spots saved before they named their map: the trainer's own map.)
+    const mapOf = (id) => Object.keys(window.WORLD_MAPS).find((m) => window.WORLD_MAPS[m].people.some((p) => p.trainer && p.trainer.id === id));
+    for (const id of Object.keys(spots)) if ((spots[id].map || mapOf(id)) !== map) delete spots[id];
   }
 
   // A FireRed trainer's party as party records.
@@ -2844,7 +2860,7 @@
         onWarp,
         trainerWaiting, hiddenItem: (h) => !player.flags[h.flag],
         onStep: () => { leftPallet(player.location.map); return redForestStep() || jessieJamesStep() || repelStep(); }, allowWild: repelAllows,
-        onMap: (m) => music((window.WORLD_MAPS[m] || {}).music)
+        onMap: (m) => { forgetTrainerSpots(m); music((window.WORLD_MAPS[m] || {}).music); }
       });
       if (ev.type === "menu") await startMenu();
       else if (ev.type === "repel-ended") await repelWoreOff();

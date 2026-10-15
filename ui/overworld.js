@@ -694,8 +694,8 @@
     const s = window.GbaMenus.Surface(), pal = window.GBA_MENUS.palettes.std3;
     s.frame("std", pal, 1, 1, W / 8, 2);
     s.fill(8, 8, W, 16, [255, 255, 255]);
-    const tw = s.textWidth(name) + String(name).length;
-    s.text(name, 8 + Math.floor((W - tw) / 2), 10, [98, 98, 98], [213, 213, 205], "normal", null, 1);
+    const tw = s.textWidth(name);
+    s.text(name, 8 + Math.floor((W - tw) / 2), 10, [98, 98, 98], [213, 213, 205]);
     return s.canvas();
   }
   function showAreaName(mapName) {

@@ -510,8 +510,8 @@
         tile(s, 0x22 + row * 3 + col, tx, ty);
       }
       s.fill(25 * 8, 9 * 8, 32, 32, P5.bg);
-      s.text("Yes", 25 * 8, 9 * 8 + 2, P5.fg, P5.shadow, "normal", null, 1);
-      s.text("No", 25 * 8, 9 * 8 + 18, P5.fg, P5.shadow, "normal", null, 1);
+      s.text("Yes", 25 * 8, 9 * 8 + 2, P5.fg, P5.shadow);
+      s.text("No", 25 * 8, 9 * 8 + 18, P5.fg, P5.shadow);
       battleCursor(s, null, 24, 9 + 2 * cursor);
       s.show(canvas);
     };

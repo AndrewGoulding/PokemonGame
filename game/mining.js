@@ -131,7 +131,7 @@
     }
     const taken = [];
     const treasures = [];
-    const count = 2 + Math.floor(rng() * 3);
+    const count = (lv || 1) <= 10 ? 2 : (lv || 1) <= 20 ? 3 : 4;   // more to find as you level up
     for (let i = 0; i < count; i++) {
       const [item, , shape] = pickTreasure(rng, lv, map);
       const at = place(shape, taken, rng);

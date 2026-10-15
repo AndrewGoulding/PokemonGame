@@ -45,8 +45,8 @@
     m.top = Math.max(0, Math.min(m.top, n - shown, m.cursor));
     if (m.cursor >= m.top + shown) m.top = m.cursor - shown + 1;
   }
-  function wrap(s, text, width, sp) {
-    const w = (t) => s.textWidth(t) + sp * t.length, lines = [];
+  function wrap(s, text, width) {
+    const w = (t) => s.textWidth(t), lines = [];
     for (const para of String(text || "").split("\n")) {
       let line = "";
       for (const word of para.split(/\s+/)) {
@@ -74,14 +74,14 @@
     }
     const cur = items[m.cursor];
     if (!menuOpen) {
-      wrap(s, cur ? cur.desc : "Return to the PC.", 192, 2).slice(0, 3)
-        .forEach((l, i) => s.text(l, 40, 115 + 14 * i, WHITE, DARK, "normal", null, 2));
+      wrap(s, cur ? cur.desc : "Return to the PC.", 192).slice(0, 3)
+        .forEach((l, i) => s.text(l, 40, 115 + 14 * i, WHITE, DARK));
     } else {
       if (st.prompt) {
         const pw = st.prompt.width;
         s.frame("std", G.palettes.std3, 6, 15, pw, 4);
         s.fill(48, 120, pw * 8, 32, WHITE);
-        st.prompt.text.split("\n").forEach((l, i) => s.text(l, 48, 122 + 14 * i, DARK, LIGHT, "normal", null, 1));
+        st.prompt.text.split("\n").forEach((l, i) => s.text(l, 48, 122 + 14 * i, DARK, LIGHT));
       }
       if (st.menu.kind === "actions") {
         // Window 4 (22, 13, 7 wide): WITHDRAW / GIVE / CANCEL.

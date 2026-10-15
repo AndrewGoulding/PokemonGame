@@ -47,8 +47,8 @@
   const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 
   const entries = () => st.items.concat([null]);   // (null: Cancel)
-  function wrap(s, text, width, sp) {
-    const w = (t) => s.textWidth(t) + sp * t.length, lines = [];
+  function wrap(s, text, width) {
+    const w = (t) => s.textWidth(t), lines = [];
     for (const para of String(text || "").split("\n")) {
       let line = "";
       for (const word of para.split(/\s+/)) {
@@ -79,8 +79,8 @@
     const cur = items[st.cursor];
     if (!busy) {
       // The description (window 5: 40, 112), white on the panel.
-      wrap(s, cur ? cur.desc : "Quit shopping.", 196, 2).slice(0, 3)
-        .forEach((l, i) => s.text(l, 40, 115 + 15 * i, WHITE, DARK, "normal", null, 2));
+      wrap(s, cur ? cur.desc : "Quit shopping.", 196).slice(0, 3)
+        .forEach((l, i) => s.text(l, 40, 115 + 15 * i, WHITE, DARK));
     }
     if (st.qty) {
       // IN BAG (window 1: 1, 11, 13 x 2) and ×NN with the price (window 3: 17, 9, 12 x 4).

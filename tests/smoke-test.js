@@ -550,6 +550,9 @@ for (const share of [false, true]) {
 
   assert.strictEqual(Bag.name("poke-ball"), "Poké Ball");
   assert.strictEqual(Bag.name("kings-rock"), "King's Rock");
+  // FireRed's descriptions, three lines at most, in mixed case.
+  assert.strictEqual(Bag.description("potion"), "A spray-type wound medicine.\nIt restores the HP of one Pokémon\nby 20 points.");
+  for (const [id, d] of Object.entries(window.ITEM_DESCRIPTIONS)) assert(d.split("\n").length <= 3 && !/POK/.test(d), id);
   assert.strictEqual(Bag.pocket("great-ball"), "Poké Balls");
   assert.strictEqual(Bag.pocket("super-potion"), "Medicine");
   assert.strictEqual(Bag.pocket("oran-berry"), "Berries");
@@ -1389,7 +1392,8 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
   const r = mulberry32(7);
   for (let n = 0; n < 50; n++) {
     const dig = Mining.create(r, 1 + (n % Mining.MAX_LEVEL));
-    assert(dig.treasures.length >= 1 && dig.treasures.length <= 4);
+    const lvl = 1 + (n % Mining.MAX_LEVEL);
+    assert(dig.treasures.length >= 1 && dig.treasures.length <= (lvl <= 10 ? 2 : lvl <= 20 ? 3 : 4));
     assert(dig.rock.every((l) => l >= 2 && l <= 6));
     // Treasures and bedrock never overlap.
     const seen = new Set();
