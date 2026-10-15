@@ -713,12 +713,12 @@ for (const share of [false, true]) {
     "Sleep Talk", "U-turn", "Substitute", "Flash Cannon", "Trick Room", "Wild Charge", "Rock Smash", "Snarl",
     "Nature Power", "Dark Pulse", "Power-Up Punch", "Dazzling Gleam", "Confide"];
   const HMS = ["Cut", "Fly", "Surf", "Strength", "Flash", "Whirlpool", "Waterfall", "Rock Smash", "Dive", "Defog", "Rock Climb"];
-  const TMS = XY.filter((m) => !HMS.includes(m)).concat("Secret Power", "Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail", "Focus Punch", "Skill Swap");
-  assert.strictEqual(TMS.length, 106);
+  const TMS = XY.filter((m) => !HMS.includes(m)).concat("Secret Power", "Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail", "Focus Punch", "Skill Swap", "Snatch");
+  assert.strictEqual(TMS.length, 107);
   TMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("tm" + String(i + 1).padStart(2, "0")), move, "TM" + (i + 1)));
   HMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("hm" + String(i + 1).padStart(2, "0")), move, "HM" + (i + 1)));
-  assert.strictEqual(Bag.machines().length, 117);
-  assert(!ITEMS.tm107 && !ITEMS.hm12, "no machines past TM106 and HM11");
+  assert.strictEqual(Bag.machines().length, 118);
+  assert(!ITEMS.tm108 && !ITEMS.hm12, "no machines past TM107 and HM11");
   // Every move Pokémon learn by machine in Gen 6 is a TM or HM here; the
   // machines Gen 6 had none for (Bullet Seed, Whirlpool, Defog, Rock Climb)
   // take their compatibility from other generations.
@@ -726,7 +726,7 @@ for (const share of [false, true]) {
   for (const l of Object.values(LEARNSETS_GEN6)) for (const m of l.tm || []) tmMoves.add(m);
   const machineMoves = Bag.machines().map(Bag.machineMove);
   for (const m of tmMoves) assert(machineMoves.includes(m), "no machine for " + m);
-  assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail", "Focus Punch", "Skill Swap", "Whirlpool", "Defog", "Rock Climb"]);
+  assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail", "Focus Punch", "Skill Swap", "Snatch", "Whirlpool", "Defog", "Rock Climb"]);
   for (const m of ["Whirlpool", "Defog", "Rock Climb", "Bullet Seed"]) assert(MACHINE_LEARNERS[m].length > 50, "who can use " + m);
   assert(!MACHINE_LEARNERS.Thief, "TMs Gen 6 had keep Gen 6's compatibility");
   assert(Bag.canUseOn(Party.create("Oddish", 20, { rng }), "tm100") && !Bag.canUseOn(Party.create("Pidgey", 20, { rng }), "tm100"), "Bullet Seed: Oddish yes, Pidgey no");
@@ -749,11 +749,14 @@ for (const share of [false, true]) {
   assert.strictEqual(Bag.name("tm24"), "TM24 Thunderbolt");
   assert.strictEqual(Bag.name("tm99"), "TM99 Secret Power");
   assert.strictEqual(Bag.name("hm11"), "HM11 Rock Climb");
-  assert.deepStrictEqual(Bag.machines().slice(98, 108), ["tm99", "tm100", "tm101", "tm102", "tm103", "tm104", "tm105", "tm106", "hm01", "hm02"]);
+  assert.deepStrictEqual(Bag.machines().slice(98, 109), ["tm99", "tm100", "tm101", "tm102", "tm103", "tm104", "tm105", "tm106", "tm107", "hm01", "hm02"]);
   assert.strictEqual(Bag.name("tm103"), "TM103 Giga Drain");
   assert.strictEqual(Bag.name("tm104"), "TM104 Iron Tail");
   assert.strictEqual(Bag.name("tm105"), "TM105 Focus Punch");
   assert.strictEqual(Bag.name("tm106"), "TM106 Skill Swap");
+  assert.strictEqual(Bag.name("tm107"), "TM107 Snatch");
+  // FireRed's TM49 (Snatch) in the Rocket Hideout is TM107 here.
+  assert(WORLD_MAPS.RocketHideout_B4F.people.some((p) => p.script === "RocketHideout_B4F_EventScript_ItemTM49" && p.item === "tm107"));
   // Saves from before keep their machines' moves under the new numbers.
   const oldSave = Object.assign(Player.create("T"), { party: [Party.create("Pidgey", 5, { rng })], bag: { "tm94-oras": 1 } });
   delete oldSave.pcItems;

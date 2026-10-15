@@ -216,7 +216,7 @@ Abra, Clefairy, Dratini, Scyther or Porygon, TMs (Ice Beam, Thunderbolt, Shadow
 Ball, Flamethrower, and Iron Tail, TM104 here, since this game's TM23 is Smack
 Down) or held items. Beat the Rocket guarding the poster and the switch behind
 it opens the stairs to the Rocket Hideout (B1F-B4F: its trainers, items and
-spinning arrow floors; the barriers that open once their guards are beaten; the
+spinning arrow floors; FireRed's TM49 Snatch, TM107 here; the barriers that open once their guards are beaten; the
 Lift Key a Rocket drops on B4F, which works the elevator; and Giovanni, who
 leaves the Silph Scope behind once beaten, which lets you finish Pokémon Tower).
 Through any of the four gates you reach Saffron City, Team Rocket's town until
@@ -794,9 +794,15 @@ Stone already could.)
 - **TMs**: X and Y's TM01–TM100 in order, minus Flash and Rock Smash (HMs
   here), then Secret Power from Omega Ruby and Alpha Sapphire (TM99) and
   Bullet Seed (TM100, FireRed's TM09), Water Pulse (TM101, FireRed's TM03) and
-  Shock Wave (TM102, FireRed's TM34). Compatibility comes from the Gen 6
+  Shock Wave (TM102, FireRed's TM34), then every other FireRed TM whose move
+  had no machine here, added at the end in the order the maps reach them: Giga
+  Drain (TM103, FireRed's TM19), Iron Tail (TM104, TM23), Focus Punch (TM105,
+  TM01), Skill Swap (TM106, TM48) and Snatch (TM107, TM49, in the Rocket
+  Hideout). `tools/build-maps.js` stops with an error if a map gives a FireRed
+  TM this game has no machine for, so a new one is added the same way.
+  Compatibility comes from the Gen 6
   learnsets; for HMs and for machines Gen 6 never had (Bullet Seed, Water
-  Pulse, Shock Wave), also from
+  Pulse, Shock Wave and the later ones), also from
   any generation that taught the move by machine (`data/machine-learners.js`,
   built by `npm run build:machine-learners` from @pkmn/dex), which covers
   Bullet Seed, Whirlpool, Defog and Rock Climb. The same file has

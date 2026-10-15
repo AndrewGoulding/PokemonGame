@@ -519,6 +519,7 @@ window.ITEMS = {
   "tm104": { name: "tm104", category: "all-machines", effect: "Teaches Iron Tail to a compatible Pokémon." },
   "tm105": { name: "tm105", category: "all-machines", effect: "Teaches Focus Punch to a compatible Pokémon." },
   "tm106": { name: "tm106", category: "all-machines", effect: "Teaches Skill Swap to a compatible Pokémon." },
+  "tm107": { name: "tm107", category: "all-machines", effect: "Teaches Snatch to a compatible Pokémon." },
   "tmv-pass": { name: "tmv-pass", category: "gameplay", effect: "Permits access to Kiloude City." },
   "town-map": { name: "town-map", category: "key-items", effect: "A very convenient map that can be viewed anytime. It even shows where you are." },
   "toxic-orb": { name: "toxic-orb", category: "bad-held-items", effect: "Held: Inflicts Toxic on the holder at the end of the turn. Activates after Poison damage would occur." },

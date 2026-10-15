@@ -556,7 +556,11 @@ function itemId(frItem) {
   const move = frMachineMoves[(m[1] === "hm" ? 50 : 0) + +m[2] - 1];
   const ours = Object.keys(window.ITEMS).find((k) => /^(tm|hm)\d+$/.test(k) &&
     toID((/^Teaches (.+?) to a compatible/.exec(window.ITEMS[k].effect) || [])[1] || "") === toID(move));
-  return ours || id;
+  // A FireRed TM whose move this game has no machine for: add one at the end of
+  // the list in data/items.js (as TM103 Giga Drain ... TM107 Snatch were), then
+  // run tools/build-machine-learners.js and tools/build-item-sprites.js.
+  if (!ours) throw new Error("FireRed's " + id.toUpperCase() + " (" + move + ") has no machine in this game: add it to the end of the TM list in data/items.js");
+  return ours;
 }
 
 // The item an item ball holds ("potion"), from its finditem line.
