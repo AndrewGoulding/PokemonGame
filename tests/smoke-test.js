@@ -1325,9 +1325,9 @@ for (const share of [false, true]) {
   assert.deepStrictEqual([T.width, T.height, T.map.length, T.dungeon.length], [22, 15, 15, 15]);
   assert.deepStrictEqual([T.map[11][4], T.names.PALLET_TOWN, T.dungeon[3][9], T.names.MT_MOON], ["PALLET_TOWN", "Pallet Town", "MT_MOON", "Mt. Moon"]);
   const onMap = (sec) => T.map.some((r) => r.includes(sec)) || T.dungeon.some((r) => r.includes(sec));
-  // (FireRed gives the Underground Path, the S.S. Anne, the Rocket Hideout and Silph Co. no square of their own.)
+  // (FireRed gives the Underground Path, the S.S. Anne, the Rocket Hideout, Silph Co. and the Pokémon League no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
-    assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "UNDERGROUND_PATH_2", "S_S_ANNE", "ROCKET_HIDEOUT", "SILPH_CO"].includes(T.mapSections[name])), name + " is on the Town Map");
+    assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "UNDERGROUND_PATH_2", "S_S_ANNE", "ROCKET_HIDEOUT", "SILPH_CO", "POKEMON_LEAGUE"].includes(T.mapSections[name])), name + " is on the Town Map");
   }
   assert(fs.existsSync(path.join(__dirname, "../assets/town-map/kanto.png")));
 }
@@ -2594,12 +2594,73 @@ console.log("ok: doubles regressions, " + DOUBLES + " random doubles battles fin
   assert(W("VictoryRoad_3F").people.filter((p) => p.trainer && p.trainer.id === "TRAINER_COOL_COUPLE_RAY_TYRA").every((p) => p.trainer.double));
   assert.strictEqual(Player.prizeMoney("Cool Couple Ray & Tyra", [{ level: 45 }], "Cool Couple"), 24 * 45);
 
-  // The Indigo Plateau: its Pokémon Center (respawn, Fly spot, the Mart);
-  // the Elite Four's door isn't built yet.
+  // The Indigo Plateau: its Pokémon Center (respawn, Fly spot, the Mart),
+  // and the door at the back to the Elite Four.
   const ic = W("IndigoPlateau_PokemonCenter_1F"), ispot = Player.CENTERS.IndigoPlateau_PokemonCenter_1F;
   assert(!ic.collision[ispot.y * ic.width + ispot.x] && window.TOWN_MAP.fly.INDIGO_PLATEAU.center === "IndigoPlateau_PokemonCenter_1F");
   assert.deepStrictEqual(ic.people.find((p) => p.mart).mart, ["ultra-ball", "great-ball", "full-restore", "max-potion", "revive", "full-heal", "max-repel"]);
-  assert(ic.warps.some((w) => !w.map && w.mapConst === "MAP_POKEMON_LEAGUE_LORELEIS_ROOM"));
+  { const r = World.step({ map: "IndigoPlateau_PokemonCenter_1F", x: 4, y: 2 }, "up"); assert.strictEqual(r.warp.map + " " + r.warp.x + "," + r.warp.y, "PokemonLeague_LoreleisRoom 6,12"); }
+
+  // The Pokémon League: the rooms in FireRed's order, each one's door on to
+  // the next and back, and the Hall of Fame past the Champion's room.
+  const rooms = League.ROOMS.map((r) => r.map);
+  assert.deepStrictEqual(rooms, ["PokemonLeague_LoreleisRoom", "PokemonLeague_BrunosRoom", "PokemonLeague_AgathasRoom",
+    "PokemonLeague_LancesRoom", "PokemonLeague_ChampionsRoom"]);
+  rooms.slice(0, -1).forEach((m, k) => assert.strictEqual(W(m).warps[1].map, rooms[k + 1], m + " leads on"));
+  assert.strictEqual(W("PokemonLeague_ChampionsRoom").warps[1].map, League.HALL_OF_FAME);
+  for (const [m, x, y] of [["PokemonLeague_LoreleisRoom", 6, 2], ["PokemonLeague_AgathasRoom", 6, 2], ["PokemonLeague_LancesRoom", 6, 5]]) {
+    assert(patched(m, []).at(x, y).collision && !patched(m, ["door"]).at(x, y).collision, m + "'s door: shut until opened");
+  }
+  // (The way in is shut to walking anyway: the scene walks you in. Closed, it looks it.)
+  rooms.slice(0, 4).forEach((m) => assert(W(m).patches.closed && W(m).patches.door, m + "'s patches"));
+  assert(!patched("PokemonLeague_LancesRoom", []).at(6, 15).collision && patched("PokemonLeague_LancesRoom", ["closed"]).at(6, 15).collision);
+  assert(["lorelei", "bruno", "agatha", "lance"].every((n) => fs.existsSync(path.join(root, "assets/sprites/trainers/front/elite_four_" + n + ".png"))));
+  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_ELITE_FOUR_LORELEI.party.map((m) => m.species + m.level), ["Dewgong52", "Cloyster51", "Slowbro52", "Jynx54", "Lapras54"]);
+  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_ELITE_FOUR_LANCE.party.map((m) => m.species + m.level), ["Gyarados56", "Dragonair54", "Dragonair54", "Aerodactyl58", "Dragonite60"]);
+  assert.deepStrictEqual(["BRUNO", "AGATHA", "LANCE"].map((n) => WORLD_TRAINERS["TRAINER_ELITE_FOUR_" + n].party.slice(-1)[0].item), ["sitrus-berry", "sitrus-berry", "sitrus-berry"]);
+  assert.strictEqual(Player.prizeMoney("Elite Four Lance", [{ level: 60 }], "Elite Four"), 100 * 60);
+  // The run: each room's entry scene once it's that room's turn, the way in
+  // shut behind you, the door on once its trainer's beaten.
+  const lf = {};
+  assert(League.entryDue(lf, rooms[0]) && !League.entryDue(lf, rooms[1]));
+  League.enter(lf, rooms[0]);
+  assert.deepStrictEqual(League.patches(lf, rooms[0]), ["closed"]);
+  assert(!League.entryDue(lf, rooms[0]) && League.entryDue(lf, rooms[1]));
+  League.beat(lf, 0);
+  assert.deepStrictEqual(League.patches(lf, rooms[0]), ["closed", "door"]);
+  for (let k = 1; k < 4; k++) {
+    League.enter(lf, rooms[k]);
+    assert.deepStrictEqual(League.patches(lf, rooms[k]), ["closed"], rooms[k]);
+    assert.deepStrictEqual(League.patches(lf, rooms[k - 1]), ["door"], rooms[k - 1] + " stays open behind");
+    League.beat(lf, k);
+  }
+  assert(League.entryDue(lf, rooms[4]) && League.scene(lf) === 4);
+  assert.strictEqual(League.trainerId(lf, 0), "TRAINER_ELITE_FOUR_LORELEI");
+  assert.strictEqual(League.trainerId({ canLinkWithRS: true }, 3), "TRAINER_ELITE_FOUR_LANCE_2");
+  assert(WORLD_TRAINERS.TRAINER_ELITE_FOUR_LANCE_2.party.length === 5);
+  // Losing (or the Hall of Fame) starts it over from Lorelei.
+  lf.TRAINER_ELITE_FOUR_BRUNO = true; lf.TRAINER_CHAMPION_FIRST_SQUIRTLE = true; lf.TRAINER_LEADER_BROCK = true;
+  League.beat(lf, 4);
+  assert(!League.entryDue(lf, rooms[4]));
+  League.reset(lf);
+  assert(League.entryDue(lf, rooms[0]) && League.entryDue(lf, rooms[4]) && !League.beaten(lf, 0) && League.patches(lf, rooms[0]).length === 0);
+  assert(!lf.TRAINER_ELITE_FOUR_BRUNO && !lf.TRAINER_CHAMPION_FIRST_SQUIRTLE && lf.TRAINER_LEADER_BROCK, "only the League's trainers forgotten");
+  // The Hall of Fame: game clear, and the team on record (up to 50, oldest dropped).
+  const hf = {}, team = [Party.create("Charizard", 63, { rng }), Party.create("Pikachu", 55, { rng, nickname: "Sparky" })];
+  team[0].ot = { name: "ASH", id: 12345 };
+  const rec = League.record(hf, team, { name: "ASH", id: 12345, playTimeMs: 3600000 });
+  assert(hf.gameClear && hf.hofCount === 1 && hf.hallOfFame.length === 1 && rec.number === 1);
+  assert.deepStrictEqual(rec.team.map((m) => [m.species, m.level, m.nickname, m.ot.id]), [["Charizard", 63, null, 12345], ["Pikachu", 55, "Sparky", 12345]]);
+  for (let i = 0; i < 60; i++) League.record(hf, team, { name: "ASH", id: 12345 });
+  assert(hf.hallOfFame.length === League.MAX_TEAMS && hf.hallOfFame[0].number === 12 && hf.hofCount === 61);
+  assert.strictEqual(JSON.parse(Player.serialize(Object.assign(Player.create("ASH"), { flags: hf }))).flags.hallOfFame.length, 50, "saved with the game");
+  // The champion's room: Gary, and Prof. Oak (hidden until he comes in).
+  const champ = W("PokemonLeague_ChampionsRoom");
+  assert(champ.people.some((p) => p.localId === "LOCALID_CHAMPIONS_ROOM_RIVAL" && p.x === 6 && p.y === 8));
+  assert(champ.people.some((p) => p.localId === "LOCALID_CHAMPIONS_ROOM_PROF_OAK" && p.flag === "FLAG_HIDE_OAK_IN_CHAMP_ROOM"));
+  assert(fs.existsSync(path.join(root, "assets/sprites/trainers/front/champion_rival.png")));
+  for (const f of ["the_end", "confetti", "rival", "pokeball_charizard", "pikachu_2"]) assert(fs.existsSync(path.join(root, "assets/credits", f + ".png")), f);
+  assert(W("PokemonLeague_HallOfFame").people.some((p) => p.localId === "LOCALID_HALL_OF_FAME_PROF_OAK"));
 }
 
 // Held items whose names end in "Ball" aren't Poké Balls.

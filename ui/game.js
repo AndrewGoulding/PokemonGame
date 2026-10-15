@@ -292,7 +292,7 @@
       expShare: expShareOn(),
       trainer: Player.LOOKS[player.look].back,
       foeTrainer: foe.pic, defeatText: opts.defeatText && opts.defeatText.map((p) => fill(p)),
-      victoryMusic: wild ? "mus_victory_wild" : leader ? "mus_victory_gym_leader" : "mus_victory_trainer",
+      victoryMusic: opts.victoryMusic || (wild ? "mus_victory_wild" : leader ? "mus_victory_gym_leader" : "mus_victory_trainer"),
       terrain: battleTerrain(opts),
       bag: player.bag,
       // (The Bag screen: its pockets, and the bag's colours.)
@@ -437,6 +437,9 @@
       await message("… … … …");
     }
     await say("{PLAYER} blacked out!");
+    // (DoWhiteOut runs EventScript_ResetEliteFourEnd: the League starts over
+    // from Lorelei.)
+    League.reset(player.flags);
     // (DoWhiteOut heals the party as you go.)
     player.party.forEach(Party.heal);
     const center = player.flags.lastCenter && Player.CENTERS[player.flags.lastCenter];
@@ -783,7 +786,7 @@
     let icons = "";
     for (let y = 0; y < T.height; y++) for (let x = 0; x < T.width; x++) {
       const sec = T.dungeon[y][x];
-      if (!sec || (sec === "CERULEAN_CAVE" && !player.flags.hallOfFame)) continue;
+      if (!sec || (sec === "CERULEAN_CAVE" && !player.flags.gameClear)) continue;
       const off = T.towns.includes(T.map[y][x]) ? 2 : 0;
       icons += '<div class="tm-dungeon' + (visited.includes(sec) ? " visited" : "") + '" style="left:' + pct(32 + 8 * x + off, 240) +
         ";top:" + pct(32 + 8 * y + off, 160) + '"></div>';
@@ -1088,7 +1091,7 @@
       await Screen.printed();
       clearMenu();
       const items = [f.billHelped ? "Bill's PC" : "Someone's PC", player.name + "'s PC"]
-        .concat(f.pokedex ? ["Prof. Oak's PC"] : [], ["Log off"]);
+        .concat(f.pokedex ? ["Prof. Oak's PC"] : [], f.gameClear ? ["Hall of Fame"] : [], ["Log off"]);
       const { index } = await pcMenu(items, { width: f.pokedex || player.name.length > 6 ? 14 : 13 });
       const v = index < 0 ? "Log off" : items[index];
       if (v === "Log off") { sfx("se_pc_off"); Screen.say(""); return; }
@@ -1100,6 +1103,11 @@
       } else if (index === 1) {
         await say("Accessed {PLAYER}'s PC.");
         await playersPc();
+      } else if (items[index] === "Hall of Fame") {
+        // (FireRed's PC: the Hall of Fame's records, the newest first.)
+        Screen.say("");
+        await HallOfFame.pc($("#overlay"), f.hallOfFame || [], { cry, sfx });
+        $("#overlay").classList.add("hidden");
       } else {
         await say(["Accessed Prof. Oak's PC…", "Accessed the Pokédex Rating\nSystem…"]);
         if (await confirm("Would you like to have your\nPokédex rated?")) {
@@ -1809,8 +1817,10 @@
       "Route22_EventScript_LateRivalTriggerTop", "Route22_EventScript_LateRivalTriggerMid", "Route22_EventScript_LateRivalTriggerBottom",
       "VictoryRoad_2F_EventScript_DoubleEdgeTutor", "enter:IndigoPlateau_PokemonCenter_1F",
       "IndigoPlateau_PokemonCenter_1F_EventScript_Nurse", "IndigoPlateau_PokemonCenter_1F_EventScript_Clerk",
-      "IndigoPlateau_PokemonCenter_1F_EventScript_DoorGuard"
-    ]).concat(ROUTE23_BADGES.slice(1).flatMap((b) => ["", "Trigger"].map((t) => "Route23_EventScript_" + b + "BadgeGuard" + t))).concat([1, 2, 3, 4, 5, 6].flatMap((n) => ["Left", "Right"].map((s) => "CinnabarIsland_Gym_EventScript_Quiz" + n + s))).concat(CYCLING_ROAD_GATES.flatMap((g) => ["Top", "MidTop", "Mid", "MidBottom", "Bottom"].map((k) => g + "_EventScript_NeedBikeTrigger" + k))));
+      "IndigoPlateau_PokemonCenter_1F_EventScript_DoorGuard",
+      "PokemonLeague_LoreleisRoom_EventScript_Lorelei", "PokemonLeague_BrunosRoom_EventScript_Bruno",
+      "PokemonLeague_AgathasRoom_EventScript_Agatha", "PokemonLeague_LancesRoom_EventScript_Lance"
+    ]).concat(League.ROOMS.map((r) => "enter:" + r.map), ["enter:" + League.HALL_OF_FAME]).concat(ROUTE23_BADGES.slice(1).flatMap((b) => ["", "Trigger"].map((t) => "Route23_EventScript_" + b + "BadgeGuard" + t))).concat([1, 2, 3, 4, 5, 6].flatMap((n) => ["Left", "Right"].map((s) => "CinnabarIsland_Gym_EventScript_Quiz" + n + s))).concat(CYCLING_ROAD_GATES.flatMap((g) => ["Top", "MidTop", "Mid", "MidBottom", "Bottom"].map((k) => g + "_EventScript_NeedBikeTrigger" + k))));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
   // Item balls on the map: picked up once, then gone.
@@ -1937,8 +1947,14 @@
       case "FLAG_HIDE_VICTORY_ROAD_2F_BOULDER": return LeagueRoad.dropped(f);
       // (Only for the credits, once you're Champion.)
       case "FLAG_HIDE_CREDITS_RIVAL": case "FLAG_HIDE_CREDITS_OAK": return false;
+      // Prof. Oak, until he comes into the Champion's room after the battle.
+      case "FLAG_HIDE_OAK_IN_CHAMP_ROOM": return false;
       // Bill waits on Cinnabar after the Volcano Badge to take you to the Sevii
       // Islands, which aren't built: he and the Seagallop stay away.
+      // (For the Sevii Islands: FireRed's VAR_MAP_SCENE_CINNABAR_ISLAND is set
+      // by beating Blaine; once you're Champion player.flags.gameClear is set
+      // (FLAG_SYS_GAME_CLEAR), and FLAG_SYS_CAN_LINK_WITH_RS, set at the end of
+      // their story, is player.flags.canLinkWithRS: the League's rematch teams.)
       case "FLAG_HIDE_CINNABAR_BILL": case "FLAG_HIDE_CINNABAR_SEAGALLOP": case "FLAG_HIDE_CINNABAR_POKECENTER_BILL": return false;
       // After you choose, your rival stands below the Poké Ball he took.
       // Leaf (the lab rival's other look) until she leaves after your battle;
@@ -1990,6 +2006,8 @@
     if (script === "FuchsiaCity_Gym_EventScript_Koga") { await koga(ev.person); return; }
     if (script === "CinnabarIsland_Gym_EventScript_Blaine") { await blaine(ev.person); return; }
     if (script === "ViridianCity_Gym_EventScript_Giovanni") { await giovanniGym(ev.person); return; }
+    if (ELITE_FOUR_SCRIPTS.includes(script)) { await eliteFour(ELITE_FOUR_SCRIPTS.indexOf(script)); return; }
+    if (/^enter:PokemonLeague_/.test(script)) { await leagueEnter(script.slice(6)); return; }
     { const g = /^Route23_EventScript_(\w+)BadgeGuard(Trigger)?$/.exec(script); if (g) { await badgeGuard(ROUTE23_BADGES.indexOf(g[1]) + 1, !!g[2], "LOCALID_" + g[1].toUpperCase() + "_BADGE_GUARD"); return; } }
     { const q = /^CinnabarIsland_Gym_EventScript_Quiz(\d)(Left|Right)$/.exec(script); if (q) { await cinnabarQuiz(+q[1], q[2]); return; } }
     if (FUCHSIA_SIGN_MONS[script]) { await monSign(FUCHSIA_SIGN_MONS[script], ev.sign.text); return; }
@@ -2085,6 +2103,13 @@
             "If you want a Pokémon of your own,\ngo see Prof. Oak."]);
           f.metRedsMom = true;
           return;
+        }
+        // (This game's own: home as the new Champion, she's heard. FireRed's
+        // Mom has nothing new to say after the Hall of Fame.)
+        if (f.gameClear && !f.momHeardChampion) {
+          f.momHeardChampion = true;
+          await say(["Red's Mom: {PLAYER}! Welcome home!\nI saw it on TV!",
+            "You're the new Pokémon League\nChampion! I'm so proud of you!"]);
         }
         await say("Red's Mom: Oh, {PLAYER}! You look worn out.\nYou and your Pokémon should take a\nquick rest.");
         await outOfCenterHeal();
@@ -5872,6 +5897,209 @@
     sfx("se_ice_break");
   }
 
+
+  // ---------- The Pokémon League ----------
+  //
+  // FireRed's PokemonLeague_* scripts (the rules are in game/pokemon-league.js).
+  // Through the Indigo Plateau's back door: walking into each Elite Four
+  // room, you walk up to its trainer and the way in shuts behind you (SE_UNLOCK);
+  // there's no way out but on, through the door that opens once they're beaten,
+  // or blacking out, back to the Indigo Plateau's Pokémon Center, and the League
+  // starts over from Lorelei. Lance's room has its long corridor. Then Gary,
+  // the Champion; Prof. Oak; the Hall of Fame, its record, and the credits;
+  // and you're home in Pallet Town.
+  const ELITE_FOUR_SCRIPTS = ["PokemonLeague_LoreleisRoom_EventScript_Lorelei", "PokemonLeague_BrunosRoom_EventScript_Bruno",
+    "PokemonLeague_AgathasRoom_EventScript_Agatha", "PokemonLeague_LancesRoom_EventScript_Lance"];
+  const LEAGUE_TEXT = ["PokemonLeague_LoreleisRoom_Text_", "PokemonLeague_BrunosRoom_Text_", "PokemonLeague_AgathasRoom_Text_", "PokemonLeague_LancesRoom_Text_"];
+  const LEAGUE_IDS = [null, "LOCALID_BRUNO", "#0", "LOCALID_LANCE"];
+
+  // Walking in (each room's OnFrame, while it's that room's turn).
+  async function leagueEnter(map) {
+    const f = player.flags, k = League.room(map);
+    if (map === League.HALL_OF_FAME) { await hallOfFame(); return; }
+    if (k === 4) { await championsRoom(); return; }
+    if (!League.entryDue(f, map)) return;
+    // (PokemonLeague_EventScript_EnterRoom; Lance's walk through his corridor.)
+    await Overworld.act([{ who: "player", moves: M(k === 3 ? "PokemonLeague_LancesRoom_Movement_WalkThroughCorridor" : "Common_Movement_WalkUp5") }]);
+    League.enter(f, map);
+    sfx("se_unlock");
+    applyPatches(map);
+    await persist();
+  }
+
+  // An Elite Four member (PokemonLeague_<name>sRoom_EventScript_<name>):
+  // FireRed's team (the rematch team, _2, once FLAG_SYS_CAN_LINK_WITH_RS is
+  // set), to the Gym Leader battle music; beaten, the door behind them opens.
+  // Bruno and Agatha look away when they've had their say. (Lorelei's
+  // rematch words go by FLAG_SYS_CAN_LINK_WITH_RS, the others' by
+  // FLAG_SYS_GAME_CLEAR, as in FireRed.)
+  async function eliteFour(k) {
+    const f = player.flags, X = (label) => T(LEAGUE_TEXT[k] + label);
+    const lookAway = async () => {
+      if (k !== 1 && k !== 2) return;
+      Screen.say("");
+      const facing = Overworld.position().facing;
+      const way = facing === "up" ? "Right" : facing === "down" ? "Left" : "Down";
+      await Overworld.act([{ who: LEAGUE_IDS[k], moves: M("Common_Movement_WalkInPlaceFaster" + way) }]);
+    };
+    if (League.beaten(f, k)) { await say(X("PostBattle")); await lookAway(); return; }
+    const intro = X((k === 0 ? f.canLinkWithRS : f.gameClear) ? "RematchIntro" : "Intro");
+    await say(intro.slice(0, -1));
+    music("mus_encounter_gym_leader");
+    await say(intro.slice(-1));
+    if (!canBattle()) return;
+    const id = League.trainerId(f, k), data = window.WORLD_TRAINERS[id];
+    const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(id), pic: data.pic },
+      defeatText: X("Defeat"), trainerId: id, prizeClass: "Elite Four",
+      music: "mus_vs_gym_leader", victoryMusic: "mus_victory_trainer" });
+    if (outcome !== "won") return;
+    show("world");
+    await Overworld.resume();
+    // (PokemonLeague_EventScript_OpenDoor: a pause, SE_RS_DOOR, and it's open.)
+    League.beat(f, k);
+    await sleep(533);
+    sfx("se_rs_door");
+    applyPatches(player.location.map);
+    await persist();
+    await say(X("PostBattle"));
+    await lookAway();
+  }
+
+  // Gary, the Champion (PokemonLeague_ChampionsRoom_EventScript_EnterRoom):
+  // this game's team for him, as on Silph Co. and Route 22, at FireRed's
+  // Champion levels: Pidgeot (59), Arcanine (59: his Growlithe's evolved),
+  // Gyarados (59, in Rhydon's place), Exeggutor (61), Umbreon (63: his Eevee,
+  // as FireRed's starter, holding its Sitrus Berry) and Alakazam (57, holding
+  // its Alakazite: it Mega Evolves). With FLAG_SYS_CAN_LINK_WITH_RS, FireRed's
+  // rematch levels (72-75). FireRed's moves for the Pokémon FireRed gives him.
+  const CHAMPION_TEAM = [["Pidgeot", 59, 72], ["Arcanine", 59, 73], ["Gyarados", 59, 72], ["Exeggutor", 61, 73], ["Umbreon", 63, 75, "sitrus-berry"], ["Alakazam", 57, 73, "alakazite"]];
+  function championTeam(rematch) {
+    const fr = window.WORLD_TRAINERS[rematch ? "TRAINER_CHAMPION_REMATCH_SQUIRTLE" : "TRAINER_CHAMPION_FIRST_SQUIRTLE"];
+    const frg = window.WORLD_TRAINERS[rematch ? "TRAINER_CHAMPION_REMATCH_BULBASAUR" : "TRAINER_CHAMPION_FIRST_BULBASAUR"];
+    const movesOf = (sp) => { const m = fr.party.concat(frg.party).find((x) => x.species === sp); return m && m.moves; };
+    return CHAMPION_TEAM.map(([sp, lv, lv2, item]) => Object.assign(Party.create(sp, rematch ? lv2 : lv, { ivs: 31, moves: movesOf(sp) }), item ? { item } : {}));
+  }
+  async function championsRoom() {
+    const f = player.flags, R = "LOCALID_CHAMPIONS_ROOM_RIVAL", O = "LOCALID_CHAMPIONS_ROOM_PROF_OAK";
+    if (!League.entryDue(f, player.location.map)) return;
+    await Overworld.act([{ who: "player", moves: M("PokemonLeague_ChampionsRoom_Movement_PlayerEnter") }]);
+    await sleep(333);
+    await say(T(f.gameClear ? "PokemonLeague_ChampionsRoom_Text_RematchIntro" : "PokemonLeague_ChampionsRoom_Text_Intro"));
+    if (!canBattle()) return;
+    const rematch = !!f.canLinkWithRS, team = championTeam(rematch);
+    const outcome = await battle("trainer", { foe: { name: "Champion " + player.rival, team, pic: "champion_rival" },
+      defeatText: T("PokemonLeague_ChampionsRoom_Text_Defeat"),
+      trainerId: rematch ? "TRAINER_CHAMPION_REMATCH_SQUIRTLE" : "TRAINER_CHAMPION_FIRST_SQUIRTLE",
+      prize: 100 * Math.max(...team.map((r) => r.level)),   // (TRAINER_CLASS_CHAMPION: 25, x4)
+      music: "mus_vs_champion", victoryMusic: "mus_victory_gym_leader", terrain: "champion" });
+    if (outcome !== "won") return;
+    League.beat(f, 4);
+    show("world");
+    await Overworld.resume();
+    await say(T("PokemonLeague_ChampionsRoom_Text_PostBattle"));
+    // Prof. Oak comes in.
+    music("mus_slow_pallet");
+    Overworld.addObject(O, { x: 6, y: 15, facing: "up" });
+    await say(T("PokemonLeague_ChampionsRoom_Text_OakPlayer"));
+    Screen.say("");
+    await Overworld.act([{ who: "player", moves: M("PokemonLeague_ChampionsRoom_Movement_PlayerWatchOakEnter") },
+      { who: R, moves: M("PokemonLeague_ChampionsRoom_Movement_RivalWatchOakEnter") },
+      { who: O, moves: M("PokemonLeague_ChampionsRoom_Movement_OakEnter") }]);
+    await sleep(417);
+    await say(T("PokemonLeague_ChampionsRoom_Text_OakCongratulations"), [Party.speciesName(f.starter || player.party[0].species)]);
+    await Overworld.act([{ who: O, moves: M("Common_Movement_WalkInPlaceFasterRight") }, { who: R, moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
+    await say(T("PokemonLeague_ChampionsRoom_Text_OakImDisappointedRival"));
+    Screen.say("");
+    await Overworld.act([{ who: O, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+    await sleep(333);
+    await say(T("PokemonLeague_ChampionsRoom_Text_OakPlayerComeWithMe"));
+    Screen.say("");
+    await sleep(217);
+    // Oak, then you, up the stairs and into the Hall of Fame.
+    await Overworld.act([{ who: O, moves: M("PokemonLeague_ChampionsRoom_Movement_OakExit") },
+      { who: "player", moves: M("PokemonLeague_ChampionsRoom_Movement_PlayerExit") }]);
+    await Overworld.teleport({ map: League.HALL_OF_FAME, x: 5, y: 12, facing: "up" });
+    await hallOfFame();
+  }
+
+  // The Hall of Fame (PokemonLeague_HallOfFame_EventScript_EnterRoom): you
+  // walk up beside Prof. Oak; his words; the record machine flashes
+  // (FLDEFF_HALL_OF_FAME_RECORD); then EventScript_SetDefeatedEliteFourFlagsVars
+  // (the League starts over), setrespawn at home, and EnterHallOfFame: the
+  // party healed, FLAG_SYS_GAME_CLEAR, your team on record, saved, and
+  // FireRed's Hall of Fame screen; the credits; and you're home.
+  async function hallOfFame() {
+    const f = player.flags, O = "LOCALID_HALL_OF_FAME_PROF_OAK";
+    await Overworld.act([{ who: "player", moves: M("PokemonLeague_HallOfFame_Movement_EnterRoom") }]);
+    await Overworld.act([{ who: O, moves: M("Common_Movement_WalkInPlaceFasterLeft") }, { who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
+    await sleep(300);
+    await say(T("PokemonLeague_HallOfFame_Text_OakCongratulations"));
+    Screen.say("");
+    await Overworld.act([{ who: O, moves: M("Common_Movement_WalkInPlaceFasterUp") }, { who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
+    await sleep(333);
+    await HallOfFame.recordFlash($("#overlay"));
+    await sleep(667);
+    League.reset(f);
+    delete f.lastCenter;   // (setrespawn HEAL_LOCATION_PALLET_TOWN)
+    player.party.forEach(Party.heal);
+    const entry = League.record(f, player.party.map((r) => Object.assign({}, r, { form: Party.form(r) })),
+      { name: player.name, id: player.trainerId, playTimeMs: player.playTimeMs });
+    // Where you'll be after the credits (FireRed's continue warp, at home).
+    player.location = Object.assign({}, Player.HOME);
+    music(null);
+    await Overworld.fadeToBlack();
+    // (Whatever goes wrong drawing it, you're Champion and the game goes on.)
+    await HallOfFame.show($("#overlay"), entry, {
+      cry, sfx, music, player: { name: player.name, id: player.trainerId, playTimeMs: player.playTimeMs, pic: Player.LOOKS[player.look].front },
+      save: async () => { await persist(); }
+    }).catch((e) => { console.error(e); return persist(); });
+    await creditsRoll();
+  }
+
+  // The credits (FireRed's IndigoPlateau_Exterior_EventScript_Credits, then
+  // DoCredits): out in front of the Indigo Plateau, Gary comes out and runs
+  // off, Prof. Oak comes out, looks at you and walks off, and you run off
+  // too; then the credits roll over Kanto, with Charizard, Venusaur,
+  // Blastoise and Pikachu, to THE END. (The first time all the way; after
+  // that, Start skips them.) Then you're at home in Pallet Town.
+  async function creditsRoll() {
+    const f = player.flags, R = "LOCALID_CREDITS_RIVAL", O = "LOCALID_CREDITS_PROF_OAK";
+    const run = (moves) => moves.map((m) => m.replace(/^player_run_/, "walk_fast_"));
+    $("#overlay").classList.add("hidden");
+    show("world");
+    await Overworld.teleport({ map: "IndigoPlateau_Exterior", x: 11, y: 7, facing: "down" });
+    music("mus_credits");
+    await sleep(1750);
+    Overworld.addObject(R, { x: 11, y: 6, facing: "down" });
+    await Overworld.act([{ who: R, moves: M("IndigoPlateau_Exterior_Movement_RivalExitBuilding") },
+      { who: "player", moves: M("IndigoPlateau_Exterior_Movement_PushPlayerOutOfWay") }]);
+    await Overworld.act([{ who: "player", moves: M("IndigoPlateau_Exterior_Movement_PlayerWatchRivalLeave") },
+      { who: R, moves: M("IndigoPlateau_Exterior_Movement_RivalLeave") }]);
+    Overworld.removeObject(R);
+    await sleep(1667);
+    Overworld.addObject(O, { x: 11, y: 6, facing: "down" });
+    await Overworld.act([{ who: O, moves: M("IndigoPlateau_Exterior_Movement_OakExitBuilding") }]);
+    await sleep(2667);
+    await Overworld.act([{ who: "player", moves: M("IndigoPlateau_Exterior_Movement_PlayerWatchOakLeave") },
+      { who: O, moves: M("IndigoPlateau_Exterior_Movement_OakLeave") }]);
+    Overworld.removeObject(O);
+    await sleep(1667);
+    await Overworld.act([{ who: "player", moves: M("IndigoPlateau_Exterior_Movement_PlayerBeginLeave") }]);
+    await sleep(2583);
+    await Overworld.act([{ who: "player", moves: M("IndigoPlateau_Exterior_Movement_PlayerFaceLeague") }]);
+    await sleep(1500);
+    await Overworld.act([{ who: "player", moves: M("IndigoPlateau_Exterior_Movement_PlayerTurnAround") }]);
+    await Overworld.act([{ who: "player", moves: run(M("IndigoPlateau_Exterior_Movement_PlayerLeave")) }]);
+    await Overworld.fadeToBlack();
+    await HallOfFame.credits($("#overlay"), { skippable: !!f.seenCredits, cry, music, rival: player.rival,
+      player: { look: player.look, name: player.name } }).catch((e) => console.error(e));
+    f.seenCredits = true;
+    $("#overlay").classList.add("hidden");
+    await Overworld.teleport(Object.assign({}, Player.HOME));
+    music((window.WORLD_MAPS[Player.HOME.map] || {}).music);
+    await persist();
+  }
+
   // ---------- Cinnabar Island ----------
 
   // Blaine: battle (talking to him), then the Volcano Badge and TM38 Fire
@@ -6145,6 +6373,9 @@
     if (map === "RocketHideout_B4F" && !(f.TRAINER_TEAM_ROCKET_GRUNT_16 && f.TRAINER_TEAM_ROCKET_GRUNT_17)) return ["barrier"];
     // The Seafoam Islands' currents (game/seafoam.js).
     if (/^SeafoamIslands_B[34]F$/.test(map)) return Seafoam.patches(f, map);
+    // The Pokémon League's doors: the way in shut behind you, the way on open
+    // once that room's trainer's beaten.
+    if (/^PokemonLeague_/.test(map)) return League.patches(f, map);
     // Victory Road's rock barriers, until their floor switches are pressed.
     if (/^VictoryRoad_\dF$/.test(map)) return LeagueRoad.barriers(f, map, Object.keys((window.WORLD_MAPS[map] || {}).patches || {}));
     // The Pokémon Mansion's doors, by its switch.
@@ -6358,6 +6589,9 @@
     if (/^Route22_EventScript_LateRivalTrigger/.test(script)) return route22LateRivalDue();
     if (script === "Route22_NorthEntrance_EventScript_BoulderBadgeGuardTrigger") return LeagueRoad.guardStops(player.flags, 1);
     { const g = /^Route23_EventScript_(\w+)BadgeGuardTrigger$/.exec(script); if (g) return LeagueRoad.guardStops(player.flags, ROUTE23_BADGES.indexOf(g[1]) + 1); }
+    // The Pokémon League's rooms: their entry scenes, while it's their turn;
+    // the Hall of Fame's, always.
+    if (/^enter:PokemonLeague_/.test(script)) { const m = script.slice(6); return m === League.HALL_OF_FAME || League.entryDue(player.flags, m); }
     // Walking into the Indigo Plateau's Pokémon Center makes it where you go
     // after blacking out (FireRed's setrespawn there).
     if (script === "enter:IndigoPlateau_PokemonCenter_1F") { player.flags.lastCenter = "IndigoPlateau_PokemonCenter_1F"; return false; }

@@ -73,7 +73,13 @@ const TITLES = {
   CeruleanCity_House4: "Cerulean City · House",
   CeruleanCity_House5: "Cerulean City · Berry house",
   Route24: "Route 24 · Nugget Bridge",
-  Route25_SeaCottage: "Route 25 · Sea Cottage"
+  Route25_SeaCottage: "Route 25 · Sea Cottage",
+  PokemonLeague_LoreleisRoom: "Pokémon League · Lorelei's room",
+  PokemonLeague_BrunosRoom: "Pokémon League · Bruno's room",
+  PokemonLeague_AgathasRoom: "Pokémon League · Agatha's room",
+  PokemonLeague_LancesRoom: "Pokémon League · Lance's room",
+  PokemonLeague_ChampionsRoom: "Pokémon League · Champion's room",
+  PokemonLeague_HallOfFame: "Pokémon League · Hall of Fame"
 };
 
 const MAPS = [
@@ -141,7 +147,9 @@ const MAPS = [
   "PokemonMansion_1F", "PokemonMansion_2F", "PokemonMansion_3F", "PokemonMansion_B1F",
   "Route21_North", "Route21_South",
   "PowerPlant", "ViridianCity_Gym", "Route23", "VictoryRoad_1F", "VictoryRoad_2F", "VictoryRoad_3F",
-  "IndigoPlateau_Exterior", "IndigoPlateau_PokemonCenter_1F", "IndigoPlateau_PokemonCenter_2F"
+  "IndigoPlateau_Exterior", "IndigoPlateau_PokemonCenter_1F", "IndigoPlateau_PokemonCenter_2F",
+  "PokemonLeague_LoreleisRoom", "PokemonLeague_BrunosRoom", "PokemonLeague_AgathasRoom", "PokemonLeague_LancesRoom",
+  "PokemonLeague_ChampionsRoom", "PokemonLeague_HallOfFame"
 ];
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
@@ -731,6 +739,17 @@ for (const floor of ["1F", "2F", "3F"]) {
     return l && ["VictoryRoad_" + floor, "barrier" + l[1]];
   });
 }
+// The Pokémon League's doors (data/scripts/pokemon_league.inc): each Elite
+// Four room's way in shut behind you ("closed": PokemonLeague_EventScript_CloseEntry,
+// Lance's own SetEntryClosed) and its door ahead open once its trainer's
+// beaten ("door": SetDoorOpen, Lance's SetDoorOpenLance).
+for (const room of ["Loreleis", "Brunos", "Agathas"]) {
+  scriptPatches("data/scripts/pokemon_league.inc", (label) =>
+    label === "PokemonLeague_EventScript_CloseEntry" ? ["PokemonLeague_" + room + "Room", "closed"]
+      : label === "PokemonLeague_EventScript_SetDoorOpen" && ["PokemonLeague_" + room + "Room", "door"]);
+}
+scriptPatches("data/scripts/pokemon_league.inc", (label) => label === "PokemonLeague_EventScript_SetDoorOpenLance" && ["PokemonLeague_LancesRoom", "door"]);
+scriptPatches("data/maps/PokemonLeague_LancesRoom/scripts.inc", (label) => label === "PokemonLeague_LancesRoom_EventScript_SetEntryClosed" && ["PokemonLeague_LancesRoom", "closed"]);
 // Seafoam Islands B4F: calm water by the stairs once both boulders are down
 // there (SeafoamIslands_B4F_EventScript_SetCalmWaterNearStairs).
 scriptPatches("data/maps/SeafoamIslands_B4F/scripts.inc", (label) => label === "SeafoamIslands_B4F_EventScript_SetCalmWaterNearStairs" && ["SeafoamIslands_B4F", "calm"]);

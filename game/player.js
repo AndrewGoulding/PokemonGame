@@ -59,7 +59,7 @@
     "Beauty": 72, "Cooltrainer": 36, "Boss": 100, "Black Belt": 24, "Juggler": 40, "Scientist": 48,
     "Bird Keeper": 24, "Rocker": 24, "Tamer": 40, "Young Couple": 28, "Crush Kin": 24, "Cue Ball": 24,
     "Swimmer♀": 4, "Sis And Bro": 4, "Burglar": 88,
-    "Cool Couple": 24
+    "Cool Couple": 24, "Elite Four": 100, "Champion": 100
   };
   // Money lost on blacking out: highest party level x this, by badge count (Gen 6).
   const BLACKOUT_BASE = [8, 16, 24, 36, 48, 64, 80, 100, 120];

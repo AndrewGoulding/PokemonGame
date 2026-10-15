@@ -40,7 +40,8 @@ sells to you and the old man lying across the road north gets up and shows you
 how to catch Pokémon. The Pokémon Center's nurse heals your party (and is where
 you return if you black out), and its PC is FireRed's: "Which PC should be
 accessed?" (Someone's PC, which becomes Bill's PC once you've helped him; your
-own; Prof. Oak's PC once you have a Pokédex). Bill's PC is the Pokémon Storage
+own; Prof. Oak's PC once you have a Pokédex; the Hall of Fame once you're
+Champion: each team on record, newest first, as FireRed's PC shows it). Bill's PC is the Pokémon Storage
 System: 14 boxes of 30 (BOX1-BOX14, each with a name and one of FireRed's 16
 wallpapers), Withdraw, Deposit, Move Pokémon (pick a Pokémon up with the hand
 and put it down anywhere, in a box or your party) and Move items (take, give and
@@ -360,8 +361,36 @@ where they were when you leave a floor, the barriers stay down until you pass
 through Route 23 again, and 3F's boulder drops through a hole to 2F
 (`game/league-road.js`). Out the far side and up Route 23 is the Indigo
 Plateau: its Pokémon Center (a respawn point and Fly spot, its Mart, the
-nurse); the guard at the Elite Four's door wishes you luck, but the Pokémon
-League beyond isn't built yet, nor is Cerulean Cave. Tiles, palettes and metatiles come from
+nurse); the guard at the Elite Four's door wishes you luck, and through it
+is the **Pokémon League** (FireRed's rooms and scripts, `game/pokemon-league.js`):
+walk into Lorelei's room and you're walked up to her as the way in shuts
+behind you; there's no way out but on, through the door at the back that opens
+(FireRed's sound and tiles) once she's beaten, then Bruno's room, Agatha's and
+Lance's (through his long corridor), each with FireRed's team, words, room
+music and battle background, to the Gym Leader battle music. Black out to any of
+them and you're back at the Indigo Plateau's Pokémon Center, and the run starts
+over from Lorelei (FireRed's EventScript_ResetEliteFour). Then Gary, the
+Champion, to the Champion's music: his team as on Silph Co. and Route 22, at
+FireRed's Champion levels: Pidgeot (59), Arcanine (59: his Growlithe's evolved),
+Gyarados (59), Exeggutor (61), Umbreon (63, his ace, with a Sitrus Berry) and
+Alakazam (57), which Mega Evolves with its Alakazite. Beaten, Prof. Oak comes
+in, congratulates you, tells Gary why he lost and takes you up to the Hall of
+Fame; his words there, the record machine, and FireRed's Hall of Fame screen:
+your team saved on record ("SAVING… DON'T TURN OFF THE POWER."), each Pokémon
+in turn with its cry, number, name, level and ID No., "Welcome to the HALL OF
+FAME!" with applause and confetti, then you, your name, ID No. and time, and
+"LEAGUE CHAMPION! CONGRATULATIONS!". Then the credits: out in front of the
+Indigo Plateau Gary runs off, Prof. Oak looks at you and walks off, you run
+off too, and FireRed's credits roll over Kanto's towns and routes (FireRed's
+staff, timings and scenes, with Charizard, Venusaur, Blastoise and Pikachu, to
+THE END; after the first time, Start or B skips them). You wake up at home in
+Pallet Town, Champion (FireRed's FLAG_SYS_GAME_CLEAR; blacking out takes you
+home again until you use another Pokémon Center), and Red's Mom has heard the
+news. The League can be challenged again (Gary's and the others' rematch words
+once you're Champion; FireRed's rematch teams, Lorelei's to Lance's from its
+data and Gary's at its levels, once the Sevii Islands' story sets
+FLAG_SYS_CAN_LINK_WITH_RS, which they'll do once they're built). Cerulean
+Cave isn't built yet. Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into
@@ -497,6 +526,15 @@ bag and arrow sprites in `graphics/interface/`) into `assets/bag/`, and
 cd pokefirered && git sparse-checkout add graphics/item_menu/ /src/data/items.json && cd ..
 node tools/build-bag.js pokefirered
 node tools/build-item-descriptions.js pokefirered
+```
+
+`tools/build-credits.js` converts the Hall of Fame's confetti and the credits'
+pictures (`graphics/credits/`: the Poké Balls and Pokémon, Gary running, THE
+END) into `assets/credits/`:
+
+```sh
+cd pokefirered && git sparse-checkout add graphics/credits/ graphics/misc/ && cd ..
+node tools/build-credits.js pokefirered
 ```
 
 `tools/build-evolution.js` converts FireRed's evolution scene
