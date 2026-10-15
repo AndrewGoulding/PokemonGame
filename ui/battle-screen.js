@@ -984,6 +984,9 @@
   // Bag in battle: balls (wild battles only) and anything usable in battle.
   // Returns a choice, or null to go back. The item leaves the bag once the
   // engine accepts the choice (see loop()).
+  // BAG: FireRed's Bag screen (ui/bag-screen.js, cfg.bagPockets). Use is
+  // there for what can be used right now; the pocket is remembered.
+  let battlePocket = null;
   async function chooseBag() {
     const bag = config.bag || {};
     const usableHere = (id) => {
@@ -993,13 +996,28 @@
       return !!eff && !eff.outOfBattle;
     };
     for (;;) {
-      const items = Object.keys(bag).filter(usableHere);
-      if (!items.length) {
-        await message("There's nothing in your bag you can use right now.");
-        return null;
+      let item;
+      if (config.bagPockets && window.BagScreen) {
+        say("");
+        clearMenu();
+        const r = await window.BagScreen.open({
+          pockets: config.bagPockets, pocketName: battlePocket || "Items", female: !!config.bagFemale,
+          frame: window.GameOptions ? window.GameOptions.get().frame : 0,
+          actions: (it) => (usableHere(it.id) ? [{ label: "Use", value: "use" }] : [])
+        });
+        window.BagScreen.close();
+        if (!r) return null;
+        battlePocket = r.pocket;
+        item = r.id;
+      } else {
+        const items = Object.keys(bag).filter(usableHere);
+        if (!items.length) {
+          await message("There's nothing in your bag you can use right now.");
+          return null;
+        }
+        item = await ask("Which item will you use?", items.map((id) => itemOption(id, bag[id])).concat([back]));
+        if (item == null) return null;
       }
-      const item = await ask("Which item will you use?", items.map((id) => itemOption(id, bag[id])).concat([back]));
-      if (item == null) return null;
       if (window.Bag.isBall(item)) return { type: "ball", ball: item };
 
       // Which Pokémon: FireRed's party screen ("Use on which POKéMON?").

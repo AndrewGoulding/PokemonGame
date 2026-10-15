@@ -633,7 +633,8 @@
   async function step(k) {
     const c = st.cursor, mode = st.mode;
     const go = (to) => { se("se_select"); return moveHand(to); };
-    if (k === "b") return (await leave(false)) ? "exit" : null;
+    // (B in the party panel puts it away, except in DEPOSIT, where it stays.)
+    if (k === "b" && !(c.area === "party" && mode !== "deposit")) return (await leave(false)) ? "exit" : null;
     if (c.area === "box") {
       const row = Math.floor(c.pos / 6), col = c.pos % 6;
       if (k === "up") return go(row ? { area: "box", pos: c.pos - 6 } : { area: "title", pos: 0 });
@@ -668,7 +669,7 @@
         await moveHand({ area: "box", pos: st.boxPos || 0 });
         await showParty(false);
       };
-      if (k === "right") return hide();
+      if (k === "right" || k === "b") { if (k === "b") se("se_select"); return hide(); }
       if (k === "a" && c.pos === 6) return mode === "deposit" ? ((await leave(true)) ? "exit" : null) : hide();
       if (k === "a") return onMon();
     }

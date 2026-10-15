@@ -284,6 +284,8 @@
       victoryMusic: wild ? "mus_victory_wild" : leader ? "mus_victory_gym_leader" : "mus_victory_trainer",
       terrain: battleTerrain(opts),
       bag: player.bag,
+      // (The Bag screen: its pockets, and the bag's colours.)
+      bagPockets, bagFemale: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
       catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s) },
       opponent: wild ? randomMove : (b) => OpponentAI.choose(b, "p2"),
       // A new move with four known: the Summary screen picks the one to forget
