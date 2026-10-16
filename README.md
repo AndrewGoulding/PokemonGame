@@ -133,7 +133,8 @@ Search: A to Z mode (the ones seen), Type, Lightest and Smallest mode (the
 ones caught);
 this game's Area mode: Kanto, under the Pokémon list: every place with wild Pokémon (FireRed's and LeafGreen's alike; ----- until you've been
 there) with how many of its Pokémon you've caught and a gold crown once you've
-caught them all, and A on one lists them FireRed-style; each entry's category,
+caught them all, and A on one lists them FireRed-style under the titles Grass
+(and caves), Fishing and Surfing; each entry's category,
 height and weight in feet and pounds, footprint, picture and description, with
 Up / Down to the next one and Start for its cry; and the Area / Size page:
 where it lives on the map of Kanto and how big it is next to you. Catching a

@@ -1640,8 +1640,9 @@
     return PokedexScreen.open(dexOptions());
   }
   // AREA MODE's places: each map section with wild Pokémon, in the order the
-  // maps come in (the order you reach them), with the species found there and
-  // whether you've been.
+  // maps come in (the order you reach them), with the species found there
+  // (in the grass or cave, with a rod, and surfing) and whether you've been.
+  const AREA_KINDS = [["Grass", "wild"], ["Fishing", "fishing"], ["Surfing", "water"]];
   function dexAreaList() {
     const secs = (window.TOWN_MAP || {}).mapSections || {}, names = (window.TOWN_MAP || {}).names || {};
     const visited = player.flags.visitedSections || [], bySec = new Map();
@@ -1653,11 +1654,14 @@
     };
     for (const [name, m] of Object.entries(window.WORLD_MAPS)) {
       const sec = secs[name];
-      if (!sec || !m.wild) continue;
-      if (!bySec.has(sec)) bySec.set(sec, new Set());
-      walk(m.wild, bySec.get(sec));
+      if (!sec || !AREA_KINDS.some(([, k]) => m[k])) continue;
+      if (!bySec.has(sec)) bySec.set(sec, AREA_KINDS.map(() => new Set()));
+      AREA_KINDS.forEach(([, k], i) => walk(m[k], bySec.get(sec)[i]));
     }
-    return [...bySec].map(([sec, species]) => ({ name: names[sec] || sec, visited: visited.includes(sec), species: [...species] }));
+    return [...bySec].map(([sec, sets]) => ({
+      name: names[sec] || sec, visited: visited.includes(sec),
+      groups: AREA_KINDS.map(([title], i) => ({ title, species: [...sets[i]] })).filter((gr) => gr.species.length)
+    }));
   }
   // Where a species can be found: the map sections of the maps whose wild
   // Pokémon (grass, water, fishing, rocks) include it.

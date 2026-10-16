@@ -25,7 +25,8 @@
 //   await PokedexScreen.open({
 //     entries,     // [{ id, species, seen, caught }] in National Dex order
 //     areas,       // (species) => [MAPSEC, ...] where it can be found
-//     areaList,    // [{ name, visited, species: [...] }] the places with wild Pokémon, in order
+//     areaList,    // [{ name, visited, groups: [{ title, species: [...] }] }] the places
+//                  //   with wild Pokémon, in order: Grass, Fishing, Surfing
 //     trainer,     // your front picture's URL (the size comparison)
 //     cry,         // (species) => void
 //     national,    // the National Pokédex (IsNationalPokedexEnabled): always, once you have one
@@ -251,6 +252,8 @@
       const e = L.rows[L.top + r];
       if (!e) continue;
       const y = 18 + 14 * r;
+      // (Area mode's titles: Grass, Fishing, Surfing, as the menu's headings.)
+      if (e.head) { s.text(e.head, 8, y, ORANGE, RED); continue; }
       s.text("{NO}", 28, y + 2, BLACK, BEIGE, "small");
       s.text(pad3(e.id), 37, y + 2, BLACK, BEIGE, "small");
       s.text(e.seen ? nameOf(e.species) : "-----", 72, y, BLACK, BEIGE);
@@ -269,15 +272,24 @@
 
   // ---------- Area mode (this game's) ----------
 
-  // The places with wild Pokémon: { name, visited, rows (dex entries), caught, complete }.
+  // The places with wild Pokémon: { name, visited, rows, caught, total,
+  // complete }. Rows are dex entries under a { head } for each way of
+  // finding them (Grass, Fishing, Surfing); caught and total count each
+  // species once.
   function areaRows() {
     if (st.areaRows) return st.areaRows;
     const byName = {};
     for (const e of st.entries) byName[e.species] = e;
     return (st.areaRows = (st.opts.areaList || []).map((a) => {
-      const rows = [...new Set(a.species)].map((sp) => byName[sp]).filter(Boolean).sort((x, y) => x.id - y.id);
-      const caught = rows.filter((e) => e.caught).length;
-      return { name: a.name, visited: !!a.visited, rows, caught, complete: rows.length > 0 && caught === rows.length };
+      const rows = [], all = new Set();
+      for (const gr of a.groups || []) {
+        const mons = [...new Set(gr.species)].map((sp) => byName[sp]).filter(Boolean).sort((x, y) => x.id - y.id);
+        if (!mons.length) continue;
+        rows.push({ head: gr.title }, ...mons);
+        mons.forEach((e) => all.add(e));
+      }
+      const caught = [...all].filter((e) => e.caught).length;
+      return { name: a.name, visited: !!a.visited, rows, caught, total: all.size, complete: all.size > 0 && caught === all.size };
     }));
   }
   // A gold crown, 11x8 (a place whose Pokémon you've all caught).
@@ -306,7 +318,7 @@
       if (!a.visited) { s.text("-----", 28, y, BLACK, BEIGE); continue; }
       s.text(a.name, 28, y, BLACK, BEIGE);
       if (a.complete) crown(s, 140, y + 3);
-      const n = a.caught + "/" + a.rows.length;
+      const n = a.caught + "/" + a.total;
       s.text(n, 216 - s.textWidth(n), y, BLACK, BEIGE);
     }
     bars(s, "Area mode", "{DPAD_UPDOWN}Pick {A_BUTTON}OK {B_BUTTON}Cancel");
@@ -328,7 +340,7 @@
       const a = st.areas.rows[st.areas.cursor];
       if (!a.visited) continue;
       se("se_select");
-      await openList("area", { mode: "area", rows: a.rows, header: a.name, cursor: 0, top: 0 }, "areas");
+      await openList("area", { mode: "area", rows: a.rows, header: a.name, cursor: a.rows[0] && a.rows[0].head ? 1 : 0, top: 0 }, "areas");
     }
   }
 
@@ -504,12 +516,15 @@
     for (;;) {
       const k = await keys((key) => {
         const L = st.list;
-        if (key === "up" || key === "down") { if (listMove(L, key === "up" ? -1 : 1, L.rows.length)) se("se_select"); }
+        if (key === "up" || key === "down") { if (listMove(L, key === "up" ? -1 : 1, L.rows.length, (c) => !!L.rows[c].head)) se("se_select"); }
         else if (key === "left" || key === "right") {
           const before = L.cursor, n = L.rows.length;
           L.cursor = Math.max(0, Math.min(n - 1, L.cursor + (key === "left" ? -9 : 9)));
           L.top = Math.max(0, Math.min(Math.max(0, n - 9), L.top + (key === "left" ? -9 : 9)));
           if (L.cursor < L.top) L.top = L.cursor;
+          if (L.cursor >= L.top + 9) L.top = L.cursor - 8;
+          // (Not on a title: the Pokémon after it, or before at the end.)
+          if (L.rows[L.cursor].head) L.cursor += L.cursor + 1 < n ? 1 : -1;
           if (L.cursor >= L.top + 9) L.top = L.cursor - 8;
           if (L.cursor !== before) se("se_select");
         } else if (key === "a" || key === "b") return key;
@@ -517,7 +532,7 @@
       });
       if (k === "b") { await go(back || "menu"); return; }
       const e = st.list.rows[st.list.cursor];
-      if (!e.seen) continue;
+      if (e.head || !e.seen) continue;
       st.entryHeader = st.list.header;
       await fade(1); st.entry = e; st.view = "entry"; cry(e.species); await fade(0);
       await showEntry(e, "list");
