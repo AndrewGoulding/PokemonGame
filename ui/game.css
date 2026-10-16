@@ -216,6 +216,8 @@
 }
 .world.hidden { display: none; }
 .screen:has(> .textbox:not(.empty)) > .scene { padding-bottom: calc(20cqw + 8px); }
+/* The Berry Crush (ui/berry-crush.js) uses the whole screen: the text box only shows with something in it. */
+.screen:has(> .scene.evo.crush:not(.hidden)) > .textbox.empty { display: none; }
 
 /* Boy / girl choice: the first (standing) frame of each walking sheet */
 .starters img.look { width: 64px; height: 128px; object-fit: cover; object-position: 0 0; image-rendering: pixelated; }

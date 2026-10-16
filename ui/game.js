@@ -1142,8 +1142,9 @@
       Player.addItem(player, "powder-jar");
       f.gotPowderJar = true;
       await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the " + Bag.name("powder-jar") + "!");
-      await say(["Now, there's no Berry Crusher\nabout these parts.", "So bring your Berries to me, and\nI'll crush them into Berry Powder.",
-        "I'll concoct medicine for you if\nyou bring me some Berry Powder."]);
+      // (FireRed's lines: the Berry Crush at the Direct Corner, ui/berry-crush.js.)
+      await say(X("GoCrushBerriesAtDirectCorner").slice(0, -1));
+      await say(["If you'd rather, bring your Berries\nto me and I'll crush them myself."]);
     }
     // Crushing Berries (this game's): a kind, and how many.
     for (;;) {
@@ -1177,6 +1178,119 @@
       await say(more.slice(0, -1));
       if (!(await confirm(more[more.length - 1]))) { await say(X("HopeToSeeYouAgain")); return; }
     }
+  }
+
+  // ---------- The Berry Crush (game/berry-crush.js, ui/berry-crush.js) ----------
+  //
+  // FireRed's Direct Corner (CableClub_EventScript_DirectCornerAttendant): once
+  // you have the Powder Jar it offers the Berry Crush. FireRed plays it with 2
+  // to 5 people over the Wireless Adapter; here you choose how many play and
+  // the others are the computer. Each puts in a Berry (yours from the Bag,
+  // used up), the lid drops, "3 2 1 START", and everyone presses A to push
+  // it down; the powder made goes into your Powder Jar, and the pressing
+  // speed is kept as a record for that many players (the rankings in the
+  // Berry Powder man's house).
+  const CRUSH_NAMES = ["Lucas", "Kim", "Chris", "Jody", "Max", "Erin", "Toby", "Mia", "Seth", "Ivy"];
+  const hasBerry = () => Object.keys(player.bag).some((id) => /-berry$/.test(id) && player.bag[id] > 0);
+  async function directCorner() {
+    const f = player.flags;
+    if (!f.pokedex || !f.gotPowderJar) { await say(T("Text_WirelessClubUndergoingAdjustments")); return; }
+    await say(["Welcome to the Pokémon Wireless\nClub Direct Corner.", "You may interact directly with\nyour friends here."]);
+    for (;;) {
+      const v = await multichoice("Which room would you like to\nenter?", 0, 0, ["Berry Crush", "Cancel"]);
+      if (v !== 0) { Screen.say(""); await say("Please come again!"); return; }
+      if (!(await confirm("Would you like to use the\nBerry Crush System?"))) continue;
+      if (!hasBerry()) { await say("To use the Berry Crush service,\nyou must have at least one Berry."); continue; }
+      const k = await multichoice("How many will play?", 0, 0, ["2 players", "3 players", "4 players", "5 players", "Cancel"]);
+      if (k < 0 || k > 3) continue;
+      Screen.say("");
+      await berryCrush(k + 2);
+      return;
+    }
+  }
+  async function chooseCrushBerry() {
+    const r = await BagScreen.open({
+      pockets: () => bagPockets().filter((p) => p.name === "Berries"), pocketName: "Berries",
+      female: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl), frame: GameOptions.get().frame,
+      actions: () => [{ label: "Choose", value: "choose" }]
+    });
+    BagScreen.close();
+    return r ? r.id : null;
+  }
+  async function berryCrush(count) {
+    const f = player.flags;
+    const names = CRUSH_NAMES.slice().sort(() => Math.random() - 0.5);
+    const players = [{ name: player.name, you: true }].concat(names.slice(0, count - 1).map((name) => ({ name, cpu: BerryCrush.cpu() })));
+    const kinds = Object.keys(BerryCrush.BERRIES).slice(0, 25);   // (what the others bring: the commoner ones)
+    await Overworld.fadeToBlack();
+    show("scene");
+    clearMenu();
+    music("mus_game_corner");
+    const bc = await BerryCrushScreen.open(scene, { players, sfx });
+    try {
+      await bc.fadeIn();
+      for (;;) {
+        await say(["Are you ready to Berry-Crush?\nPlease pick a Berry for use."]);
+        Screen.say("");
+        const mine = await chooseCrushBerry();
+        if (!mine) break;
+        Player.removeItem(player, mine, 1);
+        const ids = [mine].concat(players.slice(1).map(() => kinds[Math.floor(Math.random() * kinds.length)] + "-berry"));
+        Screen.say("Please wait while each member\nchooses a Berry.");
+        await sleep(1000);
+        Screen.say("");
+        await bc.drop(ids.map((id) => ({ id, icon: Bag.sprite(id), box: (window.ITEM_SPRITE_BOXES || {})[id] })));
+        await bc.countdown();
+        const { game, timeUp } = await bc.play(ids);
+        await bc.finish(timeUp);
+        if (timeUp) await say(["Time's up.", "Good Berry Powder could not be\nmade…"]);
+        else {
+          const res = BerryCrush.results(game);
+          // (SaveResults: the pressing speed, a record for this many players.)
+          const records = f.berryCrushSpeeds || (f.berryCrushSpeeds = [0, 0, 0, 0]);
+          const newRecord = res.pressingSpeed > records[count - 2];
+          if (newRecord) records[count - 2] = res.pressingSpeed;
+          await bc.results(res, newRecord, (id) => Bag.name(id));
+          f.berryPowder = Math.min(99999, (f.berryPowder | 0) + res.powder);
+          await sayWithJingle("mus_level_up", "You ended up with " + res.powder + " units of\nsilky-smooth Berry Powder.");
+          await say("Your total amount of Berry Powder\nis " + f.berryPowder + ".");
+        }
+        Screen.say("Recording your game results in the\nsave file.\nPlease wait.");
+        await persist();
+        await sleep(500);
+        if (!(await confirm("Want to play Berry Crush again?"))) break;
+        if (!hasBerry()) { await say("You have no Berries.\nThe game will be canceled."); break; }
+        bc.reset();
+      }
+      Screen.say("");
+      await bc.fadeOut();
+    } finally {
+      bc.close();
+    }
+    show("world");
+    music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[player.location.map] || {}).music);
+    await Overworld.resume();
+    await Overworld.fadeFromBlack();
+  }
+  // The rankings in the Berry Powder man's house (Task_ShowBerryCrushRankings):
+  // the best pressing speed for 2 to 5 players, A or B to close.
+  async function berryCrushRankings() {
+    const speeds = player.flags.berryCrushSpeeds || [0, 0, 0, 0];
+    const pal = window.GBA_MENUS.palettes.std3, s = GbaMenus.Surface(), c = overlayCanvas();
+    s.frame("std", pal, 3, 4, 24, 13);
+    s.fill(24, 32, 192, 104, pal[1]);
+    const centre = (t, y) => s.text(t, 24 + 96 - (s.textWidth(t) >> 1), 32 + y, pal[8], pal[9]);
+    centre("Berry Crush", 2);
+    centre("Pressing-Speed Rankings", 18);
+    speeds.forEach((q, i) => {
+      s.text((i + 2) + " players", 24 + 4, 32 + 42 + 14 * i, pal[2], pal[3]);
+      const t = BerryCrush.speedText(q) + " Times/sec.";
+      s.text(t, 24 + 192 - s.textWidth(t), 32 + 42 + 14 * i, pal[2], pal[3]);
+    });
+    c.classList.remove("hidden");
+    s.show(c);
+    await GbaMenus.keys((k) => (k === "a" || k === "b" ? true : undefined));
+    c.classList.add("hidden");
   }
 
   // ---------- Poké Mart ----------
@@ -2648,8 +2762,10 @@
 
       case "Common_EventScript_UnionRoomAttendant":
       case "Common_EventScript_WirelessClubAttendant":
-      case "Common_EventScript_DirectCornerAttendant":
         await say(T("Text_WirelessClubUndergoingAdjustments"));
+        return;
+      case "Common_EventScript_DirectCornerAttendant":
+        await directCorner();
         return;
 
       // ---------- Route 22 ----------
@@ -2878,7 +2994,7 @@
       }
       case "CeruleanCity_House5_EventScript_BerryPowderMan": await berryPowderMan(); return;
       case "CeruleanCity_House5_EventScript_BerryCrushRankings":
-        await say("BERRY CRUSH rankings.\nNo one has crushed any Berries yet.");
+        await berryCrushRankings();
         return;
 
       case "PewterCity_PokemonCenter_1F_EventScript_Nurse":

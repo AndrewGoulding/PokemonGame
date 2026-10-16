@@ -1493,6 +1493,27 @@ for (const share of [false, true]) {
   assert.strictEqual(Faraway.mewStep({ mew: { x: 13, y: 14 }, prev: { x: 13, y: 16 }, cur: { x: 13, y: 16 }, steps: 3, isGrass: grass }).dir, null, "turning isn't a step");
 }
 
+// Berry Crush (game/berry-crush.js): two players, Oran and Cheri Berries (100
+// presses between them), both pressing every 8 frames together.
+{
+  assert.deepStrictEqual(BerryCrush.stats("oran-berry"), { difficulty: 50, powder: 30 });
+  const g = BerryCrush.create([{ name: "Red", berry: "oran-berry" }, { name: "Cpu", berry: "cheri-berry" }]);
+  assert.strictEqual(g.targetAPresses, 100);
+  let fx, frames = 0;
+  do { frames++; const on = frames % 8 === 0; fx = BerryCrush.step(g, [on, on], [on, on]); } while (!fx.done && frames < 5000);
+  // (Together: 2 presses plus 1 for being in step, so 34 rounds of 3 reach 100.)
+  assert.strictEqual(frames, 34 * 8, "the crusher is down after 34 pairs of presses");
+  assert.strictEqual(fx.depth, 32);
+  assert.strictEqual(g.players[0].numSyncedAPresses, 34, "every press in step");
+  const r = BerryCrush.results(g, () => 0);
+  assert.strictEqual(r.page, "neatness");
+  assert.strictEqual(r.random[0].stat >> 4, 97, "33 of 34 presses neat");
+  assert.strictEqual(r.silkiness, 100, "7 or 8 presses every 30 frames: big sparkles every time, 100%");
+  assert.strictEqual(r.powder, 50 * 2, "powder x players x silkiness");
+  assert.strictEqual(BerryCrush.speedText(r.pressingSpeed), "15.00", "68 presses in 4.53 seconds");
+  assert.strictEqual(BerryCrush.speedText(0x0440), "4.25");
+}
+
 // Fishing (World.fishingEncounter): each rod its own slots of the map's fishing_mons.
 {
   const rolls = (vals) => { let i = 0; return () => vals[i++ % vals.length]; };

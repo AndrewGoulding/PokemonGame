@@ -196,6 +196,23 @@ slots (70/30), the Good Rod's three (60/20/20) and the Super Rod's five
 (40/40/15/4/1), each version's Pokémon where FireRed and LeafGreen differ.
 In the Safari Zone it's a Safari battle.
 
+**The Berry Crush** is FireRed's (src/berry_crush.c; `game/berry-crush.js`
+plays it, `ui/berry-crush.js` draws it with the pictures from
+`tools/build-berry-crush.js`): the Direct Corner attendant upstairs in every
+Pokémon Center offers it once you have the Powder Jar. FireRed plays it over
+the Wireless Adapter with 2 to 5 people; here you choose how many and the
+others are the computer, each pressing at a steady rhythm of their own. You
+pick a Berry from the Bag (it's used up), everyone's Berry drops into the
+crusher, the lid falls, "3 2 1 START", and pressing A pushes the lid down:
+presses on the same frame as someone else's count extra (FireRed's
+sSyncPressBonus) and land as big impacts, the screen shakes and powder spills
+out of the tube. When the lid's all the way down (the Berries' difficulties
+added up), the results: the number of presses, one of neatness, cooperation or
+pressing power at random, then the Berries, time, pressing speed (a record for
+that many players goes red) and silkiness. The powder made (the Berries' powder,
+times the players, times the silkiness) goes into your Powder Jar, then "Want
+to play Berry Crush again?".
+
 **Breeding and Eggs**: two Pokémon left at Four Island's Day-Care may find
 an Egg, as in FireRed (src/daycare.c): every 256th step, 70% of the time if
 they're the same species from different Trainers, 50% the same species from
@@ -885,7 +902,7 @@ has a different Pokémon in a slot (Sandshrew for FireRed's Ekans on Route 4),
 either is as likely. The three starters are out in the wild, 5% each: Bulbasaur in Viridian Forest, Charmander on Route 3 and Squirtle on Route 24. FireRed's TMs found in item balls become this game's
 machine for the same move (TM09 Bullet Seed is TM100 here). An Escape Rope works
 where FireRed allows it (caves, Viridian Forest) and takes you back to where
-you last went from outdoors through a door or cave entrance, one step out from it as in FireRed (UpdateEscapeWarp). The Berry Powder man in Cerulean gives you the Powder Jar once you've a Berry, crushes your Berries into Berry Powder (FireRed's Berry Crush amounts) and swaps the powder for his FireRed prizes. Trainers work as in FireRed: one you haven't beaten sees you
+you last went from outdoors through a door or cave entrance, one step out from it as in FireRed (UpdateEscapeWarp). The Berry Powder man in Cerulean gives you the Powder Jar once you've a Berry and sends you to the Direct Corner's Berry Crush (or crushes your Berries himself, at the Berry Crush's amounts), and swaps the powder for his FireRed prizes; the sign in his house shows your Berry Crush records. Trainers work as in FireRed: one you haven't beaten sees you
 straight ahead within their sight range (nothing in between), shows "!",
 walks up and battles with their FireRed party (fixed IVs, set moves where
 FireRed sets them); beaten, they say their after-battle line, and one that walked over to you stays
