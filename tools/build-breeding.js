@@ -1,4 +1,4 @@
-// Builds data/breeding.js from Pokémon Showdown's Gen 6 data (@pkmn/dex):
+// Builds data/breeding.js from Pokémon Showdown's Gen 6 data (@pkmn/dex; Gen 7's for its Pokémon):
 // each species' Egg Groups, the species its Eggs hatch into, and the
 // incense a parent must hold for a baby Pokémon's Egg.
 // Run with: npm install && node tools/build-breeding.js
@@ -12,8 +12,12 @@ const { Dex } = require("@pkmn/dex");
 const root = path.join(__dirname, "..");
 global.window = global;
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex.js"), "utf8"));
+vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex-gen7.js"), "utf8"));
 
-const gen6 = Dex.forGen(6);
+const gen6 = Dex.forGen(6), gen7 = Dex.forGen(7);
+// (Generation 7's Pokémon from its own data; this game's Minior is
+// Showdown's Minior-Meteor, and its Minior-Core Showdown's Minior.)
+const SHOWDOWN_NAME = { Minior: "Minior-Meteor", "Minior-Core": "Minior" };
 const toID = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
 const dexKeys = Object.keys(window.DEX);
 function ourName(name) {
@@ -34,18 +38,20 @@ const INCENSE = {
 
 const groups = {}, hatches = {};
 for (const key of dexKeys) {
-  const s = gen6.species.get(key);
+  const dex = window.DEX[key].gen === 7 ? gen7 : gen6;
+  const s = dex.species.get(SHOWDOWN_NAME[key] || key);
   if (!s || !s.exists) continue;
   groups[key] = s.eggGroups.slice();
   // Down the evolution line to its first stage (stopping above an incense baby).
   let base = s;
   while (base.prevo) {
-    const prev = gen6.species.get(base.prevo);
+    const prev = dex.species.get(base.prevo);
     if (INCENSE[prev.name] && base.name !== prev.name) { hatches[key + "|incense"] = ourName(prev.name); break; }
     base = prev;
   }
-  // (A forme hatches as its species: Rotom-Wash's Eggs are Rotom.)
-  if (base.forme && base.baseSpecies !== base.name) base = gen6.species.get(base.baseSpecies);
+  // (A forme hatches as its species: Rotom-Wash's Eggs are Rotom. But
+  // Alolan Pokémon hatch Alolan, as in Gen 7.)
+  if (base.forme && base.baseSpecies !== base.name && base.forme !== "Alola") base = dex.species.get(base.baseSpecies);
   hatches[key] = ourName(base.name);
 }
 const incense = {};

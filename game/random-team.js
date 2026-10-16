@@ -2,6 +2,7 @@
 // Depends on: window.DEX, window.MOVES, window.NATURES, window.LEARNSETS_GEN6
 //
 //   RandomTeam.team(3, { level: 50 })        // array of Battle team sets
+//                                             // ({ maxGen: 6 } or { onlyGen: 7 }: from those generations)
 //   RandomTeam.pokemon("Pikachu", 25)         // one set for a given species
 //
 // Pass { rng } (a function returning [0, 1)) to make the result repeatable.
@@ -13,13 +14,17 @@
 
   // Base species only (formes like megas have ids above 10000), and only ones
   // with a learnset to pick moves from.
-  let eligible = null;
-  function eligibleSpecies() {
-    if (!eligible) {
-      eligible = Object.keys(window.DEX).filter((name) =>
-        window.DEX[name].id < 10000 && window.LEARNSETS_GEN6[name]);
+  // (opts.maxGen / opts.onlyGen: only species from those generations.)
+  const eligible = {};
+  function eligibleSpecies(opts) {
+    const key = (opts.maxGen || "") + ":" + (opts.onlyGen || "");
+    if (!eligible[key]) {
+      eligible[key] = Object.keys(window.DEX).filter((name) => {
+        const d = window.DEX[name];
+        return d.id < 10000 && window.LEARNSETS_GEN6[name] && (!opts.maxGen || d.gen <= opts.maxGen) && (!opts.onlyGen || d.gen === opts.onlyGen);
+      });
     }
-    return eligible;
+    return eligible[key];
   }
 
   const pick = (arr, rng) => arr[Math.floor(rng() * arr.length)];
@@ -66,7 +71,7 @@
     const chosen = new Set();
     const out = [];
     while (out.length < size) {
-      const species = pick(eligibleSpecies(), rng);
+      const species = pick(eligibleSpecies(opts), rng);
       if (chosen.has(species)) continue;
       const set = pokemon(species, level, { rng });
       if (!set.moves.length) continue;

@@ -22,7 +22,9 @@
   function meetsConditions(record, e, ctx) {
     const party = ctx.party || [];
     if (e.gender && record.gender !== e.gender) return false;
-    if (e.time && (ctx.time || timeOfDay()) !== e.time) return false;
+    // ("dusk": 5pm to 6pm, Ultra Sun and Moon's evening, Dusk Lycanroc's.)
+    if (e.time === "dusk") { if (ctx.time ? ctx.time !== "dusk" : new Date().getHours() !== 17) return false; }
+    else if (e.time && (ctx.time || timeOfDay()) !== e.time) return false;
     if (e.stats) {
       const s = window.Party.stats(record);
       if (e.stats === "atk>def" && !(s.atk > s.def)) return false;

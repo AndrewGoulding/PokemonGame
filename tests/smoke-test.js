@@ -46,7 +46,7 @@ function mulberry32(a) {
 // Random teams are valid: unique species, 1–4 known moves, sprites present.
 const rng = mulberry32(42);
 for (let i = 0; i < 50; i++) {
-  const team = RandomTeam.team(3, { level: 5 + Math.floor(rng() * 96), rng });
+  const team = RandomTeam.team(3, { level: 5 + Math.floor(rng() * 96), rng, maxGen: 6 });
   assert.strictEqual(new Set(team.map((s) => s.species)).size, 3, "duplicate species in team");
   for (const set of team) {
     assert(set.moves.length >= 1 && set.moves.length <= 4, set.species + " has " + set.moves.length + " moves");
@@ -65,8 +65,8 @@ for (let seed = 1; seed <= BATTLES; seed++) {
   const teamRng = mulberry32(seed * 7919);
   const battle = new Battle({
     seed,
-    p1: { name: "A", team: RandomTeam.team(3, { level: 50, rng: teamRng }) },
-    p2: { name: "B", team: RandomTeam.team(3, { level: 50, rng: teamRng }) }
+    p1: { name: "A", team: RandomTeam.team(3, { level: 50, rng: teamRng, maxGen: 6 }) },
+    p2: { name: "B", team: RandomTeam.team(3, { level: 50, rng: teamRng, maxGen: 6 }) }
   });
   battle.start();
   for (let step = 0; step < 2000 && !battle.ended; step++) {
@@ -253,7 +253,7 @@ let aiWinRate;
   for (let seed = 1; seed <= 100; seed++) {
     for (const swap of [false, true]) {
       const teamRng = mulberry32(seed * 31);
-      let aiTeam = RandomTeam.team(3, { rng: teamRng }), otherTeam = RandomTeam.team(3, { rng: teamRng });
+      let aiTeam = RandomTeam.team(3, { rng: teamRng, maxGen: 6 }), otherTeam = RandomTeam.team(3, { rng: teamRng, maxGen: 6 });
       if (swap) [aiTeam, otherTeam] = [otherTeam, aiTeam];
       const battle = new Battle({ seed, p1: { name: "AI", team: aiTeam }, p2: { name: "Random", team: otherTeam } });
       const rng = mulberry32(seed);
@@ -731,7 +731,9 @@ for (const share of [false, true]) {
   for (const m of tmMoves) assert(machineMoves.includes(m), "no machine for " + m);
   assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail", "Focus Punch", "Skill Swap", "Snatch", "Whirlpool", "Defog", "Rock Climb"]);
   for (const m of ["Whirlpool", "Defog", "Rock Climb", "Bullet Seed"]) assert(MACHINE_LEARNERS[m].length > 50, "who can use " + m);
-  assert(!MACHINE_LEARNERS.Thief, "TMs Gen 6 had keep Gen 6's compatibility");
+  // (For Gen 7's Pokémon, any generation's machines: tools/build-gen7.js.)
+  assert((MACHINE_LEARNERS.Thief || []).every((s) => DEX[s].gen === 7), "TMs Gen 6 had keep Gen 6's compatibility");
+  assert(MACHINE_LEARNERS.Thief.includes("Incineroar"), "Gen 7's Pokémon: any generation's machines");
   assert(Bag.canUseOn(Party.create("Oddish", 20, { rng }), "tm100") && !Bag.canUseOn(Party.create("Pidgey", 20, { rng }), "tm100"), "Bullet Seed: Oddish yes, Pidgey no");
   assert.strictEqual(Bag.name("tm100"), "TM100 Bullet Seed");
   // The move tutors teach as in FireRed: Charmander can learn Mega Punch.
@@ -2285,7 +2287,7 @@ const DOUBLES = 120;
 let doublesTurns = 0;
 for (let seed = 1; seed <= DOUBLES; seed++) {
   const teamRng = mulberry32(seed * 104729);
-  const team = (n) => RandomTeam.team(n, { level: 50, rng: teamRng });
+  const team = (n) => RandomTeam.team(n, { level: 50, rng: teamRng, maxGen: 6 });
   const tag = seed % 4 === 0;
   const p1 = tag ? { name: "A", team: team(3), partner: { name: "A2", team: team(1 + (seed % 3)) } } : { name: "A", team: team(1 + (seed % 6)) };
   const p2 = tag && seed % 8 === 0 ? { name: "B", team: team(2), partner: { name: "B2", team: team(3) } } : { name: "B", team: team(1 + ((seed * 5) % 6)) };

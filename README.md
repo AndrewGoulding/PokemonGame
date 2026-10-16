@@ -1086,6 +1086,30 @@ Earth Badge's TM. (From a save that won those battles before: Sabrina gives
 hers when you talk to her again, Giovanni too if he's still in his Gym, and
 otherwise Gary's and Giovanni's are item balls where they stood.)
 
+## Generation 7
+
+The Alola Pokémon are in: all 88 (#722-809, Rowlet to Melmetal), the Alolan
+forms of Kanto's eighteen (Rattata to Marowak), and the forms Gen 7's Pokémon
+battle in (Lycanroc's Midnight and Dusk, Oricorio's four dances, Wishiwashi's
+School, Minior's Core, Mimikyu's Busted form, Silvally's seventeen types,
+Necrozma's Dusk Mane and Dawn Wings, Zygarde's 10% and Complete forms,
+Greninja's Battle Bond and Ash forms). `tools/build-gen7.js` makes
+`data/dex-gen7.js`, `data/learnsets-gen7.js` and `data/moves-gen7.js` from
+@pkmn/dex (Showdown's Gen 7 data: types, stats, abilities, Gen 7's level-up,
+TM, tutor and Egg moves) and PokeAPI's CSVs (catch rate, Egg steps, Exp. and
+EV yields, friendship, growth rate, and the form IDs the sprites are filed
+under), with the 53 moves Gen 7 added (not the Z-Moves; Melmetal's Double
+Iron Bash from Let's Go). `tools/fetch-gen7-sprites.js` brings their sprites
+from PokeAPI's repository (the same 96x96 pictures as the others: front,
+back, shiny, shiny back), and the party icons, evolutions (Ice Stone for
+Crabrawler and the Alolan Sandshrew and Vulpix, Thunder Stone for Charjabug,
+Lycanroc by day, night or at dusk, 5pm to 6pm), Egg Groups and machine
+compatibility (any generation's, for Gen 7's Pokémon) are built by the tools
+that build everyone else's. A Gen 7 TM this game hasn't got (Brutal Swing,
+Smart Strike, ...) isn't learnt by machine. Metronome, a Gen 6 move here,
+doesn't call Gen 7's moves. Like the other generations' Pokémon after the
+first 386, they have no cries (FireRed has none).
+
 ## Faraway Island
 
 Emerald's Old Sea Map event, for Mew. Once the Sapphire is in Celio's machine

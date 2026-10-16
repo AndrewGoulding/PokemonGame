@@ -35,6 +35,11 @@ for (const l of Object.values(window.LEARNSETS_GEN6)) for (const m of l.tm || []
 const moveOf = (id) => /^Teaches (.+?) to a compatible/.exec(window.ITEMS[id].effect)[1];
 const machineList = Object.keys(window.ITEMS).filter((id) => /^hm\d+$/.test(id) || (/^tm\d+$/.test(id) && !gen6Machine.has(moveOf(id))))
   .sort().map(moveOf);
+// Generation 7's Pokémon (tools/build-gen7.js) get every machine they could
+// use in some generation, beyond Sun and Moon's machines.
+for (const f of ["data/dex-gen7.js", "data/moves-gen7.js", "data/learnsets-gen7.js"]) vm.runInThisContext(fs.readFileSync(path.join(root, f), "utf8"));
+const allMachines = Object.keys(window.ITEMS).filter((id) => /^(tm|hm)\d+$/.test(id)).sort().map(moveOf);
+const SHOWDOWN_NAME = { Minior: "Minior-Meteor", "Minior-Core": "Minior" };
 
 // This game's own additions: species that can use a machine no game let them.
 const GAME_EXTRA = {
@@ -49,9 +54,9 @@ const TUTOR_MOVES = ["Mega Punch", "Swords Dance", "Mega Kick", "Body Slam", "Do
   const machineMoves = {};   // species -> Set of move ids learnable by machine in some generation
   const tutorMoves = {};     // species -> Set of move ids a tutor taught it in some generation
   for (const species of Object.keys(window.DEX)) {
-    let data = await Dex.learnsets.get(toID(species));
+    let data = await Dex.learnsets.get(toID(SHOWDOWN_NAME[species] || species));
     if (!data || !data.learnset) {
-      const base = Dex.species.get(species);
+      const base = Dex.species.get(SHOWDOWN_NAME[species] || species);
       data = base && base.exists ? await Dex.learnsets.get(toID(base.changesFrom || base.baseSpecies)) : null;
     }
     const set = new Set(), tutor = new Set();
@@ -63,8 +68,9 @@ const TUTOR_MOVES = ["Mega Punch", "Swords Dance", "Mega Kick", "Body Slam", "Do
     tutorMoves[species] = tutor;
   }
   const out = {};
-  for (const move of machineList) {
+  for (const move of allMachines) {
     const extra = Object.keys(window.DEX).filter((species) => {
+      if (!machineList.includes(move) && window.DEX[species].gen !== 7) return false;
       const gen6 = (window.LEARNSETS_GEN6[species] || {}).tm || [];
       return !gen6.includes(move) && (machineMoves[species].has(toID(move)) || (GAME_EXTRA[move] || []).includes(species));
     }).sort();

@@ -83,6 +83,7 @@ fs.writeFileSync(path.join(root, "data/party-menu.js"),
 
 global.window = global;
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex.js"), "utf8"));
+vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex-gen7.js"), "utf8"));
 
 // "Mr. Mime" -> MR_MIME, "Nidoran-F" -> NIDORAN_F, "Charizard-Mega-X" -> CHARIZARD_MEGA_X.
 const constName = (name) => name.toUpperCase().replace(/É/g, "E").replace(/['.:]/g, "")
@@ -124,6 +125,8 @@ function writeIcon(file, out, colours) {
   writePng(out, 32, 64, rgba);
 }
 
+// Names the expansion files differently.
+const ICON_FOLDERS = { MINIOR_CORE: "minior/core/red", GRENINJA_BOND: "greninja", ZYGARDE_10: "zygarde/10_percent" };
 const outDir = path.join(root, "assets/sprites/icons");
 fs.mkdirSync(outDir, { recursive: true });
 let fromFr = 0, fromX = 0;
@@ -145,8 +148,12 @@ for (const w of want) {
   if (x && fs.existsSync(X(x.file))) { writeIcon(X(x.file), out, xPals[x.pal]); fromX++; continue; }
   // (Species written with macros, like Arceus's types: their folder's
   // icon.png, which carries its own palette.)
-  const folder = X("graphics/pokemon", w.c.toLowerCase(), "icon.png");
-  if (fs.existsSync(folder)) { writeIcon(folder, out, readPng(folder).palette); fromX++; continue; }
+  // (Or a form's folder under its species', "minior/core/red"; or, for a
+  // form without one, its species' own icon: Silvally's types share one.)
+  const folders = [w.c.toLowerCase(), ICON_FOLDERS[w.c], w.c.toLowerCase().replace("_", "/"), base.toLowerCase()].filter(Boolean)
+    .map((d) => X("graphics/pokemon", d, "icon.png"));
+  const folder = folders.find(fs.existsSync);
+  if (folder) { writeIcon(folder, out, readPng(folder).palette); fromX++; continue; }
   missing.push(w.name);
 }
 console.log("wrote data/party-menu.js and assets/sprites/icons/: " + fromFr + " FireRed icons, " + fromX + " from the expansion" +
