@@ -7307,19 +7307,18 @@
     f.celioScene = 6;
     await giveOldSeaMap();
   }
-  // This game's: with Hoenn linked up, Lanette sends Celio something for
-  // you, Emerald's Old Sea Map (its island: Faraway Island, by Seagallop from
-  // Vermilion). (Saves that linked up before this get it next time they talk.)
+  // This game's: with Hoenn linked up, Celio gives you Bill's reward for
+  // your help, Emerald's Old Sea Map (its island: Faraway Island, by Seagallop
+  // from Vermilion). (Saves that linked up before this get it next time they talk.)
   async function giveOldSeaMap() {
     const f = player.flags;
     if (f.gotOldSeaMap) return;
-    await say(["Oh! And Lanette sent something\nover the link, too.",
-      "It's an old sea chart she came\nacross in Hoenn.",
-      "She thought you might like it.\nIt shows an island nobody's been\nto in a very long time.",
-      "The Seagallop sailors in Vermilion\nmight know how to get there."]);
+    await say(["Oh, and {PLAYER}, Bill wanted me\nto give you this.", "It's a reward for all your help."]);
     Player.addItem(player, "old-sea-map");
     f.gotOldSeaMap = true;
     await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the " + Bag.name("old-sea-map") + "!");
+    await say(["It's an old sea chart. It shows an\nisland nobody's been to in a very\nlong time.",
+      "The Seagallop sailors in Vermilion\nmight know how to get there."]);
   }
   // Bill, helping Celio (..._EventScript_Bill).
   async function oneIslandCenterBill() {

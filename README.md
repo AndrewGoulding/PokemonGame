@@ -530,7 +530,7 @@ page. Gideon's Sapphire goes to Celio, whose machine then links with Hoenn
 (FLAG_SYS_CAN_LINK_WITH_RS): the League's rematch teams, Lorelei back at the
 League, and (FireRed's FLAG_HIDE_CERULEAN_CAVE_GUARD, `Sevii.ceruleanCaveOpen`)
 Cerulean Cave's guard steps aside, Champion or not, as in FireRed. And (this
-game's) Lanette sends Celio something for you over the new link: Emerald's
+game's) Celio gives you Bill's reward for all your help: Emerald's
 **Old Sea Map** (see **Faraway Island** below). From Cinnabar,
 Route 21 runs north across the sea, its fishermen and swimmers, to Pallet Town.
 Off Route 10's waterway, the Power Plant (Surf along the river to its doors): its wild
@@ -1048,7 +1048,7 @@ otherwise Gary's and Giovanni's are item balls where they stood.)
 ## Faraway Island
 
 Emerald's Old Sea Map event, for Mew. Once the Sapphire is in Celio's machine
-he gives you the **Old Sea Map** (talk to him again if you'd already done it),
+he gives you the **Old Sea Map**, Bill's reward for all your help (talk to him again if you'd already done it),
 and Vermilion's Seagallop sailor, as FireRed's does with an event ticket, is
 amazed the first time ("Oh! That's an Old Sea Map!") and offers the Sevii
 Islands or **Faraway Island**: Seagallop Hi-Speed 10 takes you there. The maps
