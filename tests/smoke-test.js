@@ -3113,7 +3113,9 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
     assert(WORLD_TEXT["PokedexRating_Text_" + k], k);
   }
   // FireRed's National Pokédex checks: the Pokédex here.
-  assert(/if \(Player\.nationalDex\(player\) && scene >= 3\)/.test(gameJs), "Celio asks for the Ruby with the National Pokédex");
+  // (and, as FireRed's comes after the Hall of Fame, once you're Champion: until
+  // then only One, Two and Three Island can be reached.)
+  assert(/if \(Player\.nationalDex\(player\) && player\.flags\.gameClear && scene >= 3\)/.test(gameJs), "Celio asks for the Ruby once you're Champion");
   assert(/ThreeIsland_DunsparceTunnel"\) return Player\.nationalDex\(player\) \? \["dugout"\]/.test(gameJs));
   assert(!/ThreeIsland_DunsparceTunnel[^\n]*gameClear/.test(gameJs));
   // The aides count Kanto's kinds (GetPokedexCount with VAR_0x8004 0).
