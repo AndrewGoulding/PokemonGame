@@ -3734,20 +3734,29 @@
       // Haunter, and those holding their item: Onix with a Metal Coat, ...).
       case "Game_EventScript_TradebackGuy": {
         await say(["Hi! I'm the Tradeback Guy!", "Some Pokémon only evolve when\nthey're traded. Nobody to trade\nwith? Leave it to me!",
-          "I'll trade with you, and then\ntrade your Pokémon right back!"]);
+          "I'll trade you my Rattata, and then\ntrade your Pokémon right back!"]);
         if (!(await confirm("Want to trade a Pokémon with me?"))) { await say("Okay! Come back anytime!"); return; }
         const mine = await choosePartyFor("Choose a POKéMON.");
         show("world");
         if (!mine) { await say("Okay! Come back anytime!"); return; }
         if (mine.egg) { await say("An EGG can't be traded!"); return; }
-        const name = Party.displayName(mine);
-        await say("{PLAYER} traded " + name + "…\n… … … … …\nand got it back!");
-        const evo = Evolution.find(mine, { trigger: "trade", party: player.party });
-        if (!evo) { await say("Hmm… Nothing happened.\nHere's your " + name + " back!"); return; }
-        await evolve(mine, evo, false);
+        // Your Pokémon for his Lv. 5 Rattata, and back again: two trades, as
+        // FireRed shows them (ui/trade-scene.js), then the trade evolution.
+        const rattata = Party.create("Rattata", 5);
+        rattata.hp = Party.maxHp(rattata);
+        rattata.ot = { name: "TRADEBACK", id: 1 };
+        await tradeScene(mine, rattata, "Tradeback Guy");
         show("world");
         await Overworld.resume();
-        await say("There you go! Come back anytime!");
+        await say("Great! Now let's trade back!");
+        await tradeScene(rattata, mine, "Tradeback Guy");
+        const name = Party.displayName(mine);
+        const evo = Evolution.find(mine, { trigger: "trade", party: player.party });
+        if (evo) await evolve(mine, evo, false);
+        show("world");
+        music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[player.location.map] || {}).music);
+        await Overworld.resume();
+        await say(evo ? "There you go! Come back anytime!" : "Here's your " + name + " back!\nCome back anytime!");
         return;
       }
       // ---------- The S.S. Anne ----------
@@ -4132,6 +4141,22 @@
       text: { ask: "Trade_Text_DoYouHaveMonWantToTradeForMon", no: "Trade_Text_ThatsTooBad",
         wrong: "Trade_Text_ThisIsNoMon", thanks: "Trade_Text_ThanksYoureAPal", after: "Trade_Text_HowIsMyOldMon" } }
   };
+  // FireRed's trade sequence (ui/trade-scene.js): `mine` leaves for `partner`
+  // and `theirs` arrives, from the black and back to it.
+  async function tradeScene(mine, theirs, partner) {
+    show("scene");
+    Screen.say("");
+    clearMenu();
+    music(null);
+    const pic = (r) => ({ url: Screen.spriteUrl(r.species, Party.form(r), false, r.shiny), species: r.species, name: Party.displayName(r) });
+    const t = await TradeScene.open(scene, {
+      send: pic(mine), receive: pic(theirs), partner,
+      say: (text) => Screen.say(fill(text)), cry: (sp) => cry(sp), music, fanfare,
+      waitA: () => Screen.printed().then(() => Screen.waitForA())
+    });
+    try { await t.run(); } finally { t.close(); }
+    Screen.say("");
+  }
   async function inGameTrade(trade) {
     const f = player.flags, vars = [Party.speciesName(trade.wants), Party.speciesName(trade.gives)];
     const X = Object.assign({ ask: "Trade_Text_LookingForMonWannaTradeForMon", no: "Trade_Text_AwwOhWell",
@@ -4151,10 +4176,15 @@
     if (trade.item) theirs.item = trade.item;   // (what it holds: FireRed's heldItem)
     theirs.met = { level: theirs.level, map: player.location.map, traded: true };
     theirs.hp = Party.maxHp(theirs);
+    // (Their trainer, FireRed's OT name in capitals: "REYLEY" -> "Reyley".)
+    await tradeScene(mine, theirs, trade.ot ? trade.ot.name.charAt(0) + trade.ot.name.slice(1).toLowerCase() : "the trainer");
     player.party[i] = theirs;
     Player.markCaught(player, trade.gives);
     f[trade.flag] = true;
-    await say("{PLAYER} sent " + Party.displayName(mine) + " to the trainer.\nThe trainer sent back " + trade.nickname + "!");
+    // (Back to the map: FireRed's CB2_ReturnToField, the map's music again.)
+    show("world");
+    music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[player.location.map] || {}).music);
+    await Overworld.resume();
     await say(T(X.thanks));
   }
 

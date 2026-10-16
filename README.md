@@ -902,7 +902,10 @@ to his lab, the rival battle, the Route 1 Potion, Oak's Parcel and the
 Pokédex scene (your rival comes back, Oak fetches the two Pokédexes from the
 desk at the back; until then there's no Pokédex in the menu), the
 Viridian old man, the nurse, the move tutor, the Route 2 trade of Abra for
-Mr. Mime "Mimien", Prof. Oak's Aide giving HM05 Flash for ten kinds
+Mr. Mime "Mimien" (every in-game trade plays FireRed's trade sequence,
+`ui/trade-scene.js`, pictures by `tools/build-trade.js`: yours leaves in its
+Poké Ball, down into the GBA and up the cable, passes theirs on the way, and
+theirs bounces in and comes out), Prof. Oak's Aide giving HM05 Flash for ten kinds
 caught, your rival Gary on Route 22 (Pidgey and Eevee, as in Yellow), Red
 catching up with you at the north end of Viridian Forest (with the starter
 that beats yours and Pikachu), the League gate guard, Pewter's Gym guide
@@ -940,8 +943,9 @@ way they were (as FireRed does, so wanderers stop wandering), and battle you
 again, with the same team, until you beat them or leave the map), the woman on
 the S.S. Anne who lets you rest (the screen goes black while the healing jingle
 plays, as with Red's Mom), the Tradeback Guy upstairs
-in every Pokémon Center (he trades your Pokémon and straight back, so trade
-evolutions happen), and Bill: a
+in every Pokémon Center (he trades you a Lv. 5 Rattata for your Pokémon and
+then trades it straight back, both shown with FireRed's trade sequence, so
+trade evolutions happen), and Bill: a
 Clefairy until you run his Teleporter's Cell Separator, then he gives you the
 S.S. Ticket and his PC shows his favourite Pokémon) are in `ui/game.js`; their FireRed
 lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scripts

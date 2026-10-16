@@ -315,5 +315,5 @@
   const setTextSpeed = (f) => { textSpeed = f; };
   const setCharDelay = (ms) => { charMs = ms; };
 
-  window.Screen = { MESSAGE_MS, setTextSpeed, setCharDelay, printed, spriteUrl, iconUrl, setSprite, clearSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, prompt, yesNo, clearMenu, learnMovePrompt };
+  window.Screen = { MESSAGE_MS, setTextSpeed, setCharDelay, printed, spriteUrl, iconUrl, setSprite, clearSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, prompt, yesNo, clearMenu, learnMovePrompt, waitForA };
 })();
