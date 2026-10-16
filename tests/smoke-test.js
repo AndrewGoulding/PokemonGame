@@ -2520,6 +2520,163 @@ for (let seed = 1; seed <= GEN7; seed++) {
   gen7Turns += battle.turn;
 }
 
+// ---------- Generation 8 battles ----------
+{
+  const g8 = (species, moves, extra) => Object.assign({ species, level: 50, moves }, extra);
+  const singles = (p1, p2, seed) => {
+    const b = new Battle({ seed: seed || 1, debug: true, p1: { name: "A", team: p1 }, p2: { name: "B", team: p2 } });
+    b.start();
+    return b;
+  };
+  const has = (evs, type, ...args) => evs.some((e) => e[0] === type && args.every((a, i) => a instanceof RegExp ? a.test(e[i + 1]) : e[i + 1] === a));
+
+  // Zacian: Intrepid Sword; with the Rusted Sword, the Crowned Sword and
+  // Behemoth Blade for Iron Head (Iron Head again after the battle).
+  {
+    const record = Party.create("Zacian", 70, { rng: mulberry32(8) });
+    record.item = "rusted-sword";
+    record.moves = [{ name: "Iron Head", pp: 15 }, { name: "Slash", pp: 20 }];
+    const b = singles([Party.toBattleSet(record)], [g8("Snorlax", ["Splash"])]);
+    const z = b.sides.p1.active;
+    assert.strictEqual(z.species, "Zacian-Crowned");
+    assert.strictEqual(z.boosts.atk, 1, "Intrepid Sword");
+    assert.strictEqual(z.moves[0].name, "Behemoth Blade");
+    play(b, { p1: mv(0), p2: mv(0) });
+    Party.syncFromBattle(record, z);
+    assert.deepStrictEqual(record.moves.map((m) => m.name), ["Iron Head", "Slash"]);
+    assert.strictEqual(record.species, "Zacian");
+  }
+  // Ice Face takes a physical hit; Gulp Missile spits back.
+  {
+    const b = singles([g8("Eiscue", ["Splash"])], [g8("Snorlax", ["Tackle", "Ember"])]);
+    const e = b.sides.p1.active;
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(e.species, "Eiscue-Noice");
+    assert.strictEqual(e.hp, e.maxhp);
+    const c = singles([g8("Cramorant", ["Surf"])], [g8("Snorlax", ["Splash", "Tackle"], { ability: "Thick Fat" })]);
+    const cram = c.sides.p1.active, lax = c.sides.p2.active;
+    play(c, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(cram.species, "Cramorant-Gulping");
+    const evs = play(c, { p1: mv(0), p2: mv(1) });
+    assert(has(evs, "detailschange", cram.ident, "Cramorant"), "Gulp Missile spat its catch");
+    assert(lax.boosts.def < 0 || lax.status === "par");
+  }
+  // Hunger Switch, Aura Wheel's type.
+  {
+    const b = singles([g8("Morpeko", ["Aura Wheel"])], [g8("Snorlax", ["Splash"])]);
+    const m = b.sides.p1.active;
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(m.species, "Morpeko-Hangry");
+    const evs = play(b, { p1: mv(0), p2: mv(0) });
+    assert(hpLost(b.sides.p2.active) > 0);
+    assert.strictEqual(Damage.calc(m, b.sides.p2.active, "Aura Wheel", {}, { moveType: "Dark" }).type, "Dark");
+  }
+  // Neutralizing Gas: Levitate stops working.
+  {
+    const b = singles([g8("Weezing-Galar", ["Earthquake"], { ability: "Neutralizing Gas" })], [g8("Bronzong", ["Splash"], { ability: "Levitate" })]);
+    assert(has(b.events, "-ability", b.sides.p1.active.ident, "Neutralizing Gas"));
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert(hpLost(b.sides.p2.active) > 0, "Earthquake hit a Levitate Bronzong");
+  }
+  // Gorilla Tactics locks the move; Mirror Armor bounces Growl.
+  {
+    const b = singles([g8("Darmanitan-Galar", ["Ice Punch", "Fire Punch"], { ability: "Gorilla Tactics" })], [g8("Corviknight", ["Splash"], { ability: "Mirror Armor" })]);
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert(b.getRequest("p1").active.moves[1].disabled, "Gorilla Tactics: locked into Ice Punch");
+    const c = singles([g8("Rattata", ["Growl"], { ability: "Guts" })], [g8("Corviknight", ["Splash"], { ability: "Mirror Armor" })]);
+    play(c, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(c.sides.p1.active.boosts.atk, -1);
+    assert.strictEqual(c.sides.p2.active.boosts.atk, 0);
+  }
+  // Obstruct, Stone Axe, Steel Beam, Court Change, Clangorous Soul.
+  {
+    const b = singles([g8("Grimmsnarl", ["Obstruct"])], [g8("Snorlax", ["Tackle"], { ability: "Thick Fat" })]);
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(b.sides.p2.active.boosts.def, -2);
+    const c = singles([g8("Kleavor", ["Stone Axe", "Court Change"])], [g8("Snorlax", ["Splash"]), g8("Snorlax", ["Splash"])]);
+    for (let i = 0; i < 4 && !c.sides.p2.conditions.stealthrock; i++) play(c, { p1: mv(0), p2: mv(0) });   // (90% accurate)
+    assert(c.sides.p2.conditions.stealthrock, "Stone Axe sets Stealth Rock");
+    play(c, { p1: mv(1), p2: mv(0) });
+    assert(c.sides.p1.conditions.stealthrock && !c.sides.p2.conditions.stealthrock, "Court Change swaps them");
+    const d = singles([g8("Duraludon", ["Steel Beam"])], [g8("Snorlax", ["Splash"])]);
+    const dura = d.sides.p1.active;
+    play(d, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(dura.hp, dura.maxhp - Math.ceil(dura.maxhp / 2));
+    const k = singles([g8("Kommo-o", ["Clangorous Soul"])], [g8("Snorlax", ["Splash"])]);
+    play(k, { p1: mv(0), p2: mv(0) });
+    assert.deepStrictEqual([k.sides.p1.active.boosts.atk, k.sides.p1.active.boosts.spe], [1, 1]);
+    assert.strictEqual(hpLost(k.sides.p1.active), Math.floor(k.sides.p1.active.maxhp / 3));
+  }
+  // Damage: Body Press uses Defense, Bolt Beak doubles moving first,
+  // Triple Axel 20/40/60, Wicked Blow always crits, Terrain Pulse.
+  {
+    const corv = Damage.makePokemon("Corviknight", { level: 50 }), lax = Damage.makePokemon("Snorlax", { level: 50 });
+    const iron = Damage.makePokemon("Corviknight", { level: 50, boosts: { def: 2 } });
+    assert(Damage.calc(iron, lax, "Body Press", {}).max > Damage.calc(corv, lax, "Body Press", {}).max, "Body Press: Defense");
+    const zolt = Damage.makePokemon("Dracozolt", { level: 50 });
+    assert.strictEqual(Damage.calc(zolt, lax, "Bolt Beak", {}, {}).basePower, 170);
+    assert.strictEqual(Damage.calc(zolt, lax, "Bolt Beak", {}, { movesAfterTarget: true }).basePower, 85);
+    const axel = Damage.makePokemon("Glaceon", { level: 50 });
+    assert.deepStrictEqual([0, 1, 2].map((i) => Damage.calc(axel, lax, "Triple Axel", {}, { hitIndex: i }).basePower), [20, 40, 60]);
+    assert.strictEqual(Damage.critChance(zolt, "Wicked Blow"), 1);
+    // (Doubled to 100, and Electric Terrain powers Electric moves up 1.5x.)
+    assert.strictEqual(Damage.calc(zolt, lax, "Terrain Pulse", { terrain: "ElectricTerrain" }, { moveType: "Electric" }).basePower, 150);
+  }
+  // Evolutions: Toxtricity by nature, Sirfetch'd after 3 critical hits,
+  // Basculegion's recoil (counted in battle), Overqwil's Barb Barrages.
+  {
+    const toxel = Party.create("Toxel", 30, { rng: mulberry32(1) });
+    toxel.nature = "Hardy";
+    assert.strictEqual(Evolution.find(toxel, { trigger: "level" }).into, "Toxtricity");
+    toxel.nature = "Modest";
+    assert.strictEqual(Evolution.find(toxel, { trigger: "level" }).into, "Toxtricity-Low-Key");
+    const fetch = Party.create("Farfetch'd-Galar", 30, { rng: mulberry32(1) });
+    assert(!Evolution.find(fetch, { trigger: "battle", crits: 2 }));
+    assert.strictEqual(Evolution.find(fetch, { trigger: "battle", crits: 3 }).into, "Sirfetch'd");
+    const bass = Party.create("Basculin-White-Striped", 30, { rng: mulberry32(2) });
+    bass.moves = [{ name: "Wave Crash", pp: 10 }];
+    const b = singles([Party.toBattleSet(bass)], [g8("Snorlax", ["Splash"], { level: 100 })]);
+    play(b, { p1: mv(0), p2: mv(0) });
+    const mon = b.sides.p1.pokemon[0];
+    assert(mon.recoilTaken > 0, "recoil counted");
+    Party.syncFromBattle(bass, mon);
+    assert.strictEqual(bass.recoil, mon.recoilTaken);
+    assert(!Evolution.find(bass, { trigger: "level" }));
+    bass.recoil = 294;
+    assert(/^Basculegion/.test(Evolution.find(bass, { trigger: "level" }).into));
+    const qwil = Party.create("Qwilfish-Hisui", 30, { rng: mulberry32(3) });
+    qwil.moves = [{ name: "Barb Barrage", pp: 10 }];
+    const c = singles([Party.toBattleSet(qwil)], [g8("Snorlax", ["Splash"], { level: 100 })]);
+    play(c, { p1: mv(0), p2: mv(0) });
+    Party.syncFromBattle(qwil, c.sides.p1.pokemon[0]);
+    assert.deepStrictEqual(qwil.moveUses, { "Barb Barrage": 1 });
+    qwil.moveUses["Barb Barrage"] = 20;
+    assert.strictEqual(Evolution.find(qwil, { trigger: "level" }).into, "Overqwil");
+  }
+}
+
+// Gen 8's Pokémon in random battles, as Gen 7's above.
+const GEN8 = 100;
+let gen8Turns = 0;
+for (let seed = 1; seed <= GEN8; seed++) {
+  const teamRng = mulberry32(seed * 7927);
+  const dbl = seed % 2 === 0;
+  const team = () => RandomTeam.team(dbl ? 4 : 3, { level: 50, rng: teamRng, onlyGen: 8 });
+  const battle = new Battle({ seed, debug: true, format: dbl ? "doubles" : "singles", p1: { name: "A", team: team() }, p2: { name: "B", team: team() } });
+  const rng = mulberry32(seed);
+  battle.start();
+  for (let step = 0; step < 3000 && !battle.ended; step++) {
+    for (const id of ["p1", "p2"]) {
+      const req = battle.getRequest(id);
+      if (req.phase !== "move" && req.phase !== "switch") continue;
+      const r = battle.choose(id, step % 2 ? OpponentAI.choose(battle, id, rng) : battle.randomChoice(id));
+      assert(r.ok, "Gen 8 choice rejected in battle " + seed + ": " + r.error);
+    }
+  }
+  assert(battle.ended, "Gen 8 battle " + seed + " did not finish");
+  gen8Turns += battle.turn;
+}
+
 console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns), AI beat random moves in " + aiWinRate + "% of games");
 console.log("ok: doubles regressions, " + DOUBLES + " random doubles battles finished (" + doublesTurns + " turns)");
 
@@ -3587,3 +3744,4 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
   assert(/when: \(f\) => f\.foughtMewtwo/.test(gameJs), "Mewtwonites once Mewtwo is caught or beaten");
 }
 console.log("ok: Gen 7, " + GEN7 + " random battles finished (" + gen7Turns + " turns)");
+console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " turns)");

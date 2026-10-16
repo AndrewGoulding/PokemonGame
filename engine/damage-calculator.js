@@ -33,7 +33,9 @@
 //            in the sun on that side), unnerved (the defender can't eat its
 //            resist Berry), battery (1.3x special power: an ally with Battery),
 //            moveType (the move's type as the battle settled it),
-//            lastMoveFailed (Stomping Tantrum) }
+//            lastMoveFailed (Stomping Tantrum), statsLowered (Lash Out),
+//            hitIndex (Triple Axel's hit, from 0), powerSpot, steelySpirit,
+//            suppressA / suppressD (that side's Ability is switched off) }
 //   targets: how many Pokémon a spread move is hitting (0.75x when > 1).
 
 (function () {
@@ -235,6 +237,13 @@
     // (A type the battle engine settled on: Revelation Dance, Multi-Attack,
     // Plasma Fists' ions.)
     if (env.moveType) move.type = env.moveType;
+    // Shell Side Arm is physical (and makes contact) when that would hit harder.
+    if (move.id === "shellsidearm") {
+      const D = env.defender;
+      const phys = applyStage(A.stats.atk, A.boosts.atk) / Math.max(1, applyStage(D.stats.def, D.boosts.def));
+      const spec = applyStage(A.stats.spa, A.boosts.spa) / Math.max(1, applyStage(D.stats.spd, D.boosts.spd));
+      if (phys > spec) { move.category = "Physical"; move.flags.contact = 1; }
+    }
     // Photon Geyser is physical when the user's Attack is higher.
     if (move.id === "photongeyser" && applyStage(A.stats.atk, A.boosts.atk) > applyStage(A.stats.spa, A.boosts.spa)) move.category = "Physical";
     return move;
@@ -328,6 +337,14 @@
       case "pursuit": if (opts.targetSwitching) bp *= 2; break;
       case "beatup": if (opts.beatUpPower) bp = opts.beatUpPower; break;
       case "stompingtantrum": if (opts.lastMoveFailed) bp *= 2; break;
+      // Gen 8
+      case "boltbeak": case "fishiousrend": if (!opts.movesAfterTarget) bp *= 2; break;
+      case "lashout": if (opts.statsLowered) bp *= 2; break;
+      case "barbbarrage": if (D.status === "psn" || D.status === "tox") bp *= 2; break;
+      case "infernalparade": if (D.status) bp *= 2; break;
+      case "tripleaxel": bp = 20 * ((opts.hitIndex || 0) + 1); break;
+      case "terrainpulse": if (env.field.terrain && isGrounded(A, env.field)) bp *= 2; break;
+      case "risingvoltage": if (env.field.terrain === "ElectricTerrain" && isGrounded(D, env.field)) bp *= 2; break;
       case "watershuriken": if (A.species === "Greninja-Ash") bp = 20; break;
       default: break;
     }
@@ -369,6 +386,9 @@
     opts = opts || {};
     const A = makeView(attackerIn);
     const D = makeView(defenderIn);
+    // (Neutralizing Gas: Abilities the battle has switched off.)
+    if (opts.suppressA) A.ability = "";
+    if (opts.suppressD) D.ability = "";
 
     // Weather (suppressed by Cloud Nine / Air Lock)
     let weather = field.weather || "";
@@ -419,6 +439,8 @@
         eff = eff / row.Flying;
       }
     }
+    // Tar Shot: Fire hits twice as hard.
+    if (D.volatiles && D.volatiles.tarshot && move.type === "Fire") eff *= 2;
     result.typeEffectiveness = eff;
 
     if (eff === 0) {
@@ -510,6 +532,14 @@
 
     if (opts.helpingHand) push(1.5);
     if (opts.battery && move.category === "Special") push(5325 / 4096);
+    // (Gen 8: an ally's Power Spot, Steely Spirit on either side of the user,
+    // and the moves terrain or Gravity powers up.)
+    if (opts.powerSpot) push(5325 / 4096);
+    if (opts.steelySpirit && move.type === "Steel") push(1.5);
+    if (move.id === "gravapple" && field.gravity) push(1.5);
+    if ((move.id === "expandingforce" && field.terrain === "PsychicTerrain") || (move.id === "mistyexplosion" && field.terrain === "MistyTerrain")) {
+      if (isGrounded(A, field)) push(1.5);
+    }
     if (opts.charge && move.type === "Electric") push(2);
 
     const aGrounded = isGrounded(A, field);
@@ -614,7 +644,7 @@
       : (["allAdjacentFoes", "allAdjacent"].includes(move.target) && field.isDoubles ? 2 : 1);
 
     let stab = 1;
-    if (move.forceSTAB || A.hasType(move.type) || A.ability === "Protean") stab = 1.5;
+    if (move.forceSTAB || A.hasType(move.type) || A.ability === "Protean" || A.ability === "Libero") stab = 1.5;
     const aab = window.ABILITIES[A.ability];
     if (aab && typeof aab.onModifySTAB === "function") {
       try {

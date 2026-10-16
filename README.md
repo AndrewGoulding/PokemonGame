@@ -1136,6 +1136,63 @@ pokeemerald-expansion, like the other moves and Abilities after Gen 3. The
 test battles 100 random Gen 7 teams in debug mode. (RKS System needs no
 Memories: each Silvally form is its own species.)
 
+## Generation 8
+
+Galar's Pokémon are in: all 89 (#810-898, Grookey to Calyrex), the Galarian
+forms (Meowth to Stunfisk, with Galarian Darmanitan's Zen Mode) and the forms
+Gen 8's Pokémon battle in (Toxtricity's Low Key, Cramorant's Gulping and
+Gorging, Eiscue's Noice Face, female Indeedee, Morpeko's Hangry Mode, Zacian's
+and Zamazenta's Crowned, Rapid Strike Urshifu, Calyrex's Ice and Shadow
+Riders), and Legends: Arceus's: its seven (#899-905, Wyrdeer to Enamorus),
+the Hisuian forms, White-Striped Basculin, female Basculegion and Therian
+Enamorus. `tools/build-gen8.js` makes `data/dex-gen8.js`,
+`data/learnsets-gen8.js` and `data/moves-gen8.js` from @pkmn/dex (Sword and
+Shield's data; Scarlet and Violet's for Legends: Arceus's, where they battle)
+and PokeAPI's CSVs, with the 88 moves Gen 8 added (not the Max Moves). The
+sprites come the way Gen 7's do (`node tools/fetch-gen7-sprites.js <csv
+folder> gen8`), and the party icons, evolutions, Egg Groups (Galarian and
+Hisuian Pokémon hatch as such) and machines (any generation's) are built by
+the usual tools. Gen 7's Silvally forms moved to IDs 10500-10516 (PokeAPI
+gives Hisuian Pokémon their old IDs). Not in: Gigantamax and Dynamax,
+Eternamax, Alcremie's flavours, Dialga's and Palkia's Origin Formes.
+
+Gen 8's evolution items are in the Bag: Tart and Sweet Apples, Cracked and
+Chipped Pots, the Galarica Cuff and Wreath, the seven Sweets, Black Augurite,
+the Peat Block and Kubfu's Scrolls of Darkness and Waters (pokesprite's
+pictures; `tools/build-gen8-item-sprites.js` draws the last four from
+pokeemerald-expansion's). Evolutions the games tie to places or styles keep a
+rule this game can check, noted in `data/evolutions.js`: Galarian Farfetch'd
+becomes Sirfetch'd after a battle in which it landed 3 critical hits; Galarian
+Yamask becomes Runerigus levelling up with 49 HP or more lost; Toxel becomes
+Amped or Low Key Toxtricity by its nature; Kubfu reads a scroll; Alcremie
+comes from any Sweet; Basculin (White-Striped) becomes Basculegion after
+taking 294 recoil damage in all, Hisuian Qwilfish becomes Overqwil after 20
+Barb Barrages (both counted on the Pokémon, across battles); Ursaring uses
+the Peat Block at night; Stantler becomes Wyrdeer at Lv. 30 (it can't learn
+Psyshield Bash here). Galar's and Hisui's evolutions of other regions'
+Pokémon (Koffing into Galarian Weezing, Quilava into Hisuian Typhlosion)
+aren't: this is Kanto.
+
+In battle, Gen 8's 34 Abilities work, among them Intrepid Sword, Dauntless
+Shield, Ice Face, Gulp Missile, Hunger Switch, Neutralizing Gas (every other
+Ability goes quiet), Gorilla Tactics (a Choice lock), Mirror Armor, Quick
+Draw, Unseen Fist, Mimicry, Screen Cleaner, Wandering Spirit, Perish Body,
+Ripen (Berries do twice as much), Power Spot and Steely Spirit (Libero, like
+Protean here, gives every move the same-type bonus). Zacian with the Rusted
+Sword and Zamazenta with the Rusted Shield (held items) are Crowned when
+they come out, Iron Head becoming Behemoth Blade or Bash for the battle.
+Kleavor's and Hisuian Samurott's Sharpness (Gen 9) is in too. The moves that
+need code are in `data/battle-moves.js` and the engine: Obstruct, Octolock,
+Jaw Lock, No Retreat, Court Change, Clangorous Soul, Coaching, Life Dew,
+Jungle Healing, Lunar Blessing, Take Heart, Stuff Cheeks and Teatime, Corrosive
+Gas, Magic Powder, Tar Shot, Poltergeist, Steel Roller, Steel Beam,
+Chloroblast, Eerie Spell, Burning Jealousy, Lash Out, Bolt Beak, Fishious
+Rend, Body Press, Shell Side Arm, Terrain Pulse, Rising Voltage, Expanding
+Force, Misty Explosion, Grav Apple, Grassy Glide, Meteor Beam, Triple Axel,
+Aura Wheel, Stone Axe, Ceaseless Edge, Dire Claw, Barb Barrage, Infernal
+Parade, Triple Arrows and the three storms. The test battles 100 random Gen
+8 teams in debug mode.
+
 ## Faraway Island
 
 Emerald's Old Sea Map event, for Mew. Once the Sapphire is in Celio's machine
@@ -1349,7 +1406,7 @@ and Pewter City's), water animation, and a Town Map of Johto.
 | `assets/world/` | Generated map images and transparent overworld sprites |
 | `assets/intro/` | Generated opening movie, title screen and Oak's speech graphics |
 | `assets/battle/` | Generated battle backgrounds (FireRed's battle terrains) |
-| `tests/` | Loads every non-UI script and checks formulas, engine regressions, progression rules and AI choices, plus 200 random battles, 120 random double battles and 100 random battles of Gen 7 teams; `tests/browser/lib.js` is a Playwright helper for checking things in the real page (it serves the game, loads a save made in Node, and presses keys long enough to register) |
+| `tests/` | Loads every non-UI script and checks formulas, engine regressions, progression rules and AI choices, plus 200 random battles, 120 random double battles and 100 random battles each of Gen 7 and Gen 8 teams; `tests/browser/lib.js` is a Playwright helper for checking things in the real page (it serves the game, loads a save made in Node, and presses keys long enough to register) |
 
 ## Script load order
 

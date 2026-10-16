@@ -104,7 +104,9 @@
     truant: null, typechange: "{who}'s type changed!", yawn: "{who} grew drowsy!",
     electrify: "{who}'s moves have been electrified!", flashfire: "{who}'s Fire-type moves were powered up!",
     slowstart: "{who} can't get it going!", minimize: null, defensecurl: null, stockpile: null,
-    laserfocus: "{who} concentrated intensely!", shackled: "{who} can no longer escape!", throatchop: null
+    laserfocus: "{who} concentrated intensely!", shackled: "{who} can no longer escape!", throatchop: null,
+    octolock: "{who} can no longer escape because of Octolock!", noretreat: "{who} can no longer escape because it used No Retreat!",
+    tarshot: "{who} became weaker to fire!"
   };
   const VOLATILE_END = {
     confusion: "{who} snapped out of its confusion!", substitute: "{who}'s substitute faded!",
@@ -125,7 +127,11 @@
     spectralthief: "{who} stole the target's boosted stats!", disguise: "Its disguise served it as a decoy!",
     battlebond: "{who} became fully charged due to its bond with its Trainer!",
     powerconstruct: "You sense the presence of many!", shieldsdown: null,
-    queenlymajesty: "{who}'s Queenly Majesty blocked the move!", dazzling: "{who}'s Dazzling blocked the move!"
+    queenlymajesty: "{who}'s Queenly Majesty blocked the move!", dazzling: "{who}'s Dazzling blocked the move!",
+    courtchange: "{who} swapped the battle effects affecting each side of the field!",
+    poltergeist: "{who} is about to be attacked by its item!", eeriespell: "It reduced the PP of {who}'s move!",
+    jawlock: "Neither Pokémon can run away!", perishbody: "Both Pokémon will faint in three turns!",
+    wanderingspirit: "{who} swapped Abilities with its target!", iceface: null, gulpmissile: null
   };
   const PREPARE = {
     solarbeam: "{who} absorbed light!", dig: "{who} burrowed its way under the ground!",
@@ -142,7 +148,7 @@
     fairyaura: "{who} is radiating a fairy aura!", aurabreak: "{who} reversed all other Pokémon's auras!",
     sturdy: "{who} held on with its sturdiness!", anticipation: "{who} shuddered!",
     airlock: "The effects of the weather disappeared.", cloudnine: "The effects of the weather disappeared.",
-    comatose: "{who} is drowsing!"
+    comatose: "{who} is drowsing!", neutralizinggas: "Neutralizing gas filled the area!", asone: "{who} has two Abilities!"
   };
   const SIDE_START = {
     stealthrock: "Pointed stones float in the air around {team}!",
@@ -1082,6 +1088,7 @@
       }
       case "-setboost": return fill("{who} cut its own HP and maximized its " + (STAT_NAMES[b] || b) + "!", a);
       case "-clearallboost": return "All stat changes were eliminated!";
+      case "-clearboost": return fill("{who}'s stat changes were removed!", a);
       case "cant": return fill(lookup(CANT, effectId(b), "{who} can't move!"), a);
       case "-start": {
         const id = effectId(b);

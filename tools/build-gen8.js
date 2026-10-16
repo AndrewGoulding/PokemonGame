@@ -148,7 +148,9 @@ function convertMove(m) {
   for (const k of KEEP) {
     if (m[k] == null || m[k] === false) continue;
     if (k === "critRatio" && m[k] === 1) continue;
-    if (k === "secondaries") continue;
+    // (Showdown fills in `secondaries` from `secondary`; only a move with
+    // several, Triple Arrows, needs the list.)
+    if (k === "secondaries" && m[k].length < 2) continue;
     out[k] = JSON.parse(JSON.stringify(m[k]));
   }
   if (out.secondary && !Object.keys(out.secondary).some((k) => k !== "chance")) delete out.secondary;

@@ -1,4 +1,4 @@
-// abilities.js — Gen 6 (all 191 abilities, num 1–191) and Gen 7 (num 192–233)
+// abilities.js — Gen 6 (all 191 abilities, num 1–191), Gen 7 (num 192–233) and Gen 8 (num 234–267)
 // Auto-curated. See header comment for engine API.
 
 window.ABILITIES = {
@@ -1805,6 +1805,11 @@ window.ABILITIES = {
     flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
     onResidual(ctx) {
       const p = ctx.pokemon;
+      // (Galarian Darmanitan, Gen 8: Zen Mode at half HP or less.)
+      if (/^Darmanitan-Galar/.test(p.species) && !p.transformed) {
+        ctx.abilityForme(p, p.hp <= p.maxhp / 2 ? "Darmanitan-Galar-Zen" : "Darmanitan-Galar");
+        return;
+      }
       if (p.baseSpecies.baseSpecies !== "Darmanitan" || p.transformed) return;
       if (p.hp <= p.maxhp / 2 && !["Zen","Galar-Zen"].includes(p.species.forme)) p.addVolatile("zenmode");
       else if (p.hp > p.maxhp / 2 && ["Zen","Galar-Zen"].includes(p.species.forme)) {
@@ -2546,6 +2551,308 @@ window.ABILITIES = {
       if (move && ctx.target.getMoveHitData(move).typeMod > 0) return ctx.chainModify(damage, 1.25);
     },
   },
+  // ==================================================================
+  // Gen 8 (num 234-267)
+  // ==================================================================
+  "Intrepid Sword": {
+    name: "Intrepid Sword", num: 234, rating: 4,
+    effect: "Raises Attack by 1 stage when it enters battle.",
+    onStart(ctx) { ctx.boost(ctx.pokemon, { atk: 1 }); },
+  },
+
+  "Dauntless Shield": {
+    name: "Dauntless Shield", num: 235, rating: 3.5,
+    effect: "Raises Defense by 1 stage when it enters battle.",
+    onStart(ctx) { ctx.boost(ctx.pokemon, { def: 1 }); },
+  },
+
+  "Libero": {
+    name: "Libero", num: 236, rating: 4,
+    effect: "Its moves get the same-type bonus whatever their type (as Protean here).",
+  },
+
+  "Ball Fetch": {
+    name: "Ball Fetch", num: 237, rating: 0,
+    effect: "Fetches the first failed Poké Ball (no effect in battle here).",
+  },
+
+  "Cotton Down": {
+    name: "Cotton Down", num: 238, rating: 2,
+    effect: "When hit by an attack, lowers the Speed of every other Pokémon by 1 stage.",
+    onDamagingHit(ctx) {
+      ctx.add("-ability", ctx.pokemon, "Cotton Down");
+      for (const m of ctx.getAllActive()) if (m !== ctx.pokemon) ctx.boost(m, { spe: -1 }, ctx.pokemon);
+    },
+  },
+
+  "Propeller Tail": {
+    name: "Propeller Tail", num: 239, rating: 0,
+    effect: "Its moves can't be drawn away (Follow Me, Lightning Rod, ...).",
+  },
+
+  "Mirror Armor": {
+    name: "Mirror Armor", num: 240, rating: 2,
+    effect: "Stat drops other Pokémon cause bounce back to them.",
+    flags: { breakable: 1 },
+    onTryBoost(ctx, boost, effect) {
+      const src = ctx.source;
+      if (!src || src === ctx.pokemon || (effect && effect.id === "mirrorarmor")) return;
+      const back = {};
+      for (const k in boost) if (boost[k] < 0) { back[k] = boost[k]; delete boost[k]; }
+      if (!Object.keys(back).length) return;
+      ctx.add("-ability", ctx.pokemon, "Mirror Armor");
+      if (!src.fainted) ctx.boost(src, back, ctx.pokemon);
+    },
+  },
+
+  "Gulp Missile": {
+    name: "Gulp Missile", num: 241, rating: 2.5,
+    effect: "Surf or Dive catches prey; hit while holding it, Cramorant spits it at the attacker.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    onAfterMove(ctx, move) {
+      const p = ctx.pokemon;
+      if (p.species !== "Cramorant" || p.transformed || !move || !["surf", "dive"].includes(move.id)) return;
+      ctx.abilityForme(p, p.hp > p.maxhp / 2 ? "Cramorant-Gulping" : "Cramorant-Gorging");
+    },
+    onDamagingHit(ctx) {
+      const p = ctx.pokemon, src = ctx.source;
+      if (!/^Cramorant-G/.test(p.species) || !src) return;
+      const gorging = p.species === "Cramorant-Gorging";
+      ctx.abilityForme(p, "Cramorant");
+      if (src.fainted) return;
+      ctx.damage(src, src.baseMaxhp / 4, p);
+      if (gorging) ctx.trySetStatus(src, "par", p);
+      else ctx.boost(src, { def: -1 }, p);
+    },
+  },
+
+  "Stalwart": {
+    name: "Stalwart", num: 242, rating: 0,
+    effect: "Its moves can't be drawn away (Follow Me, Lightning Rod, ...).",
+  },
+
+  "Steam Engine": {
+    name: "Steam Engine", num: 243, rating: 2,
+    effect: "Raises Speed by 6 stages when hit by a Fire- or Water-type move.",
+    onDamagingHit(ctx, move) { if (move.type === "Fire" || move.type === "Water") ctx.boost(ctx.pokemon, { spe: 6 }); },
+  },
+
+  "Punk Rock": {
+    name: "Punk Rock", num: 244, rating: 3.5,
+    effect: "Sound-based moves: 1.3× power from it, half damage to it.",
+    flags: { breakable: 1 },
+    onBasePower(ctx, power, move) { if (move.flags && move.flags.sound) return ctx.chainModify(power, [5325, 4096]); },
+    onSourceModifyDamage(ctx, damage, move) { if (move.flags && move.flags.sound) return ctx.chainModify(damage, 0.5); },
+  },
+
+  "Sand Spit": {
+    name: "Sand Spit", num: 245, rating: 1,
+    effect: "Whips up a sandstorm when hit by an attack.",
+    onDamagingHit(ctx) { ctx.setWeather("Sandstorm"); },
+  },
+
+  "Ice Scales": {
+    name: "Ice Scales", num: 246, rating: 4,
+    effect: "Halves damage from special moves.",
+    flags: { breakable: 1 },
+    onSourceModifyDamage(ctx, damage, move) { if (move.category === "Special") return ctx.chainModify(damage, 0.5); },
+  },
+
+  "Ripen": {
+    name: "Ripen", num: 247, rating: 2,
+    effect: "Doubles what the Berries it eats do (healing and stat Berries).",
+    // (The Berries check for it: data/conditions.js.)
+  },
+
+  "Ice Face": {
+    name: "Ice Face", num: 248, rating: 3,
+    effect: "Eiscue's ice head takes one physical hit; hail makes it again.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1, breakable: 1 },
+    onDamage(ctx, damage, effect) {
+      const p = ctx.pokemon, m = effect && effect.effectType === "Move" && window.MOVES[effect.name];
+      if (p.species !== "Eiscue" || p.transformed || !m || m.cat !== "Physical") return;
+      ctx.add("-activate", p, "ability: Ice Face");
+      ctx.abilityForme(p, "Eiscue-Noice", "{who}'s Ice Face broke!");
+      return 0;
+    },
+    onStart(ctx) { gen8IceFace(ctx); },
+    onResidual(ctx) { gen8IceFace(ctx); },
+  },
+
+  "Power Spot": {
+    name: "Power Spot", num: 249, rating: 0,
+    effect: "Its ally's moves have 1.3× power.",
+    // (Doubles: the battle engine passes it to the damage calculator.)
+  },
+
+  "Mimicry": {
+    name: "Mimicry", num: 250, rating: 0,
+    effect: "Its type becomes the terrain's.",
+    onStart(ctx) { ctx.battle.mimicry(ctx.pokemon); },
+  },
+
+  "Screen Cleaner": {
+    name: "Screen Cleaner", num: 251, rating: 2,
+    effect: "On switch-in, ends Reflect, Light Screen and Aurora Veil on both sides.",
+    onStart(ctx) {
+      const b = ctx.battle;
+      for (const side of [ctx.pokemon.side, ctx.pokemon.side.foe]) {
+        for (const id of ["reflect", "lightscreen", "auroraveil"]) b.removeSideCondition(side, id);
+      }
+    },
+  },
+
+  "Steely Spirit": {
+    name: "Steely Spirit", num: 252, rating: 3.5,
+    effect: "Its and its ally's Steel-type moves have 1.5× power.",
+    // (The battle engine passes it to the damage calculator.)
+  },
+
+  "Perish Body": {
+    name: "Perish Body", num: 253, rating: 1,
+    effect: "When hit by a contact move, both it and the attacker will faint in three turns.",
+    onDamagingHit(ctx, move) {
+      const src = ctx.source;
+      if (!src || src.fainted || !ctx.checkMoveMakesContact(move, src, ctx.pokemon) || src.volatiles.perishsong) return;
+      ctx.add("-activate", ctx.pokemon, "ability: Perish Body");
+      for (const m of [ctx.pokemon, src]) if (!m.fainted && !m.volatiles.perishsong) m.addVolatile("perishsong", ctx.pokemon);
+    },
+  },
+
+  "Wandering Spirit": {
+    name: "Wandering Spirit", num: 254, rating: 2.5,
+    effect: "Swaps Abilities with a Pokémon that hits it with a contact move.",
+    onDamagingHit(ctx, move) {
+      const src = ctx.source, p = ctx.pokemon;
+      const theirs = src && window.ABILITIES[src.ability];
+      if (!src || src.fainted || !ctx.checkMoveMakesContact(move, src, p) || !theirs || (theirs.flags && theirs.flags.failskillswap)) return;
+      const mine = p.ability;
+      p.ability = src.ability; src.ability = mine;
+      p.abilityState = {}; src.abilityState = {};
+      ctx.add("-activate", p, "ability: Wandering Spirit", "[of] " + src.ident);
+    },
+  },
+
+  "Gorilla Tactics": {
+    name: "Gorilla Tactics", num: 255, rating: 4.5,
+    effect: "1.5× Attack, but it's locked into the first move it picks.",
+    onModifyAtk(ctx, atk) { return ctx.chainModify(atk, 1.5); },
+    // (The battle engine locks its move, as a Choice item does.)
+  },
+
+  "Neutralizing Gas": {
+    name: "Neutralizing Gas", num: 256, rating: 4,
+    effect: "While it's out, every other Pokémon's Ability has no effect.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1 },
+    onStart(ctx) { ctx.add("-ability", ctx.pokemon, "Neutralizing Gas"); },
+    // (The battle engine switches the other Abilities off.)
+  },
+
+  "Pastel Veil": {
+    name: "Pastel Veil", num: 257, rating: 2,
+    effect: "It and its ally can't be poisoned.",
+    flags: { breakable: 1 },
+    onStart(ctx) {
+      for (const m of [ctx.pokemon].concat(ctx.allies())) {
+        if (m && (m.status === "psn" || m.status === "tox")) { ctx.add("-activate", ctx.pokemon, "ability: Pastel Veil"); ctx.cureStatus(m); }
+      }
+    },
+    onAllySetStatus(ctx, status, effect) {
+      if (status.id !== "psn" && status.id !== "tox") return;
+      if (effect && effect.effectType === "Move" && !effect.secondaries) ctx.add("-block", ctx.target, "ability: Pastel Veil", "[of] " + ctx.pokemon.ident);
+      return false;
+    },
+  },
+
+  "Hunger Switch": {
+    name: "Hunger Switch", num: 258, rating: 1,
+    effect: "Morpeko switches between Full Belly and Hangry Mode each turn.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1 },
+    onResidual(ctx) {
+      const p = ctx.pokemon;
+      if (!/^Morpeko/.test(p.species) || p.transformed) return;
+      ctx.abilityForme(p, p.species === "Morpeko" ? "Morpeko-Hangry" : "Morpeko");
+    },
+  },
+
+  "Quick Draw": {
+    name: "Quick Draw", num: 259, rating: 2.5,
+    effect: "30% chance to move first with a damaging move in its priority bracket.",
+    // (The battle engine rolls for it when it orders the moves.)
+  },
+
+  "Unseen Fist": {
+    name: "Unseen Fist", num: 260, rating: 2,
+    effect: "Its contact moves get through Protect and the like.",
+  },
+
+  "Curious Medicine": {
+    name: "Curious Medicine", num: 261, rating: 0,
+    effect: "On switch-in, its ally's stat changes are reset.",
+    onStart(ctx) {
+      for (const m of ctx.allies()) {
+        if (!m || m === ctx.pokemon) continue;
+        for (const k of Object.keys(m.boosts)) m.boosts[k] = 0;
+        ctx.add("-clearboost", m, "[from] ability: Curious Medicine", "[of] " + ctx.pokemon.ident);
+      }
+    },
+  },
+
+  "Transistor": {
+    name: "Transistor", num: 262, rating: 3.5,
+    effect: "1.5× power on Electric-type moves.",
+    onModifyAtk(ctx, atk, move) { if (move.type === "Electric") return ctx.chainModify(atk, 1.5); },
+    onModifySpA(ctx, spa, move) { if (move.type === "Electric") return ctx.chainModify(spa, 1.5); },
+  },
+
+  "Dragon's Maw": {
+    name: "Dragon's Maw", num: 263, rating: 3.5,
+    effect: "1.5× power on Dragon-type moves.",
+    onModifyAtk(ctx, atk, move) { if (move.type === "Dragon") return ctx.chainModify(atk, 1.5); },
+    onModifySpA(ctx, spa, move) { if (move.type === "Dragon") return ctx.chainModify(spa, 1.5); },
+  },
+
+  "Chilling Neigh": {
+    name: "Chilling Neigh", num: 264, rating: 3,
+    effect: "Raises Attack by 1 stage when it knocks out a Pokémon.",
+    onSourceAfterFaint(ctx) { if (ctx.effect && ctx.effect.effectType === "Move") ctx.boost(ctx.pokemon, { atk: 1 }); },
+  },
+
+  "Grim Neigh": {
+    name: "Grim Neigh", num: 265, rating: 3,
+    effect: "Raises Sp. Atk by 1 stage when it knocks out a Pokémon.",
+    onSourceAfterFaint(ctx) { if (ctx.effect && ctx.effect.effectType === "Move") ctx.boost(ctx.pokemon, { spa: 1 }); },
+  },
+
+  "As One (Glastrier)": {
+    name: "As One (Glastrier)", num: 266, rating: 3.5,
+    effect: "Unnerve and Chilling Neigh: foes can't eat Berries; +1 Attack on a knockout.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    onStart(ctx) { ctx.add("-ability", ctx.pokemon, "As One"); ctx.add("-ability", ctx.pokemon, "Unnerve"); },
+    onSourceAfterFaint(ctx) { if (ctx.effect && ctx.effect.effectType === "Move") ctx.boost(ctx.pokemon, { atk: 1 }); },
+  },
+
+  "As One (Spectrier)": {
+    name: "As One (Spectrier)", num: 267, rating: 3.5,
+    effect: "Unnerve and Grim Neigh: foes can't eat Berries; +1 Sp. Atk on a knockout.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    onStart(ctx) { ctx.add("-ability", ctx.pokemon, "As One"); ctx.add("-ability", ctx.pokemon, "Unnerve"); },
+    onSourceAfterFaint(ctx) { if (ctx.effect && ctx.effect.effectType === "Move") ctx.boost(ctx.pokemon, { spa: 1 }); },
+  },
+
+  // ==================================================================
+  // Gen 9: the one Legends: Arceus's Pokémon have (Kleavor, Hisuian Samurott)
+  // ==================================================================
+  "Sharpness": {
+    name: "Sharpness", num: 292, rating: 3.5,
+    effect: "1.5× power on slicing moves.",
+    onBasePower(ctx, power, move) {
+      const SLICING = ["aerialace", "aircutter", "airslash", "behemothblade", "ceaselessedge", "crosspoison", "cut", "furycutter",
+        "leafblade", "nightslash", "psychocut", "razorleaf", "razorshell", "sacredsword", "secretsword", "slash", "solarblade",
+        "stoneaxe", "xscissor"];
+      if (SLICING.includes(move.id)) return ctx.chainModify(power, 1.5);
+    },
+  },
 
 };
 
@@ -2573,6 +2880,11 @@ function gen7ShieldsDown(ctx) {
     ctx.add("-activate", p, "ability: Shields Down");
     ctx.abilityForme(p, "Minior-Core", "{who}'s shell broke open!");
   }
+}
+// Ice Face: Eiscue's ice head comes back in hail.
+function gen8IceFace(ctx) {
+  const p = ctx.pokemon;
+  if (p.species === "Eiscue-Noice" && !p.transformed && ctx.isWeather("Hail")) ctx.abilityForme(p, "Eiscue", "{who}'s Ice Face was restored!");
 }
 // Schooling: from Lv. 20, School Form while its HP is above a quarter.
 function gen7Schooling(ctx) {

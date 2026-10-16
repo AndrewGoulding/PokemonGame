@@ -147,6 +147,18 @@
         if (ctx.source && ctx.source.side !== ctx.pokemon.side && move && move.category === "Physical") ctx.effectState.gotHit = true;
       }
     },
+    // Gen 8
+    obstruct: { name: "Obstruct", duration: 1 },
+    octolock: {
+      name: "Octolock",
+      onResidual(ctx) {
+        const src = ctx.effectState.source;
+        if (!src || !src.isActive || src.fainted) { ctx.pokemon.removeVolatile("octolock"); return; }
+        ctx.boost(ctx.pokemon, { def: -1, spd: -1 }, src, E("Volatile", "octolock", "Octolock"));
+      }
+    },
+    noretreat: { name: "No Retreat" },
+    tarshot: { name: "Tar Shot" },
     sparklingaria: {
       name: "Sparkling Aria",
       duration: 1,
@@ -404,10 +416,17 @@
       const p = ctx.pokemon;
       const m = p.moves.find((x) => x.pp === 0);
       if (m) { m.pp = Math.min(m.maxpp, 10); ctx.add("-enditem", p, "Leppa Berry", "[eat]"); eat(ctx); }
+    },
+    eaten(ctx) {
+      const m = ctx.pokemon.moves.slice().sort((a, b) => a.pp - b.pp)[0];
+      if (m) m.pp = Math.min(m.maxpp, m.pp + 10);
     }
   };
 
   // HP-threshold berries
+  // (Gen 8: Ripen doubles what a Berry does; Stuff Cheeks and Teatime eat
+  // one whatever the HP, through its `eaten`.)
+  const ripe = (p) => (p.hasAbility("Ripen") ? 2 : 1);
   const healBerry = (name, thresholdNum, thresholdDen, getAmount) => {
     items[name] = {
       onUpdate(ctx) {
@@ -415,8 +434,9 @@
         if (!p.hp || p.hp * thresholdDen > p.maxhp * thresholdNum) return;
         ctx.add("-enditem", p, name, "[eat]");
         eat(ctx);
-        ctx.heal(p, getAmount(p), p, E("Item", name, name));
-      }
+        ctx.heal(p, getAmount(p) * ripe(p), p, E("Item", name, name));
+      },
+      eaten(ctx) { ctx.heal(ctx.pokemon, getAmount(ctx.pokemon) * ripe(ctx.pokemon), ctx.pokemon, E("Item", name, name)); }
     };
   };
   healBerry("sitrus-berry", 1, 2, (p) => Math.floor(p.maxhp / 4));
@@ -433,8 +453,9 @@
         if (!p.hp || p.hp * 4 > p.maxhp) return;
         ctx.add("-enditem", p, name, "[eat]");
         eat(ctx);
-        ctx.boost(p, { [stat]: 1 }, p);
-      }
+        ctx.boost(p, { [stat]: ripe(p) }, p);
+      },
+      eaten(ctx) { ctx.boost(ctx.pokemon, { [stat]: ripe(ctx.pokemon) }, ctx.pokemon); }
     };
   };
   pinchBerry("liechi-berry", "atk");
@@ -456,6 +477,11 @@
         eat(ctx);
         if (hasStatus) ctx.cureStatus(p, true);
         if (hasConf) p.removeVolatile("confusion");
+      },
+      eaten(ctx) {
+        const p = ctx.pokemon;
+        if (p.status && (statusList === "any" || statusList.includes(p.status))) ctx.cureStatus(p, true);
+        if (curesConfusion && p.volatiles.confusion) p.removeVolatile("confusion");
       }
     };
   };

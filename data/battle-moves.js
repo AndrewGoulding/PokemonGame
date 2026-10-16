@@ -464,5 +464,109 @@
     b.add("-fieldstart", "iondeluge");
   };
 
+  // ---- Gen 8 ----
+  // A Berry eaten whatever its trigger (Stuff Cheeks, Teatime).
+  const eatBerry = (b, mon) => {
+    if (!/-berry$/.test(mon.item) || b.isUnnerved(mon)) return false;
+    const name = mon.item, it = window.ITEM_EFFECTS[name];
+    b.add("-enditem", mon, name, "[eat]");
+    b.consumeItem(mon);
+    if (it && it.eaten) {
+      const h = { fn: it.eaten, thisObj: it, effect: E("Item", name, name), state: {} };
+      it.eaten.call(it, b.makeCtx(mon, h, {}));
+    }
+    return true;
+  };
+  status.stuffcheeks = (b, user) => {
+    if (!/-berry$/.test(user.item) || !eatBerry(b, user)) return false;
+    b.boost(user, { def: 2 }, user, E("Move", "stuffcheeks", "Stuff Cheeks"));
+    return "done";
+  };
+  status.teatime = (b) => {
+    let any = false;
+    for (const m of b.getActives()) if (eatBerry(b, m)) any = true;
+    return any ? "done" : false;
+  };
+  status.corrosivegas = (b, user, target) => {
+    if (!target.item || target === user) return false;
+    const it = b.takeItem(target);
+    b.add("-enditem", target, it, "[from] move: Corrosive Gas", "[of] " + user.ident);
+    return "done";
+  };
+  status.magicpowder = (b, user, target) => {
+    if (target.types.join() === "Psychic") return false;
+    target.types = ["Psychic"];
+    b.add("-start", target, "typechange", "Psychic");
+    return "done";
+  };
+  status.clangoroussoul = (b, user) => {
+    const cost = Math.floor(user.maxhp / 3);
+    if (user.hp <= cost) return false;
+    if (!b.boost(user, { atk: 1, def: 1, spa: 1, spd: 1, spe: 1 }, user, E("Move", "clangoroussoul", "Clangorous Soul"))) return false;
+    b.damage(user, cost, user, E("Move", "clangoroussoul", "Clangorous Soul"));
+    return "done";
+  };
+  // (Coaching has nobody to coach in a single battle.)
+  status.coaching = (b, user, target) => !!target && target !== user && target.side === user.side;
+  status.noretreat = (b, user) => !user.volatiles.noretreat;
+  status.courtchange = (b, user) => {
+    const a = user.side.conditions, c = user.side.foe.conditions;
+    user.side.conditions = c; user.side.foe.conditions = a;
+    b.add("-activate", user, "move: Court Change");
+    return "done";
+  };
+  const healTeam = (cure) => (b, user, target, move) => {
+    let any = false;
+    for (const m of [user, b.allyOf(user)]) {
+      if (!m || m.fainted) continue;
+      if (b.heal(m, Math.round(m.maxhp / 4), user, E("Move", move.id, move.name))) any = true;
+      if (cure && m.status && b.cureStatus(m)) any = true;
+    }
+    return any ? "done" : false;
+  };
+  status.lifedew = healTeam(false);
+  status.junglehealing = status.lunarblessing = healTeam(true);
+  status.takeheart = (b, user) => {
+    const cured = user.status ? b.cureStatus(user) : false;
+    const raised = b.boost(user, { spa: 1, spd: 1 }, user, E("Move", "takeheart", "Take Heart"));
+    return cured || raised ? "done" : false;
+  };
+
+  beforeHit.poltergeist = (b, user, target) => {
+    if (!target.item) return false;
+    b.add("-activate", target, "move: Poltergeist", target.item);
+  };
+  beforeHit.steelroller = (b) => !!b.field.terrain;
+  beforeHit.aurawheel = (b, user) => /^Morpeko/.test(user.species);
+  afterHitSelf.steelroller = (b) => {
+    if (!b.field.terrain) return;
+    b.add("-fieldend", b.field.terrain);
+    b.field.terrain = ""; b.field.terrainTurns = 0;
+    b.mimicry();
+  };
+  afterHitSelf.ceaselessedge = (b, user, target) => { b.addSideCondition(target.side, "spikes", user); };
+  afterHitSelf.stoneaxe = (b, user, target) => { b.addSideCondition(target.side, "stealthrock", user); };
+  afterHit.eeriespell = (b, user, target) => {
+    const m = target.lastMove && target.moves.find((x) => x.id === target.lastMove);
+    if (!m || !m.pp) return;
+    const lost = Math.min(3, m.pp);
+    m.pp -= lost;
+    b.add("-activate", target, "move: Eerie Spell", m.name, lost);
+  };
+  afterHit.burningjealousy = (b, user, target, move) => {
+    if (target.statsRaisedThisTurn) b.trySetStatus(target, "brn", user, E("Move", move.id, move.name));
+  };
+  afterHit.jawlock = (b, user, target) => {
+    if (target.volatiles.substitute) return;
+    if (!target.volatiles.shackled) target.volatiles.shackled = { id: "shackled", source: user };
+    if (!user.volatiles.shackled) user.volatiles.shackled = { id: "shackled", source: target };
+    b.add("-activate", user, "move: Jaw Lock", "[of] " + target.ident);
+  };
+  // Dire Claw: 50% to poison, paralyse or put to sleep, a third each.
+  afterHit.direclaw = (b, user, target, move) => {
+    if (target.hasAbility("Shield Dust") || !b.randomChance(1, 2)) return;
+    b.trySetStatus(target, b.sample(["psn", "par", "slp"]), user, E("Move", move.id, move.name));
+  };
+
   window.BATTLE_MOVE_EFFECTS = { status, afterHit, beforeHit, afterHitSelf };
 })();

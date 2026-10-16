@@ -620,5 +620,7 @@ window.ITEMS = {
   "black-augurite": { name: "black-augurite", category: "evolution", effect: "Evolves a Scyther into Kleavor." },
   "peat-block": { name: "peat-block", category: "evolution", effect: "Evolves an Ursaring into Ursaluna at night. (Under a full moon, in the main games.)" },
   "scroll-of-darkness": { name: "scroll-of-darkness", category: "evolution", effect: "Evolves a Kubfu into Single Strike Urshifu. (The Tower of Darkness, in the main games.)" },
-  "scroll-of-waters": { name: "scroll-of-waters", category: "evolution", effect: "Evolves a Kubfu into Rapid Strike Urshifu. (The Tower of Waters, in the main games.)" }
+  "scroll-of-waters": { name: "scroll-of-waters", category: "evolution", effect: "Evolves a Kubfu into Rapid Strike Urshifu. (The Tower of Waters, in the main games.)" },
+  "rusted-sword": { name: "rusted-sword", category: "species-specific", effect: "Held by Zacian: it becomes the Crowned Sword when it enters battle, and its Iron Head becomes Behemoth Blade." },
+  "rusted-shield": { name: "rusted-shield", category: "species-specific", effect: "Held by Zamazenta: it becomes the Crowned Shield when it enters battle, and its Iron Head becomes Behemoth Bash." }
 };

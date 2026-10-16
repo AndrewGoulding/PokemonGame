@@ -154,7 +154,7 @@
   const WEATHER_ROCKS = { SunnyDay: "heat-rock", RainDance: "damp-rock", Sandstorm: "smooth-rock", Hail: "icy-rock" };
   const DEF_ACC_ABILITIES = new Set(["Sand Veil", "Snow Cloak", "Tangled Feet", "Wonder Skin"]);
   const SILENT_VOLATILES = new Set(["choicelock", "mustrecharge", "lockedmove", "twoturnmove", "flinch",
-    "protect", "kingsshield", "spikyshield", "banefulbunker", "sparklingaria", "endure", "charge", "roost", "focuspunch", "destinybond", "focusenergy"]);
+    "protect", "kingsshield", "spikyshield", "banefulbunker", "obstruct", "sparklingaria", "endure", "charge", "roost", "focuspunch", "destinybond", "focusenergy"]);
   const INVULN = {
     fly: "fly", bounce: "fly", dig: "dig", dive: "dive", shadowforce: "shadow", phantomforce: "shadow"
   };
@@ -171,7 +171,7 @@
   const REDIRECTABLE = new Set(["normal", "any", "adjacentFoe", "randomNormal"]);
   // One-turn doubles effects, cleared at the end of each turn.
   const TURN_VOLATILES = ["helpinghand", "followme", "ragepowder", "spotlight"];
-  const STALL_MOVES = new Set(["protect", "detect", "endure", "kingsshield", "spikyshield", "banefulbunker", "quickguard", "wideguard", "matblock", "craftyshield"]);
+  const STALL_MOVES = new Set(["protect", "detect", "endure", "kingsshield", "spikyshield", "banefulbunker", "obstruct", "quickguard", "wideguard", "matblock", "craftyshield"]);
 
   // Indexes
   let DEX_INDEX = null, MOVE_INDEX = null, ABILITY_CONDITIONS = null, MEGA_MAP = null;
@@ -301,7 +301,7 @@
     setType(t) { this.types = [].concat(t); return true; }
     ignoringAbility() { return !!this.volatiles.gastroacid || this.battle._breakAbilityOf === this; }
     hasAbility(a) {
-      if (this.ignoringAbility()) return false;
+      if (this.ignoringAbility() || this.battle.neutralized(this)) return false;
       return (Array.isArray(a) ? a : [a]).includes(this.ability);
     }
     getAbility() {
@@ -539,7 +539,7 @@
       const only = o.only;
       if (!only || only === "ability") {
         const ab = window.ABILITIES[mon.ability];
-        if (ab && typeof ab[name] === "function" && !mon.volatiles.gastroacid) {
+        if (ab && typeof ab[name] === "function" && !mon.volatiles.gastroacid && !this.neutralized(mon)) {
           const breakable = ab.flags && ab.flags.breakable;
           const accOk = !o.accSide || (o.accSide === "defender") === DEF_ACC_ABILITIES.has(ab.name);
           if (accOk && !(o.breakAbility && breakable)) {
@@ -648,7 +648,7 @@
     // Calls one ability hook directly and returns its raw result.
     callAbility(mon, hookName, o, ...args) {
       const ab = window.ABILITIES[mon.ability];
-      if (!ab || typeof ab[hookName] !== "function" || mon.volatiles.gastroacid) return undefined;
+      if (!ab || typeof ab[hookName] !== "function" || mon.volatiles.gastroacid || this.neutralized(mon)) return undefined;
       const h = { fn: ab[hookName], thisObj: ab, effect: E("Ability", toID(ab.name), ab.name), state: mon.abilityState };
       const ctx = this.makeCtx(mon, h, o || {});
       try { return ab[hookName].apply(ab, [ctx].concat(args)); }
@@ -665,7 +665,7 @@
       for (const holder of ally ? [mon, ally] : [mon]) {
         const ab = window.ABILITIES[holder.ability];
         const fn = ab && ab["onAlly" + name];
-        if (typeof fn !== "function" || holder.volatiles.gastroacid) continue;
+        if (typeof fn !== "function" || holder.volatiles.gastroacid || this.neutralized(holder)) continue;
         if (o.breakAbility && ab.flags && ab.flags.breakable) continue;
         const h = { fn, thisObj: ab, effect: E("Ability", toID(ab.name), ab.name), state: holder.abilityState };
         const ctx = this.makeCtx(holder, h, Object.assign({}, o, { target: mon }));
@@ -680,7 +680,19 @@
     isUnnerved(mon) {
       const foe = mon.side.foe.active;
       const foes = this.doubles ? this.foesOf(mon) : foe && !foe.fainted && foe.isActive ? [foe] : [];
-      return foes.some((f) => f.hasAbility("Unnerve"));
+      return foes.some((f) => f.hasAbility(["Unnerve", "As One (Glastrier)", "As One (Spectrier)"]));
+    }
+    // Neutralizing Gas (Gen 8): while a Pokémon with it is out, every other
+    // Pokémon's Ability does nothing (but the ones that can't be suppressed).
+    neutralized(mon) {
+      if (mon.ability === "Neutralizing Gas") return false;
+      let gas = false;
+      for (const s of [this.sides.p1, this.sides.p2]) {
+        for (const m of s.actives) if (m && m !== mon && !m.fainted && m.isActive && m.ability === "Neutralizing Gas" && !m.volatiles.gastroacid) gas = true;
+      }
+      if (!gas) return false;
+      const ab = window.ABILITIES[mon.ability];
+      return !(ab && ab.flags && ab.flags.cantsuppress);
     }
     // Flower Gift on a Pokémon's side (itself or its ally); only Cherrim's works.
     flowerGift(mon) {
@@ -770,7 +782,20 @@
       if (this.field.terrain === name) return false;
       this.field.terrain = name; this.field.terrainTurns = 5;
       this.add("-fieldstart", name, effect && effect.effectType === "Ability" ? "[from] ability: " + effect.name + " [of] " + (source ? source.ident : "") : "");
+      this.mimicry();
       return true;
+    }
+    // Mimicry (Gen 8): its type is the terrain's (its own again with none).
+    mimicry(only) {
+      const T = { ElectricTerrain: "Electric", GrassyTerrain: "Grass", MistyTerrain: "Fairy", PsychicTerrain: "Psychic" };
+      for (const m of only ? [only] : this.getActives()) {
+        if (!m.hasAbility("Mimicry")) continue;
+        const t = T[this.field.terrain];
+        const types = t ? [t] : m.baseTypes.slice();
+        if (types.join() === m.types.join()) continue;
+        m.types = types;
+        this.add("-start", m, "typechange", types.join("/"), "[from] ability: Mimicry");
+      }
     }
     addSideCondition(side, id, source) {
       const c = window.CONDITIONS.sides[id];
@@ -984,6 +1009,8 @@
         if (nv === cur) { this.add(delta > 0 ? "-boost" : "-unboost", mon, k, 0); continue; }
         mon.boosts[k] = nv;
         changed = true;
+        // (For Burning Jealousy and Lash Out.)
+        if (nv > cur) mon.statsRaisedThisTurn = true; else mon.statsLoweredThisTurn = true;
         this.add(delta > 0 ? "-boost" : "-unboost", mon, k, Math.abs(nv - cur));
       }
       if (changed) this.runEvent("onAfterEachBoost", mon, { source, effect, relay: boosts, args: [effect], only: "ability" });
@@ -1147,6 +1174,14 @@
       if ((mon.species === "Groudon" && mon.item === "red-orb") || (mon.species === "Kyogre" && mon.item === "blue-orb")) {
         this.formeChange(mon, mon.species + "-Primal");
       }
+      // (Gen 8: Zacian with the Rusted Sword, Zamazenta with the Rusted Shield.)
+      // (Its Iron Head is Behemoth Blade / Bash in battle, as a Mimic'd move is.)
+      const crown = { Zacian: ["rusted-sword", "Behemoth Blade"], Zamazenta: ["rusted-shield", "Behemoth Bash"] }[mon.baseSpecies];
+      if (crown && mon.item === crown[0] && !mon.transformed) {
+        if (mon.species !== mon.baseSpecies + "-Crowned") this.formeChange(mon, mon.baseSpecies + "-Crowned");
+        const i = mon.moves.findIndex((m) => m.name === "Iron Head");
+        if (i >= 0) mon.moves[i] = Object.assign({}, mon.moves[i], { name: crown[1], id: toID(crown[1]), mimicOf: mon.moves[i] });
+      }
       if (mon.ability === "Imposter" && !mon.transformed) {
         // (Doubles: the foe standing opposite.)
         const foe = this.doubles ? mon.side.foe.actives[1 - mon.slot] : mon.side.foe.active;
@@ -1277,7 +1312,7 @@
         if (!disabled && mon.volatiles.throatchop && data.flags && data.flags.sound) disabled = true;
         if (!disabled && mon.volatiles.torment && mon.lastMove === m.id) disabled = true;
         if (!disabled && mon.volatiles.encore && mon.volatiles.encore.moveId && mon.volatiles.encore.moveId !== m.id) disabled = true;
-        if (!disabled && mon.item.indexOf("choice-") === 0 && mon.volatiles.choicelock && mon.volatiles.choicelock.moveId !== m.id) disabled = true;
+        if (!disabled && (mon.item.indexOf("choice-") === 0 || mon.hasAbility("Gorilla Tactics")) && mon.volatiles.choicelock && mon.volatiles.choicelock.moveId !== m.id) disabled = true;
         if (!disabled && mon.item === "assault-vest" && data.cat === "Status") disabled = true;
         return { index: i, id: m.id, name: m.name, pp: m.pp, maxpp: m.maxpp, disabled, type: data.type, category: data.cat, power: data.power, target: data.target };
       });
@@ -1306,8 +1341,9 @@
         if (foe && !foe.fainted) this.callAbility(foe, "onFoeTrapPokemon", { source: foe }, mon);
       }
       if (mon.volatiles.ingrain || mon.volatiles.skydrop) mon.trapped = true;
-      const sh = mon.volatiles.shackled;
+      const sh = mon.volatiles.shackled || mon.volatiles.octolock;
       if (sh && sh.source && sh.source.isActive && !sh.source.fainted) mon.trapped = true;
+      if (mon.volatiles.noretreat) mon.trapped = true;
       const pt = mon.volatiles.partiallytrapped;
       if (pt && pt.source && pt.source.isActive && !pt.source.fainted) mon.trapped = true;
       return mon.trapped;
@@ -1733,6 +1769,9 @@
             if (typeof pr === "number") pri = pr;
             let frac = 0;
             if (mon.item === "quick-claw" && this.randomChance(1, 5)) frac = 1;
+            // (Gen 8: Quick Draw, 30% with a damaging move; Grassy Glide on Grassy Terrain.)
+            if (mon.hasAbility("Quick Draw") && mv.category !== "Status" && this.randomChance(3, 10)) { frac = 1; mon.quickDraw = true; }
+            if (mv.id === "grassyglide" && this.field.terrain === "GrassyTerrain" && this.isGrounded(mon)) pri += 1;
             const act = { order: 3, type: "move", mon, side: s, moveName: name, slot: c.slot, forced: f, priority: pri, frac, speed: this.getSpeed(mon) };
             if (this.doubles) act.targetLoc = c.targetLoc;
             actions.push(act);
@@ -1756,7 +1795,7 @@
         return a.rand - b.rand;
       });
       for (const s of [this.sides.p1, this.sides.p2]) {
-        for (const m of s.actives) if (m) { m.moveThisTurn = false; m.usedItemThisTurn = false; m.lastDamage = null; }
+        for (const m of s.actives) if (m) { m.moveThisTurn = false; m.usedItemThisTurn = false; m.lastDamage = null; m.statsRaisedThisTurn = false; m.statsLoweredThisTurn = false; }
       }
       this.queue = actions;
       this.queue.push({ type: "residual", order: 9 });
@@ -2263,6 +2302,11 @@
         move.type = user.types[0]; move.typeOverride = true;
       }
       if (this.field.pseudo.iondeluge && move.type === "Normal") { move.type = "Electric"; move.typeOverride = true; }
+      // Gen 8: Terrain Pulse takes the terrain's type (on the ground); Aura
+      // Wheel is Dark in Morpeko's Hangry Mode.
+      const terrainType = { ElectricTerrain: "Electric", GrassyTerrain: "Grass", MistyTerrain: "Fairy", PsychicTerrain: "Psychic" }[this.field.terrain];
+      if (move.id === "terrainpulse" && terrainType && this.isGrounded(user)) { move.type = terrainType; move.typeOverride = true; }
+      if (move.id === "aurawheel" && user.species === "Morpeko-Hangry") { move.type = "Dark"; move.typeOverride = true; }
       let target, targets = null;
       if (this.doubles) {
         targets = this.getMoveTargets(user, move, o);
@@ -2287,7 +2331,7 @@
       }
       user.lastMove = move.id;
       user.moveThisTurn = true;
-      if (user.item.indexOf("choice-") === 0 && !o.bounced && move.id !== "struggle") {
+      if ((user.item.indexOf("choice-") === 0 || user.hasAbility("Gorilla Tactics")) && !o.bounced && move.id !== "struggle") {
         user.volatiles.choicelock = { moveId: move.id };
       }
       if (o.slot !== undefined && o.slot >= 0 && user.volatiles.encore && !user.volatiles.encore.moveId) user.volatiles.encore.moveId = move.id;
@@ -2320,6 +2364,7 @@
         else if (user.item === "power-herb") { this.consumeItem(user); this.add("-enditem", user, "Power Herb"); }
         else {
           this.add("-prepare", user, move.name);
+          if (move.id === "meteorbeam") this.boost(user, { spa: 1 }, user, E("Move", "meteorbeam", "Meteor Beam"));
           user.volatiles.twoturnmove = { id: "twoturnmove", move: move.name, invuln: INVULN[move.id] || null };
           // (Doubles: it strikes the same position next turn.)
           if (this.doubles && target && target !== user) user.volatiles.twoturnmove.targetLoc = this.locOf(target, user);
@@ -2385,12 +2430,12 @@
         this.pendingSwitch = { side: user.side, copy: move.selfSwitch === "copyvolatile", slot: user.slot };
       }
       // Mind Blown: the user loses half its max HP, hit or miss.
-      if (move.id === "mindblown" && !user.fainted && !user.hasAbility("Magic Guard")) {
-        this.damage(user, Math.ceil(user.maxhp / 2), user, E("Move", "mindblown", "Mind Blown"));
+      if ((move.id === "mindblown" || move.mindBlownRecoil || move.id === "chloroblast") && !user.fainted && !user.hasAbility("Magic Guard")) {
+        this.damage(user, Math.ceil(user.maxhp / 2), user, E("Move", move.id, move.name));
       }
       // (For Stomping Tantrum.)
       user.lastMoveFailed = !success;
-      if (!user.fainted) this.runEvent("onAfterMove", user, { only: "ability" });
+      if (!user.fainted) this.runEvent("onAfterMove", user, { only: "ability", relay: move, move });
       if (move.flags.dance && !o.danced) this.dancers(user, move);
     }
 
@@ -2458,7 +2503,7 @@
     // Storm Drain on anyone else (not against Mold Breaker), draw
     // single-target moves.
     redirectTarget(user, move, target) {
-      if (!target || !REDIRECTABLE.has(move.target) || user.hasAbility("Stalwart")) return target;
+      if (!target || !REDIRECTABLE.has(move.target) || user.hasAbility(["Stalwart", "Propeller Tail"]) || move.id === "snipeshot") return target;
       const foes = this.foesOf(user);
       const lit = foes.find((f) => f.volatiles.spotlight && !f.volatiles.skydrop);
       if (lit) return lit;
@@ -2563,6 +2608,12 @@
         }
         return true;
       }
+      // (Obstruct: damaging moves only; contact ones lose 2 Defense.)
+      if (v.obstruct && move.category !== "Status") {
+        this.add("-activate", target, "move: Protect");
+        if (move.flags.contact) this.boost(user, { def: -2 }, target, E("Move", "obstruct", "Obstruct"));
+        return true;
+      }
       if (target.side.conditions.quickguard && move.priority > 0) { this.add("-activate", target, "move: Quick Guard"); return true; }
       return false;
     }
@@ -2579,7 +2630,7 @@
         if (r === true) return true;
       }
       const w = this.getWeather();
-      if ((move.id === "thunder" || move.id === "hurricane") && (w === "RainDance" || w === "PrimordialSea")) return true;
+      if ((move.id === "thunder" || move.id === "hurricane" || /^(bleakwind|wildbolt|sandsear)storm$/.test(move.id)) && (w === "RainDance" || w === "PrimordialSea")) return true;
       if ((move.id === "thunder" || move.id === "hurricane") && (w === "SunnyDay" || w === "DesolateLand")) acc = 50;
       if (move.id === "blizzard" && w === "Hail") return true;
       if (!move.ohko) {
@@ -2609,7 +2660,8 @@
       try {
         if (!isSelf) {
           if (this.isInvulnerable(target, move)) { this.add("-miss", user, target); return false; }
-          if (move.flags.protect && !move.breaksProtect && this.isProtected(target, user, move)) return false;
+          const unseen = move.flags.contact && user.hasAbility("Unseen Fist");
+          if (move.flags.protect && !move.breaksProtect && !unseen && this.isProtected(target, user, move)) return false;
           if (this.sideGuarded(target, user, move)) return false;
           if (this.priorityBlocked(user, target, move, brk)) return false;
           if (move.flags.reflectable && target.volatiles.magiccoat && !move.hasBounced) {
@@ -2696,6 +2748,8 @@
 
       for (let i = 0; i < hits; i++) {
         if (target.fainted || user.fainted) break;
+        // (Gen 8's Triple Axel checks accuracy for each hit.)
+        if (i > 0 && move.multiaccuracy && move.gen && !this.accuracyCheck(user, target, move)) break;
         let crit = false;
         if (!luckyChant && !(move.id === "counter")) {
           const chance = window.Damage.critChance(user, move.name, { focusEnergy: !!user.volatiles.focusenergy });
@@ -2715,7 +2769,10 @@
           targetDamagedThisTurn: !!target.lastDamage, hitByTarget: !!(user.lastDamage && user.lastDamage.source === target),
           movesAfterTarget: target.moveThisTurn, allyFainted: user.side.faintedLastTurn, targetSwitching: !!o.pursuitSwitch,
           magnitude: this.magnitude,
-          moveType: move.typeOverride ? move.type : undefined, lastMoveFailed: !!user.lastMoveFailed
+          moveType: move.typeOverride ? move.type : undefined, lastMoveFailed: !!user.lastMoveFailed,
+          statsLowered: !!user.statsLoweredThisTurn, hitIndex: i,
+          suppressA: this.neutralized(user), suppressD: this.neutralized(target),
+          steelySpirit: [user, this.allyOf(user)].some((m) => m && m.hasAbility("Steely Spirit"))
         };
         // Flower Gift (Cherrim in the sun): 1.5x Attack for the user's side,
         // 1.5x Sp. Def for the target's (Mold Breaker ignores that one).
@@ -2732,6 +2789,7 @@
           opts.plusMinus = user.hasAbility(["Plus", "Minus"]) && !!uAlly && uAlly.hasAbility(["Plus", "Minus"]);
           opts.friendGuard = !!tAlly && tAlly !== user && tAlly.hasAbility("Friend Guard") && !move.ignoreAbility;
           opts.battery = !!uAlly && uAlly.hasAbility("Battery");
+          opts.powerSpot = !!uAlly && uAlly.hasAbility("Power Spot");
         }
         let r;
         try { r = window.Damage.calc(user, target, move.name, field, opts); }
@@ -2875,7 +2933,7 @@
         if (STALL_MOVES.has(vs)) {
           if (!this.stallSuccess(user)) { this.add("-fail", user); user.stallCount = 0; return false; }
           user.stallCount = (user.stallCount || 0) + 1;
-          if (vs === "endure" || vs === "protect" || vs === "kingsshield" || vs === "spikyshield" || vs === "banefulbunker") this.addVolatile(user, vs, user, moveEffect);
+          if (vs === "endure" || vs === "protect" || vs === "kingsshield" || vs === "spikyshield" || vs === "banefulbunker" || vs === "obstruct") this.addVolatile(user, vs, user, moveEffect);
           else this.addSideCondition(user.side, vs, user);
           return true;
         }
@@ -2999,7 +3057,7 @@
           for (const m of actives) if (!m.fainted && this.isGrounded(m)) this.heal(m, Math.floor(m.maxhp / 16), m, E("Terrain", "grassyterrain", "Grassy Terrain"));
         }
         f.terrainTurns--;
-        if (f.terrainTurns <= 0) { this.add("-fieldend", f.terrain); f.terrain = ""; }
+        if (f.terrainTurns <= 0) { this.add("-fieldend", f.terrain); f.terrain = ""; this.mimicry(); }
       }
       // Wish
       for (const s of [this.sides.p1, this.sides.p2]) {
@@ -3040,7 +3098,7 @@
             if (v.duration <= 0) this.removeVolatile(m, id);
           }
         }
-        if (!m.volatiles.protect && !m.volatiles.kingsshield && !m.volatiles.spikyshield && !m.volatiles.banefulbunker && !m.volatiles.endure
+        if (!m.volatiles.protect && !m.volatiles.kingsshield && !m.volatiles.spikyshield && !m.volatiles.banefulbunker && !m.volatiles.obstruct && !m.volatiles.endure
             && !(m.lastMove && STALL_MOVES.has(m.lastMove))) m.stallCount = 0;
         m.activeTurns++;
         if (m.hp && m.volatiles.roost === undefined && m.types.join() !== m.baseTypes.join() && !m.mega) { /* type changes persist */ }

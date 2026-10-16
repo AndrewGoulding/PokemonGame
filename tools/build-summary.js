@@ -89,7 +89,7 @@ const data = {
 
 const vm = require("vm");
 global.window = global;
-for (const f of ["data/moves.js", "data/moves-gen7.js", "data/abilities.js"]) vm.runInThisContext(fs.readFileSync(path.join(root, f), "utf8"));
+for (const f of ["data/moves.js", "data/moves-gen7.js", "data/moves-gen8.js", "data/abilities.js"]) vm.runInThisContext(fs.readFileSync(path.join(root, f), "utf8"));
 const key = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
 const strings = (body) => [...body.matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]).join("").replace(/\\n/g, "\n")
   .replace(/POKéMON/g, "Pokémon").replace(/\{PKMN\}/g, "Pokémon");
@@ -119,7 +119,9 @@ for (const block of xMoves.split(/\n    \[MOVE_/).slice(1)) {
 const xAbilities = fs.readFileSync(X("src/data/abilities.h"), "utf8");
 for (const block of xAbilities.split(/\n    \[ABILITY_/).slice(1)) {
   const name = /\.name = _\("([^"]+)"/.exec(block), desc = /\.description = COMPOUND_STRING\(([\s\S]*?)\),\n/.exec(block);
-  const ours = name && ourAbilities[key(name[1])];
+  // (Its two "As One"s are Showdown's, and this game's, As One (Glastrier) and (Spectrier).)
+  const asOne = { AS_ONE_ICE_RIDER: "As One (Glastrier)", AS_ONE_SHADOW_RIDER: "As One (Spectrier)" }[/^(\w+)\]/.exec(block)[1]];
+  const ours = asOne || (name && ourAbilities[key(name[1])]);
   if (ours && desc && !data.abilityText[ours]) data.abilityText[ours] = strings(desc[1]);
 }
 
