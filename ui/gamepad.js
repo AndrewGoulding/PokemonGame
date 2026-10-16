@@ -16,13 +16,17 @@
 
   const pad = document.createElement("div");
   pad.className = "gamepad";
+  // (The arrows are one triangle turned four ways: the ▶ and ◀ characters
+  // come out as colour emoji on some phones.)
+  const arrow = (turn) => '<svg viewBox="0 0 10 10" width="0.8em" height="0.8em" aria-hidden="true" style="pointer-events: none; transform: rotate(' + turn +
+    'deg)"><path d="M5 1.5 L9 8 L1 8 Z" fill="currentColor"/></svg>';
   pad.innerHTML =
     '<div class="dpad">' +
-      '<button type="button" data-btn="up" aria-label="Up">▲</button>' +
-      '<button type="button" data-btn="left" aria-label="Left">◀</button>' +
+      '<button type="button" data-btn="up" aria-label="Up">' + arrow(0) + '</button>' +
+      '<button type="button" data-btn="left" aria-label="Left">' + arrow(-90) + '</button>' +
       '<span class="dpad-mid"></span>' +
-      '<button type="button" data-btn="right" aria-label="Right">▶</button>' +
-      '<button type="button" data-btn="down" aria-label="Down">▼</button>' +
+      '<button type="button" data-btn="right" aria-label="Right">' + arrow(90) + '</button>' +
+      '<button type="button" data-btn="down" aria-label="Down">' + arrow(180) + '</button>' +
     "</div>" +
     '<div class="sys">' +
       '<button type="button" data-btn="select">Select</button>' +
