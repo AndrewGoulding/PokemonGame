@@ -109,8 +109,8 @@ Balls, Berries). Old saves simply sort into the new pockets, with FireRed's desc
 (its own words and line breaks, for the items FireRed has). A opens Use / Give / Toss; Toss asks how
 many and throws them away right there. It holds medicine, evolution
 stones (each item for evolving says "Evolves certain Pokémon when used."), Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
-the Exp. Share, Oak's Parcel, the Town Map and the fishing rods (there's no
-fishing yet). After the Bag come FireRed's Pokédex, the **National
+the Exp. Share, Oak's Parcel, the Town Map and the fishing rods (see
+**Fishing** below). After the Bag come FireRed's Pokédex, the **National
 Pokédex** from the moment Oak hands it over (Pokémon from beyond Kanto turn
 up in the campaign; FireRed's IsNationalPokedexEnabled is `Player.nationalDex`:
 its table of contents is FireRed's National one, with Seen and Owned each
@@ -168,6 +168,20 @@ protecting your exhausted Pokémon; then you're there, and the nurse heals them
 at the counter ("First, you should restore your Pokémon to full health.", the
 healing machine, and until you've beaten Brock her advice about Potions), or
 at home Red's Mom does.
+
+**Fishing** is FireRed's (`StartFishing` in src/field_player_avatar.c): use
+the Old, Good or Super Rod from the Bag, or register it to Select, facing
+water (on foot, water you could Surf onto; surfing, open water). You cast
+(FireRed's fishing sprites), and dots appear one by one in the text box, 4 to
+10 the first time; then half the time it's "Not even a nibble‥". When
+something bites the rod tugs, and you have 36, 33 or 30 frames (Old, Good,
+Super Rod) to press A or "It got away‥". The Good and Super Rods make you
+reel in more than once (1, 1-3 or 1-6 times, and perhaps once or twice
+more), then "A POKéMON's on the hook!" and a wild battle with the map's
+fishing Pokémon for that rod: FireRed's `fishing_mons`, the Old Rod's two
+slots (70/30), the Good Rod's three (60/20/20) and the Super Rod's five
+(40/40/15/4/1), each version's Pokémon where FireRed and LeafGreen differ.
+In the Safari Zone it's a Safari battle.
 
 **Saving**: the game saves automatically to this browser (including where you
 are on the map) after every battle, story event and menu change, and
@@ -560,7 +574,7 @@ CeruleanCave_B1F_EventScript_Mewtwo). Its icon shows on the Town Map from then
 on. With that, **Kanto and the Sevii Islands are complete**. Left out
 on purpose: the link rooms (the Pokémon Centers' Battle Colosseum, Trade
 Center, Record Corner and Union Room), FireRed's unused and prototype maps,
-fishing, breeding and Eggs (the Day-Cares never find one), e-Reader content
+e-Reader content
 (Seven Island's visiting trainers), and FireRed's Mystery Gift islands, Navel
 Rock and Birth Island (Ho-Oh, Lugia and Deoxys: Johto and Hoenn are to come
 instead; no tickets, no ferry there, and they stay sea on the Town Map). Tiles, palettes and metatiles come from
@@ -863,7 +877,7 @@ of them, the second under one next to it, and a wrong second can resets both;
 the electric beams are FireRed's metatiles, swapped in as `<Map>-patch-*.png`
 from `MAP_PATCHES` in `tools/build-maps.js`) with Lt. Surge (Voltorb, Pikachu and
 Raichu, the Thunder Badge and TM34 Shock Wave, this game's TM102), the Fishing
-Guru's Old Rod (there's no fishing yet), Elyssa's trade (Ch'Ding the
+Guru's Old Rod, Elyssa's trade (Ch'Ding the
 Farfetch'd for a Spearow), the Fan Club Chairman's Bike Voucher and the Bike
 Shop's Bicycle for it, Leaf waiting where the road from
 Route 6 comes into Vermilion (Butterfree 18, Wigglytuff 20, Nidorina 21 and her

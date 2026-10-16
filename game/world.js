@@ -7,6 +7,7 @@
 //   World.wildEncounter("Route1", rng)          // -> { species, level } or null (one roll)
 //   World.stepEncounter(state, "MtMoon_1F", x, y, { allow })   // FireRed's check for a step (below)
 //   World.step(pos, "left", occupied, { surf: true })   // surfing: water, or { dismount } onto land
+//   World.fishingEncounter("Route12", "good-rod")      // -> { species, level, slot } or null
 
 (function () {
   "use strict";
@@ -189,6 +190,17 @@
       !(occupied && occupied(ahead.map, ahead.x, ahead.y));
   }
 
+  // Whether a rod can be cast from `pos` facing `dir` (FireRed's CanFish):
+  // never at a waterfall; on foot, at water you could start surfing on;
+  // surfing, at open water.
+  function canFish(pos, dir, surfing, occupied) {
+    const [dx, dy] = DIRS[dir];
+    const ahead = blockAt(pos.map, pos.x + dx, pos.y + dy);
+    if (!ahead.map || ahead.behavior === MB.WATERFALL) return false;
+    if (!surfing) return facingWater(pos, dir, occupied);
+    return isSurfable(ahead.behavior) && !ahead.collision;
+  }
+
   // ---------- Cycling Road ----------
   //
   // On the slope on the Bicycle (FireRed's bike.c, BikeInputHandler_Normal and
@@ -256,6 +268,26 @@
     // A slot where LeafGreen differs from FireRed: either version's Pokémon.
     const species = s.alt && rng() < 0.5 ? s.alt : s.species;
     // (`slot`: which one, for Tanoby's Unown, whose letter goes by it.)
+    return { species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)), slot };
+  }
+
+  // Fishing (FireRed's ChooseWildMonIndex_Fishing): the Old Rod's slots 0-1
+  // (70, 30 percent), the Good Rod's 2-4 (60, 20, 20), the Super Rod's 5-9
+  // (40, 40, 15, 4, 1). -> { species, level, slot } or null (no fishing here).
+  const ROD_SLOTS = {
+    "old-rod": [[0, 70], [1, 30]],
+    "good-rod": [[2, 60], [3, 20], [4, 20]],
+    "super-rod": [[5, 40], [6, 40], [7, 15], [8, 4], [9, 1]]
+  };
+  function fishingEncounter(mapName, rodId, rng) {
+    rng = rng || Math.random;
+    const t = map(mapName).fishing, slots = ROD_SLOTS[rodId];
+    if (!t || !slots) return null;
+    let roll = Math.floor(rng() * 100), k = 0;
+    while (k < slots.length - 1 && roll >= slots[k][1]) roll -= slots[k++][1];
+    const slot = slots[k][0], s = t.slots[slot];
+    if (!s || !s.species) return null;
+    const species = s.alt && rng() < 0.5 ? s.alt : s.species;
     return { species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)), slot };
   }
 
@@ -337,6 +369,7 @@
   window.World = {
     walkable, pathBack,
     DIRS, OPPOSITE, MB, map, connectionOrigin, blockAt, warpAt, warpTarget, setDynamicWarp, step, facingWater, isSurfable,
-    isPullDown, slopeMove, currentDir, currentStep, CURRENT_SPEED, signAt, triggersAt, isGrass, wildEncounter, stepEncounter, pickWild, LAND_SLOT_WEIGHTS, WATER_SLOT_WEIGHTS
+    isPullDown, slopeMove, currentDir, currentStep, CURRENT_SPEED, signAt, triggersAt, isGrass, wildEncounter, stepEncounter, pickWild, LAND_SLOT_WEIGHTS, WATER_SLOT_WEIGHTS,
+    canFish, fishingEncounter, ROD_SLOTS
   };
 })();

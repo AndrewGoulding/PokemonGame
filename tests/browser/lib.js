@@ -79,8 +79,9 @@ async function start(edit, location, opts) {
     // Through the intro and title to CONTINUE.
     async boot() {
       await page.waitForTimeout(1500);
-      for (let i = 0; i < 6; i++) { await s.press("Enter"); await page.waitForTimeout(700); if (await page.evaluate(() => !!(window.Game && window.Game.player))) break; }
-      await page.waitForTimeout(1500);
+      const inWorld = () => page.evaluate(() => { const w = document.getElementById("world"); return !!w && !w.classList.contains("hidden") && !!(window.Game && window.Game.player); });
+      for (let i = 0; i < 12 && !(await inWorld()); i++) { await s.press(i < 2 ? "Enter" : "z"); await page.waitForTimeout(700); }
+      await page.waitForTimeout(1200);
     },
     async close() { await browser.close(); server.close(); }
   };

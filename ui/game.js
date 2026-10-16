@@ -658,9 +658,10 @@
     return r ? player.party[r.slot] : null;
   }
 
-  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case"];
+  const RODS = ["old-rod", "good-rod", "super-rod"];
+  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
-  const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map"];
+  const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map"].concat(RODS);
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
     item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS || item === "escape-rope";
   // TMs and HMs work like key items: they can't be held, tossed or sold.
@@ -675,6 +676,12 @@
     if (item === "itemfinder") { fieldAction = itemfinder; return "escaped"; }
     if (item === "vs-seeker") { fieldAction = vsSeeker; return "escaped"; }
     if (item === "bicycle") { fieldAction = bicycle; return "escaped"; }
+    if (RODS.includes(item)) {
+      // (Only facing water: FireRed's FieldUseFunc_Rod.)
+      if (!Overworld.ahead().fishable) { await message("Oak: " + player.name + "! This isn't the time to use that!"); return; }
+      fieldAction = () => fish(item);
+      return "escaped";
+    }
     if (item === "poke-flute") {
       // FireRed's Poké Flute outside battle: it wakes your sleeping Pokémon.
       const asleep = player.party.filter((r) => r.status === "slp");
@@ -5206,6 +5213,79 @@
     if (mode === "surf" || !here.cycling) { await say("Oak: " + player.name + "! This isn't the time to use that!"); return; }
     Overworld.setAvatar("bike");
   }
+  // Fishing (FireRed's StartFishing, src/field_player_avatar.c). You cast,
+  // and dots appear in the text box one every 20 frames (4 to 10 the first
+  // time); then half the time it's "Not even a nibble‥" (always, where
+  // there's nothing to fish). A bite tugs at the rod and you have 36, 33 or
+  // 30 frames (Old, Good, Super Rod) to press A, or "It got away‥". The
+  // better rods make you reel in more than once (at least 1, 1-3 or 1-6
+  // times, and maybe again: 40% / 10% for the Good Rod, 70% / 30% for the
+  // Super Rod), and then "A POKéMON's on the hook!" and a wild battle with
+  // the map's fishing Pokémon for that rod (World.fishingEncounter).
+  const ROD_INDEX = { "old-rod": 0, "good-rod": 1, "super-rod": 2 };
+  // A pressed within `ms` -> true, or false once it's past.
+  function pressAWithin(ms) {
+    return new Promise((resolve) => {
+      const onKey = (e) => {
+        if (!["z", "Z", " "].includes(e.key) || e.repeat) return;
+        e.preventDefault(); e.stopPropagation();
+        done(true);
+      };
+      const done = (v) => { clearTimeout(t); document.removeEventListener("keydown", onKey, true); resolve(v); };
+      const t = setTimeout(() => done(false), ms);
+      document.addEventListener("keydown", onKey, true);
+    });
+  }
+  async function fish(rodId) {
+    const r = ROD_INDEX[rodId], at = player.location;
+    const here = window.WORLD_MAPS[at.map] || {};
+    const frames = (n) => sleep(n * 1000 / 60);
+    const minRounds = 1 + Math.floor(Math.random() * [1, 3, 6][r]);
+    const second = frames(60);
+    await Overworld.rod("out");
+    await second;
+    let rounds = 0, result = null;
+    while (!result) {
+      // A round of dots.
+      let dots = Math.floor(Math.random() * 10) + 1;
+      if (rounds === 0) dots += 3;
+      dots = Math.min(dots, 10);
+      Screen.say(" ");
+      for (let n = 1; n <= dots; n++) {
+        await frames(20);
+        const text = Array(n).fill("·").join("  ");
+        Screen.say(text, text.length);
+      }
+      await frames(20);
+      // (Whether anything bites at all is only decided the first time.)
+      if (rounds++ === 0 && (!here.fishing || Math.random() < 0.5)) { result = "nibble"; break; }
+      Overworld.rod("bite");
+      if (!(await pressAWithin([36, 33, 30][r] * 1000 / 60))) { result = "away"; break; }
+      if (rounds < minRounds) continue;
+      if (rounds < 2 && Math.floor(Math.random() * 100) < [[0, 0], [40, 10], [70, 30]][r][rounds]) continue;
+      result = "hooked";
+    }
+    if (result !== "hooked") {
+      Overworld.rod("away");
+      await say(result === "nibble" ? "Not even a nibble‥" : "It got away‥");
+      Screen.say("");
+      Overworld.rod(null);
+      return;
+    }
+    await say("A POKéMON's on the hook!");
+    Screen.say("");
+    Overworld.rod(null);
+    const mon = World.fishingEncounter(at.map, rodId);
+    if (!mon) return;
+    player.flags.fishingCaptures = (player.flags.fishingCaptures | 0) + 1;
+    // (FireRed's pond, or the sea.)
+    const ahead = Overworld.ahead();
+    const terrain = ahead.behavior === 0x10 ? "pond" : "water";
+    if (safariOn()) { await safariBattle(mon.species, mon.level, terrain); return; }
+    if (!canBattle()) return;
+    await battle("wild", { foe: { name: "Wild", team: [Party.create(mon.species, mon.level)] }, terrain });
+  }
+
   // ---------- Cycling Road ----------
   //
   // (Route 16's and Route 18's gates, and the maps between: CYCLING_ROAD_MAPS.)

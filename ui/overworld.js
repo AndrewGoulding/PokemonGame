@@ -362,6 +362,49 @@
 
   // ---------- Walking, cycling, surfing ----------
 
+  // ---------- Fishing ----------
+  //
+  // The rod (FireRed's fishing sheet, 32x32: frames 0-3 facing left, 4-7 up,
+  // 8-11 down; right is left mirrored): taking it out and putting it away
+  // (sAnim_TakeOutRod*, sAnim_PutAwayRod*), and the hooked Pokémon tugging at
+  // it (sAnim_HookedPokemon*). [frame offset from the facing's first, frames].
+  const ROD_ANIMS = {
+    out: [[0, 4], [1, 4], [2, 4], [3, 4]],
+    away: [[3, 4], [2, 6], [1, 6], [0, 6]],
+    bite: [[2, 6], [3, 6], [2, 6], [3, 6], [3, 30]]
+  };
+  let rod = null;   // { anim, i, t, loop, resolve, hold }
+  // Starts a rod animation ("out", "away", "bite"; null puts the walking
+  // sprite back). Resolves when it's done ("bite" goes round until the next).
+  function setRod(kind) {
+    if (rod && rod.resolve) rod.resolve();
+    if (!kind) { rod = null; return Promise.resolve(); }
+    return new Promise((resolve) => { rod = { anim: ROD_ANIMS[kind], i: 0, t: 0, loop: kind === "bite", resolve }; });
+  }
+  function updateRod() {
+    if (!rod || rod.hold) return;
+    if (++rod.t < rod.anim[rod.i][1]) return;
+    rod.t = 0;
+    if (rod.i + 1 < rod.anim.length) { rod.i++; return; }
+    if (rod.loop) { rod.i = 0; return; }
+    rod.hold = true;   // (stays on its last frame)
+    const done = rod.resolve;
+    rod.resolve = null;
+    if (done) done();
+  }
+  // The frame to draw, and where (AlignFishingAnimationFrames: the cast
+  // frames sideways sit 8 pixels toward the rod, up 8 higher, down 8 lower).
+  function rodFrame() {
+    const off = rod.anim[rod.i][0];
+    const base = { left: 0, right: 0, up: 4, down: 8 }[me.facing];
+    const frame = base + off;
+    let dx = -8, dy = 0;
+    if (frame >= 1 && frame <= 3) dx += me.facing === "left" ? -8 : 8;
+    if (frame === 5) dy = -8;
+    if (frame === 10 || frame === 11) dy = 8;
+    return { frame, dx, dy };
+  }
+
   function setAvatar(mode) {
     if (me.avatar === mode) return;
     me.avatar = mode;
@@ -918,6 +961,7 @@
     if (pan) updatePan();
     updateWeather();
     if (heal) updateHeal();
+    updateRod();
     if (transition && ++transition.t > FLASH_FRAMES + SLICE_FRAMES + 4) {
       const done = transition.resolve;
       transition = null;
@@ -1155,7 +1199,13 @@
       frame = { down: 0, up: 2, left: 4, right: 4 }[me.facing];
       bob = Math.floor(performance.now() / 500) % 2;
     }
-    if (!me.hidden) sprites.push({ y: py, draw: () => drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob) });
+    let dy = 0;
+    if (rod && me.avatar !== "surf") {
+      // (Fishing on the water, you stay as you are on it.)
+      const r = rodFrame();
+      sheet = look + "_fish"; w = 32; frame = r.frame; dx = r.dx; dy = r.dy;
+    }
+    if (!me.hidden) sprites.push({ y: py, draw: () => drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy) });
     if (heal) drawHeal(camX, camY);   // the healing machine's balls and screen, under people
     sprites.sort((a, b) => a.y - b.y).forEach((s) => s.draw());
 
@@ -1233,7 +1283,7 @@
       });
     }
     const look = "player_" + (ctx.player.look || "custom");
-    await Promise.all([preloadMap(me.map), ...["_run", "_bike", "_surf"].map((k) => spriteImage(look + k).loaded)]);
+    await Promise.all([preloadMap(me.map), ...["_run", "_bike", "_surf", "_fish"].map((k) => spriteImage(look + k).loaded)]);
     showControls();
     hint();
     ignoreInputUntil = performance.now() + 200;
@@ -1270,13 +1320,15 @@
     explore, hide, read: (pages) => read(pages), showAreaName, forceStep, refreshPeople: () => loadPeople(),
     act, addObject, removeObject, removePerson, teleport, battleTransition, resume, pokecenterHeal,
     fadeToBlack: fadeOut, fadeFromBlack: fadeIn, shake,
-    setAvatar, avatar: () => me.avatar, flash, isDark: () => light != null && !flashOn,
+    setAvatar, avatar: () => me.avatar, flash, rod: setRod, isDark: () => light != null && !flashOn,
     // What's in front of you: the tile, whoever stands there, and whether
     // it's water you could start surfing on.
     ahead: () => {
       const [dx, dy] = World.DIRS[me.facing], x = me.x + dx, y = me.y + dy, p = personAt(x, y);
       return { map: me.map, x, y, facing: me.facing, person: p ? p.def : null, behavior: World.blockAt(me.map, x, y).behavior,
-        water: me.avatar !== "surf" && World.facingWater({ map: me.map, x: me.x, y: me.y }, me.facing, occupiedForPlayer) };
+        water: me.avatar !== "surf" && World.facingWater({ map: me.map, x: me.x, y: me.y }, me.facing, occupiedForPlayer),
+        // (Somewhere a rod can be cast: FireRed's CanFish.)
+        fishable: World.canFish({ map: me.map, x: me.x, y: me.y }, me.facing, me.avatar === "surf", occupiedForPlayer) };
     },
     position: () => ({ map: me.map, x: me.x, y: me.y, facing: me.facing }),
     // Everyone on the map now, where they stand (the VS Seeker looks around).

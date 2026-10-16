@@ -1362,6 +1362,18 @@ for (const share of [false, true]) {
   }
 }
 
+// Fishing (World.fishingEncounter): each rod its own slots of the map's fishing_mons.
+{
+  const rolls = (vals) => { let i = 0; return () => vals[i++ % vals.length]; };
+  assert.strictEqual(World.fishingEncounter("Route12", "old-rod", rolls([0.1, 0])).species, "Magikarp", "Old Rod: Magikarp");
+  const good = World.fishingEncounter("Route12", "good-rod", rolls([0.7, 0.9]));
+  assert.strictEqual(good.slot, 3, "Good Rod 60-79: slot 3");
+  assert.strictEqual(World.fishingEncounter("Route12", "super-rod", rolls([0.995, 0.9])).slot, 9, "Super Rod 99: slot 9");
+  assert.strictEqual(World.fishingEncounter("PewterCity", "old-rod"), null, "nothing to fish in Pewter");
+  assert(World.canFish({ map: "Route12", x: 19, y: 63 }, "right", false), "the Route 12 pier faces water");
+  assert(!World.canFish({ map: "Route12", x: 19, y: 63 }, "left", false), "...not land");
+}
+
 // FireRed's encounter check (World.stepEncounter): after an encounter, Mt. Moon
 // (rate 7) waits out its cooldown of 8 steps, each only a 5% chance of going on,
 // and a missed roll builds up the buff. Coming out of Mt. Moon, you step out

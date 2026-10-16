@@ -394,8 +394,8 @@ const GAME_TEXT = [
   "PalletTown_Text_LookCopiedTrainerTipsSign", "PalletTown_Text_PressStartToOpenMenuCopy"
 ];
 // The player character's overworld sheets (assets/sprites/overworld/<prefix>_normal.png,
-// <prefix>_surf_run.png, _bike.png and _surf.png), by look: player_<look>.png,
-// player_<look>_run.png, _bike.png and _surf.png.
+// <prefix>_surf_run.png, _bike.png, _surf.png and _fish.png), by look: player_<look>.png,
+// player_<look>_run.png, _bike.png, _surf.png and _fish.png.
 const PLAYER_SPRITES = { custom: "player_character" };
 
 const root = path.join(__dirname, "..");
@@ -1074,13 +1074,21 @@ for (const name of MAPS) {
     // (rock_smash_mons): kept apart from `wild` (the grass), which the
     // Pokédex's area pages and route crowns go by.
     water: slotsOf(land, "water_mons"),
-    rockSmash: slotsOf(land, "rock_smash_mons")
+    rockSmash: slotsOf(land, "rock_smash_mons"),
+    // Fishing (fishing_mons): slots 0-1 the Old Rod's, 2-4 the Good Rod's,
+    // 5-9 the Super Rod's; `alt` is LeafGreen's where it differs.
+    fishing: slotsOf(land, "fishing_mons", leafGreen)
   };
 }
-function slotsOf(enc, kind) {
+function slotsOf(enc, kind, other) {
   const e = enc && enc[kind];
   if (!e) return undefined;
-  return { rate: e.encounter_rate, slots: e.mons.map((m) => ({ species: dexByID[toID(m.species.replace(/^SPECIES_/, ""))], min: m.min_level, max: m.max_level })) };
+  const sp = (m) => dexByID[toID(m.species.replace(/^SPECIES_/, ""))];
+  const lg = other && other[kind];
+  return { rate: e.encounter_rate, slots: e.mons.map((m, i) => {
+    const alt = lg && lg.mons[i] && sp(lg.mons[i]);
+    return Object.assign({ species: sp(m), min: m.min_level, max: m.max_level }, alt && alt !== sp(m) ? { alt } : {});
+  }) };
 }
 
 // Movement scripts (walk_up, walk_in_place_faster_down, ...) by label, for the
@@ -1151,6 +1159,9 @@ for (const [color, prefix] of Object.entries(PLAYER_SPRITES)) {
   if (fs.existsSync(bike)) writeSprite(readPng(bike), path.join(outSprites, "player_" + color + "_bike.png"));
   const surf = path.join(root, "assets/sprites/overworld", prefix + "_surf.png");
   if (fs.existsSync(surf)) writeSprite(cropFrames(readPng(surf), 32, 0, 6), path.join(outSprites, "player_" + color + "_surf.png"));
+  // Fishing (32x32: casting left, up and down, four frames each).
+  const fish = path.join(root, "assets/sprites/overworld", prefix + "_fish.png");
+  if (fs.existsSync(fish)) writeSprite(readPng(fish), path.join(outSprites, "player_" + color + "_fish.png"));
 }
 
 // ---------- The Move Relearner and Move Deleter (not in FireRed) ----------
