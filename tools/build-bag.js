@@ -21,6 +21,9 @@
 //                                red_arrow.pal): left, then up, 16x16 each
 //   return-arrow.png             CANCEL's item icon (graphics/items/icons/
 //                                return_to_field_arrow.png), 24x24
+//   select-button.png            the SELECT button by the registered item
+//                                (graphics/interface/select_button.png, in the
+//                                list window's palette, bag_window_pal.pal), 24x16
 "use strict";
 
 const fs = require("fs");
@@ -98,5 +101,12 @@ sprite("red_arrow_other.png", "red_arrow.pal", "arrows.png");
   const rgba = new Uint8ClampedArray(img.width * img.height * 4);
   img.px.forEach((v, i) => { v &= 15; if (v) rgba.set([...colours[v], 255], i * 4); });
   writePng(path.join(out, "return-arrow.png"), img.width, img.height, rgba);
+}
+{
+  const img = readPng(P("graphics/interface/select_button.png"));
+  const colours = readPal(P("graphics/item_menu/bag_window_pal.pal"));
+  const rgba = new Uint8ClampedArray(img.width * img.height * 4);
+  img.px.forEach((v, i) => { v &= 15; if (v) rgba.set([...colours[v], 255], i * 4); });
+  writePng(path.join(out, "select-button.png"), img.width, img.height, rgba);
 }
 console.log("wrote assets/bag/");

@@ -21,6 +21,8 @@
 //   })
 //   // -> null (B, or CANCEL), or { action, id, pocket }
 //   BagScreen.close()   // hides it (it stays up after open() for messages)
+//   BagScreen.setRegistered(() => id)   // the item registered to SELECT, shown
+//                                       // with FireRed's SELECT button
 //
 // The ▶ and the list's scroll remember where they were in each pocket.
 (function () {
@@ -42,7 +44,7 @@
     if (!images[url]) { const img = new Image(); img.src = url; img.onload = () => st && paint(); images[url] = img; }
     return images[url];
   }
-  ["bg-male", "bg-female", "desc-dim", "bag-male", "bag-female", "arrows", "return-arrow"].forEach((n) => image("assets/bag/" + n + ".png"));
+  ["bg-male", "bg-female", "desc-dim", "bag-male", "bag-female", "arrows", "return-arrow", "select-button"].forEach((n) => image("assets/bag/" + n + ".png"));
   const A = (n) => image("assets/bag/" + n + ".png");
   const ready = (img) => img && img.complete && img.naturalWidth;
 
@@ -57,6 +59,7 @@
   // ---------- State ----------
 
   let st = null, raf = 0, frameNo = 0;
+  let registered = null;   // () => the id of the item registered to SELECT
 
   function pocket() { return st.pockets[st.pocket]; }
   function entries() { return pocket().items.concat([null]); }   // (null: CANCEL)
@@ -181,6 +184,16 @@
         const dw = Math.round(bw * sc), dh = Math.round(bh * sc);
         g.drawImage(icon, bx, by, bw, bh, 20 - Math.floor(dw / 2), 136 - Math.floor(dh / 2), dw, dh);
       } else g.drawImage(icon, 8, 124, 24, 24);
+    }
+    // The item registered to SELECT: the SELECT button where a quantity would
+    // be (x 0x70 in the list window, at 88), on its row.
+    const reg = registered && registered(), sel = A("select-button");
+    if (reg && ready(sel)) {
+      const m = mem();
+      for (let r = 0; r < Math.min(items.length, 6); r++) {
+        const it = items[m.top + r];
+        if (it && it.qty == null && it.id === reg) g.drawImage(sel, 88 + 0x70, 10 + 16 * r);
+      }
     }
     // Arrows: left / right for the pockets (8, 72 and 72, 72), up / down for a
     // list longer than six (160, 8 and 160, 104), bouncing 2 pixels.
@@ -403,5 +416,5 @@
     canvas.classList.add("hidden");
   }
 
-  window.BagScreen = { open, close };
+  window.BagScreen = { open, close, setRegistered: (fn) => { registered = fn; } };
 })();

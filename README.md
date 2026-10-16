@@ -1226,7 +1226,7 @@ and Pewter City's), water animation, and a Town Map of Johto.
   area pages and route crowns for now), and walking onto land hops you off.
 - **The Bicycle** (from the Bag, or Select once it's registered: key items
   you can use on the map can be registered to Select, Backspace on a
-  keyboard): riding sprite and cycling music, Emerald's Mach Bike speed, half as
+  keyboard; the Bag shows FireRed's SELECT button beside the registered one): riding sprite and cycling music, Emerald's Mach Bike speed, half as
   fast again (it picks up speed going straight: 1.5 times walking pace, then running
   pace, then 6 pixels a frame;
   stopping, turning or bumping into something starts over), wild Pokémon 80% as often (FireRed's rate on a bike), and only

@@ -1045,6 +1045,7 @@
   // USE and GIVE close it for the party screen or the text box and open it
   // again after; TOSS happens on the bag screen itself.
   let bagPocket = "Medicine";
+  BagScreen.setRegistered(() => player && player.flags.registered);
   function bagPockets() {
     const order = (id) => (Bag.isMachine(id) ? Bag.machines().indexOf(id) : 0);
     return Bag.POCKETS.map((p) => ({
