@@ -1737,7 +1737,7 @@
       // (An Egg: SUMMARY, SWITCH and CANCEL only.)
       const r = await openParty({ cursor, actions: (slot) => [{ label: "SUMMARY", value: "summary" }]
         .concat(FieldMoves.forMon(player.party[slot]).map((m) =>
-          ({ label: m.toUpperCase(), value: "field:" + m, field: true, desc: FieldMoves.info(m).desc })))
+          ({ label: m, value: "field:" + m, field: true, desc: FieldMoves.info(m).desc })))
         .concat([{ label: "SWITCH", value: "switch" }].concat(player.party[slot].egg ? [] : [{ label: "ITEM", value: "item" }]), [{ label: "CANCEL", value: "cancel" }]) });
       if (!r) { PartyMenu.close(); return; }
       cursor = r.cursor;
