@@ -102,6 +102,12 @@ body {
 .sprite.hit { animation: blink 0.5s steps(2) 1; }
 /* A move's effect (ui/battle-screen.js animateMove), in its type's colour. */
 .move-fx { position: absolute; pointer-events: none; z-index: 3; }
+/* Mega Evolution's animation (ui/battle-screen.js megaEvolution). */
+.mega-fx { position: absolute; pointer-events: none; z-index: 3; image-rendering: pixelated;
+  background-repeat: no-repeat; background-size: 100% 100%; transform: translate(-50%, -50%); }
+.mega-fx.white { background: #fff; }
+.mega-fx.speck { background-size: 100% 300%; background-position: 0 100%; opacity: 0.75; }
+.mega-fx.puff { background-size: 100% 400%; }
 /* The party summary bars (ui/battle-screen.js): the field's 240x112. */
 .party-bars { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; image-rendering: pixelated; pointer-events: none; }
 .move-fx.orb { width: 9%; aspect-ratio: 1; border-radius: 50%;

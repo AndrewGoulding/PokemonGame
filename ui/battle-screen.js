@@ -727,6 +727,108 @@
       fx.remove();
     }));
   }
+  // Mega Evolution's animation, pokeemerald-expansion's
+  // gBattleAnimGeneral_MegaEvolution (tools/build-mega-anim.js), frame for
+  // frame at 60 a second: the Pokémon flashes yellow six times
+  // (blend_color_cycle to 11/16 of RGB(31, 31, 11)) while three rounds of
+  // specks fly in to it from round about (gMegaParticlesSpriteTemplate: 13
+  // frames each, 3 apart) to SE_M_MEGA_KICK; then SE_M_SOLAR_BEAM and the
+  // stone grows over it (1/8 to double size in 120 frames), turning white
+  // 20 frames in as everything else does (80 and 48 frames); in the white it
+  // cries and becomes its Mega Evolution, the white fades (48 frames), it
+  // shakes (5 pixels, 14 frames), the Mega symbol grows on it, pulses and
+  // shrinks away, and six purple puffs swirl up round it (AnimParticleInVortex).
+  // `pos`: whose; `species`: what it becomes.
+  const FRAME_MS = 1000 / 60;
+  async function megaEvolution(pos, species) {
+    const v = view[pos], sprite = el.sides[pos].sprite;
+    const swap = () => { if (species) { v.species = species; v.form = ""; renderSide(pos); } };
+    if (!sceneOn()) { swap(); return; }
+    const frames = (n) => wait(n * FRAME_MS);
+    // (In GBA pixels: the field is 240x112.)
+    const [px, py] = centerOf(pos), cx = px * 2.4, cy = py * 1.12;
+    const mirror = sideOf(pos) === "p1" ? 1 : -1;   // (SetAnimSpriteInitialXOffset)
+    const piece = (file, w, h, cls) => {
+      const d = document.createElement("div");
+      d.className = "mega-fx" + (cls ? " " + cls : "");
+      if (file) d.style.backgroundImage = "url(assets/battle/anims/" + file + ")";
+      d.style.width = (w / 2.4) + "%";
+      d.style.height = (h / 1.12) + "%";
+      el.field.appendChild(d);
+      return d;
+    };
+    const at = (x, y) => ({ left: (x / 2.4) + "%", top: (y / 1.12) + "%" });
+    const all = [];
+
+    // Yellow flashes and the specks.
+    for (let i = 0; i < 3; i++) setTimeout(() => sfx("se_m_mega_kick"), i * 13 * FRAME_MS);
+    const yellow = "sepia(1) saturate(4) hue-rotate(5deg) brightness(1.3)";
+    all.push(sprite.animate([{ filter: "none" }, { filter: yellow }, { filter: "none" }],
+      { duration: 22 * FRAME_MS, iterations: 6 }).finished);
+    const SPECKS = [[40, -10], [-35, -10], [15, -40], [-10, -32], [25, -20], [-40, -20], [5, -40]];
+    for (let round = 0; round < 3; round++) {
+      for (const [dx, dy] of SPECKS) {
+        const p = piece("mega-particles.png", 16, 16, "speck");
+        all.push(p.animate([Object.assign(at(cx + dx * mirror, cy + dy), { transform: "translate(-50%, -50%) scale(1)" }),
+          Object.assign(at(cx, cy), { transform: "translate(-50%, -50%) scale(" + (1 - 13 * 5 / 256) + ")" })],
+          { duration: 13 * FRAME_MS, fill: "forwards" }).finished.then(() => p.remove()));
+        await frames(3);
+      }
+    }
+    await Promise.all(all.splice(0));
+
+    // The stone, and everything turning white.
+    sfx("se_m_solar_beam");
+    const white = piece(null, 240, 112, "white");
+    Object.assign(white.style, { left: "0", top: "0", transform: "none", opacity: 0 });
+    const stone = piece("mega-stone.png", 64, 64), stoneWhite = piece("mega-stone-white.png", 64, 64);
+    for (const st of [stone, stoneWhite]) {
+      Object.assign(st.style, at(cx, cy));
+      all.push(st.animate([{ transform: "translate(-50%, -50%) scale(0.125)" }, { transform: "translate(-50%, -50%) scale(2)" }],
+        { duration: 120 * FRAME_MS, fill: "forwards" }).finished);
+    }
+    stoneWhite.style.opacity = 0;
+    await frames(20);
+    all.push(stoneWhite.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 80 * FRAME_MS, fill: "forwards" }).finished);
+    all.push(white.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 48 * FRAME_MS, fill: "forwards" }).finished);
+    await Promise.all(all.splice(0));
+    stone.remove(); stoneWhite.remove();
+
+    // In the white: its cry, and it's changed.
+    swap();
+    cry(pos);
+    await spriteReady(sprite);
+    all.push(white.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 48 * FRAME_MS, fill: "forwards" }).finished.then(() => white.remove()));
+    const shake = [], gbaPx = el.field.clientWidth / 240;
+    for (let i = 0; i < 14; i++) shake.push({ transform: "translateX(" + (i % 2 ? -5 : 5) * gbaPx + "px)" });
+    shake.push({ transform: "translateX(0)" });
+    all.push(sprite.animate(shake, { duration: 14 * FRAME_MS }).finished);
+    // The symbol: 1/16 to about double in 15 frames, a pause, six pulses of
+    // 1/16 either way over 4 frames, and down again in 15.
+    const symbol = piece("mega-symbol.png", 32, 32);
+    Object.assign(symbol.style, at(cx, cy));
+    const sc = (k) => ({ transform: "translate(-50%, -50%) scale(" + (k / 256) + ")" });
+    const kf = [sc(16), sc(496), sc(496)];
+    for (let i = 0; i < 6; i++) kf.push(sc(i % 2 ? 496 : 432));
+    kf.push(sc(16));
+    const times = [0, 15, 17, 21, 25, 29, 33, 37, 41, 56];
+    all.push(symbol.animate(kf.map((k, i) => Object.assign(k, { offset: times[i] / 56 })), { duration: 56 * FRAME_MS }).finished.then(() => symbol.remove()));
+    await frames(2);
+    // The puffs: [y, rise (1/256 pixel a frame), frames, sway step, sway].
+    const PUFFS = [[12, 528, 30, 13, 50], [0, 480, 20, 16, -46], [1, 576, 20, 8, 42], [15, 400, 25, 11, -42], [12, 512, 25, 16, 46], [1, 464, 30, 15, -50]];
+    for (const [y0, rise, n, step, sway] of PUFFS) {
+      const puff = piece("mega-smoke.png", 32, 32, "puff");
+      const kfs = [];
+      for (let f = 0; f <= n; f++) {
+        const x = cx + Math.sin((f * step & 255) / 256 * 2 * Math.PI) * sway, y = cy + y0 - (f * rise >> 8);
+        kfs.push(Object.assign(at(x, y), { backgroundPositionY: (Math.min(3, Math.floor(f / 3)) * 100 / 3) + "%", offset: f / n }));
+      }
+      all.push(puff.animate(kfs, { duration: n * FRAME_MS, easing: "steps(" + n + ", end)" }).finished.then(() => puff.remove()));
+      await frames(2);
+    }
+    await Promise.all(all.splice(0));
+  }
+
   // A stat rising (red) or falling (blue) on a Pokémon, with FireRed's sound.
   async function animateStat(side, up) {
     if (!sceneOn()) return;
@@ -987,9 +1089,18 @@
       case "-singleturn": return effectId(b) === "focuspunch" ? fill("{who} is tightening its focus!", a) : null;
       case "-ability": return fill(lookup(ABILITY, effectId(b), "{who}'s " + b + "!"), a);
       case "-mega": {
-        // (Into the Mega Evolution its stone names: "Mega Charizard X".)
+        // pokeemerald-expansion's BattleScript_MegaEvolution: "…'s Charizardite X
+        // is reacting to …'s Mega Ring!", its animation (the picture changes
+        // in the white), then "… has Mega Evolved into Mega Charizard X!" (the
+        // Mega Evolution its stone names).
         const into = /into (Mega [^.]+)\./.exec(((window.ITEMS || {})[c] || {}).effect || "");
-        return fill("{who} has Mega Evolved into " + (into ? into[1] : "Mega " + b) + "!", a);
+        const change = battle.events.slice(cursor).find((e) => e[0] === "detailschange" && e[1] === a);
+        const trainer = battle.sides[side].name;
+        return async () => {
+          await message(fill("{who}'s " + ballName(c) + " is reacting to " + trainer + "'s Mega Ring!", a));
+          await megaEvolution(pos, change && change[2]);
+          await message(fill("{who} has Mega Evolved into " + (into ? into[1] : "Mega " + b) + "!", a));
+        };
       }
       case "-transform": return fill("{who} transformed into " + nameOf(b) + "!", a);
       case "-enditem": return fill("{who} used its " + b + "!", a);

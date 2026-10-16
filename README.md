@@ -1038,7 +1038,15 @@ battle: in the move menu, START switches Mega Evolution on for the move you
 pick, shown as pokeemerald-expansion shows it: its Mega trigger slides out
 from behind your healthbox while you choose a move and lights up while it's
 on. A Mega Evolved Pokémon's healthbox (either side, singles or doubles) shows
-the expansion's Mega symbol in place of "Lv" (tools/build-mega-icons.js). Its
+the expansion's Mega symbol in place of "Lv" (tools/build-mega-icons.js).
+Mega Evolving plays the expansion's BattleScript_MegaEvolution: "…'s
+Charizardite X is reacting to …'s Mega Ring!", then its Mega Evolution
+animation frame for frame (gBattleAnimGeneral_MegaEvolution, pictures by
+tools/build-mega-anim.js): yellow flashes while specks fly in, the Mega Stone
+grows over it as the screen turns white, it cries and changes in the white,
+then shakes as the Mega symbol pulses on it and purple puffs swirl up; then
+"… has Mega Evolved into Mega Charizard X!" (BATTLE SCENE off leaves out the
+animation). Its
 Summary in battle (from the party screen) shows its Mega form: the Mega
 picture, the stats the battle worked out, its Mega ability and types; after
 the battle it's back to its own form. (FireRed has no Mega Evolution; trainers
