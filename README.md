@@ -96,9 +96,16 @@ where?"; ITEM gives or takes a held item). The
 same screen picks a Pokémon for an item (ABLE / NOT ABLE for TMs and
 evolution stones), a trade or a tutor, and for switching in battle (SHIFT, or
 SUMMARY to look at a Pokémon as it is in the battle).
-Then the Bag, FireRed's Bag screen with six pockets (Items, Medicine, Poké
-Balls, TMs & HMs, Berries, Key Items; left / right between them, and each
-pocket remembers where its ▶ was), with FireRed's descriptions under the list
+Then the Bag, FireRed's Bag screen with nine pockets (Items, Medicine,
+Power-up, Poké Balls, TMs & HMs, Berries, Held Items, Mega Stones, Key Items;
+left / right between them, and each pocket remembers where its ▶ was). Power-up
+holds what makes a Pokémon stronger for good (vitamins, Wings, PP Up and PP
+Max, mints, Rare Candy, Exp. Candies, Ability Capsule, Bottle Caps), Held Items
+what is mainly for holding (Leftovers, Choice items, type boosters, weather
+rocks, Light Clay, Iron Ball...), Mega Stones the stones; the new pockets show
+the bag recoloured (blue, green, violet; tools/build-bag.js). In battle the Bag
+shows only the pockets with something usable there (Items, Medicine, Poké
+Balls, Berries). Old saves simply sort into the new pockets, with FireRed's descriptions under the list
 (its own words and line breaks, for the items FireRed has). A opens Use / Give / Toss; Toss asks how
 many and throws them away right there. It holds medicine, evolution
 stones (each item for evolving says "Evolves certain Pokémon when used."), Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
@@ -258,11 +265,15 @@ rescued, then naps beside it): its Pokémon Center, the Poké Mart, the Copycat'
 house (bring her a Poké Doll and she teaches Mimic), Mr. Psychic (TM29 Psychic),
 the Pokémon Trainer Fan Club, the Fighting Dojo (its Black Belts and the Karate
 Master, who turns to face you as you pass him; beaten, he lets you take
-Hitmonlee or Hitmonchan, Lv. 25, and the other stays on its shelf), and
+Hitmonlee or Hitmonchan, Lv. 25, and the other stays on its shelf; once
+you're Champion its Black Belts and the Karate Master battle you once more,
+with their Pokémon fully evolved at Lv. 48-52 (Machamp, Primeape, Hitmonlee
+and Hitmonchan), and the Karate Master, beaten again, gives you the Hitmon
+you left behind, Lv. 50), and
 Sabrina's Gym, a maze of warp pads you spin away on (the Marsh Badge and TM04
 Calm Mind). Silph Co., 1F to 11F: its Rockets and scientists, its items, the
 warp pads between floors and rooms, the elevator, and locked doors that the Card
-Key from 5F opens for good; the Thunder Wave tutor on 2F, a nap on 9F, Gary on 7F
+Key from 5F opens for good; the Thunder Wave tutor on 2F (₽1,000 a time, as often as you like), a nap on 9F, Gary on 7F
 (Pidgeot, Growlithe, Gyarados, Exeggutor, Umbreon and an Alakazam holding its
 Alakazite, which Mega Evolves; Lv. 35-40) and the Silph worker there who gives
 you a Lapras, Lv. 25; and Giovanni in the boardroom on 11F, where Red comes down
@@ -966,9 +977,26 @@ only then does Mr. Fuji come over: impressed by your battling, he gives you the
 Gengarite and goes home to the Pokémon House.
 
 With the Mega Ring, a Pokémon holding its Mega Stone can Mega Evolve once a
-battle: in the move menu, START switches Mega Evolution on ("MEGA EVOLVE: ON")
-for the move you pick. (FireRed has no Mega Evolution; trainers holding a Mega
-Stone already could.)
+battle: in the move menu, START switches Mega Evolution on for the move you
+pick, shown as pokeemerald-expansion shows it: its Mega trigger slides out
+from behind your healthbox while you choose a move and lights up while it's
+on. A Mega Evolved Pokémon's healthbox (either side, singles or doubles) shows
+the expansion's Mega symbol in place of "Lv" (tools/build-mega-icons.js). Its
+Summary in battle (from the party screen) shows its Mega form: the Mega
+picture, the stats the battle worked out, its Mega ability and types; after
+the battle it's back to its own form. (FireRed has no Mega Evolution; trainers
+holding a Mega Stone already could.)
+
+Other Mega Stones around Kanto (this game's own): the Beedrillite in Viridian
+Forest, the Aerodactylite in Mt. Moon (B2F), the Gyaradosite on Route 25, the
+Slowbronite in the Seafoam Islands (1F), the Pinsirite in the Safari Zone
+(Center area), and the Mewtwonite X and Y beside Mewtwo's spot in Cerulean
+Cave once Mewtwo is caught or beaten (not if you run), all as item balls; Gary
+gives you the Pidgeotite after your battle on Silph Co. 7F, Sabrina the
+Alakazite with the Marsh Badge's TM, and Giovanni the Kangaskhanite with the
+Earth Badge's TM. (From a save that won those battles before: Sabrina gives
+hers when you talk to her again, Giovanni too if he's still in his Gym, and
+otherwise Gary's and Giovanni's are item balls where they stood.)
 
 ## Progression rules (Gen 6)
 
