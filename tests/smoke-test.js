@@ -604,7 +604,7 @@ for (const share of [false, true]) {
   for (let i = 0; i < 7; i++) Player.receive(p, Party.create("Pidgey", 5, { rng }));
   assert.strictEqual(p.party.length, 6);
   assert.strictEqual(Player.boxCount(p.boxes[0]), 1, "the seventh goes to the PC");
-  assert.strictEqual(p.boxes.length, 14);
+  assert.strictEqual(p.boxes.length, 30);
   assert.strictEqual(p.boxes[0].length, 30);
   assert(Player.hasCaught(p, "Pidgey"));
   assert.strictEqual(Player.withdraw(p, 0, 0), "Your party is full.");
@@ -625,15 +625,15 @@ for (const share of [false, true]) {
     assert.deepStrictEqual([q.party[0].species, q.boxes[0][0].species], ["Rattata", "Pidgey"]);
   }
 
-  // Saves from before FireRed's PC: 8 packed boxes become 14 of 30 slots.
+  // Saves from before FireRed's PC: 8 packed boxes become 30 of 30 slots.
   {
     const old = JSON.parse(Player.serialize(p));
     old.version = 2; old.boxes = [[p.party[0]]]; delete old.boxNames; delete old.boxWallpapers;
     const { player: o } = Player.load(old);
-    assert.strictEqual(o.boxes.length, 14);
+    assert.strictEqual(o.boxes.length, 30);
     assert.strictEqual(o.boxes[0][0].species, "Pidgey");
     assert.strictEqual(o.boxes[0][1], null);
-    assert.deepStrictEqual([o.boxNames[13], o.boxWallpapers[5]], ["BOX14", 1]);
+    assert.deepStrictEqual([o.boxNames[29], o.boxWallpapers[5]], ["BOX30", 1]);
     assert.strictEqual(Player.deposit(o, 1, 3, 7), null);
     assert(o.boxes[3][7] && Player.boxCount(o.boxes[3]) === 1, "deposit into a chosen slot");
   }

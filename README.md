@@ -48,7 +48,7 @@ seen and owned, his word on it to its fanfare, then the National Pokédex's
 and whether it's complete; the aides around Kanto count Kanto's kinds, as
 FireRed's do); the Hall of Fame once you're
 Champion: each team on record, newest first, as FireRed's PC shows it). Bill's PC is the Pokémon Storage
-System: 14 boxes of 30 (BOX1-BOX14, each with a name and one of FireRed's 16
+System: 30 boxes of 30 (BOX1-BOX30, each with a name and one of FireRed's 16
 wallpapers), Withdraw, Deposit, Move Pokémon (pick a Pokémon up with the hand
 and put it down anywhere, in a box or your party) and Move items (take, give and
 swap held items), with FireRed's hand, party panel, "which BOX?" popup, box

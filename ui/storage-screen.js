@@ -7,7 +7,7 @@
 //
 //   await StorageScreen.open({
 //     mode,        // "withdraw" | "deposit" | "move" | "items"
-//     boxes,       // the PC: 14 arrays of 30 (records, or null), changed in place
+//     boxes,       // the PC: 30 arrays of 30 (records, or null), changed in place
 //     names, wallpapers,   // each box's name and wallpaper (0-15), changed in place
 //     party,       // your party's records, changed in place (packed again on the way out)
 //     box,         // the box to open on
@@ -51,7 +51,7 @@
     "cursor-shadow", "box-arrows", "choose-box", "waveform"].forEach(PC);
   const ready = (img) => img && img.complete && img.naturalWidth;
 
-  const BOX_SIZE = 30, BOXES = 14;
+  const BOX_SIZE = 30, BOXES = window.Player ? window.Player.BOX_COUNT : 30;
   const WALLPAPER_NAMES = ["Forest", "City", "Desert", "Savanna", "Crag", "Volcano", "Snow", "Cave",
     "Beach", "Seafloor", "River", "Sky", "Stars", "Poké Center", "Tiles", "Simple"];
   const THEMES = ["Scenery 1", "Scenery 2", "Scenery 3", "Etcetera"];
@@ -402,7 +402,7 @@
   // Changing boxes: the new one slides in, 6 pixels a frame for 32 frames.
   async function scrollTo(b) {
     if (b === st.box) return;
-    const fwd = (b - st.box + BOXES) % BOXES, dir = fwd < 7 ? 1 : -1;
+    const fwd = (b - st.box + BOXES) % BOXES, dir = fwd <= BOXES / 2 ? 1 : -1;
     se("se_select");
     st.scroll = { from: st.box, dir, dx: 0 };
     st.box = b;

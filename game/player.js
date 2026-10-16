@@ -14,11 +14,11 @@
   "use strict";
 
   // 2: TMs and HMs renumbered (Flash and Rock Smash became HMs; see game/bag.js).
-  // 3: FireRed's PC: 14 boxes of 30 fixed slots (null where empty), with names
+  // 3: FireRed's PC: boxes of 30 fixed slots (null where empty), with names
   //    and wallpapers.
   const VERSION = 3;
   const PARTY_SIZE = 6;
-  const BOX_COUNT = 14;
+  const BOX_COUNT = 30;
   const BOX_SIZE = 30;
   const STARTING_MONEY = 3000;
   // The Exp. Share (Gen 6, party-wide) is a key item you start with, switched on,
