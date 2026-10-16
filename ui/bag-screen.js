@@ -17,6 +17,7 @@
 //     deposit    // instead of the menu (the PC's DEPOSIT ITEM): A asks "Deposit
 //                //   how many?" and calls deposit(id, n), which returns an error
 //                //   message or null
+//     fresh      // the cursors start at the top and aren't remembered
 //   })
 //   // -> null (B, or CANCEL), or { action, id, pocket }
 //   BagScreen.close()   // hides it (it stays up after open() for messages)
@@ -50,7 +51,8 @@
   // turn, left, middle, right, then round again (bag_*.png: 2 the left
   // pocket, 3 the middle, 1 the right).
   const BAG_FRAMES = [2, 3, 1];
-  const memory = {};   // pocket name -> { cursor, top }
+  let memory = {};   // pocket name -> { cursor, top }
+  let saved = null;   // (yours, while a demo's bag has its own)
 
   // ---------- State ----------
 
@@ -331,6 +333,9 @@
   async function open(opts) {
     st = { opts, pockets: opts.pockets(), pocket: Math.max(0, opts.pocket || 0), female: !!opts.female, frame: opts.frame,
       menu: null, prompt: null, hop: 5, hopY: 5, shake: -1 };
+    // (opts.fresh: a bag of its own, the old man's: every ▶ at the top, and
+    // yours as you left them after.)
+    if (opts.fresh) { saved = memory; memory = {}; }
     if (opts.pocketName) { const i = st.pockets.findIndex((p) => p.name === opts.pocketName); if (i >= 0) st.pocket = i; }
     clampMem();
     canvas.classList.remove("hidden");
@@ -392,6 +397,7 @@
   }
 
   function close() {
+    if (saved) { memory = saved; saved = null; }
     st = null;
     cancelAnimationFrame(raf);
     canvas.classList.add("hidden");

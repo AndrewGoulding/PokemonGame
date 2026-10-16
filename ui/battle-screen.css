@@ -316,6 +316,8 @@ body {
   image-rendering: pixelated;
   transition: transform 0.35s ease-in, opacity 0.35s;
 }
+/* (The old man's: 4 frames.) */
+.trainer-back.four { background-size: 100% 400%; }
 .trainer-back.leaving { transform: translateX(-150%); opacity: 0; }
 /* A tag battle: you at x 32, your partner at 90 (PlayerHandleDrawTrainerPic). */
 .field.tag .trainer-back { left: 0; }

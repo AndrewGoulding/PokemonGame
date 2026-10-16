@@ -30,6 +30,9 @@
 //     // items: [{ key, label, help }]; drawn over the map (the rest of the
 //     // canvas clear) -> { key (or "exit"), cursor }
 //
+//   await GbaMenus.simulate([[64, "right"], [64, "a"]])
+//     // scripted presses, frames apart, for the menus here (your keys wait)
+//
 // The D-pad moves, A picks and B goes back (Z / X on a keyboard).
 (function () {
   "use strict";
@@ -179,6 +182,7 @@
         const k = KEY[e.key];
         if (!k) return;
         e.preventDefault(); e.stopImmediatePropagation();
+        if (autopilot && !e.autopilot) return;   // (only the scripted presses)
         if (e.repeat && (k === "a" || k === "b")) return;
         const r = onKey(k);
         if (r !== undefined) { document.removeEventListener("keydown", handler, true); resolve(r); }
@@ -187,6 +191,23 @@
     });
   }
   const se = () => { if (window.GameAudio && window.GameAudio.se) window.GameAudio.se("se_select"); };
+
+  // Scripted presses (FireRed's simulated input, as the old man's catching
+  // demo): `presses` = [[frame, key], ...], each counted from the one before
+  // at 60 frames a second; your own keys do nothing until it's done.
+  let autopilot = false;
+  const KEY_NAME = { up: "ArrowUp", down: "ArrowDown", left: "ArrowLeft", right: "ArrowRight", a: "z", b: "x" };
+  async function simulate(presses) {
+    autopilot = true;
+    try {
+      for (const [frames, key] of presses) {
+        await new Promise((r) => setTimeout(r, frames * 1000 / 60));
+        const e = new KeyboardEvent("keydown", { key: KEY_NAME[key], bubbles: true, cancelable: true });
+        e.autopilot = true;
+        document.dispatchEvent(e);
+      }
+    } finally { autopilot = false; }
+  }
 
   // ---------- The main menu (src/main_menu.c) ----------
 
@@ -828,6 +849,7 @@
   }
 
   window.GbaMenus = {
+    simulate,
     battleAction: (canvas, ...a) => during("battle", battleAction(canvas, ...a)),
     battleMoves: (canvas, ...a) => during("moves", battleMoves(canvas, ...a)),
     battleYesNo: (canvas, ...a) => during("battleyesno", battleYesNo(canvas, ...a)),

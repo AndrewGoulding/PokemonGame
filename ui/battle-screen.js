@@ -1077,7 +1077,12 @@
       case "-ball":   // [side, ball, target, shakes, "caught"|"", (Safari Balls left)]
         return async () => {
           if (ev[6] != null) showSafariBox(+ev[6]);
-          await message("You threw a " + ballName(b) + "!", 700);
+          // (The old man throws his: frames 1, 2, 3, back to 0, 24/9/24/9 frames.)
+          if (config.oldMan) {
+            await message("The old man used\n" + ballName(b) + "!", 700);
+            const t = trainerEl();
+            (async () => { for (const [f, n] of [[1, 24], [2, 9], [3, 24], [0, 9]]) { t.style.backgroundPositionY = (f * 100 / 3) + "%"; await wait(n * 1000 / 60); } })();
+          } else await message("You threw a " + ballName(b) + "!", 700);
           sfx("se_ball_throw");
           el.ball.src = "assets/sprites/items/ball/" + b.replace(/-ball$/, "") + ".png";
           el.ball.classList.remove("hidden", "shake", "caught");
@@ -1751,6 +1756,7 @@
     if (cfg.trainer) {
       trainer.style.backgroundImage = "url(assets/sprites/trainers/back/" + cfg.trainer + ".png)";
       trainer.style.backgroundPositionY = "0%";
+      trainer.classList.toggle("four", !!cfg.oldMan);   // (his picture has 4 frames, not 5)
       trainer.classList.remove("hidden", "leaving");
       movers.push([trainer, shift]);
       trainerOut = true;
@@ -1808,7 +1814,9 @@
       sparkle("p2");
       await wait(350);
       el.sides.p2.info.classList.remove("hidden");
-      await message("A wild " + mon.name + " appeared!");
+      // (The old man's: "Wild … appeared!{PAUSE 127}", on by itself.)
+      if (cfg.oldMan) await message("Wild " + mon.name + " appeared!", 127 * 1000 / 60);
+      else await message("A wild " + mon.name + " appeared!");
       foeAnnounced = true;
     }
   }
@@ -2038,6 +2046,54 @@
     t.classList.add("hidden");
   }
 
+  // FireRed's catching demo in Viridian City (StartOldManTutorialBattle and
+  // the old man's battle controller): a wild Lv. 5 Weedle, the old man from
+  // behind with no Pokémon of his own; after 64 frames his ▶ goes to BAG and
+  // after 64 more it opens; in his bag (a Potion and a Poké Ball, InitOldManBag)
+  // the pockets turn every 102 frames to the Poké Balls, the ball is chosen
+  // and used (Task_Bag_OldManTutorial); it shakes three times and the Weedle's
+  // caught, but it's not his to keep. Nothing here needs a key.
+  // cfg: { mon: { name, species, level, hp, maxhp }, terrain, bagFemale }
+  async function oldManTutorial(cfg) {
+    config = Object.assign({ oldMan: true, wild: true }, cfg);
+    partyOrder = null;
+    const mon = cfg.mon;
+    battle = { wild: true, doubles: false, events: [], sides: { p1: { tag: false, pokemon: [] }, p2: { pokemon: [mon] } } };
+    cursor = 0;
+    hbStop();
+    doublesLayout = false;
+    el.field.classList.remove("doubles", "tag");
+    view = { p1: { species: null }, p2: { species: null }, p1b: { species: null }, p2b: { species: null } };
+    el.ball.classList.add("hidden");
+    for (const k of POSITIONS) renderSide(k);
+    await intro(Object.assign({}, config, { trainer: "old_man", p2: { team: [{}] } }));
+    say("");
+    clearMenu();
+    const chose = window.GbaMenus.battleAction(overlay(), { name: "", prompt: ["What will the", "old man do?"], cursor: 0, frame: frame() });
+    await window.GbaMenus.simulate([[64, "right"], [64, "a"]]);
+    await chose;
+    const item = (id) => ({ id, name: window.Bag.name(id), icon: window.Bag.sprite(id), qty: 1, desc: window.Bag.description(id) });
+    const bag = window.BagScreen.open({
+      fresh: true, female: !!cfg.bagFemale, frame: frame(),
+      pockets: () => [{ name: "Items", items: [item("potion")] }, { name: "Key Items", items: [] }, { name: "Poké Balls", items: [item("poke-ball")] }],
+      actions: () => [{ label: "Use", value: "use" }]
+    });
+    await window.GbaMenus.simulate([[102, "right"], [102, "right"], [102, "a"], [102, "a"]]);
+    await bag;
+    window.BagScreen.close();
+    await applyEvent(["-ball", "p1", "poke-ball", "p2a: " + mon.name, "3", "caught"])();
+    const GA = window.GameAudio;
+    if (GA) GA.music("mus_caught");
+    const jingle = GA ? GA.fanfare("mus_caught_intro") : null;
+    await message("Gotcha! " + mon.name + " was caught!");
+    await jingle;
+    await wait(500);
+    hbStop();
+    el.ball.classList.add("hidden");
+    trainerEl().classList.remove("four");
+    config = null;
+  }
+
   // Runs one battle to the end. See the header for `cfg`.
   async function run(cfg) {
     config = cfg;
@@ -2087,5 +2143,5 @@
     return { outcome, battle };
   }
 
-  window.BattleScreen = { run, ballName };
+  window.BattleScreen = { run, oldManTutorial, ballName };
 })();

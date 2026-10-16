@@ -37,7 +37,10 @@ North of Route 1 is **Viridian City**. The Poké Mart clerk hands you Oak's
 Parcel; take it back to Prof. Oak for your first five Poké Balls (new games
 start without any), and after that the Mart
 sells to you and the old man lying across the road north gets up and shows you
-how to catch Pokémon. The Pokémon Center's nurse heals your party (and is where
+how to catch Pokémon: FireRed's demo battle, the old man from behind against a
+wild Lv. 5 Weedle, his ▶ moving to BAG, his bag turning to the Poké Balls and
+the ball thrown, all on its own timing, as FireRed's (it has no Teachy TV to
+give after). The Pokémon Center's nurse heals your party (and is where
 you return if you black out), and its PC is FireRed's: "Which PC should be
 accessed?" (Someone's PC, which becomes Bill's PC once you've helped him; your
 own; Prof. Oak's PC once you have a Pokédex (his rating, FireRed's: Kanto's

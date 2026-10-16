@@ -4238,11 +4238,27 @@
   }
 
   // The old man north of Viridian shows how to catch a Pokémon.
+  // FireRed's ViridianCity_EventScript_DoTutorialBattle: his words, then the
+  // catching demo (StartOldManTutorialBattle: the slice transition into a
+  // battle with a wild Lv. 5 Weedle, BattleScreen.oldManTutorial), then
+  // "There! Now tell me, that was educational, was it not?" (FireRed gives
+  // the Teachy TV with it; this game has none.)
   async function catchTutorial() {
     await say(T("ViridianCity_Text_ShowYouHowToCatchMons"));
-    await say(["The old man weakened a wild Weedle,\nthen threw a Poké Ball…", "Gotcha!\nWeedle was caught!"]);
-    await say(T("ViridianCity_Text_WeakenMonsFirstToCatch").slice(-2));
+    music("mus_vs_wild");
+    await Overworld.battleTransition();
+    show("field");
+    const weedle = Party.create("Weedle", 5);
+    weedle.gender = "M";   // (CreateMaleMon)
+    weedle.hp = Party.maxHp(weedle);
+    await BattleScreen.oldManTutorial({
+      mon: { name: Party.speciesName("Weedle"), species: "Weedle", level: 5, hp: weedle.hp, maxhp: weedle.hp, gender: "M" },
+      terrain: battleTerrain({}), bagFemale: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl)
+    });
     player.flags.catchTutorial = true;
+    show("world");
+    await Overworld.resume();
+    await say([T("ViridianCity_Text_ThatWasEducationalTakeThis")[0]]);
   }
 
   // FireRed's move tutors (EventScript_DreamEaterTutor and the like): each
