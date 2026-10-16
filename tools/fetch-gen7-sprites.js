@@ -1,10 +1,11 @@
-// Downloads the Generation 7 Pokémon's sprites from PokeAPI's sprite
+// Downloads the Generation 7 (or 8) Pokémon's sprites from PokeAPI's sprite
 // repository (github.com/PokeAPI/sprites), the same 96x96 pictures the game's
 // other Pokémon use: front, back, shiny and shiny back, into
 // assets/sprites/pokemon/[back/][shiny/]<id>.png.
 //
-//   node tools/fetch-gen7-sprites.js <PokeAPI csv folder>   (after tools/build-gen7.js,
-//                                                            which leaves gen7-sprites.json there)
+//   node tools/fetch-gen7-sprites.js <PokeAPI csv folder> [gen8]
+//   (after tools/build-gen7.js or tools/build-gen8.js, which leave
+//   gen7-sprites.json / gen8-sprites.json there)
 //
 // A sprite PokeAPI hasn't got for a form falls back to its base form's.
 "use strict";
@@ -14,7 +15,8 @@ const path = require("path");
 const https = require("https");
 
 const dir = process.argv[2];
-const list = JSON.parse(fs.readFileSync(path.join(dir || "", "gen7-sprites.json"), "utf8"));
+const gen = process.argv[3] || "gen7";
+const list = JSON.parse(fs.readFileSync(path.join(dir || "", gen + "-sprites.json"), "utf8"));
 const out = path.join(__dirname, "..", "assets/sprites/pokemon");
 const BASE = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/";
 

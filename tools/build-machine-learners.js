@@ -35,9 +35,11 @@ for (const l of Object.values(window.LEARNSETS_GEN6)) for (const m of l.tm || []
 const moveOf = (id) => /^Teaches (.+?) to a compatible/.exec(window.ITEMS[id].effect)[1];
 const machineList = Object.keys(window.ITEMS).filter((id) => /^hm\d+$/.test(id) || (/^tm\d+$/.test(id) && !gen6Machine.has(moveOf(id))))
   .sort().map(moveOf);
-// Generation 7's Pokémon (tools/build-gen7.js) get every machine they could
-// use in some generation, beyond Sun and Moon's machines.
-for (const f of ["data/dex-gen7.js", "data/moves-gen7.js", "data/learnsets-gen7.js"]) vm.runInThisContext(fs.readFileSync(path.join(root, f), "utf8"));
+// Generation 7's and 8's Pokémon (tools/build-gen7.js, build-gen8.js) get
+// every machine they could use in some generation, beyond their own games'.
+for (const f of ["data/dex-gen7.js", "data/moves-gen7.js", "data/learnsets-gen7.js", "data/dex-gen8.js", "data/moves-gen8.js", "data/learnsets-gen8.js"]) {
+  vm.runInThisContext(fs.readFileSync(path.join(root, f), "utf8"));
+}
 const allMachines = Object.keys(window.ITEMS).filter((id) => /^(tm|hm)\d+$/.test(id)).sort().map(moveOf);
 const SHOWDOWN_NAME = { Minior: "Minior-Meteor", "Minior-Core": "Minior" };
 
@@ -70,7 +72,7 @@ const TUTOR_MOVES = ["Mega Punch", "Swords Dance", "Mega Kick", "Body Slam", "Do
   const out = {};
   for (const move of allMachines) {
     const extra = Object.keys(window.DEX).filter((species) => {
-      if (!machineList.includes(move) && window.DEX[species].gen !== 7) return false;
+      if (!machineList.includes(move) && !(window.DEX[species].gen >= 7)) return false;
       const gen6 = (window.LEARNSETS_GEN6[species] || {}).tm || [];
       return !gen6.includes(move) && (machineMoves[species].has(toID(move)) || (GAME_EXTRA[move] || []).includes(species));
     }).sort();

@@ -4,7 +4,8 @@
 //   const evo = Evolution.find(record, { trigger: "level", party, time: "day" });
 //   if (evo) Evolution.evolve(record, evo.into);
 //
-// Triggers: "level" (after levelling up), "item" (with ctx.item) and "trade".
+// Triggers: "level" (after levelling up), "item" (with ctx.item), "trade" and
+// "battle" (after any battle, with ctx.crits: the critical hits it landed).
 // See data/evolutions.js for the methods and conditions.
 
 (function () {
@@ -35,6 +36,12 @@
     if (e.partySpecies && !party.some((p) => p !== record && p.species === e.partySpecies)) return false;
     if (e.moveType && !record.moves.some((m) => window.MOVES[m.name].type === e.moveType)) return false;
     if (e.cloak && (record.cloak || "plant") !== e.cloak) return false;
+    // (Gen 8: Toxtricity's nature, Runerigus's lost HP, Basculegion's recoil,
+    // Overqwil's Barb Barrages.)
+    if (e.natures && !e.natures.includes(record.nature)) return false;
+    if (e.hpLost && window.Party.maxHp(record) - record.hp < e.hpLost) return false;
+    if (e.recoil && (record.recoil || 0) < e.recoil) return false;
+    if (e.moveUses && Object.entries(e.moveUses).some(([m, n]) => ((record.moveUses || {})[m] || 0) < n)) return false;
     if (e.personality) {
       // Wurmple: the upper 16 bits of the personality value, mod 10, below 5 -> Silcoon.
       const low = ((record.personality >>> 16) % 10) < 5;
@@ -54,6 +61,9 @@
         return true;
       case "item":
         return e.method === "item" && e.item === ctx.item;
+      // After a battle (Sirfetch'd: ctx.crits critical hits landed in it).
+      case "battle":
+        return e.method === "crits" && (ctx.crits || 0) >= e.crits;
       case "trade":
         if (e.method !== "trade") return false;
         if (e.item && record.item !== e.item) return false;
@@ -72,7 +82,7 @@
     // Most specific first, so an Eevee that knows a Fairy move becomes Sylveon
     // rather than Espeon.
     const specificity = (e) => (e.moveType ? 2 : 0) +
-      ["partySpecies", "partyType", "item", "move", "time", "stats"].filter((k) => e[k]).length;
+      ["partySpecies", "partyType", "item", "move", "time", "stats", "natures"].filter((k) => e[k]).length;
     const options = (window.EVOLUTIONS[record.species] || []).slice()
       .sort((a, b) => specificity(b) - specificity(a));
     return options.find((e) => methodMatches(record, e, ctx) && meetsConditions(record, e, ctx)) || null;

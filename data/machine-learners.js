@@ -49,6 +49,7 @@ window.MACHINE_LEARNERS = {
   ],
   "Surf": [
    "Aggron-Mega",
+   "Arrokuda",
    "Audino-Mega",
    "Axew",
    "Blastoise-Mega",
@@ -307,7 +308,9 @@ window.MACHINE_LEARNERS = {
   ],
   "Waterfall": [
    "Blastoise-Mega",
+   "Chewtle",
    "Cloyster",
+   "Drizzile",
    "Gyarados-Mega",
    "Kyogre-Primal",
    "Latias-Mega",
@@ -320,9 +323,13 @@ window.MACHINE_LEARNERS = {
    "Shellder",
    "Shellos",
    "Slowbro",
+   "Slowbro-Galar",
    "Slowbro-Mega",
    "Slowking",
+   "Slowking-Galar",
    "Slowpoke",
+   "Slowpoke-Galar",
+   "Sobble",
    "Surskit",
    "Swampert-Mega",
    "Wingull"
@@ -596,11 +603,30 @@ window.MACHINE_LEARNERS = {
   ],
   "Calm Mind": [
    "Exeggutor-Alola",
-   "Primarina"
+   "Polteageist",
+   "Primarina",
+   "Sinistea"
+  ],
+  "Roar": [
+   "Calyrex-Ice",
+   "Duraludon",
+   "Glastrier",
+   "Urshifu",
+   "Zamazenta",
+   "Zarude"
   ],
   "Toxic": [
+   "Eternatus",
    "Melmetal",
-   "Meltan"
+   "Meltan",
+   "Slowbro-Galar",
+   "Slowking-Galar",
+   "Toxtricity",
+   "Toxtricity-Low-Key",
+   "Weezing-Galar"
+  ],
+  "Venoshock": [
+   "Toxtricity-Low-Key"
   ],
   "Bullet Seed": [
    "Abomasnow",
@@ -638,6 +664,7 @@ window.MACHINE_LEARNERS = {
    "Gloom",
    "Gogoat",
    "Gourgeist",
+   "Grookey",
    "Grotle",
    "Grovyle",
    "Gulpin",
@@ -693,6 +720,7 @@ window.MACHINE_LEARNERS = {
    "Tangela",
    "Tangrowth",
    "Tapu Bulu",
+   "Thwackey",
    "Torterra",
    "Toucannon",
    "Treecko",
@@ -723,11 +751,13 @@ window.MACHINE_LEARNERS = {
    "Arceus",
    "Armaldo",
    "Aron",
+   "Arrokuda",
    "Articuno",
    "Azelf",
    "Azumarill",
    "Azurill",
    "Barboach",
+   "Barraskewda",
    "Basculin",
    "Beartic",
    "Bibarel",
@@ -742,6 +772,7 @@ window.MACHINE_LEARNERS = {
    "Castform",
    "Celebi",
    "Chansey",
+   "Chewtle",
    "Chinchou",
    "Clamperl",
    "Clauncher",
@@ -752,6 +783,9 @@ window.MACHINE_LEARNERS = {
    "Cloyster",
    "Corphish",
    "Corsola",
+   "Cramorant",
+   "Cramorant-Gorging",
+   "Cramorant-Gulping",
    "Crawdaunt",
    "Croconaw",
    "Cryogonal",
@@ -769,8 +803,12 @@ window.MACHINE_LEARNERS = {
    "Dragonair",
    "Dragonite",
    "Dratini",
+   "Drednaw",
+   "Drizzile",
    "Ducklett",
    "Dunsparce",
+   "Eiscue",
+   "Eiscue-Noice",
    "Empoleon",
    "Exploud",
    "Feebas",
@@ -805,6 +843,7 @@ window.MACHINE_LEARNERS = {
    "Huntail",
    "Igglybuff",
    "Illumise",
+   "Inteleon",
    "Jigglypuff",
    "Jirachi",
    "Jynx",
@@ -907,15 +946,19 @@ window.MACHINE_LEARNERS = {
    "Slakoth",
    "Sliggoo",
    "Slowbro",
+   "Slowbro-Galar",
    "Slowbro-Mega",
    "Slowking",
+   "Slowking-Galar",
    "Slowpoke",
+   "Slowpoke-Galar",
    "Smoochum",
    "Sneasel",
    "Snorlax",
    "Snorunt",
    "Snover",
    "Snubbull",
+   "Sobble",
    "Spheal",
    "Spinda",
    "Spiritomb",
@@ -1723,6 +1766,7 @@ window.MACHINE_LEARNERS = {
    "Granbull",
    "Graveler",
    "Graveler-Alola",
+   "Grimmsnarl",
    "Groudon",
    "Groudon-Primal",
    "Grovyle",
@@ -1752,6 +1796,7 @@ window.MACHINE_LEARNERS = {
    "Kommo-o",
    "Krokorok",
    "Krookodile",
+   "Kubfu",
    "Ledian",
    "Ledyba",
    "Lickilicky",
@@ -1823,6 +1868,7 @@ window.MACHINE_LEARNERS = {
    "Reuniclus",
    "Rhydon",
    "Rhyperior",
+   "Rillaboom",
    "Riolu",
    "Sableye",
    "Sableye-Mega",
@@ -1859,12 +1905,15 @@ window.MACHINE_LEARNERS = {
    "Tyranitar",
    "Tyranitar-Mega",
    "Ursaring",
+   "Urshifu",
+   "Urshifu-Rapid-Strike",
    "Vigoroth",
    "Volbeat",
    "Wartortle",
    "Weavile",
    "Wigglytuff",
    "Zangoose",
+   "Zarude",
    "Zekrom"
   ],
   "Skill Swap": [
@@ -1938,6 +1987,8 @@ window.MACHINE_LEARNERS = {
    "Hoopa-Unbound",
    "Hoothoot",
    "Hypno",
+   "Indeedee",
+   "Indeedee-F",
    "Inkay",
    "Jigglypuff",
    "Jirachi",
@@ -1974,6 +2025,7 @@ window.MACHINE_LEARNERS = {
    "Palossand",
    "Phantump",
    "Plusle",
+   "Polteageist",
    "Psyduck",
    "Pumpkaboo",
    "Raichu-Alola",
@@ -1985,6 +2037,7 @@ window.MACHINE_LEARNERS = {
    "Sandygast",
    "Shuppet",
    "Sigilyph",
+   "Sinistea",
    "Slowbro",
    "Slowbro-Mega",
    "Slowking",
@@ -2104,6 +2157,16 @@ window.MACHINE_LEARNERS = {
    "Zubat"
   ],
   "Sunny Day": [
+   "Articuno-Galar",
+   "Carkol",
+   "Coalossal",
+   "Corviknight",
+   "Corvisquire",
+   "Dragapult",
+   "Drakloak",
+   "Eternatus",
+   "Falinks",
+   "Greedent",
    "Gumshoos",
    "Hakamo-o",
    "Kommo-o",
@@ -2112,6 +2175,7 @@ window.MACHINE_LEARNERS = {
    "Magearna",
    "Mimikyu",
    "Mimikyu-Busted",
+   "Moltres-Galar",
    "Mudbray",
    "Mudsdale",
    "Necrozma",
@@ -2123,20 +2187,33 @@ window.MACHINE_LEARNERS = {
    "Salandit",
    "Salazzle",
    "Sandygast",
-   "Yungoos"
+   "Stonjourner",
+   "Toxtricity",
+   "Toxtricity-Low-Key",
+   "Yungoos",
+   "Zamazenta",
+   "Zapdos-Galar"
   ],
   "Taunt": [
+   "Inteleon",
+   "Slowking-Galar",
    "Tsareena"
   ],
   "Ice Beam": [
+   "Barraskewda",
    "Sandshrew-Alola",
    "Sandslash-Alola"
+  ],
+  "Blizzard": [
+   "Barraskewda"
   ],
   "Hyper Beam": [
    "Araquanid",
    "Bruxish",
    "Crabominable",
    "Decidueye",
+   "Eiscue",
+   "Eiscue-Noice",
    "Golisopod",
    "Grimer-Alola",
    "Gumshoos",
@@ -2145,6 +2222,7 @@ window.MACHINE_LEARNERS = {
    "Mudsdale",
    "Oranguru",
    "Palossand",
+   "Pincurchin",
    "Primarina",
    "Ribombee",
    "Salazzle",
@@ -2156,9 +2234,21 @@ window.MACHINE_LEARNERS = {
    "Type: Null",
    "Zeraora"
   ],
+  "Light Screen": [
+   "Drakloak",
+   "Impidimp"
+  ],
   "Rain Dance": [
+   "Appletun",
+   "Articuno-Galar",
+   "Corviknight",
    "Dartrix",
    "Decidueye",
+   "Eiscue",
+   "Eiscue-Noice",
+   "Eternatus",
+   "Falinks",
+   "Greedent",
    "Gumshoos",
    "Komala",
    "Kommo-o",
@@ -2166,6 +2256,7 @@ window.MACHINE_LEARNERS = {
    "Lurantis",
    "Mimikyu",
    "Mimikyu-Busted",
+   "Moltres-Galar",
    "Oricorio",
    "Oricorio-Pa'u",
    "Oricorio-Pom-Pom",
@@ -2174,18 +2265,30 @@ window.MACHINE_LEARNERS = {
    "Rowlet",
    "Sandygast",
    "Shiinotic",
-   "Yungoos"
+   "Toxtricity",
+   "Toxtricity-Low-Key",
+   "Yungoos",
+   "Zamazenta",
+   "Zapdos-Galar"
   ],
   "Solar Beam": [
    "Blacephalon",
    "Ninetales-Alola"
   ],
   "Smack Down": [
+   "Carkol",
+   "Cinderace",
+   "Coalossal",
+   "Copperajah",
    "Diglett-Alola",
    "Dugtrio-Alola",
+   "Inteleon",
    "Mudbray",
    "Mudsdale",
-   "Persian-Alola"
+   "Persian-Alola",
+   "Rolycoly",
+   "Slowbro-Galar",
+   "Stonjourner"
   ],
   "Thunderbolt": [
    "Grimer-Alola",
@@ -2195,6 +2298,10 @@ window.MACHINE_LEARNERS = {
    "Charjabug",
    "Grimer-Alola",
    "Muk-Alola"
+  ],
+  "Earthquake": [
+   "Cufant",
+   "Regidrago"
   ],
   "Dig": [
    "Charjabug",
@@ -2228,12 +2335,25 @@ window.MACHINE_LEARNERS = {
    "Zygarde-Complete"
   ],
   "Psychic": [
-   "Magearna"
+   "Magearna",
+   "Spectrier"
   ],
   "Brick Break": [
    "Greninja-Ash",
    "Greninja-Bond",
-   "Grimer-Alola"
+   "Grimer-Alola",
+   "Meowth-Galar",
+   "Perrserker",
+   "Toxtricity",
+   "Toxtricity-Low-Key",
+   "Zamazenta"
+  ],
+  "Reflect": [
+   "Drakloak",
+   "Hatenna",
+   "Hatterene",
+   "Hattrem",
+   "Impidimp"
   ],
   "Sludge Wave": [
    "Greninja-Ash",
@@ -2243,25 +2363,50 @@ window.MACHINE_LEARNERS = {
    "Sandygast"
   ],
   "Sandstorm": [
+   "Copperajah",
+   "Cufant",
    "Grimer-Alola",
    "Lycanroc",
    "Lycanroc-Dusk",
    "Lycanroc-Midnight",
+   "Moltres-Galar",
    "Muk-Alola",
    "Necrozma",
-   "Rockruff"
+   "Rockruff",
+   "Slowbro-Galar",
+   "Zamazenta",
+   "Zapdos-Galar"
+  ],
+  "Fire Blast": [
+   "Eternatus"
   ],
   "Rock Tomb": [
    "Komala",
    "Nihilego",
    "Sandshrew-Alola",
-   "Sandslash-Alola"
+   "Sandslash-Alola",
+   "Silicobra"
   ],
   "Aerial Ace": [
+   "Corviknight",
+   "Corvisquire",
+   "Cramorant",
+   "Cramorant-Gorging",
+   "Cramorant-Gulping",
    "Dartrix",
    "Decidueye",
+   "Flapple",
    "Incineroar",
-   "Rowlet"
+   "Kubfu",
+   "Meowth-Galar",
+   "Moltres-Galar",
+   "Perrserker",
+   "Rookidee",
+   "Rowlet",
+   "Urshifu",
+   "Urshifu-Rapid-Strike",
+   "Zapdos-Galar",
+   "Zarude"
   ],
   "Facade": [
    "Magearna",
@@ -2270,6 +2415,13 @@ window.MACHINE_LEARNERS = {
    "Shiinotic",
    "Toucannon",
    "Trumbeak"
+  ],
+  "Flame Charge": [
+   "Carkol",
+   "Cinderace",
+   "Coalossal",
+   "Raboot",
+   "Scorbunny"
   ],
   "Rest": [
    "Magearna",
@@ -2282,30 +2434,65 @@ window.MACHINE_LEARNERS = {
    "Oranguru"
   ],
   "Thief": [
+   "Grookey",
    "Incineroar",
-   "Komala"
+   "Komala",
+   "Moltres-Galar",
+   "Rillaboom",
+   "Thwackey",
+   "Toxtricity",
+   "Toxtricity-Low-Key"
   ],
   "Low Sweep": [
    "Greninja-Ash",
    "Greninja-Bond",
    "Gumshoos",
-   "Lycanroc-Midnight"
+   "Lycanroc-Midnight",
+   "Rillaboom",
+   "Slowking-Galar",
+   "Stonjourner",
+   "Zarude"
   ],
   "Focus Blast": [
    "Graveler-Alola"
   ],
   "False Swipe": [
+   "Chewtle",
    "Greninja-Ash",
    "Greninja-Bond",
+   "Meowth-Galar",
+   "Perrserker",
    "Sandslash-Alola"
   ],
   "Fling": [
+   "Cinderace",
+   "Grimmsnarl",
+   "Impidimp",
    "Jangmo-o",
    "Komala",
+   "Kubfu",
    "Lycanroc-Midnight",
-   "Sandygast"
+   "Meowth-Galar",
+   "Morgrem",
+   "Sandygast",
+   "Urshifu-Rapid-Strike"
+  ],
+  "Charge Beam": [
+   "Morpeko",
+   "Morpeko-Hangry",
+   "Pincurchin",
+   "Regieleki",
+   "Toxtricity",
+   "Toxtricity-Low-Key"
+  ],
+  "Will-O-Wisp": [
+   "Cinderace"
   ],
   "Acrobatics": [
+   "Cramorant",
+   "Cramorant-Gorging",
+   "Cramorant-Gulping",
+   "Moltres-Galar",
    "Pikipek",
    "Toucannon",
    "Trumbeak"
@@ -2326,6 +2513,8 @@ window.MACHINE_LEARNERS = {
   ],
   "Giga Impact": [
    "Araquanid",
+   "Eiscue",
+   "Eiscue-Noice",
    "Grimer-Alola",
    "Gumshoos",
    "Komala",
@@ -2335,15 +2524,19 @@ window.MACHINE_LEARNERS = {
    "Mimikyu",
    "Mimikyu-Busted",
    "Naganadel",
+   "Pincurchin",
    "Ribombee",
    "Salazzle",
    "Toucannon",
    "Toxapex"
   ],
   "Stone Edge": [
+   "Cufant",
    "Diglett-Alola",
    "Mudbray",
-   "Mudsdale"
+   "Mudsdale",
+   "Silicobra",
+   "Zamazenta"
   ],
   "Thunder Wave": [
    "Geodude-Alola",
@@ -2355,36 +2548,82 @@ window.MACHINE_LEARNERS = {
    "Salazzle"
   ],
   "Swords Dance": [
+   "Cinderace",
    "Diglett-Alola",
    "Dugtrio-Alola",
    "Greninja-Ash",
    "Greninja-Bond",
-   "Rockruff"
+   "Kubfu",
+   "Raboot",
+   "Rockruff",
+   "Urshifu",
+   "Urshifu-Rapid-Strike",
+   "Zarude"
   ],
   "Struggle Bug": [
    "Charjabug",
    "Cutiefly",
+   "Frosmoth",
    "Grubbin",
    "Ribombee",
+   "Snom",
    "Vikavolt"
   ],
   "Psych Up": [
+   "Alcremie",
+   "Calyrex",
+   "Calyrex-Ice",
+   "Calyrex-Shadow",
+   "Falinks",
+   "Hatenna",
+   "Hatterene",
+   "Hattrem",
+   "Indeedee",
+   "Indeedee-F",
+   "Inteleon",
    "Oricorio",
    "Oricorio-Pa'u",
    "Oricorio-Pom-Pom",
    "Oricorio-Sensu",
+   "Slowbro-Galar",
+   "Slowking-Galar",
+   "Slowpoke-Galar",
+   "Stonjourner",
    "Toucannon"
   ],
   "Bulldoze": [
+   "Carkol",
+   "Greedent",
    "Lycanroc",
    "Lycanroc-Dusk",
    "Lycanroc-Midnight",
    "Rockruff",
+   "Rolycoly",
    "Vikavolt",
    "Yungoos"
   ],
   "Rock Slide": [
-   "Nihilego"
+   "Nihilego",
+   "Silicobra"
+  ],
+  "X-Scissor": [
+   "Meowth-Galar",
+   "Perrserker"
+  ],
+  "Dragon Tail": [
+   "Appletun",
+   "Chewtle",
+   "Dragapult",
+   "Drakloak",
+   "Drednaw",
+   "Dreepy",
+   "Duraludon",
+   "Eternatus"
+  ],
+  "Poison Jab": [
+   "Chewtle",
+   "Slowking-Galar",
+   "Zacian"
   ],
   "Grass Knot": [
    "Cutiefly",
@@ -2394,25 +2633,40 @@ window.MACHINE_LEARNERS = {
    "Magearna"
   ],
   "Flash Cannon": [
+   "Cufant",
+   "Meowth-Galar",
    "Palossand",
+   "Perrserker",
    "Sandshrew-Alola",
    "Sandslash-Alola",
-   "Sandygast"
+   "Sandygast",
+   "Zacian"
+  ],
+  "Trick Room": [
+   "Hatenna",
+   "Hattrem",
+   "Indeedee-F",
+   "Polteageist",
+   "Sinistea"
   ],
   "Wild Charge": [
    "Geodude-Alola",
    "Graveler-Alola",
    "Gumshoos",
+   "Pincurchin",
    "Yungoos"
   ],
   "Snarl": [
-   "Meowth-Alola"
+   "Calyrex",
+   "Meowth-Alola",
+   "Slowking-Galar"
   ],
   "Dark Pulse": [
    "Grimer-Alola"
   ],
   "Dazzling Gleam": [
-   "Vulpix-Alola"
+   "Vulpix-Alola",
+   "Zacian"
   ],
   "Secret Power": [
    "Zygarde-Complete"

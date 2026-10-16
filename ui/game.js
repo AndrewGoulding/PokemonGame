@@ -323,10 +323,11 @@
       if ((e[0] === "switch" || e[0] === "drag") && String(e[1]).startsWith("p2")) Player.markSeen(player, String(e[2]).split(", L")[0]);
     }
     // (A tag battle: only the three you chose; your partner's are theirs.)
-    const leveledUp = [];
+    const leveledUp = [], critical = [];
     DoubleBattle.syncBack(player.party, chosen, b.sides.p1.pokemon, (record, mon) => {
       Party.syncFromBattle(record, mon);
       if (mon.leveledUp) leveledUp.push(record);
+      if (mon.critsLanded) critical.push([record, mon.critsLanded]);
     });
 
     if (result.outcome === "won" && opts.trainerId) {
@@ -353,6 +354,11 @@
     } else {
       for (const record of leveledUp) {
         const evo = Evolution.find(record, { trigger: "level", party: player.party });
+        if (evo) await evolve(record, evo, true);
+      }
+      // (Galarian Farfetch'd: three critical hits in the battle, levelled up or not.)
+      for (const [record, crits] of critical) {
+        const evo = Evolution.find(record, { trigger: "battle", crits, party: player.party });
         if (evo) await evolve(record, evo, true);
       }
     }

@@ -11,8 +11,10 @@ const root = path.join(__dirname, "..");
 global.window = global;
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex.js"), "utf8"));
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex-gen7.js"), "utf8"));
+vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex-gen8.js"), "utf8"));
+vm.runInThisContext(fs.readFileSync(path.join(root, "data/natures.js"), "utf8"));
 
-const gen6 = Dex.forGen(6), gen7 = Dex.forGen(7);
+const gen6 = Dex.forGen(6), gen7 = Dex.forGen(7), gen8 = Dex.forGen(8), gen9 = Dex.forGen(9);
 const toID = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
 const itemId = (s) => String(s).toLowerCase().replace(/'/g, "").replace(/[^a-z0-9]+/g, "-");
 
@@ -133,6 +135,58 @@ for (const s of gen7.species.all()) {
   if (s.prevo === "Rockruff-Dusk") list.unshift(entry); else list.push(entry);
 }
 
+// Generation 8's (tools/build-gen8.js): the Galar Pokémon, Legends: Arceus's,
+// and the regional forms that evolve from regional forms. (Not Galar's or
+// Hisui's own evolutions of other regions' Pokémon, Koffing into Galarian
+// Weezing or Quilava into Hisuian Typhlosion: this is Kanto.) Their other
+// conditions, as the games word them, become rules this game keeps:
+//   Sirfetch'd: 3 critical hits in one battle (crits); Runerigus: level up
+//   with 49+ HP lost (hpLost; the Dusty Bowl's arch isn't here); Alcremie:
+//   a Sweet (any of the seven, used like a stone; it's spun with one held in
+//   the games); Urshifu: Kubfu's scrolls (the games' two towers); Wyrdeer:
+//   Lv. 30 (Stantler can't learn Psyshield Bash here); Overqwil: Barb Barrage
+//   used 20 times (moveUses); Basculegion: 294 recoil damage taken
+//   (recoil); Ursaluna: the Peat Block at night (under a full moon in the
+//   games); Toxtricity: by nature (natures).
+const AMPED = ["Hardy", "Brave", "Adamant", "Naughty", "Docile", "Impish", "Lax", "Hasty", "Jolly", "Naive", "Rash", "Sassy", "Quirky"];
+const OTHER_GEN8 = {
+  "Sirfetch’d": { method: "crits", crits: 3 },
+  Runerigus: { method: "level", hpLost: 49, note: "Needs the Dusty Bowl's stone arch in the main games." },
+  Urshifu: { method: "item", item: "scroll-of-darkness", note: "Needs the Tower of Darkness in the main games; Kubfu reads its scroll here." },
+  "Urshifu-Rapid-Strike": { method: "item", item: "scroll-of-waters", note: "Needs the Tower of Waters in the main games; Kubfu reads its scroll here." },
+  Wyrdeer: { method: "level", level: 30, note: "Needs Psyshield Bash used 20 times in the agile style in Legends: Arceus; Stantler can't learn it here." },
+  Overqwil: { method: "level", moveUses: { "Barb Barrage": 20 }, note: "Legends: Arceus: in the strong style; here any 20 uses." },
+  Basculegion: { method: "level", recoil: 294, gender: "M" },
+  "Basculegion-F": { method: "level", recoil: 294, gender: "F" },
+  Ursaluna: { method: "item", item: "peat-block", time: "night", note: "Needs a full moon in Legends: Arceus; here any night." },
+  Kleavor: { method: "item", item: "black-augurite" }
+};
+for (const [dex, num] of [[gen8, (n) => n >= 810 && n <= 898], [gen9, (n) => n < 810 || n > 898]]) {
+  for (const s of dex.species.all()) {
+    const into = s.name.replace(/’/g, "'");
+    if (!window.DEX[into] || window.DEX[into].gen !== 8 || !s.prevo || s.evoRegion || !num(s.num) && !/-(Galar|Hisui)$/.test(into)) continue;
+    if (dex === gen8 && /-Hisui$/.test(into)) continue;
+    if (dex === gen9 && !/-Hisui$|^(Wyrdeer|Kleavor|Ursaluna|Basculegion|Basculegion-F|Sneasler|Overqwil|Enamorus)$/.test(into)) continue;
+    const from = s.prevo.replace(/’/g, "'");
+    if (!window.DEX[from]) continue;
+    // (A regional form only from a regional form: Galarian Linoone, Hisuian Zoroark.)
+    if (/-(Galar|Hisui)$/.test(into) && window.DEX[from].gen !== 8) continue;
+    const list = out[from] || (out[from] = []);
+    if (into === "Alcremie") {
+      for (const sweet of ["strawberry", "love", "berry", "clover", "flower", "star", "ribbon"]) {
+        list.push({ into, method: "item", item: sweet + "-sweet", note: "Spun while holding a Sweet in the main games; here the Sweet is used on it." });
+      }
+      continue;
+    }
+    const entry = Object.assign({ into }, OTHER_GEN8[s.name] || method(s));
+    if (entry.note) entry.note = entry.note.replace(/^Gen 6/, "Gen 8");
+    if (into === "Toxtricity") entry.natures = AMPED;
+    if (into === "Toxtricity-Low-Key") entry.natures = Object.keys(window.NATURES).filter((n) => !AMPED.includes(n));
+    if (into === "Polteageist") list.push(Object.assign({}, entry, { item: "chipped-pot" }));
+    list.push(entry);
+  }
+}
+
 // Special cases Showdown doesn't encode as data.
 for (const [into, half] of [["Silcoon", "low"], ["Cascoon", "high"]]) {
   const e = out.Wurmple.find((x) => x.into === into);
@@ -145,7 +199,7 @@ delete shedinja.note;
 const sorted = {};
 for (const k of Object.keys(out).sort((a, b) => window.DEX[a].id - window.DEX[b].id)) sorted[k] = out[k];
 
-const header = `// Auto-generated by tools/build-evolutions.js from @pkmn/dex (Gen 6, and Gen 7 for its Pokémon). Do not edit by hand.
+const header = `// Auto-generated by tools/build-evolutions.js from @pkmn/dex (Gen 6, and Gens 7 and 8 for theirs). Do not edit by hand.
 //
 // window.EVOLUTIONS[species] = [{ into, method, ...conditions }]
 //   method: "level"       level up to \`level\` or higher
@@ -155,9 +209,12 @@ const header = `// Auto-generated by tools/build-evolutions.js from @pkmn/dex (G
 //           "item"        use \`item\` (an evolution stone etc.)
 //           "trade"       trade (optionally holding \`item\`, or for \`tradeWith\`)
 //           "shed"        Shedinja: appears next to Ninjask if there's room and a Poké Ball
+//           "crits"       after a battle in which it landed \`crits\` critical hits (Sirfetch'd)
 //   conditions: time ("day"|"night"|"dusk"), gender ("M"|"F"), stats ("atk>def"|"atk<def"|"atk=def"),
 //               partyType, partySpecies, moveType, personality ("low"|"high"),
-//               cloak ("plant"|"sandy"|"trash", Burmy's cloak)
+//               cloak ("plant"|"sandy"|"trash", Burmy's cloak), natures (one of them),
+//               hpLost (at least that much HP down), recoil (that much recoil
+//               damage taken in all), moveUses ({ move: times used, in all })
 //   note: how a condition this game can't model yet was approximated
 `;
 const body = "window.EVOLUTIONS = {\n" + Object.entries(sorted)

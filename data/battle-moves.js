@@ -117,8 +117,9 @@
 
   // ---- Move-calling moves ----
   status.metronome = (b, user) => {
-    // (Gen 6's moves: the ones Gen 7 added, data/moves-gen7.js, aren't called.)
-    const pool = Object.keys(window.MOVES).filter((n) => window.MOVES[n].flags.metronome && window.MOVES[n].gen !== 7);
+    // (Gen 6's moves: the ones Gens 7 and 8 added, data/moves-gen7.js and
+    // moves-gen8.js, aren't called.)
+    const pool = Object.keys(window.MOVES).filter((n) => window.MOVES[n].flags.metronome && !window.MOVES[n].gen);
     const name = b.sample(pool);
     b.execMove(user, b.getActiveMove(name), { bounced: true });
     return true;

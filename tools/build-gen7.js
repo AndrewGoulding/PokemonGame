@@ -114,13 +114,15 @@ for (const [ours, sdName, apiName] of forms) {
   const want = POKEAPI_FOR[ours] || apiName || toID(sdName);
   let api = pokemonBy[want] || pokemonBy[toID(sdName)], spriteName = api && api.id;
   // (A form that's only a PokeAPI form, Silvally's types: the base Pokémon's
-  // numbers, the form's ID, its sprites filed as "773-fighting".)
+  // numbers, an ID of its own, its sprites filed as "773-fighting".)
   let formId = null;
   if (!api) {
     const f = formRows.find((r) => r.identifier === want);
     if (!f) throw new Error("No PokeAPI pokemon for " + ours);
     api = pokemon.find((p) => p.id === f.pokemon_id);
-    formId = +f.id;
+    // (Numbered from 10500, clear of PokeAPI's Pokémon IDs: its form IDs
+    // 10232-10248 are Hisuian Pokémon's there.)
+    formId = 10500 + (+f.id - 10232);
     spriteName = api.id + "-" + f.form_identifier;
   }
   const sp = speciesById[api.species_id];

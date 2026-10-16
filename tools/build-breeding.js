@@ -1,4 +1,5 @@
-// Builds data/breeding.js from Pokémon Showdown's Gen 6 data (@pkmn/dex; Gen 7's for its Pokémon):
+// Builds data/breeding.js from Pokémon Showdown's Gen 6 data (@pkmn/dex; Gen 7's and 8's for
+// theirs, Gen 9's for Legends: Arceus's):
 // each species' Egg Groups, the species its Eggs hatch into, and the
 // incense a parent must hold for a baby Pokémon's Egg.
 // Run with: npm install && node tools/build-breeding.js
@@ -13,8 +14,11 @@ const root = path.join(__dirname, "..");
 global.window = global;
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex.js"), "utf8"));
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex-gen7.js"), "utf8"));
+vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex-gen8.js"), "utf8"));
 
-const gen6 = Dex.forGen(6), gen7 = Dex.forGen(7);
+const gen6 = Dex.forGen(6), gen7 = Dex.forGen(7), gen8 = Dex.forGen(8), gen9 = Dex.forGen(9);
+// (Legends: Arceus's Pokémon and forms are Gen 9's in Showdown.)
+const fromGen9 = (key) => /-Hisui$|^(Wyrdeer|Kleavor|Ursaluna|Basculegion|Basculegion-F|Sneasler|Overqwil|Enamorus|Enamorus-Therian|Basculin-White-Striped)$/.test(key);
 // (Generation 7's Pokémon from its own data; this game's Minior is
 // Showdown's Minior-Meteor, and its Minior-Core Showdown's Minior.)
 const SHOWDOWN_NAME = { Minior: "Minior-Meteor", "Minior-Core": "Minior" };
@@ -38,21 +42,26 @@ const INCENSE = {
 
 const groups = {}, hatches = {};
 for (const key of dexKeys) {
-  const dex = window.DEX[key].gen === 7 ? gen7 : gen6;
-  const s = dex.species.get(SHOWDOWN_NAME[key] || key);
+  const g = window.DEX[key].gen;
+  const dex = g === 7 ? gen7 : g === 8 ? (fromGen9(key) ? gen9 : gen8) : gen6;
+  let s = dex.species.get(SHOWDOWN_NAME[key] || key.replace(/'/g, "’"));
+  if (!s.exists) s = dex.species.get(key);
   if (!s || !s.exists) continue;
   groups[key] = s.eggGroups.slice();
   // Down the evolution line to its first stage (stopping above an incense baby).
-  let base = s;
+  // (Gen 8's battle forms breed as their own: Galarian Zen Darmanitan as
+  // Galarian Darmanitan.)
+  let base = g === 8 && s.battleOnly ? dex.species.get(s.battleOnly) : s;
   while (base.prevo) {
     const prev = dex.species.get(base.prevo);
     if (INCENSE[prev.name] && base.name !== prev.name) { hatches[key + "|incense"] = ourName(prev.name); break; }
     base = prev;
   }
   // (A forme hatches as its species: Rotom-Wash's Eggs are Rotom. But
-  // Alolan Pokémon hatch Alolan, as in Gen 7.)
-  if (base.forme && base.baseSpecies !== base.name && base.forme !== "Alola") base = dex.species.get(base.baseSpecies);
-  hatches[key] = ourName(base.name);
+  // Alolan, Galarian and Hisuian Pokémon hatch as such, as in their games,
+  // and Basculegion as White-Striped Basculin.)
+  if (base.forme && base.baseSpecies !== base.name && !["Alola", "Galar", "Hisui", "White-Striped"].includes(base.forme)) base = dex.species.get(base.baseSpecies);
+  hatches[key] = ourName(base.name.replace(/’/g, "'"));
 }
 const incense = {};
 for (const [k, v] of Object.entries(hatches)) {

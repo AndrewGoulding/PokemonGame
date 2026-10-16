@@ -83,7 +83,7 @@ fs.writeFileSync(path.join(root, "data/party-menu.js"),
 
 global.window = global;
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex.js"), "utf8"));
-vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex-gen7.js"), "utf8"));
+for (const f of ["data/dex-gen7.js", "data/dex-gen8.js"]) vm.runInThisContext(fs.readFileSync(path.join(root, f), "utf8"));
 
 // "Mr. Mime" -> MR_MIME, "Nidoran-F" -> NIDORAN_F, "Charizard-Mega-X" -> CHARIZARD_MEGA_X.
 const constName = (name) => name.toUpperCase().replace(/É/g, "E").replace(/['.:]/g, "")

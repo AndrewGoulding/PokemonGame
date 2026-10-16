@@ -146,7 +146,11 @@
       shiny: !!record.shiny,   // (display only too)
       ball: record.ball,    // the ball it's thrown out in (and a Luxury Ball's friendship)
       metHere: friendshipOpts(record, here).metHere,
-      ppUps: record.moves.map((m) => m.ppUps || 0)
+      ppUps: record.moves.map((m) => m.ppUps || 0),
+      // (Gen 8 evolutions' running totals: Basculin's recoil, Hisuian
+      // Qwilfish's Barb Barrages.)
+      recoil: record.recoil || 0,
+      moveUses: Object.assign({}, record.moveUses)
     };
   }
 
@@ -174,7 +178,20 @@
       return slot;
     });
     record.item = mon.item;
+    // (The totals Gen 8's evolutions count, for the moves they name.)
+    if (mon.recoilTaken) record.recoil = mon.recoilTaken;
+    const counted = Object.keys(mon.moveUses || {}).filter((m) => countedMoves().has(m));
+    if (counted.length) record.moveUses = Object.fromEntries(counted.map((m) => [m, mon.moveUses[m]]));
     return record;
+  }
+  // Moves an evolution counts the uses of (Overqwil's Barb Barrage).
+  let counted = null;
+  function countedMoves() {
+    if (!counted) {
+      counted = new Set();
+      for (const list of Object.values(window.EVOLUTIONS || {})) for (const e of list) for (const m of Object.keys(e.moveUses || {})) counted.add(m);
+    }
+    return counted;
   }
 
   // The wild Pokémon's record becomes yours: its battle state plus the ball.

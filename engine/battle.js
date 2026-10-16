@@ -272,6 +272,10 @@
         this.hp = clamp(set.hp, 0, this.maxhp);
         this.fainted = this.hp === 0;
       }
+      // (Running totals for Gen 8's evolutions; crits are this battle's.)
+      this.recoilTaken = set.recoil || 0;
+      this.moveUses = Object.assign({}, set.moveUses);
+      this.critsLanded = 0;
       if (set.status && !this.fainted) {
         this.status = set.status;
         if (set.status === "slp") this.statusState.time = battle.randInt(1, 3);
@@ -2271,7 +2275,10 @@
         if (move.target === "foeSide" || move.target === "all") target = foe;
       }
 
-      if (!o.secondTurn && !o.bounced) this.deductPP(user, move, this.doubles ? targets : foe);
+      if (!o.secondTurn && !o.bounced) {
+        this.deductPP(user, move, this.doubles ? targets : foe);
+        user.moveUses[move.name] = (user.moveUses[move.name] || 0) + 1;
+      }
       if (this.doubles && targets.length > 1) this.add("move", user, move.name, target, "[spread] " + targets.map((t) => t.ident).join(","));
       else this.add("move", user, move.name, target || user);
       if (this._redirectedBy) {
@@ -2472,7 +2479,7 @@
       if (user.fainted) return;
       const moveEffect = Object.assign(E("Move", move.id, move.name), { ignoreAbility: move.ignoreAbility, status: move.status });
       if (move.recoil && d.dealt > 0) {
-        this.damage(user, Math.max(1, Math.round((d.dealt * move.recoil[0]) / move.recoil[1])), user, E("Recoil", "recoil", "Recoil"));
+        user.recoilTaken = (user.recoilTaken || 0) + this.damage(user, Math.max(1, Math.round((d.dealt * move.recoil[0]) / move.recoil[1])), user, E("Recoil", "recoil", "Recoil"));
       }
       if (!d.hit || user.fainted) return;
       if (move.self) {
@@ -2742,7 +2749,7 @@
         if (hits > 1 && i > 0 && user.hasAbility("Parental Bond") && move.multihitType === "parentalbond") dmg = Math.floor(dmg / 2);
         const typeMod = r.typeEffectiveness > 1 ? Math.log2(r.typeEffectiveness) : r.typeEffectiveness < 1 ? -Math.log2(1 / r.typeEffectiveness) : 0;
         target._hit = { typeMod, crit: r.crit };
-        if (r.crit) this.add("-crit", target);
+        if (r.crit) { this.add("-crit", target); user.critsLanded = (user.critsLanded || 0) + 1; }
         if (i === 0) {
           if (typeMod > 0) this.add("-supereffective", target);
           else if (typeMod < 0) this.add("-resisted", target);
@@ -2787,7 +2794,7 @@
       const d = o.deferSelf;   // (doubles spread moves: once per move, in afterSpread)
       if (d) { d.dealt += totalDealt; d.hit = true; }
       if (move.recoil && totalDealt > 0 && !user.fainted && !d) {
-        this.damage(user, Math.max(1, Math.round((totalDealt * move.recoil[0]) / move.recoil[1])), user, E("Recoil", "recoil", "Recoil"));
+        user.recoilTaken = (user.recoilTaken || 0) + this.damage(user, Math.max(1, Math.round((totalDealt * move.recoil[0]) / move.recoil[1])), user, E("Recoil", "recoil", "Recoil"));
       }
       if (move.id === "struggle" && !user.fainted) this.damage(user, Math.max(1, Math.floor(user.maxhp / 4)), user, E("Recoil", "recoil", "Recoil"));
 

@@ -53,7 +53,13 @@
     "yellow-shard": 400, "green-shard": 400, "hard-stone": 200, "oval-stone": 2100,
     "nugget": 10000, "pearl": 1400, "big-pearl": 7500, "tiny-mushroom": 500, "big-mushroom": 5000, "razz-berry": 20, "nanab-berry": 20, "bluk-berry": 20,
     // Held items no shop sells, priced so they sell for Gen 6's ₽100.
-    "smooth-rock": 200, "heat-rock": 200, "damp-rock": 200, "icy-rock": 200, "iron-ball": 200, "light-clay": 200
+    "smooth-rock": 200, "heat-rock": 200, "damp-rock": 200, "icy-rock": 200, "iron-ball": 200, "light-clay": 200,
+    // Generation 8's evolution items, at Sword and Shield's prices (Legends:
+    // Arceus's items and the scrolls, priced as the stones).
+    "tart-apple": 2200, "sweet-apple": 2200, "cracked-pot": 1600, "chipped-pot": 38000, "galarica-cuff": 6000,
+    "galarica-wreath": 6000, "strawberry-sweet": 500, "love-sweet": 500, "berry-sweet": 500, "clover-sweet": 500,
+    "flower-sweet": 500, "star-sweet": 500, "ribbon-sweet": 500, "black-augurite": 2100, "peat-block": 2100,
+    "scroll-of-darkness": 2100, "scroll-of-waters": 2100
   };
   // Not in Gen 6 shops; priced for this game. Mints are from Sword and Shield.
   const MINT_PRICE = 20000;

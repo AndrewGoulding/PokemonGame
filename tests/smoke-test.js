@@ -725,14 +725,15 @@ for (const share of [false, true]) {
   // Every move Pokémon learn by machine in Gen 6 is a TM or HM here; the
   // machines Gen 6 had none for (Bullet Seed, Whirlpool, Defog, Rock Climb)
   // take their compatibility from other generations.
+  // (Gen 6's species: later generations' learnsets keep their TMs that are machines here.)
   const tmMoves = new Set();
-  for (const l of Object.values(LEARNSETS_GEN6)) for (const m of l.tm || []) tmMoves.add(m);
+  for (const [s, l] of Object.entries(LEARNSETS_GEN6)) if (!((DEX[s] || {}).gen >= 7)) for (const m of l.tm || []) tmMoves.add(m);
   const machineMoves = Bag.machines().map(Bag.machineMove);
   for (const m of tmMoves) assert(machineMoves.includes(m), "no machine for " + m);
   assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail", "Focus Punch", "Skill Swap", "Snatch", "Whirlpool", "Defog", "Rock Climb"]);
   for (const m of ["Whirlpool", "Defog", "Rock Climb", "Bullet Seed"]) assert(MACHINE_LEARNERS[m].length > 50, "who can use " + m);
-  // (For Gen 7's Pokémon, any generation's machines: tools/build-gen7.js.)
-  assert((MACHINE_LEARNERS.Thief || []).every((s) => DEX[s].gen === 7), "TMs Gen 6 had keep Gen 6's compatibility");
+  // (For Gen 7's and 8's Pokémon, any generation's machines: tools/build-gen7.js, build-gen8.js.)
+  assert((MACHINE_LEARNERS.Thief || []).every((s) => DEX[s].gen >= 7), "TMs Gen 6 had keep Gen 6's compatibility");
   assert(MACHINE_LEARNERS.Thief.includes("Incineroar"), "Gen 7's Pokémon: any generation's machines");
   assert(Bag.canUseOn(Party.create("Oddish", 20, { rng }), "tm100") && !Bag.canUseOn(Party.create("Pidgey", 20, { rng }), "tm100"), "Bullet Seed: Oddish yes, Pidgey no");
   assert.strictEqual(Bag.name("tm100"), "TM100 Bullet Seed");

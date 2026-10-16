@@ -602,5 +602,23 @@ window.ITEMS = {
   "poke-flute": { name: "poke-flute", category: "key-items", effect: "A sweet-sounding flute that awakens Pokémon." },
   "vs-seeker": { name: "vs-seeker", category: "key-items", effect: "A device that signals Trainers you've battled who want a rematch." },
   "bike-voucher": { name: "bike-voucher", category: "key-items", effect: "A voucher for obtaining a Bicycle from the Bike Shop." },
-  "bluk-berry": { name: "bluk-berry", category: "baking-only", effect: "Can be ground into a powder as an ingredient for medicine." }
+  "bluk-berry": { name: "bluk-berry", category: "baking-only", effect: "Can be ground into a powder as an ingredient for medicine." },
+  // Generation 8's evolution items (Sword and Shield; Legends: Arceus's Black Augurite and Peat Block).
+  "tart-apple": { name: "tart-apple", category: "evolution", effect: "Evolves an Applin into Flapple." },
+  "sweet-apple": { name: "sweet-apple", category: "evolution", effect: "Evolves an Applin into Appletun." },
+  "cracked-pot": { name: "cracked-pot", category: "evolution", effect: "Evolves a Sinistea into Polteageist." },
+  "chipped-pot": { name: "chipped-pot", category: "evolution", effect: "Evolves a Sinistea into Polteageist. (Its Antique Form, in the main games.)" },
+  "galarica-cuff": { name: "galarica-cuff", category: "evolution", effect: "Evolves a Galarian Slowpoke into Galarian Slowbro." },
+  "galarica-wreath": { name: "galarica-wreath", category: "evolution", effect: "Evolves a Galarian Slowpoke into Galarian Slowking." },
+  "strawberry-sweet": { name: "strawberry-sweet", category: "evolution", effect: "Evolves a Milcery into Alcremie. (Held while it spins, in the main games.)" },
+  "love-sweet": { name: "love-sweet", category: "evolution", effect: "Evolves a Milcery into Alcremie. (Held while it spins, in the main games.)" },
+  "berry-sweet": { name: "berry-sweet", category: "evolution", effect: "Evolves a Milcery into Alcremie. (Held while it spins, in the main games.)" },
+  "clover-sweet": { name: "clover-sweet", category: "evolution", effect: "Evolves a Milcery into Alcremie. (Held while it spins, in the main games.)" },
+  "flower-sweet": { name: "flower-sweet", category: "evolution", effect: "Evolves a Milcery into Alcremie. (Held while it spins, in the main games.)" },
+  "star-sweet": { name: "star-sweet", category: "evolution", effect: "Evolves a Milcery into Alcremie. (Held while it spins, in the main games.)" },
+  "ribbon-sweet": { name: "ribbon-sweet", category: "evolution", effect: "Evolves a Milcery into Alcremie. (Held while it spins, in the main games.)" },
+  "black-augurite": { name: "black-augurite", category: "evolution", effect: "Evolves a Scyther into Kleavor." },
+  "peat-block": { name: "peat-block", category: "evolution", effect: "Evolves an Ursaring into Ursaluna at night. (Under a full moon, in the main games.)" },
+  "scroll-of-darkness": { name: "scroll-of-darkness", category: "evolution", effect: "Evolves a Kubfu into Single Strike Urshifu. (The Tower of Darkness, in the main games.)" },
+  "scroll-of-waters": { name: "scroll-of-waters", category: "evolution", effect: "Evolves a Kubfu into Rapid Strike Urshifu. (The Tower of Waters, in the main games.)" }
 };
