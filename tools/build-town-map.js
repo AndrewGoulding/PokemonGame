@@ -9,6 +9,8 @@
 //   assets/town-map/cursor.png    the cursor's two frames (16x16 each)
 //   assets/town-map/dungeon-icon.png  the small icon on caves and forests:
 //                                 two 8x8 frames, not visited and visited
+//   assets/town-map/fly-icon.png  Fly's icon on the places you can fly to:
+//                                 two 16x16 frames, the wing and blank
 //   data/town-map.js              window.TOWN_MAP: FireRed's 22 x 15 grid of map
 //                                 sections (towns and routes, and the dungeon
 //                                 layer: caves and forests), their names, and the
@@ -79,6 +81,7 @@ function sprite(png, pal, file) {
 }
 sprite("cursor.png", "cursor.pal", "cursor.png");
 sprite("dungeon_icon.png", "misc_icon.pal", "dungeon-icon.png");
+sprite("fly_icon.png", "misc_icon.pal", "fly-icon.png");
 
 // The player's icon: the head of the player character's overworld sprite
 // (assets/sprites/overworld/player_character_normal.png, facing down), in a

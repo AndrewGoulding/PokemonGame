@@ -356,9 +356,12 @@
 .tm-dungeon { position: absolute; width: 3.3333%; height: 5%; pointer-events: none; image-rendering: pixelated;
   background: url(../assets/town-map/dungeon-icon.png) 0 0 / 100% 200% no-repeat; }
 .tm-dungeon.visited { background-position: 0 100%; }
-/* Fly: the places you can fly to (a red dot ringed in white). */
-.tm-fly { position: absolute; width: 3.3333%; height: 5%; pointer-events: none; border-radius: 50%;
-  background: radial-gradient(circle, #e83820 0 38%, #fff 40% 62%, transparent 64%); }
+/* Fly: FireRed's icon on the places you can fly to (CreateFlyIconSprite:
+   16x16, centred on the square's corner at 8x + 36), shown 30 frames and
+   hidden 60 (sAnim_FlyIcon). */
+.tm-fly { position: absolute; width: 6.6667%; height: 10%; pointer-events: none; image-rendering: pixelated;
+  background: url(../assets/town-map/fly-icon.png) 0 0 / 100% 200% no-repeat; animation: tm-fly 1.5s steps(1) infinite; }
+@keyframes tm-fly { 33.3333% { background-position: 0 100%; } }
 @keyframes tm-blink { 50% { background-position: 0 100%; } }
 .tm-name { position: absolute; left: 0; right: 0; top: 0; height: 10%; display: flex; align-items: center; gap: 10px; padding: 0 3%;
   color: #fff; font-weight: 700; font-size: clamp(12px, 2.6vw, 18px); text-shadow: 1px 1px 0 #000; }

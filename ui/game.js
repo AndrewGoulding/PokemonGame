@@ -863,7 +863,7 @@
           const sec = R.map[y][x];
           if (!flyTo(sec) || marked.has(sec)) continue;
           marked.add(sec);
-          icons += '<div class="tm-fly" style="left:' + pct(32 + 8 * x, 240) + ";top:" + pct(32 + 8 * y, 160) + '"></div>';
+          icons += '<div class="tm-fly" style="left:' + pct(28 + 8 * x, 240) + ";top:" + pct(28 + 8 * y, 160) + '"></div>';
         }
       }
       scene.innerHTML = '<div class="town-map' + (flying ? " flying" : "") + '"><img class="tm-map" src="' + R.image + '" alt="Map of ' + R.label + '">' + icons +

@@ -1217,7 +1217,7 @@ and Pewter City's), water animation, and a Town Map of Johto.
   surfing here!", "There's nothing to Cut.") or uses it: Cut a tree in front of
   you, Flash in a dark cave (`requires_flash`: dark but for a circle around you,
   which opens up), Fly from outdoors to any town you've been to (the Town Map,
-  with the places marked; you land outside its Pokémon Center, FireRed's heal
+  each place marked with FireRed's blinking wing icon; you land outside its Pokémon Center, FireRed's heal
   locations, and Route 4's Center counts once you've been in), Strength (push
   boulders until you leave the map), Surf onto the water in front of you, Rock
   Smash a rock in front of you (a Pokémon may be hiding under it), Waterfall up
