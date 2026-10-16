@@ -890,8 +890,11 @@ for (const share of [false, true]) {
   assert.strictEqual(at(out), "PalletTown 6,7");
   assert(out.warp.door, "arriving at a door steps you out of it");
   assert.strictEqual(at(World.step({ map: "PalletTown", x: 16, y: 14 }, "up")), "PalletTown_ProfessorOaksLab 6,12");
-  // Stairs.
-  assert.strictEqual(at(World.step({ map: "PalletTown_PlayersHouse_1F", x: 9, y: 2 }, "right")), "PalletTown_PlayersHouse_2F 10,2");
+  // Stairs (FireRed's TryArrowWarp): stepping onto them is just a step; on
+  // them, pressing toward them goes up, and walking away doesn't.
+  assert.strictEqual(at(World.step({ map: "PalletTown_PlayersHouse_1F", x: 9, y: 2 }, "right")), "PalletTown_PlayersHouse_1F 10,2");
+  assert.strictEqual(at(World.step({ map: "PalletTown_PlayersHouse_1F", x: 10, y: 2 }, "right")), "PalletTown_PlayersHouse_2F 10,2");
+  assert.strictEqual(at(World.step({ map: "PalletTown_PlayersHouse_1F", x: 10, y: 2 }, "left")), "PalletTown_PlayersHouse_1F 9,2");
   // Pallet Town and Route 1 join at the top / bottom edge.
   assert.strictEqual(at(World.step({ map: "PalletTown", x: 12, y: 0 }, "up")), "Route1 12,39");
   assert.strictEqual(at(World.step({ map: "Route1", x: 12, y: 39 }, "down")), "PalletTown 12,0");
@@ -3283,7 +3286,7 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
     ["ultra-ball", "Poké Balls"], ["mega-ring", "Key Items"], ["tm01", "TMs & HMs"]]) assert.strictEqual(Bag.pocket(id), p, id);
   assert.deepStrictEqual(Bag.BATTLE_POCKETS, ["Items", "Medicine", "Poké Balls", "Berries"]);
   const bagJs = fs.readFileSync(path.join(root, "ui/bag-screen.js"), "utf8");
-  for (const p of Bag.POCKETS) assert(bagJs.includes('"' + p + '": '), "a bag picture for " + p);
+  assert(/BAG_FRAMES\[st\.pocket % 3\]/.test(bagJs) && !/POCKET_FRAMES/.test(bagJs), "every pocket shows FireRed's bag, not a recoloured one");
   const bagPng = fs.readFileSync(path.join(root, "assets/bag/bag-male.png"));
   assert.strictEqual(bagPng.readUInt32BE(20), 640, "ten bag frames");
   const battleJs = fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8");

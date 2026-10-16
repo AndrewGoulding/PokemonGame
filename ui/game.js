@@ -6000,7 +6000,9 @@
     if (!f[ID]) {
       await say(person.trainer.intro);
       if (!canBattle()) return;
-      const outcome = await battle("trainer", { foe: { name: "Leader Sabrina", team: trainerTeam(ID), pic: "leader_sabrina" },
+      // (This game's: her Alakazam holds its Alakazite, and Mega Evolves.)
+      const team = trainerTeam(ID).map((r) => (r.species === "Alakazam" ? Object.assign(r, { item: "alakazite" }) : r));
+      const outcome = await battle("trainer", { foe: { name: "Leader Sabrina", team, pic: "leader_sabrina" },
         defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
       if (outcome !== "won") return;
       if (!hasBadge("marsh")) player.badges.push("marsh");
@@ -6152,10 +6154,10 @@
   }
 
   // 7F: Gary (SilphCo_7F_EventScript_RivalScene). This game's own team, at
-  // about FireRed's levels: Pidgeot, Growlithe, Gyarados, Exeggutor, Umbreon
-  // (his Eevee) and Alakazam, which holds its Alakazite and Mega Evolves.
+  // about FireRed's levels: Pidgeot, Growlithe, Gyarados (which holds its
+  // Gyaradosite and Mega Evolves), Exeggutor, Umbreon (his Eevee) and Alakazam.
   // Then he's off by the warp pad.
-  const SILPH_RIVAL_TEAM = [["Pidgeot", 37], ["Growlithe", 35], ["Gyarados", 38], ["Exeggutor", 35], ["Umbreon", 40], ["Alakazam", 35, "alakazite"]];
+  const SILPH_RIVAL_TEAM = [["Pidgeot", 37], ["Growlithe", 35], ["Gyarados", 38, "gyaradosite"], ["Exeggutor", 35], ["Umbreon", 40], ["Alakazam", 35]];
   async function silphRival(top) {
     const f = player.flags, R = "LOCALID_SILPH_CO_RIVAL";
     music("mus_encounter_rival");
@@ -6559,9 +6561,9 @@
   // FireRed's Route22_EventScript_LateRival: once you've beaten Giovanni,
   // Gary comes up from the left on your way to the League. This game's own
   // team for him (as on Silph Co.'s 7F) at FireRed's levels here: Pidgeot,
-  // Growlithe, Gyarados (in Rhyhorn's place), Exeggutor, Alakazam (holding
-  // its Alakazite: it Mega Evolves) and Umbreon (his Eevee) as his ace.
-  const ROUTE22_LATE_RIVAL_TEAM = [["Pidgeot", 47], ["Growlithe", 45], ["Gyarados", 45], ["Exeggutor", 45], ["Umbreon", 53], ["Alakazam", 47, "alakazite"]];
+  // Growlithe, Gyarados (in Rhyhorn's place, holding its Gyaradosite: it Mega
+  // Evolves), Exeggutor, Alakazam and Umbreon (his Eevee) as his ace.
+  const ROUTE22_LATE_RIVAL_TEAM = [["Pidgeot", 47], ["Growlithe", 45], ["Gyarados", 45, "gyaradosite"], ["Exeggutor", 45], ["Umbreon", 53], ["Alakazam", 47]];
   const route22LateRivalDue = () => !!(player.flags.TRAINER_LEADER_GIOVANNI && !player.flags.route22LateRival);
   async function route22LateRival(side) {
     if (!route22LateRivalDue()) return;
@@ -6715,11 +6717,11 @@
   // Gary, the Champion (PokemonLeague_ChampionsRoom_EventScript_EnterRoom):
   // this game's team for him, as on Silph Co. and Route 22, at FireRed's
   // Champion levels: Pidgeot (59), Arcanine (59: his Growlithe's evolved),
-  // Gyarados (59, in Rhydon's place), Exeggutor (61), Umbreon (63: his Eevee,
-  // as FireRed's starter, holding its Sitrus Berry) and Alakazam (57, holding
-  // its Alakazite: it Mega Evolves). With FLAG_SYS_CAN_LINK_WITH_RS, FireRed's
+  // Gyarados (59, in Rhydon's place, holding its Gyaradosite: it Mega Evolves),
+  // Exeggutor (61), Umbreon (63: his Eevee, as FireRed's starter, holding its
+  // Sitrus Berry) and Alakazam (57). With FLAG_SYS_CAN_LINK_WITH_RS, FireRed's
   // rematch levels (72-75). FireRed's moves for the Pokémon FireRed gives him.
-  const CHAMPION_TEAM = [["Pidgeot", 59, 72], ["Arcanine", 59, 73], ["Gyarados", 59, 72], ["Exeggutor", 61, 73], ["Umbreon", 63, 75, "sitrus-berry"], ["Alakazam", 57, 73, "alakazite"]];
+  const CHAMPION_TEAM = [["Pidgeot", 59, 72], ["Arcanine", 59, 73], ["Gyarados", 59, 72, "gyaradosite"], ["Exeggutor", 61, 73], ["Umbreon", 63, 75, "sitrus-berry"], ["Alakazam", 57, 73]];
   function championTeam(rematch) {
     const fr = window.WORLD_TRAINERS[rematch ? "TRAINER_CHAMPION_REMATCH_SQUIRTLE" : "TRAINER_CHAMPION_FIRST_SQUIRTLE"];
     const frg = window.WORLD_TRAINERS[rematch ? "TRAINER_CHAMPION_REMATCH_BULBASAUR" : "TRAINER_CHAMPION_FIRST_BULBASAUR"];

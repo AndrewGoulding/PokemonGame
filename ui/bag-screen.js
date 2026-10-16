@@ -46,14 +46,10 @@
   const ready = (img) => img && img.complete && img.naturalWidth;
 
   const WHITE = [255, 255, 255], DARK = [98, 98, 98], LIGHT = [213, 213, 205];
-  // The bag's frame for each pocket: its pockets open in turn, left, middle,
-  // right, then round again (bag_*.png: 2 the left pocket, 3 the middle, 1 the
-  // right); the new pockets have the bag in their own colour (4 blue, 5 green,
-  // 6 violet, and shut 7-9: tools/build-bag.js).
+  // The bag's frame for each pocket: FireRed's bag, its pockets opening in
+  // turn, left, middle, right, then round again (bag_*.png: 2 the left
+  // pocket, 3 the middle, 1 the right).
   const BAG_FRAMES = [2, 3, 1];
-  const POCKET_FRAMES = { "Items": 2, "Medicine": 3, "Power-up": 4, "Poké Balls": 1, "TMs & HMs": 2, "Berries": 3,
-    "Held Items": 5, "Mega Stones": 6, "Key Items": 1 };
-  const SHUT_FRAMES = { "Power-up": 7, "Held Items": 8, "Mega Stones": 9 };
   const memory = {};   // pocket name -> { cursor, top }
 
   // ---------- State ----------
@@ -163,7 +159,7 @@
     // and FireRed's shake when the ▶ moves (sAffineAnim_BagShake).
     const bag = A(st.female ? "bag-female" : "bag-male");
     if (ready(bag)) {
-      const f = st.hop > 0 ? SHUT_FRAMES[pocket().name] || 0 : POCKET_FRAMES[pocket().name] || BAG_FRAMES[st.pocket % 3];
+      const f = st.hop > 0 ? 0 : BAG_FRAMES[st.pocket % 3];
       const SHAKE = [-1, -2, -1, 0, 1, 2, 1, 0, -1, -2, -1, 0];
       const angle = st.shake >= 0 && st.shake < 12 ? SHAKE[st.shake] * 2.8125 : 0;
       g.save();

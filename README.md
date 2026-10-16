@@ -95,15 +95,17 @@ back, with the Pokémon's happiness (out of 255) under both; up / down go throug
 where?"; ITEM gives or takes a held item). The
 same screen picks a Pokémon for an item (ABLE / NOT ABLE for TMs and
 evolution stones), a trade or a tutor, and for switching in battle (SHIFT, or
-SUMMARY to look at a Pokémon as it is in the battle).
+SUMMARY to look at a Pokémon as it is in the battle; in battle the Pokémon
+fighting is first, and the one sent in takes the place of the one it
+replaced, FireRed's battle order).
 Then the Bag, FireRed's Bag screen with nine pockets (Items, Medicine,
 Power-up, Poké Balls, TMs & HMs, Berries, Held Items, Mega Stones, Key Items;
 left / right between them, and each pocket remembers where its ▶ was). Power-up
 holds what makes a Pokémon stronger for good (vitamins, Wings, PP Up and PP
 Max, mints, Rare Candy, Exp. Candies, Ability Capsule, Bottle Caps), Held Items
 what is mainly for holding (Leftovers, Choice items, type boosters, weather
-rocks, Light Clay, Iron Ball...), Mega Stones the stones; the new pockets show
-the bag recoloured (blue, green, violet; tools/build-bag.js). In battle the Bag
+rocks, Light Clay, Iron Ball...), Mega Stones the stones; every pocket shows
+FireRed's bag, its pockets opening left, middle, right in turn. In battle the Bag
 shows only the pockets with something usable there (Items, Medicine, Poké
 Balls, Berries). Old saves simply sort into the new pockets, with FireRed's descriptions under the list
 (its own words and line breaks, for the items FireRed has). A opens Use / Give / Toss; Toss asks how
@@ -126,7 +128,7 @@ one you've seen, with the caught ball and
 types; the nine habitats' pages, up to four Pokémon a page in their circles;
 Search: A to Z mode (the ones seen), Type, Lightest and Smallest mode (the
 ones caught);
-this game's Area mode: every place with wild Pokémon (FireRed's and LeafGreen's alike; ----- until you've been
+this game's Area mode: Kanto, under the Pokémon list: every place with wild Pokémon (FireRed's and LeafGreen's alike; ----- until you've been
 there) with how many of its Pokémon you've caught and a gold crown once you've
 caught them all, and A on one lists them FireRed-style; each entry's category,
 height and weight in feet and pounds, footprint, picture and description, with
@@ -314,12 +316,12 @@ you're Champion its Black Belts and the Karate Master battle you once more,
 with their Pokémon fully evolved at Lv. 48-52 (Machamp, Primeape, Hitmonlee
 and Hitmonchan), and the Karate Master, beaten again, gives you the Hitmon
 you left behind, Lv. 50), and
-Sabrina's Gym, a maze of warp pads you spin away on (the Marsh Badge and TM04
-Calm Mind). Silph Co., 1F to 11F: its Rockets and scientists, its items, the
+Sabrina's Gym, a maze of warp pads you spin away on (her Alakazam holds its
+Alakazite and Mega Evolves; the Marsh Badge and TM04 Calm Mind). Silph Co., 1F to 11F: its Rockets and scientists, its items, the
 warp pads between floors and rooms, the elevator, and locked doors that the Card
 Key from 5F opens for good; the Thunder Wave tutor on 2F (₽1,000 a time, as often as you like), a nap on 9F, Gary on 7F
-(Pidgeot, Growlithe, Gyarados, Exeggutor, Umbreon and an Alakazam holding its
-Alakazite, which Mega Evolves; Lv. 35-40) and the Silph worker there who gives
+(Pidgeot, Growlithe, a Gyarados holding its Gyaradosite, which Mega
+Evolves, Exeggutor, Umbreon and Alakazam; Lv. 35-40) and the Silph worker there who gives
 you a Lapras, Lv. 25; and Giovanni in the boardroom on 11F, where Red comes down
 by the warp pad and, without a word, stands beside you for a tag battle (his
 Charizard, holding Charizardite X, Snorlax and Pikachu, Lv. 36; Giovanni has
@@ -546,8 +548,8 @@ his Gym's trainers count as beaten, and the Rockets left around Kanto are gone;
 talk to him again and he says Team Rocket is finished forever, and he's gone
 too. On Route 22, Gary is waiting once more on your way to the League (FireRed's
 late rival, with the same triggers): his Silph Co. team at FireRed's levels here,
-Pidgeot (47), Growlithe (45), Gyarados (45), Exeggutor (45), Umbreon (53, his
-ace) and Alakazam (47), which Mega Evolves with its Alakazite; losing blacks you
+Pidgeot (47), Growlithe (45), Gyarados (45), which Mega Evolves with its
+Gyaradosite, Exeggutor (45), Umbreon (53, his ace) and Alakazam (47); losing blacks you
 out. Past the League gate's guard (Boulder Badge), Route 23's seven guards each
 check one Badge in order, Cascade to Earth: walk up to the next one and he
 stops you (and sends you back a step) until you've shown it (FireRed's
@@ -578,8 +580,8 @@ them and you're back at the Indigo Plateau's Pokémon Center, and the run starts
 over from Lorelei (FireRed's EventScript_ResetEliteFour). Then Gary, the
 Champion, to the Champion's music: his team as on Silph Co. and Route 22, at
 FireRed's Champion levels: Pidgeot (59), Arcanine (59: his Growlithe's evolved),
-Gyarados (59), Exeggutor (61), Umbreon (63, his ace, with a Sitrus Berry) and
-Alakazam (57), which Mega Evolves with its Alakazite. Beaten, Prof. Oak comes
+Gyarados (59), which Mega Evolves with its Gyaradosite, Exeggutor (61),
+Umbreon (63, his ace, with a Sitrus Berry) and Alakazam (57). Beaten, Prof. Oak comes
 in, congratulates you, tells Gary why he lost and takes you up to the Hall of
 Fame; his words there, the record machine, and FireRed's Hall of Fame screen:
 your team saved on record ("SAVING… DON'T TURN OFF THE POWER."), each Pokémon
@@ -864,8 +866,13 @@ To add maps, list them in `MAPS` at the top of `tools/build-maps.js` and rerun
 it; doors and map edges connect themselves when both sides are built.
 Walking off an edge toward a map that isn't built yet says so.
 
-Rules follow Gen 3: collision and elevation per block, solid doors you walk
-into, door mats you walk out through, stairs, ledges you can jump down,
+People wider than a tile (Snorlax, bikers, the Seagallop) are centred on
+their tile, as FireRed draws them, and Snorlax, the old man lying across
+Viridian's road and the legendary birds block the tiles either side of them
+too. Rules follow Gen 3: collision and elevation per block, solid doors you walk
+into, door mats you walk out through, stairs (as FireRed's: step onto the
+bottom step, then press toward the stairs to take them; you arrive on the
+other floor's stairs facing away from them), ledges you can jump down,
 connected maps you walk straight into, and tall grass encounters at the map's
 rate (Random() % 2880 < rate × 16) using the 20/20/10/10/10/10/5/5/4/4/1/1
 encounter slots. Wild Pokémon come from both versions: where LeafGreen's table

@@ -1198,9 +1198,28 @@
   // SUMMARY / CANCEL (cfg.summary shows its Summary screen as it is now in
   // battle). One that's fainted or already out says so; B goes back unless a
   // Pokémon has to be sent out.
+  // FireRed's order on the party screen in battle (gBattlePartyCurrentOrder):
+  // whoever's in battle comes first (in a double battle, both, by slot), and
+  // the one sent in takes the place of the one it replaced. Team indexes, in
+  // that order (your own Pokémon only, in a tag battle).
+  let partyOrder = null;
+  function battleOrder() {
+    const side = battle.sides.p1;
+    const mine = side.pokemon.map((m, i) => i).filter((i) => !side.tag || side.pokemon[i].owner === 0);
+    if (!partyOrder || partyOrder.length !== mine.length) partyOrder = mine.slice();
+    side.actives.forEach((m, k) => {
+      const idx = m ? side.pokemon.indexOf(m) : -1, at = partyOrder.indexOf(idx);
+      if (at < 0 || k >= partyOrder.length || at === k) return;
+      [partyOrder[k], partyOrder[at]] = [partyOrder[at], partyOrder[k]];
+    });
+    return partyOrder;
+  }
+
   async function chooseSwitch(req, canCancel, taken) {
-    // (A tag battle: only your own Pokémon.)
-    const team = req.team.filter((p) => p.mine !== false);
+    // (A tag battle: only your own Pokémon; in battle order.)
+    const own = req.team.filter((p) => p.mine !== false);
+    const team = battleOrder().map((i) => own.find((p) => p.index === i)).filter(Boolean)
+      .concat(own.filter((p) => !battleOrder().includes(p.index)));
     const mons = team.map((p) => ({
       name: p.name, icon: window.Screen.iconUrl(p.species), level: p.level, gender: p.gender,
       hp: p.hp, maxhp: p.maxhp, status: p.status, item: !!p.item
@@ -1290,17 +1309,18 @@
         await message("It won't have any effect.");
         continue;
       }
-      // Which Pokémon: FireRed's party screen ("Use on which POKéMON?").
+      // Which Pokémon: FireRed's party screen ("Use on which POKéMON?"), in battle order.
+      const order = battleOrder().filter((i) => i < mons.length);
       let target = null;
       for (;;) {
         say("");
         clearMenu();
-        const r = await window.PartyMenu.open({ message: "Use on which {PKMN}?", cursor: target || 0,
+        const r = await window.PartyMenu.open({ message: "Use on which {PKMN}?", cursor: target != null ? order.indexOf(target) : 0,
           frame: window.GameOptions ? window.GameOptions.get().frame : 0,
-          mons: mons.map((m) => ({ name: m.name, icon: window.Screen.iconUrl(m.species), level: m.level, gender: m.gender,
+          mons: order.map((i) => mons[i]).map((m) => ({ name: m.name, icon: window.Screen.iconUrl(m.species), level: m.level, gender: m.gender,
             hp: m.fainted ? 0 : m.hp, maxhp: m.maxhp, status: m.status, item: !!m.item })) });
         if (!r) { target = null; break; }
-        target = r.slot;
+        target = order[r.slot];
         if (window.ItemUse.canUse(battle.itemView(mons[target]), item, { inBattle: true })) break;
         await message("It won't have any effect.");
       }
@@ -2021,6 +2041,7 @@
   // Runs one battle to the end. See the header for `cfg`.
   async function run(cfg) {
     config = cfg;
+    partyOrder = null;
     battle = new Battle(Object.assign({
       p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, ghost: !!cfg.ghost, noCatch: !!cfg.noCatch, exp: !!cfg.exp, expShare: !!cfg.expShare, catchContext: cfg.catchContext,
       safari: cfg.safari

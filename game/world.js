@@ -41,8 +41,12 @@
   // Warps you trigger by stepping onto them (doors, stairs). Others, like the
   // mats inside buildings, trigger by walking off the edge while standing on them.
   const STEP_WARPS = new Set([MB.CAVE_DOOR, MB.LADDER, MB.FALL_WARP, MB.REGULAR_WARP, MB.WARP_DOOR,
-    MB.UP_ESCALATOR, MB.DOWN_ESCALATOR, MB.UP_RIGHT_STAIR_WARP, MB.UP_LEFT_STAIR_WARP,
-    MB.DOWN_RIGHT_STAIR_WARP, MB.DOWN_LEFT_STAIR_WARP]);
+    MB.UP_ESCALATOR, MB.DOWN_ESCALATOR]);
+  // Stairs aren't stepped on to warp: standing on the bottom step, you press
+  // toward them, right or left (FireRed's TryArrowWarp:
+  // IsDirectionalStairWarpMetatileBehavior).
+  const STAIR_DIR = { [MB.UP_RIGHT_STAIR_WARP]: "right", [MB.DOWN_RIGHT_STAIR_WARP]: "right",
+    [MB.UP_LEFT_STAIR_WARP]: "left", [MB.DOWN_LEFT_STAIR_WARP]: "left" };
   const ARROW_DIR = { [MB.EAST_ARROW_WARP]: "right", [MB.WEST_ARROW_WARP]: "left",
     [MB.NORTH_ARROW_WARP]: "up", [MB.SOUTH_ARROW_WARP]: "down" };
   const isWater = (b) => b >= 0x10 && b <= 0x15;
@@ -102,7 +106,9 @@
     // Coming out through a door or a cave's mouth, you step out of it
     // (FireRed's door exit and Task_ExitNonAnimDoor).
     const behavior = dest.behavior[to.y * dest.width + to.x];
-    return { map: w.map, x: to.x, y: to.y, door: behavior === MB.WARP_DOOR || behavior === MB.CAVE_DOOR };
+    // (Arriving by stairs, you stand on them facing away: ExitStairsMovement.)
+    const facing = STAIR_DIR[behavior] ? OPPOSITE[STAIR_DIR[behavior]] : undefined;
+    return { map: w.map, x: to.x, y: to.y, door: behavior === MB.WARP_DOOR || behavior === MB.CAVE_DOOR, facing };
   }
 
   // The map edge you'd walk off of, for a better message than a bump.
@@ -132,8 +138,14 @@
     // Standing on a door mat (or another edge warp) and walking out through it:
     // in the mat's arrow direction, down if it has none, into something solid.
     const hereWarp = warpAt(pos.map, pos.x, pos.y);
+    // On stairs, pressing toward them takes them.
+    if (hereWarp && STAIR_DIR[here.behavior]) {
+      if (dir !== STAIR_DIR[here.behavior]) { /* (walking off them) */ }
+      else if (!hereWarp.map && hereWarp.mapConst !== "MAP_DYNAMIC") return { ok: false, unbuilt: hereWarp.mapConst };
+      else return { ok: false, warp: warpTarget(hereWarp), stairs: true };
+    }
     const exitDir = ARROW_DIR[here.behavior] || "down";
-    if (hereWarp && !STEP_WARPS.has(here.behavior) && dir === exitDir && !free(ahead)) {
+    if (hereWarp && !STEP_WARPS.has(here.behavior) && !STAIR_DIR[here.behavior] && dir === exitDir && !free(ahead)) {
       return { ok: false, warp: warpTarget(hereWarp) };
     }
 

@@ -238,7 +238,14 @@
   let neighbours = [];
   let pendingEvent = null;   // (a scene something set off, to start once you're standing still)
 
-  const personAt = (x, y) => people.find((p) => (p.x === x && p.y === y) || (p.move && p.move.tx === x && p.move.ty === y));
+  // (Snorlax, the old man lying across Viridian's road and the legendary
+  // birds are as wide as two tiles, centred on theirs: they're in the way of
+  // the tiles either side too, so you can't walk onto them.)
+  const WIDE_BLOCKERS = new Set(["snorlax", "old_man_lying_down", "articuno", "zapdos", "moltres"]);
+  const personAt = (x, y) => people.find((p) => (p.x === x && p.y === y) || (p.move && p.move.tx === x && p.move.ty === y) ||
+    (!p.move && p.y === y && Math.abs(p.x - x) === 1 && WIDE_BLOCKERS.has(p.def.sprite)));
+  // A sprite wider than a tile is centred on its tile, as FireRed's are.
+  const spriteDx = (def) => (def.offsetX != null ? def.offsetX : def.width > 16 ? (16 - def.width) / 2 : 0);
   const occupiedForPlayer = (mapName, x, y) => (mapName === me.map ? !!personAt(x, y)
     : neighbours.some((n) => n.map === mapName && n.x === x && n.y === y));
 
@@ -544,6 +551,7 @@
     afterFade = async () => {
       me.map = target.map; me.x = target.x; me.y = target.y;
       if (target.door) me.facing = "down";
+      else if (target.facing) me.facing = target.facing;
       hideAreaName();
       if (World.map(me.map).showName) showAreaName(me.map);
       checkAvatar(); checkLight();
@@ -1174,13 +1182,13 @@
       if (p.emote) emotes.push([p.emote, x - camX, y - camY - p.def.height + TILE]);
       const walking = (!!p.move && p.move.t < TILE / 2) || (p.inPlace > 0 && p.inPlace % 16 >= 8);
       return { y, draw: () => { if (shade) g.filter = SHADE; drawSprite(p.def.sprite, p.def.width, p.def.height,
-        frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), p.facing === "right", x - camX + (p.def.offsetX || 0), y - camY); g.filter = "none"; } };
+        frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), p.facing === "right", x - camX + spriteDx(p.def), y - camY); g.filter = "none"; } };
     });
     for (const n of neighbours) {
       const x = (n.ox + n.x) * TILE, y = (n.oy + n.y) * TILE;
       if (x - camX < -TILE * 2 || x - camX > VIEW_W + TILE || y - camY < -TILE * 2 || y - camY > VIEW_H + TILE * 2) continue;
       sprites.push({ y, draw: () => drawSprite(n.def.sprite, n.def.width, n.def.height,
-        frameFor(n.facing, false, 0, n.def.frames), n.facing === "right", x - camX + (n.def.offsetX || 0), y - camY) });
+        frameFor(n.facing, false, 0, n.def.frames), n.facing === "right", x - camX + spriteDx(n.def), y - camY) });
     }
     if (me.emote) emotes.push([me.emote, px - camX, py - camY - 16]);
     const look = "player_" + (ctx.player.look || "custom");

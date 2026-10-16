@@ -4,7 +4,8 @@
 //   the table of contents   the National Pokédex's (sListMenuItems_NatDexModeSelect):
 //                           POKéMON LIST (NUMERICAL MODE: KANTO and NATIONAL),
 //                           the nine habitats, SEARCH (A TO Z, TYPE, LIGHTEST and
-//                           SMALLEST MODE), this game's AREA MODE and CLOSE,
+//                           SMALLEST MODE) and CLOSE; this game's AREA MODE: KANTO
+//                           comes under the POKéMON LIST,
 //                           with each choice's picture and the Seen / Owned
 //                           counts, Kanto's and National; the ▶ starts on
 //                           NATIONAL. (`national: false`: the Kanto Pokédex's
@@ -163,14 +164,15 @@
 
   function menuItems() {
     const seen = new Set(st.entries.filter((e) => e.seen).map((e) => e.species));
+    // (This game's Area mode, Kanto's places, under the lists.)
+    const area = { label: "Area mode: Kanto", act: "areas", icon: "areas", locked: !areaRows().some((a) => a.visited) };
     const it = [{ head: "Pokémon list" }].concat(st.national
       ? [{ label: "Numerical mode: Kanto", act: "kanto", icon: "numerical" }, { label: "Numerical mode: National", act: "national", icon: "numerical" }]
-      : [{ label: "Numerical mode", act: "kanto", icon: "numerical" }], [{ head: "Pokémon habitats" }]);
+      : [{ label: "Numerical mode", act: "kanto", icon: "numerical" }], [area, { head: "Pokémon habitats" }]);
     D().habitats.forEach((h, i) => it.push({ label: h.name + " Pokémon", act: "habitat", habitat: i, icon: h.icon,
       locked: !h.pages.some((p) => p.some((sp) => seen.has(sp))) }));
     it.push({ head: "Search" }, ...SEARCH.map(([act, label, icon]) => ({ label, act, icon })));
-    it.push({ head: "Pokémon areas" }, { label: "Area mode", act: "areas", icon: "areas", locked: !areaRows().some((a) => a.visited) },
-      { head: "Other" }, { label: "Close Pokédex", act: "close", icon: "cancel" });
+    it.push({ head: "Other" }, { label: "Close Pokédex", act: "close", icon: "cancel" });
     return it;
   }
   function drawMenu() {
