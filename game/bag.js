@@ -167,9 +167,28 @@
     };
   }
 
-  // Would `item` do anything to `record` outside battle? opts: { move, party }
+  // The Ability Capsule (Gen 6): the other of a species' two ordinary
+  // Abilities, or null (one Ability only, or its Hidden Ability).
+  function capsuleAbility(record) {
+    const abilities = (window.DEX[record.species] || {}).abilities || [];
+    if (abilities.length < 2 || !abilities.includes(record.ability)) return null;
+    return abilities.find((a) => a !== record.ability) || null;
+  }
+  // Bottle Caps (Hyper Training, as in Sword and Shield and Scarlet and
+  // Violet: from Lv. 50): a stat's IV acts as 31 from then on. A Bottle Cap
+  // trains one stat, a Gold Bottle Cap all six. The stats a cap would train.
+  const HYPER_TRAINING_LEVEL = 50;
+  function trainableStats(record) {
+    if (record.level < HYPER_TRAINING_LEVEL) return [];
+    return window.Party.STAT_KEYS.filter((k) => (record.ivs[k] | 0) < 31 && !(record.hyper || []).includes(k));
+  }
+
+  // Would `item` do anything to `record` outside battle? opts: { move, party, stat }
   function canUseOn(record, item, opts) {
     opts = opts || {};
+    if (item === "ability-capsule") return !!capsuleAbility(record);
+    if (item === "bottle-cap") return opts.stat ? trainableStats(record).includes(opts.stat) : trainableStats(record).length > 0;
+    if (item === "gold-bottle-cap") return trainableStats(record).length > 0;
     if (isStone(item)) return !!window.Evolution.find(record, { trigger: "item", item, party: opts.party });
     if (isMachine(item)) return window.Party.canLearnMachine(record, machineMove(item)) && !window.Party.knowsMove(record, machineMove(item));
     if (mintNature(item)) return record.nature !== mintNature(item);
@@ -179,6 +198,19 @@
   // Applies an HP / status / PP / vitamin item. Evolution stones and Rare Candy
   // go through levelUp() and the evolution flow in the UI instead.
   function useOn(record, item, opts) {
+    if (item === "ability-capsule") {
+      const old = record.ability;
+      record.ability = capsuleAbility(record);
+      return { ability: record.ability, oldAbility: old };
+    }
+    if (item === "bottle-cap" || item === "gold-bottle-cap") {
+      const oldMax = window.Party.maxHp(record);
+      const stats = item === "gold-bottle-cap" ? trainableStats(record) : [opts.stat];
+      record.hyper = (record.hyper || []).concat(stats);
+      // (A trained HP raises max HP; current HP goes up by the same amount.)
+      if (record.hp > 0) record.hp += window.Party.maxHp(record) - oldMax;
+      return { trained: stats };
+    }
     if (mintNature(item)) {
       const old = record.nature;
       record.nature = mintNature(item);
@@ -227,7 +259,7 @@
 
   window.Bag = {
     POCKETS, get BATTLE_POCKETS() { return BATTLE_POCKETS(); }, PRICES, name, description, sprite, price, sellPrice, pocket, isBall, isStone, isKeyItem,
-    isMachine, machineMove, machines, mintNature,
+    isMachine, machineMove, machines, mintNature, capsuleAbility, trainableStats, HYPER_TRAINING_LEVEL,
     martStock, canUseOn, useOn, levelUp, give, take
   };
 })();

@@ -107,7 +107,13 @@ the bag recoloured (blue, green, violet; tools/build-bag.js). In battle the Bag
 shows only the pockets with something usable there (Items, Medicine, Poké
 Balls, Berries). Old saves simply sort into the new pockets, with FireRed's descriptions under the list
 (its own words and line breaks, for the items FireRed has). A opens Use / Give / Toss; Toss asks how
-many and throws them away right there. It holds medicine, evolution
+many and throws them away right there. The Ability Capsule switches a
+Pokémon between its species' two ordinary Abilities (it asks first; not a
+Hidden Ability, nor a species with one). Bottle Caps are Hyper Training, as in
+Sword and Shield and Scarlet and Violet: on a Pokémon of Lv. 50 or more, a
+Bottle Cap makes one stat you pick (from the ones not already at 31) act as
+if its IV were 31, a Gold Bottle Cap all of them; the IV itself stays as it
+was, for breeding, and the Summary's IV page shows 31. It holds medicine, evolution
 stones (each item for evolving says "Evolves certain Pokémon when used."), Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
 the Exp. Share, Oak's Parcel, the Town Map and the fishing rods (see
 **Fishing** below). After the Bag come FireRed's Pokédex, the **National

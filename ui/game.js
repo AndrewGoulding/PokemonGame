@@ -591,6 +591,34 @@
       await message(name + "'s nature changed from " + r.oldNature + " to " + r.nature + "!");
       return;
     }
+    if (item === "ability-capsule") {
+      // (Gen 6: it asks first.)
+      const to = Bag.capsuleAbility(record);
+      if (!to) { await message("It won't have any effect."); return; }
+      if (!(await confirm("Do you want to change " + name + "'s Ability from " + record.ability + " to " + to + "?"))) return;
+      Player.removeItem(player, item);
+      Bag.useOn(record, item);
+      await message(name + "'s Ability changed to " + to + "!");
+      return;
+    }
+    if (item === "bottle-cap" || item === "gold-bottle-cap") {
+      // Hyper Training: a stat's IV acts as 31 (a Gold Bottle Cap: all of them).
+      if (record.level < Bag.HYPER_TRAINING_LEVEL) { await message(name + " must be at least Lv. " + Bag.HYPER_TRAINING_LEVEL + " for Hyper Training."); return; }
+      if (!Bag.canUseOn(record, item)) { await message(name + " can't be trained any more."); return; }
+      let stat;
+      if (item === "bottle-cap") {
+        const can = Bag.trainableStats(record);
+        const v = await multichoice("Which stat should be Hyper Trained?", 21, 0, can.map((k) => STAT_NAMES[k]).concat(["Cancel"]));
+        Screen.say("");
+        if (v < 0 || v >= can.length) return;
+        stat = can[v];
+      }
+      Player.removeItem(player, item);
+      const r = Bag.useOn(record, item, { stat });
+      await message(item === "gold-bottle-cap" ? name + " was Hyper Trained in all its stats!"
+        : name + "'s " + STAT_NAMES[r.trained[0]] + " was Hyper Trained!");
+      return;
+    }
     if (item === "rare-candy") {
       if (!Bag.canUseOn(record, item)) { await message("It won't have any effect."); return; }
       if (!player.flags.debugCandy) Player.removeItem(player, item);   // the debug menu makes them infinite
@@ -662,7 +690,9 @@
   const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
   const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map"].concat(RODS);
+  const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
+    item === "ability-capsule" || item === "bottle-cap" || item === "gold-bottle-cap" ||
     item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS || item === "escape-rope";
   // TMs and HMs work like key items: they can't be held, tossed or sold.
   const holdable = (item) => !Bag.isBall(item) && !Bag.isMachine(item) && !Bag.isKeyItem(item);
@@ -944,7 +974,7 @@
       name: Party.displayName(r), species: Party.speciesName(r.species), dexNo: (DEX[Party.speciesName(r.species)] || dex).id,
       level: r.level, gender: r.gender, types: dex.types, ot: ot.name, otId: ot.id & 0xffff,
       item: r.item ? Bag.name(r.item) : "", memo, hp: r.hp, maxhp: stats.hp,
-      evs: Object.assign({}, r.evs), ivs: Object.assign({}, r.ivs), nature: r.nature, happiness: r.happiness,
+      evs: Object.assign({}, r.evs), ivs: Object.assign({}, Party.trainedIvs(r)), nature: r.nature, happiness: r.happiness,
       stats: { atk: stats.atk, def: stats.def, spa: stats.spa, spd: stats.spd, spe: stats.spe },
       exp: r.exp, toNext: Math.max(0, next - r.exp), expFrac: next > here ? (r.exp - here) / (next - here) : 0,
       ability, abilityText: (window.SUMMARY_SCREEN.abilityText || {})[ability] || "",

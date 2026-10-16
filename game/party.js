@@ -9,6 +9,8 @@
 // A record:
 //   { species, nickname, level, exp, nature, ability, gender, personality, ivs, evs,
 //     happiness, item, ball, moves: [{ name, pp, ppUps }], hp, status }
+// `hyper` (from Bottle Caps: Hyper Training) lists the stats trained to act
+// as if their IVs were 31; `ivs` itself stays as it is (what breeding passes on).
 // `ppUps` (0-3, from PP Up / PP Max) is left out when 0.
 // Max HP and other stats are always worked out from the record, never stored.
 
@@ -83,9 +85,16 @@
     return record;
   }
 
+  // Its IVs as stats use them: 31 for each Hyper Trained stat.
+  function trainedIvs(record) {
+    if (!record.hyper || !record.hyper.length) return record.ivs;
+    const ivs = Object.assign({}, record.ivs);
+    for (const k of record.hyper) ivs[k] = 31;
+    return ivs;
+  }
   function stats(record) {
     return window.Stats.calcAllStats(record.species,
-      { level: record.level, nature: record.nature, ivs: record.ivs, evs: record.evs });
+      { level: record.level, nature: record.nature, ivs: trainedIvs(record), evs: record.evs });
   }
   const maxHp = (record) => stats(record).hp;
   // Sprite variant for Pokémon whose look differs within one Pokédex entry:
@@ -120,7 +129,7 @@
       nature: record.nature,
       ability: record.ability,
       gender: record.gender,
-      ivs: record.ivs,
+      ivs: trainedIvs(record),
       evs: Object.assign({}, record.evs),
       happiness: record.happiness,
       item: record.item,
@@ -219,7 +228,7 @@
   }
 
   window.Party = { SHINY_ODDS,
-    CLOAKS, create, maxPp, stats, maxHp, speciesName, displayName, form, isFainted, toBattleSet, friendshipOpts, adjustFriendship,
+    CLOAKS, STAT_KEYS, create, maxPp, trainedIvs, stats, maxHp, speciesName, displayName, form, isFainted, toBattleSet, friendshipOpts, adjustFriendship,
     syncFromBattle, caught, heal, teachMove, canLearnMachine, knowsMove, movesLearnedAt, expProgress
   };
 })();

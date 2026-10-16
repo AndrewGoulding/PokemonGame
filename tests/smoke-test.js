@@ -1362,6 +1362,35 @@ for (const share of [false, true]) {
   }
 }
 
+// The Ability Capsule and Bottle Caps (game/bag.js).
+{
+  const r = Party.create("Gengar", 30);
+  r.ability = "Levitate";
+  assert(!Bag.canUseOn(r, "ability-capsule"), "Gengar has one Ability");
+  const b = Party.create("Machamp", 30);
+  b.ability = "Guts";
+  assert(Bag.canUseOn(b, "ability-capsule"), "Machamp has two");
+  Bag.useOn(b, "ability-capsule");
+  assert.strictEqual(b.ability, "No Guard", "the capsule swaps them");
+  b.ability = "Steadfast";
+  assert(!Bag.canUseOn(b, "ability-capsule"), "not a Hidden Ability");
+  const m = Party.create("Machamp", 49, { ivs: 3 });
+  assert(!Bag.canUseOn(m, "bottle-cap"), "Hyper Training needs Lv. 50");
+  m.level = 50;
+  const before = Party.stats(m), hp = m.hp = Party.maxHp(m);
+  assert(Bag.canUseOn(m, "bottle-cap", { stat: "atk" }));
+  Bag.useOn(m, "bottle-cap", { stat: "atk" });
+  assert.strictEqual(m.ivs.atk, 3, "the IV itself stays (for breeding)");
+  assert(Party.stats(m).atk > before.atk && Party.toBattleSet(m).ivs.atk === 31, "Attack acts as 31");
+  assert(!Bag.canUseOn(m, "bottle-cap", { stat: "atk" }), "trained once");
+  Bag.useOn(m, "gold-bottle-cap");
+  assert.deepStrictEqual(Bag.trainableStats(m), [], "a Gold Bottle Cap trains the rest");
+  assert(m.hp > hp, "trained HP raises current HP too");
+  assert(!Bag.canUseOn(m, "gold-bottle-cap"));
+  const saved = Player.load(JSON.parse(Player.serialize(Object.assign(Player.create("T", 0), { party: [m] })))).player.party[0];
+  assert.deepStrictEqual(saved.hyper.slice().sort(), Party.STAT_KEYS.slice().sort(), "saves keep Hyper Training");
+}
+
 // Fishing (World.fishingEncounter): each rod its own slots of the map's fishing_mons.
 {
   const rolls = (vals) => { let i = 0; return () => vals[i++ % vals.length]; };
