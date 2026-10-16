@@ -1110,6 +1110,32 @@ Smart Strike, ...) isn't learnt by machine. Metronome, a Gen 6 move here,
 doesn't call Gen 7's moves. Like the other generations' Pokémon after the
 first 386, they have no cries (FireRed has none).
 
+In battle, Gen 7's 42 Abilities work (`data/abilities.js`, num 192-233):
+the formes they bring about change the picture, stats and types mid-battle
+(Shields Down's Meteor Form and Core, Wishiwashi schooling from Lv. 20 above
+a quarter HP, Disguise taking the first hit, Battle Bond's Ash-Greninja after a
+knockout, with three-hit 20-power Water Shuriken, Power Construct's Complete
+Forme at half HP, its extra HP added), and the in-battle Summary shows the
+forme. The Surges set their terrain, Psychic Terrain among them (1.5x Psychic
+moves, no priority moves at grounded Pokémon; Nature Power calls Psychic);
+Queenly Majesty and Dazzling also stop priority moves; Dancer copies dance
+moves; Wimp Out and Emergency Exit switch out below half HP (not a wild
+Pokémon's); Innards Out, Beast Boost, Soul-Heart, Receiver and Power of
+Alchemy, Battery, Merciless, Galvanize (1.2x), Liquid Voice, Triage, Long
+Reach, Stakeout, Water Bubble, Fluffy, Full Metal Body, Shadow Shield, Prism
+Armor, Neuroforce and the rest are as in Sun and Moon. The new moves that need
+more than their data are in `data/battle-moves.js`: Shore Up, Floral Healing,
+Purify, Strength Sap, Speed Swap, Gear Up, Toxic Thread, Aurora Veil (hail
+only; both screens), Baneful Bunker, Laser Focus, Throat Chop, Spirit Shackle
+and Anchor Shot (trap), Spectral Thief, Pollen Puff (heals an ally), Psychic
+Fangs (breaks screens), First Impression, Burn Up, Core Enforcer, Beak Blast,
+Shell Trap, Mind Blown, Plasma Fists, Sparkling Aria, Solar Blade, Stomping
+Tantrum, Power Trip, Darkest Lariat, Photon Geyser, Revelation Dance and
+Multi-Attack (the user's type). Their Summary descriptions come from
+pokeemerald-expansion, like the other moves and Abilities after Gen 3. The
+test battles 100 random Gen 7 teams in debug mode. (RKS System needs no
+Memories: each Silvally form is its own species.)
+
 ## Faraway Island
 
 Emerald's Old Sea Map event, for Mew. Once the Sapphire is in Celio's machine
@@ -1323,7 +1349,7 @@ and Pewter City's), water animation, and a Town Map of Johto.
 | `assets/world/` | Generated map images and transparent overworld sprites |
 | `assets/intro/` | Generated opening movie, title screen and Oak's speech graphics |
 | `assets/battle/` | Generated battle backgrounds (FireRed's battle terrains) |
-| `tests/` | Loads every non-UI script and checks formulas, engine regressions, progression rules and AI choices, plus 200 random battles; `tests/browser/lib.js` is a Playwright helper for checking things in the real page (it serves the game, loads a save made in Node, and presses keys long enough to register) |
+| `tests/` | Loads every non-UI script and checks formulas, engine regressions, progression rules and AI choices, plus 200 random battles, 120 random double battles and 100 random battles of Gen 7 teams; `tests/browser/lib.js` is a Playwright helper for checking things in the real page (it serves the game, loads a save made in Node, and presses keys long enough to register) |
 
 ## Script load order
 

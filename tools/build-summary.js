@@ -89,7 +89,7 @@ const data = {
 
 const vm = require("vm");
 global.window = global;
-for (const f of ["data/moves.js", "data/abilities.js"]) vm.runInThisContext(fs.readFileSync(path.join(root, f), "utf8"));
+for (const f of ["data/moves.js", "data/moves-gen7.js", "data/abilities.js"]) vm.runInThisContext(fs.readFileSync(path.join(root, f), "utf8"));
 const key = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
 const strings = (body) => [...body.matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]).join("").replace(/\\n/g, "\n")
   .replace(/POKéMON/g, "Pokémon").replace(/\{PKMN\}/g, "Pokémon");

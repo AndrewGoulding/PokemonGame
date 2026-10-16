@@ -2311,6 +2311,214 @@ for (let seed = 1; seed <= DOUBLES; seed++) {
   doublesTurns += battle.turn;
 }
 
+// ---------- Generation 7 battles ----------
+{
+  const g7 = (species, moves, extra) => Object.assign({ species, level: 50, moves }, extra);
+  const singles = (p1, p2, seed) => {
+    const b = new Battle({ seed: seed || 1, debug: true, p1: { name: "A", team: p1 }, p2: { name: "B", team: p2 } });
+    b.start();
+    return b;
+  };
+  const has = (evs, type, ...args) => evs.some((e) => e[0] === type && args.every((a, i) => a instanceof RegExp ? a.test(e[i + 1]) : e[i + 1] === a));
+
+  // Psychic Surge: Psychic Terrain on the way in; a grounded Pokémon can't
+  // be hit by priority moves, and Psychic moves get 1.5x.
+  {
+    const b = singles([g7("Tapu Lele", ["Psychic"])], [g7("Rattata", ["Quick Attack"], { ability: "Guts" })]);
+    assert.strictEqual(b.field.terrain, "PsychicTerrain");
+    assert(has(b.events, "-fieldstart", "PsychicTerrain"));
+    const lele = b.sides.p1.active;
+    const evs = play(b, { p1: mv(0), p2: mv(0) });
+    assert(has(evs, "-activate", lele.ident, "move: Psychic Terrain"), "Quick Attack is blocked");
+    assert.strictEqual(lele.hp, lele.maxhp);
+    const r = Damage.calc(lele, b.sides.p2.active, "Psychic", { terrain: "PsychicTerrain" });
+    const plain = Damage.calc(lele, b.sides.p2.active, "Psychic", {});
+    assert(r.basePower === 135 && plain.basePower === 90, "Psychic Terrain: 1.5x power");
+  }
+  // Disguise: the first hit only busts Mimikyu's disguise.
+  {
+    const b = singles([g7("Mimikyu", ["Splash"])], [g7("Rattata", ["Bite"], { ability: "Guts" })]);
+    const mimikyu = b.sides.p1.active;
+    const evs = play(b, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(mimikyu.species, "Mimikyu-Busted");
+    assert.strictEqual(mimikyu.hp, mimikyu.maxhp);
+    assert(has(evs, "detailschange", mimikyu.ident, "Mimikyu-Busted"));
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert(mimikyu.hp < mimikyu.maxhp, "the second hit lands");
+  }
+  // Shields Down: Meteor Form above half HP (no status), Core at half or less.
+  {
+    const b = singles([g7("Minior", ["Splash"])], [g7("Raticate", ["Super Fang", "Toxic"], { ability: "Guts" })]);
+    const minior = b.sides.p1.active;
+    play(b, { p1: mv(0), p2: mv(1) });
+    assert(!minior.status, "Meteor Form can't be poisoned");
+    play(b, { p1: mv(0), p2: mv(0) });
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(minior.species, "Minior-Core");
+    assert(minior.stats.spe > Stats.calcAllStats("Minior", { level: 50 }).spe);
+  }
+  // Schooling: from Lv. 20 Wishiwashi schools.
+  {
+    const b = singles([g7("Wishiwashi", ["Splash"], { level: 20 })], [g7("Wishiwashi", ["Splash"], { level: 19 })]);
+    assert.strictEqual(b.sides.p1.active.species, "Wishiwashi-School");
+    assert.strictEqual(b.sides.p2.active.species, "Wishiwashi");
+  }
+  // Galvanize: Normal moves become Electric, 1.2x.
+  {
+    const b = singles([g7("Golem-Alola", ["Tackle"], { ability: "Galvanize" })], [g7("Gyarados", ["Splash"])]);
+    const r = Damage.calc(b.sides.p1.active, b.sides.p2.active, "Tackle", {});
+    assert.strictEqual(r.type, "Electric");
+    assert.strictEqual(r.basePower, 60);
+  }
+  // Stamina, Water Compaction, Beast Boost.
+  {
+    const b = singles([g7("Mudsdale", ["Splash"], { ability: "Stamina" })], [g7("Rattata", ["Tackle"], { ability: "Guts" })]);
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(b.sides.p1.active.boosts.def, 1);
+    const c = singles([g7("Nihilego", ["Sludge Bomb"], { level: 100 })], [g7("Caterpie", ["Splash"], { level: 2 }), g7("Caterpie", ["Splash"], { level: 2 })]);
+    play(c, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(c.sides.p1.active.boosts.spd, 1, "Beast Boost raises its best stat (Sp. Def)");
+  }
+  // Baneful Bunker: protects and poisons a contact attacker.
+  {
+    const b = singles([g7("Toxapex", ["Baneful Bunker"])], [g7("Rattata", ["Tackle"], { ability: "Guts" })]);
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(b.sides.p1.active.hp, b.sides.p1.active.maxhp);
+    assert.strictEqual(b.sides.p2.active.status, "psn");
+  }
+  // Spirit Shackle traps; Throat Chop stops sound moves.
+  {
+    const b = singles([g7("Decidueye", ["Spirit Shackle", "Throat Chop"], { level: 30 })],
+      [g7("Alakazam", ["Hyper Voice"], { level: 50 }), g7("Snorlax", ["Splash"])]);
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert(b.getRequest("p2").active.trapped, "Spirit Shackle traps");
+    play(b, { p1: mv(1), p2: mv(0) });
+    assert(b.sides.p2.active.volatiles.throatchop);
+    assert(b.getRequest("p2").active.moves[0].disabled, "no sound moves after Throat Chop");
+  }
+  // Strength Sap: heals by the target's Attack, then lowers it.
+  {
+    const b = singles([g7("Shiinotic", ["Strength Sap"])], [g7("Snorlax", ["Splash"])]);
+    const shiinotic = b.sides.p1.active, snorlax = b.sides.p2.active;
+    shiinotic.hp = 1;
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(shiinotic.hp, Math.min(shiinotic.maxhp, 1 + snorlax.stats.atk));
+    assert.strictEqual(snorlax.boosts.atk, -1);
+  }
+  // Aurora Veil only in hail (Snow Warning).
+  {
+    const b = singles([g7("Ninetales-Alola", ["Aurora Veil"], { ability: "Snow Warning" })], [g7("Snorlax", ["Splash"])]);
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert(b.sides.p1.conditions.auroraveil);
+    const c = singles([g7("Ninetales-Alola", ["Aurora Veil"], { ability: "Snow Cloak" })], [g7("Snorlax", ["Splash"])]);
+    const evs = play(c, { p1: mv(0), p2: mv(0) });
+    assert(!c.sides.p1.conditions.auroraveil && has(evs, "-fail"));
+  }
+  // Dancer: Oricorio copies a dance move.
+  {
+    const b = singles([g7("Oricorio", ["Splash"])], [g7("Scizor", ["Swords Dance"])]);
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(b.sides.p1.active.boosts.atk, 2, "Dancer copied Swords Dance");
+  }
+  // Innards Out: the attacker takes the HP Pyukumuku had left.
+  {
+    const b = singles([g7("Pyukumuku", ["Splash"], { level: 5 }), g7("Pyukumuku", ["Splash"])], [g7("Snorlax", ["Body Slam"], { level: 100 })]);
+    const left = b.sides.p1.active.hp;
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(hpLost(b.sides.p2.active), left);
+  }
+  // Comatose can't be statused; Merciless always crits a poisoned target.
+  {
+    const b = singles([g7("Komala", ["Splash"])], [g7("Mareanie", ["Toxic", "Poison Jab"], { ability: "Merciless" })]);
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert(!b.sides.p1.active.status);
+    const c = singles([g7("Snorlax", ["Splash"], { status: "psn", ability: "Thick Fat" })], [g7("Mareanie", ["Poison Jab"], { ability: "Merciless" })]);
+    const evs = play(c, { p1: mv(0), p2: mv(0) });
+    assert(has(evs, "-crit", c.sides.p1.active.ident));
+  }
+  // Emergency Exit: below half HP from an attack, it switches out.
+  {
+    const b = singles([g7("Snorlax", ["Super Fang"])], [g7("Golisopod", ["Splash"]), g7("Rattata", ["Splash"])]);
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(b.getRequest("p2").phase, "switch");
+  }
+  // Power Construct: Zygarde turns Complete at half HP or less, at the end
+  // of the turn, and the HP it gains is added.
+  {
+    const b = singles([g7("Zygarde-10%", ["Splash"], { ability: "Power Construct" })], [g7("Raticate", ["Super Fang"])]);
+    const z = b.sides.p1.active, before = z.maxhp;
+    for (let i = 0; i < 6 && z.species !== "Zygarde-Complete"; i++) play(b, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(z.species, "Zygarde-Complete");
+    const hit = b.events.filter((e) => e[0] === "-damage" && e[1] === z.ident).pop();
+    const lost = before - parseInt(hit[2], 10);
+    assert(z.maxhp > before && z.maxhp - z.hp === lost, "the extra HP is added");
+  }
+  // Battle Bond: a knockout turns Greninja into Ash-Greninja.
+  {
+    const b = singles([g7("Greninja-Bond", ["Surf"], { level: 100 })], [g7("Caterpie", ["Splash"], { level: 2 }), g7("Caterpie", ["Splash"], { level: 2 })]);
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(b.sides.p1.active.species, "Greninja-Ash");
+  }
+  // Multi-Attack and Revelation Dance take the user's type; Photon Geyser
+  // goes physical; Darkest Lariat ignores Defense boosts.
+  {
+    const b = singles([g7("Silvally-Fire", ["Multi-Attack"])], [g7("Snorlax", ["Splash"])]);
+    const evs = play(b, { p1: mv(0), p2: mv(0) });
+    assert(hpLost(b.sides.p2.active) > 0);
+    const a = b.sides.p1.active;
+    assert.strictEqual(Damage.calc(a, b.sides.p2.active, "Multi-Attack", {}, { moveType: "Fire" }).type, "Fire");
+    const nec = Damage.makePokemon("Necrozma", { level: 50 });
+    const snorlax = Damage.makePokemon("Snorlax", { level: 50 });
+    assert.strictEqual(Damage.calc(nec, snorlax, "Photon Geyser", {}).category, Damage.makePokemon("Necrozma", { level: 50 }).stats.atk > nec.stats.spa ? "Physical" : "Special");
+    const incin = Damage.makePokemon("Incineroar", { level: 50 });
+    const wall = Damage.makePokemon("Snorlax", { level: 50, boosts: { def: 6 } });
+    assert.deepStrictEqual(Damage.calc(incin, wall, "Darkest Lariat", {}).damage, Damage.calc(incin, snorlax, "Darkest Lariat", {}).damage);
+  }
+  // Doubles: Soul-Heart, Receiver, Queenly Majesty, Battery.
+  {
+    const b = new Battle({ seed: 1, format: "doubles", debug: true,
+      p1: { name: "A", team: [g7("Magearna", ["Splash"]), g7("Passimian", ["Splash"], { ability: "Receiver" })] },
+      p2: { name: "B", team: [g7("Snorlax", ["Explosion"], { level: 100, ability: "Thick Fat" }), g7("Tsareena", ["Splash"], { ability: "Queenly Majesty" })] } });
+    b.start();
+    const [magearna, passimian] = b.sides.p1.actives;
+    play(b, { p1: [mv(0), mv(0)], p2: [mv(0), mv(0)] });
+    assert(b.sides.p2.actives[0].fainted, "Snorlax exploded");
+    assert(magearna.fainted && passimian.ability === "Soul-Heart", "Receiver took Magearna's Soul-Heart");
+    const c = new Battle({ seed: 1, format: "doubles", debug: true,
+      p1: { name: "A", team: [g7("Rattata", ["Quick Attack"], { ability: "Guts" }), g7("Vikavolt", ["Splash"])] },
+      p2: { name: "B", team: [g7("Snorlax", ["Splash"]), g7("Tsareena", ["Splash"], { ability: "Queenly Majesty" })] } });
+    c.start();
+    const evs = play(c, { p1: [mv(0, 1), mv(0)], p2: [mv(0), mv(0)] });
+    assert(has(evs, "-activate", c.sides.p2.actives[1].ident, "ability: Queenly Majesty"), "Queenly Majesty guards its ally");
+    assert.strictEqual(c.sides.p2.actives[0].hp, c.sides.p2.actives[0].maxhp);
+    const charj = Damage.makePokemon("Charjabug", { level: 50 }), foe = Damage.makePokemon("Snorlax", { level: 50 });
+    assert.strictEqual(Damage.calc(charj, foe, "Bug Buzz", {}, { battery: true }).basePower, 117);
+  }
+}
+
+// Gen 7's Pokémon in random battles (singles and doubles, the battle in
+// debug mode so an Ability or move effect that throws fails the test).
+const GEN7 = 100;
+let gen7Turns = 0;
+for (let seed = 1; seed <= GEN7; seed++) {
+  const teamRng = mulberry32(seed * 7919);
+  const dbl = seed % 2 === 0;
+  const team = () => RandomTeam.team(dbl ? 4 : 3, { level: 50, rng: teamRng, onlyGen: 7 });
+  const battle = new Battle({ seed, debug: true, format: dbl ? "doubles" : "singles", p1: { name: "A", team: team() }, p2: { name: "B", team: team() } });
+  const rng = mulberry32(seed);
+  battle.start();
+  for (let step = 0; step < 3000 && !battle.ended; step++) {
+    for (const id of ["p1", "p2"]) {
+      const req = battle.getRequest(id);
+      if (req.phase !== "move" && req.phase !== "switch") continue;
+      const r = battle.choose(id, step % 2 ? OpponentAI.choose(battle, id, rng) : battle.randomChoice(id));
+      assert(r.ok, "Gen 7 choice rejected in battle " + seed + ": " + r.error);
+    }
+  }
+  assert(battle.ended, "Gen 7 battle " + seed + " did not finish");
+  gen7Turns += battle.turn;
+}
+
 console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns), AI beat random moves in " + aiWinRate + "% of games");
 console.log("ok: doubles regressions, " + DOUBLES + " random doubles battles finished (" + doublesTurns + " turns)");
 
@@ -3352,7 +3560,7 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
   assert(/const DOJO_SECOND_LEVEL = 50;/.test(gameJs) && /f\.dojoHitmon2 = species/.test(gameJs));
   // The in-battle Summary: a Mega's picture, stats and ability.
   assert(/const views = now\.map\(\(r, k\) => battleSummaryView\(r, mons\[k\]\)\)/.test(gameJs));
-  assert(/if \(mon\.mega && DEX\[mon\.species\]\)/.test(gameJs));
+  assert(/if \(\(mon\.mega \|\| mon\.formeChanged\) && DEX\[mon\.species\]\)/.test(gameJs));
   // Mega Stones.
   const balls = [...gameJs.matchAll(/\{ map: "(\w+)", x: (\d+), y: (\d+), item: "([\w-]+)"/g)].map((m) => ({ map: m[1], x: +m[2], y: +m[3], item: m[4] }));
   const gifts = [...gameJs.matchAll(/megaStoneGift\("([\w-]+)"/g)].map((m) => m[1]);
@@ -3377,3 +3585,4 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
   }
   assert(/when: \(f\) => f\.foughtMewtwo/.test(gameJs), "Mewtwonites once Mewtwo is caught or beaten");
 }
+console.log("ok: Gen 7, " + GEN7 + " random battles finished (" + gen7Turns + " turns)");

@@ -124,6 +124,34 @@
     protect: { name: "Protect", duration: 1 },
     kingsshield: { name: "King's Shield", duration: 1 },
     spikyshield: { name: "Spiky Shield", duration: 1 },
+    banefulbunker: { name: "Baneful Bunker", duration: 1 },
+    // Gen 7
+    laserfocus: { name: "Laser Focus", duration: 2 },
+    throatchop: {
+      name: "Throat Chop",
+      duration: 2,
+      onBeforeMove(ctx, move) {
+        if (move && move.flags && move.flags.sound) { ctx.add("cant", ctx.pokemon, "move: Throat Chop", move.name); return false; }
+      }
+    },
+    shackled: { name: "shackled" },
+    beakblast: {
+      name: "Beak Blast",
+      onDamagingHit(ctx, move) {
+        if (ctx.source && move && move.flags && move.flags.contact) ctx.trySetStatus(ctx.source, "brn", ctx.pokemon);
+      }
+    },
+    shelltrap: {
+      name: "Shell Trap",
+      onDamagingHit(ctx, move) {
+        if (ctx.source && ctx.source.side !== ctx.pokemon.side && move && move.category === "Physical") ctx.effectState.gotHit = true;
+      }
+    },
+    sparklingaria: {
+      name: "Sparkling Aria",
+      duration: 1,
+      onStart(ctx) { if (ctx.pokemon.status === "brn") ctx.cureStatus(ctx.pokemon); }
+    },
     endure: {
       name: "Endure",
       duration: 1,
@@ -263,6 +291,7 @@
     safeguard: { name: "Safeguard", duration: 5 },
     mist: { name: "Mist", duration: 5 },
     luckychant: { name: "Lucky Chant", duration: 5 },
+    auroraveil: { name: "Aurora Veil", duration: 5 },
     tailwind: {
       name: "Tailwind",
       duration: 4,

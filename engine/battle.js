@@ -147,13 +147,14 @@
     desolateland: "DesolateLand", primordialsea: "PrimordialSea", deltastream: "DeltaStream"
   };
   const TERRAIN_NAMES = {
-    electricterrain: "ElectricTerrain", grassyterrain: "GrassyTerrain", mistyterrain: "MistyTerrain"
+    electricterrain: "ElectricTerrain", grassyterrain: "GrassyTerrain", mistyterrain: "MistyTerrain",
+    psychicterrain: "PsychicTerrain"
   };
   const PRIMAL = ["DesolateLand", "PrimordialSea", "DeltaStream"];
   const WEATHER_ROCKS = { SunnyDay: "heat-rock", RainDance: "damp-rock", Sandstorm: "smooth-rock", Hail: "icy-rock" };
   const DEF_ACC_ABILITIES = new Set(["Sand Veil", "Snow Cloak", "Tangled Feet", "Wonder Skin"]);
   const SILENT_VOLATILES = new Set(["choicelock", "mustrecharge", "lockedmove", "twoturnmove", "flinch",
-    "protect", "kingsshield", "spikyshield", "endure", "charge", "roost", "focuspunch", "destinybond", "focusenergy"]);
+    "protect", "kingsshield", "spikyshield", "banefulbunker", "sparklingaria", "endure", "charge", "roost", "focuspunch", "destinybond", "focusenergy"]);
   const INVULN = {
     fly: "fly", bounce: "fly", dig: "dig", dive: "dive", shadowforce: "shadow", phantomforce: "shadow"
   };
@@ -170,7 +171,7 @@
   const REDIRECTABLE = new Set(["normal", "any", "adjacentFoe", "randomNormal"]);
   // One-turn doubles effects, cleared at the end of each turn.
   const TURN_VOLATILES = ["helpinghand", "followme", "ragepowder", "spotlight"];
-  const STALL_MOVES = new Set(["protect", "detect", "endure", "kingsshield", "spikyshield", "quickguard", "wideguard", "matblock", "craftyshield"]);
+  const STALL_MOVES = new Set(["protect", "detect", "endure", "kingsshield", "spikyshield", "banefulbunker", "quickguard", "wideguard", "matblock", "craftyshield"]);
 
   // Indexes
   let DEX_INDEX = null, MOVE_INDEX = null, ABILITY_CONDITIONS = null, MEGA_MAP = null;
@@ -603,6 +604,8 @@
         takeItem: (mon) => b.takeItem(mon),
         setType: (mon, t) => mon.setType(t),
         formeChange: () => false,
+        abilityForme: (mon, forme, text) => b.abilityForme(mon, forme, text),
+        setTerrain: (t) => b.setTerrain(t, holder, h.effect),
         transformInto: (mon, t) => b.transformInto(mon, t),
         singleEvent: () => undefined,
         actions: { useMove: (move, user, opts) => b.execMove(user, move, { target: opts && opts.target, bounced: true }) },
@@ -758,11 +761,11 @@
       this.field.weather = ""; this.field.weatherTurns = 0; this.field.weatherSource = null;
       return true;
     }
-    setTerrain(name) {
+    setTerrain(name, source, effect) {
       name = TERRAIN_NAMES[toID(name)] || name;
       if (this.field.terrain === name) return false;
       this.field.terrain = name; this.field.terrainTurns = 5;
-      this.add("-fieldstart", name);
+      this.add("-fieldstart", name, effect && effect.effectType === "Ability" ? "[from] ability: " + effect.name + " [of] " + (source ? source.ident : "") : "");
       return true;
     }
     addSideCondition(side, id, source) {
@@ -775,7 +778,7 @@
       } else {
         if (st) return false;
         let dur = c.duration;
-        if (source && source.item === "light-clay" && (id === "reflect" || id === "lightscreen")) dur = 8;
+        if (source && source.item === "light-clay" && (id === "reflect" || id === "lightscreen" || id === "auroraveil")) dur = 8;
         st = side.conditions[id] = { duration: dur, source };
       }
       this.add("-sidestart", side.id, c.name || id);
@@ -845,6 +848,21 @@
       this.runEvent("onEnd", mon, { only: "ability" });
       this.endSkyDrop(mon);
       mon.volatiles = {}; mon.status = ""; mon.statusState = {};
+      // Gen 7: Soul-Heart (any other Pokémon fainting), and Receiver / Power
+      // of Alchemy (the ally's Ability passes to it).
+      for (const m of this.getActives()) {
+        if (m === mon || m.volatiles.gastroacid) continue;
+        if (m.hasAbility("Soul-Heart")) this.boost(m, { spa: 1 }, m, E("Ability", "soulheart", "Soul-Heart"));
+      }
+      const heir = this.allyOf(mon) || (this.doubles && mon.side.actives.find((m) => m && m !== mon && !m.fainted));
+      const given = window.ABILITIES[mon.ability];
+      if (heir && !heir.volatiles.gastroacid && heir.hasAbility(["Receiver", "Power of Alchemy"]) && given
+          && !(given.flags && given.flags.noreceiver) && !["Wonder Guard", "Trace", "Imposter", "Illusion", "Zen Mode", "Forecast", "Flower Gift"].includes(mon.ability)) {
+        const from = heir.ability;
+        heir.ability = mon.ability; heir.abilityState = {};
+        this.add("-ability", heir, given.name, "[from] ability: " + from, "[of] " + mon.ident);
+        this.runEvent("onStart", heir, { only: "ability" });
+      }
     }
 
     // Sky Drop: the user (fainting, switching out, failing to move on the
@@ -1012,6 +1030,8 @@
       m.name = key; m.id = toID(key); m.category = raw.cat; m.effectType = "Move";
       m.flags = m.flags || {};
       if (!m.secondaries && m.secondary) m.secondaries = [m.secondary];
+      // (Gen 7's Clanging Scales: a self boost once per move, as `self` is here.)
+      if (m.selfBoost && !m.self) m.self = m.selfBoost;
       return m;
     }
 
@@ -1216,6 +1236,24 @@
       return true;
     }
 
+    // Gen 7's battle formes an Ability brings about (Shields Down, Schooling,
+    // Disguise, Battle Bond, Power Construct): new stats and types, the same
+    // Ability. A forme with more HP (Zygarde Complete) adds the difference.
+    abilityForme(mon, forme, text) {
+      const d = window.DEX[forme];
+      if (!d || mon.species === forme || mon.transformed || mon.fainted) return false;
+      const stats = window.Stats.calcAllStats(forme, { level: mon.level, nature: mon.nature, ivs: mon.ivs, evs: mon.evs });
+      mon.species = forme;
+      mon.stats = stats;
+      mon.types = d.types.slice(); mon.baseTypes = d.types.slice();
+      mon.weight = d.weight;
+      if (stats.hp > mon.maxhp) { mon.hp += stats.hp - mon.maxhp; mon.maxhp = mon.baseMaxhp = stats.hp; }
+      mon.formeChanged = true;
+      this.add("detailschange", mon, forme);
+      if (text) this.add("-formechange", mon, text);
+      return true;
+    }
+
     // ---------- Requests / choices ----------
     // SELECT on the move menu: two of the active Pokémon's moves trade places
     // (and their PP; the party's order follows, as in FireRed).
@@ -1232,6 +1270,7 @@
         let disabled = m.pp <= 0;
         if (!disabled && mon.volatiles.disable && mon.volatiles.disable.moveId === m.id) disabled = true;
         if (!disabled && mon.volatiles.taunt && data.cat === "Status") disabled = true;
+        if (!disabled && mon.volatiles.throatchop && data.flags && data.flags.sound) disabled = true;
         if (!disabled && mon.volatiles.torment && mon.lastMove === m.id) disabled = true;
         if (!disabled && mon.volatiles.encore && mon.volatiles.encore.moveId && mon.volatiles.encore.moveId !== m.id) disabled = true;
         if (!disabled && mon.item.indexOf("choice-") === 0 && mon.volatiles.choicelock && mon.volatiles.choicelock.moveId !== m.id) disabled = true;
@@ -1263,6 +1302,8 @@
         if (foe && !foe.fainted) this.callAbility(foe, "onFoeTrapPokemon", { source: foe }, mon);
       }
       if (mon.volatiles.ingrain || mon.volatiles.skydrop) mon.trapped = true;
+      const sh = mon.volatiles.shackled;
+      if (sh && sh.source && sh.source.isActive && !sh.source.fainted) mon.trapped = true;
       const pt = mon.volatiles.partiallytrapped;
       if (pt && pt.source && pt.source.isActive && !pt.source.fainted) mon.trapped = true;
       return mon.trapped;
@@ -1692,6 +1733,8 @@
             if (this.doubles) act.targetLoc = c.targetLoc;
             actions.push(act);
             if (name && toID(name) === "focuspunch" && !f) { mon.volatiles.focuspunch = { duration: 1 }; this.add("-singleturn", mon, "move: Focus Punch"); }
+            if (name && toID(name) === "beakblast" && !f) { mon.volatiles.beakblast = { id: "beakblast", duration: 1 }; this.add("-singleturn", mon, "move: Beak Blast"); }
+            if (name && toID(name) === "shelltrap" && !f) { mon.volatiles.shelltrap = { id: "shelltrap", duration: 1 }; this.add("-singleturn", mon, "move: Shell Trap"); }
           }
         }
       }
@@ -2210,6 +2253,12 @@
         if (typeof ab.onModifyMove === "function") { try { ab.onModifyMove.call(ab, move, user); } catch (e) { if (this.debug) throw e; } }
         if (typeof ab.onModifyType === "function") this.callAbility(user, "onModifyType", { move }, move);
       }
+      // Gen 7: Revelation Dance and Multi-Attack take the user's (first)
+      // type; Plasma Fists' ions turn Normal moves Electric for the turn.
+      if ((move.id === "revelationdance" || (move.id === "multiattack" && /^Silvally/.test(user.species))) && user.types[0] && user.types[0] !== "???") {
+        move.type = user.types[0]; move.typeOverride = true;
+      }
+      if (this.field.pseudo.iondeluge && move.type === "Normal") { move.type = "Electric"; move.typeOverride = true; }
       let target, targets = null;
       if (this.doubles) {
         targets = this.getMoveTargets(user, move, o);
@@ -2259,7 +2308,7 @@
       // Charging moves
       if (move.flags.charge && !o.secondTurn) {
         const w = this.getWeather();
-        const sunSkip = (move.id === "solarbeam") && (w === "SunnyDay" || w === "DesolateLand");
+        const sunSkip = (move.id === "solarbeam" || move.id === "solarblade") && (w === "SunnyDay" || w === "DesolateLand");
         if (sunSkip) { /* fires immediately */ }
         else if (user.item === "power-herb") { this.consumeItem(user); this.add("-enditem", user, "Power Herb"); }
         else {
@@ -2328,7 +2377,31 @@
       if (success && !user.fainted && move.selfSwitch) {
         this.pendingSwitch = { side: user.side, copy: move.selfSwitch === "copyvolatile", slot: user.slot };
       }
+      // Mind Blown: the user loses half its max HP, hit or miss.
+      if (move.id === "mindblown" && !user.fainted && !user.hasAbility("Magic Guard")) {
+        this.damage(user, Math.ceil(user.maxhp / 2), user, E("Move", "mindblown", "Mind Blown"));
+      }
+      // (For Stomping Tantrum.)
+      user.lastMoveFailed = !success;
       if (!user.fainted) this.runEvent("onAfterMove", user, { only: "ability" });
+      if (move.flags.dance && !o.danced) this.dancers(user, move);
+    }
+
+    // Dancer (Gen 7): each other Pokémon with it copies a dance move just
+    // used, at the Pokémon that danced (if a foe) or its own foe.
+    dancers(user, move) {
+      const any = this.getActives().filter((m) => m !== user && m.hasAbility("Dancer"));
+      if (!any.length) return;
+      for (const d of any.length > 1 ? this.sortBySpeed(any) : any) {
+        if (d === user || d.fainted || !d.hasAbility("Dancer") || d.volatiles.gastroacid || this.ended) continue;
+        const o = { bounced: true, danced: true };
+        const aimed = !["self", "allySide", "allyTeam", "all", "foeSide", "allAdjacentFoes", "allAdjacent"].includes(move.target);
+        if (aimed && user.side !== d.side && !user.fainted) {
+          if (this.doubles) o.targetLoc = this.locOf(user, d); else o.target = user;
+        }
+        this.add("-activate", d, "ability: Dancer");
+        this.execMove(d, this.getActiveMove(move.name), o);
+      }
     }
 
     // Doubles: who a move hits, from its target type and the chosen target
@@ -2457,15 +2530,27 @@
       return false;
     }
 
+    // Gen 7: grounded Pokémon in Psychic Terrain, and a side with Queenly
+    // Majesty or Dazzling, can't be hit by the foe's priority moves.
+    priorityBlocked(user, target, move, brk) {
+      if (target.side === user.side || !(move.priority > 0)) return false;
+      if (move.target !== "normal" && move.target !== "any" && move.target !== "adjacentFoe" && !SPREAD_TARGETS.has(move.target)) return false;
+      const guard = [target, this.allyOf(target)].find((m) => m && !m.fainted && m.hasAbility(["Queenly Majesty", "Dazzling"]) && !(brk && m === target));
+      if (guard) { this.add("-activate", guard, "ability: " + guard.ability, "[of] " + user.ident); return true; }
+      if (this.field.terrain === "PsychicTerrain" && this.isGrounded(target)) { this.add("-activate", target, "move: Psychic Terrain"); return true; }
+      return false;
+    }
+
     isProtected(target, user, move) {
       const v = target.volatiles;
       if (this.doubles && SPREAD_TARGETS.has(move.target) && target.side.conditions.wideguard) {
         this.add("-activate", target, "move: Wide Guard");
         return true;
       }
-      if (v.protect || v.kingsshield || v.spikyshield) {
+      if (v.protect || v.kingsshield || v.spikyshield || v.banefulbunker) {
         this.add("-activate", target, "move: Protect");
         if (move.flags.contact) {
+          if (v.banefulbunker) this.trySetStatus(user, "psn", target, E("Move", "banefulbunker", "Baneful Bunker"));
           if (v.kingsshield) this.boost(user, { atk: -2 }, target, E("Move", "kingsshield", "King's Shield"));
           if (v.spikyshield) this.damage(user, Math.floor(user.baseMaxhp / 8), target, E("Move", "spikyshield", "Spiky Shield"));
         }
@@ -2519,6 +2604,7 @@
           if (this.isInvulnerable(target, move)) { this.add("-miss", user, target); return false; }
           if (move.flags.protect && !move.breaksProtect && this.isProtected(target, user, move)) return false;
           if (this.sideGuarded(target, user, move)) return false;
+          if (this.priorityBlocked(user, target, move, brk)) return false;
           if (move.flags.reflectable && target.volatiles.magiccoat && !move.hasBounced) {
             this.add("-activate", target, "move: Magic Coat");
             const nm = this.getActiveMove(move.name);
@@ -2571,6 +2657,14 @@
       if (move.id === "dreameater" && target.status !== "slp") { this.add("-immune", target); return false; }
       if (move.id === "snore" || move.id === "sleeptalk") { if (user.status !== "slp") { this.add("-fail", user); return false; } }
       if (move.id === "endeavor" && target.hp <= user.hp) { this.add("-fail", user); return false; }
+      // (Gen 7 moves: First Impression, Burn Up, Shell Trap, Psychic Fangs,
+      // Spectral Thief, Pollen Puff on an ally.)
+      const before = window.BATTLE_MOVE_EFFECTS && window.BATTLE_MOVE_EFFECTS.beforeHit && window.BATTLE_MOVE_EFFECTS.beforeHit[move.id];
+      if (before) {
+        const r = before(this, user, target, move);
+        if (r === false) { this.add("-fail", user); return false; }
+        if (r === "done") return true;
+      }
 
       // Number of hits
       let hits = 1;
@@ -2588,6 +2682,7 @@
           .map((p) => Math.floor((window.DEX[p.species] || {}).atk / 10) + 5);
         hits = beatUp.length;
       }
+      if (move.id === "watershuriken" && user.species === "Greninja-Ash") hits = 3;
       const luckyChant = target.side.conditions.luckychant;
       let totalDealt = 0, hitCount = 0, connected = false, lastResult = null;
       const sub = target.volatiles.substitute && !move.flags.bypasssub && !user.hasAbility("Infiltrator");
@@ -2597,11 +2692,14 @@
         let crit = false;
         if (!luckyChant && !(move.id === "counter")) {
           const chance = window.Damage.critChance(user, move.name, { focusEnergy: !!user.volatiles.focusenergy });
-          crit = chance >= 1 || this.random() < chance;
+          // (Gen 7: Laser Focus, and Merciless against a poisoned target.)
+          const sure = !!user.volatiles.laserfocus || (user.hasAbility("Merciless") && (target.status === "psn" || target.status === "tox"));
+          crit = sure || chance >= 1 || this.random() < chance;
         }
         const field = {
           weather: this.getWeather(), terrain: this.field.terrain, gravity: !!this.field.pseudo.gravity, isDoubles: this.doubles,
-          reflect: !!target.side.conditions.reflect, lightScreen: !!target.side.conditions.lightscreen
+          reflect: !!target.side.conditions.reflect || !!target.side.conditions.auroraveil,
+          lightScreen: !!target.side.conditions.lightscreen || !!target.side.conditions.auroraveil
         };
         const opts = {
           crit, hits: 1, charge: !!user.volatiles.charge, stockpile: stockLayers,
@@ -2609,7 +2707,8 @@
           lastDamageTaken: user.lastDamage ? user.lastDamage.amount : 0,
           targetDamagedThisTurn: !!target.lastDamage, hitByTarget: !!(user.lastDamage && user.lastDamage.source === target),
           movesAfterTarget: target.moveThisTurn, allyFainted: user.side.faintedLastTurn, targetSwitching: !!o.pursuitSwitch,
-          magnitude: this.magnitude
+          magnitude: this.magnitude,
+          moveType: move.typeOverride ? move.type : undefined, lastMoveFailed: !!user.lastMoveFailed
         };
         // Flower Gift (Cherrim in the sun): 1.5x Attack for the user's side,
         // 1.5x Sp. Def for the target's (Mold Breaker ignores that one).
@@ -2625,6 +2724,7 @@
           const uAlly = this.allyOf(user), tAlly = this.allyOf(target);
           opts.plusMinus = user.hasAbility(["Plus", "Minus"]) && !!uAlly && uAlly.hasAbility(["Plus", "Minus"]);
           opts.friendGuard = !!tAlly && tAlly !== user && tAlly.hasAbility("Friend Guard") && !move.ignoreAbility;
+          opts.battery = !!uAlly && uAlly.hasAbility("Battery");
         }
         let r;
         try { r = window.Damage.calc(user, target, move.name, field, opts); }
@@ -2694,6 +2794,8 @@
       // Move-specific after-effects
       const after = window.BATTLE_MOVE_EFFECTS && window.BATTLE_MOVE_EFFECTS.afterHit[move.id];
       if (after && !target.fainted) after(this, user, target, move, totalDealt);
+      const afterSelf = window.BATTLE_MOVE_EFFECTS && window.BATTLE_MOVE_EFFECTS.afterHitSelf && window.BATTLE_MOVE_EFFECTS.afterHitSelf[move.id];
+      if (afterSelf && !user.fainted) afterSelf(this, user, target, move, totalDealt);
 
       // Secondary effects
       if (!target.fainted && move.secondaries && !sub) {
@@ -2766,7 +2868,7 @@
         if (STALL_MOVES.has(vs)) {
           if (!this.stallSuccess(user)) { this.add("-fail", user); user.stallCount = 0; return false; }
           user.stallCount = (user.stallCount || 0) + 1;
-          if (vs === "endure" || vs === "protect" || vs === "kingsshield" || vs === "spikyshield") this.addVolatile(user, vs, user, moveEffect);
+          if (vs === "endure" || vs === "protect" || vs === "kingsshield" || vs === "spikyshield" || vs === "banefulbunker") this.addVolatile(user, vs, user, moveEffect);
           else this.addSideCondition(user.side, vs, user);
           return true;
         }
@@ -2931,7 +3033,7 @@
             if (v.duration <= 0) this.removeVolatile(m, id);
           }
         }
-        if (!m.volatiles.protect && !m.volatiles.kingsshield && !m.volatiles.spikyshield && !m.volatiles.endure
+        if (!m.volatiles.protect && !m.volatiles.kingsshield && !m.volatiles.spikyshield && !m.volatiles.banefulbunker && !m.volatiles.endure
             && !(m.lastMove && STALL_MOVES.has(m.lastMove))) m.stallCount = 0;
         m.activeTurns++;
         if (m.hp && m.volatiles.roost === undefined && m.types.join() !== m.baseTypes.join() && !m.mega) { /* type changes persist */ }

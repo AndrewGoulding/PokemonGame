@@ -1,4 +1,4 @@
-// abilities.js — Gen 6 (all 191 abilities, num 1–191)
+// abilities.js — Gen 6 (all 191 abilities, num 1–191) and Gen 7 (num 192–233)
 // Auto-curated. See header comment for engine API.
 
 window.ABILITIES = {
@@ -2199,4 +2199,386 @@ window.ABILITIES = {
     },
   },
 
+  // ==================================================================
+  // Gen 7 (num 192–233)
+  // ==================================================================
+  "Stamina": {
+    name: "Stamina", num: 192, rating: 3.5,
+    effect: "Raises Defense by 1 stage when hit by an attack.",
+    onDamagingHit(ctx) { ctx.boost(ctx.pokemon, { def: 1 }); },
+  },
+
+  "Wimp Out": {
+    name: "Wimp Out", num: 193, rating: 1,
+    effect: "Switches out when an attack drops its HP to half or less.",
+    onDamagingHit(ctx) { gen7HalfHpSwitch(ctx, "Wimp Out"); },
+  },
+
+  "Emergency Exit": {
+    name: "Emergency Exit", num: 194, rating: 1,
+    effect: "Switches out when an attack drops its HP to half or less.",
+    onDamagingHit(ctx) { gen7HalfHpSwitch(ctx, "Emergency Exit"); },
+  },
+
+  "Water Compaction": {
+    name: "Water Compaction", num: 195, rating: 1.5,
+    effect: "Raises Defense by 2 stages when hit by a Water-type move.",
+    onDamagingHit(ctx, move) { if (move.type === "Water") ctx.boost(ctx.pokemon, { def: 2 }); },
+  },
+
+  "Merciless": {
+    name: "Merciless", num: 196, rating: 1.5,
+    effect: "Its attacks are critical hits if the target is poisoned.",
+    // (The battle engine checks the target's poison when it rolls for a critical hit.)
+  },
+
+  "Shields Down": {
+    name: "Shields Down", num: 197, rating: 3,
+    effect: "Above half HP, Minior is in its Meteor Form and can't be statused; at half or less, its Core.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    onStart(ctx) { gen7ShieldsDown(ctx); },
+    onResidual(ctx) { gen7ShieldsDown(ctx); },
+    onSetStatus(ctx, status, effect) {
+      if (ctx.pokemon.species !== "Minior" || ctx.pokemon.transformed) return;
+      if (ctx.effect && ctx.effect.effectType === "Move" && !ctx.effect.secondaries) ctx.add("-immune", ctx.pokemon, "[from] ability: Shields Down");
+      return false;
+    },
+    onTryAddVolatile(ctx, status) {
+      if (ctx.pokemon.species === "Minior" && !ctx.pokemon.transformed && status.id === "yawn") return false;
+    },
+  },
+
+  "Stakeout": {
+    name: "Stakeout", num: 198, rating: 4.5,
+    effect: "Doubles its attacking stat against a target that switched in this turn.",
+    onModifyAtk(ctx, atk) { if (ctx.target && !ctx.target.activeTurns) return ctx.chainModify(atk, 2); },
+    onModifySpA(ctx, spa) { if (ctx.target && !ctx.target.activeTurns) return ctx.chainModify(spa, 2); },
+  },
+
+  "Water Bubble": {
+    name: "Water Bubble", num: 199, rating: 4.5,
+    effect: "Doubles Water-type power, halves Fire-type damage taken, and prevents burns.",
+    flags: { breakable: 1 },
+    onModifyAtk(ctx, atk, move) { if (move.type === "Water" && ctx.pokemon === ctx.source) return ctx.chainModify(atk, 2); },
+    onModifySpA(ctx, spa, move) { if (move.type === "Water" && ctx.pokemon === ctx.source) return ctx.chainModify(spa, 2); },
+    onSourceModifyDamage(ctx, damage, move) { if (move.type === "Fire") return ctx.chainModify(damage, 0.5); },
+    onUpdate(ctx) {
+      if (ctx.pokemon.status === "brn") { ctx.add("-activate", ctx.pokemon, "ability: Water Bubble"); ctx.cureStatus(ctx.pokemon); }
+    },
+    onSetStatus(ctx, status) {
+      if (status.id !== "brn") return;
+      if (ctx.effect && ctx.effect.effectType === "Move" && !ctx.effect.secondaries) ctx.add("-immune", ctx.pokemon, "[from] ability: Water Bubble");
+      return false;
+    },
+  },
+
+  "Steelworker": {
+    name: "Steelworker", num: 200, rating: 3.5,
+    effect: "1.5× power on Steel-type moves.",
+    onModifyAtk(ctx, atk, move) { if (move.type === "Steel") return ctx.chainModify(atk, 1.5); },
+    onModifySpA(ctx, spa, move) { if (move.type === "Steel") return ctx.chainModify(spa, 1.5); },
+  },
+
+  "Berserk": {
+    name: "Berserk", num: 201, rating: 2,
+    effect: "Raises Sp. Atk by 1 stage when an attack drops its HP to half or less.",
+    onDamagingHit(ctx) { if (gen7DroppedBelowHalf(ctx.pokemon)) ctx.boost(ctx.pokemon, { spa: 1 }); },
+  },
+
+  "Slush Rush": {
+    name: "Slush Rush", num: 202, rating: 3,
+    effect: "Doubles Speed in hail.",
+    onModifySpe(ctx, spe) { if (ctx.isWeather("Hail")) return ctx.chainModify(spe, 2); },
+  },
+
+  "Long Reach": {
+    name: "Long Reach", num: 203, rating: 1,
+    effect: "Its moves don't make contact.",
+    onModifyMove(move) { if (move.flags) move.flags = Object.assign({}, move.flags, { contact: 0 }); },
+  },
+
+  "Liquid Voice": {
+    name: "Liquid Voice", num: 204, rating: 1.5,
+    effect: "Its sound-based moves become Water type.",
+    onModifyType(ctx, move) {
+      if (move.flags && move.flags.sound) move.type = "Water";
+    },
+  },
+
+  "Triage": {
+    name: "Triage", num: 205, rating: 3.5,
+    effect: "Its healing moves have +3 priority.",
+    onModifyPriority(ctx, priority, move) { if (move && move.flags && move.flags.heal) return priority + 3; },
+  },
+
+  "Galvanize": {
+    name: "Galvanize", num: 206, rating: 4,
+    effect: "Normal moves become Electric, 1.2× power.",
+    onModifyType(ctx, move) {
+      const noModify = ["judgment", "multiattack", "naturalgift", "revelationdance", "technoblast", "terrainpulse", "weatherball"];
+      if (move.type === "Normal" && !noModify.includes(move.id)) {
+        move.type = "Electric"; move.typeChangerBoosted = true;
+      }
+    },
+    onBasePower(ctx, power, move) {
+      if (move.typeChangerBoosted) return ctx.chainModify(power, [4915, 4096]);
+    },
+  },
+
+  "Surge Surfer": {
+    name: "Surge Surfer", num: 207, rating: 3,
+    effect: "Doubles Speed on Electric Terrain.",
+    onModifySpe(ctx, spe) { if (ctx.isTerrain("ElectricTerrain")) return ctx.chainModify(spe, 2); },
+  },
+
+  "Schooling": {
+    name: "Schooling", num: 208, rating: 3,
+    effect: "From Lv. 20, Wishiwashi forms a school while its HP is above a quarter.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    onStart(ctx) { gen7Schooling(ctx); },
+    onResidual(ctx) { gen7Schooling(ctx); },
+  },
+
+  "Disguise": {
+    name: "Disguise", num: 209, rating: 3.5,
+    effect: "The first hit Mimikyu takes only breaks its disguise.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1, breakable: 1 },
+    onDamage(ctx, damage, effect) {
+      const p = ctx.pokemon;
+      if (p.species !== "Mimikyu" || p.transformed || !effect || effect.effectType !== "Move") return;
+      ctx.add("-activate", p, "ability: Disguise");
+      ctx.abilityForme(p, "Mimikyu-Busted", "{who}'s disguise was busted!");
+      return 0;
+    },
+  },
+
+  "Battle Bond": {
+    name: "Battle Bond", num: 210, rating: 4,
+    effect: "Greninja becomes Ash-Greninja when it knocks out a Pokémon.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    onSourceAfterFaint(ctx) {
+      const p = ctx.pokemon;
+      if (p.species !== "Greninja-Bond" || p.transformed || p.hp <= 0) return;
+      ctx.add("-activate", p, "ability: Battle Bond");
+      ctx.abilityForme(p, "Greninja-Ash", "{who} became Ash-Greninja!");
+    },
+  },
+
+  "Power Construct": {
+    name: "Power Construct", num: 211, rating: 5,
+    effect: "At half HP or less, Zygarde changes to its Complete Forme.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    onResidual(ctx) {
+      const p = ctx.pokemon;
+      if (!/^Zygarde/.test(p.species) || p.species === "Zygarde-Complete" || p.transformed || p.hp > p.maxhp / 2) return;
+      ctx.add("-activate", p, "ability: Power Construct");
+      ctx.abilityForme(p, "Zygarde-Complete", "{who} transformed into its Complete Forme!");
+    },
+  },
+
+  "Corrosion": {
+    name: "Corrosion", num: 212, rating: 2.5,
+    effect: "It can poison Steel and Poison types.",
+    // (The battle engine's poison immunity checks for it.)
+  },
+
+  "Comatose": {
+    name: "Comatose", num: 213, rating: 4,
+    effect: "It is always drowsing: it counts as asleep and can't be statused.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    onStart(ctx) { ctx.add("-ability", ctx.pokemon, "Comatose"); },
+    onSetStatus(ctx) {
+      if (ctx.effect && ctx.effect.effectType === "Move" && !ctx.effect.secondaries) ctx.add("-immune", ctx.pokemon, "[from] ability: Comatose");
+      return false;
+    },
+    onTryAddVolatile(ctx, status) { if (status.id === "yawn") return false; },
+  },
+
+  "Queenly Majesty": {
+    name: "Queenly Majesty", num: 214, rating: 2.5,
+    effect: "Foes can't use priority moves on it or its ally.",
+    flags: { breakable: 1 },
+    // (The battle engine checks for it with Psychic Terrain's priority block.)
+  },
+
+  "Innards Out": {
+    name: "Innards Out", num: 215, rating: 4,
+    effect: "When knocked out by an attack, the attacker takes the HP it had left.",
+    onDamagingHit(ctx) {
+      const p = ctx.pokemon, last = p.lastDamage;
+      if (p.hp > 0 || !last || !ctx.source || ctx.source.fainted) return;
+      ctx.damage(ctx.source, last.amount, p);
+    },
+  },
+
+  "Dancer": {
+    name: "Dancer", num: 216, rating: 1.5,
+    effect: "After another Pokémon uses a dance move, it copies that move.",
+    // (The battle engine repeats the dance.)
+  },
+
+  "Battery": {
+    name: "Battery", num: 217, rating: 0,
+    effect: "Its ally's special moves have 1.3× power.",
+    // (Doubles: the battle engine passes it to the damage calculator.)
+  },
+
+  "Fluffy": {
+    name: "Fluffy", num: 218, rating: 3.5,
+    effect: "Halves contact damage; doubles Fire-type damage taken.",
+    flags: { breakable: 1 },
+    onSourceModifyDamage(ctx, damage, move) {
+      let mod = 1;
+      if (move.type === "Fire") mod *= 2;
+      if (move.flags && move.flags.contact) mod /= 2;
+      if (mod !== 1) return ctx.chainModify(damage, mod);
+    },
+  },
+
+  "Dazzling": {
+    name: "Dazzling", num: 219, rating: 2.5,
+    effect: "Foes can't use priority moves on it or its ally.",
+    flags: { breakable: 1 },
+  },
+
+  "Soul-Heart": {
+    name: "Soul-Heart", num: 220, rating: 3.5,
+    effect: "Raises Sp. Atk by 1 stage when any other Pokémon faints.",
+    // (The battle engine raises it when a Pokémon faints.)
+  },
+
+  "Tangling Hair": {
+    name: "Tangling Hair", num: 221, rating: 2,
+    effect: "Contact attackers have their Speed lowered by 1.",
+    onDamagingHit(ctx, move) {
+      if (ctx.checkMoveMakesContact(move, ctx.source, ctx.pokemon, true)) {
+        ctx.add("-ability", ctx.pokemon, "Tangling Hair");
+        ctx.boost(ctx.source, { spe: -1 }, ctx.pokemon, true);
+      }
+    },
+  },
+
+  "Receiver": {
+    name: "Receiver", num: 222, rating: 0,
+    effect: "It takes on the Ability of an ally that faints.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1 },
+  },
+
+  "Power of Alchemy": {
+    name: "Power of Alchemy", num: 223, rating: 0,
+    effect: "It takes on the Ability of an ally that faints.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1 },
+  },
+
+  "Beast Boost": {
+    name: "Beast Boost", num: 224, rating: 3.5,
+    effect: "Raises its highest stat by 1 stage when it knocks out a Pokémon.",
+    onSourceAfterFaint(ctx) {
+      if (!ctx.effect || ctx.effect.effectType !== "Move") return;
+      const s = ctx.pokemon.stats;
+      let best = "atk";
+      for (const k of ["def", "spa", "spd", "spe"]) if (s[k] > s[best]) best = k;
+      ctx.boost(ctx.pokemon, { [best]: 1 });
+    },
+  },
+
+  "RKS System": {
+    name: "RKS System", num: 225, rating: 4,
+    effect: "Silvally's type matches its form; Multi-Attack takes that type.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+  },
+
+  "Electric Surge": {
+    name: "Electric Surge", num: 226, rating: 4,
+    effect: "On switch-in, sets Electric Terrain.",
+    onStart(ctx) { ctx.setTerrain("electricterrain"); },
+  },
+
+  "Psychic Surge": {
+    name: "Psychic Surge", num: 227, rating: 4,
+    effect: "On switch-in, sets Psychic Terrain.",
+    onStart(ctx) { ctx.setTerrain("psychicterrain"); },
+  },
+
+  "Misty Surge": {
+    name: "Misty Surge", num: 228, rating: 3.5,
+    effect: "On switch-in, sets Misty Terrain.",
+    onStart(ctx) { ctx.setTerrain("mistyterrain"); },
+  },
+
+  "Grassy Surge": {
+    name: "Grassy Surge", num: 229, rating: 4,
+    effect: "On switch-in, sets Grassy Terrain.",
+    onStart(ctx) { ctx.setTerrain("grassyterrain"); },
+  },
+
+  "Full Metal Body": {
+    name: "Full Metal Body", num: 230, rating: 2,
+    effect: "Other Pokémon can't lower its stats (Mold Breaker can't get past it).",
+    onTryBoost(ctx, boost, effect) {
+      if (ctx.source && ctx.target === ctx.source) return;
+      let showMsg = false;
+      for (const k in boost) if (boost[k] < 0) { delete boost[k]; showMsg = true; }
+      if (showMsg && !(effect && effect.secondaries)) ctx.add("-fail", ctx.pokemon, "unboost", "[from] ability: Full Metal Body");
+    },
+  },
+
+  "Shadow Shield": {
+    name: "Shadow Shield", num: 231, rating: 3.5,
+    effect: "Halves damage taken at full HP (Mold Breaker can't get past it).",
+    onSourceModifyDamage(ctx, damage) {
+      if (ctx.target.hp >= ctx.target.maxhp) return ctx.chainModify(damage, 0.5);
+    },
+  },
+
+  "Prism Armor": {
+    name: "Prism Armor", num: 232, rating: 3,
+    effect: "0.75× damage from super-effective moves (Mold Breaker can't get past it).",
+    onSourceModifyDamage(ctx, damage, move) {
+      if (ctx.target.getMoveHitData(move).typeMod > 0) return ctx.chainModify(damage, 0.75);
+    },
+  },
+
+  "Neuroforce": {
+    name: "Neuroforce", num: 233, rating: 2.5,
+    effect: "1.25× damage with super-effective moves.",
+    onModifyDamage(ctx, damage, move) {
+      if (move && ctx.target.getMoveHitData(move).typeMod > 0) return ctx.chainModify(damage, 1.25);
+    },
+  },
+
 };
+
+// ---- Gen 7 helpers ----
+// An attack that took it from above half its HP to half or less.
+function gen7DroppedBelowHalf(p) {
+  const last = p.lastDamage;
+  return !!last && p.hp > 0 && p.hp <= p.maxhp / 2 && p.hp + last.amount > p.maxhp / 2;
+}
+// Wimp Out / Emergency Exit: it heads back to its Trainer (a wild Pokémon
+// has nowhere to go).
+function gen7HalfHpSwitch(ctx, name) {
+  const p = ctx.pokemon, b = ctx.battle;
+  if (!b || !gen7DroppedBelowHalf(p) || (b.wild && p.side.id === "p2") || !p.side.bench(p.slot).length) return;
+  ctx.add("-activate", p, "ability: " + name);
+  b.pendingSwitch = { side: p.side, copy: false, slot: p.slot };
+}
+// Shields Down: Meteor Form above half HP, Core at half or less.
+function gen7ShieldsDown(ctx) {
+  const p = ctx.pokemon;
+  if (!/^Minior/.test(p.species) || p.transformed || p.hp <= 0) return;
+  if (p.hp > p.maxhp / 2) {
+    if (p.species !== "Minior") ctx.abilityForme(p, "Minior", "{who}'s shell protected it!");
+  } else if (p.species !== "Minior-Core") {
+    ctx.add("-activate", p, "ability: Shields Down");
+    ctx.abilityForme(p, "Minior-Core", "{who}'s shell broke open!");
+  }
+}
+// Schooling: from Lv. 20, School Form while its HP is above a quarter.
+function gen7Schooling(ctx) {
+  const p = ctx.pokemon;
+  if (!/^Wishiwashi/.test(p.species) || p.transformed || p.hp <= 0) return;
+  if (p.level >= 20 && p.hp > p.maxhp / 4) {
+    if (p.species !== "Wishiwashi-School") ctx.abilityForme(p, "Wishiwashi-School", "{who} formed a school!");
+  } else if (p.species !== "Wishiwashi") ctx.abilityForme(p, "Wishiwashi", "{who} stopped schooling!");
+}

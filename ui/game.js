@@ -306,7 +306,8 @@
       forgetMove: (i, mon, move) => chooseMoveToForget(Party.syncFromBattle(own[i], mon), move),
       // The Summary screen from the party screen in battle: each Pokémon as it
       // is now (HP, status, PP, Exp.), from copies, so nothing changes.
-      // A Mega Evolved Pokémon shows its Mega form: the picture, the stats the
+      // A Mega Evolved Pokémon (or one in a forme its Ability brought about,
+      // Gen 7's Minior Core or Ash-Greninja) shows that form: the picture, the stats the
       // battle worked out for it, its ability and types (the record itself
       // goes back to its own form after the battle).
       summary: (i, mons) => {
@@ -1006,7 +1007,7 @@
     if (!mon) return v;
     v.hp = mon.fainted ? 0 : mon.hp;
     v.status = mon.fainted ? "" : mon.status;
-    if (mon.mega && DEX[mon.species]) {
+    if ((mon.mega || mon.formeChanged) && DEX[mon.species]) {
       const ability = (window.ABILITIES[mon.ability] || {}).name || mon.ability;
       Object.assign(v, {
         maxhp: mon.maxhp, types: DEX[mon.species].types.slice(),

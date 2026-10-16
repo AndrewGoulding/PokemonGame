@@ -68,7 +68,8 @@
     par: "{who} is paralyzed! It can't move!", slp: "{who} is fast asleep.", frz: "{who} is frozen solid!",
     recharge: "{who} must recharge!", scared: "{who} is too scared to move!", flinch: "{who} flinched and couldn't move!",
     attract: "{who} is immobilized by love!", truant: "{who} is loafing around!",
-    focuspunch: "{who} lost its focus and couldn't move!"
+    focuspunch: "{who} lost its focus and couldn't move!",
+    throatchop: "The effects of Throat Chop prevent {who} from using certain moves!"
   };
   const DAMAGE_FROM = {
     poison: "{who} is hurt by poison!", badpoison: "{who} is hurt by poison!", burn: "{who} is hurt by its burn!",
@@ -102,7 +103,8 @@
     taunt: "{who} fell for the taunt!", telekinesis: "{who} was hurled into the air!",
     truant: null, typechange: "{who}'s type changed!", yawn: "{who} grew drowsy!",
     electrify: "{who}'s moves have been electrified!", flashfire: "{who}'s Fire-type moves were powered up!",
-    slowstart: "{who} can't get it going!", minimize: null, defensecurl: null, stockpile: null
+    slowstart: "{who} can't get it going!", minimize: null, defensecurl: null, stockpile: null,
+    laserfocus: "{who} concentrated intensely!", shackled: "{who} can no longer escape!", throatchop: null
   };
   const VOLATILE_END = {
     confusion: "{who} snapped out of its confusion!", substitute: "{who}'s substitute faded!",
@@ -118,7 +120,12 @@
     healbell: "A bell chimed!", protect: "{who} protected itself!", mist: "{who} is protected by the mist!",
     safeguard: "{who} is protected by Safeguard!", mistyterrain: "{who} surrounds itself with a protective mist!",
     quickguard: "Quick Guard protected {whom}!", stickyweb: "{who} was caught in a sticky web!",
-    substitute: "The substitute took damage for {whom}!", snatch: "{who} snatched the move!"
+    substitute: "The substitute took damage for {whom}!", snatch: "{who} snatched the move!",
+    psychicterrain: "{who} is protected by the Psychic Terrain!", speedswap: "{who} switched Speed with its target!",
+    spectralthief: "{who} stole the target's boosted stats!", disguise: "Its disguise served it as a decoy!",
+    battlebond: "{who} became fully charged due to its bond with its Trainer!",
+    powerconstruct: "You sense the presence of many!", shieldsdown: null,
+    queenlymajesty: "{who}'s Queenly Majesty blocked the move!", dazzling: "{who}'s Dazzling blocked the move!"
   };
   const PREPARE = {
     solarbeam: "{who} absorbed light!", dig: "{who} burrowed its way under the ground!",
@@ -134,7 +141,8 @@
     teravolt: "{who} is radiating a bursting aura!", darkaura: "{who} is radiating a dark aura!",
     fairyaura: "{who} is radiating a fairy aura!", aurabreak: "{who} reversed all other Pokémon's auras!",
     sturdy: "{who} held on with its sturdiness!", anticipation: "{who} shuddered!",
-    airlock: "The effects of the weather disappeared.", cloudnine: "The effects of the weather disappeared."
+    airlock: "The effects of the weather disappeared.", cloudnine: "The effects of the weather disappeared.",
+    comatose: "{who} is drowsing!"
   };
   const SIDE_START = {
     stealthrock: "Pointed stones float in the air around {team}!",
@@ -144,11 +152,13 @@
     tailwind: "The tailwind blew from behind {team}!",
     reflect: "Reflect raised {team}'s Defense!", lightscreen: "Light Screen raised {team}'s Sp. Def!",
     safeguard: "{Team} cloaked itself in a mystical veil!", mist: "{Team} became shrouded in mist!",
-    luckychant: "Lucky Chant shielded {team} from critical hits!"
+    luckychant: "Lucky Chant shielded {team} from critical hits!",
+    auroraveil: "Aurora Veil made {team} stronger against physical and special moves!"
   };
   const FIELD_START = {
     grassyterrain: "Grass grew to cover the battlefield!", mistyterrain: "Mist swirled about the battlefield!",
     electricterrain: "An electric current runs across the battlefield!", gravity: "Gravity intensified!",
+    psychicterrain: "The battlefield got weird!",
     trickroom: "The dimensions were twisted!", iondeluge: "A deluge of ions showers the battlefield!",
     magicroom: "It created a bizarre area in which Pokémon's held items lose their effects!",
     wonderroom: "It created a bizarre area in which Defense and Sp. Def stats are swapped!",
@@ -157,6 +167,7 @@
   const FIELD_END = {
     grassyterrain: "The grass disappeared from the battlefield.", mistyterrain: "The mist disappeared from the battlefield.",
     electricterrain: "The electricity disappeared from the battlefield.", gravity: "Gravity returned to normal!",
+    psychicterrain: "The weirdness disappeared from the battlefield!",
     trickroom: "The twisted dimensions returned to normal!", magicroom: "Magic Room wore off, and held items' effects returned to normal!",
     wonderroom: "Wonder Room wore off, and Defense and Sp. Def stats returned to normal!",
     watersport: "The effects of Water Sport have faded.", mudsport: "The effects of Mud Sport have faded.",
@@ -1086,7 +1097,16 @@
         if (effectId(b) === "naturepower") return "Nature Power turned into " + c + "!";
         return fill(lookup(ACTIVATE, effectId(b), "{who}'s " + effectName(b) + " activated!"), a);
       case "-prepare": return fill(lookup(PREPARE, effectId(b), "{who} is getting ready to use " + b + "!"), a);
-      case "-singleturn": return effectId(b) === "focuspunch" ? fill("{who} is tightening its focus!", a) : null;
+      case "-singleturn": {
+        const id = effectId(b);
+        if (id === "focuspunch") return fill("{who} is tightening its focus!", a);
+        if (id === "beakblast") return fill("{who} started heating up its beak!", a);
+        if (id === "shelltrap") return fill("{who} set a shell trap!", a);
+        return null;
+      }
+      // (Gen 7: a forme an Ability brought about, Burn Up, Core Enforcer.)
+      case "-text": case "-formechange": return fill(b, a);
+      case "-endability": return fill("{who}'s Ability was suppressed!", a);
       case "-ability": return fill(lookup(ABILITY, effectId(b), "{who}'s " + b + "!"), a);
       case "-mega": {
         // pokeemerald-expansion's BattleScript_MegaEvolution: "…'s Charizardite X

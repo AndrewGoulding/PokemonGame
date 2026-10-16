@@ -1,4 +1,4 @@
-// Move-specific effects for battle.js (Gen 6)
+// Move-specific effects for battle.js (Gen 6, and Gen 7's new moves)
 // Load after battle.js is NOT required; battle.js reads window.BATTLE_MOVE_EFFECTS lazily.
 //
 // Most moves are driven purely by the data in moves.js (damage, status, boosts,
@@ -204,7 +204,7 @@
   };
   // Nature Power: calls a move based on the terrain (Tri Attack with no terrain,
   // as on Wi-Fi in Gen 6).
-  const NATURE_POWER = { ElectricTerrain: "Thunderbolt", GrassyTerrain: "Energy Ball", MistyTerrain: "Moonblast" };
+  const NATURE_POWER = { ElectricTerrain: "Thunderbolt", GrassyTerrain: "Energy Ball", MistyTerrain: "Moonblast", PsychicTerrain: "Psychic" };
   status.naturepower = (b, user, target) => {
     const name = NATURE_POWER[b.field.terrain] || "Tri Attack";
     b.add("-activate", user, "move: Nature Power", name);
@@ -369,5 +369,99 @@
     if (it) { user.item = it; b.add("-item", user, it, "[from] move: Thief", "[of] " + target.ident); }
   };
 
-  window.BATTLE_MOVE_EFFECTS = { status, afterHit };
+  // ---- Gen 7 ----
+  // beforeHit[id](battle, user, target, move): before a damaging move's
+  // damage (false: it fails; "done": handled, no damage).
+  // afterHitSelf[id](battle, user, target, move, dealt): after the hit even
+  // if the target fainted.
+  const beforeHit = {};
+  const afterHitSelf = {};
+  const healFrac = (b, mon, frac, user, name) =>
+    (b.heal(mon, Math.round(mon.maxhp * frac), user, E("Move", toID(name), name)) ? true : false);
+  status.shoreup = (b, user) => healFrac(b, user, b.getWeather() === "Sandstorm" ? 2 / 3 : 1 / 2, user, "Shore Up");
+  status.floralhealing = (b, user, target) =>
+    healFrac(b, target, b.field.terrain === "GrassyTerrain" ? 2 / 3 : 1 / 2, user, "Floral Healing");
+  status.purify = (b, user, target) => {
+    if (!target.status || !b.cureStatus(target)) return false;
+    healFrac(b, user, 1 / 2, user, "Purify");
+    return "done";
+  };
+  status.speedswap = (b, user, target) => {
+    const s = user.stats.spe;
+    user.stats = Object.assign({}, user.stats, { spe: target.stats.spe });
+    target.stats = Object.assign({}, target.stats, { spe: s });
+    b.add("-activate", user, "move: Speed Swap", "[of] " + target.ident);
+    return "done";
+  };
+  status.strengthsap = (b, user, target) => {
+    if (target.boosts.atk <= -6) return false;
+    const atk = b.getBoostedStat(target, "atk");
+    b.boost(target, { atk: -1 }, user, E("Move", "strengthsap", "Strength Sap"));
+    let amt = atk;
+    if (user.item === "big-root") amt = Math.floor(amt * 1.3);
+    b.heal(user, amt, target, E("Move", "strengthsap", "Strength Sap"));
+    return "done";
+  };
+  status.gearup = (b, user) => {
+    const who = [user, b.allyOf(user)].filter((m) => m && !m.fainted && m.hasAbility(["Plus", "Minus"]));
+    if (!who.length) return false;
+    for (const m of who) b.boost(m, { atk: 1, spa: 1 }, user, E("Move", "gearup", "Gear Up"));
+    return "done";
+  };
+  // Aurora Veil: only in hail (the data sets the side condition).
+  status.auroraveil = (b) => b.getWeather() === "Hail";
+  // Toxic Thread: works if either the Speed drop or the poison does.
+  status.toxicthread = (b, user, target, move) => {
+    const eff = E("Move", "toxicthread", "Toxic Thread");
+    const slowed = b.boost(target, { spe: -1 }, user, eff);
+    const poisoned = b.trySetStatus(target, "psn", user, eff);
+    return slowed || poisoned ? "done" : false;
+  };
+
+  beforeHit.firstimpression = (b, user) => user.activeTurns === 0;
+  beforeHit.beakblast = (b, user) => { delete user.volatiles.beakblast; };
+  beforeHit.burnup = (b, user) => user.hasType("Fire");
+  beforeHit.shelltrap = (b, user) => !!(user.volatiles.shelltrap && user.volatiles.shelltrap.gotHit);
+  beforeHit.psychicfangs = (b, user, target) => {
+    for (const id of ["reflect", "lightscreen", "auroraveil"]) b.removeSideCondition(target.side, id);
+  };
+  // Spectral Thief: the target's stat rises become the user's first.
+  beforeHit.spectralthief = (b, user, target) => {
+    const stolen = {};
+    for (const k of Object.keys(target.boosts)) if (target.boosts[k] > 0) { stolen[k] = target.boosts[k]; target.boosts[k] = 0; }
+    if (Object.keys(stolen).length) {
+      b.add("-activate", user, "move: Spectral Thief", "[of] " + target.ident);
+      b.boost(user, stolen, user, E("Move", "spectralthief", "Spectral Thief"));
+    }
+  };
+  // Pollen Puff at an ally heals it instead.
+  beforeHit.pollenpuff = (b, user, target) => {
+    if (target.side !== user.side) return;
+    if (!healFrac(b, target, 1 / 2, user, "Pollen Puff")) return false;
+    return "done";
+  };
+  afterHit.throatchop = (b, user, target) => { b.addVolatile(target, "throatchop", user, E("Move", "throatchop", "Throat Chop")); };
+  afterHit.spiritshackle = afterHit.anchorshot = (b, user, target, move) => {
+    if (target.volatiles.substitute) return;
+    b.addVolatile(target, "shackled", user, E("Move", move.id, move.name));
+  };
+  // Core Enforcer: the Ability of a target that has already moved stops working.
+  afterHit.coreenforcer = (b, user, target) => {
+    const ab = window.ABILITIES[target.ability];
+    if (!target.moveThisTurn || target.volatiles.gastroacid || (ab && ab.flags && ab.flags.cantsuppress)) return;
+    target.volatiles.gastroacid = { id: "gastroacid" };
+    b.add("-endability", target, "[from] move: Core Enforcer");
+  };
+  afterHitSelf.burnup = (b, user) => {
+    user.types = user.types.filter((t) => t !== "Fire");
+    if (!user.types.length) user.types = ["???"];
+    b.add("-text", user, "{who} burned itself out!");
+  };
+  afterHitSelf.plasmafists = (b) => {
+    if (b.field.pseudo.iondeluge) return;
+    b.field.pseudo.iondeluge = { turns: 1 };
+    b.add("-fieldstart", "iondeluge");
+  };
+
+  window.BATTLE_MOVE_EFFECTS = { status, afterHit, beforeHit, afterHitSelf };
 })();

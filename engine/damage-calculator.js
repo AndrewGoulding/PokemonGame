@@ -19,7 +19,7 @@
 // Field: { weather, terrain, gravity, isDoubles, reflect, lightScreen }
 //   weather: "SunnyDay" | "RainDance" | "Sandstorm" | "Hail" |
 //            "DesolateLand" | "PrimordialSea" | "DeltaStream"
-//   terrain: "ElectricTerrain" | "GrassyTerrain" | "MistyTerrain"
+//   terrain: "ElectricTerrain" | "GrassyTerrain" | "MistyTerrain" | "PsychicTerrain"
 //   reflect / lightScreen refer to the DEFENDER's side.
 //
 // Options: { crit, targets, hits, helpingHand, charge, extraAbilities,
@@ -31,7 +31,9 @@
 //            Plus/Minus), friendGuard (0.75x: the defender's ally has Friend Guard),
 //            flowerGiftAtk / flowerGiftSpD (1.5x Attack / Sp. Def: Flower Gift
 //            in the sun on that side), unnerved (the defender can't eat its
-//            resist Berry) }
+//            resist Berry), battery (1.3x special power: an ally with Battery),
+//            moveType (the move's type as the battle settled it),
+//            lastMoveFailed (Stomping Tantrum) }
 //   targets: how many Pokémon a spread move is hitting (0.75x when > 1).
 
 (function () {
@@ -230,6 +232,11 @@
     if (ab && typeof ab.onModifyType === "function") {
       try { ab.onModifyType({ pokemon: A }, move); } catch (e) { /* ignore */ }
     }
+    // (A type the battle engine settled on: Revelation Dance, Multi-Attack,
+    // Plasma Fists' ions.)
+    if (env.moveType) move.type = env.moveType;
+    // Photon Geyser is physical when the user's Attack is higher.
+    if (move.id === "photongeyser" && applyStage(A.stats.atk, A.boosts.atk) > applyStage(A.stats.spa, A.boosts.spa)) move.category = "Physical";
     return move;
   }
 
@@ -289,7 +296,7 @@
         bp = Math.min(200, 60 + 20 * up);
         break;
       }
-      case "storedpower": {
+      case "storedpower": case "powertrip": {
         let up = 0;
         for (const k of ["atk", "def", "spa", "spd", "spe"]) if (A.boosts[k] > 0) up += A.boosts[k];
         bp = 20 + 20 * up;
@@ -320,6 +327,8 @@
       case "retaliate": if (opts.allyFainted) bp *= 2; break;
       case "pursuit": if (opts.targetSwitching) bp *= 2; break;
       case "beatup": if (opts.beatUpPower) bp = opts.beatUpPower; break;
+      case "stompingtantrum": if (opts.lastMoveFailed) bp *= 2; break;
+      case "watershuriken": if (A.species === "Greninja-Ash") bp = 20; break;
       default: break;
     }
     return bp;
@@ -368,7 +377,7 @@
 
     const env = { attacker: A, defender: D, field, weather,
       speA: Math.max(1, applyStage(A.stats.spe, A.boosts.spe)),
-      speD: Math.max(1, applyStage(D.stats.spe, D.boosts.spe)) };
+      speD: Math.max(1, applyStage(D.stats.spe, D.boosts.spe)), moveType: opts.moveType };
 
     const move = prepMove(moveName, A, env);
     const result = {
@@ -500,12 +509,14 @@
     if (aItem === "griseous-orb" && A.species.startsWith("Giratina") && ["Dragon", "Ghost"].includes(move.type)) push(1.2);
 
     if (opts.helpingHand) push(1.5);
+    if (opts.battery && move.category === "Special") push(5325 / 4096);
     if (opts.charge && move.type === "Electric") push(2);
 
     const aGrounded = isGrounded(A, field);
     const dGrounded = isGrounded(D, field);
     if (field.terrain === "ElectricTerrain" && move.type === "Electric" && aGrounded) push(1.5);
     if (field.terrain === "GrassyTerrain" && move.type === "Grass" && aGrounded) push(1.5);
+    if (field.terrain === "PsychicTerrain" && move.type === "Psychic" && aGrounded) push(1.5);
     if (field.terrain === "MistyTerrain" && move.type === "Dragon" && dGrounded) push(0.5);
     if (field.terrain === "GrassyTerrain" && ["earthquake", "bulldoze", "magnitude"].includes(move.id) && dGrounded) push(0.5);
 
@@ -523,6 +534,7 @@
     if (simpleDoubled(D, ignoreAbility)) defStage = clampStage(defStage * 2);
     if (D.ability === "Unaware" && !(ignoreAbility && abilityIsBreakable("Unaware"))) atkStage = 0;
     if (A.ability === "Unaware") defStage = 0;
+    if (move.id === "darkestlariat") defStage = 0;
     if (crit) {
       if (atkStage < 0) atkStage = 0;
       if (defStage > 0) defStage = 0;
