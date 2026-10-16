@@ -1116,7 +1116,10 @@ the formes they bring about change the picture, stats and types mid-battle
 a quarter HP, Disguise taking the first hit, Battle Bond's Ash-Greninja after a
 knockout, with three-hit 20-power Water Shuriken, Power Construct's Complete
 Forme at half HP, its extra HP added), and the in-battle Summary shows the
-forme. The Surges set their terrain, Psychic Terrain among them (1.5x Psychic
+forme. (Aegislash's Stance Change works the same way: Blade Forme for a
+damaging move, Shield Forme for King's Shield and when it leaves the field.
+Zygarde's 50% Forme has its own stats: 108 HP, 81 Sp. Atk, 95 Speed.) The
+Surges set their terrain, Psychic Terrain among them (1.5x Psychic
 moves, no priority moves at grounded Pokémon; Nature Power calls Psychic);
 Queenly Majesty and Dazzling also stop priority moves; Dancer copies dance
 moves; Wimp Out and Emergency Exit switch out below half HP (not a wild

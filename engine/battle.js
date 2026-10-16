@@ -1275,10 +1275,12 @@
       return true;
     }
 
-    // Gen 7's battle formes an Ability brings about (Shields Down, Schooling,
-    // Disguise, Battle Bond, Power Construct): new stats and types, the same
-    // Ability. A forme with more HP (Zygarde Complete) adds the difference.
-    abilityForme(mon, forme, text) {
+    // The battle formes an Ability brings about (Aegislash's Stance Change;
+    // Gen 7's Shields Down, Schooling, Disguise, Battle Bond, Power Construct;
+    // Gen 8's): new stats and types, the same Ability. A forme with more HP
+    // (Zygarde Complete) adds the difference. `silent`: no message (Aegislash
+    // going back to Shield Forme as it leaves the field).
+    abilityForme(mon, forme, text, silent) {
       const d = window.DEX[forme];
       if (!d || mon.species === forme || mon.transformed || mon.fainted) return false;
       const stats = window.Stats.calcAllStats(forme, { level: mon.level, nature: mon.nature, ivs: mon.ivs, evs: mon.evs });
@@ -1288,6 +1290,7 @@
       mon.weight = d.weight;
       if (stats.hp > mon.maxhp) { mon.hp += stats.hp - mon.maxhp; mon.maxhp = mon.baseMaxhp = stats.hp; }
       mon.formeChanged = true;
+      if (silent) return true;
       this.add("detailschange", mon, forme);
       if (text) this.add("-formechange", mon, text);
       return true;

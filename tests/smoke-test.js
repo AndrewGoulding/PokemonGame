@@ -2312,6 +2312,26 @@ for (let seed = 1; seed <= DOUBLES; seed++) {
   doublesTurns += battle.turn;
 }
 
+// Stance Change: Aegislash's Blade Forme for a damaging move, Shield Forme
+// for King's Shield, Shield Forme again when it leaves the field.
+{
+  const b = new Battle({ seed: 1, debug: true, p1: { name: "A", team: [{ species: "Aegislash-Shield", level: 50, moves: ["Iron Head", "King's Shield"] },
+    { species: "Snorlax", level: 50, moves: ["Splash"] }] }, p2: { name: "B", team: [{ species: "Snorlax", level: 50, moves: ["Splash"] }] } });
+  b.start();
+  const aegis = b.sides.p1.active;
+  let evs = play(b, { p1: mv(0), p2: mv(0) });
+  assert.strictEqual(aegis.species, "Aegislash-Blade");
+  assert.strictEqual(aegis.stats.atk, Stats.calcAllStats("Aegislash-Blade", { level: 50, nature: aegis.nature, ivs: aegis.ivs, evs: aegis.evs }).atk);
+  assert(evs.findIndex((e) => e[0] === "detailschange") < evs.findIndex((e) => e[0] === "move"), "it changes before it attacks");
+  play(b, { p1: mv(1), p2: mv(0) });
+  assert.strictEqual(aegis.species, "Aegislash-Shield");
+  play(b, { p1: mv(0), p2: mv(0) });
+  play(b, { p1: { type: "switch", index: 1 }, p2: mv(0) });
+  assert.strictEqual(aegis.species, "Aegislash-Shield", "back to Shield Forme on switching out");
+}
+// Zygarde (50% Forme) has its own stats, not Complete Forme's.
+assert.deepStrictEqual(["hp", "atk", "def", "spa", "spd", "spe"].map((k) => DEX.Zygarde[k]), [108, 100, 121, 81, 95, 95]);
+
 // ---------- Generation 7 battles ----------
 {
   const g7 = (species, moves, extra) => Object.assign({ species, level: 50, moves }, extra);

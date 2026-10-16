@@ -2011,11 +2011,20 @@ window.ABILITIES = {
     name: "Stance Change", num: 176, rating: 4,
     effect: "Aegislash changes forme depending on whether it uses a damaging move or King's Shield.",
     flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    // (Blade Forme for a damaging move, Shield Forme for King's Shield; the
+    // battle engine passes the attacker. The damage calculator, which calls
+    // this without one, sees whichever forme the battle has already set.)
     onModifyMove(move, attacker) {
-      if (attacker.species.baseSpecies !== "Aegislash" || attacker.transformed) return;
+      if (!attacker || !attacker.battle || !/^Aegislash/.test(attacker.species) || attacker.transformed) return;
       if (move.category === "Status" && move.id !== "kingsshield") return;
-      const targetForme = move.id === "kingsshield" ? "Aegislash-Shield" : "Aegislash-Blade";
-      if (attacker.species.name !== targetForme) ctx.formeChange(attacker, targetForme);
+      const blade = move.id !== "kingsshield";
+      const forme = blade ? "Aegislash-Blade" : "Aegislash-Shield";
+      if (attacker.species !== forme) attacker.battle.abilityForme(attacker, forme, blade ? "Changed to Blade Forme!" : "Changed to Shield Forme!");
+    },
+    // Back to Shield Forme when it leaves the field.
+    onSwitchOut(ctx) {
+      const p = ctx.pokemon;
+      if (p.species === "Aegislash-Blade" && !p.transformed) ctx.battle.abilityForme(p, "Aegislash-Shield", null, true);
     },
   },
 
