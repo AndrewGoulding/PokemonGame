@@ -880,7 +880,7 @@ has a different Pokémon in a slot (Sandshrew for FireRed's Ekans on Route 4),
 either is as likely. The three starters are out in the wild, 5% each: Bulbasaur in Viridian Forest, Charmander on Route 3 and Squirtle on Route 24. FireRed's TMs found in item balls become this game's
 machine for the same move (TM09 Bullet Seed is TM100 here). An Escape Rope works
 where FireRed allows it (caves, Viridian Forest) and takes you back to where
-you last went from outdoors through a door or cave entrance. Trainers work as in FireRed: one you haven't beaten sees you
+you last went from outdoors through a door or cave entrance, one step out from it as in FireRed (UpdateEscapeWarp). The Berry Powder man in Cerulean gives you the Powder Jar once you've a Berry, crushes your Berries into Berry Powder (FireRed's Berry Crush amounts) and swaps the powder for his FireRed prizes. Trainers work as in FireRed: one you haven't beaten sees you
 straight ahead within their sight range (nothing in between), shows "!",
 walks up and battles with their FireRed party (fixed IVs, set moves where
 FireRed sets them); beaten, they say their after-battle line, and one that walked over to you stays

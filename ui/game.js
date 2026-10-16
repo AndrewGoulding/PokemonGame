@@ -692,7 +692,7 @@
   }
 
   const RODS = ["old-rod", "good-rod", "super-rod"];
-  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case"].concat(RODS);
+  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case", "powder-jar"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
   const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
@@ -730,6 +730,8 @@
         : "The Exp. Share was turned off. Only Pokémon that battle will gain Exp. Points.");
     } else if (item === "town-map") await townMap();
     else if (item === "coin-case") await message("Your Coins:\n" + plainCoins(coins()));
+    // (FieldUseFunc_PowderJar: how much Berry Powder you have.)
+    else if (item === "powder-jar") await message("Berry Powder:\n" + (player.flags.berryPowder | 0).toLocaleString("en-US"));
   }
 
   // Something to do on the map once the menus close (the Itemfinder).
@@ -1104,6 +1106,76 @@
     Screen.say(text);
     clearMenu();
     return GbaMenus.quantity($("#overlay"), { max, unitPrice, inBag, frame: GameOptions.get().frame });
+  }
+
+  // ---------- Cerulean City: the Berry Powder man ----------
+  //
+  // CeruleanCity_House5_EventScript_BerryPowderMan: interested in Berries,
+  // and with some in your Bag (FireRed asks for the Berry Pouch, which this
+  // game's Bag has in its place), you get the Powder Jar. Then he trades
+  // medicine for Berry Powder, at FireRed's prices. FireRed's powder comes
+  // from the Berry Crush, a link game this game hasn't got: here (this
+  // game's own) he crushes your Berries himself, each giving what it does in
+  // the Berry Crush (gBerryCrush_BerryData's powder).
+  const BERRY_POWDER = {
+    cheri: 20, chesto: 20, pecha: 20, rawst: 20, aspear: 20, leppa: 30, oran: 30, persim: 30, lum: 30, sitrus: 30,
+    figy: 50, wiki: 50, mago: 50, aguav: 50, iapapa: 50, razz: 70, bluk: 70, nanab: 70, wepear: 70, pinap: 70,
+    pomeg: 100, kelpsy: 100, qualot: 100, hondew: 100, grepa: 100, tamato: 150, cornn: 150, magost: 150, rabuta: 150, nomel: 150,
+    spelon: 250, pamtre: 250, watmel: 250, durin: 250, belue: 250, liechi: 500, ganlon: 500, salac: 500, petaya: 500, apicot: 500,
+    lansat: 750, starf: 750, enigma: 200
+  };
+  // (Berries FireRed hasn't got: the Berry Crush's middle amount.)
+  const berryPowderOf = (id) => BERRY_POWDER[id.replace(/-berry$/, "")] || 30;
+  // FireRed's exchange list (LISTMENU_BERRY_POWDER) and prices.
+  const POWDER_PRIZES = [["energy-powder", 50], ["energy-root", 80], ["heal-powder", 50], ["revival-herb", 300], ["protein", 1000],
+    ["iron", 1000], ["carbos", 1000], ["calcium", 1000], ["zinc", 1000], ["hp-up", 1000], ["pp-up", 3000]];
+  async function berryPowderMan() {
+    const f = player.flags, X = (k) => T("CeruleanCity_House1_Text_" + k);
+    const berries = () => Object.keys(player.bag).filter((id) => /-berry$/.test(id) && player.bag[id] > 0);
+    if (!f.gotPowderJar) {
+      const q = X("AnyInterestInBerries");
+      await say(q.slice(0, -1));
+      if (!(await confirm(fill(q[q.length - 1])))) { await say(X("TakeInterestInAllSortsOfThings")); return; }
+      if (!berries().length) { await say(X("WhyMustYouLieNoBerries")); return; }
+      await say(X("HaveJustTheThing"));
+      Player.addItem(player, "powder-jar");
+      f.gotPowderJar = true;
+      await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the " + Bag.name("powder-jar") + "!");
+      await say(["Now, there's no Berry Crusher\nabout these parts.", "So bring your Berries to me, and\nI'll crush them into Berry Powder.",
+        "I'll concoct medicine for you if\nyou bring me some Berry Powder."]);
+    }
+    // Crushing Berries (this game's): a kind, and how many.
+    for (;;) {
+      const have = berries();
+      if (!have.length || !(await confirm("Shall I crush some of your Berries\ninto Berry Powder?"))) break;
+      const i = await ask("Which Berries shall I crush?", have.map((id) => ({ label: Bag.name(id) + "  ×" + player.bag[id] + "  (" + berryPowderOf(id) + " each)", value: id }))
+        .concat([back()]));
+      if (i === "back") break;
+      const n = await chooseQuantity("How many shall I crush?", player.bag[i]);
+      Screen.say("");
+      if (!n) continue;
+      Player.removeItem(player, i, n);
+      const gained = n * berryPowderOf(i);
+      f.berryPowder = Math.min(99999, (f.berryPowder | 0) + gained);
+      sfx("se_m_bonemerang");
+      await say(gained.toLocaleString("en-US") + " units of Berry Powder\nwent into the Powder Jar.");
+    }
+    // FireRed's exchange (CeruleanCity_House5_EventScript_AskToExchangePowder).
+    await say(X("HaveYouBroughtBerryPowder"));
+    for (;;) {
+      const v = await ask(T("CeruleanCity_House5_Text_ExchangeWithWhat")[0] + "\n(Berry Powder: " + (f.berryPowder | 0).toLocaleString("en-US") + ")",
+        POWDER_PRIZES.map(([id, cost]) => ({ label: Bag.name(id) + "  " + cost, value: id })).concat([back("Exit")]));
+      if (v === "back") { await say(X("SeeMeIfYoudLikeToTradePowder")); return; }
+      const cost = POWDER_PRIZES.find(([id]) => id === v)[1];
+      if (!(await confirm(fill(X("YoullExchangeBerryPowderForItem")[0], [Bag.name(v)])))) continue;
+      if ((f.berryPowder | 0) < cost) { await say(X("DontHaveEnoughBerryPowder")); continue; }
+      f.berryPowder -= cost;
+      Player.addItem(player, v);
+      await sayWithJingle(itemJingle(v), "{PLAYER} received the " + Bag.name(v) + "!");
+      const more = X("TradeMoreBerryPowder");
+      await say(more.slice(0, -1));
+      if (!(await confirm(more[more.length - 1]))) { await say(X("HopeToSeeYouAgain")); return; }
+    }
   }
 
   // ---------- Poké Mart ----------
@@ -2799,14 +2871,7 @@
         await say(T("CeruleanCity_BikeShop_Text_ThankYouComeAgain"));
         return;
       }
-      // The Berry Powder man: without FireRed's Berry Pouch, you've no Berries.
-      case "CeruleanCity_House5_EventScript_BerryPowderMan": {
-        const q = T("CeruleanCity_House1_Text_AnyInterestInBerries");
-        await say(q.slice(0, -1));
-        await say(T((await confirm(fill(q[q.length - 1]))) ? "CeruleanCity_House1_Text_WhyMustYouLieNoBerries"
-          : "CeruleanCity_House1_Text_TakeInterestInAllSortsOfThings"));
-        return;
-      }
+      case "CeruleanCity_House5_EventScript_BerryPowderMan": await berryPowderMan(); return;
       case "CeruleanCity_House5_EventScript_BerryCrushRankings":
         await say("BERRY CRUSH rankings.\nNo one has crushed any Berries yet.");
         return;
@@ -9080,7 +9145,13 @@
     leftPallet(to.map);
     visitSection(to.map);
     const a = window.WORLD_MAPS[from.map], b = window.WORLD_MAPS[to.map];
-    if (a && b && OUTDOORS.includes(a.type) && !OUTDOORS.includes(b.type)) player.flags.escapeWarp = { map: from.map, x: from.x, y: from.y };
+    // (FireRed's UpdateEscapeWarp: where an Escape Rope or Dig brings you out,
+    // a tile south of the entrance, unless you went in facing south. Standing
+    // in front of a door you're already off it.)
+    if (a && b && OUTDOORS.includes(a.type) && !OUTDOORS.includes(b.type)) {
+      const onWarp = !!World.warpAt(from.map, from.x, from.y), facing = Overworld.position().facing;
+      player.flags.escapeWarp = { map: from.map, x: from.x, y: from.y + (onWarp && facing !== "down" ? 1 : 0) };
+    }
     // Into an elevator: its doors open back where you got in until you choose a floor.
     if (/_Elevator$/.test(to.map) && !/_Elevator$/.test(from.map)) setDynamicWarp({ map: from.map, x: from.x, y: from.y });
   }
