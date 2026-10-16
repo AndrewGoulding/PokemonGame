@@ -6142,11 +6142,11 @@
     f["wokeRoute" + route + "Snorlax"] = true;
     Overworld.removePerson(person);
     const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create("Snorlax", 30)] }, terrain: "grass" });
-    if (outcome === "won" || outcome === "ran") {
-      show("world");
-      await Overworld.resume();
-      await say(T("Text_SnorlaxReturnedToMountains"));
-    }
+    if (outcome === "lost") return;
+    show("world");
+    await Overworld.resume();
+    // (Caught, it's in your party; otherwise it lumbers off.)
+    if (outcome !== "caught") await say(T("Text_SnorlaxReturnedToMountains"));
   }
 
   // A fishing rod from one of the Fishing Guru's brothers ("Do you like to fish?").

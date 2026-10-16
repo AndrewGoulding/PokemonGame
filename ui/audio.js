@@ -23,6 +23,14 @@
   let wanted = null;                // the song the game wants (played once sound can start)
   let fanfareDepth = 0;
   let mono = false;                 // the Option screen's SOUND: MONO
+  // How long FireRed lets each fanfare play before the music comes back
+  // (sFanfares in src/sound.c, in frames at 60 a second). The Poké Flute's
+  // song runs on for 51 seconds; FireRed cuts it off after 450 frames.
+  const FANFARE_FRAMES = {
+    mus_level_up: 80, mus_obtain_item: 160, mus_evolved: 220, mus_obtain_tmhm: 220, mus_heal: 160,
+    mus_obtain_badge: 340, mus_move_deleted: 180, mus_obtain_berry: 120, mus_slots_jackpot: 250,
+    mus_slots_win: 150, mus_too_bad: 160, mus_poke_flute: 450, mus_obtain_key_item: 170, mus_dex_rating: 196
+  };
 
   function loadData() {
     if (window.MUSIC_DATA) return Promise.resolve();
@@ -131,11 +139,13 @@
       if (!enabled || !ctx || !window.MUSIC_DATA || ctx.state !== "running") return;
       const before = current && { name: current.name, at: position(current) };
       fanfareDepth++;
-      await start(name, 0, 0.05);
+      const frames = FANFARE_FRAMES[name];
+      await Promise.race([start(name, 0, 0.05)].concat(frames ? [new Promise((r) => setTimeout(r, frames * 1000 / 60))] : []));
       fanfareDepth--;
       if (fanfareDepth) return;
       const next = wanted || (before && before.name);
       if (next) start(next, before && before.name === next ? before.at : 0, 0.05);
+      else if (current && current.name === name) stopCurrent(0.05);
     },
     // A sound effect (one of tools/build-audio.js's SOUND_EFFECTS), over whatever is
     // playing; returns how long it lasts (seconds), or nothing if it isn't played.
