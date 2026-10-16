@@ -249,6 +249,19 @@
   // "SAFARI BALLS" and how many are left (UpdateSafariBallsTextOnHealthbox,
   // UpdateLeftNoOfBallsTextOnHealthbox).
   const hbSafari = hbImg("healthbox-safari");
+  // Mega Evolution, as pokeemerald-expansion shows it (tools/build-mega-icons.js,
+  // src/battle_gimmick.c): a Mega Evolved Pokémon's box has the Mega symbol
+  // where "Lv" was (CreateIndicatorSprite, UpdateLvlInHealthbox); while you
+  // choose a move for a Pokémon that can Mega Evolve, the trigger slides out
+  // from behind its box (15 pixels left, 1 a frame: SpriteCb_GimmickTrigger),
+  // lit up while START has it on, and back in once you've chosen.
+  const hbMega = hbImg("mega-indicator"), hbTrigger = hbImg("mega-trigger");
+  let trigger = null;   // { pos, on, x (its centre less the box's), hide }
+  function showTrigger(pos) {
+    trigger = { pos, on: false, x: trigger && trigger.pos === pos ? trigger.x : -15, hide: false };
+    hbStart();
+  }
+  function hideTrigger() { if (trigger) { trigger.hide = true; trigger.on = false; } }
   const HB_CREAM = [255, 255, 222], HB_TEXT = [65, 65, 65], HB_SHADOW = [222, 213, 180];
   const HB_MALE = [65, 205, 255], HB_FEMALE = [255, 156, 148];
   const HB_STATUS = { psn: 0, tox: 0, par: 1, slp: 2, frz: 3, brn: 4 };
@@ -291,7 +304,7 @@
     const b = hb[side], d = b.data, cfg = hbCfg(side), st = hbStyle(side);
     if (b.data.safari) return safariLayer(b);
     const shownHp = b.hp < b.hpTo ? Math.floor(b.hp) : Math.ceil(b.hp);
-    const key = [d.name, d.gender, d.level, d.status, d.caught, shownHp, b.maxhp, doublesLayout].join("|");
+    const key = [d.name, d.gender, d.level, d.status, d.caught, d.mega, shownHp, b.maxhp, doublesLayout].join("|");
     if (b.layer && b.layerKey === key) return b.layer;
     b.layerKey = key;
     const s = window.GbaMenus.Surface();
@@ -303,9 +316,11 @@
     const nx = st.nameX;
     const w = s.text(d.name || "", nx, 3, HB_TEXT, HB_SHADOW, "small");
     if (d.gender === "M" || d.gender === "F") s.text(d.gender === "M" ? "♂" : "♀", nx + w, 3, d.gender === "M" ? HB_MALE : HB_FEMALE, HB_SHADOW, "small");
-    // "Lv" and the level, right-aligned in 24 pixels.
+    // "Lv" and the level, right-aligned in 24 pixels (Mega Evolved, the
+    // level alone, the Mega symbol before it).
     const lv = String(d.level || "");
-    s.text("{LV}" + lv, st.lvX + 5 * (3 - lv.length), 3, HB_TEXT, HB_SHADOW, "small");
+    const lvW = s.textWidth("{LV}", "small"), lvAt = st.lvX + 5 * (3 - lv.length);
+    s.text(d.mega ? lv : "{LV}" + lv, d.mega ? lvAt + lvW : lvAt, 3, HB_TEXT, HB_SHADOW, "small");
     // Your HP: "cur/" at (60, 21) and "max" at (80, 21), each right-aligned to 3.
     if (st.singlesPlayer) {
       const cur = String(Math.max(0, shownHp)), max = String(b.maxhp);
@@ -324,6 +339,7 @@
     g.clip();
     g.drawImage(s.canvas(), 0, 0);
     g.restore();
+    if (d.mega && hbMega.complete) g.drawImage(hbMega, lvAt + lvW - 10, -1);
     // The status icon: yours left of the HP numbers, theirs over "HP".
     const stIcon = HB_STATUS[d.status];
     if (stIcon != null && hbStatus.complete) g.drawImage(hbStatus, 0, ((sideOf(side) === "p2" ? 5 : 0) + stIcon) * 8, 24, 8, st.status[0], st.status[1], 24, 8);
@@ -335,6 +351,12 @@
     const g = hbLayer.getContext("2d");
     g.clearRect(0, 0, 240, 112);
     g.imageSmoothingEnabled = false;
+    // The Mega trigger, behind its box (32x32, centred 30 left of the box's
+    // centre and 10 below it, 4 in a double battle; frame 1 when on).
+    if (trigger && hb[trigger.pos].shown && hbTrigger.complete) {
+      const b = hb[trigger.pos], cfg = hbCfg(trigger.pos);
+      g.drawImage(hbTrigger, 0, trigger.on ? 32 : 0, 32, 32, cfg.x + 32 + trigger.x - 16, cfg.y + b.y2 + (doublesLayout ? 4 : 10), 32, 32);
+    }
     for (const side of POSITIONS) {
       const b = hb[side], cfg = hbCfg(side);
       if (!cfg || !b.shown || !b.data.name) continue;
@@ -366,6 +388,8 @@
   }
 
   function tickHealthboxes() {
+    if (trigger && !trigger.hide && trigger.x > -30) trigger.x--;
+    else if (trigger && trigger.hide && ++trigger.x >= -15) trigger = null;
     for (const side of POSITIONS) {
       const b = hb[side];
       if (b.x2) b.x2 = b.x2 > 0 ? Math.max(0, b.x2 - 5) : Math.min(0, b.x2 + 5);
@@ -388,14 +412,14 @@
       else b.y2 = 0;
     }
     drawHealthboxes();
-    const busy = POSITIONS.some((sd) => { const b = hb[sd]; return b.hp !== b.hpTo || b.exp !== b.expTo || b.flash >= 0 || b.x2; });
+    const busy = POSITIONS.some((sd) => { const b = hb[sd]; return b.hp !== b.hpTo || b.exp !== b.expTo || b.flash >= 0 || b.x2; }) || !!(trigger && trigger.hide);
     if (!busy && hbWaiters.length) { const w = hbWaiters; hbWaiters = []; w.forEach((r) => r()); }
     hbRaf = requestAnimationFrame(tickHealthboxes);
   }
   // Resolves when the bars have stopped moving (and boxes sliding in).
   const hbSettled = () => new Promise((r) => hbWaiters.push(r));
   function hbStart() { if (!hbRaf) hbRaf = requestAnimationFrame(tickHealthboxes); }
-  function hbStop() { cancelAnimationFrame(hbRaf); hbRaf = 0; hbWaiters.splice(0).forEach((r) => r()); hbReset(); drawHealthboxes(); }
+  function hbStop() { cancelAnimationFrame(hbRaf); hbRaf = 0; hbWaiters.splice(0).forEach((r) => r()); hbReset(); trigger = null; drawHealthboxes(); }
   // Showing or hiding a box (what the old info boxes' classList did): shown,
   // it slides in.
   function hbShow(side, on) {
@@ -608,7 +632,8 @@
       gender: /^Nidoran/.test(v.species) || (id === "p2" && config && config.ghost) ? "" : mon.gender,
       // (A wild Pokémon's box shows a ball if you've caught its kind before.)
       caught: side === "p2" && battle.wild && config.catchContext && config.catchContext.caughtBefore
-        ? !!config.catchContext.caughtBefore(v.species) : false
+        ? !!config.catchContext.caughtBefore(v.species) : false,
+      mega: /-Mega(-|$)/.test(v.species || "")
     };
     b.maxhp = v.maxhp || 1;
     b.hpTo = v.hp;
@@ -1235,7 +1260,9 @@
         say("");
         clearMenu();
         const r = await window.BagScreen.open({
-          pockets: config.bagPockets, pocketName: battlePocket || "Items", female: !!config.bagFemale,
+          // (Only the pockets with something usable in battle: Bag.BATTLE_POCKETS.)
+          pockets: () => config.bagPockets().filter((p) => window.Bag.BATTLE_POCKETS.includes(p.name)),
+          pocketName: battlePocket || "Items", female: !!config.bagFemale,
           frame: window.GameOptions ? window.GameOptions.get().frame : 0,
           actions: (it) => (usableHere(it.id) ? [{ label: "Use", value: "use" }] : [])
         });
@@ -1365,7 +1392,8 @@
         };
         // Mega Evolution (with the Mega Ring, a Mega Stone held, once a battle;
         // in a double battle, one of your two only).
-        const mega = active.canMega && config.megaRing && !(dbl && dbl.megaTaken) ? { on: false } : null;
+        const mega = active.canMega && config.megaRing && !(dbl && dbl.megaTaken) ? { on: false, toggled: (on) => { if (trigger) trigger.on = on; } } : null;
+        if (mega) showTrigger(pos);
         // (A double battle: the Pokémon a spread or field move will hit
         // flash, PreviewDeterminativeMoveTargets.)
         const onCursor = dbl ? (c) => previewTargets(pos, moves[c]) : null;
@@ -1391,8 +1419,10 @@
           lastMove[active.name] = m.index;
           const choice = mega && mega.on ? { type: "move", move: m.index, mega: true } : { type: "move", move: m.index };
           if (target !== undefined) choice.target = target;
+          hideTrigger();
           return choice;
         }
+        hideTrigger();
         continue;
       }
       if (a.action === "bag") {

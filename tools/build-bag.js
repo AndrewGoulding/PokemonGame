@@ -9,9 +9,14 @@
 //                                palette 0 is bg_female.pal), 240x160
 //   desc-dim.png                 rows 14-19 in palette 2: the description area
 //                                while a menu is open (Bag_FillMessageBoxWithPalette)
-//   bag-male.png, bag-female.png the bag sprite's four 64x64 frames (graphics/
-//                                interface/bag_*.png in bag.pal): shut, POKé
-//                                BALLS, ITEMS, KEY ITEMS
+//   bag-male.png, bag-female.png the bag sprite's 64x64 frames (graphics/
+//                                interface/bag_*.png in bag.pal): FireRed's
+//                                four (shut, POKé BALLS, ITEMS, KEY ITEMS),
+//                                then this game's own for its new pockets, the
+//                                bag recoloured: 4 ITEMS' frame in blue
+//                                (Power-up), 5 POKé BALLS' in green (Held
+//                                Items), 6 KEY ITEMS' in violet (Mega Stones);
+//                                7-9 the shut bag in those colours
 //   arrows.png                   the red scroll arrows (red_arrow_other.png in
 //                                red_arrow.pal): left, then up, 16x16 each
 //   return-arrow.png             CANCEL's item icon (graphics/items/icons/
@@ -64,8 +69,28 @@ function sprite(png, palFile, file) {
   img.px.forEach((v, i) => { v &= 15; if (v) rgba.set([...colours[v], 255], i * 4); });
   writePng(path.join(out, file), img.width, img.height, rgba);
 }
-sprite("bag_male.png", "bag.pal", "bag-male.png");
-sprite("bag_female.png", "bag.pal", "bag-female.png");
+// The bag's body colours (1-4 the yellows, 9 the brown shading) turned to
+// another hue, as 5-bit GBA colours.
+function recolour([r, g, b], hue) {
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), v = max / 255, s = max ? 0.8 * (max - min) / max : 0;
+  const h = hue / 60, c = v * s, x = c * (1 - Math.abs((h % 2) - 1)), m = v - c;
+  const [r1, g1, b1] = h < 1 ? [c, x, 0] : h < 2 ? [x, c, 0] : h < 3 ? [0, c, x] : h < 4 ? [0, x, c] : h < 5 ? [x, 0, c] : [c, 0, x];
+  return [r1, g1, b1].map((u) => Math.round((u + m) * 31) * 255 / 31 | 0);
+}
+const NEW_FRAMES = [[2, 205], [1, 125], [3, 285], [0, 205], [0, 125], [0, 285]];   // (FireRed frame, hue)
+function bag(png, file) {
+  const img = readPng(P("graphics/interface", png)), colours = readPal(P("graphics/interface/bag.pal"));
+  const W = img.width, F = 64 * W, frames = 4 + NEW_FRAMES.length;
+  const rgba = new Uint8ClampedArray(W * 64 * frames * 4);
+  const put = (src, dst, pal) => {
+    for (let i = 0; i < F; i++) { const v = img.px[src * F + i] & 15; if (v) rgba.set([...pal[v], 255], (dst * F + i) * 4); }
+  };
+  for (let f = 0; f < 4; f++) put(f, f, colours);
+  NEW_FRAMES.forEach(([src, hue], k) => put(src, 4 + k, colours.map((c, i) => ([1, 2, 3, 4, 9].includes(i) ? recolour(c, hue) : c))));
+  writePng(path.join(out, file), W, 64 * frames, rgba);
+}
+bag("bag_male.png", "bag-male.png");
+bag("bag_female.png", "bag-female.png");
 sprite("red_arrow_other.png", "red_arrow.pal", "arrows.png");
 {
   const img = readPng(P("graphics/items/icons/return_to_field_arrow.png"));

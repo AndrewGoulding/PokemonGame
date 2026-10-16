@@ -306,10 +306,14 @@
       forgetMove: (i, mon, move) => chooseMoveToForget(Party.syncFromBattle(own[i], mon), move),
       // The Summary screen from the party screen in battle: each Pokémon as it
       // is now (HP, status, PP, Exp.), from copies, so nothing changes.
+      // A Mega Evolved Pokémon shows its Mega form: the picture, the stats the
+      // battle worked out for it, its ability and types (the record itself
+      // goes back to its own form after the battle).
       summary: (i, mons) => {
         const now = own.map((r, k) => (mons[k] ? Party.syncFromBattle(JSON.parse(JSON.stringify(r)), mons[k]) : r));
         cry(now[i].species);
-        return SummaryScreen.open(now.map(summaryView), i, { frame: GameOptions.get().frame, cry: (sp) => cry(sp) });
+        const views = now.map((r, k) => battleSummaryView(r, mons[k]));
+        return SummaryScreen.open(views, i, { frame: GameOptions.get().frame, cry: (sp) => cry(sp) });
       }
     });
     const b = result.battle;
@@ -945,6 +949,25 @@
       ball: "assets/sprites/items/ball/" + (r.ball || "poke-ball").replace(/-ball$/, "") + ".png"
     };
   }
+  // summaryView() of a record as it is in battle (`mon`: the battle's
+  // Pokémon): its HP and status now, and, Mega Evolved, its Mega form.
+  function battleSummaryView(r, mon) {
+    const v = summaryView(r);
+    if (!mon) return v;
+    v.hp = mon.fainted ? 0 : mon.hp;
+    v.status = mon.fainted ? "" : mon.status;
+    if (mon.mega && DEX[mon.species]) {
+      const ability = (window.ABILITIES[mon.ability] || {}).name || mon.ability;
+      Object.assign(v, {
+        maxhp: mon.maxhp, types: DEX[mon.species].types.slice(),
+        stats: { atk: mon.stats.atk, def: mon.stats.def, spa: mon.stats.spa, spd: mon.stats.spd, spe: mon.stats.spe },
+        ability, abilityText: (window.SUMMARY_SCREEN.abilityText || {})[ability] || "",
+        pic: Screen.spriteUrl(mon.species, undefined, false, r.shiny),
+        picEmpty: ((window.SPRITE_METRICS || {}).front || {})[DEX[mon.species].id] || 0
+      });
+    }
+    return v;
+  }
   // Swapping two moves on KNOWN MOVES' details changes their order in battle.
   function summaryContext(records) {
     return {
@@ -968,7 +991,7 @@
 
   // ---------- Bag ----------
 
-  // FireRed's Bag screen (ui/bag-screen.js), with this game's six pockets.
+  // FireRed's Bag screen (ui/bag-screen.js), with this game's nine pockets.
   // USE and GIVE close it for the party screen or the text box and open it
   // again after; TOSS happens on the bag screen itself.
   let bagPocket = "Medicine";
@@ -1927,8 +1950,10 @@
   const TRAINER_SCRIPTS = new Set();
   for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) if (p.trainer && p.trainer.id) TRAINER_SCRIPTS.add(p.script);
   // (or, signalled by the VS Seeker, want a rematch)
+  // (or, once you're Champion, the Fighting Dojo wants its rematch: dojoRematch())
   const trainerWaiting = (person) => !!(person.trainer && person.trainer.id &&
-    (!player.flags[person.trainer.id] || (player.flags.vsRematch && player.flags.vsRematch[person.trainer.id])));
+    (!player.flags[person.trainer.id] || (player.flags.vsRematch && player.flags.vsRematch[person.trainer.id]) ||
+      dojoRematch(person.trainer.id)));
 
   function visible(person, map) {
     const f = player.flags;
@@ -2035,8 +2060,8 @@
       case "FLAG_HIDE_SAFFRON_FAN_CLUB_BLACK_BELT": case "FLAG_HIDE_SAFFRON_FAN_CLUB_ROCKER":
       case "FLAG_HIDE_SAFFRON_FAN_CLUB_WOMAN": case "FLAG_HIDE_SAFFRON_FAN_CLUB_BEAUTY": return false;
       // The Dojo's prized Pokémon: the one you take goes; the other stays.
-      case "FLAG_HIDE_DOJO_HITMONLEE_BALL": return f.dojoHitmon !== "Hitmonlee";
-      case "FLAG_HIDE_DOJO_HITMONCHAN_BALL": return f.dojoHitmon !== "Hitmonchan";
+      case "FLAG_HIDE_DOJO_HITMONLEE_BALL": return f.dojoHitmon !== "Hitmonlee" && f.dojoHitmon2 !== "Hitmonlee";
+      case "FLAG_HIDE_DOJO_HITMONCHAN_BALL": return f.dojoHitmon !== "Hitmonchan" && f.dojoHitmon2 !== "Hitmonchan";
       // The Snorlax asleep across Route 12, until you wake it with the Poké Flute.
       case "FLAG_HIDE_ROUTE_12_SNORLAX": return !f.wokeRoute12Snorlax;
       // And the one on Route 16.
@@ -2207,7 +2232,7 @@
     }
     // The Karate Master, beaten: choose a prized Pokémon (or train with them).
     if (script === "SaffronCity_Dojo_EventScript_MasterKoichi" && !trainerWaiting(ev.person)) {
-      await say(T(f.dojoHitmon ? "SaffronCity_Dojo_Text_StayAndTrainWithUs" : "SaffronCity_Dojo_Text_ChoosePrizedFightingMon"));
+      await dojoMaster();
       return;
     }
     // Gideon has the Sapphire (his battle's own ending: FiveIsland_RocketWarehouse_EventScript_DefeatedGideon).
@@ -2217,7 +2242,7 @@
         const beaten = !!f[ev.person.trainer.id];
         await trainerBattle(ev.person, null);
         if (!beaten) await afterRocket(ev.person);
-      } else await say(ev.person.trainer.after || ev.person.text || []);
+      } else await say(dojoAfter(ev.person.trainer.id) || ev.person.trainer.after || ev.person.text || []);
       return;
     }
 
@@ -2226,7 +2251,8 @@
       Player.addItem(player, item);
       f[ev.person.flag] = true;
       Overworld.removePerson(ev.person);   // (just the ball: everyone else stays where they are)
-      await sayWithJingle(itemJingle(item), "{PLAYER} found a " + Bag.name(item) + "!");
+      await sayWithJingle(itemJingle(item), /^Game_EventScript_MegaStone_/.test(ev.person.script || "") ? "{PLAYER} found " + article(Bag.name(item)) + "!"
+        : "{PLAYER} found a " + Bag.name(item) + "!");
       return;
     }
 
@@ -3105,7 +3131,8 @@
         await elevator(SILPH_FLOORS.map(([label, x]) => ({ label, map: "SilphCo_" + label, x, y: 3 })), true);
         return;
       case "SilphCo_2F_EventScript_ThunderWaveTutor":
-        await moveTutor("Thunder Wave", "tutorThunderWave", "Text_ThunderWave");
+        // (Again and again, for a price, like Route 4's and Rock Slide's tutors.)
+        await moveTutor("Thunder Wave", "tutorThunderWave", "Text_ThunderWave", TUTOR_PRICE);
         return;
       case "SilphCo_7F_EventScript_RivalTriggerTop":
       case "SilphCo_7F_EventScript_RivalTriggerBottom":
@@ -3883,11 +3910,16 @@
       await Overworld.act([{ who, moves: ["emote_exclamation_mark"].concat(Array(approach).fill("walk_" + facing)) }]);
       await Overworld.act([{ who: "player", moves: ["face_" + World.OPPOSITE[facing]] }]);
     }
-    await say(t.intro);
+    const re = dojoRematch(t.id);
+    await say(re ? re.intro : t.intro);
     if (!canBattle()) return;
-    const team = trainerTeam(t.id);
-    await battle("trainer", { foe: { name: data.className + " " + data.name, team, pic: data.pic }, defeatText: t.defeat, trainerId: t.id,
-      prizeClass: data.className, double: !!t.double });
+    const team = re ? re.team() : trainerTeam(t.id);
+    const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team, pic: data.pic },
+      defeatText: re ? re.defeat : t.defeat, trainerId: t.id, prizeClass: data.className, double: !!t.double });
+    if (re && outcome === "won") {
+      (player.flags.dojoRematch || (player.flags.dojoRematch = {}))[t.id] = true;
+      if (t.id === DOJO_MASTER) { show("world"); await Overworld.resume(); await dojoMaster(); }
+    }
     // A beaten trainer who walked over to you stays where they stopped (see
     // visible()) while you're on the map: back in their spot they could shut
     // you in, as Route 25's Hiker Flint does the TM43 corner. Leave the map
@@ -4123,7 +4155,8 @@
     return true;
   }
 
-  // What the Route 4 tutors charge each time.
+  // What the tutors who teach again and again (Route 4's, Rock Slide's,
+  // Silph Co.'s Thunder Wave) charge each time.
   const TUTOR_PRICE = 1000;
 
   // Lavender Town's Name Rater (LavenderTown_House2_EventScript_NameRater):
@@ -4239,8 +4272,47 @@
     return false;
   }
   // People the game's scenes add to a map (Overworld's ctx.extraPeople).
+  // ---------- Mega Stones ----------
+  //
+  // (This game's own.) Mega Stones lying about Kanto as item balls, each
+  // with its own flag (flags["megaStone:<item>"]): Beedrillite in Viridian
+  // Forest, Aerodactylite in Mt. Moon, Gyaradosite on Route 25, Slowbronite
+  // in the Seafoam Islands, Pinsirite in the Safari Zone, and Mewtwonite X
+  // and Y beside Mewtwo's spot in Cerulean Cave once it's caught or beaten.
+  // Others are gifts (megaStoneGift): Gary's Pidgeotite on Silph Co. 7F,
+  // Sabrina's Alakazite and Giovanni's Kangaskhanite with their badges. A
+  // save from before these gifts finds Gary's and Giovanni's (who have gone)
+  // as item balls where they stood, and Sabrina gives hers when you talk to
+  // her again.
+  const megaFlag = (item) => "megaStone:" + item;
+  const MEGA_STONE_BALLS = [
+    { map: "ViridianForest", x: 3, y: 55, item: "beedrillite" },
+    { map: "MtMoon_B2F", x: 46, y: 22, item: "aerodactylite" },
+    { map: "Route25", x: 41, y: 2, item: "gyaradosite" },
+    { map: "SeafoamIslands_1F", x: 3, y: 18, item: "slowbronite" },
+    { map: "SafariZone_Center", x: 9, y: 29, item: "pinsirite" },
+    { map: "CeruleanCave_B1F", x: 5, y: 12, item: "mewtwonite-x", when: (f) => f.foughtMewtwo },
+    { map: "CeruleanCave_B1F", x: 9, y: 12, item: "mewtwonite-y", when: (f) => f.foughtMewtwo },
+    // (Left behind for a save that beat them before they gave these.)
+    { map: "SilphCo_7F", x: 2, y: 6, item: "pidgeotite", when: (f) => f.silphRival },
+    { map: "ViridianCity_Gym", x: 2, y: 2, item: "kangaskhanite", when: (f) => f.giovanniLeft }
+  ].map((b, i) => Object.assign({ id: 950 + i, script: "Game_EventScript_MegaStone_" + b.item, flag: megaFlag(b.item),
+    movement: "face_down", text: null, sprite: "item_ball", width: 16, height: 16, frames: 1, inanimate: true }, b));
+  for (const b of MEGA_STONE_BALLS) ITEM_BALLS.add(b.script);
+  const megaStoneBalls = (map) => MEGA_STONE_BALLS.filter((b) => b.map === map && (!b.when || b.when(player.flags)));
+  // A Mega Stone handed over: `lines` first, then "… received …!" with the jingle; once.
+  async function megaStoneGift(item, lines, from) {
+    const f = player.flags;
+    if (f[megaFlag(item)]) return false;
+    if (lines) await say(lines);
+    Player.addItem(player, item);
+    f[megaFlag(item)] = true;
+    await sayWithJingle(itemJingle(item), fill("{PLAYER} received the " + Bag.name(item) + "\nfrom " + from + "!"));
+    return true;
+  }
+
   function extraPeople(map) {
-    const out = [];
+    const out = megaStoneBalls(map);
     // The Tradeback Guy, upstairs in every Pokémon Center.
     if (/_PokemonCenter_2F$/.test(map)) {
       out.push(Object.assign({ id: 901, localId: "LOCALID_TRADEBACK_GUY", script: "Game_EventScript_TradebackGuy", x: 12, y: 5,
@@ -5801,28 +5873,118 @@
       Player.addItem(player, tm);
       f.gotTM04 = true;
       await sayWithJingle(itemJingle(tm), tmText(T("SaffronCity_Gym_Text_ReceivedTM04FromSabrina"), 4, tm));
+      await sabrinaAlakazite();
       await say(T("SaffronCity_Gym_Text_SabrinaPostBattle"));
       return;
     }
+    if (await sabrinaAlakazite()) return;
     await say(tmText(T("SaffronCity_Gym_Text_ExplainTM04"), 4, tm));
   }
+
+  // (This game's own: her Alakazam's Mega Stone, after the badge and TM.)
+  const sabrinaAlakazite = () => megaStoneGift("alakazite", ["I foresaw that you would win…\nand that you would need this.",
+    "An Alakazite. Held by Alakazam, it\nawakens a power beyond the mind's."], "Sabrina");
 
   // The Fighting Dojo's prized Pokémon (SaffronCity_Dojo_EventScript_HitmonleeBall):
   // its picture, the Karate Master looks up, and it's yours if you like
   // (Lv. 25); its Poké Ball goes, and the other's yours no longer to take.
+  // (This game's own: once you've beaten the Karate Master's rematch, the
+  // other is yours too, at Lv. 50; see dojoMaster().)
   async function dojoBall(person, species) {
     const f = player.flags;
-    if (f.dojoHitmon) { await say(T("SaffronCity_Dojo_Text_BetterNotGetGreedy")); return; }
+    const second = !!f.dojoHitmon && dojoMasterRematchWon() && !f.dojoHitmon2;
+    if (f.dojoHitmon && !second) { await say(T("SaffronCity_Dojo_Text_BetterNotGetGreedy")); return; }
     showPicture(species);
     cry(species);
     await Overworld.act([{ who: "LOCALID_KARATE_MASTER", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
     const yes = await confirm(fill(T("SaffronCity_Dojo_Text_YouWant" + species)[0]));
     hidePicture();
     if (!yes) return;
-    await giftMon(species, 25, T("SaffronCity_Dojo_Text_ReceivedMonFromKarateMaster"), [Party.speciesName(species)], () => {
+    await giftMon(species, second ? DOJO_SECOND_LEVEL : 25, T("SaffronCity_Dojo_Text_ReceivedMonFromKarateMaster"), [Party.speciesName(species)], () => {
       Overworld.removePerson(person);
-      f.dojoHitmon = species;
+      if (second) f.dojoHitmon2 = species; else f.dojoHitmon = species;
     });
+  }
+
+  // ---------- The Fighting Dojo's rematch ----------
+  //
+  // (This game's own.) Once you're Champion (flags.gameClear), the Dojo has
+  // trained hard: each of its Black Belts and the Karate Master battles you
+  // once more, their Pokémon fully evolved (FireRed's teams' species lines:
+  // Machop and Machoke are Machamps now, Mankey Primeapes) at levels 48-52.
+  // Beat the Karate Master again and he gives you the Hitmon you didn't
+  // take the first time, at Lv. 50. Each battles you again only once
+  // (flags.dojoRematch[trainer id]: won).
+  const DOJO_MASTER = "TRAINER_BLACK_BELT_KOICHI";
+  const DOJO_SECOND_LEVEL = 50;
+  const DOJO_REMATCH = {
+    TRAINER_BLACK_BELT_HITOSHI: {
+      team: [["Machamp", 49], ["Primeape", 49], ["Primeape", 50]],
+      intro: ["Hwaah!", "So the Champion comes back to our\nFighting Dojo!", "A title means nothing on these\nmats! Fight me!"],
+      defeat: ["Oof!\nThe Champion's the real thing!"],
+      after: ["Even the Champion comes here to\ntrain! I'll have to work twice as hard!"]
+    },
+    TRAINER_BLACK_BELT_HIDEKI: {
+      team: [["Machamp", 50], ["Machamp", 51]],
+      intro: ["My Machop and Machoke have grown\nup since you were last here.", "Four arms each now!\nShow me what you've got!"],
+      defeat: ["Judge!\nIppon! A clean point to you!"],
+      after: ["Our Master has waited a long time\nfor this rematch. Be ready!"]
+    },
+    TRAINER_BLACK_BELT_AARON: {
+      team: [["Primeape", 52]],
+      intro: ["Hiyah!", "Boulders are too easy now!\nI shatter whole cliffs!", "My Primeape's fury is harder than\nany rock!"],
+      defeat: ["Yow!\nStubbed fingers… again!"],
+      after: ["Psychic power still frightens us…\nBut now, so do you!"]
+    },
+    TRAINER_BLACK_BELT_MIKE: {
+      team: [["Primeape", 48], ["Primeape", 49], ["Primeape", 50]],
+      intro: ["Hoargh!", "Champion or not, rules are rules!\nTake your shoes off!"],
+      defeat: ["I give up!\nYou're even stronger than before!"],
+      after: ["I'm still a small fry next to our\nMaster. Next time, I'll be bigger!"]
+    },
+    [DOJO_MASTER]: {
+      team: [["Hitmonlee", 52], ["Hitmonchan", 52]],
+      intro: ["Grunt!", "The Champion of the Pokémon League\nreturns to my Dojo!", "Since the day you beat us, we have\ntrained from dawn till dusk!",
+        "Show me the fighting spirit of a\nChampion! I hold nothing back!", "Fwaaa!"],
+      defeat: ["Hwa!\nArrgh! Beaten once more!"],
+      after: ["Grunt!", "Your strength is beyond doubt.\nWe will train even harder!"]
+    }
+  };
+  // A trainer's rematch, while it's waiting: { intro, defeat, team() }, or null.
+  function dojoRematch(id) {
+    const f = player.flags, re = DOJO_REMATCH[id];
+    if (!re || !f.gameClear || !f[id] || (f.dojoRematch && f.dojoRematch[id])) return null;
+    const fr = window.WORLD_TRAINERS[id].party;
+    return Object.assign({}, re, {
+      team: () => re.team.map(([sp, lv], i) => Party.create(sp, lv, { ivs: Math.floor(((fr[i] || fr[0]).iv || 0) * 31 / 255) }))
+    });
+  }
+  const dojoAfter = (id) => (DOJO_REMATCH[id] && player.flags.dojoRematch && player.flags.dojoRematch[id] ? DOJO_REMATCH[id].after : null);
+  const dojoMasterRematchWon = () => !!(player.flags.dojoRematch && player.flags.dojoRematch[DOJO_MASTER]);
+  // The Karate Master, beaten: choose a prized Pokémon (or train with them);
+  // beaten again, the Hitmon you left behind, once (if the party and boxes
+  // are full, he keeps it for you until you come back).
+  async function dojoMaster() {
+    const f = player.flags;
+    if (dojoMasterRematchWon() && f.dojoHitmon && !f.dojoHitmon2) {
+      const species = f.dojoHitmon === "Hitmonlee" ? "Hitmonchan" : "Hitmonlee";
+      const name = Party.speciesName(species);
+      await say(["Indeed, I have lost once more!", "When you came before, you took our\n" + f.dojoHitmon + " and left " + name + " here.",
+        name + " has trained hard ever since,\nand it wishes to go with you!", "Take it! Let the two of them train\ntogether at your side!"]);
+      const ball = window.WORLD_MAPS.SaffronCity_Dojo.people.find((p) => p.script === "SaffronCity_Dojo_EventScript_" + species + "Ball");
+      showPicture(species);
+      cry(species);
+      const got = await giftMon(species, DOJO_SECOND_LEVEL, T("SaffronCity_Dojo_Text_ReceivedMonFromKarateMaster"), [name], () => {
+        f.dojoHitmon2 = species;
+        hidePicture();
+        if (ball) Overworld.removePerson(ball);
+      });
+      hidePicture();
+      if (got) await say(["Grunt!", "Stay and train at karate with us,\nall three of you!"]);
+      return;
+    }
+    if (dojoMasterRematchWon() && f.dojoHitmon) { await say(DOJO_REMATCH[DOJO_MASTER].after); return; }
+    await say(T(f.dojoHitmon ? "SaffronCity_Dojo_Text_StayAndTrainWithUs" : "SaffronCity_Dojo_Text_ChoosePrizedFightingMon"));
   }
 
   // ---------- Silph Co. ----------
@@ -5870,7 +6032,12 @@
     f.silphRival = true;
     show("world");
     await Overworld.resume();
-    await say(T("SilphCo_7F_Text_RivalPostBattle"));
+    // (This game's own: before his "Smell ya!", a Mega Stone from Silph's labs.)
+    const bye = T("SilphCo_7F_Text_RivalPostBattle");
+    await say(bye.slice(0, -1));
+    await megaStoneGift("pidgeotite", ["Oh, and here. Silph was making these.\nI grabbed a spare: a Pidgeotite.",
+      "Not that it'll help you keep up\nwith me!"], player.rival);
+    await say(bye.slice(-1));
     music("mus_rival_exit");
     await Overworld.act([{ who: R, moves: M(top ? "SilphCo_7F_Movement_RivalExitTop" : "SilphCo_7F_Movement_RivalExitBottom") }]);
     sfx("se_warp_in");
@@ -6166,6 +6333,8 @@
     player.flags[flag] = true;
     if (outcome === "won") { await Overworld.fadeToBlack(); Overworld.removePerson(person); await Overworld.fadeFromBlack(); }
     else Overworld.removePerson(person);
+    // (Mewtwo gone, its Mega Stones are there beside its spot.)
+    if (species === "Mewtwo") Overworld.refreshPeople();
   }
 
   // ---------- The Power Plant ----------
@@ -6225,8 +6394,10 @@
       f.gotTM26FromGiovanni = true;
       await sayWithJingle(itemJingle(tm), tmText(T("ViridianCity_Gym_Text_ReceivedTM26FromGiovanni"), 26, tm));
       await say(tmText(T("ViridianCity_Gym_Text_ExplainTM26"), 26, tm));
+      await giovanniKangaskhanite();
       return;
     }
+    if (await giovanniKangaskhanite()) return;
     await say(T("ViridianCity_Gym_Text_GiovanniPostBattle"));
     Screen.say("");
     await Overworld.fadeToBlack();
@@ -6234,6 +6405,10 @@
     Overworld.removePerson(person);
     await Overworld.fadeFromBlack();
   }
+
+  // (This game's own: his Kangaskhan's Mega Stone, after the badge and TM.)
+  const giovanniKangaskhanite = () => megaStoneGift("kangaskhanite", ["And take this. A Kangaskhanite.",
+    "Team Rocket has no more use for it.\nPerhaps you can master its power."], "Giovanni");
 
   // ---------- Route 22's rival, late ----------
   //
@@ -8685,7 +8860,7 @@
     if (script === "PokemonTower_5F_EventScript_ExitPurifiedZone") { inPurifiedZone = false; return false; }
     // The Karate Master turns to you until he's beaten; Gary waits on Silph's
     // 7F, and Giovanni on 11F, until you've battled them.
-    if (/^SaffronCity_Dojo_EventScript_TriggerMasterBattle/.test(script)) return !player.flags.TRAINER_BLACK_BELT_KOICHI;
+    if (/^SaffronCity_Dojo_EventScript_TriggerMasterBattle/.test(script)) return !player.flags.TRAINER_BLACK_BELT_KOICHI || !!dojoRematch(DOJO_MASTER);
     if (/^SilphCo_7F_EventScript_RivalTrigger/.test(script)) return !player.flags.silphRival;
     if (/^SilphCo_11F_EventScript_GiovanniTrigger/.test(script)) return !silphFreed();
     // Back in the Safari Zone's gate during the Safari Game: leaving early?

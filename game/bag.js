@@ -5,6 +5,7 @@
 //
 //   Bag.name("poke-ball")                 // "Poké Ball"
 //   Bag.pocket("oran-berry")              // "Berries"
+//   Bag.BATTLE_POCKETS                    // the pockets the Bag shows in battle
 //   Bag.martStock(["poke-ball", ...])     // [{ item, price }] for a Mart's list
 //   Bag.canUseOn(record, "fire-stone")    // true if it would do something
 //   Bag.useOn(record, "potion")           // { healed: 20 } etc.
@@ -12,7 +13,13 @@
 (function () {
   "use strict";
 
-  const POCKETS = ["Items", "Medicine", "Poké Balls", "TMs & HMs", "Berries", "Key Items"];
+  // FireRed's Bag has three pockets; this game's has nine. Power-up holds
+  // what makes a Pokémon stronger for good (vitamins, Wings, PP Ups, mints,
+  // Rare Candy, Exp. Candies, Ability Capsules, Bottle Caps), Held Items what
+  // a Pokémon holds to do its job (Leftovers, Choice items, type boosters,
+  // weather rocks...), Mega Stones the stones. Old saves just sort again:
+  // the bag is one list of items; the pockets are worked out from it.
+  const POCKETS = ["Items", "Medicine", "Power-up", "Poké Balls", "TMs & HMs", "Berries", "Held Items", "Mega Stones", "Key Items"];
 
   const SPECIAL_NAMES = {
     "poke-ball": "Poké Ball", "kings-rock": "King's Rock", "up-grade": "Up-Grade", "hp-up": "HP Up",
@@ -118,17 +125,30 @@
 
   const isKeyItem = (item) => (window.ITEMS[item] || {}).category === "key-items";
 
+  const POWER_UP = ["vitamins", "nature-mints", "exp-candy"];
+  const HELD = ["held-items", "type-enhancement", "choice", "plates", "jewels", "bad-held-items", "effort-training", "species-specific", "training"];
+  const isPowerUp = (item) => POWER_UP.includes((window.ITEMS[item] || {}).category) || /bottle-cap$/.test(item) || item === "ability-capsule";
+
   function pocket(item) {
     if (isKeyItem(item)) return "Key Items";
     if (isBall(item)) return "Poké Balls";
     if (isMachine(item)) return "TMs & HMs";
     if (/-berry$/.test(item)) return "Berries";
     const cat = (window.ITEMS[item] || {}).category;
+    if (cat === "mega-stones") return "Mega Stones";
+    if (isPowerUp(item)) return "Power-up";
     const eff = window.ItemUse.effect(item) || {};
     if (eff.boost || eff.battleEffect) return "Items";   // (the X items, Dire Hit, Guard Spec.)
-    if (window.ItemUse.effect(item) || ["healing", "status-cures", "revival", "pp-recovery", "vitamins"].includes(cat)) return "Medicine";
+    if (window.ItemUse.effect(item) || ["healing", "status-cures", "revival", "pp-recovery"].includes(cat)) return "Medicine";
+    if (HELD.includes(cat)) return "Held Items";
     return "Items";
   }
+  // In battle the Bag shows only the pockets with something that can be used
+  // there (Items for the X items, Medicine, Poké Balls, Berries).
+  const usableInBattle = (item) => isBall(item) || (!!window.ItemUse.effect(item) && !window.ItemUse.effect(item).outOfBattle);
+  let battlePockets = null;
+  const BATTLE_POCKETS = () => battlePockets ||
+    (battlePockets = POCKETS.filter((p) => Object.keys(window.ITEMS).some((id) => usableInBattle(id) && pocket(id) === p)));
 
   // A Poké Mart's shelves: each Mart sells its fixed FireRed list (from the
   // clerk's script, see tools/build-maps.js), at Gen 6 prices.
@@ -206,7 +226,7 @@
   }
 
   window.Bag = {
-    POCKETS, PRICES, name, description, sprite, price, sellPrice, pocket, isBall, isStone, isKeyItem,
+    POCKETS, get BATTLE_POCKETS() { return BATTLE_POCKETS(); }, PRICES, name, description, sprite, price, sellPrice, pocket, isBall, isStone, isKeyItem,
     isMachine, machineMove, machines, mintNature,
     martStock, canUseOn, useOn, levelUp, give, take
   };

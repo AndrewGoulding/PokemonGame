@@ -2681,7 +2681,7 @@ console.log("ok: doubles regressions, " + DOUBLES + " random doubles battles fin
 
 // Held items whose names end in "Ball" aren't Poké Balls.
 for (const item of ["iron-ball", "light-ball", "smoke-ball"]) {
-  assert(!Bag.isBall(item) && Bag.pocket(item) === "Items", item + " goes in Items");
+  assert(!Bag.isBall(item) && Bag.pocket(item) === "Held Items", item + " goes in Held Items");
 }
 assert(Bag.isBall("poke-ball") && Bag.isBall("safari-ball"));
 // Rock Tunnel's floors are numbered.
@@ -3125,4 +3125,89 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
   for (const label of ["Numerical mode: Kanto", "Numerical mode: National", "A to Z mode", "Type mode", "Lightest mode", "Smallest mode"]) {
     assert(dexJs.includes('"' + label + '"'), label);
   }
+}
+
+// The Bag's nine pockets (game/bag.js): Power-up, Held Items and Mega Stones
+// besides FireRed's own and this game's; in battle, only those with
+// something usable there.
+{
+  assert.deepStrictEqual(Bag.POCKETS, ["Items", "Medicine", "Power-up", "Poké Balls", "TMs & HMs", "Berries", "Held Items", "Mega Stones", "Key Items"]);
+  for (const id of ["hp-up", "protein", "pp-up", "pp-max", "rare-candy", "adamant-mint", "health-wing", "ability-capsule", "bottle-cap", "exp-candy-s"]) {
+    assert.strictEqual(Bag.pocket(id), "Power-up", id);
+  }
+  for (const id of ["leftovers", "choice-band", "charcoal", "smooth-rock", "light-clay", "everstone", "lucky-egg", "life-orb", "flame-plate"]) {
+    assert.strictEqual(Bag.pocket(id), "Held Items", id);
+  }
+  for (const id of ["charizardite-x", "alakazite", "beedrillite"]) assert.strictEqual(Bag.pocket(id), "Mega Stones", id);
+  for (const [id, p] of [["potion", "Medicine"], ["x-attack", "Items"], ["fire-stone", "Items"], ["nugget", "Items"], ["oran-berry", "Berries"],
+    ["ultra-ball", "Poké Balls"], ["mega-ring", "Key Items"], ["tm01", "TMs & HMs"]]) assert.strictEqual(Bag.pocket(id), p, id);
+  assert.deepStrictEqual(Bag.BATTLE_POCKETS, ["Items", "Medicine", "Poké Balls", "Berries"]);
+  const bagJs = fs.readFileSync(path.join(root, "ui/bag-screen.js"), "utf8");
+  for (const p of Bag.POCKETS) assert(bagJs.includes('"' + p + '": '), "a bag picture for " + p);
+  const bagPng = fs.readFileSync(path.join(root, "assets/bag/bag-male.png"));
+  assert.strictEqual(bagPng.readUInt32BE(20), 640, "ten bag frames");
+  const battleJs = fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8");
+  assert(/Bag\.BATTLE_POCKETS\.includes\(p\.name\)/.test(battleJs));
+}
+
+// Mega Evolution's pictures from pokeemerald-expansion: the healthbox
+// indicator and the move menu's trigger.
+{
+  for (const f of ["mega-indicator", "mega-trigger"]) assert(fs.existsSync(path.join(root, "assets/battle-interface", f + ".png")), f);
+  const battleJs = fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8");
+  assert(/mega: \/-Mega\(-\|\$\)\/\.test/.test(battleJs) && /showTrigger\(pos\)/.test(battleJs) && /hideTrigger\(\)/.test(battleJs));
+  const menusJs = fs.readFileSync(path.join(root, "ui/gba-menus.js"), "utf8");
+  assert(!menusJs.includes("START: MEGA EVOLVE") && /opts\.mega\.toggled\(opts\.mega\.on\)/.test(menusJs));
+}
+
+// ui/game.js: Silph Co.'s Thunder Wave tutor charges; the Fighting Dojo's
+// rematch once you're Champion; the in-battle Summary of a Mega; the Mega
+// Stones (item balls on reachable tiles, and the gifts).
+{
+  const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  assert(/moveTutor\("Thunder Wave", "tutorThunderWave", "Text_ThunderWave", TUTOR_PRICE\)/.test(gameJs));
+  // The Dojo: every trainer of FireRed's Dojo, fully evolved, levels 48-52,
+  // FireRed's species lines.
+  const dojo = /const DOJO_REMATCH = \{([\s\S]*?)\n  \};/.exec(gameJs)[1];
+  const ids = WORLD_MAPS.SaffronCity_Dojo.people.filter((p) => p.trainer).map((p) => p.trainer.id);
+  assert.strictEqual(ids.length, 5);
+  for (const id of ids) {
+    const key = id === "TRAINER_BLACK_BELT_KOICHI" ? "[DOJO_MASTER]" : id;
+    const m = new RegExp(key.replace(/[[\]]/g, "\\$&") + ": \\{\\s*team: (\\[.*?\\]\\]),").exec(dojo);
+    assert(m, id + " has a rematch");
+    const team = JSON.parse(m[1].replace(/'/g, '"'));
+    assert(team.length >= 1);
+    for (const [sp, lv] of team) {
+      assert(DEX[sp] && lv >= 48 && lv <= 52, id + " " + sp);
+      assert(!(EVOLUTIONS[sp] || []).length, sp + " is fully evolved");
+    }
+  }
+  assert(/if \(!re \|\| !f\.gameClear \|\| !f\[id\] \|\| \(f\.dojoRematch && f\.dojoRematch\[id\]\)\) return null;/.test(gameJs));
+  assert(/const DOJO_SECOND_LEVEL = 50;/.test(gameJs) && /f\.dojoHitmon2 = species/.test(gameJs));
+  // The in-battle Summary: a Mega's picture, stats and ability.
+  assert(/const views = now\.map\(\(r, k\) => battleSummaryView\(r, mons\[k\]\)\)/.test(gameJs));
+  assert(/if \(mon\.mega && DEX\[mon\.species\]\)/.test(gameJs));
+  // Mega Stones.
+  const balls = [...gameJs.matchAll(/\{ map: "(\w+)", x: (\d+), y: (\d+), item: "([\w-]+)"/g)].map((m) => ({ map: m[1], x: +m[2], y: +m[3], item: m[4] }));
+  const gifts = [...gameJs.matchAll(/megaStoneGift\("([\w-]+)"/g)].map((m) => m[1]);
+  assert.deepStrictEqual(gifts.sort(), ["alakazite", "kangaskhanite", "pidgeotite"]);
+  const all = new Set(balls.map((b) => b.item).concat(gifts));
+  for (const id of ["beedrillite", "pidgeotite", "alakazite", "slowbronite", "kangaskhanite", "pinsirite", "gyaradosite", "aerodactylite",
+    "mewtwonite-x", "mewtwonite-y"]) {
+    assert(all.has(id), id + " can be found");
+    assert.strictEqual(ITEMS[id].category, "mega-stones", id);
+  }
+  for (const b of balls) {
+    const m = World.map(b.map);
+    // (Gary's and Giovanni's, for an old save, where they stood before they went.)
+    const gone = ["FLAG_HIDE_SILPH_RIVAL", "FLAG_HIDE_VIRIDIAN_GIOVANNI"];
+    assert(!m.people.some((p) => p.x === b.x && p.y === b.y && !gone.includes(p.flag)), b.item + ": nobody stands there");
+    const occupied = (mp, x, y) => m.people.some((p) => p.x === x && p.y === y && !gone.includes(p.flag));
+    // Reachable on foot from one of the map's doors, or from beside Mewtwo
+    // (Cerulean Cave's B1F is reached by water).
+    const starts = m.warps.flatMap((w) => [[0, 0], [0, 1], [0, -1], [1, 0], [-1, 0]].map(([dx, dy]) => ({ map: b.map, x: w.x + dx, y: w.y + dy })));
+    if (b.map === "CeruleanCave_B1F") starts.push({ map: b.map, x: 7, y: 13 });
+    assert(starts.some((s) => World.walkable(s, occupied, 9999).has(b.x + "," + b.y)), b.item + " is reachable");
+  }
+  assert(/when: \(f\) => f\.foughtMewtwo/.test(gameJs), "Mewtwonites once Mewtwo is caught or beaten");
 }
