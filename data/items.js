@@ -536,6 +536,7 @@ window.ITEMS = {
   "tri-pass": { name: "tri-pass", category: "key-items", effect: "A pass for the Seagallop ferries between One, Two and Three Island." },
   "rainbow-pass": { name: "rainbow-pass", category: "key-items", effect: "A pass for the Seagallop ferries between Vermilion and all of the Sevii Islands." },
   "ruby": { name: "ruby", category: "key-items", effect: "A gem with a red glow, found deep in Mt. Ember's Ruby Path. Celio needs it for his Network Machine." },
+  "old-sea-map": { name: "old-sea-map", category: "key-items", effect: "An old map from Celio's link with Hoenn. The Seagallop can sail to the island it shows." },
   "sapphire": { name: "sapphire", category: "key-items", effect: "A gem with a blue glow. Celio needs it for his Network Machine." },
   "gold-teeth": { name: "gold-teeth", category: "key-items", effect: "Gold dentures lost by the Safari Zone's Warden." },
   "lift-key": { name: "lift-key", category: "key-items", effect: "An elevator key used in Team Rocket's Hideout." },

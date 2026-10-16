@@ -529,7 +529,9 @@ on the water and under rocks, signs and the Town Map's Six and Seven Island
 page. Gideon's Sapphire goes to Celio, whose machine then links with Hoenn
 (FLAG_SYS_CAN_LINK_WITH_RS): the League's rematch teams, Lorelei back at the
 League, and (FireRed's FLAG_HIDE_CERULEAN_CAVE_GUARD, `Sevii.ceruleanCaveOpen`)
-Cerulean Cave's guard steps aside, Champion or not, as in FireRed. From Cinnabar,
+Cerulean Cave's guard steps aside, Champion or not, as in FireRed. And (this
+game's) Lanette sends Celio something for you over the new link: Emerald's
+**Old Sea Map** (see **Faraway Island** below). From Cinnabar,
 Route 21 runs north across the sea, its fishermen and swimmers, to Pallet Town.
 Off Route 10's waterway, the Power Plant (Surf along the river to its doors): its wild
 Pikachu, Voltorb, Magnemite, Magneton and Electabuzz, its items (TM17 Protect, TM25
@@ -1042,6 +1044,33 @@ Alakazite with the Marsh Badge's TM, and Giovanni the Kangaskhanite with the
 Earth Badge's TM. (From a save that won those battles before: Sabrina gives
 hers when you talk to her again, Giovanni too if he's still in his Gym, and
 otherwise Gary's and Giovanni's are item balls where they stood.)
+
+## Faraway Island
+
+Emerald's Old Sea Map event, for Mew. Once the Sapphire is in Celio's machine
+he gives you the **Old Sea Map** (talk to him again if you'd already done it),
+and Vermilion's Seagallop sailor, as FireRed's does with an event ticket, is
+amazed the first time ("Oh! That's an Old Sea Map!") and offers the Sevii
+Islands or **Faraway Island**: Seagallop Hi-Speed 10 takes you there. The maps
+are Emerald's own, `FarawayIsland_Entrance` and `FarawayIsland_Interior`,
+drawn from Emerald's tilesets (General, Rustboro, Fortree, with Emerald's
+water and flower animations) by `tools/build-emerald-maps.js` from a
+[pret/pokeemerald](https://github.com/pret/pokeemerald) checkout into
+`data/emerald-maps.js`:
+
+```sh
+node tools/build-emerald-maps.js <path to pret/pokeemerald>
+```
+
+The shore has the island's faded sign and the Seagallop's sailor to take you
+home. Inside, in the long grass, Mew plays hide and seek as in Emerald
+(`src/faraway_island.c`, here `game/faraway.js`): it spots you as you come in,
+darts into the grass and vanishes; each step you take it takes one too, away
+from you if it can (and never trapped between you and one of the four
+rocks), shows itself only every 8th step and pauses on the 9th, and walking
+up to it, seen or not, finds it: "Myuu…", and a wild Mew, Lv. 30. Caught or
+beaten it's gone for good; run from, it flies away and is back the next
+time you come in. Like Emerald's, the island is no place to Fly from.
 
 ## Johto (in progress)
 

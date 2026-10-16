@@ -1995,7 +1995,9 @@
       "TrainerTower_EventScript_DoublesTrainer2", "TrainerTower_EventScript_SingleBattleTrigger",
       "TrainerTower_EventScript_DoubleBattleTriggerTop", "TrainerTower_EventScript_DoubleBattleTriggerBottom",
       // Cerulean Cave.
-      "CeruleanCave_B1F_EventScript_Mewtwo"
+      "CeruleanCave_B1F_EventScript_Mewtwo",
+      // Faraway Island (Emerald's; data/emerald-maps.js).
+      "FarawayIsland_Entrance_EventScript_Sailor", "FarawayIsland_Interior_EventScript_Mew"
     ]).concat(Object.keys(BRAILLE_SIGNS)).concat(League.ROOMS.map((r) => "enter:" + r.map), ["enter:" + League.HALL_OF_FAME]).concat(ROUTE23_BADGES.slice(1).flatMap((b) => ["", "Trigger"].map((t) => "Route23_EventScript_" + b + "BadgeGuard" + t))).concat([1, 2, 3, 4, 5, 6].flatMap((n) => ["Left", "Right"].map((s) => "CinnabarIsland_Gym_EventScript_Quiz" + n + s))).concat(CYCLING_ROAD_GATES.flatMap((g) => ["Top", "MidTop", "Mid", "MidBottom", "Bottom"].map((k) => g + "_EventScript_NeedBikeTrigger" + k))));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
@@ -2188,6 +2190,8 @@
       // deep inside until caught or beaten (CeruleanCave_B1F_OnTransition).
       case "FLAG_HIDE_CERULEAN_CAVE_GUARD": return !Sevii.ceruleanCaveOpen(f);
       case "FLAG_HIDE_MEWTWO": return !f.foughtMewtwo;
+      // Faraway Island's Mew, till it's caught or beaten (FLAG_CAUGHT_MEW, FLAG_DEFEATED_MEW).
+      case "FLAG_HIDE_MEW": return !f.foughtMew;
       case "FLAG_HIDE_RUBY": return !f.gotRuby;
       // Four Island: Gary, for his scene the first time you come; the
       // poachers and Lorelei in Icefall Cave until you've run them off, and
@@ -3364,6 +3368,10 @@
       case "MtEmber_Exterior_EventScript_Grunt2": await emberGrunt(2); return;
       case "MtEmber_Summit_EventScript_Moltres": await legendaryBird(ev.person, "Moltres", "foughtMoltres"); return;
       // ---------- Cerulean Cave ----------
+      // ---------- Faraway Island ----------
+      case "FarawayIsland_Entrance_EventScript_Sailor": await farawaySailor(ev.person); return;
+      case "enter:FarawayIsland_Interior": await findMew(); return;
+      case "FarawayIsland_Interior_EventScript_Mew": await mewFound(ev.person); return;
       case "CeruleanCave_B1F_EventScript_Mewtwo":
         await legendaryBird(ev.person, "Mewtwo", "foughtMewtwo", { level: 70, text: T("CeruleanCave_B1F_Text_Mew"), music: "mus_vs_mewtwo" });
         return;
@@ -6904,8 +6912,89 @@
     const back = async () => { if (walkBack) await Overworld.act([{ who: "player", moves: ["walk_up"] }]); };
     if (scene < 1) { await say(T("VermilionCity_Text_TheShipSetSail")); await back(); return; }
     const q = T(scene >= 5 ? "VermilionCity_Text_BoardSeagallopRainbowPass" : "VermilionCity_Text_BoardSeagallopTriPass");
+    // With the Old Sea Map, as FireRed's sailor is with an event ticket
+    // (VermilionCity_EventScript_HasMysticTicket): the first time, he's
+    // amazed; then the Sevii Islands, or Faraway Island on Seagallop 10.
+    if (scene >= 5 && Player.itemCount(player, "old-sea-map")) {
+      if (!f.shownOldSeaMap) {
+        f.shownOldSeaMap = true;
+        await say(["Oh! That's an Old Sea Map!\nNow that is rare.", "We'll be happy to take you to\nFaraway Island anytime."]);
+      }
+      const i = await multichoice(T("VermilionCity_Text_BoardSeagallopFerry")[0], 17, 6, ["Sevii Islands", "Faraway Island", "Exit"]);
+      if (i === 0) { await say(q.slice(0, -1)); await seagallopMenu("VERMILION_CITY", q, back); return; }
+      if (i !== 1) { Screen.say(""); await back(); return; }
+      await say(T("VermilionCity_Text_Seagallop10Departing"));
+      await ferry({ map: "FarawayIsland_Entrance", x: 13, y: 38, facing: "up" }, false);
+      return;
+    }
     await say(q.slice(0, -1));
     await seagallopMenu("VERMILION_CITY", q, back);
+  }
+  // The Seagallop's crossing (as setSail's) to `to` ({ map, x, y, facing }).
+  async function ferry(to, eastbound) {
+    Screen.say("");
+    clearMenu();
+    await sleep(333);
+    await Overworld.fadeToBlack();
+    const o = $("#overlay");
+    await Seagallop.ride(o, { eastbound, sfx, fadeMusic: () => music(null) }).catch((e) => console.error(e));
+    o.classList.add("hidden");
+    sfx("se_exit");
+    Overworld.setAvatar("walk");
+    await Overworld.teleport(to);
+    music((window.WORLD_MAPS[to.map] || {}).music);
+    await persist();
+  }
+
+  // ---------- Faraway Island (Emerald's Old Sea Map event) ----------
+  //
+  // From Pokémon Emerald (data/maps/FarawayIsland_*, src/faraway_island.c;
+  // the maps in data/emerald-maps.js). The Seagallop's sailor waits at the
+  // shore to take you home; inside, in the long grass, Mew plays hide and
+  // seek (game/faraway.js): it hides as you come in, moves as you do, away
+  // from you, shows itself every 8th step, and is found by walking up to it,
+  // seen or not. A wild Mew, Lv. 30: caught or beaten it's gone for good; run
+  // from, it flies away and is back the next time you come in.
+  const MEW = "LOCALID_FARAWAY_ISLAND_MEW";
+  // FarawayIsland_Entrance_EventScript_Sailor ("Do you want to return to Lilycove?" in Emerald).
+  async function farawaySailor(person) {
+    const q = ["The captain can be so maddeningly\nfickle…", "Do you want to return to Vermilion?"];
+    await say(q.slice(0, -1));
+    if (!(await confirm(q[q.length - 1]))) { await say("Aye, right, as you like, then."); return; }
+    await say(["Aye, right, then!\nSail home we will!"]);
+    Screen.say("");
+    await Overworld.act([{ who: "LOCALID_FARAWAY_ISLAND_SAILOR", moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
+    await sleep(500);
+    const p = Sevii.port("VERMILION_CITY");
+    await ferry({ map: p.map, x: p.x, y: p.y, facing: "up" }, true);
+  }
+  // FarawayIsland_Interior_EventScript_FindMew: coming in, "!" over Mew,
+  // and it darts three steps up into the grass and is gone from sight.
+  async function findMew() {
+    sfx("se_pin");
+    await Overworld.act([{ who: MEW, moves: ["emote_exclamation_mark"] }]);
+    await sleep(800);
+    await Overworld.act([{ who: MEW, moves: ["walk_up", "walk_up", "walk_up", "walk_in_place_faster_down", "set_invisible"] }]);
+  }
+  // Each step inside: Mew's (UpdateFarawayIslandStepCounter, GetMewMoveDirection).
+  function farawayStep() {
+    const f = player.flags;
+    if (player.location.map !== "FarawayIsland_Interior" || f.foughtMew) return;
+    const mew = Overworld.personPosition(MEW);
+    if (!mew) return;
+    f.farawaySteps = ((f.farawaySteps | 0) + 1) % 9999;
+    const cur = Overworld.position(), [dx, dy] = World.DIRS[cur.facing];
+    const r = Faraway.mewStep({ mew, prev: { x: cur.x - dx, y: cur.y - dy }, cur, steps: f.farawaySteps, isGrass: Faraway.isGrass(cur.map) });
+    if (r.visible != null) Overworld.setPersonHidden(MEW, !r.visible);
+    if (r.dir) Overworld.stepPerson(MEW, r.dir);
+  }
+  // FarawayIsland_Interior_EventScript_Mew: found! It shows itself, "Myuu…",
+  // and the battle.
+  async function mewFound(person) {
+    if (!canBattle()) return;
+    Overworld.setPersonHidden(MEW, false);
+    await Overworld.act([{ who: MEW, moves: ["face_player"] }]);
+    await legendaryBird(person, "Mew", "foughtMew", { level: 30, text: ["Myuu…"] });
   }
 
   // ---------- The Sevii Islands: Bill's trip ----------
@@ -7124,6 +7213,7 @@
   // Warehouse on Five Island, and gives it back once beaten).
   async function celio() {
     const f = player.flags, X = (k) => T("OneIsland_PokemonCenter_1F_Text_" + k), scene = f.celioScene || 0;
+    if (scene >= 6 && !f.gotOldSeaMap) { await giveOldSeaMap(); return; }
     if (scene >= 7) {
       await say(X("CelioHearingRumorsAboutYou"));
       await say(X(["BillsFirstMonWasAbra", "BillsHometownInGoldenrod", "BillCantStomachMilk"][Math.floor(Math.random() * 3)]));
@@ -7215,6 +7305,21 @@
     await Overworld.act([{ who: CELIO, moves: ["face_player"] }]);
     await say(X("ManagedToLinkWithHoennThankYou"));
     f.celioScene = 6;
+    await giveOldSeaMap();
+  }
+  // This game's: with Hoenn linked up, Lanette sends Celio something for
+  // you, Emerald's Old Sea Map (its island: Faraway Island, by Seagallop from
+  // Vermilion). (Saves that linked up before this get it next time they talk.)
+  async function giveOldSeaMap() {
+    const f = player.flags;
+    if (f.gotOldSeaMap) return;
+    await say(["Oh! And Lanette sent something\nover the link, too.",
+      "It's an old sea chart she came\nacross in Hoenn.",
+      "She thought you might like it.\nIt shows an island nobody's been\nto in a very long time.",
+      "The Seagallop sailors in Vermilion\nmight know how to get there."]);
+    Player.addItem(player, "old-sea-map");
+    f.gotOldSeaMap = true;
+    await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the " + Bag.name("old-sea-map") + "!");
   }
   // Bill, helping Celio (..._EventScript_Bill).
   async function oneIslandCenterBill() {
@@ -9031,6 +9136,9 @@
     if (/^enter:/.test(script) && megaAideDue(script.slice(6))) return true;
     if ((script === "enter:PokemonTower_7F" || script === "Game_EventScript_MegaTower") && megaTowerDue()) return true;
     if (script === "enter:PewterCity") { player.flags.museumTicket = false; return leafPewterDue(); }
+    // Into Faraway Island's grass (FarawayIsland_Interior_OnTransition): the
+    // step count starts again, and Mew, if it's there, is spotted and hides.
+    if (script === "enter:FarawayIsland_Interior") { player.flags.farawaySteps = 0; return !player.flags.foughtMew; }
     // Walking into the Route 4 Pokémon Center makes it where you go after
     // blacking out (FireRed's setrespawn there).
     if (script === "enter:Route4_PokemonCenter_1F") { player.flags.lastCenter = "Route4_PokemonCenter_1F"; return false; }
@@ -9163,6 +9271,7 @@
         onStep: () => {
           leftPallet(player.location.map); DayCare.step(player.flags.dayCare); DayCare.step(player.flags.dayCare2); vsSeekerStep(); friendshipStep();
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
+          farawayStep();
           return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || safariStep() || cinnabarBillStep() || eggStep() || repelStep();
         }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) && repelAllows(mon),
         onMap: (m) => {

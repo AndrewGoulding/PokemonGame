@@ -152,6 +152,7 @@ window.ITEM_DESCRIPTIONS = {
   "sacred-ash": "Revives all fainted Pokémon,\nrestoring HP fully.",
   "safari-ball": "A special Ball that is used only in\nthe Safari Zone. It is finished in\na camouflage pattern.",
   "salac-berry": "When held by a Pokémon, it raises\nthe Speed stat in a pinch.",
+  "old-sea-map": "A faded sea chart\nthat shows the way\nto a certain island.",
   "sapphire": "An exquisitely beautiful gem that\nhas a blue glow.\nIt symbolizes honesty.",
   "scope-lens": "An item to be held by a Pokémon.\nA lens that boosts the critical-hit\nratio of the holding Pokémon.",
   "sea-incense": "An item to be held by a Pokémon.\nIt slightly boosts the power of\nWater-type moves.",

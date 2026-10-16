@@ -15,7 +15,8 @@
     "build:audio": "node tools/build-audio.js",
     "build:font": "node tools/build-font.js",
     "build:johto": "node tools/build-johto.js",
-    "build:breeding": "node tools/build-breeding.js"
+    "build:breeding": "node tools/build-breeding.js",
+    "build:emerald-maps": "node tools/build-emerald-maps.js"
   },
   "devDependencies": {
     "@pkmn/dex": "0.10.11",

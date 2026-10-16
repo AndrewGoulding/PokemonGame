@@ -1338,7 +1338,7 @@ for (const share of [false, true]) {
   // (FireRed gives the Underground Path, the S.S. Anne, the Rocket Hideout, Silph Co., the Pokémon League,
   // the Ember Spa, the Dunsparce Tunnel (Three Isle Path), the Rocket Warehouse, Trainer Tower's inside, the Tanoby Key and the Tanoby chambers no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
-    if (WORLD_MAPS[name].region === "johto") continue;   // (Johto has no Town Map yet)
+    if (["johto", "emerald"].includes(WORLD_MAPS[name].region)) continue;   // (Johto and Faraway Island aren't on Kanto's Town Map)
     assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "UNDERGROUND_PATH_2", "S_S_ANNE", "ROCKET_HIDEOUT", "SILPH_CO",
       "POKEMON_LEAGUE", "EMBER_SPA", "THREE_ISLE_PATH", "ROCKET_WAREHOUSE", "TRAINER_TOWER_2", "TANOBY_KEY"].includes(T.mapSections[name]) || /_CHAMBER$/.test(T.mapSections[name])), name + " is on the Town Map");
   }
@@ -1466,6 +1466,28 @@ for (const share of [false, true]) {
   assert.strictEqual(World.step({ map: "NewBarkTown", x: 0, y: 15 }, "left").map, "Route29", "west out of New Bark Town");
   assert.strictEqual(World.fishingEncounter("NewBarkTown", "old-rod", () => 0).species, "Magikarp", "Gen 4 rods");
   assert.strictEqual(World.step({ map: "NewBarkTown", x: 23, y: 13 }, "up").unbuilt, "MAP_NEW_BARK_PLAYER_HOUSE_1F", "the house isn't built yet");
+}
+
+// Faraway Island (data/emerald-maps.js, from Emerald) and its Mew (game/faraway.js).
+{
+  const E = WORLD_MAPS.FarawayIsland_Entrance, I = WORLD_MAPS.FarawayIsland_Interior;
+  assert(E && I && E.region === "emerald", "Faraway Island is built");
+  for (const m of [E, I]) for (const k of ["collision", "behavior", "elevation"]) assert.strictEqual(m[k].length, m.width * m.height, m.name + " " + k);
+  assert.strictEqual(World.warpTarget(E.warps[0]).map, "FarawayIsland_Interior", "the shore leads in");
+  assert.strictEqual(World.warpTarget(I.warps[0]).map, "FarawayIsland_Entrance", "and back out");
+  assert(!Object.values(WORLD_MAPS).some((m) => m.connections.some((c) => c.map === E.name || c.map === I.name)), "only the Seagallop goes there");
+  assert(E.signs[0].text[1].startsWith("“…ber, 6th day"), "the old sign");
+  assert(ITEMS["old-sea-map"] && Bag.isKeyItem("old-sea-map"), "the Old Sea Map is a key item");
+  const grass = Faraway.isGrass("FarawayIsland_Interior");
+  assert(grass(13, 14) && !grass(14, 9), "Mew's grass, not the rocks");
+  // Mew moves away from you, and shows itself every 8th step (and stays put the 9th).
+  const r = Faraway.mewStep({ mew: { x: 16, y: 14 }, prev: { x: 16, y: 17 }, cur: { x: 16, y: 16 }, steps: 1, isGrass: grass, rng: () => 0 });
+  // (Against the rock at (13, 13) it goes round: Emerald's check for being trapped.)
+  assert.strictEqual(Faraway.mewStep({ mew: { x: 13, y: 14 }, prev: { x: 13, y: 17 }, cur: { x: 13, y: 16 }, steps: 1, isGrass: grass }).dir, "right");
+  assert.deepStrictEqual(r, { dir: "up", visible: false }, "up, away from you");
+  assert.strictEqual(Faraway.mewStep({ mew: { x: 13, y: 14 }, prev: { x: 13, y: 17 }, cur: { x: 13, y: 16 }, steps: 8, isGrass: grass }).visible, true);
+  assert.strictEqual(Faraway.mewStep({ mew: { x: 13, y: 14 }, prev: { x: 13, y: 17 }, cur: { x: 13, y: 16 }, steps: 9, isGrass: grass }).dir, null);
+  assert.strictEqual(Faraway.mewStep({ mew: { x: 13, y: 14 }, prev: { x: 13, y: 16 }, cur: { x: 13, y: 16 }, steps: 3, isGrass: grass }).dir, null, "turning isn't a step");
 }
 
 // Fishing (World.fishingEncounter): each rod its own slots of the map's fishing_mons.

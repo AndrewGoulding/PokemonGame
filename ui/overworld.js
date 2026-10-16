@@ -81,7 +81,12 @@
   // (60 a second) going round 640; the sand's water edge takes its next frame
   // every 8, the water every 16 (one frame later), the flowers every 16 (two
   // later). -> each anim's frame now.
-  const TILE_ANIMS = { water: { every: 16, at: 1, frames: 8 }, sand: { every: 8, at: 0, frames: 8 }, flower: { every: 16, at: 2, frames: 5 } };
+  // Emerald's General tileset (its maps: tools/build-emerald-maps.js) has
+  // five, each taking its next frame every 16, one frame apart
+  // (TilesetAnim_General): flowers, water, sand's edge, waterfalls, land's edge.
+  const TILE_ANIMS = { water: { every: 16, at: 1, frames: 8 }, sand: { every: 8, at: 0, frames: 8 }, flower: { every: 16, at: 2, frames: 5 },
+    e_flower: { every: 16, at: 0, frames: 4 }, e_water: { every: 16, at: 1, frames: 8 }, e_sand: { every: 16, at: 2, frames: 8 },
+    e_waterfall: { every: 16, at: 3, frames: 4 }, e_land: { every: 16, at: 4, frames: 4 } };
   function animFrame(name) {
     const a = TILE_ANIMS[name], c = Math.floor(performance.now() / (1000 / 60)) % 640;
     return a ? Math.floor(((c - a.at + 640) % 640) / a.every) % a.frames : 0;
@@ -1339,6 +1344,18 @@
       const p = people.find((q) => q.def.id === id);
       if (p) { p.def = Object.assign({}, p.def, { movement: "face_" + facing }); p.facing = facing; }
     },
+    // Someone (by local id) takes a step `dir` now, whatever's there (Faraway
+    // Island's Mew, moving as you do); or just turns, with `turnOnly`.
+    stepPerson: (localId, dir, turnOnly) => {
+      const p = people.find((q) => q.def.localId === localId);
+      if (!p || p.move) return;
+      p.facing = dir;
+      if (turnOnly) return;
+      const [dx, dy] = World.DIRS[dir];
+      p.move = { tx: p.x + dx, ty: p.y + dy, t: 0 };
+    },
+    // Someone (by local id) hidden or shown: still there, still in the way.
+    setPersonHidden: (localId, hidden) => { const p = people.find((q) => q.def.localId === localId); if (p) p.hidden = !!hidden; },
     // Where someone on the map (by local id) stands, or null.
     personPosition: (localId) => { const p = people.find((q) => q.def.localId === localId); return p ? { x: p.x, y: p.y, facing: p.facing } : null; }
   };
