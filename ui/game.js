@@ -1416,6 +1416,7 @@
         { label: "Double battle", value: "double", className: "action" },
         { label: "Tag battle", value: "tag", className: "action" },
         { label: "Go to the last Pokémon Center", value: "center", className: "action" },
+        { label: "Visit Johto (New Bark Town)", value: "johto", className: "action" },
         back()]);
       if (v === "back") return;
       if (v === "add") await debugAddPokemon();
@@ -1443,6 +1444,12 @@
         player.location = Object.assign({}, center || Player.HOME);
         await persist();
         return "battled";   // (back to the map, at the new place)
+      } else if (v === "johto") {
+        // Johto isn't joined to Kanto yet (data/johto-maps.js): outside your
+        // house in New Bark Town; the debug menu's Pokémon Center trip brings you back.
+        player.location = { map: "NewBarkTown", x: 23, y: 13, facing: "down" };
+        await persist();
+        return "battled";
       } else if (v === "repels") {
         Player.addItem(player, "max-repel", 99);
         await message("Added 99 Max Repels to your bag.");

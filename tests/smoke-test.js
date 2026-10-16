@@ -1338,6 +1338,7 @@ for (const share of [false, true]) {
   // (FireRed gives the Underground Path, the S.S. Anne, the Rocket Hideout, Silph Co., the Pokémon League,
   // the Ember Spa, the Dunsparce Tunnel (Three Isle Path), the Rocket Warehouse, Trainer Tower's inside, the Tanoby Key and the Tanoby chambers no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
+    if (WORLD_MAPS[name].region === "johto") continue;   // (Johto has no Town Map yet)
     assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "UNDERGROUND_PATH_2", "S_S_ANNE", "ROCKET_HIDEOUT", "SILPH_CO",
       "POKEMON_LEAGUE", "EMBER_SPA", "THREE_ISLE_PATH", "ROCKET_WAREHOUSE", "TRAINER_TOWER_2", "TANOBY_KEY"].includes(T.mapSections[name]) || /_CHAMBER$/.test(T.mapSections[name])), name + " is on the Town Map");
   }
@@ -1444,6 +1445,27 @@ for (const share of [false, true]) {
   assert(!Bag.canUseOn(m, "gold-bottle-cap"));
   const saved = Player.load(JSON.parse(Player.serialize(Object.assign(Player.create("T", 0), { party: [m] })))).player.party[0];
   assert.deepStrictEqual(saved.hyper.slice().sort(), Party.STAT_KEYS.slice().sort(), "saves keep Hyper Training");
+}
+
+// Johto (data/johto-maps.js, from HeartGold and SoulSilver): New Bark Town,
+// Route 29 and Cherrygrove City, joined to each other and not to Kanto.
+{
+  const J = ["CherrygroveCity", "Route29", "NewBarkTown"];
+  for (const name of J) {
+    const m = WORLD_MAPS[name];
+    assert(m && m.region === "johto", name + " is built");
+    for (const k of ["collision", "behavior", "elevation", "encounter"]) assert.strictEqual(m[k].length, m.width * m.height, name + " " + k);
+    for (const c of m.connections) assert(J.includes(c.map), name + " connects only within Johto");
+    for (const part of ["", "-top", "-border"]) assert(fs.existsSync(path.join(root, "assets/world/maps", name + part + ".png")), name + part);
+    for (const p of m.people) assert(fs.existsSync(path.join(root, "assets/world/sprites", p.sprite + ".png")), p.sprite);
+    for (const t of [m.wild, m.water]) if (t) for (const s of t.slots) assert(DEX[s.species], name + ": " + s.species);
+    for (const h of m.hidden) assert(ITEMS[h.item], h.item);
+  }
+  assert.deepStrictEqual(new Set(WORLD_MAPS.Route29.wild.slots.map((s) => s.species)), new Set(["Pidgey", "Sentret", "Rattata"]), "Route 29 by day");
+  assert(!Object.values(WORLD_MAPS).some((m) => m.region !== "johto" && m.connections.some((c) => J.includes(c.map))), "nothing in Kanto leads to Johto");
+  assert.strictEqual(World.step({ map: "NewBarkTown", x: 0, y: 15 }, "left").map, "Route29", "west out of New Bark Town");
+  assert.strictEqual(World.fishingEncounter("NewBarkTown", "old-rod", () => 0).species, "Magikarp", "Gen 4 rods");
+  assert.strictEqual(World.step({ map: "NewBarkTown", x: 23, y: 13 }, "up").unbuilt, "MAP_NEW_BARK_PLAYER_HOUSE_1F", "the house isn't built yet");
 }
 
 // Fishing (World.fishingEncounter): each rod its own slots of the map's fishing_mons.

@@ -1043,6 +1043,37 @@ Earth Badge's TM. (From a save that won those battles before: Sabrina gives
 hers when you talk to her again, Giovanni too if he's still in his Gym, and
 otherwise Gary's and Giovanni's are item balls where they stood.)
 
+## Johto (in progress)
+
+Johto's first maps are built from HeartGold and SoulSilver: **New Bark Town,
+Route 29 and Cherrygrove City**, joined to each other and not yet to Kanto
+(the debug menu's **Visit Johto (New Bark Town)** takes you there, and its
+Pokémon Center trip brings you back). HGSS's maps are 3D, so
+`tools/build-johto.js` (with `tools/lib/hgss-map.js`, `nitro.js` and
+`narc.js`) draws them the way FireRed would show them, from a
+[pret/pokeheartgold](https://github.com/pret/pokeheartgold) checkout:
+
+```sh
+node tools/build-johto.js <path to pret/pokeheartgold>
+```
+
+It reads the map headers and the overworld matrix, each 32x32-tile chunk's
+land data (tile permissions, building placements and its NSBMD terrain
+model) and the area's textures, and rasterises the terrain and buildings in
+software at 16 px a tile: house fronts and tree trunks drawn upward from
+their tiles, as in FireRed, and what stands in front of you (tree tops,
+roofs) in the map's `-top` layer. The tiles' permissions become collision and
+FireRed's behaviours (tall grass, water, ledges, doors), and from the event
+data, scripts and text come the signs ("New Bark Town / Winds of a New
+Beginning"), hidden items and the people always there, with what they say
+and HGSS's own sprites (`assets/world/sprites/hgss_*.png`, put in FireRed's
+frame order). Wild Pokémon are HeartGold's daytime ones (Route 29: Pidgey,
+Sentret and Rattata), Surf's, and Gen 4's fishing (five slots a rod,
+40/40/15/4/1). Everything goes into `data/johto-maps.js`, which adds the
+maps to `WORLD_MAPS`. Not built yet: the houses and Elm's Lab (their doors
+say so), Johto's story, music (FireRed's stands in: Pallet Town's, Route 1's
+and Pewter City's), water animation, and a Town Map of Johto.
+
 ## Progression rules (Gen 6)
 
 - **Experience**: the six growth curves, and base exp × level / 7 split between
@@ -1198,7 +1229,7 @@ otherwise Gary's and Giovanni's are item balls where they stood.)
 | `assets/world/` | Generated map images and transparent overworld sprites |
 | `assets/intro/` | Generated opening movie, title screen and Oak's speech graphics |
 | `assets/battle/` | Generated battle backgrounds (FireRed's battle terrains) |
-| `tests/` | Loads every non-UI script and checks formulas, engine regressions, progression rules and AI choices, plus 200 random battles |
+| `tests/` | Loads every non-UI script and checks formulas, engine regressions, progression rules and AI choices, plus 200 random battles; `tests/browser/lib.js` is a Playwright helper for checking things in the real page (it serves the game, loads a save made in Node, and presses keys long enough to register) |
 
 ## Script load order
 
@@ -1216,7 +1247,7 @@ and later files read those globals, so scripts must load in this order:
 9. `data/evolutions.js` → `EVOLUTIONS`
 10. `data/item-sprites.js` → `ITEM_SPRITES`
 11. `data/sprite-metrics.js` → `SPRITE_METRICS`
-12. `data/world-maps.js` → `WORLD_MAPS`
+12. `data/world-maps.js` → `WORLD_MAPS` (and `data/johto-maps.js` adds Johto's)
 13. `data/intro-text.js` → `INTRO_TEXT`
 14. `engine/stat-calculator.js` → `Stats`
 15. `engine/experience.js` → `Experience`

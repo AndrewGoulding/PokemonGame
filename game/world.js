@@ -140,6 +140,8 @@
     // Doors are solid: walking up into one opens it and goes inside.
     const aheadWarp = ahead.map && warpAt(ahead.map, ahead.x, ahead.y);
     if (aheadWarp && ahead.behavior === MB.WARP_DOOR && dir === "up") {
+      // (A door into a map not built yet, as Johto's houses are: say so.)
+      if (!aheadWarp.map && aheadWarp.mapConst && aheadWarp.mapConst !== "MAP_DYNAMIC") return { ok: false, door: true, unbuilt: aheadWarp.mapConst };
       return { ok: false, warp: warpTarget(aheadWarp), door: true };
     }
 
@@ -279,9 +281,20 @@
     "good-rod": [[2, 60], [3, 20], [4, 20]],
     "super-rod": [[5, 40], [6, 40], [7, 15], [8, 4], [9, 1]]
   };
+  // (Johto's maps, from HeartGold and SoulSilver, have Gen 4's rods instead:
+  // `rods`, five slots each, 40/40/15/4/1.)
+  const GEN4_ROD_WEIGHTS = [40, 40, 15, 4, 1];
   function fishingEncounter(mapName, rodId, rng) {
     rng = rng || Math.random;
     const t = map(mapName).fishing, slots = ROD_SLOTS[rodId];
+    if (t && t.rods) {
+      const r = t.rods[rodId];
+      if (!r) return null;
+      let roll = Math.floor(rng() * 100), k = 0;
+      while (k < GEN4_ROD_WEIGHTS.length - 1 && roll >= GEN4_ROD_WEIGHTS[k]) roll -= GEN4_ROD_WEIGHTS[k++];
+      const s = r.slots[k];
+      return s && s.species ? { species: s.species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)), slot: k } : null;
+    }
     if (!t || !slots) return null;
     let roll = Math.floor(rng() * 100), k = 0;
     while (k < slots.length - 1 && roll >= slots[k][1]) roll -= slots[k++][1];

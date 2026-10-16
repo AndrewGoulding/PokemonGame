@@ -1169,13 +1169,13 @@
       if (p.emote) emotes.push([p.emote, x - camX, y - camY - p.def.height + TILE]);
       const walking = (!!p.move && p.move.t < TILE / 2) || (p.inPlace > 0 && p.inPlace % 16 >= 8);
       return { y, draw: () => { if (shade) g.filter = SHADE; drawSprite(p.def.sprite, p.def.width, p.def.height,
-        frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), p.facing === "right", x - camX, y - camY); g.filter = "none"; } };
+        frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), p.facing === "right", x - camX + (p.def.offsetX || 0), y - camY); g.filter = "none"; } };
     });
     for (const n of neighbours) {
       const x = (n.ox + n.x) * TILE, y = (n.oy + n.y) * TILE;
       if (x - camX < -TILE * 2 || x - camX > VIEW_W + TILE || y - camY < -TILE * 2 || y - camY > VIEW_H + TILE * 2) continue;
       sprites.push({ y, draw: () => drawSprite(n.def.sprite, n.def.width, n.def.height,
-        frameFor(n.facing, false, 0, n.def.frames), n.facing === "right", x - camX, y - camY) });
+        frameFor(n.facing, false, 0, n.def.frames), n.facing === "right", x - camX + (n.def.offsetX || 0), y - camY) });
     }
     if (me.emote) emotes.push([me.emote, px - camX, py - camY - 16]);
     const look = "player_" + (ctx.player.look || "custom");
