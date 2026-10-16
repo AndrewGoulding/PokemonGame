@@ -5,7 +5,7 @@
 //
 //   node tools/build-mega-anim.js <path to pokeemerald-expansion>   (or set POKEEMERALD_EXPANSION)
 //
-// Writes assets/battle/anims/:
+// Writes assets/battle-anims/:
 //   mega-stone.png       the stone that grows over the Pokémon (64x64)
 //   mega-stone-white.png the same, all white (it blends to white: AnimTask_BlendParticle)
 //   mega-particles.png   the specks drawn in to it (16x16 frames; the third is used)
@@ -27,7 +27,7 @@ if (!src || files.some((f) => !fs.existsSync(P(f)))) {
   console.error("Usage: node tools/build-mega-anim.js <path to pokeemerald-expansion>  (needs graphics/battle_anims/sprites/)");
   process.exit(1);
 }
-const out = path.join(__dirname, "..", "assets/battle/anims");
+const out = path.join(__dirname, "..", "assets/battle-anims");
 fs.mkdirSync(out, { recursive: true });
 
 // A GBA colour (5 bits a channel) as the screen shows it.
@@ -48,4 +48,4 @@ convert("mega_stone.png", "mega-stone-white.png", { white: true });
 convert("mega_particles.png", "mega-particles.png");
 convert("mega_symbol.png", "mega-symbol.png");
 convert("electricity.png", "mega-smoke.png", { palette: readPng(P("electric_orbs.png")).palette, blend: { coeff: 12, to: [29, 0, 29] } });
-console.log("wrote assets/battle/anims/mega-stone.png, mega-stone-white.png, mega-particles.png, mega-symbol.png, mega-smoke.png");
+console.log("wrote assets/battle-anims/mega-stone.png, mega-stone-white.png, mega-particles.png, mega-symbol.png, mega-smoke.png");

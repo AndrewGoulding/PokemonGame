@@ -751,7 +751,7 @@
     const piece = (file, w, h, cls) => {
       const d = document.createElement("div");
       d.className = "mega-fx" + (cls ? " " + cls : "");
-      if (file) d.style.backgroundImage = "url(assets/battle/anims/" + file + ")";
+      if (file) d.style.backgroundImage = "url(assets/battle-anims/" + file + ")";
       d.style.width = (w / 2.4) + "%";
       d.style.height = (h / 1.12) + "%";
       el.field.appendChild(d);
