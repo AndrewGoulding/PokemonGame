@@ -6823,7 +6823,11 @@
     if (scene === 5) { await say(X("PassLetYouGetToAllIslands")); return; }
     if (f.gotRuby && Player.itemCount(player, "ruby")) { await celioRuby(); return; }
     if (scene === 4) { await say(X("TryingToFindGem")); return; }
-    if (Player.nationalDex(player) && scene >= 3) {
+    // (FireRed asks once you have the National Pokédex, which comes after the
+    // Hall of Fame; here you have it from the start, so: once you're Champion.
+    // Until then only One, Two and Three Island can be reached: the Rainbow
+    // Pass for the rest is his thanks for the Ruby.)
+    if (Player.nationalDex(player) && player.flags.gameClear && scene >= 3) {
       await say(X("CelioCaughtMoreMonMaybeICanBeUseful"));
       await Overworld.act([{ who: CELIO, moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
       await say(X("YoullBeTradingFromTrainersFarAway"));

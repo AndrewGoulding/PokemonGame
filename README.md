@@ -377,8 +377,9 @@ Dunsparce Tunnel, dug out with a Nugget for you, as FireRed has it with the
 National Pokédex) and the
 islands' marts and Pokémon Centers (respawn points and Fly spots). Back at One
 Island Bill's done, and the Seagallop takes you both home to Cinnabar, where he
-says goodbye. Then, as you have the National Pokédex (FireRed's condition;
-see the Pokédex above), Celio asks you to find a gem for his Network
+says goodbye. Until you're Champion only One, Two and Three Island can be
+reached. Once you are (FireRed's condition is the National Pokédex, which it
+gives after the Hall of Fame; here you have that from the start), Celio asks you to find a gem for his Network
 Machine, and two Team Rocket grunts outside Mt. Ember let slip the Rocket
 Warehouse's passwords ("Goldeen need log", "Yes, nah, Chansey"); beat them and
 the Ruby Path opens (its floors down to B5F, FireRed's Braille on its walls),
