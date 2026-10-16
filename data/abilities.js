@@ -2873,11 +2873,10 @@ function gen7DroppedBelowHalf(p) {
 }
 // Wimp Out / Emergency Exit: it heads back to its Trainer (a wild Pokémon
 // has nowhere to go).
-function gen7HalfHpSwitch(ctx, name) {
-  const p = ctx.pokemon, b = ctx.battle;
-  if (!b || !gen7DroppedBelowHalf(p) || (b.wild && p.side.id === "p2") || !p.side.bench(p.slot).length) return;
-  ctx.add("-activate", p, "ability: " + name);
-  b.pendingSwitch = { side: p.side, copy: false, slot: p.slot };
+// (Damage from anything else, hazards, weather, recoil: the battle engine's
+// damage(), which calls the same emergencyExit.)
+function gen7HalfHpSwitch(ctx) {
+  if (ctx.battle && gen7DroppedBelowHalf(ctx.pokemon)) ctx.battle.emergencyExit(ctx.pokemon);
 }
 // Shields Down: Meteor Form above half HP, Core at half or less.
 function gen7ShieldsDown(ctx) {

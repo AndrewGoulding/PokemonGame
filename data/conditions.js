@@ -143,8 +143,13 @@
     },
     shelltrap: {
       name: "Shell Trap",
+      // (Hit by a foe's physical move, it springs the trap at once: its Shell
+      // Trap moves to the front of the turn's queue.)
       onDamagingHit(ctx, move) {
-        if (ctx.source && ctx.source.side !== ctx.pokemon.side && move && move.category === "Physical") ctx.effectState.gotHit = true;
+        if (!ctx.source || ctx.source.side === ctx.pokemon.side || !move || move.category !== "Physical" || ctx.effectState.gotHit) return;
+        ctx.effectState.gotHit = true;
+        const q = ctx.battle.queue, i = q.findIndex((a) => a.type === "move" && a.mon === ctx.pokemon && a.moveName === "Shell Trap");
+        if (i > 0) q.unshift(q.splice(i, 1)[0]);
       }
     },
     // Gen 8

@@ -322,11 +322,12 @@
         bp = pp >= 5 ? 40 : pp === 4 ? 50 : pp === 3 ? 60 : pp === 2 ? 80 : 190;
         break;
       }
-      case "hex": if (D.status) bp *= 2; break;
+      // (Comatose counts as asleep.)
+      case "hex": if (D.status || D.ability === "Comatose") bp *= 2; break;
       case "venoshock": if (D.status === "psn" || D.status === "tox") bp *= 2; break;
       case "brine": if (D.hp * 2 <= D.maxhp) bp *= 2; break;
       case "facade": if (statusAny(A)) bp *= 2; break;
-      case "wakeupslap": if (D.status === "slp") bp *= 2; break;
+      case "wakeupslap": if (D.status === "slp" || D.ability === "Comatose") bp *= 2; break;
       case "smellingsalts": if (D.status === "par") bp *= 2; break;
       case "acrobatics": if (!A.item) bp *= 2; break;
       case "knockoff": if (D.item) bp = tr(bp * 1.5); break;
@@ -341,7 +342,7 @@
       case "boltbeak": case "fishiousrend": if (!opts.movesAfterTarget) bp *= 2; break;
       case "lashout": if (opts.statsLowered) bp *= 2; break;
       case "barbbarrage": if (D.status === "psn" || D.status === "tox") bp *= 2; break;
-      case "infernalparade": if (D.status) bp *= 2; break;
+      case "infernalparade": if (D.status || D.ability === "Comatose") bp *= 2; break;
       case "tripleaxel": bp = 20 * ((opts.hitIndex || 0) + 1); break;
       case "terrainpulse": if (env.field.terrain && isGrounded(A, env.field)) bp *= 2; break;
       case "risingvoltage": if (env.field.terrain === "ElectricTerrain" && isGrounded(D, env.field)) bp *= 2; break;

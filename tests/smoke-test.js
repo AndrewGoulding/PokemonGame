@@ -2517,6 +2517,42 @@ assert.deepStrictEqual(["hp", "atk", "def", "spa", "spd", "spe"].map((k) => DEX.
   }
 }
 
+// Gen 7/8 follow-ups: Comatose counts as asleep; Emergency Exit from any
+// damage; Shell Trap springs at once; Expanding Force and Dragon Darts in doubles.
+{
+  const g = (species, moves, extra) => Object.assign({ species, level: 50, moves }, extra);
+  const singles = (p1, p2) => { const b = new Battle({ seed: 1, debug: true, p1: { name: "A", team: p1 }, p2: { name: "B", team: p2 } }); b.start(); return b; };
+  const dbl = (p1, p2) => { const b = new Battle({ seed: 1, debug: true, format: "doubles", p1: { name: "A", team: p1 }, p2: { name: "B", team: p2 } }); b.start(); return b; };
+  const komala = Damage.makePokemon("Komala", { level: 50, ability: "Comatose" });
+  // (Komala is Normal: Hex can't touch it, Wake-Up Slap shows it.)
+  assert.strictEqual(Damage.calc(Damage.makePokemon("Machamp", { level: 50 }), komala, "Wake-Up Slap", {}).basePower, 140);
+  const k = singles([g("Komala", ["Sleep Talk", "Wood Hammer"])], [g("Snorlax", ["Splash"])]);
+  const evs = play(k, { p1: mv(0), p2: mv(0) });
+  assert(evs.some((e) => e[0] === "move" && e[2] === "Wood Hammer"), "Komala can use Sleep Talk");
+  // Emergency Exit: sandstorm takes Golisopod to half HP.
+  const ex = singles([g("Tyranitar", ["Splash"], { ability: "Sand Stream" })], [g("Golisopod", ["Splash"]), g("Snorlax", ["Splash"])]);
+  const golis = ex.sides.p2.active;
+  golis.hp = Math.floor(golis.maxhp / 2) + 2;
+  play(ex, { p1: mv(0), p2: mv(0) });
+  assert.strictEqual(ex.getRequest("p2").phase, "switch", "Emergency Exit after sandstorm damage");
+  // Shell Trap: hit by a physical move, Turtonator goes next, ahead of the others.
+  const st = dbl([g("Turtonator", ["Shell Trap"]), g("Snorlax", ["Splash"], { level: 5 })],
+    [g("Pidgeot", ["Wing Attack"], { level: 70 }), g("Rattata", ["Splash"], { level: 60, ability: "Guts" })]);
+  const order = play(st, { p1: [mv(0), mv(0)], p2: [mv(0, 1), mv(0)] }).filter((e) => e[0] === "move").map((e) => e[2]);
+  assert.deepStrictEqual(order.slice(0, 2), ["Wing Attack", "Shell Trap"]);
+  // Expanding Force on Psychic Terrain and Dragon Darts hit both foes.
+  const ef = dbl([g("Indeedee", ["Expanding Force"], { ability: "Psychic Surge" }), g("Snorlax", ["Splash"])],
+    [g("Machamp", ["Splash"]), g("Machamp", ["Splash"])]);
+  play(ef, { p1: [mv(0, 1), mv(0)], p2: [mv(0), mv(0)] });
+  assert(ef.sides.p2.actives.every((m) => hpLost(m) > 0), "Expanding Force spreads");
+  const dd = dbl([g("Dragapult", ["Dragon Darts"]), g("Snorlax", ["Splash"])], [g("Snorlax", ["Splash"]), g("Snorlax", ["Splash"])]);
+  play(dd, { p1: [mv(0, 1), mv(0)], p2: [mv(0), mv(0)] });
+  assert(dd.sides.p2.actives.every((m) => hpLost(m) > 0), "Dragon Darts hits each foe");
+  const df = dbl([g("Dragapult", ["Dragon Darts"]), g("Snorlax", ["Splash"])], [g("Clefable", ["Splash"]), g("Snorlax", ["Splash"])]);
+  const hits = play(df, { p1: [mv(0, 1), mv(0)], p2: [mv(0), mv(0)] }).filter((e) => e[0] === "-damage" && e[1] === df.sides.p2.actives[1].ident && !e[3]);
+  assert.strictEqual(hits.length, 2, "both hits go to the Snorlax when Clefable is immune");
+}
+
 // Gen 7's Pokémon in random battles (singles and doubles, the battle in
 // debug mode so an Ability or move effect that throws fails the test).
 const GEN7 = 100;

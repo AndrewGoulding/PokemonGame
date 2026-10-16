@@ -694,6 +694,18 @@
       const ab = window.ABILITIES[mon.ability];
       return !(ab && ab.flags && ab.flags.cantsuppress);
     }
+    // Asleep, or always drowsing (Comatose, Gen 7): Sleep Talk, Snore, Dream
+    // Eater, Hex and Wake-Up Slap treat it as asleep.
+    asleep(mon) { return mon.status === "slp" || mon.hasAbility("Comatose"); }
+    // Wimp Out / Emergency Exit (Gen 7): at half HP or less it heads back to
+    // its Trainer (a wild Pokémon has nowhere to go).
+    emergencyExit(mon) {
+      if (mon.fainted || !mon.isActive || (this.wild && mon.side.id === "p2") || !mon.side.bench(mon.slot).length) return false;
+      if (!mon.hasAbility(["Wimp Out", "Emergency Exit"])) return false;
+      this.add("-activate", mon, "ability: " + mon.ability);
+      this.pendingSwitch = { side: mon.side, copy: false, slot: mon.slot };
+      return true;
+    }
     // Flower Gift on a Pokémon's side (itself or its ally); only Cherrim's works.
     flowerGift(mon) {
       return [mon, this.allyOf(mon)].some((m) => m && !m.fainted && m.hasAbility("Flower Gift") && /^Cherrim/.test(m.baseSpecies));
@@ -845,6 +857,9 @@
       }
       this.add("-damage", mon, this.hpStr(mon), effect && effect.effectType !== "Move" && effect.name ? "[from] " + effect.name : "");
       if (mon.hp <= 0) this.faint(mon, source, effect);
+      // (Wimp Out / Emergency Exit from hazards, weather, recoil and the like;
+      // an attack's own damage is the Ability's onDamagingHit.)
+      else if ((!effect || effect.effectType !== "Move") && mon.hp <= mon.maxhp / 2 && mon.hp + amount > mon.maxhp / 2) this.emergencyExit(mon);
       return amount;
     }
 
@@ -2311,6 +2326,8 @@
       if (move.id === "terrainpulse" && terrainType && this.isGrounded(user)) { move.type = terrainType; move.typeOverride = true; }
       if (move.id === "aurawheel" && user.species === "Morpeko-Hangry") { move.type = "Dark"; move.typeOverride = true; }
       let target, targets = null;
+      // (Gen 8: Expanding Force hits both foes on Psychic Terrain.)
+      if (move.id === "expandingforce" && this.field.terrain === "PsychicTerrain" && this.isGrounded(user)) move.target = "allAdjacentFoes";
       if (this.doubles) {
         targets = this.getMoveTargets(user, move, o);
         target = targets[0] || null;
@@ -2408,8 +2425,21 @@
           if (this.resolveMove(user, t, move, o)) success = true;
         }
         this.afterSpread(user, move, o.deferSelf);
+      } else if (this.doubles && move.smartTarget && this.dartsTargets(user, move, target).length === 2) {
+        // Dragon Darts (Gen 8): one hit at each foe when both can be hit.
+        o.spread = 1;
+        const [t1, t2] = this.dartsTargets(user, move, target);
+        move.multihit = 1;
+        const s1 = this.resolveMove(user, t1, move, o);
+        const s2 = !t2.fainted && t2.isActive && !user.fainted ? this.resolveMove(user, t2, move, o) : false;
+        success = s1 || s2;
       } else {
         if (this.doubles) o.spread = 1;
+        // (Dragon Darts at a foe it can't hit, with one it can: both hits go there.)
+        if (this.doubles && move.smartTarget) {
+          const ok = this.dartsTargets(user, move, target);
+          if (ok.length === 1) target = ok[0];
+        }
         success = this.resolveMove(user, target, move, o);
       }
       if (dropped && !dropped.fainted) this.add("-end", dropped, "Sky Drop");
@@ -2457,6 +2487,17 @@
         this.add("-activate", d, "ability: Dancer");
         this.execMove(d, this.getActiveMove(move.name), o);
       }
+    }
+
+    // Dragon Darts: the foes it can hit, its chosen target first (not one
+    // that's fainted, out of reach, protecting itself or immune to Dragon).
+    dartsTargets(user, move, target) {
+      const v = (f) => f && !f.fainted && f.isActive && !this.isInvulnerable(f, move)
+        && !f.volatiles.protect && !f.volatiles.kingsshield && !f.volatiles.spikyshield && !f.volatiles.banefulbunker && !f.volatiles.obstruct
+        && window.Damage.typeEffectiveness(move.type, f.types) > 0;
+      const foes = this.foesOf(user);
+      const order = target && foes.includes(target) ? [target].concat(foes.filter((f) => f !== target)) : foes;
+      return order.filter(v);
     }
 
     // Doubles: who a move hits, from its target type and the chosen target
@@ -2716,8 +2757,8 @@
         if (!sp || !sp.layers) { this.add("-fail", user); return false; }
         stockLayers = sp.layers;
       }
-      if (move.id === "dreameater" && target.status !== "slp") { this.add("-immune", target); return false; }
-      if (move.id === "snore" || move.id === "sleeptalk") { if (user.status !== "slp") { this.add("-fail", user); return false; } }
+      if (move.id === "dreameater" && !this.asleep(target)) { this.add("-immune", target); return false; }
+      if (move.id === "snore" || move.id === "sleeptalk") { if (!this.asleep(user)) { this.add("-fail", user); return false; } }
       if (move.id === "endeavor" && target.hp <= user.hp) { this.add("-fail", user); return false; }
       // (Gen 7 moves: First Impression, Burn Up, Shell Trap, Psychic Fangs,
       // Spectral Thief, Pollen Puff on an ally.)

@@ -125,7 +125,7 @@
     return true;
   };
   status.sleeptalk = (b, user) => {
-    if (user.status !== "slp") return false;
+    if (!b.asleep(user)) return false;
     const pool = user.moves.filter((m) => !window.MOVES[m.name].flags.nosleeptalk && m.id !== "sleeptalk");
     if (!pool.length) return false;
     const pick = b.sample(pool);
