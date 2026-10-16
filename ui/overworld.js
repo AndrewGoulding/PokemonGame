@@ -1333,7 +1333,7 @@
     explore, hide, read: (pages) => read(pages), showAreaName, forceStep, refreshPeople: () => loadPeople(),
     act, addObject, removeObject, removePerson, teleport, battleTransition, resume, pokecenterHeal,
     fadeToBlack: fadeOut, fadeFromBlack: fadeIn, shake,
-    setAvatar, avatar: () => me.avatar, flash, rod: setRod, isDark: () => light != null && !flashOn,
+    setAvatar, avatar: () => me.avatar, flash, rod: setRod, emote: (mark) => { me.emote = mark ? { mark } : null; }, isDark: () => light != null && !flashOn,
     // What's in front of you: the tile, whoever stands there, and whether
     // it's water you could start surfing on.
     ahead: () => {

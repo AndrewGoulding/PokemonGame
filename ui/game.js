@@ -5357,67 +5357,48 @@
     if (mode === "surf" || !here.cycling) { await say("Oak: " + player.name + "! This isn't the time to use that!"); return; }
     Overworld.setAvatar("bike");
   }
-  // Fishing (FireRed's StartFishing, src/field_player_avatar.c). You cast,
-  // and dots appear in the text box one every 20 frames (4 to 10 the first
-  // time); then half the time it's "Not even a nibble‥" (always, where
-  // there's nothing to fish). A bite tugs at the rod and you have 36, 33 or
-  // 30 frames (Old, Good, Super Rod) to press A, or "It got away‥". The
-  // better rods make you reel in more than once (at least 1, 1-3 or 1-6
-  // times, and maybe again: 40% / 10% for the Good Rod, 70% / 30% for the
-  // Super Rod), and then "A POKéMON's on the hook!" and a wild battle with
-  // the map's fishing Pokémon for that rod (World.fishingEncounter).
-  const ROD_INDEX = { "old-rod": 0, "good-rod": 1, "super-rod": 2 };
-  // A pressed within `ms` -> true, or false once it's past.
-  function pressAWithin(ms) {
-    return new Promise((resolve) => {
-      const onKey = (e) => {
-        if (!["z", "Z", " "].includes(e.key) || e.repeat) return;
-        e.preventDefault(); e.stopPropagation();
-        done(true);
-      };
-      const done = (v) => { clearTimeout(t); document.removeEventListener("keydown", onKey, true); resolve(v); };
-      const t = setTimeout(() => done(false), ms);
-      document.addEventListener("keydown", onKey, true);
-    });
-  }
+  // Fishing (FireRed's StartFishing, src/field_player_avatar.c, Task_Fishing).
+  // You cast, and a second later dots appear in the text box, one every 20
+  // frames, 4 to 10 of them; then either nothing bites, "Not even a nibble‥"
+  // (always, where there's nothing to fish), or something does: the rod
+  // bends, a "!" pops up over your head, and "A POKéMON's on the hook!", then
+  // a wild battle with the map's fishing Pokémon for that rod
+  // (World.fishingEncounter). As in FireRed and LeafGreen there's no button
+  // to press in time and only the one round of dots (Fishing7 goes straight
+  // to the hook; the reeling of Ruby and Sapphire, Fishing8 and Fishing9, is
+  // left behind, never reached). FireRed's bite is Random() & 1, one cast in
+  // two; here it's twice that, every cast where there's something to catch.
+  const BITE_CHANCE = 1;
   async function fish(rodId) {
-    const r = ROD_INDEX[rodId], at = player.location;
+    const at = player.location;
     const here = window.WORLD_MAPS[at.map] || {};
     const frames = (n) => sleep(n * 1000 / 60);
-    const minRounds = 1 + Math.floor(Math.random() * [1, 3, 6][r]);
     const second = frames(60);
     await Overworld.rod("out");
     await second;
-    let rounds = 0, result = null;
-    while (!result) {
-      // A round of dots.
-      let dots = Math.floor(Math.random() * 10) + 1;
-      if (rounds === 0) dots += 3;
-      dots = Math.min(dots, 10);
-      Screen.say(" ");
-      for (let n = 1; n <= dots; n++) {
-        await frames(20);
-        const text = Array(n).fill("·").join("  ");
-        Screen.say(text, text.length);
-      }
+    // The dots (Fishing4, Fishing5).
+    const dots = Math.min(10, Math.floor(Math.random() * 10) + 4);
+    Screen.say(" ");
+    for (let n = 1; n <= dots; n++) {
       await frames(20);
-      // (Whether anything bites at all is only decided the first time.)
-      if (rounds++ === 0 && (!here.fishing || Math.random() < 0.5)) { result = "nibble"; break; }
-      Overworld.rod("bite");
-      if (!(await pressAWithin([36, 33, 30][r] * 1000 / 60))) { result = "away"; break; }
-      if (rounds < minRounds) continue;
-      if (rounds < 2 && Math.floor(Math.random() * 100) < [[0, 0], [40, 10], [70, 30]][r][rounds]) continue;
-      result = "hooked";
+      const text = Array(n).fill("·").join("  ");
+      Screen.say(text, text.length);
     }
-    if (result !== "hooked") {
+    await frames(20);
+    // Whether it bites (Fishing6).
+    if (!here.fishing || Math.random() >= BITE_CHANCE) {
       Overworld.rod("away");
-      await say(result === "nibble" ? "Not even a nibble‥" : "It got away‥");
+      await say("Not even a nibble‥");
       Screen.say("");
       Overworld.rod(null);
       return;
     }
+    Overworld.rod("bite");
+    Overworld.emote("!");
+    sfx("se_pin");
     await say("A POKéMON's on the hook!");
     Screen.say("");
+    Overworld.emote(null);
     Overworld.rod(null);
     const mon = World.fishingEncounter(at.map, rodId);
     if (!mon) return;

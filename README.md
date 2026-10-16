@@ -183,12 +183,13 @@ at home Red's Mom does.
 **Fishing** is FireRed's (`StartFishing` in src/field_player_avatar.c): use
 the Old, Good or Super Rod from the Bag, or register it to Select, facing
 water (on foot, water you could Surf onto; surfing, open water). You cast
-(FireRed's fishing sprites), and dots appear one by one in the text box, 4 to
-10 the first time; then half the time it's "Not even a nibble‥". When
-something bites the rod tugs, and you have 36, 33 or 30 frames (Old, Good,
-Super Rod) to press A or "It got away‥". The Good and Super Rods make you
-reel in more than once (1, 1-3 or 1-6 times, and perhaps once or twice
-more), then "A POKéMON's on the hook!" and a wild battle with the map's
+(FireRed's fishing sprites), and a second later dots appear one by one in
+the text box, 4 to 10 of them. Then either "Not even a nibble‥" or a bite:
+the rod bends, a "!" pops up over your head, and "A POKéMON's on the hook!".
+As in FireRed there's no button to press in time and only one round of dots
+(its Fishing7 goes straight to the hook). FireRed bites one cast in two;
+here bites are twice as likely, so every cast bites wherever there's
+something to fish. Then a wild battle with the map's
 fishing Pokémon for that rod: FireRed's `fishing_mons`, the Old Rod's two
 slots (70/30), the Good Rod's three (60/20/20) and the Super Rod's five
 (40/40/15/4/1), each version's Pokémon where FireRed and LeafGreen differ.
