@@ -127,6 +127,7 @@
 
   function controls() {
     if (st.mode === "choose") return "{DPAD_UPDOWN}PICK {A_BUTTON}SELECT";
+    if (st.view.egg) return "{A_BUTTON}CANCEL";
     return ["{DPAD_RIGHT}PAGE {A_BUTTON}CANCEL", "{DPAD_LEFTRIGHT}PAGE", "{DPAD_LEFTRIGHT}PAGE {A_BUTTON}DETAIL",
       "{DPAD_UPDOWN}PICK {A_BUTTON}SWITCH", "{DPAD_LEFT}PAGE {A_BUTTON}" + (st.ivs ? "EVs" : "IVs")][st.page];
   }
@@ -146,7 +147,7 @@
     if (page === 3) { layer(base, d.maps.pageMoves, false, pal0); layer(base, d.maps.pageMovesInfo, false, pal0); }
     // (The EV / IV page: the SKILLS page's stats, without its lower panel.)
     else if (page === 4) layer(base, d.maps.pageSkills.map((e, i) => (i >= 32 * 13 ? 0 : e)), false, pal0);
-    else layer(base, [d.maps.pageInfo, d.maps.pageSkills, d.maps.pageMoves][page], false, pal0);
+    else layer(base, [v.egg ? d.maps.pageEgg : d.maps.pageInfo, d.maps.pageSkills, d.maps.pageMoves][page], false, pal0);
     // The page tabs (PokeSum_DrawPageProgressTiles): tiles 345 + n on rows 0-1,
     // two columns a tab: those before this page's are dots on the bar, this
     // one's is the white dot, those after it are on the lighter part, which
@@ -175,12 +176,18 @@
     T(pageName(page), 4, 1, th, 1, 2);
     const c = controls(), cw = top.textWidth(c, "small");
     T(c, 152 + 0x54 - cw, 0, th, 1, 2, "small");
-    if (page !== 3) T("{LV}" + v.level, 4, 18, th, 1, 2);
+    if (page !== 3 && !v.egg) T("{LV}" + v.level, 4, 18, th, 1, 2);
     T(v.name, 40, 18, th, 1, 2);
-    if (v.gender === "F") T("♀", 105, 18, th, 5, 4);
+    if (v.egg) { /* (no gender shown) */ }
+    else if (v.gender === "F") T("♀", 105, 18, th, 5, 4);
     else if (v.gender === "M") T("♂", 105, 18, th, 9, 8);
 
-    if (page === 0) {
+    if (page === 0 && v.egg) {
+      // An Egg (FireRed's page_egg): "EGG", the Egg Watch and where it came from.
+      dark(v.species, 167, 35);
+      v.eggWatch.split("\n").forEach((l, i) => dark(l, 127, 61 + i * 14));
+      wrap(top, v.memo, 224).slice(0, 3).forEach((l, i) => dark(l, 8, 115 + i * 14));
+    } else if (page === 0) {
       dark(String(v.dexNo).padStart(3, "0"), 167, 21);
       dark(v.species, 167, 35);
       typeIcon(top, v.types[0], 167, 51);
@@ -368,7 +375,8 @@
           }
           return undefined;
         }
-        if (k === "right" && st.page < 2) { se(); st.page++; redraw(); }
+        if (k === "right" && st.view.egg) { /* (an Egg has only its one page) */ }
+        else if (k === "right" && st.page < 2) { se(); st.page++; redraw(); }
         else if (k === "right" && st.page === 2) { se(); st.page = 4; redraw(); }
         else if (k === "left" && st.page === 4) { se(); st.page = 2; st.ivs = false; redraw(); }
         else if (k === "a" && st.page === 4) { se(); st.ivs = !st.ivs; redraw(); }
@@ -377,7 +385,8 @@
           const i = st.index + (k === "up" ? -1 : 1);
           if (i < 0 || i >= st.views.length) return undefined;
           st.index = i; st.view = st.views[i];
-          if (opts && opts.cry) opts.cry(st.view.species);
+          if (st.view.egg) st.page = 0;
+          if (opts && opts.cry && !st.view.egg) opts.cry(st.view.species);
           redraw();
         } else if (k === "a" && st.page === 2) { se(); st.page = 3; st.cursor = 0; redraw(); }
         else if (k === "b" || (k === "a" && st.page === 0)) { se(); return true; }

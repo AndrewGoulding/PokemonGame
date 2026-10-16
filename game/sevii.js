@@ -225,7 +225,8 @@
 
   // The Water Labyrinth's gentleman gives his Egg (Togepi) only for a lead
   // Pokémon as fond of you as can be (GetLeadMonFriendship: 255).
-  const leadFriendshipMax = (party) => { const lead = (party || [])[0]; return !!lead && (lead.happiness | 0) >= 255; };
+  // (GetLeadMonIndex: the first that isn't an Egg.)
+  const leadFriendshipMax = (party) => { const lead = (party || []).find((r) => !r.egg); return !!lead && (lead.happiness | 0) >= 255; };
 
   // ---------- Six Island ----------
 

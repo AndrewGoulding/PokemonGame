@@ -233,6 +233,8 @@
     const lines = itemsMode() ? 15 : 0;
     if (itemsMode()) t.text(v.item || "", 6, 88, DATA_FG, DATA_SHADOW, "small");
     t.text(v.name, 6, 88 + lines, DATA_FG, DATA_SHADOW);
+    // (An Egg: just "EGG".)
+    if (v.egg) { g.drawImage(t.canvas(), 0, 0); return; }
     t.text("/" + v.species, 6, 102 + lines, DATA_FG, DATA_SHADOW);
     let x = 10;
     if (v.gender === "M" || v.gender === "F") {
@@ -410,7 +412,7 @@
 
   // ---------- Rules ----------
 
-  const healthy = (r) => r && r.hp > 0;
+  const healthy = (r) => r && r.hp > 0 && !r.egg;   // (an Egg can't be your last Pokémon)
   // Would the party (with `without` gone and `plus` added) still have a Pokémon that can battle?
   function partyOk(without, plus) {
     return st.party.some((r) => r && r !== without && healthy(r)) || healthy(plus);

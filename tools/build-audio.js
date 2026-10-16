@@ -211,7 +211,7 @@ const SOUND_EFFECTS = ["se_ball", "se_select", "se_ball_throw", "se_ball_trade",
   "se_pc_on", "se_pc_login", "se_pc_off", "se_failure", "se_win_open", "se_exp_max", "se_shop", "se_shiny", "se_pin", "se_unlock",
   "se_elevator", "se_ding_dong", "se_exit", "se_door", "se_warp_in", "se_warp_out", "se_fall", "se_boo",
   "se_rs_door", "se_save", "se_applause", "se_ship", "se_ice_crack", "se_ice_break", "se_rs_shop",
-  "se_bang", "se_truck_move", "se_lavaridge_fall_warp", "se_click"];
+  "se_bang", "se_truck_move", "se_lavaridge_fall_warp", "se_click", "se_egg_hatch"];
 const isSoundEffect = (name) => SOUND_EFFECTS.includes(name) || /^se_m_/.test(name);
 
 // Flat per-track event lists to keep the file small: [tick, kind, a, b, c] ...

@@ -21,10 +21,10 @@
 
   // ---------- Helpers ----------
 
-  const partyLevel = () => Math.max(1, ...player.party.map((r) => r.level));
-  const canBattle = () => player.party.some((r) => !Party.isFainted(r));
+  const partyLevel = () => Math.max(1, ...player.party.filter((r) => !r.egg).map((r) => r.level));
+  const canBattle = () => player.party.some(Party.canFight);
   // Two Pokémon that can fight, for a double battle (FireRed's GetMonsStateToDoubles).
-  const canDouble = () => player.party.filter((r) => !Party.isFainted(r)).length >= 2;
+  const canDouble = () => player.party.filter(Party.canFight).length >= 2;
   const money = (n) => "₽" + Math.floor(n).toLocaleString("en-US");
   const article = (word) => (/^[AEIOU]/i.test(word) ? "an " : "a ") + word;
 
@@ -275,7 +275,7 @@
     // A Gym Leader, the Elite Four or the Champion: the whole party is pleased
     // to be in a battle that matters (FireRed's FRIENDSHIP_EVENT_LEAGUE_BATTLE).
     if (!wild && /^TRAINER_(LEADER|ELITE_FOUR|CHAMPION)/.test(opts.trainerId || "")) {
-      for (const r of player.party) Party.adjustFriendship(r, "leagueBattle", here);
+      for (const r of player.party) if (!r.egg) Party.adjustFriendship(r, "leagueBattle", here);
     }
     const foeSets = (f) => f.team.map((r) => Object.assign(Party.toBattleSet(r), opts.ghost ? { name: "Ghost" } : {}));
     const result = await BattleScreen.run({
@@ -566,6 +566,7 @@
   // Uses `item` from the bag on `record`, with whatever follows (evolving, new moves).
   async function useItemOn(record, item) {
     const name = Party.displayName(record);
+    if (record.egg) { await message("It won't have any effect."); return; }
     if (Bag.isStone(item)) {
       const evo = Evolution.find(record, { trigger: "item", item, party: player.party });
       if (!evo) { await message("It won't have any effect."); return; }
@@ -650,6 +651,7 @@
   }
 
   async function giveItem(record, item) {
+    if (record.egg) { await message("An EGG can't hold items."); return; }
     Player.removeItem(player, item);
     const old = Bag.give(record, item);
     if (old) {
@@ -662,8 +664,11 @@
 
   // ---------- FireRed's party screen (ui/party-menu.js) ----------
 
+  // The Egg's pictures (tools/build-eggs.js).
+  const EGG_ICON = "assets/sprites/icons/egg.png", EGG_PIC = "assets/sprites/egg.png";
+  const iconOf = (r) => (r.egg ? EGG_ICON : Screen.iconUrl(r.species, Party.form(r)));
   const partyMons = (notes) => player.party.map((r, i) => ({
-    name: Party.displayName(r), icon: Screen.iconUrl(r.species, Party.form(r)), level: r.level, gender: r.gender,
+    name: Party.displayNameOrEgg(r), egg: !!r.egg, icon: iconOf(r), level: r.level, gender: r.egg ? "" : r.gender,
     hp: r.hp, maxhp: Party.maxHp(r), status: r.status, item: !!r.item, desc: notes ? notes[i] : null
   }));
   // Opens it on the party (Screen.say("") first: no old text over it).
@@ -796,7 +801,7 @@
     const f = player.flags;
     f.friendshipSteps = ((f.friendshipSteps | 0) + 1) % FRIENDSHIP_STEPS;
     if (f.friendshipSteps) return;
-    for (const r of player.party) Party.adjustFriendship(r, "walking", player.location.map);
+    for (const r of player.party) if (!r.egg) Party.adjustFriendship(r, "walking", player.location.map);
   }
   function vsSeekerStep() {
     const f = player.flags;
@@ -963,6 +968,12 @@
     return (sec && T.names[sec]) || null;
   };
   function summaryView(r) {
+    if (r.egg) {
+      // An Egg (FireRed's summary of one): "EGG", the Egg Watch, where it came from.
+      return { egg: true, name: "EGG", species: "EGG", level: 0, gender: "", types: [], memo: Breeding.eggOrigin(r),
+        eggWatch: Breeding.eggWatch(r), hp: 1, maxhp: 1, status: "", shiny: false, moves: [], stats: {},
+        pic: EGG_PIC, picEmpty: 0, icon: EGG_ICON, ball: "assets/sprites/items/ball/poke.png" };
+    }
     const dex = DEX[r.species], stats = Party.stats(r), E = Experience, rate = E.growthRate(r.species);
     const here = E.expForLevel(rate, r.level), next = r.level >= 100 ? here : E.expForLevel(rate, r.level + 1);
     const ot = r.ot || { name: player.name, id: player.trainerId };
@@ -1022,7 +1033,7 @@
     records = records || player.party;
     Screen.say("");
     clearMenu();
-    cry(records[index].species);
+    if (!records[index].egg) cry(records[index].species);
     return SummaryScreen.open(records.map(summaryView), index, summaryContext(records));
   }
 
@@ -1245,7 +1256,7 @@
     return StorageScreen.open({
       mode, boxes: player.boxes, names: player.boxNames, wallpapers: player.boxWallpapers, party: player.party,
       box: lastBox, frame: GameOptions.get().frame,
-      view: (r) => ({
+      view: (r) => (r.egg ? { egg: true, name: "EGG", species: "EGG", level: 0, gender: "", item: "", icon: EGG_ICON, pic: EGG_PIC, picEmpty: 0 } : {
         name: Party.displayName(r), species: r.species, level: r.level, gender: r.gender,
         item: r.item ? Bag.name(r.item) : "", icon: Screen.iconUrl(r.species, Party.form(r)),
         pic: Screen.spriteUrl(r.species, Party.form(r), false, r.shiny),
@@ -1639,10 +1650,11 @@
     if (!player.party.length) { await message("You don't have any Pokémon yet."); return; }
     let cursor = 0;
     for (;;) {
+      // (An Egg: SUMMARY, SWITCH and CANCEL only.)
       const r = await openParty({ cursor, actions: (slot) => [{ label: "SUMMARY", value: "summary" }]
         .concat(FieldMoves.forMon(player.party[slot]).map((m) =>
           ({ label: m.toUpperCase(), value: "field:" + m, field: true, desc: FieldMoves.info(m).desc })))
-        .concat([{ label: "SWITCH", value: "switch" }, { label: "ITEM", value: "item" }, { label: "CANCEL", value: "cancel" }]) });
+        .concat([{ label: "SWITCH", value: "switch" }].concat(player.party[slot].egg ? [] : [{ label: "ITEM", value: "item" }]), [{ label: "CANCEL", value: "cancel" }]) });
       if (!r) { PartyMenu.close(); return; }
       cursor = r.cursor;
       const mon = player.party[r.slot];
@@ -3642,6 +3654,7 @@
         const mine = await choosePartyFor("Choose a POKéMON.");
         show("world");
         if (!mine) { await say("Okay! Come back anytime!"); return; }
+        if (mine.egg) { await say("An EGG can't be traded!"); return; }
         const name = Party.displayName(mine);
         await say("{PLAYER} traded " + name + "…\n… … … … …\nand got it back!");
         const evo = Evolution.find(mine, { trigger: "trade", party: player.party });
@@ -4046,7 +4059,7 @@
     show("world");
     if (!mine) { await say(T(X.no)); return; }
     const i = player.party.indexOf(mine);
-    if (mine.species !== trade.wants) { await say(T(X.wrong), vars); return; }
+    if (mine.species !== trade.wants || mine.egg) { await say(T(X.wrong), vars); return; }
     const theirs = Party.create(trade.gives, mine.level, { nickname: trade.nickname });
     theirs.ivs = Object.assign({}, trade.ivs);
     if (trade.ot) theirs.ot = Object.assign({}, trade.ot);
@@ -4175,6 +4188,7 @@
     const record = await choosePartyFor("Teach which {PKMN}?");
     show("world");
     if (!record) { await declined(); return; }
+    if (record.egg) { await say(T("TwoIsland_House_Text_CantTeachAnEgg")); return; }
     const name = Party.displayName(record);
     const set = window.LEARNSETS_GEN6[record.species] || {};
     const learns = [].concat(set.tm || [], set.tutor || [], (set.levelup || []).map((l) => l[1])).includes(move) ||
@@ -4207,6 +4221,7 @@
     const r = await choosePartyFor("Rate which {PKMN}'s nickname?");
     show("world");
     if (!r) { await say(N("ISeeComeVisitAgain")); return; }
+    if (r.egg) { await say(N("ThatIsMerelyAnEgg")); return; }
     const name = Party.displayName(r);
     const traded = (r.met && r.met.traded) || (r.ot && (r.ot.id !== player.trainerId || r.ot.name !== player.name));
     if (traded) { await say(N("TrulyImpeccableName"), [name]); return; }
@@ -4489,6 +4504,7 @@
       if (!(await confirm("Shall I teach a Pokémon a move for a Heart Scale? (You have " + Player.itemCount(player, "heart-scale") + ".)"))) return;
       const r = await choosePartyFor("Choose a POKéMON.");
       if (!r) continue;
+      if (r.egg) { await say(T("TwoIsland_House_Text_CantTeachAnEgg")); continue; }
       const moves = relearnable(r);
       if (!moves.length) { await say("Sorry… There's no move I can teach\nthat Pokémon."); continue; }
       // FireRed's Move Relearner screen (ui/move-relearner.js); forgetting a
@@ -4522,6 +4538,7 @@
       if (!(await confirm("Would you like me to make a Pokémon forget a move?"))) return;
       const r = await choosePartyFor("Choose a POKéMON.");
       if (!r) continue;
+      if (r.egg) { await say(T("FuchsiaCity_House3_Text_NoEggShouldKnowMoves")); continue; }
       if (r.moves.length <= 1) { await say(Party.displayName(r) + " seems to know only\none move…"); continue; }
       const i = await ask("Which move should be forgotten?", r.moves.map((m, k) => ({ label: m.name, value: k, className: "type-" + MOVES[m.name].type }))
         .concat([back()]));
@@ -5371,12 +5388,13 @@
     const q = D("WantMeToRaiseMon");
     await say(q.slice(0, -1));
     if (!(await confirm(fill(q[q.length - 1])))) { await say(D("ComeAgain")); return; }
-    if (player.party.length === 1) { await say(D("OnlyHaveOneMonWithYou")); return; }
+    if (player.party.filter((r) => !r.egg).length === 1) { await say(D("OnlyHaveOneMonWithYou")); return; }
     await say(D("WhichMonShouldIRaise"));
     const mine = await choosePartyFor("Choose a POKéMON.");
     show("world");
     if (!mine) { await say(D("ComeAnytimeYouLike")); return; }
-    if (!player.party.some((r) => r !== mine && !Party.isFainted(r))) { await say(D("WhatWillYouBattleWith")); return; }
+    if (mine.egg) { await say("I can't raise an EGG!"); return; }
+    if (!player.party.some((r) => r !== mine && Party.canFight(r))) { await say(D("WhatWillYouBattleWith")); return; }
     player.party.splice(player.party.indexOf(mine), 1);
     f.dayCare = DayCare.deposit(mine);
     await say(D("LookAfterMonForAWhile"), [Party.displayName(mine)]);
@@ -6296,11 +6314,11 @@
   const magikarpSizeHash = monSizeHash, magikarpSize = (hash) => monSize("Magikarp", hash), magikarpInches = (hash) => monInches("Magikarp", hash);
   async function magikarpRecord() {
     const f = player.flags, L = (k) => T("Route12_FishingHouse_Text_" + k);
-    if (!player.party.some((r) => r.species === "Magikarp")) { await say(L("TryFishingBringMeMagikarp")); return; }
+    if (!player.party.some((r) => r.species === "Magikarp" && !r.egg)) { await say(L("TryFishingBringMeMagikarp")); return; }
     await say(L("OhMagikarpAllowMeToSee"));
     const r = await choosePartyFor("Choose a {PKMN}.");
     if (!r) return;
-    if (r.species !== "Magikarp") { await say(L("DoesntLookLikeMagikarp")); return; }
+    if (r.species !== "Magikarp" || r.egg) { await say(L("DoesntLookLikeMagikarp")); return; }
     const hash = magikarpSizeHash(r), record = f.magikarpRecord != null ? f.magikarpRecord : 0;
     const now = magikarpSize(hash), best = magikarpSize(record), vars = [null, magikarpInches(hash), magikarpInches(record)];
     if (f.magikarpRecord == null || now > best) {
@@ -6324,6 +6342,7 @@
       await say(D("WhichMonShouldForgetMove"));
       const r = await choosePartyFor("Choose a {PKMN}.");
       if (!r) { await say(D("ComeAgainToForgetOtherMoves")); return; }
+      if (r.egg) { await say(T("FuchsiaCity_House3_Text_NoEggShouldKnowMoves")); return; }
       const name = Party.displayName(r);
       if (r.moves.length <= 1) { await say(D("MonOnlyKnowsOneMove"), [name]); return; }
       const i = await ask(fill(D("WhichMoveShouldBeForgotten")[0]), r.moves.map((m, k) => ({ label: m.name, value: k, className: "type-" + MOVES[m.name].type }))
@@ -6755,7 +6774,7 @@
     League.reset(f);
     delete f.lastCenter;   // (setrespawn HEAL_LOCATION_PALLET_TOWN)
     player.party.forEach(Party.heal);
-    const entry = League.record(f, player.party.map((r) => Object.assign({}, r, { form: Party.form(r) })),
+    const entry = League.record(f, player.party.filter((r) => !r.egg).map((r) => Object.assign({}, r, { form: Party.form(r) })),
       { name: player.name, id: player.trainerId, playTimeMs: player.playTimeMs });
     // Where you'll be after the credits (FireRed's continue warp, at home).
     player.location = Object.assign({}, Player.HOME);
@@ -7344,7 +7363,7 @@
   // the ultimate move of a fully evolved starter you lead with that's as fond
   // of you as can be — Frenzy Plant, Blast Burn or Hydro Cannon, each once.
   async function capeBrinkTutor() {
-    const f = player.flags, lead = player.party[0];
+    const f = player.flags, lead = player.party.find((r) => !r.egg);
     if (f.capeBrinkDone) { await say(T("Text_FeelRejuvenated")); return; }
     if (capeBrinkJustTaught) { await say(T("Text_MakeBestUseOfMove")); return; }
     const species = lead ? Party.speciesName(lead.species) : "";
@@ -7388,6 +7407,7 @@
       const r = await choosePartyFor("Choose a POKéMON.");
       show("world");
       if (!r) { await say(H("NeedMushroomOrTwoToLearnMove")); return; }
+      if (r.egg) { await say(H("CantTeachAnEgg")); continue; }
       const moves = relearnable(r);
       if (!moves.length) { await say(H("NoMoveICanTeachThatMon")); continue; }
       await say(H("TeachWhichMove"));
@@ -7677,8 +7697,8 @@
   // and FourIsland_EventScript_DaycareMan): FireRed's two-Pokémon Day-Care.
   // The lady takes up to two Pokémon to raise (game/daycare.js: a point of
   // Exp. a step, ¥100 and ¥100 a level to take one back); her husband outside
-  // says how they're doing. (FireRed's couple also find Eggs when two get on:
-  // this game has no Eggs, so they never do.)
+  // says how they're doing, and has the Eggs the two of them find
+  // (game/breeding.js).
   const DC = (k) => T("DayCare_Text_" + k);
   async function yesNo(pages, vars) {
     await say(pages.slice(0, -1), vars);
@@ -7686,16 +7706,18 @@
   }
   async function fourIslandDayCareLady() {
     const f = player.flags, list = f.dayCare2 || (f.dayCare2 = []);
+    if (f.dayCareEggs && f.dayCareEggs.eggWaiting && list.length === 2) { await say(DC("HusbandWasLookingForYou")); return; }
     const comeAgain = () => say(DC("ComeAgain"));
     // FourIsland_PokemonDayCare_GiveMonToRaise, and "one more?" while there's room.
     const give = async () => {
       for (;;) {
-        if (player.party.length === 1) { await say(DC("YouHaveJustOneMon")); return; }
+        if (player.party.filter((r) => !r.egg).length === 1) { await say(DC("YouHaveJustOneMon")); return; }
         await say(DC("WhichMonShouldWeRaise"));
         const mine = await choosePartyFor("Choose a POKéMON.");
         show("world");
         if (!mine) { await comeAgain(); return; }
-        if (!player.party.some((r) => r !== mine && !Party.isFainted(r))) { await say(DC("WhatWillYouBattleWith")); return; }
+        if (mine.egg) { await say("We can't raise an EGG!"); return; }
+        if (!player.party.some((r) => r !== mine && Party.canFight(r))) { await say(DC("WhatWillYouBattleWith")); return; }
         player.party.splice(player.party.indexOf(mine), 1);
         list.push(DayCare.deposit(mine));
         cry(mine.species);
@@ -7747,11 +7769,26 @@
     await comeAgain();
   }
   async function fourIslandDayCareMan() {
-    const list = player.flags.dayCare2 || [];
+    const f = player.flags, list = f.dayCare2 || [], eggs = f.dayCareEggs || (f.dayCareEggs = {});
+    // An Egg waiting (FourIsland_EventScript_DaycareEggWaiting): "You do want it, yes?"
+    if (eggs.eggWaiting && list.length === 2) {
+      if (!(await yesNo(DC("DoYouWantEgg"))) && !(await confirm(fill(DC("IWillKeepDoYouWantIt").join(" "))))) {
+        await say(DC("IllKeepIt"));
+        eggs.eggWaiting = false;   // (RejectEggFromDayCare)
+        return;
+      }
+      if (player.party.length >= Player.PARTY_SIZE) { await say(DC("YouHaveNoRoomForIt")); return; }
+      await sayWithJingle("mus_level_up", DC("ReceivedEgg"));
+      await say(DC("TakeGoodCareOfIt"));
+      // (GiveEggFromDaycare: what's in it is decided now.)
+      player.party.push(Breeding.makeEgg(list[0].mon, list[1].mon, { map: player.location.map }));
+      eggs.eggWaiting = false;
+      return;
+    }
     if (!list.length) { await say(DC("ImDaycareManSpeakToMyWife")); return; }
-    // (With two, FireRed adds how well they get on, which goes by the Egg
-    // groups that decide whether an Egg turns up: there are none here.)
     await say(DC(list.length === 1 ? "YourMonIsDoingFine" : "YourMonsAreDoingFine"), list.map((d) => Party.displayName(d.mon)));
+    // (With two, how well they get on: SetDaycareCompatibilityString.)
+    if (list.length === 2) await say(Breeding.compatibilityText(Breeding.compatibility(list[0].mon, list[1].mon)));
   }
 
   // The sticker man (FourIsland_House2_EventScript_StickerMan): brag about
@@ -7984,10 +8021,56 @@
     await memorialTM();
   }
 
+  // ---------- Eggs (game/breeding.js) ----------
+  //
+  // Each step: the Four Island Day-Care's couple may find an Egg (it waits
+  // with the Day-Care Man), and the Eggs in your party get nearer hatching.
+  function eggStep() {
+    const f = player.flags;
+    if (f.dayCare2 && f.dayCare2.length === 2) Breeding.dayCareStep(f.dayCareEggs || (f.dayCareEggs = {}), f.dayCare2);
+    const egg = Breeding.hatchStep(f.eggHatch || (f.eggHatch = {}), player.party);
+    return egg ? { type: "egg-hatch", record: egg } : null;
+  }
+  // An Egg hatching (EventScript_EggHatch, then FireRed's egg hatch scene,
+  // ui/egg-hatch.js): "Huh?", the screen fades, the Egg wobbles and bursts to
+  // the evolution music, its cry, "X hatched from the EGG!" to its fanfare,
+  // and a nickname if you like.
+  async function eggHatches(egg) {
+    await say("Huh?");
+    Screen.say("");
+    await Overworld.fadeToBlack();
+    Breeding.hatch(egg, player.location.map);
+    Player.markCaught(player, egg.species);   // (AddHatchedMonToParty)
+    const name = Party.speciesName(egg.species);
+    show("scene");
+    clearMenu();
+    music(null);
+    const s = await EggHatchScene.open(scene, { mon: Screen.spriteUrl(egg.species, Party.form(egg), false, egg.shiny) });
+    try {
+      // (Task_EggHatchPlayBGM: the evolution intro, then a second later the evolution music.)
+      const intro = GA && GA.se("mus_evolution_intro");
+      setTimeout(() => music("mus_evolution"), intro ? intro * 1000 : 1000);
+      await s.run();
+      cry(egg.species);
+      await sleep(1000);
+      const jingle = fanfare("mus_evolved");
+      await message(name + " hatched from the EGG!");
+      await jingle;
+      if (await confirm("Would you like to nickname the newly\nhatched " + name + "?")) {
+        const typed = await enterText(name + "'s nickname?", name, 10);
+        if (typed && typed !== name) egg.nickname = typed;
+      } else await s.fadeOut();
+    } finally {
+      s.close();
+    }
+    Screen.say("");
+    music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[player.location.map] || {}).music);
+    await persist();
+  }
+
   // The Water Labyrinth's gentleman (FiveIsland_WaterLabyrinth_EventScript_EggGentleman):
   // a lead Pokémon as fond of you as can be, and he gives you the Egg he got
-  // on his travels: Togepi. (This game has no Eggs: it hatches there and
-  // then, a Lv. 5 Togepi, as FireRed's would.) After, he remembers Daisy
+  // on his travels: a Togepi Egg (FireRed's giveegg SPECIES_TOGEPI). After, he remembers Daisy
   // when you have a Togepi or Togetic of your own with you.
   async function eggGentleman() {
     const f = player.flags, E = (k) => T("FiveIsland_WaterLabyrinth_Text_" + k);
@@ -8001,28 +8084,13 @@
       f.gotTogepiEgg = true;
       delete f.noRoomForTogepiEgg;
       await sayWithJingle("mus_level_up", E("ReceivedEggFromMan"));
-      await hatch(Party.create("Togepi", 5));
-      // (Just given, FireRed's is still an Egg: he says how glad he is.)
+      player.party.push(Breeding.giftEgg("Togepi", { map: player.location.map, from: "traveling-man" }));
       await say(E("GladIMetSomeoneLikeYou"));
       return;
     }
-    const mine = player.party.find((r) => (r.species === "Togepi" || r.species === "Togetic") && r.ot && r.ot.id === player.trainerId);
+    const mine = player.party.find((r) => !r.egg && (r.species === "Togepi" || r.species === "Togetic") && r.ot && r.ot.id === player.trainerId);
     if (mine) await say(E("CuteMonRemindsMeOfDaisy"), ["", Party.speciesName(mine.species)]);
     else await say(E("GladIMetSomeoneLikeYou"));
-  }
-  // An Egg hatching (src/egg_hatch.c's words): "Oh?", the cry, "X hatched
-  // from the EGG!" and a nickname.
-  async function hatch(record) {
-    Player.receive(player, record);
-    const name = Party.speciesName(record.species);
-    await say("Oh?");
-    cry(record.species);
-    await sayWithJingle("mus_evolved", name + " hatched from the Egg!");
-    if (await confirm(fill("Would you like to nickname the newly hatched " + name + "?"))) {
-      const typed = await enterText(name + "'s nickname?", name, 10);
-      if (typed && typed !== name) record.nickname = typed;
-      show("world");
-    }
   }
 
   // Resort Gorgeous: Selphy, lost in the Lost Cave (FiveIsland_LostCave_Room10_EventScript_FindSelphyScene),
@@ -8072,7 +8140,7 @@
     const r = f.resortRequest;
     if (r && r.expired) { await say(H("OhImTiredOfWaiting")); await request(); return; }
     if (!r) { await say(H("PleaseHearMyWish")); await request(); return; }
-    if (!player.party.some((m) => m.species === r.species)) { await request(); return; }
+    if (!player.party.some((m) => m.species === r.species && !m.egg)) { await request(); return; }
     await say(H("MonYouCaughtForMeThankYou"), [Party.speciesName(r.species)]);
     Overworld.addObject(B, { x: 6, y: 2, facing: "down" });
     await Overworld.act([{ who: B, moves: Hm("ButlerEnter") }]);
@@ -8184,12 +8252,12 @@
   // gives you a Nest Ball for the biggest yet.
   async function heracrossFan() {
     const f = player.flags, H = (k) => T("SixIsland_WaterPath_House1_Text_" + k);
-    if (!player.party.some((r) => r.species === "Heracross")) { await say(H("LoveItNeedItHeracross")); return; }
+    if (!player.party.some((r) => r.species === "Heracross" && !r.egg)) { await say(H("LoveItNeedItHeracross")); return; }
     await say(H("MayIMeasureHeracross"));
     const r = await choosePartyFor("Choose a {PKMN}.");
     show("world");
     if (!r) return;
-    if (r.species !== "Heracross") { await say(H("ThisWontDo")); return; }
+    if (r.species !== "Heracross" || r.egg) { await say(H("ThisWontDo")); return; }
     const hash = monSizeHash(r), record = f.heracrossRecord || 0;
     const now = monSize("Heracross", hash), best = monSize("Heracross", record), vars = [null, monInches("Heracross", hash), monInches("Heracross", record)];
     // (Smaller, or the same, is only a letdown once she's given you the Nest Ball.)
@@ -8927,7 +8995,7 @@
   }
   function repelAllows(wild) {
     if (!(player.repelSteps > 0)) return true;
-    const lead = player.party.find((r) => !Party.isFainted(r));
+    const lead = player.party.find(Party.canFight);
     return !lead || wild.level >= lead.level;
   }
   async function useRepel(item) {
@@ -9088,7 +9156,7 @@
         onStep: () => {
           leftPallet(player.location.map); DayCare.step(player.flags.dayCare); DayCare.step(player.flags.dayCare2); vsSeekerStep(); friendshipStep();
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
-          return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || safariStep() || cinnabarBillStep() || repelStep();
+          return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || safariStep() || cinnabarBillStep() || eggStep() || repelStep();
         }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) && repelAllows(mon),
         onMap: (m) => {
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
@@ -9118,6 +9186,7 @@
       else if (ev.type === "water") await surfPrompt();
       else if (ev.type === "waterfall") await waterfall();
       else if (ev.type === "repel-ended") await repelWoreOff();
+      else if (ev.type === "egg-hatch") await eggHatches(ev.record);
       else if (ev.type === "red-forest") await redForest();
       else if (ev.type === "leaf-vermilion") await leafVermilion();
       else if (ev.type === "jessie-james") await jessieJames();

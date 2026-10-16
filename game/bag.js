@@ -186,6 +186,7 @@
   // Would `item` do anything to `record` outside battle? opts: { move, party, stat }
   function canUseOn(record, item, opts) {
     opts = opts || {};
+    if (record.egg) return false;
     if (item === "ability-capsule") return !!capsuleAbility(record);
     if (item === "bottle-cap") return opts.stat ? trainableStats(record).includes(opts.stat) : trainableStats(record).length > 0;
     if (item === "gold-bottle-cap") return trainableStats(record).length > 0;

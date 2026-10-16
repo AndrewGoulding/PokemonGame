@@ -162,8 +162,9 @@
     const d = D(), m = st.mons[i];
     const level = m ? hpLevel(m.hp, m.maxhp) : "full";
     const pal = m ? boxPalette(boxState(st, i), level, m.gender) : D().palette.slice(48, 64);
-    const map = box.main ? (m && m.desc ? d.slots.mainNoHp : d.slots.main)
-      : !m ? d.slots.wideEmpty : m.desc ? d.slots.wideNoHp : d.slots.wide;
+    // (An Egg's box has no HP bar either: FireRed's blitFunc with hideHP.)
+    const map = box.main ? (m && (m.desc || m.egg) ? d.slots.mainNoHp : d.slots.main)
+      : !m ? d.slots.wideEmpty : m.desc || m.egg ? d.slots.wideNoHp : d.slots.wide;
     if (box.main && !m) return;
     const x0 = box.left * 8, y0 = box.top * 8;
     for (let ty = 0; ty < box.h; ty++) for (let tx = 0; tx < box.w; tx++) {
@@ -177,6 +178,8 @@
     const r = box.main ? INFO.main : INFO.wide;
     const txt = (str, [x, y], fg, shadow, font) => s.text(str, x0 + x, y0 + y, pal[fg], pal[shadow], font || "small");
     txt(m.name, r.nick, 3, 2);
+    // (An Egg's box has only its name: DisplayPartyPokemonData.)
+    if (m.egg) { if (m.desc) txt(m.desc, r.desc, 3, 2, "normal"); return; }
     if (!statusOf(m)) txt("{LV}" + m.level, r.level, 3, 2);
     if (m.gender === "M" || m.gender === "F") txt(m.gender === "M" ? "♂" : "♀", r.gender, 11, 12);
     if (m.desc) { txt(m.desc, r.desc, 3, 2, "normal"); return; }

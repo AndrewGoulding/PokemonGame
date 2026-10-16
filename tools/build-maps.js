@@ -373,7 +373,8 @@ const GAME_TEXT = [
   // The Joyful Game Corner's minigames, played over the wireless link (data/scripts/cable_club.inc).
   "Text_WelcomeCanYouWait", "Text_AdapterNotConnectedMinigame",
   // Four Island's Day-Care (data/text/day_care.inc).
-  "DayCare_Text_ImDaycareManSpeakToMyWife", "DayCare_Text_YourMonIsDoingFine", "DayCare_Text_YourMonsAreDoingFine",
+  "DayCare_Text_ImDaycareManSpeakToMyWife", "DayCare_Text_DoYouWantEgg", "DayCare_Text_IWillKeepDoYouWantIt", "DayCare_Text_IllKeepIt",
+  "DayCare_Text_YouHaveNoRoomForIt", "DayCare_Text_ReceivedEgg", "DayCare_Text_TakeGoodCareOfIt", "DayCare_Text_HusbandWasLookingForYou", "DayCare_Text_YourMonIsDoingFine", "DayCare_Text_YourMonsAreDoingFine",
   "DayCare_Text_WouldYouLikeUsToRaiseMon", "DayCare_Text_WhichMonShouldWeRaise", "DayCare_Text_WellRaiseYourMon",
   "DayCare_Text_WeCanRaiseOneMore", "DayCare_Text_FineThenComeAgain", "DayCare_Text_NotEnoughMoney", "DayCare_Text_TakeOtherOneBackToo",
   "DayCare_Text_ComeAgain", "DayCare_Text_GoodToSeeYou", "DayCare_Text_YourMonHasGrownXLevels", "DayCare_Text_YourPartyIsFull",

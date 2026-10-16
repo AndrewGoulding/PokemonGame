@@ -189,6 +189,30 @@ slots (70/30), the Good Rod's three (60/20/20) and the Super Rod's five
 (40/40/15/4/1), each version's Pokémon where FireRed and LeafGreen differ.
 In the Safari Zone it's a Safari battle.
 
+**Breeding and Eggs**: two Pokémon left at Four Island's Day-Care may find
+an Egg, as in FireRed (src/daycare.c): every 256th step, 70% of the time if
+they're the same species from different Trainers, 50% the same species from
+you or different species from different Trainers, 20% different species
+from you (or Ditto with one of yours), never if they share no Egg Group
+(`data/breeding.js`, built from @pkmn/dex by `tools/build-breeding.js`), are
+the same gender, or are Ditto twice or Undiscovered. The Day-Care Man
+outside says how well they get on, and has the Egg for you ("You do want it,
+yes?"); the lady says he was looking for you. What's in it follows Gen 6's
+rules, as the battles do: the mother's first stage (or the one that isn't
+Ditto's), an incense baby only when a parent holds its incense (Sea Incense
+for Azurill...), Nidoran♀'s and Illumise's either of the pair, Manaphy's a
+Phione; three IVs from the parents, five with a Destiny Knot, a Power item's
+stat first; an Everstone's nature; the mother's Hidden Ability 60% of the
+time, otherwise her Ability slot 80%; the mother's Poké Ball; Lv. 1 with its
+level-up moves, then the Egg moves either parent knows, and the level-up
+moves both know (and Volt Tackle with a Light Ball). Eggs ride in the party
+(FireRed's EGG box, icon and Summary page with its Egg Watch), can't battle,
+hold items, learn moves or be traded, and every 255 steps are a cycle nearer
+hatching (two with a Flame Body or Magma Armor Pokémon in the party): then
+"Huh?" and FireRed's hatching scene (`ui/egg-hatch.js`): the Egg wobbles and
+cracks three times, bursts in a white flash, the Pokémon's cry, "… hatched
+from the EGG!" to its fanfare, and a nickname if you like.
+
 **Saving**: the game saves automatically to this browser (including where you
 are on the map) after every battle, story event and menu change, and
 **Continue** picks up where you left off. Saves from before the overworld put
@@ -426,7 +450,8 @@ tutor's house, the sticker man (brag about your Hall of Fame entries and he
 puts a sticker on your Trainer Card, a better one each tier), and the Day-Care,
 FireRed's two-Pokémon one: the Day-Care Lady takes up to two Pokémon, each
 growing a point of Exp. a step, and her husband outside says how they're
-doing (this game has no Eggs, so the couple never find one). Lorelei's house,
+doing and how well the two get on; when they find an Egg, he has it for you
+(see **Breeding and Eggs** below). Lorelei's house,
 her stuffed dolls (six always there, and one more for every 25 times you've
 entered the Hall of Fame, up to 200: FireRed's UpdateLoreleiDollCollection). Icefall Cave (Surf to it, Waterfall inside: HM07 Waterfall is on 1F):
 on 1F the thin ice cracks the first time you step on it and breaks the next,
@@ -449,7 +474,7 @@ who stole the Sapphire, hands it over once beaten, for Celio. The Memorial
 Pillar: leave a Lemonade on Tectonix's grave and its owner gives you TM42
 Facade; its Bird Keepers, items and hidden berries. The Water Labyrinth: a
 gentleman gives his Egg to a Trainer whose lead Pokémon is as fond of them as
-can be (it hatches straight away here, a Lv. 5 Togepi). Resort Gorgeous (its
+can be: a Togepi Egg. Resort Gorgeous (its
 Painters, Ladies, Youngster and swimmer) and the Lost Cave, a maze of
 fog-filled rooms with its Ruin Maniac and Psychic: Lady Selphy is lost in it,
 battles you and asks you to take her home; at home she'd like to see a

@@ -69,7 +69,7 @@
     return SINGLE_MONS[c].map((i) => mon(fl.trainers[0].mons[i], level));
   }
   // GetPartyMaxLevel.
-  const partyLevel = (party) => Math.max(1, ...(party || []).map((r) => r.level | 0));
+  const partyLevel = (party) => Math.max(1, ...(party || []).filter((r) => !r.egg).map((r) => r.level | 0));
 
   // The clock: FireRed's VBlank counter, 60 a second, until you reach the owner.
   function tick(flags, ms) {

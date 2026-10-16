@@ -104,6 +104,11 @@
     : record.species === "Unown" && record.unown ? record.unown : "");
   const displayName = (record) => record.nickname || speciesName(record.species);
   const isFainted = (record) => record.hp <= 0;
+  // An Egg (game/breeding.js): it can't battle or do anything until it hatches.
+  const isEgg = (record) => !!(record && record.egg);
+  // Could it go into battle: not an Egg, not fainted.
+  const canFight = (record) => !!record && !record.egg && record.hp > 0;
+  const displayNameOrEgg = (record) => (record.egg ? "EGG" : displayName(record));
 
   // FireRed's friendship bonuses for a record: its held item, its ball, and
   // whether it was met in the area of `here` (a map name).
@@ -228,7 +233,7 @@
   }
 
   window.Party = { SHINY_ODDS,
-    CLOAKS, STAT_KEYS, create, maxPp, trainedIvs, stats, maxHp, speciesName, displayName, form, isFainted, toBattleSet, friendshipOpts, adjustFriendship,
+    CLOAKS, STAT_KEYS, create, maxPp, trainedIvs, stats, maxHp, speciesName, displayName, form, isFainted, isEgg, canFight, displayNameOrEgg, toBattleSet, friendshipOpts, adjustFriendship,
     syncFromBattle, caught, heal, teachMove, canLearnMachine, knowsMove, movesLearnedAt, expProgress
   };
 })();

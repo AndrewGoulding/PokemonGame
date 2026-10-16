@@ -29,7 +29,7 @@
 (function () {
   "use strict";
 
-  const able = (r) => !!r && !window.Party.isFainted(r);
+  const able = (r) => !!r && !r.egg && !window.Party.isFainted(r);
   const ORDINAL = ["FIRST", "SECOND", "THIRD"];
   const NUMBER = ["", "One", "Two", "Three"];
 
@@ -55,7 +55,8 @@
     return order.length < need ? (NUMBER[need] || need) + " POKéMON are needed." : null;
   }
 
-  function team(party, chosen) { return chosen ? chosen.map((i) => party[i]) : party.slice(); }
+  // (Eggs stay out of battles.)
+  function team(party, chosen) { return chosen ? chosen.map((i) => party[i]) : party.filter((r) => !r.egg); }
   function syncBack(party, chosen, battleMons, sync) {
     const records = team(party, chosen);
     records.forEach((r, k) => { if (battleMons[k]) sync(r, battleMons[k]); });

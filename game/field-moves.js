@@ -31,6 +31,7 @@
   // Its field moves for the party screen: those it knows, and those its HM
   // could teach it (whether or not you have the HM yet).
   function forMon(record) {
+    if (record.egg) return [];
     return FIELD_MOVES.map((f) => f.move).filter((m) => window.Party.knowsMove(record, m) || learnable(record, m));
   }
 
@@ -39,7 +40,7 @@
   // null when it can.
   function check(player, record, move) {
     const f = info(move);
-    if (!f) return "unable";
+    if (!f || record.egg) return "unable";   // (an Egg can't do anything)
     if (!window.Party.knowsMove(record, move)) {
       if (!learnable(record, move)) return "unable";
       if (!hasHm(player, move)) return "hm";

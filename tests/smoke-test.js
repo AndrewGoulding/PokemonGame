@@ -1362,6 +1362,61 @@ for (const share of [false, true]) {
   }
 }
 
+// Breeding and Eggs (game/breeding.js).
+{
+  const mk = (sp, g, lv) => Object.assign(Party.create(sp, lv || 30), { gender: g });
+  const rng = mulberry32(7);
+  assert.strictEqual(Breeding.compatibility(mk("Pikachu", "M"), mk("Raichu", "F")), 20, "same OT, different species: 20");
+  assert.strictEqual(Breeding.compatibility(mk("Pikachu", "M"), mk("Pikachu", "F")), 50, "same species: 50");
+  assert.strictEqual(Breeding.compatibility(mk("Pikachu", "M"), Object.assign(mk("Pikachu", "F"), { ot: { name: "X", id: 1 } })), 70, "different OT: 70");
+  assert.strictEqual(Breeding.compatibility(mk("Pikachu", "M"), mk("Pikachu", "M")), 0, "same gender");
+  assert.strictEqual(Breeding.compatibility(mk("Pikachu", "M"), mk("Geodude", "F")), 0, "no Egg Group in common");
+  assert.strictEqual(Breeding.compatibility(mk("Mewtwo", "N"), mk("Ditto", "N")), 0, "Undiscovered");
+  assert.strictEqual(Breeding.compatibility(mk("Magnemite", "N"), mk("Ditto", "N")), 20, "Ditto breeds with the genderless");
+  // The Egg: the mother's first stage, Lv. 1, moves, ball, nature with an Everstone.
+  const mom = Object.assign(mk("Raichu", "F"), { ball: "great-ball", item: "everstone", nature: "Timid" });
+  const dad = mk("Pikachu", "M");
+  dad.moves = [{ name: "Thunderbolt", pp: 15 }];
+  const egg = Breeding.makeEgg(mom, dad, { rng });
+  assert(egg.egg && egg.species === "Pichu" && egg.level === 1, "Raichu's Egg is a Pichu");
+  assert.strictEqual(egg.nature, "Timid", "the Everstone passes the nature");
+  assert.strictEqual(egg.ball, "great-ball", "the mother's ball");
+  assert.strictEqual(egg.eggCycles, DEX.Pichu.baseEggSteps / 256);
+  dad.item = "light-ball";
+  assert(Breeding.makeEgg(mom, dad, { rng }).moves.some((m) => m.name === "Volt Tackle"), "Light Ball: Volt Tackle");
+  const marill = Object.assign(mk("Azumarill", "F"), { item: "sea-incense" });
+  assert.strictEqual(Breeding.makeEgg(marill, mk("Azumarill", "M"), { rng }).species, "Azurill", "Sea Incense: Azurill");
+  assert.strictEqual(Breeding.makeEgg(mk("Azumarill", "F"), mk("Azumarill", "M"), { rng }).species, "Marill", "no incense: Marill");
+  assert.strictEqual(Breeding.makeEgg(mk("Ditto", "N"), mk("Charizard", "M"), { rng }).species, "Charmander", "with Ditto, the other's");
+  // Five IVs with a Destiny Knot.
+  const a = Object.assign(Party.create("Eevee", 30, { ivs: 31 }), { gender: "F", item: "destiny-knot" });
+  const b = Object.assign(Party.create("Eevee", 30, { ivs: 31 }), { gender: "M" });
+  for (let i = 0; i < 20; i++) {
+    const e = Breeding.makeEgg(a, b, { rng });
+    assert(Party.STAT_KEYS.filter((k) => e.ivs[k] === 31).length >= 5, "Destiny Knot: five of the parents' IVs");
+  }
+  // The Day-Care finds one at the 255th step, compatibility percent of the time.
+  const st = {};
+  let found = false;
+  for (let i = 0; i < 255; i++) found = Breeding.dayCareStep(st, [{ mon: mom }, { mon: mk("Pikachu", "M") }], () => 0) || found;
+  assert(found && st.eggWaiting, "an Egg turns up");
+  // Hatching: a cycle every 255 steps (two with Flame Body), then it hatches.
+  const party = [Object.assign(Party.create("Magmar", 30), { ability: "Flame Body" }), Breeding.giftEgg("Togepi")];
+  party[1].eggCycles = 2;
+  const hs = {};
+  let hatched = null;
+  for (let i = 0; i < 255 * 2 && !hatched; i++) hatched = Breeding.hatchStep(hs, party);
+  assert.strictEqual(hatched, party[1], "Flame Body: two cycles at once");
+  Breeding.hatch(hatched, "Route5");
+  assert(!hatched.egg && hatched.happiness === 120 && hatched.met.hatched, "hatched");
+  // Eggs stay out of battles and field moves.
+  const eggParty = [Breeding.giftEgg("Togepi"), Party.create("Pidgey", 10)];
+  assert.deepStrictEqual(DoubleBattle.team(eggParty, null).map((r) => r.species), ["Pidgey"], "no Eggs in battle");
+  assert(!DoubleBattle.canDouble(eggParty), "an Egg isn't a second Pokémon");
+  assert.deepStrictEqual(FieldMoves.forMon(eggParty[0]), []);
+  assert(!Bag.canUseOn(eggParty[0], "potion"), "no items on an Egg");
+}
+
 // The Ability Capsule and Bottle Caps (game/bag.js).
 {
   const r = Party.create("Gengar", 30);
