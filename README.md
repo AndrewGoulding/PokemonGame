@@ -40,7 +40,10 @@ sells to you and the old man lying across the road north gets up and shows you
 how to catch Pokémon. The Pokémon Center's nurse heals your party (and is where
 you return if you black out), and its PC is FireRed's: "Which PC should be
 accessed?" (Someone's PC, which becomes Bill's PC once you've helped him; your
-own; Prof. Oak's PC once you have a Pokédex; the Hall of Fame once you're
+own; Prof. Oak's PC once you have a Pokédex (his rating, FireRed's: Kanto's
+seen and owned, his word on it to its fanfare, then the National Pokédex's
+and whether it's complete; the aides around Kanto count Kanto's kinds, as
+FireRed's do); the Hall of Fame once you're
 Champion: each team on record, newest first, as FireRed's PC shows it). Bill's PC is the Pokémon Storage
 System: 14 boxes of 30 (BOX1-BOX14, each with a name and one of FireRed's 16
 wallpapers), Withdraw, Deposit, Move Pokémon (pick a Pokémon up with the hand
@@ -100,9 +103,16 @@ pocket remembers where its ▶ was), with FireRed's descriptions under the list
 many and throws them away right there. It holds medicine, evolution
 stones (each item for evolving says "Evolves certain Pokémon when used."), Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
 the Exp. Share, Oak's Parcel, the Town Map and the fishing rods (there's no
-fishing yet). After the Bag come FireRed's Pokédex (its
-table of contents with Seen / Owned; the numerical list, with the caught ball and
+fishing yet). After the Bag come FireRed's Pokédex, the **National
+Pokédex** from the moment Oak hands it over (Pokémon from beyond Kanto turn
+up in the campaign; FireRed's IsNationalPokedexEnabled is `Player.nationalDex`:
+its table of contents is FireRed's National one, with Seen and Owned each
+for Kanto and National; Numerical mode: Kanto and Numerical mode: National,
+the ▶ starting on National, by National Pokédex number, each up to the last
+one you've seen, with the caught ball and
 types; the nine habitats' pages, up to four Pokémon a page in their circles;
+Search: A to Z mode (the ones seen), Type, Lightest and Smallest mode (the
+ones caught);
 this game's Area mode: every place with wild Pokémon (FireRed's and LeafGreen's alike; ----- until you've been
 there) with how many of its Pokémon you've caught and a gold crown once you've
 caught them all, and A on one lists them FireRed-style; each entry's category,
@@ -363,11 +373,12 @@ Cue Ball Paxton, and the gang leaves; Bond Bridge (its swimmers, tubers, Aroma
 Ladies and the twins Joy & Meg) to Berry Forest, where Lostelle's in trouble: a
 wild Lv. 30 Hypno, then her Iapapa Berry, and she takes you home to her dad,
 who swaps the Meteorite for a Moon Stone. Three Isle Port (its bikers, the
-Dunsparce Tunnel, dug out with a Nugget for you once you're Champion) and the
+Dunsparce Tunnel, dug out with a Nugget for you, as FireRed has it with the
+National Pokédex) and the
 islands' marts and Pokémon Centers (respawn points and Fly spots). Back at One
 Island Bill's done, and the Seagallop takes you both home to Cinnabar, where he
-says goodbye. Once you're Champion (FireRed asks for the National Pokédex,
-which this game hasn't got) Celio asks you to find a gem for his Network
+says goodbye. Then, as you have the National Pokédex (FireRed's condition;
+see the Pokédex above), Celio asks you to find a gem for his Network
 Machine, and two Team Rocket grunts outside Mt. Ember let slip the Rocket
 Warehouse's passwords ("Goldeen need log", "Yes, nah, Chansey"); beat them and
 the Ruby Path opens (its floors down to B5F, FireRed's Braille on its walls),
@@ -461,9 +472,7 @@ on the water and under rocks, signs and the Town Map's Six and Seven Island
 page. Gideon's Sapphire goes to Celio, whose machine then links with Hoenn
 (FLAG_SYS_CAN_LINK_WITH_RS): the League's rematch teams, Lorelei back at the
 League, and (FireRed's FLAG_HIDE_CERULEAN_CAVE_GUARD, `Sevii.ceruleanCaveOpen`)
-Cerulean Cave's guard steps aside; and Celio, as thanks, gives you two
-Seagallop tickets he found in his machine (this game's own: FireRed's came by
-Mystery Gift; see below). From Cinnabar,
+Cerulean Cave's guard steps aside, Champion or not, as in FireRed. From Cinnabar,
 Route 21 runs north across the sea, its fishermen and swimmers, to Pallet Town.
 Off Route 10's waterway, the Power Plant (Surf along the river to its doors): its wild
 Pikachu, Voltorb, Magnemite, Magneton and Electabuzz, its items (TM17 Protect, TM25
@@ -495,9 +504,11 @@ through Route 23 again, and 3F's boulder drops through a hole to 2F
 (`game/league-road.js`). Out the far side and up Route 23 is the Indigo
 Plateau: its Pokémon Center (a respawn point and Fly spot, its Mart, the
 nurse); the guard at the Elite Four's door wishes you luck (once you're
-Champion, FireRed's door check, with the National Pokédex standing for
-Champion here: she stands in the doorway, "Lorelei of the Elite Four is
-absent", until the Sapphire is in Celio's machine), and through it
+Champion, FireRed's door check: she stands in the doorway, "Lorelei of the
+Elite Four is absent", until the Sapphire is in Celio's machine; FireRed asks
+for the National Pokédex, which its players only get after the Hall of Fame,
+so here, with the National Pokédex from the start, it waits for you to be
+Champion rather than shut the League before your first challenge), and through it
 is the **Pokémon League** (FireRed's rooms and scripts, `game/pokemon-league.js`):
 walk into Lorelei's room and you're walked up to her as the way in shuts
 behind you; there's no way out but on, through the door at the back that opens
@@ -534,32 +545,13 @@ a Max Revive, one hidden), and deep in B1F Mewtwo: "Mew!", its cry, and a wild
 Lv. 70 Mewtwo to its own battle music; caught or beaten it's gone, run from
 it flies away and is back the next time you come (FireRed's
 CeruleanCave_B1F_EventScript_Mewtwo). Its icon shows on the Town Map from then
-on. **Navel Rock and Birth Island**, FireRed's Mystery Gift islands: there's
-no Mystery Gift here, so Celio gives you the Mystic Ticket and the Aurora
-Ticket once his machine links with Hoenn, and Vermilion's Seagallop sailor,
-surprised the first time he sees each, offers "Sevii Islands", "Navel Rock"
-and "Birth Island" (FireRed's VermilionCity_EventScript_HasMysticTicket and
-the rest: Seagallop Hi-Speed 10 and 12). Navel Rock: its harbor and the
-Seagallop back to Vermilion, the rock, and inside the fork: up the Summit
-path's floors to the Summit, where Ho-Oh waits in the shaded sky; step up and
-the view rises to it, its wings beating, the shade lifts, it cries and swoops
-down to battle (Lv. 70; a hidden Sacred Ash there); down the Base path's
-eleven floors to the Base, where thunder shakes the cave and Lugia (Lv. 70)
-cries. Birth Island: the triangle on its rocky hill: touch it and it jumps to
-another spot, a shade redder; dawdle too many steps before touching it again
-and it's back where it began (FireRed's DoDeoxysTriangleInteraction, its
-spots, step limits and colours: `Sevii.deoxysTouch`); touch it at its tenth
-spot and it shatters and Deoxys comes down to you, a Lv. 30 Deoxys in its
-Attack Forme as in FireRed (`Deoxys-Attack`; its Normal Forme on the island),
-to its own music. Caught, each is gone; beaten, it flies away for good; run
-from, it's back (and the triangle starts over) the next time you come. The
-islands go on the Town Map's pages once you've been (FireRed draws sea there
-till then). With that, **Kanto and the Sevii Islands are complete**. Left out
+on. With that, **Kanto and the Sevii Islands are complete**. Left out
 on purpose: the link rooms (the Pokémon Centers' Battle Colosseum, Trade
 Center, Record Corner and Union Room), FireRed's unused and prototype maps,
 fishing, breeding and Eggs (the Day-Cares never find one), e-Reader content
-(Seven Island's visiting trainers) and the National Pokédex (being Champion
-stands in for it where FireRed asks for it). Tiles, palettes and metatiles come from
+(Seven Island's visiting trainers), and FireRed's Mystery Gift islands, Navel
+Rock and Birth Island (Ho-Oh, Lugia and Deoxys: Johto and Hoenn are to come
+instead; no tickets, no ferry there, and they stay sea on the Town Map). Tiles, palettes and metatiles come from
 `assets/tilesets/`; layouts, doors, signs, people, their text and wild Pokémon
 come from a pokefirered checkout, and so do trainers (`src/data/trainers.h`,
 `trainer_parties.h`, class names, front pictures). `tools/build-maps.js` turns them into

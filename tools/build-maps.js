@@ -115,12 +115,7 @@ const TITLES = {
   SevenIsland_SevaultCanyon_House: "Sevault Canyon · Chansey house", SevenIsland_SevaultCanyon_TanobyKey: "Tanoby Key",
   SevenIsland_TanobyRuins: "Tanoby Ruins",
   ...Object.fromEntries(["Monean", "Liptoo", "Weepth", "Dilford", "Scufib", "Rixy", "Viapois"].map((c) => ["SevenIsland_TanobyRuins_" + c + "Chamber", c + " Chamber"])),
-  CeruleanCave_1F: "Cerulean Cave · 1F", CeruleanCave_2F: "Cerulean Cave · 2F", CeruleanCave_B1F: "Cerulean Cave · B1F",
-  NavelRock_Harbor: "Navel Rock · Harbor", NavelRock_Exterior: "Navel Rock", BirthIsland_Harbor: "Birth Island · Harbor",
-  BirthIsland_Exterior: "Birth Island",
-  // (FireRed's popup says NAVEL ROCK all the way through.)
-  ...Object.fromEntries(["1F", "B1F", "Fork", "Summit", "Base", "SummitPath_2F", "SummitPath_3F", "SummitPath_4F", "SummitPath_5F"]
-    .concat(Array.from({ length: 11 }, (_, i) => "BasePath_B" + (i + 1) + "F")).map((m) => ["NavelRock_" + m, "Navel Rock"]))
+  CeruleanCave_1F: "Cerulean Cave · 1F", CeruleanCave_2F: "Cerulean Cave · 2F", CeruleanCave_B1F: "Cerulean Cave · B1F"
 };
 
 const MAPS = [
@@ -224,14 +219,10 @@ const MAPS = [
   "SevenIsland_TanobyRuins_DilfordChamber", "SevenIsland_TanobyRuins_ScufibChamber", "SevenIsland_TanobyRuins_RixyChamber",
   "SevenIsland_TanobyRuins_ViapoisChamber",
   // Cerulean Cave, open once the islands' story is done.
-  "CeruleanCave_1F", "CeruleanCave_2F", "CeruleanCave_B1F",
-  // FireRed's Mystery Gift islands, by the Seagallop with Celio's tickets:
-  // Navel Rock (Ho-Oh at the Summit, Lugia at the Base) and Birth Island (Deoxys).
-  "NavelRock_Harbor", "NavelRock_Exterior", "NavelRock_1F", "NavelRock_Fork", "NavelRock_SummitPath_2F", "NavelRock_SummitPath_3F",
-  "NavelRock_SummitPath_4F", "NavelRock_SummitPath_5F", "NavelRock_Summit", "NavelRock_B1F"
-].concat(Array.from({ length: 11 }, (_, i) => "NavelRock_BasePath_B" + (i + 1) + "F"), ["NavelRock_Base",
-  "BirthIsland_Harbor", "BirthIsland_Exterior"
-]));
+  "CeruleanCave_1F", "CeruleanCave_2F", "CeruleanCave_B1F"
+  // (Not FireRed's Mystery Gift islands, Navel Rock and Birth Island: left
+  // out on purpose, with Johto and Hoenn to come.)
+]);
 // People whose look is set by a map script (OBJ_EVENT_GFX_VAR_*), and a second
 // look the game can switch to, e.g. the old man lying across Viridian's road.
 // (Fuchsia's fossil Pokémon statue is a Kabuto, or an Omanyte once you've
@@ -240,9 +231,7 @@ const VAR_GFX = { ViridianCity: { OBJ_EVENT_GFX_VAR_0: "OBJ_EVENT_GFX_OLD_MAN_1"
   // (Trainer Tower's trainers look like whoever the floor has: ui/game.js
   // picks their look; the e-Reader trainer upstairs in Seven Island's house
   // never visits here.)
-  SevenIsland_House_Room2: { OBJ_EVENT_GFX_VAR_0: "OBJ_EVENT_GFX_YOUNGSTER" },
-  // (Deoxys, in its Normal Forme: BirthIsland_Exterior_OnTransition.)
-  BirthIsland_Exterior: { OBJ_EVENT_GFX_VAR_0: "OBJ_EVENT_GFX_DEOXYS_N" } };
+  SevenIsland_House_Room2: { OBJ_EVENT_GFX_VAR_0: "OBJ_EVENT_GFX_YOUNGSTER" } };
 for (let n = 1; n <= 8; n++) VAR_GFX["TrainerTower_" + n + "F"] = Object.fromEntries([0, 1, 2, 3].map((k) => ["OBJ_EVENT_GFX_VAR_" + k, "OBJ_EVENT_GFX_YOUNGSTER"]));
 const ALT_GFX = {
   ViridianCity_EventScript_TutorialOldMan: "OBJ_EVENT_GFX_OLD_MAN_LYING_DOWN",
@@ -361,6 +350,10 @@ const GAME_TEXT = [
   "Trade_Text_DoYouHaveMonWantToTradeForMon", "Trade_Text_ThatsTooBad", "Trade_Text_ThisIsNoMon",
   "Trade_Text_ThanksYoureAPal", "Trade_Text_HowIsMyOldMon", "Text_CutTreeDown", "Text_TreeCanBeCutDown",
   "Aide_Text_HaventCaughtEnoughMonsForItem", "Aide_Text_GetEnoughMonsComeBackForItem",
+  // Prof. Oak's Pokédex rating (data/text/pokedex_rating.inc): Kanto's, then the National Pokédex's.
+  "PokedexRating_Text_SeenXOwnedY", "PokedexRating_Text_Complete", "PokedexRating_Text_NationalDexSeenXOwnedY",
+  "PokedexRating_Text_LookForwardToFilledNationalDex", "PokedexRating_Text_YouveCompletedDex",
+  ...Array.from({ length: 15 }, (_, i) => "PokedexRating_Text_LessThan" + (i + 1) * 10),
   "Text_OnlySkilledTrainersAllowedThrough", "Text_CantLetYouPass", "Text_OhThatsBadgeGoRightAhead", "Text_MoveCanOnlyBeLearnedOnce",
   // Route 23's badge guards (data/text/route23.inc).
   "Text_OnlyPassWithBadgeDontHaveYet", "Text_OnlyPassWithBadgeOhGoAhead",
@@ -1030,8 +1023,7 @@ for (const name of MAPS) {
     name, title: TITLES[name] || name.replace(/_/g, " ").replace(/([a-z])([A-Z0-9])/g, "$1 $2"),
     width: w, height: h, type: map.map_type.replace(/^MAP_TYPE_/, "").toLowerCase(),
     // Its song (assets/audio/music.js), e.g. "mus_pallet".
-    // (MUS_NONE: silence, Birth Island's.)
-    music: map.music && map.music !== "MUS_NONE" ? map.music.toLowerCase() : undefined,
+    music: map.music ? map.music.toLowerCase() : undefined,
     // FireRed's battle scene for the map ("gym", "indoor1", ...), unless normal.
     // Where an Escape Rope works (caves, Viridian Forest).
     allowEscaping: map.allow_escaping || undefined,
@@ -1144,18 +1136,6 @@ for (const name of MAPS) {
 for (const k of GAME_TEXT) {
   if (!texts(MAPS[0])[k]) throw new Error("Missing shared text " + k);
   gameText[k] = texts(MAPS[0])[k];
-}
-
-// Birth Island's triangle in each of its colours (src/field_specials.c's
-// sDeoxysObjectPals: MoveDeoxysObject loads deoxys_rock_<n> over its palette's
-// first 4 colours at each step of the puzzle): birth_island_stone_<n>.png.
-{
-  const stone = readPng(P("graphics/object_events/pics/misc/birth_island_stone.png"));
-  for (let n = 0; n <= 10; n++) {
-    const pal = readPal(P("graphics/field_specials/deoxys_rock_" + n + ".pal"));
-    const palette = stone.palette.map((c, i) => (i < 4 ? pal[i] : c));
-    writeSprite(Object.assign({}, stone, { palette }), path.join(outSprites, "birth_island_stone_" + n + ".png"));
-  }
 }
 
 for (const [color, prefix] of Object.entries(PLAYER_SPRITES)) {

@@ -108,7 +108,6 @@ window.ITEM_DESCRIPTIONS = {
   "miracle-seed": "An item to be held by a Pokémon.\nA seed imbued with life that boosts\nthe power of Grass-type moves.",
   "moomoo-milk": "Highly nutritious milk.\nIt restores the HP of one Pokémon\nby 100 points.",
   "moon-stone": "A peculiar stone that makes certain\nspecies of Pokémon evolve.\nIt is as black as the night sky.",
-  "mystic-ticket": "A ticket required to board the ship\nto Navel Rock.\nIt glows with a mystic light.",
   "mystic-water": "An item to be held by a Pokémon.\nA teardrop-shaped gem that boosts\nthe power of Water-type moves.",
   "nanab-berry": "Can be ground up into a powder as\nan ingredient for medicine.",
   "nest-ball": "A somewhat different Ball that\nworks especially well on weaker\nPokémon.",

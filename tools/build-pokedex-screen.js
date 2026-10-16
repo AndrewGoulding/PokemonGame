@@ -52,7 +52,9 @@ const speciesOf = (c) => ourName[key(c.replace(/^SPECIES_/, ""))];
 
 // ---------- Backgrounds (BG3, the dex's 32 tiles and palette 0) ----------
 
-const tiles = readPng(P("graphics/pokedex/kanto_dex_bgtiles.png"));
+// (The National Pokédex's tiles, sNatDexTiles: the Pokédex is the National one from the start here.
+// Both load kanto_dex_bgpals: DexScreen_LoadResources.)
+const tiles = readPng(P("graphics/pokedex/national_dex_bgtiles.png"));
 const pals = readPal(P("graphics/pokedex/kanto_dex_bgpals.pal"));
 const pal0 = pals.slice(0, 16);
 // A screen of tile entries (tile | 0x400 hflip | 0x800 vflip), rows of 30.

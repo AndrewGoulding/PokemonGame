@@ -161,7 +161,7 @@
       clearMenu();
       show("intro");
       const v = await GbaMenus.mainMenu($("#intro"), {
-        save: p && { name: p.name, timeMs: p.playTimeMs, dex: p.flags.pokedex ? p.pokedex.caught.length : null, badges: p.badges.length },
+        save: p && { name: p.name, timeMs: p.playTimeMs, dex: p.flags.pokedex ? Player.dexCount(p, "caught", !Player.nationalDex(p)) : null, badges: p.badges.length },
         frame: GameOptions.get().frame
       });
       if (v === "back") return "back";
@@ -790,10 +790,8 @@
     let region = here.region, [cx, cy] = here.cell;
     visitSection(player.location && player.location.map);
     const visited = f.visitedSections || [];
-    // Places not on the map yet (GetDungeonMapsecUnderCursor; BufferRegionMapBg):
-    // Cerulean Cave until it's open, Navel Rock and Birth Island until you've been.
-    const hiddenSection = (sec) => (sec === "CERULEAN_CAVE" && !f.canLinkWithRS) ||
-      regions.some((r) => r.hidden && r.hidden.section === sec && !f[r.hidden.flag]);
+    // Places not on the map yet (GetDungeonMapsecUnderCursor): Cerulean Cave until it's open.
+    const hiddenSection = (sec) => sec === "CERULEAN_CAVE" && !f.canLinkWithRS;
     // Fly's places: visited, with somewhere to land.
     const flyTo = (sec) => (flying && sec && visited.includes(sec) && (T.fly || {})[sec]) || null;
     show("scene");
@@ -820,8 +818,7 @@
           icons += '<div class="tm-fly" style="left:' + pct(32 + 8 * x, 240) + ";top:" + pct(32 + 8 * y, 160) + '"></div>';
         }
       }
-      scene.innerHTML = '<div class="town-map' + (flying ? " flying" : "") + '"><img class="tm-map" src="' + (R.hidden && !f[R.hidden.flag] ? R.hidden.image : R.image) +
-        '" alt="Map of ' + R.label + '">' + icons +
+      scene.innerHTML = '<div class="town-map' + (flying ? " flying" : "") + '"><img class="tm-map" src="' + R.image + '" alt="Map of ' + R.label + '">' + icons +
         '<div class="tm-name"><b></b><small></small></div>' +
         (region === here.region ? '<img class="tm-player" src="assets/town-map/player.png" alt="You are here" style="' + sprite(here.cell[0], here.cell[1]) + '">' : "") +
         '<div class="tm-cursor"></div></div>';
@@ -1150,9 +1147,7 @@
         $("#overlay").classList.add("hidden");
       } else {
         await say(["Accessed Prof. Oak's PC…", "Accessed the Pokédex Rating\nSystem…"]);
-        if (await confirm("Would you like to have your\nPokédex rated?")) {
-          await say("Prof. Oak: {PLAYER}, you've seen " + player.pokedex.seen.length + "\nPokémon, and caught " + player.pokedex.caught.length + "!");
-        }
+        if (await confirm("Would you like to have your\nPokédex rated?")) await rateDex();
         await say("Closed link to Prof. Oak's PC.");
       }
     }
@@ -1483,7 +1478,9 @@
       areas: speciesAreas,
       areaList: dexAreaList(),
       trainer: "assets/sprites/trainers/front/" + Player.LOOKS[player.look].front + ".png",
-      cry: (sp) => cry(sp)
+      cry: (sp) => cry(sp),
+      // (The National Pokédex from the start: Player.nationalDex.)
+      national: Player.nationalDex(player)
     }, extra);
   }
   function pokedex() {
@@ -1536,7 +1533,7 @@
       const html = '<div class="trainer-card"><img class="trainer-card-pic" alt="" src="assets/sprites/trainers/front/' +
         Player.LOOKS[player.look].front + '.png"><h2>' + escapeHtml(player.name) + "</h2>" +
         "<dl><dt>Money</dt><dd>" + money(player.money) + "</dd>" +
-        "<dt>Pokédex</dt><dd>" + player.pokedex.caught.length + " caught, " + player.pokedex.seen.length + " seen</dd>" +
+        "<dt>Pokédex</dt><dd>" + Player.dexCount(player, "caught", !Player.nationalDex(player)) + " caught, " + Player.dexCount(player, "seen", !Player.nationalDex(player)) + " seen</dd>" +
         "<dt>Badges</dt><dd>" + player.badges.length + "</dd>" +
         "<dt>Mining</dt><dd>Lv. " + Mining.level(miningXp()) + (Mining.toNext(miningXp()) == null ? " (max)"
           : " <small>(" + Mining.toNext(miningXp()) + " XP to the next level)</small>") + "</dd>" +
@@ -1918,9 +1915,8 @@
       "TrainerTower_EventScript_DoublesTrainer1", "TrainerTower_EventScript_SinglesTrainer", "TrainerTower_EventScript_KnockoutTrainer",
       "TrainerTower_EventScript_DoublesTrainer2", "TrainerTower_EventScript_SingleBattleTrigger",
       "TrainerTower_EventScript_DoubleBattleTriggerTop", "TrainerTower_EventScript_DoubleBattleTriggerBottom",
-      // Cerulean Cave, Navel Rock and Birth Island.
-      "CeruleanCave_B1F_EventScript_Mewtwo", "NavelRock_Harbor_EventScript_Sailor", "BirthIsland_Harbor_EventScript_Sailor",
-      "NavelRock_Summit_EventScript_HoOh", "NavelRock_Base_EventScript_Lugia", "BirthIsland_Exterior_EventScript_Triangle"
+      // Cerulean Cave.
+      "CeruleanCave_B1F_EventScript_Mewtwo"
     ]).concat(Object.keys(BRAILLE_SIGNS)).concat(League.ROOMS.map((r) => "enter:" + r.map), ["enter:" + League.HALL_OF_FAME]).concat(ROUTE23_BADGES.slice(1).flatMap((b) => ["", "Trigger"].map((t) => "Route23_EventScript_" + b + "BadgeGuard" + t))).concat([1, 2, 3, 4, 5, 6].flatMap((n) => ["Left", "Right"].map((s) => "CinnabarIsland_Gym_EventScript_Quiz" + n + s))).concat(CYCLING_ROAD_GATES.flatMap((g) => ["Top", "MidTop", "Mid", "MidBottom", "Bottom"].map((k) => g + "_EventScript_NeedBikeTrigger" + k))));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
@@ -1970,9 +1966,11 @@
     // The Seafoam Islands' boulders: where they are now (game/seafoam.js).
     if (Seafoam.isBoulderFlag(person.flag)) return !Seafoam.hidden(f, person.flag);
     // Lostelle's dad stands by the counter once he's thanked you (TwoIsland_JoyfulGameCorner_OnTransition);
-    // the Dunsparce Tunnel's prospector digs at the wall until it's dug out.
+    // the Dunsparce Tunnel's prospector digs at the wall until it's dug out
+    // (ThreeIsland_DunsparceTunnel_OnTransition: with the National Pokédex,
+    // which you have from the start here, it's dug out).
     if (person.script === "TwoIsland_JoyfulGameCorner_EventScript_LostellesDaddy" && f.gotMoonStoneFromDaddy) return { x: 6, y: 2, movement: "face_down" };
-    if (person.script === "ThreeIsland_DunsparceTunnel_EventScript_Prospector" && !f.gameClear) return { x: 6, y: 3, movement: "face_right" };
+    if (person.script === "ThreeIsland_DunsparceTunnel_EventScript_Prospector" && !Player.nationalDex(player)) return { x: 6, y: 3, movement: "face_right" };
     // Trainer Tower's floors: the challenge's trainers, where and as whom (towerPerson).
     { const tv = towerPerson(person, map || player.location.map); if (tv !== undefined) return tv; }
     // The Tanoby Key's boulders on their switches, once it's solved.
@@ -2109,18 +2107,6 @@
       // deep inside until caught or beaten (CeruleanCave_B1F_OnTransition).
       case "FLAG_HIDE_CERULEAN_CAVE_GUARD": return !Sevii.ceruleanCaveOpen(f);
       case "FLAG_HIDE_MEWTWO": return !f.foughtMewtwo;
-      // Navel Rock: Ho-Oh at the Summit, Lugia at the Base, until caught or
-      // beaten (NavelRock_Summit_OnTransition, NavelRock_Base_OnTransition).
-      case "FLAG_HIDE_HO_OH": return !f.foughtHoOh && !f.hoOhFlewAway;
-      case "FLAG_HIDE_LUGIA": return !f.foughtLugia && !f.lugiaFlewAway;
-      // Birth Island: the triangle where the puzzle has it, in its colour;
-      // Deoxys only comes when it breaks (BirthIsland_Exterior_OnTransition).
-      case "FLAG_HIDE_BIRTH_ISLAND_METEORITE": {
-        if (f.foughtDeoxys || f.deoxysFlewAway || deoxys.awakened) return false;
-        const [x, y] = Sevii.DEOXYS_COORDS[deoxys.num];
-        return { x, y, sprite: "birth_island_stone_" + deoxys.num };
-      }
-      case "FLAG_HIDE_DEOXYS": return false;
       case "FLAG_HIDE_RUBY": return !f.gotRuby;
       // Four Island: Gary, for his scene the first time you come; the
       // poachers and Lorelei in Icefall Cave until you've run them off, and
@@ -2568,8 +2554,8 @@
       case "IndigoPlateau_PokemonCenter_1F_EventScript_Clerk":
         await mart(ev.person.mart);
         return;
-      // The Elite Four's door: once you're Champion (FireRed: the National
-      // Pokédex), it's closed until the Sapphire's in Celio's machine.
+      // The Elite Four's door: once you're Champion, it's closed until the
+      // Sapphire's in Celio's machine (Sevii.leagueClosed).
       case "IndigoPlateau_PokemonCenter_1F_EventScript_DoorGuard":
         await say(T(Sevii.leagueClosed(f) ? "IndigoPlateau_PokemonCenter_1F_Text_LoreleiIsAbsentClosedForTimeBeing"
           : "IndigoPlateau_PokemonCenter_1F_Text_FaceEliteFourGoodLuck"));
@@ -3294,15 +3280,10 @@
       case "MtEmber_Exterior_EventScript_Grunt1": await emberGrunt(1); return;
       case "MtEmber_Exterior_EventScript_Grunt2": await emberGrunt(2); return;
       case "MtEmber_Summit_EventScript_Moltres": await legendaryBird(ev.person, "Moltres", "foughtMoltres"); return;
-      // ---------- Cerulean Cave, Navel Rock and Birth Island ----------
+      // ---------- Cerulean Cave ----------
       case "CeruleanCave_B1F_EventScript_Mewtwo":
         await legendaryBird(ev.person, "Mewtwo", "foughtMewtwo", { level: 70, text: T("CeruleanCave_B1F_Text_Mew"), music: "mus_vs_mewtwo" });
         return;
-      case "NavelRock_Harbor_EventScript_Sailor": await eventHarborSailor("NAVEL_ROCK"); return;
-      case "BirthIsland_Harbor_EventScript_Sailor": await eventHarborSailor("BIRTH_ISLAND"); return;
-      case "NavelRock_Summit_EventScript_HoOh": await hoOh(); return;
-      case "NavelRock_Base_EventScript_Lugia": await lugia(ev.person); return;
-      case "BirthIsland_Exterior_EventScript_Triangle": await deoxysTriangle(ev.person); return;
       case "MtEmber_RubyPath_B5F_EventScript_Ruby":
         f.gotRuby = true;
         Overworld.removePerson(ev.person);
@@ -3342,11 +3323,11 @@
       case "ThreeIsland_Mart_EventScript_Clerk": await mart(ev.person.mart); return;
       case "ThreeIsland_BerryForest_EventScript_Lostelle": await berryForestLostelle(ev.person); return;
       // The Dunsparce Tunnel's prospector strikes gold once it's dug out
-      // (FireRed: with the National Pokédex; here, once you're Champion).
+      // (with the National Pokédex: from the start here).
       case "ThreeIsland_DunsparceTunnel_EventScript_Prospector": {
         const D = (k) => T("ThreeIsland_DunsparceTunnel_Text_" + k);
         if (f.gotNuggetFromProspector) { await say(D("ThatsANugget")); return; }
-        if (!f.gameClear) {
+        if (!Player.nationalDex(player)) {
           await say(D("ProspectingForGold"));
           Screen.say("");
           await Overworld.act([{ who: "LOCALID_PROSPECTOR", moves: ["face_right"] }]);
@@ -3736,7 +3717,7 @@
         const ask = A("GiveItemfinderIfCaught30");
         await say(ask.slice(0, -1), [NEEDED, label]);
         if (!(await confirm(fill(ask[ask.length - 1], [NEEDED, label])))) { await say(T("Aide_Text_GetEnoughMonsComeBackForItem"), [NEEDED, label]); return; }
-        const count = player.pokedex.caught.length;
+        const count = Player.dexCount(player, "caught", true);   // (Kanto's: GetPokedexCount)
         if (count < NEEDED) { await say(T("Aide_Text_HaventCaughtEnoughMonsForItem"), [NEEDED, label, count]); return; }
         await say(A("GreatHereYouGo"), [NEEDED, label, count]);
         Player.addItem(player, item);
@@ -3755,7 +3736,7 @@
         const ask = T("Route2_EastBuilding_Text_GiveHM05IfSeen10Mons");
         await say(ask.slice(0, -1));
         if (!(await confirm(fill(ask[ask.length - 1])))) { await say(T("Aide_Text_GetEnoughMonsComeBackForItem"), [NEEDED, label]); return; }
-        const count = player.pokedex.caught.length;
+        const count = Player.dexCount(player, "caught", true);   // (Kanto's: GetPokedexCount)
         if (count < NEEDED) { await say(T("Aide_Text_HaventCaughtEnoughMonsForItem"), [NEEDED, label, count]); return; }
         await say(T("Route2_EastBuilding_Text_GreatHereYouGo"), [NEEDED, label, count]);
         Player.addItem(player, item);
@@ -4169,15 +4150,30 @@
     await say(N(next === name ? "FromNowOnShallBeKnownAsSameName" : "FromNowOnShallBeKnownAsName"), [next]);
   }
 
+  // Prof. Oak's Pokédex rating (PokedexRating_EventScript_Rate): Kanto's seen
+  // and owned and his rating, to its fanfare; then the National Pokédex's
+  // (which you always have here) and whether it's complete (HasAllMons).
+  async function rateDex() {
+    const R = (k) => T("PokedexRating_Text_" + k), n = (which, kanto) => String(Player.dexCount(player, which, kanto));
+    await say(R("SeenXOwnedY"), [n("seen", true), n("caught", true)]);
+    const rating = Player.dexRating(player);
+    await sayWithJingle(rating.complete ? "mus_evolved" : "mus_dex_rating", R(rating.text));
+    if (!Player.nationalDex(player)) return;
+    await say(R("NationalDexSeenXOwnedY"), [n("seen", false), n("caught", false)]);
+    if (Player.hasAllMons(player)) { player.flags.oakSawDexCompletion = true; await say(R("YouveCompletedDex")); }
+    else await say(R("LookForwardToFilledNationalDex"));
+  }
+
   // Prof. Oak's Aides (FireRed's Aide_EventScript_*): an item for so many kinds
-  // of Pokémon caught.
+  // of Pokémon caught (GetPokedexCount with VAR_0x8004 0: Kanto's, National
+  // Pokédex or not).
   async function aideGift(o) {
-    const f = player.flags, label = Bag.name(o.item), A = (k) => T(o.text + k), vars = () => [o.needed, label, player.pokedex.caught.length];
+    const f = player.flags, label = Bag.name(o.item), A = (k) => T(o.text + k), vars = () => [o.needed, label, Player.dexCount(player, "caught", true)];
     if (f[o.flag]) { await say(A(o.explain), vars()); return; }
     const ask = A(o.ask);
     await say(ask.slice(0, -1), vars());
     if (!(await confirm(fill(ask[ask.length - 1], vars())))) { await say(T("Aide_Text_GetEnoughMonsComeBackForItem"), vars()); return; }
-    if (player.pokedex.caught.length < o.needed) { await say(T("Aide_Text_HaventCaughtEnoughMonsForItem"), vars()); return; }
+    if (Player.dexCount(player, "caught", true) < o.needed) { await say(T("Aide_Text_HaventCaughtEnoughMonsForItem"), vars()); return; }
     await say(A("GreatHereYouGo"), vars());
     // (A key item you have already stays one: the Exp. Share, which this game starts you with.)
     if (!(Bag.isKeyItem(o.item) && Player.itemCount(player, o.item))) Player.addItem(player, o.item);
@@ -6172,105 +6168,6 @@
     else Overworld.removePerson(person);
   }
 
-  // ---------- Navel Rock and Birth Island ----------
-  //
-  // Ho-Oh, Lugia and Deoxys (FireRed's Mystery Gift islands): a wild battle
-  // to the legendary music (Deoxys has its own). Caught, it's gone
-  // (FLAG_FOUGHT_*); beaten, it flies away for good (FLAG_*_FLEW_AWAY); run
-  // from, it flies away, and is back the next time you come.
-  // (EventScript_MonFlewAway: the screen fades, it's gone, "... flew away!")
-  async function eventLegend(localId, hideFlag, species, level, fought, flewAway, battleMusic) {
-    const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create(species, level)] }, music: battleMusic || "mus_vs_legend" });
-    if (outcome === "lost") return outcome;
-    show("world");
-    await Overworld.resume();
-    if (outcome === "won" || outcome === "ran") {
-      if (outcome === "won") player.flags[flewAway] = true;
-      else tempFlags.add(player.location.map + ":" + hideFlag);
-      await Overworld.fadeToBlack();
-      Overworld.removeObject(localId);
-      await Overworld.fadeFromBlack();
-      // (Deoxys-Attack is "Deoxys".)
-      await say(T("Text_MonFlewAway"), [species.replace(/-(Normal|Attack|Defense|Speed)$/, "")]);
-      return outcome;
-    }
-    player.flags[fought] = true;
-    Overworld.removeObject(localId);
-    return outcome;
-  }
-  // The Summit (NavelRock_Summit_EventScript_HoOh): stepping up to it, the
-  // camera looks up to Ho-Oh, its wings beating; the shade lifts, it cries
-  // and swoops down to you.
-  async function wingFlaps(count, delayFrames) {
-    for (let i = 0; i < count; i++) { if (i) await sleep(delayFrames * 1000 / 60); sfx("se_m_wing_attack"); }
-  }
-  async function hoOh() {
-    const H = "LOCALID_NAVEL_ROCK_HO_OH", map = "NavelRock_Summit";
-    tempFlags.add(map + ":hoOh");   // (VAR_TEMP_1: once each visit)
-    if (!canBattle()) return;
-    const frames = (n) => sleep(n * 1000 / 60);
-    wingFlaps(3, 35);
-    await Promise.all([Overworld.act([{ who: H, moves: ["delay_16", "delay_16", "walk_in_place_down", "walk_in_place_down", "walk_in_place_down", "walk_in_place_down"] }]),
-      Overworld.panCamera(-3)]);
-    await frames(50);
-    tempFlags.add(map + ":clear");   // (setweather 0)
-    cry("Ho-Oh");
-    await frames(30 + 60 + 30);
-    wingFlaps(3, 35);
-    await Promise.all([frames(32).then(() => Overworld.panCamera(0)),
-      Overworld.act([{ who: H, moves: ["walk_down", "walk_down", "walk_down", "walk_down", "walk_down", "walk_in_place_down", "delay_16", "delay_16"] }])]);
-    await eventLegend(H, "FLAG_HIDE_HO_OH", "Ho-Oh", 70, "foughtHoOh", "hoOhFlewAway");
-  }
-  // The Base (NavelRock_Base_EventScript_Lugia): thunder, the cave shakes,
-  // and Lugia cries.
-  async function lugia() {
-    const L = "LOCALID_NAVEL_ROCK_LUGIA";
-    if (!canBattle()) return;
-    const frames = (n) => sleep(n * 1000 / 60);
-    await frames(20);
-    for (let i = 0; i < 2; i++) {
-      sfx("se_thunderstorm_stop");
-      await Overworld.shake(8, { x: 3, y: 0, delay: 2 });   // (ShakeScreen: 4 shakes, each there and back)
-      await frames(30);
-    }
-    await frames(50);
-    cry("Lugia");
-    await frames(80);
-    await eventLegend(L, "FLAG_HIDE_LUGIA", "Lugia", 70, "foughtLugia", "lugiaFlewAway");
-  }
-  // Birth Island's triangle (BirthIsland_Exterior_EventScript_Triangle,
-  // game/sevii.js's deoxysTouch): touched, it moves on (or back to the start,
-  // if you dawdled); touched at its last spot it breaks, and Deoxys comes
-  // down to you (Movement_DeoxysApproach). Deoxys battles in its Attack
-  // Forme, as in FireRed (Deoxys-Attack); its look on the island is the
-  // Normal Forme's.
-  let deoxys = Sevii.deoxysPuzzle();
-  async function deoxysTriangle() {
-    const ROCK = "LOCALID_BIRTH_ISLAND_EXTERIOR_ROCK", D = "LOCALID_BIRTH_ISLAND_DEOXYS";
-    if (!deoxys.awakened && deoxys.num === 10 && !canBattle()) return;
-    const result = Sevii.deoxysTouch(deoxys);
-    if (result === 3) return;
-    if (result === 0 || result === 1) {
-      // (FLDEFF_MOVE_DEOXYS_ROCK: it fades out and back in at its new spot, in its new colour.)
-      sfx(result === 0 ? "se_m_confuse_ray" : "se_deoxys_move");
-      await Overworld.fadeToBlack();
-      const [x, y] = Sevii.DEOXYS_COORDS[deoxys.num];
-      Overworld.addObject(ROCK, { x, y }, { sprite: "birth_island_stone_" + deoxys.num });
-      await Overworld.fadeFromBlack();
-      return;
-    }
-    // Solved: the rock shatters (FLDEFF_DESTROY_DEOXYS_ROCK) and Deoxys comes.
-    music("mus_encounter_deoxys");
-    await Overworld.shake(8, { x: 0, y: 2, delay: 3 });
-    sfx("se_bang");
-    Overworld.removeObject(ROCK);
-    Overworld.addObject(D, { x: 15, y: 3 });
-    await Overworld.act([{ who: D, moves: Array(7).fill("walk_slower_down") }]);
-    cry("Deoxys-Normal");
-    await sleep(1000);
-    await eventLegend(D, "FLAG_HIDE_DEOXYS", "Deoxys-Attack", 30, "foughtDeoxys", "deoxysFlewAway", "mus_vs_deoxys");
-  }
-
   // ---------- The Power Plant ----------
   //
   // The two "item balls" that are Electrode (PowerPlant_EventScript_Electrode1
@@ -6639,10 +6536,7 @@
   // game/sevii.js has the ports, the menus and the story's flags.
   async function setSail(from, to, announce) {
     if (announce !== false) {
-      // (From Vermilion, the special ferries to Navel Rock and Birth Island:
-      // EventScript_SailToNavelRock, _SailToBirthIsland.)
-      const special = from === "VERMILION_CITY" && { NAVEL_ROCK: "VermilionCity_Text_Seagallop10Departing", BIRTH_ISLAND: "VermilionCity_Text_Seagallop12Departing" }[to];
-      await say(special ? T(special) : from === "VERMILION_CITY" && to !== "CINNABAR_ISLAND" ? T("VermilionCity_Text_Seagallop7Departing") : T("Text_AllAboardSeagallopNum"),
+      await say(from === "VERMILION_CITY" && to !== "CINNABAR_ISLAND" ? T("VermilionCity_Text_Seagallop7Departing") : T("Text_AllAboardSeagallopNum"),
         [String(Sevii.ferryNumber(from, to))]);
     }
     Screen.say("");
@@ -6686,15 +6580,6 @@
       return;
     }
   }
-  // Navel Rock's and Birth Island's harbor sailors: back to Vermilion
-  // (MULTICHOICE_SEAGALLOP_VERMILION).
-  async function eventHarborSailor(from) {
-    const q = T("Text_WhereDoYouWantToSail");
-    await say(q.slice(0, -1));
-    const i = await multichoice(fill(q[q.length - 1]), 20, 8, ["Vermilion", "Exit"]);
-    if (i !== 0) { Screen.say(""); return; }
-    await setSail(from, "VERMILION_CITY");
-  }
   // The harbor sailors on One, Two and Three Island.
   async function harborSailor(from) {
     const q = T("Text_WhereDoYouWantToSail");
@@ -6707,23 +6592,6 @@
     const f = player.flags, scene = f.celioScene || 0;
     const back = async () => { if (walkBack) await Overworld.act([{ who: "player", moves: ["walk_up"] }]); };
     if (scene < 1) { await say(T("VermilionCity_Text_TheShipSetSail")); await back(); return; }
-    // With the Rainbow Pass and a ticket (VermilionCity_EventScript_HasMysticTicket,
-    // _HasAuroraTicket, _HasMysticAndAuroraTickets): the sailor's surprised the
-    // first time, then the Sevii Islands, or the ticket's island.
-    const tickets = scene >= 5 ? Sevii.ticketPorts(f, (item) => Player.itemCount(player, item) > 0) : [];
-    if (tickets.length) {
-      if (tickets.includes("NAVEL_ROCK") && !f.shownMysticTicket) { f.shownMysticTicket = true; await say(T("VermilionCity_Text_OhMysticTicketTakeYouToNavelRock")); }
-      if (tickets.includes("BIRTH_ISLAND") && !f.shownAuroraTicket) { f.shownAuroraTicket = true; await say(T("VermilionCity_Text_OhAuroraTicketTakeYouToBirthIsland")); }
-      const q = T("VermilionCity_Text_BoardSeagallopFerry");
-      const items = ["SEVII"].concat(tickets, ["EXIT"]);
-      const [left, top] = tickets.length > 1 ? [13, 5] : tickets[0] === "NAVEL_ROCK" ? [17, 6] : [13, 6];
-      const i = await multichoice(fill(q[q.length - 1]), left, top, items.map((p) => (p === "SEVII" ? "Sevii Islands" : p === "EXIT" ? "Exit" : Sevii.port(p).label)));
-      const pick = i < 0 ? "EXIT" : items[i];
-      if (pick === "SEVII") { await seagallopMenu("VERMILION_CITY", q, back); return; }
-      if (pick === "EXIT") { Screen.say(""); await back(); return; }
-      await setSail("VERMILION_CITY", pick);
-      return;
-    }
     const q = T(scene >= 5 ? "VermilionCity_Text_BoardSeagallopRainbowPass" : "VermilionCity_Text_BoardSeagallopTriPass");
     await say(q.slice(0, -1));
     await seagallopMenu("VERMILION_CITY", q, back);
@@ -6937,16 +6805,14 @@
   }
 
   // Celio (OneIsland_PokemonCenter_1F_EventScript_Celio): what he says as
-  // the story goes on. Once you're Champion (FireRed: with the National
-  // Pokédex, which this game hasn't got) he asks you to find a gem for his
+  // the story goes on. With the National Pokédex (yours from the start here),
+  // once Bill's taken you home (scene 3), he asks you to find a gem for his
   // Network Machine, and Team Rocket turns up on Mt. Ember; bring him the
   // Ruby and he trades your Tri-Pass for the Rainbow Pass and asks for the
   // Sapphire (the Dotted Hole on Six Island; Gideon takes it to the Rocket
   // Warehouse on Five Island, and gives it back once beaten).
   async function celio() {
     const f = player.flags, X = (k) => T("OneIsland_PokemonCenter_1F_Text_" + k), scene = f.celioScene || 0;
-    // (A save from before the tickets: he remembers them now.)
-    if (scene >= 6 && await celioTickets()) return;
     if (scene >= 7) {
       await say(X("CelioHearingRumorsAboutYou"));
       await say(X(["BillsFirstMonWasAbra", "BillsHometownInGoldenrod", "BillCantStomachMilk"][Math.floor(Math.random() * 3)]));
@@ -6957,7 +6823,7 @@
     if (scene === 5) { await say(X("PassLetYouGetToAllIslands")); return; }
     if (f.gotRuby && Player.itemCount(player, "ruby")) { await celioRuby(); return; }
     if (scene === 4) { await say(X("TryingToFindGem")); return; }
-    if (f.gameClear && scene >= 3) {
+    if (Player.nationalDex(player) && scene >= 3) {
       await say(X("CelioCaughtMoreMonMaybeICanBeUseful"));
       await Overworld.act([{ who: CELIO, moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
       await say(X("YoullBeTradingFromTrainersFarAway"));
@@ -7034,22 +6900,6 @@
     await Overworld.act([{ who: CELIO, moves: ["face_player"] }]);
     await say(X("ManagedToLinkWithHoennThankYou"));
     f.celioScene = 6;
-    await celioTickets();
-  }
-  // This game's own (FireRed gave these by Mystery Gift): Celio's thanks,
-  // the Mystic Ticket and the Aurora Ticket, for the Seagallop from Vermilion
-  // to Navel Rock and Birth Island (FLAG_ENABLE_SHIP_NAVEL_ROCK, _BIRTH_ISLAND).
-  async function celioTickets() {
-    const f = player.flags;
-    if (f.gotEventTickets || !f.canLinkWithRS) return false;
-    await say(["Oh, and {PLAYER}…\nI almost forgot.", "While I was setting up the machine,\nI found these tucked inside it.",
-      "Two Seagallop tickets, to islands\nI've never even heard of…", "I can't leave the machine now.\nI'd like you to have them."]);
-    Player.addItem(player, "mystic-ticket");
-    Player.addItem(player, "aurora-ticket");
-    f.gotEventTickets = f.enableShipNavelRock = f.enableShipBirthIsland = true;
-    await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the Mystic Ticket\nand the Aurora Ticket from Celio!");
-    await say(["Show them to the Seagallop's crew\nin Vermilion.", "Who knows what you'll find out\nthere? Tell me all about it!"]);
-    return true;
   }
   // Bill, helping Celio (..._EventScript_Bill).
   async function oneIslandCenterBill() {
@@ -7506,10 +7356,6 @@
     }
     // Outside Trainer Tower the challenge is over (SevenIsland_TrainerTower_OnTransition).
     if (m === "SevenIsland_TrainerTower") f.towerScene = 0;
-    // Birth Island's triangle starts over (BirthIsland_Exterior_OnTransition);
-    // the islands go on the Town Map (setworldmapflag).
-    if (m === "BirthIsland_Exterior") { deoxys = Sevii.deoxysPuzzle(); f.worldMapBirthIsland = true; }
-    if (m === "NavelRock_Exterior") f.worldMapNavelRock = true;
   }
   // Walking about Cinnabar while Bill's waiting there: he comes over.
   function cinnabarBillStep() {
@@ -8637,7 +8483,7 @@
         f.canLinkWithRS ? ["on"] : []);
     }
     if (map === "MtEmber_Exterior") return (f.celioScene || 0) >= 4 ? ["cave"] : [];
-    if (map === "ThreeIsland_DunsparceTunnel") return f.gameClear ? ["dugout"] : [];
+    if (map === "ThreeIsland_DunsparceTunnel") return Player.nationalDex(player) ? ["dugout"] : [];
     // Five Island: the Rocket Warehouse's door open (FiveIsland_Meadow_OnLoad),
     // its arrows turned round once the Admin by them is beaten
     // (FiveIsland_RocketWarehouse_OnLoad); Icefall Cave 1F's ice, cracked or broken.
@@ -8824,12 +8670,6 @@
     // Walking into the Route 4 Pokémon Center makes it where you go after
     // blacking out (FireRed's setrespawn there).
     if (script === "enter:Route4_PokemonCenter_1F") { player.flags.lastCenter = "Route4_PokemonCenter_1F"; return false; }
-    // Navel Rock's Summit: Ho-Oh comes down as you step up to it, once each
-    // visit (NavelRock_Summit_OnTransition's VAR_TEMP_1).
-    if (script === "NavelRock_Summit_EventScript_HoOh") {
-      const f = player.flags;
-      return !f.foughtHoOh && !f.hoOhFlewAway && !tempFlags.has("NavelRock_Summit:hoOh");
-    }
     // (FireRed's FLAG_TEMP_2 and 3: Bill in the Teleporter, back after the ticket.)
     if (script === "enter:SSAnne_Exterior") return ssAnneDeparting();
     if (script === "enter:Route25_SeaCottage") { billInTeleporter = billJustOut = false; seaCottageReturn = !!player.flags.gotSSTicket; return false; }
@@ -8954,13 +8794,11 @@
         },
         boulderSwitch: (map, x, y) => tanobySwitch(map, x, y) || victoryRoadSwitch(map, x, y),
         // (The Tanoby Ruins' chambers are dark until the Tanoby Key's solved: EventScript_TryDarkenRuins.)
-        // (And Navel Rock's Summit clears as Ho-Oh comes down: NavelRock_Summit_EventScript_HoOh's setweather 0.)
-        weather: (map) => (Sevii.tanobyLocked(player.flags, map) ? "shade" : tempFlags.has(map + ":clear") ? "none" : null),
+        weather: (map) => (Sevii.tanobyLocked(player.flags, map) ? "shade" : null),
         onAvatar: (mode) => music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music),
         onStep: () => {
           leftPallet(player.location.map); DayCare.step(player.flags.dayCare); DayCare.step(player.flags.dayCare2); vsSeekerStep(); friendshipStep();
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
-          if (player.location.map === "BirthIsland_Exterior") Sevii.deoxysStep(deoxys);
           return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || safariStep() || cinnabarBillStep() || repelStep();
         }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) && repelAllows(mon),
         onMap: (m) => {

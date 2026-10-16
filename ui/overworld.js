@@ -913,24 +913,9 @@
     if (pan.n >= pan.count) { const done = pan.resolve; pan = null; panY = 0; panX = 0; done(); }
   }
 
-  // The camera leaving the player (FireRed's SpawnCameraObject: a camera
-  // object walked about, a pixel a frame): panCamera(tiles) moves it that
-  // many tiles down (up if negative) from the player, panCamera(0) back.
-  let camOff = 0, camTarget = 0, camDone = null;
-  function panCamera(tiles) {
-    camTarget = tiles * TILE;
-    if (camOff === camTarget) return Promise.resolve();
-    return new Promise((resolve) => { camDone = resolve; });
-  }
-  function updateCamera() {
-    camOff += Math.sign(camTarget - camOff);
-    if (camOff === camTarget && camDone) { const done = camDone; camDone = null; done(); }
-  }
-
   function update() {
     updatePopup();
     if (pan) updatePan();
-    if (camOff !== camTarget) updateCamera();
     updateWeather();
     if (heal) updateHeal();
     if (transition && ++transition.t > FLASH_FRAMES + SLICE_FRAMES + 4) {
@@ -1014,10 +999,7 @@
 
   // Frame index in a FireRed overworld sheet: 0-2 standing (down, up, left),
   // 3-4 walking down, 5-6 up, 7-8 left. Right is left mirrored.
-  // (Ho-Oh, Lugia and Deoxys have two: still, and their wings or arms moving
-  // as they go: sPicTable_HoOh's walking frames.)
   function frameFor(facing, walking, parity, frames) {
-    if (frames === 2) return walking ? 1 : 0;
     const stand = { down: 0, up: 1, left: 2, right: 2 }[facing];
     if (!walking || frames < 9) return Math.min(stand, frames - 1);
     return { down: 3, up: 5, left: 7, right: 7 }[facing] + parity;
@@ -1103,7 +1085,7 @@
       py = (sy * TILE) - dy * (me.move.dist - t);
       if (me.move.jump || me.move.dismount || me.move.hop) hop = Math.sin((t / me.move.dist) * Math.PI) * (me.move.jump ? 10 : 6);
     }
-    const camX = px - PLAYER_X + panX, camY = py - PLAYER_Y + panY + camOff;
+    const camX = px - PLAYER_X + panX, camY = py - PLAYER_Y + panY;
 
     g.fillStyle = "#000";
     g.fillRect(0, 0, VIEW_W, VIEW_H);
@@ -1287,7 +1269,7 @@
   window.Overworld = {
     explore, hide, read: (pages) => read(pages), showAreaName, forceStep, refreshPeople: () => loadPeople(),
     act, addObject, removeObject, removePerson, teleport, battleTransition, resume, pokecenterHeal,
-    fadeToBlack: fadeOut, fadeFromBlack: fadeIn, shake, panCamera,
+    fadeToBlack: fadeOut, fadeFromBlack: fadeIn, shake,
     setAvatar, avatar: () => me.avatar, flash, isDark: () => light != null && !flashOn,
     // What's in front of you: the tile, whoever stands there, and whether
     // it's water you could start surfing on.

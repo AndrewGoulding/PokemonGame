@@ -1,11 +1,16 @@
 // FireRed's Pokédex (src/pokedex_screen.c), drawn the way the game draws it at
 // 240x160 (assets/pokedex/, data/pokedex-screen.js, tools/build-pokedex-screen.js):
 //
-//   the table of contents   POKéMON LIST (numerical), the nine habitats, this
-//                           game's AREA MODE and CLOSE, with each choice's
-//                           picture and the Seen / Owned counts
-//   a list                  "No001", the caught ball, the name (----- if unseen)
-//                           and, caught, its types
+//   the table of contents   the National Pokédex's (sListMenuItems_NatDexModeSelect):
+//                           POKéMON LIST (NUMERICAL MODE: KANTO and NATIONAL),
+//                           the nine habitats, SEARCH (A TO Z, TYPE, LIGHTEST and
+//                           SMALLEST MODE), this game's AREA MODE and CLOSE,
+//                           with each choice's picture and the Seen / Owned
+//                           counts, Kanto's and National; the ▶ starts on
+//                           NATIONAL. (`national: false`: the Kanto Pokédex's
+//                           menu, one NUMERICAL MODE and the Kanto counts.)
+//   a list                  "No001" (National Dex numbers), the caught ball, the
+//                           name (----- if unseen) and, caught, its types
 //   AREA MODE               the places with wild Pokémon (----- until you've
 //                           been), how many of theirs you've caught, and a gold
 //                           crown once that's all of them; A lists them
@@ -22,6 +27,7 @@
 //     areaList,    // [{ name, visited, species: [...] }] the places with wild Pokémon, in order
 //     trainer,     // your front picture's URL (the size comparison)
 //     cry,         // (species) => void
+//     national,    // the National Pokédex (IsNationalPokedexEnabled): always, once you have one
 //     register     // a species: just caught; show its habitat page, then its entry ({A}NEXT)
 //   })
 (function () {
@@ -45,7 +51,7 @@
   }
   const A = (n) => image("assets/pokedex/" + n + ".png");
   ["wallpaper", "entry", "area", "habitat", "circle-0", "circle-1", "circle-2", "circle-3", "circle-4", "mini-page", "caught-marker",
-    "ball", "map-kanto", "footprints"].forEach(A);
+    "ball", "map-kanto", "footprints", "cat-numerical", "cat-abc", "cat-type", "cat-lightest", "cat-smallest"].forEach(A);
   const ready = (img) => img && img.complete && img.naturalWidth;
   const D = () => window.POKEDEX_SCREEN;
 
@@ -65,6 +71,7 @@
   const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
   const S = () => window.GbaMenus.Surface();
   const pad3 = (n) => String(n).padStart(3, "0");
+  const KANTO_DEX_COUNT = 151;
   const DEX = (sp) => window.DEX[sp] || {};
   const text = (sp) => ((window.POKEDEX_TEXT || {})[DEX(sp).id]) || {};
   const nameOf = (sp) => (window.Party && window.Party.speciesName ? window.Party.speciesName(sp) : sp);
@@ -156,9 +163,12 @@
 
   function menuItems() {
     const seen = new Set(st.entries.filter((e) => e.seen).map((e) => e.species));
-    const it = [{ head: "Pokémon list" }, { label: "Numerical mode", act: "numerical", icon: "numerical" }, { head: "Pokémon habitats" }];
+    const it = [{ head: "Pokémon list" }].concat(st.national
+      ? [{ label: "Numerical mode: Kanto", act: "kanto", icon: "numerical" }, { label: "Numerical mode: National", act: "national", icon: "numerical" }]
+      : [{ label: "Numerical mode", act: "kanto", icon: "numerical" }], [{ head: "Pokémon habitats" }]);
     D().habitats.forEach((h, i) => it.push({ label: h.name + " Pokémon", act: "habitat", habitat: i, icon: h.icon,
       locked: !h.pages.some((p) => p.some((sp) => seen.has(sp))) }));
+    it.push({ head: "Search" }, ...SEARCH.map(([act, label, icon]) => ({ label, act, icon })));
     it.push({ head: "Pokémon areas" }, { label: "Area mode", act: "areas", icon: "areas", locked: !areaRows().some((a) => a.visited) },
       { head: "Other" }, { label: "Close Pokédex", act: "close", icon: "cancel" });
     return it;
@@ -177,11 +187,22 @@
     const cur = items[m.cursor], icon = cur && cur.icon && cur.icon !== "areas" && A("cat-" + cur.icon);
     if (cur && cur.icon === "areas") areaIcon(168, 88);
     else if (ready(icon)) g.drawImage(icon, 168, 88);
-    const seen = st.entries.filter((e) => e.seen).length, owned = st.entries.filter((e) => e.caught).length;
-    s.text("Seen:", 168, 25, BLACK, BEIGE);
-    s.text(String(seen).padStart(3, " "), 200, 37, ORANGE, RED);
-    s.text("Owned:", 168, 53, BLACK, BEIGE);
-    s.text(String(owned).padStart(3, " "), 200, 65, ORANGE, RED);
+    const count = (key, kanto) => String(st.entries.filter((e) => e[key] && (!kanto || e.id <= KANTO_DEX_COUNT)).length).padStart(3, " ");
+    if (st.national) {
+      // Seen and Owned, each Kanto's and the National Pokédex's (small font).
+      [["Seen:", "seen", 18], ["Owned:", "caught", 53]].forEach(([label, key, y]) => {
+        s.text(label, 168, y, BLACK, BEIGE, "small");
+        s.text("Kanto", 176, y + 11, BLACK, BEIGE, "small");
+        s.text(count(key, true), 220, y + 11, ORANGE, RED, "small");
+        s.text("National", 176, y + 22, BLACK, BEIGE, "small");
+        s.text(count(key, false), 220, y + 22, ORANGE, RED, "small");
+      });
+    } else {
+      s.text("Seen:", 168, 25, BLACK, BEIGE);
+      s.text(count("seen", true), 200, 37, ORANGE, RED);
+      s.text("Owned:", 168, 53, BLACK, BEIGE);
+      s.text(count("caught", true), 200, 65, ORANGE, RED);
+    }
     bars(s, "Pokédex   Table of contents", "{DPAD_UPDOWN}Pick {A_BUTTON}OK");
     g.drawImage(s.canvas(), 0, 0);
     arrows(m.top > 0, m.top + 9 < items.length, 200, 19, 141);
@@ -199,10 +220,27 @@
 
   // ---------- Lists ----------
 
-  function makeList() {
-    const seen = st.entries.filter((e) => e.seen);
-    const last = Math.max(0, ...seen.map((e) => e.id));
-    return { mode: "numerical", rows: st.entries.filter((e) => e.id <= last), header: "Pokémon list", cursor: 0, top: 0 };
+  // FireRed's ordered lists (DexScreen_CountMonsInOrderedList), by National
+  // Dex number: Kanto's 151 or all of them, each up to the last one seen; and
+  // SEARCH's: A TO Z the ones seen, TYPE, LIGHTEST and SMALLEST the ones caught
+  // (FireRed's gPokedexOrder_* tables: by type, FireRed's type order, pure
+  // types first; by weight; by height), only Kanto's without the National Pokédex.
+  const SEARCH = [["atoz", "A to Z mode", "abc"], ["type", "Type mode", "type"], ["lightest", "Lightest mode", "lightest"],
+    ["smallest", "Smallest mode", "smallest"]];
+  const TYPE_ORDER = ["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel", "Fire", "Water", "Grass",
+    "Electric", "Psychic", "Ice", "Dragon", "Dark", "Fairy"];
+  function makeList(mode) {
+    const pool = st.entries.filter((e) => st.national ? mode !== "kanto" || e.id <= KANTO_DEX_COUNT : e.id <= KANTO_DEX_COUNT);
+    if (mode === "kanto" || mode === "national") {
+      const last = Math.max(0, ...pool.filter((e) => e.seen).map((e) => e.id));
+      return { mode, rows: pool.filter((e) => e.id <= last), header: "Pokémon list", cursor: 0, top: 0 };
+    }
+    const by = (f) => (a, b) => f(a) - f(b) || a.id - b.id;
+    const typeKey = (e) => { const t = DEX(e.species).types || []; return TYPE_ORDER.indexOf(t[0]) * 100 + (t[1] && t[1] !== t[0] ? 1 + TYPE_ORDER.indexOf(t[1]) : 0); };
+    const rows = mode === "atoz" ? pool.filter((e) => e.seen).sort((a, b) => nameOf(a.species).localeCompare(nameOf(b.species)) || a.id - b.id)
+      : pool.filter((e) => e.caught).sort(mode === "type" ? by(typeKey) : mode === "lightest" ? by((e) => DEX(e.species).weight || 0)
+        : by((e) => DEX(e.species).height || 0));
+    return { mode, rows, header: "Search", cursor: 0, top: 0 };
   }
   function drawList() {
     const L = st.list, s = S();
@@ -458,7 +496,7 @@
 
   // A list of Pokémon: the numerical one, or a place's (AREA MODE). B goes back to `back`.
   async function openList(mode, list, back) {
-    st.list = list || st.lists[mode] || (st.lists[mode] = makeList());
+    st.list = list || st.lists[mode] || (st.lists[mode] = makeList(mode));
     if (!st.list.rows.length) return;
     await go("list");
     for (;;) {
@@ -523,10 +561,12 @@
   }
 
   async function open(opts) {
-    st = { opts, entries: opts.entries, view: "menu", tick: 0, fade: 0, fadeColour: "rgba(255,255,255,", lists: {},
+    st = { opts, entries: opts.entries, national: opts.national !== false, view: "menu", tick: 0, fade: 0, fadeColour: "rgba(255,255,255,", lists: {},
       menu: null, list: null, entry: null, habitat: null, registering: !!opts.register };
     const items = menuItems();
-    st.menu = Object.assign({ items }, open.menuPos || { cursor: 1, top: 0 });
+    // (The ▶ starts on the National list: NUMERICAL MODE: NATIONAL.)
+    const start = Math.max(1, items.findIndex((it) => it.act === (st.national ? "national" : "kanto")));
+    st.menu = Object.assign({ items }, (open.menuPos && open.menuPos.national === st.national && open.menuPos) || { cursor: start, top: 0 });
     canvas.classList.remove("hidden");
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(frame);
@@ -548,7 +588,7 @@
         else if (key === "a" || key === "b") return key;
         return undefined;
       });
-      open.menuPos = { cursor: st.menu.cursor, top: st.menu.top };
+      open.menuPos = { cursor: st.menu.cursor, top: st.menu.top, national: st.national };
       const it = st.menu.items[st.menu.cursor];
       if (k === "b" || it.act === "close") break;
       if (it.act === "habitat") { if (!it.locked) await openHabitat(it.habitat, null, "menu"); }

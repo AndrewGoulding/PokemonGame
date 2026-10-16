@@ -753,7 +753,6 @@ for (const share of [false, true]) {
     ["SixIsland_DottedHole_1F", "SixIsland_DottedHole_B1F", "SixIsland_DottedHole_B2F", "SixIsland_DottedHole_B3F", "SixIsland_DottedHole_B4F",
       "SixIsland_DottedHole_SapphireRoom", "SixIsland_PatternBush", "SixIsland_AlteringCave", "SevenIsland_SevaultCanyon_TanobyKey"],
     ["Monean", "Liptoo", "Weepth", "Dilford", "Scufib", "Rixy", "Viapois"].map((c) => "SevenIsland_TanobyRuins_" + c + "Chamber"),
-    // (Not Navel Rock: FireRed doesn't let you escape from it.)
     ["CeruleanCave_1F", "CeruleanCave_2F", "CeruleanCave_B1F"]));
   assert(WORLD_MAPS.MtMoon_1F.people.some((p) => p.item === "tm100"), "FireRed's TM09 in Mt. Moon is TM100 Bullet Seed here");
   assert(Bag.canUseOn(Party.create("Gyarados", 30, { rng }), "hm06"), "Gyarados can use Whirlpool");
@@ -2971,14 +2970,14 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
   assert(Sevii.ceruleanCaveOpen({ gameClear: true, canLinkWithRS: true }) && !Sevii.ceruleanCaveOpen({ gameClear: true }));
 }
 
-// ---------- Cerulean Cave, the League's door, Lorelei's dolls, Navel Rock and Birth Island ----------
+// ---------- Cerulean Cave, the League's door, Lorelei's dolls (and no Navel Rock or Birth Island) ----------
 {
   const W = (m) => { assert(WORLD_MAPS[m], m + " is built"); return WORLD_MAPS[m]; };
   const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
   // Cerulean Cave's guard stands in the way (just below the way in) until
-  // you're Champion and Celio has the Sapphire.
-  assert(!Sevii.ceruleanCaveOpen({}) && !Sevii.ceruleanCaveOpen({ canLinkWithRS: true }) && !Sevii.ceruleanCaveOpen({ gameClear: true }));
-  assert(Sevii.ceruleanCaveOpen({ gameClear: true, canLinkWithRS: true }));
+  // Celio has the Sapphire (FLAG_SYS_CAN_LINK_WITH_RS), Champion or not.
+  assert(!Sevii.ceruleanCaveOpen({}) && !Sevii.ceruleanCaveOpen({ gameClear: true }));
+  assert(Sevii.ceruleanCaveOpen({ canLinkWithRS: true }) && Sevii.ceruleanCaveOpen({ gameClear: true, canLinkWithRS: true }));
   const guard = W("CeruleanCity").people.find((p) => p.flag === "FLAG_HIDE_CERULEAN_CAVE_GUARD");
   const caveDoor = W("CeruleanCity").warps.find((w) => w.map === "CeruleanCave_1F");
   assert(guard && caveDoor && guard.x === caveDoor.x && guard.y === caveDoor.y + 1, "the guard stands below the cave's way in");
@@ -3009,76 +3008,35 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
   assert.strictEqual(dolls.filter((p) => !p.flag).length, 6);
   assert.deepStrictEqual(dolls.filter((p) => p.flag).map((p) => p.flag).sort(), Sevii.LORELEI_DOLL_FLAGS.slice().sort());
 
-  // Navel Rock and Birth Island: every map built and joined up.
-  const navel = Object.keys(WORLD_MAPS).filter((m) => /^(NavelRock|BirthIsland)_/.test(m));
-  assert.strictEqual(navel.length, 22 + 2);
-  for (const m of navel) for (const w of W(m).warps) assert(WORLD_MAPS[w.map], m + " -> " + w.map);
-  assert(!W("NavelRock_1F").allowEscaping);
-  // Celio's tickets, and the Seagallop from Vermilion: only with the ticket
-  // and the ship enabled (VermilionCity_EventScript_CheckHasMysticTicket).
-  for (const t of ["mystic-ticket", "aurora-ticket"]) {
-    assert.strictEqual(ITEMS[t].category, "key-items", t);
-    assert(ITEM_SPRITES[t] && fs.existsSync(path.join(root, ITEM_SPRITES[t])), t + " sprite");
+  // Navel Rock and Birth Island are left out on purpose: no maps, no ferries
+  // there, no tickets from Celio, nothing of theirs on the Town Map.
+  assert(!Object.keys(WORLD_MAPS).some((m) => /^(NavelRock|BirthIsland)_/.test(m)));
+  for (const m of Object.keys(WORLD_MAPS)) for (const w of WORLD_MAPS[m].warps) assert(!/^(NavelRock|BirthIsland)_/.test(w.map), m);
+  assert(!ITEMS["mystic-ticket"] && !ITEM_SPRITES["mystic-ticket"] && !ITEM_SPRITES["aurora-ticket"]);
+  assert(!Sevii.ticketPorts && !Sevii.EVENT_PORTS && !Sevii.deoxysTouch && !Sevii.port("NAVEL_ROCK") && !Sevii.port("BIRTH_ISLAND"));
+  for (const from of Sevii.PORTS.map((p) => p.id)) for (const page of [0, 1]) for (const flags of [{ celioScene: 7, cinnabarScene: 4 }, { celioScene: 3, cinnabarScene: 4 }]) {
+    assert(!Sevii.menu(flags, from, page).items.some((i) => i === "NAVEL_ROCK" || i === "BIRTH_ISLAND"));
   }
-  const has = (...items) => (it) => items.includes(it);
-  const ships = { enableShipNavelRock: true, enableShipBirthIsland: true };
-  assert.deepStrictEqual(Sevii.ticketPorts({}, has("mystic-ticket", "aurora-ticket")), []);
-  assert.deepStrictEqual(Sevii.ticketPorts(ships, has()), []);
-  assert.deepStrictEqual(Sevii.ticketPorts(ships, has("mystic-ticket")), ["NAVEL_ROCK"]);
-  assert.deepStrictEqual(Sevii.ticketPorts(ships, has("aurora-ticket")), ["BIRTH_ISLAND"]);
-  assert.deepStrictEqual(Sevii.ticketPorts(ships, has("mystic-ticket", "aurora-ticket")), ["NAVEL_ROCK", "BIRTH_ISLAND"]);
-  // (Never on the islands' own menus.)
-  for (const from of Sevii.PORTS.map((p) => p.id)) for (const page of [0, 1]) {
-    assert(!Sevii.menu({ celioScene: 7, cinnabarScene: 4 }, from, page).items.some((i) => i === "NAVEL_ROCK" || i === "BIRTH_ISLAND"));
+  assert(!/mystic-ticket|aurora-ticket|NavelRock_|BirthIsland_|panCamera|se_deoxys_move|se_thunderstorm_stop/.test(gameJs));
+  assert(!/se_deoxys_move|se_thunderstorm_stop/.test(fs.readFileSync(path.join(root, "tools/build-audio.js"), "utf8")));
+  for (const R of window.TOWN_MAP.sevii) {
+    assert(!R.hidden && !R.map.some((row) => row.includes("NAVEL_ROCK") || row.includes("BIRTH_ISLAND")), R.id);
+    assert(!R.dungeon.some((row) => row.includes("NAVEL_ROCK") || row.includes("BIRTH_ISLAND")), R.id);
   }
-  assert(Sevii.built("NAVEL_ROCK") && Sevii.built("BIRTH_ISLAND"));
-  assert.strictEqual(Sevii.port("NAVEL_ROCK").map, "NavelRock_Harbor");
-  // GetSeagallopNumber: Vermilion's 7 either way; FireRed's script calls the ones out 10 and 12.
-  assert.strictEqual(Sevii.ferryNumber("VERMILION_CITY", "NAVEL_ROCK"), 7);
-  assert.strictEqual(Sevii.ferryNumber("NAVEL_ROCK", "VERMILION_CITY"), 7);
-  assert(/SEAGALLOP HI-SPEED 10|Seagallop Hi-Speed 10/.test(WORLD_TEXT.VermilionCity_Text_Seagallop10Departing.join(" ")));
-  assert.strictEqual(WORLD_TEXT.VermilionCity_Text_OhMysticTicketTakeYouToNavelRock[0], "Oh! That's a Mystic Ticket!\nNow that is rare.");
-  // Ho-Oh at the Summit (its trigger in front), Lugia at the Base, both Lv. 70.
-  const summit = W("NavelRock_Summit");
-  assert(summit.people.some((p) => p.localId === "LOCALID_NAVEL_ROCK_HO_OH" && p.flag === "FLAG_HIDE_HO_OH"));
-  assert(summit.triggers.some((q) => q.x === 9 && q.y === 12 && q.script === "NavelRock_Summit_EventScript_HoOh"));
-  assert(summit.weather === "shade" && summit.hidden.some((h) => h.item === "sacred-ash"));
-  assert(W("NavelRock_Base").people.some((p) => p.localId === "LOCALID_NAVEL_ROCK_LUGIA" && p.script === "NavelRock_Base_EventScript_Lugia"));
-  assert(/eventLegend\(H, "FLAG_HIDE_HO_OH", "Ho-Oh", 70,/.test(gameJs) && /eventLegend\(L, "FLAG_HIDE_LUGIA", "Lugia", 70,/.test(gameJs));
-  for (const sp of ["Ho-Oh", "Lugia", "Deoxys-Attack", "Mewtwo"]) assert(DEX[sp] && Party.create(sp, 70, { rng }).moves.length, sp);
-  // Birth Island's triangle (DoDeoxysTriangleInteraction).
-  const bi = W("BirthIsland_Exterior");
-  assert.strictEqual(bi.music, undefined);
-  for (const [x, y] of Sevii.DEOXYS_COORDS) assert(x < bi.width && y < bi.height && !bi.collision[y * bi.width + x], "triangle spot " + x + "," + y);
-  for (let n = 0; n <= 10; n++) assert(fs.existsSync(path.join(root, "assets/world/sprites/birth_island_stone_" + n + ".png")));
-  assert(bi.people.some((p) => p.localId === "LOCALID_BIRTH_ISLAND_DEOXYS" && p.sprite === "deoxys_n"));
+  assert(!Object.values(window.TOWN_MAP.mapSections).some((sec) => sec === "NAVEL_ROCK" || sec === "BIRTH_ISLAND"));
   {
-    const p = Sevii.deoxysPuzzle(), walk = (n) => { for (let i = 0; i < n; i++) Sevii.deoxysStep(p); };
-    // The first touch moves it whatever the steps; then each within its cap.
-    walk(50);
-    assert.strictEqual(Sevii.deoxysTouch(p), 1);
-    for (let k = 1; k < 10; k++) { walk(Sevii.DEOXYS_STEP_CAPS[k - 1]); assert.strictEqual(Sevii.deoxysTouch(p), 1, "touch " + k); }
-    assert.strictEqual(p.num, 10);
-    walk(3);
-    assert.strictEqual(Sevii.deoxysTouch(p), 2, "solved: Deoxys");
-    assert(p.awakened && Sevii.deoxysTouch(p) === 3);
-    // One step too many and it's back to the start.
-    const q = Sevii.deoxysPuzzle();
-    Sevii.deoxysTouch(q);
-    for (let i = 0; i < 5; i++) Sevii.deoxysStep(q);
-    assert.strictEqual(Sevii.deoxysTouch(q), 0);
-    assert.strictEqual(q.num, 0);
-    assert.strictEqual(Sevii.deoxysTouch(q), 1);
-    // (The step count wraps after 99: IncrementBirthIslandRockStepCount.)
-    for (let i = 0; i < 100; i++) Sevii.deoxysStep(q);
-    assert.strictEqual(q.steps, 0);
+    // An old save with Celio's tickets, made on Navel Rock: the tickets and
+    // the islands' flags go, and it's back at Vermilion's dock.
+    const old = JSON.parse(Player.serialize(Player.create("Red")));
+    old.bag = Object.assign({}, old.bag, { "mystic-ticket": 1, "aurora-ticket": 1 });
+    old.flags = Object.assign({}, old.flags, { gotEventTickets: true, enableShipNavelRock: true, enableShipBirthIsland: true,
+      worldMapNavelRock: true, hoOhFlewAway: true, foughtLugia: true, canLinkWithRS: true });
+    old.location = { map: "NavelRock_Summit", x: 9, y: 12, facing: "up" };
+    const { player: p } = Player.load(JSON.parse(JSON.stringify(old)));
+    assert(!p.bag["mystic-ticket"] && !p.bag["aurora-ticket"] && p.flags.canLinkWithRS);
+    assert(!p.flags.gotEventTickets && !p.flags.enableShipNavelRock && !p.flags.worldMapNavelRock && !p.flags.hoOhFlewAway && !p.flags.foughtLugia);
+    assert.strictEqual(p.location.map, "VermilionCity");
   }
-  // The Town Map: Navel Rock and Birth Island hidden till you've been.
-  for (const [id, sec] of [["SEVII_45", "NAVEL_ROCK"], ["SEVII_67", "BIRTH_ISLAND"]]) {
-    const R = window.TOWN_MAP.sevii.find((r) => r.id === id);
-    assert(R.hidden && R.hidden.section === sec && fs.existsSync(path.join(root, R.hidden.image)) && R.map.some((row) => row.includes(sec)), id);
-  }
-  assert.strictEqual(window.TOWN_MAP.mapSections.NavelRock_Summit, "NAVEL_ROCK");
 
   // Trainer Tower: FireRed's built-in challenges, eight floors each.
   const TT = window.TRAINER_TOWER;
@@ -3127,4 +3085,42 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
   assert.strictEqual(TrainerTower.best(tflags, 2), 3660);
   tflags.tower.running = false; TrainerTower.tick(tflags, 5000);
   assert.strictEqual(tflags.tower.frames, 5940);
+}
+
+// ---------- The National Pokédex, from the start ----------
+{
+  const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  const dexJs = fs.readFileSync(path.join(root, "ui/pokedex-screen.js"), "utf8");
+  const p = Player.create("Red");
+  assert(!Player.nationalDex(p));
+  p.flags.pokedex = true;   // (Oak hands it over: FLAG_SYS_POKEDEX_GET)
+  assert(Player.nationalDex(p));
+  // Kanto's counts are National Dex numbers 1-151; the National one counts
+  // every number once (a form isn't one of its own).
+  for (const sp of ["Bulbasaur", "Mew", "Chikorita", "Heracross", "Deoxys-Normal", "Deoxys-Attack"]) Player.markCaught(p, sp);
+  Player.markSeen(p, "Pikachu");
+  assert.deepStrictEqual([Player.dexCount(p, "seen", true), Player.dexCount(p, "caught", true), Player.dexCount(p, "seen", false),
+    Player.dexCount(p, "caught", false)], [3, 2, 6, 5]);
+  assert.strictEqual(Player.dexNumber("Chikorita"), 152);
+  // Prof. Oak's rating: by Kanto kinds caught; 150 is complete without Mew.
+  const rate = (ids) => { const q = Player.create("Red"); for (const n of ids) Player.markCaught(q, Object.keys(DEX).find((k) => DEX[k].id === n)); return Player.dexRating(q); };
+  assert.deepStrictEqual(rate([1, 2, 3]), { text: "LessThan10", complete: false });
+  assert.deepStrictEqual(rate(Array.from({ length: 52 }, (_, i) => i + 1).concat([152, 153])), { text: "LessThan60", complete: false });
+  assert.deepStrictEqual(rate(Array.from({ length: 150 }, (_, i) => i + 1)), { text: "Complete", complete: true });
+  assert.deepStrictEqual(rate(Array.from({ length: 149 }, (_, i) => i + 1).concat([151])), { text: "LessThan150", complete: false });
+  assert(!Player.hasAllMons(p));
+  for (const k of ["SeenXOwnedY", "LessThan10", "LessThan150", "Complete", "NationalDexSeenXOwnedY", "LookForwardToFilledNationalDex", "YouveCompletedDex"]) {
+    assert(WORLD_TEXT["PokedexRating_Text_" + k], k);
+  }
+  // FireRed's National Pokédex checks: the Pokédex here.
+  assert(/if \(Player\.nationalDex\(player\) && scene >= 3\)/.test(gameJs), "Celio asks for the Ruby with the National Pokédex");
+  assert(/ThreeIsland_DunsparceTunnel"\) return Player\.nationalDex\(player\) \? \["dugout"\]/.test(gameJs));
+  assert(!/ThreeIsland_DunsparceTunnel[^\n]*gameClear/.test(gameJs));
+  // The aides count Kanto's kinds (GetPokedexCount with VAR_0x8004 0).
+  assert(!/player\.pokedex\.caught\.length/.test(gameJs));
+  // The Pokédex screen: the National Pokédex's table of contents and lists.
+  assert(/national: Player\.nationalDex\(player\)/.test(gameJs));
+  for (const label of ["Numerical mode: Kanto", "Numerical mode: National", "A to Z mode", "Type mode", "Lightest mode", "Smallest mode"]) {
+    assert(dexJs.includes('"' + label + '"'), label);
+  }
 }

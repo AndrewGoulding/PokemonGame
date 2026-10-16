@@ -94,19 +94,9 @@
 //   Sevii.leagueClosed(flags)          // Indigo Plateau's door guard blocks the way:
 //                                      //   "Lorelei is absent" (Champion, Sapphire not in yet)
 //   Sevii.loreleiDolls(hofCount)       // Lorelei's extra dolls on show (UpdateLoreleiDollCollection)
-//   Sevii.ticketPorts(flags, has)      // the event islands Vermilion's Seagallop sails to:
-//                                      //   ["NAVEL_ROCK", "BIRTH_ISLAND"] by ticket
-//   Sevii.DEOXYS_COORDS, deoxysPuzzle(), deoxysTouch(p), deoxysStep(p)
-//                                      // Birth Island's triangle (DoDeoxysTriangleInteraction)
 //   foughtMewtwo        FLAG_FOUGHT_MEWTWO (caught or beaten: gone)
-//   foughtHoOh / hoOhFlewAway, foughtLugia / lugiaFlewAway, foughtDeoxys /
-//                       deoxysFlewAway: FLAG_FOUGHT_* (caught) and FLAG_*_FLEW_AWAY
-//                       (beaten): gone for good; run from, back next visit
-//   gotEventTickets     this game's own: Celio's thanks, the Mystic Ticket and
-//                       the Aurora Ticket (FireRed's Mystery Gift), and with them
-//                       enableShipNavelRock / enableShipBirthIsland
-//                       (FLAG_ENABLE_SHIP_NAVEL_ROCK, _BIRTH_ISLAND)
-//   shownMysticTicket / shownAuroraTicket  FLAG_SHOWN_MYSTIC_TICKET, _AURORA_TICKET
+// (FireRed's Mystery Gift islands, Navel Rock and Birth Island, aren't built:
+// no event tickets, no ferries there.)
 (function () {
   "use strict";
 
@@ -124,12 +114,7 @@
     { id: "CINNABAR_ISLAND", label: "Cinnabar Island", map: "CinnabarIsland", x: 21, y: 7 }
   ];
   const ids = PORTS.map((p) => p.id);
-  // Navel Rock and Birth Island, by ticket from Vermilion only (sSeag).
-  const EVENT_PORTS = [
-    { id: "NAVEL_ROCK", label: "Navel Rock", map: "NavelRock_Harbor", x: 8, y: 5, ticket: "mystic-ticket", flag: "enableShipNavelRock" },
-    { id: "BIRTH_ISLAND", label: "Birth Island", map: "BirthIsland_Harbor", x: 8, y: 5, ticket: "aurora-ticket", flag: "enableShipBirthIsland" }
-  ];
-  const port = (id) => PORTS.find((p) => p.id === id) || EVENT_PORTS.find((p) => p.id === id) || null;
+  const port = (id) => PORTS.find((p) => p.id === id) || null;
   const built = (id, maps) => { const p = port(id); return !!(p && (maps || window.WORLD_MAPS || {})[p.map]); };
 
   // sTravelDirectionMatrix (src/seagallop.c): bit `to` of the row for `from`
@@ -148,8 +133,6 @@
     const both = (...set) => set.includes(from) && set.includes(to);
     if (either("CINNABAR_ISLAND")) return 1;
     if (either("VERMILION_CITY")) return 7;
-    if (either("NAVEL_ROCK")) return 10;
-    if (either("BIRTH_ISLAND")) return 12;
     if (both("ONE_ISLAND", "TWO_ISLAND", "THREE_ISLAND")) return 2;
     if (both("FOUR_ISLAND", "FIVE_ISLAND")) return 3;
     if (both("SIX_ISLAND", "SEVEN_ISLAND")) return 5;
@@ -280,13 +263,16 @@
 
   // FireRed's Cerulean Cave guard steps aside once Celio has the Sapphire
   // (OneIsland_PokemonCenter_1F: FLAG_SYS_CAN_LINK_WITH_RS sets
-  // FLAG_HIDE_CERULEAN_CAVE_GUARD; FireRed also wants the National Pokédex,
-  // which this game hasn't got: you're Champion instead, as Celio asks).
-  const ceruleanCaveOpen = (flags) => !!(flags && flags.gameClear && flags.canLinkWithRS);
+  // FLAG_HIDE_CERULEAN_CAVE_GUARD), whether or not you're Champion yet.
+  const ceruleanCaveOpen = (flags) => !!(flags && flags.canLinkWithRS);
 
   // Indigo Plateau's door guard (IndigoPlateau_PokemonCenter_1F_EventScript_CheckBlockDoor):
-  // with the National Pokédex (here: once you're Champion) and the Sapphire
-  // not yet in Celio's machine, she stands in the doorway: Lorelei's away.
+  // with the National Pokédex and the Sapphire not yet in Celio's machine,
+  // she stands in the doorway: Lorelei's away. (FireRed only gives the
+  // National Pokédex after the Hall of Fame; here you have it from the start,
+  // so this asks for that: once you're Champion, as FireRed's players are by
+  // then. Asking only for the Pokédex would shut the League before your
+  // first challenge until the islands' story is done.)
   const leagueClosed = (flags) => !!(flags && flags.gameClear && !flags.canLinkWithRS);
 
   // Lorelei's dolls (UpdateLoreleiDollCollection): one more on show every 25
@@ -298,38 +284,8 @@
   const loreleiDolls = (hofCount) => Math.min(8, Math.floor((hofCount | 0) / 25));
   const loreleiDollShown = (flag, hofCount) => { const i = LORELEI_DOLL_FLAGS.indexOf(flag); return i >= 0 && i < loreleiDolls(hofCount); };
 
-  // ---------- Navel Rock and Birth Island ----------
-
-  // Vermilion's Seagallop with a ticket (VermilionCity_EventScript_CheckHasMysticTicket,
-  // _CheckHasAuroraTicket): the ship enabled (FireRed's Mystery Gift; here,
-  // Celio's tickets) and the ticket in the bag. `has(item)` -> bool.
-  const ticketPorts = (flags, has) => EVENT_PORTS.filter((p) => flags && flags[p.flag] && has(p.ticket)).map((p) => p.id);
-
-  // Birth Island's triangle (src/field_specials.c, DoDeoxysTriangleInteraction):
-  // touch it and it moves to the next of sDeoxysCoords, a shade redder; if you
-  // took more steps than sDeoxysStepCaps allows since the last touch, it
-  // goes back to the start. Touched at the tenth spot, it breaks and Deoxys
-  // comes. The count starts over each time you come to the island
-  // (BirthIsland_Exterior_OnTransition).
-  const DEOXYS_COORDS = [[15, 12], [11, 14], [15, 8], [19, 14], [12, 11], [18, 11], [15, 14], [11, 14], [19, 14], [15, 15], [15, 10]];
-  const DEOXYS_STEP_CAPS = [4, 8, 8, 8, 4, 4, 4, 6, 3, 3];
-  const deoxysPuzzle = () => ({ num: 0, steps: 0, awakened: false });
-  // -> FireRed's VAR_RESULT: 0 back to the start, 1 moved on, 2 solved (Deoxys), 3 already solved.
-  function deoxysTouch(p) {
-    if (p.awakened) return 3;
-    const num = p.num, steps = p.steps;
-    p.steps = 0;
-    if (num !== 0 && DEOXYS_STEP_CAPS[num - 1] < steps) { p.num = 0; return 0; }
-    if (num === 10) { p.awakened = true; return 2; }
-    p.num = num + 1;
-    return 1;
-  }
-  // A step on the island (IncrementBirthIslandRockStepCount).
-  function deoxysStep(p) { p.steps = p.steps + 1 > 99 ? 0 : p.steps + 1; }
-
   window.Sevii = { DOTTED_HOLE_CUT, cutOpensDottedHole, TANOBY_CHAMBERS, UNOWN_LETTER_SLOTS, unownForm, unownLetter, tanobyLocked,
     TANOBY_BOULDERS_SOLVED, ceruleanCaveOpen, leagueClosed, LORELEI_DOLL_FLAGS, loreleiDolls, loreleiDollShown,
-    EVENT_PORTS, ticketPorts, DEOXYS_COORDS, DEOXYS_STEP_CAPS, deoxysPuzzle, deoxysTouch, deoxysStep,
     PORTS, port, built, ferryNumber, eastbound, menu, CAPE_BRINK_MOVES, capeBrinkMove, capeBrinkDone,
     ICEFALL_ICE, icefallPatches, hofBrag, RESORT_DELUXE, RESORT_PATIENCE, resortRequest, resortStep, leadFriendshipMax };
 })();

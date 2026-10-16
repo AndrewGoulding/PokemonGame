@@ -33,6 +33,8 @@
   // saves from before the overworld appear (the same spot).
   const NEW_GAME_LOCATION = { map: "PalletTown", x: 6, y: 8, facing: "down" };
   const OLD_SAVE_LOCATION = { map: "PalletTown", x: 6, y: 8, facing: "down" };
+  // Vermilion's Seagallop dock (game/sevii.js's VERMILION_CITY port).
+  const VERMILION_DOCK = { map: "VermilionCity", x: 23, y: 32, facing: "down" };
   const HOME = { map: "PalletTown_PlayersHouse_1F", x: 8, y: 5, facing: "up" };
   // Where you come back after blacking out: in front of each Pokémon Center's counter.
   const CENTERS = {
@@ -131,6 +133,35 @@
     if (window.DEX[species] && !player.pokedex.caught.includes(species)) player.pokedex.caught.push(species);
   }
   const hasCaught = (player, species) => player.pokedex.caught.includes(species);
+  // The Pokédex is the National Pokédex from the moment Oak hands it over
+  // (FireRed's IsNationalPokedexEnabled: here, FLAG_SYS_POKEDEX_GET).
+  const nationalDex = (player) => !!(player && player.flags && player.flags.pokedex);
+  // FireRed's GetKantoPokedexCount / GetNationalPokedexCount: kinds seen or
+  // caught, Kanto's 151 (National Dex numbers 1-151) or all of them.
+  const KANTO_DEX_COUNT = 151;
+  const dexNumber = (species) => ((window.DEX || {})[species] || {}).id || 0;
+  // Prof. Oak's rating (src/prof_pc.c, GetProfOaksRatingMessageByCount): by
+  // Kanto kinds caught, in tens; 150 is complete without Mew. -> { text: the
+  // PokedexRating_Text_ label, complete }.
+  function dexRating(player) {
+    const n = dexCount(player, "caught", true), mew = player.pokedex.caught.some((s) => dexNumber(s) === 151);
+    if (n < 150) return { text: "LessThan" + (Math.floor(n / 10) + 1) * 10, complete: false };
+    if (n === 150 && mew) return { text: "LessThan150", complete: false };
+    return { text: "Complete", complete: true };
+  }
+  // FireRed's HasAllMons: the National Pokédex complete, its 386 but Mew,
+  // Lugia, Ho-Oh, Celebi, Jirachi and Deoxys (the event Pokémon).
+  const NATIONAL_DEX_COUNT = 386, NOT_NEEDED = [151, 249, 250, 251, 385, 386];
+  function hasAllMons(player) {
+    const caught = new Set(player.pokedex.caught.map(dexNumber));
+    for (let n = 1; n <= NATIONAL_DEX_COUNT; n++) if (!NOT_NEEDED.includes(n) && !caught.has(n)) return false;
+    return true;
+  }
+  // (Each number counts once: a form, like Deoxys-Attack, isn't one of its own.)
+  function dexCount(player, which, kanto) {
+    const ids = new Set(player.pokedex[which === "seen" ? "seen" : "caught"].map(dexNumber));
+    return [...ids].filter((n) => n >= 1 && n <= (kanto ? KANTO_DEX_COUNT : 9999)).length;
+  }
 
   // Adds a Pokémon to the party, or the first PC box with room.
   // Returns "party", "box N" (1-based) or null if everything is full.
@@ -348,9 +379,16 @@
     if (player.flags.oaksParcel && !player.flags.parcelDelivered) player.bag["oaks-parcel"] = 1;
     // Saves from before the Pokédex scene: Oak gave it with the parcel.
     if (player.flags.parcelDelivered && player.flags.pokedex === undefined) player.flags.pokedex = true;
+    // Navel Rock and Birth Island are gone (left out on purpose): Celio's
+    // tickets for them go (the Mystic Ticket's no longer an item at all), and
+    // with them their flags; a save made out there is back at Vermilion's dock.
+    if (player.flags.gotEventTickets) delete player.bag["aurora-ticket"];
+    for (const k of ["gotEventTickets", "enableShipNavelRock", "enableShipBirthIsland", "shownMysticTicket", "shownAuroraTicket",
+      "worldMapNavelRock", "worldMapBirthIsland", "foughtHoOh", "hoOhFlewAway", "foughtLugia", "lugiaFlewAway", "foughtDeoxys", "deoxysFlewAway"]) delete player.flags[k];
     player.look = lookOf(data.look);
     player.rival = String(data.rival || RIVAL_NAME).slice(0, 12);
     let loc = data.location;
+    if (loc && /^(NavelRock|BirthIsland)_/.test(loc.map)) loc = VERMILION_DOCK;
     const known = (m) => !window.WORLD_MAPS || !!window.WORLD_MAPS[m];
     // Saves made upstairs in a Poké Mart (its 2F is gone: the Move Relearner and
     // Deleter are upstairs in the Pokémon Centers now): just inside its door.
@@ -380,7 +418,7 @@
 
   window.Player = {
     VERSION, LOOKS, PLAYER_LOOK, RIVAL_NAME, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG, STARTING_PC_ITEMS, NEW_GAME_LOCATION, HOME, CENTERS,
-    create, markSeen, markCaught, hasCaught, receive, deposit, withdraw, swapWithBox, healBoxes, release, boxCount, firstEmpty, boxed,
+    create, markSeen, markCaught, hasCaught, nationalDex, KANTO_DEX_COUNT, dexNumber, dexCount, dexRating, hasAllMons, receive, deposit, withdraw, swapWithBox, healBoxes, release, boxCount, firstEmpty, boxed,
     itemCount, addItem, removeItem, depositItem, withdrawItem, addMoney, prizeMoney, blackoutLoss, serialize, load
   };
 })();
