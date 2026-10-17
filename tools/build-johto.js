@@ -208,8 +208,7 @@ MAPS.forEach((m, i) => {
     r.below[i] = 255;
   }
   writePng(path.join(mapsDir, m.name + ".png"), W, H, r.below);
-  // (Nothing in a cave stands in front of you: its waterfalls are models, and would.)
-  writePng(path.join(mapsDir, m.name + "-top.png"), W, H, m.type === "underground" ? new Uint8ClampedArray(W * H * 4) : r.top);
+  writePng(path.join(mapsDir, m.name + "-top.png"), W, H, r.top);
   // Outside the map: the forest of its top-left corner (2x2 tiles).
   const border = new Uint8ClampedArray(32 * 32 * 4);
   for (let y = 0; y < 32; y++) border.set(r.below.subarray(y * W * 4, y * W * 4 + 128), y * 128);

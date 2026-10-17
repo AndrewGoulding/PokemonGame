@@ -40,6 +40,34 @@ function sliver(t) {
   return longest > 24 && len(c) / longest < 2.5;
 }
 
+// A land's BDHC: where you stand. Points (x, z), slopes (normals), heights
+// (plane constants), then plates, each a rectangle between two points on the
+// plane of a slope and a height (y = -(nx x + nz z + d) / ny), in the chunk's
+// own coordinates (-256 to 256). All 20.12 fixed point.
+function readBdhc(b) {
+  if (!b || b.length < 16 || b.toString("ascii", 0, 4) !== "BDHC") return null;
+  let p = 4;
+  const [np, ns, nh, npl] = [0, 1, 2, 3].map((k) => b.readUInt16LE(p + 2 * k));
+  p += 12;
+  const pts = [], sl = [], hs = [], plates = [];
+  for (let i = 0; i < np; i++, p += 8) pts.push([b.readInt32LE(p) / 4096, b.readInt32LE(p + 4) / 4096]);
+  for (let i = 0; i < ns; i++, p += 12) sl.push([b.readInt32LE(p) / 4096, b.readInt32LE(p + 4) / 4096, b.readInt32LE(p + 8) / 4096]);
+  for (let i = 0; i < nh; i++, p += 4) hs.push(b.readInt32LE(p) / 4096);
+  for (let i = 0; i < npl; i++, p += 8) plates.push([0, 2, 4, 6].map((k) => b.readUInt16LE(p + k)));
+  return {
+    heightAt(x, z) {
+      let best = null;
+      for (const [a, c, si, hi] of plates) {
+        const [x1, z1] = pts[a], [x2, z2] = pts[c], [nx, ny, nz] = sl[si];
+        if (!ny || x < Math.min(x1, x2) || x > Math.max(x1, x2) || z < Math.min(z1, z2) || z > Math.max(z1, z2)) continue;
+        const y = -(nx * x + nz * z + hs[hi]) / ny;
+        if (best == null || y > best) best = y;
+      }
+      return best;
+    }
+  };
+}
+
 function renderMap(ROOT, MAPCONST, opts) {
   opts = opts || {};
   const PROJ = opts.proj || "oblique", K = opts.k || 1, SS = opts.ss || 2, GROUND = 16;
@@ -137,6 +165,7 @@ function renderMap(ROOT, MAPCONST, opts) {
       if (!bm) { console.warn("no building model", b.id); continue; }
       if (SKIP_BUILDINGS.has(b.id)) continue;
       const nb = N.parseNsb(bm);
+      const group = { tris: [] };
       const ang = (v) => (v / 65536) * 2 * Math.PI; // rotations are u16 angles
       let mtx = M.trans(wx + b.pos[0], wy + b.pos[1], wz + b.pos[2]);
       if (b.rot[1]) mtx = M.mul(mtx, M.rotY(ang(b.rot[1])));
@@ -147,7 +176,7 @@ function renderMap(ROOT, MAPCONST, opts) {
         // (Slivers, long and next to no width: the windmills' blades in
         // their rest pose, which draw as lines across the map.)
         if (sliver(t)) continue;
-        t.tex = nb.tex || bldTex; t.building = true; t.base = [wx + b.pos[0], wz + b.pos[2]]; tris.push(t);
+        t.tex = nb.tex || bldTex; t.building = group; group.tris.push(t); tris.push(t);
       }
       bldCount++;
     }
@@ -162,39 +191,36 @@ function renderMap(ROOT, MAPCONST, opts) {
   // Two layers: below sprites, above sprites (the "top" layer).
   const color = new Float32Array(SW * SH * 4), depth = new Float32Array(SW * SH).fill(-1e9);
   const isTop = new Uint8Array(SW * SH);
-  // (opts.ground: maps that aren't flat. Each tile's ground is the highest
-  // of the land's floors over it (surfaces facing up, as a waterfall's
-  // slope you Surf up does) where you can walk or Surf, and a solid tile's its neighbour's; everything is drawn from the ground
+  // (opts.ground: maps that aren't flat. Each tile's ground is the height the
+  // game stands you at there (its BDHC) where you can walk or Surf, and a
+  // solid tile's its neighbour's; everything is drawn from the ground
   // it stands on, so raised ground stays on its tiles and a house or tree on
   // it still rises from its base.)
   const TW = (cx1 - cx0 + 1) * 32, TH = (cz1 - cz0 + 1) * 32;
-  let G = null;
+  let G = null, open = null, wet = null;
   if (opts.ground) {
     // (Only where you can walk or Surf: a tree's crown or a rock's top isn't ground.)
-    const open = new Uint8Array(TW * TH);
+    open = new Uint8Array(TW * TH); wet = new Uint8Array(TW * TH);
     for (const [x, z] of cells) {
       const L = readLand(MX.land[z * MX.w + x]);
-      for (let ty = 0; ty < 32; ty++) for (let tx = 0; tx < 32; tx++) open[((z - cz0) * 32 + ty) * TW + (x - cx0) * 32 + tx] = (L.perm[ty * 32 + tx] >> 15) & 1 ? 0 : 1;
+      for (let ty = 0; ty < 32; ty++) for (let tx = 0; tx < 32; tx++) {
+        const v = L.perm[ty * 32 + tx], i = ((z - cz0) * 32 + ty) * TW + (x - cx0) * 32 + tx;
+        open[i] = (v >> 15) & 1 ? 0 : 1;
+        wet[i] = [0x10, 0x13, 0x15, 0x22].includes(v & 0xff) ? 1 : 0;
+      }
     }
     G = new Float32Array(TW * TH).fill(-Infinity);
-    for (const t of tris) {
-      if (t.building) continue;
-      const P = t.v.map((v) => v.p);
-      const a = [P[1][0] - P[0][0], P[1][1] - P[0][1], P[1][2] - P[0][2]], b = [P[2][0] - P[0][0], P[2][1] - P[0][1], P[2][2] - P[0][2]];
-      const n = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-      const len = Math.hypot(...n);
-      if (!len || Math.abs(n[1]) / len < 0.5) continue;
-      const tx0 = Math.max(0, Math.floor((Math.min(P[0][0], P[1][0], P[2][0]) - ox) / 16)), tx1 = Math.min(TW - 1, Math.floor((Math.max(P[0][0], P[1][0], P[2][0]) - ox) / 16));
-      const tz0 = Math.max(0, Math.floor((Math.min(P[0][2], P[1][2], P[2][2]) - oz) / 16)), tz1 = Math.min(TH - 1, Math.floor((Math.max(P[0][2], P[1][2], P[2][2]) - oz) / 16));
-      const d = (P[1][0] - P[0][0]) * (P[2][2] - P[0][2]) - (P[2][0] - P[0][0]) * (P[1][2] - P[0][2]);
-      if (Math.abs(d) < 1e-9) continue;
-      for (let tz = tz0; tz <= tz1; tz++) for (let tx = tx0; tx <= tx1; tx++) {
-        const px = ox + tx * 16 + 8, pz = oz + tz * 16 + 8;
-        const w1 = ((px - P[0][0]) * (P[2][2] - P[0][2]) - (P[2][0] - P[0][0]) * (pz - P[0][2])) / d;
-        const w2 = ((P[1][0] - P[0][0]) * (pz - P[0][2]) - (px - P[0][0]) * (P[1][2] - P[0][2])) / d;
-        if (w1 < -1e-6 || w2 < -1e-6 || w1 + w2 > 1 + 1e-6) continue;
-        const y = P[0][1] + w1 * (P[1][1] - P[0][1]) + w2 * (P[2][1] - P[0][1]);
-        if (open[tz * TW + tx] && y > G[tz * TW + tx]) G[tz * TW + tx] = y;
+    // (From each chunk's BDHC, the heights the game stands you at: flat or
+    // sloping rectangles, "plates", each a plane. Where they overlap, a bridge
+    // over water, the higher.)
+    for (const [x, z] of cells) {
+      const B = readBdhc(readLand(MX.land[z * MX.w + x]).bdhc);
+      if (!B) continue;
+      for (let ty = 0; ty < 32; ty++) for (let tx = 0; tx < 32; tx++) {
+        const i = ((z - cz0) * 32 + ty) * TW + (x - cx0) * 32 + tx;
+        if (!open[i]) continue;
+        const h = B.heightAt(tx * 16 + 8 - 256, ty * 16 + 8 - 256);
+        if (h != null && h > G[i]) G[i] = h;
       }
     }
     // (Tiles with no floor, the solid ones, take a neighbour's.)
@@ -231,9 +257,85 @@ function renderMap(ROOT, MAPCONST, opts) {
     }
     return best === -Infinity ? low : best;
   };
-  // (Buildings too: a tree or house on a solid tile has its neighbours' ground under it, and a
-  // waterfall's top stands on the water it falls from.)
-  if (G) for (const t of tris) t.g = t.v.map((v) => groundUnder(v.p[0], v.p[1], v.p[2]));
+  // (A building, a tree or a house, stands on one ground, at its foot, so it
+  // rises whole; one over two grounds, a waterfall between its pools, is
+  // drawn from the ground under each corner, as the land is.)
+  if (G) {
+    // (Land well below the solid tiles it's under, the sea's plane under a
+    // mountain, is hidden in 3D; drawn, it shows through the cracks between
+    // the mountain's terraces. Left out.)
+    // (Hidden: more than 64 under the highest land surface over a solid tile,
+    // under a mountain's top, not a tree's crown.)
+    const top = new Float32Array(TW * TH).fill(-Infinity);
+    for (const t of tris) {
+      if (t.building) continue;
+      const P = t.v.map((v) => v.p);
+      const a = [P[1][0] - P[0][0], P[1][1] - P[0][1], P[1][2] - P[0][2]], b = [P[2][0] - P[0][0], P[2][1] - P[0][1], P[2][2] - P[0][2]];
+      const n = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+      const len = Math.hypot(...n), d = (P[1][0] - P[0][0]) * (P[2][2] - P[0][2]) - (P[2][0] - P[0][0]) * (P[1][2] - P[0][2]);
+      if (!len || Math.abs(n[1]) / len < 0.5 || Math.abs(d) < 1e-9) continue;
+      const tx0 = Math.max(0, Math.floor((Math.min(P[0][0], P[1][0], P[2][0]) - ox) / 16)), tx1 = Math.min(TW - 1, Math.floor((Math.max(P[0][0], P[1][0], P[2][0]) - ox) / 16));
+      const tz0 = Math.max(0, Math.floor((Math.min(P[0][2], P[1][2], P[2][2]) - oz) / 16)), tz1 = Math.min(TH - 1, Math.floor((Math.max(P[0][2], P[1][2], P[2][2]) - oz) / 16));
+      for (let tz = tz0; tz <= tz1; tz++) for (let tx = tx0; tx <= tx1; tx++) {
+        const px = ox + tx * 16 + 8, pz = oz + tz * 16 + 8;
+        const w1 = ((px - P[0][0]) * (P[2][2] - P[0][2]) - (P[2][0] - P[0][0]) * (pz - P[0][2])) / d;
+        const w2 = ((P[1][0] - P[0][0]) * (pz - P[0][2]) - (px - P[0][0]) * (P[1][2] - P[0][2])) / d;
+        if (w1 < -1e-6 || w2 < -1e-6 || w1 + w2 > 1 + 1e-6) continue;
+        const y = P[0][1] + w1 * (P[1][1] - P[0][1]) + w2 * (P[2][1] - P[0][1]);
+        if (y > top[tz * TW + tx]) top[tz * TW + tx] = y;
+      }
+    }
+    const buried = (p) => {
+      const tx = Math.floor((p[0] - ox) / 16), tz = Math.floor((p[2] - oz) / 16);
+      if (tx < 0 || tz < 0 || tx >= TW || tz >= TH) return false;
+      return !open[tz * TW + tx] && p[1] < top[tz * TW + tx] - 64;
+    };
+    for (const t of tris) if (!t.building && t.v.every((v) => buried(v.p))) t.buried = true;
+    for (const t of tris) if (!t.building) t.g = t.v.map((v) => groundUnder(v.p[0], v.p[1], v.p[2]));
+    for (const grp of new Set(tris.filter((t) => t.building).map((t) => t.building))) {
+      const ps = grp.tris.flatMap((t) => t.v.map((v) => v.p));
+      const x0 = Math.min(...ps.map((p) => p[0])), x1 = Math.max(...ps.map((p) => p[0]));
+      const z0 = Math.min(...ps.map((p) => p[2])), z1 = Math.max(...ps.map((p) => p[2]));
+      const foot = Math.min(...ps.map((p) => p[1]));
+      let lo = Infinity, hi = -Infinity;
+      // (Two tiles north too: a waterfall is a sheet on the row below its top.)
+      for (let tz = Math.floor((z0 - oz) / 16) - 2; tz <= Math.floor((z1 - oz) / 16 - 1e-3); tz++) for (let tx = Math.floor((x0 - ox) / 16); tx <= Math.floor((x1 - ox) / 16 - 1e-3); tx++) {
+        if (tx < 0 || tz < 0 || tx >= TW || tz >= TH || !open[tz * TW + tx]) continue;
+        lo = Math.min(lo, G[tz * TW + tx]); hi = Math.max(hi, G[tz * TW + tx]);
+      }
+      grp.spans = hi - lo > 32;
+      if (opts.verbose) console.log("building", Math.round(x0 - ox), Math.round(z0 - oz), Math.round(x1 - x0), Math.round(z1 - z0), "foot", Math.round(foot), "ground", lo, hi, grp.spans);
+      const g = groundUnder((x0 + x1) / 2, foot, z1 - 1);
+      for (const t of grp.tris) t.g = grp.spans ? t.v.map((v) => groundUnder(v.p[0], v.p[1], v.p[2])) : [g, g, g];
+    }
+  }
+  let solidAround = null;
+  // (The textures of the water you Surf on and its falls: never in front of you.)
+  // (Those mostly on such tiles: a rock standing in the water isn't water.)
+  const waterTex = new Set();
+  if (G) {
+    const count = new Map();
+    for (const t of tris) {
+      if (!t.mat || !t.mat.texName) continue;
+      const tx = Math.floor(((t.v[0].p[0] + t.v[1].p[0] + t.v[2].p[0]) / 3 - ox) / 16), tz = Math.floor(((t.v[0].p[2] + t.v[1].p[2] + t.v[2].p[2]) / 3 - oz) / 16);
+      if (tx < 0 || tz < 0 || tx >= TW || tz >= TH) continue;
+      const c = count.get(t.mat.texName) || [0, 0];
+      c[0] += wet[tz * TW + tx]; c[1]++;
+      count.set(t.mat.texName, c);
+    }
+    for (const [name, [w, n]] of count) if (w > 0.8 * n) waterTex.add(name);
+  }
+  if (G) {
+    solidAround = new Uint8Array(TW * TH);
+    for (let z = 0; z < TH; z++) for (let x = 0; x < TW; x++) {
+      let all = true;
+      for (let dz = -1; dz <= 1 && all; dz++) for (let dx = -1; dx <= 1 && all; dx++) {
+        const u = x + dx, w = z + dz;
+        if (u >= 0 && w >= 0 && u < TW && w < TH && open[w * TW + u]) all = false;
+      }
+      solidAround[z * TW + x] = all ? 1 : 0;
+    }
+  }
   const project = (p, g) => PROJ === "top"
     ? [(p[0] - ox) * SS, (p[2] - oz) * SS, p[1]]
     : g != null ? [(p[0] - ox) * SS, (p[2] - oz - K * Math.max(0, p[1] - g)) * SS, (p[1] - g) + p[2] * K]
@@ -258,13 +360,21 @@ function renderMap(ROOT, MAPCONST, opts) {
     const matAlpha = mat ? mat.alpha : 1;
     const translucent = matAlpha < 0.99 || (tex && (tex.fmt === 1 || tex.fmt === 6));
     if (translucent !== translucentPass) return;
+    if (tri.buried) return;
+    // (The sea inside a mountain: its tile and all round it solid, and not
+    // water. Hidden in 3D; drawn, it shows between the mountain's terraces.)
+    const inRock = solidAround && mat && /^sea_(on|un)/.test(mat.texName) ? (w0, w1, w2) => {
+      const V = tri.v, wx = w0 * V[0].p[0] + w1 * V[1].p[0] + w2 * V[2].p[0], wz = w0 * V[0].p[2] + w1 * V[1].p[2] + w2 * V[2].p[2];
+      const tx = Math.floor((wx - ox) / 16), tz = Math.floor((wz - oz) / 16);
+      return tx >= 0 && tz >= 0 && tx < TW && tz < TH && solidAround[tz * TW + tx];
+    } : null;
     const P = tri.v.map((v, k) => project(v.p, tri.g ? tri.g[k] : null));
     // Back-face culling (the DS culls per material). Screen y down, so CCW in world = ...
     const area2 = (P[1][0] - P[0][0]) * (P[2][1] - P[0][1]) - (P[2][0] - P[0][0]) * (P[1][1] - P[0][1]);
     if (Math.abs(area2) < 1e-9) return;
     // (A triangle the ground's heights turn over, between two heights, is folded: left out.)
     if (tri.g) {
-      const Q = tri.v.map((v) => project(v.p, null));
+      const Q = tri.v.map((v) => [v.p[0], v.p[2] - K * v.p[1]]);
       const flat2 = (Q[1][0] - Q[0][0]) * (Q[2][1] - Q[0][1]) - (Q[2][0] - Q[0][0]) * (Q[1][1] - Q[0][1]);
       if (flat2 * area2 < 0) return;
     }
@@ -280,6 +390,7 @@ function renderMap(ROOT, MAPCONST, opts) {
       if (w0 < -1e-6 || w1 < -1e-6 || w2 < -1e-6) continue;
       const d = w0 * P[0][2] + w1 * P[1][2] + w2 * P[2][2];
       const idx = y * SW + x;
+      if (inRock && inRock(w0, w1, w2)) continue;
       if (d < depth[idx] - 0.01) continue;
       const V = tri.v;
       const c = [0, 1, 2].map((k) => w0 * V[0].c[k] + w1 * V[1].c[k] + w2 * V[2].c[k]);
@@ -293,6 +404,8 @@ function renderMap(ROOT, MAPCONST, opts) {
       const lit = flag("nolight") ? [1, 1, 1] : c.map((v) => Math.min(1, v / 0.81)); // vertex colours are ~0.81 = full brightness
       const r = rgba[0] * lit[0], g = rgba[1] * lit[1], b = rgba[2] * lit[2];
       if (translucentPass) {
+        // (Water over something in front of you, a waterfall's spray over a wall: behind you, with it.)
+        if (tri.g && mat && (waterTex.has(mat.texName) || (tri.building && tri.building.spans))) isTop[idx] = 0;
         color[idx * 4] = color[idx * 4] * (1 - a) + r * a; color[idx * 4 + 1] = color[idx * 4 + 1] * (1 - a) + g * a;
         color[idx * 4 + 2] = color[idx * 4 + 2] * (1 - a) + b * a; color[idx * 4 + 3] = 255;
       } else {
@@ -303,9 +416,13 @@ function renderMap(ROOT, MAPCONST, opts) {
         const wz = w0 * V[0].p[2] + w1 * V[1].p[2] + w2 * V[2].p[2];
         const wy = w0 * V[0].p[1] + w1 * V[1].p[1] + w2 * V[2].p[1] - (tri.g ? w0 * tri.g[0] + w1 * tri.g[1] + w2 * tri.g[2] - GROUND : 0);
         const screenRow = Math.floor(y / SS / 16), surfRow = Math.floor((wz - oz) / 16 - 1e-3);
-        // (On a map drawn from its ground, only buildings and trees: its land, a
-        // waterfall or a cliff, is never in front of you.)
-        isTop[idx] = PROJ !== "top" && (!tri.g || tri.building) && wy > GROUND + 1.5 && surfRow > screenRow ? 1 : 0;
+        // (Drawn from its ground: not a waterfall drawn from the ground under
+        // each corner, which you climb, nor anything on a tile you walk or
+        // Surf on, nor water.)
+        const wx = w0 * V[0].p[0] + w1 * V[1].p[0] + w2 * V[2].p[0];
+        const own = Math.min(TH - 1, Math.max(0, surfRow)) * TW + Math.min(TW - 1, Math.max(0, Math.floor((wx - ox) / 16)));
+        const grounded = tri.g && ((tri.building && tri.building.spans) || open[own] || (mat && waterTex.has(mat.texName)));
+        isTop[idx] = PROJ !== "top" && !grounded && wy > GROUND + 1.5 && surfRow > screenRow ? 1 : 0;
       }
     }
   }

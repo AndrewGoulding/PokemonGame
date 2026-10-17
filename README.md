@@ -1657,10 +1657,17 @@ model) and the area's textures, and rasterises the terrain and buildings in
 software at 16 px a tile: house fronts and tree trunks drawn upward from
 their tiles, as in FireRed, and what stands in front of you (tree tops,
 roofs) in the map's `-top` layer. Johto's first three maps are flat; Route 27,
-Tohjo Falls and Route 26 climb, so they're drawn from each tile's ground (the
-highest floor over a tile you can walk or Surf on, and a solid tile takes its
-neighbour's): raised ground stays on its tiles, and a tree, house or cliff
-rises from the ground it stands on. HGSS's waterfalls are solid, and become
+Tohjo Falls and Route 26 climb, so they're drawn from each tile's ground: the
+height the game stands you at there (each chunk's BDHC, its flat and sloping
+"plates"), on a tile you can walk or Surf on, and a solid tile takes its
+neighbour's. Raised ground stays on its tiles; the land's corners stand on
+the highest ground around them that isn't above them; a tree or house rises
+whole from the ground at its foot, and a waterfall, between two grounds, is
+drawn from the ground under each corner. Hidden land (the sea under a
+mountain, which would show between its terraces) is left out, and any gap
+left takes its neighbours' colour. In front of you go trees, roofs, rocks and
+walls, but never water or what stands on a tile you walk or Surf on, so you
+pass behind Tohjo Falls' rocks and walls and climb its falls in view. HGSS's waterfalls are solid, and become
 FireRed's, which Waterfall takes you up (or down); the maps' joins come from
 where they sit on the matrix. The tiles' permissions become collision and
 FireRed's behaviours (tall grass, water, ledges, doors), and from the event
