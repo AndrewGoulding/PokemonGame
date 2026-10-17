@@ -98,10 +98,22 @@
   }
   const maxHp = (record) => stats(record).hp;
   // Sprite variant for Pokémon whose look differs within one Pokédex entry:
-  // "sandy" / "trash" for those Burmy (sprites named 412-sandy.png etc.), and
-  // Unown's letters ("b" ... "z", "exclamation", "question": 201-b.png ...).
+  // "sandy" / "trash" for those Burmy (sprites named 412-sandy.png etc.),
+  // Unown's letters ("b" ... "z", "exclamation", "question": 201-b.png ...),
+  // and Alcremie's cream and Sweet ("ruby-cream-strawberry-sweet": 869-...;
+  // the vanilla cream with a Strawberry Sweet is its own picture).
   const form = (record) => (record.cloak && record.cloak !== "plant" ? record.cloak
-    : record.species === "Unown" && record.unown ? record.unown : "");
+    : record.species === "Unown" && record.unown ? record.unown
+    : record.species === "Alcremie" && record.alcremie && record.alcremie !== "vanilla-cream-strawberry-sweet" ? record.alcremie : "");
+  // Alcremie's cream, as Sword and Shield decide it when Milcery spins:
+  // which way, for how long, and the time of day (a long spin the other way
+  // from 7pm to 8pm, the Rainbow Swirl).
+  function alcremieCream(clockwise, long, hour) {
+    const night = hour >= 20 || hour < 4;
+    if (!clockwise && long && hour === 19) return "rainbow-swirl";
+    if (night) return clockwise ? (long ? "lemon-cream" : "matcha-cream") : (long ? "mint-cream" : "salted-cream");
+    return clockwise ? (long ? "caramel-swirl" : "vanilla-cream") : (long ? "ruby-swirl" : "ruby-cream");
+  }
   const displayName = (record) => record.nickname || speciesName(record.species);
   const isFainted = (record) => record.hp <= 0;
   // An Egg (game/breeding.js): it can't battle or do anything until it hatches.
@@ -250,7 +262,7 @@
   }
 
   window.Party = { SHINY_ODDS,
-    CLOAKS, STAT_KEYS, create, maxPp, trainedIvs, stats, maxHp, speciesName, displayName, form, isFainted, isEgg, canFight, displayNameOrEgg, toBattleSet, friendshipOpts, adjustFriendship,
+    CLOAKS, STAT_KEYS, create, maxPp, trainedIvs, stats, maxHp, speciesName, displayName, form, alcremieCream, isFainted, isEgg, canFight, displayNameOrEgg, toBattleSet, friendshipOpts, adjustFriendship,
     syncFromBattle, caught, heal, teachMove, canLearnMachine, knowsMove, movesLearnedAt, expProgress
   };
 })();

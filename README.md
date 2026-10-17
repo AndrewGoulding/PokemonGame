@@ -1201,7 +1201,12 @@ comes from any Sweet; Basculin (White-Striped) becomes Basculegion after
 taking 294 recoil damage in all, Hisuian Qwilfish becomes Overqwil after 20
 Barb Barrages (both counted on the Pokémon, across battles); Ursaring uses
 the Peat Block at night; Stantler becomes Wyrdeer at Lv. 30 (it can't learn
-Psyshield Bash here). Galar's and Hisui's evolutions of other regions'
+Psyshield Bash here). Alcremie comes in all 63 flavours: a Sweet used on Milcery asks which
+way it spins and for how long, and that with the time of day gives its cream
+as in Sword and Shield (clockwise and short by day: Vanilla Cream; the other
+way and long from 7pm to 8pm: Rainbow Swirl; ...), the Sweet sitting on top
+(PokeAPI's pictures for each; pokeemerald-expansion gives one party icon to
+all creams). Galar's and Hisui's evolutions of other regions'
 Pokémon (Koffing into Galarian Weezing, Quilava into Hisuian Typhlosion)
 aren't: this is Kanto.
 

@@ -2634,6 +2634,24 @@ assert.deepStrictEqual(["hp", "atk", "def", "spa", "spd", "spe"].map((k) => DEX.
   assert.deepStrictEqual([d.sides.p1.active.species, d.sides.p2.active.species], ["Dialga-Origin", "Palkia-Origin"]);
 }
 
+// Alcremie's flavours: the cream from how Milcery spins and when, the Sweet
+// on top; every one of the 63 has its pictures and party icon.
+{
+  assert.strictEqual(Party.alcremieCream(true, false, 12), "vanilla-cream");
+  assert.strictEqual(Party.alcremieCream(false, false, 12), "ruby-cream");
+  assert.strictEqual(Party.alcremieCream(false, true, 19), "rainbow-swirl");
+  assert.strictEqual(Party.alcremieCream(true, false, 22), "matcha-cream");
+  const a = Party.create("Alcremie", 30);
+  assert.strictEqual(Party.form(a), "", "plain Alcremie: vanilla cream, Strawberry Sweet");
+  a.alcremie = "ruby-swirl-clover-sweet";
+  assert.strictEqual(Party.form(a), "ruby-swirl-clover-sweet");
+  assert.strictEqual(ALCREMIE_FORMS.length, 63);
+  for (const f of ALCREMIE_FORMS.filter((x) => x !== "vanilla-cream-strawberry-sweet")) {
+    for (const sub of ["", "back/", "shiny/", "back/shiny/"]) assert(fs.existsSync(path.join(root, "assets/sprites/pokemon", sub + "869-" + f + ".png")), sub + f);
+    assert(fs.existsSync(path.join(root, "assets/sprites/icons/869-" + f + ".png")), "icon " + f);
+  }
+}
+
 // Gen 7's Pokémon in random battles (singles and doubles, the battle in
 // debug mode so an Ability or move effect that throws fails the test).
 const GEN7 = 100;

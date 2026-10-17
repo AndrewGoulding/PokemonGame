@@ -579,6 +579,15 @@
     if (Bag.isStone(item)) {
       const evo = Evolution.find(record, { trigger: "item", item, party: player.party });
       if (!evo) { await message("It won't have any effect."); return; }
+      // (Milcery: it spins with the Sweet, this way or that, a little or a
+      // lot; that and the time of day make Alcremie's cream.)
+      if (evo.into === "Alcremie") {
+        const way = await multichoice("Which way will " + name + " spin?", 0, 0, ["Clockwise", "Counterclockwise", "Cancel"]);
+        if (way !== 0 && way !== 1) return;
+        const long = await multichoice("For how long?", 0, 0, ["A little", "A lot", "Cancel"]);
+        if (long !== 0 && long !== 1) return;
+        record.alcremie = Party.alcremieCream(way === 0, long === 1, new Date().getHours()) + "-" + item;
+      }
       Player.removeItem(player, item);
       await evolve(record, evo, false);
       return;
