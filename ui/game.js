@@ -2397,6 +2397,8 @@
     const f = player.flags;
     // (A Tera Raid den: glowing while its raid is on.)
     { const den = RaidDens.byScript(person.script); if (den) return RaidDens.active(f, den.id) ? { sprite: "raid_den_active" } : true; }
+    // (The League gate's guard on the way to Johto: there until you're Champion. data/johto-maps.js)
+    if (person.script === "Route22_NorthEntrance_EventScript_JohtoGuard") return !f.gameClear;
     // (The Champion here is Red.)
     if (person.localId === "LOCALID_CHAMPIONS_ROOM_RIVAL") return Object.assign({}, lookOf("red"));
     if (person.item) return !f[person.flag];
@@ -9978,6 +9980,8 @@
     // (Mr. Psychic's back room, once he's given you his TM; Celadon's Berry Farm, always: the same file.)
     if (map === "SaffronCity_MrPsychicsHouse") return f.gotTM29 ? ["denroom"] : [];
     if (map === "CeladonCity") return ["berryfarm"];
+    // (The League gate's way west, to Johto's Route 26: data/johto-maps.js.)
+    if (map === "Route22_NorthEntrance") return ["johto"];
     if (map === "CeladonCity_GameCorner") return (f.openedRocketHideout ? [] : ["hidden"]).concat(["cardroom"]);
     if (map === "RocketHideout_B1F" && !f.TRAINER_TEAM_ROCKET_GRUNT_12) return ["barrier"];
     if (map === "RocketHideout_B4F" && !(f.TRAINER_TEAM_ROCKET_GRUNT_16 && f.TRAINER_TEAM_ROCKET_GRUNT_17)) return ["barrier"];

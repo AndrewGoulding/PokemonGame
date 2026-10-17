@@ -1632,9 +1632,16 @@ time you come in. Like Emerald's, the island is no place to Fly from.
 ## Johto (in progress)
 
 Johto's first maps are built from HeartGold and SoulSilver: **New Bark Town,
-Route 29 and Cherrygrove City**, joined to each other and not yet to Kanto
-(the debug menu's **Visit Johto (New Bark Town)** takes you there, and its
-Pokémon Center trip brings you back). HGSS's maps are 3D, so
+Route 29 and Cherrygrove City**, and the way to Kanto: **Route 27** (by sea
+east from New Bark Town), **Tohjo Falls** (the cave in its middle: Surf, and
+Waterfall up one of its falls and down the other, as in HGSS) and **Route
+26**, north to the Pokémon League Reception Gate. That gate is FireRed's own
+(Route 22's, to Victory Road), with a new way out west: a mat at its left
+wall to Route 26's door. A guard stands in front of it until you're the
+Champion: "The Johto region lies to the west." / "I'm sorry, but only the
+Champion of the Pokémon League may go on to Johto." Become Champion and he's
+gone. (The debug menu's **Visit Johto (New Bark Town)** still takes you
+there, and its Pokémon Center trip brings you back.) HGSS's maps are 3D, so
 `tools/build-johto.js` (with `tools/lib/hgss-map.js`, `nitro.js` and
 `narc.js`) draws them the way FireRed would show them, from a
 [pret/pokeheartgold](https://github.com/pret/pokeheartgold) checkout:
@@ -1643,12 +1650,19 @@ Pokémon Center trip brings you back). HGSS's maps are 3D, so
 node tools/build-johto.js <path to pret/pokeheartgold>
 ```
 
-It reads the map headers and the overworld matrix, each 32x32-tile chunk's
+It reads the map headers and the overworld matrix (or a cave's own, as
+Tohjo Falls'), each 32x32-tile chunk's
 land data (tile permissions, building placements and its NSBMD terrain
 model) and the area's textures, and rasterises the terrain and buildings in
 software at 16 px a tile: house fronts and tree trunks drawn upward from
 their tiles, as in FireRed, and what stands in front of you (tree tops,
-roofs) in the map's `-top` layer. The tiles' permissions become collision and
+roofs) in the map's `-top` layer. Johto's first three maps are flat; Route 27,
+Tohjo Falls and Route 26 climb, so they're drawn from each tile's ground (the
+highest floor over a tile you can walk or Surf on, and a solid tile takes its
+neighbour's): raised ground stays on its tiles, and a tree, house or cliff
+rises from the ground it stands on. HGSS's waterfalls are solid, and become
+FireRed's, which Waterfall takes you up (or down); the maps' joins come from
+where they sit on the matrix. The tiles' permissions become collision and
 FireRed's behaviours (tall grass, water, ledges, doors), and from the event
 data, scripts and text come the signs ("New Bark Town / Winds of a New
 Beginning"), hidden items and the people always there, with what they say
@@ -1656,8 +1670,8 @@ and HGSS's own sprites (`assets/world/sprites/hgss_*.png`, put in FireRed's
 frame order). Wild Pokémon are HeartGold's daytime ones (Route 29: Pidgey,
 Sentret and Rattata), Surf's, and Gen 4's fishing (five slots a rod,
 40/40/15/4/1). Everything goes into `data/johto-maps.js`, which adds the
-maps to `WORLD_MAPS`. Not built yet: the houses and Elm's Lab (their doors
-say so), Johto's story, music (FireRed's stands in: Pallet Town's, Route 1's
+maps to `WORLD_MAPS` (and the gate's mat, warp and guard). Not built yet: the houses and Elm's Lab (their doors
+say so), Johto's trainers (Routes 26 and 27's aren't there yet) and story, music (FireRed's stands in: Pallet Town's, Route 1's
 and Pewter City's), water animation, and a Town Map of Johto.
 
 ## Orre: the Outskirt Stand (in progress)

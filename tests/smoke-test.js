@@ -1701,9 +1701,11 @@ for (const share of [false, true]) {
 }
 
 // Johto (data/johto-maps.js, from HeartGold and SoulSilver): New Bark Town,
-// Route 29 and Cherrygrove City, joined to each other and not to Kanto.
+// Route 29 and Cherrygrove City, and Route 27, Tohjo Falls and Route 26 to
+// Kanto, joined to each other; Kanto's only way in is the League gate's
+// west door (Route22_NorthEntrance), its guard there until you're Champion.
 {
-  const J = ["CherrygroveCity", "Route29", "NewBarkTown"];
+  const J = ["CherrygroveCity", "Route29", "NewBarkTown", "Route27", "TohjoFalls", "Route26"];
   for (const name of J) {
     const m = WORLD_MAPS[name];
     assert(m && m.region === "johto", name + " is built");
@@ -1719,6 +1721,23 @@ for (const share of [false, true]) {
   assert.strictEqual(World.step({ map: "NewBarkTown", x: 0, y: 15 }, "left").map, "Route29", "west out of New Bark Town");
   assert.strictEqual(World.fishingEncounter("NewBarkTown", "old-rod", () => 0).species, "Magikarp", "Gen 4 rods");
   assert.strictEqual(World.step({ map: "NewBarkTown", x: 23, y: 13 }, "up").unbuilt, "MAP_NEW_BARK_PLAYER_HOUSE_1F", "the house isn't built yet");
+  // East: Route 27, then Route 26 (north of its east end).
+  assert.strictEqual(World.step({ map: "NewBarkTown", x: 31, y: 15 }, "right", null, { surf: true }).map, "Route27", "east out of New Bark Town, by sea");
+  assert.deepStrictEqual(WORLD_MAPS.Route27.connections.find((c) => c.map === "Route26"), { map: "Route26", direction: "right", offset: -96 });
+  // Tohjo Falls: in and out of Route 27 both ways; its waterfalls are Waterfall's, not walls.
+  for (const [i, w] of WORLD_MAPS.TohjoFalls.warps.entries()) if (w.map) assert.strictEqual(WORLD_MAPS[w.map].warps[w.warp].map, "TohjoFalls", "Tohjo Falls warp " + i);
+  const tf = WORLD_MAPS.TohjoFalls, falls = tf.behavior.map((b, i) => [b, i]).filter(([b]) => b === World.MB.WATERFALL);
+  assert(falls.length >= 10 && falls.every(([, i]) => !tf.collision[i]), "Tohjo Falls' waterfalls");
+  // The League gate: its west mat to Route 26's door, and back; nothing else in Kanto leads to Johto.
+  const gate = WORLD_MAPS.Route22_NorthEntrance, gw = gate.warps.findIndex((w) => w.map === "Route26");
+  const r26 = WORLD_MAPS.Route26.warps.filter((w) => w.map === "Route22_NorthEntrance");
+  assert(gw >= 0 && r26.length === 2 && r26.every((w) => w.warp === gw) && WORLD_MAPS.Route26.warps[gate.warps[gw].warp] === r26[0]);
+  assert(gate.patches.johto && fs.existsSync(path.join(root, "assets/world/maps/Route22_NorthEntrance-patch-johto.png")));
+  assert(!Object.values(WORLD_MAPS).some((m) => m.region !== "johto" && m.name !== "Route22_NorthEntrance" && m.warps.some((w) => J.includes(w.map))), "only the gate");
+  const guard = gate.people.find((p) => p.script === "Route22_NorthEntrance_EventScript_JohtoGuard");
+  assert(guard && guard.x === gate.warps[gw].x + 1 && guard.y === gate.warps[gw].y, "the guard stands before the way west");
+  for (const y of [-1, 1]) assert(gate.collision[(gate.warps[gw].y + y) * gate.width + gate.warps[gw].x], "the mat's only way in is past him");
+  assert(/JohtoGuard"\) return !f\.gameClear;/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")), "he's there until you're Champion");
 }
 
 // Faraway Island (data/emerald-maps.js, from Emerald) and its Mew (game/faraway.js).
