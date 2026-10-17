@@ -2156,6 +2156,7 @@
     "Route5_SouthEntrance_EventScript_GuardTriggerLeft", "Route5_SouthEntrance_EventScript_GuardTriggerMid",
     "Route5_SouthEntrance_EventScript_GuardTriggerRight",
     "Game_EventScript_Leaf", "Game_EventScript_TradebackGuy", "Game_EventScript_PokerDealer", "Game_EventScript_BlackjackDealer",
+    "Game_EventScript_PokerTable", "Game_EventScript_BlackjackTable", "Game_EventScript_MahjongTable",
     "Route11_EastEntrance_2F_EventScript_Aide", "Route11_EastEntrance_2F_EventScript_Turner",
     "SSAnne_2F_Corridor_EventScript_RivalTriggerLeft", "SSAnne_2F_Corridor_EventScript_RivalTriggerMid",
     "SSAnne_2F_Corridor_EventScript_RivalTriggerRight", "SSAnne_CaptainsOffice_EventScript_Captain",
@@ -3973,6 +3974,9 @@
       // Haunter, and those holding their item: Onix with a Metal Coat, ...).
       case "Game_EventScript_PokerDealer": await pokerTable(); return;
       case "Game_EventScript_BlackjackDealer": await blackjackTable(); return;
+      case "Game_EventScript_PokerTable": await pokerTable(); return;
+      case "Game_EventScript_BlackjackTable": await blackjackTable(); return;
+      case "Game_EventScript_MahjongTable": await mahjongTable(); return;
       case "Game_EventScript_TradebackGuy": {
         await say(["Hi! I'm the Tradeback Guy!", "Some Pokémon only evolve when\nthey're traded. Nobody to trade\nwith? Leave it to me!",
           "I'll trade you my Rattata, and then\ntrade your Pokémon right back!"]);
@@ -4749,13 +4753,7 @@
         movement: "face_down", text: null }, window.WORLD_SPRITES.tradeback));
     }
     if (map === "PokemonTower_7F" && megaTowerDue()) out.push(...megaTowerPeople());
-    // The poker and blackjack dealers, by the counter at the back of the Game Corner (this game's own).
-    if (map === "CeladonCity_GameCorner") {
-      const clerk = window.WORLD_MAPS.CeladonCity_GameCorner.people.find((p) => /CoinsClerk$/.test(p.script));
-      const looks = { text: null, sprite: clerk.sprite, width: clerk.width, height: clerk.height, frames: clerk.frames, movement: "face_down" };
-      out.push(Object.assign({ id: 902, localId: "LOCALID_POKER_DEALER", script: "Game_EventScript_PokerDealer", x: 13, y: 4 }, looks));
-      out.push(Object.assign({ id: 903, localId: "LOCALID_BLACKJACK_DEALER", script: "Game_EventScript_BlackjackDealer", x: 11, y: 4 }, looks));
-    }
+    if (map === "CeladonCity_GameCorner_CardRoom") out.push(...cardRoomCrowd());
     if (leafWaiting(map)) {
       const at = LEAF_SPOTS[map];
       out.push(Object.assign({ id: 900, localId: LEAF, script: "Game_EventScript_Leaf", x: at.x, y: at.y,
@@ -6233,6 +6231,74 @@
     keep(after);
     const diff = after - before;
     await say(diff > 0 ? "You're " + diff + " Coins up!\nCome back anytime." : diff < 0 ? "Better luck next time!" : "You broke even! Come back anytime.");
+    await persist();
+  }
+
+  // The card room's regulars (this game's own; data/card-room.js): people
+  // in the chairs, the same all day: three at the poker table (a chair left
+  // for you), two at blackjack and four round the mahjong table. Each a
+  // trainer from around the game (TablePlayers) in someone's clothes.
+  const CROWD_SPRITES = ["woman_1", "fat_man", "boy", "old_man_1", "woman_3", "youngster", "balding_man", "woman_2", "lass", "gentleman",
+    "old_man_2", "bug_catcher", "cooltrainer_f", "rocker", "man", "camper", "black_belt", "hiker", "cooltrainer_m", "picnicker",
+    "old_woman", "beauty", "sailor", "fisher", "poke_maniac", "channeler", "crush_girl", "scientist"];
+  const CROWD_FACING = { poker: ["right", "left", "up", "up"], blackjack: ["up", "up", "up", "up"], mahjong: ["down", "up", "right", "left"] };
+  const CROWD_SAYS = [
+    ["I'm on a hot streak today!"], ["Don't tell my wife how much\nI've lost here..."], ["Shh! I'm counting."],
+    ["The house always wins, they say.\nNot today!"], ["One more hand, then I'll go home."],
+    ["I came for the slots, but\nthe cards are where it's at."], ["Bah! Another bad beat!"]];
+  let crowdCache = null;
+  function cardRoomCrowd() {
+    const day = Math.floor(Date.now() / 86400000);
+    if (crowdCache && crowdCache.day === day) return crowdCache.people;
+    let seed = day * 2654435761 >>> 0;
+    const rng = () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const looks = {};
+    for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people || []) if (!looks[p.sprite]) looks[p.sprite] = p;
+    const sprites = CROWD_SPRITES.filter((s) => looks[s]);
+    const room = window.WORLD_MAPS.CeladonCity_GameCorner_CardRoom, players = TablePlayers.pick(9, rng);
+    const people = [], mahjong = [];
+    const seat = (table, i) => {
+      const [x, y] = room.seats[table][i], who = players[people.length], look = looks[sprites[Math.floor(rng() * sprites.length)]];
+      const says = table === "mahjong" ? ["Ron! ...Oh, wait. Never mind.", "Want to sit in? Talk to the table!"] : CROWD_SAYS[Math.floor(rng() * CROWD_SAYS.length)];
+      people.push({ id: 910 + people.length, localId: "LOCALID_CARD_PLAYER_" + people.length, script: null, x, y, movement: "face_" + CROWD_FACING[table][i],
+        rangeX: 0, rangeY: 0, flag: null, text: [who.name + ": " + says[0]].concat(says.slice(1)),
+        sprite: look.sprite, width: look.width, height: look.height, frames: look.frames });
+      if (table === "mahjong") mahjong.push(who);
+    };
+    [0, 1, 2].forEach((i) => seat("poker", i));
+    [0, 2].forEach((i) => seat("blackjack", i));
+    [0, 1, 2, 3].forEach((i) => seat("mahjong", i));
+    crowdCache = { day, people, mahjong };
+    return people;
+  }
+
+  // Mahjong (game/mahjong.js, ui/mahjong.js; this game's own): Riichi, an
+  // East round. 250 Coins buys you in for 25,000 points; when you get up (or
+  // the game's over) every 100 points left is a Coin. One of the four at the
+  // table lets you have their chair.
+  const MAHJONG_BUY_IN = 250;
+  async function mahjongTable() {
+    if (!player.flags.gotCoinCase) { await say(T("CeladonCity_GameCorner_Text_CoinCaseIsRequired")); return; }
+    await say(["It's a mahjong table. Four are playing\nRiichi: an East round, 25,000 points each.",
+      "Sitting in costs " + MAHJONG_BUY_IN + " Coins. Every 100 points\nyou have when you get up is a Coin."]);
+    if (coins() < MAHJONG_BUY_IN) { await say("You don't have enough Coins."); return; }
+    if (!(await confirm("Sit in for " + MAHJONG_BUY_IN + " Coins?"))) return;
+    cardRoomCrowd();
+    const [gone, ...others] = crowdCache.mahjong;
+    addCoins(-MAHJONG_BUY_IN);
+    await say((gone ? gone.name : "A player") + " gets up and gives\nyou their seat. Good luck!");
+    Screen.say("");
+    show("scene");
+    clearMenu();
+    const game = Mahjong.create({ names: [player.name].concat(others.map((p) => p.name)) });
+    const points = await MahjongScreen.run(scene, game, { pics: [Player.LOOKS[player.look].front].concat(others.map((p) => p.pic)) });
+    show("world");
+    await Overworld.resume();
+    const won = Math.max(0, Math.floor(points / 100));
+    addCoins(won);
+    const diff = won - MAHJONG_BUY_IN;
+    await say(diff > 0 ? "You cashed out " + won + " Coins: " + diff + " up!" : diff < 0 ? (won ? "You cashed out " + won + " Coins.\nBetter luck next time!" : "Better luck next time!")
+      : "You broke even!");
     await persist();
   }
 
@@ -9542,7 +9608,7 @@
       if (f.vermilionGymLocksOpen) return ["off"];
       if (gymCans && gymCans.foundFirst) return ["half"];
     }
-    if (map === "CeladonCity_GameCorner" && !f.openedRocketHideout) return ["hidden"];
+    if (map === "CeladonCity_GameCorner") return (f.openedRocketHideout ? [] : ["hidden"]).concat(["cardroom"]);
     if (map === "RocketHideout_B1F" && !f.TRAINER_TEAM_ROCKET_GRUNT_12) return ["barrier"];
     if (map === "RocketHideout_B4F" && !(f.TRAINER_TEAM_ROCKET_GRUNT_16 && f.TRAINER_TEAM_ROCKET_GRUNT_17)) return ["barrier"];
     // The Seafoam Islands' currents (game/seafoam.js).

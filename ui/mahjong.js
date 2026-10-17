@@ -1,0 +1,220 @@
+// The Game Corner's mahjong table (game/mahjong.js has the rules).
+//
+//   const points = await MahjongScreen.run(sceneElement, game, { pics });   // -> your points when you leave
+//
+// You at the bottom, the others to your right, across and to your left, each
+// with their portrait (their trainer class's front picture), name, seat wind,
+// points, the tiles they've called and their discards (a Riichi discard
+// marked red); in the middle the round, the counters, the tiles left and the
+// dora indicator. Your hand along the bottom, the tile you drew set apart.
+// Your turn: left / right and A (or tap) to discard; Tsumo and Riichi as
+// buttons when you can (Riichi first, then the discard). Another's discard
+// you can take: Ron, Pon, Chi or Pass. After a hand: the winning hand, its
+// yaku, han and fu and who paid what; then Next hand or Leave the table (B).
+(function () {
+  const M = () => window.Mahjong;
+  const esc = (s) => window.Screen.escapeHtml(String(s));
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const AI_MS = 450;
+  const WIND_KANJI = ["E", "S", "W", "N"];
+
+  // A tile picture from assets/mahjong/tiles.png (60x80 each, the back last).
+  function tile(t, opts) {
+    opts = opts || {};
+    const k = t == null || opts.back ? 34 : t;
+    return '<span class="mj-tile' + (opts.small ? " small" : "") + (opts.cls ? " " + opts.cls : "") + '" style="--k:' + k + '"' +
+      (opts.i != null ? ' data-i="' + opts.i + '"' : "") + (opts.title !== false && t != null && !opts.back ? ' title="' + esc(M().tileName(t)) + '"' : "") + "></span>";
+  }
+
+  function run(root, g, opts) {
+    opts = opts || {};
+    const pics = opts.pics || [];
+    const se = (id) => { if (window.GameAudio) window.GameAudio.se(id); };
+    let items = [], cursor = 0, pick = null, message = "", riichiMode = false, detail = null;
+
+    function playerHtml(i) {
+      const p = g.players[i];
+      const wind = WIND_KANJI[M().seatWind(g, i) - 27];
+      const river = p.river.map((t, k) => tile(t, { small: true, cls: (k === p.riichiAt ? "riichi" : "") + (p.called.includes(k) ? " called" : "") })).join("");
+      const meldsHtml = p.melds.map((m) => '<span class="mj-meld">' + m.tiles.map((t) => tile(t, { small: true })).join("") + "</span>").join("");
+      const showHand = g.phase === "end" && g.result && (g.result.winner === i || (g.result.type === "draw" && g.result.ready[i]));
+      const hidden = i === 0 ? "" : '<div class="mj-hidden">' + p.hand.map((t) => tile(t, { small: true, back: !showHand })).join("") + "</div>";
+      return '<div class="mj-player p' + i + (g.turn === i && g.phase !== "end" ? " turn" : "") + '">' +
+        '<div class="mj-head">' + (pics[i] ? '<img class="pk-portrait" alt="" src="assets/sprites/trainers/front/' + esc(pics[i]) + '.png">' : "") +
+          '<div><div class="pk-name">' + esc(p.name) + ' <span class="mj-wind' + (wind === "E" ? " dealer" : "") + '">' + { E: "East", S: "South", W: "West", N: "North" }[wind] + "</span></div>" +
+          '<div class="pk-chips">' + p.points.toLocaleString("en-US") + (p.riichi ? ' <span class="mj-stick">Riichi</span>' : "") + "</div></div></div>" +
+        hidden + '<div class="mj-melds">' + meldsHtml + '</div><div class="mj-river">' + river + "</div></div>";
+    }
+
+    function draw() {
+      const me = g.players[0];
+      const o = g.phase === "discard" && g.turn === 0 ? M().discardOptions(g) : null;
+      // Your hand: the tile drawn set apart at the end.
+      const hand = me.hand.slice();
+      let drawnAt = -1;
+      if (me.drawn != null && g.turn === 0 && g.phase === "discard") { hand.splice(hand.lastIndexOf(me.drawn), 1); hand.push(me.drawn); drawnAt = hand.length - 1; }
+      const handItems = items.filter((it) => it.tile != null);
+      const handHtml = hand.map((t, k) => {
+        const it = handItems.findIndex((h) => h.slot === k);
+        const ok = it >= 0;
+        return tile(t, { i: ok ? items.indexOf(handItems[it]) : null, cls: (k === drawnAt ? "drawn" : "") + (ok ? " pickable" : o ? " blocked" : "") +
+          (ok && items.indexOf(handItems[it]) === cursor ? " cursor" : "") + (detail && detail.win === t && g.result && g.result.winner === 0 ? " win" : "") });
+      }).join("");
+      const buttons = items.map((it, k) => (it.tile != null ? "" : '<button type="button" class="pk-button' + (k === cursor ? " cursor" : "") + '" data-i="' + k + '">' + esc(it.label) + "</button>")).join("");
+      const round = M().WINDS[g.round - 27] + " " + (g.hand + 1) + (g.honba ? " · " + g.honba + " honba" : "") + (g.sticks ? " · " + g.sticks + " Riichi stick" + (g.sticks > 1 ? "s" : "") : "");
+      root.innerHTML = '<div class="dig poker mahjong">' +
+        '<div class="mj-table">' + playerHtml(2) + playerHtml(3) +
+          '<div class="mj-center"><div class="mj-round">' + esc(round) + '</div><div class="mj-dora">Dora ' + (g.dora ? g.dora.map((t) => tile(t, { small: true })).join("") : "") +
+            '</div><div class="mj-left">' + (g.wall ? g.wall.length + " tiles left" : "") + "</div></div>" +
+          playerHtml(1) + "</div>" +
+        (detail ? '<div class="mj-result">' + detail.html + "</div>" : "") +
+        '<div class="pk-yours mj-message">' + esc(message) + "</div>" +
+        '<div class="mj-you">' + playerHtml(0) + '<div class="mj-hand">' + handHtml + '<span class="mj-melds">' +
+          me.melds.map((m) => '<span class="mj-meld">' + m.tiles.map((t) => tile(t)).join("") + "</span>").join("") + "</span></div></div>" +
+        '<div class="pk-actions">' + buttons + "</div></div>";
+    }
+
+    function choose(list, at) {
+      items = list;
+      cursor = Math.max(0, Math.min(at == null ? 0 : at, list.length - 1));
+      draw();
+      return new Promise((resolve) => { pick = resolve; });
+    }
+    function chosen(k) {
+      if (!pick || !items[k]) return;
+      const r = pick;
+      pick = null;
+      const v = items[k];
+      items = [];
+      r(v);
+    }
+    function onKey(e) {
+      if (!pick) return;
+      if (["ArrowLeft", "a", "A", "ArrowUp"].includes(e.key)) { cursor = (cursor + items.length - 1) % items.length; draw(); }
+      else if (["ArrowRight", "d", "D", "ArrowDown"].includes(e.key)) { cursor = (cursor + 1) % items.length; draw(); }
+      else if (["z", "Z", " ", "Enter"].includes(e.key)) chosen(cursor);
+      else if (["x", "X", "b", "B"].includes(e.key)) {
+        const back = items.findIndex((it) => it.value === "leave" || it.value === "pass" || it.value === "unriichi");
+        if (back >= 0) chosen(back); else return;
+      } else return;
+      e.preventDefault();
+    }
+    function onClick(e) {
+      const b = e.target.closest && e.target.closest("[data-i]");
+      if (b) { e.preventDefault(); chosen(+b.dataset.i); }
+    }
+    document.addEventListener("keydown", onKey);
+    root.addEventListener("click", onClick);
+
+    const name = (i) => (i === 0 ? "You" : g.players[i].name);
+    function say(ev) {
+      if (ev.seat == null) return null;
+      const n = name(ev.seat), you = ev.seat === 0;
+      switch (ev.type) {
+        case "discard": return n + (you ? " discard " : " discards ") + M().tileName(ev.tile) + (ev.riichi ? ": Riichi!" : ".");
+        case "pon": return n + (you ? " call" : " calls") + " Pon on " + M().tileName(ev.tile) + "!";
+        case "chi": return n + (you ? " call" : " calls") + " Chi on " + M().tileName(ev.tile) + "!";
+        default: return null;
+      }
+    }
+    function report() {
+      const lines = g.log.map(say).filter(Boolean);
+      g.log = [];
+      if (lines.length) message = lines[lines.length - 1];
+    }
+
+    // Your discard (or Tsumo, or Riichi first).
+    async function yourTurn() {
+      for (;;) {
+        const o = M().discardOptions(g), me = g.players[0];
+        const hand = me.hand.slice();
+        if (me.drawn != null) { hand.splice(hand.lastIndexOf(me.drawn), 1); hand.push(me.drawn); }
+        const allowed = riichiMode ? o.riichi : o.tiles;
+        const list = [];
+        hand.forEach((t, slot) => { if (allowed.includes(t) && (!me.riichi || slot === hand.length - 1)) list.push({ tile: t, slot }); });
+        if (o.tsumo) list.push({ label: "Tsumo!", value: "tsumo" });
+        if (o.riichi.length && !riichiMode) list.push({ label: "Riichi", value: "riichi" });
+        if (riichiMode) list.push({ label: "Cancel Riichi", value: "unriichi" });
+        message = riichiMode ? "Riichi: which tile goes?" : me.riichi ? "In Riichi: the tile you drew goes, unless it wins." : "Your turn: pick a tile to discard.";
+        const at = list.findIndex((it) => it.tile != null && it.slot === hand.length - 1);
+        const v = await choose(list, o.tsumo ? list.findIndex((it) => it.value === "tsumo") : at >= 0 ? at : 0);
+        if (v.value === "tsumo") { se("se_shop"); M().tsumo(g); return; }
+        if (v.value === "riichi") { riichiMode = true; continue; }
+        if (v.value === "unriichi") { riichiMode = false; continue; }
+        se("se_ball_tray_ball");
+        M().discard(g, v.tile, riichiMode);
+        riichiMode = false;
+        return;
+      }
+    }
+    // Answering a claim on another's discard.
+    async function yourClaim() {
+      const c = g.claims[0];
+      const list = c.options.map((o) => ({ label: o.type === "ron" ? "Ron!" : o.type === "pon" ? "Pon" : "Chi " + o.tiles.map((t) => t % 9 + 1).join("") + (g.lastDiscard.tile % 9 + 1),
+        value: o })).concat([{ label: "Pass", value: "pass" }]);
+      message = name(g.lastDiscard.seat) + " discarded " + M().tileName(g.lastDiscard.tile) + ".";
+      const v = await choose(list, 0);
+      M().claim(g, 0, v.value === "pass" ? null : v.value);
+      if (v.value !== "pass") se(v.value.type === "ron" ? "se_shop" : "se_select");
+    }
+
+    function resultHtml() {
+      const r = g.result;
+      const pay = r.pay.map((n, k) => (n ? esc(name(k)) + " " + (n > 0 ? "+" : "") + n.toLocaleString("en-US") : "")).filter(Boolean).join(" · ");
+      if (r.type === "draw") {
+        const ready = r.ready.map((x, k) => (x ? name(k) : null)).filter(Boolean);
+        return { html: "<b>Exhaustive draw.</b> " + (ready.length ? esc(ready.join(", ")) + (ready.length > 1 ? " are" : (ready[0] === "You" ? " are" : " is")) + " ready." : "Nobody's ready.") + "<br>" + pay };
+      }
+      const s = r.score;
+      const head = esc(name(r.winner)) + (r.winner === 0 ? " win" : " wins") + " by " + (r.type === "ron" ? "Ron off " + esc(name(r.from)) : "Tsumo") + "!";
+      const hand = r.tiles.map((t) => tile(t, { small: true, cls: t === r.tile ? "win" : "" })).join("") + " " + r.melds.map((m) => '<span class="mj-meld">' + m.tiles.map((t) => tile(t, { small: true })).join("") + "</span>").join("");
+      const yaku = s.yaku.map(([y, h]) => esc(y) + " " + (h >= 13 && s.yakuman ? "" : h)).join(", ");
+      return { win: r.tile, html: "<b>" + head + "</b><div class=\"mj-hand small\">" + hand + "</div>" + yaku + "<br>" +
+        (s.yakuman ? "" : s.han + " han " + s.fu + " fu") + (s.name ? " · " + s.name : "") + "<br>" + pay };
+    }
+
+    async function hand() {
+      detail = null;
+      M().startHand(g);
+      message = (g.dealer === 0 ? "You deal" : name(g.dealer) + " deals") + ". " + M().WINDS[g.round - 27] + " " + (g.hand + 1) + ".";
+      draw();
+      await sleep(600);
+      while (g.phase !== "end") {
+        if (g.phase === "discard") {
+          if (g.turn === 0) await yourTurn();
+          else { draw(); await sleep(AI_MS); M().aiTurn(g); se("se_ball_tray_ball"); }
+        } else if (g.phase === "claim") {
+          // (The others answer straight away; you, if you can take it.)
+          for (const seat of Object.keys(g.claims)) if (+seat !== 0 && g.claims[seat].answer === undefined && g.phase === "claim") M().aiClaim(g, +seat);
+          if (g.phase === "claim" && g.claims && g.claims[0] && g.claims[0].answer === undefined) await yourClaim();
+        }
+        report();
+        draw();
+      }
+      detail = resultHtml();
+      const mine = g.result.pay[0];
+      message = g.result.type === "draw" ? "The wall's run out." : g.result.winner === 0 ? "You win " + mine.toLocaleString("en-US") + " points!" : mine < 0 ? "You pay " + (-mine).toLocaleString("en-US") + " points." : "";
+      se(mine > 0 ? "se_shop" : mine < 0 ? "se_failure" : "se_select");
+      draw();
+    }
+
+    return (async () => {
+      for (;;) {
+        await hand();
+        if (g.over) {
+          const order = g.players.map((p, k) => [p.points, k]).sort((a, b) => b[0] - a[0]);
+          message += " The game's over! " + order.map(([pts, k], n) => (n + 1) + ". " + name(k) + " " + pts.toLocaleString("en-US")).join(", ") + ".";
+          await choose([{ label: "Leave the table", value: "leave" }], 0);
+          break;
+        }
+        const v = await choose([{ label: "Next hand", value: "next" }, { label: "Leave the table", value: "leave" }], 0);
+        if (v.value === "leave") break;
+      }
+      document.removeEventListener("keydown", onKey);
+      root.removeEventListener("click", onClick);
+      return g.players[0].points;
+    })();
+  }
+
+  window.MahjongScreen = { run };
+})();

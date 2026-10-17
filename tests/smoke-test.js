@@ -4232,6 +4232,44 @@ console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " 
   assert(Math.abs(1e6 - sim.coins) < 4000 * 10 * 0.06, "close to even");
 }
 
+// Mahjong (game/mahjong.js): hands, scores, and a whole game between the AIs.
+{
+  const M = Mahjong;
+  const hand = [1, 2, 3, 4, 5, 6, 11, 12, 13, 23, 24, 25, 13, 13];
+  assert.strictEqual(M.shanten(hand, 0), -1, "a complete hand");
+  assert.deepStrictEqual(M.waits([1, 2, 4, 5, 6, 11, 12, 13, 23, 24, 25, 13, 13], 0), [0, 3], "waiting on 1 and 4 man");
+  const tp = M.score({ tiles: hand, melds: [] }, { dora: [33], ura: [], win: 3, tsumo: false, seatWind: 28, roundWind: 27 });
+  assert.deepStrictEqual([tp.yaku.map((y) => y[0]).join(","), tp.han, tp.fu], ["Tanyao,Pinfu", 2, 30], "tanyao pinfu");
+  assert.strictEqual(M.score({ tiles: [0, 0, 0, 8, 8, 8, 9, 9, 9, 17, 17, 17, 27, 27], melds: [] }, { dora: [33], win: 27, tsumo: true, seatWind: 28, roundWind: 27 }).name, "Yakuman", "four concealed triplets");
+  assert.strictEqual(M.score({ tiles: [1, 2, 3, 4, 5, 6, 11, 12, 13, 23, 24, 25, 30, 30], melds: [] }, { dora: [33], win: 5, tsumo: false, seatWind: 28, roundWind: 27 }), null, "no yaku, no win");
+  const g = M.create({ rng: mulberry32(7) });
+  let hands = 0;
+  while (!g.over && hands < 12) {
+    M.startHand(g);
+    for (let guard = 0; g.phase !== "end"; guard++) {
+      assert(guard < 1000, "a hand ends");
+      if (g.phase === "discard") M.aiTurn(g);
+      else for (const seat of Object.keys(g.claims)) if (g.phase === "claim" && g.claims[seat] && g.claims[seat].answer === undefined) M.aiClaim(g, +seat);
+    }
+    hands++;
+    assert.strictEqual(g.players.reduce((n, p) => n + p.points, 0) + g.sticks * 1000, 100000, "points kept");
+  }
+}
+
+// The Game Corner's card room (data/card-room.js): through the wall and back, the tables and their chairs.
+{
+  const room = WORLD_MAPS.CeladonCity_GameCorner_CardRoom, gc = WORLD_MAPS.CeladonCity_GameCorner;
+  const door = gc.warps.findIndex((w) => w.map === "CeladonCity_GameCorner_CardRoom");
+  assert(door >= 0 && gc.patches.cardroom, "a doorway in the Game Corner");
+  assert(room.warps.length && room.warps.every((w) => w.map === gc.name && w.warp === door), "the mat leads back");
+  assert(room.warps[gc.warps[door].warp], "the doorway leads to the mat");
+  for (const s of ["Game_EventScript_PokerTable", "Game_EventScript_BlackjackTable", "Game_EventScript_MahjongTable"]) assert(room.signs.some((g) => g.script === s), s);
+  for (const [table, seats] of Object.entries(room.seats)) {
+    assert.strictEqual(seats.length, 4, table);
+    for (const [x, y] of seats) assert(room.signs.some((g) => Math.abs(g.x - x) + Math.abs(g.y - y) === 1), table + " chair by its table");
+  }
+}
+
 // The card tables' players (game/table-players.js): trainers, with portraits.
 {
   const picked = TablePlayers.pick(3, () => 0.5);

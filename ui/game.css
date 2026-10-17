@@ -405,6 +405,45 @@
 .bj-bet { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 
+/* The mahjong table (ui/mahjong.js): the others above (across, to your left, to your right), you below. */
+.mahjong { gap: 3px; font-size: 11px; }
+.mj-tile { --w: 24px; display: inline-block; width: var(--w); height: calc(var(--w) * 4 / 3); vertical-align: bottom;
+  background: url(../assets/mahjong/tiles.png) calc(var(--k) * var(--w) * -1) 0 / calc(var(--w) * 35) 100% no-repeat; }
+.mj-tile.small { --w: 15px; }
+.mj-hand .mj-tile { --w: 30px; margin-right: 1px; }
+.mj-hand .mj-tile.drawn { margin-left: 8px; }
+.mj-hand .mj-tile.pickable { cursor: pointer; }
+.mj-hand .mj-tile.blocked { filter: brightness(0.6); }
+.mj-hand .mj-tile.cursor { transform: translateY(-6px); outline: 2px solid #ffe066; border-radius: 3px; }
+.mj-tile.win { outline: 2px solid #8fe36a; border-radius: 2px; }
+.mj-tile.riichi { transform: rotate(90deg); margin: 0 3px; }
+.mj-tile.called { opacity: 0.45; }
+.mj-hand.small .mj-tile { --w: 18px; }
+.mj-table { display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: auto auto; gap: 3px; }
+.mj-table .p2 { grid-column: 2; grid-row: 1; }
+.mj-table .p3 { grid-column: 1; grid-row: 1 / span 2; }
+.mj-table .p1 { grid-column: 3; grid-row: 1 / span 2; }
+.mj-center { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  border-radius: 6px; background: rgba(0, 0, 0, 0.25); padding: 3px; }
+.mj-round { font-weight: 700; }
+.mj-player { display: flex; flex-direction: column; gap: 2px; padding: 3px; border: 2px solid rgba(0, 0, 0, 0.35); border-radius: 6px;
+  background: rgba(0, 0, 0, 0.18); min-width: 0; }
+.mj-player.turn { border-color: #ffe066; }
+.mj-head { display: flex; align-items: center; gap: 4px; }
+.mj-head .pk-portrait { width: 32px; height: 32px; }
+.mj-wind { padding: 0 4px; border-radius: 6px; background: rgba(255, 255, 255, 0.2); font-size: 10px; }
+.mj-wind.dealer { background: #c8302c; }
+.mj-stick { padding: 0 4px; border-radius: 6px; background: #f5ecd6; color: #c8302c; font-size: 10px; font-weight: 700; }
+.mj-river, .mj-hidden, .mj-melds { display: flex; flex-wrap: wrap; gap: 1px; align-items: flex-end; }
+.mj-river { min-height: 20px; }
+.mj-meld { display: inline-flex; margin-right: 3px; }
+.mj-you { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.mj-you .mj-player { flex-direction: row; flex-wrap: wrap; align-items: center; }
+.mj-hand { display: flex; align-items: flex-end; flex-wrap: wrap; justify-content: center; padding-top: 6px; }
+.mj-hand .mj-melds { margin-left: 8px; }
+.mj-message { font-size: 13px; min-height: 16px; text-align: center; }
+.mj-result { padding: 4px 6px; border-radius: 6px; background: rgba(0, 0, 0, 0.35); text-align: center; line-height: 1.4; }
+
 /* The berry tree (ui/berry-picking.js): its canvas as big as the space under the bars allows. */
 .berry-pick { background: #2e4a26; }
 .berry-board { display: block; align-self: center; flex: 1 1 auto; min-height: 0; max-width: 100%; aspect-ratio: 240 / 160;

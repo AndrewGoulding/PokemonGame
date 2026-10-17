@@ -329,7 +329,13 @@ and TM19 Giga Drain, TM103 here), and the Game Corner: buy Coins (100 for ₽2,0
 500 for ₽10,000 or 1,000 for ₽20,000: FireRed's ₽20 a Coin, though its list is 50 and 500, with your money and Coins in their boxes at
 the top left; up to 9,999 in the Coin Case), get a few from the gamblers,
 find them on the floor, and play FireRed's slot machines (its reels, odds,
-lines and payouts, from `src/slot_machine.c`) or Texas Hold'em at the poker
+lines and payouts, from `src/slot_machine.c`), or go through the doorway in
+the back wall (left of the stairs) to the card room (this game's own, built
+from the Game Corner's tiles by `tools/build-card-room.js` into
+`data/card-room.js`), where the dealers stand at their tables and the
+regulars sit in the chairs around them (people in all sorts of clothes, the
+same all day: three at poker, two at blackjack, four at mahjong). Play
+Texas Hold'em at the poker
 table (this game's own: `game/poker.js` has the rules, `ui/poker.js` the
 table). The dealer seats you, once you have the Coin Case, at the stakes you
 pick: low stakes (a 200-Coin buy-in, blinds of 1 and 2), mid stakes (1,000;
@@ -354,7 +360,7 @@ Sailors), and either or in between for everyone else. At a showdown everyone's c
 five of seven win, pot by pot. Between hands, Next hand or Leave the table
 (B); your chips go back in the Coin Case as Coins. Or play blackjack (this
 game's own: `game/blackjack.js`, `ui/blackjack.js`) with the dealer beside
-the poker table, with two other trainers at the table (picked the same way,
+the poker table (talk to the dealer or the table), with two other trainers at the table (picked the same way,
 portraits and all; you sit between them) betting and playing their own hands
 by basic strategy against the same dealer and shoe, one after another (one
 who runs out of Coins leaves, and another sits down): bets of 10, 20, 50, 100 or 200 Coins straight from your Coin
@@ -364,7 +370,17 @@ on all 17s and checking for Blackjack with an Ace or ten-card up, Blackjack
 paying 3 to 2, Double Down on your first two cards and one Split of a pair
 (split Aces take one card each). Hit, Stand, Double Down and Split are
 picked with left / right and A, or tapped; the dealer's hole card turns over
-and its draws come one at a time. Spend Coins in the Prize Room on
+and its draws come one at a time. Or sit in at the mahjong table (this
+game's own: `game/mahjong.js`, `ui/mahjong.js`; tile pictures from
+FluffyStuff's riichi-mahjong-tiles, public domain, by
+`tools/build-mahjong-tiles.js`): one of the four players gives you their
+chair for 250 Coins, which is 25,000 points. It's Riichi: an East round,
+136 tiles (no red fives, no kans), Pon, Chi, Ron, Tsumo and Riichi, furiten,
+dora and ura-dora, honba and the usual yaku, han, fu and limits (mangan to
+yakuman), against three trainers (picked as for poker, portraits and all)
+who play for the fastest hand, call when it helps and, far from ready, play safe against a Riichi.
+Between hands, Next hand or Leave the table; every 100 points you have when
+you get up (or when the game ends) is a Coin. Spend Coins in the Prize Room on
 Abra, Clefairy, Dratini, Scyther or Porygon, TMs (Ice Beam, Thunderbolt, Shadow
 Ball, Flamethrower, and Iron Tail, TM104 here, since this game's TM23 is Smack
 Down) or held items, each counter's prizes in FireRed's list with your Coins
