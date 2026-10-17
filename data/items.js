@@ -25,6 +25,7 @@ window.ITEMS = {
   "babiri-berry": { name: "babiri-berry", category: "type-protection", effect: "Held: Consumed when struck by a super-effective Steel-type attack to halve the damage." },
   "banettite": { name: "banettite", category: "mega-stones", effect: "Held: Allows Banette to Mega Evolve into Mega Banette." },
   "beedrillite": { name: "beedrillite", category: "mega-stones", effect: "Held: Allows Beedrill to Mega Evolve into Mega Beedrill." },
+  "berry-pouch": { name: "berry-pouch", category: "key-items", effect: "Use it in a forest to shake a berry tree and catch the berries that fall. The higher your farming level, the better the berries." },
   "berry-juice": { name: "berry-juice", category: "healing", effect: "Restores 20 HP." },
   "bicycle": { name: "bicycle", category: "key-items", effect: "Use for fast transit." },
   "big-root": { name: "big-root", category: "held-items", effect: "Held: Increases HP recovered from draining moves, Ingrain, and Aqua Ring by 3/10 (30%)." },

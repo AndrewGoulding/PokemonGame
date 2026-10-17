@@ -730,9 +730,9 @@
   }
 
   const RODS = ["fishing-rod"];
-  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case", "powder-jar"].concat(RODS);
+  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case", "powder-jar"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
-  const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map"].concat(RODS);
+  const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map", "berry-pouch"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
     item === "ability-capsule" || item === "ability-patch" || item === "bottle-cap" || item === "gold-bottle-cap" || item === "zygarde-cube" ||
@@ -747,6 +747,7 @@
   // closes the bag afterwards, back to the map: "escaped").
   async function useKeyItem(item) {
     if (item === "explorer-kit") return (await explorerKit()) ? "escaped" : null;
+    if (item === "berry-pouch") return (await berryPouch()) ? "escaped" : null;
     if (item === "itemfinder") { fieldAction = itemfinder; return "escaped"; }
     if (item === "vs-seeker") { fieldAction = vsSeeker; return "escaped"; }
     if (item === "bicycle") { fieldAction = bicycle; return "escaped"; }
@@ -996,6 +997,43 @@
     const after = Mining.level(f.miningXp);
     if (after > before) await MiningScreen.message("Your mining level rose to " + after + "! You have more energy, and rarer treasures may turn up now.");
     MiningScreen.clear();
+    await persist();
+    return true;
+  }
+
+  // Picking berries with the Berry Pouch (game/berry-picking.js,
+  // ui/berry-picking.js), in a forest: shake a tree and catch what falls.
+  // Playing earns farming XP (flags.farmingXp): your farming level adds
+  // berries and decides which kinds you can pick.
+  const FORESTS = ["ViridianForest", "ThreeIsland_BerryForest", "SixIsland_PatternBush"];
+  const farmingXp = () => player.flags.farmingXp | 0;
+  async function berryPouch() {
+    if (!FORESTS.includes(player.location && player.location.map)) {
+      await message("There are no berry trees to pick from here. Try using the Berry Pouch in a forest!");
+      return false;
+    }
+    show("scene");
+    clearMenu();
+    const f = player.flags, xp = farmingXp(), before = BerryPicking.level(xp);
+    const game = await BerryPickingScreen.run(scene, BerryPicking.create(Math.random, before), xp, player.look || "custom");
+    const r = BerryPicking.result(game);
+    const berries = BerryPicking.rewards(r, before);
+    f.farmingXp = xp + r.xp;
+    const berriesOf = (n, what) => n + " " + what + (n === 1 ? "y" : "ies");
+    await BerryPickingScreen.message("Score " + r.score + ": " + berriesOf(r.ripe, "ripe berr") +
+      (r.gold ? " and " + berriesOf(r.gold, "gold berr") : "") + " caught" +
+      (r.bestCombo > 1 ? ", best combo ×" + r.bestCombo : "") + ".");
+    const counts = {};
+    for (const id of berries) counts[id] = (counts[id] || 0) + 1;
+    for (const [id, n] of Object.entries(counts)) {
+      Player.addItem(player, id, n);
+      await BerryPickingScreen.message(player.name + " put " + (n > 1 ? n + " " + Bag.name(id).replace(/y$/, "ies") : article(Bag.name(id))) + " in the Berry Pouch!");
+    }
+    await BerryPickingScreen.message("Gained " + r.xp + " farming XP.");
+    const after = BerryPicking.level(f.farmingXp);
+    const tier = BerryPicking.TIERS.find((t) => t.from > before && t.from <= after);
+    if (after > before) await BerryPickingScreen.message("Your farming level rose to " + after + "!" + (tier ? " " + tier.name + " berries can be picked now." : " More berries will come home now."));
+    BerryPickingScreen.clear();
     await persist();
     return true;
   }
@@ -1859,6 +1897,8 @@
         "<dt>Badges</dt><dd>" + player.badges.length + "</dd>" +
         "<dt>Mining</dt><dd>Lv. " + Mining.level(miningXp()) + (Mining.toNext(miningXp()) == null ? " (max)"
           : " <small>(" + Mining.toNext(miningXp()) + " XP to the next level)</small>") + "</dd>" +
+        "<dt>Farming</dt><dd>Lv. " + BerryPicking.level(farmingXp()) + (BerryPicking.toNext(farmingXp()) == null ? " (max)"
+          : " <small>(" + BerryPicking.toNext(farmingXp()) + " XP to the next level)</small>") + "</dd>" +
         "<dt>Fishing</dt><dd>Lv. " + Fishing.level(fishingXp()) + (Fishing.toNext(fishingXp()) == null ? " (max)"
           : " <small>(" + Fishing.toNext(fishingXp()) + " XP to the next level)</small>") + "</dd>" +
         "<dt>Play time</dt><dd>" + playTime(player.playTimeMs) + "</dd>" +

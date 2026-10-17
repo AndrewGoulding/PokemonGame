@@ -1442,6 +1442,34 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   80 and the plates at 100. Each fossil is only found in its own caves:
   Kanto's (Helix, Dome, Old Amber) in Mt. Moon; later regions' fossils will
   get caves of their own. The rules are in `game/mining.js`, the screen in `ui/mining.js`.
+- **Berry Pouch** (a key item you start with; old saves get it too): use it
+  from the Bag (or Select, registered) in a forest (Viridian Forest, Three
+  Island's Berry Forest, Six Island's Pattern Bush) to pick berries, this
+  game's own minigame (`game/berry-picking.js` has the rules, the screen is
+  `ui/berry-picking.js`). A berry tree fills the screen; a meter at the top
+  sweeps back and forth over a sweet spot. A (or tapping the tree) shakes the
+  tree: on the sweet spot, three ripe purple berries and maybe a gold one;
+  near it, a ripe and a green (unripe) one; anywhere else, two green ones;
+  shaking again while the tree still sways (a second and a half) is
+  over-shaking, three green berries and points off. Berries fall from all
+  over the tree, ripe ones slowly, green ones faster, gold ones fastest; move
+  left and right (the D-pad, or tapping the ground) to catch them in the
+  basket on your head: a ripe one is 10 points, a gold one 30, every good
+  catch in a row adds a combo bonus (2 a catch, up to 20), a green one caught
+  costs 10 and breaks the combo, and so does letting a ripe or gold one drop.
+  A game lasts 30 seconds. You take home a berry and one more for every 60
+  points, fewer if you caught many green ones or missed many; your **farming
+  level** adds up to as many again (all of them again at level 100), and each
+  gold berry brings one from the best tier you can pick. Berries come in
+  tiers by farming level: Basic (Cheri, Chesto, Pecha, Rawst, Aspear, Oran,
+  Persim) from 1, Restoring (Leppa, Sitrus, Lum and the confusion berries) from
+  10, Contest (Razz, Bluk, Nanab, Wepear, Pinap) from 20, EV-reducing (Pomeg,
+  Kelpsy, Qualot, Hondew, Grepa, Tamato) from 30, Type-resisting (Occa to
+  Roseli, and Chilan) from 45 and Battle-boosting (Liechi, Ganlon, Salac,
+  Petaya, Apicot, Lansat, Starf, Micle, Custap, Jaboca, Rowap, Kee, Maranga,
+  Enigma) from 60; each tier you can pick comes up half as often as the one
+  below it. Farming XP is 5 a game and 1 for every 10 points; levels go as
+  mining's do, and the trainer card shows your farming level.
 - **Fly and Transform animations** (FireRed's Move_FLY and Move_TRANSFORM, frame
   for frame): Fly's first turn turns the Pokémon into a ball of shadow that
   squashes, stretches and shoots off the top of the screen, and it stays out
@@ -1578,7 +1606,7 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
 |---|---|
 | `data/` | Pokédex, moves, abilities, items, item sprite paths, learnsets, evolutions, overworld maps, natures, type chart, plus the battle hooks for conditions and moves |
 | `engine/` | Stat, damage, experience, catch and item formulas, and the battle engine |
-| `game/` | Game logic around the engine: party records, the player and their save (`player.js`, `save.js`), bag and Poké Mart (`bag.js`), overworld rules (`world.js`), mining and fishing levels (`mining.js`, `fishing.js`), evolution, encounters, random teams and the opponent AI |
+| `game/` | Game logic around the engine: party records, the player and their save (`player.js`, `save.js`), bag and Poké Mart (`bag.js`), overworld rules (`world.js`), mining, fishing and farming levels (`mining.js`, `fishing.js`, `berry-picking.js`), evolution, encounters, random teams and the opponent AI |
 | `ui/` | Text box and menus (`screen.js`), the battle screen, the overworld (`overworld.js`), FireRed's intro (`intro.js`), and the game flow, story events and menus (`game.js`) |
 | `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`, `npm run build:maps`, `npm run build:intro`, `npm run build:battle-bgs`, `npm run build:machine-learners`, `npm run build:sprite-metrics`, `node tools/build-slot-machine.js pokefirered` for the Game Corner slot machine graphics) and their shared PNG/GBA/text helpers (`tools/lib/`) |
 | `assets/sprites/` | Pokémon sprites (front, back, shiny), item icons, trainer and overworld sprites |

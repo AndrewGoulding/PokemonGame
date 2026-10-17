@@ -346,6 +346,10 @@
 .dig-board.shake { animation: dig-shake 0.15s; }
 .dig-board.shake-hard { animation: dig-shake 0.25s 2; }
 @keyframes dig-shake { 25% { transform: translate(-2px, 1px); } 75% { transform: translate(2px, -1px); } }
+/* The berry tree (ui/berry-picking.js): its canvas as big as the space under the bars allows. */
+.berry-pick { background: #2e4a26; }
+.berry-board { display: block; align-self: center; flex: 1 1 auto; min-height: 0; max-width: 100%; aspect-ratio: 240 / 160;
+  image-rendering: pixelated; border: 2px solid #1d150d; border-radius: 4px; touch-action: none; }
 .dig-tool { grid-row: span 2; align-self: stretch; display: flex; align-items: center; padding: 0 8px; border: 2px solid #1d150d;
   border-radius: 6px; background: #ffd34d; font-size: 12px; font-weight: 700; white-space: nowrap; }
 

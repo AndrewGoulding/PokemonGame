@@ -777,8 +777,8 @@ for (const share of [false, true]) {
   const oldSave = Object.assign(Player.create("T"), { party: [Party.create("Pidgey", 5, { rng })], bag: { "tm94-oras": 1 } });
   delete oldSave.pcItems;
   assert.deepStrictEqual(Player.load(JSON.parse(JSON.stringify(oldSave))).player.pcItems, { potion: 1 }, "old saves get the PC Potion");
-  assert.deepStrictEqual(Player.load(oldSave).player.bag, { tm99: 1, "exp-share": 1, "explorer-kit": 1 },
-    "old saves get Secret Power, the Exp. Share and the Explorer Kit");
+  assert.deepStrictEqual(Player.load(oldSave).player.bag, { tm99: 1, "exp-share": 1, "explorer-kit": 1, "berry-pouch": 1 },
+    "old saves get Secret Power, the Exp. Share, the Explorer Kit and the Berry Pouch");
   const v1 = Object.assign(Player.create("T"), { version: 1, party: [Object.assign(Party.create("Pidgey", 5, { rng }), { item: "tm71" })],
     bag: { tm69: 1, tm70: 1, tm71: 1, tm93: 1, tm94: 1, tm95: 1, tm100: 1, tm101: 1, hm05: 1, hm07: 1 }, pcItems: { tm24: 2 } });
   const fromV1 = Player.load(JSON.parse(JSON.stringify(v1))).player;
@@ -1848,6 +1848,8 @@ for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
 {
   assert(window.ITEMS["explorer-kit"] && Bag.isKeyItem("explorer-kit") && Bag.sprite("explorer-kit"));
   assert.strictEqual(Player.create("T").bag["explorer-kit"], 1, "you start with the Explorer Kit");
+  assert.strictEqual(Player.create("T").bag["berry-pouch"], 1, "...and the Berry Pouch");
+  assert(Bag.isKeyItem("berry-pouch") && Bag.sprite("berry-pouch"));
   // Every treasure is a real item with a picture, and its shape has tiles.
   for (const [item, , shape] of Mining.TREASURES) {
     assert(window.ITEMS[item] && Bag.sprite(item), item);
@@ -4066,3 +4068,51 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
 }
 console.log("ok: Gen 7, " + GEN7 + " random battles finished (" + gen7Turns + " turns)");
 console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " turns)");
+
+// Berry picking (game/berry-picking.js): shake a tree to the meter, catch what falls.
+{
+  const B = BerryPicking;
+  const seq = (vals) => { let i = 0; return () => vals[i++ % vals.length]; };
+  // Every tier's berries are real items; a tier opens at its farming level.
+  for (const t of B.TIERS) for (const id of t.berries) assert(window.ITEMS[id] && Bag.sprite(id), id);
+  assert.deepStrictEqual(B.tiersAt(1).map((t) => t.name), ["Basic"]);
+  assert.deepStrictEqual(B.tiersAt(30).map((t) => t.name), ["Basic", "Restoring", "Contest", "EV-reducing"]);
+  assert.strictEqual(B.tiersAt(100).length, B.TIERS.length);
+  // Shakes: on the sweet spot, near it, off it, and while the tree still sways.
+  const g = B.create(seq([0.5]), 1);
+  const at = (target) => { while (Math.abs(B.meterAt(g.t + 1) - target) > 0.01) B.step(g, {}); };
+  at(g.sweet); B.step(g, { shake: true });
+  assert.strictEqual(g.events[0].quality, "perfect");
+  assert.strictEqual(g.berries.filter((b) => b.kind === "ripe").length, 3, "three ripe berries");
+  B.step(g, { shake: true });
+  assert.strictEqual(g.events[0].quality, "over", "shaking again too soon");
+  assert.strictEqual(g.berries.filter((b) => b.kind === "green").length, 3);
+  // Catching: standing under a ripe berry catches it (10 points, a combo of 1);
+  // a green one costs points and breaks the combo; one let fall is a miss.
+  const c = B.create(seq([0.5]), 1);
+  c.berries = [{ kind: "ripe", x: c.x, y: B.CATCH_Y - 1, speed: 1, wait: 0 }];
+  B.step(c, {});
+  assert.deepStrictEqual([c.ripe, c.score, c.combo], [1, 12, 1]);
+  c.berries = [{ kind: "green", x: c.x, y: B.CATCH_Y - 1, speed: 1, wait: 0 }];
+  B.step(c, {});
+  assert.deepStrictEqual([c.bad, c.score, c.combo], [1, 2, 0]);
+  c.berries = [{ kind: "gold", x: c.x + 60, y: B.H + 7, speed: 2, wait: 0 }];
+  B.step(c, {});
+  assert.strictEqual(c.misses, 1);
+  // Left and right move you; time runs out after 30 seconds.
+  const x0 = c.x; B.step(c, { left: true }); assert(c.x < x0 && c.facing === "left");
+  const t = B.create(seq([0.5]), 1);
+  for (let i = 0; i < B.FRAMES; i++) B.step(t, {});
+  assert(t.over, "30 seconds");
+  // Results: a berry for every 60 points (and one), less for green ones and
+  // misses; XP 5 and a tenth of the score; the farming level adds berries,
+  // and each gold berry brings one from the best tier.
+  const r = B.result(Object.assign(B.create(seq([0.5])), { score: 300, gold: 1 }));
+  assert.deepStrictEqual([r.berries, r.xp], [6, 35]);
+  assert.strictEqual(B.result(Object.assign(B.create(seq([0.5])), { score: 300, bad: 12 })).berries, 3, "green ones lower the yield");
+  assert.strictEqual(B.rewards(r, 1, seq([0.5])).length, 6 + 1);
+  assert.strictEqual(B.rewards(r, 100, seq([0.5])).length, 12 + 1, "up to twice as many at level 100");
+  const best = B.rewards(Object.assign({}, r, { berries: 0 }), 60, seq([0.5]));
+  assert(B.TIERS[B.TIERS.length - 1].berries.includes(best[best.length - 1]), "a gold berry's is from the best tier");
+  assert(B.rewards(r, 1, Math.random).every((id) => B.TIERS[0].berries.includes(id)), "only Basic berries at level 1");
+}
