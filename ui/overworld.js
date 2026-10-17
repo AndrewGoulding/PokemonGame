@@ -422,7 +422,7 @@
   function setAvatar(mode) {
     if (me.avatar === mode) return;
     me.avatar = mode;
-    me.hopping = false; me.hopHeld = 0;
+    me.hopping = false; me.hopHeld = 0; me.wheelie = null; me.lowering = 0;
     if (ctx && ctx.player) ctx.player.flags.avatar = mode === "walk" ? undefined : mode;
     if (ctx && ctx.onAvatar) ctx.onAvatar(mode);
   }
@@ -533,20 +533,42 @@
 
   // ---------- Hopping on the Bicycle ----------
   //
-  // Emerald's Acro Bike bunny hop (src/bike.c, AcroBikeHandleInputWheelieStanding
-  // and AcroBikeHandleInputBunnyHop): on the Bicycle, hold B standing still
-  // for 40 frames and you start hopping, SE_BIKE_HOP and a low jump
-  // (sJumpY_Low) of 16 frames each: in place, turning if you press another
-  // way, or a tile along (over a ledge too) if you press the way you face.
-  // Let go of B and you stop. As in Emerald, a hop in place counts as a step
-  // for wild Pokémon (and a Repel, and trainers seeing you), so hopping in
-  // tall grass can find one; it doesn't set off the tile's scripts again.
-  const HOP_HOLD_FRAMES = 40;
+  // Emerald's Acro Bike wheelie and bunny hop (src/bike.c,
+  // AcroBikeHandleInputWheelieStanding and AcroBikeHandleInputBunnyHop): on
+  // the Bicycle, press B standing still and you pop a wheelie (rising for 4
+  // frames, then up on the back wheel: the wheelie sheet, tools/build-wheelie.js);
+  // while you hold it you can turn, or ride along on the back wheel at the
+  // Bicycle's slowest pace. Hold it 40 frames standing still and you start
+  // hopping on the back wheel, SE_BIKE_HOP and a low jump (sJumpY_Low) of 16
+  // frames each: in place, turning if you press another way, or a tile along
+  // (over a ledge too) if you press the way you face. Let go of B and the
+  // front wheel comes down (4 frames). As in Emerald, a hop in place can find
+  // a wild Pokémon in tall grass, but it isn't a step: a Repel and the
+  // Safari Zone's steps don't count it, and the tile's scripts don't run again.
+  const HOP_HOLD_FRAMES = 40, WHEELIE_RISE_FRAMES = 4;
   const JUMP_Y_LOW = [0, -2, -3, -4, -5, -6, -6, -6, -5, -5, -4, -3, -2, 0, 0, 0];
   function bikeHop(dir) {
-    if (!bDown) { me.hopping = false; me.hopHeld = 0; return false; }
+    if (!bDown) {
+      if (me.wheelie) { me.wheelie = null; me.hopping = false; me.hopHeld = 0; me.lowering = WHEELIE_RISE_FRAMES; }
+      if (me.lowering > 0) { me.lowering--; return true; }
+      return false;
+    }
+    if (!me.wheelie) {
+      if (dir) return false;   // (B riding along does nothing)
+      me.wheelie = { t: 0 }; me.hopHeld = 0; me.lowering = 0;
+      me.bikeDir = null; me.bikeRun = 0; me.carry = 0;
+      return true;
+    }
+    me.wheelie.t++;
     if (!me.hopping) {
-      if (dir) { me.hopHeld = 0; return false; }
+      if (dir && dir !== me.facing) { me.facing = dir; return true; }
+      if (dir) {
+        // Along on the back wheel.
+        me.hopHeld = 0;
+        const r = World.step({ map: me.map, x: me.x, y: me.y }, dir, occupiedForPlayer);
+        if (r.ok && !r.warp && !r.jump) { startStep(r, dir, false, BIKE_SPEEDS[0]); me.move.wheelie = true; }
+        return true;
+      }
       if (++me.hopHeld < HOP_HOLD_FRAMES) return true;
       me.hopping = true;
     }
@@ -564,12 +586,8 @@
     me.move = { tx: me.x, ty: me.y, tmap: me.map, dir: me.facing, t: 0, dist: TILE, speed: WALK_SPEED, inPlace: true, bikeHop: true };
     return true;
   }
-  // A hop in place, landed: a step for wild Pokémon, a Repel and trainers.
+  // A hop in place, landed: wild Pokémon may jump out, but it isn't a step.
   function finishHopInPlace() {
-    const seen = anyTrainerSees();
-    if (seen) return finish(seen);
-    const said = ctx.onStep && ctx.onStep();
-    if (said) return finish(said);
     const wild = World.stepEncounter(wildState, me.map, me.x, me.y, {
       allow: ctx.allowWild, repel: !!(ctx.player && ctx.player.repelSteps > 0), surf: false, bike: true });
     if (wild) finish(Object.assign({ type: "wild" }, wild));
@@ -1480,6 +1498,14 @@
       // The Bicycle's sheet (32 wide): standing, and pedalling while moving.
       sheet = look + "_bike"; w = 32; dx = -8;
       frame = frameFor(me.facing, !!me.move && !me.move.bikeHop && (me.move.t % TILE) < TILE / 2, me.parity, 9);
+      // Popping a wheelie, up on the back wheel, or hopping on it (rising
+      // then up, each hop).
+      const pose = me.lowering > 0 ? 0 : me.move && me.move.bikeHop ? (me.move.t < WHEELIE_RISE_FRAMES ? 0 : 1)
+        : me.move && me.move.wheelie ? 1 : me.wheelie && !me.move ? (me.wheelie.t < WHEELIE_RISE_FRAMES ? 0 : 1) : null;
+      if (pose != null && ready(spriteImage(look + "_wheelie"))) {
+        sheet = look + "_wheelie";
+        frame = { down: 0, up: 2, left: 4, right: 4 }[me.facing] + pose;
+      }
     } else if (me.avatar === "surf") {
       // On the water: down, up or left, bobbing up and down a pixel.
       sheet = look + "_surf"; w = 32; dx = -8;
@@ -1559,6 +1585,7 @@
     const sameMap = me.map === loc.map;
     me.map = loc.map; me.x = loc.x; me.y = loc.y; me.facing = loc.facing || me.facing || "down"; me.move = null;
     me.hidden = false; me.emote = null;
+    me.wheelie = null; me.hopping = false; me.hopHeld = 0; me.lowering = 0;
     me.avatar = (ctx.player.flags && ctx.player.flags.avatar) || "walk";
     checkAvatar();
     if (!sameMap) checkLight();
@@ -1575,7 +1602,7 @@
       });
     }
     const look = "player_" + (ctx.player.look || "custom");
-    await Promise.all([preloadMap(me.map), ...["_run", "_bike", "_surf", "_fish"].map((k) => spriteImage(look + k).loaded)]);
+    await Promise.all([preloadMap(me.map), ...["_run", "_bike", "_wheelie", "_surf", "_fish"].map((k) => spriteImage(look + k).loaded)]);
     showControls();
     hint();
     ignoreInputUntil = performance.now() + 200;
