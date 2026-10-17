@@ -6028,12 +6028,18 @@
 
   // Erika: battle (talking to her), then the Rainbow Badge and TM19 Giga
   // Drain (this game's TM103). Beating her also beats her Gym's trainers.
+  // Her team: FireRed's, her ace Vileplume Terastallizing into a Poison type as soon as it's out.
+  function erikaTeam() {
+    const team = trainerTeam("TRAINER_LEADER_ERIKA");
+    Object.assign(team.find((r) => r.species === "Vileplume"), { teraType: "Poison", teraAce: true });
+    return team;
+  }
   async function erika(person) {
     const f = player.flags, ID = "TRAINER_LEADER_ERIKA";
     if (!f[ID]) {
       await say(person.trainer.intro);
       if (!canBattle()) return;
-      const outcome = await battle("trainer", { foe: { name: "Leader Erika", team: trainerTeam(ID), pic: "leader_erika" },
+      const outcome = await battle("trainer", { foe: { name: "Leader Erika", team: erikaTeam(), pic: "leader_erika", tera: true },
         defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
       if (outcome !== "won") return;
       if (!hasBadge("rainbow")) player.badges.push("rainbow");
@@ -6595,9 +6601,10 @@
     if (!f[ID]) {
       await say(person.trainer.intro);
       if (!canBattle()) return;
-      // (This game's: her Alakazam holds its Alakazite, and Mega Evolves.)
-      const team = trainerTeam(ID).map((r) => (r.species === "Alakazam" ? Object.assign(r, { item: "alakazite" }) : r));
-      const outcome = await battle("trainer", { foe: { name: "Leader Sabrina", team, pic: "leader_sabrina" },
+      // (This game's: her Alakazam holds its Alakazite, Mega Evolves, then
+      // Terastallizes into a Dark type.)
+      const team = trainerTeam(ID).map((r) => (r.species === "Alakazam" ? Object.assign(r, { item: "alakazite", teraType: "Dark", teraAce: true }) : r));
+      const outcome = await battle("trainer", { foe: { name: "Leader Sabrina", team, pic: "leader_sabrina", tera: true },
         defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
       if (outcome !== "won") return;
       if (!hasBadge("marsh")) player.badges.push("marsh");
@@ -7014,12 +7021,22 @@
   // Koga: battle (talking to him), then the Soul Badge and TM06 Toxic
   // (FireRed's TM06: the TM with Toxic here). Beating him also beats his
   // Gym's trainers.
+  // His team (this game's): Weezing, Muk (FireRed's), Arbok, and his ace,
+  // Beedrill, holding its Beedrillite: it Mega Evolves, then Terastallizes
+  // into a Fire type.
+  function kogaTeam() {
+    const fr = trainerTeam("TRAINER_LEADER_KOGA");
+    const weezing = fr.find((r) => r.species === "Weezing"), muk = fr.find((r) => r.species === "Muk");
+    return [weezing, muk, Party.create("Arbok", 40, { ivs: 0, moves: ["Glare", "Poison Fang", "Crunch", "Sludge Bomb"] }),
+      Object.assign(Party.create("Beedrill", 44, { ivs: 0, moves: ["Poison Jab", "X-Scissor", "Drill Run", "Swords Dance"] }),
+        { item: "beedrillite", teraType: "Fire", teraAce: true })];
+  }
   async function koga(person) {
     const f = player.flags, ID = "TRAINER_LEADER_KOGA";
     if (!f[ID]) {
       await say(person.trainer.intro);
       if (!canBattle()) return;
-      const outcome = await battle("trainer", { foe: { name: "Leader Koga", team: trainerTeam(ID), pic: "leader_koga" },
+      const outcome = await battle("trainer", { foe: { name: "Leader Koga", team: kogaTeam(), pic: "leader_koga", tera: true },
         defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
       if (outcome !== "won") return;
       if (!hasBadge("soul")) player.badges.push("soul");

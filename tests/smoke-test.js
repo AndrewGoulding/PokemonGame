@@ -3148,6 +3148,23 @@ for (let seed = 1; seed <= GEN8; seed++) {
     assert(/Object\.assign\(starmie, \{ teraType: "Psychic", teraAce: true \}\)/.test(gameSrc) && /pic: "leader_misty", tera: true/.test(gameSrc), "Misty's Starmie");
     assert(/r\.species === "Raichu"\), \{ teraType: "Water", teraAce: true \}\)/.test(gameSrc) && /pic: "leader_lt_surge", tera: true/.test(gameSrc), "Lt. Surge's Raichu");
     assert(WORLD_TRAINERS.TRAINER_LEADER_LT_SURGE.party.some((m) => m.species === "Raichu"));
+    assert(/r\.species === "Vileplume"\), \{ teraType: "Poison", teraAce: true \}\)/.test(gameSrc) && /pic: "leader_erika", tera: true/.test(gameSrc), "Erika's Vileplume");
+    assert(/item: "alakazite", teraType: "Dark", teraAce: true/.test(gameSrc) && /pic: "leader_sabrina", tera: true/.test(gameSrc), "Sabrina's Mega Alakazam");
+    assert(/return \[weezing, muk, Party\.create\("Arbok"/.test(gameSrc) && /item: "beedrillite", teraType: "Fire", teraAce: true/.test(gameSrc)
+      && /pic: "leader_koga", tera: true/.test(gameSrc), "Koga: Weezing, Muk, Arbok, Mega Beedrill (Tera Fire)");
+    // While the ace is still to come, no one else Terastallizes (Erika's Victreebel, with Giga Drain, waits).
+    const e = new Battle({ seed: 1, debug: true, p1: { name: "A", team: [g9("Snorlax", ["Splash"])] },
+      p2: { name: "B", team: [g9("Victreebel", ["Giga Drain"], { teraType: "Grass" }), g9("Vileplume", ["Acid"], { teraType: "Poison", teraAce: true })], tera: true } });
+    e.start();
+    e.choose("p1", mv(0)); e.choose("p2", OpponentAI.choose(e, "p2", mulberry32(1)));
+    assert(!e.sides.p2.pokemon[0].terastallized, "the Orb is kept for the ace");
+    // A Mega Stone holder Mega Evolves and Terastallizes in the same turn, the Mega Evolution first.
+    const k = new Battle({ seed: 1, debug: true, p1: { name: "A", team: [g9("Snorlax", ["Splash"])] },
+      p2: { name: "B", team: [g9("Beedrill", ["Poison Jab"], { item: "beedrillite", teraType: "Fire", teraAce: true })], tera: true } });
+    k.start();
+    k.choose("p1", mv(0)); k.choose("p2", OpponentAI.choose(k, "p2", mulberry32(1)));
+    const bee = k.sides.p2.pokemon[0], order = k.events.map((ev) => ev[0]).filter((t) => t === "-mega" || t === "-terastallize");
+    assert.deepStrictEqual([bee.species, bee.terastallized, bee.types, order], ["Beedrill-Mega", "Fire", ["Fire"], ["-mega", "-terastallize"]], "Mega Beedrill, Tera Fire");
     assert(/script === "enter:PewterCity" \|\| script === "arrive:PewterCity"\) && !player\.flags\.gotTeraOrb/.test(gameSrc)
       && /Player\.addItem\(player, "tera-orb"\)/.test(gameSrc), "the Tera Orb from Prof. Oak's aide in Pewter"); }
   // Tera STAB: 2x for a Tera Type it already had, 1.5x for its own types or a new one; the 60-power floor.

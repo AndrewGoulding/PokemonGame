@@ -1475,11 +1475,13 @@
 
     // ---------- Terastallizing (Gen 9) ----------
     // Once a battle (a tag team: each Trainer once), with a Tera Orb: not
-    // Dynamaxed, Mega Evolved or holding a Mega Stone it can use or a Z-Crystal.
+    // Dynamaxed or holding a Z-Crystal. (This game's own: a Mega Evolved
+    // Pokémon can, and one can Mega Evolve and Terastallize in the same turn,
+    // the Mega Evolution first.)
     teraUsedFor(side, mon) { return side.tag ? !!side.teraUsedBy[mon.owner] : side.teraUsed; }
     canTera(mon) {
-      return !!mon.side.teraAllowed && !this.teraUsedFor(mon.side, mon) && !mon.terastallized && !mon.dynamaxed && !mon.mega
-        && !this.megaForme(mon) && !(window.Z_MOVES && window.Z_MOVES.crystals[mon.item]) && !!mon.teraType;
+      return !!mon.side.teraAllowed && !this.teraUsedFor(mon.side, mon) && !mon.terastallized && !mon.dynamaxed
+        && !(window.Z_MOVES && window.Z_MOVES.crystals[mon.item]) && !!mon.teraType;
     }
     // Its types become its Tera Type (a Stellar Pokémon keeps its own), for
     // the rest of the battle, switched out and back in or not. Ogerpon takes
@@ -1730,7 +1732,7 @@
             side.choice.dynamax = true;
           }
           if (choice.tera) {
-            if (!req.active.canTera || choice.zmove || choice.mega || choice.dynamax || choice.ultra) return { ok: false, error: "Cannot Terastallize" };
+            if (!req.active.canTera || choice.zmove || choice.dynamax || choice.ultra) return { ok: false, error: "Cannot Terastallize" };
             side.choice.tera = true;
           }
         } else return { ok: false, error: "Invalid choice" };
@@ -2050,7 +2052,7 @@
           }
           if (c.tera) {
             const who = side.tag ? slot : 0;
-            if (!a.canTera || c.zmove || c.mega || c.dynamax || c.ultra || partial.some((x, i) => x && x.tera && i !== slot && (side.tag ? i === who : true))) return err("Cannot Terastallize");
+            if (!a.canTera || c.zmove || c.dynamax || c.ultra || partial.some((x, i) => x && x.tera && i !== slot && (side.tag ? i === who : true))) return err("Cannot Terastallize");
             picked.tera = true;
           }
           partial[slot] = picked;
@@ -2132,7 +2134,8 @@
             if (c.mega) actions.push({ order: 2, type: "mega", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
             if (c.ultra) actions.push({ order: 2, type: "ultra", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
             if (c.dynamax) actions.push({ order: 2, type: "dynamax", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
-            if (c.tera) actions.push({ order: 2, type: "tera", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
+            // (After any Mega Evolution that turn, its own included.)
+            if (c.tera) actions.push({ order: 2.5, type: "tera", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
             const f = c.forced;
             const name = f ? f.move : c.moveName;
             const mv = this.getActiveMove(name);

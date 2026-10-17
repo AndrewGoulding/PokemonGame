@@ -382,9 +382,9 @@
     g.clip();
     g.drawImage(s.canvas(), 0, 0);
     g.restore();
-    if (d.mega && hbMega.complete) g.drawImage(hbMega, lvAt + lvW - 10, -1);
-    // (Terastallized: its Tera Type's indicator there instead.)
-    else if (d.tera && hbTera.complete && TERA_TYPES.includes(d.tera)) g.drawImage(hbTera, TERA_TYPES.indexOf(d.tera) * 8, 0, 8, 16, lvAt + lvW - 10, -1, 8, 16);
+    // (Terastallized, Mega Evolved or not: its Tera Type's indicator there instead.)
+    if (d.tera && hbTera.complete && TERA_TYPES.includes(d.tera)) g.drawImage(hbTera, TERA_TYPES.indexOf(d.tera) * 8, 0, 8, 16, lvAt + lvW - 10, -1, 8, 16);
+    else if (d.mega && hbMega.complete) g.drawImage(hbMega, lvAt + lvW - 10, -1);
     // (This game's own: a gold star after a shiny wild Pokémon's name, kept inside the name's window.)
     if (d.shiny) drawStar(g, Math.min(nx + w + (gw || 0) + 1, nx + 56 - 7), 6);
     // The status icon: yours left of the HP numbers, theirs over "HP".

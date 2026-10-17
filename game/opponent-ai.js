@@ -109,6 +109,13 @@
   const SINGLE = ["normal", "any", "adjacentFoe"];
 
   // Revival Blessing: back comes the strongest of those that fainted (highest level, then base stat total).
+  // When to Terastallize: a trainer with an ace (teraAce) Terastallizes it as
+  // soon as it's out, and no one else; otherwise for a damaging move of its
+  // Tera Type (or Tera Blast), or with its last Pokémon (`last`).
+  function teraNow(battle, side, mon, a, move, last) {
+    if (side.pokemon.some((p) => p.teraAce)) return !!mon.teraAce;
+    return last || teraFits(battle, a, move);
+  }
   // (A damaging move of its Tera Type, or Tera Blast.)
   function teraFits(battle, a, move) {
     if (!move || move.category === "Status") return false;
@@ -191,7 +198,7 @@
       if (a.canUltraBurst) choice.ultra = true;
       if (a.zMoves && a.zMoves[best.index] && !zmove) { choice.zmove = true; zmove = true; }
       // (Terastallize for a move of its Tera Type, once.)
-      if (a.canTera && !tera && !choice.mega && !choice.zmove && !choice.ultra && (teraFits(battle, a, best) || side.actives[slot].teraAce)) { choice.tera = true; tera = true; }
+      if (a.canTera && !tera && !choice.zmove && !choice.ultra && teraNow(battle, side, side.actives[slot], a, best, false)) { choice.tera = true; tera = true; }
       out[slot] = choice;
     });
     return out;
@@ -236,8 +243,8 @@
     // (Dynamax with its last Pokémon, if its Trainer can.)
     else if (req.active.canDynamax && side.pokemon.filter((p) => !p.fainted).length === 1 && !choice.mega) choice.dynamax = true;
     // (Terastallize for a move of its Tera Type, with its last Pokémon, or its ace as soon as it's out.)
-    if (req.active.canTera && !choice.mega && !choice.zmove && !choice.dynamax && !choice.ultra
-      && (teraFits(battle, req.active, best) || side.pokemon.filter((p) => !p.fainted).length === 1 || attacker.teraAce)) choice.tera = true;
+    if (req.active.canTera && !choice.zmove && !choice.dynamax && !choice.ultra
+      && teraNow(battle, side, attacker, req.active, best, side.pokemon.filter((p) => !p.fainted).length === 1)) choice.tera = true;
     return choice;
   }
 

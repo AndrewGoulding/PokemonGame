@@ -1336,7 +1336,12 @@ them), the picture tinted halfway to the type's colour and its type's Tera
 symbol where "Lv" was. Trainers with a Tera Orb Terastallize for a move of
 their Tera Type, with their last Pokémon, or their ace as soon as it's out:
 Brock's Onix Terastallizes into an Electric type, Misty's Starmie into a
-pure Psychic type and Lt. Surge's Raichu into a Water type.
+pure Psychic type, Lt. Surge's Raichu into a Water type, Erika's Vileplume
+into a Poison type, Koga's Mega Beedrill into a Fire type and Sabrina's Mega
+Alakazam into a Dark type (a trainer with an ace keeps the Orb for it). Koga's
+team here is Weezing, Muk, Arbok and Beedrill with its Beedrillite. A Mega
+Evolved Pokémon can Terastallize too (this game's own), even in the same turn
+it Mega Evolves, the Mega Evolution first.
 
 Alcremie comes in all 63 flavours: a Sweet used on Milcery asks which
 way it spins and for how long, and that with the time of day gives its cream
