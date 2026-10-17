@@ -799,7 +799,9 @@
       // B_WIN_MOVE_NAME_1-4 (tiles 2 / 11, rows 15 / 17), small font.
       for (let i = 0; i < 4; i++) {
         const x = (i & 1 ? 11 : 2) * 8, y = (i & 2 ? 17 : 15) * 8 + 1;
-        s.text(moves[i] ? moves[i].name : "-", x, y, P5.fg, P5.shadow, "small");
+        // (A Z-Move or Dynamax switched on: the moves they make, "-" for none.)
+        const z = opts.mega && opts.mega.on && opts.mega.names;
+        s.text(moves[i] ? (z ? z(moves[i]) || "-" : moves[i].name) : "-", x, y, P5.fg, P5.shadow, "small");
       }
       if (swapping != null) {
         if (swapping !== cursor) battleCursor(s, frame, ...at(swapping), 29);

@@ -568,5 +568,15 @@
     b.trySetStatus(target, b.sample(["psn", "par", "slp"]), user, E("Move", move.id, move.name));
   };
 
+  // ---- Z-Moves (Gen 7) ----
+  beforeHit.soulstealing7starstrike = beforeHit.spectralthief;
+  afterHitSelf.genesissupernova = (b, user) => { b.setTerrain("psychicterrain", user); };
+  afterHitSelf.splinteredstormshards = (b) => {
+    if (!b.field.terrain) return;
+    b.add("-fieldend", b.field.terrain);
+    b.field.terrain = ""; b.field.terrainTurns = 0;
+    b.mimicry();
+  };
+
   window.BATTLE_MOVE_EFFECTS = { status, afterHit, beforeHit, afterHitSelf };
 })();

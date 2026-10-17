@@ -131,7 +131,7 @@
       return out;
     }
     if (req.phase !== "move") return null;
-    let mega = false;
+    let mega = false, zmove = false;
     req.actives.forEach((a, slot) => {
       if (!a) return;
       if (a.forced) { out[slot] = { type: "move", move: 0 }; return; }
@@ -174,6 +174,9 @@
       const choice = { type: "move", move: best.index };
       if (bestTarget) choice.target = bestTarget;
       if (a.canMega && !mega) { choice.mega = true; mega = true; }
+      // (Ultra Burst when it can; its Z-Move on the move it picked, once.)
+      if (a.canUltraBurst) choice.ultra = true;
+      if (a.zMoves && a.zMoves[best.index] && !zmove) { choice.zmove = true; zmove = true; }
       out[slot] = choice;
     });
     return out;
@@ -212,6 +215,8 @@
     }
     const choice = { type: "move", move: best.index };
     if (req.active.canMega) choice.mega = true;
+    if (req.active.canUltraBurst) choice.ultra = true;
+    if (req.active.zMoves && req.active.zMoves[best.index]) choice.zmove = true;
     return choice;
   }
 

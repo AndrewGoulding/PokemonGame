@@ -237,6 +237,8 @@
     // (A type the battle engine settled on: Revelation Dance, Multi-Attack,
     // Plasma Fists' ions.)
     if (env.moveType) move.type = env.moveType;
+    // (A type Z-Move: the power and category its move gives it.)
+    if (env.zPower) { move.power = env.zPower; move.category = env.zCategory || move.category; }
     // Shell Side Arm is physical (and makes contact) when that would hit harder.
     if (move.id === "shellsidearm") {
       const D = env.defender;
@@ -245,7 +247,7 @@
       if (phys > spec) { move.category = "Physical"; move.flags.contact = 1; }
     }
     // Photon Geyser is physical when the user's Attack is higher.
-    if (move.id === "photongeyser" && applyStage(A.stats.atk, A.boosts.atk) > applyStage(A.stats.spa, A.boosts.spa)) move.category = "Physical";
+    if ((move.id === "photongeyser" || move.id === "lightthatburnsthesky") && applyStage(A.stats.atk, A.boosts.atk) > applyStage(A.stats.spa, A.boosts.spa)) move.category = "Physical";
     return move;
   }
 
@@ -360,6 +362,7 @@
       case "dragonrage": return 40;
       case "sonicboom": return 20;
       case "superfang": case "naturesmadness": return Math.max(1, tr(D.hp / 2));
+      case "guardianofalola": return Math.max(1, tr((D.hp * 3) / 4));
       case "endeavor": return D.hp > A.hp ? D.hp - A.hp : 0;
       case "finalgambit": return A.hp;
       case "counter": case "mirrorcoat": return (opts.lastDamageTaken || 0) * 2;
@@ -398,7 +401,7 @@
 
     const env = { attacker: A, defender: D, field, weather,
       speA: Math.max(1, applyStage(A.stats.spe, A.boosts.spe)),
-      speD: Math.max(1, applyStage(D.stats.spe, D.boosts.spe)), moveType: opts.moveType };
+      speD: Math.max(1, applyStage(D.stats.spe, D.boosts.spe)), moveType: opts.moveType, zPower: opts.zPower, zCategory: opts.zCategory };
 
     const move = prepMove(moveName, A, env);
     const result = {
@@ -529,6 +532,9 @@
     if (aItem.endsWith("-gem") && aItem.slice(0, -4) === move.type.toLowerCase()) push(1.3);
     if (aItem === "adamant-orb" && A.species === "Dialga" && ["Dragon", "Steel"].includes(move.type)) push(1.2);
     if (aItem === "lustrous-orb" && A.species === "Palkia" && ["Dragon", "Water"].includes(move.type)) push(1.2);
+    // (Legends: Arceus's: the Adamant Crystal and Lustrous Globe, for the Origin Formes.)
+    if (aItem === "adamant-crystal" && /^Dialga/.test(A.species) && ["Dragon", "Steel"].includes(move.type)) push(1.2);
+    if (aItem === "lustrous-globe" && /^Palkia/.test(A.species) && ["Dragon", "Water"].includes(move.type)) push(1.2);
     if (aItem === "griseous-orb" && A.species.startsWith("Giratina") && ["Dragon", "Ghost"].includes(move.type)) push(1.2);
 
     if (opts.helpingHand) push(1.5);
@@ -632,6 +638,7 @@
     }
 
     if (opts.friendGuard) pushF(0.75);
+    if (opts.zBrokeProtect) pushF(0.25);
 
     const ra = runHook(A.ability, "onModifyDamage", env, A, base, move);
     finalChain = chainMult(finalChain, ra.mult);

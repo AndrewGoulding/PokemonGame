@@ -288,6 +288,8 @@
       foeTrainer2: foe2 && foe2.pic, defeatText2: foe2 && foe2.defeatText && foe2.defeatText.map((p) => fill(p)),
       ghost: !!opts.ghost, noCatch: !!opts.noCatch,
       megaRing: Player.itemCount(player, "mega-ring") > 0,
+      zRing: Player.itemCount(player, "z-ring") > 0,
+      dynamaxBand: Player.itemCount(player, "dynamax-band") > 0,
       safari: opts.safari ? { balls: player.flags.safari.balls } : undefined,
       wild,
       exp: !opts.safari && !opts.noExp,

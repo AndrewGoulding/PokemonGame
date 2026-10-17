@@ -1189,6 +1189,15 @@
       if ((mon.species === "Groudon" && mon.item === "red-orb") || (mon.species === "Kyogre" && mon.item === "blue-orb")) {
         this.formeChange(mon, mon.species + "-Primal");
       }
+      // (Gen 7: Silvally with a Memory takes its type's form; Gen 8's Origin
+      // Dialga and Palkia with the Adamant Crystal and Lustrous Globe.)
+      const memory = /^([a-z]+)-memory$/.exec(mon.item);
+      if (memory && /^Silvally/.test(mon.species) && !mon.transformed) {
+        const forme = "Silvally-" + memory[1].charAt(0).toUpperCase() + memory[1].slice(1);
+        if (mon.species !== forme && window.DEX[forme]) this.abilityForme(mon, forme);
+      }
+      const origin = { Dialga: "adamant-crystal", Palkia: "lustrous-globe" }[mon.baseSpecies];
+      if (origin && mon.item === origin && mon.species === mon.baseSpecies && !mon.transformed) this.abilityForme(mon, mon.baseSpecies + "-Origin");
       // (Gen 8: Zacian with the Rusted Sword, Zamazenta with the Rusted Shield.)
       // (Its Iron Head is Behemoth Blade / Bash in battle, as a Mimic'd move is.)
       const crown = { Zacian: ["rusted-sword", "Behemoth Blade"], Zamazenta: ["rusted-shield", "Behemoth Bash"] }[mon.baseSpecies];
@@ -1321,6 +1330,54 @@
       return mon.baseSpecies === base || mon.species === base ? forme : null;
     }
 
+    // ---------- Z-Moves and Ultra Burst (Gen 7) ----------
+    // The Z-Move each of `slots` would be with mon's Z-Crystal, or null.
+    zMovesFor(mon, slots) {
+      if (mon.side.zUsed || !window.Z_MOVES || !window.Z_MOVES.crystals[mon.item]) return null;
+      const out = slots.map((s) => {
+        const z = s.disabled ? null : this.zMoveFor(mon, this.getActiveMove(s.name));
+        return z ? (z.zStatus ? "Z-" + s.name : z.name) : null;
+      });
+      return out.some(Boolean) ? out : null;
+    }
+    // The active Z-Move `base` becomes, with mon's Z-Crystal (null: none).
+    zMoveFor(mon, base) {
+      const Z = window.Z_MOVES, c = Z && Z.crystals[mon.item];
+      if (!c) return null;
+      if (c.move) {
+        if (base.name !== c.from || !c.users.includes(mon.species)) return null;
+        const z = this.getActiveMove(c.move);
+        z.ppFrom = base.id;
+        return z;
+      }
+      if (base.type !== c.type || base.id === "struggle") return null;
+      if (base.category === "Status") {
+        base.isZ = true; base.zStatus = Z.status[base.name] || {};
+        return base;
+      }
+      const z = this.getActiveMove(Z.byType[c.type]);
+      z.category = base.category; z.zPower = Z.power[base.name] || 100; z.zFrom = base.name; z.ppFrom = base.id;
+      return z;
+    }
+    // A status move's Z-Power bonus, before the move.
+    zStatusBonus(mon, z) {
+      const eff = E("Move", "zpower", "Z-Power");
+      if (z.boost) this.boost(mon, z.boost, mon, eff);
+      else if (z.effect === "clearnegativeboost") {
+        let any = false;
+        for (const k of Object.keys(mon.boosts)) if (mon.boosts[k] < 0) { mon.boosts[k] = 0; any = true; }
+        if (any) this.add("-clearnegativeboost", mon, "[zeffect]");
+      } else if (z.effect === "crit2") this.addVolatile(mon, "focusenergy", mon, eff);
+      else if (z.effect === "heal") this.heal(mon, mon.maxhp, mon, eff);
+      else if (z.effect === "curse") { if (mon.hasType("Ghost")) this.heal(mon, mon.maxhp, mon, eff); else this.boost(mon, { atk: 1 }, mon, eff); }
+      else if (z.effect === "redirect" && this.doubles) mon.volatiles.followme = { id: "followme" };
+      else if (z.effect === "healreplacement") mon.side.healingWish = { lunar: false, name: "Z-Power" };
+    }
+    canUltraBurst(mon) {
+      return !mon.side.ultraUsed && mon.item === "ultranecrozium-z" && !mon.transformed
+        && (mon.species === "Necrozma-Dusk-Mane" || mon.species === "Necrozma-Dawn-Wings");
+    }
+
     // ---------- Requests / choices ----------
     // SELECT on the move menu: two of the active Pokémon's moves trade places
     // (and their PP; the party's order follows, as in FireRed).
@@ -1406,6 +1463,8 @@
         ability: mon.ability, boosts: Object.assign({}, mon.boosts),
         moves: slots, struggle: !forced && !usable.length,
         canMega: !forced && !side.megaUsed && !mon.mega && !!this.megaForme(mon),
+        zMoves: forced ? null : this.zMovesFor(mon, slots),
+        canUltraBurst: !forced && this.canUltraBurst(mon),
         trapped: false, forced: forced
       };
       if (forced) { base.switches = []; return base; }
@@ -1468,6 +1527,14 @@
             if (!req.active.canMega) return { ok: false, error: "Cannot Mega Evolve" };
             side.choice.mega = true;
           }
+          if (choice.ultra) {
+            if (!req.active.canUltraBurst) return { ok: false, error: "Cannot Ultra Burst" };
+            side.choice.ultra = true;
+          }
+          if (choice.zmove) {
+            if (!req.active.zMoves || !req.active.zMoves[side.choice.slot]) return { ok: false, error: "Cannot use a Z-Move" };
+            side.choice.zmove = true;
+          }
         } else return { ok: false, error: "Invalid choice" };
       }
       this.maybeCommit();
@@ -1516,6 +1583,8 @@
       for (const i of req.switches) opts.push({ type: "switch", index: i });
       const c = this.sample(opts);
       if (c.type === "move" && req.active.canMega && this.random() < 0.7) c.mega = true;
+      if (c.type === "move" && req.active.canUltraBurst) c.ultra = true;
+      if (c.type === "move" && req.active.zMoves && req.active.zMoves[c.move] && this.random() < 0.5) c.zmove = true;
       return c;
     }
 
@@ -1630,6 +1699,8 @@
           status: mon.status, item: mon.item, ability: mon.ability, boosts: Object.assign({}, mon.boosts),
           moves, struggle: !forced && !moves.some((m) => !m.disabled),
           canMega: !forced && !this.megaUsedFor(side, mon) && !mon.mega && !!this.megaForme(mon),
+          zMoves: forced ? null : this.zMovesFor(mon, moves),
+          canUltraBurst: !forced && this.canUltraBurst(mon),
           trapped: false, forced, switches: []
         };
         if (forced) return r;
@@ -1717,6 +1788,14 @@
             megaBy.add(who);
             picked.mega = true;
           }
+          if (c.ultra) {
+            if (!a.canUltraBurst) return err("Cannot Ultra Burst");
+            picked.ultra = true;
+          }
+          if (c.zmove) {
+            if (!a.zMoves || !a.zMoves[picked.slot] || partial.some((x, i) => x && x.zmove && i !== slot)) return err("Cannot use a Z-Move");
+            picked.zmove = true;
+          }
           partial[slot] = picked;
         } else return err("Invalid choice");
         any = true;
@@ -1739,7 +1818,7 @@
       if (req.phase !== "move") return null;
       const side = this.controller(id).side;
       const used = new Set((side.partial || []).filter((c) => c && c.type === "switch").map((c) => c.index));
-      let mega = false;
+      let mega = false, zm = false;
       req.actives.forEach((a, slot) => {
         if (!a) return;
         if (a.forced) { out[slot] = { type: "move", move: 0 }; return; }
@@ -1754,6 +1833,8 @@
           const foes = locs.filter((l) => l > 0);
           if (locs.length) c.target = this.sample(foes.length ? foes : locs);
           if (a.canMega && !mega && this.random() < 0.7) { c.mega = true; mega = true; }
+          if (a.canUltraBurst) c.ultra = true;
+          if (a.zMoves && a.zMoves[c.move] && !zm && this.random() < 0.5) { c.zmove = true; zm = true; }
         }
         out[slot] = c;
       });
@@ -1789,6 +1870,7 @@
           else if (c.type === "recharge") actions.push({ order: 3, type: "move", mon, side: s, recharge: true, priority: 0, speed: this.getSpeed(mon) });
           else {
             if (c.mega) actions.push({ order: 2, type: "mega", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
+            if (c.ultra) actions.push({ order: 2, type: "ultra", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
             const f = c.forced;
             const name = f ? f.move : c.moveName;
             const mv = this.getActiveMove(name);
@@ -1800,7 +1882,7 @@
             // (Gen 8: Quick Draw, 30% with a damaging move; Grassy Glide on Grassy Terrain.)
             if (mon.hasAbility("Quick Draw") && mv.category !== "Status" && this.randomChance(3, 10)) { frac = 1; mon.quickDraw = true; }
             if (mv.id === "grassyglide" && this.field.terrain === "GrassyTerrain" && this.isGrounded(mon)) pri += 1;
-            const act = { order: 3, type: "move", mon, side: s, moveName: name, slot: c.slot, forced: f, priority: pri, frac, speed: this.getSpeed(mon) };
+            const act = { order: 3, type: "move", mon, side: s, moveName: name, slot: c.slot, forced: f, priority: pri, frac, speed: this.getSpeed(mon), zmove: !!c.zmove };
             if (this.doubles) act.targetLoc = c.targetLoc;
             actions.push(act);
             if (name && toID(name) === "focuspunch" && !f) { mon.volatiles.focuspunch = { duration: 1 }; this.add("-singleturn", mon, "move: Focus Punch"); }
@@ -2226,6 +2308,16 @@
           this.runEvent("onSwitchIn", a.mon, { only: "ability" });
           break;
         }
+        case "ultra": {
+          // Ultra Burst (Ultra Sun and Moon): Dusk Mane or Dawn Wings Necrozma
+          // holding Ultranecrozium Z, once a battle.
+          if (a.mon.fainted || !this.canUltraBurst(a.mon)) return;
+          a.side.ultraUsed = true;
+          this.add("-burst", a.mon, "Necrozma-Ultra", a.mon.item);
+          this.formeChange(a.mon, "Necrozma-Ultra");
+          this.runEvent("onStart", a.mon, { only: "ability" });
+          break;
+        }
         case "move": this.runMoveAction(a); break;
         case "residual": this.residual(); break;
         case "run": this.tryRun(a.mon); break;
@@ -2253,7 +2345,18 @@
         delete mon.volatiles.twoturnmove; delete mon.volatiles.lockedmove;
         return;
       }
-      const move = this.getActiveMove(a.moveName);
+      let move = this.getActiveMove(a.moveName);
+      // A Z-Move (Sun and Moon): the move becomes its Z-Move (a status move
+      // gets its Z-Power bonus first), once a battle.
+      if (a.zmove && !mon.side.zUsed) {
+        const z = this.zMoveFor(mon, move);
+        if (z) {
+          mon.side.zUsed = true;
+          this.add("-zpower", mon);
+          if (z.zStatus) this.zStatusBonus(mon, z.zStatus);
+          move = z;
+        }
+      }
       if (move.id === "focuspunch" && mon.volatiles.focuspunch && mon.volatiles.focuspunch.lostFocus) {
         this.add("cant", mon, "Focus Punch", "Focus Punch");
         return;
@@ -2294,7 +2397,7 @@
     // ---------- Move execution ----------
     deductPP(user, move, target) {
       if (move.id === "struggle") return;
-      const slot = user.moves.find((m) => m.id === move.id);
+      const slot = user.moves.find((m) => m.id === (move.ppFrom || move.id));
       if (!slot) return;
       let amount = 1;
       if (Array.isArray(target)) {
@@ -2716,6 +2819,9 @@
           if (this.isInvulnerable(target, move)) { this.add("-miss", user, target); return false; }
           const unseen = move.flags.contact && user.hasAbility("Unseen Fist");
           if (move.flags.protect && !move.breaksProtect && !unseen && this.isProtected(target, user, move)) return false;
+          // (A Z-Move gets through Protect and the like with a quarter of its damage.)
+          const v = target.volatiles;
+          if (o) o.zBrokeProtect = !!move.isZ && move.category !== "Status" && !!(v.protect || v.kingsshield || v.spikyshield || v.banefulbunker || v.obstruct);
           if (this.sideGuarded(target, user, move)) return false;
           if (this.priorityBlocked(user, target, move, brk)) return false;
           if (move.flags.reflectable && target.volatiles.magiccoat && !move.hasBounced) {
@@ -2825,6 +2931,7 @@
           magnitude: this.magnitude,
           moveType: move.typeOverride ? move.type : undefined, lastMoveFailed: !!user.lastMoveFailed,
           statsLowered: !!user.statsLoweredThisTurn, hitIndex: i,
+          zPower: move.zPower, zCategory: move.zPower ? move.category : undefined, zBrokeProtect: !!o.zBrokeProtect,
           suppressA: this.neutralized(user), suppressD: this.neutralized(target),
           steelySpirit: [user, this.allyOf(user)].some((m) => m && m.hasAbility("Steely Spirit"))
         };
@@ -2857,6 +2964,7 @@
           if (move.hasCrashDamage) this.damage(user, Math.floor(user.maxhp / 2), user, moveEffect);
           return false;
         }
+        if (o.zBrokeProtect && i === 0) this.add("-zbroken", target);
         let dmg = r.damage[this.randInt(0, 15)];
         if (hits > 1 && i > 0 && user.hasAbility("Parental Bond") && move.multihitType === "parentalbond") dmg = Math.floor(dmg / 2);
         const typeMod = r.typeEffectiveness > 1 ? Math.log2(r.typeEffectiveness) : r.typeEffectiveness < 1 ? -Math.log2(1 / r.typeEffectiveness) : 0;

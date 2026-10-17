@@ -2588,6 +2588,52 @@ assert.deepStrictEqual(["hp", "atk", "def", "spa", "spd", "spe"].map((k) => DEX.
   assert(!pika.getRequest("p1").active.canMega);
 }
 
+// Z-Moves: a Z-Crystal turns a move of its type into its Z-Move (status moves
+// get a Z-Power bonus), once a battle, through Protect for a quarter; the
+// species' own crystals; Ultra Burst; Silvally's Memories; Origin Dialga.
+{
+  const g = (species, moves, extra) => Object.assign({ species, level: 50, moves }, extra);
+  const singles = (p1, p2) => { const b = new Battle({ seed: 1, debug: true, p1: { name: "A", team: p1 }, p2: { name: "B", team: p2 } }); b.start(); return b; };
+  const b = singles([g("Charizard", ["Flamethrower", "Swords Dance"], { item: "firium-z" })], [g("Snorlax", ["Protect", "Splash"], { level: 70 })]);
+  assert.deepStrictEqual(b.getRequest("p1").active.zMoves, ["Inferno Overdrive", null]);
+  const lax = b.sides.p2.active;
+  let evs = play(b, { p1: { type: "move", move: 0, zmove: true }, p2: mv(0) });
+  assert(evs.some((e) => e[0] === "-zpower") && evs.some((e) => e[0] === "move" && e[2] === "Inferno Overdrive"));
+  assert(evs.some((e) => e[0] === "-zbroken"), "a Z-Move gets through Protect");
+  const through = hpLost(lax);
+  assert(through > 0);
+  assert.strictEqual(b.sides.p1.active.moves[0].pp, b.sides.p1.active.moves[0].maxpp - 1, "the PP is Flamethrower's");
+  assert.strictEqual(b.getRequest("p1").active.zMoves, null, "once a battle");
+  assert(!b.choose("p1", { type: "move", move: 0, zmove: true }).ok);
+  // The full Z-Move's power: 175 from Flamethrower.
+  const zard = Damage.makePokemon("Charizard", { level: 50 }), foe = Damage.makePokemon("Snorlax", { level: 50 });
+  assert.strictEqual(Damage.calc(zard, foe, "Inferno Overdrive", {}, { zPower: 175, zCategory: "Special" }).basePower, 175);
+  // A status Z-Move: Z-Swords Dance clears the stat drops first.
+  const c = singles([g("Snorlax", ["Swords Dance"], { item: "normalium-z" })], [g("Rattata", ["Growl"], { ability: "Guts" })]);
+  play(c, { p1: mv(0), p2: mv(0) });
+  play(c, { p1: { type: "move", move: 0, zmove: true }, p2: mv(0) });
+  assert.strictEqual(c.sides.p1.active.boosts.atk, 2 - 1 + 1, "-1 from Growl cleared, then +2 (and Growl again after)");
+  // Pikachu's own: Volt Tackle into Catastropika.
+  const p = singles([g("Pikachu", ["Volt Tackle", "Thunderbolt"], { item: "pikanium-z" })], [g("Snorlax", ["Splash"])]);
+  assert.deepStrictEqual(p.getRequest("p1").active.zMoves, ["Catastropika", null]);
+  // Ultra Burst, then Light That Burns the Sky.
+  const n = singles([g("Necrozma-Dusk-Mane", ["Photon Geyser"], { item: "ultranecrozium-z" })], [g("Snorlax", ["Splash"], { level: 90 })]);
+  assert(n.getRequest("p1").active.canUltraBurst);
+  assert.strictEqual(n.getRequest("p1").active.zMoves, null, "only Ultra Necrozma has its Z-Move");
+  evs = play(n, { p1: { type: "move", move: 0, ultra: true }, p2: mv(0) });
+  assert.strictEqual(n.sides.p1.active.species, "Necrozma-Ultra");
+  assert(evs.some((e) => e[0] === "-burst"));
+  assert.deepStrictEqual(n.getRequest("p1").active.zMoves, ["Light That Burns the Sky"]);
+  assert(!n.getRequest("p1").active.canUltraBurst);
+  // Silvally's Memories and the Origin Formes.
+  const s = singles([g("Silvally", ["Multi-Attack"], { item: "fire-memory" })], [g("Ferrothorn", ["Splash"])]);
+  assert.strictEqual(s.sides.p1.active.species, "Silvally-Fire");
+  evs = play(s, { p1: mv(0), p2: mv(0) });
+  assert(evs.some((e) => e[0] === "-supereffective"), "Fire Multi-Attack against Ferrothorn");
+  const d = singles([g("Dialga", ["Splash"], { item: "adamant-crystal" })], [g("Palkia", ["Splash"], { item: "lustrous-globe" })]);
+  assert.deepStrictEqual([d.sides.p1.active.species, d.sides.p2.active.species], ["Dialga-Origin", "Palkia-Origin"]);
+}
+
 // Gen 7's Pokémon in random battles (singles and doubles, the battle in
 // debug mode so an Ability or move effect that throws fails the test).
 const GEN7 = 100;

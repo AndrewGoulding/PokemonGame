@@ -1129,6 +1129,19 @@
           await message(fill("{who} has Mega Evolved into " + (into ? into[1] : "Mega " + b) + "!", a));
         };
       }
+      // Ultra Burst (Ultra Sun and Moon): the light, the change, its true power.
+      case "-burst": {
+        const change = battle.events.slice(cursor).find((e) => e[0] === "detailschange" && e[1] === a);
+        return async () => {
+          await message(fill("Bright light is about to burst out of {who}!", a));
+          await megaEvolution(pos, change && change[2]);
+          await message(fill("{who} regained its true power through Ultra Burst!", a));
+        };
+      }
+      // Z-Moves (Sun and Moon).
+      case "-zpower": return fill("{who} surrounded itself with its Z-Power!", a);
+      case "-zbroken": return fill("{who} couldn't fully protect itself and got hurt!", a);
+      case "-clearnegativeboost": return fill("{who} returned its decreased stats to normal using its Z-Power!", a);
       case "-transform": return fill("{who} transformed into " + nameOf(b) + "!", a);
       case "-enditem": return fill("{who} used its " + b + "!", a);
       case "-weather":
@@ -1554,8 +1567,16 @@
           return (moves = slots());
         };
         // Mega Evolution (with the Mega Ring, a Mega Stone held, once a battle;
-        // in a double battle, one of your two only).
-        const mega = active.canMega && config.megaRing && !(dbl && dbl.megaTaken) ? { on: false, toggled: (on) => { if (trigger) trigger.on = on; } } : null;
+        // in a double battle, one of your two only). Or, START the same way:
+        // Ultra Burst or a Z-Move (with the Z-Ring), or Dynamax (with the
+        // Dynamax Band); a Z-Move or Dynamax shows the moves it makes.
+        const toggled = (on) => { if (trigger) trigger.on = on; };
+        const kind = active.canMega && config.megaRing && !(dbl && dbl.megaTaken) ? "mega"
+          : active.canUltraBurst && config.zRing ? "ultra"
+          : active.zMoves && config.zRing && !(dbl && dbl.zTaken) ? "zmove"
+          : active.canDynamax && config.dynamaxBand && !(dbl && dbl.dynamaxTaken) ? "dynamax" : null;
+        const shown = kind === "zmove" ? active.zMoves : kind === "dynamax" ? active.maxMoves : null;
+        const mega = kind ? { on: false, toggled, kind, names: shown ? (m) => shown[m.index] || null : null } : null;
         if (mega) showTrigger(pos);
         // (A double battle: the Pokémon a spread or field move will hit
         // flash, PreviewDeterminativeMoveTargets.)
@@ -1580,7 +1601,13 @@
             if (target === null) continue;   // B: back to the moves
           }
           lastMove[active.name] = m.index;
-          const choice = mega && mega.on ? { type: "move", move: m.index, mega: true } : { type: "move", move: m.index };
+          if (mega && mega.on && mega.kind === "zmove" && !active.zMoves[m.index]) {
+            overlay().classList.add("hidden");
+            await message("That move can't become a Z-Move!");
+            continue;
+          }
+          const choice = { type: "move", move: m.index };
+          if (mega && mega.on) choice[mega.kind] = true;
           if (target !== undefined) choice.target = target;
           hideTrigger();
           return choice;
@@ -1796,7 +1823,8 @@
       const canBack = k > 0 && !req.actives[slots[k - 1]].forced && !(prev && prev.type === "item");
       const taken = earlier.filter((c) => c && c.type === "switch").map((c) => c.index);
       const sub = { active: a, slot, team: req.team, switches: (a.switches || []).filter((i) => !taken.includes(i)),
-        doubles: { back: canBack, megaTaken: earlier.some((c) => c && c.mega), taken } };
+        doubles: { back: canBack, megaTaken: earlier.some((c) => c && c.mega), zTaken: earlier.some((c) => c && c.zmove),
+          dynamaxTaken: earlier.some((c) => c && c.dynamax), taken } };
       const c = await chooseAction(sub);
       if (c === "back") { k--; returnItem(choices[slots[k]]); choices[slots[k]] = null; continue; }
       choices[slot] = c;

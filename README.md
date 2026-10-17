@@ -1139,6 +1139,23 @@ pokeemerald-expansion, like the other moves and Abilities after Gen 3. The
 test battles 100 random Gen 7 teams in debug mode. (RKS System needs no
 Memories: each Silvally form is its own species.)
 
+**Z-Moves** (Sun and Moon): with the Z-Ring (a key item) and a Z-Crystal
+held, START on the move menu turns the moves into Z-Moves (their names show:
+Inferno Overdrive for a Fire move, "Z-" for a status move), once a battle.
+A damaging move's Z-Move has its power (Flamethrower 175, Showdown's table)
+and category, and gets through Protect and the like for a quarter of the
+damage; a status move gets its Z-Power bonus first (stat boosts, clearing
+drops, full healing, ...). The 18 type crystals, and 15 species' own (Pikanium
+Z: Pikachu's Volt Tackle into Catastropika; Guardian of Alola takes 3/4 of
+the target's HP; Genesis Supernova leaves Psychic Terrain), come from
+`tools/build-z-moves.js` (`data/z-moves.js`). **Ultra Burst** (Ultra Sun and
+Moon): Dusk Mane or Dawn Wings Necrozma holding Ultranecrozium Z becomes
+Ultra Necrozma (START, with the Z-Ring), whose Photon Geyser becomes Light
+That Burns the Sky. **Silvally's Memories**: Silvally holding one takes that
+type's form when it comes out (each form is also its own species, as
+before). Trainers use their Z-Moves and Ultra Burst. (Pikashunium Z, for
+Pikachu in a cap, isn't in.)
+
 All of Zygarde's formes are in: its 10% and 50% Formes, the Complete Forme
 that Power Construct makes of either at half HP, and Mega Zygarde (Legends:
 Z-A), into which the Complete Forme can Mega Evolve holding Zygardite. The
@@ -1196,7 +1213,9 @@ Ripen (Berries do twice as much), Power Spot and Steely Spirit (Libero, like
 Protean here, gives every move the same-type bonus). Zacian with the Rusted
 Sword and Zamazenta with the Rusted Shield (held items) are Crowned when
 they come out, Iron Head becoming Behemoth Blade or Bash for the battle.
-Kleavor's and Hisuian Samurott's Sharpness (Gen 9) is in too. The moves that
+Kleavor's and Hisuian Samurott's Sharpness (Gen 9) is in too. Dialga holding the Adamant Crystal and Palkia
+the Lustrous Globe (Legends: Arceus) take their Origin Formes when they come
+out, and the items power up their moves as the Orbs do. The moves that
 need code are in `data/battle-moves.js` and the engine: Obstruct, Octolock,
 Jaw Lock, No Retreat, Court Change, Clangorous Soul, Coaching, Life Dew,
 Jungle Healing, Lunar Blessing, Take Heart, Stuff Cheeks and Teatime, Corrosive
