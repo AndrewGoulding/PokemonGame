@@ -9,9 +9,10 @@
 // (their trainer class's front picture), name, coins, and hand (two side by
 // side after a split; the one in play outlined) with its total, bet and how
 // it went. The others take a moment over each move. Before a hand: your bet
-// (10 to 200 Coins, what you can afford) or Leave the table (B too). Your
-// hand: Hit, Stand, and on two cards Double Down and, with a pair, Split,
-// picked with left / right and A (or tapped).
+// (10 to 200 Coins, what you can afford) or Leave (B too). Your hand: Hit,
+// Stand, and on two cards Double Down and, with a pair, Split, picked with
+// the D-pad and A (or tapped), in FireRed's windows under the screen with
+// what's happening (ui/table-ui.js).
 (function () {
   const B = () => window.Blackjack;
   const RANKS = { 11: "J", 12: "Q", 13: "K", 14: "A" };
@@ -64,11 +65,9 @@
       root.innerHTML = '<div class="dig poker blackjack">' +
         '<div class="bj-dealer"><div class="pk-name">Dealer</div><div class="pk-hole">' + dealerCards.map((c, i) => card(c, i === 1 && holeDown)).join("") + "</div>" +
           '<div class="bj-total">' + esc(dealerTotal) + "</div></div>" +
-        '<div class="pk-middle"><div class="pk-yours">' + esc(message) + '</div><div class="pk-message">Dealer stands on all 17s · Blackjack pays 3 to 2</div></div>' +
-        '<div class="bj-seats">' + g.players.map(seatHtml).join("") + "</div>" +
-        '<div class="pk-actions">' +
-          buttons.map((b, i) => '<button type="button" class="pk-button' + (i === cursor ? " cursor" : "") + '" data-i="' + i + '">' + esc(b.label) + "</button>").join("") +
-        "</div></div>";
+        '<div class="pk-middle"><div class="pk-stakes">Dealer stands on all 17s · Blackjack pays 3 to 2</div></div>' +
+        '<div class="bj-seats">' + g.players.map(seatHtml).join("") + "</div></div>";
+      window.TableUI.panel({ message, items: buttons, cursor, onPick: chosen });
     }
 
     function choose(list, at) {
@@ -88,19 +87,14 @@
     }
     function onKey(e) {
       if (!pick) return;
-      if (["ArrowLeft", "a", "A", "ArrowUp"].includes(e.key)) { cursor = (cursor + buttons.length - 1) % buttons.length; draw(); }
-      else if (["ArrowRight", "d", "D", "ArrowDown"].includes(e.key)) { cursor = (cursor + 1) % buttons.length; draw(); }
+      const to = window.TableUI.move(cursor, buttons.length, e.key);
+      if (to != null) { cursor = to; draw(); }
       else if (["z", "Z", " ", "Enter"].includes(e.key)) chosen(cursor);
       else if (["x", "X", "b", "B"].includes(e.key)) { const leave = buttons.findIndex((b) => b.value === "leave"); if (leave >= 0) chosen(leave); else return; }
       else return;
       e.preventDefault();
     }
-    function onClick(e) {
-      const b = e.target.closest && e.target.closest(".pk-button");
-      if (b) { e.preventDefault(); chosen(+b.dataset.i); }
-    }
     document.addEventListener("keydown", onKey);
-    root.addEventListener("click", onClick);
 
     // A new player for a seat someone's left (trainers not already at the table).
     const replace = (away) => (window.TablePlayers ? window.TablePlayers.pick(1, Math.random, away)[0] : null);
@@ -168,16 +162,16 @@
         const bets = B().BETS.filter((n) => n <= g.coins);
         if (!bets.length) {
           message += (message ? " " : "") + "You're out of Coins for a bet.";
-          await choose([{ label: "Leave the table", value: "leave" }], 0);
+          await choose([{ label: "Leave", value: "leave" }], 0);
           break;
         }
-        const v = await choose(bets.map((n) => ({ label: "Bet " + n, value: n })).concat([{ label: "Leave the table", value: "leave" }]),
+        const v = await choose(bets.map((n) => ({ label: "Bet " + n, value: n })).concat([{ label: "Leave", value: "leave" }]),
           Math.max(0, bets.indexOf(lastBet)));
         if (v === "leave") break;
         await round(v);
       }
       document.removeEventListener("keydown", onKey);
-      root.removeEventListener("click", onClick);
+      window.TableUI.clear();
       return g.coins;
     })();
   }

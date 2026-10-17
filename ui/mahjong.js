@@ -2,15 +2,17 @@
 //
 //   const points = await MahjongScreen.run(sceneElement, game, { pics });   // -> your points when you leave
 //
-// You at the bottom, the others to your right, across and to your left, each
+// You at the bottom, the others along the top (to your left, across and to your right), each
 // with their portrait (their trainer class's front picture), name, seat wind,
 // points, the tiles they've called and their discards (a Riichi discard
 // marked red); in the middle the round, the counters, the tiles left and the
 // dora indicator. Your hand along the bottom, the tile you drew set apart.
-// Your turn: left / right and A (or tap) to discard; Tsumo and Riichi as
-// buttons when you can (Riichi first, then the discard). Another's discard
-// you can take: Ron, Pon, Chi or Pass. After a hand: the winning hand, its
-// yaku, han and fu and who paid what; then Next hand or Leave the table (B).
+// Your turn: left / right and A (or tap) to discard; Tsumo and Riichi when
+// you can (Riichi first, then the discard). Another's discard you can take:
+// Ron, Pon, Chi or Pass. Those choices, and what's happening, are in
+// FireRed's windows under the screen (ui/table-ui.js). After a hand: the
+// winning hand, its yaku, han and fu and who paid what; then Next hand or
+// Leave (B).
 (function () {
   const M = () => window.Mahjong;
   const esc = (s) => window.Screen.escapeHtml(String(s));
@@ -38,12 +40,14 @@
       const river = p.river.map((t, k) => tile(t, { small: true, cls: (k === p.riichiAt ? "riichi" : "") + (p.called.includes(k) ? " called" : "") })).join("");
       const meldsHtml = p.melds.map((m) => '<span class="mj-meld">' + m.tiles.map((t) => tile(t, { small: true })).join("") + "</span>").join("");
       const showHand = g.phase === "end" && g.result && (g.result.winner === i || (g.result.type === "draw" && g.result.ready[i]));
-      const hidden = i === 0 ? "" : '<div class="mj-hidden">' + p.hand.map((t) => tile(t, { small: true, back: !showHand })).join("") + "</div>";
+      // (The others' hands only when they're shown, after a hand: a winner's, or those ready at a draw.)
+      const hidden = i === 0 || !showHand ? "" : '<div class="mj-hidden">' + p.hand.map((t) => tile(t, { small: true })).join("") + "</div>";
       return '<div class="mj-player p' + i + (g.turn === i && g.phase !== "end" ? " turn" : "") + '">' +
         '<div class="mj-head">' + (pics[i] ? '<img class="pk-portrait" alt="" src="assets/sprites/trainers/front/' + esc(pics[i]) + '.png">' : "") +
-          '<div><div class="pk-name">' + esc(p.name) + ' <span class="mj-wind' + (wind === "E" ? " dealer" : "") + '">' + { E: "East", S: "South", W: "West", N: "North" }[wind] + "</span></div>" +
-          '<div class="pk-chips">' + p.points.toLocaleString("en-US") + (p.riichi ? ' <span class="mj-stick">Riichi</span>' : "") + "</div></div></div>" +
-        hidden + '<div class="mj-melds">' + meldsHtml + '</div><div class="mj-river">' + river + "</div></div>";
+          '<div class="pk-info"><div class="pk-name">' + esc(p.name) + "</div>" +
+          '<div class="pk-chips"><span class="mj-wind' + (wind === "E" ? " dealer" : "") + '">' + { E: "East", S: "South", W: "West", N: "North" }[wind] + "</span> " +
+            p.points.toLocaleString("en-US") + (p.riichi ? ' <span class="mj-stick">Riichi</span>' : "") + "</div></div></div>" +
+        hidden + (meldsHtml ? '<div class="mj-melds">' + meldsHtml + "</div>" : "") + '<div class="mj-river">' + river + "</div></div>";
     }
 
     function draw() {
@@ -60,18 +64,17 @@
         return tile(t, { i: ok ? items.indexOf(handItems[it]) : null, cls: (k === drawnAt ? "drawn" : "") + (ok ? " pickable" : o ? " blocked" : "") +
           (ok && items.indexOf(handItems[it]) === cursor ? " cursor" : "") + (detail && detail.win === t && g.result && g.result.winner === 0 ? " win" : "") });
       }).join("");
-      const buttons = items.map((it, k) => (it.tile != null ? "" : '<button type="button" class="pk-button' + (k === cursor ? " cursor" : "") + '" data-i="' + k + '">' + esc(it.label) + "</button>")).join("");
       const round = M().WINDS[g.round - 27] + " " + (g.hand + 1) + (g.honba ? " · " + g.honba + " honba" : "") + (g.sticks ? " · " + g.sticks + " Riichi stick" + (g.sticks > 1 ? "s" : "") : "");
       root.innerHTML = '<div class="dig poker mahjong">' +
-        '<div class="mj-table">' + playerHtml(2) + playerHtml(3) +
-          '<div class="mj-center"><div class="mj-round">' + esc(round) + '</div><div class="mj-dora">Dora ' + (g.dora ? g.dora.map((t) => tile(t, { small: true })).join("") : "") +
-            '</div><div class="mj-left">' + (g.wall ? g.wall.length + " tiles left" : "") + "</div></div>" +
-          playerHtml(1) + "</div>" +
-        (detail ? '<div class="mj-result">' + detail.html + "</div>" : "") +
-        '<div class="pk-yours mj-message">' + esc(message) + "</div>" +
+        '<div class="mj-table">' + playerHtml(3) + playerHtml(2) + playerHtml(1) +
+          (detail ? '<div class="mj-result">' + detail.html + "</div>" : "") + "</div>" +
+        '<div class="mj-center"><span class="mj-round">' + esc(round) + '</span><span class="mj-dora">Dora ' + (g.dora ? g.dora.map((t) => tile(t, { small: true })).join("") : "") +
+          '</span><span class="mj-left">' + (g.wall ? g.wall.length + " tiles left" : "") + "</span></div>" +
         '<div class="mj-you">' + playerHtml(0) + '<div class="mj-hand">' + handHtml + '<span class="mj-melds">' +
-          me.melds.map((m) => '<span class="mj-meld">' + m.tiles.map((t) => tile(t)).join("") + "</span>").join("") + "</span></div></div>" +
-        '<div class="pk-actions">' + buttons + "</div></div>";
+          me.melds.map((m) => '<span class="mj-meld">' + m.tiles.map((t) => tile(t)).join("") + "</span>").join("") + "</span></div></div></div>";
+      // The choices that aren't tiles (Tsumo, Riichi, Ron, Pass...) in the panel under the screen.
+      const buttons = items.map((it, k) => ({ label: it.label, k })).filter((b) => items[b.k].tile == null);
+      window.TableUI.panel({ message, items: buttons, cursor: buttons.findIndex((b) => b.k === cursor), onPick: (i) => buttons[i] && chosen(buttons[i].k) });
     }
 
     function choose(list, at) {
@@ -100,7 +103,7 @@
       e.preventDefault();
     }
     function onClick(e) {
-      const b = e.target.closest && e.target.closest("[data-i]");
+      const b = e.target.closest && e.target.closest(".mj-tile[data-i]");
       if (b) { e.preventDefault(); chosen(+b.dataset.i); }
     }
     document.addEventListener("keydown", onKey);
@@ -204,14 +207,15 @@
         if (g.over) {
           const order = g.players.map((p, k) => [p.points, k]).sort((a, b) => b[0] - a[0]);
           message += " The game's over! " + order.map(([pts, k], n) => (n + 1) + ". " + name(k) + " " + pts.toLocaleString("en-US")).join(", ") + ".";
-          await choose([{ label: "Leave the table", value: "leave" }], 0);
+          await choose([{ label: "Leave", value: "leave" }], 0);
           break;
         }
-        const v = await choose([{ label: "Next hand", value: "next" }, { label: "Leave the table", value: "leave" }], 0);
+        const v = await choose([{ label: "Next hand", value: "next" }, { label: "Leave", value: "leave" }], 0);
         if (v.value === "leave") break;
       }
       document.removeEventListener("keydown", onKey);
       root.removeEventListener("click", onClick);
+      window.TableUI.clear();
       return g.players[0].points;
     })();
   }

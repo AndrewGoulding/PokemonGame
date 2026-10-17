@@ -7,10 +7,12 @@
 // their bet this round, their cards face down until a showdown), the board
 // and the pot in the middle with your hand so far ("Your hand: Pair of
 // Kings": from the flop on, the best five of your cards and the board's,
-// which are outlined in gold), and you at the bottom with your cards. Your turn: Fold, Check or Call, Bet or Raise, picked
-// with left / right and A (or tapped). Between hands: Next hand or Leave
-// the table (B leaves too); with no chips left, only leaving. The regulars
-// take a moment over each move.
+// which are outlined in gold), and you at the bottom with your cards. What
+// happens, and your choices, are in FireRed's windows under the screen
+// (ui/table-ui.js). Your turn: Fold, Check or Call, Bet or Raise, picked with
+// the D-pad and A (or tapped). Between hands: Next hand or Leave (B leaves
+// too); with no chips left, only leaving. The regulars take a moment over
+// each move.
 (function () {
   const P = () => window.Poker;
   const RANKS = { 11: "J", 12: "Q", 13: "K", 14: "A" };
@@ -41,10 +43,10 @@
       const hand = show && t2.result && t2.result.hands[i];
       return '<div class="pk-seat' + (s.human ? " you" : "") + (t2.toAct === i ? " turn" : "") + (s.folded || s.out ? " folded" : "") + (winning ? " won" : "") + '">' +
         (s.pic ? '<img class="pk-portrait" alt="" src="assets/sprites/trainers/front/' + esc(s.pic) + '.png">' : "") +
-        '<div class="pk-name">' + esc(s.name) + dealer + "</div>" +
-        '<div class="pk-chips">' + s.chips + " chips</div>" +
+        '<div class="pk-info"><div class="pk-name">' + esc(s.name) + dealer + "</div>" +
+        // (What they did last, or their hand at a showdown, and their bet this round, by their chips.)
+        '<div class="pk-chips">' + s.chips + (s.human ? " chips" : "") + (status || hand ? " · " + esc(hand ? hand.name : status) : "") + (s.bet ? ' <span class="pk-bet">' + s.bet + "</span>" : "") + "</div></div>" +
         '<div class="pk-hole">' + (s.cards && s.cards.length ? s.cards.map((c) => card(c, { down: !show, win: inBest(c) })).join("") : card(null) + card(null)) + "</div>" +
-        '<div class="pk-status">' + esc(hand ? hand.name : status) + (s.bet ? ' <span class="pk-bet">' + s.bet + "</span>" : "") + "</div>" +
         "</div>";
     }
 
@@ -60,13 +62,11 @@
       root.innerHTML = '<div class="dig poker">' +
         '<div class="pk-row">' + t.seats.slice(1).map((s, i) => seatHtml(s, i + 1)).join("") + "</div>" +
         '<div class="pk-middle"><div class="pk-board">' + board + '</div><div class="pk-pot">Pot ' + P().pot(t) +
-          (t.street !== "done" ? " · " + { preflop: "Before the flop", flop: "The flop", turn: "The turn", river: "The river" }[t.street] : "") + "</div>" +
-          '<div class="pk-yours">' + (yours ? "Your hand: " + esc(yours.name) : me.folded ? "You folded." : "") + "</div>" +
-          '<div class="pk-message">' + esc(message) + "</div>" +
-          '<div class="pk-stakes">' + esc(t.stakes.name) + " · blinds " + t.sb + "/" + t.bb + " · bets " + t.bb + "/" + 2 * t.bb + "</div></div>" +
-        '<div class="pk-bottom">' + seatHtml(me, 0) + '<div class="pk-actions">' +
-          buttons.map((b, i) => '<button type="button" class="pk-button' + (i === cursor ? " cursor" : "") + '" data-i="' + i + '">' + esc(b.label) + "</button>").join("") +
-        "</div></div></div>";
+          (t.street !== "done" ? " · " + { preflop: "Before the flop", flop: "The flop", turn: "The turn", river: "The river" }[t.street] : "") +
+          '<span class="pk-stakes">' + esc(t.stakes.name) + " · blinds " + t.sb + "/" + t.bb + "</span></div>" +
+          '<div class="pk-yours">' + (yours ? "Your hand: " + esc(yours.name) : me.folded ? "You folded." : "") + "</div></div>" +
+        seatHtml(me, 0) + "</div>";
+      window.TableUI.panel({ message, items: buttons, cursor, onPick: chosen });
     }
 
     // Waits for you to pick one of `list` ({ label, value }).
@@ -87,19 +87,14 @@
     }
     function onKey(e) {
       if (!pick) return;
-      if (["ArrowLeft", "a", "A", "ArrowUp"].includes(e.key)) { cursor = (cursor + buttons.length - 1) % buttons.length; draw(); }
-      else if (["ArrowRight", "d", "D", "ArrowDown"].includes(e.key)) { cursor = (cursor + 1) % buttons.length; draw(); }
+      const to = window.TableUI.move(cursor, buttons.length, e.key);
+      if (to != null) { cursor = to; draw(); }
       else if (["z", "Z", " ", "Enter"].includes(e.key)) chosen(cursor);
       else if (["x", "X", "b", "B"].includes(e.key)) { const leave = buttons.findIndex((b) => b.value === "leave"); if (leave >= 0) chosen(leave); else return; }
       else return;
       e.preventDefault();
     }
-    function onClick(e) {
-      const b = e.target.closest && e.target.closest(".pk-button");
-      if (b) { e.preventDefault(); chosen(+b.dataset.i); }
-    }
     document.addEventListener("keydown", onKey);
-    root.addEventListener("click", onClick);
 
     const name = (i) => (i === 0 ? "You" : t.seats[i].name);
     function say(ev) {
@@ -168,12 +163,12 @@
         const broke = t.seats[0].chips <= 0;
         if (broke) message += " You're out of chips.";
         cursor = 0;
-        const v = await choose(broke ? [{ label: "Leave the table", value: "leave" }]
-          : [{ label: "Next hand", value: "next" }, { label: "Leave the table", value: "leave" }]);
+        const v = await choose(broke ? [{ label: "Leave", value: "leave" }]
+          : [{ label: "Next hand", value: "next" }, { label: "Leave", value: "leave" }]);
         if (v === "leave") break;
       }
       document.removeEventListener("keydown", onKey);
-      root.removeEventListener("click", onClick);
+      window.TableUI.clear();
       return t.seats[0].chips;
     })();
   }

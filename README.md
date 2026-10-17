@@ -344,11 +344,19 @@ three trainers from around the game (`game/table-players.js`: any trainer
 but Gym Leaders, the Elite Four, rivals, Team Rocket and pairs, by class and
 name, "Bird Keeper Wilton", each with their class's front picture as a
 portrait), who buy in the same; one who runs out of chips leaves and another
-trainer sits down. It's fixed limit: bets and raises of the big blind before
+trainer sits down. Now and then (3% a seat, at any of the card tables) a
+star sits in instead: a Gym Leader, one of the Elite Four, Red, Leaf or your
+rival, each with their own picture and way of playing, and the dealer points
+them out; one among the regulars in the card room's chairs wears their own
+overworld sprite. It's fixed limit: bets and raises of the big blind before
 the flop and on it, and twice that on the turn and river, four bets a round
 at most (the table shows its stakes); short stacks go all
-in, with side pots. On your turn pick Fold, Check or Call, or Bet or Raise
-(left / right and A, or tap). Your hand so far is named in the middle of the
+in, with side pots. At all three tables what's happening and your choices
+are in FireRed's windows in the panel under the screen (`ui/table-ui.js`):
+the message in the standard frame, the choices in the frame you picked in
+the Options with FireRed's ▶, in FireRed's font; the screen above is all
+table, the cards, tiles and portraits as big as it allows. On your turn pick Fold, Check or Call, or Bet or Raise
+(the D-pad and A, or tap). Your hand so far is named in the middle of the
 table ("Your hand: Pair of Kings"; from the flop on, your best five-card hand,
 its five cards outlined in gold among yours and the board's). The
 regulars each guess their chance of winning by dealing the rest of the hand
@@ -357,7 +365,7 @@ own style: tight for careful sorts (Gentlemen, Ladies, Scientists,
 Engineers, Super Nerds, Aroma Ladies), loose and given to bluffing for the
 gambling sorts (Gamers, Bikers, Rockers, Cue Balls, Burglars, Jugglers,
 Sailors), and either or in between for everyone else. At a showdown everyone's cards turn over and the best
-five of seven win, pot by pot. Between hands, Next hand or Leave the table
+five of seven win, pot by pot. Between hands, Next hand or Leave
 (B); your chips go back in the Coin Case as Coins. Or play blackjack (this
 game's own: `game/blackjack.js`, `ui/blackjack.js`) with the dealer beside
 the poker table (talk to the dealer or the table), with two other trainers at the table (picked the same way,
@@ -379,7 +387,7 @@ chair for 250 Coins, which is 25,000 points. It's Riichi: an East round,
 dora and ura-dora, honba and the usual yaku, han, fu and limits (mangan to
 yakuman), against three trainers (picked as for poker, portraits and all)
 who play for the fastest hand, call when it helps and, far from ready, play safe against a Riichi.
-Between hands, Next hand or Leave the table; every 100 points you have when
+Between hands, Next hand or Leave; every 100 points you have when
 you get up (or when the game ends) is a Coin. Spend Coins in the Prize Room on
 Abra, Clefairy, Dratini, Scyther or Porygon, TMs (Ice Beam, Thunderbolt, Shadow
 Ball, Flamethrower, and Iron Tail, TM104 here, since this game's TM23 is Smack

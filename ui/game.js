@@ -6176,6 +6176,20 @@
     await Overworld.resume();
   }
 
+  // The card tables' stars (game/table-players.js): besides the Gym Leaders
+  // and the Elite Four, Red, Leaf and your rival now and then sit in.
+  function tableStars() {
+    TablePlayers.setStars([
+      { name: "Pokémon Trainer Red", pic: "red", style: "steady", sprite: "red" },
+      { name: "Pokémon Trainer " + LAB_RIVAL_NAME, pic: "green", style: "loose", sprite: "leaf" },
+      { name: "Rival " + player.rival, pic: "rival_late", style: "loose", sprite: "blue" }]);
+  }
+  // A star at the table gets a mention before the game.
+  async function starNotice(players) {
+    const stars = players.filter((p) => p && p.star);
+    if (stars.length) await say("Whoa! " + stars.map((p) => p.name).join(" and ") + (stars.length > 1 ? "\nare" : "\nis") + " at the table today!");
+  }
+
   // Texas Hold'em (game/poker.js, ui/poker.js; this game's own): the dealer
   // seats you with the three regulars for a buy-in of coins (your chips), and
   // what you have left when you get up goes back in your Coin Case.
@@ -6196,11 +6210,14 @@
     if (coins() < stakes.buyIn) { await say("The buy-in at " + stakes.name.toLowerCase() + " is " + plainCoins(stakes.buyIn) + " Coins.\nCome back with more!"); return; }
     const buyIn = stakes.buyIn;
     addCoins(-buyIn);
+    tableStars();
+    const table = Poker.create({ chips: buyIn, stakes, name: player.name, pic: Player.LOOKS[player.look].front });
     await say("Here are your chips. Good luck!");
+    await starNotice(table.seats.slice(1).map((st) => TablePlayers.stars().find((p) => p.name === st.name)));
     Screen.say("");
     show("scene");
     clearMenu();
-    const chips = await PokerScreen.run(scene, Poker.create({ chips: buyIn, stakes, name: player.name, pic: Player.LOOKS[player.look].front }));
+    const chips = await PokerScreen.run(scene, table);
     show("world");
     await Overworld.resume();
     addCoins(chips);
@@ -6218,6 +6235,9 @@
       " Coins. Blackjack pays\n3 to 2, and I stand on all 17s."]);
     if (coins() < Blackjack.BETS[0]) { await say("You'll need at least " + Blackjack.BETS[0] + " Coins to play.\nCome back with more!"); return; }
     if (!(await confirm("Care to play a few hands?"))) { await say("Maybe next time, then."); return; }
+    tableStars();
+    const others = TablePlayers.pick(2);
+    await starNotice(others);
     Screen.say("");
     show("scene");
     clearMenu();
@@ -6225,7 +6245,7 @@
     // (Your Coin Case keeps up with every bet and payout, up to 9,999, and the game saves after each hand.)
     const keep = (n) => { player.flags.coins = 0; addCoins(n); persist(); return coins(); };
     const after = await BlackjackScreen.run(scene, Blackjack.create({ coins: before, name: player.name, pic: Player.LOOKS[player.look].front,
-      others: TablePlayers.pick(2) }), keep);
+      others }), keep);
     show("world");
     await Overworld.resume();
     keep(after);
@@ -6255,11 +6275,15 @@
     const looks = {};
     for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people || []) if (!looks[p.sprite]) looks[p.sprite] = p;
     const sprites = CROWD_SPRITES.filter((s) => looks[s]);
+    tableStars();
     const room = window.WORLD_MAPS.CeladonCity_GameCorner_CardRoom, players = TablePlayers.pick(9, rng);
     const people = [], mahjong = [];
     const seat = (table, i) => {
-      const [x, y] = room.seats[table][i], who = players[people.length], look = looks[sprites[Math.floor(rng() * sprites.length)]];
-      const says = table === "mahjong" ? ["Ron! ...Oh, wait. Never mind.", "Want to sit in? Talk to the table!"] : CROWD_SAYS[Math.floor(rng() * CROWD_SAYS.length)];
+      // (A star in their own clothes.)
+      const [x, y] = room.seats[table][i], who = players[people.length], random = looks[sprites[Math.floor(rng() * sprites.length)]];
+      const look = (who.star && (looks[who.sprite] || window.WORLD_SPRITES[who.sprite])) || random;
+      const says = who.star ? ["Shh! I'm just here for a quiet game.\nDon't tell anyone!"]
+        : table === "mahjong" ? ["Ron! ...Oh, wait. Never mind.", "Want to sit in? Talk to the table!"] : CROWD_SAYS[Math.floor(rng() * CROWD_SAYS.length)];
       people.push({ id: 910 + people.length, localId: "LOCALID_CARD_PLAYER_" + people.length, script: null, x, y, movement: "face_" + CROWD_FACING[table][i],
         rangeX: 0, rangeY: 0, flag: null, text: [who.name + ": " + says[0]].concat(says.slice(1)),
         sprite: look.sprite, width: look.width, height: look.height, frames: look.frames });
@@ -6287,6 +6311,7 @@
     const [gone, ...others] = crowdCache.mahjong;
     addCoins(-MAHJONG_BUY_IN);
     await say((gone ? gone.name : "A player") + " gets up and gives\nyou their seat. Good luck!");
+    await starNotice(others);
     Screen.say("");
     show("scene");
     clearMenu();

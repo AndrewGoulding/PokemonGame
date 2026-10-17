@@ -4279,6 +4279,16 @@ console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " 
     assert(!/Leader|Elite|Champion|Rival|Rocket/.test(p.className), p.name);
   }
   assert(!TablePlayers.pick(5, Math.random, picked.map((p) => p.name)).some((p) => picked.some((q) => q.name === p.name)), "nobody twice");
+  // Now and then a star: the Gym Leaders, the Elite Four, and the game's own (Red, Leaf, your rival).
+  const stars = TablePlayers.stars();
+  assert.strictEqual(stars.filter((p) => /^Leader /.test(p.name)).length, 8, "the eight Gym Leaders");
+  assert.strictEqual(stars.filter((p) => /^Elite Four /.test(p.name)).length, 4, "the Elite Four");
+  TablePlayers.setStars([{ name: "Pokémon Trainer Red", pic: "red", sprite: "red" }]);
+  const starry = TablePlayers.pick(13, () => 0);
+  assert(starry.every((p) => p.star) && new Set(starry.map((p) => p.name)).size === 13 && starry.some((p) => p.name === "Pokémon Trainer Red"), "all stars, once each");
+  for (const p of starry) assert(require("fs").existsSync(require("path").join(__dirname, "..", "assets/sprites/trainers/front", p.pic + ".png")) && Poker.STYLES[p.style], p.name);
+  assert(!TablePlayers.pick(3, () => 0.5).some((p) => p.star), "rarely");
+  TablePlayers.setStars([]);
   // Poker: a trainer out of chips leaves and another sits down.
   const t = Poker.create({ chips: 100 });
   assert(t.seats.slice(1).every((s) => s.pic && Poker.STYLES[Object.keys(Poker.STYLES).find((k) => Poker.STYLES[k] === s.style)]));
