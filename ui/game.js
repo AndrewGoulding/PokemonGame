@@ -4699,7 +4699,8 @@
   // (This game's own.) Mega Stones lying about Kanto as item balls, each
   // with its own flag (flags["megaStone:<item>"]): Beedrillite in Viridian
   // Forest, Aerodactylite in Mt. Moon, Gyaradosite on Route 25, Slowbronite
-  // in the Seafoam Islands, Pinsirite in the Safari Zone, and Mewtwonite X
+  // in the Seafoam Islands, Pinsirite and Scizorite in the Safari Zone (its
+  // Center and East areas), and Mewtwonite X
   // and Y beside Mewtwo's spot in Cerulean Cave once it's caught or beaten.
   // Others are gifts (megaStoneGift): Gary's Pidgeotite on Silph Co. 7F,
   // Sabrina's Alakazite and Giovanni's Kangaskhanite with their badges. A
@@ -4713,6 +4714,7 @@
     { map: "Route25", x: 41, y: 2, item: "gyaradosite" },
     { map: "SeafoamIslands_1F", x: 3, y: 18, item: "slowbronite" },
     { map: "SafariZone_Center", x: 9, y: 29, item: "pinsirite" },
+    { map: "SafariZone_East", x: 44, y: 13, item: "scizorite" },
     { map: "CeruleanCave_B1F", x: 5, y: 12, item: "mewtwonite-x", when: (f) => f.foughtMewtwo },
     { map: "CeruleanCave_B1F", x: 9, y: 12, item: "mewtwonite-y", when: (f) => f.foughtMewtwo },
     // (Left behind for a save that beat them before they gave these.)

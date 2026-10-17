@@ -4047,7 +4047,7 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
   const gifts = [...gameJs.matchAll(/megaStoneGift\("([\w-]+)"/g)].map((m) => m[1]);
   assert.deepStrictEqual(gifts.sort(), ["alakazite", "kangaskhanite", "pidgeotite"]);
   const all = new Set(balls.map((b) => b.item).concat(gifts));
-  for (const id of ["beedrillite", "pidgeotite", "alakazite", "slowbronite", "kangaskhanite", "pinsirite", "gyaradosite", "aerodactylite",
+  for (const id of ["beedrillite", "pidgeotite", "alakazite", "slowbronite", "kangaskhanite", "pinsirite", "scizorite", "gyaradosite", "aerodactylite",
     "mewtwonite-x", "mewtwonite-y"]) {
     assert(all.has(id), id + " can be found");
     assert.strictEqual(ITEMS[id].category, "mega-stones", id);

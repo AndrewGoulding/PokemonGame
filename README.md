@@ -1101,8 +1101,8 @@ holding a Mega Stone already could.)
 
 Other Mega Stones around Kanto (this game's own): the Beedrillite in Viridian
 Forest, the Aerodactylite in Mt. Moon (B2F), the Gyaradosite on Route 25, the
-Slowbronite in the Seafoam Islands (1F), the Pinsirite in the Safari Zone
-(Center area), and the Mewtwonite X and Y beside Mewtwo's spot in Cerulean
+Slowbronite in the Seafoam Islands (1F), the Pinsirite and the Scizorite in
+the Safari Zone (Center and East areas), and the Mewtwonite X and Y beside Mewtwo's spot in Cerulean
 Cave once Mewtwo is caught or beaten (not if you run), all as item balls; Gary
 gives you the Pidgeotite after your battle on Silph Co. 7F, Sabrina the
 Alakazite with the Marsh Badge's TM, and Giovanni the Kangaskhanite with the
