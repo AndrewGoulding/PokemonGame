@@ -218,6 +218,9 @@ function runMesh(cmds, startMtx, stackW, mat, tris, opts) {
         case 0x14: mtx = stackW[P(0) & 31]; break;
         case 0x1b: mtx = M.mul(mtx, M.scale((P(0) | 0) / 4096, (P(1) | 0) / 4096, (P(2) | 0) / 4096)); break;
         case 0x20: { const v = P(0); col = [bits(v, 0, 5) / 31, bits(v, 5, 10) / 31, bits(v, 10, 15) / 31]; usedColor = true; break; }
+        // (A normal, with the material's lights on: the DS lights the vertex,
+        // replacing its colour. Lit full on, from above: the material's diffuse.)
+        case 0x21: if (mat && mat.lights) col = mat.diffuse.slice(); break;
         case 0x22: { const v = P(0); uv = [sbits(v, 0, 16) / 16, sbits(v, 16, 16) / 16]; break; }
         case 0x23: { const a = P(0), b = P(1); vtx = [sbits(a, 0, 16) / 4096, sbits(a, 16, 16) / 4096, sbits(b, 0, 16) / 4096]; emit(); break; }
         case 0x24: { const v = P(0); vtx = [sbits(v, 0, 10) / 64, sbits(v, 10, 10) / 64, sbits(v, 20, 10) / 64]; emit(); break; }

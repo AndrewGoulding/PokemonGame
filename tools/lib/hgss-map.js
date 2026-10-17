@@ -113,8 +113,26 @@ function renderMap(ROOT, MAPCONST, opts) {
   // ---------- area data: textures ----------
   const area = readNarc(F("a/0/4/2"))[H.areaDataBank];
   const buildTexSet = area.readUInt16LE(0), mapTexSet = area.readUInt16LE(2), outdoor = area[6];
-  const mapTex = N.parseNsb(readNarc(F("a/0/4/4"))[mapTexSet]).tex;
-  const bldTex = N.parseNsb(readNarc(F("a/0/7/0"))[buildTexSet]).tex;
+  const mapTexNarc = readNarc(F("a/0/4/4")), bldTexNarc = readNarc(F("a/0/7/0")), areas = readNarc(F("a/0/4/2"));
+  const texSets = new Map();
+  // (An interior may have no set of building textures, or an empty one.)
+  const texSet = (narc, i) => {
+    const k = (narc === mapTexNarc ? "m" : "b") + i;
+    if (!texSets.has(k)) texSets.set(k, narc[i] && narc[i].length > 16 ? N.parseNsb(narc[i]).tex : null);
+    return texSets.get(k);
+  };
+  const mapTex = texSet(mapTexNarc, mapTexSet);
+  const bldTex = texSet(bldTexNarc, buildTexSet);
+  // (A chunk of a neighbouring map, in the ring round this one: its own map's textures.)
+  const idToConst = {}; for (const [c, id] of Object.entries(mapIds)) if (!(id in idToConst)) idToConst[id] = c;
+  const chunkTex = (x, z) => {
+    const id = main && MX.hdr[z * MX.w + x];
+    if (!id || id === mapId || !idToConst[id]) return [mapTex, bldTex];
+    const h = header(idToConst[id]);
+    const a = h && areas[h.areaDataBank];
+    if (!a) return [mapTex, bldTex];
+    return [texSet(mapTexNarc, a.readUInt16LE(2)), texSet(bldTexNarc, a.readUInt16LE(0))];
+  };
   const bldModels = readNarc(F(outdoor ? "a/0/4/0" : "a/1/4/8"));
   const lands = readNarc(F("a/0/6/5"));
 
@@ -135,12 +153,14 @@ function renderMap(ROOT, MAPCONST, opts) {
 
   // ---------- textures (cached RGBA) ----------
   const texCache = new Map();
-  function textureFor(mat, preferTex) {
+  const texIds = new Map();
+  const texId = (t) => { if (!texIds.has(t)) texIds.set(t, texIds.size); return texIds.get(t); };
+  function textureFor(mat, preferTex, secondTex) {
     if (!mat || !mat.texName) return null;
-    const key = (preferTex === bldTex ? "b:" : "m:") + mat.texName + "/" + mat.palName;
+    const key = texId(preferTex) + "/" + texId(secondTex) + ":" + mat.texName + "/" + mat.palName;
     if (texCache.has(key)) return texCache.get(key);
     let t = null;
-    for (const tex of [preferTex, mapTex, bldTex]) {
+    for (const tex of [preferTex, secondTex, mapTex, bldTex]) {
       if (tex && tex.textures[mat.texName]) { t = N.decodeTexture(tex, mat.texName, mat.palName); if (t) break; }
     }
     if (!t) console.warn("missing texture", mat.texName, mat.palName);
@@ -157,8 +177,8 @@ function renderMap(ROOT, MAPCONST, opts) {
     if (lid === 0xffff || lid >= lands.length) continue;
     const L = readLand(lid);
     const wx = x * 512 + 256, wz = z * 512 + 256, wy = MX.alt[z * MX.w + x] * 16 * 0; // (altitude unused: flat Johto start)
-    const nsb = N.parseNsb(L.model);
-    for (const m of nsb.models) for (const t of N.buildTriangles(m, M.trans(wx, wy, wz))) { t.tex = nsb.tex || mapTex; tris.push(t); }
+    const nsb = N.parseNsb(L.model), [cMapTex, cBldTex] = chunkTex(x, z);
+    for (const m of nsb.models) for (const t of N.buildTriangles(m, M.trans(wx, wy, wz))) { t.tex = nsb.tex || cMapTex; t.tex2 = cBldTex; tris.push(t); }
     if (flag("nobuildings")) continue;
     for (const b of L.builds) {
       const bm = bldModels[b.id];
@@ -176,7 +196,7 @@ function renderMap(ROOT, MAPCONST, opts) {
         // (Slivers, long and next to no width: the windmills' blades in
         // their rest pose, which draw as lines across the map.)
         if (sliver(t)) continue;
-        t.tex = nb.tex || bldTex; t.building = group; group.tris.push(t); tris.push(t);
+        t.tex = nb.tex || cBldTex; t.tex2 = cMapTex; t.building = group; group.tris.push(t); tris.push(t);
       }
       bldCount++;
     }
@@ -356,7 +376,7 @@ function renderMap(ROOT, MAPCONST, opts) {
 
   function raster(tri, translucentPass) {
     const mat = tri.mat;
-    const tex = textureFor(mat, tri.tex);
+    const tex = textureFor(mat, tri.tex, tri.tex2);
     const matAlpha = mat ? mat.alpha : 1;
     const translucent = matAlpha < 0.99 || (tex && (tex.fmt === 1 || tex.fmt === 6));
     if (translucent !== translucentPass) return;

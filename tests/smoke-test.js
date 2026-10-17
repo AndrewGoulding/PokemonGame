@@ -1700,12 +1700,17 @@ for (const share of [false, true]) {
   assert.deepStrictEqual(saved.hyper.slice().sort(), Party.STAT_KEYS.slice().sort(), "saves keep Hyper Training");
 }
 
-// Johto (data/johto-maps.js, from HeartGold and SoulSilver): New Bark Town,
-// Route 29 and Cherrygrove City, and Route 27, Tohjo Falls and Route 26 to
+// Johto (data/johto-maps.js, from HeartGold and SoulSilver): New Bark Town to
+// Violet, Azalea and Goldenrod (with their routes, gatehouses, Union Cave,
+// Ilex Forest and the Ruins of Alph), and Route 27, Tohjo Falls and Route 26 to
 // Kanto, joined to each other; Kanto's only way in is the League gate's
 // west door (Route22_NorthEntrance), its guard there until you're Champion.
 {
-  const J = ["CherrygroveCity", "Route29", "NewBarkTown", "Route27", "TohjoFalls", "Route26"];
+  const J = Object.keys(WORLD_MAPS).filter((n) => WORLD_MAPS[n].region === "johto");
+  for (const n of ["CherrygroveCity", "Route29", "NewBarkTown", "Route27", "TohjoFalls", "Route26", "Route30", "Route31", "VioletCity", "Route32",
+    "Route33", "AzaleaTown", "Route34", "GoldenrodCity", "Route35", "Route36", "RuinsOfAlph", "Route46", "UnionCave_1F", "IlexForest",
+    "Route29_Route46_Gatehouse", "Route31_VioletGatehouse", "VioletCity_Route36_Gatehouse", "Route32_RuinsOfAlph_Gatehouse",
+    "Route36_RuinsOfAlph_Gatehouse", "Route35_Goldenrod_Gatehouse", "AzaleaTown_IlexForest_Gatehouse", "Route34_IlexForest_Gatehouse"]) assert(J.includes(n), n + " is built");
   for (const name of J) {
     const m = WORLD_MAPS[name];
     assert(m && m.region === "johto", name + " is built");
@@ -1721,6 +1726,24 @@ for (const share of [false, true]) {
   assert.strictEqual(World.step({ map: "NewBarkTown", x: 0, y: 15 }, "left").map, "Route29", "west out of New Bark Town");
   assert.strictEqual(World.fishingEncounter("NewBarkTown", "old-rod", () => 0).species, "Magikarp", "Gen 4 rods");
   assert.strictEqual(World.step({ map: "NewBarkTown", x: 23, y: 13 }, "up").unbuilt, "MAP_NEW_BARK_PLAYER_HOUSE_1F", "the house isn't built yet");
+  // Every built warp's way back; every map reached from New Bark Town (walking, Surf, Waterfall).
+  for (const n of J) for (const [i, w] of WORLD_MAPS[n].warps.entries()) if (w.map && J.includes(w.map)) {
+    const back = WORLD_MAPS[w.map].warps[w.warp];
+    assert(back && back.map === n, n + " warp " + i + " to " + w.map + " and back");
+  }
+  {
+    const key = (p) => p.map + ":" + p.x + ":" + p.y, start = { map: "NewBarkTown", x: 12, y: 14 }, seen = new Set([key(start)]), q = [start], reached = new Set();
+    while (q.length) {
+      const p = q.shift(); reached.add(p.map);
+      for (const d of ["up", "down", "left", "right"]) for (const surf of [false, true]) {
+        const r = World.step(p, d, null, surf ? { surf: true } : undefined);
+        let n = r.warp && r.warp.map ? { map: r.warp.map, x: r.warp.x, y: r.warp.y } : r.ok ? { map: r.map, x: r.x, y: r.y } : null;
+        if (!n && !surf) { const b = World.blockAt(p.map, p.x + World.DIRS[d][0], p.y + World.DIRS[d][1]); if (b.map && b.behavior === World.MB.WATERFALL) n = { map: b.map, x: b.x, y: b.y }; }
+        if (n && WORLD_MAPS[n.map] && !seen.has(key(n))) { seen.add(key(n)); q.push(n); }
+      }
+    }
+    for (const n of J) assert(reached.has(n), n + " reached from New Bark Town");
+  }
   // East: Route 27, then Route 26 (north of its east end).
   assert.strictEqual(World.step({ map: "NewBarkTown", x: 31, y: 15 }, "right", null, { surf: true }).map, "Route27", "east out of New Bark Town, by sea");
   assert.deepStrictEqual(WORLD_MAPS.Route27.connections.find((c) => c.map === "Route26"), { map: "Route26", direction: "right", offset: -96 });

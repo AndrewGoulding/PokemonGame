@@ -1,6 +1,7 @@
 // Builds the first Johto maps from HeartGold and SoulSilver
 // (a pret/pokeheartgold checkout): Cherrygrove City, Route 29, New Bark
-// Town, and the way to Kanto: Route 27, Tohjo Falls and Route 26, whose gate
+// Town; west and north to Violet City, Azalea Town and Goldenrod City
+// (Routes 30 to 36 and 46, the Ruins of Alph); and the way to Kanto: Route 27, Tohjo Falls and Route 26, whose gate
 // at the top is the Pokémon League's (FireRed's Route22_NorthEntrance, its
 // way west into Johto drawn here, and open to the Champion: ui/game.js).
 //
@@ -55,7 +56,31 @@ const MAPS = [
   { c: "MAP_NEW_BARK", name: "NewBarkTown", title: "New Bark Town", type: "town", zone: "T20", music: "mus_pallet" },
   { c: "MAP_ROUTE_27", name: "Route27", title: "Route 27", type: "route", zone: "R27", music: "mus_route3", ground: true },
   { c: "MAP_TOHJO_FALLS", name: "TohjoFalls", title: "Tohjo Falls", type: "underground", zone: "D45R0101", music: "mus_mt_moon", ground: true },
-  { c: "MAP_ROUTE_26", name: "Route26", title: "Route 26", type: "route", zone: "R26", music: "mus_route3", ground: true }
+  { c: "MAP_ROUTE_26", name: "Route26", title: "Route 26", type: "route", zone: "R26", music: "mus_route3", ground: true },
+  // West and north of Cherrygrove: to Violet City, Azalea Town and Goldenrod City.
+  { c: "MAP_ROUTE_30", name: "Route30", title: "Route 30", type: "route", zone: "R30", music: "mus_route1", ground: true },
+  { c: "MAP_ROUTE_31", name: "Route31", title: "Route 31", type: "route", zone: "R31", music: "mus_route1", ground: true },
+  { c: "MAP_VIOLET", name: "VioletCity", title: "Violet City", type: "city", zone: "T22", music: "mus_vermillion", ground: true },
+  { c: "MAP_ROUTE_32", name: "Route32", title: "Route 32", type: "route", zone: "R32", music: "mus_route3", ground: true },
+  { c: "MAP_ROUTE_33", name: "Route33", title: "Route 33", type: "route", zone: "R33", music: "mus_route3", ground: true },
+  { c: "MAP_AZALEA", name: "AzaleaTown", title: "Azalea Town", type: "town", zone: "T23", music: "mus_fuchsia", ground: true },
+  { c: "MAP_ROUTE_34", name: "Route34", title: "Route 34", type: "route", zone: "R34", music: "mus_route11", ground: true },
+  { c: "MAP_GOLDENROD", name: "GoldenrodCity", title: "Goldenrod City", type: "city", zone: "T25", music: "mus_celadon", ground: true },
+  { c: "MAP_ROUTE_35", name: "Route35", title: "Route 35", type: "route", zone: "R35", music: "mus_route11", ground: true },
+  { c: "MAP_ROUTE_36", name: "Route36", title: "Route 36", type: "route", zone: "R36", music: "mus_route11", ground: true },
+  { c: "MAP_RUINS_OF_ALPH", name: "RuinsOfAlph", title: "Ruins of Alph", type: "route", zone: "D24R0101", music: "mus_sevii_route", ground: true },
+  { c: "MAP_ROUTE_46", name: "Route46", title: "Route 46", type: "route", zone: "R46", music: "mus_route24", ground: true },
+  // The gatehouses, caves and forest between them (each on its own matrix).
+  { c: "MAP_ROUTE_29_ROUTE_46_GATEHOUSE", name: "Route29_Route46_Gatehouse", title: "Route 29", type: "indoor", zone: "R29R0101", music: "mus_route1", ground: true },
+  { c: "MAP_ROUTE_31_VIOLET_GATEHOUSE", name: "Route31_VioletGatehouse", title: "Route 31", type: "indoor", zone: "R31R0101", music: "mus_route1", ground: true },
+  { c: "MAP_VIOLET_ROUTE_36_GATEHOUSE", name: "VioletCity_Route36_Gatehouse", title: "Violet City", type: "indoor", zone: "T22R0701", music: "mus_route11", ground: true },
+  { c: "MAP_ROUTE_32_RUINS_OF_ALPH_GATEHOUSE", name: "Route32_RuinsOfAlph_Gatehouse", title: "Route 32", type: "indoor", zone: "R32R0101", music: "mus_route3", ground: true },
+  { c: "MAP_ROUTE_36_RUINS_OF_ALPH_GATEHOUSE", name: "Route36_RuinsOfAlph_Gatehouse", title: "Route 36", type: "indoor", zone: "R36R0101", music: "mus_route11", ground: true },
+  { c: "MAP_ROUTE_35_GOLDENROD_GATEHOUSE", name: "Route35_Goldenrod_Gatehouse", title: "Route 35", type: "indoor", zone: "R35R0101", music: "mus_route11", ground: true },
+  { c: "MAP_UNION_CAVE_1F", name: "UnionCave_1F", title: "Union Cave", type: "underground", zone: "D25R0101", music: "mus_mt_moon", ground: true },
+  { c: "MAP_AZALEA_ILEX_FOREST_GATEHOUSE", name: "AzaleaTown_IlexForest_Gatehouse", title: "Azalea Town", type: "indoor", zone: "T23R0101", music: "mus_route11", ground: true },
+  { c: "MAP_ILEX_FOREST", name: "IlexForest", title: "Ilex Forest", type: "route", zone: "D36R0101", music: "mus_viridian_forest", ground: true },
+  { c: "MAP_ROUTE_34_ILEX_FOREST_GATEHOUSE", name: "Route34_IlexForest_Gatehouse", title: "Route 34", type: "indoor", zone: "R34R0201", music: "mus_route11", ground: true }
 ];
 // The Pokémon League Reception Gate is FireRed's own (Route22_NorthEntrance):
 // Route 26's door into it is its new way west (data/johto-maps.js adds it).
@@ -78,6 +103,7 @@ function frBehavior(b) {
     case 0x62: case 0x63: case 0x64: case 0x65: return b;   // warps you walk off
     case 0x6c: return 0x62; case 0x6d: return 0x63; case 0x6e: return 0x64; case 0x6f: return 0x65;
     case 0x67: return 0x67;                       // warp pad
+    case 0x5e: case 0x5f: return 0x61;            // stairs you walk onto (a cave's floors): a ladder's step-on warp
     case 0x69: return 0x69;                       // door
     case 0x83: case 0x85: case 0x86: return b;    // PC, town map, TV
     default: return 0;                            // (headbutt trees and the like: collision does it)
@@ -201,8 +227,12 @@ MAPS.forEach((m, i) => {
       if (n) { for (let k = 0; k < 3; k++) r.below[o + k] = Math.round(sum[k] / n); r.below[o + 3] = 255; } else gaps = true;
     }
   }
-  // (A cave's nothing-there is dark.)
-  if (m.type === "underground") for (let i = 3; i < r.below.length; i += 4) if (r.below[i] < 255) {
+  // (In a room or cave, a tile nothing's drawn on is outside it: solid.)
+  const inside = m.type === "indoor" || m.type === "underground";
+  const drawnTiles = r.perm.map((v, i) => { const x = (i % r.width) * 16 + 8, y = Math.floor(i / r.width) * 16 + 8; return r.below[(y * W + x) * 4 + 3] > 0; });
+  const drawn = (i) => drawnTiles[i];
+  // (A cave's or room's nothing-there is dark.)
+  if (inside) for (let i = 3; i < r.below.length; i += 4) if (r.below[i] < 255) {
     const a = r.below[i] / 255;
     for (let k = 1; k <= 3; k++) r.below[i - k] = Math.round(r.below[i - k] * a);
     r.below[i] = 255;
@@ -216,7 +246,7 @@ MAPS.forEach((m, i) => {
 
   // (HGSS's waterfalls are solid, and the water at their tops (34) a tile of
   // its own: FireRed's are waterfalls you go up or down with Waterfall, onto water.)
-  const collision = r.perm.map((v) => ((v & 0xff) === 0x13 || (v & 0xff) === 0x22 ? 0 : (v >> 15) & 1));
+  const collision = r.perm.map((v, i) => (inside && !drawn(i) ? 1 : (v & 0xff) === 0x13 || (v & 0xff) === 0x22 ? 0 : (v >> 15) & 1));
   const behavior = r.perm.map((v) => ((v & 0xff) === 0x22 ? 0x10 : frBehavior(v & 0xff)));
   const ev = r.events || { warps: [], signs: [], people: [], triggers: [] };
   // (Doors are solid, as FireRed's are: walking up into one goes in.)
@@ -233,7 +263,7 @@ MAPS.forEach((m, i) => {
   }
   out[m.name] = {
     name: m.name, title: m.title, width: r.width, height: r.height, type: m.type, music: m.music, region: "johto",
-    cycling: true, showName: true, top: true, borderWidth: 2, borderHeight: 2,
+    cycling: true, showName: m.type !== "indoor", top: true, borderWidth: 2, borderHeight: 2,
     collision, elevation: collision.map(() => 0), behavior, encounter: behavior.map((b) => (b === 0x02 ? 1 : 0)),
     connections: [],
     warps: ev.warps.map((w) => (w.map === "MAP_ROUTE_22_POKEMON_LEAGUE_RECEPTION_GATE" ? { x: w.x, y: w.y, map: GATE.name, warp: "johto" }

@@ -1631,8 +1631,13 @@ time you come in. Like Emerald's, the island is no place to Fly from.
 
 ## Johto (in progress)
 
-Johto's first maps are built from HeartGold and SoulSilver: **New Bark Town,
-Route 29 and Cherrygrove City**, and the way to Kanto: **Route 27** (by sea
+Johto's maps are built from HeartGold and SoulSilver, 28 of them so far:
+**New Bark Town, Route 29 and Cherrygrove City**; north and west from there
+**Route 30 and 31, Violet City, Route 32, Union Cave 1F, Route 33, Azalea
+Town, Ilex Forest, Route 34, Goldenrod City, Route 35, Route 36, the Ruins of
+Alph** (outside) and **Route 46**, with the gatehouses between them (Route
+29/46, Route 31/Violet, Violet/Route 36, Route 32 and Route 36 to the Ruins,
+Route 35/Goldenrod, Azalea and Route 34 to Ilex Forest); and the way to Kanto: **Route 27** (by sea
 east from New Bark Town), **Tohjo Falls** (the cave in its middle: Surf, and
 Waterfall up one of its falls and down the other, as in HGSS) and **Route
 26**, north to the Pokémon League Reception Gate. That gate is FireRed's own
@@ -1650,14 +1655,14 @@ there, and its Pokémon Center trip brings you back.) HGSS's maps are 3D, so
 node tools/build-johto.js <path to pret/pokeheartgold>
 ```
 
-It reads the map headers and the overworld matrix (or a cave's own, as
-Tohjo Falls'), each 32x32-tile chunk's
+It reads the map headers and the overworld matrix (or a cave's, forest's or
+room's own, as Tohjo Falls', Ilex Forest's and the gatehouses'), each 32x32-tile chunk's
 land data (tile permissions, building placements and its NSBMD terrain
 model) and the area's textures, and rasterises the terrain and buildings in
 software at 16 px a tile: house fronts and tree trunks drawn upward from
 their tiles, as in FireRed, and what stands in front of you (tree tops,
-roofs) in the map's `-top` layer. Johto's first three maps are flat; Route 27,
-Tohjo Falls and Route 26 climb, so they're drawn from each tile's ground: the
+roofs) in the map's `-top` layer. Johto's first three maps are flat; the rest
+climb, so they're drawn from each tile's ground: the
 height the game stands you at there (each chunk's BDHC, its flat and sloping
 "plates"), on a tile you can walk or Surf on, and a solid tile takes its
 neighbour's. Raised ground stays on its tiles; the land's corners stand on
@@ -1667,7 +1672,11 @@ drawn from the ground under each corner. Hidden land (the sea under a
 mountain, which would show between its terraces) is left out, and any gap
 left takes its neighbours' colour. In front of you go trees, roofs, rocks and
 walls, but never water or what stands on a tile you walk or Surf on, so you
-pass behind Tohjo Falls' rocks and walls and climb its falls in view. HGSS's waterfalls are solid, and become
+pass behind Tohjo Falls' rocks and walls and climb its falls in view. A
+chunk of a neighbouring map, drawn round a map's edge, uses that map's own
+textures; land lit by the DS (normals, not vertex colours) is drawn fully
+lit; in a room or cave, a tile with nothing drawn on it is solid; and HGSS's
+cave stairs become warps you step onto. HGSS's waterfalls are solid, and become
 FireRed's, which Waterfall takes you up (or down); the maps' joins come from
 where they sit on the matrix. The tiles' permissions become collision and
 FireRed's behaviours (tall grass, water, ledges, doors), and from the event
@@ -1677,8 +1686,10 @@ and HGSS's own sprites (`assets/world/sprites/hgss_*.png`, put in FireRed's
 frame order). Wild Pokémon are HeartGold's daytime ones (Route 29: Pidgey,
 Sentret and Rattata), Surf's, and Gen 4's fishing (five slots a rod,
 40/40/15/4/1). Everything goes into `data/johto-maps.js`, which adds the
-maps to `WORLD_MAPS` (and the gate's mat, warp and guard). Not built yet: the houses and Elm's Lab (their doors
-say so), Johto's trainers (Routes 26 and 27's aren't there yet) and story, music (FireRed's stands in: Pallet Town's, Route 1's
+maps to `WORLD_MAPS` (and the gate's mat, warp and guard). Not built yet: the buildings (houses, Pokémon Centers, marts,
+Gyms, Elm's Lab, Sprout Tower, the Radio Tower and the rest: their doors say so),
+Union Cave's lower floors, Dark Cave and the National Park, Johto's trainers
+and story, music (FireRed's stands in: Pallet Town's, Route 1's
 and Pewter City's), water animation, and a Town Map of Johto.
 
 ## Orre: the Outskirt Stand (in progress)
