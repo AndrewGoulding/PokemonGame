@@ -1424,13 +1424,17 @@ holding START while pressing left or right picks the other (letting go
 switches it), so START, then hold START, right, let go, does both.
 
 **Tera Raid dens** (this game's own, after Scarlet and Violet's Tera Raid
-Battles; `game/raid-dens.js`): twelve dens, each of one type: Route 1
+Battles; `game/raid-dens.js`): eighteen dens, one of each type: Route 1
 (Normal, in the flower meadow), Viridian Forest (Bug, its south-west
 corner below the tall grass), Seafoam Islands 1F
 (Ice), the Power Plant (Electric), the Fighting Dojo's back room (Fighting),
-Mt. Moon 1F (Rock), Rock Tunnel 1F (Ground), Route 25 by the sea (Water),
+Rock Tunnel 1F (Rock), Diglett's Cave (Ground), Route 25 by the sea (Water),
 Route 18's flower garden (Flying), Cinnabar Island's beach (Fire), Lavender
-Town (Ghost) and outside the Indigo Plateau (Steel). A den sleeps until you
+Town (Ghost), Silph Co.'s lobby (Steel), outside the Indigo Plateau
+(Dragon), Celadon's Berry Farm (Grass), the Pokémon Mansion 1F (Poison),
+Mr. Psychic's back room (Psychic), the Rocket Hideout B1F (Dark; its
+Pokémon are Umbreon and Alola's Dark forms, no Galarian Moltres) and Mt.
+Moon B2F (Fairy). A den sleeps until you
 use a Lure on it (talk to it); then it glows, with a beam of light, holding a
 raid of 1 to 5 stars until you win it. Its Pokémon are all Kanto's: Kanto's own
 (not the legendaries or starters), their regional forms (Alolan Sandshrew,
@@ -1464,8 +1468,15 @@ the den's type (4, 6, 10, 15 or 25); and the den goes to sleep again. A
 den doesn't turn to face you when you talk to it (it's inanimate, as item
 balls are). The Fighting Dojo's back room is behind a
 sliding door in its back wall, which the Karate Master opens once you've
-beaten him (he tells you of the den); `tools/build-raid-dens.js` draws the
-dens and builds the room from the Dojo's tiles into `data/dojo-den-room.js`.
+beaten him (he tells you of the den). Mr. Psychic's back room is behind a
+door in his house's back wall, open once he's given you his TM (he tells
+you of the den then, and again after). Celadon's Berry Farm is the lawn
+south of its Gym: two tilled plots (for planting Berries, in a later
+update; for now they're in the way), its sign and the Grass den between
+them. `tools/build-raid-dens.js` draws the dens, builds the two rooms from
+their buildings' own tiles and draws the doors and the farm, into
+`data/raid-den-rooms.js`. A raid left glowing in a den that has since moved
+or changed type is gone.
 
 Alcremie comes in all 63 flavours: a Sweet used on Milcery asks which
 way it spins and for how long, and that with the time of day gives its cream

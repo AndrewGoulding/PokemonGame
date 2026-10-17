@@ -3540,8 +3540,18 @@
           Player.addItem(player, tm);
           f.gotTM29 = true;
           await sayWithJingle(itemJingle(tm), tmText(T("SaffronCity_MrPsychicsHouse_Text_ReceivedTM29FromMrPsychic"), 29, tm));
+          await say(tmText(T("SaffronCity_MrPsychicsHouse_Text_ExplainTM29"), 29, tm));
+          // (This game's own: his back room, and the Tera Raid den in it.)
+          await say(["And I sensed you'd want this, too…", "The door behind me leads to my back\nroom. A Tera Raid den sleeps there.",
+            "Use a Lure on it, and a Tera\nPsychic-type Pokémon will rise.", "Go on in, as often as you like."]);
+          Screen.say("");
+          sfx("se_rs_door");
+          applyPatches("SaffronCity_MrPsychicsHouse");
+          await persist();
+          return;
         }
         await say(tmText(T("SaffronCity_MrPsychicsHouse_Text_ExplainTM29"), 29, tm));
+        await say(["My back room's Tera Raid den…\nI sense it awaits your Lure."]);
         return;
       }
       case "SaffronCity_Gym_EventScript_GymGuy":
@@ -9960,8 +9970,11 @@
       if (f.vermilionGymLocksOpen) return ["off"];
       if (gymCans && gymCans.foundFirst) return ["half"];
     }
-    // (The Dojo's back room, once its Karate Master's beaten and has opened it: data/dojo-den-room.js.)
+    // (The Dojo's back room, once its Karate Master's beaten and has opened it: data/raid-den-rooms.js.)
     if (map === "SaffronCity_Dojo") return f.TRAINER_BLACK_BELT_KOICHI && f.dojoDenDoor ? ["denroom"] : [];
+    // (Mr. Psychic's back room, once he's given you his TM; Celadon's Berry Farm, always: the same file.)
+    if (map === "SaffronCity_MrPsychicsHouse") return f.gotTM29 ? ["denroom"] : [];
+    if (map === "CeladonCity") return ["berryfarm"];
     if (map === "CeladonCity_GameCorner") return (f.openedRocketHideout ? [] : ["hidden"]).concat(["cardroom"]);
     if (map === "RocketHideout_B1F" && !f.TRAINER_TEAM_ROCKET_GRUNT_12) return ["barrier"];
     if (map === "RocketHideout_B4F" && !(f.TRAINER_TEAM_ROCKET_GRUNT_16 && f.TRAINER_TEAM_ROCKET_GRUNT_17)) return ["barrier"];

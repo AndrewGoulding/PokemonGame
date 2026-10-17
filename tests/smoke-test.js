@@ -576,9 +576,13 @@ for (const share of [false, true]) {
 // Tera Raid dens (game/raid-dens.js): on their maps, on free tiles; stars by
 // Badges and Lures; the boss; rewards; the Dojo's back room and its door.
 {
-  assert.strictEqual(RaidDens.DENS.length, 12);
+  assert.strictEqual(RaidDens.DENS.length, 18);
   assert.deepStrictEqual(RaidDens.DENS.map((d) => d.type).sort(),
-    ["Bug", "Electric", "Fighting", "Fire", "Flying", "Ghost", "Ground", "Ice", "Normal", "Rock", "Steel", "Water"]);
+    ["Bug", "Dark", "Dragon", "Electric", "Fairy", "Fighting", "Fire", "Flying", "Ghost", "Grass", "Ground", "Ice", "Normal", "Poison", "Psychic", "Rock", "Steel", "Water"]);
+  assert(!RaidDens.POOLS.Dark.some((t) => t.includes("Moltres-Galar")), "no Galarian Moltres");
+  // (A raid from before its den changed type is gone.)
+  assert.strictEqual(RaidDens.active({ raidDens: { indigo: { stars: 1, species: "Magnemite", level: 12 } } }, "indigo"), null);
+  assert(RaidDens.active({ raidDens: { indigo: { stars: 1, species: "Dratini", level: 12 } } }, "indigo"));
   for (const d of RaidDens.DENS) {
     const m = WORLD_MAPS[d.map];
     assert(m, "no map " + d.map);
@@ -646,6 +650,18 @@ for (const share of [false, true]) {
   const door = dojo.warps.find((w) => w.map === "SaffronCity_Dojo_DenRoom");
   assert(door && dojo.patches.denroom && room.warps.every((w) => w.map === "SaffronCity_Dojo" && dojo.warps[w.warp] === door));
   assert(dojo.collision[door.y * dojo.width + door.x], "the wall, until the door's patch is on");
+  // Mr. Psychic's back room, the same; its door opens with his TM.
+  const proom = WORLD_MAPS.SaffronCity_MrPsychicsHouse_DenRoom, house = WORLD_MAPS.SaffronCity_MrPsychicsHouse;
+  const pdoor = house.warps.find((w) => w.map === "SaffronCity_MrPsychicsHouse_DenRoom");
+  assert(pdoor && house.patches.denroom && proom.warps.every((w) => w.map === "SaffronCity_MrPsychicsHouse" && house.warps[w.warp] === pdoor));
+  assert(house.collision[pdoor.y * house.width + pdoor.x] && proom.warps.every((w) => !proom.collision[w.y * proom.width + w.x]));
+  assert(/MrPsychicsHouse"\) return f\.gotTM29 \? \["denroom"\]/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")));
+  // Celadon's Berry Farm: its patch (the plots and the sign, blocked; the den's tile free) and its sign.
+  const farm = WORLD_MAPS.CeladonCity.patches.berryfarm, gd = RaidDens.DENS.find((d) => d.type === "Grass");
+  assert(farm && gd.map === "CeladonCity" && gd.x >= farm.x && gd.x < farm.x + farm.w && gd.y >= farm.y && gd.y < farm.y + farm.h);
+  assert(!farm.collision.some(([x, y]) => x === gd.x && y === gd.y) && WORLD_MAPS.CeladonCity.signs.some((sg) => /BerryFarm/.test(sg.script)));
+  for (const f of ["CeladonCity-patch-berryfarm", "SaffronCity_MrPsychicsHouse-patch-denroom", "SaffronCity_MrPsychicsHouse_DenRoom"])
+    assert(fs.existsSync(path.join(root, "assets/world/maps/" + f + ".png")), f);
 }
 
 // Effect Spore: the status it gives says it's Effect Spore's, and whose, for

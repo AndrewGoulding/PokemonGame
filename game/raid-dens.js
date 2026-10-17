@@ -1,6 +1,6 @@
 // Tera Raid dens (this game's own, after Scarlet and Violet's Tera Raid
-// Battles and Sword and Shield's dens): twelve dens around Kanto, each of
-// one type. A den sleeps until you use a Lure on it; then it glows with a
+// Battles and Sword and Shield's dens): eighteen dens around Kanto, one
+// of each type. A den sleeps until you use a Lure on it; then it glows with a
 // Tera Raid of 1 to 5 stars (the more Badges you have, the more stars it can
 // have, and the stronger the Lure, the likelier the higher ones), until you
 // win it. The Tera Raid Pokémon is Terastallized into the den's type, with
@@ -25,22 +25,30 @@
 (function () {
   "use strict";
 
-  // [id, map, x, y, type]. The Fighting den is in the Fighting Dojo's back
-  // room (tools/build-dojo-den-room.js, data/dojo-den-room.js), which opens
-  // once you've beaten its Karate Master.
+  // [id, map, x, y, type]. Three are in places made for them (tools/build-raid-dens.js,
+  // data/raid-den-rooms.js): the Fighting den in the Fighting Dojo's back
+  // room, open once you've beaten its Karate Master; the Psychic den in Mr.
+  // Psychic's back room, open once he's given you his TM; and the Grass den
+  // in Celadon's Berry Farm, south of its Gym.
   const DENS = [
     ["route1", "Route1", 5, 8, "Normal"],
     ["viridianForest", "ViridianForest", 3, 33, "Bug"],   // (the south-west corner, below the grass)
     ["seafoam", "SeafoamIslands_1F", 4, 17, "Ice"],
     ["powerPlant", "PowerPlant", 2, 10, "Electric"],
     ["dojo", "SaffronCity_Dojo_DenRoom", 6, 5, "Fighting"],
-    ["mtMoon", "MtMoon_1F", 34, 19, "Rock"],
-    ["rockTunnel", "RockTunnel_1F", 12, 21, "Ground"],
+    ["rockTunnel", "RockTunnel_1F", 12, 21, "Rock"],
+    ["diglettsCave", "DiglettsCave_B1F", 36, 33, "Ground"],
     ["route25", "Route25", 62, 8, "Water"],
     ["route18", "Route18", 12, 3, "Flying"],
     ["cinnabar", "CinnabarIsland", 18, 13, "Fire"],
     ["lavender", "LavenderTown", 16, 8, "Ghost"],
-    ["indigo", "IndigoPlateau_Exterior", 4, 10, "Steel"]
+    ["silph", "SilphCo_1F", 27, 6, "Steel"],
+    ["indigo", "IndigoPlateau_Exterior", 4, 10, "Dragon"],
+    ["berryFarm", "CeladonCity", 11, 36, "Grass"],
+    ["mansion", "PokemonMansion_1F", 3, 30, "Poison"],
+    ["mrPsychic", "SaffronCity_MrPsychicsHouse_DenRoom", 5, 4, "Psychic"],
+    ["rocketHideout", "RocketHideout_B1F", 14, 15, "Dark"],
+    ["mtMoon", "MtMoon_B2F", 16, 4, "Fairy"]
   ].map(([id, map, x, y, type]) => ({ id, map, x, y, type, script: "RaidDen_" + id }));
   const byScript = (script) => DENS.find((d) => d.script === script) || null;
 
@@ -119,7 +127,27 @@
       ["Gengar", "Crobat", "Marowak-Alola", "Hypno"]],
     Steel: [["Magnemite", "Diglett-Alola", "Sandshrew-Alola", "Onix"], ["Magneton", "Onix", "Dugtrio-Alola", "Sandslash-Alola", "Meowth-Galar"],
       ["Magneton", "Steelix", "Dugtrio-Alola", "Sandslash-Alola", "Perrserker"], ["Magnezone", "Steelix", "Scizor", "Perrserker"],
-      ["Magnezone", "Steelix", "Scizor"]]
+      ["Magnezone", "Steelix", "Scizor"]],
+    Grass: [["Oddish", "Bellsprout", "Exeggcute", "Tangela"], ["Gloom", "Weepinbell", "Exeggcute", "Tangela", "Paras"],
+      ["Vileplume", "Victreebel", "Exeggutor", "Bellossom", "Parasect"], ["Exeggutor", "Tangrowth", "Leafeon", "Vileplume", "Victreebel", "Exeggutor-Alola"],
+      ["Tangrowth", "Leafeon", "Exeggutor-Alola", "Bellossom", "Vileplume"]],
+    Poison: [["Ekans", "Nidoran-F", "Nidoran-M", "Zubat", "Grimer", "Koffing"], ["Nidorina", "Nidorino", "Golbat", "Grimer", "Koffing", "Tentacool", "Venonat"],
+      ["Arbok", "Muk", "Weezing", "Tentacruel", "Venomoth", "Grimer-Alola"], ["Nidoking", "Nidoqueen", "Crobat", "Muk-Alola", "Weezing-Galar", "Gengar"],
+      ["Crobat", "Nidoking", "Nidoqueen", "Muk", "Weezing-Galar"]],
+    Psychic: [["Abra", "Drowzee", "Slowpoke", "Slowpoke-Galar", "Ponyta-Galar"], ["Kadabra", "Drowzee", "Slowpoke", "Mr. Mime", "Jynx", "Exeggcute"],
+      ["Kadabra", "Hypno", "Slowbro", "Mr. Mime", "Jynx", "Rapidash-Galar"], ["Alakazam", "Slowbro", "Slowking", "Espeon", "Exeggutor", "Mr. Mime-Galar"],
+      ["Alakazam", "Espeon", "Slowking", "Slowbro-Galar", "Mr. Rime"]],
+    // (Kanto has only the Dratini line and its odd Dragons: Horsea and Seadra, which become Kingdra, beside them.)
+    Dragon: [["Dratini", "Horsea"], ["Dratini", "Dragonair", "Seadra"],
+      ["Dragonair", "Seadra", "Exeggutor-Alola", "Gyarados"], ["Dragonite", "Kingdra", "Exeggutor-Alola", "Aerodactyl", "Dragonair"],
+      ["Dragonite", "Kingdra", "Exeggutor-Alola", "Gyarados"]],
+    // (Kanto's Dark-types are Umbreon and Alola's forms; no Galarian Moltres.)
+    Dark: [["Rattata-Alola", "Meowth-Alola", "Grimer-Alola"], ["Rattata-Alola", "Raticate-Alola", "Meowth-Alola", "Grimer-Alola"],
+      ["Raticate-Alola", "Persian-Alola", "Muk-Alola", "Umbreon"], ["Umbreon", "Persian-Alola", "Muk-Alola", "Raticate-Alola"],
+      ["Umbreon", "Muk-Alola", "Persian-Alola"]],
+    Fairy: [["Clefairy", "Jigglypuff"], ["Clefairy", "Jigglypuff", "Mr. Mime"],
+      ["Clefable", "Wigglytuff", "Mr. Mime", "Rapidash-Galar", "Ninetales-Alola", "Weezing-Galar"], ["Clefable", "Wigglytuff", "Sylveon", "Ninetales-Alola", "Rapidash-Galar", "Weezing-Galar"],
+      ["Sylveon", "Clefable", "Ninetales-Alola", "Rapidash-Galar"]]
   };
   // (Kanto's: Bulbasaur to Mew, their regional forms, and their later evolutions.)
   const KANTO_LATER = ["Crobat", "Bellossom", "Politoed", "Slowking", "Steelix", "Scizor", "Kingdra", "Porygon2", "Porygon-Z", "Espeon",
@@ -131,7 +159,12 @@
   // what their pre-evolutions can learn (Caterpie's Tackle, Weedle's Poison Sting).
   const RAID_MOVES = { Metapod: ["Tackle", "String Shot", "Harden"], Kakuna: ["Poison Sting", "String Shot", "Harden"] };
 
-  const active = (flags, id) => (flags.raidDens && flags.raidDens[id]) || null;
+  // (A raid left glowing by an older version, from before its den moved or
+  // changed type, isn't one of its den's now: it's gone.)
+  const active = (flags, id) => {
+    const raid = flags.raidDens && flags.raidDens[id], den = DENS.find((d) => d.id === id);
+    return raid && den && POOLS[den.type].some((pool) => pool.includes(raid.species)) ? raid : null;
+  };
   // A Lure on a sleeping den: a raid of rolled stars, a Pokémon from its pool, its level.
   function start(flags, den, lure, badges, rng) {
     rng = rng || Math.random;
