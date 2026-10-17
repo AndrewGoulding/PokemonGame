@@ -296,9 +296,9 @@
     // (The Tera Orb: it lets a Pokémon Terastallize once a battle, and
     // recharges itself after every battle.)
     const teraOrb = Player.itemCount(player, "tera-orb") > 0;
-    // (A Tera Raid's Pokémon: more HP the more stars, RaidDens.HP.)
+    // (A Tera Raid's Pokémon: more HP the more stars, RaidDens.HP, and already Terastallized.)
     const foeSets = (f) => f.team.map((r) => Object.assign(Party.toBattleSet(r), opts.ghost ? { name: "Ghost" } : {},
-      opts.raid ? { raidHp: RaidDens.HP[opts.raid] } : {}));
+      opts.raid ? { raidHp: RaidDens.HP[opts.raid], teraStart: true } : {}));
     const result = await BattleScreen.run({
       p1: Object.assign({ name: player.name, team: own.map((r) => Party.toBattleSet(r, here)), dynamax: Player.itemCount(player, "dynamax-band") > 0, tera: teraOrb },
         opts.partner ? { partner: { name: opts.partner.name, team: opts.partner.team.map((r) => Party.toBattleSet(r)) } } : {}),
@@ -308,6 +308,9 @@
       partnerTrainer: opts.partner && opts.partner.pic,
       foeTrainer2: foe2 && foe2.pic, defeatText2: foe2 && foe2.defeatText && foe2.defeatText.map((p) => fill(p)),
       ghost: !!opts.ghost, noCatch: !!opts.noCatch, raid: opts.raid || 0, raidTurns: opts.raid ? RaidDens.TURNS[opts.raid] : 0,
+      // (A Tera Raid won: the Balls you could catch it in.)
+      raidBalls: opts.raid ? () => Object.keys(player.bag).filter((id) => Bag.isBall(id) && Player.itemCount(player, id) > 0).slice(0, 8)
+        .map((id) => ({ id, name: Bag.name(id) })) : null,
       megaRing: Player.itemCount(player, "mega-ring") > 0,
       zRing: Player.itemCount(player, "z-ring") > 0,
       dynamaxBand: Player.itemCount(player, "dynamax-band") > 0,
@@ -343,6 +346,7 @@
       }
     });
     const b = result.battle;
+    if (opts.raid) opts.raidBall = result.raidBall || null;   // (the Ball its Pokémon was caught in, if it was)
     for (const e of b.events) {
       if (opts.ghost) break;   // (an unidentified Ghost isn't seen)
       if ((e[0] === "switch" || e[0] === "drag") && String(e[1]).startsWith("p2")) Player.markSeen(player, String(e[2]).split(", L")[0]);
@@ -753,6 +757,8 @@
     if (r.pp) await message(name + "'s PP was restored.");
     if (r.ppUp) await message(record.moves[move].name + "'s PP increased.");
     if (r.ev) await message(name + "'s base stats rose.");
+    // (An EV-lowering Berry, as Gen 4 says it.)
+    if (r.evStat) await message(name + " turned friendly.\n" + (r.evDown ? "Its base " + STAT_NAMES[r.evStat] + " fell!" : "Its base " + STAT_NAMES[r.evStat] + " can't fall!"));
   }
 
   async function giveItem(record, item) {
@@ -1193,8 +1199,14 @@
   // again after; TOSS happens on the bag screen itself.
   let bagPocket = "Medicine";
   BagScreen.setRegistered(() => player && player.flags.registered);
+  // (Berries can be sorted by their tiers, BerryPicking.TIERS, as the berry
+  // tree gives them: the Bag's "Sort" on a berry, flags.berrySort "tier".)
+  const BERRY_TIER_ORDER = () => BerryPicking.TIERS.flatMap((t) => t.berries);
+  const berryTier = (id) => BerryPicking.TIERS.find((t) => t.berries.includes(id));
   function bagPockets() {
-    const order = (id) => (Bag.isMachine(id) ? Bag.machines().indexOf(id) : 0);
+    const tiers = player.flags.berrySort === "tier" ? BERRY_TIER_ORDER() : null;
+    const order = (id) => (Bag.isMachine(id) ? Bag.machines().indexOf(id)
+      : tiers && /-berry$/.test(id) ? (tiers.includes(id) ? tiers.indexOf(id) : tiers.length) : 0);
     return Bag.POCKETS.map((p) => ({
       name: p,
       items: Object.keys(player.bag).filter((id) => Bag.pocket(id) === p)
@@ -1202,7 +1214,8 @@
         .map((id) => ({
           id, name: Bag.name(id), icon: Bag.sprite(id),
           qty: Bag.isMachine(id) || Bag.isKeyItem(id) ? null : player.bag[id],
-          desc: Bag.description(id) + (id === "exp-share" ? (expShareOn() ? "\nIt's on." : "\nIt's off.") : "")
+          desc: Bag.description(id) + (id === "exp-share" ? (expShareOn() ? "\nIt's on." : "\nIt's off.") : "") +
+            (tiers && berryTier(id) && Bag.description(id).split("\n").length < 3 ? "\n(" + berryTier(id).name + " berry)" : "")
         }))
     }));
   }
@@ -1220,6 +1233,7 @@
           if (holdable(it.id)) a.push({ label: "Give", value: "give" });
           if (!Bag.isMachine(it.id) && !Bag.isKeyItem(it.id)) a.push({ label: "Toss", value: "toss" });
           if (REGISTERABLE.includes(it.id)) a.push({ label: player.flags.registered === it.id ? "Deselect" : "Register", value: "register" });
+          if (/-berry$/.test(it.id)) a.push({ label: "Sort", value: "sort" });
           return a;
         },
         toss: (id, n) => { Player.removeItem(player, id, n); persist(); }
@@ -1232,6 +1246,12 @@
         const on = player.flags.registered !== id;
         player.flags.registered = on ? id : undefined;
         await message(on ? "The " + Bag.name(id) + " was registered to Select." : "The " + Bag.name(id) + " is no longer registered.");
+      }
+      else if (what === "sort") {
+        // Berries: by their tiers (Basic, Restoring, Contest, ...), or back to A to Z.
+        const byTier = player.flags.berrySort !== "tier";
+        player.flags.berrySort = byTier ? "tier" : "name";
+        await message(byTier ? "Your Berries are sorted by tier:\nBasic, Restoring, Contest and on." : "Your Berries are sorted A to Z.");
       }
       else if (what === "use" && Bag.isKeyItem(id)) { if ((await useKeyItem(id)) === "escaped") return "escaped"; }
       else if (what === "use" && (id in REPEL_STEPS || id in LURE_STEPS)) await useRepel(id);
@@ -10101,8 +10121,9 @@
   // choose (no catching mid-way) against its Pokémon, Terastallized into the den's type with more HP,
   // won within its turns (RaidDens.TURNS) or you're blown out of the den;
   // losing, you're thrown out of the den (your Pokémon are fine) and it keeps
-  // glowing. Won: money, Exp. Candies, vitamins and Berries, then the chance
-  // to catch it, in any Ball (it can't miss).
+  // glowing. Won: the battle goes on, to catch it in any Ball if you like (it
+  // can't miss); then the rewards (money, Exp. Candies, vitamins, Berries and
+  // Tera Shards) on their own screen (ui/raid-rewards.js).
   const LURES = ["lure", "super-lure", "max-lure"];
   const RAID_MUSIC = [null, "mus_vs_wild", "mus_vs_wild", "mus_vs_trainer", "mus_vs_legend", "mus_vs_legend"];
   async function raidDen(den) {
@@ -10136,7 +10157,7 @@
     // (One Pokémon only, as in Scarlet and Violet: you choose which.)
     let pick;
     for (;;) {
-      pick = await choosePartyFor("Send which POKéMON into the raid?");
+      pick = await choosePartyFor("Send which POKéMON?");
       show("world");
       if (!pick) { await say("The den keeps glowing…"); return; }
       if (Party.canFight(pick)) break;
@@ -10144,47 +10165,41 @@
     }
     const chosen = [player.party.indexOf(pick)];
     const boss = RaidDens.boss(den, raid);
-    const outcome = await battle("wild", { foe: { name: "Wild", team: [boss], tera: true }, raid: raid.stars, noCatch: true, noBlackout: true,
-      music: RAID_MUSIC[raid.stars], chosen });
-    show("world");
-    await Overworld.resume();
-    if (outcome === "lost") { await say(["You were blown out of the den…", "Your Pokémon were restored."]); return; }
-    // (Out of turns: blown out too, the den still glowing.)
-    if (outcome === "timeout") {
-      player.party.forEach(Party.heal);
-      await say(["The den is still glowing…", "Your Pokémon were restored."]);
+    const ro = { foe: { name: "Wild", team: [boss], tera: true }, raid: raid.stars, noCatch: true, noBlackout: true,
+      music: RAID_MUSIC[raid.stars], chosen };
+    const outcome = await battle("wild", ro);
+    if (outcome !== "won") {
+      show("world");
+      await Overworld.resume();
+      if (outcome === "lost") await say(["You were blown out of the den…", "Your Pokémon were restored."]);
+      // (Out of turns: blown out too, the den still glowing.)
+      else if (outcome === "timeout") {
+        player.party.forEach(Party.heal);
+        await say(["The den is still glowing…", "Your Pokémon were restored."]);
+      }
       return;
     }
-    if (outcome !== "won") return;
     RaidDens.finish(f, den.id);
-    Overworld.refreshPeople();
+    // Caught in the battle (it keeps the den's Tera Type).
+    if (ro.raidBall) {
+      Player.removeItem(player, ro.raidBall);
+      delete boss.teraAce;
+      Object.assign(boss, { ball: ro.raidBall, status: "" });
+      Party.heal(boss);
+      await addCaught(boss);
+    }
+    // The rewards, and FireRed's style of screen for them.
     const r = RaidDens.rewards(raid.stars, Math.random, den.type);
     Player.addMoney(player, r.money);
     for (const [id, n] of r.items) Player.addItem(player, id, n);
-    await sayWithJingle("mus_obtain_item", "{PLAYER} won the Tera Raid and\ngot " + money(r.money) + "!");
-    const lines = r.items.map(([id, n]) => Bag.name(id) + " ×" + n);
-    const pages = [];
-    for (let i = 0; i < lines.length; i += 2) pages.push(lines.slice(i, i + 2).join("\n"));
-    await say(["{PLAYER} also got:"].concat(pages));
     await persist();
-    await raidCatch(boss, name);
-  }
-  // After the raid: catch it? Any Ball you have; it can't miss.
-  async function raidCatch(boss, name) {
-    if (!(await confirm("The " + name + " is worn out.\nWill you catch it?"))) return;
-    const balls = Object.keys(player.bag).filter((id) => Bag.isBall(id) && Player.itemCount(player, id) > 0).slice(0, 8);
-    if (!balls.length) { await say("You don't have any Poké Balls…"); return; }
-    const v = await multichoice("Which Ball will you use?", 0, 0, balls.map((id) => Bag.name(id)).concat(["Cancel"]));
     Screen.say("");
-    if (v < 0 || v >= balls.length) return;
-    Player.removeItem(player, balls[v]);
-    delete boss.teraAce;
-    boss.ball = balls[v];
-    Party.heal(boss);
-    sfx("se_ball_throw");
-    await say(player.name + " threw " + article(Bag.name(balls[v])) + "!");
-    await addCaught(boss);
-    await persist();
+    show("world");
+    await RaidRewardsScreen.show({ stars: raid.stars, type: den.type, name, level: raid.level, money: r.money, items: r.items,
+      caught: !!ro.raidBall, frame: GameOptions.get().frame });
+    Overworld.refreshPeople();
+    await Overworld.resume();
+    music((window.WORLD_MAPS[player.location.map] || {}).music);
   }
 
   // ---------- Repels and Lures ----------

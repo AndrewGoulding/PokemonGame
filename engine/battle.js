@@ -298,6 +298,7 @@
       this.teraType = /^(Ogerpon|Terapagos)/.test(speciesKey) ? Battle.defaultTeraType(speciesKey) : set.teraType || Battle.defaultTeraType(speciesKey, set.personality);
       this.terastallized = null;
       this.teraAce = !!set.teraAce;
+      this.teraStart = !!set.teraStart;   // (a Tera Raid's Pokémon: Terastallized before the battle begins)
       if (set.status && !this.fainted) {
         this.status = set.status;
         if (set.status === "slp") this.statusState.time = battle.randInt(1, 3);

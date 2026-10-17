@@ -47,8 +47,8 @@
       root.querySelector(".xp .dig-fill").style.width = p.need ? pct(p.into, p.need) : "100%";
       root.querySelector(".dig-xp").textContent = p.need ? p.into + " / " + p.need + " XP" : "Max";
       const time = root.querySelector(".energy .dig-fill");
-      time.style.width = pct(game.left, B().FRAMES);
-      time.classList.toggle("low", game.left <= B().FRAMES / 4);
+      time.style.width = pct(game.left, game.total);
+      time.classList.toggle("low", game.left <= game.total / 4);
       root.querySelector(".berry-time").textContent = Math.ceil(game.left / 60) + "s";
       root.querySelector(".berry-score").textContent = "Score " + game.score + (game.combo > 1 ? "  ×" + game.combo : "");
     }
@@ -161,7 +161,7 @@
           for (const ev of game.events) {
             if (ev.type === "shake") {
               se(SHAKE_SE[ev.quality]);
-              flash = { t: 40, text: { perfect: "Perfect shake!" + (ev.bonus ? " +" + Math.round(ev.bonus / 60) + "s" : ""), good: "Good shake!", bad: "Unripe…", over: "Too rough!" }[ev.quality],
+              flash = { t: 40, text: { perfect: "Perfect shake!" + (ev.bonus ? " +" + Math.max(1, Math.round(ev.bonus / 60)) + "s" : ""), good: "Good shake!", bad: "Unripe…", over: "Too rough!" }[ev.quality],
                 colour: { perfect: "#a8f07a", good: "#f2e27a", bad: "#e8e8e8", over: "#ff8a7a" }[ev.quality] };
             } else if (ev.type === "catch") {
               se(ev.kind === "green" ? "se_failure" : ev.kind === "gold" ? "se_shiny" : "se_bag_cursor");

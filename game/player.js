@@ -365,10 +365,10 @@
       item = RENAMED[item] || item;
       if (window.ITEMS[item] && n > 0) player.bag[item] = Math.min(MAX_ITEM_COUNT, n | 0);
     }
-    // Everyone has the Explorer Kit and the Berry Pouch, saves from before them too (not Wes, in
-    // Orre: game/orre.js has your own Bag put away).
+    // Everyone has the Explorer Kit, the Berry Pouch and the Fishing Rod, saves from before
+    // them too (not Wes, in Orre: game/orre.js has your own Bag put away).
     const asWes = !!(data.flags && data.flags.orreStash);
-    if (!asWes) player.bag["explorer-kit"] = player.bag["berry-pouch"] = 1;
+    if (!asWes) player.bag["explorer-kit"] = player.bag["berry-pouch"] = player.bag["fishing-rod"] = 1;
     // Saves from before PC item storage get its starting Potion.
     player.pcItems = {};
     for (let [item, n] of Object.entries(data.pcItems || STARTING_PC_ITEMS)) {

@@ -30,7 +30,7 @@
   // once you've beaten its Karate Master.
   const DENS = [
     ["route1", "Route1", 5, 8, "Normal"],
-    ["viridianForest", "ViridianForest", 13, 8, "Bug"],
+    ["viridianForest", "ViridianForest", 3, 33, "Bug"],   // (the south-west corner, below the grass)
     ["seafoam", "SeafoamIslands_1F", 4, 17, "Ice"],
     ["powerPlant", "PowerPlant", 2, 10, "Electric"],
     ["dojo", "SaffronCity_Dojo_DenRoom", 6, 5, "Fighting"],
@@ -44,13 +44,13 @@
   ].map(([id, map, x, y, type]) => ({ id, map, x, y, type, script: "RaidDen_" + id }));
   const byScript = (script) => DENS.find((d) => d.script === script) || null;
 
-  // Each den on its map: a person who doesn't move, drawn as the den
+  // Each den on its map: a person who doesn't move or turn (inanimate), drawn as the den
   // (assets/world/sprites/raid_den.png; raid_den_active.png while it glows).
   for (const d of DENS) {
     const m = window.WORLD_MAPS && window.WORLD_MAPS[d.map];
     if (!m || m.people.some((p) => p.script === d.script)) continue;
     m.people.push({ id: 900 + DENS.indexOf(d), x: d.x, y: d.y, movement: "face_down", rangeX: 0, rangeY: 0, script: d.script,
-      flag: null, text: null, localId: "LOCALID_RAID_DEN", sprite: "raid_den", width: 16, height: 32, frames: 1 });
+      flag: null, text: null, localId: "LOCALID_RAID_DEN", sprite: "raid_den", width: 16, height: 32, frames: 1, inanimate: true });
   }
 
   // By stars (1-5; index 0 unused): the Badges a raid needs, its Pokémon's

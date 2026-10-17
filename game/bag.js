@@ -179,7 +179,7 @@
   function view(record) {
     return {
       hp: record.hp, maxhp: window.Party.maxHp(record), status: record.status, fainted: record.hp <= 0,
-      confused: false, evs: record.evs, level: record.level,
+      confused: false, evs: record.evs, level: record.level, happiness: record.happiness,
       moves: record.moves.map((m) => ({ pp: m.pp, maxpp: window.Party.maxPp(m), base: window.MOVES[m.name].pp, ppUps: m.ppUps || 0 }))
     };
   }
@@ -286,8 +286,9 @@
       m.pp = v.moves[i].pp;
       if (v.moves[i].ppUps) m.ppUps = v.moves[i].ppUps;
     });
-    // An HP Up raises max HP; current HP goes up by the same amount.
-    if (result.ev && record.hp > 0) record.hp += window.Party.maxHp(record) - v.maxhp;
+    // An HP Up raises max HP; current HP goes up by the same amount (a Pomeg
+    // Berry lowers it, down by as much, but not to fainting).
+    if ((result.ev || result.evDown) && record.hp > 0) record.hp = Math.max(1, record.hp + window.Party.maxHp(record) - v.maxhp);
     return result;
   }
 

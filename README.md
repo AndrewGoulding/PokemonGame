@@ -129,7 +129,13 @@ if its IV were 31, a Gold Bottle Cap all of them; the IV itself stays as it
 was, for breeding, and the Summary's IV page shows 31. It holds medicine, evolution
 stones (each item for evolving says "Evolves certain Pokémon when used."), Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
 the Exp. Share, Oak's Parcel, the Town Map and the Fishing Rod (you start
-with it; see **Fishing** below). After the Bag come FireRed's Pokédex, the **National
+with it, and older saves are given it; see **Fishing** below). In the
+Berries pocket, A on a berry also offers **Sort**: the Berries in their
+tiers (the berry tree's: Basic, Restoring, Contest, EV-reducing, ..., each
+berry's description saying its tier), or back to A to Z. The EV-lowering
+Berries (Pomeg, Kelpsy, Qualot, Hondew, Grepa, Tamato) work as from Gen 7:
+used on a Pokémon, its stat's EVs go down 10 and it grows friendlier (10, 5
+or 2), as their descriptions now say. After the Bag come FireRed's Pokédex, the **National
 Pokédex** from the moment Oak hands it over (Pokémon from beyond Kanto turn
 up in the campaign; FireRed's IsNationalPokedexEnabled is `Player.nationalDex`:
 its table of contents is FireRed's National one, with Seen and Owned each
@@ -1417,7 +1423,8 @@ switches it), so START, then hold START, right, let go, does both.
 
 **Tera Raid dens** (this game's own, after Scarlet and Violet's Tera Raid
 Battles; `game/raid-dens.js`): twelve dens, each of one type: Route 1
-(Normal, in the flower meadow), Viridian Forest (Bug), Seafoam Islands 1F
+(Normal, in the flower meadow), Viridian Forest (Bug, its south-west
+corner below the tall grass), Seafoam Islands 1F
 (Ice), the Power Plant (Electric), the Fighting Dojo's back room (Fighting),
 Mt. Moon 1F (Rock), Rock Tunnel 1F (Ground), Route 25 by the sea (Water),
 Route 18's flower garden (Flying), Cinnabar Island's beach (Fire), Lavender
@@ -1433,7 +1440,8 @@ Lure most often brings 1 star (50/30/15/4/1%), a Super Lure 2 or 3
 (20/35/28/12/5%) and a Max Lure 3 or 4 (5/15/30/30/20%). The raid is a
 battle with its Pokémon (from each type's list for that many stars, at Lv.
 12, 20, 35, 50 or 65 and up to 3 more, with IVs of 10 to 31), which
-Terastallizes into the den's type as soon as it's out and has 1.5, 2, 2.5, 3
+comes out already Terastallized into the den's type (no animation: its
+Tera colours and symbol from the start) and has 1.5, 2, 2.5, 3
 or 4 times its HP; it battles as a trainer's Pokémon does, and can't be caught
 mid-battle. You send in one Pokémon, chosen from your party when you take
 the raid on (as in Scarlet and Violet), and it battles alone. You have 10, 10, 12, 15 or 20 turns to win (as Scarlet and
@@ -1441,12 +1449,18 @@ Violet's raids have a time limit): told at the start, then "3 turns left!",
 "2 turns left!" and "This is the last turn!"; out of turns, "The Tera Raid
 Pokémon's power grew too strong!" and you're blown out. Lose, or run out of
 turns, and you're thrown out of the den (your Pokémon are restored) and it
-keeps glowing. Win and you get money (₽1,500 / 3,000 / 6,000 / 10,000
+keeps glowing. Win and the battle goes on: the Tera Raid Pokémon is back,
+worn out, and you're asked whether to catch it; YES, then which of your
+Balls, and FireRed's throw and catch (it can't miss; it keeps its Tera
+Type). Then a FireRed-style screen of what you won (`ui/raid-rewards.js`:
+the stars and the Pokémon beaten, then the money and each item with its
+icon and how many, six to a page): money (₽1,500 / 3,000 / 6,000 / 10,000
 / 20,000), Exp. Candies (XS for 1 star up to L and XL for 5), vitamins (1 to
 5) and Berries (2 to 6: everyday ones for 1 star, Sitrus and Lum, the
 EV-lowering ones and the rare pinch Berries further up) and Tera Shards of
-the den's type (4, 6, 10, 15 or 25), and the den goes to sleep again; then you may catch its Pokémon in any Ball you have (it can't
-miss), keeping its Tera Type. The Fighting Dojo's back room is behind a
+the den's type (4, 6, 10, 15 or 25); and the den goes to sleep again. A
+den doesn't turn to face you when you talk to it (it's inanimate, as item
+balls are). The Fighting Dojo's back room is behind a
 sliding door in its back wall, which the Karate Master opens once you've
 beaten him (he tells you of the den); `tools/build-raid-dens.js` draws the
 dens and builds the room from the Dojo's tiles into `data/dojo-den-room.js`.
@@ -1776,8 +1790,9 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   caught): a ripe one is 10 points, a gold one 30, every good
   catch in a row adds a combo bonus (2 a catch, up to 20), a green one caught
   costs 10 and breaks the combo, and so does letting a ripe or gold one drop.
-  A game lasts 30 seconds, and every perfect shake adds 2 more (never more
-  than 30 left); when time's up you can't shake the tree, but you can still
+  A game lasts 30 seconds, and 10 more for every 10 farming levels (40 at
+  level 10, 130 at 100); every perfect shake adds 1 more (never more than the
+  game's full time left); when time's up you can't shake the tree, but you can still
   move until the last berries are down. You take home a berry and one more for every 60
   points, fewer if you caught many green ones or missed many; your **farming
   level** adds up to as many again (all of them again at level 100), and each
@@ -1803,7 +1818,8 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   changes its picture into the target's, and back. `tools/build-move-anims.js`
   draws the ball and splat from pokefirered.
 - **Catching**: the Gen 6 formula (HP, catch rate, ball and status bonuses,
-  four shake checks). Poké, Great, Ultra, Master, Net, Nest, Repeat, Timer,
+  four shake checks); this game's own catch rate for Bulbasaur, Charmander
+  and Squirtle is 120 (45 in the games). Poké, Great, Ultra, Master, Net, Nest, Repeat, Timer,
   Quick and Dusk Balls have their bonuses. No critical captures yet.
 - **The Safari Zone** (`engine/safari.js`, FireRed's): a species' catch factor
   is its catch rate × 100 / 1275 and its escape factor its Safari flee rate ×

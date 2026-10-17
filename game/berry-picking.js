@@ -12,9 +12,10 @@
 // gold one 30, and every good catch in a row adds a combo bonus (2 points a
 // catch in the combo, up to 20); a green one caught costs 10 and breaks the
 // combo, and so does letting a ripe or gold one drop. A berry is caught if
-// it touches you or your basket at all. 30 seconds a game, and every perfect
-// shake adds 2 more (up to the full 30 left); when time's up you can't shake
-// any more, but you can still move until the last berries are down.
+// it touches you or your basket at all. 30 seconds a game, 10 more for every
+// 10 farming levels, and every perfect shake adds 1 more (never more than the
+// game's full time left); when time's up you can't shake any more, but you
+// can still move until the last berries are down.
 //
 // The berries you take home: one, and one more for every 60 points, fewer
 // if you caught a lot of green ones or missed a lot; your farming level adds
@@ -38,7 +39,9 @@
   const BASKET_BOX = { half: BASKET_HALF + 1, y0: CATCH_Y - 1, y1: CATCH_Y + 7 };
   const BODY_BOX = { half: 6, y0: CATCH_Y + 4, y1: CATCH_Y + 25 };
   const BERRY_R = 3;
-  const PERFECT_BONUS = 2 * 60;       // a perfect shake's extra time (frames)
+  const PERFECT_BONUS = 60;           // a perfect shake's extra time (frames)
+  const LEVEL_BONUS = 10 * 60;        // and every 10 farming levels' (frames)
+  const framesFor = (level) => FRAMES + LEVEL_BONUS * Math.floor((level || 1) / 10);
   const CANOPY = { x0: 56, x1: 184, y0: 22, y1: 66 };
   const FALL = { ripe: 0.9, green: 1.4, gold: 2.2 };   // pixels a frame
   const POINTS = { ripe: 10, gold: 30, green: -10, overShake: -15 };
@@ -69,7 +72,7 @@
 
   function create(rng, level) {
     rng = rng || Math.random;
-    return { rng, level: level || 1, t: 0, left: FRAMES, x: W / 2, facing: "up", sway: 0, swayDir: 1,
+    return { rng, level: level || 1, t: 0, left: framesFor(level), total: framesFor(level), x: W / 2, facing: "up", sway: 0, swayDir: 1,
       sweet: 0.2 + rng() * 0.6, berries: [], score: 0, combo: 0, bestCombo: 0,
       ripe: 0, gold: 0, bad: 0, misses: 0, shakes: 0, over: false, events: [] };
   }
@@ -97,7 +100,7 @@
     g.swayDir = -g.swayDir;
     g.sweet = 0.15 + rng() * 0.7;
     // (A perfect shake: a little more time.)
-    const bonus = q === "perfect" ? Math.min(PERFECT_BONUS, FRAMES - g.left) : 0;
+    const bonus = q === "perfect" ? Math.min(PERFECT_BONUS, g.total - g.left) : 0;
     g.left += bonus;
     g.events.push({ type: "shake", quality: q, bonus });
   }
@@ -180,7 +183,7 @@
   }
 
   const M = () => window.Mining;
-  window.BerryPicking = { W, H, FRAMES, CATCH_Y, BASKET_HALF, CANOPY, FALL, POINTS, TIERS, SWEET, NEAR, PERFECT_BONUS,
+  window.BerryPicking = { W, H, FRAMES, CATCH_Y, BASKET_HALF, CANOPY, FALL, POINTS, TIERS, SWEET, NEAR, PERFECT_BONUS, LEVEL_BONUS, framesFor,
     create, step, touches, meterAt, shakeQuality, result, rewards, pickBerry, tiersAt,
     get MAX_LEVEL() { return M().MAX_LEVEL; },
     level: (xp) => M().level(xp), toNext: (xp) => M().toNext(xp), progress: (xp) => M().progress(xp) };

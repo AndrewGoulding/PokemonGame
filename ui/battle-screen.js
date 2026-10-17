@@ -2619,6 +2619,14 @@
     el.field.classList.remove("doubles", "tag");
     view = { p1: { species: null }, p2: { species: null }, p1b: { species: null }, p2b: { species: null } };
     teraShown = {};
+    // (A Tera Raid's Pokémon comes out already Terastallized: no animation, just its look.)
+    for (const m of battle.sides.p2.pokemon) {
+      if (!m.teraStart || !battle.canTera(m)) continue;
+      const n = battle.events.length;
+      battle.terastallize(m);
+      battle.events.splice(n);
+      teraShown["p2:" + m.teamIndex] = m.terastallized;
+    }
     el.ball.classList.add("hidden");
     for (const k of POSITIONS) renderSide(k);
     await intro(Object.assign({}, config, { trainer: "old_man", p2: { team: [{}] } }));
@@ -2665,6 +2673,14 @@
     el.field.classList.toggle("tag", !!battle.sides.p1.tag);
     view = { p1: { species: null }, p2: { species: null }, p1b: { species: null }, p2b: { species: null } };
     teraShown = {};
+    // (A Tera Raid's Pokémon comes out already Terastallized: no animation, just its look.)
+    for (const m of battle.sides.p2.pokemon) {
+      if (!m.teraStart || !battle.canTera(m)) continue;
+      const n = battle.events.length;
+      battle.terastallize(m);
+      battle.events.splice(n);
+      teraShown["p2:" + m.teamIndex] = m.terastallized;
+    }
     el.ball.classList.add("hidden");
     for (const k of POSITIONS) renderSide(k);
     await intro(cfg);
@@ -2678,6 +2694,8 @@
     battle.start();
     raidAnnounced = -1;
     const status = await loop();
+    // (A Tera Raid won: the battle goes on, to catch it if you like.)
+    const raidBall = status !== "crashed" && cfg.raid && battle.winner === "p1" ? await raidCatch() : null;
     let outcome;
     if (status === "crashed") {
       await message("The battle engine hit an error (details in the browser console).");
@@ -2698,7 +2716,37 @@
     else if (battle.winner === "p2") outcome = "lost";
     else outcome = "draw";
     hbStop();
-    return { outcome, battle };
+    return { outcome, battle, raidBall };
+  }
+
+  // After a Tera Raid's Pokémon is beaten (this game's own): it's back, worn
+  // out; YES / NO to catch it, then which Ball (cfg.raidBalls(): [{ id, name }]
+  // of yours), and the Ball's throw and catch as FireRed's (it can't miss).
+  // -> the Ball used, or null.
+  async function raidCatch() {
+    const mon = battle.sides.p2.pokemon[0];
+    const v = view.p2;
+    v.fainted = false;
+    renderSide("p2");
+    el.sides.p2.info.classList.add("hidden");
+    await spriteReady(el.sides.p2.sprite);
+    await message("The Tera Raid Pokémon\n" + mon.name + " is worn out!");
+    say("Will you catch " + mon.name + "?");
+    await window.Screen.printed();
+    if (!(await window.GbaMenus.battleYesNo(overlay(), { frame: frame() }))) { say(""); return null; }
+    const balls = config.raidBalls ? config.raidBalls() : [];
+    if (!balls.length) { await message("You don't have any Poké Balls…"); return null; }
+    say("Which Ball will you use?");
+    await window.Screen.printed();
+    const pick = await window.GbaMenus.listMenu(overlay(), { left: 19, top: 1, width: 10, frame: frame(),
+      items: balls.map((b) => b.name).concat(["Cancel"]) });
+    overlay().classList.add("hidden");
+    say("");
+    if (!pick || pick.index == null || pick.index < 0 || pick.index >= balls.length) return null;
+    const ball = balls[pick.index].id;
+    battle.events.push(["-ball", "p1", ball, mon.ident, 3, "caught"], ["caught", mon.ident, ball]);
+    await playNewEvents();
+    return ball;
   }
 
   window.BattleScreen = { run, oldManTutorial, ballName };

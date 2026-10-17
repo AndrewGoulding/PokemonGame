@@ -387,6 +387,8 @@
     st.handFrame = 3;
     await frames(8, (i) => { st.handY2 = 7 - i; });
     st.handY2 = 0;
+    // (Back up: a fist while it holds something, else the open hand bobbing again.)
+    st.handFrame = st.held || st.heldItem ? 3 : null;
   }
   // The party panel unrolling (20 frames, SE_WIN_OPEN) or rolling back up.
   async function showParty(on) {

@@ -642,6 +642,30 @@ for (const share of [false, true]) {
   assert(dojo.collision[door.y * dojo.width + door.x], "the wall, until the door's patch is on");
 }
 
+// The EV-lowering Berries: their stat's EVs down 10, friendship up, told as such;
+// the starters' catch rates; the Fishing Rod for every save.
+{
+  const r = Party.create("Pikachu", 20, { rng: () => 0.5 });
+  r.evs = { hp: 25, atk: 4 }; r.happiness = 100;
+  const hp0 = Party.maxHp(r); r.hp = hp0;
+  assert(Bag.canUseOn(r, "pomeg-berry") && Bag.pocket("pomeg-berry") === "Berries");
+  const out = Bag.useOn(r, "pomeg-berry");
+  assert.deepStrictEqual([out.evDown, out.evStat, r.evs.hp], [10, "hp", 15]);
+  assert(r.happiness > 100, "friendlier");
+  assert(r.hp <= Party.maxHp(r) && r.hp >= 1);
+  Bag.useOn(r, "kelpsy-berry");
+  assert.strictEqual(r.evs.atk, 0, "not below 0");
+  const maxed = Object.assign(Party.create("Pikachu", 20), { evs: {}, happiness: 255 });
+  assert(!Bag.canUseOn(maxed, "grepa-berry"), "nothing to lower and as friendly as can be");
+  for (const [b, st] of [["pomeg", "HP"], ["kelpsy", "Attack"], ["qualot", "Defense"], ["hondew", "Sp. Atk"], ["grepa", "Sp. Def"], ["tamato", "Speed"]]) {
+    assert(/friendly/.test(Bag.description(b + "-berry")) && Bag.description(b + "-berry").includes("base " + st), b);
+  }
+  assert.deepStrictEqual(["Bulbasaur", "Charmander", "Squirtle"].map((sp) => DEX[sp].captureRate), [120, 120, 120]);
+  assert.strictEqual(Player.create("RED", 0).bag["fishing-rod"], 1, "a new game starts with the Fishing Rod");
+  const before = JSON.parse(Player.serialize(Object.assign(Player.create("RED", 0), { bag: { potion: 1 } })));
+  assert.strictEqual(Player.load(before).player.bag["fishing-rod"], 1, "and so does an older save");
+}
+
 // Tera Shards: one of each type, in the Power-up pocket, with a picture; 50
 // change a Pokémon's Tera Type (not to the one it has, nor Ogerpon's).
 {
@@ -895,8 +919,8 @@ for (const share of [false, true]) {
   const oldSave = Object.assign(Player.create("T"), { party: [Party.create("Pidgey", 5, { rng })], bag: { "tm94-oras": 1 } });
   delete oldSave.pcItems;
   assert.deepStrictEqual(Player.load(JSON.parse(JSON.stringify(oldSave))).player.pcItems, { potion: 1 }, "old saves get the PC Potion");
-  assert.deepStrictEqual(Player.load(oldSave).player.bag, { tm99: 1, "exp-share": 1, "explorer-kit": 1, "berry-pouch": 1 },
-    "old saves get Secret Power, the Exp. Share, the Explorer Kit and the Berry Pouch");
+  assert.deepStrictEqual(Player.load(oldSave).player.bag, { tm99: 1, "exp-share": 1, "explorer-kit": 1, "berry-pouch": 1, "fishing-rod": 1 },
+    "old saves get Secret Power, the Exp. Share, the Explorer Kit, the Berry Pouch and the Fishing Rod");
   const v1 = Object.assign(Player.create("T"), { version: 1, party: [Object.assign(Party.create("Pidgey", 5, { rng }), { item: "tm71" })],
     bag: { tm69: 1, tm70: 1, tm71: 1, tm93: 1, tm94: 1, tm95: 1, tm100: 1, tm101: 1, hm05: 1, hm07: 1 }, pcItems: { tm24: 2 } });
   const fromV1 = Player.load(JSON.parse(JSON.stringify(v1))).player;
@@ -4562,7 +4586,9 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   for (let i = 0; i < 12 && !side.ripe; i++) B.step(side, { left: true });
   assert.strictEqual(side.ripe, 1, "walked into from the side");
   assert(!B.touches({ x: side.x + 30, y: B.CATCH_Y }, side.x), "not one well to the side");
-  // A perfect shake adds 2 seconds (never past 30 left).
+  // 30 seconds, and 10 more every 10 farming levels.
+  assert.deepStrictEqual([1, 9, 10, 25, 100].map((lv) => B.create(seq([0.5]), lv).left / 60), [30, 30, 40, 50, 130]);
+  // A perfect shake adds a second (never past the full time left).
   const pf = B.create(seq([0.5]), 1);
   for (let i = 0; i < 600; i++) B.step(pf, {});
   const leftBefore = pf.left;
@@ -4570,7 +4596,8 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   const ticks = leftBefore - pf.left;
   B.step(pf, { shake: true });
   assert.strictEqual(pf.events[0].quality, "perfect");
-  assert.strictEqual(pf.left, leftBefore - ticks - 1 + B.PERFECT_BONUS, "two seconds more");
+  assert.strictEqual(B.PERFECT_BONUS, 60);
+  assert.strictEqual(pf.left, leftBefore - ticks - 1 + B.PERFECT_BONUS, "a second more");
   // Time up with berries still falling: you can still move, and it's over once they're down.
   const end = B.create(seq([0.5]), 1);
   end.left = 1;
