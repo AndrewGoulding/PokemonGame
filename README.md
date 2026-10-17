@@ -120,7 +120,7 @@ Hidden Ability, nor a species with one). The Ability Patch (as in Scarlet and
 Violet; dig it up with the Explorer Kit) switches an ordinary Ability to the
 species' Hidden Ability, or the Hidden Ability back to its first ordinary one
 (it asks first too); a Hidden Ability stays hidden when the Pokémon evolves. Wings add one EV
-in their stat, as far as 252 (vitamins stop at 100). Exp. Candies (Sword and Shield's) give 100 (XS), 800 (S),
+in their stat; Wings and vitamins alike go up to 252 in a stat (510 in all). Exp. Candies (Sword and Shield's) give 100 (XS), 800 (S),
 3,000 (M), 10,000 (L) or 30,000 (XL) Exp. Points: each level they bring is told, with its moves to
 learn, and then it evolves if it can. Bottle Caps are Hyper Training, as in
 Sword and Shield and Scarlet and Violet: on a Pokémon of Lv. 50 or more, a
@@ -131,8 +131,8 @@ stones (each item for evolving says "Evolves certain Pokémon when used."), Rare
 the Exp. Share, Oak's Parcel, the Town Map and the Fishing Rod (you start
 with it, and older saves are given it; see **Fishing** below). In the
 Berries pocket, A on a berry also offers **Sort**: the Berries in their
-tiers (the berry tree's: Basic, Restoring, Contest, EV-reducing, ..., each
-berry's description saying its tier), or back to A to Z. The EV-lowering
+tiers (the berry tree's: Basic, Restoring, Contest, EV-reducing, ...), or
+back to A to Z ("The berries are now sorted."). The EV-lowering
 Berries (Pomeg, Kelpsy, Qualot, Hondew, Grepa, Tamato) work as from Gen 7:
 used on a Pokémon, its stat's EVs go down 10 and it grows friendlier (10, 5
 or 2), as their descriptions now say. After the Bag come FireRed's Pokédex, the **National
@@ -1074,7 +1074,7 @@ theirs bounces in and comes out), Prof. Oak's Aide giving HM05 Flash for ten kin
 caught, your rival Gary on Route 22 (Pidgey and Eevee, as in Yellow), Red
 catching up with you at the north end of Viridian Forest (with the starter
 that beats yours and Pikachu), the League gate guard, Pewter's Gym guide
-and Museum guide walking you over, the Museum's ₽50 ticket, the Old Amber,
+and Museum guide walking you over, the Museum's ₽50 ticket, the Old Amber (and, in its room, this game's own fossil doctor, who revives fossils as Cinnabar's does: one left with either is ready from either once you've left and come back),
 the Seismic Toss tutor, Brock (Zubat, Geodude, Vulpix and Onix) with the Boulder Badge and TM39, Leaf waiting outside the Gym
 afterwards (she waits a few steps from the door, sees you and walks over) for a battle (Butterfree, which Terastallizes into a pure Flying type, her starter and a Jigglypuff; beat her and she gives you TM54 False Swipe), the Mega Punch and Mega Kick tutors (who teach
 again and again, for ₽1,000 each time), the
@@ -1451,14 +1451,14 @@ Violet's raids have a time limit): told at the start, then "3 turns left!",
 "2 turns left!" and "This is the last turn!"; out of turns, "The Tera Raid
 Pokémon's power grew too strong!" and you're blown out. Lose, or run out of
 turns, and you're thrown out of the den (your Pokémon are restored) and it
-keeps glowing. Win and the battle goes on: the Tera Raid Pokémon is back,
+keeps glowing. Win and the battle goes on: the Tera Raid Pokémon stays there,
 worn out, and you're asked whether to catch it; YES, then which of your
 Balls, and FireRed's throw and catch (it can't miss; it keeps its Tera
 Type). Then a FireRed-style screen of what you won (`ui/raid-rewards.js`:
 the stars and the Pokémon beaten, then the money and each item with its
 icon and how many, six to a page): money (₽1,500 / 3,000 / 6,000 / 10,000
 / 20,000), Exp. Candies (XS for 1 star up to L and XL for 5), Wings for 1 and
-2 stars (3 and 5) and vitamins from 3 stars (2, 3 and 5) and Berries (2 to 6: everyday ones for 1 star, Sitrus and Lum, the
+2 stars (5 and 10) and vitamins from 3 stars (2, 3 and 5) and Berries (2 to 6: everyday ones for 1 star, Sitrus and Lum, the
 EV-lowering ones and the rare pinch Berries further up) and Tera Shards of
 the den's type (4, 6, 10, 15 or 25); and the den goes to sleep again. A
 den doesn't turn to face you when you talk to it (it's inanimate, as item
@@ -1760,7 +1760,7 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   (Mt. Moon) to dig in the wall, as in Diamond and Pearl's Underground. Hit
   tiles (the D-pad and A, or tap / click them; B or tapping the tool switches
   it) with the Pickaxe (1 energy) or the wider Hammer (2 energy) to clear
-  the rock (1-6 layers; grey bedrock can't be dug) and uncover buried
+  the rock (1-6 layers; no bedrock here: every tile can be dug) and uncover buried
   treasures (2 up to mining level 10, 3 up to 20, then 4). The dig ends when every treasure is out (they go in your bag) or
   your energy runs out (40 at mining level 1, and 2 more each level: 238 at
   level 100). What a hit dug up is told under the board until the next hit.
@@ -1777,8 +1777,8 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   Kanto's (Helix, Dome, Old Amber) in Mt. Moon; later regions' fossils will
   Tools (SELECT, or B, changes tool): the Pickaxe; the Hammer from mining
   level 5 (the eight tiles round it too, 2 energy); the Bomb from level 10
-  (goes off somewhere at random: 2 layers off the tiles close by, 1 off those
-  a little further, 4 energy); the Survey Kit from level 20 (digs nothing,
+  (goes off somewhere at random: 2 layers off the tiles within 2 of it, 1 off
+  those out to 3 or so, 4 energy); the Survey Kit from level 20 (digs nothing,
   but tells you what's still buried, 2 energy). A level that brings a new
   tool says so.
   get caves of their own. The rules are in `game/mining.js`, the screen in `ui/mining.js`.
@@ -1865,7 +1865,7 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
 - **X items**: X Attack, Defense, Sp. Atk, Sp. Def, Speed and Accuracy raise
   that stat of the Pokémon in battle one stage (Gen 6).
 - **Items**: Gen 6 effects for potions and drinks, status cures, Revives, PP
-  restores, vitamins (10 EVs each, up to 100) and Rare Candy. In battle, using
+  restores, vitamins (10 EVs each, up to 252 in a stat, as from Sword and Shield) and Rare Candy. In battle, using
   an item takes your turn and happens before moves.
 - **HMs**: one set for every region: HM01 Cut, HM02 Fly, HM03 Surf, HM04
   Strength, HM05 Flash, HM06 Whirlpool, HM07 Waterfall, HM08 Rock Smash,

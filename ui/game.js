@@ -1216,8 +1216,7 @@
         .map((id) => ({
           id, name: Bag.name(id), icon: Bag.sprite(id),
           qty: Bag.isMachine(id) || Bag.isKeyItem(id) ? null : player.bag[id],
-          desc: Bag.description(id) + (id === "exp-share" ? (expShareOn() ? "\nIt's on." : "\nIt's off.") : "") +
-            (tiers && berryTier(id) && Bag.description(id).split("\n").length < 3 ? "\n(" + berryTier(id).name + " berry)" : "")
+          desc: Bag.description(id) + (id === "exp-share" ? (expShareOn() ? "\nIt's on." : "\nIt's off.") : "")
         }))
     }));
   }
@@ -1253,7 +1252,7 @@
         // Berries: by their tiers (Basic, Restoring, Contest, ...), or back to A to Z.
         const byTier = player.flags.berrySort !== "tier";
         player.flags.berrySort = byTier ? "tier" : "name";
-        await message(byTier ? "Your Berries are sorted by tier:\nBasic, Restoring, Contest and on." : "Your Berries are sorted A to Z.");
+        await message("The berries are now sorted.");
       }
       else if (what === "use" && Bag.isKeyItem(id)) { if ((await useKeyItem(id)) === "escaped") return "escaped"; }
       else if (what === "use" && (id in REPEL_STEPS || id in LURE_STEPS)) await useRepel(id);
@@ -3976,6 +3975,7 @@
         await inGameTrade(TRADES.tangeny);
         return;
       case "CinnabarIsland_PokemonLab_ExperimentRoom_EventScript_FossilScientist":
+      case PEWTER_FOSSIL_SCIENTIST:
         await fossilScientist();
         return;
       case "CinnabarIsland_PokemonLab_ResearchRoom_EventScript_MetronomeTutor":
@@ -9767,6 +9767,18 @@
     { item: "dome-fossil", species: "Kabuto", has: (f) => f.mtMoonFossil === "dome-fossil", flag: "revivedDome" },
     { item: "old-amber", species: "Aerodactyl", has: (f) => !!f.gotOldAmber, flag: "revivedAmber" }
   ];
+  // (This game's own: another such doctor in Pewter's Museum, in the Old
+  // Amber's room, the same at it as Cinnabar's; a fossil left with either is
+  // ready from either once you've left and come back.)
+  const PEWTER_FOSSIL_SCIENTIST = "PewterCity_Museum_1F_EventScript_FossilScientist";
+  {
+    const m = window.WORLD_MAPS.PewterCity_Museum_1F;
+    if (m && !m.people.some((p) => p.script === PEWTER_FOSSIL_SCIENTIST)) {
+      m.people.push({ id: 950, x: 24, y: 3, movement: "face_down", rangeX: 0, rangeY: 0, script: PEWTER_FOSSIL_SCIENTIST, flag: null,
+        text: null, localId: "LOCALID_PEWTER_FOSSIL_SCIENTIST", sprite: "scientist", width: 16, height: 32, frames: 10 });
+    }
+    SPECIAL.add(PEWTER_FOSSIL_SCIENTIST);
+  }
   async function fossilScientist() {
     const f = player.flags, X = (k) => T("CinnabarIsland_PokemonLab_ExperimentRoom_Text_" + k);
     const mtMoon = FOSSILS.slice(0, 2).find((fo) => fo.has(f));
@@ -10317,8 +10329,8 @@
     if (script === "enter:IndigoPlateau_PokemonCenter_1F") { player.flags.lastCenter = "IndigoPlateau_PokemonCenter_1F"; return false; }
     // Cinnabar Gym's door, locked until you've the Secret Key.
     if (script === "CinnabarIsland_EventScript_GymDoorLocked") return !player.flags.FLAG_HIDE_POKEMON_MANSION_B1F_SECRET_KEY;
-    // Back in the Pokémon Lab, a fossil you left with the doctor is ready.
-    if (script === "enter:CinnabarIsland_PokemonLab_Entrance") {
+    // Back in the Pokémon Lab (or Pewter's Museum), a fossil you left with the doctor is ready.
+    if (script === "enter:CinnabarIsland_PokemonLab_Entrance" || script === "enter:PewterCity_Museum_1F") {
       if (player.flags.fossilRevive) player.flags.fossilRevive.ready = true;
       return false;
     }

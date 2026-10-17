@@ -1339,6 +1339,13 @@
         setHp(c, ev[4]);
         return async () => { await hbSettled(); await message("The battlers shared their pain!"); };
       case "faint":
+        // (A Tera Raid's Pokémon beaten stays where it is, worn out, to be caught.)
+        if (config.raid && side === "p2") {
+          if (config.victoryMusic && window.GameAudio) window.GameAudio.music(config.victoryMusic);
+          v.hp = 0;
+          el.sides[pos].info.classList.add("hidden");
+          return "The Tera Raid Pokémon\n" + nameOf(a) + " is worn out!";
+        }
         cry(pos, { faint: true });
         setTimeout(() => sfx("se_faint"), 300);
         // The foe's last Pokémon down: the victory theme (over the Exp. messages).
@@ -2728,18 +2735,13 @@
     return { outcome, battle, raidBall };
   }
 
-  // After a Tera Raid's Pokémon is beaten (this game's own): it's back, worn
-  // out; YES / NO to catch it, then which Ball (cfg.raidBalls(): [{ id, name }]
+  // After a Tera Raid's Pokémon is beaten (this game's own): still there, worn
+  // out (the "faint" event leaves it be); YES / NO to catch it, then which Ball (cfg.raidBalls(): [{ id, name }]
   // of yours), and the Ball's throw and catch as FireRed's (it can't miss).
   // -> the Ball used, or null.
   async function raidCatch() {
     const mon = battle.sides.p2.pokemon[0];
-    const v = view.p2;
-    v.fainted = false;
-    renderSide("p2");
     el.sides.p2.info.classList.add("hidden");
-    await spriteReady(el.sides.p2.sprite);
-    await message("The Tera Raid Pokémon\n" + mon.name + " is worn out!");
     say("Will you catch " + mon.name + "?");
     await window.Screen.printed();
     if (!(await window.GbaMenus.battleYesNo(overlay(), { frame: frame() }))) { say(""); return null; }

@@ -164,8 +164,8 @@
   // By stars: money, Exp. Candies, how many Wings (1 and 2 stars) or vitamins
   // (3 stars and up), and how many Berries from which kinds.
   const REWARDS = [null,
-    { money: 1500, candies: [["exp-candy-xs", 3]], wings: 3, vitamins: 0, berries: [2, ["common"]] },
-    { money: 3000, candies: [["exp-candy-xs", 3], ["exp-candy-s", 2]], wings: 5, vitamins: 0, berries: [3, ["common", "good"]] },
+    { money: 1500, candies: [["exp-candy-xs", 3]], wings: 5, vitamins: 0, berries: [2, ["common"]] },
+    { money: 3000, candies: [["exp-candy-xs", 3], ["exp-candy-s", 2]], wings: 10, vitamins: 0, berries: [3, ["common", "good"]] },
     { money: 6000, candies: [["exp-candy-s", 3], ["exp-candy-m", 2]], vitamins: 2, berries: [4, ["good"]] },
     { money: 10000, candies: [["exp-candy-m", 3], ["exp-candy-l", 2]], vitamins: 3, berries: [5, ["good", "training"]] },
     { money: 20000, candies: [["exp-candy-l", 3], ["exp-candy-xl", 2]], vitamins: 5, berries: [6, ["training", "rare"]] }

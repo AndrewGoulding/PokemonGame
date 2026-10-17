@@ -82,9 +82,9 @@
     "energy-powder": [-5, -5, -10], "heal-powder": [-5, -5, -10], "energy-root": [-10, -10, -15], "revival-herb": [-15, -15, -20]
   };
 
-  // Vitamins add 10 EVs, but only up to 100 in that stat (and 510 in total);
-  // Wings 1, up to 252.
-  const VITAMIN_EVS = 10, VITAMIN_CAP = 100, EV_TOTAL = 510, WING_EVS = 1, WING_CAP = 252, EV_BERRY_DROP = 10;
+  // Vitamins add 10 EVs, Wings 1, up to 252 in a stat (as from Sword and
+  // Shield: the most any stat can have) and 510 in total.
+  const VITAMIN_EVS = 10, VITAMIN_CAP = 252, EV_TOTAL = 510, WING_EVS = 1, WING_CAP = 252, EV_BERRY_DROP = 10;
 
   const curable = (eff, t) =>
     (t.status && (eff.cure === ALL || (eff.cure && eff.cure.includes(t.status)))) || (eff.confusion && t.confused);

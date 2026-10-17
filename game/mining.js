@@ -1,7 +1,8 @@
 // Digging in a cave wall: Diamond and Pearl's Underground mining game.
 //
 // The wall is 13 x 10 tiles of rock, each 1-6 layers deep. Two to four
-// treasures are buried in it, plus some bedrock that can't be dug. Each hit
+// treasures are buried in it (Diamond and Pearl's bedrock, which can't be
+// dug, is left out here). Each hit
 // takes layers off: the pickaxe 2 from the tile hit and 1 from the four
 // beside it; the hammer (from mining level 5) 2 from the tile and 1 from all
 // eight around it, but it takes twice the energy. This game's own tools too:
@@ -30,7 +31,7 @@
   ];
   const ENERGY_COST = Object.fromEntries(TOOLS.map((t) => [t.id, t.cost]));
   const tools = (lv) => TOOLS.filter((t) => (lv || 1) >= t.level);
-  const BOMB_NEAR = 1.5, BOMB_FAR = 2.5;   // (tiles from where it goes off: 2 layers, then 1)
+  const BOMB_NEAR = 2.2, BOMB_FAR = 3.6;   // (tiles from where it goes off: 2 layers, then 1)
   const XP_PER_HIT = 1, XP_PER_TREASURE = 10;
   // Energy for a dig: 40 at level 1, and 2 more each level (238 at level 100).
   const maxEnergy = (lv) => 40 + 2 * ((lv || 1) - 1);
@@ -155,7 +156,7 @@
       if (at) treasures.push(Object.assign({ item, found: false }, at));
     }
     const bedrock = new Array(WIDTH * HEIGHT).fill(false);
-    const rocks = 1 + Math.floor(rng() * 3);
+    const rocks = 0;   // (this game's: no bedrock, every tile can be dug)
     for (let i = 0; i < rocks; i++) {
       const at = place(BEDROCK[Math.floor(rng() * BEDROCK.length)], taken, rng);
       if (at) for (const [x, y] of at.cells) bedrock[y * WIDTH + x] = true;

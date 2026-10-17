@@ -534,8 +534,8 @@ for (const share of [false, true]) {
   assert.strictEqual(r.moves[0].pp, 10);
   Bag.useOn(r, "max-elixir");
   assert(r.moves.every((m) => m.pp === MOVES[m.name].pp));
-  for (let i = 0; i < 12; i++) if (Bag.canUseOn(r, "protein")) Bag.useOn(r, "protein");
-  assert.strictEqual(r.evs.atk, 100, "vitamins stop at 100 EVs");
+  for (let i = 0; i < 30; i++) if (Bag.canUseOn(r, "protein")) Bag.useOn(r, "protein");
+  assert.strictEqual(r.evs.atk, 252, "vitamins stop at 252 EVs");
 
   // Rare Candy: a level, the new level's moves, and friendship.
   const c = Party.create("Charmander", 16, { rng });
@@ -722,10 +722,14 @@ for (const share of [false, true]) {
   };
   const plain = tries(false), lured = tries(true);
   assert(lured > plain * 1.7 && lured < plain * 2.3, "lure " + plain + " -> " + lured);
-  // A Wing: 1 EV, up to 252; a vitamin stops at 100.
+  // A Wing: 1 EV; a vitamin 10; either up to 252 in a stat (510 in all).
+  const v = Party.create("Pidgey", 20, { rng });
+  v.evs = { atk: 248 };
+  assert.strictEqual(Bag.useOn(v, "protein").ev, 4, "a vitamin up to 252");
+  assert(!Bag.canUseOn(v, "protein") && !Bag.canUseOn(v, "muscle-wing"));
   const w = Party.create("Pidgey", 20, { rng });
   w.evs = { atk: 251 };
-  assert(Bag.canUseOn(w, "muscle-wing") && !Bag.canUseOn(w, "protein"));
+  assert(Bag.canUseOn(w, "muscle-wing") && Bag.canUseOn(w, "protein"));
   assert.strictEqual(Bag.useOn(w, "muscle-wing").ev, 1);
   assert.strictEqual(w.evs.atk, 252);
   assert(!Bag.canUseOn(w, "muscle-wing"));
