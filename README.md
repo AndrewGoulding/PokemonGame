@@ -329,7 +329,22 @@ and TM19 Giga Drain, TM103 here), and the Game Corner: buy Coins (50 for ₽1,00
 500 for ₽10,000, in FireRed's list, with your money and Coins in their boxes at
 the top left; up to 9,999 in the Coin Case), get a few from the gamblers,
 find them on the floor, and play FireRed's slot machines (its reels, odds,
-lines and payouts, from `src/slot_machine.c`); spend them in the Prize Room on
+lines and payouts, from `src/slot_machine.c`) or Texas Hold'em at the poker
+table (this game's own: `game/poker.js` has the rules, `ui/poker.js` the
+table). The dealer by the counter at the back seats you, once you have the
+Coin Case and at least 20 Coins, for a buy-in of 100, 200, 500 or 1,000 Coins
+(or all you have) in chips, against three regulars, a Gentleman, a Gamer and
+a Scientist, with 500 each (they buy back in when they're out). It's fixed
+limit: blinds of 5 and 10, bets and raises of 10 before the flop and on it
+and 20 on the turn and river, four bets a round at most; short stacks go all
+in, with side pots. On your turn pick Fold, Check or Call, or Bet or Raise
+(left / right and A, or tap); your cards show what they make so far. The
+regulars each guess their chance of winning by dealing the rest of the hand
+out a few hundred times and weigh it against the price of a call, in their
+own style (the Gentleman tight, the Gamer loose and given to bluffing, the
+Scientist in between). At a showdown everyone's cards turn over and the best
+five of seven win, pot by pot. Between hands, Next hand or Leave the table
+(B); your chips go back in the Coin Case as Coins. Spend Coins in the Prize Room on
 Abra, Clefairy, Dratini, Scyther or Porygon, TMs (Ice Beam, Thunderbolt, Shadow
 Ball, Flamethrower, and Iron Tail, TM104 here, since this game's TM23 is Smack
 Down) or held items, each counter's prizes in FireRed's list with your Coins

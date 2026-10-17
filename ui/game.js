@@ -2151,7 +2151,7 @@
     "EventScript_CutTree", "EventScript_RockSmash", "EventScript_StrengthBoulder", "Route5_PokemonDayCare_EventScript_DaycareMan", "UndergroundPath_NorthEntrance_EventScript_Saige",
     "Route5_SouthEntrance_EventScript_GuardTriggerLeft", "Route5_SouthEntrance_EventScript_GuardTriggerMid",
     "Route5_SouthEntrance_EventScript_GuardTriggerRight",
-    "Game_EventScript_Leaf", "Game_EventScript_TradebackGuy",
+    "Game_EventScript_Leaf", "Game_EventScript_TradebackGuy", "Game_EventScript_PokerDealer",
     "Route11_EastEntrance_2F_EventScript_Aide", "Route11_EastEntrance_2F_EventScript_Turner",
     "SSAnne_2F_Corridor_EventScript_RivalTriggerLeft", "SSAnne_2F_Corridor_EventScript_RivalTriggerMid",
     "SSAnne_2F_Corridor_EventScript_RivalTriggerRight", "SSAnne_CaptainsOffice_EventScript_Captain",
@@ -3967,6 +3967,7 @@
       // The Tradeback Guy (this game's): he trades with you and straight back,
       // so a Pokémon that evolves by trading does (Kadabra, Machoke, Graveler,
       // Haunter, and those holding their item: Onix with a Metal Coat, ...).
+      case "Game_EventScript_PokerDealer": await pokerTable(); return;
       case "Game_EventScript_TradebackGuy": {
         await say(["Hi! I'm the Tradeback Guy!", "Some Pokémon only evolve when\nthey're traded. Nobody to trade\nwith? Leave it to me!",
           "I'll trade you my Rattata, and then\ntrade your Pokémon right back!"]);
@@ -4743,6 +4744,12 @@
         movement: "face_down", text: null }, window.WORLD_SPRITES.tradeback));
     }
     if (map === "PokemonTower_7F" && megaTowerDue()) out.push(...megaTowerPeople());
+    // The poker dealer, by the counter at the back of the Game Corner (this game's own).
+    if (map === "CeladonCity_GameCorner") {
+      const clerk = window.WORLD_MAPS.CeladonCity_GameCorner.people.find((p) => /CoinsClerk$/.test(p.script));
+      out.push({ id: 902, localId: "LOCALID_POKER_DEALER", script: "Game_EventScript_PokerDealer", x: 13, y: 4, movement: "face_down",
+        text: null, sprite: clerk.sprite, width: clerk.width, height: clerk.height, frames: clerk.frames });
+    }
     if (leafWaiting(map)) {
       const at = LEAF_SPOTS[map];
       out.push(Object.assign({ id: 900, localId: LEAF, script: "Game_EventScript_Leaf", x: at.x, y: at.y,
@@ -6161,6 +6168,37 @@
     player.flags.coins = await window.SlotMachine.play({ machineId: id, coins: coins(), maxCoins: MAX_COINS, sfx, fanfare });
     show("world");
     await Overworld.resume();
+  }
+
+  // Texas Hold'em (game/poker.js, ui/poker.js; this game's own): the dealer
+  // seats you with the three regulars for a buy-in of coins (your chips), and
+  // what you have left when you get up goes back in your Coin Case.
+  const POKER_BUY_INS = [100, 200, 500, 1000];
+  async function pokerTable() {
+    if (!player.flags.gotCoinCase) { await say(T("CeladonCity_GameCorner_Text_CoinCaseIsRequired")); return; }
+    await say(["Welcome to the poker table!\nWe play Texas Hold'em, fixed limit.",
+      "Blinds are " + Poker.SMALL_BLIND + " and " + Poker.BIG_BLIND + " Coins; bets are " + Poker.BIG_BLIND + ",\nthen " + 2 * Poker.BIG_BLIND + " on the turn and river."]);
+    if (coins() < Poker.BIG_BLIND * 2) { await say("You'll need at least " + Poker.BIG_BLIND * 2 + " Coins to sit\ndown. Come back with more!"); return; }
+    coinsBox(0, 0);
+    const offers = POKER_BUY_INS.filter((n) => n < coins()).concat([coins()]);
+    let v;
+    try { v = await multichoice("How many Coins will you buy in for?", 18, 0, offers.map((n) => plainCoins(n) + " Coins").concat(["Cancel"])); }
+    finally { coinsBox(null); }
+    if (v < 0 || v >= offers.length) { await say("Maybe next time, then."); return; }
+    const buyIn = offers[v];
+    addCoins(-buyIn);
+    await say("Here are your chips. Good luck!");
+    Screen.say("");
+    show("scene");
+    clearMenu();
+    const chips = await PokerScreen.run(scene, Poker.create({ chips: buyIn, name: player.name }));
+    show("world");
+    await Overworld.resume();
+    addCoins(chips);
+    const diff = chips - buyIn;
+    await say(diff > 0 ? "You cashed out " + chips + " Coins: " + diff + " up!\nCome back anytime." : diff < 0 ? (chips ? "You cashed out " + chips + " Coins.\nBetter luck next time!" : "Better luck next time!")
+      : "You broke even! Come back anytime.");
+    await persist();
   }
 
   // The Prize Room's three counters (FireRed's prizes and prices). A TM

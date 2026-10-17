@@ -4120,3 +4120,67 @@ console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " 
   assert.deepStrictEqual(B.rewards(Object.assign({}, r, { berries: 0 }), 85, seq([0.5])), ["enigma-berry"], "the Enigma Berry from 85");
   assert(B.rewards(r, 1, Math.random).every((id) => B.TIERS[0].berries.includes(id)), "only Basic berries at level 1");
 }
+
+// Texas Hold'em (game/poker.js): hands, betting, side pots, and the regulars.
+{
+  const P = Poker;
+  const c = (s) => s.split(" ").map((x) => ({ rank: { T: 10, J: 11, Q: 12, K: 13, A: 14 }[x[0]] || +x[0], suit: x[1] }));
+  const name = (s) => P.best(c(s)).name;
+  assert.strictEqual(name("AS KS QS JS TS 2H 3D"), "Royal Flush");
+  assert.strictEqual(name("AS 2S 3S 4S 5S 9H 9D"), "Straight Flush, 5 high");
+  assert.strictEqual(name("9S 9H 9D 4C 4D 4H 3D"), "9s full of 4s", "the best full house of two trips");
+  assert.strictEqual(name("AH 2D 3C 4S 5H KD QD"), "Straight, 5 high", "ace low");
+  assert.strictEqual(name("KH KD 7C 7S 2H 2D 9C"), "Two Pair, Kings and 7s", "the best two of three pairs");
+  assert.strictEqual(name("AH KH 8H 4H 2H 3S 3D"), "Flush, Ace high");
+  assert(P.compare(P.best(c("AH AD KC 7S 2H 3D 9C")).score, P.best(c("AH AD QC 7S 2H 3D 9C")).score) > 0, "the kicker counts");
+  assert.strictEqual(P.compare(P.best(c("AH KD 2C 3S 9H TD JC")).score, P.best(c("AS KC 2D 3H 9C TS JD")).score), 0, "a split");
+  // A hand: blinds, and the big blind gets its option before the flop.
+  const rng = (() => { let s = 3; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+  const t = P.create({ chips: 200, rng });
+  t.button = 2;   // (it moves on to seat 3: you are the small blind)
+  P.startHand(t);
+  assert.deepStrictEqual(t.blinds, [0, 1]);
+  assert.deepStrictEqual([t.seats[0].bet, t.seats[1].bet, t.toAct], [5, 10, 2]);
+  P.act(t, { type: "call" }); P.act(t, { type: "call" }); P.act(t, { type: "call" });
+  assert.strictEqual(t.toAct, 1, "the big blind's option");
+  assert(P.options(t).canCheck && P.options(t).raiseTo === 20);
+  P.act(t, { type: "check" });
+  assert.deepStrictEqual([t.street, t.board.length, P.pot(t)], ["flop", 3, 40]);
+  // Bets are 20 on the turn; four bets a round at most.
+  P.act(t, { type: "check" }); P.act(t, { type: "check" }); P.act(t, { type: "check" }); P.act(t, { type: "check" });
+  assert.strictEqual(t.street, "turn");
+  P.act(t, { type: "raise" });
+  assert.strictEqual(t.currentBet, 20, "a turn bet is 20");
+  P.act(t, { type: "raise" }); P.act(t, { type: "raise" }); P.act(t, { type: "raise" });
+  assert(!P.options(t).canRaise, "capped at four bets");
+  // Everyone else folds: the last one in takes the pot without a showdown.
+  while (t.street !== "done") P.act(t, { type: t.seats[t.toAct].bet === t.currentBet ? "check" : "fold" });
+  assert(!t.result.showdown && t.result.winners.length === 1);
+  assert.strictEqual(t.seats.reduce((n, s) => n + s.chips, 0), 200 + 3 * P.STACK, "no chips made or lost");
+  // Side pots: you go all in for 15 with aces; the main pot (15 from each of
+  // four) is yours, the 15 more the others put in goes to the best of them.
+  const s = P.create({ chips: 15, rng });
+  s.button = 2; P.startHand(s);   // (you: small blind; Gentleman: big blind; Gamer first)
+  s.seats[0].cards = c("AS AH"); s.seats[1].cards = c("KS KH"); s.seats[2].cards = c("QS QH"); s.seats[3].cards = c("2C 7D");
+  s.deck = c("3C 4D 9H JS 8C").concat(s.deck);
+  P.act(s, { type: "raise" });   // Gamer to 20
+  P.act(s, { type: "call" });    // Scientist
+  P.act(s, { type: "call" });    // you, all in for 10 more
+  assert(s.seats[0].allIn && s.seats[0].total === 15);
+  P.act(s, { type: "call" });    // Gentleman
+  while (s.street !== "done") P.act(s, { type: "check" });
+  assert.deepStrictEqual(s.result.won, [60, 15, 0, 0]);
+  assert.deepStrictEqual(s.result.pots.map((p) => [p.amount, p.winners]), [[60, [0]], [15, [1]]]);
+  // The regulars play: hundreds of hands without getting stuck, chips kept whole.
+  const r = P.create({ chips: 300, rng });
+  for (let h = 0; h < 40; h++) {
+    if (r.seats[0].chips <= 0) r.seats[0].chips = 300;
+    P.startHand(r);
+    const before = r.seats.reduce((n, x) => n + x.chips + x.total, 0);
+    for (let k = 0; k < 200 && r.street !== "done"; k++) P.act(r, P.decide(r, 30));
+    assert.strictEqual(r.street, "done", "hand " + h + " finished");
+    assert.strictEqual(r.seats.reduce((n, x) => n + x.chips, 0), before, "hand " + h + ": chips whole");
+  }
+  const e = P.create({ chips: 100, rng }); P.startHand(e); e.seats[e.toAct].cards = c("AS AH");
+  assert(P.equity(e, e.toAct, 300) > 0.5, "aces are favourites against three");
+}
