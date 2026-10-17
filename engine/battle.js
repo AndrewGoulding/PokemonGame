@@ -291,6 +291,7 @@
       // (Ogerpon's is its mask's, Terapagos's Stellar, whatever was set.)
       this.teraType = /^(Ogerpon|Terapagos)/.test(speciesKey) ? Battle.defaultTeraType(speciesKey) : set.teraType || Battle.defaultTeraType(speciesKey, set.personality);
       this.terastallized = null;
+      this.teraAce = !!set.teraAce;
       if (set.status && !this.fainted) {
         this.status = set.status;
         if (set.status === "slp") this.statusState.time = battle.randInt(1, 3);

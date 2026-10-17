@@ -1313,7 +1313,9 @@ Dynamax: it becomes Eternamax Eternatus. `tools/build-max-moves.js` writes
 `data/max-moves.js`. Trainers Dynamax their last Pokémon when they can (no
 trainer has the Dynamax Band yet).
 
-**Terastallizing** (Scarlet and Violet): with the Tera Orb (a key item), START
+**Terastallizing** (Scarlet and Violet): with the Tera Orb (a key item: the
+first time you come into Pewter City, one of Prof. Oak's aides catches up
+with you and gives it to you), START
 on the move menu Terastallizes a Pokémon into its Tera Type, once a battle;
 the Orb is then empty until a Pokémon Center (or blacking out) recharges it.
 Every Pokémon has a Tera Type (one of its own types, set when it's made and
@@ -1331,8 +1333,9 @@ Pokémon) and hits both foes; Stellar Tera Blast is 100 power and lowers its
 Attack and Sp. Atk. As pokeemerald-expansion shows it: the Tera trigger beside
 the box, the rainbow, crystal and shards (`tools/build-mega-icons.js` copies
 them), the picture tinted halfway to the type's colour and its type's Tera
-symbol where "Lv" was. Trainers Terastallize for a move of their Tera Type, or
-with their last Pokémon, when they can (none has a Tera Orb yet).
+symbol where "Lv" was. Trainers with a Tera Orb Terastallize for a move of
+their Tera Type, with their last Pokémon, or their ace as soon as it's out:
+Brock has one, and his Onix Terastallizes into an Electric type.
 
 Alcremie comes in all 63 flavours: a Sweet used on Milcery asks which
 way it spins and for how long, and that with the time of day gives its cream

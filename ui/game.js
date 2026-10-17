@@ -289,7 +289,7 @@
       p1: Object.assign({ name: player.name, team: own.map((r) => Party.toBattleSet(r, here)), dynamax: Player.itemCount(player, "dynamax-band") > 0, tera: teraOrb },
         opts.partner ? { partner: { name: opts.partner.name, team: opts.partner.team.map((r) => Party.toBattleSet(r)) } } : {}),
       // (Pokémon Tower's unidentified Ghost goes by "Ghost".)
-      p2: Object.assign({ name: foe.name, team: foeSets(foe) }, foe2 ? { partner: { name: foe2.name, team: foeSets(foe2) } } : {}),
+      p2: Object.assign({ name: foe.name, team: foeSets(foe), tera: !!foe.tera }, foe2 ? { partner: { name: foe2.name, team: foeSets(foe2) } } : {}),
       format: double ? "doubles" : undefined,
       partnerTrainer: opts.partner && opts.partner.pic,
       foeTrainer2: foe2 && foe2.pic, defeatText2: foe2 && foe2.defeatText && foe2.defeatText.map((p) => fill(p)),
@@ -2647,6 +2647,8 @@
 
     if (SILPH_WORKERS[script]) { await say(T(SILPH_WORKERS[script][silphFreed() ? 1 : 0])); return; }
     if (SILPH_DOORS.includes(script)) { await silphDoor(script); return; }
+    // (Coming out of the Gym with the Tera Orb still to get: the aide, then Leaf.)
+    if (teraAideDue(script)) { await teraAide(); if (!(script === "enter:PewterCity" && leafPewterDue())) return; }
     if (/^enter:/.test(script) && megaAideDue(script.slice(6))) { await megaAide(); return; }
     if ((script === "enter:PokemonTower_7F" || script === "Game_EventScript_MegaTower") && megaTowerDue()) { await megaTower(); return; }
     const can = /^VermilionCity_Gym_EventScript_TrashCan(\d+)$/.exec(script);
@@ -5252,6 +5254,35 @@
     Overworld.removeObject(MEGA_AIDE);
   }
   const megaTowerDue = () => !!player.flags.megaAideMet && !player.flags.megaTowerDone;
+
+  // The Tera Orb (this game's own): the first time you come into Pewter
+  // City, walking in or out of a door, another of Prof. Oak's aides catches
+  // up with you (as the one above does) with it.
+  const TERA_AIDE = "LOCALID_TERA_AIDE";
+  const teraAideDue = (script) => (script === "enter:PewterCity" || script === "arrive:PewterCity") && !player.flags.gotTeraOrb;
+  async function teraAide() {
+    const route = megaAideRoute();
+    const give = async () => {
+      Player.addItem(player, "tera-orb");
+      player.flags.gotTeraOrb = true;
+      await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the Tera Orb\nfrom Prof. Oak's aide!");
+      await say(["With it, START on the move menu\nlets one of your Pokémon\nTerastallize, once a battle.",
+        "It becomes its Tera Type, and moves\nof that type get stronger!",
+        "Using it empties the Orb. A Pokémon\nCenter recharges it, as it heals\nyour Pokémon.", "Good luck, {PLAYER}!"]);
+    };
+    if (!route) { await say("I'm one of Prof. Oak's aides.\nThe Professor wanted you to have this!"); await give(); return; }
+    const back = route.walk.slice().reverse().map((d) => "walk_fast_" + World.OPPOSITE[d]);
+    Overworld.addObject(TERA_AIDE, { x: route.from.x, y: route.from.y, facing: route.walk[0] || route.face }, lookOf("scientist"));
+    await say("Hey! {PLAYER}! Wait up!");
+    await Overworld.act([{ who: TERA_AIDE, moves: route.walk.map((d) => "walk_fast_" + d).concat(["face_" + route.face]) }]);
+    await Overworld.act([{ who: "player", moves: ["face_" + World.OPPOSITE[route.face]] }]);
+    await say(["Phew… You're a hard one to\ncatch up with!",
+      "I'm one of Prof. Oak's aides.\nThe Professor has been studying\nTerastallization, from far-off Paldea.",
+      "He wanted you to have this Tera Orb!"]);
+    await give();
+    await Overworld.act([{ who: TERA_AIDE, moves: back.concat(["set_invisible"]) }]);
+    Overworld.removeObject(TERA_AIDE);
+  }
   // Who's at the top of the Tower, waiting: Prof. Oak and Mr. Fuji at the
   // top, and Leaf, Gary and Red in a line, facing them, with a place left in
   // the middle for you (MEGA_SPOT), two steps before Oak.
@@ -5896,6 +5927,8 @@
   // leads with, and Vulpix (level 13).
   function brockTeam() {
     const [geodude, onix] = trainerTeam("TRAINER_LEADER_BROCK");
+    // (His ace, Onix, Terastallizes into an Electric type as soon as it's out.)
+    Object.assign(onix, { teraType: "Electric", teraAce: true });
     return [Party.create("Zubat", 11, { ivs: 0 }), geodude, Party.create("Vulpix", 13, { ivs: 0 }), onix];
   }
 
@@ -5914,7 +5947,7 @@
     if (!f.TRAINER_LEADER_BROCK) {
       await say(person.trainer.intro);
       if (!canBattle()) return;
-      const outcome = await battle("trainer", { foe: { name: "Leader Brock", team: brockTeam(), pic: "leader_brock" },
+      const outcome = await battle("trainer", { foe: { name: "Leader Brock", team: brockTeam(), pic: "leader_brock", tera: true },
         defeatText: person.trainer.defeat, trainerId: "TRAINER_LEADER_BROCK", terrain: "leader" });
       if (outcome !== "won") return;
       if (!hasBadge("boulder")) player.badges.push("boulder");
@@ -9883,7 +9916,9 @@
     // Prof. Oak's aide, then his test at the top of Pokémon Tower (this game's own).
     if (/^enter:/.test(script) && megaAideDue(script.slice(6))) return true;
     if ((script === "enter:PokemonTower_7F" || script === "Game_EventScript_MegaTower") && megaTowerDue()) return true;
-    if (script === "enter:PewterCity") { player.flags.museumTicket = false; return leafPewterDue(); }
+    if (script === "enter:PewterCity") player.flags.museumTicket = false;
+    if (teraAideDue(script)) return true;
+    if (script === "enter:PewterCity") return leafPewterDue();
     // Into Faraway Island's grass (FarawayIsland_Interior_OnTransition): the
     // step count starts again, and Mew, if it's there, is spotted and hides.
     if (script === "enter:FarawayIsland_Interior") { player.flags.farawaySteps = 0; return !player.flags.foughtMew; }

@@ -3136,6 +3136,17 @@ for (let seed = 1; seed <= GEN8; seed++) {
     assert.deepStrictEqual(b.sides.p1.active.types, ["Ghost"], "still Terastallized when it comes back");
     const cc = play(b, { p1: mv(1), p2: mv(0) });
     assert(has(cc, "-immune", s.ident), "Close Combat can't touch a Tera Ghost"); }
+  // A trainer's ace (teraAce: Brock's Onix, Tera Electric) Terastallizes as soon as it's out.
+  { const b = new Battle({ seed: 1, debug: true, p1: { name: "A", team: [g9("Pikachu", ["Splash"])] },
+      p2: { name: "B", team: [g9("Onix", ["Tackle"], { teraType: "Electric", teraAce: true }), g9("Geodude", ["Tackle"])], tera: true } });
+    b.start();
+    b.choose("p1", mv(0)); b.choose("p2", OpponentAI.choose(b, "p2", mulberry32(1)));
+    const o = b.sides.p2.pokemon[0];
+    assert.deepStrictEqual([o.terastallized, o.types], ["Electric", ["Electric"]], "Brock's Onix: Tera Electric, first turn");
+    const gameSrc = fs.readFileSync(path.join(__dirname, "../ui/game.js"), "utf8");
+    assert(/Object\.assign\(onix, \{ teraType: "Electric", teraAce: true \}\)/.test(gameSrc) && /pic: "leader_brock", tera: true/.test(gameSrc), "Brock's Onix");
+    assert(/script === "enter:PewterCity" \|\| script === "arrive:PewterCity"\) && !player\.flags\.gotTeraOrb/.test(gameSrc)
+      && /Player\.addItem\(player, "tera-orb"\)/.test(gameSrc), "the Tera Orb from Prof. Oak's aide in Pewter"); }
   // Tera STAB: 2x for a Tera Type it already had, 1.5x for its own types or a new one; the 60-power floor.
   { const tera = (sp, t) => Object.assign(Damage.makePokemon(sp, { level: 50 }), { terastallized: t, teraBaseTypes: window.DEX[sp].types.slice(), types: t === "Stellar" ? window.DEX[sp].types.slice() : [t] });
     const d = Damage.makePokemon("Snorlax", { level: 50 }), plain = Damage.makePokemon("Pikachu", { level: 50 });

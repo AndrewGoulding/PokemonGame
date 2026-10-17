@@ -191,7 +191,7 @@
       if (a.canUltraBurst) choice.ultra = true;
       if (a.zMoves && a.zMoves[best.index] && !zmove) { choice.zmove = true; zmove = true; }
       // (Terastallize for a move of its Tera Type, once.)
-      if (a.canTera && !tera && !choice.mega && !choice.zmove && !choice.ultra && teraFits(battle, a, best)) { choice.tera = true; tera = true; }
+      if (a.canTera && !tera && !choice.mega && !choice.zmove && !choice.ultra && (teraFits(battle, a, best) || side.actives[slot].teraAce)) { choice.tera = true; tera = true; }
       out[slot] = choice;
     });
     return out;
@@ -235,9 +235,9 @@
     if (req.active.zMoves && req.active.zMoves[best.index]) choice.zmove = true;
     // (Dynamax with its last Pokémon, if its Trainer can.)
     else if (req.active.canDynamax && side.pokemon.filter((p) => !p.fainted).length === 1 && !choice.mega) choice.dynamax = true;
-    // (Terastallize for a move of its Tera Type, or with its last Pokémon.)
+    // (Terastallize for a move of its Tera Type, with its last Pokémon, or its ace as soon as it's out.)
     if (req.active.canTera && !choice.mega && !choice.zmove && !choice.dynamax && !choice.ultra
-      && (teraFits(battle, req.active, best) || side.pokemon.filter((p) => !p.fainted).length === 1)) choice.tera = true;
+      && (teraFits(battle, req.active, best) || side.pokemon.filter((p) => !p.fainted).length === 1 || attacker.teraAce)) choice.tera = true;
     return choice;
   }
 

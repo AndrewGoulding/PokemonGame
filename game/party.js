@@ -178,7 +178,8 @@
       // (Dynamax: its level, raised by Dynamax Candy, and the G-Max Factor.)
       dynamaxLevel: record.dynamaxLevel || 0,
       gmax: !!record.gmax,
-      teraType: teraType(record), personality: record.personality
+      teraType: teraType(record), personality: record.personality,
+      teraAce: !!record.teraAce   // (a trainer's ace, which Terastallizes as soon as it can)
     };
   }
 
