@@ -334,3 +334,6 @@ body {
 .shiny-spark { position: absolute; z-index: 3; color: #fff7a8; font-size: clamp(12px, 3vw, 22px); pointer-events: none;
   text-shadow: 0 0 4px #ffd400, 0 0 8px #fff; transform: translate(-50%, -50%) scale(0); animation: shiny-spark 0.9s ease-out forwards; }
 @keyframes shiny-spark { 30% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(0.2) rotate(90deg); opacity: 0; } }
+
+/* Dynamax (Sword and Shield): the Pokémon grows, lit red. */
+.sprite.dynamax { scale: 1.35; filter: drop-shadow(0 0 3px #ff2050) drop-shadow(0 0 6px #ff2050); }

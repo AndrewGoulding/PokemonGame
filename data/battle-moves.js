@@ -568,6 +568,68 @@
     b.trySetStatus(target, b.sample(["psn", "par", "slp"]), user, E("Move", move.id, move.name));
   };
 
+  // ---- Max Moves and G-Max Moves (Gen 8) ----
+  // Their effects, after the hit (even if the target fainted): weather,
+  // terrain, a stat change for each foe or each Pokémon on the user's side.
+  const foesOf = (b, user) => (b.doubles ? b.foesOf(user) : [user.side.foe.active].filter((m) => m && !m.fainted && m.isActive));
+  const sideOf = (b, user) => [user, b.allyOf(user)].filter((m) => m && !m.fainted);
+  const maxEff = (id, name) => E("Move", id, name);
+  const MAX_WEATHER = { maxflare: "SunnyDay", maxgeyser: "RainDance", maxrockfall: "Sandstorm", maxhailstorm: "Hail" };
+  const MAX_TERRAIN = { maxlightning: "electricterrain", maxovergrowth: "grassyterrain", maxmindstorm: "psychicterrain", maxstarfall: "mistyterrain" };
+  const MAX_FOES = { maxstrike: { spe: -1 }, maxflutterby: { spa: -1 }, maxphantasm: { def: -1 }, maxdarkness: { spd: -1 }, maxwyrmwind: { atk: -1 } };
+  const MAX_ALLIES = { maxknuckle: { atk: 1 }, maxooze: { spa: 1 }, maxquake: { spd: 1 }, maxsteelspike: { def: 1 }, maxairstream: { spe: 1 } };
+  for (const [id, w] of Object.entries(MAX_WEATHER)) afterHitSelf[id] = (b, user, t, move) => { b.setWeather(w, user, maxEff(id, move.name)); };
+  for (const [id, t] of Object.entries(MAX_TERRAIN)) afterHitSelf[id] = (b, user) => { b.setTerrain(t, user); };
+  for (const [id, bo] of Object.entries(MAX_FOES)) afterHitSelf[id] = (b, user, t, move) => { for (const f of foesOf(b, user)) b.boost(f, bo, user, maxEff(id, move.name)); };
+  for (const [id, bo] of Object.entries(MAX_ALLIES)) afterHitSelf[id] = (b, user, t, move) => { for (const a of sideOf(b, user)) b.boost(a, bo, a, maxEff(id, move.name)); };
+  const eachFoe = (fn) => (b, user, t, move) => { for (const f of foesOf(b, user)) fn(b, user, f, maxEff(move.id, move.name), move); };
+  // Four turns of damage on the foes' side.
+  for (const id of ["gmaxwildfire", "gmaxvinelash", "gmaxcannonade", "gmaxvolcalith"]) afterHitSelf[id] = (b, user) => { b.addSideCondition(user.side.foe, id, user); };
+  afterHitSelf.gmaxbefuddle = eachFoe((b, user, f, eff) => { b.trySetStatus(f, b.sample(["slp", "psn", "par"]), user, eff); });
+  afterHitSelf.gmaxvoltcrash = eachFoe((b, user, f, eff) => { b.trySetStatus(f, "par", user, eff); });
+  afterHitSelf.gmaxmalodor = eachFoe((b, user, f, eff) => { b.trySetStatus(f, "psn", user, eff); });
+  afterHitSelf.gmaxstunshock = eachFoe((b, user, f, eff) => { b.trySetStatus(f, b.sample(["psn", "par"]), user, eff); });
+  afterHitSelf.gmaxgoldrush = afterHitSelf.gmaxsmite = eachFoe((b, user, f, eff) => { b.addVolatile(f, "confusion", user, eff); });
+  afterHitSelf.gmaxcuddle = eachFoe((b, user, f, eff) => {
+    if (f.gender !== "N" && user.gender !== "N" && f.gender !== user.gender) b.addVolatile(f, "attract", user, eff);
+  });
+  afterHitSelf.gmaxterror = eachFoe((b, user, f, eff) => { b.addVolatile(f, "shackled", user, eff); });
+  afterHitSelf.gmaxmeltdown = eachFoe((b, user, f, eff) => { b.addVolatile(f, "torment", user, eff); });
+  afterHitSelf.gmaxfoamburst = eachFoe((b, user, f, eff) => { b.boost(f, { spe: -2 }, user, eff); });
+  afterHitSelf.gmaxtartness = eachFoe((b, user, f, eff) => { b.boost(f, { evasion: -1 }, user, eff); });
+  afterHitSelf.gmaxsandblast = afterHitSelf.gmaxcentiferno = eachFoe((b, user, f, eff, move) => {
+    if (b.addVolatile(f, "partiallytrapped", user, eff)) f.volatiles.partiallytrapped.moveName = move.id === "gmaxsandblast" ? "Sand Tomb" : "Fire Spin";
+  });
+  afterHitSelf.gmaxchistrike = (b, user) => {
+    for (const a of sideOf(b, user)) {
+      if (a.volatiles.gmaxchistrike) a.volatiles.gmaxchistrike.layers = Math.min(3, a.volatiles.gmaxchistrike.layers + 1);
+      else b.addVolatile(a, "gmaxchistrike", user);
+    }
+  };
+  afterHitSelf.gmaxresonance = (b, user) => { b.addSideCondition(user.side, "auroraveil", user); };
+  afterHitSelf.gmaxstonesurge = (b, user) => { b.addSideCondition(user.side.foe, "stealthrock", user); };
+  afterHitSelf.gmaxsteelsurge = (b, user) => { b.addSideCondition(user.side.foe, "gmaxsteelsurge", user); };
+  afterHitSelf.gmaxwindrage = (b, user) => {
+    for (const id of ["reflect", "lightscreen", "auroraveil", "safeguard", "mist"]) b.removeSideCondition(user.side.foe, id);
+    for (const s of [user.side, user.side.foe]) for (const id of ["spikes", "toxicspikes", "stealthrock", "stickyweb", "gmaxsteelsurge"]) b.removeSideCondition(s, id);
+  };
+  afterHitSelf.gmaxgravitas = (b) => {
+    if (b.field.pseudo.gravity) return;
+    b.field.pseudo.gravity = { turns: 5 };
+    b.add("-fieldstart", "gravity");
+  };
+  afterHitSelf.gmaxsweetness = (b, user) => { for (const m of user.side.pokemon) if (!m.fainted && m.status) { m.status = ""; m.statusState = {}; } b.add("-activate", user, "move: Aromatherapy"); };
+  afterHitSelf.gmaxfinale = (b, user, t, move) => { for (const a of sideOf(b, user)) b.heal(a, Math.floor(a.maxhp / 6), user, maxEff(move.id, move.name)); };
+  // G-Max Replenish: half the time, each Pokémon on its side gets back a Berry it ate.
+  afterHitSelf.gmaxreplenish = (b, user) => {
+    for (const a of sideOf(b, user)) if (!a.item && /-berry$/.test(a.lastItem || "") && b.randomChance(1, 2)) { a.item = a.lastItem; b.add("-item", a, a.item, "[from] move: G-Max Replenish"); }
+  };
+  afterHit.gmaxsnooze = (b, user, target, move) => { if (b.randomChance(1, 2)) b.addVolatile(target, "yawn", user, maxEff(move.id, move.name)); };
+  afterHit.gmaxdepletion = (b, user, target) => {
+    const m = target.lastMove && target.moves.find((x) => x.id === target.lastMove);
+    if (m && m.pp) { const lost = Math.min(2, m.pp); m.pp -= lost; b.add("-activate", target, "move: G-Max Depletion", m.name, lost); }
+  };
+
   // ---- Z-Moves (Gen 7) ----
   beforeHit.soulstealing7starstrike = beforeHit.spectralthief;
   afterHitSelf.genesissupernova = (b, user) => { b.setTerrain("psychicterrain", user); };

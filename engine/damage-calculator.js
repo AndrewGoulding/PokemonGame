@@ -342,6 +342,7 @@
       case "stompingtantrum": if (opts.lastMoveFailed) bp *= 2; break;
       // Gen 8
       case "boltbeak": case "fishiousrend": if (!opts.movesAfterTarget) bp *= 2; break;
+      case "behemothblade": case "behemothbash": case "dynamaxcannon": if (opts.targetDynamaxed) bp *= 2; break;
       case "lashout": if (opts.statsLowered) bp *= 2; break;
       case "barbbarrage": if (D.status === "psn" || D.status === "tox") bp *= 2; break;
       case "infernalparade": if (D.status || D.ability === "Comatose") bp *= 2; break;
@@ -755,6 +756,7 @@
       } catch (e) { /* ignore */ }
     }
     if (opts.focusEnergy) stage += 2;
+    if (opts.critBoost) stage += opts.critBoost;   // (G-Max Chi Strike)
     if (A.item === "scope-lens" || A.item === "razor-claw") stage += 1;
     if (A.item === "stick" && A.species === "Farfetch'd") stage += 2;
     if (A.item === "lucky-punch" && A.species === "Chansey") stage += 2;

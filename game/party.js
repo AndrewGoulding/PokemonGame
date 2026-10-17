@@ -162,7 +162,10 @@
       // (Gen 8 evolutions' running totals: Basculin's recoil, Hisuian
       // Qwilfish's Barb Barrages.)
       recoil: record.recoil || 0,
-      moveUses: Object.assign({}, record.moveUses)
+      moveUses: Object.assign({}, record.moveUses),
+      // (Dynamax: its level, raised by Dynamax Candy, and the G-Max Factor.)
+      dynamaxLevel: record.dynamaxLevel || 0,
+      gmax: !!record.gmax
     };
   }
 
@@ -178,7 +181,9 @@
     record.exp = mon.exp;
     record.evs = Object.assign({}, mon.evs);
     record.happiness = mon.happiness;
-    record.hp = Math.min(mon.hp, maxHp(record));
+    // (Still Dynamaxed: its HP back to normal size.)
+    const hp = mon.dynamaxed && mon.hp > 0 ? Math.ceil((mon.hp * mon.dynamaxed.snap.maxhp) / mon.maxhp) : mon.hp;
+    record.hp = Math.min(hp, maxHp(record));
     record.status = mon.fainted ? "" : mon.status;
     // PP Ups stay with the move they were used on (a move learned mid-battle has none).
     const ups = {};

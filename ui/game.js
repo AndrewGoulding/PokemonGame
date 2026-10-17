@@ -279,7 +279,7 @@
     }
     const foeSets = (f) => f.team.map((r) => Object.assign(Party.toBattleSet(r), opts.ghost ? { name: "Ghost" } : {}));
     const result = await BattleScreen.run({
-      p1: Object.assign({ name: player.name, team: own.map((r) => Party.toBattleSet(r, here)) },
+      p1: Object.assign({ name: player.name, team: own.map((r) => Party.toBattleSet(r, here)), dynamax: Player.itemCount(player, "dynamax-band") > 0 },
         opts.partner ? { partner: { name: opts.partner.name, team: opts.partner.team.map((r) => Party.toBattleSet(r)) } } : {}),
       // (Pokémon Tower's unidentified Ghost goes by "Ghost".)
       p2: Object.assign({ name: foe.name, team: foeSets(foe) }, foe2 ? { partner: { name: foe2.name, team: foeSets(foe2) } } : {}),
@@ -620,6 +620,14 @@
       await message(name + "'s Ability changed to " + to + "!");
       return;
     }
+    if (item === "dynamax-candy" || item === "max-mushrooms") {
+      if (!Bag.canUseOn(record, item)) { await message("It won't have any effect."); return; }
+      Player.removeItem(player, item);
+      const r = Bag.useOn(record, item);
+      await message(item === "dynamax-candy" ? name + "'s Dynamax Level rose to " + r.level + "!"
+        : r.gmax ? name + " ate the Max Soup and gained the G-Max Factor!" : name + " ate the Max Soup and lost the G-Max Factor.");
+      return;
+    }
     if (item === "zygarde-cube") {
       if (!Bag.canUseOn(record, item)) { await message("It won't have any effect."); return; }
       const v = await multichoice("What would you like to do?", 0, 0, ["Change Forme", "Change Ability", "Cancel"]);
@@ -728,6 +736,7 @@
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
     item === "ability-capsule" || item === "bottle-cap" || item === "gold-bottle-cap" || item === "zygarde-cube" ||
+    item === "dynamax-candy" || item === "max-mushrooms" ||
     item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS || item === "escape-rope";
   // TMs and HMs work like key items: they can't be held, tossed or sold.
   const holdable = (item) => !Bag.isBall(item) && !Bag.isMachine(item) && !Bag.isKeyItem(item);

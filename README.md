@@ -1201,7 +1201,25 @@ comes from any Sweet; Basculin (White-Striped) becomes Basculegion after
 taking 294 recoil damage in all, Hisuian Qwilfish becomes Overqwil after 20
 Barb Barrages (both counted on the Pokémon, across battles); Ursaring uses
 the Peat Block at night; Stantler becomes Wyrdeer at Lv. 30 (it can't learn
-Psyshield Bash here). Alcremie comes in all 63 flavours: a Sweet used on Milcery asks which
+Psyshield Bash here). **Dynamax and Gigantamax**: with the Dynamax Band (a key item), START on
+the move menu Dynamaxes a Pokémon for three turns, once a battle: the
+picture grows, lit red; its HP goes up by its Dynamax Level (×1.5, and 5%
+more a level: Dynamax Candy raises it to 10, ×2); every move is a Max Move
+(Showdown's power for each: Max Flare, Max Geyser, ... with their weather,
+terrain or stat changes) and a status move Max Guard, which stops even Max
+Moves. Max Moves get through Protect for a quarter of their damage. A
+Dynamaxed Pokémon can't flinch, be forced out, or be hit by OHKO or
+weight-based moves, and Behemoth Blade, Behemoth Bash and Dynamax Cannon do
+double damage to it. A Pokémon with the G-Max Factor (Max Mushrooms used on
+it make it Max Soup, and take it away again) Gigantamaxes instead, in its
+Gigantamax forme, its type's Max Move becoming its G-Max Move (G-Max
+Wildfire's four turns of fire, Volt Crash, Befuddle, Steelsurge, Chi Strike,
+Replenish, One Blow through any protection, ...). Eternatus doesn't
+Dynamax: it becomes Eternamax Eternatus. `tools/build-max-moves.js` writes
+`data/max-moves.js`. Trainers Dynamax their last Pokémon when they can (no
+trainer has the Dynamax Band yet).
+
+Alcremie comes in all 63 flavours: a Sweet used on Milcery asks which
 way it spins and for how long, and that with the time of day gives its cream
 as in Sword and Shield (clockwise and short by day: Vanilla Cream; the other
 way and long from 7pm to 8pm: Rainbow Swirl; ...), the Sweet sitting on top

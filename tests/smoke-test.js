@@ -2652,6 +2652,60 @@ assert.deepStrictEqual(["hp", "atk", "def", "spa", "spd", "spe"].map((k) => DEX.
   }
 }
 
+// Dynamax (with the Dynamax Band: the side's `dynamax`): three turns, HP up
+// by its Dynamax Level, Max Moves and their effects, Max Guard; Gigantamax
+// with the G-Max Factor; Eternatus Eternamaxes; Dynamax Candy and Max Soup.
+{
+  const g = (species, moves, extra) => Object.assign({ species, level: 50, moves }, extra);
+  const singles = (p1, p2, dyn) => {
+    const b = new Battle({ seed: 1, debug: true, p1: { name: "A", team: p1, dynamax: dyn !== false }, p2: { name: "B", team: p2 } });
+    b.start();
+    return b;
+  };
+  const no = singles([g("Snorlax", ["Body Slam"])], [g("Snorlax", ["Splash"])], false);
+  assert(!no.getRequest("p1").active.canDynamax, "no Dynamax without the Dynamax Band");
+  const b = singles([g("Snorlax", ["Body Slam", "Rest"])], [g("Snorlax", ["Splash", "Fissure", "Fake Out"], { level: 100, ability: "Thick Fat" })]);
+  const lax = b.sides.p1.active, before = lax.maxhp;
+  assert.deepStrictEqual(b.getRequest("p1").active.maxMoves, ["Max Strike", "Max Guard"]);
+  let evs = play(b, { p1: { type: "move", move: 0, dynamax: true }, p2: mv(0) });
+  assert(evs.some((e) => e[0] === "-dynamax") && evs.some((e) => e[0] === "move" && e[2] === "Max Strike"));
+  assert.strictEqual(lax.maxhp, before * 2, "Dynamax Level 10: double HP");
+  assert.strictEqual(b.sides.p2.active.boosts.spe, -1, "Max Strike lowers the foe's Speed");
+  assert(b.getRequest("p1").active.dynamaxed && !b.getRequest("p1").active.canDynamax);
+  evs = play(b, { p1: mv(0), p2: mv(1) });
+  assert(evs.some((e) => e[0] === "-fail"), "no OHKO moves at a Dynamaxed Pokémon");
+  evs = play(b, { p1: mv(0), p2: mv(2) });
+  assert(!evs.some((e) => e[0] === "cant" && e[2] === "flinch"));
+  assert(evs.some((e) => e[0] === "-dynamaxend"), "it ends after three turns");
+  assert.strictEqual(lax.maxhp, before);
+  // Max Guard, and a Max Move through Protect for a quarter.
+  const p = singles([g("Snorlax", ["Body Slam"])], [g("Snorlax", ["Protect"]), g("Snorlax", ["Splash"])]);
+  evs = play(p, { p1: { type: "move", move: 0, dynamax: true }, p2: mv(0) });
+  assert(evs.some((e) => e[0] === "-zbroken") && hpLost(p.sides.p2.active) > 0);
+  // Gigantamax: Charizard's G-Max Wildfire.
+  const c = singles([g("Charizard", ["Flamethrower", "Air Slash"], { gmax: true })], [g("Snorlax", ["Splash"], { level: 70 })]);
+  assert.deepStrictEqual(c.getRequest("p1").active.maxMoves, ["G-Max Wildfire", "Max Airstream"]);
+  play(c, { p1: { type: "move", move: 0, dynamax: true }, p2: mv(0) });
+  assert.strictEqual(c.sides.p1.active.species, "Charizard-Gmax");
+  assert(c.sides.p2.conditions.gmaxwildfire, "G-Max Wildfire burns the field for four turns");
+  // Dynamax Level 0 (a party Pokémon's own): ×1.5. Eternatus: Eternamax.
+  const rec = Party.create("Snorlax", 50, { rng: mulberry32(5) });
+  const d = new Battle({ seed: 1, p1: { name: "A", team: [Party.toBattleSet(rec)], dynamax: true }, p2: { name: "B", team: [g("Snorlax", ["Splash"])] } });
+  d.start();
+  const m0 = d.sides.p1.active.maxhp;
+  play(d, { p1: { type: "move", move: 0, dynamax: true }, p2: mv(0) });
+  assert.strictEqual(d.sides.p1.active.maxhp, Math.floor(m0 * 1.5));
+  const e = singles([g("Eternatus", ["Dynamax Cannon"])], [g("Snorlax", ["Splash"], { level: 100 })]);
+  play(e, { p1: { type: "move", move: 0, dynamax: true }, p2: mv(0) });
+  assert.strictEqual(e.sides.p1.active.species, "Eternatus-Eternamax");
+  // Dynamax Candy, Max Soup (Max Mushrooms).
+  const zard = Party.create("Charizard", 50);
+  assert(Bag.canUseOn(zard, "max-mushrooms") && !Bag.canUseOn(Party.create("Pidgey", 5), "max-mushrooms"));
+  Bag.useOn(zard, "max-mushrooms");
+  Bag.useOn(zard, "dynamax-candy");
+  assert.deepStrictEqual([zard.gmax, zard.dynamaxLevel, Party.toBattleSet(zard).gmax], [true, 1, true]);
+}
+
 // Gen 7's Pokémon in random battles (singles and doubles, the battle in
 // debug mode so an Ability or move effect that throws fails the test).
 const GEN7 = 100;
@@ -2810,14 +2864,15 @@ for (let seed = 1; seed <= GEN7; seed++) {
   }
 }
 
-// Gen 8's Pokémon in random battles, as Gen 7's above.
+// Gen 8's Pokémon in random battles, as Gen 7's above, Dynamaxing.
 const GEN8 = 100;
 let gen8Turns = 0;
 for (let seed = 1; seed <= GEN8; seed++) {
   const teamRng = mulberry32(seed * 7927);
   const dbl = seed % 2 === 0;
   const team = () => RandomTeam.team(dbl ? 4 : 3, { level: 50, rng: teamRng, onlyGen: 8 });
-  const battle = new Battle({ seed, debug: true, format: dbl ? "doubles" : "singles", p1: { name: "A", team: team() }, p2: { name: "B", team: team() } });
+  const battle = new Battle({ seed, debug: true, format: dbl ? "doubles" : "singles", p1: { name: "A", team: team(), dynamax: true },
+    p2: { name: "B", team: team(), dynamax: true } });   // (and Dynamax)
   const rng = mulberry32(seed);
   battle.start();
   for (let step = 0; step < 3000 && !battle.ended; step++) {

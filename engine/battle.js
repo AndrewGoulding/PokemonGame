@@ -154,7 +154,7 @@
   const WEATHER_ROCKS = { SunnyDay: "heat-rock", RainDance: "damp-rock", Sandstorm: "smooth-rock", Hail: "icy-rock" };
   const DEF_ACC_ABILITIES = new Set(["Sand Veil", "Snow Cloak", "Tangled Feet", "Wonder Skin"]);
   const SILENT_VOLATILES = new Set(["choicelock", "mustrecharge", "lockedmove", "twoturnmove", "flinch",
-    "protect", "kingsshield", "spikyshield", "banefulbunker", "obstruct", "sparklingaria", "endure", "charge", "roost", "focuspunch", "destinybond", "focusenergy"]);
+    "protect", "kingsshield", "spikyshield", "banefulbunker", "obstruct", "maxguard", "sparklingaria", "endure", "charge", "roost", "focuspunch", "destinybond", "focusenergy"]);
   const INVULN = {
     fly: "fly", bounce: "fly", dig: "dig", dive: "dive", shadowforce: "shadow", phantomforce: "shadow"
   };
@@ -171,7 +171,7 @@
   const REDIRECTABLE = new Set(["normal", "any", "adjacentFoe", "randomNormal"]);
   // One-turn doubles effects, cleared at the end of each turn.
   const TURN_VOLATILES = ["helpinghand", "followme", "ragepowder", "spotlight"];
-  const STALL_MOVES = new Set(["protect", "detect", "endure", "kingsshield", "spikyshield", "banefulbunker", "obstruct", "quickguard", "wideguard", "matblock", "craftyshield"]);
+  const STALL_MOVES = new Set(["protect", "detect", "endure", "kingsshield", "spikyshield", "banefulbunker", "obstruct", "maxguard", "quickguard", "wideguard", "matblock", "craftyshield"]);
 
   // Indexes
   let DEX_INDEX = null, MOVE_INDEX = null, ABILITY_CONDITIONS = null, MEGA_MAP = null;
@@ -273,6 +273,11 @@
         this.fainted = this.hp === 0;
       }
       // (Running totals for Gen 8's evolutions; crits are this battle's.)
+      // (Dynamax: its Dynamax Level, 0-10, and the G-Max Factor; a battle
+      // set without them is at level 10, as in Showdown.)
+      this.dynamaxLevel = set.dynamaxLevel != null ? set.dynamaxLevel : 10;
+      this.gmax = !!set.gmax;
+      this.dynamaxed = null;
       this.recoilTaken = set.recoil || 0;
       this.moveUses = Object.assign({}, set.moveUses);
       this.critsLanded = 0;
@@ -384,6 +389,9 @@
       this.choice = null;
       this.foe = null;
       this.megaUsed = false;
+      // (Dynamax: only a side whose Trainer has the Dynamax Band, opts.dynamax.)
+      this.dynamaxAllowed = !!opts.dynamax;
+      this.dynamaxUsed = false;
       this.faintedLastTurn = false;
       this.faintedThisTurn = false;
     }
@@ -891,6 +899,7 @@
       }
       this.runEvent("onEnd", mon, { only: "ability" });
       this.endSkyDrop(mon);
+      this.undynamax(mon, true);
       mon.volatiles = {}; mon.status = ""; mon.statusState = {};
       // Gen 7: Soul-Heart (any other Pokémon fainting), and Receiver / Power
       // of Alchemy (the ally's Ability passes to it).
@@ -971,6 +980,7 @@
 
     addVolatile(mon, id, source, effect) {
       if (!mon || mon.fainted) return false;
+      if (mon.dynamaxed && id === "flinch") return false;
       if (mon.volatiles[id]) return false;
       const cond = getCondition(id) || {};
       const r = this.runEvent("onTryAddVolatile", mon, { source, effect, relay: { id }, breakAbility: this._breakFor(mon, effect) });
@@ -1133,6 +1143,7 @@
       if (side.tag && old && !old.fainted && old.isActive && !o.drag) this.add("-withdraw", old, side.trainers[old.owner]);
       if (old && !old.fainted && old.isActive) {
         this.endSkyDrop(old);
+        this.undynamax(old, true);
         this.runEvent("onSwitchOut", old, { only: "ability" });
         this.runEvent("onEnd", old, { only: "ability" });
         if (o.copy) carried = { boosts: Object.assign({}, old.boosts), volatiles: {} };
@@ -1265,6 +1276,11 @@
         const eff = window.Damage.typeEffectiveness("Rock", mon.types);
         this.damage(mon, (mon.maxhp * eff) / 8, null, E("SideCondition", "stealthrock", "Stealth Rock"));
       }
+      // (G-Max Steelsurge: the same, Steel type.)
+      if (s.gmaxsteelsurge && !mon.fainted) {
+        const eff = window.Damage.typeEffectiveness("Steel", mon.types);
+        this.damage(mon, (mon.maxhp * eff) / 8, null, E("SideCondition", "gmaxsteelsurge", "G-Max Steelsurge"));
+      }
       if (mon.fainted) return;
       if (s.spikes && this.isGrounded(mon)) {
         const frac = [0, 8, 6, 4][s.spikes.layers];
@@ -1378,6 +1394,59 @@
         && (mon.species === "Necrozma-Dusk-Mane" || mon.species === "Necrozma-Dawn-Wings");
     }
 
+    // ---------- Dynamax and Gigantamax (Gen 8) ----------
+    canDynamax(mon) {
+      return mon.side.dynamaxAllowed && !mon.side.dynamaxUsed && !mon.dynamaxed && !mon.mega
+        && !/^(Zacian|Zamazenta)/.test(mon.species) && !!window.MAX_MOVES;
+    }
+    // The Max Move (or G-Max Move, or Max Guard) each of `slots` becomes.
+    maxMovesFor(mon, slots) {
+      return slots.map((s) => this.maxMoveFor(mon, this.getActiveMove(s.name)).name);
+    }
+    maxMoveFor(mon, base) {
+      const M = window.MAX_MOVES;
+      if (base.category === "Status") { const g = this.getActiveMove("Max Guard"); g.ppFrom = base.id; return g; }
+      const gspecies = mon.species.replace(/-Gmax$/, "");
+      const g = (mon.gmax || /-Gmax$/.test(mon.species)) && M.gmax[gspecies];
+      const name = g && window.MOVES[g].type === base.type ? g : M.byType[base.type] || M.byType.Normal;
+      const m = this.getActiveMove(name);
+      m.category = base.category; m.zPower = m.power || M.power[base.name] || 100; m.ppFrom = base.id; m.maxFrom = base.name;
+      // (Urshifu's G-Max One Blow and Rapid Flow get through any protection.)
+      if (m.id === "gmaxoneblow" || m.id === "gmaxrapidflow") m.breaksProtect = true;
+      return m;
+    }
+    // Dynamax: three turns, its HP ×1.5 + 5% a Dynamax Level (×2 at 10);
+    // with the G-Max Factor, its Gigantamax forme. (Eternatus: Eternamax,
+    // with that forme's HP instead.)
+    dynamax(mon) {
+      mon.side.dynamaxUsed = true;
+      const snap = { species: mon.species, stats: mon.stats, types: mon.types, baseTypes: mon.baseTypes, weight: mon.weight,
+        maxhp: mon.maxhp, baseMaxhp: mon.baseMaxhp };
+      mon.dynamaxed = { turns: 3, snap };
+      const eternamax = /^Eternatus/.test(mon.species);
+      const gmax = !eternamax && mon.gmax && window.DEX[mon.species + "-Gmax"] ? mon.species + "-Gmax" : null;
+      this.add("-dynamax", mon, eternamax ? "Eternamax" : gmax ? "Gmax" : "");
+      if (eternamax) this.abilityForme(mon, "Eternatus-Eternamax");
+      else {
+        if (gmax) this.abilityForme(mon, gmax);
+        const ratio = 1.5 + 0.05 * Math.max(0, Math.min(10, mon.dynamaxLevel));
+        mon.maxhp = mon.baseMaxhp = Math.floor(snap.maxhp * ratio);
+        mon.hp = Math.floor(mon.hp * ratio);
+      }
+      this.add("-dynamaxhp", mon, this.hpStr(mon));
+    }
+    undynamax(mon, silent) {
+      const d = mon.dynamaxed;
+      if (!d) return;
+      mon.dynamaxed = null;
+      const cur = mon.maxhp, changed = mon.species !== d.snap.species;
+      Object.assign(mon, d.snap);
+      if (mon.hp > 0) mon.hp = Math.max(1, Math.min(mon.maxhp, Math.ceil((mon.hp * d.snap.maxhp) / cur)));
+      if (silent) return;
+      if (changed) this.add("detailschange", mon, mon.species);
+      this.add("-dynamaxend", mon, this.hpStr(mon));
+    }
+
     // ---------- Requests / choices ----------
     // SELECT on the move menu: two of the active Pokémon's moves trade places
     // (and their PP; the party's order follows, as in FireRed).
@@ -1397,7 +1466,7 @@
         if (!disabled && mon.volatiles.throatchop && data.flags && data.flags.sound) disabled = true;
         if (!disabled && mon.volatiles.torment && mon.lastMove === m.id) disabled = true;
         if (!disabled && mon.volatiles.encore && mon.volatiles.encore.moveId && mon.volatiles.encore.moveId !== m.id) disabled = true;
-        if (!disabled && (mon.item.indexOf("choice-") === 0 || mon.hasAbility("Gorilla Tactics")) && mon.volatiles.choicelock && mon.volatiles.choicelock.moveId !== m.id) disabled = true;
+        if (!disabled && (mon.item.indexOf("choice-") === 0 || mon.hasAbility("Gorilla Tactics")) && mon.volatiles.choicelock && mon.volatiles.choicelock.moveId !== m.id && !mon.dynamaxed) disabled = true;
         if (!disabled && mon.item === "assault-vest" && data.cat === "Status") disabled = true;
         return { index: i, id: m.id, name: m.name, pp: m.pp, maxpp: m.maxpp, disabled, type: data.type, category: data.cat, power: data.power, target: data.target };
       });
@@ -1465,6 +1534,8 @@
         canMega: !forced && !side.megaUsed && !mon.mega && !!this.megaForme(mon),
         zMoves: forced ? null : this.zMovesFor(mon, slots),
         canUltraBurst: !forced && this.canUltraBurst(mon),
+        canDynamax: !forced && this.canDynamax(mon), dynamaxed: !!mon.dynamaxed,
+        maxMoves: !forced && (mon.dynamaxed || this.canDynamax(mon)) ? this.maxMovesFor(mon, slots) : null,
         trapped: false, forced: forced
       };
       if (forced) { base.switches = []; return base; }
@@ -1535,6 +1606,10 @@
             if (!req.active.zMoves || !req.active.zMoves[side.choice.slot]) return { ok: false, error: "Cannot use a Z-Move" };
             side.choice.zmove = true;
           }
+          if (choice.dynamax) {
+            if (!req.active.canDynamax || choice.zmove || choice.mega) return { ok: false, error: "Cannot Dynamax" };
+            side.choice.dynamax = true;
+          }
         } else return { ok: false, error: "Invalid choice" };
       }
       this.maybeCommit();
@@ -1585,6 +1660,7 @@
       if (c.type === "move" && req.active.canMega && this.random() < 0.7) c.mega = true;
       if (c.type === "move" && req.active.canUltraBurst) c.ultra = true;
       if (c.type === "move" && req.active.zMoves && req.active.zMoves[c.move] && this.random() < 0.5) c.zmove = true;
+      if (c.type === "move" && !c.zmove && !c.mega && req.active.canDynamax && this.random() < 0.3) c.dynamax = true;
       return c;
     }
 
@@ -1701,6 +1777,8 @@
           canMega: !forced && !this.megaUsedFor(side, mon) && !mon.mega && !!this.megaForme(mon),
           zMoves: forced ? null : this.zMovesFor(mon, moves),
           canUltraBurst: !forced && this.canUltraBurst(mon),
+          canDynamax: !forced && this.canDynamax(mon), dynamaxed: !!mon.dynamaxed,
+          maxMoves: !forced && (mon.dynamaxed || this.canDynamax(mon)) ? this.maxMovesFor(mon, moves) : null,
           trapped: false, forced, switches: []
         };
         if (forced) return r;
@@ -1796,6 +1874,10 @@
             if (!a.zMoves || !a.zMoves[picked.slot] || partial.some((x, i) => x && x.zmove && i !== slot)) return err("Cannot use a Z-Move");
             picked.zmove = true;
           }
+          if (c.dynamax) {
+            if (!a.canDynamax || c.zmove || c.mega || partial.some((x, i) => x && x.dynamax && i !== slot)) return err("Cannot Dynamax");
+            picked.dynamax = true;
+          }
           partial[slot] = picked;
         } else return err("Invalid choice");
         any = true;
@@ -1818,7 +1900,7 @@
       if (req.phase !== "move") return null;
       const side = this.controller(id).side;
       const used = new Set((side.partial || []).filter((c) => c && c.type === "switch").map((c) => c.index));
-      let mega = false, zm = false;
+      let mega = false, zm = false, dm = false;
       req.actives.forEach((a, slot) => {
         if (!a) return;
         if (a.forced) { out[slot] = { type: "move", move: 0 }; return; }
@@ -1835,6 +1917,7 @@
           if (a.canMega && !mega && this.random() < 0.7) { c.mega = true; mega = true; }
           if (a.canUltraBurst) c.ultra = true;
           if (a.zMoves && a.zMoves[c.move] && !zm && this.random() < 0.5) { c.zmove = true; zm = true; }
+          if (!c.zmove && !c.mega && a.canDynamax && !dm && this.random() < 0.3) { c.dynamax = true; dm = true; }
         }
         out[slot] = c;
       });
@@ -1871,6 +1954,7 @@
           else {
             if (c.mega) actions.push({ order: 2, type: "mega", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
             if (c.ultra) actions.push({ order: 2, type: "ultra", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
+            if (c.dynamax) actions.push({ order: 2, type: "dynamax", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
             const f = c.forced;
             const name = f ? f.move : c.moveName;
             const mv = this.getActiveMove(name);
@@ -2318,6 +2402,7 @@
           this.runEvent("onStart", a.mon, { only: "ability" });
           break;
         }
+        case "dynamax": if (!a.mon.fainted && this.canDynamax(a.mon)) this.dynamax(a.mon); break;
         case "move": this.runMoveAction(a); break;
         case "residual": this.residual(); break;
         case "run": this.tryRun(a.mon); break;
@@ -2357,6 +2442,8 @@
           move = z;
         }
       }
+      // Dynamaxed, every move is a Max Move (a status move Max Guard).
+      if (mon.dynamaxed && move.id !== "struggle") move = this.maxMoveFor(mon, move);
       if (move.id === "focuspunch" && mon.volatiles.focuspunch && mon.volatiles.focuspunch.lostFocus) {
         this.add("cant", mon, "Focus Punch", "Focus Punch");
         return;
@@ -2464,7 +2551,7 @@
       }
       user.lastMove = move.id;
       user.moveThisTurn = true;
-      if ((user.item.indexOf("choice-") === 0 || user.hasAbility("Gorilla Tactics")) && !o.bounced && move.id !== "struggle") {
+      if ((user.item.indexOf("choice-") === 0 || user.hasAbility("Gorilla Tactics")) && !o.bounced && move.id !== "struggle" && !user.dynamaxed) {
         user.volatiles.choicelock = { moveId: move.id };
       }
       if (o.slot !== undefined && o.slot >= 0 && user.volatiles.encore && !user.volatiles.encore.moveId) user.volatiles.encore.moveId = move.id;
@@ -2817,11 +2904,16 @@
       try {
         if (!isSelf) {
           if (this.isInvulnerable(target, move)) { this.add("-miss", user, target); return false; }
+          // (Max Guard stops everything, Max Moves too.)
+          if (target.volatiles.maxguard && !move.breaksProtect) {
+            this.add("-activate", target, "move: Max Guard");
+            return false;
+          }
           const unseen = move.flags.contact && user.hasAbility("Unseen Fist");
           if (move.flags.protect && !move.breaksProtect && !unseen && this.isProtected(target, user, move)) return false;
           // (A Z-Move gets through Protect and the like with a quarter of its damage.)
           const v = target.volatiles;
-          if (o) o.zBrokeProtect = !!move.isZ && move.category !== "Status" && !!(v.protect || v.kingsshield || v.spikyshield || v.banefulbunker || v.obstruct);
+          if (o) o.zBrokeProtect = !!(move.isZ || move.isMax) && move.category !== "Status" && !move.breaksProtect && !!(v.protect || v.kingsshield || v.spikyshield || v.banefulbunker || v.obstruct);
           if (this.sideGuarded(target, user, move)) return false;
           if (this.priorityBlocked(user, target, move, brk)) return false;
           if (move.flags.reflectable && target.volatiles.magiccoat && !move.hasBounced) {
@@ -2876,6 +2968,8 @@
       if (move.id === "dreameater" && !this.asleep(target)) { this.add("-immune", target); return false; }
       if (move.id === "snore" || move.id === "sleeptalk") { if (!this.asleep(user)) { this.add("-fail", user); return false; } }
       if (move.id === "endeavor" && target.hp <= user.hp) { this.add("-fail", user); return false; }
+      // (A Dynamaxed Pokémon: no OHKO moves, no weight-based moves.)
+      if (target.dynamaxed && (move.ohko || ["lowkick", "grassknot", "heatcrash", "heavyslam"].includes(move.id))) { this.add("-fail", user); return false; }
       // (Gen 7 moves: First Impression, Burn Up, Shell Trap, Psychic Fangs,
       // Spectral Thief, Pollen Puff on an ally.)
       const before = window.BATTLE_MOVE_EFFECTS && window.BATTLE_MOVE_EFFECTS.beforeHit && window.BATTLE_MOVE_EFFECTS.beforeHit[move.id];
@@ -2912,7 +3006,8 @@
         if (i > 0 && move.multiaccuracy && move.gen && !this.accuracyCheck(user, target, move)) break;
         let crit = false;
         if (!luckyChant && !(move.id === "counter")) {
-          const chance = window.Damage.critChance(user, move.name, { focusEnergy: !!user.volatiles.focusenergy });
+          const chance = window.Damage.critChance(user, move.name, { focusEnergy: !!user.volatiles.focusenergy,
+            critBoost: (user.volatiles.gmaxchistrike || {}).layers || 0 });
           // (Gen 7: Laser Focus, and Merciless against a poisoned target.)
           const sure = !!user.volatiles.laserfocus || (user.hasAbility("Merciless") && (target.status === "psn" || target.status === "tox"));
           crit = sure || chance >= 1 || this.random() < chance;
@@ -2932,6 +3027,7 @@
           moveType: move.typeOverride ? move.type : undefined, lastMoveFailed: !!user.lastMoveFailed,
           statsLowered: !!user.statsLoweredThisTurn, hitIndex: i,
           zPower: move.zPower, zCategory: move.zPower ? move.category : undefined, zBrokeProtect: !!o.zBrokeProtect,
+          targetDynamaxed: !!target.dynamaxed,
           suppressA: this.neutralized(user), suppressD: this.neutralized(target),
           steelySpirit: [user, this.allyOf(user)].some((m) => m && m.hasAbility("Steely Spirit"))
         };
@@ -3058,6 +3154,7 @@
       const opts = side.bench(target.slot);
       if (!opts.length || target.volatiles.ingrain || target.hasAbility("Suction Cups")) return;
       if (target.volatiles.skydrop || (target.volatiles.twoturnmove && target.volatiles.twoturnmove.skyDrop)) return;
+      if (target.dynamaxed) return;
       if (this.callAbility(target, "onDragOut", { source: user }) === false) return;
       this.switchIn(side, this.sample(opts), { drag: true, slot: target.slot });
     }
@@ -3095,7 +3192,7 @@
         if (STALL_MOVES.has(vs)) {
           if (!this.stallSuccess(user)) { this.add("-fail", user); user.stallCount = 0; return false; }
           user.stallCount = (user.stallCount || 0) + 1;
-          if (vs === "endure" || vs === "protect" || vs === "kingsshield" || vs === "spikyshield" || vs === "banefulbunker" || vs === "obstruct") this.addVolatile(user, vs, user, moveEffect);
+          if (vs === "endure" || vs === "protect" || vs === "kingsshield" || vs === "spikyshield" || vs === "banefulbunker" || vs === "obstruct" || vs === "maxguard") this.addVolatile(user, vs, user, moveEffect);
           else this.addSideCondition(user.side, vs, user);
           return true;
         }
@@ -3252,6 +3349,7 @@
         if (f.pseudo[id].turns <= 0) { delete f.pseudo[id]; this.add("-fieldend", id); }
       }
       for (const m of this.getActives()) {
+        if (m.dynamaxed && --m.dynamaxed.turns <= 0) this.undynamax(m);
         if (this.doubles) for (const id of TURN_VOLATILES) delete m.volatiles[id];
         for (const id of Object.keys(m.volatiles)) {
           const v = m.volatiles[id];
@@ -3260,7 +3358,7 @@
             if (v.duration <= 0) this.removeVolatile(m, id);
           }
         }
-        if (!m.volatiles.protect && !m.volatiles.kingsshield && !m.volatiles.spikyshield && !m.volatiles.banefulbunker && !m.volatiles.obstruct && !m.volatiles.endure
+        if (!m.volatiles.protect && !m.volatiles.kingsshield && !m.volatiles.spikyshield && !m.volatiles.banefulbunker && !m.volatiles.obstruct && !m.volatiles.maxguard && !m.volatiles.endure
             && !(m.lastMove && STALL_MOVES.has(m.lastMove))) m.stallCount = 0;
         m.activeTurns++;
         if (m.hp && m.volatiles.roost === undefined && m.types.join() !== m.baseTypes.join() && !m.mega) { /* type changes persist */ }

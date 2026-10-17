@@ -799,9 +799,16 @@
       // B_WIN_MOVE_NAME_1-4 (tiles 2 / 11, rows 15 / 17), small font.
       for (let i = 0; i < 4; i++) {
         const x = (i & 1 ? 11 : 2) * 8, y = (i & 2 ? 17 : 15) * 8 + 1;
-        // (A Z-Move or Dynamax switched on: the moves they make, "-" for none.)
+        // (A Z-Move or Dynamax switched on: the moves they make, "-" for none,
+        // shortened to fit the column: "G-Max Wildfire" as "G-Wildfire", then cut.)
         const z = opts.mega && opts.mega.on && opts.mega.names;
-        s.text(moves[i] ? (z ? z(moves[i]) || "-" : moves[i].name) : "-", x, y, P5.fg, P5.shadow, "small");
+        let label = moves[i] ? (z ? z(moves[i]) || "-" : moves[i].name) : "-";
+        if (z && s.textWidth(label, "small") > 64) {
+          label = label.replace(/^G-Max /, "G-");
+          while (label.length > 3 && s.textWidth(label + ".", "small") > 64) label = label.slice(0, -1);
+          if (s.textWidth(label, "small") > 64 || label !== (z(moves[i]) || "").replace(/^G-Max /, "G-")) label = label.trimEnd() + ".";
+        }
+        s.text(label, x, y, P5.fg, P5.shadow, "small");
       }
       if (swapping != null) {
         if (swapping !== cursor) battleCursor(s, frame, ...at(swapping), 29);
@@ -841,7 +848,7 @@
       else if (k === "select" && opts.swap && moves.length > 1) {
         swapping = cursor; cursor = cursor !== 0 ? 0 : 1; draw();
       }
-      else if (k === "start" && opts.mega) { se(); opts.mega.on = !opts.mega.on; if (opts.mega.toggled) opts.mega.toggled(opts.mega.on); draw(); }
+      else if (k === "start" && opts.mega && !opts.mega.fixed) { se(); opts.mega.on = !opts.mega.on; if (opts.mega.toggled) opts.mega.toggled(opts.mega.on); draw(); }
       else if (k === "a") { se(); return { index: cursor, cursor }; }
       else if (k === "b") { se(); return null; }
       return undefined;

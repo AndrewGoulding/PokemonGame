@@ -211,6 +211,8 @@
     if (record.egg) return false;
     if (item === "ability-capsule") return !!capsuleAbility(record);
     if (item === "zygarde-cube") return !!ZYGARDE[record.species];
+    if (item === "dynamax-candy") return (record.dynamaxLevel || 0) < 10;
+    if (item === "max-mushrooms") return !!window.DEX[record.species + "-Gmax"];
     if (item === "bottle-cap") return opts.stat ? trainableStats(record).includes(opts.stat) : trainableStats(record).length > 0;
     if (item === "gold-bottle-cap") return trainableStats(record).length > 0;
     if (isStone(item)) return !!window.Evolution.find(record, { trigger: "item", item, party: opts.party });
@@ -222,6 +224,8 @@
   // Applies an HP / status / PP / vitamin item. Evolution stones and Rare Candy
   // go through levelUp() and the evolution flow in the UI instead.
   function useOn(record, item, opts) {
+    if (item === "dynamax-candy") { record.dynamaxLevel = (record.dynamaxLevel || 0) + 1; return { level: record.dynamaxLevel }; }
+    if (item === "max-mushrooms") { record.gmax = !record.gmax; return { gmax: record.gmax }; }
     if (item === "ability-capsule") {
       const old = record.ability;
       record.ability = capsuleAbility(record);

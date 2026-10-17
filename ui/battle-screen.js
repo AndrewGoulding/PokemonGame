@@ -159,7 +159,10 @@
     reflect: "Reflect raised {team}'s Defense!", lightscreen: "Light Screen raised {team}'s Sp. Def!",
     safeguard: "{Team} cloaked itself in a mystical veil!", mist: "{Team} became shrouded in mist!",
     luckychant: "Lucky Chant shielded {team} from critical hits!",
-    auroraveil: "Aurora Veil made {team} stronger against physical and special moves!"
+    auroraveil: "Aurora Veil made {team} stronger against physical and special moves!",
+    gmaxwildfire: "{Team} were surrounded by fire!", gmaxvinelash: "{Team} got trapped with vines!",
+    gmaxcannonade: "{Team} got caught in the vortex of water!", gmaxvolcalith: "{Team} became surrounded by rocks!",
+    gmaxsteelsurge: "Sharp-pointed pieces of steel started floating around {team}!"
   };
   const FIELD_START = {
     grassyterrain: "Grass grew to cover the battlefield!", mistyterrain: "Mist swirled about the battlefield!",
@@ -928,6 +931,8 @@
     const side = sideOf(a);
     const pos = posOf(a);
     const v = view[pos];
+    // (Dynamax ends when it faints or leaves the field: the picture goes back to size.)
+    if ((type === "switch" || type === "drag" || type === "faint") && el.sides[pos]) el.sides[pos].sprite.classList.remove("dynamax");
 
     switch (type) {
       case "switch":
@@ -1138,6 +1143,19 @@
           await message(fill("{who} regained its true power through Ultra Burst!", a));
         };
       }
+      // Dynamax (Sword and Shield): the picture grows, red-lit, for three turns.
+      case "-dynamax": {
+        const verb = b === "Gmax" ? "Gigantamaxed" : b === "Eternamax" ? "Eternamaxed" : "Dynamaxed";
+        return async () => {
+          await message(fill("{who} " + verb + "!", a));
+          el.sides[pos].sprite.classList.add("dynamax");
+        };
+      }
+      case "-dynamaxhp": setHp(a, b); return null;
+      case "-dynamaxend":
+        el.sides[pos].sprite.classList.remove("dynamax");
+        setHp(a, b);
+        return fill("{who} returned to its normal size!", a);
       // Z-Moves (Sun and Moon).
       case "-zpower": return fill("{who} surrounded itself with its Z-Power!", a);
       case "-zbroken": return fill("{who} couldn't fully protect itself and got hurt!", a);
@@ -1576,8 +1594,10 @@
           : active.zMoves && config.zRing && !(dbl && dbl.zTaken) ? "zmove"
           : active.canDynamax && config.dynamaxBand && !(dbl && dbl.dynamaxTaken) ? "dynamax" : null;
         const shown = kind === "zmove" ? active.zMoves : kind === "dynamax" ? active.maxMoves : null;
-        const mega = kind ? { on: false, toggled, kind, names: shown ? (m) => shown[m.index] || null : null } : null;
-        if (mega) showTrigger(pos);
+        // (Already Dynamaxed: its Max Moves, always.)
+        const mega = kind ? { on: false, toggled, kind, names: shown ? (m) => shown[m.index] || null : null }
+          : active.dynamaxed && active.maxMoves ? { on: true, fixed: true, names: (m) => active.maxMoves[m.index] || null } : null;
+        if (mega && !mega.fixed) showTrigger(pos);
         // (A double battle: the Pokémon a spread or field move will hit
         // flash, PreviewDeterminativeMoveTargets.)
         const onCursor = dbl ? (c) => previewTargets(pos, moves[c]) : null;
@@ -1607,7 +1627,7 @@
             continue;
           }
           const choice = { type: "move", move: m.index };
-          if (mega && mega.on) choice[mega.kind] = true;
+          if (mega && mega.on && mega.kind) choice[mega.kind] = true;
           if (target !== undefined) choice.target = target;
           hideTrigger();
           return choice;

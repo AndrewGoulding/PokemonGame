@@ -154,6 +154,9 @@
     },
     // Gen 8
     obstruct: { name: "Obstruct", duration: 1 },
+    maxguard: { name: "Max Guard", duration: 1 },
+    // G-Max Chi Strike: +1 critical-hit stage a use (up to 3), until it leaves.
+    gmaxchistrike: { name: "G-Max Chi Strike", onStart(ctx) { ctx.effectState.layers = 1; } },
     octolock: {
       name: "Octolock",
       onResidual(ctx) {
@@ -302,6 +305,13 @@
   // ---------------------------------------------------------------
   // Side conditions
   // ---------------------------------------------------------------
+  const gmaxBurn = (name, type) => ({
+    name, duration: 4,
+    onResidual(ctx) {
+      const p = ctx.pokemon;
+      if (!p.hasType(type)) ctx.damage(p, hpFrac(p, 1, 6), null, E("SideCondition", name.toLowerCase().replace(/[^a-z]/g, ""), name));
+    }
+  });
   const sides = {
     reflect: { name: "Reflect", duration: 5 },
     lightscreen: { name: "Light Screen", duration: 5 },
@@ -309,6 +319,14 @@
     mist: { name: "Mist", duration: 5 },
     luckychant: { name: "Lucky Chant", duration: 5 },
     auroraveil: { name: "Aurora Veil", duration: 5 },
+    // G-Max Wildfire, Vine Lash, Cannonade, Volcalith: four turns of 1/6 HP a
+    // turn to the side's Pokémon not of that type.
+    gmaxwildfire: gmaxBurn("G-Max Wildfire", "Fire"),
+    gmaxvinelash: gmaxBurn("G-Max Vine Lash", "Grass"),
+    gmaxcannonade: gmaxBurn("G-Max Cannonade", "Water"),
+    gmaxvolcalith: gmaxBurn("G-Max Volcalith", "Rock"),
+    // G-Max Steelsurge: sharp steel, like Stealth Rock but Steel type.
+    gmaxsteelsurge: { name: "G-Max Steelsurge" },
     tailwind: {
       name: "Tailwind",
       duration: 4,

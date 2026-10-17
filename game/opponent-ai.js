@@ -217,6 +217,8 @@
     if (req.active.canMega) choice.mega = true;
     if (req.active.canUltraBurst) choice.ultra = true;
     if (req.active.zMoves && req.active.zMoves[best.index]) choice.zmove = true;
+    // (Dynamax with its last Pokémon, if its Trainer can.)
+    else if (req.active.canDynamax && side.pokemon.filter((p) => !p.fainted).length === 1 && !choice.mega) choice.dynamax = true;
     return choice;
   }
 
