@@ -75,9 +75,10 @@ function pick(id) {
   return { groups: [latest], rows: g[latest] };
 }
 
-// This game's own additions, kept through every rebuild: Charmander still
-// learns Metal Claw at 13, as in FireRed, for Brock's Rock types.
-const EXTRA = { Charmander: [[13, "Metal Claw"]] };
+// This game's own additions, kept through every rebuild: Charmander,
+// Charmeleon and Charizard still learn Metal Claw at 13, as in FireRed, for
+// Brock's Rock types.
+const EXTRA = { Charmander: [[13, "Metal Claw"]], Charmeleon: [[13, "Metal Claw"]], Charizard: [[13, "Metal Claw"]] };
 
 const out = {}, source = {}, kept = [];
 // (A form that shares its base species' learnset, as Gigantamax ones do, gets it from there.)

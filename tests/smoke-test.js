@@ -1306,8 +1306,8 @@ for (const share of [false, true]) {
 {
   const Party = window.Party;
   assert.deepStrictEqual(Party.create("Charmander", 5).moves.map((m) => m.name), ["Scratch", "Growl", "Ember"]);
-  // (This game's own: Charmander still learns Metal Claw at 13, for Brock.)
-  assert.deepStrictEqual(Party.movesLearnedAt(Party.create("Charmander", 12), 13), ["Metal Claw"]);
+  // (This game's own: Charmander, Charmeleon and Charizard still learn Metal Claw at 13, for Brock.)
+  for (const sp of ["Charmander", "Charmeleon", "Charizard"]) assert.deepStrictEqual(Party.movesLearnedAt(Party.create(sp, 12), 13), ["Metal Claw"], sp);
   assert.deepStrictEqual(Party.create("Pikachu", 5).moves.map((m) => m.name).slice(0, 2), ["Tail Whip", "Thunder Shock"]);
 }
 
