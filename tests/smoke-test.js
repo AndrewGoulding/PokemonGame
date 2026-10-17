@@ -4264,3 +4264,25 @@ console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " 
   }
   assert(g.players.every((p) => p.result && p.result.length >= 1));
 }
+
+// Wild held items (data/wild-items.js: FireRed's, else Emerald's; Encounters.heldItem).
+{
+  const W = window.WILD_ITEMS;
+  assert.deepStrictEqual(W.Chansey, [null, "lucky-egg"], "FireRed's");
+  assert.deepStrictEqual(W.Pikachu, ["oran-berry", "light-ball"], "none in FireRed: Emerald's");
+  assert(!W.Mawile && !W.Lucario, "neither: nothing (and nothing past Gen 3)");
+  for (const [sp, items] of Object.entries(W)) for (const id of items) assert(id === null || (ITEMS[id] && Bag.sprite(id)), sp + ": " + id);
+  const at = (r) => () => r;
+  // 45% nothing, 50% common, 5% rare; Compound Eyes 20 / 60 / 20; the same item twice, always.
+  assert.deepStrictEqual([0.44, 0.45, 0.94, 0.95].map((r) => Encounters.heldItem("Pikachu", at(r))), ["", "oran-berry", "oran-berry", "light-ball"]);
+  assert.deepStrictEqual([0.19, 0.2, 0.79, 0.8].map((r) => Encounters.heldItem("Pikachu", at(r), true)), ["", "oran-berry", "oran-berry", "light-ball"]);
+  assert.strictEqual(Encounters.heldItem("Shuckle", at(0)), "berry-juice", "always its Berry Juice");
+  assert.strictEqual(Encounters.heldItem("Chansey", at(0.5)), "", "no common item: nothing");
+  assert.strictEqual(Encounters.heldItem("Mawile", at(0.99)), "");
+  const lead = Object.assign(Party.create("Butterfree", 20), { ability: "Compound Eyes" });
+  assert.strictEqual(Encounters.withHeldItem(Party.create("Pikachu", 5), lead, at(0.85)).item, "light-ball", "Compound Eyes");
+  // Caught, it keeps what it's still holding.
+  const wild = Object.assign(Party.create("Pikachu", 5), { item: "oran-berry" });
+  assert.strictEqual(Party.caught(wild, { level: 5, exp: wild.exp, evs: wild.evs, happiness: 70, hp: 10, status: "", moves: [], item: "oran-berry" }, "poke-ball").item, "oran-berry");
+  assert.strictEqual(Party.caught(wild, { level: 5, exp: wild.exp, evs: wild.evs, happiness: 70, hp: 10, status: "", moves: [], item: "" }, "poke-ball").item, "", "a Berry it ate is gone");
+}

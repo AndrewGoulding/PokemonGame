@@ -1445,6 +1445,18 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   switch it off and on), each Pokémon that battled gets the full amount
   instead of a split, and the rest of the party (not fainted) gets half, plus
   EVs, as in X and Y.
+- **Wild held items**: a wild Pokémon in the grass, on the water, on a rod,
+  under a smashed rock or in the Safari Zone may be holding an item:
+  FireRed's for its species (`.itemCommon` and `.itemRare` in
+  src/data/pokemon/species_info.h), or Emerald's (Ruby and Sapphire's) when
+  FireRed gives it none, such as Pikachu's Oran Berry and Light Ball, and
+  nothing when neither does (or for anything past Gen 3); `data/wild-items.js`,
+  from `node tools/build-wild-items.js <pokefirered> <pokeemerald's species_info.h>`.
+  As in FireRed (SetWildMonHeldItem): 50% the common item, 5% the rare one,
+  and always the item when both are the same (Shuckle's Berry Juice); a lead
+  Pokémon with Compound Eyes makes it 60% and 20%, as in Emerald. Thief and
+  Covet can take it, a Berry gets eaten, and caught, it keeps what it still
+  holds. The legendaries waiting on the map hold nothing, as in FireRed.
 - **Shiny Pokémon**: any Pokémon you meet or are given is shiny 1 time in 1,000
   (trainers' never are). They use their shiny sprites
   everywhere, sparkle as they come out in battle (a wild one too, as it

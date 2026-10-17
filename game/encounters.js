@@ -3,6 +3,7 @@
 //
 //   Encounters.wild(partyLevel)       // -> a party record for a wild Pokémon
 //   Encounters.trainer(partyLevel)    // -> { name, team: [records] }
+//   Encounters.withHeldItem(record, lead)   // a wild Pokémon holding what it rolls (data/wild-items.js)
 //
 // A species can appear from its "minimum level": 1 for a base form, its
 // evolution level for level-up evolutions, the same as its pre-evolution for
@@ -81,5 +82,25 @@
     return { name: pick(TRAINER_NAMES, rng), team };
   }
 
-  window.Encounters = { speciesFor, wild, trainer, minLevel: (s) => (minLevels || (minLevels = buildMinLevels()))[s] };
+  // What a wild Pokémon is holding (data/wild-items.js: FireRed's, else
+  // Emerald's): as SetWildMonHeldItem, 45% nothing, 50% the common item and
+  // 5% the rare one; with a lead Pokémon with Compound Eyes (as in Emerald),
+  // 20% nothing, 60% common and 20% rare; both the same item, always that.
+  // -> an item id, or "".
+  function heldItem(species, rng, compoundEyes) {
+    const items = (window.WILD_ITEMS || {})[species];
+    if (!items) return "";
+    const [common, rare] = items;
+    if (common === rare) return common || "";
+    const r = Math.floor((rng || Math.random)() * 100);
+    const none = compoundEyes ? 20 : 45, notRare = compoundEyes ? 80 : 95;
+    return (r < none ? "" : r < notRare ? common : rare) || "";
+  }
+  // A wild Pokémon's record, holding what it rolls (`lead`: your lead Pokémon's record, for Compound Eyes).
+  function withHeldItem(record, lead, rng) {
+    record.item = heldItem(record.species, rng, !!lead && lead.ability === "Compound Eyes");
+    return record;
+  }
+
+  window.Encounters = { speciesFor, wild, trainer, heldItem, withHeldItem, minLevel: (s) => (minLevels || (minLevels = buildMinLevels()))[s] };
 })();

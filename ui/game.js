@@ -82,6 +82,10 @@
   }
 
   const confirm = (text) => Screen.yesNo(text);
+  // A wild Pokémon met in the grass, on the water, on a rod, under a rock or in
+  // the Safari Zone, holding what it rolls (Encounters.withHeldItem; your lead
+  // Pokémon's Compound Eyes helps). (Not the legendaries waiting on the map.)
+  const wildMon = (record) => Encounters.withHeldItem(record, player.party.find((r) => !r.egg && r.hp > 0));
   let continued = false;   // (just continued a saved game: the area's name shows)
   const sfx = (name) => { if (window.GameAudio && window.GameAudio.se) window.GameAudio.se(name); };
 
@@ -255,7 +259,7 @@
   async function battle(kind, opts) {
     opts = opts || {};
     const wild = kind === "wild";
-    const foe = opts.foe || (wild ? { name: "Wild", team: [Encounters.wild(partyLevel())] } : Encounters.trainer(partyLevel()));
+    const foe = opts.foe || (wild ? { name: "Wild", team: [wildMon(Encounters.wild(partyLevel()))] } : Encounters.trainer(partyLevel()));
     const foe2 = !wild && opts.foe2 || null;
     const double = !wild && !opts.safari && !!(opts.double || opts.partner || foe2);
     if (!wild) for (const r of foe.team.concat(foe2 ? foe2.team : [])) delete r.shiny;   // trainers' Pokémon are never shiny
@@ -5564,7 +5568,7 @@
     const m = window.WORLD_MAPS[player.location.map];
     if (m && m.rockSmash && Math.floor(Math.random() * 1600) < m.rockSmash.rate * 16 && canBattle()) {
       const w = World.pickWild(m, Math.random, m.rockSmash);
-      if (w) await battle("wild", { foe: { name: "Wild", team: [Party.create(w.species, w.level)] } });
+      if (w) await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(w.species, w.level))] } });
     }
   }
 
@@ -5706,7 +5710,7 @@
     const terrain = ahead.behavior === 0x10 ? "pond" : "water";
     if (safariOn()) { await safariBattle(mon.species, mon.level, terrain); return; }
     if (!canBattle()) return;
-    await battle("wild", { foe: { name: "Wild", team: [Party.create(mon.species, mon.level)] }, terrain });
+    await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(mon.species, mon.level))] }, terrain });
   }
 
   // ---------- Cycling Road ----------
@@ -9477,7 +9481,7 @@
   }
   // A wild Pokémon in the Safari Zone.
   async function safariBattle(species, level, terrain) {
-    const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create(species, level)] }, terrain, safari: true });
+    const outcome = await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(species, level))] }, terrain, safari: true });
     const s = player.flags.safari;
     if (outcome === "noballs") {
       show("world");
@@ -9925,7 +9929,7 @@
           : here && ["route", "town", "city"].includes(here.type) ? "grass" : undefined;
         if (safariOn()) await safariBattle(ev.species, ev.level, terrain);
         // (The Tanoby Ruins' Unown: each slot's letter, sUnownLetterSlots.)
-        else await battle("wild", { foe: { name: "Wild", team: [Party.create(ev.species, ev.level, { unown: Sevii.unownLetter(at.map, ev.slot) })] },
+        else await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(ev.species, ev.level, { unown: Sevii.unownLetter(at.map, ev.slot) }))] },
           terrain, ghost: towerGhost() });
       } else await story(ev);
       await persist();

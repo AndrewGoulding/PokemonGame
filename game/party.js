@@ -214,6 +214,8 @@
   // The wild Pokémon's record becomes yours: its battle state plus the ball.
   function caught(wildRecord, mon, ball) {
     const record = syncFromBattle(JSON.parse(JSON.stringify(wildRecord)), mon);
+    // (What it's holding when caught: a Berry it ate, or an item knocked off or stolen, is gone.)
+    if (mon && "item" in mon) record.item = mon.item || "";
     record.ball = ball;
     if (ball === "friend-ball") record.happiness = 200;
     if (ball === "heal-ball") heal(record);
