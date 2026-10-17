@@ -838,7 +838,9 @@ replaces each species' level-up list (and says which game each came from,
 evolving (level 0 there, as Charizard's Air Slash) is learned when it evolves.
 Thousand Arrows and Thousand Waves aren't in the game, so Zygarde goes without. One
 addition of this game's own: Charmander, Charmeleon and Charizard still
-learn Metal Claw at 13, as in FireRed, for Brock's Rock types.
+learn Metal Claw at 13, as in FireRed, for Brock's Rock types. Every
+trainer's Pokémon (Gym Leaders, the Elite Four, rivals, Trainer Tower and
+everyone on the maps) knows the last four moves it learns by its level.
 
 ```sh
 mkdir pokeapi && for f in pokemon_moves version_groups move_names; do
