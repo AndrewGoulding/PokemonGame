@@ -99,7 +99,7 @@
   // Turns `record` into `into`. Keeps damage taken, the ability slot (a Hidden
   // Ability included), and
   // consumes a held evolution item. Returns the moves the new species learns
-  // at the current level (to teach or offer).
+  // on evolving and at the current level (to teach or offer).
   function evolve(record, into, evo) {
     const oldDex = window.DEX[record.species], newDex = window.DEX[into];
     const oldMax = window.Party.maxHp(record);
@@ -114,7 +114,10 @@
     if (evo && (evo.method === "level-hold" || evo.method === "trade") && evo.item && record.item === evo.item) {
       record.item = "";
     }
-    return window.Party.movesLearnedAt(record, record.level);
+    // (Its moves learned on evolving, level 0 as Scarlet and Violet list them, then those at its level.)
+    const moves = window.Party.movesLearnedAt(record, 0);
+    for (const m of window.Party.movesLearnedAt(record, record.level)) if (!moves.includes(m)) moves.push(m);
+    return moves;
   }
 
   // Nincada -> Ninjask also leaves a Shedinja if there's room and a Poké Ball.

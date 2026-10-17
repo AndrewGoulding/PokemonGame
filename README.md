@@ -828,6 +828,22 @@ cd expansion && git sparse-checkout add '/src/data/pokemon/level_up_learnsets/*'
 node tools/order-learnsets.js expansion
 ```
 
+Every Pokémon's level-up moves are then Scarlet and Violet's (with The Teal
+Mask and The Indigo Disk), or, for one that isn't in them, the latest game's
+it's in (Legends: Arceus, Brilliant Diamond and Shining Pearl, Sword and
+Shield, Ultra Sun and Ultra Moon or Let's Go): `tools/build-levelup-learnsets.js`
+writes them from PokeAPI's CSVs into `data/learnsets-levelup.js`, which
+replaces each species' level-up list (and says which game each came from,
+`LEVELUP_SOURCE`); TMs, tutors and Egg moves are as before. A move learned on
+evolving (level 0 there, as Charizard's Air Slash) is learned when it evolves.
+Thousand Arrows and Thousand Waves aren't in the game, so Zygarde goes without.
+
+```sh
+mkdir pokeapi && for f in pokemon_moves version_groups move_names; do
+  curl -sSfL -o pokeapi/$f.csv https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/$f.csv; done
+node tools/build-levelup-learnsets.js pokeapi
+```
+
 `tools/build-summary.js` converts FireRed's Summary screen and Move Relearner
 (`graphics/summary_screen/`, `graphics/interface/`) into `data/summary-screen.js`,
 with short descriptions for every move and ability (FireRed's, and the
@@ -1843,7 +1859,7 @@ and later files read those globals, so scripts must load in this order:
 4. `data/moves.js` → `MOVES`
 5. `data/abilities.js` → `ABILITIES`
 6. `data/items.js` → `ITEMS`
-7. `data/learnsets.js` → `LEARNSETS_GEN6`
+7. `data/learnsets.js` → `LEARNSETS_GEN6` (`data/learnsets-levelup.js` gives it Scarlet and Violet's level-up moves)
 8. `data/machine-learners.js` → `MACHINE_LEARNERS`
 9. `data/evolutions.js` → `EVOLUTIONS`
 10. `data/item-sprites.js` → `ITEM_SPRITES`

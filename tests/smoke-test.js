@@ -307,7 +307,7 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
   const group = Experience.growthRate("Charmander");
   const battle = new Battle({
     seed: 3, exp: true, wild: true,
-    p1: { name: "P", team: [{ species: "Charmander", level: 15, exp: Experience.expForLevel(group, 16) - 5, hp: 30,
+    p1: { name: "P", team: [{ species: "Charmander", level: 16, exp: Experience.expForLevel(group, 17) - 5, hp: 30,
       moves: ["Scratch", "Growl", "Ember", "Smokescreen"] }] },
     p2: { name: "W", team: [{ species: "Rattata", level: 12, moves: ["Tackle"] }] }
   });
@@ -320,13 +320,14 @@ assert.strictEqual(Experience.gain({ species: "Rattata", level: 12, participants
     battle.choose("p2", { type: "move", move: 0 });
   }
   assert.strictEqual(battle.winner, "p1");
-  assert.strictEqual(mon.level, 16);
+  assert.strictEqual(mon.level, 17);
   assert(mon.leveledUp && mon.maxhp > maxBefore, "stats should go up on level-up");
   assert(battle.events.some((e) => e[0] === "-exp" && e[2] === 87));
-  assert(battle.events.some((e) => e[0] === "-levelup" && e[2] === 16));
-  assert(battle.events.some((e) => e[0] === "-trylearn" && e[2] === "Dragon Rage"), "should offer Dragon Rage at 16");
-  assert(battle.replaceMove("p1", 0, 1, "Dragon Rage"));
-  assert.deepStrictEqual(mon.moves.map((m) => m.name), ["Scratch", "Dragon Rage", "Ember", "Smokescreen"]);
+  assert(battle.events.some((e) => e[0] === "-levelup" && e[2] === 17));
+  // (Scarlet and Violet's learnset: Fire Fang at 17.)
+  assert(battle.events.some((e) => e[0] === "-trylearn" && e[2] === "Fire Fang"), "should offer Fire Fang at 17");
+  assert(battle.replaceMove("p1", 0, 1, "Fire Fang"));
+  assert.deepStrictEqual(mon.moves.map((m) => m.name), ["Scratch", "Fire Fang", "Ember", "Smokescreen"]);
 }
 
 // Gen 6 Exp. Share: the Pokémon that battled gets the full amount, the rest of
@@ -458,7 +459,7 @@ for (const share of [false, true]) {
   const learned = Evolution.evolve(charmeleon, "Charizard", { method: "level" });
   assert.strictEqual(charmeleon.species, "Charizard");
   assert.strictEqual(charmeleon.hp, Party.maxHp(charmeleon) - 20);
-  assert.deepStrictEqual(learned, ["Wing Attack"]);
+  assert.deepStrictEqual(learned, ["Air Slash"], "Scarlet and Violet: Air Slash on evolving");
   assert.strictEqual(Evolution.shedinja(Party.create("Nincada", 20, { rng })).species, "Shedinja");
 
   // Burmy: females become the Wormadam matching their cloak, males Mothim.
@@ -537,10 +538,10 @@ for (const share of [false, true]) {
   assert.strictEqual(r.evs.atk, 100, "vitamins stop at 100 EVs");
 
   // Rare Candy: a level, the new level's moves, and friendship.
-  const c = Party.create("Charmander", 15, { rng });
+  const c = Party.create("Charmander", 16, { rng });
   const happy = c.happiness;
-  assert.deepStrictEqual(Bag.levelUp(c), ["Dragon Rage"]);
-  assert.strictEqual(c.level, 16);
+  assert.deepStrictEqual(Bag.levelUp(c), ["Fire Fang"]);
+  assert.strictEqual(c.level, 17);
   assert(c.happiness > happy);
   assert.strictEqual(Evolution.find(c, { trigger: "level" }).into, "Charmeleon");
 
@@ -1299,11 +1300,12 @@ for (const share of [false, true]) {
   assert.deepStrictEqual(problems, [], "debug species");
 }
 
-// Moves learned at the same level come in the games' order
-// (tools/order-learnsets.js): a new Charmander knows Scratch, then Growl.
+// Moves learned at the same level come in the games' order (Scarlet and
+// Violet's, tools/build-levelup-learnsets.js): a new Charmander knows
+// Scratch, then Growl, then Ember (level 4).
 {
   const Party = window.Party;
-  assert.deepStrictEqual(Party.create("Charmander", 5).moves.map((m) => m.name), ["Scratch", "Growl"]);
+  assert.deepStrictEqual(Party.create("Charmander", 5).moves.map((m) => m.name), ["Scratch", "Growl", "Ember"]);
   assert.deepStrictEqual(Party.create("Pikachu", 5).moves.map((m) => m.name).slice(0, 2), ["Tail Whip", "Thunder Shock"]);
 }
 
