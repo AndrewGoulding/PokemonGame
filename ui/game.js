@@ -268,7 +268,7 @@
     const double = !wild && !opts.safari && !!(opts.double || opts.partner || foe2);
     if (!wild) for (const r of foe.team.concat(foe2 ? foe2.team : [])) delete r.shiny;   // trainers' Pokémon are never shiny
     // (This game's own: one wild Pokémon in ten is a Tera Pokémon, of a random
-    // Tera Type, Terastallizing as soon as it's out; beat it for Tera Shards,
+    // Tera Type, already Terastallized when it appears; beat it for Tera Shards,
     // or catch it and it keeps its Tera Type. Not in the Safari Zone, a raid
     // or Pokémon Tower's unidentified Ghost.)
     const wildTera = wild && !opts.safari && !opts.raid && !opts.ghost && Math.random() < WILD_TERA_CHANCE
@@ -298,7 +298,7 @@
     const teraOrb = Player.itemCount(player, "tera-orb") > 0;
     // (A Tera Raid's Pokémon: more HP the more stars, RaidDens.HP, and already Terastallized.)
     const foeSets = (f) => f.team.map((r) => Object.assign(Party.toBattleSet(r), opts.ghost ? { name: "Ghost" } : {},
-      opts.raid ? { raidHp: RaidDens.HP[opts.raid], teraStart: true } : {}));
+      opts.raid ? { raidHp: RaidDens.HP[opts.raid], teraStart: true } : {}, wildTera ? { teraStart: true } : {}));
     const result = await BattleScreen.run({
       p1: Object.assign({ name: player.name, team: own.map((r) => Party.toBattleSet(r, here)), dynamax: Player.itemCount(player, "dynamax-band") > 0, tera: teraOrb },
         opts.partner ? { partner: { name: opts.partner.name, team: opts.partner.team.map((r) => Party.toBattleSet(r)) } } : {}),
@@ -1069,6 +1069,8 @@
     await MiningScreen.message("Gained " + dig.xp + " mining XP.");
     const after = Mining.level(f.miningXp);
     if (after > before) await MiningScreen.message("Your mining level rose to " + after + "! You have more energy, and rarer treasures may turn up now.");
+    // (A new tool: the Hammer at 5, the Bomb at 10, the Survey Kit at 20.)
+    for (const t of Mining.TOOLS) if (t.level > before && t.level <= after) await MiningScreen.message("You can use the " + t.name + " now! SELECT changes tools.");
     MiningScreen.clear();
     await persist();
     return true;

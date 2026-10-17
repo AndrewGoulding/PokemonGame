@@ -3,8 +3,12 @@
 // The wall is 13 x 10 tiles of rock, each 1-6 layers deep. Two to four
 // treasures are buried in it, plus some bedrock that can't be dug. Each hit
 // takes layers off: the pickaxe 2 from the tile hit and 1 from the four
-// beside it; the hammer 2 from the tile and 1 from all eight around it, but
-// it takes twice the energy. A treasure is yours once every tile over it is
+// beside it; the hammer (from mining level 5) 2 from the tile and 1 from all
+// eight around it, but it takes twice the energy. This game's own tools too:
+// the bomb (from level 10) goes off somewhere at random, taking 2 layers off
+// the tiles close by and 1 off those a little further, for 4 energy; the
+// survey kit (from level 20) digs nothing, but tells you what's still
+// buried, for 2. A treasure is yours once every tile over it is
 // cleared. The dig ends when every treasure is out, or when you run out of
 // energy (anything not fully dug out stays buried). The higher your mining
 // level, the more energy you have.
@@ -12,11 +16,21 @@
 // Mining XP: 1 for every hit, 10 more for every treasure dug out.
 //
 //   const dig = Mining.create(rng, Mining.level(xp), mapName);
-//   Mining.hit(dig, x, y, "pick");    // -> { found: [item ids uncovered by this hit], xp }
+//   Mining.tools(level)               // the tools you can use: [{ id, name, level, cost }]
+//   Mining.hit(dig, x, y, "pick");    // -> { found: [item ids uncovered by this hit], xp } ("hammer", "bomb": at random)
+//   Mining.survey(dig)                // -> [item ids still buried] (the survey kit, 2 energy)
 //   dig.over, dig.tired (out of energy), dig.xp, Mining.found(dig)
 (function () {
   const WIDTH = 13, HEIGHT = 10;
-  const ENERGY_COST = { pick: 1, hammer: 2 };
+  const TOOLS = [
+    { id: "pick", name: "Pickaxe", level: 1, cost: 1 },
+    { id: "hammer", name: "Hammer", level: 5, cost: 2 },
+    { id: "bomb", name: "Bomb", level: 10, cost: 4 },
+    { id: "survey", name: "Survey Kit", level: 20, cost: 2 }
+  ];
+  const ENERGY_COST = Object.fromEntries(TOOLS.map((t) => [t.id, t.cost]));
+  const tools = (lv) => TOOLS.filter((t) => (lv || 1) >= t.level);
+  const BOMB_NEAR = 1.5, BOMB_FAR = 2.5;   // (tiles from where it goes off: 2 layers, then 1)
   const XP_PER_HIT = 1, XP_PER_TREASURE = 10;
   // Energy for a dig: 40 at level 1, and 2 more each level (238 at level 100).
   const maxEnergy = (lv) => 40 + 2 * ((lv || 1) - 1);
@@ -147,23 +161,35 @@
       if (at) for (const [x, y] of at.cells) bedrock[y * WIDTH + x] = true;
     }
     const energy = maxEnergy(lv);
-    return { width: WIDTH, height: HEIGHT, level: lv, rock, bedrock, treasures, energy, maxEnergy: energy, xp: 0, over: false, tired: false };
+    return { width: WIDTH, height: HEIGHT, level: lv, rock, bedrock, treasures, energy, maxEnergy: energy, xp: 0, over: false, tired: false, rng };
   }
 
-  // One hit with "pick" or "hammer" at (x, y).
+  // One hit with "pick" or "hammer" at (x, y), or the "bomb" (somewhere at
+  // random: x, y are ignored). -> { found, xp, at: [x, y] where it hit }
   function hit(dig, x, y, tool) {
+    if (tool === "bomb" && !dig.over) {
+      const rng = dig.rng || Math.random;
+      x = Math.floor(rng() * WIDTH); y = Math.floor(rng() * HEIGHT);
+    }
     if (dig.over || x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT) return { found: [], xp: 0 };
-    const around = tool === "hammer"
-      ? [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]
-      : [[0, -1], [-1, 0], [1, 0], [0, 1]];
     const dent = (tx, ty, n) => {
       if (tx < 0 || ty < 0 || tx >= WIDTH || ty >= HEIGHT) return;
       const i = ty * WIDTH + tx;
       if (!dig.bedrock[i]) dig.rock[i] = Math.max(0, dig.rock[i] - n);
     };
-    dent(x, y, 2);
-    for (const [dx, dy] of around) dent(x + dx, y + dy, 1);
-    dig.energy = Math.max(0, dig.energy - ENERGY_COST[tool === "hammer" ? "hammer" : "pick"]);
+    if (tool === "bomb") {
+      for (let ty = 0; ty < HEIGHT; ty++) for (let tx = 0; tx < WIDTH; tx++) {
+        const d = Math.hypot(tx - x, ty - y);
+        if (d <= BOMB_FAR) dent(tx, ty, d <= BOMB_NEAR ? 2 : 1);
+      }
+    } else {
+      const around = tool === "hammer"
+        ? [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]
+        : [[0, -1], [-1, 0], [1, 0], [0, 1]];
+      dent(x, y, 2);
+      for (const [dx, dy] of around) dent(x + dx, y + dy, 1);
+    }
+    dig.energy = Math.max(0, dig.energy - (ENERGY_COST[tool] || ENERGY_COST.pick));
     const found = [];
     for (const t of dig.treasures) {
       if (!t.found && t.cells.every(([cx, cy]) => dig.rock[cy * WIDTH + cx] === 0)) { t.found = true; found.push(t.item); }
@@ -172,11 +198,19 @@
     dig.xp += xp;
     if (dig.treasures.every((t) => t.found)) dig.over = true;
     else if (dig.energy <= 0) dig.over = dig.tired = true;
-    return { found, xp };
+    return { found, xp, at: [x, y] };
+  }
+  // The survey kit: what's still buried (2 energy; nothing dug, no XP).
+  function survey(dig) {
+    if (dig.over) return [];
+    dig.energy = Math.max(0, dig.energy - ENERGY_COST.survey);
+    const left = dig.treasures.filter((t) => !t.found).map((t) => t.item);
+    if (dig.energy <= 0) dig.over = dig.tired = true;
+    return left;
   }
 
   const found = (dig) => dig.treasures.filter((t) => t.found).map((t) => t.item);
 
-  window.Mining = { WIDTH, HEIGHT, ENERGY_COST, XP_PER_HIT, XP_PER_TREASURE, TREASURES, LEVELS, MAX_LEVEL, FOSSIL_CAVES,
-    maxEnergy, level, toNext, progress, available, create, hit, found };
+  window.Mining = { WIDTH, HEIGHT, ENERGY_COST, TOOLS, XP_PER_HIT, XP_PER_TREASURE, TREASURES, LEVELS, MAX_LEVEL, FOSSIL_CAVES,
+    maxEnergy, level, toNext, progress, available, create, hit, survey, tools, found };
 })();

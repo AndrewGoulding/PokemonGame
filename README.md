@@ -1373,9 +1373,11 @@ behind you and gives it to you), START
 on the move menu Terastallizes a Pokémon into its Tera Type, once a battle;
 the Orb recharges itself after every battle. Its trigger is always offered,
 beside a Z-Move's, Dynamax's or Ultra Burst's too (only Mega Evolution can
-go with it in the same turn). **Wild Tera Pokémon** (this game's own, as in
+go with it in the same turn). **Effect Spore** (and any status given by another Pokémon's Ability)
+says so: "Machamp has been paralyzed due to the wild Breloom's Effect
+Spore!". **Wild Tera Pokémon** (this game's own, as in
 Scarlet and Violet): one wild Pokémon in ten (not in the Safari Zone) has a
-random Tera Type and Terastallizes as soon as it's out, battling as a
+random Tera Type and is already Terastallized when it appears, battling as a
 trainer's Pokémon does; knock it out and you get 3 Tera Shards of its Tera
 Type, or catch it and it keeps that Tera Type. **Tera Shards** (one kind
 for each type, in the Power-up pocket): 50 of a type, used on a Pokémon,
@@ -1455,8 +1457,8 @@ Balls, and FireRed's throw and catch (it can't miss; it keeps its Tera
 Type). Then a FireRed-style screen of what you won (`ui/raid-rewards.js`:
 the stars and the Pokémon beaten, then the money and each item with its
 icon and how many, six to a page): money (₽1,500 / 3,000 / 6,000 / 10,000
-/ 20,000), Exp. Candies (XS for 1 star up to L and XL for 5), vitamins (1 to
-5) and Berries (2 to 6: everyday ones for 1 star, Sitrus and Lum, the
+/ 20,000), Exp. Candies (XS for 1 star up to L and XL for 5), Wings for 1 and
+2 stars (3 and 5) and vitamins from 3 stars (2, 3 and 5) and Berries (2 to 6: everyday ones for 1 star, Sitrus and Lum, the
 EV-lowering ones and the rare pinch Berries further up) and Tera Shards of
 the den's type (4, 6, 10, 15 or 25); and the den goes to sleep again. A
 den doesn't turn to face you when you talk to it (it's inanimate, as item
@@ -1773,6 +1775,12 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   Revives and Rare Bones at 63, the Ability Patch at 70, Gold Bottle Caps at
   80 and the plates at 100. Each fossil is only found in its own caves:
   Kanto's (Helix, Dome, Old Amber) in Mt. Moon; later regions' fossils will
+  Tools (SELECT, or B, changes tool): the Pickaxe; the Hammer from mining
+  level 5 (the eight tiles round it too, 2 energy); the Bomb from level 10
+  (goes off somewhere at random: 2 layers off the tiles close by, 1 off those
+  a little further, 4 energy); the Survey Kit from level 20 (digs nothing,
+  but tells you what's still buried, 2 energy). A level that brings a new
+  tool says so.
   get caves of their own. The rules are in `game/mining.js`, the screen in `ui/mining.js`.
 - **Berry Pouch** (a key item you start with; old saves get it too): use it
   from the Bag (or Select, registered) in a forest (Viridian Forest, Three

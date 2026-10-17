@@ -5,7 +5,7 @@
 // have, and the stronger the Lure, the likelier the higher ones), until you
 // win it. The Tera Raid Pokémon is Terastallized into the den's type, with
 // more HP the more stars, and must be beaten within a number of turns;
-// beaten, it gives money, Exp. Candies, vitamins, Berries and Tera Shards of
+// beaten, it gives money, Exp. Candies, Wings (1-2 stars) or vitamins (3+), Berries and Tera Shards of
 // the den's type (more and better the more stars), and you may catch it.
 // Depends on: window.WORLD_MAPS, window.DEX, window.ITEMS, window.Party (when used).
 //
@@ -153,6 +153,7 @@
   // ---------- Rewards ----------
 
   const VITAMINS = ["hp-up", "protein", "iron", "calcium", "zinc", "carbos"];
+  const WINGS = ["health-wing", "muscle-wing", "resist-wing", "genius-wing", "clever-wing", "swift-wing"];
   const BERRIES = {
     common: ["oran-berry", "cheri-berry", "chesto-berry", "pecha-berry", "rawst-berry", "aspear-berry", "persim-berry"],
     good: ["sitrus-berry", "leppa-berry", "lum-berry", "figy-berry", "wiki-berry", "mago-berry", "aguav-berry", "iapapa-berry"],
@@ -160,10 +161,11 @@
     training: ["pomeg-berry", "kelpsy-berry", "qualot-berry", "hondew-berry", "grepa-berry", "tamato-berry"],
     rare: ["liechi-berry", "ganlon-berry", "salac-berry", "petaya-berry", "apicot-berry", "lansat-berry", "starf-berry"]
   };
-  // By stars: money, Exp. Candies, how many vitamins, and how many Berries from which kinds.
+  // By stars: money, Exp. Candies, how many Wings (1 and 2 stars) or vitamins
+  // (3 stars and up), and how many Berries from which kinds.
   const REWARDS = [null,
-    { money: 1500, candies: [["exp-candy-xs", 3]], vitamins: 1, berries: [2, ["common"]] },
-    { money: 3000, candies: [["exp-candy-xs", 3], ["exp-candy-s", 2]], vitamins: 1, berries: [3, ["common", "good"]] },
+    { money: 1500, candies: [["exp-candy-xs", 3]], wings: 3, vitamins: 0, berries: [2, ["common"]] },
+    { money: 3000, candies: [["exp-candy-xs", 3], ["exp-candy-s", 2]], wings: 5, vitamins: 0, berries: [3, ["common", "good"]] },
     { money: 6000, candies: [["exp-candy-s", 3], ["exp-candy-m", 2]], vitamins: 2, berries: [4, ["good"]] },
     { money: 10000, candies: [["exp-candy-m", 3], ["exp-candy-l", 2]], vitamins: 3, berries: [5, ["good", "training"]] },
     { money: 20000, candies: [["exp-candy-l", 3], ["exp-candy-xl", 2]], vitamins: 5, berries: [6, ["training", "rare"]] }
@@ -178,6 +180,7 @@
     const pick = (list) => list[Math.floor(rng() * list.length)];
     // (The first kind of candy, one more half the time.)
     R.candies.forEach(([id, n], i) => add(id, n + (i === 0 && rng() < 0.5 ? 1 : 0)));
+    for (let i = 0; i < (R.wings || 0); i++) add(pick(WINGS), 1);
     for (let i = 0; i < R.vitamins; i++) add(pick(VITAMINS), 1);
     const berries = [].concat(...R.berries[1].map((k) => BERRIES[k]));
     for (let i = 0; i < R.berries[0]; i++) add(pick(berries), 1);

@@ -350,9 +350,10 @@ window.ABILITIES = {
     onDamagingHit(ctx, move) {
       if (ctx.checkMoveMakesContact(move, ctx.source, ctx.pokemon) && ctx.source.runStatusImmunity("powder")) {
         const r = ctx.random(100);
-        if (r < 11) ctx.source.trySetStatus("slp", ctx.pokemon);
-        else if (r < 21) ctx.source.trySetStatus("par", ctx.pokemon);
-        else if (r < 30) ctx.source.trySetStatus("psn", ctx.pokemon);
+        // (Through ctx, so the status says it's Effect Spore's.)
+        if (r < 11) ctx.trySetStatus(ctx.source, "slp", ctx.pokemon);
+        else if (r < 21) ctx.trySetStatus(ctx.source, "par", ctx.pokemon);
+        else if (r < 30) ctx.trySetStatus(ctx.source, "psn", ctx.pokemon);
       }
     },
   },

@@ -629,10 +629,16 @@ for (const share of [false, true]) {
   const total = (st) => { const r = RaidDens.rewards(st, rng); return [r.money, r.items.reduce((n, [, k]) => n + k, 0), r.items]; };
   const [m1, n1, i1] = total(1), [m5, n5, i5] = total(5);
   assert(m5 > m1 && n5 > n1, "5-star rewards more");
+  const VIT = ["hp-up", "protein", "iron", "calcium", "zinc", "carbos"];
   for (const items of [i1, i5]) {
     assert(items.every(([id]) => ITEMS[id]));
-    assert(items.some(([id]) => /^exp-candy/.test(id)) && items.some(([id]) => /-berry$/.test(id)) &&
-      items.some(([id]) => ["hp-up", "protein", "iron", "calcium", "zinc", "carbos"].includes(id)));
+    assert(items.some(([id]) => /^exp-candy/.test(id)) && items.some(([id]) => /-berry$/.test(id)));
+  }
+  // Wings from 1- and 2-star raids, vitamins from 3 stars up.
+  for (const st of [1, 2, 3, 4, 5]) {
+    const items = RaidDens.rewards(st, rng).items;
+    const wings = items.some(([id]) => /-wing$/.test(id)), vits = items.some(([id]) => VIT.includes(id));
+    assert(st <= 2 ? wings && !vits : vits && !wings, st + " stars: " + JSON.stringify(items));
   }
   assert(i5.some(([id]) => id === "exp-candy-xl") && !i1.some(([id]) => id === "exp-candy-xl"));
   // The Dojo's back room: its way out back to the Dojo's door, which is behind a patch.
@@ -640,6 +646,25 @@ for (const share of [false, true]) {
   const door = dojo.warps.find((w) => w.map === "SaffronCity_Dojo_DenRoom");
   assert(door && dojo.patches.denroom && room.warps.every((w) => w.map === "SaffronCity_Dojo" && dojo.warps[w.warp] === door));
   assert(dojo.collision[door.y * dojo.width + door.x], "the wall, until the door's patch is on");
+}
+
+// Effect Spore: the status it gives says it's Effect Spore's, and whose, for
+// "… has been paralyzed due to the opposing …'s Effect Spore!".
+{
+  let seen = null;
+  for (let seed = 1; seed < 60 && !seen; seed++) {
+    const b = new Battle({ seed, p1: { name: "A", team: [{ species: "Machamp", level: 50, moves: ["Tackle"] }] },
+      p2: { name: "B", team: [{ species: "Breloom", level: 100, ability: "Effect Spore", moves: ["Splash"] }] } });
+    b.start();
+    for (let t = 0; t < 5 && !seen && !b.ended; t++) {
+      b.choose("p1", { type: "move", move: 0 }); b.choose("p2", { type: "move", move: 0 });
+      seen = b.events.find((e) => e[0] === "-status" && /^p1/.test(e[1]));
+    }
+  }
+  assert(seen, "Effect Spore went off");
+  assert.strictEqual(seen[3], "[from] ability: Effect Spore");
+  assert(/^p2a?: Breloom/.test(seen[4]), "and whose: " + seen[4]);
+  assert(/has been " \+ \(STATUS_DONE\[b\]/.test(fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8")));
 }
 
 // The EV-lowering Berries: their stat's EVs down 10, friendship up, told as such;
@@ -2117,6 +2142,23 @@ for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
   for (let i = 0; i < 100 && !tired.over; i++) Mining.hit(tired, 12, 9, "pick");
   assert(tired.over && tired.tired && tired.energy === 0);
   assert.deepStrictEqual(Mining.found(tired), tired.treasures.filter((t) => t.found).map((t) => t.item));
+  // The tools, by mining level: the hammer from 5, the bomb from 10, the survey kit from 20.
+  assert.deepStrictEqual([1, 4, 5, 10, 19, 20, 100].map((lv) => Mining.tools(lv).map((t) => t.id).join()),
+    ["pick", "pick", "pick,hammer", "pick,hammer,bomb", "pick,hammer,bomb", "pick,hammer,bomb,survey", "pick,hammer,bomb,survey"]);
+  assert(Mining.ENERGY_COST.bomb > Mining.ENERGY_COST.hammer);
+  // The bomb: somewhere at random, 2 layers off close by and 1 a little further.
+  const bomb = Mining.create(mulberry32(5), 10);
+  bomb.rock.fill(4); bomb.bedrock.fill(false);
+  const e0 = bomb.energy, b = Mining.hit(bomb, 0, 0, "bomb");
+  const [bx, by] = b.at, at = (x, y) => bomb.rock[y * 13 + x];
+  assert.strictEqual(at(bx, by), 2, "2 off where it went off");
+  assert(bomb.rock.filter((n) => n === 2).length >= 5 && bomb.rock.some((n) => n === 3) && bomb.rock.some((n) => n === 4), "a patch, not the whole wall");
+  assert.strictEqual(bomb.energy, e0 - Mining.ENERGY_COST.bomb);
+  // The survey kit: what's still buried, for its energy; nothing dug.
+  const sv = Mining.create(mulberry32(6), 20), rock0 = sv.rock.slice(), e1 = sv.energy;
+  assert.deepStrictEqual(Mining.survey(sv), sv.treasures.map((t) => t.item));
+  assert.deepStrictEqual(sv.rock, rock0);
+  assert.strictEqual(sv.energy, e1 - Mining.ENERGY_COST.survey);
 }
 
 // ---------- Double battles ----------

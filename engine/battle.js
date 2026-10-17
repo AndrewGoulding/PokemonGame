@@ -1017,7 +1017,9 @@
       mon.statusState = { source };
       if (id === "slp") mon.statusState.time = this.randInt(2, 4);
       if (id === "tox") mon.statusState.stage = 0;
-      this.add("-status", mon, id, effect && effect.effectType === "Ability" ? "[from] ability: " + effect.name : "");
+      // (From an Ability: which, and whose, for the message.)
+      const fromAbility = effect && effect.effectType === "Ability";
+      this.add("-status", mon, id, fromAbility ? "[from] ability: " + effect.name : "", fromAbility && source && source !== mon ? source : "");
       this.runEvent("onAfterSetStatus", mon, { source, effect, relay: sobj, only: "ability" });
       // (Gen 9: Pecharunt's Poison Puppeteer confuses whoever it poisons.)
       if ((id === "psn" || id === "tox") && source && source !== mon && /^Pecharunt/.test(source.species) && source.hasAbility("Poison Puppeteer") && !mon.fainted) {

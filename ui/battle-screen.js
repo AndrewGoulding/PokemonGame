@@ -637,6 +637,9 @@
       .replace(/\{Team\}/g, capitalize(team)).replace(/\{team\}/g, team);
   }
 
+  // A status, as "… has been ___ due to …'s Ability!" says it.
+  const STATUS_DONE = { psn: "poisoned", tox: "badly poisoned", par: "paralyzed", slp: "put to sleep", brn: "burned", frz: "frozen" };
+
   // Looks `key` up in `table`; falls back to `fallback` when the key is missing.
   function lookup(table, key, fallback) {
     return Object.prototype.hasOwnProperty.call(table, key) ? table[key] : fallback;
@@ -1358,6 +1361,12 @@
       case "-status":
         v.status = b;
         renderSide(pos);
+        // (From another Pokémon's Ability, Effect Spore's: "… has been
+        // poisoned due to the opposing …'s Effect Spore!")
+        if (/^\[from\] ability: /.test(c || "") && ev[4]) {
+          const owner = fill("{whom}", ev[4]), ability = String(c).replace(/^\[from\] ability: /, "");
+          return fill("{who} has been " + (STATUS_DONE[b] || "afflicted") + " due to\n" + owner + "'s " + ability + "!", a);
+        }
         return fill(lookup(STATUS_START, b, "{who} was afflicted by " + b + "!"), a);
       case "-curestatus":
         v.status = "";
