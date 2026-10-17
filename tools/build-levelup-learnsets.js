@@ -75,6 +75,10 @@ function pick(id) {
   return { groups: [latest], rows: g[latest] };
 }
 
+// This game's own additions, kept through every rebuild: Charmander still
+// learns Metal Claw at 13, as in FireRed, for Brock's Rock types.
+const EXTRA = { Charmander: [[13, "Metal Claw"]] };
+
 const out = {}, source = {}, kept = [];
 // (A form that shares its base species' learnset, as Gigantamax ones do, gets it from there.)
 const owner = new Map();
@@ -98,6 +102,8 @@ for (const species of Object.keys(window.LEARNSETS_GEN6).sort()) {
     list.push([lvl, m]);
   });
   // (A move it learns on evolving and again later: both, as the games have it.)
+  for (const [lvl, m] of EXTRA[species] || []) if (!list.some((x) => x[1] === m)) list.push([lvl, m]);
+  list.sort((a, b) => a[0] - b[0]);
   if (!list.length) { kept.push(species); continue; }
   out[species] = list;
   source[species] = p.groups.map((v) => groupName[v]).join("+");
