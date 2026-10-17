@@ -83,7 +83,8 @@ fs.writeFileSync(path.join(root, "data/party-menu.js"),
 
 global.window = global;
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex.js"), "utf8"));
-for (const f of ["data/dex-gen7.js", "data/dex-gen8.js"]) vm.runInThisContext(fs.readFileSync(path.join(root, f), "utf8"));
+window.LEARNSETS_GEN6 = {};
+for (const f of ["data/dex-gen7.js", "data/dex-gen8.js", "data/dex-forms.js"]) vm.runInThisContext(fs.readFileSync(path.join(root, f), "utf8"));
 
 // "Mr. Mime" -> MR_MIME, "Nidoran-F" -> NIDORAN_F, "Charizard-Mega-X" -> CHARIZARD_MEGA_X.
 const constName = (name) => name.toUpperCase().replace(/É/g, "E").replace(/['.:]/g, "")
@@ -131,9 +132,17 @@ const outDir = path.join(root, "assets/sprites/icons");
 fs.mkdirSync(outDir, { recursive: true });
 let fromFr = 0, fromX = 0;
 const missing = [];
-const want = Object.entries(window.DEX).map(([name, d]) => ({ name, id: d.id, c: constName(name) }));
+// (Alcremie itself is the expansion's vanilla cream with a Strawberry Sweet,
+// not the first ALCREMIE_ it lists, the Gigantamax.)
+const SPECIES_CONST = { ALCREMIE: "ALCREMIE_STRAWBERRY_VANILLA_CREAM" };
+const want = Object.entries(window.DEX).map(([name, d]) => ({ name, id: d.id, c: SPECIES_CONST[constName(name)] || constName(name) }));
 // Burmy's cloaks (Party.form) have their own icons too.
 want.push({ name: "Burmy (Sandy Cloak)", id: "412-sandy", c: "BURMY_SANDY" }, { name: "Burmy (Trash Cloak)", id: "412-trash", c: "BURMY_TRASH" });
+// And Alcremie's looks: "ruby-cream-strawberry-sweet" is the expansion's ALCREMIE_STRAWBERRY_RUBY_CREAM.
+for (const f of window.ALCREMIE_FORMS) {
+  const m = /^(.+)-(\w+)-sweet$/.exec(f);
+  if (f !== "vanilla-cream-strawberry-sweet") want.push({ name: "Alcremie (" + f + ")", id: "869-" + f, c: "ALCREMIE_" + m[2].toUpperCase() + "_" + m[1].toUpperCase().replace(/-/g, "_") });
+}
 for (const w of want) {
   const out = path.join(outDir, w.id + ".png");
   const base = w.c.split("_")[0];

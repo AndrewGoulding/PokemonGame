@@ -2553,6 +2553,41 @@ assert.deepStrictEqual(["hp", "atk", "def", "spa", "spd", "spe"].map((k) => DEX.
   assert.strictEqual(hits.length, 2, "both hits go to the Snorlax when Clefable is immune");
 }
 
+// All of Zygarde's formes: the Zygarde Cube switches 10% and 50% and Aura
+// Break / Power Construct; Power Construct makes either Complete in battle;
+// Zygardite Mega Evolves the Complete Forme only.
+{
+  const z = Party.create("Zygarde", 60);
+  z.ability = "Aura Break";
+  assert(Bag.canUseOn(z, "zygarde-cube") && !Bag.canUseOn(Party.create("Pikachu", 5), "zygarde-cube"));
+  z.hp -= 10;
+  Bag.zygardeCube(z, "forme");
+  assert.strictEqual(z.species, "Zygarde-10%");
+  assert.strictEqual(Party.maxHp(z) - z.hp, 10, "the HP it's down stays down");
+  Bag.zygardeCube(z, "ability");
+  assert.strictEqual(z.ability, "Power Construct");
+  Bag.zygardeCube(z, "forme");
+  assert.strictEqual(z.species, "Zygarde");
+  assert.strictEqual(Bag.pocket("zygardite"), "Mega Stones");
+  z.item = "zygardite";
+  z.moves = [{ name: "Dragon Pulse", pp: 10 }];
+  const b = new Battle({ seed: 1, debug: true, p1: { name: "A", team: [Party.toBattleSet(z)] },
+    p2: { name: "B", team: [{ species: "Raticate", level: 60, moves: ["Super Fang"] }, { species: "Snorlax", level: 60, moves: ["Splash"] }] } });
+  b.start();
+  const mon = b.sides.p1.active;
+  assert(!b.getRequest("p1").active.canMega, "no Mega Zygarde from the 50% Forme");
+  for (let i = 0; i < 6 && mon.species !== "Zygarde-Complete"; i++) play(b, { p1: mv(0), p2: b.getRequest("p2").phase === "switch" ? { type: "switch", index: 1 } : mv(0) });
+  assert.strictEqual(mon.species, "Zygarde-Complete");
+  assert(b.getRequest("p1").active.canMega, "the Complete Forme can Mega Evolve");
+  play(b, { p1: { type: "move", move: 0, mega: true }, p2: b.getRequest("p2").phase === "switch" ? { type: "switch", index: 1 } : mv(0) });
+  assert.strictEqual(mon.species, "Zygarde-Mega");
+  // (A Mega Stone only works for its own species.)
+  const pika = new Battle({ seed: 1, p1: { name: "A", team: [{ species: "Pikachu", level: 50, item: "charizardite-x", moves: ["Tackle"] }] },
+    p2: { name: "B", team: [{ species: "Snorlax", level: 50, moves: ["Splash"] }] } });
+  pika.start();
+  assert(!pika.getRequest("p1").active.canMega);
+}
+
 // Gen 7's Pokémon in random battles (singles and doubles, the battle in
 // debug mode so an Ability or move effect that throws fails the test).
 const GEN7 = 100;

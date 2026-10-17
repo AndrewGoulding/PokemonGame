@@ -609,6 +609,18 @@
       await message(name + "'s Ability changed to " + to + "!");
       return;
     }
+    if (item === "zygarde-cube") {
+      if (!Bag.canUseOn(record, item)) { await message("It won't have any effect."); return; }
+      const v = await multichoice("What would you like to do?", 0, 0, ["Change Forme", "Change Ability", "Cancel"]);
+      if (v === 0) {
+        const r = Bag.zygardeCube(record, "forme");
+        await message(name + " transformed into its " + (r.species === "Zygarde-10%" ? "10%" : "50%") + " Forme!");
+      } else if (v === 1) {
+        const r = Bag.zygardeCube(record, "ability");
+        await message(name + "'s Ability changed to " + r.ability + "!");
+      }
+      return;
+    }
     if (item === "bottle-cap" || item === "gold-bottle-cap") {
       // Hyper Training: a stat's IV acts as 31 (a Gold Bottle Cap: all of them).
       if (record.level < Bag.HYPER_TRAINING_LEVEL) { await message(name + " must be at least Lv. " + Bag.HYPER_TRAINING_LEVEL + " for Hyper Training."); return; }
@@ -704,7 +716,7 @@
   const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
-    item === "ability-capsule" || item === "bottle-cap" || item === "gold-bottle-cap" ||
+    item === "ability-capsule" || item === "bottle-cap" || item === "gold-bottle-cap" || item === "zygarde-cube" ||
     item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS || item === "escape-rope";
   // TMs and HMs work like key items: they can't be held, tossed or sold.
   const holdable = (item) => !Bag.isBall(item) && !Bag.isMachine(item) && !Bag.isKeyItem(item);

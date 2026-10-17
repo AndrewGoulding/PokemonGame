@@ -1139,6 +1139,18 @@ pokeemerald-expansion, like the other moves and Abilities after Gen 3. The
 test battles 100 random Gen 7 teams in debug mode. (RKS System needs no
 Memories: each Silvally form is its own species.)
 
+All of Zygarde's formes are in: its 10% and 50% Formes, the Complete Forme
+that Power Construct makes of either at half HP, and Mega Zygarde (Legends:
+Z-A), into which the Complete Forme can Mega Evolve holding Zygardite. The
+Zygarde Cube (a key item, used from the Bag on Zygarde) switches it between
+10% and 50% and between Aura Break and Power Construct. A Mega Stone only
+works for its own species now. `tools/build-extra-forms.js` adds the battle
+formes the generation imports left out to `data/dex-forms.js` (Mega Zygarde,
+Ultra Necrozma, Dialga's and Palkia's Origin Formes, Eternamax Eternatus and
+the Gigantamax formes), with their sprites (Mega Zygarde's drawn from
+pokeemerald-expansion's, PokeAPI having none), and
+`tools/build-later-item-sprites.js` the pictures of the items they need.
+
 ## Generation 8
 
 Galar's Pokémon are in: all 89 (#810-898, Grookey to Calyrex), the Galarian
@@ -1162,7 +1174,7 @@ Eternamax, Alcremie's flavours, Dialga's and Palkia's Origin Formes.
 Gen 8's evolution items are in the Bag: Tart and Sweet Apples, Cracked and
 Chipped Pots, the Galarica Cuff and Wreath, the seven Sweets, Black Augurite,
 the Peat Block and Kubfu's Scrolls of Darkness and Waters (pokesprite's
-pictures; `tools/build-gen8-item-sprites.js` draws the last four from
+pictures; `tools/build-later-item-sprites.js` draws the last four from
 pokeemerald-expansion's). Evolutions the games tie to places or styles keep a
 rule this game can check, noted in `data/evolutions.js`: Galarian Farfetch'd
 becomes Sirfetch'd after a battle in which it landed 3 critical hits; Galarian

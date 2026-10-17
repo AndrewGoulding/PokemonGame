@@ -39,7 +39,7 @@ function mintSprite(id) {
 // Folder -> the suffix its file names leave out.
 const SUFFIX_FOLDERS = {
   ball: "-ball", berry: "-berry", gem: "-gem", fossil: "-fossil", flute: "-flute",
-  shard: "-shard", plate: "-plate", incense: "-incense"
+  shard: "-shard", plate: "-plate", incense: "-incense", memory: "-memory"
 };
 
 const exists = (folder, name) => fs.existsSync(path.join(spriteDir, folder, name + ".png"));

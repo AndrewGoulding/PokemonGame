@@ -131,8 +131,9 @@
 
   const isKeyItem = (item) => (window.ITEMS[item] || {}).category === "key-items";
 
-  const POWER_UP = ["vitamins", "nature-mints", "exp-candy"];
-  const HELD = ["held-items", "type-enhancement", "choice", "plates", "jewels", "bad-held-items", "effort-training", "species-specific", "training"];
+  const POWER_UP = ["vitamins", "nature-mints", "exp-candy", "dynamax-candy"];
+  const HELD = ["held-items", "type-enhancement", "choice", "plates", "jewels", "bad-held-items", "effort-training", "species-specific", "training",
+    "z-crystals", "memories"];
   const isPowerUp = (item) => POWER_UP.includes((window.ITEMS[item] || {}).category) || /bottle-cap$/.test(item) || item === "ability-capsule";
 
   function pocket(item) {
@@ -180,6 +181,21 @@
     if (abilities.length < 2 || !abilities.includes(record.ability)) return null;
     return abilities.find((a) => a !== record.ability) || null;
   }
+  // The Zygarde Cube (Sun and Moon): Zygarde between its 10% and 50% Formes
+  // ("forme"), or Aura Break and Power Construct ("ability").
+  const ZYGARDE = { Zygarde: "Zygarde-10%", "Zygarde-10%": "Zygarde" };
+  function zygardeCube(record, what) {
+    if (!ZYGARDE[record.species]) return null;
+    if (what === "ability") {
+      record.ability = record.ability === "Power Construct" ? "Aura Break" : "Power Construct";
+      return { ability: record.ability };
+    }
+    const oldMax = window.Party.maxHp(record);
+    record.species = ZYGARDE[record.species];
+    // (The HP it's down stays down, as an evolution keeps it.)
+    if (record.hp > 0) record.hp = Math.max(1, window.Party.maxHp(record) - (oldMax - record.hp));
+    return { species: record.species };
+  }
   // Bottle Caps (Hyper Training, as in Sword and Shield and Scarlet and
   // Violet: from Lv. 50): a stat's IV acts as 31 from then on. A Bottle Cap
   // trains one stat, a Gold Bottle Cap all six. The stats a cap would train.
@@ -194,6 +210,7 @@
     opts = opts || {};
     if (record.egg) return false;
     if (item === "ability-capsule") return !!capsuleAbility(record);
+    if (item === "zygarde-cube") return !!ZYGARDE[record.species];
     if (item === "bottle-cap") return opts.stat ? trainableStats(record).includes(opts.stat) : trainableStats(record).length > 0;
     if (item === "gold-bottle-cap") return trainableStats(record).length > 0;
     if (isStone(item)) return !!window.Evolution.find(record, { trigger: "item", item, party: opts.party });
@@ -266,7 +283,7 @@
 
   window.Bag = {
     POCKETS, get BATTLE_POCKETS() { return BATTLE_POCKETS(); }, PRICES, name, description, sprite, price, sellPrice, pocket, isBall, isStone, isKeyItem,
-    isMachine, machineMove, machines, mintNature, capsuleAbility, trainableStats, HYPER_TRAINING_LEVEL,
+    isMachine, machineMove, machines, mintNature, capsuleAbility, trainableStats, HYPER_TRAINING_LEVEL, zygardeCube,
     martStock, canUseOn, useOn, levelUp, give, take
   };
 })();

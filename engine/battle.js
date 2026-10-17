@@ -1311,6 +1311,16 @@
       return true;
     }
 
+    // The Mega Evolution a held Mega Stone allows, if it's that species'
+    // stone: Zygardite only from the Complete Forme (Legends: Z-A).
+    megaForme(mon) {
+      const forme = MEGA_MAP[mon.item];
+      if (!forme || mon.transformed) return null;
+      if (forme === "Zygarde-Mega") return mon.species === "Zygarde-Complete" ? forme : null;
+      const base = forme.replace(/-Mega(-[XY])?$/, "");
+      return mon.baseSpecies === base || mon.species === base ? forme : null;
+    }
+
     // ---------- Requests / choices ----------
     // SELECT on the move menu: two of the active Pokémon's moves trade places
     // (and their PP; the party's order follows, as in FireRed).
@@ -1395,7 +1405,7 @@
         species: mon.species, name: mon.name, hp: mon.hp, maxhp: mon.maxhp, status: mon.status, item: mon.item,
         ability: mon.ability, boosts: Object.assign({}, mon.boosts),
         moves: slots, struggle: !forced && !usable.length,
-        canMega: !forced && !side.megaUsed && !mon.mega && !!MEGA_MAP[mon.item],
+        canMega: !forced && !side.megaUsed && !mon.mega && !!this.megaForme(mon),
         trapped: false, forced: forced
       };
       if (forced) { base.switches = []; return base; }
@@ -1619,7 +1629,7 @@
           slot, teamIndex: mon.teamIndex, species: mon.species, name: mon.name, hp: mon.hp, maxhp: mon.maxhp,
           status: mon.status, item: mon.item, ability: mon.ability, boosts: Object.assign({}, mon.boosts),
           moves, struggle: !forced && !moves.some((m) => !m.disabled),
-          canMega: !forced && !this.megaUsedFor(side, mon) && !mon.mega && !!MEGA_MAP[mon.item],
+          canMega: !forced && !this.megaUsedFor(side, mon) && !mon.mega && !!this.megaForme(mon),
           trapped: false, forced, switches: []
         };
         if (forced) return r;
@@ -2206,7 +2216,7 @@
         }
         case "mega": {
           if (a.mon.fainted || this.megaUsedFor(a.side, a.mon)) return;
-          const forme = MEGA_MAP[a.mon.item];
+          const forme = this.megaForme(a.mon);
           if (!forme) return;
           if (a.side.tag) a.side.megaUsedBy[a.mon.owner] = true;
           else a.side.megaUsed = true;
