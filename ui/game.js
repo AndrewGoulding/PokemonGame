@@ -2398,6 +2398,10 @@
     const f = player.flags;
     // (A Tera Raid den: glowing while its raid is on.)
     { const den = RaidDens.byScript(person.script); if (den) return RaidDens.active(f, den.id) ? { sprite: "raid_den_active" } : true; }
+    // (Johto's people: hidden while HGSS's flag for them is set, and where
+    // the map's own script puts them this visit.)
+    if ((person.hgssFlag && johto.flag(person.hgssFlag)) || person.offstage) return false;
+    { const at = person.localId && !person.trainer && johto.placed(person.localId); if (at) return { x: at.x, y: at.y, movement: "face_" + at.facing }; }
     // (The League gate's guard on the way to Johto: there until you're Champion. data/johto-maps.js)
     if (person.script === "Route22_NorthEntrance_EventScript_JohtoGuard") return !f.gameClear;
     // (The Champion here is Red.)
@@ -2657,6 +2661,11 @@
     }
     const script = (ev.person || ev.sign || ev.trigger).script;
     const f = player.flags;
+
+    // Johto's scripts (ui/johto-script.js), and its Apricorn trees.
+    if (/^(enter|arrive):/.test(script)) { const due = johto.frameScript(script.replace(/^\w+:/, "")); if (due) { await runJohto(due, null); return; } }
+    { const js = johto.scriptOf(ev.person || ev.sign || ev.trigger); if (js) { await runJohto(js, ev.person); return; } }
+    { const ap = /^hgss_apricorn:(\d+):(\w+)$/.exec(script || ""); if (ap) { await apricornTree(+ap[1], ap[2]); return; } }
 
     if (script === "PewterCity_Gym_EventScript_Brock") { await brock(ev.person); return; }
     if (script === "CeruleanCity_Gym_EventScript_Misty") { await misty(ev.person); return; }
@@ -10304,6 +10313,101 @@
     return true;
   }
 
+  // ---------- Johto's field scripts (ui/johto-script.js) ----------
+  //
+  // Johto's maps run HeartGold's own scripts (compiled into data/johto-maps.js
+  // by tools/build-johto.js): what its people say and do, its signs, the
+  // scenes its steps start and its maps' own scripts, with HGSS's flags and
+  // vars, starting where a new HGSS game starts. Its trainers battle as
+  // Kanto's do (their HGSS parties and lines), and its item balls, small
+  // trees and breakable rocks work as Kanto's; its Apricorn trees bear an
+  // Apricorn a day.
+  const KANTO_BADGES = ["boulder", "cascade", "thunder", "rainbow", "soul", "marsh", "volcano", "earth"];
+  const johto = JohtoScript.create({
+    player: () => player,
+    say: (pages) => say(pages),
+    confirm: (question) => confirm(question),
+    choose: async (texts) => { const i = await multichoice(null, 0, 0, texts); Screen.say(""); return i; },
+    close: () => Screen.say(""),
+    facePlayer: (person) => Overworld.act([{ who: person.localId || "#" + person.id, moves: ["face_player"] }]),
+    act: (tracks) => Overworld.act(tracks),
+    // (Someone a flag hid, onto the map where it has them, or where the map's script put them.)
+    show: (id) => {
+      const def = (window.WORLD_MAPS[player.location.map] || { people: [] }).people.find((p) => p.localId === id);
+      if (!def) return;
+      const at = johto.placed(id) || { x: def.x, y: def.y, facing: (/^face_(\w+)/.exec(def.movement || "") || [, "down"])[1] };
+      Overworld.addObject(id, { x: at.x, y: at.y, facing: at.facing });
+    },
+    hide: (id) => Overworld.removeObject(id),
+    place: (id, x, y, facing) => { const map = window.WORLD_MAPS[player.location.map]; if (Overworld.personPosition(id) && x >= 0 && y >= 0 && x < map.width && y < map.height) Overworld.addObject(id, { x, y, facing }); },
+    personAt: (id) => (id === "player" ? Overworld.position() : Overworld.personPosition(id)),
+    origin: (zone) => window.JOHTO_SCRIPTS.origins[zone],
+    giveItem: async (id, n, verb) => {
+      if (!window.ITEMS[id]) return;   // (one the game hasn't got)
+      Player.addItem(player, id, n);
+      const name = Bag.name(id);
+      await sayWithJingle(itemJingle(id), "{PLAYER} " + verb + " " + (n > 1 ? n + " " + name + (/s$/.test(name) ? "" : "s") : Bag.isKeyItem(id) ? "the " + name : article(name)) + "!");
+    },
+    hasItem: (id, n) => Player.itemCount(player, id) >= n,
+    takeItem: (id, n) => Player.removeItem(player, id, n),
+    itemCount: (id) => Player.itemCount(player, id),
+    cry: (species) => { if (window.DEX[species]) cry(species); },
+    fanfare: () => {},
+    fade: (out) => (out ? Overworld.fadeToBlack() : Overworld.fadeFromBlack()),
+    trainerBattle: (id) => johtoBattle("trainer", id),
+    wildBattle: (species, level) => johtoBattle("wild", species, level),
+    // (Only to Johto's maps that are built: HGSS's world coordinates, as theirs.
+    // Into one that isn't, as Route 34's Day Care, you stay where you are.)
+    warp: async (mapConst, x, y, facing) => {
+      const J = window.JOHTO_SCRIPTS, name = J.mapConsts[mapConst], o = name && J.origins[J.maps[name]];
+      if (!o) { await Overworld.fadeFromBlack(); return; }
+      await Overworld.teleport({ map: name, x: x - o.x, y: y - o.y, facing });
+    },
+    hasBadge: (n) => n >= 8 && player.badges.includes(KANTO_BADGES[n - 8]),
+    sleep, isGirl, onBike: () => Overworld.avatar() === "bike"
+  });
+  // A battle a script starts: a trainer (HGSS's, window.WORLD_TRAINERS) or a wild Pokémon.
+  async function johtoBattle(kind, id, level) {
+    if (!canBattle()) return "lost";
+    let outcome;
+    if (kind === "trainer") {
+      const data = window.WORLD_TRAINERS[id];
+      if (!data) return "won";
+      outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(id), pic: data.pic },
+        defeatText: data.defeat || ["…"], trainerId: id, prizeClass: data.className, double: !!data.double && canDouble() });
+    } else {
+      if (!window.DEX[id]) return "won";
+      outcome = await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(id, level))] } });
+    }
+    if (outcome !== "lost") { show("world"); await Overworld.resume(); }
+    return outcome;
+  }
+  // Runs a script; then whatever the map's frame table has due (a scene it set going).
+  async function runJohto(js, person) {
+    const seen = new Set();
+    for (let n = 0; js && n < 5; n++) {
+      seen.add(js.zone + ":" + js.label);
+      await johto.run(js.zone, js.label, { person });
+      person = null;
+      Screen.say("");
+      js = johto.frameScript(player.location.map);
+      if (js && seen.has(js.zone + ":" + js.label)) break;
+    }
+    await persist();
+  }
+  // An Apricorn tree: an Apricorn of its colour, once a day.
+  async function apricornTree(tree, colour) {
+    const s = johto.state(), today = new Date().toDateString();
+    const picked = s.apricorns || (s.apricorns = {});
+    if (picked[tree] === today) { await say(["There's nothing on this Apricorn\ntree right now.", "It should bear fruit again tomorrow."]); return; }
+    const item = colour + "-apricorn";
+    await say("It's an Apricorn tree, bearing\n" + article(Bag.name(item)) + "!");
+    picked[tree] = today;
+    Player.addItem(player, item);
+    await sayWithJingle("mus_obtain_item", "{PLAYER} found " + article(Bag.name(item)) + "!");
+    await persist();
+  }
+
   // ---------- Tera Raid dens (game/raid-dens.js) ----------
   //
   // A den sleeps until you use a Lure on it; then it glows with a raid of 1
@@ -10441,6 +10545,11 @@
   // ---------- Exploring ----------
 
   function special(script) {
+    // Johto: its scripts (a step's, while its var has its value), its
+    // Apricorn trees, and its maps' frame tables as you come in.
+    if (/^hgss:/.test(script || "")) return johto.triggerDue(script);
+    if (/^hgss_apricorn:/.test(script || "")) return true;
+    if (/^(enter|arrive):/.test(script || "") && johto.frameScript(script.replace(/^\w+:/, ""))) return true;
     // Coming back into Pewter City: the Museum ticket was for one visit (FireRed's OnTransition).
     // Coming out of the Gym with the Boulder Badge, Leaf is waiting.
     // Prof. Oak's aide, then his test at the top of Pokémon Tower (this game's own).
@@ -10608,6 +10717,8 @@
           if (m !== tempFlagsMap) { seviiTransition(m); capeBrinkJustTaught = false; moveManiacMet = false; icefallIce = {}; }
           // Route 23 puts Victory Road back as it was: barriers up, boulders back (Route23_OnTransition).
           if (m !== tempFlagsMap && m === "Route23") LeagueRoad.reset(player.flags);
+          // (Into a Johto map: its OnTransition script, before its people are placed.)
+          if (m !== tempFlagsMap) johto.transition(m);
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
           music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }
       });

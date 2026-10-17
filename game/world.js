@@ -274,14 +274,18 @@
   const WATER_SLOT_WEIGHTS = [60, 30, 5, 4, 1];
   // A Pokémon from the map's slots (and its level): the grass's, or `table`'s
   // (the water's, the rocks').
+  // (A table can have its own slot weights: Johto's Rock Smash, 90 and 10.)
   function pickWild(m, rng, table) {
-    const t = table || m.wild, weights = table ? WATER_SLOT_WEIGHTS : LAND_SLOT_WEIGHTS;
+    const t = table || m.wild, weights = t.weights || (table ? WATER_SLOT_WEIGHTS : LAND_SLOT_WEIGHTS);
     let roll = Math.floor(rng() * 100), slot = 0;
     while (slot < weights.length - 1 && roll >= weights[slot]) roll -= weights[slot++];
     const s = t.slots[slot];
     if (!s || !s.species) return null;
     // A slot where LeafGreen differs from FireRed: either version's Pokémon.
-    const species = s.alt && rng() < 0.5 ? s.alt : s.species;
+    // (Johto's slots by the time of day, as HGSS's: morning 4-10, night 20-4.)
+    const hour = new Date().getHours();
+    const species = s.night && (hour >= 20 || hour < 4) ? s.night : s.morning && hour >= 4 && hour < 10 ? s.morning
+      : s.alt && rng() < 0.5 ? s.alt : s.species;
     // (`slot`: which one, for Tanoby's Unown, whose letter goes by it.)
     return { species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)), slot };
   }

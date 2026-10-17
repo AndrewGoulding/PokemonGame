@@ -1745,7 +1745,8 @@ for (const share of [false, true]) {
     for (const n of J) assert(reached.has(n), n + " reached from New Bark Town");
   }
   // Drawn in FireRed's style (tools/lib/fr-painter.js): FireRed's people, its gate rooms, water animated as Kanto's.
-  for (const n of J) for (const p of WORLD_MAPS[n].people) assert(!/^hgss_/.test(p.sprite), n + ": FireRed's sprite for " + p.sprite);
+  // (But for what FireRed has no picture of: Pokémon standing about, Sudowoodo and Apricorn trees.)
+  for (const n of J) for (const p of WORLD_MAPS[n].people) assert(!/^hgss_/.test(p.sprite) || /^hgss_(follower_mon_static_\w+|usokky|bonguri)$/.test(p.sprite), n + ": FireRed's sprite for " + p.sprite);
   for (const n of J.filter((n) => /Gatehouse$/.test(n))) {
     const m = WORLD_MAPS[n], t = WORLD_MAPS[m.width === 13 ? "Route7_EastEntrance" : "Route5_SouthEntrance"];
     assert(m.width === t.width && m.height === t.height && m.collision.join() === t.collision.join(), n + " is FireRed's gate");

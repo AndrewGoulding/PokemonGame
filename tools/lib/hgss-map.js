@@ -481,7 +481,7 @@ function renderMap(ROOT, MAPCONST, opts) {
     events: ev && {
       warps: (ev.warps || []).map((w) => Object.assign(loc(w), { map: w.header, anchor: w.anchor })),
       signs: (ev.bgs || []).map((s) => Object.assign(loc(s), { script: s.scriptId, type: s.type })),
-      people: (ev.objects || []).map((o) => Object.assign(loc(o), { id: o.id, sprite: o.spriteId, movement: o.movement, facing: o.facingDirection, flag: o.eventFlag, script: o.scriptId, rangeX: o.xRange, rangeY: o.yRange })),
+      people: (ev.objects || []).map((o) => Object.assign(loc(o), { id: o.id, sprite: o.spriteId, movement: o.movement, facing: o.facingDirection, flag: o.eventFlag, script: o.scriptId, rangeX: o.xRange, rangeY: o.yRange, type: o.type, param0: o.param0 })),
       triggers: (ev.coords || []).map((c) => Object.assign(loc(c), { w: c.w, h: c.h, script: c.scriptId, var: c.var, val: c.val }))
     }
   };

@@ -25,8 +25,15 @@
 //   data/johto-maps.js      window.WORLD_MAPS entries for them (merged into
 //                           FireRed's): size, collision, behaviour (HGSS's
 //                           numbers turned into FireRed's), warps (to maps not
-//                           built yet), signs, people, hidden items, wild
-//                           Pokémon (daytime), Surf and fishing.
+//                           built yet), signs, everyone on them (people,
+//                           trainers, item balls, small trees, breakable
+//                           rocks, Apricorn trees), step triggers, hidden
+//                           items, wild Pokémon (morning, day and night),
+//                           Surf, fishing and Rock Smash; and after them,
+//                           window.JOHTO_SCRIPTS (their field scripts, compiled
+//                           by tools/lib/hgss-script.js for ui/johto-script.js),
+//                           their trainers (window.WORLD_TRAINERS) and the
+//                           Apricorns and key items the scripts use.
 "use strict";
 
 const fs = require("fs");
@@ -38,6 +45,7 @@ const HC = require("./lib/hgss-classes");
 const Painter = require("./lib/fr-painter");
 const { writeAnimSheet } = require("./lib/fr-tiles");
 const N = require("./lib/nitro");
+const HS = require("./lib/hgss-script");
 
 const ROOT = process.argv.slice(2).find((a) => !a.startsWith("--")) || process.env.POKEHEARTGOLD;
 // (Drawn in FireRed's style, as Kanto is (tools/lib/fr-painter.js); with --hgss, as HGSS draws them.)
@@ -173,7 +181,14 @@ const FR_PEOPLE = {
   SPRITE_GSGIRL1: "lass", SPRITE_GSGIRL2: "little_girl", SPRITE_GSGIRL3: "picnicker",
   SPRITE_GSWOMAN1: "woman_1", SPRITE_GSWOMAN2: "woman_2", SPRITE_GSWOMAN3: "woman_3", SPRITE_MIDDLEWOMAN1_2: "mom",
   SPRITE_GSMAN1: "man", SPRITE_GSMAN2: "cooltrainer_m", SPRITE_GSMAN3: "cooltrainer_m", SPRITE_GSBIGMAN: "fat_man", SPRITE_GSMIDDLEMAN1: "balding_man",
-  SPRITE_GSOLDMAN1: "old_man_1", SPRITE_GSOLDWOMAN1: "old_woman", SPRITE_JUGGRER: "gentleman", SPRITE_COUNTERM: "clerk"
+  SPRITE_GSOLDMAN1: "old_man_1", SPRITE_GSOLDWOMAN1: "old_woman", SPRITE_JUGGRER: "gentleman", SPRITE_COUNTERM: "clerk",
+  SPRITE_ROCKETM: "rocket_m", SPRITE_ROCKETW: "rocket_f", SPRITE_POLICEMAN: "policeman", SPRITE_PICNICGIRL_2: "picnicker",
+  SPRITE_CAMPBOY_2: "camper", SPRITE_FISHING_2: "fisher", SPRITE_MOUNT_2: "hiker", SPRITE_DOCTOR: "scientist", SPRITE_GSMAMA: "mom",
+  SPRITE_GSFIGHTER: "black_belt", SPRITE_MANIA: "poke_maniac", SPRITE_SUIT: "gentleman",
+  SPRITE_GSRIVEL: "cooltrainer_m", SPRITE_DANCER: "woman_3", SPRITE_FIRE: "man", SPRITE_MYSTERY_2: "boy",
+  SPRITE_FOLLOWER_MON_STATIC_SLOWPOKE: "slowpoke", SPRITE_FOLLOWER_MON_STATIC_PIDGEY: "pidgey",
+  // (Item balls, small trees and breakable rocks: FireRed's, as the game uses them.)
+  SPRITE_MONSTARBALL: "item_ball", SPRITE_TREE: "cut_tree", SPRITE_BREAKROCK: "rock_smash_rock"
 };
 let krLooks = null, krMaps = null;
 // Kanto's maps (data/world-maps.js, as tools/build-maps.js made them).
@@ -195,6 +210,8 @@ function frPersonSprite(sprite) {
 }
 const spritesDone = new Map();
 function personSprite(sprite) {
+  // (The friend, Lyra, whose look HGSS sets by a var: as Leaf, FireRed's own girl.)
+  if (/^SPRITE_VAR_\d+$/.test(sprite)) return Object.assign({}, kanto() && window.WORLD_SPRITES.leaf);
   if (!HGSS_LOOK) { const fr = frPersonSprite(sprite); if (fr) return Object.assign({}, fr); }
   if (spritesDone.has(sprite)) return spritesDone.get(sprite);
   let out = null;
@@ -205,13 +222,16 @@ function personSprite(sprite) {
     const pal = t && Object.keys(t.palettes)[0];
     const names = t ? Object.keys(t.textures).sort((a, b) => +a.split(".").pop() - +b.split(".").pop()) : [];
     const frames = names.map((k) => N.decodeTexture(t, k, pal));
-    if (frames.length >= 12 && frames[0].w === 32 && frames[0].h === 32) {
+    // (A Pokémon standing about: 8 frames, two each way, up, down, left,
+    // right; an Apricorn tree: just itself.)
+    const order = frames.length >= 12 ? FR_FRAMES : frames.length === 8 ? [2, 0, 4, 3, 2, 1, 0, 5, 4] : [0];
+    if (frames.length && frames[0].w === 32 && frames[0].h === 32 && (frames.length >= 12 || frames.length === 8 || sprite === "SPRITE_BONGURI")) {
       const name = "hgss_" + sprite.replace(/^SPRITE_/, "").toLowerCase();
-      const W = 32 * FR_FRAMES.length, rgba = new Uint8ClampedArray(W * 32 * 4);
-      FR_FRAMES.forEach((f, n) => { for (let y = 0; y < 32; y++) rgba.set(frames[f].rgba.subarray(y * 128, (y + 1) * 128), (y * W + n * 32) * 4); });
+      const W = 32 * order.length, rgba = new Uint8ClampedArray(W * 32 * 4);
+      order.forEach((f, n) => { for (let y = 0; y < 32; y++) rgba.set(frames[f].rgba.subarray(y * 128, (y + 1) * 128), (y * W + n * 32) * 4); });
       writePng(path.join(root, "assets/world/sprites", name + ".png"), W, 32, rgba);
       // (32 wide, centred on the tile: offsetX.)
-      out = { sprite: name, width: 32, height: 32, frames: FR_FRAMES.length, offsetX: -8 };
+      out = { sprite: name, width: 32, height: 32, frames: order.length, offsetX: -8 };
     }
   }
   spritesDone.set(sprite, out);
@@ -230,12 +250,101 @@ function movement(p) {
 
 const enc = JSON.parse(fs.readFileSync(F("fielddata/encountdata/gs_enc_data.json"), "utf8")).encounters;
 const ver = (v) => (v && typeof v === "object" && !Array.isArray(v) && "HEARTGOLD" in v ? v.HEARTGOLD : v);
+// (A grass slot's Pokémon by the time of day, as HGSS's: morning 4-10,
+// day 10-20, night 20-4; the morning's and night's only where they differ.)
 const slot = (s) => {
   const lv = ver(s.level);
-  const sp = species(ver(s.species && s.species.day !== undefined ? s.species.day : s.species));
-  return { species: sp, min: typeof lv === "object" ? lv.min : lv, max: typeof lv === "object" ? lv.max : lv };
+  const timed = s.species && s.species.day !== undefined;
+  const sp = species(ver(timed ? s.species.day : s.species));
+  const out = { species: sp, min: typeof lv === "object" ? lv.min : lv, max: typeof lv === "object" ? lv.max : lv };
+  if (timed) {
+    const morn = species(ver(s.species.morn)), nite = species(ver(s.species.nite));
+    if (morn && morn !== sp) out.morning = morn;
+    if (nite && nite !== sp) out.night = nite;
+  }
+  return out;
 };
-const table = (t) => (t && t.rate ? { rate: t.rate, slots: t.mons.map(slot) } : undefined);
+const table = (t, weights) => (t && t.rate ? Object.assign({ rate: t.rate, slots: t.mons.map(slot) }, weights ? { weights } : {}) : undefined);
+
+// ---------- Scripts (tools/lib/hgss-script.js, run by ui/johto-script.js) ----------
+
+// HGSS's items as this game's (by name; the Apricorns and the Apricorn Box are added below).
+const APRICORNS = ["red", "yellow", "blue", "green", "pink", "white", "black"];
+const extraItems = Object.fromEntries(APRICORNS.map((c) => [c + "-apricorn", { name: c + "-apricorn", category: "apricorn", effect: "A " + c + " Apricorn. It assails your nostrils." }]));
+// (And the key items its scripts give or ask for that the game hasn't got.)
+extraItems.squirtbottle = { name: "squirtbottle", category: "key-items", effect: "A watering can shaped like a Squirtle. It helps promote healthy plant growth." };
+extraItems["berry-pots"] = { name: "berry-pots", category: "key-items", effect: "Four pots for growing Berries." };
+extraItems["vs-recorder"] = { name: "vs-recorder", category: "key-items", effect: "A device that records battles." };
+extraItems["apricorn-box"] = { name: "apricorn-box", category: "key-items", effect: "A box for keeping Apricorns. It holds a whole lot of them." };
+const itemByKey = {};
+for (const id of Object.keys(window.ITEMS).concat(Object.keys(extraItems))) itemByKey[id.replace(/[^a-z0-9]/g, "")] = id;
+const APRICORN_ITEM = { RED: "red-apricorn", YLW: "yellow-apricorn", BLU: "blue-apricorn", GRN: "green-apricorn", PNK: "pink-apricorn", WHT: "white-apricorn", BLK: "black-apricorn" };
+// (Where HGSS's names for an item aren't this game's.)
+const ITEM_ALIAS = { PARLYZ_HEAL: "paralyze-heal", VS__RECORDER: "vs-recorder", POKE_BALL: "poke-ball", X_DEFEND: "x-defense", X_SPECIAL: "x-sp-atk", X_SP_DEF: "x-sp-def",
+  ELIXIR: "elixir", HP_UP: "hp-up", PP_UP: "pp-up", KINGS_ROCK: "kings-rock", BLACKGLASSES: "black-glasses", NEVERMELTICE: "never-melt-ice",
+  TWISTEDSPOON: "twisted-spoon", SILVERPOWDER: "silver-powder", THUNDERSTONE: "thunder-stone", TINYMUSHROOM: "tiny-mushroom",
+  BRIGHTPOWDER: "bright-powder", DEEPSEATOOTH: "deep-sea-tooth", DEEPSEASCALE: "deep-sea-scale", ENERGYPOWDER: "energy-powder" };
+const item = (c) => {
+  const k = String(c).replace(/^ITEM_/, "");
+  if (ITEM_ALIAS[k] && (window.ITEMS[ITEM_ALIAS[k]] || extraItems[ITEM_ALIAS[k]])) return ITEM_ALIAS[k];
+  const ap = /^APRICORN_(\w+)$/.exec(k) || /^(\w+)_APRICORN$/.exec(k);
+  if (ap && APRICORN_ITEM[ap[1]]) return APRICORN_ITEM[ap[1]];
+  return itemByKey[k.toLowerCase().replace(/[^a-z0-9]/g, "")] || null;
+};
+// Each Apricorn tree's colour (src/apricorn_tree_sys.c's sTreeApricorns), by its number.
+const APRICORN_NAMES = { RED: "red", YLW: "yellow", BLU: "blue", GRN: "green", PNK: "pink", WHT: "white", BLK: "black" };
+const treeApricorns = [...fs.readFileSync(path.join(ROOT, "src/apricorn_tree_sys.c"), "utf8")
+  .split("sTreeApricorns")[1].split("};")[0].matchAll(/APRICORN_(RED|YLW|BLU|GRN|PNK|WHT|BLK)\b/g)].map((m) => APRICORN_NAMES[m[1]]);
+const SC = HS.compiler(ROOT, { item, species });
+const zones = {}, zoneOfMap = {}, origins = {};
+
+// Trainers: HGSS's (files/poketool/trainer/trainers.json, indexed as
+// include/constants/trainers.h numbers them), as window.WORLD_TRAINERS has
+// FireRed's; their pictures, FireRed's nearest.
+const trainerIds = {};
+for (const m of fs.readFileSync(path.join(ROOT, "include/constants/trainers.h"), "utf8").matchAll(/#define (TRAINER_\w+)\s+(\d+)/g)) trainerIds[m[1]] = +m[2];
+const HG_TRAINERS = JSON.parse(fs.readFileSync(F("poketool/trainer/trainers.json"), "utf8")).trainers;
+const classIds = {};
+for (const m of fs.readFileSync(path.join(ROOT, "include/constants/trainer_class.h"), "utf8").matchAll(/#define (TRAINERCLASS_\w+)\s+(\d+)/g)) classIds[m[1]] = +m[2];
+const classNames = JSON.parse(fs.readFileSync(F("msgdata/msg/msg_0730.json"), "utf8")).messages.map((m) => [].concat(m.en_US || "").join(""));
+const CLASS_PIC = {
+  YOUNGSTER: "youngster", LASS: "lass", CAMPER: "camper", PICNICKER: "picnicker", BUG_CATCHER: "bug_catcher", AROMA_LADY: "aroma_lady",
+  TWINS: "twins", HIKER: "hiker", BATTLE_GIRL: "crush_girl", FISHERMAN: "fisherman", BLACK_BELT: "black_belt", ACE_TRAINER_M: "cooltrainer_m",
+  ACE_TRAINER_F: "cooltrainer_f", ACE_TRAINER_M_GS: "cooltrainer_m", ACE_TRAINER_F_GS: "cooltrainer_f", BIRD_KEEPER: "bird_keeper",
+  BIRD_KEEPER_GS: "bird_keeper", JUGGLER: "juggler", LADY: "lady", GENTLEMAN: "gentleman", BEAUTY: "beauty", SCIENTIST: "scientist",
+  SCIENTIST_GS: "scientist", SWIMMER_M: "swimmer_m", SWIMMER_F: "swimmer_f", TUBER_M: "tuber_f", TUBER_F: "tuber_f", SAILOR: "sailor",
+  RUIN_MANIAC: "ruin_maniac", PSYCHIC_M: "psychic_m", PSYCHIC_F: "psychic_f", TEAM_ROCKET: "rocket_grunt_m", TEAM_ROCKET_F: "rocket_grunt_f",
+  BURGLAR: "burglar", BIKER: "biker", POKE_MANIAC: "pokemaniac", SUPER_NERD: "super_nerd", ROUGHNECK: "cue_ball", GUITARIST: "rocker",
+  FIREBREATHER: "burglar", POLICEMAN: "gentleman", POKEFAN_M: "gentleman", POKEFAN: "lady", SCHOOL_KID_M: "youngster", SCHOOL_KID_F: "lass",
+  KIMONO_GIRL: "lady", SAGE: "channeler", MEDIUM: "channeler", TEACHER: "lady", PKMN_BREEDER_M: "pokemon_breeder", PKMN_BREEDER_F: "pokemon_breeder",
+  PKMN_RANGER_M: "pokemon_ranger_m", PKMN_RANGER_F: "pokemon_ranger_f", PASSERBY: "youngster", RIVAL: "rival_early", ENGINEER: "engineer"
+};
+const GIRL_CLASSES = /^(LASS|PICNICKER|AROMA_LADY|TWINS|BATTLE_GIRL|ACE_TRAINER_F|ACE_TRAINER_F_GS|LADY|BEAUTY|SWIMMER_F|TUBER_F|PSYCHIC_F|POKEFAN|SCHOOL_KID_F|KIMONO_GIRL|MEDIUM|TEACHER|PKMN_BREEDER_F|PKMN_RANGER_F|COWGIRL|SOCIALITE|PARASOL_LADY|IDOL|SKIER|WAITRESS)$/;
+const trainers = {};
+function trainer(id) {
+  const key = String(id).replace(/^HGSS_/, "");
+  if (trainers["HGSS_" + key] || !(key in trainerIds)) return trainers["HGSS_" + key] || null;
+  const t = HG_TRAINERS[trainerIds[key]];
+  const cls = t.class.replace(/^TRAINERCLASS_/, "");
+  const msg = (type) => { const m = t.messages.find((x) => x.type === type); return m ? HS.pages(m.message.replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\\f/g, "\f")) : null; };
+  // (Their moves: the last four each learns by its level, as Kanto's trainers' are, not HGSS's sets.)
+  const party = t.party.map((mon) => Object.assign({ species: species(mon.species), level: mon.level, iv: mon.difficulty || 0 },
+    mon.item && mon.item !== "ITEM_NONE" && item(mon.item) ? { item: item(mon.item) } : {})).filter((m) => m.species);
+  trainers["HGSS_" + key] = {
+    className: classNames[classIds[t.class]] || cls, name: t.name.replace(/\{[^}]*\}/g, "").trim() || key, pic: CLASS_PIC[cls] || "youngster",
+    party, music: cls === "TEAM_ROCKET" || cls === "TEAM_ROCKET_F" ? "mus_encounter_rocket" : GIRL_CLASSES.test(cls) ? "mus_encounter_girl" : "mus_encounter_boy",
+    double: !!t.double, intro: msg("TRMSG_INTRO"), defeat: msg("TRMSG_LOSE"), after: msg("TRMSG_AFTER")
+  };
+  return trainers["HGSS_" + key];
+}
+// (std_itemball_<map>_<item>, std_hiddenitem_...: the item is the longest ending that's an item.)
+function itemFromScript(s, prefix) {
+  const parts = String(s).replace(prefix, "").split("_");
+  for (let k = 0; k < parts.length; k++) { const id = item(parts.slice(k).join("_")); if (id) return id; }
+  return null;
+}
+// What HGSS's own Day-Care Man says, outside his house on Route 34.
+const DAYCARE_MAN = ["I'm the Day-Care Man.", "Do you know about Eggs? My wife and\nI were raising some Pokémon, and\nwhat do you know, we found an Egg!"];
 
 const out = {}, rendered = {};
 const mapsDir = path.join(root, "assets/world/maps");
@@ -331,14 +440,39 @@ MAPS.forEach((m, i) => {
   // (Doors are solid, as FireRed's are: walking up into one goes in.)
   rendered[m.name] = r;
   const e = enc.find((x) => x.map === m.zone);
+  // Its scripts, compiled (data/johto-scripts.js).
+  const z = SC.zone(m.zone);
+  if (z) { zones[m.zone] = z; zoneOfMap[m.name] = m.zone; origins[m.zone] = { x: r.origin.cellX * 32, y: r.origin.cellZ * 32 }; }
+  const hgss = (ref) => { const label = SC.scriptRef(ref); return z && label && label in z.labels ? "hgss:" + m.zone + ":" + label : null; };
   const people = [];
   for (const p of ev.people) {
-    // Only those always there (story people come with their scenes; trainers, with Johto's battles).
-    if (p.flag !== "FLAG_NOTHING" || !p.script || /^std_trainer/.test(p.script)) continue;
     const look = personSprite(p.sprite);
     if (!look) continue;
-    people.push(Object.assign({ id: people.length, x: p.x, y: p.y, movement: movement(p), rangeX: p.rangeX || 1, rangeY: p.rangeY || 1,
-      script: String(p.script).replace(/^_EV_|\s*\+.*$/g, ""), flag: null, text: scriptText(m.zone, p.script) || ["…"] }, look));
+    const s = String(p.script);
+    // Everyone, each with HGSS's flag that hides them (hgssFlag: the story's),
+    // and what they do: their script; or, for trainers, item balls, small
+    // trees, breakable rocks and Apricorn trees, the game's own way.
+    const def = Object.assign({ id: people.length, localId: p.id, x: p.x, y: p.y, movement: movement(p), rangeX: p.rangeX || 1, rangeY: p.rangeY || 1,
+      script: null, flag: null, text: null }, look, p.flag && p.flag !== "FLAG_NOTHING" ? { hgssFlag: p.flag } : {});
+    let mt;
+    if ((mt = /^std_trainer\((\w+)\)/.exec(s))) {
+      const t = trainer(mt[1]);
+      if (!t) continue;
+      Object.assign(def, { script: "hgss_trainer:HGSS_" + mt[1], text: t.after,
+        trainer: { id: "HGSS_" + mt[1], intro: t.intro, defeat: t.defeat, after: t.after, sight: p.param0 || 1, double: t.double } });
+    } else if (/^std_itemball_/.test(s)) {
+      const it = itemFromScript(s, /^std_itemball_/);
+      if (!it) continue;
+      Object.assign(def, { script: "Johto_Item_" + p.id, item: it, flag: "JOHTO_" + p.flag, inanimate: true });
+    } else if (s === "std_field_cut") Object.assign(def, { script: "EventScript_CutTree", flag: "JOHTO_CUT_" + p.id, text: ["This tree looks like it can be\ncut down!"], inanimate: true });
+    else if (s === "std_field_rock_smash") Object.assign(def, { script: "EventScript_RockSmash", flag: "JOHTO_ROCK_" + p.id, inanimate: true });
+    else if (s === "std_apricorn_tree") Object.assign(def, { script: "hgss_apricorn:" + (p.param0 | 0) + ":" + (treeApricorns[p.param0 | 0] || "red"), inanimate: true });
+    else if (s === "std_daycare_man") Object.assign(def, { text: DAYCARE_MAN });
+    else if (/^_EV_/.test(s)) Object.assign(def, { script: hgss(s), text: scriptText(m.zone, p.script) });
+    // (Someone kept at the map's edge for a scene, out of sight in HGSS's 3D:
+    // offstage until a script brings them on.)
+    if (!def.script && !def.hgssFlag && (p.x <= 0 || p.y <= 0 || p.x >= r.width - 1 || p.y >= r.height - 1)) def.offstage = true;
+    people.push(def);
   }
   out[m.name] = {
     name: m.name, title: m.title, width: r.width, height: r.height, type: m.type, music: m.music, region: "johto",
@@ -347,8 +481,15 @@ MAPS.forEach((m, i) => {
     connections: [],
     warps: ev.warps.map((w) => (w.map === "MAP_ROUTE_22_POKEMON_LEAGUE_RECEPTION_GATE" ? { x: w.x, y: w.y, map: GATE.name, warp: "johto" }
       : { x: w.x, y: w.y, map: byConst[w.map] || null, mapConst: byConst[w.map] ? undefined : w.map, warp: w.anchor })),
-    signs: ev.signs.filter((s) => s.type !== 2).map((s) => ({ x: s.x, y: s.y, script: String(s.script).replace(/^_EV_|\s*\+.*$/g, ""), text: scriptText(m.zone, s.script) })),
-    triggers: [],
+    signs: ev.signs.filter((s) => s.type !== 2).map((s) => ({ x: s.x, y: s.y, script: hgss(s.script) || String(s.script).replace(/^_EV_|\s*\+.*$/g, ""), text: scriptText(m.zone, s.script) })),
+    // (A step trigger, on each of its tiles: its script, while its var has its value.)
+    triggers: [].concat(...(ev.triggers || []).map((t) => {
+      const sc = hgss(t.script), val = typeof t.val === "number" ? t.val : SC.defines[t.val];
+      if (!sc || val == null) return [];
+      const out = [];
+      for (let dy = 0; dy < (t.h || 1); dy++) for (let dx = 0; dx < (t.w || 1); dx++) out.push({ x: t.x + dx, y: t.y + dy, script: sc + "?" + t.var + "=" + val });
+      return out;
+    })),
     // (std_hiddenitem_<map>_<item>: the item is the longest ending that's an item.)
     hidden: ev.signs.filter((s) => s.type === 2 && s.x >= 0 && s.y >= 0 && s.x < r.width && s.y < r.height).map((s) => {
       const parts = String(s.script).replace(/^std_hiddenitem_/, "").split("_");
@@ -359,6 +500,8 @@ MAPS.forEach((m, i) => {
     people,
     wild: e && table(e.land),
     water: e && table(e.surf),
+    // (Under Rock Smash rocks: HGSS's two slots, 90 and 10 percent.)
+    rockSmash: e && table(e.rock_smash, [90, 10]),
     // (Gen 4's rods: five slots each, 40/40/15/4/1.)
     fishing: e && e.fishing && e.fishing.old_rod.rate ? { rods: { "old-rod": table(e.fishing.old_rod), "good-rod": table(e.fishing.good_rod), "super-rod": table(e.fishing.super_rod) } } : undefined,
     // (Its animated water and flowers, as Kanto's: <Map>-anim.png.)
@@ -439,16 +582,37 @@ if (!HGSS_LOOK) for (const m of MAPS) {
     const spot = tpl.spots[i % tpl.spots.length];
     return Object.assign({}, p, { x: spot[0], y: spot[1], movement: spot[2] });
   });
+  // (Its step triggers were on HGSS's floor, not this one: none.)
   Object.assign(g, { width: t.width, height: t.height, collision: t.collision.slice(), elevation: t.elevation.slice(), behavior: t.behavior.slice(),
-    encounter: t.encounter.slice(), warps, people, top: t.top, borderWidth: t.borderWidth, borderHeight: t.borderHeight });
+    encounter: t.encounter.slice(), warps, people, triggers: [], top: t.top, borderWidth: t.borderWidth, borderHeight: t.borderHeight });
   for (const part of ["", "-top", "-border"]) {
     const from = path.join(mapsDir, tpl.map + part + ".png"), to = path.join(mapsDir, m.name + part + ".png");
     if (fs.existsSync(from)) fs.copyFileSync(from, to); else if (fs.existsSync(to)) fs.unlinkSync(to);
   }
 }
 
+// The scripts' trainers (TrainerBattle's) as well as those on the maps.
+for (const z of Object.values(zones)) for (const c of z.cmds) if (c[0] === "TrainerBattle") trainer(c[1]);
+// Where Johto's story starts: HGSS's new game (scr_seq_0149), and then, as
+// you come to it a Champion with Pokémon, what having them would have done
+// in rooms not built yet: New Bark's way west open (VAR_SCENE_NEW_BARK_WEST_EXIT,
+// Elm's lab), the Route 30 battle demo over with Youngster Joey out in its
+// place (Elm's lab, after Mr. Pokémon), and Route 32's man no longer sending
+// you back to Violet's Gym (VAR_UNK_408D).
+const ARRIVAL = [["SetVar", "VAR_SCENE_NEW_BARK_WEST_EXIT", 1], ["SetFlag", "FLAG_HIDE_ROUTE_30_BATTLERS"],
+  ["ClearFlag", "FLAG_HIDE_ROUTE_30_YOUNGSTER_JOEY"], ["SetVar", "VAR_UNK_408D", 1]];
+const scripts = { zones, messages: SC.messages, init: SC.init().concat(ARRIVAL), maps: zoneOfMap, origins, mapConsts: byConst };
+// (In data/johto-maps.js, after the maps.)
+const scriptsJs = "// Johto's field scripts (tools/lib/hgss-script.js; run by ui/johto-script.js), its trainers, and the Apricorns.\n" +
+  "window.JOHTO_SCRIPTS = " + JSON.stringify(scripts) + ";\n" +
+  "Object.assign(window.WORLD_TRAINERS, " + JSON.stringify(trainers) + ");\n" +
+  "Object.assign(window.ITEMS, " + JSON.stringify(extraItems) + ");\n" +
+  "Object.assign(window.ITEM_SPRITES || (window.ITEM_SPRITES = {}), " + JSON.stringify(Object.assign(
+    Object.fromEntries(APRICORNS.map((c) => [c + "-apricorn", "assets/sprites/items/apricorn/" + c + ".png"])),
+    { "apricorn-box": "assets/sprites/items/apricorn/green.png" })) + ");\n";
+console.log("scripts:", Object.keys(zones).length, "zones,", Object.keys(trainers).length, "trainers,", Object.keys(SC.messages).length, "messages");
 fs.writeFileSync(path.join(root, "data/johto-maps.js"),
   "// Auto-generated by tools/build-johto.js from pret/pokeheartgold. Do not edit by hand.\n" +
   "// Johto's maps, added to FireRed's (data/world-maps.js).\n" +
-  "Object.assign(window.WORLD_MAPS, " + JSON.stringify(out) + ");\n" + gateJs);
+  "Object.assign(window.WORLD_MAPS, " + JSON.stringify(out) + ");\n" + gateJs + scriptsJs);
 console.log("wrote " + MAPS.length + " Johto maps to data/johto-maps.js and assets/world/");

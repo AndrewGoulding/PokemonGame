@@ -1748,17 +1748,53 @@ cave stairs become warps you step onto. HGSS's waterfalls are solid, and become
 FireRed's, which Waterfall takes you up (or down); the maps' joins come from
 where they sit on the matrix. The tiles' permissions become collision and
 FireRed's behaviours (tall grass, water, ledges, doors), and from the event
-data, scripts and text come the signs ("New Bark Town / Winds of a New
-Beginning"), hidden items and the people always there, with what they say
-and HGSS's own sprites (`assets/world/sprites/hgss_*.png`, put in FireRed's
-frame order). Wild Pokémon are HeartGold's daytime ones (Route 29: Pidgey,
-Sentret and Rattata), Surf's, and Gen 4's fishing (five slots a rod,
-40/40/15/4/1). Everything goes into `data/johto-maps.js`, which adds the
-maps to `WORLD_MAPS` (and the gate's mat, warp and guard). Not built yet: the buildings (houses, Pokémon Centers, marts,
-Gyms, Elm's Lab, Sprout Tower, the Radio Tower and the rest: their doors say so),
-Union Cave's lower floors, Dark Cave and the National Park, Johto's trainers
-and story, music (FireRed's stands in: Pallet Town's, Route 1's
-and Pewter City's), water animation, and a Town Map of Johto.
+data come the signs ("New Bark Town / Winds of a New Beginning"), hidden
+items, and everyone on the maps (people, trainers, item balls, small trees,
+breakable rocks, Apricorn trees), with FireRed's nearest sprites (HGSS's own,
+`assets/world/sprites/hgss_*.png` in FireRed's frame order, only for what
+FireRed has no picture of: Pokémon standing about, Sudowoodo, Apricorn trees).
+
+**Johto's scripts are HeartGold's own.** `tools/lib/hgss-script.js` compiles
+each map's field scripts (`files/fielddata/script/scr_seq`: its people's and
+signs' scripts, its step triggers, and its map scripts, on entering it and its
+frame table) and their text into `data/johto-maps.js` (`window.JOHTO_SCRIPTS`),
+and `ui/johto-script.js` runs them as HGSS does: messages (and Yes/No), people
+walking and turning (HGSS's movements as FireRed's), people appearing and
+going, flags and vars (HGSS's, kept in the save; the map's temporary ones
+until you leave it), comparisons and jumps, items given and taken, menus,
+fades, warps, and trainer and wild battles (`TrainerBattle`, `WildBattle`),
+leaving out what this game hasn't got (the Pokégear and phone calls, photos,
+the follower Pokémon). So the Apricorn man on Route 30 comes out of his house
+as you pass and gives you the Apricorn Box, Cherrygrove's Guide Gent shows you
+round, Team Rocket harasses a man in Azalea Town, Lyra takes you to the Day
+Care on Route 34, the Kimono Girl is lost in Ilex Forest, and the Sudowoodo
+stands in the way on Route 36. Johto's story starts where HGSS's new game
+starts (its `scr_seq_0149`: who's hidden until the story gets to them),
+except for what coming to Johto a Champion with Pokémon would already have
+done in rooms not built yet: New Bark Town's way west is open, Route 30's
+battle demo is over with Youngster Joey there in its place, and the man at
+the top of Route 32 no longer sends you back to Violet's Gym.
+
+**Johto's trainers** (60 so far) are HeartGold's (`files/poketool/trainer`):
+their classes, names, parties (each Pokémon knowing the last four moves it
+learns by its level, as Kanto's trainers' do), lines and sight; they battle
+as Kanto's do, with FireRed's nearest trainer pictures (an Ace Trainer is a
+Cooltrainer, a Firebreather a Burglar). Item balls, small trees (Cut) and
+breakable rocks (Rock Smash, with HGSS's Pokémon under them: two slots, 90
+and 10 percent) work as Kanto's, and each Apricorn tree bears an Apricorn of
+its colour (`src/apricorn_tree_sys.c`) once a day: this game adds the seven
+Apricorns (pictures from `assets/sprites/items/apricorn`), the Apricorn Box,
+the Squirtbottle, the Berry Pots and the VS Recorder, which the scripts give
+or ask for. Wild Pokémon are HeartGold's by the time of day, as HGSS has
+them: morning (4-10), day and night (20-4), e.g. Route 29's Pidgey and
+Sentret, and Hoothoot at night; then Surf's, Gen 4's fishing (five slots a
+rod, 40/40/15/4/1) and Rock Smash's. Everything goes into
+`data/johto-maps.js`, which adds the maps to `WORLD_MAPS` (and the gate's mat,
+warp and guard). Not built yet: the buildings (houses, Pokémon Centers, marts,
+Gyms, Elm's Lab, Sprout Tower, the Radio Tower and the rest: their doors say
+so), so the story can't go on past what happens outside; Union Cave's lower
+floors, Dark Cave and the National Park; Johto's music (FireRed's stands in:
+Pallet Town's, Route 1's and Pewter City's); and a Town Map of Johto.
 
 ## Orre: the Outskirt Stand (in progress)
 
