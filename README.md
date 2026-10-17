@@ -1080,7 +1080,7 @@ afterwards (she waits a few steps from the door, sees you and walks over) for a 
 again and again, for ₽1,000 each time), the
 Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils, Jessie & James
 climbing down the last ladder in Mt. Moon as in Yellow (a double battle), Gary in Cerulean (FireRed's team, with
-his Eevee), the Nugget Bridge Rocket (a Nugget, then a battle), the Rocket in
+his Eevee, which knows Shadow Ball and Terastallizes into a Ghost type), the Nugget Bridge Rocket (a Nugget, then a battle), the Rocket in
 the robbed house's yard (beat him and he gives back TM28 Dig), the Day-Care
 Man (`game/daycare.js`: one Pokémon gains 1 Exp. Point a step, learning its
 new moves; ₽100 plus ₽100 a level to take it back), small trees you can Cut

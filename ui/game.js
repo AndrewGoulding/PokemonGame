@@ -5201,8 +5201,11 @@
     await say(T("CeruleanCity_Text_RivalIntro"));
     const base = trainerTeam("TRAINER_RIVAL_CERULEAN_SQUIRTLE");
     const last = base[base.length - 1];
-    const team = base.slice(0, -1).concat(Party.create("Eevee", last.level, { ivs: last.ivs.hp }));
-    const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_early" },
+    // (This game's own: his Eevee knows Shadow Ball here, and Terastallizes into a Ghost type.)
+    const moves = window.RandomTeam.levelUpMoves("Eevee", last.level).filter((m) => m !== "Shadow Ball").slice(-3).concat(["Shadow Ball"]);
+    const eevee = Object.assign(Party.create("Eevee", last.level, { ivs: last.ivs.hp, moves }), { teraType: "Ghost", teraAce: true });
+    const team = base.slice(0, -1).concat(eevee);
+    const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_early", tera: true },
       defeatText: T("CeruleanCity_Text_RivalDefeat"), trainerId: "TRAINER_RIVAL_CERULEAN_SQUIRTLE" });
     if (outcome !== "won") return;
     f.ceruleanRival = true;

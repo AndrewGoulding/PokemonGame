@@ -3426,6 +3426,8 @@ for (let seed = 1; seed <= GEN8; seed++) {
     assert(/team: swappedTeam\(ID\), pic: "leader_giovanni", tera: true/.test(gameSrc) && /team = swappedTeam\(id\)/.test(gameSrc));
     // Leaf on Route 22 before the League (Mega Dragonite, Tera Flying), Gary at the end of
     // Victory Road (his Growlithe an Arcanine, about level 50), and Red the Champion (Mega Charizard Y).
+    // Gary's second battle (Cerulean): his Eevee knows Shadow Ball and Terastallizes into a Ghost type.
+    assert(/concat\(\["Shadow Ball"\]\);\n\s*const eevee = Object\.assign\(Party\.create\("Eevee"[^\n]*teraType: "Ghost", teraAce: true \}\);\n\s*const team = base[^\n]*\n[^\n]*pic: "rival_early", tera: true/.test(gameSrc), "Gary's Cerulean Eevee");
     assert(/Party\.create\("Politoed", 48[^\n]*\n[^\n]*Object\.assign\(Party\.create\("Dragonite", 53, \{ ivs: 31 \}\), \{ item: "dragoninite", teraType: "Flying", teraAce: true \}\)/.test(gameSrc), "Leaf's Route 22 team");
     assert(/const VICTORY_ROAD_RIVAL_TEAM = \[\["Pidgeot", 50\], \["Arcanine", 50\], \["Gyarados", 50, "gyaradosite"\]/.test(gameSrc) && /at\.map === "Route23" && at\.x === 18 && at\.y === 28/.test(gameSrc), "Gary at the end of Victory Road");
     assert(/const CHAMPION_TEAM = \[\["Pikachu", 58, 72\], \["Espeon", 59, 72\], \["Wartortle", 60, 73\], \["Venusaur", 60, 73\], \["Snorlax", 61, 74\], \["Charizard", 63, 75, "charizardite-y"\]\]/.test(gameSrc)
