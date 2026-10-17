@@ -1,8 +1,9 @@
 // Builds data/learnsets-levelup.js: every Pokémon's level-up moves as
 // Scarlet and Violet have them (with The Teal Mask and The Indigo Disk), or,
-// for one that isn't in them, as the latest game it's in has them (Legends:
-// Arceus, Brilliant Diamond and Shining Pearl, Sword and Shield, Let's Go,
-// Ultra Sun and Ultra Moon, ... by PokeAPI's version-group order). It
+// for one that isn't in them, as the latest game it's in has them (Brilliant
+// Diamond and Shining Pearl, Sword and Shield, Let's Go, Ultra Sun and Ultra
+// Moon, ... by PokeAPI's version-group order; not Legends: Arceus, whose sets
+// are short ones: the next latest game's instead). It
 // replaces the levelup list of each species in window.LEARNSETS_GEN6 (the
 // TM, tutor and egg lists stay as they are).
 //
@@ -40,7 +41,7 @@ function csv(name) {
   return lines.map((l) => { const v = l.split(","); return Object.fromEntries(keys.map((k, i) => [k, v[i]])); });
 }
 
-// Scarlet and Violet (and its DLC) first; then the latest game.
+// Scarlet and Violet (and its DLC) first; then the latest game (Legends: Arceus last).
 const SV = new Set(["25", "26", "27"]);
 const groups = csv("version_groups.csv");
 const groupOrder = Object.fromEntries(groups.map((g) => [g.id, +g.order]));
@@ -71,7 +72,10 @@ function pick(id) {
   if (!g) return null;
   const sv = Object.keys(g).filter((v) => SV.has(v));
   if (sv.length) return { groups: sv, rows: sv.flatMap((v) => g[v]) };
-  const latest = Object.keys(g).sort((a, b) => groupOrder[b] - groupOrder[a])[0];
+  // (Legends: Arceus's sets are short ones: the latest game's after it
+  // instead; Legends: Arceus's only when it has no other.)
+  const LA = "24";
+  const latest = Object.keys(g).sort((a, b) => (a === LA) - (b === LA) || groupOrder[b] - groupOrder[a])[0];
   return { groups: [latest], rows: g[latest] };
 }
 
