@@ -1346,6 +1346,14 @@ and Pewter City's), water animation, and a Town Map of Johto.
   at 63 and the plates at 100. Each fossil is only found in its own caves:
   Kanto's (Helix, Dome, Old Amber) in Mt. Moon; later regions' fossils will
   get caves of their own. The rules are in `game/mining.js`, the screen in `ui/mining.js`.
+- **Fly and Transform animations** (FireRed's Move_FLY and Move_TRANSFORM, frame
+  for frame): Fly's first turn turns the Pokémon into a ball of shadow that
+  squashes, stretches and shoots off the top of the screen, and it stays out
+  of sight until it comes down; the second, the ball dives in from the top
+  corner through the target (a hit splat, the target shaking). Transform
+  (and Imposter) takes the Pokémon to mosaic, 16-pixel blocks in 45 frames,
+  changes its picture into the target's, and back. `tools/build-move-anims.js`
+  draws the ball and splat from pokefirered.
 - **Catching**: the Gen 6 formula (HP, catch rate, ball and status bonuses,
   four shake checks). Poké, Great, Ultra, Master, Net, Nest, Repeat, Timer,
   Quick and Dusk Balls have their bonuses. No critical captures yet.

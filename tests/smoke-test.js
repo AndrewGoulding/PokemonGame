@@ -2706,6 +2706,13 @@ assert.deepStrictEqual(["hp", "atk", "def", "spa", "spd", "spe"].map((k) => DEX.
   assert.deepStrictEqual([zard.gmax, zard.dynamaxLevel, Party.toBattleSet(zard).gmax], [true, 1, true]);
 }
 
+// FireRed's Fly and Transform animations (tools/build-move-anims.js).
+{
+  for (const f of ["round-shadow.png", "impact.png"]) assert(fs.existsSync(path.join(root, "assets/battle-anims", f)), f);
+  const bs = fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8");
+  assert(/async function flyUp\(pos\)/.test(bs) && /async function flyAttack\(pos, aim, lands\)/.test(bs) && /async function transformAnim\(pos, swap\)/.test(bs));
+}
+
 // Gen 7's Pokémon in random battles (singles and doubles, the battle in
 // debug mode so an Ability or move effect that throws fails the test).
 const GEN7 = 100;

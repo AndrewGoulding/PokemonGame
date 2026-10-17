@@ -337,3 +337,7 @@ body {
 
 /* Dynamax (Sword and Shield): the Pokémon grows, lit red. */
 .sprite.dynamax { scale: 1.35; filter: drop-shadow(0 0 3px #ff2050) drop-shadow(0 0 6px #ff2050); }
+
+/* Fly: the Pokémon is up in the air (FireRed hides its picture); Transform's mosaic over the picture. */
+.sprite.flying, .sprite.mosaic-hidden { opacity: 0 !important; transition: none !important; }
+.mosaic-fx { position: absolute; image-rendering: pixelated; pointer-events: none; z-index: 3; }

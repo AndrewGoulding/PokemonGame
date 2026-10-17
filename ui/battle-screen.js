@@ -849,6 +849,144 @@
     await Promise.all(all.splice(0));
   }
 
+  // Runs fn(frame) once a GBA frame (60 a second) until it returns false.
+  function eachFrame(fn) {
+    return new Promise((resolve) => {
+      let f = 0, last = performance.now(), acc = 0;
+      const step = (t) => {
+        acc += t - last; last = t;
+        while (acc >= FRAME_MS) { acc -= FRAME_MS; if (fn(f++) === false) { resolve(); return; } }
+        requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
+  }
+  // A picture from assets/battle-anims/ on the field, w x h GBA pixels, its
+  // middle at GBA (x, y) (the field is 240x112), scaled and turned.
+  function animPiece(file, w, h) {
+    const d = document.createElement("div");
+    d.className = "mega-fx";
+    d.style.backgroundImage = "url(assets/battle-anims/" + file + ")";
+    d.style.width = (w / 2.4) + "%";
+    d.style.height = (h / 1.12) + "%";
+    el.field.appendChild(d);
+    d.place = (x, y, sx, sy, deg) => {
+      d.style.left = (x / 2.4) + "%"; d.style.top = (y / 1.12) + "%";
+      d.style.transform = "translate(-50%, -50%) rotate(" + (deg || 0) + "deg) scale(" + (sx == null ? 1 : sx) + ", " + (sy == null ? sx == null ? 1 : sx : sy) + ")";
+    };
+    return d;
+  }
+  const gbaCenter = (pos) => { const [x, y] = centerOf(pos); return [x * 2.4, y * 1.12]; };
+  // AnimTask_ShakeMon: `amount` GBA pixels to the side and back, `times` times, `delay` frames apart.
+  function shakeMon(pos, amount, times, delay) {
+    const sprite = el.sides[pos].sprite, gbaPx = el.field.clientWidth / 240, kf = [];
+    for (let i = 0; i < times; i++) kf.push({ transform: "translateX(" + (i % 2 ? 0 : amount * gbaPx) + "px)" });
+    kf.push({ transform: "translateX(0)" });
+    return sprite.animate(kf, { duration: times * (delay + 1) * FRAME_MS, easing: "steps(" + times + ", end)" }).finished;
+  }
+
+  // Fly (FireRed's Move_FLY). The first turn, FlySetUp: SE_M_FLY, and the
+  // Pokémon becomes a ball of shadow (gFlyBallUpSpriteTemplate) that squashes
+  // and stretches (sAffineAnim_FlyBallUp: from 1/16 wide, out to round in 6
+  // frames, flattened by 1/8 a frame for 5, then thinner and taller for 10)
+  // and, after 13 frames, shoots up faster and faster (336/256 of a pixel a
+  // frame more each frame) off the top; the Pokémon is gone until it comes
+  // down. The second, FlyUnleash: SE_M_DOUBLE_TEAM, the ball dives in from the
+  // top corner behind it (turned: 70° yours, -56° a foe's) through the target
+  // in 20 frames and on off the screen; as it arrives, a hit splat on the
+  // target (gBasicHitSplatSpriteTemplate, 8 frames, at 12/16), the target
+  // shakes (6 pixels, 8 times, every other frame) and SE_M_RAZOR_WIND.
+  async function flyUp(pos) {
+    const sprite = el.sides[pos].sprite;
+    sprite.classList.add("flying");
+    if (!sceneOn()) return;
+    sfx("se_m_fly");
+    const [x, y0] = gbaCenter(pos);
+    const ball = animPiece("round-shadow.png", 64, 64);
+    let sx = 16, sy = 256, y = y0, speed = 0;
+    await eachFrame((f) => {
+      if (f >= 1 && f <= 6) sx += 40;
+      else if (f >= 7 && f <= 11) sy -= 32;
+      else if (f >= 12 && f <= 21) { sx -= 16; sy += 32; }
+      if (f >= 13) { speed += 336; y -= speed >> 8; }
+      ball.place(x, y, sx / 256, sy / 256);
+      return y >= -32;
+    });
+    ball.remove();
+  }
+  async function flyAttack(pos, aim, lands) {
+    const sprite = el.sides[pos].sprite;
+    if (!sceneOn() || !lands) { sprite.classList.remove("flying"); return; }
+    sfx("se_m_double_team");
+    const mine = sideOf(pos) === "p1";
+    const [x0, y0] = mine ? [-32, -32] : [272, -32];
+    const [x1, y1] = gbaCenter(aim);
+    const ball = animPiece("round-shadow.png", 64, 64);
+    const hits = [];
+    await eachFrame((f) => {
+      const x = x0 + (x1 - x0) * f / 20, y = y0 + (y1 - y0) * f / 20;
+      ball.place(x, y, 1, 1, mine ? 70.3 : -56.25);
+      if (f === 20) {
+        const splat = animPiece("impact.png", 32, 32);
+        splat.style.opacity = 0.75;
+        splat.place(x1, y1);
+        hits.push(wait(8 * FRAME_MS).then(() => splat.remove()));
+        hits.push(shakeMon(aim, 6, 8, 1));
+        sfx("se_m_razor_wind");
+      }
+      return f <= 20 || (x > -32 && x < 272 && y < 112 + 32);
+    });
+    ball.remove();
+    // (Back at once, no fade.)
+    sprite.style.transition = "none";
+    sprite.classList.remove("flying");
+    void sprite.offsetWidth;
+    sprite.style.transition = "";
+    await Promise.all(hits);
+  }
+
+  // Transform (FireRed's Move_TRANSFORM, AnimTask_TransformMon): SE_M_TELEPORT
+  // (SE_M_MINIMIZE 48 frames on), the Pokémon goes to mosaic, one step more
+  // every 3 frames up to 16-pixel blocks; it changes into the target's
+  // picture; and the mosaic comes back down to nothing the same way.
+  // `swap`: changes the picture (and waits for it).
+  async function transformAnim(pos, swap) {
+    const sprite = el.sides[pos].sprite;
+    if (!sceneOn()) { await swap(); return; }
+    sfx("se_m_teleport");
+    setTimeout(() => sfx("se_m_minimize"), 48 * FRAME_MS);
+    const f = el.field.getBoundingClientRect(), r = sprite.getBoundingClientRect();
+    const canvas = document.createElement("canvas");
+    canvas.className = "mosaic-fx";
+    Object.assign(canvas.style, { left: ((r.left - f.left) / f.width * 100) + "%", top: ((r.top - f.top) / f.height * 100) + "%",
+      width: (r.width / f.width * 100) + "%", height: (r.height / f.height * 100) + "%" });
+    el.field.appendChild(canvas);
+    const draw = (level) => {
+      const w = sprite.naturalWidth || 96, h = sprite.naturalHeight || 96;
+      canvas.width = w; canvas.height = h;
+      const g = canvas.getContext("2d");
+      g.imageSmoothingEnabled = false;
+      // (Blocks of level + 1 GBA pixels; the picture is 96 for the GBA's 64.)
+      const block = Math.max(1, Math.round((level + 1) * w / 64));
+      const small = document.createElement("canvas");
+      small.width = Math.ceil(w / block); small.height = Math.ceil(h / block);
+      const sg = small.getContext("2d");
+      sg.imageSmoothingEnabled = false;
+      sg.drawImage(sprite, 0, 0, small.width, small.height);
+      g.drawImage(small, 0, 0, small.width * block, small.height * block);
+    };
+    draw(0);
+    sprite.classList.add("mosaic-hidden");
+    for (let level = 1; level <= 15; level++) { await wait(3 * FRAME_MS); draw(level); }
+    await swap();
+    for (let level = 15; level >= 0; level--) { draw(level); await wait(3 * FRAME_MS); }
+    sprite.style.transition = "none";
+    sprite.classList.remove("mosaic-hidden");
+    void sprite.offsetWidth;
+    sprite.style.transition = "";
+    canvas.remove();
+  }
+
   // A stat rising (red) or falling (blue) on a Pokémon, with FireRed's sound.
   async function animateStat(side, up) {
     if (!sceneOn()) return;
@@ -933,6 +1071,8 @@
     const v = view[pos];
     // (Dynamax ends when it faints or leaves the field: the picture goes back to size.)
     if ((type === "switch" || type === "drag" || type === "faint") && el.sides[pos]) el.sides[pos].sprite.classList.remove("dynamax");
+    // (Up in the air from Fly until it comes down: back when it can't move, faints or leaves.)
+    if ((type === "switch" || type === "drag" || type === "faint" || type === "cant") && el.sides[pos]) el.sides[pos].sprite.classList.remove("flying");
 
     switch (type) {
       case "switch":
@@ -1009,6 +1149,14 @@
         // move's ("[spread] p2a: X,p2b: Y").
         lastAims = battle.doubles ? moveAims(ev) : null;
         const aims = lastAims;
+        // (Fly: FireRed's own animation for each of its two turns.)
+        if (b === "Fly") {
+          const setUp = battle.events[cursor] && battle.events[cursor][0] === "-prepare" && battle.events[cursor][1] === a;
+          const aim = (aims && aims[0]) || posAt(otherSide(side), slotOf(pos));
+          return async () => { await message(text, 400); if (setUp) await flyUp(pos); else await flyAttack(pos, battle.doubles ? aim : otherSide(side), lands); };
+        }
+        if (b === "Transform") return async () => { el.sides[pos].sprite.classList.remove("flying"); await message(text, 400); };
+        el.sides[pos].sprite.classList.remove("flying");
         return async () => { await message(text, 400); if (b !== "Magnitude" && lands) await animateMove(pos, b, aims); };
       }
       case "-magnitude": {
@@ -1160,7 +1308,18 @@
       case "-zpower": return fill("{who} surrounded itself with its Z-Power!", a);
       case "-zbroken": return fill("{who} couldn't fully protect itself and got hurt!", a);
       case "-clearnegativeboost": return fill("{who} returned its decreased stats to normal using its Z-Power!", a);
-      case "-transform": return fill("{who} transformed into " + nameOf(b) + "!", a);
+      // Transform (and Imposter): the mosaic, the target's picture, then the words.
+      case "-transform": {
+        const t = view[posOf(b)] || {}, text = fill("{who} transformed into " + nameOf(b) + "!", a);
+        return async () => {
+          await transformAnim(pos, async () => {
+            v.species = t.species; v.form = t.form || "";
+            renderSide(pos);
+            await spriteReady(el.sides[pos].sprite);
+          });
+          await message(text);
+        };
+      }
       case "-enditem": return fill("{who} used its " + b + "!", a);
       case "-weather":
         if (a === "none") return "The weather cleared up.";
