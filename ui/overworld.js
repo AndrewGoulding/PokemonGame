@@ -32,7 +32,8 @@
 // kept in player.flags.avatar). The Bicycle goes faster and only where the
 // map allows cycling; surfing goes over water, and onto land you hop off.
 //
-// Controls: arrows / WASD to move, Shift (or B / X) toggles running, Z / Space / Enter
+// Controls: arrows / WASD to move, Shift (or B / X) toggles running (on the
+// Bicycle, holding it hops), Z / Space / Enter
 // to talk or read, Esc / M (Start) to open the menu. The on-screen buttons
 // (ui/gamepad.js) press the same keys.
 
@@ -180,7 +181,8 @@
   document.addEventListener("keydown", (e) => {
     if (B_KEYS.includes(e.key)) bDown = true;
     if (!running || paused || e.repeat || !B_KEYS.includes(e.key)) return;
-    toggleRun();
+    // (On the Bicycle, B is for hopping instead.)
+    if (me.avatar !== "bike") toggleRun();
     e.preventDefault();
   });
   document.addEventListener("keyup", (e) => { if (B_KEYS.includes(e.key)) bDown = false; });
@@ -420,6 +422,7 @@
   function setAvatar(mode) {
     if (me.avatar === mode) return;
     me.avatar = mode;
+    me.hopping = false; me.hopHeld = 0;
     if (ctx && ctx.player) ctx.player.flags.avatar = mode === "walk" ? undefined : mode;
     if (ctx && ctx.onAvatar) ctx.onAvatar(mode);
   }
@@ -480,6 +483,7 @@
   function finishStep() {
     const mv = me.move;
     me.move = null;
+    if (mv.inPlace) return finishHopInPlace();
     if (mv.dismount) setAvatar("walk");
     const changedMap = mv.tmap !== me.map, from = me.map;
     me.map = mv.tmap; me.x = mv.tx; me.y = mv.ty;
@@ -524,6 +528,50 @@
     const wild = World.stepEncounter(wildState, me.map, me.x, me.y, {
       allow: ctx.allowWild, repel: !!(ctx.player && ctx.player.repelSteps > 0),
       surf: me.avatar === "surf", bike: me.avatar === "bike" });
+    if (wild) finish(Object.assign({ type: "wild" }, wild));
+  }
+
+  // ---------- Hopping on the Bicycle ----------
+  //
+  // Emerald's Acro Bike bunny hop (src/bike.c, AcroBikeHandleInputWheelieStanding
+  // and AcroBikeHandleInputBunnyHop): on the Bicycle, hold B standing still
+  // for 40 frames and you start hopping, SE_BIKE_HOP and a low jump
+  // (sJumpY_Low) of 16 frames each: in place, turning if you press another
+  // way, or a tile along (over a ledge too) if you press the way you face.
+  // Let go of B and you stop. As in Emerald, a hop in place counts as a step
+  // for wild Pokémon (and a Repel, and trainers seeing you), so hopping in
+  // tall grass can find one; it doesn't set off the tile's scripts again.
+  const HOP_HOLD_FRAMES = 40;
+  const JUMP_Y_LOW = [0, -2, -3, -4, -5, -6, -6, -6, -5, -5, -4, -3, -2, 0, 0, 0];
+  function bikeHop(dir) {
+    if (!bDown) { me.hopping = false; me.hopHeld = 0; return false; }
+    if (!me.hopping) {
+      if (dir) { me.hopHeld = 0; return false; }
+      if (++me.hopHeld < HOP_HOLD_FRAMES) return true;
+      me.hopping = true;
+    }
+    if (window.GameAudio) window.GameAudio.se("se_bike_hop");
+    me.bikeDir = null; me.bikeRun = 0; me.carry = 0; me.turnTimer = 0;
+    if (dir && dir === me.facing) {
+      const r = World.step({ map: me.map, x: me.x, y: me.y }, dir, occupiedForPlayer);
+      if (r.ok && !r.warp) {
+        startStep(r, dir, false, r.jump ? WALK_SPEED * 2 : WALK_SPEED);
+        me.move.bikeHop = !r.jump;
+        return true;
+      }
+    }
+    if (dir) me.facing = dir;
+    me.move = { tx: me.x, ty: me.y, tmap: me.map, dir: me.facing, t: 0, dist: TILE, speed: WALK_SPEED, inPlace: true, bikeHop: true };
+    return true;
+  }
+  // A hop in place, landed: a step for wild Pokémon, a Repel and trainers.
+  function finishHopInPlace() {
+    const seen = anyTrainerSees();
+    if (seen) return finish(seen);
+    const said = ctx.onStep && ctx.onStep();
+    if (said) return finish(said);
+    const wild = World.stepEncounter(wildState, me.map, me.x, me.y, {
+      allow: ctx.allowWild, repel: !!(ctx.player && ctx.player.repelSteps > 0), surf: false, bike: true });
     if (wild) finish(Object.assign({ type: "wild" }, wild));
   }
 
@@ -1222,6 +1270,7 @@
     if (pressedA) { pressedA = false; return interact(); }
     const dir = heldDir();
     if (me.avatar === "bike" && World.isPullDown(World.blockAt(me.map, me.x, me.y).behavior)) return slope(dir);
+    if (me.avatar === "bike" && bikeHop(dir)) return;
     // On a current, it carries you (World.currentStep) wherever you press.
     if (me.avatar === "surf") {
       const c = World.currentStep({ map: me.map, x: me.x, y: me.y }, occupiedForPlayer);
@@ -1354,7 +1403,8 @@
     const m = World.map(me.map);
     // The player's position in pixels, mid-step included.
     let px = me.x * TILE, py = me.y * TILE, hop = 0;
-    if (me.move) {
+    if (me.move && me.move.inPlace) hop = -JUMP_Y_LOW[Math.min(15, Math.floor(me.move.t))];
+    else if (me.move) {
       const [dx, dy] = World.DIRS[me.move.dir];
       const t = Math.min(me.move.t, me.move.dist);
       // Mid-step the player is still in its old map's coordinates.
@@ -1362,7 +1412,8 @@
       const sy = me.move.tmap === me.map ? me.move.ty : me.y + dy * (me.move.jump ? 2 : 1);
       px = (sx * TILE) - dx * (me.move.dist - t);
       py = (sy * TILE) - dy * (me.move.dist - t);
-      if (me.move.jump || me.move.dismount || me.move.hop) hop = Math.sin((t / me.move.dist) * Math.PI) * (me.move.jump ? 10 : 6);
+      if (me.move.bikeHop) hop = -JUMP_Y_LOW[Math.min(15, Math.floor(t))];
+      else if (me.move.jump || me.move.dismount || me.move.hop) hop = Math.sin((t / me.move.dist) * Math.PI) * (me.move.jump ? 10 : 6);
     }
     const camX = px - PLAYER_X + panX, camY = py - PLAYER_Y + panY;
 
@@ -1428,7 +1479,7 @@
     if (me.avatar === "bike") {
       // The Bicycle's sheet (32 wide): standing, and pedalling while moving.
       sheet = look + "_bike"; w = 32; dx = -8;
-      frame = frameFor(me.facing, !!me.move && (me.move.t % TILE) < TILE / 2, me.parity, 9);
+      frame = frameFor(me.facing, !!me.move && !me.move.bikeHop && (me.move.t % TILE) < TILE / 2, me.parity, 9);
     } else if (me.avatar === "surf") {
       // On the water: down, up or left, bobbing up and down a pixel.
       sheet = look + "_surf"; w = 32; dx = -8;

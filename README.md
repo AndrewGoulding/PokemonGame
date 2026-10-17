@@ -1515,6 +1515,13 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   stopping, turning or bumping into something starts over), wild Pokémon 80% as often (FireRed's rate on a bike), and only
   where FireRed allows cycling (`allow_cycling`): going indoors gets you off,
   and using it indoors gets "Oak: ...! This isn't the time to use that!"
+  It also hops like Emerald's Acro Bike: hold B (X or Shift) standing still
+  and after 40 frames you bunny-hop (Emerald's SE_BIKE_HOP and low jump, 16
+  frames a hop), in place, turning if you press another way, or a tile along
+  (over ledges too) if you press the way you face; let go to stop. A hop in
+  place counts as a step, as in Emerald, so hopping in tall grass can find a
+  wild Pokémon (and a Repel counts it down). On the Bicycle, B doesn't toggle
+  running.
 - **TMs**: X and Y's TM01–TM100 in order, minus Flash and Rock Smash (HMs
   here), then Secret Power from Omega Ruby and Alpha Sapphire (TM99) and
   Bullet Seed (TM100, FireRed's TM09), Water Pulse (TM101, FireRed's TM03) and
