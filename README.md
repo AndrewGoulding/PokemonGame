@@ -376,7 +376,9 @@ Safari Ball, Bait (it's less likely to flee, but harder to catch) or a Rock
 by FireRed's catch and escape factors and each species' Safari flee rate
 (`engine/safari.js`). The Start menu shows your steps and balls and can RETIRE;
 out of steps or balls, the PA calls time and you're back at the gate, and
-walking back into the gate early, you're asked if you're leaving. FireRed's
+walking back into the gate early, you're asked if you're leaving. Leaving,
+you walk one step further from the counter than in FireRed, past the
+attendant's trigger, so you can't walk straight back in without paying. FireRed's
 Route 12 TM48 (Skill Swap) is TM106 here.
 West of Celadon City, Route 16 is blocked by a second sleeping Snorlax (the
 Poké Flute again, a wild Lv. 30 Snorlax, and Leftovers hidden where it slept);

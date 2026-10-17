@@ -9249,6 +9249,11 @@
   const SAFARI_GATE = "FuchsiaCity_SafariZone_Entrance";
   const safariOn = () => !!player.flags.safari;
   const G = (k) => T("FuchsiaCity_SafariZone_Entrance_Text_" + k);
+  // On your way out from the counter: FireRed's two steps down leave you on
+  // the entry trigger's row, where walking back up skips the attendant (a
+  // scripted step onto a trigger doesn't set it off); this game's one step
+  // more puts you below it, so going back in means paying again.
+  const SAFARI_EXIT = () => M("FuchsiaCity_SafariZone_Entrance_Movement_Exit").concat("walk_down");
   function safariStep() {
     const s = player.flags.safari;
     if (!s || !/^SafariZone_/.test(player.location.map)) return null;
@@ -9290,7 +9295,7 @@
       await say(G("PleaseReturnSafariBalls"));
       Screen.say("");
       delete player.flags.safari;
-      await Overworld.act([{ who: "player", moves: M("FuchsiaCity_SafariZone_Entrance_Movement_Exit") }]);
+      await Overworld.act([{ who: "player", moves: SAFARI_EXIT() }]);
       return;
     }
     await say(G("GoodLuck"));
@@ -9309,7 +9314,7 @@
     if (walkIn) await Overworld.act([{ who: "player", moves: M("FuchsiaCity_SafariZone_Entrance_Movement_ApproachCounter") }]);
     await say(G("CatchFairShareComeAgain"));
     Screen.say("");
-    await Overworld.act([{ who: "player", moves: M(walkIn ? "FuchsiaCity_SafariZone_Entrance_Movement_Exit2" : "FuchsiaCity_SafariZone_Entrance_Movement_Exit") }]);
+    await Overworld.act([{ who: "player", moves: walkIn ? M("FuchsiaCity_SafariZone_Entrance_Movement_Exit2") : SAFARI_EXIT() }]);
   }
   // A wild Pokémon in the Safari Zone.
   async function safariBattle(species, level, terrain) {
