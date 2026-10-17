@@ -6120,17 +6120,19 @@
   const plainCoins = (n) => n.toLocaleString("en-US");
 
   // The clerk (CeladonCity_GameCorner_EventScript_CoinsClerk): the money box
-  // and coins box at the top left, 50 or 500 Coins in
-  // MULTICHOICE_GAME_CORNER_COIN_PURCHASE_COUNTER at the top right.
+  // and coins box at the top left, and (this game's own) 100, 500 or 1,000
+  // Coins (FireRed's 50 or 500, MULTICHOICE_GAME_CORNER_COIN_PURCHASE_COUNTER) at the top right.
   async function coinsClerk() {
     const G = (k) => T("CeladonCity_GameCorner_Text_" + k);
     moneyBox(0, 0); coinsBox(0, 5);
     try {
       const q = G("WelcomeBuySomeCoins");
       await say(q.slice(0, -1));
-      const i = await multichoice(q[q.length - 1], 13, 0, ["{FONT_SMALL} 50 Coins{CLEAR_TO 69}¥1,000", "{FONT_SMALL}500 Coins{CLEAR_TO 64}¥10,000", "Exit"]);
-      if (i < 0 || i > 1) { await say(G("ComePlaySometime")); return; }
-      const v = i ? 500 : 50;
+      // (This game's: 100, 500 or 1,000 Coins, at FireRed's ¥20 a Coin.)
+      const i = await multichoice(q[q.length - 1], 12, 0, ["{FONT_SMALL}  100 Coins{CLEAR_TO 74}¥2,000", "{FONT_SMALL}  500 Coins{CLEAR_TO 69}¥10,000",
+        "{FONT_SMALL}1,000 Coins{CLEAR_TO 69}¥20,000", "Exit"]);
+      if (i < 0 || i > 2) { await say(G("ComePlaySometime")); return; }
+      const v = [100, 500, 1000][i];
       if (!player.flags.gotCoinCase) { await say(G("SorryDontHaveCoinCase")); return; }
       if (coins() + v > MAX_COINS) { await say(G("CoinCaseIsFull")); return; }
       if (player.money < v * 20) { await say(G("CantAffordCoins")); return; }

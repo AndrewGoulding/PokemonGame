@@ -325,8 +325,8 @@ give it to any of the thirsty gate guards and all four gates to Saffron open;
 the game designer's diploma for a complete Kanto Pokédex; an Eevee, Lv. 25, in
 a Poké Ball in the rooftop room), the restaurant (the Coin Case), the hotel and
 houses, the Soft-Boiled tutor, Erika's Gym (behind a Cut tree; the Rainbow Badge
-and TM19 Giga Drain, TM103 here), and the Game Corner: buy Coins (50 for ₽1,000,
-500 for ₽10,000, in FireRed's list, with your money and Coins in their boxes at
+and TM19 Giga Drain, TM103 here), and the Game Corner: buy Coins (100 for ₽2,000,
+500 for ₽10,000 or 1,000 for ₽20,000: FireRed's ₽20 a Coin, though its list is 50 and 500, with your money and Coins in their boxes at
 the top left; up to 9,999 in the Coin Case), get a few from the gamblers,
 find them on the floor, and play FireRed's slot machines (its reels, odds,
 lines and payouts, from `src/slot_machine.c`) or Texas Hold'em at the poker
