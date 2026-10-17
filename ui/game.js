@@ -9465,12 +9465,18 @@
   // Blast. Beating him also beats his Gym's trainers and opens all its doors.
   // Bill's then waiting outside to take you to the Sevii Islands
   // (VAR_MAP_SCENE_CINNABAR_ISLAND 1: flags.cinnabarScene).
+  // His team: FireRed's, and (this game's) his ace after Arcanine, Houndoom
+  // with its Houndoominite: it Mega Evolves and Terastallizes into a Dark type.
+  function blaineTeam() {
+    return trainerTeam("TRAINER_LEADER_BLAINE").concat([Object.assign(Party.create("Houndoom", 48,
+      { ivs: 0, moves: ["Flamethrower", "Dark Pulse", "Sludge Bomb", "Nasty Plot"] }), { item: "houndoominite", teraType: "Dark", teraAce: true })]);
+  }
   async function blaine(person) {
     const f = player.flags, ID = "TRAINER_LEADER_BLAINE";
     if (!f[ID]) {
       await say(person.trainer.intro);
       if (!canBattle()) return;
-      const outcome = await battle("trainer", { foe: { name: "Leader Blaine", team: trainerTeam(ID), pic: "leader_blaine" },
+      const outcome = await battle("trainer", { foe: { name: "Leader Blaine", team: blaineTeam(), pic: "leader_blaine", tera: true },
         defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
       if (outcome !== "won") return;
       if (!hasBadge("volcano")) player.badges.push("volcano");

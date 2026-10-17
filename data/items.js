@@ -167,6 +167,7 @@ window.ITEMS = {
   "heat-rock": { name: "heat-rock", category: "held-items", effect: "Held: Sunny Day by the holder lasts 8 rounds instead of 5." },
   "heavy-ball": { name: "heavy-ball", category: "apricorn-balls", effect: "Has flat bonus or penalty to catch rate depending on weight class of target. Made from Blk Apricorn." },
   "helix-fossil": { name: "helix-fossil", category: "dex-completion", effect: "Can be revived into an Omanyte." },
+  "houndoominite": { name: "houndoominite", category: "mega-stones", effect: "Held: Allows Houndoom to Mega Evolve into Mega Houndoom." },
   "heracronite": { name: "heracronite", category: "mega-stones", effect: "Held: Allows Heracross to Mega Evolve into Mega Heracross." },
   "hm01": { name: "hm01", category: "all-machines", effect: "Teaches Cut to a compatible Pokémon." },
   "hm02": { name: "hm02", category: "all-machines", effect: "Teaches Fly to a compatible Pokémon." },
