@@ -123,7 +123,7 @@ Bottle Cap makes one stat you pick (from the ones not already at 31) act as
 if its IV were 31, a Gold Bottle Cap all of them; the IV itself stays as it
 was, for breeding, and the Summary's IV page shows 31. It holds medicine, evolution
 stones (each item for evolving says "Evolves certain Pokémon when used."), Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
-the Exp. Share, Oak's Parcel, the Town Map and the fishing rods (see
+the Exp. Share, Oak's Parcel, the Town Map and the Fishing Rod (see
 **Fishing** below). After the Bag come FireRed's Pokédex, the **National
 Pokédex** from the moment Oak hands it over (Pokémon from beyond Kanto turn
 up in the campaign; FireRed's IsNationalPokedexEnabled is `Player.nationalDex`:
@@ -184,8 +184,9 @@ at the counter ("First, you should restore your Pokémon to full health.", the
 healing machine, and until you've beaten Brock her advice about Potions), or
 at home Red's Mom does.
 
-**Fishing** is FireRed's (`StartFishing` in src/field_player_avatar.c): use
-the Old, Good or Super Rod from the Bag, or register it to Select, facing
+**Fishing** is FireRed's (`StartFishing` in src/field_player_avatar.c), with
+one Fishing Rod (the Super Rod's picture) in place of its three: use it from
+the Bag, or register it to Select, facing
 water (on foot, water you could Surf onto; surfing, open water). You cast
 (FireRed's fishing sprites), and a second later dots appear one by one in
 the text box, 4 to 10 of them. Then either "Not even a nibble‥" or a bite:
@@ -193,11 +194,25 @@ the rod bends, a "!" pops up over your head, and "A POKéMON's on the hook!".
 As in FireRed there's no button to press in time and only one round of dots
 (its Fishing7 goes straight to the hook). FireRed bites one cast in two;
 here bites are twice as likely, so every cast bites wherever there's
-something to fish. Then a wild battle with the map's
-fishing Pokémon for that rod: FireRed's `fishing_mons`, the Old Rod's two
-slots (70/30), the Good Rod's three (60/20/20) and the Super Rod's five
-(40/40/15/4/1), each version's Pokémon where FireRed and LeafGreen differ.
-In the Safari Zone it's a Safari battle.
+something to fish. Then a wild battle with one of the map's fishing
+Pokémon: FireRed's `fishing_mons`, still the Old Rod's two slots (70/30),
+the Good Rod's three (60/20/20) and the Super Rod's five (40/40/15/4/1),
+each version's Pokémon where FireRed and LeafGreen differ (Johto's maps,
+HeartGold and SoulSilver's three rods). Which rod's slots a bite comes from
+goes by your **fishing level** (`game/fishing.js`): every Pokémon hooked
+earns fishing XP (10 for an Old Rod Pokémon, 15 for a Good Rod one, 20 for a
+Super Rod one), and levels go as mining's do (20 XP a level up to 20, then
+40, 60, 80 and 100; level 100 at 5,980 XP). Up to level 9 only the Old Rod's
+Pokémon bite; from 10 the Good Rod's too (60/40); from 25 the Super Rod's
+(30/40/30); from 50, 15/35/50, and from 75, 5/25/70. From level 50 the Super
+Rod's rarer slots come up more often too (35/35/20/7/3, and 30/30/25/10/5
+from 75). The XP and any new level are told after "on the hook!", and the
+trainer card shows your fishing level. In the Safari Zone it's a Safari
+battle. The Fishing Guru in Vermilion City gives you the Fishing Rod; his
+brothers in Fuchsia City and on Route 12 give it to you if you haven't got
+it yet, and otherwise tell you your fishing level and what's next (the Route
+12 brother then keeps FireRed's Magikarp size record). Old saves have their
+rods turned into the one Fishing Rod.
 
 **The Berry Crush** is FireRed's (src/berry_crush.c; `game/berry-crush.js`
 plays it, `ui/berry-crush.js` draws it with the pictures from
@@ -356,14 +371,14 @@ way he came, the townsfolk come back out, and the President gives you the
 Master Ball. The Silph Co. 5F TM01 (Focus Punch) is TM105 here.
 South of Lavender Town, Route 12 (its gate, with TM27 Return from the girl
 upstairs; the fishermen along the pier; the Fishing Guru's younger brother's
-house, with the Super Rod and his Magikarp size record, FireRed's, for a Net Ball)
+house, with his Magikarp size record, FireRed's, for a Net Ball)
 is blocked by a sleeping Snorlax: play the Poké Flute to wake it, and it attacks,
 a wild Snorlax, Lv. 30, you can catch; beaten or not, it's gone. Routes 13, 14 and
 15 (their trainers, Cut trees and hidden items; Route 15's gate, where Prof.
 Oak's Aide has the Exp. Share for fifty kinds caught and the binoculars show
 Articuno) lead west to Fuchsia City: its Pokémon Center, the Poké Mart, the
 Substitute tutor, the Pokémon statues' signs, the Fishing Guru's older brother
-(the Good Rod), Bill's grandfather's house, the Move Deleter, the Safari Zone
+(on your fishing level), Bill's grandfather's house, the Move Deleter, the Safari Zone
 office, the Warden's house (bring back his Gold Teeth, lost in the Safari Zone,
 for HM04 Strength) and Koga's Gym, its invisible walls between you and him (the
 Soul Badge, which lets you Surf, and TM06 Toxic). The Safari Zone: ₽500 at the
@@ -951,7 +966,7 @@ of them, the second under one next to it, and a wrong second can resets both;
 the electric beams are FireRed's metatiles, swapped in as `<Map>-patch-*.png`
 from `MAP_PATCHES` in `tools/build-maps.js`) with Lt. Surge (Voltorb, Pikachu and
 Raichu, the Thunder Badge and TM34 Shock Wave, this game's TM102), the Fishing
-Guru's Old Rod, Elyssa's trade (Ch'Ding the
+Guru's Fishing Rod, Elyssa's trade (Ch'Ding the
 Farfetch'd for a Spearow), the Fan Club Chairman's Bike Voucher and the Bike
 Shop's Bicycle for it, Leaf waiting where the road from
 Route 6 comes into Vermilion (Butterfree 18, Wigglytuff 20, Nidorina 21 and her
@@ -1558,7 +1573,7 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
 |---|---|
 | `data/` | Pokédex, moves, abilities, items, item sprite paths, learnsets, evolutions, overworld maps, natures, type chart, plus the battle hooks for conditions and moves |
 | `engine/` | Stat, damage, experience, catch and item formulas, and the battle engine |
-| `game/` | Game logic around the engine: party records, the player and their save (`player.js`, `save.js`), bag and Poké Mart (`bag.js`), overworld rules (`world.js`), evolution, encounters, random teams and the opponent AI |
+| `game/` | Game logic around the engine: party records, the player and their save (`player.js`, `save.js`), bag and Poké Mart (`bag.js`), overworld rules (`world.js`), mining and fishing levels (`mining.js`, `fishing.js`), evolution, encounters, random teams and the opponent AI |
 | `ui/` | Text box and menus (`screen.js`), the battle screen, the overworld (`overworld.js`), FireRed's intro (`intro.js`), and the game flow, story events and menus (`game.js`) |
 | `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`, `npm run build:maps`, `npm run build:intro`, `npm run build:battle-bgs`, `npm run build:machine-learners`, `npm run build:sprite-metrics`, `node tools/build-slot-machine.js pokefirered` for the Game Corner slot machine graphics) and their shared PNG/GBA/text helpers (`tools/lib/`) |
 | `assets/sprites/` | Pokémon sprites (front, back, shiny), item icons, trainer and overworld sprites |

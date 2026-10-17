@@ -729,7 +729,7 @@
     return r ? player.party[r.slot] : null;
   }
 
-  const RODS = ["old-rod", "good-rod", "super-rod"];
+  const RODS = ["fishing-rod"];
   const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case", "powder-jar"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
   const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map"].concat(RODS);
@@ -753,7 +753,7 @@
     if (RODS.includes(item)) {
       // (Only facing water: FireRed's FieldUseFunc_Rod.)
       if (!Overworld.ahead().fishable) { await message("Oak: " + player.name + "! This isn't the time to use that!"); return; }
-      fieldAction = () => fish(item);
+      fieldAction = () => fish();
       return "escaped";
     }
     if (item === "poke-flute") {
@@ -974,6 +974,9 @@
     delete f.miningDug;
     return f.miningXp | 0;
   };
+  // Fishing XP (flags.fishingXp, game/fishing.js): every Pokémon hooked earns
+  // some, and your fishing level decides what bites.
+  const fishingXp = () => player.flags.fishingXp | 0;
   async function explorerKit() {
     const here = player.location && window.WORLD_MAPS[player.location.map];
     if (!here || here.type !== "underground") { await message("Oak: " + player.name + "! This isn't the time to use that!"); return false; }
@@ -1856,6 +1859,8 @@
         "<dt>Badges</dt><dd>" + player.badges.length + "</dd>" +
         "<dt>Mining</dt><dd>Lv. " + Mining.level(miningXp()) + (Mining.toNext(miningXp()) == null ? " (max)"
           : " <small>(" + Mining.toNext(miningXp()) + " XP to the next level)</small>") + "</dd>" +
+        "<dt>Fishing</dt><dd>Lv. " + Fishing.level(fishingXp()) + (Fishing.toNext(fishingXp()) == null ? " (max)"
+          : " <small>(" + Fishing.toNext(fishingXp()) + " XP to the next level)</small>") + "</dd>" +
         "<dt>Play time</dt><dd>" + playTime(player.playTimeMs) + "</dd>" +
         // (Four Island's sticker man: the Hall of Fame sticker, one of four by entries.)
         (player.flags.hofBragState ? "<dt>Stickers</dt><dd>Hall of Fame " + "★".repeat(player.flags.hofBragState) + "</dd>" : "") +
@@ -3485,10 +3490,17 @@
         await say(tmText(L("ExplainTM27"), 27, tm));
         return;
       }
-      // The Fishing Guru's brother: the Super Rod, then the Magikarp record.
+      // The Fishing Guru's brother: (FireRed's Super Rod) the Fishing Rod if you
+      // haven't one, and his request; then the Magikarp record.
       case "Route12_FishingHouse_EventScript_FishingGuruBrother":
         if (f.gotSuperRod) { await magikarpRecord(); return; }
-        await rodGift("super-rod", "gotSuperRod", "Route12_FishingHouse_Text_", "TakeThisAndFish", "ReceivedSuperRod", "IfYouCatchBigMagikarpShowMe");
+        if (!hasFishingRod()) {
+          if (await rodGift("Route12_FishingHouse_Text_", "TakeThisAndFish", "IfYouCatchBigMagikarpShowMe")) f.gotSuperRod = true;
+          return;
+        }
+        await say(fishingLevelTalk("Route12"));
+        await say(T("Route12_FishingHouse_Text_IfYouCatchBigMagikarpShowMe").slice(2));
+        f.gotSuperRod = true;
         return;
       case "Route12_FishingHouse_EventScript_MagikarpRecordSign":
         await say(f.magikarpRecord != null ? T("Route12_FishingHouse_Text_MostGiganticMagikarpXInches")
@@ -3845,10 +3857,12 @@
       case "FuchsiaCity_WardensHouse_EventScript_Warden":
         await warden();
         return;
-      // The Fishing Guru's other brother: the Good Rod.
+      // The Fishing Guru's other brother: (FireRed's Good Rod) the Fishing Rod if
+      // you haven't one; then how your fishing is going.
       case "FuchsiaCity_House2_EventScript_FishingGurusBrother":
-        if (f.gotGoodRod) { await say(T("FuchsiaCity_House2_Text_HowAreTheFishBiting")); return; }
-        await rodGift("good-rod", "gotGoodRod", "FuchsiaCity_House2_Text_", "LikeYourStyleTakeThis", "ReceivedGoodRod", "GoodRodCanCatchBetterMons");
+        if (!hasFishingRod()) { await rodGift("FuchsiaCity_House2_Text_", "LikeYourStyleTakeThis"); return; }
+        await say(T("FuchsiaCity_House2_Text_HowAreTheFishBiting"));
+        await say(fishingLevelTalk("Fuchsia"));
         return;
       case "FuchsiaCity_House3_EventScript_MoveDeleter":
         await fuchsiaMoveDeleter();
@@ -3986,17 +4000,21 @@
       case "VermilionCity_Gym_EventScript_GymStatue":
         await say(T(hasBadge("thunder") ? "VermilionCity_Gym_Text_GymStatuePlayerWon" : "VermilionCity_Gym_Text_GymStatue"));
         return;
-      // The Fishing Guru gives you an Old Rod.
+      // The Fishing Guru gives you (FireRed's Old Rod) the Fishing Rod.
       case "VermilionCity_House1_EventScript_FishingGuru": {
-        if (f.gotOldRod) { await say(T("VermilionCity_House1_Text_HowAreTheFishBiting")); return; }
+        if (hasFishingRod()) {
+          await say(T("VermilionCity_House1_Text_HowAreTheFishBiting"));
+          await say(fishingLevelTalk("Vermilion"));
+          return;
+        }
         const q = T("VermilionCity_House1_Text_ImFishingGuruDoYouLikeToFish");
         await say(q.slice(0, -1));
         if (!(await confirm(fill(q[q.length - 1])))) { await say(T("VermilionCity_House1_Text_OhThatsSoDisappointing")); return; }
         await say(T("VermilionCity_House1_Text_TakeThisAndFish"));
-        Player.addItem(player, "old-rod");
+        await giveFishingRod("the Fishing Guru");
         f.gotOldRod = true;
-        await sayWithJingle(itemJingle("old-rod"), T("VermilionCity_House1_Text_ReceivedOldRodFromFishingGuru"));
         await say(T("VermilionCity_House1_Text_FishingIsAWayOfLife"));
+        await say(FISHING_LEVELS_EXPLAINED);
         return;
       }
       case "VermilionCity_House2_EventScript_Elyssa":
@@ -5584,14 +5602,14 @@
   // frames, 4 to 10 of them; then either nothing bites, "Not even a nibble‥"
   // (always, where there's nothing to fish), or something does: the rod
   // bends, a "!" pops up over your head, and "A POKéMON's on the hook!", then
-  // a wild battle with the map's fishing Pokémon for that rod
-  // (World.fishingEncounter). As in FireRed and LeafGreen there's no button
+  // a wild battle with the map's fishing Pokémon for your fishing level
+  // (game/fishing.js), and the fishing XP it's worth. As in FireRed and LeafGreen there's no button
   // to press in time and only the one round of dots (Fishing7 goes straight
   // to the hook; the reeling of Ruby and Sapphire, Fishing8 and Fishing9, is
   // left behind, never reached). FireRed's bite is Random() & 1, one cast in
   // two; here it's twice that, every cast where there's something to catch.
   const BITE_CHANCE = 1;
-  async function fish(rodId) {
+  async function fish() {
     const at = player.location;
     const here = window.WORLD_MAPS[at.map] || {};
     const frames = (n) => sleep(n * 1000 / 60);
@@ -5622,9 +5640,16 @@
     Screen.say("");
     Overworld.emote(null);
     Overworld.rod(null);
-    const mon = World.fishingEncounter(at.map, rodId);
+    const before = Fishing.level(fishingXp());
+    const mon = Fishing.encounter(at.map, before);
     if (!mon) return;
     player.flags.fishingCaptures = (player.flags.fishingCaptures | 0) + 1;
+    player.flags.fishingXp = fishingXp() + mon.xp;
+    const after = Fishing.level(player.flags.fishingXp);
+    await say("Gained " + mon.xp + " fishing XP.");
+    const rarer = Fishing.TIERS.some(([from]) => from > before && from <= after);
+    if (after > before) await say("Your fishing level rose to " + after + "!" + (rarer ? "\nRarer Pokémon may bite now." : ""));
+    Screen.say("");
     // (FireRed's pond, or the sea.)
     const ahead = Overworld.ahead();
     const terrain = ahead.behavior === 0x10 ? "pond" : "water";
@@ -6580,16 +6605,37 @@
   }
 
   // A fishing rod from one of the Fishing Guru's brothers ("Do you like to fish?").
-  async function rodGift(rod, flag, prefix, takeThis, received, explain) {
+  // The Fishing Guru's brothers, if you haven't the Fishing Rod yet: it's
+  // theirs to give then (`explain`: what's said after, if anything). -> given?
+  async function rodGift(prefix, takeThis, explain) {
     const L = (k) => T(prefix + k);
     const like = L("DoYouLikeToFish");
     await say(like.slice(0, -1));
-    if (!(await confirm(fill(like[like.length - 1])))) { await say(L("OhThatsDisappointing")); return; }
+    if (!(await confirm(fill(like[like.length - 1])))) { await say(L("OhThatsDisappointing")); return false; }
     await say(L(takeThis));
-    Player.addItem(player, rod);
-    player.flags[flag] = true;
-    await sayWithJingle(itemJingle(rod), L(received));
-    await say(L(explain));
+    await giveFishingRod("the Fishing Guru's brother");
+    await say(explain ? L(explain) : FISHING_LEVELS_EXPLAINED);
+    return true;
+  }
+  const hasFishingRod = () => Player.itemCount(player, "fishing-rod") > 0;
+  async function giveFishingRod(from) {
+    Player.addItem(player, "fishing-rod");
+    await sayWithJingle(itemJingle("fishing-rod"), fill("{PLAYER} received a Fishing Rod from\n" + from + "."));
+  }
+  // (This game's own words: fishing levels, game/fishing.js.)
+  const FISHING_LEVELS_EXPLAINED = ["The more Pokémon you hook, the\nbetter you get at fishing.",
+    "And the better you fish, the rarer\nthe Pokémon that bite!"];
+  // The Fishing Guru and his brothers on how your fishing is going.
+  function fishingLevelTalk(who) {
+    const lv = Fishing.level(fishingXp());
+    const next = Fishing.TIERS.find(([from]) => from > lv);
+    const said = ["Your fishing level is " + lv + "!"];
+    if (lv >= Fishing.MAX_LEVEL) said.push("There's nothing left for me to teach\nyou. You're a true Fishing Guru!");
+    else if (lv < 10) said.push("Keep at it! Better Pokémon bite\nonce you reach level 10.");
+    else if (lv < 25) said.push("Not bad! Reach level 25 and the\nrarest Pokémon start biting.");
+    else said.push(next ? "Splendid! Rare Pokémon bite even\nmore often from level " + next[0] + "." : "Splendid! You land the rare ones\nas often as anyone can.");
+    if (who === "Vermilion") said.push("Fishing is a way of life!");
+    return said;
   }
 
   // The Magikarp size record (src/pokemon_size_record.c): a Magikarp's size

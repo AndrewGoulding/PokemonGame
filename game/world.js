@@ -8,6 +8,7 @@
 //   World.stepEncounter(state, "MtMoon_1F", x, y, { allow })   // FireRed's check for a step (below)
 //   World.step(pos, "left", occupied, { surf: true })   // surfing: water, or { dismount } onto land
 //   World.fishingEncounter("Route12", "good-rod")      // -> { species, level, slot } or null
+//                                                     (game/fishing.js picks the rod's slots by fishing level)
 
 (function () {
   "use strict";
@@ -296,14 +297,16 @@
   // (Johto's maps, from HeartGold and SoulSilver, have Gen 4's rods instead:
   // `rods`, five slots each, 40/40/15/4/1.)
   const GEN4_ROD_WEIGHTS = [40, 40, 15, 4, 1];
-  function fishingEncounter(mapName, rodId, rng) {
+  // `weights` (optional) replaces the rod's slot percentages, in order.
+  function fishingEncounter(mapName, rodId, rng, weights) {
     rng = rng || Math.random;
-    const t = map(mapName).fishing, slots = ROD_SLOTS[rodId];
+    const t = map(mapName).fishing;
+    const slots = ROD_SLOTS[rodId] && (weights ? ROD_SLOTS[rodId].map(([slot], i) => [slot, weights[i]]) : ROD_SLOTS[rodId]);
     if (t && t.rods) {
-      const r = t.rods[rodId];
+      const r = t.rods[rodId], w = weights || GEN4_ROD_WEIGHTS;
       if (!r) return null;
       let roll = Math.floor(rng() * 100), k = 0;
-      while (k < GEN4_ROD_WEIGHTS.length - 1 && roll >= GEN4_ROD_WEIGHTS[k]) roll -= GEN4_ROD_WEIGHTS[k++];
+      while (k < w.length - 1 && roll >= w[k]) roll -= w[k++];
       const s = r.slots[k];
       return s && s.species ? { species: s.species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)), slot: k } : null;
     }

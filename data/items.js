@@ -119,7 +119,7 @@ window.ITEMS = {
   "figy-berry": { name: "figy-berry", category: "picky-healing", effect: "Held: Consumed at 1/2 max HP to restore 1/8 max HP. Confuses Pokémon that dislike spicy flavor." },
   "fire-gem": { name: "fire-gem", category: "jewels", effect: "Held: When the holder uses a damaging Fire-type move, the move has 1.5× power and this item is consumed." },
   "fire-stone": { name: "fire-stone", category: "evolution", effect: "Evolves an Eevee into Flareon, a Growlithe into Arcanine, a Pansear into Simisear, or a Vulpix into Ninetales." },
-  "fishing-rod": { name: "fishing-rod", category: "gameplay", effect: "Allows the player to fish for Pokémon." },
+  "fishing-rod": { name: "fishing-rod", category: "key-items", effect: "Use it by any body of water to fish for wild Pokémon. The higher your fishing level, the rarer the Pokémon that bite." },
   "fist-plate": { name: "fist-plate", category: "plates", effect: "Held: Fighting-Type moves from holder do 20% more damage. Changes Arceus's and Judgment's type to Fighting." },
   "flame-orb": { name: "flame-orb", category: "bad-held-items", effect: "Held: Inflicts Burn on the holder at the end of the turn. Activates after Burn damage would occur." },
   "flame-plate": { name: "flame-plate", category: "plates", effect: "Held: Fire-Type moves from holder do 20% more damage. Changes Arceus's and Judgment's type to Fire." },

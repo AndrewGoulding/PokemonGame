@@ -327,7 +327,8 @@
 
   // Item ids that changed since a save's version: old id -> new id.
   function renamedItems(version) {
-    const out = { "tm94-oras": "tm99" };
+    // (The three rods are one Fishing Rod now: game/fishing.js.)
+    const out = { "tm94-oras": "tm99", "old-rod": "fishing-rod", "good-rod": "fishing-rod", "super-rod": "fishing-rod" };
     if ((version || 1) < 2) {
       // Version 1 had X and Y's TM01-TM100, TM101 Secret Power, HM05 Waterfall and HM07 Dive.
       for (let n = 71; n <= 101; n++) if (n !== 94) out["tm" + n] = "tm" + String(n - (n > 94 ? 2 : 1)).padStart(2, "0");
@@ -378,6 +379,14 @@
     for (const s of dex.caught || []) markCaught(player, s);
     player.badges = Array.isArray(data.badges) ? data.badges.slice() : [];
     player.flags = Object.assign({}, data.flags);
+    if (RENAMED[player.flags.registered]) player.flags.registered = RENAMED[player.flags.registered];
+    // (Your own Bag, put away while you're Wes in Orre.)
+    const stash = player.flags.orreStash;
+    if (stash && stash.bag) {
+      const bag = {};
+      for (const [item, n] of Object.entries(stash.bag)) bag[RENAMED[item] || item] = Math.max(bag[RENAMED[item] || item] || 0, n);
+      stash.bag = bag;
+    }
     // Saves from before key items: the Exp. Share, and Oak's Parcel if it's still to deliver.
     if (!player.bag["exp-share"] && !asWes) player.bag["exp-share"] = 1;
     if (player.flags.oaksParcel && !player.flags.parcelDelivered) player.bag["oaks-parcel"] = 1;

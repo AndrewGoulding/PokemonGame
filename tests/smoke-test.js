@@ -560,8 +560,8 @@ for (const share of [false, true]) {
   assert.strictEqual(Bag.pocket("oran-berry"), "Berries");
   assert.strictEqual(Bag.pocket("fire-stone"), "Items");
   assert.strictEqual(Bag.sellPrice("potion"), 150);
-  // The fishing rods are key items; the weather rocks and the like sell for Gen 6's ₽100.
-  for (const rod of ["old-rod", "good-rod", "super-rod"]) assert.strictEqual(Bag.pocket(rod), "Key Items", rod);
+  // The Fishing Rod is a key item; the weather rocks and the like sell for Gen 6's ₽100.
+  assert.strictEqual(Bag.pocket("fishing-rod"), "Key Items");
   for (const id of ["smooth-rock", "heat-rock", "damp-rock", "icy-rock", "iron-ball", "light-clay"]) assert.strictEqual(Bag.sellPrice(id), 100, id);
   // Each Mart sells FireRed's list for it, read from the clerk's script.
   const viridian = WORLD_MAPS.ViridianCity_Mart.people.find((p) => p.mart).mart;
@@ -1600,6 +1600,34 @@ for (const share of [false, true]) {
   assert.strictEqual(World.fishingEncounter("PewterCity", "old-rod"), null, "nothing to fish in Pewter");
   assert(World.canFish({ map: "Route12", x: 19, y: 63 }, "right", false), "the Route 12 pier faces water");
   assert(!World.canFish({ map: "Route12", x: 19, y: 63 }, "left", false), "...not land");
+  // Other weights for a rod's slots (the Super Rod's at a high fishing level).
+  assert.strictEqual(World.fishingEncounter("Route12", "super-rod", rolls([0.96, 0.9]), [30, 30, 25, 10, 5]).slot, 9, "96: slot 9 (only 99 is, with FireRed's)");
+}
+
+// Fishing levels (game/fishing.js): one Fishing Rod; the level picks which
+// rod's slots a bite comes from, and each bite's XP goes by that rod.
+{
+  const rolls = (vals) => { let i = 0; return () => vals[i++ % vals.length]; };
+  assert.deepStrictEqual([0, 20, 380, 580].map(Fishing.level), [1, 2, 20, 25], "mining's levels");
+  // Only the Old Rod's Pokémon at first, the Good Rod's from 10, the Super Rod's from 25.
+  for (const r of [0, 0.5, 0.99]) assert.strictEqual(Fishing.pickRod(1, () => r), "old-rod");
+  assert.deepStrictEqual([0.5, 0.7].map((r) => Fishing.pickRod(10, () => r)), ["old-rod", "good-rod"]);
+  assert.deepStrictEqual([0.2, 0.5, 0.8].map((r) => Fishing.pickRod(25, () => r)), ["old-rod", "good-rod", "super-rod"]);
+  assert.strictEqual(Fishing.pickRod(100, () => 0.3), "super-rod", "mostly the Super Rod's at the top");
+  assert.deepStrictEqual(Fishing.superWeights(49), [40, 40, 15, 4, 1]);
+  assert.deepStrictEqual(Fishing.superWeights(80), [30, 30, 25, 10, 5]);
+  const low = Fishing.encounter("Route12", 1, rolls([0.5, 0.1, 0]));
+  assert.deepStrictEqual([low.species, low.rod, low.xp], ["Magikarp", "old-rod", 10]);
+  const high = Fishing.encounter("Route12", 100, rolls([0.99, 0.5, 0]));
+  assert.deepStrictEqual([high.rod, high.xp], ["super-rod", 20]);
+  assert(high.slot >= 5, "a Super Rod slot");
+  assert.strictEqual(Fishing.encounter("PewterCity", 50), null, "nothing to fish in Pewter");
+  assert.strictEqual(Fishing.encounter("NewBarkTown", 1, () => 0).species, "Magikarp", "Johto's rods too");
+  // Saves with the old rods have the Fishing Rod instead (registered too).
+  const old = JSON.parse(Player.serialize(Object.assign(Player.create("RED", 0), { bag: { "old-rod": 1, "super-rod": 1 } })));
+  old.flags.registered = "super-rod";
+  const loaded = Player.load(old).player;
+  assert.deepStrictEqual([loaded.bag["fishing-rod"], loaded.bag["old-rod"], loaded.bag["super-rod"], loaded.flags.registered], [1, undefined, undefined, "fishing-rod"]);
 }
 
 // FireRed's encounter check (World.stepEncounter): after an encounter, Mt. Moon
