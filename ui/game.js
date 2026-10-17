@@ -5432,7 +5432,7 @@
       }
       case "Fly":
         if (!OUTDOORS.includes(here.type)) return "Can't use that here.";
-        return () => fly();
+        return () => fly(mon);
       case "Strength": {
         if (!facingScript("EventScript_StrengthBoulder")) return "Can't use that here.";
         return () => useStrength(mon);
@@ -5550,14 +5550,21 @@
   }
 
   // Fly: pick a town you've been to on the Town Map, and off you go, landing
-  // outside its Pokémon Center (FireRed's heal locations).
-  async function fly() {
+  // outside its Pokémon Center (FireRed's heal locations). `mon` flies you:
+  // FireRed's Fly out of battle (Overworld.flyOut, flyIn), unless you're
+  // surfing (then just the sound and a fade).
+  async function fly(mon) {
     const spot = await townMap({ fly: true });
     await Overworld.resume();   // (the map was put away for the Town Map)
     if (!spot) return;
-    sfx("se_m_fly");
+    if (Overworld.avatar() === "surf" || !mon) sfx("se_m_fly");
+    else {
+      Overworld.setAvatar("walk");
+      await Overworld.flyOut({ species: mon.species, form: Party.form(mon), shiny: !!mon.shiny });
+    }
     Overworld.setAvatar("walk");
-    await Overworld.teleport({ map: spot.map, x: spot.x, y: spot.y, facing: "down" });
+    await Overworld.teleport({ map: spot.map, x: spot.x, y: spot.y, facing: "down", hidden: true });
+    await Overworld.flyIn();
     // (A scene that starts on arriving: Bill waiting on Cinnabar Island.)
     if (spot.map === "CinnabarIsland" && special("enter:" + spot.map)) await story({ type: "trigger", trigger: { script: "enter:" + spot.map }, map: spot.map });
   }

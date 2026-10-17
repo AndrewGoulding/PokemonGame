@@ -692,7 +692,7 @@
   async function teleport(loc) {
     if (!fade) await fadeOut();
     me.map = loc.map; me.x = loc.x; me.y = loc.y; me.facing = loc.facing || "down";
-    me.move = null; me.hidden = false; me.emote = null;
+    me.move = null; me.hidden = !!loc.hidden; me.emote = null;
     checkAvatar(); checkLight();
     loadPeople();
     await preloadMap(me.map);
@@ -774,6 +774,213 @@
     for (let y = 0, i = 0; y < VIEW_H; y += band, i++) {
       const w = Math.ceil(VIEW_W * k);
       g.fillRect(i % 2 ? VIEW_W - w : 0, y, w, band);
+    }
+  }
+
+  // ---------- Per-frame jobs ----------
+  //
+  // everyFrame(fn): fn(t) once a frame (t = 0, 1, 2...) until it returns true.
+  const frameJobs = [];
+  const everyFrame = (fn) => new Promise((resolve) => frameJobs.push({ fn, t: 0, resolve }));
+  const waitFrames = (n) => everyFrame((t) => t >= n - 1);
+  function runFrameJobs() {
+    for (const job of frameJobs.slice()) {
+      if (job.fn(job.t++)) { frameJobs.splice(frameJobs.indexOf(job), 1); job.resolve(); }
+    }
+  }
+
+  // ---------- Fly ----------
+  //
+  // FireRed's FLDEFF_FLY_OUT and FLDEFF_FLY_IN (src/field_effect.c), frame
+  // for frame. Out: you raise a Poké Ball (the field-move pose, frames 0-3
+  // of the pose sheet 4 frames each and 4 for 8); your Pokémon is shown
+  // (FLDEFF_FIELD_MOVE_SHOW_MON, outdoors: a band of streaks opens from the
+  // right and grows to lines 40-120 while they scroll, the Pokémon slides in
+  // from x 320 at 20 a frame, cries, waits 30 frames and slides off; the band
+  // closes 6 lines a frame); the bird leaves its ball, growing as it arcs up
+  // and off to the top left; you face left, 16 frames later it swoops down
+  // from the right (SE_M_FLY), you hop on 8 frames into the swoop, and 10
+  // later it carries you up and away, growing, and the screen fades. In: the
+  // bird swoops in from the right with you on it, shrinking from twice its
+  // size, drops you on your spot (you hop down) and flies on; you raise the
+  // Ball and it spirals back in, turned a quarter and shrinking. Positions are
+  // FireRed's screen positions (sprite centres), 8 lines higher here as our
+  // camera has the player 8 lines higher; the bird is drawn without a rider
+  // and your own sitting picture (the ride sheet) rides on it, scaled with it.
+  let fly = null;   // { player: undefined (as usual) | null (not drawn) | { sheet, w, frame, x, y }, bird, band, mon }
+  const turn = (a) => a / 256 * 2 * Math.PI;   // (FireRed's angles: 256 to a turn)
+  const gbaSin = (a, amp) => Math.trunc(Math.sin(turn(a)) * amp);
+  const gbaCos = (a, amp) => Math.trunc(Math.cos(turn(a)) * amp);
+  const PLAYER_CX = 120, PLAYER_CY = 72;   // (FireRed's: the player's sprite centre on screen)
+  const JUMP_IN_PLACE = [-4, -6, -8, -10, -11, -12, -12, -12, -11, -10, -9, -8, -6, -4, 0, 0];   // (sJumpY_Normal)
+  const JUMP_OFF_BIRD = [-2, -4, -5, -6, -7, -8, -8, -8, -7, -7, -6, -5, -3, -2, 0, 2, 4, 8];
+
+  const look = () => "player_" + (ctx.player.look || "custom");
+  // The player as one of its sheets' frames, centred at (x, y).
+  const standing = (facing) => ({ sheet: look(), w: 16, frame: frameFor(facing, false, 0, 9), flip: facing === "right", x: PLAYER_CX, y: PLAYER_CY });
+  const riding = (x, y) => ({ sheet: look() + "_ride", w: 32, frame: 2, x, y });
+  // The field-move pose (sAnim_FieldMove), or standing still for a look without one.
+  async function fieldMovePose() {
+    const has = ready(spriteImage(look() + "_item"));
+    await everyFrame((t) => {
+      fly.player = has ? { sheet: look() + "_item", w: 16, frame: t < 16 ? t >> 2 : 4, x: PLAYER_CX, y: PLAYER_CY } : standing(me.facing);
+      return t >= 23;
+    });
+  }
+
+  // FLDEFF_FIELD_MOVE_SHOW_MON (outdoors).
+  async function showMon(species, form, shiny) {
+    const img = image(window.Screen.spriteUrl(species, form, false, shiny));
+    await img.loaded;
+    const band = fly.band = { x0: 240, y0: 80, y1: 81, scroll: 0 };
+    const scroll = () => { band.scroll -= 16; };
+    await everyFrame(() => {
+      scroll();
+      band.x0 = Math.max(0, band.x0 - 16); band.y0 = Math.max(40, band.y0 - 2); band.y1 = Math.min(120, band.y1 + 2);
+      return band.x0 === 0 && band.y0 === 40 && band.y1 === 120;
+    });
+    const mon = fly.mon = { img, x: 320 };
+    let wait = 30;
+    await everyFrame(() => {
+      scroll();
+      if (wait === 30 && mon.x > 120) {
+        if ((mon.x -= 20) <= 120) { mon.x = 120; if (window.GameAudio) window.GameAudio.cry(species); }
+        return false;
+      }
+      if (wait > 0) { wait--; return false; }
+      if (mon.x < -64) return true;
+      mon.x -= 20;
+      return false;
+    });
+    fly.mon = null;
+    await everyFrame(() => {
+      scroll();
+      band.y0 = Math.min(80, band.y0 + 6); band.y1 = Math.max(81, band.y1 - 6);
+      return band.y0 === 80 && band.y1 === 81;
+    });
+    fly.band = null;
+  }
+
+  // Off you go (`mon`: { species, form, shiny }, the Pokémon that knows Fly).
+  async function flyOut(mon) {
+    const loads = [spriteImage(look() + "_item"), spriteImage(look() + "_ride"), spriteImage("fly_bird"), spriteImage("field_move_streaks")];
+    await Promise.all(loads.map((i) => i.loaded));
+    fly = { player: undefined };
+    await fieldMovePose();
+    await showMon(mon.species, mon.form, mon.shiny);
+    // The bird leaves its Ball (SpriteCB_FlyBirdLeaveBall; sAffineAnim_FlyBirdLeaveBall).
+    const bird = fly.bird = { x: 128, y: -48, dx: 0, dy: 0, scale: 8 / 256, rot: -30, rider: false };
+    let d1 = 64, d2 = 256;
+    await everyFrame((t) => {
+      if (t > 0 && t <= 30) bird.scale += 28 / 256;
+      d1 += d2 >> 8;
+      bird.dx = gbaCos(d1, 120); bird.dy = gbaSin(d1, 120);
+      if (d2 < 2048) d2 += 96;
+      return d1 > 129;
+    });
+    bird.scale = 1; bird.rot = 0;
+    // You face left; 16 frames later it swoops down (SpriteCB_FlyBirdSwoopDown).
+    me.facing = "left";
+    fly.player = standing("left");
+    await waitFrames(16);
+    if (window.GameAudio) window.GameAudio.se("se_m_fly");
+    Object.assign(bird, { x: 120, y: 0 });
+    let a = 0;
+    await everyFrame((t) => {
+      bird.dx = gbaCos(a, 140); bird.dy = gbaSin(a, 72);
+      a = (a + 4) & 0xff;
+      // (Hop on, 8 frames in: the ride picture, a jump in place.)
+      if (t >= 8) fly.player = riding(PLAYER_CX, PLAYER_CY + (JUMP_IN_PLACE[t - 8] || 0));
+      return t >= 17;
+    });
+    // Up and away with you (SpriteCB_FlyBirdWithPlayer, sAffineAnim_FlyBirdOutOfMap).
+    fly.player = null;
+    bird.rider = true;
+    await everyFrame(() => {
+      bird.dx = gbaCos(a, 180); bird.dy = gbaSin(a, 72);
+      a = (a + 2) & 0xff;
+      bird.scale += 24 / 256;
+      return a >= 128;
+    });
+    await fadeOut();
+    fly = null;
+  }
+
+  // Landing, once the map has faded in with you hidden.
+  async function flyIn() {
+    await Promise.all([spriteImage(look() + "_item"), spriteImage(look() + "_ride"), spriteImage("fly_bird")].map((i) => i.loaded));
+    fly = { player: null };
+    me.hidden = false;
+    const bird = fly.bird = { x: 120, y: 0, dx: 0, dy: 0, scale: 2, rot: 0, rider: true };
+    let a = 0;
+    // In with you, shrinking to its size (sAffineAnim_FlyBirdIntoMap), until it's over your spot.
+    await everyFrame(() => {
+      bird.dx = gbaCos(a, 180); bird.dy = gbaSin(a, 72);
+      a = (a + 2) & 0xff;
+      bird.scale = Math.max(1, bird.scale - 16 / 256);
+      return a >= 64;
+    });
+    bird.rider = false;
+    const x = bird.x + bird.dx, y = bird.y + bird.dy - 8;
+    // It flies on; you hop down onto your spot.
+    await everyFrame((t) => {
+      if (a < 128) { bird.dx = gbaCos(a, 140); bird.dy = gbaSin(a, 72); a += 4; }
+      if (t < JUMP_OFF_BIRD.length) fly.player = riding(x, y + JUMP_OFF_BIRD[t]);
+      return t >= JUMP_OFF_BIRD.length - 1 && a >= 128;
+    });
+    fly.bird = null;
+    me.facing = "down";
+    await fieldMovePose();
+    // Back into its Ball (SpriteCB_FlyBirdReturnToBall, sAffineAnim_FlyBirdReturnToBall).
+    const back = fly.bird = { x: 112, y: -32, dx: 0, dy: 0, scale: 1, rot: 64, rider: false };
+    let b1 = 240, b2 = 2048, b3 = 0, b4 = 128;
+    await everyFrame((t) => {
+      if (t > 0 && t <= 22) back.scale -= 10 / 256;
+      b1 += b2 >> 8; b3 += b2 >> 8; b1 &= 0xff;
+      back.dx = gbaCos(b1, 32); back.dy = gbaSin(b1, 120);
+      if (b2 > 256) b2 -= b4;
+      if (b4 < 256) b4 += 24;
+      if (b2 < 256) b2 = 256;
+      return b3 >= 60;
+    });
+    fly.bird = null;
+    await waitFrames(16);
+    fly = null;
+  }
+
+  function drawFly() {
+    const f = fly, down = 8;   // (FireRed's screen positions are 8 lines lower)
+    if (f.player) {
+      const p = f.player, img = spriteImage(p.sheet);
+      if (ready(img)) {
+        const x = Math.round(p.x - p.w / 2), y = Math.round(p.y - 16 - down);
+        if (p.flip) { g.save(); g.translate(x + p.w, y); g.scale(-1, 1); g.drawImage(img, p.frame * p.w, 0, p.w, 32, 0, 0, p.w, 32); g.restore(); }
+        else g.drawImage(img, p.frame * p.w, 0, p.w, 32, x, y, p.w, 32);
+      }
+    }
+    if (f.bird) {
+      const b = f.bird, img = spriteImage("fly_bird"), ride = spriteImage(look() + "_ride");
+      g.save();
+      g.translate(Math.round(b.x + b.dx), Math.round(b.y + b.dy - down));
+      g.rotate(-turn(b.rot));
+      g.scale(b.scale, b.scale);
+      if (ready(img)) g.drawImage(img, -32, -32);
+      if (b.rider && ready(ride)) g.drawImage(ride, 2 * 32, 0, 32, 32, -16, -16 - 8, 32, 32);
+      g.restore();
+    }
+    if (f.band) {
+      const b = f.band, img = spriteImage("field_move_streaks");
+      if (b.y1 > b.y0 && ready(img)) {
+        g.save();
+        g.beginPath(); g.rect(b.x0, b.y0, VIEW_W - b.x0, b.y1 - b.y0); g.clip();
+        const sx = ((b.scroll % 256) + 256) % 256;
+        for (let x = -sx; x < VIEW_W; x += 256) g.drawImage(img, x, 40);
+        g.restore();
+      }
+    }
+    if (f.mon && ready(f.mon.img)) {
+      const img = f.mon.img, w = img.naturalWidth, h = img.naturalHeight;
+      g.drawImage(img, Math.round(f.mon.x - w / 2), Math.round(80 - h / 2));
     }
   }
 
@@ -971,6 +1178,7 @@
 
   function update() {
     updatePopup();
+    runFrameJobs();
     if (pan) updatePan();
     updateWeather();
     if (heal) updateHeal();
@@ -1234,7 +1442,7 @@
       sheet = look + "_fish"; w = 32; frame = r.frame; dx = r.dx; dy = r.dy;
     }
     const meOver = overTop(me, me.map, me.x, me.y, me.move ? me.move.tmap || me.map : me.map, me.move ? me.move.tx : me.x, me.move ? me.move.ty : me.y);
-    if (!me.hidden) sprites.push({ y: py, over: meOver, draw: () => drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy) });
+    if (!me.hidden && !(fly && fly.player !== undefined)) sprites.push({ y: py, over: meOver, draw: () => drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy) });
     if (heal) drawHeal(camX, camY);   // the healing machine's balls and screen, under people
     sprites.sort((a, b) => a.y - b.y);
     sprites.filter((s) => !s.over).forEach((s) => s.draw());
@@ -1250,6 +1458,7 @@
     // (Those up on raised ground, over the top layer.)
     sprites.filter((s) => s.over).forEach((s) => s.draw());
     drawDarkness(px - camX, py - camY);
+    if (fly) drawFly();
     // "!", "!!", "?" and "×" bubbles over someone's head.
     for (const [e, x, y] of emotes) {
       g.fillStyle = "#fff"; g.strokeStyle = "#000"; g.lineWidth = 1;
@@ -1350,7 +1559,7 @@
 
   window.Overworld = {
     explore, hide, read: (pages) => read(pages), showAreaName, forceStep, refreshPeople: () => loadPeople(),
-    act, addObject, removeObject, removePerson, teleport, battleTransition, resume, pokecenterHeal,
+    act, addObject, removeObject, removePerson, teleport, battleTransition, resume, pokecenterHeal, flyOut, flyIn,
     fadeToBlack: fadeOut, fadeFromBlack: fadeIn, shake,
     setAvatar, avatar: () => me.avatar, flash, rod: setRod, emote: (mark) => { me.emote = mark ? { mark } : null; }, isDark: () => light != null && !flashOn,
     // What's in front of you: the tile, whoever stands there, and whether

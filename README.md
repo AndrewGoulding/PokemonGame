@@ -1492,7 +1492,14 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   you, Flash in a dark cave (`requires_flash`: dark but for a circle around you,
   which opens up), Fly from outdoors to any town you've been to (the Town Map,
   each place marked with FireRed's blinking wing icon; you land outside its Pokémon Center, FireRed's heal
-  locations, and Route 4's Center counts once you've been in), Strength (push
+  locations, and Route 4's Center counts once you've been in) with FireRed's
+  Fly animation out of battle (FLDEFF_FLY_OUT and FLY_IN, frame for frame, in
+  `ui/overworld.js`): you raise a Poké Ball, your Pokémon slides across a band
+  of streaks and cries, the bird leaves its Ball, swoops down for you and
+  carries you off as the screen fades; at the other end it swoops in with
+  you, drops you on your spot and spirals back into the Ball (from the water,
+  just the sound and a fade out; `tools/build-fly.js` makes the bird, the
+  streaks and the player's pose and riding pictures), Strength (push
   boulders until you leave the map), Surf onto the water in front of you, Rock
   Smash a rock in front of you (a Pokémon may be hiding under it), Waterfall up
   the falls while surfing. A in front of a tree, a rock, a boulder, the water
