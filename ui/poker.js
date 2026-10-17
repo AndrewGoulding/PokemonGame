@@ -4,8 +4,9 @@
 //
 // The three regulars sit along the top (their chips, what they did last,
 // their bet this round, their cards face down until a showdown), the board
-// and the pot in the middle, and you at the bottom with your cards and what
-// they make so far. Your turn: Fold, Check or Call, Bet or Raise, picked
+// and the pot in the middle with your hand so far ("Your hand: Pair of
+// Kings": from the flop on, the best five of your cards and the board's,
+// which are outlined in gold), and you at the bottom with your cards. Your turn: Fold, Check or Call, Bet or Raise, picked
 // with left / right and A (or tapped). Between hands: Next hand or Leave
 // the table (B leaves too); with no chips left, only leaving. The regulars
 // take a moment over each move.
@@ -40,22 +41,27 @@
       return '<div class="pk-seat' + (s.human ? " you" : "") + (t2.toAct === i ? " turn" : "") + (s.folded || s.out ? " folded" : "") + (winning ? " won" : "") + '">' +
         '<div class="pk-name">' + esc(s.name) + dealer + "</div>" +
         '<div class="pk-chips">' + s.chips + " chips</div>" +
-        '<div class="pk-hole">' + (s.cards && s.cards.length ? s.cards.map((c) => card(c, { down: !show })).join("") : card(null) + card(null)) + "</div>" +
+        '<div class="pk-hole">' + (s.cards && s.cards.length ? s.cards.map((c) => card(c, { down: !show, win: inBest(c) })).join("") : card(null) + card(null)) + "</div>" +
         '<div class="pk-status">' + esc(hand ? hand.name : status) + (s.bet ? ' <span class="pk-bet">' + s.bet + "</span>" : "") + "</div>" +
         "</div>";
     }
 
+    // Your five-card hand so far (from the flop on, the five cards making it
+    // are outlined in gold, yours and the board's).
+    let yours = null;
+    const inBest = (c) => !!(yours && yours.cards && yours.cards.includes(c));
     function draw() {
       const me = t.seats[0];
-      const board = [0, 1, 2, 3, 4].map((k) => card(t.board[k])).join("");
-      const mine = me.cards && me.cards.length && !me.folded && t.street !== "done" ? P().describe(me.cards, t.board) : "";
+      const live = me.cards && me.cards.length && !me.folded && !me.out;
+      yours = !live ? null : t.board.length >= 3 ? P().best(me.cards.concat(t.board)) : { name: P().describe(me.cards, t.board) };
+      const board = [0, 1, 2, 3, 4].map((k) => card(t.board[k], { win: inBest(t.board[k]) })).join("");
       root.innerHTML = '<div class="dig poker">' +
         '<div class="pk-row">' + t.seats.slice(1).map((s, i) => seatHtml(s, i + 1)).join("") + "</div>" +
         '<div class="pk-middle"><div class="pk-board">' + board + '</div><div class="pk-pot">Pot ' + P().pot(t) +
           (t.street !== "done" ? " · " + { preflop: "Before the flop", flop: "The flop", turn: "The turn", river: "The river" }[t.street] : "") + "</div>" +
+          '<div class="pk-yours">' + (yours ? "Your hand: " + esc(yours.name) : me.folded ? "You folded." : "") + "</div>" +
           '<div class="pk-message">' + esc(message) + "</div></div>" +
         '<div class="pk-bottom">' + seatHtml(me, 0) + '<div class="pk-actions">' +
-          (mine ? '<div class="pk-made">' + esc(mine) + "</div>" : "") +
           buttons.map((b, i) => '<button type="button" class="pk-button' + (i === cursor ? " cursor" : "") + '" data-i="' + i + '">' + esc(b.label) + "</button>").join("") +
         "</div></div></div>";
     }

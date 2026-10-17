@@ -377,7 +377,8 @@
 .pk-bottom { display: grid; grid-template-columns: auto 1fr; gap: 6px; align-items: stretch; }
 .pk-bottom .pk-card { width: 32px; height: 44px; }
 .pk-actions { display: flex; flex-wrap: wrap; align-content: center; gap: 4px; }
-.pk-made { width: 100%; font-weight: 700; color: #ffe066; }
+.pk-yours { min-height: 18px; font-size: 15px; font-weight: 700; color: #ffe066; text-shadow: 1px 1px 0 #1d150d; }
+.pk-card.win { box-shadow: 0 0 0 2px #ffe066, 0 1px 0 rgba(0, 0, 0, 0.4); }
 .pk-button { flex: 1 1 30%; min-height: 30px; padding: 2px 6px; border: 2px solid #1d150d; border-radius: 6px; background: #f5ecd6;
   color: #1d150d; font: inherit; font-weight: 700; cursor: pointer; }
 .pk-button.cursor { background: #ffd34d; outline: 2px solid #fff; }

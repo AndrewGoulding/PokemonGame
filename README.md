@@ -338,7 +338,9 @@ a Scientist, with 500 each (they buy back in when they're out). It's fixed
 limit: blinds of 5 and 10, bets and raises of 10 before the flop and on it
 and 20 on the turn and river, four bets a round at most; short stacks go all
 in, with side pots. On your turn pick Fold, Check or Call, or Bet or Raise
-(left / right and A, or tap); your cards show what they make so far. The
+(left / right and A, or tap). Your hand so far is named in the middle of the
+table ("Your hand: Pair of Kings"; from the flop on, your best five-card hand,
+its five cards outlined in gold among yours and the board's). The
 regulars each guess their chance of winning by dealing the rest of the hand
 out a few hundred times and weigh it against the price of a call, in their
 own style (the Gentleman tight, the Gamer loose and given to bluffing, the
