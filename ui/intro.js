@@ -716,13 +716,13 @@
   // ---------- Prof. Oak's speech (src/oak_speech.c) ----------
 
   const SPEECH_IMAGES = ["oak-speech-bg", "oak-speech-oak", "oak-speech-player-character",
-    "oak-speech-platform", "controls-page-2", "controls-page-3", "pikachu-page", "pikachu-body", "pikachu-ears", "pikachu-eyes"];
+    "oak-speech-platform", "pikachu-page", "pikachu-body", "pikachu-ears", "pikachu-eyes"];
   const IT = (label) => window.INTRO_TEXT[label];
   const NAMES = (labels) => labels.map((l) => IT("gNameChoice_" + l)[0]);
   const BOY_NAMES = NAMES(["Red", "Fire", "Ash", "Kene", "Geki", "Jak", "Janne", "Jonn", "Kamon", "Karl", "Taylor", "Oscar",
     "Hiro", "Max", "Jon", "Ralph", "Kay", "Tosh", "Roak"]);
 
-  // Text drawn on the picture (the controls guide and Pikachu pages).
+  // Text drawn on the picture (the Pikachu pages).
   function text(str, x, y, opts) {
     opts = opts || {};
     g.font = (opts.bold ? "bold " : "") + (opts.size || 9) + "px 'Trebuchet MS', Verdana, sans-serif";
@@ -768,48 +768,10 @@
     });
   }
 
-  const BAR = "#283a78", GUIDE_BG = "#4a6cc0";
+  const BAR = "#283a78";
 
-  // 1. The controls guide (three pages, A forward, B back).
-  async function controlsGuide() {
-    if (window.GameAudio) window.GameAudio.music("mus_new_game_instruct");
-    let page = 1;
-    const s = { page: 1, dim: 0 };
-    paint = () => {
-      g.fillStyle = GUIDE_BG; g.fillRect(0, 0, W, H);
-      g.fillStyle = BAR; g.fillRect(0, 0, W, 16); g.fillRect(0, 152, W, 8);
-      text("CONTROLS", 6, 3, { bold: true });
-      text(s.page === 1 ? "Ⓐ NEXT" : "Ⓐ NEXT  Ⓑ BACK", 234, 3, { bold: true, align: "right" });
-      if (s.page === 1) text(IT("gControlsGuide_Text_Intro")[0], 8, 62, { size: 9 });
-      if (s.page === 2) {
-        blit("controls-page-2", 0, 0, 40, 128, 8, 24);
-        text(IT("gControlsGuide_Text_DPad")[0], 50, 26);
-        text(IT("gControlsGuide_Text_AButton")[0], 50, 82);
-        text(IT("gControlsGuide_Text_BButton")[0], 50, 122);
-      }
-      if (s.page === 3) {
-        blit("controls-page-3", 0, 0, 40, 128, 8, 24);
-        text(IT("gControlsGuide_Text_StartButton")[0], 50, 26);
-        text(IT("gControlsGuide_Text_SelectButton")[0], 50, 66);
-        text(IT("gControlsGuide_Text_LRButtons")[0], 50, 106);
-      }
-      if (s.dim) { g.fillStyle = GUIDE_BG; g.globalAlpha = s.dim; g.fillRect(0, 16, W, 136); g.globalAlpha = 1; }
-    };
-    await fadeTo("#000", 16, 0, 0);
-    for (;;) {
-      const v = await turnPage(page);
-      const next = v === "next" ? page + 1 : page - 1;
-      if (next > 3) break;
-      await until((t) => (s.dim = Math.min(1, (t + 1) / 6)) >= 1);
-      page = s.page = next;
-      await until((t) => (s.dim = Math.max(0, 1 - (t + 1) / 6)) <= 0);
-    }
-    show("");
-    await fadeTo("#000", 0, 16, 2);
-    await wait(32);
-  }
-
-  // 2. The Pikachu pages about the adventure ahead.
+  // The Pikachu pages about the adventure ahead. (FireRed's controls guide
+  // before them isn't in this game: the buttons are under the screen.)
   async function pikachuPages() {
     const s = { page: 1, textAlpha: 1, t: 0 };
     paint = () => {
@@ -983,8 +945,7 @@
     start();
     skippable = false; skipped = false;
     fade = { color: "#000", level: 16 };
-    await controlsGuide();
-    actors.clear();
+    if (window.GameAudio) window.GameAudio.music("mus_new_game_instruct");
     await pikachuPages();
     actors.clear();
     const result = await speech();

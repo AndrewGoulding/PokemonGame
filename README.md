@@ -19,8 +19,8 @@ switching), SOUND (mono, stereo or off), VOLUME (0 to 10: music, sound effects a
 FRAME (the menus' windows: FireRed's ten window frames; the text box is always
 FireRed's message box, as in FireRed) and, from the main
 menu, SAVE FILE to load a downloaded save; it's also in the Start menu. Start a
-**NEW GAME** and you get FireRed's new-game intro: the controls guide, the
-Pikachu pages (A turns the page, B goes back), then Prof. Oak, who shows you a Nidoran♀ and has you name
+**NEW GAME** and you get FireRed's new-game intro (without its controls
+guide): the Pikachu pages (A turns the page, B goes back), then Prof. Oak, who shows you a Nidoran♀ and has you name
 yourself before you shrink away into Pallet Town, just outside Red's house. Try
 to leave town through the tall grass to the north and Prof. Oak stops you and
 walks you to his lab, where Leaf is waiting; pick Bulbasaur, Squirtle or Charmander from the
