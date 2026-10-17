@@ -6193,7 +6193,7 @@
     Screen.say("");
     show("scene");
     clearMenu();
-    const chips = await PokerScreen.run(scene, Poker.create({ chips: buyIn, name: player.name }));
+    const chips = await PokerScreen.run(scene, Poker.create({ chips: buyIn, name: player.name, pic: Player.LOOKS[player.look].front }));
     show("world");
     await Overworld.resume();
     addCoins(chips);
@@ -6217,7 +6217,8 @@
     const before = coins();
     // (Your Coin Case keeps up with every bet and payout, up to 9,999, and the game saves after each hand.)
     const keep = (n) => { player.flags.coins = 0; addCoins(n); persist(); return coins(); };
-    const after = await BlackjackScreen.run(scene, Blackjack.create({ coins: before }), keep);
+    const after = await BlackjackScreen.run(scene, Blackjack.create({ coins: before, name: player.name, pic: Player.LOOKS[player.look].front,
+      others: TablePlayers.pick(2) }), keep);
     show("world");
     await Overworld.resume();
     keep(after);

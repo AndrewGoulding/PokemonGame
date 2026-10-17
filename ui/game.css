@@ -354,7 +354,10 @@
 .pk-seat.turn { border-color: #ffe066; }
 .pk-seat.folded { opacity: 0.55; }
 .pk-seat.won { border-color: #8fe36a; background: rgba(143, 227, 106, 0.18); }
-.pk-name { font-weight: 700; white-space: nowrap; }
+.pk-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.pk-portrait { width: 48px; height: 48px; image-rendering: pixelated; object-fit: contain; object-position: 50% 100%;
+  border-radius: 50%; background: rgba(255, 255, 255, 0.12); }
+.pk-seat.you .pk-portrait { width: 40px; height: 40px; }
 .pk-dealer { display: inline-block; margin-left: 4px; padding: 0 4px; border-radius: 8px; background: #f5ecd6; color: #1d150d; font-size: 10px; }
 .pk-chips, .pk-status { font-variant-numeric: tabular-nums; white-space: nowrap; min-height: 15px; }
 .pk-bet { display: inline-block; padding: 0 5px; border-radius: 8px; background: #f2c230; color: #1d150d; font-weight: 700; }
@@ -385,16 +388,21 @@
 
 /* The blackjack table (ui/blackjack.js), on the poker table's felt and cards. */
 .bj-dealer { display: flex; flex-direction: column; align-items: center; gap: 3px; padding-top: 6px; }
-.bj-dealer .pk-card, .bj-hand .pk-card { width: 32px; height: 44px; }
+.bj-dealer .pk-card { width: 32px; height: 44px; }
 .bj-total { min-height: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.bj-hands { display: flex; justify-content: center; gap: 10px; }
-.bj-hand { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 8px; border: 2px solid rgba(0, 0, 0, 0.35);
-  border-radius: 6px; background: rgba(0, 0, 0, 0.18); min-width: 96px; }
+.bj-seats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; align-items: end; }
+.bj-seat { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 3px; border: 2px solid rgba(0, 0, 0, 0.35);
+  border-radius: 6px; background: rgba(0, 0, 0, 0.18); min-width: 0; }
+.bj-seat.turn { border-color: #ffe066; }
+.bj-seat.folded { opacity: 0.55; }
+.bj-seat-hands { display: flex; justify-content: center; gap: 4px; }
+.bj-hand { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 2px 4px; border: 2px solid transparent; border-radius: 6px; }
+.bj-seat .bj-hand .pk-card { width: 26px; height: 36px; }
 .bj-hand.active { border-color: #ffe066; }
 .bj-hand.win, .bj-hand.blackjack { border-color: #8fe36a; background: rgba(143, 227, 106, 0.18); }
 .bj-hand.lose, .bj-hand.bust { opacity: 0.7; }
 .bj-bet { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.bj-bottom { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; }
+
 
 /* The berry tree (ui/berry-picking.js): its canvas as big as the space under the bars allows. */
 .berry-pick { background: #2e4a26; }

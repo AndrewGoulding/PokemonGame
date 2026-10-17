@@ -333,8 +333,11 @@ lines and payouts, from `src/slot_machine.c`) or Texas Hold'em at the poker
 table (this game's own: `game/poker.js` has the rules, `ui/poker.js` the
 table). The dealer by the counter at the back seats you, once you have the
 Coin Case and at least 20 Coins, for a buy-in of 100, 200, 500 or 1,000 Coins
-(or all you have) in chips, against three regulars, a Gentleman, a Gamer and
-a Scientist, with 500 each (they buy back in when they're out). It's fixed
+(or all you have) in chips, against three trainers from around the game
+(`game/table-players.js`: any trainer but Gym Leaders, the Elite Four,
+rivals, Team Rocket and pairs, by class and name, "Bird Keeper Wilton", each
+with their class's front picture as a portrait), with 500 each; one who runs
+out of chips leaves and another trainer sits down. It's fixed
 limit: blinds of 5 and 10, bets and raises of 10 before the flop and on it
 and 20 on the turn and river, four bets a round at most; short stacks go all
 in, with side pots. On your turn pick Fold, Check or Call, or Bet or Raise
@@ -343,12 +346,17 @@ table ("Your hand: Pair of Kings"; from the flop on, your best five-card hand,
 its five cards outlined in gold among yours and the board's). The
 regulars each guess their chance of winning by dealing the rest of the hand
 out a few hundred times and weigh it against the price of a call, in their
-own style (the Gentleman tight, the Gamer loose and given to bluffing, the
-Scientist in between). At a showdown everyone's cards turn over and the best
+own style: tight for careful sorts (Gentlemen, Ladies, Scientists,
+Engineers, Super Nerds, Aroma Ladies), loose and given to bluffing for the
+gambling sorts (Gamers, Bikers, Rockers, Cue Balls, Burglars, Jugglers,
+Sailors), and either or in between for everyone else. At a showdown everyone's cards turn over and the best
 five of seven win, pot by pot. Between hands, Next hand or Leave the table
 (B); your chips go back in the Coin Case as Coins. Or play blackjack (this
 game's own: `game/blackjack.js`, `ui/blackjack.js`) with the dealer beside
-the poker table: bets of 10, 20, 50, 100 or 200 Coins straight from your Coin
+the poker table, with two other trainers at the table (picked the same way,
+portraits and all; you sit between them) betting and playing their own hands
+by basic strategy against the same dealer and shoe, one after another (one
+who runs out of Coins leaves, and another sits down): bets of 10, 20, 50, 100 or 200 Coins straight from your Coin
 Case (it keeps up with every hand, and the game saves after each), a six-deck
 shoe shuffled again once three quarters of it is dealt, the dealer standing
 on all 17s and checking for Blackjack with an Ace or ten-card up, Blackjack

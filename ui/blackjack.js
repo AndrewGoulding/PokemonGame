@@ -1,22 +1,26 @@
 // The Game Corner's blackjack table (game/blackjack.js has the rules).
 //
-//   const coins = await BlackjackScreen.run(sceneElement, Blackjack.create({ coins }), onCoins);   // -> your coins when you leave
+//   const coins = await BlackjackScreen.run(sceneElement, Blackjack.create({ coins, others, name, pic }), onCoins);
+//   // -> your coins when you leave
 //
 // The dealer's cards along the top (the second face down until it's the
-// dealer's turn; then the dealer's draws come one at a time), yours at the
-// bottom with their total (and a second hand, side by side, after a split;
-// the one in play outlined), your coins and your bet. Before a hand: a bet
-// (10 to 200 Coins, what you can afford) or Leave the table (B too). In a hand:
-// Hit, Stand, and on two cards Double Down and, with a pair, Split, picked
-// with left / right and A (or tapped).
+// dealer's turn; then the dealer's draws come one at a time), and the
+// players along the bottom, you in the middle: each with their portrait
+// (their trainer class's front picture), name, coins, and hand (two side by
+// side after a split; the one in play outlined) with its total, bet and how
+// it went. The others take a moment over each move. Before a hand: your bet
+// (10 to 200 Coins, what you can afford) or Leave the table (B too). Your
+// hand: Hit, Stand, and on two cards Double Down and, with a pair, Split,
+// picked with left / right and A (or tapped).
 (function () {
   const B = () => window.Blackjack;
   const RANKS = { 11: "J", 12: "Q", 13: "K", 14: "A" };
   const SUIT = { S: "♠", H: "♥", D: "♦", C: "♣" };
   const esc = (s) => window.Screen.escapeHtml(String(s));
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  const DEAL_MS = 350;
-  const OUTCOMES = { blackjack: "Blackjack!", win: "You win!", push: "Push", lose: "Dealer wins", bust: "Bust!" };
+  const DEAL_MS = 300, MOVE_MS = 650;
+  const OUTCOMES = { blackjack: "Blackjack!", win: "Win", push: "Push", lose: "Lose", bust: "Bust" };
+  const VERBS = { hit: "hits", stand: "stands", double: "doubles down", split: "splits" };
 
   function card(c, down) {
     if (!c) return "";
@@ -29,33 +33,42 @@
     return B().isBlackjack(cards) ? "Blackjack" : v.total > 21 ? v.total + " (bust)" : (v.soft && v.total < 21 ? "Soft " : "") + v.total;
   };
 
-  // `onCoins(coins)`: called whenever your coins change (a bet down, a hand
-  // paid), to keep the Coin Case up to date; it returns what the Coin Case
-  // holds (it may be full), and the table goes on with that.
   function run(root, g, onCoins) {
-    const sync = () => { if (onCoins) g.coins = onCoins(g.coins); };
     const se = (id) => { if (window.GameAudio) window.GameAudio.se(id); };
-    let buttons = [], cursor = 0, pick = null, message = "Place your bet!", shownDealer = 0, shownMine = [0], holeDown = true, lastBet = 10;
+    // (onCoins(coins) keeps your Coin Case up to date and returns what it holds: the table goes on with that.)
+    const sync = () => { if (onCoins) g.coins = onCoins(g.coins); };
+    let buttons = [], cursor = 0, pick = null, message = "Place your bet!", lastBet = 10;
+    // While dealing: how many cards of each player's first hand, and the dealer's, are out (null: all).
+    let shown = null, shownDealer = 0, holeDown = true;
+
+    function seatHtml(p, pi) {
+      const r = p.result;
+      const hands = p.hands.map((h, i) => {
+        const n = shown && i === 0 ? shown[pi] : h.cards.length;
+        const cards = h.cards.slice(0, n);
+        const res = r && r[i];
+        return '<div class="bj-hand' + (!shown && g.phase === "player" && g.turn === pi && g.active === i ? " active" : "") + (res ? " " + res.outcome : "") + '">' +
+          '<div class="pk-hole">' + cards.map((c) => card(c)).join("") + "</div>" +
+          '<div class="bj-total">' + (cards.length ? esc(totalText(cards)) : "") + "</div>" +
+          '<div class="bj-bet">' + h.bet + (res ? " · " + esc(OUTCOMES[res.outcome]) + (res.paid > res.bet ? " +" + (res.paid - res.bet) : "") : "") + "</div></div>";
+      }).join("");
+      return '<div class="bj-seat' + (p.human ? " you" : "") + (!shown && g.phase === "player" && g.turn === pi ? " turn" : "") + (p.out ? " folded" : "") + '">' +
+        (p.pic ? '<img class="pk-portrait" alt="" src="assets/sprites/trainers/front/' + esc(p.pic) + '.png">' : "") +
+        '<div class="pk-name">' + esc(p.name) + '</div><div class="pk-chips">' + (p.out ? "Out" : p.coins + " Coins") + "</div>" +
+        '<div class="bj-seat-hands">' + hands + "</div></div>";
+    }
 
     function draw() {
       const dealerCards = g.dealer.slice(0, shownDealer);
       const dealerTotal = !dealerCards.length ? "" : holeDown ? (B().points(dealerCards[0]) === 11 ? "A" : B().points(dealerCards[0])) + " showing" : totalText(dealerCards);
-      const hands = g.hands.map((h, i) => {
-        const cards = h.cards.slice(0, shownMine[i] == null ? h.cards.length : shownMine[i]);
-        const r = g.result && g.result[i];
-        return '<div class="bj-hand' + (g.phase === "player" && g.active === i ? " active" : "") + (r ? " " + r.outcome : "") + '">' +
-          '<div class="pk-hole">' + cards.map((c) => card(c)).join("") + "</div>" +
-          '<div class="bj-total">' + (cards.length ? esc(totalText(cards)) : "") + "</div>" +
-          '<div class="bj-bet">Bet ' + h.bet + (r ? " · " + esc(OUTCOMES[r.outcome]) + (r.paid ? " +" + r.paid : "") : "") + "</div></div>";
-      }).join("");
       root.innerHTML = '<div class="dig poker blackjack">' +
         '<div class="bj-dealer"><div class="pk-name">Dealer</div><div class="pk-hole">' + dealerCards.map((c, i) => card(c, i === 1 && holeDown)).join("") + "</div>" +
           '<div class="bj-total">' + esc(dealerTotal) + "</div></div>" +
         '<div class="pk-middle"><div class="pk-yours">' + esc(message) + '</div><div class="pk-message">Dealer stands on all 17s · Blackjack pays 3 to 2</div></div>' +
-        '<div class="bj-hands">' + hands + "</div>" +
-        '<div class="bj-bottom"><div class="pk-chips">' + g.coins + ' Coins</div><div class="pk-actions">' +
+        '<div class="bj-seats">' + g.players.map(seatHtml).join("") + "</div>" +
+        '<div class="pk-actions">' +
           buttons.map((b, i) => '<button type="button" class="pk-button' + (i === cursor ? " cursor" : "") + '" data-i="' + i + '">' + esc(b.label) + "</button>").join("") +
-        "</div></div></div>";
+        "</div></div>";
     }
 
     function choose(list, at) {
@@ -89,48 +102,68 @@
     document.addEventListener("keydown", onKey);
     root.addEventListener("click", onClick);
 
+    // A new player for a seat someone's left (trainers not already at the table).
+    const replace = (away) => (window.TablePlayers ? window.TablePlayers.pick(1, Math.random, away)[0] : null);
+
     async function round(bet) {
       lastBet = bet;
-      B().deal(g, bet);
+      B().deal(g, bet, replace);
       sync();
-      message = g.shuffled ? "A fresh shoe is shuffled." : "";
-      // The deal: yours, the dealer's, yours, the dealer's (face down).
-      holeDown = true; shownDealer = 0; shownMine = [0];
-      for (const [who, n] of [["me", 1], ["dealer", 1], ["me", 2], ["dealer", 2]]) {
-        if (who === "me") shownMine[0] = n; else shownDealer = n;
-        se("se_ball_tray_ball");
-        draw();
-        await sleep(DEAL_MS);
+      const notes = g.log.filter((e) => e.type === "leave").map((e) => e.name + " is out of Coins and leaves." + (e.joined ? " " + e.joined + " sits down." : ""));
+      if (g.shuffled) notes.push("A fresh shoe is shuffled.");
+      message = notes.join(" ");
+      // The deal: a card each round the table, then the dealer's (the second face down).
+      holeDown = true; shownDealer = 0; shown = g.players.map(() => 0);
+      for (let k = 1; k <= 2; k++) {
+        for (let pi = 0; pi < g.players.length; pi++) {
+          if (!g.players[pi].hands.length) continue;
+          shown[pi] = k; se("se_ball_tray_ball"); draw(); await sleep(DEAL_MS);
+        }
+        shownDealer = k; se("se_ball_tray_ball"); draw(); await sleep(DEAL_MS);
       }
-      shownMine = [];
+      shown = null;
       while (g.phase === "player") {
-        const o = B().options(g);
-        const list = [{ label: "Hit", value: "hit" }, { label: "Stand", value: "stand" }];
-        if (o.double) list.push({ label: "Double Down", value: "double" });
-        if (o.split) list.push({ label: "Split", value: "split" });
-        message = g.hands.length > 1 ? "Hand " + (g.active + 1) + ": hit or stand?" : "Hit or stand?";
-        const v = await choose(list, 0);
-        B().act(g, v);
-        sync();
-        if (v !== "stand") se("se_ball_tray_ball");
-        draw();
-        if (v !== "stand") await sleep(DEAL_MS);
+        const o = B().options(g), p = g.players[g.turn];
+        if (o.human) {
+          const list = [{ label: "Hit", value: "hit" }, { label: "Stand", value: "stand" }];
+          if (o.double) list.push({ label: "Double Down", value: "double" });
+          if (o.split) list.push({ label: "Split", value: "split" });
+          message = (p.hands.length > 1 ? "Your hand " + (g.active + 1) : "Your turn") + ": hit or stand?";
+          const v = await choose(list, 0);
+          B().act(g, v);
+          sync();
+          if (v !== "stand") se("se_ball_tray_ball");
+          draw();
+          if (v !== "stand") await sleep(DEAL_MS);
+        } else {
+          message = p.name + "'s turn…";
+          draw();
+          await sleep(MOVE_MS);
+          const v = B().strategy(g);
+          B().act(g, v);
+          message = p.name + " " + VERBS[v] + ".";
+          if (v !== "stand") se("se_ball_tray_ball");
+          draw();
+          await sleep(MOVE_MS / 2);
+        }
       }
       // The dealer's turn: the hole card, then each card drawn.
       holeDown = false;
-      message = "";
+      message = "The dealer's turn.";
       draw();
       while (shownDealer < g.dealer.length) { await sleep(DEAL_MS * 2); shownDealer++; se("se_ball_tray_ball"); draw(); }
       await sleep(DEAL_MS);
       const won = g.result.reduce((n, r) => n + r.paid - r.bet, 0);
-      message = g.result.length > 1 ? (won > 0 ? "You come out " + won + " Coins up!" : won < 0 ? "You're down " + -won + " Coins." : "You break even.")
-        : OUTCOMES[g.result[0].outcome] + (g.result[0].outcome === "blackjack" ? " Paid 3 to 2." : "");
+      const dealer = B().value(g.dealer).total;
+      message = (dealer > 21 ? "The dealer busts! " : B().isBlackjack(g.dealer) ? "The dealer has Blackjack. " : "The dealer has " + dealer + ". ") +
+        (won > 0 ? "You win " + won + " Coins!" : won < 0 ? "You lose " + -won + " Coins." : "You break even.");
       sync();
       se(won > 0 ? "se_shop" : won < 0 ? "se_failure" : "se_select");
       draw();
     }
 
     return (async () => {
+      draw();
       for (;;) {
         const bets = B().BETS.filter((n) => n <= g.coins);
         if (!bets.length) {

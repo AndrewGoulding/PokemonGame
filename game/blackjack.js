@@ -1,5 +1,6 @@
 // Blackjack in the Celadon Game Corner (this game's own), for coins at the
-// blackjack dealer's table.
+// blackjack dealer's table, with other trainers playing their own hands
+// alongside you (game/table-players.js), basic strategy (strategy()).
 //
 // The usual casino rules: a six-deck shoe, shuffled again once three
 // quarters of it has been dealt. You bet, and get two cards face up; the
@@ -13,11 +14,12 @@
 // draws to 17 and stands, soft 17 included. Beat the dealer: even money; the
 // same: a push, your bet back.
 //
-//   const g = Blackjack.create({ coins, rng });   // a table; g.coins: yours at it
-//   Blackjack.deal(g, bet);                         // g.phase: "player" | "done"
-//   Blackjack.options(g) -> { hit, stand, double, split } for the hand in play (g.hands[g.active])
-//   Blackjack.act(g, "hit" | "stand" | "double" | "split");   // the dealer plays once your hands are done
-//   g.result: [{ outcome: "blackjack" | "win" | "push" | "lose" | "bust", paid }] once done
+//   const g = Blackjack.create({ coins, rng, others: TablePlayers.pick(2) });   // g.coins, g.hands, g.result: yours
+//   Blackjack.deal(g, bet, replace);               // g.phase: "player" | "done"; g.turn: whose hand is in play
+//   Blackjack.options(g) -> { human, hit, stand, double, split } for that hand (g.players[g.turn].hands[g.active])
+//   Blackjack.act(g, Blackjack.strategy(g))      // (another player's move), or yours
+//   // the dealer plays once every hand is done; each player's .result:
+//   // [{ outcome: "blackjack" | "win" | "push" | "lose" | "bust", paid }]
 // Cards are { rank: 2-14 (11 J, 12 Q, 13 K, 14 A), suit: "S" | "H" | "D" | "C" }.
 (function () {
   const SUITS = ["S", "H", "D", "C"];
@@ -40,102 +42,156 @@
   }
   const isBlackjack = (cards) => cards.length === 2 && value(cards).total === 21;
 
+  // The table: you (seat `you`) and, with `others` (TablePlayers: { name, pic }), other trainers
+  // with STACK coins each, playing their own hands against the same dealer and shoe.
+  const STACK = 1000;
   function create(opts) {
     opts = opts || {};
     const rng = opts.rng || Math.random;
-    return { rng, coins: opts.coins | 0, shoe: shoe(rng), hands: [], dealer: [], active: 0, phase: "bet", result: null, shuffled: false };
+    const others = (opts.others || []).map((p) => ({ name: p.name, pic: p.pic, coins: p.coins || STACK, hands: [], result: null }));
+    const me = { name: opts.name || "You", pic: opts.pic || null, coins: opts.coins | 0, hands: [], result: null, human: true };
+    // (You sit in the middle: half of the others play before you, half after.)
+    const half = Math.ceil(others.length / 2);
+    const players = others.slice(0, half).concat([me], others.slice(half));
+    const g = { rng, players, you: half, shoe: shoe(rng), dealer: [], turn: -1, active: 0, phase: "bet", shuffled: false, log: [] };
+    // (Your seat's coins, hands and results, as g.coins, g.hands and g.result.)
+    for (const k of ["coins", "hands", "result"]) Object.defineProperty(g, k, { get: () => g.players[g.you][k], set: (v) => { g.players[g.you][k] = v; } });
+    return g;
   }
   function draw(g) {
     if (g.shoe.length < DECKS * 52 * RESHUFFLE) { g.shoe = shoe(g.rng); g.shuffled = true; }
     return g.shoe.shift();
   }
 
-  function deal(g, bet) {
-    bet = Math.min(bet | 0, g.coins);
-    g.coins -= bet;
+  // A new hand: your bet `bet`, the others' their own (a favourite amount, now and then more or less).
+  // Anyone else out of coins leaves; `replace(name)` (if given) brings a new player for the seat.
+  function deal(g, bet, replace) {
+    const rng = g.rng;
     g.shuffled = false;
-    const hand = { cards: [], bet, done: false };
-    g.hands = [hand];
+    g.log = [];
+    g.players.forEach((p, i) => {
+      if (p.human || p.coins >= BETS[0]) return;
+      const fresh = replace && replace(g.players.map((o) => o.name));
+      g.log.push({ type: "leave", name: p.name, joined: fresh ? fresh.name : null });
+      g.players[i] = fresh ? { name: fresh.name, pic: fresh.pic, coins: STACK, hands: [], result: null } : Object.assign(p, { out: true });
+    });
+    for (const p of g.players) {
+      p.result = null;
+      p.hands = [];
+      if (p.out) continue;
+      let b = p.human ? Math.min(bet | 0, p.coins) : (p.fav = p.fav || BETS[Math.floor(rng() * 3)]);
+      if (!p.human) { if (rng() < 0.25) b = BETS[Math.max(0, Math.min(BETS.length - 1, BETS.indexOf(b) + (rng() < 0.5 ? -1 : 1)))]; b = Math.min(b, p.coins); }
+      p.coins -= b;
+      p.hands = [{ cards: [], bet: b, done: false }];
+    }
     g.dealer = [];
-    g.active = 0;
-    g.result = null;
-    hand.cards.push(draw(g)); g.dealer.push(draw(g)); hand.cards.push(draw(g)); g.dealer.push(draw(g));
+    const seated = g.players.filter((p) => p.hands.length);
+    for (let round = 0; round < 2; round++) { for (const p of seated) p.hands[0].cards.push(draw(g)); g.dealer.push(draw(g)); }
     g.phase = "player";
-    // (The dealer checks for Blackjack with an Ace or ten-card up; yours ends it too.)
-    const up = points(g.dealer[0]);
-    if ((up >= 10 && isBlackjack(g.dealer)) || isBlackjack(hand.cards)) { hand.done = true; finish(g); }
-    return g;
+    // (The dealer checks for Blackjack with an Ace or ten-card up: then it's over.)
+    if (points(g.dealer[0]) >= 10 && isBlackjack(g.dealer)) return finish(g);
+    for (const p of seated) if (isBlackjack(p.hands[0].cards)) p.hands[0].done = true;
+    g.turn = -1;
+    return next(g);
   }
+  // On to the next hand still in play, the next player, or the dealer.
+  function next(g) {
+    for (;;) {
+      const p = g.players[g.turn];
+      if (p) { while (p.hands[g.active] && p.hands[g.active].done) g.active++; if (p.hands[g.active]) return g; }
+      g.turn++; g.active = 0;
+      if (g.turn >= g.players.length) return finish(g);
+    }
+  }
+  const current = (g) => (g.phase === "player" ? g.players[g.turn] : null);
 
+  // What the hand in play can do (and `p` its player).
   function options(g) {
-    const h = g.hands[g.active];
-    if (g.phase !== "player" || !h) return null;
+    const p = current(g), h = p && p.hands[g.active];
+    if (!h) return null;
     const two = h.cards.length === 2 && !h.splitAces;
     return {
-      hit: !h.splitAces, stand: true,
-      double: two && g.coins >= h.bet,
-      split: two && g.hands.length === 1 && points(h.cards[0]) === points(h.cards[1]) && g.coins >= h.bet
+      player: g.turn, human: !!p.human, hit: !h.splitAces, stand: true,
+      double: two && p.coins >= h.bet,
+      split: two && p.hands.length === 1 && points(h.cards[0]) === points(h.cards[1]) && p.coins >= h.bet
     };
   }
 
   function act(g, what) {
     const o = options(g);
     if (!o || !o[what]) return g;
-    const h = g.hands[g.active];
+    const p = current(g), h = p.hands[g.active];
+    g.log = [{ type: what, player: g.turn }];
     if (what === "hit") {
       h.cards.push(draw(g));
       if (value(h.cards).total >= 21) h.done = true;
     } else if (what === "stand") h.done = true;
     else if (what === "double") {
-      g.coins -= h.bet; h.bet *= 2; h.doubled = true;
+      p.coins -= h.bet; h.bet *= 2; h.doubled = true;
       h.cards.push(draw(g));
       h.done = true;
     } else if (what === "split") {
-      g.coins -= h.bet;
+      p.coins -= h.bet;
       const aces = h.cards[0].rank === 14;
       const second = { cards: [h.cards.pop()], bet: h.bet, done: false, split: true };
       h.split = true;
-      g.hands.push(second);
-      for (const x of g.hands) {
+      p.hands.push(second);
+      for (const x of p.hands) {
         x.cards.push(draw(g));
         // (Split Aces: one card each, and that's all.)
         if (aces) { x.splitAces = true; x.done = true; }
         else if (value(x.cards).total === 21) x.done = true;
       }
     }
-    // On to the next hand still in play, or the dealer.
-    while (g.hands[g.active] && g.hands[g.active].done) g.active++;
-    if (g.active >= g.hands.length) finish(g);
-    return g;
+    return next(g);
   }
 
-  // The dealer plays (unless every hand of yours is bust), and each hand is paid.
+  // Basic strategy (the usual chart, near enough), for the other players.
+  function strategy(g) {
+    const o = options(g), p = current(g), h = p.hands[g.active];
+    const v = value(h.cards), up = points(g.dealer[0]);
+    if (o.split) {
+      const r = points(h.cards[0]);
+      if (r === 11 || r === 8 || ([2, 3, 7].includes(r) && up <= 7) || (r === 6 && up <= 6) || (r === 9 && ![7, 10, 11].includes(up))) return "split";
+    }
+    if (o.double && !v.soft && (v.total === 11 || (v.total === 10 && up <= 9) || (v.total === 9 && up >= 3 && up <= 6))) return "double";
+    if (v.soft) {
+      if (o.double && v.total >= 15 && v.total <= 18 && up >= 4 && up <= 6) return "double";
+      return v.total >= 19 || (v.total === 18 && up <= 8) ? "stand" : "hit";
+    }
+    return v.total >= 17 || (v.total >= 13 && up <= 6) || (v.total === 12 && up >= 4 && up <= 6) ? "stand" : "hit";
+  }
+
+  // The dealer plays (unless every hand at the table is bust or a Blackjack), and each hand is paid.
   function finish(g) {
-    const live = g.hands.some((h) => value(h.cards).total <= 21);
+    const hands = g.players.flatMap((p) => p.hands);
     const dealerBj = isBlackjack(g.dealer);
-    const natural = g.hands.length === 1 && isBlackjack(g.hands[0].cards);
-    if (live && !dealerBj && !natural) while (value(g.dealer).total < 17) g.dealer.push(draw(g));
+    const waiting = hands.some((h) => value(h.cards).total <= 21 && !(!h.split && isBlackjack(h.cards)));
+    if (waiting && !dealerBj) while (value(g.dealer).total < 17) g.dealer.push(draw(g));
     const d = value(g.dealer).total;
-    g.result = g.hands.map((h) => {
-      const v = value(h.cards).total;
-      // (A split hand's 21 in two cards isn't a Blackjack.)
-      const bj = !h.split && isBlackjack(h.cards);
-      let outcome;
-      if (v > 21) outcome = "bust";
-      else if (bj && dealerBj) outcome = "push";
-      else if (bj) outcome = "blackjack";
-      else if (dealerBj) outcome = "lose";
-      else if (d > 21 || v > d) outcome = "win";
-      else if (v === d) outcome = "push";
-      else outcome = "lose";
-      const paid = outcome === "blackjack" ? h.bet + Math.floor(h.bet * 3 / 2) : outcome === "win" ? 2 * h.bet : outcome === "push" ? h.bet : 0;
-      g.coins += paid;
-      return { outcome, paid, bet: h.bet, total: v };
-    });
+    for (const p of g.players) {
+      p.result = p.hands.map((h) => {
+        const v = value(h.cards).total;
+        // (A split hand's 21 in two cards isn't a Blackjack.)
+        const bj = !h.split && isBlackjack(h.cards);
+        let outcome;
+        if (v > 21) outcome = "bust";
+        else if (bj && dealerBj) outcome = "push";
+        else if (bj) outcome = "blackjack";
+        else if (dealerBj) outcome = "lose";
+        else if (d > 21 || v > d) outcome = "win";
+        else if (v === d) outcome = "push";
+        else outcome = "lose";
+        const paid = outcome === "blackjack" ? h.bet + Math.floor(h.bet * 3 / 2) : outcome === "win" ? 2 * h.bet : outcome === "push" ? h.bet : 0;
+        p.coins += paid;
+        return { outcome, paid, bet: h.bet, total: v };
+      });
+    }
     g.phase = "done";
+    g.turn = -1;
     g.active = -1;
     return g;
   }
 
-  window.Blackjack = { SUITS, DECKS, BETS, shoe, points, value, isBlackjack, create, deal, options, act };
+  window.Blackjack = { SUITS, DECKS, BETS, STACK, shoe, points, value, isBlackjack, create, deal, options, act, strategy, current };
 })();

@@ -4160,14 +4160,14 @@ console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " 
   // Side pots: you go all in for 15 with aces; the main pot (15 from each of
   // four) is yours, the 15 more the others put in goes to the best of them.
   const s = P.create({ chips: 15, rng });
-  s.button = 2; P.startHand(s);   // (you: small blind; Gentleman: big blind; Gamer first)
+  s.button = 2; P.startHand(s);   // (you: small blind; seat 1: big blind; seat 2 first)
   s.seats[0].cards = c("AS AH"); s.seats[1].cards = c("KS KH"); s.seats[2].cards = c("QS QH"); s.seats[3].cards = c("2C 7D");
   s.deck = c("3C 4D 9H JS 8C").concat(s.deck);
-  P.act(s, { type: "raise" });   // Gamer to 20
-  P.act(s, { type: "call" });    // Scientist
+  P.act(s, { type: "raise" });   // seat 2 to 20
+  P.act(s, { type: "call" });    // seat 3
   P.act(s, { type: "call" });    // you, all in for 10 more
   assert(s.seats[0].allIn && s.seats[0].total === 15);
-  P.act(s, { type: "call" });    // Gentleman
+  P.act(s, { type: "call" });    // seat 1
   while (s.street !== "done") P.act(s, { type: "check" });
   assert.deepStrictEqual(s.result.won, [60, 15, 0, 0]);
   assert.deepStrictEqual(s.result.pots.map((p) => [p.amount, p.winners]), [[60, [0]], [15, [1]]]);
@@ -4230,4 +4230,37 @@ console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " 
     while (sim.phase === "player") { const v = B.value(sim.hands[sim.active].cards).total, up = B.points(sim.dealer[0]); B.act(sim, v >= 17 || (v >= 13 && up <= 6) ? "stand" : "hit"); }
   }
   assert(Math.abs(1e6 - sim.coins) < 4000 * 10 * 0.06, "close to even");
+}
+
+// The card tables' players (game/table-players.js): trainers, with portraits.
+{
+  const picked = TablePlayers.pick(3, () => 0.5);
+  assert.strictEqual(new Set(picked.map((p) => p.name)).size, 3, "three different trainers");
+  for (const p of picked) {
+    assert(/^\S.* \S+$/.test(p.name) && p.pic && require("fs").existsSync(require("path").join(__dirname, "..", "assets/sprites/trainers/front", p.pic + ".png")), p.name);
+    assert(!/Leader|Elite|Champion|Rival|Rocket/.test(p.className), p.name);
+  }
+  assert(!TablePlayers.pick(5, Math.random, picked.map((p) => p.name)).some((p) => picked.some((q) => q.name === p.name)), "nobody twice");
+  // Poker: a trainer out of chips leaves and another sits down.
+  const t = Poker.create({ chips: 100 });
+  assert(t.seats.slice(1).every((s) => s.pic && Poker.STYLES[Object.keys(Poker.STYLES).find((k) => Poker.STYLES[k] === s.style)]));
+  const gone = t.seats[2].name;
+  t.seats[2].chips = 0;
+  Poker.startHand(t);
+  assert(t.seats[2].name !== gone && t.seats[2].chips + t.seats[2].total === Poker.STACK && t.log.some((e) => e.type === "replace" && e.left === gone));
+  // Blackjack with others at the table: everyone's hands are dealt and played
+  // (basic strategy), you sit in the middle, and the coins all add up.
+  const rng = (() => { let x = 9; return () => (x = (x * 16807) % 2147483647) / 2147483647; })();
+  const g = Blackjack.create({ coins: 500, rng, others: TablePlayers.pick(2, rng) });
+  assert.deepStrictEqual([g.players.length, g.you, g.players[1].human], [3, 1, true]);
+  for (let r = 0; r < 200; r++) {
+    const before = g.players.reduce((n, p) => n + p.coins, 0);
+    Blackjack.deal(g, 10, (away) => TablePlayers.pick(1, rng, away)[0]);
+    for (let k = 0; k < 40 && g.phase === "player"; k++) Blackjack.act(g, Blackjack.options(g).human ? "stand" : Blackjack.strategy(g));
+    assert.strictEqual(g.phase, "done", "round " + r);
+    const bets = g.players.reduce((n, p) => n + p.result.reduce((m, x) => m + x.bet, 0), 0), paid = g.players.reduce((n, p) => n + p.result.reduce((m, x) => m + x.paid, 0), 0);
+    assert.strictEqual(g.players.reduce((n, p) => n + p.coins, 0), before - bets + paid + g.log.filter((e) => e.joined).length * Blackjack.STACK, "round " + r + ": coins add up");
+    if (g.coins < 10) g.coins = 500;
+  }
+  assert(g.players.every((p) => p.result && p.result.length >= 1));
 }

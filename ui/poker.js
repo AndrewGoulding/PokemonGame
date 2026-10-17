@@ -2,7 +2,8 @@
 //
 //   const chips = await PokerScreen.run(sceneElement, Poker.create({ chips, name }));   // -> your chips when you leave
 //
-// The three regulars sit along the top (their chips, what they did last,
+// The three other players (trainers from around the game, each with their
+// class's portrait) sit along the top (their chips, what they did last,
 // their bet this round, their cards face down until a showdown), the board
 // and the pot in the middle with your hand so far ("Your hand: Pair of
 // Kings": from the flop on, the best five of your cards and the board's,
@@ -39,6 +40,7 @@
       const winning = t2.result && t2.result.winners.includes(i);
       const hand = show && t2.result && t2.result.hands[i];
       return '<div class="pk-seat' + (s.human ? " you" : "") + (t2.toAct === i ? " turn" : "") + (s.folded || s.out ? " folded" : "") + (winning ? " won" : "") + '">' +
+        (s.pic ? '<img class="pk-portrait" alt="" src="assets/sprites/trainers/front/' + esc(s.pic) + '.png">' : "") +
         '<div class="pk-name">' + esc(s.name) + dealer + "</div>" +
         '<div class="pk-chips">' + s.chips + " chips</div>" +
         '<div class="pk-hole">' + (s.cards && s.cards.length ? s.cards.map((c) => card(c, { down: !show, win: inBest(c) })).join("") : card(null) + card(null)) + "</div>" +
@@ -108,7 +110,7 @@
         case "call": return n + (you ? " call " : " calls ") + ev.amount + (ev.allIn ? ", all in!" : ".");
         case "bet": return n + (you ? " bet " : " bets ") + ev.to + (ev.allIn ? ", all in!" : ".");
         case "raise": return n + (you ? " raise to " : " raises to ") + ev.to + (ev.allIn ? ", all in!" : ".");
-        case "rebuy": return t.seats[ev.seat].name + " buys back in.";
+        case "replace": return ev.left + " is out of chips and leaves. " + ev.joined + " sits down.";
         default: return null;
       }
     }
@@ -123,8 +125,9 @@
       P().startHand(t);
       se("se_ball_tray_ball");
       const [sb, bb] = t.blinds;
-      message = name(sb) + " post" + (sb ? "s" : "") + " the small blind, " + name(bb).replace(/^You$/, "you") + " the big blind.";
-      t.log = t.log.filter((e) => e.type === "rebuy");
+      const joined = t.log.filter((e) => e.type === "replace").map(say);
+      message = joined.concat([name(sb) + " post" + (sb ? "s" : "") + " the small blind, " + name(bb).replace(/^You$/, "you") + " the big blind."]).join(" ");
+      t.log = [];
       draw();
       let street = t.street;
       while (t.street !== "done") {

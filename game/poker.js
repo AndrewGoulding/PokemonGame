@@ -1,5 +1,6 @@
 // Texas Hold'em in the Celadon Game Corner (this game's own), played for
-// coins at the poker dealer's table against three regulars.
+// coins at the poker dealer's table against three trainers from around the
+// game (game/table-players.js: their names and portraits).
 //
 // Fixed-limit hold'em: blinds of 5 and 10 coins; bets and raises are 10 on
 // the first two rounds (before the flop, and on it) and 20 on the turn and
@@ -11,12 +12,12 @@
 // of a call or raise goes all in, and side pots sort out who can win what;
 // a split pot's odd coin goes to the first winner left of the button.
 //
-// The regulars (OPPONENTS) decide from their hand's chance of winning against
+// The other players decide from their hand's chance of winning against
 // whoever's still in, guessed by dealing out the rest of the hand a few
 // hundred times (equity), weighed against the price of a call, each in their
-// own style: how good a hand they want before raising, how much they need to
-// stay in, and how often they bluff. A regular who loses all their chips
-// buys back in for STACK.
+// own style (STYLES): how good a hand they want before raising, how much they
+// need to stay in, and how often they bluff. One who loses all their chips
+// leaves, and another trainer sits down with STACK.
 //
 //   const t = Poker.create({ chips: 200, rng });   // you're seat 0
 //   Poker.startHand(t);
@@ -30,13 +31,19 @@
   const SMALL_BLIND = 5, BIG_BLIND = 10, MAX_BETS = 4, STACK = 500;
   const STREETS = ["preflop", "flop", "turn", "river"];
   const HAND_NAMES = ["High Card", "Pair", "Two Pair", "Three of a Kind", "Straight", "Flush", "Full House", "Four of a Kind", "Straight Flush", "Royal Flush"];
-  // The regulars: raise with this much of a share of the pot's chances (1 = an even share),
+  // How they play: raise with this much of a share of the pot's chances (1 = an even share),
   // need this much of the price of a call to stay in, and bluff this often.
-  const OPPONENTS = [
-    { name: "Gentleman", raise: 1.7, stay: 1.1, bluff: 0.03 },
-    { name: "Gamer", raise: 1.25, stay: 0.75, bluff: 0.15 },
-    { name: "Scientist", raise: 1.45, stay: 0.95, bluff: 0.07 }
-  ];
+  const STYLES = {
+    tight: { raise: 1.7, stay: 1.1, bluff: 0.03 },
+    loose: { raise: 1.25, stay: 0.75, bluff: 0.15 },
+    steady: { raise: 1.45, stay: 0.95, bluff: 0.07 }
+  };
+  // New players for the table: trainers (TablePlayers), or plain ones without them.
+  function newPlayers(n, rng, away) {
+    const picked = window.TablePlayers ? window.TablePlayers.pick(n, rng, away) : [];
+    while (picked.length < n) picked.push({ name: "Player " + (picked.length + 2), pic: null, style: ["tight", "loose", "steady"][picked.length % 3] });
+    return picked.map((p) => ({ name: p.name, pic: p.pic, styleName: p.style, style: STYLES[p.style] || STYLES.steady }));
+  }
 
   function deck(rng) {
     const d = [];
@@ -118,8 +125,8 @@
   function create(opts) {
     opts = opts || {};
     const rng = opts.rng || Math.random;
-    const seats = [{ name: opts.name || "You", chips: opts.chips | 0, human: true }]
-      .concat(OPPONENTS.map((o) => ({ name: o.name, chips: opts.stack || STACK, style: o })));
+    const seats = [{ name: opts.name || "You", chips: opts.chips | 0, human: true, pic: opts.pic || null }]
+      .concat(newPlayers(3, rng).map((p) => Object.assign(p, { chips: opts.stack || STACK })));
     return { rng, seats, button: Math.floor(rng() * seats.length), board: [], deck: [], street: "done", toAct: -1,
       hands: 0, log: [], result: null };
   }
@@ -139,10 +146,16 @@
 
   function startHand(t) {
     const rng = t.rng;
-    // (A regular who's out of chips buys back in.)
-    for (const s of t.seats) if (!s.human && s.chips <= 0) { s.chips = STACK; t.log.push({ type: "rebuy", seat: t.seats.indexOf(s) }); }
+    t.log = [];
+    // (A player out of chips leaves, and a new one sits down.)
+    t.seats.forEach((s, i) => {
+      if (s.human || s.chips > 0) return;
+      const fresh = newPlayers(1, rng, t.seats.map((o) => o.name))[0];
+      t.log.push({ type: "replace", seat: i, left: s.name, joined: fresh.name });
+      t.seats[i] = Object.assign(fresh, { chips: STACK });
+    });
     for (const s of t.seats) Object.assign(s, { cards: [], folded: false, allIn: false, bet: 0, total: 0, out: s.chips <= 0, acted: false, last: null });
-    t.board = []; t.result = null; t.log = [];
+    t.board = []; t.result = null;
     t.deck = deck(rng);
     t.hands++;
     t.button = nextSeat(t, t.button, (s) => !s.out);
@@ -303,7 +316,7 @@
 
   // What the regular to act does.
   function decide(t, iterations) {
-    const i = t.toAct, s = t.seats[i], o = options(t), rng = t.rng, style = s.style || OPPONENTS[2];
+    const i = t.toAct, s = t.seats[i], o = options(t), rng = t.rng, style = s.style || STYLES.steady;
     const players = t.seats.filter(inHand).length;
     const e = equity(t, i, iterations || 250, rng);
     const share = e * players;             // (1: an even share of the chances)
@@ -317,6 +330,6 @@
   const RANK_NAMES = { 11: "J", 12: "Q", 13: "K", 14: "A" };
   const cardName = (c) => (RANK_NAMES[c.rank] || String(c.rank)) + { S: "♠", H: "♥", D: "♦", C: "♣" }[c.suit];
 
-  window.Poker = { SUITS, SMALL_BLIND, BIG_BLIND, MAX_BETS, STACK, STREETS, HAND_NAMES, OPPONENTS,
+  window.Poker = { SUITS, SMALL_BLIND, BIG_BLIND, MAX_BETS, STACK, STREETS, HAND_NAMES, STYLES, newPlayers,
     deck, score5, best, compare, handName, describe, create, startHand, options, act, equity, decide, pot, cardName };
 })();
