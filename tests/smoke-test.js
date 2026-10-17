@@ -4475,7 +4475,13 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   assert(room.warps.length && room.warps.every((w) => w.map === gc.name && w.warp === door), "the mat leads back");
   assert(room.warps[gc.warps[door].warp], "the doorway leads to the mat");
   for (const s of ["Game_EventScript_PokerTable", "Game_EventScript_BlackjackTable"]) assert(room.signs.some((g) => g.script === s), s);
-  for (const s of ["Game_EventScript_PokerDealer", "Game_EventScript_BlackjackDealer", "Game_EventScript_MahjongDealer"]) assert(room.people.some((p) => p.script === s), s);
+  for (const s of ["Game_EventScript_PokerDealer", "Game_EventScript_BlackjackDealer"]) assert(room.people.some((p) => p.script === s), s);
+  assert(!room.people.some((p) => /Mahjong/.test(p.script || "")), "no mahjong dealer: its players ask you to sit in");
+  const gameSrc = fs.readFileSync(path.join(__dirname, "../ui/game.js"), "utf8");
+  assert(/"Want to play with us\?\\nIt costs " \+ MAHJONG_BUY_IN \+ " Coins for the buy-in\."/.test(gameSrc) && !/gives\\nyou their seat/.test(gameSrc), "the mahjong players' invitation");
+  assert(/mahjongCrowd = null;/.test(gameSrc), "new mahjong players after every game");
+  assert.strictEqual(SUMMARY_SCREEN.abilityText["Embody Aspect (Teal)"], "Terastal raises Speed.");
+  assert(room.top && fs.existsSync(path.join(__dirname, "../assets/world/maps/CeladonCity_GameCorner_CardRoom-top.png")), "the plants' leaves over you");
   for (const [table, seats] of Object.entries(room.seats)) {
     assert.strictEqual(seats.length, 4, table);
     for (const [x, y] of seats) assert(room.signs.some((g) => Math.abs(g.x - x) + Math.abs(g.y - y) === 1), table + " chair by its table");

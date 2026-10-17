@@ -120,7 +120,10 @@ const xAbilities = fs.readFileSync(X("src/data/abilities.h"), "utf8");
 for (const block of xAbilities.split(/\n    \[ABILITY_/).slice(1)) {
   const name = /\.name = _\("([^"]+)"/.exec(block), desc = /\.description = COMPOUND_STRING\(([\s\S]*?)\),\n/.exec(block);
   // (Its two "As One"s are Showdown's, and this game's, As One (Glastrier) and (Spectrier).)
-  const asOne = { AS_ONE_ICE_RIDER: "As One (Glastrier)", AS_ONE_SHADOW_RIDER: "As One (Spectrier)" }[/^(\w+)\]/.exec(block)[1]];
+  // (Ogerpon's four Embody Aspects are Showdown's, and this game's, Embody Aspect (Teal) and the rest.)
+  const asOne = { AS_ONE_ICE_RIDER: "As One (Glastrier)", AS_ONE_SHADOW_RIDER: "As One (Spectrier)",
+    EMBODY_ASPECT_TEAL_MASK: "Embody Aspect (Teal)", EMBODY_ASPECT_HEARTHFLAME_MASK: "Embody Aspect (Hearthflame)",
+    EMBODY_ASPECT_WELLSPRING_MASK: "Embody Aspect (Wellspring)", EMBODY_ASPECT_CORNERSTONE_MASK: "Embody Aspect (Cornerstone)" }[/^(\w+)\]/.exec(block)[1]];
   const ours = asOne || (name && ourAbilities[key(name[1])]);
   if (ours && desc && !data.abilityText[ours]) data.abilityText[ours] = strings(desc[1]);
 }

@@ -68,19 +68,30 @@
       }).join("");
       // In Riichi: the tiles you're waiting on, and how many of each could still be out there (four, less
       // those you can see: your hand, everyone's discards and called sets, the dora indicators).
+      const seen = M().countsOf(me.hand.concat(g.dora || [], ...g.players.map((p) => p.river.filter((t, k) => !p.called.includes(k))),
+        ...g.players.map((p) => p.melds.flatMap((m) => m.tiles))));
+      const waitList = (closed) => M().waits(closed, me.melds.length).map((t) => '<span class="mj-wait">' + tile(t, { small: true }) +
+        "×" + Math.max(0, 4 - seen[t]) + "</span>").join("");
       let waitsHtml = "";
       if (me.riichi && g.phase !== "end") {
         const closed = me.hand.slice();
         if (me.drawn != null && g.turn === 0 && g.phase === "discard") closed.splice(closed.lastIndexOf(me.drawn), 1);
-        const seen = M().countsOf(me.hand.concat(g.dora || [], ...g.players.map((p) => p.river.filter((t, k) => !p.called.includes(k))),
-          ...g.players.map((p) => p.melds.flatMap((m) => m.tiles))));
-        waitsHtml = '<span class="mj-waits">Waits ' + M().waits(closed, me.melds.length).map((t) => '<span class="mj-wait">' + tile(t, { small: true }) +
-          "×" + Math.max(0, 4 - seen[t]) + "</span>").join("") + "</span>";
+        waitsHtml = '<span class="mj-waits">Waits ' + waitList(closed) + "</span>";
+      }
+      // Choosing your Riichi discard: each tile you could let go, and what you'd be waiting on.
+      let riichiHtml = "";
+      if (riichiMode && o) {
+        const at = items[cursor] && items[cursor].tile;
+        riichiHtml = '<div class="mj-result mj-riichi"><b>Riichi: which tile goes?</b>' + [...new Set(o.riichi)].map((t) => {
+          const rest = me.hand.slice();
+          rest.splice(rest.indexOf(t), 1);
+          return '<div class="mj-riichi-row' + (t === at ? " cursor" : "") + '">Drop ' + tile(t, { small: true }) + '<span class="mj-waits">Waits ' + waitList(rest) + "</span></div>";
+        }).join("") + "</div>";
       }
       const round = M().WINDS[g.round - 27] + " " + (g.hand + 1) + (g.honba ? " · " + g.honba + " honba" : "") + (g.sticks ? " · " + g.sticks + " Riichi stick" + (g.sticks > 1 ? "s" : "") : "");
       root.innerHTML = '<div class="dig poker mahjong">' +
         '<div class="mj-table">' + playerHtml(3) + playerHtml(2) + playerHtml(1) +
-          (detail ? '<div class="mj-result">' + detail.html + "</div>" : "") + "</div>" +
+          (detail ? '<div class="mj-result">' + detail.html + "</div>" : "") + riichiHtml + "</div>" +
         '<div class="mj-center"><span class="mj-round">' + esc(round) + '</span><span class="mj-dora">Dora ' + (g.dora ? g.dora.map((t) => tile(t, { small: true })).join("") : "") +
           '</span><span class="mj-left">' + (g.wall ? g.wall.length + " tiles left" : "") + "</span>" + waitsHtml + "</div>" +
         '<div class="mj-you">' + playerHtml(0) + '<div class="mj-hand">' + handHtml + '<span class="mj-melds">' +
@@ -180,7 +191,16 @@
         if (o.tsumo) list.push({ label: "Tsumo!", value: "tsumo" });
         if (o.riichi.length && !riichiMode) list.push({ label: "Riichi", value: "riichi" });
         if (riichiMode) list.push({ label: "Cancel Riichi", value: "unriichi" });
-        message = riichiMode ? "Riichi: which tile goes?" : me.riichi ? "In Riichi: the tile you drew goes, unless it wins." : "Your turn: pick a tile to discard.";
+        // (In Riichi, the tile you drew goes by itself, unless it wins: then Tsumo, or let it go.)
+        if (me.riichi && !o.tsumo && !riichiMode) {
+          message = "You drew " + M().tileName(me.drawn) + ".";
+          draw();
+          await wait(AI_MS);
+          se("se_ball_tray_ball");
+          M().discard(g, me.drawn, false);
+          return;
+        }
+        message = riichiMode ? "Riichi: which tile goes? Each shows what you'd wait on." : me.riichi ? "In Riichi: that tile wins! Tsumo, or let it go?" : "Your turn: pick a tile to discard.";
         const at = list.findIndex((it) => it.tile != null && it.slot === hand.length - 1);
         const v = await choose(list, o.tsumo ? list.findIndex((it) => it.value === "tsumo") : at >= 0 ? at : 0);
         if (v.value === "tsumo") { se("se_shop"); M().tsumo(g); return; }

@@ -1,6 +1,7 @@
 // Builds the Celadon Game Corner's card room (this game's own), behind a
-// doorway in the Game Corner's north wall: the poker table, the blackjack
-// table and the mahjong table, each dealer at their table.
+// doorway in the Game Corner's north wall: the poker table and the blackjack
+// table, each dealer at theirs, and the mahjong table, its players seated
+// (by ui/game.js) with a chair free.
 //
 //   assets/world/maps/CeladonCity_GameCorner_CardRoom.png (and -border.png)
 //       the room: the Game Corner's own wall, floor, mat and plant tiles
@@ -21,7 +22,7 @@ const { readPng, writePng } = require("./lib/png");
 const root = path.join(__dirname, "..");
 const MAPS = path.join(root, "assets/world/maps");
 const GC = "CeladonCity_GameCorner", ROOM = "CeladonCity_GameCorner_CardRoom";
-const gc = readPng(path.join(MAPS, GC + ".png"));
+const gc = readPng(path.join(MAPS, GC + ".png")), gcTop = readPng(path.join(MAPS, GC + "-top.png"));
 global.window = global;
 require(path.join(root, "data/world-maps.js"));
 const gcMap = window.WORLD_MAPS[GC];
@@ -70,8 +71,10 @@ const WALL_TOP = [0, 0], WALL = [0, 1], SHADOW = [4, 2], FLOOR = [11, 3], MAT = 
 const UNDER = { "0,13": [0, 12] };
 const src = [];
 for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) src[y * W + x] = y === 0 ? WALL_TOP : y === 1 ? WALL : y === 2 ? SHADOW : y === H - 1 ? BOTTOM : FLOOR;
-// The way out, at the bottom (as the Game Corner's own).
-MAT.forEach((m, k) => { src[(H - 2) * W + 9 + k] = m; });
+// The way out, at the bottom (as the Game Corner's own; its last pixels are in the row
+// under it, MAT_BOTTOM).
+const MAT_BOTTOM = [[8, 14], [9, 14], [10, 14]];
+MAT.forEach((m, k) => { src[(H - 2) * W + 9 + k] = m; src[(H - 1) * W + 9 + k] = MAT_BOTTOM[k]; });
 for (const [x, y] of [[0, 3], [W - 1, 3], [0, H - 2], [W - 1, H - 2]]) src[y * W + x] = PLANT;
 // The seats: chairs.
 const SEATS = { poker: [[1, 5], [7, 5], [3, 6], [5, 6]], blackjack: [[9, 6], [10, 6], [11, 6], [12, 6]], mahjong: [[17, 4], [16, 7], [15, 5], [18, 6]] };
@@ -99,11 +102,11 @@ src.forEach(([sx, sy], i) => {
 });
 
 // The tables (blocking, and each tile a "sign": A on it sits you down; the mahjong
-// table's only tells you to ask the dealer standing by it).
+// table's only tells you to ask one of its players).
 const TABLES = {
   poker: { x: 2, y: 4, w: 5, h: 2, script: "Game_EventScript_PokerTable" },
   blackjack: { x: 9, y: 4, w: 4, h: 2, script: "Game_EventScript_BlackjackTable" },
-  mahjong: { x: 16, y: 5, w: 2, h: 2, script: null, text: ["A game of mahjong is under way.", "Talk to the dealer to sit in."] }
+  mahjong: { x: 16, y: 5, w: 2, h: 2, script: null, text: ["A game of mahjong is under way.", "Talk to one of the players to sit in."] }
 };
 const signs = [];
 for (const t of Object.values(TABLES)) for (let y = t.y; y < t.y + t.h; y++) for (let x = t.x; x < t.x + t.w; x++) {
@@ -165,6 +168,20 @@ function frame(x0, y0, w, h) { rect(x0, y0, w, h, "#5a3416"); rect(x0 + 1, y0 + 
   }
 }
 writePng(path.join(MAPS, ROOM + ".png"), W * T, H * T, img);
+// The layer drawn over you: each plant's leaves, in the tile above its pot (the
+// Game Corner's top layer, tile PLANT_TOP).
+{
+  const PLANT_TOP = [0, 12], top = new Uint8ClampedArray(W * T * H * T * 4);
+  src.forEach(([sx, sy], i) => {
+    if (sx !== PLANT[0] || sy !== PLANT[1]) return;
+    const dx = i % W, dy = Math.floor(i / W) - 1;
+    for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
+      const s = ((PLANT_TOP[1] * T + y) * gcTop.width + PLANT_TOP[0] * T + x) * 4;
+      top.set(gcTop.rgba.slice(s, s + 4), ((dy * T + y) * W * T + dx * T + x) * 4);
+    }
+  });
+  writePng(path.join(MAPS, ROOM + "-top.png"), W * T, H * T, top);
+}
 fs.copyFileSync(path.join(MAPS, GC + "-border.png"), path.join(MAPS, ROOM + "-border.png"));
 
 // ---------- The doorway in the Game Corner ----------
@@ -183,7 +200,7 @@ fs.copyFileSync(path.join(MAPS, GC + "-border.png"), path.join(MAPS, ROOM + "-bo
 
 const MAT_X = 9;
 const room = {
-  name: ROOM, title: "Celadon City Game Corner", width: W, height: H, type: "indoor", music: gcMap.music, top: false,
+  name: ROOM, title: "Celadon City Game Corner", width: W, height: H, type: "indoor", music: gcMap.music, top: true,
   borderWidth: 2, borderHeight: 2, collision, elevation, behavior, encounter, connections: [],
   warps: MAT.map((m, k) => ({ x: MAT_X + k, y: H - 2, map: GC, warp: gcMap.warps.length })),
   signs, triggers: [], hidden: [], patches: {},
@@ -192,9 +209,7 @@ const room = {
     { id: 0, x: 4, y: 3, movement: "face_down", rangeX: 0, rangeY: 0, script: "Game_EventScript_PokerDealer", flag: null, text: null,
       localId: "LOCALID_POKER_DEALER", sprite: "worker_m", width: 16, height: 32, frames: 10 },
     { id: 1, x: 10, y: 3, movement: "face_down", rangeX: 0, rangeY: 0, script: "Game_EventScript_BlackjackDealer", flag: null, text: null,
-      localId: "LOCALID_BLACKJACK_DEALER", sprite: "worker_f", width: 16, height: 32, frames: 10 },
-    { id: 2, x: 18, y: 5, movement: "face_down", rangeX: 0, rangeY: 0, script: "Game_EventScript_MahjongDealer", flag: null, text: null,
-      localId: "LOCALID_MAHJONG_DEALER", sprite: "worker_m", width: 16, height: 32, frames: 10 }
+      localId: "LOCALID_BLACKJACK_DEALER", sprite: "worker_f", width: 16, height: 32, frames: 10 }
   ],
   seats: SEATS, wild: null
 };

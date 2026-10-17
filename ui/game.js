@@ -2163,7 +2163,7 @@
     "Route5_SouthEntrance_EventScript_GuardTriggerLeft", "Route5_SouthEntrance_EventScript_GuardTriggerMid",
     "Route5_SouthEntrance_EventScript_GuardTriggerRight",
     "Game_EventScript_Leaf", "Game_EventScript_TradebackGuy", "Game_EventScript_PokerDealer", "Game_EventScript_BlackjackDealer",
-    "Game_EventScript_PokerTable", "Game_EventScript_BlackjackTable", "Game_EventScript_MahjongDealer",
+    "Game_EventScript_PokerTable", "Game_EventScript_BlackjackTable", "Game_EventScript_MahjongPlayer",
     "Route11_EastEntrance_2F_EventScript_Aide", "Route11_EastEntrance_2F_EventScript_Turner",
     "SSAnne_2F_Corridor_EventScript_RivalTriggerLeft", "SSAnne_2F_Corridor_EventScript_RivalTriggerMid",
     "SSAnne_2F_Corridor_EventScript_RivalTriggerRight", "SSAnne_CaptainsOffice_EventScript_Captain",
@@ -3983,7 +3983,7 @@
       case "Game_EventScript_BlackjackDealer": await blackjackTable(); return;
       case "Game_EventScript_PokerTable": await pokerTable(); return;
       case "Game_EventScript_BlackjackTable": await blackjackTable(); return;
-      case "Game_EventScript_MahjongDealer": await mahjongTable(); return;
+      case "Game_EventScript_MahjongPlayer": await mahjongTable(); return;
       case "Game_EventScript_TradebackGuy": {
         await say(["Hi! I'm the Tradeback Guy!", "Some Pokémon only evolve when\nthey're traded. Nobody to trade\nwith? Leave it to me!",
           "I'll trade you my Rattata, and then\ntrade your Pokémon right back!"]);
@@ -6270,9 +6270,10 @@
   }
 
   // The card room's regulars (this game's own; data/card-room.js): people
-  // in the chairs, the same all day: three at the poker table (a chair left
-  // for you), two at blackjack and four round the mahjong table. Each a
-  // trainer from around the game (TablePlayers) in someone's clothes.
+  // in the chairs. Three at the poker table (a chair left for you) and two at
+  // blackjack, the same all day; three round the mahjong table, a chair free,
+  // new ones after every game you play with them. Each a trainer from around
+  // the game (TablePlayers) in someone's clothes.
   const CROWD_SPRITES = ["woman_1", "fat_man", "boy", "old_man_1", "woman_3", "youngster", "balding_man", "woman_2", "lass", "gentleman",
     "old_man_2", "bug_catcher", "cooltrainer_f", "rocker", "man", "camper", "black_belt", "hiker", "cooltrainer_m", "picnicker",
     "old_woman", "beauty", "sailor", "fisher", "poke_maniac", "channeler", "crush_girl", "scientist"];
@@ -6281,60 +6282,79 @@
     ["I'm on a hot streak today!"], ["Don't tell my wife how much\nI've lost here..."], ["Shh! I'm counting."],
     ["The house always wins, they say.\nNot today!"], ["One more hand, then I'll go home."],
     ["I came for the slots, but\nthe cards are where it's at."], ["Bah! Another bad beat!"]];
-  let crowdCache = null;
-  function cardRoomCrowd() {
-    const day = Math.floor(Date.now() / 86400000);
-    if (crowdCache && crowdCache.day === day) return crowdCache.people;
-    let seed = day * 2654435761 >>> 0;
-    const rng = () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  // (The mahjong chairs they take: the one nearest the door, 1, is yours.)
+  const MAHJONG_CHAIRS = [0, 2, 3];
+  let crowdCache = null, mahjongCrowd = null;
+  function crowdLooks() {
     const looks = {};
     for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people || []) if (!looks[p.sprite]) looks[p.sprite] = p;
-    const sprites = CROWD_SPRITES.filter((s) => looks[s]);
-    tableStars();
-    const room = window.WORLD_MAPS.CeladonCity_GameCorner_CardRoom, players = TablePlayers.pick(9, rng);
-    const people = [], mahjong = [];
-    const seat = (table, i) => {
-      // (A star in their own clothes.)
-      const [x, y] = room.seats[table][i], who = players[people.length], random = looks[sprites[Math.floor(rng() * sprites.length)]];
-      const look = (who.star && (looks[who.sprite] || window.WORLD_SPRITES[who.sprite])) || random;
-      const says = who.star ? ["Shh! I'm just here for a quiet game.\nDon't tell anyone!"]
-        : table === "mahjong" ? ["Ron! ...Oh, wait. Never mind.", "Want to sit in? Ask the dealer!"] : CROWD_SAYS[Math.floor(rng() * CROWD_SAYS.length)];
-      people.push({ id: 910 + people.length, localId: "LOCALID_CARD_PLAYER_" + people.length, script: null, x, y, movement: "face_" + CROWD_FACING[table][i],
-        rangeX: 0, rangeY: 0, flag: null, text: [who.name + ": " + says[0]].concat(says.slice(1)),
-        sprite: look.sprite, width: look.width, height: look.height, frames: look.frames });
-      if (table === "mahjong") mahjong.push(who);
-    };
-    [0, 1, 2].forEach((i) => seat("poker", i));
-    [0, 2].forEach((i) => seat("blackjack", i));
-    [0, 1, 2, 3].forEach((i) => seat("mahjong", i));
-    crowdCache = { day, people, mahjong };
-    return people;
+    return { looks, sprites: CROWD_SPRITES.filter((s) => looks[s]) };
+  }
+  function cardRoomCrowd() {
+    const day = Math.floor(Date.now() / 86400000);
+    if (!crowdCache || crowdCache.day !== day) {
+      let seed = day * 2654435761 >>> 0;
+      const rng = () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+      const { looks, sprites } = crowdLooks();
+      tableStars();
+      const room = window.WORLD_MAPS.CeladonCity_GameCorner_CardRoom, players = TablePlayers.pick(5, rng);
+      const people = [];
+      const seat = (table, i) => {
+        // (A star in their own clothes.)
+        const [x, y] = room.seats[table][i], who = players[people.length], random = looks[sprites[Math.floor(rng() * sprites.length)]];
+        const look = (who.star && (looks[who.sprite] || window.WORLD_SPRITES[who.sprite])) || random;
+        const says = who.star ? ["Shh! I'm just here for a quiet game.\nDon't tell anyone!"] : CROWD_SAYS[Math.floor(rng() * CROWD_SAYS.length)];
+        people.push({ id: 910 + people.length, localId: "LOCALID_CARD_PLAYER_" + people.length, script: null, x, y, movement: "face_" + CROWD_FACING[table][i],
+          rangeX: 0, rangeY: 0, flag: null, text: [who.name + ": " + says[0]].concat(says.slice(1)),
+          sprite: look.sprite, width: look.width, height: look.height, frames: look.frames, who });
+      };
+      [0, 1, 2].forEach((i) => seat("poker", i));
+      [0, 2].forEach((i) => seat("blackjack", i));
+      crowdCache = { day, people };
+    }
+    return crowdCache.people.concat(mahjongPlayers());
+  }
+  // The three at the mahjong table, each a way to sit in with them.
+  function mahjongPlayers() {
+    if (!mahjongCrowd) {
+      tableStars();
+      const { looks, sprites } = crowdLooks();
+      const room = window.WORLD_MAPS.CeladonCity_GameCorner_CardRoom;
+      const away = crowdCache ? crowdCache.people.map((p) => p.who.name) : [];
+      mahjongCrowd = TablePlayers.pick(3, Math.random, away).map((who, k) => {
+        const i = MAHJONG_CHAIRS[k], [x, y] = room.seats.mahjong[i];
+        const look = (who.star && (looks[who.sprite] || window.WORLD_SPRITES[who.sprite])) || looks[sprites[Math.floor(Math.random() * sprites.length)]];
+        return { id: 920 + k, localId: "LOCALID_MAHJONG_PLAYER_" + k, script: "Game_EventScript_MahjongPlayer", x, y, movement: "face_" + CROWD_FACING.mahjong[i],
+          rangeX: 0, rangeY: 0, flag: null, text: null, sprite: look.sprite, width: look.width, height: look.height, frames: look.frames, who };
+      });
+    }
+    return mahjongCrowd;
   }
 
   // Mahjong (game/mahjong.js, ui/mahjong.js; this game's own): Riichi, an
   // East round. 250 Coins buys you in for 25,000 points; when you get up (or
   // the game's over) every 100 points left is a Coin; quitting mid-game
-  // with Select forfeits it all. The dealer by the table seats you, and one
-  // of the four at it lets you have their chair.
+  // with Select forfeits it all. Any of the three at the table asks you to
+  // sit in; you play them, and three others sit down after.
   const MAHJONG_BUY_IN = 250;
   async function mahjongTable() {
     if (!player.flags.gotCoinCase) { await say(T("CeladonCity_GameCorner_Text_CoinCaseIsRequired")); return; }
-    await say(["Welcome to the mahjong table!\nWe play Riichi: an East round,\n25,000 points each.",
-      "Sitting in costs " + MAHJONG_BUY_IN + " Coins. Every 100 points\nyou have when you get up is a Coin.",
-      "You can get up between hands, or\nany time with SELECT, but then you\nforfeit your buy-in."]);
+    const others = mahjongPlayers().map((p) => p.who);
+    if (!(await confirm("Want to play with us?\nIt costs " + MAHJONG_BUY_IN + " Coins for the buy-in."))) { await say("Maybe next time, then."); return; }
     if (coins() < MAHJONG_BUY_IN) { await say("You'll need " + MAHJONG_BUY_IN + " Coins to sit in.\nCome back with more!"); return; }
-    if (!(await confirm("Sit in for " + MAHJONG_BUY_IN + " Coins?"))) { await say("Maybe next time, then."); return; }
-    cardRoomCrowd();
-    const [gone, ...others] = crowdCache.mahjong;
     addCoins(-MAHJONG_BUY_IN);
-    await say((gone ? gone.name : "A player") + " gets up and gives\nyou their seat. Good luck!");
+    await say(["We play Riichi: an East round,\n25,000 points each. Every 100 points\nyou have when you get up is a Coin.",
+      "You can get up between hands, or\nany time with SELECT, but then you\nforfeit your buy-in."]);
     await starNotice(others);
     Screen.say("");
     show("scene");
     clearMenu();
     const game = Mahjong.create({ names: [player.name].concat(others.map((p) => p.name)) });
     const points = await MahjongScreen.run(scene, game, { pics: [Player.LOOKS[player.look].front].concat(others.map((p) => p.pic)) });
+    // (New players at the table for next time.)
+    mahjongCrowd = null;
     show("world");
+    if (Overworld.refreshPeople) Overworld.refreshPeople();
     await Overworld.resume();
     if (points == null) { await say("You got up mid-game and forfeited\nyour buy-in. Come back anytime!"); await persist(); return; }
     const won = Math.max(0, Math.floor(points / 100));

@@ -332,9 +332,10 @@ find them on the floor, and play FireRed's slot machines (its reels, odds,
 lines and payouts, from `src/slot_machine.c`), or go through the doorway in
 the back wall (left of the stairs) to the card room (this game's own, built
 from the Game Corner's tiles by `tools/build-card-room.js` into
-`data/card-room.js`), where the dealers stand at their tables and the
-regulars sit in the chairs around them (people in all sorts of clothes, the
-same all day: three at poker, two at blackjack, four at mahjong). Play
+`data/card-room.js`), where the dealers stand at the poker and blackjack
+tables and the regulars sit in the chairs around them (people in all sorts
+of clothes, the same all day: three at poker, two at blackjack), and three
+players sit at the mahjong table with a chair free. Play
 Texas Hold'em at the poker
 table (this game's own: `game/poker.js` has the rules, `ui/poker.js` the
 table). The dealer seats you, once you have the Coin Case, at the stakes you
@@ -381,13 +382,17 @@ picked with left / right and A, or tapped; the dealer's hole card turns over
 and its draws come one at a time. Or sit in at the mahjong table (this
 game's own: `game/mahjong.js`, `ui/mahjong.js`; tile pictures from
 FluffyStuff's riichi-mahjong-tiles, public domain, by
-`tools/build-mahjong-tiles.js`): talk to the dealer standing by the table,
-and one of the four players gives you their chair for 250 Coins, which is
-25,000 points. The suits go by their English names (Characters, Dots and
+`tools/build-mahjong-tiles.js`): talk to any of the three players there
+("Want to play with us? It costs 250 Coins for the buy-in.") and take the
+free chair for 250 Coins, which is 25,000 points. You play those three, and
+three new ones sit down after every game (anyone, picked as for poker, a
+star 3% of the time a chair). The suits go by their English names (Characters, Dots and
 Bamboo: "6 of Dots"), each suited tile with its number in a corner badge in
 its suit's colour, and once you're in Riichi the middle of the table shows
 the tiles you're waiting on and how many of each could still be out there
-(four, less the ones you can see). It's Riichi: an East round,
+(four, less the ones you can see). Choosing Riichi lists every tile you
+could drop for it and what you'd be waiting on after each; in Riichi, each
+tile you draw is discarded for you, unless it wins (then Tsumo, or let it go). It's Riichi: an East round,
 136 tiles (no red fives, no kans), Pon, Chi, Ron, Tsumo and Riichi, furiten,
 dora and ura-dora, honba and the usual yaku, han, fu and limits (mangan to
 yakuman), against three trainers (picked as for poker, portraits and all)

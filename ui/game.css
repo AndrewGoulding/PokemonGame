@@ -470,6 +470,10 @@
   gap: calc(var(--u) * 1.5); padding: calc(var(--u) * 2); border-radius: calc(var(--u) * 2.5); background: rgba(10, 30, 16, 0.92);
   text-align: center; font-size: var(--ts); line-height: 1.25; }
 .mj-result b { font-size: var(--t); font-weight: normal; color: #ffe066; }
+.mj-riichi { justify-content: flex-start; overflow-y: auto; }
+.mj-riichi-row { display: flex; align-items: center; gap: calc(var(--u) * 3); padding: calc(var(--u) * 0.5) calc(var(--u) * 2);
+  border: calc(var(--u) * 2 / 3) solid transparent; border-radius: calc(var(--u) * 2); }
+.mj-riichi-row.cursor { border-color: #ffe066; }
 
 /* The tables' panel under the screen (ui/table-ui.js): FireRed's windows,
    twice a game pixel (--p): what's happening in the standard frame, the
