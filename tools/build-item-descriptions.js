@@ -8,7 +8,8 @@
 // "Prof. Oak"), except HP, PP, TM and HM. Items are keyed by this game's ids
 // (data/items.js); TMs and HMs are left out (their descriptions are their
 // moves'), and items FireRed doesn't have keep data/items.js's text. This
-// game's Exp. Share is a key item you turn on and off, so it has its own.
+// game's Exp. Share is a key item you turn on and off, and its Berry Pouch
+// picks berries, so they have their own; the Old Sea Map's is Emerald's.
 "use strict";
 
 const fs = require("fs");
@@ -31,7 +32,11 @@ const KEEP = new Set(["HP", "PP", "TM", "HM"]);
 const mixedCase = (text) => text.replace(/[A-Zé]{2,}(?:'[A-Z]+)?/g, (w) => (KEEP.has(w) ? w : w.charAt(0) + w.slice(1).toLowerCase()));
 
 const out = {
-  "exp-share": "When it's on, your whole party\ngets Exp. Points from battles."   // (ui/game.js adds whether it's on)
+  "exp-share": "When it's on, your whole party\ngets Exp. Points from battles.",   // (ui/game.js adds whether it's on)
+  // (Emerald's, from Faraway Island.)
+  "old-sea-map": "A faded sea chart\nthat shows the way\nto a certain island.",
+  // (This game's: the Berry Pouch picks berries, game/berry-picking.js.)
+  "berry-pouch": "Use it in a forest to shake a\nberry tree and catch the Berries\nthat fall."
 };
 for (const it of JSON.parse(fs.readFileSync(file, "utf8")).items) {
   if (!/^ITEM_/.test(it.itemId) || /^ITEM_(NONE|TM|HM|0|UNUSED)/.test(it.itemId)) continue;

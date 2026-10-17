@@ -1460,14 +1460,17 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   A game lasts 30 seconds. You take home a berry and one more for every 60
   points, fewer if you caught many green ones or missed many; your **farming
   level** adds up to as many again (all of them again at level 100), and each
-  gold berry brings one from the best tier you can pick. Berries come in
-  tiers by farming level: Basic (Cheri, Chesto, Pecha, Rawst, Aspear, Oran,
-  Persim) from 1, Restoring (Leppa, Sitrus, Lum and the confusion berries) from
-  10, Contest (Razz, Bluk, Nanab, Wepear, Pinap) from 20, EV-reducing (Pomeg,
-  Kelpsy, Qualot, Hondew, Grepa, Tamato) from 30, Type-resisting (Occa to
-  Roseli, and Chilan) from 45 and Battle-boosting (Liechi, Ganlon, Salac,
-  Petaya, Apicot, Lansat, Starf, Micle, Custap, Jaboca, Rowap, Kee, Maranga,
-  Enigma) from 60; each tier you can pick comes up half as often as the one
+  gold berry brings one from the best tier you can pick. Every berry in the
+  game (Gen 3's 43 and the 24 since) is in a tier, by farming level: Basic
+  (Cheri, Chesto, Pecha, Rawst, Aspear, Oran, Persim) from 1, Restoring
+  (Leppa, Sitrus, Lum and the confusion berries) from 10, Contest (Razz,
+  Bluk, Nanab, Wepear, Pinap, Cornn, Magost, Rabuta, Nomel) from 20,
+  EV-reducing (Pomeg, Kelpsy, Qualot, Hondew, Grepa, Tamato) from 30, Rare
+  contest (Spelon, Pamtre, Watmel, Durin, Belue) from 40, Type-resisting
+  (Occa to Roseli, and Chilan) from 45, Pinch (Liechi, Ganlon, Salac, Petaya,
+  Apicot, Lansat, Starf, Micle, Custap) from 60, Retaliation (Jaboca, Rowap,
+  Kee, Maranga) from 70 and Legendary (the Enigma Berry) from 85; each tier
+  you can pick comes up half as often as the one
   below it. Farming XP is 5 a game and 1 for every 10 points; levels go as
   mining's do, and the trainer card shows your farming level.
 - **Fly and Transform animations** (FireRed's Move_FLY and Move_TRANSFORM, frame

@@ -17,8 +17,9 @@
 // if you caught a lot of green ones or missed a lot; your farming level adds
 // up to as many again (all of them again at level 100), and each gold berry
 // caught brings one from the best tier you can pick. Which berries: TIERS,
-// each from a farming level; the tiers you can pick from come up in turn,
-// the lower ones more often. Farming XP: 5 a game, and 1 for every 10 points.
+// every berry in the game, each tier from a farming level (the Enigma Berry,
+// alone, from 85); the tiers you can pick from come up in turn, each half as
+// often as the one below it. Farming XP: 5 a game, and 1 for every 10 points.
 // Farming levels go as mining's do (game/mining.js).
 //
 //   const game = BerryPicking.create(rng, level);
@@ -38,16 +39,18 @@
   const OVER_SHAKE = 0.45;            // shaking with more sway than this left is over-shaking
   const GOLD_CHANCE = 0.3;            // a perfect shake's chance of a gold berry
 
-  // [from farming level, name, berries]
+  // [from farming level, name, berries]: every berry in the game, in tiers.
   const TIERS = [
     [1, "Basic", ["cheri", "chesto", "pecha", "rawst", "aspear", "oran", "persim"]],
     [10, "Restoring", ["leppa", "sitrus", "lum", "figy", "wiki", "mago", "aguav", "iapapa"]],
-    [20, "Contest", ["razz", "bluk", "nanab", "wepear", "pinap"]],
+    [20, "Contest", ["razz", "bluk", "nanab", "wepear", "pinap", "cornn", "magost", "rabuta", "nomel"]],
     [30, "EV-reducing", ["pomeg", "kelpsy", "qualot", "hondew", "grepa", "tamato"]],
+    [40, "Rare contest", ["spelon", "pamtre", "watmel", "durin", "belue"]],
     [45, "Type-resisting", ["occa", "passho", "wacan", "rindo", "yache", "chople", "kebia", "shuca", "coba", "payapa",
       "tanga", "charti", "kasib", "haban", "colbur", "babiri", "chilan", "roseli"]],
-    [60, "Battle-boosting", ["liechi", "ganlon", "salac", "petaya", "apicot", "lansat", "starf", "micle", "custap",
-      "jaboca", "rowap", "kee", "maranga", "enigma"]]
+    [60, "Pinch", ["liechi", "ganlon", "salac", "petaya", "apicot", "lansat", "starf", "micle", "custap"]],
+    [70, "Retaliation", ["jaboca", "rowap", "kee", "maranga"]],
+    [85, "Legendary", ["enigma"]]
   ].map(([from, name, berries]) => ({ from, name, berries: berries.map((b) => b + "-berry").filter((id) => !window.ITEMS || window.ITEMS[id]) }));
   const tiersAt = (lv) => TIERS.filter((t) => (lv || 1) >= t.from);
 

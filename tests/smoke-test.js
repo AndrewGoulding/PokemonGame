@@ -4073,8 +4073,11 @@ console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " 
 {
   const B = BerryPicking;
   const seq = (vals) => { let i = 0; return () => vals[i++ % vals.length]; };
-  // Every tier's berries are real items; a tier opens at its farming level.
-  for (const t of B.TIERS) for (const id of t.berries) assert(window.ITEMS[id] && Bag.sprite(id), id);
+  // Every tier's berries are real items, and every berry is in a tier; a tier opens at its farming level.
+  for (const t of B.TIERS) for (const id of t.berries) assert(window.ITEMS[id] && Bag.sprite(id) && Bag.description(id), id);
+  const tiered = new Set(B.TIERS.flatMap((t) => t.berries));
+  for (const id of Object.keys(window.ITEMS).filter((k) => /-berry$/.test(k))) assert(tiered.has(id), id + " in a tier");
+  assert.strictEqual(tiered.size, 67, "Gen 3's 43 berries and the 24 since");
   assert.deepStrictEqual(B.tiersAt(1).map((t) => t.name), ["Basic"]);
   assert.deepStrictEqual(B.tiersAt(30).map((t) => t.name), ["Basic", "Restoring", "Contest", "EV-reducing"]);
   assert.strictEqual(B.tiersAt(100).length, B.TIERS.length);
@@ -4113,6 +4116,7 @@ console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " 
   assert.strictEqual(B.rewards(r, 1, seq([0.5])).length, 6 + 1);
   assert.strictEqual(B.rewards(r, 100, seq([0.5])).length, 12 + 1, "up to twice as many at level 100");
   const best = B.rewards(Object.assign({}, r, { berries: 0 }), 60, seq([0.5]));
-  assert(B.TIERS[B.TIERS.length - 1].berries.includes(best[best.length - 1]), "a gold berry's is from the best tier");
+  assert(B.tiersAt(60).pop().berries.includes(best[best.length - 1]), "a gold berry's is from the best tier");
+  assert.deepStrictEqual(B.rewards(Object.assign({}, r, { berries: 0 }), 85, seq([0.5])), ["enigma-berry"], "the Enigma Berry from 85");
   assert(B.rewards(r, 1, Math.random).every((id) => B.TIERS[0].berries.includes(id)), "only Basic berries at level 1");
 }
