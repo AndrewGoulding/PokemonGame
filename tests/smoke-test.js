@@ -4526,6 +4526,36 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   c.berries = [{ kind: "gold", x: c.x + 60, y: B.H + 7, speed: 2, wait: 0 }];
   B.step(c, {});
   assert.strictEqual(c.misses, 1);
+  // Touching you at all catches it: on your body below the basket, or walked
+  // into from the side after it's passed the basket's height.
+  const body = B.create(seq([0.5]), 1);
+  body.berries = [{ kind: "ripe", x: body.x + 5, y: B.CATCH_Y + 15, speed: 1, wait: 0 }];
+  B.step(body, {});
+  assert.strictEqual(body.ripe, 1, "caught on the body");
+  const side = B.create(seq([0.5]), 1);
+  side.berries = [{ kind: "ripe", x: side.x - 24, y: B.CATCH_Y + 10, speed: 0.1, wait: 0 }];
+  for (let i = 0; i < 12 && !side.ripe; i++) B.step(side, { left: true });
+  assert.strictEqual(side.ripe, 1, "walked into from the side");
+  assert(!B.touches({ x: side.x + 30, y: B.CATCH_Y }, side.x), "not one well to the side");
+  // A perfect shake adds 2 seconds (never past 30 left).
+  const pf = B.create(seq([0.5]), 1);
+  for (let i = 0; i < 600; i++) B.step(pf, {});
+  const leftBefore = pf.left;
+  while (Math.abs(B.meterAt(pf.t + 1) - pf.sweet) > 0.01) B.step(pf, {});
+  const ticks = leftBefore - pf.left;
+  B.step(pf, { shake: true });
+  assert.strictEqual(pf.events[0].quality, "perfect");
+  assert.strictEqual(pf.left, leftBefore - ticks - 1 + B.PERFECT_BONUS, "two seconds more");
+  // Time up with berries still falling: you can still move, and it's over once they're down.
+  const end = B.create(seq([0.5]), 1);
+  end.left = 1;
+  end.berries = [{ kind: "ripe", x: 20, y: 70, speed: 1, wait: 0 }];
+  B.step(end, {});
+  assert(end.left === 0 && !end.over);
+  const ex = end.x; B.step(end, { left: true }); assert(end.x < ex, "moving after time's up");
+  B.step(end, { shake: true }); assert(!end.events.some((e) => e.type === "shake"), "no shaking after time's up");
+  for (let i = 0; i < 200 && !end.over; i++) B.step(end, { left: true });
+  assert(end.over && end.ripe === 1, "caught it, then over");
   // Left and right move you; time runs out after 30 seconds.
   const x0 = c.x; B.step(c, { left: true }); assert(c.x < x0 && c.facing === "left");
   const t = B.create(seq([0.5]), 1);

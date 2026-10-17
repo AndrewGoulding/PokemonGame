@@ -102,8 +102,13 @@
       const mx = 40, mw = 160, my = 4, mh = 7;
       g.fillStyle = "#1d150d"; g.fillRect(mx - 2, my - 2, mw + 4, mh + 4);
       g.fillStyle = game.sway > 0.45 ? "#7a4b4b" : "#d65a4a"; g.fillRect(mx, my, mw, mh);
-      g.fillStyle = "#f2c230"; g.fillRect(mx + (game.sweet - B().NEAR) * mw, my, B().NEAR * 2 * mw, mh);
-      g.fillStyle = "#6cc24a"; g.fillRect(mx + (game.sweet - B().SWEET) * mw, my, B().SWEET * 2 * mw, mh);
+      // (The zones kept inside the bar, so its black edge stays when one's at an end.)
+      const zone = (half, colour) => {
+        const x0 = Math.max(0, game.sweet - half), x1 = Math.min(1, game.sweet + half);
+        g.fillStyle = colour; g.fillRect(mx + x0 * mw, my, (x1 - x0) * mw, mh);
+      };
+      zone(B().NEAR, "#f2c230");
+      zone(B().SWEET, "#6cc24a");
       const cx = mx + B().meterAt(game.t) * mw;
       g.fillStyle = "#fff"; g.fillRect(Math.round(cx) - 1, my - 3, 3, mh + 6);
       g.fillStyle = "#1d150d"; g.fillRect(Math.round(cx), my - 2, 1, mh + 4);
@@ -156,7 +161,7 @@
           for (const ev of game.events) {
             if (ev.type === "shake") {
               se(SHAKE_SE[ev.quality]);
-              flash = { t: 40, text: { perfect: "Perfect shake!", good: "Good shake!", bad: "Unripe…", over: "Too rough!" }[ev.quality],
+              flash = { t: 40, text: { perfect: "Perfect shake!" + (ev.bonus ? " +" + Math.round(ev.bonus / 60) + "s" : ""), good: "Good shake!", bad: "Unripe…", over: "Too rough!" }[ev.quality],
                 colour: { perfect: "#a8f07a", good: "#f2e27a", bad: "#e8e8e8", over: "#ff8a7a" }[ev.quality] };
             } else if (ev.type === "catch") {
               se(ev.kind === "green" ? "se_failure" : ev.kind === "gold" ? "se_shiny" : "se_bag_cursor");

@@ -302,7 +302,7 @@ body {
 .field.entering .sprite, .field.entering .trainer-back { transition: transform 1s linear; }
 .sprite.silhouette { filter: brightness(0.2); }
 .field.no-anim .terrain, .field.no-anim .sprite, .field.no-anim .trainer-back { transition: none !important; }
-.sprite { transition: opacity 0.4s, transform 0.4s, filter 0.3s; }
+.sprite { transition: opacity 0.4s, transform 0.4s, filter 0.3s; filter: var(--tint, none); }
 
 /* The opposing trainer, 64x64, where their Pokémon will stand. */
 .foe-trainer {

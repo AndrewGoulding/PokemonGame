@@ -1380,8 +1380,10 @@ turns Stellar (Teraform Zero): Stellar keeps its types, gives 2× to them and
 Pokémon) and hits both foes; Stellar Tera Blast is 100 power and lowers its
 Attack and Sp. Atk. As pokeemerald-expansion shows it: the Tera trigger beside
 the box, the rainbow, crystal and shards (`tools/build-mega-icons.js` copies
-them), the picture tinted halfway to the type's colour and its type's Tera
-symbol where "Lv" was. Trainers with a Tera Orb Terastallize for a move of
+them), the picture tinted halfway to the type's colour (an SVG filter, so it
+works opened straight from the file too) and its type's Tera symbol in the
+box (this game's way: under the start of its name, left of "HP", so "Lv"
+stays; on theirs, after a status icon if there is one). Trainers with a Tera Orb Terastallize for a move of
 their Tera Type, with their last Pokémon, or their ace as soon as it's out:
 Leaf's Butterfree outside Pewter Gym Terastallizes into a pure Flying type,
 Brock's Onix into a Dragon type, Misty's Starmie into a
@@ -1421,7 +1423,8 @@ battle with its Pokémon (from each type's list for that many stars, at Lv.
 12, 20, 35, 50 or 65 and up to 3 more, with IVs of 10 to 31), which
 Terastallizes into the den's type as soon as it's out and has 1.5, 2, 2.5, 3
 or 4 times its HP; it battles as a trainer's Pokémon does, and can't be caught
-mid-battle. You have 10, 10, 12, 15 or 20 turns to win (as Scarlet and
+mid-battle. You send in one Pokémon, chosen from your party when you take
+the raid on (as in Scarlet and Violet), and it battles alone. You have 10, 10, 12, 15 or 20 turns to win (as Scarlet and
 Violet's raids have a time limit): told at the start, then "3 turns left!",
 "2 turns left!" and "This is the last turn!"; out of turns, "The Tera Raid
 Pokémon's power grew too strong!" and you're blown out. Lose, or run out of
@@ -1757,10 +1760,13 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   over-shaking, three green berries and points off. Berries fall from all
   over the tree, ripe ones slowly, green ones faster, gold ones fastest; move
   left and right (the D-pad, or tapping the ground) to catch them in the
-  basket on your head: a ripe one is 10 points, a gold one 30, every good
+  basket on your head (a berry that touches you or the basket at all is
+  caught): a ripe one is 10 points, a gold one 30, every good
   catch in a row adds a combo bonus (2 a catch, up to 20), a green one caught
   costs 10 and breaks the combo, and so does letting a ripe or gold one drop.
-  A game lasts 30 seconds. You take home a berry and one more for every 60
+  A game lasts 30 seconds, and every perfect shake adds 2 more (never more
+  than 30 left); when time's up you can't shake the tree, but you can still
+  move until the last berries are down. You take home a berry and one more for every 60
   points, fewer if you caught many green ones or missed many; your **farming
   level** adds up to as many again (all of them again at level 100), and each
   gold berry brings one from the best tier you can pick. Every berry in the

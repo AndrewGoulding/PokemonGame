@@ -359,10 +359,11 @@
     const w = s.text(d.name || "", nx, 3, HB_TEXT, HB_SHADOW, "small");
     const gw = d.gender === "M" || d.gender === "F" ? s.text(d.gender === "M" ? "♂" : "♀", nx + w, 3, d.gender === "M" ? HB_MALE : HB_FEMALE, HB_SHADOW, "small") : 0;
     // "Lv" and the level, right-aligned in 24 pixels (Mega Evolved, the
-    // level alone, the Mega symbol before it).
+    // level alone, the Mega symbol before it; Terastallized, "Lv" stays and
+    // its Tera Type's symbol goes left of "HP").
     const lv = String(d.level || "");
     const lvW = s.textWidth("{LV}", "small"), lvAt = st.lvX + 5 * (3 - lv.length);
-    const gimmick = d.mega || d.tera;
+    const gimmick = d.mega && !d.tera;
     s.text(gimmick ? lv : "{LV}" + lv, gimmick ? lvAt + lvW : lvAt, 3, HB_TEXT, HB_SHADOW, "small");
     // Your HP: "cur/" at (60, 21) and "max" at (80, 21), each right-aligned to 3.
     if (st.singlesPlayer) {
@@ -382,14 +383,19 @@
     g.clip();
     g.drawImage(s.canvas(), 0, 0);
     g.restore();
-    // (Terastallized, Mega Evolved or not: its Tera Type's indicator there instead.)
-    if (d.tera && hbTera.complete && TERA_TYPES.includes(d.tera)) g.drawImage(hbTera, TERA_TYPES.indexOf(d.tera) * 8, 0, 8, 16, lvAt + lvW - 10, -1, 8, 16);
-    else if (d.mega && hbMega.complete) g.drawImage(hbMega, lvAt + lvW - 10, -1);
-    // (This game's own: a gold star after a shiny wild Pokémon's name, kept inside the name's window.)
-    if (d.shiny) drawStar(g, Math.min(nx + w + (gw || 0) + 1, nx + 56 - 7), 6);
     // The status icon: yours left of the HP numbers, theirs over "HP".
     const stIcon = HB_STATUS[d.status];
     if (stIcon != null && hbStatus.complete) g.drawImage(hbStatus, 0, ((sideOf(side) === "p2" ? 5 : 0) + stIcon) * 8, 24, 8, st.status[0], st.status[1], 24, 8);
+    // (Terastallized, Mega Evolved or not: its Tera Type's indicator, under the
+    // name's start, left of "HP", so "Lv" stays; theirs with a status, after
+    // the status icon, which covers "HP".)
+    if (d.tera && hbTera.complete && TERA_TYPES.includes(d.tera)) {
+      const afterStatus = HB_STATUS[d.status] != null && !st.singlesPlayer;
+      g.drawImage(hbTera, TERA_TYPES.indexOf(d.tera) * 8, 0, 8, 16, afterStatus ? st.status[0] + 22 : st.nameX + 2, 8, 8, 16);
+    }
+    else if (d.mega && hbMega.complete) g.drawImage(hbMega, lvAt + lvW - 10, -1);
+    // (This game's own: a gold star after a shiny wild Pokémon's name, kept inside the name's window.)
+    if (d.shiny) drawStar(g, Math.min(nx + w + (gw || 0) + 1, nx + 56 - 7), 6);
     b.layer = c;
     return c;
   }

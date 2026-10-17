@@ -263,7 +263,8 @@
     const foe2 = !wild && opts.foe2 || null;
     const double = !wild && !opts.safari && !!(opts.double || opts.partner || foe2);
     if (!wild) for (const r of foe.team.concat(foe2 ? foe2.team : [])) delete r.shiny;   // trainers' Pokémon are never shiny
-    let chosen = null;
+    // (Only some of your party: a tag battle's three you choose; a Tera Raid's one, opts.chosen.)
+    let chosen = opts.chosen || null;
     if (opts.partner) {
       chosen = opts.chosen || await chooseBattleTeam(3);
       if (!chosen) return "cancelled";
@@ -10063,8 +10064,8 @@
   // ---------- Tera Raid dens (game/raid-dens.js) ----------
   //
   // A den sleeps until you use a Lure on it; then it glows with a raid of 1
-  // to 5 stars until you win it. The raid: a wild battle (no catching mid-way)
-  // against its Pokémon, Terastallized into the den's type with more HP,
+  // to 5 stars until you win it. The raid: a wild battle with one Pokémon you
+  // choose (no catching mid-way) against its Pokémon, Terastallized into the den's type with more HP,
   // won within its turns (RaidDens.TURNS) or you're blown out of the den;
   // losing, you're thrown out of the den (your Pokémon are fine) and it keeps
   // glowing. Won: money, Exp. Candies, vitamins and Berries, then the chance
@@ -10099,9 +10100,19 @@
     await say(["It's a " + raid.stars + "-star Tera Raid!", "A Tera " + den.type + "-type " + name + " (Lv. " + raid.level + ")\nis waiting in the den!"]);
     if (!canBattle()) return;
     if (!(await confirm("Will you take on the Tera Raid?"))) { await say("The den keeps glowing…"); return; }
+    // (One Pokémon only, as in Scarlet and Violet: you choose which.)
+    let pick;
+    for (;;) {
+      pick = await choosePartyFor("Send which POKéMON into the raid?");
+      show("world");
+      if (!pick) { await say("The den keeps glowing…"); return; }
+      if (Party.canFight(pick)) break;
+      await say(pick.egg ? "An Egg can't battle!" : Party.displayName(pick) + " is in no condition\nto battle!");
+    }
+    const chosen = [player.party.indexOf(pick)];
     const boss = RaidDens.boss(den, raid);
     const outcome = await battle("wild", { foe: { name: "Wild", team: [boss], tera: true }, raid: raid.stars, noCatch: true, noBlackout: true,
-      music: RAID_MUSIC[raid.stars] });
+      music: RAID_MUSIC[raid.stars], chosen });
     show("world");
     await Overworld.resume();
     if (outcome === "lost") { await say(["You were blown out of the den…", "Your Pokémon were restored."]); return; }

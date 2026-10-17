@@ -281,57 +281,49 @@
     return "assets/sprites/icons/" + (dex ? dex.id : 0) + (form ? "-" + form : "") + ".png";
   }
   // (tint [r, g, b]: the picture blended halfway to that colour, as a
-  // Terastallized Pokémon's is: BlendPalette(..., 8, its Tera Type's colour).)
-  const tinted = {};
-  function tintUrl(url, tint) {
-    const key = url + "|" + tint.join(",");
-    if (tinted[key]) return tinted[key];
-    return (tinted[key] = new Promise((resolve, reject) => {
-      const im = new Image();
-      im.onload = () => {
-        const c = document.createElement("canvas");
-        c.width = im.naturalWidth; c.height = im.naturalHeight;
-        const g = c.getContext("2d");
-        g.drawImage(im, 0, 0);
-        const d = g.getImageData(0, 0, c.width, c.height), px = d.data;
-        for (let i = 0; i < px.length; i += 4) {
-          if (!px[i + 3]) continue;
-          for (let k = 0; k < 3; k++) px[i + k] = (px[i + k] + tint[k]) >> 1;
-        }
-        g.putImageData(d, 0, 0);
-        resolve(c.toDataURL());
-      };
-      im.onerror = () => { delete tinted[key]; reject(new Error("no picture")); };
-      im.src = url;
-    }));
+  // Terastallized Pokémon's is: BlendPalette(..., 8, its Tera Type's colour).
+  // An SVG filter does it, through the CSS variable --tint (.sprite's filter
+  // in ui/battle-screen.css): unlike drawing the picture on a canvas and
+  // reading it back, it works when the game is opened straight from the file
+  // (file://, where reading a picture's pixels is forbidden).)
+  function tintFilter(tint) {
+    const id = "tint-" + tint.join("-");
+    if (!document.getElementById(id)) {
+      let svg = document.getElementById("tint-filters");
+      if (!svg) {
+        svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.id = "tint-filters";
+        svg.setAttribute("width", "0"); svg.setAttribute("height", "0");
+        svg.style.position = "absolute";
+        document.body.appendChild(svg);
+      }
+      const [r, g, b] = tint.map((c) => (c / 255 / 2).toFixed(4));
+      svg.insertAdjacentHTML("beforeend", '<filter id="' + id + '" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="' +
+        "0.5 0 0 0 " + r + " 0 0.5 0 0 " + g + " 0 0 0.5 0 " + b + ' 0 0 0 1 0"/></filter>');
+    }
+    return "url(#" + id + ")";
   }
   function setSprite(img, species, form, back, shiny, tint) {
-    const plain = spriteUrl(species, form, back, shiny);
-    const src = tint ? plain + "#tint=" + tint.join(",") : plain;
+    img.style.setProperty("--tint", tint ? tintFilter(tint) : "none");
+    const src = spriteUrl(species, form, back, shiny);
     if (img.dataset.wanted === src) return;
-    if (!tint && img.getAttribute("src") === src) return;
+    if (img.getAttribute("src") === src) return;
     img.dataset.wanted = src;
     // Keep the old picture (the last Pokémon here) from showing while the new
     // one loads. "load" can fire before the picture is decoded, and browsers keep
     // painting the old one until then, so wait for decode() before showing it.
     img.style.visibility = "hidden";
     const show = (url) => {
-      const fallback = () => {
+      img.src = url;
+      img.decode().then(() => {
+        if (img.dataset.wanted === src) img.style.visibility = "";
+      }, () => {
         if (img.dataset.wanted !== src) return;
-        if (form && url === plain) show(spriteUrl(species, "", back, shiny));   // no art for this form: use the base one
+        if (form && url === src) show(spriteUrl(species, "", back, shiny));   // no art for this form: use the base one
         else img.style.visibility = "";
-      };
-      const put = (u) => {
-        if (img.dataset.wanted !== src) return;
-        img.src = u;
-        img.decode().then(() => {
-          if (img.dataset.wanted === src) img.style.visibility = "";
-        }, fallback);
-      };
-      if (tint) tintUrl(url, tint).then(put, fallback);
-      else put(url);
+      });
     };
-    show(plain);
+    show(src);
   }
   // Forgets an <img>'s Pokémon (between battles), so nothing old can show.
   function clearSprite(img) {

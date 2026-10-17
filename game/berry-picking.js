@@ -11,7 +11,10 @@
 // along the bottom with your basket to catch them: a ripe one is worth 10, a
 // gold one 30, and every good catch in a row adds a combo bonus (2 points a
 // catch in the combo, up to 20); a green one caught costs 10 and breaks the
-// combo, and so does letting a ripe or gold one drop. 30 seconds a game.
+// combo, and so does letting a ripe or gold one drop. A berry is caught if
+// it touches you or your basket at all. 30 seconds a game, and every perfect
+// shake adds 2 more (up to the full 30 left); when time's up you can't shake
+// any more, but you can still move until the last berries are down.
 //
 // The berries you take home: one, and one more for every 60 points, fewer
 // if you caught a lot of green ones or missed a lot; your farming level adds
@@ -29,6 +32,13 @@
   const W = 240, H = 160;
   const FRAMES = 30 * 60;
   const CATCH_Y = 124, BASKET_HALF = 12, PLAYER_SPEED = 2.5, PLAYER_MIN = 16, PLAYER_MAX = W - 16;
+  // What catches a berry, round your x: the basket (CATCH_Y - 1 to + 7, as
+  // ui/berry-picking.js draws it) and you under it (your sprite's body, its
+  // head from CATCH_Y + 4 down to your feet); and a berry's radius.
+  const BASKET_BOX = { half: BASKET_HALF + 1, y0: CATCH_Y - 1, y1: CATCH_Y + 7 };
+  const BODY_BOX = { half: 6, y0: CATCH_Y + 4, y1: CATCH_Y + 25 };
+  const BERRY_R = 3;
+  const PERFECT_BONUS = 2 * 60;       // a perfect shake's extra time (frames)
   const CANOPY = { x0: 56, x1: 184, y0: 22, y1: 66 };
   const FALL = { ripe: 0.9, green: 1.4, gold: 2.2 };   // pixels a frame
   const POINTS = { ripe: 10, gold: 30, green: -10, overShake: -15 };
@@ -86,7 +96,10 @@
     g.sway = 1;
     g.swayDir = -g.swayDir;
     g.sweet = 0.15 + rng() * 0.7;
-    g.events.push({ type: "shake", quality: q });
+    // (A perfect shake: a little more time.)
+    const bonus = q === "perfect" ? Math.min(PERFECT_BONUS, FRAMES - g.left) : 0;
+    g.left += bonus;
+    g.events.push({ type: "shake", quality: q, bonus });
   }
 
   // One frame. input: { left, right, shake } (shake: A pressed this frame).
@@ -98,16 +111,16 @@
     if (g.left > 0) {
       g.left--;
       if (input.shake) shake(g);
-      if (input.left && !input.right) { g.x = Math.max(PLAYER_MIN, g.x - PLAYER_SPEED); g.facing = "left"; }
-      else if (input.right && !input.left) { g.x = Math.min(PLAYER_MAX, g.x + PLAYER_SPEED); g.facing = "right"; }
-      else g.facing = "up";
     }
+    // (You can move until the last berries are down, time up or not.)
+    if (input.left && !input.right) { g.x = Math.max(PLAYER_MIN, g.x - PLAYER_SPEED); g.facing = "left"; }
+    else if (input.right && !input.left) { g.x = Math.min(PLAYER_MAX, g.x + PLAYER_SPEED); g.facing = "right"; }
+    else g.facing = "up";
     g.sway = Math.max(0, g.sway - 1 / SWAY_FRAMES);
     for (const b of g.berries) {
       if (b.wait > 0) { b.wait--; continue; }
-      const before = b.y;
       b.y += b.speed;
-      if (before < CATCH_Y && b.y >= CATCH_Y && Math.abs(b.x - g.x) <= BASKET_HALF) {
+      if (touches(b, g.x)) {
         b.done = true;
         if (b.kind === "green") {
           g.bad++; g.combo = 0; g.score = Math.max(0, g.score + POINTS.green);
@@ -127,6 +140,13 @@
     // (Time's up once the last berries have come down.)
     if (g.left === 0 && !g.berries.length) g.over = true;
     return g;
+  }
+
+  // Does a falling berry touch you or your basket (at x)? (A berry falls at
+  // most 2.4 pixels a frame, less than either box is tall, so none slips through.)
+  function touches(b, x) {
+    const hit = (box) => Math.abs(b.x - x) <= box.half + BERRY_R && b.y + BERRY_R >= box.y0 && b.y - BERRY_R <= box.y1;
+    return hit(BASKET_BOX) || hit(BODY_BOX);
   }
 
   // What a finished game came to.
@@ -160,8 +180,8 @@
   }
 
   const M = () => window.Mining;
-  window.BerryPicking = { W, H, FRAMES, CATCH_Y, BASKET_HALF, CANOPY, FALL, POINTS, TIERS, SWEET, NEAR,
-    create, step, meterAt, shakeQuality, result, rewards, pickBerry, tiersAt,
+  window.BerryPicking = { W, H, FRAMES, CATCH_Y, BASKET_HALF, CANOPY, FALL, POINTS, TIERS, SWEET, NEAR, PERFECT_BONUS,
+    create, step, touches, meterAt, shakeQuality, result, rewards, pickBerry, tiersAt,
     get MAX_LEVEL() { return M().MAX_LEVEL; },
     level: (xp) => M().level(xp), toNext: (xp) => M().toNext(xp), progress: (xp) => M().progress(xp) };
 })();
