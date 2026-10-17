@@ -4184,3 +4184,50 @@ console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " 
   const e = P.create({ chips: 100, rng }); P.startHand(e); e.seats[e.toAct].cards = c("AS AH");
   assert(P.equity(e, e.toAct, 300) > 0.5, "aces are favourites against three");
 }
+
+// Blackjack (game/blackjack.js): totals, the deal, doubling, splitting, payouts.
+{
+  const B = Blackjack;
+  const c = (s) => s.split(" ").map((x) => ({ rank: { T: 10, J: 11, Q: 12, K: 13, A: 14 }[x[0]] || +x[0], suit: x[1] || "S" }));
+  assert.deepStrictEqual(B.value(c("AS 6H")), { total: 17, soft: true });
+  assert.deepStrictEqual(B.value(c("AS 6H 9C")), { total: 16, soft: false }, "the Ace drops to 1");
+  assert.deepStrictEqual(B.value(c("AS AH 9C")), { total: 21, soft: true });
+  assert(B.isBlackjack(c("AS KH")) && !B.isBlackjack(c("7S 7H 7C")));
+  // A table with a stacked shoe: yours, the dealer's, yours, the dealer's, then draws.
+  const table = (cards, coins) => { const g = B.create({ coins: coins || 100, rng: () => 0.5 }); g.shoe = c(cards).concat(g.shoe); return g; };
+  // (The deal goes yours, the dealer's, yours, the dealer's; then draws in order.)
+  let g = table("TS 9H 7C 8D 5S");   // you 10+7, the dealer 9+8
+  B.deal(g, 10);
+  assert.deepStrictEqual([g.coins, g.phase, B.options(g).double, B.options(g).split], [90, "player", true, false]);
+  B.act(g, "stand");
+  assert.deepStrictEqual([g.result[0].outcome, g.coins, g.dealer.length], ["push", 100, 2], "17 against 17: a push");
+  g = table("AS 9H KH 7D");          // Blackjack against 16
+  B.deal(g, 10);
+  assert.deepStrictEqual([g.phase, g.result[0].outcome, g.coins], ["done", "blackjack", 115], "3 to 2");
+  g = table("TS AH 9H KD");          // the dealer's Blackjack, checked first
+  B.deal(g, 10);
+  assert.deepStrictEqual([g.phase, g.result[0].outcome, g.coins], ["done", "lose", 90]);
+  g = table("5S TH 6H 7D TC");       // 11: double down, a ten: 21 against 17
+  B.deal(g, 10); B.act(g, "double");
+  assert.deepStrictEqual([g.hands[0].bet, g.hands[0].cards.length, g.result[0].outcome, g.coins], [20, 3, "win", 120]);
+  g = table("8S TH 8H 6D 9C TC KS"); // split 8s: 17 and 18; the dealer's 16 draws a King and busts
+  B.deal(g, 10); B.act(g, "split");
+  assert.deepStrictEqual(g.hands.map((h) => B.value(h.cards).total), [17, 18]);
+  assert(!B.options(g).split, "one split");
+  B.act(g, "stand"); B.act(g, "stand");
+  assert.deepStrictEqual([g.result.map((r) => r.outcome), g.coins], [["win", "win"], 120]);
+  g = table("TS TH 6H 7D KC");       // 16, hit, bust: the dealer doesn't draw
+  B.deal(g, 10); B.act(g, "hit");
+  assert.deepStrictEqual([g.result[0].outcome, g.dealer.length, g.coins], ["bust", 2, 90]);
+  g = table("AS TH AH 7D 2C 9S");    // split Aces: one card each, then it's the dealer's
+  B.deal(g, 10); B.act(g, "split");
+  assert.strictEqual(g.phase, "done", "split Aces take one card each");
+  assert.deepStrictEqual(g.result.map((r) => r.outcome), ["lose", "win"], "13 and 20 against 17");
+  // Hands of basic strategy lose about half a percent of what's bet.
+  const sim = B.create({ coins: 1e6, rng: (() => { let x = 5; return () => (x = (x * 16807) % 2147483647) / 2147483647; })() });
+  for (let r = 0; r < 4000; r++) {
+    B.deal(sim, 10);
+    while (sim.phase === "player") { const v = B.value(sim.hands[sim.active].cards).total, up = B.points(sim.dealer[0]); B.act(sim, v >= 17 || (v >= 13 && up <= 6) ? "stand" : "hit"); }
+  }
+  assert(Math.abs(1e6 - sim.coins) < 4000 * 10 * 0.06, "close to even");
+}

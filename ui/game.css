@@ -383,6 +383,19 @@
   color: #1d150d; font: inherit; font-weight: 700; cursor: pointer; }
 .pk-button.cursor { background: #ffd34d; outline: 2px solid #fff; }
 
+/* The blackjack table (ui/blackjack.js), on the poker table's felt and cards. */
+.bj-dealer { display: flex; flex-direction: column; align-items: center; gap: 3px; padding-top: 6px; }
+.bj-dealer .pk-card, .bj-hand .pk-card { width: 32px; height: 44px; }
+.bj-total { min-height: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bj-hands { display: flex; justify-content: center; gap: 10px; }
+.bj-hand { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 8px; border: 2px solid rgba(0, 0, 0, 0.35);
+  border-radius: 6px; background: rgba(0, 0, 0, 0.18); min-width: 96px; }
+.bj-hand.active { border-color: #ffe066; }
+.bj-hand.win, .bj-hand.blackjack { border-color: #8fe36a; background: rgba(143, 227, 106, 0.18); }
+.bj-hand.lose, .bj-hand.bust { opacity: 0.7; }
+.bj-bet { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bj-bottom { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; }
+
 /* The berry tree (ui/berry-picking.js): its canvas as big as the space under the bars allows. */
 .berry-pick { background: #2e4a26; }
 .berry-board { display: block; align-self: center; flex: 1 1 auto; min-height: 0; max-width: 100%; aspect-ratio: 240 / 160;

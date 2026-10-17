@@ -2151,7 +2151,7 @@
     "EventScript_CutTree", "EventScript_RockSmash", "EventScript_StrengthBoulder", "Route5_PokemonDayCare_EventScript_DaycareMan", "UndergroundPath_NorthEntrance_EventScript_Saige",
     "Route5_SouthEntrance_EventScript_GuardTriggerLeft", "Route5_SouthEntrance_EventScript_GuardTriggerMid",
     "Route5_SouthEntrance_EventScript_GuardTriggerRight",
-    "Game_EventScript_Leaf", "Game_EventScript_TradebackGuy", "Game_EventScript_PokerDealer",
+    "Game_EventScript_Leaf", "Game_EventScript_TradebackGuy", "Game_EventScript_PokerDealer", "Game_EventScript_BlackjackDealer",
     "Route11_EastEntrance_2F_EventScript_Aide", "Route11_EastEntrance_2F_EventScript_Turner",
     "SSAnne_2F_Corridor_EventScript_RivalTriggerLeft", "SSAnne_2F_Corridor_EventScript_RivalTriggerMid",
     "SSAnne_2F_Corridor_EventScript_RivalTriggerRight", "SSAnne_CaptainsOffice_EventScript_Captain",
@@ -3968,6 +3968,7 @@
       // so a Pokémon that evolves by trading does (Kadabra, Machoke, Graveler,
       // Haunter, and those holding their item: Onix with a Metal Coat, ...).
       case "Game_EventScript_PokerDealer": await pokerTable(); return;
+      case "Game_EventScript_BlackjackDealer": await blackjackTable(); return;
       case "Game_EventScript_TradebackGuy": {
         await say(["Hi! I'm the Tradeback Guy!", "Some Pokémon only evolve when\nthey're traded. Nobody to trade\nwith? Leave it to me!",
           "I'll trade you my Rattata, and then\ntrade your Pokémon right back!"]);
@@ -4744,11 +4745,12 @@
         movement: "face_down", text: null }, window.WORLD_SPRITES.tradeback));
     }
     if (map === "PokemonTower_7F" && megaTowerDue()) out.push(...megaTowerPeople());
-    // The poker dealer, by the counter at the back of the Game Corner (this game's own).
+    // The poker and blackjack dealers, by the counter at the back of the Game Corner (this game's own).
     if (map === "CeladonCity_GameCorner") {
       const clerk = window.WORLD_MAPS.CeladonCity_GameCorner.people.find((p) => /CoinsClerk$/.test(p.script));
-      out.push({ id: 902, localId: "LOCALID_POKER_DEALER", script: "Game_EventScript_PokerDealer", x: 13, y: 4, movement: "face_down",
-        text: null, sprite: clerk.sprite, width: clerk.width, height: clerk.height, frames: clerk.frames });
+      const looks = { text: null, sprite: clerk.sprite, width: clerk.width, height: clerk.height, frames: clerk.frames, movement: "face_down" };
+      out.push(Object.assign({ id: 902, localId: "LOCALID_POKER_DEALER", script: "Game_EventScript_PokerDealer", x: 13, y: 4 }, looks));
+      out.push(Object.assign({ id: 903, localId: "LOCALID_BLACKJACK_DEALER", script: "Game_EventScript_BlackjackDealer", x: 11, y: 4 }, looks));
     }
     if (leafWaiting(map)) {
       const at = LEAF_SPOTS[map];
@@ -6198,6 +6200,29 @@
     const diff = chips - buyIn;
     await say(diff > 0 ? "You cashed out " + chips + " Coins: " + diff + " up!\nCome back anytime." : diff < 0 ? (chips ? "You cashed out " + chips + " Coins.\nBetter luck next time!" : "Better luck next time!")
       : "You broke even! Come back anytime.");
+    await persist();
+  }
+
+  // Blackjack (game/blackjack.js, ui/blackjack.js; this game's own): bets
+  // straight from your Coin Case.
+  async function blackjackTable() {
+    if (!player.flags.gotCoinCase) { await say(T("CeladonCity_GameCorner_Text_CoinCaseIsRequired")); return; }
+    await say(["Welcome to the blackjack table!", "Bets are " + Blackjack.BETS[0] + " to " + Blackjack.BETS[Blackjack.BETS.length - 1] +
+      " Coins. Blackjack pays\n3 to 2, and I stand on all 17s."]);
+    if (coins() < Blackjack.BETS[0]) { await say("You'll need at least " + Blackjack.BETS[0] + " Coins to play.\nCome back with more!"); return; }
+    if (!(await confirm("Care to play a few hands?"))) { await say("Maybe next time, then."); return; }
+    Screen.say("");
+    show("scene");
+    clearMenu();
+    const before = coins();
+    // (Your Coin Case keeps up with every bet and payout, up to 9,999, and the game saves after each hand.)
+    const keep = (n) => { player.flags.coins = 0; addCoins(n); persist(); return coins(); };
+    const after = await BlackjackScreen.run(scene, Blackjack.create({ coins: before }), keep);
+    show("world");
+    await Overworld.resume();
+    keep(after);
+    const diff = after - before;
+    await say(diff > 0 ? "You're " + diff + " Coins up!\nCome back anytime." : diff < 0 ? "Better luck next time!" : "You broke even! Come back anytime.");
     await persist();
   }
 

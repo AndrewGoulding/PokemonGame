@@ -346,7 +346,16 @@ out a few hundred times and weigh it against the price of a call, in their
 own style (the Gentleman tight, the Gamer loose and given to bluffing, the
 Scientist in between). At a showdown everyone's cards turn over and the best
 five of seven win, pot by pot. Between hands, Next hand or Leave the table
-(B); your chips go back in the Coin Case as Coins. Spend Coins in the Prize Room on
+(B); your chips go back in the Coin Case as Coins. Or play blackjack (this
+game's own: `game/blackjack.js`, `ui/blackjack.js`) with the dealer beside
+the poker table: bets of 10, 20, 50, 100 or 200 Coins straight from your Coin
+Case (it keeps up with every hand, and the game saves after each), a six-deck
+shoe shuffled again once three quarters of it is dealt, the dealer standing
+on all 17s and checking for Blackjack with an Ace or ten-card up, Blackjack
+paying 3 to 2, Double Down on your first two cards and one Split of a pair
+(split Aces take one card each). Hit, Stand, Double Down and Split are
+picked with left / right and A, or tapped; the dealer's hole card turns over
+and its draws come one at a time. Spend Coins in the Prize Room on
 Abra, Clefairy, Dratini, Scyther or Porygon, TMs (Ice Beam, Thunderbolt, Shadow
 Ball, Flamethrower, and Iron Tail, TM104 here, since this game's TM23 is Smack
 Down) or held items, each counter's prizes in FireRed's list with your Coins
