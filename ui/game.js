@@ -4350,9 +4350,10 @@
   }
 
   // A FireRed trainer's party as party records.
+  // (Their moves: the last four each learns by its level, not FireRed's sets.)
   function trainerTeam(id) {
     const data = window.WORLD_TRAINERS[id];
-    return data.party.map((m) => Object.assign(Party.create(m.species, m.level, { ivs: Math.floor(m.iv * 31 / 255), moves: m.moves }),
+    return data.party.map((m) => Object.assign(Party.create(m.species, m.level, { ivs: Math.floor(m.iv * 31 / 255) }),
       m.item ? { item: m.item } : {}));
   }
 
@@ -5933,14 +5934,13 @@
   }
 
   // Misty's team: Psyduck (level 18, in Staryu's place), which she leads
-  // with, Togepi (level 19, with Dazzling Gleam from a TM, its only real
-  // attack besides Metronome), then FireRed's Starmie.
+  // with, Togepi (level 19), then FireRed's Starmie.
   function mistyTeam() {
     const [, starmie] = trainerTeam("TRAINER_LEADER_MISTY");
     // (Her ace, Starmie, Terastallizes into a pure Psychic type as soon as it's out.)
     Object.assign(starmie, { teraType: "Psychic", teraAce: true });
     return [Party.create("Psyduck", 18, { ivs: 0 }),
-      Party.create("Togepi", 19, { ivs: 0, moves: ["Dazzling Gleam", "Metronome", "Sweet Kiss", "Yawn"] }), starmie];
+      Party.create("Togepi", 19, { ivs: 0 }), starmie];
   }
 
   // Brock: battle (talking to him), then the Boulder Badge and TM39.
@@ -7027,8 +7027,8 @@
   function kogaTeam() {
     const fr = trainerTeam("TRAINER_LEADER_KOGA");
     const weezing = fr.find((r) => r.species === "Weezing"), muk = fr.find((r) => r.species === "Muk");
-    return [weezing, muk, Party.create("Arbok", 40, { ivs: 0, moves: ["Glare", "Poison Fang", "Crunch", "Sludge Bomb"] }),
-      Object.assign(Party.create("Beedrill", 44, { ivs: 0, moves: ["Poison Jab", "X-Scissor", "Drill Run", "Swords Dance"] }),
+    return [weezing, muk, Party.create("Arbok", 40, { ivs: 0 }),
+      Object.assign(Party.create("Beedrill", 44, { ivs: 0 }),
         { item: "beedrillite", teraType: "Fire", teraAce: true })];
   }
   async function koga(person) {
@@ -7353,13 +7353,10 @@
   // Gyarados (59, in Rhydon's place, holding its Gyaradosite: it Mega Evolves),
   // Exeggutor (61), Umbreon (63: his Eevee, as FireRed's starter, holding its
   // Sitrus Berry) and Alakazam (57). With FLAG_SYS_CAN_LINK_WITH_RS, FireRed's
-  // rematch levels (72-75). FireRed's moves for the Pokémon FireRed gives him.
+  // rematch levels (72-75), each with the last four moves it learns by its level.
   const CHAMPION_TEAM = [["Pidgeot", 59, 72], ["Arcanine", 59, 73], ["Gyarados", 59, 72, "gyaradosite"], ["Exeggutor", 61, 73], ["Umbreon", 63, 75, "sitrus-berry"], ["Alakazam", 57, 73]];
   function championTeam(rematch) {
-    const fr = window.WORLD_TRAINERS[rematch ? "TRAINER_CHAMPION_REMATCH_SQUIRTLE" : "TRAINER_CHAMPION_FIRST_SQUIRTLE"];
-    const frg = window.WORLD_TRAINERS[rematch ? "TRAINER_CHAMPION_REMATCH_BULBASAUR" : "TRAINER_CHAMPION_FIRST_BULBASAUR"];
-    const movesOf = (sp) => { const m = fr.party.concat(frg.party).find((x) => x.species === sp); return m && m.moves; };
-    return CHAMPION_TEAM.map(([sp, lv, lv2, item]) => Object.assign(Party.create(sp, rematch ? lv2 : lv, { ivs: 31, moves: movesOf(sp) }), item ? { item } : {}));
+    return CHAMPION_TEAM.map(([sp, lv, lv2, item]) => Object.assign(Party.create(sp, rematch ? lv2 : lv, { ivs: 31 }), item ? { item } : {}));
   }
   async function championsRoom() {
     const f = player.flags, R = "LOCALID_CHAMPIONS_ROOM_RIVAL", O = "LOCALID_CHAMPIONS_ROOM_PROF_OAK";
@@ -9470,10 +9467,8 @@
   // Houndoom with its Houndoominite: it Mega Evolves and Terastallizes into a Dark type.
   function blaineTeam() {
     const [, , rapidash, arcanine] = trainerTeam("TRAINER_LEADER_BLAINE");
-    return [Party.create("Magmortar", 43, { ivs: 0, moves: ["Flamethrower", "Thunderbolt", "Focus Blast", "Confuse Ray"] }),
-      Party.create("Magcargo", 42, { ivs: 0, moves: ["Lava Plume", "Earth Power", "Ancient Power", "Amnesia"] }),
-      rapidash, arcanine, Object.assign(Party.create("Houndoom", 48,
-      { ivs: 0, moves: ["Flamethrower", "Dark Pulse", "Sludge Bomb", "Nasty Plot"] }), { item: "houndoominite", teraType: "Dark", teraAce: true })];
+    return [Party.create("Magmortar", 43, { ivs: 0 }), Party.create("Magcargo", 42, { ivs: 0 }),
+      rapidash, arcanine, Object.assign(Party.create("Houndoom", 48, { ivs: 0 }), { item: "houndoominite", teraType: "Dark", teraAce: true })];
   }
   async function blaine(person) {
     const f = player.flags, ID = "TRAINER_LEADER_BLAINE";
