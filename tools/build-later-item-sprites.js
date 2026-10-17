@@ -1,5 +1,5 @@
 // The item pictures Gens 7, 8 and 9's additions need (Z-Crystals, Memories, the
-// Z-Ring, Dynamax Band and Candy, the Ability Patch, Exp. Candies, Zygarde's Cube and Zygardite, Kubfu's
+// Z-Ring, Dynamax Band and Candy, the Ability Patch, Exp. Candies, Tera Shards, Zygarde's Cube and Zygardite, Kubfu's
 // scrolls, Dialga's and Palkia's Legends: Arceus items, Gen 9's evolution
 // items, Legends: Z-A's Mega Stones, ...), into
 // assets/sprites/items/<folder>/<item>.png:
@@ -52,7 +52,10 @@ const EXPANSION = [
   // Sword and Shield's Exp. Candies (their icons carry their own palettes).
   ["other-item/exp-candy-xs", "exp_candy_xs"], ["other-item/exp-candy-s", "exp_candy_s"], ["other-item/exp-candy-m", "exp_candy_m"],
   ["other-item/exp-candy-l", "exp_candy_l"], ["other-item/exp-candy-xl", "exp_candy_xl"]
-];
+].concat(
+  // Tera Shards: one picture, each type's palette.
+  ["normal", "fire", "water", "electric", "grass", "ice", "fighting", "poison", "ground", "flying", "psychic", "bug", "rock", "ghost",
+    "dragon", "dark", "steel", "fairy"].map((t) => ["other-item/" + t + "-tera-shard", "tera_shard", t + "_tera_shard"]));
 // And Legends: Z-A's Mega Stones (data/items-gen9.js): "absolite-z" is the expansion's absolite_z.
 {
   global.window = global;
@@ -80,9 +83,9 @@ function get(url) {
     fs.mkdirSync(path.dirname(path.join(out, file)), { recursive: true });
     fs.writeFileSync(path.join(out, file + ".png"), buf);
   }
-  for (const [file, icon] of EXPANSION) {
+  for (const [file, icon, palette] of EXPANSION) {
     const img = readPng(X("graphics/items/icons", icon + ".png"));
-    const pal = X("graphics/items/icon_palettes", icon + ".pal");
+    const pal = X("graphics/items/icon_palettes", (palette || icon) + ".pal");
     const colours = fs.existsSync(pal) ? readPal(pal) : img.palette;
     const rgba = new Uint8ClampedArray(32 * 32 * 4);
     const ox = (32 - img.width) >> 1, oy = (32 - img.height) >> 1;

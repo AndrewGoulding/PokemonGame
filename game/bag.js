@@ -138,7 +138,7 @@
 
   const isKeyItem = (item) => (window.ITEMS[item] || {}).category === "key-items";
 
-  const POWER_UP = ["vitamins", "nature-mints", "exp-candy", "dynamax-candy"];
+  const POWER_UP = ["vitamins", "nature-mints", "exp-candy", "dynamax-candy", "tera-shards"];
   const HELD = ["held-items", "type-enhancement", "choice", "plates", "jewels", "bad-held-items", "effort-training", "species-specific", "training",
     "z-crystals", "memories"];
   const isPowerUp = (item) => POWER_UP.includes((window.ITEMS[item] || {}).category) || /bottle-cap$/.test(item) || item === "ability-capsule" || item === "ability-patch";
@@ -225,10 +225,16 @@
     return window.Party.STAT_KEYS.filter((k) => (record.ivs[k] | 0) < 31 && !(record.hyper || []).includes(k));
   }
 
+  // Tera Shards (Scarlet and Violet's): TERA_SHARDS_NEEDED of a type change a
+  // Pokémon's Tera Type to it (not Ogerpon's or Terapagos's). The type, or null.
+  const TERA_SHARDS_NEEDED = 50;
+  const teraShardType = (item) => { const m = /^([a-z]+)-tera-shard$/.exec(item); return m ? m[1][0].toUpperCase() + m[1].slice(1) : null; };
+
   // Would `item` do anything to `record` outside battle? opts: { move, party, stat }
   function canUseOn(record, item, opts) {
     opts = opts || {};
     if (record.egg) return false;
+    if (teraShardType(item)) return !/^(Ogerpon|Terapagos)/.test(record.species) && window.Party.teraType(record) !== teraShardType(item);
     if (item === "ability-capsule") return !!capsuleAbility(record);
     if (item === "ability-patch") return !!patchAbility(record);
     if (item === "zygarde-cube") return !!ZYGARDE[record.species];
@@ -327,6 +333,6 @@
   window.Bag = {
     POCKETS, get BATTLE_POCKETS() { return BATTLE_POCKETS(); }, PRICES, name, description, sprite, price, sellPrice, pocket, isBall, isStone, isKeyItem,
     isMachine, machineMove, machines, mintNature, capsuleAbility, patchAbility, trainableStats, HYPER_TRAINING_LEVEL, zygardeCube,
-    martStock, canUseOn, useOn, levelUp, expCandy, give, take
+    martStock, canUseOn, useOn, levelUp, expCandy, give, take, teraShardType, TERA_SHARDS_NEEDED
   };
 })();

@@ -82,6 +82,10 @@
   }
 
   const confirm = (text) => Screen.yesNo(text);
+  // Wild Tera Pokémon (in battle()): how often, and the Tera Shards one knocked out gives.
+  const WILD_TERA_CHANCE = 0.1, WILD_TERA_SHARDS = 3;
+  const TYPES18 = ["Normal", "Fire", "Water", "Electric", "Grass", "Ice", "Fighting", "Poison", "Ground", "Flying", "Psychic", "Bug",
+    "Rock", "Ghost", "Dragon", "Dark", "Steel", "Fairy"];
   // A wild Pokémon met in the grass, on the water, on a rod, under a rock or in
   // the Safari Zone, holding what it rolls (Encounters.withHeldItem; your lead
   // Pokémon's Compound Eyes helps). (Not the legendaries waiting on the map.)
@@ -263,6 +267,13 @@
     const foe2 = !wild && opts.foe2 || null;
     const double = !wild && !opts.safari && !!(opts.double || opts.partner || foe2);
     if (!wild) for (const r of foe.team.concat(foe2 ? foe2.team : [])) delete r.shiny;   // trainers' Pokémon are never shiny
+    // (This game's own: one wild Pokémon in ten is a Tera Pokémon, of a random
+    // Tera Type, Terastallizing as soon as it's out; beat it for Tera Shards,
+    // or catch it and it keeps its Tera Type. Not in the Safari Zone, a raid
+    // or Pokémon Tower's unidentified Ghost.)
+    const wildTera = wild && !opts.safari && !opts.raid && !opts.ghost && Math.random() < WILD_TERA_CHANCE
+      ? TYPES18[Math.floor(Math.random() * TYPES18.length)] : null;
+    if (wildTera) Object.assign(foe.team[0], { teraType: wildTera, teraAce: true });
     // (Only some of your party: a tag battle's three you choose; a Tera Raid's one, opts.chosen.)
     let chosen = opts.chosen || null;
     if (opts.partner) {
@@ -292,7 +303,7 @@
       p1: Object.assign({ name: player.name, team: own.map((r) => Party.toBattleSet(r, here)), dynamax: Player.itemCount(player, "dynamax-band") > 0, tera: teraOrb },
         opts.partner ? { partner: { name: opts.partner.name, team: opts.partner.team.map((r) => Party.toBattleSet(r)) } } : {}),
       // (Pokémon Tower's unidentified Ghost goes by "Ghost".)
-      p2: Object.assign({ name: foe.name, team: foeSets(foe), tera: !!foe.tera }, foe2 ? { partner: { name: foe2.name, team: foeSets(foe2) } } : {}),
+      p2: Object.assign({ name: foe.name, team: foeSets(foe), tera: !!foe.tera || !!wildTera }, foe2 ? { partner: { name: foe2.name, team: foeSets(foe2) } } : {}),
       format: double ? "doubles" : undefined,
       partnerTrainer: opts.partner && opts.partner.pic,
       foeTrainer2: foe2 && foe2.pic, defeatText2: foe2 && foe2.defeatText && foe2.defeatText.map((p) => fill(p)),
@@ -313,8 +324,8 @@
       // (The Bag screen: its pockets, and the bag's colours.)
       bagPockets, bagFemale: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
       catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s) },
-      // (A Tera Raid's Pokémon battles as a trainer's does, and Terastallizes.)
-      opponent: wild && !opts.raid ? randomMove : (b) => OpponentAI.choose(b, "p2"),
+      // (A Tera Raid's Pokémon, or a wild Tera Pokémon, battles as a trainer's does, and Terastallizes.)
+      opponent: wild && !opts.raid && !wildTera ? randomMove : (b) => OpponentAI.choose(b, "p2"),
       // A new move with four known: the Summary screen picks the one to forget
       // (the record caught up with the battle first: level, moves, PP).
       forgetMove: (i, mon, move) => chooseMoveToForget(Party.syncFromBattle(own[i], mon), move),
@@ -366,8 +377,18 @@
       await message("The wild " + dropped.name + " dropped\n" + article(name) + "!");
       await message(player.name + " put the " + name + "\nin the Bag.");
     }
+    // (A wild Tera Pokémon knocked out: its Tera Type's Tera Shards.)
+    if (wildTera && dropped && dropped.fainted) {
+      const shard = wildTera.toLowerCase() + "-tera-shard", n = WILD_TERA_SHARDS;
+      Player.addItem(player, shard, n);
+      await message(player.name + " got " + n + " " + Bag.name(shard) + "s!");
+    }
     if (opts.safari && player.flags.safari) player.flags.safari.balls = b.safari.balls;
-    if (result.outcome === "caught") await addCaught(Party.caught(foe.team[0], b.caught, ballUsed(b)));
+    if (result.outcome === "caught") {
+      const record = Party.caught(foe.team[0], b.caught, ballUsed(b));
+      delete record.teraAce;   // (a Tera Pokémon keeps its Tera Type)
+      await addCaught(record);
+    }
     if (opts.safari) {
       // (No one fought: no blacking out, no evolving.)
     } else if ((result.outcome === "lost" || !canBattle()) && opts.noBlackout) {
@@ -689,6 +710,18 @@
       if (evo) await evolve(record, evo, true);
       return;
     }
+    // Tera Shards: fifty of a type change its Tera Type to that type.
+    const shardType = Bag.teraShardType(item);
+    if (shardType) {
+      if (!Bag.canUseOn(record, item)) { await message("It won't have any effect."); return; }
+      const need = Bag.TERA_SHARDS_NEEDED, have = Player.itemCount(player, item);
+      if (have < need) { await message("It takes " + need + " " + Bag.name(item) + "s to change\na Pokémon's Tera Type. (You have " + have + ".)"); return; }
+      if (!(await confirm(name + "'s Tera Type: " + Party.teraType(record) + "\nChange it to " + shardType + "? (" + need + " Shards)"))) return;
+      Player.removeItem(player, item, need);
+      record.teraType = shardType;
+      await message(name + "'s Tera Type changed to " + shardType + "!");
+      return;
+    }
     if ((ItemUse.effect(item) || {}).expCandy) {
       if (!Bag.canUseOn(record, item)) { await message("It won't have any effect."); return; }
       Player.removeItem(player, item);
@@ -770,7 +803,7 @@
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
     item === "ability-capsule" || item === "ability-patch" || item === "bottle-cap" || item === "gold-bottle-cap" || item === "zygarde-cube" ||
-    item === "dynamax-candy" || item === "max-mushrooms" ||
+    item === "dynamax-candy" || item === "max-mushrooms" || !!Bag.teraShardType(item) ||
     item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS || item in LURE_STEPS || item === "escape-rope";
   // TMs and HMs work like key items: they can't be held, tossed or sold.
   const holdable = (item) => !Bag.isBall(item) && !Bag.isMachine(item) && !Bag.isKeyItem(item);
@@ -10125,7 +10158,7 @@
     if (outcome !== "won") return;
     RaidDens.finish(f, den.id);
     Overworld.refreshPeople();
-    const r = RaidDens.rewards(raid.stars);
+    const r = RaidDens.rewards(raid.stars, Math.random, den.type);
     Player.addMoney(player, r.money);
     for (const [id, n] of r.items) Player.addItem(player, id, n);
     await sayWithJingle("mus_obtain_item", "{PLAYER} won the Tera Raid and\ngot " + money(r.money) + "!");

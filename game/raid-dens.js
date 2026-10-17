@@ -5,8 +5,8 @@
 // have, and the stronger the Lure, the likelier the higher ones), until you
 // win it. The Tera Raid Pokémon is Terastallized into the den's type, with
 // more HP the more stars, and must be beaten within a number of turns;
-// beaten, it gives money, Exp. Candies, vitamins and Berries (more and
-// better the more stars), and you may catch it.
+// beaten, it gives money, Exp. Candies, vitamins, Berries and Tera Shards of
+// the den's type (more and better the more stars), and you may catch it.
 // Depends on: window.WORLD_MAPS, window.DEX, window.ITEMS, window.Party (when used).
 //
 //   RaidDens.DENS                        // [{ id, map, x, y, type }]
@@ -17,7 +17,7 @@
 //   RaidDens.start(flags, den, lure, badges, rng)  // use a Lure on a den: its raid, now glowing
 //   RaidDens.boss(den, raid, rng)        // the Tera Raid Pokémon, a party record (Terastallizes as soon as it's out)
 //   RaidDens.HP / LEVELS / IVS / TURNS   // by stars (index 1-5)
-//   RaidDens.rewards(stars, rng)         // { money, items: [[id, count], ...] }
+//   RaidDens.rewards(stars, rng, type)   // { money, items: [[id, count], ...] } (with the den type's Tera Shards)
 //   RaidDens.finish(flags, id)           // won: the den sleeps again
 //
 // player.flags.raidDens: { [den id]: { stars, species, level } } while it glows.
@@ -78,45 +78,58 @@
     return maxStars(badges);
   }
 
-  // The Pokémon each den's raids can bring, by type and stars.
+  // The Pokémon each den's raids can bring, by type and stars: Kanto's own
+  // (Bulbasaur to Mew, no legendaries or starters), their regional forms
+  // (Alolan Sandshrew, Hisuian Growlithe, ...), and the evolutions later
+  // generations gave them (Scizor, Magnezone, Crobat, Perrserker, ...).
   const POOLS = {
-    Normal: [["Rattata", "Meowth", "Eevee", "Lechonk", "Sentret"], ["Raticate", "Furret", "Lickitung", "Teddiursa", "Aipom"],
-      ["Persian", "Ursaring", "Zangoose", "Oinkologne", "Kangaskhan"], ["Snorlax", "Tauros", "Porygon2", "Lopunny", "Ursaring"],
-      ["Snorlax", "Blissey", "Slaking", "Porygon-Z", "Ursaluna"]],
-    Bug: [["Caterpie", "Weedle", "Venonat", "Tarountula", "Nymble"], ["Metapod", "Kakuna", "Paras", "Spinarak", "Pineco"],
-      ["Butterfree", "Beedrill", "Parasect", "Venomoth", "Lokix"], ["Scyther", "Pinsir", "Heracross", "Scizor", "Kleavor"],
-      ["Scizor", "Heracross", "Volcarona", "Golisopod", "Pinsir"]],
-    Ice: [["Snorunt", "Swinub", "Cetoddle", "Spheal", "Snom"], ["Sneasel", "Delibird", "Smoochum", "Bergmite", "Snover"],
-      ["Glalie", "Froslass", "Jynx", "Dewgong", "Piloswine"], ["Lapras", "Cloyster", "Weavile", "Avalugg", "Cetitan"],
-      ["Mamoswine", "Baxcalibur", "Weavile", "Glaceon", "Lapras"]],
-    Electric: [["Pikachu", "Voltorb", "Magnemite", "Pawmi", "Elekid"], ["Magneton", "Mareep", "Joltik", "Pawmo", "Shinx"],
-      ["Electrode", "Raichu", "Electabuzz", "Jolteon", "Ampharos"], ["Magnezone", "Electivire", "Ampharos", "Pawmot", "Luxray"],
-      ["Electivire", "Magnezone", "Toxtricity", "Kilowattrel", "Jolteon"]],
-    Fighting: [["Machop", "Mankey", "Tyrogue", "Riolu", "Makuhita"], ["Primeape", "Croagunk", "Timburr", "Meditite", "Machoke"],
-      ["Hitmonlee", "Hitmonchan", "Hitmontop", "Machoke", "Gurdurr"], ["Machamp", "Lucario", "Conkeldurr", "Annihilape", "Hariyama"],
-      ["Machamp", "Conkeldurr", "Lucario", "Annihilape", "Kommo-o"]],
-    Rock: [["Geodude", "Onix", "Nacli", "Larvitar", "Rolycoly"], ["Graveler", "Omanyte", "Kabuto", "Rockruff", "Naclstack"],
-      ["Golem", "Omastar", "Kabutops", "Lycanroc", "Sudowoodo"], ["Aerodactyl", "Rhyperior", "Garganacl", "Golem", "Pupitar"],
-      ["Tyranitar", "Rhyperior", "Garganacl", "Aerodactyl", "Coalossal"]],
-    Ground: [["Diglett", "Sandshrew", "Cubone", "Phanpy", "Wooper"], ["Dugtrio", "Marowak", "Sandslash", "Rhyhorn", "Trapinch"],
-      ["Rhydon", "Donphan", "Flygon", "Hippopotas", "Gligar"], ["Hippowdon", "Excadrill", "Gliscor", "Krookodile", "Donphan"],
-      ["Garchomp", "Excadrill", "Krookodile", "Gliscor", "Hippowdon"]],
-    Water: [["Magikarp", "Psyduck", "Poliwag", "Horsea", "Wiglett"], ["Staryu", "Krabby", "Seel", "Poliwhirl", "Shellder"],
-      ["Golduck", "Kingler", "Starmie", "Seaking", "Vaporeon"], ["Gyarados", "Lapras", "Vaporeon", "Kingdra", "Dondozo"],
-      ["Gyarados", "Kingdra", "Milotic", "Dondozo", "Vaporeon"]],
-    Flying: [["Pidgey", "Spearow", "Hoothoot", "Starly", "Wattrel"], ["Pidgeotto", "Fearow", "Doduo", "Staravia", "Swablu"],
-      ["Farfetch'd", "Dodrio", "Noctowl", "Fearow", "Altaria"], ["Pidgeot", "Staraptor", "Altaria", "Skarmory", "Corviknight"],
-      ["Staraptor", "Corviknight", "Dragonite", "Salamence", "Talonflame"]],
-    Fire: [["Vulpix", "Growlithe", "Ponyta", "Charcadet", "Litleo"], ["Magby", "Slugma", "Houndour", "Charcadet", "Ponyta"],
-      ["Ninetales", "Rapidash", "Magmar", "Houndoom", "Torkoal"], ["Arcanine", "Magmortar", "Flareon", "Armarouge", "Houndoom"],
-      ["Arcanine", "Volcarona", "Magmortar", "Ceruledge", "Chandelure"]],
-    Ghost: [["Gastly", "Misdreavus", "Shuppet", "Duskull", "Greavard"], ["Haunter", "Drifloon", "Phantump", "Litwick", "Sinistea"],
-      ["Haunter", "Banette", "Dusclops", "Drifblim", "Houndstone"], ["Gengar", "Mismagius", "Dusknoir", "Polteageist", "Trevenant"],
-      ["Gengar", "Dragapult", "Chandelure", "Mimikyu", "Ceruledge"]],
-    Steel: [["Magnemite", "Aron", "Varoom", "Tinkatink", "Klink"], ["Magneton", "Lairon", "Pawniard", "Skarmory", "Tinkatuff"],
-      ["Steelix", "Skarmory", "Bronzong", "Klang", "Bisharp"], ["Aggron", "Scizor", "Tinkaton", "Revavroom", "Bronzong"],
-      ["Metagross", "Kingambit", "Aggron", "Steelix", "Corviknight"]]
+    Normal: [["Rattata", "Meowth", "Eevee", "Pidgey", "Jigglypuff"], ["Raticate", "Lickitung", "Doduo", "Farfetch'd", "Chansey"],
+      ["Persian", "Kangaskhan", "Tauros", "Wigglytuff", "Porygon"], ["Snorlax", "Porygon2", "Lickilicky", "Kangaskhan", "Dodrio"],
+      ["Snorlax", "Blissey", "Porygon-Z", "Tauros", "Lickilicky"]],
+    Bug: [["Caterpie", "Weedle", "Paras", "Venonat"], ["Metapod", "Kakuna", "Paras", "Venonat"],
+      ["Butterfree", "Beedrill", "Parasect", "Venomoth"], ["Scyther", "Pinsir", "Scizor", "Kleavor"],
+      ["Scizor", "Kleavor", "Pinsir"]],
+    Ice: [["Seel", "Shellder", "Vulpix-Alola", "Sandshrew-Alola"], ["Dewgong", "Jynx", "Vulpix-Alola", "Sandshrew-Alola"],
+      ["Dewgong", "Cloyster", "Jynx", "Sandslash-Alola", "Ninetales-Alola"], ["Lapras", "Cloyster", "Ninetales-Alola", "Glaceon", "Sandslash-Alola"],
+      ["Lapras", "Cloyster", "Glaceon", "Ninetales-Alola"]],
+    Electric: [["Pikachu", "Voltorb", "Magnemite", "Voltorb-Hisui"], ["Magneton", "Electabuzz", "Pikachu", "Voltorb"],
+      ["Raichu", "Electrode", "Electabuzz", "Jolteon", "Raichu-Alola"], ["Magnezone", "Electivire", "Jolteon", "Electrode-Hisui", "Raichu"],
+      ["Magnezone", "Electivire", "Raichu-Alola", "Jolteon"]],
+    Fighting: [["Machop", "Mankey"], ["Machoke", "Primeape", "Farfetch'd-Galar"],
+      ["Hitmonlee", "Hitmonchan", "Primeape", "Machoke", "Poliwrath"], ["Machamp", "Poliwrath", "Hitmonlee", "Hitmonchan", "Annihilape"],
+      ["Machamp", "Annihilape", "Poliwrath", "Hitmonlee", "Hitmonchan"]],
+    Rock: [["Geodude", "Onix", "Omanyte", "Kabuto"], ["Graveler", "Omanyte", "Kabuto", "Rhyhorn", "Geodude-Alola"],
+      ["Golem", "Omastar", "Kabutops", "Rhydon", "Graveler-Alola"], ["Aerodactyl", "Rhyperior", "Golem", "Omastar", "Kabutops"],
+      ["Aerodactyl", "Rhyperior", "Golem-Alola", "Omastar", "Kabutops"]],
+    Ground: [["Diglett", "Sandshrew", "Cubone", "Rhyhorn"], ["Dugtrio", "Sandslash", "Marowak", "Rhyhorn"],
+      ["Rhydon", "Marowak", "Nidoqueen", "Nidoking", "Dugtrio"], ["Rhyperior", "Nidoqueen", "Nidoking", "Golem", "Marowak"],
+      ["Rhyperior", "Nidoking", "Nidoqueen", "Golem"]],
+    Water: [["Psyduck", "Poliwag", "Horsea", "Goldeen", "Krabby"], ["Staryu", "Krabby", "Seel", "Poliwhirl", "Shellder", "Tentacool"],
+      ["Golduck", "Kingler", "Starmie", "Seaking", "Vaporeon", "Tentacruel"], ["Gyarados", "Lapras", "Vaporeon", "Kingdra", "Starmie"],
+      ["Gyarados", "Kingdra", "Lapras", "Vaporeon"]],
+    Flying: [["Pidgey", "Spearow", "Zubat", "Doduo"], ["Pidgeotto", "Fearow", "Golbat", "Farfetch'd", "Doduo"],
+      ["Pidgeotto", "Fearow", "Dodrio", "Golbat", "Farfetch'd"], ["Pidgeot", "Aerodactyl", "Crobat", "Dodrio", "Dragonite"],
+      ["Pidgeot", "Dragonite", "Crobat", "Aerodactyl"]],
+    Fire: [["Vulpix", "Growlithe", "Ponyta", "Growlithe-Hisui"], ["Ponyta", "Growlithe", "Vulpix", "Magmar", "Growlithe-Hisui"],
+      ["Ninetales", "Rapidash", "Magmar", "Flareon", "Marowak-Alola"], ["Arcanine", "Magmortar", "Flareon", "Ninetales", "Arcanine-Hisui"],
+      ["Arcanine", "Magmortar", "Arcanine-Hisui", "Rapidash", "Flareon"]],
+    // (Kanto has only the Gastly line for Ghost: the eerie ones beside it.)
+    Ghost: [["Gastly", "Zubat", "Drowzee", "Cubone"], ["Gastly", "Haunter", "Golbat", "Cubone", "Drowzee"],
+      ["Haunter", "Hypno", "Golbat", "Marowak", "Marowak-Alola"], ["Gengar", "Haunter", "Crobat", "Marowak-Alola", "Hypno"],
+      ["Gengar", "Crobat", "Marowak-Alola", "Hypno"]],
+    Steel: [["Magnemite", "Diglett-Alola", "Sandshrew-Alola", "Onix"], ["Magneton", "Onix", "Dugtrio-Alola", "Sandslash-Alola", "Meowth-Galar"],
+      ["Magneton", "Steelix", "Dugtrio-Alola", "Sandslash-Alola", "Perrserker"], ["Magnezone", "Steelix", "Scizor", "Perrserker"],
+      ["Magnezone", "Steelix", "Scizor"]]
   };
+  // (Kanto's: Bulbasaur to Mew, their regional forms, and their later evolutions.)
+  const KANTO_LATER = ["Crobat", "Bellossom", "Politoed", "Slowking", "Steelix", "Scizor", "Kingdra", "Porygon2", "Porygon-Z", "Espeon",
+    "Umbreon", "Leafeon", "Glaceon", "Sylveon", "Blissey", "Magnezone", "Lickilicky", "Rhyperior", "Tangrowth", "Electivire", "Magmortar",
+    "Kleavor", "Annihilape", "Perrserker", "Sirfetch'd", "Mr. Rime"];
+  const isKanto = (sp) => !!window.DEX[sp] && (window.DEX[sp].id <= 151 || KANTO_LATER.includes(sp) ||
+    (/-(Alola|Galar|Hisui)$/.test(sp) && (window.DEX[sp.replace(/-(Alola|Galar|Hisui)$/, "")] || {}).id <= 151));
+  // A few raid Pokémon whose own moves are too few to make a battle of it:
+  // what their pre-evolutions can learn (Caterpie's Tackle, Weedle's Poison Sting).
+  const RAID_MOVES = { Metapod: ["Tackle", "String Shot", "Harden"], Kakuna: ["Poison Sting", "String Shot", "Harden"] };
 
   const active = (flags, id) => (flags.raidDens && flags.raidDens[id]) || null;
   // A Lure on a sleeping den: a raid of rolled stars, a Pokémon from its pool, its level.
@@ -132,7 +145,8 @@
   }
   // The Tera Raid Pokémon: Terastallized into the den's type as soon as it's out.
   function boss(den, raid, rng) {
-    const r = window.Party.create(raid.species, raid.level, { ivs: IVS[raid.stars], rng });
+    const r = window.Party.create(raid.species, raid.level, Object.assign({ ivs: IVS[raid.stars], rng },
+      RAID_MOVES[raid.species] ? { moves: RAID_MOVES[raid.species] } : {}));
     return Object.assign(r, { teraType: den.type, teraAce: true });
   }
 
@@ -154,9 +168,12 @@
     { money: 10000, candies: [["exp-candy-m", 3], ["exp-candy-l", 2]], vitamins: 3, berries: [5, ["good", "training"]] },
     { money: 20000, candies: [["exp-candy-l", 3], ["exp-candy-xl", 2]], vitamins: 5, berries: [6, ["training", "rare"]] }
   ];
-  function rewards(stars, rng) {
+  // ...and Tera Shards of the den's type (`type`), by stars.
+  const SHARDS = [0, 4, 6, 10, 15, 25];
+  function rewards(stars, rng, type) {
     rng = rng || Math.random;
     const R = REWARDS[stars], got = {};
+    if (type) got[type.toLowerCase() + "-tera-shard"] = SHARDS[stars];
     const add = (id, n) => { if (window.ITEMS[id]) got[id] = (got[id] || 0) + n; };
     const pick = (list) => list[Math.floor(rng() * list.length)];
     // (The first kind of candy, one more half the time.)
@@ -167,5 +184,5 @@
     return { money: R.money, items: Object.entries(got) };
   }
 
-  window.RaidDens = { DENS, byScript, active, maxStars, rollStars, start, finish, boss, rewards, POOLS, BADGES, LEVELS, IVS, HP, TURNS, LURE_ODDS, REWARDS };
+  window.RaidDens = { DENS, byScript, active, maxStars, rollStars, start, finish, boss, rewards, POOLS, isKanto, RAID_MOVES, BADGES, LEVELS, IVS, HP, TURNS, LURE_ODDS, REWARDS, SHARDS };
 })();

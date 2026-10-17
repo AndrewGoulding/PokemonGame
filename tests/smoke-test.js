@@ -586,7 +586,7 @@ for (const share of [false, true]) {
     assert(here.length === 1 && here[0].script === d.script, "den " + d.id + " alone on its tile");
     assert(!m.collision[d.y * m.width + d.x] && !World.warpAt(d.map, d.x, d.y), "den " + d.id + " on a free tile");
     assert.strictEqual(RaidDens.byScript(d.script), d);
-    for (const tier of RaidDens.POOLS[d.type]) for (const sp of tier) assert(DEX[sp], sp);
+    for (const tier of RaidDens.POOLS[d.type]) for (const sp of tier) assert(DEX[sp] && RaidDens.isKanto(sp), sp + ": a Kanto Pokémon");
   }
   for (const f of ["raid_den", "raid_den_active"]) assert(fs.existsSync(path.join(root, "assets/world/sprites/" + f + ".png")), f);
   // Stars: 1 with no Badges, up to 5 with all eight; stronger Lures, more stars.
@@ -617,6 +617,15 @@ for (const share of [false, true]) {
   RaidDens.finish(flags, den.id);
   assert.strictEqual(RaidDens.active(flags, den.id), null);
   // Rewards: money, candies, vitamins and Berries, more with more stars.
+  // (Kanto's: not Johto's Teddiursa, nor a Paldean Pokémon; but Scizor and Alolan Sandshrew.)
+  assert(!RaidDens.isKanto("Teddiursa") && !RaidDens.isKanto("Lechonk") && RaidDens.isKanto("Scizor") && RaidDens.isKanto("Sandshrew-Alola"));
+  // Metapod and Kakuna know more than Harden (their pre-evolutions' moves).
+  const bug = RaidDens.DENS.find((d) => d.type === "Bug");
+  const meta = RaidDens.boss(bug, { stars: 2, species: "Metapod", level: 20 }, rng), kak = RaidDens.boss(bug, { stars: 2, species: "Kakuna", level: 20 }, rng);
+  assert(meta.moves.some((m) => m.name === "Tackle") && kak.moves.some((m) => m.name === "Poison Sting"));
+  // Tera Shards of the den's type, more for more stars.
+  const fire = RaidDens.rewards(3, rng, "Fire").items.find(([id]) => id === "fire-tera-shard");
+  assert(fire && fire[1] === RaidDens.SHARDS[3] && RaidDens.SHARDS[5] > RaidDens.SHARDS[1]);
   const total = (st) => { const r = RaidDens.rewards(st, rng); return [r.money, r.items.reduce((n, [, k]) => n + k, 0), r.items]; };
   const [m1, n1, i1] = total(1), [m5, n5, i5] = total(5);
   assert(m5 > m1 && n5 > n1, "5-star rewards more");
@@ -631,6 +640,22 @@ for (const share of [false, true]) {
   const door = dojo.warps.find((w) => w.map === "SaffronCity_Dojo_DenRoom");
   assert(door && dojo.patches.denroom && room.warps.every((w) => w.map === "SaffronCity_Dojo" && dojo.warps[w.warp] === door));
   assert(dojo.collision[door.y * dojo.width + door.x], "the wall, until the door's patch is on");
+}
+
+// Tera Shards: one of each type, in the Power-up pocket, with a picture; 50
+// change a Pokémon's Tera Type (not to the one it has, nor Ogerpon's).
+{
+  const types = ["Normal", "Fire", "Water", "Electric", "Grass", "Ice", "Fighting", "Poison", "Ground", "Flying", "Psychic", "Bug",
+    "Rock", "Ghost", "Dragon", "Dark", "Steel", "Fairy"];
+  for (const t of types) {
+    const id = t.toLowerCase() + "-tera-shard";
+    assert(ITEMS[id] && ITEM_SPRITES[id] && Bag.pocket(id) === "Power-up" && Bag.teraShardType(id) === t && Bag.name(id) === t + " Tera Shard", id);
+  }
+  const mon = Object.assign(Party.create("Pikachu", 20), { teraType: "Electric" });
+  assert(Bag.canUseOn(mon, "fire-tera-shard") && !Bag.canUseOn(mon, "electric-tera-shard") && !Bag.canUseOn(Party.create("Ogerpon", 70), "fire-tera-shard"));
+  assert.strictEqual(Bag.TERA_SHARDS_NEEDED, 50);
+  const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  assert(/WILD_TERA_CHANCE = 0\.1/.test(gameJs) && /Object\.assign\(foe\.team\[0\], \{ teraType: wildTera, teraAce: true \}\)/.test(gameJs), "wild Tera Pokémon");
 }
 
 // Lures beside the Repels of their kind; Wings and Exp. Candies.

@@ -1932,7 +1932,9 @@
           : active.canTera && config.teraOrb && !(dbl && dbl.teraTaken) ? "tera" : null;
         const shown = kind === "zmove" ? active.zMoves : kind === "dynamax" ? active.maxMoves : null;
         // (This game's own: Mega Evolve and Terastallize, the same turn if you like: two triggers.)
-        const alt = kind === "mega" && active.canTera && config.teraOrb && !(dbl && dbl.teraTaken) ? { kind: "tera", on: false } : null;
+        // (And beside a Z-Move, Dynamax or Ultra Burst, so the Tera Orb is always on
+        // offer, though only Mega Evolution goes with it in the same turn.)
+        const alt = kind && kind !== "tera" && active.canTera && config.teraOrb && !(dbl && dbl.teraTaken) ? { kind: "tera", on: false } : null;
         // (Already Dynamaxed: its Max Moves, always.)
         const mega = kind ? { on: false, toggled, kind, alt, focus: 0, names: shown ? (m) => shown[m.index] || null : null }
           : active.dynamaxed && active.maxMoves ? { on: true, fixed: true, names: (m) => active.maxMoves[m.index] || null } : null;
@@ -1963,6 +1965,11 @@
           if (mega && mega.on && mega.kind === "zmove" && !active.zMoves[m.index]) {
             overlay().classList.add("hidden");
             await message("That move can't become a Z-Move!");
+            continue;
+          }
+          if (mega && mega.on && mega.alt && mega.alt.on && mega.kind !== "mega") {
+            overlay().classList.add("hidden");
+            await message("It can't Terastallize and do that\nin the same turn!");
             continue;
           }
           const choice = { type: "move", move: m.index };

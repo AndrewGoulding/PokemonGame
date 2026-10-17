@@ -1365,7 +1365,15 @@ trainer has the Dynamax Band yet).
 first time you come into Pewter City, one of Prof. Oak's aides runs up
 behind you and gives it to you), START
 on the move menu Terastallizes a Pokémon into its Tera Type, once a battle;
-the Orb recharges itself after every battle.
+the Orb recharges itself after every battle. Its trigger is always offered,
+beside a Z-Move's, Dynamax's or Ultra Burst's too (only Mega Evolution can
+go with it in the same turn). **Wild Tera Pokémon** (this game's own, as in
+Scarlet and Violet): one wild Pokémon in ten (not in the Safari Zone) has a
+random Tera Type and Terastallizes as soon as it's out, battling as a
+trainer's Pokémon does; knock it out and you get 3 Tera Shards of its Tera
+Type, or catch it and it keeps that Tera Type. **Tera Shards** (one kind
+for each type, in the Power-up pocket): 50 of a type, used on a Pokémon,
+change its Tera Type to that type (not Ogerpon's or Terapagos's).
 Every Pokémon has a Tera Type (one of its own types, set when it's made and
 kept through evolution; Ogerpon's is its mask's, Terapagos's Stellar), shown on
 the Summary's EV / IV page. Terastallized, it is its Tera Type alone for the
@@ -1415,7 +1423,11 @@ Mt. Moon 1F (Rock), Rock Tunnel 1F (Ground), Route 25 by the sea (Water),
 Route 18's flower garden (Flying), Cinnabar Island's beach (Fire), Lavender
 Town (Ghost) and outside the Indigo Plateau (Steel). A den sleeps until you
 use a Lure on it (talk to it); then it glows, with a beam of light, holding a
-raid of 1 to 5 stars until you win it. How many stars is random: 1 with no
+raid of 1 to 5 stars until you win it. Its Pokémon are all Kanto's: Kanto's own
+(not the legendaries or starters), their regional forms (Alolan Sandshrew,
+Hisuian Growlithe, ...) and their later evolutions (Scizor, Magnezone,
+Crobat, ...); a raid's Metapod knows Tackle and its Kakuna Poison Sting, as
+their pre-evolutions do. How many stars is random: 1 with no
 Badges, up to 2 with two, 3 with four, 4 with six and 5 with all eight; a
 Lure most often brings 1 star (50/30/15/4/1%), a Super Lure 2 or 3
 (20/35/28/12/5%) and a Max Lure 3 or 4 (5/15/30/30/20%). The raid is a
@@ -1432,8 +1444,8 @@ turns, and you're thrown out of the den (your Pokémon are restored) and it
 keeps glowing. Win and you get money (₽1,500 / 3,000 / 6,000 / 10,000
 / 20,000), Exp. Candies (XS for 1 star up to L and XL for 5), vitamins (1 to
 5) and Berries (2 to 6: everyday ones for 1 star, Sitrus and Lum, the
-EV-lowering ones and the rare pinch Berries further up), and the den goes to
-sleep again; then you may catch its Pokémon in any Ball you have (it can't
+EV-lowering ones and the rare pinch Berries further up) and Tera Shards of
+the den's type (4, 6, 10, 15 or 25), and the den goes to sleep again; then you may catch its Pokémon in any Ball you have (it can't
 miss), keeping its Tera Type. The Fighting Dojo's back room is behind a
 sliding door in its back wall, which the Karate Master opens once you've
 beaten him (he tells you of the den); `tools/build-raid-dens.js` draws the
