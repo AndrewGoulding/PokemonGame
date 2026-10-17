@@ -1339,7 +1339,8 @@ Brock's Onix Terastallizes into an Electric type, Misty's Starmie into a
 pure Psychic type, Lt. Surge's Raichu into a Water type, Erika's Vileplume
 into a Poison type, Koga's Mega Beedrill into a Fire type, Sabrina's Mega
 Alakazam into a Dark type and Blaine's Mega Houndoom (Lv. 48, with the
-Houndoominite, after his FireRed four) into a Dark type (a trainer with an ace keeps the Orb for it). Koga's
+Houndoominite; his team here is Magmortar, Magcargo, Rapidash, Arcanine and
+Houndoom) into a Dark type (a trainer with an ace keeps the Orb for it). Koga's
 team here is Weezing, Muk, Arbok and Beedrill with its Beedrillite. A Mega
 Evolved Pokémon can Terastallize too (this game's own), even in the same turn
 it Mega Evolves, the Mega Evolution first. Yours too: when it can do both, both

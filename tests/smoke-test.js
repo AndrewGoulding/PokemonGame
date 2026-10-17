@@ -3151,6 +3151,7 @@ for (let seed = 1; seed <= GEN8; seed++) {
     assert(/r\.species === "Vileplume"\), \{ teraType: "Poison", teraAce: true \}\)/.test(gameSrc) && /pic: "leader_erika", tera: true/.test(gameSrc), "Erika's Vileplume");
     assert(/item: "alakazite", teraType: "Dark", teraAce: true/.test(gameSrc) && /pic: "leader_sabrina", tera: true/.test(gameSrc), "Sabrina's Mega Alakazam");
     assert(/item: "houndoominite", teraType: "Dark", teraAce: true/.test(gameSrc) && /pic: "leader_blaine", tera: true/.test(gameSrc), "Blaine's Mega Houndoom");
+    assert(/return \[Party\.create\("Magmortar", 43,[^\n]*\n\s*Party\.create\("Magcargo", 42,[^\n]*\n\s*rapidash, arcanine, Object\.assign\(Party\.create\("Houndoom"/.test(gameSrc), "Blaine: Magmortar, Magcargo, Rapidash, Arcanine, Mega Houndoom");
     assert(/Houndoom to Mega Evolve into Mega Houndoom/.test(ITEMS.houndoominite.effect) && ITEM_SPRITES.houndoominite, "the Houndoominite");
     assert(/return \[weezing, muk, Party\.create\("Arbok"/.test(gameSrc) && /item: "beedrillite", teraType: "Fire", teraAce: true/.test(gameSrc)
       && /pic: "leader_koga", tera: true/.test(gameSrc), "Koga: Weezing, Muk, Arbok, Mega Beedrill (Tera Fire)");

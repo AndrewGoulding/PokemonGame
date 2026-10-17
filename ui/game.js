@@ -9465,11 +9465,15 @@
   // Blast. Beating him also beats his Gym's trainers and opens all its doors.
   // Bill's then waiting outside to take you to the Sevii Islands
   // (VAR_MAP_SCENE_CINNABAR_ISLAND 1: flags.cinnabarScene).
-  // His team: FireRed's, and (this game's) his ace after Arcanine, Houndoom
-  // with its Houndoominite: it Mega Evolves and Terastallizes into a Dark type.
+  // His team (this game's): Magmortar and Magcargo in place of FireRed's
+  // Growlithe and Ponyta, FireRed's Rapidash and Arcanine, and his ace,
+  // Houndoom with its Houndoominite: it Mega Evolves and Terastallizes into a Dark type.
   function blaineTeam() {
-    return trainerTeam("TRAINER_LEADER_BLAINE").concat([Object.assign(Party.create("Houndoom", 48,
-      { ivs: 0, moves: ["Flamethrower", "Dark Pulse", "Sludge Bomb", "Nasty Plot"] }), { item: "houndoominite", teraType: "Dark", teraAce: true })]);
+    const [, , rapidash, arcanine] = trainerTeam("TRAINER_LEADER_BLAINE");
+    return [Party.create("Magmortar", 43, { ivs: 0, moves: ["Flamethrower", "Thunderbolt", "Focus Blast", "Confuse Ray"] }),
+      Party.create("Magcargo", 42, { ivs: 0, moves: ["Lava Plume", "Earth Power", "Ancient Power", "Amnesia"] }),
+      rapidash, arcanine, Object.assign(Party.create("Houndoom", 48,
+      { ivs: 0, moves: ["Flamethrower", "Dark Pulse", "Sludge Bomb", "Nasty Plot"] }), { item: "houndoominite", teraType: "Dark", teraAce: true })];
   }
   async function blaine(person) {
     const f = player.flags, ID = "TRAINER_LEADER_BLAINE";
