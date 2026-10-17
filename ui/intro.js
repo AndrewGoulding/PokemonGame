@@ -737,24 +737,6 @@
   const say = (pages) => (async () => { for (const p of [].concat(pages)) await window.Screen.read(p); })();
   const show = (page) => window.Screen.say(page);
 
-  // Asks for a name in the menu area, pre-filled with `suggestion`.
-  function askName(prompt, suggestion) {
-    window.Screen.say(prompt);
-    const menu = document.getElementById("menu");
-    menu.innerHTML = '<div class="intro-name"><input id="intro-name-input" maxlength="10" autocomplete="off" aria-label="Name"></div>';
-    const input = document.getElementById("intro-name-input");
-    input.value = suggestion;
-    const ok = document.createElement("button");
-    ok.type = "button"; ok.className = "action"; ok.textContent = "OK";
-    menu.appendChild(ok);
-    input.focus(); input.select();
-    return new Promise((resolve) => {
-      const done = () => { const v = input.value.trim(); if (!v) return; menu.innerHTML = ""; resolve(v.slice(0, 10)); };
-      ok.addEventListener("click", done);
-      input.addEventListener("keydown", (e) => { if (e.key === "Enter") done(); });
-    });
-  }
-
   // The guide's pages turn with the buttons, as in FireRed: A forward, B back
   // (not on the first page). Nothing in the text box.
   function turnPage(page) {
@@ -817,14 +799,7 @@
     const nidoran = new Image();
     nidoran.src = window.Screen.spriteUrl("Nidoran-F", "");
     paint = () => {
-      if (s.naming) {
-        g.fillStyle = "#6a8ad6"; g.fillRect(0, 0, W, H);
-        g.fillStyle = "#fff"; g.fillRect(16, 40, 208, 48);
-        text(s.naming.title, 120, 52, { color: "#303030", size: 11, bold: true, align: "center" });
-        const who = s.naming.sprite;
-        if (who) blit(who, 0, 0, 16, 32, 112, 96, {});
-        return;
-      }
+      if (s.naming) { s.naming.draw(g); return; }
       blit("oak-speech-bg", 0, 0, W, H, 0, 0);
       if (s.platform) blit("oak-speech-platform", 0, 0, 96, 32, 72 + s.platformX, 96, { alpha: s.picAlpha });
       if (s.bgDark) { g.fillStyle = "rgba(0,0,0," + s.bgDark + ")"; g.fillRect(0, 0, W, H); }
@@ -888,11 +863,20 @@
 
     // The player's name.
     const pickFrom = (list) => list[Math.floor(Math.random() * list.length)];
+    // FireRed's naming screen (ui/naming-screen.js), between fades to black;
+    // OK with nothing typed gives `suggestion`.
     const nameScreen = async (title, suggestion, overworld) => {
       await fadeTo("#000", 0, 16, 0);
-      s.naming = { title, sprite: overworld ? "../world/sprites/" + overworld : null };
+      show("");
+      window.Screen.clearMenu();
+      const icon =overworld ? "assets/world/sprites/" + overworld + ".png" : null;
+      await window.NamingScreen.preload(icon);
+      const ns = window.NamingScreen.create({ title, maxChars: 7, fallback: suggestion, icon });
+      s.naming = ns;
+      actors.add(() => (s.naming === ns ? ns.step() : false));
       await fadeTo("#000", 16, 0, 0);
-      const v = await askName(title, suggestion);
+      ns.start();
+      const v = await ns.done;
       await fadeTo("#000", 0, 16, 0);
       s.naming = null;
       return v;
@@ -900,7 +884,7 @@
     let name;
     await say(IT("gOakSpeech_Text_YourNameWhatIsIt"));
     for (;;) {
-      name = await nameScreen("Your name?", pickFrom(BOY_NAMES), "player_" + look);
+      name = await nameScreen("YOUR NAME?",pickFrom(BOY_NAMES), "player_" + look);
       s.picX = 60; s.platformX = 60;
       await fadeTo("#000", 16, 0, 0);
       show(fill(IT("gOakSpeech_Text_SoYourNameIsPlayer")[0], name));

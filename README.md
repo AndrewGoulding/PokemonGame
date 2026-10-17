@@ -21,7 +21,9 @@ FireRed's message box, as in FireRed) and, from the main
 menu, SAVE FILE to load a downloaded save; it's also in the Start menu. Start a
 **NEW GAME** and you get FireRed's new-game intro (without its controls
 guide): the Pikachu pages (A turns the page, B goes back), then Prof. Oak, who shows you a Nidoran♀ and has you name
-yourself before you shrink away into Pallet Town, just outside Red's house. Try
+yourself on FireRed's naming screen (up to 7 letters on its UPPER / lower / OTHERS keyboard: the D-pad
+moves, A types, B deletes, Select changes the page, Start jumps to OK; OK with nothing typed picks a name
+for you) before you shrink away into Pallet Town, just outside Red's house. Try
 to leave town through the tall grass to the north and Prof. Oak stops you and
 walks you to his lab, where Leaf is waiting; pick Bulbasaur, Squirtle or Charmander from the
 Poké Balls on his table (each one shows you its Pokémon before you decide).
@@ -966,6 +968,20 @@ node tools/build-intro.js pokefirered     # or: POKEFIRERED=pokefirered npm run 
 `ui/intro.js` plays them on a 240x160 canvas, following the timing in pret's
 `src/intro.c`, `src/title_screen.c` and `src/oak_speech.c` (frame counts at 60
 a second). There's no music or cries.
+
+The naming screen is FireRed's `src/naming_screen.c`: `tools/build-naming-screen.js`
+draws its backgrounds (the menu tilemap and the three keyboard pages, in their
+palettes) and cuts out its sprites (the page button and its labels, BACK, OK,
+the cursor, the arrow and underscores) into `assets/naming-screen/` (it needs
+`graphics/naming_screen/`):
+
+```sh
+cd pokefirered && git sparse-checkout add graphics/naming_screen/ && cd ..
+node tools/build-naming-screen.js pokefirered   # or: POKEFIRERED=pokefirered npm run build:naming-screen
+```
+
+`ui/naming-screen.js` runs it with FireRed's key layout, cursor wrapping, page
+swap and button flashes, the text in FireRed's font.
 
 ### Battle backgrounds
 
