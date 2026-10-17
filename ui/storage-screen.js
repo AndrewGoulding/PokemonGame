@@ -165,10 +165,12 @@
       const k = st.partyRows;   // 0 (hidden: the button) to 20 (shown)
       g.drawImage(panel, 0, (20 - k) * 8, 96, (k + 2) * 8, 80, 0, 96, (k + 2) * 8);
       if (k > 0) {
-        // (SetPartySlotTilemaps: each slot blue with a Pokémon in it, grey without.)
+        // (SetPartySlotTilemaps: each slot blue with a Pokémon in it, grey
+        // without; and blue under a Pokémon the hand is holding.)
         const empty = PC("party-slot-empty"), filled = PC("party-slot-filled"), shift = (k - 20) * 8;
+        const heldOver = st.held && st.cursor.area === "party" ? st.cursor.pos : -1;
         for (let i = 1; i < 6; i++) {
-          const img = st.party[i] ? filled : empty;
+          const img = st.party[i] || i === heldOver ? filled : empty;
           if (ready(img)) g.drawImage(img, 136, 8 + 24 * (i - 1) + shift);
         }
         st.party.forEach((r, i) => {

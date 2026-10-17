@@ -92,6 +92,8 @@
   }
 
   async function open(root, opts) {
+    // (The last evolution's final frame mustn't show while the pictures load.)
+    root.innerHTML = "";
     const [terrain, sparkleImg, from, into] = await Promise.all([
       load("assets/battle/plain.png"), load("assets/evolution/sparkle.png"),
       load(opts.from), load(opts.into)]);
@@ -429,6 +431,7 @@
         cancelAnimationFrame(timer);
         tasks = [];
         root.classList.remove("evo");
+        canvas.remove();
       }
     };
   }

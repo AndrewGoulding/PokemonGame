@@ -793,10 +793,11 @@
   // party screen with `message` ("Use on which POKéMON?"). For a TM or an
   // evolution stone each box says whether it can be used (ABLE / NOT ABLE /
   // LEARNED), as in FireRed. Resolves with the record, or null (B).
-  async function choosePartyFor(message, item) {
+  // (A move tutor passes its own notes instead of an item.)
+  async function choosePartyFor(message, item, notes) {
     const note = (r) => (Bag.isMachine(item) && Party.knowsMove(r, Bag.machineMove(item)) ? "LEARNED"
       : Bag.canUseOn(r, item, { party: player.party }) ? "ABLE" : "NOT ABLE");
-    const notes = item && (Bag.isMachine(item) || Bag.isStone(item)) ? player.party.map(note) : null;
+    if (!notes) notes = item && (Bag.isMachine(item) || Bag.isStone(item)) ? player.party.map(note) : null;
     const r = await openParty({ message, notes });
     PartyMenu.close();
     return r ? player.party[r.slot] : null;
@@ -2735,7 +2736,12 @@
     if (SILPH_WORKERS[script]) { await say(T(SILPH_WORKERS[script][silphFreed() ? 1 : 0])); return; }
     if (SILPH_DOORS.includes(script)) { await silphDoor(script); return; }
     // (Coming out of the Gym with the Tera Orb still to get: the aide, then Leaf.)
-    if (teraAideDue(script)) { await teraAide(); if (!(script === "enter:PewterCity" && leafPewterDue())) return; }
+    if (teraAideDue(script)) {
+      const leaf = script === "enter:PewterCity" && leafPewterDue();
+      await teraAide();   // (stepping you out of the door first)
+      if (leaf) await leafPewter(true);
+      return;
+    }
     if (script === "enter:Route23" && victoryRoadRivalDue()) { await victoryRoadRival(); return; }
     if (/^enter:/.test(script) && megaAideDue(script.slice(6))) { await megaAide(); return; }
     if ((script === "enter:PokemonTower_7F" || script === "Game_EventScript_MegaTower") && megaTowerDue()) { await megaTower(); return; }
@@ -4668,6 +4674,11 @@
   // again, for `price` each time (TUTOR_PRICE unless given; null: free).
   // `taught`: the label of what they say once it's taught, if not <text>Taught.
   // True when it's taught this time.
+  function tutorCanLearn(record, move) {
+    const set = window.LEARNSETS_GEN6[record.species] || {};
+    return [].concat(set.tm || [], set.tutor || [], (set.levelup || []).map((l) => l[1])).includes(move) ||
+      ((window.TUTOR_LEARNERS || {})[move] || []).includes(record.species);
+  }
   async function moveTutor(move, flag, text, price, taught) {
     const f = player.flags;
     taught = taught || text + "Taught";
@@ -4681,16 +4692,15 @@
       if (player.money < price) { await say("You don't have enough money."); return; }
     }
     await say(T(text + "WhichMon"));
-    const record = await choosePartyFor("Teach which {PKMN}?");
+    // (Each box says whether it can learn the move, as FireRed's tutors' party screen does.)
+    const notes = player.party.map((r) => (r.egg || !tutorCanLearn(r, move) ? "NOT ABLE" : Party.knowsMove(r, move) ? "LEARNED" : "ABLE"));
+    const record = await choosePartyFor("Teach which {PKMN}?", null, notes);
     show("world");
     if (!record) { await declined(); return; }
     if (record.egg) { await say(T("TwoIsland_House_Text_CantTeachAnEgg")); return; }
     const name = Party.displayName(record);
-    const set = window.LEARNSETS_GEN6[record.species] || {};
-    const learns = [].concat(set.tm || [], set.tutor || [], (set.levelup || []).map((l) => l[1])).includes(move) ||
-      ((window.TUTOR_LEARNERS || {})[move] || []).includes(record.species);
     if (Party.knowsMove(record, move)) { await say(name + " already knows " + move + "."); return; }
-    if (!learns) { await say(name + " can't learn " + move + "."); return; }
+    if (!tutorCanLearn(record, move)) { await say(name + " can't learn " + move + "."); return; }
     await learnMove(record, move);
     if (!Party.knowsMove(record, move)) { await declined(); return; }
     if (price) {
@@ -4808,7 +4818,8 @@
   // and heads off west, out of sight.
   //
   // In Vermilion City she waits where the road from Route 6 comes in, and
-  // battles you as you come down it: Butterfree (18), Wigglytuff (20),
+  // battles you as you come down it: Butterfree (18, Terastallizing into a
+  // Flying type again), Wigglytuff (20),
   // Nidorina (21) and her starter's evolution (22).
   const LEAF = "LOCALID_LEAF";
   const LEAF_SPOTS = { PewterCity: { x: 19, y: 17, facing: "left" }, VermilionCity: { x: 23, y: 10, facing: "up" } };
@@ -4961,9 +4972,10 @@
     await say(["Leaf: {PLAYER}! Over here!",
       "I came through the Underground\nPath too. Isn't Vermilion pretty?\nYou can smell the sea!",
       "My Pokémon have gotten a lot\nstronger since Pewter. Want to see?"]);
-    const team = [Party.create("Butterfree", 18), Party.create("Wigglytuff", 20), Party.create("Nidorina", 21),
-      Party.create(STAGE_TWO[RIVAL_PICK[f.starter]], 22)];
-    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green" },
+    // (Her Butterfree Terastallizes into a pure Flying type again.)
+    const team = [Object.assign(Party.create("Butterfree", 18), { teraType: "Flying", teraAce: true }), Party.create("Wigglytuff", 20),
+      Party.create("Nidorina", 21), Party.create(STAGE_TWO[RIVAL_PICK[f.starter]], 22)];
+    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green", tera: true },
       defeatText: ["Oh, no! You're still a step ahead\nof me, {PLAYER}!"] });
     if (outcome !== "won") return;
     f.leafVermilion = true;
@@ -5187,6 +5199,85 @@
     Overworld.removeObject(K);
   }
 
+  // ---------- Jessie & James, later on (as in Yellow) ----------
+  //
+  // Three more ambushes, each a double battle (a single one with only one
+  // Pokémon that can fight): stepping out of the Rocket Hideout's elevator
+  // corridor toward Giovanni on B4F (Koffing, Meowth and Ekans, level 25),
+  // coming up to Mr. Fuji on Pokémon Tower 7F (Meowth, Arbok and Weezing,
+  // 27), and stepping off Silph Co. 7F's warp pad on 11F (Weezing, Arbok and
+  // Meowth, 31). Each time they come at you from a few steps off, say their
+  // piece and battle; beaten, they blast off back the way they came. Beat
+  // you, and they're waiting there again.
+  const LATER_JESSIE_JAMES = {
+    RocketHideout_B4F: {
+      flag: "jessieJamesHideout", team: [["Koffing", 25], ["Meowth", 25], ["Ekans", 25]],
+      // (Only before Giovanni's beaten; up the way from the elevator.)
+      due: (f, at) => !f.TRAINER_BOSS_GIOVANNI && at.y === 19 && (at.x === 16 || at.x === 17) && at.facing === "up",
+      cols: [16, 17], dy: -1, steps: 3,
+      intro: ["Jessie: Not another step, brat!", "James: How dare you humiliate us\nat Mt. Moon!",
+        "Jessie: It's payback time, you brat!"],
+      defeat: ["Jessie: Such a dreadful twerp!"],
+      after: ["Jessie, James & Meowth: Looks like\nTeam Rocket's blasting off again!"]
+    },
+    PokemonTower_7F: {
+      flag: "jessieJamesTower", team: [["Meowth", 27], ["Arbok", 27], ["Weezing", 27]],
+      // (Only while Mr. Fuji's still held there.)
+      due: (f, at) => !f.rescuedMrFuji && at.y === 12 && at.x >= 10 && at.x <= 12 && at.facing === "up",
+      cols: [10, 12], dy: -1, steps: 3,
+      intro: ["Jessie: Stop right there!", "James: Grampa here wanted to\ncomplain, so we're setting him\nstraight.",
+        "Jessie: So render yourself invisible,\nor prepare to fight!"],
+      defeat: ["James: You will regret this!"],
+      after: ["Jessie, James & Meowth: Looks like\nTeam Rocket's blasting off again!"]
+    },
+    SilphCo_11F: {
+      flag: "jessieJamesSilph", team: [["Weezing", 31], ["Arbok", 31], ["Meowth", 31]],
+      // (Only before Giovanni's beaten; just off the warp pad from 7F.)
+      due: (f, at) => !f.TRAINER_BOSS_GIOVANNI_2 && at.x <= 2 && (at.y === 6 || at.y === 7),
+      cols: [0, 2], dy: 1, steps: 3,
+      intro: ["Jessie: Hold it right there, brat!", "James: Our Boss is in a meeting!",
+        "Jessie: You'd better not disturb\nhim!"],
+      defeat: ["James: Like always…"],
+      after: ["Jessie: Team Rocket, blast off at\nthe speed of light!", "James: Again…"]
+    }
+  };
+  function laterJessieJamesStep() {
+    const f = player.flags, at = Overworld.position(), J = LATER_JESSIE_JAMES[at.map];
+    return J && !f[J.flag] && J.due(f, at) && canBattle() ? { type: "jessie-james-later" } : null;
+  }
+  async function laterJessieJames() {
+    const f = player.flags, me = Overworld.position(), J = LATER_JESSIE_JAMES[me.map];
+    const JE = "LOCALID_JESSIE", JA = "LOCALID_JAMES";
+    music("mus_encounter_rocket");
+    // (They end up side by side in front of you, Jessie face to face with you;
+    // they come from `steps` tiles further off, from the side of `dy`.)
+    const hi = J.cols[1], other = me.x < hi ? me.x + 1 : me.x - 1;
+    const row = me.y + J.dy, from = row + J.dy * J.steps;
+    const come = J.dy < 0 ? "down" : "up", back = J.dy < 0 ? "up" : "down";
+    await Overworld.act([{ who: "player", moves: ["emote_exclamation_mark"] }]);
+    await say(J.intro.slice(0, 1));
+    Overworld.addObject(JE, { x: me.x, y: from, facing: come }, window.WORLD_SPRITES.jessie);
+    Overworld.addObject(JA, { x: other, y: from, facing: come }, window.WORLD_SPRITES.james);
+    const walk = Array(J.steps).fill("walk_" + come);
+    await Overworld.act([{ who: JE, moves: walk }, { who: JA, moves: walk }]);
+    await Overworld.act([{ who: "player", moves: ["face_" + back] }]);
+    await say(J.intro.slice(1));
+    const team = J.team.map(([sp, lv]) => Party.create(sp, lv));
+    const outcome = await battle("trainer", { foe: { name: "Rocket Jessie & James", team, pic: "jessie_james" },
+      defeatText: J.defeat, prize: 54 * J.team[0][1], double: canDouble() });
+    if (outcome !== "won") return;
+    f[J.flag] = true;
+    show("world");
+    await Overworld.resume();
+    await say(J.after);
+    // Back the way they came, and gone.
+    const leave = Array(J.steps).fill("walk_" + back).concat(["set_invisible"]);
+    await Overworld.act([{ who: JE, moves: leave }, { who: JA, moves: leave }]);
+    Overworld.removeObject(JE);
+    Overworld.removeObject(JA);
+    music((window.WORLD_MAPS[me.map] || {}).music);
+  }
+
   // ---------- Cerulean City: your rival ----------
   //
   // Heading north out of Cerulean, Gary comes down from Nugget Bridge for a
@@ -5268,9 +5359,11 @@
   // finds you as you come out (of the Gym or the Volunteer House, whichever
   // came second) and sends you up the Tower, where Oak and Mr. Fuji wait at
   // the top, and Leaf, Gary and Red in a line before them. Oak is studying
-  // Mega Evolution, and tests everyone: Leaf, then Gary, then Red comes over
-  // to battle you (healed before each; the others battle off screen), and
-  // goes back to their place. Lose one and you black out as usual, and the
+  // Mega Evolution, and tests everyone: Leaf, then Gary, then Red steps away
+  // from the others with you, down the floor, to battle you (their aces
+  // Terastallize; the others battle off screen), and goes back to their
+  // place; after each, Oak comes down to heal your Pokémon and goes back to
+  // his. Lose one and you black out as usual, and the
   // test starts over when you come back. Win all three and you go up to Oak
   // for the Mega Ring and the Kanto starters' Mega Stones; then Red, Leaf,
   // Gary and Oak leave down the stairs, and Mr. Fuji, last, comes over with
@@ -5361,7 +5454,17 @@
     const toPlayer = World.pathBack(tree, best[0]);   // (the last step would be onto you)
     return { from: best[1], walk: toPlayer.slice(0, -1), face: toPlayer[toPlayer.length - 1] };
   }
+  // Coming out of a door, the scenes that start as you walk out ("enter:")
+  // begin before you step out onto the street: step out first.
+  async function stepOutOfDoor() {
+    const at = Overworld.position(), b = World.blockAt(at.map, at.x, at.y).behavior;
+    if (b !== World.MB.WARP_DOOR && b !== World.MB.CAVE_DOOR) return;
+    const people = Overworld.people();
+    const r = World.step({ map: at.map, x: at.x, y: at.y }, "down", (m, x, y) => people.some((q) => q.x === x && q.y === y));
+    if (r.ok && !r.warp) await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
+  }
   async function megaAide() {
+    await stepOutOfDoor();
     const route = megaAideRoute();
     if (!route) return;
     const back = route.walk.slice().reverse().map((d) => "walk_fast_" + World.OPPOSITE[d]);
@@ -5389,6 +5492,7 @@
   const teraAideStep = () => (Overworld.position().map === "PewterCity" && !player.flags.gotTeraOrb && megaAideRoute("only")
     ? { type: "tera-aide" } : null);
   async function teraAide() {
+    await stepOutOfDoor();
     const route = megaAideRoute("only") || megaAideRoute(true);
     const give = async () => {
       Player.addItem(player, "tera-orb");
@@ -5416,6 +5520,9 @@
   // the middle for you (MEGA_SPOT), two steps before Oak.
   const MEGA_SPOT = { x: 11, y: 7 };
   const MEGA_PLACES = { oak: [11, 4, "down"], fuji: [12, 4, "down"], leaf: [9, 7, "up"], gary: [10, 7, "up"], red: [12, 7, "up"] };
+  // Where you and the one you're battling stand, apart from the others: down
+  // the floor, face to face.
+  const MEGA_ARENA = { you: { x: 11, y: 11 }, them: { x: 11, y: 9 } };
   function megaTowerPeople() {
     const sprites = { oak: "prof_oak", fuji: "mr_fuji", gary: "blue", red: "red", leaf: "leaf" };
     return Object.entries(MEGA_PLACES).map(([who, [x, y, facing]], i) => Object.assign({ id: 910 + i, localId: MEGA_CAST[who],
@@ -5427,20 +5534,23 @@
     const starter = RIVAL_PICK[player.flags.starter] || "Bulbasaur";
     return [["Butterfree", 27], ["Wigglytuff", 28], ["Nidorina", 29], [LEAF_FOURTH[starter], 30], [STAGE_TWO[starter], 31]];
   };
-  // In the order you battle them.
+  // In the order you battle them. Each one's ace Terastallizes, as it has
+  // before (`tera`): Leaf's Butterfree into a Flying type, Gary's Eevee, now
+  // an Umbreon, into a Ghost type, and Red's Pikachu (knowing Surf) into a
+  // Water type.
   const MEGA_RIVALS = [
     { key: "leaf", name: () => "Pokémon Trainer " + LAB_RIVAL_NAME, pic: "green", music: "mus_encounter_rival",
-      team: leafMegaTeam,
+      team: leafMegaTeam, tera: ["Butterfree", "Flying"],
       intro: ["Leaf: My turn, {PLAYER}! I've been\ntraining really hard since\nVermilion!", "This time I'm going to win!"],
       defeat: ["Leaf: Aww! You're amazing,\n{PLAYER}!"],
       after: ["Leaf: That was so much fun!\nI can't wait to see what Mega\nEvolution is!"] },
     { key: "gary", name: () => "Rival " + player.rival, pic: "rival_late", music: "mus_encounter_rival",
-      team: () => [["Pidgeotto", 27], ["Growlithe", 28], ["Gyarados", 29], ["Exeggutor", 30], ["Umbreon", 31]],
+      team: () => [["Pidgeotto", 27], ["Growlithe", 28], ["Gyarados", 29], ["Exeggutor", 30], ["Umbreon", 31]], tera: ["Umbreon", "Ghost"],
       intro: ["{RIVAL}: Heh! Gramps called you too,\nhuh, {PLAYER}?", "Doesn't matter. I'll pass his test\nby beating you first! Let's go!"],
       defeat: ["{RIVAL}: What!? Not again!"],
       after: ["{RIVAL}: Tch… Fine. You passed.\nBut I'm not done getting stronger!"] },
     { key: "red", name: () => "Pokémon Trainer Red", pic: "red", music: "mus_encounter_rival",
-      team: () => [["Pikachu", 27], ["Charmeleon", 28], ["Wartortle", 29], ["Ivysaur", 30], ["Espeon", 31]],
+      team: () => [["Pikachu", 27], ["Charmeleon", 28], ["Wartortle", 29], ["Ivysaur", 30], ["Espeon", 31]], tera: ["Pikachu", "Water"],
       intro: ["Red: …", "Red stepped forward, ready to battle!"],
       defeat: ["…"],
       after: ["Red: …", "Red gave a small nod."] }
@@ -5474,19 +5584,26 @@
     } else {
       await say(["Oak: Ah, {PLAYER}! Ready to try my\ntest again?", "You'll have to win all three battles.\nI'll heal your Pokémon. Good luck!"]);
     }
-    // One at a time, each steps out of the line to battle you, and back.
+    player.party.forEach(Party.heal);
+    await sayWithJingle("mus_heal", "Prof. Oak healed {PLAYER}'s Pokémon!");
+    // One at a time: you and the next one step away from the others, down
+    // the floor, to battle (MEGA_ARENA); then they go back to their place,
+    // Prof. Oak comes down to heal your Pokémon and goes back to his, and
+    // you go back to yours.
+    const [ox, oy] = MEGA_PLACES.oak;
     for (const r of MEGA_RIVALS) {
       if (beaten[r.key]) continue;
       const who = MEGA_CAST[r.key], [hx, hy] = MEGA_PLACES[r.key];
-      player.party.forEach(Party.heal);
-      await sayWithJingle("mus_heal", "Prof. Oak healed {PLAYER}'s Pokémon!");
       music(r.music);
-      // (Out of the line, to stand in front of you.)
-      await walkTo(who, { x: MEGA_SPOT.x, y: MEGA_SPOT.y - 1 }, "down");
-      await Overworld.act([{ who: "player", moves: ["face_up"] }]);
+      await walkTo("player", MEGA_ARENA.you, "up");
+      await walkTo(who, MEGA_ARENA.them, "down");
       await say(r.intro);
       const team = r.team().map(([sp, lv]) => Party.create(sp, lv));
-      const outcome = await battle("trainer", { foe: { name: r.name(), team, pic: r.pic }, defeatText: r.defeat,
+      if (r.tera) {
+        const i = team.findIndex((m) => m.species === r.tera[0]);
+        if (i >= 0) team[i] = r.tera[0] === "Pikachu" ? surfingPikachu(team[i].level) : Object.assign(team[i], { teraType: r.tera[1], teraAce: true });
+      }
+      const outcome = await battle("trainer", { foe: { name: r.name(), team, pic: r.pic, tera: !!r.tera }, defeatText: r.defeat,
         prize: 36 * team[team.length - 1].level });
       // (Blacked out: the whole test again next time.)
       if (outcome !== "won") { delete f.megaBeaten; await persist(); return; }
@@ -5496,9 +5613,13 @@
       await say(r.after);
       music("mus_oak");
       await walkTo(who, { x: hx, y: hy }, "up");
+      await walkTo(OAK_, { x: MEGA_ARENA.you.x, y: MEGA_ARENA.you.y - 1 }, "down");
       await Overworld.act([{ who: "player", moves: ["face_up"] }]);
+      player.party.forEach(Party.heal);
+      await sayWithJingle("mus_heal", "Prof. Oak healed {PLAYER}'s Pokémon!");
+      await walkTo(OAK_, { x: ox, y: oy }, "down");
+      await walkTo("player", MEGA_SPOT, "up");
     }
-    player.party.forEach(Party.heal);
     music("mus_oak");
     await say(["Oak: Splendid! Simply splendid!",
       "While you were battling, Red, Leaf and\n{RIVAL} had quite the battles among\nthemselves, too.",
@@ -5506,7 +5627,6 @@
       "And {PLAYER}, you won every one of\nyour battles! I knew I could count\non you.",
       "Come here a moment, {PLAYER}."]);
     // Up to Prof. Oak for the Mega Ring and the Mega Stones, then back.
-    const [ox, oy] = MEGA_PLACES.oak;
     await walkTo("player", { x: ox, y: oy + 1 }, "up");
     await say(["Oak: Here! I want you to have this.\nIt's a Mega Ring."]);
     Player.addItem(player, "mega-ring");
@@ -10047,9 +10167,15 @@
   // ---------- The S.S. Anne ----------
   //
   // Red (where FireRed has Gary) comes out of a cabin on 2F and battles you:
-  // Pikachu (24), Charmeleon, Wartortle and Ivysaur (25 each). The Captain,
+  // Pikachu (24, knowing Surf and Terastallizing into a Water type),
+  // Charmeleon, Wartortle and Ivysaur (25 each). The Captain,
   // seasick, gives you HM01 Cut once you've rubbed his back; the next time you
   // step out onto the dock, the ship sets sail and is gone.
+  // Red's Pikachu (this game's own): it knows Surf, and Terastallizes into a Water type.
+  function surfingPikachu(level) {
+    const moves = window.RandomTeam.levelUpMoves("Pikachu", level).filter((m) => m !== "Surf").slice(-3).concat(["Surf"]);
+    return Object.assign(Party.create("Pikachu", level, { moves }), { teraType: "Water", teraAce: true });
+  }
   async function ssAnneRed(side) {
     const f = player.flags, R = "LOCALID_SS_ANNE_RIVAL";
     sfx("se_exit");
@@ -10061,8 +10187,9 @@
     await Overworld.act(approach);
     if (side === "Left") await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
     await say("…");
-    const team = [Party.create("Pikachu", 24), Party.create("Charmeleon", 25), Party.create("Wartortle", 25), Party.create("Ivysaur", 25)];
-    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer Red", team, pic: "red" }, defeatText: ["…"] });
+    // (His Pikachu knows Surf, and Terastallizes into a Water type.)
+    const team = [surfingPikachu(24), Party.create("Charmeleon", 25), Party.create("Wartortle", 25), Party.create("Ivysaur", 25)];
+    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer Red", team, pic: "red", tera: true }, defeatText: ["…"] });
     if (outcome !== "won") return;
     f.ssAnneRed = true;
     show("world");
@@ -10164,7 +10291,7 @@
     const f = player.flags;
     let raid = RaidDens.active(f, den.id);
     if (!raid) {
-      await say(["It's a Tera Raid den.", "It's quiet… Something seems to be\nsleeping deep inside it."]);
+      await say(["It's " + article(den.type) + "-type Tera Raid den.", "It's quiet… Something seems to be\nsleeping deep inside it."]);
       const have = LURES.filter((id) => Player.itemCount(player, id) > 0);
       if (!have.length) { await say("Maybe a Lure would wake it…"); return; }
       let lure = have[0];
@@ -10433,7 +10560,7 @@
           leftPallet(player.location.map); DayCare.step(player.flags.dayCare); DayCare.step(player.flags.dayCare2); vsSeekerStep(); friendshipStep();
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
           farawayStep();
-          return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || safariStep() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep();
+          return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep();
         }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) && repelAllows(mon),
         onMap: (m) => {
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
@@ -10468,6 +10595,7 @@
       else if (ev.type === "leaf-vermilion") await leafVermilion();
       else if (ev.type === "tera-aide") await teraAide();
       else if (ev.type === "jessie-james") await jessieJames();
+      else if (ev.type === "jessie-james-later") await laterJessieJames();
       else if (ev.type === "safari-over") await safariOver(ev.text, false);
       else if (ev.type === "wild") {
         if (!canBattle() && !safariOn()) continue;

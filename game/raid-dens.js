@@ -41,7 +41,7 @@
     ["route25", "Route25", 62, 8, "Water"],
     ["route18", "Route18", 12, 3, "Flying"],
     ["cinnabar", "CinnabarIsland", 18, 13, "Fire"],
-    ["lavender", "LavenderTown", 16, 8, "Ghost"],
+    ["lavender", "PokemonTower_1F", 11, 2, "Ghost"],   // (at the top of Pokémon Tower's ground floor)
     ["silph", "SilphCo_1F", 27, 6, "Steel"],
     ["indigo", "IndigoPlateau_Exterior", 4, 10, "Dragon"],
     ["berryFarm", "CeladonCity", 11, 36, "Grass"],

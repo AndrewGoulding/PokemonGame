@@ -53,7 +53,8 @@ Champion: each team on record, newest first, as FireRed's PC shows it). Bill's P
 System: 30 boxes of 30 (BOX1-BOX30, each with a name and one of FireRed's 16
 wallpapers), Withdraw, Deposit, Move Pokémon (pick a Pokémon up with the hand
 and put it down anywhere, in a box or your party) and Move items (take, give and
-swap held items), with FireRed's hand, party panel, "which BOX?" popup, box
+swap held items), with FireRed's hand, party panel (its slots blue with a
+Pokémon in them, and under one the hand is holding), "which BOX?" popup, box
 scrolling and release. A Pokémon put in a box (or sent there when your party
 is full) is fully healed, as from Gen 4 on. Your own PC is item storage: Withdraw item on FireRed's
 item list, Deposit item from the Bag. There's
@@ -99,7 +100,8 @@ page tabs: POKéMON EVs, each stat's EVs, and A switches it to POKéMON IVs and
 back, with the Pokémon's happiness (out of 255) under both; up / down go through your party; SWITCH asks "Move to
 where?"; ITEM gives or takes a held item). The
 same screen picks a Pokémon for an item (ABLE / NOT ABLE for TMs and
-evolution stones), a trade or a tutor, and for switching in battle (SHIFT, or
+evolution stones), a trade or a tutor (ABLE / NOT ABLE / LEARNED for the
+tutor's move, as FireRed's tutors show it), and for switching in battle (SHIFT, or
 SUMMARY to look at a Pokémon as it is in the battle; in battle the Pokémon
 fighting is first, and the one sent in takes the place of the one it
 replaced, FireRed's battle order).
@@ -1079,7 +1081,11 @@ the Seismic Toss tutor, Brock (Zubat, Geodude, Vulpix and Onix) with the Boulder
 afterwards (she waits a few steps from the door, sees you and walks over) for a battle (Butterfree, which Terastallizes into a pure Flying type, her starter and a Jigglypuff; beat her and she gives you TM54 False Swipe), the Mega Punch and Mega Kick tutors (who teach
 again and again, for ₽1,000 each time), the
 Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils, Jessie & James
-climbing down the last ladder in Mt. Moon as in Yellow (a double battle), Gary in Cerulean (FireRed's team, with
+climbing down the last ladder in Mt. Moon as in Yellow (a double battle; they're back,
+as in Yellow and each time a double battle, on Rocket Hideout B4F on the way to Giovanni
+with Koffing, Meowth and Ekans at 25, on Pokémon Tower 7F before Mr. Fuji with Meowth,
+Arbok and Weezing at 27, and on Silph Co. 11F just off the warp pad from 7F with
+Weezing, Arbok and Meowth at 31), Gary in Cerulean (FireRed's team, with
 his Eevee, which knows Shadow Ball and Terastallizes into a Ghost type), the Nugget Bridge Rocket (a Nugget, then a battle), the Rocket in
 the robbed house's yard (beat him and he gives back TM28 Dig), the Day-Care
 Man (`game/daycare.js`: one Pokémon gains 1 Exp. Point a step, learning its
@@ -1093,9 +1099,9 @@ Raichu, the Thunder Badge and TM34 Shock Wave, this game's TM102), the Fishing
 Guru's Fishing Rod, Elyssa's trade (Ch'Ding the
 Farfetch'd for a Spearow), the Fan Club Chairman's Bike Voucher and the Bike
 Shop's Bicycle for it, Leaf waiting where the road from
-Route 6 comes into Vermilion (Butterfree 18, Wigglytuff 20, Nidorina 21 and her
+Route 6 comes into Vermilion (Butterfree 18, which Terastallizes into a Flying type again, Wigglytuff 20, Nidorina 21 and her
 second-stage starter 22), Red on the S.S. Anne where FireRed has Gary (Pikachu
-24, Charmeleon, Wartortle and Ivysaur 25), the seasick Captain's HM01 Cut, the
+24, which knows Surf and Terastallizes into a Water type, Charmeleon, Wartortle and Ivysaur 25), the seasick Captain's HM01 Cut, the
 ship sailing off when you next step onto the dock, Turner's trade in Route 11's
 gate (Nina the Nidorina for a Nidorino), Prof. Oak's aide there with the
 Itemfinder for thirty kinds of Pokémon caught (use it from the Bag: within 7
@@ -1190,12 +1196,16 @@ he comes along the paths from just off the screen, and goes back the way he
 came, and sends you to the top of Pokémon Tower. There Prof. Oak and Mr. Fuji
 stand at the top, and Leaf, Gary and Red wait in a line before them; you walk
 up the middle to stand before Oak, and everyone faces him as he explains: he
-has been studying Mega Evolution and tests everyone. One at a time, each steps
-out of the line, walks over to you and battles you, then goes back to their
-place: Leaf (Butterfree, Wigglytuff, Nidorina, then Vulpix, Gloom or Poliwhirl
+has been studying Mega Evolution and tests everyone. One at a time, you and the
+next one step away from the others, down the floor, to battle face to face, then
+they go back to their place: Leaf (Butterfree, Wigglytuff, Nidorina, then Vulpix, Gloom or Poliwhirl
 by her starter, then her starter's second stage; Lv. 27-31), Gary (Pidgeotto,
 Growlithe, Gyarados, Exeggutor, Umbreon) and Red (Pikachu, Charmeleon,
-Wartortle, Ivysaur, Espeon), and you're healed before each battle. You have to
+Wartortle, Ivysaur, Espeon). Each one's ace Terastallizes as before: Leaf's
+Butterfree into a Flying type, Gary's Umbreon into a Ghost type and Red's Pikachu,
+knowing Surf, into a Water type. Oak heals your Pokémon before the first battle,
+and after each one he walks down to you to heal them and goes back to his
+place, and you go back to yours. You have to
 win all three: lose one and you black out as usual, and the test starts over
 when you come back. Win them all and you step up to Oak for the Mega Ring and
 the Kanto starters' Mega Stones (Venusaurite, Charizardite X and Y,
@@ -1429,12 +1439,12 @@ Battles; `game/raid-dens.js`): eighteen dens, one of each type: Route 1
 corner below the tall grass), Seafoam Islands 1F
 (Ice), the Power Plant (Electric), the Fighting Dojo's back room (Fighting),
 Rock Tunnel 1F (Rock), Diglett's Cave (Ground), Route 25 by the sea (Water),
-Route 18's flower garden (Flying), Cinnabar Island's beach (Fire), Lavender
-Town (Ghost), Silph Co.'s lobby (Steel), outside the Indigo Plateau
+Route 18's flower garden (Flying), Cinnabar Island's beach (Fire), Pokémon
+Tower 1F (Ghost), Silph Co.'s lobby (Steel), outside the Indigo Plateau
 (Dragon), Celadon's Berry Farm (Grass), the Pokémon Mansion 1F (Poison),
 Mr. Psychic's back room (Psychic), the Rocket Hideout B1F (Dark; its
 Pokémon are Umbreon and Alola's Dark forms, no Galarian Moltres) and Mt.
-Moon B2F (Fairy). A den sleeps until you
+Moon B2F (Fairy). Talking to a den tells you its type. A den sleeps until you
 use a Lure on it (talk to it); then it glows, with a beam of light, holding a
 raid of 1 to 5 stars until you win it. Its Pokémon are all Kanto's: Kanto's own
 (not the legendaries or starters), their regional forms (Alolan Sandshrew,
