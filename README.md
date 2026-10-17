@@ -1312,7 +1312,7 @@ home. Inside, in the long grass, Mew plays hide and seek as in Emerald
 darts into the grass and vanishes; each step you take it takes one too, away
 from you if it can (and never trapped between you and one of the four
 rocks), shows itself only every 8th step and pauses on the 9th, and walking
-up to it, seen or not, finds it: "Myuu…", and a wild Mew, Lv. 30. Caught or
+up to it, seen or not, finds it: "Myuu…", and a wild Mew, Lv. 50 (Emerald's is Lv. 30). Caught or
 beaten it's gone for good; run from, it flies away and is back the next
 time you come in. Like Emerald's, the island is no place to Fly from.
 

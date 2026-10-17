@@ -7366,7 +7366,7 @@
   // shore to take you home; inside, in the long grass, Mew plays hide and
   // seek (game/faraway.js): it hides as you come in, moves as you do, away
   // from you, shows itself every 8th step, and is found by walking up to it,
-  // seen or not. A wild Mew, Lv. 30: caught or beaten it's gone for good; run
+  // seen or not. A wild Mew, Lv. 50 (Emerald's is Lv. 30): caught or beaten it's gone for good; run
   // from, it flies away and is back the next time you come in.
   const MEW = "LOCALID_FARAWAY_ISLAND_MEW";
   // FarawayIsland_Entrance_EventScript_Sailor ("Do you want to return to Lilycove?" in Emerald).
@@ -7407,7 +7407,7 @@
     if (!canBattle()) return;
     Overworld.setPersonHidden(MEW, false);
     await Overworld.act([{ who: MEW, moves: ["face_player"] }]);
-    await legendaryBird(person, "Mew", "foughtMew", { level: 30, text: ["Myuu…"] });
+    await legendaryBird(person, "Mew", "foughtMew", { level: 50, text: ["Myuu…"] });
   }
 
   // ---------- Orre: the Outskirt Stand (Pokémon Colosseum's opening) ----------
