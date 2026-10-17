@@ -1362,7 +1362,15 @@ into a Poison type, Koga's Mega Beedrill into a Fire type, Sabrina's Mega
 Alakazam into a Dark type and Blaine's Mega Houndoom (Lv. 48, with the
 Houndoominite; his team here is Magmortar, Magcargo, Rapidash, Arcanine and
 Houndoom) into a Dark type (a trainer with an ace keeps the Orb for it). Koga's
-team here is Weezing, Muk, Arbok and Beedrill with its Beedrillite. A Mega
+team here is Weezing, Muk, Arbok and Beedrill with its Beedrillite. Giovanni's
+Gym team is Rhydon, Persian, Nidoqueen, Nidoking and his ace, Mega
+Kangaskhan (Tera Fighting); Sabrina has Jynx in Kadabra's place. The Elite
+Four, first battle and rematch alike: Bruno has Hitmontop in his second
+Onix's (Steelix's) place; Agatha has Hisuian Typhlosion, Cursola, Alolan
+Marowak, Mismagius and her ace, Mega Gengar (Tera Dark); Lance has Kingdra
+and Mega Charizard X where FireRed has his Dragonairs (the rematch's
+Dragonite and Kingdra), and his Dragonite Terastallizes into a Flying type
+(TEAM_SWAPS in `ui/game.js`). A Mega
 Evolved Pokémon can Terastallize too (this game's own), even in the same turn
 it Mega Evolves, the Mega Evolution first. Yours too: when it can do both, both
 triggers slide out, one picked; START switches the picked one on or off, and

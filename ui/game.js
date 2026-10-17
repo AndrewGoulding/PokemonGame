@@ -6603,7 +6603,7 @@
       if (!canBattle()) return;
       // (This game's: her Alakazam holds its Alakazite, Mega Evolves, then
       // Terastallizes into a Dark type.)
-      const team = trainerTeam(ID).map((r) => (r.species === "Alakazam" ? Object.assign(r, { item: "alakazite", teraType: "Dark", teraAce: true }) : r));
+      const team = swappedTeam(ID).map((r) => (r.species === "Alakazam" ? Object.assign(r, { item: "alakazite", teraType: "Dark", teraAce: true }) : r));
       const outcome = await battle("trainer", { foe: { name: "Leader Sabrina", team, pic: "leader_sabrina", tera: true },
         defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
       if (outcome !== "won") return;
@@ -7157,7 +7157,7 @@
       music("mus_encounter_rocket");
       await say(intro.slice(-1));
       if (!canBattle()) return;
-      const outcome = await battle("trainer", { foe: { name: "Leader Giovanni", team: trainerTeam(ID), pic: "leader_giovanni" },
+      const outcome = await battle("trainer", { foe: { name: "Leader Giovanni", team: swappedTeam(ID), pic: "leader_giovanni", tera: true },
         defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
       if (outcome !== "won") return;
       if (!hasBadge("earth")) player.badges.push("earth");
@@ -7315,6 +7315,33 @@
   // Bruno and Agatha look away when they've had their say. (Lorelei's
   // rematch words go by FLAG_SYS_CAN_LINK_WITH_RS, the others' by
   // FLAG_SYS_GAME_CLEAR, as in FireRed.)
+  // This game's changes to FireRed's teams, the same for the first battle
+  // and the rematch (_2): [slot, species in its place (null: keep it), extras]
+  // at that slot's level. A Tera ace (teraAce) Terastallizes as soon as it's
+  // out, its trainer having a Tera Orb.
+  const TEAM_SWAPS = {
+    // Giovanni (Viridian Gym): Rhydon, Persian, and his ace, Mega Kangaskhan (Tera Fighting).
+    TRAINER_LEADER_GIOVANNI: [[0, "Rhydon"], [1, "Persian"], [4, "Kangaskhan", { item: "kangaskhanite", teraType: "Fighting", teraAce: true }]],
+    // Sabrina (Saffron Gym): Jynx in Kadabra's place.
+    TRAINER_LEADER_SABRINA: [[0, "Jynx"]],
+    // Bruno: Hitmontop in his second Onix's (Steelix's) place.
+    TRAINER_ELITE_FOUR_BRUNO: [[3, "Hitmontop"]], TRAINER_ELITE_FOUR_BRUNO_2: [[3, "Hitmontop"]],
+    // Agatha: Hisuian Typhlosion, Cursola, Alolan Marowak, Mismagius and her ace, Mega Gengar (Tera Dark).
+    TRAINER_ELITE_FOUR_AGATHA: [[0, "Typhlosion-Hisui"], [1, "Cursola"], [2, "Marowak-Alola"], [3, "Mismagius"], [4, null, { item: "gengarite", teraType: "Dark", teraAce: true }]],
+    TRAINER_ELITE_FOUR_AGATHA_2: [[0, "Typhlosion-Hisui"], [1, "Cursola"], [2, "Marowak-Alola"], [3, "Mismagius"], [4, null, { item: "gengarite", teraType: "Dark", teraAce: true }]],
+    // Lance: Kingdra and Mega Charizard X in his Dragonairs' places, and his ace, Dragonite (Tera Flying).
+    TRAINER_ELITE_FOUR_LANCE: [[1, "Kingdra"], [2, "Charizard", { item: "charizardite-x" }], [4, null, { teraType: "Flying", teraAce: true }]],
+    TRAINER_ELITE_FOUR_LANCE_2: [[1, "Kingdra"], [2, "Charizard", { item: "charizardite-x" }], [4, null, { teraType: "Flying", teraAce: true }]]
+  };
+  function swappedTeam(id) {
+    const team = trainerTeam(id);
+    for (const [slot, species, extra] of TEAM_SWAPS[id] || []) {
+      const was = team[slot];
+      if (species) team[slot] = Party.create(species, was.level, { ivs: was.ivs.hp });
+      if (extra) Object.assign(team[slot], extra);
+    }
+    return team;
+  }
   async function eliteFour(k) {
     const f = player.flags, X = (label) => T(LEAGUE_TEXT[k] + label);
     const lookAway = async () => {
@@ -7330,8 +7357,8 @@
     music("mus_encounter_gym_leader");
     await say(intro.slice(-1));
     if (!canBattle()) return;
-    const id = League.trainerId(f, k), data = window.WORLD_TRAINERS[id];
-    const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(id), pic: data.pic },
+    const id = League.trainerId(f, k), data = window.WORLD_TRAINERS[id], team = swappedTeam(id);
+    const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team, pic: data.pic, tera: team.some((r) => r.teraAce) },
       defeatText: X("Defeat"), trainerId: id, prizeClass: "Elite Four",
       music: "mus_vs_gym_leader", victoryMusic: "mus_victory_trainer" });
     if (outcome !== "won") return;

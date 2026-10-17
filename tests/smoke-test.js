@@ -3156,6 +3156,22 @@ for (let seed = 1; seed <= GEN8; seed++) {
     assert(/item: "alakazite", teraType: "Dark", teraAce: true/.test(gameSrc) && /pic: "leader_sabrina", tera: true/.test(gameSrc), "Sabrina's Mega Alakazam");
     assert(/item: "houndoominite", teraType: "Dark", teraAce: true/.test(gameSrc) && /pic: "leader_blaine", tera: true/.test(gameSrc), "Blaine's Mega Houndoom");
     assert(/return \[Party\.create\("Magmortar", 43, \{ ivs: 0 \}\), Party\.create\("Magcargo", 42, \{ ivs: 0 \}\),\n\s*rapidash, arcanine, Object\.assign\(Party\.create\("Houndoom", 48, \{ ivs: 0 \}\)/.test(gameSrc), "Blaine: Magmortar, Magcargo, Rapidash, Arcanine, Mega Houndoom");
+    // The Elite Four's, Giovanni's and Sabrina's swaps (first battle and rematch alike).
+    const swaps = /const TEAM_SWAPS = (\{[\s\S]*?\n  \});/.exec(gameSrc);
+    assert(swaps, "TEAM_SWAPS");
+    const SW = eval("(" + swaps[1] + ")");
+    const swapped = (id) => { const t = WORLD_TRAINERS[id].party.map((m) => ({ species: m.species })); for (const [i, sp, x] of SW[id] || []) { if (sp) t[i] = { species: sp }; Object.assign(t[i], x); } return t; };
+    for (const r of ["", "_2"]) {
+      assert.deepStrictEqual(swapped("TRAINER_ELITE_FOUR_AGATHA" + r).map((m) => m.species), ["Typhlosion-Hisui", "Cursola", "Marowak-Alola", "Mismagius", "Gengar"]);
+      assert.deepStrictEqual(swapped("TRAINER_ELITE_FOUR_AGATHA" + r)[4], { species: "Gengar", item: "gengarite", teraType: "Dark", teraAce: true });
+      assert.deepStrictEqual(swapped("TRAINER_ELITE_FOUR_LANCE" + r).map((m) => m.species), ["Gyarados", "Kingdra", "Charizard", "Aerodactyl", "Dragonite"]);
+      assert.strictEqual(swapped("TRAINER_ELITE_FOUR_LANCE" + r)[4].teraType, "Flying");
+      assert.strictEqual(swapped("TRAINER_ELITE_FOUR_BRUNO" + r)[3].species, "Hitmontop");
+    }
+    assert.deepStrictEqual(swapped("TRAINER_LEADER_GIOVANNI").map((m) => m.species), ["Rhydon", "Persian", "Nidoqueen", "Nidoking", "Kangaskhan"]);
+    assert.strictEqual(swapped("TRAINER_LEADER_SABRINA")[0].species, "Jynx");
+    for (const sp of ["Typhlosion-Hisui", "Cursola", "Marowak-Alola", "Mismagius", "Kingdra", "Hitmontop", "Jynx", "Rhydon", "Persian"]) assert(DEX[sp] && LEARNSETS_GEN6[sp], sp);
+    assert(/team: swappedTeam\(ID\), pic: "leader_giovanni", tera: true/.test(gameSrc) && /team = swappedTeam\(id\)/.test(gameSrc));
     // Every trainer's Pokémon knows the last four moves it learns by its level (not FireRed's sets).
     assert(!/moves: m\.moves/.test(gameSrc) && !/moves: m\.moves/.test(fs.readFileSync(path.join(__dirname, "../game/trainer-tower.js"), "utf8")), "trainers' moves by level");
     assert.deepStrictEqual(Party.create("Geodude", 12).moves.map((m) => m.name), RandomTeam.levelUpMoves("Geodude", 12));
