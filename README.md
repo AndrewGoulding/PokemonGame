@@ -201,8 +201,8 @@ each version's Pokémon where FireRed and LeafGreen differ (Johto's maps,
 HeartGold and SoulSilver's three rods). Which rod's slots a bite comes from
 goes by your **fishing level** (`game/fishing.js`): every Pokémon hooked
 earns fishing XP (10 for an Old Rod Pokémon, 15 for a Good Rod one, 20 for a
-Super Rod one), and levels go as mining's do (20 XP a level up to 20, then
-40, 60, 80 and 100; level 100 at 5,980 XP). Up to level 9 only the Old Rod's
+Super Rod one), and levels take 20 XP each up to level 20, then 40, 60, 80
+and 100 (level 100 at 5,980 XP). Up to level 9 only the Old Rod's
 Pokémon bite; from 10 the Good Rod's too (60/40); from 25 the Super Rod's
 (30/40/30); from 50, 15/35/50, and from 75, 5/25/70. From level 50 the Super
 Rod's rarer slots come up more often too (35/35/20/7/3, and 30/30/25/10/5
@@ -1674,8 +1674,8 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   level 100). What a hit dug up is told under the board until the next hit.
   Every hit earns 1 mining XP and every treasure 10 more; the top of the
   screen shows your mining level, a bar to the next one, and your energy.
-  Levels take 20 XP each up to level 20, then 40, 60, 80 and 100 (5,980 XP in
-  all for level 100). Only common treasures (Heart Scales and shards) turn up
+  Levels go up on a curve: 20 + L²/20 XP from level L to the next (20 at
+  first, 40 at level 20, 145 at 50, 510 at 99; 18,365 XP in all for level 100). Only common treasures (Heart Scales and shards) turn up
   at first; rarer ones unlock along the way: Hard Stones and Everstones at 5,
   Revives, Star Pieces and Oval Stones at 10, the vitamins (HP Up, Protein,
   Iron, Calcium, Zinc, Carbos) at 15, the evolution stones at 20,

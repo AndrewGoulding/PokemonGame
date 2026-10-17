@@ -40,9 +40,19 @@
     return null;
   }
 
-  const M = () => window.Mining;
-  window.Fishing = { RODS, XP, TIERS, SUPER_WEIGHTS, pickRod, encounter,
-    get MAX_LEVEL() { return M().MAX_LEVEL; },
-    level: (xp) => M().level(xp), toNext: (xp) => M().toNext(xp), progress: (xp) => M().progress(xp),
+  // Fishing level, 1 to 100, from fishing XP: going from level L to L + 1
+  // takes 20 x (1 + floor(L / 20)) XP (20 each up to level 20, then 40, 60,
+  // 80 and 100; 5,980 in all for level 100). LEVELS[L - 1] is level L's XP.
+  const MAX_LEVEL = 100;
+  const LEVELS = [0];
+  for (let L = 1; L < MAX_LEVEL; L++) LEVELS.push(LEVELS[L - 1] + 20 * (1 + Math.floor(L / 20)));
+  const level = (xp) => LEVELS.filter((n) => (xp | 0) >= n).length;
+  const toNext = (xp) => (level(xp) >= MAX_LEVEL ? null : LEVELS[level(xp)] - (xp | 0));
+  function progress(xp) {
+    const lv = level(xp);
+    if (lv >= MAX_LEVEL) return { level: lv, into: 0, need: 0 };
+    return { level: lv, into: (xp | 0) - LEVELS[lv - 1], need: LEVELS[lv] - LEVELS[lv - 1] };
+  }
+  window.Fishing = { RODS, XP, TIERS, SUPER_WEIGHTS, pickRod, encounter, MAX_LEVEL, LEVELS, level, toNext, progress,
     tiers: (lv) => at(TIERS, lv), superWeights: (lv) => at(SUPER_WEIGHTS, lv) };
 })();
