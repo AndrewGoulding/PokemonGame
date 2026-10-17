@@ -608,12 +608,23 @@
   // or fly sit higher by FireRed's elevation (gEnemyMonElevation; for later
   // Pokémon, 8 pixels if they have Levitate). The foe's sprite is 72 GBA pixels
   // tall for its 96, yours 96.
+  //
+  // (This game's own: in a single battle a tall Pokémon of yours, such as Mega
+  // Blastoise with its cannon, would reach up behind the foe's healthbox, so
+  // it stands lower instead, its feet behind the text box as in Diamond and
+  // Pearl: the top of the picture comes no higher than just under the box.)
+  const PLAYER_SPRITE_TOP = 14, FOE_BOX_BOTTOM = 46;   // (GBA px; yours is 96 tall, its feet at y 110)
   function placeSprite(sprite, v, back) {
     const M = window.SPRITE_METRICS, dex = window.DEX[v.species];
     if (!M || !dex) return;
     const table = back ? M.back : M.front;
     const key = dex.id + (v.form ? "-" + v.form : "");
-    let pct = ((table[key] != null ? table[key] : table[dex.id]) || 0) / 96 * 100;
+    const of = (t) => (t[key] != null ? t[key] : t[dex.id]) || 0;
+    let pct = of(table) / 96 * 100;
+    if (back && M.backTop && !(battle && battle.doubles)) {
+      const top = PLAYER_SPRITE_TOP + of(table) + of(M.backTop);
+      if (top < FOE_BOX_BOTTOM) pct += (FOE_BOX_BOTTOM - top) / 96 * 100;
+    }
     if (!back) {
       const lift = M.elevation[v.species] != null ? M.elevation[v.species]
         : dex.id > 386 && (dex.abilities || []).includes("Levitate") ? 8 : 0;

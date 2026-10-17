@@ -885,7 +885,11 @@ trainer's. Every
 Pokémon stands on its platform: `tools/build-sprite-metrics.js` measures the
 empty rows under each sprite into `data/sprite-metrics.js`, along with
 FireRed's `gEnemyMonElevation` for foes that float or fly (later Pokémon
-with Levitate float 8 pixels). `ui/game.js` picks
+with Levitate float 8 pixels). In a single battle a tall Pokémon of yours
+(Mega Blastoise's cannon, Charizard's wings) would reach up behind the foe's
+healthbox, so it stands lower instead, its feet behind the text box as in
+Diamond and Pearl (the metrics also measure the empty rows above each back
+sprite for this). `ui/game.js` picks
 the terrain like FireRed: tall grass for grass encounters, the building scene
 indoors, a cave underground, and the plain scene elsewhere.
 
