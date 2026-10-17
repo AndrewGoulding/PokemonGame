@@ -287,6 +287,10 @@
       this.critsLanded = 0;
       // (Gen 9: the Pokémon of each species it's knocked out, Kingambit's Bisharp.)
       this.koSpecies = Object.assign({}, set.koSpecies);
+      // (Gen 9: its Tera Type, set.teraType; Terastallized: this.terastallized, that type.)
+      // (Ogerpon's is its mask's, Terapagos's Stellar, whatever was set.)
+      this.teraType = /^(Ogerpon|Terapagos)/.test(speciesKey) ? Battle.defaultTeraType(speciesKey) : set.teraType || Battle.defaultTeraType(speciesKey, set.personality);
+      this.terastallized = null;
       if (set.status && !this.fainted) {
         this.status = set.status;
         if (set.status === "slp") this.statusState.time = battle.randInt(1, 3);
@@ -309,7 +313,7 @@
     get ident() { return this.side.id + (this.slot === 1 ? "b" : "a") + ": " + this.name; }
     hasType(t) { return this.types.includes(t); }
     getTypes() { return this.types.slice(); }
-    setType(t) { this.types = [].concat(t); return true; }
+    setType(t) { if (this.terastallized) return false; this.types = [].concat(t); return true; }
     ignoringAbility() { return !!this.volatiles.gastroacid || this.battle._breakAbilityOf === this; }
     hasAbility(a) {
       if (this.ignoringAbility() || this.battle.neutralized(this)) return false;
@@ -385,6 +389,10 @@
         : (opts.team || []).slice(0, 6).map((s) => [s, 0]);
       this.pokemon = sets.map(([s, owner], i) => { const p = new Pokemon(battle, this, s, i); p.owner = owner; return p; });
       this.megaUsedBy = [false, false];
+      // (Terastallizing: a side whose Trainer has a charged Tera Orb, opts.tera; once a battle.)
+      this.teraAllowed = !!opts.tera;
+      this.teraUsed = false;
+      this.teraUsedBy = [false, false];
       this.partial = [];
       this.switchSlots = [];
       if (!this.pokemon.length) throw new Error(id + " has no Pokemon");
@@ -417,6 +425,16 @@
   // Battle
   // ---------------------------------------------------------------
   class Battle {
+    // A Pokémon's Tera Type when nothing set one: Ogerpon's its mask's,
+    // Terapagos Stellar, any other one of its own types (by its personality
+    // if it has one, so a caught Pokémon keeps it).
+    static defaultTeraType(species, personality) {
+      const ogerpon = { Ogerpon: "Grass", "Ogerpon-Wellspring": "Water", "Ogerpon-Hearthflame": "Fire", "Ogerpon-Cornerstone": "Rock" }[species];
+      if (ogerpon) return ogerpon;
+      if (/^Terapagos/.test(species)) return "Stellar";
+      const d = window.DEX[species], types = (d && d.types) || ["Normal"];
+      return types[personality != null ? (personality >>> 0) % types.length : 0];
+    }
     constructor(opts) {
       buildIndexes();
       opts = opts || {};
@@ -815,7 +833,7 @@
     mimicry(only) {
       const T = { ElectricTerrain: "Electric", GrassyTerrain: "Grass", MistyTerrain: "Fairy", PsychicTerrain: "Psychic" };
       for (const m of only ? [only] : this.getActives()) {
-        if (!m.hasAbility("Mimicry")) continue;
+        if (!m.hasAbility("Mimicry") || m.terastallized) continue;
         const t = T[this.field.terrain];
         const types = t ? [t] : m.baseTypes.slice();
         if (types.join() === m.types.join()) continue;
@@ -1107,6 +1125,12 @@
     }
 
     restoreTypes(mon) { mon.types = mon.baseTypes.slice(); }
+    // (A form change keeps a Terastallized Pokémon's Tera Type.)
+    keepTeraType(mon, d) {
+      if (!mon.terastallized) return;
+      mon.teraBaseTypes = d.types.slice();
+      if (mon.terastallized !== "Stellar") { mon.types = [mon.terastallized]; mon.baseTypes = [mon.terastallized]; }
+    }
 
     confusionDamage(mon) {
       const base = tr(tr(tr(tr((2 * mon.level) / 5 + 2) * 40 * this.getBoostedStat(mon, "atk")) / this.getBoostedStat(mon, "def")) / 50) + 2;
@@ -1355,6 +1379,7 @@
       mon.species = forme;
       mon.stats = stats;
       mon.types = d.types.slice(); mon.baseTypes = d.types.slice();
+      this.keepTeraType(mon, d);
       mon.weight = d.weight;
       if (d.abilities && d.abilities[0]) { mon.ability = d.abilities[0]; mon.baseAbility = mon.baseAbility || mon.ability; }
       mon.maxhp = stats.hp; mon.baseMaxhp = stats.hp;
@@ -1376,6 +1401,7 @@
       mon.species = forme;
       mon.stats = stats;
       mon.types = d.types.slice(); mon.baseTypes = d.types.slice();
+      this.keepTeraType(mon, d);
       mon.weight = d.weight;
       if (stats.hp > mon.maxhp) { mon.hp += stats.hp - mon.maxhp; mon.maxhp = mon.baseMaxhp = stats.hp; }
       mon.formeChanged = true;
@@ -1444,6 +1470,36 @@
     canUltraBurst(mon) {
       return !mon.side.ultraUsed && mon.item === "ultranecrozium-z" && !mon.transformed
         && (mon.species === "Necrozma-Dusk-Mane" || mon.species === "Necrozma-Dawn-Wings");
+    }
+
+    // ---------- Terastallizing (Gen 9) ----------
+    // Once a battle (a tag team: each Trainer once), with a Tera Orb: not
+    // Dynamaxed, Mega Evolved or holding a Mega Stone it can use or a Z-Crystal.
+    teraUsedFor(side, mon) { return side.tag ? !!side.teraUsedBy[mon.owner] : side.teraUsed; }
+    canTera(mon) {
+      return !!mon.side.teraAllowed && !this.teraUsedFor(mon.side, mon) && !mon.terastallized && !mon.dynamaxed && !mon.mega
+        && !this.megaForme(mon) && !(window.Z_MOVES && window.Z_MOVES.crystals[mon.item]) && !!mon.teraType;
+    }
+    // Its types become its Tera Type (a Stellar Pokémon keeps its own), for
+    // the rest of the battle, switched out and back in or not. Ogerpon takes
+    // its mask's Tera form, Embody Aspect raising a stat; Terapagos turns
+    // Stellar, Teraform Zero clearing the weather and terrain.
+    terastallize(mon) {
+      const side = mon.side, type = mon.teraType;
+      if (side.tag) side.teraUsedBy[mon.owner] = true; else side.teraUsed = true;
+      mon.terastallized = type;
+      const own = window.DEX[mon.species];
+      mon.teraBaseTypes = (own ? own.types : mon.types).slice();
+      this.add("-terastallize", mon, type);
+      const forme = { Ogerpon: "Ogerpon-Teal-Tera", "Ogerpon-Wellspring": "Ogerpon-Wellspring-Tera", "Ogerpon-Hearthflame": "Ogerpon-Hearthflame-Tera",
+        "Ogerpon-Cornerstone": "Ogerpon-Cornerstone-Tera", "Terapagos-Terastal": "Terapagos-Stellar" }[mon.species];
+      if (forme && !mon.transformed && this.abilityForme(mon, forme, null, true)) {
+        this.add("detailschange", mon, forme);
+        mon.ability = mon.baseAbility = window.DEX[forme].abilities[0];
+        mon.abilityState = {};
+      }
+      if (type !== "Stellar") { mon.types = [type]; mon.baseTypes = [type]; }
+      this.runEvent("onTerastallize", mon, { only: "ability" });
     }
 
     // ---------- Dynamax and Gigantamax (Gen 8) ----------
@@ -1596,6 +1652,7 @@
         canUltraBurst: !forced && this.canUltraBurst(mon),
         canDynamax: !forced && this.canDynamax(mon), dynamaxed: !!mon.dynamaxed,
         maxMoves: !forced && (mon.dynamaxed || this.canDynamax(mon)) ? this.maxMovesFor(mon, slots) : null,
+        canTera: !forced && this.canTera(mon), teraType: mon.teraType, terastallized: mon.terastallized,
         trapped: false, forced: forced
       };
       if (forced) { base.switches = []; return base; }
@@ -1670,6 +1727,10 @@
           if (choice.dynamax) {
             if (!req.active.canDynamax || choice.zmove || choice.mega) return { ok: false, error: "Cannot Dynamax" };
             side.choice.dynamax = true;
+          }
+          if (choice.tera) {
+            if (!req.active.canTera || choice.zmove || choice.mega || choice.dynamax || choice.ultra) return { ok: false, error: "Cannot Terastallize" };
+            side.choice.tera = true;
           }
         } else return { ok: false, error: "Invalid choice" };
       }
@@ -1766,6 +1827,7 @@
       if (c.type === "move" && req.active.canUltraBurst) c.ultra = true;
       if (c.type === "move" && req.active.zMoves && req.active.zMoves[c.move] && this.random() < 0.5) c.zmove = true;
       if (c.type === "move" && !c.zmove && !c.mega && req.active.canDynamax && this.random() < 0.3) c.dynamax = true;
+      if (c.type === "move" && !c.zmove && !c.mega && !c.dynamax && !c.ultra && req.active.canTera && this.random() < 0.3) c.tera = true;
       return c;
     }
 
@@ -1885,6 +1947,7 @@
           canUltraBurst: !forced && this.canUltraBurst(mon),
           canDynamax: !forced && this.canDynamax(mon), dynamaxed: !!mon.dynamaxed,
           maxMoves: !forced && (mon.dynamaxed || this.canDynamax(mon)) ? this.maxMovesFor(mon, moves) : null,
+          canTera: !forced && this.canTera(mon), teraType: mon.teraType, terastallized: mon.terastallized,
           trapped: false, forced, switches: []
         };
         if (forced) return r;
@@ -1984,6 +2047,11 @@
             if (!a.canDynamax || c.zmove || c.mega || partial.some((x, i) => x && x.dynamax && i !== slot)) return err("Cannot Dynamax");
             picked.dynamax = true;
           }
+          if (c.tera) {
+            const who = side.tag ? slot : 0;
+            if (!a.canTera || c.zmove || c.mega || c.dynamax || c.ultra || partial.some((x, i) => x && x.tera && i !== slot && (side.tag ? i === who : true))) return err("Cannot Terastallize");
+            picked.tera = true;
+          }
           partial[slot] = picked;
         } else return err("Invalid choice");
         any = true;
@@ -2006,7 +2074,7 @@
       if (req.phase !== "move") return null;
       const side = this.controller(id).side;
       const used = new Set((side.partial || []).filter((c) => c && c.type === "switch").map((c) => c.index));
-      let mega = false, zm = false, dm = false;
+      let mega = false, zm = false, dm = false, tera = !side.tag && (side.partial || []).some((c) => c && c.tera);
       req.actives.forEach((a, slot) => {
         if (!a) return;
         if (a.forced) { out[slot] = { type: "move", move: 0 }; return; }
@@ -2024,6 +2092,7 @@
           if (a.canUltraBurst) c.ultra = true;
           if (a.zMoves && a.zMoves[c.move] && !zm && this.random() < 0.5) { c.zmove = true; zm = true; }
           if (!c.zmove && !c.mega && a.canDynamax && !dm && this.random() < 0.3) { c.dynamax = true; dm = true; }
+          if (!c.zmove && !c.mega && !c.dynamax && !c.ultra && a.canTera && !tera && this.random() < 0.3) { c.tera = true; tera = true; }
         }
         out[slot] = c;
       });
@@ -2062,6 +2131,7 @@
             if (c.mega) actions.push({ order: 2, type: "mega", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
             if (c.ultra) actions.push({ order: 2, type: "ultra", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
             if (c.dynamax) actions.push({ order: 2, type: "dynamax", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
+            if (c.tera) actions.push({ order: 2, type: "tera", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
             const f = c.forced;
             const name = f ? f.move : c.moveName;
             const mv = this.getActiveMove(name);
@@ -2512,6 +2582,7 @@
           break;
         }
         case "dynamax": if (!a.mon.fainted && this.canDynamax(a.mon)) this.dynamax(a.mon); break;
+        case "tera": if (!a.mon.fainted && this.canTera(a.mon)) this.terastallize(a.mon); break;
         case "move": this.runMoveAction(a); break;
         case "residual": this.residual(); break;
         case "run": this.tryRun(a.mon); break;
@@ -2636,6 +2707,18 @@
       const terrainType = { ElectricTerrain: "Electric", GrassyTerrain: "Grass", MistyTerrain: "Fairy", PsychicTerrain: "Psychic" }[this.field.terrain];
       if (move.id === "terrainpulse" && terrainType && this.isGrounded(user)) { move.type = terrainType; move.typeOverride = true; }
       if (move.id === "aurawheel" && user.species === "Morpeko-Hangry") { move.type = "Dark"; move.typeOverride = true; }
+      // (Gen 9: Tera Blast takes a Terastallized user's Tera Type, physical if its
+      // Attack is higher; Stellar Terapagos's Tera Starstorm is Stellar and hits both foes.)
+      const atkHigher = () => this.getBoostedStat(user, "atk") > this.getBoostedStat(user, "spa");
+      if (move.id === "terablast" && user.terastallized) {
+        move.type = user.terastallized; move.typeOverride = true;
+        if (atkHigher()) move.category = "Physical";
+        if (user.terastallized === "Stellar") move.power = 100;
+      }
+      if (move.id === "terastarstorm" && user.species === "Terapagos-Stellar") {
+        move.type = "Stellar"; move.typeOverride = true; move.target = "allAdjacentFoes";
+        if (atkHigher()) move.category = "Physical";
+      }
       let target, targets = null;
       // (Gen 8: Expanding Force hits both foes on Psychic Terrain.)
       if (move.id === "expandingforce" && this.field.terrain === "PsychicTerrain" && this.isGrounded(user)) move.target = "allAdjacentFoes";
@@ -3175,7 +3258,9 @@
           ruin: this.ruin(user, target),
           timesHit: user.timesHit || 0,
           faintedAllies: user.side.pokemon.filter((m) => m !== user && m.fainted).length,
-          fickle: !!o.fickle, glaiveRush: !!target.volatiles.glaiverush
+          fickle: !!o.fickle, glaiveRush: !!target.volatiles.glaiverush,
+          moveCategory: move.id === "terablast" || move.id === "terastarstorm" ? move.category : undefined,
+          movePower: move.id === "terablast" ? move.power : undefined
         };
         // Flower Gift (Cherrim in the sun): 1.5x Attack for the user's side,
         // 1.5x Sp. Def for the target's (Mold Breaker ignores that one).

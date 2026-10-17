@@ -1,6 +1,13 @@
 // abilities.js — Gen 6 (all 191 abilities, num 1–191), Gen 7 (num 192–233), Gen 8 (num 234–267), Gen 9 (num 268–310) and Legends: Z-A's
 // Auto-curated. See header comment for engine API.
 
+// (Gen 9: Terastallized Ogerpon's Embody Aspect, raising a stat each time.)
+function embodyAspect(ctx, stat) {
+  const p = ctx.pokemon;
+  if (!p.terastallized || !/^Ogerpon/.test(p.species)) return;
+  ctx.boost(p, { [stat]: 1 }, p);
+}
+
 window.ABILITIES = {
 
   // ==================================================================
@@ -2864,9 +2871,7 @@ window.ABILITIES = {
   },
 
   // ==================================================================
-  // Gen 9 (Scarlet and Violet, num 268-310). Those for the Tera
-  // phenomenon (Embody Aspect, Teraform Zero) do nothing here: there's no
-  // Terastallizing.
+  // Gen 9 (Scarlet and Violet, num 268-310).
   // ==================================================================
   "Lingering Aroma": {
     name: "Lingering Aroma", num: 268, rating: 2,
@@ -3236,16 +3241,46 @@ window.ABILITIES = {
     },
   },
 
-  "Teraform Zero": { name: "Teraform Zero", num: 309, rating: 3, effect: "Terastallized Terapagos clears the weather and terrain (no Terastallizing here).",
-    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 } },
-  "Embody Aspect (Teal)": { name: "Embody Aspect (Teal)", num: 301, rating: 3.5, effect: "Terastallized Ogerpon's Speed rises (no Terastallizing here).",
-    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 } },
-  "Embody Aspect (Hearthflame)": { name: "Embody Aspect (Hearthflame)", num: 303, rating: 3.5, effect: "Terastallized Ogerpon's Attack rises (no Terastallizing here).",
-    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 } },
-  "Embody Aspect (Wellspring)": { name: "Embody Aspect (Wellspring)", num: 302, rating: 3.5, effect: "Terastallized Ogerpon's Sp. Def rises (no Terastallizing here).",
-    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 } },
-  "Embody Aspect (Cornerstone)": { name: "Embody Aspect (Cornerstone)", num: 304, rating: 3.5, effect: "Terastallized Ogerpon's Defense rises (no Terastallizing here).",
-    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 } },
+  "Teraform Zero": {
+    name: "Teraform Zero", num: 309, rating: 3,
+    effect: "When Terapagos turns Stellar, the weather and terrain end.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    onTerastallize(ctx) {
+      const b = ctx.battle;
+      if (!b || !b.field.weather && !b.field.terrain) return;
+      ctx.add("-activate", ctx.pokemon, "ability: Teraform Zero");
+      b.clearWeather();
+      if (b.field.terrain) { ctx.add("-fieldend", b.field.terrain); b.field.terrain = ""; b.field.terrainTurns = 0; b.mimicry(); }
+    },
+  },
+  "Embody Aspect (Teal)": {
+    name: "Embody Aspect (Teal)", num: 301, rating: 3.5,
+    effect: "Terastallized Ogerpon's Speed rises when it Terastallizes or comes out.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    onStart(ctx) { embodyAspect(ctx, "spe"); },
+    onTerastallize(ctx) { embodyAspect(ctx, "spe"); },
+  },
+  "Embody Aspect (Hearthflame)": {
+    name: "Embody Aspect (Hearthflame)", num: 303, rating: 3.5,
+    effect: "Terastallized Ogerpon's Attack rises when it Terastallizes or comes out.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    onStart(ctx) { embodyAspect(ctx, "atk"); },
+    onTerastallize(ctx) { embodyAspect(ctx, "atk"); },
+  },
+  "Embody Aspect (Wellspring)": {
+    name: "Embody Aspect (Wellspring)", num: 302, rating: 3.5,
+    effect: "Terastallized Ogerpon's Sp. Def rises when it Terastallizes or comes out.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    onStart(ctx) { embodyAspect(ctx, "spd"); },
+    onTerastallize(ctx) { embodyAspect(ctx, "spd"); },
+  },
+  "Embody Aspect (Cornerstone)": {
+    name: "Embody Aspect (Cornerstone)", num: 304, rating: 3.5,
+    effect: "Terastallized Ogerpon's Defense rises when it Terastallizes or comes out.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    onStart(ctx) { embodyAspect(ctx, "def"); },
+    onTerastallize(ctx) { embodyAspect(ctx, "def"); },
+  },
 
   // ==================================================================
   // Legends: Z-A's (its new Megas')

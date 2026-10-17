@@ -23,8 +23,8 @@
 // Ursaluna, Oinkologne's female, Maushold's Family of Four, Squawkabilly's
 // plumages, Palafin's Hero, Tatsugiri's Droopy and Stretchy, Dudunsparce's
 // Three-Segment, Gimmighoul's Roaming, Ogerpon's masks and Terapagos's
-// Terastal Form. Not: the Tera formes (Ogerpon's Tera masks, Stellar
-// Terapagos: there's no Terastallizing here), Koraidon's and Miraidon's
+// Terastal Form, and the Tera formes Terastallizing brings (Ogerpon's masks
+// Terastallized, Stellar Terapagos). Not: Koraidon's and Miraidon's
 // travel modes, Poltchageist's and Sinistcha's Artisan and Masterpiece
 // (they look the same). Megas: the 47 Legends: Z-A and its Mega Dimension
 // added (Mega Zygarde was already in, tools/build-extra-forms.js), not Mega
@@ -117,6 +117,12 @@ for (const it of MEGA_STONES) for (const [from, mega] of Object.entries(it.megaS
   megas.push(mega);
 }
 forms.push("Floette-Eternal");
+// The Tera formes (Terastallizing: engine/battle.js): Ogerpon's four masks
+// Terastallized and Stellar Terapagos. PokeAPI has no Ogerpon Tera forms: IDs
+// of this game's own (10527-10530), its masked forms' sprites.
+const TERA_FORMS = { "Ogerpon-Teal-Tera": ["Ogerpon", 10527, "ogerpon"], "Ogerpon-Wellspring-Tera": ["Ogerpon-Wellspring", 10528, "ogerpon-wellspring-mask"],
+  "Ogerpon-Hearthflame-Tera": ["Ogerpon-Hearthflame", 10529, "ogerpon-hearthflame-mask"], "Ogerpon-Cornerstone-Tera": ["Ogerpon-Cornerstone", 10530, "ogerpon-cornerstone-mask"],
+  "Terapagos-Stellar": ["Terapagos", null, "terapagos-stellar"] };
 // A form whose moves are its species' (the Megas, the Eternal Flower): our name -> the species'.
 const SAME_MOVES = { "Floette-Eternal": "Floette" };
 
@@ -125,13 +131,13 @@ function add(sdName, opts) {
   const s = gen9.species.get(sdName);
   if (!s.exists) throw new Error("No such species: " + sdName);
   const ours = ourName(s.name);
-  const api = pokemonBy[POKEAPI_FOR[s.name] || apiID(s.name)];
+  const api = pokemonBy[(TERA_FORMS[s.name] || [])[2] || POKEAPI_FOR[s.name] || apiID(s.name)];
   if (!api) throw new Error("No PokeAPI pokemon for " + s.name);
   const sp = speciesById[api.species_id];
   const base = opts.base && window.DEX[opts.base];
   const a = s.abilities;
   const entry = {
-    id: +api.id, types: s.types.slice(),
+    id: opts.id || +api.id, types: s.types.slice(),
     abilities: [a[0], a[1]].filter(Boolean),
     hiddenAbility: a.H || a.S || undefined,
     captureRate: +sp.capture_rate, baseEggSteps: +sp.hatch_counter * 256,
@@ -148,7 +154,9 @@ function add(sdName, opts) {
   sprites[entry.id] = String(api.id);
   return [ours, s];
 }
+for (const [n, [base, id]] of Object.entries(TERA_FORMS)) SAME_MOVES[n] = base;
 const sources = {};
+for (const [n, [base, id]] of Object.entries(TERA_FORMS)) add(n, { base, id });
 for (const n of forms) {
   const [ours, s] = add(n, { base: SAME_MOVES[n] });
   if (!SAME_MOVES[ours]) sources[ours] = s;

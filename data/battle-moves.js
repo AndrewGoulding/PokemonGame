@@ -30,7 +30,8 @@
   for (const id of ["recover", "softboiled", "milkdrink", "slackoff", "healorder"]) status[id] = heal50;
   status.roost = (b, user) => {
     if (!heal50(b, user)) return false;
-    if (user.hasType("Flying")) {
+    // (A Terastallized Pokémon keeps its Tera Type.)
+    if (user.hasType("Flying") && !user.terastallized) {
       user.types = user.types.filter((t) => t !== "Flying");
       if (!user.types.length) user.types = ["Normal"];
       b.addVolatile(user, "roost", user);
@@ -454,6 +455,7 @@
     b.add("-endability", target, "[from] move: Core Enforcer");
   };
   afterHitSelf.burnup = (b, user) => {
+    if (user.terastallized) return;
     user.types = user.types.filter((t) => t !== "Fire");
     if (!user.types.length) user.types = ["???"];
     b.add("-text", user, "{who} burned itself out!");
@@ -494,7 +496,7 @@
     return "done";
   };
   status.magicpowder = (b, user, target) => {
-    if (target.types.join() === "Psychic") return false;
+    if (target.types.join() === "Psychic" || target.terastallized) return false;
     target.types = ["Psychic"];
     b.add("-start", target, "typechange", "Psychic");
     return "done";
@@ -621,7 +623,12 @@
     return "done";
   };
   beforeHit.doubleshock = (b, user) => user.hasType("Electric");
+  // (Gen 9: Stellar Tera Blast lowers the user's Attack and Sp. Atk.)
+  afterHitSelf.terablast = (b, user) => {
+    if (user.terastallized === "Stellar") b.boost(user, { atk: -1, spa: -1 }, user, E("Move", "terablast", "Tera Blast"));
+  };
   afterHitSelf.doubleshock = (b, user) => {
+    if (user.terastallized) return;
     user.types = user.types.filter((t) => t !== "Electric");
     if (!user.types.length) user.types = ["???"];
     b.add("-text", user, "{who} used up all its electricity!");

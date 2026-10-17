@@ -243,6 +243,9 @@
     if (env.moveType) move.type = env.moveType;
     // (A type Z-Move: the power and category its move gives it.)
     if (env.zPower) { move.power = env.zPower; move.category = env.zCategory || move.category; }
+    // (Gen 9: Tera Blast's category and power as the battle settled them.)
+    if (env.moveCategory) move.category = env.moveCategory;
+    if (env.movePower) move.power = env.movePower;
     // Shell Side Arm is physical (and makes contact) when that would hit harder.
     if (move.id === "shellsidearm") {
       const D = env.defender;
@@ -420,7 +423,8 @@
 
     const env = { attacker: A, defender: D, field, weather,
       speA: Math.max(1, applyStage(A.stats.spe, A.boosts.spe)),
-      speD: Math.max(1, applyStage(D.stats.spe, D.boosts.spe)), moveType: opts.moveType, zPower: opts.zPower, zCategory: opts.zCategory };
+      speD: Math.max(1, applyStage(D.stats.spe, D.boosts.spe)), moveType: opts.moveType, zPower: opts.zPower, zCategory: opts.zCategory,
+      moveCategory: opts.moveCategory, movePower: opts.movePower };
 
     const move = prepMove(moveName, A, env);
     const result = {
@@ -464,6 +468,8 @@
     }
     // Tar Shot: Fire hits twice as hard.
     if (D.volatiles && D.volatiles.tarshot && move.type === "Fire") eff *= 2;
+    // (Gen 9: a Stellar move is super effective on a Terastallized Pokémon, neutral otherwise.)
+    if (move.type === "Stellar") eff = D.terastallized ? 2 : 1;
     result.typeEffectiveness = eff;
     env.eff = eff;   // (Tera Shell)
 
@@ -530,6 +536,10 @@
 
     // ---- Base power ----
     let bp = getBasePower(move, A, D, env, opts);
+    // (Gen 9: a Terastallized Pokémon's moves of its Tera Type are at least 60
+    // power: not priority moves, multi-hit moves or ones whose power varies.)
+    if (A.terastallized && A.terastallized !== "Stellar" && move.type === A.terastallized && bp < 60 && !(move.priority > 0)
+      && !move.multihit && move.power && !["eruption", "waterspout", "dragonenergy"].includes(move.id)) bp = 60;
     let bpChain = 4096;
     const push = (mult) => { bpChain = chainMult(bpChain, fp(mult)); };
 
@@ -685,9 +695,15 @@
       : (["allAdjacentFoes", "allAdjacent"].includes(move.target) && field.isDoubles ? 2 : 1);
 
     let stab = 1;
-    if (move.forceSTAB || A.hasType(move.type) || A.ability === "Protean" || A.ability === "Libero") stab = 1.5;
+    // (Terastallized: its Tera Type and its own types both count; Protean and
+    // Libero no longer change its type. A Tera Type it already had: 2x. Stellar:
+    // 2x for its own types, 1.2x for the rest.)
+    const ownTypes = A.terastallized ? A.teraBaseTypes || [] : [];
+    if (move.forceSTAB || A.hasType(move.type) || ownTypes.includes(move.type) || (!A.terastallized && (A.ability === "Protean" || A.ability === "Libero"))) stab = 1.5;
+    if (A.terastallized === "Stellar") stab = stab === 1.5 ? 2 : 4915 / 4096;
+    else if (A.terastallized === move.type && ownTypes.includes(move.type)) stab = 2;
     const aab = window.ABILITIES[A.ability];
-    if (aab && typeof aab.onModifySTAB === "function") {
+    if (A.terastallized !== "Stellar" && aab && typeof aab.onModifySTAB === "function") {
       try {
         const s = aab.onModifySTAB({ pokemon: A }, stab, move);
         if (typeof s === "number") stab = s;

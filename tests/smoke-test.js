@@ -3118,6 +3118,56 @@ for (let seed = 1; seed <= GEN8; seed++) {
     zozo.hp = 1;
     play(b, { p1: mv(1), p2: [mv(0, 2), mv(0)] });
     assert(zozo.fainted && !tat.volatiles.commanding, "out again when Dondozo faints"); }
+  // Terastallizing (with a Tera Orb: p1.tera): its Tera Type for the rest of
+  // the battle, once a battle.
+  { const tsingles = (p1, p2) => { const b = new Battle({ seed: 1, debug: true, p1: { name: "A", team: p1, tera: true }, p2: { name: "B", team: p2 } }); b.start(); return b; };
+    const b = tsingles([g9("Snorlax", ["Tera Blast", "Roost"], { teraType: "Ghost" }), g9("Pidgeot", ["Roost"], { teraType: "Flying" })],
+      [g9("Dusknoir", ["Splash"]), g9("Machamp", ["Close Combat"])]);
+    const s = b.sides.p1.active;
+    assert(b.getRequest("p1").active.canTera && !b.getRequest("p2").active.canTera, "only with a Tera Orb");
+    const evs = play(b, { p1: { type: "move", move: 0, tera: true }, p2: mv(0) });
+    assert(has(evs, "-terastallize", s.ident, "Ghost"));
+    assert.deepStrictEqual([s.terastallized, s.types], ["Ghost", ["Ghost"]]);
+    assert(hpLost(b.sides.p2.active) > 0, "a Ghost-type Tera Blast hits Dusknoir");
+    assert(!b.getRequest("p1").active.canTera, "once a battle");
+    play(b, { p1: { type: "switch", index: 1 }, p2: mv(0) });
+    assert(!b.getRequest("p1").active.canTera, "once a battle, for any Pokémon");
+    play(b, { p1: { type: "switch", index: 0 }, p2: { type: "switch", index: 1 } });
+    assert.deepStrictEqual(b.sides.p1.active.types, ["Ghost"], "still Terastallized when it comes back");
+    const cc = play(b, { p1: mv(1), p2: mv(0) });
+    assert(has(cc, "-immune", s.ident), "Close Combat can't touch a Tera Ghost"); }
+  // Tera STAB: 2x for a Tera Type it already had, 1.5x for its own types or a new one; the 60-power floor.
+  { const tera = (sp, t) => Object.assign(Damage.makePokemon(sp, { level: 50 }), { terastallized: t, teraBaseTypes: window.DEX[sp].types.slice(), types: t === "Stellar" ? window.DEX[sp].types.slice() : [t] });
+    const d = Damage.makePokemon("Snorlax", { level: 50 }), plain = Damage.makePokemon("Pikachu", { level: 50 });
+    const r = (a, m) => Damage.calc(a, d, m, {}).max;
+    const same = r(tera("Pikachu", "Electric"), "Thunderbolt"), base = r(plain, "Thunderbolt");
+    assert(same > base * 1.3 && same < base * 1.36, "Tera Electric Pikachu: 2x");
+    assert.strictEqual(r(tera("Pikachu", "Water"), "Thunderbolt"), base, "its own type stays 1.5x");
+    assert(r(tera("Pikachu", "Water"), "Surf") > r(plain, "Surf") * 1.45, "its Tera Type: 1.5x");
+    assert.strictEqual(Damage.calc(tera("Pikachu", "Electric"), d, "Thunder Shock", {}).basePower, 60, "60 power at least");
+    assert.strictEqual(Damage.calc(tera("Pikachu", "Normal"), d, "Quick Attack", {}).basePower, 40, "not for priority moves");
+    const ad = Damage.makePokemon("Porygon-Z", { level: 50, ability: "Adaptability" });
+    const adT = Object.assign(Damage.makePokemon("Porygon-Z", { level: 50, ability: "Adaptability" }), { terastallized: "Normal", teraBaseTypes: ["Normal"], types: ["Normal"] });
+    assert(r(adT, "Hyper Voice") > r(ad, "Hyper Voice") * 1.1, "Adaptability: 2.25x");
+    const target = Object.assign(Damage.makePokemon("Snorlax", { level: 50 }), { terastallized: "Normal" });
+    const st = tera("Terapagos-Stellar", "Stellar");
+    assert.strictEqual(Damage.calc(st, target, "Tera Starstorm", {}, { moveType: "Stellar" }).typeEffectiveness, 2, "Stellar: 2x at a Terastallized Pokémon");
+    assert.strictEqual(Damage.calc(st, d, "Tera Starstorm", {}, { moveType: "Stellar" }).typeEffectiveness, 1); }
+  // Ogerpon's masks: its Tera Type, its Tera form, Embody Aspect. Terapagos turns Stellar: Teraform Zero.
+  { const b = new Battle({ seed: 1, debug: true, p1: { name: "A", team: [g9("Ogerpon-Wellspring", ["Splash"], { item: "wellspring-mask", teraType: "Fire" })], tera: true },
+      p2: { name: "B", team: [g9("Pelipper", ["Splash"], { ability: "Drizzle" })] } });
+    b.start();
+    const o = b.sides.p1.active;
+    assert.strictEqual(o.teraType, "Water", "the mask's type");
+    play(b, { p1: { type: "move", move: 0, tera: true }, p2: mv(0) });
+    assert.deepStrictEqual([o.species, o.types, o.ability, o.boosts.spd], ["Ogerpon-Wellspring-Tera", ["Water"], "Embody Aspect (Wellspring)", 1]);
+    const c = new Battle({ seed: 1, debug: true, p1: { name: "A", team: [g9("Terapagos", ["Tera Starstorm"])], tera: true },
+      p2: { name: "B", team: [g9("Pelipper", ["Splash"], { ability: "Drizzle" })] } });
+    c.start();
+    assert.strictEqual(c.field.weather, "RainDance");
+    play(c, { p1: { type: "move", move: 0, tera: true }, p2: mv(0) });
+    const t = c.sides.p1.active;
+    assert.deepStrictEqual([t.species, t.terastallized, t.ability, c.field.weather], ["Terapagos-Stellar", "Stellar", "Teraform Zero", ""]); }
   // Gen 9's evolution rules: steps, Coins, knockouts, 1 in 100.
   { const pawmo = Party.create("Pawmo", 30, { rng: mulberry32(9) });
     assert(!Evolution.find(pawmo, { trigger: "level", party: [pawmo] }));
@@ -3138,12 +3188,12 @@ for (let seed = 1; seed <= GEN8; seed++) {
 
 // Gen 9's Pokémon in random battles, as Gen 8's above (no Dynamax).
 const GEN9 = 100;
-let gen9Turns = 0;
+let gen9Turns = 0, gen9Tera = 0;
 for (let seed = 1; seed <= GEN9; seed++) {
   const teamRng = mulberry32(seed * 104729);
   const dbl = seed % 2 === 0;
   const team = () => RandomTeam.team(dbl ? 4 : 3, { level: 50, rng: teamRng, onlyGen: 9 });
-  const battle = new Battle({ seed, debug: true, format: dbl ? "doubles" : "singles", p1: { name: "A", team: team() }, p2: { name: "B", team: team() } });
+  const battle = new Battle({ seed, debug: true, format: dbl ? "doubles" : "singles", p1: { name: "A", team: team(), tera: true }, p2: { name: "B", team: team(), tera: true } });
   const rng = mulberry32(seed);
   battle.start();
   for (let step = 0; step < 3000 && !battle.ended; step++) {
@@ -3155,6 +3205,7 @@ for (let seed = 1; seed <= GEN9; seed++) {
     }
   }
   assert(battle.ended, "Gen 9 battle " + seed + " did not finish");
+  if (battle.events.some((e) => e[0] === "-terastallize")) gen9Tera++;
   gen9Turns += battle.turn;
 }
 
@@ -4168,7 +4219,7 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
 {
   for (const f of ["mega-indicator", "mega-trigger"]) assert(fs.existsSync(path.join(root, "assets/battle-interface", f + ".png")), f);
   const battleJs = fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8");
-  assert(/mega: \/-Mega\(-\|\$\)\/\.test/.test(battleJs) && /showTrigger\(pos\)/.test(battleJs) && /hideTrigger\(\)/.test(battleJs));
+  assert(/mega: \/-Mega\(-\|\$\)\/\.test/.test(battleJs) && /showTrigger\(pos, kind\)/.test(battleJs) && /hideTrigger\(\)/.test(battleJs));
   const menusJs = fs.readFileSync(path.join(root, "ui/gba-menus.js"), "utf8");
   assert(!menusJs.includes("START: MEGA EVOLVE") && /opts\.mega\.toggled\(opts\.mega\.on\)/.test(menusJs));
 }
@@ -4226,6 +4277,7 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
 }
 console.log("ok: Gen 7, " + GEN7 + " random battles finished (" + gen7Turns + " turns)");
 console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " turns)");
+assert(gen9Tera > GEN9 / 2, "Terastallizing in the Gen 9 battles");
 console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " turns)");
 
 // Berry picking (game/berry-picking.js): shake a tree to the meter, catch what falls.

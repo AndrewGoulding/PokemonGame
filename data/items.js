@@ -704,6 +704,7 @@ window.ITEMS = {
   "adamant-crystal": { name: "adamant-crystal", category: "species-specific", effect: "Held by Dialga: it takes its Origin Forme in battle, and its Dragon- and Steel-type moves are 1.2x." },
   "lustrous-globe": { name: "lustrous-globe", category: "species-specific", effect: "Held by Palkia: it takes its Origin Forme in battle, and its Dragon- and Water-type moves are 1.2x." },
   "dynamax-band": { name: "dynamax-band", category: "key-items", effect: "Lets a Pokémon Dynamax (or Gigantamax) for three turns: once a battle." },
+  "tera-orb": { name: "tera-orb", category: "key-items", effect: "Lets a Pokémon Terastallize into its Tera Type: once, then a Pokémon Center recharges it." },
   "dynamax-candy": { name: "dynamax-candy", category: "dynamax-candy", effect: "Raises a Pokémon's Dynamax Level by 1 (up to 10): its HP when Dynamaxed grows with it." },
   "max-mushrooms": { name: "max-mushrooms", category: "dynamax-candy", effect: "Made into Max Soup: gives a Pokémon that can Gigantamax the G-Max Factor (or takes it away)." }
 };

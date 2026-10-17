@@ -1308,6 +1308,27 @@ Dynamax: it becomes Eternamax Eternatus. `tools/build-max-moves.js` writes
 `data/max-moves.js`. Trainers Dynamax their last Pokémon when they can (no
 trainer has the Dynamax Band yet).
 
+**Terastallizing** (Scarlet and Violet): with the Tera Orb (a key item), START
+on the move menu Terastallizes a Pokémon into its Tera Type, once a battle;
+the Orb is then empty until a Pokémon Center (or blacking out) recharges it.
+Every Pokémon has a Tera Type (one of its own types, set when it's made and
+kept through evolution; Ogerpon's is its mask's, Terapagos's Stellar), shown on
+the Summary's EV / IV page. Terastallized, it is its Tera Type alone for the
+rest of the battle, switched out or not (Magic Powder, Roost, Burn Up, Double Shock and
+Mimicry can't change it): its Tera Type's moves get 1.5× (2× if it was already
+that type; Adaptability 2.25×), its own types' moves keep their 1.5×, and its
+Tera Type's moves under 60 power go up to 60 (not priority moves, multi-hit
+moves or ones whose power varies). Tera Blast takes its Tera Type, physical if
+its Attack is higher. Ogerpon takes its mask's Tera form (Embody Aspect); Terapagos
+turns Stellar (Teraform Zero): Stellar keeps its types, gives 2× to them and
+1.2× to the rest, and its Tera Starstorm is Stellar (2× against a Terastallized
+Pokémon) and hits both foes; Stellar Tera Blast is 100 power and lowers its
+Attack and Sp. Atk. As pokeemerald-expansion shows it: the Tera trigger beside
+the box, the rainbow, crystal and shards (`tools/build-mega-icons.js` copies
+them), the picture tinted halfway to the type's colour and its type's Tera
+symbol where "Lv" was. Trainers Terastallize for a move of their Tera Type, or
+with their last Pokémon, when they can (none has a Tera Orb yet).
+
 Alcremie comes in all 63 flavours: a Sweet used on Milcery asks which
 way it spins and for how long, and that with the time of day gives its cream
 as in Sword and Shield (clockwise and short by day: Vanilla Cream; the other
@@ -1352,8 +1373,7 @@ masks and Terastal Terapagos). `tools/build-gen9.js` makes `data/dex-gen9.js`,
 PokeAPI's CSVs; the sprites come as Gen 7's and 8's do (`node
 tools/fetch-gen7-sprites.js <csv folder> gen9`), and the party icons
 (pokeemerald-expansion's), sprite metrics, evolutions, Egg Groups (Paldean
-Pokémon hatch as such) and machines are built by the usual tools. Not in: the
-Tera formes (no Terastallizing here), Koraidon's and Miraidon's travel modes,
+Pokémon hatch as such) and machines are built by the usual tools. Not in: Koraidon's and Miraidon's travel modes,
 and the Artisan and Masterpiece teacups, which look the same. The Hisuian forms
 were already in (with Gen 8, above).
 
@@ -1405,8 +1425,10 @@ Dondozo's stats rise by 2 stages; Tatsugiri disappears, takes no actions and
 every move aimed at it misses, though it still takes indirect damage; neither
 can be switched or forced out, a fainted Tatsugiri leaves Dondozo bound, and
 Dondozo fainting lets Tatsugiri out again; Order Up raises Dondozo's Attack,
-Defense or Speed by its Tatsugiri's form); Embody Aspect and Teraform Zero do nothing,
-as there's no Terastallizing. Legends: Z-A's Megas bring theirs: Dragonize
+Defense or Speed by its Tatsugiri's form), Embody Aspect (Terastallized
+Ogerpon's Speed, Attack, Sp. Def or Defense rises by its mask, as it
+Terastallizes and each time it comes out) and Teraform Zero (Terapagos turning
+Stellar ends the weather and terrain). Legends: Z-A's Megas bring theirs: Dragonize
 (Normal moves become Dragon, 1.2×), Mega Sol (its moves as in harsh sunlight),
 Piercing Drill (contact moves through Protect, for a quarter), Eelevate,
 Fire Mane and Spicy Spray. **Snow** is Gen 9's hail: Snowscape and Chilly

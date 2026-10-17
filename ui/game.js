@@ -281,9 +281,12 @@
     if (!wild && /^TRAINER_(LEADER|ELITE_FOUR|CHAMPION)/.test(opts.trainerId || "")) {
       for (const r of player.party) if (!r.egg) Party.adjustFriendship(r, "leagueBattle", here);
     }
+    // (The Tera Orb: charged, it lets a Pokémon Terastallize once; then it's
+    // empty until a Pokémon Center recharges it.)
+    const teraOrb = Player.itemCount(player, "tera-orb") > 0 && !player.flags.teraOrbEmpty;
     const foeSets = (f) => f.team.map((r) => Object.assign(Party.toBattleSet(r), opts.ghost ? { name: "Ghost" } : {}));
     const result = await BattleScreen.run({
-      p1: Object.assign({ name: player.name, team: own.map((r) => Party.toBattleSet(r, here)), dynamax: Player.itemCount(player, "dynamax-band") > 0 },
+      p1: Object.assign({ name: player.name, team: own.map((r) => Party.toBattleSet(r, here)), dynamax: Player.itemCount(player, "dynamax-band") > 0, tera: teraOrb },
         opts.partner ? { partner: { name: opts.partner.name, team: opts.partner.team.map((r) => Party.toBattleSet(r)) } } : {}),
       // (Pokémon Tower's unidentified Ghost goes by "Ghost".)
       p2: Object.assign({ name: foe.name, team: foeSets(foe) }, foe2 ? { partner: { name: foe2.name, team: foeSets(foe2) } } : {}),
@@ -294,6 +297,7 @@
       megaRing: Player.itemCount(player, "mega-ring") > 0,
       zRing: Player.itemCount(player, "z-ring") > 0,
       dynamaxBand: Player.itemCount(player, "dynamax-band") > 0,
+      teraOrb,
       safari: opts.safari ? { balls: player.flags.safari.balls } : undefined,
       wild,
       exp: !opts.safari && !opts.noExp,
@@ -324,6 +328,7 @@
       }
     });
     const b = result.battle;
+    if (b.sides.p1.tag ? b.sides.p1.teraUsedBy[0] : b.sides.p1.teraUsed) player.flags.teraOrbEmpty = true;
     for (const e of b.events) {
       if (opts.ghost) break;   // (an unidentified Ghost isn't seen)
       if ((e[0] === "switch" || e[0] === "drag") && String(e[1]).startsWith("p2")) Player.markSeen(player, String(e[2]).split(", L")[0]);
@@ -461,6 +466,7 @@
     League.reset(player.flags);
     // (DoWhiteOut heals the party as you go.)
     player.party.forEach(Party.heal);
+    delete player.flags.teraOrbEmpty;   // (the Tera Orb recharged at a Pokémon Center)
     const center = player.flags.lastCenter && Player.CENTERS[player.flags.lastCenter];
     const to = Object.assign({}, center || Player.HOME);
     music(null);
@@ -489,6 +495,7 @@
     await Overworld.pokecenterHeal(player.party.length, () => fanfare("mus_heal"));
     if (id) await Overworld.act([{ who: id, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
     player.party.forEach(Party.heal);
+    delete player.flags.teraOrbEmpty;   // (the Tera Orb recharged at a Pokémon Center)
     await say(T(player.flags.TRAINER_LEADER_BROCK ? "Text_MonsHealed" : "Text_MonsHealedShouldBuyPotions"));
   }
   // EventScript_AfterWhiteOutMomHeal: (Red's) Mom turns to you, and heals them.
@@ -1076,7 +1083,7 @@
       exp: r.exp, toNext: Math.max(0, next - r.exp), expFrac: next > here ? (r.exp - here) / (next - here) : 0,
       ability, abilityText: (window.SUMMARY_SCREEN.abilityText || {})[ability] || "",
       moves: r.moves.map((m) => ({ name: m.name, pp: m.pp, maxpp: Party.maxPp(m) })),
-      status: r.status, shiny: !!r.shiny,
+      status: r.status, shiny: !!r.shiny, teraType: Party.teraType(r),
       pic: Screen.spriteUrl(r.species, Party.form(r), false, r.shiny),
       picEmpty: ((window.SPRITE_METRICS || {}).front || {})[dex.id] || 0,
       icon: Screen.iconUrl(r.species, Party.form(r)),
@@ -4516,6 +4523,7 @@
     await Overworld.pokecenterHeal(player.party.length, () => fanfare("mus_heal"));
     if (id) await Overworld.act([{ who: id, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
     player.party.forEach(Party.heal);
+    delete player.flags.teraOrbEmpty;   // (the Tera Orb recharged at a Pokémon Center)
     if (Player.CENTERS[mapName]) player.flags.lastCenter = mapName;
     await say(T("Text_RestoredPkmnToFullHealth"));
     await say(T("Text_WeHopeToSeeYouAgain"));

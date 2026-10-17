@@ -41,6 +41,7 @@ const EXPANSION = [
   ["evo-item/scroll-of-darkness", "scroll_of_darkness"], ["evo-item/scroll-of-waters", "scroll_of_waters"],
   ["mega-stone/zygardite", "zygardite"], ["hold-item/adamant-crystal", "adamant_crystal"],
   ["hold-item/lustrous-globe", "lustrous_globe"], ["other-item/max-mushrooms", "max_mushrooms"],
+  ["key-item/tera-orb", "tera_orb"],
   // Gen 9's evolution items.
   ["evo-item/auspicious-armor", "auspicious_armor"], ["evo-item/malicious-armor", "malicious_armor"],
   ["evo-item/syrupy-apple", "syrupy_apple"], ["evo-item/unremarkable-teacup", "unremarkable_teacup"],

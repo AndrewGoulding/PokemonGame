@@ -281,9 +281,19 @@
   // from behind its box (15 pixels left, 1 a frame: SpriteCb_GimmickTrigger),
   // lit up while START has it on, and back in once you've chosen.
   const hbMega = hbImg("mega-indicator"), hbTrigger = hbImg("mega-trigger");
+  // (Terastallizing: the expansion's Tera trigger, and its indicators, one a
+  // type in this order. TERA_RGB: each type's teraTypeRGBValue, 5 bits a channel.)
+  const hbTeraTrigger = hbImg("tera-trigger"), hbTera = hbImg("tera-indicators");
+  const TERA_TYPES = ["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel", "Fire", "Water",
+    "Grass", "Electric", "Psychic", "Ice", "Dragon", "Dark", "Fairy", "Stellar"];
+  const TERA_RGB = {};
+  for (const [t, r, gr, bl] of [["Normal", 31, 31, 31], ["Fighting", 26, 8, 14], ["Flying", 31, 26, 7], ["Poison", 26, 10, 25],
+    ["Ground", 25, 23, 18], ["Rock", 18, 16, 8], ["Bug", 18, 24, 6], ["Ghost", 12, 10, 16], ["Steel", 19, 19, 20], ["Fire", 31, 20, 11],
+    ["Water", 10, 18, 27], ["Grass", 12, 24, 11], ["Electric", 30, 26, 7], ["Psychic", 31, 14, 15], ["Ice", 14, 26, 25],
+    ["Dragon", 10, 18, 27], ["Dark", 6, 5, 8], ["Fairy", 31, 15, 21], ["Stellar", 10, 18, 27]]) TERA_RGB[t] = [r, gr, bl].map((x) => (x << 3) | (x >> 2));
   let trigger = null;   // { pos, on, x (its centre less the box's), hide }
-  function showTrigger(pos) {
-    trigger = { pos, on: false, x: trigger && trigger.pos === pos ? trigger.x : -15, hide: false };
+  function showTrigger(pos, kind) {
+    trigger = { pos, kind, on: false, x: trigger && trigger.pos === pos ? trigger.x : -15, hide: false };
     hbStart();
   }
   function hideTrigger() { if (trigger) { trigger.hide = true; trigger.on = false; } }
@@ -336,7 +346,7 @@
     const b = hb[side], d = b.data, cfg = hbCfg(side), st = hbStyle(side);
     if (b.data.safari) return safariLayer(b);
     const shownHp = b.hp < b.hpTo ? Math.floor(b.hp) : Math.ceil(b.hp);
-    const key = [d.name, d.gender, d.level, d.status, d.caught, d.mega, d.shiny, shownHp, b.maxhp, doublesLayout].join("|");
+    const key = [d.name, d.gender, d.level, d.status, d.caught, d.mega, d.tera, d.shiny, shownHp, b.maxhp, doublesLayout].join("|");
     if (b.layer && b.layerKey === key) return b.layer;
     b.layerKey = key;
     const s = window.GbaMenus.Surface();
@@ -352,7 +362,8 @@
     // level alone, the Mega symbol before it).
     const lv = String(d.level || "");
     const lvW = s.textWidth("{LV}", "small"), lvAt = st.lvX + 5 * (3 - lv.length);
-    s.text(d.mega ? lv : "{LV}" + lv, d.mega ? lvAt + lvW : lvAt, 3, HB_TEXT, HB_SHADOW, "small");
+    const gimmick = d.mega || d.tera;
+    s.text(gimmick ? lv : "{LV}" + lv, gimmick ? lvAt + lvW : lvAt, 3, HB_TEXT, HB_SHADOW, "small");
     // Your HP: "cur/" at (60, 21) and "max" at (80, 21), each right-aligned to 3.
     if (st.singlesPlayer) {
       const cur = String(Math.max(0, shownHp)), max = String(b.maxhp);
@@ -372,6 +383,8 @@
     g.drawImage(s.canvas(), 0, 0);
     g.restore();
     if (d.mega && hbMega.complete) g.drawImage(hbMega, lvAt + lvW - 10, -1);
+    // (Terastallized: its Tera Type's indicator there instead.)
+    else if (d.tera && hbTera.complete && TERA_TYPES.includes(d.tera)) g.drawImage(hbTera, TERA_TYPES.indexOf(d.tera) * 8, 0, 8, 16, lvAt + lvW - 10, -1, 8, 16);
     // (This game's own: a gold star after a shiny wild Pokémon's name, kept inside the name's window.)
     if (d.shiny) drawStar(g, Math.min(nx + w + (gw || 0) + 1, nx + 56 - 7), 6);
     // The status icon: yours left of the HP numbers, theirs over "HP".
@@ -389,7 +402,7 @@
     // centre and 10 below it, 4 in a double battle; frame 1 when on).
     if (trigger && hb[trigger.pos].shown && hbTrigger.complete) {
       const b = hb[trigger.pos], cfg = hbCfg(trigger.pos);
-      g.drawImage(hbTrigger, 0, trigger.on ? 32 : 0, 32, 32, cfg.x + 32 + trigger.x - 16, cfg.y + b.y2 + (doublesLayout ? 4 : 10), 32, 32);
+      g.drawImage(trigger.kind === "tera" && hbTeraTrigger.complete ? hbTeraTrigger : hbTrigger, 0, trigger.on ? 32 : 0, 32, 32, cfg.x + 32 + trigger.x - 16, cfg.y + b.y2 + (doublesLayout ? 4 : 10), 32, 32);
     }
     for (const side of POSITIONS) {
       const b = hb[side], cfg = hbCfg(side);
@@ -557,6 +570,7 @@
   const GHOST_PIC = "assets/battle-interface/ghost.png";
   let cursor = 0;       // index of the next battle event to play
   let view = null;      // what the screen currently shows for each side
+  let teraShown = {};   // ("p1:2": the Tera Type that Pokémon has Terastallized into)
 
   const sideOf = (ident) => String(ident).slice(0, 2);
   const nameOf = (ident) => String(ident).replace(/^p\d[ab]?: /, "");
@@ -665,7 +679,7 @@
     const side = sideOf(id);
     // (Pokémon Tower's unidentified Ghost: FireRed's gGhostFrontPic.)
     if (id === "p2" && config && config.ghost) { if (sprite.getAttribute("src") !== GHOST_PIC) { sprite.src = GHOST_PIC; sprite.style.visibility = ""; } }
-    else window.Screen.setSprite(sprite, v.species, v.form, side === "p1", v.shiny);
+    else window.Screen.setSprite(sprite, v.species, v.form, side === "p1", v.shiny, v.tera ? TERA_RGB[v.tera] : null);
     placeSprite(sprite, v, side === "p1");
     sprite.alt = v.name;
     sprite.classList.toggle("hidden", !!v.inBall || !!v.commanding);   // (Commander: in Dondozo's mouth)
@@ -683,6 +697,7 @@
       caught: side === "p2" && battle.wild && config.catchContext && config.catchContext.caughtBefore
         ? !!config.catchContext.caughtBefore(v.species) : false,
       mega: /-Mega(-|$)/.test(v.species || ""),
+      tera: v.tera || null,
       shiny: side === "p2" && !!(battle && battle.wild) && !!v.shiny
     };
     b.maxhp = v.maxhp || 1;
@@ -790,6 +805,75 @@
   // shrinks away, and six purple puffs swirl up round it (AnimParticleInVortex).
   // `pos`: whose; `species`: what it becomes.
   const FRAME_MS = 1000 / 60;
+  // Terastallizing, as pokeemerald-expansion animates it (General_TeraCharge
+  // and General_TeraActivate): the picture flickers through the rainbow, a
+  // crystal grows over it and everything goes white; the crystal shatters,
+  // and out of the white it comes in its Tera Type's colours, shaking, its
+  // cry, the Tera symbol over it.
+  async function terastalAnim(pos, species) {
+    const v = view[pos], sprite = el.sides[pos].sprite;
+    const swap = () => { if (species) { v.species = species; v.form = ""; } renderSide(pos); };
+    if (!sceneOn()) { swap(); return; }
+    const frames = (n) => wait(n * FRAME_MS);
+    const [px, py] = centerOf(pos), cx = px * 2.4, cy = py * 1.12;
+    const piece = (file, w, h, cls) => {
+      const d = document.createElement("div");
+      d.className = "mega-fx" + (cls ? " " + cls : "");
+      if (file) d.style.backgroundImage = "url(assets/battle-interface/" + file + ")";
+      d.style.width = (w / 2.4) + "%";
+      d.style.height = (h / 1.12) + "%";
+      el.field.appendChild(d);
+      return d;
+    };
+    const at = (x, y) => ({ left: (x / 2.4) + "%", top: (y / 1.12) + "%" });
+    const all = [];
+    sfx("se_m_dragon_rage");
+    const rainbow = [];
+    for (let i = 0; i <= 12; i++) rainbow.push({ filter: "sepia(1) saturate(5) hue-rotate(" + (i * 30) + "deg)" });
+    rainbow.push({ filter: "none" });
+    await sprite.animate(rainbow, { duration: 60 * FRAME_MS }).finished;
+    // The crystal grows over it; the white.
+    sfx("se_m_solar_beam");
+    const crystal = piece("tera-crystal.png", 64, 64);
+    Object.assign(crystal.style, at(cx, cy));
+    all.push(crystal.animate([{ transform: "translate(-50%, -50%) scale(0.25)", opacity: 0.5 }, { transform: "translate(-50%, -50%) scale(1.25)", opacity: 1 }],
+      { duration: 20 * FRAME_MS, fill: "forwards" }).finished);
+    const white = piece(null, 240, 112, "white");
+    Object.assign(white.style, { left: "0", top: "0", transform: "none", opacity: 0 });
+    await frames(20);
+    all.push(white.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 32 * FRAME_MS, fill: "forwards" }).finished);
+    await Promise.all(all.splice(0));
+    crystal.remove();
+    // It shatters: six shards fly out (gTeraCrystalSpreadSpriteTemplate).
+    sfx("se_m_brick_break");
+    for (const [f, dx, dy] of [[0, -5, 8], [1, 5, 9], [2, 5, -8], [2, -5, -8], [1, -10, 0], [0, 10, 0]]) {
+      const shard = piece("tera-shatter.png", 16, 16);
+      shard.style.backgroundPosition = "0 " + (-f * 100) + "%";
+      shard.style.backgroundSize = "100% 300%";
+      all.push(shard.animate([Object.assign(at(cx, cy), { transform: "translate(-50%, -50%)", opacity: 1 }),
+        Object.assign(at(cx + dx * 4, cy + dy * 4), { transform: "translate(-50%, -50%)", opacity: 0 })],
+        { duration: 24 * FRAME_MS, fill: "forwards" }).finished.then(() => shard.remove()));
+    }
+    // In the white: its new colours.
+    swap();
+    cry(pos);
+    await spriteReady(sprite);
+    all.push(white.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 32 * FRAME_MS, fill: "forwards" }).finished.then(() => white.remove()));
+    const shake = [], gbaPx = el.field.clientWidth / 240;
+    for (let i = 0; i < 14; i++) shake.push({ transform: "translateX(" + (i % 2 ? -5 : 5) * gbaPx + "px)" });
+    shake.push({ transform: "translateX(0)" });
+    all.push(sprite.animate(shake, { duration: 14 * FRAME_MS }).finished);
+    const symbol = piece("tera-symbol.png", 32, 32);
+    Object.assign(symbol.style, at(cx, cy));
+    const sc = (k) => ({ transform: "translate(-50%, -50%) scale(" + (k / 256) + ")" });
+    const kf = [sc(16), sc(496), sc(496)];
+    for (let i = 0; i < 6; i++) kf.push(sc(i % 2 ? 496 : 432));
+    kf.push(sc(16));
+    const times = [0, 15, 17, 21, 25, 29, 33, 37, 41, 56];
+    all.push(symbol.animate(kf.map((k, i) => Object.assign(k, { offset: times[i] / 56 })), { duration: 56 * FRAME_MS }).finished.then(() => symbol.remove()));
+    await Promise.all(all);
+  }
+
   async function megaEvolution(pos, species) {
     const v = view[pos], sprite = el.sides[pos].sprite;
     const swap = () => { if (species) { v.species = species; v.form = ""; renderSide(pos); } };
@@ -1118,7 +1202,7 @@
         view[pos] = { name: nameOf(a), species: m[1] || nameOf(a), level: m[2] || "?",
           hp: hp.hp, maxhp: hp.maxhp, status: hp.status, fainted: false,
           exp: ev[4] === "" || ev[4] == null ? null : +ev[4], teamIndex: +ev[5],
-          form: set.form || "", shiny: !!set.shiny };
+          form: set.form || "", shiny: !!set.shiny, tera: teraShown[side + ":" + ev[5]] || null };
         const ball = set.ball;
         if (battle.doubles) noteSwitchIn(pos);
         else if (side === "p1") foeHpAtSwitchIn = view.p2.species ? view.p2.hp : null;
@@ -1328,6 +1412,18 @@
           await message(fill("Bright light is about to burst out of {who}!", a));
           await megaEvolution(pos, change && change[2]);
           await message(fill("{who} regained its true power through Ultra Burst!", a));
+        };
+      }
+      // Terastallizing (Scarlet and Violet): pokeemerald-expansion's
+      // STRINGID_PKMNTERASTALLIZEDINTO after its animation; Ogerpon and
+      // Terapagos change form as they do.
+      case "-terastallize": {
+        const change = battle.events.slice(cursor).find((e) => e[0] === "detailschange" && e[1] === a);
+        teraShown[side + ":" + v.teamIndex] = b;
+        return async () => {
+          v.tera = b;
+          await terastalAnim(pos, change && change[2]);
+          await message(fill("{who} terastallized into the " + b + " type!", a));
         };
       }
       // Dynamax (Sword and Shield): the picture grows, red-lit, for three turns.
@@ -1816,12 +1912,13 @@
         const kind = active.canMega && config.megaRing && !(dbl && dbl.megaTaken) ? "mega"
           : active.canUltraBurst && config.zRing ? "ultra"
           : active.zMoves && config.zRing && !(dbl && dbl.zTaken) ? "zmove"
-          : active.canDynamax && config.dynamaxBand && !(dbl && dbl.dynamaxTaken) ? "dynamax" : null;
+          : active.canDynamax && config.dynamaxBand && !(dbl && dbl.dynamaxTaken) ? "dynamax"
+          : active.canTera && config.teraOrb && !(dbl && dbl.teraTaken) ? "tera" : null;
         const shown = kind === "zmove" ? active.zMoves : kind === "dynamax" ? active.maxMoves : null;
         // (Already Dynamaxed: its Max Moves, always.)
         const mega = kind ? { on: false, toggled, kind, names: shown ? (m) => shown[m.index] || null : null }
           : active.dynamaxed && active.maxMoves ? { on: true, fixed: true, names: (m) => active.maxMoves[m.index] || null } : null;
-        if (mega && !mega.fixed) showTrigger(pos);
+        if (mega && !mega.fixed) showTrigger(pos, kind);
         // (A double battle: the Pokémon a spread or field move will hit
         // flash, PreviewDeterminativeMoveTargets.)
         const onCursor = dbl ? (c) => previewTargets(pos, moves[c]) : null;
@@ -2072,7 +2169,7 @@
       const taken = earlier.filter((c) => c && c.type === "switch").map((c) => c.index);
       const sub = { active: a, slot, team: req.team, switches: (a.switches || []).filter((i) => !taken.includes(i)),
         doubles: { back: canBack, megaTaken: earlier.some((c) => c && c.mega), zTaken: earlier.some((c) => c && c.zmove),
-          dynamaxTaken: earlier.some((c) => c && c.dynamax), taken } };
+          dynamaxTaken: earlier.some((c) => c && c.dynamax), teraTaken: earlier.some((c) => c && c.tera), taken } };
       const c = await chooseAction(sub);
       if (c === "back") { k--; returnItem(choices[slots[k]]); choices[slots[k]] = null; continue; }
       choices[slot] = c;
@@ -2256,7 +2353,8 @@
       const set = setOf(side, +ev[5]);
       view[pos] = { name: nameOf(ev[1]), species: m[1] || nameOf(ev[1]), level: m[2] || "?",
         hp: hp.hp, maxhp: hp.maxhp, status: hp.status, fainted: false,
-        exp: ev[4] === "" || ev[4] == null ? null : +ev[4], teamIndex: +ev[5], form: set.form || "", shiny: !!set.shiny };
+        exp: ev[4] === "" || ev[4] == null ? null : +ev[4], teamIndex: +ev[5], form: set.form || "", shiny: !!set.shiny,
+        tera: teraShown[side + ":" + ev[5]] || null };
       out[side].push({ pos, name: nameOf(ev[1]), ball: set.ball, sender: ev[6] || trainerName(side, +ev[5]) });
     }
     for (const k of ["p1", "p1b"]) if (view[k].species) noteSwitchIn(k);
@@ -2478,6 +2576,7 @@
     doublesLayout = false;
     el.field.classList.remove("doubles", "tag");
     view = { p1: { species: null }, p2: { species: null }, p1b: { species: null }, p2b: { species: null } };
+    teraShown = {};
     el.ball.classList.add("hidden");
     for (const k of POSITIONS) renderSide(k);
     await intro(Object.assign({}, config, { trainer: "old_man", p2: { team: [{}] } }));
@@ -2523,6 +2622,7 @@
     el.field.classList.toggle("doubles", !!battle.doubles);
     el.field.classList.toggle("tag", !!battle.sides.p1.tag);
     view = { p1: { species: null }, p2: { species: null }, p1b: { species: null }, p2b: { species: null } };
+    teraShown = {};
     el.ball.classList.add("hidden");
     for (const k of POSITIONS) renderSide(k);
     await intro(cfg);

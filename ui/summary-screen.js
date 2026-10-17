@@ -213,6 +213,12 @@
       // And its happiness (friendship, 0-255), below them on both.
       dark("HAPPINESS", 74, 103);
       right((v.happiness || 0) + "/255", 175, 63, 103);
+      // (Gen 9: its Tera Type, under them: the type's icon, or STELLAR.)
+      if (v.teraType) {
+        dark("TERA TYPE", 74, 116);
+        if (TYPE_TILE[v.teraType] != null) typeIcon(top, v.teraType, 206, 117);
+        else right(v.teraType.toUpperCase(), 175, 63, 116);
+      }
     } else {
       const rows = v.moves.slice(0, 4);
       while (rows.length < 4) rows.push(null);

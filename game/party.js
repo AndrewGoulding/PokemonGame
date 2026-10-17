@@ -74,6 +74,8 @@
       hp: 0,
       status: ""
     };
+    // (Gen 9: its Tera Type, one of its own types.)
+    record.teraType = teraType(record);
     if (species === "Burmy") record.cloak = opts.cloak || pick(CLOAKS, rng);
     // Unown's letter (FireRed: from its personality; here kept as itself):
     // "a" to "z", "exclamation" or "question" (opts.unown, else A).
@@ -137,6 +139,15 @@
   }
 
   // (`here`, the map you're on: for the friendship bonus where it was met.)
+  // Its Tera Type: the one it was given, else one of its types by its personality
+  // (Ogerpon's its mask's and Terapagos's Stellar whatever it was given, as in battle).
+  function teraType(record) {
+    if (window.Battle && /^(Ogerpon|Terapagos)/.test(record.species)) return window.Battle.defaultTeraType(record.species);
+    if (record.teraType) return record.teraType;
+    if (window.Battle) return window.Battle.defaultTeraType(record.species, record.personality);
+    const types = (window.DEX[record.species] || {}).types || ["Normal"];
+    return types[(record.personality >>> 0) % types.length];
+  }
   function toBattleSet(record, here) {
     return {
       species: record.species,
@@ -166,7 +177,8 @@
       koSpecies: Object.assign({}, record.koSpecies),
       // (Dynamax: its level, raised by Dynamax Candy, and the G-Max Factor.)
       dynamaxLevel: record.dynamaxLevel || 0,
-      gmax: !!record.gmax
+      gmax: !!record.gmax,
+      teraType: teraType(record), personality: record.personality
     };
   }
 
@@ -282,7 +294,7 @@
   }
 
   window.Party = { SHINY_ODDS,
-    CLOAKS, STAT_KEYS, create, maxPp, trainedIvs, stats, maxHp, speciesName, displayName, form, alcremieCream, isFainted, isEgg, canFight, displayNameOrEgg, toBattleSet, friendshipOpts, adjustFriendship,
+    CLOAKS, STAT_KEYS, create, maxPp, trainedIvs, stats, maxHp, speciesName, displayName, form, alcremieCream, teraType, isFainted, isEgg, canFight, displayNameOrEgg, toBattleSet, friendshipOpts, adjustFriendship,
     syncFromBattle, caught, heal, teachMove, canLearnMachine, knowsMove, movesLearnedAt, expProgress
   };
 })();
