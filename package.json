@@ -8,6 +8,7 @@
     "build:item-sprites": "node tools/build-item-sprites.js",
     "build:maps": "node tools/build-maps.js",
     "build:intro": "node tools/build-intro.js",
+    "build:naming-screen": "node tools/build-naming-screen.js",
     "build:battle-bgs": "node tools/build-battle-bgs.js",
     "build:machine-learners": "node tools/build-machine-learners.js",
     "build:sprite-metrics": "node tools/build-sprite-metrics.js",

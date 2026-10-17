@@ -1120,6 +1120,52 @@ for (const share of [false, true]) {
   assert.deepStrictEqual(INTRO_TEXT.gOakSpeech_Text_ThisWorld, ["This world…"]);
 }
 
+// FireRed's naming screen (ui/naming-screen.js): its pictures are built, the
+// intro names you with it (not a text field), and it types, wraps and ends as
+// FireRed's does. Run in a sandbox with the keys and pictures stubbed.
+{
+  const src = fs.readFileSync(path.join(root, "ui/naming-screen.js"), "utf8");
+  assert(scripts.indexOf("ui/naming-screen.js") >= 0 && scripts.indexOf("ui/naming-screen.js") < scripts.indexOf("ui/intro.js"), "naming screen loads before the intro");
+  const introJs = fs.readFileSync(path.join(root, "ui/intro.js"), "utf8");
+  assert(introJs.includes("NamingScreen.create") && !introJs.includes("<input"), "the intro names you on the naming screen");
+  let onKey = null;
+  const sandbox = { Image: class { constructor() { this.complete = false; } }, document: {}, GBA_MENUS };
+  sandbox.window = sandbox;
+  sandbox.GbaMenus = { keys: (fn) => { onKey = fn; return new Promise(() => {}); } };
+  vm.runInNewContext(src, sandbox, { filename: "ui/naming-screen.js" });
+  const NS = sandbox.NamingScreen;
+  for (const n of NS.PICTURES) assert(fs.existsSync(path.join(root, "assets/naming-screen", n + ".png")), "missing naming screen picture " + n);
+  const ns = NS.create({ title: "YOUR NAME?", maxChars: 7, fallback: "RED" });
+  ns.start();
+  const press = (k) => { const r = onKey(k); for (let i = 0; i < 40; i++) ns.step(); return r; };
+  assert.strictEqual(ns.state.cursor.join(), "0,0");
+  assert.strictEqual(ns.state.page, "upper");
+  press("left"); assert.strictEqual(ns.state.cursor.join(), "8,0");    // onto PAGE
+  press("up"); assert.strictEqual(ns.state.cursor.join(), "8,2");      // wraps to OK
+  press("right"); assert.strictEqual(ns.state.cursor.join(), "0,3");   // off OK onto the bottom row
+  press("up"); press("up");
+  press("a"); press("right"); press("a");                            // G, H
+  press("select"); assert.strictEqual(ns.state.page, "lower");
+  press("a"); assert.strictEqual(ns.state.text, "GHh");
+  press("b"); assert.strictEqual(ns.state.text, "GH");
+  press("select"); assert.strictEqual(ns.state.page, "symbols");
+  assert.strictEqual(ns.state.cursor.join(), "1,1");
+  for (let i = 0; i < 5; i++) press("a");                            // full at 7: the cursor goes to OK
+  assert.strictEqual(ns.state.text, "GH66666");
+  assert.strictEqual(ns.state.cursor.join(), "6,2");
+  let name = null;
+  ns.done.then((n) => { name = n; });
+  assert.strictEqual(press("a"), "ok");
+  // (Settled on the next turn of the event loop.)
+  setImmediate(() => assert.strictEqual(name, "GH66666"));
+  // Nothing typed: OK gives the fallback.
+  const empty = NS.create({ fallback: "RED" });
+  empty.start();
+  onKey("start"); empty.step();
+  onKey("a"); empty.step();
+  empty.done.then((n) => assert.strictEqual(n, "RED"));
+}
+
 // Viridian Forest's trainers: FireRed's five Bug Catchers with their parties,
 // lines and sight ranges; hidden items; the forest's own wild Pokémon.
 {
