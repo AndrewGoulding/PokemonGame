@@ -1062,6 +1062,20 @@
     return { down: 3, up: 5, left: 7, right: 7 }[facing] + parity;
   }
 
+  // Gen 3's sprite priority by elevation (sElevationToPriority): someone
+  // standing at elevation 4, 6, 8, 10 or 12 (raised ground: the Safari Zone's
+  // ledges), or 13 or 14, is drawn over the map's top layer; anywhere else,
+  // under it. Each remembers the last elevation it stood on, from where it is
+  // and where it's stepping to (ObjectEventUpdateElevation: 0 changes nothing,
+  // and 15, a bridge, leaves it as it was).
+  const OVER_TOP = [0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0];
+  function overTop(a, map, x, y, tmap, tx, ty) {
+    if (a.elev == null) a.elev = 3;
+    const prev = World.blockAt(map, x, y).elevation, cur = World.blockAt(tmap, tx, ty).elevation;
+    if (cur !== 15 && prev !== 15 && cur !== 0) a.elev = cur;
+    return !!OVER_TOP[a.elev];
+  }
+
   function drawSprite(name, w, h, frame, flip, px, py) {
     const img = spriteImage(name);
     if (!ready(img)) return;
@@ -1181,13 +1195,14 @@
       }
       if (p.emote) emotes.push([p.emote, x - camX, y - camY - p.def.height + TILE]);
       const walking = (!!p.move && p.move.t < TILE / 2) || (p.inPlace > 0 && p.inPlace % 16 >= 8);
-      return { y, draw: () => { if (shade) g.filter = SHADE; drawSprite(p.def.sprite, p.def.width, p.def.height,
+      const over = overTop(p, me.map, p.x, p.y, me.map, p.move ? p.move.tx : p.x, p.move ? p.move.ty : p.y);
+      return { y, over, draw: () => { if (shade) g.filter = SHADE; drawSprite(p.def.sprite, p.def.width, p.def.height,
         frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), p.facing === "right", x - camX + spriteDx(p.def), y - camY); g.filter = "none"; } };
     });
     for (const n of neighbours) {
       const x = (n.ox + n.x) * TILE, y = (n.oy + n.y) * TILE;
       if (x - camX < -TILE * 2 || x - camX > VIEW_W + TILE || y - camY < -TILE * 2 || y - camY > VIEW_H + TILE * 2) continue;
-      sprites.push({ y, draw: () => drawSprite(n.def.sprite, n.def.width, n.def.height,
+      sprites.push({ y, over: !!OVER_TOP[World.blockAt(n.map, n.x, n.y).elevation], draw: () => drawSprite(n.def.sprite, n.def.width, n.def.height,
         frameFor(n.facing, false, 0, n.def.frames), n.facing === "right", x - camX + spriteDx(n.def), y - camY) });
     }
     if (me.emote) emotes.push([me.emote, px - camX, py - camY - 16]);
@@ -1218,9 +1233,11 @@
       const r = rodFrame();
       sheet = look + "_fish"; w = 32; frame = r.frame; dx = r.dx; dy = r.dy;
     }
-    if (!me.hidden) sprites.push({ y: py, draw: () => drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy) });
+    const meOver = overTop(me, me.map, me.x, me.y, me.move ? me.move.tmap || me.map : me.map, me.move ? me.move.tx : me.x, me.move ? me.move.ty : me.y);
+    if (!me.hidden) sprites.push({ y: py, over: meOver, draw: () => drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy) });
     if (heal) drawHeal(camX, camY);   // the healing machine's balls and screen, under people
-    sprites.sort((a, b) => a.y - b.y).forEach((s) => s.draw());
+    sprites.sort((a, b) => a.y - b.y);
+    sprites.filter((s) => !s.over).forEach((s) => s.draw());
 
     if (shade) g.filter = SHADE;
     for (const [name, ox, oy] of layers) {
@@ -1230,6 +1247,8 @@
       drawPatches(name, ox - camX, oy - camY, "-top");
     }
     g.filter = "none";
+    // (Those up on raised ground, over the top layer.)
+    sprites.filter((s) => s.over).forEach((s) => s.draw());
     drawDarkness(px - camX, py - camY);
     // "!", "!!", "?" and "×" bubbles over someone's head.
     for (const [e, x, y] of emotes) {
