@@ -44,7 +44,10 @@ const EXPANSION = [
   // Gen 9's evolution items.
   ["evo-item/auspicious-armor", "auspicious_armor"], ["evo-item/malicious-armor", "malicious_armor"],
   ["evo-item/syrupy-apple", "syrupy_apple"], ["evo-item/unremarkable-teacup", "unremarkable_teacup"],
-  ["evo-item/metal-alloy", "metal_alloy"]
+  ["evo-item/metal-alloy", "metal_alloy"],
+  // Ogerpon's masks.
+  ["hold-item/wellspring-mask", "wellspring_mask"], ["hold-item/hearthflame-mask", "hearthflame_mask"],
+  ["hold-item/cornerstone-mask", "cornerstone_mask"], ["hold-item/booster-energy", "booster_energy"]
 ];
 // And Legends: Z-A's Mega Stones (data/items-gen9.js): "absolite-z" is the expansion's absolite_z.
 {

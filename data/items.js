@@ -638,6 +638,11 @@ window.ITEMS = {
   "syrupy-apple": { name: "syrupy-apple", category: "evolution", effect: "Evolves an Applin into Dipplin." },
   "unremarkable-teacup": { name: "unremarkable-teacup", category: "evolution", effect: "Evolves a Poltchageist into Sinistcha." },
   "metal-alloy": { name: "metal-alloy", category: "evolution", effect: "Evolves a Duraludon into Archaludon." },
+  "booster-energy": { name: "booster-energy", category: "held-items", effect: "Held: used up when it comes out to start a Protosynthesis or Quark Drive, if the sun or Electric Terrain hasn't, until it leaves the field." },
+  // Ogerpon's masks (The Teal Mask): it takes the mask's form in battle, its moves 1.2× as strong.
+  "wellspring-mask": { name: "wellspring-mask", category: "species-specific", effect: "Held by Ogerpon: it wears the mask in battle, as its Wellspring Mask form, and its moves have 1.2× power." },
+  "hearthflame-mask": { name: "hearthflame-mask", category: "species-specific", effect: "Held by Ogerpon: it wears the mask in battle, as its Hearthflame Mask form, and its moves have 1.2× power." },
+  "cornerstone-mask": { name: "cornerstone-mask", category: "species-specific", effect: "Held by Ogerpon: it wears the mask in battle, as its Cornerstone Mask form, and its moves have 1.2× power." },
   "rusted-sword": { name: "rusted-sword", category: "species-specific", effect: "Held by Zacian: it becomes the Crowned Sword when it enters battle, and its Iron Head becomes Behemoth Blade." },
   "rusted-shield": { name: "rusted-shield", category: "species-specific", effect: "Held by Zamazenta: it becomes the Crowned Shield when it enters battle, and its Iron Head becomes Behemoth Bash." },
   // Gens 7 and 8's battle gimmicks: Zygarde's Cube and Zygardite, the Z-Ring and Z-Crystals, the Memories,

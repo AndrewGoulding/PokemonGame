@@ -1,4 +1,4 @@
-// abilities.js — Gen 6 (all 191 abilities, num 1–191), Gen 7 (num 192–233) and Gen 8 (num 234–267)
+// abilities.js — Gen 6 (all 191 abilities, num 1–191), Gen 7 (num 192–233), Gen 8 (num 234–267), Gen 9 (num 268–310) and Legends: Z-A's
 // Auto-curated. See header comment for engine API.
 
 window.ABILITIES = {
@@ -685,8 +685,8 @@ window.ABILITIES = {
       const w = ctx.field.effectiveWeather();
       if (["SunnyDay", "DesolateLand"].includes(w) && p.species.id !== "Castform-Sunny") forme = "Castform-Sunny";
       else if (["RainDance", "PrimordialSea"].includes(w) && p.species.id !== "Castform-Rainy") forme = "Castform-Rainy";
-      else if (w === "Hail" && p.species.id !== "Castform-Snowy") forme = "Castform-Snowy";
-      else if (!["SunnyDay","DesolateLand","RainDance","PrimordialSea","Hail"].includes(w) && p.species.id !== "Castform") forme = "Castform";
+      else if ((w === "Hail" || w === "Snow") && p.species.id !== "Castform-Snowy") forme = "Castform-Snowy";
+      else if (!["SunnyDay","DesolateLand","RainDance","PrimordialSea","Hail","Snow"].includes(w) && p.species.id !== "Castform") forme = "Castform";
       if (p.isActive && forme) ctx.formeChange(p, forme, this, false, "[msg]");
     },
   },
@@ -906,7 +906,7 @@ window.ABILITIES = {
     onImmunity(ctx, type) { if (type === "hail") return false; },
     onModifyAccuracy(ctx, accuracy) {
       if (typeof accuracy !== "number") return;
-      if (ctx.isWeather("Hail")) return ctx.chainModify(accuracy, 0.8);
+      if (ctx.isWeather(["Hail", "Snow"])) return ctx.chainModify(accuracy, 0.8);
     },
   },
 
@@ -1301,7 +1301,7 @@ window.ABILITIES = {
   "Ice Body": {
     name: "Ice Body", num: 115, rating: 1,
     effect: "Heals 1/16 max HP per turn in hail; immune to hail damage.",
-    onWeather(ctx, effect) { if (ctx.isWeather("Hail")) ctx.heal(ctx.pokemon, ctx.pokemon.baseMaxhp / 16); },
+    onWeather(ctx, effect) { if (ctx.isWeather(["Hail", "Snow"])) ctx.heal(ctx.pokemon, ctx.pokemon.baseMaxhp / 16); },
     onImmunity(ctx, type) { if (type === "hail") return false; },
   },
 
@@ -2302,7 +2302,7 @@ window.ABILITIES = {
   "Slush Rush": {
     name: "Slush Rush", num: 202, rating: 3,
     effect: "Doubles Speed in hail.",
-    onModifySpe(ctx, spe) { if (ctx.isWeather("Hail")) return ctx.chainModify(spe, 2); },
+    onModifySpe(ctx, spe) { if (ctx.isWeather(["Hail", "Snow"])) return ctx.chainModify(spe, 2); },
   },
 
   "Long Reach": {
@@ -2859,11 +2859,492 @@ window.ABILITIES = {
       const SLICING = ["aerialace", "aircutter", "airslash", "behemothblade", "ceaselessedge", "crosspoison", "cut", "furycutter",
         "leafblade", "nightslash", "psychocut", "razorleaf", "razorshell", "sacredsword", "secretsword", "slash", "solarblade",
         "stoneaxe", "xscissor"];
-      if (SLICING.includes(move.id)) return ctx.chainModify(power, 1.5);
+      if (SLICING.includes(move.id) || GEN9_SLICING.includes(move.id)) return ctx.chainModify(power, 1.5);
+    },
+  },
+
+  // ==================================================================
+  // Gen 9 (Scarlet and Violet, num 268-310). Those for the Tera
+  // phenomenon (Embody Aspect, Teraform Zero) do nothing here: there's no
+  // Terastallizing.
+  // ==================================================================
+  "Lingering Aroma": {
+    name: "Lingering Aroma", num: 268, rating: 2,
+    effect: "Contact attackers' Ability becomes Lingering Aroma.",
+    onDamagingHit(ctx, move) {
+      const sa = ctx.source.getAbility();
+      if (sa.flags.cantsuppress || sa.id === "Lingering Aroma") return;
+      if (ctx.checkMoveMakesContact(move, ctx.source, ctx.pokemon, !ctx.source.isAlly(ctx.pokemon)))
+        ctx.source.setAbility("Lingering Aroma", ctx.pokemon);
+    },
+  },
+
+  "Seed Sower": {
+    name: "Seed Sower", num: 269, rating: 2.5,
+    effect: "When hit by an attack, Grassy Terrain begins.",
+    onDamagingHit(ctx) { ctx.setTerrain("grassyterrain"); },
+  },
+
+  "Thermal Exchange": {
+    name: "Thermal Exchange", num: 270, rating: 2.5,
+    effect: "+1 Attack when hit by a Fire-type move; can't be burned.",
+    flags: { breakable: 1 },
+    onDamagingHit(ctx, move) { if (move.type === "Fire") ctx.boost(ctx.pokemon, { atk: 1 }); },
+    onSetStatus(ctx, status) {
+      if (status.id !== "brn") return;
+      if (ctx.effect && ctx.effect.status) ctx.add("-immune", ctx.pokemon, "[from] ability: Thermal Exchange");
+      return false;
+    },
+  },
+
+  "Anger Shell": {
+    name: "Anger Shell", num: 271, rating: 3,
+    effect: "When an attack drops it to half HP or less: +1 Attack, Sp. Atk and Speed, -1 Defense and Sp. Def.",
+    onDamagingHit(ctx) {
+      if (gen7DroppedBelowHalf(ctx.pokemon)) ctx.boost(ctx.pokemon, { atk: 1, spa: 1, spe: 1, def: -1, spd: -1 });
+    },
+  },
+
+  "Purifying Salt": {
+    name: "Purifying Salt", num: 272, rating: 4,
+    effect: "Can't be given a status condition; Ghost-type moves do half damage to it.",
+    flags: { breakable: 1 },
+    onSetStatus(ctx) {
+      if (ctx.effect && ctx.effect.status) ctx.add("-immune", ctx.pokemon, "[from] ability: Purifying Salt");
+      return false;
+    },
+    onTryAddVolatile(ctx, status) {
+      if (status.id === "yawn") { ctx.add("-immune", ctx.pokemon, "[from] ability: Purifying Salt"); return false; }
+    },
+    onSourceModifyDamage(ctx, damage, move) { if (move.type === "Ghost") return ctx.chainModify(damage, 0.5); },
+  },
+
+  "Well-Baked Body": {
+    name: "Well-Baked Body", num: 273, rating: 3.5,
+    effect: "Immune to Fire; +2 Defense when hit by a Fire-type move.",
+    flags: { breakable: 1 },
+    onTryHit(ctx, move) {
+      if (ctx.target !== ctx.source && move.type === "Fire") {
+        if (!ctx.boost(ctx.pokemon, { def: 2 })) ctx.add("-immune", ctx.pokemon, "[from] ability: Well-Baked Body");
+        return false;
+      }
+    },
+  },
+
+  "Wind Rider": {
+    name: "Wind Rider", num: 274, rating: 3.5,
+    effect: "Immune to wind moves, +1 Attack when hit by one or when Tailwind starts on its side.",
+    flags: { breakable: 1 },
+    onTryHit(ctx, move) {
+      if (ctx.target !== ctx.source && GEN9_WIND.includes(move.id) && move.category !== "Status") {
+        if (!ctx.boost(ctx.pokemon, { atk: 1 })) ctx.add("-immune", ctx.pokemon, "[from] ability: Wind Rider");
+        return false;
+      }
+    },
+    // (Tailwind on its side: the battle engine boosts it.)
+  },
+
+  "Guard Dog": {
+    name: "Guard Dog", num: 275, rating: 2,
+    effect: "Intimidate raises its Attack instead; it can't be forced out.",
+    flags: { breakable: 1 },
+    onTryBoost(ctx, boost, effect) {
+      if (effect && effect.name === "Intimidate" && boost.atk < 0) {
+        delete boost.atk;
+        ctx.boost(ctx.pokemon, { atk: 1 }, ctx.pokemon);
+      }
+    },
+    onDragOut(ctx) { ctx.add("-activate", ctx.pokemon, "ability: Guard Dog"); return false; },
+  },
+
+  "Rocky Payload": {
+    name: "Rocky Payload", num: 276, rating: 3.5,
+    effect: "1.5× power on Rock-type moves.",
+    onModifyAtk(ctx, atk, move) { if (move.type === "Rock") return ctx.chainModify(atk, 1.5); },
+    onModifySpA(ctx, spa, move) { if (move.type === "Rock") return ctx.chainModify(spa, 1.5); },
+  },
+
+  "Wind Power": {
+    name: "Wind Power", num: 277, rating: 1,
+    effect: "Charged up when hit by a wind move or when Tailwind starts on its side.",
+    onDamagingHit(ctx, move) { if (GEN9_WIND.includes(move.id)) gen9Charge(ctx); },
+    // (Tailwind on its side: the battle engine charges it.)
+  },
+
+  "Zero to Hero": {
+    name: "Zero to Hero", num: 278, rating: 5,
+    effect: "Palafin becomes its Hero Form when it switches out.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    onSwitchOut(ctx) {
+      const p = ctx.pokemon;
+      if (p.species === "Palafin" && !p.transformed && ctx.battle.abilityForme(p, "Palafin-Hero", null, true)) p.heroToShow = true;
+    },
+    onStart(ctx) {
+      const p = ctx.pokemon;
+      if (!p.heroToShow) return;
+      p.heroToShow = false;
+      ctx.add("-activate", p, "ability: Zero to Hero");
+      ctx.add("-formechange", p, "{who} underwent a heroic transformation!");
+    },
+  },
+
+  "Commander": {
+    name: "Commander", num: 279, rating: 0,
+    effect: "Tatsugiri hides in an ally Dondozo's mouth: Dondozo's stats rise by 2 stages; Tatsugiri can't be hit or act.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    onStart(ctx) {
+      const p = ctx.pokemon, dondozo = ctx.allies().find((m) => m && !m.fainted && /^Dondozo/.test(m.species));
+      if (!/^Tatsugiri/.test(p.species) || !dondozo || dondozo.commandedBy) return;
+      p.commanding = dondozo; dondozo.commandedBy = p;
+      ctx.add("-activate", p, "ability: Commander", "[of] " + dondozo.ident);
+      ctx.boost(dondozo, { atk: 2, def: 2, spa: 2, spd: 2, spe: 2 }, p);
+    },
+    // (While it's in Dondozo's mouth: attacks miss it and it does nothing; out again if Dondozo faints.)
+    onTryHit(ctx) {
+      const p = ctx.pokemon;
+      if (!p.commanding || p.commanding.fainted || ctx.source === p) return;
+      ctx.add("-activate", p, "ability: Commander");
+      return false;
+    },
+    onBeforeMove(ctx) {
+      const p = ctx.pokemon;
+      if (p.commanding && !p.commanding.fainted) return false;
+    },
+  },
+
+  "Electromorphosis": {
+    name: "Electromorphosis", num: 280, rating: 3,
+    effect: "Charged up when hit by an attack (its next Electric move does double damage).",
+    onDamagingHit(ctx) { gen9Charge(ctx); },
+  },
+
+  "Protosynthesis": {
+    name: "Protosynthesis", num: 281, rating: 3,
+    onStart(ctx) { gen9Booster(ctx, "sun"); },
+    onEnd(ctx) { ctx.pokemon.boosterEnergy = false; },
+    effect: "In the sun (or with Booster Energy): its highest stat ×1.3 (Speed ×1.5).",
+    onModifyAtk(ctx, atk) { if (gen9Paradox(ctx, "sun") === "atk") return ctx.chainModify(atk, [5325, 4096]); },
+    onModifyDef(ctx, def) { if (gen9Paradox(ctx, "sun", true) === "def") return ctx.chainModify(def, [5325, 4096]); },
+    onModifySpA(ctx, spa) { if (gen9Paradox(ctx, "sun") === "spa") return ctx.chainModify(spa, [5325, 4096]); },
+    onModifySpD(ctx, spd) { if (gen9Paradox(ctx, "sun", true) === "spd") return ctx.chainModify(spd, [5325, 4096]); },
+    onModifySpe(ctx, spe) { if (gen9Paradox(ctx, "sun") === "spe") return ctx.chainModify(spe, 1.5); },
+  },
+
+  "Quark Drive": {
+    name: "Quark Drive", num: 282, rating: 3,
+    onStart(ctx) { gen9Booster(ctx, "electric"); },
+    onEnd(ctx) { ctx.pokemon.boosterEnergy = false; },
+    effect: "On Electric Terrain (or with Booster Energy): its highest stat ×1.3 (Speed ×1.5).",
+    onModifyAtk(ctx, atk) { if (gen9Paradox(ctx, "electric") === "atk") return ctx.chainModify(atk, [5325, 4096]); },
+    onModifyDef(ctx, def) { if (gen9Paradox(ctx, "electric", true) === "def") return ctx.chainModify(def, [5325, 4096]); },
+    onModifySpA(ctx, spa) { if (gen9Paradox(ctx, "electric") === "spa") return ctx.chainModify(spa, [5325, 4096]); },
+    onModifySpD(ctx, spd) { if (gen9Paradox(ctx, "electric", true) === "spd") return ctx.chainModify(spd, [5325, 4096]); },
+    onModifySpe(ctx, spe) { if (gen9Paradox(ctx, "electric") === "spe") return ctx.chainModify(spe, 1.5); },
+  },
+
+  "Good as Gold": {
+    name: "Good as Gold", num: 283, rating: 5,
+    effect: "Immune to other Pokémon's status moves.",
+    flags: { breakable: 1 },
+    onTryHit(ctx, move) {
+      if (move.category === "Status" && ctx.source && ctx.source !== ctx.pokemon) {
+        ctx.add("-immune", ctx.pokemon, "[from] ability: Good as Gold");
+        return false;
+      }
+    },
+  },
+
+  // The Treasures of Ruin: every other Pokémon's stat ×0.75 (the battle engine passes it to the damage calculator).
+  "Vessel of Ruin": { name: "Vessel of Ruin", num: 284, rating: 4.5, effect: "Lowers the Sp. Atk of every other Pokémon (×0.75).",
+    onStart(ctx) { ctx.add("-ability", ctx.pokemon, "Vessel of Ruin"); } },
+  "Sword of Ruin": { name: "Sword of Ruin", num: 285, rating: 4.5, effect: "Lowers the Defense of every other Pokémon (×0.75).",
+    onStart(ctx) { ctx.add("-ability", ctx.pokemon, "Sword of Ruin"); } },
+  "Tablets of Ruin": { name: "Tablets of Ruin", num: 286, rating: 4.5, effect: "Lowers the Attack of every other Pokémon (×0.75).",
+    onStart(ctx) { ctx.add("-ability", ctx.pokemon, "Tablets of Ruin"); } },
+  "Beads of Ruin": { name: "Beads of Ruin", num: 287, rating: 4.5, effect: "Lowers the Sp. Def of every other Pokémon (×0.75).",
+    onStart(ctx) { ctx.add("-ability", ctx.pokemon, "Beads of Ruin"); } },
+
+  "Orichalcum Pulse": {
+    name: "Orichalcum Pulse", num: 288, rating: 4.5,
+    effect: "Turns the sunlight harsh on switch-in; Attack ×1.33 in the sun.",
+    onSwitchIn(ctx) { ctx.setWeather("SunnyDay"); },
+    onModifyAtk(ctx, atk) { if (ctx.isWeather(["SunnyDay", "DesolateLand"])) return ctx.chainModify(atk, [5461, 4096]); },
+  },
+
+  "Hadron Engine": {
+    name: "Hadron Engine", num: 289, rating: 4.5,
+    effect: "Sets Electric Terrain on switch-in; Sp. Atk ×1.33 on Electric Terrain.",
+    onSwitchIn(ctx) { ctx.setTerrain("electricterrain"); },
+    onModifySpA(ctx, spa) { if (ctx.isTerrain("ElectricTerrain")) return ctx.chainModify(spa, [5461, 4096]); },
+  },
+
+  "Opportunist": {
+    name: "Opportunist", num: 290, rating: 3,
+    effect: "Copies the stat rises its foes get.",
+    // (The battle engine copies them as they happen.)
+  },
+
+  "Cud Chew": {
+    name: "Cud Chew", num: 291, rating: 2,
+    effect: "Eats a Berry it ate again at the end of the next turn.",
+    // (The battle engine remembers the Berry as it's eaten: mon.cudChew.)
+    onResidual(ctx) {
+      const p = ctx.pokemon, st = p.cudChew;
+      if (!st || --st.turns > 0) return;
+      p.cudChew = null;
+      const it = window.ITEM_EFFECTS[st.item];
+      if (!it || typeof it.eaten !== "function" || p.fainted) return;
+      ctx.add("-activate", p, "ability: Cud Chew");
+      ctx.add("-enditem", p, st.item, "[eat]");
+      it.eaten(ctx);
+    },
+  },
+
+  "Supreme Overlord": {
+    name: "Supreme Overlord", num: 293, rating: 4,
+    effect: "Its moves have 10% more power for each of its party that has fainted (up to 5).",
+    onBasePower(ctx, power) {
+      const n = Math.min(5, (ctx.pokemon.side ? ctx.pokemon.side.pokemon : []).filter((m) => m !== ctx.pokemon && m.fainted).length);
+      if (n) return ctx.chainModify(power, [4096 + 410 * n, 4096]);
+    },
+  },
+
+  "Costar": {
+    name: "Costar", num: 294, rating: 0,
+    effect: "On switch-in, copies its ally's stat changes.",
+    onSwitchIn(ctx) {
+      const ally = ctx.allies().find((m) => m && !m.fainted && m !== ctx.pokemon);
+      if (!ally) return;
+      for (const k of Object.keys(ally.boosts)) ctx.pokemon.boosts[k] = ally.boosts[k];
+      ctx.add("-copyboost", ctx.pokemon, ally, "[from] ability: Costar");
+    },
+  },
+
+  "Toxic Debris": {
+    name: "Toxic Debris", num: 295, rating: 3.5,
+    effect: "When hit by a physical attack, scatters Toxic Spikes on the attacker's side.",
+    onDamagingHit(ctx, move) {
+      const src = ctx.source;
+      if (move.category !== "Physical" || !src || src.side === ctx.pokemon.side) return;
+      ctx.battle.addSideCondition(src.side, "toxicspikes", ctx.pokemon);
+    },
+  },
+
+  "Armor Tail": {
+    name: "Armor Tail", num: 296, rating: 2.5,
+    effect: "Foes can't use priority moves on it or its ally.",
+    flags: { breakable: 1 },
+    // (The battle engine blocks them, as for Dazzling.)
+  },
+
+  "Earth Eater": {
+    name: "Earth Eater", num: 297, rating: 3.5,
+    effect: "Immune to Ground; heals 1/4 max HP when hit by Ground.",
+    flags: { breakable: 1 },
+    onTryHit(ctx, move) {
+      if (ctx.target !== ctx.source && move.type === "Ground") {
+        if (!ctx.heal(ctx.pokemon, ctx.pokemon.baseMaxhp / 4)) ctx.add("-immune", ctx.pokemon, "[from] ability: Earth Eater");
+        return false;
+      }
+    },
+  },
+
+  "Mycelium Might": {
+    name: "Mycelium Might", num: 298, rating: 2,
+    effect: "Its status moves go last in their priority bracket and ignore other Pokémon's Abilities.",
+    onFractionalPriority: (ctx, priority, move) => (move && move.category === "Status" ? -0.1 : 0),
+    onModifyMove(move) { if (move.category === "Status") move.ignoreAbility = true; },
+  },
+
+  "Mind's Eye": {
+    name: "Mind's Eye", num: 300, rating: 0,
+    effect: "Normal and Fighting moves hit Ghost types; ignores evasion; accuracy can't be lowered.",
+    flags: { breakable: 1 },
+    onTryBoost(ctx, boost) {
+      if (ctx.source && ctx.target === ctx.source) return;
+      if (boost.accuracy && boost.accuracy < 0) {
+        delete boost.accuracy;
+        ctx.add("-fail", ctx.pokemon, "unboost", "accuracy", "[from] ability: Mind's Eye");
+      }
+    },
+    onModifyMove(move) {
+      move.ignoreEvasion = true;
+      if (!move.ignoreImmunity) move.ignoreImmunity = {};
+      if (move.ignoreImmunity !== true) { move.ignoreImmunity.Fighting = true; move.ignoreImmunity.Normal = true; }
+    },
+  },
+
+  "Supersweet Syrup": {
+    name: "Supersweet Syrup", num: 306, rating: 1.5,
+    effect: "The first time it comes out, lowers its foes' evasiveness by 1 stage.",
+    onStart(ctx) {
+      const p = ctx.pokemon;
+      if (p.syrupUsed) return;
+      p.syrupUsed = true;
+      ctx.add("-ability", p, "Supersweet Syrup");
+      for (const foe of ctx.foes()) ctx.boost(foe, { evasion: -1 }, p);
+    },
+  },
+
+  "Hospitality": {
+    name: "Hospitality", num: 299, rating: 0,
+    effect: "On switch-in, heals its ally by 1/4 of its max HP.",
+    onSwitchIn(ctx) {
+      for (const m of ctx.allies()) if (m && !m.fainted && m !== ctx.pokemon) ctx.heal(m, Math.floor(m.baseMaxhp / 4), ctx.pokemon);
+    },
+  },
+
+  "Toxic Chain": {
+    name: "Toxic Chain", num: 305, rating: 4.5,
+    effect: "Its attacks have a 30% chance to badly poison.",
+    onSourceDamagingHit(ctx) {
+      const t = ctx.target;
+      if (!t || t.fainted || t.hasAbility("Shield Dust") || !ctx.randomChance(3, 10)) return;
+      ctx.trySetStatus(t, "tox", ctx.pokemon);
+    },
+  },
+
+  "Poison Puppeteer": {
+    name: "Poison Puppeteer", num: 310, rating: 3,
+    effect: "Pecharunt: a Pokémon it poisons is confused too.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    // (The battle engine confuses them as it poisons them.)
+  },
+
+  "Tera Shift": {
+    name: "Tera Shift", num: 307, rating: 3,
+    effect: "Terapagos takes its Terastal Form when it comes out.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
+    onSwitchIn(ctx) {
+      const p = ctx.pokemon;
+      if (!/^Terapagos/.test(p.species) || p.transformed) return;
+      if (p.species === "Terapagos") {
+        ctx.add("-activate", p, "ability: Tera Shift");
+        ctx.abilityForme(p, "Terapagos-Terastal", "{who} transformed!");
+      }
+      // (Its Terastal Form's Ability, each time it comes out.)
+      p.ability = "Tera Shell"; p.abilityState = {};
+    },
+  },
+
+  "Tera Shell": {
+    name: "Tera Shell", num: 308, rating: 3.5,
+    effect: "At full HP, every attack is not very effective against Terapagos.",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, breakable: 1 },
+    onSourceModifyDamage(ctx, damage, move) {
+      const p = ctx.target;
+      if (!p || p.hp < p.maxhp || !/^Terapagos/.test(p.species) || move.category === "Status") return;
+      const eff = ctx.typeEffectiveness ? ctx.typeEffectiveness(move) : null;
+      if (eff && eff > 0) return ctx.chainModify(damage, 0.5 / eff);
+    },
+  },
+
+  "Teraform Zero": { name: "Teraform Zero", num: 309, rating: 3, effect: "Terastallized Terapagos clears the weather and terrain (no Terastallizing here).",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 } },
+  "Embody Aspect (Teal)": { name: "Embody Aspect (Teal)", num: 301, rating: 3.5, effect: "Terastallized Ogerpon's Speed rises (no Terastallizing here).",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 } },
+  "Embody Aspect (Hearthflame)": { name: "Embody Aspect (Hearthflame)", num: 303, rating: 3.5, effect: "Terastallized Ogerpon's Attack rises (no Terastallizing here).",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 } },
+  "Embody Aspect (Wellspring)": { name: "Embody Aspect (Wellspring)", num: 302, rating: 3.5, effect: "Terastallized Ogerpon's Sp. Def rises (no Terastallizing here).",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 } },
+  "Embody Aspect (Cornerstone)": { name: "Embody Aspect (Cornerstone)", num: 304, rating: 3.5, effect: "Terastallized Ogerpon's Defense rises (no Terastallizing here).",
+    flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 } },
+
+  // ==================================================================
+  // Legends: Z-A's (its new Megas')
+  // ==================================================================
+  "Dragonize": {
+    name: "Dragonize", num: 311, rating: 4,
+    effect: "Normal moves become Dragon, 1.2× power.",
+    onModifyType(ctx, move) {
+      const noModify = ["judgment", "multiattack", "naturalgift", "revelationdance", "technoblast", "terrainpulse", "weatherball"];
+      if (move.type === "Normal" && !noModify.includes(move.id)) { move.type = "Dragon"; move.typeChangerBoosted = true; }
+    },
+    onBasePower(ctx, power, move) { if (move.typeChangerBoosted) return ctx.chainModify(power, [4915, 4096]); },
+  },
+
+  "Mega Sol": {
+    name: "Mega Sol", num: 312, rating: 4,
+    effect: "Its moves work as if the sunlight were harsh.",
+    // (The damage calculator and the battle engine treat its moves as used in the sun.)
+  },
+
+  "Piercing Drill": {
+    name: "Piercing Drill", num: 313, rating: 3,
+    effect: "Its contact moves get through Protect and the like, for 1/4 of the damage.",
+    // (The battle engine lets them through.)
+  },
+
+  "Eelevate": {
+    name: "Eelevate", num: 314, rating: 3.5,
+    effect: "Immune to Ground moves and hazards on the ground; raises its highest stat when it knocks out a Pokémon.",
+    flags: { breakable: 1 },
+    onSourceAfterFaint(ctx) {
+      if (!ctx.effect || ctx.effect.effectType !== "Move") return;
+      const s = ctx.pokemon.stats;
+      let best = "atk";
+      for (const k of ["def", "spa", "spd", "spe"]) if (s[k] > s[best]) best = k;
+      ctx.boost(ctx.pokemon, { [best]: 1 });
+    },
+  },
+
+  "Fire Mane": {
+    name: "Fire Mane", num: 315, rating: 3.5,
+    effect: "1.5× power on Fire-type moves.",
+    onModifyAtk(ctx, atk, move) { if (move.type === "Fire") return ctx.chainModify(atk, 1.5); },
+    onModifySpA(ctx, spa, move) { if (move.type === "Fire") return ctx.chainModify(spa, 1.5); },
+  },
+
+  "Spicy Spray": {
+    name: "Spicy Spray", num: 316, rating: 3,
+    effect: "An attacker that hits it is burned.",
+    onDamagingHit(ctx) {
+      const src = ctx.source;
+      if (src && !src.fainted && src !== ctx.pokemon) ctx.trySetStatus(src, "brn", ctx.pokemon);
     },
   },
 
 };
+
+// ---- Gen 9 helpers ----
+// The wind moves (Wind Rider, Wind Power) and Gen 9's slicing moves (Sharpness).
+const GEN9_WIND = ["aircutter", "blizzard", "fairywind", "gust", "heatwave", "hurricane", "icywind", "petalblizzard", "sandsearstorm",
+  "springtidestorm", "tailwind", "twister", "whirlwind", "bleakwindstorm", "wildboltstorm"];
+const GEN9_SLICING = ["aquacutter", "bitterblade", "kowtowcleave", "mightycleave", "populationbomb", "psyblade", "tachyoncutter"];
+// Charge (Electromorphosis, Wind Power): its next Electric move does double damage.
+function gen9Charge(ctx) {
+  const p = ctx.pokemon;
+  if (p.fainted) return;
+  ctx.add("-activate", p, "ability: " + p.ability);
+  ctx.battle.addVolatile(p, "charge", p);
+}
+// Booster Energy: used up as it comes out, if the sun (Electric Terrain) isn't already doing it.
+function gen9Booster(ctx, kind) {
+  const p = ctx.pokemon;
+  if (p.item !== "booster-energy" || p.boosterEnergy) return;
+  if (kind === "sun" ? ctx.isWeather(["SunnyDay", "DesolateLand"]) : ctx.isTerrain("ElectricTerrain")) return;
+  ctx.battle.consumeItem(p);
+  p.boosterEnergy = true;
+  ctx.add("-enditem", p, "Booster Energy");
+  ctx.add("-activate", p, "ability: " + p.ability);
+}
+// Protosynthesis / Quark Drive: the stat boosted (its highest, stat stages
+// counted; ties in the order Atk, Def, SpA, SpD, Spe) while the sun shines or
+// Electric Terrain is up. (Its Defense and Sp. Def: the defender's; the battle
+// engine and the damage calculator pass both through ctx.pokemon.)
+function gen9Paradox(ctx, kind) {
+  const p = ctx.pokemon;
+  if (!p || !p.stats) return null;
+  const on = kind === "sun" ? ctx.isWeather(["SunnyDay", "DesolateLand"]) : ctx.isTerrain("ElectricTerrain");
+  if (!on && !p.boosterEnergy) return null;
+  const stage = (k) => { const v = (p.boosts && p.boosts[k]) || 0; return v >= 0 ? (2 + v) / 2 : 2 / (2 - v); };
+  let best = "atk", bestV = -1;
+  for (const k of ["atk", "def", "spa", "spd", "spe"]) {
+    const v = Math.floor(p.stats[k] * stage(k));
+    if (v > bestV) { best = k; bestV = v; }
+  }
+  return best;
+}
 
 // ---- Gen 7 helpers ----
 // An attack that took it from above half its HP to half or less.
@@ -2892,7 +3373,7 @@ function gen7ShieldsDown(ctx) {
 // Ice Face: Eiscue's ice head comes back in hail.
 function gen8IceFace(ctx) {
   const p = ctx.pokemon;
-  if (p.species === "Eiscue-Noice" && !p.transformed && ctx.isWeather("Hail")) ctx.abilityForme(p, "Eiscue", "{who}'s Ice Face was restored!");
+  if (p.species === "Eiscue-Noice" && !p.transformed && ctx.isWeather(["Hail", "Snow"])) ctx.abilityForme(p, "Eiscue", "{who}'s Ice Face was restored!");
 }
 // Schooling: from Lv. 20, School Form while its HP is above a quarter.
 function gen7Schooling(ctx) {

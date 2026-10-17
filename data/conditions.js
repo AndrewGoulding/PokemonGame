@@ -152,6 +152,31 @@
         if (i > 0) q.unshift(q.splice(i, 1)[0]);
       }
     },
+    // Gen 9
+    burningbulwark: { name: "Burning Bulwark", duration: 1 },
+    silktrap: { name: "Silk Trap", duration: 1 },
+    // Psychic Noise: two turns of no healing. (Its own condition: Heal Block,
+    // the Gen 4 move, still does nothing here.)
+    psychicnoise: { name: "Psychic Noise", duration: 3 },
+    // Salt Cure: 1/8 of its HP a turn (1/4 for Water and Steel types) while it's in.
+    saltcure: {
+      name: "Salt Cure",
+      onResidual(ctx) {
+        const p = ctx.pokemon, n = p.hasType("Water") || p.hasType("Steel") ? 4 : 8;
+        ctx.damage(p, hpFrac(p, 1, n), ctx.effectState.source, E("Volatile", "saltcure", "Salt Cure"));
+      }
+    },
+    // Syrup Bomb: -1 Speed at the end of each of the next 3 turns.
+    syrupbomb: {
+      name: "Syrup Bomb", duration: 4,
+      onResidual(ctx) {
+        const src = ctx.effectState.source;
+        if (src && (!src.isActive || src.fainted)) { ctx.pokemon.removeVolatile("syrupbomb"); return; }
+        ctx.boost(ctx.pokemon, { spe: -1 }, src, E("Volatile", "syrupbomb", "Syrup Bomb"));
+      }
+    },
+    // Glaive Rush: until its next move, every move hits it, for double damage.
+    glaiverush: { name: "Glaive Rush" },
     // Gen 8
     obstruct: { name: "Obstruct", duration: 1 },
     maxguard: { name: "Max Guard", duration: 1 },

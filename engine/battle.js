@@ -144,6 +144,8 @@
 
   const WEATHER_NAMES = {
     sunnyday: "SunnyDay", raindance: "RainDance", sandstorm: "Sandstorm", hail: "Hail",
+    // (Gen 9's snow, from Snowscape and Chilly Reception: no damage, Ice types' Defense ×1.5.)
+    snow: "Snow", snowscape: "Snow",
     desolateland: "DesolateLand", primordialsea: "PrimordialSea", deltastream: "DeltaStream"
   };
   const TERRAIN_NAMES = {
@@ -151,7 +153,7 @@
     psychicterrain: "PsychicTerrain"
   };
   const PRIMAL = ["DesolateLand", "PrimordialSea", "DeltaStream"];
-  const WEATHER_ROCKS = { SunnyDay: "heat-rock", RainDance: "damp-rock", Sandstorm: "smooth-rock", Hail: "icy-rock" };
+  const WEATHER_ROCKS = { SunnyDay: "heat-rock", RainDance: "damp-rock", Sandstorm: "smooth-rock", Hail: "icy-rock", Snow: "icy-rock" };
   const DEF_ACC_ABILITIES = new Set(["Sand Veil", "Snow Cloak", "Tangled Feet", "Wonder Skin"]);
   const SILENT_VOLATILES = new Set(["choicelock", "mustrecharge", "lockedmove", "twoturnmove", "flinch",
     "protect", "kingsshield", "spikyshield", "banefulbunker", "obstruct", "maxguard", "sparklingaria", "endure", "charge", "roost", "focuspunch", "destinybond", "focusenergy"]);
@@ -171,7 +173,7 @@
   const REDIRECTABLE = new Set(["normal", "any", "adjacentFoe", "randomNormal"]);
   // One-turn doubles effects, cleared at the end of each turn.
   const TURN_VOLATILES = ["helpinghand", "followme", "ragepowder", "spotlight"];
-  const STALL_MOVES = new Set(["protect", "detect", "endure", "kingsshield", "spikyshield", "banefulbunker", "obstruct", "maxguard", "quickguard", "wideguard", "matblock", "craftyshield"]);
+  const STALL_MOVES = new Set(["protect", "detect", "endure", "kingsshield", "spikyshield", "banefulbunker", "obstruct", "maxguard", "quickguard", "wideguard", "matblock", "craftyshield", "burningbulwark", "silktrap"]);
 
   // Indexes
   let DEX_INDEX = null, MOVE_INDEX = null, ABILITY_CONDITIONS = null, MEGA_MAP = null;
@@ -762,7 +764,7 @@
       if (this.field.pseudo.gravity) return true;
       if (mon.item === "iron-ball") return true;
       if (mon.hasType("Flying")) return false;
-      if (mon.hasAbility("Levitate")) return false;
+      if (mon.hasAbility(["Levitate", "Eelevate"])) return false;
       if (mon.item === "air-balloon") return false;
       if (mon.volatiles.magnetrise) return false;
       return true;
@@ -835,6 +837,14 @@
         st = side.conditions[id] = { duration: dur, source };
       }
       this.add("-sidestart", side.id, c.name || id);
+      // (Gen 9: Tailwind on its side raises a Wind Rider's Attack and charges a Wind Power.)
+      if (id === "tailwind") {
+        for (const m of side.actives) {
+          if (!m || m.fainted) continue;
+          if (m.hasAbility("Wind Rider")) this.boost(m, { atk: 1 }, m, E("Ability", "windrider", "Wind Rider"));
+          if (m.hasAbility("Wind Power")) { this.add("-activate", m, "ability: Wind Power"); this.addVolatile(m, "charge", m); }
+        }
+      }
       return true;
     }
     removeSideCondition(side, id) {
@@ -847,6 +857,7 @@
     // ---------- HP ----------
     heal(mon, amount, source, effect) {
       if (!mon || mon.fainted || mon.hp <= 0 || mon.hp >= mon.maxhp) return 0;
+      if (mon.volatiles.psychicnoise) return 0;   // (Psychic Noise)
       amount = Math.max(1, Math.floor(amount));
       const healed = Math.min(amount, mon.maxhp - mon.hp);
       mon.hp += healed;
@@ -976,6 +987,11 @@
       if (id === "tox") mon.statusState.stage = 0;
       this.add("-status", mon, id, effect && effect.effectType === "Ability" ? "[from] ability: " + effect.name : "");
       this.runEvent("onAfterSetStatus", mon, { source, effect, relay: sobj, only: "ability" });
+      // (Gen 9: Pecharunt's Poison Puppeteer confuses whoever it poisons.)
+      if ((id === "psn" || id === "tox") && source && source !== mon && /^Pecharunt/.test(source.species) && source.hasAbility("Poison Puppeteer") && !mon.fainted) {
+        this.add("-activate", source, "ability: Poison Puppeteer");
+        this.addVolatile(mon, "confusion", source, E("Ability", "poisonpuppeteer", "Poison Puppeteer"));
+      }
       return true;
     }
 
@@ -1044,6 +1060,17 @@
         this.add(delta > 0 ? "-boost" : "-unboost", mon, k, Math.abs(nv - cur));
       }
       if (changed) this.runEvent("onAfterEachBoost", mon, { source, effect, relay: boosts, args: [effect], only: "ability" });
+      // (Gen 9's Opportunist: a foe's stat rises, copied.)
+      const ups = {};
+      for (const k of Object.keys(boosts)) if (boosts[k] > 0) ups[k] = boosts[k];
+      if (changed && Object.keys(ups).length && !(effect && effect.name === "Opportunist")) {
+        const foes = this.doubles ? this.foesOf(mon) : [mon.side.foe.active].filter((m) => m && !m.fainted && m.isActive);
+        for (const f of foes) {
+          if (!f.hasAbility("Opportunist") || f.fainted) continue;
+          this.add("-activate", f, "ability: Opportunist");
+          this.boost(f, ups, f, E("Ability", "opportunist", "Opportunist"));
+        }
+      }
       return changed;
     }
 
@@ -1057,6 +1084,8 @@
     }
     consumeItem(mon) {
       if (!mon.item) return;
+      // (Gen 9's Cud Chew: a Berry it eats, eaten again at the end of next turn.)
+      if (/-berry$/.test(mon.item) && mon.hasAbility("Cud Chew")) mon.cudChew = { item: mon.item, turns: 2 };
       mon.lastItem = mon.item; mon.item = ""; mon.usedItemThisTurn = true;
       delete mon.volatiles.choicelock;
       this.runEvent("onAfterUseItem", mon, { only: "ability" });
@@ -1181,6 +1210,12 @@
         mon.boosts = carried.boosts;
         for (const id of Object.keys(carried.volatiles)) mon.volatiles[id] = carried.volatiles[id];
       }
+      // (Gen 9's Shed Tail: the substitute it left for whoever comes in.)
+      if (side.shedTail && !mon.fainted) {
+        mon.volatiles.substitute = { id: "substitute", hp: side.shedTail };
+        side.shedTail = 0;
+        this.add("-start", mon, "Substitute");
+      }
       this.markParticipants();
       if (side.tag) this.add(o.drag ? "drag" : "switch", mon, mon.species + ", L" + mon.level, this.hpStr(mon), this.expProgress(mon), mon.teamIndex, side.trainers[mon.owner]);
       else this.add(o.drag ? "drag" : "switch", mon, mon.species + ", L" + mon.level, this.hpStr(mon), this.expProgress(mon), mon.teamIndex);
@@ -1214,6 +1249,9 @@
       }
       const origin = { Dialga: "adamant-crystal", Palkia: "lustrous-globe" }[mon.baseSpecies];
       if (origin && mon.item === origin && mon.species === mon.baseSpecies && !mon.transformed) this.abilityForme(mon, mon.baseSpecies + "-Origin");
+      // (Gen 9: Ogerpon wearing a mask takes its form.)
+      const mask = { "wellspring-mask": "Ogerpon-Wellspring", "hearthflame-mask": "Ogerpon-Hearthflame", "cornerstone-mask": "Ogerpon-Cornerstone" }[mon.item];
+      if (mask && mon.species === "Ogerpon" && !mon.transformed) this.abilityForme(mon, mask);
       // (Gen 8: Zacian with the Rusted Sword, Zamazenta with the Rusted Shield.)
       // (Its Iron Head is Behemoth Blade / Bash in battle, as a Mimic'd move is.)
       const crown = { Zacian: ["rusted-sword", "Behemoth Blade"], Zamazenta: ["rusted-shield", "Behemoth Bash"] }[mon.baseSpecies];
@@ -1473,9 +1511,12 @@
         if (!disabled && mon.volatiles.taunt && data.cat === "Status") disabled = true;
         if (!disabled && mon.volatiles.throatchop && data.flags && data.flags.sound) disabled = true;
         if (!disabled && mon.volatiles.torment && mon.lastMove === m.id) disabled = true;
+        // (Gen 9: Gigaton Hammer and Blood Moon can't be used twice in a row.)
+        if (!disabled && (m.id === "gigatonhammer" || m.id === "bloodmoon") && mon.lastMove === m.id) disabled = true;
         if (!disabled && mon.volatiles.encore && mon.volatiles.encore.moveId && mon.volatiles.encore.moveId !== m.id) disabled = true;
         if (!disabled && (mon.item.indexOf("choice-") === 0 || mon.hasAbility("Gorilla Tactics")) && mon.volatiles.choicelock && mon.volatiles.choicelock.moveId !== m.id && !mon.dynamaxed) disabled = true;
         if (!disabled && mon.item === "assault-vest" && data.cat === "Status") disabled = true;
+        if (!disabled && mon.volatiles.psychicnoise && data.flags && data.flags.heal) disabled = true;
         return { index: i, id: m.id, name: m.name, pp: m.pp, maxpp: m.maxpp, disabled, type: data.type, category: data.cat, power: data.power, target: data.target };
       });
       return slots;
@@ -2516,6 +2557,8 @@
     execMove(user, move, o) {
       o = o || {};
       const foe = user.side.foe.active;
+      // (Glaive Rush's exposure lasts until the user moves again.)
+      if (user.volatiles.glaiverush && user.volatiles.glaiverush.turn < this.turn) delete user.volatiles.glaiverush;
       // Attacker ability tweaks the move
       const ab = window.ABILITIES[user.ability];
       if (ab && !user.volatiles.gastroacid) {
@@ -2587,12 +2630,14 @@
       // Charging moves
       if (move.flags.charge && !o.secondTurn) {
         const w = this.getWeather();
-        const sunSkip = (move.id === "solarbeam" || move.id === "solarblade") && (w === "SunnyDay" || w === "DesolateLand");
+        const sunSkip = ((move.id === "solarbeam" || move.id === "solarblade") && (w === "SunnyDay" || w === "DesolateLand" || user.hasAbility("Mega Sol")))
+          || (move.id === "electroshot" && (w === "RainDance" || w === "PrimordialSea"));
+        if (sunSkip && move.id === "electroshot") this.boost(user, { spa: 1 }, user, E("Move", "electroshot", "Electro Shot"));
         if (sunSkip) { /* fires immediately */ }
         else if (user.item === "power-herb") { this.consumeItem(user); this.add("-enditem", user, "Power Herb"); }
         else {
           this.add("-prepare", user, move.name);
-          if (move.id === "meteorbeam") this.boost(user, { spa: 1 }, user, E("Move", "meteorbeam", "Meteor Beam"));
+          if (move.id === "meteorbeam" || move.id === "electroshot") this.boost(user, { spa: 1 }, user, E("Move", move.id, move.name));
           user.volatiles.twoturnmove = { id: "twoturnmove", move: move.name, invuln: INVULN[move.id] || null };
           // (Doubles: it strikes the same position next turn.)
           if (this.doubles && target && target !== user) user.volatiles.twoturnmove.targetLoc = this.locOf(target, user);
@@ -2834,12 +2879,20 @@
       return false;
     }
 
+    // The Treasures of Ruin out on the field, for a hit by `user` on `target`:
+    // Tablets (user's Attack), Vessel (its Sp. Atk), Sword (target's Defense),
+    // Beads (its Sp. Def), each not counting for its own holder.
+    ruin(user, target) {
+      const on = (ab, not) => this.getActives().some((m) => m && m !== not && !m.fainted && m.hasAbility(ab) && !this.neutralized(m));
+      return { atk: on("Tablets of Ruin", user), spa: on("Vessel of Ruin", user), def: on("Sword of Ruin", target), spd: on("Beads of Ruin", target) };
+    }
+
     // Gen 7: grounded Pokémon in Psychic Terrain, and a side with Queenly
-    // Majesty or Dazzling, can't be hit by the foe's priority moves.
+    // Majesty or Dazzling (or Gen 9's Armor Tail), can't be hit by the foe's priority moves.
     priorityBlocked(user, target, move, brk) {
       if (target.side === user.side || !(move.priority > 0)) return false;
       if (move.target !== "normal" && move.target !== "any" && move.target !== "adjacentFoe" && !SPREAD_TARGETS.has(move.target)) return false;
-      const guard = [target, this.allyOf(target)].find((m) => m && !m.fainted && m.hasAbility(["Queenly Majesty", "Dazzling"]) && !(brk && m === target));
+      const guard = [target, this.allyOf(target)].find((m) => m && !m.fainted && m.hasAbility(["Queenly Majesty", "Dazzling", "Armor Tail"]) && !(brk && m === target));
       if (guard) { this.add("-activate", guard, "ability: " + guard.ability, "[of] " + user.ident); return true; }
       if (this.field.terrain === "PsychicTerrain" && this.isGrounded(target)) { this.add("-activate", target, "move: Psychic Terrain"); return true; }
       return false;
@@ -2851,19 +2904,26 @@
         this.add("-activate", target, "move: Wide Guard");
         return true;
       }
-      if (v.protect || v.kingsshield || v.spikyshield || v.banefulbunker) {
+      if (v.protect || v.kingsshield || v.spikyshield || v.banefulbunker || v.burningbulwark) {
         this.add("-activate", target, "move: Protect");
         if (move.flags.contact) {
           if (v.banefulbunker) this.trySetStatus(user, "psn", target, E("Move", "banefulbunker", "Baneful Bunker"));
+          if (v.burningbulwark) this.trySetStatus(user, "brn", target, E("Move", "burningbulwark", "Burning Bulwark"));
           if (v.kingsshield) this.boost(user, { atk: -2 }, target, E("Move", "kingsshield", "King's Shield"));
           if (v.spikyshield) this.damage(user, Math.floor(user.baseMaxhp / 8), target, E("Move", "spikyshield", "Spiky Shield"));
         }
         return true;
       }
-      // (Obstruct: damaging moves only; contact ones lose 2 Defense.)
+      // (Obstruct: damaging moves only; contact ones lose 2 Defense. Gen 9's
+      // Silk Trap the same, 1 Speed.)
       if (v.obstruct && move.category !== "Status") {
         this.add("-activate", target, "move: Protect");
         if (move.flags.contact) this.boost(user, { def: -2 }, target, E("Move", "obstruct", "Obstruct"));
+        return true;
+      }
+      if (v.silktrap && move.category !== "Status") {
+        this.add("-activate", target, "move: Protect");
+        if (move.flags.contact) this.boost(user, { spe: -1 }, target, E("Move", "silktrap", "Silk Trap"));
         return true;
       }
       if (target.side.conditions.quickguard && move.priority > 0) { this.add("-activate", target, "move: Quick Guard"); return true; }
@@ -2884,7 +2944,8 @@
       const w = this.getWeather();
       if ((move.id === "thunder" || move.id === "hurricane" || /^(bleakwind|wildbolt|sandsear)storm$/.test(move.id)) && (w === "RainDance" || w === "PrimordialSea")) return true;
       if ((move.id === "thunder" || move.id === "hurricane") && (w === "SunnyDay" || w === "DesolateLand")) acc = 50;
-      if (move.id === "blizzard" && w === "Hail") return true;
+      if (move.id === "blizzard" && (w === "Hail" || w === "Snow")) return true;
+      if (target.volatiles.glaiverush) return true;
       if (!move.ohko) {
         const evaStage = move.ignoreEvasion ? 0 : target.boosts.evasion;
         const stage = clamp(user.boosts.accuracy - evaStage, -6, 6);
@@ -2918,10 +2979,12 @@
             return false;
           }
           const unseen = move.flags.contact && user.hasAbility("Unseen Fist");
-          if (move.flags.protect && !move.breaksProtect && !unseen && this.isProtected(target, user, move)) return false;
+          // (Legends: Z-A's Piercing Drill: contact moves get through, for a quarter of the damage.)
+          const drill = move.flags.contact && move.category !== "Status" && user.hasAbility("Piercing Drill");
+          if (move.flags.protect && !move.breaksProtect && !unseen && !drill && this.isProtected(target, user, move)) return false;
           // (A Z-Move gets through Protect and the like with a quarter of its damage.)
           const v = target.volatiles;
-          if (o) o.zBrokeProtect = !!(move.isZ || move.isMax) && move.category !== "Status" && !move.breaksProtect && !!(v.protect || v.kingsshield || v.spikyshield || v.banefulbunker || v.obstruct);
+          if (o) o.zBrokeProtect = !!(move.isZ || move.isMax || drill) && move.category !== "Status" && !move.breaksProtect && !!(v.protect || v.kingsshield || v.spikyshield || v.banefulbunker || v.obstruct || v.burningbulwark || v.silktrap);
           if (this.sideGuarded(target, user, move)) return false;
           if (this.priorityBlocked(user, target, move, brk)) return false;
           if (move.flags.reflectable && target.volatiles.magiccoat && !move.hasBounced) {
@@ -2958,11 +3021,17 @@
 
       // Moves with special preconditions
       if (move.id === "fakeout" && user.activeTurns > 0) { this.add("-fail", user); return false; }
-      if (move.id === "suckerpunch") {
+      if (move.id === "suckerpunch" || move.id === "thunderclap") {
         const ta = this.queue.find((x) => x.type === "move" && x.mon === target && !x.recharge);
         if (!ta || !ta.moveName || window.MOVES[ta.moveName].cat === "Status") { this.add("-fail", user); return false; }
       }
-      if (move.id === "counter" || move.id === "mirrorcoat" || move.id === "metalburst") {
+      // (Gen 9's Upper Hand: only against a priority attack it's about to use.)
+      if (move.id === "upperhand") {
+        const ta = this.queue.find((x) => x.type === "move" && x.mon === target && !x.recharge);
+        const tm = ta && ta.moveName && window.MOVES[ta.moveName];
+        if (!tm || tm.cat === "Status" || !(tm.priority > 0)) { this.add("-fail", user); return false; }
+      }
+      if (move.id === "counter" || move.id === "mirrorcoat" || move.id === "metalburst" || move.id === "comeuppance") {
         const ld = user.lastDamage;
         const want = move.id === "counter" ? "Physical" : move.id === "mirrorcoat" ? "Special" : null;
         if (!ld || (want && ld.category !== want)) { this.add("-fail", user); return false; }
@@ -2987,6 +3056,8 @@
         if (r === "done") return true;
       }
 
+      // (Gen 9: Fickle Beam's 30% for double power.)
+      if (move.id === "ficklebeam" && this.randomChance(3, 10)) { o.fickle = true; this.add("-activate", user, "move: Fickle Beam"); }
       // Number of hits
       let hits = 1;
       if (typeof move.multihit === "number") hits = move.multihit;
@@ -3037,7 +3108,12 @@
           zPower: move.zPower, zCategory: move.zPower ? move.category : undefined, zBrokeProtect: !!o.zBrokeProtect,
           targetDynamaxed: !!target.dynamaxed,
           suppressA: this.neutralized(user), suppressD: this.neutralized(target),
-          steelySpirit: [user, this.allyOf(user)].some((m) => m && m.hasAbility("Steely Spirit"))
+          steelySpirit: [user, this.allyOf(user)].some((m) => m && m.hasAbility("Steely Spirit")),
+          // (Gen 9's Treasures of Ruin: each lowers that stat of every other Pokémon out.)
+          ruin: this.ruin(user, target),
+          timesHit: user.timesHit || 0,
+          faintedAllies: user.side.pokemon.filter((m) => m !== user && m.fainted).length,
+          fickle: !!o.fickle, glaiveRush: !!target.volatiles.glaiverush
         };
         // Flower Gift (Cherrim in the sun): 1.5x Attack for the user's side,
         // 1.5x Sp. Def for the target's (Mold Breaker ignores that one).
@@ -3092,6 +3168,7 @@
           dealt = holdsOn && dmg <= 0 ? 0 : this.damage(target, dmg, user, moveEffect);
           if (target.volatiles.focuspunch) target.volatiles.focuspunch.lostFocus = true;
           if (dealt > 0) {
+            target.timesHit = (target.timesHit || 0) + 1;   // (Rage Fist)
             target.lastDamage = { amount: dealt, category: move.category, source: user };
             this.runEvent("onDamagingHit", target, { source: user, effect: moveEffect, relay: move, move });
             if (target.hasAbility("Cute Charm") && move.flags.contact && !user.fainted && !user.volatiles.attract

@@ -3000,6 +3000,118 @@ for (let seed = 1; seed <= GEN8; seed++) {
   gen8Turns += battle.turn;
 }
 
+// ---------- Generation 9 battles, and Legends: Z-A's Megas ----------
+{
+  const g9 = (species, moves, extra) => Object.assign({ species, level: 50, moves }, extra);
+  const singles = (p1, p2, seed) => {
+    const b = new Battle({ seed: seed || 1, debug: true, p1: { name: "A", team: p1 }, p2: { name: "B", team: p2 } });
+    b.start();
+    return b;
+  };
+  const has = (evs, type, ...args) => evs.some((e) => e[0] === type && args.every((a, i) => a instanceof RegExp ? a.test(e[i + 1]) : e[i + 1] === a));
+  const megaGo = (b) => play(b, { p1: { type: "move", move: 0, mega: true }, p2: mv(0) });
+
+  // Legends: Z-A's Megas: by stone, Meowstic's by gender, Tatsugiri's by form, Floette any.
+  for (const [species, stone, extra, forme] of [["Clefable", "clefablite", {}, "Clefable-Mega"], ["Meowstic", "meowsticite", { gender: "F" }, "Meowstic-F-Mega"],
+    ["Meowstic", "meowsticite", { gender: "M" }, "Meowstic-M-Mega"], ["Tatsugiri-Droopy", "tatsugirinite", {}, "Tatsugiri-Droopy-Mega"],
+    ["Floette", "floettite", {}, "Floette-Mega"], ["Raichu", "raichunite-y", {}, "Raichu-Mega-Y"], ["Garchomp", "garchompite-z", {}, "Garchomp-Mega-Z"]]) {
+    const b = singles([g9(species, ["Splash"], Object.assign({ item: stone }, extra))], [g9("Snorlax", ["Splash"])]);
+    assert(b.getRequest("p1").active.canMega, species + " can Mega Evolve");
+    megaGo(b);
+    assert.strictEqual(b.sides.p1.active.species, forme, stone);
+  }
+  { const b = singles([g9("Clefable", ["Splash"], { item: "meowsticite" })], [g9("Snorlax", ["Splash"])]);
+    assert(!b.getRequest("p1").active.canMega, "another's stone does nothing"); }
+  // Mega Feraligatr's Dragonize: Normal moves become Dragon.
+  { const b = singles([g9("Feraligatr", ["Return"], { item: "feraligite" })], [g9("Snorlax", ["Splash"])]);
+    megaGo(b);
+    assert.strictEqual(b.sides.p1.active.ability, "Dragonize"); }
+  // Piercing Drill gets through Protect for a quarter.
+  { const b = singles([g9("Excadrill", ["Splash", "Iron Head"], { item: "excadrite" })], [g9("Snorlax", ["Protect", "Splash"])]);
+    megaGo(b);
+    const evs = play(b, { p1: mv(1), p2: mv(0) });
+    assert(hpLost(b.sides.p2.active) > 0 && has(evs, "-zbroken"), "Piercing Drill"); }
+
+  // Snowscape: snow, no damage, Ice types' Defense up; Blizzard can't miss.
+  { const b = singles([g9("Cetitan", ["Snowscape"])], [g9("Snorlax", ["Splash"])]);
+    const evs = play(b, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(b.getWeather(), "Snow");
+    assert(!damageTo(evs, b.sides.p2.active.ident).length, "no snow damage");
+    const c = b.sides.p1.active, l = b.sides.p2.active;
+    assert(Damage.calc(l, c, "Tackle", { weather: "Snow" }).max < Damage.calc(l, c, "Tackle", {}).max, "Ice types' Defense in snow"); }
+
+  // Good as Gold blocks status moves; Treasures of Ruin.
+  { const b = singles([g9("Gholdengo", ["Splash"])], [g9("Snorlax", ["Thunder Wave"])]);
+    play(b, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(b.sides.p1.active.status, "", "Good as Gold");
+    const pao = b.sides.p1.active;
+    const plain = Damage.calc(pao, b.sides.p2.active, "Tackle", {}).max;
+    assert(Damage.calc(pao, b.sides.p2.active, "Tackle", {}, { ruin: { def: true } }).max > plain, "Sword of Ruin"); }
+
+  // Zero to Hero: Palafin out and in again is a Hero.
+  { const b = singles([g9("Palafin", ["Splash"]), g9("Snorlax", ["Splash"])], [g9("Snorlax", ["Splash"])]);
+    play(b, { p1: { type: "switch", index: 1 }, p2: mv(0) });
+    play(b, { p1: { type: "switch", index: 0 }, p2: mv(0) });
+    assert.strictEqual(b.sides.p1.active.species, "Palafin-Hero"); }
+  // Tera Shift: Terapagos takes its Terastal Form and Tera Shell.
+  { const b = singles([g9("Terapagos", ["Splash"])], [g9("Snorlax", ["Splash"])]);
+    const t = b.sides.p1.active;
+    assert.deepStrictEqual([t.species, t.ability], ["Terapagos-Terastal", "Tera Shell"]); }
+  // Rage Fist grows with each hit taken; Last Respects with each fainted ally.
+  { const a = Damage.makePokemon("Annihilape", { level: 50 }), d = Damage.makePokemon("Alakazam", { level: 50 });
+    assert(Damage.calc(a, d, "Rage Fist", {}, { timesHit: 3 }).basePower === 200);
+    assert(Damage.calc(a, d, "Last Respects", {}, { faintedAllies: 2 }).basePower === 150); }
+  // Salt Cure: a quarter a turn to a Water type.
+  { const b = singles([g9("Garganacl", ["Salt Cure"])], [g9("Vaporeon", ["Splash"])]);
+    play(b, { p1: mv(0), p2: mv(0) });
+    const v = b.sides.p2.active;
+    assert(v.volatiles.saltcure && hpLost(v) >= Math.floor(v.maxhp / 4), "Salt Cure"); }
+  // Shed Tail: out, and the substitute stays for whoever comes in.
+  { const b = singles([g9("Cyclizar", ["Shed Tail"]), g9("Snorlax", ["Splash"])], [g9("Snorlax", ["Splash"])]);
+    play(b, { p1: mv(0), p2: mv(0) });
+    if (b.getRequest("p1").phase === "switch") play(b, { p1: { type: "switch", index: 1 } });
+    assert(b.sides.p1.active.species === "Snorlax" && b.sides.p1.active.volatiles.substitute, "Shed Tail"); }
+
+  // Gen 9's evolution rules: steps, Coins, knockouts, 1 in 100.
+  { const pawmo = Party.create("Pawmo", 30, { rng: mulberry32(9) });
+    assert(!Evolution.find(pawmo, { trigger: "level", party: [pawmo] }));
+    pawmo.steps = 1000;
+    assert.strictEqual(Evolution.find(pawmo, { trigger: "level", party: [pawmo] }).into, "Pawmot");
+    const g = Party.create("Gimmighoul", 30, { rng: mulberry32(9) });
+    assert(!Evolution.find(g, { trigger: "level", party: [g], coins: 998 }));
+    assert.strictEqual(Evolution.find(g, { trigger: "level", party: [g], coins: 999 }).into, "Gholdengo");
+    const bis = Party.create("Bisharp", 60, { rng: mulberry32(9) });
+    bis.koSpecies = { Bisharp: 3 };
+    assert.strictEqual(Evolution.find(bis, { trigger: "level", party: [bis] }).into, "Kingambit");
+    const t = Party.create("Tandemaus", 30, { rng: mulberry32(9) });
+    t.personality = 1234500;
+    assert.strictEqual(Evolution.find(t, { trigger: "level", party: [t] }).into, "Maushold-Four");
+    t.personality = 1234501;
+    assert.strictEqual(Evolution.find(t, { trigger: "level", party: [t] }).into, "Maushold"); }
+}
+
+// Gen 9's Pokémon in random battles, as Gen 8's above (no Dynamax).
+const GEN9 = 100;
+let gen9Turns = 0;
+for (let seed = 1; seed <= GEN9; seed++) {
+  const teamRng = mulberry32(seed * 104729);
+  const dbl = seed % 2 === 0;
+  const team = () => RandomTeam.team(dbl ? 4 : 3, { level: 50, rng: teamRng, onlyGen: 9 });
+  const battle = new Battle({ seed, debug: true, format: dbl ? "doubles" : "singles", p1: { name: "A", team: team() }, p2: { name: "B", team: team() } });
+  const rng = mulberry32(seed);
+  battle.start();
+  for (let step = 0; step < 3000 && !battle.ended; step++) {
+    for (const id of ["p1", "p2"]) {
+      const req = battle.getRequest(id);
+      if (req.phase !== "move" && req.phase !== "switch") continue;
+      const r = battle.choose(id, step % 2 ? OpponentAI.choose(battle, id, rng) : battle.randomChoice(id));
+      assert(r.ok, "Gen 9 choice rejected in battle " + seed + ": " + r.error);
+    }
+  }
+  assert(battle.ended, "Gen 9 battle " + seed + " did not finish");
+  gen9Turns += battle.turn;
+}
+
 console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns), AI beat random moves in " + aiWinRate + "% of games");
 console.log("ok: doubles regressions, " + DOUBLES + " random doubles battles finished (" + doublesTurns + " turns)");
 
@@ -4068,6 +4180,7 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
 }
 console.log("ok: Gen 7, " + GEN7 + " random battles finished (" + gen7Turns + " turns)");
 console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " turns)");
+console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " turns)");
 
 // Berry picking (game/berry-picking.js): shake a tree to the meter, catch what falls.
 {

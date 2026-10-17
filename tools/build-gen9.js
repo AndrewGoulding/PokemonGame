@@ -207,6 +207,8 @@ for (const m of gen9.moves.all()) {
   if (m.gen !== 9 || m.isMax || m.isZ || m.isNonstandard || OLD_MOVES[m.name]) continue;
   movesOut[m.name] = convertMove(m);
 }
+// (Psychic Noise's two turns without healing are data/battle-moves.js's, its own condition.)
+delete movesOut["Psychic Noise"].secondary;
 const known = (name) => OLD_MOVES[name] || movesOut[name];
 
 // ---------- Learnsets ----------

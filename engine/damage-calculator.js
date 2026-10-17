@@ -17,7 +17,7 @@
 //     ivs (only needed for Hidden Power type), isNFE (for Eviolite) }
 //
 // Field: { weather, terrain, gravity, isDoubles, reflect, lightScreen }
-//   weather: "SunnyDay" | "RainDance" | "Sandstorm" | "Hail" |
+//   weather: "SunnyDay" | "RainDance" | "Sandstorm" | "Hail" | "Snow" |
 //            "DesolateLand" | "PrimordialSea" | "DeltaStream"
 //   terrain: "ElectricTerrain" | "GrassyTerrain" | "MistyTerrain" | "PsychicTerrain"
 //   reflect / lightScreen refer to the DEFENDER's side.
@@ -35,7 +35,10 @@
 //            moveType (the move's type as the battle settled it),
 //            lastMoveFailed (Stomping Tantrum), statsLowered (Lash Out),
 //            hitIndex (Triple Axel's hit, from 0), powerSpot, steelySpirit,
-//            suppressA / suppressD (that side's Ability is switched off) }
+//            suppressA / suppressD (that side's Ability is switched off),
+//            ruin ({ atk, spa, def, spd }: the Treasures of Ruin out), timesHit
+//            (Rage Fist), faintedAllies (Last Respects), fickle (Fickle Beam's
+//            double), glaiveRush (the target used Glaive Rush) }
 //   targets: how many Pokémon a spread move is hitting (0.75x when > 1).
 
 (function () {
@@ -168,6 +171,7 @@
         return arguments.length === 1 ? undefined : a;
       },
       modify: (v, m) => modify(v, Array.isArray(m) ? m[0] / m[1] : m),
+      typeEffectiveness: () => env.eff,
       add: () => {},
       damage: () => {},
       heal: () => {},
@@ -214,11 +218,11 @@
 
     // Moves whose type depends on state
     if (move.id === "weatherball") {
-      const w = env.weather;
+      const w = A.ability === "Mega Sol" && !env.weather ? "SunnyDay" : env.weather;
       if (w === "SunnyDay" || w === "DesolateLand") move.type = "Fire";
       else if (w === "RainDance" || w === "PrimordialSea") move.type = "Water";
       else if (w === "Sandstorm") move.type = "Rock";
-      else if (w === "Hail") move.type = "Ice";
+      else if (w === "Hail" || w === "Snow") move.type = "Ice";
       if (move.type !== "Normal") move.power = 100;
     }
     if (move.id === "hiddenpower") {
@@ -246,6 +250,11 @@
       const spec = applyStage(A.stats.spa, A.boosts.spa) / Math.max(1, applyStage(D.stats.spd, D.boosts.spd));
       if (phys > spec) { move.category = "Physical"; move.flags.contact = 1; }
     }
+    // (Gen 9: Ogerpon's Ivy Cudgel takes its mask's type, Paldean Tauros's Raging Bull its breed's.)
+    const CUDGEL = { "Ogerpon-Wellspring": "Water", "Ogerpon-Hearthflame": "Fire", "Ogerpon-Cornerstone": "Rock" };
+    const BULL = { "Tauros-Paldea-Combat": "Fighting", "Tauros-Paldea-Blaze": "Fire", "Tauros-Paldea-Aqua": "Water" };
+    if (move.id === "ivycudgel" && CUDGEL[A.species]) move.type = CUDGEL[A.species];
+    if (move.id === "ragingbull" && BULL[A.species]) move.type = BULL[A.species];
     // Photon Geyser is physical when the user's Attack is higher.
     if ((move.id === "photongeyser" || move.id === "lightthatburnsthesky") && applyStage(A.stats.atk, A.boosts.atk) > applyStage(A.stats.spa, A.boosts.spa)) move.category = "Physical";
     return move;
@@ -350,6 +359,14 @@
       case "terrainpulse": if (env.field.terrain && isGrounded(A, env.field)) bp *= 2; break;
       case "risingvoltage": if (env.field.terrain === "ElectricTerrain" && isGrounded(D, env.field)) bp *= 2; break;
       case "watershuriken": if (A.species === "Greninja-Ash") bp = 20; break;
+      // Gen 9
+      case "ragefist": bp = Math.min(350, 50 + 50 * (opts.timesHit || 0)); break;
+      case "lastrespects": bp = 50 + 50 * Math.min(100, opts.faintedAllies || 0); break;
+      case "hardpress":
+        bp = tr(tr((100 * (100 * tr((D.hp * 4096) / D.maxhp)) + 2048 - 1) / 4096) / 100) || 1;
+        break;
+      case "ficklebeam": if (opts.fickle) bp *= 2; break;
+      case "temperflare": if (opts.lastMoveFailed) bp *= 2; break;
       default: break;
     }
     return bp;
@@ -367,7 +384,8 @@
       case "endeavor": return D.hp > A.hp ? D.hp - A.hp : 0;
       case "finalgambit": return A.hp;
       case "counter": case "mirrorcoat": return (opts.lastDamageTaken || 0) * 2;
-      case "metalburst": return tr((opts.lastDamageTaken || 0) * 1.5);
+      case "metalburst": case "comeuppance": return tr((opts.lastDamageTaken || 0) * 1.5);
+      case "ruination": return Math.max(1, tr(D.hp / 2));
       default: return null;
     }
   }
@@ -428,7 +446,7 @@
       eff = typeEffectiveness(move.type, D.types);
     }
     // Scrappy: Normal/Fighting hit Ghost
-    if (A.ability === "Scrappy" && D.hasType("Ghost") && (move.type === "Normal" || move.type === "Fighting")) {
+    if ((A.ability === "Scrappy" || A.ability === "Mind's Eye") && D.hasType("Ghost") && (move.type === "Normal" || move.type === "Fighting")) {
       const others = D.types.filter((t) => t !== "Ghost");
       eff = typeEffectiveness(move.type, others);
     }
@@ -447,6 +465,7 @@
     // Tar Shot: Fire hits twice as hard.
     if (D.volatiles && D.volatiles.tarshot && move.type === "Fire") eff *= 2;
     result.typeEffectiveness = eff;
+    env.eff = eff;   // (Tera Shell)
 
     if (eff === 0) {
       result.notes.push("No effect (type immunity)");
@@ -467,7 +486,8 @@
     if (defAbilityActive) {
       const ab = D.ability;
       const imm =
-        (ab === "Levitate" && move.type === "Ground" && !field.gravity && D.item !== "iron-ball") ||
+        ((ab === "Levitate" || ab === "Eelevate") && move.type === "Ground" && !field.gravity && D.item !== "iron-ball") ||
+        (ab === "Earth Eater" && move.type === "Ground") || (ab === "Well-Baked Body" && move.type === "Fire") ||
         (ab === "Flash Fire" && move.type === "Fire") ||
         ((ab === "Water Absorb" || ab === "Dry Skin" || ab === "Storm Drain") && move.type === "Water") ||
         ((ab === "Volt Absorb" || ab === "Lightning Rod" || ab === "Motor Drive") && move.type === "Electric") ||
@@ -537,6 +557,8 @@
     if (aItem === "adamant-crystal" && /^Dialga/.test(A.species) && ["Dragon", "Steel"].includes(move.type)) push(1.2);
     if (aItem === "lustrous-globe" && /^Palkia/.test(A.species) && ["Dragon", "Water"].includes(move.type)) push(1.2);
     if (aItem === "griseous-orb" && A.species.startsWith("Giratina") && ["Dragon", "Ghost"].includes(move.type)) push(1.2);
+    // (Gen 9: Ogerpon's masks.)
+    if (/^(wellspring|hearthflame|cornerstone)-mask$/.test(aItem) && /^Ogerpon/.test(A.species)) push(4915 / 4096);
 
     if (opts.helpingHand) push(1.5);
     if (opts.battery && move.category === "Special") push(5325 / 4096);
@@ -549,6 +571,8 @@
       if (isGrounded(A, field)) push(1.5);
     }
     if (opts.charge && move.type === "Electric") push(2);
+    // (Gen 9: Psyblade on Electric Terrain.)
+    if (move.id === "psyblade" && field.terrain === "ElectricTerrain") push(1.5);
 
     const aGrounded = isGrounded(A, field);
     const dGrounded = isGrounded(D, field);
@@ -597,6 +621,9 @@
     if (oi === "soul-dew" && offStat === "spa" && ["Latios", "Latias"].includes(offensiveMon.species)) atkChain = chainMult(atkChain, fp(1.5));
     if (opts.plusMinus && offStat === "spa") atkChain = chainMult(atkChain, fp(1.5));
     if (opts.flowerGiftAtk && offStat === "atk") atkChain = chainMult(atkChain, fp(1.5));
+    // (Gen 9's Treasures of Ruin, as the battle engine found them: ×0.75.)
+    const ruin = opts.ruin || {};
+    if ((ruin.atk && offStat === "atk") || (ruin.spa && offStat === "spa")) atkChain = chainMult(atkChain, 3072);
     attack = Math.max(1, applyChain(attack, atkChain));
 
     // Defense-side modifier chain
@@ -615,7 +642,9 @@
     if (di === "deep-sea-scale" && D.species === "Clamperl" && defStat === "spd") defChain = chainMult(defChain, fp(2));
     if (di === "soul-dew" && defStat === "spd" && ["Latios", "Latias"].includes(D.species)) defChain = chainMult(defChain, fp(1.5));
     if (weather === "Sandstorm" && D.hasType("Rock") && defStat === "spd") defChain = chainMult(defChain, fp(1.5));
+    if (weather === "Snow" && D.hasType("Ice") && defStat === "def") defChain = chainMult(defChain, fp(1.5));
     if (opts.flowerGiftSpD && defStat === "spd") defChain = chainMult(defChain, fp(1.5));
+    if ((ruin.def && defStat === "def") || (ruin.spd && defStat === "spd")) defChain = chainMult(defChain, 3072);
     defense = Math.max(1, applyChain(defense, defChain));
 
     // ---- Base damage ----
@@ -639,6 +668,9 @@
     }
 
     if (opts.friendGuard) pushF(0.75);
+    // (Gen 9: Collision Course and Electro Drift, super effective; Glaive Rush's user takes double.)
+    if ((move.id === "collisioncourse" || move.id === "electrodrift") && eff > 1) pushF(5461 / 4096);
+    if (opts.glaiveRush) pushF(2);
     if (opts.zBrokeProtect) pushF(0.25);
 
     const ra = runHook(A.ability, "onModifyDamage", env, A, base, move);
@@ -663,8 +695,11 @@
     }
 
     let weatherMult = 1;
-    if (weather === "SunnyDay" || weather === "DesolateLand") {
-      if (move.type === "Fire") weatherMult = 1.5; else if (move.type === "Water") weatherMult = 0.5;
+    // (Legends: Z-A's Mega Sol: its moves as in the sun.)
+    const sunny = weather === "SunnyDay" || weather === "DesolateLand" || (A.ability === "Mega Sol" && weather !== "PrimordialSea");
+    if (sunny) {
+      // (Gen 9's Hydro Steam is boosted in the sun, not weakened.)
+      if (move.type === "Fire" || move.id === "hydrosteam") weatherMult = 1.5; else if (move.type === "Water") weatherMult = 0.5;
     } else if (weather === "RainDance" || weather === "PrimordialSea") {
       if (move.type === "Water") weatherMult = 1.5; else if (move.type === "Fire") weatherMult = 0.5;
     }

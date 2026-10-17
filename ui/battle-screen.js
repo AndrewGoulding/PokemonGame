@@ -106,7 +106,9 @@
     slowstart: "{who} can't get it going!", minimize: null, defensecurl: null, stockpile: null,
     laserfocus: "{who} concentrated intensely!", shackled: "{who} can no longer escape!", throatchop: null,
     octolock: "{who} can no longer escape because of Octolock!", noretreat: "{who} can no longer escape because it used No Retreat!",
-    tarshot: "{who} became weaker to fire!"
+    tarshot: "{who} became weaker to fire!",
+    psychicnoise: "{who} was prevented from healing!", saltcure: "{who} is being salt cured!", syrupbomb: "{who} got covered in sticky candy syrup!", glaiverush: null,
+    burningbulwark: "{who} protected itself!", silktrap: "{who} protected itself!"
   };
   const VOLATILE_END = {
     confusion: "{who} snapped out of its confusion!", substitute: "{who}'s substitute faded!",
@@ -114,7 +116,8 @@
     magnetrise: "{who}'s electromagnetism wore off!", bind: "{who} was freed from Bind!",
     whirlpool: "{who} was freed from Whirlpool!", firespin: "{who} was freed from Fire Spin!",
     sandtomb: "{who} was freed from Sand Tomb!", stockpile: "{who}'s stockpiled effect wore off!",
-    bide: "{who} unleashed its energy!", slowstart: "{who} finally got its act together!"
+    bide: "{who} unleashed its energy!", slowstart: "{who} finally got its act together!",
+    psychicnoise: "{who}'s Heal Block wore off!", syrupbomb: "{who} was freed from the sticky candy syrup!"
   };
   const ACTIVATE = {
     confusion: "{who} is confused!", attract: "{who} is in love with {foe}!", bide: "{who} is storing energy!",
@@ -128,13 +131,15 @@
     battlebond: "{who} became fully charged due to its bond with its Trainer!",
     powerconstruct: "You sense the presence of many!", shieldsdown: null,
     queenlymajesty: "{who}'s Queenly Majesty blocked the move!", dazzling: "{who}'s Dazzling blocked the move!",
+    armortail: "{who}'s Armor Tail blocked the move!", ficklebeam: "{who} is going all out for this attack!",
+    commander: "{who} is commanding its ally!", goodasgold: null,
     courtchange: "{who} swapped the battle effects affecting each side of the field!",
     poltergeist: "{who} is about to be attacked by its item!", eeriespell: "It reduced the PP of {who}'s move!",
     jawlock: "Neither Pokémon can run away!", perishbody: "Both Pokémon will faint in three turns!",
     wanderingspirit: "{who} swapped Abilities with its target!", iceface: null, gulpmissile: null
   };
   const PREPARE = {
-    solarbeam: "{who} absorbed light!", dig: "{who} burrowed its way under the ground!",
+    solarbeam: "{who} absorbed light!", dig: "{who} burrowed its way under the ground!", electroshot: "{who} absorbed electricity!",
     fly: "{who} flew up high!", bounce: "{who} sprang up!", dive: "{who} hid underwater!",
     phantomforce: "{who} vanished instantly!", shadowforce: "{who} vanished instantly!",
     skullbash: "{who} tucked in its head!", skyattack: "{who} became cloaked in a harsh light!",
@@ -184,11 +189,11 @@
   };
   const WEATHER_START = {
     SunnyDay: "The sunlight turned harsh!", RainDance: "It started to rain!",
-    Sandstorm: "A sandstorm kicked up!", Hail: "It started to hail!"
+    Sandstorm: "A sandstorm kicked up!", Hail: "It started to hail!", Snow: "It started to snow!"
   };
   const WEATHER_UPKEEP = {
     SunnyDay: "The sunlight is strong.", RainDance: "Rain continues to fall.",
-    Sandstorm: "The sandstorm rages.", Hail: "Hail continues to fall."
+    Sandstorm: "The sandstorm rages.", Hail: "Hail continues to fall.", Snow: "Snow continues to fall."
   };
 
   // "move: Light Screen" -> "lightscreen", "[from] bad poison" -> "badpoison"

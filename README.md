@@ -1390,6 +1390,41 @@ Moon (1F), the Victreebelite on Route 25, the Raichunite X and Y in the Power
 Plant, the Starminite in the Seafoam Islands (B4F) and the Dragoninite in the
 Safari Zone's West area.
 
+In battle, Gen 9's 48 Abilities work, among them Protosynthesis and Quark
+Drive (in the sun or on Electric Terrain, or with Booster Energy, a held
+item: the highest stat ×1.3, Speed ×1.5), Orichalcum Pulse and Hadron Engine,
+the four Treasures of Ruin (every other Pokémon's stat ×0.75), Good as Gold,
+Purifying Salt, Well-Baked Body, Earth Eater, Wind Rider and Wind Power (with
+Tailwind too), Electromorphosis, Guard Dog, Armor Tail, Opportunist, Cud Chew,
+Supreme Overlord, Costar, Toxic Debris, Toxic Chain, Mycelium Might, Mind's
+Eye, Supersweet Syrup, Hospitality, Poison Puppeteer, Zero to Hero (Palafin's
+Hero Form once it's been out and back), Tera Shift and Tera Shell (Terapagos
+takes its Terastal Form as it comes out) and Commander (Tatsugiri hides in an
+ally Dondozo's mouth: Dondozo's stats rise by 2 stages and Tatsugiri can't be
+hit or act until Dondozo faints); Embody Aspect and Teraform Zero do nothing,
+as there's no Terastallizing. Legends: Z-A's Megas bring theirs: Dragonize
+(Normal moves become Dragon, 1.2×), Mega Sol (its moves as in harsh sunlight),
+Piercing Drill (contact moves through Protect, for a quarter), Eelevate,
+Fire Mane and Spicy Spray. **Snow** is Gen 9's hail: Snowscape and Chilly
+Reception bring it; it does no damage and raises Ice types' Defense ×1.5
+(Blizzard can't miss, Aurora Veil works, Weather Ball is Ice; Ice Body, Snow
+Cloak, Slush Rush and Ice Face work in it as in hail). The moves that need
+code: Rage Fist (stronger for each hit taken), Last Respects (for each
+fainted ally), Hard Press, Fickle Beam, Temper Flare, Collision Course and
+Electro Drift, Hydro Steam (stronger in the sun), Psyblade (on Electric
+Terrain), Ivy Cudgel (Ogerpon's mask's type; the Wellspring, Hearthflame and
+Cornerstone Masks, held, give it that form and 1.2× power) and Raging Bull
+(Paldean Tauros's breed's type, breaking screens), Ruination, Comeuppance,
+Thunderclap, Upper Hand, Glaive Rush, Salt Cure, Syrup Bomb, Psychic Noise
+(two turns without healing), Alluring Voice, Burning Bulwark, Silk Trap,
+Electro Shot (at once in the rain), Gigaton Hammer and Blood Moon (not twice
+in a row), Double Shock, Ice Spinner, Mortal Spin, Shed Tail (its substitute
+for whoever comes in), Revival Blessing (the first of the party that has
+fainted, back with half its HP), Fillet Away, Tidy Up, Doodle and Dragon
+Cheer. Their Summary descriptions are pokeemerald-expansion's. The test
+battles 100 random Gen 9 teams. (Heal Block, the Gen 4 move, still does
+nothing here.)
+
 ## Faraway Island
 
 Emerald's Old Sea Map event, for Mew. Once the Sapphire is in Celio's machine
@@ -1748,7 +1783,7 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
 | `assets/world/` | Generated map images and transparent overworld sprites |
 | `assets/intro/` | Generated opening movie, title screen and Oak's speech graphics |
 | `assets/battle/` | Generated battle backgrounds (FireRed's battle terrains) |
-| `tests/` | Loads every non-UI script and checks formulas, engine regressions, progression rules and AI choices, plus 200 random battles, 120 random double battles and 100 random battles each of Gen 7 and Gen 8 teams; `tests/browser/lib.js` is a Playwright helper for checking things in the real page (it serves the game, loads a save made in Node, and presses keys long enough to register) |
+| `tests/` | Loads every non-UI script and checks formulas, engine regressions, progression rules and AI choices, plus 200 random battles, 120 random double battles and 100 random battles each of Gen 7, Gen 8 and Gen 9 teams; `tests/browser/lib.js` is a Playwright helper for checking things in the real page (it serves the game, loads a save made in Node, and presses keys long enough to register) |
 
 ## Script load order
 

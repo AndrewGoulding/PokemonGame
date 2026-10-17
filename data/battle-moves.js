@@ -410,7 +410,7 @@
     return "done";
   };
   // Aurora Veil: only in hail (the data sets the side condition).
-  status.auroraveil = (b) => b.getWeather() === "Hail";
+  status.auroraveil = (b) => b.getWeather() === "Hail" || b.getWeather() === "Snow";
   // Toxic Thread: works if either the Speed drop or the poison does.
   status.toxicthread = (b, user, target, move) => {
     const eff = E("Move", "toxicthread", "Toxic Thread");
@@ -566,6 +566,75 @@
   afterHit.direclaw = (b, user, target, move) => {
     if (target.hasAbility("Shield Dust") || !b.randomChance(1, 2)) return;
     b.trySetStatus(target, b.sample(["psn", "par", "slp"]), user, E("Move", move.id, move.name));
+  };
+
+  // ---- Gen 9 (Scarlet and Violet) ----
+  const eff9 = (move) => E("Move", move.id, move.name);
+  // Revival Blessing: the first of its party that has fainted comes back with half its HP.
+  status.revivalblessing = (b, user, t, move) => {
+    const mon = user.side.pokemon.find((m) => m !== user && m.fainted);
+    if (!mon) return false;
+    mon.fainted = false; mon.hp = Math.max(1, Math.floor(mon.maxhp / 2)); mon.status = ""; mon.statusState = {};
+    b.add("-text", user, (mon.nickname || mon.species.replace(/-.*/, "")) + " was revived and is ready to fight again!");
+    return "done";
+  };
+  // Shed Tail: half its HP into a substitute, then out; the substitute stays for whoever comes in.
+  status.shedtail = (b, user) => {
+    if (user.hp <= Math.ceil(user.maxhp / 2) || user.volatiles.substitute) return false;
+    if (!user.side.pokemon.some((m) => !m.fainted && !m.isActive)) return false;
+    b.damage(user, Math.ceil(user.maxhp / 2), user, E("Move", "shedtail", "Shed Tail"));
+    user.side.shedTail = Math.floor(user.maxhp / 4);
+    b.add("-text", user, "{who} shed its tail to create a decoy!");
+    return true;   // (its selfSwitch takes it out)
+  };
+  // Fillet Away: half its HP for +2 Attack, Sp. Atk and Speed.
+  status.filletaway = (b, user, t, move) => {
+    if (user.hp <= Math.floor(user.maxhp / 2)) return false;
+    b.damage(user, Math.floor(user.maxhp / 2), user, eff9(move));
+    b.boost(user, { atk: 2, spa: 2, spe: 2 }, user, eff9(move));
+    return "done";
+  };
+  // Tidy Up: hazards and substitutes gone from the field, then +1 Attack and Speed.
+  status.tidyup = (b, user, t, move) => {
+    for (const s of [user.side, user.side.foe]) for (const id of ["spikes", "toxicspikes", "stealthrock", "stickyweb", "gmaxsteelsurge"]) b.removeSideCondition(s, id);
+    for (const m of b.getActives()) if (m && m.volatiles.substitute) { delete m.volatiles.substitute; b.add("-end", m, "Substitute"); }
+    b.boost(user, { atk: 1, spe: 1 }, user, eff9(move));
+    return "done";
+  };
+  // Doodle: the user (and its ally) take the target's Ability.
+  status.doodle = (b, user, target) => {
+    const ab = window.ABILITIES[target.ability];
+    if (!ab || (ab.flags && (ab.flags.failroleplay || ab.flags.noreceiver))) return false;
+    for (const m of [user, b.allyOf(user)]) {
+      if (!m || m.fainted || m.ability === target.ability) continue;
+      m.ability = target.ability; m.abilityState = {};
+      b.add("-ability", m, target.ability, "[from] move: Doodle");
+    }
+    return "done";
+  };
+  // Dragon Cheer: its ally's critical-hit ratio rises (as Focus Energy; doubles only).
+  status.dragoncheer = (b, user) => {
+    const ally = b.allyOf(user);
+    if (!ally || ally.fainted || ally.volatiles.focusenergy) return false;
+    return b.addVolatile(ally, "focusenergy", user) ? "done" : false;
+  };
+  beforeHit.doubleshock = (b, user) => user.hasType("Electric");
+  afterHitSelf.doubleshock = (b, user) => {
+    user.types = user.types.filter((t) => t !== "Electric");
+    if (!user.types.length) user.types = ["???"];
+    b.add("-text", user, "{who} used up all its electricity!");
+  };
+  // Raging Bull breaks the target's screens.
+  beforeHit.ragingbull = beforeHit.psychicfangs;
+  afterHit.saltcure = (b, user, target) => { b.addVolatile(target, "saltcure", user); };
+  afterHit.syrupbomb = (b, user, target) => { b.addVolatile(target, "syrupbomb", user); };
+  afterHit.alluringvoice = (b, user, target, move) => { if (target.statsRaisedThisTurn) b.addVolatile(target, "confusion", user, eff9(move)); };
+  afterHit.psychicnoise = (b, user, target) => { b.addVolatile(target, "psychicnoise", user); };
+  afterHitSelf.glaiverush = (b, user) => { if (b.addVolatile(user, "glaiverush", user)) user.volatiles.glaiverush.turn = b.turn; };
+  afterHitSelf.icespinner = afterHitSelf.steelroller;
+  afterHitSelf.mortalspin = (b, user) => {
+    for (const id of ["spikes", "toxicspikes", "stealthrock", "stickyweb", "gmaxsteelsurge"]) b.removeSideCondition(user.side, id);
+    user.removeVolatile("leechseed"); user.removeVolatile("partiallytrapped");
   };
 
   // ---- Max Moves and G-Max Moves (Gen 8) ----
