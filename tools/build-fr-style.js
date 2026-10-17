@@ -79,69 +79,80 @@ function classify(id, behavior, solid, f) {
   return "rock";
 }
 
-// ---------- Kanto's outdoor maps ----------
+// ---------- Styles: Kanto's outdoor maps, and its caves ----------
 
-const layouts = JSON.parse(fs.readFileSync(path.join(pret, "data/layouts/layouts.json"), "utf8")).layouts
-  .filter((l) => l.primary_tileset === "gTileset_General" && /^(\w+Town|\w+City|Route\d+|\w+Island|IndigoPlateau_Exterior)_Layout$/.test(l.name));
+const allLayouts = JSON.parse(fs.readFileSync(path.join(pret, "data/layouts/layouts.json"), "utf8")).layouts.filter((l) => l.name);
 const tilesets = {};
 const tileset = (s) => tilesets[s] || (tilesets[s] = T.loadTileset(s));
-
-// Each metatile's class, from its behaviour, its colours and whether Kanto's maps
-// mostly make it solid.
-const solidCount = {}, useCount = {}, behaviorOf = {};
-const grids = [];
-for (const l of layouts) {
-  const bin = fs.readFileSync(path.join(pret, l.blockdata_filepath));
-  const primary = tileset(l.primary_tileset), secondary = tileset(l.secondary_tileset);
-  const blocks = Array.from({ length: l.width * l.height }, (_, i) => bin.readUInt16LE(i * 2));
-  grids.push({ l, blocks, secondary });
-  for (const b of blocks) {
-    const id = b & 0x3ff;
-    if (id >= T.NUM_PRIMARY_METATILES) continue;
-    useCount[id] = (useCount[id] || 0) + 1;
-    solidCount[id] = (solidCount[id] || 0) + ((b >> 10) & 3 ? 1 : 0);
-    if (behaviorOf[id] == null) behaviorOf[id] = T.metatile(primary, secondary, id).behavior;
-  }
-}
-const general = tileset("gTileset_General"), filler = tileset("gTileset_PalletTown");
-const classes = {};
-for (const id of Object.keys(useCount).map(Number)) {
-  classes[id] = classify(id, behaviorOf[id], solidCount[id] / useCount[id] > 0.5, colours(general, filler, id));
-}
-// (A town's own metatiles: its buildings, mostly; told apart the same way, for the neighbours.)
-const secondaryClass = {};
-function classOf(g, b) {
-  const id = b & 0x3ff;
-  if (id < T.NUM_PRIMARY_METATILES) return classes[id];
-  const k = g.l.secondary_tileset + ":" + id;
-  if (!(k in secondaryClass)) {
-    const mt = T.metatile(general, g.secondary, id), f = colours(general, g.secondary, id);
-    const solid = !!((b >> 10) & 3);
-    secondaryClass[k] = solid && !WATER_BEHAVIOURS.has(mt.behavior) && f.green < 0.45 && f.brown < 0.35 ? "building" : classify(-1, mt.behavior, solid, f);
-  }
-  return secondaryClass[k];
-}
-
-// ---------- Patterns ----------
-
+const general = tileset("gTileset_General");
 const NEIGHBOURS = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]];
-const patterns = {};
-for (const g of grids) {
-  const { width: w, height: h } = g.l;
-  const cls = g.blocks.map((b) => classOf(g, b));
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const id = g.blocks[y * w + x] & 0x3ff;
-    if (id >= T.NUM_PRIMARY_METATILES) continue;
-    const c = cls[y * w + x];
-    if (c === "building" || c === "object") continue;
-    // (Off the map's edge: as the tile at the edge.)
-    const n = NEIGHBOURS.map(([dx, dy]) => cls[Math.min(h - 1, Math.max(0, y + dy)) * w + Math.min(w - 1, Math.max(0, x + dx))]);
-    const key = (x & 1) + "" + (y & 1) + "|" + n.join(",");
-    const table = patterns[c] || (patterns[c] = {});
-    const counts = table[key] || (table[key] = {});
-    counts[id] = (counts[id] || 0) + 1;
+
+// A style learned from `layouts`: the classes of the metatiles they use, and
+// the patterns. Its metatiles are the General tileset's, and (with `own`, a
+// secondary tileset, as the Cave's) that one's too.
+function learn(layouts, own) {
+  // Each metatile's class, from its behaviour, its colours and whether
+  // Kanto's maps mostly make it solid.
+  const solidCount = {}, useCount = {}, behaviorOf = {}, grids = [];
+  const mine = (l, id) => id < T.NUM_PRIMARY_METATILES || l.secondary_tileset === own;
+  for (const l of layouts) {
+    const bin = fs.readFileSync(path.join(pret, l.blockdata_filepath));
+    const primary = tileset(l.primary_tileset), secondary = tileset(l.secondary_tileset);
+    const blocks = Array.from({ length: l.width * l.height }, (_, i) => bin.readUInt16LE(i * 2));
+    grids.push({ l, blocks, secondary });
+    for (const b of blocks) {
+      const id = b & 0x3ff;
+      if (!mine(l, id)) continue;
+      useCount[id] = (useCount[id] || 0) + 1;
+      solidCount[id] = (solidCount[id] || 0) + ((b >> 10) & 3 ? 1 : 0);
+      if (behaviorOf[id] == null) behaviorOf[id] = T.metatile(primary, secondary, id).behavior;
+    }
   }
+  const second = tileset(own || "gTileset_PalletTown");
+  const classes = {};
+  for (const id of Object.keys(useCount).map(Number)) {
+    classes[id] = classify(id < T.NUM_PRIMARY_METATILES ? id : -1, behaviorOf[id], solidCount[id] / useCount[id] > 0.5, colours(general, second, id));
+  }
+  // (A town's own metatiles: its buildings, mostly; told apart the same way, for the neighbours.)
+  const secondaryClass = {};
+  function classOf(g, b) {
+    const id = b & 0x3ff;
+    if (mine(g.l, id)) return classes[id];
+    const k = g.l.secondary_tileset + ":" + id;
+    if (!(k in secondaryClass)) {
+      const mt = T.metatile(general, g.secondary, id), f = colours(general, g.secondary, id);
+      const solid = !!((b >> 10) & 3);
+      secondaryClass[k] = solid && !WATER_BEHAVIOURS.has(mt.behavior) && f.green < 0.45 && f.brown < 0.35 ? "building" : classify(-1, mt.behavior, solid, f);
+    }
+    return secondaryClass[k];
+  }
+  const patterns = {};
+  for (const g of grids) {
+    const { width: w, height: h } = g.l;
+    const cls = g.blocks.map((b) => classOf(g, b));
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const id = g.blocks[y * w + x] & 0x3ff;
+      if (!mine(g.l, id)) continue;
+      const c = cls[y * w + x];
+      if (c === "building" || c === "object") continue;
+      // (Off the map's edge: as the tile at the edge.)
+      const n = NEIGHBOURS.map(([dx, dy]) => cls[Math.min(h - 1, Math.max(0, y + dy)) * w + Math.min(w - 1, Math.max(0, x + dx))]);
+      const key = (x & 1) + "" + (y & 1) + "|" + n.join(",");
+      const table = patterns[c] || (patterns[c] = {});
+      const counts = table[key] || (table[key] = {});
+      counts[id] = (counts[id] || 0) + 1;
+    }
+  }
+  return { grids, classOf, style: { primary: "gTileset_General", secondary: own || "gTileset_PalletTown", classes,
+    patterns: Object.fromEntries(Object.entries(patterns).map(([c, t]) => [c, Object.entries(t)])) } };
 }
+
+// Outdoors: Kanto's towns, cities, routes and islands. Caves: those drawn with the Cave tileset (Mt. Moon, Victory Road, ...).
+const outdoor = learn(allLayouts.filter((l) => l.primary_tileset === "gTileset_General" &&
+  /^(\w+Town|\w+City|Route\d+|\w+Island|IndigoPlateau_Exterior)_Layout$/.test(l.name)));
+const cave = learn(allLayouts.filter((l) => l.secondary_tileset === "gTileset_Cave"), "gTileset_Cave");
+const { grids, classOf } = outdoor;
+const layouts = outdoor.grids.map((g) => g.l);
 
 // ---------- Stamps: Kanto's buildings and signs ----------
 //
@@ -196,10 +207,12 @@ for (const g of grids) {
   }
 }
 
-const out = { classes, patterns: {}, stamps, signs: Object.entries(signs).sort((a, b) => b[1] - a[1]).map(([id]) => +id) };
-for (const [c, table] of Object.entries(patterns)) out.patterns[c] = Object.entries(table);
+const out = { styles: { outdoor: outdoor.style, cave: cave.style }, stamps,
+  signs: Object.entries(signs).sort((a, b) => b[1] - a[1]).map(([id]) => +id) };
 fs.mkdirSync(path.join(root, "tools/data"), { recursive: true });
 fs.writeFileSync(path.join(root, "tools/data/fr-style.json"), JSON.stringify(out));
-const summary = Object.entries(out.patterns).map(([c, p]) => c + " " + p.length).join(", ");
-console.log("learned from " + layouts.length + " Kanto maps: " + summary);
+for (const [name, st] of Object.entries(out.styles)) {
+  console.log(name + ": " + Object.entries(st.patterns).map(([c, p]) => c + " " + p.length).join(", "));
+}
+console.log("learned from " + outdoor.grids.length + " outdoor and " + cave.grids.length + " cave maps");
 console.log(stamps.length + " stamps; signs " + out.signs.join(" "));

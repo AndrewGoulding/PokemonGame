@@ -4,7 +4,7 @@
 // and the textures uppermost on it seen from above. And its buildings: each
 // door, the building round it and what kind it is.
 //
-//   const classes = classify(r)   // r = renderMap(..., { ground: true, labels: true })
+//   const classes = classify(r, { cave })   // r = renderMap(..., { ground: true, labels: true })
 //   const buildings = buildingsOf(r, classes, warps)   // warps: [{ x, y, mapConst | map }]
 "use strict";
 
@@ -26,12 +26,17 @@ const textureClass = (name) => (TEXTURES.find(([, re]) => re.test(name)) || [nul
 const LEDGES = { 0x38: "ledge_e", 0x39: "ledge_w", 0x3a: "ledge_n", 0x3b: "ledge_s" };
 const WATER = new Set([0x10, 0x13, 0x15, 0x22]);
 
-function classify(r) {
+// (opts.cave: a cave's: its floor is all path, what's solid all rock but
+// for rocks in its water.)
+function classify(r, opts) {
+  const cave = opts && opts.cave;
   return r.perm.map((v, i) => {
     const b = v & 0xff, solid = (v >> 15) & 1, l = r.labels[i];
     if (!solid && (b === 0x02 || b === 0x03)) return "tallgrass";
     if (LEDGES[b]) return LEDGES[b];
+    if (b === 0x13) return "waterfall";
     if (!solid && WATER.has(b)) return "water";
+    if (cave) return !solid ? "path" : Object.keys(l.tex).some((n) => textureClass(n) === "water") ? "waterrock" : "rock";
     if (!solid && b === 0x21) return "sand";
     // Votes by class from the textures seen on the tile; a building model's
     // count as "building" (unless it's a tree or such).

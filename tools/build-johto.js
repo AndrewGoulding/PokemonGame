@@ -166,8 +166,36 @@ for (const m of fs.readFileSync(path.join(ROOT, "include/constants/mmodel.h"), "
 // HGSS's frames: up, down, left, right, four each (stand, step, stand, step).
 // FireRed's: stand down, up, left; walk down, down, up, up, left, left.
 const FR_FRAMES = [4, 0, 8, 5, 7, 1, 3, 9, 11];
+// In FireRed's style (not --hgss): HGSS's people as FireRed's nearest
+// (their size and frames as Kanto's people with that sprite have them).
+const FR_PEOPLE = {
+  SPRITE_GSBOY1: "boy", SPRITE_GSBOY2: "youngster", SPRITE_GSBOY3: "camper", SPRITE_GSBABYBOY1: "little_boy",
+  SPRITE_GSGIRL1: "lass", SPRITE_GSGIRL2: "little_girl", SPRITE_GSGIRL3: "picnicker",
+  SPRITE_GSWOMAN1: "woman_1", SPRITE_GSWOMAN2: "woman_2", SPRITE_GSWOMAN3: "woman_3", SPRITE_MIDDLEWOMAN1_2: "mom",
+  SPRITE_GSMAN1: "man", SPRITE_GSMAN2: "cooltrainer_m", SPRITE_GSMAN3: "cooltrainer_m", SPRITE_GSBIGMAN: "fat_man", SPRITE_GSMIDDLEMAN1: "balding_man",
+  SPRITE_GSOLDMAN1: "old_man_1", SPRITE_GSOLDWOMAN1: "old_woman", SPRITE_JUGGRER: "gentleman", SPRITE_COUNTERM: "clerk"
+};
+let krLooks = null, krMaps = null;
+// Kanto's maps (data/world-maps.js, as tools/build-maps.js made them).
+function kanto() {
+  if (!krMaps) {
+    vm.runInThisContext(fs.readFileSync(path.join(root, "data/world-maps.js"), "utf8"));
+    krMaps = Object.assign({}, window.WORLD_MAPS);
+  }
+  return krMaps;
+}
+function frPersonSprite(sprite) {
+  if (!krLooks) {
+    krLooks = {};
+    for (const m of Object.values(kanto())) for (const p of m.people) {
+      if (p.sprite && !krLooks[p.sprite]) krLooks[p.sprite] = { sprite: p.sprite, width: p.width, height: p.height, frames: p.frames };
+    }
+  }
+  return krLooks[FR_PEOPLE[sprite]] || null;
+}
 const spritesDone = new Map();
 function personSprite(sprite) {
+  if (!HGSS_LOOK) { const fr = frPersonSprite(sprite); if (fr) return Object.assign({}, fr); }
   if (spritesDone.has(sprite)) return spritesDone.get(sprite);
   let out = null;
   const i = mmodelIndex[spriteTable[sprite]];
@@ -214,7 +242,7 @@ const mapsDir = path.join(root, "assets/world/maps");
 MAPS.forEach((m, i) => {
   loadMessages(m.zone);
   // (Outdoors, drawn by the painter in FireRed's style: from what each tile is.)
-  const painted = !HGSS_LOOK && m.type !== "indoor" && m.type !== "underground";
+  const painted = !HGSS_LOOK && m.type !== "indoor";
   const r = renderMap(ROOT, m.c, { ground: m.ground, labels: painted });   // (ground: not flat, as Johto's first maps are)
   const W = r.width * 16, H = r.height * 16;
   // (Where a map that isn't flat was left with a gap, a folded triangle's, its neighbours' colour.)
@@ -249,11 +277,28 @@ MAPS.forEach((m, i) => {
   if (painted) {
     // What each tile is, its buildings (from their doors) and signs; drawn with
     // FireRed's metatiles and Kanto's buildings.
-    const classes = HC.classify(r);
+    const cave = m.type === "underground";
+    const classes = HC.classify(r, { cave });
     const evw = (r.events || { warps: [] }).warps.map((w) => ({ x: w.x, y: w.y, mapConst: w.map }));
     const signs = ((r.events || { signs: [] }).signs || []).filter((sg) => sg.type !== 2)
       .map((sg) => [sg.x, sg.y, /TRAINER TIPS/i.test((scriptText(m.zone, sg.script) || []).join(" ")) ? "tips" : "sign"]);
-    const pic = Painter.compose(classes, r.width, r.height, { buildings: HC.buildingsOf(r, classes, evw), signs });
+    // (A cave's undrawn outside, solid: rock.)
+    if (cave) classes.forEach((c, i) => { if (!drawn(i)) classes[i] = "rock"; });
+    // (Nor is floor you can't get to from its ways in: rock, as round Kanto's caves.)
+    if (cave) {
+      const reach = new Set(), q = (r.events || { warps: [] }).warps.map((w) => w.y * r.width + w.x);
+      for (const k of q) reach.add(k);
+      while (q.length) {
+        const k = q.pop(), x = k % r.width, y = Math.floor(k / r.width);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const u = x + dx, v = y + dy, n = v * r.width + u;
+          if (u < 0 || v < 0 || u >= r.width || v >= r.height || reach.has(n) || ((r.perm[n] >> 15) & 1 && (r.perm[n] & 0xff) !== 0x13)) continue;
+          reach.add(n); q.push(n);
+        }
+      }
+      classes.forEach((c, i) => { if (!reach.has(i) && c !== "waterrock") classes[i] = "rock"; });
+    }
+    const pic = Painter.compose(classes, r.width, r.height, { buildings: cave ? [] : HC.buildingsOf(r, classes, evw), signs, style: cave ? "cave" : "outdoor" });
     writePng(path.join(mapsDir, m.name + ".png"), W, H, pic.below);
     writePng(path.join(mapsDir, m.name + "-top.png"), W, H, pic.above);
     if (pic.anim.pics.length) { writeAnimSheet(animFile, pic.anim.pics); anim = { cells: pic.anim.cells, anims: pic.anims }; }
@@ -266,7 +311,8 @@ MAPS.forEach((m, i) => {
       edge[pic.classes[i]] = (edge[pic.classes[i]] || 0) + 1;
     }
     const outside = ["tree", "water", "rock"].sort((a, b) => (edge[b] || 0) - (edge[a] || 0))[0];
-    writePng(path.join(mapsDir, m.name + "-border.png"), 32, 32, Painter.render(Painter.paint(Array(4).fill(outside), 2, 2), 2, 2).below);
+    const style = cave ? "cave" : "outdoor";
+    writePng(path.join(mapsDir, m.name + "-border.png"), 32, 32, Painter.render(Painter.paint(Array(4).fill(outside), 2, 2, style), 2, 2, null, style).below);
   } else {
     writePng(path.join(mapsDir, m.name + ".png"), W, H, r.below);
     writePng(path.join(mapsDir, m.name + "-top.png"), W, H, r.top);
@@ -364,6 +410,43 @@ const gateJs = "(function () {\n" +
   "  const w = gate.warps.length - 1;\n" +
   "  for (const m of " + JSON.stringify(MAPS.map((m) => m.name)) + ") for (const x of window.WORLD_MAPS[m].warps) if (x.warp === \"johto\") x.warp = w;\n" +
   "})();\n";
+// ---------- Gatehouses, as FireRed's ----------
+//
+// In FireRed's style, each gatehouse inside is a copy of FireRed's own gate
+// (Saffron's Route 5 gate for one you go through north to south, its Route 7
+// gate for west to east): its picture, floor and walls. Its ways out lead
+// where the gatehouse's did (each side's first, then the second tile of each
+// doorway), and its people stand where FireRed's guard stands and about the room.
+const GATE_TEMPLATES = {
+  ns: { map: "Route5_SouthEntrance", spots: [[1, 5, "face_right"], [7, 4, "face_left"], [6, 7, "face_left"], [2, 7, "face_right"]] },
+  we: { map: "Route7_EastEntrance", spots: [[6, 2, "face_down"], [3, 3, "face_down"], [9, 3, "face_down"], [4, 7, "face_up"]] }
+};
+if (!HGSS_LOOK) for (const m of MAPS) {
+  if (!/Gatehouse/.test(m.name)) continue;
+  const g = out[m.name];
+  const [a, b] = g.warps;
+  const across = Math.abs(a.x - b.x) > Math.abs(a.y - b.y);
+  const tpl = GATE_TEMPLATES[across ? "we" : "ns"], t = kanto()[tpl.map];
+  // (Each side's warps in the template: west or north first.)
+  const side = (w) => (across ? (w.x < t.width / 2 ? 0 : 1) : (w.y < t.height / 2 ? 0 : 1));
+  const mineSide = (w) => (across ? (w.x < (a.x + b.x) / 2 ? 0 : 1) : (w.y < (a.y + b.y) / 2 ? 0 : 1));
+  // (Only those on its floor: FireRed's Route 5 gate has a couple in its walls too.)
+  const floor = t.warps.filter((w) => !t.collision[w.y * t.width + w.x]);
+  const tplBySide = [floor.filter((w) => side(w) === 0), floor.filter((w) => side(w) === 1)];
+  const warps = g.warps.map((w) => Object.assign({}, w, { x: tplBySide[mineSide(w)][0].x, y: tplBySide[mineSide(w)][0].y }));
+  for (const w of g.warps) for (const extra of tplBySide[mineSide(w)].slice(1)) warps.push(Object.assign({}, w, { x: extra.x, y: extra.y }));
+  const people = g.people.map((p, i) => {
+    const spot = tpl.spots[i % tpl.spots.length];
+    return Object.assign({}, p, { x: spot[0], y: spot[1], movement: spot[2] });
+  });
+  Object.assign(g, { width: t.width, height: t.height, collision: t.collision.slice(), elevation: t.elevation.slice(), behavior: t.behavior.slice(),
+    encounter: t.encounter.slice(), warps, people, top: t.top, borderWidth: t.borderWidth, borderHeight: t.borderHeight });
+  for (const part of ["", "-top", "-border"]) {
+    const from = path.join(mapsDir, tpl.map + part + ".png"), to = path.join(mapsDir, m.name + part + ".png");
+    if (fs.existsSync(from)) fs.copyFileSync(from, to); else if (fs.existsSync(to)) fs.unlinkSync(to);
+  }
+}
+
 fs.writeFileSync(path.join(root, "data/johto-maps.js"),
   "// Auto-generated by tools/build-johto.js from pret/pokeheartgold. Do not edit by hand.\n" +
   "// Johto's maps, added to FireRed's (data/world-maps.js).\n" +

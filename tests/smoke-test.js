@@ -1744,6 +1744,26 @@ for (const share of [false, true]) {
     }
     for (const n of J) assert(reached.has(n), n + " reached from New Bark Town");
   }
+  // Drawn in FireRed's style (tools/lib/fr-painter.js): FireRed's people, its gate rooms, water animated as Kanto's.
+  for (const n of J) for (const p of WORLD_MAPS[n].people) assert(!/^hgss_/.test(p.sprite), n + ": FireRed's sprite for " + p.sprite);
+  for (const n of J.filter((n) => /Gatehouse$/.test(n))) {
+    const m = WORLD_MAPS[n], t = WORLD_MAPS[m.width === 13 ? "Route7_EastEntrance" : "Route5_SouthEntrance"];
+    assert(m.width === t.width && m.height === t.height && m.collision.join() === t.collision.join(), n + " is FireRed's gate");
+    for (const w of m.warps) assert(!m.collision[w.y * m.width + w.x], n + ": its doorways are floor");
+  }
+  assert(WORLD_MAPS.Route27.anim && fs.existsSync(path.join(root, "assets/world/maps/Route27-anim.png")), "Johto's sea moves");
+  {
+    const Painter = require(path.join(root, "tools/lib/fr-painter.js"));
+    // A pond in a meadow, a tree line above: grass, water with shores, trees, as Kanto has them.
+    const g = [];
+    for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) g.push(y < 2 ? "tree" : x >= 2 && x < 6 && y >= 4 && y < 7 ? "water" : "grass");
+    const blocks = Painter.paint(g, 8, 8);
+    const style = require(path.join(root, "tools/data/fr-style.json"));
+    const kantoUses = (cls, id) => style.styles.outdoor.patterns[cls].some(([, counts]) => counts[id]);
+    for (let i = 0; i < 64; i++) assert(kantoUses(g[i], blocks[i]), "tile " + i + ": a metatile Kanto uses for " + g[i]);
+    assert(new Set(blocks.filter((b, i) => g[i] === "water")).size > 1, "the pond has shores");
+    assert(Painter.stamps.some((t) => t.kind === "pokecenter") && Painter.stamps.some((t) => t.kind === "mart") && Painter.stamps.every((t) => t.blocks[t.door[1] * t.w + t.door[0]] != null));
+  }
   // East: Route 27, then Route 26 (north of its east end).
   assert.strictEqual(World.step({ map: "NewBarkTown", x: 31, y: 15 }, "right", null, { surf: true }).map, "Route27", "east out of New Bark Town, by sea");
   assert.deepStrictEqual(WORLD_MAPS.Route27.connections.find((c) => c.map === "Route26"), { map: "Route26", direction: "right", offset: -96 });

@@ -1647,6 +1647,10 @@ with FireRed's own metatiles by one painter, `tools/lib/fr-painter.js`:
   2x2 blocks). It also keeps a library of Kanto's buildings, picked out by
   hand: Pokémon Centers, Marts, Gyms, houses of several sizes, Oak's Lab,
   big buildings, towers and a gate, each with its door; and FireRed's signs.
+  It learns two styles: outdoor (from Kanto's towns, cities, routes and
+  islands) and cave (from the maps drawn with the Cave tileset); a class a
+  style lacks (water in a cave) is drawn as outdoors, and waterfalls are
+  FireRed's waterfall column (top, middle, foot).
 - A region's builder says what each of its tiles is, in those classes, and
   where its buildings and their doors are. The painter gives each tile the
   metatile Kanto uses in the closest pattern (so shores, path edges, cliff
@@ -1686,8 +1690,15 @@ come from HGSS's tile behaviours and, for what's solid, the textures
 uppermost on each tile seen from above (`tools/lib/hgss-classes.js`: trees,
 rock, fences, buildings), and their buildings from their doors (a Pokémon
 Center's door gets a Pokémon Center, a Gym's a Gym, a gatehouse's a gate).
-Its caves and gatehouses inside, and its people's sprites, are still HGSS's
-own for now. HGSS's maps are 3D, so
+Tohjo Falls and Union Cave are drawn in the cave style (learned from Mt.
+Moon, Victory Road and the Lost Cave: their floor, rock walls and ledges;
+water and waterfalls as outdoors), floor you can't reach from their ways in
+being rock as round Kanto's caves. Each gatehouse inside is FireRed's own
+gate (Saffron's Route 5 gate for one you go through north to south, its Route
+7 gate for west to east), its doorways leading where the gatehouse's did and
+its people standing where FireRed's guard stands and about the room. And
+Johto's people are FireRed's: HGSS's men, women, boys, girls, old folk and
+clerks as FireRed's nearest. HGSS's maps are 3D, so
 `tools/build-johto.js` (with `tools/lib/hgss-map.js`, `nitro.js` and
 `narc.js`) reads them, and with `--hgss` draws them the way HGSS shows them
 seen from above, from a
