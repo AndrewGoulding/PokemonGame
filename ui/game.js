@@ -1804,6 +1804,9 @@
   // maps come in (the order you reach them), with the species found there
   // (in the grass or cave, with a rod, and surfing) and whether you've been.
   const AREA_KINDS = [["Grass", "wild"], ["Fishing", "fishing"], ["Surfing", "water"]];
+  // (Not the S.S. Anne: it only has the fishing and surfing of Vermilion's dock,
+  // the same Pokémon as Vermilion City's.)
+  const AREA_SKIP = ["S_S_ANNE"];
   function dexAreaList() {
     const secs = (window.TOWN_MAP || {}).mapSections || {}, names = (window.TOWN_MAP || {}).names || {};
     const visited = player.flags.visitedSections || [], bySec = new Map();
@@ -1815,7 +1818,7 @@
     };
     for (const [name, m] of Object.entries(window.WORLD_MAPS)) {
       const sec = secs[name];
-      if (!sec || !AREA_KINDS.some(([, k]) => m[k])) continue;
+      if (!sec || AREA_SKIP.includes(sec) || !AREA_KINDS.some(([, k]) => m[k])) continue;
       if (!bySec.has(sec)) bySec.set(sec, AREA_KINDS.map(() => new Set()));
       AREA_KINDS.forEach(([, k], i) => walk(m[k], bySec.get(sec)[i]));
     }

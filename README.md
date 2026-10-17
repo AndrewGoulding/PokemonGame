@@ -134,7 +134,7 @@ one you've seen, with the caught ball and
 types; the nine habitats' pages, up to four Pokémon a page in their circles;
 Search: A to Z mode (the ones seen), Type, Lightest and Smallest mode (the
 ones caught);
-this game's Area mode: Kanto, under the Pokémon list: every place with wild Pokémon (FireRed's and LeafGreen's alike; ----- until you've been
+this game's Area mode: Kanto, under the Pokémon list: every place with wild Pokémon (but the S.S. Anne, whose dock has Vermilion City's; FireRed's and LeafGreen's alike; ----- until you've been
 there) with how many of its Pokémon you've caught and a gold crown once you've
 caught them all, and A on one lists them FireRed-style under the titles Grass
 (and caves), Fishing and Surfing; each entry's category,
