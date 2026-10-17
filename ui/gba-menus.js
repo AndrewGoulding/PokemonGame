@@ -834,9 +834,23 @@
     };
     canvas.classList.remove("hidden");
     draw();
+    // (Two triggers, opts.mega.alt (Mega Evolution and Terastallizing): START
+    // switches the one picked (opts.mega.focus) on or off; hold START and
+    // press left / right to pick the other, and letting go switches it.)
+    const g = opts.mega && !opts.mega.fixed ? opts.mega : null, two = !!(g && g.alt);
+    const changed = () => { if (g.toggled) g.toggled(g.on); draw(); };
+    const flip = () => { se(); const t = two && g.focus ? g.alt : g; t.on = !t.on; changed(); };
+    let startHeld = false;
+    const startUp = (e) => {
+      if (!["Start", "m", "M"].includes(e.key) || !startHeld) return;
+      startHeld = false;
+      flip();
+    };
+    if (two) document.addEventListener("keyup", startUp, true);
     const r = await keys((k) => {
       const go = (c) => { if (c < moves.length && c !== cursor) { cursor = c; if (swapping != null) se(); draw(); } };
-      if (k === "left" || k === "right") go(cursor ^ 1);
+      if (startHeld && ["left", "right", "up", "down"].includes(k)) { se(); g.focus = g.focus ? 0 : 1; changed(); }
+      else if (k === "left" || k === "right") go(cursor ^ 1);
       else if (k === "up" || k === "down") go(cursor ^ 2);
       else if (swapping != null) {
         if (k === "a" || k === "select") {
@@ -848,11 +862,12 @@
       else if (k === "select" && opts.swap && moves.length > 1) {
         swapping = cursor; cursor = cursor !== 0 ? 0 : 1; draw();
       }
-      else if (k === "start" && opts.mega && !opts.mega.fixed) { se(); opts.mega.on = !opts.mega.on; if (opts.mega.toggled) opts.mega.toggled(opts.mega.on); draw(); }
+      else if (k === "start" && g) { if (two) startHeld = true; else flip(); }
       else if (k === "a") { se(); return { index: cursor, cursor }; }
       else if (k === "b") { se(); return null; }
       return undefined;
     });
+    document.removeEventListener("keyup", startUp, true);
     if (!(opts.keep && r)) canvas.classList.add("hidden");
     return r;
   }

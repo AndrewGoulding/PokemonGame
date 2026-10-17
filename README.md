@@ -1341,7 +1341,10 @@ into a Poison type, Koga's Mega Beedrill into a Fire type and Sabrina's Mega
 Alakazam into a Dark type (a trainer with an ace keeps the Orb for it). Koga's
 team here is Weezing, Muk, Arbok and Beedrill with its Beedrillite. A Mega
 Evolved Pokémon can Terastallize too (this game's own), even in the same turn
-it Mega Evolves, the Mega Evolution first.
+it Mega Evolves, the Mega Evolution first. Yours too: when it can do both, both
+triggers slide out, one picked; START switches the picked one on or off, and
+holding START while pressing left or right picks the other (letting go
+switches it), so START, then hold START, right, let go, does both.
 
 Alcremie comes in all 63 flavours: a Sweet used on Milcery asks which
 way it spins and for how long, and that with the time of day gives its cream

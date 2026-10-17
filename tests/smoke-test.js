@@ -3152,6 +3152,12 @@ for (let seed = 1; seed <= GEN8; seed++) {
     assert(/item: "alakazite", teraType: "Dark", teraAce: true/.test(gameSrc) && /pic: "leader_sabrina", tera: true/.test(gameSrc), "Sabrina's Mega Alakazam");
     assert(/return \[weezing, muk, Party\.create\("Arbok"/.test(gameSrc) && /item: "beedrillite", teraType: "Fire", teraAce: true/.test(gameSrc)
       && /pic: "leader_koga", tera: true/.test(gameSrc), "Koga: Weezing, Muk, Arbok, Mega Beedrill (Tera Fire)");
+    // Yours too: Mega Evolve and Terastallize in the same turn.
+    const y = new Battle({ seed: 1, debug: true, p1: { name: "A", team: [g9("Charizard", ["Ember"], { item: "charizardite-x", teraType: "Dragon" })], tera: true },
+      p2: { name: "B", team: [g9("Snorlax", ["Splash"])] } });
+    y.start();
+    assert(y.choose("p1", { type: "move", move: 0, mega: true, tera: true }).ok); y.choose("p2", mv(0));
+    assert.deepStrictEqual([y.sides.p1.active.species, y.sides.p1.active.terastallized], ["Charizard-Mega-X", "Dragon"], "Mega and Tera together");
     // While the ace is still to come, no one else Terastallizes (Erika's Victreebel, with Giga Drain, waits).
     const e = new Battle({ seed: 1, debug: true, p1: { name: "A", team: [g9("Snorlax", ["Splash"])] },
       p2: { name: "B", team: [g9("Victreebel", ["Giga Drain"], { teraType: "Grass" }), g9("Vileplume", ["Acid"], { teraType: "Poison", teraAce: true })], tera: true } });
@@ -4250,9 +4256,9 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
 {
   for (const f of ["mega-indicator", "mega-trigger"]) assert(fs.existsSync(path.join(root, "assets/battle-interface", f + ".png")), f);
   const battleJs = fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8");
-  assert(/mega: \/-Mega\(-\|\$\)\/\.test/.test(battleJs) && /showTrigger\(pos, kind\)/.test(battleJs) && /hideTrigger\(\)/.test(battleJs));
+  assert(/mega: \/-Mega\(-\|\$\)\/\.test/.test(battleJs) && /showTrigger\(pos, kind, alt && alt.kind\)/.test(battleJs) && /hideTrigger\(\)/.test(battleJs));
   const menusJs = fs.readFileSync(path.join(root, "ui/gba-menus.js"), "utf8");
-  assert(!menusJs.includes("START: MEGA EVOLVE") && /opts\.mega\.toggled\(opts\.mega\.on\)/.test(menusJs));
+  assert(!menusJs.includes("START: MEGA EVOLVE") && /g\.toggled\(g\.on\)/.test(menusJs) && /if \(startHeld && \["left", "right", "up", "down"\]\.includes\(k\)\)/.test(menusJs));
 }
 
 // ui/game.js: Silph Co.'s Thunder Wave tutor charges; the Fighting Dojo's

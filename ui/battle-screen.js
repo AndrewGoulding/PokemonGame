@@ -292,11 +292,11 @@
     ["Water", 10, 18, 27], ["Grass", 12, 24, 11], ["Electric", 30, 26, 7], ["Psychic", 31, 14, 15], ["Ice", 14, 26, 25],
     ["Dragon", 10, 18, 27], ["Dark", 6, 5, 8], ["Fairy", 31, 15, 21], ["Stellar", 10, 18, 27]]) TERA_RGB[t] = [r, gr, bl].map((x) => (x << 3) | (x >> 2));
   let trigger = null;   // { pos, on, x (its centre less the box's), hide }
-  function showTrigger(pos, kind) {
-    trigger = { pos, kind, on: false, x: trigger && trigger.pos === pos ? trigger.x : -15, hide: false };
+  function showTrigger(pos, kind, altKind) {
+    trigger = { pos, kind, altKind, on: false, altOn: false, focus: 0, x: trigger && trigger.pos === pos ? trigger.x : -15, hide: false };
     hbStart();
   }
-  function hideTrigger() { if (trigger) { trigger.hide = true; trigger.on = false; } }
+  function hideTrigger() { if (trigger) { trigger.hide = true; trigger.on = trigger.altOn = false; } }
   const HB_CREAM = [255, 255, 222], HB_TEXT = [65, 65, 65], HB_SHADOW = [222, 213, 180];
   const HB_MALE = [65, 205, 255], HB_FEMALE = [255, 156, 148];
   const HB_STATUS = { psn: 0, tox: 0, par: 1, slp: 2, frz: 3, brn: 4 };
@@ -402,7 +402,17 @@
     // centre and 10 below it, 4 in a double battle; frame 1 when on).
     if (trigger && hb[trigger.pos].shown && hbTrigger.complete) {
       const b = hb[trigger.pos], cfg = hbCfg(trigger.pos);
-      g.drawImage(trigger.kind === "tera" && hbTeraTrigger.complete ? hbTeraTrigger : hbTrigger, 0, trigger.on ? 32 : 0, 32, 32, cfg.x + 32 + trigger.x - 16, cfg.y + b.y2 + (doublesLayout ? 4 : 10), 32, 32);
+      const img = (kind) => (kind === "tera" && hbTeraTrigger.complete ? hbTeraTrigger : hbTrigger);
+      const x = cfg.x + 32 + trigger.x - 16, y = cfg.y + b.y2 + (doublesLayout ? 4 : 10);
+      // (Two: the second further out, and the one START would switch dimmed
+      // less: the other is see-through until it's on.)
+      if (trigger.altKind) {
+        g.globalAlpha = trigger.focus === 1 || trigger.altOn ? 1 : 0.55;
+        g.drawImage(img(trigger.altKind), 0, trigger.altOn ? 32 : 0, 32, 32, x + (trigger.x + 15) * 2, y, 32, 32);
+        g.globalAlpha = trigger.focus === 0 || trigger.on ? 1 : 0.55;
+      }
+      g.drawImage(img(trigger.kind), 0, trigger.on ? 32 : 0, 32, 32, x, y, 32, 32);
+      g.globalAlpha = 1;
     }
     for (const side of POSITIONS) {
       const b = hb[side], cfg = hbCfg(side);
@@ -1908,17 +1918,19 @@
         // in a double battle, one of your two only). Or, START the same way:
         // Ultra Burst or a Z-Move (with the Z-Ring), or Dynamax (with the
         // Dynamax Band); a Z-Move or Dynamax shows the moves it makes.
-        const toggled = (on) => { if (trigger) trigger.on = on; };
+        const toggled = () => { if (trigger) Object.assign(trigger, { on: mega.on, altOn: !!(mega.alt && mega.alt.on), focus: mega.focus || 0 }); };
         const kind = active.canMega && config.megaRing && !(dbl && dbl.megaTaken) ? "mega"
           : active.canUltraBurst && config.zRing ? "ultra"
           : active.zMoves && config.zRing && !(dbl && dbl.zTaken) ? "zmove"
           : active.canDynamax && config.dynamaxBand && !(dbl && dbl.dynamaxTaken) ? "dynamax"
           : active.canTera && config.teraOrb && !(dbl && dbl.teraTaken) ? "tera" : null;
         const shown = kind === "zmove" ? active.zMoves : kind === "dynamax" ? active.maxMoves : null;
+        // (This game's own: Mega Evolve and Terastallize, the same turn if you like: two triggers.)
+        const alt = kind === "mega" && active.canTera && config.teraOrb && !(dbl && dbl.teraTaken) ? { kind: "tera", on: false } : null;
         // (Already Dynamaxed: its Max Moves, always.)
-        const mega = kind ? { on: false, toggled, kind, names: shown ? (m) => shown[m.index] || null : null }
+        const mega = kind ? { on: false, toggled, kind, alt, focus: 0, names: shown ? (m) => shown[m.index] || null : null }
           : active.dynamaxed && active.maxMoves ? { on: true, fixed: true, names: (m) => active.maxMoves[m.index] || null } : null;
-        if (mega && !mega.fixed) showTrigger(pos, kind);
+        if (mega && !mega.fixed) showTrigger(pos, kind, alt && alt.kind);
         // (A double battle: the Pokémon a spread or field move will hit
         // flash, PreviewDeterminativeMoveTargets.)
         const onCursor = dbl ? (c) => previewTargets(pos, moves[c]) : null;
@@ -1949,6 +1961,7 @@
           }
           const choice = { type: "move", move: m.index };
           if (mega && mega.on && mega.kind) choice[mega.kind] = true;
+          if (mega && mega.alt && mega.alt.on) choice[mega.alt.kind] = true;
           if (target !== undefined) choice.target = target;
           hideTrigger();
           return choice;
