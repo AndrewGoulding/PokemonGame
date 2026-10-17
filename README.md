@@ -452,10 +452,11 @@ Key from 5F opens for good; the Thunder Wave tutor on 2F (₽1,000 a time, as of
 (Pidgeot, Growlithe, a Gyarados holding its Gyaradosite, which Mega
 Evolves, Exeggutor, Umbreon and Alakazam; Lv. 35-40) and the Silph worker there who gives
 you a Lapras, Lv. 25; and Giovanni in the boardroom on 11F, where Red comes down
-by the warp pad and, without a word, stands beside you for a tag battle (his
+by the warp pad and, without a word, walks over to stand beside you for a tag battle (his
 Charizard, holding Charizardite X, Snorlax and Pikachu, Lv. 36; Giovanni has
-FireRed's team, his Kangaskhan holding its Kangaskhanite, and both Mega
-Evolve): beat him and Team Rocket leaves Silph and Saffron, Red heads back the
+six: FireRed's Nidorino, Kangaskhan, Rhyhorn and Nidoqueen, with a Dugtrio and
+a Persian before his Nidoqueen, his Kangaskhan holding its Kangaskhanite, and both Mega
+Evolve): beat him and Team Rocket leaves Silph and Saffron, Red walks back the
 way he came, the townsfolk come back out, and the President gives you the
 Master Ball. The Silph Co. 5F TM01 (Focus Punch) is TM105 here.
 South of Lavender Town, Route 12 (its gate, with TM27 Return from the girl
@@ -1052,7 +1053,9 @@ has a different Pokémon in a slot (Sandshrew for FireRed's Ekans on Route 4),
 either is as likely. The three starters are out in the wild, 5% each: Bulbasaur in Viridian Forest, Charmander on Route 3 and Squirtle on Route 24. FireRed's TMs found in item balls become this game's
 machine for the same move (TM09 Bullet Seed is TM100 here). An Escape Rope works
 where FireRed allows it (caves, Viridian Forest) and takes you back to where
-you last went from outdoors through a door or cave entrance, one step out from it as in FireRed (UpdateEscapeWarp). The Berry Powder man in Cerulean gives you the Powder Jar once you've a Berry and sends you to the Direct Corner's Berry Crush (or crushes your Berries himself, at the Berry Crush's amounts), and swaps the powder for his FireRed prizes; the sign in his house shows your Berry Crush records. Trainers work as in FireRed: one you haven't beaten sees you
+you last went from outdoors through a door or cave entrance, one step out from it as in FireRed (UpdateEscapeWarp),
+with FireRed's Escape Rope warp (Task_EscapeRopeWarpOut / WarpIn): you spin faster and faster and rise up off the
+screen as it fades, then come down at the way in, spinning until you face south. The Berry Powder man in Cerulean gives you the Powder Jar once you've a Berry and sends you to the Direct Corner's Berry Crush (or crushes your Berries himself, at the Berry Crush's amounts), and swaps the powder for his FireRed prizes; the sign in his house shows your Berry Crush records. Trainers work as in FireRed: one you haven't beaten sees you
 straight ahead within their sight range (nothing in between), shows "!",
 walks up and battles with their FireRed party (fixed IVs, set moves where
 FireRed sets them); beaten, they say their after-battle line, and one that walked over to you stays
@@ -1116,7 +1119,8 @@ the S.S. Anne who lets you rest (the screen goes black while the healing jingle
 plays, as with Red's Mom), the Tradeback Guy upstairs
 in every Pokémon Center (he trades you a Lv. 5 Rattata for your Pokémon and
 then trades it straight back, both shown with FireRed's trade sequence, so
-trade evolutions happen), and Bill: a
+trade evolutions happen; he only takes a Pokémon that would evolve, and his
+party screen marks each one ABLE or NOT ABLE), and Bill: a
 Clefairy until you run his Teleporter's Cell Separator, then he gives you the
 S.S. Ticket and his PC shows his favourite Pokémon) are in `ui/game.js`; their FireRed
 lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scripts
@@ -1209,7 +1213,8 @@ place, and you go back to yours. You have to
 win all three: lose one and you black out as usual, and the test starts over
 when you come back. Win them all and you step up to Oak for the Mega Ring and
 the Kanto starters' Mega Stones (Venusaurite, Charizardite X and Y,
-Blastoisinite), and step back. Then Red (without a word), Leaf and Gary (each
+Blastoisinite), and step back; then Leaf, Gary and Red, one at a time, step up
+to him for Mega Rings of their own. Then Red (without a word), Leaf and Gary (each
 with a parting word) go down the stairs, Oak heads back to his research, and
 only then does Mr. Fuji come over: impressed by your battling, he gives you the
 Gengarite and goes home to the Pokémon House.
@@ -1439,7 +1444,7 @@ Battles; `game/raid-dens.js`): eighteen dens, one of each type: Route 1
 corner below the tall grass), Seafoam Islands 1F
 (Ice), the Power Plant (Electric), the Fighting Dojo's back room (Fighting),
 Rock Tunnel 1F (Rock), Diglett's Cave (Ground), Route 25 by the sea (Water),
-Route 18's flower garden (Flying), Cinnabar Island's beach (Fire), Pokémon
+Route 18 among the Bird Keepers (Flying), Cinnabar Island's beach (Fire), Pokémon
 Tower 1F (Ghost), Silph Co.'s lobby (Steel), outside the Indigo Plateau
 (Dragon), Celadon's Berry Farm (Grass), the Pokémon Mansion 1F (Poison),
 Mr. Psychic's back room (Psychic), the Rocket Hideout B1F (Dark; its

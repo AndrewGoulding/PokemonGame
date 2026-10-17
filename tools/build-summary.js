@@ -103,6 +103,9 @@ for (const [, name, body] of frMoves.matchAll(/const u8 gMoveDescription_(\w+)\[
   const ours = ourMoves[key(name)];
   if (ours) data.moveText[ours] = strings(body);
 }
+// (Where a move does more now than in FireRed, its description says so.)
+const NEWER_MOVE_TEXT = { Growth: "The user's body is\nforced to grow,\nraising ATTACK\nand SP. ATK." };
+Object.assign(data.moveText, NEWER_MOVE_TEXT);
 const frAbilities = fs.readFileSync(P("src/data/text/abilities.h"), "utf8");
 for (const [, name, body] of frAbilities.matchAll(/static const u8 s(\w+)Description\[\] = _\(([\s\S]*?)\);/g)) {
   const ours = ourAbilities[key(name)];

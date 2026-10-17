@@ -4093,7 +4093,8 @@
         return;
       // The Tradeback Guy (this game's): he trades with you and straight back,
       // so a Pokémon that evolves by trading does (Kadabra, Machoke, Graveler,
-      // Haunter, and those holding their item: Onix with a Metal Coat, ...).
+      // Haunter, and those holding their item: Onix with a Metal Coat, ...);
+      // he won't take one that wouldn't.
       case "Game_EventScript_PokerDealer": await pokerTable(); return;
       case "Game_EventScript_BlackjackDealer": await blackjackTable(); return;
       case "Game_EventScript_PokerTable": await pokerTable(); return;
@@ -4103,10 +4104,16 @@
         await say(["Hi! I'm the Tradeback Guy!", "Some Pokémon only evolve when\nthey're traded. Nobody to trade\nwith? Leave it to me!",
           "I'll trade you my Rattata, and then\ntrade your Pokémon right back!"]);
         if (!(await confirm("Want to trade a Pokémon with me?"))) { await say("Okay! Come back anytime!"); return; }
-        const mine = await choosePartyFor("Choose a POKéMON.");
+        // (Only a Pokémon that would evolve by it: each box says ABLE or NOT ABLE.)
+        const evolves = (r) => !r.egg && !!Evolution.find(r, { trigger: "trade", party: player.party });
+        const mine = await choosePartyFor("Choose a POKéMON.", null, player.party.map((r) => (evolves(r) ? "ABLE" : "NOT ABLE")));
         show("world");
         if (!mine) { await say("Okay! Come back anytime!"); return; }
         if (mine.egg) { await say("An EGG can't be traded!"); return; }
+        if (!evolves(mine)) {
+          await say(["Hmm… " + Party.displayName(mine) + " won't evolve by\ntrading.", "I only trade Pokémon that evolve\nwhen they're traded. Sorry!"]);
+          return;
+        }
         // Your Pokémon for his Lv. 5 Rattata, and back again: two trades, as
         // FireRed shows them (ui/trade-scene.js), then the trade evolution.
         const rattata = Party.create("Rattata", 5);
@@ -5365,7 +5372,8 @@
   // place; after each, Oak comes down to heal your Pokémon and goes back to
   // his. Lose one and you black out as usual, and the
   // test starts over when you come back. Win all three and you go up to Oak
-  // for the Mega Ring and the Kanto starters' Mega Stones; then Red, Leaf,
+  // for the Mega Ring and the Kanto starters' Mega Stones, and Leaf, Gary and
+  // Red each step up for a Mega Ring of their own; then Red, Leaf,
   // Gary and Oak leave down the stairs, and Mr. Fuji, last, comes over with
   // the Gengarite.
   const MEGA_AIDE = "LOCALID_MEGA_AIDE";
@@ -5642,19 +5650,28 @@
       "Have your Pokémon hold one, and\npress START when you choose a move\nto Mega Evolve!"]);
     const back = Array(MEGA_SPOT.y - oy - 1).fill("walk_down");
     await Overworld.act([{ who: "player", moves: ["lock_facing_direction"].concat(back, ["unlock_facing_direction"]) }]);
+    // Then a Mega Ring for each of the others: one at a time, they step up
+    // to him, and back to their place.
+    await say(["Oak: And you three passed my test,\ntoo! Leaf, {RIVAL}, Red!", "I have a Mega Ring for each of you\nas well. Come here!"]);
+    for (const r of MEGA_RIVALS) {
+      const who = MEGA_CAST[r.key], [hx, hy] = MEGA_PLACES[r.key];
+      await walkTo(who, { x: ox, y: oy + 1 }, "up");
+      await sayWithJingle("mus_obtain_key_item", (r.key === "gary" ? "{RIVAL}" : r.key === "red" ? "Red" : LAB_RIVAL_NAME) + " received a Mega Ring\nfrom Prof. Oak!");
+      await walkTo(who, { x: hx, y: hy }, "up");
+    }
     // Off they go: Red without a word, Leaf and Gary with one.
     const RED = MEGA_CAST.red, LEAF_ = MEGA_CAST.leaf, GARY = MEGA_CAST.gary;
     await Overworld.act([{ who: RED, moves: ["face_player"] }]);
     await say(["Red: …"]);
     await megaLeaves(RED);
     await Overworld.act([{ who: LEAF_, moves: ["face_player"] }]);
-    await say(["Leaf: A Mega Ring! Congratulations,\n{PLAYER}! You totally earned it!",
-      "I'll keep training with my Pokémon,\ntoo. Maybe one day we'll find some\nMega Stones of our own!",
+    await say(["Leaf: We all got Mega Rings! You\ntotally earned yours, {PLAYER}!",
+      "I'll keep training with my Pokémon,\ntoo. Now I just need to find a\nMega Stone of my own!",
       "See you around, {PLAYER}! Take\ncare of yourself!"]);
     await megaLeaves(LEAF_);
     music("mus_rival_exit");
     await Overworld.act([{ who: GARY, moves: ["face_player"] }]);
-    await say(["{RIVAL}: Hmph! So Gramps gave you\nthe Mega Ring. Enjoy it while you\ncan.",
+    await say(["{RIVAL}: Hmph! So Gramps gave us\nall Mega Rings. Doesn't matter.", "I'll be the one who masters Mega\nEvolution first!",
       "Next time we battle, I'll be the one\nwho comes out on top. Count on it!",
       "Smell ya later, {PLAYER}!"]);
     await megaLeaves(GARY);
@@ -7061,14 +7078,17 @@
   // 11F: Giovanni (SilphCo_11F_EventScript_BattleGiovanni). This game's
   // own: a tag battle. Red comes down by the warp pad from 7F and stands
   // beside you, without a word; he brings Charizard (holding its Charizardite
-  // X: it Mega Evolves), Snorlax and Pikachu, and Giovanni's Kangaskhan holds
-  // its Kangaskhanite. Beaten, Giovanni's gone, and so is Team Rocket, from
+  // X: it Mega Evolves), Snorlax and Pikachu; Giovanni has six, and his
+  // Kangaskhan holds its Kangaskhanite. Beaten, Giovanni's gone, and so is Team Rocket, from
   // Silph Co. and from Saffron; and Red goes back the way he came.
   const SILPH_RED = "LOCALID_SILPH_CO_RED";
   // Red's Pokémon now: those he had at the top of Pokémon Tower, all fully
   // evolved, and a Snorlax, all at Lv. 36; for the tag battle he picks three.
   const RED_SILPH_ROSTER = [["Pikachu", 36], ["Charizard", 36, "charizardite-x"], ["Blastoise", 36], ["Venusaur", 36], ["Espeon", 36], ["Snorlax", 36]];
   const RED_SILPH_PICK = ["Charizard", "Snorlax", "Pikachu"];
+  // FireRed's team for him (Nidorino, Kangaskhan, Rhyhorn, Nidoqueen), with
+  // two more (his Dugtrio and Persian), six against the two of you.
+  const SILPH_GIOVANNI_EXTRA = [["Dugtrio", 38], ["Persian", 39]];
   async function giovanniSilph(left) {
     const G = "LOCALID_SILPH_CO_GIOVANNI", ID = "TRAINER_BOSS_GIOVANNI_2", R = SILPH_RED;
     await Overworld.act([{ who: G, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
@@ -7085,14 +7105,17 @@
     // is past Giovanni: below him, then.)
     const spots = left ? [{ x: 6, y: 16, face: "up" }] : besideYou().map((t) => Object.assign(t, { face: me.facing }));
     sfx("se_warp_in");
-    const from = await walkIn(R, lookOf("red"), { x: 2, y: 5 }, spots, "fast_");
+    // (He walks, there and back: he's in no hurry.)
+    const from = await walkIn(R, lookOf("red"), { x: 2, y: 5 }, spots);
     if (Overworld.personPosition(R)) await faceEachOther(R);
     await say(["Red: …"]);
     await Overworld.act([{ who: R, moves: ["face_up"] }, { who: "player", moves: ["face_" + me.facing] }]);
     await say(["Red joined {PLAYER}, ready\nto battle!",
       "Giovanni: Hm? Another child…\nHow tiresome.",
       "No matter. I'll crush the two of you\ntogether!"]);
-    const team = trainerTeam(ID).map((r) => (r.species === "Kangaskhan" ? Object.assign(r, { item: "kangaskhanite" }) : r));
+    const own = trainerTeam(ID).map((r) => (r.species === "Kangaskhan" ? Object.assign(r, { item: "kangaskhanite" }) : r));
+    const extra = SILPH_GIOVANNI_EXTRA.map(([sp, lv]) => Party.create(sp, lv, { ivs: own[0].ivs.hp }));
+    const team = own.slice(0, -1).concat(extra, own.slice(-1));   // (Nidoqueen, his ace, still last)
     const redTeam = RED_SILPH_PICK.map((sp) => RED_SILPH_ROSTER.find((m) => m[0] === sp))
       .map(([sp, lv, item]) => Object.assign(Party.create(sp, lv), item ? { item } : {}));
     const outcome = await battle("trainer", { foe: { name: "Boss Giovanni", team, pic: "leader_giovanni" },
@@ -7120,7 +7143,7 @@
     if (!at) return;
     await faceEachOther(R);
     await say(["Red: …", "Red gave a small nod."]);
-    if (from) await walkOut(R, from, "fast_");
+    if (from) await walkOut(R, from);
     Overworld.removeObject(R);
   }
 
@@ -10270,8 +10293,14 @@
     if (!here || !here.allowEscaping || !to) { await message("Oak: " + player.name + "! This isn't the time to use that!"); return false; }
     Player.removeItem(player, "escape-rope");
     await message(player.name + " used the Escape Rope.");
-    player.location = { map: to.map, x: to.x, y: to.y, facing: "down" };
-    await persist();
+    // (Back on the map, FireRed's Escape Rope warp: spinning up and away, and
+    // down again at the way in.)
+    fieldAction = async () => {
+      Screen.say("");
+      await Overworld.escapeRopeOut();
+      await Overworld.escapeRopeIn({ map: to.map, x: to.x, y: to.y, facing: "down" });
+      await persist();
+    };
     return true;
   }
 

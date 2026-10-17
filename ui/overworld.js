@@ -768,6 +768,62 @@
     await new Promise((resolve) => { fadeDir = -1; afterFade = resolve; });
   }
 
+  // The Escape Rope (FireRed's Task_EscapeRopeWarpOut / Task_EscapeRopeWarpIn).
+  // Out: you spin round, faster and faster (SpinObjectEvent), with SE_WARP_IN
+  // 20 frames in; after 60 frames you rise up off the screen, 8 pixels a
+  // frame, still spinning, and the screen fades out. In: the screen fades in
+  // with you up out of sight; SE_WARP_OUT, and you come down 4 pixels a frame
+  // (SE_CLICK as you land), spinning from 8 frames in until, 50 frames or
+  // more in, you face the way you arrived.
+  function spinner() {
+    let delay = 0, turns = 0, busy = 0;
+    return () => {
+      // (Each turn is a face-direction movement: done the frame after.)
+      if (busy) { busy--; return; }
+      if (delay !== 0 && --delay !== 0) return;
+      me.facing = SPIN_FACINGS[(SPIN_FACINGS.indexOf(me.facing) + 1) % 4];
+      busy = 1;
+      if (turns < 12) turns++;
+      delay = 12 >> turns;
+    };
+  }
+  async function escapeRopeOut() {
+    const spin = spinner(), se = (id) => { if (window.GameAudio) window.GameAudio.se(id); };
+    let gone = false;
+    me.lift = 0;
+    const spinning = everyFrame((t) => {
+      spin();
+      if (t === 20) se("se_warp_in");
+      if (t >= 60 && me.lift < 88) me.lift += 8;
+      if (me.lift >= 88 && !gone) { gone = true; fadeOut().then(() => { gone = "faded"; }); }
+      return gone === "faded";
+    });
+    await spinning;
+  }
+  async function escapeRopeIn(loc) {
+    const facing = loc.facing || "down";
+    me.lift = 88;
+    me.hidden = true;
+    await teleport(Object.assign({}, loc, { hidden: true }));
+    me.facing = facing;
+    if (window.GameAudio) window.GameAudio.se("se_warp_out");
+    me.hidden = false;
+    const spin = spinner();
+    let spinEnded = false;
+    await everyFrame((t) => {
+      if (me.lift > 0) {
+        me.lift = Math.max(0, me.lift - 4);
+        if (me.lift === 0 && window.GameAudio) window.GameAudio.se("se_click");
+      }
+      if (t >= 8 && !spinEnded) {
+        spin();
+        if (t >= 50 && me.facing === facing) spinEnded = true;
+      }
+      return me.lift === 0 && spinEnded;
+    });
+    me.lift = 0;
+  }
+
   // ---------- Talking ----------
 
   const fillText = (s) => s.replace(/\{PLAYER\}/g, ctx.player.name).replace(/\{RIVAL\}/g, ctx.rivalName || "Gary").replace(/\{STR_VAR_\d\}/g, "");
@@ -1520,7 +1576,9 @@
       sheet = look + "_fish"; w = 32; frame = r.frame; dx = r.dx; dy = r.dy;
     }
     const meOver = overTop(me, me.map, me.x, me.y, me.move ? me.move.tmap || me.map : me.map, me.move ? me.move.tx : me.x, me.move ? me.move.ty : me.y);
-    if (!me.hidden && !(fly && fly.player !== undefined)) sprites.push({ y: py, over: meOver, draw: () => drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy) });
+    // (Up in the air on an Escape Rope: over everything once a tile up.)
+    const lift = me.lift || 0;
+    if (!me.hidden && !(fly && fly.player !== undefined)) sprites.push({ y: py, over: meOver || lift >= 16, draw: () => drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy - lift) });
     if (heal) drawHeal(camX, camY);   // the healing machine's balls and screen, under people
     sprites.sort((a, b) => a.y - b.y);
     sprites.filter((s) => !s.over).forEach((s) => s.draw());
@@ -1638,7 +1696,7 @@
 
   window.Overworld = {
     explore, hide, read: (pages) => read(pages), showAreaName, forceStep, refreshPeople: () => loadPeople(),
-    act, addObject, removeObject, removePerson, teleport, battleTransition, resume, pokecenterHeal, flyOut, flyIn,
+    act, addObject, removeObject, removePerson, teleport, battleTransition, resume, pokecenterHeal, flyOut, flyIn, escapeRopeOut, escapeRopeIn,
     fadeToBlack: fadeOut, fadeFromBlack: fadeIn, shake,
     setAvatar, avatar: () => me.avatar, flash, rod: setRod, emote: (mark) => { me.emote = mark ? { mark } : null; }, isDark: () => light != null && !flashOn,
     // What's in front of you: the tile, whoever stands there, and whether

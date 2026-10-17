@@ -39,7 +39,7 @@
     ["rockTunnel", "RockTunnel_1F", 12, 21, "Rock"],
     ["diglettsCave", "DiglettsCave_B1F", 36, 33, "Ground"],
     ["route25", "Route25", 62, 8, "Water"],
-    ["route18", "Route18", 12, 3, "Flying"],
+    ["route18", "Route18", 44, 13, "Flying"],   // (among the Bird Keepers, out of their sight)
     ["cinnabar", "CinnabarIsland", 18, 13, "Fire"],
     ["lavender", "PokemonTower_1F", 11, 2, "Ghost"],   // (at the top of Pokémon Tower's ground floor)
     ["silph", "SilphCo_1F", 27, 6, "Steel"],
