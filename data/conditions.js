@@ -155,9 +155,14 @@
     // Gen 9
     burningbulwark: { name: "Burning Bulwark", duration: 1 },
     silktrap: { name: "Silk Trap", duration: 1 },
-    // Psychic Noise: two turns of no healing. (Its own condition: Heal Block,
-    // the Gen 4 move, still does nothing here.)
-    psychicnoise: { name: "Psychic Noise", duration: 3 },
+    // Heal Block: five turns of no healing (Psychic Noise's: two). Healing
+    // moves can't be chosen, and one already chosen fails.
+    healblock: {
+      name: "Heal Block", duration: 5,
+      onBeforeMove(ctx, move) {
+        if (move && move.flags && move.flags.heal) { ctx.add("cant", ctx.pokemon, "move: Heal Block", move.name); return false; }
+      }
+    },
     // Salt Cure: 1/8 of its HP a turn (1/4 for Water and Steel types) while it's in.
     saltcure: {
       name: "Salt Cure",
@@ -177,6 +182,7 @@
     },
     // Glaive Rush: until its next move, every move hits it, for double damage.
     glaiverush: { name: "Glaive Rush" },
+    dragoncheer: { name: "Dragon Cheer" },
     // Gen 8
     obstruct: { name: "Obstruct", duration: 1 },
     maxguard: { name: "Max Guard", duration: 1 },

@@ -68,7 +68,7 @@
     par: "{who} is paralyzed! It can't move!", slp: "{who} is fast asleep.", frz: "{who} is frozen solid!",
     recharge: "{who} must recharge!", scared: "{who} is too scared to move!", flinch: "{who} flinched and couldn't move!",
     attract: "{who} is immobilized by love!", truant: "{who} is loafing around!",
-    focuspunch: "{who} lost its focus and couldn't move!",
+    focuspunch: "{who} lost its focus and couldn't move!", healblock: "{who} can't use that move because of Heal Block!",
     throatchop: "The effects of Throat Chop prevent {who} from using certain moves!"
   };
   const DAMAGE_FROM = {
@@ -107,7 +107,7 @@
     laserfocus: "{who} concentrated intensely!", shackled: "{who} can no longer escape!", throatchop: null,
     octolock: "{who} can no longer escape because of Octolock!", noretreat: "{who} can no longer escape because it used No Retreat!",
     tarshot: "{who} became weaker to fire!",
-    psychicnoise: "{who} was prevented from healing!", saltcure: "{who} is being salt cured!", syrupbomb: "{who} got covered in sticky candy syrup!", glaiverush: null,
+    dragoncheer: "{who} is getting pumped!", saltcure: "{who} is being salt cured!", syrupbomb: "{who} got covered in sticky candy syrup!", glaiverush: null,
     burningbulwark: "{who} protected itself!", silktrap: "{who} protected itself!"
   };
   const VOLATILE_END = {
@@ -117,7 +117,7 @@
     whirlpool: "{who} was freed from Whirlpool!", firespin: "{who} was freed from Fire Spin!",
     sandtomb: "{who} was freed from Sand Tomb!", stockpile: "{who}'s stockpiled effect wore off!",
     bide: "{who} unleashed its energy!", slowstart: "{who} finally got its act together!",
-    psychicnoise: "{who}'s Heal Block wore off!", syrupbomb: "{who} was freed from the sticky candy syrup!"
+    healblock: "{who}'s Heal Block wore off!", syrupbomb: "{who} was freed from the sticky candy syrup!"
   };
   const ACTIVATE = {
     confusion: "{who} is confused!", attract: "{who} is in love with {foe}!", bide: "{who} is storing energy!",
@@ -132,7 +132,7 @@
     powerconstruct: "You sense the presence of many!", shieldsdown: null,
     queenlymajesty: "{who}'s Queenly Majesty blocked the move!", dazzling: "{who}'s Dazzling blocked the move!",
     armortail: "{who}'s Armor Tail blocked the move!", ficklebeam: "{who} is going all out for this attack!",
-    commander: "{who} is commanding its ally!", goodasgold: null,
+    commander: "{who} was swallowed by its ally and is commanding from inside!", goodasgold: null,
     courtchange: "{who} swapped the battle effects affecting each side of the field!",
     poltergeist: "{who} is about to be attacked by its item!", eeriespell: "It reduced the PP of {who}'s move!",
     jawlock: "Neither Pokémon can run away!", perishbody: "Both Pokémon will faint in three turns!",
@@ -668,7 +668,7 @@
     else window.Screen.setSprite(sprite, v.species, v.form, side === "p1", v.shiny);
     placeSprite(sprite, v, side === "p1");
     sprite.alt = v.name;
-    sprite.classList.toggle("hidden", !!v.inBall);
+    sprite.classList.toggle("hidden", !!v.inBall || !!v.commanding);   // (Commander: in Dondozo's mouth)
     sprite.classList.toggle("fainted", v.fainted);
     info.classList.toggle("hidden", v.fainted);
 
@@ -1229,6 +1229,8 @@
         const msg = fill(tpl, a);
         return async () => { if (changed) await hbSettled(); if (msg) await message(msg); };
       }
+      // Revival Blessing: [ident, name]
+      case "-revive": return capitalize(label(side, b)) + " was revived and is ready to fight again!";
       case "-sethp": // Pain Split: [user, userHp, target, targetHp]
         setHp(a, b);
         setHp(c, ev[4]);
@@ -1282,9 +1284,16 @@
         if (id === "disable" && c) return fill("{who}'s " + c + " was disabled!", a);
         return fill(lookup(VOLATILE_START, id, null), a);
       }
-      case "-end": return fill(lookup(VOLATILE_END, effectId(b), null), a);
+      case "-end":
+        if (effectId(b) === "commander" && view[pos]) { view[pos].commanding = false; renderSide(pos); return null; }
+        return fill(lookup(VOLATILE_END, effectId(b), null), a);
       case "-activate":
         if (effectId(b) === "naturepower") return "Nature Power turned into " + c + "!";
+        // (Commander: Tatsugiri disappears into Dondozo's mouth.)
+        if (effectId(b) === "commander" && view[pos]) {
+          const msg = fill(ACTIVATE.commander, a);
+          return async () => { await message(msg); view[pos].commanding = true; renderSide(pos); };
+        }
         return fill(lookup(ACTIVATE, effectId(b), "{who}'s " + effectName(b) + " activated!"), a);
       case "-prepare": return fill(lookup(PREPARE, effectId(b), "{who} is getting ready to use " + b + "!"), a);
       case "-singleturn": {
@@ -1576,6 +1585,32 @@
       [partyOrder[k], partyOrder[at]] = [partyOrder[at], partyOrder[k]];
     });
     return partyOrder;
+  }
+
+  // Revival Blessing: which of your fainted Pokémon comes back (the party
+  // screen, only a fainted one can be picked; no backing out).
+  async function chooseRevive(req) {
+    const own = req.team.filter((p) => p.mine !== false);
+    const team = battleOrder().map((i) => own.find((p) => p.index === i)).filter(Boolean)
+      .concat(own.filter((p) => !battleOrder().includes(p.index)));
+    const mons = team.map((p) => ({
+      name: p.name, icon: window.Screen.iconUrl(p.species), level: p.level, gender: p.gender,
+      hp: p.hp, maxhp: p.maxhp, status: p.status, item: !!p.item
+    }));
+    let cursor = Math.max(0, team.findIndex((p) => req.revives.includes(p.index)));
+    for (;;) {
+      say("");
+      clearMenu();
+      const frame = window.GameOptions ? window.GameOptions.get().frame : 0;
+      const r = await window.PartyMenu.open({ mons, cursor, frame, canCancel: false, message: "Revive which Pokémon?",
+        actions: () => [{ label: "REVIVE", value: "revive" }, { label: "CANCEL", value: "cancel" }] });
+      if (!r || r.action === "cancel") continue;
+      cursor = r.cursor;
+      const p = team[r.slot];
+      if (!req.revives.includes(p.index)) { await message(p.name + " doesn't need reviving!"); continue; }
+      window.PartyMenu.close();
+      return { type: "revive", index: p.index };
+    }
   }
 
   async function chooseSwitch(req, canCancel, taken) {
@@ -1959,8 +1994,8 @@
       if (battle.ended) return;
       if (battle.doubles) { const r = await doublesStep(); if (r === "crashed") return r; continue; }
       const p1 = battle.getRequest("p1");
-      if (p1.phase === "move" || p1.phase === "switch") {
-        const choice = p1.phase === "move" ? await chooseAction(p1) : await chooseSwitch(p1, false);
+      if (p1.phase === "move" || p1.phase === "switch" || p1.phase === "revive") {
+        const choice = p1.phase === "move" ? await chooseAction(p1) : p1.phase === "revive" ? await chooseRevive(p1) : await chooseSwitch(p1, false);
         const r = choose("p1", choice);
         if (r.crashed) return "crashed";
         if (!r.ok) await message(r.error);
@@ -1968,7 +2003,7 @@
         continue;
       }
       const p2 = battle.getRequest("p2");
-      if (p2.phase === "move" || p2.phase === "switch") {
+      if (p2.phase === "move" || p2.phase === "switch" || p2.phase === "revive") {
         let choice;
         try { choice = config.opponent(battle); } catch (e) { console.error(e); return "crashed"; }
         // SHIFT (the Option screen's BATTLE STYLE): "… is about to use …. Will
@@ -1998,6 +2033,10 @@
   // your one), then your partner's, the opponent's and their partner's.
   async function doublesStep() {
     const p1 = battle.getRequest("p1");
+    if (p1 && p1.phase === "revive") {
+      const r = choose("p1", await chooseRevive(p1));
+      return r.crashed ? "crashed" : null;
+    }
     if (p1 && (p1.phase === "move" || p1.phase === "switch") && p1.open.length) {
       const choices = p1.phase === "move" ? await chooseDoublesMoves(p1) : await chooseDoublesSwitches(p1);
       const r = choose("p1", choices);
@@ -2008,7 +2047,7 @@
     const ais = [["p1b", config.partnerAI], ["p2", config.opponent], ["p2b", config.opponent2]];
     for (const [id, ai] of ais) {
       const req = battle.getRequest(id);
-      if (!req || !(req.phase === "move" || req.phase === "switch") || !req.open.length) continue;
+      if (!req || !(req.phase === "revive" || ((req.phase === "move" || req.phase === "switch") && req.open.length))) continue;
       let choice;
       try { choice = ai ? ai(battle) : window.OpponentAI.choose(battle, id); } catch (e) { console.error(e); return "crashed"; }
       if (choose(id, choice).crashed) return "crashed";

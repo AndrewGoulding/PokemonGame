@@ -3072,6 +3072,52 @@ for (let seed = 1; seed <= GEN8; seed++) {
     if (b.getRequest("p1").phase === "switch") play(b, { p1: { type: "switch", index: 1 } });
     assert(b.sides.p1.active.species === "Snorlax" && b.sides.p1.active.volatiles.substitute, "Shed Tail"); }
 
+  // Revival Blessing: you pick who comes back, with half its HP.
+  { const b = singles([g9("Pawmot", ["Revival Blessing", "Splash"]), g9("Snorlax", ["Splash"]), g9("Machamp", ["Splash"])], [g9("Snorlax", ["Splash"])]);
+    b.sides.p1.pokemon[1].hp = 0; b.sides.p1.pokemon[1].fainted = true;
+    b.sides.p1.pokemon[2].hp = 0; b.sides.p1.pokemon[2].fainted = true;
+    play(b, { p1: mv(0), p2: mv(0) });
+    const rq = b.getRequest("p1");
+    assert.deepStrictEqual([rq.phase, rq.revives], ["revive", [1, 2]]);
+    assert(!b.choose("p1", { type: "revive", index: 0 }).ok, "only a fainted one");
+    const evs = b.events.length;
+    assert(b.choose("p1", { type: "revive", index: 2 }).ok);
+    const m = b.sides.p1.pokemon[2];
+    assert(!m.fainted && m.hp === Math.floor(m.maxhp / 2) && b.events.slice(evs).some((e) => e[0] === "-revive"));
+    assert.strictEqual(b.getRequest("p1").phase, "move", "the turn went on");
+    const c = singles([g9("Pawmot", ["Revival Blessing"])], [g9("Snorlax", ["Splash"])]);
+    play(c, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(c.getRequest("p1").phase, "move", "nobody to revive: it fails"); }
+  // Heal Block: no healing moves, no healing; Psychic Noise for two turns.
+  { const b = singles([g9("Alakazam", ["Heal Block"])], [g9("Blissey", ["Soft-Boiled", "Splash"])]);
+    play(b, { p1: mv(0), p2: mv(1) });
+    const bl = b.sides.p2.active;
+    assert(bl.volatiles.healblock && b.getRequest("p2").active.moves[0].disabled, "Heal Block");
+    bl.hp = Math.floor(bl.maxhp / 2);
+    assert.strictEqual(b.heal(bl, 100, bl), 0);
+    const c = singles([g9("Indeedee", ["Psychic Noise"])], [g9("Snorlax", ["Splash"])]);
+    play(c, { p1: mv(0), p2: mv(0) });
+    assert.strictEqual(c.sides.p2.active.volatiles.healblock.duration, 1, "Psychic Noise: two turns"); }
+  // Doubles: Dragon Cheer (+1, +2 for a Dragon) and Commander.
+  { const b = doubles({ team: [g9("Hydrapple", ["Dragon Cheer", "Splash"]), g9("Garchomp", ["Splash"]), g9("Snorlax", ["Splash"])] },
+      { team: [g9("Snorlax", ["Splash"]), g9("Snorlax", ["Splash"])] });
+    play(b, { p1: [mv(0, -2), mv(0)], p2: [mv(0), mv(0)] });
+    assert.strictEqual(b.sides.p1.actives[1].volatiles.dragoncheer.stages, 2, "Dragon Cheer on a Dragon"); }
+  { const b = doubles({ team: [g9("Tatsugiri-Stretchy", ["Splash"]), g9("Dondozo", ["Order Up", "Splash"]), g9("Snorlax", ["Splash"])] },
+      { team: [g9("Machamp", ["Close Combat", "Splash"]), g9("Machamp", ["Splash"])] });
+    const [tat, zozo] = b.sides.p1.actives;
+    assert(tat.volatiles.commanding && zozo.volatiles.commanded, "in Dondozo's mouth");
+    assert.deepStrictEqual([zozo.boosts.atk, zozo.boosts.spe], [2, 2]);
+    const rq = b.getRequest("p1");
+    assert(!rq.open.includes(0) && rq.actives[1].trapped && !rq.actives[1].switches.length, "Tatsugiri can't act, Dondozo can't leave");
+    // (Machamp's Close Combat at Tatsugiri, in slot a.)
+    const evs = play(b, { p1: mv(0, 1), p2: [mv(0, 1), mv(0)] });
+    assert.strictEqual(tat.hp, tat.maxhp, "an attack at Tatsugiri misses");
+    assert(evs.some((e) => e[0] === "-miss" && e[2] === tat.ident));
+    assert.strictEqual(zozo.boosts.spe, 3, "Order Up with a Stretchy Tatsugiri: Speed");
+    zozo.hp = 1;
+    play(b, { p1: mv(1), p2: [mv(0, 2), mv(0)] });
+    assert(zozo.fainted && !tat.volatiles.commanding, "out again when Dondozo faints"); }
   // Gen 9's evolution rules: steps, Coins, knockouts, 1 in 100.
   { const pawmo = Party.create("Pawmo", 30, { rng: mulberry32(9) });
     assert(!Evolution.find(pawmo, { trigger: "level", party: [pawmo] }));
@@ -3103,7 +3149,7 @@ for (let seed = 1; seed <= GEN9; seed++) {
   for (let step = 0; step < 3000 && !battle.ended; step++) {
     for (const id of ["p1", "p2"]) {
       const req = battle.getRequest(id);
-      if (req.phase !== "move" && req.phase !== "switch") continue;
+      if (req.phase !== "move" && req.phase !== "switch" && req.phase !== "revive") continue;
       const r = battle.choose(id, step % 2 ? OpponentAI.choose(battle, id, rng) : battle.randomChoice(id));
       assert(r.ok, "Gen 9 choice rejected in battle " + seed + ": " + r.error);
     }

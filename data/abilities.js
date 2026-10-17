@@ -2992,23 +2992,20 @@ window.ABILITIES = {
     name: "Commander", num: 279, rating: 0,
     effect: "Tatsugiri hides in an ally Dondozo's mouth: Dondozo's stats rise by 2 stages; Tatsugiri can't be hit or act.",
     flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1 },
-    onStart(ctx) {
-      const p = ctx.pokemon, dondozo = ctx.allies().find((m) => m && !m.fainted && /^Dondozo/.test(m.species));
-      if (!/^Tatsugiri/.test(p.species) || !dondozo || dondozo.commandedBy) return;
-      p.commanding = dondozo; dondozo.commandedBy = p;
+    // (As soon as Tatsugiri and an ally Dondozo are both out, it goes into
+    // Dondozo's mouth: the volatiles commanding (Tatsugiri: no actions,
+    // every move aimed at it misses, it can't leave) and commanded (Dondozo:
+    // it can't leave either), kept by the battle engine. Dondozo fainting lets
+    // Tatsugiri out; Tatsugiri fainting leaves Dondozo bound.)
+    onUpdate(ctx) {
+      const p = ctx.pokemon;
+      if (!/^Tatsugiri/.test(p.species) || p.transformed || p.fainted || p.volatiles.commanding || !ctx.battle.doubles) return;
+      const dondozo = ctx.allies().find((m) => m && m !== p && !m.fainted && m.isActive && /^Dondozo/.test(m.species) && !m.volatiles.commanded && !m.dynamaxed);
+      if (!dondozo) return;
+      p.volatiles.commanding = { id: "commanding", source: dondozo };
+      dondozo.volatiles.commanded = { id: "commanded", source: p };
       ctx.add("-activate", p, "ability: Commander", "[of] " + dondozo.ident);
       ctx.boost(dondozo, { atk: 2, def: 2, spa: 2, spd: 2, spe: 2 }, p);
-    },
-    // (While it's in Dondozo's mouth: attacks miss it and it does nothing; out again if Dondozo faints.)
-    onTryHit(ctx) {
-      const p = ctx.pokemon;
-      if (!p.commanding || p.commanding.fainted || ctx.source === p) return;
-      ctx.add("-activate", p, "ability: Commander");
-      return false;
-    },
-    onBeforeMove(ctx) {
-      const p = ctx.pokemon;
-      if (p.commanding && !p.commanding.fainted) return false;
     },
   },
 

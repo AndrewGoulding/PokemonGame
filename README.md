@@ -1399,9 +1399,13 @@ Tailwind too), Electromorphosis, Guard Dog, Armor Tail, Opportunist, Cud Chew,
 Supreme Overlord, Costar, Toxic Debris, Toxic Chain, Mycelium Might, Mind's
 Eye, Supersweet Syrup, Hospitality, Poison Puppeteer, Zero to Hero (Palafin's
 Hero Form once it's been out and back), Tera Shift and Tera Shell (Terapagos
-takes its Terastal Form as it comes out) and Commander (Tatsugiri hides in an
-ally Dondozo's mouth: Dondozo's stats rise by 2 stages and Tatsugiri can't be
-hit or act until Dondozo faints); Embody Aspect and Teraform Zero do nothing,
+takes its Terastal Form as it comes out) and Commander (in a double battle,
+Tatsugiri goes into an ally Dondozo's mouth as soon as both are out:
+Dondozo's stats rise by 2 stages; Tatsugiri disappears, takes no actions and
+every move aimed at it misses, though it still takes indirect damage; neither
+can be switched or forced out, a fainted Tatsugiri leaves Dondozo bound, and
+Dondozo fainting lets Tatsugiri out again; Order Up raises Dondozo's Attack,
+Defense or Speed by its Tatsugiri's form); Embody Aspect and Teraform Zero do nothing,
 as there's no Terastallizing. Legends: Z-A's Megas bring theirs: Dragonize
 (Normal moves become Dragon, 1.2×), Mega Sol (its moves as in harsh sunlight),
 Piercing Drill (contact moves through Protect, for a quarter), Eelevate,
@@ -1419,11 +1423,13 @@ Thunderclap, Upper Hand, Glaive Rush, Salt Cure, Syrup Bomb, Psychic Noise
 (two turns without healing), Alluring Voice, Burning Bulwark, Silk Trap,
 Electro Shot (at once in the rain), Gigaton Hammer and Blood Moon (not twice
 in a row), Double Shock, Ice Spinner, Mortal Spin, Shed Tail (its substitute
-for whoever comes in), Revival Blessing (the first of the party that has
-fainted, back with half its HP), Fillet Away, Tidy Up, Doodle and Dragon
-Cheer. Their Summary descriptions are pokeemerald-expansion's. The test
-battles 100 random Gen 9 teams. (Heal Block, the Gen 4 move, still does
-nothing here.)
+for whoever comes in), Revival Blessing (mid-turn, its Trainer picks which
+fainted Pokémon comes back with half its HP: you on the party screen; in a
+double battle one still in its slot goes straight back out), Fillet Away,
+Tidy Up, Doodle and Dragon Cheer (its ally's critical-hit ratio up 1 stage, 2
+for a Dragon type; not with Focus Energy). Their Summary descriptions are pokeemerald-expansion's. The test
+battles 100 random Gen 9 teams. Heal Block works too now (five turns of no
+healing: healing moves can't be chosen, and Psychic Noise gives two).
 
 ## Faraway Island
 

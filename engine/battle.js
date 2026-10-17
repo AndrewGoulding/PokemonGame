@@ -155,7 +155,7 @@
   const PRIMAL = ["DesolateLand", "PrimordialSea", "DeltaStream"];
   const WEATHER_ROCKS = { SunnyDay: "heat-rock", RainDance: "damp-rock", Sandstorm: "smooth-rock", Hail: "icy-rock", Snow: "icy-rock" };
   const DEF_ACC_ABILITIES = new Set(["Sand Veil", "Snow Cloak", "Tangled Feet", "Wonder Skin"]);
-  const SILENT_VOLATILES = new Set(["choicelock", "mustrecharge", "lockedmove", "twoturnmove", "flinch",
+  const SILENT_VOLATILES = new Set(["choicelock", "commanding", "commanded", "mustrecharge", "lockedmove", "twoturnmove", "flinch",
     "protect", "kingsshield", "spikyshield", "banefulbunker", "obstruct", "maxguard", "sparklingaria", "endure", "charge", "roost", "focuspunch", "destinybond", "focusenergy"]);
   const INVULN = {
     fly: "fly", bounce: "fly", dig: "dig", dive: "dive", shadowforce: "shadow", phantomforce: "shadow"
@@ -715,7 +715,7 @@
     // its Trainer (a wild Pokémon has nowhere to go).
     emergencyExit(mon) {
       if (mon.fainted || !mon.isActive || (this.wild && mon.side.id === "p2") || !mon.side.bench(mon.slot).length) return false;
-      if (!mon.hasAbility(["Wimp Out", "Emergency Exit"])) return false;
+      if (!mon.hasAbility(["Wimp Out", "Emergency Exit"]) || mon.volatiles.commanded) return false;
       this.add("-activate", mon, "ability: " + mon.ability);
       this.pendingSwitch = { side: mon.side, copy: false, slot: mon.slot };
       return true;
@@ -857,7 +857,7 @@
     // ---------- HP ----------
     heal(mon, amount, source, effect) {
       if (!mon || mon.fainted || mon.hp <= 0 || mon.hp >= mon.maxhp) return 0;
-      if (mon.volatiles.psychicnoise) return 0;   // (Psychic Noise)
+      if (mon.volatiles.healblock) return 0;   // (Heal Block, Psychic Noise)
       amount = Math.max(1, Math.floor(amount));
       const healed = Math.min(amount, mon.maxhp - mon.hp);
       mon.hp += healed;
@@ -900,6 +900,12 @@
       const foe = this.doubles ? this.foesOf(mon)[0] : mon.side.foe.active;
       this.friendship(mon, foe && foe.level - mon.level > 29 ? "faintLarge" : "faintSmall");
       this.add("faint", mon);
+      // (Commander: Dondozo down, its Tatsugiri comes out of its mouth; a fainted Tatsugiri leaves Dondozo still bound.)
+      if (mon.volatiles.commanded) {
+        const t = mon.volatiles.commanded.source;
+        delete mon.volatiles.commanded;
+        if (t && t.volatiles.commanding && t.volatiles.commanding.source === mon) { delete t.volatiles.commanding; if (!t.fainted) this.add("-end", t, "Commander"); }
+      }
       // A tag-team trainer with nothing left is out; their slot stays empty.
       if (mon.side.tag && !mon.side.pokemon.some((p) => p.owner === mon.owner && !p.fainted)) {
         this.add("-trainerout", mon.side.id, mon.side.trainers[mon.owner], mon.slot);
@@ -1182,7 +1188,7 @@
         this.runEvent("onEnd", old, { only: "ability" });
         if (o.copy) carried = { boosts: Object.assign({}, old.boosts), volatiles: {} };
         if (carried) {
-          for (const id of ["substitute", "leechseed", "ingrain", "aquaring", "focusenergy", "magnetrise", "taunt", "encore", "disable", "torment", "yawn", "perishsong"]) {
+          for (const id of ["substitute", "leechseed", "ingrain", "aquaring", "focusenergy", "dragoncheer", "healblock", "magnetrise", "taunt", "encore", "disable", "torment", "yawn", "perishsong"]) {
             if (old.volatiles[id]) carried.volatiles[id] = old.volatiles[id];
           }
         }
@@ -1516,13 +1522,15 @@
         if (!disabled && mon.volatiles.encore && mon.volatiles.encore.moveId && mon.volatiles.encore.moveId !== m.id) disabled = true;
         if (!disabled && (mon.item.indexOf("choice-") === 0 || mon.hasAbility("Gorilla Tactics")) && mon.volatiles.choicelock && mon.volatiles.choicelock.moveId !== m.id && !mon.dynamaxed) disabled = true;
         if (!disabled && mon.item === "assault-vest" && data.cat === "Status") disabled = true;
-        if (!disabled && mon.volatiles.psychicnoise && data.flags && data.flags.heal) disabled = true;
+        if (!disabled && mon.volatiles.healblock && data.flags && data.flags.heal) disabled = true;
         return { index: i, id: m.id, name: m.name, pp: m.pp, maxpp: m.maxpp, disabled, type: data.type, category: data.cat, power: data.power, target: data.target };
       });
       return slots;
     }
 
     forcedAction(mon) {
+      // (Gen 9: a Tatsugiri in Dondozo's mouth does nothing.)
+      if (mon.volatiles.commanding) return { commanding: true };
       if (mon.volatiles.mustrecharge) return { recharge: true };
       if (mon.volatiles.twoturnmove) {
         const tt = mon.volatiles.twoturnmove;
@@ -1547,12 +1555,15 @@
       const sh = mon.volatiles.shackled || mon.volatiles.octolock;
       if (sh && sh.source && sh.source.isActive && !sh.source.fainted) mon.trapped = true;
       if (mon.volatiles.noretreat) mon.trapped = true;
+      // (Gen 9: Dondozo with a Tatsugiri in its mouth, and that Tatsugiri, can't leave.)
+      if (mon.volatiles.commanded || mon.volatiles.commanding) mon.trapped = true;
       const pt = mon.volatiles.partiallytrapped;
       if (pt && pt.source && pt.source.isActive && !pt.source.fainted) mon.trapped = true;
       return mon.trapped;
     }
 
     getRequest(sideId) {
+      if (this.phase === "revive" && !this.ended) return this.reviveRequest(sideId);
       if (this.doubles) return this.controller(sideId) ? this.getRequestDoubles(sideId) : null;
       const side = this.sides[sideId];
       const base = { phase: "wait", turn: this.turn, ended: this.ended, winner: this.winner };
@@ -1597,6 +1608,7 @@
     }
 
     choose(sideId, choice) {
+      if (this.phase === "revive" && !this.ended) return this.chooseRevive(sideId, choice);
       if (this.doubles && !this.ended) return this.chooseDoubles(sideId, choice);
       const side = this.sides[sideId];
       if (!side) return { ok: false, error: "No such side" };
@@ -1683,7 +1695,7 @@
           continue;
         }
         const f = this.forcedAction(s.active);
-        if (f) s.choice = f.recharge ? { type: "recharge" } : { type: "move", forced: f };
+        if (f) s.choice = f.commanding ? { type: "commanding" } : f.recharge ? { type: "recharge" } : { type: "move", forced: f };
       }
     }
 
@@ -1695,7 +1707,51 @@
       }
     }
 
+    // ---------- Revival Blessing (Gen 9) ----------
+    // Mid-turn, the side (in a tag battle, the trainer) whose Pokémon used it
+    // picks one of its fainted Pokémon: phase "revive", { revives: [team
+    // indexes], team }; choose(id, { type: "revive", index }). It comes back
+    // with half its HP; in a double battle, one still in its slot (not yet
+    // replaced) goes straight back onto the field.
+    reviveRequest(id) {
+      const r = this.pendingRevive;
+      const base = { phase: "wait", turn: this.turn, ended: this.ended, winner: this.winner, open: [] };
+      if (this.doubles) base.format = "doubles";
+      if (!r || r.ctl !== id) return base;
+      const side = r.side;
+      base.phase = "revive";
+      base.team = side.pokemon.map((p, i) => ({
+        index: i, species: p.species, name: p.name, level: p.level, hp: p.hp, maxhp: p.maxhp, status: p.status,
+        fainted: p.fainted, active: p.isActive, item: p.item, gender: p.gender, mine: !side.tag || p.owner === r.user.owner
+      }));
+      base.revives = side.pokemon.map((p, i) => (p.fainted && (!side.tag || p.owner === r.user.owner) ? i : -1)).filter((i) => i >= 0);
+      return base;
+    }
+    chooseRevive(id, choice) {
+      const r = this.pendingRevive;
+      const req = this.reviveRequest(id);
+      if (req.phase !== "revive") return { ok: false, error: "Not waiting for a choice from " + id };
+      if (!choice || choice.type !== "revive" || !req.revives.includes(choice.index)) return { ok: false, error: "Invalid choice" };
+      this.pendingRevive = null;
+      const side = r.side, mon = side.pokemon[choice.index];
+      const slot = this.doubles ? side.actives.indexOf(mon) : -1;
+      mon.hp = Math.max(1, Math.floor(mon.maxhp / 2));
+      mon.status = ""; mon.statusState = {};
+      mon.fainted = false;
+      this.add("-revive", mon, mon.name);
+      if (slot >= 0) { mon.isActive = false; this.switchIn(side, choice.index, { slot }); }
+      this.phase = "running";
+      this.runQueue();
+      return { ok: true };
+    }
+    // Who answers for `mon`'s side: "p1"/"p2", or in a tag battle the partner's "p1b"/"p2b".
+    controllerOf(mon) {
+      const id = mon.side.id;
+      return mon.side.tag && mon.owner === 1 ? id + "b" : id;
+    }
+
     randomChoice(sideId) {
+      if (this.phase === "revive") { const rq = this.reviveRequest(sideId); return rq.phase === "revive" ? { type: "revive", index: this.sample(rq.revives) } : null; }
       if (this.doubles) return this.randomChoiceDoubles(sideId);
       const req = this.getRequest(sideId);
       if (req.phase === "switch") return { type: "switch", index: this.sample(req.switches) };
@@ -1731,6 +1787,7 @@
     }
 
     forcedChoice(mon, f) {
+      if (f.commanding) return { type: "commanding" };
       return f.recharge ? { type: "recharge" } : { type: "move", forced: f, targetLoc: f.targetLoc };
     }
 
@@ -2000,6 +2057,7 @@
           }
           else if (c.type === "switch") actions.push({ order: 1, type: "switch", mon, side: s, index: c.index, priority: 0, speed: this.getSpeed(mon) });
           else if (c.type === "recharge") actions.push({ order: 3, type: "move", mon, side: s, recharge: true, priority: 0, speed: this.getSpeed(mon) });
+          else if (c.type === "commanding") continue;
           else {
             if (c.mega) actions.push({ order: 2, type: "mega", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
             if (c.ultra) actions.push({ order: 2, type: "ultra", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
@@ -2048,6 +2106,7 @@
 
     runQueue() {
       while (this.queue.length && !this.ended) {
+        if (this.pendingRevive) { this.phase = "revive"; return; }
         if (this.pendingSwitch) {
           const p = this.pendingSwitch;
           this.pendingSwitch = null;
@@ -2069,6 +2128,7 @@
         this.runUpdates();
       }
       if (this.pendingSwitch) { this.queue.push({ type: "noop" }); return this.runQueue(); }
+      if (this.pendingRevive && !this.ended) { this.queue.push({ type: "noop" }); this.phase = "revive"; return; }
       if (!this.ended) this.afterTurn();
     }
 
@@ -2832,6 +2892,8 @@
     }
 
     isInvulnerable(target, move) {
+      // (Gen 9: a Tatsugiri in Dondozo's mouth: every move aimed at it misses.)
+      if (target.volatiles.commanding && move.target !== "self") return true;
       const tt = target.volatiles.twoturnmove;
       // (Carried up by Sky Drop: in the air, like Fly.)
       const invuln = tt && tt.invuln || (target.volatiles.skydrop ? "fly" : null);
@@ -3086,7 +3148,7 @@
         let crit = false;
         if (!luckyChant && !(move.id === "counter")) {
           const chance = window.Damage.critChance(user, move.name, { focusEnergy: !!user.volatiles.focusenergy,
-            critBoost: (user.volatiles.gmaxchistrike || {}).layers || 0 });
+            critBoost: ((user.volatiles.gmaxchistrike || {}).layers || 0) + ((user.volatiles.dragoncheer || {}).stages || 0) });
           // (Gen 7: Laser Focus, and Merciless against a poisoned target.)
           const sure = !!user.volatiles.laserfocus || (user.hasAbility("Merciless") && (target.status === "psn" || target.status === "tox"));
           crit = sure || chance >= 1 || this.random() < chance;
@@ -3239,7 +3301,7 @@
       const opts = side.bench(target.slot);
       if (!opts.length || target.volatiles.ingrain || target.hasAbility("Suction Cups")) return;
       if (target.volatiles.skydrop || (target.volatiles.twoturnmove && target.volatiles.twoturnmove.skyDrop)) return;
-      if (target.dynamaxed) return;
+      if (target.dynamaxed || target.volatiles.commanded || target.volatiles.commanding) return;
       if (this.callAbility(target, "onDragOut", { source: user }) === false) return;
       this.switchIn(side, this.sample(opts), { drag: true, slot: target.slot });
     }

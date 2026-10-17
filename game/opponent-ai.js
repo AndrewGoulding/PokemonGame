@@ -108,10 +108,18 @@
   const SPREAD = ["allAdjacentFoes", "allAdjacent"];
   const SINGLE = ["normal", "any", "adjacentFoe"];
 
+  // Revival Blessing: back comes the strongest of those that fainted (highest level, then base stat total).
+  function chooseRevive(battle, req) {
+    const team = req.team;
+    const score = (i) => { const d = window.DEX[team[i].species] || {}; return team[i].level * 1000 + ((d.hp + d.atk + d.def + d.spa + d.spd + d.spe) || 0); };
+    return { type: "revive", index: req.revives.slice().sort((a, b) => score(b) - score(a))[0] };
+  }
+
   function chooseDoubles(battle, id, rng) {
     const pick = (arr) => arr[Math.floor(rng() * arr.length)];
     const req = battle.getRequest(id);
     if (!req) return null;
+    if (req.phase === "revive") return chooseRevive(battle, req);
     const side = battle.sides[id.slice(0, 2)];
     const out = [];
     if (req.phase === "switch") {
@@ -188,6 +196,7 @@
     const pick = (arr) => arr[Math.floor(rng() * arr.length)];
     const req = battle.getRequest(sideId);
     const side = battle.sides[sideId];
+    if (req.phase === "revive") return chooseRevive(battle, req);
 
     if (req.phase === "switch") {
       let best = req.switches[0], bestScore = -Infinity;

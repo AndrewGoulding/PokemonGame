@@ -207,8 +207,10 @@ for (const m of gen9.moves.all()) {
   if (m.gen !== 9 || m.isMax || m.isZ || m.isNonstandard || OLD_MOVES[m.name]) continue;
   movesOut[m.name] = convertMove(m);
 }
-// (Psychic Noise's two turns without healing are data/battle-moves.js's, its own condition.)
+// (Psychic Noise's two turns of Heal Block are data/battle-moves.js's.)
 delete movesOut["Psychic Noise"].secondary;
+// (Revival Blessing asks for its Pokémon itself: not Showdown's switch-and-slot way.)
+delete movesOut["Revival Blessing"].selfSwitch; delete movesOut["Revival Blessing"].slotCondition;
 const known = (name) => OLD_MOVES[name] || movesOut[name];
 
 // ---------- Learnsets ----------

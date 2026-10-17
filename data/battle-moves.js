@@ -570,12 +570,11 @@
 
   // ---- Gen 9 (Scarlet and Violet) ----
   const eff9 = (move) => E("Move", move.id, move.name);
-  // Revival Blessing: the first of its party that has fainted comes back with half its HP.
-  status.revivalblessing = (b, user, t, move) => {
-    const mon = user.side.pokemon.find((m) => m !== user && m.fainted);
-    if (!mon) return false;
-    mon.fainted = false; mon.hp = Math.max(1, Math.floor(mon.maxhp / 2)); mon.status = ""; mon.statusState = {};
-    b.add("-text", user, (mon.nickname || mon.species.replace(/-.*/, "")) + " was revived and is ready to fight again!");
+  // Revival Blessing: its Trainer picks one of the party that has fainted,
+  // to come back with half its HP (the battle engine asks: phase "revive").
+  status.revivalblessing = (b, user) => {
+    if (!user.side.pokemon.some((m) => m.fainted && (!user.side.tag || m.owner === user.owner))) return false;
+    b.pendingRevive = { side: user.side, user, ctl: b.controllerOf(user) };
     return "done";
   };
   // Shed Tail: half its HP into a substitute, then out; the substitute stays for whoever comes in.
@@ -612,11 +611,14 @@
     }
     return "done";
   };
-  // Dragon Cheer: its ally's critical-hit ratio rises (as Focus Energy; doubles only).
+  // Dragon Cheer: its ally's critical-hit ratio rises 1 stage, 2 for a
+  // Dragon type (as it is now); not with Focus Energy or another Cheer.
   status.dragoncheer = (b, user) => {
     const ally = b.allyOf(user);
-    if (!ally || ally.fainted || ally.volatiles.focusenergy) return false;
-    return b.addVolatile(ally, "focusenergy", user) ? "done" : false;
+    if (!ally || ally.fainted || ally.volatiles.focusenergy || ally.volatiles.dragoncheer) return false;
+    if (!b.addVolatile(ally, "dragoncheer", user)) return false;
+    ally.volatiles.dragoncheer.stages = ally.hasType("Dragon") ? 2 : 1;
+    return "done";
   };
   beforeHit.doubleshock = (b, user) => user.hasType("Electric");
   afterHitSelf.doubleshock = (b, user) => {
@@ -629,9 +631,18 @@
   afterHit.saltcure = (b, user, target) => { b.addVolatile(target, "saltcure", user); };
   afterHit.syrupbomb = (b, user, target) => { b.addVolatile(target, "syrupbomb", user); };
   afterHit.alluringvoice = (b, user, target, move) => { if (target.statsRaisedThisTurn) b.addVolatile(target, "confusion", user, eff9(move)); };
-  afterHit.psychicnoise = (b, user, target) => { b.addVolatile(target, "psychicnoise", user); };
+  // (Psychic Noise: Heal Block for two turns.)
+  afterHit.psychicnoise = (b, user, target) => { if (b.addVolatile(target, "healblock", user)) target.volatiles.healblock.duration = 2; };
   afterHitSelf.glaiverush = (b, user) => { if (b.addVolatile(user, "glaiverush", user)) user.volatiles.glaiverush.turn = b.turn; };
   afterHitSelf.icespinner = afterHitSelf.steelroller;
+  // Order Up: Dondozo with a Tatsugiri in its mouth gets +1 to a stat by
+  // Tatsugiri's form (Curly: Attack, Droopy: Defense, Stretchy: Speed).
+  afterHitSelf.orderup = (b, user, t, move) => {
+    const c = user.volatiles.commanded, tat = c && c.source;
+    if (!tat || !/^Tatsugiri/.test(tat.species)) return;
+    const stat = /Droopy/.test(tat.species) ? "def" : /Stretchy/.test(tat.species) ? "spe" : "atk";
+    b.boost(user, { [stat]: 1 }, user, eff9(move));
+  };
   afterHitSelf.mortalspin = (b, user) => {
     for (const id of ["spikes", "toxicspikes", "stealthrock", "stickyweb", "gmaxsteelsurge"]) b.removeSideCondition(user.side, id);
     user.removeVolatile("leechseed"); user.removeVolatile("partiallytrapped");
