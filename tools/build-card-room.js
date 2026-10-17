@@ -63,8 +63,11 @@ function rounded(x0, y0, w, h, r, colour, a) {
 // ---------- The room ----------
 
 // Its tiles, as the Game Corner's: [sx, sy] for each, and the map's data from the same tile.
-const WALL_TOP = [0, 0], WALL = [0, 1], SHADOW = [4, 2], FLOOR = [11, 3], MAT = [[9, 13], [10, 13], [11, 13]], BOTTOM = [0, 14],
-  CHAIR = [1, 6], PLANT = [0, 13];
+// (The Game Corner's mat is drawn across three tiles, centred on the middle one; its plant
+// stands on the shadowed floor by the wall, which is swapped for plain floor here: UNDER.)
+const WALL_TOP = [0, 0], WALL = [0, 1], SHADOW = [4, 2], FLOOR = [11, 3], MAT = [[8, 13], [9, 13], [10, 13]], BOTTOM = [0, 14],
+  CHAIR = [4, 6], PLANT = [0, 13];
+const UNDER = { "0,13": [0, 12] };
 const src = [];
 for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) src[y * W + x] = y === 0 ? WALL_TOP : y === 1 ? WALL : y === 2 ? SHADOW : y === H - 1 ? BOTTOM : FLOOR;
 // The way out, at the bottom (as the Game Corner's own).
@@ -74,6 +77,20 @@ for (const [x, y] of [[0, 3], [W - 1, 3], [0, H - 2], [W - 1, H - 2]]) src[y * W
 const SEATS = { poker: [[1, 5], [7, 5], [3, 6], [5, 6]], blackjack: [[9, 6], [10, 6], [11, 6], [12, 6]], mahjong: [[17, 4], [16, 7], [15, 5], [18, 6]] };
 for (const list of Object.values(SEATS)) for (const [x, y] of list) src[y * W + x] = CHAIR;
 src.forEach(([sx, sy], i) => tile(sx, sy, i % W, Math.floor(i / W)));
+// Tiles drawn over the shadowed floor: its pixels become plain floor.
+src.forEach(([sx, sy], i) => {
+  const under = UNDER[sx + "," + sy];
+  if (!under) return;
+  const dx = i % W, dy = Math.floor(i / W);
+  for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
+    const at = (tx, ty) => ((ty * T + y) * gc.width + tx * T + x) * 4;
+    const a = at(sx, sy), b = at(under[0], under[1]);
+    if (gc.rgba[a] === gc.rgba[b] && gc.rgba[a + 1] === gc.rgba[b + 1] && gc.rgba[a + 2] === gc.rgba[b + 2]) {
+      const f = at(FLOOR[0], FLOOR[1]);
+      img.set(gc.rgba.slice(f, f + 4), ((dy * T + y) * W * T + dx * T + x) * 4);
+    }
+  }
+});
 
 const collision = [], elevation = [], behavior = [], encounter = [];
 src.forEach(([sx, sy], i) => {
@@ -81,16 +98,17 @@ src.forEach(([sx, sy], i) => {
   collision[i] = gcMap.collision[j]; elevation[i] = gcMap.elevation[j]; behavior[i] = gcMap.behavior[j]; encounter[i] = 0;
 });
 
-// The tables (blocking, and each tile a "sign": A on it sits you down).
+// The tables (blocking, and each tile a "sign": A on it sits you down; the mahjong
+// table's only tells you to ask the dealer standing by it).
 const TABLES = {
   poker: { x: 2, y: 4, w: 5, h: 2, script: "Game_EventScript_PokerTable" },
   blackjack: { x: 9, y: 4, w: 4, h: 2, script: "Game_EventScript_BlackjackTable" },
-  mahjong: { x: 16, y: 5, w: 2, h: 2, script: "Game_EventScript_MahjongTable" }
+  mahjong: { x: 16, y: 5, w: 2, h: 2, script: null, text: ["A game of mahjong is under way.", "Talk to the dealer to sit in."] }
 };
 const signs = [];
 for (const t of Object.values(TABLES)) for (let y = t.y; y < t.y + t.h; y++) for (let x = t.x; x < t.x + t.w; x++) {
   collision[y * W + x] = 1;
-  signs.push({ x, y, script: t.script, text: null });
+  signs.push({ x, y, script: t.script, text: t.text || null });
 }
 // Poker: an oval of green felt in a wooden rail, chips and cards on it.
 {
@@ -174,7 +192,9 @@ const room = {
     { id: 0, x: 4, y: 3, movement: "face_down", rangeX: 0, rangeY: 0, script: "Game_EventScript_PokerDealer", flag: null, text: null,
       localId: "LOCALID_POKER_DEALER", sprite: "worker_m", width: 16, height: 32, frames: 10 },
     { id: 1, x: 10, y: 3, movement: "face_down", rangeX: 0, rangeY: 0, script: "Game_EventScript_BlackjackDealer", flag: null, text: null,
-      localId: "LOCALID_BLACKJACK_DEALER", sprite: "worker_f", width: 16, height: 32, frames: 10 }
+      localId: "LOCALID_BLACKJACK_DEALER", sprite: "worker_f", width: 16, height: 32, frames: 10 },
+    { id: 2, x: 18, y: 5, movement: "face_down", rangeX: 0, rangeY: 0, script: "Game_EventScript_MahjongDealer", flag: null, text: null,
+      localId: "LOCALID_MAHJONG_DEALER", sprite: "worker_m", width: 16, height: 32, frames: 10 }
   ],
   seats: SEATS, wild: null
 };

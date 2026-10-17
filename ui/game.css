@@ -428,6 +428,13 @@
 .mj-tile { --w: calc(var(--u) * 8); display: inline-block; flex-shrink: 0; width: var(--w); height: calc(var(--w) * 4 / 3); vertical-align: bottom;
   background: url(../assets/mahjong/tiles.png) calc(var(--k) * var(--w) * -1) 0 / calc(var(--w) * 35) 100% no-repeat; }
 .mj-tile.small { --w: calc(var(--u) * 7.5); }
+/* A suited tile's number (1-9), in its top-left corner, in its suit's colour: Characters red, Dots blue, Bamboo green. */
+.mj-tile[data-n] { position: relative; }
+.mj-tile[data-n]::after { content: attr(data-n); position: absolute; left: calc(var(--w) * -0.06); top: calc(var(--w) * -0.08);
+  min-width: calc(var(--w) * 0.36); padding: 0 calc(var(--w) * 0.03); border-radius: calc(var(--w) * 0.12); font-size: calc(var(--w) * 0.36);
+  line-height: 1.05; text-align: center; color: #fff; text-shadow: none; background: #c8302c; box-shadow: 0 0 0 calc(var(--w) * 0.03) #fffdf5; }
+.mj-tile[data-s="1"]::after { background: #2b4fb0; }
+.mj-tile[data-s="2"]::after { background: #1f7a3a; }
 .mj-table .mj-player .mj-tile.small { --w: calc(var(--u) * 10); }
 .mj-hand .mj-tile { --w: calc(var(--u) * 15.5); }
 .mj-hand .mj-tile.drawn { margin-left: calc(var(--u) * 3); }
@@ -452,6 +459,9 @@
 .mj-meld { display: inline-flex; margin-right: calc(var(--u) * 1); }
 .mj-center { display: flex; justify-content: center; align-items: center; gap: calc(var(--u) * 6); font-size: var(--ts); }
 .mj-dora { display: inline-flex; align-items: center; gap: calc(var(--u) * 1.5); }
+.mj-waits { display: inline-flex; align-items: center; gap: calc(var(--u) * 2); padding: calc(var(--u) * 0.5) calc(var(--u) * 2);
+  border-radius: calc(var(--u) * 2); background: rgba(255, 224, 102, 0.2); color: #ffe066; }
+.mj-wait { display: inline-flex; align-items: center; gap: calc(var(--u) * 0.5); }
 .mj-you .mj-player { flex-direction: row; flex-wrap: wrap; align-items: center; }
 .mj-you .mj-head .pk-info { font-size: var(--ts); }
 .mj-hand { display: flex; align-items: flex-end; justify-content: center; padding-top: calc(var(--u) * 2.5); }

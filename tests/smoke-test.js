@@ -4263,7 +4263,8 @@ console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " 
   assert(door >= 0 && gc.patches.cardroom, "a doorway in the Game Corner");
   assert(room.warps.length && room.warps.every((w) => w.map === gc.name && w.warp === door), "the mat leads back");
   assert(room.warps[gc.warps[door].warp], "the doorway leads to the mat");
-  for (const s of ["Game_EventScript_PokerTable", "Game_EventScript_BlackjackTable", "Game_EventScript_MahjongTable"]) assert(room.signs.some((g) => g.script === s), s);
+  for (const s of ["Game_EventScript_PokerTable", "Game_EventScript_BlackjackTable"]) assert(room.signs.some((g) => g.script === s), s);
+  for (const s of ["Game_EventScript_PokerDealer", "Game_EventScript_BlackjackDealer", "Game_EventScript_MahjongDealer"]) assert(room.people.some((p) => p.script === s), s);
   for (const [table, seats] of Object.entries(room.seats)) {
     assert.strictEqual(seats.length, 4, table);
     for (const [x, y] of seats) assert(room.signs.some((g) => Math.abs(g.x - x) + Math.abs(g.y - y) === 1), table + " chair by its table");

@@ -381,14 +381,20 @@ picked with left / right and A, or tapped; the dealer's hole card turns over
 and its draws come one at a time. Or sit in at the mahjong table (this
 game's own: `game/mahjong.js`, `ui/mahjong.js`; tile pictures from
 FluffyStuff's riichi-mahjong-tiles, public domain, by
-`tools/build-mahjong-tiles.js`): one of the four players gives you their
-chair for 250 Coins, which is 25,000 points. It's Riichi: an East round,
+`tools/build-mahjong-tiles.js`): talk to the dealer standing by the table,
+and one of the four players gives you their chair for 250 Coins, which is
+25,000 points. The suits go by their English names (Characters, Dots and
+Bamboo: "6 of Dots"), each suited tile with its number in a corner badge in
+its suit's colour, and once you're in Riichi the middle of the table shows
+the tiles you're waiting on and how many of each could still be out there
+(four, less the ones you can see). It's Riichi: an East round,
 136 tiles (no red fives, no kans), Pon, Chi, Ron, Tsumo and Riichi, furiten,
 dora and ura-dora, honba and the usual yaku, han, fu and limits (mangan to
 yakuman), against three trainers (picked as for poker, portraits and all)
 who play for the fastest hand, call when it helps and, far from ready, play safe against a Riichi.
 Between hands, Next hand or Leave; every 100 points you have when
-you get up (or when the game ends) is a Coin. Spend Coins in the Prize Room on
+you get up (or when the game ends) is a Coin. SELECT gets you up at any
+time (after a YES / NO, the table waiting), forfeiting your buy-in. Spend Coins in the Prize Room on
 Abra, Clefairy, Dratini, Scyther or Porygon, TMs (Ice Beam, Thunderbolt, Shadow
 Ball, Flamethrower, and Iron Tail, TM104 here, since this game's TM23 is Smack
 Down) or held items, each counter's prizes in FireRed's list with your Coins

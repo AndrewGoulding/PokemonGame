@@ -2156,7 +2156,7 @@
     "Route5_SouthEntrance_EventScript_GuardTriggerLeft", "Route5_SouthEntrance_EventScript_GuardTriggerMid",
     "Route5_SouthEntrance_EventScript_GuardTriggerRight",
     "Game_EventScript_Leaf", "Game_EventScript_TradebackGuy", "Game_EventScript_PokerDealer", "Game_EventScript_BlackjackDealer",
-    "Game_EventScript_PokerTable", "Game_EventScript_BlackjackTable", "Game_EventScript_MahjongTable",
+    "Game_EventScript_PokerTable", "Game_EventScript_BlackjackTable", "Game_EventScript_MahjongDealer",
     "Route11_EastEntrance_2F_EventScript_Aide", "Route11_EastEntrance_2F_EventScript_Turner",
     "SSAnne_2F_Corridor_EventScript_RivalTriggerLeft", "SSAnne_2F_Corridor_EventScript_RivalTriggerMid",
     "SSAnne_2F_Corridor_EventScript_RivalTriggerRight", "SSAnne_CaptainsOffice_EventScript_Captain",
@@ -3976,7 +3976,7 @@
       case "Game_EventScript_BlackjackDealer": await blackjackTable(); return;
       case "Game_EventScript_PokerTable": await pokerTable(); return;
       case "Game_EventScript_BlackjackTable": await blackjackTable(); return;
-      case "Game_EventScript_MahjongTable": await mahjongTable(); return;
+      case "Game_EventScript_MahjongDealer": await mahjongTable(); return;
       case "Game_EventScript_TradebackGuy": {
         await say(["Hi! I'm the Tradeback Guy!", "Some Pokémon only evolve when\nthey're traded. Nobody to trade\nwith? Leave it to me!",
           "I'll trade you my Rattata, and then\ntrade your Pokémon right back!"]);
@@ -6283,7 +6283,7 @@
       const [x, y] = room.seats[table][i], who = players[people.length], random = looks[sprites[Math.floor(rng() * sprites.length)]];
       const look = (who.star && (looks[who.sprite] || window.WORLD_SPRITES[who.sprite])) || random;
       const says = who.star ? ["Shh! I'm just here for a quiet game.\nDon't tell anyone!"]
-        : table === "mahjong" ? ["Ron! ...Oh, wait. Never mind.", "Want to sit in? Talk to the table!"] : CROWD_SAYS[Math.floor(rng() * CROWD_SAYS.length)];
+        : table === "mahjong" ? ["Ron! ...Oh, wait. Never mind.", "Want to sit in? Ask the dealer!"] : CROWD_SAYS[Math.floor(rng() * CROWD_SAYS.length)];
       people.push({ id: 910 + people.length, localId: "LOCALID_CARD_PLAYER_" + people.length, script: null, x, y, movement: "face_" + CROWD_FACING[table][i],
         rangeX: 0, rangeY: 0, flag: null, text: [who.name + ": " + says[0]].concat(says.slice(1)),
         sprite: look.sprite, width: look.width, height: look.height, frames: look.frames });
@@ -6298,15 +6298,17 @@
 
   // Mahjong (game/mahjong.js, ui/mahjong.js; this game's own): Riichi, an
   // East round. 250 Coins buys you in for 25,000 points; when you get up (or
-  // the game's over) every 100 points left is a Coin. One of the four at the
-  // table lets you have their chair.
+  // the game's over) every 100 points left is a Coin; quitting mid-game
+  // with Select forfeits it all. The dealer by the table seats you, and one
+  // of the four at it lets you have their chair.
   const MAHJONG_BUY_IN = 250;
   async function mahjongTable() {
     if (!player.flags.gotCoinCase) { await say(T("CeladonCity_GameCorner_Text_CoinCaseIsRequired")); return; }
-    await say(["It's a mahjong table. Four are playing\nRiichi: an East round, 25,000 points each.",
-      "Sitting in costs " + MAHJONG_BUY_IN + " Coins. Every 100 points\nyou have when you get up is a Coin."]);
-    if (coins() < MAHJONG_BUY_IN) { await say("You don't have enough Coins."); return; }
-    if (!(await confirm("Sit in for " + MAHJONG_BUY_IN + " Coins?"))) return;
+    await say(["Welcome to the mahjong table!\nWe play Riichi: an East round,\n25,000 points each.",
+      "Sitting in costs " + MAHJONG_BUY_IN + " Coins. Every 100 points\nyou have when you get up is a Coin.",
+      "You can get up between hands, or\nany time with SELECT, but then you\nforfeit your buy-in."]);
+    if (coins() < MAHJONG_BUY_IN) { await say("You'll need " + MAHJONG_BUY_IN + " Coins to sit in.\nCome back with more!"); return; }
+    if (!(await confirm("Sit in for " + MAHJONG_BUY_IN + " Coins?"))) { await say("Maybe next time, then."); return; }
     cardRoomCrowd();
     const [gone, ...others] = crowdCache.mahjong;
     addCoins(-MAHJONG_BUY_IN);
@@ -6319,6 +6321,7 @@
     const points = await MahjongScreen.run(scene, game, { pics: [Player.LOOKS[player.look].front].concat(others.map((p) => p.pic)) });
     show("world");
     await Overworld.resume();
+    if (points == null) { await say("You got up mid-game and forfeited\nyour buy-in. Come back anytime!"); await persist(); return; }
     const won = Math.max(0, Math.floor(points / 100));
     addCoins(won);
     const diff = won - MAHJONG_BUY_IN;

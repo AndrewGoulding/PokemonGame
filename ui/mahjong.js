@@ -1,6 +1,6 @@
 // The Game Corner's mahjong table (game/mahjong.js has the rules).
 //
-//   const points = await MahjongScreen.run(sceneElement, game, { pics });   // -> your points when you leave
+//   const points = await MahjongScreen.run(sceneElement, game, { pics });   // -> your points when you leave (null: you quit with Select)
 //
 // You at the bottom, the others along the top (to your left, across and to your right), each
 // with their portrait (their trainer class's front picture), name, seat wind,
@@ -24,7 +24,9 @@
   function tile(t, opts) {
     opts = opts || {};
     const k = t == null || opts.back ? 34 : t;
-    return '<span class="mj-tile' + (opts.small ? " small" : "") + (opts.cls ? " " + opts.cls : "") + '" style="--k:' + k + '"' +
+    // (A suited tile's number in its corner: data-n, coloured by its suit, data-s.)
+    const num = k < 27 ? ' data-n="' + (k % 9 + 1) + '" data-s="' + Math.floor(k / 9) + '"' : "";
+    return '<span class="mj-tile' + (opts.small ? " small" : "") + (opts.cls ? " " + opts.cls : "") + '" style="--k:' + k + '"' + num +
       (opts.i != null ? ' data-i="' + opts.i + '"' : "") + (opts.title !== false && t != null && !opts.back ? ' title="' + esc(M().tileName(t)) + '"' : "") + "></span>";
   }
 
@@ -64,27 +66,57 @@
         return tile(t, { i: ok ? items.indexOf(handItems[it]) : null, cls: (k === drawnAt ? "drawn" : "") + (ok ? " pickable" : o ? " blocked" : "") +
           (ok && items.indexOf(handItems[it]) === cursor ? " cursor" : "") + (detail && detail.win === t && g.result && g.result.winner === 0 ? " win" : "") });
       }).join("");
+      // In Riichi: the tiles you're waiting on, and how many of each could still be out there (four, less
+      // those you can see: your hand, everyone's discards and called sets, the dora indicators).
+      let waitsHtml = "";
+      if (me.riichi && g.phase !== "end") {
+        const closed = me.hand.slice();
+        if (me.drawn != null && g.turn === 0 && g.phase === "discard") closed.splice(closed.lastIndexOf(me.drawn), 1);
+        const seen = M().countsOf(me.hand.concat(g.dora || [], ...g.players.map((p) => p.river.filter((t, k) => !p.called.includes(k))),
+          ...g.players.map((p) => p.melds.flatMap((m) => m.tiles))));
+        waitsHtml = '<span class="mj-waits">Waits ' + M().waits(closed, me.melds.length).map((t) => '<span class="mj-wait">' + tile(t, { small: true }) +
+          "×" + Math.max(0, 4 - seen[t]) + "</span>").join("") + "</span>";
+      }
       const round = M().WINDS[g.round - 27] + " " + (g.hand + 1) + (g.honba ? " · " + g.honba + " honba" : "") + (g.sticks ? " · " + g.sticks + " Riichi stick" + (g.sticks > 1 ? "s" : "") : "");
       root.innerHTML = '<div class="dig poker mahjong">' +
         '<div class="mj-table">' + playerHtml(3) + playerHtml(2) + playerHtml(1) +
           (detail ? '<div class="mj-result">' + detail.html + "</div>" : "") + "</div>" +
         '<div class="mj-center"><span class="mj-round">' + esc(round) + '</span><span class="mj-dora">Dora ' + (g.dora ? g.dora.map((t) => tile(t, { small: true })).join("") : "") +
-          '</span><span class="mj-left">' + (g.wall ? g.wall.length + " tiles left" : "") + "</span></div>" +
+          '</span><span class="mj-left">' + (g.wall ? g.wall.length + " tiles left" : "") + "</span>" + waitsHtml + "</div>" +
         '<div class="mj-you">' + playerHtml(0) + '<div class="mj-hand">' + handHtml + '<span class="mj-melds">' +
           me.melds.map((m) => '<span class="mj-meld">' + m.tiles.map((t) => tile(t)).join("") + "</span>").join("") + "</span></div></div></div>";
       // The choices that aren't tiles (Tsumo, Riichi, Ron, Pass...) in the panel under the screen.
       const buttons = items.map((it, k) => ({ label: it.label, k })).filter((b) => items[b.k].tile == null);
-      window.TableUI.panel({ message, items: buttons, cursor: buttons.findIndex((b) => b.k === cursor), onPick: (i) => buttons[i] && chosen(buttons[i].k) });
+      if (quitAsk) window.TableUI.panel({ message: "Get up from the table now? You'll\nforfeit your buy-in.", items: [{ label: "Yes" }, { label: "No" }],
+        cursor: quitAsk.cursor, onPick: (i) => answerQuit(i === 0) });
+      else window.TableUI.panel({ message, items: buttons, cursor: buttons.findIndex((b) => b.k === cursor), onPick: (i) => buttons[i] && chosen(buttons[i].k) });
     }
 
     function choose(list, at) {
       items = list;
       cursor = Math.max(0, Math.min(at == null ? 0 : at, list.length - 1));
       draw();
-      return new Promise((resolve) => { pick = resolve; });
+      return new Promise((resolve, reject) => { pick = resolve; pickReject = reject; });
+    }
+    // Select: get up at any time, forfeiting your buy-in (after a YES / NO;
+    // the table waits while you think). STOP unwinds the game.
+    const STOP = {};
+    let quitAsk = null, stopped = false, pickReject = null;
+    function answerQuit(yes) {
+      se("se_select");
+      quitAsk = null;
+      if (!yes) { draw(); return; }
+      stopped = true;
+      if (pickReject) { const r = pickReject; pick = pickReject = null; r(STOP); }
+    }
+    // (Each pause in play waits out the question, and stops there if you've gone.)
+    async function wait(ms) {
+      if (ms) await sleep(ms);
+      while (quitAsk) await sleep(100);
+      if (stopped) throw STOP;
     }
     function chosen(k) {
-      if (!pick || !items[k]) return;
+      if (!pick || !items[k] || quitAsk) return;
       const r = pick;
       pick = null;
       const v = items[k];
@@ -92,6 +124,16 @@
       r(v);
     }
     function onKey(e) {
+      if (stopped) return;
+      if (quitAsk) {
+        if (window.TableUI.move(quitAsk.cursor, 2, e.key) != null) { quitAsk.cursor = 1 - quitAsk.cursor; draw(); }
+        else if (["z", "Z", " ", "Enter"].includes(e.key)) answerQuit(quitAsk.cursor === 0);
+        else if (["x", "X", "b", "B", "Select"].includes(e.key)) answerQuit(false);
+        else return;
+        e.preventDefault();
+        return;
+      }
+      if (e.key === "Select") { e.preventDefault(); se("se_select"); quitAsk = { cursor: 1 }; draw(); return; }
       if (!pick) return;
       if (["ArrowLeft", "a", "A", "ArrowUp"].includes(e.key)) { cursor = (cursor + items.length - 1) % items.length; draw(); }
       else if (["ArrowRight", "d", "D", "ArrowDown"].includes(e.key)) { cursor = (cursor + 1) % items.length; draw(); }
@@ -181,11 +223,11 @@
       M().startHand(g);
       message = (g.dealer === 0 ? "You deal" : name(g.dealer) + " deals") + ". " + M().WINDS[g.round - 27] + " " + (g.hand + 1) + ".";
       draw();
-      await sleep(600);
+      await wait(600);
       while (g.phase !== "end") {
         if (g.phase === "discard") {
           if (g.turn === 0) await yourTurn();
-          else { draw(); await sleep(AI_MS); M().aiTurn(g); se("se_ball_tray_ball"); }
+          else { draw(); await wait(AI_MS); M().aiTurn(g); se("se_ball_tray_ball"); }
         } else if (g.phase === "claim") {
           // (The others answer straight away; you, if you can take it.)
           for (const seat of Object.keys(g.claims)) if (+seat !== 0 && g.claims[seat].answer === undefined && g.phase === "claim") M().aiClaim(g, +seat);
@@ -202,21 +244,27 @@
     }
 
     return (async () => {
-      for (;;) {
-        await hand();
-        if (g.over) {
-          const order = g.players.map((p, k) => [p.points, k]).sort((a, b) => b[0] - a[0]);
-          message += " The game's over! " + order.map(([pts, k], n) => (n + 1) + ". " + name(k) + " " + pts.toLocaleString("en-US")).join(", ") + ".";
-          await choose([{ label: "Leave", value: "leave" }], 0);
-          break;
+      let quit = false;
+      try {
+        for (;;) {
+          await hand();
+          if (g.over) {
+            const order = g.players.map((p, k) => [p.points, k]).sort((a, b) => b[0] - a[0]);
+            message += " The game's over! " + order.map(([pts, k], n) => (n + 1) + ". " + name(k) + " " + pts.toLocaleString("en-US")).join(", ") + ".";
+            await choose([{ label: "Leave", value: "leave" }], 0);
+            break;
+          }
+          const v = await choose([{ label: "Next hand", value: "next" }, { label: "Leave", value: "leave" }], 0);
+          if (v.value === "leave") break;
         }
-        const v = await choose([{ label: "Next hand", value: "next" }, { label: "Leave", value: "leave" }], 0);
-        if (v.value === "leave") break;
+      } catch (e) {
+        if (e !== STOP) throw e;
+        quit = true;
       }
       document.removeEventListener("keydown", onKey);
       root.removeEventListener("click", onClick);
       window.TableUI.clear();
-      return g.players[0].points;
+      return quit ? null : g.players[0].points;
     })();
   }
 

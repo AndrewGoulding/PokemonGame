@@ -17,7 +17,7 @@
 // 8 baiman, 11 sanbaiman, 13 (or a yakuman) yakuman. A hand drawn out pays
 // 3,000 from those not ready to those ready.
 //
-// Tiles are 0-33: man 1-9 (0-8), pin 1-9 (9-17), sou 1-9 (18-26), the winds
+// Tiles are 0-33: Characters (man) 1-9 (0-8), Dots (pin) 1-9 (9-17), Bamboo (sou) 1-9 (18-26), the winds
 // East, South, West, North (27-30) and the dragons White, Green, Red (31-33).
 // Seats are 0 (you) to 3 counter-clockwise: 1 on your right plays after you,
 // 3 on your left before you (Chi is only from them).
@@ -38,7 +38,8 @@
   const GREEN = new Set([19, 20, 21, 23, 25, 32]);   // (sou 2, 3, 4, 6, 8 and Green: Ryuuiisou)
   const NAMES = (() => {
     const out = [];
-    for (const [s, n] of [["man", "Man"], ["pin", "Pin"], ["sou", "Sou"]]) for (let i = 1; i <= 9; i++) out.push(i + " " + n);
+    // (In English: man are Characters, pin Dots and sou Bamboo.)
+    for (const suit of ["Characters", "Dots", "Bamboo"]) for (let i = 1; i <= 9; i++) out.push(i + " of " + suit);
     return out.concat(["East", "South", "West", "North", "White Dragon", "Green Dragon", "Red Dragon"]);
   })();
   const doraOf = (ind) => (ind < 27 ? Math.floor(ind / 9) * 9 + (ind % 9 + 1) % 9 : ind < 31 ? 27 + (ind - 27 + 1) % 4 : 31 + (ind - 31 + 1) % 3);
