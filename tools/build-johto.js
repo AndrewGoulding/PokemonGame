@@ -34,11 +34,16 @@ const path = require("path");
 const vm = require("vm");
 const { readPng, writePng } = require("./lib/png");
 const { renderMap } = require("./lib/hgss-map");
+const HC = require("./lib/hgss-classes");
+const Painter = require("./lib/fr-painter");
+const { writeAnimSheet } = require("./lib/fr-tiles");
 const N = require("./lib/nitro");
 
-const ROOT = process.argv[2] || process.env.POKEHEARTGOLD;
+const ROOT = process.argv.slice(2).find((a) => !a.startsWith("--")) || process.env.POKEHEARTGOLD;
+// (Drawn in FireRed's style, as Kanto is (tools/lib/fr-painter.js); with --hgss, as HGSS draws them.)
+const HGSS_LOOK = process.argv.includes("--hgss");
 if (!ROOT || !fs.existsSync(path.join(ROOT, "files/fielddata"))) {
-  console.error("Usage: node tools/build-johto.js <path to pret/pokeheartgold>");
+  console.error("Usage: node tools/build-johto.js <path to pret/pokeheartgold> [--hgss]");
   process.exit(1);
 }
 const root = path.join(__dirname, "..");
@@ -208,7 +213,9 @@ const out = {}, rendered = {};
 const mapsDir = path.join(root, "assets/world/maps");
 MAPS.forEach((m, i) => {
   loadMessages(m.zone);
-  const r = renderMap(ROOT, m.c, { ground: m.ground });   // (ground: not flat, as Johto's first maps are)
+  // (Outdoors, drawn by the painter in FireRed's style: from what each tile is.)
+  const painted = !HGSS_LOOK && m.type !== "indoor" && m.type !== "underground";
+  const r = renderMap(ROOT, m.c, { ground: m.ground, labels: painted });   // (ground: not flat, as Johto's first maps are)
   const W = r.width * 16, H = r.height * 16;
   // (Where a map that isn't flat was left with a gap, a folded triangle's, its neighbours' colour.)
   if (m.ground) for (let pass = 0, gaps = true; gaps && pass < 32; pass++) {
@@ -237,12 +244,38 @@ MAPS.forEach((m, i) => {
     for (let k = 1; k <= 3; k++) r.below[i - k] = Math.round(r.below[i - k] * a);
     r.below[i] = 255;
   }
-  writePng(path.join(mapsDir, m.name + ".png"), W, H, r.below);
-  writePng(path.join(mapsDir, m.name + "-top.png"), W, H, r.top);
-  // Outside the map: the forest of its top-left corner (2x2 tiles).
-  const border = new Uint8ClampedArray(32 * 32 * 4);
-  for (let y = 0; y < 32; y++) border.set(r.below.subarray(y * W * 4, y * W * 4 + 128), y * 128);
-  writePng(path.join(mapsDir, m.name + "-border.png"), 32, 32, border);
+  let anim;
+  const animFile = path.join(mapsDir, m.name + "-anim.png");
+  if (painted) {
+    // What each tile is, its buildings (from their doors) and signs; drawn with
+    // FireRed's metatiles and Kanto's buildings.
+    const classes = HC.classify(r);
+    const evw = (r.events || { warps: [] }).warps.map((w) => ({ x: w.x, y: w.y, mapConst: w.map }));
+    const signs = ((r.events || { signs: [] }).signs || []).filter((sg) => sg.type !== 2)
+      .map((sg) => [sg.x, sg.y, /TRAINER TIPS/i.test((scriptText(m.zone, sg.script) || []).join(" ")) ? "tips" : "sign"]);
+    const pic = Painter.compose(classes, r.width, r.height, { buildings: HC.buildingsOf(r, classes, evw), signs });
+    writePng(path.join(mapsDir, m.name + ".png"), W, H, pic.below);
+    writePng(path.join(mapsDir, m.name + "-top.png"), W, H, pic.above);
+    if (pic.anim.pics.length) { writeAnimSheet(animFile, pic.anim.pics); anim = { cells: pic.anim.cells, anims: pic.anims }; }
+    else if (fs.existsSync(animFile)) fs.unlinkSync(animFile);
+    // Outside the map: what most of its edge is (trees, sea, ...), painted.
+    const edge = {};
+    for (let i = 0; i < r.width * r.height; i++) {
+      const x = i % r.width, y = Math.floor(i / r.width);
+      if (x && y && x < r.width - 1 && y < r.height - 1) continue;
+      edge[pic.classes[i]] = (edge[pic.classes[i]] || 0) + 1;
+    }
+    const outside = ["tree", "water", "rock"].sort((a, b) => (edge[b] || 0) - (edge[a] || 0))[0];
+    writePng(path.join(mapsDir, m.name + "-border.png"), 32, 32, Painter.render(Painter.paint(Array(4).fill(outside), 2, 2), 2, 2).below);
+  } else {
+    writePng(path.join(mapsDir, m.name + ".png"), W, H, r.below);
+    writePng(path.join(mapsDir, m.name + "-top.png"), W, H, r.top);
+    if (fs.existsSync(animFile)) fs.unlinkSync(animFile);
+    // Outside the map: the forest of its top-left corner (2x2 tiles).
+    const border = new Uint8ClampedArray(32 * 32 * 4);
+    for (let y = 0; y < 32; y++) border.set(r.below.subarray(y * W * 4, y * W * 4 + 128), y * 128);
+    writePng(path.join(mapsDir, m.name + "-border.png"), 32, 32, border);
+  }
 
   // (HGSS's waterfalls are solid, and the water at their tops (34) a tile of
   // its own: FireRed's are waterfalls you go up or down with Waterfall, onto water.)
@@ -281,7 +314,9 @@ MAPS.forEach((m, i) => {
     wild: e && table(e.land),
     water: e && table(e.surf),
     // (Gen 4's rods: five slots each, 40/40/15/4/1.)
-    fishing: e && e.fishing && e.fishing.old_rod.rate ? { rods: { "old-rod": table(e.fishing.old_rod), "good-rod": table(e.fishing.good_rod), "super-rod": table(e.fishing.super_rod) } } : undefined
+    fishing: e && e.fishing && e.fishing.old_rod.rate ? { rods: { "old-rod": table(e.fishing.old_rod), "good-rod": table(e.fishing.good_rod), "super-rod": table(e.fishing.super_rod) } } : undefined,
+    // (Its animated water and flowers, as Kanto's: <Map>-anim.png.)
+    anim
   };
   console.log(m.name, r.width + "x" + r.height, "people", people.length, "signs", out[m.name].signs.length, "warps", out[m.name].warps.length);
 });

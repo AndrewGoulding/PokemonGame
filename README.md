@@ -1629,6 +1629,40 @@ up to it, seen or not, finds it: "Myuu…", and a wild Mew, Lv. 50 (Emerald's is
 beaten it's gone for good; run from, it flies away and is back the next
 time you come in. Like Emerald's, the island is no place to Fly from.
 
+## Other regions in FireRed's style
+
+Every region is to look like Kanto, whatever game its maps come from (most
+later games' maps are 3D). So a region's maps are built in two halves: its
+**layout** from its own game (where you can walk, water, tall grass, ledges,
+doors, warps, people, signs, wild Pokémon), and its **pictures** painted
+with FireRed's own metatiles by one painter, `tools/lib/fr-painter.js`:
+
+- `tools/build-fr-style.js <pret/pokefirered>` learns FireRed's style from
+  Kanto's own maps into `tools/data/fr-style.json`. Each metatile of the
+  General tileset gets a class (grass, flowers, path, sand, pavement, bridge,
+  tall grass, water, water rock, tree, rock, fence, ledges facing each way,
+  building, object), and every tile of Kanto's towns, cities, routes and
+  islands is counted under its pattern: its class, its eight neighbours'
+  classes and whether its column and row are odd (trees and grass repeat in
+  2x2 blocks). It also keeps a library of Kanto's buildings, picked out by
+  hand: Pokémon Centers, Marts, Gyms, houses of several sizes, Oak's Lab,
+  big buildings, towers and a gate, each with its door; and FireRed's signs.
+- A region's builder says what each of its tiles is, in those classes, and
+  where its buildings and their doors are. The painter gives each tile the
+  metatile Kanto uses in the closest pattern (so shores, path edges, cliff
+  faces and tree lines come out as Kanto draws them), stamps a Kanto building
+  of the right kind on each door (the one that best covers the building's
+  footprint, its door on the door), fills door-less city blocks with Kanto's
+  houses and plain buildings (never a Pokémon Center, Mart or Gym where there's
+  none), puts trees on what's left, and draws FireRed's signs, bushes and
+  flowers. The water and flowers animate as Kanto's do.
+
+The look is the painter's and the tileset's alone, so changing either
+changes every region at once, and a new region needs only its builder (and,
+for its landmarks, new buildings in the library). `tools/build-maps.js`
+(Kanto) and the painter share `tools/lib/fr-tiles.js` (FireRed's tilesets
+and drawing metatiles).
+
 ## Johto (in progress)
 
 Johto's maps are built from HeartGold and SoulSilver, 28 of them so far:
@@ -1646,9 +1680,17 @@ wall to Route 26's door. A guard stands in front of it until you're the
 Champion: "The Johto region lies to the west." / "I'm sorry, but only the
 Champion of the Pokémon League may go on to Johto." Become Champion and he's
 gone. (The debug menu's **Visit Johto (New Bark Town)** still takes you
-there, and its Pokémon Center trip brings you back.) HGSS's maps are 3D, so
+there, and its Pokémon Center trip brings you back.) Johto's towns, cities,
+routes and Ilex Forest are drawn in FireRed's style (above): their classes
+come from HGSS's tile behaviours and, for what's solid, the textures
+uppermost on each tile seen from above (`tools/lib/hgss-classes.js`: trees,
+rock, fences, buildings), and their buildings from their doors (a Pokémon
+Center's door gets a Pokémon Center, a Gym's a Gym, a gatehouse's a gate).
+Its caves and gatehouses inside, and its people's sprites, are still HGSS's
+own for now. HGSS's maps are 3D, so
 `tools/build-johto.js` (with `tools/lib/hgss-map.js`, `nitro.js` and
-`narc.js`) draws them the way FireRed would show them, from a
+`narc.js`) reads them, and with `--hgss` draws them the way HGSS shows them
+seen from above, from a
 [pret/pokeheartgold](https://github.com/pret/pokeheartgold) checkout:
 
 ```sh

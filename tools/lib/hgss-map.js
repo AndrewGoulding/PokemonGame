@@ -185,7 +185,7 @@ function renderMap(ROOT, MAPCONST, opts) {
       if (!bm) { console.warn("no building model", b.id); continue; }
       if (SKIP_BUILDINGS.has(b.id)) continue;
       const nb = N.parseNsb(bm);
-      const group = { tris: [] };
+      const group = { tris: [], id: b.id, x: wx + b.pos[0], z: wz + b.pos[2] };
       const ang = (v) => (v / 65536) * 2 * Math.PI; // rotations are u16 angles
       let mtx = M.trans(wx + b.pos[0], wy + b.pos[1], wz + b.pos[2]);
       if (b.rot[1]) mtx = M.mul(mtx, M.rotY(ang(b.rot[1])));
@@ -488,7 +488,39 @@ function renderMap(ROOT, MAPCONST, opts) {
 
 
 
-  return Object.assign(data, { below: layer(() => true), top: layer((i) => isTop[i]), perm, ground: G });
+  // (opts.labels: what's uppermost on each tile seen from straight above, 4x4
+  // samples a tile: its texture's name, and the building model it's part of
+  // if any, as { tex: { name: samples }, building: { id: samples } }.)
+  let labels = null;
+  if (opts.labels) {
+    labels = Array.from({ length: tw * th }, () => ({ tex: {}, building: {} }));
+    const best = new Float32Array(tw * th * 16).fill(-Infinity), who = new Array(tw * th * 16);
+    for (const t of tris) {
+      if (t.buried) continue;
+      const P = t.v.map((v) => v.p);
+      const d = (P[1][0] - P[0][0]) * (P[2][2] - P[0][2]) - (P[2][0] - P[0][0]) * (P[1][2] - P[0][2]);
+      if (Math.abs(d) < 1e-9) continue;
+      const sx0 = Math.max(0, Math.floor((Math.min(P[0][0], P[1][0], P[2][0]) - ox) / 4)), sx1 = Math.min(tw * 4 - 1, Math.floor((Math.max(P[0][0], P[1][0], P[2][0]) - ox) / 4));
+      const sz0 = Math.max(0, Math.floor((Math.min(P[0][2], P[1][2], P[2][2]) - oz) / 4)), sz1 = Math.min(th * 4 - 1, Math.floor((Math.max(P[0][2], P[1][2], P[2][2]) - oz) / 4));
+      for (let sz = sz0; sz <= sz1; sz++) for (let sx = sx0; sx <= sx1; sx++) {
+        const px = ox + sx * 4 + 2, pz = oz + sz * 4 + 2;
+        const w1 = ((px - P[0][0]) * (P[2][2] - P[0][2]) - (P[2][0] - P[0][0]) * (pz - P[0][2])) / d;
+        const w2 = ((P[1][0] - P[0][0]) * (pz - P[0][2]) - (px - P[0][0]) * (P[1][2] - P[0][2])) / d;
+        if (w1 < -1e-6 || w2 < -1e-6 || w1 + w2 > 1 + 1e-6) continue;
+        const y = P[0][1] + w1 * (P[1][1] - P[0][1]) + w2 * (P[2][1] - P[0][1]);
+        const tile = (sz >> 2) * tw + (sx >> 2), k = tile * 16 + (sz & 3) * 4 + (sx & 3);
+        if (y > best[k]) { best[k] = y; who[k] = t; }
+      }
+    }
+    for (let i = 0; i < tw * th; i++) for (let k = 0; k < 16; k++) {
+      const t = who[i * 16 + k];
+      if (!t) continue;
+      const name = (t.mat && t.mat.texName) || "?";
+      labels[i].tex[name] = (labels[i].tex[name] || 0) + 1;
+      if (t.building) labels[i].building[t.building.id] = (labels[i].building[t.building.id] || 0) + 1;
+    }
+  }
+  return Object.assign(data, { below: layer(() => true), top: layer((i) => isTop[i]), perm, ground: G, labels });
 }
 
 module.exports = { renderMap };
