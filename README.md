@@ -1046,7 +1046,7 @@ the Seismic Toss tutor, Brock (Zubat, Geodude, Vulpix and Onix) with the Boulder
 afterwards (she waits a few steps from the door, sees you and walks over) for a battle (Butterfree, her starter and a Jigglypuff; beat her and she gives you TM54 False Swipe), the Mega Punch and Mega Kick tutors (who teach
 again and again, for ₽1,000 each time), the
 Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils, Jessie & James
-climbing down the last ladder in Mt. Moon as in Yellow, Gary in Cerulean (FireRed's team, with
+climbing down the last ladder in Mt. Moon as in Yellow (a double battle), Gary in Cerulean (FireRed's team, with
 his Eevee), the Nugget Bridge Rocket (a Nugget, then a battle), the Rocket in
 the robbed house's yard (beat him and he gives back TM28 Dig), the Day-Care
 Man (`game/daycare.js`: one Pokémon gains 1 Exp. Point a step, learning its

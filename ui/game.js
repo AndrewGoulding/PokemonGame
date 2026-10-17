@@ -5039,7 +5039,7 @@
   //
   // As in Yellow: heading down to the last ladder on B2F, Jessie and James
   // climb down it, recite their motto and battle with Ekans, Meowth and
-  // Koffing (level 14). Beaten, they pay ₽750 and blast off; beat you, and
+  // Koffing (level 14), a double battle (this game's). Beaten, they pay ₽750 and blast off; beat you, and
   // they wait there again.
   function jessieJamesStep() {
     const f = player.flags, at = Overworld.position();
@@ -5063,8 +5063,10 @@
       "Jessie: Team Rocket, blast off at the\nspeed of light!", "James: Surrender now, or prepare to\nfight!",
       "Meowth: Meowth! That's right!"]);
     const team = [Party.create("Ekans", 14), Party.create("Meowth", 14), Party.create("Koffing", 14)];
+    // (A double battle, the two of them together; with only one Pokémon that
+    // can fight, a single one.)
     const outcome = await battle("trainer", { foe: { name: "Rocket Jessie & James", team, pic: "jessie_james" },
-      defeatText: ["Jessie: We can't lose to a kid\nlike this!"], prize: 750 });
+      defeatText: ["Jessie: We can't lose to a kid\nlike this!"], prize: 750, double: canDouble() });
     if (outcome !== "won") return;
     f.jessieJames = true;
     show("world");
