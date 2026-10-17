@@ -240,10 +240,11 @@
   let neighbours = [];
   let pendingEvent = null;   // (a scene something set off, to start once you're standing still)
 
-  // (Snorlax, the old man lying across Viridian's road and the legendary
-  // birds are as wide as two tiles, centred on theirs: they're in the way of
-  // the tiles either side too, so you can't walk onto them.)
-  const WIDE_BLOCKERS = new Set(["snorlax", "old_man_lying_down", "articuno", "zapdos", "moltres"]);
+  // (The old man lying across Viridian's road and the legendary birds are
+  // as wide as two tiles, centred on theirs: they're in the way of the tiles
+  // either side too, so you can't walk onto them. Snorlax's picture hardly
+  // spills over its tile, so you walk right up to it.)
+  const WIDE_BLOCKERS = new Set(["old_man_lying_down", "articuno", "zapdos", "moltres"]);
   const personAt = (x, y) => people.find((p) => (p.x === x && p.y === y) || (p.move && p.move.tx === x && p.move.ty === y) ||
     (!p.move && p.y === y && Math.abs(p.x - x) === 1 && WIDE_BLOCKERS.has(p.def.sprite)));
   // A sprite wider than a tile is centred on its tile, as FireRed's are.
