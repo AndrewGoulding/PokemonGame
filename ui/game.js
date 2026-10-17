@@ -284,7 +284,9 @@
     // (The Tera Orb: it lets a Pokémon Terastallize once a battle, and
     // recharges itself after every battle.)
     const teraOrb = Player.itemCount(player, "tera-orb") > 0;
-    const foeSets = (f) => f.team.map((r) => Object.assign(Party.toBattleSet(r), opts.ghost ? { name: "Ghost" } : {}));
+    // (A Tera Raid's Pokémon: more HP the more stars, RaidDens.HP.)
+    const foeSets = (f) => f.team.map((r) => Object.assign(Party.toBattleSet(r), opts.ghost ? { name: "Ghost" } : {},
+      opts.raid ? { raidHp: RaidDens.HP[opts.raid] } : {}));
     const result = await BattleScreen.run({
       p1: Object.assign({ name: player.name, team: own.map((r) => Party.toBattleSet(r, here)), dynamax: Player.itemCount(player, "dynamax-band") > 0, tera: teraOrb },
         opts.partner ? { partner: { name: opts.partner.name, team: opts.partner.team.map((r) => Party.toBattleSet(r)) } } : {}),
@@ -293,7 +295,7 @@
       format: double ? "doubles" : undefined,
       partnerTrainer: opts.partner && opts.partner.pic,
       foeTrainer2: foe2 && foe2.pic, defeatText2: foe2 && foe2.defeatText && foe2.defeatText.map((p) => fill(p)),
-      ghost: !!opts.ghost, noCatch: !!opts.noCatch,
+      ghost: !!opts.ghost, noCatch: !!opts.noCatch, raid: opts.raid || 0,
       megaRing: Player.itemCount(player, "mega-ring") > 0,
       zRing: Player.itemCount(player, "z-ring") > 0,
       dynamaxBand: Player.itemCount(player, "dynamax-band") > 0,
@@ -310,7 +312,8 @@
       // (The Bag screen: its pockets, and the bag's colours.)
       bagPockets, bagFemale: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
       catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s) },
-      opponent: wild ? randomMove : (b) => OpponentAI.choose(b, "p2"),
+      // (A Tera Raid's Pokémon battles as a trainer's does, and Terastallizes.)
+      opponent: wild && !opts.raid ? randomMove : (b) => OpponentAI.choose(b, "p2"),
       // A new move with four known: the Summary screen picks the one to forget
       // (the record caught up with the battle first: level, moves, PP).
       forgetMove: (i, mon, move) => chooseMoveToForget(Party.syncFromBattle(own[i], mon), move),
@@ -2320,6 +2323,8 @@
       "OutskirtStand_Diner_EventScript_TV", "OutskirtStand_Diner_EventScript_Jukebox"
     ]).concat(Object.keys(BRAILLE_SIGNS)).concat(League.ROOMS.map((r) => "enter:" + r.map), ["enter:" + League.HALL_OF_FAME]).concat(ROUTE23_BADGES.slice(1).flatMap((b) => ["", "Trigger"].map((t) => "Route23_EventScript_" + b + "BadgeGuard" + t))).concat([1, 2, 3, 4, 5, 6].flatMap((n) => ["Left", "Right"].map((s) => "CinnabarIsland_Gym_EventScript_Quiz" + n + s))).concat(CYCLING_ROAD_GATES.flatMap((g) => ["Top", "MidTop", "Mid", "MidBottom", "Bottom"].map((k) => g + "_EventScript_NeedBikeTrigger" + k))));
 
+  for (const d of RaidDens.DENS) SPECIAL.add(d.script);
+
   // Which people are around, from FireRed's event flags and this game's story flags.
   // Item balls on the map: picked up once, then gone.
   const ITEM_BALLS = new Set();
@@ -2335,6 +2340,8 @@
 
   function visible(person, map) {
     const f = player.flags;
+    // (A Tera Raid den: glowing while its raid is on.)
+    { const den = RaidDens.byScript(person.script); if (den) return RaidDens.active(f, den.id) ? { sprite: "raid_den_active" } : true; }
     // (The Champion here is Red.)
     if (person.localId === "LOCALID_CHAMPIONS_ROOM_RIVAL") return Object.assign({}, lookOf("red"));
     if (person.item) return !f[person.flag];
@@ -2625,6 +2632,7 @@
         const beaten = !!f[ev.person.trainer.id];
         await trainerBattle(ev.person, null);
         if (!beaten) await afterRocket(ev.person);
+        if (ev.person.trainer.id === DOJO_MASTER) await dojoDenDoor();
       } else await say(dojoAfter(ev.person.trainer.id) || ev.person.trainer.after || ev.person.text || []);
       return;
     }
@@ -2666,6 +2674,7 @@
       return;
     }
 
+    { const den = RaidDens.byScript(script); if (den) { await raidDen(den); return; } }
     if (SILPH_WORKERS[script]) { await say(T(SILPH_WORKERS[script][silphFreed() ? 1 : 0])); return; }
     if (SILPH_DOORS.includes(script)) { await silphDoor(script); return; }
     // (Coming out of the Gym with the Tera Orb still to get: the aide, then Leaf.)
@@ -3495,6 +3504,7 @@
         await Overworld.act([{ who: "LOCALID_KARATE_MASTER", moves: M(script.endsWith("Left") ? "Common_Movement_WalkInPlaceFasterLeft" : "Common_Movement_WalkInPlaceFasterRight") }]);
         await Overworld.act([{ who: "player", moves: [script.endsWith("Left") ? "face_right" : "face_left"] }]);
         await trainerBattle(master, null);
+        await dojoDenDoor();
         return;
       }
       case "SaffronCity_Dojo_EventScript_HitmonleeBall":
@@ -6778,6 +6788,24 @@
     }
     if (dojoMasterRematchWon() && f.dojoHitmon) { await say(DOJO_REMATCH[DOJO_MASTER].after); return; }
     await say(T(f.dojoHitmon ? "SaffronCity_Dojo_Text_StayAndTrainWithUs" : "SaffronCity_Dojo_Text_ChoosePrizedFightingMon"));
+    if (!f.dojoDenDoor) await dojoDenDoor();
+    else if (f.dojoHitmon) await say(["Our training room is through the\ndoor at the back. Its den awaits\nyour Lure!"]);
+  }
+  // (This game's own.) Beaten, the Karate Master opens the door to the
+  // Dojo's back room and its Tera Raid den (game/raid-dens.js), once.
+  async function dojoDenDoor() {
+    const f = player.flags;
+    if (!f[DOJO_MASTER] || f.dojoDenDoor) return;
+    show("world");
+    await Overworld.resume();
+    await say(["Grunt! One thing more!", "Behind the door at the back of my\nDojo is our training room.",
+      "A Tera Raid den sleeps there. Use a\nLure on it, and a Tera Fighting-type\nPokémon will rise to face you!",
+      "I shall open it for you. Train\nthere as often as you like!"]);
+    Screen.say("");
+    f.dojoDenDoor = true;
+    sfx("se_rs_door");
+    applyPatches("SaffronCity_Dojo");
+    await persist();
   }
 
   // ---------- Silph Co. ----------
@@ -9864,6 +9892,8 @@
       if (f.vermilionGymLocksOpen) return ["off"];
       if (gymCans && gymCans.foundFirst) return ["half"];
     }
+    // (The Dojo's back room, once its Karate Master's beaten and has opened it: data/dojo-den-room.js.)
+    if (map === "SaffronCity_Dojo") return f.TRAINER_BLACK_BELT_KOICHI && f.dojoDenDoor ? ["denroom"] : [];
     if (map === "CeladonCity_GameCorner") return (f.openedRocketHideout ? [] : ["hidden"]).concat(["cardroom"]);
     if (map === "RocketHideout_B1F" && !f.TRAINER_TEAM_ROCKET_GRUNT_12) return ["barrier"];
     if (map === "RocketHideout_B4F" && !(f.TRAINER_TEAM_ROCKET_GRUNT_16 && f.TRAINER_TEAM_ROCKET_GRUNT_17)) return ["barrier"];
@@ -10028,6 +10058,82 @@
     player.location = { map: to.map, x: to.x, y: to.y, facing: "down" };
     await persist();
     return true;
+  }
+
+  // ---------- Tera Raid dens (game/raid-dens.js) ----------
+  //
+  // A den sleeps until you use a Lure on it; then it glows with a raid of 1
+  // to 5 stars until you win it. The raid: a wild battle (no catching mid-way)
+  // against its Pokémon, Terastallized into the den's type with more HP;
+  // losing, you're thrown out of the den (your Pokémon are fine) and it keeps
+  // glowing. Won: money, Exp. Candies, vitamins and Berries, then the chance
+  // to catch it, in any Ball (it can't miss).
+  const LURES = ["lure", "super-lure", "max-lure"];
+  const RAID_MUSIC = [null, "mus_vs_wild", "mus_vs_wild", "mus_vs_trainer", "mus_vs_legend", "mus_vs_legend"];
+  async function raidDen(den) {
+    const f = player.flags;
+    let raid = RaidDens.active(f, den.id);
+    if (!raid) {
+      await say(["It's a Tera Raid den.", "It's quiet… Something seems to be\nsleeping deep inside it."]);
+      const have = LURES.filter((id) => Player.itemCount(player, id) > 0);
+      if (!have.length) { await say("Maybe a Lure would wake it…"); return; }
+      let lure = have[0];
+      if (have.length > 1) {
+        const v = await multichoice("Use a Lure on the den?", 0, 0, have.map((id) => Bag.name(id)).concat(["Cancel"]));
+        Screen.say("");
+        if (v < 0 || v >= have.length) return;
+        lure = have[v];
+      } else if (!(await confirm("Use " + article(Bag.name(lure)) + " on the den?"))) return;
+      Player.removeItem(player, lure);
+      raid = RaidDens.start(f, den, lure, player.badges.length);
+      await say(player.name + " used the " + Bag.name(lure) + "!");
+      Screen.say("");
+      sfx("se_m_cosmic_power");
+      Overworld.refreshPeople();
+      await sleep(600);
+      await persist();
+      await say("The den began to glow!");
+    }
+    const name = Party.speciesName(raid.species);
+    await say(["It's a " + raid.stars + "-star Tera Raid!", "A Tera " + den.type + "-type " + name + " (Lv. " + raid.level + ")\nis waiting in the den!"]);
+    if (!canBattle()) return;
+    if (!(await confirm("Will you take on the Tera Raid?"))) { await say("The den keeps glowing…"); return; }
+    const boss = RaidDens.boss(den, raid);
+    const outcome = await battle("wild", { foe: { name: "Wild", team: [boss], tera: true }, raid: raid.stars, noCatch: true, noBlackout: true,
+      music: RAID_MUSIC[raid.stars] });
+    show("world");
+    await Overworld.resume();
+    if (outcome === "lost") { await say(["You were blown out of the den…", "Your Pokémon were restored."]); return; }
+    if (outcome !== "won") return;
+    RaidDens.finish(f, den.id);
+    Overworld.refreshPeople();
+    const r = RaidDens.rewards(raid.stars);
+    Player.addMoney(player, r.money);
+    for (const [id, n] of r.items) Player.addItem(player, id, n);
+    await sayWithJingle("mus_obtain_item", "{PLAYER} won the Tera Raid and\ngot " + money(r.money) + "!");
+    const lines = r.items.map(([id, n]) => Bag.name(id) + " ×" + n);
+    const pages = [];
+    for (let i = 0; i < lines.length; i += 2) pages.push(lines.slice(i, i + 2).join("\n"));
+    await say(["{PLAYER} also got:"].concat(pages));
+    await persist();
+    await raidCatch(boss, name);
+  }
+  // After the raid: catch it? Any Ball you have; it can't miss.
+  async function raidCatch(boss, name) {
+    if (!(await confirm("The " + name + " is worn out.\nWill you catch it?"))) return;
+    const balls = Object.keys(player.bag).filter((id) => Bag.isBall(id) && Player.itemCount(player, id) > 0).slice(0, 8);
+    if (!balls.length) { await say("You don't have any Poké Balls…"); return; }
+    const v = await multichoice("Which Ball will you use?", 0, 0, balls.map((id) => Bag.name(id)).concat(["Cancel"]));
+    Screen.say("");
+    if (v < 0 || v >= balls.length) return;
+    Player.removeItem(player, balls[v]);
+    delete boss.teraAce;
+    boss.ball = balls[v];
+    Party.heal(boss);
+    sfx("se_ball_throw");
+    await say(player.name + " threw " + article(Bag.name(balls[v])) + "!");
+    await addCaught(boss);
+    await persist();
   }
 
   // ---------- Repels and Lures ----------

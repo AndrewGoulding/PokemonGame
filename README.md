@@ -1405,6 +1405,33 @@ triggers slide out, one picked; START switches the picked one on or off, and
 holding START while pressing left or right picks the other (letting go
 switches it), so START, then hold START, right, let go, does both.
 
+**Tera Raid dens** (this game's own, after Scarlet and Violet's Tera Raid
+Battles; `game/raid-dens.js`): twelve dens, each of one type: Route 1
+(Normal, in the flower meadow), Viridian Forest (Bug), Seafoam Islands 1F
+(Ice), the Power Plant (Electric), the Fighting Dojo's back room (Fighting),
+Mt. Moon 1F (Rock), Rock Tunnel 1F (Ground), Route 25 by the sea (Water),
+Route 18's flower garden (Flying), Cinnabar Island's beach (Fire), Lavender
+Town (Ghost) and outside the Indigo Plateau (Steel). A den sleeps until you
+use a Lure on it (talk to it); then it glows, with a beam of light, holding a
+raid of 1 to 5 stars until you win it. How many stars is random: 1 with no
+Badges, up to 2 with two, 3 with four, 4 with six and 5 with all eight; a
+Lure most often brings 1 star (50/30/15/4/1%), a Super Lure 2 or 3
+(20/35/28/12/5%) and a Max Lure 3 or 4 (5/15/30/30/20%). The raid is a
+battle with its Pokémon (from each type's list for that many stars, at Lv.
+12, 20, 35, 50 or 65 and up to 3 more, with IVs of 10 to 31), which
+Terastallizes into the den's type as soon as it's out and has 1.5, 2, 2.5, 3
+or 4 times its HP; it battles as a trainer's Pokémon does, and can't be caught
+mid-battle. Lose and you're thrown out of the den (your Pokémon are restored)
+and it keeps glowing. Win and you get money (₽1,500 / 3,000 / 6,000 / 10,000
+/ 20,000), Exp. Candies (XS for 1 star up to L and XL for 5), vitamins (1 to
+5) and Berries (2 to 6: everyday ones for 1 star, Sitrus and Lum, the
+EV-lowering ones and the rare pinch Berries further up), and the den goes to
+sleep again; then you may catch its Pokémon in any Ball you have (it can't
+miss), keeping its Tera Type. The Fighting Dojo's back room is behind a
+sliding door in its back wall, which the Karate Master opens once you've
+beaten him (he tells you of the den); `tools/build-raid-dens.js` draws the
+dens and builds the room from the Dojo's tiles into `data/dojo-den-room.js`.
+
 Alcremie comes in all 63 flavours: a Sweet used on Milcery asks which
 way it spins and for how long, and that with the time of day gives its cream
 as in Sword and Shield (clockwise and short by day: Vanilla Cream; the other

@@ -2340,6 +2340,8 @@
       el.sides.p2.info.classList.remove("hidden");
       // (The old man's: "Wild … appeared!{PAUSE 127}", on by itself.)
       if (cfg.oldMan) await message("Wild " + mon.name + " appeared!", 127 * 1000 / 60);
+      // (A Tera Raid, this game's own: its stars.)
+      else if (cfg.raid) await message("The " + cfg.raid + "-star Tera Raid Pokémon,\n" + mon.name + ", appeared!");
       else await message("A wild " + mon.name + " appeared!");
       foeAnnounced = true;
     }

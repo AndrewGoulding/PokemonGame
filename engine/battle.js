@@ -276,6 +276,12 @@
         this.hp = clamp(set.hp, 0, this.maxhp);
         this.fainted = this.hp === 0;
       }
+      // (A Tera Raid's Pokémon, this game's own: set.raidHp times its HP, at full.)
+      if (set.raidHp > 1) {
+        this.maxhp = this.baseMaxhp = Math.round(this.stats.hp * set.raidHp);
+        this.hp = this.maxhp;
+        this.fainted = false;
+      }
       // (Running totals for Gen 8's evolutions; crits are this battle's.)
       // (Dynamax: its Dynamax Level, 0-10, and the G-Max Factor; a battle
       // set without them is at level 10, as in Showdown.)

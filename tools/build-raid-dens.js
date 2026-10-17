@@ -1,0 +1,157 @@
+// Builds the Tera Raid dens' pictures and the Fighting Dojo's back room (this
+// game's own; see game/raid-dens.js):
+//
+//   assets/world/sprites/raid_den.png, raid_den_active.png
+//       a den, 16x32 (it stands on its tile like a person): a ring of rocks
+//       round a hole with a Tera crystal in it, dull while it sleeps; glowing,
+//       with a beam of light up out of it, while a raid is on
+//   assets/world/maps/SaffronCity_Dojo_DenRoom.png (and -border.png)
+//       the back room, from the Dojo's own tiles (assets/world/maps/SaffronCity_Dojo.png,
+//       as tools/build-maps.js made it): its wall, floor, a tatami and the way out
+//   assets/world/maps/SaffronCity_Dojo-patch-denroom.png
+//       a sliding door drawn into the Dojo's back wall (a patch, on once
+//       you've beaten its Karate Master)
+//   data/dojo-den-room.js
+//       the room's map, and the Dojo's door: the patch and its warp
+//
+//   node tools/build-raid-dens.js
+"use strict";
+
+const fs = require("fs");
+const path = require("path");
+const { readPng, writePng } = require("./lib/png");
+
+const root = path.join(__dirname, "..");
+const MAPS = path.join(root, "assets/world/maps");
+const hex = (h, a) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16), a == null ? 255 : a];
+
+// ---------- The den ----------
+
+function den(active) {
+  const W = 16, H = 32, px = new Uint8ClampedArray(W * H * 4);
+  const put = (x, y, c, a) => {
+    if (x < 0 || y < 0 || x >= W || y >= H) return;
+    const i = (y * W + x) * 4, k = a == null ? 1 : a, rgba = hex(c);
+    if (!px[i + 3]) { px.set([rgba[0], rgba[1], rgba[2], Math.round(255 * k)], i); return; }
+    const old = px[i + 3] / 255, out = k + old * (1 - k);
+    for (let n = 0; n < 3; n++) px[i + n] = (rgba[n] * k + px[i + n] * old * (1 - k)) / out;
+    px[i + 3] = Math.round(255 * out);
+  };
+  const inEllipse = (x, y, cx, cy, rx, ry) => ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1;
+  const CX = 8, CY = 25;
+  // The rock ring: outline, rock, a lighter top-left, the dark hole.
+  for (let y = 16; y < 32; y++) for (let x = 0; x < W; x++) {
+    if (!inEllipse(x, y, CX, CY, 8, 6)) continue;
+    const edge = !inEllipse(x, y, CX, CY, 7, 5);
+    if (edge) put(x, y, "#3c3028");
+    else if (inEllipse(x, y, CX, CY + 0.5, 4.2, 2.6)) put(x, y, y < CY ? "#1c1420" : "#2a2030");
+    else put(x, y, (x + y) % 5 === 0 ? "#7a6a58" : y < CY - 1 && x < CX ? "#b4a48c" : y > CY + 2 ? "#6e5e4e" : "#968470");
+  }
+  // (Pebbles on the rim.)
+  for (const [x, y] of [[3, 21], [12, 22], [2, 27], [13, 28], [6, 30]]) put(x, y, "#c8b89c");
+  // The crystal: a gem standing in the hole.
+  const gem = active ? ["#fff0ff", "#ff8ce0", "#d040b0", "#7a1a70"] : ["#b8b0c8", "#8a7e9c", "#645878", "#3a3048"];
+  const shape = [[8, 17, 0], [7, 18, 1], [8, 18, 0], [9, 18, 2], [6, 19, 1], [7, 19, 0], [8, 19, 1], [9, 19, 2], [10, 19, 2],
+    [6, 20, 1], [7, 20, 1], [8, 20, 1], [9, 20, 2], [10, 20, 2], [6, 21, 1], [7, 21, 0], [8, 21, 1], [9, 21, 2], [10, 21, 2],
+    [6, 22, 1], [7, 22, 1], [8, 22, 2], [9, 22, 2], [10, 22, 2], [7, 23, 1], [8, 23, 2], [9, 23, 2], [7, 24, 2], [8, 24, 2], [9, 24, 2]];
+  for (const [x, y, k] of shape) put(x, y, gem[k]);
+  for (const [x, y] of [[8, 16], [6, 18], [10, 18], [5, 19], [11, 19], [5, 20], [11, 20], [5, 21], [11, 21], [5, 22], [11, 22], [6, 23], [10, 23], [6, 24], [10, 24]]) put(x, y, gem[3]);
+  if (active) {
+    // The beam: up from the crystal to the top, white in the middle, pink at its edges, fading as it goes.
+    for (let y = 0; y < 17; y++) {
+      const fade = 0.35 + 0.65 * (y / 16);
+      put(7, y, "#ffffff", 0.85 * fade); put(8, y, "#ffffff", 0.85 * fade);
+      put(6, y, "#ff70d0", 0.55 * fade); put(9, y, "#ff70d0", 0.55 * fade);
+      put(5, y, "#ff40c0", 0.25 * fade); put(10, y, "#ff40c0", 0.25 * fade);
+    }
+    // (Sparkles.)
+    for (const [x, y] of [[3, 6], [12, 11], [2, 14], [13, 3]]) { put(x, y, "#ffe8ff"); put(x - 1, y, "#ff9ce4", 0.6); put(x + 1, y, "#ff9ce4", 0.6); put(x, y - 1, "#ff9ce4", 0.6); put(x, y + 1, "#ff9ce4", 0.6); }
+  }
+  return px;
+}
+writePng(path.join(root, "assets/world/sprites/raid_den.png"), 16, 32, den(false));
+writePng(path.join(root, "assets/world/sprites/raid_den_active.png"), 16, 32, den(true));
+
+// ---------- The Dojo's back room ----------
+
+const DOJO = "SaffronCity_Dojo", ROOM = "SaffronCity_Dojo_DenRoom", T = 16;
+const dojo = readPng(path.join(MAPS, DOJO + ".png"));
+global.window = global;
+require(path.join(root, "data/world-maps.js"));
+const dojoMap = window.WORLD_MAPS[DOJO];
+const W = dojoMap.width, H = 10;   // (as wide as the Dojo)
+const DOOR = { x: 3, y: 2 };       // (the Dojo's back wall, left of the pillars)
+
+// Each tile of the room: the Dojo tile it's a copy of.
+const src = [];
+const MAT_ROW = 8;
+for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+  let s;
+  if (y <= 2) s = [x === 4 ? 3 : x === 8 ? 9 : y === 2 && x === 6 ? 1 : x, y];   // the wall, without the pillars (or the vase's flower)
+  else if (y < MAT_ROW) s = [x, 12];                           // plain floor
+  else if (y === MAT_ROW) s = [[3, 4].includes(x) ? 2 : [9, 10].includes(x) ? 11 : x, 14];   // the way out (no drums' shadows)
+  else s = [x, 15];
+  src[y * W + x] = s;
+}
+// A tatami, 3x3, in the middle: the Dojo's mat's corners, edges and middle.
+const TATAMI = { "-1,-1": [4, 7], "0,-1": [5, 7], "1,-1": [8, 7], "-1,0": [4, 8], "0,0": [5, 8], "1,0": [8, 8], "-1,1": [4, 11], "0,1": [5, 11], "1,1": [8, 11] };
+const DEN = { x: 6, y: 5 };
+for (const [k, s] of Object.entries(TATAMI)) {
+  const [dx, dy] = k.split(",").map(Number);
+  src[(DEN.y + dy) * W + DEN.x + dx] = s;
+}
+
+const img = new Uint8ClampedArray(W * T * H * T * 4);
+function tile(sx, sy, dx, dy, into, iw) {
+  for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
+    const s = ((sy * T + y) * dojo.width + sx * T + x) * 4;
+    const d = ((dy * T + y) * iw + dx * T + x) * 4;
+    into.set(dojo.rgba.slice(s, s + 4), d);
+  }
+}
+const collision = [], elevation = [], behavior = [], encounter = [];
+src.forEach(([sx, sy], i) => {
+  tile(sx, sy, i % W, Math.floor(i / W), img, W * T);
+  const j = sy * dojoMap.width + sx;
+  collision[i] = dojoMap.collision[j]; elevation[i] = dojoMap.elevation[j]; behavior[i] = dojoMap.behavior[j]; encounter[i] = 0;
+});
+writePng(path.join(MAPS, ROOM + ".png"), W * T, H * T, img);
+fs.copyFileSync(path.join(MAPS, DOJO + "-border.png"), path.join(MAPS, ROOM + "-border.png"));
+
+// ---------- The door in the Dojo ----------
+{
+  const w = T, h = 2 * T, door = new Uint8ClampedArray(w * h * 4);
+  tile(DOOR.x, DOOR.y - 1, 0, 0, door, w);
+  tile(DOOR.x, DOOR.y, 0, 1, door, w);
+  const px = (x, y, c) => door.set(hex(c), (y * w + x) * 4);
+  // A shoji: a dark wooden frame, paper panes, the frame's bars across them.
+  for (let y = 6; y < h; y++) for (let x = 1; x < w - 1; x++) {
+    const frame = x === 1 || x === w - 2 || y === 6 || x === 8;
+    const bar = y === 13 || y === 20 || y === 27 || x === 4 || x === 12;
+    px(x, y, frame ? "#4a2c14" : bar ? "#7a5232" : y > 28 ? "#d8cca8" : "#f2ead0");
+  }
+  writePng(path.join(MAPS, DOJO + "-patch-denroom.png"), w, h, door);
+}
+
+// ---------- The data ----------
+
+const MAT_XS = [5, 6, 7];
+const room = {
+  name: ROOM, title: dojoMap.title, width: W, height: H, type: "indoor", music: dojoMap.music, top: false,
+  borderWidth: 2, borderHeight: 2, collision, elevation, behavior, encounter, connections: [],
+  warps: MAT_XS.map((x) => ({ x, y: MAT_ROW, map: DOJO, warp: dojoMap.warps.length })),
+  signs: [], triggers: [], hidden: [], patches: {}, people: [], wild: null
+};
+const out = "// Auto-generated by tools/build-raid-dens.js (the Dojo's tiles). Do not edit by hand.\n" +
+  "// The Fighting Dojo's back room, behind a door in its back wall: its Tera Raid den (game/raid-dens.js).\n" +
+  "window.WORLD_MAPS[" + JSON.stringify(ROOM) + "] = " + JSON.stringify(room) + ";\n" +
+  "(function () {\n" +
+  "  const dojo = window.WORLD_MAPS[" + JSON.stringify(DOJO) + "];\n" +
+  "  if (!dojo) return;\n" +
+  "  // The door: a patch drawn into the wall (on once the Karate Master's beaten), the tile in it a way through.\n" +
+  "  dojo.patches = Object.assign({}, dojo.patches, { denroom: { x: " + DOOR.x + ", y: " + (DOOR.y - 1) + ", w: 1, h: 2, top: false, collision: [[" + DOOR.x + ", " + DOOR.y + ", 0, 0x60]] } });\n" +
+  "  if (!dojo.warps.some((w) => w.map === " + JSON.stringify(ROOM) + ")) dojo.warps.push({ x: " + DOOR.x + ", y: " + DOOR.y + ", map: " + JSON.stringify(ROOM) + ", warp: 1 });\n" +
+  "  if (window.TOWN_MAP && window.TOWN_MAP.mapSections) window.TOWN_MAP.mapSections[" + JSON.stringify(ROOM) + "] = window.TOWN_MAP.mapSections[" + JSON.stringify(DOJO) + "];\n" +
+  "})();\n";
+fs.writeFileSync(path.join(root, "data/dojo-den-room.js"), out);
+console.log("wrote the den sprites, " + ROOM + " and data/dojo-den-room.js");

@@ -573,6 +573,62 @@ for (const share of [false, true]) {
     assert(ITEM_SPRITES[item], "no sprite for mart item " + item);
   }
 }
+// Tera Raid dens (game/raid-dens.js): on their maps, on free tiles; stars by
+// Badges and Lures; the boss; rewards; the Dojo's back room and its door.
+{
+  assert.strictEqual(RaidDens.DENS.length, 12);
+  assert.deepStrictEqual(RaidDens.DENS.map((d) => d.type).sort(),
+    ["Bug", "Electric", "Fighting", "Fire", "Flying", "Ghost", "Ground", "Ice", "Normal", "Rock", "Steel", "Water"]);
+  for (const d of RaidDens.DENS) {
+    const m = WORLD_MAPS[d.map];
+    assert(m, "no map " + d.map);
+    const here = m.people.filter((p) => p.x === d.x && p.y === d.y);
+    assert(here.length === 1 && here[0].script === d.script, "den " + d.id + " alone on its tile");
+    assert(!m.collision[d.y * m.width + d.x] && !World.warpAt(d.map, d.x, d.y), "den " + d.id + " on a free tile");
+    assert.strictEqual(RaidDens.byScript(d.script), d);
+    for (const tier of RaidDens.POOLS[d.type]) for (const sp of tier) assert(DEX[sp], sp);
+  }
+  for (const f of ["raid_den", "raid_den_active"]) assert(fs.existsSync(path.join(root, "assets/world/sprites/" + f + ".png")), f);
+  // Stars: 1 with no Badges, up to 5 with all eight; stronger Lures, more stars.
+  assert.deepStrictEqual([0, 1, 2, 3, 4, 5, 6, 7, 8].map(RaidDens.maxStars), [1, 1, 2, 2, 3, 3, 4, 4, 5]);
+  let seed = 7;
+  const rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const mean = (lure, badges) => { let t = 0; for (let i = 0; i < 3000; i++) t += RaidDens.rollStars(lure, badges, rng); return t / 3000; };
+  for (let i = 0; i < 500; i++) assert(RaidDens.rollStars("max-lure", 0, rng) === 1 && RaidDens.rollStars("max-lure", 3, rng) <= 2);
+  const [a, b, c] = ["lure", "super-lure", "max-lure"].map((l) => mean(l, 8));
+  assert(a < b && b < c && a < 2 && c > 3.3, "lure means " + [a, b, c]);
+  // A raid: in the den's pool, its level; its boss Terastallizes into the den's type.
+  const flags = {}, den = RaidDens.DENS.find((d) => d.type === "Fire");
+  const raid = RaidDens.start(flags, den, "max-lure", 8, rng);
+  assert.strictEqual(RaidDens.active(flags, den.id), raid);
+  assert(RaidDens.POOLS.Fire[raid.stars - 1].includes(raid.species) && raid.level >= RaidDens.LEVELS[raid.stars] && raid.level <= RaidDens.LEVELS[raid.stars] + 3);
+  const boss = RaidDens.boss(den, raid, rng);
+  assert(boss.teraAce && boss.teraType === "Fire" && boss.level === raid.level && boss.ivs.atk === RaidDens.IVS[raid.stars]);
+  // In battle: its HP times the stars' multiplier, at full; it Terastallizes when it moves.
+  const bb = new Battle({ p1: { name: "P", team: [Party.toBattleSet(Party.create("Mewtwo", 100, { rng }))] },
+    p2: { name: "Wild", tera: true, team: [Object.assign(Party.toBattleSet(boss), { raidHp: RaidDens.HP[5] })] }, wild: true, seed: 3 });
+  const bm = bb.sides.p2.pokemon[0];
+  assert.strictEqual(bm.maxhp, Math.round(bm.stats.hp * 4));
+  assert.strictEqual(bm.hp, bm.maxhp);
+  RaidDens.finish(flags, den.id);
+  assert.strictEqual(RaidDens.active(flags, den.id), null);
+  // Rewards: money, candies, vitamins and Berries, more with more stars.
+  const total = (st) => { const r = RaidDens.rewards(st, rng); return [r.money, r.items.reduce((n, [, k]) => n + k, 0), r.items]; };
+  const [m1, n1, i1] = total(1), [m5, n5, i5] = total(5);
+  assert(m5 > m1 && n5 > n1, "5-star rewards more");
+  for (const items of [i1, i5]) {
+    assert(items.every(([id]) => ITEMS[id]));
+    assert(items.some(([id]) => /^exp-candy/.test(id)) && items.some(([id]) => /-berry$/.test(id)) &&
+      items.some(([id]) => ["hp-up", "protein", "iron", "calcium", "zinc", "carbos"].includes(id)));
+  }
+  assert(i5.some(([id]) => id === "exp-candy-xl") && !i1.some(([id]) => id === "exp-candy-xl"));
+  // The Dojo's back room: its way out back to the Dojo's door, which is behind a patch.
+  const room = WORLD_MAPS.SaffronCity_Dojo_DenRoom, dojo = WORLD_MAPS.SaffronCity_Dojo;
+  const door = dojo.warps.find((w) => w.map === "SaffronCity_Dojo_DenRoom");
+  assert(door && dojo.patches.denroom && room.warps.every((w) => w.map === "SaffronCity_Dojo" && dojo.warps[w.warp] === door));
+  assert(dojo.collision[door.y * dojo.width + door.x], "the wall, until the door's patch is on");
+}
+
 // Lures beside the Repels of their kind; Wings and Exp. Candies.
 {
   assert.deepStrictEqual(Bag.martStock(["potion", "repel", "super-repel"]).map((x) => x.item), ["potion", "repel", "lure", "super-repel", "super-lure"]);
