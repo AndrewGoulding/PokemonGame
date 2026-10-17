@@ -376,6 +376,7 @@
 .pk-board .pk-card .pk-suit { font-size: 17px; }
 .pk-middle { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 0; }
 .pk-pot { font-weight: 700; font-variant-numeric: tabular-nums; }
+.pk-stakes { font-size: 11px; opacity: 0.75; }
 .pk-message { min-height: 30px; text-align: center; padding: 0 8px; }
 .pk-bottom { display: grid; grid-template-columns: auto 1fr; gap: 6px; align-items: stretch; }
 .pk-bottom .pk-card { width: 32px; height: 44px; }

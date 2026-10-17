@@ -6181,25 +6181,28 @@
   // Texas Hold'em (game/poker.js, ui/poker.js; this game's own): the dealer
   // seats you with the three regulars for a buy-in of coins (your chips), and
   // what you have left when you get up goes back in your Coin Case.
-  const POKER_BUY_INS = [100, 200, 500, 1000];
+  // The stakes (Poker.STAKES): low (200 Coins in, blinds 1 and 2), mid
+  // (1,000; 5 and 10) or high (3,000; 15 and 30); the other players buy in the same.
   async function pokerTable() {
     if (!player.flags.gotCoinCase) { await say(T("CeladonCity_GameCorner_Text_CoinCaseIsRequired")); return; }
     await say(["Welcome to the poker table!\nWe play Texas Hold'em, fixed limit.",
-      "Blinds are " + Poker.SMALL_BLIND + " and " + Poker.BIG_BLIND + " Coins; bets are " + Poker.BIG_BLIND + ",\nthen " + 2 * Poker.BIG_BLIND + " on the turn and river."]);
-    if (coins() < Poker.BIG_BLIND * 2) { await say("You'll need at least " + Poker.BIG_BLIND * 2 + " Coins to sit\ndown. Come back with more!"); return; }
+      "Bets are the big blind, and twice that\non the turn and river."]);
     coinsBox(0, 0);
-    const offers = POKER_BUY_INS.filter((n) => n < coins()).concat([coins()]);
     let v;
-    try { v = await multichoice("How many Coins will you buy in for?", 18, 0, offers.map((n) => plainCoins(n) + " Coins").concat(["Cancel"])); }
-    finally { coinsBox(null); }
-    if (v < 0 || v >= offers.length) { await say("Maybe next time, then."); return; }
-    const buyIn = offers[v];
+    try {
+      v = await multichoice("Which stakes will you play?", 14, 0, Poker.STAKES.map((st) =>
+        "{FONT_SMALL}" + st.name + "{CLEAR_TO 62}" + plainCoins(st.buyIn) + " in, " + st.sb + "/" + st.bb).concat(["Cancel"]));
+    } finally { coinsBox(null); }
+    if (v < 0 || v >= Poker.STAKES.length) { await say("Maybe next time, then."); return; }
+    const stakes = Poker.STAKES[v];
+    if (coins() < stakes.buyIn) { await say("The buy-in at " + stakes.name.toLowerCase() + " is " + plainCoins(stakes.buyIn) + " Coins.\nCome back with more!"); return; }
+    const buyIn = stakes.buyIn;
     addCoins(-buyIn);
     await say("Here are your chips. Good luck!");
     Screen.say("");
     show("scene");
     clearMenu();
-    const chips = await PokerScreen.run(scene, Poker.create({ chips: buyIn, name: player.name, pic: Player.LOOKS[player.look].front }));
+    const chips = await PokerScreen.run(scene, Poker.create({ chips: buyIn, stakes, name: player.name, pic: Player.LOOKS[player.look].front }));
     show("world");
     await Overworld.resume();
     addCoins(chips);

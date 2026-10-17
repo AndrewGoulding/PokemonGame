@@ -2,10 +2,11 @@
 // coins at the poker dealer's table against three trainers from around the
 // game (game/table-players.js: their names and portraits).
 //
-// Fixed-limit hold'em: blinds of 5 and 10 coins; bets and raises are 10 on
-// the first two rounds (before the flop, and on it) and 20 on the turn and
-// river, four bets a round at most (the big blind is the first one before
-// the flop). Each player gets two cards; five shared cards come out, three
+// Fixed-limit hold'em at one of three STAKES: low (a 200-coin buy-in, blinds
+// of 1 and 2), mid (1,000; 5 and 10) or high (3,000; 15 and 30). Bets and
+// raises are the big blind on the first two rounds (before the flop, and on
+// it) and twice that on the turn and river, four bets a round at most (the
+// big blind is the first one before the flop). Each player gets two cards; five shared cards come out, three
 // (the flop), one (the turn), one (the river), with a round of betting
 // before the flop and after each. Whoever's left at the end shows down: the
 // best five of their seven cards wins (HAND_NAMES, best first). Anyone short
@@ -17,9 +18,9 @@
 // hundred times (equity), weighed against the price of a call, each in their
 // own style (STYLES): how good a hand they want before raising, how much they
 // need to stay in, and how often they bluff. One who loses all their chips
-// leaves, and another trainer sits down with STACK.
+// leaves, and another trainer sits down with the table's buy-in.
 //
-//   const t = Poker.create({ chips: 200, rng });   // you're seat 0
+//   const t = Poker.create({ chips: 200, stakes: Poker.STAKES[0], rng });   // you're seat 0
 //   Poker.startHand(t);
 //   Poker.options(t) -> { seat, toCall, canCheck, canRaise, raiseTo, ... } for t.toAct
 //   Poker.act(t, { type: "fold" | "check" | "call" | "raise" });   // t.log: what happened
@@ -28,7 +29,12 @@
 // Cards are { rank: 2-14 (11 J, 12 Q, 13 K, 14 A), suit: "S" | "H" | "D" | "C" }.
 (function () {
   const SUITS = ["S", "H", "D", "C"];
-  const SMALL_BLIND = 5, BIG_BLIND = 10, MAX_BETS = 4, STACK = 500;
+  const MAX_BETS = 4;
+  const STAKES = [
+    { name: "Low stakes", buyIn: 200, sb: 1, bb: 2 },
+    { name: "Mid stakes", buyIn: 1000, sb: 5, bb: 10 },
+    { name: "High stakes", buyIn: 3000, sb: 15, bb: 30 }
+  ];
   const STREETS = ["preflop", "flop", "turn", "river"];
   const HAND_NAMES = ["High Card", "Pair", "Two Pair", "Three of a Kind", "Straight", "Flush", "Full House", "Four of a Kind", "Straight Flush", "Royal Flush"];
   // How they play: raise with this much of a share of the pot's chances (1 = an even share),
@@ -125,15 +131,16 @@
   function create(opts) {
     opts = opts || {};
     const rng = opts.rng || Math.random;
+    const stakes = opts.stakes || STAKES[1];
     const seats = [{ name: opts.name || "You", chips: opts.chips | 0, human: true, pic: opts.pic || null }]
-      .concat(newPlayers(3, rng).map((p) => Object.assign(p, { chips: opts.stack || STACK })));
-    return { rng, seats, button: Math.floor(rng() * seats.length), board: [], deck: [], street: "done", toAct: -1,
+      .concat(newPlayers(3, rng).map((p) => Object.assign(p, { chips: stakes.buyIn })));
+    return { rng, seats, stakes, sb: stakes.sb, bb: stakes.bb, button: Math.floor(rng() * seats.length), board: [], deck: [], street: "done", toAct: -1,
       hands: 0, log: [], result: null };
   }
   const inHand = (s) => !s.folded && !s.out;
   const canAct = (s) => inHand(s) && !s.allIn;
   const nextSeat = (t, i, ok) => { for (let k = 1; k <= t.seats.length; k++) { const j = (i + k) % t.seats.length; if (ok(t.seats[j])) return j; } return -1; };
-  const betUnit = (t) => (t.street === "turn" || t.street === "river" ? 2 * BIG_BLIND : BIG_BLIND);
+  const betUnit = (t) => (t.street === "turn" || t.street === "river" ? 2 * t.bb : t.bb);
   const pot = (t) => t.seats.reduce((n, s) => n + (s.total || 0), 0);
 
   // Puts `n` chips (at most all of them) from seat `i` into the pot this round.
@@ -152,7 +159,7 @@
       if (s.human || s.chips > 0) return;
       const fresh = newPlayers(1, rng, t.seats.map((o) => o.name))[0];
       t.log.push({ type: "replace", seat: i, left: s.name, joined: fresh.name });
-      t.seats[i] = Object.assign(fresh, { chips: STACK });
+      t.seats[i] = Object.assign(fresh, { chips: t.stakes.buyIn });
     });
     for (const s of t.seats) Object.assign(s, { cards: [], folded: false, allIn: false, bet: 0, total: 0, out: s.chips <= 0, acted: false, last: null });
     t.board = []; t.result = null;
@@ -164,15 +171,15 @@
     const sb = live === 2 ? t.button : nextSeat(t, t.button, (s) => !s.out);
     const bb = nextSeat(t, sb, (s) => !s.out);
     t.blinds = [sb, bb];
-    put(t, sb, SMALL_BLIND);
-    put(t, bb, BIG_BLIND);
+    put(t, sb, t.sb);
+    put(t, bb, t.bb);
     t.log.push({ type: "blinds", sb, bb });
     for (let round = 0; round < 2; round++) for (let k = 1; k <= t.seats.length; k++) {
       const s = t.seats[(t.button + k) % t.seats.length];
       if (!s.out) s.cards.push(t.deck.shift());
     }
     t.street = "preflop";
-    t.currentBet = BIG_BLIND;
+    t.currentBet = t.bb;
     t.bets = 1;
     t.toAct = nextSeat(t, bb, canAct);
     settle(t);
@@ -330,6 +337,6 @@
   const RANK_NAMES = { 11: "J", 12: "Q", 13: "K", 14: "A" };
   const cardName = (c) => (RANK_NAMES[c.rank] || String(c.rank)) + { S: "♠", H: "♥", D: "♦", C: "♣" }[c.suit];
 
-  window.Poker = { SUITS, SMALL_BLIND, BIG_BLIND, MAX_BETS, STACK, STREETS, HAND_NAMES, STYLES, newPlayers,
+  window.Poker = { SUITS, STAKES, MAX_BETS, STREETS, HAND_NAMES, STYLES, newPlayers,
     deck, score5, best, compare, handName, describe, create, startHand, options, act, equity, decide, pot, cardName };
 })();

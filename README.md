@@ -331,15 +331,16 @@ the top left; up to 9,999 in the Coin Case), get a few from the gamblers,
 find them on the floor, and play FireRed's slot machines (its reels, odds,
 lines and payouts, from `src/slot_machine.c`) or Texas Hold'em at the poker
 table (this game's own: `game/poker.js` has the rules, `ui/poker.js` the
-table). The dealer by the counter at the back seats you, once you have the
-Coin Case and at least 20 Coins, for a buy-in of 100, 200, 500 or 1,000 Coins
-(or all you have) in chips, against three trainers from around the game
-(`game/table-players.js`: any trainer but Gym Leaders, the Elite Four,
-rivals, Team Rocket and pairs, by class and name, "Bird Keeper Wilton", each
-with their class's front picture as a portrait), with 500 each; one who runs
-out of chips leaves and another trainer sits down. It's fixed
-limit: blinds of 5 and 10, bets and raises of 10 before the flop and on it
-and 20 on the turn and river, four bets a round at most; short stacks go all
+table). The dealer seats you, once you have the Coin Case, at the stakes you
+pick: low stakes (a 200-Coin buy-in, blinds of 1 and 2), mid stakes (1,000;
+5 and 10) or high stakes (3,000; 15 and 30), your buy-in in chips, against
+three trainers from around the game (`game/table-players.js`: any trainer
+but Gym Leaders, the Elite Four, rivals, Team Rocket and pairs, by class and
+name, "Bird Keeper Wilton", each with their class's front picture as a
+portrait), who buy in the same; one who runs out of chips leaves and another
+trainer sits down. It's fixed limit: bets and raises of the big blind before
+the flop and on it, and twice that on the turn and river, four bets a round
+at most (the table shows its stakes); short stacks go all
 in, with side pots. On your turn pick Fold, Check or Call, or Bet or Raise
 (left / right and A, or tap). Your hand so far is named in the middle of the
 table ("Your hand: Pair of Kings"; from the flop on, your best five-card hand,

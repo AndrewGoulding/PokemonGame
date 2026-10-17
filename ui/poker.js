@@ -62,7 +62,8 @@
         '<div class="pk-middle"><div class="pk-board">' + board + '</div><div class="pk-pot">Pot ' + P().pot(t) +
           (t.street !== "done" ? " · " + { preflop: "Before the flop", flop: "The flop", turn: "The turn", river: "The river" }[t.street] : "") + "</div>" +
           '<div class="pk-yours">' + (yours ? "Your hand: " + esc(yours.name) : me.folded ? "You folded." : "") + "</div>" +
-          '<div class="pk-message">' + esc(message) + "</div></div>" +
+          '<div class="pk-message">' + esc(message) + "</div>" +
+          '<div class="pk-stakes">' + esc(t.stakes.name) + " · blinds " + t.sb + "/" + t.bb + " · bets " + t.bb + "/" + 2 * t.bb + "</div></div>" +
         '<div class="pk-bottom">' + seatHtml(me, 0) + '<div class="pk-actions">' +
           buttons.map((b, i) => '<button type="button" class="pk-button' + (i === cursor ? " cursor" : "") + '" data-i="' + i + '">' + esc(b.label) + "</button>").join("") +
         "</div></div></div>";

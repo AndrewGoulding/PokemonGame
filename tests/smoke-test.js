@@ -4156,7 +4156,7 @@ console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " 
   // Everyone else folds: the last one in takes the pot without a showdown.
   while (t.street !== "done") P.act(t, { type: t.seats[t.toAct].bet === t.currentBet ? "check" : "fold" });
   assert(!t.result.showdown && t.result.winners.length === 1);
-  assert.strictEqual(t.seats.reduce((n, s) => n + s.chips, 0), 200 + 3 * P.STACK, "no chips made or lost");
+  assert.strictEqual(t.seats.reduce((n, s) => n + s.chips, 0), 200 + 3 * t.stakes.buyIn, "no chips made or lost");
   // Side pots: you go all in for 15 with aces; the main pot (15 from each of
   // four) is yours, the 15 more the others put in goes to the best of them.
   const s = P.create({ chips: 15, rng });
@@ -4247,7 +4247,7 @@ console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " 
   const gone = t.seats[2].name;
   t.seats[2].chips = 0;
   Poker.startHand(t);
-  assert(t.seats[2].name !== gone && t.seats[2].chips + t.seats[2].total === Poker.STACK && t.log.some((e) => e.type === "replace" && e.left === gone));
+  assert(t.seats[2].name !== gone && t.seats[2].chips + t.seats[2].total === t.stakes.buyIn && t.log.some((e) => e.type === "replace" && e.left === gone));
   // Blackjack with others at the table: everyone's hands are dealt and played
   // (basic strategy), you sit in the middle, and the coins all add up.
   const rng = (() => { let x = 9; return () => (x = (x * 16807) % 2147483647) / 2147483647; })();
@@ -4285,4 +4285,16 @@ console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " 
   const wild = Object.assign(Party.create("Pikachu", 5), { item: "oran-berry" });
   assert.strictEqual(Party.caught(wild, { level: 5, exp: wild.exp, evs: wild.evs, happiness: 70, hp: 10, status: "", moves: [], item: "oran-berry" }, "poke-ball").item, "oran-berry");
   assert.strictEqual(Party.caught(wild, { level: 5, exp: wild.exp, evs: wild.evs, happiness: 70, hp: 10, status: "", moves: [], item: "" }, "poke-ball").item, "", "a Berry it ate is gone");
+}
+
+// Poker's stakes: the blinds, bets and everyone's buy-in go by them.
+{
+  const [low, mid, high] = Poker.STAKES;
+  assert.deepStrictEqual([low, mid, high].map((s) => [s.buyIn, s.sb, s.bb]), [[200, 1, 2], [1000, 5, 10], [3000, 15, 30]]);
+  const t = Poker.create({ chips: 200, stakes: low });
+  assert(t.seats.slice(1).every((s) => s.chips === 200), "the others buy in the same");
+  t.button = 2; Poker.startHand(t);
+  assert.deepStrictEqual([t.seats[0].bet, t.seats[1].bet, Poker.options(t).raiseTo], [1, 2, 4]);
+  const h = Poker.create({ chips: 3000, stakes: high }); h.button = 2; Poker.startHand(h);
+  assert.deepStrictEqual([h.seats[0].bet, h.seats[1].bet, Poker.options(h).raiseTo], [15, 30, 60]);
 }
