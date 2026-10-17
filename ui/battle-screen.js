@@ -2098,12 +2098,26 @@
     }
   }
 
+  let raidAnnounced = -1;   // (the turn a Tera Raid's turns left were last told)
   async function loop() {
     for (;;) {
       await playNewEvents();
       if (battle.ended) return;
       if (battle.doubles) { const r = await doublesStep(); if (r === "crashed") return r; continue; }
       const p1 = battle.getRequest("p1");
+      // (A Tera Raid's turn limit, this game's own: config.raidTurns.)
+      if (config.raidTurns && p1.phase === "move" && raidAnnounced !== battle.turn) {
+        raidAnnounced = battle.turn;
+        const left = config.raidTurns - battle.turn + 1;   // (battle.turn: the turn being chosen, from 1)
+        if (left <= 0) {
+          await message("The Tera Raid Pokémon's power\ngrew too strong!");
+          await message("You were blown out of the den!");
+          battle.raidTimedOut = true;
+          return;
+        }
+        if (battle.turn === 1) await message("You have " + left + " turns to win\nthe Tera Raid!");
+        else if (left <= 3) await message(left === 1 ? "This is the last turn!" : left + " turns left!");
+      }
       if (p1.phase === "move" || p1.phase === "switch" || p1.phase === "revive") {
         const choice = p1.phase === "move" ? await chooseAction(p1) : p1.phase === "revive" ? await chooseRevive(p1) : await chooseSwitch(p1, false);
         const r = choose("p1", choice);
@@ -2649,6 +2663,7 @@
       hideBars();
     }
     battle.start();
+    raidAnnounced = -1;
     const status = await loop();
     let outcome;
     if (status === "crashed") {
@@ -2656,6 +2671,7 @@
       outcome = "crashed";
     } else if (battle.caught) outcome = "caught";
     else if (battle.escaped) outcome = "ran";
+    else if (battle.raidTimedOut) outcome = "timeout";
     else if (battle.safari && battle.safariOut) outcome = "noballs";
     else if (battle.safari && battle.fled) outcome = "fled";
     else if (battle.winner === "p1") {

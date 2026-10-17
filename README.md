@@ -1421,8 +1421,12 @@ battle with its Pokémon (from each type's list for that many stars, at Lv.
 12, 20, 35, 50 or 65 and up to 3 more, with IVs of 10 to 31), which
 Terastallizes into the den's type as soon as it's out and has 1.5, 2, 2.5, 3
 or 4 times its HP; it battles as a trainer's Pokémon does, and can't be caught
-mid-battle. Lose and you're thrown out of the den (your Pokémon are restored)
-and it keeps glowing. Win and you get money (₽1,500 / 3,000 / 6,000 / 10,000
+mid-battle. You have 10, 10, 12, 15 or 20 turns to win (as Scarlet and
+Violet's raids have a time limit): told at the start, then "3 turns left!",
+"2 turns left!" and "This is the last turn!"; out of turns, "The Tera Raid
+Pokémon's power grew too strong!" and you're blown out. Lose, or run out of
+turns, and you're thrown out of the den (your Pokémon are restored) and it
+keeps glowing. Win and you get money (₽1,500 / 3,000 / 6,000 / 10,000
 / 20,000), Exp. Candies (XS for 1 star up to L and XL for 5), vitamins (1 to
 5) and Berries (2 to 6: everyday ones for 1 star, Sitrus and Lum, the
 EV-lowering ones and the rare pinch Berries further up), and the den goes to

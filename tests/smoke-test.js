@@ -591,6 +591,10 @@ for (const share of [false, true]) {
   for (const f of ["raid_den", "raid_den_active"]) assert(fs.existsSync(path.join(root, "assets/world/sprites/" + f + ".png")), f);
   // Stars: 1 with no Badges, up to 5 with all eight; stronger Lures, more stars.
   assert.deepStrictEqual([0, 1, 2, 3, 4, 5, 6, 7, 8].map(RaidDens.maxStars), [1, 1, 2, 2, 3, 3, 4, 4, 5]);
+  // Its turn limit, more for more stars; the battle screen blows you out after it (raidTurns).
+  assert.deepStrictEqual(RaidDens.TURNS.slice(1), [10, 10, 12, 15, 20]);
+  assert(/raidTurns: opts\.raid \? RaidDens\.TURNS\[opts\.raid\]/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")));
+  assert(/battle\.raidTimedOut = true/.test(fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8")));
   let seed = 7;
   const rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
   const mean = (lure, badges) => { let t = 0; for (let i = 0; i < 3000; i++) t += RaidDens.rollStars(lure, badges, rng); return t / 3000; };

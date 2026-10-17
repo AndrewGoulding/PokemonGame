@@ -295,7 +295,7 @@
       format: double ? "doubles" : undefined,
       partnerTrainer: opts.partner && opts.partner.pic,
       foeTrainer2: foe2 && foe2.pic, defeatText2: foe2 && foe2.defeatText && foe2.defeatText.map((p) => fill(p)),
-      ghost: !!opts.ghost, noCatch: !!opts.noCatch, raid: opts.raid || 0,
+      ghost: !!opts.ghost, noCatch: !!opts.noCatch, raid: opts.raid || 0, raidTurns: opts.raid ? RaidDens.TURNS[opts.raid] : 0,
       megaRing: Player.itemCount(player, "mega-ring") > 0,
       zRing: Player.itemCount(player, "z-ring") > 0,
       dynamaxBand: Player.itemCount(player, "dynamax-band") > 0,
@@ -10064,7 +10064,8 @@
   //
   // A den sleeps until you use a Lure on it; then it glows with a raid of 1
   // to 5 stars until you win it. The raid: a wild battle (no catching mid-way)
-  // against its Pokémon, Terastallized into the den's type with more HP;
+  // against its Pokémon, Terastallized into the den's type with more HP,
+  // won within its turns (RaidDens.TURNS) or you're blown out of the den;
   // losing, you're thrown out of the den (your Pokémon are fine) and it keeps
   // glowing. Won: money, Exp. Candies, vitamins and Berries, then the chance
   // to catch it, in any Ball (it can't miss).
@@ -10104,6 +10105,12 @@
     show("world");
     await Overworld.resume();
     if (outcome === "lost") { await say(["You were blown out of the den…", "Your Pokémon were restored."]); return; }
+    // (Out of turns: blown out too, the den still glowing.)
+    if (outcome === "timeout") {
+      player.party.forEach(Party.heal);
+      await say(["The den is still glowing…", "Your Pokémon were restored."]);
+      return;
+    }
     if (outcome !== "won") return;
     RaidDens.finish(f, den.id);
     Overworld.refreshPeople();

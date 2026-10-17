@@ -4,8 +4,9 @@
 // Tera Raid of 1 to 5 stars (the more Badges you have, the more stars it can
 // have, and the stronger the Lure, the likelier the higher ones), until you
 // win it. The Tera Raid Pokémon is Terastallized into the den's type, with
-// more HP the more stars; beaten, it gives money, Exp. Candies, vitamins and
-// Berries (more and better the more stars), and you may catch it.
+// more HP the more stars, and must be beaten within a number of turns;
+// beaten, it gives money, Exp. Candies, vitamins and Berries (more and
+// better the more stars), and you may catch it.
 // Depends on: window.WORLD_MAPS, window.DEX, window.ITEMS, window.Party (when used).
 //
 //   RaidDens.DENS                        // [{ id, map, x, y, type }]
@@ -15,7 +16,7 @@
 //   RaidDens.rollStars(lure, badges, rng)  // a raid's stars, from the Lure used
 //   RaidDens.start(flags, den, lure, badges, rng)  // use a Lure on a den: its raid, now glowing
 //   RaidDens.boss(den, raid, rng)        // the Tera Raid Pokémon, a party record (Terastallizes as soon as it's out)
-//   RaidDens.HP / LEVELS / IVS           // by stars (index 1-5)
+//   RaidDens.HP / LEVELS / IVS / TURNS   // by stars (index 1-5)
 //   RaidDens.rewards(stars, rng)         // { money, items: [[id, count], ...] }
 //   RaidDens.finish(flags, id)           // won: the den sleeps again
 //
@@ -53,11 +54,14 @@
   }
 
   // By stars (1-5; index 0 unused): the Badges a raid needs, its Pokémon's
-  // level (and up to 3 more), IVs, and HP (times its usual).
+  // level (and up to 3 more), IVs, HP (times its usual)...
   const BADGES = [0, 0, 2, 4, 6, 8];
   const LEVELS = [0, 12, 20, 35, 50, 65];
   const IVS = [0, 10, 15, 20, 25, 31];
   const HP = [0, 1.5, 2, 2.5, 3, 4];
+  // ...and the turns you have to win it (as Scarlet and Violet's raids have a
+  // time limit), more for the bigger ones.
+  const TURNS = [0, 10, 10, 12, 15, 20];
   const maxStars = (badges) => BADGES.reduce((n, need, s) => (s && badges >= need ? s : n), 1);
 
   // How likely each number of stars is, by Lure (before the Badges rule some out).
@@ -163,5 +167,5 @@
     return { money: R.money, items: Object.entries(got) };
   }
 
-  window.RaidDens = { DENS, byScript, active, maxStars, rollStars, start, finish, boss, rewards, POOLS, BADGES, LEVELS, IVS, HP, LURE_ODDS, REWARDS };
+  window.RaidDens = { DENS, byScript, active, maxStars, rollStars, start, finish, boss, rewards, POOLS, BADGES, LEVELS, IVS, HP, TURNS, LURE_ODDS, REWARDS };
 })();
