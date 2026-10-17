@@ -3145,6 +3145,9 @@ for (let seed = 1; seed <= GEN8; seed++) {
     assert.deepStrictEqual([o.terastallized, o.types], ["Electric", ["Electric"]], "Brock's Onix: Tera Electric, first turn");
     const gameSrc = fs.readFileSync(path.join(__dirname, "../ui/game.js"), "utf8");
     assert(/Object\.assign\(onix, \{ teraType: "Electric", teraAce: true \}\)/.test(gameSrc) && /pic: "leader_brock", tera: true/.test(gameSrc), "Brock's Onix");
+    assert(/Object\.assign\(starmie, \{ teraType: "Psychic", teraAce: true \}\)/.test(gameSrc) && /pic: "leader_misty", tera: true/.test(gameSrc), "Misty's Starmie");
+    assert(/r\.species === "Raichu"\), \{ teraType: "Water", teraAce: true \}\)/.test(gameSrc) && /pic: "leader_lt_surge", tera: true/.test(gameSrc), "Lt. Surge's Raichu");
+    assert(WORLD_TRAINERS.TRAINER_LEADER_LT_SURGE.party.some((m) => m.species === "Raichu"));
     assert(/script === "enter:PewterCity" \|\| script === "arrive:PewterCity"\) && !player\.flags\.gotTeraOrb/.test(gameSrc)
       && /Player\.addItem\(player, "tera-orb"\)/.test(gameSrc), "the Tera Orb from Prof. Oak's aide in Pewter"); }
   // Tera STAB: 2x for a Tera Type it already had, 1.5x for its own types or a new one; the 60-power floor.

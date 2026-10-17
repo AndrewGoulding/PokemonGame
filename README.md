@@ -1335,7 +1335,8 @@ the box, the rainbow, crystal and shards (`tools/build-mega-icons.js` copies
 them), the picture tinted halfway to the type's colour and its type's Tera
 symbol where "Lv" was. Trainers with a Tera Orb Terastallize for a move of
 their Tera Type, with their last Pokémon, or their ace as soon as it's out:
-Brock has one, and his Onix Terastallizes into an Electric type.
+Brock's Onix Terastallizes into an Electric type, Misty's Starmie into a
+pure Psychic type and Lt. Surge's Raichu into a Water type.
 
 Alcremie comes in all 63 flavours: a Sweet used on Milcery asks which
 way it spins and for how long, and that with the time of day gives its cream

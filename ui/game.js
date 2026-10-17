@@ -5937,6 +5937,8 @@
   // attack besides Metronome), then FireRed's Starmie.
   function mistyTeam() {
     const [, starmie] = trainerTeam("TRAINER_LEADER_MISTY");
+    // (Her ace, Starmie, Terastallizes into a pure Psychic type as soon as it's out.)
+    Object.assign(starmie, { teraType: "Psychic", teraAce: true });
     return [Party.create("Psyduck", 18, { ivs: 0 }),
       Party.create("Togepi", 19, { ivs: 0, moves: ["Dazzling Gleam", "Metronome", "Sweet Kiss", "Yawn"] }), starmie];
   }
@@ -5973,7 +5975,7 @@
     if (!f.TRAINER_LEADER_MISTY) {
       await say(person.trainer.intro);
       if (!canBattle()) return;
-      const outcome = await battle("trainer", { foe: { name: "Leader Misty", team: mistyTeam(), pic: "leader_misty" },
+      const outcome = await battle("trainer", { foe: { name: "Leader Misty", team: mistyTeam(), pic: "leader_misty", tera: true },
         defeatText: person.trainer.defeat, trainerId: "TRAINER_LEADER_MISTY", terrain: "leader" });
       if (outcome !== "won") return;
       if (!hasBadge("cascade")) player.badges.push("cascade");
@@ -5993,12 +5995,18 @@
 
   // Lt. Surge: battle (talking to him), then the Thunder Badge and TM34 Shock
   // Wave (this game's TM102). Beating him also beats his Gym's trainers.
+  // His team: FireRed's, his ace Raichu Terastallizing into a Water type as soon as it's out.
+  function surgeTeam() {
+    const team = trainerTeam("TRAINER_LEADER_LT_SURGE");
+    Object.assign(team.find((r) => r.species === "Raichu"), { teraType: "Water", teraAce: true });
+    return team;
+  }
   async function ltSurge(person) {
     const f = player.flags, ID = "TRAINER_LEADER_LT_SURGE";
     if (!f[ID]) {
       await say(person.trainer.intro);
       if (!canBattle()) return;
-      const outcome = await battle("trainer", { foe: { name: "Leader Lt. Surge", team: trainerTeam(ID), pic: "leader_lt_surge" },
+      const outcome = await battle("trainer", { foe: { name: "Leader Lt. Surge", team: surgeTeam(), pic: "leader_lt_surge", tera: true },
         defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
       if (outcome !== "won") return;
       if (!hasBadge("thunder")) player.badges.push("thunder");
