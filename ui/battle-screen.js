@@ -320,11 +320,18 @@
     b.layer = c;
     return c;
   }
+  const STAR = ["...#...", "..###..", "#######", ".#####.", "..###..", ".##.##.", "##...##"];
+  function drawStar(g, x, y) {
+    for (const [dx, dy, colour] of [[1, 1, "#9c6b00"], [0, 0, "#f8d030"]]) {
+      g.fillStyle = colour;
+      STAR.forEach((row, j) => [...row].forEach((ch, i) => { if (ch === "#") g.fillRect(x + i + dx, y + j + dy, 1, 1); }));
+    }
+  }
   function hbLayerFor(side) {
     const b = hb[side], d = b.data, cfg = hbCfg(side), st = hbStyle(side);
     if (b.data.safari) return safariLayer(b);
     const shownHp = b.hp < b.hpTo ? Math.floor(b.hp) : Math.ceil(b.hp);
-    const key = [d.name, d.gender, d.level, d.status, d.caught, d.mega, shownHp, b.maxhp, doublesLayout].join("|");
+    const key = [d.name, d.gender, d.level, d.status, d.caught, d.mega, d.shiny, shownHp, b.maxhp, doublesLayout].join("|");
     if (b.layer && b.layerKey === key) return b.layer;
     b.layerKey = key;
     const s = window.GbaMenus.Surface();
@@ -335,7 +342,7 @@
     // Name, then the gender symbol after it (FONT_SMALL at window (0, 3)).
     const nx = st.nameX;
     const w = s.text(d.name || "", nx, 3, HB_TEXT, HB_SHADOW, "small");
-    if (d.gender === "M" || d.gender === "F") s.text(d.gender === "M" ? "♂" : "♀", nx + w, 3, d.gender === "M" ? HB_MALE : HB_FEMALE, HB_SHADOW, "small");
+    const gw = d.gender === "M" || d.gender === "F" ? s.text(d.gender === "M" ? "♂" : "♀", nx + w, 3, d.gender === "M" ? HB_MALE : HB_FEMALE, HB_SHADOW, "small") : 0;
     // "Lv" and the level, right-aligned in 24 pixels (Mega Evolved, the
     // level alone, the Mega symbol before it).
     const lv = String(d.level || "");
@@ -360,6 +367,8 @@
     g.drawImage(s.canvas(), 0, 0);
     g.restore();
     if (d.mega && hbMega.complete) g.drawImage(hbMega, lvAt + lvW - 10, -1);
+    // (This game's own: a gold star after a shiny wild Pokémon's name, kept inside the name's window.)
+    if (d.shiny) drawStar(g, Math.min(nx + w + (gw || 0) + 1, nx + 56 - 7), 6);
     // The status icon: yours left of the HP numbers, theirs over "HP".
     const stIcon = HB_STATUS[d.status];
     if (stIcon != null && hbStatus.complete) g.drawImage(hbStatus, 0, ((sideOf(side) === "p2" ? 5 : 0) + stIcon) * 8, 24, 8, st.status[0], st.status[1], 24, 8);
@@ -568,6 +577,10 @@
     return all[teamIndex] || {};
   };
   const { message, ask, wait, say, clearMenu } = window.Screen;
+  // (A wait A can't cut short: the wild Pokémon sliding in and showing
+  // itself, and a thrown ball dropping and shaking, play out in full.
+  // Screen.wait ends early on A.)
+  const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   // "Charizard" / "the opposing Blastoise" / "the wild Pidgey"
   function label(side, name) {
@@ -664,7 +677,8 @@
       // (A wild Pokémon's box shows a ball if you've caught its kind before.)
       caught: side === "p2" && battle.wild && config.catchContext && config.catchContext.caughtBefore
         ? !!config.catchContext.caughtBefore(v.species) : false,
-      mega: /-Mega(-|$)/.test(v.species || "")
+      mega: /-Mega(-|$)/.test(v.species || ""),
+      shiny: side === "p2" && !!(battle && battle.wild) && !!v.shiny
     };
     b.maxhp = v.maxhp || 1;
     b.hpTo = v.hp;
@@ -1430,13 +1444,13 @@
           // In it goes (FireRed: SE_BALL_TRADE), then the ball drops and bounces.
           setTimeout(() => sfx("se_ball_trade"), 150);
           setTimeout(() => sfx("se_ball_bounce_1"), 380);
-          await wait(500);
+          await pause(500);
           for (let i = 0; i < +ev[4]; i++) {
             el.ball.classList.remove("shake");
             void el.ball.offsetWidth;
             el.ball.classList.add("shake");
             sfx("se_ball");
-            await wait(SHAKE_MS);
+            await pause(SHAKE_MS);
           }
           if (ev[5] === "caught") { el.ball.classList.add("caught"); return; }
           sfx("se_ball_trade");
@@ -2129,7 +2143,7 @@
     if (cfg.wild) {
       mon = battle.sides.p2.pokemon[0];
       view.p2 = { name: mon.name, species: mon.species, level: mon.level, hp: mon.hp, maxhp: mon.maxhp, status: "",
-        fainted: false, exp: null, teamIndex: 0, form: (cfg.p2.team[0] || {}).form || "" };
+        fainted: false, exp: null, teamIndex: 0, form: (cfg.p2.team[0] || {}).form || "", shiny: !!(cfg.p2.team[0] || {}).shiny };
       renderSide("p2");
       el.sides.p2.info.classList.add("hidden");
       el.sides.p2.sprite.classList.add("silhouette");
@@ -2162,13 +2176,13 @@
     el.field.classList.add("entering");
     for (const t of [foeTerrain, playerTerrain]) t.style.backgroundPositionX = "";
     for (const [e] of movers) e.style.transform = "";
-    await wait(1100);
+    await (mon ? pause : wait)(1100);
     el.field.classList.remove("entering");
     if (mon) {
       el.sides.p2.sprite.classList.remove("silhouette");
       cry("p2");
       sparkle("p2");
-      await wait(350);
+      await pause(350);
       el.sides.p2.info.classList.remove("hidden");
       // (The old man's: "Wild … appeared!{PAUSE 127}", on by itself.)
       if (cfg.oldMan) await message("Wild " + mon.name + " appeared!", 127 * 1000 / 60);

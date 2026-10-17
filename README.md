@@ -1428,8 +1428,11 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   EVs, as in X and Y.
 - **Shiny Pokémon**: any Pokémon you meet or are given is shiny 1 time in 1,000
   (trainers' never are). They use their shiny sprites
-  everywhere, sparkle as they come out in battle, and have a ★ on their
-  summary. (The debug menu's Add a Pokémon has a Shiny box.)
+  everywhere, sparkle as they come out in battle (a wild one too, as it
+  appears), have a gold star after their name in a wild battle's healthbox,
+  and have a ★ on their summary. (The debug menu's Add a Pokémon has a Shiny
+  box.) A wild Pokémon sliding in and showing itself, and a thrown ball
+  dropping and shaking, play out in full: A doesn't cut them short.
 - **Move Relearner and Move Deleter**: they sit on the cushions upstairs in
   every Pokémon Center. The Relearner teaches a Pokémon a level-up move
   it could know by now (its own, or one its earlier forms learn by its level,
