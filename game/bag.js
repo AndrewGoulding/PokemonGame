@@ -59,7 +59,9 @@
     "tart-apple": 2200, "sweet-apple": 2200, "cracked-pot": 1600, "chipped-pot": 38000, "galarica-cuff": 6000,
     "galarica-wreath": 6000, "strawberry-sweet": 500, "love-sweet": 500, "berry-sweet": 500, "clover-sweet": 500,
     "flower-sweet": 500, "star-sweet": 500, "ribbon-sweet": 500, "black-augurite": 2100, "peat-block": 2100,
-    "scroll-of-darkness": 2100, "scroll-of-waters": 2100
+    "scroll-of-darkness": 2100, "scroll-of-waters": 2100,
+    // Generation 9's, at Scarlet and Violet's prices (the armors and Metal Alloy as the stones).
+    "auspicious-armor": 3000, "malicious-armor": 3000, "syrupy-apple": 2200, "unremarkable-teacup": 1600, "metal-alloy": 3000
   };
   // Not in Gen 6 shops; priced for this game. Mints are from Sword and Shield.
   const MINT_PRICE = 20000;

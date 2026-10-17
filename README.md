@@ -1339,6 +1339,57 @@ Aura Wheel, Stone Axe, Ceaseless Edge, Dire Claw, Barb Barrage, Infernal
 Parade, Triple Arrows and the three storms. The test battles 100 random Gen
 8 teams in debug mode.
 
+## Generation 9
+
+Paldea's Pokémon are in: all 120 (#906-1025, Sprigatito to Pecharunt), the
+Paldean forms (Combat, Blaze and Aqua Breed Tauros, Paldean Wooper) and the
+forms Gen 9's Pokémon come in (Bloodmoon Ursaluna, female Oinkologne,
+Maushold's Family of Four, Squawkabilly's plumages, Hero Palafin, Droopy and
+Stretchy Tatsugiri, Three-Segment Dudunsparce, Roaming Gimmighoul, Ogerpon's
+masks and Terastal Terapagos). `tools/build-gen9.js` makes `data/dex-gen9.js`,
+`data/learnsets-gen9.js` (Scarlet and Violet's moves), `data/moves-gen9.js`
+(the 64 moves Gen 9 added) and `data/items-gen9.js` from @pkmn/dex and
+PokeAPI's CSVs; the sprites come as Gen 7's and 8's do (`node
+tools/fetch-gen7-sprites.js <csv folder> gen9`), and the party icons
+(pokeemerald-expansion's), sprite metrics, evolutions, Egg Groups (Paldean
+Pokémon hatch as such) and machines are built by the usual tools. Not in: the
+Tera formes (no Terastallizing here), Koraidon's and Miraidon's travel modes,
+and the Artisan and Masterpiece teacups, which look the same. The Hisuian forms
+were already in (with Gen 8, above).
+
+Paldea's evolutions of older Pokémon are in too: Primeape into Annihilape
+(Rage Fist used 20 times), Girafarig into Farigiraf (knowing Twin Beam),
+Dunsparce into Dudunsparce (knowing Hyper Drill), Bisharp into Kingambit,
+Applin into Dipplin (the Syrupy Apple) and on into Hydrapple (knowing Dragon
+Cheer), Duraludon into Archaludon (the Metal Alloy) and Paldean Wooper into
+Clodsire. Their other rules, noted in `data/evolutions.js`: Pawmo, Bramblin
+and Rellor evolve once they've walked 1,000 steps in your party (following you
+in Let's Go, in the games); Bisharp once it has knocked out 3 Bisharp (Bisharp
+holding a Leader's Crest, in the games); Gimmighoul with 999 Coins in your Coin
+Case (999 Gimmighoul Coins, in the games); and 1 in 100 Tandemaus become a
+Family of Four and 1 in 100 Dudunsparce have three segments, by personality.
+The Auspicious and Malicious Armors, Syrupy Apple, Unremarkable Teacup and
+Metal Alloy are in the Bag. The Karate Master's rematch team (a Dojo rule: fully
+evolved) has Annihilape now where it had Primeape.
+
+**Legends: Z-A's Megas**: all 47 that Legends: Z-A and its Mega Dimension
+added, with their Mega Stones (pokeemerald-expansion's pictures): Mega
+Clefable, Victreebel, Starmie, Dragonite, Meganium, Feraligatr, Skarmory,
+Froslass, Emboar, Excadrill, Scolipede, Scrafty, Eelektross, Chandelure,
+Chesnaught, Delphox, Greninja, Pyroar, Floette, Malamar, Barbaracle,
+Dragalge, Hawlucha, Drampa and Falinks; Mega Raichu X and Y, Chimecho, Absol
+Z, Staraptor, Garchomp Z, Lucario Z, Heatran, Darkrai, Golurk, Meowstic (male
+and female), Crabominable, Golisopod, Magearna, Zeraora, Scovillain, Glimmora,
+Tatsugiri (each of its forms) and Baxcalibur (Mega Zygarde was already in).
+A stone may stand for several: the Meowsticite gives a Meowstic its Mega by
+gender, the Tatsugirinite by form. Floette's Eternal Flower is in, but as it
+can't be caught the Floettite works for any Floette. Like the other
+generations' Mega Stones, the stones for other regions' Pokémon aren't found
+in Kanto; the Kanto Pokémon's are, as item balls: the Clefablite deep in Mt.
+Moon (1F), the Victreebelite on Route 25, the Raichunite X and Y in the Power
+Plant, the Starminite in the Seafoam Islands (B4F) and the Dragoninite in the
+Safari Zone's West area.
+
 ## Faraway Island
 
 Emerald's Old Sea Map event, for Mew. Once the Sapphire is in Celio's machine

@@ -632,6 +632,12 @@ window.ITEMS = {
   "peat-block": { name: "peat-block", category: "evolution", effect: "Evolves an Ursaring into Ursaluna at night. (Under a full moon, in the main games.)" },
   "scroll-of-darkness": { name: "scroll-of-darkness", category: "evolution", effect: "Evolves a Kubfu into Single Strike Urshifu. (The Tower of Darkness, in the main games.)" },
   "scroll-of-waters": { name: "scroll-of-waters", category: "evolution", effect: "Evolves a Kubfu into Rapid Strike Urshifu. (The Tower of Waters, in the main games.)" },
+  // Generation 9's evolution items (Scarlet and Violet, and their DLC).
+  "auspicious-armor": { name: "auspicious-armor", category: "evolution", effect: "Evolves a Charcadet into Armarouge." },
+  "malicious-armor": { name: "malicious-armor", category: "evolution", effect: "Evolves a Charcadet into Ceruledge." },
+  "syrupy-apple": { name: "syrupy-apple", category: "evolution", effect: "Evolves an Applin into Dipplin." },
+  "unremarkable-teacup": { name: "unremarkable-teacup", category: "evolution", effect: "Evolves a Poltchageist into Sinistcha." },
+  "metal-alloy": { name: "metal-alloy", category: "evolution", effect: "Evolves a Duraludon into Archaludon." },
   "rusted-sword": { name: "rusted-sword", category: "species-specific", effect: "Held by Zacian: it becomes the Crowned Sword when it enters battle, and its Iron Head becomes Behemoth Blade." },
   "rusted-shield": { name: "rusted-shield", category: "species-specific", effect: "Held by Zamazenta: it becomes the Crowned Shield when it enters battle, and its Iron Head becomes Behemoth Bash." },
   // Gens 7 and 8's battle gimmicks: Zygarde's Cube and Zygardite, the Z-Ring and Z-Crystals, the Memories,

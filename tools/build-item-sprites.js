@@ -13,7 +13,7 @@ const vm = require("vm");
 const root = path.join(__dirname, "..");
 const spriteDir = path.join(root, "assets/sprites/items");
 global.window = global;
-for (const f of ["data/items.js", "data/moves.js", "data/natures.js"]) {
+for (const f of ["data/items.js", "data/items-gen9.js", "data/moves.js", "data/natures.js"]) {
   vm.runInThisContext(fs.readFileSync(path.join(root, f), "utf8"));
 }
 

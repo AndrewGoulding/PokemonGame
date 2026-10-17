@@ -35,9 +35,10 @@ for (const l of Object.values(window.LEARNSETS_GEN6)) for (const m of l.tm || []
 const moveOf = (id) => /^Teaches (.+?) to a compatible/.exec(window.ITEMS[id].effect)[1];
 const machineList = Object.keys(window.ITEMS).filter((id) => /^hm\d+$/.test(id) || (/^tm\d+$/.test(id) && !gen6Machine.has(moveOf(id))))
   .sort().map(moveOf);
-// Generation 7's and 8's Pokémon (tools/build-gen7.js, build-gen8.js) get
+// Generation 7's, 8's and 9's Pokémon (tools/build-gen7.js, build-gen8.js, build-gen9.js) get
 // every machine they could use in some generation, beyond their own games'.
-for (const f of ["data/dex-gen7.js", "data/moves-gen7.js", "data/learnsets-gen7.js", "data/dex-gen8.js", "data/moves-gen8.js", "data/learnsets-gen8.js"]) {
+for (const f of ["data/dex-gen7.js", "data/moves-gen7.js", "data/learnsets-gen7.js", "data/dex-gen8.js", "data/moves-gen8.js", "data/learnsets-gen8.js",
+  "data/moves-gen9.js", "data/learnsets-gen9.js", "data/dex-gen9.js"]) {
   vm.runInThisContext(fs.readFileSync(path.join(root, f), "utf8"));
 }
 const allMachines = Object.keys(window.ITEMS).filter((id) => /^(tm|hm)\d+$/.test(id)).sort().map(moveOf);

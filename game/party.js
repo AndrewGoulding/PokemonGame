@@ -163,6 +163,7 @@
       // Qwilfish's Barb Barrages.)
       recoil: record.recoil || 0,
       moveUses: Object.assign({}, record.moveUses),
+      koSpecies: Object.assign({}, record.koSpecies),
       // (Dynamax: its level, raised by Dynamax Candy, and the G-Max Factor.)
       dynamaxLevel: record.dynamaxLevel || 0,
       gmax: !!record.gmax
@@ -199,7 +200,19 @@
     if (mon.recoilTaken) record.recoil = mon.recoilTaken;
     const counted = Object.keys(mon.moveUses || {}).filter((m) => countedMoves().has(m));
     if (counted.length) record.moveUses = Object.fromEntries(counted.map((m) => [m, mon.moveUses[m]]));
+    // (And Pokémon knocked out, of the species an evolution counts: Kingambit's Bisharp.)
+    const kos = Object.keys(mon.koSpecies || {}).filter((sp) => countedSpecies().has(sp));
+    if (kos.length) record.koSpecies = Object.fromEntries(kos.map((sp) => [sp, mon.koSpecies[sp]]));
     return record;
+  }
+  // Species an evolution counts the knockouts of (Kingambit's Bisharp).
+  let countedKo = null;
+  function countedSpecies() {
+    if (!countedKo) {
+      countedKo = new Set();
+      for (const list of Object.values(window.EVOLUTIONS || {})) for (const e of list) for (const sp of Object.keys(e.koSpecies || {})) countedKo.add(sp);
+    }
+    return countedKo;
   }
   // Moves an evolution counts the uses of (Overqwil's Barb Barrage).
   let counted = null;

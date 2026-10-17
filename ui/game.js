@@ -359,7 +359,7 @@
       await blackout(wild ? null : foe);
     } else {
       for (const record of leveledUp) {
-        const evo = Evolution.find(record, { trigger: "level", party: player.party });
+        const evo = Evolution.find(record, { trigger: "level", party: player.party, coins: coins() });
         if (evo) await evolve(record, evo, true);
       }
       // (Galarian Farfetch'd: three critical hits in the battle, levelled up or not.)
@@ -668,7 +668,7 @@
       const newMoves = Bag.levelUp(record, { here: player.location && player.location.map });
       await message(name + " grew to Lv. " + record.level + "!");
       for (const move of newMoves) await learnMove(record, move);
-      const evo = Evolution.find(record, { trigger: "level", party: player.party });
+      const evo = Evolution.find(record, { trigger: "level", party: player.party, coins: coins() });
       if (evo) await evolve(record, evo, true);
       return;
     }
@@ -4729,7 +4729,14 @@
     { map: "CeruleanCave_B1F", x: 9, y: 12, item: "mewtwonite-y", when: (f) => f.foughtMewtwo },
     // (Left behind for a save that beat them before they gave these.)
     { map: "SilphCo_7F", x: 2, y: 6, item: "pidgeotite", when: (f) => f.silphRival },
-    { map: "ViridianCity_Gym", x: 2, y: 2, item: "kangaskhanite", when: (f) => f.giovanniLeft }
+    { map: "ViridianCity_Gym", x: 2, y: 2, item: "kangaskhanite", when: (f) => f.giovanniLeft },
+    // Legends: Z-A's, for Kanto's Pokémon: where each lives.
+    { map: "MtMoon_1F", x: 45, y: 37, item: "clefablite" },
+    { map: "Route25", x: 16, y: 6, item: "victreebelite" },
+    { map: "PowerPlant", x: 11, y: 38, item: "raichunite-x" },
+    { map: "PowerPlant", x: 47, y: 9, item: "raichunite-y" },
+    { map: "SeafoamIslands_B4F", x: 33, y: 5, item: "starminite" },
+    { map: "SafariZone_West", x: 7, y: 15, item: "dragoninite" }
   ].map((b, i) => Object.assign({ id: 950 + i, script: "Game_EventScript_MegaStone_" + b.item, flag: megaFlag(b.item),
     movement: "face_down", text: null, sprite: "item_ball", width: 16, height: 16, frames: 1, inanimate: true }, b));
   for (const b of MEGA_STONE_BALLS) ITEM_BALLS.add(b.script);
@@ -6575,7 +6582,7 @@
   // (This game's own.) Once you're Champion (flags.gameClear), the Dojo has
   // trained hard: each of its Black Belts and the Karate Master battles you
   // once more, their Pokémon fully evolved (FireRed's teams' species lines:
-  // Machop and Machoke are Machamps now, Mankey Primeapes) at levels 48-52.
+  // Machop and Machoke are Machamps now, Mankey and Primeape Annihilapes) at levels 48-52.
   // Beat the Karate Master again and he gives you the Hitmon you didn't
   // take the first time, at Lv. 50. Each battles you again only once
   // (flags.dojoRematch[trainer id]: won).
@@ -6583,7 +6590,7 @@
   const DOJO_SECOND_LEVEL = 50;
   const DOJO_REMATCH = {
     TRAINER_BLACK_BELT_HITOSHI: {
-      team: [["Machamp", 49], ["Primeape", 49], ["Primeape", 50]],
+      team: [["Machamp", 49], ["Annihilape", 49], ["Annihilape", 50]],
       intro: ["Hwaah!", "So the Champion comes back to our\nFighting Dojo!", "A title means nothing on these\nmats! Fight me!"],
       defeat: ["Oof!\nThe Champion's the real thing!"],
       after: ["Even the Champion comes here to\ntrain! I'll have to work twice as hard!"]
@@ -6595,13 +6602,13 @@
       after: ["Our Master has waited a long time\nfor this rematch. Be ready!"]
     },
     TRAINER_BLACK_BELT_AARON: {
-      team: [["Primeape", 52]],
-      intro: ["Hiyah!", "Boulders are too easy now!\nI shatter whole cliffs!", "My Primeape's fury is harder than\nany rock!"],
+      team: [["Annihilape", 52]],
+      intro: ["Hiyah!", "Boulders are too easy now!\nI shatter whole cliffs!", "My Annihilape's fury is harder than\nany rock!"],
       defeat: ["Yow!\nStubbed fingers… again!"],
       after: ["Psychic power still frightens us…\nBut now, so do you!"]
     },
     TRAINER_BLACK_BELT_MIKE: {
-      team: [["Primeape", 48], ["Primeape", 49], ["Primeape", 50]],
+      team: [["Annihilape", 48], ["Annihilape", 49], ["Annihilape", 50]],
       intro: ["Hoargh!", "Champion or not, rules are rules!\nTake your shoes off!"],
       defeat: ["I give up!\nYou're even stronger than before!"],
       after: ["I'm still a small fry next to our\nMaster. Next time, I'll be bigger!"]
@@ -8829,12 +8836,17 @@
     await memorialTM();
   }
 
+  let stepEvolvers = null;
+  const STEP_EVOLVERS = () => stepEvolvers || (stepEvolvers = new Set(Object.keys(window.EVOLUTIONS).filter((sp) => window.EVOLUTIONS[sp].some((e) => e.steps))));
+
   // ---------- Eggs (game/breeding.js) ----------
   //
   // Each step: the Four Island Day-Care's couple may find an Egg (it waits
   // with the Day-Care Man), and the Eggs in your party get nearer hatching.
   function eggStep() {
     const f = player.flags;
+    // (And the steps Gen 9's walkers count: Pawmo, Bramblin and Rellor, up to the 1,000 they need.)
+    for (const r of player.party) if (!r.egg && STEP_EVOLVERS().has(r.species) && (r.steps | 0) < 1000) r.steps = (r.steps | 0) + 1;
     if (f.dayCare2 && f.dayCare2.length === 2) Breeding.dayCareStep(f.dayCareEggs || (f.dayCareEggs = {}), f.dayCare2);
     const egg = Breeding.hatchStep(f.eggHatch || (f.eggHatch = {}), player.party);
     return egg ? { type: "egg-hatch", record: egg } : null;

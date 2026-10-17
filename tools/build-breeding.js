@@ -15,6 +15,8 @@ global.window = global;
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex.js"), "utf8"));
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex-gen7.js"), "utf8"));
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex-gen8.js"), "utf8"));
+window.LEARNSETS_GEN6 = {};
+vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex-gen9.js"), "utf8"));
 
 const gen6 = Dex.forGen(6), gen7 = Dex.forGen(7), gen8 = Dex.forGen(8), gen9 = Dex.forGen(9);
 // (Legends: Arceus's Pokémon and forms are Gen 9's in Showdown.)
@@ -43,9 +45,11 @@ const INCENSE = {
 const groups = {}, hatches = {};
 for (const key of dexKeys) {
   const g = window.DEX[key].gen;
-  const dex = g === 7 ? gen7 : g === 8 ? (fromGen9(key) ? gen9 : gen8) : gen6;
+  const dex = g === 7 ? gen7 : g === 8 ? (fromGen9(key) ? gen9 : gen8) : g === 9 ? gen9 : gen6;
   let s = dex.species.get(SHOWDOWN_NAME[key] || key.replace(/'/g, "’"));
   if (!s.exists) s = dex.species.get(key);
+  // (Legends: Z-A's Megas and the Eternal Flower are Gen 9's in Showdown.)
+  if (!s.exists) s = gen9.species.get(key);
   if (!s || !s.exists) continue;
   groups[key] = s.eggGroups.slice();
   // Down the evolution line to its first stage (stopping above an incense baby).
@@ -58,9 +62,9 @@ for (const key of dexKeys) {
     base = prev;
   }
   // (A forme hatches as its species: Rotom-Wash's Eggs are Rotom. But
-  // Alolan, Galarian and Hisuian Pokémon hatch as such, as in their games,
+  // Alolan, Galarian, Hisuian and Paldean Pokémon hatch as such, as in their games,
   // and Basculegion as White-Striped Basculin.)
-  if (base.forme && base.baseSpecies !== base.name && !["Alola", "Galar", "Hisui", "White-Striped"].includes(base.forme)) base = dex.species.get(base.baseSpecies);
+  if (base.forme && base.baseSpecies !== base.name && !/^(Alola|Galar|Hisui|White-Striped|Paldea)/.test(base.forme)) base = dex.species.get(base.baseSpecies);
   hatches[key] = ourName(base.name.replace(/’/g, "'"));
 }
 const incense = {};

@@ -1,6 +1,7 @@
-// The item pictures Gens 7 and 8's additions need (Z-Crystals, Memories, the
+// The item pictures Gens 7, 8 and 9's additions need (Z-Crystals, Memories, the
 // Z-Ring, Dynamax Band and Candy, the Ability Patch, Zygarde's Cube and Zygardite, Kubfu's
-// scrolls, Dialga's and Palkia's Legends: Arceus items, ...), into
+// scrolls, Dialga's and Palkia's Legends: Arceus items, Gen 9's evolution
+// items, Legends: Z-A's Mega Stones, ...), into
 // assets/sprites/items/<folder>/<item>.png:
 //   from pokesprite (github.com/msikma/pokesprite, where the other item
 //   sprites come from: 32x32), downloaded; and, for the ones it hasn't got,
@@ -39,8 +40,19 @@ const EXPANSION = [
   ["evo-item/black-augurite", "black_augurite"], ["evo-item/peat-block", "peat_block"],
   ["evo-item/scroll-of-darkness", "scroll_of_darkness"], ["evo-item/scroll-of-waters", "scroll_of_waters"],
   ["mega-stone/zygardite", "zygardite"], ["hold-item/adamant-crystal", "adamant_crystal"],
-  ["hold-item/lustrous-globe", "lustrous_globe"], ["other-item/max-mushrooms", "max_mushrooms"]
+  ["hold-item/lustrous-globe", "lustrous_globe"], ["other-item/max-mushrooms", "max_mushrooms"],
+  // Gen 9's evolution items.
+  ["evo-item/auspicious-armor", "auspicious_armor"], ["evo-item/malicious-armor", "malicious_armor"],
+  ["evo-item/syrupy-apple", "syrupy_apple"], ["evo-item/unremarkable-teacup", "unremarkable_teacup"],
+  ["evo-item/metal-alloy", "metal_alloy"]
 ];
+// And Legends: Z-A's Mega Stones (data/items-gen9.js): "absolite-z" is the expansion's absolite_z.
+{
+  global.window = global;
+  window.ITEMS = {};
+  require("vm").runInThisContext(fs.readFileSync(path.join(__dirname, "..", "data/items-gen9.js"), "utf8"));
+  for (const id of Object.keys(window.ITEMS)) EXPANSION.push(["mega-stone/" + id, id.replace(/-/g, "_")]);
+}
 
 function get(url) {
   return new Promise((resolve) => {

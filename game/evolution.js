@@ -6,6 +6,7 @@
 //
 // Triggers: "level" (after levelling up), "item" (with ctx.item), "trade" and
 // "battle" (after any battle, with ctx.crits: the critical hits it landed).
+// A level-up's ctx.coins: the Coins in your Coin Case (Gholdengo).
 // See data/evolutions.js for the methods and conditions.
 
 (function () {
@@ -42,6 +43,13 @@
     if (e.hpLost && window.Party.maxHp(record) - record.hp < e.hpLost) return false;
     if (e.recoil && (record.recoil || 0) < e.recoil) return false;
     if (e.moveUses && Object.entries(e.moveUses).some(([m, n]) => ((record.moveUses || {})[m] || 0) < n)) return false;
+    // (Gen 9: Pawmot's steps walked, Kingambit's Bisharp knocked out,
+    // Gholdengo's Coins (ctx.coins: the Coin Case's), Maushold's and
+    // Dudunsparce's 1 in 100.)
+    if (e.steps && (record.steps || 0) < e.steps) return false;
+    if (e.koSpecies && Object.entries(e.koSpecies).some(([sp, n]) => ((record.koSpecies || {})[sp] || 0) < n)) return false;
+    if (e.coins && (ctx.coins || 0) < e.coins) return false;
+    if (e.rare != null && ((record.personality >>> 0) % 100 === 0) !== e.rare) return false;
     if (e.personality) {
       // Wurmple: the upper 16 bits of the personality value, mod 10, below 5 -> Silcoon.
       const low = ((record.personality >>> 16) % 10) < 5;
@@ -98,6 +106,7 @@
     const slot = Math.max(0, oldDex.abilities.indexOf(record.ability));
     record.species = into;
     delete record.cloak; // only Burmy has one
+    delete record.steps; delete record.koSpecies;   // (what Gen 9's evolutions counted)
     // (A Hidden Ability stays hidden: the new species' Hidden Ability.)
     const hidden = oldDex.hiddenAbility && record.ability === oldDex.hiddenAbility && !oldDex.abilities.includes(record.ability);
     record.ability = (hidden && newDex.hiddenAbility) || newDex.abilities[Math.min(slot, newDex.abilities.length - 1)] || record.ability;

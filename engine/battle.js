@@ -186,6 +186,8 @@
     // Mega stones: parse "Allows X to Mega Evolve into Mega X (Y)."
     for (const [id, it] of Object.entries(window.ITEMS)) {
       if (it.category !== "mega-stones") continue;
+      // (Legends: Z-A's say which Mega each species becomes: { species: Mega }.)
+      if (it.megaStone) { MEGA_MAP[id] = it.megaStone; continue; }
       const m = /into Mega ([^.]+)\./.exec(it.effect || "");
       if (!m) continue;
       let name = m[1].trim();
@@ -281,6 +283,8 @@
       this.recoilTaken = set.recoil || 0;
       this.moveUses = Object.assign({}, set.moveUses);
       this.critsLanded = 0;
+      // (Gen 9: the Pokémon of each species it's knocked out, Kingambit's Bisharp.)
+      this.koSpecies = Object.assign({}, set.koSpecies);
       if (set.status && !this.fainted) {
         this.status = set.status;
         if (set.status === "slp") this.statusState.time = battle.randInt(1, 3);
@@ -890,6 +894,7 @@
         this.add("-trainerout", mon.side.id, mon.side.trainers[mon.owner], mon.slot);
       }
       if (this.expEnabled && mon.side.id === "p2") this.awardExp(mon);
+      if (source && source !== mon && source.side !== mon.side && source.koSpecies) source.koSpecies[mon.baseSpecies] = (source.koSpecies[mon.baseSpecies] || 0) + 1;
       if (source && source !== mon && !source.fainted && effect && effect.effectType === "Move") {
         if (mon.volatiles.destinybond) {
           this.add("-activate", mon, "move: Destiny Bond");
@@ -1337,10 +1342,13 @@
     }
 
     // The Mega Evolution a held Mega Stone allows, if it's that species'
-    // stone: Zygardite only from the Complete Forme (Legends: Z-A).
+    // stone: Zygardite only from the Complete Forme (Legends: Z-A), and
+    // Legends: Z-A's others by their megaStone map.
     megaForme(mon) {
       const forme = MEGA_MAP[mon.item];
       if (!forme || mon.transformed) return null;
+      // (A stone for several: by species, a female Meowstic's by gender.)
+      if (typeof forme === "object") return (mon.gender === "F" && forme[mon.species + "-F"]) || forme[mon.species] || null;
       if (forme === "Zygarde-Mega") return mon.species === "Zygarde-Complete" ? forme : null;
       const base = forme.replace(/-Mega(-[XY])?$/, "");
       return mon.baseSpecies === base || mon.species === base ? forme : null;
