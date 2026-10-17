@@ -56,8 +56,11 @@
     ["root-fossil", 1, [".xxx.", "xxxxx", "xxxxx", "xxxxx"], 30],
     ["claw-fossil", 1, ["xxxxx", "xxxxx", "xxxxx", "xxxx."], 30],
     ["skull-fossil", 1, ["xxxx", "xxxx", "xxxx", "xxxx"], 30],
-    ["armor-fossil", 1, ["xxxxx", "xxxxx", "xxxxx", "xxxxx"], 30]
-  ].concat(["flame", "splash", "zap", "meadow", "icicle", "fist", "toxic", "earth", "sky", "mind", "insect",
+    ["armor-fossil", 1, ["xxxxx", "xxxxx", "xxxxx", "xxxxx"], 30],
+    ["bottle-cap", 2, ["xxx", "xxx", "xxx"], 40],
+    ["gold-bottle-cap", 0.5, ["xxx", "xxx", "xxx"], 80],
+    ["ability-patch", 0.5, ["xxxx", "xxxx"], 70]
+  ].concat(["hp-up", "protein", "iron", "calcium", "zinc", "carbos"].map((v) => [v, 2, ["xx", "xx", "xx"], 15])).concat(["flame", "splash", "zap", "meadow", "icicle", "fist", "toxic", "earth", "sky", "mind", "insect",
     "stone", "spooky", "draco", "dread", "iron"].map((p) => [p + "-plate", 0.5, ["xxxx", "xxxx", "xxxx"], 100]));
 
   // Mining level, 1 to 100, from your mining XP. Going from level L to L + 1

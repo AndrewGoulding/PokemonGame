@@ -105,7 +105,7 @@ Then the Bag, FireRed's Bag screen with nine pockets (Items, Medicine,
 Power-up, Poké Balls, TMs & HMs, Berries, Held Items, Mega Stones, Key Items;
 left / right between them, and each pocket remembers where its ▶ was). Power-up
 holds what makes a Pokémon stronger for good (vitamins, Wings, PP Up and PP
-Max, mints, Rare Candy, Exp. Candies, Ability Capsule, Bottle Caps), Held Items
+Max, mints, Rare Candy, Exp. Candies, Ability Capsule and Patch, Bottle Caps), Held Items
 what is mainly for holding (Leftovers, Choice items, type boosters, weather
 rocks, Light Clay, Iron Ball...), Mega Stones the stones; every pocket shows
 FireRed's bag, its pockets opening left, middle, right in turn. In battle the Bag
@@ -114,7 +114,10 @@ Balls, Berries). Old saves simply sort into the new pockets, with FireRed's desc
 (its own words and line breaks, for the items FireRed has). A opens Use / Give / Toss; Toss asks how
 many and throws them away right there. The Ability Capsule switches a
 Pokémon between its species' two ordinary Abilities (it asks first; not a
-Hidden Ability, nor a species with one). Bottle Caps are Hyper Training, as in
+Hidden Ability, nor a species with one). The Ability Patch (as in Scarlet and
+Violet; dig it up with the Explorer Kit) switches an ordinary Ability to the
+species' Hidden Ability, or the Hidden Ability back to its first ordinary one
+(it asks first too); a Hidden Ability stays hidden when the Pokémon evolves. Bottle Caps are Hyper Training, as in
 Sword and Shield and Scarlet and Violet: on a Pokémon of Lv. 50 or more, a
 Bottle Cap makes one stat you pick (from the ones not already at 31) act as
 if its IV were 31, a Gold Bottle Cap all of them; the IV itself stays as it
@@ -1411,9 +1414,11 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   Levels take 20 XP each up to level 20, then 40, 60, 80 and 100 (5,980 XP in
   all for level 100). Only common treasures (Heart Scales and shards) turn up
   at first; rarer ones unlock along the way: Hard Stones and Everstones at 5,
-  Revives, Star Pieces and Oval Stones at 10, the evolution stones at 20,
-  every fossil at 30, some held items at 38 and 51, Max Revives and Rare Bones
-  at 63 and the plates at 100. Each fossil is only found in its own caves:
+  Revives, Star Pieces and Oval Stones at 10, the vitamins (HP Up, Protein,
+  Iron, Calcium, Zinc, Carbos) at 15, the evolution stones at 20,
+  every fossil at 30, some held items at 38 and 51, Bottle Caps at 40, Max
+  Revives and Rare Bones at 63, the Ability Patch at 70, Gold Bottle Caps at
+  80 and the plates at 100. Each fossil is only found in its own caves:
   Kanto's (Helix, Dome, Old Amber) in Mt. Moon; later regions' fossils will
   get caves of their own. The rules are in `game/mining.js`, the screen in `ui/mining.js`.
 - **Fly and Transform animations** (FireRed's Move_FLY and Move_TRANSFORM, frame

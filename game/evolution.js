@@ -88,7 +88,8 @@
     return options.find((e) => methodMatches(record, e, ctx) && meetsConditions(record, e, ctx)) || null;
   }
 
-  // Turns `record` into `into`. Keeps damage taken, the ability slot, and
+  // Turns `record` into `into`. Keeps damage taken, the ability slot (a Hidden
+  // Ability included), and
   // consumes a held evolution item. Returns the moves the new species learns
   // at the current level (to teach or offer).
   function evolve(record, into, evo) {
@@ -97,7 +98,9 @@
     const slot = Math.max(0, oldDex.abilities.indexOf(record.ability));
     record.species = into;
     delete record.cloak; // only Burmy has one
-    record.ability = newDex.abilities[Math.min(slot, newDex.abilities.length - 1)] || record.ability;
+    // (A Hidden Ability stays hidden: the new species' Hidden Ability.)
+    const hidden = oldDex.hiddenAbility && record.ability === oldDex.hiddenAbility && !oldDex.abilities.includes(record.ability);
+    record.ability = (hidden && newDex.hiddenAbility) || newDex.abilities[Math.min(slot, newDex.abilities.length - 1)] || record.ability;
     record.hp = Math.max(record.hp > 0 ? 1 : 0, window.Party.maxHp(record) - (oldMax - record.hp));
     if (evo && (evo.method === "level-hold" || evo.method === "trade") && evo.item && record.item === evo.item) {
       record.item = "";

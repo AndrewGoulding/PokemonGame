@@ -1424,7 +1424,7 @@ for (const share of [false, true]) {
   assert(!Bag.canUseOn(eggParty[0], "potion"), "no items on an Egg");
 }
 
-// The Ability Capsule and Bottle Caps (game/bag.js).
+// The Ability Capsule, Ability Patch and Bottle Caps (game/bag.js).
 {
   const r = Party.create("Gengar", 30);
   r.ability = "Levitate";
@@ -1436,6 +1436,17 @@ for (const share of [false, true]) {
   assert.strictEqual(b.ability, "No Guard", "the capsule swaps them");
   b.ability = "Steadfast";
   assert(!Bag.canUseOn(b, "ability-capsule"), "not a Hidden Ability");
+  // The Ability Patch: to the Hidden Ability and back (to the first ordinary one).
+  assert(!Bag.canUseOn(r, "ability-patch"), "Gengar has no Hidden Ability here");
+  assert(Bag.canUseOn(b, "ability-patch"));
+  assert.deepStrictEqual(Bag.useOn(b, "ability-patch"), { ability: "Guts", oldAbility: "Steadfast" });
+  b.ability = "No Guard";
+  assert.deepStrictEqual(Bag.useOn(b, "ability-patch"), { ability: "Steadfast", oldAbility: "No Guard" });
+  // A Hidden Ability stays hidden when it evolves.
+  const machop = Party.create("Machop", 28);
+  machop.ability = "Steadfast";
+  Evolution.evolve(machop, "Machoke", { method: "level" });
+  assert.strictEqual(machop.ability, "Steadfast");
   const m = Party.create("Machamp", 49, { ivs: 3 });
   assert(!Bag.canUseOn(m, "bottle-cap"), "Hyper Training needs Lv. 50");
   m.level = 50;
@@ -1841,6 +1852,9 @@ for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
   assert.deepStrictEqual(Mining.available(1).map((t) => t[0]).sort(),
     ["blue-shard", "green-shard", "heart-scale", "red-shard", "yellow-shard"]);
   assert.deepStrictEqual(["everstone", "hard-stone"].map((i) => Mining.TREASURES.find((t) => t[0] === i)[3]), [5, 5]);
+  // Vitamins from level 15, Bottle Caps from 40 and Gold Bottle Caps from 80.
+  assert.deepStrictEqual(["hp-up", "protein", "iron", "calcium", "zinc", "carbos", "bottle-cap", "gold-bottle-cap"].map(unlock),
+    [15, 15, 15, 15, 15, 15, 40, 80]);
   // At the top level everything turns up, but fossils only in their own caves.
   assert.strictEqual(Mining.available(Mining.MAX_LEVEL, "MtMoon_1F").length, Mining.TREASURES.length - 4, "all but Sinnoh's fossils in Mt. Moon");
   for (let lv = 1; lv <= Mining.MAX_LEVEL; lv++) assert(Mining.available(lv).length > 0);

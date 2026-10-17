@@ -610,9 +610,9 @@
       await message(name + "'s nature changed from " + r.oldNature + " to " + r.nature + "!");
       return;
     }
-    if (item === "ability-capsule") {
+    if (item === "ability-capsule" || item === "ability-patch") {
       // (Gen 6: it asks first.)
-      const to = Bag.capsuleAbility(record);
+      const to = item === "ability-patch" ? Bag.patchAbility(record) : Bag.capsuleAbility(record);
       if (!to) { await message("It won't have any effect."); return; }
       if (!(await confirm("Do you want to change " + name + "'s Ability from " + record.ability + " to " + to + "?"))) return;
       Player.removeItem(player, item);
@@ -735,7 +735,7 @@
   const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
-    item === "ability-capsule" || item === "bottle-cap" || item === "gold-bottle-cap" || item === "zygarde-cube" ||
+    item === "ability-capsule" || item === "ability-patch" || item === "bottle-cap" || item === "gold-bottle-cap" || item === "zygarde-cube" ||
     item === "dynamax-candy" || item === "max-mushrooms" ||
     item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS || item === "escape-rope";
   // TMs and HMs work like key items: they can't be held, tossed or sold.

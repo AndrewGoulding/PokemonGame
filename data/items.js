@@ -1,5 +1,6 @@
 window.ITEMS = {
   "ability-capsule": { name: "ability-capsule", category: "held-items", effect: "Switches a Pokémon between its two possible (non-Hidden) Abilities." },
+  "ability-patch": { name: "ability-patch", category: "held-items", effect: "Switches a Pokémon between one of its ordinary Abilities and its Hidden Ability." },
   "abomasite": { name: "abomasite", category: "mega-stones", effect: "Held: Allows Abomasnow to Mega Evolve into Mega Abomasnow." },
   "absolite": { name: "absolite", category: "mega-stones", effect: "Held: Allows Absol to Mega Evolve into Mega Absol." },
   "absorb-bulb": { name: "absorb-bulb", category: "held-items", effect: "Held: Raises the holder's Special Attack by one stage when it takes Water-type damage." },

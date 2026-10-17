@@ -134,7 +134,7 @@
   const POWER_UP = ["vitamins", "nature-mints", "exp-candy", "dynamax-candy"];
   const HELD = ["held-items", "type-enhancement", "choice", "plates", "jewels", "bad-held-items", "effort-training", "species-specific", "training",
     "z-crystals", "memories"];
-  const isPowerUp = (item) => POWER_UP.includes((window.ITEMS[item] || {}).category) || /bottle-cap$/.test(item) || item === "ability-capsule";
+  const isPowerUp = (item) => POWER_UP.includes((window.ITEMS[item] || {}).category) || /bottle-cap$/.test(item) || item === "ability-capsule" || item === "ability-patch";
 
   function pocket(item) {
     if (isKeyItem(item)) return "Key Items";
@@ -181,6 +181,16 @@
     if (abilities.length < 2 || !abilities.includes(record.ability)) return null;
     return abilities.find((a) => a !== record.ability) || null;
   }
+  // The Ability Patch (as in Scarlet and Violet): from an ordinary Ability to
+  // the species' Hidden Ability, or from the Hidden Ability back to its first
+  // ordinary one. Null if it has no Hidden Ability (or only that one).
+  function patchAbility(record) {
+    const dex = window.DEX[record.species] || {};
+    const hidden = dex.hiddenAbility, abilities = dex.abilities || [];
+    if (!hidden || abilities.includes(hidden)) return null;
+    if (record.ability === hidden) return abilities[0] || null;
+    return abilities.includes(record.ability) ? hidden : null;
+  }
   // The Zygarde Cube (Sun and Moon): Zygarde between its 10% and 50% Formes
   // ("forme"), or Aura Break and Power Construct ("ability").
   const ZYGARDE = { Zygarde: "Zygarde-10%", "Zygarde-10%": "Zygarde" };
@@ -210,6 +220,7 @@
     opts = opts || {};
     if (record.egg) return false;
     if (item === "ability-capsule") return !!capsuleAbility(record);
+    if (item === "ability-patch") return !!patchAbility(record);
     if (item === "zygarde-cube") return !!ZYGARDE[record.species];
     if (item === "dynamax-candy") return (record.dynamaxLevel || 0) < 10;
     if (item === "max-mushrooms") return !!window.DEX[record.species + "-Gmax"];
@@ -229,6 +240,11 @@
     if (item === "ability-capsule") {
       const old = record.ability;
       record.ability = capsuleAbility(record);
+      return { ability: record.ability, oldAbility: old };
+    }
+    if (item === "ability-patch") {
+      const old = record.ability;
+      record.ability = patchAbility(record);
       return { ability: record.ability, oldAbility: old };
     }
     if (item === "bottle-cap" || item === "gold-bottle-cap") {
@@ -287,7 +303,7 @@
 
   window.Bag = {
     POCKETS, get BATTLE_POCKETS() { return BATTLE_POCKETS(); }, PRICES, name, description, sprite, price, sellPrice, pocket, isBall, isStone, isKeyItem,
-    isMachine, machineMove, machines, mintNature, capsuleAbility, trainableStats, HYPER_TRAINING_LEVEL, zygardeCube,
+    isMachine, machineMove, machines, mintNature, capsuleAbility, patchAbility, trainableStats, HYPER_TRAINING_LEVEL, zygardeCube,
     martStock, canUseOn, useOn, levelUp, give, take
   };
 })();

@@ -1,5 +1,5 @@
 // The item pictures Gens 7 and 8's additions need (Z-Crystals, Memories, the
-// Z-Ring, Dynamax Band and Candy, Zygarde's Cube and Zygardite, Kubfu's
+// Z-Ring, Dynamax Band and Candy, the Ability Patch, Zygarde's Cube and Zygardite, Kubfu's
 // scrolls, Dialga's and Palkia's Legends: Arceus items, ...), into
 // assets/sprites/items/<folder>/<item>.png:
 //   from pokesprite (github.com/msikma/pokesprite, where the other item
@@ -31,7 +31,8 @@ const Z = ["normalium", "firium", "waterium", "electrium", "grassium", "icium", 
 // [our folder/file, pokesprite's path]
 const POKESPRITE = [
   ["key-item/zygarde-cube", "key-item/zygarde-cube"], ["key-item/z-ring", "key-item/z-ring"],
-  ["key-item/dynamax-band", "key-item/dynamax-band"], ["other-item/dynamax-candy", "other-item/dynamax-candy"]
+  ["key-item/dynamax-band", "key-item/dynamax-band"], ["other-item/dynamax-candy", "other-item/dynamax-candy"],
+  ["other-item/ability-patch", "other-item/ability-patch"]
 ].concat(TYPES.map((t) => ["memory/" + t, "memory/" + t]), Z.map((z) => ["z-crystal/" + z + "-z", "z-crystals/" + z + "-z--bag"]));
 // [our folder/file, the expansion's icon]
 const EXPANSION = [
