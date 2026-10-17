@@ -1308,6 +1308,76 @@ maps to `WORLD_MAPS`. Not built yet: the houses and Elm's Lab (their doors
 say so), Johto's story, music (FireRed's stands in: Pallet Town's, Route 1's
 and Pewter City's), water animation, and a Town Map of Johto.
 
+## Orre: the Outskirt Stand (in progress)
+
+Pokémon Colosseum's opening, at the **Outskirt Stand**: a diner made from an
+old locomotive out in Orre's desert. It isn't joined to anywhere yet: the
+debug menu's **Visit Orre (Outskirt Stand)** takes you there and **Leave Orre**
+brings you back (so do its Pokémon Center and Johto trips). In Orre you're
+**Wes**: `game/orre.js` puts your own name, look, party, Bag, money and
+trainer ID away and brings out Wes's (kept from one visit to the next), with
+his partners from the start of Colosseum: **Espeon** (Lv. 25: Confusion,
+Return, Reflect, Helping Hand) and **Umbreon** (Lv. 26: Bite, Secret Power,
+Taunt, Snatch). Leaving swaps everything back.
+
+The first visit plays the opening. On a black screen Team Snagem's hideout
+blows up behind Wes as he gets away with its portable Snag Machine. He rides
+his bike in from the south of the desert and parks beside the Stand. Two men
+come out of the diner, **Folly** and **Trudly**. They talk about their meal
+and the sack in their truck, see Wes, tell him to mind his own business, and
+drive off with it. Inside, **Rider Willie** sits at the back. When Wes comes
+out again, Willie follows him and challenges him to a **double battle** (every
+battle in Colosseum is one) with two Zigzagoon (Lv. 23 and 24). Afterwards he
+points Wes north to Phenac City. Losing to Willie doesn't make you black out:
+he goes back in and challenges you again next time.
+
+In the diner:
+- The bartender serves a free meal that heals your Pokémon, and runs the
+  shop once Willie's been battled.
+- The TV shows the news.
+- The jukebox plays another song.
+- The travellers in the booths talk about the road.
+
+North is the way to Phenac City and south the way back to the hideout; both
+say they aren't built yet.
+
+Colosseum is 3D, so nothing of it converts. `tools/build-orre.js` builds the
+place in the GBA games' style instead, from a
+[pret/pokeemerald](https://github.com/pret/pokeemerald) checkout:
+
+```sh
+node tools/build-orre.js <path to pret/pokeemerald>
+```
+
+- **The ground** is Emerald's Route 111 desert (sand, dunes and red cliffs
+  from the General and Mauville tilesets), cleared of its rocks and the
+  Mirage Tower.
+- **Drawn in code**, pixel by pixel, in FireRed's palette and shading style:
+  - the locomotive diner (rusty boiler, smokestack, headlight and
+    cowcatcher, "OUTSKIRT STAND" on its side), its wooden shack with the
+    door and the orange steps;
+  - Folly and Trudly's truck, a blue pickup with the sack in its bed, in
+    front, back and side views;
+  - Wes's parked bike;
+  - the whole interior: plank walls with copper pipes, the curved wooden
+    bar with its bottle shelves and stools, the TV with a Poké Ball on
+    screen, the jukebox, three green booths and the yellow checkered floor.
+- **Wes** is Emerald's Brendan recoloured (overworld walking, running, bike,
+  Surf and fishing sheets, and his battle pictures): the white cap reads as
+  Wes's silver hair, with a dark coat.
+- **Willie** is FireRed's Cool Trainer with pink hair; his battle picture is
+  FireRed's Biker with a pink mohawk.
+- **Folly, Trudly, the bartender and the travellers** use FireRed's
+  sprites.
+
+Everything goes into `data/orre-maps.js`, `assets/world/maps/OutskirtStand*`,
+`assets/world/sprites/player_wes*` and `orre_*`, and the `wes` and
+`rider_willie` trainer pictures. The words are this game's own, since
+Colosseum's script wasn't to hand. The music is FireRed's for now:
+- outside: the Sevii Islands' route theme;
+- inside: the Game Corner's;
+- Willie's battle: Ruby and Sapphire's trainer battle.
+
 ## Progression rules (Gen 6)
 
 - **Experience**: the six growth curves, and base exp × level / 7 split between
@@ -1489,7 +1559,7 @@ and later files read those globals, so scripts must load in this order:
 9. `data/evolutions.js` → `EVOLUTIONS`
 10. `data/item-sprites.js` → `ITEM_SPRITES`
 11. `data/sprite-metrics.js` → `SPRITE_METRICS`
-12. `data/world-maps.js` → `WORLD_MAPS` (and `data/johto-maps.js` adds Johto's)
+12. `data/world-maps.js` → `WORLD_MAPS` (and `data/johto-maps.js`, `data/emerald-maps.js` and `data/orre-maps.js` add Johto's, Faraway Island's and Orre's)
 13. `data/intro-text.js` → `INTRO_TEXT`
 14. `engine/stat-calculator.js` → `Stats`
 15. `engine/experience.js` → `Experience`

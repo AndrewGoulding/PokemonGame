@@ -1643,6 +1643,7 @@
         { label: "Tag battle", value: "tag", className: "action" },
         { label: "Go to the last Pokémon Center", value: "center", className: "action" },
         { label: "Visit Johto (New Bark Town)", value: "johto", className: "action" },
+        { label: Orre.inOrre(player.location) ? "Leave Orre (back as yourself)" : "Visit Orre (Outskirt Stand)", value: "orre", className: "action" },
         back()]);
       if (v === "back") return;
       if (v === "add") await debugAddPokemon();
@@ -1667,12 +1668,19 @@
         // In front of the counter of the Center you last used (home before
         // you've used one), as blacking out takes you.
         const center = player.flags.lastCenter && Player.CENTERS[player.flags.lastCenter];
+        Orre.leave(player);   // (from Orre, as yourself again)
         player.location = Object.assign({}, center || Player.HOME);
         await persist();
         return "battled";   // (back to the map, at the new place)
+      } else if (v === "orre") {
+        // Orre isn't joined to anywhere yet (game/orre.js): you're Wes there.
+        if (Orre.inOrre(player.location)) await leaveOrre();
+        else fieldAction = visitOrre;
+        return "battled";
       } else if (v === "johto") {
         // Johto isn't joined to Kanto yet (data/johto-maps.js): outside your
         // house in New Bark Town; the debug menu's Pokémon Center trip brings you back.
+        Orre.leave(player);
         player.location = { map: "NewBarkTown", x: 23, y: 13, facing: "down" };
         await persist();
         return "battled";
@@ -2227,7 +2235,10 @@
       // Cerulean Cave.
       "CeruleanCave_B1F_EventScript_Mewtwo",
       // Faraway Island (Emerald's; data/emerald-maps.js).
-      "FarawayIsland_Entrance_EventScript_Sailor", "FarawayIsland_Interior_EventScript_Mew"
+      "FarawayIsland_Entrance_EventScript_Sailor", "FarawayIsland_Interior_EventScript_Mew",
+      // Orre (data/orre-maps.js).
+      "OutskirtStand_Diner_EventScript_Bartender", "OutskirtStand_Diner_EventScript_Willie",
+      "OutskirtStand_Diner_EventScript_TV", "OutskirtStand_Diner_EventScript_Jukebox"
     ]).concat(Object.keys(BRAILLE_SIGNS)).concat(League.ROOMS.map((r) => "enter:" + r.map), ["enter:" + League.HALL_OF_FAME]).concat(ROUTE23_BADGES.slice(1).flatMap((b) => ["", "Trigger"].map((t) => "Route23_EventScript_" + b + "BadgeGuard" + t))).concat([1, 2, 3, 4, 5, 6].flatMap((n) => ["Left", "Right"].map((s) => "CinnabarIsland_Gym_EventScript_Quiz" + n + s))).concat(CYCLING_ROAD_GATES.flatMap((g) => ["Top", "MidTop", "Mid", "MidBottom", "Bottom"].map((k) => g + "_EventScript_NeedBikeTrigger" + k))));
 
   // Which people are around, from FireRed's event flags and this game's story flags.
@@ -2246,6 +2257,7 @@
   function visible(person, map) {
     const f = player.flags;
     if (person.item) return !f[person.flag];
+    { const o = Orre.visible(person, f); if (o !== undefined) return o; }   // (Orre's people)
     if (person.flag && tempFlags.has((map || player.location.map) + ":" + person.flag)) return false;   // (a tree you've cut)
     const spot = person.trainer && f.trainerSpots && f.trainerSpots[person.trainer.id];
     if (spot) return { x: spot.x, y: spot.y, movement: "face_" + spot.facing };
@@ -3594,6 +3606,17 @@
       case "MtEmber_Summit_EventScript_Moltres": await legendaryBird(ev.person, "Moltres", "foughtMoltres"); return;
       // ---------- Cerulean Cave ----------
       // ---------- Faraway Island ----------
+      // ---------- Orre ----------
+      case "enter:OutskirtStand": await willieChallenge(); return;
+      case "OutskirtStand_Diner_EventScript_Bartender": await orreBartender(); return;
+      case "OutskirtStand_Diner_EventScript_Willie":
+        await say(["Willie: That bike out front yours?\nShe's a beauty.",
+          "And those two Pokémon of yours… Tell you\nwhat, when you head out, I'll follow you."]);
+        return;
+      case "OutskirtStand_Diner_EventScript_TV":
+        await say(["It's the news.", "\"…and the Colosseums of Orre are packed\nas ever this week…\"", "The picture fizzles into static."]);
+        return;
+      case "OutskirtStand_Diner_EventScript_Jukebox": await orreJukebox(); return;
       case "FarawayIsland_Entrance_EventScript_Sailor": await farawaySailor(ev.person); return;
       case "enter:FarawayIsland_Interior": await findMew(); return;
       case "FarawayIsland_Interior_EventScript_Mew": await mewFound(ev.person); return;
@@ -7251,6 +7274,161 @@
     await legendaryBird(person, "Mew", "foughtMew", { level: 30, text: ["Myuu…"] });
   }
 
+  // ---------- Orre: the Outskirt Stand (Pokémon Colosseum's opening) ----------
+  //
+  // Not joined to the rest of the world yet: the debug menu takes you there,
+  // as Wes (game/orre.js swaps your party, Bag and look for his, and back).
+  // The first time: on a black screen, Team Snagem's hideout blows up behind
+  // Wes as he gets away with its portable Snag Machine; he rides across the
+  // desert to the Outskirt Stand, an old locomotive made a diner (the maps in
+  // data/orre-maps.js), and parks. Two men come out of the diner, Folly and
+  // Trudly, talking about their meal and the sack in their truck; seeing
+  // Wes, they tell him to get lost and drive off north with it. Inside, Rider
+  // Willie, at the back, wants a look at Wes's Pokémon: coming out again,
+  // Willie follows and challenges him to a double battle (every battle in
+  // Colosseum is one), and after it points him on to Phenac City; the bar
+  // sells to him from then on. (The words are this game's own: Colosseum's
+  // script isn't to hand.)
+  const ORRE = (k) => "LOCALID_ORRE_" + k;
+  async function visitOrre() {
+    const first = !player.flags.orre;
+    Screen.say("");
+    show("world");
+    Overworld.resume();
+    await Overworld.fadeToBlack();
+    music(null);
+    Overworld.setAvatar("walk");
+    Orre.enter(player);
+    if (first) await snagemEscape();
+    await Overworld.teleport(player.location);
+    if (first) await orreArrival();
+    await persist();
+  }
+  async function leaveOrre(to) {
+    Orre.leave(player, to);
+    await persist();
+  }
+  // Team Snagem's hideout: the narration on black, the blast (a white flash
+  // going orange, the screen shaking), and Wes riding away.
+  async function snagemEscape() {
+    const o = $("#overlay");
+    await GbaMenus.blackScreen(o, "Somewhere in the wastelands of Orre:\nthe hideout of Team Snagem, the gang\nthat steals other Trainers' Pokémon.");
+    await GbaMenus.blackScreen(o, "One of its own has turned on it. Wes\nhas taken the gang's portable Snag\nMachine, and set charges on his way out…");
+    const g = o.getContext("2d");
+    sfx("se_m_explosion");
+    for (let f = 0; f < 90; f++) {
+      const t = f / 90;
+      if (f === 30) sfx("se_m_explosion");
+      g.setTransform(1, 0, 0, 1, f < 60 ? (f % 4 < 2 ? -6 : 6) * (1 - t) : 0, f < 60 ? (f % 6 < 3 ? -4 : 4) * (1 - t) : 0);
+      g.fillStyle = "#000";
+      g.fillRect(-10, -10, o.width + 20, o.height + 20);
+      const r = 40 + t * 420, grad = g.createRadialGradient(240, 200, 0, 240, 200, r);
+      const fade = Math.max(0, 1 - t * 1.2);
+      grad.addColorStop(0, "rgba(255,255,240," + fade + ")");
+      grad.addColorStop(0.35, "rgba(255,200,80," + fade + ")");
+      grad.addColorStop(0.7, "rgba(232,96,40," + fade * 0.8 + ")");
+      grad.addColorStop(1, "rgba(0,0,0,0)");
+      g.fillStyle = grad;
+      g.fillRect(-10, -10, o.width + 20, o.height + 20);
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    await GbaMenus.blackScreen(o, "With Espeon and Umbreon, and the Snag\nMachine on his arm, Wes rides off\ninto the desert…");
+    o.classList.add("hidden");
+  }
+  // Riding in from the south edge to beside the Stand, and parking.
+  async function orreArrival() {
+    music("mus_cycling");
+    Overworld.setAvatar("bike");
+    await Overworld.act([{ who: "player", moves: Array(10).fill("walk_fast_up").concat(["walk_fast_left"]) }]);
+    await sleep(300);
+    Overworld.setAvatar("walk");
+    await Overworld.act([{ who: "player", moves: ["walk_left"] }]);
+    player.flags.orre = 1;
+    Overworld.refreshPeople();
+    music(window.WORLD_MAPS.OutskirtStand.music);
+    await sleep(400);
+    await follyAndTrudly();
+  }
+  // Folly and Trudly come out of the diner, and drive off north with their sack.
+  async function follyAndTrudly() {
+    const door = window.WORLD_MAPS.OutskirtStand.warps[0];
+    sfx("se_door");
+    Overworld.addObject(ORRE("TRUDLY"), { x: door.x, y: door.y, facing: "down" });
+    await Overworld.act([{ who: ORRE("TRUDLY"), moves: ["walk_down", "walk_right", "walk_right"] }]);
+    sfx("se_door");
+    Overworld.addObject(ORRE("FOLLY"), { x: door.x, y: door.y, facing: "down" });
+    await Overworld.act([{ who: ORRE("FOLLY"), moves: ["walk_down", "walk_right"] }, { who: ORRE("TRUDLY"), moves: ["delay_16", "face_left"] }]);
+    await say(["Trudly: Burp! Ahh, I'm stuffed!\nNothing beats a hot meal after a drive."]);
+    await say(["Folly: Quit yapping, Trudly. The boss is\nwaiting on this delivery, remember?"]);
+    await say(["Trudly: Yeah, yeah… That sack in the\ntruck isn't going anywhere, Folly."]);
+    sfx("se_pin");
+    await Overworld.act([{ who: ORRE("FOLLY"), moves: ["face_down", "emote_exclamation_mark"] }]);
+    await say(["Folly: …Huh? What are you gawking at?", "Mind your own business, kid!\nCome on, Trudly. We're going."]);
+    Screen.say("");
+    // (Along to the truck out front, and in: Trudly at the wheel, Folly beside him.)
+    const truck = window.WORLD_MAPS.OutskirtStand.patches.truck, right = (n) => Array(n).fill("walk_right");
+    await Overworld.act([{ who: ORRE("TRUDLY"), moves: right(truck.x + 1 - door.x - 2).concat(["walk_down", "set_invisible"]) },
+      { who: ORRE("FOLLY"), moves: right(truck.x - door.x - 1).concat(["walk_down", "set_invisible"]) }]);
+    sfx("se_door");
+    await sleep(500);
+    await say(["The sack in the back of the truck…\nDid it just move?"]);
+    Screen.say("");
+    player.flags.orre = 2;
+    applyPatches("OutskirtStand");
+    sfx("se_truck_move");
+    await Overworld.act([{ who: ORRE("TRUCK"), moves: ["delay_16"].concat(Array(12).fill("walk_fast_right"), ["set_invisible"]) }]);
+    Overworld.removeObject(ORRE("FOLLY")); Overworld.removeObject(ORRE("TRUDLY"));
+  }
+  // Coming back out of the diner, Willie follows.
+  async function willieChallenge() {
+    const door = window.WORLD_MAPS.OutskirtStand.warps[0];
+    await Overworld.act([{ who: "player", moves: ["walk_down", "walk_down"] }]);
+    await say(["Hey! Wait up!"]);
+    sfx("se_door");
+    Overworld.addObject(ORRE("WILLIE"), { x: door.x, y: door.y, facing: "down" });
+    await Overworld.act([{ who: ORRE("WILLIE"), moves: ["walk_down"] }, { who: "player", moves: ["face_up"] }]);
+    await say(["Willie: Name's Willie. I ride these roads\nall day, and I've never seen you before.",
+      "Those two of yours look like they've been\nthrough a lot. Let's see what they can do!",
+      "Two on two, the way we battle in Orre!"]);
+    const outcome = await battle("trainer", { foe: { name: "Rider Willie", team: Orre.willieTeam(), pic: "rider_willie" },
+      double: true, prizeClass: "Rider", noBlackout: true, music: "mus_rs_vs_trainer",
+      defeatText: ["Whoa! You're the real deal!"] });
+    show("world");
+    await Overworld.resume();
+    music(window.WORLD_MAPS.OutskirtStand.music);
+    if (outcome === "won") {
+      player.flags.orre = 3;
+      await say(["Willie: Man, you've got skills!",
+        "If you're looking for Trainers, head up\nthe road north to Phenac City.",
+        "It's a nice town. Fountains everywhere!\nSee you around!"]);
+    } else await say(["Willie: Ha! Not bad, but not good\nenough. Come find me any time!"]);
+    Screen.say("");
+    await Overworld.act([{ who: ORRE("WILLIE"), moves: ["walk_up", "set_invisible"] }]);
+    sfx("se_door");
+    Overworld.removeObject(ORRE("WILLIE"));
+  }
+  // The bartender: a hot meal (the party rested) any time, and the bar's
+  // stock once Willie's been battled.
+  async function orreBartender() {
+    await say(["Welcome to the Outskirt Stand!"]);
+    if (await confirm("You look beat. How about a hot meal?\nOn the house, for a new face.")) {
+      player.party.forEach(Party.heal);
+      await sayWithJingle("mus_heal", "{PLAYER} and the Pokémon ate their fill.\nEveryone's rested!");
+    }
+    if ((player.flags.orre | 0) < 3) { await say(["Sorry, kid, the shop's shut till I've\nsorted out the morning's delivery."]); return; }
+    await mart(Orre.SHOP);
+  }
+  // The jukebox: another song.
+  const JUKEBOX = ["mus_game_corner", "mus_celadon", "mus_sevii_123", "mus_route24", "mus_cinnabar"];
+  async function orreJukebox() {
+    if (!(await confirm("It's a jukebox, lit up in every colour.\nPlay a song?"))) return;
+    const f = player.flags;
+    f.orreJukebox = ((f.orreJukebox | 0) + 1) % JUKEBOX.length;
+    music(JUKEBOX[f.orreJukebox]);
+    await say(["♪ A twangy tune starts up…"]);
+  }
+
   // ---------- The Sevii Islands: Bill's trip ----------
   //
   // Beat Blaine and Bill's waiting outside his Gym (VAR_MAP_SCENE_CINNABAR_ISLAND
@@ -9183,6 +9361,7 @@
   // Which of a map's patches (WORLD_MAPS[..].patches) are on now.
   function mapPatches(map) {
     const f = player.flags;
+    if (map === "OutskirtStand") return Orre.patches(map, f);
     if (map === "VermilionCity_Gym") {
       if (f.vermilionGymLocksOpen) return ["off"];
       if (gymCans && gymCans.foundFirst) return ["half"];
@@ -9398,6 +9577,9 @@
     // Into Faraway Island's grass (FarawayIsland_Interior_OnTransition): the
     // step count starts again, and Mew, if it's there, is spotted and hides.
     if (script === "enter:FarawayIsland_Interior") { player.flags.farawaySteps = 0; return !player.flags.foughtMew; }
+    // Orre: in the diner after the truck's gone, Willie follows you out.
+    if (script === "enter:OutskirtStand_Diner") { if ((player.flags.orre | 0) === 2) player.flags.orreInside = true; return false; }
+    if (script === "enter:OutskirtStand") return (player.flags.orre | 0) === 2 && !!player.flags.orreInside;
     // Walking into the Route 4 Pokémon Center makes it where you go after
     // blacking out (FireRed's setrespawn there).
     if (script === "enter:Route4_PokemonCenter_1F") { player.flags.lastCenter = "Route4_PokemonCenter_1F"; return false; }

@@ -83,7 +83,9 @@
   // (assets/intro/), and overworld sprites (assets/world/sprites/player_<look>*.png);
   // `girl` would pick FireRed's lines for girls (Mom, the Magikarp salesman).
   const LOOKS = {
-    custom: { label: "Custom", back: "player_character", front: "player_character", speech: "oak-speech-player-character" }
+    custom: { label: "Custom", back: "player_character", front: "player_character", speech: "oak-speech-player-character" },
+    // Wes, who you are in Orre (game/orre.js): not chosen at the start.
+    wes: { label: "Wes", back: "wes", front: "wes", speech: "oak-speech-player-character" }
   };
   const PLAYER_LOOK = "custom";
   // Saves from when you could play as Red or Leaf become the custom character.
@@ -361,8 +363,10 @@
       item = RENAMED[item] || item;
       if (window.ITEMS[item] && n > 0) player.bag[item] = Math.min(MAX_ITEM_COUNT, n | 0);
     }
-    // Everyone has the Explorer Kit, saves from before it too.
-    player.bag["explorer-kit"] = 1;
+    // Everyone has the Explorer Kit, saves from before it too (not Wes, in
+    // Orre: game/orre.js has your own Bag put away).
+    const asWes = !!(data.flags && data.flags.orreStash);
+    if (!asWes) player.bag["explorer-kit"] = 1;
     // Saves from before PC item storage get its starting Potion.
     player.pcItems = {};
     for (let [item, n] of Object.entries(data.pcItems || STARTING_PC_ITEMS)) {
@@ -375,7 +379,7 @@
     player.badges = Array.isArray(data.badges) ? data.badges.slice() : [];
     player.flags = Object.assign({}, data.flags);
     // Saves from before key items: the Exp. Share, and Oak's Parcel if it's still to deliver.
-    if (!player.bag["exp-share"]) player.bag["exp-share"] = 1;
+    if (!player.bag["exp-share"] && !asWes) player.bag["exp-share"] = 1;
     if (player.flags.oaksParcel && !player.flags.parcelDelivered) player.bag["oaks-parcel"] = 1;
     // Saves from before the Pokédex scene: Oak gave it with the parcel.
     if (player.flags.parcelDelivered && player.flags.pokedex === undefined) player.flags.pokedex = true;

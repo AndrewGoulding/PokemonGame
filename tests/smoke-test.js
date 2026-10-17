@@ -1248,10 +1248,10 @@ for (const share of [false, true]) {
   assert.strictEqual(Player.create("T").pcItems.potion, 1);
 }
 
-// The player character: the custom one (Red and Leaf are rivals), with every
-// picture the game shows; the rival is Gary.
+// The player character: the custom one (Red and Leaf are rivals), and Wes
+// in Orre, with every picture the game shows; the rival is Gary.
 {
-  assert.deepStrictEqual(Object.keys(Player.LOOKS), ["custom"]);
+  assert.deepStrictEqual(Object.keys(Player.LOOKS), ["custom", "wes"]);
   assert.deepStrictEqual([Player.create("T").look, Player.create("T").rival], ["custom", "Gary"]);
   for (const [look, l] of Object.entries(Player.LOOKS)) {
     assert.strictEqual(Player.create("T", look).look, look);
@@ -1344,7 +1344,7 @@ for (const share of [false, true]) {
   // (FireRed gives the Underground Path, the S.S. Anne, the Rocket Hideout, Silph Co., the Pokémon League,
   // the Ember Spa, the Dunsparce Tunnel (Three Isle Path), the Rocket Warehouse, Trainer Tower's inside, the Tanoby Key and the Tanoby chambers no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
-    if (["johto", "emerald"].includes(WORLD_MAPS[name].region)) continue;   // (Johto and Faraway Island aren't on Kanto's Town Map)
+    if (["johto", "emerald", "orre"].includes(WORLD_MAPS[name].region)) continue;   // (Johto, Faraway Island and Orre aren't on Kanto's Town Map)
     assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "UNDERGROUND_PATH_2", "S_S_ANNE", "ROCKET_HIDEOUT", "SILPH_CO",
       "POKEMON_LEAGUE", "EMBER_SPA", "THREE_ISLE_PATH", "ROCKET_WAREHOUSE", "TRAINER_TOWER_2", "TANOBY_KEY"].includes(T.mapSections[name]) || /_CHAMBER$/.test(T.mapSections[name])), name + " is on the Town Map");
   }
@@ -1494,6 +1494,68 @@ for (const share of [false, true]) {
   assert.strictEqual(Faraway.mewStep({ mew: { x: 13, y: 14 }, prev: { x: 13, y: 17 }, cur: { x: 13, y: 16 }, steps: 8, isGrass: grass }).visible, true);
   assert.strictEqual(Faraway.mewStep({ mew: { x: 13, y: 14 }, prev: { x: 13, y: 17 }, cur: { x: 13, y: 16 }, steps: 9, isGrass: grass }).dir, null);
   assert.strictEqual(Faraway.mewStep({ mew: { x: 13, y: 14 }, prev: { x: 13, y: 16 }, cur: { x: 13, y: 16 }, steps: 3, isGrass: grass }).dir, null, "turning isn't a step");
+}
+
+// Orre's Outskirt Stand (data/orre-maps.js, tools/build-orre.js) and Wes (game/orre.js).
+{
+  const O = WORLD_MAPS.OutskirtStand, D = WORLD_MAPS.OutskirtStand_Diner;
+  assert(O && D && O.region === "orre" && D.region === "orre", "the Outskirt Stand is built");
+  for (const m of [O, D]) {
+    for (const k of ["collision", "behavior", "elevation", "encounter"]) assert.strictEqual(m[k].length, m.width * m.height, m.name + " " + k);
+    for (const p of m.people) assert(fs.existsSync(path.join(root, "assets/world/sprites/" + p.sprite + ".png")), "missing sprite " + p.sprite);
+    for (const f of ["", "-border"].concat(m.top ? ["-top"] : [])) assert(fs.existsSync(path.join(root, "assets/world/maps/" + m.name + f + ".png")), m.name + f);
+  }
+  // The door leads in (walking up into it), the mats back out.
+  const door = O.warps[0];
+  assert.strictEqual(O.behavior[door.y * O.width + door.x], World.MB.WARP_DOOR);
+  assert.deepStrictEqual(World.step({ map: "OutskirtStand", x: door.x, y: door.y + 1 }, "up").warp.map, "OutskirtStand_Diner");
+  for (const w of D.warps) assert.strictEqual(World.warpTarget(w).map, "OutskirtStand");
+  // North and south are roads not built yet; nothing leads there from elsewhere.
+  assert.deepStrictEqual(O.connections.map((c) => [c.direction, c.map, c.mapConst]), [["up", null, "MAP_PHENAC_CITY"], ["down", null, "MAP_SNAGEM_HIDEOUT"]]);
+  assert(!Object.values(WORLD_MAPS).some((m) => m.connections.some((c) => c.map === O.name) || m.warps.some((w) => w.map === O.name && m !== D)), "only the debug menu goes there");
+  // Across the bar from the bartender: a counter.
+  const bar = D.people.find((p) => p.script === "OutskirtStand_Diner_EventScript_Bartender");
+  assert.strictEqual(D.behavior[(bar.y + 1) * D.width + bar.x], World.MB.COUNTER);
+  assert.strictEqual(D.collision[(bar.y + 2) * D.width + bar.x], 0, "room to stand and order");
+  // The truck's footprint is solid while it's there.
+  assert.deepStrictEqual(Orre.patches("OutskirtStand", { orre: 1 }), ["truck"]);
+  assert.deepStrictEqual(Orre.patches("OutskirtStand", { orre: 2 }), []);
+  assert.strictEqual(O.patches.truck.collision.length, 4);
+  // Who's there as the opening goes on.
+  const who = (step) => O.people.concat(D.people).filter((p) => Orre.visible(p, { orre: step }) !== false).map((p) => p.localId.replace("LOCALID_ORRE_", ""));
+  assert.deepStrictEqual(who(0).filter((k) => ["TRUCK", "BIKE", "DINER_WILLIE"].includes(k)), ["TRUCK", "DINER_WILLIE"]);
+  assert.deepStrictEqual(who(2).filter((k) => ["TRUCK", "BIKE", "DINER_WILLIE"].includes(k)), ["BIKE", "DINER_WILLIE"]);
+  assert(!who(3).includes("DINER_WILLIE") && !who(3).includes("FOLLY") && !who(3).includes("WILLIE"), "Willie's gone once battled; Folly and Trudly only in their scene");
+  // Becoming Wes and back.
+  const pl = Player.create("Ash");
+  pl.party = [Party.create("Pikachu", 12)];
+  pl.bag = { potion: 3 };
+  pl.location = { map: "PalletTown", x: 5, y: 6, facing: "up" };
+  const mine = JSON.stringify([pl.name, pl.look, pl.party, pl.bag, pl.money, pl.trainerId]);
+  Orre.enter(pl);
+  assert.deepStrictEqual([pl.name, pl.look, pl.location.map], ["Wes", "wes", "OutskirtStand"]);
+  assert.deepStrictEqual(pl.party.map((r) => [r.species, r.level, r.moves.map((m) => m.name).join("/")]),
+    [["Espeon", 25, "Confusion/Return/Reflect/Helping Hand"], ["Umbreon", 26, "Bite/Secret Power/Taunt/Snatch"]]);
+  assert(Orre.inOrre(pl.location) && !Orre.inOrre({ map: "PalletTown" }));
+  assert.deepStrictEqual(Object.keys(pl.bag), [], "Wes starts with an empty Bag");
+  pl.party[0].level = 26;
+  pl.location = { map: "OutskirtStand_Diner", x: 7, y: 10, facing: "up" };
+  Orre.leave(pl);
+  assert.strictEqual(JSON.stringify([pl.name, pl.look, pl.party, pl.bag, pl.money, pl.trainerId]), mine, "all yours again");
+  assert.deepStrictEqual(pl.location, { map: "PalletTown", x: 5, y: 6, facing: "up" });
+  assert(!pl.flags.orreStash);
+  Orre.enter(pl);
+  assert.deepStrictEqual([pl.party[0].level, pl.location.map], [26, "OutskirtStand_Diner"], "Wes as he was left");
+  Orre.leave(pl);
+  // A save made as Wes loads as Wes (and doesn't hand him an Exp. Share or the Explorer Kit).
+  Orre.enter(pl);
+  const back = Player.load(JSON.parse(JSON.stringify(pl))).player;
+  assert.deepStrictEqual([back.name, back.look, back.bag], ["Wes", "wes", {}]);
+  // Rider Willie, and the bar's stock (no Escape Rope: it would take Wes to Kanto).
+  assert.deepStrictEqual(Orre.willieTeam().map((r) => [r.species, r.level]), [["Zigzagoon", 23], ["Zigzagoon", 24]]);
+  assert(Orre.SHOP.every((id) => ITEMS[id]) && !Orre.SHOP.includes("escape-rope"));
+  for (const f of ["trainers/back/wes", "trainers/front/wes", "trainers/front/rider_willie"]) assert(fs.existsSync(path.join(root, "assets/sprites/" + f + ".png")), f);
+  for (const k of ["", "_run", "_bike", "_surf", "_fish"]) assert(fs.existsSync(path.join(root, "assets/world/sprites/player_wes" + k + ".png")));
 }
 
 // Berry Crush (game/berry-crush.js): two players, Oran and Cheri Berries (100
