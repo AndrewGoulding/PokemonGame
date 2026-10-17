@@ -281,9 +281,9 @@
     if (!wild && /^TRAINER_(LEADER|ELITE_FOUR|CHAMPION)/.test(opts.trainerId || "")) {
       for (const r of player.party) if (!r.egg) Party.adjustFriendship(r, "leagueBattle", here);
     }
-    // (The Tera Orb: charged, it lets a Pokémon Terastallize once; then it's
-    // empty until a Pokémon Center recharges it.)
-    const teraOrb = Player.itemCount(player, "tera-orb") > 0 && !player.flags.teraOrbEmpty;
+    // (The Tera Orb: it lets a Pokémon Terastallize once a battle, and
+    // recharges itself after every battle.)
+    const teraOrb = Player.itemCount(player, "tera-orb") > 0;
     const foeSets = (f) => f.team.map((r) => Object.assign(Party.toBattleSet(r), opts.ghost ? { name: "Ghost" } : {}));
     const result = await BattleScreen.run({
       p1: Object.assign({ name: player.name, team: own.map((r) => Party.toBattleSet(r, here)), dynamax: Player.itemCount(player, "dynamax-band") > 0, tera: teraOrb },
@@ -328,7 +328,6 @@
       }
     });
     const b = result.battle;
-    if (b.sides.p1.tag ? b.sides.p1.teraUsedBy[0] : b.sides.p1.teraUsed) player.flags.teraOrbEmpty = true;
     for (const e of b.events) {
       if (opts.ghost) break;   // (an unidentified Ghost isn't seen)
       if ((e[0] === "switch" || e[0] === "drag") && String(e[1]).startsWith("p2")) Player.markSeen(player, String(e[2]).split(", L")[0]);
@@ -353,6 +352,15 @@
       if (b.sides.p2.pokemon.some((m) => [...(m.expParticipants || [])].some((p) => p.item === "amulet-coin"))) prize *= 2;
       Player.addMoney(player, prize);
       await message("You got " + money(prize) + " for winning!");
+    }
+    // (This game's own: a wild Pokémon you knock out drops what it was holding,
+    // and it goes in your Bag.)
+    const dropped = wild && result.outcome === "won" && b.sides.p2.pokemon[0];
+    if (dropped && dropped.fainted && dropped.item && window.ITEMS[dropped.item]) {
+      const item = dropped.item, name = Bag.name(item);
+      Player.addItem(player, item);
+      await message("The wild " + dropped.name + " dropped\n" + article(name) + "!");
+      await message(player.name + " put the " + name + "\nin the Bag.");
     }
     if (opts.safari && player.flags.safari) player.flags.safari.balls = b.safari.balls;
     if (result.outcome === "caught") await addCaught(Party.caught(foe.team[0], b.caught, ballUsed(b)));
@@ -466,7 +474,6 @@
     League.reset(player.flags);
     // (DoWhiteOut heals the party as you go.)
     player.party.forEach(Party.heal);
-    delete player.flags.teraOrbEmpty;   // (the Tera Orb recharged at a Pokémon Center)
     const center = player.flags.lastCenter && Player.CENTERS[player.flags.lastCenter];
     const to = Object.assign({}, center || Player.HOME);
     music(null);
@@ -495,7 +502,6 @@
     await Overworld.pokecenterHeal(player.party.length, () => fanfare("mus_heal"));
     if (id) await Overworld.act([{ who: id, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
     player.party.forEach(Party.heal);
-    delete player.flags.teraOrbEmpty;   // (the Tera Orb recharged at a Pokémon Center)
     await say(T(player.flags.TRAINER_LEADER_BROCK ? "Text_MonsHealed" : "Text_MonsHealedShouldBuyPotions"));
   }
   // EventScript_AfterWhiteOutMomHeal: (Red's) Mom turns to you, and heals them.
@@ -679,6 +685,19 @@
       if (evo) await evolve(record, evo, true);
       return;
     }
+    if ((ItemUse.effect(item) || {}).expCandy) {
+      if (!Bag.canUseOn(record, item)) { await message("It won't have any effect."); return; }
+      Player.removeItem(player, item);
+      const r = Bag.expCandy(record, item, { here: player.location && player.location.map });
+      await message(name + " gained " + r.exp.toLocaleString("en-US") + " Exp. Points!");
+      for (const lv of r.levels) {
+        await message(name + " grew to Lv. " + lv.level + "!");
+        for (const move of lv.moves) await learnMove(record, move);
+      }
+      const evo = r.levels.length && Evolution.find(record, { trigger: "level", party: player.party, coins: coins() });
+      if (evo) await evolve(record, evo, true);
+      return;
+    }
     let move;
     const eff = ItemUse.effect(item);
     if (eff && eff.oneMove) {
@@ -748,7 +767,7 @@
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
     item === "ability-capsule" || item === "ability-patch" || item === "bottle-cap" || item === "gold-bottle-cap" || item === "zygarde-cube" ||
     item === "dynamax-candy" || item === "max-mushrooms" ||
-    item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS || item === "escape-rope";
+    item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS || item in LURE_STEPS || item === "escape-rope";
   // TMs and HMs work like key items: they can't be held, tossed or sold.
   const holdable = (item) => !Bag.isBall(item) && !Bag.isMachine(item) && !Bag.isKeyItem(item);
   const expShareOn = () => Player.itemCount(player, "exp-share") > 0 && !player.flags.expShareOff;
@@ -1178,7 +1197,7 @@
         await message(on ? "The " + Bag.name(id) + " was registered to Select." : "The " + Bag.name(id) + " is no longer registered.");
       }
       else if (what === "use" && Bag.isKeyItem(id)) { if ((await useKeyItem(id)) === "escaped") return "escaped"; }
-      else if (what === "use" && id in REPEL_STEPS) await useRepel(id);
+      else if (what === "use" && (id in REPEL_STEPS || id in LURE_STEPS)) await useRepel(id);
       else if (what === "use" && id === "escape-rope") { if (await useEscapeRope()) return "escaped"; }
       else if (what === "use") {
         const t = await choosePartyFor(Bag.isMachine(id) ? "Teach which {PKMN}?" : "Use on which {PKMN}?", id);
@@ -2838,8 +2857,7 @@
         return;
       // Rock Tunnel B1F's Rock Slide tutor.
       case "RockTunnel_B1F_EventScript_RockSlideTutor":
-        // (Again and again, for money, like the Route 4 tutors.)
-        await moveTutor("Rock Slide", "tutorRockSlide", "Text_RockSlide", TUTOR_PRICE);
+        await moveTutor("Rock Slide", "tutorRockSlide", "Text_RockSlide");
         return;
       // Prof. Oak's Aide in Route 10's Pokémon Center: the Everstone for twenty kinds caught.
       case "Route10_PokemonCenter_1F_EventScript_Aide":
@@ -3124,10 +3142,10 @@
       // ---------- Route 4 and Mt. Moon ----------
 
       case "Route4_EventScript_MegaPunchTutor":
-        await moveTutor("Mega Punch", "tutorMegaPunch", "Text_MegaPunch", TUTOR_PRICE);
+        await moveTutor("Mega Punch", "tutorMegaPunch", "Text_MegaPunch");
         return;
       case "Route4_EventScript_MegaKickTutor":
-        await moveTutor("Mega Kick", "tutorMegaKick", "Text_MegaKick", TUTOR_PRICE);
+        await moveTutor("Mega Kick", "tutorMegaKick", "Text_MegaKick");
         return;
 
       case "Route4_PokemonCenter_1F_EventScript_Nurse":
@@ -3272,8 +3290,12 @@
       case "CeladonCity_DepartmentStore_2F_EventScript_ClerkTMs":
       case "CeladonCity_DepartmentStore_4F_EventScript_Clerk":
       case "CeladonCity_DepartmentStore_5F_EventScript_ClerkXItems":
-      case "CeladonCity_DepartmentStore_5F_EventScript_ClerkVitamins":
         await mart(ev.person.mart);
+        return;
+      // (Beside the vitamins, this game's Wings and Exp. Candies.)
+      case "CeladonCity_DepartmentStore_5F_EventScript_ClerkVitamins":
+        await mart(ev.person.mart.concat(["health-wing", "muscle-wing", "resist-wing", "genius-wing", "clever-wing", "swift-wing",
+          "exp-candy-xs", "exp-candy-s", "exp-candy-m", "exp-candy-l", "exp-candy-xl"]));
         return;
       case "CeladonCity_EventScript_SoftboiledTutor":
         await moveTutor("Soft-Boiled", "tutorSoftboiled", "Text_Softboiled");
@@ -3431,14 +3453,19 @@
         await say(T("SaffronCity_Text_HesTakingASnooze"));
         return;
       // The Copycat mimics you, unless you've a Poké Doll for her: then she
-      // teaches Mimic (FireRed's EventScript_MimicTutor), once.
+      // teaches Mimic (FireRed's EventScript_MimicTutor); after that, again
+      // and again for money.
       case "SaffronCity_CopycatsHouse_2F_EventScript_Copycat": {
         const girl = !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl);
-        if (!Player.itemCount(player, "poke-doll")) {
+        if (!f.tutorMimic && !Player.itemCount(player, "poke-doll")) {
           await say(T(girl ? "SaffronCity_CopycatsHouse_2F_Text_MimickingFavoriteHobbyFemale" : "SaffronCity_CopycatsHouse_2F_Text_MimickingFavoriteHobbyMale"));
           return;
         }
-        if (await moveTutor("Mimic", "tutorMimic", "Text_Mimic", null, girl ? "Text_MimicTaughtFemale" : "Text_MimicTaughtMale")) Player.removeItem(player, "poke-doll");
+        // (The first time for a Poké Doll; after that, for money, as the other tutors.)
+        const doll = !f.tutorMimic;
+        if (await moveTutor("Mimic", "tutorMimic", "Text_Mimic", doll ? null : undefined, girl ? "Text_MimicTaughtFemale" : "Text_MimicTaughtMale") && doll) {
+          Player.removeItem(player, "poke-doll");
+        }
         return;
       }
       // Mr. Psychic: FireRed's TM29, Psychic (the TM with that move here).
@@ -3493,8 +3520,7 @@
         await elevator(SILPH_FLOORS.map(([label, x]) => ({ label, map: "SilphCo_" + label, x, y: 3 })), true);
         return;
       case "SilphCo_2F_EventScript_ThunderWaveTutor":
-        // (Again and again, for a price, like Route 4's and Rock Slide's tutors.)
-        await moveTutor("Thunder Wave", "tutorThunderWave", "Text_ThunderWave", TUTOR_PRICE);
+        await moveTutor("Thunder Wave", "tutorThunderWave", "Text_ThunderWave");
         return;
       case "SilphCo_7F_EventScript_RivalTriggerTop":
       case "SilphCo_7F_EventScript_RivalTriggerBottom":
@@ -4529,7 +4555,6 @@
     await Overworld.pokecenterHeal(player.party.length, () => fanfare("mus_heal"));
     if (id) await Overworld.act([{ who: id, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
     player.party.forEach(Party.heal);
-    delete player.flags.teraOrbEmpty;   // (the Tera Orb recharged at a Pokémon Center)
     if (Player.CENTERS[mapName]) player.flags.lastCenter = mapName;
     await say(T("Text_RestoredPkmnToFullHealth"));
     await say(T("Text_WeHopeToSeeYouAgain"));
@@ -4559,17 +4584,16 @@
     await say([T("ViridianCity_Text_ThatWasEducationalTakeThis")[0]]);
   }
 
-  // FireRed's move tutors (EventScript_DreamEaterTutor and the like): each
-  // teaches its move once, with its own lines (Text_<Move>Teach, ...Declined,
-  // ...WhichMon, ...Taught).
-  // `price`: this tutor teaches again and again, for that much each time
-  // (instead of FireRed's once only).
+  // FireRed's move tutors (EventScript_DreamEaterTutor and the like), with
+  // their own lines (Text_<Move>Teach, ...Declined, ...WhichMon, ...Taught).
+  // In FireRed each teaches its move once; here they all teach it again and
+  // again, for `price` each time (TUTOR_PRICE unless given; null: free).
   // `taught`: the label of what they say once it's taught, if not <text>Taught.
   // True when it's taught this time.
   async function moveTutor(move, flag, text, price, taught) {
     const f = player.flags;
     taught = taught || text + "Taught";
-    if (f[flag] && !price) { await say(T(taught)); return false; }
+    if (price === undefined) price = TUTOR_PRICE;
     const teach = T(text + "Teach");
     await say(teach.slice(0, -1));
     const declined = () => say(T(text + "Declined"));
@@ -4577,7 +4601,7 @@
     if (price) {
       if (!(await confirm("It'll cost " + money(price) + ". Is that okay?\n(You have " + money(player.money) + ".)"))) { await declined(); return; }
       if (player.money < price) { await say("You don't have enough money."); return; }
-    } else if (!(await confirm(fill(T("Text_MoveCanOnlyBeLearnedOnce").join(" "))))) { await declined(); return; }
+    }
     await say(T(text + "WhichMon"));
     const record = await choosePartyFor("Teach which {PKMN}?");
     show("world");
@@ -4600,8 +4624,7 @@
     return true;
   }
 
-  // What the tutors who teach again and again (Route 4's, Rock Slide's,
-  // Silph Co.'s Thunder Wave) charge each time.
+  // What the move tutors charge each time they teach.
   const TUTOR_PRICE = 1000;
 
   // Lavender Town's Name Rater (LavenderTown_House2_EventScript_NameRater):
@@ -4700,8 +4723,9 @@
   // Leaf waits a few steps from Pewter Gym's door once you have the Boulder
   // Badge. Coming out (or talking to her), she sees you ("!"), comes over,
   // happy for you: she has a Pokédex from Prof. Oak too, and wants a battle
-  // (healing your Pokémon first). Butterfree (level 14), her starter (level 15,
-  // the one weak against yours) and Jigglypuff (level 13). Losing blacks you
+  // (healing your Pokémon first). Butterfree (level 14: it Terastallizes into
+  // a pure Flying type), her starter (level 15, the one weak against yours)
+  // and Jigglypuff (level 13). Losing blacks you
   // out and she's waiting again; beat her and she gives you TM54 False Swipe
   // and heads off west, out of sight.
   //
@@ -4822,8 +4846,10 @@
     player.party.forEach(Party.heal);
     await sayWithJingle("mus_heal", "{PLAYER}'s Pokémon were fully healed!");
     await say("Leaf: There! Now let's battle!");
-    const team = [Party.create("Butterfree", 14), Party.create(RIVAL_PICK[f.starter], 15), Party.create("Jigglypuff", 13)];
-    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green" },
+    // (Her Butterfree, her ace, Terastallizes into a pure Flying type: she has a Tera Orb too.)
+    const team = [Object.assign(Party.create("Butterfree", 14), { teraType: "Flying", teraAce: true }), Party.create(RIVAL_PICK[f.starter], 15),
+      Party.create("Jigglypuff", 13)];
+    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green", tera: true },
       defeatText: ["Wow! You really are strong,\n{PLAYER}!"] });
     if (outcome !== "won") return;
     f.leafPewter = true;
@@ -5231,14 +5257,25 @@
   // He comes from just off the screen (within 10 steps), or else from 5 to 7
   // steps away, along tiles he can walk on (World.walkable), and goes back
   // the way he came.
-  function megaAideRoute() {
+  // (`behind`: from behind you if he can, his last step the way you face,
+  // else at least from the side of you your back is to; "only": from behind
+  // you or not at all.)
+  function megaAideRoute(behind) {
     const at = Overworld.position();
     const people = Overworld.people();
     const tree = World.walkable(at, (m, x, y) => people.some((q) => q.x === x && q.y === y), 10);
     const offScreen = (t) => t.x < at.x - 7 || t.x > at.x + 7 || t.y < at.y - 4 || t.y > at.y + 5;
     const score = (t) => (offScreen(t) && t.dist >= 5 ? 300 - t.dist : t.dist >= 5 && t.dist <= 7 ? 100 + t.dist : t.dist <= 7 ? t.dist : 0);
-    let best = null;
-    for (const [key, t] of tree) if (t.dist >= 1 && (!best || score(t) > score(best[1]))) best = [key, t];
+    const [fx, fy] = World.DIRS[at.facing] || [0, 0];
+    const backSide = (t) => (t.x - at.x) * fx + (t.y - at.y) * fy < 0;
+    const fromBehind = (key) => World.pathBack(tree, key).slice(-1)[0] === at.facing;
+    const pick = (ok) => {
+      let best = null;
+      for (const [key, t] of tree) if (t.dist >= 1 && ok(key, t) && (!best || score(t) > score(best[1]))) best = [key, t];
+      return best;
+    };
+    const best = behind === "only" ? pick((key, t) => backSide(t) && fromBehind(key) && t.dist >= 3)
+      : (behind && (pick((key, t) => backSide(t) && fromBehind(key)) || pick((key, t) => backSide(t)))) || pick(() => true);
     if (!best) return null;
     const toPlayer = World.pathBack(tree, best[0]);   // (the last step would be onto you)
     return { from: best[1], walk: toPlayer.slice(0, -1), face: toPlayer[toPlayer.length - 1] };
@@ -5263,18 +5300,22 @@
 
   // The Tera Orb (this game's own): the first time you come into Pewter
   // City, walking in or out of a door, another of Prof. Oak's aides catches
-  // up with you (as the one above does) with it.
+  // up with you (as the one above does, but from behind you) with it.
   const TERA_AIDE = "LOCALID_TERA_AIDE";
-  const teraAideDue = (script) => (script === "enter:PewterCity" || script === "arrive:PewterCity") && !player.flags.gotTeraOrb;
+  // He runs up from behind you: as you come in if there's room behind you on
+  // Pewter's side, else a few steps on (teraAideStep).
+  const teraAideDue = (script) => (script === "enter:PewterCity" || script === "arrive:PewterCity") && !player.flags.gotTeraOrb && !!megaAideRoute("only");
+  const teraAideStep = () => (Overworld.position().map === "PewterCity" && !player.flags.gotTeraOrb && megaAideRoute("only")
+    ? { type: "tera-aide" } : null);
   async function teraAide() {
-    const route = megaAideRoute();
+    const route = megaAideRoute("only") || megaAideRoute(true);
     const give = async () => {
       Player.addItem(player, "tera-orb");
       player.flags.gotTeraOrb = true;
       await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the Tera Orb\nfrom Prof. Oak's aide!");
       await say(["With it, START on the move menu\nlets one of your Pokémon\nTerastallize, once a battle.",
         "It becomes its Tera Type, and moves\nof that type get stronger!",
-        "Using it empties the Orb. A Pokémon\nCenter recharges it, as it heals\nyour Pokémon.", "Good luck, {PLAYER}!"]);
+        "Using it empties the Orb, but it\nrecharges itself after every\nbattle.", "Good luck, {PLAYER}!"]);
     };
     if (!route) { await say("I'm one of Prof. Oak's aides.\nThe Professor wanted you to have this!"); await give(); return; }
     const back = route.walk.slice().reverse().map((d) => "walk_fast_" + World.OPPOSITE[d]);
@@ -8331,21 +8372,26 @@
 
   // Cape Brink's tutor (TwoIsland_CapeBrink_House_EventScript_StarterTutor):
   // the ultimate move of a fully evolved starter you lead with that's as fond
-  // of you as can be — Frenzy Plant, Blast Burn or Hydro Cannon, each once.
+  // of you as can be — Frenzy Plant, Blast Burn or Hydro Cannon. In FireRed
+  // each once; here the first time free, then again and again for TUTOR_PRICE.
   async function capeBrinkTutor() {
     const f = player.flags, lead = player.party.find((r) => !r.egg);
-    if (f.capeBrinkDone) { await say(T("Text_FeelRejuvenated")); return; }
     if (capeBrinkJustTaught) { await say(T("Text_MakeBestUseOfMove")); return; }
+    const m = Sevii.capeBrinkMove(lead);
+    if (!m && f.capeBrinkDone) { await say(T("Text_FeelRejuvenated")); return; }
     const species = lead ? Party.speciesName(lead.species) : "";
     await say(T("Text_UltimateMoveThatMon"), [species]);
-    const m = Sevii.capeBrinkMove(lead, f);
     if (!m) { await say(T("Text_JustMistaken")); return; }
-    const vars = [species, m.move];
+    const vars = [species, m.move], again = !!f[m.flag];
     await Overworld.act([{ who: "LOCALID_CAPE_BRINK_TUTOR", moves: ["jump_in_place_" + World.OPPOSITE[Overworld.position().facing]] }]);
     const q = T("Text_AllowMeToTeachMonUltimateMove");
     await say(q.slice(0, -1), vars);
     if (!(await confirm(fill(q[q.length - 1], vars)))) { await say(T("Text_YouRejectIt")); return; }
-    if (!(await confirm(fill(T("Text_MoveCanOnlyBeLearnedOnce").join(" "))))) { await say(T("Text_YouRejectIt")); return; }
+    if (Party.knowsMove(lead, m.move)) { await say(Party.displayName(lead) + " already knows " + m.move + "."); return; }
+    if (again) {
+      if (!(await confirm("It'll cost " + money(TUTOR_PRICE) + ". Is that okay?\n(You have " + money(player.money) + ".)"))) { await say(T("Text_YouRejectIt")); return; }
+      if (player.money < TUTOR_PRICE) { await say("You don't have enough money."); return; }
+    }
     await say(T("Text_LetMeConferUltimateMove"), vars);
     Screen.say("");
     await Overworld.fadeToBlack();
@@ -8353,6 +8399,13 @@
     show("world");
     await Overworld.fadeFromBlack();
     if (!Party.knowsMove(lead, m.move)) { await say(T("Text_YouRejectIt")); return; }
+    if (again) {
+      Player.addMoney(player, -TUTOR_PRICE);
+      await say(player.name + " paid " + money(TUTOR_PRICE) + ".");
+      await say(T("Text_TaughtMove"));
+      capeBrinkJustTaught = true;
+      return;
+    }
     f[m.flag] = true;
     if (Sevii.capeBrinkDone(f)) { await say(T("Text_PassedOnEverythingIKnow")); f.capeBrinkDone = true; return; }
     await say(T("Text_TaughtMove"));
@@ -9977,13 +10030,21 @@
     return true;
   }
 
-  // ---------- Repels ----------
+  // ---------- Repels and Lures ----------
   //
   // For 100 / 200 / 250 steps, wild Pokémon weaker than the lead Pokémon (the
-  // first that can battle) stay away (Gen 3: below its level).
+  // first that can battle) stay away (Gen 3: below its level). A Lure (Let's
+  // Go, Pikachu! and Eevee!'s, this game's way: as long as a Repel of its
+  // kind, and sold beside it) does the opposite: wild Pokémon turn up twice
+  // as often. One or the other at a time.
 
   const REPEL_STEPS = { "repel": 100, "super-repel": 200, "max-repel": 250 };
+  const LURE_STEPS = { "lure": 100, "super-lure": 200, "max-lure": 250 };
   function repelStep() {
+    if (player.lureSteps > 0) {
+      player.lureSteps--;
+      return player.lureSteps === 0 ? { type: "lure-ended" } : null;
+    }
     if (!(player.repelSteps > 0)) return null;
     player.repelSteps--;
     return player.repelSteps === 0 ? { type: "repel-ended" } : null;
@@ -9993,19 +10054,24 @@
     const lead = player.party.find(Party.canFight);
     return !lead || wild.level >= lead.level;
   }
+  // A Repel or a Lure, from the Bag.
   async function useRepel(item) {
-    if (player.repelSteps > 0) { await message("But the effects of a Repel lingered from earlier."); return; }
+    const lure = item in LURE_STEPS;
+    if (player.repelSteps > 0 || player.lureSteps > 0) {
+      await message("But the effects of a " + (player.lureSteps > 0 ? "Lure" : "Repel") + " lingered from earlier.");
+      return;
+    }
     Player.removeItem(player, item);
-    player.repelSteps = REPEL_STEPS[item];
-    player.flags.lastRepel = item;
+    if (lure) { player.lureSteps = LURE_STEPS[item]; player.flags.lastLure = item; }
+    else { player.repelSteps = REPEL_STEPS[item]; player.flags.lastRepel = item; }
     await message(player.name + " used the " + Bag.name(item) + ".");
   }
-  // When a Repel wears off you're offered another of the same kind, if you
-  // have one (as in Black and White).
-  async function repelWoreOff() {
-    const item = player.flags.lastRepel;
-    if (!item || !Player.itemCount(player, item)) { await say("Repel's effect wore off…"); return; }
-    if (await confirm("Repel's effect wore off… Would you like to use another " + Bag.name(item) + "? (" +
+  // When a Repel (or a Lure) wears off you're offered another of the same
+  // kind, if you have one (as in Black and White).
+  async function repelWoreOff(lure) {
+    const item = player.flags[lure ? "lastLure" : "lastRepel"], what = lure ? "Lure" : "Repel";
+    if (!item || !Player.itemCount(player, item)) { await say(what + "'s effect wore off…"); return; }
+    if (await confirm(what + "'s effect wore off… Would you like to use another " + Bag.name(item) + "? (" +
       Player.itemCount(player, item) + " left)")) await useRepel(item);
     await persist();
   }
@@ -10161,7 +10227,7 @@
           leftPallet(player.location.map); DayCare.step(player.flags.dayCare); DayCare.step(player.flags.dayCare2); vsSeekerStep(); friendshipStep();
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
           farawayStep();
-          return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || safariStep() || cinnabarBillStep() || eggStep() || repelStep();
+          return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || safariStep() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep();
         }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) && repelAllows(mon),
         onMap: (m) => {
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
@@ -10190,10 +10256,11 @@
       else if (ev.type === "select") await useRegistered();
       else if (ev.type === "water") await surfPrompt();
       else if (ev.type === "waterfall") await waterfall();
-      else if (ev.type === "repel-ended") await repelWoreOff();
+      else if (ev.type === "repel-ended" || ev.type === "lure-ended") await repelWoreOff(ev.type === "lure-ended");
       else if (ev.type === "egg-hatch") await eggHatches(ev.record);
       else if (ev.type === "red-forest") await redForest();
       else if (ev.type === "leaf-vermilion") await leafVermilion();
+      else if (ev.type === "tera-aide") await teraAide();
       else if (ev.type === "jessie-james") await jessieJames();
       else if (ev.type === "safari-over") await safariOver(ev.text, false);
       else if (ev.type === "wild") {

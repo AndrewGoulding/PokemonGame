@@ -573,6 +573,38 @@ for (const share of [false, true]) {
     assert(ITEM_SPRITES[item], "no sprite for mart item " + item);
   }
 }
+// Lures beside the Repels of their kind; Wings and Exp. Candies.
+{
+  assert.deepStrictEqual(Bag.martStock(["potion", "repel", "super-repel"]).map((x) => x.item), ["potion", "repel", "lure", "super-repel", "super-lure"]);
+  assert.deepStrictEqual(["lure", "super-lure", "max-lure"].map((id) => [Bag.pocket(id), Bag.price(id), !!ITEM_SPRITES[id]]),
+    [["Items", 400, true], ["Items", 700, true], ["Items", 900, true]]);
+  // A Lure doubles the chance a step finds a wild Pokémon.
+  const tries = (lure) => {
+    let n = 0, seed = 1;
+    const rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const grass = (() => { const m = WORLD_MAPS.Route1; for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) if (World.isGrass(World.blockAt("Route1", x, y))) return [x, y]; })();
+    for (let i = 0; i < 4000; i++) if (World.stepEncounter({ steps: 99, prev: World.blockAt("Route1", ...grass).behavior }, "Route1", grass[0], grass[1], { rng, lure })) n++;
+    return n;
+  };
+  const plain = tries(false), lured = tries(true);
+  assert(lured > plain * 1.7 && lured < plain * 2.3, "lure " + plain + " -> " + lured);
+  // A Wing: 1 EV, up to 252; a vitamin stops at 100.
+  const w = Party.create("Pidgey", 20, { rng });
+  w.evs = { atk: 251 };
+  assert(Bag.canUseOn(w, "muscle-wing") && !Bag.canUseOn(w, "protein"));
+  assert.strictEqual(Bag.useOn(w, "muscle-wing").ev, 1);
+  assert.strictEqual(w.evs.atk, 252);
+  assert(!Bag.canUseOn(w, "muscle-wing"));
+  assert.deepStrictEqual(["health-wing", "exp-candy-xl"].map((id) => [Bag.pocket(id), Bag.name(id)]), [["Power-up", "Health Wing"], ["Power-up", "Exp. Candy XL"]]);
+  // An Exp. Candy: its Exp. Points, and every level they bring.
+  const c = Party.create("Pidgey", 5, { rng });
+  const r = Bag.expCandy(c, "exp-candy-m");
+  assert.strictEqual(r.exp, 3000);
+  assert(c.level > 10 && r.levels.length === c.level - 5 && r.levels.map((l) => l.level).join() === Array.from({ length: c.level - 5 }, (_, i) => i + 6).join());
+  assert.strictEqual(c.level, Experience.levelForExp(Experience.growthRate("Pidgey"), c.exp));
+  const top = Party.create("Pidgey", 100, { rng });
+  assert(!Bag.canUseOn(top, "exp-candy-xs"));
+}
 
 // Items in battle: before moves, on benched and fainted Pokémon too.
 {
@@ -4343,12 +4375,14 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
   assert(!menusJs.includes("START: MEGA EVOLVE") && /g\.toggled\(g\.on\)/.test(menusJs) && /if \(startHeld && \["left", "right", "up", "down"\]\.includes\(k\)\)/.test(menusJs));
 }
 
-// ui/game.js: Silph Co.'s Thunder Wave tutor charges; the Fighting Dojo's
+// ui/game.js: every move tutor charges (Mimic's first lesson is for a Poké Doll); the Fighting Dojo's
 // rematch once you're Champion; the in-battle Summary of a Mega; the Mega
 // Stones (item balls on reachable tiles, and the gifts).
 {
   const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
-  assert(/moveTutor\("Thunder Wave", "tutorThunderWave", "Text_ThunderWave", TUTOR_PRICE\)/.test(gameJs));
+  assert(/moveTutor\("Thunder Wave", "tutorThunderWave", "Text_ThunderWave"\)/.test(gameJs) && /if \(price === undefined\) price = TUTOR_PRICE;/.test(gameJs));
+  assert.deepStrictEqual([...gameJs.matchAll(/moveTutor\("([^"]+)"[^;]*null/g)].map((m) => m[1]), ["Mimic"]);
+  assert(!/MoveCanOnlyBeLearnedOnce/.test(gameJs), "no tutor teaches only once");
   // The Dojo: every trainer of FireRed's Dojo, fully evolved, levels 48-52,
   // FireRed's species lines.
   const dojo = /const DOJO_REMATCH = \{([\s\S]*?)\n  \};/.exec(gameJs)[1];

@@ -13,7 +13,8 @@
 //   a list                  "No001" (National Dex numbers), the caught ball, the
 //                           name (----- if unseen) and, caught, its types
 //   AREA MODE               the places with wild Pokémon (----- until you've
-//                           been), how many of theirs you've caught, and a gold
+//                           been), how many of theirs you've caught, a brown
+//                           crown once that's all its Grass ones and a gold
 //                           crown once that's all of them; A lists them
 //   a habitat's pages       up to four Pokémon a page in their circles, with cards
 //   an entry                number, name, category, height, weight, footprint,
@@ -273,30 +274,34 @@
   // ---------- Area mode (this game's) ----------
 
   // The places with wild Pokémon: { name, visited, rows, caught, total,
-  // complete }. Rows are dex entries under a { head } for each way of
-  // finding them (Grass, Fishing, Surfing); caught and total count each
-  // species once.
+  // complete, grassComplete }. Rows are dex entries under a { head } for each
+  // way of finding them (Grass, Fishing, Surfing); caught and total count each
+  // species once. grassComplete: all its Grass Pokémon caught.
   function areaRows() {
     if (st.areaRows) return st.areaRows;
     const byName = {};
     for (const e of st.entries) byName[e.species] = e;
     return (st.areaRows = (st.opts.areaList || []).map((a) => {
       const rows = [], all = new Set();
+      let grassComplete = false;
       for (const gr of a.groups || []) {
         const mons = [...new Set(gr.species)].map((sp) => byName[sp]).filter(Boolean).sort((x, y) => x.id - y.id);
         if (!mons.length) continue;
         rows.push({ head: gr.title }, ...mons);
         mons.forEach((e) => all.add(e));
+        if (gr.title === "Grass") grassComplete = mons.every((e) => e.caught);
       }
       const caught = [...all].filter((e) => e.caught).length;
-      return { name: a.name, visited: !!a.visited, rows, caught, total: all.size, complete: all.size > 0 && caught === all.size };
+      return { name: a.name, visited: !!a.visited, rows, caught, total: all.size, complete: all.size > 0 && caught === all.size, grassComplete };
     }));
   }
-  // A gold crown, 11x8 (a place whose Pokémon you've all caught).
+  // A crown, 11x8: gold for a place whose Pokémon you've all caught, brown
+  // for one whose Grass Pokémon you have (but not yet its others).
   const CROWN = ["#....#....#", "##..###..##", "#Y#.#Y#.#Y#", "#YY#YYY#YY#", "#YYYYYYYYY#", "#YRYYBYYRY#", "#YYYYYYYYY#", "###########"];
-  const CROWN_COLOURS = { "#": [123, 82, 0], Y: [255, 205, 41], R: [230, 49, 41], B: [57, 106, 238] };
-  function crown(s, x, y) {
-    CROWN.forEach((row, j) => [...row].forEach((c, i) => { if (CROWN_COLOURS[c]) s.put(x + i, y + j, CROWN_COLOURS[c]); }));
+  const GOLD_CROWN = { "#": [123, 82, 0], Y: [255, 205, 41], R: [230, 49, 41], B: [57, 106, 238] };
+  const BROWN_CROWN = { "#": [74, 41, 16], Y: [172, 106, 49], R: [230, 49, 41], B: [57, 106, 238] };
+  function crown(s, x, y, colours) {
+    CROWN.forEach((row, j) => [...row].forEach((c, i) => { if (colours[c]) s.put(x + i, y + j, colours[c]); }));
   }
   // The menu's picture for AREA MODE: the Kanto map (map_kanto.png), shrunk into the pictures' oval.
   function areaIcon(x, y) {
@@ -317,7 +322,8 @@
       if (L.top + r === L.cursor) s.text("▶", 20, y, BLACK, BEIGE);
       if (!a.visited) { s.text("-----", 28, y, BLACK, BEIGE); continue; }
       s.text(a.name, 28, y, BLACK, BEIGE);
-      if (a.complete) crown(s, 140, y + 3);
+      if (a.complete) crown(s, 140, y + 3, GOLD_CROWN);
+      else if (a.grassComplete) crown(s, 140, y + 3, BROWN_CROWN);
       const n = a.caught + "/" + a.total;
       s.text(n, 216 - s.textWidth(n), y, BLACK, BEIGE);
     }

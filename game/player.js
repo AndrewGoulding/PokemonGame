@@ -22,9 +22,9 @@
   const BOX_SIZE = 30;
   const STARTING_MONEY = 3000;
   // The Exp. Share (Gen 6, party-wide) is a key item you start with, switched on,
-  // and so is the Explorer Kit (for digging in cave walls).
+  // and so are the Explorer Kit (for digging in cave walls) and the Fishing Rod.
   // No Poké Balls: as in FireRed, the first ones come from Prof. Oak with the Pokédex.
-  const STARTING_BAG = { "exp-share": 1, "explorer-kit": 1, "berry-pouch": 1 };
+  const STARTING_BAG = { "exp-share": 1, "explorer-kit": 1, "berry-pouch": 1, "fishing-rod": 1 };
   const MAX_MONEY = 9999999;
   const MAX_ITEM_COUNT = 999;
   // The item storage in your PC starts with a Potion, as in FireRed.
@@ -118,6 +118,7 @@
       badges: [],
       flags: {},
       repelSteps: 0,
+      lureSteps: 0,
       playTimeMs: 0,
       createdAt: Date.now(),
       trainerId: Math.floor(Math.random() * 65536),   // the ID No. on your Pokémon's summaries
@@ -421,6 +422,7 @@
       }
     }
     player.repelSteps = Math.max(0, data.repelSteps | 0);
+    player.lureSteps = Math.max(0, data.lureSteps | 0);
     player.playTimeMs = Math.max(0, +data.playTimeMs || 0);
     player.createdAt = data.createdAt || Date.now();
     // (Saves from before trainer IDs get one from when the game was started.)

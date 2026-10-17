@@ -343,8 +343,8 @@
     const table = opts.surf ? m.water : m.wild;
     if (!table || !(opts.surf ? isSurfable(b.behavior) : isGrass(b))) return null;
     const rate = table.rate;
-    // HandleWildEncounterCooldown
-    const minSteps = rate >= 80 ? 0 : rate < 10 ? 8 : 8 - Math.floor(rate / 10);
+    // HandleWildEncounterCooldown (none with a Lure on)
+    const minSteps = opts.lure || rate >= 80 ? 0 : rate < 10 ? 8 : 8 - Math.floor(rate / 10);
     if ((state.steps | 0) < minSteps) {
       state.steps = (state.steps | 0) + 1;
       if (Math.floor(rng() * 100) >= 5) return null;
@@ -352,7 +352,8 @@
     // StandardWildEncounter: a new kind of ground, then the rate test.
     if (prev != null && prev !== b.behavior && Math.floor(rng() * 100) >= 60) return null;
     const buffAdd = () => { state.buff = opts.repel ? 0 : (state.buff | 0) + rate; };
-    const base = opts.bike ? Math.floor(rate * 16 * 80 / 100) : rate * 16;
+    // (A Lure: twice as often.)
+    const base = (opts.bike ? Math.floor(rate * 16 * 80 / 100) : rate * 16) * (opts.lure ? 2 : 1);
     const chance = Math.min(MAX_ENCOUNTER_RATE, base + Math.floor((state.buff | 0) * 16 / 200));
     if (Math.floor(rng() * MAX_ENCOUNTER_RATE) >= chance) { buffAdd(); return null; }
     const mon = pickWild(m, rng, opts.surf ? m.water : null);

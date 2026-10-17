@@ -57,7 +57,7 @@ swap held items), with FireRed's hand, party panel, "which BOX?" popup, box
 scrolling and release. A Pokémon put in a box (or sent there when your party
 is full) is fully healed, as from Gen 4 on. Your own PC is item storage: Withdraw item on FireRed's
 item list, Deposit item from the Bag. There's
-also a move tutor who teaches Dream Eater once, a school and the Nickname house.
+also a move tutor who teaches Dream Eater (₽1,000 a time, as often as you like: every move tutor in the game does), a school and the Nickname house.
 Viridian's Gym is locked ("Viridian Gym's doors are locked…") until you have
 the Cascade to the Volcano Badges, as in FireRed (see below).
 
@@ -119,14 +119,17 @@ Pokémon between its species' two ordinary Abilities (it asks first; not a
 Hidden Ability, nor a species with one). The Ability Patch (as in Scarlet and
 Violet; dig it up with the Explorer Kit) switches an ordinary Ability to the
 species' Hidden Ability, or the Hidden Ability back to its first ordinary one
-(it asks first too); a Hidden Ability stays hidden when the Pokémon evolves. Bottle Caps are Hyper Training, as in
+(it asks first too); a Hidden Ability stays hidden when the Pokémon evolves. Wings add one EV
+in their stat, as far as 252 (vitamins stop at 100). Exp. Candies (Sword and Shield's) give 100 (XS), 800 (S),
+3,000 (M), 10,000 (L) or 30,000 (XL) Exp. Points: each level they bring is told, with its moves to
+learn, and then it evolves if it can. Bottle Caps are Hyper Training, as in
 Sword and Shield and Scarlet and Violet: on a Pokémon of Lv. 50 or more, a
 Bottle Cap makes one stat you pick (from the ones not already at 31) act as
 if its IV were 31, a Gold Bottle Cap all of them; the IV itself stays as it
 was, for breeding, and the Summary's IV page shows 31. It holds medicine, evolution
 stones (each item for evolving says "Evolves certain Pokémon when used."), Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
-the Exp. Share, Oak's Parcel, the Town Map and the Fishing Rod (see
-**Fishing** below). After the Bag come FireRed's Pokédex, the **National
+the Exp. Share, Oak's Parcel, the Town Map and the Fishing Rod (you start
+with it; see **Fishing** below). After the Bag come FireRed's Pokédex, the **National
 Pokédex** from the moment Oak hands it over (Pokémon from beyond Kanto turn
 up in the campaign; FireRed's IsNationalPokedexEnabled is `Player.nationalDex`:
 its table of contents is FireRed's National one, with Seen and Owned each
@@ -137,8 +140,8 @@ types; the nine habitats' pages, up to four Pokémon a page in their circles;
 Search: A to Z mode (the ones seen), Type, Lightest and Smallest mode (the
 ones caught);
 this game's Area mode: Kanto, under the Pokémon list: every place with wild Pokémon (but the S.S. Anne, whose dock has Vermilion City's; FireRed's and LeafGreen's alike; ----- until you've been
-there) with how many of its Pokémon you've caught and a gold crown once you've
-caught them all, and A on one lists them FireRed-style under the titles Grass
+there) with how many of its Pokémon you've caught, a brown crown once you've
+caught all its Grass Pokémon and a gold crown once you've caught them all, and A on one lists them FireRed-style under the titles Grass
 (and caves), Fishing and Surfing; each entry's category,
 height and weight in feet and pounds, footprint, picture and description, with
 Up / Down to the next one and Start for its cry; and the Area / Size page:
@@ -165,7 +168,11 @@ Battles open as in FireRed: from the map the screen flashes white twice and
 slices away; the wild Pokémon slides in (in shadow) as your trainer does from
 the other side, it lights up and appears, and your trainer throws your first
 Pokémon's Ball. Repels (from the bag) keep wild Pokémon below your lead's level
-away for 100, 200 or 250 steps; when one wears off you're asked whether to use
+away for 100, 200 or 250 steps; **Lures** (Lure, Super Lure and Max Lure, as
+in Let's Go, Pikachu! and Eevee!: ₽400, ₽700 and ₽900) do the opposite for as
+long, wild Pokémon turning up twice as often (and with no quiet steps after
+a battle). Every Poké Mart that sells a Repel sells the Lure of the same kind
+beside it. One or the other at a time; when one wears off you're asked whether to use
 another of the same kind (as in Black and White). In battle you can fight, use items from the Bag (FireRed's Bag screen, Use on what
 can be used right now), switch, and in wild battles
 throw balls or run. Pokémon gain experience and EVs, level up mid-battle, learn
@@ -210,10 +217,10 @@ Pokémon bite; from 10 the Good Rod's too (60/40); from 25 the Super Rod's
 Rod's rarer slots come up more often too (35/35/20/7/3, and 30/30/25/10/5
 from 75). The XP and any new level are told after "on the hook!", and the
 trainer card shows your fishing level. In the Safari Zone it's a Safari
-battle. The Fishing Guru in Vermilion City gives you the Fishing Rod; his
-brothers in Fuchsia City and on Route 12 give it to you if you haven't got
-it yet, and otherwise tell you your fishing level and what's next (the Route
-12 brother then keeps FireRed's Magikarp size record). Old saves have their
+battle. You start the game with the Fishing Rod (in FireRed the Fishing
+Guru in Vermilion City gives you the Old Rod); he and his brothers in
+Fuchsia City and on Route 12 tell you your fishing level and what's next
+(the Route 12 brother then keeps FireRed's Magikarp size record). Old saves have their
 rods turned into the one Fishing Rod.
 
 **The Berry Crush** is FireRed's (src/berry_crush.c; `game/berry-crush.js`
@@ -318,7 +325,9 @@ guard), and the Underground Path's east entrance and tunnel, and its west
 entrance onto Route 7, with its gate to Saffron, and Celadon City: its Pokémon
 Center, the Department Store (five floors and the roof; the elevator takes you
 to any floor: FireRed's floor list and its "Now on:" window, and the car shakes
-while it hums, then dings; the 2F TM counter, the 4F toys and stones, the 5F drugstore; the
+while it hums, then dings; the 2F TM counter, the 4F toys and stones, the 5F drugstore (its vitamin
+counter also sells the six Wings, ₽300 each, and Exp. Candies: XS ₽200, S
+₽1,000, M ₽3,000, L ₽10,000, XL ₽30,000); the
 Counter tutor on 3F; on the roof, vending machines with Fresh Water, Soda Pop
 and Lemonade (FireRed's list with the prices, and your money in its box at the
 top left), and a thirsty girl who swaps TM16 Light Screen, TM20 Safeguard or
@@ -1061,7 +1070,7 @@ catching up with you at the north end of Viridian Forest (with the starter
 that beats yours and Pikachu), the League gate guard, Pewter's Gym guide
 and Museum guide walking you over, the Museum's ₽50 ticket, the Old Amber,
 the Seismic Toss tutor, Brock (Zubat, Geodude, Vulpix and Onix) with the Boulder Badge and TM39, Leaf waiting outside the Gym
-afterwards (she waits a few steps from the door, sees you and walks over) for a battle (Butterfree, her starter and a Jigglypuff; beat her and she gives you TM54 False Swipe), the Mega Punch and Mega Kick tutors (who teach
+afterwards (she waits a few steps from the door, sees you and walks over) for a battle (Butterfree, which Terastallizes into a pure Flying type, her starter and a Jigglypuff; beat her and she gives you TM54 False Swipe), the Mega Punch and Mega Kick tutors (who teach
 again and again, for ₽1,000 each time), the
 Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils, Jessie & James
 climbing down the last ladder in Mt. Moon as in Yellow (a double battle), Gary in Cerulean (FireRed's team, with
@@ -1353,10 +1362,10 @@ Dynamax: it becomes Eternamax Eternatus. `tools/build-max-moves.js` writes
 trainer has the Dynamax Band yet).
 
 **Terastallizing** (Scarlet and Violet): with the Tera Orb (a key item: the
-first time you come into Pewter City, one of Prof. Oak's aides catches up
-with you and gives it to you), START
+first time you come into Pewter City, one of Prof. Oak's aides runs up
+behind you and gives it to you), START
 on the move menu Terastallizes a Pokémon into its Tera Type, once a battle;
-the Orb is then empty until a Pokémon Center (or blacking out) recharges it.
+the Orb recharges itself after every battle.
 Every Pokémon has a Tera Type (one of its own types, set when it's made and
 kept through evolution; Ogerpon's is its mask's, Terapagos's Stellar), shown on
 the Summary's EV / IV page. Terastallized, it is its Tera Type alone for the
@@ -1374,7 +1383,8 @@ the box, the rainbow, crystal and shards (`tools/build-mega-icons.js` copies
 them), the picture tinted halfway to the type's colour and its type's Tera
 symbol where "Lv" was. Trainers with a Tera Orb Terastallize for a move of
 their Tera Type, with their last Pokémon, or their ace as soon as it's out:
-Brock's Onix Terastallizes into a Dragon type, Misty's Starmie into a
+Leaf's Butterfree outside Pewter Gym Terastallizes into a pure Flying type,
+Brock's Onix into a Dragon type, Misty's Starmie into a
 pure Psychic type, Lt. Surge's Raichu into a Water type, Erika's Vileplume
 into a Poison type, Koga's Mega Beedrill into a Fire type, Sabrina's Mega
 Alakazam into a Dark type and Blaine's Mega Houndoom (Lv. 48, with the
@@ -1667,7 +1677,9 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   and always the item when both are the same (Shuckle's Berry Juice); a lead
   Pokémon with Compound Eyes makes it 60% and 20%, as in Emerald. Thief and
   Covet can take it, a Berry gets eaten, and caught, it keeps what it still
-  holds. The legendaries waiting on the map hold nothing, as in FireRed.
+  holds. Knock one out and it drops what it was still holding, which goes in
+  your Bag (this game's own: "The wild … dropped a …!"). The legendaries
+  waiting on the map hold nothing, as in FireRed.
 - **Shiny Pokémon**: any Pokémon you meet or are given is shiny 1 time in 1,000
   (trainers' never are). They use their shiny sprites
   everywhere, sparkle as they come out in battle (a wild one too, as it

@@ -1,5 +1,5 @@
 // The item pictures Gens 7, 8 and 9's additions need (Z-Crystals, Memories, the
-// Z-Ring, Dynamax Band and Candy, the Ability Patch, Zygarde's Cube and Zygardite, Kubfu's
+// Z-Ring, Dynamax Band and Candy, the Ability Patch, Exp. Candies, Zygarde's Cube and Zygardite, Kubfu's
 // scrolls, Dialga's and Palkia's Legends: Arceus items, Gen 9's evolution
 // items, Legends: Z-A's Mega Stones, ...), into
 // assets/sprites/items/<folder>/<item>.png:
@@ -48,7 +48,10 @@ const EXPANSION = [
   ["evo-item/metal-alloy", "metal_alloy"],
   // Ogerpon's masks.
   ["hold-item/wellspring-mask", "wellspring_mask"], ["hold-item/hearthflame-mask", "hearthflame_mask"],
-  ["hold-item/cornerstone-mask", "cornerstone_mask"], ["hold-item/booster-energy", "booster_energy"]
+  ["hold-item/cornerstone-mask", "cornerstone_mask"], ["hold-item/booster-energy", "booster_energy"],
+  // Sword and Shield's Exp. Candies (their icons carry their own palettes).
+  ["other-item/exp-candy-xs", "exp_candy_xs"], ["other-item/exp-candy-s", "exp_candy_s"], ["other-item/exp-candy-m", "exp_candy_m"],
+  ["other-item/exp-candy-l", "exp_candy_l"], ["other-item/exp-candy-xl", "exp_candy_xl"]
 ];
 // And Legends: Z-A's Mega Stones (data/items-gen9.js): "absolite-z" is the expansion's absolite_z.
 {
@@ -79,7 +82,8 @@ function get(url) {
   }
   for (const [file, icon] of EXPANSION) {
     const img = readPng(X("graphics/items/icons", icon + ".png"));
-    const colours = readPal(X("graphics/items/icon_palettes", icon + ".pal"));
+    const pal = X("graphics/items/icon_palettes", icon + ".pal");
+    const colours = fs.existsSync(pal) ? readPal(pal) : img.palette;
     const rgba = new Uint8ClampedArray(32 * 32 * 4);
     const ox = (32 - img.width) >> 1, oy = (32 - img.height) >> 1;
     for (let y = 0; y < img.height; y++) for (let x = 0; x < img.width; x++) {

@@ -25,7 +25,9 @@
     "poke-ball": "Poké Ball", "kings-rock": "King's Rock", "up-grade": "Up-Grade", "hp-up": "HP Up",
     "pp-up": "PP Up", "pp-max": "PP Max", "never-melt-ice": "Never-Melt Ice", "exp-share": "Exp. Share", "oaks-parcel": "Oak's Parcel", "ss-ticket": "S.S. Ticket", "vs-seeker": "VS Seeker", "poke-flute": "Poké Flute", "guard-spec": "Guard Spec.",
     "x-accuracy": "X Accuracy", "x-attack": "X Attack", "x-defense": "X Defense", "x-speed": "X Speed",
-    "x-sp-atk": "X Sp. Atk", "x-sp-def": "X Sp. Def", "poke-doll": "Poké Doll", "oddish-ball": "Oddish Ball"
+    "x-sp-atk": "X Sp. Atk", "x-sp-def": "X Sp. Def", "poke-doll": "Poké Doll", "oddish-ball": "Oddish Ball",
+    "exp-candy-xs": "Exp. Candy XS", "exp-candy-s": "Exp. Candy S", "exp-candy-m": "Exp. Candy M", "exp-candy-l": "Exp. Candy L",
+    "exp-candy-xl": "Exp. Candy XL"
   };
 
   // Gen 6 Poké Mart prices. Items sell for half. Anything else can't be bought or sold.
@@ -40,6 +42,9 @@
     "lemonade": 400, "moomoo-milk": 500, "ether": 1200, "max-ether": 2000, "elixir": 3000,
     "max-elixir": 4500, "rare-candy": 10000,
     "hp-up": 9800, "protein": 9800, "iron": 9800, "calcium": 9800, "zinc": 9800, "carbos": 9800,
+    // (This game's own: Wings and Exp. Candies, from Celadon's vitamin counter.)
+    "health-wing": 300, "muscle-wing": 300, "resist-wing": 300, "genius-wing": 300, "clever-wing": 300, "swift-wing": 300,
+    "exp-candy-xs": 200, "exp-candy-s": 1000, "exp-candy-m": 3000, "exp-candy-l": 10000, "exp-candy-xl": 30000,
     "fire-stone": 2100, "water-stone": 2100, "thunder-stone": 2100, "leaf-stone": 2100,
     "moon-stone": 2100, "sun-stone": 2100, "shiny-stone": 2100, "dusk-stone": 2100,
     "dawn-stone": 2100, "ice-stone": 2100, "everstone": 3000, "lucky-egg": 10000,
@@ -47,7 +52,7 @@
     // (FireRed's: without a price an item can't be bought, so a Mart that
     // stocks it leaves it out.)
     "guard-spec": 700, "dire-hit": 650,
-    "repel": 350, "super-repel": 500, "max-repel": 700, "escape-rope": 550, "poke-doll": 1000, "lava-cookie": 200,
+    "repel": 350, "super-repel": 500, "max-repel": 700, "lure": 400, "super-lure": 700, "max-lure": 900, "escape-rope": 550, "poke-doll": 1000, "lava-cookie": 200,
     // Treasures from digging (they sell for half, as in Gen 6).
     "star-piece": 9800, "rare-bone": 10000, "heart-scale": 200, "red-shard": 400, "blue-shard": 400,
     "yellow-shard": 400, "green-shard": 400, "hard-stone": 200, "oval-stone": 2100,
@@ -160,9 +165,12 @@
     (battlePockets = POCKETS.filter((p) => Object.keys(window.ITEMS).some((id) => usableInBattle(id) && pocket(id) === p)));
 
   // A Poké Mart's shelves: each Mart sells its fixed FireRed list (from the
-  // clerk's script, see tools/build-maps.js), at Gen 6 prices.
+  // clerk's script, see tools/build-maps.js), at Gen 6 prices; and where it
+  // sells a Repel, the Lure of the same kind beside it (this game's own).
+  const LURES = { "repel": "lure", "super-repel": "super-lure", "max-repel": "max-lure" };
   function martStock(items) {
-    return (items || []).filter((item) => price(item) > 0).map((item) => ({ item, price: price(item) }));
+    items = [].concat(...(items || []).map((item) => (LURES[item] && !items.includes(LURES[item]) ? [item, LURES[item]] : [item])));
+    return items.filter((item) => price(item) > 0).map((item) => ({ item, price: price(item) }));
   }
 
   // ---------- Using items on party records ----------
@@ -290,6 +298,19 @@
     return window.Party.movesLearnedAt(record, record.level);
   }
 
+  // An Exp. Candy: its Exp. Points, and the levels they bring, each as if
+  // from Rare Candy. Returns { exp, levels: [{ level, moves }] }.
+  function expCandy(record, item, opts) {
+    const E = window.Experience, rate = E.growthRate(record.species);
+    const before = record.exp;
+    record.exp = Math.min(E.expForLevel(rate, E.MAX_LEVEL), record.exp + window.ItemUse.effect(item).expCandy);
+    const levels = [];
+    while (record.level < E.MAX_LEVEL && record.exp >= E.expForLevel(rate, record.level + 1)) {
+      levels.push({ level: record.level + 1, moves: levelUp(record, opts) });
+    }
+    return { exp: record.exp - before, levels };
+  }
+
   // Held items: give swaps with whatever the Pokémon held. Returns the item it
   // was holding ("" if none); the caller moves items between bag and Pokémon.
   function give(record, item) {
@@ -306,6 +327,6 @@
   window.Bag = {
     POCKETS, get BATTLE_POCKETS() { return BATTLE_POCKETS(); }, PRICES, name, description, sprite, price, sellPrice, pocket, isBall, isStone, isKeyItem,
     isMachine, machineMove, machines, mintNature, capsuleAbility, patchAbility, trainableStats, HYPER_TRAINING_LEVEL, zygardeCube,
-    martStock, canUseOn, useOn, levelUp, give, take
+    martStock, canUseOn, useOn, levelUp, expCandy, give, take
   };
 })();

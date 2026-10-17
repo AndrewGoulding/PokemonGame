@@ -526,7 +526,7 @@
     const said = ctx.onStep && ctx.onStep();
     if (said) return finish(said);
     const wild = World.stepEncounter(wildState, me.map, me.x, me.y, {
-      allow: ctx.allowWild, repel: !!(ctx.player && ctx.player.repelSteps > 0),
+      allow: ctx.allowWild, repel: !!(ctx.player && ctx.player.repelSteps > 0), lure: !!(ctx.player && ctx.player.lureSteps > 0),
       surf: me.avatar === "surf", bike: me.avatar === "bike" });
     if (wild) finish(Object.assign({ type: "wild" }, wild));
   }
@@ -589,7 +589,7 @@
   // A hop in place, landed: wild Pokémon may jump out, but it isn't a step.
   function finishHopInPlace() {
     const wild = World.stepEncounter(wildState, me.map, me.x, me.y, {
-      allow: ctx.allowWild, repel: !!(ctx.player && ctx.player.repelSteps > 0), surf: false, bike: true });
+      allow: ctx.allowWild, repel: !!(ctx.player && ctx.player.repelSteps > 0), lure: !!(ctx.player && ctx.player.lureSteps > 0), surf: false, bike: true });
     if (wild) finish(Object.assign({ type: "wild" }, wild));
   }
 

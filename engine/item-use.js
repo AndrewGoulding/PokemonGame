@@ -51,23 +51,33 @@
     "rare-candy": { levelUp: true, outOfBattle: true },
     "hp-up": { ev: "hp", outOfBattle: true }, "protein": { ev: "atk", outOfBattle: true },
     "iron": { ev: "def", outOfBattle: true }, "calcium": { ev: "spa", outOfBattle: true },
-    "zinc": { ev: "spd", outOfBattle: true }, "carbos": { ev: "spe", outOfBattle: true }
+    "zinc": { ev: "spd", outOfBattle: true }, "carbos": { ev: "spe", outOfBattle: true },
+    // Wings (Gen 5's, Gen 6's numbers): one EV a time, as far as 252 in that stat.
+    "health-wing": { ev: "hp", wing: true, outOfBattle: true }, "muscle-wing": { ev: "atk", wing: true, outOfBattle: true },
+    "resist-wing": { ev: "def", wing: true, outOfBattle: true }, "genius-wing": { ev: "spa", wing: true, outOfBattle: true },
+    "clever-wing": { ev: "spd", wing: true, outOfBattle: true }, "swift-wing": { ev: "spe", wing: true, outOfBattle: true },
+    // Exp. Candies (Sword and Shield's): that many Exp. Points (the UI levels it up).
+    "exp-candy-xs": { expCandy: 100, outOfBattle: true }, "exp-candy-s": { expCandy: 800, outOfBattle: true },
+    "exp-candy-m": { expCandy: 3000, outOfBattle: true }, "exp-candy-l": { expCandy: 10000, outOfBattle: true },
+    "exp-candy-xl": { expCandy: 30000, outOfBattle: true }
   };
   // How each changes friendship (FireRed's src/data/pokemon/item_effects.h:
   // [under 100, under 200, 200 and up]): vitamins and PP Ups please it, X
   // items a little, the bitter herbal medicines don't. (Rare Candy's is its
   // level up's.)
-  const VITAMIN = [5, 3, 2], BATTLE_ITEM = [1, 1, 0];
+  const VITAMIN = [5, 3, 2], BATTLE_ITEM = [1, 1, 0], WING = [3, 2, 1];
   const FRIENDSHIP = {
     "hp-up": VITAMIN, "protein": VITAMIN, "iron": VITAMIN, "calcium": VITAMIN, "zinc": VITAMIN, "carbos": VITAMIN,
-    "pp-up": VITAMIN, "pp-max": VITAMIN,
+    "pp-up": VITAMIN, "pp-max": VITAMIN, "health-wing": WING, "muscle-wing": WING, "resist-wing": WING, "genius-wing": WING,
+    "clever-wing": WING, "swift-wing": WING,
     "x-attack": BATTLE_ITEM, "x-defense": BATTLE_ITEM, "x-sp-atk": BATTLE_ITEM, "x-sp-def": BATTLE_ITEM,
     "x-speed": BATTLE_ITEM, "x-accuracy": BATTLE_ITEM, "guard-spec": BATTLE_ITEM, "dire-hit": BATTLE_ITEM,
     "energy-powder": [-5, -5, -10], "heal-powder": [-5, -5, -10], "energy-root": [-10, -10, -15], "revival-herb": [-15, -15, -20]
   };
 
-  // Vitamins add 10 EVs, but only up to 100 in that stat (and 510 in total).
-  const VITAMIN_EVS = 10, VITAMIN_CAP = 100, EV_TOTAL = 510;
+  // Vitamins add 10 EVs, but only up to 100 in that stat (and 510 in total);
+  // Wings 1, up to 252.
+  const VITAMIN_EVS = 10, VITAMIN_CAP = 100, EV_TOTAL = 510, WING_EVS = 1, WING_CAP = 252;
 
   const curable = (eff, t) =>
     (t.status && (eff.cure === ALL || (eff.cure && eff.cure.includes(t.status)))) || (eff.confusion && t.confused);
@@ -85,8 +95,8 @@
     if (eff.battleEffect) return !!opts.inBattle && !!target.isActive && !target.fainted && !(target.effects || {})[eff.battleEffect];
     if (eff.revive) return !!target.fainted;
     if (target.fainted) return false;
-    if (eff.levelUp) return target.level < 100;
-    if (eff.ev) return (target.evs[eff.ev] || 0) < VITAMIN_CAP && evTotal(target.evs) < EV_TOTAL;
+    if (eff.levelUp || eff.expCandy) return target.level < 100;
+    if (eff.ev) return (target.evs[eff.ev] || 0) < (eff.wing ? WING_CAP : VITAMIN_CAP) && evTotal(target.evs) < EV_TOTAL;
     if (eff.ppUp) {
       const moves = opts.move != null ? [target.moves[opts.move]] : target.moves;
       return moves.some((m) => m && m.base > 1 && (m.ppUps || 0) < MAX_PP_UPS);
@@ -152,8 +162,8 @@
       out.ppUp = m.maxpp - before;
     }
     if (eff.ev) {
-      const room = Math.min(VITAMIN_CAP - (target.evs[eff.ev] || 0), EV_TOTAL - evTotal(target.evs));
-      out.ev = Math.max(0, Math.min(VITAMIN_EVS, room));
+      const room = Math.min((eff.wing ? WING_CAP : VITAMIN_CAP) - (target.evs[eff.ev] || 0), EV_TOTAL - evTotal(target.evs));
+      out.ev = Math.max(0, Math.min(eff.wing ? WING_EVS : VITAMIN_EVS, room));
       target.evs[eff.ev] = (target.evs[eff.ev] || 0) + out.ev;
     }
     return out;
