@@ -658,11 +658,11 @@ maze, its Tamers, Black Belts and Cooltrainers, and Giovanni, its Leader all
 along (FireRed's team). Beaten, he gives the Earth Badge and TM26 Earthquake,
 his Gym's trainers count as beaten, and the Rockets left around Kanto are gone;
 talk to him again and he says Team Rocket is finished forever, and he's gone
-too. On Route 22, Gary is waiting once more on your way to the League (FireRed's
-late rival, with the same triggers): his Silph Co. team at FireRed's levels here,
-Pidgeot (47), Growlithe (45), Gyarados (45), which Mega Evolves with its
-Gyaradosite, Exeggutor (45), Umbreon (53, his ace) and Alakazam (47); losing blacks you
-out. Past the League gate's guard (Boulder Badge), Route 23's seven guards each
+too. On Route 22, Leaf is waiting on your way to the League (where FireRed has
+its late rival, with the same triggers): Butterfree (47), Wigglytuff (47),
+Nidoqueen (48), Politoed (48), her starter fully evolved (50) and her ace,
+Dragonite (53), which Mega Evolves with its Dragoninite and Terastallizes into a
+Flying type; losing blacks you out. Past the League gate's guard (Boulder Badge), Route 23's seven guards each
 check one Badge in order, Cascade to Earth: walk up to the next one and he
 stops you (and sends you back a step) until you've shown it (FireRed's
 VAR_MAP_SCENE_ROUTE23; talking to a guard checks his Badge), up to the Victory
@@ -674,7 +674,10 @@ Strength puzzle: push a boulder onto a floor switch and that floor's rock
 barrier crumbles (FireRed's setmetatile, as patches); the boulders go back
 where they were when you leave a floor, the barriers stay down until you pass
 through Route 23 again, and 3F's boulder drops through a hole to 2F
-(`game/league-road.js`). Out the far side and up Route 23 is the Indigo
+(`game/league-road.js`). Coming out of Victory Road, Gary comes down from the
+Indigo Plateau to meet you: his Silph Co. team at about level 50, Pidgeot,
+Arcanine (his Growlithe's evolved), Gyarados (Mega, with its Gyaradosite),
+Exeggutor, Alakazam and Umbreon (53, his ace). Out the far side and up Route 23 is the Indigo
 Plateau: its Pokémon Center (a respawn point and Fly spot, its Mart, the
 nurse); the guard at the Elite Four's door wishes you luck (once you're
 Champion, FireRed's door check: she stands in the doorway, "Lorelei of the
@@ -689,12 +692,11 @@ behind you; there's no way out but on, through the door at the back that opens
 Lance's (through his long corridor), each with FireRed's team, words, room
 music and battle background, to the Gym Leader battle music. Black out to any of
 them and you're back at the Indigo Plateau's Pokémon Center, and the run starts
-over from Lorelei (FireRed's EventScript_ResetEliteFour). Then Gary, the
-Champion, to the Champion's music: his team as on Silph Co. and Route 22, at
-FireRed's Champion levels: Pidgeot (59), Arcanine (59: his Growlithe's evolved),
-Gyarados (59), which Mega Evolves with its Gyaradosite, Exeggutor (61),
-Umbreon (63, his ace, with a Sitrus Berry) and Alakazam (57). Beaten, Prof. Oak comes
-in, congratulates you, tells Gary why he lost and takes you up to the Hall of
+over from Lorelei (FireRed's EventScript_ResetEliteFour). Then Red, the
+Champion (where FireRed has Gary), to the Champion's music: Pikachu (58),
+Espeon (59), Wartortle (60), Venusaur (60), Snorlax (61) and his ace, Charizard
+(63), which Mega Evolves with its Charizardite Y. Beaten, Prof. Oak comes
+in, congratulates you, has a word with Red and takes you up to the Hall of
 Fame; his words there, the record machine, and FireRed's Hall of Fame screen:
 your team saved on record ("SAVING… DON'T TURN OFF THE POWER."), each Pokémon
 in turn with its cry, number, name, level and ID No., "Welcome to the HALL OF
@@ -706,9 +708,9 @@ staff, timings and scenes, with Charizard, Venusaur, Blastoise and Pikachu, to
 THE END; after the first time, Start or B skips them). You wake up at home in
 Pallet Town, Champion (FireRed's FLAG_SYS_GAME_CLEAR; blacking out takes you
 home again until you use another Pokémon Center), and Red's Mom has heard the
-news. The League can be challenged again (Gary's and the others' rematch words
+news. The League can be challenged again (the Elite Four's rematch words
 once you're Champion; FireRed's rematch teams, Lorelei's to Lance's from its
-data and Gary's at its levels, once the Sevii Islands' story sets
+data, and Red's at FireRed's rematch Champion levels, 72-75, once the Sevii Islands' story sets
 FLAG_SYS_CAN_LINK_WITH_RS, with the Sapphire). **Cerulean Cave**, once its
 guard has stepped aside: 1F, 2F and B1F, their ladders, water to Surf and Rock
 Smash rocks, FireRed's wild Pokémon (Ditto, Wobbuffet, Kadabra, Electrode and

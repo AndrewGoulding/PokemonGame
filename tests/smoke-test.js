@@ -3175,6 +3175,13 @@ for (let seed = 1; seed <= GEN8; seed++) {
     assert.strictEqual(swapped("TRAINER_LEADER_SABRINA")[0].species, "Jynx");
     for (const sp of ["Typhlosion-Hisui", "Cursola", "Marowak-Alola", "Mismagius", "Kingdra", "Hitmontop", "Jynx", "Rhydon", "Persian"]) assert(DEX[sp] && LEARNSETS_GEN6[sp], sp);
     assert(/team: swappedTeam\(ID\), pic: "leader_giovanni", tera: true/.test(gameSrc) && /team = swappedTeam\(id\)/.test(gameSrc));
+    // Leaf on Route 22 before the League (Mega Dragonite, Tera Flying), Gary at the end of
+    // Victory Road (his Growlithe an Arcanine, about level 50), and Red the Champion (Mega Charizard Y).
+    assert(/Party\.create\("Politoed", 48[^\n]*\n[^\n]*Object\.assign\(Party\.create\("Dragonite", 53, \{ ivs: 31 \}\), \{ item: "dragoninite", teraType: "Flying", teraAce: true \}\)/.test(gameSrc), "Leaf's Route 22 team");
+    assert(/const VICTORY_ROAD_RIVAL_TEAM = \[\["Pidgeot", 50\], \["Arcanine", 50\], \["Gyarados", 50, "gyaradosite"\]/.test(gameSrc) && /at\.map === "Route23" && at\.x === 18 && at\.y === 28/.test(gameSrc), "Gary at the end of Victory Road");
+    assert(/const CHAMPION_TEAM = \[\["Pikachu", 58, 72\], \["Espeon", 59, 72\], \["Wartortle", 60, 73\], \["Venusaur", 60, 73\], \["Snorlax", 61, 74\], \["Charizard", 63, 75, "charizardite-y"\]\]/.test(gameSrc)
+      && /foe: \{ name: "Champion Red", team, pic: "red" \}/.test(gameSrc), "Red, the Champion");
+    assert(WORLD_MAPS.VictoryRoad_2F.warps.some((w) => w.map === "Route23") && WORLD_MAPS.Route23.warps.some((w) => w.x === 18 && w.y === 28 && w.map === "VictoryRoad_2F"));
     // Every trainer's Pokémon knows the last four moves it learns by its level (not FireRed's sets).
     assert(!/moves: m\.moves/.test(gameSrc) && !/moves: m\.moves/.test(fs.readFileSync(path.join(__dirname, "../game/trainer-tower.js"), "utf8")), "trainers' moves by level");
     assert.deepStrictEqual(Party.create("Geodude", 12).moves.map((m) => m.name), RandomTeam.levelUpMoves("Geodude", 12));

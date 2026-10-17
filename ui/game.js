@@ -2316,6 +2316,8 @@
 
   function visible(person, map) {
     const f = player.flags;
+    // (The Champion here is Red.)
+    if (person.localId === "LOCALID_CHAMPIONS_ROOM_RIVAL") return Object.assign({}, lookOf("red"));
     if (person.item) return !f[person.flag];
     { const o = Orre.visible(person, f); if (o !== undefined) return o; }   // (Orre's people)
     if (person.flag && tempFlags.has((map || player.location.map) + ":" + person.flag)) return false;   // (a tree you've cut)
@@ -2649,6 +2651,7 @@
     if (SILPH_DOORS.includes(script)) { await silphDoor(script); return; }
     // (Coming out of the Gym with the Tera Orb still to get: the aide, then Leaf.)
     if (teraAideDue(script)) { await teraAide(); if (!(script === "enter:PewterCity" && leafPewterDue())) return; }
+    if (script === "enter:Route23" && victoryRoadRivalDue()) { await victoryRoadRival(); return; }
     if (/^enter:/.test(script) && megaAideDue(script.slice(6))) { await megaAide(); return; }
     if ((script === "enter:PokemonTower_7F" || script === "Game_EventScript_MegaTower") && megaTowerDue()) { await megaTower(); return; }
     const can = /^VermilionCity_Gym_EventScript_TrashCan(\d+)$/.exec(script);
@@ -7191,41 +7194,81 @@
   const giovanniKangaskhanite = () => megaStoneGift("kangaskhanite", ["And take this. A Kangaskhanite.",
     "Team Rocket has no more use for it.\nPerhaps you can master its power."], "Giovanni");
 
-  // ---------- Route 22's rival, late ----------
+  // ---------- Route 22, on the way to the League: Leaf ----------
   //
-  // FireRed's Route22_EventScript_LateRival: once you've beaten Giovanni,
-  // Gary comes up from the left on your way to the League. This game's own
-  // team for him (as on Silph Co.'s 7F) at FireRed's levels here: Pidgeot,
-  // Growlithe, Gyarados (in Rhyhorn's place, holding its Gyaradosite: it Mega
-  // Evolves), Exeggutor, Alakazam and Umbreon (his Eevee) as his ace.
-  const ROUTE22_LATE_RIVAL_TEAM = [["Pidgeot", 47], ["Growlithe", 45], ["Gyarados", 45, "gyaradosite"], ["Exeggutor", 45], ["Umbreon", 53], ["Alakazam", 47]];
+  // Where FireRed's Route22_EventScript_LateRival has Gary (this game's own:
+  // Leaf), once you've beaten Giovanni: she comes up from the left on your
+  // way to the League. Butterfree, Wigglytuff, Nidoqueen, Politoed, her
+  // starter (fully evolved) and her ace, Dragonite, holding its Dragoninite:
+  // it Mega Evolves and Terastallizes into a Flying type (she has a Tera Orb).
+  const FINAL_STAGE = { Bulbasaur: "Venusaur", Charmander: "Charizard", Squirtle: "Blastoise" };
+  const route22LeafTeam = () => {
+    const starter = FINAL_STAGE[RIVAL_PICK[player.flags.starter] || "Bulbasaur"];
+    return [Party.create("Butterfree", 47, { ivs: 20 }), Party.create("Wigglytuff", 47, { ivs: 20 }), Party.create("Nidoqueen", 48, { ivs: 20 }),
+      Party.create("Politoed", 48, { ivs: 20 }), Party.create(starter, 50, { ivs: 25 }),
+      Object.assign(Party.create("Dragonite", 53, { ivs: 31 }), { item: "dragoninite", teraType: "Flying", teraAce: true })];
+  };
   const route22LateRivalDue = () => !!(player.flags.TRAINER_LEADER_GIOVANNI && !player.flags.route22LateRival);
   async function route22LateRival(side) {
     if (!route22LateRivalDue()) return;
     const f = player.flags, R = "LOCALID_ROUTE22_RIVAL";
     music("mus_encounter_rival");
-    Overworld.addObject(R, { x: 25, y: side === "Top" ? 4 : 5, facing: "right" });
+    Overworld.addObject(R, { x: 25, y: side === "Top" ? 4 : 5, facing: "right" }, window.WORLD_SPRITES.leaf);
     await Overworld.act(side === "Bottom"
       ? [{ who: R, moves: M("Route22_Movement_RivalApproachBottom") }, { who: "player", moves: M("Route22_Movement_PlayerFaceRival") }]
       : [{ who: R, moves: M("Route22_Movement_RivalApproach") }]);
-    await say(T("Route22_Text_LateRivalIntro"));
-    // (FireRed's IVs: 150, and 250 for his starter, here Umbreon.)
-    const team = ROUTE22_LATE_RIVAL_TEAM.map(([sp, lv, item]) => Object.assign(Party.create(sp, lv, { ivs: Math.floor((sp === "Umbreon" ? 250 : 150) * 31 / 255) }),
-      item ? { item } : {}));
-    const ace = Math.max(...team.map((r) => r.level));
-    const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_late" },
-      defeatText: T("Route22_Text_LateRivalDefeat"), trainerId: "TRAINER_RIVAL_ROUTE22_LATE_SQUIRTLE",
-      prize: 36 * ace });   // (TRAINER_CLASS_RIVAL_LATE: 9, x4)
+    await say(["Leaf: {PLAYER}! I knew I'd catch\nyou here!", "You've got all eight Badges too?\nSo have I!",
+      "Before we take on the Pokémon\nLeague… one more battle?", "I've been training really hard.\nThis time I'm going to win!"]);
+    const team = route22LeafTeam();
+    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green", tera: true },
+      defeatText: ["Leaf: Wow… You're amazing,\n{PLAYER}!"], prize: 36 * 53 });
     if (outcome !== "won") { if (outcome === "cancelled") Overworld.removeObject(R); return; }
     f.route22LateRival = true;
     show("world");
     await Overworld.resume();
-    await say(T("Route22_Text_LateRivalPostBattle"));
+    await say(["Leaf: I'll keep training, and one day\nI'll beat you!", "Good luck at the Pokémon League,\n{PLAYER}! I'll be cheering for you!"]);
     Screen.say("");
     await sleep(170);
     music("mus_rival_exit");
     await Overworld.act([{ who: R, moves: M("Route22_Movement_LateRivalExit") }]);
     Overworld.removeObject(R);
+    music((window.WORLD_MAPS[player.location.map] || {}).music);
+  }
+
+  // ---------- The end of Victory Road: Gary ----------
+  //
+  // This game's own: coming out of Victory Road onto Route 23 (its 2F's way
+  // out, at (18, 28)), Gary comes down from the Indigo Plateau to meet you,
+  // with his team from Silph Co. (his Growlithe an Arcanine now) at about
+  // level 50: Pidgeot, Arcanine, Gyarados (holding its Gyaradosite: it Mega
+  // Evolves), Exeggutor, Alakazam and Umbreon (his Eevee) as his ace. Then he
+  // heads back up to the League.
+  const VICTORY_ROAD_RIVAL_TEAM = [["Pidgeot", 50], ["Arcanine", 50], ["Gyarados", 50, "gyaradosite"], ["Exeggutor", 49], ["Alakazam", 50], ["Umbreon", 53]];
+  const victoryRoadRivalDue = () => {
+    const at = Overworld.position();
+    return !!(player.flags.TRAINER_LEADER_GIOVANNI && !player.flags.victoryRoadRival && at.map === "Route23" && at.x === 18 && at.y === 28 && canBattle());
+  };
+  async function victoryRoadRival() {
+    const f = player.flags, R = "LOCALID_VICTORY_ROAD_RIVAL";
+    music("mus_encounter_rival");
+    const from = await walkIn(R, lookOf("blue"), { x: 21, y: 18 }, [{ x: 18, y: 29, face: "up" }, { x: 19, y: 29, face: "left" }], "fast_");
+    if (Overworld.personPosition(R)) await faceEachOther(R);
+    await say(["{RIVAL}: Hey! {PLAYER}!", "So you made it through Victory Road\ntoo. Took you long enough!",
+      "I've already seen the Pokémon League.\nAnd I'm going to be its Champion!", "But first, I'll show you how much\nstronger I've gotten! Let's go!"]);
+    // (FireRed's Route 22 IVs: 150, and 250 for his starter, here Umbreon.)
+    const team = VICTORY_ROAD_RIVAL_TEAM.map(([sp, lv, item]) => Object.assign(Party.create(sp, lv, { ivs: Math.floor((sp === "Umbreon" ? 250 : 150) * 31 / 255) }),
+      item ? { item } : {}));
+    const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_late" },
+      defeatText: ["{RIVAL}: What!? Again!?", "Tch… I was just warming up!"], prize: 36 * 53 });
+    if (outcome !== "won") { if (Overworld.personPosition(R)) Overworld.removeObject(R); return; }
+    f.victoryRoadRival = true;
+    show("world");
+    await Overworld.resume();
+    await say(["{RIVAL}: Hmph. Don't get cocky.", "The Pokémon League's Champion is\nstronger than anyone. You'll see!", "Smell ya later, {PLAYER}!"]);
+    Screen.say("");
+    music("mus_rival_exit");
+    if (from) await walkOut(R, from, "fast_");
+    else Overworld.removeObject(R);
     music((window.WORLD_MAPS[player.location.map] || {}).music);
   }
 
@@ -7376,14 +7419,12 @@
     await lookAway();
   }
 
-  // Gary, the Champion (PokemonLeague_ChampionsRoom_EventScript_EnterRoom):
-  // this game's team for him, as on Silph Co. and Route 22, at FireRed's
-  // Champion levels: Pidgeot (59), Arcanine (59: his Growlithe's evolved),
-  // Gyarados (59, in Rhydon's place, holding its Gyaradosite: it Mega Evolves),
-  // Exeggutor (61), Umbreon (63: his Eevee, as FireRed's starter, holding its
-  // Sitrus Berry) and Alakazam (57). With FLAG_SYS_CAN_LINK_WITH_RS, FireRed's
-  // rematch levels (72-75), each with the last four moves it learns by its level.
-  const CHAMPION_TEAM = [["Pidgeot", 59, 72], ["Arcanine", 59, 73], ["Gyarados", 59, 72, "gyaradosite"], ["Exeggutor", 61, 73], ["Umbreon", 63, 75, "sitrus-berry"], ["Alakazam", 57, 73]];
+  // Red, the Champion (this game's own; FireRed has Gary,
+  // PokemonLeague_ChampionsRoom_EventScript_EnterRoom): Pikachu, Espeon,
+  // Wartortle, Venusaur, Snorlax and his ace, Charizard, holding its
+  // Charizardite Y: it Mega Evolves. Levels about FireRed's Champion's (57-63),
+  // and with FLAG_SYS_CAN_LINK_WITH_RS its rematch ones (72-75).
+  const CHAMPION_TEAM = [["Pikachu", 58, 72], ["Espeon", 59, 72], ["Wartortle", 60, 73], ["Venusaur", 60, 73], ["Snorlax", 61, 74], ["Charizard", 63, 75, "charizardite-y"]];
   function championTeam(rematch) {
     return CHAMPION_TEAM.map(([sp, lv, lv2, item]) => Object.assign(Party.create(sp, rematch ? lv2 : lv, { ivs: 31 }), item ? { item } : {}));
   }
@@ -7392,11 +7433,12 @@
     if (!League.entryDue(f, player.location.map)) return;
     await Overworld.act([{ who: "player", moves: M("PokemonLeague_ChampionsRoom_Movement_PlayerEnter") }]);
     await sleep(333);
-    await say(T(f.gameClear ? "PokemonLeague_ChampionsRoom_Text_RematchIntro" : "PokemonLeague_ChampionsRoom_Text_Intro"));
+    await say(f.gameClear ? ["Red: …", "Red stepped forward, ready to\nbattle again!"]
+      : ["Red: …", "Red, the Pokémon League Champion,\nlooks at {PLAYER} in silence.", "Red stepped forward, ready to battle!"]);
     if (!canBattle()) return;
     const rematch = !!f.canLinkWithRS, team = championTeam(rematch);
-    const outcome = await battle("trainer", { foe: { name: "Champion " + player.rival, team, pic: "champion_rival" },
-      defeatText: T("PokemonLeague_ChampionsRoom_Text_Defeat"),
+    const outcome = await battle("trainer", { foe: { name: "Champion Red", team, pic: "red" },
+      defeatText: ["…"],
       trainerId: rematch ? "TRAINER_CHAMPION_REMATCH_SQUIRTLE" : "TRAINER_CHAMPION_FIRST_SQUIRTLE",
       prize: 100 * Math.max(...team.map((r) => r.level)),   // (TRAINER_CLASS_CHAMPION: 25, x4)
       music: "mus_vs_champion", victoryMusic: "mus_victory_gym_leader", terrain: "champion" });
@@ -7404,7 +7446,7 @@
     League.beat(f, 4);
     show("world");
     await Overworld.resume();
-    await say(T("PokemonLeague_ChampionsRoom_Text_PostBattle"));
+    await say(["Red: …", "Red smiled, and gave a small nod."]);
     // Prof. Oak comes in.
     music("mus_slow_pallet");
     Overworld.addObject(O, { x: 6, y: 15, facing: "up" });
@@ -7416,7 +7458,8 @@
     await sleep(417);
     await say(T("PokemonLeague_ChampionsRoom_Text_OakCongratulations"), [Party.speciesName(f.starter || player.party[0].species)]);
     await Overworld.act([{ who: O, moves: M("Common_Movement_WalkInPlaceFasterRight") }, { who: R, moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
-    await say(T("PokemonLeague_ChampionsRoom_Text_OakImDisappointedRival"));
+    await say(["Oak: Red… You've been the Champion\nfor a long time.", "But today, {PLAYER} and their\nPokémon were stronger.",
+      "Keep training with your Pokémon,\nRed. I'm sure you two will meet\nagain!"]);
     Screen.say("");
     await Overworld.act([{ who: O, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
     await sleep(333);
@@ -9973,6 +10016,7 @@
     // Coming back into Pewter City: the Museum ticket was for one visit (FireRed's OnTransition).
     // Coming out of the Gym with the Boulder Badge, Leaf is waiting.
     // Prof. Oak's aide, then his test at the top of Pokémon Tower (this game's own).
+    if (script === "enter:Route23" && victoryRoadRivalDue()) return true;
     if (/^enter:/.test(script) && megaAideDue(script.slice(6))) return true;
     if ((script === "enter:PokemonTower_7F" || script === "Game_EventScript_MegaTower") && megaTowerDue()) return true;
     if (script === "enter:PewterCity") player.flags.museumTicket = false;
