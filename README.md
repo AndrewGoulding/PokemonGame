@@ -1356,7 +1356,7 @@ the box, the rainbow, crystal and shards (`tools/build-mega-icons.js` copies
 them), the picture tinted halfway to the type's colour and its type's Tera
 symbol where "Lv" was. Trainers with a Tera Orb Terastallize for a move of
 their Tera Type, with their last Pokémon, or their ace as soon as it's out:
-Brock's Onix Terastallizes into an Electric type, Misty's Starmie into a
+Brock's Onix Terastallizes into a Dragon type, Misty's Starmie into a
 pure Psychic type, Lt. Surge's Raichu into a Water type, Erika's Vileplume
 into a Poison type, Koga's Mega Beedrill into a Fire type, Sabrina's Mega
 Alakazam into a Dark type and Blaine's Mega Houndoom (Lv. 48, with the

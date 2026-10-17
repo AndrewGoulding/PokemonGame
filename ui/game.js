@@ -5928,8 +5928,8 @@
   // leads with, and Vulpix (level 13).
   function brockTeam() {
     const [geodude, onix] = trainerTeam("TRAINER_LEADER_BROCK");
-    // (His ace, Onix, Terastallizes into an Electric type as soon as it's out.)
-    Object.assign(onix, { teraType: "Electric", teraAce: true });
+    // (His ace, Onix, Terastallizes into a Dragon type as soon as it's out.)
+    Object.assign(onix, { teraType: "Dragon", teraAce: true });
     return [Party.create("Zubat", 11, { ivs: 0 }), geodude, Party.create("Vulpix", 13, { ivs: 0 }), onix];
   }
 

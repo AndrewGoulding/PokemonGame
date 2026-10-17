@@ -3140,15 +3140,15 @@ for (let seed = 1; seed <= GEN8; seed++) {
     assert.deepStrictEqual(b.sides.p1.active.types, ["Ghost"], "still Terastallized when it comes back");
     const cc = play(b, { p1: mv(1), p2: mv(0) });
     assert(has(cc, "-immune", s.ident), "Close Combat can't touch a Tera Ghost"); }
-  // A trainer's ace (teraAce: Brock's Onix, Tera Electric) Terastallizes as soon as it's out.
+  // A trainer's ace (teraAce: Brock's Onix, Tera Dragon) Terastallizes as soon as it's out.
   { const b = new Battle({ seed: 1, debug: true, p1: { name: "A", team: [g9("Pikachu", ["Splash"])] },
-      p2: { name: "B", team: [g9("Onix", ["Tackle"], { teraType: "Electric", teraAce: true }), g9("Geodude", ["Tackle"])], tera: true } });
+      p2: { name: "B", team: [g9("Onix", ["Tackle"], { teraType: "Dragon", teraAce: true }), g9("Geodude", ["Tackle"])], tera: true } });
     b.start();
     b.choose("p1", mv(0)); b.choose("p2", OpponentAI.choose(b, "p2", mulberry32(1)));
     const o = b.sides.p2.pokemon[0];
-    assert.deepStrictEqual([o.terastallized, o.types], ["Electric", ["Electric"]], "Brock's Onix: Tera Electric, first turn");
+    assert.deepStrictEqual([o.terastallized, o.types], ["Dragon", ["Dragon"]], "Brock's Onix: Tera Dragon, first turn");
     const gameSrc = fs.readFileSync(path.join(__dirname, "../ui/game.js"), "utf8");
-    assert(/Object\.assign\(onix, \{ teraType: "Electric", teraAce: true \}\)/.test(gameSrc) && /pic: "leader_brock", tera: true/.test(gameSrc), "Brock's Onix");
+    assert(/Object\.assign\(onix, \{ teraType: "Dragon", teraAce: true \}\)/.test(gameSrc) && /pic: "leader_brock", tera: true/.test(gameSrc), "Brock's Onix");
     assert(/Object\.assign\(starmie, \{ teraType: "Psychic", teraAce: true \}\)/.test(gameSrc) && /pic: "leader_misty", tera: true/.test(gameSrc), "Misty's Starmie");
     assert(/r\.species === "Raichu"\), \{ teraType: "Water", teraAce: true \}\)/.test(gameSrc) && /pic: "leader_lt_surge", tera: true/.test(gameSrc), "Lt. Surge's Raichu");
     assert(WORLD_TRAINERS.TRAINER_LEADER_LT_SURGE.party.some((m) => m.species === "Raichu"));
