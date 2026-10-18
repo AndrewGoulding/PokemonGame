@@ -10639,7 +10639,7 @@
     pcSpace: () => player.boxes.reduce((n, box) => n + box.filter((r) => !r).length, 0),
     say: (pages) => say(pages),
     confirm: (question) => confirm(question),
-    choose: async (texts) => { const i = await multichoice(null, 0, 0, texts); Screen.say(""); return i; },
+    choose: async (texts, question) => { const i = await multichoice(question || null, 0, 0, texts); Screen.say(""); return i; },
     close: () => Screen.say(""),
     facePlayer: (person) => Overworld.act([{ who: person.localId || "#" + person.id, moves: ["face_player"] }]),
     act: (tracks) => Overworld.act(tracks),
@@ -10831,6 +10831,15 @@
     caught: (species) => Player.hasCaught(player, species),
     dayCare: () => [].concat(player.flags.dayCare2 || []).map((r) => r && Party.displayName(r)).filter(Boolean),
     frame: () => GameOptions.get().frame
+  });
+  // The Pokéathlon Dome's courses, Athlete Points and Athlete Shop (ui/pokeathlon.js), for its scripts.
+  Pokeathlon.attach({
+    player: () => player, say: (pages) => say(pages), sfx, music, fanfare, persist, show, scene: () => scene,
+    choosePartyFor: async (message, notes, cursor) => { const r = await openParty({ message, notes, cursor }); PartyMenu.close(); return r ? player.party[r.slot] : null; },
+    displayName: (r) => Party.displayName(r),
+    resume: () => Overworld.resume(), setFlag: (name, on) => johto.setFlag(name, on), frame: () => GameOptions.get().frame,
+    mapView: () => ({ canvas: $("#world"), x: 112, y: 48 }), fieldWindow: (name, spec) => GbaMenus.fieldWindow(name, spec),
+    moneyBox: (on) => (on ? moneyBox(20, 1) : moneyBox()), boxCount: () => Player.boxed(player).length, nationalDex: () => Player.nationalDex(player)
   });
   // Prof. Elm's three Pokémon (HGSS's ChooseStarter): each one's picture, and
   // "Will you take it?", until you choose. It joins your party (or the PC);

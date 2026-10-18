@@ -11,6 +11,8 @@
 //     buy,      // (id, n) => error message or null (it's bought), then maybe a second message
 //     frame,    // the Option screen's FRAME (0-9)
 //     map       // the overworld canvas and where the tile you face is on it: { canvas, x, y }
+//     currency  // (or what it's paid in instead of money: { label, unit(n), short }, as the
+//               // Pokéathlon's Athlete Points: the box's name, a price, "not enough")
 //   })
 //   ShopScreen.close()
 (function () {
@@ -39,7 +41,7 @@
   const ready = (img) => img && img.complete && img.naturalWidth;
 
   const WHITE = [255, 255, 255], DARK = [98, 98, 98], LIGHT = [213, 213, 205];
-  const yen = (n) => "¥" + n;
+  const yen = (n) => (st && st.opts.currency ? st.opts.currency.unit(n) : "¥" + n);
 
   let st = null, raf = 0;
   const se = (n) => { if (window.GameAudio && window.GameAudio.se) window.GameAudio.se(n); };
@@ -66,7 +68,7 @@
     // MONEY (window 0: 1, 1, 8 x 3, the thin frame).
     s.frame("std", G.palettes.std3, 1, 1, 8, 3);
     s.fill(8, 8, 64, 24, WHITE);
-    s.text("Money", 8, 8, DARK, LIGHT);
+    s.text(st.opts.currency ? st.opts.currency.label : "Money", 8, 8, DARK, LIGHT);
     const m = yen(st.opts.money());
     s.text(m, 72 - s.textWidth(m, "small"), 20, DARK, LIGHT, "small");
     // The list (window 4 at 88, 8): names at 97, prices right-aligned to 221.
@@ -188,7 +190,7 @@
 
   async function buy(it) {
     const money = st.opts.money(), lim = st.opts.limit ? st.opts.limit(it.id) : { max: 99 };
-    if (money < it.price) { await message("You don't have enough money."); return; }
+    if (money < it.price) { await message(st.opts.currency ? st.opts.currency.short : "You don't have enough money."); return; }
     if (!lim.max) { await message(lim.why); return; }
     await print(it.name + "? Certainly.\nHow many would you like?");
     const max = Math.max(1, Math.min(lim.max, 99, Math.floor(money / it.price)));

@@ -1925,7 +1925,7 @@ Sentret, and Hoothoot at night; then Surf's, Gen 4's fishing (five slots a
 rod, 40/40/15/4/1) and Rock Smash's. Everything goes into
 `data/johto-maps.js`, which adds the maps to `WORLD_MAPS` (and the gate's mat,
 warp and guard). Not here yet: what needs HGSS's own games (the Battle
-Frontier, the Pokéathlon, the Safari Zone's areas).
+Frontier, the Safari Zone's areas).
 (Its music is HGSS's own: see Music and cries.)
 
 **Goldenrod's Game Corner** is the international HeartGold's: Mr. Game's
@@ -2034,6 +2034,48 @@ way (Fly, blacking out) calls it off. `tools/build-bug-contest.js` builds
 its data and scripts from a pret/pokeheartgold checkout into
 `tools/lib/johto-bug-contest.generated.js` (`node tools/build-bug-contest.js
 <path>`), which goes at the end of `data/johto-maps.js`.
+
+**The Pokéathlon** (the Pokéathlon Dome, through the gatehouse north of
+Route 35): its scripts are HGSS's (Whitney's jersey, the Athlete Shop, the
+vending machine, the records' rooms), and the receptions' shared script,
+`scr_seq_0167` (HGSS's script numbers 9850-9852, which the map build leaves
+out), is added by `tools/build-pokeathlon.js` (`node tools/build-pokeathlon.js
+<pokeheartgold>`: it writes `tools/lib/johto-pokeathlon.generated.js` and puts
+it into `data/johto-maps.js`). At the middle counter, JOIN and pick a course:
+**Speed** (Hurdle Dash, Pennant Capture, Relay Run), **Power** (Block Smash,
+Circle Push, Goal Roll), **Skill** (Snow Throw, Goal Roll, Pennant Capture),
+**Stamina** (Ring Drop, Relay Run, Block Smash) or **Jump** (Lamp Jump, Disc
+Catch, Hurdle Dash), as HGSS has them; you walk through the gate, change, and
+choose three of your party, against three teams of the computer's. Each
+Pokémon has HGSS's five **Performance** stats (Speed, Power, Skill, Stamina,
+Jump, one to five stars: each species' base and range from
+`performance.narc`, moved each day by its nature and personality as
+`CalcBoxMonPokeathlonPerformance` does; no Aprijuice), shown on the team
+screen. HGSS's ten events are touch-screen games; here
+(`ui/pokeathlon-events.js`) each is a small game for the D-pad, A and B on a
+240x160 screen, the Pokémon their party icons over their team's colour (yours
+red): Hurdle Dash (a relay over hurdles: A jumps), Pennant Capture (run to the
+pennants, gold ones triple; B changes Pokémon), Relay Run (hold A to run
+round the track, B hands over before it's worn out), Block Smash (A smashes,
+each blow tiring), Circle Push (A tackles; points for the middle ring and for
+pushing others off), Goal Roll (tackle balls into the other teams' goals),
+Snow Throw (aim and throw; a hit dazes), Ring Drop (knock the others off the
+ring; worn ones fly further), Lamp Jump (A as you land bounces higher; touch
+the lamps) and Disc Catch (run and jump for the discs; high catches score
+more). Speed makes a Pokémon run faster, Power push, smash and throw harder,
+Skill turn quicker (and the computer aim and time better with it), Stamina
+keep going, Jump jump higher. After each event and the course the results
+come up; your score is that many Athlete Points (100 more for coming first,
+the reception's script gives those), first place wins the course's Medal,
+and the best scores and how often each event's been played are kept
+(`ui/pokeathlon.js`, in `player.flags.pokeathlon`; the B1F rooms' records
+and the Museum's people read them). The **Athlete Shop** sells HGSS's prizes
+of the day (`sPokeathlonPrizeExchangePriceOverrides`: Apricorns, Moomoo Milk,
+evolution stones, the Shiny Stone, Rare Candy, PP Up, Heart Scales and so on,
+more with the National Pokédex), each once a day, paid in points; the
+vending machine takes money or points. Not here: the Supreme Cup's own
+reception (her flag keeps her away, as in HGSS until then), the Link
+Pokéathlon, the Data Cards and Aprijuice.
 
 **Johto's Town Map**: in Johto the Town Map (and Fly's) is Johto's: HGSS's
 Pokégear map, each place on the squares HGSS gives it, drawn in FireRed's

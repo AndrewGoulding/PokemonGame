@@ -170,13 +170,24 @@
         }
         return true;
       };
-      let question = null;
+      // (Or a menu, which answers a message that asks: not Yes or No, then.)
+      const nextIsMenu = (i) => {
+        for (let k = i, n = 0; k < C.length && n < 4; k++, n++) {
+          if (C[k][0] === "GoTo" && C[k][1] in L) { k = L[C[k][1]] - 1; continue; }
+          if (/^MenuInit/.test(C[k][0])) return true;
+          if (!/^(Nop|TouchscreenMenu)/.test(C[k][0])) return false;
+        }
+        return false;
+      };
+      let question = null, menuQuestion = null;
       async function show(pages, id) {
         if (!pages || !pages.length) return;
         await flush();
         const j = nextJingle(pc);
         if (j >= 0) startJingle(j);
         if (nextIsYesNo(pc)) { if (pages.length > 1) await env.say(pages.slice(0, -1)); question = pages[pages.length - 1]; return; }
+        // (A menu's question stays up with the menu.)
+        if (nextIsMenu(pc)) { if (pages.length > 1) await env.say(pages.slice(0, -1)); menuQuestion = pages[pages.length - 1]; return; }
         // (A message that asks Yes or No itself: GetMenuChoice reads it, 0 for Yes.)
         if (id && DATA().yesno && DATA().yesno[id] && readsChoice(pc)) {
           if (pages.length > 1) await env.say(pages.slice(0, -1));
@@ -391,10 +402,12 @@
           // (A menu of the standard texts, msg_0191, or of the map's own; its choice goes in its var.)
           case "MenuInitStdGmm": menu = { bank: 191, items: [], v: a[4] }; break;
           case "MenuInit": menu = { bank: z.menuBank, items: [], v: a[4] }; break;
-          case "MenuItemAdd": if (menu) menu.items.push({ text: (text("bank:" + menu.bank + ":" + getVar(a[0])) || ["…"])[0], value: getVar(a[2]) }); break;
+          // (An item's words by its number in the menu's bank, or, a shared script's, by their message's own name.)
+          case "MenuItemAdd": if (menu) menu.items.push({ text: (text(typeof a[0] === "string" && !/^VAR_/.test(a[0]) ? a[0] : "bank:" + menu.bank + ":" + getVar(a[0])) || ["…"])[0], value: getVar(a[2]) }); break;
           case "MenuExec": {
             await flush();
-            const i = menu && menu.items.length ? await env.choose(menu.items.map((x) => x.text)) : -1;
+            const i = menu && menu.items.length ? await env.choose(menu.items.map((x) => x.text), menuQuestion) : -1;
+            menuQuestion = null;
             choice = i >= 0 && menu ? menu.items[i].value : (menu && menu.items.length ? menu.items[menu.items.length - 1].value : 0);
             setVar(menu && menu.v || "VAR_SPECIAL_RESULT", choice);
             menu = null;
@@ -564,6 +577,8 @@
             // (Conditional jumps and calls: GoToIfEq, CallIfNe, ...)
             if ((m = /^GoToIf(Lt|Eq|Gt|Le|Ge|Ne)$/.exec(op))) { if (cond[m[1]](cmp)) go(a[0]); }
             else if ((m = /^CallIf(Lt|Eq|Gt|Le|Ge|Ne)$/.exec(op))) { if (cond[m[1]](cmp)) { stack.push(pc); go(a[0]); } }
+            // (The Pokéathlon's: its courses, Athlete Points, prizes and records, ui/pokeathlon.js.)
+            else if (window.Pokeathlon && window.Pokeathlon.handles(op)) { await flush(); await window.Pokeathlon.command(op, a, { getVar, setVar, buffers, flag, setFlag }); }
             // (Everything else: locks, the follower Pokémon, photos,
             // ScrCmd_*: nothing here.)
         }

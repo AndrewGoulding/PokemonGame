@@ -1,0 +1,5 @@
+/* The Pokéathlon (ui/pokeathlon.js, ui/pokeathlon-events.js): its events and
+   the screens between them are one 240x160 canvas filling the screen, as the
+   Berry Crush's is; the text box only shows with something in it. */
+.screen:has(> .scene.evo.athlon:not(.hidden)) > .textbox.empty { display: none; }
+.athlon-canvas { touch-action: none; }

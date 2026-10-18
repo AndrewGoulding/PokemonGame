@@ -518,8 +518,9 @@
       }
       const l = w.x + 1, t = w.y + 1, x = l * 8, y = t * 8;
       win(l, t, 8, 3);
-      s.text(name === "money" ? "Money" : "Coins", x, y, pal[2], pal[3]);
-      const amount = name === "money" ? "¥" + w.amount : String(w.amount) + " Coins";
+      // (Or another box like them, with its own words: the Pokéathlon's Athlete Points.)
+      s.text(w.label || (name === "money" ? "Money" : "Coins"), x, y, pal[2], pal[3]);
+      const amount = w.text || (name === "money" ? "¥" + w.amount : String(w.amount) + " Coins");
       s.text(amount, x + 64 - s.textWidth(amount, "small"), y + 12, pal[2], pal[3], "small");
     }
   }

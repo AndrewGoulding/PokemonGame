@@ -103,6 +103,8 @@ function compiler(ROOT, conv) {
   // (The banks MsgBoxExtern reads, by GetStdMsgNaix's number: src/field/scrcmd_message.c.)
   const STD_BANKS = [752, 211, 30, 435];
   STD_BANKS.forEach(needBank);
+  // (And the standard menus' words, MenuInitStdGmm's: msg_0191.)
+  needBank(191);
 
   function arg(tok, labels) {
     tok = tok.trim();
@@ -153,7 +155,8 @@ function compiler(ROOT, conv) {
   }
 
   function zone(z) {
-    const file = scrFiles.find((f) => new RegExp("^scr_seq_\\d+_" + z + "\\.s$").test(f));
+    // (Or a shared one by its number, as the Pokéathlon's receptions, scr_seq_0167.)
+    const file = scrFiles.find((f) => new RegExp("^scr_seq_\\d+_" + z + "\\.s$").test(f) || f === "scr_seq_" + z + ".s");
     if (!file) return null;
     const ev = path.join(SCR, "event_" + z + ".h");
     if (fs.existsSync(ev)) readDefines(ev);

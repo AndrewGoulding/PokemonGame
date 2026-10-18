@@ -2099,6 +2099,46 @@ if (window.JOHTO_TOWN_MAP) {
   assert(/JohtoGuard"\) return !f\.gameClear;/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")), "he's there until you're Champion");
 }
 
+// The Pokéathlon (tools/build-pokeathlon.js's tools/lib/johto-pokeathlon.generated.js,
+// ui/pokeathlon.js, ui/pokeathlon-events.js): HGSS's Performance stats, the Dome's
+// receptions' script and its Athlete Shop's prizes, and every event played through.
+{
+  const copy = (x) => JSON.parse(JSON.stringify(x));
+  const sb = { window: { JOHTO_SCRIPTS: { zones: { D49R0101: copy(JOHTO_SCRIPTS.zones.D49R0101) }, messages: {}, yesno: {} },
+    WORLD_MAPS: { PokeathlonDome_Interior_1F: copy(WORLD_MAPS.PokeathlonDome_Interior_1F) }, DEX, ITEMS, NATURES } };
+  for (const f of ["tools/lib/johto-pokeathlon.generated.js", "ui/pokeathlon-events.js", "ui/pokeathlon.js"]) vm.runInNewContext(fs.readFileSync(path.join(root, f), "utf8"), sb, { filename: f });
+  const PA = sb.window.POKEATHLON, PK = sb.window.Pokeathlon, PE = sb.window.PokeathlonEvents;
+  assert(Object.keys(PA.perf).length === 493 && PA.natures.length === 25 && PA.prizes.length === 14, "HGSS's Performance, natures and prize lists");
+  // (Pikachu: Speed, Power, Skill, Stamina, Jump, each its base, lowest and highest, 0-4.)
+  assert.strictEqual(PA.perf.Pikachu, "213203203203213");
+  for (const day of PA.prizes) for (const [id, pts] of day) assert(ITEMS[id] && pts >= 100, "a prize: " + id);
+  assert(PA.prizes[7].some(([id, pts]) => id === "shiny-stone" && pts === 3000) && PA.prizes[1].some(([id]) => id === "rare-candy"), "Sunday's Shiny Stone, Monday's Rare Candy");
+  const z = sb.window.JOHTO_SCRIPTS.zones["0167"], dome = sb.window.WORLD_MAPS.PokeathlonDome_Interior_1F;
+  assert(z && "scr_seq_0167_000" in z.labels && z.cmds.some((c) => c[0] === "Pokeathlon") && z.moves._0848, "the receptions' script, scr_seq_0167");
+  assert(dome.people.some((p) => p.script === "hgss:0167:scr_seq_0167_000"), "the reception's receptionist runs it");
+  assert(sb.window.JOHTO_SCRIPTS.zones.D49R0101.cmds.some((c) => c[0] === "SetVar" && c[2] === "lemonade"), "the vending machine's drinks");
+  // Performance today: within each species' bounds, the day and nature moving it.
+  const mon = { species: "Pikachu", personality: 3141592653, nature: "Adamant" };
+  const a = PK.performance(mon, new Date(2024, 0, 15)), b = PK.performance(mon, new Date(2024, 0, 15));
+  assert.deepStrictEqual(a, b, "the same all day");
+  PK.STATS.forEach((k, i) => assert(a[k] >= +PA.perf.Pikachu[i * 3 + 1] + 1 && a[k] <= +PA.perf.Pikachu[i * 3 + 2] + 1 && a.max[k] === +PA.perf.Pikachu[i * 3 + 2] + 1, k));
+  assert(PK.COURSES.length === 5 && PK.COURSES.every((c) => c.events.length === 3 && c.events.every((id) => PE.EVENTS[id])), "five courses of three events");
+  assert.strictEqual(new Set([].concat(...PK.COURSES.map((c) => c.events))).size, 10, "all ten events");
+  // Each event, the computer playing every team: it ends, and a team of five stars beats one of one star overall.
+  const team = (n) => ({ name: "T" + n, mons: [0, 1, 2].map(() => ({ species: "Pikachu", stats: { speed: n, power: n, skill: n, stamina: n, jump: n } })) });
+  const totals = [0, 0, 0, 0];
+  for (const id of Object.keys(PE.EVENTS)) {
+    const r = PE.simulate(id, [team(1), team(3), team(3), team(5)], mulberry32(7));
+    assert(r.over && r.points.every((n) => n >= 0 && n < 1000), id + " ends: " + r.points);
+    r.points.forEach((n, t) => { totals[t] += n; });
+  }
+  assert(totals[3] > totals[0], "stars count: " + totals);
+  // (The Dome's own commands, from ui/johto-script.js; the Athlete Shop paid in points.)
+  assert(/window\.Pokeathlon\.handles\(op\)/.test(fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8")));
+  assert(/Pokeathlon\.attach\(/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")));
+  assert(/st\.opts\.currency/.test(fs.readFileSync(path.join(root, "ui/shop-screen.js"), "utf8")));
+}
+
 // Faraway Island (data/emerald-maps.js, from Emerald) and its Mew (game/faraway.js).
 {
   const E = WORLD_MAPS.FarawayIsland_Entrance, I = WORLD_MAPS.FarawayIsland_Interior;
