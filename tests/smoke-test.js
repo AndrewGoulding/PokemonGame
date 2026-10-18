@@ -4098,6 +4098,59 @@ console.log("ok: doubles regressions, " + DOUBLES + " random doubles battles fin
   assert(all.every((ps) => Slots.evaluate(ps, 3).payout >= Slots.evaluate(ps, 1).payout), "more lines never pay less");
 }
 
+// Goldenrod's Game Corner: Voltorb Flip (ui/voltorb-flip.js, HGSS's src/voltorb_flip)
+// at Mr. Game's table, and the prize counters' menus (tools/build-voltorb-flip.js).
+{
+  const VF = require("../ui/voltorb-flip.js").logic;
+  let seed = 7;
+  const rand = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+  const g = VF.create(rand);
+  for (let round = 0; round < 40; round++) {
+    VF.newBoard(g);
+    const [volts, twos, threes] = VF.CONFIGS[g.boardId], count = (t) => g.cards.filter((c) => c.type === t).length;
+    assert(g.boardId >= (g.level - 1) * 10 && g.boardId < g.level * 10, "a board of its level");
+    assert.deepStrictEqual([count(VF.VOLTORB), count(VF.TWO), count(VF.THREE)], [volts, twos, threes], "the board's cards");
+    assert.strictEqual(g.maxPayout, Math.min(50000, 2 ** twos * 3 ** threes));
+    for (let i = 0; i < 5; i++) {
+      assert.strictEqual(g.voltorbsRow[i], g.cards.filter((c, k) => Math.floor(k / 5) === i && c.type === VF.VOLTORB).length);
+      assert.strictEqual(g.pointsCol[i], g.cards.filter((c, k) => k % 5 === i && c.type !== VF.VOLTORB).reduce((a, c) => a + c.type, 0));
+    }
+    // Every 2 and 3 flipped: cleared, and up a level (to 7; Lv. 8 from a win
+    // there, or from Lv. 5 up after five rounds of 8 cards or more, none lost).
+    const before = g.level;
+    g.cards.forEach((c, i) => { if (c.type === VF.TWO || c.type === VF.THREE) VF.flip(g, i); });
+    assert(VF.cleared(g) && g.payout === g.maxPayout, "all the 2s and 3s found");
+    VF.endRound(g, VF.WON);
+    const streak = before >= 5 && g.history.every((r) => r.flipped >= 8 && r.outcome !== VF.LOST);
+    assert.strictEqual(VF.nextLevel(g), before === 8 || streak ? 8 : Math.min(7, before + 1));
+  }
+  // A Voltorb first: back to Lv. 1; from Lv. 5, three cards flipped first: Lv. 3.
+  VF.newBoard(g); VF.flip(g, g.cards.findIndex((c) => c.type === VF.VOLTORB)); VF.endRound(g, VF.LOST);
+  assert.strictEqual(VF.nextLevel(g), 1);
+  const h = VF.create(rand);
+  h.history[4] = { outcome: VF.LOST, flipped: 3, boardId: 45, level: 5 };
+  assert.strictEqual(VF.nextLevel(h), 3);
+  h.history[4] = { outcome: VF.QUIT, flipped: 5, boardId: 45, level: 5 };
+  assert.strictEqual(VF.nextLevel(h), 5, "quitting with 5 flipped keeps Lv. 5");
+  // The payout: the first number, then times each.
+  const p = VF.create(rand); VF.newBoard(p);
+  const nums = p.cards.map((c, i) => i).filter((i) => p.cards[i].type !== VF.VOLTORB).slice(0, 3);
+  nums.forEach((i) => VF.flip(p, i));
+  assert.strictEqual(p.payout, nums.reduce((a, i) => a * p.cards[i].type, 1));
+  assert(fs.existsSync(path.join(root, "assets/voltorb-flip/board.png")) && fs.existsSync(path.join(root, "assets/voltorb-flip/sprites.png")));
+  assert(/<script src="ui\/voltorb-flip\.js"><\/script>/.test(html));
+  // The script commands: Mr. Game's table, the Coins window, MenuInit's menus.
+  const scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
+  for (const op of ["CasinoGame", "ScrCmd_116", "ScrCmd_117", "MenuInit", "GetItemPocket", "BufferPocketName"]) assert(scriptJs.includes('case "' + op + '"'), op);
+  const menus = {};
+  vm.runInNewContext(fs.readFileSync(path.join(root, "tools/lib/johto-game-corner.generated.js"), "utf8"), { window: { JOHTO_SCRIPTS: { messages: menus } } });
+  assert.deepStrictEqual(["12", "13", "11"].map((n) => menus["menu:T25SP0101:" + n][0]), ["Technical Machine", "Held Items", "Cancel"]);
+  assert(/^Abra\{CLEAR_TO \d+\}\{FONT_SMALL\}200 Coins$/.test(menus["menu:T25SP0101:24"][0]));
+  assert(/^Substitute\{CLEAR_TO \d+\}\{FONT_SMALL\}2,000 Coins$/.test(menus["menu:T25SP0101:14"][0]));
+  // (HGSS's TM90 is Substitute: this game's TM with that move, so the prize is too.)
+  assert.strictEqual(Bag.machineMove("tm89"), "Substitute");
+}
+
 // Saffron City and Silph Co.
 {
   // The four gates lead into Saffron City now.

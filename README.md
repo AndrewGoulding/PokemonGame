@@ -346,7 +346,7 @@ a Poké Ball in the rooftop room), the restaurant (the Coin Case), the hotel and
 houses, the Soft-Boiled tutor, Erika's Gym (behind a Cut tree; the Rainbow Badge
 and TM19 Giga Drain, TM103 here), and the Game Corner: buy Coins (100 for ₽2,000,
 500 for ₽10,000 or 1,000 for ₽20,000: FireRed's ₽20 a Coin, though its list is 50 and 500, with your money and Coins in their boxes at
-the top left; up to 9,999 in the Coin Case), get a few from the gamblers,
+the top left; up to 50,000 in the Coin Case, as HGSS's holds), get a few from the gamblers,
 find them on the floor, and play FireRed's slot machines (its reels, odds,
 lines and payouts, from `src/slot_machine.c`), or go through the doorway in
 the back wall (left of the stairs) to the card room (this game's own, built
@@ -1925,9 +1925,39 @@ Sentret, and Hoothoot at night; then Surf's, Gen 4's fishing (five slots a
 rod, 40/40/15/4/1) and Rock Smash's. Everything goes into
 `data/johto-maps.js`, which adds the maps to `WORLD_MAPS` (and the gate's mat,
 warp and guard). Not here yet: what needs HGSS's own games (the Battle
-Frontier, the Pokéathlon, the Safari Zone's areas,
-the Game Corner's machines). (Its music is HGSS's
-own: see Music and cries.)
+Frontier, the Pokéathlon, the Safari Zone's areas).
+(Its music is HGSS's own: see Music and cries.)
+
+**Goldenrod's Game Corner** is the international HeartGold's: Mr. Game's
+table and its game, **Voltorb Flip** (`ui/voltorb-flip.js`, from
+`src/voltorb_flip/`), and two prize counters. Talk to Mr. Game and he gives
+you a Coin Case (Kanto's Game Corner takes it too, and Kanto's takes his);
+sit across from him (the table's near side, facing up) and play. The board's
+25 cards hide 1s, 2s, 3s and Voltorb; the totals at the end of each row and
+column say what they add up to and how many Voltorb are among them. The
+first number you flip is your payout, each one after multiplies it, and a
+Voltorb loses it all; quit (B, or the Quit button) to keep what you've got,
+or find every 2 and 3 to clear the board and take it. The boards, levels and
+payouts are HGSS's: each level's ten boards (`sBoardConfigs`: how many
+Voltorb, 2s and 3s, and how many 2s and 3s may lie where no Voltorb is), up a
+level for a clear and down to as many cards as you flipped when you lose
+(Lv. 8 from five good rounds in a row), up to 50,000 Coins. Its Memo (Select,
+Backspace or C, or the button) marks a card with Voltorb, 1, 2 or 3; Game Info
+explains it all, in HGSS's words. Its pictures are HGSS's, from the game's
+NARC (`files/application/voltorb_flip`: its tiles, palettes, screens and
+sprite cells) drawn a little smaller to fit FireRed's screen, by
+`node tools/build-voltorb-flip.js <path to pokeheartgold>` into
+`assets/voltorb-flip/`, with FireRed's windows and font for its words; and
+the jingles are HGSS's (the "Is this what you're expecting?!" suspense, the
+Voltorb, the clear). The prize counters run HGSS's own scripts: the gentleman
+on the left trades Pokémon (Abra 200 Coins, Ekans 700, Dratini 2,100, Lv.
+15), the one on the right TMs (Substitute 2,000, Swords Dance 4,000, Rest
+6,000, Flamethrower, Ice Beam and Thunderbolt 10,000) and held items (Silk
+Scarf, Wide Lens, Zoom Lens, Metronome, 1,000 each), your Coins in a box at
+the top right. (Their menus, HGSS's `MenuInit`, come from the map's own
+messages, which the same builder writes into
+`tools/lib/johto-game-corner.generated.js`; HGSS's TMs are this game's TMs
+with the same moves.)
 
 **The walking Pokémon** (HGSS's follower: `ui/follower.js`, and the
 follower section of `ui/overworld.js`): in Johto your party's first Pokémon
@@ -2393,7 +2423,7 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
 | `engine/` | Stat, damage, experience, catch and item formulas, and the battle engine |
 | `game/` | Game logic around the engine: party records, the player and their save (`player.js`, `save.js`), bag and Poké Mart (`bag.js`), overworld rules (`world.js`), mining, fishing and farming levels (`mining.js`, `fishing.js`, `berry-picking.js`), evolution, encounters, random teams and the opponent AI |
 | `ui/` | Text box and menus (`screen.js`), the battle screen, the overworld (`overworld.js`), FireRed's intro (`intro.js`), and the game flow, story events and menus (`game.js`) |
-| `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`, `npm run build:maps`, `npm run build:intro`, `npm run build:battle-bgs`, `npm run build:machine-learners`, `npm run build:sprite-metrics`, `node tools/build-slot-machine.js pokefirered` for the Game Corner slot machine graphics) and their shared PNG/GBA/text helpers (`tools/lib/`) |
+| `tools/` | Data generators (`npm run build:evolutions`, `npm run build:item-sprites`, `npm run build:maps`, `npm run build:intro`, `npm run build:battle-bgs`, `npm run build:machine-learners`, `npm run build:sprite-metrics`, `node tools/build-slot-machine.js pokefirered` for the Game Corner slot machine graphics, `node tools/build-voltorb-flip.js pokeheartgold` for Voltorb Flip's) and their shared PNG/GBA/text helpers (`tools/lib/`) |
 | `assets/sprites/` | Pokémon sprites (front, back, shiny), item icons, trainer and overworld sprites |
 | `assets/tilesets/` | FireRed's tilesets (tiles, palettes, metatiles), the source for the maps |
 | `assets/world/` | Generated map images and transparent overworld sprites |

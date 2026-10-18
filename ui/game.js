@@ -6610,10 +6610,10 @@
 
   // ---------- The Game Corner ----------
   //
-  // Coins (in the Coin Case, up to 9,999): bought from the clerk, given by a
+  // Coins (in the Coin Case, up to 50,000: HGSS's): bought from the clerk, given by a
   // few gamblers, found on the floor, and won at the slots; spent next door
-  // in the Prize Room.
-  const MAX_COINS = 9999;
+  // in the Prize Room. (Goldenrod's Game Corner: Voltorb Flip, below.)
+  const MAX_COINS = 50000;
   const coins = () => player.flags.coins || 0;
   const addCoins = (n) => { player.flags.coins = Math.max(0, Math.min(MAX_COINS, coins() + n)); };
   const plainCoins = (n) => n.toLocaleString("en-US");
@@ -6675,6 +6675,15 @@
     player.flags.coins = await window.SlotMachine.play({ machineId: id, coins: coins(), maxCoins: MAX_COINS, sfx, fanfare });
     show("world");
     await Overworld.resume();
+  }
+  // Voltorb Flip (ui/voltorb-flip.js), at Mr. Game's table in Goldenrod's
+  // Game Corner (HGSS's CasinoGame): the script fades out and back in round it.
+  async function voltorbFlip() {
+    Screen.say("");
+    player.flags.coins = await window.VoltorbFlip.play({ coins: coins(), maxCoins: MAX_COINS, name: player.name, sfx, fanfare });
+    show("world");
+    await Overworld.resume();
+    await persist();
   }
 
   // The card tables' stars (game/table-players.js): besides the Gym Leaders
@@ -6743,7 +6752,7 @@
     show("scene");
     clearMenu();
     const before = coins();
-    // (Your Coin Case keeps up with every bet and payout, up to 9,999, and the game saves after each hand.)
+    // (Your Coin Case keeps up with every bet and payout, up to 50,000, and the game saves after each hand.)
     const keep = (n) => { player.flags.coins = 0; addCoins(n); persist(); return coins(); };
     const after = await BlackjackScreen.run(scene, Blackjack.create({ coins: before, name: player.name, pic: Player.LOOKS[player.look].front,
       others }), keep);
@@ -10652,6 +10661,7 @@
     giveItem: async (id, n, verb) => {
       if (!window.ITEMS[id]) return false;   // (one the game hasn't got)
       Player.addItem(player, id, n);
+      if (id === "coin-case") player.flags.gotCoinCase = true;   // (Mr. Game's: Kanto's Game Corner takes it too)
       if (!verb) return true;   // (GiveItem: the script says so itself)
       const name = Bag.name(id);
       await sayWithJingle(itemJingle(id), "{PLAYER} " + verb + " " + (n > 1 ? n + " " + name + (/s$/.test(name) ? "" : "s") : Bag.isKeyItem(id) ? "the " + name : article(name)) + "!");
@@ -10695,6 +10705,10 @@
     addMoney: (n) => { player.money = Math.max(0, Math.min(999999, player.money + n)); },
     coins: () => coins(),
     addCoins: (n) => addCoins(n),
+    // (The Game Corner: the Coins window at the top right, Voltorb Flip, a prize's pocket.)
+    coinsBox: (on) => coinsBox(on ? 20 : null, 0),
+    casinoGame: () => voltorbFlip(),
+    itemPocket: (id) => (window.ITEMS[id] ? Bag.pocket(id) : ""),
     beaten: (id) => !!player.flags["HGSS_" + String(id).replace(/^HGSS_/, "")],
     setBeaten: (id, on) => { const k = "HGSS_" + String(id).replace(/^HGSS_/, ""); if (on) player.flags[k] = true; else delete player.flags[k]; },
     sleep, isGirl, onBike: () => Overworld.avatar() === "bike",

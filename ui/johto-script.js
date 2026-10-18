@@ -33,7 +33,8 @@
 //   music(song) (null: the map's own again; false: none), se(name), shake(count, opts),
 //   moneyBox(on), moveWarp(map, i, x, y), pcSpace(), itemPocket(id),
 //   bugContest (ui/bug-contest.js: the Bug-Catching Contest's commands),
-//   phoneCall(who, kind, n), registerCard(n), phoneRematch(contact), phoneTrigger(n, on) (ui/pokegear.js).
+//   phoneCall(who, kind, n), registerCard(n), phoneRematch(contact), phoneTrigger(n, on) (ui/pokegear.js),
+//   coinsBox(on), casinoGame() (ui/voltorb-flip.js).
 (function () {
   "use strict";
 
@@ -106,6 +107,8 @@
       (isTemp(name) ? temp.v : state().v)[name] = val;
     }
     const resetTemp = () => { temp.f = {}; temp.v = {}; temp.pos = {}; };
+    // A species by its number (SPECIES_* a script keeps in a var), as its name.
+    const speciesOf = (x) => (typeof x === "number" && x > 0 && window.DEX ? Object.keys(window.DEX).find((k) => window.DEX[k].id === x) || x : x);
     // (Where the map's OnTransition script put someone, this visit.)
     const placed = (id) => temp.pos[id] || null;
 
@@ -154,6 +157,19 @@
       // (A jingle the message is about, PlayFanfare just after it: it starts with the message.)
       const startJingle = (k) => { jingle = Promise.resolve(env.fanfare(DATA().sounds && DATA().sounds[getVar(C[k][1])])); jingleAt = k; };
       const nextJingle = (i) => { for (let k = i; k < C.length && k < i + 3; k++) { if (C[k][0] === "PlayFanfare") return k; if (!/^(Nop|Buffer)/.test(C[k][0])) return -1; } return -1; };
+      // (Does a GetMenuChoice read a {YESNO} message's answer? Not if the script
+      // goes on to a menu, a gift or another message first, as the Game Corner's
+      // prize counters do after their welcome: then it asks nothing.)
+      const readsChoice = (i) => {
+        for (let k = i, n = 0; k < C.length && n < 40; n++) {
+          const o = C[k][0];
+          if (o === "GetMenuChoice" || o === "YesNo" || o === "Call") return true;
+          if (o === "GoTo") { if (!(C[k][1] in L)) return true; k = L[C[k][1]]; continue; }
+          if (/Msg$|^MenuInit|^MenuExec$|^Give|^End$|^Return$/.test(o)) return false;
+          k++;
+        }
+        return true;
+      };
       let question = null;
       async function show(pages, id) {
         if (!pages || !pages.length) return;
@@ -162,7 +178,7 @@
         if (j >= 0) startJingle(j);
         if (nextIsYesNo(pc)) { if (pages.length > 1) await env.say(pages.slice(0, -1)); question = pages[pages.length - 1]; return; }
         // (A message that asks Yes or No itself: GetMenuChoice reads it, 0 for Yes.)
-        if (id && DATA().yesno && DATA().yesno[id]) {
+        if (id && DATA().yesno && DATA().yesno[id] && readsChoice(pc)) {
           if (pages.length > 1) await env.say(pages.slice(0, -1));
           choice = (await env.confirm(pages[pages.length - 1])) ? 0 : 1;
           setVar("VAR_SPECIAL_RESULT", choice);
@@ -221,7 +237,7 @@
           case "BufferFriendsName": buffers[a[0]] = env.isGirl() ? "Ethan" : "Lyra"; break;
           case "BufferMonSpeciesName": case "BufferPartyMonSpeciesNameIndef": { const r = mon(a[1]); buffers[a[0]] = r ? r.species : ""; break; }
           case "BufferPartyMonNick": { const r = mon(a[1]); buffers[a[0]] = r ? (r.nickname || r.species) : ""; break; }
-          case "BufferSpeciesName": case "BufferSpeciesNameIndef": buffers[a[0]] = String(getVar(a[1])); break;
+          case "BufferSpeciesName": case "BufferSpeciesNameIndef": buffers[a[0]] = String(speciesOf(getVar(a[1]))); break;
           case "BufferDeptStoreFloorNo": buffers[a[0]] = (+getVar(a[1]) || 0) + "F"; break;
           case "BufferInt": case "BufferIntEx": buffers[a[0]] = String(+getVar(a[1]) || 0); break;
           case "BufferItemName": case "BufferItemNameIndef": case "BufferItemNamePlural": buffers[a[0]] = env.itemName(getVar(a[1])); break;
@@ -288,7 +304,7 @@
           case "PlayerHasSpecies": setVar(a[0], env.player().party.some((r) => !r.egg && r.species === getVar(a[1])) ? 1 : 0); break;
           case "MonAddFriendship": { const r = mon(a[1]); if (r) r.happiness = Math.min(255, (r.happiness | 0) + (+getVar(a[0]) || 0)); break; }
           case "GiveItem": await flush(); setVar(a[2], (await env.giveItem(getVar(a[0]), +getVar(a[1]) || 1, null)) === false ? 0 : 1); break;
-          case "GiveMon": await flush(); setVar(a[5], (await env.giveMon(getVar(a[0]), +getVar(a[1]) || 5, getVar(a[2]))) ? 1 : 0); break;
+          case "GiveMon": await flush(); setVar(a[5], (await env.giveMon(speciesOf(getVar(a[0])), +getVar(a[1]) || 5, getVar(a[2]))) ? 1 : 0); break;
           case "GiveSpikyEarPichu": await flush(); await env.giveMon("Pichu", 30, null); break;
           case "GiveEgg": await flush(); await env.giveEgg(getVar(a[0])); break;
           // (HGSS's Badges: 0 to 7 Johto's, from Zephyr; 8 on, Kanto's.)
@@ -304,6 +320,11 @@
           case "CheckGiveCoins": setVar(a[0], env.coins() + (+getVar(a[1]) || 0) <= 50000 ? 1 : 0); break;
           case "GiveCoins": env.addCoins(+getVar(a[0]) || 0); break;
           case "TakeCoins": env.addCoins(-(+getVar(a[0]) || 0)); break;
+          // (The Coins window: ScrCmd_116 shows it, 118 updates it, 117 takes it down.)
+          case "ScrCmd_116": case "ScrCmd_118": env.coinsBox(true); break;
+          case "ScrCmd_117": env.coinsBox(false); break;
+          // (Mr. Game's table in Goldenrod's Game Corner: Voltorb Flip, ui/voltorb-flip.js.)
+          case "CasinoGame": await flush(); await env.casinoGame(); break;
           // Trainers beaten (the game's own flags, by trainer).
           case "SetTrainerFlag": env.setBeaten(a[0], true); break;
           case "ClearTrainerFlag": env.setBeaten(a[0], false); break;
