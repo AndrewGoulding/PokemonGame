@@ -2104,7 +2104,7 @@ if (window.JOHTO_TOWN_MAP) {
       origin: () => ({ x: 0, y: 0 }), sleep: async () => {}, fade: async () => {}, shake: async () => { log.push("shake"); },
       warp: async (m, x, y, facing) => { log.push("warp " + (JOHTO_SCRIPTS.mapConsts[m] || m) + " " + x + "," + y); },
       alphPuzzle: async (n) => A.PUZZLE_FLAGS[n], alphWall: async (n) => log.push("wall " + n), unownCaught: () => player.flags.unownCaught || [],
-      cry: () => {}, fanfare: () => {}, isGirl: () => false };
+      cry: () => {}, fanfare: () => {}, se: () => {}, music: () => {}, isGirl: () => false };
     const J2 = sandbox.window.JohtoScript.create(env);
     J2.run("D24R0202", "scr_seq_D24R0202_000", {}).then(async () => {
       assert(J2.flag("FLAG_SYS_ALPH_PUZZLE_KABUTO") && J2.flag("FLAG_UNK_21C") && log.includes("shake") && log.includes("hide obj_D24R0202_babyboy1_13"), "the panel put together, the floor falls in: " + log);
