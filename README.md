@@ -1768,12 +1768,33 @@ the follower Pokémon). So the Apricorn man on Route 30 comes out of his house
 as you pass and gives you the Apricorn Box, Cherrygrove's Guide Gent shows you
 round, Team Rocket harasses a man in Azalea Town, Lyra takes you to the Day
 Care on Route 34, the Kimono Girl is lost in Ilex Forest, and the Sudowoodo
-stands in the way on Route 36. Johto's story starts where HGSS's new game
-starts (its `scr_seq_0149`: who's hidden until the story gets to them),
-except for what coming to Johto a Champion with Pokémon would already have
-done in rooms not built yet: New Bark Town's way west is open, Route 30's
-battle demo is over with Youngster Joey there in its place, and the man at
-the top of Route 32 no longer sends you back to Violet's Gym.
+stands in the way on Route 36. Johto's story starts as HGSS's does
+(its new game, `scr_seq_0149`: who's hidden until the story gets to them),
+except that you come to New Bark Town from Kanto first, as if you'd just
+left the house there (HGSS's Mom and Lyra's hello, inside it, are past):
+then **Prof. Elm's Lab** goes on as in HGSS. Step in and Elm walks you over,
+tells you about Mr. Pokémon's email, and his machine offers Chikorita,
+Cyndaquil or Totodile (each one's picture, "You'll take ...?"; Lv. 5, joining
+your party, and a nickname if you like); until he's given you one, New
+Bark's neighbour won't let you go west, and once he has, you've the
+Pokégear (HGSS's Mom gives it; there's no Mom here) and Elm comes out to
+give you his number as you go. His aide's Potion, Lyra and her Marill
+outside ("So you picked... Chikorita!"), the Guide Gent in Cherrygrove,
+**Mr. Pokémon's house** on Route 30 (the Mystery Egg; Prof. Oak and the
+Pokédex) and the rest follow on as HGSS scripts them; HGSS's party slot 0,
+in its scripts, is the starter you chose, wherever it is in your party.
+Johto's own characters keep HGSS's sprites (Lyra, or Ethan for a girl;
+Silver; Prof. Elm; the Kimono Girls). The rooms built so far: Elm's Lab,
+Mr. Pokémon's house, the houses of New Bark Town, Cherrygrove City and Route
+30, each as HGSS lays it out (so its scripts' steps and places hold), and
+**Pokémon Centers** (Cherrygrove, Violet, Route 32, Azalea, Goldenrod) and
+**Poké Marts** (Cherrygrove, Violet, Azalea) as FireRed's own rooms, as the
+gatehouses are: a Pokémon Center's nurse heals as Kanto's do (and it's where
+you come to if you black out), upstairs is FireRed's Cable Club floor with
+the Move Relearner and Deleter, and a Mart's clerks keep HGSS's scripts: the
+standard stock by Johto's Badges (HGSS's tiers: Poké Balls, Potions,
+Antidotes and Paralyze Heals with none, and more with more) and the town's
+own.
 
 **Johto's trainers** (60 so far) are HeartGold's (`files/poketool/trainer`):
 their classes, names, parties (each Pokémon knowing the last four moves it
@@ -1790,9 +1811,10 @@ them: morning (4-10), day and night (20-4), e.g. Route 29's Pidgey and
 Sentret, and Hoothoot at night; then Surf's, Gen 4's fishing (five slots a
 rod, 40/40/15/4/1) and Rock Smash's. Everything goes into
 `data/johto-maps.js`, which adds the maps to `WORLD_MAPS` (and the gate's mat,
-warp and guard). Not built yet: the buildings (houses, Pokémon Centers, marts,
-Gyms, Elm's Lab, Sprout Tower, the Radio Tower and the rest: their doors say
-so), so the story can't go on past what happens outside; Union Cave's lower
+warp and guard). Not built yet: the rest of the buildings (the other towns' houses,
+Goldenrod's and Route 32's marts, the Gyms, Sprout Tower, the Pokémon
+Academy, the Radio Tower, the Day Care and the rest: their doors say so), so
+the story can't go on past them yet (Violet's Gym, Falkner, comes next); Union Cave's lower
 floors, Dark Cave and the National Park; Johto's music (FireRed's stands in:
 Pallet Town's, Route 1's and Pewter City's); and a Town Map of Johto.
 

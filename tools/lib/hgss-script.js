@@ -81,17 +81,23 @@ function compiler(ROOT, conv) {
     }
     return msgCache[prefix];
   }
-  const messages = {};
+  // (yesno: the messages that end asking Yes or No, {YESNO}: GetMenuChoice reads it, 0 for Yes.)
+  const messages = {}, yesno = {};
+  const asks = (text) => /\{YESNO/.test([].concat(text).join(""));
   function needMsg(id) {
     if (messages[id]) return;
     const m = /^(msg_\d+(?:_\w+?)?)_(\d{5})$/.exec(id);
     if (!m) return;
     const found = msgFile(m[1]).find((x) => x.id === id);
-    if (found) messages[id] = pages(found.en_US);
+    if (found) { messages[id] = pages(found.en_US); if (asks(found.en_US)) yesno[id] = 1; }
   }
   function needBank(bank) {
     const prefix = "msg_" + String(bank).padStart(4, "0");
-    msgFile(prefix).forEach((x, i) => { if (x.en_US != null) messages["bank:" + bank + ":" + i] = pages(x.en_US); });
+    msgFile(prefix).forEach((x, i) => {
+      if (x.en_US == null) return;
+      messages["bank:" + bank + ":" + i] = pages(x.en_US);
+      if (asks(x.en_US)) yesno["bank:" + bank + ":" + i] = 1;
+    });
   }
   // (The banks MsgBoxExtern reads, by GetStdMsgNaix's number: src/field/scrcmd_message.c.)
   const STD_BANKS = [752, 211, 30, 435];
@@ -102,7 +108,7 @@ function compiler(ROOT, conv) {
     if (/^-?\d+$/.test(tok)) return +tok;
     if (/^0x[0-9a-f]+$/i.test(tok)) return parseInt(tok, 16);
     if (tok === "obj_player") return "player";
-    if (/^(VAR_|FLAG_|obj_)/.test(tok)) return tok;
+    if (/^(VAR_|FLAG_|obj_|std_)/.test(tok)) return tok;   // (std_*: CallStd's scripts, by name)
     if (/^msg_/.test(tok)) { needMsg(tok); return tok; }
     if (/^ITEM_/.test(tok)) return conv.item(tok) || tok;
     if (/^SPECIES_/.test(tok)) return conv.species(tok) || tok;
@@ -170,7 +176,7 @@ function compiler(ROOT, conv) {
     const file = scrFiles.find((f) => /^scr_seq_0149\.s$/.test(f));
     return compileSource(fs.readFileSync(path.join(SCR, file), "utf8")).cmds.filter((c) => c[0] === "SetFlag" || c[0] === "SetVar").map((c) => c.slice(0));
   }
-  return { zone, init, messages, scriptRef, needMsg, pages, defines };
+  return { zone, init, messages, yesno, scriptRef, needMsg, pages, defines };
 }
 
 module.exports = { compiler, frMove, pages };

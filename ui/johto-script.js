@@ -79,7 +79,18 @@
       const z = DATA().zones[zone];
       if (!z || !(label in z.labels)) return;
       const C = z.cmds, L = z.labels, origin = env.origin(zone) || { x: 0, y: 0 };
-      let pc = L[label], cmp = 1, sw = 0, lastBattle = null, menu = null, choice = 0;
+      let pc = L[label], cmp = 1, sw = 0, lastBattle = null, menu = null, choice = 0, starterSlot = null;
+      // (HGSS's party slot 0 is the starter just chosen: in this game it
+      // joins a party you already have, wherever it lands.)
+      const slot = (n) => {
+        n = +getVar(n) || 0;
+        if (n !== 0) return n;
+        if (starterSlot != null) return starterSlot;
+        // (Afterwards too: HGSS's slot 0 is the starter you chose, wherever it is in your party.)
+        const pid = state().starterPid, i = pid != null ? env.player().party.findIndex((r) => r.personality === pid) : -1;
+        return i >= 0 ? i : 0;
+      };
+      const mon = (n) => env.player().party[slot(n)];
       const stack = [], pending = [];
       const go = (l) => { if (l in L) pc = L[l]; };
       const who = (obj) => (obj === "player" ? "player" : obj);
@@ -87,12 +98,20 @@
       // (Is a YesNo coming, so the last page should be the question?)
       const nextIsYesNo = (i) => { for (let k = i; k < C.length && k < i + 4; k++) { if (C[k][0] === "YesNo") return true; if (!/^(Nop|ScrCmd_|TouchscreenMenu)/.test(C[k][0])) return false; } return false; };
       let question = null;
-      async function show(pages) {
+      async function show(pages, id) {
         if (!pages || !pages.length) return;
         await flush();
         if (nextIsYesNo(pc)) { if (pages.length > 1) await env.say(pages.slice(0, -1)); question = pages[pages.length - 1]; return; }
+        // (A message that asks Yes or No itself: GetMenuChoice reads it, 0 for Yes.)
+        if (id && DATA().yesno && DATA().yesno[id]) {
+          if (pages.length > 1) await env.say(pages.slice(0, -1));
+          choice = (await env.confirm(pages[pages.length - 1])) ? 0 : 1;
+          setVar("VAR_SPECIAL_RESULT", choice);
+          return;
+        }
         await env.say(pages);
       }
+      const say = (id) => show(text(id), id);
       const cond = { Lt: (c) => c === 0, Eq: (c) => c === 1, Gt: (c) => c === 2, Le: (c) => c !== 2, Ge: (c) => c !== 0, Ne: (c) => c !== 1 };
       for (let guard = 0; guard < 20000 && pc < C.length; guard++) {
         const [op, ...a] = C[pc++];
@@ -102,7 +121,14 @@
           case "Return": if (!stack.length) { await flush(); return; } pc = stack.pop(); break;
           case "GoTo": go(a[0]); break;
           case "Call": stack.push(pc); go(a[0]); break;
-          case "Compare": { const x = +getVar(a[0]) || 0, y = +getVar(a[1]) || 0; cmp = x < y ? 0 : x === y ? 1 : 2; break; }
+          case "Compare": {
+            // (A species by name, from GetPartyMonSpecies, against SPECIES_*: equal or not.)
+            const p = getVar(a[0]), q = getVar(a[1]);
+            if (typeof p === "string" || typeof q === "string") { cmp = String(p) === String(q) ? 1 : 0; break; }
+            const x = +p || 0, y = +q || 0;
+            cmp = x < y ? 0 : x === y ? 1 : 2;
+            break;
+          }
           case "GoToIfSet": if (flag(a[0])) go(a[1]); break;
           case "GoToIfUnset": if (!flag(a[0])) go(a[1]); break;
           case "CallIfSet": if (flag(a[0])) { stack.push(pc); go(a[1]); } break;
@@ -118,12 +144,12 @@
           case "CheckFlag": cmp = flag(a[0]) ? 1 : 0; break;
 
           // Messages.
-          case "NPCMsg": case "NonNPCMsg": await show(text(a[0])); break;
-          case "SimpleNPCMsg": if (ctx.person) await env.facePlayer(ctx.person); await show(text(a[0])); env.close(); break;
-          case "MsgBoxExtern": case "NonNPCMsgExtern": await show(text("bank:" + getVar(a[0]) + ":" + getVar(a[1]))); break;
-          case "GenderMsgBox": await show(text(env.isGirl() ? a[1] : a[0])); break;
-          case "TrainerTipsEx": await show(text(a[1])); env.close(); break;
-          case "DirectionSignpostEx": await show(text(a[2])); env.close(); break;
+          case "NPCMsg": case "NonNPCMsg": await say(a[0]); break;
+          case "SimpleNPCMsg": if (ctx.person) await env.facePlayer(ctx.person); await say(a[0]); env.close(); break;
+          case "MsgBoxExtern": case "NonNPCMsgExtern": await say("bank:" + getVar(a[0]) + ":" + getVar(a[1])); break;
+          case "GenderMsgBox": await say(env.isGirl() ? a[1] : a[0]); break;
+          case "TrainerTipsEx": await say(a[1]); env.close(); break;
+          case "DirectionSignpostEx": await say(a[2]); env.close(); break;
           case "CloseMsg": env.close(); break;
           case "YesNo": {
             const yes = await env.confirm(question || "");
@@ -132,14 +158,11 @@
             break;
           }
           case "BufferPlayersName": buffers[a[0]] = env.player().name; break;
-          case "BufferRivalsName": buffers[a[0]] = "Silver"; break;
+          case "BufferRivalsName": buffers[a[0]] = state().rival || "Silver"; break;
           case "BufferFriendsName": buffers[a[0]] = env.isGirl() ? "Ethan" : "Lyra"; break;
-          case "BufferMonSpeciesName": case "BufferPartyMonSpeciesNameIndef": {
-            const r = env.player().party[+getVar(a[1]) || 0];
-            buffers[a[0]] = r ? r.species : "";
-            break;
-          }
-          case "BufferPartyMonNick": { const r = env.player().party[+getVar(a[1]) || 0]; buffers[a[0]] = r ? (r.nickname || r.species) : ""; break; }
+          case "BufferMonSpeciesName": case "BufferPartyMonSpeciesNameIndef": { const r = mon(a[1]); buffers[a[0]] = r ? r.species : ""; break; }
+          case "BufferPartyMonNick": { const r = mon(a[1]); buffers[a[0]] = r ? (r.nickname || r.species) : ""; break; }
+          case "BufferSpeciesName": buffers[a[0]] = String(getVar(a[1])); break;
 
           // People and movement.
           case "FacePlayer": if (ctx.person) await env.facePlayer(ctx.person); break;
@@ -163,6 +186,9 @@
               await flush();
               await env.giveItem(getVar("VAR_SPECIAL_x8004"), +getVar("VAR_SPECIAL_x8005") || 1, a[0] === "std_give_item_verbose" ? "received" : "obtained");
             } else if (a[0] === "std_bag_is_full") await env.say(["The Bag is full…"]);
+            // (Poké Marts: the standard stock by the Badges you have, or the town's own.)
+            else if (a[0] === "std_pokemart") await env.mart(env.martStock(DATA().marts.standard));
+            else if (a[0] === "std_special_mart") await env.mart(DATA().marts.special[+getVar("VAR_SPECIAL_x8004") || 0] || []);
             break;
           case "GoToIfNoItemSpace": break;   // (this game's Bag never fills)
           case "HasSpaceForItem": setVar(a[2], 1); break;
@@ -173,14 +199,35 @@
           case "GetPartyCount": setVar(a[0], env.player().party.length); break;
           case "CountAliveMons": setVar(a[0], env.player().party.filter((r) => !r.egg && r.hp > 0).length); break;
           case "GetPartyLeadAlive": setVar(a[0], Math.max(0, env.player().party.findIndex((r) => !r.egg && r.hp > 0))); break;
-          case "GetPartyMonSpecies": { const r = env.player().party[+getVar(a[0]) || 0]; setVar(a[1], r ? r.species : 0); break; }
+          case "GetPartyMonSpecies": { const r = mon(a[0]); setVar(a[1], r ? r.species : 0); break; }
+          case "MonGetFriendship": { const r = mon(a[1]); setVar(a[0], r ? r.happiness | 0 : 0); break; }
+          case "GetPartyMonForm2": setVar(a[0], 0); break;
+          case "GetGameVersion": setVar(a[0], DATA().version || 7); break;
+
+          // The starter (Elm's Lab), and the rest of Johto's story's gifts.
+          case "ChooseStarter": {
+            await flush();
+            starterSlot = await env.chooseStarter();
+            const r = env.player().party[starterSlot];
+            if (r) state().starterPid = r.personality;
+            // (And the Pokégear, Mom's in HGSS: this game has no Mom in Johto.)
+            setFlag("FLAG_GOT_POKEGEAR", true);
+            break;
+          }
+          case "SetStarterChoice": state().starter = getVar(a[0]); break;
+          case "NicknameInput": await env.nickname(slot(a[0])); break;
+          case "NameRival": state().rival = await env.nameRival(state().rival || "Silver"); break;
+          case "HealParty": env.healParty(); break;
+          case "GiveTogepiEgg": await env.giveEgg("Togepi"); break;
+          case "TakeItemNoCheck": env.takeItem(getVar(a[0]), +getVar(a[1]) || 1); break;
           case "GetPlayerGender": setVar(a[0], env.isGirl() ? 1 : 0); break;
           case "GetWeekday": setVar(a[0], new Date().getDay()); break;
           case "PlayerOnBikeCheck": setVar(a[0], env.onBike() ? 1 : 0); break;
           case "PhotoAlbumIsFull": case "KenyaCheck": case "KenyaCheckPartyOrMailbox": case "MonHasRibbon": case "FollowerPokeIsEventTrigger":
-          case "CheckDaycareEgg": case "MonHasMove": case "GetStarterChoice":
+          case "CheckDaycareEgg": case "MonHasMove":
             setVar(a[a.length - 1], 0);
             break;
+          case "GetStarterChoice": setVar(a[0], state().starter || 0); break;
 
           // Sounds.
           case "PlayCry": env.cry(getVar(a[0])); break;
@@ -247,11 +294,16 @@
     const zoneOf = (map) => (DATA().maps[map] || null);
     // Entering a map: its OnTransition script, which only sets flags and
     // vars (and where people stand), run straight away, before they're placed.
+    // (Then its OnResume script, as HGSS runs it whenever the map comes back
+    // into view: who's out, and where.)
     function transition(map) {
       resetTemp();
       const zone = zoneOf(map), z = zone && DATA().zones[zone];
-      if (!z || !z.hdr.transition || !(z.hdr.transition in z.labels)) return;
-      let pc = z.labels[z.hdr.transition], cmp = 1;
+      if (!z) return;
+      for (const label of [z.hdr.transition, z.hdr.resume]) if (label && label in z.labels) runQuick(zone, z, label);
+    }
+    function runQuick(zone, z, label) {
+      let pc = z.labels[label], cmp = 1;
       const stack = [];
       const cond = { Lt: (c) => c === 0, Eq: (c) => c === 1, Gt: (c) => c === 2, Le: (c) => c !== 2, Ge: (c) => c !== 0, Ne: (c) => c !== 1 };
       for (let guard = 0; guard < 5000 && pc < z.cmds.length; guard++) {
@@ -268,6 +320,7 @@
         else if (op === "SetVar") setVar(a[0], a[1]);
         else if (op === "CopyVar" || op === "SetOrCopyVar") setVar(a[0], getVar(a[1]));
         else if (op === "GetWeekday") setVar(a[0], new Date().getDay());
+        else if (op === "CheckBadge") setVar(a[1], env.hasBadge(+getVar(a[0])) ? 1 : 0);
         else if ((m = /^GoToIf(Lt|Eq|Gt|Le|Ge|Ne)$/.exec(op))) { if (cond[m[1]](cmp) && a[0] in z.labels) pc = z.labels[a[0]]; }
         else if ((m = /^CallIf(Lt|Eq|Gt|Le|Ge|Ne)$/.exec(op))) { if (cond[m[1]](cmp) && a[0] in z.labels) { stack.push(pc); pc = z.labels[a[0]]; } }
         // (A person put elsewhere: where the map will place them.)

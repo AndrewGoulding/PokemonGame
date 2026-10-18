@@ -503,7 +503,7 @@
     League.reset(player.flags);
     // (DoWhiteOut heals the party as you go.)
     player.party.forEach(Party.heal);
-    const center = player.flags.lastCenter && Player.CENTERS[player.flags.lastCenter];
+    const center = player.flags.lastCenter && centerOf(player.flags.lastCenter);
     const to = Object.assign({}, center || Player.HOME);
     music(null);
     Screen.say("");
@@ -1802,7 +1802,7 @@
       } else if (v === "center") {
         // In front of the counter of the Center you last used (home before
         // you've used one), as blacking out takes you.
-        const center = player.flags.lastCenter && Player.CENTERS[player.flags.lastCenter];
+        const center = player.flags.lastCenter && centerOf(player.flags.lastCenter);
         Orre.leave(player);   // (from Orre, as yourself again)
         player.location = Object.assign({}, center || Player.HOME);
         await persist();
@@ -2406,7 +2406,12 @@
     // (Johto's people: hidden while HGSS's flag for them is set, and where
     // the map's own script puts them this visit.)
     if ((person.hgssFlag && johto.flag(person.hgssFlag)) || person.offstage) return false;
-    { const at = person.localId && !person.trainer && johto.placed(person.localId); if (at) return { x: at.x, y: at.y, movement: "face_" + at.facing }; }
+    {
+      // (Lyra, or Ethan for a girl: HGSS's friend.)
+      const look = person.girlLook && isGirl() ? person.girlLook : null;
+      const at = person.localId && !person.trainer && johto.placed(person.localId);
+      if (at || look) return Object.assign({}, look, at ? { x: at.x, y: at.y, movement: "face_" + at.facing } : {});
+    }
     // (The League gate's guard on the way to Johto: there until you're Champion. data/johto-maps.js)
     if (person.script === "Route22_NorthEntrance_EventScript_JohtoGuard") return !f.gameClear;
     // (The Champion here is Red.)
@@ -2671,6 +2676,8 @@
     if (/^(enter|arrive):/.test(script)) { const due = johto.frameScript(script.replace(/^\w+:/, "")); if (due) { await runJohto(due, null); return; } }
     { const js = johto.scriptOf(ev.person || ev.sign || ev.trigger); if (js) { await runJohto(js, ev.person); return; } }
     { const ap = /^hgss_apricorn:(\d+):(\w+)$/.exec(script || ""); if (ap) { await apricornTree(+ap[1], ap[2]); return; } }
+    // (Johto's Pokémon Centers' nurses heal as Kanto's do.)
+    if (/_PokemonCenter_1F_EventScript_Nurse$/.test(script || "") && (window.WORLD_MAPS[ev.map] || {}).pokemonCenter) { await nurse(ev.map, ev.person); return; }
 
     if (script === "PewterCity_Gym_EventScript_Brock") { await brock(ev.person); return; }
     if (script === "CeruleanCity_Gym_EventScript_Misty") { await misty(ev.person); return; }
@@ -4661,7 +4668,7 @@
     await Overworld.pokecenterHeal(player.party.length, () => fanfare("mus_heal"));
     if (id) await Overworld.act([{ who: id, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
     player.party.forEach(Party.heal);
-    if (Player.CENTERS[mapName]) player.flags.lastCenter = mapName;
+    if (centerOf(mapName)) player.flags.lastCenter = mapName;
     await say(T("Text_RestoredPkmnToFullHealth"));
     await say(T("Text_WeHopeToSeeYouAgain"));
   }
@@ -10324,6 +10331,10 @@
     return true;
   }
 
+  // Where you come to in a Pokémon Center after blacking out: Kanto's
+  // (Player.CENTERS), or one of Johto's, FireRed's own room (data/johto-maps.js).
+  const centerOf = (map) => Player.CENTERS[map] || ((window.WORLD_MAPS[map] || {}).pokemonCenter ? { map, x: 7, y: 4, facing: "up" } : null);
+
   // ---------- The Rejuvenator (this game's own) ----------
   //
   // In the Indigo Plateau's Pokémon Center: off to a new region, where the
@@ -10405,9 +10416,47 @@
       if (!o) { await Overworld.fadeFromBlack(); return; }
       await Overworld.teleport({ map: name, x: x - o.x, y: y - o.y, facing });
     },
-    hasBadge: (n) => n >= 8 && player.badges.includes(KANTO_BADGES[n - 8]),
-    sleep, isGirl, onBike: () => Overworld.avatar() === "bike"
+    hasBadge: (n) => (n >= 8 ? player.badges.includes(KANTO_BADGES[n - 8]) : player.badges.includes(Player.REGION_BADGES.johto[n])),
+    sleep, isGirl, onBike: () => Overworld.avatar() === "bike",
+    chooseStarter: johtoStarter,
+    nickname: async (i) => {
+      const r = player.party[i];
+      if (!r) return;
+      const typed = await enterText(Party.speciesName(r.species) + "'s nickname?", Party.displayName(r), 10);
+      if (typed && typed !== Party.speciesName(r.species)) r.nickname = typed;
+    },
+    nameRival: async (name) => (await enterText("His name?", name, 7)) || name,
+    healParty: () => player.party.forEach(Party.heal),
+    giveEgg: async (species) => { Player.receive(player, Breeding.giftEgg(species, { map: player.location.map })); },
+    mart: (stock) => mart(stock),
+    // (HGSS's tiers: none with no Badges, then by twos; Johto's Badges here.)
+    martStock: (list) => {
+      const n = Player.REGION_BADGES.johto.filter((b) => player.badges.includes(b)).length;
+      const tier = n === 0 ? 1 : n <= 2 ? 2 : n <= 4 ? 3 : n <= 6 ? 4 : n === 7 ? 5 : 6;
+      return list.filter(([, t]) => tier >= t).map(([id]) => id);
+    }
   });
+  // Prof. Elm's three Pokémon (HGSS's ChooseStarter): each one's picture, and
+  // "Will you take it?", until you choose. It joins your party (or the PC);
+  // returns where it is in the party, or -1.
+  const JOHTO_STARTERS = ["Chikorita", "Cyndaquil", "Totodile"];
+  const JOHTO_STARTER_LEVEL = 5;
+  async function johtoStarter() {
+    for (;;) {
+      const i = await multichoice("Which Pokémon will you choose?", 0, 0, JOHTO_STARTERS);
+      Screen.say("");
+      if (i < 0 || i >= JOHTO_STARTERS.length) continue;
+      const species = JOHTO_STARTERS[i];
+      showPicture(species);
+      cry(species);
+      const yes = await confirm("You'll take " + species + ", the " + ["Grass", "Fire", "Water"][i] + "-type Pokémon?");
+      hidePicture();
+      if (!yes) continue;
+      const record = Party.create(species, JOHTO_STARTER_LEVEL);
+      const where = Player.receive(player, record);
+      return where === "party" ? player.party.indexOf(record) : -1;
+    }
+  }
   // A battle a script starts: a trainer (HGSS's, window.WORLD_TRAINERS) or a wild Pokémon.
   async function johtoBattle(kind, id, level) {
     if (!canBattle()) return "lost";
@@ -10591,6 +10640,7 @@
     // Apricorn trees, and its maps' frame tables as you come in.
     if (/^hgss:/.test(script || "")) return johto.triggerDue(script);
     if (/^hgss_apricorn:/.test(script || "")) return true;
+    if (/_PokemonCenter_1F_EventScript_Nurse$/.test(script || "") && johto.zoneOf(player.location.map)) return true;
     if (/^(enter|arrive):/.test(script || "") && johto.frameScript(script.replace(/^\w+:/, ""))) return true;
     // Coming back into Pewter City: the Museum ticket was for one visit (FireRed's OnTransition).
     // Coming out of the Gym with the Boulder Badge, Leaf is waiting.

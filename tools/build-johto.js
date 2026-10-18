@@ -93,7 +93,27 @@ const MAPS = [
   { c: "MAP_UNION_CAVE_1F", name: "UnionCave_1F", title: "Union Cave", type: "underground", zone: "D25R0101", music: "mus_mt_moon", ground: true },
   { c: "MAP_AZALEA_ILEX_FOREST_GATEHOUSE", name: "AzaleaTown_IlexForest_Gatehouse", title: "Azalea Town", type: "indoor", zone: "T23R0101", music: "mus_route11", ground: true },
   { c: "MAP_ILEX_FOREST", name: "IlexForest", title: "Ilex Forest", type: "route", zone: "D36R0101", music: "mus_viridian_forest", ground: true },
-  { c: "MAP_ROUTE_34_ILEX_FOREST_GATEHOUSE", name: "Route34_IlexForest_Gatehouse", title: "Route 34", type: "indoor", zone: "R34R0201", music: "mus_route11", ground: true }
+  { c: "MAP_ROUTE_34_ILEX_FOREST_GATEHOUSE", name: "Route34_IlexForest_Gatehouse", title: "Route 34", type: "indoor", zone: "R34R0201", music: "mus_route11", ground: true },
+  // Rooms, as HGSS lays them out (so their scripts' steps and places hold):
+  // Elm's Lab, where Johto's story starts, Mr. Pokémon's house, the houses
+  // round them; and the Pokémon Centers and Poké Marts as FireRed's own
+  // (template: "pc" or "mart", as the gatehouses are FireRed's gates).
+  { c: "MAP_NEW_BARK_ELMS_LAB_1F", name: "NewBarkTown_ElmsLab", title: "New Bark Town", type: "indoor", zone: "T20R0101", music: "mus_oak_lab", ground: true },
+  { c: "MAP_NEW_BARK_RIVAL_HOUSE_1F", name: "NewBarkTown_LyrasHouse_1F", title: "New Bark Town", type: "indoor", zone: "T20R0401", music: "mus_pallet", ground: true },
+  { c: "MAP_NEW_BARK_SOUTHWEST_HOUSE", name: "NewBarkTown_House", title: "New Bark Town", type: "indoor", zone: "T20R0301", music: "mus_pallet", ground: true },
+  { c: "MAP_ROUTE_30_MR_POKEMON_HOUSE", name: "Route30_MrPokemonsHouse", title: "Route 30", type: "indoor", zone: "R30R0201", music: "mus_route1", ground: true },
+  { c: "MAP_ROUTE_30_APRICORN_HOUSE", name: "Route30_ApricornHouse", title: "Route 30", type: "indoor", zone: "R30R0101", music: "mus_route1", ground: true },
+  { c: "MAP_CHERRYGROVE_SOUTHWEST_HOUSE", name: "CherrygroveCity_House1", title: "Cherrygrove City", type: "indoor", zone: "T21R0301", music: "mus_pewter", ground: true },
+  { c: "MAP_CHERRYGROVE_GUIDE_GENT_HOUSE", name: "CherrygroveCity_GuideGentsHouse", title: "Cherrygrove City", type: "indoor", zone: "T21R0401", music: "mus_pewter", ground: true },
+  { c: "MAP_CHERRYGROVE_SOUTHEAST_HOUSE", name: "CherrygroveCity_House2", title: "Cherrygrove City", type: "indoor", zone: "T21R0501", music: "mus_pewter", ground: true },
+  { c: "MAP_CHERRYGROVE_POKECENTER_1F", name: "CherrygroveCity_PokemonCenter_1F", title: "Cherrygrove City", type: "indoor", zone: "T21PC0101", music: "mus_poke_center", ground: true, template: "pc" },
+  { c: "MAP_CHERRYGROVE_POKEMART", name: "CherrygroveCity_Mart", title: "Cherrygrove City", type: "indoor", zone: "T21FS0101", music: "mus_poke_center", ground: true, template: "mart" },
+  { c: "MAP_VIOLET_POKECENTER_1F", name: "VioletCity_PokemonCenter_1F", title: "Violet City", type: "indoor", zone: "T22PC0101", music: "mus_poke_center", ground: true, template: "pc" },
+  { c: "MAP_VIOLET_POKEMART", name: "VioletCity_Mart", title: "Violet City", type: "indoor", zone: "T22FS0101", music: "mus_poke_center", ground: true, template: "mart" },
+  { c: "MAP_ROUTE_32_POKECENTER_1F", name: "Route32_PokemonCenter_1F", title: "Route 32", type: "indoor", zone: "R32PC0101", music: "mus_poke_center", ground: true, template: "pc" },
+  { c: "MAP_AZALEA_POKECENTER_1F", name: "AzaleaTown_PokemonCenter_1F", title: "Azalea Town", type: "indoor", zone: "T23PC0101", music: "mus_poke_center", ground: true, template: "pc" },
+  { c: "MAP_AZALEA_POKEMART", name: "AzaleaTown_Mart", title: "Azalea Town", type: "indoor", zone: "T23FS0101", music: "mus_poke_center", ground: true, template: "mart" },
+  { c: "MAP_GOLDENROD_POKECENTER_1F", name: "GoldenrodCity_PokemonCenter_1F", title: "Goldenrod City", type: "indoor", zone: "T25PC0101", music: "mus_poke_center", ground: true, template: "pc" }
 ];
 // The Pokémon League Reception Gate is FireRed's own (Route22_NorthEntrance):
 // Route 26's door into it is its new way west (data/johto-maps.js adds it).
@@ -185,7 +205,9 @@ const FR_PEOPLE = {
   SPRITE_ROCKETM: "rocket_m", SPRITE_ROCKETW: "rocket_f", SPRITE_POLICEMAN: "policeman", SPRITE_PICNICGIRL_2: "picnicker",
   SPRITE_CAMPBOY_2: "camper", SPRITE_FISHING_2: "fisher", SPRITE_MOUNT_2: "hiker", SPRITE_DOCTOR: "scientist", SPRITE_GSMAMA: "mom",
   SPRITE_GSFIGHTER: "black_belt", SPRITE_MANIA: "poke_maniac", SPRITE_SUIT: "gentleman",
-  SPRITE_GSRIVEL: "cooltrainer_m", SPRITE_DANCER: "woman_3", SPRITE_FIRE: "man", SPRITE_MYSTERY_2: "boy",
+  SPRITE_FIRE: "man", SPRITE_MYSTERY_2: "boy", SPRITE_OOKIDO: "prof_oak", SPRITE_PCWOMAN1: "nurse", SPRITE_SHOPM1_2: "clerk",
+  SPRITE_ASSISTANTM: "scientist", SPRITE_INSTRUCTOR: "man", SPRITE_GSGENTLEMAN: "gentleman", SPRITE_MIDDLEWOMAN1_2: "mom",
+  SPRITE_GSDSBOY: "boy", SPRITE_GSBABYGIRL1: "little_girl",
   SPRITE_FOLLOWER_MON_STATIC_SLOWPOKE: "slowpoke", SPRITE_FOLLOWER_MON_STATIC_PIDGEY: "pidgey",
   // (Item balls, small trees and breakable rocks: FireRed's, as the game uses them.)
   SPRITE_MONSTARBALL: "item_ball", SPRITE_TREE: "cut_tree", SPRITE_BREAKROCK: "rock_smash_rock"
@@ -209,13 +231,22 @@ function frPersonSprite(sprite) {
   return krLooks[FR_PEOPLE[sprite]] || null;
 }
 const spritesDone = new Map();
+// (Johto's own characters keep HGSS's sprites: Lyra, or Ethan for a girl,
+// whose look HGSS sets by a var (GetFriendSprite), Silver, Prof. Elm and the
+// Kimono Girls.)
+const HGSS_CHARACTERS = new Set(["SPRITE_GSRIVEL", "SPRITE_DOCTOR", "SPRITE_DANCER"]);
 function personSprite(sprite) {
-  // (The friend, Lyra, whose look HGSS sets by a var: as Leaf, FireRed's own girl.)
-  if (/^SPRITE_VAR_\d+$/.test(sprite)) return Object.assign({}, kanto() && window.WORLD_SPRITES.leaf);
-  if (!HGSS_LOOK) { const fr = frPersonSprite(sprite); if (fr) return Object.assign({}, fr); }
+  if (/^SPRITE_VAR_\d+$/.test(sprite)) return Object.assign(modelSprite("MMODEL_HEROINE", "hgss_heroine"), { girlLook: modelSprite("MMODEL_HERO", "hgss_hero") });
+  if (!HGSS_LOOK && !HGSS_CHARACTERS.has(sprite)) { const fr = frPersonSprite(sprite); if (fr) return Object.assign({}, fr); }
   if (spritesDone.has(sprite)) return spritesDone.get(sprite);
+  const out = modelSprite(spriteTable[sprite], "hgss_" + sprite.replace(/^SPRITE_/, "").toLowerCase(), sprite);
+  spritesDone.set(sprite, out);
+  return out;
+}
+// A person's model (MMODEL_*) as one of this game's sprite sheets.
+function modelSprite(model, name, sprite) {
   let out = null;
-  const i = mmodelIndex[spriteTable[sprite]];
+  const i = mmodelIndex[model];
   const file = i != null && F("data/mmodel/mmodel/mmodel_" + String(i).padStart(8, "0") + ".NSBTX");
   if (file && fs.existsSync(file)) {
     const t = N.parseNsb(fs.readFileSync(file)).tex;
@@ -226,7 +257,6 @@ function personSprite(sprite) {
     // right; an Apricorn tree: just itself.)
     const order = frames.length >= 12 ? FR_FRAMES : frames.length === 8 ? [2, 0, 4, 3, 2, 1, 0, 5, 4] : [0];
     if (frames.length && frames[0].w === 32 && frames[0].h === 32 && (frames.length >= 12 || frames.length === 8 || sprite === "SPRITE_BONGURI")) {
-      const name = "hgss_" + sprite.replace(/^SPRITE_/, "").toLowerCase();
       const W = 32 * order.length, rgba = new Uint8ClampedArray(W * 32 * 4);
       order.forEach((f, n) => { for (let y = 0; y < 32; y++) rgba.set(frames[f].rgba.subarray(y * 128, (y + 1) * 128), (y * W + n * 32) * 4); });
       writePng(path.join(root, "assets/world/sprites", name + ".png"), W, 32, rgba);
@@ -234,7 +264,6 @@ function personSprite(sprite) {
       out = { sprite: name, width: 32, height: 32, frames: order.length, offsetX: -8 };
     }
   }
-  spritesDone.set(sprite, out);
   return out;
 }
 // HGSS movement (0 still, 2 looking around, 3 wandering) and facing (0 up,
@@ -273,6 +302,7 @@ const APRICORNS = ["red", "yellow", "blue", "green", "pink", "white", "black"];
 const extraItems = Object.fromEntries(APRICORNS.map((c) => [c + "-apricorn", { name: c + "-apricorn", category: "apricorn", effect: "A " + c + " Apricorn. It assails your nostrils." }]));
 // (And the key items its scripts give or ask for that the game hasn't got.)
 extraItems.squirtbottle = { name: "squirtbottle", category: "key-items", effect: "A watering can shaped like a Squirtle. It helps promote healthy plant growth." };
+extraItems["mystery-egg"] = { name: "mystery-egg", category: "key-items", effect: "A mysterious Egg obtained from Mr. Pokémon." };
 extraItems["berry-pots"] = { name: "berry-pots", category: "key-items", effect: "Four pots for growing Berries." };
 extraItems["vs-recorder"] = { name: "vs-recorder", category: "key-items", effect: "A device that records battles." };
 extraItems["apricorn-box"] = { name: "apricorn-box", category: "key-items", effect: "A box for keeping Apricorns. It holds a whole lot of them." };
@@ -565,7 +595,7 @@ const GATE_TEMPLATES = {
   we: { map: "Route7_EastEntrance", spots: [[6, 2, "face_down"], [3, 3, "face_down"], [9, 3, "face_down"], [4, 7, "face_up"]] }
 };
 if (!HGSS_LOOK) for (const m of MAPS) {
-  if (!/Gatehouse/.test(m.name)) continue;
+  if (!/Gatehouse/.test(m.name) || m.template) continue;
   const g = out[m.name];
   const [a, b] = g.warps;
   const across = Math.abs(a.x - b.x) > Math.abs(a.y - b.y);
@@ -591,17 +621,79 @@ if (!HGSS_LOOK) for (const m of MAPS) {
   }
 }
 
+// ---------- Pokémon Centers and Poké Marts, as FireRed's ----------
+//
+// Each is FireRed's own (Viridian City's: its picture, floor and walls), its
+// door leading where HGSS's does. In a Pokémon Center the nurse stands behind
+// FireRed's counter and heals as Kanto's nurses do; upstairs (its stairs, where
+// HGSS has a basement for the Wi-Fi Club) is FireRed's Cable Club floor, with
+// its Move Relearner and Deleter. In a Mart, HGSS's clerks stand behind
+// FireRed's counter, still with their own scripts (std_pokemart, its stock by
+// Badges, and std_special_mart, the town's own). The rest stand about the room
+// with their scripts; the Wi-Fi and Union Room counters (this game has
+// neither) aren't there.
+const ROOM_TEMPLATES = {
+  pc: { map: "ViridianCity_PokemonCenter_1F", spots: [[12, 5, "face_left"], [4, 7, "face_up"], [2, 3, "face_down"], [10, 7, "face_up"], [13, 3, "face_left"]] },
+  mart: { map: "ViridianCity_Mart", spots: [[6, 2, "face_down"], [9, 5, "face_left"], [5, 5, "face_right"]], clerks: [[2, 3, "face_right"], [2, 2, "face_right"]] }
+};
+if (!HGSS_LOOK) for (const m of MAPS) {
+  if (!m.template) continue;
+  const g = out[m.name], tpl = ROOM_TEMPLATES[m.template], t = kanto()[tpl.map];
+  const door = g.warps.find((w) => w.map) || g.warps[0];
+  const warps = t.warps.filter((w) => !/_2F$/.test(w.map || "")).map((w) => ({ x: w.x, y: w.y, map: door.map, mapConst: door.mapConst, warp: door.warp }));
+  const stairs = t.warps.find((w) => /_2F$/.test(w.map || ""));
+  const up = m.name.replace(/_1F$/, "_2F");
+  if (stairs) warps.push({ x: stairs.x, y: stairs.y, map: up, warp: 0 });
+  let spot = 0, clerk = 0;
+  const people = [];
+  for (const p of g.people) {
+    if (!p.script || /FLAG_HIDE_(COMM|WIFI)/.test(p.hgssFlag || "")) continue;
+    if (m.template === "pc" && p.sprite === "nurse") {
+      people.push(Object.assign({}, p, { x: 7, y: 2, movement: "face_down", localId: "LOCALID_" + m.name.toUpperCase() + "_NURSE",
+        script: m.name + "_EventScript_Nurse", text: null }));
+      continue;
+    }
+    const at = m.template === "mart" && p.sprite === "clerk" && clerk < tpl.clerks.length ? tpl.clerks[clerk++] : tpl.spots[spot++ % tpl.spots.length];
+    people.push(Object.assign({}, p, { x: at[0], y: at[1], movement: at[2] }));
+  }
+  Object.assign(g, { width: t.width, height: t.height, collision: t.collision.slice(), elevation: t.elevation.slice(), behavior: t.behavior.slice(),
+    encounter: t.encounter.slice(), warps, people, triggers: [], top: t.top, borderWidth: t.borderWidth, borderHeight: t.borderHeight,
+    pokemonCenter: m.template === "pc" || undefined });
+  for (const part of ["", "-top", "-border"]) {
+    const from = path.join(mapsDir, tpl.map + part + ".png"), to = path.join(mapsDir, m.name + part + ".png");
+    if (fs.existsSync(from)) fs.copyFileSync(from, to); else if (fs.existsSync(to)) fs.unlinkSync(to);
+  }
+  // Upstairs: FireRed's Pokémon Center 2F, its stairs back down here.
+  if (m.template === "pc") {
+    const t2 = kanto()[tpl.map.replace(/_1F$/, "_2F")];
+    out[up] = Object.assign(JSON.parse(JSON.stringify(t2)), { name: up, title: m.title, region: "johto", showName: false,
+      warps: t2.warps.map((w) => (/_1F$/.test(w.map || "") ? { x: w.x, y: w.y, map: m.name, warp: warps.length - 1 } : Object.assign({}, w))) });
+    for (const part of ["", "-top", "-border"]) {
+      const from = path.join(mapsDir, tpl.map.replace(/_1F$/, "_2F") + part + ".png"), to = path.join(mapsDir, up + part + ".png");
+      if (fs.existsSync(from)) fs.copyFileSync(from, to); else if (fs.existsSync(to)) fs.unlinkSync(to);
+    }
+  }
+}
+
+// The Poké Marts' stock (src/scrcmd_mart.c): the standard one, each item from
+// a tier of Badges (MartBuy), and the special ones (SpecialMartBuy's lists).
+const martSrc = fs.readFileSync(path.join(ROOT, "src/scrcmd_mart.c"), "utf8");
+const standardMart = [...martSrc.split("ScrCmd_MartBuy")[0].matchAll(/\{\s*(ITEM_\w+),\s*(\d+)\s*\}/g)].map((x) => [item(x[1]), +x[2]]).filter((x) => x[0]);
+const martLists = {};
+for (const x of martSrc.matchAll(/const u16 (_\w+)\[\] = \{([^}]*)\}/g)) martLists[x[1]] = [...x[2].matchAll(/ITEM_\w+/g)].map((i) => item(i[0])).filter(Boolean);
+const specialMarts = [...(/_0210FA3C\[\] = \{([^}]*)\}/.exec(martSrc) || [, ""])[1].matchAll(/_\w+/g)].map((x) => martLists[x[0]] || []);
+
 // The scripts' trainers (TrainerBattle's) as well as those on the maps.
 for (const z of Object.values(zones)) for (const c of z.cmds) if (c[0] === "TrainerBattle") trainer(c[1]);
-// Where Johto's story starts: HGSS's new game (scr_seq_0149), and then, as
-// you come to it a Champion with Pokémon, what having them would have done
-// in rooms not built yet: New Bark's way west open (VAR_SCENE_NEW_BARK_WEST_EXIT,
-// Elm's lab), the Route 30 battle demo over with Youngster Joey out in its
-// place (Elm's lab, after Mr. Pokémon), and Route 32's man no longer sending
-// you back to Violet's Gym (VAR_UNK_408D).
-const ARRIVAL = [["SetVar", "VAR_SCENE_NEW_BARK_WEST_EXIT", 1], ["SetFlag", "FLAG_HIDE_ROUTE_30_BATTLERS"],
-  ["ClearFlag", "FLAG_HIDE_ROUTE_30_YOUNGSTER_JOEY"], ["SetVar", "VAR_UNK_408D", 1]];
-const scripts = { zones, messages: SC.messages, init: SC.init().concat(ARRIVAL), maps: zoneOfMap, origins, mapConsts: byConst };
+// Where Johto's story starts: HGSS's new game (scr_seq_0149), as if you'd
+// just left the house in New Bark Town, which you come to from Kanto, and
+// Lyra had said hello (VAR_SCENE_PLAYERS_HOUSE_1F 2). The story goes on from
+// Elm's Lab, as in HGSS: until he's given you a Pokémon, New Bark's neighbour
+// won't let you go west; with it you've the Pokégear (FLAG_GOT_POKEGEAR, set
+// as you choose: ui/johto-script.js), and Elm gives you his number as you go.
+const START = [["SetVar", "VAR_SCENE_PLAYERS_HOUSE_1F", 2]];
+const scripts = { zones, messages: SC.messages, init: SC.init().concat(START), maps: zoneOfMap, origins, mapConsts: byConst,
+  marts: { standard: standardMart, special: specialMarts }, yesno: SC.yesno, version: SC.defines.VERSION_HEARTGOLD || 7 };
 // (In data/johto-maps.js, after the maps.)
 const scriptsJs = "// Johto's field scripts (tools/lib/hgss-script.js; run by ui/johto-script.js), its trainers, and the Apricorns.\n" +
   "window.JOHTO_SCRIPTS = " + JSON.stringify(scripts) + ";\n" +
