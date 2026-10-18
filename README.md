@@ -1863,6 +1863,24 @@ standard stock by Johto's Badges (HGSS's tiers: Poké Balls, Potions,
 Antidotes and Paralyze Heals with none, and more with more) and the town's
 own.
 
+**The S.S. Aqua** sails between Olivine and Vermilion as in HGSS: Olivine's
+port boards you with the S.S. Ticket once you're Johto's Champion, and the
+voyage goes as HGSS's scripts have it; arrived, you step off onto FireRed's
+Vermilion dock, where the S.S. Anne was, and the S.S. Aqua's sailor there
+takes you back to Olivine. Scripts' TMs and HMs are this game's machines for
+the same moves (HGSS numbers them its own way: its TM51 Roost is this game's
+TM19), and the eleven HGSS TMs for moves no machine here teaches (Brine,
+Endure, Dragon Pulse, Drain Punch, Silver Wind, Recycle, Avalanche, Stealth
+Rock, Captivate, Natural Gift, Pluck) are new TMs after this game's last,
+learned by the Pokémon HGSS lets learn them. The Gym Leaders give their TMs.
+
+**Johto's League**: once you've Johto's eight Badges, the Indigo Plateau's
+rooms are HGSS's: Elite Four Will, Koga, Bruno and Karen, and Champion Lance,
+with their HGSS teams, sprites and lines (`files/fielddata` T10R0201-0601),
+to HGSS's Gym Leader and Champion battle music; beat Lance and he takes you
+to the Hall of Fame, and from then on they bring their rematch teams. (The
+rooms, doors and Hall of Fame are FireRed's, as for Kanto's League.)
+
 **Johto's trainers** (278) are HeartGold's (`files/poketool/trainer`):
 their classes, names, parties (each Pokémon knowing the last four moves it
 learns by its level, as Kanto's trainers' do), lines and sight; they battle

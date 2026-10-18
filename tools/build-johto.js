@@ -58,6 +58,7 @@ const root = path.join(__dirname, "..");
 global.window = global;
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/dex.js"), "utf8"));
 vm.runInThisContext(fs.readFileSync(path.join(root, "data/items.js"), "utf8"));
+vm.runInThisContext(fs.readFileSync(path.join(root, "data/moves.js"), "utf8"));
 const F = (p) => path.join(ROOT, "files", p);
 
 // The maps (their places on HGSS's world matrix join them up).
@@ -511,13 +512,37 @@ const itemByKey = {};
 for (const id of Object.keys(window.ITEMS).concat(Object.keys(extraItems))) itemByKey[id.replace(/[^a-z0-9]/g, "")] = id;
 const APRICORN_ITEM = { RED: "red-apricorn", YLW: "yellow-apricorn", BLU: "blue-apricorn", GRN: "green-apricorn", PNK: "pink-apricorn", WHT: "white-apricorn", BLK: "black-apricorn" };
 // (Where HGSS's names for an item aren't this game's.)
-// (HGSS's HMs 05, 06 and 08 are Whirlpool, Rock Smash and Rock Climb: this game's HM06, HM08 and HM11.)
-const ITEM_ALIAS = { HM05: "hm06", HM06: "hm08", HM08: "hm11", PARLYZ_HEAL: "paralyze-heal", VS__RECORDER: "vs-recorder", POKE_BALL: "poke-ball", X_DEFEND: "x-defense", X_SPECIAL: "x-sp-atk", X_SP_DEF: "x-sp-def",
+const ITEM_ALIAS = { PARLYZ_HEAL: "paralyze-heal", VS__RECORDER: "vs-recorder", POKE_BALL: "poke-ball", X_DEFEND: "x-defense", X_SPECIAL: "x-sp-atk", X_SP_DEF: "x-sp-def",
   ELIXIR: "elixir", HP_UP: "hp-up", PP_UP: "pp-up", KINGS_ROCK: "kings-rock", BLACKGLASSES: "black-glasses", NEVERMELTICE: "never-melt-ice",
   TWISTEDSPOON: "twisted-spoon", SILVERPOWDER: "silver-powder", THUNDERSTONE: "thunder-stone", TINYMUSHROOM: "tiny-mushroom",
   BRIGHTPOWDER: "bright-powder", DEEPSEATOOTH: "deep-sea-tooth", DEEPSEASCALE: "deep-sea-scale", ENERGYPOWDER: "energy-powder" };
+// HGSS's TMs and HMs by the move each teaches (src/item.c), as this game's
+// machine for that move (its TM and HM numbers aren't HGSS's: data/items.js).
+const MACHINE_MOVES = {};
+for (const m of fs.readFileSync(path.join(ROOT, "src/item.c"), "utf8").matchAll(/(MOVE_\w+),\s*\/\/ ((?:TM|HM)\d+)/g)) MACHINE_MOVES[m[2]] = m[1];
+const machineFor = (k) => {
+  const move = MACHINE_MOVES[k] && toID(MACHINE_MOVES[k].replace(/^MOVE_/, ""));
+  return move ? Object.keys(window.ITEMS).find((id) => /^(tm|hm)\d+$/.test(id) && toID((/^Teaches (.+?) to a compatible/.exec(window.ITEMS[id].effect || "") || [])[1] || "") === move) || null : null;
+};
+// (HGSS's TMs for moves no machine of this game's teaches: new TMs, after
+// this game's last, and who can learn each, HGSS's (files/poketool/personal).)
+const HGSS_PERSONAL = JSON.parse(fs.readFileSync(F("poketool/personal/personal.json"), "utf8")).baseStats;
+const newMachineLearners = {};
+const newMachine = (k) => {
+  const had = Object.keys(extraItems).find((id) => extraItems[id].hgss === k);
+  if (had) return had;
+  const move = MACHINE_MOVES[k].replace(/^MOVE_/, "").split("_").map((w) => w[0] + w.slice(1).toLowerCase()).join(" ");
+  const n = Math.max(...Object.keys(window.ITEMS).concat(Object.keys(extraItems)).map((id) => (/^tm(\d+)$/.exec(id) || [0, 0])[1])) + 1;
+  extraItems["tm" + n] = { name: "tm" + n, category: "all-machines", effect: "Teaches " + move + " to a compatible Pokémon." };
+  Object.defineProperty(extraItems["tm" + n], "hgss", { value: k });   // (for the build only: HGSS's TM it is)
+  const num = +k.slice(2);
+  newMachineLearners[move] = HGSS_PERSONAL.filter((b) => (b.tms || []).includes(num)).map((b) => species(b.species)).filter(Boolean);
+  return "tm" + n;
+};
 const item = (c) => {
   const k = String(c).replace(/^ITEM_/, "");
+  if (/^TM\d+$/.test(k) && MACHINE_MOVES[k]) return machineFor(k) || newMachine(k);
+  if (/^HM\d+$/.test(k) && machineFor(k)) return machineFor(k);
   if (ITEM_ALIAS[k] && (window.ITEMS[ITEM_ALIAS[k]] || extraItems[ITEM_ALIAS[k]])) return ITEM_ALIAS[k];
   const ap = /^APRICORN_(\w+)$/.exec(k) || /^(\w+)_APRICORN$/.exec(k);
   if (ap && APRICORN_ITEM[ap[1]]) return APRICORN_ITEM[ap[1]];
@@ -920,6 +945,22 @@ const specialMarts = [...(/_0210FA3C\[\] = \{([^}]*)\}/.exec(martSrc) || [, ""])
 
 // The scripts' trainers (TrainerBattle's) as well as those on the maps.
 for (const z of Object.values(zones)) for (const c of z.cmds) if (c[0] === "TrainerBattle") trainer(c[1]);
+
+// Johto's League: HGSS's Elite Four and Champion (the Indigo Plateau's rooms,
+// zones T10R0201-0601), who take the Pokémon League's places once you've
+// Johto's eight Badges (ui/game.js): each one's party and rematch party (_2,
+// once you've Kanto's Badges as well, VAR_UNK_4135, in HGSS), sprite and lines
+// (before, and after you've won; Lance's for a boy and for a girl).
+const LEAGUE_ROOMS = [["T10R0201", "SPRITE_GSBIGFOUR1", "TRAINER_ELITE_FOUR_WILL_WILL"], ["T10R0301", "SPRITE_GSBIGFOUR2", "TRAINER_ELITE_FOUR_KOGA_KOGA"],
+  ["T10R0401", "SPRITE_GSBIGFOUR3", "TRAINER_ELITE_FOUR_BRUNO_BRUNO"], ["T10R0501", "SPRITE_GSBIGFOUR4", "TRAINER_ELITE_FOUR_KAREN_KAREN"],
+  ["T10R0601", "SPRITE_WATARU", "TRAINER_CHAMPION_LANCE"]];
+const johtoLeague = LEAGUE_ROOMS.map(([zone, sprite, id], k) => {
+  loadMessages(zone);
+  const msg = (n) => { const key = Object.keys(messages).find((m) => m.endsWith("_" + zone + "_" + String(n).padStart(5, "0"))); return key ? pages(messages[key]) : null; };
+  trainer(id); trainer(id + "_2");
+  return Object.assign({ trainer: "HGSS_" + id, rematch: "HGSS_" + id + "_2" }, k < 4 ? { intro: msg(0), after: msg(1) } : { intro: msg(0), introGirl: msg(1), after: msg(2), afterGirl: msg(3) },
+    { look: personSprite(sprite) });
+});
 // Where Johto's story starts: HGSS's new game (scr_seq_0149), as if you'd
 // just left the house in New Bark Town, which you come to from Kanto, and
 // Lyra had said hello (VAR_SCENE_PLAYERS_HOUSE_1F 2). The story goes on from
@@ -927,16 +968,27 @@ for (const z of Object.values(zones)) for (const c of z.cmds) if (c[0] === "Trai
 // won't let you go west; with it you've the Pokégear (FLAG_GOT_POKEGEAR, set
 // as you choose: ui/johto-script.js), and Elm gives you his number as you go.
 const START = [["SetVar", "VAR_SCENE_PLAYERS_HOUSE_1F", 2]];
-const scripts = { zones, messages: SC.messages, init: SC.init().concat(START), maps: zoneOfMap, origins, mapConsts: byConst,
+// (Scripts' warps name maps by HGSS's constants, or, where the compiler gave
+// their number (include/constants/maps.h), by that: both lead to the map.)
+const mapIdConsts = {};
+for (const m of fs.readFileSync(path.join(ROOT, "include/constants/maps.h"), "utf8").matchAll(/#define\s+(MAP_\w+)\s+(\d+)/g)) if (byConst[m[1]] && !(m[2] in mapIdConsts)) mapIdConsts[m[2]] = byConst[m[1]];
+const scripts = { zones, messages: SC.messages, init: SC.init().concat(START), maps: zoneOfMap, origins, mapConsts: Object.assign({}, mapIdConsts, byConst),
   marts: { standard: standardMart, special: specialMarts }, yesno: SC.yesno, version: SC.defines.VERSION_HEARTGOLD || 7 };
 // (In data/johto-maps.js, after the maps.)
 const scriptsJs = "// Johto's field scripts (tools/lib/hgss-script.js; run by ui/johto-script.js), its trainers, and the Apricorns.\n" +
   "window.JOHTO_SCRIPTS = " + JSON.stringify(scripts) + ";\n" +
   "Object.assign(window.WORLD_TRAINERS, " + JSON.stringify(trainers) + ");\n" +
+  "window.JOHTO_LEAGUE = " + JSON.stringify(johtoLeague) + ";\n" +
   "Object.assign(window.ITEMS, " + JSON.stringify(extraItems) + ");\n" +
+  "Object.assign(window.MACHINE_LEARNERS, " + JSON.stringify(newMachineLearners) + ");\n" +
   "Object.assign(window.ITEM_SPRITES || (window.ITEM_SPRITES = {}), " + JSON.stringify(Object.assign(
     Object.fromEntries(APRICORNS.map((c) => [c + "-apricorn", "assets/sprites/items/apricorn/" + c + ".png"])),
-    { "apricorn-box": "assets/sprites/items/apricorn/green.png" })) + ");\n";
+    { "apricorn-box": "assets/sprites/items/apricorn/green.png" },
+    // (The new TMs: the disc of their move's type.)
+    Object.fromEntries(Object.keys(extraItems).filter((id) => /^tm\d+$/.test(id)).map((id) => {
+      const move = /^Teaches (.+?) to/.exec(extraItems[id].effect)[1];
+      return [id, "assets/sprites/items/tm/" + String((window.MOVES[move] || {}).type || "normal").toLowerCase() + ".png"];
+    })))) + ");\n";
 console.log("scripts:", Object.keys(zones).length, "zones,", Object.keys(trainers).length, "trainers,", Object.keys(SC.messages).length, "messages");
 fs.writeFileSync(path.join(root, "data/johto-maps.js"),
   "// Auto-generated by tools/build-johto.js from pret/pokeheartgold. Do not edit by hand.\n" +

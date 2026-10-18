@@ -204,7 +204,9 @@
             else if (a[0] === "std_pokemart") await env.mart(env.martStock(DATA().marts.standard));
             else if (a[0] === "std_special_mart") await env.mart(DATA().marts.special[+getVar("VAR_SPECIAL_x8004") || 0] || []);
             break;
-          case "GoToIfNoItemSpace": break;   // (this game's Bag never fills)
+          // (HGSS's macros: the item and how many into VAR_SPECIAL_x8004 and
+          // x8005, for std_give_item_verbose after; this game's Bag never fills.)
+          case "GoToIfNoItemSpace": case "GoToIfNoItemSpace2": setVar("VAR_SPECIAL_x8004", a[0]); setVar("VAR_SPECIAL_x8005", a[1]); break;
           case "HasSpaceForItem": setVar(a[2], 1); break;
           case "HasItem": setVar(a[2], env.hasItem(getVar(a[0]), +getVar(a[1]) || 1) ? 1 : 0); break;
           case "TakeItem": setVar(a[2], env.takeItem(getVar(a[0]), +getVar(a[1]) || 1) ? 1 : 0); break;

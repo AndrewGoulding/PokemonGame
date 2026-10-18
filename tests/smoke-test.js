@@ -907,8 +907,11 @@ for (const share of [false, true]) {
   assert.strictEqual(TMS.length, 107);
   TMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("tm" + String(i + 1).padStart(2, "0")), move, "TM" + (i + 1)));
   HMS.forEach((move, i) => assert.strictEqual(Bag.machineMove("hm" + String(i + 1).padStart(2, "0")), move, "HM" + (i + 1)));
-  assert.strictEqual(Bag.machines().length, 118);
-  assert(!ITEMS.tm108 && !ITEMS.hm12, "no machines past TM107 and HM11");
+  // (And after TM107, Johto's: HGSS's TMs for moves none of these teaches, data/johto-maps.js.)
+  const johtoTMs = Bag.machines().filter((id) => /^tm\d+$/.test(id) && +id.slice(2) > 107);
+  assert.strictEqual(Bag.machines().length, 118 + johtoTMs.length);
+  assert(johtoTMs.every((id) => !TMS.includes(Bag.machineMove(id)) && !HMS.includes(Bag.machineMove(id))) && !ITEMS.hm12, "past TM107 only Johto's new moves; no HM12");
+  assert.strictEqual(new Set(johtoTMs.map(Bag.machineMove)).size, johtoTMs.length, "one TM each");
   // Every move Pokémon learn by machine in Gen 6 is a TM or HM here; the
   // machines Gen 6 had none for (Bullet Seed, Whirlpool, Defog, Rock Climb)
   // take their compatibility from other generations.
@@ -917,7 +920,7 @@ for (const share of [false, true]) {
   for (const [s, l] of Object.entries(LEARNSETS_GEN6)) if (!((DEX[s] || {}).gen >= 7)) for (const m of l.tm || []) tmMoves.add(m);
   const machineMoves = Bag.machines().map(Bag.machineMove);
   for (const m of tmMoves) assert(machineMoves.includes(m), "no machine for " + m);
-  assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m)), ["Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail", "Focus Punch", "Skill Swap", "Snatch", "Whirlpool", "Defog", "Rock Climb"]);
+  assert.deepStrictEqual(machineMoves.filter((m) => !tmMoves.has(m) && !johtoTMs.some((id) => Bag.machineMove(id) === m)), ["Bullet Seed", "Water Pulse", "Shock Wave", "Giga Drain", "Iron Tail", "Focus Punch", "Skill Swap", "Snatch", "Whirlpool", "Defog", "Rock Climb"]);
   for (const m of ["Whirlpool", "Defog", "Rock Climb", "Bullet Seed"]) assert(MACHINE_LEARNERS[m].length > 50, "who can use " + m);
   // (For Gen 7's and 8's Pokémon, any generation's machines: tools/build-gen7.js, build-gen8.js.)
   assert((MACHINE_LEARNERS.Thief || []).every((s) => DEX[s].gen >= 7), "TMs Gen 6 had keep Gen 6's compatibility");
@@ -955,7 +958,8 @@ for (const share of [false, true]) {
   assert.strictEqual(Bag.name("tm24"), "TM24 Thunderbolt");
   assert.strictEqual(Bag.name("tm99"), "TM99 Secret Power");
   assert.strictEqual(Bag.name("hm11"), "HM11 Rock Climb");
-  assert.deepStrictEqual(Bag.machines().slice(98, 109), ["tm99", "tm100", "tm101", "tm102", "tm103", "tm104", "tm105", "tm106", "tm107", "hm01", "hm02"]);
+  assert.deepStrictEqual(Bag.machines().slice(98, 107), ["tm99", "tm100", "tm101", "tm102", "tm103", "tm104", "tm105", "tm106", "tm107"]);
+  assert.deepStrictEqual(Bag.machines().filter((id) => /^hm/.test(id)).slice(0, 2), ["hm01", "hm02"]);
   assert.strictEqual(Bag.name("tm103"), "TM103 Giga Drain");
   assert.strictEqual(Bag.name("tm104"), "TM104 Iron Tail");
   assert.strictEqual(Bag.name("tm105"), "TM105 Focus Punch");
@@ -1819,10 +1823,30 @@ if (window.JOHTO_TOWN_MAP) {
     // (HGSS's HM05 and HM08, as scripts give them: this game's Whirlpool and Rock Climb HMs.)
     const gives = new Set();
     for (const z of Object.values(JOHTO_SCRIPTS.zones)) for (const c of z.cmds) for (const a of c.slice(1)) if (/^hm\d+$/.test(a)) gives.add(a);
-    assert(gives.has("hm06") && gives.has("hm08") && !gives.has("hm05"), "HGSS's HMs as this game's: " + [...gives]);
+    assert(gives.has("hm06") && gives.has("hm08"), "HGSS's HMs as this game's: " + [...gives]);
     // (HM08 Rock Climb is Prof. Oak's, in Kanto, in HGSS: here he calls with it as you get the Rising Badge.)
     assert(/if \(b === "rising"\) player\.flags\.rockClimbDue = true;/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")));
   }
+  // Scripts' warps by HGSS's map numbers lead to their maps (Ecruteak's Gym's pit back to its entrance).
+  assert.strictEqual(JOHTO_SCRIPTS.mapConsts[80], "EcruteakCity_Gym");
+  assert.strictEqual(JOHTO_SCRIPTS.mapConsts.MAP_ECRUTEAK_GYM, "EcruteakCity_Gym");
+  // Scripts' TMs are this game's machines for the same moves (Falkner's TM51 Roost is TM19 here),
+  // and HGSS's TMs no machine here teaches are new TMs, with HGSS's learners.
+  {
+    const falkner = JOHTO_SCRIPTS.zones.T22GYM0101.cmds.find((c) => c[0] === "GoToIfNoItemSpace");
+    assert(falkner && Bag.machineMove(falkner[1]) === "Roost", "Falkner's TM teaches Roost: " + (falkner && falkner[1]));
+    const pulse = Bag.machines().find((id) => Bag.machineMove(id) === "Dragon Pulse");
+    assert(pulse && +pulse.slice(2) > 107 && MACHINE_LEARNERS["Dragon Pulse"].includes("Kingdra"), "Dragon Pulse's new TM");
+    assert(/case "GoToIfNoItemSpace": case "GoToIfNoItemSpace2": setVar\("VAR_SPECIAL_x8004", a\[0\]\)/.test(fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8")), "the Gyms' TMs are given");
+  }
+  // Johto's League: HGSS's Elite Four and Lance, their teams, sprites and lines.
+  assert.strictEqual(JOHTO_LEAGUE.length, 5);
+  for (const r of JOHTO_LEAGUE) {
+    assert(WORLD_TRAINERS[r.trainer] && WORLD_TRAINERS[r.rematch] && r.intro && r.after && r.look && fs.existsSync(path.join(root, "assets/world/sprites", r.look.sprite + ".png")), r.trainer);
+  }
+  assert.deepStrictEqual(JOHTO_LEAGUE.map((r) => WORLD_TRAINERS[r.trainer].name), ["Will", "Koga", "Bruno", "Karen", "Lance"]);
+  // The S.S. Aqua: off at Vermilion's dock once it's arrived there, and its sailor back to Olivine.
+  assert(/function ssAquaExit\(\)/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")) && WORLD_MAPS.SSAqua_1F.warps[0].x === 24);
   // The Gyms' gimmicks (ui/johto-gymmicks.js): Violet's lift up to the walkways, Mahogany's ice blocks,
   // Ecruteak's dark, Cianwood's winch and the falls it stops.
   {

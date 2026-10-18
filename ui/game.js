@@ -2322,7 +2322,7 @@
     "EventScript_CutTree", "EventScript_RockSmash", "EventScript_StrengthBoulder", "Route5_PokemonDayCare_EventScript_DaycareMan", "UndergroundPath_NorthEntrance_EventScript_Saige",
     "Route5_SouthEntrance_EventScript_GuardTriggerLeft", "Route5_SouthEntrance_EventScript_GuardTriggerMid",
     "Route5_SouthEntrance_EventScript_GuardTriggerRight",
-    "Game_EventScript_Leaf", "Game_EventScript_TradebackGuy", "Game_EventScript_Rejuvenator", "Game_EventScript_PokerDealer", "Game_EventScript_BlackjackDealer",
+    "Game_EventScript_Leaf", "Game_EventScript_TradebackGuy", "Game_EventScript_Rejuvenator", "Game_EventScript_SSAquaSailor", "Game_EventScript_PokerDealer", "Game_EventScript_BlackjackDealer",
     "Game_EventScript_PokerTable", "Game_EventScript_BlackjackTable", "Game_EventScript_MahjongPlayer",
     "Route11_EastEntrance_2F_EventScript_Aide", "Route11_EastEntrance_2F_EventScript_Turner",
     "SSAnne_2F_Corridor_EventScript_RivalTriggerLeft", "SSAnne_2F_Corridor_EventScript_RivalTriggerMid",
@@ -2492,7 +2492,9 @@
     // (The League gate's guard on the way to Johto: there until you're Champion. data/johto-maps.js)
     if (person.script === "Route22_NorthEntrance_EventScript_JohtoGuard") return !f.gameClear;
     // (The Champion here is Red.)
-    if (person.localId === "LOCALID_CHAMPIONS_ROOM_RIVAL") return Object.assign({}, lookOf("red"));
+    // (Johto's League, once you've its eight Badges: HGSS's Elite Four and Lance in their places.)
+    if (johtoLeague() && ELITE_FOUR_SCRIPTS.includes(person.script)) return Object.assign({}, window.JOHTO_LEAGUE[ELITE_FOUR_SCRIPTS.indexOf(person.script)].look);
+    if (person.localId === "LOCALID_CHAMPIONS_ROOM_RIVAL") return Object.assign({}, johtoLeague() ? window.JOHTO_LEAGUE[4].look : lookOf("red"));
     if (person.item) return !f[person.flag];
     { const o = Orre.visible(person, f); if (o !== undefined) return o; }   // (Orre's people)
     if (person.flag && tempFlags.has((map || player.location.map) + ":" + person.flag)) return false;   // (a tree you've cut)
@@ -4201,6 +4203,7 @@
       case "Game_EventScript_BlackjackTable": await blackjackTable(); return;
       case "Game_EventScript_MahjongPlayer": await mahjongTable(); return;
       case "Game_EventScript_Rejuvenator": await rejuvenator(); return;
+      case "Game_EventScript_SSAquaSailor": await ssAquaToOlivine(); return;
       case "Game_EventScript_TradebackGuy": {
         await say(["Hi! I'm the Tradeback Guy!", "Some Pokémon only evolve when\nthey're traded. Nobody to trade\nwith? Leave it to me!",
           "I'll trade you my Rattata, and then\ntrade your Pokémon right back!"]);
@@ -4993,6 +4996,11 @@
     if (/_PokemonCenter_2F$/.test(map)) {
       out.push(Object.assign({ id: 901, localId: "LOCALID_TRADEBACK_GUY", script: "Game_EventScript_TradebackGuy", x: 12, y: 5,
         movement: "face_down", text: null }, window.WORLD_SPRITES.tradeback));
+    }
+    // The S.S. Aqua's sailor on Vermilion's dock, once the S.S. Anne's gone and you've been to Johto.
+    if (map === "SSAnne_Exterior" && player.flags.ssAnneDeparted && player.flags.johto) {
+      out.push(Object.assign({ id: 903, localId: "LOCALID_SS_AQUA_SAILOR", script: "Game_EventScript_SSAquaSailor", x: 33, y: 7,
+        movement: "face_left", text: null }, lookOf("sailor")));
     }
     // The Rejuvenator, upstairs in every Pokémon Center too (rejuvenator()).
     if (/_PokemonCenter_2F$/.test(map)) {
@@ -7816,7 +7824,32 @@
     }
     return team;
   }
+  // Johto's League (this game's): once you've Johto's eight Badges, HGSS's
+  // Elite Four, Will, Koga, Bruno and Karen, and Champion Lance take the
+  // League's rooms (data/johto-maps.js's JOHTO_LEAGUE, from HGSS's T10R0201-0601),
+  // with their HGSS teams, their rematch teams once you've beaten them, and
+  // their lines. (Its rooms and Hall of Fame are FireRed's as before.)
+  const johtoLeague = () => !!window.JOHTO_LEAGUE && Player.REGION_BADGES.johto.every((b) => player.badges.includes(b));
+  async function johtoEliteFour(k) {
+    const f = player.flags, J = window.JOHTO_LEAGUE[k];
+    if (League.beaten(f, k)) { await say(J.after); return; }
+    await say(J.intro);
+    if (!canBattle()) return;
+    const id = f.johtoLeagueClear ? J.rematch : J.trainer, data = window.WORLD_TRAINERS[id];
+    const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(id), pic: data.pic },
+      defeatText: data.defeat || ["…"], trainerId: id, prizeClass: "Elite Four", music: "gs_vs_gymreader", victoryMusic: "gs_win3" });
+    if (outcome !== "won") return;
+    show("world");
+    await Overworld.resume();
+    League.beat(f, k);
+    await sleep(533);
+    sfx("se_rs_door");
+    applyPatches(player.location.map);
+    await persist();
+    await say(J.after);
+  }
   async function eliteFour(k) {
+    if (johtoLeague()) { await johtoEliteFour(k); return; }
     const f = player.flags, X = (label) => T(LEAGUE_TEXT[k] + label);
     const lookAway = async () => {
       if (k !== 1 && k !== 2) return;
@@ -7862,6 +7895,7 @@
     if (!League.entryDue(f, player.location.map)) return;
     await Overworld.act([{ who: "player", moves: M("PokemonLeague_ChampionsRoom_Movement_PlayerEnter") }]);
     await sleep(333);
+    if (johtoLeague()) { await johtoChampion(); return; }
     await say(f.gameClear ? ["Red: …", "Red stepped forward, ready to\nbattle again!"]
       : ["Red: …", "Red, the Pokémon League Champion,\nlooks at {PLAYER} in silence.", "Red stepped forward, ready to battle!"]);
     if (!canBattle()) return;
@@ -7902,6 +7936,27 @@
     await hallOfFame();
   }
 
+  // Lance, Johto's Champion (scr_seq_T10R0601): his words (for a boy or a
+  // girl), his team, and once he's beaten, he takes you to the Hall of Fame.
+  async function johtoChampion() {
+    const f = player.flags, J = window.JOHTO_LEAGUE[4];
+    await say(isGirl() ? J.introGirl : J.intro);
+    if (!canBattle()) return;
+    const id = f.johtoLeagueClear ? J.rematch : J.trainer, data = window.WORLD_TRAINERS[id];
+    const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(id), pic: data.pic },
+      defeatText: data.defeat || ["…"], trainerId: id, prize: 100 * Math.max(...trainerTeam(id).map((r) => r.level)),
+      music: "gs_vs_champ", victoryMusic: "gs_win3", terrain: "champion" });
+    if (outcome !== "won") return;
+    League.beat(f, 4);
+    f.johtoLeagueDone = true;
+    show("world");
+    await Overworld.resume();
+    await say(isGirl() ? J.afterGirl : J.after);
+    Screen.say("");
+    await Overworld.teleport({ map: League.HALL_OF_FAME, x: 5, y: 12, facing: "up" });
+    await hallOfFame();
+  }
+
   // The Hall of Fame (PokemonLeague_HallOfFame_EventScript_EnterRoom): you
   // walk up beside Prof. Oak; his words; the record machine flashes
   // (FLDEFF_HALL_OF_FAME_RECORD); then EventScript_SetDefeatedEliteFourFlagsVars
@@ -7920,6 +7975,8 @@
     await HallOfFame.recordFlash($("#overlay"));
     await sleep(667);
     League.reset(f);
+    // (Johto's League won: its rematch teams from now on.)
+    if (f.johtoLeagueDone) { f.johtoLeagueClear = true; delete f.johtoLeagueDone; }
     delete f.lastCenter;   // (setrespawn HEAL_LOCATION_PALLET_TOWN)
     player.party.forEach(Party.heal);
     const entry = League.record(f, player.party.filter((r) => !r.egg).map((r) => Object.assign({}, r, { form: Party.form(r) })),
@@ -10407,6 +10464,32 @@
     await Overworld.act([{ who: "player", moves: M("VermilionCity_Movement_ExitSSAnne") }]);
   }
 
+  // ---------- The S.S. Aqua ----------
+  //
+  // HGSS's ship between Olivine and Vermilion: Olivine's port boards you
+  // (its scripts: VAR_BOAT_DIRECTION 1, sailing for Vermilion) and the voyage
+  // goes as HGSS has it; once it's arrived (FLAG_BOAT_ARRIVED) the ship's way
+  // off is to Vermilion: FireRed's dock, where the S.S. Anne was. Back from
+  // Vermilion, its sailor on the dock takes you (with the S.S. Ticket) to
+  // Olivine's port.
+  function ssAquaExit() {
+    const m = window.WORLD_MAPS.SSAqua_1F, w = m && m.warps[0];
+    if (!w) return;
+    const vermilion = +johto.getVar("VAR_BOAT_DIRECTION") === 1 && johto.flag("FLAG_BOAT_ARRIVED");
+    Object.assign(w, vermilion ? { map: "SSAnne_Exterior", warp: 0 } : { map: "SSAqua_OlivinePortExterior", warp: 1 });
+    // (Off in Vermilion, the ship's next voyage is back to Olivine.)
+    if (vermilion) johto.setVar("VAR_BOAT_DIRECTION", 0);
+  }
+  async function ssAquaToOlivine() {
+    if (!Player.itemCount(player, "ss-ticket")) { await say(["This is the S.S. Aqua's dock.", "You'll need an S.S. Ticket to sail\nto Olivine City in Johto."]); return; }
+    if (!(await confirm("The S.S. Aqua sails for Olivine City.\nWould you like to board?"))) { await say("We hope to see you again!"); return; }
+    await say(["{PLAYER} flashed the S.S. Ticket.", "Welcome aboard the S.S. Aqua!"]);
+    Screen.say("");
+    sfx("se_ship");
+    await Overworld.teleport({ map: "SSAqua_OlivinePortExterior", x: 27, y: 21, facing: "down" });
+    await say("We've arrived in Olivine City.\nWe hope to see you again!");
+  }
+
   // ---------- Escape Rope ----------
   //
   // As in FireRed: it works only where the map allows escaping (caves, Viridian
@@ -11014,6 +11097,7 @@
           if (m !== tempFlagsMap && m === "Route23") LeagueRoad.reset(player.flags);
           // (Into a Johto map: its OnTransition script, before its people are placed.)
           if (m !== tempFlagsMap) { johto.transition(m); gymmicks.enter(m); }
+          if (m === "SSAqua_1F") ssAquaExit();
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
           music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }
       });
