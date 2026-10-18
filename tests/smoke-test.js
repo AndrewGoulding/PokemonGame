@@ -2412,6 +2412,17 @@ for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
   assert.deepStrictEqual([1, 4, 5, 10, 19, 20, 100].map((lv) => Mining.tools(lv).map((t) => t.id).join()),
     ["pick", "pick", "pick,hammer", "pick,hammer,bomb", "pick,hammer,bomb", "pick,hammer,bomb,survey", "pick,hammer,bomb,survey"]);
   assert(Mining.ENERGY_COST.bomb > Mining.ENERGY_COST.hammer);
+  assert.strictEqual(Mining.ENERGY_COST.bomb, 12, "the bomb costs 12 energy");
+  {
+    const g = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), o = fs.readFileSync(path.join(root, "ui/overworld.js"), "utf8");
+    // (The fossil doctors revive any fossil in your Bag: those dug up mining too.)
+    assert(/const can = FOSSILS\.filter\(\(fo\) => Player\.itemCount\(player, fo\.item\)\)/.test(g));
+    for (const t of Mining.TREASURES.filter((t) => /fossil|amber/.test(t[0]))) assert(new RegExp('item: "' + t[0] + '"').test(g), t[0] + " can be revived");
+    // (The Rejuvenator upstairs in every Pokémon Center; Kindle Road's Black Belts running back and forth; the Ember Spa's bathers in up to the waist.)
+    assert(/if \(\/_PokemonCenter_2F\$\/\.test\(map\)\) \{\n\s*out\.push\(Object\.assign\(\{ id: 902/.test(g), "the Rejuvenator upstairs");
+    assert(/walkBackAndForth\(p, bf\[1\]\)/.test(o) && WORLD_MAPS.OneIsland_KindleRoad.people.some((p) => p.movement === "walk_left_and_right"));
+    assert(/const HOT_SPRINGS = 0x28/.test(o) && WORLD_MAPS.OneIsland_KindleRoad_EmberSpa.behavior.includes(0x28));
+  }
   // The bomb: somewhere at random, 2 layers off close by and 1 a little further.
   const bomb = Mining.create(mulberry32(5), 10);
   bomb.rock.fill(4); bomb.bedrock.fill(false);

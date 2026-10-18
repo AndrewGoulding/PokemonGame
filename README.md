@@ -518,7 +518,9 @@ it and it's gone; run, and it flies away until you come back. Cinnabar Island:
 its Pokémon Center (a respawn point and Fly spot), Poké Mart, and the Pokémon
 Lab, where the fossil doctor revives a Helix Fossil, Dome Fossil or Old Amber
 into a Lv. 5 Omanyte, Kabuto or Aerodactyl once you've left the room and come
-back, the Metronome tutor, and three trades (Garett's Seel, Seelor, for a
+back (any fossil in your Bag, as often as you bring one: those dug up mining
+too, and the Root, Claw, Skull and Armor Fossils into Lileep, Anorith,
+Cranidos and Shieldon), the Metronome tutor, and three trades (Garett's Seel, Seelor, for a
 Ponyta; Clifton's Electrode, Esphere, for a Raichu; Norma's Tangela, Tangeny,
 holding Stardust, for a Venonat; FireRed's IVs and trainers). The Pokémon
 Mansion (1F to 3F and B1F, in FireRed's shade: its burglars and scientists, its diaries, its items,
@@ -1987,7 +1989,7 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   (Lv. 25) and can't gain Exp. Points!"), Exp. Candies and Exp. Points from
   battle take it no further than the cap, a Rare Candy or Exp. Candy used on
   it fails, and the Day-Care grows it no further either.
-- **The Rejuvenator**, in the Indigo Plateau's Pokémon Center, makes a
+- **The Rejuvenator**, upstairs in every Pokémon Center (Kanto's and Johto's), makes a
   Pokémon Lv. 5 again (and heals it), keeping everything else: what it's
   evolved into, its moves, EVs, IVs, nature and ability, so you can take a
   team you've trained into a new region under its caps.
@@ -2041,7 +2043,7 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   Tools (SELECT, or B, changes tool): the Pickaxe; the Hammer from mining
   level 5 (the eight tiles round it too, 2 energy); the Bomb from level 10
   (goes off somewhere at random: 2 layers off the tiles within 2 of it, 1 off
-  those out to 3 or so, 4 energy); the Survey Kit from level 20 (digs nothing,
+  those out to 3 or so, 12 energy); the Survey Kit from level 20 (digs nothing,
   but tells you what's still buried, 2 energy). A level that brings a new
   tool says so.
   get caves of their own. The rules are in `game/mining.js`, the screen in `ui/mining.js`.

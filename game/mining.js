@@ -7,7 +7,7 @@
 // beside it; the hammer (from mining level 5) 2 from the tile and 1 from all
 // eight around it, but it takes twice the energy. This game's own tools too:
 // the bomb (from level 10) goes off somewhere at random, taking 2 layers off
-// the tiles close by and 1 off those a little further, for 4 energy; the
+// the tiles close by and 1 off those a little further, for 12 energy; the
 // survey kit (from level 20) digs nothing, but tells you what's still
 // buried, for 2. A treasure is yours once every tile over it is
 // cleared. The dig ends when every treasure is out, or when you run out of
@@ -26,7 +26,7 @@
   const TOOLS = [
     { id: "pick", name: "Pickaxe", level: 1, cost: 1 },
     { id: "hammer", name: "Hammer", level: 5, cost: 2 },
-    { id: "bomb", name: "Bomb", level: 10, cost: 4 },
+    { id: "bomb", name: "Bomb", level: 10, cost: 12 },
     { id: "survey", name: "Survey Kit", level: 20, cost: 2 }
   ];
   const ENERGY_COST = Object.fromEntries(TOOLS.map((t) => [t.id, t.cost]));

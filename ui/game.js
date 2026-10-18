@@ -33,7 +33,8 @@
   const music = (name) => { if (GA) GA.music(name); };
   // In Johto, HGSS's music (ui/audio.js plays FireRed's battle, victory,
   // "eyes meet" and jingle songs as HGSS's there).
-  const inJohto = () => !!(player && player.location && (window.WORLD_MAPS[player.location.map] || {}).region === "johto");
+  // (Is a map in Johto: `map`, or where you are.)
+  const inJohto = (map) => !!(map || (player && player.location)) && (window.WORLD_MAPS[map || player.location.map] || {}).region === "johto";
   if (GA && GA.setRegion) GA.setRegion(() => (inJohto() ? "johto" : null));
   const fanfare = (name) => (GA ? GA.fanfare(name) : Promise.resolve());
   const cry = (species, opts) => { if (GA) GA.cry(species, opts); };
@@ -982,8 +983,7 @@
     Object.assign(T.names, JOHTO_MAP.names);
     T.fly = Object.assign({}, T.fly, JOHTO_MAP.fly);
   }
-  // (Is a map in Johto, and have you been there: any of its sections visited.)
-  const inJohto = (map) => ((window.WORLD_MAPS[map] || {}).region === "johto");
+  // (Have you been to Johto: any of its sections visited.)
   const beenToJohto = () => !!JOHTO_MAP && (player.flags.visitedSections || []).some((sec) => sec in JOHTO_MAP.names);
 
   // The Town Map (with { fly: true }, for Fly: the places you can fly to are
@@ -4990,9 +4990,9 @@
       out.push(Object.assign({ id: 901, localId: "LOCALID_TRADEBACK_GUY", script: "Game_EventScript_TradebackGuy", x: 12, y: 5,
         movement: "face_down", text: null }, window.WORLD_SPRITES.tradeback));
     }
-    // The Rejuvenator, in the Indigo Plateau's Pokémon Center (rejuvenator()).
-    if (map === "IndigoPlateau_PokemonCenter_1F") {
-      out.push(Object.assign({ id: 902, localId: "LOCALID_REJUVENATOR", script: "Game_EventScript_Rejuvenator", x: 4, y: 11,
+    // The Rejuvenator, upstairs in every Pokémon Center too (rejuvenator()).
+    if (/_PokemonCenter_2F$/.test(map)) {
+      out.push(Object.assign({ id: 902, localId: "LOCALID_REJUVENATOR", script: "Game_EventScript_Rejuvenator", x: 3, y: 5,
         movement: "face_down", text: null }, lookOf("scientist")));
     }
     if (map === "PokemonTower_7F" && megaTowerDue()) out.push(...megaTowerPeople());
@@ -10063,9 +10063,14 @@
   // OnTransition: VAR_MAP_SCENE_..._REVIVE_STATE 1 -> 2). A Lv. 5 Omanyte,
   // Kabuto or Aerodactyl.
   const FOSSILS = [
-    { item: "helix-fossil", species: "Omanyte", has: (f) => f.mtMoonFossil === "helix-fossil", flag: "revivedHelix" },
-    { item: "dome-fossil", species: "Kabuto", has: (f) => f.mtMoonFossil === "dome-fossil", flag: "revivedDome" },
-    { item: "old-amber", species: "Aerodactyl", has: (f) => !!f.gotOldAmber, flag: "revivedAmber" }
+    { item: "helix-fossil", species: "Omanyte", flag: "revivedHelix" },
+    { item: "dome-fossil", species: "Kabuto", flag: "revivedDome" },
+    { item: "old-amber", species: "Aerodactyl", flag: "revivedAmber" },
+    // (And the fossils dug up mining, game/mining.js: Hoenn's and Sinnoh's too.)
+    { item: "root-fossil", species: "Lileep", flag: "revivedRoot" },
+    { item: "claw-fossil", species: "Anorith", flag: "revivedClaw" },
+    { item: "skull-fossil", species: "Cranidos", flag: "revivedSkull" },
+    { item: "armor-fossil", species: "Shieldon", flag: "revivedArmor" }
   ];
   // (This game's own: another such doctor in Pewter's Museum, in the Old
   // Amber's room, the same at it as Cinnabar's; a fossil left with either is
@@ -10081,8 +10086,6 @@
   }
   async function fossilScientist() {
     const f = player.flags, X = (k) => T("CinnabarIsland_PokemonLab_ExperimentRoom_Text_" + k);
-    const mtMoon = FOSSILS.slice(0, 2).find((fo) => fo.has(f));
-    if (f.revivedAmber && mtMoon && f[mtMoon.flag]) { await say(X("YouComeAgain")); return; }
     const reviving = f.fossilRevive;
     if (reviving && reviving.ready) {
       const fo = FOSSILS.find((x) => x.item === reviving.item), name = Party.speciesName(fo.species);
@@ -10092,7 +10095,9 @@
       return;
     }
     if (reviving) { await say(X("TakesTimeGoForWalk")); return; }
-    const can = FOSSILS.filter((fo) => fo.has(f) && !f[fo.flag] && Player.itemCount(player, fo.item));
+    // (Any fossil in your Bag, however you came by it: Mt. Moon's, the Old
+    // Amber, or one dug up mining, as many times as you bring one.)
+    const can = FOSSILS.filter((fo) => Player.itemCount(player, fo.item));
     const ask1 = X("HaveYouAFossilForMe");
     if (!can.length) { await say(ask1); await say(X("NoIsTooBad")); return; }
     await say(ask1.slice(0, -1));

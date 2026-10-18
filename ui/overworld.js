@@ -341,6 +341,11 @@
     // the start after the last one, begin again. With a range of 5 x 3 that's a
     // loop 5 tiles across and 3 down.
     const seq = /^walk_sequence_((?:up|down|left|right)(?:_(?:up|down|left|right))*)$/.exec(p.def.movement || "");
+    // (And back and forth, walk_left_and_right and the like: FireRed's
+    // MovementType_WalkBackAndForth, walking on without stopping, the first
+    // way to the edge of the range, then back to the other edge, and round.)
+    const bf = !seq && /^walk_(up|down|left|right)_and_(up|down|left|right)$/.exec(p.def.movement || "");
+    if (bf) { walkBackAndForth(p, bf[1]); return; }
     const dirs = seq ? null : WANDER_DIRS[p.def.movement];
     if (!dirs && !seq) return;
     const order = seq && seq[1].split("_");
@@ -364,6 +369,21 @@
     if ((tx === me.x && ty === me.y) || (me.move && me.move.tx === tx && me.move.ty === ty) || personAt(tx, ty)) return;
     const r = World.step({ map: me.map, x: p.x, y: p.y }, dir);
     if (!r.ok || r.map !== me.map || r.jump || r.warp || World.warpAt(me.map, tx, ty)) return;
+    p.move = { tx, ty, t: 0 };
+  }
+
+  function walkBackAndForth(p, first) {
+    p.timer = 1;
+    const dir = p.bf || first;
+    const [dx, dy] = World.DIRS[dir];
+    const tx = p.x + dx, ty = p.y + dy;
+    const out = Math.abs(tx - p.ox) > (p.def.rangeX || 1) || Math.abs(ty - p.oy) > (p.def.rangeY || 1);
+    const r = out ? null : World.step({ map: me.map, x: p.x, y: p.y }, dir);
+    // (The edge of the range, or a wall: turn round. You or someone in the way: wait.)
+    if (out || !r.ok || r.map !== me.map || r.jump || r.warp || World.warpAt(me.map, tx, ty)) { p.bf = World.OPPOSITE[dir]; p.facing = p.bf; return; }
+    p.facing = dir;
+    if ((tx === me.x && ty === me.y) || (me.move && me.move.tx === tx && me.move.ty === ty) || personAt(tx, ty)) { p.timer = 16; return; }
+    p.bf = dir;
     p.move = { tx, ty, t: 0 };
   }
 
@@ -1485,19 +1505,33 @@
     return !!OVER_TOP[a.elev];
   }
 
-  function drawSprite(name, w, h, frame, flip, px, py) {
+  // (`sunk`: pixels of its feet under the water of a hot spring, cut off.)
+  function drawSprite(name, w, h, frame, flip, px, py, sunk) {
     const img = spriteImage(name);
     if (!ready(img)) return;
-    const x = Math.round(px), y = Math.round(py + TILE - h);
+    const x = Math.round(px), y = Math.round(py + TILE - h), sh = h - (sunk || 0);
     if (flip) {
       g.save();
       g.translate(x + w, y);
       g.scale(-1, 1);
-      g.drawImage(img, frame * w, 0, w, h, 0, 0, w, h);
+      g.drawImage(img, frame * w, 0, w, sh, 0, 0, w, sh);
       g.restore();
     } else {
-      g.drawImage(img, frame * w, 0, w, h, x, y, w, h);
+      g.drawImage(img, frame * w, 0, w, sh, x, y, w, sh);
     }
+    if (sunk) drawHotSpring(x + w / 2, y + sh);
+  }
+  // Standing in a hot spring (FireRed's MB_HOT_SPRINGS: the Ember Spa), you're
+  // in it up to the waist (its FLDEFF_HOT_SPRINGS_WATER), the water rippling round you.
+  const HOT_SPRINGS = 0x28, SUNK = 6;
+  const sunkAt = (map, x, y) => (World.blockAt(map, x, y).behavior === HOT_SPRINGS ? SUNK : 0);
+  function drawHotSpring(cx, y) {
+    const ripple = Math.floor(performance.now() / 400) % 2;
+    g.fillStyle = "rgba(200,232,248,0.85)";
+    g.fillRect(Math.round(cx - 7 - ripple), y - 1, 14 + ripple * 2, 2);
+    g.fillStyle = "#ffffff";
+    g.fillRect(Math.round(cx - 5 + ripple), y - 1, 3, 1);
+    g.fillRect(Math.round(cx + 2 - ripple), y, 3, 1);
   }
 
   // ---------- The area's name (src/map_name_popup.c) ----------
@@ -1608,8 +1642,9 @@
       if (p.emote) emotes.push([p.emote, x - camX, y - camY - p.def.height + TILE]);
       const walking = (!!p.move && p.move.t < TILE / 2) || (p.inPlace > 0 && p.inPlace % 16 >= 8);
       const over = overTop(p, me.map, p.x, p.y, me.map, p.move ? p.move.tx : p.x, p.move ? p.move.ty : p.y);
+      const sunk = !p.move && !p.def.inanimate ? sunkAt(me.map, p.x, p.y) : 0;
       return { y, over, draw: () => { if (shade) g.filter = SHADE; drawSprite(p.def.sprite, p.def.width, p.def.height,
-        frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), p.facing === "right", x - camX + spriteDx(p.def), y - camY); g.filter = "none"; } };
+        frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), p.facing === "right", x - camX + spriteDx(p.def), y - camY, sunk); g.filter = "none"; } };
     });
     for (const n of neighbours) {
       const x = (n.ox + n.x) * TILE, y = (n.oy + n.y) * TILE;
@@ -1656,7 +1691,8 @@
     const meOver = overTop(me, me.map, me.x, me.y, me.move ? me.move.tmap || me.map : me.map, me.move ? me.move.tx : me.x, me.move ? me.move.ty : me.y);
     // (Up in the air on an Escape Rope: over everything once a tile up.)
     const lift = me.lift || 0;
-    if (!me.hidden && !(fly && fly.player !== undefined)) sprites.push({ y: py, over: meOver || lift >= 16, draw: () => drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy - lift) });
+    const meSunk = !me.move && me.avatar === "walk" && !lift ? sunkAt(me.map, me.x, me.y) : 0;
+    if (!me.hidden && !(fly && fly.player !== undefined)) sprites.push({ y: py, over: meOver || lift >= 16, draw: () => drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy - lift, meSunk) });
     if (heal) drawHeal(camX, camY);   // the healing machine's balls and screen, under people
     sprites.sort((a, b) => a.y - b.y);
     sprites.filter((s) => !s.over).forEach((s) => s.draw());
