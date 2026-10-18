@@ -35,6 +35,8 @@ function classify(r, opts) {
     if (!solid && (b === 0x02 || b === 0x03)) return "tallgrass";
     if (LEDGES[b]) return LEDGES[b];
     if (b === 0x13) return "waterfall";
+    // (A whirlpool: water, its swirl drawn over it: tools/build-johto.js.)
+    if (b === 0x11) return "water";
     if (!solid && WATER.has(b)) return "water";
     if (cave) return !solid ? "path" : Object.keys(l.tex).some((n) => textureClass(n) === "water") ? "waterrock" : "rock";
     if (!solid && b === 0x21) return "sand";

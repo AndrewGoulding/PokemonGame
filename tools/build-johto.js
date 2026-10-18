@@ -216,7 +216,8 @@ function frBehavior(b) {
   switch (b) {
     case 0x02: case 0x03: return 0x02;            // tall grass, very tall grass
     case 0x10: return 0x10;                       // river: pond water
-    case 0x11: return 0x10;                       // a whirlpool (FireRed has no Whirlpool): water you Surf across
+    case 0x11: return 0xf0;                       // a whirlpool: only Whirlpool gets you through (game/world.js's MB.WHIRLPOOL)
+    case 0x4b: return 0xf1; case 0x4c: return 0xf2;   // rocky walls Rock Climb goes up and down, or along
     case 0x13: return 0x13;                       // waterfall
     case 0x15: return 0x15;                       // sea
     case 0x16: case 0x1d: return 0x16;            // puddles
@@ -368,6 +369,102 @@ function movement(p) {
   return "face_" + (FACING[p.facing] || "down");
 }
 
+// ---------- Whirlpools and rocky walls, drawn over the painted map ----------
+
+// Each whirlpool (HGSS's are 3x3 tiles) a swirl over the water: two arms of
+// foam round a dark eye, turning a little each of the water's frames (its
+// animated cells, which it's drawn into).
+function drawWhirlpools(r, pic) {
+  const W = r.width, seen = new Set(), PX = r.width * 16;
+  const anim = pic.anim, cellAt = new Map();
+  for (let k = 0; k < anim.cells.length; k += 4) {
+    const n = (k + 4 < anim.cells.length ? anim.cells[k + 6] : anim.pics.length) - anim.cells[k + 2];
+    cellAt.set(anim.cells[k] + "," + anim.cells[k + 1], { first: anim.cells[k + 2], n });
+  }
+  const FOAM = [248, 248, 248], LIGHT = [136, 200, 240], EYE = [40, 96, 176];
+  // (The colour at (x, y) from the swirl's middle, turned `phase` of a full turn; or null: the water.)
+  const swirl = (x, y, R, phase) => {
+    const d = Math.hypot(x, y);
+    if (d > R) return null;
+    if (d < R * 0.18) return EYE;
+    const a = (((Math.atan2(y, x) + phase * 2 * Math.PI) * 2 - (d / R) * 2.4 * Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+    return a < 0.9 ? FOAM : a < 1.7 ? LIGHT : d < R * 0.4 ? LIGHT : null;
+  };
+  for (let i = 0; i < r.perm.length; i++) {
+    if ((r.perm[i] & 0xff) !== 0x11 || seen.has(i)) continue;
+    const group = [i], q = [i];
+    seen.add(i);
+    while (q.length) {
+      const k = q.pop(), x = k % W, y = Math.floor(k / W);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const n = (y + dy) * W + x + dx;
+        if (x + dx < 0 || x + dx >= W || y + dy < 0 || y + dy >= r.height || seen.has(n) || (r.perm[n] & 0xff) !== 0x11) continue;
+        seen.add(n); group.push(n); q.push(n);
+      }
+    }
+    const xs = group.map((k) => k % W), ys = group.map((k) => Math.floor(k / W));
+    const x0 = Math.min(...xs), x1 = Math.max(...xs) + 1, y0 = Math.min(...ys), y1 = Math.max(...ys) + 1;
+    const cx = (x0 + x1) * 8, cy = (y0 + y1) * 8, R = Math.min(x1 - x0, y1 - y0) * 8 - 1;
+    for (let py = y0 * 16; py < y1 * 16; py++) for (let px = x0 * 16; px < x1 * 16; px++) {
+      const c = swirl(px + 0.5 - cx, py + 0.5 - cy, R, 0);
+      if (c) pic.below.set(c.concat(255), (py * PX + px) * 4);
+    }
+    for (let cyc = y0 * 2; cyc < y1 * 2; cyc++) for (let cxc = x0 * 2; cxc < x1 * 2; cxc++) {
+      const cell = cellAt.get(cxc + "," + cyc);
+      if (!cell) continue;
+      for (let f = 0; f < cell.n; f++) {
+        const p = anim.pics[cell.first + f];
+        for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+          const c = swirl(cxc * 8 + x + 0.5 - cx, cyc * 8 + y + 0.5 - cy, R, f / cell.n);
+          if (c) p.set(c.concat(255), (y * 8 + x) * 4);
+        }
+      }
+    }
+  }
+}
+// Each rocky wall's tile, footholds: knobs of the rock's lightest colour with
+// its darkest under them, up the wall (or along it, for one going east-west).
+function drawRockClimbs(r, pic) {
+  const PX = r.width * 16;
+  for (let i = 0; i < r.perm.length; i++) {
+    const b = r.perm[i] & 0xff;
+    if (b !== 0x4b && b !== 0x4c) continue;
+    const x0 = (i % r.width) * 16, y0 = Math.floor(i / r.width) * 16;
+    let light = null, dark = null;
+    const lum = (o) => pic.below[o] * 3 + pic.below[o + 1] * 6 + pic.below[o + 2];
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      const o = ((y0 + y) * PX + x0 + x) * 4;
+      if (light == null || lum(o) > lum(light)) light = o;
+      if (dark == null || lum(o) < lum(dark)) dark = o;
+    }
+    const L = [...pic.below.slice(light, light + 3), 255], D = [...pic.below.slice(dark, dark + 3), 255];
+    const knobs = b === 0x4b ? [[3, 1], [9, 6], [4, 11]] : [[1, 4], [6, 10], [11, 3]];
+    for (const [kx, ky] of knobs) for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) {
+      if ((x === 0 || x === 3) && (y === 0 || y === 3)) continue;
+      pic.below.set(y === 3 || (y === 2 && (x === 0 || x === 3)) ? D : L, ((y0 + ky + y) * PX + x0 + kx + x) * 4);
+    }
+  }
+}
+
+// Cianwood's Gym with its falls stopped (the winch's doing): drawn again
+// without them (build model 173, the falls; its animation, 174, runs them
+// dry), the strip they come down kept as the map's "dry" patch.
+const CIANWOOD_FALLS = { model: 173, x: 12, y: 0, w: 3, h: 10 };
+function cianwoodDry(m, r) {
+  const F = CIANWOOD_FALLS, dry = renderMap(ROOT, m.c, { ground: m.ground, skipBuildings: [F.model] }), W = r.width * 16;
+  for (const [part, src, base] of [["", dry.below, r.below], ["-top", dry.top, null]]) {
+    const img = new Uint8ClampedArray(F.w * 16 * F.h * 16 * 4);
+    for (let y = 0; y < F.h * 16; y++) for (let x = 0; x < F.w * 16; x++) {
+      const o = ((F.y * 16 + y) * W + F.x * 16 + x) * 4, k = (y * F.w * 16 + x) * 4;
+      // (Where nothing's drawn without them, as it was.)
+      const from = src[o + 3] || !base ? src : base;
+      img.set(from.subarray(o, o + 4), k);
+    }
+    writePng(path.join(mapsDir, m.name + "-patch-dry" + part + ".png"), F.w * 16, F.h * 16, img);
+  }
+  return { dry: { x: F.x, y: F.y, w: F.w, h: F.h, top: true, collision: [] } };
+}
+
 // ---------- The maps ----------
 
 const enc = JSON.parse(fs.readFileSync(F("fielddata/encountdata/gs_enc_data.json"), "utf8")).encounters;
@@ -403,7 +500,8 @@ const itemByKey = {};
 for (const id of Object.keys(window.ITEMS).concat(Object.keys(extraItems))) itemByKey[id.replace(/[^a-z0-9]/g, "")] = id;
 const APRICORN_ITEM = { RED: "red-apricorn", YLW: "yellow-apricorn", BLU: "blue-apricorn", GRN: "green-apricorn", PNK: "pink-apricorn", WHT: "white-apricorn", BLK: "black-apricorn" };
 // (Where HGSS's names for an item aren't this game's.)
-const ITEM_ALIAS = { PARLYZ_HEAL: "paralyze-heal", VS__RECORDER: "vs-recorder", POKE_BALL: "poke-ball", X_DEFEND: "x-defense", X_SPECIAL: "x-sp-atk", X_SP_DEF: "x-sp-def",
+// (HGSS's HMs 05, 06 and 08 are Whirlpool, Rock Smash and Rock Climb: this game's HM06, HM08 and HM11.)
+const ITEM_ALIAS = { HM05: "hm06", HM06: "hm08", HM08: "hm11", PARLYZ_HEAL: "paralyze-heal", VS__RECORDER: "vs-recorder", POKE_BALL: "poke-ball", X_DEFEND: "x-defense", X_SPECIAL: "x-sp-atk", X_SP_DEF: "x-sp-def",
   ELIXIR: "elixir", HP_UP: "hp-up", PP_UP: "pp-up", KINGS_ROCK: "kings-rock", BLACKGLASSES: "black-glasses", NEVERMELTICE: "never-melt-ice",
   TWISTEDSPOON: "twisted-spoon", SILVERPOWDER: "silver-powder", THUNDERSTONE: "thunder-stone", TINYMUSHROOM: "tiny-mushroom",
   BRIGHTPOWDER: "bright-powder", DEEPSEATOOTH: "deep-sea-tooth", DEEPSEASCALE: "deep-sea-scale", ENERGYPOWDER: "energy-powder" };
@@ -521,13 +619,16 @@ MAPS.forEach((m, i) => {
         const k = q.pop(), x = k % r.width, y = Math.floor(k / r.width);
         for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
           const u = x + dx, v = y + dy, n = v * r.width + u;
-          if (u < 0 || v < 0 || u >= r.width || v >= r.height || reach.has(n) || ((r.perm[n] >> 15) & 1 && (r.perm[n] & 0xff) !== 0x13)) continue;
+          // (Through a waterfall, a whirlpool or up a rocky wall too.)
+          if (u < 0 || v < 0 || u >= r.width || v >= r.height || reach.has(n) || ((r.perm[n] >> 15) & 1 && ![0x13, 0x11, 0x4b, 0x4c].includes(r.perm[n] & 0xff))) continue;
           reach.add(n); q.push(n);
         }
       }
       classes.forEach((c, i) => { if (!reach.has(i) && c !== "waterrock") classes[i] = "rock"; });
     }
     const pic = Painter.compose(classes, r.width, r.height, { buildings: cave ? [] : HC.buildingsOf(r, classes, evw), signs, style: cave ? "cave" : "outdoor" });
+    drawWhirlpools(r, pic);
+    drawRockClimbs(r, pic);
     writePng(path.join(mapsDir, m.name + ".png"), W, H, pic.below);
     writePng(path.join(mapsDir, m.name + "-top.png"), W, H, pic.above);
     if (pic.anim.pics.length) { writeAnimSheet(animFile, pic.anim.pics); anim = { cells: pic.anim.cells, anims: pic.anims }; }
@@ -551,12 +652,13 @@ MAPS.forEach((m, i) => {
     for (let y = 0; y < 32; y++) border.set(r.below.subarray(y * W * 4, y * W * 4 + 128), y * 128);
     writePng(path.join(mapsDir, m.name + "-border.png"), 32, 32, border);
   }
+  // (Cianwood's Gym: its falls stopped, once the winch is turned (ui/johto-gymmicks.js).)
+  const patches = m.name === "CianwoodCity_Gym" ? cianwoodDry(m, r) : undefined;
 
   // (HGSS's waterfalls are solid, and the water at their tops (34) a tile of
-  // its own: FireRed's are waterfalls you go up or down with Waterfall, onto water.
-  // FireRed has no Whirlpool or Rock Climb: whirlpools are water you Surf
-  // across, and rock you'd climb, ground you walk up.)
-  const collision = r.perm.map((v, i) => (inside && !drawn(i) ? 1 : (v & 0xff) === 0x13 || (v & 0xff) === 0x22 || (v & 0xff) === 0x11 || (v & 0xff) === 0x4b || (v & 0xff) === 0x4c ? 0 : (v >> 15) & 1));
+  // its own: FireRed's are waterfalls you go up or down with Waterfall, onto
+  // water. Whirlpools and rocky walls stay solid: Whirlpool and Rock Climb take you over them.)
+  const collision = r.perm.map((v, i) => (inside && !drawn(i) ? 1 : (v & 0xff) === 0x13 || (v & 0xff) === 0x22 ? 0 : (v >> 15) & 1));
   const behavior = r.perm.map((v) => ((v & 0xff) === 0x22 ? 0x10 : frBehavior(v & 0xff)));
   // (Azalea's Gym: HGSS's Spinarak carts ride its webs between the floors;
   // this game has no carts, so you walk the webs.)
@@ -606,6 +708,8 @@ MAPS.forEach((m, i) => {
     else if (s === "std_field_rock_smash") Object.assign(def, { script: "EventScript_RockSmash", flag: "JOHTO_ROCK_" + p.id, inanimate: true });
     else if (s === "std_apricorn_tree") Object.assign(def, { script: "hgss_apricorn:" + (p.param0 | 0) + ":" + (treeApricorns[p.param0 | 0] || "red"), inanimate: true });
     else if (s === "std_daycare_man") Object.assign(def, { text: DAYCARE_MAN });
+    // (Mahogany's Gym's ice blocks, pushed along the ice: ui/overworld.js.)
+    else if (p.sprite === "SPRITE_ICE") Object.assign(def, { iceBlock: true, inanimate: true });
     else if (/^_EV_/.test(s)) Object.assign(def, { script: hgss(s), text: scriptText(m.zone, p.script) });
     // (Someone kept at the map's edge for a scene, out of sight in HGSS's 3D:
     // offstage until a script brings them on.)
@@ -648,7 +752,7 @@ MAPS.forEach((m, i) => {
     // (Gen 4's rods: five slots each, 40/40/15/4/1.)
     fishing: e && e.fishing && e.fishing.old_rod.rate ? { rods: { "old-rod": table(e.fishing.old_rod), "good-rod": table(e.fishing.good_rod), "super-rod": table(e.fishing.super_rod) } } : undefined,
     // (Its animated water and flowers, as Kanto's: <Map>-anim.png.)
-    anim
+    anim, patches
   };
   console.log(m.name, r.width + "x" + r.height, "people", people.length, "signs", out[m.name].signs.length, "warps", out[m.name].warps.length);
 });

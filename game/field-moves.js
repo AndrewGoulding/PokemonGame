@@ -1,6 +1,6 @@
 // HM moves used outside battle: FireRed's seven (src/party_menu.c's sFieldMoves,
-// in its order), the Gym Badge each needs (FLAG_BADGE01_GET + its place in
-// that list) and the line the party screen shows for it.
+// in its order) and Johto's two, the Gym Badge each needs (FLAG_BADGE01_GET +
+// its place in that list) and the line the party screen shows for it.
 //
 // A Pokémon can use one if it knows the move, or if you have the HM and it
 // could learn it from the HM, as long as you have the badge too.
@@ -19,7 +19,10 @@
     { move: "Strength", badge: "rainbow", desc: "Move heavy boulders." },
     { move: "Surf", badge: "soul", desc: "Travel on water." },
     { move: "Rock Smash", badge: "marsh", desc: "Shatter a cracked rock." },
-    { move: "Waterfall", badge: "volcano", desc: "Climb a waterfall." }
+    { move: "Waterfall", badge: "volcano", desc: "Climb a waterfall." },
+    // (And Johto's, HGSS's: Whirlpool needs the Glacier Badge, Rock Climb the Rising Badge.)
+    { move: "Whirlpool", badge: "glacier", desc: "Cross a whirlpool." },
+    { move: "Rock Climb", badge: "rising", desc: "Scale rocky walls." }
   ];
   const info = (move) => FIELD_MOVES.find((f) => f.move === move) || null;
 

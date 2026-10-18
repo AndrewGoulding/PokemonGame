@@ -24,7 +24,7 @@
 //   warp(mapConst, x, y, facing), hasBadge(n), giveBadge(n), sleep(ms), isGirl(),
 //   itemName(id), giveMon(species, level, item), giveEgg(species), givePokedex(),
 //   money(), addMoney(n), coins(), addCoins(n), beaten(trainer), setBeaten(trainer, on),
-//   setDynamicWarp(mapConst, x, y), dynamicWarpMap().
+//   setDynamicWarp(mapConst, x, y), dynamicWarpMap(), violetLift(), turnWinch().
 (function () {
   "use strict";
 
@@ -319,6 +319,10 @@
           case "CheckBattleWon": setVar(a[0], lastBattle === "won" || lastBattle === "caught" ? 1 : 0); break;
           case "GetStaticEncounterOutcome": case "StaticWildWonOrCaughtCheck": setVar(a[0], lastBattle === "caught" ? 4 : lastBattle === "won" ? 1 : 0); break;
           case "WhiteOut": return;
+
+          // The Gyms' gimmicks (ui/johto-gymmicks.js): Violet's lift, Cianwood's winch.
+          case "VioletGymElevator": await flush(); await env.violetLift(); break;
+          case "CianwoodGymTurnWinch": await flush(); setVar(a[0], env.turnWinch() ? 1 : 0); break;
 
           // The screen, and warps.
           case "FadeScreen": await flush(); await env.fade(+getVar(a[2]) === 0); break;

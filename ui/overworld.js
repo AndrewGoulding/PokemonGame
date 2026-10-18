@@ -15,6 +15,8 @@
 //   { type: "hidden", hidden, map }           found a hidden item (A on its tile)
 //   { type: "water", map }                    A facing water you could Surf on (ctx.canSurf)
 //   { type: "waterfall", map }                A facing a waterfall, surfing
+//   { type: "whirlpool", map }                A facing a whirlpool, surfing (Johto's)
+//   { type: "rockclimb", map }                A facing a rocky wall, the way Rock Climb goes (Johto's)
 //   { type: "select" }                        Select (the registered key item)
 // Plain signs and people just show their text here.
 //
@@ -26,7 +28,11 @@
 //        canSurf() -> bool, strength() -> bool (boulders can be pushed),
 //        boulderFell(def) (pushed into a hole), boulderSwitch(map, x, y) (pushed onto a floor switch;
 //        may return an event to finish with, once you're standing still), weather(map) (overrides the map's),
-//        onAvatar(mode) when you get on or off the Bicycle or the water }
+//        onAvatar(mode) when you get on or off the Bicycle or the water,
+//        darkness(map) -> null or { radius, lights: [{ x, y, r }], rects: [[x, y, w, h]] } (tiles; a map
+//        dark but for a circle round you, lights and lit rooms: Ecruteak's Gym),
+//        drawMap(g, map, x, y) (more drawn on the map, under people: Violet's Gym's lift),
+//        iceBlockStopped(def) (an ice block pushed along the ice has come to rest) }
 //
 // The player is walking, on the Bicycle or surfing (Overworld.setAvatar;
 // kept in player.flags.avatar). The Bicycle goes faster and only where the
@@ -295,6 +301,8 @@
           if (ctx.boulderFell) ctx.boulderFell(p.def);
           return;
         }
+        // An ice block slides on along the ice till something stops it.
+        if (p.slide && slideIceBlock(p)) return;
         // One pushed onto a floor switch presses it (HandleBoulderActivateVictoryRoadSwitch).
         // (It can start a scene: the Tanoby Key's switches. That waits till you're still.)
         if (isBoulder(p) && World.blockAt(me.map, p.x, p.y).behavior === World.MB.STRENGTH_BUTTON && ctx.boulderSwitch) {
@@ -455,6 +463,47 @@
     return true;
   }
 
+  // ---------- Mahogany's Gym: ice blocks ----------
+  //
+  // Walking into an ice block (HGSS's SPRITE_ICE facing down) pushes it, no
+  // Strength needed: it slides along the ice while there's ice ahead and
+  // nothing in the way. Against a wall or the ice's edge it stops (and can be
+  // pushed again); against someone it sets fast, and against another block
+  // the two freeze together, both for good (facing up, as HGSS turns them:
+  // src/unk_0206D494.c).
+  const isIceBlock = (p) => p && p.def.iceBlock;
+  function iceAhead(p, dir) {
+    const [dx, dy] = World.DIRS[dir], x = p.x + dx, y = p.y + dy;
+    const other = personAt(x, y);
+    if (other || (x === me.x && y === me.y)) return { hit: other || me };
+    const r = World.step({ map: me.map, x: p.x, y: p.y }, dir, null);
+    return r.ok && !r.jump && !r.warp && r.map === me.map && World.blockAt(me.map, r.x, r.y).behavior === World.MB.ICE ? { to: r } : {};
+  }
+  function tryPushIceBlock(dir) {
+    const [dx, dy] = World.DIRS[dir];
+    const b = personAt(me.x + dx, me.y + dy);
+    if (!isIceBlock(b) || b.move || b.facing === "up") return false;   // (facing up: set fast)
+    const a = iceAhead(b, dir);
+    if (!a.to) return false;
+    b.move = { tx: a.to.x, ty: a.to.y, t: 0, speed: SLIP_SPEED };
+    b.slide = dir;
+    if (window.GameAudio) window.GameAudio.se("se_ice_crack");
+    return true;
+  }
+  // (Its move done: on, or stopped. -> true while it's still going.)
+  function slideIceBlock(p) {
+    const a = iceAhead(p, p.slide);
+    if (a.to) { p.move = { tx: a.to.x, ty: a.to.y, t: 0, speed: SLIP_SPEED }; return true; }
+    if (a.hit && a.hit !== me) {
+      p.facing = "up";
+      if (isIceBlock(a.hit)) a.hit.facing = "up";
+      if (window.GameAudio) window.GameAudio.se("se_bang");
+    }
+    p.slide = null;
+    if (ctx.iceBlockStopped) ctx.iceBlockStopped(p.def);
+    return false;
+  }
+
   // ---------- Darkness and Flash ----------
   //
   // A cave that needs Flash is dark but for a circle around you (FireRed's
@@ -470,7 +519,32 @@
     flashOn = true;
     if (light != null) lightTarget = FLASH_RADIUS;
   }
-  function drawDarkness(px, py) {
+  // (Or the map's own darkness, ctx.darkness: a circle round you that fades at
+  // its edge, and lights and lit rooms of its own, drawn on a canvas apart.)
+  let darkCanvas = null;
+  function drawMapDarkness(d, px, py, camX, camY) {
+    if (!darkCanvas) { darkCanvas = document.createElement("canvas"); darkCanvas.width = VIEW_W; darkCanvas.height = VIEW_H; }
+    const dg = darkCanvas.getContext("2d");
+    dg.globalCompositeOperation = "source-over";
+    dg.fillStyle = "#000";
+    dg.fillRect(0, 0, VIEW_W, VIEW_H);
+    dg.globalCompositeOperation = "destination-out";
+    const hole = (x, y, r) => {
+      const grad = dg.createRadialGradient(x, y, r * 0.55, x, y, r);
+      grad.addColorStop(0, "rgba(0,0,0,1)");
+      grad.addColorStop(1, "rgba(0,0,0,0)");
+      dg.fillStyle = grad;
+      dg.fillRect(x - r, y - r, r * 2, r * 2);
+    };
+    hole(px + TILE / 2, py + TILE / 2, d.radius);
+    for (const l of d.lights || []) hole(l.x * TILE + TILE / 2 - camX, l.y * TILE + TILE / 2 - camY, l.r);
+    dg.fillStyle = "#000";
+    for (const [x, y, w, h] of d.rects || []) dg.fillRect(x * TILE - camX, y * TILE - camY, w * TILE, h * TILE);
+    g.drawImage(darkCanvas, 0, 0);
+  }
+  function drawDarkness(px, py, camX, camY) {
+    const d = ctx.darkness && ctx.darkness(me.map);
+    if (d) { drawMapDarkness(d, px, py, camX, camY); return; }
     if (light == null || light >= FLASH_RADIUS) return;
     g.save();
     g.fillStyle = "#000";
@@ -866,6 +940,9 @@
     // Water you could Surf on, or (surfing) a waterfall.
     if (me.avatar === "surf") {
       if (World.blockAt(me.map, me.x + dx, me.y + dy).behavior === World.MB.WATERFALL) return finish({ type: "waterfall", map: me.map });
+      if (World.blockAt(me.map, me.x + dx, me.y + dy).behavior === World.MB.WHIRLPOOL) return finish({ type: "whirlpool", map: me.map });
+    } else if (World.climbable(World.blockAt(me.map, me.x + dx, me.y + dy).behavior, me.facing)) {
+      return finish({ type: "rockclimb", map: me.map });
     } else if (World.facingWater({ map: me.map, x: me.x, y: me.y }, me.facing, occupiedForPlayer) && ctx.canSurf && ctx.canSurf()) {
       return finish({ type: "water", map: me.map });
     }
@@ -1359,7 +1436,7 @@
     if (r.warp && !r.ok) { warpTo(r.warp); return; }
     if (r.ok) { startStep(r, dir); return; }
     me.bikeDir = null;   // (a bump stops the Bicycle)
-    if (tryPushBoulder(dir)) { me.turnTimer = TILE; return; }
+    if (tryPushBoulder(dir) || tryPushIceBlock(dir)) { me.turnTimer = TILE; return; }
     // A door that leads nowhere yet (a locked Gym): its sign says why.
     if (r.door && performance.now() - bumpMessageAt > 3000) {
       const [dx, dy] = World.DIRS[dir];
@@ -1514,6 +1591,7 @@
       if (ready(img)) g.drawImage(img, ox - camX, oy - camY);
       drawAnimCells(name, ox - camX, oy - camY);
       drawPatches(name, ox - camX, oy - camY, "");
+      if (ctx.drawMap) ctx.drawMap(g, name, ox - camX, oy - camY);
     }
     g.filter = "none";
     drawFog(camX, camY);
@@ -1593,7 +1671,7 @@
     g.filter = "none";
     // (Those up on raised ground, over the top layer.)
     sprites.filter((s) => s.over).forEach((s) => s.draw());
-    drawDarkness(px - camX, py - camY);
+    drawDarkness(px - camX, py - camY, camX, camY);
     if (fly) drawFly();
     // "!", "!!", "?" and "×" bubbles over someone's head.
     for (const [e, x, y] of emotes) {

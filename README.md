@@ -1767,12 +1767,30 @@ breakable rocks, Apricorn trees). HGSS's ladders, stairs, escalators and
 cave exits become FireRed's (a way down you walk onto in the middle of a cave,
 as the Whirl Islands', a warp you step onto), and its elevators' doors open
 where you got in (FireRed's dynamic warp), or on the floor you choose.
-FireRed has no Whirlpool or Rock Climb, so whirlpools are water you Surf
-across and rock you'd climb is ground you walk up (Mt. Silver's cave), and
-Ice Path's slides are FireRed's ice. Azalea's Gym has no Spinarak carts:
-you walk its webs to Bugsy. The other Gyms' tricks (Violet's lift, Ecruteak's
-hidden floor, Cianwood's winch, Mahogany's ice) aren't here yet, but every
-Leader can be walked up to.
+**Whirlpools and rocky walls** are HGSS's: a whirlpool (Routes 27 and 41,
+the Whirl Islands, Dragon's Den; drawn as a swirl of foam turning with the
+water) stops you surfing, and A in front of it ("It's a huge swirl of water.
+Would you like to use Whirlpool?") takes you through it to the water beyond;
+a rocky wall (Mt. Silver, Mt. Mortar, Routes 46 and 47 and the like, footholds
+up its face) is in your way on foot until Rock Climb takes you up, down or
+along it, the way it goes ("The wall is very rocky… Would you like to use
+Rock Climb?"). Both are field moves on the party screen too, needing their
+HMs (HGSS's HM05 and HM08: this game's HM06 Whirlpool and HM11 Rock Climb,
+which Johto's scripts give; HGSS's Prof. Oak gives Rock Climb once you've sixteen Badges, so here he calls with it on the Pokégear as you get the Rising Badge) and Johto's Glacier and Rising Badges. Ice Path's
+slides are FireRed's ice. Azalea's Gym has no Spinarak carts: you walk its
+webs to Bugsy. The other Gyms' tricks are HGSS's (`src/field/gymmick`,
+`ui/johto-gymmicks.js`), each Gym as it starts each time you go in:
+**Violet's** walkways are high above its floor, and the lift in the middle
+(step on its centre) takes you up to them, shaking as it goes, and back
+down; **Ecruteak's** is dark, its floor hidden but close round you, its
+entrance and Morty's dais lit, each Medium lit by the candle she carries
+until you beat her and it goes out, and a step off the hidden walkway drops
+you back to the entrance; in **Cianwood's** Chuck trains under the falls,
+too busy to notice you until you turn the winch at the top of the Gym, which
+stops them; **Mahogany's** ice is FireRed's ice you slide on, and its ice
+blocks slide along it when you walk into them, stopping at a wall (to be
+pushed again) or setting fast against someone, or frozen together against
+another block for good.
 
 **Johto's scripts are HeartGold's own.** `tools/lib/hgss-script.js` compiles
 each map's field scripts (`files/fielddata/script/scr_seq`: its people's and

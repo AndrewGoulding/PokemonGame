@@ -7,6 +7,7 @@
 //   // -> { width, height (tiles), below, top (RGBA, width*16 x height*16),
 //   //      perm (u16 a tile: low byte the HGSS behaviour, bit 15 solid),
 //   //      events, header, cells, ground (each tile's ground height, with opts.ground) }
+//   (opts.skipBuildings: building models left out, by id; opts.permOnly: just the permissions)
 //
 // How: the map header (src/data/map_headers.h) gives its area data and the
 // main matrix (files/fielddata/mapmatrix) its chunks (land data, a/0/6/5:
@@ -109,6 +110,15 @@ function renderMap(ROOT, MAPCONST, opts) {
   const cx0 = Math.min(...cells.map((c) => c[0])), cx1 = Math.max(...cells.map((c) => c[0]));
   const cz0 = Math.min(...cells.map((c) => c[1])), cz1 = Math.max(...cells.map((c) => c[1]));
   if (opts.verbose) console.log(MAPCONST, "id", mapId, "cells", JSON.stringify(cells), "area", H.areaDataBank);
+  // (opts.permOnly: just its tiles' permissions, no pictures: quick.)
+  if (opts.permOnly) {
+    const lands = readNarc(F("a/0/6/5")), tw = (cx1 - cx0 + 1) * 32, perm = new Array(tw * (cz1 - cz0 + 1) * 32).fill(0x80ff);
+    for (const [x, z] of cells) {
+      const b = lands[MX.land[z * MX.w + x]], p0 = 0x14 + b.readUInt16LE(0x12);
+      for (let i = 0; i < 1024; i++) perm[((z - cz0) * 32 + (i >> 5)) * tw + (x - cx0) * 32 + (i & 31)] = b.readUInt16LE(p0 + 2 * i);
+    }
+    return { map: MAPCONST, width: tw, height: (cz1 - cz0 + 1) * 32, perm, cells, origin: { cellX: cx0, cellZ: cz0 } };
+  }
 
   // ---------- area data: textures ----------
   const area = readNarc(F("a/0/4/2"))[H.areaDataBank];
@@ -183,7 +193,7 @@ function renderMap(ROOT, MAPCONST, opts) {
     for (const b of L.builds) {
       const bm = bldModels[b.id];
       if (!bm) { console.warn("no building model", b.id); continue; }
-      if (SKIP_BUILDINGS.has(b.id)) continue;
+      if (SKIP_BUILDINGS.has(b.id) || (opts.skipBuildings || []).includes(b.id)) continue;
       const nb = N.parseNsb(bm);
       const group = { tris: [], id: b.id, x: wx + b.pos[0], z: wz + b.pos[2] };
       const ang = (v) => (v / 65536) * 2 * Math.PI; // rotations are u16 angles

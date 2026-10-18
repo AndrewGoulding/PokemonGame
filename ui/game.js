@@ -5858,6 +5858,12 @@
       case "Waterfall":
         if (!surfing || a.behavior !== World.MB.WATERFALL) return "Can't use that here.";
         return async () => { await say(Party.displayName(mon) + " used Waterfall."); await climbWaterfall(); };
+      case "Whirlpool":
+        if (!surfing || a.behavior !== World.MB.WHIRLPOOL) return "Can't use that here.";
+        return async () => { await say(Party.displayName(mon) + " used Whirlpool."); await crossWhirlpool(); };
+      case "Rock Climb":
+        if (surfing || !World.climbable(a.behavior, a.facing)) return "Can't use that here.";
+        return async () => { await say(usedMove(mon, "Rock Climb")); await climbRocks(); };
     }
     return "Can't use that here.";
   }
@@ -5956,6 +5962,40 @@
     while (World.blockAt(a.map, a.x + dx * n, a.y + dy * n).behavior === World.MB.WATERFALL) n++;
     sfx("se_m_waterfall");
     await Overworld.act([{ who: "player", moves: Array(n + 1).fill("walk_slow_" + a.facing) }]);
+  }
+
+  // Whirlpool (HGSS's std_menu_whirlpool): surfing, through the whirlpool
+  // ahead to the water beyond it (CallFieldTask_Whirlpool); it stays.
+  async function whirlpool() {
+    const mon = FieldMoves.user(player, "Whirlpool");
+    if (!mon) { await say("The water is swirling and spinning\naround with a mighty roar."); return; }
+    if (!(await confirm("It's a huge swirl of water.\nWould you like to use Whirlpool?"))) return;
+    await say(Party.displayName(mon) + " used Whirlpool.");
+    await crossWhirlpool();
+  }
+  async function crossWhirlpool() {
+    const a = Overworld.ahead(), [dx, dy] = World.DIRS[a.facing];
+    let n = 0;
+    while (World.blockAt(a.map, a.x + dx * n, a.y + dy * n).behavior === World.MB.WHIRLPOOL) n++;
+    sfx("se_m_whirlpool");
+    await Overworld.act([{ who: "player", moves: Array(n + 1).fill("walk_" + a.facing) }]);
+  }
+
+  // Rock Climb (HGSS's std_menu_rock_climb): up, down or along the rocky
+  // wall ahead, the way it goes, to the ground at its other end (CallFieldTask_RockClimb).
+  async function rockClimb() {
+    const mon = FieldMoves.user(player, "Rock Climb");
+    if (!mon) { await say("The wall is very rocky…\nWill a Pokémon's move scale it?"); return; }
+    if (!(await confirm("The wall is very rocky…\nWould you like to use Rock Climb?"))) return;
+    await say(usedMove(mon, "Rock Climb"));
+    await climbRocks();
+  }
+  async function climbRocks() {
+    const a = Overworld.ahead(), [dx, dy] = World.DIRS[a.facing];
+    let n = 0;
+    while (World.climbable(World.blockAt(a.map, a.x + dx * n, a.y + dy * n).behavior, a.facing)) n++;
+    sfx("se_m_rock_throw");
+    await Overworld.act([{ who: "player", moves: Array(n + 1).fill("walk_" + a.facing) }]);
   }
 
   // Fly: pick a town you've been to on the Town Map, and off you go, landing
@@ -10152,6 +10192,8 @@
     if (map === "CeladonCity") return ["berryfarm"];
     // (The League gate's ways west and east, to Johto's Routes 26 and 28: data/johto-maps.js.)
     if (map === "Route22_NorthEntrance") return ["johto", "johto-east"];
+    // (Cianwood's Gym, its falls stopped once the winch is turned: ui/johto-gymmicks.js.)
+    if (map === "CianwoodCity_Gym") return gymmicks.patches(map);
     if (map === "CeladonCity_GameCorner") return (f.openedRocketHideout ? [] : ["hidden"]).concat(["cardroom"]);
     if (map === "RocketHideout_B1F" && !f.TRAINER_TEAM_ROCKET_GRUNT_12) return ["barrier"];
     if (map === "RocketHideout_B4F" && !(f.TRAINER_TEAM_ROCKET_GRUNT_16 && f.TRAINER_TEAM_ROCKET_GRUNT_17)) return ["barrier"];
@@ -10376,6 +10418,8 @@
   // trees and breakable rocks work as Kanto's; its Apricorn trees bear an
   // Apricorn a day.
   const KANTO_BADGES = ["boulder", "cascade", "thunder", "rainbow", "soul", "marsh", "volcano", "earth"];
+  const gymmicks = JohtoGymmicks.create({ sfx: (name) => sfx(name), shake: (n, opts) => Overworld.shake(n, opts),
+    people: () => Overworld.people(), beaten: (id) => !!player.flags[id] });
   const johto = JohtoScript.create({
     player: () => player,
     say: (pages) => say(pages),
@@ -10421,7 +10465,11 @@
       await Overworld.teleport({ map: name, x: x - o.x, y: y - o.y, facing });
     },
     hasBadge: (n) => (n >= 8 ? player.badges.includes(KANTO_BADGES[n - 8]) : player.badges.includes(Player.REGION_BADGES.johto[n])),
-    giveBadge: (n) => { const b = n >= 8 ? KANTO_BADGES[n - 8] : Player.REGION_BADGES.johto[n]; if (b && !player.badges.includes(b)) player.badges.push(b); },
+    giveBadge: (n) => {
+      const b = n >= 8 ? KANTO_BADGES[n - 8] : Player.REGION_BADGES.johto[n];
+      if (b && !player.badges.includes(b)) player.badges.push(b);
+      if (b === "rising") player.flags.rockClimbDue = true;
+    },
     givePokedex: () => { player.flags.pokedex = true; },
     itemName: (id) => (window.ITEMS[id] ? Bag.name(id) : String(id)),
     giveMon: async (species, level, item) => {
@@ -10452,6 +10500,9 @@
     },
     nameRival: async (name) => (await enterText("His name?", name, 7)) || name,
     healParty: () => player.party.forEach(Party.heal),
+    // (The Gyms' gimmicks: ui/johto-gymmicks.js.)
+    violetLift: () => gymmicks.violetLift(),
+    turnWinch: () => { const turned = gymmicks.turnWinch(); applyPatches(player.location.map); return turned; },
     giveEgg: async (species) => { Player.receive(player, Breeding.giftEgg(species, { map: player.location.map })); },
     mart: (stock) => mart(stock),
     // (HGSS's tiers: none with no Badges, then by twos; Johto's Badges here.)
@@ -10509,7 +10560,21 @@
       js = johto.frameScript(player.location.map);
       if (js && seen.has(js.zone + ":" + js.label)) break;
     }
+    await oakRockClimb();
     await persist();
+  }
+  // HGSS's Prof. Oak gives you HM08 Rock Climb in his lab once you've all
+  // sixteen Badges (scr_seq_T01R0301); here, as you come to Johto with
+  // Kanto's eight, he calls on the Pokégear as you get the Rising Badge, and
+  // it's this game's HM11.
+  async function oakRockClimb() {
+    if (!player.flags.rockClimbDue) return;
+    delete player.flags.rockClimbDue;
+    if (Player.itemCount(player, "hm11")) return;
+    await say(["Professor Oak is calling on the Pokégear…", "Professor Oak: Good to see you!\nThis is what I've wanted to give to you!"]);
+    Player.addItem(player, "hm11");
+    await sayWithJingle(itemJingle("hm11"), "{PLAYER} received " + Bag.name("hm11") + "!");
+    await say(["Professor Oak: That Hidden Machine\ncontains the move Rock Climb!", "When you teach it to a Pokémon,\nyou can go up rock walls that have\nsteps carved in them."]);
   }
   // An Apricorn tree: an Apricorn of its colour, once a day.
   async function apricornTree(tree, colour) {
@@ -10802,6 +10867,8 @@
         trainerWaiting: (person) => trainerWaiting(person) && !(person.trainer.double && !canDouble()),
         hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, extraPeople,
         canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
+        // (Johto's Gyms: Ecruteak's darkness, Violet's lift.)
+        darkness: (map) => gymmicks.darkness(map), drawMap: (g, map, x, y) => gymmicks.drawMap(g, map, x, y),
         boulderFell: (def) => {
           // (3F's boulder through the hole: it's on 2F now.)
           if (def.flag === "FLAG_HIDE_VICTORY_ROAD_3F_BOULDER") LeagueRoad.dropBoulder(player.flags);
@@ -10835,7 +10902,7 @@
           // Route 23 puts Victory Road back as it was: barriers up, boulders back (Route23_OnTransition).
           if (m !== tempFlagsMap && m === "Route23") LeagueRoad.reset(player.flags);
           // (Into a Johto map: its OnTransition script, before its people are placed.)
-          if (m !== tempFlagsMap) johto.transition(m);
+          if (m !== tempFlagsMap) { johto.transition(m); gymmicks.enter(m); }
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
           music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }
       });
@@ -10846,6 +10913,8 @@
       else if (ev.type === "select") await useRegistered();
       else if (ev.type === "water") await surfPrompt();
       else if (ev.type === "waterfall") await waterfall();
+      else if (ev.type === "whirlpool") await whirlpool();
+      else if (ev.type === "rockclimb") await rockClimb();
       else if (ev.type === "repel-ended" || ev.type === "lure-ended") await repelWoreOff(ev.type === "lure-ended");
       else if (ev.type === "egg-hatch") await eggHatches(ev.record);
       else if (ev.type === "red-forest") await redForest();

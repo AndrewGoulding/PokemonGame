@@ -7,6 +7,7 @@
 //   World.wildEncounter("Route1", rng)          // -> { species, level } or null (one roll)
 //   World.stepEncounter(state, "MtMoon_1F", x, y, { allow })   // FireRed's check for a step (below)
 //   World.step(pos, "left", occupied, { surf: true })   // surfing: water, or { dismount } onto land
+//                                                     ({ whirlpool } surfing, or { climb } walking: Whirlpool or Rock Climb ahead)
 //   World.fishingEncounter("Route12", "good-rod")      // -> { species, level, slot } or null
 //                                                     (game/fishing.js picks the rod's slots by fishing level)
 
@@ -36,7 +37,11 @@
     EAST_CURRENT: 0x50, WEST_CURRENT: 0x51, NORTH_CURRENT: 0x52, SOUTH_CURRENT: 0x53,
     // Icefall Cave: ice you slip along (MB_ICE), and the thin ice that cracks
     // under you and the cracked ice that breaks (MB_THIN_ICE, MB_CRACKED_ICE).
-    ICE: 0x23, THIN_ICE: 0x26, CRACKED_ICE: 0x27
+    ICE: 0x23, THIN_ICE: 0x26, CRACKED_ICE: 0x27,
+    // Johto's own (HGSS's, which FireRed hasn't: tools/build-johto.js): a
+    // whirlpool, which only Whirlpool gets you through, and the rocky walls
+    // Rock Climb goes up and down (north-south) or along (east-west).
+    WHIRLPOOL: 0xf0, ROCK_CLIMB_NS: 0xf1, ROCK_CLIMB_EW: 0xf2
   };
   const LEDGE = { right: MB.JUMP_EAST, left: MB.JUMP_WEST, up: MB.JUMP_NORTH, down: MB.JUMP_SOUTH };
   // Warps you trigger by stepping onto them (doors, stairs). Others, like the
@@ -57,6 +62,8 @@
   const isSurfable = (b) => SURFABLE.has(b);
 
   const map = (name) => window.WORLD_MAPS[name];
+  // (A Rock Climb wall goes one way: up and down, or across.)
+  const climbable = (b, dir) => (b === MB.ROCK_CLIMB_NS && (dir === "up" || dir === "down")) || (b === MB.ROCK_CLIMB_EW && (dir === "left" || dir === "right"));
 
   // Where a connected map sits relative to `m`, in m's block coordinates.
   function connectionOrigin(m, c) {
@@ -169,6 +176,8 @@
       const c = edgeConnection(pos.map, pos.x, pos.y, dir);
       return { ok: false, unbuilt: c && !c.map ? c.mapConst : null };
     }
+    // (A rocky wall: only Rock Climb, the way it goes.)
+    if (climbable(ahead.behavior, dir)) return { ok: false, climb: true };
     if (!free(ahead)) return { ok: false };
     const result = { ok: true, map: ahead.map, x: ahead.x, y: ahead.y };
     const w = warpAt(ahead.map, ahead.x, ahead.y);
@@ -188,6 +197,7 @@
       const c = edgeConnection(pos.map, pos.x, pos.y, dir);
       return { ok: false, unbuilt: c && !c.map ? c.mapConst : null };
     }
+    if (ahead.behavior === MB.WHIRLPOOL) return { ok: false, whirlpool: true };
     if (ahead.collision || (occupied && occupied(ahead.map, ahead.x, ahead.y))) return { ok: false };
     if (ahead.behavior === MB.WATERFALL) return { ok: false, waterfall: true };
     const sameHeight = here.elevation === ahead.elevation || [0, 15].includes(here.elevation) || [0, 15].includes(ahead.elevation);
@@ -401,7 +411,7 @@
 
   window.World = {
     walkable, pathBack,
-    DIRS, OPPOSITE, MB, map, connectionOrigin, blockAt, warpAt, warpTarget, setDynamicWarp, step, facingWater, isSurfable,
+    DIRS, OPPOSITE, MB, map, connectionOrigin, blockAt, warpAt, warpTarget, setDynamicWarp, step, facingWater, isSurfable, climbable,
     isPullDown, slopeMove, currentDir, currentStep, CURRENT_SPEED, signAt, triggersAt, isGrass, wildEncounter, stepEncounter, pickWild, LAND_SLOT_WEIGHTS, WATER_SLOT_WEIGHTS,
     canFish, fishingEncounter, ROD_SLOTS
   };

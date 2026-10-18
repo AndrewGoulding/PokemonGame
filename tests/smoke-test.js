@@ -1731,7 +1731,7 @@ for (const share of [false, true]) {
   assert.strictEqual(World.step({ map: "NewBarkTown", x: 23, y: 13 }, "up").warp.map, "NewBarkTown_PlayerHouse_1F", "New Bark's houses are built");
   // (Not the Battle Frontier's halls, which need games of their own.)
   assert(WORLD_MAPS.BattleFrontier.warps.some((w) => w.mapConst === "MAP_BATTLE_FRONTIER_BATTLE_FACTORY"), "the Battle Factory isn't built");
-  // Every built warp's way back; every map reached from New Bark Town (walking, Surf, Waterfall).
+  // Every built warp's way back; every map reached from New Bark Town (walking, Surf, Waterfall, Whirlpool, Rock Climb).
   // (But for the maps scripts take you to: the Bug-Catching Contest's National Park, the Safari Zone's way in;
   // and, for reaching them, those you come to by a script, a train, an elevator or a hole in the floor: the
   // Ruins of Alph's hidden rooms, the Sinjoh Ruins, the Magnet Train, the Radio Tower's deck, the Lighthouse's top.)
@@ -1750,6 +1750,14 @@ for (const share of [false, true]) {
         const r = World.step(p, d, null, surf ? { surf: true } : undefined);
         let n = r.warp && r.warp.map ? { map: r.warp.map, x: r.warp.x, y: r.warp.y } : r.ok ? { map: r.map, x: r.x, y: r.y } : null;
         if (!n && !surf) { const b = World.blockAt(p.map, p.x + World.DIRS[d][0], p.y + World.DIRS[d][1]); if (b.map && b.behavior === World.MB.WATERFALL) n = { map: b.map, x: b.x, y: b.y }; }
+        // (Through a whirlpool, or over a rocky wall, to the far side: ui/game.js's crossWhirlpool and climbRocks.)
+        if (!n && (r.whirlpool || r.climb)) {
+          const [dx, dy] = World.DIRS[d];
+          let k = 1;
+          while (r.whirlpool ? World.blockAt(p.map, p.x + dx * k, p.y + dy * k).behavior === World.MB.WHIRLPOOL : World.climbable(World.blockAt(p.map, p.x + dx * k, p.y + dy * k).behavior, d)) k++;
+          const b = World.blockAt(p.map, p.x + dx * k, p.y + dy * k);
+          if (b.map) n = { map: b.map, x: b.x, y: b.y };
+        }
         if (n && WORLD_MAPS[n.map] && !seen.has(key(n))) { seen.add(key(n)); q.push(n); }
       }
     }
@@ -1772,6 +1780,83 @@ for (const share of [false, true]) {
       }
     }
     assert(leader && near, g + ": its Leader can be walked up to");
+  }
+  // Whirlpools and rocky walls (HGSS's): in the way until Whirlpool or Rock Climb takes you over them.
+  {
+    const whirl = (n) => WORLD_MAPS[n].behavior.filter((b) => b === World.MB.WHIRLPOOL).length;
+    const climbs = (n) => WORLD_MAPS[n].behavior.filter((b) => b === World.MB.ROCK_CLIMB_NS || b === World.MB.ROCK_CLIMB_EW).length;
+    assert(whirl("Route41") >= 36 && whirl("Route27") >= 18 && whirl("DragonsDen") >= 9, "Johto's whirlpools");
+    assert(climbs("Route47") >= 12 && climbs("MtSilverCave_UpperMountainside") >= 20 && climbs("CherrygroveCity") >= 2, "Johto's rocky walls");
+    const R = WORLD_MAPS.Route41, i = R.behavior.indexOf(World.MB.WHIRLPOOL), wx = i % R.width, wy = Math.floor(i / R.width);
+    const from = [["up", 0, 1], ["down", 0, -1], ["left", 1, 0], ["right", -1, 0]].find(([, dx, dy]) => World.isSurfable(World.blockAt("Route41", wx + dx, wy + dy).behavior));
+    assert(from && World.step({ map: "Route41", x: wx + from[1], y: wy + from[2] }, from[0], null, { surf: true }).whirlpool, "a whirlpool stops you surfing");
+    const C = WORLD_MAPS.CherrygroveCity, j = C.behavior.indexOf(World.MB.ROCK_CLIMB_NS);
+    assert(World.step({ map: "CherrygroveCity", x: j % C.width, y: Math.floor(j / C.width) + 2 }, "up").climb, "a rocky wall stops you walking");
+    assert(FieldMoves.info("Whirlpool").badge === "glacier" && FieldMoves.info("Rock Climb").badge === "rising", "Johto's field moves need Johto's Badges");
+    assert.strictEqual(FieldMoves.hmFor("Whirlpool"), "hm06");
+    assert.strictEqual(FieldMoves.hmFor("Rock Climb"), "hm11");
+    // (HGSS's HM05 and HM08, as scripts give them: this game's Whirlpool and Rock Climb HMs.)
+    const gives = new Set();
+    for (const z of Object.values(JOHTO_SCRIPTS.zones)) for (const c of z.cmds) for (const a of c.slice(1)) if (/^hm\d+$/.test(a)) gives.add(a);
+    assert(gives.has("hm06") && gives.has("hm08") && !gives.has("hm05"), "HGSS's HMs as this game's: " + [...gives]);
+    // (HM08 Rock Climb is Prof. Oak's, in Kanto, in HGSS: here he calls with it as you get the Rising Badge.)
+    assert(/if \(b === "rising"\) player\.flags\.rockClimbDue = true;/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")));
+  }
+  // The Gyms' gimmicks (ui/johto-gymmicks.js): Violet's lift up to the walkways, Mahogany's ice blocks,
+  // Ecruteak's dark, Cianwood's winch and the falls it stops.
+  {
+    const sandbox = { window: { WORLD_MAPS }, requestAnimationFrame: (f) => setImmediate(f) };
+    vm.runInNewContext(fs.readFileSync(path.join(root, "ui/johto-gymmicks.js"), "utf8"), sandbox, { filename: "ui/johto-gymmicks.js" });
+    const beaten = new Set(), sounds = [];
+    const G = sandbox.window.JohtoGymmicks.create({ sfx: (n) => sounds.push(n), shake: () => Promise.resolve(), people: () => [], beaten: (id) => beaten.has(id) });
+    const V = WORLD_MAPS.VioletCity_Gym, falkner = V.people.find((p) => p.sprite === "hgss_gsleader1");
+    const reach = (start) => {
+      const key = (p) => p.x + ":" + p.y, seen = new Set([key(start)]), q = [start];
+      while (q.length) {
+        const p = q.shift();
+        for (const d of ["up", "down", "left", "right"]) {
+          const r = World.step(p, d, null);
+          if (r.ok && r.map === "VioletCity_Gym" && !seen.has(key(r))) { seen.add(key(r)); q.push({ map: r.map, x: r.x, y: r.y }); }
+        }
+      }
+      return (x, y) => seen.has(x + ":" + y);
+    };
+    G.enter("VioletCity_Gym");
+    assert(V.triggers.some((t) => t.x === 15 && t.y === 20), "the lift's step trigger");
+    const can = reach({ map: "VioletCity_Gym", x: V.warps[0].x, y: V.warps[0].y - 1 });
+    assert(can(15, 20) && !can(falkner.x, falkner.y + 1), "the lift down: Falkner's out of reach");
+    // (Up it goes: checked once it's there, the rest going on meanwhile; a failure there fails the run.)
+    G.violetLift().then(() => {
+      assert(G.liftUp() && sounds.includes("se_elevator"));
+      const up = reach({ map: "VioletCity_Gym", x: 15, y: 20 });
+      assert(up(falkner.x, falkner.y + 1) && !up(V.warps[0].x, V.warps[0].y - 1), "the lift up: the walkways to Falkner, and not the floor");
+      G.enter("VioletCity_Gym");
+      assert(!G.liftUp(), "the lift's down again each time you come in");
+    });
+    // Mahogany's: ice blocks to push along the ice.
+    for (const n of ["MahoganyTown_GymRoom1", "MahoganyTown_GymRoom2", "MahoganyTown_GymLeaderRoom"]) {
+      const blocks = WORLD_MAPS[n].people.filter((p) => p.iceBlock);
+      assert(blocks.length >= 2 && blocks.every((p) => p.sprite === "hgss_ice" && WORLD_MAPS[n].behavior[p.y * WORLD_MAPS[n].width + p.x] === World.MB.ICE), n + "'s ice blocks, on the ice");
+    }
+    // Ecruteak's: dark but for you, its lit rooms and the Mediums' candles.
+    assert.strictEqual(G.darkness("VioletCity_Gym"), null);
+    G.enter("EcruteakCity_Gym");
+    const d = G.darkness("EcruteakCity_Gym");
+    assert(d && d.radius > 0 && d.rects.length === 2, "Ecruteak's Gym is dark");
+    const mediums = WORLD_MAPS.EcruteakCity_Gym.people.filter((p) => p.sprite === "hgss_itako" && p.trainer);
+    assert.strictEqual(mediums.length, 4, "four Mediums, each with a candle");
+    // Cianwood's: the winch turns once a visit, and the falls stop.
+    G.enter("CianwoodCity_Gym");
+    assert.deepStrictEqual([...G.patches("CianwoodCity_Gym")], []);
+    assert(G.turnWinch() && !G.turnWinch(), "the winch turns, and won't again");
+    assert.deepStrictEqual([...G.patches("CianwoodCity_Gym")], ["dry"]);
+    const CG = WORLD_MAPS.CianwoodCity_Gym;
+    assert(CG.patches && CG.patches.dry && fs.existsSync(path.join(root, "assets/world/maps/CianwoodCity_Gym-patch-dry.png")), "the falls stopped, drawn");
+    G.enter("CianwoodCity_Gym");
+    assert(!G.winch(), "the falls run again each time you come in");
+    const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
+    assert(/case "VioletGymElevator"/.test(scriptJs) && /case "CianwoodGymTurnWinch"/.test(scriptJs), "the Gyms' script commands run");
+    assert(/darkness: \(map\) => gymmicks\.darkness\(map\)/.test(gameJs) && /gymmicks\.enter\(m\)/.test(gameJs));
   }
   // (Upstairs in a Pokémon Center is FireRed's own floor, its people too.)
   for (const n of J.filter((n) => !/_PokemonCenter_2F$/.test(n))) for (const p of WORLD_MAPS[n].people) {
