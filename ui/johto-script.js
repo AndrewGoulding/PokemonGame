@@ -24,7 +24,8 @@
 //   warp(mapConst, x, y, facing), hasBadge(n), giveBadge(n), sleep(ms), isGirl(),
 //   itemName(id), giveMon(species, level, item), giveEgg(species), givePokedex(),
 //   money(), addMoney(n), coins(), addCoins(n), beaten(trainer), setBeaten(trainer, on),
-//   setDynamicWarp(mapConst, x, y), dynamicWarpMap(), violetLift(), turnWinch().
+//   setDynamicWarp(mapConst, x, y), dynamicWarpMap(), violetLift(), turnWinch(),
+//   kurt(op) (Kurt's commands: ui/johto-field.js), followerIdle(), followerHide(on).
 (function () {
   "use strict";
 
@@ -47,10 +48,12 @@
       return s;
     };
     const isTemp = (name) => /^(FLAG_MAPTEMP_|VAR_TEMP_|VAR_SPECIAL_)/.test(name);
-    const flag = (name) => !!(isTemp(name) ? temp.f[name] : state().f[name]);
+    // (HGSS's daily flags, FLAG_DAILY_*, are set until the day's out: kept as the day's date.)
+    const isDaily = (name) => /^FLAG_DAILY_/.test(name), today = () => new Date().toDateString();
+    const flag = (name) => (isTemp(name) ? !!temp.f[name] : isDaily(name) ? state().f[name] === today() : !!state().f[name]);
     function setFlag(name, on) {
       const o = isTemp(name) ? temp.f : state().f;
-      if (on) o[name] = true; else delete o[name];
+      if (on) o[name] = isDaily(name) ? today() : true; else delete o[name];
     }
     // A var's value (or a number, or a name that's neither: as it is).
     function getVar(x) {
@@ -323,6 +326,20 @@
           // The Gyms' gimmicks (ui/johto-gymmicks.js): Violet's lift, Cianwood's winch.
           case "VioletGymElevator": await flush(); await env.violetLift(); break;
           case "CianwoodGymTurnWinch": await flush(); setVar(a[0], env.turnWinch() ? 1 : 0); break;
+
+          // Kurt's Apricorn Balls (ui/johto-field.js): the Apricorns you have,
+          // giving him some, what he has, and the Ball it makes.
+          case "GetTotalApricornCount": case "ScrCmd_735": case "ScrCmd_737": case "ScrCmd_739": case "ClearKurtApricorn": {
+            await flush();
+            const v = await env.kurt(op);
+            if (a.length) setVar(a[0], v);
+            break;
+          }
+          // The follower Pokémon (ui/overworld.js) keeps up with you in a scene: wait for its step.
+          // (Sent back into its Ball until you next go through a door: SetFollowMonInhibitState.)
+          case "WaitFollowingPokemonMovement": await flush(); await env.followerIdle(); break;
+          case "SetFollowMonInhibitState": env.followerHide(!!+getVar(a[0])); break;
+          case "GetFollowPokePartyIndex": setVar(a[0], Math.max(0, env.player().party.findIndex((r) => !r.egg && r.hp > 0))); break;
 
           // The screen, and warps.
           case "FadeScreen": await flush(); await env.fade(+getVar(a[2]) === 0); break;

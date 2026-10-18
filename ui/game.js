@@ -211,7 +211,9 @@
       { name: "BATTLE STYLE", key: "battleStyle", values: ["SHIFT", "SET"], value: o.battleStyle },
       { name: "SOUND", key: "sound", values: ["MONO", "STEREO", "OFF"], value: o.sound },
       { name: "VOLUME", key: "volume", values: [...Array(11).keys()].map(String), value: o.volume },
-      { name: "FRAME", key: "frame", frame: true, values: [...Array(10).keys()].map((i) => "TYPE" + (i + 1)), value: o.frame }
+      { name: "FRAME", key: "frame", frame: true, values: [...Array(10).keys()].map((i) => "TYPE" + (i + 1)), value: o.frame },
+      // (HGSS's walking Pokémon: in Johto, as in HGSS, everywhere, or not at all.)
+      { name: "FOLLOWER", key: "follower", values: ["JOHTO", "ON", "OFF"], value: o.follower | 0 }
     ];
     if (fromTitle) rows.push({ name: "SAVE FILE", values: ["LOAD"], value: 0, action: "load" });
     rows.push({ name: "CANCEL" });
@@ -364,7 +366,7 @@
       bag: player.bag,
       // (The Bag screen: its pockets, and the bag's colours.)
       bagPockets, bagFemale: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
-      catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s) },
+      catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s), fishing: !!opts.fishing },
       // (A Tera Raid's Pokémon, or a wild Tera Pokémon, battles as a trainer's does, and Terastallizes.)
       opponent: wild && !opts.raid && !wildTera ? randomMove : (b) => OpponentAI.choose(b, "p2"),
       // A new move with four known: the Summary screen picks the one to forget
@@ -2749,6 +2751,8 @@
 
     // Johto's scripts (ui/johto-script.js), and its Apricorn trees.
     if (/^(enter|arrive):/.test(script)) { const due = johto.frameScript(script.replace(/^\w+:/, "")); if (due) { await runJohto(due, null); return; } }
+    // (Ilex Forest's Headbutt tutor: ui/johto-field.js.)
+    if (script === "hgss:D36R0101:scr_seq_D36R0101_002") { await johtoField.headbuttTutor(); return; }
     { const js = johto.scriptOf(ev.person || ev.sign || ev.trigger); if (js) { await runJohto(js, ev.person); return; } }
     { const ap = /^hgss_apricorn:(\d+):(\w+)$/.exec(script || ""); if (ap) { await apricornTree(+ap[1], ap[2]); return; } }
     // (Johto's Pokémon Centers' nurses heal as Kanto's do.)
@@ -6161,7 +6165,7 @@
     const terrain = ahead.behavior === 0x10 ? "pond" : "water";
     if (safariOn()) { await safariBattle(mon.species, mon.level, terrain); return; }
     if (!canBattle()) return;
-    await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(mon.species, mon.level))] }, terrain });
+    await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(mon.species, mon.level))] }, terrain, fishing: true });
   }
 
   // ---------- Cycling Road ----------
@@ -10520,7 +10524,8 @@
       const map = window.WORLD_MAPS[player.location.map], at = Overworld.personPosition(id);
       if (at && x >= 0 && y >= 0 && x < map.width && y < map.height) Overworld.addObject(id, { x, y, facing: facing || at.facing });
     },
-    personAt: (id) => (id === "player" ? Overworld.position() : Overworld.personPosition(id)),
+    // (253: HGSS's follower Pokémon, obj_partner_poke.)
+    personAt: (id) => (id === "player" ? Overworld.position() : id === 253 ? Overworld.follower.position() : Overworld.personPosition(id)),
     origin: (zone) => window.JOHTO_SCRIPTS.origins[zone],
     giveItem: async (id, n, verb) => {
       if (!window.ITEMS[id]) return false;   // (one the game hasn't got)
@@ -10585,6 +10590,7 @@
     turnWinch: () => { const turned = gymmicks.turnWinch(); applyPatches(player.location.map); return turned; },
     giveEgg: async (species) => { Player.receive(player, Breeding.giftEgg(species, { map: player.location.map })); },
     mart: (stock) => mart(stock),
+    kurt: (op) => johtoField.kurt(op), followerIdle: () => Overworld.follower.idle(), followerHide: (on) => Overworld.follower.hide(on),
     // (HGSS's tiers: none with no Badges, then by twos; Johto's Badges here.)
     martStock: (list) => {
       const n = Player.REGION_BADGES.johto.filter((b) => player.badges.includes(b)).length;
@@ -10592,6 +10598,29 @@
       return list.filter(([, t]) => tier >= t).map(([id]) => id);
     }
   });
+  // HGSS's walking Pokémon (ui/follower.js), and Johto's Headbutt trees and
+  // Kurt's Apricorn Balls (ui/johto-field.js).
+  const follower = Follower.create({
+    player: () => player, say: (pages) => say(pages), confirm: (q) => confirm(q), cry: (species) => cry(species),
+    hop: () => Overworld.follower.hop(),
+    giveItem: async (id) => { Player.addItem(player, id); await sayWithJingle(itemJingle(id), "{PLAYER} received " + article(Bag.name(id)) + "!"); },
+    here: () => {
+      const at = Overworld.position(), ahead = Overworld.ahead();
+      return { map: at.map, grass: World.isGrass(World.blockAt(at.map, at.x, at.y)), water: !!ahead.water };
+    }
+  });
+  const johtoField = JohtoField.create({
+    player: () => player, say: (pages) => say(pages), confirm: (q) => confirm(q),
+    choose: async (texts) => { const i = await multichoice(null, 0, 0, texts); Screen.say(""); return i; },
+    quantity: async (text, max) => { const n = await chooseQuantity(text, max); Screen.say(""); return n; },
+    itemName: (id) => Bag.name(id), text: (id) => window.JOHTO_SCRIPTS.messages[id] || null,
+    choosePartyFor: async (message, notes) => { const r = await choosePartyFor(message, null, notes); show("world"); return r; },
+    learnMove: (record, move) => learnMove(record, move),
+    wildBattle: (species, level) => johtoBattle("wild", species, level),
+    shake: () => { Screen.say(""); return Overworld.shake(8, { x: 1, y: 0, delay: 3 }); },
+    johtoState: () => johto.state(), takeItem: (id, n) => Player.removeItem(player, id, n)
+  });
+
   // Prof. Elm's three Pokémon (HGSS's ChooseStarter): each one's picture, and
   // "Will you take it?", until you choose. It joins your party (or the PC);
   // returns where it is in the party, or -1.
@@ -10946,6 +10975,8 @@
         // can fight: FireRed's CheckTrainer.)
         trainerWaiting: (person) => trainerWaiting(person) && !(person.trainer.double && !canDouble()),
         hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, extraPeople,
+        // (HGSS's: the Pokémon walking behind you, and Johto's Headbutt trees.)
+        follower: (map) => follower.look(map), headbuttTree: (map, x, y) => johtoField.headbuttTree(map, x, y),
         canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
         // (Johto's Gyms: Ecruteak's darkness, Violet's lift.)
         darkness: (map) => gymmicks.darkness(map), drawMap: (g, map, x, y) => gymmicks.drawMap(g, map, x, y),
@@ -10995,6 +11026,8 @@
       else if (ev.type === "waterfall") await waterfall();
       else if (ev.type === "whirlpool") await whirlpool();
       else if (ev.type === "rockclimb") await rockClimb();
+      else if (ev.type === "follower") await follower.talk();
+      else if (ev.type === "headbutt") await johtoField.headbutt(ev.map, ev.x, ev.y);
       else if (ev.type === "repel-ended" || ev.type === "lure-ended") await repelWoreOff(ev.type === "lure-ended");
       else if (ev.type === "egg-hatch") await eggHatches(ev.record);
       else if (ev.type === "red-forest") await redForest();

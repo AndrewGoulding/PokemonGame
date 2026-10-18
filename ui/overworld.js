@@ -18,6 +18,8 @@
 //   { type: "whirlpool", map }                A facing a whirlpool, surfing (Johto's)
 //   { type: "rockclimb", map }                A facing a rocky wall, the way Rock Climb goes (Johto's)
 //   { type: "select" }                        Select (the registered key item)
+//   { type: "follower", map }                 A facing the Pokémon walking behind you (ctx.follower)
+//   { type: "headbutt", map, x, y }           A facing a tree you could Headbutt (ctx.headbuttTree)
 // Plain signs and people just show their text here.
 //
 // ctx: { player (the save: location, name), special(script) -> bool,
@@ -32,7 +34,9 @@
 //        darkness(map) -> null or { radius, lights: [{ x, y, r }], rects: [[x, y, w, h]] } (tiles; a map
 //        dark but for a circle round you, lights and lit rooms: Ecruteak's Gym),
 //        drawMap(g, map, x, y) (more drawn on the map, under people: Violet's Gym's lift),
-//        iceBlockStopped(def) (an ice block pushed along the ice has come to rest) }
+//        iceBlockStopped(def) (an ice block pushed along the ice has come to rest),
+//        follower(map) -> the look of the Pokémon walking behind you, or null (ui/follower.js),
+//        headbuttTree(map, x, y) -> bool (a tree there you could Headbutt) }
 //
 // The player is walking, on the Bicycle or surfing (Overworld.setAvatar;
 // kept in player.flags.avatar). The Bicycle goes faster and only where the
@@ -366,7 +370,7 @@
     // (Only the edge of the range turns a walk sequence; anything else in the
     // way, they wait.)
     if (Math.abs(tx - p.ox) > (p.def.rangeX || 1) || Math.abs(ty - p.oy) > (p.def.rangeY || 1)) { if (seq) p.seq = (p.seq || 0) + 1; return; }
-    if ((tx === me.x && ty === me.y) || (me.move && me.move.tx === tx && me.move.ty === ty) || personAt(tx, ty)) return;
+    if ((tx === me.x && ty === me.y) || (me.move && me.move.tx === tx && me.move.ty === ty) || personAt(tx, ty) || followerAt(tx, ty)) return;
     const r = World.step({ map: me.map, x: p.x, y: p.y }, dir);
     if (!r.ok || r.map !== me.map || r.jump || r.warp || World.warpAt(me.map, tx, ty)) return;
     p.move = { tx, ty, t: 0 };
@@ -382,7 +386,7 @@
     // (The edge of the range, or a wall: turn round. You or someone in the way: wait.)
     if (out || !r.ok || r.map !== me.map || r.jump || r.warp || World.warpAt(me.map, tx, ty)) { p.bf = World.OPPOSITE[dir]; p.facing = p.bf; return; }
     p.facing = dir;
-    if ((tx === me.x && ty === me.y) || (me.move && me.move.tx === tx && me.move.ty === ty) || personAt(tx, ty)) { p.timer = 16; return; }
+    if ((tx === me.x && ty === me.y) || (me.move && me.move.tx === tx && me.move.ty === ty) || personAt(tx, ty) || followerAt(tx, ty)) { p.timer = 16; return; }
     p.bf = dir;
     p.move = { tx, ty, t: 0 };
   }
@@ -401,6 +405,7 @@
     me.move = { tx: r.x, ty: r.y, tmap: r.map, dir, t: carry, jump: !!r.jump, warp: r.warp || null, run, spin: !!spin,
       dismount: !!r.dismount, dist: r.jump ? TILE * 2 : TILE, speed: speedOverride || (spin ? SPIN_SPEED : r.dismount ? WALK_SPEED * 2 : speed) };
     me.parity ^= 1;
+    followerStep();
   }
 
   // ---------- Walking, cycling, surfing ----------
@@ -583,6 +588,7 @@
     const changedMap = mv.tmap !== me.map, from = me.map;
     me.map = mv.tmap; me.x = mv.tx; me.y = mv.ty;
     if (changedMap) {
+      followerCrossed(from);
       checkAvatar(); checkLight();
       loadPeople(); preloadMap(me.map); hint();
       if (!mv.warp && areaOf(from) !== areaOf(me.map)) showAreaName(me.map);
@@ -715,7 +721,7 @@
       else if (target.facing) me.facing = target.facing;
       hideAreaName();
       if (World.map(me.map).showName) showAreaName(me.map);
-      checkAvatar(); checkLight();
+      checkAvatar(); checkLight(); tuckFollower(); followerLook(); pal.hidden = false;
       loadPeople();
       await preloadMap(me.map);
       savePosition();
@@ -742,8 +748,84 @@
   function forceStep(dir) {
     me.facing = dir;
     const r = World.step({ map: me.map, x: me.x, y: me.y }, dir, occupiedForPlayer);
-    if (r.ok) { me.map = r.map; me.x = r.x; me.y = r.y; savePosition(); }
+    if (r.ok) { me.map = r.map; me.x = r.x; me.y = r.y; savePosition(); tuckFollower(); }
   }
+
+  // ---------- The follower Pokémon (HGSS's walking Pokémon) ----------
+  //
+  // Your party's first Pokémon walks behind you, a step behind, on the tile
+  // you've just left (ctx.follower(map): its look, { sprite, width, height,
+  // frames, offsetX }, or null where it doesn't come along: ui/follower.js).
+  // Through a door or a warp it comes out of you, as HGSS's does: it starts
+  // on your tile, out of sight behind you, and is left standing there as you
+  // step away. It keeps out of sight while you ride the Bicycle or Surf, and
+  // in the way of nobody (people walking about go round it; you can walk back
+  // through it, and it steps past you). A facing it talks to it
+  // ({ type: "follower" }); in a scene it keeps up with your steps.
+  const pal = { def: null, x: 0, y: 0, facing: "down", move: null, parity: 0, hop: 0, away: false, hidden: false };
+  function followerLook() { pal.def = ctx && ctx.follower ? ctx.follower(me.map) : null; }
+  function tuckFollower() { pal.x = me.x; pal.y = me.y; pal.facing = me.facing; pal.move = null; }
+  const followerShown = () => !!pal.def && !pal.hidden && !pal.away && me.avatar === "walk" && !me.hidden && !fly && !me.lift &&
+    (!!pal.move || pal.x !== me.x || pal.y !== me.y);
+  const followerAt = (x, y) => followerShown() && ((pal.x === x && pal.y === y) || (pal.move && pal.move.fx === x && pal.move.fy === y));
+  // The player sets off from (me.x, me.y): it steps onto that tile, as fast
+  // as you go (two tiles: a hop, after you over a ledge).
+  function followerStep() {
+    if (!pal.def || me.avatar !== "walk") { pal.away = true; return; }
+    const dx = me.x - pal.x, dy = me.y - pal.y, n = Math.abs(dx) + Math.abs(dy);
+    if (n === 0) return;
+    if (n > 2 || (dx && dy)) { tuckFollower(); return; }
+    pal.facing = dx > 0 ? "right" : dx < 0 ? "left" : dy > 0 ? "down" : "up";
+    const mv = me.move || { speed: WALK_SPEED, dist: TILE };
+    pal.move = { fx: pal.x, fy: pal.y, t: 0, dist: n * TILE, speed: mv.speed * (n * TILE) / (mv.dist || TILE), hop: n === 2 };
+    pal.x = me.x; pal.y = me.y; pal.parity ^= 1;
+  }
+  // (Over the edge onto the next map: where it is, in that map's tiles.)
+  function followerCrossed(from) {
+    const fm = World.map(from), c = fm && fm.connections.find((k) => k.map === me.map);
+    if (!c) { tuckFollower(); return; }
+    const [ox, oy] = World.connectionOrigin(fm, c);
+    pal.x -= ox; pal.y -= oy;
+    if (pal.move) { pal.move.fx -= ox; pal.move.fy -= oy; }
+    followerLook();
+  }
+  function updateFollower() {
+    if (pal.hop > 0) pal.hop--;
+    if (pal.move && (pal.move.t += pal.move.speed) >= pal.move.dist) pal.move = null;
+    // (Back on foot, standing still: it's out again, behind you.)
+    if (!me.move && (me.avatar !== "walk" || pal.away)) { tuckFollower(); pal.away = me.avatar !== "walk"; }
+  }
+  const FOLLOWER_HOP = 16;
+  function followerSprite(camX, camY, shade) {
+    if (!followerShown()) return null;
+    let x = pal.x * TILE, y = pal.y * TILE, lift = pal.hop > 0 ? -JUMP_Y_LOW[FOLLOWER_HOP - pal.hop] : 0;
+    if (pal.move) {
+      const k = Math.min(1, pal.move.t / pal.move.dist);
+      x = (pal.move.fx + (pal.x - pal.move.fx) * k) * TILE;
+      y = (pal.move.fy + (pal.y - pal.move.fy) * k) * TILE;
+      if (pal.move.hop) lift = Math.sin(k * Math.PI) * 10;
+    }
+    // (Walking, its two frames each way; standing, it keeps stepping on the spot, as HGSS's do.)
+    const walking = pal.move ? (pal.move.t % TILE) < TILE / 2 : Math.floor(performance.now() / 333) % 2 === 1;
+    const over = overTop(pal, me.map, pal.x, pal.y, me.map, pal.x, pal.y), d = pal.def;
+    return { y, over, draw: () => { if (shade) g.filter = SHADE; drawSprite(d.sprite, d.width, d.height, frameFor(pal.facing, walking, pal.parity, d.frames),
+      pal.facing === "right", x - camX + spriteDx(d), y - camY - lift); g.filter = "none"; } };
+  }
+  // (A facing it: it turns to you.)
+  function followerAhead(dx, dy) {
+    if (!followerShown() || pal.move || pal.x !== me.x + dx || pal.y !== me.y + dy) return false;
+    pal.facing = World.OPPOSITE[me.facing];
+    return true;
+  }
+  // For the game and HGSS's scripts (WaitFollowingPokemonMovement, GetPersonCoords on it).
+  const followerApi = {
+    refresh: () => followerLook(),
+    shown: () => followerShown(),
+    position: () => (followerShown() ? { x: pal.x, y: pal.y, facing: pal.facing } : null),
+    hop: () => { pal.hop = FOLLOWER_HOP; },
+    hide: (on) => { pal.hidden = !!on; },
+    idle: () => (pal.move ? everyFrame(() => !pal.move) : Promise.resolve())
+  };
 
   // ---------- Cutscenes ----------
   //
@@ -766,7 +848,7 @@
     if ((m = /^walk_(fast_|faster_|fastest_|slow_|slower_)?(up|down|left|right)$/.exec(cmd))) {
       const dir = m[2], [dx, dy] = World.DIRS[dir], speed = SPEEDS[m[1] || ""];
       if (!a.lockFacing) a.facing = dir;
-      if (a === me) { me.move = { tx: me.x + dx, ty: me.y + dy, tmap: me.map, dir, t: 0, dist: TILE, speed, scripted: true }; me.parity ^= 1; }
+      if (a === me) { me.move = { tx: me.x + dx, ty: me.y + dy, tmap: me.map, dir, t: 0, dist: TILE, speed, scripted: true }; me.parity ^= 1; followerStep(); }
       else a.move = { tx: a.x + dx, ty: a.y + dy, t: 0, speed };
       return 0;
     }
@@ -774,14 +856,14 @@
     if ((m = /^jump_(up|down|left|right)$/.exec(cmd))) {
       const dir = m[1], [dx, dy] = World.DIRS[dir];
       a.facing = dir;
-      if (a === me) me.move = { tx: me.x + dx, ty: me.y + dy, tmap: me.map, dir, t: 0, dist: TILE, speed: WALK_SPEED * 2, hop: true, scripted: true };
+      if (a === me) { me.move = { tx: me.x + dx, ty: me.y + dy, tmap: me.map, dir, t: 0, dist: TILE, speed: WALK_SPEED * 2, hop: true, scripted: true }; followerStep(); }
       else { a.x += dx; a.y += dy; }
       return 0;
     }
     if ((m = /^jump_2_(up|down|left|right)$/.exec(cmd))) {
       const dir = m[1], [dx, dy] = World.DIRS[dir];
       a.facing = dir;
-      if (a === me) me.move = { tx: me.x + dx * 2, ty: me.y + dy * 2, tmap: me.map, dir, t: 0, dist: TILE * 2, speed: WALK_SPEED, jump: true, scripted: true };
+      if (a === me) { me.move = { tx: me.x + dx * 2, ty: me.y + dy * 2, tmap: me.map, dir, t: 0, dist: TILE * 2, speed: WALK_SPEED, jump: true, scripted: true }; followerStep(); }
       else { a.x += dx * 2; a.y += dy * 2; }
       return 0;
     }
@@ -854,7 +936,7 @@
     if (!fade) await fadeOut();
     me.map = loc.map; me.x = loc.x; me.y = loc.y; me.facing = loc.facing || "down";
     me.move = null; me.hidden = !!loc.hidden; me.emote = null;
-    checkAvatar(); checkLight();
+    checkAvatar(); checkLight(); tuckFollower(); followerLook();
     loadPeople();
     await preloadMap(me.map);
     savePosition();
@@ -935,6 +1017,7 @@
 
   function interact() {
     const [dx, dy] = World.DIRS[me.facing];
+    if (followerAhead(dx, dy)) return finish({ type: "follower", map: me.map });
     let tx = me.x + dx, ty = me.y + dy;
     // Talk across counters.
     if (World.blockAt(me.map, tx, ty).behavior === World.MB.COUNTER) { tx += dx; ty += dy; }
@@ -957,6 +1040,8 @@
     // Something hidden on the ground in front of you.
     const hidden = (World.map(me.map).hidden || []).find((h) => h.x === tx && h.y === ty);
     if (hidden && ctx.hiddenItem && ctx.hiddenItem(hidden)) return finish({ type: "hidden", hidden, map: me.map });
+    // A tree you could Headbutt (Johto's: ctx.headbuttTree).
+    if (ctx.headbuttTree && ctx.headbuttTree(me.map, tx, ty)) return finish({ type: "headbutt", map: me.map, x: tx, y: ty });
     // Water you could Surf on, or (surfing) a waterfall.
     if (me.avatar === "surf") {
       if (World.blockAt(me.map, me.x + dx, me.y + dy).behavior === World.MB.WATERFALL) return finish({ type: "waterfall", map: me.map });
@@ -1421,6 +1506,7 @@
     if (padSpinUntil > performance.now()) me.facing = SPIN_FACINGS[Math.floor(performance.now() / 67) % 4];
     if (light != null && light < lightTarget) light = Math.min(lightTarget, light + 4);
     for (const p of people) updatePerson(p);
+    updateFollower();
     if (scene) runScene();
     if (me.move) {
       me.move.t += me.move.speed;
@@ -1652,6 +1738,8 @@
       sprites.push({ y, over: !!OVER_TOP[World.blockAt(n.map, n.x, n.y).elevation], draw: () => drawSprite(n.def.sprite, n.def.width, n.def.height,
         frameFor(n.facing, false, 0, n.def.frames), n.facing === "right", x - camX + spriteDx(n.def), y - camY) });
     }
+    const fol = followerSprite(camX, camY, shade);
+    if (fol) sprites.push(fol);   // (before you: behind you, level with you)
     if (me.emote) emotes.push([me.emote, px - camX, py - camY - 16]);
     const look = "player_" + (ctx.player.look || "custom");
     let sheet = look, frame;
@@ -1768,6 +1856,9 @@
     // people where they were if we never left the map.
     const before = new Map(people.map((p) => [p.def.id, p]));
     loadPeople();
+    // (The follower: who it is now, and still where it was if it's beside you.)
+    followerLook();
+    if (!sameMap || Math.abs(pal.x - me.x) + Math.abs(pal.y - me.y) > 1) tuckFollower();
     if (sameMap) {
       people = people.map((p) => {
         const old = before.get(p.def.id);
@@ -1812,7 +1903,7 @@
     explore, hide, read: (pages) => read(pages), showAreaName, forceStep, refreshPeople: () => loadPeople(),
     act, addObject, removeObject, removePerson, teleport, battleTransition, resume, pokecenterHeal, flyOut, flyIn, escapeRopeOut, escapeRopeIn,
     fadeToBlack: fadeOut, fadeFromBlack: fadeIn, shake,
-    setAvatar, avatar: () => me.avatar, flash, rod: setRod, emote: (mark) => { me.emote = mark ? { mark } : null; }, isDark: () => light != null && !flashOn,
+    setAvatar, avatar: () => me.avatar, flash, follower: followerApi, rod: setRod, emote: (mark) => { me.emote = mark ? { mark } : null; }, isDark: () => light != null && !flashOn,
     // What's in front of you: the tile, whoever stands there, and whether
     // it's water you could start surfing on.
     ahead: () => {

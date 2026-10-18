@@ -1834,8 +1834,8 @@ fades, warps, trainer and wild battles (`TrainerBattle`, `WildBattle`, a
 Rocket trap's Pokémon, a battle alongside someone), Badges (`GiveBadge`: Zephyr
 to Rising), Pokémon and Eggs given, money and Coins, trainers beaten
 (`SetTrainerFlag`), the phone numbers people give you (they don't ask
-again), and elevators, leaving out what this game hasn't got (the Pokégear and phone calls, photos,
-the follower Pokémon). So the Apricorn man on Route 30 comes out of his house
+again), and elevators, leaving out what this game hasn't got (the Pokégear and phone calls, photos).
+So the Apricorn man on Route 30 comes out of his house
 as you pass and gives you the Apricorn Box, Cherrygrove's Guide Gent shows you
 round, Team Rocket harasses a man in Azalea Town, Lyra takes you to the Day
 Care on Route 34, the Kimono Girl is lost in Ilex Forest, and the Sudowoodo
@@ -1887,6 +1887,55 @@ warp and guard). Not here yet: what needs HGSS's own games (the Battle
 Frontier, the Pokéathlon, the Bug-Catching Contest, the Safari Zone's areas,
 the Game Corner's machines, the Pokégear's phone calls). (Its music is HGSS's
 own: see Music and cries.)
+
+**The walking Pokémon** (HGSS's follower: `ui/follower.js`, and the
+follower section of `ui/overworld.js`): in Johto your party's first Pokémon
+(the first that can still fight) walks a step behind you, on the tile you've
+just left, as fast as you go, hopping after you over ledges, round the
+corner onto the next map; through a door it comes out behind you. It's
+HGSS's own overworld sprite (every species to Arceus, its forms and females'
+own looks; Lugia, Steelix and the big ones at 64x64), and for the species and
+forms HGSS hasn't got, FireRed's look: its party icon
+(`assets/world/sprites/follow/`, made by `tools/build-hgss-followers.js` from
+a pret/pokeheartgold checkout: `node tools/build-hgss-followers.js <path>`).
+It keeps out of sight while you ride the Bicycle or Surf, and comes along
+where HGSS lets it (each Johto map's follow mode: not at all in a few, and
+not the tall ones, Lugia, Steelix and the like, in rooms); people walking
+about go round it, and you can walk back through it. Talk to it (A facing
+it) and it turns to you with its cry and a line from HGSS's follower
+messages for how it is (poisoned, burned, its HP low), where you are (tall
+grass, a cave, indoors, by the water, morning or night) or how it feels
+about you (its friendship: "Pikachu is so happy, it started dancing!",
+"...looks a little downhearted..."); now and then (once a day) it's found
+something and holds it out to you: a Potion, a Berry, a Great Ball, more as
+you've more of Johto's Badges. In HGSS's scenes it keeps up with you
+(`ToggleFollowingPokemonMovement`, `FollowingPokemonMovement`,
+`WaitFollowingPokemonMovement`: Cherrygrove's Guide Gent shows the two of
+you round). The Option screen's **FOLLOWER** is JOHTO (as HGSS: in Johto
+only), ON (everywhere, Kanto too: the tall ones stay out of its rooms) or OFF.
+
+**Headbutt trees**: HGSS's Headbutt trees on Johto's routes and towns, and
+their Pokémon (`files/arc/headbutt.json`: `tools/build-johto-headbutt.js`,
+`ui/johto-field.js`). A facing one with a Pokémon that knows Headbutt: "It's
+a moderately sized tree. Would you like to use Headbutt?"; it shakes, and a
+Pokémon may fall out. Which trees are good goes by your Trainer ID's last
+digit, as HGSS's (src/field/headbutt.c: some of a map's trees have its common
+Pokémon for you, some its rare ones, some none), and the Pokémon by slot
+(50/15/15/10/5/5); without Headbutt, "There's a large, formidable tree that
+looks like it can be headbutted!". Headbutt is taught, as in HGSS, by the man
+shaking trees in Ilex Forest, to the Pokémon HGSS's tutor can teach.
+**Kurt's Apricorn Balls**: give Kurt Apricorns in Azalea Town (HGSS's
+script; which colour and how many) and the next day he has that many Balls
+for you: a Red Apricorn makes a Level Ball, Yellow a Moon Ball, Blue a Lure
+Ball, Green a Friend Ball, Pink a Love Ball, White a Fast Ball, Black a Heavy
+Ball. They catch as HGSS's makers meant them to: the Level Ball 2, 4 or 8
+times as well as your Pokémon's level is above, twice or four times the
+wild one's; the Lure Ball three times when you're fishing; the Moon Ball
+four times on a Moon Stone's family; the Love Ball eight times on one of
+your Pokémon's species of the other gender; the Heavy Ball by weight (20
+less to the catch rate under 204.8 kg, 20, 30 or 40 more over); the Fast
+Ball four times on a Pokémon of 100 Speed or more; and the Friend Ball's
+Pokémon start out friendly.
 
 **Johto's Town Map**: in Johto the Town Map (and Fly's) is Johto's: HGSS's
 Pokégear map, each place on the squares HGSS gives it, drawn in FireRed's

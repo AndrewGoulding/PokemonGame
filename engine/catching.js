@@ -13,7 +13,19 @@
 (function () {
   "use strict";
 
-  // Ball bonuses. ctx: { target, turn, night, caughtBefore, underwater }
+  // Kurt's Apricorn Balls, as HeartGold and SoulSilver have them (as their
+  // makers meant: the Moon Ball for a Moon Stone's family, the Love Ball for
+  // the opposite gender). The Heavy Ball adds to the catch rate by weight.
+  const MOON_STONE = new Set(["Nidoran-F", "Nidorina", "Nidoqueen", "Nidoran-M", "Nidorino", "Nidoking", "Cleffa", "Clefairy", "Clefable",
+    "Igglybuff", "Jigglypuff", "Wigglytuff", "Skitty", "Delcatty", "Munna", "Musharna"]);
+  function heavyBall(target) {
+    const dex = window.DEX[target.species] || {}, rate = dex.captureRate || 45, kg = dex.weight || 0;
+    const add = kg >= 409.6 ? 40 : kg >= 307.2 ? 30 : kg >= 204.8 ? 20 : -20;
+    return Math.max(1, rate + add) / rate;
+  }
+
+  // Ball bonuses. ctx: { target, turn, night, caughtBefore, underwater,
+  // fishing, user: { species, level, gender } (yours, for the Level and Love Balls) }
   const BALLS = {
     "poke-ball": () => 1,
     "great-ball": () => 1.5,
@@ -32,7 +44,17 @@
     "timer-ball": (ctx) => Math.min(4, 1 + ((ctx.turn - 1) * 1229) / 4096),
     "quick-ball": (ctx) => (ctx.turn <= 1 ? 5 : 1),
     "dusk-ball": (ctx) => (ctx.night ? 3.5 : 1),
-    "dive-ball": (ctx) => (ctx.underwater ? 3.5 : 1)
+    "dive-ball": (ctx) => (ctx.underwater ? 3.5 : 1),
+    "level-ball": (ctx) => {
+      const mine = ctx.user ? ctx.user.level : 0, theirs = ctx.target.level;
+      return mine >= theirs * 4 ? 8 : mine >= theirs * 2 ? 4 : mine > theirs ? 2 : 1;
+    },
+    "lure-ball": (ctx) => (ctx.fishing ? 3 : 1),
+    "moon-ball": (ctx) => (MOON_STONE.has(ctx.target.species) ? 4 : 1),
+    "love-ball": (ctx) => (ctx.user && ctx.user.species === ctx.target.species && ctx.user.gender && ctx.target.gender &&
+      ctx.user.gender !== "N" && ctx.target.gender !== "N" && ctx.user.gender !== ctx.target.gender ? 8 : 1),
+    "heavy-ball": (ctx) => heavyBall(ctx.target),
+    "fast-ball": (ctx) => ((window.DEX[ctx.target.species] || {}).spe >= 100 ? 4 : 1)
   };
 
   const STATUS_BONUS = { slp: 2.5, frz: 2.5, par: 1.5, psn: 1.5, tox: 1.5, brn: 1.5 };

@@ -5208,3 +5208,67 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   const h = Poker.create({ chips: 3000, stakes: high }); h.button = 2; Poker.startHand(h);
   assert.deepStrictEqual([h.seats[0].bet, h.seats[1].bet, Poker.options(h).raiseTo], [15, 30, 60]);
 }
+
+// HGSS's walking Pokémon (ui/follower.js, ui/overworld.js's follower), Johto's
+// Headbutt trees and Kurt's Apricorn Balls (ui/johto-field.js), and the
+// Apricorn Balls' catch bonuses (engine/catching.js).
+{
+  const FD = window.JOHTO_FOLLOWERS, HB = window.JOHTO_HEADBUTT;
+  assert(FD && HB, "the follower's and Headbutt's data are in data/johto-maps.js");
+  for (const n of ["25", "152", "249", "201-b", "479-heat", "3-f", "650", "906"]) assert(fs.existsSync(path.join(root, "assets/world/sprites/follow", n + ".png")), "follower sheet " + n);
+  assert(FD.big.includes("249") && FD.tall.includes("249") && !FD.tall.includes("25"), "Lugia's big, and too tall indoors");
+  assert.strictEqual(FD.modes.Route29, 2); assert.strictEqual(FD.modes.NewBarkTown_House, 1);
+  let opt = 0;
+  const sandbox = { window: { WORLD_MAPS, DEX, ITEMS, Party, Player, JOHTO_FOLLOWERS: FD, JOHTO_HEADBUTT: HB, LEARNSETS_GEN6, GameOptions: { get: () => ({ follower: opt }) } } };
+  vm.runInNewContext(fs.readFileSync(path.join(root, "ui/follower.js"), "utf8"), sandbox, { filename: "ui/follower.js" });
+  vm.runInNewContext(fs.readFileSync(path.join(root, "ui/johto-field.js"), "utf8"), sandbox, { filename: "ui/johto-field.js" });
+  const p = Player.create("RED", 0);
+  p.party = [Object.assign(Party.create("Pikachu", 20), { hp: 0 }), Party.create("Lugia", 50)];
+  const F = sandbox.window.Follower.create({ player: () => p });
+  assert.strictEqual(F.look("Route29").sprite, "follow/249", "the first that can still fight");
+  assert.strictEqual(F.look("Route29").width, 64);
+  assert.strictEqual(F.look("NewBarkTown_House"), null, "too tall to come in");
+  assert.strictEqual(F.look("PalletTown"), null, "Johto only, by default");
+  opt = 1; assert(F.look("PalletTown") && !F.look("PalletTown_PlayersHouse_1F"), "everywhere with FOLLOWER ON, but not tall ones indoors");
+  opt = 2; assert.strictEqual(F.look("Route29"), null, "FOLLOWER OFF");
+  opt = 0;
+  p.party[0].hp = 10; p.party[0].gender = "F";
+  assert.strictEqual(F.look("NewBarkTown_House").sprite, "follow/25-f", "a female Pikachu's own look, indoors too");
+  assert.strictEqual(F.sheet(Party.create("Rotom-Heat", 20)), "479-heat");
+  // Headbutt: Route 29's first tree is a rare one for an ID ending in 2, and nothing for one ending in 0.
+  const t0 = HB.maps.Route29.trees[0][0];
+  const JF = (id) => sandbox.window.JohtoField.create({ player: () => Object.assign(p, { trainerId: id }) });
+  assert(JF(12).headbuttTree("Route29", t0[0], t0[1]) && !JF(12).headbuttTree("Route29", 0, 0));
+  const tree = { m: HB.maps.Route29, i: 0, secret: false };
+  assert.strictEqual(JF(12).treeTable(tree), HB.maps.Route29.rare);
+  assert.strictEqual(JF(10).treeTable(tree), null);
+  assert(HB.learners.includes("Pikachu") && HB.learners.includes("Chikorita"), "the tutor teaches HGSS's learners");
+  // Kurt: three Red Apricorns, three Level Balls.
+  const bag = { "red-apricorn": 3 }, js = {};
+  const K = sandbox.window.JohtoField.create({ player: () => p, johtoState: () => js, choose: async () => 0, quantity: async () => 3, itemName: (id) => id,
+    takeItem: (id, n) => { if ((bag[id] | 0) < n) return false; bag[id] -= n; return true; } });
+  p.bag = bag;
+  (async () => {
+    assert.strictEqual(await K.kurt("GetTotalApricornCount"), 3);
+    assert.strictEqual(await K.kurt("ScrCmd_739"), 3);
+    assert.deepStrictEqual([await K.kurt("ScrCmd_735"), await K.kurt("ScrCmd_737"), bag["red-apricorn"]], [3, "level-ball", 0]);
+    await K.kurt("ClearKurtApricorn");
+    assert.strictEqual(await K.kurt("ScrCmd_735"), 0);
+  })().catch((e) => { console.error(e); process.exit(1); });
+  for (const b of Object.values(sandbox.window.JohtoField.KURT_BALLS)) assert(ITEMS[b] && Bag.sprite(b), b);
+  const scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8"), owJs = fs.readFileSync(path.join(root, "ui/overworld.js"), "utf8");
+  assert(/case "ScrCmd_739"/.test(scriptJs) && /case "WaitFollowingPokemonMovement"/.test(scriptJs) && /FLAG_DAILY_/.test(scriptJs), "Kurt's and the follower's script commands");
+  assert(/---------- The follower Pokémon/.test(owJs) && /type: "follower"/.test(owJs) && /type: "headbutt"/.test(owJs));
+  // The Apricorn Balls: only for these, nothing else changes.
+  const tgt = { species: "Snorlax", level: 10, gender: "F" };
+  assert.strictEqual(Catching.ballBonus("level-ball", { target: tgt, user: { species: "Pikachu", level: 40 } }), 8);
+  assert.strictEqual(Catching.ballBonus("level-ball", { target: tgt, user: { species: "Pikachu", level: 10 } }), 1);
+  assert.strictEqual(Catching.ballBonus("lure-ball", { target: tgt, fishing: true }), 3);
+  assert.strictEqual(Catching.ballBonus("lure-ball", { target: tgt }), 1);
+  assert.strictEqual(Catching.ballBonus("moon-ball", { target: { species: "Clefairy", level: 5 } }), 4);
+  assert.strictEqual(Catching.ballBonus("love-ball", { target: tgt, user: { species: "Snorlax", level: 5, gender: "M" } }), 8);
+  assert.strictEqual(Catching.ballBonus("love-ball", { target: tgt, user: { species: "Snorlax", level: 5, gender: "F" } }), 1);
+  assert(Catching.ballBonus("heavy-ball", { target: tgt }) > 1 && Catching.ballBonus("heavy-ball", { target: { species: "Pidgey" } }) < 1, "by weight");
+  assert.strictEqual(Catching.ballBonus("fast-ball", { target: { species: "Jolteon" } }), 4);
+  assert.strictEqual(Catching.ballBonus("poke-ball", { target: tgt, fishing: true, user: { level: 99 } }), 1);
+}

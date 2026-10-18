@@ -36,7 +36,7 @@
 //   wild: true   p2 is a wild Pokémon: p1 may also choose
 //                { type: "ball", ball: "great-ball" } or { type: "run" }.
 //                Ends with battle.caught (the Pokémon) or battle.escaped.
-//   catchContext: { night, caughtBefore(species) }   for Dusk / Repeat Balls
+//   catchContext: { night, caughtBefore(species), fishing }   for Dusk / Repeat / Lure Balls
 //
 // Items from the bag (needs engine/item-use.js), either side, any battle:
 //   { type: "item", item: "potion", target: teamIndex, move: slot (Ether etc.) }
@@ -2511,9 +2511,10 @@
       if (this.ghost || this.noCatch) { this.add("-ghostdodge", mon.side.id, ball); return; }
       const ctx = this.catchContext;
       const result = window.Catching.attempt(
-        { species: target.baseSpecies, level: target.level, hp: target.hp, maxhp: target.maxhp, status: target.status, types: target.types },
+        { species: target.baseSpecies, level: target.level, hp: target.hp, maxhp: target.maxhp, status: target.status, types: target.types, gender: target.gender },
         ball,
-        { turn: this.turn, night: !!ctx.night, caughtBefore: !!(ctx.caughtBefore && ctx.caughtBefore(target.baseSpecies)) },
+        { turn: this.turn, night: !!ctx.night, caughtBefore: !!(ctx.caughtBefore && ctx.caughtBefore(target.baseSpecies)),
+          fishing: !!ctx.fishing, user: { species: mon.baseSpecies, level: mon.level, gender: mon.gender } },
         () => this.random());
       this.add("-ball", mon.side.id, ball, target, result.shakes, result.caught ? "caught" : "");
       if (!result.caught) return;
