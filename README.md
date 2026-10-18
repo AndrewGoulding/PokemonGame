@@ -784,6 +784,21 @@ cd pokefirered && git sparse-checkout add sound/ && cd ..
 node tools/build-audio.js pokefirered
 ```
 
+Johto's music is HeartGold's own: `tools/build-johto-audio.js` converts the
+songs in pret/pokeheartgold's sound archive (`gs_sound_data.sdat`: its
+sequences, instrument banks and ADPCM waves) into `assets/audio/johto-music.js`,
+which `game/nds-sound.js` plays the way the DS's sound player does (decibel
+envelopes and volumes, 16 channels, 32,728 Hz); both load only once a Johto
+song is wanted. Songs are named `gs_` + HGSS's sequence (`gs_t_wakaba`, New
+Bark Town's), and in Johto the battles (wild, trainer, Gym Leader, Silver,
+Team Rocket, the legendary beasts), their victories, the "eyes meet" themes,
+cycling, surfing and the jingles are HGSS's (`tools/lib/hgss-music.json` lists
+each sequence's song for the maps):
+
+```sh
+node tools/build-johto-audio.js pokeheartgold
+```
+
 ### Town Map
 
 `tools/build-town-map.js` renders FireRed's Kanto region map and its three
@@ -1868,8 +1883,8 @@ rod, 40/40/15/4/1) and Rock Smash's. Everything goes into
 `data/johto-maps.js`, which adds the maps to `WORLD_MAPS` (and the gate's mat,
 warp and guard). Not here yet: what needs HGSS's own games (the Battle
 Frontier, the Pokéathlon, the Bug-Catching Contest, the Safari Zone's areas,
-the Game Corner's machines, the Pokégear's phone calls); and Johto's music
-(FireRed's nearest stands in).
+the Game Corner's machines, the Pokégear's phone calls). (Its music is HGSS's
+own: see Music and cries.)
 
 **Johto's Town Map**: in Johto the Town Map (and Fly's) is Johto's: HGSS's
 Pokégear map, each place on the squares HGSS gives it, drawn in FireRed's

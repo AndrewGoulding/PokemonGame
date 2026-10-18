@@ -2123,7 +2123,8 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
   for (const f of ["ui/game.js", "ui/battle-screen.js", "ui/intro.js"]) {
     for (const m of fs.readFileSync(path.join(root, f), "utf8").matchAll(/"(mus_[a-z0-9_]+)"/g)) named.add(m[1]);
   }
-  for (const name of named) assert(songs[name], "missing song " + name);
+  // (Johto's gs_ songs are HGSS's, in assets/audio/johto-music.js: below.)
+  for (const name of named) if (!/^gs_/.test(name)) assert(songs[name], "missing song " + name);
   // Pallet Town: a loop, seamless (the loop part is the second time through), and in range.
   const r = M4A.render(songs.mus_pallet, bank);
   assert.strictEqual(r.rate, 13379);
@@ -2143,6 +2144,43 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
   assert(Math.abs(hz(4) - 440) < 3, "sample A4: " + hz(4));
   // A cry for each of the first 386.
   for (let n = 1; n <= 386; n++) assert(fs.existsSync(path.join(root, "assets/audio/cries", n + ".wav")), "cry " + n);
+}
+
+// Johto's music: HGSS's songs, played by the DS's sound player (game/nds-sound.js).
+{
+  vm.runInThisContext(fs.readFileSync(path.join(root, "assets/audio/johto-music.js"), "utf8"), { filename: "assets/audio/johto-music.js" });
+  const NDS = require(path.join(root, "game/nds-sound.js"));
+  const J = window.JOHTO_MUSIC_DATA;
+  // Every gs_ song asked for is there: the maps', and the ones named in the UI;
+  // and each HGSS sequence in tools/lib/hgss-music.json.
+  const named = new Set(Object.values(WORLD_MAPS).map((m) => m.music).filter((m) => /^gs_/.test(m || "")));
+  for (const f of ["ui/game.js", "ui/audio.js", "ui/battle-screen.js"]) {
+    for (const m of fs.readFileSync(path.join(root, f), "utf8").matchAll(/"(gs_[a-z0-9_]*[a-z0-9])"/g)) named.add(m[1]);
+  }
+  for (const v of Object.values(JSON.parse(fs.readFileSync(path.join(root, "tools/lib/hgss-music.json"), "utf8")))) named.add(v);
+  for (const name of named) assert(J.songs[name], "missing Johto song " + name);
+  for (const name of ["gs_t_wakaba", "gs_r_1_29", "gs_vs_norapoke", "gs_vs_trainer", "gs_vs_gymreader", "gs_vs_rival", "gs_vs_rocket",
+    "gs_win1", "gs_win2", "gs_win3", "gs_eye_j_shounen", "gs_eye_j_shoujo", "gs_eye_j_ayashii", "gs_eye_k_shounen", "gs_eye_k_shoujo",
+    "gs_eye_k_ayashii", "gs_eye_bouzu", "gs_eye_maiko", "gs_eye_rocket", "gs_e_rival1", "gs_pokesen", "gs_gym", "gs_utsugi_rabo",
+    "gs_bicycle", "gs_naminori", "gs_me_lvup", "gs_me_item", "gs_me_badge", "gs_me_asa"]) assert(J.songs[name], "no " + name);
+  // New Bark Town: a loop, in range; a jingle that doesn't loop.
+  const r = NDS.render(J.songs.gs_t_wakaba, J);
+  assert.strictEqual(r.rate, 32728);
+  assert(r.loopStart > 0 && r.loopEnd > r.loopStart, "New Bark Town loops");
+  assert(r.left.every((v) => v >= -1 && v <= 1) && r.right.every((v) => !Number.isNaN(v)));
+  assert.strictEqual(NDS.render(J.songs.gs_me_lvup, J).loopStart, null);
+  // A4 on a PSG square comes out at 440 Hz.
+  const hz = (bank, prog) => {
+    J.sequences._test = [{ ev: [], events: [[0, 1, prog], [0, 0xc1, 127], [0, 0, 69, 127, 96]], loop: -1, loopTick: 0, end: 96 }];
+    const out = NDS.render({ seq: "_test", bank, vol: 127, loop: null }, J);
+    delete J.sequences._test;
+    let z = 0; const a = out.left, s0 = Math.floor(0.1 * out.rate), s1 = Math.floor(0.4 * out.rate);
+    for (let i = s0 + 1; i < s1; i++) if ((a[i - 1] < 0) !== (a[i] < 0)) z++;
+    return z / 2 / 0.3;
+  };
+  const wakabaBank = J.banks[J.songs.gs_t_wakaba.bank], psg = wakabaBank.findIndex((i) => i && i.t === "psg");
+  assert(psg >= 0, "a PSG instrument");
+  assert(Math.abs(hz(J.songs.gs_t_wakaba.bank, psg) - 440) < 4, "PSG A4: " + hz(J.songs.gs_t_wakaba.bank, psg));
 }
 
 // The VS Seeker: a key item with FireRed's picture and description, given in

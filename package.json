@@ -17,6 +17,7 @@
     "build:audio": "node tools/build-audio.js",
     "build:font": "node tools/build-font.js",
     "build:johto": "node tools/build-johto.js",
+    "build:johto-audio": "node tools/build-johto-audio.js",
     "build:breeding": "node tools/build-breeding.js",
     "build:emerald-maps": "node tools/build-emerald-maps.js"
   },

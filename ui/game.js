@@ -31,6 +31,10 @@
   // ---------- Sound (ui/audio.js) ----------
   const GA = window.GameAudio;
   const music = (name) => { if (GA) GA.music(name); };
+  // In Johto, HGSS's music (ui/audio.js plays FireRed's battle, victory,
+  // "eyes meet" and jingle songs as HGSS's there).
+  const inJohto = () => !!(player && player.location && (window.WORLD_MAPS[player.location.map] || {}).region === "johto");
+  if (GA && GA.setRegion) GA.setRegion(() => (inJohto() ? "johto" : null));
   const fanfare = (name) => (GA ? GA.fanfare(name) : Promise.resolve());
   const cry = (species, opts) => { if (GA) GA.cry(species, opts); };
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -251,6 +255,37 @@
     return type === "indoor" ? "building" : type === "underground" ? "cave" : "plain";
   }
 
+  // Johto's battle music, as HGSS picks it (its trainer classes' themes,
+  // unk_020517A4.s, and victories, battle_controller_player.c): Silver's,
+  // Team Rocket's (grunts, Executives, Giovanni), the Gym Leaders' and the
+  // Elite Four's, the Champion's, and the legendary Pokémon's own.
+  const JOHTO_LEGEND_MUSIC = { Suicune: "gs_vs_suicune", Entei: "gs_vs_entei", Raikou: "gs_vs_raikou", "Ho-Oh": "gs_vs_houou",
+    Lugia: "gs_vs_lugia", Groudon: "gs_vs_kodai", Kyogre: "gs_vs_kodai", Rayquaza: "gs_vs_kodai" };
+  function johtoBattleMusic(wild, foe, opts) {
+    if (wild) return { vs: JOHTO_LEGEND_MUSIC[foe.team[0] && foe.team[0].species] || "gs_vs_norapoke", win: "gs_win2" };
+    const t = window.WORLD_TRAINERS[opts.trainerId] || {}, cls = t.className || foe.name.split(" ")[0];
+    if (cls === "Rival" || t.pic === "hgss_silver") return { vs: "gs_vs_rival", win: "gs_win1" };
+    if (/^(Team Rocket|Executive|Rocket Boss)/.test(cls) || /^Team Rocket|^Executive|^Rocket Boss/.test(foe.name)) return { vs: "gs_vs_rocket", win: "gs_win1" };
+    if (cls === "Champion" || foe.name === "Pokémon Trainer Red") return { vs: "gs_vs_champ", win: "gs_win3" };
+    if (/^(Leader|Elite Four)/.test(cls) || /^(Leader|Elite Four) /.test(foe.name)) return { vs: "gs_vs_gymreader", win: "gs_win3" };
+    return { vs: "gs_vs_trainer", win: "gs_win1" };
+  }
+  // A Johto trainer's "eyes meet" theme, by class (HGSS's field_bgm.c, Johto's
+  // column); Silver's is his own.
+  const JOHTO_EYES = { Lass: "k_shoujo", Picnicker: "k_shoujo", Twins: "k_shoujo", Hiker: "k_ayashii", Fisherman: "k_ayashii",
+    "Black Belt": "k_ayashii", Gentleman: "k_ayashii", Policeman: "k_shounen", "Swimmer♂": "k_ayashii", Sailor: "k_ayashii",
+    Guitarist: "k_ayashii", Firebreather: "k_ayashii", Biker: "k_ayashii", Boarder: "k_ayashii", "Double Team": "k_shounen",
+    Beauty: "j_shoujo", "Swimmer♀": "j_shoujo", Skier: "j_shoujo", Teacher: "j_shoujo", "Young Couple": "j_shoujo",
+    Juggler: "j_ayashii", Burglar: "j_ayashii", "Poké Maniac": "j_ayashii", "Super Nerd": "j_ayashii",
+    "Kimono Girl": "maiko", Sage: "bouzu", Medium: "bouzu", "Team Rocket": "rocket", Scientist: "rocket", Executive: "rocket" };
+  function johtoEyes(data) {
+    const cls = data.className;
+    if (cls === "Rival") return "gs_e_rival1";
+    // (Pokéfans and Ace Trainers: the men's, or the women's.)
+    if (cls === "Pokéfan" || cls === "Ace Trainer") return data.music === "mus_encounter_girl" ? "gs_eye_j_shoujo" : "gs_eye_k_ayashii";
+    return "gs_eye_" + (JOHTO_EYES[cls] || "j_shounen");
+  }
+
   // opts.safari: a Safari Zone battle (engine/safari.js), with the Safari
   // Balls you have left (player.flags.safari).
   // Double battles: opts.double (FireRed's trainerbattle_double: the whole
@@ -281,9 +316,11 @@
       if (!chosen) return "cancelled";
     }
     const own = DoubleBattle.team(player.party, chosen);
-    // The battle theme (wild, trainer, or Gym Leader), and the one for winning.
+    // The battle theme (wild, trainer, or Gym Leader), and the one for winning
+    // (in Johto, HGSS's: johtoBattleMusic).
     const leader = !wild && /^Leader /.test(foe.name);
-    music(opts.music || (wild ? "mus_vs_wild" : leader ? "mus_vs_gym_leader" : "mus_vs_trainer"));
+    const johtoMusic = inJohto() ? johtoBattleMusic(wild, foe, opts) : {};
+    music(opts.music || johtoMusic.vs || (wild ? "mus_vs_wild" : leader ? "mus_vs_gym_leader" : "mus_vs_trainer"));
     // From the map: FireRed's flash-and-slice into battle.
     if (!world.classList.contains("hidden")) await Overworld.battleTransition();
     show("field");
@@ -321,7 +358,7 @@
       expShare: expShareOn(),
       trainer: Player.LOOKS[player.look].back,
       foeTrainer: foe.pic, defeatText: opts.defeatText && opts.defeatText.map((p) => fill(p)),
-      victoryMusic: opts.victoryMusic || (wild ? "mus_victory_wild" : leader ? "mus_victory_gym_leader" : "mus_victory_trainer"),
+      victoryMusic: opts.victoryMusic || johtoMusic.win || (wild ? "mus_victory_wild" : leader ? "mus_victory_gym_leader" : "mus_victory_trainer"),
       terrain: battleTerrain(opts),
       bag: player.bag,
       // (The Bag screen: its pockets, and the bag's colours.)
@@ -4487,7 +4524,7 @@
       await say(t.notEnough || ["You need two Pokémon to battle us!"]);
       return;
     }
-    music(data.music || "mus_encounter_boy");   // their "eyes meet" theme
+    music(inJohto() ? johtoEyes(data) : data.music || "mus_encounter_boy");   // their "eyes meet" theme
     if (approach != null) {
       await Overworld.act([{ who, moves: ["emote_exclamation_mark"].concat(Array(approach).fill("walk_" + facing)) }]);
       await Overworld.act([{ who: "player", moves: ["face_" + World.OPPOSITE[facing]] }]);
