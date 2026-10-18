@@ -1594,6 +1594,27 @@ for (const share of [false, true]) {
   assert(fs.existsSync(path.join(__dirname, "../assets/town-map/kanto.png")));
 }
 
+// Johto's Town Map (tools/build-johto-town-map.js, at the end of data/johto-maps.js):
+// HGSS's Pokégear map, every Johto map in a section, Fly outside each Pokémon Center.
+if (window.JOHTO_TOWN_MAP) {
+  const J = window.JOHTO_TOWN_MAP;
+  assert.deepStrictEqual([J.width, J.height, J.map.length, J.map[0].length, J.dungeon.length], [27, 14, 14, 27, 14]);
+  assert(fs.existsSync(path.join(__dirname, "../" + J.image)), J.image);
+  const onGrid = (sec) => J.map.some((r) => r.includes(sec)) || J.dungeon.some((r) => r.includes(sec));
+  assert(onGrid("NEW_BARK_TOWN") && onGrid("VIOLET_CITY") && onGrid("ROUTE_29") && onGrid("UNION_CAVE") && J.names.UNION_CAVE === "Union Cave");
+  for (const name of Object.keys(WORLD_MAPS)) {
+    if (WORLD_MAPS[name].region !== "johto") continue;
+    assert(J.mapSections[name] && J.names[J.mapSections[name]], name + " is in a section of Johto's Town Map");
+    assert(!(name in window.TOWN_MAP.mapSections), name + " isn't on Kanto's");
+  }
+  for (const [sec, spot] of Object.entries(J.fly)) {
+    const fm = WORLD_MAPS[spot.map];
+    assert(fm && !fm.collision[spot.y * fm.width + spot.x] && onGrid(sec) && J.towns.includes(sec), "Fly lands on open ground in " + sec);
+    if (spot.center) assert(fm.warps.some((w) => w.map === spot.center && w.x === spot.x && w.y === spot.y - 1), "Fly lands at " + sec + "'s door");
+  }
+  assert(["VIOLET_CITY", "GOLDENROD_CITY", "BLACKTHORN_CITY"].every((sec) => J.fly[sec]));
+}
+
 // Shiny Pokémon: 1 in 4096; kept through saving; trainers' never are.
 {
   assert.strictEqual(Party.SHINY_ODDS, 1000);

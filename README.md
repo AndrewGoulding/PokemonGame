@@ -796,6 +796,19 @@ cd pokefirered && git sparse-checkout add graphics/region_map/ src/data/region_m
 node tools/build-town-map.js pokefirered     # after build-maps.js
 ```
 
+Johto's Town Map comes from HeartGold's Pokégear map
+(`files/application/pokegear/map/pgmap_gra`, its places' squares in
+`src/application/pokegear/map/pokegear_map.c`, Fly's landing spots in
+`asm/unk_0203BA5C.s`) redrawn square by square in FireRed's region-map tiles:
+`tools/build-johto-town-map.js` writes `assets/town-map/johto.png` and
+`tools/lib/johto-town-map.generated.js` (`window.JOHTO_TOWN_MAP`: its grid,
+names, each Johto map's place and where Fly lands), which
+`tools/build-johto.js` puts at the end of `data/johto-maps.js`:
+
+```sh
+node tools/build-johto-town-map.js <path to pret/pokeheartgold> pokefirered
+```
+
 ### Seagallop ferry
 
 `tools/build-seagallop.js` converts the ferry ride's sea, ferry and wake
@@ -1855,8 +1868,20 @@ rod, 40/40/15/4/1) and Rock Smash's. Everything goes into
 `data/johto-maps.js`, which adds the maps to `WORLD_MAPS` (and the gate's mat,
 warp and guard). Not here yet: what needs HGSS's own games (the Battle
 Frontier, the Pokéathlon, the Bug-Catching Contest, the Safari Zone's areas,
-the Game Corner's machines, the Pokégear's phone calls); Johto's music
-(FireRed's nearest stands in); and a Town Map of Johto.
+the Game Corner's machines, the Pokégear's phone calls); and Johto's music
+(FireRed's nearest stands in).
+
+**Johto's Town Map**: in Johto the Town Map (and Fly's) is Johto's: HGSS's
+Pokégear map, each place on the squares HGSS gives it, drawn in FireRed's
+region-map tiles (sea, land lighter up the hills, routes, sea routes, a town
+icon on each place you can fly to), with HGSS's place names, your icon where
+you are and FireRed's small icons on its caves, forests and towers. Fly takes
+you to the towns and cities you've been to (going into a Pokémon Center
+counts), landing outside the Pokémon Center as HGSS does; it keeps to the
+region you're in (Kanto's places in Kanto, Johto's in Johto). Once you've been
+to Johto, SWITCH (or R) on the Town Map turns between Johto's map and Kanto's
+(and the Sevii pages). `tools/build-johto-town-map.js` builds it (see Town Map
+above).
 
 ## Orre: the Outskirt Stand (in progress)
 

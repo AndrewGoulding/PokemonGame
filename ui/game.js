@@ -929,31 +929,68 @@
     if (f.vsSeekerSteps != null && f.vsSeekerSteps < VS_SEEKER_CHARGE) f.vsSeekerSteps++;
   }
 
+  // Johto's Town Map (window.JOHTO_TOWN_MAP, at the end of data/johto-maps.js:
+  // tools/build-johto-town-map.js): HGSS's Pokégear map drawn in FireRed's
+  // region-map tiles, on its own grid (x0, y0: where its first square is).
+  // Its maps' sections, their names and its Fly spots join Kanto's in
+  // window.TOWN_MAP (Johto's sections are its own: ROUTE_29, VIOLET_CITY, ...),
+  // so whatever asks TOWN_MAP where a map is (the area's name as you arrive,
+  // the Trainer Memo's "met in", a Pokémon's friendship where it was met, Fly)
+  // knows Johto's too.
+  const JOHTO_MAP = window.JOHTO_TOWN_MAP || null;
+  if (JOHTO_MAP && window.TOWN_MAP && !window.TOWN_MAP.johto) {
+    const T = window.TOWN_MAP;
+    T.johto = JOHTO_MAP;
+    Object.assign(T.mapSections, JOHTO_MAP.mapSections);
+    Object.assign(T.names, JOHTO_MAP.names);
+    T.fly = Object.assign({}, T.fly, JOHTO_MAP.fly);
+  }
+  // (Is a map in Johto, and have you been there: any of its sections visited.)
+  const inJohto = (map) => ((window.WORLD_MAPS[map] || {}).region === "johto");
+  const beenToJohto = () => !!JOHTO_MAP && (player.flags.visitedSections || []).some((sec) => sec in JOHTO_MAP.names);
+
   // The Town Map (with { fly: true }, for Fly: the places you can fly to are
   // marked, and A on one resolves with where Fly lands there; B, null): FireRed's Kanto map (tools/build-town-map.js) with your
   // icon where you are. Move the cursor with the arrow keys, or tap a place,
   // to see its name. With the Sevii Islands' pages (One Island's Pokémon
   // Center: FLAG_SYS_SEVII_MAP_123, then _4567 with the Rainbow Pass), SWITCH
   // (or R) turns to the Sevii Islands' maps, as FireRed's switch menu does:
-  // Kanto, Sevii 1-2-3, 4-5 and 6-7. It opens on the map you're on.
+  // Kanto, Sevii 1-2-3, 4-5 and 6-7. It opens on the map you're on. In Johto
+  // it's Johto's map (JOHTO_MAP), and once you've been to Johto SWITCH turns to
+  // it from Kanto's too. Fly keeps to the region you're in: Kanto's pages in
+  // Kanto, Johto's in Johto.
   async function townMap(opts) {
     const T = window.TOWN_MAP, flying = !!(opts && opts.fly), f = player.flags;
     const pct = (n, of) => (n / of * 100) + "%";
-    const sprite = (x, y) => "left:" + pct(28 + 8 * x, 240) + ";top:" + pct(28 + 8 * y, 160);
-    // The maps you can turn to: Kanto, and the Sevii pages you have.
-    const regions = [{ id: "KANTO", label: "Kanto", image: "assets/town-map/kanto.png", map: T.map, dungeon: T.dungeon }]
+    const map = player.location && player.location.map, johtoHere = !!JOHTO_MAP && inJohto(map);
+    // The maps you can turn to: Kanto, and the Sevii pages you have; Johto's.
+    // (Kanto's grid starts 32 pixels in and down, as FireRed's: src/region_map.c.)
+    const kanto = [{ id: "KANTO", label: "Kanto", image: "assets/town-map/kanto.png", map: T.map, dungeon: T.dungeon }]
       .concat((T.sevii || []).filter((r) => r.id === "SEVII_123" ? f.seviiMap123 || f.seviiMap4567 : f.seviiMap4567)
-        .map((r) => Object.assign({ label: { SEVII_123: "Sevii Islands 1-2-3", SEVII_45: "Sevii Islands 4-5", SEVII_67: "Sevii Islands 6-7" }[r.id] }, r)));
+        .map((r) => Object.assign({ label: { SEVII_123: "Sevii Islands 1-2-3", SEVII_45: "Sevii Islands 4-5", SEVII_67: "Sevii Islands 6-7" }[r.id] }, r)))
+      .map((r) => Object.assign({ x0: 32, y0: 32, width: T.width, height: T.height, towns: T.towns }, r));
+    const johto = JOHTO_MAP && (johtoHere || (!flying && beenToJohto())) ? [JOHTO_MAP] : [];
+    const regions = johtoHere ? johto.concat(flying ? [] : kanto) : (flying ? kanto : kanto.concat(johto));
+    const sprite = (R, x, y) => "left:" + pct(R.x0 - 4 + 8 * x, 240) + ";top:" + pct(R.y0 - 4 + 8 * y, 160);
     const cellIn = (R, sec) => {
       if (!sec) return null;
-      for (const layer of [R.map, R.dungeon]) for (let y = 0; y < T.height; y++) for (let x = 0; x < T.width; x++) if (layer[y][x] === sec) return [x, y];
+      for (const layer of [R.map, R.dungeon]) for (let y = 0; y < R.height; y++) for (let x = 0; x < R.width; x++) if (layer[y][x] === sec) return [x, y];
       return null;
     };
     const find = (sec) => { for (let i = 0; i < regions.length; i++) { const c = cellIn(regions[i], sec); if (c) return { region: i, cell: c }; } return null; };
+    // (In Johto, the square you're on: HGSS's world matrix has a square every
+    // 32 tiles of a map outdoors; inside, where the building or cave is.)
+    const johtoAt = (name, x, y) => {
+      const at = JOHTO_MAP && JOHTO_MAP.at[name], R = JOHTO_MAP;
+      if (!at || regions.indexOf(R) < 0) return null;
+      const cell = at[2] ? [at[0] + Math.floor((x | 0) / 32), at[1] + Math.floor((y | 0) / 32)] : [at[0], at[1]];
+      return { region: regions.indexOf(R), cell: [Math.max(0, Math.min(R.width - 1, cell[0])), Math.max(0, Math.min(R.height - 1, cell[1]))] };
+    };
     // (Somewhere with no square of its own, the Underground Path or the S.S. Anne:
     // where you came in from outdoors.)
-    const here = find(T.mapSections[player.location && player.location.map]) ||
-      find(T.mapSections[(f.escapeWarp || {}).map]) || { region: 0, cell: cellIn(regions[0], "PALLET_TOWN") };
+    const loc = player.location || {}, esc = f.escapeWarp || {};
+    const here = johtoAt(loc.map, loc.x, loc.y) || find(T.mapSections[loc.map]) || johtoAt(esc.map, esc.x, esc.y) || find(T.mapSections[esc.map]) ||
+      (johtoHere ? { region: 0, cell: cellIn(regions[0], "NEW_BARK_TOWN") } : { region: 0, cell: cellIn(regions[0], "PALLET_TOWN") });
     let region = here.region, [cx, cy] = here.cell;
     visitSection(player.location && player.location.map);
     const visited = f.visitedSections || [];
@@ -969,25 +1006,25 @@
       // Sapphire (FLAG_SYS_CAN_LINK_WITH_RS), as its entrance opens then. On a
       // town's square the icon sits 2 pixels lower and to the right.
       let icons = "";
-      for (let y = 0; y < T.height; y++) for (let x = 0; x < T.width; x++) {
+      for (let y = 0; y < R.height; y++) for (let x = 0; x < R.width; x++) {
         const sec = R.dungeon[y][x];
         if (!sec || hiddenSection(sec)) continue;
-        const off = T.towns.includes(R.map[y][x]) ? 2 : 0;
-        icons += '<div class="tm-dungeon' + (visited.includes(sec) ? " visited" : "") + '" style="left:' + pct(32 + 8 * x + off, 240) +
-          ";top:" + pct(32 + 8 * y + off, 160) + '"></div>';
+        const off = R.towns.includes(R.map[y][x]) ? 2 : 0;
+        icons += '<div class="tm-dungeon' + (visited.includes(sec) ? " visited" : "") + '" style="left:' + pct(R.x0 + 8 * x + off, 240) +
+          ";top:" + pct(R.y0 + 8 * y + off, 160) + '"></div>';
       }
       if (flying) {
         const marked = new Set();
-        for (let y = 0; y < T.height; y++) for (let x = 0; x < T.width; x++) {
+        for (let y = 0; y < R.height; y++) for (let x = 0; x < R.width; x++) {
           const sec = R.map[y][x];
           if (!flyTo(sec) || marked.has(sec)) continue;
           marked.add(sec);
-          icons += '<div class="tm-fly" style="left:' + pct(28 + 8 * x, 240) + ";top:" + pct(28 + 8 * y, 160) + '"></div>';
+          icons += '<div class="tm-fly" style="' + sprite(R, x, y) + '"></div>';
         }
       }
       scene.innerHTML = '<div class="town-map' + (flying ? " flying" : "") + '"><img class="tm-map" src="' + R.image + '" alt="Map of ' + R.label + '">' + icons +
         '<div class="tm-name"><b></b><small></small></div>' +
-        (region === here.region ? '<img class="tm-player" src="assets/town-map/player.png" alt="You are here" style="' + sprite(here.cell[0], here.cell[1]) + '">' : "") +
+        (region === here.region ? '<img class="tm-player" src="assets/town-map/player.png" alt="You are here" style="' + sprite(R, here.cell[0], here.cell[1]) + '">' : "") +
         '<div class="tm-cursor"></div></div>';
       draw();
     };
@@ -995,10 +1032,10 @@
       const R = regions[region], place = hiddenSection(R.map[cy][cx]) ? null : R.map[cy][cx], cave = hiddenSection(R.dungeon[cy][cx]) ? null : R.dungeon[cy][cx];
       scene.querySelector(".tm-name b").textContent = T.names[place] || T.names[cave] || (flying ? "Where do you want to fly?" : "");
       scene.querySelector(".tm-name small").textContent = place && cave ? T.names[cave] : "";
-      scene.querySelector(".tm-cursor").setAttribute("style", sprite(cx, cy));
+      scene.querySelector(".tm-cursor").setAttribute("style", sprite(R, cx, cy));
     };
     render();
-    const move = (dx, dy) => { cx = Math.max(0, Math.min(T.width - 1, cx + dx)); cy = Math.max(0, Math.min(T.height - 1, cy + dy)); draw(); };
+    const move = (dx, dy) => { const R = regions[region]; cx = Math.max(0, Math.min(R.width - 1, cx + dx)); cy = Math.max(0, Math.min(R.height - 1, cy + dy)); draw(); };
     // SWITCH: the next map, the cursor on the place you're at there (or the
     // map's first town).
     const switchMap = () => {
@@ -1007,8 +1044,8 @@
       region = (region + 1) % regions.length;
       const R = regions[region];
       const at = region === here.region ? here.cell : (() => {
-        for (let y = 0; y < T.height; y++) for (let x = 0; x < T.width; x++) if (T.towns.includes(R.map[y][x])) return [x, y];
-        return [cx, cy];
+        for (let y = 0; y < R.height; y++) for (let x = 0; x < R.width; x++) if (R.towns.includes(R.map[y][x])) return [x, y];
+        return [Math.min(cx, R.width - 1), Math.min(cy, R.height - 1)];
       })();
       [cx, cy] = at;
       render();
@@ -1125,7 +1162,7 @@
   // SKILLS and KNOWN MOVES for each of `records` (up / down go through them).
 
   // Where a Pokémon was met, for the Trainer Memo: the Town Map's name for
-  // the place (Route 1, Viridian Forest, ...).
+  // the place (Route 1, Viridian Forest, ..., and Johto's: Route 29, ...).
   const placeName = (map) => {
     const T = window.TOWN_MAP, sec = T && T.mapSections[map];
     return (sec && T.names[sec]) || null;
@@ -1953,7 +1990,8 @@
     };
     for (const [name, m] of Object.entries(window.WORLD_MAPS)) {
       const sec = secs[name];
-      if (!sec || AREA_SKIP.includes(sec) || !AREA_KINDS.some(([, k]) => m[k])) continue;
+      // (Kanto's: Johto's maps have their sections too, for its Town Map.)
+      if (!sec || m.region === "johto" || AREA_SKIP.includes(sec) || !AREA_KINDS.some(([, k]) => m[k])) continue;
       if (!bySec.has(sec)) bySec.set(sec, AREA_KINDS.map(() => new Set()));
       AREA_KINDS.forEach(([, k], i) => walk(m[k], bySec.get(sec)[i]));
     }
