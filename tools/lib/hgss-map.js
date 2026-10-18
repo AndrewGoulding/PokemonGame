@@ -7,7 +7,9 @@
 //   // -> { width, height (tiles), below, top (RGBA, width*16 x height*16),
 //   //      perm (u16 a tile: low byte the HGSS behaviour, bit 15 solid),
 //   //      events, header, cells, ground (each tile's ground height, with opts.ground) }
-//   (opts.skipBuildings: building models left out, by id; opts.permOnly: just the permissions)
+//   (opts.skipBuildings: building models left out, by id; opts.permOnly: just the permissions;
+//   opts.land(x, z, land): a chunk's land data in place of the matrix's, as
+//   the Safari Zone's areas are put on its matrix: PlaceSafariZoneAreas)
 //
 // How: the map header (src/data/map_headers.h) gives its area data and the
 // main matrix (files/fielddata/mapmatrix) its chunks (land data, a/0/6/5:
@@ -102,6 +104,7 @@ function renderMap(ROOT, MAPCONST, opts) {
   const main = !own || /^map_matrix_0000/.test(own);
   const mtxFile = main ? fs.readdirSync(mtxDir).sort().find((f) => f.startsWith("map_matrix_0000")) : own;
   const MX = readMatrix(path.join(mtxDir, mtxFile));
+  if (opts.land) MX.land = MX.land.map((l, i) => opts.land(i % MX.w, Math.floor(i / MX.w), l));
   const cells = [];
   for (let z = 0; z < MX.h; z++) for (let x = 0; x < MX.w; x++) {
     if (main ? MX.hdr[z * MX.w + x] === mapId : MX.land[z * MX.w + x] !== 0xffff) cells.push([x, z]);

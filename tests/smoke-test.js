@@ -2131,6 +2131,54 @@ if (window.JOHTO_TOWN_MAP) {
     assert(/alphReaction\("escape-rope"\)/.test(gameJs) && /alphReaction\("water-stone"\)/.test(gameJs) && /chamberReaction\(player\.location\.map, Overworld\.position\(\), "flash"\)/.test(gameJs));
     assert(/JohtoAlph\.locked\(player\.location\.map, alphSolved\(\)\)/.test(gameJs) && /JohtoAlph\.unownLetter\(at\.map, alphSolved\(\)\)/.test(gameJs) && /JohtoAlph\.recordCaught/.test(gameJs));
   }
+  // The Safari Zone (tools/build-johto-safari.js, ui/johto-safari.js): twelve
+  // Areas in a 3x2 layout (one of HGSS's ten defaults; the Area Customizer
+  // changes it), each with its own Pokémon; the Safari Game: 30 Balls, no steps.
+  {
+    const D = window.JOHTO_SAFARI, SZ = WORLD_MAPS.SafariZone_EntranceExterior;
+    assert(D && D.areas.length === 12 && D.defaults.length === 10 && D.defaults.every((l) => l.length === 6 && l[4] === 3), "HGSS's Areas and layouts (the Peak always in the middle of the bottom row)");
+    for (const a of D.areas) {
+      assert(a.solid.length === 1024 && a.behavior.length === 2048 && a.mons.land.day.length === 10, a.name + "'s tiles and Pokémon");
+      assert(fs.existsSync(path.join(root, "assets/world/maps/SafariZone_EntranceExterior-patch-" + a.key + ".png")) && SZ.patches[a.key], a.name + "'s picture");
+    }
+    assert(D.areas[3].mons.land.day.some(([sp]) => sp === "Geodude") && D.areas[11].mons.land.day.some(([sp]) => sp === "Sandshrew"), "Baoba's Geodude in the Peak, Sandshrew in the Desert");
+    const sandbox = { window: { WORLD_MAPS, JOHTO_SAFARI: D, JOHTO_SCRIPTS } };
+    vm.runInNewContext(fs.readFileSync(path.join(root, "ui/johto-safari.js"), "utf8"), sandbox, { filename: "ui/johto-safari.js" });
+    const p = { flags: {}, party: [], location: { map: "SafariZone_EntranceExterior", x: 79, y: 90 } }, vars = {}, went = [];
+    const S = sandbox.window.JohtoSafari.create({ player: () => p, getVar: (k) => vars[k] || 0, setVar: (k, v) => { vars[k] = v; }, teleport: (to) => went.push(to),
+      say: async () => {}, confirm: async () => true, sfx: () => {}, roomFor: () => true, applyPatches: () => {}, frameScript: async () => {} });
+    const L = S.patches("SafariZone_EntranceExterior");
+    assert(L.length === 6 && L[4] === "peak" && D.defaults.some((d) => d.join() === p.flags.johtoSafari.layout.join()), "a default layout: " + L);
+    assert.strictEqual(S.areaAt(79, 90), 3);
+    // (The Peak's tiles are on the map, its grass Pokémon those of whichever Area you're in.)
+    const grass = [...Array(1024).keys()].find((k) => D.areas[3].behavior.substr(k * 2, 2) === "02"), gx = 64 + (grass & 31), gy = 64 + (grass >> 5);
+    assert(SZ.encounter[gy * SZ.width + gx] === 1 && World.isGrass(World.blockAt("SafariZone_EntranceExterior", gx, gy)), "the Peak's grass");
+    assert(SZ.wild.slots.length === 10 && SZ.wild.weights.every((w) => w === 10) && SZ.wild.slots.some((s) => s.species === "Geodude"), "the Peak's Pokémon, one in ten each");
+    p.location = { map: "SafariZone_EntranceExterior", x: 2, y: 2 };
+    assert.strictEqual(SZ.wild, null, "none outside the Areas");
+    // The Safari Game: started by the counter's SafariZoneAction 0; out of Balls, back at the counter.
+    S.action(0);
+    assert.strictEqual(JSON.stringify(p.flags.safari), JSON.stringify({ balls: 30, hgss: true }));
+    p.flags.safari.balls = 0;
+    S.afterBattle("fled").then(() => {
+      assert(!p.flags.safari && vars.VAR_SCENE_SAFARI_ZONE_ENTRANCE === 2 && went[0].map === "SafariZone_EntranceInterior" && went[0].x === 5 && went[0].y === 2, "out of Balls: back at the counter");
+    });
+    // Baoba's tests: a Geodude caught in the Safari Zone.
+    assert.strictEqual(S.challenge(0), 0);
+    p.party.push({ species: "Geodude", met: { level: 15, map: "SafariZone_EntranceExterior" } });
+    assert.deepStrictEqual([S.challenge(0), S.challenge(1)], [1, 0]);
+    // HGSS's Safari battle (engine/safari.js): Bait and Mud move stages 0-12 from 6.
+    const h = Safari.encounter("Geodude", { hgss: true }), r7 = mulberry32(7);
+    assert.deepStrictEqual([h.catchStage, h.fleeStage, h.fleeRate], [6, 6, 90]);
+    const how = Safari.throwRock(h, r7);
+    assert(h.catchStage === 7 && (how === "furious" ? h.fleeStage === 6 : how === "angry" && h.fleeStage === 7), "Mud");
+    for (let i = 0; i < 20; i++) Safari.throwBait(h, r7);
+    assert(h.fleeStage === 0 && h.catchStage <= 2, "Bait, down to stage 0");
+    assert.strictEqual(Safari.odds(Object.assign({}, h, { catchStage: 6 }), { hp: 100, maxhp: 100, status: "" }), Math.floor(Math.floor(window.DEX.Geodude.captureRate * 15 / 10) * 100 / 300));
+    assert.strictEqual(Safari.watch(h), "watching");
+    const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
+    assert(/case "SafariZoneAction"/.test(scriptJs) && /case "ScrCmd_716"/.test(scriptJs) && /johtoSafari\.patches\(map\)/.test(gameJs), "the Safari Zone's script commands and patches");
+  }
   // (Upstairs in a Pokémon Center is FireRed's own floor, its people too.)
   for (const n of J.filter((n) => !/_PokemonCenter_2F$/.test(n))) for (const p of WORLD_MAPS[n].people) {
     const fr = /^(item_ball|cut_tree|rock_smash_rock)$/.test(p.sprite);

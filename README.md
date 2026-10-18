@@ -1719,8 +1719,8 @@ town, city, route, cave, tower, Gym, house, shop and room of HGSS's Johto
 (and the houses by Routes 26 and 27, Tohjo Falls' hidden room, Route 28 to
 Mt. Silver and Goldenrod's Game Corner, which HGSS counts as Kanto's). Not
 built: the unused maps, the Wi-Fi rooms (and the Pokémon Centers' Wi-Fi
-basements), the Battle Frontier's halls and the Safari Zone's areas, which
-need games of their own; their doors say so. New Bark Town, Route 29 and
+basements) and the Battle Frontier's halls, which need games of their own;
+their doors say so. (The Safari Zone is built, Areas and all: below.) New Bark Town, Route 29 and
 Cherrygrove City; north and west to Violet, Azalea, Goldenrod, Ecruteak,
 Olivine, Cianwood, Mahogany and Blackthorn, the Lake of Rage, Mt. Silver and
 the routes, gatehouses, caves and towers between them; and the way to Kanto:
@@ -1924,8 +1924,7 @@ them: morning (4-10), day and night (20-4), e.g. Route 29's Pidgey and
 Sentret, and Hoothoot at night; then Surf's, Gen 4's fishing (five slots a
 rod, 40/40/15/4/1) and Rock Smash's. Everything goes into
 `data/johto-maps.js`, which adds the maps to `WORLD_MAPS` (and the gate's mat,
-warp and guard). Not here yet: what needs HGSS's own games (the Battle
-Frontier, the Safari Zone's areas).
+warp and guard). Not here yet: the Battle Frontier, which comes with Sinnoh's.
 (Its music is HGSS's own: see Music and cries.)
 
 **Goldenrod's Game Corner** is the international HeartGold's: Mr. Game's
@@ -2076,6 +2075,41 @@ more with the National Pokédex), each once a day, paid in points; the
 vending machine takes money or points. Not here: the Supreme Cup's own
 reception (her flag keeps her away, as in HGSS until then), the Link
 Pokéathlon, the Data Cards and Aprijuice.
+
+**Johto's Safari Zone** is HGSS's, west of Cianwood through the Safari Zone
+Gate. Its six places, three across and two down, each hold one of HGSS's
+twelve Areas (Plains, Meadow, Savannah, Peak, Rocky Beach, Wetland, Forest,
+Swamp, Marshland, Wasteland, Mountain, Desert): each is a 32x32-tile chunk
+HGSS puts on the Safari Zone's matrix where its layout says
+(`PlaceSafariZoneAreas`). `tools/build-johto-safari.js` draws each Area in its
+place in the Safari Zone round it, in FireRed's style
+(`assets/world/maps/SafariZone_EntranceExterior-patch-<area>.png`), and writes
+`tools/lib/johto-safari.generated.js` (added to the end of
+`data/johto-maps.js`): each Area's tiles, its Pokémon (`files/arc/safari_enc.json`:
+the grass's, Surf's and the three rods', ten slots one in ten each, by
+morning, day and night), HGSS's ten default layouts and its Safari flee rates
+(`node tools/build-johto-safari.js <path to pret/pokeheartgold>`, before
+`build-johto.js`). `ui/johto-safari.js` puts the Areas where your layout has
+them (one of the ten defaults at random, the Peak always in the middle of the
+bottom row, as a new HGSS game takes), their pictures as the map's patches and
+their tiles in its collision, and makes its wild Pokémon those of the Area
+you're in. The Safari Game is HGSS's (the counter's scripts, run with
+`SafariZoneAction`): ₽500 for 30 Safari Balls and no step limit; every wild
+Pokémon is a Safari battle with HGSS's BALL, BAIT, MUD and RUN (Bait makes it
+stay but harder to catch, Mud easier to catch but likelier to flee, on HGSS's
+stages: `engine/safari.js`, with each species' HGSS flee rate); when the
+last Ball's thrown you're back at the counter ("Ding-dong! You've run out of
+Safari Balls." if it caught something), and walking out of the gate or the
+Start menu's Retire asks if you're leaving. Baoba's Owner Aptitude Test is
+HGSS's: catch a Geodude (in the Peak), then, the next time you come to the
+Safari Zone Gate (HGSS's Baoba phones three hours later), he shows you the
+**Area Customizer**: with it (talk to the staff beside him) you choose a place
+and Swap in any of the twelve Areas (one already in the layout trades places)
+or change their Order; then a Sandshrew from the Desert makes you the Owner.
+Not here: Baoba's Object Arrangement (objects you place in the Areas, which
+bring their bonus Pokémon over the days: the data's in
+`window.JOHTO_SAFARI`, the phone calls that unlock it aren't) and the Safari
+Zone Link.
 
 **Johto's Town Map**: in Johto the Town Map (and Fly's) is Johto's: HGSS's
 Pokégear map, each place on the squares HGSS gives it, drawn in FireRed's

@@ -357,7 +357,7 @@
       zRing: Player.itemCount(player, "z-ring") > 0,
       dynamaxBand: Player.itemCount(player, "dynamax-band") > 0,
       teraOrb,
-      safari: opts.safari ? { balls: player.flags.safari.balls } : undefined,
+      safari: opts.safari ? { balls: player.flags.safari.balls, hgss: !!player.flags.safari.hgss } : undefined,
       wild,
       exp: !opts.safari && !opts.noExp, levelCap: Player.levelCap(player),
       expShare: expShareOn(),
@@ -2204,13 +2204,14 @@
       if (!safari && !contest) items.push({ key: "save", label: "Save" });
       items.push({ key: "option", label: "Option" }, { key: "exit", label: "Exit" });
       for (const it of items) it.help = it.help || START_HELP[it.key];
-      const stats = safari ? [String(safari.steps).padStart(3, " ") + "/" + Safari.STEPS, "Balls  " + String(safari.balls).padStart(2, " ")] : bugContest.menuStats();
+      const stats = safari ? (safari.hgss ? [] : [String(safari.steps).padStart(3, " ") + "/" + Safari.STEPS]).concat("Balls  " + String(safari.balls).padStart(2, " ")) : bugContest.menuStats();
       const r = await GbaMenus.startMenu($("#overlay"), { items, cursor: startCursor, frame: GameOptions.get().frame, stats });
       startCursor = r.cursor;
       const v = r.key;
       if (v === "exit") return;
       if (v === "retire" && contest) { await runJohto(johtoStd("std_bug_contest_retire"), null); return; }
       if (v === "retire") {
+        if (safari.hgss) { if (await johtoSafari.retire()) return; continue; }   // (Johto's: std_safari_exit)
         if (await confirm(fill(T("SafariZone_Text_WouldYouLikeToExit")[0]))) { await safariOver(null, false); return; }
         continue;
       }
@@ -10252,7 +10253,7 @@
   const SAFARI_EXIT = () => M("FuchsiaCity_SafariZone_Entrance_Movement_Exit").concat("walk_down");
   function safariStep() {
     const s = player.flags.safari;
-    if (!s || !/^SafariZone_/.test(player.location.map)) return null;
+    if (!s || s.hgss || !/^SafariZone_/.test(player.location.map)) return null;   // (Johto's has no steps: ui/johto-safari.js)
     s.steps = Math.max(0, s.steps - 1);
     return s.steps === 0 ? { type: "safari-over", text: "SafariZone_Text_TimesUp" } : null;
   }
@@ -10316,6 +10317,8 @@
   async function safariBattle(species, level, terrain) {
     const outcome = await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(species, level))] }, terrain, safari: true });
     const s = player.flags.safari;
+    // (Johto's, HGSS's: ui/johto-safari.js.)
+    if (s && s.hgss) { show("world"); await Overworld.resume(); await johtoSafari.afterBattle(outcome); return; }
     if (outcome === "noballs") {
       show("world");
       await Overworld.resume();
@@ -10379,6 +10382,8 @@
     if (map === "Route22_NorthEntrance") return ["johto", "johto-east"];
     // (Cianwood's Gym, its falls stopped once the winch is turned: ui/johto-gymmicks.js.)
     if (map === "CianwoodCity_Gym") return gymmicks.patches(map);
+    // (Johto's Safari Zone: its Areas where the layout has them, ui/johto-safari.js.)
+    if (map === JohtoSafari.MAP) return johtoSafari.patches(map);
     if (map === "CeladonCity_GameCorner") return (f.openedRocketHideout ? [] : ["hidden"]).concat(["cardroom"]);
     if (map === "RocketHideout_B1F" && !f.TRAINER_TEAM_ROCKET_GRUNT_12) return ["barrier"];
     if (map === "RocketHideout_B4F" && !(f.TRAINER_TEAM_ROCKET_GRUNT_16 && f.TRAINER_TEAM_ROCKET_GRUNT_17)) return ["barrier"];
@@ -10740,6 +10745,8 @@
     alphPuzzle: (n) => alphPuzzle(n),
     alphWall: (n) => alphOverlay((c) => JohtoAlph.wall(c, n)),
     unownCaught: () => player.flags.unownCaught || [],
+    // (The Safari Zone: ui/johto-safari.js.)
+    safariAction: (n) => johtoSafari.action(n), safariChallenge: (n) => johtoSafari.challenge(n), areaCustomizer: () => johtoSafari.customizer(),
     giveEgg: async (species) => { Player.receive(player, Breeding.giftEgg(species, { map: player.location.map })); },
     mart: (stock) => mart(stock),
     kurt: (op) => johtoField.kurt(op), followerIdle: () => Overworld.follower.idle(), followerHide: (on) => Overworld.follower.hide(on),
@@ -10856,6 +10863,17 @@
     resume: () => Overworld.resume(), setFlag: (name, on) => johto.setFlag(name, on), frame: () => GameOptions.get().frame,
     mapView: () => ({ canvas: $("#world"), x: 112, y: 48 }), fieldWindow: (name, spec) => GbaMenus.fieldWindow(name, spec),
     moneyBox: (on) => (on ? moneyBox(20, 1) : moneyBox()), boxCount: () => Player.boxed(player).length, nationalDex: () => Player.nationalDex(player)
+  });
+  // Johto's Safari Zone (ui/johto-safari.js): its Areas and their Pokémon, the
+  // Safari Game, Baoba's tests and the Area Customizer.
+  const johtoSafari = JohtoSafari.create({
+    player: () => player, say: (pages) => say(pages), confirm: (question) => confirm(question),
+    choose: async (texts, o) => { const i = await multichoice(o.question, 0, 0, texts, o.shown ? { shown: o.shown } : {}); Screen.say(""); return i; },
+    teleport: (to) => Overworld.teleport(to), getVar: (name) => johto.getVar(name), setVar: (name, v) => johto.setVar(name, v),
+    applyPatches: (map) => applyPatches(map), sfx: (name) => sfx(name),
+    // (The scene the room's frame table has due once you're there: the attendant seeing you out.)
+    frameScript: async () => { const js = johto.frameScript(player.location.map); if (js) await runJohto(js, null); },
+    roomFor: () => player.party.length < Player.PARTY_SIZE || player.boxes.some((b) => Player.firstEmpty(b) >= 0)
   });
   // Prof. Elm's three Pokémon (HGSS's ChooseStarter): each one's picture, and
   // "Will you take it?", until you choose. It joins your party (or the PC);
@@ -11270,7 +11288,7 @@
           // Route 23 puts Victory Road back as it was: barriers up, boulders back (Route23_OnTransition).
           if (m !== tempFlagsMap && m === "Route23") LeagueRoad.reset(player.flags);
           // (Into a Johto map: its OnTransition script, before its people are placed.)
-          if (m !== tempFlagsMap) { johto.transition(m); gymmicks.enter(m); }
+          if (m !== tempFlagsMap) { johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); }
           if (m === "SSAqua_1F") ssAquaExit();
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
           if (!gear.radioOn(m)) music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }   // (the Pokégear's radio plays on)

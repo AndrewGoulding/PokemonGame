@@ -1629,7 +1629,21 @@
         };
       // ----- The Safari Zone (FireRed's battle_message.c) -----
       case "-safaribait":
+        // (HGSS's: and how it takes it, src/battle's SafariThrowBait script.)
+        if (b) return async () => {
+          await message(battle.sides.p1.name + " threw some Bait\nat the " + nameOf(a) + "!");
+          await message(nameOf(a) + (b === "busy" ? " is busy eating!" : " is eating!"));
+        };
         return battle.sides.p1.name + " threw some Bait\nat the " + nameOf(a) + "!";
+      // (HGSS's Mud, in the Rock's place: angry, or beside itself with anger.)
+      case "-safarimud":
+        return async () => {
+          await message(battle.sides.p1.name + " threw Mud\nat the " + nameOf(a) + "!", 400);
+          sfx("se_m_rock_throw");
+          flash("p2");
+          await wait(300);
+          await message(nameOf(a) + (b === "furious" ? " is beside itself\nwith anger!" : " is angry!"));
+        };
       case "-safarirock":
         return async () => {
           await message(battle.sides.p1.name + " threw a Rock\nat the " + nameOf(a) + "!", 400);
@@ -1891,12 +1905,12 @@
   const overlay = () => document.getElementById("overlay");
   const frame = () => (window.GameOptions ? window.GameOptions.get().frame : 0);
   // The Safari Zone's menu (FireRed's gText_SafariZoneMenu): BALL / BAIT /
-  // ROCK / RUN, "What will … throw?".
+  // ROCK / RUN, "What will … throw?" (Johto's, HGSS's: MUD for ROCK).
   async function chooseSafariAction() {
     say("");
     clearMenu();
     const a = await window.GbaMenus.battleAction(overlay(), { name: battle.sides.p1.name, cursor: safariCursor, frame: frame(),
-      labels: ["BALL", "BAIT", "ROCK", "RUN"], prompt: ["What will " + battle.sides.p1.name, "throw?"] });
+      labels: ["BALL", "BAIT", battle.safari.hgss ? "MUD" : "ROCK", "RUN"], prompt: ["What will " + battle.sides.p1.name, "throw?"] });
     safariCursor = a.cursor;
     return { type: ["ball", "bait", "rock", "run"][a.cursor] };
   }

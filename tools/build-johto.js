@@ -118,9 +118,11 @@ const MAPS = [
 // And the rest of Johto: every other map of HGSS's in Johto (its map headers,
 // src/data/map_headers.h), named as FireRed names its maps (EcruteakCity_Gym,
 // UnionCave_B1F, ...), titled by its place's name, its music FireRed's nearest.
-// (Not the unused ones, the Wi-Fi rooms and Pokémon Centers' Wi-Fi basements,
-// the Battle Frontier's halls and the Safari Zone's areas, which need games of
-// their own.)
+// (Not the unused ones, the Wi-Fi rooms and Pokémon Centers' Wi-Fi basements
+// and the Battle Frontier's halls, which need games of their own; nor
+// MAP_SAFARI_ZONE_01-14, HGSS's placeholders: the Safari Zone's Areas go on
+// its own matrix, where its layout puts them, as HGSS's PlaceSafariZoneAreas
+// does: tools/build-johto-safari.js and ui/johto-safari.js.)
 const SKIP = /^MAP_(EVERYWHERE|NOTHING|UNION|UNDERGROUND|UNUSED)$|UNUSED|^MAP_WIFI|_POKECENTER_B1F$|^MAP_FIGHT_AREA|^MAP_BATTLE_PARK|^MAP_BATTLE_TOWER|^MAP_BATTLE_FRONTIER_BATTLE_|^MAP_SAFARI_ZONE_\d+$|^MAP_POKEMON_LEAGUE_ENTRANCE_WIFI_ROOM$|^MAP_GOLDENROD_GAME_CORNER_JP$/;
 // (HGSS counts these as Kanto's, but they're on Johto's side: the houses by
 // Routes 26 and 27, Tohjo Falls' hidden room, Route 28 to Mt. Silver, and
@@ -249,6 +251,7 @@ function frBehavior(b) {
     case 0x3c: case 0x3d: case 0x3e: return 0x61; // ladders, up and down (towers, wells): FireRed's ladder
     case 0x6a: case 0x6b: return b;               // escalators (Goldenrod's Department Store)
     case 0x69: return 0x69;                       // door
+    case 0x80: return 0x80;                       // a counter: you talk across it (the Safari Zone's)
     case 0x83: case 0x85: case 0x86: return b;    // PC, town map, TV
     default: return 0;                            // (headbutt trees and the like: collision does it)
   }

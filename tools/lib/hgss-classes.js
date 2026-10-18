@@ -80,6 +80,8 @@ function buildingsOf(r, classes, warps) {
   for (const wp of warps) {
     const dest = wp.mapConst || wp.map || "";
     if (/CAVE|DARK_CAVE|UNION|WELL|TOHJO|FALLS|RUINS_OF_ALPH_(?!RESEARCH)|ILEX_FOREST$|UnionCave|TohjoFalls|IlexForest$/.test(dest)) continue;
+    // (A way back to where you came from, 4095, as the Safari Zone's exit: no door of its own.)
+    if (+dest === 4095) continue;
     const k = wp.y * w + wp.x;
     if (taken.has(k)) continue;
     const tiles = [], seen = new Set([k]), q = [[wp.x, wp.y]];

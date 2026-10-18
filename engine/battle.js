@@ -489,7 +489,8 @@
       if (opts.safari) {
         this.wild = true;
         this.expEnabled = false;
-        this.safari = Object.assign(window.Safari.encounter(this.sides.p2.pokemon[0].baseSpecies), { balls: opts.safari.balls | 0 });
+        // (opts.safari.hgss: HeartGold and SoulSilver's Safari Zone, Bait and Mud.)
+        this.safari = Object.assign(window.Safari.encounter(this.sides.p2.pokemon[0].baseSpecies, opts.safari), { balls: opts.safari.balls | 0 });
         this.safariOut = false;   // (the last Safari Ball missed: "Game over!")
         this.fled = false;
       }
@@ -2554,11 +2555,12 @@
           return end();
         }
       } else if (c.type === "bait") {
-        window.Safari.throwBait(s, rng);
-        this.add("-safaribait", foe);
+        const how = window.Safari.throwBait(s, rng);
+        if (s.hgss) this.add("-safaribait", foe, how); else this.add("-safaribait", foe);
       } else if (c.type === "rock") {
-        window.Safari.throwRock(s, rng);
-        this.add("-safarirock", foe);
+        // (HGSS's Mud, in the Rock's place.)
+        const how = window.Safari.throwRock(s, rng);
+        if (s.hgss) this.add("-safarimud", foe, how); else this.add("-safarirock", foe);
       }
       if (this.sides.p2.choice && this.sides.p2.choice.type === "flee") {
         this.add("-safarifled", foe);

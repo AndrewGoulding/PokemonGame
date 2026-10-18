@@ -35,7 +35,8 @@
 //   bugContest (ui/bug-contest.js: the Bug-Catching Contest's commands),
 //   phoneCall(who, kind, n), registerCard(n), phoneRematch(contact), phoneTrigger(n, on) (ui/pokegear.js),
 //   coinsBox(on), casinoGame() (ui/voltorb-flip.js),
-//   shake(times, { x, y, delay }), alphPuzzle(n) (the flag to set if put together), alphWall(n), unownCaught().
+//   shake(times, { x, y, delay }), alphPuzzle(n) (the flag to set if put together), alphWall(n), unownCaught(),
+//   safariAction(n), safariChallenge(n), areaCustomizer() (ui/johto-safari.js).
 (function () {
   "use strict";
 
@@ -552,7 +553,6 @@
           case "BugContestGetTimeLeft": buffers[a[0]] = String(env.bugContest ? env.bugContest.minutesLeft() : 0); break;
           case "SetFlagVar": setFlag(flagNamed(getVar(a[0])), true); break;
           case "ClearFlagVar": setFlag(flagNamed(getVar(a[0])), false); break;
-          case "CountPCEmptySpace": setVar(a[0], env.pcSpace ? env.pcSpace() : 1); break;
 
           // The Gyms' gimmicks (ui/johto-gymmicks.js): Violet's lift, Cianwood's winch.
           case "VioletGymElevator": await flush(); await env.violetLift(); break;
@@ -577,6 +577,10 @@
           case "OpenAlphHiddenRoom": await flush(); await env.alphWall(+getVar(a[0]) || 0); break;
           case "ScrCmd_545": setVar(a[0], window.JohtoAlph.caughtCount(env.unownCaught())); break;
           case "CheckSeenAllLetterUnown": setVar(a[0], window.JohtoAlph.allLetters(env.unownCaught()) ? 1 : 0); break;
+          // The Safari Zone (ui/johto-safari.js): the Safari Game, Baoba's tests, the Area Customizer.
+          case "SafariZoneAction": env.safariAction(+getVar(a[0]) || 0); break;
+          case "CheckSafariZoneChallengeCompleted": setVar(a[1], env.safariChallenge(+getVar(a[0]) || 0)); break;
+          case "ScrCmd_716": await flush(); if (await env.areaCustomizer()) setFlag("FLAG_UNK_99D", true); break;
 
           // The screen, and warps.
           case "FadeScreen": await flush(); await env.fade(+getVar(a[2]) === 0); break;

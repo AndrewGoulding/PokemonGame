@@ -112,6 +112,7 @@ function compiler(ROOT, conv) {
     if (/^0x[0-9a-f]+$/i.test(tok)) return parseInt(tok, 16);
     if (tok === "obj_player") return "player";
     if (/^(VAR_|FLAG_|obj_|std_|MOVE_)/.test(tok)) return tok;   // (std_*: CallStd's scripts, by name; moves by name)
+    if (/^MAP_/.test(tok)) return tok;   // (maps by name: Warp's and SetDynamicWarp's, as JOHTO_SCRIPTS.mapConsts has them)
     if (/^msg_/.test(tok)) { needMsg(tok); return tok; }
     if (/^ITEM_/.test(tok)) return conv.item(tok) || tok;
     if (/^SPECIES_/.test(tok)) return conv.species(tok) || tok;
