@@ -32,7 +32,8 @@
 //   relearnable(slot) and relearn(slot, moves) (the Move Relearner's screen: learned?),
 //   music(song) (null: the map's own again; false: none), se(name), shake(count, opts),
 //   moneyBox(on), moveWarp(map, i, x, y), pcSpace(), itemPocket(id),
-//   bugContest (ui/bug-contest.js: the Bug-Catching Contest's commands).
+//   bugContest (ui/bug-contest.js: the Bug-Catching Contest's commands),
+//   phoneCall(who, kind, n), registerCard(n), phoneRematch(contact), phoneTrigger(n, on) (ui/pokegear.js).
 (function () {
   "use strict";
 
@@ -311,6 +312,12 @@
           // The Pokégear's phone numbers (who's given you theirs: they don't ask again).
           case "CheckRegisteredPhoneNumber": setVar(a[1], (state().phone || []).includes(a[0]) ? 1 : 0); break;
           case "RegisterGearNumber": { const s = state(); s.phone = s.phone || []; if (!s.phone.includes(a[0])) s.phone.push(a[0]); break; }
+          // (The Pokégear itself, ui/pokegear.js: a story call, its cards, a trainer wanting a rematch, the calls that come.)
+          case "PhoneCall": await flush(); await env.phoneCall(+getVar(a[0]), +getVar(a[1]), +getVar(a[2])); break;
+          case "RegisterPokegearCard": env.registerCard(+a[0]); break;
+          case "GetPhoneBookRematch": setVar(a[1], env.phoneRematch(+getVar(a[0])) ? 1 : 0); break;
+          case "ScrCmd_148": env.phoneTrigger(+a[0], true); break;
+          case "UnsetPhoneCallTrigger": env.phoneTrigger(+a[0], false); break;
           // Elevators: the floor chosen is where its doors open (FireRed's dynamic warp), and the floor it's at.
           case "SetDynamicWarp": env.setDynamicWarp(a[0], +getVar(a[2]) || 0, +getVar(a[3]) || 0); break;
           case "GetDynamicWarpFloorNo": {
@@ -536,8 +543,8 @@
             // (Conditional jumps and calls: GoToIfEq, CallIfNe, ...)
             if ((m = /^GoToIf(Lt|Eq|Gt|Le|Ge|Ne)$/.exec(op))) { if (cond[m[1]](cmp)) go(a[0]); }
             else if ((m = /^CallIf(Lt|Eq|Gt|Le|Ge|Ne)$/.exec(op))) { if (cond[m[1]](cmp)) { stack.push(pc); go(a[0]); } }
-            // (Everything else: locks, the follower Pokémon, the Pokégear,
-            // phone calls, photos, ScrCmd_*: nothing here.)
+            // (Everything else: locks, the follower Pokémon, photos,
+            // ScrCmd_*: nothing here.)
         }
       }
       await flush();
@@ -594,6 +601,8 @@
           const o = env.origin(zone) || { x: 0, y: 0 };
           env.moveWarp(map, +getVar(a[0]), (+getVar(a[1]) || 0) - o.x, (+getVar(a[2]) || 0) - o.y);
         }
+        else if (op === "GetPhoneBookRematch") setVar(a[1], env.phoneRematch(+getVar(a[0])) ? 1 : 0);
+        else if (op === "CheckRegisteredPhoneNumber") setVar(a[1], (state().phone || []).includes(a[0]) ? 1 : 0);
         else if ((m = /^GoToIf(Lt|Eq|Gt|Le|Ge|Ne)$/.exec(op))) { if (cond[m[1]](cmp) && a[0] in z.labels) pc = z.labels[a[0]]; }
         else if ((m = /^CallIf(Lt|Eq|Gt|Le|Ge|Ne)$/.exec(op))) { if (cond[m[1]](cmp) && a[0] in z.labels) { stack.push(pc); pc = z.labels[a[0]]; } }
         // (A person put elsewhere: where the map will place them.)

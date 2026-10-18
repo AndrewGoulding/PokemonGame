@@ -366,8 +366,9 @@
     // StandardWildEncounter: a new kind of ground, then the rate test.
     if (prev != null && prev !== b.behavior && Math.floor(rng() * 100) >= 60) return null;
     const buffAdd = () => { state.buff = opts.repel ? 0 : (state.buff | 0) + rate; };
-    // (A Lure: twice as often.)
-    const base = (opts.bike ? Math.floor(rate * 16 * 80 / 100) : rate * 16) * (opts.lure ? 2 : 1);
+    // (A Lure: twice as often. `scale`: more or less often still, as the
+    // Pokégear radio's March and Lullaby make them: ui/pokegear.js.)
+    const base = Math.floor((opts.bike ? Math.floor(rate * 16 * 80 / 100) : rate * 16) * (opts.lure ? 2 : 1) * (opts.scale || 1));
     const chance = Math.min(MAX_ENCOUNTER_RATE, base + Math.floor((state.buff | 0) * 16 / 200));
     if (Math.floor(rng() * MAX_ENCOUNTER_RATE) >= chance) { buffAdd(); return null; }
     const mon = pickWild(m, rng, opts.surf ? m.water : null);

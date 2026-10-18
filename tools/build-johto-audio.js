@@ -40,12 +40,13 @@ const sdat = readSdat(fs.readFileSync(sdatFile));
 // ---------- Which songs ----------
 
 // Every sequence a map header plays, and HGSS's other songs but its title,
-// opening and ending, its radio shows, the GB Sounds' versions (_P_) and the
-// Pokéwalker's (_PHC), its Pokéathlon, Battle Frontier and Wi-Fi screens; and
-// all its jingles (SEQ_ME_*).
+// opening and ending, its radio shows (but the Pokégear's Pokémon March and
+// Lullaby and the Unown's signal: ui/pokegear.js), the GB Sounds' versions
+// (_P_) and the Pokéwalker's (_PHC), its Pokéathlon, Battle Frontier and Wi-Fi
+// screens; and all its jingles (SEQ_ME_*).
 const headers = fs.readFileSync(path.join(pret, "src/data/map_headers.h"), "utf8");
 const onMaps = new Set([...headers.matchAll(/MusicId = (SEQ_\w+)/g)].map((m) => m[1]));
-const SKIP = /_P_|_PHC$|^SEQ_GS_(RADIO_|TITLE|OPENING_|POKEMON_THEME|ENDING|PT_|BF_|BA_BRAIN|WINBRAIN|WIFI|GURUGURU)/;
+const SKIP = /_P_|_PHC$|^SEQ_GS_(RADIO_(?!MARCH$|KOMORIUTA$|UNKNOWN$)|TITLE|OPENING_|POKEMON_THEME|ENDING|PT_|BF_|BA_BRAIN|WINBRAIN|WIFI|GURUGURU)/;
 const wantSeq = (name) => onMaps.has(name) ? /^SEQ_(GS|PL)_/.test(name) : (/^SEQ_GS_/.test(name) && !SKIP.test(name)) || /^SEQ_ME_/.test(name);
 const songName = (seq) => "gs_" + seq.replace(/^SEQ_(GS_)?/, "").toLowerCase();
 

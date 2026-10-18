@@ -1619,6 +1619,83 @@ if (window.JOHTO_TOWN_MAP) {
   assert(["VIOLET_CITY", "GOLDENROD_CITY", "BLACKTHORN_CITY"].every((sec) => J.fly[sec]));
 }
 
+// The Pokégear (ui/pokegear.js), its phone and radio from HGSS (tools/build-johto-phone.js,
+// at the end of data/johto-maps.js): the phone book, the calls, the trainers' rematch tiers.
+{
+  const box = { window: { WORLD_TRAINERS: {}, WORLD_MAPS: {} }, Math: Object.create(Math) };
+  vm.runInNewContext(fs.readFileSync(path.join(root, "tools/lib/johto-phone.generated.js"), "utf8"), box);
+  vm.runInNewContext(fs.readFileSync(path.join(root, "ui/pokegear.js"), "utf8"), box);
+  const P = box.window.JOHTO_PHONE, TR = box.window.WORLD_TRAINERS, plain = (x) => JSON.parse(JSON.stringify(x));   // (out of the sandbox)
+  assert.strictEqual(P.contacts.length, 75);
+  const joey = P.contacts[10];
+  assert.deepStrictEqual(plain([joey.name, joey.cls, joey.trainer, joey.where, joey.gift]), ["Joey", "Youngster", "HGSS_TRAINER_YOUNGSTER_JOEY", "Route 30", "hp-up"]);
+  assert.deepStrictEqual(plain(P.rematch.HGSS_TRAINER_YOUNGSTER_JOEY.slice(2)), ["HGSS_TRAINER_YOUNGSTER_JOEY_2", "HGSS_TRAINER_YOUNGSTER_JOEY_3", "HGSS_TRAINER_YOUNGSTER_JOEY_4"]);
+  assert.deepStrictEqual(["_2", "_3", "_4"].map((t) => TR["HGSS_TRAINER_YOUNGSTER_JOEY" + t].party.map((m) => m.species + m.level).join()), ["Raticate34", "Raticate40", "Raticate54"]);
+  assert.deepStrictEqual(plain(P.rematchIntro.HGSS_TRAINER_YOUNGSTER_JOEY), ["I've been waiting!\nLet's battle now!"]);
+  assert.strictEqual(P.scripts[33][2], 3, "Joey's PHONE_SCRIPT_033 wants a rematch");
+  assert(P.radio.music[0] === "Pokémon Music" && P.radio.passwords.length === 30 && P.radio.alph.includes("MAP_RUINS_OF_ALPH_UNDERGROUND_HALL"));
+  // A game's worth of state for it: Joey beaten, his number and Lyra's.
+  const s = { f: {}, v: {}, phone: [1, 10] }, flags = {}, said = [];
+  const johto = { state: () => s, flag: (n) => !!s.f[n], setFlag: (n, on) => { if (on) s.f[n] = true; else delete s.f[n]; }, getVar: (n) => s.v[n] || 0 };
+  let yes = true;
+  const gear = box.window.Pokegear.create({
+    player: () => ({ name: "GOLD", location: { map: "VioletCity", x: 1, y: 1 } }), johto: () => johto, map: () => "VioletCity", isGirl: () => false,
+    sfx() {}, music() {}, mapMusic() {}, fanfare() {}, say: async (p) => { said.push(...[].concat(p)); }, confirm: async (q) => { said.push(q); return yes; },
+    giveItem: async () => {}, hasItem: () => false, beaten: (id) => !!flags[id], setBeaten: (id, on) => { flags[id] = on; },
+    badges: () => ({ johto: 2, all: 10 }), dex: () => ({ seen: 0, caught: 0 }), caught: () => false, dayCare: () => [], frame: () => 0
+  });
+  s.f.FLAG_GOT_POKEGEAR = true;
+  assert(gear.has() && gear.registered(10) && !gear.registered(4));
+  // GetPhoneBookRematch: nothing until he wants one; then his party again until the
+  // Radio Tower (FLAG_UNK_97D), then his second tier, his third after the Elite Four.
+  flags.HGSS_TRAINER_YOUNGSTER_JOEY = true;
+  assert.strictEqual(gear.rematch(10), 0);
+  s.gear.seeking[10] = true;
+  assert.strictEqual(gear.rematch(10), "HGSS_TRAINER_YOUNGSTER_JOEY");
+  s.f.FLAG_UNK_97D = true;
+  assert.strictEqual(gear.rematch(10), "HGSS_TRAINER_YOUNGSTER_JOEY_2");
+  flags.HGSS_TRAINER_YOUNGSTER_JOEY_2 = true;
+  assert.strictEqual(gear.rematch(10), "HGSS_TRAINER_YOUNGSTER_JOEY_2", "his third tier waits for the Elite Four");
+  s.f.FLAG_UNK_97E = true;
+  assert.strictEqual(gear.rematch(10), "HGSS_TRAINER_YOUNGSTER_JOEY_3");
+  // Calling him: his greeting, then one of his lines (Generic: a Pokémon of his, one where he is).
+  delete s.gear.seeking[10];
+  const lines = gear.callLines(10, false);
+  assert(/This is Joey/.test(lines[0]) && lines.length >= 3 && !lines.join().includes("{BUF"), lines.join(" / "));
+  // Elm's story calls (PhoneCall 1, 2, n) and his own by the story: the Egg, after Mr. Pokémon.
+  assert.strictEqual(P.elmCalls[0], 2);
+  assert(/disaster/.test(P.contacts[1].msgs[P.scripts[P.elmCalls[0]][0]].join(" ")));
+  s.f.FLAG_GOT_ELMS_PANIC_CALL = true;
+  assert(/stepped away/.test(gear.callLines(1, false).join(" ")), "Elm, after his panic call: " + gear.callLines(1, false).join(" "));
+  // A call while walking: ten minutes on, the next step (half the time) rings.
+  box.Math.random = () => 0;
+  assert.strictEqual(gear.step(), null, "not yet");
+  gear.callDue();
+  s.phone.push(4);
+  assert.deepStrictEqual(plain(gear.step()), { type: "phone" }, "Lyra calls");
+  // A beaten trainer you haven't the number of asks again; Yes, and it's in.
+  const before = s.phone.length;
+  flags.HGSS_TRAINER_PICNICKER_LIZ = true;
+  gear.talkTrainer({ trainer: { id: "HGSS_TRAINER_PICNICKER_LIZ" } }).then((asked) => {
+    assert(asked && s.phone.length === before + 1 && s.phone.includes(12), "Liz's number");
+    assert(said.includes("Registered the phone number in the\nPokégear!"));
+  }).catch((e) => { console.error(e); process.exit(1); });
+  assert.strictEqual(gear.encounterRate(), 1, "no radio on");
+  // The radio's March and Lullaby: twice and half as many wild Pokémon (World.stepEncounter's scale).
+  const tries = (scale) => {
+    let n = 0, seed = 1;
+    const rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const grass = (() => { const m = WORLD_MAPS.Route1; for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) if (World.isGrass(World.blockAt("Route1", x, y))) return [x, y]; })();
+    for (let i = 0; i < 4000; i++) if (World.stepEncounter({ steps: 99, prev: World.blockAt("Route1", ...grass).behavior }, "Route1", grass[0], grass[1], { rng, scale })) n++;
+    return n;
+  };
+  const none = tries(1), march = tries(2), lullaby = tries(0.5);
+  assert(march > none * 1.7 && lullaby < none * 0.65, "radio " + lullaby + " / " + none + " / " + march);
+  const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
+  assert(/<script src="ui\/pokegear\.js"><\/script>/.test(html) && /key: "gear", label: "Pokégear"/.test(gameJs) && /gear\.step\(\)/.test(gameJs));
+  assert(["PhoneCall", "RegisterPokegearCard", "GetPhoneBookRematch", "UnsetPhoneCallTrigger"].every((c) => scriptJs.includes('case "' + c + '"')));
+}
+
 // Shiny Pokémon: 1 in 4096; kept through saving; trainers' never are.
 {
   assert.strictEqual(Party.SHINY_ODDS, 1000);

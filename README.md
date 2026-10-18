@@ -1834,7 +1834,7 @@ fades, warps, trainer and wild battles (`TrainerBattle`, `WildBattle`, a
 Rocket trap's Pokémon, a battle alongside someone), Badges (`GiveBadge`: Zephyr
 to Rising), Pokémon and Eggs given, money and Coins, trainers beaten
 (`SetTrainerFlag`), the phone numbers people give you (they don't ask
-again), and elevators, leaving out what this game hasn't got (photos, the camera's
+again), their story calls and the Pokégear's cards (see the Pokégear below), and elevators, leaving out what this game hasn't got (photos, the camera's
 pans and other DS screens). So the Apricorn man on Route 30 comes out of his house
 as you pass and gives you the Apricorn Box, Cherrygrove's Guide Gent shows you
 round, Team Rocket harasses a man in Azalea Town, Lyra takes you to the Day
@@ -1926,7 +1926,7 @@ rod, 40/40/15/4/1) and Rock Smash's. Everything goes into
 `data/johto-maps.js`, which adds the maps to `WORLD_MAPS` (and the gate's mat,
 warp and guard). Not here yet: what needs HGSS's own games (the Battle
 Frontier, the Pokéathlon, the Safari Zone's areas,
-the Game Corner's machines, the Pokégear's phone calls). (Its music is HGSS's
+the Game Corner's machines). (Its music is HGSS's
 own: see Music and cries.)
 
 **The walking Pokémon** (HGSS's follower: `ui/follower.js`, and the
@@ -2016,6 +2016,61 @@ region you're in (Kanto's places in Kanto, Johto's in Johto). Once you've been
 to Johto, SWITCH (or R) on the Town Map turns between Johto's map and Kanto's
 (and the Sevii pages). `tools/build-johto-town-map.js` builds it (see Town Map
 above).
+
+**The Pokégear** (`ui/pokegear.js`) is HeartGold's, in FireRed's look: once
+Elm has given you your starter (HGSS's `FLAG_GOT_POKEGEAR`) it's on the start
+menu, under the Bag. Its cards are along the top in HeartGold's gold, with the
+day and time: the **Phone** (always), the **Map** once Cherrygrove's Guide Gent
+has shown you round, and the **Radio** once you've won its card at the Radio
+Tower (the scripts' `RegisterPokegearCard`); left and right turn between them,
+B puts it away. The Phone lists the numbers you have (HGSS's names and classes:
+"Joey, Youngster", "Prof. Elm, Pokémon Professor"), and A calls one: the line
+rings ("...... ...... ......"), they answer with HGSS's own words, and it goes
+("Click! ......"). What they say is HGSS's call table (`src/application/pokegear/phone`):
+a trainer's greeting for the time of day (msg_0640), then the first of their
+call scripts whose test passes (`sGenericPhoneCallHeaders`: by chance, on
+their day and time, after the Radio Tower, during Team Rocket's takeover...):
+one of their Pokémon or one in the wild where they are, wanting a rematch
+("Let's get together and battle! ... Route 30's where I'll be."), or a gift
+waiting for you; nearby, "What's with the phone call? Come talk to me!".
+Prof. Elm's go by the story (the Egg, the radio, the Badges); Lyra or Ethan,
+Kurt, Bill, Buena, Irwin, Kenji, the Day-Care couple, the Bike Shop, Baoba and
+the Gym Leaders have their own (Prof. Oak's tells you how many Pokémon you've
+seen and caught). The scripts' story calls (`PhoneCall`: Elm's panic call
+on Route 30 after Mr. Pokémon, his Egg call in Violet City, the radio, and
+Oak's and Baoba's) ring through it, and **calls come while you walk** as in
+HGSS (`GearPhoneRingManager`): once ten minutes have gone by, the next step
+has an even chance of a call from someone whose number you have (half the
+time one of the first group, then 30 and 20 percent), each in turn, never
+from the map you're on; Elm calls when his Mystery Egg hatches. A
+**trainer** with a phone number (HGSS's phone book, `files/tel`) asks for
+yours after you beat them ("Hey, can I get your number?"; Yes, and
+"Registered the phone number in the Pokégear!"), and again if you said no and
+talk to them. When one calls wanting a rematch, talk to them and they battle
+with their rematch party (`GetPhoneBookRematch`: HGSS's tiers, `TRAINER_X_2`,
+`_3`, `_4`, the next as the story lets it: after the Radio Tower, the Elite
+Four, then Blue), and give their gift when beaten (Joey's HP Up); a gift
+they called about is theirs to give when you talk to them. (Gym Leaders
+battle again at the Fighting Dojo, which this game hasn't got: they don't
+offer.) The Map card shows the region's Town Map small with where you are, A
+the Town Map itself. The Radio tunes to HGSS's stations (`Radio_GetAvailableChannels`):
+**Pokémon Music** (DJ Ben: the Pokémon March on Mondays, Wednesdays, Fridays
+and Sundays, the Lullaby on Tuesdays, Thursdays and Saturdays), **Pokémon
+Talk** (Mary and Prof. Oak on five places in the region and a Pokémon there,
+mostly one you haven't caught) and **Buena's Password** (today's password, if
+you've a Blue Card); only the Unown's mysterious transmission in the Ruins of
+Alph's hall, the Mahogany signal round Mahogany until the hideout's cleared,
+and Team Rocket's broadcast while they've the Radio Tower; Kanto has Music,
+Talk and the Poké Flute. Each show's lines come one by one with its song
+(HGSS's: the March, Lullaby and Unown songs are built into
+`assets/audio/johto-music.js` by `tools/build-johto-audio.js` for it), and
+the song plays on as you walk, until you go to another map or into a battle:
+while the March plays, wild Pokémon come twice as often; the Lullaby, half as
+often. `tools/build-johto-phone.js` builds the phone book, call scripts,
+greetings, rematch tiers and parties and the radio's shows from a
+pret/pokeheartgold checkout (`node tools/build-johto-phone.js <path>`, into
+`tools/lib/johto-phone.generated.js`, which `tools/build-johto.js` puts at the
+end of `data/johto-maps.js`).
 
 ## Orre: the Outskirt Stand (in progress)
 

@@ -1,0 +1,685 @@
+// HeartGold's Pokégear (src/application/pokegear), drawn in FireRed's look:
+// FireRed's font and window frames at 240x160, its cards along the top (the
+// Phone; the Map, once Cherrygrove's Guide Gent has shown you round; the
+// Radio, once you've its card from the Radio Tower), the day and time at the
+// top right. The phone's people, their calls and the radio's shows are HGSS's
+// (window.JOHTO_PHONE, tools/build-johto-phone.js).
+//
+//   const gear = Pokegear.create(env);
+//   gear.has()                    // you've the Pokégear (FLAG_GOT_POKEGEAR: Elm's starter)
+//   await gear.open()             // the Pokégear, from the start menu
+//   await gear.call(who, kind, n) // a script's PhoneCall: a story call (Elm's)
+//   gear.registerCard(n)          // RegisterPokegearCard: 1 the Map, 2 the Radio
+//   gear.rematch(contact)         // GetPhoneBookRematch: the trainer they'd battle as now, or 0
+//   gear.setTrigger(n, on)        // HGSS's call triggers (ScrCmd_148, UnsetPhoneCallTrigger)
+//   gear.step()                   // each step: { type: "phone" } when it rings ...
+//   await gear.ring()             // ... and then the call
+//   await gear.beatTrainer(person)   // a phone trainer just beaten: may they have your number?
+//   await gear.talkTrainer(person)   // talking to one beaten: a rematch, a gift, or asking
+//                                    // again (true), or nothing to do (false)
+//   gear.encounterRate()          // the radio's March (x2) or Lullaby (x0.5) on wild Pokémon, else 1
+//   gear.radioOn(map)             // the radio still playing there (the map's music waits)
+//
+// env: player(), johto() (ui/johto-script.js's), map() (where you are), isGirl(),
+//   sfx(name), music(name), mapMusic(), fanfare(name), townMap(), say(pages),
+//   confirm(question), giveItem(id) (and says so), hasItem(id), beaten(id),
+//   setBeaten(id, on), rematch(person, trainer, intro) -> outcome, badges()
+//   ({ johto, all }), dex() ({ seen, caught }), caught(species), dayCare() (names),
+//   frame() (the Option screen's FRAME).
+//
+// What you've got lives in player.flags.johto (HGSS's flags), as `phone`
+// (the numbers you have, as RegisterGearNumber gives them) and `gear`
+// ({ cards, seeking (who wants a rematch), gifts (who has one for you),
+// triggers, called }).
+(function () {
+  "use strict";
+
+  const W = 240, H = 160;
+  const GM = () => window.GBA_MENUS;
+  const P = () => window.JOHTO_PHONE || null;
+  const WHITE = [255, 255, 255], DARK = [98, 98, 98], LIGHT = [213, 213, 205];
+  // (HeartGold's gold, for the Pokégear's case.)
+  const GOLD = [216, 152, 48], GOLD_DARK = [152, 88, 24], GOLD_LIGHT = [248, 216, 136], CREAM = [248, 240, 216], RED = [224, 56, 40];
+  const CARDS = ["Phone", "Map", "Radio"];
+  const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  // HGSS's phone call kinds (PHONECALLTYPE_*), generic call tests
+  // (PHONECALLGENERIC_*) and script kinds (PHONESCRIPTTYPE_*).
+  const T = { GENERIC: 0, MOM: 1, ELM: 2, OAK: 3, KURT: 4, BIKE_SHOP: 5, KENJI: 6, BILL: 7, DAYCARE_MAN: 8, DAYCARE_LADY: 9, BUENA: 10,
+    FRIEND: 11, GYM_LEADER: 12, BAOBA: 13, IRWIN: 14 };
+  const G = { NIL: 0, RAND1: 1, FIGHT_POST_ROCKETS: 2, POST_ROCKET_WEEK_TIME: 3, BUG_CONTEST_DAYS: 4, DURING_ROCKETS: 5, RAND6: 6,
+    FIGHT_POST_ROCKETS_NOT_CONTEST: 7, GIFT_NOT_CONTEST: 8, NONE: 255 };
+  const S_UNK1 = 1, S_FLAG = 2, S_REMATCH = 3, S_ITEM = 4, S_WORD = 5;
+  const KENJI = 16;
+  // Who calls while you walk (ov02_02251FDC: trainers, Gym Leaders, your
+  // friend, Buena and Irwin), and how often (GearPhoneRingManager: once ten
+  // minutes have gone by, the next step has an even chance of a call).
+  const CALLERS = new Set([T.GENERIC, T.GYM_LEADER, T.FRIEND, T.BUENA, T.IRWIN]);
+  const CALL_MINUTES = 10, CALL_CHANCE = 50;
+  // The call triggers' calls (ov02_02253C84): who, and what they say.
+  const TRIGGERS = { 0: [1, 13], 1: [1, 7], 2: [15, 85], 3: [9, 93] };
+  // HGSS's Gen 4 Berries (ITEM_CHERI_BERRY on: a gift "berry" is one of the ten) and
+  // Balls (ITEM_POKE_BALL's gift: an Ultra, Great or Poké Ball).
+  const BERRIES = ["cheri-berry", "chesto-berry", "pecha-berry", "rawst-berry", "aspear-berry", "leppa-berry", "oran-berry", "persim-berry", "lum-berry", "sitrus-berry"];
+  const BALLS = ["ultra-ball", "great-ball", "poke-ball"];
+  const rnd = (n) => Math.floor(Math.random() * n);
+  const roll = (chance) => rnd(100) <= chance;   // (rollPercentChance)
+
+  function create(env) {
+    const J = () => env.johto();
+    const state = () => {
+      const s = J().state();
+      s.phone = s.phone || [];
+      return s.gear || (s.gear = { cards: [], seeking: {}, gifts: {}, triggers: {}, called: {} });
+    };
+    const numbers = () => { state(); return J().state().phone; };
+    const registered = (i) => numbers().includes(i);
+    const register = (i) => { if (!registered(i)) numbers().push(i); };
+    const has = () => J().flag("FLAG_GOT_POKEGEAR");
+    // (The Map: once the Guide Gent's done, VAR_SCENE_CHERRYGROVE_CITY_OW 2; the Radio: FLAG_GOT_RADIO_CARD.)
+    const hasCard = (n) => n === 0 || state().cards.includes(n) ||
+      (n === 1 && +J().getVar("VAR_SCENE_CHERRYGROVE_CITY_OW") >= 2) || (n === 2 && J().flag("FLAG_GOT_RADIO_CARD"));
+    function registerCard(n) { if (!state().cards.includes(n)) state().cards.push(n); }
+
+    // ---------- Where and when ----------
+    // (HGSS's map constant for one of Johto's maps; its section's name.)
+    let constOf = null;
+    const hgssMap = (name) => {
+      const J2 = window.JOHTO_SCRIPTS;
+      if (!constOf && J2) { constOf = {}; for (const [c, n] of Object.entries(J2.mapConsts)) constOf[n] = c; }
+      return (constOf && constOf[name]) || null;
+    };
+    const mapOfConst = (c) => (window.JOHTO_SCRIPTS && window.JOHTO_SCRIPTS.mapConsts[c]) || null;
+    function section(name) {
+      const JT = window.JOHTO_TOWN_MAP, KT = window.TOWN_MAP;
+      const sec = (JT && JT.mapSections[name]) || (KT && KT.mapSections && KT.mapSections[name]);
+      return sec ? { sec, name: (JT && JT.names[sec]) || (KT && KT.names && KT.names[sec]) || "" } : { sec: null, name: "" };
+    }
+    const inJohto = () => (window.WORLD_MAPS[env.map()] || {}).region === "johto";
+    // HGSS's times of day for calls and the wild: morning 4-10, day 10-20, night 20-4.
+    const timeOfDay = () => { const h = new Date().getHours(); return h >= 4 && h < 10 ? 0 : h >= 10 && h < 20 ? 1 : 2; };
+    const weekday = () => new Date().getDay();
+    const takeover = () => { const v = +J().getVar("VAR_SCENE_ROCKET_TAKEOVER"); return v >= 2 && v <= 4; };
+    const afterRadioTower = () => J().flag("FLAG_BEAT_RADIO_TOWER_ROCKETS");
+    const isHere = (c) => !!c.map && hgssMap(env.map()) === c.map;
+
+    // ---------- Their words ----------
+    // HGSS's buffers: 0 you, 1 them, 2 where you are, 3 where they are, 4 a word,
+    // 10 and 11 one of their Pokémon and one in the wild where they are.
+    function buffers(i) {
+      const c = P().contacts[i], data = c.trainer && window.WORLD_TRAINERS[c.trainer];
+      const party = data && data.party.length ? data.party : null;
+      return { 0: env.player().name, 1: c.name, 2: section(env.map()).name, 3: c.where, 10: party ? party[rnd(party.length)].species : "Rattata", 11: wildThere(c) };
+    }
+    // (getRandomEncounterSlot: a Fisherman's from the water, anyone else's from the grass, by the time of day.)
+    function wildThere(c) {
+      const m = window.WORLD_MAPS[mapOfConst(c.map)];
+      const t = m && (c.trainerClass === "FISHERMAN" && m.water ? m.water : m.wild);
+      if (!t || !t.slots || !t.slots.length) return "Rattata";
+      const s = t.slots[rnd(t.slots.length)], tod = timeOfDay();
+      return (tod === 2 && s.night) || (tod === 0 && s.morning) || s.species;
+    }
+    const fill = (pages, b) => (pages || []).map((p) => p.replace(/\{BUF(\d+)\}/g, (m, n) => (b[n] != null ? b[n] : "")));
+    const girl = () => (env.isGirl() ? 1 : 0);
+
+    // ---------- What they say: HGSS's call scripts ----------
+    //
+    // A call: the pages they say (after their greeting), and what it does
+    // (PhoneCall_ApplyGenericNPCcallSideEffect: wanting a rematch, a gift
+    // waiting for you, a flag, a word).
+    function sideEffect(i, def, b) {
+      const g = state();
+      if (def[2] === S_REMATCH) g.seeking[i] = true;
+      else if (def[2] === S_ITEM) g.gifts[i] = def[4] === "berry" ? BERRIES[rnd(10)] : def[4] === "ball" ? BALLS[rnd(3)] : def[4];
+      else if (def[2] === S_FLAG || def[2] === S_UNK1) J().setFlag(def[4], !!def[3]);
+      else if (def[2] === S_WORD) b[4] = ((P().contacts[i].msgs[def[4] + rnd(def[3])] || [])[0] || "").replace(/\n/g, " ");
+    }
+    // A script's pages (GearPhoneCall_Simple / _Generic / _Generic2): the
+    // greeting (their row of msg_0640, unless they've none), then its message.
+    function scripted(i, script, incoming, handler) {
+      const c = P().contacts[i], def = P().scripts[script];
+      if (!def) return [];
+      const b = buffers(i);
+      sideEffect(i, def, b);
+      const greet = c.greet != null ? P().greetings[c.greet][timeOfDay() * 2 + (incoming ? 6 : 0) + girl()] : [];
+      let msg = def[girl()];
+      if (handler === 2) { const r = rnd(11); msg = def[0] === def[1] ? def[0] + r : girl() ? def[1] + 2 * r + 1 : def[0] + 2 * r; }
+      return fill(greet, b).concat(fill(c.msgs[msg], b));
+    }
+    // The generic calls (PhoneScriptGeneric_GetScriptIdInternal): the first of
+    // their eight whose test passes, or the last one tested.
+    function generic(i, incoming) {
+      const c = P().contacts[i], hdrs = (P().generic[i] || []).slice(incoming ? 8 : 0, incoming ? 16 : 8), g = state();
+      if (!incoming && isHere(c)) return scripted(i, c.local, false, 0);
+      let last = null;
+      for (const h of hdrs) {
+        const [type, chance, handler, script] = h;
+        if (type === G.NIL || type === G.NONE) break;
+        last = h;
+        let ok;
+        if (type === G.FIGHT_POST_ROCKETS) ok = !g.seeking[i] && !g.gifts[i] && (afterRadioTower() || handler !== 0 || P().scripts[script][2] !== S_REMATCH) && roll(chance);
+        else if (type === G.POST_ROCKET_WEEK_TIME) ok = afterRadioTower() && weekday() === c.day && timeOfDay() === c.time && roll(chance);
+        else if (type === G.FIGHT_POST_ROCKETS_NOT_CONTEST) ok = afterRadioTower() && !!g.seeking[i] && roll(chance);
+        else if (type === G.GIFT_NOT_CONTEST) ok = !!g.gifts[i] && roll(chance);
+        else if (type === G.BUG_CONTEST_DAYS) ok = [2, 4, 6].includes(weekday()) && roll(chance);
+        else if (type === G.DURING_ROCKETS) ok = takeover() && roll(chance);
+        else ok = roll(chance);
+        if (ok) return scripted(i, script, incoming, handler);
+      }
+      return last ? scripted(i, last[3], incoming, last[2]) : [];
+    }
+    // Prof. Elm (PhoneCall_GetScriptId_ProfElm): what he says by how far the
+    // story's got (Johto's Badges: Kanto's were won before you came).
+    function elm(incoming, script) {
+      const f = (n) => J().flag(n), badges = env.badges().johto;
+      if (script != null) return scripted(1, script, incoming, 0);
+      if (isHere(P().contacts[1])) return scripted(1, 1, false, 0);
+      const s = !f("FLAG_GOT_ELMS_PANIC_CALL") ? 8 : !f("FLAG_GAVE_RIVAL_NAME_TO_OFFICER") ? 9 : !f("FLAG_GOT_PICK_UP_EGG_CALL_FROM_ELM") ? 10
+        : !f("FLAG_GOT_EGG_FROM_ELMS_ASSISTANT") ? 11 : null;
+      if (s) return scripted(1, s, false, 0);
+      const hatched = f("FLAG_SYS_HATCHED_TOGEPI_EGG"), everstone = f("FLAG_GOT_EVERSTONE_FROM_ELM");
+      const pick = badges < 7 ? (!hatched ? 12 : everstone ? 14 + rnd(2) : 13) : takeover() ? 16 : badges < 8 ? 17 : !f("FLAG_GAME_CLEAR") ? 18
+        : !f("FLAG_GOT_SS_TICKET_FROM_ELM") ? 19 : !everstone ? (hatched ? 13 : 12) : 20 + rnd(f("FLAG_WAS_TOLD_ABOUT_POKERUS") ? 3 : 2);
+      return scripted(1, pick, false, 0);
+    }
+    const said = (i, ...ns) => { const b = buffers(i); return [].concat(...ns.map((n) => fill(P().contacts[i].msgs[n], b))); };
+    // Everyone else, as HGSS's own call handlers have them (the parts this
+    // game has: no Pokédex ratings, PC Box names or Kurt's Balls by phone).
+    function whatTheySay(i, incoming, script) {
+      const c = P().contacts[i], tod = timeOfDay(), local = !incoming && isHere(c);
+      switch (c.type) {
+        case T.GENERIC: return script != null ? scripted(i, script, incoming, 0) : generic(i, incoming);
+        case T.ELM: return elm(incoming, script);
+        case T.OAK: {
+          if (script != null) return scripted(i, script, incoming, 0);
+          if (local) return scripted(i, c.local, false, 0);
+          // (Your Pokédex: how many you've seen and caught.)
+          const d = env.dex(), b = Object.assign(buffers(i), { 5: d.seen, 6: d.caught });
+          if (!incoming) return fill(c.msgs[13 + girl()], b).concat(fill(c.msgs[20], b), fill(c.msgs[21], b));
+          return scripted(i, 68 + Math.max(1, Math.min(9, Math.floor(d.caught / 50))), true, 0);
+        }
+        case T.FRIEND: {
+          if (local) return scripted(i, girl() ? 101 : 102, false, 0);
+          if (!incoming) { const at = P().friend.at[section(env.map()).sec]; return said(i, 4 + tod, at != null ? at : 10 + rnd(3)); }
+          return said(i, 7 + tod, rnd(2) ? 10 + rnd(3) : 86 + rnd(73));
+        }
+        case T.KURT: return local ? scripted(i, 83, false, 0) : said(i, J().flag("FLAG_UNK_127") ? 6 : 2, 5);
+        case T.BIKE_SHOP: return scripted(i, script != null ? script : local ? 84 : 85, incoming, 0);
+        case T.KENJI: return scripted(i, local ? 86 : tod === 2 ? 91 : 87, false, 0);
+        case T.BILL: return script != null || incoming ? scripted(i, 93, true, 0) : local ? scripted(i, 92, false, 0) : said(i, 3 + girl(), 8);
+        case T.DAYCARE_MAN: { const n = env.dayCare(), b = Object.assign(buffers(i), { 10: n[0], 11: n[1] }); return local ? scripted(i, c.local, false, 0) : fill([].concat(c.msgs[2], c.msgs[n.length ? (n.length > 1 ? 6 : 5) : 4], c.msgs[11]), b); }
+        case T.DAYCARE_LADY: return local ? scripted(i, 97, false, 0) : said(i, 3 + girl(), env.dayCare().length ? 5 : 10);
+        case T.BUENA: {
+          if (takeover()) return scripted(i, 99, incoming, 0);
+          if (incoming) return said(i, 15 + 2 * tod + girl(), 21 + rnd(9));
+          return local ? scripted(i, 98, false, 0) : said(i, 3 + 2 * tod + girl(), 10 + rnd(3));
+        }
+        case T.GYM_LEADER: {
+          if (incoming) return said(i, 10, 12 + rnd(3));
+          if (local) return said(i, 1);
+          // (Their rematches are at the Fighting Dojo, which this game's Saffron hasn't: not today.)
+          return said(i, 2, env.badges().all >= 16 ? 4 : 3);
+        }
+        case T.BAOBA: return scripted(i, script != null ? script : c.local, incoming, 0);
+        case T.IRWIN: {
+          if (!incoming) return scripted(i, takeover() ? 156 : 172 + rnd(3), false, 0);
+          const all = env.badges().all;
+          return scripted(i, all >= 16 ? 171 : env.badges().johto >= 3 ? 170 : 169, true, 0);   // (from the Plain Badge, Whitney's)
+        }
+        default: return c.local ? scripted(i, c.local, false, 0) : said(i, 0);
+      }
+    }
+
+    // ---------- The screen ----------
+
+    let canvas = null, out = null;
+    function ensureCanvas() {
+      if (canvas) return;
+      canvas = document.createElement("canvas");
+      canvas.className = "party-menu pokegear hidden";
+      canvas.width = W * 2; canvas.height = H * 2;
+      const overlay = document.getElementById("overlay");
+      overlay.parentNode.insertBefore(canvas, overlay);
+      out = canvas.getContext("2d");
+      out.imageSmoothingEnabled = false;
+      mapImage = new Image();
+    }
+    let mapImage = null;   // (the Map card's picture of the region)
+    let ui = null;   // { card, cursor, top, call, msg, more, ringing }
+    const cards = () => [0, 1, 2].filter(hasCard);
+    const list = () => (P() ? numbers().filter((i) => P().contacts[i]) : []);
+
+    function paint() {
+      if (!ui || !canvas) return;
+      const s = GbaMenus.Surface(), frame = "type" + ((env.frame() || 0) + 1), fp = GM().frames[frame].palette, std = GM().palettes.std3;
+      // The case: gold, a darker band along the top for the cards.
+      s.fill(0, 0, W, H, GOLD);
+      for (let y = 18; y < H; y += 8) s.fill(0, y, W, 1, GOLD_LIGHT);
+      s.fill(0, 0, W, 17, GOLD_DARK);
+      // The cards you have, the one you're on lit; the day and time.
+      let x = 4;
+      for (const n of cards()) {
+        const on = n === ui.card && ui.call == null, w = s.textWidth(CARDS[n]) + 12;
+        s.fill(x, 2, w, 14, on ? CREAM : GOLD);
+        s.text(CARDS[n], x + 6, 2, on ? DARK : WHITE, on ? LIGHT : GOLD_DARK);
+        x += w + 3;
+      }
+      const d = new Date(), clock = DAYS[d.getDay()] + " " + d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0");
+      s.text(clock, W - 6 - s.textWidth(clock), 2, WHITE, GOLD_DARK);
+      // The card's window (your frame), and the message box under it.
+      s.frame(frame, fp, 1, 3, 28, 10);
+      s.fill(8, 24, 224, 80, WHITE);
+      if (ui.call != null) paintCall(s);
+      else if (ui.card === 0) paintPhone(s);
+      else if (ui.card === 1) paintMap(s);
+      else paintRadio(s);
+      s.frame("std", std, 1, 15, 28, 4);
+      s.fill(8, 120, 224, 32, WHITE);
+      const lines = String(ui.msg != null ? ui.msg : help()).split("\n").slice(0, 2);
+      lines.forEach((l, i) => s.text(l, 12, 122 + 16 * i, DARK, LIGHT));
+      if (ui.more) s.text("▼", 222, 138, RED, LIGHT, "small");
+      out.clearRect(0, 0, W * 2, H * 2);
+      out.drawImage(s.canvas(), 0, 0, W * 2, H * 2);
+      // (The Map card: the region's map, small, and where you are on it.)
+      const M = ui.card === 1 && ui.call == null && miniMap();
+      if (M && mapImage.complete && mapImage.naturalWidth) {
+        out.drawImage(mapImage, M.R.x0, M.R.y0, M.R.width * 8, M.R.height * 8, M.x * 2, M.y * 2, M.w * 2, M.h * 2);
+        if (M.cell) {
+          const px = (M.x + (M.cell[0] + 0.5) * 8 * M.k) * 2, py = (M.y + (M.cell[1] + 0.5) * 8 * M.k) * 2;
+          out.fillStyle = "#fff"; out.fillRect(px - 5, py - 5, 10, 10);
+          out.fillStyle = "rgb(224,56,40)"; out.fillRect(px - 3, py - 3, 6, 6);
+        }
+      }
+    }
+    // The region's map grid (Johto's, or Kanto's), fitted into the card, and your square on it.
+    function miniMap() {
+      const JT = window.JOHTO_TOWN_MAP, KT = window.TOWN_MAP, map = env.map(), loc = env.player().location || {};
+      let R, cell = null;
+      if (inJohto() && JT) {
+        R = JT;
+        const at = JT.at[map];
+        if (at) cell = at[2] ? [at[0] + Math.floor((loc.x | 0) / 32), at[1] + Math.floor((loc.y | 0) / 32)] : [at[0], at[1]];
+      } else if (KT) {
+        R = { image: "assets/town-map/kanto.png", x0: 32, y0: 32, width: KT.width, height: KT.height };
+        const sec = KT.mapSections && KT.mapSections[map];
+        for (let y = 0; sec && y < KT.height; y++) for (let x = 0; x < KT.width; x++) if (KT.map[y][x] === sec && !cell) cell = [x, y];
+      } else return null;
+      if (cell) cell = [Math.max(0, Math.min(R.width - 1, cell[0])), Math.max(0, Math.min(R.height - 1, cell[1]))];
+      const k = Math.min(200 / (R.width * 8), 60 / (R.height * 8)), w = Math.round(R.width * 8 * k), h = Math.round(R.height * 8 * k);
+      return { R, cell, k, w, h, x: 120 - (w >> 1), y: 42 };
+    }
+    function help() {
+      if (ui.call != null) return "";
+      if (ui.card === 0) return list().length ? "Whom do you want to call?" : "No phone numbers are registered.";
+      if (ui.card === 1) return "Press A to look at the Town Map.";
+      return radio.station ? "" : radioStations().length ? "Choose a station to listen to." : "There's no signal here...";
+    }
+    const arrow = (s, ax, ay, up) => { for (let r = 0; r < 4; r++) s.fill(ax + r, ay + (up ? 3 - r : r), 7 - 2 * r, 1, DARK); };
+    const ROWS = 5;
+    function paintPhone(s) {
+      const L = list();
+      ui.cursor = Math.max(0, Math.min(ui.cursor, L.length - 1));
+      ui.top = Math.max(0, Math.min(ui.top, ui.cursor), ui.cursor - ROWS + 1);
+      L.slice(ui.top, ui.top + ROWS).forEach((i, r) => {
+        const c = P().contacts[i], y = 26 + 16 * r;
+        s.text(c.name, 22, y, DARK, LIGHT);
+        if (c.cls) s.text(c.cls, 226 - s.textWidth(c.cls, "small"), y + 2, DARK, LIGHT, "small");
+        if (ui.top + r === ui.cursor) s.text("▶", 12, y, DARK, LIGHT);
+      });
+      if (ui.top > 0) arrow(s, 116, 20, true);
+      if (ui.top + ROWS < L.length) arrow(s, 116, 105, false);
+    }
+    function paintMap(s) {
+      s.text(inJohto() ? "Johto" : "Kanto", 14, 26, DARK, LIGHT);
+      const here = section(env.map()).name;
+      if (here) s.text(here, 226 - s.textWidth(here, "small"), 28, DARK, LIGHT, "small");
+      const M = miniMap();
+      mapImage.onload = paint;
+      if (M && !mapImage.src.endsWith(M.R.image)) mapImage.src = M.R.image;
+      if (M) s.fill(M.x - 1, M.y - 1, M.w + 2, M.h + 2, DARK);
+    }
+    function paintCall(s) {
+      const c = P().contacts[ui.call];
+      s.text(c.name, 22, 30, DARK, LIGHT);
+      if (c.cls) s.text(c.cls, 22, 48, DARK, LIGHT, "small");
+      if (c.where) s.text(c.where, 22, 64, DARK, LIGHT, "small");
+      // (A handset: ringing, or on the line.)
+      const hx = 176, hy = 34;
+      s.fill(hx, hy, 32, 8, DARK); s.fill(hx, hy + 8, 8, 24, DARK); s.fill(hx + 24, hy + 8, 8, 24, DARK);
+      s.fill(hx + 2, hy + 2, 28, 4, ui.ringing ? RED : GOLD);
+      const status = ui.ringing ? "Ringing..." : "On the line";
+      s.text(status, 192 - (s.textWidth(status, "small") >> 1), 80, DARK, LIGHT, "small");
+    }
+    function paintRadio(s) {
+      const st = radioStations();
+      if (!st.length) { s.text("No signal", 120 - (s.textWidth("No signal") >> 1), 56, DARK, LIGHT); return; }
+      // The dial: a mark for each station, the needle on the one tuned in.
+      s.fill(20, 34, 200, 2, DARK);
+      st.forEach((k, i) => {
+        const x = 20 + Math.round((i + 0.5) * 200 / st.length);
+        s.fill(x, 30, 1, 10, DARK);
+        if (radio.station === k) s.fill(x - 1, 26, 3, 16, RED);
+      });
+      ui.cursor = Math.max(0, Math.min(ui.cursor, st.length));
+      st.concat(["off"]).forEach((k, i) => {
+        const y = 44 + 12 * i, name = k === "off" ? "Turn off" : SHOWS[k].title();
+        s.text(name, 22, y, DARK, LIGHT, "small");
+        if (ui.cursor === i) s.text("▶", 12, y - 1, DARK, LIGHT, "small");
+      });
+      if (radio.station) {
+        const host = SHOWS[radio.station].host();
+        if (host) s.text(host, 226 - s.textWidth(host, "small"), 44, DARK, LIGHT, "small");
+      }
+    }
+
+    function showCanvas(on) { ensureCanvas(); canvas.classList.toggle("hidden", !on); }
+    const press = (want) => GbaMenus.keys((k) => (want.includes(k) ? k : undefined));
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    // Pages in the message box, two lines at a time, A (or B) for the next.
+    // (A line too wide for FireRed's box, as some of HGSS's are, wraps.)
+    const MAX_WIDTH = 212;
+    function wrap(text) {
+      const s = GbaMenus.Surface(), out = [];
+      let line = "";
+      for (const w of text.split(" ")) {
+        const t = line ? line + " " + w : w;
+        if (line && s.textWidth(t) > MAX_WIDTH) { out.push(line); line = w; } else line = t;
+      }
+      return line ? out.concat(line) : out;
+    }
+    const fits = (lines) => { const s = GbaMenus.Surface(); return lines.every((l) => s.textWidth(l) <= MAX_WIDTH); };
+    async function talk(pages) {
+      const chunks = [];
+      for (const p of pages) {
+        let ls = p.split("\n");
+        if (!fits(ls)) ls = wrap(ls.join(" "));
+        for (let k = 0; k < ls.length; k += 2) chunks.push(ls.slice(k, k + 2).join("\n"));
+      }
+      for (let k = 0; k < chunks.length; k++) {
+        ui.msg = chunks[k]; ui.more = k < chunks.length - 1; paint();
+        await press(["a", "b"]);
+      }
+      ui.more = false;
+    }
+
+    // ---------- A call ----------
+    // Calling them: the line rings ("......"), they answer; or they call you.
+    // Then what they say, and the line goes ("Click! ......").
+    async function phone(i, incoming, script) {
+      if (!P() || !P().contacts[i]) return;
+      const wasOpen = !!ui;
+      if (!wasOpen) ui = { card: 0, cursor: 0, top: 0 };
+      const keep = { card: ui.card, msg: ui.msg };
+      ui.call = i; ui.ringing = true;
+      showCanvas(true);
+      const R = P().common;
+      if (!incoming && !canCall()) {
+        ui.msg = R.click[0]; paint(); env.sfx("se_click"); await sleep(400);
+        await talk([R.outOfArea]);
+      } else {
+        for (let k = 0; k < 3; k++) { ui.msg = incoming ? "" : R.ringing[k]; paint(); env.sfx(incoming ? "se_ding_dong" : "se_select"); await sleep(incoming ? 700 : 500); }
+        ui.ringing = false;
+        await talk(whatTheySay(i, incoming, script));
+        for (const t of R.click) { ui.msg = t; paint(); await sleep(250); }
+        env.sfx("se_click");
+        await sleep(300);
+      }
+      ui.call = null; ui.ringing = false; ui.msg = keep.msg; ui.card = keep.card;
+      if (!wasOpen) { ui = null; showCanvas(false); } else paint();
+    }
+    // (MapHeader_CanPlacePhoneCalls: not from some caves and rooms.)
+    const canCall = () => !(P().noCalls || []).includes(hgssMap(env.map()));
+
+    // A script's call (PhoneCall who, 2, n): Elm's story calls, Oak's and Baoba's.
+    async function call(who, kind, n) {
+      if (!P()) return;
+      if (who === 0) { J().setFlag("FLAG_TALKED_TO_MOM_AFTER_NAMING_RIVAL", true); return; }   // (Mom's: there's no Mom in this game's Johto)
+      const script = who === 1 ? P().elmCalls[n] : who === 2 ? P().oakCall : who === 24 ? P().baobaCall : null;
+      if (script == null) return;
+      await phone(who, true, script);
+    }
+
+    // ---------- Calls while you walk ----------
+    let since = Date.now(), pending = null;
+    const trigger = (n, on) => { const t = state().triggers; if (on) t[n] = true; else delete t[n]; };
+    function step() {
+      if (!P() || !has() || pending != null || Date.now() - since < CALL_MINUTES * 60000) return null;
+      const map = hgssMap(env.map());
+      if (map && P().noCalls.includes(map)) return null;
+      // (A call trigger first: Elm's when the Egg hatches, and the like; not from your own map.)
+      const due = Object.keys(state().triggers).map(Number).find((n) => TRIGGERS[n] && !isHere(P().contacts[TRIGGERS[n][0]]));
+      if (due != null) { pending = { who: TRIGGERS[due][0], script: TRIGGERS[due][1], trigger: due }; return { type: "phone" }; }
+      since = Date.now();
+      if (rnd(100) > CALL_CHANCE) return null;
+      const who = caller();
+      if (who == null) return null;
+      pending = { who };
+      return { type: "phone" };
+    }
+    // Who calls (ov02_02251FDC): one of three groups (half the time the
+    // first, then 30 and 20 percent), someone in it you've the number of who
+    // isn't where you are, each in turn before anyone calls again.
+    function caller() {
+      const r = rnd(1000), group = r < 500 ? 0 : r < 800 ? 1 : 2;
+      const inGroup = numbers().filter((i) => P().contacts[i] && P().contacts[i].group === group && CALLERS.has(P().contacts[i].type));
+      if (!inGroup.length) return null;
+      const g = state(), done = g.called[group] || (g.called[group] = []);
+      if (inGroup.every((i) => done.includes(i))) done.length = 0;
+      const h = new Date().getHours();
+      const can = inGroup.filter((i) => !isHere(P().contacts[i]) && !done.includes(i) && !(P().contacts[i].type === T.BUENA && (h % 3 === 2 || takeover())));
+      if (!can.length) return null;
+      const who = can[rnd(can.length)];
+      done.push(who);
+      return who;
+    }
+    async function ring() {
+      const p = pending;
+      pending = null; since = Date.now();
+      if (!p) return;
+      if (p.trigger != null) trigger(p.trigger, false);
+      await phone(p.who, true, p.script != null ? p.script : null);
+    }
+
+    // ---------- Trainers ----------
+    const contactOf = (trainer) => (P() ? P().contacts.findIndex((c) => c.trainer === trainer) : -1);
+    // GetPhoneBookRematch (PhoneBookTrainerGetRematchInfo): if they want a
+    // rematch, the trainer they battle as: the first of their tiers you
+    // haven't beaten, as far as the story's let them go (FLAG_UNK_97C on:
+    // the second after the Radio Tower, then the Elite Four, then Blue), else 0.
+    function rematch(i) {
+      const c = P() && P().contacts[i];
+      if (!c || !state().seeking[i]) return 0;
+      if (i === KENJI && timeOfDay() !== 1) return 0;
+      const set = P().rematch[c.trainer];
+      if (!set) return 0;
+      let n = set.length - 1;
+      for (let k = 1; k < set.length; k++) if (!env.beaten(set[k])) { n = k; break; }
+      if (n > 0 && !J().flag("FLAG_UNK_" + (0x97B + n).toString(16).toUpperCase())) n = n - 1 > 0 ? n - 1 : 0;
+      return set[n];
+    }
+    // Their number (HGSS's std trainer script: GetPhoneContactMsgIds 0, or 3
+    // asking again): Yes, and it's in the Pokégear.
+    async function askNumber(i, ask) {
+      const c = P().contacts[i], b = buffers(i), pages = fill(c.msgs[ask], b);
+      if (pages.length > 1) await env.say(pages.slice(0, -1));
+      if (await env.confirm(pages[pages.length - 1])) {
+        env.fanfare("gs_me_pokegear_regist");
+        await env.say(P().common.registered);
+        register(i);
+        await env.say(fill(c.msgs[2], b));
+      } else await env.say(fill(c.msgs[3], b));
+    }
+    async function giveGift(i, item) {
+      const c = P().contacts[i];
+      await env.say(fill(c.msgs[5], buffers(i)));
+      await env.giveItem(item);
+    }
+    async function beatTrainer(person) {
+      const i = contactOf(person.trainer && person.trainer.id);
+      if (i < 0 || registered(i)) return;
+      await askNumber(i, 1);
+    }
+    async function talkTrainer(person) {
+      const id = person.trainer && person.trainer.id, i = contactOf(id);
+      if (i < 0 || !env.beaten(id)) return false;
+      const g = state(), tier = rematch(i);
+      if (tier) {
+        const intro = window.WORLD_TRAINERS[tier] && tier !== id ? window.WORLD_TRAINERS[tier].intro : P().rematchIntro[id];
+        const outcome = await env.rematch(person, tier, intro || []);
+        if (outcome !== "won") return true;
+        env.setBeaten(tier, true);
+        delete g.seeking[i];
+        // (And their gift: ScrCmd_GetPhoneContactRandomGiftBerry.)
+        const gift = P().contacts[i].gift;
+        if (gift) await giveGift(i, gift === "berry" ? BERRIES[rnd(10)] : gift);
+        return true;
+      }
+      if (g.gifts[i]) { const item = g.gifts[i]; delete g.gifts[i]; await giveGift(i, item); return true; }
+      if (!registered(i)) { await askNumber(i, 4); return true; }
+      return false;
+    }
+
+    // ---------- The radio ----------
+    //
+    // The stations here (Radio_GetAvailableChannels): none where there's no
+    // signal; only the Unown's in the Ruins of Alph's hall; the Mahogany
+    // signal round Mahogany until its hideout's cleared; only Team Rocket's
+    // broadcast while they've the Radio Tower; else Johto's (or Kanto's, with
+    // the Poké Flute). Each show's song plays, and its lines come one by one
+    // (and round again); the song carries on as you walk, until the map's
+    // music comes back. While Pokémon Music plays its March, wild Pokémon
+    // come twice as often; its Lullaby, half as often.
+    const radio = { station: null, song: null, map: null, lines: [], at: 0, timer: null };
+    const R = () => P().radio;
+    const SHOWS = {
+      music: { title: () => R().music[0], host: () => R().music[1], song: () => ([2, 4, 6].includes(weekday()) ? "gs_radio_komoriuta" : "gs_radio_march"),
+        // (Sunday's GB Sounds and the National Dex's Hoenn and Sinnoh sounds: the March or Lullaby here.)
+        lines: () => R().music[2].concat(R().music[weekday() === 0 ? 12 : 3 + weekday()]) },
+      talk: { title: () => R().talk[0], host: () => R().talk[1], song: () => "gs_ohkido_rabo", lines: talkLines },
+      buena: { title: () => R().buena[0], host: () => R().buena[1], song: () => "gs_aikotoba",
+        lines: () => R().buena[2].concat(fill(env.hasItem("blue-card") ? R().buena[4] : R().buena[5], { 0: password() }), R().buena[3]) },
+      rocket: { title: () => R().rocket[0], host: () => R().rocket[1], song: () => "gs_senkyo_r", lines: () => R().rocket[2] },
+      unown: { title: () => R().unown[0], host: () => "", song: () => "gs_radio_unknown", lines: () => [] },
+      signal: { title: () => R().signal[0], host: () => "", song: () => "gs_kaidenpa", lines: () => [] },
+      flute: { title: () => R().flute[0], host: () => "", song: () => "gs_hue", lines: () => [] }
+    };
+    // (Buena's password today: one of her thirty, a new one each day.)
+    function password() {
+      const d = new Date(), day = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+      return R().passwords[(day * 7 + 3) % R().passwords.length];
+    }
+    // Pokémon Talk (RadioShow_PokemonTalk): five places in the region with
+    // wild Pokémon, one of the Pokémon there (one you haven't caught, mostly),
+    // and Mary's two phrases about it.
+    function talkLines() {
+      const johto = inJohto(), maps = Object.values(window.WORLD_MAPS).filter((m) => (m.region === "johto") === johto && m.wild && m.wild.slots && section(m.name).name);
+      const seen = new Set(), out = R().talk[2].slice();
+      const step = (rnd(3) + 1) * 2;
+      let p1 = rnd(13), p2 = rnd(13);
+      for (let n = 0; n < 5 && maps.length; n++) {
+        let m;
+        for (let tries = 0; tries < 20; tries++) { m = maps[rnd(maps.length)]; if (!seen.has(section(m.name).name)) break; }
+        seen.add(section(m.name).name);
+        const kinds = [...new Set(m.wild.slots.flatMap((s) => [s.species, s.morning, s.night]).filter(Boolean))];
+        const fresh = kinds.filter((sp) => !env.caught(sp));
+        const sp = (fresh.length > 1 || (fresh.length === 1 && rnd(2)) ? fresh : kinds)[rnd((fresh.length > 1 || (fresh.length === 1 && rnd(2)) ? fresh : kinds).length)];
+        const b = { 0: section(m.name).name, 1: sp, 2: R().talk[6 + p1], 3: R().talk[19 + p2] };
+        out.push(...fill(R().talk[4], b), ...fill(R().talk[5], b));
+        p1 = (p1 + step) % 13; p2 = (p2 + step) % 13;
+      }
+      return out.concat(R().talk[3]);
+    }
+    function radioStations() {
+      if (!P()) return [];
+      const map = env.map(), c = hgssMap(map);
+      if (c && R() && P().noRadio.includes(c)) return [];
+      if (c && R().alph.includes(c)) return ["unown"];
+      if (!inJohto()) return ["music", "talk", "flute"];
+      if (c && R().mahogany.includes(c) && !J().flag("FLAG_ROCKET_HIDEOUT_CLEARED")) return ["signal"];
+      if (takeover()) return ["rocket"];
+      return ["music", "talk", "buena"];
+    }
+    function tune(k) {
+      clearInterval(radio.timer);
+      radio.station = k || null;
+      if (!k) { radio.song = null; env.mapMusic(); paint(); return; }
+      const show = SHOWS[k];
+      const lines = () => [].concat(...show.lines().map((l) => (fits([l]) ? [l] : wrap(l))));
+      radio.song = show.song(); radio.map = env.map(); radio.lines = lines(); radio.at = 0;
+      env.music(radio.song);
+      const next = () => {
+        if (!radio.lines.length) { if (ui && ui.call == null) { ui.msg = show.title(); paint(); } return; }
+        const a = radio.lines[radio.at % radio.lines.length], b2 = radio.lines[(radio.at + 1) % radio.lines.length];
+        radio.at++;
+        if (radio.at >= radio.lines.length) { radio.at = 0; if (k === "talk") radio.lines = lines(); }
+        if (ui && ui.call == null && ui.card === 2) { ui.msg = a + (radio.lines.length > 1 ? "\n" + b2 : ""); paint(); }
+      };
+      next();
+      radio.timer = setInterval(next, 1800);
+    }
+    // (Still playing: on this map (or `map`), the map's music not back.)
+    function radioOn(map) {
+      if (!radio.song) return false;
+      const now = window.GameAudio && window.GameAudio.now && window.GameAudio.now();
+      if (radio.map !== (map || env.map()) || (now && now !== radio.song)) { radio.song = null; radio.station = null; clearInterval(radio.timer); return false; }
+      return true;
+    }
+    function encounterRate() {
+      if (!radioOn()) return 1;
+      return radio.song === "gs_radio_march" ? 2 : radio.song === "gs_radio_komoriuta" ? 0.5 : 1;
+    }
+
+    // ---------- The Pokégear ----------
+    async function open() {
+      ensureCanvas();
+      ui = { card: cards().includes(open.last) ? open.last : 0, cursor: 0, top: 0, call: null, msg: null };
+      if (ui.card === 2) ui.cursor = Math.max(0, radioStations().indexOf(radio.station));
+      showCanvas(true);
+      env.sfx("se_win_open");
+      const clock = setInterval(paint, 15000);
+      try {
+        for (;;) {
+          if (ui.card !== 2 || !radio.station) ui.msg = null;
+          paint();
+          const act = await GbaMenus.keys((k) => {
+            const C = cards(), at = C.indexOf(ui.card);
+            if (k === "b" || k === "start") return "exit";
+            if (k === "left" || k === "right") {
+              const to = C[(at + (k === "left" ? C.length - 1 : 1)) % C.length];
+              if (to !== ui.card) { ui.card = to; ui.cursor = ui.card === 2 ? Math.max(0, radioStations().indexOf(radio.station)) : 0; ui.top = 0; env.sfx("se_select"); return "redraw"; }
+              return undefined;
+            }
+            const n = ui.card === 0 ? list().length : ui.card === 2 ? radioStations().length + (radioStations().length ? 1 : 0) : 0;
+            if ((k === "up" || k === "down") && n) {
+              const c = Math.max(0, Math.min(n - 1, ui.cursor + (k === "up" ? -1 : 1)));
+              if (c !== ui.cursor) { ui.cursor = c; env.sfx("se_select"); paint(); }
+              return undefined;
+            }
+            if (k === "a") {
+              if (ui.card === 0 && n) return "call";
+              if (ui.card === 1) return "map";
+              if (ui.card === 2 && n) return "tune";
+            }
+            return undefined;
+          });
+          if (act === "exit") break;
+          if (act === "call") { env.sfx("se_select"); await phone(list()[ui.cursor], false, null); }
+          else if (act === "map") { showCanvas(false); await env.townMap(); showCanvas(true); }
+          else if (act === "tune") { env.sfx("se_select"); const st = radioStations(); tune(ui.cursor < st.length ? st[ui.cursor] : null); }
+        }
+      } finally {
+        clearInterval(clock);
+        open.last = ui.card;
+        ui = null;
+        showCanvas(false);
+      }
+    }
+
+    return { has, open, call, registerCard, rematch, setTrigger: trigger, step, ring, beatTrainer, talkTrainer, encounterRate,
+      registered, contactOf, radioOn, timeOfDay,
+      // (For tests: a call due on the next step; what someone says on a call.)
+      callDue: () => { since = 0; }, callLines: (i, incoming) => whatTheySay(i, !!incoming, null) };
+  }
+
+  window.Pokegear = { create };
+})();

@@ -628,7 +628,7 @@
     if (said) return finish(said);
     const wild = World.stepEncounter(wildState, me.map, me.x, me.y, {
       allow: ctx.allowWild, repel: !!(ctx.player && ctx.player.repelSteps > 0), lure: !!(ctx.player && ctx.player.lureSteps > 0),
-      surf: me.avatar === "surf", bike: me.avatar === "bike" });
+      surf: me.avatar === "surf", bike: me.avatar === "bike", scale: ctx.encounterScale ? ctx.encounterScale() : 1 });
     if (wild) finish(Object.assign({ type: "wild" }, wild));
   }
 

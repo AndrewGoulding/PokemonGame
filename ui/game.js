@@ -2172,6 +2172,7 @@
     party: "Check and organize Pokémon that are\ntraveling with you in your party.",
     bag: "Equipped with pockets for storing items\nyou bought, received, or found.",
     card: "Check your money and other game data.",
+    gear: "Use the Pokégear's phone, map and radio.",
     save: "Save your game with a complete record\nof your progress to take a break.",
     option: "Adjust various game settings such as text\nspeed, game rules, etc.",
     exit: "Close this menu window.",
@@ -2193,6 +2194,7 @@
       if (player.flags.pokedex) items.push({ key: "dex", label: "Pokédex" });
       if (player.party.length) items.push({ key: "party", label: "Pokémon" });
       if (!contest) items.push({ key: "bag", label: "Bag" });
+      if (gear.has()) items.push({ key: "gear", label: "Pokégear" });   // (HGSS's, once you have it: ui/pokegear.js)
       items.push({ key: "card", label: player.name });
       if (!safari && !contest) items.push({ key: "save", label: "Save" });
       items.push({ key: "option", label: "Option" }, { key: "exit", label: "Exit" });
@@ -2210,6 +2212,7 @@
       if (v === "party") { if ((await partyMenu()) === "escaped") return; }
       else if (v === "bag") { if ((await bagScreen()) === "escaped") return; }
       else if (v === "dex") await pokedex();
+      else if (v === "gear") await gear.open();
       else if (v === "card") { if ((await trainerCard()) === "battled") return; }
       else if (v === "option") { await optionScreen(false); continue; }
       else if (v === "save") {
@@ -2749,6 +2752,7 @@
       const beaten = !!player.flags[ev.person.trainer.id];
       await trainerBattle(ev.person, ev.approach, ev.facing);
       if (!beaten) await afterRocket(ev.person);
+      if (!beaten && player.flags[ev.person.trainer.id]) await gear.beatTrainer(ev.person);   // (their number: ui/pokegear.js)
       return;
     }
     if (ev.type === "hidden") {
@@ -2803,8 +2807,10 @@
         const beaten = !!f[ev.person.trainer.id];
         await trainerBattle(ev.person, null);
         if (!beaten) await afterRocket(ev.person);
+        if (!beaten && f[ev.person.trainer.id]) await gear.beatTrainer(ev.person);
         if (ev.person.trainer.id === DOJO_MASTER) await dojoDenDoor();
-      } else await say(dojoAfter(ev.person.trainer.id) || ev.person.trainer.after || ev.person.text || []);
+      } else if (await gear.talkTrainer(ev.person)) return;   // (a Johto trainer on the phone: a rematch, a gift)
+      else await say(dojoAfter(ev.person.trainer.id) || ev.person.trainer.after || ev.person.text || []);
       return;
     }
 
@@ -9529,6 +9535,11 @@
     await Overworld.fadeToBlack();
     Breeding.hatch(egg, player.location.map);
     Player.markCaught(player, egg.species);   // (AddHatchedMonToParty)
+    // (Elm's Mystery Egg: he'll call about it, CALL_TRIGGER_ELM_EGG_HATCHED.)
+    if (egg.species === "Togepi" && johto.flag("FLAG_GOT_EGG_FROM_ELMS_ASSISTANT") && !johto.flag("FLAG_SYS_HATCHED_TOGEPI_EGG")) {
+      johto.setFlag("FLAG_SYS_HATCHED_TOGEPI_EGG", true);
+      gear.setTrigger(0, true);
+    }
     const name = Party.speciesName(egg.species);
     show("scene");
     clearMenu();
@@ -10702,6 +10713,9 @@
     giveEgg: async (species) => { Player.receive(player, Breeding.giftEgg(species, { map: player.location.map })); },
     mart: (stock) => mart(stock),
     kurt: (op) => johtoField.kurt(op), followerIdle: () => Overworld.follower.idle(), followerHide: (on) => Overworld.follower.hide(on),
+    // (The Pokégear: ui/pokegear.js.)
+    phoneCall: (who, kind, n) => gear.call(who, kind, n), registerCard: (n) => gear.registerCard(n),
+    phoneRematch: (n) => gear.rematch(n), phoneTrigger: (n, on) => gear.setTrigger(n, on),
     // (HGSS's tiers: none with no Badges, then by twos; Johto's Badges here.)
     martStock: (list) => {
       const n = Player.REGION_BADGES.johto.filter((b) => player.badges.includes(b)).length;
@@ -10782,6 +10796,28 @@
     r.hp = Party.maxHp(r);
     return r;
   }
+  // HeartGold's Pokégear (ui/pokegear.js): its phone (HGSS's people and
+  // their calls, and the trainers' rematches), the Town Map and the radio.
+  const gear = Pokegear.create({
+    player: () => player, johto: () => johto, map: () => player.location.map, isGirl, sfx, music, fanfare,
+    mapMusic: () => music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[player.location.map] || {}).music),
+    townMap: () => townMap(), say: (pages) => say(pages), confirm: (q) => confirm(q),
+    giveItem: async (id) => { if (!window.ITEMS[id]) return; Player.addItem(player, id); await sayWithJingle(itemJingle(id), "{PLAYER} received " + article(Bag.name(id)) + "!"); },
+    hasItem: (id) => Player.itemCount(player, id) > 0,
+    beaten: (id) => !!player.flags[id], setBeaten: (id, on) => { if (on) player.flags[id] = true; else delete player.flags[id]; },
+    rematch: async (person, id, intro) => {
+      const data = window.WORLD_TRAINERS[id];
+      if (!data || !canBattle()) return "lost";
+      music(johtoEyes(data));
+      await say(intro);
+      return johtoBattle("trainer", id);
+    },
+    badges: () => ({ johto: Player.REGION_BADGES.johto.filter((b) => player.badges.includes(b)).length, all: player.badges.length }),
+    dex: () => ({ seen: Player.dexCount(player, "seen"), caught: Player.dexCount(player, "caught") }),
+    caught: (species) => Player.hasCaught(player, species),
+    dayCare: () => [].concat(player.flags.dayCare2 || []).map((r) => r && Party.displayName(r)).filter(Boolean),
+    frame: () => GameOptions.get().frame
+  });
   // Prof. Elm's three Pokémon (HGSS's ChooseStarter): each one's picture, and
   // "Will you take it?", until you choose. It joins your party (or the PC);
   // returns where it is in the party, or -1.
@@ -11154,8 +11190,8 @@
           leftPallet(player.location.map); DayCare.step(player.flags.dayCare); DayCare.step(player.flags.dayCare2); vsSeekerStep(); friendshipStep();
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
           farawayStep();
-          return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep();
-        }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) && repelAllows(mon),
+          return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step();
+        }, encounterScale: () => gear.encounterRate(), allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) && repelAllows(mon),
         onMap: (m) => {
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
           if (m !== "VermilionCity") ticketChecked = false;
@@ -11178,7 +11214,7 @@
           if (m !== tempFlagsMap) { johto.transition(m); gymmicks.enter(m); }
           if (m === "SSAqua_1F") ssAquaExit();
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
-          music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }
+          if (!gear.radioOn(m)) music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }   // (the Pokégear's radio plays on)
       });
       if (ev.type === "menu") {
         await startMenu();
@@ -11193,6 +11229,7 @@
       else if (ev.type === "headbutt") await johtoField.headbutt(ev.map, ev.x, ev.y);
       else if (ev.type === "repel-ended" || ev.type === "lure-ended") await repelWoreOff(ev.type === "lure-ended");
       else if (ev.type === "egg-hatch") await eggHatches(ev.record);
+      else if (ev.type === "phone") await gear.ring();
       else if (ev.type === "red-forest") await redForest();
       else if (ev.type === "leaf-vermilion") await leafVermilion();
       else if (ev.type === "tera-aide") await teraAide();
@@ -11238,6 +11275,6 @@
 
   window.addEventListener("beforeunload", () => { if (player) { tick(); Save.write(player); } });
 
-  window.Game = { get player() { return player; } };
+  window.Game = { get player() { return player; }, get pokegear() { return gear; } };
   main();
 })();
