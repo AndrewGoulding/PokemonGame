@@ -34,7 +34,8 @@
 //   moneyBox(on), moveWarp(map, i, x, y), pcSpace(), itemPocket(id),
 //   bugContest (ui/bug-contest.js: the Bug-Catching Contest's commands),
 //   phoneCall(who, kind, n), registerCard(n), phoneRematch(contact), phoneTrigger(n, on) (ui/pokegear.js),
-//   coinsBox(on), casinoGame() (ui/voltorb-flip.js).
+//   coinsBox(on), casinoGame() (ui/voltorb-flip.js),
+//   shake(times, { x, y, delay }), alphPuzzle(n) (the flag to set if put together), alphWall(n), unownCaught().
 (function () {
   "use strict";
 
@@ -382,6 +383,7 @@
           case "PlayerOnBikeCheck": setVar(a[0], env.onBike() ? 1 : 0); break;
           case "PhotoAlbumIsFull": case "CheckDaycareEgg": setVar(a[0], 0); break;
           case "FollowerPokeIsEventTrigger": setVar(a[2], 0); break;
+          case "ScrCmd_729": setVar(a[a.length - 1], 0); break;   // (a follower's Pokémon out for a scene: none here)
           case "GetStarterChoice": setVar(a[0], state().starter || 0); break;
 
           // Sounds.
@@ -569,10 +571,30 @@
           case "WaitFollowingPokemonMovement": await flush(); await env.followerIdle(); break;
           case "SetFollowMonInhibitState": env.followerHide(!!+getVar(a[0])); break;
           case "GetFollowPokePartyIndex": setVar(a[0], Math.max(0, env.player().party.findIndex((r) => !r.egg && r.hp > 0))); break;
+          // The Ruins of Alph (ui/johto-alph.js): a chamber's stone panel (the
+          // flag it sets once put together), the words on its wall, the Unown caught.
+          case "AlphPuzzle": { await flush(); const f = await env.alphPuzzle(+getVar(a[0]) || 0); if (f) setFlag(f, true); break; }
+          case "OpenAlphHiddenRoom": await flush(); await env.alphWall(+getVar(a[0]) || 0); break;
+          case "ScrCmd_545": setVar(a[0], window.JohtoAlph.caughtCount(env.unownCaught())); break;
+          case "CheckSeenAllLetterUnown": setVar(a[0], window.JohtoAlph.allLetters(env.unownCaught()) ? 1 : 0); break;
 
           // The screen, and warps.
           case "FadeScreen": await flush(); await env.fade(+getVar(a[2]) === 0); break;
-          case "Warp": await flush(); await env.warp(a[0], +getVar(a[2]) || 0, +getVar(a[3]) || 0, DIRS[+getVar(a[4])] || "down"); return;
+          // (Pixels across and up and down, frames each way at HGSS's 30 a second, times.)
+          case "ScreenShake": await flush(); await env.shake(+getVar(a[3]) || 4, { x: +getVar(a[0]) || 0, y: +getVar(a[1]) || 0, delay: (+getVar(a[2]) || 1) * 2 }); break;
+          case "Warp": {
+            await flush();
+            await env.warp(a[0], +getVar(a[2]) || 0, +getVar(a[3]) || 0, DIRS[+getVar(a[4])] || "down");
+            // (What the script still sets once you're there, as the Ruins of
+            // Alph's falls count themselves: its flags and vars, up to its end.)
+            for (; pc < C.length && !["End", "GoTo", "Call", "Return"].includes(C[pc][0]); pc++) {
+              const [o, x, y] = C[pc];
+              if (o === "SetVar") setVar(x, y);
+              else if (o === "AddVar") setVar(x, (+getVar(x) || 0) + (+getVar(y) || 0));
+              else if (o === "SetFlag" || o === "ClearFlag") setFlag(x, o === "SetFlag");
+            }
+            return;
+          }
           default:
             // (Conditional jumps and calls: GoToIfEq, CallIfNe, ...)
             if ((m = /^GoToIf(Lt|Eq|Gt|Le|Ge|Ne)$/.exec(op))) { if (cond[m[1]](cmp)) go(a[0]); }

@@ -2049,6 +2049,88 @@ if (window.JOHTO_TOWN_MAP) {
     for (const c of ["BugContestAction", "JudgeBugContest", "BufferBugContestWinner", "IsBugContestantRegistered", "BugContestGetTimeLeft", "SetFlagVar"]) assert(scriptJs.includes('case "' + c + '"'), c);
     assert(scripts.includes("ui/bug-contest.js") && scripts.indexOf("ui/bug-contest.js") < scripts.indexOf("ui/game.js"));
   }
+  // The Ruins of Alph (ui/johto-alph.js): each chamber's stone panel, put together by moving its loose
+  // pieces into place and turning them upright; the Unown it wakes in the hall below, by letter; the walls
+  // an Escape Rope, Flash and a Water Stone open; and the chambers' scripts, run: solved, the floor falls
+  // in and you land in the hall, counted (the vars HGSS sets after the warp); the Research Center's Unown.
+  {
+    const chambers = Object.fromEntries(["Northeast", "Southeast", "Southwest", "Northwest"].map((c) => "RuinsOfAlph_" + c + "EntranceFirstRoom")
+      .map((n) => [n, { people: WORLD_MAPS[n].people.map((p) => Object.assign({}, p)) }]));
+    const sandbox = { window: { WORLD_MAPS: chambers, JOHTO_SCRIPTS }, requestAnimationFrame: (f) => setImmediate(f) };
+    vm.runInNewContext(fs.readFileSync(path.join(root, "ui/johto-alph.js"), "utf8"), sandbox, { filename: "ui/johto-alph.js" });
+    vm.runInNewContext(fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8"), sandbox, { filename: "ui/johto-script.js" });
+    const A = sandbox.window.JohtoAlph;
+    for (let n = 0; n < 4; n++) {
+      const pieces = A.start(n), at = new Set(pieces.map((p) => p.x + ":" + p.y));
+      assert(pieces.length === 16 && at.size === 16 && pieces.every((p) => !A.isCorner(p.x, p.y)) && !A.solved(pieces), "puzzle " + n + ": 16 pieces apart");
+      for (const [i, p] of pieces.entries()) {
+        if (p.fixed) { assert(p.turns === 0 && p.x === (i % 4) + 1 && p.y === Math.floor(i / 4) + 1, "puzzle " + n + ": a fixed piece in its place"); continue; }
+        assert(A.canDrop(pieces, i, (i % 4) + 1, Math.floor(i / 4) + 1), "puzzle " + n + ": piece " + (i + 1) + "'s place is free");
+        Object.assign(p, { x: (i % 4) + 1, y: Math.floor(i / 4) + 1, turns: 0 });
+      }
+      assert(A.solved(pieces), "puzzle " + n + " put together");
+      assert(fs.existsSync(path.join(root, "assets/alph/pieces-" + n + ".png")) && fs.existsSync(path.join(root, "assets/alph/wall-" + n + ".png")));
+    }
+    assert(!A.canDrop(A.start(0), 5, 0, 0) && !A.canDrop(A.start(0), 5, 3, 1) && A.canDrop(A.start(0), 5, 2, 1), "not on a corner, nor on another piece");
+    for (const f of ["board", "marks"]) assert(fs.existsSync(path.join(root, "assets/alph/" + f + ".png")));
+    for (const f of ["alph_panel", "alph_wall"]) assert(fs.existsSync(path.join(root, "assets/world/sprites/" + f + ".png")));
+    assert(Object.values(chambers).every((m) => m.people.some((p) => p.sprite === "alph_panel" && p.underfoot) && m.people.some((p) => p.sprite === "alph_wall")),
+      "each chamber's panel over its hole, and its wall");
+    // Unown: none in the hall until a puzzle's solved; then the letters it woke (Kabuto's A-J), and ! and ? in the Sinjoh room.
+    const hall = "RuinsOfAlph_UndergroundHall", none = [false, false, false, false], kabuto = [true, false, false, false];
+    assert(A.locked(hall, none) && !A.locked(hall, kabuto) && !A.locked("RuinsOfAlph", none));
+    for (let i = 0; i < 40; i++) assert("abcdefghij".includes(A.unownLetter(hall, kabuto)));
+    assert.strictEqual(A.unownLetter(hall, [false, false, false, true], () => 0.99), "z");
+    assert(["exclamation", "question"].includes(A.unownLetter("RuinsOfAlph_HallEntranceSinjohEvent", kabuto)) && A.unownLetter("RuinsOfAlph", kabuto) === null);
+    const flags = {};
+    A.recordCaught(flags, { species: "Unown" }); A.recordCaught(flags, { species: "Unown", unown: "q" }); A.recordCaught(flags, { species: "Unown" }); A.recordCaught(flags, { species: "Natu" });
+    assert.strictEqual(flags.unownCaught.join(), "a,q");
+    assert(!A.allLetters(flags.unownCaught) && A.allLetters("abcdefghijklmnopqrstuvwxyz".split("")) && A.caughtCount(["a", "question"]) === 2);
+    // The walls: used at (6, 3) facing up, in front of the right one.
+    const front = { x: 6, y: 3, facing: "up" };
+    assert.deepStrictEqual(Object.assign({}, A.chamberReaction("RuinsOfAlph_NortheastEntranceFirstRoom", front, "escape-rope")), { zone: "D24R0202", label: "scr_seq_D24R0202_002" });
+    assert(A.chamberReaction("RuinsOfAlph_SoutheastEntranceFirstRoom", front, "flash") && A.chamberReaction("RuinsOfAlph_SouthwestEntranceFirstRoom", front, "water-stone"));
+    assert(!A.chamberReaction("RuinsOfAlph_NortheastEntranceFirstRoom", { x: 6, y: 3, facing: "left" }, "escape-rope") && !A.chamberReaction("RuinsOfAlph_NortheastEntranceFirstRoom", front, "flash"));
+    for (const z of ["D24R0202", "D24R0204", "D24R0206"]) assert(("scr_seq_" + z + "_002") in JOHTO_SCRIPTS.zones[z].labels);
+    // Each chamber's panel is its puzzle, and the flag its script checks.
+    ["D24R0202", "D24R0204", "D24R0206", "D24R0208"].forEach((z, n) => {
+      const c = JOHTO_SCRIPTS.zones[z].cmds, i = c.findIndex((x) => x[0] === "AlphPuzzle");
+      assert(i >= 0 && c[i][1] === n && c.slice(i, i + 6).some((x) => x[0] === "GoToIfSet" && x[1] === A.PUZZLE_FLAGS[n]), z + "'s panel is puzzle " + n);
+    });
+    // The Kabuto chamber's panel, run: put together, the floor falls in and you land in the hall.
+    const player = { name: "RED", party: [], flags: {} }, said = [], log = [];
+    const env = { player: () => player, say: async (p) => { said.push(p.join(" ")); }, confirm: async () => true, close: () => {}, facePlayer: async () => {},
+      act: async (t) => { log.push("act"); }, show: () => {}, hide: (id) => log.push("hide " + id), place: () => {}, personAt: () => ({ x: 6, y: 7, facing: "up" }),
+      origin: () => ({ x: 0, y: 0 }), sleep: async () => {}, fade: async () => {}, shake: async () => { log.push("shake"); },
+      warp: async (m, x, y, facing) => { log.push("warp " + (JOHTO_SCRIPTS.mapConsts[m] || m) + " " + x + "," + y); },
+      alphPuzzle: async (n) => A.PUZZLE_FLAGS[n], alphWall: async (n) => log.push("wall " + n), unownCaught: () => player.flags.unownCaught || [],
+      cry: () => {}, fanfare: () => {}, isGirl: () => false };
+    const J2 = sandbox.window.JohtoScript.create(env);
+    J2.run("D24R0202", "scr_seq_D24R0202_000", {}).then(async () => {
+      assert(J2.flag("FLAG_SYS_ALPH_PUZZLE_KABUTO") && J2.flag("FLAG_UNK_21C") && log.includes("shake") && log.includes("hide obj_D24R0202_babyboy1_13"), "the panel put together, the floor falls in: " + log);
+      assert(log.some((l) => /^warp (RuinsOfAlph_UndergroundHall|315) 25,6$/.test(l)), "into the hall below: " + log);
+      assert(J2.getVar("VAR_UNK_40DD") === 1 && J2.getVar("VAR_UNK_40EC") === 1 && J2.getVar("VAR_UNK_40CE") === 1, "the fall counted, after the warp");
+      await J2.run("D24R0202", "scr_seq_D24R0202_001", {});
+      assert(log.includes("wall 0"), "the wall says ESCAPE");
+      // The Research Center: all 26 letters caught.
+      player.flags.unownCaught = "abcdefghijklmnopqrstuvwxyz".split("");
+      await J2.run("D24R0102", "scr_seq_D24R0102_002", {});
+      assert(/developed the UNOWN Report/.test(said[said.length - 1]), "the Research Center knows you've caught every letter: " + said[said.length - 1]);
+    });
+    // The falls: from behind each wall into its hidden room, and from there into the hall, onto the floor.
+    const MC = JOHTO_SCRIPTS.mapConsts;
+    for (const [z, to] of [["D24R0212", "NortheastHiddenRoom"], ["D24R0213", "SoutheastHiddenRoom"], ["D24R0214", "NorthwestHiddenRoom"], ["D24R0215", "SouthwestHiddenRoom"],
+      ["D24R0203", "UndergroundHall"], ["D24R0210", "UndergroundHall"], ["D24R0209", "UndergroundHall"], ["D24R0207", "UndergroundHall"]]) {
+      const w = JOHTO_SCRIPTS.zones[z].cmds.find((c) => c[0] === "Warp");
+      if (typeof w[1] !== "string") continue;   // (a build from before maps went by name)
+      const m = WORLD_MAPS[MC[w[1]]];
+      assert(MC[w[1]] === "RuinsOfAlph_" + to && !m.collision[w[4] * m.width + w[3]], z + " falls into " + to + ", onto its floor");
+    }
+    assert(/if \(\/\^MAP_\/\.test\(tok\)\) return tok;/.test(fs.readFileSync(path.join(root, "tools/lib/hgss-script.js"), "utf8")), "scripts' maps by name, for Warp");
+    const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    assert(/alphReaction\("escape-rope"\)/.test(gameJs) && /alphReaction\("water-stone"\)/.test(gameJs) && /chamberReaction\(player\.location\.map, Overworld\.position\(\), "flash"\)/.test(gameJs));
+    assert(/JohtoAlph\.locked\(player\.location\.map, alphSolved\(\)\)/.test(gameJs) && /JohtoAlph\.unownLetter\(at\.map, alphSolved\(\)\)/.test(gameJs) && /JohtoAlph\.recordCaught/.test(gameJs));
+  }
   // (Upstairs in a Pokémon Center is FireRed's own floor, its people too.)
   for (const n of J.filter((n) => !/_PokemonCenter_2F$/.test(n))) for (const p of WORLD_MAPS[n].people) {
     const fr = /^(item_ball|cut_tree|rock_smash_rock)$/.test(p.sprite);

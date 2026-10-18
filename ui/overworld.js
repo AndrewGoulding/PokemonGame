@@ -1729,8 +1729,9 @@
       const walking = (!!p.move && p.move.t < TILE / 2) || (p.inPlace > 0 && p.inPlace % 16 >= 8);
       const over = overTop(p, me.map, p.x, p.y, me.map, p.move ? p.move.tx : p.x, p.move ? p.move.ty : p.y);
       const sunk = !p.move && !p.def.inanimate ? sunkAt(me.map, p.x, p.y) : 0;
-      return { y, over, draw: () => { if (shade) g.filter = SHADE; drawSprite(p.def.sprite, p.def.width, p.def.height,
-        frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), p.facing === "right", x - camX + spriteDx(p.def), y - camY, sunk); g.filter = "none"; } };
+      // (Something on the floor, as the Ruins of Alph's stone panels: under everyone, offsetY down.)
+      return { y: p.def.underfoot ? -Infinity : y, over, draw: () => { if (shade) g.filter = SHADE; drawSprite(p.def.sprite, p.def.width, p.def.height,
+        frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), p.facing === "right", x - camX + spriteDx(p.def), y - camY + (p.def.offsetY || 0), sunk); g.filter = "none"; } };
     });
     for (const n of neighbours) {
       const x = (n.ox + n.x) * TILE, y = (n.oy + n.y) * TILE;

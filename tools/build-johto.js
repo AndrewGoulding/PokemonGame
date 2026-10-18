@@ -224,6 +224,11 @@ const byConst = Object.fromEntries(MAPS.map((m) => [m.c, m.name]));
 
 // HGSS tile behaviours (include/constants/metatile_behavior.h) as FireRed's
 // (game/world.js's MB): most kept Gen 3's numbers.
+// HGSS's tiles where you meet wild Pokémon on foot (sMetatileBehaviorFlags'
+// TILE_BEHAVIOR_FLAG_ENCOUNTER, by behaviour: tall grass, and the floors of
+// caves and of the Ruins of Alph's hall), as the maps' encounter tiles.
+const LAND_ENCOUNTER = new Set(fs.readFileSync(path.join(ROOT, "src/metatile_behavior.c"), "utf8").split("sMetatileBehaviorFlags[] = {")[1].split("};")[0]
+  .split("\n").filter((l) => /\]\s*=/.test(l)).map((l, i) => (/= TILE_BEHAVIOR_FLAG_ENCOUNTER,/.test(l) ? i : -1)).filter((i) => i >= 0));
 function frBehavior(b) {
   switch (b) {
     case 0x02: case 0x03: return 0x02;            // tall grass, very tall grass
@@ -508,6 +513,7 @@ extraItems["mystery-egg"] = { name: "mystery-egg", category: "key-items", effect
 extraItems["berry-pots"] = { name: "berry-pots", category: "key-items", effect: "Four pots for growing Berries." };
 extraItems["vs-recorder"] = { name: "vs-recorder", category: "key-items", effect: "A device that records battles." };
 extraItems["apricorn-box"] = { name: "apricorn-box", category: "key-items", effect: "A box for keeping Apricorns. It holds a whole lot of them." };
+extraItems["unown-report"] = { name: "unown-report", category: "key-items", effect: "A report of all the discovered kinds of Unown." };
 const itemByKey = {};
 for (const id of Object.keys(window.ITEMS).concat(Object.keys(extraItems))) itemByKey[id.replace(/[^a-z0-9]/g, "")] = id;
 const APRICORN_ITEM = { RED: "red-apricorn", YLW: "yellow-apricorn", BLU: "blue-apricorn", GRN: "green-apricorn", PNK: "pink-apricorn", WHT: "white-apricorn", BLK: "black-apricorn" };
@@ -758,7 +764,8 @@ MAPS.forEach((m, i) => {
     name: m.name, title: m.title, width: r.width, height: r.height, type: m.type, music: m.music, region: "johto",
     allowEscaping: m.type === "underground" || m.dungeon || undefined,   // (an Escape Rope or Dig works: caves and dungeons)
     cycling: true, showName: m.type !== "indoor", top: true, borderWidth: 2, borderHeight: 2,
-    collision, elevation: collision.map(() => 0), behavior, encounter: behavior.map((b) => (b === 0x02 ? 1 : 0)),
+    collision, elevation: collision.map(() => 0), behavior,
+    encounter: r.perm.map((v, i) => ((behavior[i] === 0x02 || LAND_ENCOUNTER.has(v & 0xff)) && [0, 0x02, 0x21].includes(behavior[i]) ? 1 : 0)),
     connections: [],
     warps: ev.warps.map((w) => (w.map === "MAP_ROUTE_22_POKEMON_LEAGUE_RECEPTION_GATE" ? { x: w.x, y: w.y, map: GATE.name, warp: null }
       // (An elevator's way out, 4095: where you got in, FireRed's MAP_DYNAMIC.)

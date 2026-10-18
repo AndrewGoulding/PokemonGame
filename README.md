@@ -2144,6 +2144,38 @@ pret/pokeheartgold checkout (`node tools/build-johto-phone.js <path>`, into
 `tools/lib/johto-phone.generated.js`, which `tools/build-johto.js` puts at the
 end of `data/johto-maps.js`).
 
+**The Ruins of Alph** are HGSS's (`ui/johto-alph.js`, pictures by
+`tools/build-alph.js` from a pret/pokeheartgold checkout: `node
+tools/build-alph.js <path>`). In each of the four chambers a stone panel lies
+over a hole in the floor; examine it (`AlphPuzzle`) and HGSS's sliding-tile
+puzzle comes up, its board and pieces HGSS's own (`src/alph_puzzle.c`,
+`application/annon/puzzle_gra`), in your window frame, the Pokémon's words
+beside it: Kabuto, Aerodactyl, Omanyte and Ho-Oh, each laid out as HGSS lays
+it out, most pieces in place and the rest round the edge, turned. The D-pad
+moves the cursor over the board, A picks a piece up and puts it down where the
+cursor is (on the board but not its corners, nor on another piece), or turns
+it a quarter if you put it back where it was (HGSS's touch without sliding); B
+puts it back, or asks if you'd like to quit; a tap or click works too. Put
+together, the pieces flash white, the chamber shakes, the panel's gone and the
+floor falls in: you drop into the Underground Hall below, where, the first
+time, the Research Center's assistants come running with the **Unown Report**
+(a key item: each letter you've caught, among the 28). Each solved puzzle
+wakes Unown in the hall (`src/field/encounter_check.c`): none until one's
+solved, then Kabuto's A to J, Aerodactyl's R to V, Omanyte's K to Q and
+Ho-Oh's W to Z, any of those woken, and ! and ? in its Sinjoh room (a wild
+Unown's letter as Tanoby's are: `Party.create`'s `unown`); you meet them on
+the hall's floor, as you do in caves (HGSS's encounter tiles,
+`sMetatileBehaviorFlags`, now the maps' encounter tiles: caves' floors too).
+At the back of each chamber the wall bears a word in the Unown font
+(`OpenAlphHiddenRoom`: HGSS's tablet, `msg_0198`): ESCAPE, LIGHT, WATER and
+HO OH. Use an Escape Rope (it's kept), Flash or a Water Stone standing in
+front of the right one (`src/alph_checks.c`), or bring Ho-Oh, and it opens on
+a room of replicas and items; its floor gives way into a hidden room of Unown
+writing, and that one's into the hall. The Research Center's people follow
+your Unown (`CheckSeenAllLetterUnown`: all 26 letters; how many kinds you've
+caught) and the puzzles solved, and the professor adds to your report as HGSS's
+does. (Script warps now name their maps, so every script's warp works.)
+
 ## Orre: the Outskirt Stand (in progress)
 
 Pokémon Colosseum's opening, at the **Outskirt Stand**: a diner made from an

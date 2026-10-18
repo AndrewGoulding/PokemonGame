@@ -116,6 +116,7 @@ function compiler(ROOT, conv) {
     if (/^ITEM_/.test(tok)) return conv.item(tok) || tok;
     if (/^SPECIES_/.test(tok)) return conv.species(tok) || tok;
     if (/^TRAINER_/.test(tok)) return "HGSS_" + tok;
+    if (/^MAP_/.test(tok)) return tok;   // (maps by name: Warp's, SetDynamicWarp's, as JOHTO_SCRIPTS.mapConsts has them)
     if (tok in defines) return defines[tok];
     if (tok === "TRUE") return 1;
     if (tok === "FALSE") return 0;

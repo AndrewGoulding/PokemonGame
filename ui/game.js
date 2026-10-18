@@ -509,6 +509,7 @@
   }
 
   async function addCaught(record, keep) {
+    JohtoAlph.recordCaught(player.flags, record);   // (an Unown's letter, for the Unown Report)
     // A new kind: "…'s data was added to the Pokédex." and its page (once you have one).
     if (!Player.hasCaught(player, record.species) && player.flags.pokedex) {
       Player.markCaught(player, record.species);
@@ -853,7 +854,7 @@
   }
 
   const RODS = ["fishing-rod"];
-  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case", "powder-jar"].concat(RODS);
+  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
   const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map", "berry-pouch"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
@@ -893,6 +894,8 @@
         : "The Exp. Share was turned off. Only Pokémon that battle will gain Exp. Points.");
     } else if (item === "town-map") await townMap();
     else if (item === "coin-case") await message("Your Coins:\n" + plainCoins(coins()));
+    // (The Unown Report: the letters caught, ui/johto-alph.js.)
+    else if (item === "unown-report") await alphOverlay((c) => JohtoAlph.report(c, player.flags.unownCaught, { frame: GameOptions.get().frame }));
     // (FieldUseFunc_PowderJar: how much Berry Powder you have.)
     else if (item === "powder-jar") await message("Berry Powder:\n" + (player.flags.berryPowder | 0).toLocaleString("en-US"));
   }
@@ -1345,6 +1348,8 @@
       else if (what === "use" && Bag.isKeyItem(id)) { if ((await useKeyItem(id)) === "escaped") return "escaped"; }
       else if (what === "use" && (id in REPEL_STEPS || id in LURE_STEPS)) await useRepel(id);
       else if (what === "use" && id === "escape-rope") { if (await useEscapeRope()) return "escaped"; }
+      // (A Water Stone in front of the Ruins of Alph's wall that says WATER opens it.)
+      else if (what === "use" && id === "water-stone" && alphReaction("water-stone")) return "escaped";
       else if (what === "use") {
         const t = await choosePartyFor(Bag.isMachine(id) ? "Teach which {PKMN}?" : "Use on which {PKMN}?", id);
         if (t) await useItemOn(t, id);
@@ -5937,9 +5942,13 @@
   function fieldMoveHere(move, mon) {
     const here = window.WORLD_MAPS[player.location.map] || {}, a = Overworld.ahead(), surfing = Overworld.avatar() === "surf";
     switch (move) {
-      case "Flash":
+      case "Flash": {
+        // (In front of the Ruins of Alph's wall that says LIGHT: Task_UseFlashInField.)
+        const js = JohtoAlph.chamberReaction(player.location.map, Overworld.position(), "flash");
+        if (js) return async () => { await say(usedMove(mon, "Flash")); sfx("se_m_reflect"); johto.setVar("VAR_SPECIAL_RESULT", 0); await runJohto(js); };
         if (!Overworld.isDark()) return "Can't use that here.";
         return async () => { await say(usedMove(mon, "Flash")); sfx("se_m_reflect"); Overworld.flash(); };
+      }
       case "Cut": {
         // (Ruin Valley's dotted door, from below: CutMoveRuinValleyCheck.)
         if (Sevii.cutOpensDottedHole(player.flags, Overworld.position())) return () => cutDottedHoleDoor(mon);
@@ -10561,6 +10570,8 @@
   async function useEscapeRope() {
     const here = player.location && window.WORLD_MAPS[player.location.map];
     const to = player.flags.escapeWarp;
+    // (In front of the Ruins of Alph's wall that says ESCAPE: it opens, and the rope's kept.)
+    if (alphReaction("escape-rope")) return true;
     if (!here || !here.allowEscaping || !to) { await message("Oak: " + player.name + "! This isn't the time to use that!"); return false; }
     Player.removeItem(player, "escape-rope");
     await message(player.name + " used the Escape Rope.");
@@ -10724,6 +10735,11 @@
     // (The Gyms' gimmicks: ui/johto-gymmicks.js.)
     violetLift: () => gymmicks.violetLift(),
     turnWinch: () => { const turned = gymmicks.turnWinch(); applyPatches(player.location.map); return turned; },
+    // (The Ruins of Alph: ui/johto-alph.js.)
+    shake: (n, opts) => Overworld.shake(n, opts),
+    alphPuzzle: (n) => alphPuzzle(n),
+    alphWall: (n) => alphOverlay((c) => JohtoAlph.wall(c, n)),
+    unownCaught: () => player.flags.unownCaught || [],
     giveEgg: async (species) => { Player.receive(player, Breeding.giftEgg(species, { map: player.location.map })); },
     mart: (stock) => mart(stock),
     kurt: (op) => johtoField.kurt(op), followerIdle: () => Overworld.follower.idle(), followerHide: (on) => Overworld.follower.hide(on),
@@ -10904,6 +10920,25 @@
     Player.addItem(player, "hm11");
     await sayWithJingle(itemJingle("hm11"), "{PLAYER} received " + Bag.name("hm11") + "!");
     await say(["Professor Oak: That Hidden Machine\ncontains the move Rock Climb!", "When you teach it to a Pokémon,\nyou can go up rock walls that have\nsteps carved in them."]);
+  }
+  // The Ruins of Alph (ui/johto-alph.js): a chamber's stone panel, the words
+  // on its wall and the Unown Report, on the overlay canvas.
+  async function alphOverlay(screen) {
+    const c = overlayCanvas();
+    c.classList.remove("hidden");
+    try { return await screen(c); } finally { c.classList.add("hidden"); Screen.say(""); }
+  }
+  // (Put together: the flag the script's to set, FLAG_SYS_ALPH_PUZZLE_*.)
+  const alphPuzzle = (n) => alphOverlay(async (c) => ((await JohtoAlph.puzzle(c, n, { frame: GameOptions.get().frame, sfx,
+    confirm: async (q) => { const yes = await confirm(q); Screen.say(""); return yes; } })) ? JohtoAlph.PUZZLE_FLAGS[n] : null));
+  const alphSolved = () => JohtoAlph.PUZZLE_FLAGS.map((f) => johto.flag(f));
+  // A wall in front of you that an Escape Rope, Flash or a Water Stone opens
+  // (src/alph_checks.c): its script, once the menus close; true if it's that wall.
+  function alphReaction(what, before) {
+    const js = JohtoAlph.chamberReaction(player.location.map, Overworld.position(), what);
+    if (!js) return false;
+    fieldAction = async () => { Screen.say(""); if (before) await before(); await runJohto(js); };
+    return true;
   }
   // An Apricorn tree: an Apricorn of its colour, once a day.
   async function apricornTree(tree, colour) {
@@ -11214,7 +11249,8 @@
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
           farawayStep();
           return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step();
-        }, encounterScale: () => gear.encounterRate(), allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) && repelAllows(mon),
+        }, encounterScale: () => gear.encounterRate(), allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
+          !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
         onMap: (m) => {
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
           if (m !== "VermilionCity") ticketChecked = false;
@@ -11271,8 +11307,10 @@
         if (safariOn()) await safariBattle(ev.species, ev.level, terrain);
         // (The Bug-Catching Contest's own wild Pokémon, in its park.)
         else if (bugContest.here(at.map)) await bugContest.battle(terrain);
-        // (The Tanoby Ruins' Unown: each slot's letter, sUnownLetterSlots.)
-        else await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(ev.species, ev.level, { unown: Sevii.unownLetter(at.map, ev.slot) }))] },
+        // (The Tanoby Ruins' Unown: each slot's letter, sUnownLetterSlots; the
+        // Ruins of Alph's, a letter its solved puzzles have woken.)
+        else await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(ev.species, ev.level,
+          { unown: Sevii.unownLetter(at.map, ev.slot) || JohtoAlph.unownLetter(at.map, alphSolved()) }))] },
           terrain, ghost: towerGhost() });
       } else await story(ev);
       await persist();
