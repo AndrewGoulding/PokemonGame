@@ -290,7 +290,9 @@
   }
 
   // opts.safari: a Safari Zone battle (engine/safari.js), with the Safari
-  // Balls you have left (player.flags.safari).
+  // Balls you have left (player.flags.safari). opts.bag: the Bag in the
+  // battle, if not yours (the Bug-Catching Contest's Sport Balls);
+  // opts.keepCaught(record): where a Pokémon caught goes, if not to you.
   // Double battles: opts.double (FireRed's trainerbattle_double: the whole
   // party, two at a time). A tag battle: opts.partner = { name, team (party
   // records), pic (their back picture) }: you choose three of yours first
@@ -363,9 +365,10 @@
       foeTrainer: foe.pic, defeatText: opts.defeatText && opts.defeatText.map((p) => fill(p)),
       victoryMusic: opts.victoryMusic || johtoMusic.win || (wild ? "mus_victory_wild" : leader ? "mus_victory_gym_leader" : "mus_victory_trainer"),
       terrain: battleTerrain(opts),
-      bag: player.bag,
+      bag: opts.bag || player.bag,
       // (The Bag screen: its pockets, and the bag's colours.)
-      bagPockets, bagFemale: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
+      // (Another bag: only its Poké Balls pocket, and the others it has anything in.)
+      bagPockets: opts.bag ? () => bagPockets(opts.bag).filter((p) => p.items.length || p.name === "Poké Balls") : bagPockets, bagFemale: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
       catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s), fishing: !!opts.fishing },
       // (A Tera Raid's Pokémon, or a wild Tera Pokémon, battles as a trainer's does, and Terastallizes.)
       opponent: wild && !opts.raid && !wildTera ? randomMove : (b) => OpponentAI.choose(b, "p2"),
@@ -431,7 +434,7 @@
     if (result.outcome === "caught") {
       const record = Party.caught(foe.team[0], b.caught, ballUsed(b));
       delete record.teraAce;   // (a Tera Pokémon keeps its Tera Type)
-      await addCaught(record);
+      await addCaught(record, opts.keepCaught);
     }
     if (opts.safari) {
       // (No one fought: no blacking out, no evolving.)
@@ -505,7 +508,7 @@
     return ev ? ev[2] : "poke-ball";
   }
 
-  async function addCaught(record) {
+  async function addCaught(record, keep) {
     // A new kind: "…'s data was added to the Pokédex." and its page (once you have one).
     if (!Player.hasCaught(player, record.species) && player.flags.pokedex) {
       Player.markCaught(player, record.species);
@@ -513,6 +516,7 @@
       Screen.say("");
       await PokedexScreen.open(dexOptions({ register: record.species }));
     }
+    if (keep) { await keep(record); return; }   // (not yours yet: the Bug-Catching Contest's)
     const where = Player.receive(player, record);
     const name = Party.displayName(record);
     if (where === "party") await message(name + " was added to your party!");
@@ -1287,17 +1291,19 @@
   // tree gives them: the Bag's "Sort" on a berry, flags.berrySort "tier".)
   const BERRY_TIER_ORDER = () => BerryPicking.TIERS.flatMap((t) => t.berries);
   const berryTier = (id) => BerryPicking.TIERS.find((t) => t.berries.includes(id));
-  function bagPockets() {
+  // (`bag`: another than yours, as the Bug-Catching Contest's.)
+  function bagPockets(bag) {
+    bag = bag || player.bag;
     const tiers = player.flags.berrySort === "tier" ? BERRY_TIER_ORDER() : null;
     const order = (id) => (Bag.isMachine(id) ? Bag.machines().indexOf(id)
       : tiers && /-berry$/.test(id) ? (tiers.includes(id) ? tiers.indexOf(id) : tiers.length) : 0);
     return Bag.POCKETS.map((p) => ({
       name: p,
-      items: Object.keys(player.bag).filter((id) => Bag.pocket(id) === p)
+      items: Object.keys(bag).filter((id) => Bag.pocket(id) === p)
         .sort((a, b) => order(a) - order(b) || Bag.name(a).localeCompare(Bag.name(b)))
         .map((id) => ({
           id, name: Bag.name(id), icon: Bag.sprite(id),
-          qty: Bag.isMachine(id) || Bag.isKeyItem(id) ? null : player.bag[id],
+          qty: Bag.isMachine(id) || Bag.isKeyItem(id) ? null : bag[id],
           desc: Bag.description(id) + (id === "exp-share" ? (expShareOn() ? "\nIt's on." : "\nIt's off.") : "")
         }))
     }));
@@ -2180,18 +2186,23 @@
       // POKéDEX once Prof. Oak has given you one, POKéMON once you have one.
       // In the Safari Zone: RETIRE first, and no SAVE (SetUpStartMenu_SafariZone).
       const items = [], safari = player.flags.safari;
+      // (In the Bug-Catching Contest's park: RETIRE too, and no BAG or SAVE.)
+      const contest = bugContest.here(player.location.map);
       if (safari) items.push({ key: "retire", label: "Retire" });
+      if (contest) items.push({ key: "retire", label: "Retire", help: "Finish the Bug-Catching Contest now and\nwait for the judging." });
       if (player.flags.pokedex) items.push({ key: "dex", label: "Pokédex" });
       if (player.party.length) items.push({ key: "party", label: "Pokémon" });
-      items.push({ key: "bag", label: "Bag" }, { key: "card", label: player.name });
-      if (!safari) items.push({ key: "save", label: "Save" });
+      if (!contest) items.push({ key: "bag", label: "Bag" });
+      items.push({ key: "card", label: player.name });
+      if (!safari && !contest) items.push({ key: "save", label: "Save" });
       items.push({ key: "option", label: "Option" }, { key: "exit", label: "Exit" });
-      for (const it of items) it.help = START_HELP[it.key];
-      const stats = safari ? [String(safari.steps).padStart(3, " ") + "/" + Safari.STEPS, "Balls  " + String(safari.balls).padStart(2, " ")] : null;
+      for (const it of items) it.help = it.help || START_HELP[it.key];
+      const stats = safari ? [String(safari.steps).padStart(3, " ") + "/" + Safari.STEPS, "Balls  " + String(safari.balls).padStart(2, " ")] : bugContest.menuStats();
       const r = await GbaMenus.startMenu($("#overlay"), { items, cursor: startCursor, frame: GameOptions.get().frame, stats });
       startCursor = r.cursor;
       const v = r.key;
       if (v === "exit") return;
+      if (v === "retire" && contest) { await runJohto(johtoStd("std_bug_contest_retire"), null); return; }
       if (v === "retire") {
         if (await confirm(fill(T("SafariZone_Text_WouldYouLikeToExit")[0]))) { await safariOver(null, false); return; }
         continue;
@@ -10591,8 +10602,21 @@
   const KANTO_BADGES = ["boulder", "cascade", "thunder", "rainbow", "soul", "marsh", "volcano", "earth"];
   const gymmicks = JohtoGymmicks.create({ sfx: (name) => sfx(name), shake: (n, opts) => Overworld.shake(n, opts),
     people: () => Overworld.people(), beaten: (id) => !!player.flags[id] });
+  // The Bug-Catching Contest (ui/bug-contest.js): HGSS's, in the National Park.
+  const bugContest = BugContest.create({
+    player: () => player, party: Party, receive: (r) => Player.receive(player, r), national: () => Player.nationalDex(player),
+    battle: (opts) => battle("wild", opts), wildMon, say: (pages) => say(pages), confirm: (question) => confirm(question),
+    resume: async () => { show("world"); await Overworld.resume(); },
+    setFlag: (name, on) => johto.setFlag(name, on), setVar: (name, val) => johto.setVar(name, val),
+    runStd: (name) => runJohto(johtoStd(name), null),
+    judging: async () => { await Overworld.teleport({ map: "NationalPark", x: 46, y: 50, facing: "up" }); await runJohto(johto.frameScript("NationalPark"), null); }
+  });
+  // (A std script by name, compiled as a zone of its own: { zone, label }.)
+  const johtoStd = (name) => { const s = (window.JOHTO_SCRIPTS.std || {})[name]; return s ? { zone: s[0], label: s[1] } : null; };
   const johto = JohtoScript.create({
     player: () => player,
+    bugContest,
+    pcSpace: () => player.boxes.reduce((n, box) => n + box.filter((r) => !r).length, 0),
     say: (pages) => say(pages),
     confirm: (question) => confirm(question),
     choose: async (texts) => { const i = await multichoice(null, 0, 0, texts); Screen.say(""); return i; },
@@ -10631,7 +10655,8 @@
     // (Only to Johto's maps that are built: HGSS's world coordinates, as theirs.
     // Into one that isn't, as Route 34's Day Care, you stay where you are.)
     warp: async (mapConst, x, y, facing) => {
-      const J = window.JOHTO_SCRIPTS, name = J.mapConsts[mapConst], o = name && J.origins[J.maps[name]];
+      // (A map by its number, as the scripts' Warp has it: J.mapIds.)
+      const J = window.JOHTO_SCRIPTS, name = J.mapConsts[typeof mapConst === "number" ? (J.mapIds || {})[mapConst] : mapConst], o = name && J.origins[J.maps[name]];
       if (!o) { await Overworld.fadeFromBlack(); return; }
       await Overworld.teleport({ map: name, x: x - o.x, y: y - o.y, facing });
     },
@@ -10664,7 +10689,7 @@
     sleep, isGirl, onBike: () => Overworld.avatar() === "bike",
     chooseStarter: johtoStarter,
     nickname: async (i) => {
-      const r = player.party[i];
+      const r = typeof i === "object" ? i : player.party[i];   // (or a Pokémon not in your party: the contest's bug)
       if (!r) return;
       const typed = await enterText(Party.speciesName(r.species) + "'s nickname?", Party.displayName(r), 10);
       if (typed && typed !== Party.speciesName(r.species)) r.nickname = typed;
@@ -11129,7 +11154,7 @@
           leftPallet(player.location.map); DayCare.step(player.flags.dayCare); DayCare.step(player.flags.dayCare2); vsSeekerStep(); friendshipStep();
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
           farawayStep();
-          return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep();
+          return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep();
         }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) && repelAllows(mon),
         onMap: (m) => {
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
@@ -11139,6 +11164,7 @@
           // (Flying, blacking out or teleporting out of the Safari Zone ends the
           // Safari Game: Overworld_ResetStateAfterFly and the like.)
           if (player.flags.safari && !/^SafariZone_/.test(m) && m !== SAFARI_GATE) delete player.flags.safari;
+          bugContest.onMap(m);   // (and away from the National Park, the Bug-Catching Contest)
           // (And off Cycling Road: VAR_MAP_SCENE_ROUTE16 back to 0.)
           if (player.flags.cyclingRoad && !CYCLING_ROAD_MAPS.includes(m)) delete player.flags.cyclingRoad;
           // The Seafoam Islands' boulders and currents (Route20_OnTransition,
@@ -11173,6 +11199,7 @@
       else if (ev.type === "jessie-james") await jessieJames();
       else if (ev.type === "jessie-james-later") await laterJessieJames();
       else if (ev.type === "safari-over") await safariOver(ev.text, false);
+      else if (ev.type === "johto-script") await runJohto(ev.js, null);
       else if (ev.type === "wild") {
         if (!canBattle() && !safariOn()) continue;
         // Grass on routes; caves (and other maps) use their own scene.
@@ -11182,6 +11209,8 @@
         const terrain = Overworld.avatar() === "surf" ? (b === 0x10 ? "pond" : "water")
           : here && ["route", "town", "city"].includes(here.type) ? "grass" : undefined;
         if (safariOn()) await safariBattle(ev.species, ev.level, terrain);
+        // (The Bug-Catching Contest's own wild Pokémon, in its park.)
+        else if (bugContest.here(at.map)) await bugContest.battle(terrain);
         // (The Tanoby Ruins' Unown: each slot's letter, sUnownLetterSlots.)
         else await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(ev.species, ev.level, { unown: Sevii.unownLetter(at.map, ev.slot) }))] },
           terrain, ghost: towerGhost() });

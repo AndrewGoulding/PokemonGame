@@ -1936,6 +1936,42 @@ if (window.JOHTO_TOWN_MAP) {
       console.log("ok: Johto's scripts: an in-game trade, a loan, Kenya's Mail");
     })().catch((e) => { console.error(e); process.exit(1); });
   }
+  // The Bug-Catching Contest (ui/bug-contest.js, tools/build-bug-contest.js): HGSS's scripts for it, its
+  // wild Pokémon by day, the other contestants, the judging (BugContest_JudgePlayerMon) and the prizes.
+  {
+    const D = BUG_CONTEST_DATA, std = JOHTO_SCRIPTS.std;
+    assert.strictEqual(D.encounters.length, 4, "a set without the National Pokédex, and Tuesday's, Thursday's and Saturday's");
+    for (const set of D.encounters) assert(set.length === 10 && set.every((s) => DEX[s.species] && s.min <= s.max), "ten bugs a set");
+    assert(D.contestants.length === 10 && D.names[0] === "Don" && D.classes[2] === "Ace Trainer");
+    assert(ITEMS["sport-ball"] && ["sun-stone", "everstone", "sitrus-berry", "shed-shell"].every((id) => ITEMS[id]), "the Sport Balls and prizes");
+    for (const n of ["std_bug_contest_guard_start", "std_bug_contest_guard_ask_end", "std_bug_contest_judging", "std_bug_contest_time_up", "std_bug_contest_retire"]) {
+      assert(std[n] && std[n][1] in JOHTO_SCRIPTS.zones[std[n][0]].labels, n);
+    }
+    assert(JOHTO_SCRIPTS.messages.msg_0246_00014 && JOHTO_SCRIPTS.mapIds[487] === "MAP_NATIONAL_PARK_BUG_CATCHING_CONTEST");
+    assert(WORLD_MAPS.NationalPark_BugCatchingContest.people.filter((p) => /^hgss:BUG_CONTEST:/.test(p.script)).length === 10, "the ten contestants talk");
+    assert(JOHTO_SCRIPTS.zones.D22R0101.hdr.frame.some((f) => f[2] === "std_bug_contest_judging"), "the judging in the park");
+    const sandbox = { window: { BUG_CONTEST_DATA: D, JOHTO_SCRIPTS } };
+    vm.runInNewContext(fs.readFileSync(path.join(root, "ui/bug-contest.js"), "utf8"), sandbox, { filename: "ui/bug-contest.js" });
+    const C = sandbox.window.BugContest, seq = (...xs) => { let i = 0; return () => xs[i++ % xs.length]; };
+    // (The roll out of 100: 80-99 Caterpie, 60-79 Weedle, ... 5-9 Scyther, 0-4 Pinsir.)
+    const kanto = C.encounterSet(false, 2);
+    assert.deepStrictEqual([0.07, 0.02, 0.65].map((r) => C.encounter(kanto, seq(r, 0)).species), ["Scyther", "Pinsir", "Weedle"]);
+    assert.strictEqual(JSON.stringify(C.encounter(kanto, seq(0.85, 0.999))), '{"species":"Caterpie","level":18}');
+    assert.strictEqual(C.encounterSet(true, 4)[0].species, "Wurmple", "Thursday's, with the National Pokédex");
+    const opp = C.opponents(true, 6, Math.random);
+    assert(opp.length === 5 && new Set(opp.map((o) => o.id)).size === 5 && opp.every((o) => DEX[o.species] && o.score > 100), "five others, each with a bug");
+    // A Lv. 18 Caterpie (its highest), all IVs 31, full HP: 60 + 100 + 100 + 100.
+    const cat = { species: "Caterpie", level: 18, ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }, hp: 40 };
+    assert.strictEqual(C.score(cat, kanto, 40), 360);
+    assert.strictEqual(C.score(Object.assign({}, cat, { level: 9, hp: 20, ivs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 } }), kanto, 40), 60 + 50 + 0 + 50);
+    assert.strictEqual(C.score(null, kanto, 1), 0, "nothing caught");
+    assert.deepStrictEqual([...C.rank([300, 200, 250, 100, 150, 300])], [5, 0, 2, 1, 4, 3], "on a tie, you're ahead");
+    assert.deepStrictEqual([0, 1, 2, 3].map((p) => C.prize(p, false, Math.random)), ["sun-stone", "everstone", "sitrus-berry", "shed-shell"]);
+    assert.strictEqual(C.prize(0, true, () => 0.75), "dusk-stone", "first place with the National Pokédex: one of ten stones");
+    const scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
+    for (const c of ["BugContestAction", "JudgeBugContest", "BufferBugContestWinner", "IsBugContestantRegistered", "BugContestGetTimeLeft", "SetFlagVar"]) assert(scriptJs.includes('case "' + c + '"'), c);
+    assert(scripts.includes("ui/bug-contest.js") && scripts.indexOf("ui/bug-contest.js") < scripts.indexOf("ui/game.js"));
+  }
   // (Upstairs in a Pokémon Center is FireRed's own floor, its people too.)
   for (const n of J.filter((n) => !/_PokemonCenter_2F$/.test(n))) for (const p of WORLD_MAPS[n].people) {
     const fr = /^(item_ball|cut_tree|rock_smash_rock)$/.test(p.sprite);

@@ -31,7 +31,8 @@
 //   chooseMoveToForget(slot, move) (a move slot, or -1), canLearnTutor(slot, move),
 //   relearnable(slot) and relearn(slot, moves) (the Move Relearner's screen: learned?),
 //   music(song) (null: the map's own again; false: none), se(name), shake(count, opts),
-//   moneyBox(on), moveWarp(map, i, x, y), pcSpace(), itemPocket(id).
+//   moneyBox(on), moveWarp(map, i, x, y), pcSpace(), itemPocket(id),
+//   bugContest (ui/bug-contest.js: the Bug-Catching Contest's commands).
 (function () {
   "use strict";
 
@@ -91,6 +92,8 @@
       const o = isTemp(name) ? temp.f : state().f;
       if (on) o[name] = isDaily(name) ? today() : true; else delete o[name];
     }
+    // (A flag by its number, from a var: SetFlagVar's.)
+    const flagNamed = (n) => (typeof n === "string" ? n : (DATA().flagNames || {})[n] || "FLAG_" + n);
     // A var's value (or a number, or a name that's neither: as it is).
     function getVar(x) {
       if (typeof x !== "string" || !/^VAR_/.test(x)) return x;
@@ -261,6 +264,8 @@
             else if (a[0] === "std_play_friend_music") env.music(env.isGirl() ? "gs_e_support_m" : "gs_e_support_f");
             else if (STD_MUSIC[a[0]]) env.music(STD_MUSIC[a[0]]);
             else if (/^std_fade_end_\w+_music$/.test(a[0])) env.music(null);
+            // (A std script compiled as a zone of its own, as the Bug-Catching Contest's: it runs, then this goes on.)
+            else if (DATA().std && DATA().std[a[0]]) { await flush(); await run(DATA().std[a[0]][0], DATA().std[a[0]][1], ctx); }
             break;
           // (This game's Bag never fills.)
           case "GoToIfNoItemSpace": itemVars(a[0], a[1]); setVar("VAR_SPECIAL_RESULT", 1); break;
@@ -272,7 +277,7 @@
           case "CheckBadge": setVar(a[1], env.hasBadge(+getVar(a[0])) ? 1 : 0); break;
           case "GetPartyCount": setVar(a[0], env.player().party.length); break;
           case "CountAliveMons": setVar(a[0], env.player().party.filter((r) => !r.egg && r.hp > 0).length); break;
-          case "GetPartyLeadAlive": setVar(a[0], Math.max(0, env.player().party.findIndex((r) => !r.egg && r.hp > 0))); break;
+          case "GetPartyLeadAlive": setVar(a[0], Math.max(0, env.player().party.findIndex((r) => !r.egg && r.hp > 0))); chosen.add(a[0]); break;
           case "GetPartyMonSpecies": { const r = mon(a[0]); setVar(a[1], r && !r.egg ? r.species : 0); break; }
           case "MonGetFriendship": { const r = mon(a[1]); setVar(a[0], r ? r.happiness | 0 : 0); break; }
           case "GetPartyMonForm2": setVar(a[0], 0); break;
@@ -326,7 +331,8 @@
             break;
           }
           case "SetStarterChoice": state().starter = getVar(a[0]); break;
-          case "NicknameInput": await env.nickname(slot(a[0])); break;
+          // (255: the bug you're holding in the Bug-Catching Contest.)
+          case "NicknameInput": if (+getVar(a[0]) === 255) { const r = env.bugContest && env.bugContest.caught(); if (r) await env.nickname(r); } else await env.nickname(slot(a[0])); break;
           // (Named: 0, as HGSS's naming screen gives when it's done; 1 would ask again.)
           case "NameRival": state().rival = await env.nameRival(state().rival || "Silver"); setVar(a[0], 0); break;
           case "HealParty": env.healParty(); break;
@@ -486,6 +492,25 @@
           case "GetStaticEncounterOutcome": case "StaticWildWonOrCaughtCheck": setVar(a[0], lastBattle === "caught" ? 4 : lastBattle === "won" ? 1 : 0); break;
           case "WhiteOut": return;
 
+          // The Bug-Catching Contest (ui/bug-contest.js).
+          case "BugContestAction": if (env.bugContest) { if (+a[0] === 0) env.bugContest.start(getVar(a[1])); else env.bugContest.end(); } break;
+          case "IsBugContestantRegistered": setVar(a[1], env.bugContest && env.bugContest.registered(+getVar(a[0])) ? 1 : 0); break;
+          case "JudgeBugContest": {
+            const r = env.bugContest ? env.bugContest.judge() : { placement: 3, prize: 0, species: 0 };
+            setVar(a[0], r.placement); setVar(a[1], r.prize); setVar(a[2], r.species);
+            break;
+          }
+          case "BufferBugContestWinner": {
+            const w = env.bugContest.winner(+a[0]);
+            Object.assign(buffers, { 0: w.name, 1: w.species, 2: w.cls, 3: String(w.score) });
+            break;
+          }
+          case "BufferBugContestMonNick": { const c = env.bugContest && env.bugContest.caughtNick(); if (c) buffers[a[0]] = c.nick; setVar(a[1], c && c.boxed ? 1 : 0); break; }
+          case "BugContestGetTimeLeft": buffers[a[0]] = String(env.bugContest ? env.bugContest.minutesLeft() : 0); break;
+          case "SetFlagVar": setFlag(flagNamed(getVar(a[0])), true); break;
+          case "ClearFlagVar": setFlag(flagNamed(getVar(a[0])), false); break;
+          case "CountPCEmptySpace": setVar(a[0], env.pcSpace ? env.pcSpace() : 1); break;
+
           // The Gyms' gimmicks (ui/johto-gymmicks.js): Violet's lift, Cianwood's winch.
           case "VioletGymElevator": await flush(); await env.violetLift(); break;
           case "CianwoodGymTurnWinch": await flush(); setVar(a[0], env.turnWinch() ? 1 : 0); break;
@@ -558,7 +583,9 @@
         else if (op === "ClearFlag") setFlag(a[0], false);
         else if (op === "SetVar") setVar(a[0], a[1]);
         else if (op === "CopyVar" || op === "SetOrCopyVar") setVar(a[0], getVar(a[1]));
+        else if (op === "AddVar") setVar(a[0], (+getVar(a[0]) || 0) + (+getVar(a[1]) || 0));
         else if (op === "GetWeekday") setVar(a[0], new Date().getDay());
+        else if (op === "IsBugContestantRegistered") setVar(a[1], env.bugContest && env.bugContest.registered(+getVar(a[0])) ? 1 : 0);
         else if (op === "CheckBadge") setVar(a[1], env.hasBadge(+getVar(a[0])) ? 1 : 0);
         else if (op === "GetGameVersion") setVar(a[0], DATA().version || 7);
         else if (op === "ScrCmd_379") setVar(a[0], timeOfDay());
@@ -572,7 +599,10 @@
         // (A person put elsewhere: where the map will place them.)
         else if (op === "MovePersonFacing") {
           const o = env.origin(zone) || { x: 0, y: 0 };
-          temp.pos[a[0]] = { x: (+getVar(a[1]) || 0) - o.x, y: (+getVar(a[3]) || 0) - o.y, facing: DIRS[+getVar(a[4])] || "down" };
+          // (Someone by their number on the map, from a var: the park's contestants lining up.)
+          let id = getVar(a[0]);
+          if (typeof id === "number") { const p = ((window.WORLD_MAPS || {})[map] || { people: [] }).people.find((q) => q.id === id); id = p ? p.localId : id; }
+          temp.pos[id] = { x: (+getVar(a[1]) || 0) - o.x, y: (+getVar(a[3]) || 0) - o.y, facing: DIRS[+getVar(a[4])] || "down" };
         }
       }
     }
@@ -580,7 +610,13 @@
     function frameScript(map) {
       const zone = zoneOf(map), z = zone && DATA().zones[zone];
       if (!z) return null;
-      for (const [v, val, label] of z.hdr.frame) if (+getVar(v) === +val && label in z.labels) return { zone, label };
+      for (const [v, val, label] of z.hdr.frame) {
+        if (+getVar(v) !== +val) continue;
+        if (label in z.labels) return { zone, label };
+        // (A std script: the Bug-Catching Contest's judging.)
+        const std = DATA().std && DATA().std[label];
+        if (std) return { zone: std[0], label: std[1] };
+      }
       return null;
     }
     return { run, scriptOf, triggerDue, transition, frameScript, flag, setFlag, getVar, setVar, resetTemp, zoneOf, state, placed };

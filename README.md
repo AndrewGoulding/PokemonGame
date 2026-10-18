@@ -1925,7 +1925,7 @@ Sentret, and Hoothoot at night; then Surf's, Gen 4's fishing (five slots a
 rod, 40/40/15/4/1) and Rock Smash's. Everything goes into
 `data/johto-maps.js`, which adds the maps to `WORLD_MAPS` (and the gate's mat,
 warp and guard). Not here yet: what needs HGSS's own games (the Battle
-Frontier, the Pokéathlon, the Bug-Catching Contest, the Safari Zone's areas,
+Frontier, the Pokéathlon, the Safari Zone's areas,
 the Game Corner's machines, the Pokégear's phone calls). (Its music is HGSS's
 own: see Music and cries.)
 
@@ -1977,6 +1977,33 @@ your Pokémon's species of the other gender; the Heavy Ball by weight (20
 less to the catch rate under 204.8 kg, 20, 30 or 40 more over); the Fast
 Ball four times on a Pokémon of 100 Speed or more; and the Friend Ball's
 Pokémon start out friendly.
+
+**The Bug-Catching Contest** is HGSS's, in the National Park, on Tuesdays,
+Thursdays and Saturdays (`ui/bug-contest.js`, from `src/overlay_bug_contest.c`;
+its scripts are HGSS's own std scripts, `scr_seq_0151`, which the officer in
+either of the park's gatehouses calls). He signs you up (once a day): you go
+in with your lead Pokémon only (the rest are held for you), 20 Sport Balls
+and 20 minutes, the time left counting down in a box in the park's corner
+(and on the Start menu, beside RETIRE; no BAG or SAVE meanwhile). The
+contest's park has its own wild Pokémon (HGSS's `files/data/mushi`: Caterpie,
+Weedle, Metapod, Kakuna, Butterfree, Beedrill, Venonat, Paras, Scyther and
+Pinsir without the National Pokédex; with it, Kanto's bugs at Lv. 24-36 on
+Tuesdays and Hoenn's and Sinnoh's on Thursdays and Saturdays), fought as
+any wild Pokémon is, with only your Sport Balls in the Bag. Catch one while
+you're holding another and you're asked whether to switch. Five of the ten
+other contestants (Don, Ed, Abby, William, Benny, Barry, Cindy, Josh,
+Samuel, Kipp) are about the park with their own bugs and scores. Time up,
+out of Sport Balls, done early at the gate or RETIRE, and you're judged in
+the park, the contestants lined up: your bug's score is HGSS's (its kind's
+points, its level against the highest it comes at, its IVs and the HP it
+has left), and the prizes are a Sun Stone (with the National Pokédex, one of
+ten evolution stones), an Everstone, a Sitrus Berry, or a Shed Shell for
+everyone else. Your party comes back, and you keep the last bug you caught
+(nicknamed if you like; to the PC if your party was full). Leaving another
+way (Fly, blacking out) calls it off. `tools/build-bug-contest.js` builds
+its data and scripts from a pret/pokeheartgold checkout into
+`tools/lib/johto-bug-contest.generated.js` (`node tools/build-bug-contest.js
+<path>`), which goes at the end of `data/johto-maps.js`.
 
 **Johto's Town Map**: in Johto the Town Map (and Fly's) is Johto's: HGSS's
 Pokégear map, each place on the squares HGSS gives it, drawn in FireRed's

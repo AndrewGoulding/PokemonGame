@@ -7,6 +7,7 @@
 //   c.zone("R30")   // { cmds, labels, moves, scripts, hdr } for a zone's scr_seq
 //   c.init()        // the new game's script (scr_seq_0149): the flags HGSS starts with
 //   c.messages      // { msg id or "bank:N:i": [pages] } every message the zones use
+//   c.compileSource(src)   // a script file that isn't a zone's (a std one, as scr_seq_0151), compiled the same way
 //
 // A zone's script is one flat list of commands, [name, ...args], with its
 // labels as indexes into it (a label's script runs on into the next, as
@@ -182,7 +183,7 @@ function compiler(ROOT, conv) {
     const file = scrFiles.find((f) => /^scr_seq_0149\.s$/.test(f));
     return compileSource(fs.readFileSync(path.join(SCR, file), "utf8")).cmds.filter((c) => c[0] === "SetFlag" || c[0] === "SetVar").map((c) => c.slice(0));
   }
-  return { zone, init, messages, yesno, scriptRef, needMsg, pages, defines };
+  return { zone, init, messages, yesno, scriptRef, needMsg, pages, defines, compileSource };
 }
 
 module.exports = { compiler, frMove, pages };
