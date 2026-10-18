@@ -1875,6 +1875,20 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   switch it off and on), each Pokémon that battled gets the full amount
   instead of a split, and the rest of the party (not fainted) gets half, plus
   EVs, as in X and Y.
+- **Level caps** (this game's own: the adventure goes region by region,
+  Kanto, then Johto, then the rest): in a region, your Pokémon grow no further
+  than its cap for the Badges you have of that region's eight: Lv. 15 with
+  none, then 25, 30, 35, 40, 45, 50 and 55, and no cap with all eight
+  (`Player.levelCap`). Kanto's side places (the Sevii Islands, Orre, Faraway
+  Island) go by Kanto's Badges, Johto's maps by Johto's. A Pokémon at the cap
+  gains no Exp. Points in battle (said once a battle: "… is at the level cap
+  (Lv. 25) and can't gain Exp. Points!"), Exp. Candies and Exp. Points from
+  battle take it no further than the cap, a Rare Candy or Exp. Candy used on
+  it fails, and the Day-Care grows it no further either.
+- **The Rejuvenator**, in the Indigo Plateau's Pokémon Center, makes a
+  Pokémon Lv. 5 again (and heals it), keeping everything else: what it's
+  evolved into, its moves, EVs, IVs, nature and ability, so you can take a
+  team you've trained into a new region under its caps.
 - **Wild held items**: a wild Pokémon in the grass, on the water, on a rod,
   under a smashed rock or in the Safari Zone may be holding an item:
   FireRed's for its species (`.itemCommon` and `.itemRare` in

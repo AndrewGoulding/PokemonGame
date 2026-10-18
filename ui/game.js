@@ -317,7 +317,7 @@
       teraOrb,
       safari: opts.safari ? { balls: player.flags.safari.balls } : undefined,
       wild,
-      exp: !opts.safari && !opts.noExp,
+      exp: !opts.safari && !opts.noExp, levelCap: Player.levelCap(player),
       expShare: expShareOn(),
       trainer: Player.LOOKS[player.look].back,
       foeTrainer: foe.pic, defeatText: opts.defeatText && opts.defeatText.map((p) => fill(p)),
@@ -704,6 +704,11 @@
         : name + "'s " + STAT_NAMES[r.trained[0]] + " was Hyper Trained!");
       return;
     }
+    // (At the level cap, Rare Candies and Exp. Candies do nothing: Player.levelCap.)
+    if ((item === "rare-candy" || (ItemUse.effect(item) || {}).expCandy) && record.level >= Player.levelCap(player)) {
+      await message(name + " is at the level cap (Lv. " + Player.levelCap(player) + ").\nIt won't have any effect.");
+      return;
+    }
     if (item === "rare-candy") {
       if (!Bag.canUseOn(record, item)) { await message("It won't have any effect."); return; }
       if (!player.flags.debugCandy) Player.removeItem(player, item);   // the debug menu makes them infinite
@@ -729,7 +734,7 @@
     if ((ItemUse.effect(item) || {}).expCandy) {
       if (!Bag.canUseOn(record, item)) { await message("It won't have any effect."); return; }
       Player.removeItem(player, item);
-      const r = Bag.expCandy(record, item, { here: player.location && player.location.map });
+      const r = Bag.expCandy(record, item, { here: player.location && player.location.map, cap: Player.levelCap(player) });
       await message(name + " gained " + r.exp.toLocaleString("en-US") + " Exp. Points!");
       for (const lv of r.levels) {
         await message(name + " grew to Lv. " + lv.level + "!");
@@ -2240,7 +2245,7 @@
     "EventScript_CutTree", "EventScript_RockSmash", "EventScript_StrengthBoulder", "Route5_PokemonDayCare_EventScript_DaycareMan", "UndergroundPath_NorthEntrance_EventScript_Saige",
     "Route5_SouthEntrance_EventScript_GuardTriggerLeft", "Route5_SouthEntrance_EventScript_GuardTriggerMid",
     "Route5_SouthEntrance_EventScript_GuardTriggerRight",
-    "Game_EventScript_Leaf", "Game_EventScript_TradebackGuy", "Game_EventScript_PokerDealer", "Game_EventScript_BlackjackDealer",
+    "Game_EventScript_Leaf", "Game_EventScript_TradebackGuy", "Game_EventScript_Rejuvenator", "Game_EventScript_PokerDealer", "Game_EventScript_BlackjackDealer",
     "Game_EventScript_PokerTable", "Game_EventScript_BlackjackTable", "Game_EventScript_MahjongPlayer",
     "Route11_EastEntrance_2F_EventScript_Aide", "Route11_EastEntrance_2F_EventScript_Turner",
     "SSAnne_2F_Corridor_EventScript_RivalTriggerLeft", "SSAnne_2F_Corridor_EventScript_RivalTriggerMid",
@@ -4109,6 +4114,7 @@
       case "Game_EventScript_PokerTable": await pokerTable(); return;
       case "Game_EventScript_BlackjackTable": await blackjackTable(); return;
       case "Game_EventScript_MahjongPlayer": await mahjongTable(); return;
+      case "Game_EventScript_Rejuvenator": await rejuvenator(); return;
       case "Game_EventScript_TradebackGuy": {
         await say(["Hi! I'm the Tradeback Guy!", "Some Pokémon only evolve when\nthey're traded. Nobody to trade\nwith? Leave it to me!",
           "I'll trade you my Rattata, and then\ntrade your Pokémon right back!"]);
@@ -4901,6 +4907,11 @@
     if (/_PokemonCenter_2F$/.test(map)) {
       out.push(Object.assign({ id: 901, localId: "LOCALID_TRADEBACK_GUY", script: "Game_EventScript_TradebackGuy", x: 12, y: 5,
         movement: "face_down", text: null }, window.WORLD_SPRITES.tradeback));
+    }
+    // The Rejuvenator, in the Indigo Plateau's Pokémon Center (rejuvenator()).
+    if (map === "IndigoPlateau_PokemonCenter_1F") {
+      out.push(Object.assign({ id: 902, localId: "LOCALID_REJUVENATOR", script: "Game_EventScript_Rejuvenator", x: 4, y: 11,
+        movement: "face_down", text: null }, lookOf("scientist")));
     }
     if (map === "PokemonTower_7F" && megaTowerDue()) out.push(...megaTowerPeople());
     if (map === "CeladonCity_GameCorner_CardRoom") out.push(...cardRoomCrowd());
@@ -6069,13 +6080,13 @@
     const f = player.flags, D = (k) => T("Route5_PokemonDayCare_Text_" + k);
     const dc = f.dayCare;
     if (dc) {
-      const name = Party.displayName(dc.mon), grew = DayCare.levelsGained(dc), cost = DayCare.cost(dc);
+      const name = Party.displayName(dc.mon), grew = DayCare.levelsGained(dc, Player.levelCap(player)), cost = DayCare.cost(dc, Player.levelCap(player));
       await say(D(grew ? "MonHasGrownByXLevels" : "MonNeedsToSpendMoreTime"), [name, String(grew)]);
       if (!(await confirm(fill(D("OweMeXForMonsReturn").join(" "), [name, cost.toLocaleString("en-US")])))) { await say(D("ComeAnytimeYouLike")); return; }
       if (player.party.length >= Player.PARTY_SIZE) { await say(D("YouveGotNoRoomForIt")); return; }
       if (player.money < cost) { await say(D("DontHaveEnoughMoney")); return; }
       Player.addMoney(player, -cost);
-      const mon = DayCare.withdraw(dc);
+      const mon = DayCare.withdraw(dc, Player.levelCap(player));
       f.dayCare = null;
       player.party.push(mon);
       await say(D("ThankYouHeresMon"));
@@ -9007,17 +9018,17 @@
         if (player.party.length >= Player.PARTY_SIZE) { await say(DC("YourPartyIsFull")); return; }
         let dc = list[0];
         if (list.length > 1) {
-          const i = await multichoice(null, 15, 6, list.map((d) => Party.displayName(d.mon) + " Lv" + (d.mon.level + DayCare.levelsGained(d))).concat(["Exit"]));
+          const i = await multichoice(null, 15, 6, list.map((d) => Party.displayName(d.mon) + " Lv" + (d.mon.level + DayCare.levelsGained(d, Player.levelCap(player)))).concat(["Exit"]));
           if (i < 0 || i >= list.length) { await comeAgain(); return; }
           dc = list[i];
         }
-        const name = Party.displayName(dc.mon), cost = DayCare.cost(dc);
+        const name = Party.displayName(dc.mon), cost = DayCare.cost(dc, Player.levelCap(player));
         if (!(await yesNo(DC("ItWillCostX"), [name, cost.toLocaleString("en-US")]))) { await comeAgain(); return; }
         if (player.money < cost) { await say(DC("NotEnoughMoney")); return; }
         Screen.say("");
         await Overworld.act([{ who: "LOCALID_FOUR_ISLAND_DAYCARE_WOMAN", moves: M("FourIsland_PokemonDayCare_Movement_RetrieveMon") }]);
         list.splice(list.indexOf(dc), 1);
-        const mon = DayCare.withdraw(dc);
+        const mon = DayCare.withdraw(dc, Player.levelCap(player));
         Player.addMoney(player, -cost);
         player.party.push(mon);
         sfx("se_rs_shop");
@@ -9035,7 +9046,7 @@
     }
     await say(DC("GoodToSeeYou"));
     for (const dc of list) {
-      const n = DayCare.levelsGained(dc);
+      const n = DayCare.levelsGained(dc, Player.levelCap(player));
       if (n) await say(DC("YourMonHasGrownXLevels"), [Party.displayName(dc.mon), String(n)]);
     }
     if (list.length === 1 && (await yesNo(DC("WeCanRaiseOneMore")))) { await give(); return; }
@@ -10311,6 +10322,37 @@
       await persist();
     };
     return true;
+  }
+
+  // ---------- The Rejuvenator (this game's own) ----------
+  //
+  // In the Indigo Plateau's Pokémon Center: off to a new region, where the
+  // level caps (Player.levelCap) start again at 15, a Pokémon can be made Lv. 5
+  // again, keeping everything else: what it's evolved into, its moves, its
+  // EVs and IVs, its nature and ability. It's fully healed, too.
+  const REJUVENATED_LEVEL = 5;
+  function rejuvenate(record) {
+    record.level = REJUVENATED_LEVEL;
+    record.exp = Experience.expForLevel(Experience.growthRate(record.species), REJUVENATED_LEVEL);
+    Party.heal(record);
+  }
+  async function rejuvenator() {
+    await say(["I'm the Rejuvenator!", "Off to a new region? Your Pokémon\nwill have to grow up all over again\nthere.",
+      "I can make a Pokémon young again:\nback to Lv. 5!", "It keeps everything else: its moves,\nits training, even what it's evolved\ninto."]);
+    for (;;) {
+      if (!(await confirm("Shall I rejuvenate one of\nyour Pokémon?"))) { await say("Come back any time!"); return; }
+      const notes = player.party.map((r) => (!r.egg && r.level > REJUVENATED_LEVEL ? "ABLE" : "NOT ABLE"));
+      const r = await choosePartyFor("Rejuvenate which {PKMN}?", null, notes);
+      show("world");
+      if (!r) { await say("Come back any time!"); return; }
+      const name = Party.displayName(r);
+      if (r.egg) { await say("An Egg is as young as it gets!"); continue; }
+      if (r.level <= REJUVENATED_LEVEL) { await say(name + " is young enough already!"); continue; }
+      if (!(await confirm("Make " + name + " Lv. " + REJUVENATED_LEVEL + " again?"))) continue;
+      rejuvenate(r);
+      await sayWithJingle("mus_heal", name + " became Lv. " + REJUVENATED_LEVEL + " again!");
+      await persist();
+    }
   }
 
   // ---------- Johto's field scripts (ui/johto-script.js) ----------

@@ -15,13 +15,15 @@
 
   const E = () => window.Experience;
   const group = (record) => E().growthRate(record.species);
-  // The level its Exp. Points would make it now (no further than 100).
-  function levelAfter(dc) {
-    if (!dc || dc.mon.level >= E().MAX_LEVEL) return dc ? dc.mon.level : 0;
-    return Math.min(E().MAX_LEVEL, E().levelForExp(group(dc.mon), dc.mon.exp + dc.steps));
+  // The level its Exp. Points would make it now (no further than 100, or
+  // `cap`, the level caps' Player.levelCap; one already past it stays as it is).
+  function levelAfter(dc, cap) {
+    const top = Math.min(E().MAX_LEVEL, cap || E().MAX_LEVEL);
+    if (!dc || dc.mon.level >= top) return dc ? dc.mon.level : 0;
+    return Math.min(top, E().levelForExp(group(dc.mon), dc.mon.exp + dc.steps));
   }
-  const levelsGained = (dc) => (dc ? levelAfter(dc) - dc.mon.level : 0);
-  const cost = (dc) => 100 + 100 * levelsGained(dc);
+  const levelsGained = (dc, cap) => (dc ? levelAfter(dc, cap) - dc.mon.level : 0);
+  const cost = (dc, cap) => 100 + 100 * levelsGained(dc, cap);
 
   function deposit(record) {
     return { mon: record, steps: 0 };
@@ -32,17 +34,17 @@
     else if (dc) dc.steps++;
   }
   // The Pokémon, grown: -> its record.
-  function withdraw(dc) {
-    const r = dc.mon;
-    if (r.level < E().MAX_LEVEL) {
-      const target = levelAfter(dc);
-      r.exp += dc.steps;
+  function withdraw(dc, cap) {
+    const r = dc.mon, top = Math.min(E().MAX_LEVEL, cap || E().MAX_LEVEL);
+    if (r.level < top) {
+      const target = levelAfter(dc, cap);
+      r.exp = Math.min(r.exp + dc.steps, E().expForLevel(group(r), top));
       while (r.level < target) {
         for (const move of window.Bag.levelUp(r, { noFriendship: true })) {
           if (!window.Party.teachMove(r, move)) { r.moves.shift(); window.Party.teachMove(r, move); }
         }
       }
-      r.exp = Math.min(r.exp, E().expForLevel(group(r), E().MAX_LEVEL));
+      r.exp = Math.min(r.exp, E().expForLevel(group(r), top));
     }
     return r;
   }

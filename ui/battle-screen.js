@@ -1508,6 +1508,8 @@
           const k = fieldPos(c);
           if (ev[5] !== "share" && k && hb[k].exp !== hb[k].expTo) { sfx("se_exp"); await hbSettled(); }
         };
+      case "-expcap":   // [ident, cap, teamIndex] (this game's level caps)
+        return teamName(c) + " is at the level cap (Lv. " + b + ")\nand can't gain Exp. Points!";
       case "-expshare":
         return "The rest of your team gained Exp. Points thanks to the Exp. Share!";
       case "-levelup":   // [ident, level, hp, teamIndex, progress]

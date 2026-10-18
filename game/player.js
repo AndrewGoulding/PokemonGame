@@ -431,7 +431,26 @@
     return { player, warnings };
   }
 
+  // Level caps (this game's own: the adventure goes region by region, Kanto,
+  // then Johto, ...). In a region, your Pokémon grow no further than its cap
+  // for the Badges you have of that region's eight: 15 with none, then 25, 30,
+  // 35, 40, 45, 50 and 55; with all eight, no cap. Kanto's side places (the
+  // Sevii Islands, Orre, ...) go by Kanto's Badges. At the cap a Pokémon gains
+  // no Exp. Points, and Rare Candies and Exp. Candies don't work on it.
+  const REGION_BADGES = {
+    kanto: ["boulder", "cascade", "thunder", "rainbow", "soul", "marsh", "volcano", "earth"],
+    johto: ["zephyr", "hive", "plain", "fog", "storm", "mineral", "glacier", "rising"]
+  };
+  const LEVEL_CAPS = [15, 25, 30, 35, 40, 45, 50, 55];
+  const regionOf = (map) => ((window.WORLD_MAPS && window.WORLD_MAPS[map]) || {}).region || "kanto";
+  function levelCap(player, map) {
+    const badges = REGION_BADGES[regionOf(map || (player.location && player.location.map))] || REGION_BADGES.kanto;
+    const n = badges.filter((b) => (player.badges || []).includes(b)).length;
+    return n < LEVEL_CAPS.length ? LEVEL_CAPS[n] : 100;
+  }
+
   window.Player = {
+    REGION_BADGES, LEVEL_CAPS, levelCap,
     VERSION, LOOKS, PLAYER_LOOK, RIVAL_NAME, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG, STARTING_PC_ITEMS, NEW_GAME_LOCATION, HOME, CENTERS,
     create, markSeen, markCaught, hasCaught, nationalDex, KANTO_DEX_COUNT, dexNumber, dexCount, dexRating, hasAllMons, receive, deposit, withdraw, swapWithBox, healBoxes, release, boxCount, firstEmpty, boxed,
     itemCount, addItem, removeItem, depositItem, withdrawItem, addMoney, prizeMoney, blackoutLoss, serialize, load

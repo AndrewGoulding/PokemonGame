@@ -460,6 +460,9 @@
       this.switchCause = null;
       this.pendingSwitch = null;
       this.expEnabled = !!opts.exp;
+      // (The level your Pokémon can grow to here: this game's level caps, Player.levelCap.)
+      this.levelCap = Math.min(window.Experience ? window.Experience.MAX_LEVEL : 100, opts.levelCap || 100);
+      this.capNoted = new Set();
       this.expShare = !!opts.expShare;
       this.wild = !!opts.wild;
       // Pokémon Tower without the Silph Scope (FireRed's BATTLE_TYPE_GHOST):
@@ -2378,6 +2381,11 @@
       const give = (mon, divisor, share) => {
         E.addEvs(mon.evs, foe.baseSpecies);
         if (mon.level >= E.MAX_LEVEL) return;
+        // (At the level cap: no Exp. Points, and it's said once a battle.)
+        if (mon.level >= this.levelCap) {
+          if (!this.capNoted.has(mon)) { this.capNoted.add(mon); this.add("-expcap", mon, this.levelCap, mon.teamIndex); }
+          return;
+        }
         const amount = E.gain({ species: foe.baseSpecies, level: foe.level, trainer: !this.wild,
           participants: divisor, luckyEgg: mon.item === "lucky-egg" });
         this.gainExp(mon, amount, share);
@@ -2393,8 +2401,12 @@
     gainExp(mon, amount, share) {
       const E = window.Experience;
       const group = E.growthRate(mon.baseSpecies);
+      // (No further than the level cap: the Exp. Points to reach it, and no more.)
+      const cap = Math.min(E.MAX_LEVEL, this.levelCap);
+      amount = Math.max(0, Math.min(amount, E.expForLevel(group, cap) - mon.exp));
+      if (!amount) return;
       mon.exp += amount;
-      const levelsUp = () => mon.level < E.MAX_LEVEL && mon.exp >= E.expForLevel(group, mon.level + 1);
+      const levelsUp = () => mon.level < cap && mon.exp >= E.expForLevel(group, mon.level + 1);
       this.add("-exp", mon, amount, mon.teamIndex, levelsUp() ? 1 : E.progress(group, mon.level, mon.exp), share ? "share" : "");
       while (levelsUp()) {
         mon.level++;

@@ -307,12 +307,14 @@
 
   // An Exp. Candy: its Exp. Points, and the levels they bring, each as if
   // from Rare Candy. Returns { exp, levels: [{ level, moves }] }.
+  // (opts.cap: no further than that level, the level caps' Player.levelCap.)
   function expCandy(record, item, opts) {
-    const E = window.Experience, rate = E.growthRate(record.species);
+    opts = opts || {};
+    const E = window.Experience, rate = E.growthRate(record.species), top = Math.min(E.MAX_LEVEL, opts.cap || E.MAX_LEVEL);
     const before = record.exp;
-    record.exp = Math.min(E.expForLevel(rate, E.MAX_LEVEL), record.exp + window.ItemUse.effect(item).expCandy);
+    record.exp = Math.min(E.expForLevel(rate, top), record.exp + window.ItemUse.effect(item).expCandy);
     const levels = [];
-    while (record.level < E.MAX_LEVEL && record.exp >= E.expForLevel(rate, record.level + 1)) {
+    while (record.level < top && record.exp >= E.expForLevel(rate, record.level + 1)) {
       levels.push({ level: record.level + 1, moves: levelUp(record, opts) });
     }
     return { exp: record.exp - before, levels };

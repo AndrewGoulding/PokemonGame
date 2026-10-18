@@ -3596,6 +3596,34 @@ for (let seed = 1; seed <= GEN9; seed++) {
   gen9Turns += battle.turn;
 }
 
+// Level caps (Player.levelCap): by the Badges of the region you're in; at the
+// cap, no Exp. Points in battle, Exp. Candies stop at it, the Day-Care too.
+{
+  const p = Player.create("RED", 0);
+  p.location = { map: "PalletTown", x: 5, y: 5 };
+  assert.strictEqual(Player.levelCap(p), 15);
+  p.badges = ["boulder", "cascade", "thunder"];
+  assert.strictEqual(Player.levelCap(p), 35);
+  p.badges = Player.REGION_BADGES.kanto.slice();
+  assert.strictEqual(Player.levelCap(p), 100);
+  assert.strictEqual(Player.levelCap(p, "Route29"), 15, "Johto goes by Johto's Badges");
+  const b = new Battle({ seed: 3, exp: true, wild: true, levelCap: 15,
+    p1: { name: "A", team: [Party.toBattleSet(Party.create("Charmander", 15), "PalletTown")] },
+    p2: { name: "B", team: [{ species: "Caterpie", level: 2, moves: ["Tackle"] }] } });
+  b.start();
+  const before = b.sides.p1.active.exp;
+  for (let i = 0; i < 10 && !b.ended; i++) { b.choose("p1", { type: "move", move: b.sides.p1.active.moves[0].id }); b.choose("p2", { type: "move", move: "Tackle" }); }
+  assert(b.ended && b.sides.p1.active.level === 15 && b.sides.p1.active.exp === before && b.events.some((e) => e[0] === "-expcap"), "no Exp. Points at the cap");
+  const r = Party.create("Charmander", 14);
+  Bag.expCandy(r, "exp-candy-l", { cap: 15 });
+  assert.strictEqual(r.level, 15, "an Exp. Candy stops at the cap");
+  assert.strictEqual(r.exp, Experience.expForLevel(Experience.growthRate("Charmander"), 15));
+  const dc = DayCare.deposit(Party.create("Pidgey", 10));
+  dc.steps = 100000;
+  assert.strictEqual(DayCare.levelsGained(dc, 15), 5);
+  assert.strictEqual(DayCare.withdraw(dc, 15).level, 15, "the Day-Care stops at the cap");
+}
+
 console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns), AI beat random moves in " + aiWinRate + "% of games");
 console.log("ok: doubles regressions, " + DOUBLES + " random doubles battles finished (" + doublesTurns + " turns)");
 
