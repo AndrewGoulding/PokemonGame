@@ -2358,6 +2358,9 @@
         const w = t.naturalWidth || 64;
         t.style.width = (w / 240 * 100) + "%";
         t.style.right = ((240 - cx - w / 2) / 240 * 100) + "%";
+        // (Johto's, Gen 4's 80x80: their feet a little lower, their heads at the top of the field.)
+        const h = t.naturalHeight || 64;
+        t.style.top = h > 64 ? (Math.max(0, 72 - h) / 112 * 100) + "%" : "";
         t.classList.remove("hidden");
         movers.push([t, -shift]);
       }

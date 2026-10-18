@@ -927,7 +927,10 @@ for (const share of [false, true]) {
   // The move tutors teach as in FireRed: Charmander can learn Mega Punch.
   assert(TUTOR_LEARNERS["Mega Punch"].includes("Charmander") && TUTOR_LEARNERS["Seismic Toss"].includes("Charmander"));
   // Escape Ropes work where FireRed allows escaping.
-  assert.deepStrictEqual(Object.keys(WORLD_MAPS).filter((m) => WORLD_MAPS[m].allowEscaping), ["ViridianForest", "MtMoon_1F", "MtMoon_B1F", "MtMoon_B2F",
+  // (And in Johto: its caves, Ilex Forest and its towers and dungeons, as HGSS's.)
+  for (const m of ["UnionCave_B2F", "IlexForest", "SproutTower_3F", "BellTower_5F", "TeamRocketHideout_B3F", "IcePath_B1F"]) assert(WORLD_MAPS[m].allowEscaping, m);
+  for (const m of ["VioletCity", "Route36", "GoldenrodCity_DepartmentStore_1F", "EcruteakCity_Gym"]) assert(!WORLD_MAPS[m].allowEscaping, m);
+  assert.deepStrictEqual(Object.keys(WORLD_MAPS).filter((m) => WORLD_MAPS[m].allowEscaping && WORLD_MAPS[m].region !== "johto"), ["ViridianForest", "MtMoon_1F", "MtMoon_B1F", "MtMoon_B2F",
     "DiglettsCave_NorthEntrance", "DiglettsCave_B1F", "DiglettsCave_SouthEntrance", "RockTunnel_1F", "RockTunnel_B1F",
     "PokemonTower_1F", "PokemonTower_2F", "PokemonTower_3F", "PokemonTower_4F", "PokemonTower_5F", "PokemonTower_6F", "PokemonTower_7F",
     "RocketHideout_B1F", "RocketHideout_B2F", "RocketHideout_B3F", "RocketHideout_B4F",
@@ -1725,11 +1728,19 @@ for (const share of [false, true]) {
   assert(!Object.values(WORLD_MAPS).some((m) => m.region !== "johto" && m.connections.some((c) => J.includes(c.map))), "nothing in Kanto leads to Johto");
   assert.strictEqual(World.step({ map: "NewBarkTown", x: 0, y: 15 }, "left").map, "Route29", "west out of New Bark Town");
   assert.strictEqual(World.fishingEncounter("NewBarkTown", "old-rod", () => 0).species, "Magikarp", "Gen 4 rods");
-  assert.strictEqual(World.step({ map: "NewBarkTown", x: 23, y: 13 }, "up").unbuilt, "MAP_NEW_BARK_PLAYER_HOUSE_1F", "the house isn't built yet");
+  assert.strictEqual(World.step({ map: "NewBarkTown", x: 23, y: 13 }, "up").warp.map, "NewBarkTown_PlayerHouse_1F", "New Bark's houses are built");
+  // (Not the Battle Frontier's halls, which need games of their own.)
+  assert(WORLD_MAPS.BattleFrontier.warps.some((w) => w.mapConst === "MAP_BATTLE_FRONTIER_BATTLE_FACTORY"), "the Battle Factory isn't built");
   // Every built warp's way back; every map reached from New Bark Town (walking, Surf, Waterfall).
-  for (const n of J) for (const [i, w] of WORLD_MAPS[n].warps.entries()) if (w.map && J.includes(w.map)) {
+  // (But for the maps scripts take you to: the Bug-Catching Contest's National Park, the Safari Zone's way in;
+  // and, for reaching them, those you come to by a script, a train, an elevator or a hole in the floor: the
+  // Ruins of Alph's hidden rooms, the Sinjoh Ruins, the Magnet Train, the Radio Tower's deck, the Lighthouse's top.)
+  const JOHTO_BY_SCRIPT = /^(NationalPark_BugCatchingContest|SafariZone_EntranceInterior)$/;
+  const JOHTO_NOT_WALKED = /^(NationalPark_BugCatchingContest|SafariZone_EntranceExterior|RuinsOfAlph_\w+HiddenRoom|RuinsOfAlph_\w*SinjohEvent2?|SinjohRuins_\w+|EmbeddedTower_\w+|GoldenrodCity_MagnetTrainStation_2F|GoldenrodCity_RadioTowerObservationDeck|OlivineCity_Lighthouse(Exterior|_5F|LightRoom))$/;
+  for (const n of J.filter((n) => !JOHTO_BY_SCRIPT.test(n))) for (const [i, w] of WORLD_MAPS[n].warps.entries()) if (w.map && J.includes(w.map)) {
     const back = WORLD_MAPS[w.map].warps[w.warp];
-    assert(back && back.map === n, n + " warp " + i + " to " + w.map + " and back");
+    // (An elevator's way back: wherever you got in, FireRed's dynamic warp.)
+    assert(back && (back.map === n || back.mapConst === "MAP_DYNAMIC"), n + " warp " + i + " to " + w.map + " and back");
   }
   {
     const key = (p) => p.map + ":" + p.x + ":" + p.y, start = { map: "NewBarkTown", x: 12, y: 14 }, seen = new Set([key(start)]), q = [start], reached = new Set();
@@ -1742,13 +1753,36 @@ for (const share of [false, true]) {
         if (n && WORLD_MAPS[n.map] && !seen.has(key(n))) { seen.add(key(n)); q.push(n); }
       }
     }
-    for (const n of J) assert(reached.has(n), n + " reached from New Bark Town");
+    for (const n of J) if (!JOHTO_NOT_WALKED.test(n)) assert(reached.has(n), n + " reached from New Bark Town");
   }
-  // Drawn in FireRed's style (tools/lib/fr-painter.js): FireRed's people, its gate rooms, water animated as Kanto's.
-  // (But for what FireRed has no picture of: Pokémon standing about, Sudowoodo and Apricorn trees;
-  // and Johto's own characters, HGSS's: Lyra (or Ethan), Silver, Prof. Elm, the Kimono Girls.)
-  for (const n of J) for (const p of WORLD_MAPS[n].people) assert(!/^hgss_/.test(p.sprite) || /^hgss_(follower_mon_static_\w+|usokky|bonguri|heroine|hero|gsrivel|doctor|dancer)$/.test(p.sprite), n + ": FireRed's sprite for " + p.sprite);
-  for (const n of J.filter((n) => /Gatehouse$/.test(n))) {
+  // Drawn in FireRed's style (tools/lib/fr-painter.js), its gate rooms, water animated as Kanto's; its
+  // people HGSS's own (Lyra, Silver, Prof. Elm, everyone), and its item balls, small trees and rocks FireRed's.
+  // Each Gym Leader can be walked up to from the Gym's door (Azalea's webs walked, as there are no carts).
+  for (const g of J.filter((n) => /_Gym$|_GymLeaderRoom$/.test(n))) {
+    const m = WORLD_MAPS[g], leader = m.people.find((p) => /^hgss_gsleader\d$/.test(p.sprite));
+    const start = { map: g, x: m.warps[0].x, y: m.warps[0].y - 1 }, key = (p) => p.x + ":" + p.y, seen = new Set([key(start)]), q = [start];
+    const occupied = (mm, x, y) => m.people.some((p) => p.x === x && p.y === y && !p.trainer);
+    let near = false;
+    while (q.length) {
+      const p = q.shift();
+      if (Math.abs(p.x - leader.x) + Math.abs(p.y - leader.y) === 1) near = true;
+      for (const d of ["up", "down", "left", "right"]) {
+        const r = World.step(p, d, occupied);
+        if (r.ok && r.map === g && !r.warp && !seen.has(key(r))) { seen.add(key(r)); q.push({ map: g, x: r.x, y: r.y }); }
+      }
+    }
+    assert(leader && near, g + ": its Leader can be walked up to");
+  }
+  // (Upstairs in a Pokémon Center is FireRed's own floor, its people too.)
+  for (const n of J.filter((n) => !/_PokemonCenter_2F$/.test(n))) for (const p of WORLD_MAPS[n].people) {
+    const fr = /^(item_ball|cut_tree|rock_smash_rock)$/.test(p.sprite);
+    assert(fr || /^hgss_/.test(p.sprite), n + ": HGSS's sprite for " + p.sprite);
+    assert(fs.existsSync(path.join(root, "assets/world/sprites", p.sprite + ".png")), n + ": " + p.sprite + "'s picture");
+  }
+  // (But for one with a scene on its floor, as Lyra's in Route 31's, or that isn't a way between two maps, as Route 43's toll gate: HGSS's own.)
+  const ownGate = (m) => m.triggers.length || new Set(m.warps.map((w) => w.map || w.mapConst)).size !== 2;
+  assert(ownGate(WORLD_MAPS.Route31_VioletGatehouse) && WORLD_MAPS.Route31_VioletGatehouse.width === 32, "Route 31's gatehouse is HGSS's, for Lyra's scene");
+  for (const n of J.filter((n) => /Gatehouse$/.test(n) && !ownGate(WORLD_MAPS[n]))) {
     const m = WORLD_MAPS[n], t = WORLD_MAPS[m.width === 13 ? "Route7_EastEntrance" : "Route5_SouthEntrance"];
     assert(m.width === t.width && m.height === t.height && m.collision.join() === t.collision.join(), n + " is FireRed's gate");
     for (const w of m.warps) assert(!m.collision[w.y * m.width + w.x], n + ": its doorways are floor");
@@ -1782,6 +1816,10 @@ for (const share of [false, true]) {
   const guard = gate.people.find((p) => p.script === "Route22_NorthEntrance_EventScript_JohtoGuard");
   assert(guard && guard.x === gate.warps[gw].x + 1 && guard.y === gate.warps[gw].y, "the guard stands before the way west");
   for (const y of [-1, 1]) assert(gate.collision[(gate.warps[gw].y + y) * gate.width + gate.warps[gw].x], "the mat's only way in is past him");
+  // (And its east mat, to Route 28 and Mt. Silver, with a guard of its own.)
+  const ge = gate.warps.findIndex((w) => w.map === "Route28");
+  assert(ge >= 0 && WORLD_MAPS.Route28.warps.filter((w) => w.map === "Route22_NorthEntrance").every((w) => w.warp === ge) && gate.patches["johto-east"]);
+  assert(gate.people.some((p) => p.script === guard.script && p.x === gate.warps[ge].x - 1 && p.y === gate.warps[ge].y), "a guard before the way east");
   assert(/JohtoGuard"\) return !f\.gameClear;/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")), "he's there until you're Champion");
 }
 

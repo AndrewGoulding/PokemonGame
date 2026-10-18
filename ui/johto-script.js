@@ -21,7 +21,10 @@
 //   origin(zone) ({ x, y }: the map's corner on HGSS's world matrix),
 //   giveItem(id, n, verb), hasItem(id, n), takeItem(id, n), cry(species), fanfare(),
 //   fade(out), trainerBattle(id) and wildBattle(species, level) (outcomes),
-//   warp(mapConst, x, y, facing), hasBadge(n), sleep(ms), isGirl(), map().
+//   warp(mapConst, x, y, facing), hasBadge(n), giveBadge(n), sleep(ms), isGirl(),
+//   itemName(id), giveMon(species, level, item), giveEgg(species), givePokedex(),
+//   money(), addMoney(n), coins(), addCoins(n), beaten(trainer), setBeaten(trainer, on),
+//   setDynamicWarp(mapConst, x, y), dynamicWarpMap().
 (function () {
   "use strict";
 
@@ -121,7 +124,7 @@
           case "Return": if (!stack.length) { await flush(); return; } pc = stack.pop(); break;
           case "GoTo": go(a[0]); break;
           case "Call": stack.push(pc); go(a[0]); break;
-          case "Compare": {
+          case "Compare": case "CompareVarToValue": {
             // (A species by name, from GetPartyMonSpecies, against SPECIES_*: equal or not.)
             const p = getVar(a[0]), q = getVar(a[1]);
             if (typeof p === "string" || typeof q === "string") { cmp = String(p) === String(q) ? 1 : 0; break; }
@@ -162,7 +165,13 @@
           case "BufferFriendsName": buffers[a[0]] = env.isGirl() ? "Ethan" : "Lyra"; break;
           case "BufferMonSpeciesName": case "BufferPartyMonSpeciesNameIndef": { const r = mon(a[1]); buffers[a[0]] = r ? r.species : ""; break; }
           case "BufferPartyMonNick": { const r = mon(a[1]); buffers[a[0]] = r ? (r.nickname || r.species) : ""; break; }
-          case "BufferSpeciesName": buffers[a[0]] = String(getVar(a[1])); break;
+          case "BufferSpeciesName": case "BufferSpeciesNameIndef": buffers[a[0]] = String(getVar(a[1])); break;
+          case "BufferDeptStoreFloorNo": buffers[a[0]] = (+getVar(a[1]) || 0) + "F"; break;
+          case "BufferInt": case "BufferIntEx": buffers[a[0]] = String(+getVar(a[1]) || 0); break;
+          case "BufferItemName": case "BufferItemNameIndef": case "BufferItemNamePlural": buffers[a[0]] = env.itemName(getVar(a[1])); break;
+          case "BufferMoveName": buffers[a[0]] = String(getVar(a[1])).replace(/^MOVE_/, "").toLowerCase().replace(/(^|_)(\w)/g, (x, u, c) => (u ? " " : "") + c.toUpperCase()); break;
+          // (A message by its number in the map's own bank, from a var.)
+          case "NonNPCMsgVar": case "NPCMsgVar": if (z.bank) await say(z.bank + "_" + String(+getVar(a[0]) || 0).padStart(5, "0")); break;
 
           // People and movement.
           case "FacePlayer": if (ctx.person) await env.facePlayer(ctx.person); break;
@@ -177,6 +186,8 @@
             setVar(a[1], p ? p.x + origin.x : 255); setVar(a[2], p ? p.y + origin.y : 255);
             break;
           }
+          case "SetObjectFacing": await flush(); { const p = env.personAt(a[0]); if (p) env.place(a[0], p.x, p.y, DIRS[+getVar(a[1])] || "down"); } break;
+          case "MovePerson": await flush(); env.place(a[0], (+getVar(a[1]) || 0) - origin.x, (+getVar(a[2]) || 0) - origin.y, null); break;
           case "GetPlayerFacing": setVar(a[0], Math.max(0, DIRS.indexOf(env.personAt("player").facing))); break;
 
           // Items, Pokémon, badges.
@@ -203,6 +214,43 @@
           case "MonGetFriendship": { const r = mon(a[1]); setVar(a[0], r ? r.happiness | 0 : 0); break; }
           case "GetPartyMonForm2": setVar(a[0], 0); break;
           case "GetGameVersion": setVar(a[0], DATA().version || 7); break;
+          case "PartyCountNotEgg": setVar(a[0], env.player().party.filter((r) => !r.egg).length); break;
+          case "PartyCountEgg": setVar(a[0], env.player().party.filter((r) => r.egg).length); break;
+          case "PlayerHasSpecies": setVar(a[0], env.player().party.some((r) => !r.egg && r.species === getVar(a[1])) ? 1 : 0); break;
+          case "MonAddFriendship": { const r = mon(a[1]); if (r) r.happiness = Math.min(255, (r.happiness | 0) + (+getVar(a[0]) || 0)); break; }
+          case "GiveItem": await flush(); setVar(a[2], (await env.giveItem(getVar(a[0]), +getVar(a[1]) || 1, null)) === false ? 0 : 1); break;
+          case "GiveMon": await flush(); setVar(a[5], (await env.giveMon(getVar(a[0]), +getVar(a[1]) || 5, getVar(a[2]))) ? 1 : 0); break;
+          case "GiveSpikyEarPichu": await flush(); await env.giveMon("Pichu", 30, null); break;
+          case "GiveEgg": await flush(); await env.giveEgg(getVar(a[0])); break;
+          // (HGSS's Badges: 0 to 7 Johto's, from Zephyr; 8 on, Kanto's.)
+          case "GiveBadge": env.giveBadge(+getVar(a[0]) || 0); break;
+          case "GivePokedex": env.givePokedex(); break;
+          // Money and Coins.
+          case "HasEnoughMoneyImmediate": setVar(a[0], env.money() >= (+getVar(a[1]) || 0) ? 1 : 0); break;
+          case "HasEnoughMoneyVar": setVar(a[0], env.money() >= (+getVar(a[1]) || 0) ? 1 : 0); break;
+          case "SubMoneyImmediate": case "SubMoneyVar": env.addMoney(-(+getVar(a[0]) || 0)); break;
+          case "AddMoney": env.addMoney(+getVar(a[0]) || 0); break;
+          case "GetCoinAmount": setVar(a[0], env.coins()); break;
+          case "CheckCoinsImmediate": setVar(a[0], env.coins() >= (+getVar(a[1]) || 0) ? 1 : 0); break;
+          case "CheckGiveCoins": setVar(a[0], env.coins() + (+getVar(a[1]) || 0) <= 50000 ? 1 : 0); break;
+          case "GiveCoins": env.addCoins(+getVar(a[0]) || 0); break;
+          case "TakeCoins": env.addCoins(-(+getVar(a[0]) || 0)); break;
+          // Trainers beaten (the game's own flags, by trainer).
+          case "SetTrainerFlag": env.setBeaten(a[0], true); break;
+          case "ClearTrainerFlag": env.setBeaten(a[0], false); break;
+          case "GoToIfDefeated": if (env.beaten(a[0])) go(a[1]); break;
+          case "GoToIfNotDefeated": if (!env.beaten(a[0])) go(a[1]); break;
+          // The Pokégear's phone numbers (who's given you theirs: they don't ask again).
+          case "CheckRegisteredPhoneNumber": setVar(a[1], (state().phone || []).includes(a[0]) ? 1 : 0); break;
+          case "RegisterGearNumber": { const s = state(); s.phone = s.phone || []; if (!s.phone.includes(a[0])) s.phone.push(a[0]); break; }
+          // Elevators: the floor chosen is where its doors open (FireRed's dynamic warp), and the floor it's at.
+          case "SetDynamicWarp": env.setDynamicWarp(a[0], +getVar(a[2]) || 0, +getVar(a[3]) || 0); break;
+          case "GetDynamicWarpFloorNo": {
+            const m = /_(B?)(\d+)F$/.exec(env.dynamicWarpMap() || "");
+            setVar(a[0], m ? (m[1] ? 1 - +m[2] : +m[2]) : 1);
+            break;
+          }
+          case "Random": setVar(a[0], Math.floor(Math.random() * (+getVar(a[1]) || 1))); break;
 
           // The starter (Elm's Lab), and the rest of Johto's story's gifts.
           case "ChooseStarter": {
@@ -259,6 +307,13 @@
             await flush();
             lastBattle = await env.wildBattle(a[0], +getVar(a[1]) || 5);
             if (lastBattle === "lost") return;
+            break;
+          }
+          // (A Rocket trap: a wild Pokémon jumps out. A battle alongside someone: each foe in turn.)
+          case "RocketTrapBattle": await flush(); lastBattle = await env.wildBattle(a[0], +getVar(a[1]) || 5); if (lastBattle === "lost") return; break;
+          case "MultiBattle": {
+            await flush();
+            for (const t of [a[1], a[2]]) { lastBattle = await env.trainerBattle(t); if (lastBattle === "lost") return; }
             break;
           }
           case "CheckBattleWon": setVar(a[0], lastBattle === "won" || lastBattle === "caught" ? 1 : 0); break;

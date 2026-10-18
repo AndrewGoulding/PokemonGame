@@ -5,8 +5,8 @@
 // at the top is the Pokémon League's (FireRed's Route22_NorthEntrance, its
 // way west into Johto drawn here, and open to the Champion: ui/game.js).
 //
-//   node tools/build-johto.js <path to pret/pokeheartgold>
-//   (or set POKEHEARTGOLD=<path>)
+//   node tools/build-johto.js <path to pret/pokeheartgold> [--list]
+//   (or set POKEHEARTGOLD=<path>; --list: just list the maps it would build)
 //
 // HGSS maps are 3D (each 32x32-tile chunk an NSBMD model, with building
 // models placed on it); tools/lib/hgss-map.js draws them as this game's
@@ -92,7 +92,7 @@ const MAPS = [
   { c: "MAP_ROUTE_35_GOLDENROD_GATEHOUSE", name: "Route35_Goldenrod_Gatehouse", title: "Route 35", type: "indoor", zone: "R35R0101", music: "mus_route11", ground: true },
   { c: "MAP_UNION_CAVE_1F", name: "UnionCave_1F", title: "Union Cave", type: "underground", zone: "D25R0101", music: "mus_mt_moon", ground: true },
   { c: "MAP_AZALEA_ILEX_FOREST_GATEHOUSE", name: "AzaleaTown_IlexForest_Gatehouse", title: "Azalea Town", type: "indoor", zone: "T23R0101", music: "mus_route11", ground: true },
-  { c: "MAP_ILEX_FOREST", name: "IlexForest", title: "Ilex Forest", type: "route", zone: "D36R0101", music: "mus_viridian_forest", ground: true },
+  { c: "MAP_ILEX_FOREST", name: "IlexForest", title: "Ilex Forest", type: "route", zone: "D36R0101", music: "mus_viridian_forest", ground: true, dungeon: true },
   { c: "MAP_ROUTE_34_ILEX_FOREST_GATEHOUSE", name: "Route34_IlexForest_Gatehouse", title: "Route 34", type: "indoor", zone: "R34R0201", music: "mus_route11", ground: true },
   // Rooms, as HGSS lays them out (so their scripts' steps and places hold):
   // Elm's Lab, where Johto's story starts, Mr. Pokémon's house, the houses
@@ -115,9 +115,99 @@ const MAPS = [
   { c: "MAP_AZALEA_POKEMART", name: "AzaleaTown_Mart", title: "Azalea Town", type: "indoor", zone: "T23FS0101", music: "mus_poke_center", ground: true, template: "mart" },
   { c: "MAP_GOLDENROD_POKECENTER_1F", name: "GoldenrodCity_PokemonCenter_1F", title: "Goldenrod City", type: "indoor", zone: "T25PC0101", music: "mus_poke_center", ground: true, template: "pc" }
 ];
+// And the rest of Johto: every other map of HGSS's in Johto (its map headers,
+// src/data/map_headers.h), named as FireRed names its maps (EcruteakCity_Gym,
+// UnionCave_B1F, ...), titled by its place's name, its music FireRed's nearest.
+// (Not the unused ones, the Wi-Fi rooms and Pokémon Centers' Wi-Fi basements,
+// the Battle Frontier's halls and the Safari Zone's areas, which need games of
+// their own.)
+const SKIP = /^MAP_(EVERYWHERE|NOTHING|UNION|UNDERGROUND|UNUSED)$|UNUSED|^MAP_WIFI|_POKECENTER_B1F$|^MAP_FIGHT_AREA|^MAP_BATTLE_PARK|^MAP_BATTLE_TOWER|^MAP_BATTLE_FRONTIER_BATTLE_|^MAP_SAFARI_ZONE_\d+$|^MAP_POKEMON_LEAGUE_ENTRANCE_WIFI_ROOM$|^MAP_GOLDENROD_GAME_CORNER_JP$/;
+// (HGSS counts these as Kanto's, but they're on Johto's side: the houses by
+// Routes 26 and 27, Tohjo Falls' hidden room, Route 28 to Mt. Silver, and
+// Goldenrod's Game Corner, outside Japan.)
+const JOHTO_SIDE = new Set(["MAP_ROUTE_26_NORTH_HOUSE", "MAP_ROUTE_26_WEEK_SIBLINGS_HOUSE", "MAP_ROUTE_27_HOUSE", "MAP_TOHJO_FALLS_HIDDEN_ROOM",
+  "MAP_ROUTE_28", "MAP_ROUTE_28_HOUSE", "MAP_GOLDENROD_GAME_CORNER"]);
+const TOWNS = { NEW_BARK: "NewBarkTown", CHERRYGROVE: "CherrygroveCity", VIOLET: "VioletCity", AZALEA: "AzaleaTown", CIANWOOD: "CianwoodCity",
+  GOLDENROD: "GoldenrodCity", OLIVINE: "OlivineCity", ECRUTEAK: "EcruteakCity", MAHOGANY: "MahoganyTown", BLACKTHORN: "BlackthornCity" };
+// (And the places with rooms of their own, by their names.)
+const PLACES = Object.assign({ MOUNT_SILVER: "MtSilver", MOUNT_SILVER_CAVE: "MtSilverCave", RUINS_OF_ALPH: "RuinsOfAlph", LAKE_OF_RAGE: "LakeOfRage",
+  SAFARI_ZONE: "SafariZone", SAFARI_ZONE_GATE: "SafariZoneGate", FRONTIER_ACCESS: "FrontierAccess", BATTLE_FRONTIER: "BattleFrontier",
+  POKEATHLON_DOME: "PokeathlonDome", NATIONAL_PARK: "NationalPark", SS_AQUA: "SSAqua", BELL_TOWER: "BellTower", SPROUT_TOWER: "SproutTower",
+  BURNED_TOWER: "BurnedTower", SINJOH_RUINS: "SinjohRuins", EMBEDDED_TOWER: "EmbeddedTower", DARK_CAVE: "DarkCave", DRAGONS_DEN: "DragonsDen",
+  TEAM_ROCKET_HEADQUARTERS: "TeamRocketHideout", MOUNT_MORTAR: "MtMortar", WHIRL_ISLANDS: "WhirlIslands", ICE_PATH: "IcePath",
+  SLOWPOKE_WELL: "SlowpokeWell", UNION_CAVE: "UnionCave" }, TOWNS);
+const WORDS = { POKECENTER: "PokemonCenter", POKEMART: "Mart", MOUNT: "Mt", POKEATHALON: "Pokeathlon", SS: "SS" };
+// HGSS's map constant as a name: its town (or route) first, then the rest, floors apart (_1F, _B2F).
+function mapName(c) {
+  const words = c.replace(/^MAP_/, "").split("_");
+  const pascal = (ws) => ws.map((w) => WORDS[w] || w[0] + w.slice(1).toLowerCase()).join("");
+  let base = [], rest = words;
+  for (let n = 4; n >= 1 && !base.length; n--) if (PLACES[words.slice(0, n).join("_")]) { base = [PLACES[words.slice(0, n).join("_")]]; rest = words.slice(n); }
+  if (!base.length && words[0] === "ROUTE" && /^\d+$/.test(words[1])) { base = ["Route" + words[1]]; rest = words.slice(2); }
+  const parts = base.slice();
+  let run = [];
+  for (const w of rest) {
+    if (/^B?\d+F$/.test(w)) { if (run.length) parts.push(pascal(run)); run = []; parts.push(w); } else run.push(w);
+  }
+  // (An elevator apart, as FireRed's: GoldenrodCity_DepartmentStore_Elevator.)
+  if (run.length > 1 && run[run.length - 1] === "ELEVATOR") { parts.push(pascal(run.slice(0, -1))); run = ["ELEVATOR"]; }
+  if (run.length) parts.push(pascal(run));
+  return base.length ? parts.join("_") : parts.length > 1 ? parts[0] + "_" + parts.slice(1).join("_") : parts[0];
+}
+// HGSS's music as FireRed's nearest.
+const MUSIC = {
+  SEQ_GS_POKESEN: "mus_poke_center", SEQ_GS_FS: "mus_poke_center", SEQ_GS_D_CHIKATSUURO: "mus_mt_moon", SEQ_SILENCE_FIELD: "mus_sevii_dungeon",
+  SEQ_GS_TO_YAKETA: "mus_poke_tower", SEQ_GS_D_UNKNOWN_ISEKI: "mus_sevii_dungeon", SEQ_GS_R_1_29: "mus_route1", SEQ_GS_R_1_30: "mus_route1",
+  SEQ_GS_R_2_30: "mus_route3", SEQ_GS_R_3_30: "mus_route3", SEQ_GS_R_4_34: "mus_route11", SEQ_GS_R_5_34: "mus_route11", SEQ_GS_R_6_34: "mus_route11",
+  SEQ_GS_R_6_38: "mus_route24", SEQ_GS_R_7_42: "mus_sevii_route", SEQ_GS_R_8_34: "mus_route24", SEQ_GS_T_WAKABA: "mus_pallet",
+  SEQ_GS_UTSUGI_RABO: "mus_oak_lab", SEQ_GS_C_YOSHINO: "mus_pewter", SEQ_GS_C_KIKYOU: "mus_vermillion", SEQ_GS_T_HIWADA: "mus_fuchsia",
+  SEQ_GS_C_TANBA: "mus_cinnabar", SEQ_GS_C_KOGANE: "mus_celadon", SEQ_GS_C_ASAGI: "mus_sevii_123", SEQ_GS_C_ENJU: "mus_lavender",
+  SEQ_GS_GYM: "mus_gym", SEQ_GS_KABURENJOU: "mus_route11", SEQ_GS_T_CHOUJI: "mus_pewter", SEQ_GS_C_FUSUBE: "mus_sevii_67",
+  SEQ_GS_CHAMPROAD: "mus_victory_road", SEQ_GS_D_KOUEN: "mus_route11", SEQ_GS_TO_MADATSUBOMI1: "mus_poke_tower", SEQ_GS_TO_SUZU: "mus_sevii_dungeon",
+  SEQ_GS_TO_TOUDAI: "mus_silph", SEQ_GS_D_KOORINONUKE: "mus_sevii_cave", SEQ_GS_RYUUNOANA: "mus_sevii_cave", SEQ_GS_PT_ENTR: "mus_net_center",
+  SEQ_GS_SAFARI_ROAD: "mus_sevii_route", SEQ_GS_SAFARI_HOUSE: "mus_poke_center", SEQ_GS_SAFARI_FIELD: "mus_sevii_route", SEQ_GS_GAME: "mus_game_corner",
+  SEQ_GS_WIFITOWER: "mus_net_center", SEQ_GS_D_AJITO: "mus_rocket_hideout", SEQ_GS_BATTLETOWER: "mus_trainer_tower", SEQ_GS_BATTLETOWER2: "mus_trainer_tower",
+  SEQ_GS_PT_END_FIELD: "mus_sevii_route", SEQ_GS_KOUSOKUSEN: "mus_ss_anne", SEQ_GS_TAIKAI: "mus_trainer_tower", SEQ_GS_D_SHINTO: "mus_sevii_dungeon"
+};
+// (The caves drawn as FireRed's caves are; HGSS's other "caves", its towers,
+// the Lighthouse, the Rocket hideout, the Ruins' chambers, as rooms are, in
+// HGSS's own look, where an Escape Rope still works: dungeon.)
+const REAL_CAVES = /^MAPSEC_(UNION_CAVE|SLOWPOKE_WELL|MT_MORTAR|ICE_PATH|WHIRL_ISLANDS|MT_SILVER_CAVE|DARK_CAVE|DRAGONS_DEN|CLIFF_CAVE|CLIFF_EDGE_GATE|TOHJO_FALLS)$/;
+{
+  const src = fs.readFileSync(path.join(ROOT, "src/data/map_headers.h"), "utf8");
+  const places = JSON.parse(fs.readFileSync(F("msgdata/msg/msg_0279.json"), "utf8")).messages.map((x) => [].concat(x.en_US || "").join("").replace(/’/g, "'"));
+  const mapsecs = {};
+  for (const m of fs.readFileSync(path.join(ROOT, "include/constants/map_sections.h"), "utf8").matchAll(/#define (MAPSEC_\w+)\s+(\d+)/g)) mapsecs[m[1]] = +m[2];
+  const have = new Set(MAPS.map((m) => m.c));
+  for (const m of src.matchAll(/\[(MAP_\w+)\] = \{([^}]*)\}/g)) {
+    const get = (k) => { const r = new RegExp("\\." + k + "\\s*=\\s*([^,\\n]+)").exec(m[2]); return r ? r[1].trim() : null; };
+    if ((get("regionNo") !== "MAP_REGION_JOHTO" && !JOHTO_SIDE.has(m[1])) || have.has(m[1]) || SKIP.test(m[1])) continue;
+    const zone = (/zone_event_\d+_(\w+)_bin/.exec(get("eventsBank") || "") || [])[1];
+    if (!zone || zone === "EVERYWHERE") continue;
+    const kind = get("mapType"), mapsec = get("mapsec");
+    // (Pokémon's names in it as other names are: Slowpoke Well.)
+    const title = (places[mapsecs[mapsec]] || mapName(m[1])).replace(/\b([A-Z])([A-Z]{3,})\b/g, (x, a, b) => a + b.toLowerCase());
+    const outdoors = kind === "MAP_TYPE_ROUTE" || kind === "MAP_TYPE_CITY_TOWN";
+    const cave = kind === "MAP_TYPE_CAVE" && REAL_CAVES.test(mapsec);
+    MAPS.push(Object.assign({ c: m[1], name: mapName(m[1]), title,
+      type: outdoors ? (kind === "MAP_TYPE_ROUTE" ? "route" : /Town$/.test(title) ? "town" : "city") : cave ? "underground" : "indoor",
+      zone, music: MUSIC[get("dayMusicId")] || "mus_route1", ground: true },
+      kind === "MAP_TYPE_CAVE" && !cave ? { dungeon: true } : {},
+      /_POKECENTER_1F$/.test(m[1]) ? { template: "pc" } : /_POKEMART$/.test(m[1]) ? { template: "mart" } : {}));
+  }
+}
+// (--list: just the maps, what each is called and is.)
+if (process.argv.includes("--list")) {
+  for (const m of MAPS) console.log([m.c, m.name, m.title, m.type, m.zone, m.music, m.template || (m.dungeon ? "dungeon" : "")].join("  "));
+  process.exit(0);
+}
 // The Pokémon League Reception Gate is FireRed's own (Route22_NorthEntrance):
 // Route 26's door into it is its new way west (data/johto-maps.js adds it).
-const GATE = { name: "Route22_NorthEntrance", x: 0, y: 6 };
+const GATE = { name: "Route22_NorthEntrance" };
+// (HGSS's gate has Route 26's door south and Route 28's west; FireRed's has
+// Route 22 south and Route 23 north, so they're at its side walls.)
+const GATE_DOORS = [{ to: "Route26", x: 0, y: 6, side: "left", patch: "johto", guardId: 99 },
+  { to: "Route28", x: 14, y: 6, side: "right", patch: "johto-east", guardId: 98 }];
 const byConst = Object.fromEntries(MAPS.map((m) => [m.c, m.name]));
 
 // HGSS tile behaviours (include/constants/metatile_behavior.h) as FireRed's
@@ -126,17 +216,20 @@ function frBehavior(b) {
   switch (b) {
     case 0x02: case 0x03: return 0x02;            // tall grass, very tall grass
     case 0x10: return 0x10;                       // river: pond water
+    case 0x11: return 0x10;                       // a whirlpool (FireRed has no Whirlpool): water you Surf across
     case 0x13: return 0x13;                       // waterfall
     case 0x15: return 0x15;                       // sea
     case 0x16: case 0x1d: return 0x16;            // puddles
     case 0x17: return 0x17;                       // shallow water
-    case 0x20: return 0x23;                       // ice
+    case 0x20: case 0x40: case 0x41: case 0x42: case 0x43: return 0x23;   // ice, and the slides (Ice Path's)
     case 0x21: return 0x21;                       // sand
     case 0x38: case 0x39: case 0x3a: case 0x3b: return b;   // ledges
     case 0x62: case 0x63: case 0x64: case 0x65: return b;   // warps you walk off
     case 0x6c: return 0x62; case 0x6d: return 0x63; case 0x6e: return 0x64; case 0x6f: return 0x65;
     case 0x67: return 0x67;                       // warp pad
     case 0x5e: case 0x5f: return 0x61;            // stairs you walk onto (a cave's floors): a ladder's step-on warp
+    case 0x3c: case 0x3d: case 0x3e: return 0x61; // ladders, up and down (towers, wells): FireRed's ladder
+    case 0x6a: case 0x6b: return b;               // escalators (Goldenrod's Department Store)
     case 0x69: return 0x69;                       // door
     case 0x83: case 0x85: case 0x86: return b;    // PC, town map, TV
     default: return 0;                            // (headbutt trees and the like: collision does it)
@@ -194,8 +287,8 @@ for (const m of fs.readFileSync(path.join(ROOT, "include/constants/mmodel.h"), "
 // HGSS's frames: up, down, left, right, four each (stand, step, stand, step).
 // FireRed's: stand down, up, left; walk down, down, up, up, left, left.
 const FR_FRAMES = [4, 0, 8, 5, 7, 1, 3, 9, 11];
-// In FireRed's style (not --hgss): HGSS's people as FireRed's nearest
-// (their size and frames as Kanto's people with that sprite have them).
+// FireRed's nearest to HGSS's people (their size and frames as Kanto's people
+// with that sprite have them), for those without a sheet of their own.
 const FR_PEOPLE = {
   SPRITE_GSBOY1: "boy", SPRITE_GSBOY2: "youngster", SPRITE_GSBOY3: "camper", SPRITE_GSBABYBOY1: "little_boy",
   SPRITE_GSGIRL1: "lass", SPRITE_GSGIRL2: "little_girl", SPRITE_GSGIRL3: "picnicker",
@@ -231,17 +324,17 @@ function frPersonSprite(sprite) {
   return krLooks[FR_PEOPLE[sprite]] || null;
 }
 const spritesDone = new Map();
-// (Johto's own characters keep HGSS's sprites: Lyra, or Ethan for a girl,
-// whose look HGSS sets by a var (GetFriendSprite), Silver, Prof. Elm and the
-// Kimono Girls.)
-const HGSS_CHARACTERS = new Set(["SPRITE_GSRIVEL", "SPRITE_DOCTOR", "SPRITE_DANCER"]);
+// Johto's people are HGSS's own (Lyra, or Ethan for a girl, whose look HGSS
+// sets by a var (GetFriendSprite), Silver, Prof. Elm, everyone); the item balls,
+// small trees and breakable rocks are FireRed's, as the game uses them (and so
+// is anyone whose HGSS sprite isn't a person's sheet, FireRed's nearest).
+const FR_OBJECTS = new Set(["SPRITE_MONSTARBALL", "SPRITE_TREE", "SPRITE_BREAKROCK"]);
 function personSprite(sprite) {
   if (/^SPRITE_VAR_\d+$/.test(sprite)) return Object.assign(modelSprite("MMODEL_HEROINE", "hgss_heroine"), { girlLook: modelSprite("MMODEL_HERO", "hgss_hero") });
-  if (!HGSS_LOOK && !HGSS_CHARACTERS.has(sprite)) { const fr = frPersonSprite(sprite); if (fr) return Object.assign({}, fr); }
-  if (spritesDone.has(sprite)) return spritesDone.get(sprite);
-  const out = modelSprite(spriteTable[sprite], "hgss_" + sprite.replace(/^SPRITE_/, "").toLowerCase(), sprite);
-  spritesDone.set(sprite, out);
-  return out;
+  if (FR_OBJECTS.has(sprite)) return Object.assign({}, frPersonSprite(sprite));
+  if (!spritesDone.has(sprite)) spritesDone.set(sprite, modelSprite(spriteTable[sprite], "hgss_" + sprite.replace(/^SPRITE_/, "").toLowerCase(), sprite));
+  const fr = frPersonSprite(sprite);
+  return spritesDone.get(sprite) || (fr && Object.assign({}, fr));
 }
 // A person's model (MMODEL_*) as one of this game's sprite sheets.
 function modelSprite(model, name, sprite) {
@@ -330,25 +423,15 @@ const zones = {}, zoneOfMap = {}, origins = {};
 
 // Trainers: HGSS's (files/poketool/trainer/trainers.json, indexed as
 // include/constants/trainers.h numbers them), as window.WORLD_TRAINERS has
-// FireRed's; their pictures, FireRed's nearest.
+// FireRed's.
 const trainerIds = {};
 for (const m of fs.readFileSync(path.join(ROOT, "include/constants/trainers.h"), "utf8").matchAll(/#define (TRAINER_\w+)\s+(\d+)/g)) trainerIds[m[1]] = +m[2];
 const HG_TRAINERS = JSON.parse(fs.readFileSync(F("poketool/trainer/trainers.json"), "utf8")).trainers;
 const classIds = {};
 for (const m of fs.readFileSync(path.join(ROOT, "include/constants/trainer_class.h"), "utf8").matchAll(/#define (TRAINERCLASS_\w+)\s+(\d+)/g)) classIds[m[1]] = +m[2];
 const classNames = JSON.parse(fs.readFileSync(F("msgdata/msg/msg_0730.json"), "utf8")).messages.map((m) => [].concat(m.en_US || "").join(""));
-const CLASS_PIC = {
-  YOUNGSTER: "youngster", LASS: "lass", CAMPER: "camper", PICNICKER: "picnicker", BUG_CATCHER: "bug_catcher", AROMA_LADY: "aroma_lady",
-  TWINS: "twins", HIKER: "hiker", BATTLE_GIRL: "crush_girl", FISHERMAN: "fisherman", BLACK_BELT: "black_belt", ACE_TRAINER_M: "cooltrainer_m",
-  ACE_TRAINER_F: "cooltrainer_f", ACE_TRAINER_M_GS: "cooltrainer_m", ACE_TRAINER_F_GS: "cooltrainer_f", BIRD_KEEPER: "bird_keeper",
-  BIRD_KEEPER_GS: "bird_keeper", JUGGLER: "juggler", LADY: "lady", GENTLEMAN: "gentleman", BEAUTY: "beauty", SCIENTIST: "scientist",
-  SCIENTIST_GS: "scientist", SWIMMER_M: "swimmer_m", SWIMMER_F: "swimmer_f", TUBER_M: "tuber_f", TUBER_F: "tuber_f", SAILOR: "sailor",
-  RUIN_MANIAC: "ruin_maniac", PSYCHIC_M: "psychic_m", PSYCHIC_F: "psychic_f", TEAM_ROCKET: "rocket_grunt_m", TEAM_ROCKET_F: "rocket_grunt_f",
-  BURGLAR: "burglar", BIKER: "biker", POKE_MANIAC: "pokemaniac", SUPER_NERD: "super_nerd", ROUGHNECK: "cue_ball", GUITARIST: "rocker",
-  FIREBREATHER: "burglar", POLICEMAN: "gentleman", POKEFAN_M: "gentleman", POKEFAN: "lady", SCHOOL_KID_M: "youngster", SCHOOL_KID_F: "lass",
-  KIMONO_GIRL: "lady", SAGE: "channeler", MEDIUM: "channeler", TEACHER: "lady", PKMN_BREEDER_M: "pokemon_breeder", PKMN_BREEDER_F: "pokemon_breeder",
-  PKMN_RANGER_M: "pokemon_ranger_m", PKMN_RANGER_F: "pokemon_ranger_f", PASSERBY: "youngster", RIVAL: "rival_early", ENGINEER: "engineer"
-};
+// (Their pictures, HGSS's: tools/build-hgss-trainer-pics.js.)
+const CLASS_PIC = JSON.parse(fs.readFileSync(path.join(__dirname, "lib/hgss-trainer-pics.json"), "utf8"));
 const GIRL_CLASSES = /^(LASS|PICNICKER|AROMA_LADY|TWINS|BATTLE_GIRL|ACE_TRAINER_F|ACE_TRAINER_F_GS|LADY|BEAUTY|SWIMMER_F|TUBER_F|PSYCHIC_F|POKEFAN|SCHOOL_KID_F|KIMONO_GIRL|MEDIUM|TEACHER|PKMN_BREEDER_F|PKMN_RANGER_F|COWGIRL|SOCIALITE|PARASOL_LADY|IDOL|SKIER|WAITRESS)$/;
 const trainers = {};
 function trainer(id) {
@@ -361,7 +444,7 @@ function trainer(id) {
   const party = t.party.map((mon) => Object.assign({ species: species(mon.species), level: mon.level, iv: mon.difficulty || 0 },
     mon.item && mon.item !== "ITEM_NONE" && item(mon.item) ? { item: item(mon.item) } : {})).filter((m) => m.species);
   trainers["HGSS_" + key] = {
-    className: classNames[classIds[t.class]] || cls, name: t.name.replace(/\{[^}]*\}/g, "").trim() || key, pic: CLASS_PIC[cls] || "youngster",
+    className: (classNames[classIds[t.class]] || cls).replace("₧₦", "Pokémon"), name: t.name.replace(/\{[^}]*\}/g, "").trim() || key, pic: CLASS_PIC[cls] || "hgss_youngster",
     party, music: cls === "TEAM_ROCKET" || cls === "TEAM_ROCKET_F" ? "mus_encounter_rocket" : GIRL_CLASSES.test(cls) ? "mus_encounter_girl" : "mus_encounter_boy",
     double: !!t.double, intro: msg("TRMSG_INTRO"), defeat: msg("TRMSG_LOSE"), after: msg("TRMSG_AFTER")
   };
@@ -376,6 +459,13 @@ function itemFromScript(s, prefix) {
 // What HGSS's own Day-Care Man says, outside his house on Route 34.
 const DAYCARE_MAN = ["I'm the Day-Care Man.", "Do you know about Eggs? My wife and\nI were raising some Pokémon, and\nwhat do you know, we found an Egg!"];
 
+{
+  const names = new Set();
+  for (const m of MAPS) {
+    if (names.has(m.name) || kanto()[m.name]) throw new Error("two maps named " + m.name);
+    names.add(m.name);
+  }
+}
 const out = {}, rendered = {};
 const mapsDir = path.join(root, "assets/world/maps");
 MAPS.forEach((m, i) => {
@@ -463,10 +553,28 @@ MAPS.forEach((m, i) => {
   }
 
   // (HGSS's waterfalls are solid, and the water at their tops (34) a tile of
-  // its own: FireRed's are waterfalls you go up or down with Waterfall, onto water.)
-  const collision = r.perm.map((v, i) => (inside && !drawn(i) ? 1 : (v & 0xff) === 0x13 || (v & 0xff) === 0x22 ? 0 : (v >> 15) & 1));
+  // its own: FireRed's are waterfalls you go up or down with Waterfall, onto water.
+  // FireRed has no Whirlpool or Rock Climb: whirlpools are water you Surf
+  // across, and rock you'd climb, ground you walk up.)
+  const collision = r.perm.map((v, i) => (inside && !drawn(i) ? 1 : (v & 0xff) === 0x13 || (v & 0xff) === 0x22 || (v & 0xff) === 0x11 || (v & 0xff) === 0x4b || (v & 0xff) === 0x4c ? 0 : (v >> 15) & 1));
   const behavior = r.perm.map((v) => ((v & 0xff) === 0x22 ? 0x10 : frBehavior(v & 0xff)));
+  // (Azalea's Gym: HGSS's Spinarak carts ride its webs between the floors;
+  // this game has no carts, so you walk the webs.)
+  if (m.name === "AzaleaTown_Gym") for (const [xs, y0, y1] of [[[3, 9], 11, 15], [[3, 9, 15], 26, 30]]) {
+    for (const x of xs) for (let y = y0; y <= y1; y++) collision[y * r.width + x] = 0;
+  }
   const ev = r.events || { warps: [], signs: [], people: [], triggers: [] };
+  // (HGSS's warp you walk onto heading its way, in the middle of a cave or a
+  // room, open floor beyond it, as Whirl Islands' ways down: FireRed's warp
+  // you step onto. At the map's edge, or a wall beyond, it's FireRed's own,
+  // walked out through.)
+  const ARROW = { 0x62: [1, 0], 0x63: [-1, 0], 0x64: [0, -1], 0x65: [0, 1] };
+  for (const w of ev.warps) {
+    const i = w.y * r.width + w.x, d = ARROW[behavior[i]];
+    if (!d) continue;
+    const u = w.x + d[0], v = w.y + d[1];
+    if (u >= 0 && v >= 0 && u < r.width && v < r.height && !collision[v * r.width + u] && !ev.warps.some((o) => o.x === u && o.y === v)) behavior[i] = 0x61;
+  }
   // (Doors are solid, as FireRed's are: walking up into one goes in.)
   rendered[m.name] = r;
   const e = enc.find((x) => x.map === m.zone);
@@ -501,15 +609,20 @@ MAPS.forEach((m, i) => {
     else if (/^_EV_/.test(s)) Object.assign(def, { script: hgss(s), text: scriptText(m.zone, p.script) });
     // (Someone kept at the map's edge for a scene, out of sight in HGSS's 3D:
     // offstage until a script brings them on.)
+    // (HGSS's sprite, for the build only: the Pokémon Centers' nurses and the Marts' clerks.)
+    Object.defineProperty(def, "hgssSprite", { value: p.sprite });
     if (!def.script && !def.hgssFlag && (p.x <= 0 || p.y <= 0 || p.x >= r.width - 1 || p.y >= r.height - 1)) def.offstage = true;
     people.push(def);
   }
   out[m.name] = {
     name: m.name, title: m.title, width: r.width, height: r.height, type: m.type, music: m.music, region: "johto",
+    allowEscaping: m.type === "underground" || m.dungeon || undefined,   // (an Escape Rope or Dig works: caves and dungeons)
     cycling: true, showName: m.type !== "indoor", top: true, borderWidth: 2, borderHeight: 2,
     collision, elevation: collision.map(() => 0), behavior, encounter: behavior.map((b) => (b === 0x02 ? 1 : 0)),
     connections: [],
-    warps: ev.warps.map((w) => (w.map === "MAP_ROUTE_22_POKEMON_LEAGUE_RECEPTION_GATE" ? { x: w.x, y: w.y, map: GATE.name, warp: "johto" }
+    warps: ev.warps.map((w) => (w.map === "MAP_ROUTE_22_POKEMON_LEAGUE_RECEPTION_GATE" ? { x: w.x, y: w.y, map: GATE.name, warp: null }
+      // (An elevator's way out, 4095: where you got in, FireRed's MAP_DYNAMIC.)
+      : +w.map === 4095 ? { x: w.x, y: w.y, map: null, mapConst: "MAP_DYNAMIC", warp: null }
       : { x: w.x, y: w.y, map: byConst[w.map] || null, mapConst: byConst[w.map] ? undefined : w.map, warp: w.anchor })),
     signs: ev.signs.filter((s) => s.type !== 2).map((s) => ({ x: s.x, y: s.y, script: hgss(s.script) || String(s.script).replace(/^_EV_|\s*\+.*$/g, ""), text: scriptText(m.zone, s.script) })),
     // (A step trigger, on each of its tiles: its script, while its var has its value.)
@@ -550,38 +663,43 @@ for (const a of MAPS) for (const b of MAPS) {
   const dir = touch(1, 0) ? ["right", oz] : touch(-1, 0) ? ["left", oz] : touch(0, 1) ? ["down", ox] : touch(0, -1) ? ["up", ox] : null;
   if (dir) out[a.name].connections.push({ map: b.name, direction: dir[0], offset: dir[1] });
 }
-// (The mat: a patch over the gate's left wall, its floor with a red mat on it, as at its door.)
-{
+// (The mats: patches over the gate's side walls, its floor with a red mat on it, as at its door.)
+for (const door of GATE_DOORS) {
   const gate = readPng(path.join(mapsDir, GATE.name + ".png")), T = 16, img = new Uint8ClampedArray(T * 3 * T * 4);
   for (let y = 0; y < 3 * T; y++) for (let x = 0; x < T; x++) {
-    const i = ((GATE.y - 1) * T + y) * gate.width + GATE.x * T + x;
+    const i = ((door.y - 1) * T + y) * gate.width + door.x * T + x;
     img.set(gate.rgba.slice(i * 4, i * 4 + 4), (y * T + x) * 4);
   }
-  const px = (x, y, c) => img.set([parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16), 255], (y * T + x) * 4);
+  // (Drawn for the left wall; on the right, mirrored.)
+  const px = (x, y, c) => img.set([parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16), 255],
+    (y * T + (door.side === "left" ? x : T - 1 - x)) * 4);
   for (let y = T - 4; y < 2 * T + 4; y++) for (let x = 0; x < 12; x++) {
     const edge = y === T - 4 || y === 2 * T + 3 || x === 11, rim = y === T - 3 || y === 2 * T + 2 || x === 10 || x === 0;
     px(x, y, edge ? "#5a6a7a" : rim ? "#f0e8e0" : y === T - 2 || y === 2 * T + 1 || x === 9 || x === 1 ? "#c84838" : "#d85848");
   }
-  writePng(path.join(mapsDir, GATE.name + "-patch-johto.png"), T, 3 * T, img);
+  writePng(path.join(mapsDir, GATE.name + "-patch-" + door.patch + ".png"), T, 3 * T, img);
 }
-// (And its guard, until you're Champion: ui/game.js hides him once you are.)
-const guard = { id: 99, x: GATE.x + 1, y: GATE.y, movement: "face_right", rangeX: 1, rangeY: 1, script: "Route22_NorthEntrance_EventScript_JohtoGuard", flag: null,
-  text: ["The Johto region lies to the west.", "I'm sorry, but only the Champion of\nthe Pokémon League may go on to Johto."],
-  sprite: "policeman", width: 16, height: 32, frames: 9 };
-// FireRed's gate: its way west, a mat at the left wall, to Route 26's door.
-const r26 = out.Route26.warps.findIndex((w) => w.map === GATE.name);
-out.Route26.warps.forEach((w) => { if (w.map === GATE.name) w.warp = "johto"; });
+// FireRed's gate: its ways out, mats at its side walls, to Route 26's door
+// (west) and Route 28's (east), each with a guard until you're Champion
+// (ui/game.js hides them once you are).
 const gateJs = "(function () {\n" +
   "  const gate = window.WORLD_MAPS[" + JSON.stringify(GATE.name) + "];\n" +
   "  if (!gate || gate.warps.some((w) => w.map === \"Route26\")) return;\n" +
-  "  gate.warps.push({ x: " + GATE.x + ", y: " + GATE.y + ", map: \"Route26\", warp: " + r26 + " });\n" +
   "  const at = (x, y) => y * gate.width + x;\n" +
-  "  gate.behavior[at(" + GATE.x + ", " + GATE.y + ")] = 0x63;   // (a way out west)\n" +
-  "  for (const y of [" + (GATE.y - 1) + ", " + (GATE.y + 1) + "]) gate.collision[at(" + GATE.x + ", y)] = 1;\n" +
-  "  gate.patches = Object.assign({}, gate.patches, { johto: { x: " + GATE.x + ", y: " + (GATE.y - 1) + ", w: 1, h: 3, top: false, collision: [] } });\n" +
-  "  gate.people.push(" + JSON.stringify(guard) + ");\n" +
-  "  const w = gate.warps.length - 1;\n" +
-  "  for (const m of " + JSON.stringify(MAPS.map((m) => m.name)) + ") for (const x of window.WORLD_MAPS[m].warps) if (x.warp === \"johto\") x.warp = w;\n" +
+  GATE_DOORS.map((door) => {
+    const back = out[door.to].warps.findIndex((w) => w.map === GATE.name);
+    out[door.to].warps.forEach((w) => { if (w.map === GATE.name) w.warp = door.patch; });
+    const guard = { id: door.guardId, x: door.x + (door.side === "left" ? 1 : -1), y: door.y, movement: door.side === "left" ? "face_right" : "face_left",
+      rangeX: 1, rangeY: 1, script: "Route22_NorthEntrance_EventScript_JohtoGuard", flag: null,
+      text: ["The Johto region lies to the west.", "I'm sorry, but only the Champion of\nthe Pokémon League may go on to Johto."],
+      sprite: "policeman", width: 16, height: 32, frames: 9 };
+    return "  gate.warps.push({ x: " + door.x + ", y: " + door.y + ", map: " + JSON.stringify(door.to) + ", warp: " + back + " });\n" +
+      "  gate.behavior[at(" + door.x + ", " + door.y + ")] = " + (door.side === "left" ? "0x63" : "0x62") + ";   // (a way out " + (door.side === "left" ? "west" : "east") + ")\n" +
+      "  for (const y of [" + (door.y - 1) + ", " + (door.y + 1) + "]) gate.collision[at(" + door.x + ", y)] = 1;\n" +
+      "  gate.patches = Object.assign({}, gate.patches, { " + JSON.stringify(door.patch) + ": { x: " + door.x + ", y: " + (door.y - 1) + ", w: 1, h: 3, top: false, collision: [] } });\n" +
+      "  gate.people.push(" + JSON.stringify(guard) + ");\n" +
+      "  for (const m of " + JSON.stringify([door.to]) + ") for (const x of window.WORLD_MAPS[m].warps) if (x.warp === " + JSON.stringify(door.patch) + ") x.warp = gate.warps.length - 1;\n";
+  }).join("") +
   "})();\n";
 // ---------- Gatehouses, as FireRed's ----------
 //
@@ -597,6 +715,8 @@ const GATE_TEMPLATES = {
 if (!HGSS_LOOK) for (const m of MAPS) {
   if (!/Gatehouse/.test(m.name) || m.template) continue;
   const g = out[m.name];
+  // (Not one with a scene on its floor, as Lyra's in Route 31's, or that isn't a way between two maps, as Route 43's toll gate: HGSS's own.)
+  if (g.triggers.length || new Set(g.warps.map((w) => w.map || w.mapConst)).size !== 2) continue;
   const [a, b] = g.warps;
   const across = Math.abs(a.x - b.x) > Math.abs(a.y - b.y);
   const tpl = GATE_TEMPLATES[across ? "we" : "ns"], t = kanto()[tpl.map];
@@ -648,12 +768,12 @@ if (!HGSS_LOOK) for (const m of MAPS) {
   const people = [];
   for (const p of g.people) {
     if (!p.script || /FLAG_HIDE_(COMM|WIFI)/.test(p.hgssFlag || "")) continue;
-    if (m.template === "pc" && p.sprite === "nurse") {
+    if (m.template === "pc" && p.hgssSprite === "SPRITE_PCWOMAN1") {
       people.push(Object.assign({}, p, { x: 7, y: 2, movement: "face_down", localId: "LOCALID_" + m.name.toUpperCase() + "_NURSE",
         script: m.name + "_EventScript_Nurse", text: null }));
       continue;
     }
-    const at = m.template === "mart" && p.sprite === "clerk" && clerk < tpl.clerks.length ? tpl.clerks[clerk++] : tpl.spots[spot++ % tpl.spots.length];
+    const at = m.template === "mart" && /^SPRITE_(SHOPM1_2|COUNTERM)$/.test(p.hgssSprite) && clerk < tpl.clerks.length ? tpl.clerks[clerk++] : tpl.spots[spot++ % tpl.spots.length];
     people.push(Object.assign({}, p, { x: at[0], y: at[1], movement: at[2] }));
   }
   Object.assign(g, { width: t.width, height: t.height, collision: t.collision.slice(), elevation: t.elevation.slice(), behavior: t.behavior.slice(),

@@ -16,7 +16,7 @@
 // Super Nerds, Aroma Ladies), and either for anyone else; each star their
 // own (STAR_STYLES). `sprite`: a star's overworld sprite, for the card room.
 (function () {
-  const AWAY = /Leader|Elite Four|Champion|Rival|Team Rocket|Boss|Rocket|Pkmn Prof|Professor/i;
+  const AWAY = /Leader|Elite Four|Champion|Rival|Team Rocket|Boss|Rocket|Executive|Pkmn Prof|Professor/i;
   const LOOSE = /Gamer|Biker|Rocker|Cue Ball|Burglar|Juggler|Sailor|Gambler/i;
   const TIGHT = /Gentleman|Lady|Scientist|Engineer|Super Nerd|Aroma/i;
   const STAR_CHANCE = 0.03;
@@ -28,8 +28,9 @@
     if (!leaders) {
       leaders = [];
       const seen = new Set();
-      for (const t of Object.values(window.WORLD_TRAINERS || {})) {
-        if (!t || !t.name || !t.pic || !/^(Leader|Elite Four)$/.test(t.className) || seen.has(t.name)) continue;
+      // (Kanto's: Johto's trainers, HGSS_*, aren't at Kanto's tables.)
+      for (const [id, t] of Object.entries(window.WORLD_TRAINERS || {})) {
+        if (!t || !t.name || !t.pic || /^HGSS_/.test(id) || !/^(Leader|Elite Four)$/.test(t.className) || seen.has(t.name)) continue;
         seen.add(t.name);
         leaders.push({ name: t.className + " " + t.name, className: t.className, first: t.name, pic: t.pic, style: STAR_STYLES[t.name] || "steady",
           sprite: t.name.toLowerCase().replace(/[^a-z]+/g, "_"), star: true });

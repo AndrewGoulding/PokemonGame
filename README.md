@@ -1684,19 +1684,22 @@ and drawing metatiles).
 
 ## Johto (in progress)
 
-Johto's maps are built from HeartGold and SoulSilver, 28 of them so far:
-**New Bark Town, Route 29 and Cherrygrove City**; north and west from there
-**Route 30 and 31, Violet City, Route 32, Union Cave 1F, Route 33, Azalea
-Town, Ilex Forest, Route 34, Goldenrod City, Route 35, Route 36, the Ruins of
-Alph** (outside) and **Route 46**, with the gatehouses between them (Route
-29/46, Route 31/Violet, Violet/Route 36, Route 32 and Route 36 to the Ruins,
-Route 35/Goldenrod, Azalea and Route 34 to Ilex Forest); and the way to Kanto: **Route 27** (by sea
-east from New Bark Town), **Tohjo Falls** (the cave in its middle: Surf, and
-Waterfall up one of its falls and down the other, as in HGSS) and **Route
-26**, north to the Pokémon League Reception Gate. That gate is FireRed's own
-(Route 22's, to Victory Road), with a new way out west: a mat at its left
-wall to Route 26's door. A guard stands in front of it until you're the
-Champion: "The Johto region lies to the west." / "I'm sorry, but only the
+Johto's maps are built from HeartGold and SoulSilver: all of them, every
+town, city, route, cave, tower, Gym, house, shop and room of HGSS's Johto
+(and the houses by Routes 26 and 27, Tohjo Falls' hidden room, Route 28 to
+Mt. Silver and Goldenrod's Game Corner, which HGSS counts as Kanto's). Not
+built: the unused maps, the Wi-Fi rooms (and the Pokémon Centers' Wi-Fi
+basements), the Battle Frontier's halls and the Safari Zone's areas, which
+need games of their own; their doors say so. New Bark Town, Route 29 and
+Cherrygrove City; north and west to Violet, Azalea, Goldenrod, Ecruteak,
+Olivine, Cianwood, Mahogany and Blackthorn, the Lake of Rage, Mt. Silver and
+the routes, gatehouses, caves and towers between them; and the way to Kanto:
+**Route 27** (by sea east from New Bark Town), **Tohjo Falls** (the cave in
+its middle: Surf, and Waterfall up one of its falls and down the other, as in
+HGSS) and **Route 26**, north to the Pokémon League Reception Gate. That gate
+is FireRed's own (Route 22's, to Victory Road), with a new way out west: a mat
+at its left wall to Route 26's door. A guard stands in front of it until
+you're the Champion: "The Johto region lies to the west." / "I'm sorry, but only the
 Champion of the Pokémon League may go on to Johto." Become Champion and he's
 gone. (The debug menu's **Visit Johto (New Bark Town)** still takes you
 there, and its Pokémon Center trip brings you back.) Johto's towns, cities,
@@ -1705,15 +1708,25 @@ come from HGSS's tile behaviours and, for what's solid, the textures
 uppermost on each tile seen from above (`tools/lib/hgss-classes.js`: trees,
 rock, fences, buildings), and their buildings from their doors (a Pokémon
 Center's door gets a Pokémon Center, a Gym's a Gym, a gatehouse's a gate).
-Tohjo Falls and Union Cave are drawn in the cave style (learned from Mt.
+Johto's caves (Tohjo Falls, Union Cave, Slowpoke Well, Dark Cave, Mt.
+Mortar, Ice Path, the Whirl Islands, Dragon's Den, Mt. Silver's cave, Cliff
+Cave) are drawn in the cave style (learned from Mt.
 Moon, Victory Road and the Lost Cave: their floor, rock walls and ledges;
 water and waterfalls as outdoors), floor you can't reach from their ways in
-being rock as round Kanto's caves. Each gatehouse inside is FireRed's own
+being rock as round Kanto's caves; its rooms, towers (Sprout Tower, the Bell
+and Burned Towers, the Lighthouse, the Radio Tower), the Ruins of Alph's
+chambers and the Rocket hideout as HGSS shows them. An Escape Rope works in
+its caves, Ilex Forest and its towers and dungeons. Each gatehouse you go
+straight through is FireRed's own
 gate (Saffron's Route 5 gate for one you go through north to south, its Route
 7 gate for west to east), its doorways leading where the gatehouse's did and
-its people standing where FireRed's guard stands and about the room. And
-Johto's people are FireRed's: HGSS's men, women, boys, girls, old folk and
-clerks as FireRed's nearest. HGSS's maps are 3D, so
+its people standing where FireRed's guard stands and about the room (one with
+a scene on its floor, as Lyra's in Route 31's, or that isn't a way between two
+maps, as Route 43's toll gate, stays HGSS's).
+Johto's people are HGSS's own, sprites and all (Lyra, Silver, Prof. Elm, the
+Kimono Girls, everyone: `assets/world/sprites/hgss_*.png`, in FireRed's frame
+order); its item balls, small trees and breakable rocks are FireRed's.
+HGSS's maps are 3D, so
 `tools/build-johto.js` (with `tools/lib/hgss-map.js`, `nitro.js` and
 `narc.js`) reads them, and with `--hgss` draws them the way HGSS shows them
 seen from above, from a
@@ -1750,9 +1763,16 @@ where they sit on the matrix. The tiles' permissions become collision and
 FireRed's behaviours (tall grass, water, ledges, doors), and from the event
 data come the signs ("New Bark Town / Winds of a New Beginning"), hidden
 items, and everyone on the maps (people, trainers, item balls, small trees,
-breakable rocks, Apricorn trees), with FireRed's nearest sprites (HGSS's own,
-`assets/world/sprites/hgss_*.png` in FireRed's frame order, only for what
-FireRed has no picture of: Pokémon standing about, Sudowoodo, Apricorn trees).
+breakable rocks, Apricorn trees). HGSS's ladders, stairs, escalators and
+cave exits become FireRed's (a way down you walk onto in the middle of a cave,
+as the Whirl Islands', a warp you step onto), and its elevators' doors open
+where you got in (FireRed's dynamic warp), or on the floor you choose.
+FireRed has no Whirlpool or Rock Climb, so whirlpools are water you Surf
+across and rock you'd climb is ground you walk up (Mt. Silver's cave), and
+Ice Path's slides are FireRed's ice. Azalea's Gym has no Spinarak carts:
+you walk its webs to Bugsy. The other Gyms' tricks (Violet's lift, Ecruteak's
+hidden floor, Cianwood's winch, Mahogany's ice) aren't here yet, but every
+Leader can be walked up to.
 
 **Johto's scripts are HeartGold's own.** `tools/lib/hgss-script.js` compiles
 each map's field scripts (`files/fielddata/script/scr_seq`: its people's and
@@ -1762,8 +1782,11 @@ and `ui/johto-script.js` runs them as HGSS does: messages (and Yes/No), people
 walking and turning (HGSS's movements as FireRed's), people appearing and
 going, flags and vars (HGSS's, kept in the save; the map's temporary ones
 until you leave it), comparisons and jumps, items given and taken, menus,
-fades, warps, and trainer and wild battles (`TrainerBattle`, `WildBattle`),
-leaving out what this game hasn't got (the Pokégear and phone calls, photos,
+fades, warps, trainer and wild battles (`TrainerBattle`, `WildBattle`, a
+Rocket trap's Pokémon, a battle alongside someone), Badges (`GiveBadge`: Zephyr
+to Rising), Pokémon and Eggs given, money and Coins, trainers beaten
+(`SetTrainerFlag`), the phone numbers people give you (they don't ask
+again), and elevators, leaving out what this game hasn't got (the Pokégear and phone calls, photos,
 the follower Pokémon). So the Apricorn man on Route 30 comes out of his house
 as you pass and gives you the Apricorn Box, Cherrygrove's Guide Gent shows you
 round, Team Rocket harasses a man in Azalea Town, Lyra takes you to the Day
@@ -1783,12 +1806,8 @@ outside ("So you picked... Chikorita!"), the Guide Gent in Cherrygrove,
 **Mr. Pokémon's house** on Route 30 (the Mystery Egg; Prof. Oak and the
 Pokédex) and the rest follow on as HGSS scripts them; HGSS's party slot 0,
 in its scripts, is the starter you chose, wherever it is in your party.
-Johto's own characters keep HGSS's sprites (Lyra, or Ethan for a girl;
-Silver; Prof. Elm; the Kimono Girls). The rooms built so far: Elm's Lab,
-Mr. Pokémon's house, the houses of New Bark Town, Cherrygrove City and Route
-30, each as HGSS lays it out (so its scripts' steps and places hold), and
-**Pokémon Centers** (Cherrygrove, Violet, Route 32, Azalea, Goldenrod) and
-**Poké Marts** (Cherrygrove, Violet, Azalea) as FireRed's own rooms, as the
+Rooms are as HGSS lays them out (so their scripts' steps and places hold),
+but for the **Pokémon Centers** and **Poké Marts**, FireRed's own rooms, as the
 gatehouses are: a Pokémon Center's nurse heals as Kanto's do (and it's where
 you come to if you black out), upstairs is FireRed's Cable Club floor with
 the Move Relearner and Deleter, and a Mart's clerks keep HGSS's scripts: the
@@ -1796,11 +1815,16 @@ standard stock by Johto's Badges (HGSS's tiers: Poké Balls, Potions,
 Antidotes and Paralyze Heals with none, and more with more) and the town's
 own.
 
-**Johto's trainers** (60 so far) are HeartGold's (`files/poketool/trainer`):
+**Johto's trainers** (278) are HeartGold's (`files/poketool/trainer`):
 their classes, names, parties (each Pokémon knowing the last four moves it
 learns by its level, as Kanto's trainers' do), lines and sight; they battle
-as Kanto's do, with FireRed's nearest trainer pictures (an Ace Trainer is a
-Cooltrainer, a Firebreather a Burglar). Item balls, small trees (Cut) and
+as Kanto's do, with HGSS's own trainer pictures (Gen 4's 80x80, standing a
+little taller than FireRed's: `assets/sprites/trainers/front/hgss_*.png`,
+and Diamond and Pearl's `dp_*.png` for the classes HGSS shares with them),
+made by `tools/build-hgss-trainer-pics.js` from a
+[smogon/sprites](https://github.com/smogon/sprites) checkout
+(`node tools/build-hgss-trainer-pics.js <path>`), each class's picture in
+`tools/lib/hgss-trainer-pics.json`. Item balls, small trees (Cut) and
 breakable rocks (Rock Smash, with HGSS's Pokémon under them: two slots, 90
 and 10 percent) work as Kanto's, and each Apricorn tree bears an Apricorn of
 its colour (`src/apricorn_tree_sys.c`) once a day: this game adds the seven
@@ -1811,12 +1835,10 @@ them: morning (4-10), day and night (20-4), e.g. Route 29's Pidgey and
 Sentret, and Hoothoot at night; then Surf's, Gen 4's fishing (five slots a
 rod, 40/40/15/4/1) and Rock Smash's. Everything goes into
 `data/johto-maps.js`, which adds the maps to `WORLD_MAPS` (and the gate's mat,
-warp and guard). Not built yet: the rest of the buildings (the other towns' houses,
-Goldenrod's and Route 32's marts, the Gyms, Sprout Tower, the Pokémon
-Academy, the Radio Tower, the Day Care and the rest: their doors say so), so
-the story can't go on past them yet (Violet's Gym, Falkner, comes next); Union Cave's lower
-floors, Dark Cave and the National Park; Johto's music (FireRed's stands in:
-Pallet Town's, Route 1's and Pewter City's); and a Town Map of Johto.
+warp and guard). Not here yet: what needs HGSS's own games (the Battle
+Frontier, the Pokéathlon, the Bug-Catching Contest, the Safari Zone's areas,
+the Game Corner's machines, the Pokégear's phone calls); Johto's music
+(FireRed's nearest stands in); and a Town Map of Johto.
 
 ## Orre: the Outskirt Stand (in progress)
 

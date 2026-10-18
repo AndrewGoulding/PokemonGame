@@ -108,7 +108,7 @@ function compiler(ROOT, conv) {
     if (/^-?\d+$/.test(tok)) return +tok;
     if (/^0x[0-9a-f]+$/i.test(tok)) return parseInt(tok, 16);
     if (tok === "obj_player") return "player";
-    if (/^(VAR_|FLAG_|obj_|std_)/.test(tok)) return tok;   // (std_*: CallStd's scripts, by name)
+    if (/^(VAR_|FLAG_|obj_|std_|MOVE_)/.test(tok)) return tok;   // (std_*: CallStd's scripts, by name; moves by name)
     if (/^msg_/.test(tok)) { needMsg(tok); return tok; }
     if (/^ITEM_/.test(tok)) return conv.item(tok) || tok;
     if (/^SPECIES_/.test(tok)) return conv.species(tok) || tok;
@@ -169,6 +169,12 @@ function compiler(ROOT, conv) {
       for (const m of src.matchAll(/InitScriptGoToIfEqual\s+(\w+),\s*(\w+),\s*(.+)/g)) hdr.frame.push([m[1], arg(m[2]), scriptRef(m[3])]);
     }
     c.hdr = hdr;
+    // (Its own messages' bank, for NonNPCMsgVar's: a message by its number, all of them.)
+    const bank = msgFiles.find((f) => new RegExp("^msg_\\d+_" + z + "\\.json$").test(f));
+    if (bank && c.cmds.some((x) => /^(NonNPCMsgVar|NPCMsgVar)$/.test(x[0]))) {
+      c.bank = bank.replace(/\.json$/, "");
+      for (const x of msgFile(c.bank)) needMsg(x.id);
+    }
     return c;
   }
   // The new game's flags (scr_seq_0149: what's hidden until the story gets to it).

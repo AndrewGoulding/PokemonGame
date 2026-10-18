@@ -10150,8 +10150,8 @@
     // (Mr. Psychic's back room, once he's given you his TM; Celadon's Berry Farm, always: the same file.)
     if (map === "SaffronCity_MrPsychicsHouse") return f.gotTM29 ? ["denroom"] : [];
     if (map === "CeladonCity") return ["berryfarm"];
-    // (The League gate's way west, to Johto's Route 26: data/johto-maps.js.)
-    if (map === "Route22_NorthEntrance") return ["johto"];
+    // (The League gate's ways west and east, to Johto's Routes 26 and 28: data/johto-maps.js.)
+    if (map === "Route22_NorthEntrance") return ["johto", "johto-east"];
     if (map === "CeladonCity_GameCorner") return (f.openedRocketHideout ? [] : ["hidden"]).concat(["cardroom"]);
     if (map === "RocketHideout_B1F" && !f.TRAINER_TEAM_ROCKET_GRUNT_12) return ["barrier"];
     if (map === "RocketHideout_B4F" && !(f.TRAINER_TEAM_ROCKET_GRUNT_16 && f.TRAINER_TEAM_ROCKET_GRUNT_17)) return ["barrier"];
@@ -10392,12 +10392,16 @@
       Overworld.addObject(id, { x: at.x, y: at.y, facing: at.facing });
     },
     hide: (id) => Overworld.removeObject(id),
-    place: (id, x, y, facing) => { const map = window.WORLD_MAPS[player.location.map]; if (Overworld.personPosition(id) && x >= 0 && y >= 0 && x < map.width && y < map.height) Overworld.addObject(id, { x, y, facing }); },
+    place: (id, x, y, facing) => {
+      const map = window.WORLD_MAPS[player.location.map], at = Overworld.personPosition(id);
+      if (at && x >= 0 && y >= 0 && x < map.width && y < map.height) Overworld.addObject(id, { x, y, facing: facing || at.facing });
+    },
     personAt: (id) => (id === "player" ? Overworld.position() : Overworld.personPosition(id)),
     origin: (zone) => window.JOHTO_SCRIPTS.origins[zone],
     giveItem: async (id, n, verb) => {
-      if (!window.ITEMS[id]) return;   // (one the game hasn't got)
+      if (!window.ITEMS[id]) return false;   // (one the game hasn't got)
       Player.addItem(player, id, n);
+      if (!verb) return true;   // (GiveItem: the script says so itself)
       const name = Bag.name(id);
       await sayWithJingle(itemJingle(id), "{PLAYER} " + verb + " " + (n > 1 ? n + " " + name + (/s$/.test(name) ? "" : "s") : Bag.isKeyItem(id) ? "the " + name : article(name)) + "!");
     },
@@ -10417,6 +10421,27 @@
       await Overworld.teleport({ map: name, x: x - o.x, y: y - o.y, facing });
     },
     hasBadge: (n) => (n >= 8 ? player.badges.includes(KANTO_BADGES[n - 8]) : player.badges.includes(Player.REGION_BADGES.johto[n])),
+    giveBadge: (n) => { const b = n >= 8 ? KANTO_BADGES[n - 8] : Player.REGION_BADGES.johto[n]; if (b && !player.badges.includes(b)) player.badges.push(b); },
+    givePokedex: () => { player.flags.pokedex = true; },
+    itemName: (id) => (window.ITEMS[id] ? Bag.name(id) : String(id)),
+    giveMon: async (species, level, item) => {
+      if (!window.DEX[species]) return false;
+      let record = null;
+      const ok = await giftMon(species, level, ["{PLAYER} received " + Party.speciesName(species) + "!"], [], () => {
+        record = player.party[player.party.length - 1];
+      });
+      // (Holding its item, if it joined your party.)
+      if (ok && item && window.ITEMS[item] && record && record.species === species && !record.item) record.item = item;
+      return ok;
+    },
+    setDynamicWarp: (mapConst, x, y) => { const name = window.JOHTO_SCRIPTS.mapConsts[mapConst]; if (name) setDynamicWarp({ map: name, x, y }); },
+    dynamicWarpMap: () => (player.flags.dynamicWarp || {}).map,
+    money: () => player.money,
+    addMoney: (n) => { player.money = Math.max(0, Math.min(999999, player.money + n)); },
+    coins: () => coins(),
+    addCoins: (n) => addCoins(n),
+    beaten: (id) => !!player.flags["HGSS_" + String(id).replace(/^HGSS_/, "")],
+    setBeaten: (id, on) => { const k = "HGSS_" + String(id).replace(/^HGSS_/, ""); if (on) player.flags[k] = true; else delete player.flags[k]; },
     sleep, isGirl, onBike: () => Overworld.avatar() === "bike",
     chooseStarter: johtoStarter,
     nickname: async (i) => {
