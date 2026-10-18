@@ -1837,7 +1837,7 @@ if (window.JOHTO_TOWN_MAP) {
     assert(falkner && Bag.machineMove(falkner[1]) === "Roost", "Falkner's TM teaches Roost: " + (falkner && falkner[1]));
     const pulse = Bag.machines().find((id) => Bag.machineMove(id) === "Dragon Pulse");
     assert(pulse && +pulse.slice(2) > 107 && MACHINE_LEARNERS["Dragon Pulse"].includes("Kingdra"), "Dragon Pulse's new TM");
-    assert(/case "GoToIfNoItemSpace": case "GoToIfNoItemSpace2": setVar\("VAR_SPECIAL_x8004", a\[0\]\)/.test(fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8")), "the Gyms' TMs are given");
+    assert(/case "GoToIfNoItemSpace": itemVars\(a\[0\], a\[1\]\)/.test(fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8")), "the Gyms' TMs are given");
   }
   // Johto's League: HGSS's Elite Four and Lance, their teams, sprites and lines.
   assert.strictEqual(JOHTO_LEAGUE.length, 5);
@@ -1902,6 +1902,39 @@ if (window.JOHTO_TOWN_MAP) {
     const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
     assert(/case "VioletGymElevator"/.test(scriptJs) && /case "CianwoodGymTurnWinch"/.test(scriptJs), "the Gyms' script commands run");
     assert(/darkness: \(map\) => gymmicks\.darkness\(map\)/.test(gameJs) && /gymmicks\.enter\(m\)/.test(gameJs));
+  }
+  // Johto's scripts' trades, loans and the like (ui/johto-script.js, tools/build-johto-script-data.js).
+  {
+    if (!window.JOHTO_SCRIPTS.trades) vm.runInThisContext(fs.readFileSync(path.join(root, "tools/lib/johto-script-data.generated.js"), "utf8"));
+    const JS = window.JOHTO_SCRIPTS;
+    assert.strictEqual(JS.trades.length, 13, "HGSS's thirteen in-game trades and loans");
+    assert.deepStrictEqual([JS.trades[0].gives, JS.trades[0].wants, JS.trades[0].nickname], ["Onix", "Bellsprout", "Rocky"], "Violet City's Onix for a Bellsprout");
+    assert.deepStrictEqual([JS.trades[7].gives, JS.trades[7].nickname, JS.trades[6].gives, JS.trades[6].nickname], ["Spearow", "Kenya", "Shuckle", "Shuckie"]);
+    assert.strictEqual(JS.sounds[1185], "gs_me_item", "HGSS's jingles by number");
+    assert(JS.messages["bank:191:126"] && JS.tutors.Headbutt.includes("Rattata"), "the standard menu's texts; Headbutt's tutor");
+    if (!window.JohtoScript) vm.runInThisContext(fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8"));
+    const party = [Party.create("Charizard", 50), Party.create("Bellsprout", 12)], said = [], traded = [], given = [], me = { name: "RED", flags: {}, party };
+    const env = new Proxy({
+      player: () => me, say: async (p) => { said.push(...p); }, confirm: async () => true, close: () => {},
+      facePlayer: async () => {}, act: async () => {}, personAt: () => ({ x: 1, y: 1, facing: "up" }), choosePartyMon: async () => 1, fade: async () => {}, origin: () => ({ x: 0, y: 0 }),
+      npcTrade: async (t, i) => { traded.push([t.gives, i]); party[i] = Party.create(t.gives, 12); },
+      giveLoanMon: async (t, level, n) => { given.push(t.gives); party.push(Object.assign(Party.create(t.gives, level), { loan: n })); },
+      giveItem: async (id) => { given.push(id); }, isGirl: () => false
+    }, { get: (t, k) => t[k] || (() => {}) });
+    const S = JohtoScript.create(env);
+    (async () => {
+      await S.run("T22R0601", "scr_seq_T22R0601_001", { person: { id: 1 } });
+      assert.deepStrictEqual(traded, [["Onix", 1]], "the trade goes through with the Bellsprout chosen");
+      assert(S.flag("FLAG_TRADE_VIOLET_CITY_BELLSPROUT_ONIX") && said.some((s) => /BELLSPROUT/.test(s)));
+      // Cianwood's Shuckie, lent; Kenya's Mail delivered on Route 31, and TM44 for it (GoToIfNoItemSpace sets the item).
+      await S.run("T24R0201", "scr_seq_T24R0201_000", { person: { id: 1 } });
+      assert(given.includes("Shuckle") && party.some((r) => r.loan === 6), "Shuckie joins, lent");
+      party.splice(1, 2, Object.assign(Party.create("Spearow", 20), { loan: 7, mail: "kenya" }));
+      S.setVar("VAR_LOAN_SPEAROW", 1);
+      await S.run("R31", "scr_seq_R31_001", { person: { id: 1 } });
+      assert(party.length === 1 && given.includes("tm44") && S.getVar("VAR_LOAN_SPEAROW") === 3, "Kenya's Mail delivered, TM44 given");
+      console.log("ok: Johto's scripts: an in-game trade, a loan, Kenya's Mail");
+    })().catch((e) => { console.error(e); process.exit(1); });
   }
   // (Upstairs in a Pokémon Center is FireRed's own floor, its people too.)
   for (const n of J.filter((n) => !/_PokemonCenter_2F$/.test(n))) for (const p of WORLD_MAPS[n].people) {

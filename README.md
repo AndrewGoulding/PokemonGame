@@ -1834,12 +1834,35 @@ fades, warps, trainer and wild battles (`TrainerBattle`, `WildBattle`, a
 Rocket trap's Pokémon, a battle alongside someone), Badges (`GiveBadge`: Zephyr
 to Rising), Pokémon and Eggs given, money and Coins, trainers beaten
 (`SetTrainerFlag`), the phone numbers people give you (they don't ask
-again), and elevators, leaving out what this game hasn't got (the Pokégear and phone calls, photos).
-So the Apricorn man on Route 30 comes out of his house
+again), and elevators, leaving out what this game hasn't got (photos, the camera's
+pans and other DS screens). So the Apricorn man on Route 30 comes out of his house
 as you pass and gives you the Apricorn Box, Cherrygrove's Guide Gent shows you
 round, Team Rocket harasses a man in Azalea Town, Lyra takes you to the Day
 Care on Route 34, the Kimono Girl is lost in Ilex Forest, and the Sudowoodo
-stands in the way on Route 36. Johto's story starts as HGSS's does
+stands in the way on Route 36. **In-game trades and loans** are HGSS's
+(`src/npc_trade.c` and its NPCTrade data, `files/a/1/1/2`, with their
+nicknames and trainers, `msg_0200`: `tools/build-johto-script-data.js` writes
+them, with HGSS's songs by number, the standard menus' texts and Headbutt's
+tutor learnset, into `tools/lib/johto-script-data.generated.js`): the party
+screen to choose a Pokémon (`PartySelectUI`, `GetPartySelection`), and FireRed's
+trade sequence, so Violet City's Bellsprout gets you Rocky the Onix (its trainer,
+IVs, nature, ability and held item, never shiny), and the rest of Johto's
+trades likewise; Kenya the Spearow is lent to you on Route 35's gatehouse with
+its Mail, which the sleepy man on Route 31 takes (TM44 for it), and Cianwood's
+Shuckie is lent (`GiveLoanMon`) until Kirk asks for him back another day
+(`CheckReturnLoanMon`: not if he's holding something, or he's all you've got
+to battle with; he stays if he's grown fond of you). HGSS's daily flags clear
+each day. The move commands are HGSS's: Ilex Forest's Headbutt tutor (who can
+learn it by HGSS's tutor learnsets; a Pokémon with four moves forgets one on
+FireRed's Summary screen), Blackthorn's Move Deleter and Move Maniac (the Move
+Relearner's screen, for a Heart Scale), and ribbons are kept. HGSS's music
+plays in its scenes (`PlayBGM`, the rival's, Lyra's or a Kimono Girl's theme,
+and back to the map's), its jingles under the messages that call for them
+(`PlayFanfare`: an item, a Pokémon received, a phone number registered), a
+few sound effects as FireRed's nearest; the money box shows while you pay
+(Moomoo Farm's milk), the screen shakes, menus show HGSS's texts (the standard
+ones, msg_0191, and a map's own), and a map's script moves its warps
+(Route 47's way into the Embedded Tower). Johto's story starts as HGSS's does
 (its new game, `scr_seq_0149`: who's hidden until the story gets to them),
 except that you come to New Bark Town from Kanto first, as if you'd just
 left the house there (HGSS's Mom and Lyra's hello, inside it, are past):

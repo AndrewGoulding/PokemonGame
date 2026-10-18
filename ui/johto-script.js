@@ -25,12 +25,42 @@
 //   itemName(id), giveMon(species, level, item), giveEgg(species), givePokedex(),
 //   money(), addMoney(n), coins(), addCoins(n), beaten(trainer), setBeaten(trainer, on),
 //   setDynamicWarp(mapConst, x, y), dynamicWarpMap(), violetLift(), turnWinch(),
-//   kurt(op) (Kurt's commands: ui/johto-field.js), followerIdle(), followerHide(on).
+//   kurt(op) (Kurt's commands: ui/johto-field.js), followerIdle(), followerHide(on),
+//   choosePartyMon(message) (a party slot, or -1), npcTrade(trade, slot) and
+//   giveLoanMon(trade, level, n) (JOHTO_SCRIPTS.trades'), setMove(slot, moveSlot, move),
+//   chooseMoveToForget(slot, move) (a move slot, or -1), canLearnTutor(slot, move),
+//   relearnable(slot) and relearn(slot, moves) (the Move Relearner's screen: learned?),
+//   music(song) (null: the map's own again; false: none), se(name), shake(count, opts),
+//   moneyBox(on), moveWarp(map, i, x, y), pcSpace(), itemPocket(id).
 (function () {
   "use strict";
 
   const DATA = () => window.JOHTO_SCRIPTS || { zones: {}, messages: {}, init: [], maps: {} };
   const DIRS = ["up", "down", "left", "right"];   // (HGSS's DIR_NORTH ... DIR_EAST)
+  // (GetStdMsgNaix's banks, for MsgBoxExtern: src/field/scrcmd_message.c.)
+  const STD_BANKS = [752, 211, 30, 435];
+  // HGSS's sound effects (include/constants/sndseq.h) as the nearest of
+  // FireRed's; the rest (its talking blip, SEQ_SE_DP_SELECT, too) play nothing.
+  const SE = { 1501: "se_select", 1521: "se_ding_dong", 1538: "se_exit", 1539: "se_door", 1543: "se_door", 1547: "se_pc_on",
+    1562: "se_save", 1603: "se_shop", 1613: "se_warp_out", 1754: "se_ship", 2180: "se_fall", 2334: "se_shop" };
+  // The standard scripts that play someone's music (scr_seq_0003's): HGSS's songs.
+  // (Lyra's, or Ethan's for a girl: std_play_friend_music.)
+  const STD_MUSIC = { std_play_rival_intro_music: "gs_e_rival1", std_play_rival_outro_music: "gs_e_rival2",
+    std_play_eusine_music: "gs_e_minaki", std_play_clair_music: "gs_ibuki", std_play_mom_music: "gs_e_tsureteke1",
+    std_play_follow_music: "gs_e_tsureteke2", std_play_pichu_music: "gs_e_g_pichu", std_play_kimono_girl_music: "gs_e_maiko_theme" };
+  // Gen 4's type numbers (GetMonTypes), by this game's type names.
+  const TYPES = ["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel", "???", "Fire", "Water",
+    "Grass", "Electric", "Psychic", "Ice", "Dragon", "Dark"];
+  // (HGSS's time of day, ScrCmd_379: morning from 4, day from 10, evening from 17, night from 20, late night from 0.)
+  const timeOfDay = () => { const h = new Date().getHours(); return h < 4 ? 4 : h < 10 ? 0 : h < 17 ? 1 : h < 20 ? 2 : 3; };
+  // A move by HGSS's name (MOVE_DOUBLE_EDGE): this game's (Double-Edge).
+  const toID = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
+  let moveIDs = null;
+  function moveName(x) {
+    const id = toID(String(x).replace(/^MOVE_/, ""));
+    if (!moveIDs) { moveIDs = {}; for (const k of Object.keys(window.MOVES || {})) moveIDs[toID(k)] = k; }
+    return moveIDs[id] || String(x).replace(/^MOVE_/, "").toLowerCase().replace(/(^|_)(\w)/g, (m, u, c) => (u ? " " : "") + c.toUpperCase());
+  }
 
   function create(env) {
     const temp = { f: {}, v: {}, pos: {} };
@@ -44,6 +74,12 @@
           else if (cmd === "ClearFlag") delete s.f[name];
           else if (cmd === "SetVar") s.v[name] = val;
         }
+      }
+      // (HGSS's daily flags, FLAG_DAILY_*, clear each new day: ClearDailyFlags.)
+      const today = new Date().toDateString();
+      if (s.day !== today) {
+        s.day = today;
+        for (const k of Object.keys(s.f)) if (/^FLAG_DAILY_/.test(k)) delete s.f[k];
       }
       return s;
     };
@@ -86,9 +122,15 @@
       if (!z || !(label in z.labels)) return;
       const C = z.cmds, L = z.labels, origin = env.origin(zone) || { x: 0, y: 0 };
       let pc = L[label], cmp = 1, sw = 0, lastBattle = null, menu = null, choice = 0, starterSlot = null;
+      // (What a party screen, a move list or the Move Relearner chose, until
+      // the command that reads it; the trade LoadNPCTrade loaded; a jingle playing.)
+      let picked = 255, trade = null, jingle = null, jingleAt = -1;
       // (HGSS's party slot 0 is the starter just chosen: in this game it
       // joins a party you already have, wherever it lands.)
+      // (But not a slot a party screen chose, in a var or a copy of it: chosen.)
+      const chosen = new Set();
       const slot = (n) => {
+        if (chosen.has(n)) return +getVar(n) || 0;
         n = +getVar(n) || 0;
         if (n !== 0) return n;
         if (starterSlot != null) return starterSlot;
@@ -97,16 +139,23 @@
         return i >= 0 ? i : 0;
       };
       const mon = (n) => env.player().party[slot(n)];
+      const itemVars = (item, n) => { setVar("VAR_SPECIAL_x8004", getVar(item)); setVar("VAR_SPECIAL_x8005", +getVar(n) || 1); };
+      const sound = (n) => (DATA().sounds || {})[getVar(n)] || null;
       const stack = [], pending = [];
       const go = (l) => { if (l in L) pc = L[l]; };
       const who = (obj) => (obj === "player" ? "player" : obj);
       const flush = async () => { if (pending.length) { const t = pending.splice(0); await env.act(t); } };
       // (Is a YesNo coming, so the last page should be the question?)
       const nextIsYesNo = (i) => { for (let k = i; k < C.length && k < i + 4; k++) { if (C[k][0] === "YesNo") return true; if (!/^(Nop|ScrCmd_|TouchscreenMenu)/.test(C[k][0])) return false; } return false; };
+      // (A jingle the message is about, PlayFanfare just after it: it starts with the message.)
+      const startJingle = (k) => { jingle = Promise.resolve(env.fanfare(DATA().sounds && DATA().sounds[getVar(C[k][1])])); jingleAt = k; };
+      const nextJingle = (i) => { for (let k = i; k < C.length && k < i + 3; k++) { if (C[k][0] === "PlayFanfare") return k; if (!/^(Nop|Buffer)/.test(C[k][0])) return -1; } return -1; };
       let question = null;
       async function show(pages, id) {
         if (!pages || !pages.length) return;
         await flush();
+        const j = nextJingle(pc);
+        if (j >= 0) startJingle(j);
         if (nextIsYesNo(pc)) { if (pages.length > 1) await env.say(pages.slice(0, -1)); question = pages[pages.length - 1]; return; }
         // (A message that asks Yes or No itself: GetMenuChoice reads it, 0 for Yes.)
         if (id && DATA().yesno && DATA().yesno[id]) {
@@ -141,8 +190,8 @@
           case "CallIfUnset": if (!flag(a[0])) { stack.push(pc); go(a[1]); } break;
           case "Switch": sw = +getVar(a[0]) || 0; setVar("VAR_SPECIAL_x8008", sw); break;
           case "Case": if (sw === +getVar(a[0])) go(a[1]); break;
-          case "SetVar": setVar(a[0], a[1]); break;
-          case "CopyVar": case "SetOrCopyVar": setVar(a[0], getVar(a[1])); break;
+          case "SetVar": setVar(a[0], a[1]); chosen.delete(a[0]); break;
+          case "CopyVar": case "SetOrCopyVar": setVar(a[0], getVar(a[1])); if (chosen.has(a[1])) chosen.add(a[0]); else chosen.delete(a[0]); break;
           case "AddVar": setVar(a[0], (+getVar(a[0]) || 0) + (+getVar(a[1]) || 0)); break;
           case "SubVar": setVar(a[0], (+getVar(a[0]) || 0) - (+getVar(a[1]) || 0)); break;
           case "SetFlag": setFlag(a[0], true); break;
@@ -194,7 +243,13 @@
           case "GetPlayerFacing": setVar(a[0], Math.max(0, DIRS.indexOf(env.personAt("player").facing))); break;
 
           // Items, Pokémon, badges.
-          case "GiveItemNoCheck": await flush(); await env.giveItem(a[0], +getVar(a[1]) || 1, "received"); break;
+          // (These macros set VAR_SPECIAL_x8004 and x8005 to the item and how many, as HGSS's ItemVars:
+          // the messages after them name it.)
+          case "GiveItemNoCheck":
+            await flush();
+            itemVars(a[0], a[1]);
+            await env.giveItem(getVar(a[0]), +getVar(a[1]) || 1, "received");
+            break;
           case "CallStd":
             if (a[0] === "std_give_item_verbose" || a[0] === "std_obtain_item_verbose") {
               await flush();
@@ -203,10 +258,13 @@
             // (Poké Marts: the standard stock by the Badges you have, or the town's own.)
             else if (a[0] === "std_pokemart") await env.mart(env.martStock(DATA().marts.standard));
             else if (a[0] === "std_special_mart") await env.mart(DATA().marts.special[+getVar("VAR_SPECIAL_x8004") || 0] || []);
+            else if (a[0] === "std_play_friend_music") env.music(env.isGirl() ? "gs_e_support_m" : "gs_e_support_f");
+            else if (STD_MUSIC[a[0]]) env.music(STD_MUSIC[a[0]]);
+            else if (/^std_fade_end_\w+_music$/.test(a[0])) env.music(null);
             break;
-          // (HGSS's macros: the item and how many into VAR_SPECIAL_x8004 and
-          // x8005, for std_give_item_verbose after; this game's Bag never fills.)
-          case "GoToIfNoItemSpace": case "GoToIfNoItemSpace2": setVar("VAR_SPECIAL_x8004", a[0]); setVar("VAR_SPECIAL_x8005", a[1]); break;
+          // (This game's Bag never fills.)
+          case "GoToIfNoItemSpace": itemVars(a[0], a[1]); setVar("VAR_SPECIAL_RESULT", 1); break;
+          case "GoToIfNoItemSpace2": itemVars(a[0], a[1]); setVar("VAR_SPECIAL_RESULT", 1); cmp = 1; break;
           case "HasSpaceForItem": setVar(a[2], 1); break;
           case "HasItem": setVar(a[2], env.hasItem(getVar(a[0]), +getVar(a[1]) || 1) ? 1 : 0); break;
           case "TakeItem": setVar(a[2], env.takeItem(getVar(a[0]), +getVar(a[1]) || 1) ? 1 : 0); break;
@@ -215,7 +273,7 @@
           case "GetPartyCount": setVar(a[0], env.player().party.length); break;
           case "CountAliveMons": setVar(a[0], env.player().party.filter((r) => !r.egg && r.hp > 0).length); break;
           case "GetPartyLeadAlive": setVar(a[0], Math.max(0, env.player().party.findIndex((r) => !r.egg && r.hp > 0))); break;
-          case "GetPartyMonSpecies": { const r = mon(a[0]); setVar(a[1], r ? r.species : 0); break; }
+          case "GetPartyMonSpecies": { const r = mon(a[0]); setVar(a[1], r && !r.egg ? r.species : 0); break; }
           case "MonGetFriendship": { const r = mon(a[1]); setVar(a[0], r ? r.happiness | 0 : 0); break; }
           case "GetPartyMonForm2": setVar(a[0], 0); break;
           case "GetGameVersion": setVar(a[0], DATA().version || 7); break;
@@ -269,36 +327,139 @@
           }
           case "SetStarterChoice": state().starter = getVar(a[0]); break;
           case "NicknameInput": await env.nickname(slot(a[0])); break;
-          case "NameRival": state().rival = await env.nameRival(state().rival || "Silver"); break;
+          // (Named: 0, as HGSS's naming screen gives when it's done; 1 would ask again.)
+          case "NameRival": state().rival = await env.nameRival(state().rival || "Silver"); setVar(a[0], 0); break;
           case "HealParty": env.healParty(); break;
           case "GiveTogepiEgg": await env.giveEgg("Togepi"); break;
-          case "TakeItemNoCheck": env.takeItem(getVar(a[0]), +getVar(a[1]) || 1); break;
+          case "TakeItemNoCheck": itemVars(a[0], a[1]); setVar("VAR_SPECIAL_RESULT", env.takeItem(getVar(a[0]), +getVar(a[1]) || 1) ? 1 : 0); break;
           case "GetPlayerGender": setVar(a[0], env.isGirl() ? 1 : 0); break;
           case "GetWeekday": setVar(a[0], new Date().getDay()); break;
           case "PlayerOnBikeCheck": setVar(a[0], env.onBike() ? 1 : 0); break;
-          case "PhotoAlbumIsFull": case "KenyaCheck": case "KenyaCheckPartyOrMailbox": case "MonHasRibbon": case "FollowerPokeIsEventTrigger":
-          case "CheckDaycareEgg": case "MonHasMove":
-            setVar(a[a.length - 1], 0);
-            break;
+          case "PhotoAlbumIsFull": case "CheckDaycareEgg": setVar(a[0], 0); break;
+          case "FollowerPokeIsEventTrigger": setVar(a[2], 0); break;
           case "GetStarterChoice": setVar(a[0], state().starter || 0); break;
 
           // Sounds.
           case "PlayCry": env.cry(getVar(a[0])); break;
-          case "PlayFanfare": env.fanfare(); break;
+          // (A jingle, HGSS's own (tools/lib/hgss-music.json); WaitFanfare waits for it. One a message
+          // is about started with it.)
+          case "PlayFanfare": if (jingleAt !== pc - 1) startJingle(pc - 1); break;
+          case "WaitFanfare": if (jingle) { await jingle; jingle = null; } jingleAt = -1; break;
+          // (The music: a song by its number, a character's for a scene, and back to the map's.)
+          case "PlayBGM": case "TempBGM": if (sound(a[0])) env.music(sound(a[0])); break;
+          case "StopBGM": case "FadeOutBGM": env.music(false); break;
+          case "ResetBGM": env.music(null); break;
+          case "PlaySE": if (SE[getVar(a[0])]) env.se(SE[getVar(a[0])]); break;
+          case "WaitSE": case "StopSE": case "WaitCry": break;
           case "Wait": await env.sleep((+getVar(a[0]) || 0) * 33); break;
 
           // Menus.
-          case "MenuInitStdGmm": menu = { bank: getVar(a[4]), items: [] }; break;
-          case "MenuItemAdd": if (menu) menu.items.push({ text: (text("bank:" + menu.bank + ":" + a[0]) || ["…"])[0], value: a[2] }); break;
+          // (A menu of the standard texts, msg_0191, or of the map's own; its choice goes in its var.)
+          case "MenuInitStdGmm": menu = { bank: 191, items: [], v: a[4] }; break;
+          case "MenuInit": menu = { bank: z.menuBank, items: [], v: a[4] }; break;
+          case "MenuItemAdd": if (menu) menu.items.push({ text: (text("bank:" + menu.bank + ":" + getVar(a[0])) || ["…"])[0], value: getVar(a[2]) }); break;
           case "MenuExec": {
             await flush();
             const i = menu && menu.items.length ? await env.choose(menu.items.map((x) => x.text)) : -1;
             choice = i >= 0 && menu ? menu.items[i].value : (menu && menu.items.length ? menu.items[menu.items.length - 1].value : 0);
-            setVar("VAR_SPECIAL_RESULT", choice);
+            setVar(menu && menu.v || "VAR_SPECIAL_RESULT", choice);
             menu = null;
             break;
           }
+          case "GetStdMsgNaix": setVar(a[1], STD_BANKS[+getVar(a[0])] || 0); break;
           case "GetMenuChoice": setVar(a[0], choice); break;
+          // (The message box stays up, waits for A: this game's messages do anyway.)
+          case "HoldMsg": case "WaitButton": case "WaitABPress": case "Lock": case "LockAll": case "Release": case "ReleaseAll": break;
+          // (The money box, at the top left, while you pay.)
+          case "ShowMoneyBox": case "UpdateMoneyBox": env.moneyBox(true); break;
+          case "HideMoneyBox": env.moneyBox(false); break;
+
+          // Choosing a Pokémon: the party screen (PartySelectUI; an in-game
+          // trade's, ScrCmd_566), and GetPartySelection reads the slot, 255 for none.
+          case "PartySelectUI": case "ScrCmd_566": {
+            await flush();
+            const i = await env.choosePartyMon(op === "ScrCmd_566" ? "Trade which Pokémon?" : "Choose a Pokémon.");
+            picked = i >= 0 ? i : 255;
+            break;
+          }
+          case "GetPartySelection": setVar(a[0], picked); if (picked !== 255) chosen.add(a[0]); else chosen.delete(a[0]); break;
+          // In-game trades (src/npc_trade.c): the trade's Pokémon (JOHTO_SCRIPTS.trades) for one of yours.
+          case "LoadNPCTrade": trade = (DATA().trades || [])[+getVar(a[0])] || null; break;
+          case "NPCTradeGetReqSpecies": setVar(a[0], trade ? trade.wants : 0); break;
+          case "NPCTradeGetOfferedSpecies": setVar(a[0], trade ? trade.gives : 0); break;
+          case "NPCTradeExec": await flush(); if (trade && mon(a[0])) await env.npcTrade(trade, slot(a[0])); break;
+          case "NPCTradeEnd": trade = null; break;
+          // A Pokémon lent to you (Kenya, Cianwood's Shuckie): given, and back
+          // (CheckReturnLoanMon: 0 it can go back; 1 it isn't theirs, 2 it's
+          // holding something, 4 it's your only one that can battle).
+          case "GiveLoanMon": { const t = (DATA().trades || [])[+getVar(a[0])]; await flush(); if (t) await env.giveLoanMon(t, +getVar(a[1]) || 5, +getVar(a[0])); break; }
+          case "CheckReturnLoanMon": {
+            const r = mon(a[1]), party = env.player().party;
+            setVar(a[2], !r || r.loan !== +getVar(a[0]) ? 1 : party.filter((x) => !x.egg && x.hp > 0).length < 2 ? 4 : r.item ? 2 : 0);
+            break;
+          }
+          case "ReturnLoanMon": { const i = slot(a[0]), party = env.player().party; if (party[i]) party.splice(i, 1); break; }
+          // (Kenya's Mail: held by the Spearow lent with it, until it's delivered.
+          // KenyaCheck's last: 0, holding Mail at all; 1, Kenya's.)
+          case "KenyaCheck": { const r = mon(a[1]); setVar(a[0], r && r.mail ? 1 : 0); break; }
+          case "KenyaCheckPartyOrMailbox": setVar(a[0], env.player().party.some((r) => r.mail === "kenya") ? 1 : 0); break;
+          case "MonGiveMail": { const r = mon(a[0]); if (r) delete r.mail; break; }
+          // Ribbons (HGSS's numbers, kept on the Pokémon).
+          case "GiveRibbon": { const r = mon(a[0]), n = +getVar(a[1]); if (r && !(r.ribbons || []).includes(n)) (r.ribbons = r.ribbons || []).push(n); break; }
+          case "MonHasRibbon": { const r = mon(a[1]); setVar(a[0], r && (r.ribbons || []).includes(+getVar(a[2])) ? 1 : 0); break; }
+          case "MonGetGender": { const r = mon(a[0]); setVar(a[1], !r || r.gender === "N" ? 2 : r.gender === "F" ? 1 : 0); break; }
+          case "GetMonTypes": {
+            const r = mon(a[2]), types = (r && window.DEX && window.DEX[r.species] || {}).types || [];
+            setVar(a[0], Math.max(0, TYPES.indexOf(types[0]))); setVar(a[1], Math.max(0, TYPES.indexOf(types[1] || types[0])));
+            break;
+          }
+          case "GetEVTotal": { const r = mon(a[1]); setVar(a[0], r ? Object.values(r.evs || {}).reduce((x, y) => x + (+y || 0), 0) : 0); break; }
+          // (Not caught by you: from a trade, or someone else's.)
+          case "PartyMonIsMine": { const r = mon(a[0]); setVar(a[1], r && (r.loan != null || (r.met && r.met.traded)) ? 1 : 0); break; }
+          case "GetPartySlotWithFatefulEncounter": {
+            const i = env.player().party.findIndex((r) => !r.egg && r.species === getVar(a[1]) && r.fateful);
+            setVar(a[0], i >= 0 ? i : 255);
+            break;
+          }
+          // Moves: what it knows, teaching one over another (the Summary
+          // screen's move list to choose which), forgetting one (the Move
+          // Deleter), and the Move Relearner and tutors (their screen).
+          case "MonHasMove": { const r = mon(a[2]); setVar(a[0], r && !r.egg && r.moves.some((m) => m.name === moveName(getVar(a[1]))) ? 1 : 0); break; }
+          case "CountMonMoves": { const r = mon(a[1]); setVar(a[0], r && !r.egg ? r.moves.length : 0); break; }
+          case "SetMonMove": { const r = mon(a[0]); if (r) env.setMove(slot(a[0]), Math.min(+getVar(a[1]) || 0, r.moves.length), moveName(getVar(a[2]))); break; }
+          case "MonForgetMove": { const r = mon(a[0]), i = +getVar(a[1]) || 0; if (r && r.moves.length > 1 && r.moves[i]) r.moves.splice(i, 1); break; }
+          case "BufferPartyMonMoveName": { const r = mon(a[1]), m = r && r.moves[+getVar(a[2])]; buffers[a[0]] = m ? m.name : ""; break; }
+          case "PokemonSummaryScreen": case "ScrCmd_394": {
+            await flush();
+            const i = mon(op === "ScrCmd_394" ? a[0] : a[1]) ? await env.chooseMoveToForget(slot(op === "ScrCmd_394" ? a[0] : a[1]), op === "ScrCmd_394" ? null : moveName(getVar(a[2]))) : -1;
+            picked = i >= 0 ? i : 4;
+            break;
+          }
+          case "GetMoveSelection": setVar(a[1], picked); break;
+          case "ScrCmd_395": setVar(a[0], picked === 4 ? 255 : picked); break;
+          // (Headbutt, Ilex Forest's tutor's: can it learn it? HGSS's tutor learnsets, or this game's.)
+          case "ScrCmd_656": {
+            const r = mon(a[0]), hgss = ((DATA().tutors || {}).Headbutt || []).includes(r && r.species);
+            setVar(a[1], r && !r.egg && (hgss || env.canLearnTutor(slot(a[0]), "Headbutt")) ? 1 : 0);
+            break;
+          }
+          case "ScrCmd_466": { const r = mon(a[1]); setVar(a[0], r && !r.egg && env.relearnable(slot(a[1])) > 0 ? 1 : 0); break; }
+          case "MoveRelearnerInit": case "MoveTutorInit":
+            await flush();
+            picked = mon(a[0]) && (await env.relearn(slot(a[0]), op === "MoveTutorInit" ? [moveName(getVar(a[1]))] : null)) ? 0 : 255;
+            break;
+          case "MoveRelearnerGetResult": setVar(a[0], picked); break;
+          // (The hour, for who's about: ScrCmd_522.)
+          case "ScrCmd_522": setVar(a[0], new Date().getHours()); break;
+          case "ScrCmd_379": setVar(a[0], timeOfDay()); break;
+          case "CountPCEmptySpace": setVar(a[0], env.pcSpace()); break;
+          // (The pocket an item went in, by its name: BufferPocketName's.)
+          case "GetItemPocket": setVar(a[1], env.itemPocket(getVar(a[0]))); break;
+          case "BufferPocketName": buffers[a[0]] = String(getVar(a[1])); break;
+          // (The screen shakes: HGSS's x and y, the frames between, how many times.)
+          case "ScreenShake": await flush(); await env.shake(+getVar(a[3]) || 1, { x: +getVar(a[0]) || 0, y: +getVar(a[1]) || 0, delay: Math.max(1, +getVar(a[2]) || 1) * 2 }); break;
+          // (One of the map's warps put elsewhere, as its OnTransition script does.)
+          case "MoveWarp": env.moveWarp(null, +getVar(a[0]), (+getVar(a[1]) || 0) - origin.x, (+getVar(a[2]) || 0) - origin.y); break;
 
           // Battles.
           case "TrainerBattle": {
@@ -378,9 +539,9 @@
       resetTemp();
       const zone = zoneOf(map), z = zone && DATA().zones[zone];
       if (!z) return;
-      for (const label of [z.hdr.transition, z.hdr.resume]) if (label && label in z.labels) runQuick(zone, z, label);
+      for (const label of [z.hdr.transition, z.hdr.resume]) if (label && label in z.labels) runQuick(zone, z, label, map);
     }
-    function runQuick(zone, z, label) {
+    function runQuick(zone, z, label, map) {
       let pc = z.labels[label], cmp = 1;
       const stack = [];
       const cond = { Lt: (c) => c === 0, Eq: (c) => c === 1, Gt: (c) => c === 2, Le: (c) => c !== 2, Ge: (c) => c !== 0, Ne: (c) => c !== 1 };
@@ -399,6 +560,13 @@
         else if (op === "CopyVar" || op === "SetOrCopyVar") setVar(a[0], getVar(a[1]));
         else if (op === "GetWeekday") setVar(a[0], new Date().getDay());
         else if (op === "CheckBadge") setVar(a[1], env.hasBadge(+getVar(a[0])) ? 1 : 0);
+        else if (op === "GetGameVersion") setVar(a[0], DATA().version || 7);
+        else if (op === "ScrCmd_379") setVar(a[0], timeOfDay());
+        // (One of the map's warps put elsewhere: Route 47's to the Embedded Tower, HeartGold's room.)
+        else if (op === "MoveWarp") {
+          const o = env.origin(zone) || { x: 0, y: 0 };
+          env.moveWarp(map, +getVar(a[0]), (+getVar(a[1]) || 0) - o.x, (+getVar(a[2]) || 0) - o.y);
+        }
         else if ((m = /^GoToIf(Lt|Eq|Gt|Le|Ge|Ne)$/.exec(op))) { if (cond[m[1]](cmp) && a[0] in z.labels) pc = z.labels[a[0]]; }
         else if ((m = /^CallIf(Lt|Eq|Gt|Le|Ge|Ne)$/.exec(op))) { if (cond[m[1]](cmp) && a[0] in z.labels) { stack.push(pc); pc = z.labels[a[0]]; } }
         // (A person put elsewhere: where the map will place them.)

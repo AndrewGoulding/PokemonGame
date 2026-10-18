@@ -4660,15 +4660,19 @@
     theirs.met = { level: theirs.level, map: player.location.map, traded: true };
     theirs.hp = Party.maxHp(theirs);
     // (Their trainer, FireRed's OT name in capitals: "REYLEY" -> "Reyley".)
-    await tradeScene(mine, theirs, trade.ot ? trade.ot.name.charAt(0) + trade.ot.name.slice(1).toLowerCase() : "the trainer");
-    player.party[i] = theirs;
-    Player.markCaught(player, trade.gives);
+    await tradeFor(i, theirs, trade.ot ? trade.ot.name.charAt(0) + trade.ot.name.slice(1).toLowerCase() : "the trainer");
     f[trade.flag] = true;
+    await say(T(X.thanks));
+  }
+  // Your Pokémon in party slot `i` for `theirs`, as FireRed shows it; then back to the map.
+  async function tradeFor(i, theirs, partner) {
+    await tradeScene(player.party[i], theirs, partner);
+    player.party[i] = theirs;
+    Player.markCaught(player, theirs.species);
     // (Back to the map: FireRed's CB2_ReturnToField, the map's music again.)
     show("world");
     music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[player.location.map] || {}).music);
     await Overworld.resume();
-    await say(T(X.thanks));
   }
 
   // ---------- Oak's parcel and the Pokédex ----------
@@ -10621,7 +10625,6 @@
     takeItem: (id, n) => Player.removeItem(player, id, n),
     itemCount: (id) => Player.itemCount(player, id),
     cry: (species) => { if (window.DEX[species]) cry(species); },
-    fanfare: () => {},
     fade: (out) => (out ? Overworld.fadeToBlack() : Overworld.fadeFromBlack()),
     trainerBattle: (id) => johtoBattle("trainer", id),
     wildBattle: (species, level) => johtoBattle("wild", species, level),
@@ -10679,7 +10682,45 @@
       const n = Player.REGION_BADGES.johto.filter((b) => player.badges.includes(b)).length;
       const tier = n === 0 ? 1 : n <= 2 ? 2 : n <= 4 ? 3 : n <= 6 ? 4 : n === 7 ? 5 : 6;
       return list.filter(([, t]) => tier >= t).map(([id]) => id);
-    }
+    },
+    // (Choosing a Pokémon, its trades and loans, its moves: below.)
+    choosePartyMon: async (message) => { const r = await choosePartyFor(message); show("world"); return r ? player.party.indexOf(r) : -1; },
+    npcTrade: (trade, i) => tradeFor(i, johtoTradeMon(trade, player.party[i].level), trade.ot.name),
+    giveLoanMon: async (trade, level, n) => {
+      const r = Object.assign(johtoTradeMon(trade, level), { loan: n }, n === 7 ? { mail: "kenya" } : {});
+      Player.receive(player, r);
+    },
+    setMove: (i, slot, move) => { if (window.MOVES[move]) Party.teachMove(player.party[i], move, slot); },
+    chooseMoveToForget: async (i, move) => {
+      const r = player.party[i];
+      // (The Move Deleter's: which move, as Kanto's asks.)
+      const k = move ? await chooseMoveToForget(r, move) : await ask("Which move should be forgotten?",
+        r.moves.map((m, j) => ({ label: m.name, value: j, className: "type-" + MOVES[m.name].type })).concat([back()]));
+      show("world");
+      return k == null || k === "back" ? -1 : k;
+    },
+    canLearnTutor: (i, move) => tutorCanLearn(player.party[i], move),
+    relearnable: (i) => relearnable(player.party[i]).length,
+    relearn: async (i, moves) => {
+      const r = player.party[i];
+      Screen.say("");
+      clearMenu();
+      const move = await MoveRelearner.open({
+        name: Party.displayName(r), moves: moves || relearnable(r), known: r.moves.map((m) => m.name), frame: GameOptions.get().frame,
+        forget: (m) => chooseMoveToForget(r, m), teach: (m, slot) => Party.teachMove(r, m, slot == null ? undefined : slot)
+      });
+      show("world");
+      return !!(move && Party.knowsMove(r, move));
+    },
+    // (A song, or the map's own again, or none.)
+    music: (song) => music(song === null ? avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[player.location.map] || {}).music : song || null),
+    fanfare: (song) => (song ? fanfare(song) : Promise.resolve()),
+    se: (name) => sfx(name),
+    shake: (n, opts) => Overworld.shake(n, opts),
+    moneyBox: (on) => moneyBox(on ? 0 : null, 0),
+    moveWarp: (map, i, x, y) => { const w = ((window.WORLD_MAPS[map || player.location.map] || {}).warps || [])[i]; if (w) Object.assign(w, { x, y }); },
+    pcSpace: () => player.boxes.reduce((n, box) => n + box.filter((r) => !r).length, 0),
+    itemPocket: (id) => (window.ITEMS[id] ? Bag.pocket(id) : "Items")
   });
   // HGSS's walking Pokémon (ui/follower.js), and Johto's Headbutt trees and
   // Kurt's Apricorn Balls (ui/johto-field.js).
@@ -10704,6 +10745,18 @@
     johtoState: () => johto.state(), takeItem: (id, n) => Player.removeItem(player, id, n)
   });
 
+  // An in-game trade's Pokémon (JOHTO_SCRIPTS.trades, HGSS's NPCTrade): its
+  // nickname, trainer, IVs, nature, ability, gender and held item, never shiny.
+  function johtoTradeMon(t, level) {
+    const r = Party.create(t.gives, level, { nickname: t.nickname, shiny: false });
+    Object.assign(r, { ivs: Object.assign({}, t.ivs), nature: t.nature, gender: t.gender, personality: t.personality, ot: { name: t.ot.name, id: t.ot.id },
+      met: { level, map: player.location.map, traded: true } });
+    const dex = window.DEX[t.gives];
+    if (t.ability && (dex.abilities.includes(t.ability) || dex.hiddenAbility === t.ability)) r.ability = t.ability;
+    if (t.item && window.ITEMS[t.item]) r.item = t.item;
+    r.hp = Party.maxHp(r);
+    return r;
+  }
   // Prof. Elm's three Pokémon (HGSS's ChooseStarter): each one's picture, and
   // "Will you take it?", until you choose. It joins your party (or the PC);
   // returns where it is in the party, or -1.
