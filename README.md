@@ -553,8 +553,7 @@ One Island: its houses, Kindle Road (its swimmers, fishermen, Crush Girls,
 Black Belts, a camper and picnicker, Crush Kin Mik & Kia (a double battle),
 Rock Smash rocks, items and wild Pokémon on land and water) and the Ember Spa,
 whose hot spring heals your Pokémon (you and the Pokémon following you sit in
-it up to the waist; in tall grass, anywhere, FireRed's grass sprite is drawn over
-the feet of whoever stands in it, rustling as they step in) and whose old man gives you HM08 Rock Smash
+it up to the waist) and whose old man gives you HM08 Rock Smash
 (FireRed's HM06); Treasure Beach and its hidden items; Mt. Ember (its Pokémon
 Rangers and Crush Girl, the Explosion tutor, Strength boulders and Rock Smash
 rocks, the summit paths up to Moltres, a wild Lv. 50 Moltres as Articuno and
@@ -1108,7 +1107,9 @@ too. Rules follow Gen 3: collision and elevation per block, solid doors you walk
 into, door mats you walk out through, stairs (as FireRed's: step onto the
 bottom step, then press toward the stairs to take them; you arrive on the
 other floor's stairs facing away from them), ledges you can jump down,
-connected maps you walk straight into, and tall grass encounters at the map's
+connected maps you walk straight into, tall grass you walk in, not on
+(FireRed's FLDEFF_TALL_GRASS: its sprite over the feet of whoever stands in
+it, you, your Pokémon or anyone else, rustling as they step in), and tall grass encounters at the map's
 rate (Random() % 2880 < rate × 16) using the 20/20/10/10/10/10/5/5/4/4/1/1
 encounter slots. Wild Pokémon come from both versions: where LeafGreen's table
 has a different Pokémon in a slot (Sandshrew for FireRed's Ekans on Route 4),
