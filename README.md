@@ -58,7 +58,7 @@ Pokémon in them, and under one the hand is holding), "which BOX?" popup, box
 scrolling and release. A Pokémon put in a box (or sent there when your party
 is full) is fully healed, as from Gen 4 on. Your own PC is item storage: Withdraw item on FireRed's
 item list, Deposit item from the Bag. There's
-also a move tutor who teaches Dream Eater (₽1,000 a time, as often as you like: every move tutor in the game does), a school and the Nickname house.
+also a move tutor who teaches Dream Eater (₽10,000 a time, as often as you like: every move tutor in the game does), a school and the Nickname house.
 Viridian's Gym is locked ("Viridian Gym's doors are locked…") until you have
 the Cascade to the Volcano Badges, as in FireRed (see below).
 
@@ -317,7 +317,7 @@ trainers and items, Route 11 with its ten trainers and its gate (on to Route
 east side, and Route 10 east of Route 9: its trainers, its Pokémon Center (Prof.
 Oak's aide gives the Everstone for twenty kinds caught; Fly can land outside
 it), and Rock Tunnel (1F and B1F, dark without Flash, with its fifteen trainers,
-items, Rock Smash rocks and the Rock Slide tutor, ₽1,000 a time as often as you like; its floors are numbered in the area name popup), and Lavender Town: its
+items, Rock Smash rocks and the Rock Slide tutor, ₽10,000 a time as often as you like; its floors are numbered in the area name popup), and Lavender Town: its
 Pokémon Center, Poké Mart (Super Repels and Revives), the Name Rater (renames
 a Pokémon you caught yourself; one you traded for keeps its name), Cubone's
 house and the Volunteer Pokémon House (Mr. Fuji is away until Pokémon Tower),
@@ -451,7 +451,7 @@ you left behind, Lv. 50), and
 Sabrina's Gym, a maze of warp pads you spin away on (her Alakazam holds its
 Alakazite and Mega Evolves; the Marsh Badge and TM04 Calm Mind). Silph Co., 1F to 11F: its Rockets and scientists, its items, the
 warp pads between floors and rooms, the elevator, and locked doors that the Card
-Key from 5F opens for good; the Thunder Wave tutor on 2F (₽1,000 a time, as often as you like), a nap on 9F, Gary on 7F
+Key from 5F opens for good; the Thunder Wave tutor on 2F (₽10,000 a time, as often as you like), a nap on 9F, Gary on 7F
 (Pidgeot, Growlithe, a Gyarados holding its Gyaradosite, which Mega
 Evolves, Exeggutor, Umbreon and Alakazam; Lv. 35-40) and the Silph worker there who gives
 you a Lapras, Lv. 25; and Giovanni in the boardroom on 11F, where Red comes down
@@ -699,10 +699,20 @@ Strength puzzle: push a boulder onto a floor switch and that floor's rock
 barrier crumbles (FireRed's setmetatile, as patches); the boulders go back
 where they were when you leave a floor, the barriers stay down until you pass
 through Route 23 again, and 3F's boulder drops through a hole to 2F
-(`game/league-road.js`). Coming out of Victory Road, Gary comes down from the
-Indigo Plateau to meet you: his Silph Co. team at about level 50, Pidgeot,
+(`game/league-road.js`). Coming out of Victory Road (a step out of the cave's
+mouth first), Gary comes down from the Indigo Plateau to meet you: his Silph Co. team at about level 50, Pidgeot,
 Arcanine (his Growlithe's evolved), Gyarados (Mega, with its Gyaradosite),
-Exeggutor, Alakazam and Umbreon (53, his ace). Out the far side and up Route 23 is the Indigo
+Exeggutor, Alakazam and Umbreon (53, his ace). **Gym Leader rematches**
+(this game's own): once you're the Champion, each of Kanto's Gym Leaders
+battles you again in their Gym, once a day of the game's clock (lose, and
+they'll take you on again that day), with stronger teams: HeartGold and
+SoulSilver's rematch teams for Brock, Misty, Lt. Surge, Erika, Sabrina and
+Blaine (Lv. 52 to 62), Koga's from HGSS's Elite Four rematch (Lv. 60 to 64,
+his Mega Beedrill his ace), and Giovanni, who comes back to his Gym for it,
+with Dugtrio, Nidoqueen, Nidoking, Hippowdon, Rhyperior and Mega Kangaskhan
+(Lv. 58 to 63). Each one's ace Terastallizes as in your first battle (Brock's
+Onix into a Dragon type, Misty's Starmie a Psychic, ...), and Sabrina's
+Alakazam and Blaine's Houndoom Mega Evolve again. Out the far side and up Route 23 is the Indigo
 Plateau: its Pokémon Center (a respawn point and Fly spot, its Mart, the
 nurse); the guard at the Elite Four's door wishes you luck (once you're
 Champion, FireRed's door check: she stands in the doorway, "Lorelei of the
@@ -1115,7 +1125,7 @@ that beats yours and Pikachu), the League gate guard, Pewter's Gym guide
 and Museum guide walking you over, the Museum's ₽50 ticket, the Old Amber (and, in its room, this game's own fossil doctor, who revives fossils as Cinnabar's does: one left with either is ready from either once you've left and come back),
 the Seismic Toss tutor, Brock (Zubat, Geodude, Vulpix and Onix) with the Boulder Badge and TM39, Leaf waiting outside the Gym
 afterwards (she waits a few steps from the door, sees you and walks over) for a battle (Butterfree, which Terastallizes into a pure Flying type, her starter and a Jigglypuff; beat her and she gives you TM54 False Swipe), the Mega Punch and Mega Kick tutors (who teach
-again and again, for ₽1,000 each time), the
+again and again, for ₽10,000 each time), the
 Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils, Jessie & James
 climbing down the last ladder in Mt. Moon as in Yellow (a double battle; they're back,
 as in Yellow and each time a double battle, on Rocket Hideout B4F on the way to Giovanni

@@ -2679,7 +2679,7 @@
       // Giovanni in Viridian Gym, until he's gone after telling you Team
       // Rocket's finished; then the Rockets left around Kanto are gone too
       // (FLAG_HIDE_MISC_KANTO_ROCKETS, set on beating him).
-      case "FLAG_HIDE_VIRIDIAN_GIOVANNI": return !f.giovanniLeft;
+      case "FLAG_HIDE_VIRIDIAN_GIOVANNI": return !f.giovanniLeft || !!f.gameClear;   // (back for rematches once you're Champion)
       case "FLAG_HIDE_MISC_KANTO_ROCKETS": return !f.TRAINER_LEADER_GIOVANNI;
       // Victory Road: the boulder on 3F until it drops through the hole, and
       // then the one it becomes on 2F (Route23_OnTransition puts them back).
@@ -2827,6 +2827,8 @@
     // (Johto's Pokémon Centers' nurses heal as Kanto's do.)
     if (/_PokemonCenter_1F_EventScript_Nurse$/.test(script || "") && (window.WORLD_MAPS[ev.map] || {}).pokemonCenter) { await nurse(ev.map, ev.person); return; }
 
+    // (Kanto's Gym Leaders' rematches, once you're Champion: leaderRematch.)
+    if (KANTO_REMATCH[script] && await leaderRematch(KANTO_REMATCH[script])) return;
     if (script === "PewterCity_Gym_EventScript_Brock") { await brock(ev.person); return; }
     if (script === "CeruleanCity_Gym_EventScript_Misty") { await misty(ev.person); return; }
     if (script === "VermilionCity_Gym_EventScript_LtSurge") { await ltSurge(ev.person); return; }
@@ -4899,7 +4901,7 @@
   }
 
   // What the move tutors charge each time they teach.
-  const TUTOR_PRICE = 1000;
+  const TUTOR_PRICE = 10000;
 
   // Lavender Town's Name Rater (LavenderTown_House2_EventScript_NameRater):
   // renames a Pokémon you caught yourself; one from a trade keeps its name.
@@ -7760,6 +7762,88 @@
     music((window.WORLD_MAPS[player.location.map] || {}).music);
   }
 
+  // ---------- Kanto's Gym Leaders' rematches ----------
+  //
+  // This game's own: once you're the Champion (and each has given you their
+  // TM), Kanto's Gym Leaders battle you again in their Gyms, once a day (the
+  // game's clock: Player.gameTime), with stronger teams: HeartGold and
+  // SoulSilver's rematch teams where they have them (TRAINER_LEADER_*_2:
+  // Brock, Misty, Lt. Surge, Erika, Sabrina, Blaine), Koga's from HGSS's
+  // Elite Four rematch, and Giovanni's this game's own, who comes back to his
+  // Gym for it. Each one's ace Terastallizes as in your first battle, and
+  // Koga's Beedrill, Sabrina's Alakazam, Blaine's Houndoom and Giovanni's
+  // Kangaskhan Mega Evolve again. Lose, and they'll take you on again today.
+  const KANTO_REMATCH = {
+    PewterCity_Gym_EventScript_Brock: { id: "TRAINER_LEADER_BROCK", tm: "gotTM39", name: "Brock", pic: "leader_brock",
+      team: () => leaderTeam("HGSS_TRAINER_LEADER_BROCK_BROCK_2", "Onix", { teraType: "Dragon" }),
+      intro: ["Brock: You're the Champion now?", "My rock-hard will is stronger than\never. Let's see if you can crack it!"],
+      defeat: ["Brock: Your strength is solid as a\nrock. Come back anytime!"] },
+    CeruleanCity_Gym_EventScript_Misty: { id: "TRAINER_LEADER_MISTY", tm: "gotTM03", name: "Misty", pic: "leader_misty",
+      team: () => leaderTeam("HGSS_TRAINER_LEADER_MISTY_MISTY_2", "Starmie", { teraType: "Psychic" }),
+      intro: ["Misty: The Champion, back at my Gym!", "My water Pokémon have gotten tougher.\nReady to get soaked?"],
+      defeat: ["Misty: Wow… You're still way too\nstrong. Come by again tomorrow!"] },
+    VermilionCity_Gym_EventScript_LtSurge: { id: "TRAINER_LEADER_LT_SURGE", tm: "gotTM34", name: "Lt. Surge", pic: "leader_lt_surge",
+      team: () => leaderTeam("HGSS_TRAINER_LEADER_LT_SURGE_LT__SURGE_2", "Raichu", { teraType: "Water" }),
+      intro: ["Lt. Surge: Hey, kid! The Champion!", "My electric soldiers have been drilling\nday and night! Let's battle!"],
+      defeat: ["Lt. Surge: Whoa! You're the real deal,\nkid! Come back for another round!"] },
+    CeladonCity_Gym_EventScript_Erika: { id: "TRAINER_LEADER_ERIKA", tm: "gotTM19", name: "Erika", pic: "leader_erika",
+      team: () => leaderTeam("HGSS_TRAINER_LEADER_ERIKA_ERIKA_2", "Tangrowth", { teraType: "Poison" }),
+      intro: ["Erika: Oh, the Champion… How lovely.", "My Pokémon have grown, as flowers do.\nShall we battle?"],
+      defeat: ["Erika: Such splendid strength…\nPlease, visit again."] },
+    FuchsiaCity_Gym_EventScript_Koga: { id: "TRAINER_LEADER_KOGA", tm: "gotTM06FromKoga", name: "Koga", pic: "leader_koga",
+      team: () => leaderTeam("HGSS_TRAINER_ELITE_FOUR_KOGA_KOGA_2", null, null, [["Skuntank", "Beedrill", { item: "beedrillite", teraType: "Fire" }]]),
+      intro: ["Koga: Fwahahaha! The Champion!", "My ninja techniques have only grown\nsharper. Witness them!"],
+      defeat: ["Koga: Humph! Your skill is beyond\ndoubt. I shall train harder still."] },
+    SaffronCity_Gym_EventScript_Sabrina: { id: "TRAINER_LEADER_SABRINA", tm: "gotTM04", name: "Sabrina", pic: "leader_sabrina",
+      team: () => leaderTeam("HGSS_TRAINER_LEADER_SABRINA_SABRINA_2", "Alakazam", { item: "alakazite", teraType: "Dark" }),
+      intro: ["Sabrina: I knew you would come.", "I foresaw this battle… but not how\nit ends. Show me."],
+      defeat: ["Sabrina: Even my visions could not\nforesee such power. Come again."] },
+    CinnabarIsland_Gym_EventScript_Blaine: { id: "TRAINER_LEADER_BLAINE", tm: "gotTM38FromBlaine", name: "Blaine", pic: "leader_blaine",
+      team: () => leaderTeam("HGSS_TRAINER_LEADER_BLAINE_BLAINE_2", "Houndoom", { item: "houndoominite", teraType: "Dark", level: 62 }),
+      intro: ["Blaine: Hah! The Champion returns!", "My fire burns hotter than ever!\nCan you stand the heat?"],
+      defeat: ["Blaine: I've burned out! You're\na blazing talent. Come again!"] },
+    ViridianCity_Gym_EventScript_Giovanni: { id: "TRAINER_LEADER_GIOVANNI", tm: "gotTM26FromGiovanni", name: "Giovanni", pic: "leader_giovanni",
+      team: () => [["Dugtrio", 58], ["Nidoqueen", 60], ["Nidoking", 60], ["Hippowdon", 59], ["Rhyperior", 62]]
+        .map(([sp, lv]) => Party.create(sp, lv, { ivs: 31 }))
+        .concat(Object.assign(Party.create("Kangaskhan", 63, { ivs: 31 }), { item: "kangaskhanite", teraType: "Fighting", teraAce: true })),
+      intro: ["Giovanni: So, the Champion comes to me.", "I have trained in solitude since we\nlast met. I will not lose again!"],
+      defeat: ["Giovanni: …Hmph. You are truly\nworthy of the title of Champion."] }
+  };
+  // A rematch team from a trainer's party: its ace (by species) given its
+  // Tera Type and anything else in `ace` (a level: raised to it); `swap`:
+  // [species, for species, extras], the new one the ace.
+  function leaderTeam(id, aceSpecies, ace, swap) {
+    const team = trainerTeam(id);
+    for (const [from, to, extra] of swap || []) {
+      const i = team.findIndex((r) => r.species === from);
+      if (i >= 0) team.push(Object.assign(Party.create(to, team.splice(i, 1)[0].level + 1, { ivs: 31 }), extra || {}, { teraAce: true }));   // (last: the ace)
+    }
+    const r = aceSpecies && team.find((m) => m.species === aceSpecies);
+    if (r) {
+      const { level, ...rest } = ace;
+      if (level) Object.assign(r, Party.create(r.species, level, { ivs: 31 }), { item: r.item });
+      Object.assign(r, rest, { teraAce: true });
+    }
+    return team;
+  }
+  async function leaderRematch(L) {
+    const f = player.flags;
+    if (!f.gameClear || !f[L.id] || !f[L.tm]) return false;
+    const days = f.leaderRematchDay || (f.leaderRematchDay = {}), today = Player.gameTime().today;
+    if (days[L.id] === today) return false;   // (beaten today: their usual words)
+    await say(L.intro);
+    if (!(await confirm(L.name + ": Will you battle me again?"))) { await say([L.name + ": Very well. Come back anytime."]); return true; }
+    if (!canBattle()) return true;
+    const team = L.team(), top = Math.max(...team.map((r) => r.level));
+    const outcome = await battle("trainer", { foe: { name: "Leader " + L.name, team, pic: L.pic, tera: true }, defeatText: L.defeat, terrain: "leader", prize: top * 200 });
+    if (outcome !== "won") return true;
+    days[L.id] = today;
+    show("world");
+    await Overworld.resume();
+    await say([L.name + ": Come back tomorrow, Champion,\nand we'll battle again!"]);
+    return true;
+  }
+
   // ---------- The end of Victory Road: Gary ----------
   //
   // This game's own: coming out of Victory Road onto Route 23 (its 2F's way
@@ -7775,8 +7859,10 @@
   };
   async function victoryRoadRival() {
     const f = player.flags, R = "LOCALID_VICTORY_ROAD_RIVAL";
+    // (A step out of the cave's mouth first, onto the route, where he meets you.)
+    await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
     music("mus_encounter_rival");
-    const from = await walkIn(R, lookOf("blue"), { x: 21, y: 18 }, [{ x: 18, y: 29, face: "up" }, { x: 19, y: 29, face: "left" }], "fast_");
+    const from = await walkIn(R, lookOf("blue"), { x: 21, y: 18 }, [{ x: 19, y: 29, face: "left" }, { x: 18, y: 30, face: "up" }], "fast_");
     if (Overworld.personPosition(R)) await faceEachOther(R);
     await say(["{RIVAL}: Hey! {PLAYER}!", "So you made it through Victory Road\ntoo. Took you long enough!",
       "I've already seen the Pokémon League.\nAnd I'm going to be its Champion!", "But first, I'll show you how much\nstronger I've gotten! Let's go!"]);

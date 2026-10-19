@@ -43,7 +43,7 @@
     ["cinnabar", "CinnabarIsland", 18, 13, "Fire"],
     ["lavender", "PokemonTower_1F", 11, 2, "Ghost"],   // (at the top of Pokémon Tower's ground floor)
     ["silph", "SilphCo_1F", 27, 6, "Steel"],
-    ["indigo", "IndigoPlateau_Exterior", 4, 10, "Dragon"],
+    ["indigo", "IndigoPlateau_Exterior", 14, 12, "Dragon"],   // (in a corner of the plaza, off the way to the door)
     ["berryFarm", "CeladonCity_BerryFarm", 27, 10, "Grass"],
     ["mansion", "PokemonMansion_1F", 3, 30, "Poison"],
     ["mrPsychic", "SaffronCity_MrPsychicsHouse_DenRoom", 5, 4, "Psychic"],

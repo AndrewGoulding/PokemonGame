@@ -593,6 +593,24 @@ for (const share of [false, true]) {
     for (const tier of RaidDens.POOLS[d.type]) for (const sp of tier) assert(DEX[sp] && RaidDens.isKanto(sp), sp + ": a Kanto Pokémon");
   }
   for (const f of ["raid_den", "raid_den_active"]) assert(fs.existsSync(path.join(root, "assets/world/sprites/" + f + ".png")), f);
+  // Every den can be walked up to: from its map's doors and edges, over the ledges the way they jump.
+  for (const d of RaidDens.DENS) {
+    const m = WORLD_MAPS[d.map], W = m.width, H = m.height, MB = World.MB;
+    const open = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !m.collision[y * W + x] && !(x === d.x && y === d.y);
+    const JUMP = { [MB.JUMP_SOUTH]: [0, 1], [MB.JUMP_NORTH]: [0, -1], [MB.JUMP_EAST]: [1, 0], [MB.JUMP_WEST]: [-1, 0] };
+    const seen = new Set(), q = [], add = (x, y) => { if (open(x, y) && !seen.has(x + "," + y)) { seen.add(x + "," + y); q.push([x, y]); } };
+    for (const w of m.warps) for (const [dx, dy] of [[0, 0], [0, 1], [0, -1], [1, 0], [-1, 0]]) add(w.x + dx, w.y + dy);
+    for (let x = 0; x < W; x++) { add(x, 0); add(x, H - 1); }
+    for (let y = 0; y < H; y++) { add(0, y); add(W - 1, y); }
+    while (q.length) {
+      const [x, y] = q.shift();
+      for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+        const j = JUMP[m.behavior[(y + dy) * W + x + dx]];
+        if (j && j[0] === dx && j[1] === dy) add(x + 2 * dx, y + 2 * dy); else add(x + dx, y + dy);
+      }
+    }
+    assert([[0, 1], [0, -1], [1, 0], [-1, 0]].some(([dx, dy]) => seen.has((d.x + dx) + "," + (d.y + dy))), "den " + d.id + " can be walked up to");
+  }
   // Stars: 1 with no Badges, up to 5 with all eight; stronger Lures, more stars.
   assert.deepStrictEqual([0, 1, 2, 3, 4, 5, 6, 7, 8].map(RaidDens.maxStars), [1, 1, 2, 2, 3, 3, 4, 4, 5]);
   // Its turn limit, more for more stars; the battle screen blows you out after it (raidTurns).
@@ -608,6 +626,19 @@ for (const share of [false, true]) {
   assert.deepStrictEqual(["lure", "super-lure", "max-lure"].map((l) => rolls(l, 0)), ["1", "1", "1"]);
   assert.deepStrictEqual(["lure", "super-lure", "max-lure"].map((l) => rolls(l, 4)), ["1,2", "3", "3"]);
   assert.deepStrictEqual(["super-lure", "max-lure"].map((l) => rolls(l, 6)), ["3,4", "4"]);
+  // (Every page script parses: the UI's aren't loaded by these tests otherwise.)
+  for (const f of fs.readdirSync(path.join(root, "ui")).filter((n) => n.endsWith(".js"))) new vm.Script(fs.readFileSync(path.join(root, "ui", f), "utf8"), { filename: "ui/" + f });
+  // (Move tutors: ₽10,000 a time. Gary at Victory Road's end: a step out of the cave first.
+  // Kanto's Gym Leaders' rematches once you're Champion, Giovanni back in his Gym for them.)
+  {
+    const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    assert(/const TUTOR_PRICE = 10000;/.test(gameJs));
+    assert(/LOCALID_VICTORY_ROAD_RIVAL";\n.*\n    await Overworld\.act\(\[\{ who: "player", moves: \["walk_down"\] \}\]\);/.test(gameJs), "a step out first");
+    assert(/FLAG_HIDE_VIRIDIAN_GIOVANNI": return !f\.giovanniLeft \|\| !!f\.gameClear;/.test(gameJs));
+    const ids = [...gameJs.matchAll(/team: \(\) => leaderTeam\("(\w+)"/g)].map((m) => m[1]);
+    assert(ids.length === 7 && ids.every((id) => WORLD_TRAINERS[id] && WORLD_TRAINERS[id].party.length === 6), "the rematch teams: " + ids);
+    assert.strictEqual([...gameJs.matchAll(/_EventScript_\w+: \{ id: "TRAINER_LEADER_/g)].length, 8, "all eight of Kanto's Gym Leaders");
+  }
   // (No Master Ball for a raid's catch; Lostelle's dad stays where he is until your next visit;
   // a shop's long names in the small font; move descriptions wrapped to the summary's window.)
   {
