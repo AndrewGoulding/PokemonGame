@@ -33,7 +33,7 @@
 //   music(song) (null: the map's own again; false: none), se(name), shake(count, opts),
 //   moneyBox(on), moveWarp(map, i, x, y), pcSpace(), itemPocket(id),
 //   bugContest (ui/bug-contest.js: the Bug-Catching Contest's commands),
-//   phoneCall(who, kind, n), registerCard(n), phoneRematch(contact), phoneTrigger(n, on) (ui/pokegear.js),
+//   phoneCall(who, kind, n), registerCard(n), phoneRematch(contact), phoneTrigger(n, on), buenaPassword() (ui/pokegear.js),
 //   coinsBox(on), casinoGame() (ui/voltorb-flip.js),
 //   shake(times, { x, y, delay }), alphPuzzle(n) (the flag to set if put together), alphWall(n), unownCaught(),
 //   safariAction(n), safariChallenge(n), areaCustomizer(), safariStamp() (ui/johto-safari.js),
@@ -161,7 +161,9 @@
         return i >= 0 ? i : 0;
       };
       const mon = (n) => env.player().party[slot(n)];
-      const itemVars = (item, n) => { setVar("VAR_SPECIAL_x8004", getVar(item)); setVar("VAR_SPECIAL_x8005", +getVar(n) || 1); };
+      // (An item a var holds by HGSS's number, as Buena's prizes, or a constant this game's names hadn't: JOHTO_SCRIPTS.itemIds.)
+      const item = (x) => { const v = getVar(x), ids = DATA().itemIds; return ids && ids[v] != null ? ids[v] : v; };
+      const itemVars = (it, n) => { setVar("VAR_SPECIAL_x8004", item(it)); setVar("VAR_SPECIAL_x8005", +getVar(n) || 1); };
       const sound = (n) => (DATA().sounds || {})[getVar(n)] || null;
       const stack = [], pending = [];
       const go = (l) => { if (l in L) pc = L[l]; };
@@ -266,7 +268,7 @@
           case "BufferSpeciesName": case "BufferSpeciesNameIndef": buffers[a[0]] = String(speciesOf(getVar(a[1]))); break;
           case "BufferDeptStoreFloorNo": buffers[a[0]] = (+getVar(a[1]) || 0) + "F"; break;
           case "BufferInt": case "BufferIntEx": buffers[a[0]] = String(+getVar(a[1]) || 0); break;
-          case "BufferItemName": case "BufferItemNameIndef": case "BufferItemNamePlural": buffers[a[0]] = env.itemName(getVar(a[1])); break;
+          case "BufferItemName": case "BufferItemNameIndef": case "BufferItemNamePlural": buffers[a[0]] = env.itemName(item(a[1])); break;
           case "BufferMoveName": buffers[a[0]] = String(getVar(a[1])).replace(/^MOVE_/, "").toLowerCase().replace(/(^|_)(\w)/g, (x, u, c) => (u ? " " : "") + c.toUpperCase()); break;
           // (A message by its number in the map's own bank, from a var.)
           case "NonNPCMsgVar": case "NPCMsgVar": if (z.bank) await say(z.bank + "_" + String(+getVar(a[0]) || 0).padStart(5, "0")); break;
@@ -299,7 +301,7 @@
           case "CallStd":
             if (a[0] === "std_give_item_verbose" || a[0] === "std_obtain_item_verbose") {
               await flush();
-              await env.giveItem(getVar("VAR_SPECIAL_x8004"), +getVar("VAR_SPECIAL_x8005") || 1, a[0] === "std_give_item_verbose" ? "received" : "obtained");
+              await env.giveItem(item("VAR_SPECIAL_x8004"), +getVar("VAR_SPECIAL_x8005") || 1, a[0] === "std_give_item_verbose" ? "received" : "obtained");
             } else if (a[0] === "std_bag_is_full") await env.say(["The Bag is full…"]);
             // (Poké Marts: the standard stock by the Badges you have, or the town's own.)
             else if (a[0] === "std_pokemart") await env.mart(env.martStock(DATA().marts.standard));
@@ -314,7 +316,7 @@
           case "GoToIfNoItemSpace": itemVars(a[0], a[1]); setVar("VAR_SPECIAL_RESULT", 1); break;
           case "GoToIfNoItemSpace2": itemVars(a[0], a[1]); setVar("VAR_SPECIAL_RESULT", 1); cmp = 1; break;
           case "HasSpaceForItem": setVar(a[2], 1); break;
-          case "HasItem": setVar(a[2], env.hasItem(getVar(a[0]), +getVar(a[1]) || 1) ? 1 : 0); break;
+          case "HasItem": setVar(a[2], env.hasItem(item(a[0]), +getVar(a[1]) || 1) ? 1 : 0); break;
           case "TakeItem": setVar(a[2], env.takeItem(getVar(a[0]), +getVar(a[1]) || 1) ? 1 : 0); break;
           case "GetItemQuantity": setVar(a[1], env.itemCount(getVar(a[0]))); break;
           case "CheckBadge": setVar(a[1], env.hasBadge(+getVar(a[0])) ? 1 : 0); break;
@@ -365,6 +367,8 @@
           case "GetPhoneBookRematch": setVar(a[1], env.phoneRematch(+getVar(a[0])) ? 1 : 0); break;
           case "ScrCmd_148": env.phoneTrigger(+a[0], true); break;
           case "UnsetPhoneCallTrigger": env.phoneTrigger(+a[0], false); break;
+          // (Today's password: the first of its kind's three words in the map's bank, and which of them it is.)
+          case "GetBuenasPassword": { const n = env.buenaPassword ? env.buenaPassword() : 0; setVar(a[0], 40 + 3 * Math.floor(n / 3)); setVar(a[1], n % 3); break; }
           // Elevators: the floor chosen is where its doors open (FireRed's dynamic warp), and the floor it's at.
           case "SetDynamicWarp": env.setDynamicWarp(a[0], +getVar(a[2]) || 0, +getVar(a[3]) || 0); break;
           case "GetDynamicWarpFloorNo": {

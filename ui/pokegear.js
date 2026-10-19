@@ -19,19 +19,31 @@
 //                                    // again (true), or nothing to do (false)
 //   gear.encounterRate()          // the radio's March (x2) or Lullaby (x0.5) on wild Pokémon, else 1
 //   gear.radioOn(map)             // the radio still playing there (the map's music waits)
+//   gear.passwordSet()            // GetBuenasPassword: today's password (0-29, a new one each day)
+//   gear.savePrize(prize)         // a battle's prize: what Mom saves of it (taken from it), or 0
+//   await gear.momHome()          // talking to Mom at home: her bank, once she's on the Pokégear (true)
+//   await gear.talkPerson(person, map)  // the deliveryman, a Gym Leader with their number or
+//                                       // at the Fighting Dojo: true if they had something to do
+//   gear.visible(person)          // a Gym Leader at the Dojo: there while waiting for you (or undefined)
 //
 // env: player(), johto() (ui/johto-script.js's), map() (where you are), isGirl(),
 //   sfx(name), music(name), mapMusic(), fanfare(name), townMap(), say(pages),
-//   confirm(question), giveItem(id) (and says so), hasItem(id), beaten(id),
-//   setBeaten(id, on), rematch(person, trainer, intro) -> outcome, badges()
+//   confirm(question), choose(texts, question) (an index, or -1), amount(text, max,
+//   { saved, held }) (Pokegear.amount's box: how much, or 0), giveItem(id, n) (and says
+//   so), hasItem(id), money(), addMoney(n), beaten(id), setBeaten(id, on),
+//   rematch(person, trainer, intro) -> outcome, removePerson(person), badges()
 //   ({ johto, all }), dex() ({ seen, caught }), caught(species), dayCare() (names),
-//   frame() (the Option screen's FRAME), baobaCall(script) (Baoba calling: the
-//   Safari Zone's side of it; his words, or null for the script's).
+//   gameClear() (Johto's League won), frame() (the Option screen's FRAME), baobaCall(script)
+//   (Baoba calling: the Safari Zone's side of it; his words, or null for the script's).
+//
+// There's no real-time clock: the time and the day are the step clock's
+// (Player.gameTime: 100 steps an hour), and calls come by steps walked.
 //
 // What you've got lives in player.flags.johto (HGSS's flags), as `phone`
 // (the numbers you have, as RegisterGearNumber gives them) and `gear`
 // ({ cards, seeking (who wants a rematch), gifts (who has one for you),
-// triggers, called }).
+// triggers, called, mom ({ balance, queue, given }: her savings), password
+// ({ day, set }: today's) }).
 (function () {
   "use strict";
 
@@ -56,10 +68,22 @@
   // friend, Buena and Irwin), and how often (GearPhoneRingManager: once ten
   // minutes have gone by, the next step has an even chance of a call).
   const CALLERS = new Set([T.GENERIC, T.GYM_LEADER, T.FRIEND, T.BUENA, T.IRWIN]);
-  const CALL_MINUTES = 10, CALL_CHANCE = 50;
-  // The call triggers' calls (ov02_02253C84): who, and what they say.
-  // (Baoba's: the new Pokémon in an Area, his next test, the objects: ui/johto-safari.js.)
-  const TRIGGERS = { 0: [1, 13], 1: [1, 7], 2: [15, 85], 3: [9, 93], 6: [24, null], 7: [24, 142], 8: [24, 143], 9: [24, 144], 10: [24, 145] };
+  // (HGSS's ten minutes, here in steps: about an hour and a half on the step clock.)
+  const CALL_STEPS = 150, CALL_CHANCE = 50;
+  // The call triggers' calls (ov02_02253C84): who, and what they say (12: Mom's, she's bought you something).
+  const TRIGGERS = { 0: [1, 13], 1: [1, 7], 2: [15, 85], 3: [9, 93], 12: [0, 27],
+    // (Baoba's: the new Pokémon in an Area, his next test, the objects: ui/johto-safari.js.)
+    6: [24, null], 7: [24, 142], 8: [24, 143], 9: [24, 144], 10: [24, 145] };
+  // Mom (src/mom_gift.c, save_pokegear.c): her savings' cap, and how many
+  // things she can have waiting for you with the deliveryman.
+  const MOM_MAX = 999999, MOM_QUEUE = 5, MOM_STORY = "story";
+  // The Gym Leaders this game's Gyms have (FireRed's in Kanto, by their
+  // scripts; HGSS's in Johto, by their sprite there), and how many can wait
+  // at the Dojo at once (isDojoFull's five).
+  const KANTO_LEADERS = { BROCK: "PewterCity_Gym_EventScript_Brock", MISTY: "CeruleanCity_Gym_EventScript_Misty", LT__SURGE: "VermilionCity_Gym_EventScript_LtSurge",
+    ERIKA: "CeladonCity_Gym_EventScript_Erika", SABRINA: "SaffronCity_Gym_EventScript_Sabrina", BLAINE: "CinnabarIsland_Gym_EventScript_Blaine" };
+  const DOJO = "SaffronCity_Dojo", DOJO_MAX = 5;
+  const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   // HGSS's Gen 4 Berries (ITEM_CHERI_BERRY on: a gift "berry" is one of the ten) and
   // Balls (ITEM_POKE_BALL's gift: an Ultra, Great or Poké Ball).
   const BERRIES = ["cheri-berry", "chesto-berry", "pecha-berry", "rawst-berry", "aspear-berry", "leppa-berry", "oran-berry", "persim-berry", "lum-berry", "sitrus-berry"];
@@ -74,7 +98,8 @@
       s.phone = s.phone || [];
       return s.gear || (s.gear = { cards: [], seeking: {}, gifts: {}, triggers: {}, called: {} });
     };
-    const numbers = () => { state(); return J().state().phone; };
+    // (Mom's number is in from the start: HGSS's Pokégear has it.)
+    const numbers = () => { state(); const n = J().state().phone; if (!n.includes(0) && has()) n.unshift(0); return n; };
     const registered = (i) => numbers().includes(i);
     const register = (i) => { if (!registered(i)) numbers().push(i); };
     const has = () => J().flag("FLAG_GOT_POKEGEAR");
@@ -98,9 +123,15 @@
       return sec ? { sec, name: (JT && JT.names[sec]) || (KT && KT.names && KT.names[sec]) || "" } : { sec: null, name: "" };
     }
     const inJohto = () => (window.WORLD_MAPS[env.map()] || {}).region === "johto";
-    // HGSS's times of day for calls and the wild: morning 4-10, day 10-20, night 20-4.
-    const timeOfDay = () => { const h = new Date().getHours(); return h >= 4 && h < 10 ? 0 : h >= 10 && h < 20 ? 1 : 2; };
-    const weekday = () => new Date().getDay();
+    // The step clock (Player.gameTime), and HGSS's times of day for calls:
+    // morning 4-10, day 10-20, night 20-4.
+    function clock() {
+      if (window.Player && window.Player.gameTime) return window.Player.gameTime(env.player());
+      const steps = env.player().clockSteps != null ? env.player().clockSteps : 1000, day = Math.floor(steps / 2400), hour = Math.floor((steps % 2400) / 100);
+      return { steps, day, weekday: (day + 1) % 7, hour, minute: Math.floor((steps % 100) * 0.6), timeOfDay: hour >= 4 && hour < 10 ? "morning" : hour >= 10 && hour < 20 ? "day" : "night", today: "day" + day };
+    }
+    const timeOfDay = () => ({ morning: 0, day: 1, night: 2 })[clock().timeOfDay];
+    const weekday = () => clock().weekday;
     const takeover = () => { const v = +J().getVar("VAR_SCENE_ROCKET_TAKEOVER"); return v >= 2 && v <= 4; };
     const afterRadioTower = () => J().flag("FLAG_BEAT_RADIO_TOWER_ROCKETS");
     const isHere = (c) => !!c.map && hgssMap(env.map()) === c.map;
@@ -216,12 +247,8 @@
           if (incoming) return said(i, 15 + 2 * tod + girl(), 21 + rnd(9));
           return local ? scripted(i, 98, false, 0) : said(i, 3 + 2 * tod + girl(), 10 + rnd(3));
         }
-        case T.GYM_LEADER: {
-          if (incoming) return said(i, 10, 12 + rnd(3));
-          if (local) return said(i, 1);
-          // (Their rematches are at the Fighting Dojo, which this game's Saffron hasn't: not today.)
-          return said(i, 2, env.badges().all >= 16 ? 4 : 3);
-        }
+        case T.MOM: return mom(incoming, script);
+        case T.GYM_LEADER: return leaderCall(i, incoming);
         case T.BAOBA: {
           // (His calls change the Safari Zone, and say which Areas have new Pokémon: env.baobaCall.)
           const words = incoming && env.baobaCall ? env.baobaCall(script) : null;
@@ -234,6 +261,56 @@
         }
         default: return c.local ? scripted(i, c.local, false, 0) : said(i, 0);
       }
+    }
+
+    // Mom (PhoneCall_GetScriptId_Mother, GearPhoneCall_Mother): at home, how
+    // strange you sound on the phone; before you've told the officer your
+    // rival's name and talked to her, Elm's errand; else what she says about
+    // where you are (by HGSS's map: Kanto's for this game's Kanto), then, unless
+    // she's things waiting for you with the deliveryman, your savings: keep
+    // saving, or start? Her own call (the story's, PhoneCall 0 on Route 30:
+    // should she save your money?) and her call that she's bought you something.
+    // (Her home is this game's: Pallet Town's.)
+    const atHome = () => /^PalletTown_PlayersHouse_/.test(env.map());
+    function mom(incoming, script) {
+      const c = P().contacts[0], b = Object.assign(buffers(0), { 10: momState().balance }), msg = (n) => fill(c.msgs[n], b);
+      const askSaving = async (pages) => {
+        const yes = await ask(pages);
+        J().setFlag("FLAG_SYS_MOMS_SAVINGS", yes);
+        await talk(msg(yes ? 25 : 26));
+      };
+      if (script === MOM_STORY) return async () => { J().setFlag("FLAG_TALKED_TO_MOM_AFTER_NAMING_RIVAL", true); await askSaving(msg(22)); };
+      if (atHome()) return scripted(0, 23, false, 0);
+      if (incoming) return scripted(0, script != null ? script : 27, true, 0);
+      if (!J().flag("FLAG_GAVE_RIVAL_NAME_TO_OFFICER")) return scripted(0, 25, false, 0);
+      if (!J().flag("FLAG_TALKED_TO_MOM_AFTER_NAMING_RIVAL")) return scripted(0, 26, false, 0);
+      return async () => {
+        const at = hgssMap(env.map()), param = at && P().momCall[at] != null ? P().momCall[at] : 12;
+        await talk(msg(7 + param));
+        if (momState().queue.length >= MOM_QUEUE) { await talk(msg(21)); return; }
+        const on = J().flag("FLAG_SYS_MOMS_SAVINGS"), saved = momState().balance;
+        await askSaving(msg(on ? (saved ? 23 : 27) : (saved ? 24 : 28)));
+      };
+    }
+    // A Gym Leader (GearPhoneCall_GymLeader_Outgoing): at the Dojo, they're
+    // right here; until you've all sixteen Badges, not yet; waiting for you
+    // already; not their day and time (the phone book's), not now; else a
+    // rematch? Yes, and they'll be at the Fighting Dojo (unless five are
+    // already). Calling you: hello, then they're waiting, or their chatter.
+    function leaderCall(i, incoming) {
+      const c = P().contacts[i], g = state();
+      if (incoming) return said(i, 10, g.seeking[i] ? 11 : 12 + rnd(3));
+      if (env.map() === DOJO) return said(i, 1);
+      return async () => {
+        await talk(said(i, 2));
+        if (env.badges().all < 16) return talk(said(i, 3));
+        if (g.seeking[i]) return talk(said(i, 9));
+        if (weekday() !== c.day || timeOfDay() !== c.time) return talk(said(i, 4));
+        if (!(await ask(said(i, 5)))) return talk(said(i, 7));
+        if (Object.keys(P().leaders).filter((k) => g.seeking[k]).length >= DOJO_MAX) return talk(said(i, 8));
+        g.seeking[i] = true;
+        await talk(said(i, 6));
+      };
     }
 
     // ---------- The screen ----------
@@ -270,8 +347,8 @@
         s.text(CARDS[n], x + 6, 2, on ? DARK : WHITE, on ? LIGHT : GOLD_DARK);
         x += w + 3;
       }
-      const d = new Date(), clock = DAYS[d.getDay()] + " " + d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0");
-      s.text(clock, W - 6 - s.textWidth(clock), 2, WHITE, GOLD_DARK);
+      const t = clock(), time = DAYS[t.weekday] + " " + t.hour + ":" + String(t.minute).padStart(2, "0");
+      s.text(time, W - 6 - s.textWidth(time), 2, WHITE, GOLD_DARK);
       // The card's window (your frame), and the message box under it.
       s.frame(frame, fp, 1, 3, 28, 10);
       s.fill(8, 24, 224, 80, WHITE);
@@ -284,6 +361,12 @@
       const lines = String(ui.msg != null ? ui.msg : help()).split("\n").slice(0, 2);
       lines.forEach((l, i) => s.text(l, 12, 122 + 16 * i, DARK, LIGHT));
       if (ui.more) s.text("▼", 222, 138, RED, LIGHT, "small");
+      // (A question's YES and NO, beside the message box.)
+      if (ui.choice != null) {
+        s.frame("std", std, 23, 10, 5, 4);
+        s.fill(184, 80, 40, 32, WHITE);
+        ["YES", "NO"].forEach((t, k) => { s.text(t, 198, 82 + 16 * k, DARK, LIGHT); if (ui.choice === k) s.text("▶", 187, 82 + 16 * k, DARK, LIGHT); });
+      }
       out.clearRect(0, 0, W * 2, H * 2);
       out.drawImage(s.canvas(), 0, 0, W * 2, H * 2);
       // (The Map card: the region's map, small, and where you are on it.)
@@ -394,18 +477,38 @@
       return line ? out.concat(line) : out;
     }
     const fits = (lines) => { const s = GbaMenus.Surface(); return lines.every((l) => s.textWidth(l) <= MAX_WIDTH); };
-    async function talk(pages) {
+    const chunked = (pages) => {
       const chunks = [];
       for (const p of pages) {
         let ls = p.split("\n");
         if (!fits(ls)) ls = wrap(ls.join(" "));
         for (let k = 0; k < ls.length; k += 2) chunks.push(ls.slice(k, k + 2).join("\n"));
       }
+      return chunks;
+    };
+    async function talk(pages) {
+      const chunks = chunked(pages);
       for (let k = 0; k < chunks.length; k++) {
         ui.msg = chunks[k]; ui.more = k < chunks.length - 1; paint();
         await press(["a", "b"]);
       }
       ui.more = false;
+    }
+    // A question on the line (PhoneCall_TouchscreenListMenu's Yes and No):
+    // its last part stays up with YES and NO beside it; B is No.
+    async function ask(pages) {
+      const chunks = chunked(pages);
+      await talk(chunks.slice(0, -1));
+      ui.msg = chunks[chunks.length - 1] || ""; ui.choice = 0; paint();
+      const yes = await GbaMenus.keys((k) => {
+        if (k === "up" || k === "down") { ui.choice = k === "up" ? 0 : 1; env.sfx("se_select"); paint(); return undefined; }
+        if (k === "a") return ui.choice === 0;
+        if (k === "b") return false;
+        return undefined;
+      });
+      env.sfx("se_select");
+      ui.choice = null;
+      return yes;
     }
 
     // ---------- A call ----------
@@ -425,7 +528,8 @@
       } else {
         for (let k = 0; k < 3; k++) { ui.msg = incoming ? "" : R.ringing[k]; paint(); env.sfx(incoming ? "se_ding_dong" : "se_select"); await sleep(incoming ? 700 : 500); }
         ui.ringing = false;
-        await talk(whatTheySay(i, incoming, script));
+        const lines = whatTheySay(i, incoming, script);
+        if (typeof lines === "function") await lines(); else await talk(lines);
         for (const t of R.click) { ui.msg = t; paint(); await sleep(250); }
         env.sfx("se_click");
         await sleep(300);
@@ -439,23 +543,23 @@
     // A script's call (PhoneCall who, 2, n): Elm's story calls, Oak's and Baoba's.
     async function call(who, kind, n) {
       if (!P()) return;
-      if (who === 0) { J().setFlag("FLAG_TALKED_TO_MOM_AFTER_NAMING_RIVAL", true); return; }   // (Mom's: there's no Mom in this game's Johto)
-      const script = who === 1 ? P().elmCalls[n] : who === 2 ? P().oakCall : who === 24 ? P().baobaCall : null;
+      const script = who === 0 ? MOM_STORY : who === 1 ? P().elmCalls[n] : who === 2 ? P().oakCall : who === 24 ? P().baobaCall : null;
       if (script == null) return;
       await phone(who, true, script);
     }
 
     // ---------- Calls while you walk ----------
-    let since = Date.now(), pending = null;
+    let walked = 0, pending = null;
     const trigger = (n, on) => { const t = state().triggers; if (on) t[n] = true; else delete t[n]; };
     function step() {
-      if (!P() || !has() || pending != null || Date.now() - since < CALL_MINUTES * 60000) return null;
+      if (P() && has()) syncDeliveryman();
+      if (!P() || !has() || pending != null || ++walked < CALL_STEPS) return null;
       const map = hgssMap(env.map());
       if (map && P().noCalls.includes(map)) return null;
       // (A call trigger first: Elm's when the Egg hatches, and the like; not from your own map.)
       const due = Object.keys(state().triggers).map(Number).find((n) => TRIGGERS[n] && !isHere(P().contacts[TRIGGERS[n][0]]));
       if (due != null) { pending = { who: TRIGGERS[due][0], script: TRIGGERS[due][1], trigger: due }; return { type: "phone" }; }
-      since = Date.now();
+      walked = 0;
       if (rnd(100) > CALL_CHANCE) return null;
       const who = caller();
       if (who == null) return null;
@@ -471,7 +575,7 @@
       if (!inGroup.length) return null;
       const g = state(), done = g.called[group] || (g.called[group] = []);
       if (inGroup.every((i) => done.includes(i))) done.length = 0;
-      const h = new Date().getHours();
+      const h = clock().hour;
       const can = inGroup.filter((i) => !isHere(P().contacts[i]) && !done.includes(i) && !(P().contacts[i].type === T.BUENA && (h % 3 === 2 || takeover())));
       if (!can.length) return null;
       const who = can[rnd(can.length)];
@@ -480,7 +584,7 @@
     }
     async function ring() {
       const p = pending;
-      pending = null; since = Date.now();
+      pending = null; walked = 0;
       if (!p) return;
       if (p.trigger != null) trigger(p.trigger, false);
       await phone(p.who, true, p.script != null ? p.script : null);
@@ -562,18 +666,38 @@
         // (Sunday's GB Sounds and the National Dex's Hoenn and Sinnoh sounds: the March or Lullaby here.)
         lines: () => R().music[2].concat(R().music[weekday() === 0 ? 12 : 3 + weekday()]) },
       talk: { title: () => R().talk[0], host: () => R().talk[1], song: () => "gs_ohkido_rabo", lines: talkLines },
+      // (Today's password, with a Blue Card: heard, FLAG_DAILY_HEARD_BUENAS_PASSWORD, for Buena at the Radio Tower.)
       buena: { title: () => R().buena[0], host: () => R().buena[1], song: () => "gs_aikotoba",
-        lines: () => R().buena[2].concat(fill(env.hasItem("blue-card") ? R().buena[4] : R().buena[5], { 0: password() }), R().buena[3]) },
+        lines: () => {
+          const card = env.hasItem("blue-card");
+          if (card) J().setFlag("FLAG_DAILY_HEARD_BUENAS_PASSWORD", true);
+          return R().buena[2].concat(fill(card ? R().buena[4] : R().buena[5], { 0: password() }), R().buena[3]);
+        } },
+      // (The Variety Channel's other hours: the Search Party and the Silver Drama, just their openings here.)
+      search: { title: () => R().search[0], host: () => R().search[1], song: () => null, lines: () => R().search[2] },
+      drama: { title: () => R().drama[0], host: () => R().drama[1], song: () => null, lines: () => R().drama[2] },
       rocket: { title: () => R().rocket[0], host: () => R().rocket[1], song: () => "gs_senkyo_r", lines: () => R().rocket[2] },
       unown: { title: () => R().unown[0], host: () => "", song: () => "gs_radio_unknown", lines: () => [] },
       signal: { title: () => R().signal[0], host: () => "", song: () => "gs_kaidenpa", lines: () => [] },
       flute: { title: () => R().flute[0], host: () => "", song: () => "gs_hue", lines: () => [] }
     };
-    // (Buena's password today: one of her thirty, a new one each day.)
-    function password() {
-      const d = new Date(), day = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
-      return R().passwords[(day * 7 + 3) % R().passwords.length];
+    // Buena's password today (Save_VarsFlags_UpdateBuenasPasswordSet): one of
+    // her thirty (msg_0066_D23R0102's, ten kinds of three), a new one at random
+    // each day on the step clock, never the same as the day before.
+    function passwordSet() {
+      const g = state(), today = clock().today;
+      if (!g.password || g.password.day !== today) {
+        let n = rnd(30);
+        if (g.password && n === g.password.set) n = (n + 1) % 30;
+        g.password = { day: today, set: n };
+      }
+      return g.password.set;
     }
+    const password = () => R().passwords[passwordSet()];
+    // (The Variety Channel, RadioShow_TranslateStationID's station 3: the hour
+    // as the step clock has it, by threes: the Search Party, the Silver Drama,
+    // then Buena's Password, on air at 2, 5, 8, 11 ... as HGSS has it.)
+    const variety = () => ["search", "drama", "buena"][clock().hour % 3];
     // Pokémon Talk (RadioShow_PokemonTalk): five places in the region with
     // wild Pokémon, one of the Pokémon there (one you haven't caught, mostly),
     // and Mary's two phrases about it.
@@ -603,7 +727,7 @@
       if (!inJohto()) return ["music", "talk", "flute"];
       if (c && R().mahogany.includes(c) && !J().flag("FLAG_ROCKET_HIDEOUT_CLEARED")) return ["signal"];
       if (takeover()) return ["rocket"];
-      return ["music", "talk", "buena"];
+      return ["music", "talk", variety()];
     }
     function tune(k) {
       clearInterval(radio.timer);
@@ -612,7 +736,7 @@
       const show = SHOWS[k];
       const lines = () => [].concat(...show.lines().map((l) => (fits([l]) ? [l] : wrap(l))));
       radio.song = show.song(); radio.map = env.map(); radio.lines = lines(); radio.at = 0;
-      env.music(radio.song);
+      if (radio.song) env.music(radio.song); else env.mapMusic();
       const next = () => {
         if (!radio.lines.length) { if (ui && ui.call == null) { ui.msg = show.title(); paint(); } return; }
         const a = radio.lines[radio.at % radio.lines.length], b2 = radio.lines[(radio.at + 1) % radio.lines.length];
@@ -633,6 +757,152 @@
     function encounterRate() {
       if (!radioOn()) return 1;
       return radio.song === "gs_radio_march" ? 2 : radio.song === "gs_radio_komoriuta" ? 0.5 : 1;
+    }
+
+    // ---------- Mom's savings ----------
+    //
+    // While she's saving (FLAG_SYS_MOMS_SAVINGS: she asks on the phone), a
+    // quarter of each battle's prize goes to her (sub_0205230C), up to
+    // $999,999. As your savings pass each mark of hers she buys you something
+    // with them (MomGift_TryEnqueueGiftOnBalanceChange: HGSS's nine, in turn,
+    // and otherwise a Berry, five of one of seventeen, each time they pass
+    // another $3,000), up to five waiting, and calls to say so; Johto's Poké
+    // Marts' deliveryman has it for you (std_moms_gift_deliveryman). At home
+    // she'll give you some back, or keep more (her bank).
+    const momState = () => { const g = state(); return g.mom || (g.mom = { balance: 0, queue: [], given: [] }); };
+    function savePrize(prize) {
+      const m = momState();
+      if (!J().flag("FLAG_SYS_MOMS_SAVINGS") || m.balance >= MOM_MAX) return 0;
+      let d = Math.floor(prize / 4);
+      if (d <= 0) return 0;
+      if (m.balance + d >= MOM_MAX) d = MOM_MAX - m.balance;
+      const old = m.balance;
+      m.balance += d;
+      if (buyGifts(old)) trigger(12, true);
+      syncDeliveryman();
+      return d;
+    }
+    function buyGifts(old) {
+      const m = momState(), M = P().mom, spend = (n) => { m.balance = Math.max(0, m.balance - n); };
+      if (m.queue.length >= MOM_QUEUE) return false;
+      let bought = 0;
+      for (let i = 0; i < M.gifts.length; i++) {
+        if (m.given.includes(i)) continue;
+        if (m.balance < M.gifts[i][1]) break;
+        m.given.push(i); m.queue.push([M.gifts[i][0], 1]); spend(M.gifts[i][2]); bought++;
+        if (m.queue.length >= MOM_QUEUE) break;
+      }
+      if (bought) return true;
+      if (Math.floor(m.balance / M.berryEvery) <= Math.floor(old / M.berryEvery)) return false;
+      const [berry, n, cost] = M.berries[rnd(M.berries.length)];
+      m.queue.push([berry, n]); spend(cost);
+      return true;
+    }
+    // (The deliveryman's there while she's something waiting for you: HGSS's flag for him.)
+    const syncDeliveryman = () => { const hide = !momState().queue.length; if (J().flag("FLAG_HIDE_MOM_GIFT_DELIVERYMAN") !== hide) J().setFlag("FLAG_HIDE_MOM_GIFT_DELIVERYMAN", hide); };
+    // The deliveryman (scr_seq_0144_002): good morning, day or evening (ScrCmd_379), a package from your mom.
+    async function deliveryman() {
+      const D = P().mom.delivery, b = { 0: env.player().name }, m = momState(), h = clock().hour;
+      if (!m.queue.length) { await env.say(fill(D[30], b)); return; }
+      await env.say(fill(D[h >= 4 && h < 10 ? 27 : h >= 10 && h < 17 ? 28 : 29], b));
+      const [item, n] = m.queue.shift();
+      await env.giveItem(item, n);
+      trigger(12, false);
+      syncDeliveryman();
+      await env.say(fill(D[20], b));
+    }
+    // Mom at home (scr_seq_T20R0201's _0275), once she's on the Pokégear: is
+    // this about your money? WITHDRAW, DEPOSIT MONEY, CHANGE (keep saving, or
+    // not) or EXIT; how much (BankTransaction), and her word on it.
+    async function momHome() {
+      if (!P() || !has()) return false;
+      const H = P().mom.home, b = { 0: env.player().name }, m = momState(), say = (n) => env.say(fill(H[n], b));
+      const q = fill(H[20], b);
+      await env.say(q.slice(0, -1));
+      const k = await env.choose([29, 30, 31, 32].map((n) => H[n][0]), q[q.length - 1].replace(/\s+$/, ""));
+      if (k === 0) {
+        if (env.money() >= MOM_MAX) return say(28).then(() => true);
+        if (!m.balance) return say(22).then(() => true);
+        const n = await env.amount("How much do you want to take?", Math.min(m.balance, MOM_MAX - env.money()), { saved: m.balance, held: env.money() });
+        if (!n) return say(21).then(() => true);
+        m.balance -= n; env.addMoney(n); env.sfx("se_shop");
+        await say(24);
+      } else if (k === 1) {
+        if (m.balance >= MOM_MAX) return say(27).then(() => true);
+        if (!env.money()) return say(26).then(() => true);
+        const n = await env.amount("How much do you want to save?", Math.min(env.money(), MOM_MAX - m.balance), { saved: m.balance, held: env.money() });
+        if (!n) return say(21).then(() => true);
+        m.balance += n; env.addMoney(-n); env.sfx("se_shop");
+        await say(23);
+      } else if (k === 2) {
+        const yes = await env.confirm(fill(H[25], b)[0].replace(/\s+$/, ""));
+        J().setFlag("FLAG_SYS_MOMS_SAVINGS", yes);
+        await say(yes ? 17 : 18);
+      } else await say(21);
+      return true;
+    }
+
+    // ---------- The Gym Leaders ----------
+    //
+    // Once Johto's League is won (FLAG_GAME_CLEAR), each Gym Leader this game
+    // has gives you their number in their own Gym (HGSS has them give it in
+    // places of their own, after the League: their words from there, where
+    // they're their own). Called on their day and time, they'll battle you at
+    // Saffron's Fighting Dojo (scr_seq_T11R0101): they're there, and battle
+    // with their rematch team (TRAINER_LEADER_*_2), until you've won.
+    const leaderOf = (person, map) => {
+      if (!P() || !P().leaders) return -1;
+      if (person.gearLeader != null) return person.gearLeader;
+      const johtoGym = /_Gym$|_GymLeaderRoom$/.test(map || env.map()) && (window.WORLD_MAPS[map || env.map()] || {}).region === "johto";
+      for (const [i, L] of Object.entries(P().leaders)) {
+        const id = P().contacts[i].id;
+        if (KANTO_LEADERS[id] ? person.script === KANTO_LEADERS[id] : johtoGym && person.sprite === L.look.sprite) return +i;
+      }
+      return -1;
+    };
+    // (Their words: their own question for it, else a plain one; Yes, the
+    // jingle and their number; when to call, by the phone book.)
+    function leaderWords(i) {
+      const c = P().contacts[i], n = P().leaders[i].number || {}, nm = c.name, own = (p) => !!p && p[0] && p[0].startsWith(nm + ":");
+      const when = [nm + ": Give me a call on " + WEEKDAYS[c.day] + "\n" + ["mornings", "afternoons", "nights"][c.time] + " for a battle!"];
+      const asks = n.ask || [], k = asks.map((p) => /number/i.test(p)).lastIndexOf(true);
+      const ask = own(asks) && k >= 0 ? [k === 0 ? asks[0] : nm + ": " + asks[k]] : [nm + ": Do you want to exchange\nphone numbers?"];
+      const yesReg = (n.yes || []).some((p) => /registered/.test(p));
+      return { ask, yes: yesReg ? n.yes : n.after || [], after: yesReg && own(n.after) ? n.after : when, no: own(n.no) ? n.no : [nm + ": Oh, that's too bad..."] };
+    }
+    async function leaderNumber(i) {
+      const w = leaderWords(i), b = buffers(i), q = fill(w.ask, b);
+      if (q.length > 1) await env.say(q.slice(0, -1));
+      if (!(await env.confirm(q[q.length - 1].replace(/\s+$/, "")))) { await env.say(fill(w.no, b)); return; }
+      env.fanfare("gs_me_pokegear_regist");
+      await env.say(fill(w.yes.length ? w.yes : P().common.registered, b));
+      register(i);
+      await env.say(fill(w.after, b));
+    }
+    // (At the Dojo: there while waiting for you.)
+    function visible(person) {
+      if (person.gearLeader == null) return undefined;
+      return !!(P() && state().seeking[person.gearLeader] && registered(person.gearLeader));
+    }
+    async function talkPerson(person, map) {
+      if (!P()) return false;
+      if (person.script === "gear:deliveryman") { await deliveryman(); return true; }
+      const i = leaderOf(person, map);
+      if (i < 0) return false;
+      const L = P().leaders[i], g = state();
+      if (person.gearLeader != null) {
+        if (!g.seeking[i]) return true;
+        const outcome = await env.rematch(person, L.trainer, L.intro);
+        if (outcome !== "won") return true;
+        env.setBeaten(L.trainer, true);
+        delete g.seeking[i];
+        await env.say(L.defeat);
+        env.removePerson(person);
+        return true;
+      }
+      if (!env.gameClear() || registered(i)) return false;
+      await leaderNumber(i);
+      return true;
     }
 
     // ---------- The Pokégear ----------
@@ -682,10 +952,52 @@
     }
 
     return { has, open, call, registerCard, rematch, setTrigger: trigger, step, ring, beatTrainer, talkTrainer, encounterRate,
-      registered, contactOf, radioOn, timeOfDay,
+      registered, contactOf, radioOn, timeOfDay, passwordSet, savePrize, momHome, talkPerson, visible, deliveryman, radioStations,
       // (For tests: a call due on the next step; what someone says on a call.)
-      callDue: () => { since = 0; }, callLines: (i, incoming) => whatTheySay(i, !!incoming, null) };
+      callDue: () => { walked = CALL_STEPS; }, callLines: (i, incoming) => whatTheySay(i, !!incoming, null) };
   }
 
-  window.Pokegear = { create };
+  // How much (HGSS's BankTransaction, in FireRed's windows): your savings
+  // and the money you hold at the top right, the amount below, a digit at a
+  // time (up and down change it, left and right go along); A to take it, B
+  // for none. Returns the amount, or 0.
+  async function amount(canvas, opts) {
+    const max = Math.max(0, opts.max | 0), DIGITS = 6, frame = "type" + ((opts.frame || 0) + 1), fp = GM().frames[frame].palette, std = GM().palettes.std2;
+    const cash = (n) => "$" + n.toLocaleString("en-US");
+    let n = Math.min(1, max), at = DIGITS - 1;
+    const draw = () => {
+      const s = GbaMenus.Surface();
+      s.frame(frame, fp, 17, 1, 12, 4);
+      s.fill(136, 8, 96, 32, std[1]);
+      [["SAVED", opts.saved], ["HELD", opts.held]].forEach(([t, v], k) => {
+        s.text(t, 138, 9 + 16 * k, std[2], std[3]);
+        s.text(cash(v | 0), 230 - s.textWidth(cash(v | 0)), 9 + 16 * k, std[2], std[3]);
+      });
+      s.frame(frame, fp, 17, 11, 12, 2);
+      s.fill(136, 88, 96, 16, std[1]);
+      const digits = String(n).padStart(DIGITS, "0"), x0 = 230 - DIGITS * 8;
+      s.text("$", x0 - 10, 89, std[2], std[3]);
+      for (let k = 0; k < DIGITS; k++) s.text(digits[k], x0 + 8 * k + (8 - s.textWidth(digits[k])) / 2, 89, std[2], std[3]);
+      const ax = x0 + 8 * at;
+      for (let r = 0; r < 3; r++) { s.fill(ax + 1 + r, 84 - r, 5 - 2 * r, 1, std[2]); s.fill(ax + 1 + r, 106 + r, 5 - 2 * r, 1, std[2]); }
+      s.show(canvas);
+    };
+    canvas.classList.remove("hidden");
+    draw();
+    const r = await GbaMenus.keys((k) => {
+      const step = Math.pow(10, DIGITS - 1 - at), before = n;
+      if (k === "up") n = n + step > max ? max : n + step;
+      else if (k === "down") n = Math.max(0, n - step);
+      else if (k === "left") at = Math.max(0, at - 1);
+      else if (k === "right") at = Math.min(DIGITS - 1, at + 1);
+      else if (k === "a") return n;
+      else if (k === "b") return 0;
+      if (n !== before || k === "left" || k === "right") draw();
+      return undefined;
+    });
+    canvas.classList.add("hidden");
+    return r;
+  }
+
+  window.Pokegear = { create, amount };
 })();

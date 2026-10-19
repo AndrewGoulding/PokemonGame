@@ -414,6 +414,7 @@
       if (b.sides.p2.pokemon.some((m) => [...(m.expParticipants || [])].some((p) => p.item === "amulet-coin"))) prize *= 2;
       Player.addMoney(player, prize);
       await message("You got " + money(prize) + " for winning!");
+      Player.addMoney(player, -gear.savePrize(prize));   // (a quarter for Mom to save, while she is: ui/pokegear.js)
     }
     // (This game's own: a wild Pokémon you knock out drops what it was holding,
     // and it goes in your Bag.)
@@ -2506,6 +2507,7 @@
     // (Johto's people: hidden while HGSS's flag for them is set, and where
     // the map's own script puts them this visit.)
     if ((person.hgssFlag && johto.flag(person.hgssFlag)) || person.offstage) return false;
+    { const g = gear.visible(person); if (g !== undefined) return g; }   // (a Gym Leader at the Dojo: ui/pokegear.js)
     {
       // (Lyra, or Ethan for a girl: HGSS's friend.)
       const look = person.girlLook && isGirl() ? person.girlLook : null;
@@ -2775,6 +2777,8 @@
     const script = (ev.person || ev.sign || ev.trigger).script;
     const f = player.flags;
 
+    // (Mom's deliveryman, and the Gym Leaders' numbers and Dojo rematches: ui/pokegear.js.)
+    if (ev.person && await gear.talkPerson(ev.person, ev.map)) return;
     // Johto's scripts (ui/johto-script.js), and its Apricorn trees.
     if (/^(enter|arrive):/.test(script)) { const due = johto.frameScript(script.replace(/^\w+:/, "")); if (due) { await runJohto(due, null); return; } }
     // (Ilex Forest's Headbutt tutor: ui/johto-field.js.)
@@ -2914,6 +2918,8 @@
           await say(["Red's Mom: {PLAYER}! Welcome home!\nI saw it on TV!",
             "You're the new Pokémon League\nChampion! I'm so proud of you!"]);
         }
+        // (Once she's on the Pokégear, your savings with her: HGSS's Mom's bank, ui/pokegear.js.)
+        if (await gear.momHome()) return;
         await say("Red's Mom: Oh, {PLAYER}! You look worn out.\nYou and your Pokémon should take a\nquick rest.");
         await outOfCenterHeal();
         await say("Red's Mom: There! You and your Pokémon\nare looking great. Take care now!");
@@ -8019,7 +8025,7 @@
     await sleep(667);
     League.reset(f);
     // (Johto's League won: its rematch teams from now on.)
-    if (f.johtoLeagueDone) { f.johtoLeagueClear = true; delete f.johtoLeagueDone; }
+    if (f.johtoLeagueDone) { f.johtoLeagueClear = true; delete f.johtoLeagueDone; johto.setFlag("FLAG_GAME_CLEAR", true); }   // (HGSS's, for its scripts after the League)
     // (And the Bug-Catching Contest on offer again: once for each time you beat the Elite Four.)
     { const s = johto.state(); s.contestRound = (s.contestRound || 0) + 1; johto.setFlag("FLAG_DAILY_DID_BUG_CONTEST", false); }
     delete f.lastCenter;   // (setrespawn HEAL_LOCATION_PALLET_TOWN)
@@ -10767,7 +10773,7 @@
     kurt: (op) => johtoField.kurt(op), followerIdle: () => Overworld.follower.idle(), followerHide: (on) => Overworld.follower.hide(on),
     // (The Pokégear: ui/pokegear.js.)
     phoneCall: (who, kind, n) => gear.call(who, kind, n), registerCard: (n) => gear.registerCard(n),
-    phoneRematch: (n) => gear.rematch(n), phoneTrigger: (n, on) => gear.setTrigger(n, on),
+    phoneRematch: (n) => gear.rematch(n), phoneTrigger: (n, on) => gear.setTrigger(n, on), buenaPassword: () => gear.passwordSet(),
     // (HGSS's tiers: none with no Badges, then by twos; Johto's Badges here.)
     martStock: (list) => {
       const n = Player.REGION_BADGES.johto.filter((b) => player.badges.includes(b)).length;
@@ -10855,8 +10861,17 @@
     player: () => player, johto: () => johto, map: () => player.location.map, isGirl, sfx, music, fanfare,
     mapMusic: () => music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[player.location.map] || {}).music),
     townMap: () => townMap(), say: (pages) => say(pages), confirm: (q) => confirm(q),
-    giveItem: async (id) => { if (!window.ITEMS[id]) return; Player.addItem(player, id); await sayWithJingle(itemJingle(id), "{PLAYER} received " + article(Bag.name(id)) + "!"); },
+    choose: async (texts, question) => { const i = await multichoice(question || null, 0, 0, texts); Screen.say(""); return i; },
+    amount: async (text, max, o) => { Screen.say(text); clearMenu(); const n = await Pokegear.amount($("#overlay"), Object.assign({ max, frame: GameOptions.get().frame }, o)); Screen.say(""); return n; },
+    giveItem: async (id, n) => {
+      if (!window.ITEMS[id]) return;
+      Player.addItem(player, id, n || 1);
+      const name = Bag.name(id);
+      await sayWithJingle(itemJingle(id), "{PLAYER} received " + (n > 1 ? n + " " + name + (/s$/.test(name) ? "" : "s") : article(name)) + "!");
+    },
     hasItem: (id) => Player.itemCount(player, id) > 0,
+    money: () => player.money, addMoney: (n) => Player.addMoney(player, n), removePerson: (person) => Overworld.removePerson(person),
+    gameClear: () => !!player.flags.johtoLeagueClear || johto.flag("FLAG_GAME_CLEAR"),
     beaten: (id) => !!player.flags[id], setBeaten: (id, on) => { if (on) player.flags[id] = true; else delete player.flags[id]; },
     rematch: async (person, id, intro) => {
       const data = window.WORLD_TRAINERS[id];
