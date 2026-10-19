@@ -703,14 +703,12 @@ through Route 23 again, and 3F's boulder drops through a hole to 2F
 mouth first), Gary comes down from the Indigo Plateau to meet you: his Silph Co. team at about level 50, Pidgeot,
 Arcanine (his Growlithe's evolved), Gyarados (Mega, with its Gyaradosite),
 Exeggutor, Alakazam and Umbreon (53, his ace). **Gym Leader rematches**
-(this game's own): once you're the Champion, each of Kanto's Gym Leaders
-battles you again in their Gym, once a day of the game's clock (lose, and
+(this game's own): once you're the Champion, Kanto's Gym Leaders (but
+Giovanni) battle you again in their Gym, once a day of the game's clock (lose, and
 they'll take you on again that day), with stronger teams: HeartGold and
 SoulSilver's rematch teams for Brock, Misty, Lt. Surge, Erika, Sabrina and
-Blaine (Lv. 52 to 62), Koga's from HGSS's Elite Four rematch (Lv. 60 to 64,
-his Mega Beedrill his ace), and Giovanni, who comes back to his Gym for it,
-with Dugtrio, Nidoqueen, Nidoking, Hippowdon, Rhyperior and Mega Kangaskhan
-(Lv. 58 to 63). Each one's ace Terastallizes as in your first battle (Brock's
+Blaine (Lv. 52 to 62) and Koga's from HGSS's Elite Four rematch (Lv. 60 to 64,
+his Mega Beedrill his ace); not Giovanni. Each one's ace Terastallizes as in your first battle (Brock's
 Onix into a Dragon type, Misty's Starmie a Psychic, ...), and Sabrina's
 Alakazam and Blaine's Houndoom Mega Evolve again. Out the far side and up Route 23 is the Indigo
 Plateau: its Pokémon Center (a respawn point and Fly spot, its Mart, the

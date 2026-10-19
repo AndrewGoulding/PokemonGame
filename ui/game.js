@@ -2679,7 +2679,7 @@
       // Giovanni in Viridian Gym, until he's gone after telling you Team
       // Rocket's finished; then the Rockets left around Kanto are gone too
       // (FLAG_HIDE_MISC_KANTO_ROCKETS, set on beating him).
-      case "FLAG_HIDE_VIRIDIAN_GIOVANNI": return !f.giovanniLeft || !!f.gameClear;   // (back for rematches once you're Champion)
+      case "FLAG_HIDE_VIRIDIAN_GIOVANNI": return !f.giovanniLeft;
       case "FLAG_HIDE_MISC_KANTO_ROCKETS": return !f.TRAINER_LEADER_GIOVANNI;
       // Victory Road: the boulder on 3F until it drops through the hole, and
       // then the one it becomes on 2F (Route23_OnTransition puts them back).
@@ -7768,11 +7768,10 @@
   // TM), Kanto's Gym Leaders battle you again in their Gyms, once a day (the
   // game's clock: Player.gameTime), with stronger teams: HeartGold and
   // SoulSilver's rematch teams where they have them (TRAINER_LEADER_*_2:
-  // Brock, Misty, Lt. Surge, Erika, Sabrina, Blaine), Koga's from HGSS's
-  // Elite Four rematch, and Giovanni's this game's own, who comes back to his
-  // Gym for it. Each one's ace Terastallizes as in your first battle, and
-  // Koga's Beedrill, Sabrina's Alakazam, Blaine's Houndoom and Giovanni's
-  // Kangaskhan Mega Evolve again. Lose, and they'll take you on again today.
+  // Brock, Misty, Lt. Surge, Erika, Sabrina, Blaine) and Koga's from HGSS's
+  // Elite Four rematch (Giovanni's Gym has none). Each one's ace Terastallizes
+  // as in your first battle, and Koga's Beedrill, Sabrina's Alakazam and
+  // Blaine's Houndoom Mega Evolve again. Lose, and they'll take you on again today.
   const KANTO_REMATCH = {
     PewterCity_Gym_EventScript_Brock: { id: "TRAINER_LEADER_BROCK", tm: "gotTM39", name: "Brock", pic: "leader_brock",
       team: () => leaderTeam("HGSS_TRAINER_LEADER_BROCK_BROCK_2", "Onix", { teraType: "Dragon" }),
@@ -7801,13 +7800,7 @@
     CinnabarIsland_Gym_EventScript_Blaine: { id: "TRAINER_LEADER_BLAINE", tm: "gotTM38FromBlaine", name: "Blaine", pic: "leader_blaine",
       team: () => leaderTeam("HGSS_TRAINER_LEADER_BLAINE_BLAINE_2", "Houndoom", { item: "houndoominite", teraType: "Dark", level: 62 }),
       intro: ["Blaine: Hah! The Champion returns!", "My fire burns hotter than ever!\nCan you stand the heat?"],
-      defeat: ["Blaine: I've burned out! You're\na blazing talent. Come again!"] },
-    ViridianCity_Gym_EventScript_Giovanni: { id: "TRAINER_LEADER_GIOVANNI", tm: "gotTM26FromGiovanni", name: "Giovanni", pic: "leader_giovanni",
-      team: () => [["Dugtrio", 58], ["Nidoqueen", 60], ["Nidoking", 60], ["Hippowdon", 59], ["Rhyperior", 62]]
-        .map(([sp, lv]) => Party.create(sp, lv, { ivs: 31 }))
-        .concat(Object.assign(Party.create("Kangaskhan", 63, { ivs: 31 }), { item: "kangaskhanite", teraType: "Fighting", teraAce: true })),
-      intro: ["Giovanni: So, the Champion comes to me.", "I have trained in solitude since we\nlast met. I will not lose again!"],
-      defeat: ["Giovanni: …Hmph. You are truly\nworthy of the title of Champion."] }
+      defeat: ["Blaine: I've burned out! You're\na blazing talent. Come again!"] }
   };
   // A rematch team from a trainer's party: its ace (by species) given its
   // Tera Type and anything else in `ace` (a level: raised to it); `swap`:

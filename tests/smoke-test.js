@@ -629,15 +629,15 @@ for (const share of [false, true]) {
   // (Every page script parses: the UI's aren't loaded by these tests otherwise.)
   for (const f of fs.readdirSync(path.join(root, "ui")).filter((n) => n.endsWith(".js"))) new vm.Script(fs.readFileSync(path.join(root, "ui", f), "utf8"), { filename: "ui/" + f });
   // (Move tutors: ₽10,000 a time. Gary at Victory Road's end: a step out of the cave first.
-  // Kanto's Gym Leaders' rematches once you're Champion, Giovanni back in his Gym for them.)
+  // Kanto's Gym Leaders' rematches once you're Champion, but Giovanni's.)
   {
     const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
     assert(/const TUTOR_PRICE = 10000;/.test(gameJs));
     assert(/LOCALID_VICTORY_ROAD_RIVAL";\n.*\n    await Overworld\.act\(\[\{ who: "player", moves: \["walk_down"\] \}\]\);/.test(gameJs), "a step out first");
-    assert(/FLAG_HIDE_VIRIDIAN_GIOVANNI": return !f\.giovanniLeft \|\| !!f\.gameClear;/.test(gameJs));
+    assert(/FLAG_HIDE_VIRIDIAN_GIOVANNI": return !f\.giovanniLeft;/.test(gameJs) && !/ViridianCity_Gym_EventScript_Giovanni: \{ id:/.test(gameJs), "no rematch for Giovanni");
     const ids = [...gameJs.matchAll(/team: \(\) => leaderTeam\("(\w+)"/g)].map((m) => m[1]);
     assert(ids.length === 7 && ids.every((id) => WORLD_TRAINERS[id] && WORLD_TRAINERS[id].party.length === 6), "the rematch teams: " + ids);
-    assert.strictEqual([...gameJs.matchAll(/_EventScript_\w+: \{ id: "TRAINER_LEADER_/g)].length, 8, "all eight of Kanto's Gym Leaders");
+    assert.strictEqual([...gameJs.matchAll(/_EventScript_\w+: \{ id: "TRAINER_LEADER_/g)].length, 7, "Kanto's Gym Leaders but Giovanni");
   }
   // (No Master Ball for a raid's catch; Lostelle's dad stays where he is until your next visit;
   // a shop's long names in the small font; move descriptions wrapped to the summary's window.)
