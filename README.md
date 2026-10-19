@@ -1995,7 +1995,13 @@ Pokémon for you, some its rare ones, some none), and the Pokémon by slot
 looks like it can be headbutted!". Headbutt is taught, as in HGSS, by the man
 shaking trees in Ilex Forest, to the Pokémon HGSS's tutor can teach.
 **Kurt's Apricorn Balls**: give Kurt Apricorns in Azalea Town (HGSS's
-script; which colour and how many) and the next day he has that many Balls
+script; which colour and how many, on HGSS's Apricorn Box screen,
+`ui/apricorn-box.js`: the box's seven holes with an Apricorn of each colour you
+have and how many in the bubble beside it, what the one under the cursor is, then
+"Give how many?" and "Give 3 Red Apricorns?"; the box's picture HGSS's own, by
+`node tools/build-apricorn-box.js <pokeheartgold>`, the words in FireRed's
+windows; used from the Bag the Apricorn Box opens the same screen to show your
+Apricorns) and the next day (the game's day, `Player.gameTime().today`) he has that many Balls
 for you: a Red Apricorn makes a Level Ball, Yellow a Moon Ball, Blue a Lure
 Ball, Green a Friend Ball, Pink a Love Ball, White a Fast Ball, Black a Heavy
 Ball. They catch as HGSS's makers meant them to: the Level Ball 2, 4 or 8
@@ -2194,7 +2200,14 @@ puts it back, or asks if you'd like to quit; a tap or click works too. Put
 together, the pieces flash white, the chamber shakes, the panel's gone and the
 floor falls in: you drop into the Underground Hall below, where, the first
 time, the Research Center's assistants come running with the **Unown Report**
-(a key item: each letter you've caught, among the 28). Each solved puzzle
+(a key item: HGSS's book, overlay 113, a page to the screen on HGSS's own paper
+in its blue binder, turned with the D-pad, B to close: the cover with your name and
+how many kinds you've caught, then the Unown you've caught seven to a page, each
+with its icon and its word, ANGER to ZOOM, !!!!! and ?????, in the order you
+caught them until the report's level 4 sorts them A to Z, then the researchers'
+notes, a page at a time as the report's level, `VAR_UNOWN_REPORT_LEVEL`, comes up
+to it, the words on the hidden room's floor in the Unown font; its pictures by
+`tools/build-alph.js`, from HGSS's NARC a/2/3/9, its words msg_0001's). Each solved puzzle
 wakes Unown in the hall (`src/field/encounter_check.c`): none until one's
 solved, then Kabuto's A to J, Aerodactyl's R to V, Omanyte's K to Q and
 Ho-Oh's W to Z, any of those woken, and ! and ? in its Sinjoh room (a wild

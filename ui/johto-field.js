@@ -27,6 +27,7 @@
 //
 // env: player(), say(pages), confirm(page), choose(texts) -> index or -1,
 //   quantity(text, max) -> n, itemName(id), text(msgId) -> pages (HGSS's),
+//   apricornBox() -> { colour, id, n } or null (the Apricorn Box screen, to give),
 //   choosePartyFor(message, notes) -> record, learnMove(record, move),
 //   wildBattle(species, level), shake(), johtoState() (HGSS's flags and vars),
 //   takeItem(id, n) -> bool.
@@ -117,7 +118,13 @@
       if (op === "ScrCmd_737") return s.kurt ? KURT_BALLS[s.kurt.colour] : "poke-ball";
       if (op === "ClearKurtApricorn") { delete s.kurt; return 0; }
       if (op === "ScrCmd_739") {
-        // (HGSS's Apricorn Box: which Apricorn, and how many.)
+        // (HGSS's Apricorn Box: which Apricorn, and how many: ui/apricorn-box.js.)
+        if (env.apricornBox) {
+          const got = await env.apricornBox();
+          if (!got || !env.takeItem(got.id, got.n)) return 0;
+          s.kurt = { colour: got.colour, n: got.n };
+          return got.n;
+        }
         const have = apricorns();
         const i = await env.choose(have.map((a) => env.itemName(a.id) + " x" + a.n).concat(["Cancel"]));
         if (i < 0 || i >= have.length) return 0;

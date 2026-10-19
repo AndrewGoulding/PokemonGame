@@ -2130,6 +2130,17 @@ if (window.JOHTO_TOWN_MAP) {
     const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
     assert(/alphReaction\("escape-rope"\)/.test(gameJs) && /alphReaction\("water-stone"\)/.test(gameJs) && /chamberReaction\(player\.location\.map, Overworld\.position\(\), "flash"\)/.test(gameJs));
     assert(/JohtoAlph\.locked\(player\.location\.map, alphSolved\(\)\)/.test(gameJs) && /JohtoAlph\.unownLetter\(at\.map, alphSolved\(\)\)/.test(gameJs) && /JohtoAlph\.recordCaught/.test(gameJs));
+    // The Unown Report (overlay 113): a book, the cover's two pages, the Unown 7 to a page (14 to a
+    // spread) as caught, A to Z from the report's level 4, then the notes the level's up to.
+    const RP = (letters, level) => Array.from(A.reportPages(letters, level), (pg) => pg.kind + (pg.forms ? ":" + pg.forms.join("") : pg.notes ? ":" + pg.notes.join(",") : ""));
+    assert.deepStrictEqual(RP([], 0), ["cover", "cover"]);
+    assert.deepStrictEqual(RP(["d", "a", "question", "k"], 0), ["cover", "cover", "unown:daquestionk", "unown:"]);
+    assert.deepStrictEqual(RP(["d", "a", "question", "k"], 4).slice(2, 4), ["unown:adkquestion", "unown:"]);
+    assert.deepStrictEqual(RP("abcdefghijklmnop".split(""), 2).slice(2), ["unown:abcdefg", "unown:hijklmn", "unown:op", "unown:", "notes:6", "notes:7", "notes:8", "notes:"]);
+    assert.strictEqual(RP("abcdefghijklmnopqrstuvwxyz".split("").concat(["exclamation", "question"]), 8).length, 2 + 4 + 12, "28 Unown on two spreads, six spreads of notes");
+    assert(A.REPORT_WORDS.length === 28 && A.REPORT_WORDS[17] === "REASSURE" && Object.keys(A.NOTES).length === 13);
+    for (const n of ["plate-0", "plate-1", "lines", "bar", "words"]) assert(fs.existsSync(path.join(root, "assets/alph/report-" + n + ".png")), "the report's " + n);
+    assert(/JohtoAlph\.report\(c, player\.flags\.unownCaught, \{[^}]*\s*level: \+johto\.getVar\("VAR_UNOWN_REPORT_LEVEL"\)/.test(gameJs), "the report's level from HGSS's var");
   }
   // The Safari Zone (tools/build-johto-safari.js, ui/johto-safari.js): twelve
   // Areas in a 3x2 layout (one of HGSS's ten defaults; the Area Customizer
@@ -5648,6 +5659,24 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     assert.strictEqual(await K.kurt("ScrCmd_735"), 0);
   })().catch((e) => { console.error(e); process.exit(1); });
   for (const b of Object.values(sandbox.window.JohtoField.KURT_BALLS)) assert(ITEMS[b] && Bag.sprite(b), b);
+  // HGSS's Apricorn Box (ui/apricorn-box.js): Kurt's Apricorns chosen on it when it's there, and the Bag opens it.
+  {
+    const bag2 = { "blue-apricorn": 5 }, js2 = {};
+    const K2 = sandbox.window.JohtoField.create({ player: () => Object.assign({}, p, { bag: bag2 }), johtoState: () => js2, apricornBox: async () => ({ colour: "blue", id: "blue-apricorn", n: 4 }),
+      takeItem: (id, n) => { if ((bag2[id] | 0) < n) return false; bag2[id] -= n; return true; } });
+    (async () => {
+      assert.strictEqual(await K2.kurt("ScrCmd_739"), 4);
+      assert.deepStrictEqual([await K2.kurt("ScrCmd_737"), bag2["blue-apricorn"]], ["lure-ball", 1]);
+    })().catch((e) => { console.error(e); process.exit(1); });
+    const box = { window: {} };
+    vm.runInNewContext(fs.readFileSync(path.join(root, "ui/apricorn-box.js"), "utf8"), box, { filename: "ui/apricorn-box.js" });
+    const AB = box.window.ApricornBox;
+    assert.deepStrictEqual(Array.from(AB.counts({ "red-apricorn": 3, "black-apricorn": 120 })), [3, 0, 0, 0, 0, 0, 99]);
+    assert(AB.SPOTS.length === 7 && AB.spotAt(27, 17) === 0 && AB.spotAt(75, 33) === 1 && AB.spotAt(50, 145) === 7 && AB.spotAt(200, 20) === -1, "the box's holes, top to bottom in turn, and its plate");
+    assert(fs.existsSync(path.join(root, "assets/apricorn-box/box.png")));
+    const gj = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    assert(/"unown-report", "apricorn-box"\]\.concat\(RODS\)/.test(gj) && /item === "apricorn-box"\) await apricornBox\("view"\)/.test(gj) && /apricornBox: \(\) => apricornBox\("give"\)/.test(gj), "the Bag and Kurt open the Apricorn Box");
+  }
   const scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8"), owJs = fs.readFileSync(path.join(root, "ui/overworld.js"), "utf8");
   assert(/case "ScrCmd_739"/.test(scriptJs) && /case "WaitFollowingPokemonMovement"/.test(scriptJs) && /FLAG_DAILY_/.test(scriptJs), "Kurt's and the follower's script commands");
   assert(/---------- The follower Pokémon/.test(owJs) && /type: "follower"/.test(owJs) && /type: "headbutt"/.test(owJs));

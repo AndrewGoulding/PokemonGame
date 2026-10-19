@@ -17,12 +17,21 @@
 //                               bottom, in the order they go on the board
 //   assets/alph/wall-<n>.png    each chamber's wall: "ESCAPE", "LIGHT", "WATER"
 //                               and "HO OH" in the Unown font on the tablet
+//   assets/alph/report-*.png    the Unown Report's pages (overlay 113: NARC
+//                               a/2/3/9, screens 10-15): the cover's two
+//                               brick plates (plate-0, plate-1), an Unown's
+//                               row (bar: HGSS's 22-pixel row less two
+//                               rows of its middle), the ruled frame the
+//                               notes are written in (lines), and the words
+//                               found on the hidden room's floor (msg_0001's
+//                               15) in the Unown font (words)
 "use strict";
 
 const fs = require("fs");
 const path = require("path");
 const { readPng, writePng, readPal } = require("./lib/png");
 const { paletteRam, renderBg } = require("./lib/gba");
+const { readNarc, lz10, nitroBg: narcBg } = require("./lib/narc");
 
 const ROOT = process.argv[2] || process.env.POKEHEARTGOLD;
 const GRA = ROOT && path.join(ROOT, "files/application/annon/puzzle_gra");
@@ -125,23 +134,61 @@ const glyphOf = (ch) => (ch === " " ? 0x1dd : ch.charCodeAt(0) - 65 + 0x12a);
 // The words (msg_0198), in the wall's colours (the text printer's 0x000F0E09).
 const words = JSON.parse(fs.readFileSync(path.join(ROOT, "files/msgdata/msg/msg_0198.json"), "utf8")).messages.map((m) => m.en_US);
 const INK = [[72, 48, 24], [160, 120, 64]];
-words.forEach((word, n) => {
-  const img = crop(tabletAll, x0, y0, x1 - x0 + 1, y1 - y0 + 1);
-  const ids = [...word].map(glyphOf), w = ids.reduce((a, id) => a + font[widths + id], 0);
-  let x = (img.width - w) >> 1;
-  const y = (img.height - 16) >> 1;
-  for (const id of ids) {
+const unownWidth = (text) => [...text].map(glyphOf).reduce((a, id) => a + font[widths + id], 0);
+// `text` in the Unown font on `img` at (x, y), in `ink` (the letter, its shadow).
+function unownText(img, text, x, y, ink) {
+  for (const id of [...text].map(glyphOf)) {
     for (let t = 0; t < 4; t++) for (let j = 0; j < 8; j++) for (let k = 0; k < 2; k++) {
       const byte = font[headerSize + id * 64 + t * 16 + j * 2 + 1 - k];
       for (let i = 0; i < 4; i++) {
         const v = (byte >> (6 - 2 * i)) & 3;
         if (v !== 1 && v !== 2) continue;
         const px = x + (t & 1) * 8 + k * 4 + i, py = y + (t >> 1) * 8 + j;
-        if (px >= 0 && px < img.width) img.rgba.set(INK[v - 1].concat(255), (py * img.width + px) * 4);
+        if (px >= 0 && px < img.width && py >= 0 && py < img.height) img.rgba.set(ink[v - 1].concat(255), (py * img.width + px) * 4);
       }
     }
     x += font[widths + id];
   }
+}
+words.forEach((word, n) => {
+  const img = crop(tabletAll, x0, y0, x1 - x0 + 1, y1 - y0 + 1);
+  unownText(img, word, (img.width - unownWidth(word)) >> 1, (img.height - 16) >> 1, INK);
   save("wall-" + n + ".png", img);
 });
-console.log("wrote assets/alph/: board, marks, 4 puzzles' pieces and 4 walls");
+
+// ---------- The Unown Report ----------
+
+// Its pages (UnownReport_Init's NARC a/2/3/9: palette 4 and tiles 6 for the
+// top screen's pages, 5 and 7 for the bottom's; screens 10 and 11 the cover,
+// 12 and 13 the Unown, 14 and 15 the notes), cropped to the parts drawn in
+// the page's darkest ink (colour 6) on its paper.
+const report = readNarc(path.join(ROOT, "files/a/2/3/9")).map(lz10);
+const page = (scr) => narcBg(report[scr & 1 ? 5 : 4], report[scr & 1 ? 7 : 6], report[scr]);
+function inked(img, y0, y1) {
+  let a = img.width, b = img.height, c = 0, d = 0;
+  for (let y = y0; y < y1; y++) for (let x = 12; x < 210; x++) {
+    const o = (y * img.width + x) * 4;
+    if (img.rgba[o + 3] && img.rgba[o] === 136 && img.rgba[o + 1] === 120 && img.rgba[o + 2] === 64) { a = Math.min(a, x); b = Math.min(b, y); c = Math.max(c, x); d = Math.max(d, y); }
+  }
+  return crop(img, a, b, c - a + 1, d - b + 1);
+}
+save("report-plate-0.png", inked(page(10), 20, 192));
+save("report-plate-1.png", inked(page(11), 0, 192));
+save("report-lines.png", inked(page(14), 20, 192));
+{
+  // (The first row, without two rows of its middle: 20 pixels, so seven fit on a GBA page.)
+  const bar = inked(page(13), 0, 28), cut = bar.height >> 1;
+  const rgba = new Uint8ClampedArray(bar.width * (bar.height - 2) * 4);
+  rgba.set(bar.rgba.subarray(0, cut * bar.width * 4));
+  rgba.set(bar.rgba.subarray((cut + 2) * bar.width * 4), cut * bar.width * 4);
+  save("report-bar.png", { width: bar.width, height: bar.height - 2, rgba });
+}
+{
+  // (msg_0001's 15: three lines in font 3, the text printer's colours 1 and 2.)
+  const lines = JSON.parse(fs.readFileSync(path.join(ROOT, "files/msgdata/msg/msg_0001.json"), "utf8")).messages[15].en_US
+    .map((l) => l.replace(/\{[^}]*\}/g, "").trim());
+  const w = Math.max(...lines.map(unownWidth)), img = { width: w, height: lines.length * 16, rgba: new Uint8ClampedArray(w * lines.length * 16 * 4) };
+  lines.forEach((l, i) => unownText(img, l, (w - unownWidth(l)) >> 1, i * 16, [[64, 64, 64], [184, 168, 112]]));
+  save("report-words.png", img);
+}
+console.log("wrote assets/alph/: board, marks, 4 puzzles' pieces, 4 walls and the Unown Report's pages");

@@ -9,7 +9,9 @@
 //     // the n-th chamber's panel (0 Kabuto, 1 Aerodactyl, 2 Omanyte, 3 Ho-Oh):
 //     // true once it's put together, false if you quit
 //   await JohtoAlph.wall(canvas, n)            // the words on the n-th chamber's wall, until A or B
-//   await JohtoAlph.report(canvas, letters, { frame })   // the Unown Report: the letters caught
+//   await JohtoAlph.report(canvas, letters, { level, name, sfx })   // the Unown Report: the letters
+//     // caught, at the report's level (VAR_UNOWN_REPORT_LEVEL), your name on its cover
+//   JohtoAlph.reportPages(letters, level)      // its pages, in turn
 //   JohtoAlph.PUZZLE_FLAGS[n]                  // the flag a solved puzzle sets (FLAG_SYS_ALPH_PUZZLE_*)
 //   JohtoAlph.unownLetter(map, solved)         // a wild Unown's letter on `map` ("a" ... "question"), or null
 //   JohtoAlph.locked(map, solved)              // no wild Pokémon there until a puzzle's solved
@@ -301,31 +303,154 @@
 
   // ---------- The Unown Report ----------
 
-  // The letters caught (HGSS's report shows them page by page: here all on
-  // one), each caught one's icon in its place among the 28, in your frame.
+  // HGSS's report (overlay 113) is a book of two-page spreads, a page on each
+  // screen, turned with up and down: the cover (msg_0001's 1, your name, and
+  // how many kinds you've caught), then the Unown caught, 14 to a spread,
+  // each with its icon and its word, in the order caught (Pokedex_GetSeenFormByIdx_Unown)
+  // until the report's level 4 sorts them A to Z, then the Research Center's
+  // notes, each page there once the report's level (VAR_UNOWN_REPORT_LEVEL,
+  // which the researchers raise) is up to it (ov113_021E6BD0). Here each of
+  // its pages is a screen of its own, on HGSS's paper (tools/build-alph.js's
+  // report-*.png) in its blue binder.
+  //
+  // The words for each letter (msg_0001's 20-47), A to Z and then ! and ?.
+  const REPORT_WORDS = ["ANGER", "BEAR", "CHASE", "DIRECT", "ENGAGE", "FIND", "GIVE", "HELP", "INCREASE", "JOIN", "KEEP", "LAUGH", "MAKE",
+    "NUZZLE", "OBSERVE", "PERFORM", "QUICKEN", "REASSURE", "SEARCH", "TELL", "UNDO", "VANISH", "WANT", "XXXXX", "YIELD", "ZOOM", "!!!!!", "?????"];
+  const REPORT_FORMS = "abcdefghijklmnopqrstuvwxyz".split("").concat(SINJOH_LETTERS);
+  // The notes (msg_0001's 6-19; 15 is the hidden room's floor, in the Unown font: report-words.png).
+  const NOTES = {
+    6: "Found a strange puzzle in the ruins. Solved it, and suddenly a hole opened up in the ground and I dropped into the room below! Should have known that ancient ruins would have surprising tricks like that.",
+    7: "There was a stone statue where I fell. The place might have been a reception hall. Then, suddenly, the UNOWN appeared. That puzzle was like a key somehow. It woke the UNOWN up from their sleep. These ruins have become difficult.",
+    8: "If you turn on the radio in the ruins, you can receive mysterious radio waves! It's proof that the UNOWN communicate with each other using radio waves!",
+    9: "There are as many UNOWN as there are letters in the alphabet. Right now, we're confirming the existence of 26 kinds of UNOWN. Do you think you can find all 26 of them?",
+    10: "It seems that individually they don't make much sense, but when the various UNOWN are arranged in order, they begin to make sense. In nature, they seem to be scattered around randomly, but the truth is they're arranged in a very specific order.",
+    11: "In this report, the scattered UNOWN were sorted and put into order by the research-center staff. That makes the UNOWN much easier to understand.",
+    12: "Scratched on the floor of the ruins are UNOWN letters. Finding the room feels like a huge discovery! The Researchers were very excited and said they were going to go check it out.",
+    13: "There aren't just 26 different kinds of UNOWN. Two more have been discovered! But that begs the question of where those other two kinds are hiding...",
+    14: "The characters found scratched on the floor in the small room are transcribed here in this report.",
+    16: "We don't know what this could possibly mean yet.",
+    17: "The Researchers were saying that they'll need to examine the ruins again, but...?",
+    18: "In the past, it seems that UNOWN lived with relatives of humans in these ruins. In the lower levels of these ruins is a Pokémon statue. We've come to understand that it was those relatives who made that statue.",
+    19: "The UNOWN are very timid creatures, so they don't go outside the ruins. Even if a bunch of people gathered near the ruins, it is said that the ones who wished for UNOWN and humans to again coexist have all left."
+  };
+  // Each spread of notes (ov113_021E6BD0): its top page's and bottom page's
+  // notes, and the report's level each needs. (A spread shows once its top
+  // page can.)
+  const NOTE_SPREADS = [[[1, 6], [1, 7]], [[2, 8], [3, 9]], [[4, 10], [4, 11]], [[5, 12], [6, 13]], [[7, 14, 15, 16], [7, 17]], [[8, 18], [8, 19]]];
+
+  // The Unown in the order the report lists them (ov113_021E5A7C): as caught,
+  // or from level 4, A to Z and then ! and ? as caught.
+  function reportOrder(letters, level) {
+    letters = (letters || []).filter((f) => REPORT_FORMS.includes(f));
+    if ((level | 0) < 4) return letters;
+    return REPORT_FORMS.slice(0, 26).filter((f) => letters.includes(f)).concat(letters.filter((f) => SINJOH_LETTERS.includes(f)));
+  }
+  // The report's pages, a spread's two in turn: { kind: "cover", bottom },
+  // { kind: "unown", forms, bottom }, { kind: "notes", notes, bottom }.
+  function reportPages(letters, level) {
+    const order = reportOrder(letters, level), pages = [{ kind: "cover", bottom: false }, { kind: "cover", bottom: true }];
+    for (let i = 0; i < order.length; i += 14) {
+      pages.push({ kind: "unown", forms: order.slice(i, i + 7), bottom: false }, { kind: "unown", forms: order.slice(i + 7, i + 14), bottom: true });
+    }
+    for (const [top, bottom] of NOTE_SPREADS) {
+      if (top[0] > (level | 0)) break;
+      pages.push({ kind: "notes", notes: top.slice(1), bottom: false }, { kind: "notes", notes: bottom[0] <= (level | 0) ? bottom.slice(1) : [], bottom: true });
+    }
+    return pages;
+  }
+
+  // The page: HGSS's paper (palette 4: colours 6-9) in the binder (3-5),
+  // the page number and arrows down its right.
+  const PAPER = [232, 224, 152], INK = [64, 64, 64], RULE = [208, 200, 128], TAN = [184, 168, 112];
+  const PAGE_X = 8, PAGE_Y = 6, PAGE_W = 208, PAGE_H = 148, ROW = 21;
   async function report(canvas, letters, opts) {
     opts = opts || {};
-    letters = letters || [];
-    const frameName = "type" + ((opts.frame || 0) + 1), pal = GM().palettes.std3;
-    const forms = "abcdefghijklmnopqrstuvwxyz".split("").concat(SINJOH_LETTERS);
-    const icons = forms.map((f) => (letters.includes(f) ? image(window.Screen.iconUrl("Unown", f === "a" ? null : f)) : null));
-    await Promise.all(icons.filter(Boolean).map((i) => i.loaded));
-    const s = window.GbaMenus.Surface();
-    s.fill(0, 0, W, H, [74, 57, 41]);
-    s.frame(frameName, GM().frames[frameName].palette, 1, 1, 28, 18);
-    s.fill(8, 8, 224, 144, pal[1]);
-    s.text("UNOWN REPORT", 16, 10, pal[2], pal[3]);
-    const count = letters.length + (letters.length === 1 ? " kind" : " kinds") + " caught";
-    s.text(count, 224 - s.textWidth(count, "small"), 12, pal[2], pal[3], "small");
-    // (Each letter's square: 7 across, 4 down.)
-    const at = (i) => [20 + (i % 7) * 30, 32 + Math.floor(i / 7) * 30];
-    forms.forEach((f, i) => {
-      const [x, y] = at(i);
-      s.fill(x, y, 26, 26, pal[11]);
-      if (!letters.includes(f)) s.text(f.length > 1 ? (f === "exclamation" ? "!" : "?") : f.toUpperCase(), x + 10, y + 5, pal[3], pal[1]);
-    });
-    present(canvas, s, (g) => icons.forEach((img, i) => { if (ok(img)) { const [x, y] = at(i); g.drawImage(img, 0, 0, 32, 32, x - 3, y - 4, 32, 32); } }));
-    for (;;) { const k = await input(canvas); if (k === "a" || k === "b" || (k && k.tap)) break; }
+    const sfx = (name) => { if (opts.sfx) opts.sfx(name); };
+    const level = opts.level | 0, pages = reportPages(letters, level), caught = (letters || []).filter((f) => REPORT_FORMS.includes(f));
+    const pics = {};
+    for (const n of ["plate-0", "plate-1", "lines", "bar", "words"]) pics[n] = image("assets/alph/report-" + n + ".png");
+    const icons = {};
+    for (const f of caught) icons[f] = image(window.Screen.iconUrl("Unown", f === "a" ? null : f));
+    await Promise.all(Object.values(pics).concat(Object.values(icons)).map((i) => i.loaded));
+    let at = 0;
+
+    function draw(fade) {
+      // (The paper on one surface, the words over the pictures on another.)
+      const page = pages[at], bg = window.GbaMenus.Surface(), s = window.GbaMenus.Surface();
+      // (The binder, and the page in it: its edges HGSS's two shades.)
+      bg.fill(0, 0, W, H, [56, 128, 208]);
+      bg.fill(0, 0, W, 2, [64, 64, 64]); bg.fill(0, H - 2, W, 2, [64, 64, 64]);
+      bg.fill(2, 2, W - 4, 2, [88, 168, 240]);
+      bg.fill(PAGE_X - 2, PAGE_Y, PAGE_W + 4, PAGE_H, TAN);
+      bg.fill(PAGE_X - 1, PAGE_Y, PAGE_W + 2, PAGE_H, RULE);
+      bg.fill(PAGE_X, PAGE_Y, PAGE_W, PAGE_H, PAPER);
+      // (A top page has the notch for the binder's ring.)
+      if (!page.bottom) bg.fill(PAGE_X + 76, PAGE_Y, 56, 3, [56, 128, 208]);
+      const centre = (t, y, font) => s.text(t, PAGE_X + ((PAGE_W - s.textWidth(t, font)) >> 1), y, INK, RULE, font);
+      const pictures = [];
+      if (page.kind === "cover" && !page.bottom) {
+        pictures.push(["plate-0", 20, 52]);
+        centre("UNOWN Report", 64);
+        if (opts.name) s.text(opts.name, 192 - s.textWidth(opts.name), 80, INK, RULE);
+      } else if (page.kind === "cover") {
+        pictures.push(["plate-1", 40, 56]);
+        centre("Number of UNOWN", 64);
+        centre("Current Kinds: " + caught.length, 80);
+      } else if (page.kind === "unown") {
+        for (let i = 0; i < 7; i++) {
+          const y = PAGE_Y + 1 + i * ROW, f = page.forms[i];
+          pictures.push(["bar", 29, y]);
+          if (f) s.text(REPORT_WORDS[REPORT_FORMS.indexOf(f)], 29 + 44, y + 2, INK, RULE);
+        }
+      } else {
+        pictures.push(["lines", 13, 12]);
+        let y = 16;
+        // (A long note's lines a little closer; the page with the floor's words in the small font.)
+        const font = page.notes.length > 1 ? "small" : "normal";
+        const lineH = font === "small" ? 12 : page.notes.some((n) => (NOTES[n] || "").length > 200) ? 14 : 16;
+        for (const n of page.notes) {
+          if (n === 15) { pictures.push(["words", PAGE_X + ((PAGE_W - (pics.words.naturalWidth || 169)) >> 1), y + 2]); y += 54; continue; }
+          for (const l of wrap(s, NOTES[n], 184, font)) { s.text(l, 20, y, INK, RULE, font); y += lineH; }
+          y += 4;
+        }
+      }
+      // (The page number, n/N, and the arrows to turn: up the one before, down the one after.)
+      const num = String(at + 1), of = String(pages.length);
+      s.text(num, 228 - (s.textWidth(num, "small") >> 1), 66, [248, 248, 248], [48, 96, 136], "small");
+      s.fill(222, 79, 12, 1, [248, 248, 248]);
+      s.text(of, 228 - (s.textWidth(of, "small") >> 1), 82, [248, 248, 248], [48, 96, 136], "small");
+      const pal = GM().palettes.std3;
+      s.text("{B_BUTTON}", 222, 142, pal[2], pal[3], "small", pal);
+      present(canvas, bg, (g) => {
+        for (const [n, x, y] of pictures) if (ok(pics[n])) g.drawImage(pics[n], x, y);
+        g.drawImage(s.canvas(), 0, 0, W, H);
+        if (page.kind === "unown") page.forms.forEach((f, i) => {
+          if (ok(icons[f])) g.drawImage(icons[f], 0, 0, 32, 32, 29 + 3, PAGE_Y + 1 + i * ROW - 9, 32, 32);
+        });
+        // (HGSS's arrows, where there's a page to turn to.)
+        g.fillStyle = "#f8f8f8";
+        if (at > 0) { g.beginPath(); g.moveTo(228, 40); g.lineTo(222, 48); g.lineTo(234, 48); g.fill(); }
+        if (at < pages.length - 1) { g.beginPath(); g.moveTo(228, 112); g.lineTo(222, 104); g.lineTo(234, 104); g.fill(); }
+        // (Turning a page: the screens fade, BeginNormalPaletteFade.)
+        if (fade) { g.globalAlpha = fade; g.fillStyle = "#000"; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
+      });
+    }
+    async function turn(to) {
+      sfx("se_select");
+      for (let f = 1; f <= 4; f++) { draw(f / 4); await nextFrame(); }
+      at = to;
+      for (let f = 3; f >= 0; f--) { draw(f / 4); await nextFrame(); }
+    }
+
+    for (;;) {
+      draw(0);
+      const k = await input(canvas);
+      const back = k === "up" || k === "left" || (k && k.tap && k.tap[0] >= 216 && k.tap[1] < 64);
+      const on = k === "down" || k === "right" || (k && k.tap && k.tap[0] >= 216 && k.tap[1] >= 96 && k.tap[1] < 128);
+      if (back && at > 0) await turn(at - 1);
+      else if (on && at < pages.length - 1) await turn(at + 1);
+      else if (k === "b" || (k && k.tap && k.tap[0] >= 216 && k.tap[1] >= 136)) { sfx("se_select"); return; }
+    }
   }
 
   // ---------- The chambers' 3D pieces ----------
@@ -342,5 +467,6 @@
   }
 
   window.JohtoAlph = { LAYOUTS, PUZZLE_FLAGS, HINTS, UNOWN_LETTERS, HALLS, start, pieceAt, solved, canDrop, isCorner,
-    unownLetter, locked, recordCaught, caughtCount, allLetters, chamberReaction, puzzle, wall, report };
+    unownLetter, locked, recordCaught, caughtCount, allLetters, chamberReaction, puzzle, wall, report,
+    REPORT_WORDS, NOTES, NOTE_SPREADS, reportOrder, reportPages };
 })();

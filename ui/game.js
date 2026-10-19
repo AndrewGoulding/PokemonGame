@@ -854,7 +854,7 @@
   }
 
   const RODS = ["fishing-rod"];
-  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report"].concat(RODS);
+  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
   const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map", "berry-pouch"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
@@ -895,7 +895,10 @@
     } else if (item === "town-map") await townMap();
     else if (item === "coin-case") await message("Your Coins:\n" + plainCoins(coins()));
     // (The Unown Report: the letters caught, ui/johto-alph.js.)
-    else if (item === "unown-report") await alphOverlay((c) => JohtoAlph.report(c, player.flags.unownCaught, { frame: GameOptions.get().frame }));
+    else if (item === "unown-report") await alphOverlay((c) => JohtoAlph.report(c, player.flags.unownCaught, { frame: GameOptions.get().frame, sfx,
+      level: +johto.getVar("VAR_UNOWN_REPORT_LEVEL") || 0, name: player.name }));
+    // (HGSS's Apricorn Box: your Apricorns, ui/apricorn-box.js.)
+    else if (item === "apricorn-box") await apricornBox("view");
     // (FieldUseFunc_PowderJar: how much Berry Powder you have.)
     else if (item === "powder-jar") await message("Berry Powder:\n" + (player.flags.berryPowder | 0).toLocaleString("en-US"));
   }
@@ -10815,6 +10818,7 @@
     player: () => player, say: (pages) => say(pages), confirm: (q) => confirm(q),
     choose: async (texts) => { const i = await multichoice(null, 0, 0, texts); Screen.say(""); return i; },
     quantity: async (text, max) => { const n = await chooseQuantity(text, max); Screen.say(""); return n; },
+    apricornBox: () => apricornBox("give"),
     itemName: (id) => Bag.name(id), text: (id) => window.JOHTO_SCRIPTS.messages[id] || null,
     choosePartyFor: async (message, notes) => { const r = await choosePartyFor(message, null, notes); show("world"); return r; },
     learnMove: (record, move) => learnMove(record, move),
@@ -10948,6 +10952,9 @@
     c.classList.remove("hidden");
     try { return await screen(c); } finally { c.classList.add("hidden"); Screen.say(""); }
   }
+  // HGSS's Apricorn Box (ui/apricorn-box.js): "view" from the Bag, "give" for Kurt.
+  const apricornBox = (mode) => alphOverlay((c) => ApricornBox.open(c, { bag: player.bag, mode, frame: GameOptions.get().frame, sfx,
+    itemName: (id) => Bag.name(id), confirm: async (q) => { const yes = await confirm(q); Screen.say(""); return yes; } }));
   // (Put together: the flag the script's to set, FLAG_SYS_ALPH_PUZZLE_*.)
   const alphPuzzle = (n) => alphOverlay(async (c) => ((await JohtoAlph.puzzle(c, n, { frame: GameOptions.get().frame, sfx,
     confirm: async (q) => { const yes = await confirm(q); Screen.say(""); return yes; } })) ? JohtoAlph.PUZZLE_FLAGS[n] : null));
