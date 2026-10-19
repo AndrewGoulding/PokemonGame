@@ -75,12 +75,12 @@
         const p = api.points(), objs = api.objects();
         line("Objects " + objs.length + "/" + api.max, 0);
         line("Days " + api.days(), 1);
-        Object.keys(KIND).forEach((k, i) => line(KIND[k] + " " + p.count[k] + "  " + p.points[k] + "pt", 2 + i));
+        Object.keys(KIND).forEach((k, i) => line((k === "water" ? "Water" : KIND[k]) + " " + p.count[k] + " " + p.points[k] + "pt", 2 + i));
         const k = api.objectAt(ui.x, ui.y);
         const name = ui.hold ? D(ui.hold.id).name : k >= 0 ? D(objs[k].id).name : "";
-        if (name) line(name, 7, RED);
-        const help = ui.msg || (ui.hold ? "A: Put down  B: Back" : k >= 0 ? "A: Move or remove" : "A: Place  B: Exit");
-        help.split("\n").forEach((t, i) => line(t, 9 + i));
+        if (name) line(name, 6, RED);
+        const help = ui.msg || (ui.hold ? "A: Put down\nB: Back" : k >= 0 ? "A: Move or\nremove" : "A: Place\nB: Exit");
+        help.split("\n").forEach((t, i) => line(t, 8 + i));
       }
       out.clearRect(0, 0, W * 2, H * 2);
       out.drawImage(s.canvas(), 0, 0, W * 2, H * 2);

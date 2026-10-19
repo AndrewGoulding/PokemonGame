@@ -2155,10 +2155,21 @@ Safari Zone Gate (HGSS's Baoba phones three hours later), he shows you the
 **Area Customizer**: with it (talk to the staff beside him) you choose a place
 and Swap in any of the twelve Areas (one already in the layout trades places)
 or change their Order; then a Sandshrew from the Desert makes you the Owner.
-Not here: Baoba's Object Arrangement (objects you place in the Areas, which
-bring their bonus Pokémon over the days: the data's in
-`window.JOHTO_SAFARI`, the phone calls that unlock it aren't) and the Safari
-Zone Link.
+**Object Arrangement** is HGSS's too: once you're the Owner and have the
+National Pokédex, Baoba phones (three hours of the game clock after his last
+call; without a Pokégear, he tells you at the Gate) to give you HGSS's 24
+objects in four groups of six (Plains, Forest, Peak, Waterside), a group at
+a time, in the order your Trainer ID picks. In the Safari Game press A facing
+open ground (or water while surfing, for the Fountain) to place one, or
+facing an object to take it away; or arrange an Area's objects (up to 30) on
+its grid from the Area Customizer's Objects (`ui/johto-safari-objects.js`).
+Objects block the way and are drawn on the map. Each object of a kind is
+worth points of that kind, more the longer (in the game clock's days) its
+Area has been in your layout (`sObjectLevelBoosts`), and enough points bring
+the Area's bonus Pokémon in over its first slots
+(`SafariZoneAreaSet_LoadAreaEncounters`); when that happens, Baoba calls to
+say which Areas changed. A slot's morning, day and night Pokémon are all
+equally likely, as everywhere else. Not here: the Safari Zone Link.
 
 **Johto's Town Map**: in Johto the Town Map (and Fly's) is Johto's: HGSS's
 Pokégear map, each place on the squares HGSS gives it, drawn in FireRed's
