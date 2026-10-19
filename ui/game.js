@@ -10761,7 +10761,7 @@
     alphWall: (n) => alphOverlay((c) => JohtoAlph.wall(c, n)),
     unownCaught: () => player.flags.unownCaught || [],
     // (The Safari Zone: ui/johto-safari.js.)
-    safariAction: (n) => johtoSafari.action(n), safariChallenge: (n) => johtoSafari.challenge(n), areaCustomizer: () => johtoSafari.customizer(),
+    safariAction: (n) => johtoSafari.action(n), safariChallenge: (n) => johtoSafari.challenge(n), areaCustomizer: () => johtoSafari.customizer(), safariStamp: () => johtoSafari.stamp(),
     giveEgg: async (species) => { Player.receive(player, Breeding.giftEgg(species, { map: player.location.map })); },
     mart: (stock) => mart(stock),
     kurt: (op) => johtoField.kurt(op), followerIdle: () => Overworld.follower.idle(), followerHide: (on) => Overworld.follower.hide(on),
@@ -10869,7 +10869,8 @@
     dex: () => ({ seen: Player.dexCount(player, "seen"), caught: Player.dexCount(player, "caught") }),
     caught: (species) => Player.hasCaught(player, species),
     dayCare: () => [].concat(player.flags.dayCare2 || []).map((r) => r && Party.displayName(r)).filter(Boolean),
-    frame: () => GameOptions.get().frame
+    frame: () => GameOptions.get().frame,
+    baobaCall: (script) => johtoSafari.phoneCall(script)   // (Baoba's calls: ui/johto-safari.js)
   });
   // The Pokéathlon Dome's courses, Athlete Points and Athlete Shop (ui/pokeathlon.js), for its scripts.
   Pokeathlon.attach({
@@ -10889,7 +10890,11 @@
     applyPatches: (map) => applyPatches(map), sfx: (name) => sfx(name),
     // (The scene the room's frame table has due once you're there: the attendant seeing you out.)
     frameScript: async () => { const js = johto.frameScript(player.location.map); if (js) await runJohto(js, null); },
-    roomFor: () => player.party.length < Player.PARTY_SIZE || player.boxes.some((b) => Player.firstEmpty(b) >= 0)
+    roomFor: () => player.party.length < Player.PARTY_SIZE || player.boxes.some((b) => Player.firstEmpty(b) >= 0),
+    // (Object Arrangement: Baoba's calls on the Pokégear, and the arranging screen, ui/johto-safari-objects.js.)
+    isGirl, phone: () => gear.has(), phoneTrigger: (n, on) => gear.setTrigger(n, on), nationalDex: () => Player.nationalDex(player),
+    here: () => ({ x: player.location.x, y: player.location.y }),
+    arrange: (api) => JohtoSafariObjects.open(api, { frame: GameOptions.get().frame })
   });
   // Prof. Elm's three Pokémon (HGSS's ChooseStarter): each one's picture, and
   // "Will you take it?", until you choose. It joins your party (or the PC);
@@ -11271,7 +11276,8 @@
         follower: (map) => follower.look(map), headbuttTree: (map, x, y) => johtoField.headbuttTree(map, x, y),
         canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
         // (Johto's Gyms: Ecruteak's darkness, Violet's lift.)
-        darkness: (map) => gymmicks.darkness(map), drawMap: (g, map, x, y) => gymmicks.drawMap(g, map, x, y),
+        darkness: (map) => gymmicks.darkness(map), drawMap: (g, map, x, y) => { gymmicks.drawMap(g, map, x, y); johtoSafari.drawMap(g, map, x, y); },
+        faced: (map, x, y, surfing) => johtoSafari.faced(map, x, y, surfing),
         boulderFell: (def) => {
           // (3F's boulder through the hole: it's on 2F now.)
           if (def.flag === "FLAG_HIDE_VICTORY_ROAD_3F_BOULDER") LeagueRoad.dropBoulder(player.flags);
@@ -11286,6 +11292,7 @@
           leftPallet(player.location.map); DayCare.step(player.flags.dayCare); DayCare.step(player.flags.dayCare2); vsSeekerStep(); friendshipStep();
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
           farawayStep();
+          johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step();
         }, encounterScale: () => gear.encounterRate(), allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
@@ -11324,6 +11331,7 @@
       else if (ev.type === "rockclimb") await rockClimb();
       else if (ev.type === "follower") await follower.talk();
       else if (ev.type === "headbutt") await johtoField.headbutt(ev.map, ev.x, ev.y);
+      else if (ev.type === "safari-object") await johtoSafari.fieldObject(ev.x, ev.y);
       else if (ev.type === "repel-ended" || ev.type === "lure-ended") await repelWoreOff(ev.type === "lure-ended");
       else if (ev.type === "egg-hatch") await eggHatches(ev.record);
       else if (ev.type === "phone") await gear.ring();

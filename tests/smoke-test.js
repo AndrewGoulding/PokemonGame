@@ -2219,6 +2219,62 @@ if (window.JOHTO_TOWN_MAP) {
     const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
     assert(/case "SafariZoneAction"/.test(scriptJs) && /case "ScrCmd_716"/.test(scriptJs) && /johtoSafari\.patches\(map\)/.test(gameJs), "the Safari Zone's script commands and patches");
   }
+  // Object Arrangement (ui/johto-safari.js, ui/johto-safari-objects.js): HGSS's
+  // 24 objects in Baoba's four groups, their pictures; Baoba's calls unlock
+  // them; an Area's objects (worth more the more days, of the step clock, it's
+  // been in the layout) bring its bonus Pokémon over its first slots.
+  {
+    const D = window.JOHTO_SAFARI, SZ = WORLD_MAPS.SafariZone_EntranceExterior;
+    assert(D.objects.length === 24 && D.objects[3].name === "Tree" && D.objects[3].w === 2 && D.objects[3].type === "forest" && D.objects[12].type === null, "HGSS's objects");
+    assert(D.groups.length === 4 && D.groups.every((g) => g.length === 6) && D.unlockOrder.length === 40 && D.boosts[0].join() === "1,5,10,15,20", "Baoba's groups and the points by days");
+    assert(fs.existsSync(path.join(root, "assets/world/maps/SafariZone_EntranceExterior-objects.png")) && D.objects.every((o) => o.sprite.length === 5 && o.sprite[1] > 0), "the objects' pictures");
+    assert(D.areas.every((a) => a.place.length === 1024) && D.areas[0].mons.land.bonus[0].needs.join() === "plains,3", "where objects go; the Plains' Girafarig wants 3 Plains points");
+    let steps = 1000;
+    const Pl = { STEPS_PER_HOUR: 100, gameTime: () => ({ steps, day: Math.floor(steps / 2400) }) };
+    const sandbox = { window: { WORLD_MAPS, JOHTO_SAFARI: D, JOHTO_SCRIPTS, JOHTO_PHONE: window.JOHTO_PHONE, Player: Pl } };
+    vm.runInNewContext(fs.readFileSync(path.join(root, "ui/johto-safari.js"), "utf8"), sandbox, { filename: "ui/johto-safari.js" });
+    const p = { name: "GOLD", trainerId: 10, flags: { johtoSafari: { layout: [0, 7, 1, 5, 3, 6] } }, party: [], location: { map: "SafariZone_EntranceExterior", x: 40, y: 40 } };
+    const vars = { VAR_UNK_4057: 3 }, triggers = {}, said = [];
+    const S = sandbox.window.JohtoSafari.create({ player: () => p, getVar: (k) => vars[k] || 0, setVar: (k, v) => { vars[k] = v; }, teleport: async () => {},
+      say: async (t) => said.push([].concat(t).join(" ")), confirm: async () => true, choose: async () => 0, sfx: () => {}, roomFor: () => true, applyPatches: () => {},
+      frameScript: async () => {}, isGirl: () => false, phone: () => true, phoneTrigger: (n, on) => { triggers[n] = on; }, nationalDex: () => true, here: () => here });
+    let here = { x: 0, y: 0 };
+    S.patches("SafariZone_EntranceExterior");
+    // Baoba's calls: three hours (300 steps) after his clock, the next test; then the objects.
+    S.stamp(); S.tick();
+    assert(!triggers[7], "not yet");
+    steps += 300; S.tick();
+    assert(triggers[7] && S.phoneCall(142) === null && vars.VAR_UNK_4057 === 4, "Baoba's next test, on the Pokégear");
+    vars.VAR_UNK_4057 = 6; S.stamp(); steps += 300; S.tick();
+    assert(triggers[8] && S.phoneCall(143) === null && vars.VAR_UNK_4057 === 7 && p.flags.johtoSafari.unlock === 1, "Object Arrangement");
+    assert.deepStrictEqual(S.unlockedIds(), [0, 1, 2, 19, 20, 12], "Trainer ID ...0: the Plains objects first");
+    // Three Shrubbery in the Plains (place 0): 3 Plains points, the Girafarig.
+    assert(S.slotsOf(0, "land")[0][1][0] !== "Girafarig");
+    // (n objects on the open ground of an Area, a tile apart.)
+    const scatter = (a, id, n) => { const at = []; for (let k = 0; k < 1024 && at.length < n; k += 2) if (S.fits(a, id, k & 31, k >> 5, -1)) { S.place(a, id, k & 31, k >> 5); at.push(k); } return at; };
+    const put = scatter(0, 0, 3);
+    assert(S.points(0).points.plains === 3 && S.slotsOf(0, "land")[0][1][0] === "Girafarig", "the Plains' bonus Pokémon");
+    assert(SZ.collision[(32 + (put[0] >> 5)) * SZ.width + 32 + (put[0] & 31)] === 1 && !S.fits(0, 0, put[0] & 31, put[0] >> 5, -1), "an object blocks its tile");
+    // Six more in the Meadow (place 2): 6 points, the Chansey wants 12; ten days (of steps) on, each is worth 2, and Baoba calls.
+    scatter(1, 1, 6);
+    const chansey = () => S.slotsOf(1, "land").some((v) => v[1][0] === "Chansey");
+    assert(S.points(1).points.plains === 6 && !chansey());
+    steps += 10 * 2400; S.tick();
+    assert(S.points(1).points.plains === 12 && chansey() && triggers[6], "ten days on: the Meadow's Chansey");
+    assert(/Meadow/.test(S.phoneCall(null).join(" ")), "Baoba says where");
+    // In the Safari Game: A facing an open spot places one, facing one takes it away.
+    S.action(0);
+    const open = [...Array(1024).keys()].find((k) => k > 64 && S.fits(0, 0, k & 31, k >> 5, -1) && S.fits(0, 0, k & 31, (k >> 5) + 1, -1)), fx = 32 + (open & 31), fy = 32 + (open >> 5);
+    here = { x: fx, y: fy + 1 };
+    assert(S.faced("SafariZone_EntranceExterior", fx, fy, false) && !S.faced("SafariZone_EntranceExterior", 2, 2, false));
+    S.fieldObject(fx, fy).then(() => {
+      assert(S.points(0).count.plains === 4 && /Placed Shrubbery/.test(said.join("|")), "placed in the field: " + said.join("|"));
+      return S.fieldObject(fx, fy);
+    }).then(() => assert(S.points(0).count.plains === 3 && /Removed the Shrubbery/.test(said.join("|")), "taken away"));
+    const owJs = fs.readFileSync(path.join(root, "ui/overworld.js"), "utf8"), gearJs = fs.readFileSync(path.join(root, "ui/pokegear.js"), "utf8");
+    assert(/ctx\.faced && ctx\.faced\(/.test(owJs) && /6: \[24, null\], 7: \[24, 142\]/.test(gearJs) && /env\.baobaCall\(script\)/.test(gearJs), "the field and the Pokégear's sides");
+    assert(scripts.indexOf("ui/johto-safari-objects.js") >= 0 && scripts.indexOf("ui/johto-safari-objects.js") < scripts.indexOf("ui/game.js"), "the arranging screen loads");
+  }
   // (Upstairs in a Pokémon Center is FireRed's own floor, its people too.)
   for (const n of J.filter((n) => !/_PokemonCenter_2F$/.test(n))) for (const p of WORLD_MAPS[n].people) {
     const fr = /^(item_ball|cut_tree|rock_smash_rock)$/.test(p.sprite);

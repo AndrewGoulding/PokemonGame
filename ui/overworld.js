@@ -20,6 +20,7 @@
 //   { type: "select" }                        Select (the registered key item)
 //   { type: "follower", map }                 A facing the Pokémon walking behind you (ctx.follower)
 //   { type: "headbutt", map, x, y }           A facing a tree you could Headbutt (ctx.headbuttTree)
+//   ctx.faced(map, x, y, surfing)'s event      A facing a tile the game has a use for (Johto's Safari Zone objects)
 // Plain signs and people just show their text here.
 //
 // ctx: { player (the save: location, name), special(script) -> bool,
@@ -36,7 +37,8 @@
 //        drawMap(g, map, x, y) (more drawn on the map, under people: Violet's Gym's lift),
 //        iceBlockStopped(def) (an ice block pushed along the ice has come to rest),
 //        follower(map) -> the look of the Pokémon walking behind you, or null (ui/follower.js),
-//        headbuttTree(map, x, y) -> bool (a tree there you could Headbutt) }
+//        headbuttTree(map, x, y) -> bool (a tree there you could Headbutt),
+//        faced(map, x, y, surfing) -> an event to finish with, or null (A facing a tile) }
 //
 // The player is walking, on the Bicycle or surfing (Overworld.setAvatar;
 // kept in player.flags.avatar). The Bicycle goes faster and only where the
@@ -1051,6 +1053,9 @@
     } else if (World.facingWater({ map: me.map, x: me.x, y: me.y }, me.facing, occupiedForPlayer) && ctx.canSurf && ctx.canSurf()) {
       return finish({ type: "water", map: me.map });
     }
+    // Anything else the game does with the tile you face (ctx.faced: the Safari Zone's objects).
+    const faced = ctx.faced && ctx.faced(me.map, tx, ty, me.avatar === "surf");
+    if (faced) return finish(faced);
   }
 
   // ---------- Frame loop ----------

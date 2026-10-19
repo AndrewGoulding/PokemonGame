@@ -25,7 +25,8 @@
 //   confirm(question), giveItem(id) (and says so), hasItem(id), beaten(id),
 //   setBeaten(id, on), rematch(person, trainer, intro) -> outcome, badges()
 //   ({ johto, all }), dex() ({ seen, caught }), caught(species), dayCare() (names),
-//   frame() (the Option screen's FRAME).
+//   frame() (the Option screen's FRAME), baobaCall(script) (Baoba calling: the
+//   Safari Zone's side of it; his words, or null for the script's).
 //
 // What you've got lives in player.flags.johto (HGSS's flags), as `phone`
 // (the numbers you have, as RegisterGearNumber gives them) and `gear`
@@ -57,7 +58,8 @@
   const CALLERS = new Set([T.GENERIC, T.GYM_LEADER, T.FRIEND, T.BUENA, T.IRWIN]);
   const CALL_MINUTES = 10, CALL_CHANCE = 50;
   // The call triggers' calls (ov02_02253C84): who, and what they say.
-  const TRIGGERS = { 0: [1, 13], 1: [1, 7], 2: [15, 85], 3: [9, 93] };
+  // (Baoba's: the new Pokémon in an Area, his next test, the objects: ui/johto-safari.js.)
+  const TRIGGERS = { 0: [1, 13], 1: [1, 7], 2: [15, 85], 3: [9, 93], 6: [24, null], 7: [24, 142], 8: [24, 143], 9: [24, 144], 10: [24, 145] };
   // HGSS's Gen 4 Berries (ITEM_CHERI_BERRY on: a gift "berry" is one of the ten) and
   // Balls (ITEM_POKE_BALL's gift: an Ultra, Great or Poké Ball).
   const BERRIES = ["cheri-berry", "chesto-berry", "pecha-berry", "rawst-berry", "aspear-berry", "leppa-berry", "oran-berry", "persim-berry", "lum-berry", "sitrus-berry"];
@@ -220,7 +222,11 @@
           // (Their rematches are at the Fighting Dojo, which this game's Saffron hasn't: not today.)
           return said(i, 2, env.badges().all >= 16 ? 4 : 3);
         }
-        case T.BAOBA: return scripted(i, script != null ? script : c.local, incoming, 0);
+        case T.BAOBA: {
+          // (His calls change the Safari Zone, and say which Areas have new Pokémon: env.baobaCall.)
+          const words = incoming && env.baobaCall ? env.baobaCall(script) : null;
+          return words || scripted(i, script != null ? script : c.local, incoming, 0);
+        }
         case T.IRWIN: {
           if (!incoming) return scripted(i, takeover() ? 156 : 172 + rnd(3), false, 0);
           const all = env.badges().all;

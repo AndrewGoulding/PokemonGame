@@ -36,7 +36,7 @@
 //   phoneCall(who, kind, n), registerCard(n), phoneRematch(contact), phoneTrigger(n, on) (ui/pokegear.js),
 //   coinsBox(on), casinoGame() (ui/voltorb-flip.js),
 //   shake(times, { x, y, delay }), alphPuzzle(n) (the flag to set if put together), alphWall(n), unownCaught(),
-//   safariAction(n), safariChallenge(n), areaCustomizer() (ui/johto-safari.js),
+//   safariAction(n), safariChallenge(n), areaCustomizer(), safariStamp() (ui/johto-safari.js),
 //   magnetTrain(toward, mapConst, x, y) (the Magnet Train's ride: ui/magnet-train.js).
 (function () {
   "use strict";
@@ -593,6 +593,7 @@
           // The Safari Zone (ui/johto-safari.js): the Safari Game, Baoba's tests, the Area Customizer.
           case "SafariZoneAction": env.safariAction(+getVar(a[0]) || 0); break;
           case "CheckSafariZoneChallengeCompleted": setVar(a[1], env.safariChallenge(+getVar(a[0]) || 0)); break;
+          case "UpdateSafariZoneIGT": env.safariStamp(); break;
           case "ScrCmd_716": await flush(); if (await env.areaCustomizer()) setFlag("FLAG_UNK_99D", true); break;
 
           // The screen, and warps.

@@ -119,13 +119,16 @@ for (const set of [[0, 1, 2, 3, 4, 5], [6, 7, 8, 9, 10, 11]]) {
     if (pics.length) writeAnimSheet(animFile, pics); else if (fs.existsSync(animFile)) fs.unlinkSync(animFile);
     // Its tiles: solid or not, and what they are (FireRed's behaviours), a
     // character each and two hex digits each.
-    let solid = "", beh = "";
+    // (And where an object can go: 1 on open ground, sand or mud, 2 on water
+    // you Surf on, else 0: field_control.c's std_safari_place_object tests.)
+    let solid = "", beh = "", place = "";
     for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
-      const v = r.perm[(y0 + y) * r.width + x0 + x];
-      solid += (v & 0xff) === 0x13 ? "0" : String((v >> 15) & 1);
-      beh += frBehavior(v & 0xff).toString(16).padStart(2, "0");
+      const v = r.perm[(y0 + y) * r.width + x0 + x], b = v & 0xff, fb = frBehavior(b);
+      solid += b === 0x13 ? "0" : String((v >> 15) & 1);
+      beh += fb.toString(16).padStart(2, "0");
+      place += fb === 0x10 || fb === 0x15 ? "2" : !((v >> 15) & 1) && [0x00, 0x21, 0xa4].includes(b) ? "1" : "0";
     }
-    out.areas[a] = { name: AREA_NAMES[a], key: AREAS[a], solid, behavior: beh, anim: pics.length ? { cells, anims: pic.anims } : undefined };
+    out.areas[a] = { name: AREA_NAMES[a], key: AREAS[a], solid, behavior: beh, place, anim: pics.length ? { cells, anims: pic.anims } : undefined };
     const tiles = beh.match(/../g);
     console.log(AREA_NAMES[a], "grass", tiles.filter((h) => h === "02").length, "water", tiles.filter((h) => h === "10" || h === "15").length, "anim cells", cells.length / 4);
   });
@@ -171,10 +174,141 @@ for (const p of JSON.parse(fs.readFileSync(path.join(ROOT, "files/poketool/perso
   if (sp && p.greatMarshRate) out.flee[sp] = p.greatMarshRate;
 }
 
+// ---------- Object Arrangement ----------
+// HGSS's 24 objects (src/unk_02097268.c's sObjects: the build model, its
+// size in tiles, its type), their names and words (msg_0430), the four
+// groups of six Baoba's calls unlock (overlay 108's lists, in the order your
+// Trainer ID's last digit takes them), the points each object's worth by the
+// tens of days its Area's been in the layout (sObjectLevelBoosts), and the
+// field's words (msg_0427: placing and removing).
+const U = fs.readFileSync(path.join(ROOT, "src/unk_02097268.c"), "utf8");
+const OBJ_TYPES = { NONE: null, PLAINS: "plains", FOREST: "forest", PEAK: "peak", WATER: "water" };
+const BM = {};
+for (const m of fs.readFileSync(path.join(ROOT, "include/constants/buildmodel.h"), "utf8").matchAll(/#define\s+(BUILD_MODEL_\w+)\s+(\d+)/g)) BM[m[1]] = +m[2];
+const objDefs = [...U.split("sObjects[")[1].split("};")[0].matchAll(/\[SAFARI_ZONE_OBJECTID_(\w+)\]\s*=\s*\{\s*(\w+),\s*(\w+),\s*(\d+),\s*(\d+),\s*(\w+),\s*SAFARI_ZONE_OBJECT_TYPE_(\w+)\s*\}/g)]
+  .map((m) => ({ model: BM[m[2]], w: +m[4], h: +m[5], gendered: m[6] === "TRUE", type: OBJ_TYPES[m[7]] }));
+if (objDefs.length !== 24) throw new Error("couldn't read the Safari Zone's objects");
+const OM = JSON.parse(fs.readFileSync(path.join(ROOT, "files/msgdata/msg/msg_0430.json"), "utf8")).messages
+  .map((x) => [].concat(x.en_US || "").join("").replace(/’/g, "'").split(/\n/).map((t) => t.trim()).filter(Boolean));
+const ASM = fs.readFileSync(path.join(ROOT, "asm/overlay_108_021E8850.s"), "utf8").replace(/;.*/g, "");
+const asmBytes = (label) => ASM.split(label + ":")[1].split(/\n\s*\n|\.balign|\n\w/)[0].match(/0x[0-9A-F]+/gi).map((h) => parseInt(h, 16));
+const asmWords = ASM.split("ov108_021EAD08:")[1].split("\n\n")[0];
+const groups = [...asmWords.matchAll(/\.word\s+(\d+),\s*(\w+)/g)].map((m) => asmBytes(m[2]).slice(0, +m[1]));
+const order = asmBytes("ov108_021EAD28");
+const boosts = [...U.split("sObjectLevelBoosts")[1].split("};")[0].matchAll(/\{([\d,\s]+)\}/g)].map((m) => m[1].split(",").map(Number));
+if (groups.length !== 4 || order.length !== 40 || boosts.length !== 4) throw new Error("couldn't read Object Arrangement's tables");
+
+// Each object's picture: its build model (a/0/4/0) drawn as the maps are,
+// from above and in front (tools/lib/hgss-map.js's "oblique"), 4x
+// supersampled, cropped; all of them in one sheet, with where each stands
+// from its tiles' top left corner.
+const N = require("./lib/nitro");
+const { readNarc } = require("./lib/narc");
+const bldModels = readNarc(path.join(ROOT, "files/a/0/4/0"));
+function drawModel(id) {
+  const nb = N.parseNsb(bldModels[id]), CW = 64, CH = 112, CX = 32, CZ = 88, SS = 4, W = CW * SS, H = CH * SS;
+  const col = new Float32Array(W * H * 4), dep = new Float32Array(W * H).fill(-1e9), texc = new Map();
+  const tex = (mat) => {
+    if (!mat || !mat.texName) return null;
+    const k = mat.texName + "/" + mat.palName;
+    if (!texc.has(k)) texc.set(k, N.decodeTexture(nb.tex, mat.texName, mat.palName));
+    return texc.get(k);
+  };
+  const wrap = (c, n, rep, mir) => {
+    let i = Math.floor(c * n);
+    if (!rep) return Math.min(n - 1, Math.max(0, i));
+    if (mir) { const per = Math.floor(i / n); i = ((i % n) + n) % n; return per & 1 ? n - 1 - i : i; }
+    return ((i % n) + n) % n;
+  };
+  const tris = [];
+  for (const m of nb.models) for (const t of N.buildTriangles(m, N.M.ident())) tris.push(t);
+  const proj = (p) => [(p[0] + CX) * SS, (p[2] - p[1] + CZ) * SS, p[1] + p[2]];
+  // (Opaque first, with the depth; then the translucent, the shadow and the fountain's spray, over it.)
+  for (const pass of [false, true]) for (const t of tris) {
+    const mat = t.mat, tx = tex(mat), ma = mat ? mat.alpha : 1;
+    if ((ma < 0.99 || !!(tx && (tx.fmt === 1 || tx.fmt === 6))) !== pass) continue;
+    const P = t.v.map((v) => proj(v.p));
+    const a2 = (P[1][0] - P[0][0]) * (P[2][1] - P[0][1]) - (P[2][0] - P[0][0]) * (P[1][1] - P[0][1]);
+    if (Math.abs(a2) < 1e-9 || (mat && mat.cullBack && a2 > 0) || (mat && mat.cullFront && a2 < 0)) continue;
+    const x0 = Math.max(0, Math.floor(Math.min(P[0][0], P[1][0], P[2][0]))), x1 = Math.min(W - 1, Math.ceil(Math.max(P[0][0], P[1][0], P[2][0])));
+    const y0 = Math.max(0, Math.floor(Math.min(P[0][1], P[1][1], P[2][1]))), y1 = Math.min(H - 1, Math.ceil(Math.max(P[0][1], P[1][1], P[2][1])));
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const px = x + 0.5, py = y + 0.5;
+      const w0 = ((P[1][0] - px) * (P[2][1] - py) - (P[2][0] - px) * (P[1][1] - py)) / a2;
+      const w1 = ((P[2][0] - px) * (P[0][1] - py) - (P[0][0] - px) * (P[2][1] - py)) / a2, w2 = 1 - w0 - w1;
+      if (w0 < -1e-6 || w1 < -1e-6 || w2 < -1e-6) continue;
+      const d = w0 * P[0][2] + w1 * P[1][2] + w2 * P[2][2], i = y * W + x, V = t.v;
+      if (!pass && d < dep[i] - 0.01) continue;
+      let rgba = [200, 200, 200, 255];
+      if (tx) {
+        const u = w0 * V[0].uv[0] + w1 * V[1].uv[0] + w2 * V[2].uv[0], v = w0 * V[0].uv[1] + w1 * V[1].uv[1] + w2 * V[2].uv[1];
+        const tp = (mat.texParam | tx.params) >>> 0, X = wrap(u, tx.w, tp & (1 << 16), tp & (1 << 18)), Y = wrap(v, tx.h, tp & (1 << 17), tp & (1 << 19)), q = (Y * tx.w + X) * 4;
+        rgba = [tx.rgba[q], tx.rgba[q + 1], tx.rgba[q + 2], tx.rgba[q + 3]];
+      }
+      const a = (rgba[3] / 255) * ma;
+      if (!pass && a < 0.5) continue;
+      const lit = [0, 1, 2].map((j) => Math.min(1, (w0 * V[0].c[j] + w1 * V[1].c[j] + w2 * V[2].c[j]) / 0.81));
+      for (let j = 0; j < 3; j++) col[i * 4 + j] = pass ? col[i * 4 + j] * (1 - a) + rgba[j] * lit[j] * a : rgba[j] * lit[j];
+      col[i * 4 + 3] = pass ? Math.max(col[i * 4 + 3], a * 255) : 255;
+      if (!pass) dep[i] = d;
+    }
+  }
+  const img = new Uint8ClampedArray(CW * CH * 4);
+  let bx0 = CW, by0 = CH, bx1 = -1, by1 = -1;
+  for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
+    let r = 0, g = 0, b = 0, a = 0;
+    for (let sy = 0; sy < SS; sy++) for (let sx = 0; sx < SS; sx++) {
+      const i = (y * SS + sy) * W + x * SS + sx, al = col[i * 4 + 3] / 255;
+      r += col[i * 4] * al; g += col[i * 4 + 1] * al; b += col[i * 4 + 2] * al; a += al;
+    }
+    if (a < 0.5) continue;
+    const o = (y * CW + x) * 4;
+    img[o] = r / a; img[o + 1] = g / a; img[o + 2] = b / a; img[o + 3] = Math.round(255 * a / (SS * SS));
+    bx0 = Math.min(bx0, x); by0 = Math.min(by0, y); bx1 = Math.max(bx1, x); by1 = Math.max(by1, y);
+  }
+  return { img, CW, CX, CZ, bx0, by0, w: bx1 - bx0 + 1, h: by1 - by0 + 1 };
+}
+const pics = [], sprite = (def, model) => {
+  const p = drawModel(model), at = pics.reduce((s, q) => s + q.w, 0);
+  pics.push(p);
+  // [x in the sheet, width, height, x and y from the object's top left tile corner]
+  return [at, p.w, p.h, p.bx0 - (p.CX - 8 * def.w), p.by0 - (p.CZ - 8 * def.h)];
+};
+out.objects = objDefs.map((d, i) => ({ name: OM[14 + i][0], about: OM[38 + i], type: d.type, w: d.w, h: d.h,
+  sprite: sprite(d, d.model), spriteF: d.gendered ? sprite(d, d.model + 1) : undefined }));
+{
+  const SW = pics.reduce((s, q) => s + q.w, 0), SH = Math.max(...pics.map((q) => q.h)), sheet = new Uint8ClampedArray(SW * SH * 4);
+  let at = 0;
+  for (const p of pics) {
+    for (let y = 0; y < p.h; y++) sheet.set(p.img.subarray(((p.by0 + y) * p.CW + p.bx0) * 4, ((p.by0 + y) * p.CW + p.bx0 + p.w) * 4), (y * SW + at) * 4);
+    at += p.w;
+  }
+  writePng(path.join(mapsDir, MAP + "-objects.png"), SW, SH, sheet);
+}
+out.groups = groups;
+out.unlockOrder = order;
+out.boosts = boosts;
+out.text.place = MSG[4]; out.text.placed = MSG[5]; out.text.remove = MSG[6]; out.text.removed = MSG[7];
+out.text.full = MSG[8]; out.text.noObjects = MSG[9]; out.text.noSpace = MSG[10];
+console.log("objects", out.objects.length, out.objects.map((o) => o.name + " " + o.w + "x" + o.h).join(", "));
+
 const file = path.join(__dirname, "lib/johto-safari.generated.js");
-fs.writeFileSync(file, "// Johto's Safari Zone (tools/build-johto-safari.js, from pret/pokeheartgold): its twelve Areas, their Pokémon, HGSS's default layouts and flee rates.\n" +
+const START = "// Johto's Safari Zone (tools/build-johto-safari.js", END = "// (End of the Safari Zone.)\n";
+const js = START + ", from pret/pokeheartgold): its twelve Areas, their Pokémon, its objects, HGSS's default layouts and flee rates.\n" +
   "window.JOHTO_SAFARI = " + JSON.stringify(out) + ";\n" +
   // (Each Area a patch over the Safari Zone's picture, where the layout puts it: ui/johto-safari.js.)
   "(function () {\n  const m = window.WORLD_MAPS." + MAP + ";\n  if (!m) return;\n  m.patches = m.patches || {};\n" +
-  "  window.JOHTO_SAFARI.areas.forEach((a) => { m.patches[a.key] = { x: 0, y: 0, w: 32, h: 32, top: true, collision: [], anim: a.anim }; });\n})();\n");
+  "  window.JOHTO_SAFARI.areas.forEach((a) => { m.patches[a.key] = { x: 0, y: 0, w: 32, h: 32, top: true, collision: [], anim: a.anim }; });\n})();\n" + END;
+fs.writeFileSync(file, js);
+// And into data/johto-maps.js, in place of what an earlier run (or build-johto.js) put there.
+const mapsFile = path.join(root, "data/johto-maps.js");
+if (fs.existsSync(mapsFile)) {
+  let maps = fs.readFileSync(mapsFile, "utf8");
+  const a = maps.indexOf(START);
+  if (a >= 0) {
+    const e = maps.indexOf(END, a), b = e >= 0 ? e + END.length : maps.indexOf("})();\n", a) + "})();\n".length;
+    maps = maps.slice(0, a) + js + maps.slice(b);
+  } else maps += js;
+  fs.writeFileSync(mapsFile, maps);
+}
 console.log("wrote", path.relative(root, file), (fs.statSync(file).size / 1024).toFixed(0) + " KB");
