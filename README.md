@@ -1871,7 +1871,7 @@ tells you about Mr. Pokémon's email, and his machine offers Chikorita,
 Cyndaquil or Totodile (each one's picture, "You'll take ...?"; Lv. 5, joining
 your party, and a nickname if you like); until he's given you one, New
 Bark's neighbour won't let you go west, and once he has, you've the
-Pokégear (HGSS's Mom gives it; there's no Mom here) and Elm comes out to
+Pokégear (HGSS's Mom gives it; this game's Mom is in Pallet Town) and Elm comes out to
 give you his number as you go. His aide's Potion, Lyra and her Marill
 outside ("So you picked... Chikorita!"), the Guide Gent in Cherrygrove,
 **Mr. Pokémon's house** on Route 30 (the Mystery Egg; Prof. Oak and the
@@ -2205,7 +2205,9 @@ the Gym Leaders have their own (Prof. Oak's tells you how many Pokémon you've
 seen and caught). The scripts' story calls (`PhoneCall`: Elm's panic call
 on Route 30 after Mr. Pokémon, his Egg call in Violet City, the radio, and
 Oak's and Baoba's) ring through it, and **calls come while you walk** as in
-HGSS (`GearPhoneRingManager`): once ten minutes have gone by, the next step
+HGSS (`GearPhoneRingManager`): once 150 steps have gone by (HGSS's ten
+minutes; there's no real-time clock, so the Pokégear's day and time are the
+game's step clock), the next step
 has an even chance of a call from someone whose number you have (half the
 time one of the first group, then 30 and 20 percent), each in turn, never
 from the map you're on; Elm calls when his Mystery Egg hatches. A
@@ -2216,15 +2218,32 @@ talk to them. When one calls wanting a rematch, talk to them and they battle
 with their rematch party (`GetPhoneBookRematch`: HGSS's tiers, `TRAINER_X_2`,
 `_3`, `_4`, the next as the story lets it: after the Radio Tower, the Elite
 Four, then Blue), and give their gift when beaten (Joey's HP Up); a gift
-they called about is theirs to give when you talk to them. (Gym Leaders
-battle again at the Fighting Dojo, which this game hasn't got: they don't
-offer.) The Map card shows the region's Town Map small with where you are, A
+they called about is theirs to give when you talk to them. **Mom** is in the
+phone book from the start: at home she sounds strange on the phone, and
+elsewhere she says something about where you are, then asks about your
+savings. Say yes and she keeps a quarter of each battle's prize (up to
+$999,999); as your savings pass HGSS's marks she buys you something with them
+(`src/mom_gift.c`: a Super Potion, Repel, Silk Scarf, Moon Stone, Choice
+Scarf, Focus Sash and so on, then Berries each $3,000 more) and calls to say
+so, and the deliveryman in any of Johto's Poké Marts has it for you. Talk to
+her at home (Pallet Town's, in this game) to withdraw or deposit money or stop
+saving. **Gym Leaders' rematches**: once you've won Johto's League, each of the
+sixteen Gym Leaders gives you their number when you talk to them in their Gym.
+Call them on their day and time (HGSS's phone book: Whitney on Saturday
+afternoons, Falkner on Saturday mornings, and so on) once you've all sixteen
+Badges, and they'll wait for you at Saffron's Fighting Dojo (five at most at
+once) to battle with HGSS's rematch teams (`TRAINER_LEADER_*_2`). The Map card shows the region's Town Map small with where you are, A
 the Town Map itself. The Radio tunes to HGSS's stations (`Radio_GetAvailableChannels`):
 **Pokémon Music** (DJ Ben: the Pokémon March on Mondays, Wednesdays, Fridays
 and Sundays, the Lullaby on Tuesdays, Thursdays and Saturdays), **Pokémon
 Talk** (Mary and Prof. Oak on five places in the region and a Pokémon there,
-mostly one you haven't caught) and **Buena's Password** (today's password, if
-you've a Blue Card); only the Unown's mysterious transmission in the Ruins of
+mostly one you haven't caught) and the Variety Channel, which goes by the hour
+as HGSS's does (`RadioShow_TranslateStationID`: the hour's remainder by
+three): the Pokémon Search Party, the Serial Radio Drama, then **Buena's
+Password** (at 2:00, 5:00, 8:00 and so on). Her password is one of HGSS's
+thirty (`msg_0066_D23R0102`), a new one at random each day, never the same
+twice running. With a Blue Card you hear it, and Buena at the Radio Tower
+asks for it that day; only the Unown's mysterious transmission in the Ruins of
 Alph's hall, the Mahogany signal round Mahogany until the hideout's cleared,
 and Team Rocket's broadcast while they've the Radio Tower; Kanto has Music,
 Talk and the Poké Flute. Each show's lines come one by one with its song

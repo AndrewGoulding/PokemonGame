@@ -1696,6 +1696,25 @@ if (window.JOHTO_TOWN_MAP) {
   const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
   assert(/<script src="ui\/pokegear\.js"><\/script>/.test(html) && /key: "gear", label: "Pokégear"/.test(gameJs) && /gear\.step\(\)/.test(gameJs));
   assert(["PhoneCall", "RegisterPokegearCard", "GetPhoneBookRematch", "UnsetPhoneCallTrigger"].every((c) => scriptJs.includes('case "' + c + '"')));
+  // Mom (src/mom_gift.c): saving a quarter of each prize once you've said yes, her gifts
+  // as the savings pass their marks, the deliveryman with them; Mom's number from the start.
+  assert(gear.registered(0), "Mom's number");
+  assert.strictEqual(gear.savePrize(4000), 0, "not saving yet");
+  s.f.FLAG_SYS_MOMS_SAVINGS = true;
+  assert.strictEqual(gear.savePrize(4000), 1000);
+  assert(s.gear.mom.balance === 1000 - 600 && plain(s.gear.mom.queue).join() === "super-potion,1" && !s.f.FLAG_HIDE_MOM_GIFT_DELIVERYMAN && s.gear.triggers[12], "a Super Potion bought, the deliveryman there, her call due");
+  said.length = 0;
+  gear.deliveryman().then(() => {
+    assert(s.gear.mom.queue.length === 0 && s.f.FLAG_HIDE_MOM_GIFT_DELIVERYMAN && /package for you/.test(said.join(" ")), "the deliveryman: " + said.join(" / "));
+  }).catch((e) => { console.error(e); process.exit(1); });
+  // Buena's Password: one of the thirty, the same all day (the step clock's).
+  const pw = gear.passwordSet();
+  assert(pw >= 0 && pw < 30 && gear.passwordSet() === pw);
+  // The Gym Leaders: all sixteen at Saffron's Dojo with their rematch teams, their day and time from the phone book.
+  assert.strictEqual(Object.keys(P.leaders).length, 16);
+  for (const [i, L] of Object.entries(P.leaders)) assert(TR[L.trainer] && TR[L.trainer].party.length && L.intro.length && P.contacts[i].day != null, "leader " + i);
+  assert(fs.existsSync(path.join(root, "assets/world/sprites/hgss_gsleader11.png")) && /gear\.talkPerson\(ev\.person/.test(gameJs) && /gear\.savePrize\(/.test(gameJs));
+  assert(/case "GetBuenasPassword"/.test(scriptJs));
 }
 
 // Shiny Pokémon: 1 in 4096; kept through saving; trainers' never are.

@@ -1920,6 +1920,8 @@
         fishable: World.canFish({ map: me.map, x: me.x, y: me.y }, me.facing, me.avatar === "surf", occupiedForPlayer) };
     },
     position: () => ({ map: me.map, x: me.x, y: me.y, facing: me.facing }),
+    // (Walking about, waiting for you: nothing on screen, no step under way. For the browser tests.)
+    idle: () => !!resolveExplore && !paused && !me.move && !fade,
     // Everyone on the map now, where they stand (the VS Seeker looks around).
     people: () => people.filter((p) => !p.hidden).map((p) => ({ def: p.def, x: p.x, y: p.y, facing: p.facing })),
     // Stops someone where they stand, facing `facing` (a trainer the VS Seeker

@@ -53,16 +53,21 @@ function serve() {
   });
 }
 
+// opts: out (the screenshots' folder), save (a save's text to load instead of
+// making one), storage ({ key: text } more for localStorage, as the Option
+// screen's), init (a function run in the page before its scripts).
 async function start(edit, location, opts) {
   opts = opts || {};
-  const save = makeSave(edit, location);
+  const save = opts.save || makeSave(edit, location);
   const server = await serve();
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
   const page = await browser.newPage({ viewport: { width: 960, height: 900 } });
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e.stack || e)));
   page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
-  await page.addInitScript(([key, text]) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem(key, text); sessionStorage.setItem("seeded", "1"); } }, ["pokemon-game-save", save]);
+  const seed = Object.assign({ "pokemon-game-save": save }, opts.storage || {});
+  await page.addInitScript((seed) => { if (!sessionStorage.getItem("seeded")) { for (const k in seed) localStorage.setItem(k, seed[k]); sessionStorage.setItem("seeded", "1"); } }, seed);
+  if (opts.init) await page.addInitScript(opts.init);
   await page.goto("http://localhost:" + server.address().port + "/index.html");
   const outDir = opts.out || path.join(root, "tests/browser/out");
   fs.mkdirSync(outDir, { recursive: true });
