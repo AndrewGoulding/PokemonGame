@@ -6,23 +6,35 @@
 // ui/pokeathlon-events.js has the ten events.
 //
 //   Pokeathlon.attach(game)    // ui/game.js: what it needs of the game (below)
-//   Pokeathlon.performance(record, date)   // a Pokémon's Performance today:
+//   Pokeathlon.performance(record, day)   // a Pokémon's Performance on that day of the month:
 //     // { speed, power, skill, stamina, jump } (1-5 stars), and .max (as high as each goes)
-//   await Pokeathlon.runCourse(course, { supreme })   // -> { score, place } or null (didn't go in)
+//   await Pokeathlon.runCourse(course, { supreme, flag })   // -> { score, place, points } or null (didn't go in)
 //
-// A course is three events, with three of your Pokémon against three teams
-// of the computer's; each event's points add up to your score, and that
-// many Athlete Points are yours (99,999 at most), with 100 more for coming
-// first (the reception's script gives those), and the course's Medal the first
-// time. HGSS's Performance (src/pokemon.c, CalcBoxMonPokeathlonPerformance):
+// A course (HGSS's overlay 96) is three events, with three of your Pokémon
+// against three teams of the computer's; each event's points (HGSS's for its
+// result, ui/pokeathlon-events.js) and then the closing ceremony's bonuses
+// (ov96_021EDA58): the Challenge Bonus, 75 less the team's base stars
+// (performance.narc's, 15 to 75 of them); 10 for each Pokémon that didn't
+// fail, fall or get in its own way (the No-Miss Bonus); 20 for the Pokémon
+// that brought in the most (the points leader); and 10 for the one that
+// jumped, tackled, failed or dashed the most (one of those four, drawn: the
+// prize for effort). Ties are settled by a drawing. Your score is that many
+// Athlete Points (99,999 at most; ov96_021E7718 adds them), and the
+// reception's script gives 100 more for coming first (300 in the Supreme Cup).
+// Coming first, each of your three Pokémon (its species) wins the course's
+// Medal. HGSS's Performance (src/pokemon.c, CalcBoxMonPokeathlonPerformance):
 // each species' base stars, and how far they go up or down, from
 // performance.narc; today's go up or down by its nature and its personality's
-// digits with the day of the month; no Aprijuice here.
+// digits with the day of the month (here the game clock's day); no Aprijuice.
 //
-// Kept in player.flags.pokeathlon: { ap, earned, entries, wins, rank (HGSS's
-// friendship points, ScrCmd_725's), medals: { speed: true, ... }, best: {
-// course: score }, events: { id: [played, best] }, jumps, tackles, shop: {
-// day, bought: [slots] } }.
+// Kept in player.flags.pokeathlon: { ap, rank (HGSS's friendship points,
+// ScrCmd_725's), rec: HGSS's counts (save's Pokeathlon_UnkSubStruct_B00:
+// joined, wins, lasts, bonuses, eventWins [10], eventLasts, instructions,
+// time, and its Pokémon's failed ... impeded), courses: { course: [best
+// winning score, species x3] } (the Trust room's), events: { id: { played,
+// top: [[result, species x3] x5] } } (the Friendship room's), medals: {
+// species: course bits }, statues: [species x3] (the last winning team),
+// shop: { day, bought: [slots] } }.
 (function () {
   "use strict";
 
@@ -31,21 +43,33 @@
   const STAT_LABELS = { speed: "SPD", power: "POW", skill: "SKL", stamina: "STM", jump: "JMP" };
   // (HGSS's Performance order, PERFORMANCE_POWER ... PERFORMANCE_STAMINA, as the nature table has it.)
   const PERF_ORDER = ["power", "skill", "speed", "jump", "stamina"];
-  // The five courses, as the Pokeathlon command numbers them (scr_seq_0167),
-  // each with its three events (scr_seq_D49R0102's "About events").
+  // The five courses, as the Pokeathlon command numbers them (scr_seq_0167;
+  // ov96_021E7FA8's Medal bits 1, 2, 4, 8, 16), each with its three events
+  // (scr_seq_D49R0102's "About events").
   const COURSES = [
     { key: "speed", name: "Speed Course", events: ["hurdle", "pennant", "relay"] },
     { key: "power", name: "Power Course", events: ["block", "circle", "goal"] },
     { key: "skill", name: "Skill Course", events: ["snow", "goal", "pennant"] },
     { key: "stamina", name: "Stamina Course", events: ["ring", "relay", "block"] },
     { key: "jump", name: "Jump Course", events: ["lamp", "disc", "hurdle"] }];
-  // (The events in msg_0191's order: Hurdle Dash ... Goal Roll, ScrCmd_724 0-9's counts.)
+  // (The events in HGSS's order: Hurdle Dash ... Goal Roll, ScrCmd_724 0-9's.)
   const EVENT_ORDER = ["hurdle", "pennant", "circle", "block", "disc", "lamp", "relay", "ring", "snow", "goal"];
+  // The Friendship room's (ov96_021E80C4: every event's best past these,
+  // ov96_0221A894; Hurdle Dash's a time, so under it).
+  const FRIENDSHIP = { hurdle: 3000, pennant: 35, circle: 40, block: 80, disc: 40, lamp: 350, relay: 12288, ring: 70, snow: 30, goal: 3 };
+  const lower = (id) => id === "hurdle";
   const RIVALS = ["Gina", "Roman", "Kiri", "Dalton", "Mira", "Tobias", "Ayla", "Hugo", "Lena", "Caspian", "Nadia", "Orrin", "Pia", "Felix", "Junie"];
-  const MAX_AP = 99999;
+  const MAX_AP = 99999, MAX_COUNT = 9999999;
+  // (HGSS's counts, as its save keeps them; ACTS are each Pokémon's.)
+  const ACTS = ["failed", "jumped", "points", "tackled", "fell", "dashed", "switched", "impeded"];
+  const COUNTS = ["joined", "wins", "lasts", "bonuses", "eventLasts", "instructions", "time"].concat(ACTS);
 
   let G = null;   // (the game: attach())
   const P = (k) => window.PokeathlonEvents[k];
+  // (The game's clock: no real one here. HGSS's Performance goes by the day
+  // of the month, the shop by the day of the week.)
+  const clock = () => (window.Player && window.Player.gameTime ? window.Player.gameTime(G && G.player()) : { day: 0, weekday: 1, today: "day0" });
+  const dayOfMonth = () => (clock().day % 31) + 1;
 
   // ---------- Performance ----------
 
@@ -62,9 +86,9 @@
     const v = { speed: d.spe, power: d.atk, skill: ((d.spa || 0) + (d.spd || 0)) / 2, stamina: ((d.hp || 0) + (d.def || 0)) / 2, jump: ((d.spe || 0) + (d.atk || 0)) / 2 };
     return STATS.map((k) => { const b = Math.max(0, Math.min(4, Math.round((v[k] || 60) / 30) - 1)); return [b, Math.max(0, b - 1), Math.min(4, b + 1)]; });
   }
-  function performance(r, date) {
-    date = date || new Date();
-    const base = baseOf(r.species), day = date.getDate(), pid = (r.personality >>> 0) || 0;
+  function performance(r, day) {
+    day = day || dayOfMonth();
+    const base = baseOf(r.species), pid = (r.personality >>> 0) || 0;
     const nat = DATA().natures.find((n) => n[0] === r.nature) || ["", 0, 0, 0, 0, 0];
     const out = { max: {} };
     STATS.forEach((k, i) => {
@@ -77,30 +101,41 @@
     });
     return out;
   }
+  // The Challenge Bonus (ov96_021ED954): 75 less the team's base stars.
+  const challenge = (team) => Math.max(0, Math.min(75, 75 - team.mons.reduce((n, m) => n + baseOf(m.species).reduce((a, b) => a + b[0] + 1, 0), 0)));
 
   // ---------- Saved ----------
 
   function save() {
     const f = G.player().flags;
     const s = f.pokeathlon || (f.pokeathlon = {});
-    for (const [k, v] of [["ap", 0], ["earned", 0], ["entries", 0], ["wins", 0], ["rank", 0], ["jumps", 0], ["tackles", 0]]) if (s[k] == null) s[k] = v;
-    s.medals = s.medals || {}; s.best = s.best || {}; s.events = s.events || {};
+    if (s.ap == null) s.ap = 0;
+    if (s.rank == null) s.rank = 0;
+    if (!s.rec) {
+      // (An older save's: its entries, wins, jumps and tackles.)
+      s.rec = { eventWins: EVENT_ORDER.map(() => 0) };
+      for (const k of COUNTS) s.rec[k] = 0;
+      Object.assign(s.rec, { joined: s.entries | 0, wins: s.wins | 0, jumped: s.jumps | 0, tackled: s.tackles | 0 });
+      for (const k of ["entries", "wins", "jumps", "tackles", "earned", "best", "medals"]) delete s[k];
+      s.events = {};
+    }
+    s.courses = s.courses || {}; s.events = s.events || {}; s.medals = s.medals || {};
     return s;
   }
+  const count = (rec, k, n) => { rec[k] = Math.min(MAX_COUNT, (rec[k] || 0) + (n == null ? 1 : n)); };
   function addAp(n) {
     const s = save();
     s.ap = Math.max(0, Math.min(MAX_AP, s.ap + n));
-    if (n > 0) s.earned = Math.min(MAX_AP * 10, s.earned + n);
   }
   // The Athlete Shop's prizes today (ScrCmd_771: the day of the week's list,
   // a longer one with the National Pokédex), each once a day.
-  function prizesToday(date) {
-    date = date || new Date();
+  function prizesToday(weekday) {
+    weekday = weekday == null ? clock().weekday : weekday;
     const nat = G && G.nationalDex ? G.nationalDex() : false;
-    return DATA().prizes[date.getDay() + (nat ? 7 : 0)] || [];
+    return DATA().prizes[weekday + (nat ? 7 : 0)] || [];
   }
-  function shopToday(date) {
-    const s = save(), today = (date || new Date()).toDateString();
+  function shopToday() {
+    const s = save(), today = clock().today;
     if (!s.shop || s.shop.day !== today) s.shop = { day: today, bought: [] };
     return s.shop;
   }
@@ -201,31 +236,104 @@
     return (await key()) === "a";
   }
   const ORD = ["1st", "2nd", "3rd", "4th"];
-  // The order the teams came in (ties: yours first, then as they are).
-  const ranking = (points, you) => [0, 1, 2, 3].sort((a, b) => points[b] - points[a] || (a === you ? -1 : b === you ? 1 : a - b));
-  async function eventResults(name, teams, points, n) {
-    const g = canvasIn(scene());
-    backdrop(g, name, "Event " + n + "/3");
-    ranking(points, 0).forEach((t, i) => row(g, teams, t, i, String(points[t])));
-    P("text")(g, "A: Next", W / 2, 143, "white", "center");
-    await key();
+  // A team's row: its place (or none), name, Pokémon (or just those named) and what it got.
+  function row(g, teams, t, y, place, right, only) {
+    const C = P("TEAM")[t];
+    P("box")(g, 4, y, W - 8, 22);
+    g.fillStyle = C[2]; g.fillRect(8, y + 3, 22, 16); g.fillStyle = C[0]; g.fillRect(9, y + 4, 20, 14);
+    if (place != null) P("text")(g, ORD[place], 19, y + 3, "white", "center");
+    P("text")(g, teams[t].name, 34, y + 3, "dark");
+    teams[t].mons.forEach((m, k) => { if (!only || only.includes(k)) P("drawMon")(g, { team: t, icon: P("iconOf")(m.species), t: 0, face: -1, z: 0 }, 112 + k * 22, y + 21, { noShadow: true }); });
+    P("text")(g, right, W - 10, y + 3, teams[t].you ? "gold" : "dark", "right");
   }
-  function row(g, teams, t, i, right) {
-    const y = 24 + i * 29, C = P("TEAM")[t];
-    P("box")(g, 4, y, W - 8, 27);
-    g.fillStyle = C[2]; g.fillRect(8, y + 4, 22, 19); g.fillStyle = C[0]; g.fillRect(9, y + 5, 20, 17);
-    P("text")(g, ORD[i], 19, y + 6, "white", "center");
-    P("text")(g, teams[t].name, 34, y + 6, "dark");
-    teams[t].mons.forEach((m, k) => P("drawMon")(g, { team: t, icon: P("iconOf")(m.species), t: 0, face: -1, z: 0 }, 112 + k * 22, y + 24, { noShadow: true }));
-    P("text")(g, right, W - 10, y + 6, teams[t].you ? "gold" : "dark", "right");
+  // A screen of the closing ceremony: rows, and the announcer's words, a page at a time (A).
+  async function announce(title, sub, draw, pages) {
+    for (const lines of pages) {
+      const g = canvasIn(scene());
+      backdrop(g, title, sub);
+      if (draw) draw(g);
+      P("box")(g, 2, 116, W - 4, 42);
+      [].concat(lines).forEach((line, i) => P("text")(g, line, 10, 120 + i * 16, "dark"));
+      await key();
+    }
   }
-  async function finalResults(course, teams, scores, totals) {
-    const g = canvasIn(scene());
-    backdrop(g, course.name, "Results");
-    ranking(totals, 0).forEach((t, i) => row(g, teams, t, i, String(totals[t])));
-    // (Yours, event by event.)
-    P("text")(g, course.events.map((id, e) => scores[e][0]).join(" + ") + " = " + totals[0] + "   A: Next", W / 2, 143, "white", "center");
-    await key();
+  // An event's result, in its own measure.
+  function measure(id, raw) {
+    if (id === "hurdle") return (raw / 60).toFixed(1) + "s";
+    if (id === "relay") return (raw / 1024).toFixed(1) + " laps";
+    return String(raw);
+  }
+  async function eventResults(id, teams, r, n) {
+    const order = [0, 1, 2, 3].sort((a, b) => r.points[b] - r.points[a] || a - b);
+    await announce(P("EVENTS")[id].name, "Event " + n + "/3", (g) => order.forEach((t, i) => {
+      const place = r.points.filter((p) => p > r.points[t]).length;
+      row(g, teams, t, 22 + i * 23, place, measure(id, r.raw[t]) + "   " + r.points[t] + " pts", []);
+    }), [[["All right! Results of the first event!?", "So exciting! How was the second event?!", "The end! How was the third event?!"][n - 1]]]);
+  }
+
+  // ---------- The closing ceremony (ov96_021EBB64) ----------
+
+  // What each team's Pokémon did over the three events, added up (the
+  // points each brought in: its share of its team's points in each event).
+  function addActs(results) {
+    return [0, 1, 2, 3].map((t) => [0, 1, 2].map((i) => {
+      const a = Object.fromEntries(ACTS.map((k) => [k, 0]));
+      for (const r of results) {
+        for (const k of ACTS) if (k !== "points") a[k] += r.acts[t][i][k] | 0;
+        const all = r.acts[t].reduce((n, x) => n + Math.max(0, x.points | 0), 0);
+        if (all) a.points += Math.round(r.points[t] * Math.max(0, r.acts[t][i].points | 0) / all);
+      }
+      return a;
+    }));
+  }
+  // The bonuses (ov96_021EDA58): each team's, and which Pokémon won which.
+  function bonuses(teams, acts, rng) {
+    const mons = [];
+    acts.forEach((team, t) => team.forEach((a, i) => mons.push({ t, i, a })));
+    const best = (k) => Math.max(...mons.map((m) => m.a[k]));
+    // (The prize for effort: one of the four, drawn, that someone did.)
+    const EFFORT = ["jumped", "tackled", "failed", "dashed"];
+    const from = Math.floor(rng() * 4);
+    let effort = null;
+    for (let k = 0; k < 4 && !effort; k++) if (best(EFFORT[(from + k) % 4]) > 0) effort = EFFORT[(from + k) % 4];
+    const pick = (test) => mons.filter(test).map((m) => [m.t, m.i]);
+    const top = best("points");
+    return {
+      challenge: teams.map(challenge),
+      noMiss: pick((m) => !m.a.failed && !m.a.fell && !m.a.impeded),
+      leader: pick((m) => m.a.points === top),
+      effort, effortMons: effort ? pick((m) => m.a[effort] === best(effort)) : []
+    };
+  }
+  const EFFORT_SAY = { jumped: "The Pokémon that jumped the most...", tackled: "The Pokémon that hit the most...", failed: "The Pokémon that failed the most...", dashed: "The Pokémon that dashed the most..." };
+  async function ceremony(course, teams, results, rng) {
+    const acts = addActs(results), b = bonuses(teams, acts, rng);
+    const bonus = [0, 0, 0, 0], awards = [0, 0, 0, 0];
+    const title = course.name, sub = "Closing ceremony";
+    await announce(title, sub, null, [["Great job, athletes!", "Which team fought the hardest?"], ["We've got the results! But first...", "who's overflowing with fighting spirit?"]]);
+    b.challenge.forEach((n, t) => { bonus[t] += n; if (n) awards[t]++; });
+    await announce(title, sub, (g) => [0, 1, 2, 3].forEach((t) => row(g, teams, t, 22 + t * 23, null, "+" + b.challenge[t])), [["A Challenge Bonus for", "Pokémon and Team!"]]);
+    // Each Pokémon's prizes, team by team.
+    const prize = async (words, list, n) => {
+      for (const [t] of list) { bonus[t] += n; awards[t]++; }
+      const by = [0, 1, 2, 3].map((t) => list.filter(([x]) => x === t).map(([, i]) => i));
+      const shown = [0, 1, 2, 3].filter((t) => by[t].length);
+      await announce(title, sub, (g) => shown.forEach((t, k) => row(g, teams, t, 22 + k * 23, null, "+" + n * by[t].length, by[t])),
+        [words, list.length ? ["That's all!"] : ["There wasn't one this time."]]);
+    };
+    await prize(["Continuing on, the individual prizes...", "The No-Miss Bonus!"], b.noMiss, 10);
+    await prize(["Moving on...", "the points leader!"], b.leader, 20);
+    if (b.effort) await prize(["Next up... the prize for effort!", EFFORT_SAY[b.effort]], b.effortMons, 10);
+    // The event points, and the overall winner (ties by a drawing).
+    const totals = [0, 1, 2, 3].map((t) => bonus[t] + results.reduce((n, r) => n + r.points[t], 0));
+    const draw = [0, 1, 2, 3].map(() => rng());
+    const order = [0, 1, 2, 3].sort((a, c) => totals[c] - totals[a] || draw[a] - draw[c]);
+    const tie = totals[order[0]] === totals[order[1]];
+    await announce(title, sub, (g) => order.forEach((t, i) => row(g, teams, t, 22 + i * 23, i,
+      results.map((r) => r.points[t]).join(" + ") + " + " + bonus[t] + " = " + totals[t], [])),
+    [["Finally...", "we'll add up the event points!"]].concat(tie ? [["What? We have a tie!?", "Well, we settle ties by a drawing!"]] : [])
+      .concat([["The overall winner, with " + totals[order[0]] + " points...", "Team " + teams[order[0]].name + "!"]]));
+    return { totals, order, bonus, awards, acts };
   }
 
   // ---------- A course ----------
@@ -254,45 +362,68 @@
     }
     const rng = Math.random;
     const teams = [mine].concat(rivalTeams(rng, opts.supreme));
-    const s = save();
-    s.entries++;
+    const s = save(), rec = s.rec, flag = opts.flag || (() => false);
     G.music("gs_bicycle");
-    const scores = [], counts = {};
+    const results = [];
     for (let e = 0; e < 3; e++) {
-      const id = course.events[e], ev = P("EVENTS")[id];
+      const id = course.events[e];
       const r = await P("run")(scene(), id, teams, { rng, sfx: G.sfx, ai: opts.supreme ? 1.3 : 1 });
-      scores.push(r.points);
-      for (const [k, v] of Object.entries(r.counts)) counts[k] = (counts[k] || 0) + (v | 0);
-      // (The records: how often each event's been played, and its best.)
-      const rec = s.events[id] || (s.events[id] = [0, 0]);
-      rec[0]++; rec[1] = Math.max(rec[1], r.points[0]);
-      await eventResults(ev.name, teams, r.points, e + 1);
+      results.push(r);
+      await eventResults(id, teams, r, e + 1);
     }
-    const totals = [0, 1, 2, 3].map((t) => scores.reduce((n, p) => n + p[t], 0));
-    const place = ranking(totals, 0).indexOf(0);
-    await finalResults(course, teams, scores, totals);
-    // Records and Medals.
-    s.jumps += counts.jumps | 0;
-    s.tackles += counts.tackles | 0;
-    const score = totals[0];
-    const newBest = score > (s.best[course.key] || 0);
-    if (newBest) s.best[course.key] = score;
-    if (place === 0) s.wins++;
+    const c = await ceremony(course, teams, results, rng);
+    const score = c.totals[0], place = c.order.indexOf(0), won = place === 0;
+    const last = !won && score === Math.min(...c.totals);
+    const species = mine.mons.map((m) => m.species);
+    // The Medal (each of the three's), and the course's record: the best
+    // winning score (999 at most) and the team that got it (ov96_021E786C).
+    const best = s.courses[course.key];
+    const newBest = won && (!best || score > best[0]);
+    const pages = [];
+    if (won) {
+      const bit = 1 << COURSES.indexOf(course);
+      for (const sp of species) s.medals[sp] = (s.medals[sp] | 0) | bit;
+      pages.push(["Team " + mine.name + " was awarded", "the " + course.name.replace(" Course", " Medal") + "!"]);
+      if (newBest) { s.courses[course.key] = [Math.min(999, score)].concat(species); pages.push(["Team " + mine.name + " beat its personal", "best at the " + course.name + "!"]); }
+      s.statues = species.slice();
+      pages.push(["Congratulations!", "That was a wonderful Performance!"], ["Keep aiming to be the top Pokéathlete!", "That is... Pokéathlon FOREVER!"]);
+    } else pages.push(["You did well on the", course.name + "!"]);
+    if (won) G.fanfare("gs_me_pt_victory");
+    await announce(course.name, "Closing ceremony", (g) => c.order.forEach((t, i) => row(g, teams, t, 22 + i * 23, i, String(c.totals[t]))), pages);
+    // The records (ov96_021E7D6C and ov96_021E7938).
+    count(rec, "joined");
+    if (won) count(rec, "wins"); else if (last) count(rec, "lasts");
+    count(rec, "bonuses", c.awards[0]);
+    results.forEach((r, e) => {
+      const id = course.events[e], i = EVENT_ORDER.indexOf(id), top = Math.max(...r.points);
+      if (r.points[0] === top) rec.eventWins[i] = Math.min(MAX_COUNT, rec.eventWins[i] + 1);
+      else if (r.points[0] === Math.min(...r.points)) count(rec, "eventLasts");
+      count(rec, "instructions", r.instructions | 0);
+      count(rec, "time", Math.floor((r.frames | 0) / 60));
+      // (Each event's five best results, and how often it's been played.)
+      const ev = s.events[id] || (s.events[id] = { played: 0, top: [] });
+      ev.played = Math.min(MAX_COUNT, ev.played + 1);
+      ev.top.push([r.raw[0]].concat(species));
+      ev.top.sort((a, b) => (lower(id) ? a[0] - b[0] : b[0] - a[0]));
+      ev.top.length = Math.min(5, ev.top.length);
+    });
+    for (const k of ACTS) count(rec, k, c.acts[0].reduce((n, a) => n + a[k], 0));
     addAp(score);
-    let medal = false;
-    if (place === 0 && !s.medals[course.key]) { s.medals[course.key] = true; medal = true; }
-    // (The rooms below, HGSS's FLAG_UNK_0EF to 0F1: the Trust room with a win,
-    // the Potential room with three Medals, the Friendship room with all five.)
-    const medals = Object.keys(s.medals).length;
-    if (s.wins) G.setFlag("FLAG_UNK_0EF", true);
-    if (medals >= 3) G.setFlag("FLAG_UNK_0F0", true);
-    if (medals >= 5) G.setFlag("FLAG_UNK_0F1", true);
+    // The rooms below (HGSS's FLAG_UNK_0EF to 0F1, ov96_021E7718): the
+    // Potential room when one of your Pokémon has all five Medals, the Trust
+    // room when you've won every course, the Friendship room when each
+    // event's best is past its mark.
+    if (won && !flag("FLAG_UNK_0F0") && species.some((sp) => s.medals[sp] === 31)) G.setFlag("FLAG_UNK_0F0", true);
+    if (won && !flag("FLAG_UNK_0EF") && COURSES.every((k) => s.courses[k.key])) G.setFlag("FLAG_UNK_0EF", true);
+    if (!flag("FLAG_UNK_0F1") && EVENT_ORDER.every((id) => {
+      const t = s.events[id] && s.events[id].top[0];
+      return t && (lower(id) ? t[0] < FRIENDSHIP[id] : t[0] > FRIENDSHIP[id]);
+    })) G.setFlag("FLAG_UNK_0F1", true);
     await leave();
-    if (place === 0) G.fanfare("gs_me_pt_victory");
-    if (newBest) await G.say(["A new record for the " + course.name + ":\n" + score + " points!"]);
-    if (medal) await G.say(["{PLAYER} won the " + course.name.replace(" Course", " Medal") + "!"]);
     await G.persist();
-    return { score, place, points: Math.min(score, MAX_AP) };
+    // (The script then says the score and the points; the course's own
+    // messages, the Medal's and the record's, came in the ceremony above.)
+    return { score, place, points: Math.min(score, 0xffff) };
   }
 
   // ---------- The Athlete Shop (ScrCmd_771) ----------
@@ -323,27 +454,43 @@
     window.ShopScreen.close();
   }
 
-  // ---------- The records (ScrCmd_712) ----------
+  // ---------- The records ----------
 
+  const evName = (id) => P("EVENTS")[id].name;
+  const pages2 = (lines) => { const out = []; for (let i = 0; i < lines.length; i += 2) out.push(lines.slice(i, i + 2).join("\n")); return out; };
+  // The B1F rooms' (ScrCmd_712): 0 the Trust room's course records, 1 the
+  // Potential room's Medals, 2 the Friendship room's event records, 3 the
+  // records room's (as the Pokéathlon data).
   async function records(kind) {
     const s = save();
     if (kind === 1) {
-      // (The Medals.)
-      const got = COURSES.filter((c) => s.medals[c.key]).map((c) => c.name.replace(" Course", ""));
-      await G.say([got.length ? "{PLAYER}'s Medals:\n" + got.join(", ") + "." : "{PLAYER} hasn't won a Medal yet.",
-        "Courses won: " + s.wins + "\nCourses entered: " + s.entries]);
+      const got = Object.entries(s.medals).filter(([, bits]) => bits).map(([sp, bits]) => sp + ": " + COURSES.filter((c, i) => bits & (1 << i)).map((c) => c.name.replace(" Course", "")).join(", "));
+      await G.say(got.length ? ["The Medals your Pokémon have won:"].concat(got) : ["None of your Pokémon have won\na Medal yet."]);
     } else if (kind === 2) {
-      const lines = EVENT_ORDER.map((id) => [P("EVENTS")[id].name, s.events[id]]).filter((x) => x[1]).map(([n, r]) => n + ": best " + r[1] + " (" + r[0] + " played)");
-      const pages = [];
-      for (let i = 0; i < lines.length; i += 2) pages.push(lines.slice(i, i + 2).join("\n"));
-      await G.say(pages.length ? pages : ["No events have been played yet."]);
-    } else if (kind === 3) {
-      await G.say(["Athlete Points earned in all:\n" + s.earned + " points.", "Jumps: " + s.jumps + "\nTackles: " + s.tackles]);
-    } else {
-      const pages = [];
-      for (let i = 0; i < COURSES.length; i += 2) pages.push(COURSES.slice(i, i + 2).map((c) => c.name + ": " + (s.best[c.key] || "--")).join("\n"));
-      await G.say(["Course records (best scores):"].concat(pages));
+      const lines = EVENT_ORDER.filter((id) => s.events[id] && s.events[id].top.length).map((id) => evName(id) + ": " + measure(id, s.events[id].top[0][0]) + " (" + s.events[id].played + " played)");
+      await G.say(lines.length ? pages2(lines) : ["No events have been played yet."]);
+    } else if (kind === 3) await data(0);
+    else {
+      const lines = COURSES.map((c) => c.name + ": " + (s.courses[c.key] ? s.courses[c.key][0] : "--"));
+      await G.say(["Course records (best winning scores):"].concat(pages2(lines)));
     }
+  }
+  // The Pokéathlon data (ScrCmd_743, overlay 3's: msg_0277's), 0 overall,
+  // 1 events, 2 actions. HGSS shows "???" for those its Data Cards haven't
+  // unlocked (ov03_02259880); none are sold here, so only the two it always
+  // shows (the times joined, and the Link Pokéathlon's).
+  const DATA_LINES = [
+    [["Times Joined Pokéathlon", (r) => r.joined], ["Pokéathlon 1st Places", (r) => r.wins, 1], ["Pokéathlon Last Places", (r) => r.lasts, 2], ["Bonuses Earned", (r) => r.bonuses, 25],
+      ["Event 1st Place", (r) => r.eventWins.reduce((a, b) => a + b, 0), 21], ["Event Last Place", (r) => r.eventLasts, 22], ["Connection Participation", () => 0],
+      ["Connection 1st Places", () => 0, 19], ["Connection Last Places", () => 0, 20], ["Time Spent", (r) => Math.floor(r.time / 60) + ":" + String(r.time % 60).padStart(2, "0"), 27]],
+    EVENT_ORDER.map((id, i) => [evName(id) + " 1st Places", (r) => r.eventWins[i], [5, 7, 18, 8, 9, 17, 6, 16, 10, 24][i]]),
+    [["Pokémon Instructions", (r) => r.instructions, 26], ["Times Pokémon Dashed", (r) => r.dashed, 3], ["Times Pokémon Jumped", (r) => r.jumped, 4],
+      ["Times Pokémon Tackled", (r) => r.tackled, 14], ["Times Pokémon Switched", (r) => r.switched, 23], ["Times Pokémon Self-Impeded", (r) => r.impeded, 13],
+      ["Pokémon Acquired Points", (r) => r.points, 11], ["Pokémon Failed", (r) => r.failed, 12], ["Pokémon Fell Down", (r) => r.fell, 15]]];
+  async function data(kind) {
+    const rec = save().rec, cards = save().dataCards | 0;
+    const lines = (DATA_LINES[kind] || DATA_LINES[0]).map(([label, get, card]) => (card && !(cards & (1 << (card - 1))) ? "???" : label + ": " + get(rec)));
+    await G.say(pages2(lines));
   }
 
   // ---------- The scripts' commands ----------
@@ -354,8 +501,9 @@
     // (The Dome's: courses, points, prizes, records.)
     CountAliveMonsAndPC: (a, api) => api.setVar(a[0], G.player().party.filter((r) => !r.egg && r.hp > 0).length + G.boxCount()),
     BufferPokeathlonCourseName: (a, api) => { api.buffers[a[0]] = (COURSES[+api.getVar(a[1])] || COURSES[0]).name; },
+    // (Pokeathlon link, supreme, course, -> didn't go in, score, points, place.)
     async Pokeathlon(a, api) {
-      const r = await runCourse(+api.getVar(a[2]) || 0, { supreme: +api.getVar(a[1]) === 1 });
+      const r = await runCourse(+api.getVar(a[2]) || 0, { supreme: +api.getVar(a[1]) === 1, flag: api.flag });
       api.setVar(a[3], r ? 0 : 1);
       if (r) { api.setVar(a[4], r.score); api.setVar(a[5], r.points); api.setVar(a[6], r.place); }
     },
@@ -372,24 +520,25 @@
     ScrCmd_835: (a, api) => api.setVar(a[0], 0),
     ScrCmd_772: () => G.say(["We're waiting for this season's\nData Cards. Please come back later!"]),
     ScrCmd_712: (a) => records(+a[0]),
+    ScrCmd_743: (a, api) => data(+api.getVar(a[0])),
     // The points box (ScrCmd_116, 118 and 117), and the money box.
     ScrCmd_116: () => box(true), ScrCmd_118: () => box(true), ScrCmd_117: () => box(false),
     ShowMoneyBox: () => G.moneyBox(true), UpdateMoneyBox: () => G.moneyBox(true), HideMoneyBox: () => G.moneyBox(false)
   };
   // ScrCmd_724's records (src/field/scrcmd_pokemon_misc.c reads them out of
-  // the Pokéathlon's save): 0-9 how often each event's been played, 10 the
-  // courses won, 11 the friendship points, 12 the courses entered, 14 the
-  // jumps, 15 the tackles, 16 the Athlete Points earned in all, 17 the Medals.
+  // the Pokéathlon's save): 0-9 how often each event's been won, 10 the
+  // courses won, 11 the friendship points, 12 the courses joined, 13 the
+  // instructions, 14 the jumps, 15 the tackles, 16 the dashes, 17 the switches.
   function record(n) {
-    const s = save();
-    if (n <= 9) return (s.events[EVENT_ORDER[n]] || [0])[0];
-    return { 10: s.wins, 11: s.rank, 12: s.entries, 14: s.jumps, 15: s.tackles, 16: s.earned, 17: Object.keys(s.medals).length }[n] || 0;
+    const s = save(), r = s.rec;
+    if (n <= 9) return r.eventWins[n] | 0;
+    return { 10: r.wins, 11: s.rank, 12: r.joined, 13: r.instructions, 14: r.jumped, 15: r.tackled, 16: r.dashed, 17: r.switched }[n] | 0;
   }
   const handles = (op) => !!G && Object.prototype.hasOwnProperty.call(COMMANDS, op);
   async function command(op, a, api) { await COMMANDS[op](a, api); }
 
   window.Pokeathlon = {
-    attach: (game) => { G = game; }, handles, command, performance, runCourse, prizesToday, COURSES, STATS,
-    ap: () => (G ? save().ap : 0), addAp
+    attach: (game) => { G = game; }, handles, command, performance, runCourse, prizesToday, COURSES, STATS, EVENT_ORDER, FRIENDSHIP,
+    challenge, bonuses, record, ap: () => (G ? save().ap : 0), addAp
   };
 })();

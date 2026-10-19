@@ -6,7 +6,20 @@
 //   const r = await PokeathlonEvents.run(sceneEl, "hurdle", teams, { rng, sfx })
 //     // teams: four [{ name, you (yours: red), mons: [{ species, name, stats }] x 3 }],
 //     //   stats: { speed, power, skill, stamina, jump }, 1-5 stars each
-//     // -> { points: [n, n, n, n], counts: { jumps, ... } } (counts: your team's)
+//     // -> { raw: [n x 4], points: [n x 4], acts: [[{ failed, jumped, ... } x 3] x 4],
+//     //      frames, instructions }
+//
+// Each team's result (raw) is in HGSS's own measure, and its points are HGSS's
+// for it (POINTS, overlay 96's table ov96_0221D9C8, 200 at most): Hurdle
+// Dash the three legs' time (in 60ths of a second), 11,500 over it in 30ths;
+// Pennant Capture the pennants brought home, three each; Circle Push the
+// circles' numbers, three each; Block Smash the blocks, one each; Disc Catch
+// its points, 150 - 120 / (1 + 0.08 x them); Lamp Jump its points over 3.5;
+// Relay Run the distance (1,024 a lap), ten a lap; Ring Drop its points, 1.5
+// each; Snow Throw the hits, three each; Goal Roll the goals (less those in
+// its own), five each, and 100, 80, 70 or 60 for its place (ov96_0221A730).
+// And what each Pokémon did (acts, HGSS's eight: failed, jumped, points,
+// tackled, fell, dashed, switched, impeded) for the closing ceremony's prizes.
 //
 // Each event (EVENTS[id]): its name, how it's played (help), and init(ctx)
 // -> its state; step(s, input) a frame (60 a second) with your input
@@ -25,6 +38,7 @@
   const TEAM = [   // (body, light, dark) for red, blue, green and yellow, HGSS's team colours
     ["#e8483c", "#ffa898", "#90201a"], ["#3c78e8", "#9cc4ff", "#1c3c90"],
     ["#38a848", "#98e8a0", "#1c6028"], ["#e8c030", "#fff0a0", "#906810"]];
+  const TEAM_PAL = ["red", "blue", "green", "yellow"];
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const lerp = (a, b, t) => a + (b - a) * t;
   // A star rating (1-5) as 0..1.
@@ -118,7 +132,7 @@
       const x = 2 + t * 47;
       g.fillStyle = TEAM[t][2]; g.fillRect(x, 2, 45, 14);
       g.fillStyle = TEAM[t][0]; g.fillRect(x + 1, 3, 43, 12);
-      text(g, String(Math.floor(s.score[t])), x + 42, 2, "white", "right");
+      text(g, s.show ? s.show(s, t) : String(Math.floor(s.score[t])), x + 42, 2, "white", "right");
       if (s.ctx.teams[t].you) { g.fillStyle = "#fff"; g.fillRect(x + 2, 5, 2, 8); }
     }
     const left = s.race ? Math.floor(s.frame / FPS) : Math.max(0, Math.ceil((s.duration - s.frame) / FPS));
@@ -231,13 +245,33 @@
     return mons;
   }
 
+  // What each Pokémon did (HGSS's per-Pokémon counts, as its save keeps them).
+  const ACTS = ["failed", "jumped", "points", "tackled", "fell", "dashed", "switched", "impeded"];
+  function act(s, team, slot, k, n) { const a = s.acts[team][slot]; a[k] += n == null ? 1 : n; }
+  // HGSS's points for a team's result in each event (none over 200).
+  const cap = (n) => Math.max(0, Math.min(200, Math.floor(n)));
+  const POINTS = {
+    hurdle: (raw) => cap(11500 / (Math.max(1, raw) / 30)), pennant: (raw) => cap(raw * 3), circle: (raw) => cap(raw * 3), block: (raw) => cap(raw),
+    disc: (raw) => cap(150 - 120 / (raw * 0.08 + 1)), lamp: (raw) => cap(raw / 3.5), relay: (raw) => cap(raw / 1024 * 10),
+    ring: (raw) => cap(raw * 1.5), snow: (raw) => cap(raw * 3), goal: (raw) => cap(raw * 5)
+  };
+  function eventPoints(id, raws) {
+    if (id !== "goal") return raws.map(POINTS[id]);
+    // (Goal Roll's place: 100, 80, 70 or 60, a tie taking the lower.)
+    return raws.map((r) => {
+      const rank = raws.filter((o) => o > r).length, ties = raws.filter((o) => o === r).length - 1;
+      return cap([100, 80, 70, 60][Math.min(3, rank + ties)] + POINTS.goal(r));
+    });
+  }
+
   // ---------- The events ----------
 
   const EVENTS = {};
 
   // Hurdle Dash (Speed, Jump): a relay race over the hurdles, each of your
-  // three running a leg. A jumps; clipping a hurdle trips you up.
-  const LEG = 720, HURDLE_EVERY = 80;
+  // three running a leg. A jumps; clipping a hurdle trips you up. The result
+  // is the time the three take (HGSS's: points by all three's seconds).
+  const LEG = 2160, HURDLE_EVERY = 80;
   EVENTS.hurdle = {
     name: "Hurdle Dash", help: ["Your Pokémon run on their own.", "A: jump over the hurdles!"],
     init(ctx) {
@@ -266,6 +300,7 @@
         }
         if (jump && L.z === 0 && L.stun === 0) {
           L.vz = vz0; L.z = 0.01;
+          act(s, t, L.leg, "jumped");
           if (s.ctx.teams[t].you) { s.jumps++; s.ctx.sfx("se_m_jump_kick"); }
         }
         const before = L.x;
@@ -274,21 +309,23 @@
         // Clipping a hurdle: it falls, and you stumble.
         if (hx != null && before < hx && L.x >= hx && L.z < 9 && !L.down[hx]) {
           L.down[hx] = true; L.stun = 30 - 4 * m.stats.skill; L.v *= 0.3;
+          act(s, t, L.leg, "failed");
           if (s.ctx.teams[t].you) { s.trips++; s.ctx.sfx("se_bang"); }
         }
         m.moving = true; m.z = L.z;
         // The baton: at the end of a leg, the next one runs on.
         if (L.x >= (L.leg + 1) * LEG) {
-          if (L.leg < 2) { L.leg++; L.v *= 0.6; } else { L.done = s.frame; s.score[t] = points(L.done); if (s.ctx.teams[t].you) s.ctx.sfx("se_select"); }
+          if (L.leg < 2) { L.leg++; L.v *= 0.6; } else { L.done = s.frame; s.score[t] = L.done; if (s.ctx.teams[t].you) s.ctx.sfx("se_select"); }
         }
       });
-      // (Everyone's in, or a minute and a half has gone.)
-      if (s.lanes.every((L) => L.done != null) || s.frame > FPS * 90) {
-        s.lanes.forEach((L, t) => { if (L.done == null) s.score[t] = points(s.frame + (3 * LEG - L.x) * 2); });
+      // (Everyone's in, or two and a half minutes have gone: the rest as far as they'd got.)
+      if (s.lanes.every((L) => L.done != null) || s.frame > FPS * 150) {
+        s.lanes.forEach((L, t) => { if (L.done == null) s.score[t] = s.frame + Math.round((3 * LEG - L.x) * 2); });
         s.over = true;
       }
-      function points(frames) { return Math.round(clamp(2800 / (frames / FPS), 20, 200)); }
     },
+    // (Each team's leg, and its time once it's in.)
+    show: (s, t) => (s.lanes[t].done != null ? (s.lanes[t].done / FPS).toFixed(1) : "Leg " + (s.lanes[t].leg + 1)),
     draw(s, g) {
       const you = s.ctx.you, L0 = s.lanes[you];
       // (The camera follows yours; the start line is 20 pixels in.)
@@ -329,15 +366,19 @@
   };
 
   // Pennant Capture (Speed, Skill): pennants pop up about the beach; touch
-  // one to take it (a gold one is worth three). Running wears a Pokémon out.
-  const newPennant = (s) => ({ x: 26 + s.ctx.rng() * (W - 52), y: HUD + 22 + s.ctx.rng() * (H - HUD - 34), gold: s.ctx.rng() < 0.12, wait: 0 });
+  // them to pick them up (nine at most) and bring them home to your corner
+  // (HGSS's: the pennants brought back count). Dash (A) into one from
+  // behind to take what it's carrying. Running wears a Pokémon out.
+  const newPennant = (s) => ({ x: 26 + s.ctx.rng() * (W - 52), y: HUD + 22 + s.ctx.rng() * (H - HUD - 34), wait: 0 });
+  const PENNANT_HOME = [[22, 146], [22, HUD + 16], [218, HUD + 16], [218, 146]];
   EVENTS.pennant = {
-    name: "Pennant Capture", help: ["D-pad: run.  B: change Pokémon.", "Grab pennants! Gold ones count x3."],
+    name: "Pennant Capture", help: ["D-pad: run.  A: dash.  B: change.", "Bring pennants home to your corner!"],
     init(ctx) {
       const corners = [[30, 140], [30, 40], [210, 40], [210, 140]];
       const s = { ctx, frame: 0, duration: FPS * 45, score: [0, 0, 0, 0], active: 0, pennants: [], taken: 0,
         mons: newMons(ctx, (t, i) => [corners[t][0] + (i - 1) * 14 * (t < 2 ? 1 : -1), corners[t][1] + (i - 1) * 6]) };
-      for (let i = 0; i < 7; i++) s.pennants.push(newPennant(s));
+      for (const m of s.mons) m.carry = 0;
+      for (let i = 0; i < 5; i++) s.pennants.push(newPennant(s));
       return s;
     },
     step(s, input) {
@@ -345,32 +386,60 @@
       const yours = yourMon(s, input);
       for (const m of s.mons) {
         tick(m);
-        if (m === yours) steerPad(m, input);
+        const home = PENNANT_HOME[m.team];
+        if (m.stun > 0) { m.vx *= 0.9; m.vy *= 0.9; }
+        else if (m.dashT > 0) { /* (dashing) */ }
+        else if (m === yours) { steerPad(m, input); if (input.pressed.a && dash(m, heading(m))) { act(s, m.team, m.slot, "dashed"); s.ctx.sfx("se_m_take_down"); } }
         else {
-          // (The computer: the nearest pennant no teammate's after.)
-          if (!m.goal || m.t % 24 === 0 || !s.pennants.includes(m.goal)) {
-            const taken = s.mons.filter((o) => o !== m && o.team === m.team).map((o) => o.goal);
-            let best = null, bd = 1e9;
-            for (const p of s.pennants) if (p.wait <= 0 && !taken.includes(p)) {
-              const d = Math.hypot(p.x - m.x, p.y - m.y) / (p.gold ? 2 : 1) + s.ctx.rng() * (1 - st(m, "skill")) * 50;
-              if (d < bd) { bd = d; best = p; }
+          // (The computer: home with enough, or the nearest pennant no
+          // teammate's after; and a dash at a foe with plenty, if it's behind one.)
+          const prey = s.mons.find((o) => o.team !== m.team && o.carry >= 3 && dist(o, m) < 22 && (o.vx * (o.x - m.x) + o.vy * (o.y - m.y)) > 0);
+          if (prey && m.dashCool <= 0 && s.ctx.rng() < 0.08 * s.ctx.ai) { dash(m, Math.atan2(prey.y - m.y, prey.x - m.x)); act(s, m.team, m.slot, "dashed"); }
+          else {
+            if (!m.goal || m.t % 24 === 0 || (m.goal !== home && !s.pennants.includes(m.goal))) {
+              const taken = s.mons.filter((o) => o !== m && o.team === m.team).map((o) => o.goal);
+              let best = null, bd = 1e9;
+              for (const p of s.pennants) if (p.wait <= 0 && !taken.includes(p)) {
+                const d = Math.hypot(p.x - m.x, p.y - m.y) + s.ctx.rng() * (1 - st(m, "skill")) * 50;
+                if (d < bd) { bd = d; best = p; }
+              }
+              const enough = 2 + Math.round(4 * st(m, "skill")), far = Math.hypot(home[0] - m.x, home[1] - m.y);
+              m.goal = m.carry >= 9 || (m.carry >= enough && bd > far * 0.5) || (m.carry && !best) ? home : best;
             }
-            m.goal = best;
+            const goal = m.goal === home ? { x: home[0], y: home[1] } : m.goal;
+            if (goal) steer(m, goal.x, goal.y, 0.8 + 0.2 * s.ctx.ai); else steer(m, m.x, m.y);
           }
-          if (m.goal) steer(m, m.goal.x, m.goal.y, 0.8 + 0.2 * s.ctx.ai); else steer(m, m.x, m.y);
         }
         stamina(m, Math.hypot(m.vx, m.vy) > 0.5);
         move(m);
         m.x = clamp(m.x, 14, W - 14); m.y = clamp(m.y, HUD + 12, H - 6);
+        // (Home: what it's carrying counts.)
+        if (m.carry && Math.hypot(m.x - home[0], m.y - home[1]) < 16) {
+          s.score[m.team] += m.carry; act(s, m.team, m.slot, "points", m.carry);
+          if (m.team === s.ctx.you) { s.taken += m.carry; s.ctx.sfx("se_shiny"); }
+          m.carry = 0; m.goal = null;
+        }
       }
-      bump(s.mons, 7);
+      // (A dash into one from behind takes its pennants.)
+      for (const [a, b] of bump(s.mons, 7)) for (const [hitter, hit] of [[a, b], [b, a]]) {
+        if (hitter.dashT <= 0 || hit.dashT > 0) continue;
+        act(s, hitter.team, hitter.slot, "tackled");
+        hit.stun = 20;
+        const behind = hit.vx * (hit.x - hitter.x) + hit.vy * (hit.y - hitter.y) >= 0;
+        if (behind && hit.carry && hitter.carry < 9) {
+          const n = Math.min(hit.carry, 9 - hitter.carry);
+          hitter.carry += n; hit.carry -= n; act(s, hit.team, hit.slot, "failed");
+          if (hitter.team === s.ctx.you || hit.team === s.ctx.you) s.ctx.sfx("se_bang");
+        }
+        hitter.dashT = 0;
+      }
       for (const p of s.pennants) {
         if (p.wait > 0) { p.wait--; continue; }
-        const m = s.mons.find((o) => Math.abs(o.x - p.x) < 9 && Math.abs(o.y - 3 - p.y) < 8);
+        const m = s.mons.find((o) => o.carry < 9 && o.stun <= 0 && Math.abs(o.x - p.x) < 9 && Math.abs(o.y - 3 - p.y) < 8);
         if (!m) continue;
-        s.score[m.team] += p.gold ? 6 : 2;
-        if (m.team === s.ctx.you) { s.taken++; s.ctx.sfx(p.gold ? "se_shiny" : "se_bag_cursor"); }
-        Object.assign(p, newPennant(s), { wait: 40 });
+        m.carry++;
+        if (m.team === s.ctx.you) s.ctx.sfx("se_bag_cursor");
+        Object.assign(p, newPennant(s), { wait: 90 });
       }
       if (s.frame >= s.duration) s.over = true;
     },
@@ -378,20 +447,28 @@
       g.fillStyle = "#f0dca0"; g.fillRect(0, HUD, W, H - HUD);
       g.fillStyle = "#e4cc8c"; for (let i = 0; i < 60; i++) g.fillRect((i * 53) % W, HUD + (i * 37) % (H - HUD), 2, 1);
       g.fillStyle = "#58a8e8"; g.fillRect(0, HUD, W, 6); g.fillStyle = "#a8d8f8"; g.fillRect(0, HUD + 5, W, 1);
+      // (Each team's home, in its corner.)
+      PENNANT_HOME.forEach(([x, y], t) => {
+        g.fillStyle = TEAM[t][2]; g.beginPath(); g.ellipse(x, y, 15, 7, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = TEAM[t][1]; g.beginPath(); g.ellipse(x, y, 13, 5.5, 0, 0, Math.PI * 2); g.fill();
+      });
       for (const p of s.pennants) {
         if (p.wait > 0) continue;
         const x = Math.round(p.x), y = Math.round(p.y), wave = (s.frame >> 3) % 2;
         g.fillStyle = "#705030"; g.fillRect(x, y - 10, 1, 11);
-        g.fillStyle = p.gold ? "#f8d030" : "#f05048"; g.fillRect(x + 1, y - 10, 6 - wave, 2); g.fillRect(x + 1, y - 8, 4 - wave, 2); g.fillRect(x + 1, y - 6, 2, 1);
-        if (p.gold && (s.frame >> 2) % 4 === 0) { g.fillStyle = "#fff"; g.fillRect(x + 4, y - 12, 1, 1); }
+        g.fillStyle = "#f05048"; g.fillRect(x + 1, y - 10, 6 - wave, 2); g.fillRect(x + 1, y - 8, 4 - wave, 2); g.fillRect(x + 1, y - 6, 2, 1);
       }
-      for (const m of s.mons.slice().sort((a, b) => a.y - b.y)) drawMon(g, m, m.x, m.y, { cursor: isYours(s, m) });
+      for (const m of s.mons.slice().sort((a, b) => a.y - b.y)) {
+        drawMon(g, m, m.x, m.y, { cursor: isYours(s, m) });
+        if (m.carry) text(g, String(m.carry), m.x + 7, m.y - 32, TEAM_PAL[m.team]);
+      }
     },
     counts: (s) => ({ pennants: s.taken })
   };
 
   // Relay Run (Speed, Stamina): round the track, one Pokémon at a time. Hold
-  // A to run; it tires as it goes, and B hands over to the next.
+  // A to run; it tires as it goes, and B hands over to the next. The result
+  // is the distance run (HGSS's: 1,024 a lap).
   const RX = 92, RY = 46, CX = 120, CY = 92;
   const PERIMETER = 2 * Math.PI * Math.sqrt((RX * RX + RY * RY) / 2);
   EVENTS.relay = {
@@ -418,14 +495,19 @@
           const when = m.staminaMax * (0.06 + (1 - st(m, "skill")) * 0.12 * (2 - s.ctx.ai) + s.ctx.rng() * 0.01);
           swap = m.stamina < when || (m.tired && s.ctx.rng() < 0.05);
         }
-        if (swap) { T.cur = (T.cur + 1) % 3; T.pass = 20; s.ctx.sfx(you ? "se_select" : null); return; }
+        if (swap) { act(s, t, T.cur, "switched"); T.cur = (T.cur + 1) % 3; T.pass = 20; s.ctx.sfx(you ? "se_select" : null); return; }
         const top = (1.15 + 0.26 * m.stats.speed) * (m.tired ? 0.35 : 1);
         T.v = run ? Math.min(top, T.v + 0.05) : T.v * 0.94;
-        if (run && !m.tired) { m.stamina = Math.max(0, m.stamina - 1); if (m.stamina <= 0) m.tired = true; }
+        // (Each burst of running is a dash: a press of A, or every 3/4 of a second held.)
+        if (run) { T.held = T.ran ? T.held + 1 : 0; if (T.held % 45 === 0) act(s, t, T.cur, "dashed"); }
+        T.ran = run;
+        if (run && !m.tired) { m.stamina = Math.max(0, m.stamina - 1); if (m.stamina <= 0) { m.tired = true; act(s, t, T.cur, "failed"); } }
         T.dist += T.v;
         m.moving = T.v > 0.3;
         s.laps[t] = T.dist / PERIMETER;
-        s.score[t] = Math.floor(s.laps[t] * 10);
+        const raw = Math.floor(s.laps[t] * 1024);
+        act(s, t, T.cur, "points", raw - s.score[t]);
+        s.score[t] = raw;
       });
       if (s.frame >= s.duration) s.over = true;
     },
@@ -459,12 +541,13 @@
       g.fillStyle = m.tired ? "#e83828" : m.stamina < m.staminaMax / 4 ? "#f0c030" : "#58d058";
       g.fillRect(187, H - 9, Math.round(46 * (m.stamina || 0) / (m.staminaMax || 1)), 3);
     },
+    show: (s, t) => s.laps[t].toFixed(1),
     counts: (s) => ({ laps: Math.floor(s.laps[s.ctx.you]) })
   };
 
   // Block Smash (Power, Stamina): a tower of blocks each; A smashes (Power:
   // how much a blow does), but every blow tires; B changes Pokémon.
-  const BLOCK_HP = 10;
+  const BLOCK_HP = 12;
   EVENTS.block = {
     name: "Block Smash", help: ["A: smash! Not too fast, though.", "B: change a worn-out Pokémon."],
     init(ctx) {
@@ -495,19 +578,19 @@
           if (hit) C.wait = Math.floor(s.ctx.rng() * (3 + (1 - st(m, "skill")) * 10) / s.ctx.ai);
           swap = m.tired || m.stamina < m.staminaMax * (0.12 + s.ctx.rng() * 0.1);
         }
-        if (swap) { C.cur = (C.cur + 1) % 3; C.swap = 24; return; }
+        if (swap) { act(s, t, C.cur, "switched"); C.cur = (C.cur + 1) % 3; C.swap = 24; return; }
         if (!hit || m.tired) return;
         // (Too soon after the last blow: it does nothing, and tires all the same.)
         const early = C.cool > 0;
         m.stamina = Math.max(0, m.stamina - 1);
-        if (m.stamina <= 0) m.tired = true;
+        if (m.stamina <= 0) { m.tired = true; act(s, t, C.cur, "failed"); }
         C.cool = 14; C.hitT = 6;
         if (early) return;
         C.hp -= 1 + m.stats.power;
         if (you) s.ctx.sfx("se_m_cut");
         if (C.hp <= 0) {
           C.blocks++; C.hp += BLOCK_HP;
-          s.score[t] += 2;
+          s.score[t]++; act(s, t, C.cur, "points");
           if (you) { s.smashed++; s.ctx.sfx("se_m_rock_throw"); }
           for (let k = 0; k < 5; k++) s.bits.push({ x: 30 + t * 60, y: 116, vx: (s.ctx.rng() - 0.5) * 3, vy: -1 - s.ctx.rng() * 2, life: 30 });
         }
@@ -548,9 +631,11 @@
     counts: (s) => ({ blocks: s.smashed })
   };
 
-  // Circle Push (Power, Stamina): stay in the middle ring, and push the
-  // others out of it, and off the field. A: tackle; B: change Pokémon.
-  const ARENA = { x: 120, y: 92, r: 64, inner: 22 };
+  // Circle Push (Power, Stamina): six rounds; when each one's time runs out,
+  // a Pokémon in a circle scores its number (HGSS's): 3 in the middle, 2 in
+  // the ring round it, 1 on the rest of the field. Push the others out; off
+  // the field, one's out for a while. A: tackle; B: change Pokémon.
+  const ARENA = { x: 120, y: 92, r: 64, inner: 22, mid: 43 }, ROUND = FPS * 7.5;
   EVENTS.circle = {
     name: "Circle Push", help: ["D-pad: move.  A: tackle.  B: change.", "Stand in the middle ring!"],
     init(ctx) {
@@ -565,22 +650,33 @@
         if (m.out) { if (--m.out <= 0) { const [x, y] = s.at(m.team, m.slot); Object.assign(m, { x, y, vx: 0, vy: 0, out: 0, fallen: 0 }); } else m.fallen = Math.min(40, (m.fallen || 0) + 1); continue; }
         if (m.stun > 0) { m.vx *= 0.92; m.vy *= 0.92; }
         else if (m.dashT > 0) { /* (dashing: on it goes) */ }
-        else if (m === yours) { steerPad(m, input); if (input.pressed.a && dash(m, heading(m))) { s.tackles = (s.tackles || 0) + 1; s.ctx.sfx("se_m_take_down"); } }
-        else ai(s, m);
+        else if (m === yours) { steerPad(m, input); if (input.pressed.a && dash(m, heading(m))) { act(s, m.team, m.slot, "dashed"); s.ctx.sfx("se_m_take_down"); } }
+        else if (ai(s, m)) act(s, m.team, m.slot, "dashed");
         stamina(m, m.dashT > 0);
         move(m);
       }
-      for (const [a, b] of bump(s.mons.filter((m) => !m.out), 7)) { a.last = b.team; b.last = a.team; if (a.dashT > 0) b.stun = 12; if (b.dashT > 0) a.stun = 12; }
+      for (const [a, b] of bump(s.mons.filter((m) => !m.out), 7)) {
+        a.last = b.team; b.last = a.team;
+        if (a.dashT > 0) { b.stun = 12; act(s, a.team, a.slot, "tackled"); }
+        if (b.dashT > 0) { a.stun = 12; act(s, b.team, b.slot, "tackled"); }
+      }
       for (const m of s.mons) {
         if (m.out) continue;
-        const d = Math.hypot(m.x - ARENA.x, m.y - ARENA.y);
-        if (d < ARENA.inner) s.score[m.team] += 1.5 / FPS;
-        if (d > ARENA.r + 3) {
-          m.out = 90;
-          if (m.last != null && m.last !== m.team) { s.score[m.last] += 4; if (m.last === s.ctx.you) s.pushes++; }
+        if (Math.hypot(m.x - ARENA.x, m.y - ARENA.y) > ARENA.r + 3) {
+          m.out = 90; act(s, m.team, m.slot, "fell");
+          if (m.last != null && m.last !== m.team && m.last === s.ctx.you) s.pushes++;
           if (m.team === s.ctx.you || m.last === s.ctx.you) s.ctx.sfx("se_fall");
           m.last = null;
         }
+      }
+      // (The round's up: each in a circle scores its number.)
+      if (s.frame % ROUND === 0) {
+        for (const m of s.mons) {
+          if (m.out) continue;
+          const d = Math.hypot(m.x - ARENA.x, m.y - ARENA.y), n = d < ARENA.inner ? 3 : d < ARENA.mid ? 2 : 1;
+          s.score[m.team] += n; act(s, m.team, m.slot, "points", n);
+        }
+        s.ctx.sfx("se_pin");
       }
       if (s.frame >= s.duration) s.over = true;
     },
@@ -589,11 +685,19 @@
       crowd(g, HUD, 12, s.frame);
       g.fillStyle = "#383050"; g.beginPath(); g.ellipse(ARENA.x, ARENA.y + 4, ARENA.r + 4, ARENA.r * 0.62 + 4, 0, 0, Math.PI * 2); g.fill();
       g.fillStyle = "#e8d8a8"; g.beginPath(); g.ellipse(ARENA.x, ARENA.y, ARENA.r, ARENA.r * 0.62, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = "#f0e0b0"; g.beginPath(); g.ellipse(ARENA.x, ARENA.y, ARENA.mid, ARENA.mid * 0.62, 0, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = "#c8b078"; g.beginPath(); g.ellipse(ARENA.x, ARENA.y, ARENA.mid, ARENA.mid * 0.62, 0, 0, Math.PI * 2); g.stroke();
       g.fillStyle = "#f8c860"; g.beginPath(); g.ellipse(ARENA.x, ARENA.y, ARENA.inner, ARENA.inner * 0.62, 0, 0, Math.PI * 2); g.fill();
       g.strokeStyle = "#c89838"; g.beginPath(); g.ellipse(ARENA.x, ARENA.y, ARENA.inner, ARENA.inner * 0.62, 0, 0, Math.PI * 2); g.stroke();
       // (Seen at a slant: the field is flattened, the Pokémon stand on it.)
       const flat = (m) => ARENA.y + (m.y - ARENA.y) * 0.62;
       for (const m of s.mons.slice().sort((a, b) => flat(a) - flat(b))) drawMon(g, m, m.x, flat(m) + (m.out ? m.fallen / 2 : 0), { cursor: isYours(s, m) });
+      // (The circles' numbers, and the round.)
+      text(g, "3", ARENA.x, ARENA.y - 6, "dark", "center"); text(g, "2", ARENA.x, ARENA.y - ARENA.mid * 0.62 + 1, "dark", "center");
+      text(g, "1", ARENA.x, ARENA.y - ARENA.r * 0.62 + 1, "dark", "center");
+      g.fillStyle = "rgba(0,0,0,0.4)"; g.fillRect(4, H - 15, 96, 13);
+      const left = Math.ceil((ROUND - s.frame % ROUND) / FPS);
+      text(g, "Round " + Math.min(6, Math.floor(s.frame / ROUND) + 1) + "/6  " + left, 6, H - 16, left <= 2 ? "gold" : "white");
     },
     counts: (s) => ({ pushes: s.pushes, tackles: s.tackles | 0 })
   };
@@ -603,21 +707,21 @@
     const near = others.filter((o) => dist(o, m) < 30 && Math.hypot(o.x - c.x, o.y - c.y) < c.r * 0.8).sort((a, b) => dist(a, m) - dist(b, m))[0];
     if (near && m.dashCool <= 0 && s.ctx.rng() < 0.03 * (1 + st(m, "skill")) * s.ctx.ai) {
       // (Into it, from the middle's side if it can.)
-      dash(m, Math.atan2(near.y - m.y, near.x - m.x) + (s.ctx.rng() - 0.5) * (1 - st(m, "skill")));
-      return;
+      return dash(m, Math.atan2(near.y - m.y, near.x - m.x) + (s.ctx.rng() - 0.5) * (1 - st(m, "skill")));
     }
     const wob = m.t / 40 + m.slot * 2;
     steer(m, c.x + Math.cos(wob) * 10, c.y + Math.sin(wob) * 10, 0.7 + 0.3 * s.ctx.ai);
+    return false;
   }
 
   // Goal Roll (Power, Skill): roll the balls into the other teams' goals,
   // one at each side (yours is the red one, on the left). A: tackle.
   const PITCH = { x0: 14, x1: 226, y0: HUD + 10, y1: H - 6, gate: 22 };
   const goalOf = (t) => [[PITCH.x0, (PITCH.y0 + PITCH.y1) / 2], [W / 2, PITCH.y0], [PITCH.x1, (PITCH.y0 + PITCH.y1) / 2], [W / 2, PITCH.y1]][t];
-  // (A ball rolls out of the middle; every fifth one is gold, worth three.)
+  // (A ball rolls out of the middle.)
   function newBall(s) {
     const a = s.ctx.rng() * Math.PI * 2;
-    return { x: W / 2 + Math.cos(a) * 20, y: (PITCH.y0 + PITCH.y1) / 2 + Math.sin(a) * 14, vx: Math.cos(a) * 0.6, vy: Math.sin(a) * 0.6, gold: s.spawned % 5 === 4, wait: 0, last: null };
+    return { x: W / 2 + Math.cos(a) * 20, y: (PITCH.y0 + PITCH.y1) / 2 + Math.sin(a) * 14, vx: Math.cos(a) * 0.6, vy: Math.sin(a) * 0.6, wait: 0, last: null, by: null };
   }
   EVENTS.goal = {
     name: "Goal Roll", help: ["D-pad: move.  A: tackle.  B: change.", "Roll balls into the others' goals!"],
@@ -634,14 +738,14 @@
         tick(m);
         if (m.stun > 0) { m.vx *= 0.9; m.vy *= 0.9; }
         else if (m.dashT > 0) { /* dashing */ }
-        else if (m === yours) { steerPad(m, input); if (input.pressed.a && dash(m, heading(m))) { s.tackles = (s.tackles || 0) + 1; s.ctx.sfx("se_m_take_down"); } }
+        else if (m === yours) { steerPad(m, input); if (input.pressed.a && dash(m, heading(m))) { act(s, m.team, m.slot, "dashed"); s.ctx.sfx("se_m_take_down"); } }
         else {
           // (The computer: get behind the nearest ball and roll it at a rival's goal.)
           const b = s.balls.filter((x) => x.wait <= 0).sort((p, q) => dist(p, m) - dist(q, m))[0];
           if (b) {
             const target = [0, 1, 2, 3].filter((t) => t !== m.team).map(goalOf).sort((p, q) => Math.hypot(p[0] - b.x, p[1] - b.y) - Math.hypot(q[0] - b.x, q[1] - b.y))[0];
             const a = Math.atan2(target[1] - b.y, target[0] - b.x), bx = b.x - Math.cos(a) * 11, by = b.y - Math.sin(a) * 11;
-            if (Math.hypot(bx - m.x, by - m.y) < 8 && m.dashCool <= 0 && s.ctx.rng() < 0.3 * s.ctx.ai) dash(m, a + (s.ctx.rng() - 0.5) * 0.6 * (1 - st(m, "skill")));
+            if (Math.hypot(bx - m.x, by - m.y) < 8 && m.dashCool <= 0 && s.ctx.rng() < 0.3 * s.ctx.ai) { if (dash(m, a + (s.ctx.rng() - 0.5) * 0.6 * (1 - st(m, "skill")))) act(s, m.team, m.slot, "dashed"); }
             else steer(m, bx, by, 0.75 + 0.25 * s.ctx.ai);
           } else steer(m, W / 2, (PITCH.y0 + PITCH.y1) / 2, 0.5);
         }
@@ -649,7 +753,7 @@
         move(m);
         m.x = clamp(m.x, PITCH.x0 + 6, PITCH.x1 - 6); m.y = clamp(m.y, PITCH.y0 + 6, PITCH.y1 - 2);
       }
-      bump(s.mons, 7);
+      for (const [a, b] of bump(s.mons, 7)) { if (a.dashT > 0) act(s, a.team, a.slot, "tackled"); if (b.dashT > 0) act(s, b.team, b.slot, "tackled"); }
       for (const b of s.balls) {
         if (b.wait > 0) { if (--b.wait === 0) { s.spawned++; Object.assign(b, newBall(s)); } continue; }
         for (const m of s.mons) {
@@ -658,7 +762,7 @@
           const nx = dx / d, ny = dy / d, kick = 0.6 + 0.25 * m.stats.power + (m.dashT > 0 ? 1.2 : 0);
           b.x = m.x + nx * 11; b.y = m.y + ny * 11;
           b.vx = nx * kick + m.vx * 0.5; b.vy = ny * kick + m.vy * 0.5;
-          b.last = m.team;
+          b.last = m.team; b.by = m;
         }
         b.x += b.vx; b.y += b.vy; b.vx *= 0.985; b.vy *= 0.985;
         const cy = (PITCH.y0 + PITCH.y1) / 2, open = (v, mid) => Math.abs(v - mid) < PITCH.gate;
@@ -668,8 +772,10 @@
         if (b.y < PITCH.y0 + 5) { if (open(b.x, W / 2)) into = 1; else { b.y = PITCH.y0 + 5; b.vy = Math.abs(b.vy); } }
         if (b.y > PITCH.y1 - 3) { if (open(b.x, W / 2)) into = 3; else { b.y = PITCH.y1 - 3; b.vy = -Math.abs(b.vy); } }
         if (into != null) {
-          // (Into someone's goal: a point for whoever touched it last, if it isn't theirs.)
-          if (b.last != null && b.last !== into) { s.score[b.last] += b.gold ? 36 : 12; if (b.last === s.ctx.you) { s.goals++; s.ctx.sfx("se_shiny"); } }
+          // (Into someone's goal: a goal for whoever touched it last; into
+          // their own, one fewer for them.)
+          if (b.last != null && b.last !== into) { s.score[b.last]++; act(s, b.last, b.by.slot, "points"); if (b.last === s.ctx.you) { s.goals++; s.ctx.sfx("se_shiny"); } }
+          else if (b.last === into) { s.score[into]--; act(s, into, b.by.slot, "impeded"); if (into === s.ctx.you) s.ctx.sfx("se_fall"); }
           b.wait = 40; b.vx = b.vy = 0;
         }
       }
@@ -689,8 +795,8 @@
         const b = o.b, x = Math.round(b.x), y = Math.round(b.y);
         g.fillStyle = "rgba(0,0,0,0.25)"; g.fillRect(x - 4, y + 3, 9, 2);
         g.fillStyle = "#303030"; g.beginPath(); g.arc(x, y - 1, 5.5, 0, Math.PI * 2); g.fill();
-        g.fillStyle = b.gold ? "#f8d030" : "#f8f8f8"; g.beginPath(); g.arc(x, y - 1, 4.5, 0, Math.PI * 2); g.fill();
-        g.fillStyle = b.gold ? "#c89818" : "#d04040"; g.fillRect(x - 1, y - 3, 3, 3);
+        g.fillStyle = "#f8f8f8"; g.beginPath(); g.arc(x, y - 1, 4.5, 0, Math.PI * 2); g.fill();
+        g.fillStyle = "#d04040"; g.fillRect(x - 1, y - 3, 3, 3);
       }
     },
     counts: (s) => ({ goals: s.goals, tackles: s.tackles | 0 })
@@ -735,8 +841,8 @@
         }
         if (throwAt != null) {
           const spread = (s.ctx.rng() - 0.5) * (0.5 - 0.4 * st(m, "skill")), v = 2.2 + 0.35 * m.stats.power;
-          s.balls.push({ x: m.x, y: m.y - 8, vx: Math.cos(throwAt + spread) * v, vy: Math.sin(throwAt + spread) * v, team: m.team, life: 70 + 10 * m.stats.power });
-          m.reload = 64 - 7 * m.stats.skill;
+          s.balls.push({ x: m.x, y: m.y - 8, vx: Math.cos(throwAt + spread) * v, vy: Math.sin(throwAt + spread) * v, team: m.team, slot: m.slot, life: 70 + 10 * m.stats.power });
+          m.reload = 140 - 14 * m.stats.skill;
           m.face = Math.cos(throwAt) > 0 ? 1 : -1;
           if (m.team === s.ctx.you) s.ctx.sfx("se_ball_throw");
         }
@@ -750,7 +856,7 @@
         const hit = s.mons.find((o) => o.team !== b.team && o.stun <= 0 && Math.abs(o.x - b.x) < 8 && Math.abs(o.y - 8 - b.y) < 9);
         if (hit) {
           b.life = 0; hit.stun = 70;
-          s.score[b.team] += 3;
+          s.score[b.team]++; act(s, b.team, b.slot, "points"); act(s, hit.team, hit.slot, "fell");
           if (b.team === s.ctx.you) { s.hits++; s.ctx.sfx("se_m_hail"); }
         }
         if (b.x < 0 || b.x > W || b.y < HUD || b.y > H) b.life = 0;
@@ -805,6 +911,7 @@
             const next = s.all.find((o) => o.team === m.team && o.slot === (m.slot + 1) % 3);
             const [x, y] = s.corner(m.team);
             Object.assign(next, { x, y, vx: 0, vy: 0, out: 0, fallen: 0, end: next.endMax, stun: 30, last: null });
+            act(s, m.team, m.slot, "switched");
             Object.assign(m, { out: 0, fallen: 0, end: m.endMax });
             s.mons[s.mons.indexOf(m)] = next;
           }
@@ -812,13 +919,13 @@
         }
         if (m.stun > 0) { m.vx *= 0.9; m.vy *= 0.9; }
         else if (m.dashT > 0) { /* dashing */ }
-        else if (s.ctx.teams[m.team].you) { steerPad(m, input); if (input.pressed.a && dash(m, heading(m))) { s.tackles = (s.tackles || 0) + 1; s.ctx.sfx("se_m_take_down"); } }
+        else if (s.ctx.teams[m.team].you) { steerPad(m, input); if (input.pressed.a && dash(m, heading(m))) { act(s, m.team, m.slot, "dashed"); s.ctx.sfx("se_m_take_down"); } }
         else {
           const foes = s.mons.filter((o) => o !== m && !o.out);
           // (The nearest foe, or the one nearest an edge; and keep off the edges itself.)
           const edge = (o) => Math.min(o.x - RING.x0, RING.x1 - o.x, o.y - RING.y0, RING.y1 - o.y);
           const f = foes.sort((a, b) => dist(a, m) + edge(a) - dist(b, m) - edge(b))[0];
-          if (f && dist(f, m) < 26 && m.dashCool <= 0 && s.ctx.rng() < 0.06 * s.ctx.ai) dash(m, Math.atan2(f.y - m.y, f.x - m.x) + (s.ctx.rng() - 0.5) * 0.5 * (1 - st(m, "skill")));
+          if (f && dist(f, m) < 26 && m.dashCool <= 0 && s.ctx.rng() < 0.06 * s.ctx.ai) { if (dash(m, Math.atan2(f.y - m.y, f.x - m.x) + (s.ctx.rng() - 0.5) * 0.5 * (1 - st(m, "skill")))) act(s, m.team, m.slot, "dashed"); }
           else if (f) { const cx = (RING.x0 + RING.x1) / 2, cy = (RING.y0 + RING.y1) / 2; steer(m, lerp(f.x, cx, 0.4), lerp(f.y, cy, 0.4), 0.55 + 0.25 * s.ctx.ai); }
         }
         move(m);
@@ -830,16 +937,16 @@
           if (hitter.dashT <= 0) continue;
           hit.end = Math.max(0, hit.end - 1 - hitter.stats.power / 3);
           const k = 1 + 1.6 * (1 - hit.end / hit.endMax);
-          hit.vx *= k; hit.vy *= k; hit.stun = 10; hit.last = hitter.team;
-          hitter.dashT = 0;
+          hit.vx *= k; hit.vy *= k; hit.stun = 10; hit.last = hitter.team; hit.lastMon = hitter;
+          hitter.dashT = 0; act(s, hitter.team, hitter.slot, "tackled");
         }
       }
       for (const m of s.mons) {
         if (m.out) continue;
-        if (s.frame % FPS === 0) s.score[m.team] += 1;
         if (m.x < RING.x0 - 2 || m.x > RING.x1 + 2 || m.y < RING.y0 - 2 || m.y > RING.y1 + 4) {
-          m.out = 60;
-          if (m.last != null && m.last !== m.team) { s.score[m.last] += 6; if (m.last === s.ctx.you) s.knocks++; }
+          m.out = 60; act(s, m.team, m.slot, "fell");
+          // (Knocked off: ten points for the one that did it.)
+          if (m.last != null && m.last !== m.team) { s.score[m.last] += 10; act(s, m.last, m.lastMon.slot, "points", 10); if (m.last === s.ctx.you) s.knocks++; }
           if (m.team === s.ctx.you) s.falls++;
           if (m.team === s.ctx.you || m.last === s.ctx.you) s.ctx.sfx("se_fall");
         }
@@ -866,7 +973,8 @@
   };
 
   // Lamp Jump (Jump, Skill): bounce on your trampoline and touch the lamps
-  // (the higher, the more points). A just as you land bounces you higher;
+  // (the higher, the more points: 10 to 50, and each more in one jump
+  // counting twice, three times, ...). A just as you land bounces you higher;
   // left and right move you; B changes Pokémon.
   const LAMP_LEVELS = [36, 54, 72, 90, 108];   // (heights above the trampoline)
   // (A lamp somewhere over the trampoline: one of the three always low.)
@@ -893,7 +1001,7 @@
           const dx = (input.right ? 1 : 0) - (input.left ? 1 : 0);
           C.x = clamp(C.x + dx * (0.7 + 0.15 * m.stats.skill), 8, 52);
           if (dx) m.face = dx;
-          if (input.pressed.b && C.z < 4) { C.cur = (C.cur + 1) % 3; C.swap = 20; C.vz = low; return; }
+          if (input.pressed.b && C.z < 4) { act(s, t, C.cur, "switched"); C.cur = (C.cur + 1) % 3; C.swap = 20; C.vz = low; return; }
         } else {
           // (The computer: under the best lamp it can reach; A at the bounce, if its Skill holds.)
           const reach = (C.vz * C.vz) / (2 * G) * 1.15 + 6;
@@ -906,8 +1014,11 @@
           // A bounce: A in time (just before or after landing) goes higher, and missing it lower.
           C.z = 0;
           const good = s.frame - C.lastA <= 8;
+          // (A too soon is a missed bounce.)
+          if (!good && C.lastA > 0) act(s, t, C.cur, "failed");
           C.vz = good ? Math.min(top, Math.abs(C.vz) * 1.12 + 0.25) : Math.max(low, Math.abs(C.vz) * 0.85);
-          C.landT = 6;
+          C.landT = 6; C.combo = 0;
+          act(s, t, C.cur, "jumped");
           if (you) { s.bounces++; if (good) s.ctx.sfx("se_m_jump_kick"); }
           C.lastA = -99;
         }
@@ -916,7 +1027,9 @@
         for (const l of C.lamps) {
           if (l.wait > 0) { if (--l.wait === 0) Object.assign(l, newLamp(s, l.k)); continue; }
           if (Math.abs(l.x - C.x) < 9 && Math.abs(l.h - (C.z + 12)) < 9) {
-            s.score[t] += LAMP_LEVELS.indexOf(l.h) + 2;
+            C.combo = (C.combo || 0) + 1;
+            const n = (LAMP_LEVELS.indexOf(l.h) + 1) * 2 * Math.min(2, C.combo);
+            s.score[t] += n; act(s, t, C.cur, "points", n);
             if (you) { s.lit++; s.ctx.sfx("se_shiny"); }
             l.wait = 60;
           }
@@ -969,7 +1082,7 @@
       if (--s.next <= 0) {
         // A disc, from one side or the other, high or low.
         const left = s.ctx.rng() < 0.5, v = 1.0 + s.ctx.rng() * 1.1;
-        s.discs.push({ x: left ? -6 : W + 6, y: HUD + 50 + s.ctx.rng() * 30, vx: left ? v : -v, vy: -0.25 + s.ctx.rng() * 0.35, gold: s.spawned++ % 7 === 6 });
+        s.discs.push({ x: left ? -6 : W + 6, y: HUD + 50 + s.ctx.rng() * 30, vx: left ? v : -v, vy: -0.25 + s.ctx.rng() * 0.35 });
         s.next = 26 + Math.floor(s.ctx.rng() * 16);
       }
       for (const d of s.discs) { d.x += d.vx; d.y += d.vy; d.vy += 0.008; }
@@ -1002,6 +1115,7 @@
         if (swap && m.z === 0) {
           const next = s.all.find((o) => o.team === m.team && o.slot === (m.slot + 1) % 3);
           Object.assign(next, { x: m.x, z: 0, vz: 0, vx: 0 });
+          act(s, m.team, m.slot, "switched");
           s.mons[s.mons.indexOf(m)] = next;
           s.ctx.sfx("se_select");
           continue;
@@ -1011,14 +1125,15 @@
         if (dx) m.face = dx;
         m.x = clamp(m.x + m.vx, 10, W - 10);
         m.moving = dx !== 0 || m.z > 0;
-        if (jump && !m.z) { m.vz = vz0; m.z = 0.01; if (s.ctx.teams[m.team].you) { s.jumps++; s.ctx.sfx("se_m_jump_kick"); } }
+        if (jump && !m.z) { m.vz = vz0; m.z = 0.01; act(s, m.team, m.slot, "jumped"); if (s.ctx.teams[m.team].you) { s.jumps++; s.ctx.sfx("se_m_jump_kick"); } }
         if (m.z > 0) { m.z += m.vz; m.vz -= G; if (m.z <= 0) { m.z = 0; m.vz = 0; } }
         for (const d of s.discs) {
           if (d.done || Math.abs(d.x - m.x) > 12 || Math.abs(d.y - (GROUND - m.z - 14)) > 12) continue;
           d.done = true;
           const h = GROUND - d.y;
-          s.score[m.team] += (2 + Math.floor(Math.max(0, h - 14) / 20)) * (d.gold ? 2 : 1);
-          if (s.ctx.teams[m.team].you) { s.caught++; s.ctx.sfx(d.gold ? "se_shiny" : "se_bag_cursor"); }
+          const n = 1 + Math.floor(Math.max(0, h - 34) / 20);
+          s.score[m.team] += n; act(s, m.team, m.slot, "points", n);
+          if (s.ctx.teams[m.team].you) { s.caught++; s.ctx.sfx("se_bag_cursor"); }
         }
       }
       bump(s.mons.filter((m) => !m.z), 6);
@@ -1038,7 +1153,7 @@
         const x = Math.round(d.x), y = Math.round(d.y);
         g.fillStyle = "rgba(0,0,0,0.18)"; g.fillRect(x - 3, GROUND - 1, 7, 2);
         g.fillStyle = "#303030"; g.fillRect(x - 5, y - 1, 11, 3);
-        g.fillStyle = d.gold ? "#f8d030" : (s.frame >> 2) % 2 ? "#f86060" : "#f88080"; g.fillRect(x - 4, y - 1, 9, 2);
+        g.fillStyle = (s.frame >> 2) % 2 ? "#f86060" : "#f88080"; g.fillRect(x - 4, y - 1, 9, 2);
       }
     },
     counts: (s) => ({ discs: s.caught, jumps: s.jumps })
@@ -1060,7 +1175,7 @@
     root.appendChild(canvas);
     const g = canvas.getContext("2d");
     g.imageSmoothingEnabled = false;
-    const s = ev.init(ctx);
+    const s = begin(ev, ctx);
     const held = {}, pressed = {};
     return new Promise((resolve) => {
       const down = (e) => {
@@ -1089,6 +1204,8 @@
             if (phase === "count" && pf >= FPS * 3 + 30) { phase = "play"; pf = 0; }
             if (phase === "play") {
               const input = Object.assign({}, held, { pressed: Object.assign({}, pressed) });
+              // (Your instructions to your Pokémon: each press of A or B.)
+              s.instructions += (pressed.a ? 1 : 0) + (pressed.b ? 1 : 0);
               ev.step(s, input);
               for (const k2 of Object.keys(pressed)) delete pressed[k2];
               if (s.over) { phase = "finish"; pf = 0; ctx.sfx("se_pin"); }
@@ -1123,7 +1240,7 @@
         document.removeEventListener("keyup", up, true);
         root.classList.remove("athlon");
         window.PokeathlonEvents.playing = null;
-        resolve({ points: s.score.map((n) => Math.max(0, Math.round(n))), counts: ev.counts ? ev.counts(s) : {} });
+        resolve(result(id, s));
       }
       draw();
       requestAnimationFrame(frame);
@@ -1134,10 +1251,22 @@
   // the computer for every team, in node.)
   function simulate(id, teams, rng, frames) {
     const ev = EVENTS[id], ctx = { teams, you: -1, rng: rng || Math.random, ai: 1, sfx: () => {} };
+    const s = begin(ev, ctx);
+    for (let f = 0; f < (frames || FPS * 180) && !s.over; f++) ev.step(s, { pressed: {} });
+    return Object.assign(result(id, s), { over: !!s.over });
+  }
+  function begin(ev, ctx) {
     const s = ev.init(ctx);
-    for (let f = 0; f < (frames || FPS * 120) && !s.over; f++) ev.step(s, { pressed: {} });
-    return { points: s.score.map((n) => Math.max(0, Math.round(n))), over: !!s.over, counts: ev.counts ? ev.counts(s) : {} };
+    s.acts = ctx.teams.map(() => [0, 1, 2].map(() => Object.fromEntries(ACTS.map((k) => [k, 0]))));
+    s.instructions = 0;
+    if (ev.show) s.show = ev.show;
+    return s;
+  }
+  // (Each team's result, HGSS's points for it, and what each Pokémon did.)
+  function result(id, s) {
+    const raw = s.score.map((n) => Math.max(0, Math.round(n)));
+    return { raw, points: eventPoints(id, raw), acts: s.acts, frames: s.frame, instructions: s.instructions, counts: EVENTS[id].counts ? EVENTS[id].counts(s) : {} };
   }
 
-  window.PokeathlonEvents = { EVENTS, run, simulate, TEAM, W, H, drawMon, text, box, iconOf, fast: 0 };
+  window.PokeathlonEvents = { EVENTS, run, simulate, POINTS, eventPoints, ACTS, TEAM, W, H, drawMon, text, box, iconOf, fast: 0 };
 })();

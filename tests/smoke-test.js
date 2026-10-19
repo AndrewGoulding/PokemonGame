@@ -2260,7 +2260,7 @@ if (window.JOHTO_TOWN_MAP) {
   assert(sb.window.JOHTO_SCRIPTS.zones.D49R0101.cmds.some((c) => c[0] === "SetVar" && c[2] === "lemonade"), "the vending machine's drinks");
   // Performance today: within each species' bounds, the day and nature moving it.
   const mon = { species: "Pikachu", personality: 3141592653, nature: "Adamant" };
-  const a = PK.performance(mon, new Date(2024, 0, 15)), b = PK.performance(mon, new Date(2024, 0, 15));
+  const a = PK.performance(mon, 15), b = PK.performance(mon, 15);
   assert.deepStrictEqual(a, b, "the same all day");
   PK.STATS.forEach((k, i) => assert(a[k] >= +PA.perf.Pikachu[i * 3 + 1] + 1 && a[k] <= +PA.perf.Pikachu[i * 3 + 2] + 1 && a.max[k] === +PA.perf.Pikachu[i * 3 + 2] + 1, k));
   assert(PK.COURSES.length === 5 && PK.COURSES.every((c) => c.events.length === 3 && c.events.every((id) => PE.EVENTS[id])), "five courses of three events");
@@ -2274,6 +2274,30 @@ if (window.JOHTO_TOWN_MAP) {
     r.points.forEach((n, t) => { totals[t] += n; });
   }
   assert(totals[3] > totals[0], "stars count: " + totals);
+  // HGSS's points for each event's result (overlay 96's ov96_0221D9C8), 200 at most.
+  const EP = PE.eventPoints;
+  assert.deepStrictEqual(EP("hurdle", [3000, 1725, 6000, 100]), [115, 200, 57, 200]);
+  assert.deepStrictEqual(EP("relay", [12288, 0, 1024, 30000]), [120, 0, 10, 200]);
+  assert.deepStrictEqual(EP("disc", [40, 0, 10, 100]), [121, 30, 83, 136]);
+  assert.deepStrictEqual(EP("lamp", [350, 7, 0, 1000]), [100, 2, 0, 200]);
+  assert.deepStrictEqual(EP("pennant", [35, 1, 0, 70]).concat(EP("ring", [70, 3, 0, 1]), EP("block", [80, 0, 1, 300])), [105, 3, 0, 200, 105, 4, 0, 1, 80, 0, 1, 200]);
+  // (Goal Roll: five a goal, and 100, 80, 70 or 60 for the place, a tie taking the lower.)
+  assert.deepStrictEqual(EP("goal", [3, 5, 5, 0]), [85, 105, 105, 60]);
+  // The closing ceremony's bonuses: the Challenge Bonus (75 less the base stars), the
+  // No-Miss Bonus, the points leader, and the prize for effort.
+  assert.strictEqual(PK.challenge({ mons: [0, 1, 2].map(() => ({ species: "Pikachu" })) }), 75 - 3 * 5 * 3, "Pikachu: three stars in each");
+  const acts = (o) => Object.assign({ failed: 0, jumped: 0, points: 0, tackled: 0, fell: 0, dashed: 0, switched: 0, impeded: 0 }, o);
+  const four = [0, 1, 2, 3].map((t) => [0, 1, 2].map((i) => acts(t === 1 && i === 2 ? { points: 9, jumped: 4, failed: 1 } : t === 2 && i === 0 ? { fell: 2, jumped: 4 } : {})));
+  const bo = PK.bonuses([0, 1, 2, 3].map(() => ({ mons: [0, 1, 2].map(() => ({ species: "Pikachu" })) })), four, () => 0);
+  assert.strictEqual(bo.noMiss.length, 10, "ten didn't miss");
+  assert.strictEqual(JSON.stringify(bo.leader), "[[1,2]]");
+  assert(bo.effort === "jumped" && bo.effortMons.length === 2, "the most jumps: two of them");
+  // ScrCmd_724's records (src/field/scrcmd_pokemon_misc.c, overlay 3's labels).
+  const pl = { flags: {}, party: [] };
+  PK.attach({ player: () => pl });
+  pl.flags.pokeathlon = { ap: 0, rank: 7, rec: { eventWins: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], wins: 11, joined: 12, instructions: 13, jumped: 14, tackled: 15, dashed: 16, switched: 17 } };
+  assert.deepStrictEqual([0, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18].map(PK.record), [1, 10, 11, 7, 12, 13, 14, 15, 16, 17, 0]);
+  assert(PK.FRIENDSHIP.hurdle === 3000 && PK.FRIENDSHIP.relay === 12288, "the Friendship room's marks");
   // (The Dome's own commands, from ui/johto-script.js; the Athlete Shop paid in points.)
   assert(/window\.Pokeathlon\.handles\(op\)/.test(fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8")));
   assert(/Pokeathlon\.attach\(/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")));

@@ -2056,27 +2056,50 @@ choose three of your party, against three teams of the computer's. Each
 Pokémon has HGSS's five **Performance** stats (Speed, Power, Skill, Stamina,
 Jump, one to five stars: each species' base and range from
 `performance.narc`, moved each day by its nature and personality as
-`CalcBoxMonPokeathlonPerformance` does; no Aprijuice), shown on the team
-screen. HGSS's ten events are touch-screen games; here
-(`ui/pokeathlon-events.js`) each is a small game for the D-pad, A and B on a
-240x160 screen, the Pokémon their party icons over their team's colour (yours
-red): Hurdle Dash (a relay over hurdles: A jumps), Pennant Capture (run to the
-pennants, gold ones triple; B changes Pokémon), Relay Run (hold A to run
-round the track, B hands over before it's worn out), Block Smash (A smashes,
-each blow tiring), Circle Push (A tackles; points for the middle ring and for
-pushing others off), Goal Roll (tackle balls into the other teams' goals),
-Snow Throw (aim and throw; a hit dazes), Ring Drop (knock the others off the
-ring; worn ones fly further), Lamp Jump (A as you land bounces higher; touch
-the lamps) and Disc Catch (run and jump for the discs; high catches score
-more). Speed makes a Pokémon run faster, Power push, smash and throw harder,
-Skill turn quicker (and the computer aim and time better with it), Stamina
-keep going, Jump jump higher. After each event and the course the results
-come up; your score is that many Athlete Points (100 more for coming first,
-the reception's script gives those), first place wins the course's Medal,
-and the best scores and how often each event's been played are kept
-(`ui/pokeathlon.js`, in `player.flags.pokeathlon`; the B1F rooms' records
-and the Museum's people read them). The **Athlete Shop** sells HGSS's prizes
-of the day (`sPokeathlonPrizeExchangePriceOverrides`: Apricorns, Moomoo Milk,
+`CalcBoxMonPokeathlonPerformance` does, by the game clock's day; no
+Aprijuice), shown on the team screen. HGSS's ten events are touch-screen
+games; here (`ui/pokeathlon-events.js`) each is a small game for the D-pad, A
+and B on a 240x160 screen, the Pokémon their party icons over their team's
+colour (yours red): Hurdle Dash (a relay over hurdles: A jumps; the three
+legs' time), Pennant Capture (pick up pennants, nine at most, and bring them
+home to your corner; dash into one from behind to take its pennants), Relay
+Run (hold A to run round the track, B hands over before it's worn out; the
+laps), Block Smash (A smashes, each blow tiring; the blocks), Circle Push (six
+rounds: when each runs out, a Pokémon in the middle circle scores 3, in the
+ring round it 2, on the rest 1; A tackles them off), Goal Roll (tackle balls
+into the other teams' goals; one into your own counts against you), Snow
+Throw (aim and throw; the hits), Ring Drop (knock the others off the ring, 10
+each), Lamp Jump (A as you land bounces higher; touch the lamps) and Disc
+Catch (run and jump for the discs; high catches score more). Speed makes a
+Pokémon run faster, Power push, smash and throw harder, Skill turn quicker
+(and the computer aim and time better with it), Stamina keep going, Jump jump
+higher. Each team's result is turned into points as HGSS does it (overlay
+96's table, 200 at most): Hurdle Dash 11,500 over the seconds (in 30ths),
+Pennant Capture, Circle Push and Snow Throw three a point, Block Smash one a
+block, Disc Catch 150 - 120 / (1 + 0.08 x its points), Lamp Jump its points
+over 3.5, Relay Run ten a lap, Ring Drop 1.5 a point, Goal Roll five a goal
+and 100, 80, 70 or 60 for its place. Then the closing ceremony's bonuses
+(HGSS's): the Challenge Bonus (75 less the team's base stars), 10 for each
+Pokémon that didn't fail, fall or score against itself (the No-Miss Bonus),
+20 for the one that brought in the most (the points leader), and 10 for the
+one that jumped, tackled, failed or dashed the most (one of those four,
+drawn); ties are settled by a drawing. Then, in the ceremony, the Medal (each
+of your three Pokémon's, for that course, when you win) and "beat its
+personal best" (a new winning record for the course), before you're back at
+the reception: your score is that many Athlete Points (as HGSS adds them; the
+reception's script says so, and gives 100 more for first place). HGSS's
+records are kept (`ui/pokeathlon.js`, in `player.flags.pokeathlon`): the
+courses joined and won, each event's wins, the jumps, tackles, dashes,
+switches and so on that the Dome's people and signs read (`ScrCmd_724`'s
+numbers as `src/field/scrcmd_pokemon_misc.c` has them), each course's best
+winning score, each event's five best results and the Medals each species
+has won; the basement's rooms open as HGSS opens them: the Trust room once
+you've won all five courses, the Potential room once one of your Pokémon has
+all five Medals, and the Friendship room once each event's best is past
+HGSS's mark (30 seconds of Hurdle Dash, 35 pennants, 80 blocks, 12 laps, ...).
+The records' rooms and the Pokéathlon data person show them (the data, as in
+HGSS, "???" where a Data Card hasn't unlocked it). The **Athlete Shop** sells HGSS's prizes
+of the day of the week (the game clock's; `sPokeathlonPrizeExchangePriceOverrides`: Apricorns, Moomoo Milk,
 evolution stones, the Shiny Stone, Rare Candy, PP Up, Heart Scales and so on,
 more with the National Pokédex), each once a day, paid in points; the
 vending machine takes money or points. Not here: the Supreme Cup's own
