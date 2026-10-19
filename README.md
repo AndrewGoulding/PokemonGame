@@ -1487,8 +1487,9 @@ Hisuian Growlithe, ...) and their later evolutions (Scizor, Magnezone,
 Crobat, ...); a raid's Metapod knows Tackle and its Kakuna Poison Sting, as
 their pre-evolutions do. How many stars is random: 1 with no
 Badges, up to 2 with two, 3 with four, 4 with six and 5 with all eight; a
-Lure most often brings 1 star (50/30/15/4/1%), a Super Lure 2 or 3
-(20/35/28/12/5%) and a Max Lure 3 or 4 (5/15/30/30/20%). The raid is a
+Lure brings 1 or 2 stars, a Super Lure 3 or 4 and a Max Lure 5, and a Lure
+stronger than your Badges allow brings the most they do (a Max Lure with six
+Badges, 4 stars). The raid is a
 battle with its Pokémon (from each type's list for that many stars, at Lv.
 12, 20, 35, 50 or 65 and up to 3 more, with IVs of 10 to 31), which
 comes out already Terastallized into the den's type (no animation: its
@@ -1502,7 +1503,7 @@ Pokémon's power grew too strong!" and you're blown out. Lose, or run out of
 turns, and you're thrown out of the den (your Pokémon are restored) and it
 keeps glowing. Win and the battle goes on: the Tera Raid Pokémon stays there,
 worn out, and you're asked whether to catch it; YES, then which of your
-Balls, and FireRed's throw and catch (it can't miss; it keeps its Tera
+Balls (any but the Master Ball), and FireRed's throw and catch (it can't miss; it keeps its Tera
 Type). Then a FireRed-style screen of what you won (`ui/raid-rewards.js`:
 the stars and the Pokémon beaten, then the money and each item with its
 icon and how many, six to a page): money (₽1,500 / 3,000 / 6,000 / 10,000

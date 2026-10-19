@@ -350,8 +350,9 @@
       partnerTrainer: opts.partner && opts.partner.pic,
       foeTrainer2: foe2 && foe2.pic, defeatText2: foe2 && foe2.defeatText && foe2.defeatText.map((p) => fill(p)),
       ghost: !!opts.ghost, noCatch: !!opts.noCatch, raid: opts.raid || 0, raidTurns: opts.raid ? RaidDens.TURNS[opts.raid] : 0,
-      // (A Tera Raid won: the Balls you could catch it in.)
-      raidBalls: opts.raid ? () => Object.keys(player.bag).filter((id) => Bag.isBall(id) && Player.itemCount(player, id) > 0).slice(0, 8)
+      // (A Tera Raid won: the Balls you could catch it in; not the Master Ball,
+      // as in Scarlet and Violet, where a raid's catch never fails anyway.)
+      raidBalls: opts.raid ? () => Object.keys(player.bag).filter((id) => Bag.isBall(id) && id !== "master-ball" && Player.itemCount(player, id) > 0).slice(0, 8)
         .map((id) => ({ id, name: Bag.name(id) })) : null,
       megaRing: Player.itemCount(player, "mega-ring") > 0,
       zRing: Player.itemCount(player, "z-ring") > 0,
@@ -2558,7 +2559,8 @@
     // the Dunsparce Tunnel's prospector digs at the wall until it's dug out
     // (ThreeIsland_DunsparceTunnel_OnTransition: FireRed's with the National
     // Pokédex; here, once you're Champion, it's dug out).
-    if (person.script === "TwoIsland_JoyfulGameCorner_EventScript_LostellesDaddy" && f.gotMoonStoneFromDaddy) return { x: 6, y: 2, movement: "face_down" };
+    // (Only from the next visit on: right after the Moon Stone he stays where he is.)
+    if (person.script === "TwoIsland_JoyfulGameCorner_EventScript_LostellesDaddy" && (f.gameCornerScene || 0) >= 4) return { x: 6, y: 2, movement: "face_down" };
     if (person.script === "ThreeIsland_DunsparceTunnel_EventScript_Prospector" && !player.flags.gameClear) return { x: 6, y: 3, movement: "face_right" };
     // Trainer Tower's floors: the challenge's trainers, where and as whom (towerPerson).
     { const tv = towerPerson(person, map || player.location.map); if (tv !== undefined) return tv; }

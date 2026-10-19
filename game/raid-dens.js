@@ -2,7 +2,7 @@
 // Battles and Sword and Shield's dens): eighteen dens around Kanto, one
 // of each type. A den sleeps until you use a Lure on it; then it glows with a
 // Tera Raid of 1 to 5 stars (the more Badges you have, the more stars it can
-// have, and the stronger the Lure, the likelier the higher ones), until you
+// have, and the stronger the Lure, the more: 1-2, 3-4 or 5), until you
 // win it. The Tera Raid Pokémon is Terastallized into the den's type, with
 // more HP the more stars, and must be beaten within a number of turns;
 // beaten, it gives money, Exp. Candies, Wings (1-2 stars) or vitamins (3+), Berries and Tera Shards of
@@ -13,7 +13,7 @@
 //   RaidDens.byScript(script)            // the den a map person's script is ("RaidDen_<id>"), or null
 //   RaidDens.active(flags, id)           // the raid glowing in den `id` ({ stars, species, level }), or null
 //   RaidDens.maxStars(badges)            // the most stars a raid can have with that many Badges
-//   RaidDens.rollStars(lure, badges, rng)  // a raid's stars, from the Lure used
+//   RaidDens.rollStars(lure, badges, rng)  // a raid's stars, from the Lure used (LURE_STARS)
 //   RaidDens.start(flags, den, lure, badges, rng)  // use a Lure on a den: its raid, now glowing
 //   RaidDens.boss(den, raid, rng)        // the Tera Raid Pokémon, a party record (Terastallizes as soon as it's out)
 //   RaidDens.HP / LEVELS / IVS / TURNS   // by stars (index 1-5)
@@ -72,18 +72,14 @@
   const TURNS = [0, 10, 10, 12, 15, 20];
   const maxStars = (badges) => BADGES.reduce((n, need, s) => (s && badges >= need ? s : n), 1);
 
-  // How likely each number of stars is, by Lure (before the Badges rule some out).
-  const LURE_ODDS = {
-    "lure": [0, 50, 30, 15, 4, 1],
-    "super-lure": [0, 20, 35, 28, 12, 5],
-    "max-lure": [0, 5, 15, 30, 30, 20]
-  };
+  // The stars each Lure brings: a Lure 1 or 2, a Super Lure 3 or 4, a Max Lure 5,
+  // as many as your Badges allow (BADGES); a Lure stronger than they allow
+  // brings the most they do.
+  const LURE_STARS = { "lure": [1, 2], "super-lure": [3, 4], "max-lure": [5] };
   function rollStars(lure, badges, rng) {
     rng = rng || Math.random;
-    const odds = (LURE_ODDS[lure] || LURE_ODDS.lure).map((w, s) => (s && s <= maxStars(badges) ? w : 0));
-    let r = rng() * odds.reduce((a, b) => a + b, 0);
-    for (let s = 1; s <= 5; s++) if ((r -= odds[s]) < 0) return s;
-    return maxStars(badges);
+    const can = (LURE_STARS[lure] || LURE_STARS.lure).filter((s) => s <= maxStars(badges));
+    return can.length ? can[Math.floor(rng() * can.length)] : maxStars(badges);
   }
 
   // The Pokémon each den's raids can bring, by type and stars: Kanto's own
@@ -220,5 +216,5 @@
     return { money: R.money, items: Object.entries(got) };
   }
 
-  window.RaidDens = { DENS, byScript, active, maxStars, rollStars, start, finish, boss, rewards, POOLS, isKanto, RAID_MOVES, BADGES, LEVELS, IVS, HP, TURNS, LURE_ODDS, REWARDS, SHARDS };
+  window.RaidDens = { DENS, byScript, active, maxStars, rollStars, start, finish, boss, rewards, POOLS, isKanto, RAID_MOVES, BADGES, LEVELS, IVS, HP, TURNS, LURE_STARS, REWARDS, SHARDS };
 })();

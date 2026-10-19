@@ -601,10 +601,20 @@ for (const share of [false, true]) {
   assert(/battle\.raidTimedOut = true/.test(fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8")));
   let seed = 7;
   const rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  const mean = (lure, badges) => { let t = 0; for (let i = 0; i < 3000; i++) t += RaidDens.rollStars(lure, badges, rng); return t / 3000; };
-  for (let i = 0; i < 500; i++) assert(RaidDens.rollStars("max-lure", 0, rng) === 1 && RaidDens.rollStars("max-lure", 3, rng) <= 2);
-  const [a, b, c] = ["lure", "super-lure", "max-lure"].map((l) => mean(l, 8));
-  assert(a < b && b < c && a < 2 && c > 3.3, "lure means " + [a, b, c]);
+  // A Lure 1 or 2 stars, a Super Lure 3 or 4, a Max Lure 5; past what your Badges allow, the most they do.
+  const rolls = (lure, badges) => { const seen = new Set(); for (let i = 0; i < 300; i++) seen.add(RaidDens.rollStars(lure, badges, rng)); return [...seen].sort().join(); };
+  assert.deepStrictEqual(["lure", "super-lure", "max-lure"].map((l) => rolls(l, 8)), ["1,2", "3,4", "5"]);
+  assert.deepStrictEqual(["lure", "super-lure", "max-lure"].map((l) => rolls(l, 0)), ["1", "1", "1"]);
+  assert.deepStrictEqual(["lure", "super-lure", "max-lure"].map((l) => rolls(l, 4)), ["1,2", "3", "3"]);
+  assert.deepStrictEqual(["super-lure", "max-lure"].map((l) => rolls(l, 6)), ["3,4", "4"]);
+  // (No Master Ball for a raid's catch; Lostelle's dad stays where he is until your next visit;
+  // a shop's long names in the small font; move descriptions wrapped to the summary's window.)
+  {
+    const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    assert(/id !== "master-ball" && Player\.itemCount/.test(gameJs) && /LostellesDaddy" && \(f\.gameCornerScene \|\| 0\) >= 4/.test(gameJs));
+    assert(/textWidth\(name\) > room \? "small"/.test(fs.readFileSync(path.join(root, "ui/shop-screen.js"), "utf8")));
+    assert(/mv\.shortDesc \|\| "", 108\)/.test(fs.readFileSync(path.join(root, "ui/summary-screen.js"), "utf8")));
+  }
   // A raid: in the den's pool, its level; its boss Terastallizes into the den's type.
   const flags = {}, den = RaidDens.DENS.find((d) => d.type === "Fire");
   const raid = RaidDens.start(flags, den, "max-lure", 8, rng);

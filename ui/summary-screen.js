@@ -245,7 +245,7 @@
           const acc = mv.acc === true || !mv.acc ? "---" : String(mv.acc).padStart(3, " ");
           dark(pow, 57, 57); dark(acc, 57, 71);
           categoryIcon(top, mv.cat, 48, 79);
-          wrap(top, (d.moveText || {})[m.name] || mv.shortDesc || "", 112).slice(0, 4).forEach((l, i) => dark(l, 7, 98 + i * 14));
+          wrap(top, (d.moveText || {})[m.name] || mv.shortDesc || "", 108).slice(0, 4).forEach((l, i) => dark(l, 7, 98 + i * 14));
         }
       }
     }

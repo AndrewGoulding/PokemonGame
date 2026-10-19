@@ -74,8 +74,10 @@
     // The list (window 4 at 88, 8): names at 97, prices right-aligned to 221.
     for (let r = 0; r < shown; r++) {
       const it = items[st.top + r], y = 10 + 16 * r;
-      s.text(it ? it.name : "Cancel", 97, y, DARK, LIGHT);
-      if (it) { const p = yen(it.price); s.text(p, 222 - s.textWidth(p, "small"), y, DARK, LIGHT, "small"); }
+      const p = it && yen(it.price), room = it ? 222 - s.textWidth(p, "small") - 4 - 97 : Infinity, name = it ? it.name : "Cancel";
+      // (A name too long for its row before the price, "TM99 Secret Power": in the small font.)
+      s.text(name, 97, y, DARK, LIGHT, s.textWidth(name) > room ? "small" : undefined);
+      if (it) s.text(p, 222 - s.textWidth(p, "small"), y, DARK, LIGHT, "small");
       if (st.top + r === st.cursor) s.text("▶", 89, y, busy ? LIGHT : DARK, busy ? DARK : LIGHT);
     }
     const cur = items[st.cursor];
