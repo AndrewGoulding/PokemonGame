@@ -890,6 +890,12 @@ for (const share of [false, true]) {
   // Tera Shards sell for ₽1,000 each; and the Bag opening on a Berry you've none of left
   // (the last one planted) mustn't trip over its CLOSE BAG row.
   assert.deepStrictEqual(["fire-tera-shard", "water-tera-shard"].map((id) => Bag.sellPrice(id)), [1000, 1000]);
+  // Faraway Island's Mew: Psychic, Nasty Plot, Aura Sphere, Ice Beam.
+  assert(/const FARAWAY_MEW_MOVES = \["Psychic", "Nasty Plot", "Aura Sphere", "Ice Beam"\];/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")), "Mew's moves");
+  assert.deepStrictEqual(Party.create("Mew", 50, { moves: ["Psychic", "Nasty Plot", "Aura Sphere", "Ice Beam"] }).moves.map((m) => m.name), ["Psychic", "Nasty Plot", "Aura Sphere", "Ice Beam"]);
+  // Tall grass: its sprite in data/field-effects.js, drawn over whoever's in it.
+  assert(FIELD_EFFECTS.tallGrass && FIELD_EFFECTS.tallGrass.px.length === 16 * 16 * 5 && FIELD_EFFECTS.tallGrass.palette.length >= 16);
+  assert(/for \(const s of tallGrassSprites\(camX, camY, shade\)\) sprites\.push\(s\);/.test(fs.readFileSync(path.join(root, "ui/overworld.js"), "utf8")), "tall grass drawn");
   // A Tin Bottle Cap: one IV down to 0 (undoing Hyper Training there).
   {
     const r = Object.assign(Party.create("Snorlax", 30, { ivs: 31 }), { hyper: ["spe"] });

@@ -1600,6 +1600,78 @@
     return !!OVER_TOP[a.elev];
   }
 
+  // ---------- Tall grass (FLDEFF_TALL_GRASS, src/field_effect_helpers.c) ----------
+  //
+  // Whoever stands in tall grass (MB_TALL_GRASS: you, your Pokémon, people)
+  // is in it, not on it: FireRed's 16x16 grass sprite (data/field-effects.js)
+  // over the tile and their feet. Stepping in, it rustles (frames 1-4, 10
+  // frames each, then 0: sAnim_TallGrass); someone already standing there
+  // when the map's drawn has it at rest (frame 0). It stays while anyone's on
+  // the tile or stepping off it, and until it's done rustling.
+  const GRASS_FRAME_MS = 10 * 1000 / 60;
+  const grassFx = new Map();   // "map:x:y" -> { x, y, start (ms), map }
+  let grassPics = null;
+  function grassPic(frame) {
+    const fx = window.FIELD_EFFECTS && window.FIELD_EFFECTS.tallGrass;
+    if (!fx) return null;
+    if (!grassPics) {
+      grassPics = [];
+      for (let f = 0; f < fx.frames; f++) {
+        const c = document.createElement("canvas");
+        c.width = fx.width; c.height = fx.height;
+        const cg = c.getContext("2d"), img = cg.createImageData(fx.width, fx.height), n = fx.width * fx.height;
+        for (let i = 0; i < n; i++) {
+          const v = parseInt(fx.px[f * n + i], 16);
+          if (!v) continue;
+          img.data.set(fx.palette[v], i * 4); img.data[i * 4 + 3] = 255;
+        }
+        cg.putImageData(img, 0, 0);
+        grassPics.push(c);
+      }
+    }
+    return grassPics[frame];
+  }
+  const isTallGrass = (map, x, y) => World.blockAt(map, x, y).behavior === World.MB.TALL_GRASS;
+  // The tiles someone's on: where they stand, and where they're stepping to
+  // or from; and whether they're stepping.
+  function grassOccupants() {
+    const out = [];
+    if (!me.hidden && !fly) {
+      out.push([me.x, me.y, !!me.move]);
+      if (me.move && (me.move.tmap || me.map) === me.map) out.push([me.move.tx, me.move.ty, true]);
+    }
+    for (const p of people) {
+      if (p.hidden || p.def.inanimate) continue;
+      out.push([p.x, p.y, !!p.move]);
+      if (p.move) out.push([p.move.tx, p.move.ty, true]);
+    }
+    if (followerShown()) {
+      out.push([pal.x, pal.y, !!pal.move]);
+      if (pal.move) out.push([pal.move.fx, pal.move.fy, true]);
+    }
+    return out;
+  }
+  function tallGrassSprites(camX, camY, shade) {
+    const now = performance.now(), here = new Set();
+    for (const [x, y, stepping] of grassOccupants()) {
+      if (!isTallGrass(me.map, x, y)) continue;
+      const key = me.map + ":" + x + ":" + y;
+      here.add(key);
+      if (!grassFx.has(key)) grassFx.set(key, { x, y, map: me.map, start: stepping ? now : -Infinity });
+    }
+    const out = [];
+    for (const [key, fx] of grassFx) {
+      const t = Math.floor((now - fx.start) / GRASS_FRAME_MS), done = t >= 4;
+      if (fx.map !== me.map || (!here.has(key) && done)) { grassFx.delete(key); continue; }
+      const pic = grassPic(done ? 0 : t + 1);
+      if (!pic) continue;
+      // (Over whoever's on its tile, or stepping onto it from below; under
+      // anyone on the row below.)
+      out.push({ y: fx.y * TILE + TILE - 0.5, over: false, draw: () => { if (shade) g.filter = SHADE; g.drawImage(pic, fx.x * TILE - camX, fx.y * TILE - camY); g.filter = "none"; } });
+    }
+    return out;
+  }
+
   // (`sunk`: pixels of its feet under the water of a hot spring, cut off.)
   function drawSprite(name, w, h, frame, flip, px, py, sunk) {
     const img = spriteImage(name);
@@ -1792,6 +1864,7 @@
     const meSunk = !me.move && me.avatar === "walk" && !lift ? sunkAt(me.map, me.x, me.y) : 0;
     if (!me.hidden && !(fly && fly.player !== undefined)) sprites.push({ y: py, over: meOver || lift >= 16, draw: () => drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy - lift, meSunk) });
     if (heal) drawHeal(camX, camY);   // the healing machine's balls and screen, under people
+    for (const s of tallGrassSprites(camX, camY, shade)) sprites.push(s);
     sprites.sort((a, b) => a.y - b.y);
     sprites.filter((s) => !s.over).forEach((s) => s.draw());
 

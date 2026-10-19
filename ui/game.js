@@ -7636,7 +7636,7 @@
   // and Zapdos (PowerPlant_EventScript_Zapdos), wild at Lv. 50, to the
   // legendary battle music. Beaten or caught, it's gone for good; run from,
   // it flies away, and is back the next time you come.
-  // (Mewtwo in Cerulean Cave too, `opts` { level, text, music }: Lv. 70,
+  // (Mewtwo in Cerulean Cave too, `opts` { level, text, music, moves }: Lv. 70,
   // "Mew!", its own battle music: CeruleanCave_B1F_EventScript_Mewtwo.)
   async function legendaryBird(person, species, flag, opts) {
     opts = opts || {};
@@ -7645,7 +7645,7 @@
     await say(opts.text || T("Text_Gyaoo"));
     music("mus_encounter_gym_leader");
     await sleep(300);
-    const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create(species, opts.level || 50)] }, music: opts.music || "mus_vs_legend" });
+    const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create(species, opts.level || 50, opts.moves ? { moves: opts.moves } : {})] }, music: opts.music || "mus_vs_legend" });
     if (outcome === "lost") return;
     show("world");
     await Overworld.resume();
@@ -8366,12 +8366,14 @@
     if (r.dir) Overworld.stepPerson(MEW, r.dir);
   }
   // FarawayIsland_Interior_EventScript_Mew: found! It shows itself, "Myuu…",
-  // and the battle.
+  // and the battle. (This game's own: it knows Psychic, Nasty Plot, Aura
+  // Sphere and Ice Beam.)
+  const FARAWAY_MEW_MOVES = ["Psychic", "Nasty Plot", "Aura Sphere", "Ice Beam"];
   async function mewFound(person) {
     if (!canBattle()) return;
     Overworld.setPersonHidden(MEW, false);
     await Overworld.act([{ who: MEW, moves: ["face_player"] }]);
-    await legendaryBird(person, "Mew", "foughtMew", { level: 50, text: ["Myuu…"] });
+    await legendaryBird(person, "Mew", "foughtMew", { level: 50, text: ["Myuu…"], moves: FARAWAY_MEW_MOVES });
   }
 
   // ---------- Orre: the Outskirt Stand (Pokémon Colosseum's opening) ----------

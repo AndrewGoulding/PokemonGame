@@ -553,7 +553,8 @@ One Island: its houses, Kindle Road (its swimmers, fishermen, Crush Girls,
 Black Belts, a camper and picnicker, Crush Kin Mik & Kia (a double battle),
 Rock Smash rocks, items and wild Pokémon on land and water) and the Ember Spa,
 whose hot spring heals your Pokémon (you and the Pokémon following you sit in
-it up to the waist) and whose old man gives you HM08 Rock Smash
+it up to the waist; in tall grass, anywhere, FireRed's grass sprite is drawn over
+the feet of whoever stands in it, rustling as they step in) and whose old man gives you HM08 Rock Smash
 (FireRed's HM06); Treasure Beach and its hidden items; Mt. Ember (its Pokémon
 Rangers and Crush Girl, the Explosion tutor, Strength boulders and Rock Smash
 rocks, the summit paths up to Moltres, a wild Lv. 50 Moltres as Articuno and
@@ -1750,7 +1751,8 @@ home. Inside, in the long grass, Mew plays hide and seek as in Emerald
 darts into the grass and vanishes; each step you take it takes one too, away
 from you if it can (and never trapped between you and one of the four
 rocks), shows itself only every 8th step and pauses on the 9th, and walking
-up to it, seen or not, finds it: "Myuu…", and a wild Mew, Lv. 50 (Emerald's is Lv. 30). Caught or
+up to it, seen or not, finds it: "Myuu…", and a wild Mew, Lv. 50 (Emerald's is Lv. 30), knowing
+Psychic, Nasty Plot, Aura Sphere and Ice Beam (this game's own). Caught or
 beaten it's gone for good; run from, it flies away and is back the next
 time you come in. Like Emerald's, the island is no place to Fly from.
 
