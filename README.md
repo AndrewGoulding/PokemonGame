@@ -128,7 +128,8 @@ learn, and then it evolves if it can. Bottle Caps are Hyper Training, as in
 Sword and Shield and Scarlet and Violet: on a Pokémon of Lv. 50 or more, a
 Bottle Cap raises the IV of one stat you pick (from the ones not already at
 31) to 31, a Gold Bottle Cap all of them; unlike those games, where it only
-acts as 31, the IV itself changes (for breeding too). It holds medicine, evolution
+acts as 31, the IV itself changes (for breeding too). A Tin Bottle Cap
+(Legends: Z-A's) lowers one stat's IV you pick to 0, at any level. It holds medicine, evolution
 stones (each item for evolving says "Evolves certain Pokémon when used."), Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
 the Exp. Share, Oak's Parcel, the Town Map and the Fishing Rod (you start
 with it, and older saves are given it; see **Fishing** below). In the
@@ -140,7 +141,8 @@ used on a Pokémon, its stat's EVs go down 10 and it grows friendlier (10, 5
 or 2), as their descriptions now say; with no EVs in that stat, "It would have
 no effect." Berries sell to any Poké Mart by their tier (the Berry Pouch's
 nine, below): ₽50 for the Basic ones, then 100, 150, 200, 250, 300, 350, 425
-and ₽500 for the Enigma Berry. After the Bag come FireRed's Pokédex, the **National
+and ₽500 for the Enigma Berry; Tera Shards for ₽1,000 each.
+After the Bag come FireRed's Pokédex, the **National
 Pokédex** from the moment Oak hands it over (Pokémon from beyond Kanto turn
 up in the campaign; FireRed's IsNationalPokedexEnabled is `Player.nationalDex`:
 its table of contents is FireRed's National one, with Seen and Owned each
@@ -662,7 +664,11 @@ Points** (1 BP on floors 1-3, 2 on 4-6, 3 on 7 and 8; a double battle's pair
 count as two), and the gentleman by the lobby's right-hand counter teaches a
 Pokémon any of its tutor moves for BP (on the Move Relearner's screen, each
 move's price under the list: 16 BP for a status move, else 8 up to 60 power,
-16 up to 80, 24 up to 100, 32 above). Lose and
+16 up to 80, 24 up to 100, 32 above); the old woman beside him teaches its
+Egg moves (any its evolution line could have hatched knowing) at the same
+prices; and the lobby's shop is a BP Shop instead of a Poké Mart: Bottle Cap
+25 BP, Gold Bottle Cap 75, Tin Bottle Cap 10 (one IV down to 0, for Trick
+Room), every mint 50 and the six vitamins 2 each. Lose and
 you're back at the counter. The tower's owner on the roof stops the clock,
 gives the challenge's prize (once: Up-Grade, Dragon Scale, Metal Coat, King's
 Rock) and says whether you've set a record; the best times are on the lobby's

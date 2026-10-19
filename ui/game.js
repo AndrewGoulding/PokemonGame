@@ -752,6 +752,18 @@
         : name + "'s " + STAT_NAMES[r.trained[0]] + " was Hyper Trained!");
       return;
     }
+    if (item === "tin-bottle-cap") {
+      // (A stat's IV down to 0.)
+      const can = Bag.lowerableStats(record);
+      if (!can.length) { await message("It won't have any effect."); return; }
+      const v = await multichoice("Which stat's IV should go down to 0?", 21, 0, can.map((k) => STAT_NAMES[k]).concat(["Cancel"]));
+      Screen.say("");
+      if (v < 0 || v >= can.length) return;
+      Player.removeItem(player, item);
+      Bag.useOn(record, item, { stat: can[v] });
+      await message(name + "'s " + STAT_NAMES[can[v]] + " IV went down to 0!");
+      return;
+    }
     // (At the level cap, Rare Candies and Exp. Candies do nothing: Player.levelCap.)
     if ((item === "rare-candy" || (ItemUse.effect(item) || {}).expCandy) && record.level >= Player.levelCap(player)) {
       await message(name + " is at the level cap (Lv. " + Player.levelCap(player) + ").\nIt won't have any effect.");
@@ -862,7 +874,7 @@
   const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map", "berry-pouch"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
-    item === "ability-capsule" || item === "ability-patch" || item === "bottle-cap" || item === "gold-bottle-cap" || item === "zygarde-cube" ||
+    item === "ability-capsule" || item === "ability-patch" || item === "bottle-cap" || item === "gold-bottle-cap" || item === "tin-bottle-cap" || item === "zygarde-cube" ||
     item === "dynamax-candy" || item === "max-mushrooms" || !!Bag.teraShardType(item) ||
     item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS || item in LURE_STEPS || item === "escape-rope";
   // TMs and HMs work like key items: they can't be held, tossed or sold.
@@ -4091,9 +4103,10 @@
       case "TrainerTower_Lobby_EventScript_Nurse":
         await nurse(ev.map, ev.person);
         return;
-      case "SixIsland_Mart_EventScript_Clerk": case "SevenIsland_Mart_EventScript_Clerk": case "TrainerTower_Lobby_EventScript_MartClerk":
+      case "SixIsland_Mart_EventScript_Clerk": case "SevenIsland_Mart_EventScript_Clerk":
         await mart(ev.person.mart);
         return;
+      case "TrainerTower_Lobby_EventScript_MartClerk": await bpShop(); return;
       case "enter:SixIsland_PokemonCenter_1F": await sixIslandRival(); return;
       case "SixIsland_RuinValley_EventScript_Scientist": await ruinValleyScientist(); return;
       case "SixIsland_RuinValley_EventScript_DottedHoleDoor": await dottedHoleDoor(); return;
@@ -4127,6 +4140,7 @@
       case "TrainerTower_Elevator_EventScript_FloorSelect": await towerElevator(); return;
       case "TrainerTower_EventScript_Owner": await towerOwner(); return;
       case "TrainerTower_Lobby_EventScript_BPTutor": await bpTutor(); return;
+      case "TrainerTower_Lobby_EventScript_BPEggTutor": await bpEggTutor(); return;
       case "TrainerTower_EventScript_SingleBattleTrigger": await towerBattle(ev.map, 0); return;
       case "TrainerTower_EventScript_DoubleBattleTriggerTop": await towerBattle(ev.map, 0); return;
       case "TrainerTower_EventScript_DoubleBattleTriggerBottom": await towerBattle(ev.map, 1); return;
@@ -10234,9 +10248,31 @@
     }
     SPECIAL.add(BP_TUTOR);
   }
-  async function bpTutor() {
-    const f = player.flags;
-    await say(["I teach Pokémon moves from tutors\nall over the world.", "In exchange, I ask for the Battle\nPoints you earn in Trainer Tower."]);
+  // Its Egg moves (every game's): its own Egg list and its evolution line's,
+  // the first stage's being where they're kept.
+  function bpEggMoves(record) {
+    const sets = window.LEARNSETS_GEN6, out = [];
+    for (const sp of evolutionLine(record.species)) {
+      const set = sets[sp] || sets[String(sp).split("-")[0]] || {};
+      for (const m of set.egg || []) if (window.MOVES[m] && !Party.knowsMove(record, m) && !out.includes(m)) out.push(m);
+    }
+    return out.sort();
+  }
+  const BP_EGG_TUTOR = "TrainerTower_Lobby_EventScript_BPEggTutor";
+  {
+    const m = window.WORLD_MAPS.TrainerTower_Lobby;
+    if (m && !m.people.some((p) => p.script === BP_EGG_TUTOR)) {
+      m.people.push({ id: 952, x: 17, y: 14, movement: "face_left", rangeX: 0, rangeY: 0, script: BP_EGG_TUTOR, flag: null,
+        text: null, localId: "LOCALID_TOWER_BP_EGG_TUTOR", sprite: "old_woman", width: 16, height: 32, frames: 9 });
+    }
+    SPECIAL.add(BP_EGG_TUTOR);
+  }
+  const bpTutor = () => bpTeacher(bpTutorMoves, ["I teach Pokémon moves from tutors\nall over the world.", "In exchange, I ask for the Battle\nPoints you earn in Trainer Tower."]);
+  // (The lady beside him: the Egg moves a Pokémon could have hatched knowing.)
+  const bpEggTutor = () => bpTeacher(bpEggMoves, ["I teach Pokémon the moves they\ncould have hatched knowing.", "In exchange, I ask for the Battle\nPoints you earn in Trainer Tower."]);
+  async function bpTeacher(movesOf, intro) {
+    const f = player.flags, bpTutorMoves = movesOf;
+    await say(intro);
     for (;;) {
       if (!(await confirm("Shall I teach a Pokémon a move?\n(You have " + (f.bp || 0) + " BP.)"))) break;
       const notes = player.party.map((r) => (r.egg || !bpTutorMoves(r).length ? "NOT ABLE" : "ABLE"));
@@ -10264,6 +10300,36 @@
       }
     }
     await say("Earn more BP in the tower, and\ncome back anytime.");
+  }
+  // The lobby's shop takes BP instead of money (this game's own): Bottle Caps
+  // (Gold, and Tin), every mint and the six vitamins.
+  const BP_SHOP = [["bottle-cap", 25], ["gold-bottle-cap", 75], ["tin-bottle-cap", 10]]
+    .concat(Object.keys(window.ITEMS).filter((id) => Bag.mintNature(id)).sort().map((id) => [id, 50]))
+    .concat(["hp-up", "protein", "iron", "calcium", "zinc", "carbos"].map((id) => [id, 2]));
+  async function bpShop() {
+    const f = player.flags, at = Overworld.position(), [dx, dy] = (World.DIRS || {})[at.facing] || [1, 0];
+    await say(["Welcome to the BP Shop!", "Battle Points from the tower buy\nthings here. (You have " + (f.bp || 0) + " BP.)"]);
+    Screen.say("");
+    clearMenu();
+    await ShopScreen.open({
+      frame: GameOptions.get().frame,
+      items: BP_SHOP.map(([id, price]) => ({ id, name: Bag.name(id), price, desc: Bag.description(id), icon: Bag.sprite(id) })),
+      money: () => f.bp || 0,
+      currency: { label: "BP", unit: (n) => n + " BP", short: "You don't have enough BP." },
+      inBag: (id) => Player.itemCount(player, id),
+      limit: () => ({ max: 99 }),
+      buy: (id, n) => {
+        if (Player.itemCount(player, id) + n > 999) return { error: "You have no more room for this\nitem." };
+        f.bp = (f.bp || 0) - BP_SHOP.find((x) => x[0] === id)[1] * n;
+        Player.addItem(player, id, n);
+        persist();
+        return null;
+      },
+      map: { canvas: $("#world"), x: 112 + 16 * dx, y: 64 + 16 * dy }
+    });
+    ShopScreen.close();
+    show("world");
+    await say("Please come again!");
   }
   // The elevator down from the roof (TrainerTower_Elevator_EventScript_FloorSelect):
   // Rooftop or B1F (FireRed's names); down it goes, and out at the lobby's

@@ -887,6 +887,25 @@ for (const share of [false, true]) {
   assert(!Bag.canUseOn(Object.assign(Party.create("Pikachu", 20), { evs: {}, happiness: 70 }), "grepa-berry"), "no EVs to lower: no effect, however friendly");
   // Berries sell by tier, ₽50 to ₽500.
   assert.deepStrictEqual(["oran", "sitrus", "razz", "pomeg", "spelon", "occa", "liechi", "kee", "enigma"].map((b) => Bag.sellPrice(b + "-berry")), [50, 100, 150, 200, 250, 300, 350, 425, 500]);
+  // Tera Shards sell for ₽1,000 each; and the Bag opening on a Berry you've none of left
+  // (the last one planted) mustn't trip over its CLOSE BAG row.
+  assert.deepStrictEqual(["fire-tera-shard", "water-tera-shard"].map((id) => Bag.sellPrice(id)), [1000, 1000]);
+  // A Tin Bottle Cap: one IV down to 0 (undoing Hyper Training there).
+  {
+    const r = Object.assign(Party.create("Snorlax", 30, { ivs: 31 }), { hyper: ["spe"] });
+    assert(Bag.canUseOn(r, "tin-bottle-cap", { stat: "spe" }));
+    Bag.useOn(r, "tin-bottle-cap", { stat: "spe" });
+    assert.strictEqual(r.ivs.spe, 0);
+    assert(!r.hyper.includes("spe") && !Bag.canUseOn(r, "tin-bottle-cap", { stat: "spe" }));
+  }
+  {
+    const g = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    // Trainer Tower's BP shop in place of its Poké Mart, and the Egg move tutor beside the tutor.
+    assert(/case "TrainerTower_Lobby_EventScript_MartClerk": await bpShop\(\); return;/.test(g) && /const BP_SHOP = \[\["bottle-cap", 25\], \["gold-bottle-cap", 75\], \["tin-bottle-cap", 10\]\]/.test(g), "the BP shop");
+    assert(/\.concat\(\["hp-up", "protein", "iron", "calcium", "zinc", "carbos"\]\.map\(\(id\) => \[id, 2\]\)\)/.test(g) && /filter\(\(id\) => Bag\.mintNature\(id\)\)\.sort\(\)\.map\(\(id\) => \[id, 50\]\)/.test(g));
+    assert(/case "TrainerTower_Lobby_EventScript_BPEggTutor": await bpEggTutor\(\); return;/.test(g) && /const bpEggTutor = \(\) => bpTeacher\(bpEggMoves,/.test(g), "the Egg move tutor");
+  }
+  assert(/findIndex\(\(e\) => e && e\.id === opts\.select\)/.test(fs.readFileSync(path.join(root, "ui/bag-screen.js"), "utf8")), "the Bag's select");
   for (const [b, st] of [["pomeg", "HP"], ["kelpsy", "Attack"], ["qualot", "Defense"], ["hondew", "Sp. Atk"], ["grepa", "Sp. Def"], ["tamato", "Speed"]]) {
     assert(/friendly/.test(Bag.description(b + "-berry")) && Bag.description(b + "-berry").includes("base " + st), b);
   }

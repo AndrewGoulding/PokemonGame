@@ -137,7 +137,10 @@
     const tiers = window.BerryPicking && window.BerryPicking.TIERS, i = tiers ? tiers.findIndex((t) => t.berries.includes(item)) : -1;
     return i >= 0 ? BERRY_SELL[i] : 0;
   }
-  const sellPrice = (item) => (/-berry$/.test(item) && berrySellPrice(item) ? berrySellPrice(item) : Math.floor(price(item) / 2));
+  // Tera Shards (not sold anywhere): ₽1,000 each to a Poké Mart (this game's own).
+  const TERA_SHARD_SELL = 1000;
+  const sellPrice = (item) => (/-berry$/.test(item) && berrySellPrice(item) ? berrySellPrice(item)
+    : /-tera-shard$/.test(item) ? TERA_SHARD_SELL : Math.floor(price(item) / 2));
 
   // (By category: an Iron Ball, Light Ball or Smoke Ball is held, not thrown.)
   const isBall = (item) => /balls$/.test((window.ITEMS[item] || {}).category || "");
@@ -232,6 +235,9 @@
     if (record.level < HYPER_TRAINING_LEVEL) return [];
     return window.Party.STAT_KEYS.filter((k) => (record.ivs[k] | 0) < 31 && !(record.hyper || []).includes(k));
   }
+  // A Tin Bottle Cap (Legends: Z-A's): a stat's IV down to 0 (for Trick Room
+  // and Gyro Ball), at any level. The stats it would lower.
+  const lowerableStats = (record) => window.Party.STAT_KEYS.filter((k) => (record.ivs[k] | 0) > 0);
 
   // Tera Shards (Scarlet and Violet's): TERA_SHARDS_NEEDED of a type change a
   // Pokémon's Tera Type to it (not Ogerpon's or Terapagos's). The type, or null.
@@ -250,6 +256,7 @@
     if (item === "max-mushrooms") return !!window.DEX[record.species + "-Gmax"];
     if (item === "bottle-cap") return opts.stat ? trainableStats(record).includes(opts.stat) : trainableStats(record).length > 0;
     if (item === "gold-bottle-cap") return trainableStats(record).length > 0;
+    if (item === "tin-bottle-cap") return opts.stat ? lowerableStats(record).includes(opts.stat) : lowerableStats(record).length > 0;
     if (isStone(item)) return !!window.Evolution.find(record, { trigger: "item", item, party: opts.party });
     if (isMachine(item)) return window.Party.canLearnMachine(record, machineMove(item)) && !window.Party.knowsMove(record, machineMove(item));
     if (mintNature(item)) return record.nature !== mintNature(item);
@@ -280,6 +287,13 @@
       // (A trained HP raises max HP; current HP goes up by the same amount.)
       if (record.hp > 0) record.hp += window.Party.maxHp(record) - oldMax;
       return { trained: stats };
+    }
+    if (item === "tin-bottle-cap") {
+      const oldMax = window.Party.maxHp(record);
+      record.ivs[opts.stat] = 0;
+      record.hyper = (record.hyper || []).filter((k) => k !== opts.stat);
+      if (record.hp > 0) record.hp = Math.max(1, record.hp + window.Party.maxHp(record) - oldMax);
+      return { lowered: opts.stat };
     }
     if (mintNature(item)) {
       const old = record.nature;
@@ -345,7 +359,7 @@
 
   window.Bag = {
     POCKETS, get BATTLE_POCKETS() { return BATTLE_POCKETS(); }, PRICES, name, description, sprite, price, sellPrice, pocket, isBall, isStone, isKeyItem,
-    isMachine, machineMove, machines, mintNature, capsuleAbility, patchAbility, trainableStats, HYPER_TRAINING_LEVEL, zygardeCube,
+    isMachine, machineMove, machines, mintNature, capsuleAbility, patchAbility, trainableStats, lowerableStats, HYPER_TRAINING_LEVEL, zygardeCube,
     martStock, canUseOn, useOn, levelUp, expCandy, give, take, teraShardType, TERA_SHARDS_NEEDED
   };
 })();
