@@ -509,7 +509,9 @@ const table = (t, weights) => (t && t.rate ? Object.assign({ rate: t.rate, slots
 
 // HGSS's items as this game's (by name; the Apricorns and the Apricorn Box are added below).
 const APRICORNS = ["red", "yellow", "blue", "green", "pink", "white", "black"];
-const extraItems = Object.fromEntries(APRICORNS.map((c) => [c + "-apricorn", { name: c + "-apricorn", category: "apricorn", effect: "A " + c + " Apricorn. It assails your nostrils." }]));
+// (Each with HGSS's words for it, the Apricorn Box's: msg_0021's 40-46.)
+const APRICORN_WORDS = JSON.parse(fs.readFileSync(F("msgdata/msg/msg_0021.json"), "utf8")).messages.slice(40, 47).map((m) => [].concat(m.en_US).slice(1).join(" ").replace(/\n/g, "").replace(/’/g, "'"));
+const extraItems = Object.fromEntries(APRICORNS.map((c, i) => [c + "-apricorn", { name: c + "-apricorn", category: "apricorn", effect: APRICORN_WORDS[i] }]));
 // (And the key items its scripts give or ask for that the game hasn't got.)
 extraItems.squirtbottle = { name: "squirtbottle", category: "key-items", effect: "A watering can shaped like a Squirtle. It helps promote healthy plant growth." };
 extraItems["mystery-egg"] = { name: "mystery-egg", category: "key-items", effect: "A mysterious Egg obtained from Mr. Pokémon." };
