@@ -114,6 +114,49 @@ beat("Out of the Gym: Elm's call about the Egg", async (g) => {
   await g.expect("FLAG_GOT_PICK_UP_EGG_CALL_FROM_ELM");
 });
 
+beat("Violet's Poké Mart: Elm's aide and the Egg", async (g) => {
+  await g.go("VioletCity", 21, 34, "up");
+  await g.walk("up", 1);
+  await g.mash();
+  if (!(await g.eval(page.flag, "FLAG_GOT_EGG_FROM_ELMS_ASSISTANT"))) await g.talk("assistantm");
+  await g.expect("FLAG_GOT_EGG_FROM_ELMS_ASSISTANT");
+});
+
+beat("Azalea: the Rocket at the well, Kurt", async (g) => {
+  await g.go("AzaleaTown", 50, 19, "up");
+  await g.walk("up", 1);
+  await g.mash();
+  await g.go("AzaleaTown_KurtHouse", 4, 6, "up");
+  await g.mash();
+  await g.talk("gantetsu");
+  await g.expect("FLAG_UNK_19E");   // (Kurt's off to the well)
+});
+
+beat("Slowpoke Well: Team Rocket beaten", async (g) => {
+  await g.go("SlowpokeWell_Entrance", 17, 9, "up");
+  await g.mash();
+  await g.go("SlowpokeWell_B1F", 42, 26, "up");
+  await g.mash();
+  for (const who of ["rocketm$", "rocketm_2", "rocketw", "rkanbum3"]) await g.talk(who);
+  await g.mash();
+  await g.expect("FLAG_BEAT_AZALEA_ROCKETS");
+});
+
+beat("Azalea Gym: Bugsy's Hive Badge and TM89", async (g) => {
+  await g.go("AzaleaTown_Gym", 9, 6, "up");
+  await g.mash();
+  await g.talk("gsleader2");
+  await g.expect("FLAG_GOT_TM89_FROM_BUGSY");
+  if (!(await g.eval(() => window.Game.player.badges.includes("hive")))) throw new Error("no Hive Badge");
+});
+
+beat("Azalea's west side: the rival again", async (g) => {
+  await g.go("AzaleaTown", 13, 16, "left");
+  await g.walk("left", 2);
+  await g.mash();
+  await g.expectVar("VAR_UNK_4075", (v) => v !== 1);
+});
+
 module.exports = { BEATS, makeG };
 
 // The helpers a beat gets (g), for a page started with tests/browser/lib.js.
@@ -144,6 +187,8 @@ function makeG(s) {
       if (!spot) throw new Error("no way up to " + p.id);
       const here = await s.eval(page.where);
       await g.go(here.map, spot.x, spot.y, spot.facing);
+      // (Fresh for whatever battle comes: PP and HP back.)
+      await s.eval(() => window.Game.player.party.forEach(window.Party.heal));
       await s.press("z");
       await g.mash();
     },
