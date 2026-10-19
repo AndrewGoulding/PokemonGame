@@ -550,7 +550,8 @@ been home), and Vermilion's dock sails to them too once the S.S. Anne's gone.
 One Island: its houses, Kindle Road (its swimmers, fishermen, Crush Girls,
 Black Belts, a camper and picnicker, Crush Kin Mik & Kia (a double battle),
 Rock Smash rocks, items and wild Pokémon on land and water) and the Ember Spa,
-whose hot spring heals your Pokémon and whose old man gives you HM08 Rock Smash
+whose hot spring heals your Pokémon (you and the Pokémon following you sit in
+it up to the waist) and whose old man gives you HM08 Rock Smash
 (FireRed's HM06); Treasure Beach and its hidden items; Mt. Ember (its Pokémon
 Rangers and Crush Girl, the Explosion tutor, Strength boulders and Rock Smash
 rocks, the summit paths up to Moltres, a wild Lv. 50 Moltres as Articuno and
@@ -598,8 +599,11 @@ dropping you to B1F (FireRed's sIcefallCaveIceCoords; whole again when you
 come back), and on B1F the ice is slippery: step onto it and you slide on the
 way you were going until something stops you (FireRed's MB_ICE). Up the
 waterfall at the back, Lorelei, home from the League, is facing down Team
-Rocket poaching the cave's Pokémon; she asks you to take one of them on, then
-her Lapras gets the truth out of him (the Pokémon are in the Rocket Warehouse
+Rocket poaching the cave's Pokémon; she asks for your help and battles two of
+them beside you, a tag battle (this game's own: you choose three of yours; her
+Dewgong, Jynx and Lapras, about level 40, against FireRed's Grunt and another
+with Sneasel, Koffing and Golbat; her back picture is May's recoloured,
+`tools/build-lorelei-back.py`), then her Lapras gets the truth out of him (the Pokémon are in the Rocket Warehouse
 on Five Island) and they run; she's at home on Four Island after that.
 Five Island: its houses and Pokémon Center; Five Isle Meadow, Team Rocket's
 grunts, Cut trees and the Rocket Warehouse's door, which takes two passwords:
@@ -727,18 +731,19 @@ music and battle background, to the Gym Leader battle music. Black out to any of
 them and you're back at the Indigo Plateau's Pokémon Center, and the run starts
 over from Lorelei (FireRed's EventScript_ResetEliteFour). Then Red, the
 Champion (where FireRed has Gary), to the Champion's music: Pikachu (58),
-Espeon (59), Wartortle (60), Venusaur (60), Snorlax (61) and his ace, Charizard
+Espeon (59), Blastoise (60), Venusaur (60), Snorlax (61) and his ace, Charizard
 (63), which Mega Evolves with its Charizardite Y. Beaten, Prof. Oak comes
-in, congratulates you, has a word with Red and takes you up to the Hall of
+in (your following Pokémon back in its ball meanwhile), congratulates you, has a word with Red and takes you up to the Hall of
 Fame; his words there, the record machine, and FireRed's Hall of Fame screen:
 your team saved on record ("SAVING… DON'T TURN OFF THE POWER."), each Pokémon
 in turn with its cry, number, name, level and ID No., "Welcome to the HALL OF
 FAME!" with applause and confetti, then you, your name, ID No. and time, and
 "LEAGUE CHAMPION! CONGRATULATIONS!". Then the credits: out in front of the
-Indigo Plateau Gary runs off, Prof. Oak looks at you and walks off, you run
-off too, and FireRed's credits roll over Kanto's towns and routes (FireRed's
-staff, timings and scenes, with Charizard, Venusaur, Blastoise and Pikachu, to
-THE END; after the first time, Start or B skips them). You wake up at home in
+Indigo Plateau Red (FireRed's Gary) runs off, Prof. Oak looks at you and walks
+off, you run off too, and FireRed's credits roll over Kanto's towns and routes
+(FireRed's staff, timings and scenes, each drawn with the maps joined to it, as
+Route 10's runs on into Lavender Town; with Charizard, Venusaur, Blastoise and
+Pikachu, to THE END; Start or B skips them, the first time too). You wake up at home in
 Pallet Town, Champion (FireRed's FLAG_SYS_GAME_CLEAR; blacking out takes you
 home again until you use another Pokémon Center), and Red's Mom has heard the
 news. The League can be challenged again (the Elite Four's rematch words

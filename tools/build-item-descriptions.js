@@ -36,7 +36,9 @@ const out = {
   // (Emerald's, from Faraway Island.)
   "old-sea-map": "A faded sea chart\nthat shows the way\nto a certain island.",
   // (This game's: the Berry Pouch picks berries, game/berry-picking.js.)
-  "berry-pouch": "Use it in a forest to shake a\nberry tree and catch the Berries\nthat fall."
+  "berry-pouch": "Use it in a forest to shake a\nberry tree and catch the Berries\nthat fall.",
+  // (As since Gen 4: a quarter of its HP, not FireRed's 30.)
+  "sitrus-berry": "When held by a Pokémon, it will be\nused in battle to restore 1/4\nof its max HP."
 };
 for (const it of JSON.parse(fs.readFileSync(file, "utf8")).items) {
   if (!/^ITEM_/.test(it.itemId) || /^ITEM_(NONE|TM|HM|0|UNUSED)/.test(it.itemId)) continue;

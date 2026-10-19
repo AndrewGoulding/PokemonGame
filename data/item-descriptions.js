@@ -205,7 +205,7 @@ window.ITEM_DESCRIPTIONS = {
   "silk-scarf": "An item to be held by a Pokémon.\nA sumptuous scarf that boosts the\npower of Normal-type moves.",
   "silph-scope": "A scope that makes unseeable\nPokémon visible.\nIt is made by Silph Co.",
   "silver-powder": "An item to be held by a Pokémon.\nA shiny silver powder that boosts\nthe power of Bug-type moves.",
-  "sitrus-berry": "When held by a Pokémon, it will be\nused in battle to restore 30 HP.",
+  "sitrus-berry": "When held by a Pokémon, it will be\nused in battle to restore 1/4\nof its max HP.",
   "smoke-ball": "An item to be held by a Pokémon.\nThe holding Pokémon can flee from\nany wild Pokémon for sure.",
   "soda-pop": "A fizzy soda drink.\nIt restores the HP of one Pokémon\nby 60 points.",
   "soft-sand": "An item to be held by a Pokémon.\nA loose, silky sand that boosts the\npower of Ground-type moves.",

@@ -1130,6 +1130,11 @@
   }
   // FireRed puts "A critical hit!" and how effective it was after the hit.
   let hitNotes = [], hitSound = null;
+  // (Sturdy, Endure, a Focus Sash keeping it on 1 HP come between those and
+  // the hit: held till after it, so the hit still has its sound and the
+  // notes come first, as in FireRed: "It's super effective!", then "endured".)
+  let heldAfterHit = [];
+  const HELD_AFTER_HIT = new Set(["-ability", "-activate", "-enditem"]);
 
   function flash(id) {
     // BATTLE SCENE: OFF (the Option screen) leaves out the hit animation.
@@ -1273,7 +1278,7 @@
         renderSide(pos);
         return null;
       case "move": {
-        hitNotes = []; hitSound = null;
+        hitNotes = []; hitSound = null; heldAfterHit = [];
         const text = fill("{who} used " + b + "!", a);
         // (Magnitude's animation waits for "Magnitude n!"; a move that misses,
         // fails or is blocked has none, as in FireRed.)
@@ -1313,11 +1318,12 @@
         if (!c) {
           // A move's hit: its sound by how effective it was, the HP going down,
           // then "A critical hit!" / "It's super effective!".
-          const notes = hitNotes, sound = hitSound || "se_effective";
-          hitNotes = []; hitSound = null;
+          const notes = hitNotes, sound = hitSound || "se_effective", held = heldAfterHit;
+          hitNotes = []; hitSound = null; heldAfterHit = [];
           return async () => {
             if (changed) { sfx(sound); await hbSettled(); }
             for (const n of notes) await message(n);
+            for (const h of held) await playOut(applyEvent(h));
           };
         }
         const msg = fill(lookup(DAMAGE_FROM, effectId(c), "{who} was hurt by " + effectName(c) + "!"), a);
@@ -1680,12 +1686,16 @@
 
   async function playEvent(ev) {
     // (A critical hit or effectiveness with no hit after it, e.g. on a Substitute.)
+    if (hitNotes.length && HELD_AFTER_HIT.has(ev[0])) { heldAfterHit.push(ev); return; }
     if (hitNotes.length && !["-damage", "-crit", "-supereffective", "-resisted"].includes(ev[0])) {
-      const notes = hitNotes;
-      hitNotes = []; hitSound = null;
+      const notes = hitNotes, held = heldAfterHit;
+      hitNotes = []; hitSound = null; heldAfterHit = [];
       for (const n of notes) await message(n);
+      for (const h of held) await playOut(applyEvent(h));
     }
-    const out = applyEvent(ev);
+    await playOut(applyEvent(ev));
+  }
+  async function playOut(out) {
     if (typeof out === "string") await message(out);
     else if (typeof out === "function") await out();
     else if (out && out.pause) await wait(out.pause);

@@ -4319,8 +4319,23 @@ for (let seed = 1; seed <= GEN8; seed++) {
     assert(/concat\(\["Shadow Ball"\]\);\n\s*const eevee = Object\.assign\(Party\.create\("Eevee"[^\n]*teraType: "Ghost", teraAce: true \}\);\n\s*const team = base[^\n]*\n[^\n]*pic: "rival_early", tera: true/.test(gameSrc), "Gary's Cerulean Eevee");
     assert(/Party\.create\("Politoed", 48[^\n]*\n[^\n]*Object\.assign\(Party\.create\("Dragonite", 53, \{ ivs: 31 \}\), \{ item: "dragoninite", teraType: "Flying", teraAce: true \}\)/.test(gameSrc), "Leaf's Route 22 team");
     assert(/const VICTORY_ROAD_RIVAL_TEAM = \[\["Pidgeot", 50\], \["Arcanine", 50\], \["Gyarados", 50, "gyaradosite"\]/.test(gameSrc) && /at\.map === "Route23" && at\.x === 18 && at\.y === 28/.test(gameSrc), "Gary at the end of Victory Road");
-    assert(/const CHAMPION_TEAM = \[\["Pikachu", 58, 72\], \["Espeon", 59, 72\], \["Wartortle", 60, 73\], \["Venusaur", 60, 73\], \["Snorlax", 61, 74\], \["Charizard", 63, 75, "charizardite-y"\]\]/.test(gameSrc)
+    assert(/const CHAMPION_TEAM = \[\["Pikachu", 58, 72\], \["Espeon", 59, 72\], \["Blastoise", 60, 73\], \["Venusaur", 60, 73\], \["Snorlax", 61, 74\], \["Charizard", 63, 75, "charizardite-y"\]\]/.test(gameSrc)
       && /foe: \{ name: "Champion Red", team, pic: "red" \}/.test(gameSrc), "Red, the Champion");
+    // After him: your Pokémon in its ball while Oak walks up; Red (not Gary) out of the
+    // Indigo Plateau before the credits, which Start always skips; the credits' scenes
+    // drawn with the maps joined to theirs (Route 10 on into Lavender Town).
+    assert(/Overworld\.follower\.hide\(true\);[^\n]*\n\s*Overworld\.addObject\(O, \{ x: 6, y: 15, facing: "up" \}\)/.test(gameSrc), "Oak and your Pokémon");
+    assert(/Overworld\.addObject\(R, \{ x: 11, y: 6, facing: "down" \}, lookOf\("red"\)\)/.test(gameSrc) && /HallOfFame\.credits\(\$\("#overlay"\), \{ skippable: true,/.test(gameSrc), "Red at the Plateau; Start skips the credits");
+    assert(/c\.direction === "down" \? \[c\.map, at, m\.height \* 16\]/.test(fs.readFileSync(path.join(__dirname, "../ui/hall-of-fame.js"), "utf8")), "the credits' joined maps");
+    assert(WORLD_MAPS.Route10.connections.some((c) => c.map === "LavenderTown" && c.direction === "down"));
+    // Icefall Cave: Lorelei beside you against two Grunts (her back picture made from May's).
+    assert(/partner: \{ name: "Lorelei", team: ICEFALL_LORELEI[^\n]*pic: "lorelei" \}/.test(gameSrc) && /foe2: \{ name: data\.className \+ " " \+ data\.name, team: ICEFALL_GRUNT2/.test(gameSrc), "Lorelei's tag battle");
+    assert(fs.existsSync(path.join(__dirname, "../assets/sprites/trainers/back/lorelei.png")));
+    for (const sp of ["Dewgong", "Jynx", "Lapras", "Sneasel", "Koffing", "Golbat"]) assert(DEX[sp], sp);
+    // Sturdy and the like between how effective a hit was and the hit: after it, the hit's sound kept.
+    assert(/if \(hitNotes\.length && HELD_AFTER_HIT\.has\(ev\[0\]\)\) \{ heldAfterHit\.push\(ev\); return; \}/.test(fs.readFileSync(path.join(__dirname, "../ui/battle-screen.js"), "utf8")), "Sturdy's hit sound");
+    // Your Pokémon in a hot spring, as you are.
+    assert(/const sunk = !pal\.move && !lift \? sunkAt\(me\.map, pal\.x, pal\.y\) : 0;/.test(fs.readFileSync(path.join(__dirname, "../ui/overworld.js"), "utf8")), "the follower in the Ember Spa");
     assert(WORLD_MAPS.VictoryRoad_2F.warps.some((w) => w.map === "Route23") && WORLD_MAPS.Route23.warps.some((w) => w.x === 18 && w.y === 28 && w.map === "VictoryRoad_2F"));
     // Every trainer's Pokémon knows the last four moves it learns by its level (not FireRed's sets).
     assert(!/moves: m\.moves/.test(gameSrc) && !/moves: m\.moves/.test(fs.readFileSync(path.join(__dirname, "../game/trainer-tower.js"), "utf8")), "trainers' moves by level");

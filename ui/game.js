@@ -8051,10 +8051,10 @@
 
   // Red, the Champion (this game's own; FireRed has Gary,
   // PokemonLeague_ChampionsRoom_EventScript_EnterRoom): Pikachu, Espeon,
-  // Wartortle, Venusaur, Snorlax and his ace, Charizard, holding its
+  // Blastoise, Venusaur, Snorlax and his ace, Charizard, holding its
   // Charizardite Y: it Mega Evolves. Levels about FireRed's Champion's (57-63),
   // and with FLAG_SYS_CAN_LINK_WITH_RS its rematch ones (72-75).
-  const CHAMPION_TEAM = [["Pikachu", 58, 72], ["Espeon", 59, 72], ["Wartortle", 60, 73], ["Venusaur", 60, 73], ["Snorlax", 61, 74], ["Charizard", 63, 75, "charizardite-y"]];
+  const CHAMPION_TEAM = [["Pikachu", 58, 72], ["Espeon", 59, 72], ["Blastoise", 60, 73], ["Venusaur", 60, 73], ["Snorlax", 61, 74], ["Charizard", 63, 75, "charizardite-y"]];
   function championTeam(rematch) {
     return CHAMPION_TEAM.map(([sp, lv, lv2, item]) => Object.assign(Party.create(sp, rematch ? lv2 : lv, { ivs: 31 }), item ? { item } : {}));
   }
@@ -8080,6 +8080,7 @@
     await say(["Red: …", "Red smiled, and gave a small nod."]);
     // Prof. Oak comes in.
     music("mus_slow_pallet");
+    Overworld.follower.hide(true);   // (your Pokémon back in its ball: Oak walks up the way it stands)
     Overworld.addObject(O, { x: 6, y: 15, facing: "up" });
     await say(T("PokemonLeague_ChampionsRoom_Text_OakPlayer"));
     Screen.say("");
@@ -8101,6 +8102,7 @@
     await Overworld.act([{ who: O, moves: M("PokemonLeague_ChampionsRoom_Movement_OakExit") },
       { who: "player", moves: M("PokemonLeague_ChampionsRoom_Movement_PlayerExit") }]);
     await Overworld.teleport({ map: League.HALL_OF_FAME, x: 5, y: 12, facing: "up" });
+    Overworld.follower.hide(false);
     await hallOfFame();
   }
 
@@ -8164,11 +8166,11 @@
   }
 
   // The credits (FireRed's IndigoPlateau_Exterior_EventScript_Credits, then
-  // DoCredits): out in front of the Indigo Plateau, Gary comes out and runs
-  // off, Prof. Oak comes out, looks at you and walks off, and you run off
-  // too; then the credits roll over Kanto, with Charizard, Venusaur,
-  // Blastoise and Pikachu, to THE END. (The first time all the way; after
-  // that, Start skips them.) Then you're at home in Pallet Town.
+  // DoCredits): out in front of the Indigo Plateau, Red (FireRed's rival:
+  // here the Champion you beat) comes out and runs off, Prof. Oak comes out,
+  // looks at you and walks off, and you run off too; then the credits roll
+  // over Kanto, with Charizard, Venusaur, Blastoise and Pikachu, to THE END.
+  // (Start skips them, the first time too.) Then you're at home in Pallet Town.
   async function creditsRoll() {
     const f = player.flags, R = "LOCALID_CREDITS_RIVAL", O = "LOCALID_CREDITS_PROF_OAK";
     const run = (moves) => moves.map((m) => m.replace(/^player_run_/, "walk_fast_"));
@@ -8177,7 +8179,7 @@
     await Overworld.teleport({ map: "IndigoPlateau_Exterior", x: 11, y: 7, facing: "down" });
     music("mus_credits");
     await sleep(1750);
-    Overworld.addObject(R, { x: 11, y: 6, facing: "down" });
+    Overworld.addObject(R, { x: 11, y: 6, facing: "down" }, lookOf("red"));
     await Overworld.act([{ who: R, moves: M("IndigoPlateau_Exterior_Movement_RivalExitBuilding") },
       { who: "player", moves: M("IndigoPlateau_Exterior_Movement_PushPlayerOutOfWay") }]);
     await Overworld.act([{ who: "player", moves: M("IndigoPlateau_Exterior_Movement_PlayerWatchRivalLeave") },
@@ -8198,7 +8200,7 @@
     await Overworld.act([{ who: "player", moves: M("IndigoPlateau_Exterior_Movement_PlayerTurnAround") }]);
     await Overworld.act([{ who: "player", moves: run(M("IndigoPlateau_Exterior_Movement_PlayerLeave")) }]);
     await Overworld.fadeToBlack();
-    await HallOfFame.credits($("#overlay"), { skippable: !!f.seenCredits, cry, music, rival: player.rival,
+    await HallOfFame.credits($("#overlay"), { skippable: true, cry, music, rival: player.rival,
       player: { look: player.look, name: player.name } }).catch((e) => console.error(e));
     f.seenCredits = true;
     $("#overlay").classList.add("hidden");
@@ -9495,12 +9497,16 @@
 
   // Icefall Cave's back (FourIsland_IcefallCave_Back_EventScript_LoreleiRocketsScene):
   // Lorelei, home on Four Island, catches Team Rocket poaching the cave's
-  // Pokémon. She asks you to take one of them on; beaten, he won't say where
+  // Pokémon. She asks you to help, and battles two of them beside you (a
+  // tag battle: this game's own; FireRed's is you against one); beaten, he won't say where
   // they've taken the Pokémon until her Lapras makes him, then they run off:
   // the Rocket Warehouse on Five Island.
+  const ICEFALL_LORELEI = [["Dewgong", 40], ["Jynx", 40], ["Lapras", 42]];
+  const ICEFALL_GRUNT2 = [["Sneasel", 38], ["Koffing", 38], ["Golbat", 39]];
   async function icefallLorelei() {
     const f = player.flags, I = (k) => T("FourIsland_IcefallCave_Back_Text_" + k), Im = (k) => M("FourIsland_IcefallCave_Back_Movement_" + k);
     const L = "LOCALID_ICEFALL_LORELEI", R1 = "LOCALID_ICEFALL_ROCKET1", R2 = "LOCALID_ICEFALL_ROCKET2", R3 = "LOCALID_ICEFALL_ROCKET3";
+    const start = Object.assign({ map: player.location.map }, Overworld.position());
     await say(I("LoreleiKeepHandsOffMons"));
     await Overworld.act([{ who: R1, moves: Im("WalkInPlaceDown") }]);
     await say(I("ShutItLadyLeaveUsBe"));
@@ -9520,9 +9526,25 @@
     music("mus_encounter_rocket");
     await say(I("GruntIntro"));
     if (!canBattle()) return;
+    // (This game's own: Lorelei battles beside you, against both Grunts:
+    // FireRed's one, and the other with Pokémon of his own.)
+    await Overworld.act([{ who: R1, moves: Im("WalkInPlaceDown") }]);
+    await say(["Hey, this one's mine too!", "Lorelei: Then we'll take you both on.\n{PLAYER}, choose three Pokémon!"]);
+    Screen.say("");
     const id = "TRAINER_TEAM_ROCKET_GRUNT_45", data = window.WORLD_TRAINERS[id];
     const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(id), pic: data.pic },
-      defeatText: I("GruntDefeat"), trainerId: id, prizeClass: data.className });
+      foe2: { name: data.className + " " + data.name, team: ICEFALL_GRUNT2.map(([sp, lv]) => Party.create(sp, lv)), pic: data.pic,
+        defeatText: ["Gah! Two against two, and\nwe still lost?!"], prizeClass: data.className },
+      defeatText: I("GruntDefeat"), trainerId: id, prizeClass: data.className,
+      partner: { name: "Lorelei", team: ICEFALL_LORELEI.map(([sp, lv]) => Party.create(sp, lv, { ivs: 31 })), pic: "lorelei" } });
+    if (outcome === "cancelled") {
+      // (Not ready: back where you came in, and it all happens again when you return.)
+      await say(["Lorelei: Not ready? Then hurry,\n{PLAYER}! I'll hold them here."]);
+      await Overworld.fadeToBlack();
+      await Overworld.teleport(Object.assign({}, start));
+      music((window.WORLD_MAPS[player.location.map] || {}).music);
+      return;
+    }
     if (outcome !== "won") return;
     show("world");
     await Overworld.resume();

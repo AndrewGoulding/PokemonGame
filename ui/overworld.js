@@ -812,8 +812,10 @@
     // (Walking, its two frames each way; standing, it keeps stepping on the spot, as HGSS's do.)
     const walking = pal.move ? (pal.move.t % TILE) < TILE / 2 : Math.floor(performance.now() / 333) % 2 === 1;
     const over = overTop(pal, me.map, pal.x, pal.y, me.map, pal.x, pal.y), d = pal.def;
+    // (In a hot spring it's in the water too, as you are.)
+    const sunk = !pal.move && !lift ? sunkAt(me.map, pal.x, pal.y) : 0;
     return { y, over, draw: () => { if (shade) g.filter = SHADE; drawSprite(d.sprite, d.width, d.height, frameFor(pal.facing, walking, pal.parity, d.frames),
-      pal.facing === "right", x - camX + spriteDx(d), y - camY - lift); g.filter = "none"; } };
+      pal.facing === "right", x - camX + spriteDx(d), y - camY - lift, sunk); g.filter = "none"; } };
   }
   // (A facing it: it turns to you.)
   function followerAhead(dx, dy) {

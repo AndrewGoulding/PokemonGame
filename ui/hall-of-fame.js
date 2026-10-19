@@ -419,8 +419,19 @@
           const bw = border.naturalWidth, bh = border.naturalHeight;
           for (let y = ((oy % bh) + bh) % bh - bh; y < H; y += bh) for (let x = ((ox % bw) + bw) % bw - bw; x < W; x += bw) L.g.drawImage(border, x, y);
         }
-        if (ok(below)) L.g.drawImage(below, ox, oy);
-        if (m && m.top && ok(top)) L.g.drawImage(top, ox, oy);
+        // (The map, and the ones joined to it, as the overworld draws them:
+        // Route 10's scene runs on down into Lavender Town.)
+        const maps = [[scene.map, 0, 0]].concat(((m && m.connections) || []).map((c) => {
+          const o = window.WORLD_MAPS[c.map], at = (c.offset || 0) * 16;
+          if (!o || !m) return null;
+          return c.direction === "down" ? [c.map, at, m.height * 16] : c.direction === "up" ? [c.map, at, -o.height * 16]
+            : c.direction === "left" ? [c.map, -o.width * 16, at] : c.direction === "right" ? [c.map, m.width * 16, at] : null;
+        }).filter(Boolean));
+        for (const [k, x, y] of maps) { const img = k === scene.map ? below : image("assets/world/maps/" + k + ".png"); if (ok(img)) L.g.drawImage(img, ox + x, oy + y); }
+        for (const [k, x, y] of maps) {
+          const img = k === scene.map ? top : image("assets/world/maps/" + k + "-top.png");
+          if ((window.WORLD_MAPS[k] || {}).top && ok(img)) L.g.drawImage(img, ox + x, oy + y);
+        }
         // (The darkened band, rows 36 to 124: BLDY 10 toward black.)
         L.g.fillStyle = "rgba(0, 0, 0, " + 10 / 16 + ")";
         L.g.fillRect(0, 36, W, 88);
@@ -442,7 +453,9 @@
     const setScene = (key) => {
       const [map, x, y, dx, dy] = SCENES[key];
       scene = { map, cx: x * 16, cy: y * 16, dx, dy };
-      return Promise.all(["", "-top", "-border"].map((p) => image("assets/world/maps/" + map + p + ".png").loaded));
+      const joined = ((window.WORLD_MAPS[map] || {}).connections || []).map((c) => c.map);
+      return Promise.all(["", "-top", "-border"].map((p) => image("assets/world/maps/" + map + p + ".png").loaded)
+        .concat(joined.flatMap((k) => ["", "-top"].map((p) => image("assets/world/maps/" + k + p + ".png").loaded))));
     };
     const fadeScreen = async (from, to) => { const st = from < to ? 1 : -1; for (let f = from; f !== to + st && !skip; f += st) { draw(f); await tick(); } };
 
