@@ -655,8 +655,14 @@ each of the eight floors has its battle, laid out for it (FireRed's floor
 layouts for each kind): a trainer who walks up to you with two of their six
 Pokémon, a pair waiting for a double battle (not without two Pokémon that can
 fight), or three trainers one after another, each with one; their Pokémon are
-at your best Pokémon's level, what they say is FireRed's Easy Chat, and there's
-no Exp. or money and no healing on the way but the lobby's nurse. Lose and
+at your best Pokémon's level with FireRed's movesets for them, what they say
+is FireRed's Easy Chat, and there's no Exp. or money and no healing on the way
+but the lobby's nurse. This game's own: each trainer you beat earns **Battle
+Points** (1 BP on floors 1-3, 2 on 4-6, 3 on 7 and 8; a double battle's pair
+count as two), and the gentleman by the lobby's right-hand counter teaches a
+Pokémon any of its tutor moves for BP (on the Move Relearner's screen, each
+move's price under the list: 16 BP for a status move, else 8 up to 60 power,
+16 up to 80, 24 up to 100, 32 above). Lose and
 you're back at the counter. The tower's owner on the roof stops the clock,
 gives the challenge's prize (once: Up-Grade, Dragon Scale, Metal Coat, King's
 Rock) and says whether you've set a record; the best times are on the lobby's
@@ -903,13 +909,16 @@ and Ultra Moon or Let's Go; not Legends: Arceus, whose level-up sets are
 short ones): `tools/build-levelup-learnsets.js`
 writes them from PokeAPI's CSVs into `data/learnsets-levelup.js`, which
 replaces each species' level-up list (and says which game each came from,
-`LEVELUP_SOURCE`); TMs, tutors and Egg moves are as before. A move learned on
+`LEVELUP_SOURCE`); TMs are as before, and each Pokémon's Egg moves and tutor
+moves gain every one it has had in any game, Gold and Silver to Scarlet and
+Violet (PokeAPI's every version group; `pokemon_move_methods` 2 and 3). A move learned on
 evolving (level 0 there, as Charizard's Air Slash) is learned when it evolves.
 Thousand Arrows and Thousand Waves aren't in the game, so Zygarde goes without. One
 addition of this game's own: Charmander, Charmeleon and Charizard still
 learn Metal Claw at 13, as in FireRed, for Brock's Rock types. Every
-trainer's Pokémon (Gym Leaders, the Elite Four, rivals, Trainer Tower and
-everyone on the maps) knows the last four moves it learns by its level.
+trainer's Pokémon (Gym Leaders, the Elite Four, rivals and everyone on the
+maps; not Trainer Tower's, which keep FireRed's sets) knows the last four
+moves it learns by its level.
 
 ```sh
 mkdir pokeapi && for f in pokemon_moves version_groups move_names; do
@@ -1523,7 +1532,7 @@ else, as likely either, it raises its better attacking stat and its weaker
 defence ("...is getting even stronger!") or attacks again. You send in one Pokémon, chosen from your party when you take
 the raid on (as in Scarlet and Violet), and **three others join you**, four
 on one as in Scarlet and Violet's raids: first you may invite any of Kanto's
-Gym Leaders you've beaten (up to three; "+" marks those coming), and the rest
+Gym Leaders you've beaten (not Giovanni; up to three; "+" marks those coming), and the rest
 of the places fill with trainers from the den's region (FireRed's own,
 "Bug Catcher Garret", "Crush Girl Sharon": those with a Pokémon that hits the
 Tera Raid Pokémon's Tera Type hardest first). Each brings one Pokémon at about
@@ -2757,6 +2766,13 @@ For progression, pass `exp: true` (p1 earns experience) and `wild: true` (p1 may
 also choose `{ type: "ball", ball: "great-ball" }` or `{ type: "run" }`). Team sets
 can carry saved `hp`, `status`, `pp` and `exp`. See the header comment in
 `engine/battle.js` for the full API.
+
+Future Sight and Doom Desire are foreseen when used ("…foresaw an attack!")
+and land at the end of the turn after next on whoever is in that place then
+(from the Pokémon that used them, even if it has left; through Protect; Dark
+types immune to Future Sight; one at a time on a place). Last Resort fails
+until the user has used each of its other moves since it came in (and it
+needs at least one other).
 
 ### Double battles
 

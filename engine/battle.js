@@ -256,6 +256,7 @@
       this.owner = 0;         // tag battles: 0 = the side's trainer, 1 = the partner
       this.isActive = false;
       this.activeTurns = 0;
+      this.movesUsed = new Set();   // (its moves used since it came in: Last Resort)
       this.trapped = false;
       this.switchFlag = false;
       this.lastMove = "";
@@ -1320,6 +1321,7 @@
       mon.slot = slot;
       mon.isActive = true;
       mon.activeTurns = 0;
+      mon.movesUsed = new Set();
       mon.lastMove = "";
       mon.trapped = false;
       mon.moveThisTurn = false;
@@ -2912,6 +2914,7 @@
       if (!o.secondTurn && !o.bounced) {
         this.deductPP(user, move, this.doubles ? targets : foe);
         user.moveUses[move.name] = (user.moveUses[move.name] || 0) + 1;
+        user.movesUsed.add(move.ppFrom || move.id);
       }
       if (this.doubles && targets.length > 1) this.add("move", user, move.name, target, "[spread] " + targets.map((t) => t.ident).join(","));
       else this.add("move", user, move.name, target || user);
@@ -3342,6 +3345,21 @@
 
       // Moves with special preconditions
       if (move.id === "fakeout" && user.activeTurns > 0) { this.add("-fail", user); return false; }
+      // Last Resort: only once it has used each of its other moves since it
+      // came in (and it knows Last Resort and at least one other).
+      if (move.id === "lastresort") {
+        const others = user.moves.filter((m) => m.id !== "lastresort");
+        if (!user.moves.some((m) => m.id === "lastresort") || !others.length || others.some((m) => !user.movesUsed.has(m.id))) { this.add("-fail", user); return false; }
+      }
+      // Future Sight and Doom Desire: foreseen now, landing on whoever's in
+      // that place at the end of the turn after next (one at a time there).
+      if (move.flags.futuremove && !o.future) {
+        const fut = target.side.future || (target.side.future = []), slot = target.slot || 0;
+        if (fut[slot]) { this.add("-fail", user); return false; }
+        fut[slot] = { turns: 3, source: user, move: move.name };
+        this.add("-text", user, move.id === "doomdesire" ? "{who} chose Doom Desire\nas its destiny!" : "{who} foresaw\nan attack!");
+        return true;
+      }
       if (move.id === "suckerpunch" || move.id === "thunderclap") {
         const ta = this.queue.find((x) => x.type === "move" && x.mon === target && !x.recharge);
         if (!ta || !ta.moveName || window.MOVES[ta.moveName].cat === "Status") { this.add("-fail", user); return false; }
@@ -3401,7 +3419,7 @@
       const sub = target.volatiles.substitute && !move.flags.bypasssub && !user.hasAbility("Infiltrator");
 
       for (let i = 0; i < hits; i++) {
-        if (target.fainted || user.fainted) break;
+        if (target.fainted || (user.fainted && !o.future)) break;
         // (Gen 8's Triple Axel checks accuracy for each hit.)
         if (i > 0 && move.multiaccuracy && move.gen && !this.accuracyCheck(user, target, move)) break;
         let crit = false;
@@ -3736,6 +3754,20 @@
             s.wish = null;
           }
         }
+      }
+      // Future Sight and Doom Desire landing (from the one that foresaw them,
+      // even if it's gone; through Protect).
+      for (const s of [this.sides.p1, this.sides.p2]) {
+        (s.future || []).forEach((fu, slot) => {
+          if (!fu || --fu.turns > 0) return;
+          s.future[slot] = null;
+          const m = s.actives[slot];
+          if (!m || m.fainted) return;
+          this.add("-text", m, "{who} took the\n" + fu.move + " attack!");
+          const mv = this.getActiveMove(fu.move);
+          if (window.Damage.typeEffectiveness(mv.type, m.types) === 0) { this.add("-immune", m); return; }
+          this.damagingMove(fu.source, m, mv, false, { future: true });
+        });
       }
       // Per-Pokemon residuals
       for (const m of actives) {

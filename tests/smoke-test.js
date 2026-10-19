@@ -97,6 +97,52 @@ for (let seed = 1; seed <= BATTLES; seed++) {
   assert(battle.ended, "second hit of Dual Chop should have knocked out Pikachu");
 }
 
+// Future Sight: foreseen, no damage that turn or the next, then it lands at
+// the end of the turn after (a second one meanwhile fails); and a Dark type's immune.
+{
+  const battle = new Battle({
+    seed: 3,
+    p1: { name: "A", team: [{ species: "Alakazam", level: 50, moves: ["Future Sight", "Calm Mind"] }] },
+    p2: { name: "B", team: [{ species: "Snorlax", level: 50, moves: ["Rest"] }] }
+  });
+  battle.start();
+  const hp = () => battle.sides.p2.active.hp, full = hp();
+  battle.choose("p1", { type: "move", move: "Future Sight" }); battle.choose("p2", { type: "move", move: "Rest" });
+  assert.strictEqual(hp(), full, "Future Sight hit at once");
+  assert(battle.events.some((ev) => ev[0] === "-text" && /foresaw/.test(ev[2])));
+  battle.choose("p1", { type: "move", move: "Future Sight" }); battle.choose("p2", { type: "move", move: "Rest" });
+  assert.strictEqual(hp(), full, "Future Sight hit a turn early");
+  assert(battle.events.some((ev) => ev[0] === "-fail" && /^p1/.test(ev[1])), "a second Future Sight should fail");
+  battle.choose("p1", { type: "move", move: "Calm Mind" }); battle.choose("p2", { type: "move", move: "Rest" });
+  assert(hp() < full && battle.events.some((ev) => ev[0] === "-text" && /took the\nFuture Sight attack/.test(ev[2])), "Future Sight didn't land");
+  const dark = new Battle({ seed: 3, p1: { name: "A", team: [{ species: "Alakazam", level: 50, moves: ["Future Sight"] }] },
+    p2: { name: "B", team: [{ species: "Umbreon", level: 50, moves: ["Wish"] }] } });
+  dark.start();
+  for (let i = 0; i < 3; i++) { dark.choose("p1", { type: "move", move: "Future Sight" }); dark.choose("p2", { type: "move", move: "Wish" }); }
+  assert(dark.events.some((ev) => ev[0] === "-immune") && dark.sides.p2.active.hp === dark.sides.p2.active.maxhp, "Umbreon should be immune");
+}
+// Last Resort: fails until every other move it knows has been used since it came in.
+{
+  const battle = new Battle({
+    seed: 4,
+    p1: { name: "A", team: [{ species: "Eevee", level: 50, moves: ["Last Resort", "Growl", "Tail Whip"] }] },
+    p2: { name: "B", team: [{ species: "Snorlax", level: 50, moves: ["Splash"] }] }
+  });
+  battle.start();
+  const hp = () => battle.sides.p2.active.hp, full = hp();
+  const turn = (m) => { battle.choose("p1", { type: "move", move: m }); battle.choose("p2", { type: "move", move: "Splash" }); };
+  turn("Last Resort"); turn("Growl"); turn("Last Resort");
+  assert.strictEqual(hp(), full, "Last Resort worked too soon");
+  assert.strictEqual(battle.events.filter((ev) => ev[0] === "-fail" && /^p1/.test(ev[1])).length, 2);
+  turn("Tail Whip"); turn("Last Resort");
+  assert(hp() < full, "Last Resort should work once Growl and Tail Whip have been used");
+  const alone = new Battle({ seed: 4, p1: { name: "A", team: [{ species: "Eevee", level: 50, moves: ["Last Resort"] }] },
+    p2: { name: "B", team: [{ species: "Snorlax", level: 50, moves: ["Splash"] }] } });
+  alone.start();
+  alone.choose("p1", { type: "move", move: "Last Resort" }); alone.choose("p2", { type: "move", move: "Splash" });
+  assert(alone.events.some((ev) => ev[0] === "-fail" && /^p1/.test(ev[1])), "Last Resort alone should fail");
+}
+
 // Healing Wish: fails with no one to come in (a wild Pokémon); otherwise the
 // user faints and the next Pokémon in is fully healed.
 {
@@ -685,6 +731,7 @@ for (const share of [false, true]) {
     {
       const grass = RaidDens.DENS.find((d) => d.type === "Grass"), r5 = { stars: 5, level: 76, species: "Venusaur" };
       assert.deepStrictEqual(RaidDens.leaders({ TRAINER_LEADER_MISTY: true, TRAINER_LEADER_BLAINE: true }).map((L) => L.name), ["Misty", "Blaine"]);
+      assert.deepStrictEqual(RaidDens.leaders({ TRAINER_LEADER_MISTY: true, TRAINER_LEADER_GIOVANNI: true }).map((L) => L.name), ["Misty"], "no Giovanni in raids");
       const al = RaidDens.allies(grass, r5, ["Blaine", "Misty"], rng);
       assert(al.length === 3 && al[0].trainer === "Blaine" && al[1].trainer === "Misty" && al[0].leader && !al[2].leader, al.map((a) => a.trainer).join());
       const hitsGrass = (sp) => Math.max(...DEX[sp].types.map((t) => Damage.typeEffectiveness(t, ["Grass"])));
@@ -4337,8 +4384,19 @@ for (let seed = 1; seed <= GEN8; seed++) {
     // Your Pokémon in a hot spring, as you are.
     assert(/const sunk = !pal\.move && !lift \? sunkAt\(me\.map, pal\.x, pal\.y\) : 0;/.test(fs.readFileSync(path.join(__dirname, "../ui/overworld.js"), "utf8")), "the follower in the Ember Spa");
     assert(WORLD_MAPS.VictoryRoad_2F.warps.some((w) => w.map === "Route23") && WORLD_MAPS.Route23.warps.some((w) => w.x === 18 && w.y === 28 && w.map === "VictoryRoad_2F"));
-    // Every trainer's Pokémon knows the last four moves it learns by its level (not FireRed's sets).
-    assert(!/moves: m\.moves/.test(gameSrc) && !/moves: m\.moves/.test(fs.readFileSync(path.join(__dirname, "../game/trainer-tower.js"), "utf8")), "trainers' moves by level");
+    // Every trainer's Pokémon knows the last four moves it learns by its level (not FireRed's
+    // sets), but Trainer Tower's, which have FireRed's.
+    assert(!/moves: m\.moves/.test(gameSrc), "trainers' moves by level");
+    { const fl = TrainerTower.floor(0, 1), t = TrainerTower.team(fl, 0, 0, 50);
+      assert.deepStrictEqual(t[0].moves.map((m) => m.name), fl.trainers[0].mons[0].moves, "Trainer Tower's FireRed sets"); }
+    // Trainer Tower's Battle Points for every trainer beaten, and the lobby's BP tutor.
+    assert(/const towerBP = \(floor\) => \(floor <= 3 \? 1 : floor <= 6 \? 2 : 3\);/.test(gameSrc) && /const bp = towerBP\(n\) \* \(double \? 2 : 1\);\n\s*f\.bp = \(f\.bp \|\| 0\) \+ bp;/.test(gameSrc), "BP for each trainer");
+    assert(WORLD_MAPS.TrainerTower_Lobby.people.some((p) => p.script === "TrainerTower_Lobby_EventScript_BPTutor") || /script: BP_TUTOR/.test(gameSrc), "the BP tutor");
+    assert(/case "TrainerTower_Lobby_EventScript_BPTutor": await bpTutor\(\); return;/.test(gameSrc) && /f\.bp -= bpTutorPrice\(move\);/.test(gameSrc));
+    // Every game's Egg and tutor moves: Charmander's Dragon Dance (an Egg move since Gen 3)
+    // and Belly Drum (Gen 6's on), Pichu's Volt Tackle; tutors from FireRed's Body Slam to Gen 9's.
+    for (const [sp, egg] of [["Charmander", "Dragon Dance"], ["Charmander", "Belly Drum"], ["Pichu", "Volt Tackle"], ["Dratini", "Extreme Speed"]]) assert(LEARNSETS_GEN6[sp].egg.includes(egg), sp + " " + egg);
+    for (const [sp, tu] of [["Snorlax", "Body Slam"], ["Snorlax", "Seismic Toss"], ["Charizard", "Blast Burn"], ["Gengar", "Shadow Ball"]]) assert(LEARNSETS_GEN6[sp].tutor.includes(tu) || (LEARNSETS_GEN6[sp].tm || []).includes(tu), sp + " " + tu);
     assert.deepStrictEqual(Party.create("Geodude", 12).moves.map((m) => m.name), RandomTeam.levelUpMoves("Geodude", 12));
     assert(/Houndoom to Mega Evolve into Mega Houndoom/.test(ITEMS.houndoominite.effect) && ITEM_SPRITES.houndoominite, "the Houndoominite");
     assert(/return \[weezing, muk, Party\.create\("Arbok"/.test(gameSrc) && /item: "beedrillite", teraType: "Fire", teraAce: true/.test(gameSrc)

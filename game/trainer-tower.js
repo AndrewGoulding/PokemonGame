@@ -51,8 +51,8 @@
   // A Trainer Tower Pokémon (CreateBattleTowerMon): its held item,
   // EVs, IVs, nature, ability and friendship, at `level`.
   function mon(m, level) {
-    // (Its moves: the last four it learns by `level`, as every trainer's in this game.)
-    const r = window.Party.create(m.species, level, { ivs: 0 });
+    // (Its moves: FireRed's set for it.)
+    const r = window.Party.create(m.species, level, { ivs: 0, moves: (m.moves || []).filter((n) => window.MOVES[n]).length ? m.moves.filter((n) => window.MOVES[n]) : undefined });
     const abilities = (window.DEX[m.species] || {}).abilities || [];
     Object.assign(r, { ivs: Object.assign({}, m.ivs), evs: Object.assign({}, m.evs), nature: m.nature, gender: m.gender,
       happiness: m.happiness, item: m.item || "", ability: abilities[Math.min(m.abilityNum, 1)] || abilities[0] || r.ability });

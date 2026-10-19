@@ -173,11 +173,11 @@
   // region's own trainers (WORLD_TRAINERS: FireRed's for Kanto, HeartGold and
   // SoulSilver's for Johto), the ones with a Pokémon that hits it hardest
   // first, bringing that Pokémon, grown to the raid's level (EVOLUTIONS).
-  // All of them at about the raid's level.
+  // All of them at about the raid's level. (Not Giovanni: Kanto's seven.)
   const LEADERS = [["Brock", "TRAINER_LEADER_BROCK", "Rock"], ["Misty", "TRAINER_LEADER_MISTY", "Water"],
     ["Lt. Surge", "TRAINER_LEADER_LT_SURGE", "Electric"], ["Erika", "TRAINER_LEADER_ERIKA", "Grass"],
     ["Koga", "TRAINER_LEADER_KOGA", "Poison"], ["Sabrina", "TRAINER_LEADER_SABRINA", "Psychic"],
-    ["Blaine", "TRAINER_LEADER_BLAINE", "Fire"], ["Giovanni", "TRAINER_LEADER_GIOVANNI", "Ground"]].map(([name, id, type]) => ({ name, id, type }));
+    ["Blaine", "TRAINER_LEADER_BLAINE", "Fire"]].map(([name, id, type]) => ({ name, id, type }));
   // How hard a Pokémon's own types hit `type` (its best), and its base stats in all.
   const hits = (species, type) => Math.max(...(window.DEX[species].types || []).map((t) => window.Damage.typeEffectiveness(t, [type])));
   const total = (species) => { const d = window.DEX[species]; return d.hp + d.atk + d.def + d.spa + d.spd + d.spe; };

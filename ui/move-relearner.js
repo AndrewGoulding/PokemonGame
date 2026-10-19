@@ -11,7 +11,10 @@
 //     frame,     // the Option screen's FRAME (0-9)
 //     forget,    // async (move) => the slot (0-3) to forget, or null: FireRed
 //                // opens the Summary screen's move list for this
-//     teach      // (move, slot): slot null when there was room for it
+//     teach,     // (move, slot): slot null when there was room for it
+//     note,      // optional (move) => a second line under "Teach which move…?" (its price)
+//     price,     // optional (move) => its price, asked about: "Teach X for <price>?"
+//     afford,    // optional (move) => false when you can't pay; `short` is said then
 //   })           // -> the move learned, or null
 //
 // As in FireRed: up / down move through the list (no wrapping), A picks, B
@@ -178,6 +181,7 @@
         st.cursor = c;
         if (st.cursor - st.top > 4 && st.top + 7 < n) st.top++;
         if (st.cursor - st.top < 2 && st.top > 0) st.top--;
+        if (st.note) st.shown = st.base + "\n" + st.note(st.items[st.cursor]);
         window.GbaMenus.se(); draw();
       } else if (k === "a") { window.GbaMenus.se(); return st.items[st.cursor]; }
       else if (k === "b") { window.GbaMenus.se(); return null; }
@@ -186,7 +190,7 @@
   }
 
   async function open(opts) {
-    st = { items: opts.moves.concat([null]), cursor: 0, top: 0, frame: opts.frame, shown: "", tick: 0, asking: false };
+    st = { items: opts.moves.concat([null]), cursor: 0, top: 0, frame: opts.frame, shown: "", tick: 0, asking: false, note: opts.note };
     const name = opts.name, known = opts.known.slice();
     canvas.classList.remove("hidden");
     draw();
@@ -201,14 +205,16 @@
     };
     try {
       for (;;) {
-        st.shown = "Teach which move to " + name + "?"; draw();
+        st.base = "Teach which move to " + name + "?";
+        st.shown = st.base + (st.note ? "\n" + st.note(st.items[st.cursor]) : ""); draw();
         const move = await pickFromList();
         if (!move) {
           await say("Give up trying to teach a new\nmove to " + name + "?");
           if (await yesNo()) return null;
           continue;
         }
-        await say("Teach " + move + "?");
+        if (opts.afford && !opts.afford(move)) { await say(opts.short || "You can't pay for that.", true); continue; }
+        await say("Teach " + move + (opts.price ? "\nfor " + opts.price(move) : "") + "?");
         if (!(await yesNo())) continue;
         if (known.length < 4) {
           opts.teach(move, null);

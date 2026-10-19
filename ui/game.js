@@ -4126,6 +4126,7 @@
       case "TrainerTower_Lobby_EventScript_ShowRecords": await towerTimeBoard(); return;
       case "TrainerTower_Elevator_EventScript_FloorSelect": await towerElevator(); return;
       case "TrainerTower_EventScript_Owner": await towerOwner(); return;
+      case "TrainerTower_Lobby_EventScript_BPTutor": await bpTutor(); return;
       case "TrainerTower_EventScript_SingleBattleTrigger": await towerBattle(ev.map, 0); return;
       case "TrainerTower_EventScript_DoubleBattleTriggerTop": await towerBattle(ev.map, 0); return;
       case "TrainerTower_EventScript_DoubleBattleTriggerBottom": await towerBattle(ev.map, 1); return;
@@ -10111,7 +10112,15 @@
     const fight = async (team, trainer, double, defeat) => {
       const outcome = await battle("trainer", { foe: { name: trainer.className + " " + trainer.name, team, pic: trainer.pic },
         defeatText: defeat, double, noBlackout: true, noExp: true, noPrize: true });
-      if (outcome === "won") { show("world"); await Overworld.resume(); return true; }
+      if (outcome === "won") {
+        show("world");
+        await Overworld.resume();
+        // (Battle Points for each trainer beaten: a double battle's two, both.)
+        const bp = towerBP(n) * (double ? 2 : 1);
+        f.bp = (f.bp || 0) + bp;
+        await say("{PLAYER} earned " + bp + " BP!\n(" + f.bp + " BP in all.)");
+        return true;
+      }
       // TrainerTower_EventScript_WarpToLobbyLost: healed, and back to the lobby.
       player.party.forEach(Party.heal);
       t.lost = true;
@@ -10196,6 +10205,65 @@
       else if (r === 1) await say(R("TookSweetTimeGettingHere"));
     }
     await say(R("IdLikeToSeeBetterTime"));
+  }
+  // ---------- Battle Points and the lobby's BP tutor (this game's own) ----------
+  //
+  // Each trainer beaten in Trainer Tower earns Battle Points (player.flags.bp):
+  // 1 on floors 1-3, 2 on 4-6, 3 on 7 and 8. The man by the lobby's right-hand
+  // counter teaches a Pokémon any of its tutor moves (every game's: its
+  // learnset's tutor list, and FireRed's tutors' moves it can learn) for BP:
+  // 16 for a status move, else by power: 8 up to 60, 16 up to 80, 24 up to
+  // 100, 32 above.
+  const towerBP = (floor) => (floor <= 3 ? 1 : floor <= 6 ? 2 : 3);
+  function bpTutorPrice(move) {
+    const m = window.MOVES[move];
+    if (!m || m.cat === "Status" || !(m.power > 1)) return 16;
+    return m.power <= 60 ? 8 : m.power <= 80 ? 16 : m.power <= 100 ? 24 : 32;
+  }
+  function bpTutorMoves(record) {
+    const set = window.LEARNSETS_GEN6[record.species] || window.LEARNSETS_GEN6[String(record.species).split("-")[0]] || {};
+    const fr = Object.keys(window.TUTOR_LEARNERS || {}).filter((m) => window.TUTOR_LEARNERS[m].includes(record.species));
+    return [...new Set((set.tutor || []).concat(fr))].filter((m) => window.MOVES[m] && !Party.knowsMove(record, m)).sort();
+  }
+  const BP_TUTOR = "TrainerTower_Lobby_EventScript_BPTutor";
+  {
+    const m = window.WORLD_MAPS.TrainerTower_Lobby;
+    if (m && !m.people.some((p) => p.script === BP_TUTOR)) {
+      m.people.push({ id: 951, x: 17, y: 12, movement: "face_left", rangeX: 0, rangeY: 0, script: BP_TUTOR, flag: null,
+        text: null, localId: "LOCALID_TOWER_BP_TUTOR", sprite: "gentleman", width: 16, height: 32, frames: 10 });
+    }
+    SPECIAL.add(BP_TUTOR);
+  }
+  async function bpTutor() {
+    const f = player.flags;
+    await say(["I teach Pokémon moves from tutors\nall over the world.", "In exchange, I ask for the Battle\nPoints you earn in Trainer Tower."]);
+    for (;;) {
+      if (!(await confirm("Shall I teach a Pokémon a move?\n(You have " + (f.bp || 0) + " BP.)"))) break;
+      const notes = player.party.map((r) => (r.egg || !bpTutorMoves(r).length ? "NOT ABLE" : "ABLE"));
+      const r = await choosePartyFor("Teach which {PKMN}?", null, notes);
+      show("world");
+      if (!r) continue;
+      if (r.egg) { await say(T("TwoIsland_House_Text_CantTeachAnEgg")); continue; }
+      const moves = bpTutorMoves(r);
+      if (!moves.length) { await say("Sorry… There's no move I can teach\nthat Pokémon."); continue; }
+      Screen.say("");
+      clearMenu();
+      // (The Move Relearner's screen, each move's price in BP.)
+      const move = await MoveRelearner.open({
+        name: Party.displayName(r), moves, known: r.moves.map((m) => m.name), frame: GameOptions.get().frame,
+        note: (m) => (m ? bpTutorPrice(m) + " BP (you have " + (f.bp || 0) + ")" : ""),
+        price: (m) => bpTutorPrice(m) + " BP",
+        afford: (m) => (f.bp || 0) >= bpTutorPrice(m), short: "You don't have enough BP.",
+        forget: (m) => chooseMoveToForget(r, m),
+        teach: (m, slot) => Party.teachMove(r, m, slot == null ? undefined : slot)
+      });
+      if (move && Party.knowsMove(r, move)) {
+        f.bp -= bpTutorPrice(move);
+        await say("{PLAYER} handed over " + bpTutorPrice(move) + " BP.\n(" + f.bp + " BP left.)");
+        await persist();
+      }
+    }
+    await say("Earn more BP in the tower, and\ncome back anytime.");
   }
   // The elevator down from the roof (TrainerTower_Elevator_EventScript_FloorSelect):
   // Rooftop or B1F (FireRed's names); down it goes, and out at the lobby's
