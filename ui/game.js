@@ -10718,7 +10718,10 @@
     warp: johtoWarp,
     // (The Magnet Train's ride, ScrCmd_722: ui/magnet-train.js.)
     magnetTrain: (toward, mapConst, x, y) => magnetTrain.ride(toward, mapConst, x, y),
-    hasBadge: (n) => (n >= 8 ? player.badges.includes(KANTO_BADGES[n - 8]) : player.badges.includes(Player.REGION_BADGES.johto[n])),
+    // (Kanto's Badges count once Johto's League is won: HGSS's scripts take a
+    // Kanto Badge to mean that, as the Gym Leaders' days off do, and here you
+    // come to Johto with all eight.)
+    hasBadge: (n) => (n >= 8 ? !!player.flags.johtoLeagueClear && player.badges.includes(KANTO_BADGES[n - 8]) : player.badges.includes(Player.REGION_BADGES.johto[n])),
     giveBadge: (n) => {
       const b = n >= 8 ? KANTO_BADGES[n - 8] : Player.REGION_BADGES.johto[n];
       if (b && !player.badges.includes(b)) player.badges.push(b);

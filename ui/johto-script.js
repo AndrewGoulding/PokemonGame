@@ -226,8 +226,9 @@
           case "Call": stack.push(pc); go(a[0]); break;
           case "Compare": case "CompareVarToValue": {
             // (A species by name, from GetPartyMonSpecies, against SPECIES_*: equal or not.)
+            // (Or against a dex number, as HGSS's scripts write some: Compare VAR_SPECIAL_RESULT, 152.)
             const p = getVar(a[0]), q = getVar(a[1]);
-            if (typeof p === "string" || typeof q === "string") { cmp = String(p) === String(q) ? 1 : 0; break; }
+            if (typeof p === "string" || typeof q === "string") { cmp = String(typeof q === "string" ? speciesOf(p) : p) === String(typeof p === "string" ? speciesOf(q) : q) ? 1 : 0; break; }
             const x = +p || 0, y = +q || 0;
             cmp = x < y ? 0 : x === y ? 1 : 2;
             break;

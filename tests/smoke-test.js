@@ -2027,6 +2027,11 @@ if (window.JOHTO_TOWN_MAP) {
     const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
     assert(/case "VioletGymElevator"/.test(scriptJs) && /case "CianwoodGymTurnWinch"/.test(scriptJs), "the Gyms' script commands run");
     assert(/darkness: \(map\) => gymmicks\.darkness\(map\)/.test(gameJs) && /gymmicks\.enter\(m\)/.test(gameJs));
+    // (Found playing the story: Falkner was away on Mondays from the start, HGSS's
+    // days off counting from Kanto's Soul Badge, which you come to Johto with;
+    // and the rival took your starter, the script's 152 never equal to "Chikorita".)
+    assert(/hasBadge: \(n\) => \(n >= 8 \? !!player\.flags\.johtoLeagueClear && /.test(gameJs), "Kanto's Badges count after Johto's League");
+    assert(/typeof q === "string" \? speciesOf\(p\)/.test(scriptJs), "a species by name against its dex number");
   }
   // Johto's scripts' trades, loans and the like (ui/johto-script.js, tools/build-johto-script-data.js).
   {
