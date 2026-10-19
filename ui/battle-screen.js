@@ -2153,7 +2153,8 @@
       // (A Tera Raid's turn limit, this game's own: config.raidTurns.)
       if (config.raidTurns && p1.phase === "move" && raidAnnounced !== battle.turn) {
         raidAnnounced = battle.turn;
-        const left = config.raidTurns - battle.turn + 1;   // (battle.turn: the turn being chosen, from 1)
+        // (battle.turn: the turn being chosen, from 1; less the turns lost to fainting, battle.raidPenalty.)
+        const left = config.raidTurns - battle.turn + 1 - (battle.raidPenalty || 0);
         if (left <= 0) {
           await message("The Tera Raid Pokémon's power\ngrew too strong!");
           await message("You were blown out of the den!");
@@ -2698,7 +2699,7 @@
     partyOrder = null;
     battle = new Battle(Object.assign({
       p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, ghost: !!cfg.ghost, noCatch: !!cfg.noCatch, exp: !!cfg.exp, expShare: !!cfg.expShare, catchContext: cfg.catchContext,
-      safari: cfg.safari
+      safari: cfg.safari, raid: cfg.raid || 0
     }, cfg.format === "doubles" ? { format: "doubles" } : {}));
     safariCursor = 0;
     cursor = 0;

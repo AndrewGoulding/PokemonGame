@@ -64,12 +64,12 @@
   // By stars (1-5; index 0 unused): the Badges a raid needs, its Pokémon's
   // level (and up to 3 more), IVs, HP (times its usual)...
   const BADGES = [0, 0, 2, 4, 6, 8];
-  const LEVELS = [0, 12, 20, 35, 50, 65];
+  const LEVELS = [0, 12, 20, 35, 45, 75];   // (Scarlet and Violet's)
   const IVS = [0, 10, 15, 20, 25, 31];
-  const HP = [0, 1.5, 2, 2.5, 3, 4];
+  const HP = [0, 2, 3, 4, 6, 8];
   // ...and the turns you have to win it (as Scarlet and Violet's raids have a
   // time limit), more for the bigger ones.
-  const TURNS = [0, 10, 10, 12, 15, 20];
+  const TURNS = [0, 10, 12, 15, 20, 25];
   const maxStars = (badges) => BADGES.reduce((n, need, s) => (s && badges >= need ? s : n), 1);
 
   // The stars each Lure brings: a Lure 1 or 2, a Super Lure 3 or 4, a Max Lure 5,

@@ -596,7 +596,8 @@ for (const share of [false, true]) {
   // Stars: 1 with no Badges, up to 5 with all eight; stronger Lures, more stars.
   assert.deepStrictEqual([0, 1, 2, 3, 4, 5, 6, 7, 8].map(RaidDens.maxStars), [1, 1, 2, 2, 3, 3, 4, 4, 5]);
   // Its turn limit, more for more stars; the battle screen blows you out after it (raidTurns).
-  assert.deepStrictEqual(RaidDens.TURNS.slice(1), [10, 10, 12, 15, 20]);
+  assert.deepStrictEqual(RaidDens.TURNS.slice(1), [10, 12, 15, 20, 25]);
+  assert.deepStrictEqual([RaidDens.LEVELS.slice(1), RaidDens.HP.slice(1)], [[12, 20, 35, 45, 75], [2, 3, 4, 6, 8]], "Scarlet and Violet's levels, bigger HP");
   assert(/raidTurns: opts\.raid \? RaidDens\.TURNS\[opts\.raid\]/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")));
   assert(/battle\.raidTimedOut = true/.test(fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8")));
   let seed = 7;
@@ -626,8 +627,35 @@ for (const share of [false, true]) {
   const bb = new Battle({ p1: { name: "P", team: [Party.toBattleSet(Party.create("Mewtwo", 100, { rng }))] },
     p2: { name: "Wild", tera: true, team: [Object.assign(Party.toBattleSet(boss), { raidHp: RaidDens.HP[5] })] }, wild: true, seed: 3 });
   const bm = bb.sides.p2.pokemon[0];
-  assert.strictEqual(bm.maxhp, Math.round(bm.stats.hp * 4));
+  assert.strictEqual(bm.maxhp, Math.round(bm.stats.hp * 8));
   assert.strictEqual(bm.hp, bm.maxhp);
+  // Outside its turn (Battle.raidCheck): past each HP mark, and every few turns. Your
+  // raised stats wiped first; then its own drops shaken off; then stronger, or attacking again.
+  {
+    const rb = new Battle({ p1: { name: "P", team: [Party.toBattleSet(Party.create("Mewtwo", 100, { rng }))] },
+      p2: { name: "Wild", tera: true, team: [Object.assign(Party.toBattleSet(boss), { raidHp: RaidDens.HP[5] })] }, wild: true, seed: 5, raid: 5 });
+    rb.start();
+    const me = rb.sides.p1.pokemon[0], rbm = rb.sides.p2.pokemon[0], texts = () => rb.events.filter((e) => e[0] === "-text").map((e) => e[2]);
+    me.boosts.atk = 2; rbm.boosts.def = -1;
+    rb.raidCheck(false);
+    assert.strictEqual(texts().length, 0, "nothing at full HP");
+    rbm.hp = Math.floor(rbm.maxhp * 0.7);
+    rb.raidCheck(false);
+    assert(me.boosts.atk === 0 && /nullified/.test(texts().join()), "past 75%: your boosts wiped");
+    rbm.hp = Math.floor(rbm.maxhp * 0.45);
+    rb.raidCheck(false);
+    assert(rbm.boosts.def === 0 && /negative/.test(texts().join()), "past 50%: its drops gone");
+    rb.turn = 3;
+    rb.raidCheck(true);
+    assert(/stronger|again/.test(texts()[texts().length - 1]), "every 3 turns: " + texts().join(" | "));
+    assert.strictEqual(rb.raidThresholdsLeft.length, 1, "25% still to come");
+    // Fainting, as in Scarlet and Violet: back up at full HP, two turns off the limit.
+    me.boosts.spe = 1;
+    rb.damage(me, me.hp);
+    assert(!me.fainted && me.hp === me.maxhp && me.boosts.spe === 0 && rb.raidPenalty === 2, "back up, the raid lost time");
+    assert(/raidTurns - battle\.turn \+ 1 - \(battle\.raidPenalty \|\| 0\)/.test(fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8")));
+    assert(/raid: cfg\.raid \|\| 0/.test(fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8")));
+  }
   RaidDens.finish(flags, den.id);
   assert.strictEqual(RaidDens.active(flags, den.id), null);
   // Rewards: money, candies, vitamins and Berries, more with more stars.

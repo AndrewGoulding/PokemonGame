@@ -124,6 +124,11 @@
   "use strict";
 
   const tr = Math.trunc;
+  // A Tera Raid's Pokémon's extra actions, by stars (Battle.raidCheck): the
+  // HP fractions it acts at, and every how many turns it acts as well.
+  const RAID_THRESHOLDS = [[], [], [0.5], [0.5], [0.66, 0.33], [0.75, 0.5, 0.25]];
+  const RAID_EVERY = [0, 0, 0, 5, 4, 3];
+  const RAID_FAINT_TURNS = 2;   // (the turns a Tera Raid loses each time your Pokémon faints)
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
   const toID = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const normItem = (s) => String(s || "").toLowerCase().replace(/[\s_']+/g, "-");
@@ -465,6 +470,9 @@
       this.capNoted = new Set();
       this.expShare = !!opts.expShare;
       this.wild = !!opts.wild;
+      // (A Tera Raid, its stars: its Pokémon acts outside its turn, raidAct.)
+      this.raid = opts.raid || 0;
+      this.raidThresholdsLeft = (RAID_THRESHOLDS[this.raid] || []).slice();
       // Pokémon Tower without the Silph Scope (FireRed's BATTLE_TYPE_GHOST):
       // your Pokémon are too scared to move, the Ghost only says "Get out…",
       // balls miss, and running away always works.
@@ -924,6 +932,21 @@
 
     faint(mon, source, effect) {
       if (mon.fainted) return;
+      // (In a Tera Raid, as in Scarlet and Violet: your Pokémon gets back up,
+      // its stat changes and conditions gone, and the raid loses time:
+      // RAID_FAINT_TURNS off its turn limit, battle.raidPenalty.)
+      if (this.raid && mon.side.id === "p1" && !this.ended) {
+        this.raidPenalty = (this.raidPenalty || 0) + RAID_FAINT_TURNS;
+        this.add("-text", mon, "{who} fainted!");
+        this.undynamax(mon, true);
+        mon.volatiles = {}; mon.status = ""; mon.statusState = {};
+        for (const k of Object.keys(mon.boosts)) mon.boosts[k] = 0;
+        mon.hp = mon.maxhp;
+        this.add("-heal", mon, this.hpStr(mon));
+        this.add("-text", mon, "{who} got back up, but\nthe Tera Raid lost time!");
+        this.queue = this.queue.filter((q) => q.mon !== mon);
+        return;
+      }
       mon.hp = 0; mon.fainted = true; mon.side.faintedThisTurn = true;
       // Fainting upsets it: more so against a foe 30 levels higher (FireRed's
       // battle_util2.c: the opposing Pokémon's level).
@@ -2116,6 +2139,51 @@
     }
 
     // ---------- Turn flow ----------
+    // A Tera Raid's Pokémon acting outside its turn (this game's own, after
+    // Scarlet and Violet's): each time its HP falls past one of its marks
+    // (RAID_THRESHOLDS), and at the end of every so many turns (RAID_EVERY),
+    // it does what it most needs: wipes your Pokémon's stat changes if it has
+    // any raised, else shakes off its own stat drops and status, else raises
+    // two of its stats or attacks again (as likely either).
+    raidCheck(endOfTurn) {
+      const boss = this.sides.p2.active;
+      if (!boss || boss.fainted || boss.hp <= 0) return;
+      let acts = 0;
+      while (this.raidThresholdsLeft.length && boss.hp <= boss.maxhp * this.raidThresholdsLeft[0]) { this.raidThresholdsLeft.shift(); acts++; }
+      const every = RAID_EVERY[this.raid];
+      if (endOfTurn && every && this.turn % every === 0) acts++;
+      for (let i = 0; i < acts && !this.ended && !boss.fainted; i++) this.raidAct(boss);
+    }
+    raidAct(boss) {
+      const foe = this.sides.p1.active;
+      if (!foe || foe.fainted) return;
+      const keys = Object.keys(foe.boosts || {});
+      if (keys.some((k) => foe.boosts[k] > 0)) {
+        for (const k of keys) foe.boosts[k] = 0;
+        this.add("-text", boss, "The Tera Raid Pokémon nullified the\nstat changes affecting " + foe.name + "!");
+        return;
+      }
+      const drops = Object.keys(boss.boosts || {}).filter((k) => boss.boosts[k] < 0);
+      if (drops.length || boss.status) {
+        for (const k of drops) boss.boosts[k] = 0;
+        if (boss.status) this.cureStatus(boss, true);
+        this.add("-text", boss, "The Tera Raid Pokémon removed the\nnegative effects affecting it!");
+        return;
+      }
+      const moves = boss.moveSlots.map((sl) => sl.name).filter((n) => {
+        const m = window.MOVES[n];
+        return m && m.cat !== "Status" && !(m.flags && (m.flags.charge || m.flags.recharge)) && !/^(Fake Out|First Impression|Last Resort|Belch|Focus Punch|Sky Drop)$/.test(n);
+      });
+      if (moves.length && this.random() < 0.5) {
+        this.add("-text", boss, "The Tera Raid Pokémon is\nattacking again!");
+        this.execMove(boss, this.getActiveMove(this.sample(moves)), { raidBonus: true });
+        return;
+      }
+      this.add("-text", boss, "The Tera Raid Pokémon is getting\neven stronger!");
+      const st = boss.stats || {};
+      this.boost(boss, { [(st.atk || 0) >= (st.spa || 0) ? "atk" : "spa"]: 1, [(st.def || 0) <= (st.spd || 0) ? "def" : "spd"]: 1 }, boss);
+    }
+
     beginTurn() {
       this.turn++;
       this.phase = "move";
@@ -2213,6 +2281,7 @@
         this.checkWin();
         if (this.ended) return;
         this.runUpdates();
+        if (this.raid) { this.raidCheck(a.type === "residual"); this.checkWin(); if (this.ended) return; }
       }
       if (this.pendingSwitch) { this.queue.push({ type: "noop" }); return this.runQueue(); }
       if (this.pendingRevive && !this.ended) { this.queue.push({ type: "noop" }); this.phase = "revive"; return; }
