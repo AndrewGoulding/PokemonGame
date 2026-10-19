@@ -18,6 +18,7 @@
 //                //   how many?" and calls deposit(id, n), which returns an error
 //                //   message or null
 //     fresh      // the cursors start at the top and aren't remembered
+//     select     // an item id: the ▶ starts on it
 //   })
 //   // -> null (B, or CANCEL), or { action, id, pocket }
 //   BagScreen.close()   // hides it (it stays up after open() for messages)
@@ -350,6 +351,8 @@
     // yours as you left them after.)
     if (opts.fresh) { saved = memory; memory = {}; }
     if (opts.pocketName) { const i = st.pockets.findIndex((p) => p.name === opts.pocketName); if (i >= 0) st.pocket = i; }
+    // (opts.select: the ▶ on that item, if it's in the pocket: the Berry you planted last.)
+    if (opts.select) { const i = entries().findIndex((e) => e.id === opts.select); if (i >= 0) { mem().cursor = i; mem().top = Math.max(0, i - 2); } }
     clampMem();
     canvas.classList.remove("hidden");
     paint();

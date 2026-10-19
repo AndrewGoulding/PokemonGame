@@ -695,7 +695,7 @@ for (const share of [false, true]) {
   assert(house.collision[pdoor.y * house.width + pdoor.x] && proom.warps.every((w) => !proom.collision[w.y * proom.width + w.x]));
   assert(/MrPsychicsHouse"\) return f\.gotTM29 \? \["denroom"\]/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")));
   // Celadon's Berry Farm (tools/build-berry-farm.js): its own map, through a gap in the trees
-  // south of Celadon's Gym (the "farmpath" patch, always on), no sign; 36 spots in its garden;
+  // south of Celadon's Gym (the "farmpath" patch, always on), no sign; four beds of 17 in its garden;
   // the Grass den on its lawn.
   {
     const city = WORLD_MAPS.CeladonCity, farm = WORLD_MAPS.CeladonCity_BerryFarm, gd = RaidDens.DENS.find((d) => d.type === "Grass");
@@ -706,13 +706,13 @@ for (const share of [false, true]) {
     assert([10, 11].every((x) => !farm.collision[x] && !farm.collision[farm.width + x]));
     assert(gd.map === farm.name && !farm.collision[gd.y * farm.width + gd.x]);
     const B = window.BERRY_FARM;
-    assert(B.spots.length === 36 && farm.people.filter((pp) => /^BerryFarm_Tree_\d+$/.test(pp.script)).length === 36 && farm.people.some((pp) => pp.script === "BerryFarm_Caretaker"));
+    assert(B.spots.length === 68 && farm.people.filter((pp) => /^BerryFarm_Tree_\d+$/.test(pp.script)).length === 68 && farm.people.some((pp) => pp.script === "BerryFarm_Caretaker"));
     assert(Object.keys(window.ITEMS).filter((id) => /-berry$/.test(id)).every((id) => B.berries[id] && fs.existsSync(path.join(root, "assets/world/sprites/berry_tree_" + B.berries[id].tree + ".png"))), "every berry grows as one of Emerald's trees");
     assert.deepStrictEqual([B.berries["cheri-berry"].hours, B.berries["lum-berry"].hours, B.berries["liechi-berry"].hours, B.berries["razz-berry"].max], [3, 12, 24, 6], "Emerald's gBerries");
     assert(window.ITEMS["wailmer-pail"] && fs.existsSync(path.join(root, "assets/sprites/items/key-item/wailmer-pail.png")));
     // Growing (ui/berry-farm.js): Emerald's stages, each the berry's hours (100 steps an hour),
     // 1 + level / 50 times as fast; berries four stages long, then it sprouts again.
-    const box = { window: { BERRY_FARM: B, Player: { STEPS_PER_HOUR: 100, removeItem: () => {}, addItem: (p, id, n) => { p.bag[id] = (p.bag[id] || 0) + (n || 1); }, itemCount: (p, id) => p.bag[id] | 0 }, Bag: { name: (id) => id } } };
+    const box = { window: { BERRY_FARM: B, Player: { STEPS_PER_HOUR: 100, removeItem: () => {}, addItem: (p, id, n) => { p.bag[id] = (p.bag[id] || 0) + (n || 1); }, itemCount: (p, id) => p.bag[id] | 0 }, Bag: { name: (id) => Bag.name(id) } } };
     vm.runInNewContext(fs.readFileSync(path.join(root, "ui/berry-farm.js"), "utf8"), box);
     let level = 1;
     const pl = { name: "RED", flags: {}, bag: { "cheri-berry": 3, "wailmer-pail": 1 } }, said = [];
@@ -724,20 +724,24 @@ for (const share of [false, true]) {
       await F.talk(spot);
       const t = pl.flags.berryFarm.trees[0];
       assert(t && t.stage === 1 && F.visible(spot, farm.name).sprite === "berry_tree_cheri");
+      assert(said.some((x) => /planted one Cheri Berry in/.test(x)), "its name as it's written: " + said.join(" / "));
       for (let st = 1; st <= 4; st++) {
+        assert.strictEqual(F.visible(spot, farm.name).frame, [0, 2, 4, 6][st - 1] + 9, "dry soil: it wants water");
         await F.talk(spot);   // (water it: each stage once)
+        assert.strictEqual(F.visible(spot, farm.name).frame, [0, 2, 4, 6][st - 1] + 18, "wet soil: watered");
         for (let i = 0; i < 300; i++) F.step();
         assert.strictEqual(t.stage, st + 1, "Cheri: 3 hours a stage");
       }
       assert(t.yield === 3 && F.visible(spot, farm.name).frame === 8, "watered every stage: Cheri's most");
-      for (let i = 0; i < 1200; i++) F.step();
-      assert(t.stage === 2 && t.regrow === 1, "unpicked for four stages: it sprouts again");
+      for (let i = 0; i < 10000; i++) F.step();
+      assert(t.stage === 5 && t.yield === 3, "berries stay till they're picked");
       level = 100;
-      for (let i = 0; i < 100; i++) F.step();
-      assert.strictEqual(t.stage, 3, "farming level 100: three times as fast");
-      for (let i = 0; i < 300; i++) F.step();
       await F.talk(spot);
-      assert(!pl.flags.berryFarm.trees[0] && pl.bag["cheri-berry"] >= 5, "picked: " + said.slice(-3).join(" / "));
+      assert(!pl.flags.berryFarm.trees[0] && pl.bag["cheri-berry"] === 3 + 6, "farming level 100: twice as many (the stub Bag keeps the one planted)");
+      assert(said.some((x) => /picked the 6 Cheri Berries\./.test(x)) && said.some((x) => /Bag's Berries Pocket/.test(x)), said.slice(-4).join(" / "));
+      await F.talk(spot);
+      for (let i = 0; i < 100; i++) F.step();
+      assert.strictEqual(pl.flags.berryFarm.trees[0].stage, 2, "farming level 100: three times as fast");
     })().catch((e) => { console.error(e); process.exit(1); });
   }
   for (const f of ["CeladonCity-patch-farmpath", "SaffronCity_MrPsychicsHouse-patch-denroom", "SaffronCity_MrPsychicsHouse_DenRoom"])

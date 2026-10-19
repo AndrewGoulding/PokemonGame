@@ -1231,11 +1231,12 @@
       Screen.say("");
       clearMenu();
       const r = await BagScreen.open({
-        pockets: () => bagPockets().filter((p) => p.name === "Berries"), fresh: true,
+        pockets: () => bagPockets().filter((p) => p.name === "Berries"), fresh: true, select: player.flags.lastPlanted,
         female: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl), frame: GameOptions.get().frame,
         actions: () => [{ label: "Plant", value: "plant" }]
       });
       BagScreen.close();
+      if (r) player.flags.lastPlanted = r.id;   // (the Bag opens on it next time)
       return r ? r.id : null;
     },
     refresh: () => Overworld.refreshPeople(), here: () => player.location && player.location.map
