@@ -129,6 +129,10 @@ const SKIP = /^MAP_(EVERYWHERE|NOTHING|UNION|UNDERGROUND|UNUSED)$|UNUSED|^MAP_WI
 // Goldenrod's Game Corner, outside Japan.)
 const JOHTO_SIDE = new Set(["MAP_ROUTE_26_NORTH_HOUSE", "MAP_ROUTE_26_WEEK_SIBLINGS_HOUSE", "MAP_ROUTE_27_HOUSE", "MAP_TOHJO_FALLS_HIDDEN_ROOM",
   "MAP_ROUTE_28", "MAP_ROUTE_28_HOUSE", "MAP_GOLDENROD_GAME_CORNER"]);
+// (And Saffron's Magnet Train station, HGSS's, though it's Kanto's: FireRed's
+// Saffron has none, so it's built here, region "kanto", its door into Saffron
+// City new: tools/build-magnet-train.js.)
+const KANTO_SIDE = new Set(["MAP_SAFFRON_MAGNET_TRAIN_STATION_1F", "MAP_SAFFRON_MAGNET_TRAIN_STATION_2F", "MAP_SAFFRON_MAGNET_TRAIN_STATION_2F_EMPTY"]);
 const TOWNS = { NEW_BARK: "NewBarkTown", CHERRYGROVE: "CherrygroveCity", VIOLET: "VioletCity", AZALEA: "AzaleaTown", CIANWOOD: "CianwoodCity",
   GOLDENROD: "GoldenrodCity", OLIVINE: "OlivineCity", ECRUTEAK: "EcruteakCity", MAHOGANY: "MahoganyTown", BLACKTHORN: "BlackthornCity" };
 // (And the places with rooms of their own, by their names.)
@@ -137,7 +141,7 @@ const PLACES = Object.assign({ MOUNT_SILVER: "MtSilver", MOUNT_SILVER_CAVE: "MtS
   POKEATHLON_DOME: "PokeathlonDome", NATIONAL_PARK: "NationalPark", SS_AQUA: "SSAqua", BELL_TOWER: "BellTower", SPROUT_TOWER: "SproutTower",
   BURNED_TOWER: "BurnedTower", SINJOH_RUINS: "SinjohRuins", EMBEDDED_TOWER: "EmbeddedTower", DARK_CAVE: "DarkCave", DRAGONS_DEN: "DragonsDen",
   TEAM_ROCKET_HEADQUARTERS: "TeamRocketHideout", MOUNT_MORTAR: "MtMortar", WHIRL_ISLANDS: "WhirlIslands", ICE_PATH: "IcePath",
-  SLOWPOKE_WELL: "SlowpokeWell", UNION_CAVE: "UnionCave" }, TOWNS);
+  SLOWPOKE_WELL: "SlowpokeWell", UNION_CAVE: "UnionCave", SAFFRON: "SaffronCity" }, TOWNS);
 const WORDS = { POKECENTER: "PokemonCenter", POKEMART: "Mart", MOUNT: "Mt", POKEATHALON: "Pokeathlon", SS: "SS" };
 // HGSS's map constant as a name: its town (or route) first, then the rest, floors apart (_1F, _B2F).
 function mapName(c) {
@@ -183,7 +187,7 @@ const REAL_CAVES = /^MAPSEC_(UNION_CAVE|SLOWPOKE_WELL|MT_MORTAR|ICE_PATH|WHIRL_I
   const have = new Set(MAPS.map((m) => m.c));
   for (const m of src.matchAll(/\[(MAP_\w+)\] = \{([^}]*)\}/g)) {
     const get = (k) => { const r = new RegExp("\\." + k + "\\s*=\\s*([^,\\n]+)").exec(m[2]); return r ? r[1].trim() : null; };
-    if ((get("regionNo") !== "MAP_REGION_JOHTO" && !JOHTO_SIDE.has(m[1])) || have.has(m[1]) || SKIP.test(m[1])) continue;
+    if ((get("regionNo") !== "MAP_REGION_JOHTO" && !JOHTO_SIDE.has(m[1]) && !KANTO_SIDE.has(m[1])) || have.has(m[1]) || SKIP.test(m[1])) continue;
     const zone = (/zone_event_\d+_(\w+)_bin/.exec(get("eventsBank") || "") || [])[1];
     if (!zone || zone === "EVERYWHERE") continue;
     const kind = get("mapType"), mapsec = get("mapsec");
@@ -194,7 +198,7 @@ const REAL_CAVES = /^MAPSEC_(UNION_CAVE|SLOWPOKE_WELL|MT_MORTAR|ICE_PATH|WHIRL_I
     MAPS.push(Object.assign({ c: m[1], name: mapName(m[1]), title,
       type: outdoors ? (kind === "MAP_TYPE_ROUTE" ? "route" : /Town$/.test(title) ? "town" : "city") : cave ? "underground" : "indoor",
       zone, music: MUSIC[get("dayMusicId")] || "mus_route1", ground: true },
-      kind === "MAP_TYPE_CAVE" && !cave ? { dungeon: true } : {},
+      kind === "MAP_TYPE_CAVE" && !cave ? { dungeon: true } : {}, KANTO_SIDE.has(m[1]) ? { region: "kanto" } : {},
       /_POKECENTER_1F$/.test(m[1]) ? { template: "pc" } : /_POKEMART$/.test(m[1]) ? { template: "mart" } : {}));
   }
 }
@@ -766,7 +770,7 @@ MAPS.forEach((m, i) => {
     people.push(def);
   }
   out[m.name] = {
-    name: m.name, title: m.title, width: r.width, height: r.height, type: m.type, music: m.music, region: "johto",
+    name: m.name, title: m.title, width: r.width, height: r.height, type: m.type, music: m.music, region: m.region || "johto",
     allowEscaping: m.type === "underground" || m.dungeon || undefined,   // (an Escape Rope or Dig works: caves and dungeons)
     cycling: true, showName: m.type !== "indoor", top: true, borderWidth: 2, borderHeight: 2,
     collision, elevation: collision.map(() => 0), behavior,

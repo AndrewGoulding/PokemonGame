@@ -10408,6 +10408,8 @@
     }
     if (map === "MtEmber_Exterior") return (f.celioScene || 0) >= 4 ? ["cave"] : [];
     if (map === "ThreeIsland_DunsparceTunnel") return f.gameClear ? ["dugout"] : [];
+    // (Saffron's Magnet Train station's door, always there: tools/build-magnet-train.js.)
+    if (map === "SaffronCity") return ["magnettrain"];
     // Five Island: the Rocket Warehouse's door open (FiveIsland_Meadow_OnLoad),
     // its arrows turned round once the Admin by them is beaten
     // (FiveIsland_RocketWarehouse_OnLoad); Icefall Cave 1F's ice, cracked or broken.
@@ -10654,6 +10656,19 @@
   });
   // (A std script by name, compiled as a zone of its own: { zone, label }.)
   const johtoStd = (name) => { const s = (window.JOHTO_SCRIPTS.std || {})[name]; return s ? { zone: s[0], label: s[1] } : null; };
+  // (Only to Johto's maps that are built: HGSS's world coordinates, as theirs.
+  // Into one that isn't, as Route 34's Day Care, you stay where you are.)
+  async function johtoWarp(mapConst, x, y, facing) {
+    // (A map by its number, as the scripts' Warp has it: J.mapIds.)
+    const J = window.JOHTO_SCRIPTS, name = J.mapConsts[typeof mapConst === "number" ? (J.mapIds || {})[mapConst] : mapConst], o = name && J.origins[J.maps[name]];
+    if (!o) { await Overworld.fadeFromBlack(); return; }
+    await Overworld.teleport({ map: name, x: x - o.x, y: y - o.y, facing });
+  }
+  // The Magnet Train between Goldenrod and Saffron (ui/magnet-train.js).
+  const magnetTrain = MagnetTrain.create({
+    player: () => player, johto: { setFlag: (name, on) => johto.setFlag(name, on) }, music: (song) => music(song),
+    sleep: (ms) => new Promise((r) => setTimeout(r, ms)), fadeOut: () => Overworld.fadeToBlack(), warp: johtoWarp
+  });
   const johto = JohtoScript.create({
     player: () => player,
     bugContest,
@@ -10694,14 +10709,9 @@
     fade: (out) => (out ? Overworld.fadeToBlack() : Overworld.fadeFromBlack()),
     trainerBattle: (id) => johtoBattle("trainer", id),
     wildBattle: (species, level) => johtoBattle("wild", species, level),
-    // (Only to Johto's maps that are built: HGSS's world coordinates, as theirs.
-    // Into one that isn't, as Route 34's Day Care, you stay where you are.)
-    warp: async (mapConst, x, y, facing) => {
-      // (A map by its number, as the scripts' Warp has it: J.mapIds.)
-      const J = window.JOHTO_SCRIPTS, name = J.mapConsts[typeof mapConst === "number" ? (J.mapIds || {})[mapConst] : mapConst], o = name && J.origins[J.maps[name]];
-      if (!o) { await Overworld.fadeFromBlack(); return; }
-      await Overworld.teleport({ map: name, x: x - o.x, y: y - o.y, facing });
-    },
+    warp: johtoWarp,
+    // (The Magnet Train's ride, ScrCmd_722: ui/magnet-train.js.)
+    magnetTrain: (toward, mapConst, x, y) => magnetTrain.ride(toward, mapConst, x, y),
     hasBadge: (n) => (n >= 8 ? player.badges.includes(KANTO_BADGES[n - 8]) : player.badges.includes(Player.REGION_BADGES.johto[n])),
     giveBadge: (n) => {
       const b = n >= 8 ? KANTO_BADGES[n - 8] : Player.REGION_BADGES.johto[n];
@@ -11298,7 +11308,7 @@
           // Route 23 puts Victory Road back as it was: barriers up, boulders back (Route23_OnTransition).
           if (m !== tempFlagsMap && m === "Route23") LeagueRoad.reset(player.flags);
           // (Into a Johto map: its OnTransition script, before its people are placed.)
-          if (m !== tempFlagsMap) { johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); }
+          if (m !== tempFlagsMap) { magnetTrain.enter(m); johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); }
           if (m === "SSAqua_1F") ssAquaExit();
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
           if (!gear.radioOn(m)) music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }   // (the Pokégear's radio plays on)

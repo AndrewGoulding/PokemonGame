@@ -36,7 +36,8 @@
 //   phoneCall(who, kind, n), registerCard(n), phoneRematch(contact), phoneTrigger(n, on) (ui/pokegear.js),
 //   coinsBox(on), casinoGame() (ui/voltorb-flip.js),
 //   shake(times, { x, y, delay }), alphPuzzle(n) (the flag to set if put together), alphWall(n), unownCaught(),
-//   safariAction(n), safariChallenge(n), areaCustomizer() (ui/johto-safari.js).
+//   safariAction(n), safariChallenge(n), areaCustomizer() (ui/johto-safari.js),
+//   magnetTrain(toward, mapConst, x, y) (the Magnet Train's ride: ui/magnet-train.js).
 (function () {
   "use strict";
 
@@ -598,9 +599,15 @@
           case "FadeScreen": await flush(); await env.fade(+getVar(a[2]) === 0); break;
           // (Pixels across and up and down, frames each way at HGSS's 30 a second, times.)
           case "ScreenShake": await flush(); await env.shake(+getVar(a[3]) || 4, { x: +getVar(a[0]) || 0, y: +getVar(a[1]) || 0, delay: (+getVar(a[2]) || 1) * 2 }); break;
+          // (The Magnet Train's ride, then off at the other station's platform: ui/magnet-train.js.)
+          case "ScrCmd_722":
           case "Warp": {
             await flush();
-            await env.warp(a[0], +getVar(a[2]) || 0, +getVar(a[3]) || 0, DIRS[+getVar(a[4])] || "down");
+            if (op === "ScrCmd_722") await env.magnetTrain(+getVar(a[0]) || 0, a[2], +getVar(a[3]) || 0, +getVar(a[4]) || 0);
+            else await env.warp(a[0], +getVar(a[2]) || 0, +getVar(a[3]) || 0, DIRS[+getVar(a[4])] || "down");
+            // (Or the scene goes on there, as HGSS's does: the Magnet Train's
+            // attendant seeing you off the platform, tools/build-magnet-train.js.)
+            if (a[5] === "goes on") break;
             // (What the script still sets once you're there, as the Ruins of
             // Alph's falls count themselves: its flags and vars, up to its end.)
             for (; pc < C.length && !["End", "GoTo", "Call", "Return"].includes(C[pc][0]); pc++) {

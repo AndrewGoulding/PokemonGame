@@ -1588,6 +1588,8 @@ for (const share of [false, true]) {
   // the Ember Spa, the Dunsparce Tunnel (Three Isle Path), the Rocket Warehouse, Trainer Tower's inside, the Tanoby Key and the Tanoby chambers no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
     if (["johto", "emerald", "orre"].includes(WORLD_MAPS[name].region)) continue;   // (Johto, Faraway Island and Orre aren't on Kanto's Town Map)
+    // (Saffron's Magnet Train station, HGSS's: its townMapSection, which ui/magnet-train.js adds.)
+    if (WORLD_MAPS[name].townMapSection) { assert(onMap(WORLD_MAPS[name].townMapSection), name + " is on the Town Map"); continue; }
     assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "UNDERGROUND_PATH_2", "S_S_ANNE", "ROCKET_HIDEOUT", "SILPH_CO",
       "POKEMON_LEAGUE", "EMBER_SPA", "THREE_ISLE_PATH", "ROCKET_WAREHOUSE", "TRAINER_TOWER_2", "TANOBY_KEY"].includes(T.mapSections[name]) || /_CHAMBER$/.test(T.mapSections[name])), name + " is on the Town Map");
   }
@@ -1924,6 +1926,33 @@ if (window.JOHTO_TOWN_MAP) {
   assert.deepStrictEqual(JOHTO_LEAGUE.map((r) => WORLD_TRAINERS[r.trainer].name), ["Will", "Koga", "Bruno", "Karen", "Lance"]);
   // The S.S. Aqua: off at Vermilion's dock once it's arrived there, and its sailor back to Olivine.
   assert(/function ssAquaExit\(\)/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")) && WORLD_MAPS.SSAqua_1F.warps[0].x === 24);
+  // The Magnet Train (tools/build-magnet-train.js, ui/magnet-train.js): Saffron's station, Kanto's, and
+  // its new door in FireRed's Saffron; no Pass at the gates; Goldenrod's always runs, Saffron's once
+  // you're Champion; the ride off to the other station's platform.
+  {
+    const st = WORLD_MAPS.SaffronCity_MagnetTrainStation_1F, saffron = WORLD_MAPS.SaffronCity;
+    assert(st && st.region === "kanto" && WORLD_MAPS.SaffronCity_MagnetTrainStation_2F && WORLD_MAPS.SaffronCity_MagnetTrainStation_2F_Empty, "Saffron's station");
+    const door = saffron.warps.find((w) => w.map === st.name);
+    assert(door && st.warps[0].map === "SaffronCity" && saffron.warps[st.warps[0].warp] === door && saffron.patches.magnettrain, "its door");
+    assert(fs.existsSync(path.join(root, "assets/world/maps/SaffronCity-patch-magnettrain.png")));
+    for (const z of ["T25R0501", "T11R0601"]) assert(!JOHTO_SCRIPTS.zones[z].cmds.some((c) => c[0] === "HasItem"), "no Pass: " + z);
+    assert(!JOHTO_SCRIPTS.zones.T25R0501.cmds.some((c) => c.includes("FLAG_RESTORED_POWER")) && JOHTO_SCRIPTS.zones.T11R0601.cmds.some((c) => c.includes("FLAG_RESTORED_POWER")));
+    assert(/Champion/.test(JOHTO_SCRIPTS.messages.msg_0535_T11R0601_00000.join(" ")));
+    assert.strictEqual(JOHTO_SCRIPTS.mapConsts[401], "SaffronCity_MagnetTrainStation_2F");
+    assert.strictEqual(JOHTO_SCRIPTS.mapConsts[198], "GoldenrodCity_MagnetTrainStation_2F");
+    assert(/case "ScrCmd_722":/.test(fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8")));
+    const sandbox = { window: {}, setTimeout };
+    vm.runInNewContext(fs.readFileSync(path.join(root, "ui/magnet-train.js"), "utf8"), sandbox, { filename: "ui/magnet-train.js" });
+    const flags = {}, log = [], pl = { flags: {} };
+    const T = sandbox.window.MagnetTrain.create({ player: () => pl, johto: { setFlag: (n, on) => { flags[n] = on; } }, music: (s) => log.push(s),
+      sleep: async () => {}, fadeOut: async () => log.push("fade"), warp: async (...a) => log.push(a.join(",")) });
+    T.enter("SaffronCity_MagnetTrainStation_1F");
+    assert.strictEqual(flags.FLAG_RESTORED_POWER, false, "Saffron's train waits for the Champion");
+    pl.flags.gameClear = true;
+    T.enter("SaffronCity_MagnetTrainStation_1F");
+    assert.strictEqual(flags.FLAG_RESTORED_POWER, true);
+    T.ride(0, 401, 14, 11).then(() => assert.deepStrictEqual(log, ["fade", "gs_e_linear", "401,14,11,down"])).catch((e) => { console.error(e); process.exit(1); });
+  }
   // The Gyms' gimmicks (ui/johto-gymmicks.js): Violet's lift up to the walkways, Mahogany's ice blocks,
   // Ecruteak's dark, Cianwood's winch and the falls it stops.
   {

@@ -1890,7 +1890,26 @@ own.
 port boards you with the S.S. Ticket once you're Johto's Champion, and the
 voyage goes as HGSS's scripts have it; arrived, you step off onto FireRed's
 Vermilion dock, where the S.S. Anne was, and the S.S. Aqua's sailor there
-takes you back to Olivine. Scripts' TMs and HMs are this game's machines for
+takes you back to Olivine.
+
+**The Magnet Train** runs between Goldenrod City and Saffron City as in
+HGSS: its stations are HGSS's (Goldenrod's, and Saffron's, HGSS's Kanto map,
+built with Johto's but counted as Kanto's), with their people and scripts.
+The attendant greets you, the ticket gate checks you through (no Pass needed
+here: "Ping...fwip! This train is about to leave for Saffron City."), you
+board upstairs, the screen fades to the train's theme as it goes, and the
+other station's attendant sees you off the train ("We have arrived at
+Saffron! Saffron! The accent is on the "a"!"). FireRed's Saffron has no
+station, so the house at the west end of its top-left row gets a door (the
+Copycat's house's, next door), into it. Goldenrod's train always runs;
+Saffron's only once you're the Champion: until then its policeman stands in
+front of the gate ("I'm sorry, but the Magnet Train to Johto isn't running
+yet. It's only for the Champion of the Pokémon League."). `tools/build-magnet-train.js`
+writes Saffron's door (`SaffronCity-patch-magnettrain.png`) and the stations'
+changes (`tools/lib/johto-magnet-train.generated.js`), and
+`ui/magnet-train.js` the ride (HGSS's `ScrCmd_722`) and Saffron's rule.
+
+Scripts' TMs and HMs are this game's machines for
 the same moves (HGSS numbers them its own way: its TM51 Roost is this game's
 TM19), and the eleven HGSS TMs for moves no machine here teaches (Brine,
 Endure, Dragon Pulse, Drain Punch, Silver Wind, Recycle, Avalanche, Stealth
