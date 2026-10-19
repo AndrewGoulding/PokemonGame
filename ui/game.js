@@ -2551,10 +2551,10 @@
     if (Seafoam.isBoulderFlag(person.flag)) return !Seafoam.hidden(f, person.flag);
     // Lostelle's dad stands by the counter once he's thanked you (TwoIsland_JoyfulGameCorner_OnTransition);
     // the Dunsparce Tunnel's prospector digs at the wall until it's dug out
-    // (ThreeIsland_DunsparceTunnel_OnTransition: with the National Pokédex,
-    // which you have from the start here, it's dug out).
+    // (ThreeIsland_DunsparceTunnel_OnTransition: FireRed's with the National
+    // Pokédex; here, once you're Champion, it's dug out).
     if (person.script === "TwoIsland_JoyfulGameCorner_EventScript_LostellesDaddy" && f.gotMoonStoneFromDaddy) return { x: 6, y: 2, movement: "face_down" };
-    if (person.script === "ThreeIsland_DunsparceTunnel_EventScript_Prospector" && !Player.nationalDex(player)) return { x: 6, y: 3, movement: "face_right" };
+    if (person.script === "ThreeIsland_DunsparceTunnel_EventScript_Prospector" && !player.flags.gameClear) return { x: 6, y: 3, movement: "face_right" };
     // Trainer Tower's floors: the challenge's trainers, where and as whom (towerPerson).
     { const tv = towerPerson(person, map || player.location.map); if (tv !== undefined) return tv; }
     // The Tanoby Key's boulders on their switches, once it's solved.
@@ -3968,11 +3968,11 @@
       case "ThreeIsland_Mart_EventScript_Clerk": await mart(ev.person.mart); return;
       case "ThreeIsland_BerryForest_EventScript_Lostelle": await berryForestLostelle(ev.person); return;
       // The Dunsparce Tunnel's prospector strikes gold once it's dug out
-      // (with the National Pokédex: from the start here).
+      // (once you're Champion, FLAG_SYS_GAME_CLEAR: FireRed's goes by the National Pokédex).
       case "ThreeIsland_DunsparceTunnel_EventScript_Prospector": {
         const D = (k) => T("ThreeIsland_DunsparceTunnel_Text_" + k);
         if (f.gotNuggetFromProspector) { await say(D("ThatsANugget")); return; }
-        if (!Player.nationalDex(player)) {
+        if (!f.gameClear) {
           await say(D("ProspectingForGold"));
           Screen.say("");
           await Overworld.act([{ who: "LOCALID_PROSPECTOR", moves: ["face_right"] }]);
@@ -10402,7 +10402,7 @@
         f.canLinkWithRS ? ["on"] : []);
     }
     if (map === "MtEmber_Exterior") return (f.celioScene || 0) >= 4 ? ["cave"] : [];
-    if (map === "ThreeIsland_DunsparceTunnel") return Player.nationalDex(player) ? ["dugout"] : [];
+    if (map === "ThreeIsland_DunsparceTunnel") return f.gameClear ? ["dugout"] : [];
     // Five Island: the Rocket Warehouse's door open (FiveIsland_Meadow_OnLoad),
     // its arrows turned round once the Admin by them is beaten
     // (FiveIsland_RocketWarehouse_OnLoad); Icefall Cave 1F's ice, cracked or broken.

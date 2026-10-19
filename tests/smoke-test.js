@@ -5182,8 +5182,8 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
   // (and, as FireRed's comes after the Hall of Fame, once you're Champion: until
   // then only One, Two and Three Island can be reached.)
   assert(/if \(Player\.nationalDex\(player\) && player\.flags\.gameClear && scene >= 3\)/.test(gameJs), "Celio asks for the Ruby once you're Champion");
-  assert(/ThreeIsland_DunsparceTunnel"\) return Player\.nationalDex\(player\) \? \["dugout"\]/.test(gameJs));
-  assert(!/ThreeIsland_DunsparceTunnel[^\n]*gameClear/.test(gameJs));
+  // (The Dunsparce Tunnel's dug out once you're Champion, this game's rule.)
+  assert(/ThreeIsland_DunsparceTunnel"\) return f\.gameClear \? \["dugout"\]/.test(gameJs));
   // The aides count Kanto's kinds (GetPokedexCount with VAR_0x8004 0).
   assert(!/player\.pokedex\.caught\.length/.test(gameJs));
   // The Pokédex screen: the National Pokédex's table of contents and lists.

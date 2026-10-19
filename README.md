@@ -564,8 +564,8 @@ Cue Ball Paxton, and the gang leaves; Bond Bridge (its swimmers, tubers, Aroma
 Ladies and the twins Joy & Meg) to Berry Forest, where Lostelle's in trouble: a
 wild Lv. 30 Hypno, then her Iapapa Berry, and she takes you home to her dad,
 who swaps the Meteorite for a Moon Stone. Three Isle Port (its bikers, the
-Dunsparce Tunnel, dug out with a Nugget for you, as FireRed has it with the
-National Pokédex) and the
+Dunsparce Tunnel, dug out with a Nugget for you once you're Champion; FireRed
+digs it out with the National Pokédex) and the
 islands' marts and Pokémon Centers (respawn points and Fly spots). Back at One
 Island Bill's done, and the Seagallop takes you both home to Cinnabar, where he
 says goodbye. Until you're Champion only One, Two and Three Island can be
