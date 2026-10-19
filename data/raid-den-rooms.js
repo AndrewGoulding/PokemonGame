@@ -23,10 +23,9 @@ window.WORLD_MAPS["SaffronCity_MrPsychicsHouse_DenRoom"] = {"name":"SaffronCity_
   if (window.TOWN_MAP && window.TOWN_MAP.mapSections) window.TOWN_MAP.mapSections["SaffronCity_MrPsychicsHouse_DenRoom"] = window.TOWN_MAP.mapSections["SaffronCity_MrPsychicsHouse"];
 })();
 
-// Celadon's Berry Farm, south of its Gym: its plots (for planting, one day) and its sign.
+// The way to Celadon's Berry Farm: a gap in the trees south of its Gym.
 (function () {
   const city = window.WORLD_MAPS["CeladonCity"];
   if (!city) return;
-  city.patches = Object.assign({}, city.patches, { berryfarm: { x: 4, y: 34, w: 14, h: 4, top: false, collision: [[12,34,1,0],[5,35,1,0],[6,35,1,0],[7,35,1,0],[8,35,1,0],[5,36,1,0],[6,36,1,0],[7,36,1,0],[8,36,1,0],[14,35,1,0],[15,35,1,0],[16,35,1,0],[17,35,1,0],[14,36,1,0],[15,36,1,0],[16,36,1,0],[17,36,1,0]] } });
-  if (!city.signs.some((s) => s.script === "CeladonCity_EventScript_BerryFarmSign")) city.signs.push({ x: 12, y: 34, script: "CeladonCity_EventScript_BerryFarmSign", text: ["CELADON BERRY FARM\nThe plots are being readied.", "Planting opens soon!"] });
+  city.patches = Object.assign({}, city.patches, { farmpath: { x: 10, y: 38, w: 2, h: 2, top: false, collision: [[10,38,0,0],[11,38,0,0],[10,39,0,0],[11,39,0,0]] } });
 })();

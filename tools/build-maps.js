@@ -1,6 +1,8 @@
 // Builds the overworld from FireRed's map data.
 //
 //   node tools/build-maps.js <path to a pret/pokefirered checkout>
+//   (then node tools/build-raid-dens.js: it opens the trees south of Celadon's Gym,
+//   CeladonCity-top.png too, for the way to the Berry Farm)
 //   (or set POKEFIRERED=<path>; see README "Overworld maps")
 //
 // Reads, from the pokefirered checkout: data/layouts (block layouts),

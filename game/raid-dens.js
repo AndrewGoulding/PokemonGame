@@ -29,7 +29,7 @@
   // data/raid-den-rooms.js): the Fighting den in the Fighting Dojo's back
   // room, open once you've beaten its Karate Master; the Psychic den in Mr.
   // Psychic's back room, open once he's given you his TM; and the Grass den
-  // in Celadon's Berry Farm, south of its Gym.
+  // in Celadon's Berry Farm (through the trees south of its Gym: tools/build-berry-farm.js).
   const DENS = [
     ["route1", "Route1", 5, 8, "Normal"],
     ["viridianForest", "ViridianForest", 3, 33, "Bug"],   // (the south-west corner, below the grass)
@@ -44,7 +44,7 @@
     ["lavender", "PokemonTower_1F", 11, 2, "Ghost"],   // (at the top of Pokémon Tower's ground floor)
     ["silph", "SilphCo_1F", 27, 6, "Steel"],
     ["indigo", "IndigoPlateau_Exterior", 4, 10, "Dragon"],
-    ["berryFarm", "CeladonCity", 11, 36, "Grass"],
+    ["berryFarm", "CeladonCity_BerryFarm", 25, 20, "Grass"],
     ["mansion", "PokemonMansion_1F", 3, 30, "Poison"],
     ["mrPsychic", "SaffronCity_MrPsychicsHouse_DenRoom", 5, 4, "Psychic"],
     ["rocketHideout", "RocketHideout_B1F", 14, 15, "Dark"],

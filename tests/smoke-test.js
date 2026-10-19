@@ -666,11 +666,53 @@ for (const share of [false, true]) {
   assert(pdoor && house.patches.denroom && proom.warps.every((w) => w.map === "SaffronCity_MrPsychicsHouse" && house.warps[w.warp] === pdoor));
   assert(house.collision[pdoor.y * house.width + pdoor.x] && proom.warps.every((w) => !proom.collision[w.y * proom.width + w.x]));
   assert(/MrPsychicsHouse"\) return f\.gotTM29 \? \["denroom"\]/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")));
-  // Celadon's Berry Farm: its patch (the plots and the sign, blocked; the den's tile free) and its sign.
-  const farm = WORLD_MAPS.CeladonCity.patches.berryfarm, gd = RaidDens.DENS.find((d) => d.type === "Grass");
-  assert(farm && gd.map === "CeladonCity" && gd.x >= farm.x && gd.x < farm.x + farm.w && gd.y >= farm.y && gd.y < farm.y + farm.h);
-  assert(!farm.collision.some(([x, y]) => x === gd.x && y === gd.y) && WORLD_MAPS.CeladonCity.signs.some((sg) => /BerryFarm/.test(sg.script)));
-  for (const f of ["CeladonCity-patch-berryfarm", "SaffronCity_MrPsychicsHouse-patch-denroom", "SaffronCity_MrPsychicsHouse_DenRoom"])
+  // Celadon's Berry Farm (tools/build-berry-farm.js): its own map, through a gap in the trees
+  // south of Celadon's Gym (the "farmpath" patch, always on), no sign; 36 spots in its garden;
+  // the Grass den on its lawn.
+  {
+    const city = WORLD_MAPS.CeladonCity, farm = WORLD_MAPS.CeladonCity_BerryFarm, gd = RaidDens.DENS.find((d) => d.type === "Grass");
+    assert(farm && city.connections.some((c) => c.map === farm.name && c.direction === "down") && farm.connections.some((c) => c.map === "CeladonCity" && c.direction === "up"));
+    assert(city.patches.farmpath && city.patches.farmpath.collision.every(([, , c]) => c === 0) && !city.patches.berryfarm && !city.signs.some((sg) => /BerryFarm/.test(sg.script)));
+    assert(/CeladonCity"\) return \["farmpath"\]/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")));
+    // (The way through: open from Celadon's lawn down into the farm.)
+    assert([10, 11].every((x) => !farm.collision[x] && !farm.collision[farm.width + x]));
+    assert(gd.map === farm.name && !farm.collision[gd.y * farm.width + gd.x]);
+    const B = window.BERRY_FARM;
+    assert(B.spots.length === 36 && farm.people.filter((pp) => /^BerryFarm_Tree_\d+$/.test(pp.script)).length === 36 && farm.people.some((pp) => pp.script === "BerryFarm_Caretaker"));
+    assert(Object.keys(window.ITEMS).filter((id) => /-berry$/.test(id)).every((id) => B.berries[id] && fs.existsSync(path.join(root, "assets/world/sprites/berry_tree_" + B.berries[id].tree + ".png"))), "every berry grows as one of Emerald's trees");
+    assert.deepStrictEqual([B.berries["cheri-berry"].hours, B.berries["lum-berry"].hours, B.berries["liechi-berry"].hours, B.berries["razz-berry"].max], [3, 12, 24, 6], "Emerald's gBerries");
+    assert(window.ITEMS["wailmer-pail"] && fs.existsSync(path.join(root, "assets/sprites/items/key-item/wailmer-pail.png")));
+    // Growing (ui/berry-farm.js): Emerald's stages, each the berry's hours (100 steps an hour),
+    // 1 + level / 50 times as fast; berries four stages long, then it sprouts again.
+    const box = { window: { BERRY_FARM: B, Player: { STEPS_PER_HOUR: 100, removeItem: () => {}, addItem: (p, id, n) => { p.bag[id] = (p.bag[id] || 0) + (n || 1); }, itemCount: (p, id) => p.bag[id] | 0 }, Bag: { name: (id) => id } } };
+    vm.runInNewContext(fs.readFileSync(path.join(root, "ui/berry-farm.js"), "utf8"), box);
+    let level = 1;
+    const pl = { name: "RED", flags: {}, bag: { "cheri-berry": 3, "wailmer-pail": 1 } }, said = [];
+    const F = box.window.BerryFarm.create({ player: () => pl, say: async (pg) => said.push(...pg), confirm: async () => true, jingle: async (s, pg) => said.push(...pg),
+      chooseBerry: async () => "cheri-berry", farmingLevel: () => level, addFarmingXp: async () => {}, refresh: () => {}, here: () => "x" });
+    const spot = farm.people.find((pp) => pp.script === "BerryFarm_Tree_0");
+    assert.strictEqual(F.visible(spot, farm.name).sprite, "berry_soil");
+    (async () => {
+      await F.talk(spot);
+      const t = pl.flags.berryFarm.trees[0];
+      assert(t && t.stage === 1 && F.visible(spot, farm.name).sprite === "berry_tree_cheri");
+      for (let st = 1; st <= 4; st++) {
+        await F.talk(spot);   // (water it: each stage once)
+        for (let i = 0; i < 300; i++) F.step();
+        assert.strictEqual(t.stage, st + 1, "Cheri: 3 hours a stage");
+      }
+      assert(t.yield === 3 && F.visible(spot, farm.name).frame === 8, "watered every stage: Cheri's most");
+      for (let i = 0; i < 1200; i++) F.step();
+      assert(t.stage === 2 && t.regrow === 1, "unpicked for four stages: it sprouts again");
+      level = 100;
+      for (let i = 0; i < 100; i++) F.step();
+      assert.strictEqual(t.stage, 3, "farming level 100: three times as fast");
+      for (let i = 0; i < 300; i++) F.step();
+      await F.talk(spot);
+      assert(!pl.flags.berryFarm.trees[0] && pl.bag["cheri-berry"] >= 5, "picked: " + said.slice(-3).join(" / "));
+    })().catch((e) => { console.error(e); process.exit(1); });
+  }
+  for (const f of ["CeladonCity-patch-farmpath", "SaffronCity_MrPsychicsHouse-patch-denroom", "SaffronCity_MrPsychicsHouse_DenRoom"])
     assert(fs.existsSync(path.join(root, "assets/world/maps/" + f + ".png")), f);
 }
 

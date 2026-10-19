@@ -1200,12 +1200,40 @@
     }
     await BerryPickingScreen.message("Gained " + r.xp + " farming XP.");
     const after = BerryPicking.level(f.farmingXp);
-    const tier = BerryPicking.TIERS.find((t) => t.from > before && t.from <= after);
-    if (after > before) await BerryPickingScreen.message("Your farming level rose to " + after + "!" + (tier ? " " + tier.name + " berries can be picked now." : " More berries will come home now."));
+    if (after > before) await BerryPickingScreen.message(farmingLevelRose(before, after));
     BerryPickingScreen.clear();
     await persist();
     return true;
   }
+  function farmingLevelRose(before, after) {
+    const tier = BerryPicking.TIERS.find((t) => t.from > before && t.from <= after);
+    return "Your farming level rose to " + after + "!" + (tier ? " " + tier.name + " berries can be picked now." : " More berries will come home now.");
+  }
+  // Celadon's Berry Farm (ui/berry-farm.js): Emerald's berry trees, grown on
+  // the step clock, faster the higher your farming level; planting and
+  // picking earn farming XP.
+  const berryFarm = BerryFarm.create({
+    player: () => player, say: (pages) => say(pages), confirm: (q) => confirm(q), jingle: (song, pages) => sayWithJingle(song, pages),
+    farmingLevel: () => BerryPicking.level(farmingXp()),
+    addFarmingXp: async (n) => {
+      const before = BerryPicking.level(farmingXp());
+      player.flags.farmingXp = farmingXp() + n;
+      const after = BerryPicking.level(player.flags.farmingXp);
+      if (after > before) await say(farmingLevelRose(before, after));
+    },
+    chooseBerry: async () => {
+      Screen.say("");
+      clearMenu();
+      const r = await BagScreen.open({
+        pockets: () => bagPockets().filter((p) => p.name === "Berries"), fresh: true,
+        female: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl), frame: GameOptions.get().frame,
+        actions: () => [{ label: "Plant", value: "plant" }]
+      });
+      BagScreen.close();
+      return r ? r.id : null;
+    },
+    refresh: () => Overworld.refreshPeople(), here: () => player.location && player.location.map
+  });
 
   // ---------- Summary ----------
   //
@@ -2509,6 +2537,7 @@
     // the map's own script puts them this visit.)
     if ((person.hgssFlag && johto.flag(person.hgssFlag)) || person.offstage) return false;
     { const g = gear.visible(person); if (g !== undefined) return g; }   // (a Gym Leader at the Dojo: ui/pokegear.js)
+    { const b = berryFarm.visible(person, map || player.location.map); if (b !== undefined) return b; }   // (a berry tree: ui/berry-farm.js)
     {
       // (Lyra, or Ethan for a girl: HGSS's friend.)
       const look = person.girlLook && isGirl() ? person.girlLook : null;
@@ -2781,6 +2810,7 @@
 
     // (Mom's deliveryman, and the Gym Leaders' numbers and Dojo rematches: ui/pokegear.js.)
     if (ev.person && await gear.talkPerson(ev.person, ev.map)) return;
+    if (ev.person && await berryFarm.talk(ev.person)) return;   // (Celadon's Berry Farm: ui/berry-farm.js)
     // Johto's scripts (ui/johto-script.js), and its Apricorn trees.
     if (/^(enter|arrive):/.test(script)) { const due = johto.frameScript(script.replace(/^\w+:/, "")); if (due) { await runJohto(due, null); return; } }
     // (Ilex Forest's Headbutt tutor: ui/johto-field.js.)
@@ -10388,9 +10418,9 @@
     }
     // (The Dojo's back room, once its Karate Master's beaten and has opened it: data/raid-den-rooms.js.)
     if (map === "SaffronCity_Dojo") return f.TRAINER_BLACK_BELT_KOICHI && f.dojoDenDoor ? ["denroom"] : [];
-    // (Mr. Psychic's back room, once he's given you his TM; Celadon's Berry Farm, always: the same file.)
+    // (Mr. Psychic's back room, once he's given you his TM; the way to Celadon's Berry Farm, always: the same file.)
     if (map === "SaffronCity_MrPsychicsHouse") return f.gotTM29 ? ["denroom"] : [];
-    if (map === "CeladonCity") return ["berryfarm"];
+    if (map === "CeladonCity") return ["farmpath"];
     // (The League gate's ways west and east, to Johto's Routes 26 and 28: data/johto-maps.js.)
     if (map === "Route22_NorthEntrance") return ["johto", "johto-east"];
     // (Cianwood's Gym, its falls stopped once the winch is turned: ui/johto-gymmicks.js.)
@@ -11156,6 +11186,7 @@
     // Apricorn trees, and its maps' frame tables as you come in.
     if (/^hgss:/.test(script || "")) return johto.triggerDue(script);
     if (/^hgss_apricorn:/.test(script || "")) return true;
+    if (/^BerryFarm_(Caretaker|Tree_\d+)$/.test(script || "")) return true;   // (Celadon's Berry Farm: ui/berry-farm.js)
     if (/_PokemonCenter_1F_EventScript_Nurse$/.test(script || "") && johto.zoneOf(player.location.map)) return true;
     if (/^(enter|arrive):/.test(script || "") && johto.frameScript(script.replace(/^\w+:/, ""))) return true;
     // Coming back into Pewter City: the Museum ticket was for one visit (FireRed's OnTransition).
@@ -11313,6 +11344,7 @@
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
+          berryFarm.step();     // (Celadon's Berry Farm's trees growing)
           return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step();
         }, encounterScale: () => gear.encounterRate(), allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),

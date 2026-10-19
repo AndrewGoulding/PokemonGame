@@ -1516,13 +1516,33 @@ balls are). The Fighting Dojo's back room is behind a
 sliding door in its back wall, which the Karate Master opens once you've
 beaten him (he tells you of the den). Mr. Psychic's back room is behind a
 door in his house's back wall, open once he's given you his TM (he tells
-you of the den then, and again after). Celadon's Berry Farm is the lawn
-south of its Gym: two tilled plots (for planting Berries, in a later
-update; for now they're in the way), its sign and the Grass den between
-them. `tools/build-raid-dens.js` draws the dens, builds the two rooms from
-their buildings' own tiles and draws the doors and the farm, into
-`data/raid-den-rooms.js`. A raid left glowing in a den that has since moved
+you of the den then, and again after). The Grass den is on the lawn of
+Celadon's Berry Farm (below). `tools/build-raid-dens.js` draws the dens,
+builds the two rooms from their buildings' own tiles, draws the doors and
+opens the way to the farm, into `data/raid-den-rooms.js`. A raid left glowing in a den that has since moved
 or changed type is gone.
+
+**Celadon's Berry Farm** is through a gap in the trees south of Celadon's
+Gym: a field of its own, drawn in Emerald's tiles (`tools/build-berry-farm.js`,
+from a pret/pokeemerald checkout), laid out as X and Y's Berry Fields on Route
+7, with 36 places to plant inside a fence (Emerald's 2x2 plots, two trees
+each, as Route 123's garden has them). Its caretaker by the gate gives you
+the **Wailmer Pail**. Berry growing is Emerald's (`ui/berry-farm.js`, after
+`src/berry.c` and its berry tree scripts): talk to the soft, loamy soil to
+plant any Berry from your Berries pocket (the Bag opens on it), and it grows
+through Emerald's stages, drawn with Emerald's berry trees: planted, sprouted,
+growing taller, flowering, then with berries. Each stage lasts that berry's
+own time (Emerald's `stageDuration`: Cheri 3 hours a stage, Sitrus 6, Lum 12,
+Spelon 18, Liechi 24; berries since Emerald grow as one of its trees, the
+type-resisting ones 18 hours a stage and the rest 24, as in Diamond and
+Pearl) on the game's step clock (100 steps an hour, wherever you walk). Water
+it once in each of its first four stages for more berries (Emerald's yield,
+from the berry's fewest to its most). Berries left unpicked four stages'
+time fall and the tree grows again from a sprout, ten times at most. This
+game's own: the higher your farming level, the faster everything grows, 1 +
+level / 50 times as fast (twice at level 50, three times at 100), and the
+caretaker tells you how fast. Planting earns 1 farming XP and picking 2 for
+each berry.
 
 Alcremie comes in all 63 flavours: a Sweet used on Milcery asks which
 way it spins and for how long, and that with the time of day gives its cream
@@ -1663,6 +1683,7 @@ water and flower animations) by `tools/build-emerald-maps.js` from a
 
 ```sh
 node tools/build-emerald-maps.js <path to pret/pokeemerald>
+node tools/build-berry-farm.js <path to pret/pokeemerald>   # Celadon's Berry Farm, at the end of the same file
 ```
 
 The shore has the island's faded sign and the Seagallop's sailor to take you

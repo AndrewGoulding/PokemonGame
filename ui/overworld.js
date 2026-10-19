@@ -22,6 +22,8 @@
 //   { type: "headbutt", map, x, y }           A facing a tree you could Headbutt (ctx.headbuttTree)
 //   ctx.faced(map, x, y, surfing)'s event      A facing a tile the game has a use for (Johto's Safari Zone objects)
 // Plain signs and people just show their text here.
+// (A person's `frame`, if it has one, is the one picture of its sheet it shows: a
+// berry tree at its stage, ui/berry-farm.js.)
 //
 // ctx: { player (the save: location, name), special(script) -> bool,
 //        visible(person, mapName) -> bool, rivalName, onMap(mapName) (each time a map's people load: its music),
@@ -1736,13 +1738,13 @@
       const sunk = !p.move && !p.def.inanimate ? sunkAt(me.map, p.x, p.y) : 0;
       // (Something on the floor, as the Ruins of Alph's stone panels: under everyone, offsetY down.)
       return { y: p.def.underfoot ? -Infinity : y, over, draw: () => { if (shade) g.filter = SHADE; drawSprite(p.def.sprite, p.def.width, p.def.height,
-        frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), p.facing === "right", x - camX + spriteDx(p.def), y - camY + (p.def.offsetY || 0), sunk); g.filter = "none"; } };
+        p.def.frame != null ? p.def.frame : frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), p.facing === "right" && p.def.frame == null, x - camX + spriteDx(p.def), y - camY + (p.def.offsetY || 0), sunk); g.filter = "none"; } };
     });
     for (const n of neighbours) {
       const x = (n.ox + n.x) * TILE, y = (n.oy + n.y) * TILE;
       if (x - camX < -TILE * 2 || x - camX > VIEW_W + TILE || y - camY < -TILE * 2 || y - camY > VIEW_H + TILE * 2) continue;
       sprites.push({ y, over: !!OVER_TOP[World.blockAt(n.map, n.x, n.y).elevation], draw: () => drawSprite(n.def.sprite, n.def.width, n.def.height,
-        frameFor(n.facing, false, 0, n.def.frames), n.facing === "right", x - camX + spriteDx(n.def), y - camY) });
+        n.def.frame != null ? n.def.frame : frameFor(n.facing, false, 0, n.def.frames), n.facing === "right" && n.def.frame == null, x - camX + spriteDx(n.def), y - camY) });
     }
     const fol = followerSprite(camX, camY, shade);
     if (fol) sprites.push(fol);   // (before you: behind you, level with you)
