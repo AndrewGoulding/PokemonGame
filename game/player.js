@@ -120,6 +120,7 @@
       repelSteps: 0,
       lureSteps: 0,
       playTimeMs: 0,
+      clockSteps: CLOCK_START,
       createdAt: Date.now(),
       trainerId: Math.floor(Math.random() * 65536),   // the ID No. on your Pokémon's summaries
       savedAt: null
@@ -424,6 +425,7 @@
     player.repelSteps = Math.max(0, data.repelSteps | 0);
     player.lureSteps = Math.max(0, data.lureSteps | 0);
     player.playTimeMs = Math.max(0, +data.playTimeMs || 0);
+    player.clockSteps = data.clockSteps != null ? Math.max(0, data.clockSteps | 0) : CLOCK_START;
     player.createdAt = data.createdAt || Date.now();
     // (Saves from before trainer IDs get one from when the game was started.)
     player.trainerId = data.trainerId != null ? data.trainerId & 0xffff : player.createdAt % 65536;
@@ -449,7 +451,28 @@
     return n < LEVEL_CAPS.length ? LEVEL_CAPS[n] : 100;
   }
 
+  // The game's clock (this game's own: no real-time clock). Time goes by as
+  // you walk: an hour each 100 steps, a day each 2,400; the weekday from
+  // there, a new game starting on a Monday morning at 10:00. Morning is 4 to
+  // 10, day 10 to 20 and night 20 to 4, as HGSS has them. Everything that
+  // goes by the time (day and night evolutions, who's about on which day,
+  // what comes back each day) goes by this.
+  //   Player.gameTime(player?)   // -> { steps, day, weekday (0 Sunday), hour, minute, timeOfDay, today }
+  //   Player.advanceClock(player, steps)
+  const STEPS_PER_HOUR = 100, HOURS_PER_DAY = 24, STEPS_PER_DAY = STEPS_PER_HOUR * HOURS_PER_DAY;
+  const CLOCK_START = 10 * STEPS_PER_HOUR;
+  function gameTime(player) {
+    player = player || (window.Game && window.Game.player);
+    const steps = player && player.clockSteps != null ? player.clockSteps : CLOCK_START;
+    const day = Math.floor(steps / STEPS_PER_DAY), into = steps % STEPS_PER_DAY;
+    const hour = Math.floor(into / STEPS_PER_HOUR), minute = Math.floor((into % STEPS_PER_HOUR) * 60 / STEPS_PER_HOUR);
+    const timeOfDay = hour >= 4 && hour < 10 ? "morning" : hour >= 10 && hour < 20 ? "day" : "night";
+    return { steps, day, weekday: (day + 1) % 7, hour, minute, timeOfDay, today: "day" + day };
+  }
+  function advanceClock(player, n) { player.clockSteps = (player.clockSteps != null ? player.clockSteps : CLOCK_START) + (n == null ? 1 : n); }
+
   window.Player = {
+    STEPS_PER_HOUR, STEPS_PER_DAY, gameTime, advanceClock,
     REGION_BADGES, LEVEL_CAPS, levelCap,
     VERSION, LOOKS, PLAYER_LOOK, RIVAL_NAME, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG, STARTING_PC_ITEMS, NEW_GAME_LOCATION, HOME, CENTERS,
     create, markSeen, markCaught, hasCaught, nationalDex, KANTO_DEX_COUNT, dexNumber, dexCount, dexRating, hasAllMons, receive, deposit, withdraw, swapWithBox, healBoxes, release, boxCount, firstEmpty, boxed,

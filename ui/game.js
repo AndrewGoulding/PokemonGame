@@ -213,7 +213,7 @@
       { name: "VOLUME", key: "volume", values: [...Array(11).keys()].map(String), value: o.volume },
       { name: "FRAME", key: "frame", frame: true, values: [...Array(10).keys()].map((i) => "TYPE" + (i + 1)), value: o.frame },
       // (HGSS's walking Pokémon: in Johto, as in HGSS, everywhere, or not at all.)
-      { name: "FOLLOWER", key: "follower", values: ["JOHTO", "ON", "OFF"], value: o.follower | 0 }
+      { name: "FOLLOWER", key: "follower", values: ["ON", "OFF"], value: o.follower | 0 }
     ];
     if (fromTitle) rows.push({ name: "SAVE FILE", values: ["LOAD"], value: 0, action: "load" });
     rows.push({ name: "CANCEL" });
@@ -677,7 +677,7 @@
         if (way !== 0 && way !== 1) return;
         const long = await multichoice("For how long?", 0, 0, ["A little", "A lot", "Cancel"]);
         if (long !== 0 && long !== 1) return;
-        record.alcremie = Party.alcremieCream(way === 0, long === 1, new Date().getHours()) + "-" + item;
+        record.alcremie = Party.alcremieCream(way === 0, long === 1, Player.gameTime().hour) + "-" + item;
       }
       Player.removeItem(player, item);
       await evolve(record, evo, false);
@@ -6796,7 +6796,7 @@
     return { looks, sprites: CROWD_SPRITES.filter((s) => looks[s]) };
   }
   function cardRoomCrowd() {
-    const day = Math.floor(Date.now() / 86400000);
+    const day = Player.gameTime().day;
     if (!crowdCache || crowdCache.day !== day) {
       let seed = day * 2654435761 >>> 0;
       const rng = () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -8017,6 +8017,8 @@
     League.reset(f);
     // (Johto's League won: its rematch teams from now on.)
     if (f.johtoLeagueDone) { f.johtoLeagueClear = true; delete f.johtoLeagueDone; }
+    // (And the Bug-Catching Contest on offer again: once for each time you beat the Elite Four.)
+    { const s = johto.state(); s.contestRound = (s.contestRound || 0) + 1; johto.setFlag("FLAG_DAILY_DID_BUG_CONTEST", false); }
     delete f.lastCenter;   // (setrespawn HEAL_LOCATION_PALLET_TOWN)
     player.party.forEach(Party.heal);
     const entry = League.record(f, player.party.filter((r) => !r.egg).map((r) => Object.assign({}, r, { form: Party.form(r) })),
@@ -10958,9 +10960,9 @@
     fieldAction = async () => { Screen.say(""); if (before) await before(); await runJohto(js); };
     return true;
   }
-  // An Apricorn tree: an Apricorn of its colour, once a day.
+  // An Apricorn tree: an Apricorn of its colour, once a day (the game's clock's).
   async function apricornTree(tree, colour) {
-    const s = johto.state(), today = new Date().toDateString();
+    const s = johto.state(), today = Player.gameTime().today;
     const picked = s.apricorns || (s.apricorns = {});
     if (picked[tree] === today) { await say(["There's nothing on this Apricorn\ntree right now.", "It should bear fruit again tomorrow."]); return; }
     const item = colour + "-apricorn";
@@ -11263,6 +11265,7 @@
         weather: (map) => (Sevii.tanobyLocked(player.flags, map) ? "shade" : null),
         onAvatar: (mode) => music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music),
         onStep: () => {
+          Player.advanceClock(player);   // (the game's clock: Player.gameTime)
           leftPallet(player.location.map); DayCare.step(player.flags.dayCare); DayCare.step(player.flags.dayCare2); vsSeekerStep(); friendshipStep();
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
           farawayStep();

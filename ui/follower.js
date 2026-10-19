@@ -9,8 +9,8 @@
 //   F.look(map)    // { sprite, width, height, frames, offsetX } for Overworld's ctx.follower, or null
 //   await F.talk() // A facing it: its cry and a line for its mood (and sometimes an item it found)
 //
-// Where: the Option screen's FOLLOWER (GameOptions' follower: 0 JOHTO, in
-// Johto only, as HGSS has it; 1 ON, everywhere; 2 OFF). Johto's maps have
+// Where: everywhere, Kanto too (this game's), unless the Option screen's
+// FOLLOWER is OFF (GameOptions' follower: 0 ON, 1 OFF). Johto's maps have
 // HGSS's follow modes (src/data/map_headers.h: none, not the tall ones, or
 // all; the tall ones, Lugia, Steelix and the like, don't follow you indoors);
 // Kanto's, the tall ones stay out of rooms. (Diglett and Dugtrio never go
@@ -52,7 +52,7 @@
       const m = window.WORLD_MAPS[map];
       if (!m) return false;
       const opt = window.GameOptions ? window.GameOptions.get().follower | 0 : 0;
-      if (opt === 2 || (opt === 0 && m.region !== "johto")) return false;
+      if (opt === 1) return false;
       if ((r.species === "Diglett" || r.species === "Dugtrio") && BELL_TOWER.test(map)) return false;
       const mode = map in DATA().modes ? DATA().modes[map] : m.type === "indoor" ? 1 : 2;
       return mode === 2 || (mode === 1 && !has("tall", name));
@@ -76,7 +76,7 @@
       const fill = (pages) => pages.map((s) => s.replace(/\{MON\}/g, name).replace(/\{PLAYER\}/g, p.name));
       env.cry(r.species);
       // Sometimes it's found something (once a day): take it?
-      const today = new Date().toDateString(), f = p.flags;
+      const today = window.Player.gameTime(p).today, f = p.flags;   // (the game's clock's day)
       if (f.followerFind !== today && (r.happiness | 0) >= 70 && Math.random() < FIND_CHANCE && L.item) {
         f.followerFind = today;
         const badges = (window.Player && window.Player.REGION_BADGES ? window.Player.REGION_BADGES.johto : []).filter((b) => p.badges.includes(b)).length;
@@ -93,7 +93,7 @@
       if (r.status === "brn") kinds.push("burned");
       if (r.hp * 4 < maxhp) kinds.push("weak");
       if (!kinds.length && Math.random() < 0.4) {
-        const m = window.WORLD_MAPS[here.map] || {}, hour = new Date().getHours();
+        const m = window.WORLD_MAPS[here.map] || {}, hour = window.Player.gameTime(p).hour;
         if (here.grass) kinds.push("grass");
         if (here.water) kinds.push("water");
         if (m.type === "underground") kinds.push("cave");

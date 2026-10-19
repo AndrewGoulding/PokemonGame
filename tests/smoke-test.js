@@ -5621,9 +5621,8 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   assert.strictEqual(F.look("Route29").sprite, "follow/249", "the first that can still fight");
   assert.strictEqual(F.look("Route29").width, 64);
   assert.strictEqual(F.look("NewBarkTown_House"), null, "too tall to come in");
-  assert.strictEqual(F.look("PalletTown"), null, "Johto only, by default");
-  opt = 1; assert(F.look("PalletTown") && !F.look("PalletTown_PlayersHouse_1F"), "everywhere with FOLLOWER ON, but not tall ones indoors");
-  opt = 2; assert.strictEqual(F.look("Route29"), null, "FOLLOWER OFF");
+  assert(F.look("PalletTown") && !F.look("PalletTown_PlayersHouse_1F"), "in Kanto too, but not tall ones indoors");
+  opt = 1; assert.strictEqual(F.look("Route29"), null, "FOLLOWER OFF");
   opt = 0;
   p.party[0].hp = 10; p.party[0].gender = "F";
   assert.strictEqual(F.look("NewBarkTown_House").sprite, "follow/25-f", "a female Pikachu's own look, indoors too");
@@ -5664,4 +5663,26 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   assert(Catching.ballBonus("heavy-ball", { target: tgt }) > 1 && Catching.ballBonus("heavy-ball", { target: { species: "Pidgey" } }) < 1, "by weight");
   assert.strictEqual(Catching.ballBonus("fast-ball", { target: { species: "Jolteon" } }), 4);
   assert.strictEqual(Catching.ballBonus("poke-ball", { target: tgt, fishing: true, user: { level: 99 } }), 1);
+}
+
+// The game's clock (Player.gameTime: no real-time clock): an hour each 100 steps, a day each 2,400,
+// a new game on a Monday at 10:00; day and night evolutions go by it; and Johto's encounters
+// that HGSS has by the time of day are any of their morning's, day's and night's.
+{
+  const p = Player.create("RED", 0), t = Player.gameTime(p);
+  assert.deepStrictEqual([t.day, t.weekday, t.hour, t.timeOfDay], [0, 1, 10, "day"]);
+  Player.advanceClock(p, 1400);
+  assert.deepStrictEqual([Player.gameTime(p).day, Player.gameTime(p).hour, Player.gameTime(p).timeOfDay], [1, 0, "night"]);
+  assert(Player.load(JSON.parse(Player.serialize(p))).player.clockSteps === 2400, "the clock's in the save");
+  const slot = { species: "Pidgey", morning: "Ledyba", night: "Hoothoot", min: 2, max: 2 }, seen = new Set();
+  for (let i = 0; i < 60; i++) seen.add(World.pickWild({ wild: { rate: 20, slots: Array(12).fill(slot) } }, Math.random).species);
+  assert.deepStrictEqual([...seen].sort(), ["Hoothoot", "Ledyba", "Pidgey"], "any of the slot's Pokémon, whatever the time");
+  for (const f of ["game/world.js", "game/evolution.js", "ui/johto-script.js", "ui/follower.js"]) assert(!/new Date\(\)\.get(Hours|Day)|toDateString/.test(fs.readFileSync(path.join(root, f), "utf8")), f + " has no real-time clock");
+  // A form's name is its species' (Marowak-Alola is a Marowak), but for names with a hyphen of their own.
+  assert.deepStrictEqual(["Marowak-Alola", "Necrozma-Dusk-Mane", "Mr. Mime-Galar", "Venusaur-Mega", "Porygon-Z", "Ho-Oh", "Nidoran-F"].map(Party.speciesName),
+    ["Marowak", "Necrozma", "Mr. Mime", "Venusaur", "Porygon-Z", "Ho-Oh", "Nidoran♀"]);
+  assert.strictEqual(Party.displayName(Party.create("Marowak-Alola", 30)), "Marowak");
+  // The Bug-Catching Contest: once each time you beat the Elite Four, not by the weekday.
+  const scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8"), gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  assert(/const contestWeekday = /.test(scriptJs) && /s\.contestRound = \(s\.contestRound \|\| 0\) \+ 1; johto\.setFlag\("FLAG_DAILY_DID_BUG_CONTEST", false\)/.test(gameJs));
 }

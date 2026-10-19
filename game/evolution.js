@@ -15,9 +15,11 @@
   const FRIENDSHIP_TO_EVOLVE = 220;
   const LEVEL_METHODS = ["level", "friendship", "level-hold", "move", "shed"];
 
-  // Day and night as in X and Y: night is 8pm to 4am.
-  function timeOfDay(date) {
-    const h = (date || new Date()).getHours();
+  // Day and night as in X and Y: night is 8pm to 4am, by the game's clock
+  // (Player.gameTime: no real-time clock).
+  const clockHour = () => window.Player.gameTime().hour;
+  function timeOfDay(hour) {
+    const h = hour != null ? hour : clockHour();
     return h >= 20 || h < 4 ? "night" : "day";
   }
 
@@ -25,7 +27,7 @@
     const party = ctx.party || [];
     if (e.gender && record.gender !== e.gender) return false;
     // ("dusk": 5pm to 6pm, Ultra Sun and Moon's evening, Dusk Lycanroc's.)
-    if (e.time === "dusk") { if (ctx.time ? ctx.time !== "dusk" : new Date().getHours() !== 17) return false; }
+    if (e.time === "dusk") { if (ctx.time ? ctx.time !== "dusk" : clockHour() !== 17) return false; }
     else if (e.time && (ctx.time || timeOfDay()) !== e.time) return false;
     if (e.stats) {
       const s = window.Party.stats(record);

@@ -43,7 +43,22 @@
   const FORME_SUFFIX = /-(Plant|Sandy|Trash|Shield|Blade|Standard|Zen|Normal|Attack|Defense|Speed|Altered|Origin|Land|Sky|Incarnate|Therian|Ordinary|Resolute|Aria|Pirouette|Confined|Unbound|Average|Small|Large|Super)$/;
   // (And the Nidoran, as the games write them: Nidoran♀ and Nidoran♂.)
   const GENDERED_NAMES = { "Nidoran-F": "Nidoran♀", "Nidoran-M": "Nidoran♂" };
-  const speciesName = (species) => GENDERED_NAMES[species] || species.replace(FORME_SUFFIX, "");
+  // A form's name as the games write it, its species' (Alolan Marowak,
+  // "Marowak-Alola", is a Marowak; so are Megas, Rotom's appliances and the
+  // like): a form (DEX id 10000 on) goes by the longest start of its name
+  // that's a species of its own ("Necrozma-Dusk-Mane": Necrozma).
+  function speciesName(species) {
+    if (GENDERED_NAMES[species]) return GENDERED_NAMES[species];
+    const dex = window.DEX[species];
+    if (dex && dex.id >= 10000) {
+      const parts = species.split("-");
+      for (let n = parts.length - 1; n > 0; n--) {
+        const base = parts.slice(0, n).join("-"), d = window.DEX[base];
+        if (d && d.id < 10000) return GENDERED_NAMES[base] || base;
+      }
+    }
+    return species.replace(FORME_SUFFIX, "");
+  }
 
   // opts: { rng, moves, ball, nickname, ivs (a number for every stat: a trainer's Pokémon) }
   const SHINY_ODDS = 1000;   // 1 in 1,000 (Gen 6 is 1 in 4,096)

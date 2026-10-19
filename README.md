@@ -1959,7 +1959,7 @@ messages, which the same builder writes into
 with the same moves.)
 
 **The walking Pokémon** (HGSS's follower: `ui/follower.js`, and the
-follower section of `ui/overworld.js`): in Johto your party's first Pokémon
+follower section of `ui/overworld.js`): your party's first Pokémon
 (the first that can still fight) walks a step behind you, on the tile you've
 just left, as fast as you go, hopping after you over ledges, round the
 corner onto the next map; through a door it comes out behind you. It's
@@ -1981,8 +1981,8 @@ something and holds it out to you: a Potion, a Berry, a Great Ball, more as
 you've more of Johto's Badges. In HGSS's scenes it keeps up with you
 (`ToggleFollowingPokemonMovement`, `FollowingPokemonMovement`,
 `WaitFollowingPokemonMovement`: Cherrygrove's Guide Gent shows the two of
-you round). The Option screen's **FOLLOWER** is JOHTO (as HGSS: in Johto
-only), ON (everywhere, Kanto too: the tall ones stay out of its rooms) or OFF.
+you round). It follows you in Kanto too (this game's: the tall ones stay out
+of its rooms), unless the Option screen's **FOLLOWER** is OFF.
 
 **Headbutt trees**: HGSS's Headbutt trees on Johto's routes and towns, and
 their Pokémon (`files/arc/headbutt.json`: `tools/build-johto-headbutt.js`,
@@ -2007,17 +2007,18 @@ less to the catch rate under 204.8 kg, 20, 30 or 40 more over); the Fast
 Ball four times on a Pokémon of 100 Speed or more; and the Friend Ball's
 Pokémon start out friendly.
 
-**The Bug-Catching Contest** is HGSS's, in the National Park, on Tuesdays,
-Thursdays and Saturdays (`ui/bug-contest.js`, from `src/overlay_bug_contest.c`;
+**The Bug-Catching Contest** is HGSS's, in the National Park, once each
+time you've beaten the Elite Four (this game's rule, in place of HGSS's
+Tuesdays, Thursdays and Saturdays: `ui/bug-contest.js`, from `src/overlay_bug_contest.c`;
 its scripts are HGSS's own std scripts, `scr_seq_0151`, which the officer in
-either of the park's gatehouses calls). He signs you up (once a day): you go
+either of the park's gatehouses calls). He signs you up: you go
 in with your lead Pokémon only (the rest are held for you), 20 Sport Balls
 and 20 minutes, the time left counting down in a box in the park's corner
 (and on the Start menu, beside RETIRE; no BAG or SAVE meanwhile). The
 contest's park has its own wild Pokémon (HGSS's `files/data/mushi`: Caterpie,
 Weedle, Metapod, Kakuna, Butterfree, Beedrill, Venonat, Paras, Scyther and
-Pinsir without the National Pokédex; with it, Kanto's bugs at Lv. 24-36 on
-Tuesdays and Hoenn's and Sinnoh's on Thursdays and Saturdays), fought as
+Pinsir without the National Pokédex; with it, Kanto's bugs at Lv. 24-36 the first time,
+then Hoenn's, then Sinnoh's, in turn: HGSS's Tuesday, Thursday and Saturday sets), fought as
 any wild Pokémon is, with only your Sport Balls in the Bag. Catch one while
 you're holding another and you're asked whether to switch. Five of the ten
 other contestants (Don, Ed, Abby, William, Benny, Barry, Cindy, Josh,

@@ -56,8 +56,20 @@
   // Gen 4's type numbers (GetMonTypes), by this game's type names.
   const TYPES = ["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel", "???", "Fire", "Water",
     "Grass", "Electric", "Psychic", "Ice", "Dragon", "Dark"];
+  // The game's clock (Player.gameTime: it goes by steps, no real-time clock).
+  const gameTime = () => (window.Player && window.Player.gameTime ? window.Player.gameTime() : { day: 0, weekday: 1, hour: 10, today: "day0" });
+  // The Bug-Catching Contest (this game's rule): on offer once each time
+  // you've beaten the Elite Four, not by the weekday. Where its scripts ask
+  // the weekday (the park's gatehouses, the park, its std scripts: those that
+  // test for Thursday), it's a contest day while it's on offer, in turn
+  // Tuesday's, Thursday's and Saturday's (their Pokémon), and a Monday once
+  // you've had your go (FLAG_DAILY_DID_BUG_CONTEST, kept until the next
+  // Elite Four: state().contestRound counts them, ui/game.js).
+  const CONTEST_ZONES = /^(R35R0201|R36R0201|D22R0101|BUG_CONTEST)$/, CONTEST_FLAG = "FLAG_DAILY_DID_BUG_CONTEST";
+  const contestWeekday = (zone, cmds, i, s) => (CONTEST_ZONES.test(zone) && cmds.slice(i, i + 16).some((c) => c[0] === "Compare" && c[2] === 4)
+    ? (s.f[CONTEST_FLAG] ? 1 : [2, 4, 6][(s.contestRound || 0) % 3]) : null);
   // (HGSS's time of day, ScrCmd_379: morning from 4, day from 10, evening from 17, night from 20, late night from 0.)
-  const timeOfDay = () => { const h = new Date().getHours(); return h < 4 ? 4 : h < 10 ? 0 : h < 17 ? 1 : h < 20 ? 2 : 3; };
+  const timeOfDay = () => { const h = gameTime().hour; return h < 4 ? 4 : h < 10 ? 0 : h < 17 ? 1 : h < 20 ? 2 : 3; };
   // A move by HGSS's name (MOVE_DOUBLE_EDGE): this game's (Double-Edge).
   const toID = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
   let moveIDs = null;
@@ -81,16 +93,16 @@
         }
       }
       // (HGSS's daily flags, FLAG_DAILY_*, clear each new day: ClearDailyFlags.)
-      const today = new Date().toDateString();
+      const today = gameTime().today;
       if (s.day !== today) {
         s.day = today;
-        for (const k of Object.keys(s.f)) if (/^FLAG_DAILY_/.test(k)) delete s.f[k];
+        for (const k of Object.keys(s.f)) if (/^FLAG_DAILY_/.test(k) && k !== CONTEST_FLAG) delete s.f[k];
       }
       return s;
     };
     const isTemp = (name) => /^(FLAG_MAPTEMP_|VAR_TEMP_|VAR_SPECIAL_)/.test(name);
     // (HGSS's daily flags, FLAG_DAILY_*, are set until the day's out: kept as the day's date.)
-    const isDaily = (name) => /^FLAG_DAILY_/.test(name), today = () => new Date().toDateString();
+    const isDaily = (name) => /^FLAG_DAILY_/.test(name) && name !== CONTEST_FLAG, today = () => gameTime().today;
     const flag = (name) => (isTemp(name) ? !!temp.f[name] : isDaily(name) ? state().f[name] === today() : !!state().f[name]);
     function setFlag(name, on) {
       const o = isTemp(name) ? temp.f : state().f;
@@ -380,7 +392,7 @@
           case "GiveTogepiEgg": await env.giveEgg("Togepi"); break;
           case "TakeItemNoCheck": itemVars(a[0], a[1]); setVar("VAR_SPECIAL_RESULT", env.takeItem(getVar(a[0]), +getVar(a[1]) || 1) ? 1 : 0); break;
           case "GetPlayerGender": setVar(a[0], env.isGirl() ? 1 : 0); break;
-          case "GetWeekday": setVar(a[0], new Date().getDay()); break;
+          case "GetWeekday": { const d = contestWeekday(zone, C, pc, state()); setVar(a[0], d != null ? d : gameTime().weekday); break; }
           case "PlayerOnBikeCheck": setVar(a[0], env.onBike() ? 1 : 0); break;
           case "PhotoAlbumIsFull": case "CheckDaycareEgg": setVar(a[0], 0); break;
           case "FollowerPokeIsEventTrigger": setVar(a[2], 0); break;
@@ -500,7 +512,7 @@
             break;
           case "MoveRelearnerGetResult": setVar(a[0], picked); break;
           // (The hour, for who's about: ScrCmd_522.)
-          case "ScrCmd_522": setVar(a[0], new Date().getHours()); break;
+          case "ScrCmd_522": setVar(a[0], gameTime().hour); break;
           case "ScrCmd_379": setVar(a[0], timeOfDay()); break;
           case "CountPCEmptySpace": setVar(a[0], env.pcSpace()); break;
           // (The pocket an item went in, by its name: BufferPocketName's.)
@@ -653,7 +665,7 @@
         else if (op === "SetVar") setVar(a[0], a[1]);
         else if (op === "CopyVar" || op === "SetOrCopyVar") setVar(a[0], getVar(a[1]));
         else if (op === "AddVar") setVar(a[0], (+getVar(a[0]) || 0) + (+getVar(a[1]) || 0));
-        else if (op === "GetWeekday") setVar(a[0], new Date().getDay());
+        else if (op === "GetWeekday") { const d = contestWeekday(zone, z.cmds, pc, state()); setVar(a[0], d != null ? d : gameTime().weekday); }
         else if (op === "IsBugContestantRegistered") setVar(a[1], env.bugContest && env.bugContest.registered(+getVar(a[0])) ? 1 : 0);
         else if (op === "CheckBadge") setVar(a[1], env.hasBadge(+getVar(a[0])) ? 1 : 0);
         else if (op === "GetGameVersion") setVar(a[0], DATA().version || 7);

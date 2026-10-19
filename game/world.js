@@ -292,10 +292,10 @@
     const s = t.slots[slot];
     if (!s || !s.species) return null;
     // A slot where LeafGreen differs from FireRed: either version's Pokémon.
-    // (Johto's slots by the time of day, as HGSS's: morning 4-10, night 20-4.)
-    const hour = new Date().getHours();
-    const species = s.night && (hour >= 20 || hour < 4) ? s.night : s.morning && hour >= 4 && hour < 10 ? s.morning
-      : s.alt && rng() < 0.5 ? s.alt : s.species;
+    // (Johto's slots that HGSS fills by the time of day: any of its morning's,
+    // day's and night's Pokémon, this game having no clock for encounters.)
+    const kinds = [s.species, s.morning, s.night].filter((k, i, all) => k && all.indexOf(k) === i);
+    const species = kinds.length > 1 ? kinds[Math.floor(rng() * kinds.length)] : s.alt && rng() < 0.5 ? s.alt : s.species;
     // (`slot`: which one, for Tanoby's Unown, whose letter goes by it.)
     return { species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)), slot };
   }

@@ -4,7 +4,7 @@
 //
 //   GameOptions.get()               // { textSpeed: 0-2, battleScene: 0 (on) / 1 (off), battleStyle: 0 (shift) / 1 (set),
 //                                   //   sound: 0 mono / 1 stereo / 2 off, volume: 0-10, frame: 0-9,
-//                                   //   follower: 0 (in Johto) / 1 (everywhere) / 2 (off) }
+//                                   //   follower: 0 (on, everywhere) / 1 (off) }
 //   GameOptions.set({ frame: 3 })   // changes, remembers and applies them
 //
 // Applying them: the text speed is how long battle messages stay up, the
@@ -21,6 +21,8 @@
 
   let opts = Object.assign({}, DEFAULTS);
   try { Object.assign(opts, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) { /* storage blocked */ }
+  // (From when FOLLOWER was JOHTO / ON / OFF: ON either way, or OFF.)
+  if (opts.followerModes !== 2) { opts.follower = opts.follower === 2 ? 1 : 0; opts.followerModes = 2; }
   // From before the Option screen: the Sound setting was on / off.
   try { if (localStorage.getItem(KEY) == null && localStorage.getItem("pokemon-sound") === "off") opts.sound = 2; } catch (e) { /* storage blocked */ }
 
