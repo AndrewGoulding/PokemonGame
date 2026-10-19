@@ -800,7 +800,7 @@
       if (v === "back") return;
       move = v;
     }
-    if (!Bag.canUseOn(record, item, { move })) { await message("It won't have any effect."); return; }
+    if (!Bag.canUseOn(record, item, { move })) { await message(eff && eff.evDown ? "It would have no effect." : "It won't have any effect."); return; }
     Player.removeItem(player, item);
     const r = Bag.useOn(record, item, { move, here: player.location && player.location.map });
     if (r.revived) await message(name + " was revived!");
@@ -810,7 +810,7 @@
     if (r.ppUp) await message(record.moves[move].name + "'s PP increased.");
     if (r.ev) await message(name + "'s base stats rose.");
     // (An EV-lowering Berry, as Gen 4 says it.)
-    if (r.evStat) await message(name + " turned friendly.\n" + (r.evDown ? "Its base " + STAT_NAMES[r.evStat] + " fell!" : "Its base " + STAT_NAMES[r.evStat] + " can't fall!"));
+    if (r.evStat) await message(name + " turned friendly.\nIts base " + STAT_NAMES[r.evStat] + " fell!");
   }
 
   async function giveItem(record, item) {
@@ -997,6 +997,10 @@
     Object.assign(T.names, JOHTO_MAP.names);
     T.fly = Object.assign({}, T.fly, JOHTO_MAP.fly);
   }
+  // (And Kanto's Victory Road, once you've been inside: outside its entrance
+  // on Route 23. This game's own; FireRed has no Fly to caves.)
+  if (window.TOWN_MAP && window.TOWN_MAP.fly && !window.TOWN_MAP.fly.KANTO_VICTORY_ROAD)
+    window.TOWN_MAP.fly.KANTO_VICTORY_ROAD = { map: "Route23", x: 5, y: 29 };
   // (Have you been to Johto: any of its sections visited.)
   const beenToJohto = () => !!JOHTO_MAP && (player.flags.visitedSections || []).some((sec) => sec in JOHTO_MAP.names);
 
@@ -1049,6 +1053,8 @@
     const hiddenSection = (sec) => sec === "CERULEAN_CAVE" && !f.canLinkWithRS;
     // Fly's places: visited, with somewhere to land.
     const flyTo = (sec) => (flying && sec && visited.includes(sec) && (T.fly || {})[sec]) || null;
+    // (A square's place to fly to: its town's, or else its cave's, Victory Road.)
+    const flySec = (R, x, y) => (flyTo(R.map[y][x]) || !R.dungeon || !flyTo(R.dungeon[y][x]) ? R.map[y][x] : R.dungeon[y][x]);
     show("scene");
     const render = () => {
       const R = regions[region];
@@ -1067,7 +1073,7 @@
       if (flying) {
         const marked = new Set();
         for (let y = 0; y < R.height; y++) for (let x = 0; x < R.width; x++) {
-          const sec = R.map[y][x];
+          const sec = flySec(R, x, y);
           if (!flyTo(sec) || marked.has(sec)) continue;
           marked.add(sec);
           icons += '<div class="tm-fly" style="' + sprite(R, x, y) + '"></div>';
@@ -1106,7 +1112,7 @@
     const onKey = (e) => {
       if (flying && ["z", "Z", " ", "Enter"].includes(e.key)) {
         e.preventDefault(); e.stopPropagation();
-        const spot = flyTo(regions[region].map[cy][cx]);
+        const spot = flyTo(flySec(regions[region], cx, cy));
         if (spot) { sfx("se_select"); picked(spot); }
         return;
       }

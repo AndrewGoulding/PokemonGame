@@ -104,7 +104,7 @@
     if (target.fainted) return false;
     if (eff.levelUp || eff.expCandy) return target.level < 100;
     if (eff.ev) return (target.evs[eff.ev] || 0) < (eff.wing ? WING_CAP : VITAMIN_CAP) && evTotal(target.evs) < EV_TOTAL;
-    if (eff.evDown) return (target.evs[eff.evDown] || 0) > 0 || (target.happiness != null && target.happiness < 255);
+    if (eff.evDown) return (target.evs[eff.evDown] || 0) > 0;   // (only with EVs in its stat to lower)
     if (eff.ppUp) {
       const moves = opts.move != null ? [target.moves[opts.move]] : target.moves;
       return moves.some((m) => m && m.base > 1 && (m.ppUps || 0) < MAX_PP_UPS);

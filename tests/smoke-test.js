@@ -750,6 +750,9 @@ for (const share of [false, true]) {
   assert.strictEqual(r.evs.atk, 0, "not below 0");
   const maxed = Object.assign(Party.create("Pikachu", 20), { evs: {}, happiness: 255 });
   assert(!Bag.canUseOn(maxed, "grepa-berry"), "nothing to lower and as friendly as can be");
+  assert(!Bag.canUseOn(Object.assign(Party.create("Pikachu", 20), { evs: {}, happiness: 70 }), "grepa-berry"), "no EVs to lower: no effect, however friendly");
+  // Berries sell by tier, ₽50 to ₽500.
+  assert.deepStrictEqual(["oran", "sitrus", "razz", "pomeg", "spelon", "occa", "liechi", "kee", "enigma"].map((b) => Bag.sellPrice(b + "-berry")), [50, 100, 150, 200, 250, 300, 350, 425, 500]);
   for (const [b, st] of [["pomeg", "HP"], ["kelpsy", "Attack"], ["qualot", "Defense"], ["hondew", "Sp. Atk"], ["grepa", "Sp. Def"], ["tamato", "Speed"]]) {
     assert(/friendly/.test(Bag.description(b + "-berry")) && Bag.description(b + "-berry").includes("base " + st), b);
   }
@@ -1867,7 +1870,7 @@ if (window.JOHTO_TOWN_MAP) {
   const before = Party.stats(m), hp = m.hp = Party.maxHp(m);
   assert(Bag.canUseOn(m, "bottle-cap", { stat: "atk" }));
   Bag.useOn(m, "bottle-cap", { stat: "atk" });
-  assert.strictEqual(m.ivs.atk, 3, "the IV itself stays (for breeding)");
+  assert.strictEqual(m.ivs.atk, 31, "the IV itself is 31 now");
   assert(Party.stats(m).atk > before.atk && Party.toBattleSet(m).ivs.atk === 31, "Attack acts as 31");
   assert(!Bag.canUseOn(m, "bottle-cap", { stat: "atk" }), "trained once");
   Bag.useOn(m, "gold-bottle-cap");
@@ -1876,6 +1879,12 @@ if (window.JOHTO_TOWN_MAP) {
   assert(!Bag.canUseOn(m, "gold-bottle-cap"));
   const saved = Player.load(JSON.parse(Player.serialize(Object.assign(Player.create("T", 0), { party: [m] })))).player.party[0];
   assert.deepStrictEqual(saved.hyper.slice().sort(), Party.STAT_KEYS.slice().sort(), "saves keep Hyper Training");
+  // (Fly to Victory Road, once you've been inside: outside its entrance, open ground by the cave's door.)
+  {
+    const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), r23 = WORLD_MAPS.Route23;
+    assert(/TOWN_MAP\.fly\.KANTO_VICTORY_ROAD = \{ map: "Route23", x: 5, y: 29 \}/.test(gameJs) && /const flySec = /.test(gameJs));
+    assert(!r23.collision[29 * r23.width + 5] && r23.warps.some((w) => w.map === "VictoryRoad_1F" && w.x === 5 && w.y === 28));
+  }
 }
 
 // Johto (data/johto-maps.js, from HeartGold and SoulSilver): New Bark Town to
@@ -4375,8 +4384,8 @@ console.log("ok: doubles regressions, " + DOUBLES + " random doubles battles fin
 // This game's own types.
 {
   const types = (sp) => DEX[sp].types.join("/");
-  assert.deepStrictEqual(["Aerodactyl", "Gyarados", "Gyarados-Mega", "Psyduck", "Golduck", "Blastoise", "Blastoise-Mega"].map(types),
-    ["Dragon/Rock", "Dragon/Water", "Dragon/Water", "Water/Psychic", "Water/Psychic", "Water/Steel", "Water/Steel"]);
+  assert.deepStrictEqual(["Aerodactyl", "Gyarados", "Gyarados-Mega", "Psyduck", "Golduck", "Blastoise", "Blastoise-Mega", "Chansey"].map(types),
+    ["Dragon/Rock", "Dragon/Water", "Dragon/Water", "Water/Psychic", "Water/Psychic", "Water/Steel", "Water/Steel", "Fairy/Normal"]);
 }
 
 // X items: one stage up, only for the Pokémon in battle; in the Items pocket.

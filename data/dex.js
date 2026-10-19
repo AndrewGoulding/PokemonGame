@@ -4,7 +4,7 @@
 // capture_rate, base_egg_steps and abilities merged from pokemon.csv
 // height, weight, evYield, baseFriendship merged from pokemonDB_dataset.csv
 // This game's own types: Aerodactyl Dragon/Rock, Gyarados (and Mega) Dragon/Water,
-// Psyduck and Golduck Water/Psychic, Blastoise (and Mega) Water/Steel; and its own
+// Psyduck and Golduck Water/Psychic, Blastoise (and Mega) Water/Steel, Chansey Fairy/Normal; and its own
 // catch rates: Bulbasaur, Charmander and Squirtle 120 (45 in the games).
 // id added by tools/add-ids.js (PokeAPI-compatible numeric IDs)
 window.DEX = {
@@ -129,7 +129,7 @@ window.DEX = {
   Weezing:{id:110,types:["Poison"],abilities:["Levitate"],captureRate:60,baseEggSteps:5120,hp:65,atk:90,def:120,spa:85,spd:70,spe:60,baseExp:172,height:1.2,weight:9.5,evYield:{def:2},baseFriendship:50,gender:"50% Male / 50% Female",expGroup:"Medium Fast",gen:1},
   Rhyhorn:{id:111,types:["Ground","Rock"],abilities:["Lightning Rod","Rock Head"],hiddenAbility:"Reckless",captureRate:120,baseEggSteps:5120,hp:80,atk:85,def:95,spa:30,spd:30,spe:25,baseExp:69,height:1,weight:115,evYield:{def:1},baseFriendship:50,gender:"50% Male / 50% Female",expGroup:"Slow",gen:1},
   Rhydon:{id:112,types:["Ground","Rock"],abilities:["Lightning Rod","Rock Head"],hiddenAbility:"Reckless",captureRate:60,baseEggSteps:5120,hp:105,atk:130,def:120,spa:45,spd:45,spe:40,baseExp:170,height:1.9,weight:120,evYield:{atk:2},baseFriendship:50,gender:"50% Male / 50% Female",expGroup:"Slow",gen:1},
-  Chansey:{id:113,types:["Normal"],abilities:["Natural Cure","Serene Grace"],hiddenAbility:"Healer",captureRate:30,baseEggSteps:10240,hp:250,atk:5,def:5,spa:35,spd:105,spe:50,baseExp:395,height:1.1,weight:34.6,evYield:{hp:2},baseFriendship:140,gender:"100% Female",expGroup:"Fast",gen:1},
+  Chansey:{id:113,types:["Fairy","Normal"],abilities:["Natural Cure","Serene Grace"],hiddenAbility:"Healer",captureRate:30,baseEggSteps:10240,hp:250,atk:5,def:5,spa:35,spd:105,spe:50,baseExp:395,height:1.1,weight:34.6,evYield:{hp:2},baseFriendship:140,gender:"100% Female",expGroup:"Fast",gen:1},
   Tangela:{id:114,types:["Grass"],abilities:["Chlorophyll","Leaf Guard"],hiddenAbility:"Regenerator",captureRate:45,baseEggSteps:5120,hp:65,atk:55,def:115,spa:100,spd:40,spe:60,baseExp:87,height:1,weight:35,evYield:{def:1},baseFriendship:50,gender:"50% Male / 50% Female",expGroup:"Medium Fast",gen:1},
   Kangaskhan:{id:115,types:["Normal"],abilities:["Early Bird","Scrappy"],hiddenAbility:"Inner Focus",captureRate:45,baseEggSteps:5120,hp:105,atk:95,def:80,spa:40,spd:80,spe:90,baseExp:172,height:2.2,weight:80,evYield:{hp:2},baseFriendship:50,gender:"100% Female",expGroup:"Medium Fast",gen:1},
   "Kangaskhan-Mega":{id:10039,types:["Normal"],abilities:["Parental Bond"],captureRate:45,baseEggSteps:5120,hp:105,atk:125,def:100,spa:60,spd:100,spe:100,baseExp:207,height:2.2,weight:100,evYield:{hp:2},baseFriendship:50,gender:"100% Female",expGroup:"Medium Fast",gen:1},

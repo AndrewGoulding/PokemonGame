@@ -130,7 +130,14 @@
     (window.ITEMS[item] && window.ITEMS[item].effect) || "";
   const sprite = (item) => (window.ITEM_SPRITES && window.ITEM_SPRITES[item]) || "";
   const price = (item) => PRICES[item] || (isMachine(item) ? machinePrice(item) : mintNature(item) ? MINT_PRICE : 0);
-  const sellPrice = (item) => Math.floor(price(item) / 2);
+  // Berries sell by their tier (game/berry-picking.js's nine, Basic to
+  // Legendary): from ₽50 up to ₽500 (this game's own; Poké Marts don't sell them).
+  const BERRY_SELL = [50, 100, 150, 200, 250, 300, 350, 425, 500];
+  function berrySellPrice(item) {
+    const tiers = window.BerryPicking && window.BerryPicking.TIERS, i = tiers ? tiers.findIndex((t) => t.berries.includes(item)) : -1;
+    return i >= 0 ? BERRY_SELL[i] : 0;
+  }
+  const sellPrice = (item) => (/-berry$/.test(item) && berrySellPrice(item) ? berrySellPrice(item) : Math.floor(price(item) / 2));
 
   // (By category: an Iron Ball, Light Ball or Smoke Ball is held, not thrown.)
   const isBall = (item) => /balls$/.test((window.ITEMS[item] || {}).category || "");
@@ -217,7 +224,8 @@
     return { species: record.species };
   }
   // Bottle Caps (Hyper Training, as in Sword and Shield and Scarlet and
-  // Violet: from Lv. 50): a stat's IV acts as 31 from then on. A Bottle Cap
+  // Violet: from Lv. 50): a stat's IV is 31 from then on (in those games it only
+  // acts as 31; here the IV itself changes). A Bottle Cap
   // trains one stat, a Gold Bottle Cap all six. The stats a cap would train.
   const HYPER_TRAINING_LEVEL = 50;
   function trainableStats(record) {
@@ -266,7 +274,9 @@
     if (item === "bottle-cap" || item === "gold-bottle-cap") {
       const oldMax = window.Party.maxHp(record);
       const stats = item === "gold-bottle-cap" ? trainableStats(record) : [opts.stat];
+      // (The IV itself becomes 31 too, breeding and all: this game's own.)
       record.hyper = (record.hyper || []).concat(stats);
+      for (const k of stats) record.ivs[k] = 31;
       // (A trained HP raises max HP; current HP goes up by the same amount.)
       if (record.hp > 0) record.hp += window.Party.maxHp(record) - oldMax;
       return { trained: stats };

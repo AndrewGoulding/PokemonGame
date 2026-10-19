@@ -126,9 +126,9 @@ in their stat; Wings and vitamins alike go up to 252 in a stat (510 in all). Exp
 3,000 (M), 10,000 (L) or 30,000 (XL) Exp. Points: each level they bring is told, with its moves to
 learn, and then it evolves if it can. Bottle Caps are Hyper Training, as in
 Sword and Shield and Scarlet and Violet: on a Pokémon of Lv. 50 or more, a
-Bottle Cap makes one stat you pick (from the ones not already at 31) act as
-if its IV were 31, a Gold Bottle Cap all of them; the IV itself stays as it
-was, for breeding, and the Summary's IV page shows 31. It holds medicine, evolution
+Bottle Cap raises the IV of one stat you pick (from the ones not already at
+31) to 31, a Gold Bottle Cap all of them; unlike those games, where it only
+acts as 31, the IV itself changes (for breeding too). It holds medicine, evolution
 stones (each item for evolving says "Evolves certain Pokémon when used."), Rare Candy, vitamins, PP Ups, mints, TMs/HMs, held items, and Key Items:
 the Exp. Share, Oak's Parcel, the Town Map and the Fishing Rod (you start
 with it, and older saves are given it; see **Fishing** below). In the
@@ -137,7 +137,10 @@ tiers (the berry tree's: Basic, Restoring, Contest, EV-reducing, ...), or
 back to A to Z ("The berries are now sorted."). The EV-lowering
 Berries (Pomeg, Kelpsy, Qualot, Hondew, Grepa, Tamato) work as from Gen 7:
 used on a Pokémon, its stat's EVs go down 10 and it grows friendlier (10, 5
-or 2), as their descriptions now say. After the Bag come FireRed's Pokédex, the **National
+or 2), as their descriptions now say; with no EVs in that stat, "It would have
+no effect." Berries sell to any Poké Mart by their tier (the Berry Pouch's
+nine, below): ₽50 for the Basic ones, then 100, 150, 200, 250, 300, 350, 425
+and ₽500 for the Enigma Berry. After the Bag come FireRed's Pokédex, the **National
 Pokédex** from the moment Oak hands it over (Pokémon from beyond Kanto turn
 up in the campaign; FireRed's IsNationalPokedexEnabled is `Player.nationalDex`:
 its table of contents is FireRed's National one, with Seen and Owned each
@@ -2541,8 +2544,8 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   swapped for the nearest playable rule; each has a `note` explaining it.
 
 - **Types**: Gen 6's, except Aerodactyl (Dragon/Rock), Gyarados and Mega
-  Gyarados (Dragon/Water), Psyduck and Golduck (Water/Psychic), and Blastoise
-  and Mega Blastoise (Water/Steel).
+  Gyarados (Dragon/Water), Psyduck and Golduck (Water/Psychic), Blastoise
+  and Mega Blastoise (Water/Steel), and Chansey (Fairy/Normal).
 - **Moves**: Gen 6's, except Leech Life, which is Gen 7's (80 power, 10 PP), plus
   Gen 7's Instruct and Spotlight for double battles (no Pokémon learns them).
 - **X items**: X Attack, Defense, Sp. Atk, Sp. Def, Speed and Accuracy raise
