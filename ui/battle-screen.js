@@ -2693,13 +2693,38 @@
     config = null;
   }
 
+  // A Tera Raid's three allies (the engine's raidAllies), in the corner as
+  // Scarlet and Violet show them: each one's trainer and Pokémon and an HP
+  // bar, kept up to date as the battle goes; null takes it away.
+  let alliesPanel = null, alliesTimer = 0;
+  function raidAlliesPanel(allies) {
+    clearInterval(alliesTimer);
+    if (alliesPanel) { alliesPanel.remove(); alliesPanel = null; }
+    if (!allies || !allies.length) return;
+    alliesPanel = document.createElement("div");
+    alliesPanel.className = "raid-allies";
+    alliesPanel.innerHTML = allies.map((m) => '<div class="ally"><span class="who">' + window.Screen.escapeHtml(m.raidAlly.trainer) + "</span> " +
+      window.Screen.escapeHtml(m.name) + '<span class="bar"><span></span></span></div>').join("");
+    el.field.appendChild(alliesPanel);
+    const bars = [...alliesPanel.querySelectorAll(".bar span")];
+    const update = () => allies.forEach((m, i) => {
+      // (Put back if the scene's been redrawn round it, as the battle's start does.)
+      if (i === 0 && alliesPanel && !alliesPanel.isConnected) el.field.appendChild(alliesPanel);
+      const f = Math.max(0, m.hp / m.maxhp);
+      bars[i].style.width = (f * 100).toFixed(1) + "%";
+      bars[i].className = f > 0.5 ? "" : f > 0.2 ? "mid" : "low";
+    });
+    update();
+    alliesTimer = setInterval(update, 150);
+  }
+
   // Runs one battle to the end. See the header for `cfg`.
   async function run(cfg) {
     config = cfg;
     partyOrder = null;
     battle = new Battle(Object.assign({
       p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, ghost: !!cfg.ghost, noCatch: !!cfg.noCatch, exp: !!cfg.exp, expShare: !!cfg.expShare, catchContext: cfg.catchContext,
-      safari: cfg.safari, raid: cfg.raid || 0
+      safari: cfg.safari, raid: cfg.raid || 0, raidAllies: cfg.raidAllies || undefined
     }, cfg.format === "doubles" ? { format: "doubles" } : {}));
     safariCursor = 0;
     cursor = 0;
@@ -2709,6 +2734,7 @@
     el.field.classList.toggle("tag", !!battle.sides.p1.tag);
     view = { p1: { species: null }, p2: { species: null }, p1b: { species: null }, p2b: { species: null } };
     teraShown = {};
+    raidAlliesPanel(battle.raidAllies);
     // (A Tera Raid's Pokémon comes out already Terastallized: no animation, just its look.)
     for (const m of battle.sides.p2.pokemon) {
       if (!m.teraStart || !battle.canTera(m)) continue;
@@ -2752,6 +2778,7 @@
     else if (battle.winner === "p2") outcome = "lost";
     else outcome = "draw";
     hbStop();
+    raidAlliesPanel(null);
     return { outcome, battle, raidBall };
   }
 

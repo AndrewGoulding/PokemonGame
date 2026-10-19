@@ -128,7 +128,10 @@
   // HP fractions it acts at, and every how many turns it acts as well.
   const RAID_THRESHOLDS = [[], [], [0.5], [0.5], [0.66, 0.33], [0.75, 0.5, 0.25]];
   const RAID_EVERY = [0, 0, 0, 5, 4, 3];
-  const RAID_FAINT_TURNS = 2;   // (the turns a Tera Raid loses each time your Pokémon faints)
+  const RAID_FAINT_TURNS = 2;
+  const RAID_ALLY_IDENT = /^p1r\d: /;   // (a Tera Raid ally's name in the log: Battle.raidAllyLine)
+  // (The moves a Tera Raid's Pokémon aims at one of you: raidTarget.)
+  const RAID_AIMED = new Set(["normal", "any", "adjacentFoe", "randomNormal", "allAdjacentFoes", "allAdjacent"]);   // (the turns a Tera Raid loses each time your Pokémon faints)
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
   const toID = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const normItem = (s) => String(s || "").toLowerCase().replace(/[\s_']+/g, "-");
@@ -489,6 +492,21 @@
       this.sides = { p1: new Side(this, "p1", opts.p1 || {}), p2: new Side(this, "p2", opts.p2 || {}) };
       this.sides.p1.foe = this.sides.p2;
       this.sides.p2.foe = this.sides.p1;
+      // A Tera Raid's other three on your side (this game's own, after Scarlet
+      // and Violet's four-player raids): opts.raidAllies, [{ set, trainer }].
+      // Each is a Pokémon of yours in all but standing on the field: it moves
+      // each turn in speed order (raidAllyMove: its best move against the
+      // Tera Raid Pokémon), the Tera Raid Pokémon may aim at it, and it gets
+      // back up when it faints as yours does. The screen only knows your
+      // Pokémon and the foe, so what happens to an ally is told in words
+      // ("Brock's Onix used Rock Slide!": add() rewrites its lines).
+      this.raidAllies = this.raid ? (opts.raidAllies || []).slice(0, 3).map((a, i) => {
+        const m = new Pokemon(this, this.sides.p1, a.set, 100 + i);
+        const label = (a.trainer ? a.trainer + "'s " : "") + m.name;
+        Object.defineProperty(m, "ident", { get: () => "p1r" + i + ": " + label });
+        Object.assign(m, { isActive: true, raidAlly: { trainer: a.trainer || "", label } });
+        return m;
+      }) : [];
       // The Safari Zone (FireRed's BATTLE_TYPE_SAFARI, engine/safari.js): your
       // Pokémon stay in their balls; each turn you throw a Safari Ball, Bait
       // or a Rock, or run, and the wild Pokémon watches you or runs away.
@@ -525,14 +543,47 @@
 
     // ---------- Log ----------
     add(type, ...args) {
-      const out = [type];
+      let out = [type];
       for (const a of args) {
         if (a instanceof Pokemon) out.push(a.ident);
         else if (a && typeof a === "object" && !Array.isArray(a) && a.name !== undefined) out.push(a.name);
         else out.push(a);
       }
+      if (this.raidAllies && this.raidAllies.length && out.some((x) => typeof x === "string" && RAID_ALLY_IDENT.test(x))) out = this.raidAllyLine(out);
+      if (!out) return;
       this.events.push(out);
       if (this.onEvent) this.onEvent(out);
+    }
+    // A line about a Tera Raid ally, as words the screen can show ("-text" on
+    // your side), or nothing (its HP: the screen's raid panel shows it).
+    raidAllyLine(ev) {
+      const [t, a, b, c] = ev, ally = (x) => RAID_ALLY_IDENT.test(String(x || "")), nm = (x) => String(x || "").replace(/^p\d[a-z]?\d?: /, "");
+      const foe = (x) => (this.wild ? "The wild " : "The opposing ") + nm(x);
+      const who = ally(a) ? nm(a) : /^p2/.test(String(a)) ? foe(a) : nm(a);
+      const STAT = { atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed", accuracy: "accuracy", evasion: "evasiveness" };
+      const STATUS = { psn: "was poisoned", tox: "was badly poisoned", par: "is paralyzed! It may be unable to move", slp: "fell asleep", brn: "was burned", frz: "was frozen solid" };
+      let text = null;
+      switch (t) {
+        case "move": text = who + " used " + b + (ally(c) && c !== a ? " on " + nm(c) : "") + "!"; break;
+        case "-heal": text = who + " regained health!"; break;
+        case "-boost": text = who + "'s " + (STAT[b] || b) + ((+c || 1) > 1 ? " rose sharply!" : " rose!"); break;
+        case "-unboost": text = who + "'s " + (STAT[b] || b) + ((+c || 1) > 1 ? " harshly fell!" : " fell!"); break;
+        case "-status": text = who + " " + (STATUS[b] || "was hurt") + "!"; break;
+        case "-curestatus": text = who + " was cured!"; break;
+        case "-supereffective": text = "It's super effective!"; break;
+        case "-resisted": text = "It's not very effective…"; break;
+        case "-crit": text = "A critical hit!"; break;
+        case "-miss": text = who + "'s attack missed!"; break;
+        case "-immune": text = "It doesn't affect " + who + "…"; break;
+        case "-fail": text = "But it failed!"; break;
+        case "-text": text = String(b || "").replace(/\{who\}/g, who); break;
+        default: {
+          // (Anything else about the Tera Raid Pokémon itself stands, the ally named in words.)
+          if (ally(a)) return null;
+          return ev.map((x) => (ally(x) ? nm(x) : x));
+        }
+      }
+      return ["-text", "p1", text];
     }
     hpStr(mon) { return mon.hp + "/" + mon.maxhp + (mon.status ? " " + mon.status : ""); }
 
@@ -2145,6 +2196,28 @@
     // it does what it most needs: wipes your Pokémon's stat changes if it has
     // any raised, else shakes off its own stat drops and status, else raises
     // two of its stats or attacks again (as likely either).
+    // Someone on your side in a Tera Raid, at random: your Pokémon or an ally.
+    raidTarget() {
+      const pool = [this.sides.p1.active].concat(this.raidAllies).filter((m) => m && !m.fainted && m.hp > 0);
+      return this.sample(pool);
+    }
+    // A Tera Raid ally's turn: its strongest move against the Tera Raid
+    // Pokémon (power, same-type bonus and type effectiveness), or, with none
+    // that hurts, any it has.
+    raidAllyMove(m) {
+      const boss = this.sides.p2.active;
+      if (!boss || boss.fainted || m.fainted || m.hp <= 0) return;
+      const score = (name) => {
+        const mv = window.MOVES[name];
+        if (!mv || mv.cat === "Status" || !mv.power || (mv.flags && (mv.flags.charge || mv.flags.recharge))) return 0;
+        const eff = window.Damage.typeEffectiveness(mv.type, boss.types);
+        return mv.power * eff * (m.types.includes(mv.type) ? 1.5 : 1) * Math.min(1, (mv.acc === true ? 100 : mv.acc || 100) / 100);
+      };
+      const names = m.moveSlots.filter((sl) => sl.pp > 0).map((sl) => sl.name);
+      if (!names.length) return;
+      const best = names.slice().sort((x, y) => score(y) - score(x))[0];
+      this.execMove(m, this.getActiveMove(best), { target: score(best) > 0 || RAID_AIMED.has((window.MOVES[best] || {}).target) ? boss : undefined });
+    }
     raidCheck(endOfTurn) {
       const boss = this.sides.p2.active;
       if (!boss || boss.fainted || boss.hp <= 0) return;
@@ -2157,10 +2230,11 @@
     raidAct(boss) {
       const foe = this.sides.p1.active;
       if (!foe || foe.fainted) return;
-      const keys = Object.keys(foe.boosts || {});
-      if (keys.some((k) => foe.boosts[k] > 0)) {
-        for (const k of keys) foe.boosts[k] = 0;
-        this.add("-text", boss, "The Tera Raid Pokémon nullified the\nstat changes affecting " + foe.name + "!");
+      const yours = [foe].concat(this.raidAllies).filter((m) => !m.fainted);
+      if (yours.some((m) => Object.keys(m.boosts || {}).some((k) => m.boosts[k] > 0))) {
+        for (const m of yours) for (const k of Object.keys(m.boosts)) m.boosts[k] = 0;
+        this.add("-text", boss, this.raidAllies.length ? "The Tera Raid Pokémon nullified the\nstat changes affecting your side!"
+          : "The Tera Raid Pokémon nullified the\nstat changes affecting " + foe.name + "!");
         return;
       }
       const drops = Object.keys(boss.boosts || {}).filter((k) => boss.boosts[k] < 0);
@@ -2176,7 +2250,7 @@
       });
       if (moves.length && this.random() < 0.5) {
         this.add("-text", boss, "The Tera Raid Pokémon is\nattacking again!");
-        this.execMove(boss, this.getActiveMove(this.sample(moves)), { raidBonus: true });
+        this.execMove(boss, this.getActiveMove(this.sample(moves)), { raidBonus: true, target: this.raidAllies.length ? this.raidTarget() : undefined });
         return;
       }
       this.add("-text", boss, "The Tera Raid Pokémon is getting\neven stronger!");
@@ -2237,6 +2311,8 @@
           }
         }
       }
+      // (A Tera Raid's allies: each moves too, in speed order.)
+      for (const m of this.raidAllies) if (!m.fainted) actions.push({ order: 3, type: "raidally", mon: m, side: this.sides.p1, priority: 0, frac: 0, speed: this.getSpeed(m) });
       const tr_ = !!this.field.pseudo.trickroom;
       for (const a of actions) a.rand = this.random();
       actions.sort((a, b) => {
@@ -2681,6 +2757,7 @@
         case "dynamax": if (!a.mon.fainted && this.canDynamax(a.mon)) this.dynamax(a.mon); break;
         case "tera": if (!a.mon.fainted && this.canTera(a.mon)) this.terastallize(a.mon); break;
         case "move": this.runMoveAction(a); break;
+        case "raidally": this.raidAllyMove(a.mon); break;
         case "residual": this.residual(); break;
         case "run": this.tryRun(a.mon); break;
         case "ball": this.throwBall(a.mon, a.ball); break;
@@ -2732,6 +2809,8 @@
         return;
       }
       const o = { slot: a.slot, forced: a.forced, secondTurn: a.forced && a.forced.secondTurn };
+      // (A Tera Raid's Pokémon aims at any of the four on your side.)
+      if (this.raidAllies.length && mon.side.id === "p2" && RAID_AIMED.has(move.target)) o.target = this.raidTarget();
       // (Sky Drop's second turn: it drops the Pokémon it carried.)
       const tt = mon.volatiles.twoturnmove;
       if (o.secondTurn && tt && tt.skyDrop) o.target = tt.skyDrop;

@@ -1504,24 +1504,38 @@ Badges, 4 stars). The raid is a
 battle with its Pokémon (from each type's list for that many stars, at Lv.
 12, 20, 35, 45 or 75 as in Scarlet and Violet, and up to 3 more, with IVs of 10 to 31), which
 comes out already Terastallized into the den's type (no animation: its
-Tera colours and symbol from the start) and has 2, 3, 4, 6
-or 8 times its HP; it battles as a trainer's Pokémon does, and can't be caught
+Tera colours and symbol from the start) and has 5, 7.5, 10, 15 or 20 times
+its HP (2, 3, 4, 6 or 8 times, two and a half times over, for the four of
+you); it battles as a trainer's Pokémon does, and can't be caught
 mid-battle. As in Scarlet and Violet it also acts outside its turn: from 2
 stars once its HP falls past half, from 4 stars past two thirds and one
 third, and at 5 stars past three quarters, half and a quarter; and at the end
 of every 5th turn (3 stars), 4th (4 stars) or 3rd (5 stars). Each time it
 does what it most needs: "The Tera Raid Pokémon nullified the stat changes
-affecting ...!" if your Pokémon has a stat raised; else it shakes off its own
+affecting your side!" if any of you has a stat raised; else it shakes off its own
 stat drops and status ("...removed the negative effects affecting it!");
 else, as likely either, it raises its better attacking stat and its weaker
 defence ("...is getting even stronger!") or attacks again. You send in one Pokémon, chosen from your party when you take
-the raid on (as in Scarlet and Violet), and it battles alone. You have 10, 12, 15, 20 or 25 turns to win (as Scarlet and
+the raid on (as in Scarlet and Violet), and **three others join you**, four
+on one as in Scarlet and Violet's raids: first you may invite any of Kanto's
+Gym Leaders you've beaten (up to three; "+" marks those coming), and the rest
+of the places fill with trainers from the den's region (FireRed's own,
+"Bug Catcher Garret", "Crush Girl Sharon": those with a Pokémon that hits the
+Tera Raid Pokémon's Tera Type hardest first). Each brings one Pokémon at about
+the raid's level: a Gym Leader one of their own type from the raid's list for
+that many stars (Misty's Lapras against a Grass raid), a trainer the
+Pokémon of theirs that hits it hardest, grown to that level (their Seadra
+from Horsea). They battle alongside yours (`game/raid-dens.js`
+`RaidDens.allies`, and the engine's `raidAllies`): each turn each uses its
+strongest move against the Tera Raid Pokémon, which aims at any of the four
+of you; what they do is told in words ("Misty's Lapras used Ice Beam!"), and
+their HP shows in the corner of the screen. You have 10, 12, 15, 20 or 25 turns to win (as Scarlet and
 Violet's raids have a time limit): told at the start, then "3 turns left!",
 "2 turns left!" and "This is the last turn!"; out of turns, "The Tera Raid
 Pokémon's power grew too strong!" and you're blown out. Your Pokémon doesn't
 stay down, as in Scarlet and Violet: when it faints it gets back up at full
 HP (its stat changes and conditions gone, its move that turn lost) and the
-raid loses 2 turns. Run out of turns and you're thrown out of the den (your
+raid loses 2 turns; so do your allies'. Run out of turns and you're thrown out of the den (your
 Pokémon are restored) and it keeps glowing. Win and the battle goes on: the Tera Raid Pokémon stays there,
 worn out, and you're asked whether to catch it; YES, then which of your
 Balls (any but the Master Ball), and FireRed's throw and catch (it can't miss; it keeps its Tera

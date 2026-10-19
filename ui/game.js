@@ -340,7 +340,8 @@
     const teraOrb = Player.itemCount(player, "tera-orb") > 0;
     // (A Tera Raid's Pokémon: more HP the more stars, RaidDens.HP, and already Terastallized.)
     const foeSets = (f) => f.team.map((r) => Object.assign(Party.toBattleSet(r), opts.ghost ? { name: "Ghost" } : {},
-      opts.raid ? { raidHp: RaidDens.HP[opts.raid], teraStart: true } : {}, wildTera ? { teraStart: true } : {}));
+      opts.raid ? { raidHp: RaidDens.HP[opts.raid] * (opts.raidAllies && opts.raidAllies.length ? RaidDens.ALLY_HP : 1), teraStart: true } : {},
+      wildTera ? { teraStart: true } : {}));
     const result = await BattleScreen.run({
       p1: Object.assign({ name: player.name, team: own.map((r) => Party.toBattleSet(r, here)), dynamax: Player.itemCount(player, "dynamax-band") > 0, tera: teraOrb },
         opts.partner ? { partner: { name: opts.partner.name, team: opts.partner.team.map((r) => Party.toBattleSet(r)) } } : {}),
@@ -349,7 +350,7 @@
       format: double ? "doubles" : undefined,
       partnerTrainer: opts.partner && opts.partner.pic,
       foeTrainer2: foe2 && foe2.pic, defeatText2: foe2 && foe2.defeatText && foe2.defeatText.map((p) => fill(p)),
-      ghost: !!opts.ghost, noCatch: !!opts.noCatch, raid: opts.raid || 0, raidTurns: opts.raid ? RaidDens.TURNS[opts.raid] : 0,
+      ghost: !!opts.ghost, noCatch: !!opts.noCatch, raid: opts.raid || 0, raidAllies: opts.raidAllies || null, raidTurns: opts.raid ? RaidDens.TURNS[opts.raid] : 0,
       // (A Tera Raid won: the Balls you could catch it in; not the Master Ball,
       // as in Scarlet and Violet, where a raid's catch never fails anyway.)
       raidBalls: opts.raid ? () => Object.keys(player.bag).filter((id) => Bag.isBall(id) && id !== "master-ball" && Player.itemCount(player, id) > 0).slice(0, 8)
@@ -11141,6 +11142,26 @@
   // glowing. Won: the battle goes on, to catch it in any Ball if you like (it
   // can't miss); then the rewards (money, Exp. Candies, vitamins, Berries and
   // Tera Shards) on their own screen (ui/raid-rewards.js).
+  // Inviting Gym Leaders you've beaten to a raid, up to three: each name
+  // toggles, "Done" when you're ready (the rest are the region's trainers).
+  async function inviteLeaders() {
+    const can = RaidDens.leaders(player.flags).map((L) => L.name);
+    if (!can.length || !(await confirm("Invite Gym Leaders to the Tera Raid?"))) return [];
+    const picked = [];
+    let cursor = 0;
+    for (;;) {
+      // ("+" before those coming; the ▶ stays where it was.)
+      const v = await multichoice("Invite whom? (" + picked.length + "/3)", 0, 0,
+        can.map((n) => (picked.includes(n) ? "+" : " ") + n).concat([" Done"]), { cursor });
+      Screen.say("");
+      if (v < 0 || v >= can.length) return picked;
+      cursor = v;
+      const n = can[v];
+      if (picked.includes(n)) picked.splice(picked.indexOf(n), 1);
+      else if (picked.length < 3) picked.push(n);
+      if (picked.length === 3) return picked;
+    }
+  }
   const LURES = ["lure", "super-lure", "max-lure"];
   const RAID_MUSIC = [null, "mus_vs_wild", "mus_vs_wild", "mus_vs_trainer", "mus_vs_legend", "mus_vs_legend"];
   async function raidDen(den) {
@@ -11181,9 +11202,13 @@
       await say(pick.egg ? "An Egg can't battle!" : Party.displayName(pick) + " is in no condition\nto battle!");
     }
     const chosen = [player.party.indexOf(pick)];
+    // The other three: the Gym Leaders you invite, then the region's trainers (RaidDens.allies).
+    const allies = RaidDens.allies(den, raid, await inviteLeaders());
+    const names = allies.map((a) => a.trainer);
+    await say([names.length > 1 ? names.slice(0, -1).join(", ") + " and " + names[names.length - 1] + "\njoined the Tera Raid!" : names[0] + " joined the Tera Raid!"]);
     const boss = RaidDens.boss(den, raid);
     const ro = { foe: { name: "Wild", team: [boss], tera: true }, raid: raid.stars, noCatch: true, noBlackout: true,
-      music: RAID_MUSIC[raid.stars], chosen };
+      music: RAID_MUSIC[raid.stars], chosen, raidAllies: allies.map((a) => ({ set: Party.toBattleSet(a.record), trainer: a.trainer })) };
     const outcome = await battle("wild", ro);
     if (outcome !== "won") {
       show("world");

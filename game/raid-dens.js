@@ -19,6 +19,9 @@
 //   RaidDens.HP / LEVELS / IVS / TURNS   // by stars (index 1-5)
 //   RaidDens.rewards(stars, rng, type)   // { money, items: [[id, count], ...] } (with the den type's Tera Shards)
 //   RaidDens.finish(flags, id)           // won: the den sleeps again
+//   RaidDens.leaders(flags)              // the Gym Leaders you could invite to a raid (beaten)
+//   RaidDens.allies(den, raid, invited, rng)  // the three on your side: [{ trainer, record, leader }]
+//   RaidDens.ALLY_HP                     // the Tera Raid Pokémon's HP, times this again with allies
 //
 // player.flags.raidDens: { [den id]: { stars, species, level } } while it glows.
 
@@ -161,6 +164,68 @@
     const raid = flags.raidDens && flags.raidDens[id], den = DENS.find((d) => d.id === id);
     return raid && den && POOLS[den.type].some((pool) => pool.includes(raid.species)) ? raid : null;
   };
+  // ---------- The other three on your side ----------
+  // A Tera Raid is four on one, as Scarlet and Violet's are (the engine's
+  // raidAllies): you, and three others. Kanto's Gym Leaders you've beaten
+  // come if you invite them, each with a Pokémon of their own type from the
+  // raid's tier (POOLS: as evolved as the raid's Pokémon are), the one that
+  // hits the Tera Raid Pokémon's Tera Type hardest; anyone else is one of the
+  // region's own trainers (WORLD_TRAINERS: FireRed's for Kanto, HeartGold and
+  // SoulSilver's for Johto), the ones with a Pokémon that hits it hardest
+  // first, bringing that Pokémon, grown to the raid's level (EVOLUTIONS).
+  // All of them at about the raid's level.
+  const LEADERS = [["Brock", "TRAINER_LEADER_BROCK", "Rock"], ["Misty", "TRAINER_LEADER_MISTY", "Water"],
+    ["Lt. Surge", "TRAINER_LEADER_LT_SURGE", "Electric"], ["Erika", "TRAINER_LEADER_ERIKA", "Grass"],
+    ["Koga", "TRAINER_LEADER_KOGA", "Poison"], ["Sabrina", "TRAINER_LEADER_SABRINA", "Psychic"],
+    ["Blaine", "TRAINER_LEADER_BLAINE", "Fire"], ["Giovanni", "TRAINER_LEADER_GIOVANNI", "Ground"]].map(([name, id, type]) => ({ name, id, type }));
+  // How hard a Pokémon's own types hit `type` (its best), and its base stats in all.
+  const hits = (species, type) => Math.max(...(window.DEX[species].types || []).map((t) => window.Damage.typeEffectiveness(t, [type])));
+  const total = (species) => { const d = window.DEX[species]; return d.hp + d.atk + d.def + d.spa + d.spd + d.spe; };
+  const best = (list, type) => list.filter((sp) => window.DEX[sp]).sort((a, b) => hits(b, type) - hits(a, type) || total(b) - total(a))[0];
+  // A species grown to `level`: its level evolutions by then (and the rest
+  // from Lv. 40 on), each time the one that hits `type` hardest.
+  function grown(species, level, type) {
+    for (let n = 0; n < 3; n++) {
+      const evos = ((window.EVOLUTIONS || {})[species] || []).filter((e) => window.DEX[e.into] && (e.method === "level" ? e.level <= level : level >= 40));
+      if (!evos.length) break;
+      species = best(evos.map((e) => e.into), type);
+    }
+    return species;
+  }
+  const trainerName = (t) => (t.className ? t.className + " " : "") + t.name;
+  const TRAINER_POOL = {
+    kanto: (id) => /^TRAINER_/.test(id) && !/LEADER|ELITE|CHAMPION|RIVAL|BOSS|ADMIN|GRUNT|TEAM_ROCKET|TWINS|COUPLE|SIS_AND_BRO|OLD_COUPLE|CRUSH_KIN|PAINTER|_\d+$/.test(id),
+    johto: (id) => /^HGSS_TRAINER_/.test(id) && !/LEADER|ELITE|CHAMPION|RIVAL|PASSERBY|ROCKET|EXECUTIVE|GRUNT|TWINS|COUPLE|_\d+$/.test(id)
+  };
+  // The leaders you could invite: those you've beaten.
+  const leaders = (flags) => LEADERS.filter((L) => flags[L.id]);
+  // The three on your side: those of `invited` (leaders' names), then the region's trainers.
+  function allies(den, raid, invited, rng) {
+    rng = rng || Math.random;
+    const type = den.type, lv = () => raid.level - 1 + Math.floor(rng() * 3), out = [];
+    for (const name of invited || []) {
+      const L = LEADERS.find((x) => x.name === name);
+      if (!L || out.length >= 3) continue;
+      const pool = POOLS[L.type] && POOLS[L.type][raid.stars - 1] || [];
+      const sp = best(pool, type);
+      if (sp) out.push({ trainer: L.name, leader: true, record: window.Party.create(sp, lv(), { ivs: 31 }) });
+    }
+    const region = ((window.WORLD_MAPS || {})[den.map] || {}).region === "johto" ? "johto" : "kanto";
+    const T = window.WORLD_TRAINERS || {}, seen = new Set(out.map((a) => a.trainer));
+    const picks = Object.keys(T).filter((id) => TRAINER_POOL[region](id) && T[id].party && T[id].party.length && T[id].name && !/&/.test(T[id].name))
+      .map((id) => { const sp = best(T[id].party.map((m) => m.species), type); return { id, sp, score: sp ? hits(sp, type) : 0, r: rng() }; })
+      .filter((x) => x.sp).sort((a, b) => b.score - a.score || a.r - b.r);
+    for (const x of picks) {
+      if (out.length >= 3) break;
+      const name = trainerName(T[x.id]);
+      if (seen.has(name)) continue;
+      seen.add(name);
+      const level = lv();
+      out.push({ trainer: name, record: window.Party.create(grown(x.sp, level, type), level, { ivs: 20 }) });
+    }
+    return out;
+  }
+
   // A Lure on a sleeping den: a raid of rolled stars, a Pokémon from its pool, its level.
   function start(flags, den, lure, badges, rng) {
     rng = rng || Math.random;
@@ -216,5 +281,5 @@
     return { money: R.money, items: Object.entries(got) };
   }
 
-  window.RaidDens = { DENS, byScript, active, maxStars, rollStars, start, finish, boss, rewards, POOLS, isKanto, RAID_MOVES, BADGES, LEVELS, IVS, HP, TURNS, LURE_STARS, REWARDS, SHARDS };
+  window.RaidDens = { LEADERS, leaders, allies, ALLY_HP: 2.5, DENS, byScript, active, maxStars, rollStars, start, finish, boss, rewards, POOLS, isKanto, RAID_MOVES, BADGES, LEVELS, IVS, HP, TURNS, LURE_STARS, REWARDS, SHARDS };
 })();

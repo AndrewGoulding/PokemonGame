@@ -680,6 +680,30 @@ for (const share of [false, true]) {
     rb.raidCheck(true);
     assert(/stronger|again/.test(texts()[texts().length - 1]), "every 3 turns: " + texts().join(" | "));
     assert.strictEqual(rb.raidThresholdsLeft.length, 1, "25% still to come");
+    // Four on one (raidAllies): the Gym Leaders you invite, then the region's trainers, each
+    // with what hits the Tera Raid Pokémon hardest, at about its level; what they do told in words.
+    {
+      const grass = RaidDens.DENS.find((d) => d.type === "Grass"), r5 = { stars: 5, level: 76, species: "Venusaur" };
+      assert.deepStrictEqual(RaidDens.leaders({ TRAINER_LEADER_MISTY: true, TRAINER_LEADER_BLAINE: true }).map((L) => L.name), ["Misty", "Blaine"]);
+      const al = RaidDens.allies(grass, r5, ["Blaine", "Misty"], rng);
+      assert(al.length === 3 && al[0].trainer === "Blaine" && al[1].trainer === "Misty" && al[0].leader && !al[2].leader, al.map((a) => a.trainer).join());
+      const hitsGrass = (sp) => Math.max(...DEX[sp].types.map((t) => Damage.typeEffectiveness(t, ["Grass"])));
+      assert(hitsGrass(al[0].record.species) > 1 && hitsGrass(al[2].record.species) > 1, "type advantage: " + al.map((a) => a.record.species).join());
+      assert(al.every((a) => Math.abs(a.record.level - r5.level) <= 2), "at about the raid's level");
+      assert(WORLD_TRAINERS[Object.keys(WORLD_TRAINERS).find((id) => /^TRAINER_/.test(id) && (WORLD_TRAINERS[id].className + " " + WORLD_TRAINERS[id].name) === al[2].trainer)], "a real trainer of Kanto's: " + al[2].trainer);
+      const ab = new Battle({ p1: { name: "P", team: [Party.toBattleSet(Party.create("Mewtwo", 100, { rng }))] },
+        p2: { name: "Wild", tera: true, team: [Object.assign(Party.toBattleSet(boss), { raidHp: RaidDens.HP[5] * RaidDens.ALLY_HP })] }, wild: true, seed: 9, raid: 5,
+        raidAllies: al.map((a) => ({ set: Party.toBattleSet(a.record), trainer: a.trainer })) });
+      ab.start();
+      for (let t = 0; t < 4 && !ab.ended; t++) { ab.choose("p1", { type: "move", move: 0 }); ab.choose("p2", ab.randomChoice("p2")); }
+      assert(ab.raidAllies.length === 3 && ab.events.some((e) => e[0] === "-text" && /^Blaine's \w+ used /.test(e[2])), "the allies move");
+      assert(!ab.events.some((e) => e.some((x) => /^p1r\d: /.test(String(x)))), "the screen never sees an ally's name in the log");
+      const ally = ab.raidAllies[0];
+      ab.damage(ally, ally.hp);
+      assert(!ally.fainted && ally.hp === ally.maxhp && ab.events.some((e) => e[0] === "-text" && /Blaine's \w+ got back up/.test(e[2])), "an ally gets back up too");
+      const bsJs = fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8"), gJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+      assert(/raidAlliesPanel\(battle\.raidAllies\)/.test(bsJs) && /RaidDens\.allies\(den, raid, await inviteLeaders\(\)\)/.test(gJs) && /RaidDens\.ALLY_HP/.test(gJs));
+    }
     // Fainting, as in Scarlet and Violet: back up at full HP, two turns off the limit.
     me.boosts.spe = 1;
     rb.damage(me, me.hp);

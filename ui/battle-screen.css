@@ -341,3 +341,16 @@ body {
 /* Fly: the Pokémon is up in the air (FireRed hides its picture); Transform's mosaic over the picture. */
 .sprite.flying, .sprite.mosaic-hidden { opacity: 0 !important; transition: none !important; }
 .mosaic-fx { position: absolute; image-rendering: pixelated; pointer-events: none; z-index: 3; }
+
+/* A Tera Raid's three allies (raidAlliesPanel): top right, small, over the scene. */
+.raid-allies {
+  position: absolute; right: 1%; top: 2%; z-index: 5; width: 34%;
+  font-family: "FireRed", system-ui, sans-serif; font-size: clamp(8px, 2.2vw, 14px); line-height: 1.15; color: #fff;
+  background: rgba(40, 48, 64, 0.72); border-radius: 4px; padding: 0.6% 1.2%;
+}
+.raid-allies .ally { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.raid-allies .who { color: #f8d870; }
+.raid-allies .bar { display: block; height: 3px; background: #384050; margin: 1px 0 2px; }
+.raid-allies .bar span { display: block; height: 100%; width: 100%; background: #58d080; transition: width 0.3s; }
+.raid-allies .bar span.mid { background: #f8c030; }
+.raid-allies .bar span.low { background: #f05030; }
