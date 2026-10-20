@@ -821,7 +821,7 @@
     if (r.cured) await message(name + " was cured of its " + ({ psn: "poisoning", tox: "poisoning", par: "paralysis", slp: "sleep", brn: "burn", frz: "freezing" }[r.cured] || "status") + ".");
     if (r.pp) await message(name + "'s PP was restored.");
     if (r.ppUp) await message(record.moves[move].name + "'s PP increased.");
-    if (r.ev) await message(name + "'s base stats rose.");
+    if (r.ev) await message(name + "'s base " + STAT_NAMES[eff.ev] + "\nrose.");
     // (An EV-lowering Berry, as Gen 4 says it.)
     if (r.evStat) await message(name + " turned friendly.\nIts base " + STAT_NAMES[r.evStat] + " fell!");
   }
@@ -1635,6 +1635,9 @@
     return ShopScreen.open({
       frame: GameOptions.get().frame,
       items: Bag.martStock(stock).map((x) => ({ id: x.item, name: Bag.name(x.item), price: x.price, desc: Bag.description(x.item), icon: Bag.sprite(x.item) })),
+      // (A counter of only TMs and HMs, Celadon's 2F: every name in the small
+      // font, as the long ones must be, so the list looks the same all down.)
+      smallNames: stock.length > 0 && stock.every((id) => /^(tm|hm)\d/.test(id)),
       money: () => player.money,
       inBag: (id) => Player.itemCount(player, id),
       // (TMs and HMs: one each, and never twice.)
@@ -3552,10 +3555,9 @@
       case "CeladonCity_DepartmentStore_5F_EventScript_ClerkXItems":
         await mart(ev.person.mart);
         return;
-      // (Beside the vitamins, this game's Wings and Exp. Candies.)
+      // (Beside the vitamins, this game's Wings.)
       case "CeladonCity_DepartmentStore_5F_EventScript_ClerkVitamins":
-        await mart(ev.person.mart.concat(["health-wing", "muscle-wing", "resist-wing", "genius-wing", "clever-wing", "swift-wing",
-          "exp-candy-xs", "exp-candy-s", "exp-candy-m", "exp-candy-l", "exp-candy-xl"]));
+        await mart(ev.person.mart.concat(["health-wing", "muscle-wing", "resist-wing", "genius-wing", "clever-wing", "swift-wing"]));
         return;
       case "CeladonCity_EventScript_SoftboiledTutor":
         await moveTutor("Soft-Boiled", "tutorSoftboiled", "Text_Softboiled");

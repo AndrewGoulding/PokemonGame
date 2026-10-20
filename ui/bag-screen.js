@@ -131,7 +131,7 @@
         // Selling: ×NN and what it's worth (sWindowTemplates[1]: 17, 9, 12 x 4).
         s.frame(userFrame, G.frames[userFrame].palette, 17, 9, 12, 4);
         s.fill(136, 72, 96, 32, WHITE);
-        s.text("×" + String(st.menu.n).padStart(2, "0"), 140, 82, DARK, LIGHT, "small");
+        s.text("×" + String(st.menu.n).padStart(st.menu.max > 99 ? 3 : 2, "0"), 140, 82, DARK, LIGHT, "small");
         const p = "¥" + st.menu.n * st.menu.price;
         s.text(p, 228 - s.textWidth(p, "small"), 82, DARK, LIGHT, "small");
       } else if (st.menu.kind === "count") {
@@ -309,7 +309,7 @@
     let n = 1;
     if (it.qty > 1) {
       st.prompt = wide(it.name + "?\nHow many would you like to sell?");
-      st.menu = { kind: "count", n: 1, max: Math.min(it.qty, 99), price: unit };
+      st.menu = { kind: "count", n: 1, max: it.qty, price: unit };
       paint();
       n = await menuKeys();
       st.menu = { kind: "none" };

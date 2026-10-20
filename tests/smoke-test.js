@@ -710,6 +710,16 @@ for (const share of [false, true]) {
     const jt = RaidDens.joinedText(["Cooltrainer Nathan", "Bird Keeper Chester", "Crush Girl Sharon"]);
     assert(jt.split("\n").every((l) => l.length <= 34) && jt.replace(/\n/g, " ") === "Cooltrainer Nathan, Bird Keeper Chester and Crush Girl Sharon joined the Tera Raid!", jt);
     assert.strictEqual(RaidDens.joinedText(["Misty"]), "Misty joined the Tera Raid!");
+    // Celadon: no Exp. Candies at the vitamin counter; the TM counter's names
+    // all in the small font; selling as many as you have (not 99 at most);
+    // a vitamin says which base stat rose.
+    const bagJs0 = fs.readFileSync(path.join(root, "ui/bag-screen.js"), "utf8"), shopJs0 = fs.readFileSync(path.join(root, "ui/shop-screen.js"), "utf8");
+    const gJs0 = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    const vit = gJs0.slice(gJs0.indexOf('case "CeladonCity_DepartmentStore_5F_EventScript_ClerkVitamins"'));
+    assert(!/exp-candy/.test(vit.slice(0, vit.indexOf("return;"))) && /"swift-wing"\]\)\);/.test(vit), "no Exp. Candies at Celadon's vitamin counter");
+    assert(/smallNames: stock\.length > 0 && stock\.every\(\(id\) => \/\^\(tm\|hm\)\\d\/\.test\(id\)\)/.test(gJs0) && /\(it && st\.opts\.smallNames\) \|\| s\.textWidth\(name\) > room/.test(shopJs0), "TM counter: small names");
+    assert(/kind: "count", n: 1, max: it\.qty, price: unit/.test(bagJs0) && !/Math\.min\(it\.qty, 99\)/.test(bagJs0), "sell more than 99");
+    assert(/name \+ "'s base " \+ STAT_NAMES\[eff\.ev\] \+ "\\nrose\."/.test(gJs0) && ItemUse.effect("calcium").ev === "spa" && ItemUse.effect("swift-wing").ev === "spe", "vitamin message names the stat");
     // Inviting: A invites, B takes back the last one invited.
     const gJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
     assert(/if \(v < 0\) \{\n\s*if \(!picked\.length\) return \[\];\n\s*cursor = can\.indexOf\(picked\.pop\(\)\);/.test(gJs) && /RaidDens\.joinedText\(allies\.map/.test(gJs), "raid invite keys");

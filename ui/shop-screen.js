@@ -76,7 +76,7 @@
       const it = items[st.top + r], y = 10 + 16 * r;
       const p = it && yen(it.price), room = it ? 222 - s.textWidth(p, "small") - 4 - 97 : Infinity, name = it ? it.name : "Cancel";
       // (A name too long for its row before the price, "TM99 Secret Power": in the small font.)
-      s.text(name, 97, y, DARK, LIGHT, s.textWidth(name) > room ? "small" : undefined);
+      s.text(name, 97, y, DARK, LIGHT, (it && st.opts.smallNames) || s.textWidth(name) > room ? "small" : undefined);
       if (it) s.text(p, 222 - s.textWidth(p, "small"), y, DARK, LIGHT, "small");
       if (st.top + r === st.cursor) s.text("▶", 89, y, busy ? LIGHT : DARK, busy ? DARK : LIGHT);
     }

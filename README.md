@@ -122,7 +122,7 @@ Hidden Ability, nor a species with one). The Ability Patch (as in Scarlet and
 Violet; dig it up with the Explorer Kit) switches an ordinary Ability to the
 species' Hidden Ability, or the Hidden Ability back to its first ordinary one
 (it asks first too); a Hidden Ability stays hidden when the Pokémon evolves. Wings add one EV
-in their stat; Wings and vitamins alike go up to 252 in a stat (510 in all). Exp. Candies (Sword and Shield's) give 100 (XS), 800 (S),
+in their stat; Wings and vitamins alike go up to 252 in a stat (510 in all), and say which ("Pikachu's base Speed rose."). Exp. Candies (Sword and Shield's) give 100 (XS), 800 (S),
 3,000 (M), 10,000 (L) or 30,000 (XL) Exp. Points: each level they bring is told, with its moves to
 learn, and then it evolves if it can. Bottle Caps are Hyper Training, as in
 Sword and Shield and Scarlet and Violet: on a Pokémon of Lv. 50 or more, a
@@ -175,7 +175,8 @@ what it does in FireRed (Viridian: Poké Balls, Potions, Antidotes and
 Paralyze Heals), at Gen 6 prices, through FireRed's Mart: Buy / Sell / See
 ya!, the buy screen with the stock and prices on the right, your money and
 the map round you on the left and the item below (how many, then "That will
-be ¥… Okay?"), and selling from the Bag for half price.
+be ¥… Okay?"), and selling from the Bag for half price (as many at once as
+you have, past 99).
 
 Battles open as in FireRed: from the map the screen flashes white twice and
 slices away; the wild Pokémon slides in (in shadow) as your trainer does from
@@ -338,9 +339,8 @@ guard), and the Underground Path's east entrance and tunnel, and its west
 entrance onto Route 7, with its gate to Saffron, and Celadon City: its Pokémon
 Center, the Department Store (five floors and the roof; the elevator takes you
 to any floor: FireRed's floor list and its "Now on:" window, and the car shakes
-while it hums, then dings; the 2F TM counter, the 4F toys and stones, the 5F drugstore (its vitamin
-counter also sells the six Wings, ₽300 each, and Exp. Candies: XS ₽200, S
-₽1,000, M ₽3,000, L ₽10,000, XL ₽30,000); the
+while it hums, then dings; the 2F TM counter (every name in the small font, as the long ones must be), the 4F toys and stones, the 5F drugstore (its vitamin
+counter also sells the six Wings, ₽300 each); the
 Counter tutor on 3F; on the roof, vending machines with Fresh Water, Soda Pop
 and Lemonade (FireRed's list with the prices, and your money in its box at the
 top left), and a thirsty girl who swaps TM16 Light Screen, TM20 Safeguard or

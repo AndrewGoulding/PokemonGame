@@ -42,7 +42,7 @@
     "lemonade": 400, "moomoo-milk": 500, "ether": 1200, "max-ether": 2000, "elixir": 3000,
     "max-elixir": 4500, "rare-candy": 10000,
     "hp-up": 9800, "protein": 9800, "iron": 9800, "calcium": 9800, "zinc": 9800, "carbos": 9800,
-    // (This game's own: Wings and Exp. Candies, from Celadon's vitamin counter.)
+    // (This game's own: Wings, from Celadon's vitamin counter, and Exp. Candies, from Tera Raids.)
     "health-wing": 300, "muscle-wing": 300, "resist-wing": 300, "genius-wing": 300, "clever-wing": 300, "swift-wing": 300,
     "exp-candy-xs": 200, "exp-candy-s": 1000, "exp-candy-m": 3000, "exp-candy-l": 10000, "exp-candy-xl": 30000,
     "fire-stone": 2100, "water-stone": 2100, "thunder-stone": 2100, "leaf-stone": 2100,
