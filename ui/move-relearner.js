@@ -61,6 +61,15 @@
     Dragon: 0xA0, Dark: 0x8C, Fairy: 0xA4 };
   const LABEL = { type: 0xA8, power: 0xC0, accuracy: 0xC8, pp: 0xE0, effect: 0xE8 };
   const menuIcon = (s, tile, w, x, y) => blit(s, "menuInfo", (tile % 16) * 8, Math.floor(tile / 16) * 8, w, 12, x, y, D().pals.types);
+  // The move's category beside its name in the list (this game's, as the
+  // Summary screen has it): Diamond and Pearl's 16x16 icons, Physical,
+  // Special and Status (data sheet categoryIcons).
+  const CATEGORIES = ["Physical", "Special", "Status"];
+  function categoryIcon(s, cat, x, y) {
+    const i = CATEGORIES.indexOf(cat), sh = D().sheets.categoryIcons;
+    if (i < 0 || !sh) return;
+    blit(s, "categoryIcons", 0, i * 16, 16, 16, x, y, sh.palette);
+  }
 
   // A description in lines no wider than `width` (FireRed's own are already
   // broken into lines; later ones are re-wrapped to fit).
@@ -120,6 +129,7 @@
       const y = 8 + r * 14;
       if (y + 14 > 104) { s.text(it || "CANCEL", 160, y, STD[2], STD[3]); continue; }
       s.text(it || "CANCEL", 160, y, STD[2], STD[3]);
+      if (it && window.MOVES[it]) categoryIcon(s, window.MOVES[it].cat, 216, y - 1);
       if (st.top + r === st.cursor) s.text("▶", 152, y, STD[2], STD[3]);
     }
     // The message box (W7, in your frame).

@@ -73,6 +73,33 @@
     }
   }
 
+  // The nature's mark on the stats page (the modern games'): the raised
+  // stat's label in red, the lowered one's in blue. The labels are the
+  // page's own tiles (ATTACK at rows 39-47, then every 13 pixels; the
+  // letters colour 14 of their tiles), recoloured in place.
+  const NATURE_UP = [248, 64, 64], NATURE_DOWN = [72, 128, 248];
+  const STAT_ROW = { atk: 0, def: 1, spa: 2, spd: 3, spe: 4 };
+  function natureLabels(s, map, pal0, nature) {
+    const n = window.NATURES && window.NATURES[nature];
+    if (!n || (!n.plus && !n.minus) || n.plus === n.minus) return;
+    const bg = D().sheets.bg, p = px("bg");
+    const rows = [];
+    if (n.plus && STAT_ROW[n.plus] != null) rows.push([39 + 13 * STAT_ROW[n.plus], NATURE_UP]);
+    if (n.minus && STAT_ROW[n.minus] != null) rows.push([39 + 13 * STAT_ROW[n.minus], NATURE_DOWN]);
+    for (let ty = 4; ty < 13; ty++) for (let tx = 14; tx < 21; tx++) {
+      const e = map[ty * 32 + tx], t = e & 0x3ff, hf = e & 0x400, vf = e & 0x800;
+      const sx = (t % 16) * 8, sy = Math.floor(t / 16) * 8;
+      for (let y = 0; y < 8; y++) {
+        const row = rows.find(([y0]) => ty * 8 + y >= y0 && ty * 8 + y < y0 + 9);
+        if (!row) continue;
+        for (let x = 0; x < 8; x++) {
+          const v = p[(sy + (vf ? 7 - y : y)) * bg.width + sx + (hf ? 7 - x : x)] & 15;
+          if (v === 14) s.put(tx * 8 + x, ty * 8 + y, row[1]);
+        }
+      }
+    }
+  }
+
   // sMenuInfoIcons: the types' 32x12 icons in graphics/interface/menu_info.png
   // (Fairy, which FireRed doesn't have, is the expansion's, in its "???" slot.)
   const TYPE_TILE = { Normal: 0x20, Fighting: 0x64, Flying: 0x60, Poison: 0x80, Ground: 0x48, Rock: 0x44, Bug: 0x6C,
@@ -148,6 +175,7 @@
     // (The EV / IV page: the SKILLS page's stats, without its lower panel.)
     else if (page === 4) layer(base, d.maps.pageSkills.map((e, i) => (i >= 32 * 13 ? 0 : e)), false, pal0);
     else layer(base, [v.egg ? d.maps.pageEgg : d.maps.pageInfo, d.maps.pageSkills, d.maps.pageMoves][page], false, pal0);
+    if ((page === 1 || page === 4) && !v.egg) natureLabels(base, d.maps.pageSkills, pal0, v.nature);
     // The page tabs (PokeSum_DrawPageProgressTiles): tiles 345 + n on rows 0-1,
     // two columns a tab: those before this page's are dots on the bar, this
     // one's is the white dot, those after it are on the lighter part, which

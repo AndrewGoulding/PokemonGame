@@ -619,6 +619,7 @@
         case "-sideend": return "  " + a + "'s " + b + " ended";
         case "-ability": return "  [" + nm(a) + "'s " + b + "]";
         case "cant": return nm(a) + " can't move (" + b + ")";
+        case "-disobey": return "  " + nm(a) + " disobeys (" + b + ")";
         case "-exp": return "  " + nm(a) + " gained " + b + " Exp. Points!";
         case "-expshare": return "  The rest of your team gained Exp. Points thanks to the Exp. Share!";
         case "-levelup": return "  " + nm(a) + " grew to Lv. " + b + "!";
@@ -2812,6 +2813,13 @@
         return;
       }
       const o = { slot: a.slot, forced: a.forced, secondTurn: a.forced && a.forced.secondTurn };
+      // Disobedience (FireRed's IsMonDisobedient): one of yours over the level
+      // cap may not do as it's told.
+      if (!a.forced && mon.side.id === "p1" && move.id !== "struggle" && mon.level > this.levelCap) {
+        const r = this.disobey(mon, move, o);
+        if (r === false) return;
+        if (r) move = r;
+      }
       // (A Tera Raid's Pokémon aims at any of the four on your side.)
       if (this.raidAllies.length && mon.side.id === "p2" && RAID_AIMED.has(move.target)) o.target = this.raidTarget();
       // (Sky Drop's second turn: it drops the Pokémon it carried.)
@@ -2822,6 +2830,36 @@
         if (a.pursuitTarget) { o.target = a.pursuitTarget; o.pursuitSwitch = true; }
       }
       this.execMove(mon, move, o);
+    }
+
+    // FireRed's IsMonDisobedient, for a Pokémon over the level cap (its
+    // badges' obedience level there): the higher over it, the likelier it
+    // is to ignore orders (and use another move), loaf around, take a nap
+    // or hurt itself instead. Returns the move it uses instead, false for
+    // none this turn, or null when it obeys.
+    disobey(mon, move, o) {
+      const cap = this.levelCap, lv = mon.level;
+      const roll = () => ((lv + cap) * this.randInt(0, 255)) >> 8;
+      if (roll() < cap) return null;
+      if (roll() < cap) {
+        const others = mon.moves.map((m, i) => ({ m, i })).filter(({ m }) => m.name !== move.name && m.pp > 0 && !m.disabled);
+        if (!others.length) { this.add("-disobey", mon, "loaf"); return false; }
+        const pick = others[this.randInt(0, others.length - 1)];
+        this.add("-disobey", mon, "ignored");
+        o.slot = pick.i;
+        return this.getActiveMove(pick.m.name);
+      }
+      const over = lv - cap, r = this.randInt(0, 255);
+      if (r < over && !mon.status && !mon.hasAbility("Vital Spirit") && !mon.hasAbility("Insomnia")) {
+        this.add("-disobey", mon, "nap");
+        mon.status = "slp";
+        mon.statusState = { source: mon, time: this.randInt(2, 4) };
+        this.add("-status", mon, "slp", "[silent]");
+        return false;
+      }
+      if (r < over * 2) { this.add("-disobey", mon, "hurt"); this.confusionDamage(mon); return false; }
+      this.add("-disobey", mon, ["loaf", "turnaway", "notice"][this.randInt(0, 2)]);
+      return false;
     }
 
     // Doubles: a foe's Pursuit aimed at a Pokémon about to switch out hits it

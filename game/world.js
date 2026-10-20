@@ -19,7 +19,7 @@
 
   // Metatile behaviours (pret include/constants/metatile_behaviors.h).
   const MB = {
-    TALL_GRASS: 0x02,
+    TALL_GRASS: 0x02, LONG_GRASS: 0x03,
     // A floor switch a Strength boulder presses (Victory Road).
     STRENGTH_BUTTON: 0x20,
     JUMP_EAST: 0x38, JUMP_WEST: 0x39, JUMP_NORTH: 0x3a, JUMP_SOUTH: 0x3b,
@@ -268,7 +268,7 @@
   // Gen 3 encounter slots: 20, 20, 10, 10, 10, 10, 5, 5, 4, 4, 1, 1 percent.
   const LAND_SLOT_WEIGHTS = [20, 20, 10, 10, 10, 10, 5, 5, 4, 4, 1, 1];
 
-  function isGrass(b) { return b.behavior === MB.TALL_GRASS || b.behavior === MB.CYCLING_ROAD_PULL_DOWN_GRASS || b.encounter === 1; }
+  function isGrass(b) { return b.behavior === MB.TALL_GRASS || b.behavior === MB.LONG_GRASS || b.behavior === MB.CYCLING_ROAD_PULL_DOWN_GRASS || b.encounter === 1; }
 
   // After a step onto (x, y): a wild Pokémon, or null. Gen 3: a land
   // encounter happens if Random() % 2880 < rate * 16.

@@ -694,9 +694,19 @@ prices; and the lobby's shop is a BP Shop instead of a Poké Mart: Bottle Cap
 25 BP, Gold Bottle Cap 75, Tin Bottle Cap 10 (one IV down to 0, for Trick
 Room), every mint 25 and the six vitamins 2 each. Lose and
 you're back at the counter. The tower's owner on the roof stops the clock,
-gives the challenge's prize (once: Up-Grade, Dragon Scale, Metal Coat, King's
-Rock) and says whether you've set a record; the best times are on the lobby's
-Time Board, and the elevator takes you back down. Canyon Entrance and Sevault
+hands over the challenge's rewards and says whether you've set a record; the
+best times are on the lobby's Time Board, and the elevator takes you back
+down. The rewards are this game's (not FireRed's once-only prizes): every
+challenge finished draws items from one pool, whatever the mode, and the
+faster the finish the better the draw (Single, Double and Mixed count as fast
+under 8 minutes and middling under 15; Knockout, three battles a floor, under
+16 and 30). A slow finish draws vitamins, PP Ups, mints and everyday held
+items (Quick Claw, King's Rock, Leftovers, Metal Coat, Dragon Scale,
+Up-Grade...); a middling one adds Bottle Caps, PP Maxes and the stronger held
+items (the Choice items, Life Orb, Focus Sash, Assault Vest, Eviolite...); a
+fast one adds Gold Bottle Caps, Ability Capsules and the Ability Patch. A
+slow, middling or fast finish gives one, two or three items; a Knockout two
+more than that. Canyon Entrance and Sevault
 Canyon (Cooltrainers, Young Couple Eve & Jon and Cool Couple Lex & Nya, Rock
 Smash rocks, the Chansey dance man's house, where dancing along heals your
 Pokémon), the Tanoby Key (push a boulder over each of its seven switches and
@@ -1157,9 +1167,10 @@ too. Rules follow Gen 3: collision and elevation per block, solid doors you walk
 into, door mats you walk out through, stairs (as FireRed's: step onto the
 bottom step, then press toward the stairs to take them; you arrive on the
 other floor's stairs facing away from them), ledges you can jump down,
-connected maps you walk straight into, tall grass you walk in, not on
-(FireRed's FLDEFF_TALL_GRASS: its sprite over the feet of whoever stands in
-it, you, your Pokémon or anyone else, rustling as they step in), and tall grass encounters at the map's
+connected maps you walk straight into, long grass (Faraway Island's) you
+walk in, not on (FireRed's FLDEFF_LONG_GRASS: its sprite over the feet of
+whoever stands in it, you, your Pokémon or anyone else, rustling as they step
+in; ordinary tall grass leaves you in view), and tall grass encounters at the map's
 rate (Random() % 2880 < rate × 16) using the 20/20/10/10/10/10/5/5/4/4/1/1
 encounter slots. Wild Pokémon come from both versions: where LeafGreen's table
 has a different Pokémon in a slot (Sandshrew for FireRed's Ekans on Route 4),
@@ -2104,7 +2115,20 @@ them: morning (4-10), day and night (20-4), e.g. Route 29's Pidgey and
 Sentret, and Hoothoot at night; then Surf's, Gen 4's fishing (five slots a
 rod, 40/40/15/4/1) and Rock Smash's. Everything goes into
 `data/johto-maps.js`, which adds the maps to `WORLD_MAPS` (and the gate's mat,
-warp and guard). Not here yet: the Battle Frontier, which comes with Sinnoh's.
+warp and guard). Not here yet: the Battle Frontier, which comes with Sinnoh's;
+in its place, north of Route 40 through its gatehouse, stands Crystal's
+**Battle Tower** (this game's own, in FireRed's Trainer Tower lobby drawn
+again there). At the counter, or from its receptionist, choose a level, 10 to
+100 by tens, and three Pokémon at or under it (Crystal's rules: no two of
+the same Pokémon, no two holding the same item, no Eggs), then battle seven
+of the Trainer Tower's trainers in a row, each with three of their six
+Pokémon (FireRed's sets) at that level, your three healed between battles,
+with no Exp. or money; you may stop between battles, and a loss ends the
+challenge. Seven wins earn the level's prize (Crystal's: HP Up, Protein,
+Iron, Carbos and Calcium at Lv. 10 to 50, a PP Up at 60, a Rare Candy at 70
+and 80, a PP Max at 90 and a Bottle Cap at 100) and Battle Points (3, and 1
+more for every 20 levels). The lobby's nurse heals, its clerk is the BP Shop,
+and the sign by the counter keeps your best streak at each level.
 (Its music is HGSS's own: see Music and cries.)
 
 **Goldenrod's Game Corner** is the international HeartGold's: Mr. Game's
@@ -2374,7 +2398,7 @@ has an even chance of a call from someone whose number you have (half the
 time one of the first group, then 30 and 20 percent), each in turn, never
 from the map you're on; Elm calls when his Mystery Egg hatches. A
 **trainer** with a phone number (HGSS's phone book, `files/tel`) asks for
-yours after you beat them ("Hey, can I get your number?"; Yes, and
+yours on the map after you beat them, once you have the Pokégear ("Hey, can I get your number?"; Yes, and
 "Registered the phone number in the Pokégear!"), and again if you said no and
 talk to them. When one calls wanting a rematch, talk to them and they battle
 with their rematch party (`GetPhoneBookRematch`: HGSS's tiers, `TRAINER_X_2`,
@@ -2546,7 +2570,11 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   gains no Exp. Points in battle (said once a battle: "… is at the level cap
   (Lv. 25) and can't gain Exp. Points!"), Exp. Candies and Exp. Points from
   battle take it no further than the cap, a Rare Candy or Exp. Candy used on
-  it fails, and the Day-Care grows it no further either.
+  it fails, and the Day-Care grows it no further either. One over the cap
+  (traded, or brought to Johto from Kanto) may not obey, as in FireRed
+  (IsMonDisobedient, the cap as its obedience level): the further over, the
+  likelier it ignores orders and uses another move, loafs around, turns away,
+  pretends not to notice, takes a nap or hurts itself.
 - **The Rejuvenator**, upstairs in every Pokémon Center (Kanto's and Johto's), makes a
   Pokémon Lv. 5 again (and heals it), keeping everything else: what it's
   evolved into, its moves, EVs, IVs, nature and ability, so you can take a
@@ -2565,7 +2593,7 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   holds. Knock one out and it drops what it was still holding, which goes in
   your Bag (this game's own: "The wild … dropped a …!"). The legendaries
   waiting on the map hold nothing, as in FireRed.
-- **Shiny Pokémon**: any Pokémon you meet or are given is shiny 1 time in 1,000
+- **Shiny Pokémon**: any Pokémon you meet or are given is shiny 1 time in 4,096
   (trainers' never are). They use their shiny sprites
   everywhere, sparkle as they come out in battle (a wild one too, as it
   appears), have a gold star after their name in a wild battle's healthbox,
@@ -2576,7 +2604,9 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   every Pokémon Center. The Relearner teaches a Pokémon a level-up move
   it could know by now (its own, or one its earlier forms learn by its level,
   so evolving early never loses a move), for a Heart Scale (dig them up with the Explorer Kit),
-  on FireRed's Move Relearner screen; with four moves already, you pick one to
+  on FireRed's Move Relearner screen (each move's category icon, physical,
+  special or status, beside it in the list, as on the Summary screen; the
+  tutors' screens too); with four moves already, you pick one to
   forget on the Summary screen's move list, as for TMs and tutors;
   the Deleter makes it forget a move, free.
 - **Explorer Kit** (a key item you start with): use it from the bag in a cave
@@ -2592,7 +2622,7 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   Levels go up on a curve: 20 + L²/20 XP from level L to the next (20 at
   first, 40 at level 20, 145 at 50, 510 at 99; 18,365 XP in all for level 100). Only common treasures (Heart Scales and shards) turn up
   at first; rarer ones unlock along the way: Hard Stones and Everstones at 5,
-  Metal Coats at 25,
+  Metal Coats, King's Rocks and Ice Stones at 25 (the Ice Stone at 20),
   Revives, Star Pieces and Oval Stones at 10, the vitamins (HP Up, Protein,
   Iron, Calcium, Zinc, Carbos) at 15, the evolution stones at 20,
   every fossil at 30, some held items at 38 and 51, Bottle Caps at 40, Max
@@ -2602,7 +2632,7 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   Tools (SELECT, or B, changes tool): the Pickaxe; the Hammer from mining
   level 5 (the eight tiles round it too, 2 energy); the Bomb from level 10
   (goes off somewhere at random: 2 layers off the tiles within 2 of it, 1 off
-  those out to 3 or so, 12 energy); the Survey Kit from level 20 (digs nothing,
+  those out to 3 or so, 6 energy); the Survey Kit from level 20 (digs nothing,
   but tells you what's still buried, 2 energy). A level that brings a new
   tool says so.
   get caves of their own. The rules are in `game/mining.js`, the screen in `ui/mining.js`.

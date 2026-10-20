@@ -896,7 +896,7 @@
   const RODS = ["fishing-rod"];
   const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
-  const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map", "berry-pouch"].concat(RODS);
+  const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map", "berry-pouch", "explorer-kit"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
     item === "ability-capsule" || item === "ability-patch" || item === "bottle-cap" || item === "gold-bottle-cap" || item === "tin-bottle-cap" || item === "zygarde-cube" ||
@@ -4174,6 +4174,10 @@
       case "TrainerTower_Elevator_EventScript_FloorSelect": await towerElevator(); return;
       case "TrainerTower_EventScript_Owner": await towerOwner(); return;
       case "TrainerTower_Lobby_EventScript_BPTutor": await bpTutor(); return;
+      case BT_ENTRY: await battleTowerEntry(); return;
+      case BT_RECEPTION: await battleTowerReception(); return;
+      case BT_NURSE: await nurse(ev.map, ev.person); return;
+      case BT_SIGN: await battleTowerSign(); return;
       case "TrainerTower_Lobby_EventScript_BPEggTutor": await bpEggTutor(); return;
       case "TrainerTower_EventScript_SingleBattleTrigger": await towerBattle(ev.map, 0); return;
       case "TrainerTower_EventScript_DoubleBattleTriggerTop": await towerBattle(ev.map, 0); return;
@@ -9405,6 +9409,7 @@
     }
     // Outside Trainer Tower the challenge is over (SevenIsland_TrainerTower_OnTransition).
     if (m === "SevenIsland_TrainerTower") f.towerScene = 0;
+    if (m === "Route40_BattleFrontierGatehouse") f.battleTowerScene = 0;   // (the Battle Tower's counter asks again)
   }
   // Walking about Cinnabar while Bill's waiting there: he comes over.
   function cinnabarBillStep() {
@@ -10282,21 +10287,22 @@
     await say([(fl.trainers[i] || fl.trainers[0]).after]);
   }
   // The owner, on the roof (TrainerTower_EventScript_SpeakToOwner): the
-  // clock stops; the prize (once a challenge); your time, a record or not.
+  // clock stops; the rewards (this game's: items every challenge, by how
+  // fast it went, TrainerTower.rewards); your time, a record or not.
   async function towerOwner() {
     const f = player.flags, R = (k) => T("TrainerTower_Roof_Text_" + k);
     tick();
-    const t = f.tower || TrainerTower.start(f, 0), rec = TrainerTower.records(f);
+    const t = f.tower || TrainerTower.start(f, 0);
+    TrainerTower.records(f);
     t.running = false;
-    const state = (t.spokeToOwner ? 1 : 0) + (rec.prize[t.mode] && t.checkedFinalTime ? 1 : 0);
-    t.spokeToOwner = true;
-    if (state < 2) {
-      if (state === 0) await say(R("ImOwnerBattledPerfectly"));
-      if (!rec.prize[t.mode]) {
-        const item = TrainerTower.prize(t.mode);
-        rec.prize[t.mode] = true;
+    if (!t.spokeToOwner) {
+      t.spokeToOwner = true;
+      await say(R("ImOwnerBattledPerfectly"));
+      const items = TrainerTower.rewards(t.mode, t.frames);
+      const pace = TrainerTower.pace(t.mode, t.frames);
+      await say(pace === 3 ? "And so quickly, too! Here, these are for you." : pace === 2 ? "Not bad at all. Here, these are for you." : R("ThisIsForYou"));
+      for (const item of items) {
         Player.addItem(player, item);
-        await say(R("ThisIsForYou"));
         await sayWithJingle("mus_level_up", "{PLAYER} obtained the " + Bag.name(item) + "!");
       }
       const r = TrainerTower.finalTime(f);
@@ -10332,6 +10338,139 @@
         text: null, localId: "LOCALID_TOWER_BP_TUTOR", sprite: "gentleman", width: 16, height: 32, frames: 10 });
     }
     SPECIAL.add(BP_TUTOR);
+  }
+  // ---------- Route 40's Battle Tower (Crystal's; this game's own) ----------
+  //
+  // Crystal's Battle Tower stands north of Route 40, through the gatehouse
+  // where HGSS has its Battle Frontier (which this game hasn't got): FireRed's
+  // Trainer Tower lobby, drawn again here, stands in for Crystal's. At the
+  // counter (or its receptionist) choose a level, 10 to 100 by tens, and three
+  // Pokémon at or under it, no two of one species, none holding the same item
+  // as another, no Eggs (Crystal's rules); then seven battles in a row against
+  // the Trainer Tower's trainers (three of their six Pokémon each, FireRed's
+  // sets, at the chosen level), your three healed between battles, no Exp. or
+  // money, and you may stop between them. Lose and the challenge ends; win all
+  // seven for the level's prize (Crystal's vitamins and PP Ups at the lower
+  // levels, Rare Candies and better above) and Battle Points. The nurse heals
+  // and the clerk is the BP Shop. The sign keeps your best streak at each level.
+  const BATTLE_TOWER = "BattleTower_Lobby", BT_ENTRY = "BattleTower_Lobby_EventScript_EntryTrigger", BT_RECEPTION = "BattleTower_Lobby_EventScript_Receptionist",
+    BT_NURSE = "BattleTower_Lobby_EventScript_Nurse", BT_SIGN = "BattleTower_Lobby_EventScript_Sign";
+  const BT_LEVELS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100], BT_BATTLES = 7;
+  const BT_PRIZES = { 10: "hp-up", 20: "protein", 30: "iron", 40: "carbos", 50: "calcium", 60: "pp-up", 70: "rare-candy", 80: "rare-candy", 90: "pp-max", 100: "bottle-cap" };
+  const btBP = (level) => 3 + Math.floor(level / 20);
+  {
+    const src = window.WORLD_MAPS.TrainerTower_Lobby, gate = window.WORLD_MAPS.Route40_BattleFrontierGatehouse;
+    if (src && gate && !window.WORLD_MAPS[BATTLE_TOWER]) {
+      const m = JSON.parse(JSON.stringify(src));
+      const person = (localId, script) => Object.assign({}, src.people.find((p) => p.localId === localId), { script, localId: localId.replace("TOWER", "BATTLE_TOWER") });
+      Object.assign(m, { name: BATTLE_TOWER, title: "Battle Tower", region: "johto", image: "TrainerTower_Lobby", patches: {}, showName: true,
+        warps: [{ x: 9, y: 15, map: "Route40_BattleFrontierGatehouse", warp: 1 }],
+        signs: [{ x: 8, y: 10, script: BT_SIGN, text: null }],
+        triggers: [{ x: 9, y: 7, script: BT_ENTRY }],
+        people: [person("LOCALID_TOWER_NURSE", BT_NURSE), person("LOCALID_TOWER_MART_CLERK", "TrainerTower_Lobby_EventScript_MartClerk"),
+          person("LOCALID_TOWER_RECEPTIONIST", BT_RECEPTION)] });
+      // (No floors above and no elevator: the stairs and the lift's door are shut.)
+      m.collision[2 * m.width + 9] = 1;
+      m.collision[8 * m.width + 17] = 1;
+      window.WORLD_MAPS[BATTLE_TOWER] = m;
+      gate.warps[1] = { x: 4, y: 1, map: BATTLE_TOWER, warp: 0 };
+    }
+    for (const sc of [BT_ENTRY, BT_RECEPTION, BT_NURSE, BT_SIGN]) SPECIAL.add(sc);
+  }
+  const btRecords = () => player.flags.battleTower || (player.flags.battleTower = { best: {} });
+  // Every Trainer Tower trainer who battles alone (the singles' and the
+  // knockout trios'; the double battles' pairs share a name).
+  const btTrainers = () => Object.values(window.TRAINER_TOWER.floors).flatMap((fl) => fl.trainers).filter((t) => !/&/.test(t.name));
+  async function battleTowerEntry() {
+    player.flags.battleTowerScene = 1;
+    await Overworld.act([{ who: "player", moves: ["face_right"] }]);
+    await say(["Welcome to the Battle Tower!", "Here, Trainers from far and wide take\non seven battles in a row, at a level\nof their choosing."]);
+    await battleTowerChallenge();
+  }
+  async function battleTowerReception() {
+    await say("Welcome to the Battle Tower!");
+    await battleTowerChallenge();
+  }
+  async function battleTowerSign() {
+    const best = btRecords().best, lines = BT_LEVELS.filter((l) => best[l]).map((l) => "Lv. " + l + ": " + best[l] + " win" + (best[l] > 1 ? "s" : "") + " in a row");
+    await say(["Battle Tower\nSeven battles in a row, at a level of\nyour choosing."].concat(lines.length ? ["Your best:\n" + lines.slice(0, 2).join("\n")].concat(lines.length > 2 ? [lines.slice(2, 4).join("\n")] : []) : ["No records yet."]));
+  }
+  // Why three Pokémon can't enter at `level` (Crystal's rules), or null.
+  function btTeamProblem(team, level) {
+    if (team.some((r) => r.egg)) return "An Egg can't enter.";
+    if (team.some((r) => r.level > level)) return "Every Pokémon must be at Lv. " + level + "\nor under.";
+    const species = team.map((r) => Party.speciesName(r.species));
+    if (new Set(species).size < species.length) return "No two of the same Pokémon\nmay enter.";
+    const items = team.map((r) => r.item).filter(Boolean);
+    if (new Set(items).size < items.length) return "No two may hold the same item.";
+    return null;
+  }
+  async function battleTowerChallenge() {
+    for (;;) {
+      const i = await multichoice("Would you like to take the\nBattle Tower challenge?", 18, 6, ["Yes", "No", "Info"]);
+      if (i === 2) {
+        await say(["Choose a level, from 10 to 100, and\nthree Pokémon at or under it.", "No two of the same Pokémon, and no\ntwo holding the same item.",
+          "Beat seven Trainers in a row at that\nlevel for a prize and Battle Points.\nYour Pokémon are healed between battles."]);
+        continue;
+      }
+      if (i !== 0) break;
+      const l = await multichoice("Which level?", 16, 1, BT_LEVELS.map((n) => "Lv. " + n).concat(["Exit"]));
+      if (l < 0 || l >= BT_LEVELS.length) break;
+      const level = BT_LEVELS[l];
+      if (player.party.filter((r) => !r.egg && r.level <= level).length < 3) { await say("You need three Pokémon at Lv. " + level + "\nor under to enter."); continue; }
+      const chosen = await chooseBattleTeam(3);
+      if (!chosen) continue;
+      const team = chosen.map((k) => player.party[k]);
+      const problem = btTeamProblem(team, level);
+      if (problem) { await say(problem); continue; }
+      await say("Then let the Battle Tower challenge\nbegin! Good luck!");
+      Screen.say("");
+      await battleTowerStreak(level, chosen);
+      return;
+    }
+    await say("Please come again!");
+    Screen.say("");
+  }
+  async function battleTowerStreak(level, chosen) {
+    const f = player.flags, team = chosen.map((k) => player.party[k]);
+    team.forEach(Party.heal);
+    const pool = btTrainers().slice();
+    let wins = 0;
+    const noteBest = () => { const best = btRecords().best; if (wins > (best[level] || 0)) best[level] = wins; };
+    for (let n = 1; n <= BT_BATTLES; n++) {
+      const t = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+      const mons = t.mons.slice().sort(() => Math.random() - 0.5).slice(0, 3).map((m) => TrainerTower.mon(m, level));
+      await say("Battle " + n + " of " + BT_BATTLES + ":\n" + t.className + " " + t.name + "!");
+      await say([t.intro]);
+      const outcome = await battle("trainer", { foe: { name: t.className + " " + t.name, team: mons, pic: t.pic }, defeatText: [t.lose],
+        noBlackout: true, noExp: true, noPrize: true, chosen });
+      show("world");
+      await Overworld.resume();
+      if (outcome !== "won") {
+        player.party.forEach(Party.heal);
+        noteBest();
+        await say(["Too bad... Your challenge ends at\n" + wins + " win" + (wins === 1 ? "" : "s") + ".", "Please try again!"]);
+        return;
+      }
+      wins++;
+      team.forEach(Party.heal);
+      if (n < BT_BATTLES) {
+        await say("That's " + wins + " in a row! Your Pokémon\nhave been healed.");
+        if (!(await confirm("Go on to the next battle?"))) {
+          noteBest();
+          await say("Then your challenge ends at\n" + wins + " win" + (wins === 1 ? "" : "s") + ". Well done!");
+          return;
+        }
+      }
+    }
+    noteBest();
+    const prize = BT_PRIZES[level] || "rare-candy", bp = btBP(level);
+    await say(["Congratulations! You've beaten all\nseven Trainers at Lv. " + level + "!", "Here is your prize."]);
+    Player.addItem(player, prize);
+    await sayWithJingle("mus_level_up", "{PLAYER} received the " + Bag.name(prize) + "!");
+    f.bp = (f.bp || 0) + bp;
+    await say("{PLAYER} earned " + bp + " BP!\n(" + f.bp + " BP in total.)");
+    await persist();
   }
   // Its Egg moves (every game's): its own Egg list and its evolution line's,
   // the first stage's being where they're kept.
@@ -11635,6 +11774,7 @@
     // having lost (TrainerTower_Lobby_EventScript_Enter); a floor's battle
     // while it's the next to clear, and its trainers haven't come for you yet.
     if (script === "TrainerTower_Lobby_EventScript_EntryTrigger") return !player.flags.towerScene;
+    if (script === BT_ENTRY) return !player.flags.battleTowerScene;
     if (script === "enter:TrainerTower_Lobby") return !!(player.flags.tower && player.flags.tower.lost);
     if (/^TrainerTower_EventScript_(Single|Double)BattleTrigger/.test(script)) {
       const map = player.location.map, n = towerFloorNo(map);

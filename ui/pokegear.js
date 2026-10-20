@@ -624,9 +624,10 @@
       await env.say(fill(c.msgs[5], buffers(i)));
       await env.giveItem(item);
     }
+    // (Only once you have the Pokégear; asked on the map, after the battle.)
     async function beatTrainer(person) {
       const i = contactOf(person.trainer && person.trainer.id);
-      if (i < 0 || registered(i)) return;
+      if (i < 0 || registered(i) || !has()) return;
       await askNumber(i, 1);
     }
     async function talkTrainer(person) {

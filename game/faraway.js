@@ -89,10 +89,10 @@
     return go(any.length > 1 ? any[steps % any.length] : any[0] || null);
   }
 
-  // Long grass (and tall grass) on a map: FireRed's MB_TALL_GRASS here.
+  // Long grass (and tall grass) on a map: MB_LONG_GRASS (and MB_TALL_GRASS).
   const isGrass = (mapName) => (x, y) => {
     const b = window.World.blockAt(mapName, x, y);
-    return !!b.map && b.behavior === window.World.MB.TALL_GRASS;
+    return !!b.map && (b.behavior === window.World.MB.LONG_GRASS || b.behavior === window.World.MB.TALL_GRASS);
   };
 
   window.Faraway = { ROCKS, mewStep, isGrass };

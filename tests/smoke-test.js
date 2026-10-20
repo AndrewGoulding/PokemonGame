@@ -2016,7 +2016,7 @@ if (window.JOHTO_TOWN_MAP) {
 
 // Shiny Pokémon: 1 in 4096; kept through saving; trainers' never are.
 {
-  assert.strictEqual(Party.SHINY_ODDS, 1000);
+  assert.strictEqual(Party.SHINY_ODDS, 4096);
   const shiny = Party.create("Pikachu", 5, { shiny: true });
   assert(shiny.shiny && Party.toBattleSet(shiny).shiny);
   const p = Player.create("S");
@@ -3199,7 +3199,7 @@ for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
   assert.deepStrictEqual([1, 4, 5, 10, 19, 20, 100].map((lv) => Mining.tools(lv).map((t) => t.id).join()),
     ["pick", "pick", "pick,hammer", "pick,hammer,bomb", "pick,hammer,bomb", "pick,hammer,bomb,survey", "pick,hammer,bomb,survey"]);
   assert(Mining.ENERGY_COST.bomb > Mining.ENERGY_COST.hammer);
-  assert.strictEqual(Mining.ENERGY_COST.bomb, 12, "the bomb costs 12 energy");
+  assert.strictEqual(Mining.ENERGY_COST.bomb, 6, "the bomb costs 6 energy");
   {
     const g = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), o = fs.readFileSync(path.join(root, "ui/overworld.js"), "utf8");
     // (The fossil doctors revive any fossil in your Bag: those dug up mining too.)

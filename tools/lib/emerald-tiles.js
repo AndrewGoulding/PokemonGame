@@ -118,7 +118,7 @@ module.exports = function emeraldTiles(EM) {
   // Sapphire's numbers; the grass and the mountain top differ.
   function frBehavior(b) {
     switch (b) {
-      case 0x02: case 0x03: return 0x02;   // tall grass, long grass
+      case 0x02: case 0x03: return b;      // tall grass, long grass (Faraway Island's, which hides whoever's in it)
       case 0x10: case 0x11: case 0x12: case 0x13: case 0x15: case 0x16: case 0x17: return b;   // waters, puddles
       case 0x21: return 0x21;              // sand
       case 0x38: case 0x39: case 0x3a: case 0x3b: return b;   // ledges

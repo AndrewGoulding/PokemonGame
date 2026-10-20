@@ -1540,7 +1540,8 @@
         // poisoned due to the opposing …'s Effect Spore!")
         {
           let text;
-          if (/^\[from\] ability: /.test(c || "") && ev[4]) {
+          if (c === "[silent]") text = null;   // (a nap from disobeying: "began to nap!" said already)
+          else if (/^\[from\] ability: /.test(c || "") && ev[4]) {
             const owner = fill("{whom}", ev[4]), ability = String(c).replace(/^\[from\] ability: /, "");
             text = fill("{who} has been " + (STATUS_DONE[b] || "afflicted") + " due to\n" + owner + "'s " + ability + "!", a);
           } else text = fill(lookup(STATUS_START, b, "{who} was afflicted by " + b + "!"), a);
@@ -1561,6 +1562,11 @@
       case "-setboost": return fill("{who} cut its own HP and maximized its " + (STAT_NAMES[b] || b) + "!", a);
       case "-clearallboost": return "All stat changes were eliminated!";
       case "-clearboost": return fill("{who}'s stat changes were removed!", a);
+      // Over the level cap (FireRed's disobedience): "won't obey", or ignoring
+      // orders (another move follows), loafing, a nap, or hurting itself.
+      case "-disobey":
+        return fill({ ignored: "{who} ignored orders!", nap: "{who} began to nap!", hurt: "{who} won't obey!", loaf: "{who} is loafing around!",
+          turnaway: "{who} turned away!", notice: "{who} pretended not to notice!" }[b] || "{who} won't obey!", a);
       case "cant": {
         const id = effectId(b), text = fill(lookup(CANT, id, "{who} can't move!"), a);
         if (!STATUS_ANIM[id]) return text;

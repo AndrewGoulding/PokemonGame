@@ -5,7 +5,8 @@
 //
 //   TrainerTower.MODES                    // ["Single", "Double", "Knockout", "Mixed"] (the lobby's menu)
 //   TrainerTower.floor(mode, n)           // floor n (1-8) of challenge `mode` (0-3): { type, prize, trainers, looks }
-//   TrainerTower.prize(mode)              // the challenge's prize (its first floor's: GiveChallengePrize)
+//   TrainerTower.prize(mode)              // FireRed's prize for the challenge (its first floor's; not given here)
+//   TrainerTower.rewards(mode, frames, rng)   // this game's: the items for finishing it in `frames`
 //   TrainerTower.start(flags, mode)       // StartTrainerTowerChallenge: flags.tower = { mode, floorsCleared, frames, ... }
 //   TrainerTower.floorCleared(flags, n)   // GetFloorAlreadyCleared: no battle on floor n
 //   TrainerTower.team(floor, trainer, cleared, level)   // BuildEnemyParty: that trainer's Pokémon (party records)
@@ -17,8 +18,18 @@
 //
 // FireRed keeps the challenge in gSaveBlock1Ptr->trainerTower[mode]; here
 // player.flags.tower (the challenge going on) and flags.towerRecords
-// ({ best: [frames x4], prize: [bool x4] }: each mode's best time, and its
-// prize, given once, as FireRed's built-in challenges never change).
+// ({ best: [frames x4], prize: [bool x4] }: each mode's best time; `prize`
+// is from when FireRed's prizes were given once, and stays for old saves).
+//
+// Rewards (this game's, in place of FireRed's once-only prizes): every
+// challenge finished draws items from one pool, whatever the mode. The
+// faster the finish, the better the draw: slow, middling or fast (Single,
+// Double and Mixed under 15 and 8 minutes; Knockout, with three battles a
+// floor, under 30 and 16). A slow finish draws vitamins, PP Ups, mints and
+// everyday held items; a middling one adds Bottle Caps, PP Maxes and the
+// stronger held items (Choice items, Life Orb, Focus Sash...); a fast one
+// adds Gold Bottle Caps, Ability Capsules and the Ability Patch. One, two or
+// three items by pace; a Knockout two more than that.
 (function () {
   "use strict";
 
@@ -33,6 +44,37 @@
   const KNOCKOUT_MONS = [[0, 2, 4], [1, 3, 5], [2, 3, 1], [3, 4, 0], [4, 1, 2], [5, 0, 3], [0, 5, 2], [1, 4, 5]];
 
   const data = () => window.TRAINER_TOWER;
+
+  // The reward pool, by the pace that unlocks each part: [item, weight].
+  const VITAMINS = ["hp-up", "protein", "iron", "calcium", "zinc", "carbos"];
+  const HELD_EVERYDAY = ["quick-claw", "kings-rock", "scope-lens", "bright-powder", "white-herb", "mental-herb", "metal-coat", "dragon-scale",
+    "up-grade", "leftovers", "focus-band", "shell-bell", "black-sludge", "wide-lens", "muscle-band", "wise-glasses", "lum-berry", "sitrus-berry"];
+  const HELD_STRONG = ["choice-band", "choice-specs", "choice-scarf", "life-orb", "focus-sash", "assault-vest", "eviolite", "rocky-helmet",
+    "expert-belt", "weakness-policy", "air-balloon"];
+  const mints = () => Object.keys(window.ITEMS || {}).filter((id) => /-mint$/.test(id));
+  const POOLS = [
+    () => VITAMINS.map((v) => [v, 3]).concat([["pp-up", 4]], mints().map((m) => [m, 0.5]), HELD_EVERYDAY.map((h) => [h, 1.5])),
+    () => [["bottle-cap", 6], ["pp-max", 3]].concat(HELD_STRONG.map((h) => [h, 2])),
+    () => [["gold-bottle-cap", 3], ["ability-capsule", 3], ["ability-patch", 1]]
+  ];
+  // The pace: 1 slow, 2 middling, 3 fast (minutes, by mode: a Knockout has three battles a floor).
+  const PACE = (mode) => (mode === 2 ? [16, 30] : [8, 15]);
+  function pace(mode, frames) {
+    const [fast, mid] = PACE(mode);
+    return frames <= fast * 3600 ? 3 : frames <= mid * 3600 ? 2 : 1;
+  }
+  function rewards(mode, frames, rng) {
+    rng = rng || Math.random;
+    const tier = pace(mode, frames), count = tier + (mode === 2 ? 2 : 0);
+    const pool = POOLS.slice(0, tier).map((f) => f()).flat().filter(([id]) => !window.ITEMS || window.ITEMS[id]);
+    const total = pool.reduce((t, [, w]) => t + w, 0);
+    const out = [];
+    for (let i = 0; i < count; i++) {
+      let r = rng() * total;
+      for (const [id, w] of pool) { r -= w; if (r < 0) { out.push(id); break; } }
+    }
+    return out;
+  }
   const floor = (mode, n) => data().floors[data().challenges[mode][n - 1]];
   const prize = (mode) => floor(mode, 1).prize;
 
@@ -94,5 +136,5 @@
   }
 
   window.TrainerTower = { MODES, FLOORS, MAX_TIME, SINGLE_MONS, DOUBLE_MONS, KNOCKOUT_MONS, floor, prize, records, start, floorCleared,
-    mon, team, partyLevel, tick, time, best, finalTime };
+    mon, team, partyLevel, tick, time, best, finalTime, rewards, pace, PACE };
 })();

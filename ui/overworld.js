@@ -89,7 +89,9 @@
     return images[src];
   }
   const ready = (img) => img.complete && img.naturalWidth > 0;
-  const mapImage = (name, part) => image("assets/world/maps/" + name + (part ? "-" + part : "") + ".png");
+  // (A map made from another's pictures, the Battle Tower from the Trainer
+  // Tower's lobby: WORLD_MAPS[..].image names whose to draw.)
+  const mapImage = (name, part) => { const m = World.map(name); return image("assets/world/maps/" + ((m && m.image) || name) + (part ? "-" + part : "") + ".png"); };
   const spriteImage = (name) => image("assets/world/sprites/" + name + ".png");
 
   // FireRed's tile animations (TilesetAnim_General): a counter of frames
@@ -1612,11 +1614,12 @@
     return !!OVER_TOP[a.elev];
   }
 
-  // ---------- Tall grass (FLDEFF_TALL_GRASS, src/field_effect_helpers.c) ----------
+  // ---------- Long grass (FLDEFF_LONG_GRASS, src/field_effect_helpers.c) ----------
   //
-  // Whoever stands in tall grass (MB_TALL_GRASS: you, your Pokémon, people)
-  // is in it, not on it: FireRed's 16x16 grass sprite (data/field-effects.js)
-  // over the tile and their feet. Stepping in, it rustles (frames 1-4, 10
+  // Whoever stands in long grass (MB_LONG_GRASS, Faraway Island's: you, your
+  // Pokémon, people) is in it, not on it: FireRed's 16x16 long grass sprite
+  // (data/field-effects.js) over the tile and their feet. (Ordinary tall
+  // grass, where wild Pokémon are, doesn't cover anyone here.) Stepping in, it rustles (frames 1-4, 10
   // frames each, then 0: sAnim_TallGrass); someone already standing there
   // when the map's drawn has it at rest (frame 0). It stays while anyone's on
   // the tile or stepping off it, and until it's done rustling.
@@ -1624,7 +1627,7 @@
   const grassFx = new Map();   // "map:x:y" -> { x, y, start (ms), map }
   let grassPics = null;
   function grassPic(frame) {
-    const fx = window.FIELD_EFFECTS && window.FIELD_EFFECTS.tallGrass;
+    const fx = window.FIELD_EFFECTS && (window.FIELD_EFFECTS.longGrass || window.FIELD_EFFECTS.tallGrass);
     if (!fx) return null;
     if (!grassPics) {
       grassPics = [];
@@ -1643,7 +1646,9 @@
     }
     return grassPics[frame];
   }
-  const isTallGrass = (map, x, y) => World.blockAt(map, x, y).behavior === World.MB.TALL_GRASS;
+  // (Only long grass, Emerald's on Faraway Island, hides whoever's in it;
+  // FireRed's ordinary tall grass leaves them in view.)
+  const isTallGrass = (map, x, y) => World.blockAt(map, x, y).behavior === World.MB.LONG_GRASS;
   // The tiles someone's on: where they stand, and where they're stepping to
   // or from; and whether they're stepping.
   function grassOccupants() {
@@ -1675,7 +1680,8 @@
     for (const [key, fx] of grassFx) {
       const t = Math.floor((now - fx.start) / GRASS_FRAME_MS), done = t >= 4;
       if (fx.map !== me.map || (!here.has(key) && done)) { grassFx.delete(key); continue; }
-      const pic = grassPic(done ? 0 : t + 1);
+      const fx0 = window.FIELD_EFFECTS && (window.FIELD_EFFECTS.longGrass || window.FIELD_EFFECTS.tallGrass);
+      const pic = grassPic(done ? 0 : Math.min(t + 1, (fx0 ? fx0.frames : 5) - 1));
       if (!pic) continue;
       // (Over whoever's on its tile, or stepping onto it from below; under
       // anyone on the row below.)
@@ -1882,9 +1888,23 @@
 
     if (shade) g.filter = SHADE;
     for (const [name, ox, oy] of layers) {
-      if (!World.map(name).top) continue;
+      const m = World.map(name);
+      if (!m.top) continue;
       const img = mapImage(name, "top");
-      if (ready(img)) g.drawImage(img, ox - camX, oy - camY);
+      if (ready(img)) {
+        // (Where a patch with its own top layer is on, the map's own top
+        // layer stays out of its way: no chair tops over a patched floor.)
+        const on = m.patches && ctx.patches ? ctx.patches(name).map((p) => m.patches[p]).filter((pt) => pt && pt.top) : [];
+        if (on.length) {
+          g.save();
+          g.beginPath();
+          g.rect(0, 0, canvas.width, canvas.height);
+          for (const pt of on) g.rect(ox - camX + pt.x * TILE, oy - camY + pt.y * TILE, pt.w * TILE, pt.h * TILE);
+          g.clip("evenodd");
+          g.drawImage(img, ox - camX, oy - camY);
+          g.restore();
+        } else g.drawImage(img, ox - camX, oy - camY);
+      }
       drawPatches(name, ox - camX, oy - camY, "-top");
     }
     g.filter = "none";
