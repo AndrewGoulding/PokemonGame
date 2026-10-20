@@ -14,6 +14,7 @@
 # E.P(array, offset), read and written through .a[.o + i]; a function
 # pointer is the function. A struct value that's copied is copied
 # (E.copy); a union initialised through one member is { member: value }.
+import os
 import ctypes
 import clang.cindex as ci
 
@@ -305,7 +306,7 @@ class Translator:
         import re as _re
         name = t.get_declaration().spelling
         if not name or not _re.match(r"^\w+$", name):
-            name = "anon_" + str(t.get_declaration().location.line) + "_" + _re.sub(r"\W", "_", str(t.get_declaration().location.file or ""))[-20:]
+            name = "anon_" + str(t.get_declaration().location.line) + "_" + _re.sub(r"\W", "_", os.path.basename(str(t.get_declaration().location.file or "")))
         if name in self.layouts:
             return name
         self.layouts[name] = None

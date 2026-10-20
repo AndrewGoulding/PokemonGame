@@ -19,8 +19,12 @@
 // as a colour matrix and drawn as an SVG filter on the picture.
 //
 //   BattleAnim.play({ move, attacker, target, field, battlers, ... }) -> Promise
+//   BattleAnim.play({ anim: "general" | "status" | "special", id, arg, ... })
+//                          one of the expansion's other animations (a stat
+//                          change, a status, the weather, a ball thrown...)
 //   BattleAnim.run(opts)   the same without a screen (tests): { frames, error }
 //   BattleAnim.has(move)   whether the move has an animation
+//   BattleAnim.hasAnim(kind, id)
 (function () {
   "use strict";
   const D = window.BATTLE_ANIM_DATA;
@@ -53,7 +57,9 @@
   // up for everything else (each buffer, array or object given its own range
   // the first time it's asked for), so that a pointer kept in two s16s of a
   // task's data comes back as the same pointer.
-  const P = (a, o) => ({ a, o: o | 0 });
+  // (P of a pointer, as a table of script labels has them, is that
+  // pointer moved along: the C's array decaying to a pointer)
+  const P = (a, o) => (a && typeof a === "object" && !isTyped(a) && a !== IO2 && a !== IO4 && a.a !== undefined && a.o !== undefined ? { a: a.a, o: a.o + (o | 0) } : { a, o: o | 0 });
   const VRAM = new ArrayBuffer(0x18000), PLTT = new ArrayBuffer(0x400), OAMB = new ArrayBuffer(0x400);
   const io = new Uint16Array(0x200);
   const views = new WeakMap();
@@ -568,7 +574,8 @@
     IsBattleMovePhysical: () => (inst && inst.physical ? 1 : 0),
     MoveHasAdditionalEffect: () => 0,
     IsAnyTerrainAffected: () => 0,
-    ItemIdToBallId: () => 0,
+    // (balls: a ball's id (D.balls) stands for its item's)
+    ItemIdToBallId: (item) => (item >= 1 && item <= D.balls.BALL_CHERISH ? item : D.balls.BALL_POKE),
     GetMoveAnimationScript: (move) => {
       const label = moveLabel[move];
       return label ? E[label] : E.gBattleAnimMove_None || null;
@@ -582,13 +589,22 @@
     UpdateIndicatorVisibilityAndType: () => {},
     SetBattlerShadowSpriteCallback: () => {},
     CreateEnemyShadowSprite: () => {},
-    ClearBehindSubstituteBit: () => {},
+    ClearBehindSubstituteBit: (b) => { if (inst) E.gBattleSpritesDataPtr.battlerData[b].behindSubstitute = 0; },
     SwitchTwoBattlersInParty: () => {},
     // The Pokémon's pictures: this game's (a transformation's new picture
-    // is the battle screen's to show).
+    // is the battle screen's to show: opts.transform(attacker, target,
+    // kind) is called when the C changes the picture, in the mosaic).
     BattleLoadMonSpriteGfx: () => {},
-    LoadBattleMonGfxAndAnimate: () => {},
-    HandleSpeciesGfxDataChange: () => {},
+    HandleSpeciesGfxDataChange: (attacker, target, kind) => { if (inst && inst.transform) inst.transform(attacker, target, kind); },
+    // The Substitute doll: a Pokémon behind one is the doll's tiles, not
+    // its picture (battle_gfx_sfx_util.c's BattleLoadSubstituteOrMonSpriteGfx).
+    BattleLoadSubstituteOrMonSpriteGfx: (battler, loadMonSprite) => doll(battler, !loadMonSprite),
+    LoadBattleMonGfxAndAnimate: (battler, loadMonSprite, spriteId) => {
+      doll(battler, !loadMonSprite);
+      const s = C.gSprites[spriteId];
+      C.StartSpriteAnim(s, 0);
+      s.y = loadMonSprite ? coord(battler, 4) : dollY(battler);
+    },
     // Another Pokémon's picture (Role Play, Hyperspace Fury...): its tiles
     // stand for this game's picture of it once they're in VRAM.
     LoadSpecialPokePic: (dest, species, personality, isFront) => {
@@ -599,6 +615,17 @@
     GetMonSpritePalFromSpeciesAndPersonality: () => P(Uint16Array.from(REF_PAL), 0),
     CreateBattlerSprite: () => {},
     DrawBattlerOnBg: (bgId, x, y, position, paletteId, tiles, tilemap, tilesOffset) => {
+      if (inst && inst.doll[position]) {
+        // (the doll: its tiles, as battle_intro.c draws a Pokémon's)
+        copyBytes(tiles, P(dollTiles(position), 0), 0x800);
+        C.LoadBgTiles(bgId, tiles, 0x1000, tilesOffset);
+        const t = pcast(tilemap, 2);
+        let off = tilesOffset;
+        for (let i = y; i < y + 8; i++) for (let j = x; j < x + 8; j++) t.a[t.o + i * 32 + j] = (off++) | (paletteId << 12);
+        C.LoadBgTilemap(bgId, tilemap, 0x800, 0);
+        bgBattler[bgId] = null;
+        return;
+      }
       bgBattler[bgId] = { battler: position, x: x * 8, y: y * 8, pal: paletteId, map: screenBase(bgId) };
     },
     DrawMainBattleBackground: () => { endMoveBg(); },
@@ -710,7 +737,7 @@
       case 10: return mon.hp;                  // MON_DATA_HP
       case 11: return mon.shiny ? 1 : 0;       // MON_DATA_IS_SHINY
       case 18: return mon.species;             // MON_DATA_SPECIES
-      case 47: return 4;                       // MON_DATA_POKEBALL (a Poké Ball)
+      case 47: return mon.ball || D.balls.BALL_POKE;   // MON_DATA_POKEBALL
       case 65: return mon.maxHP;               // MON_DATA_MAX_HP
     }
     return 0;
@@ -721,6 +748,30 @@
     const key = (s) => "SPECIES_" + String(s).toUpperCase().replace(/[♀]/g, "_F").replace(/[♂]/g, "_M").replace(/É/g, "E")
       .replace(/[^A-Z0-9]+/g, "_").replace(/^_|_$/g, "");
     return D.species[key(name + (form ? "-" + form : ""))] || D.species[key(name)] || 0;
+  }
+
+  // The Substitute doll in place of a Pokémon: the doll's tiles in its
+  // sprite's (the front doll facing you, the back one from behind) and its
+  // palette in the Pokémon's slot; or the Pokémon back (its picture again).
+  const dollTiles = (b) => ((b & 1) ? E.gBattleAnimSpriteGfx_Substitute : E.gBattleAnimSpriteGfx_SubstituteBack);
+  function doll(b, on) {
+    if (!inst || !inst.mons[b]) return;
+    const id = E.gBattlerSpriteIds[b], s = C.gSprites[id];
+    if (!s || id >= 64) return;
+    const tiles = P(new Uint8Array(VRAM), 0x10000 + s.oam.tileNum * 32);
+    if (on) copyBytes(tiles, P(dollTiles(b), 0), 0x800); else fillBytes(tiles, 0, 0x800, 1);
+    const pal = on ? E.gBattleAnimSpritePal_Substitute : REF_PAL;
+    for (let i = 0; i < 16; i++) C.gPlttBufferUnfaded[0x100 + b * 16 + i] = C.gPlttBufferFaded[0x100 + b * 16 + i] = pal[i];
+    inst.doll[b] = on;
+    E.gBattleSpritesDataPtr.battlerData[b].behindSubstitute = on ? 1 : 0;
+  }
+  // Where the doll stands: its feet where the Pokémon's picture's are (the
+  // front doll's bottom is 15 rows under its middle, the back one's 21).
+  const DOLL_FEET = [22, 16];
+  const dollY = (b) => u8(Math.round(coordAttr(b, 3)) - DOLL_FEET[b & 1]);
+  function dollPlace(box, back) {
+    const bottom = box.cy + box.size / 2 - box.bottom;
+    return { cx: box.cx, cy: bottom - DOLL_FEET[back ? 0 : 1], size: 64 };
   }
 
   // Where a Pokémon is: from its picture (the instance's `boxes`, measured
@@ -843,6 +894,28 @@
     { bg: 3, charBaseIndex: 2, mapBaseIndex: 26, screenSize: 1, paletteMode: 0, priority: 3, baseTile: 0 }
   ];
   const BATTLER_OAM = { y: 0, affineMode: 0, objMode: 0, mosaic: 0, bpp: 0, shape: 0, x: 0, matrixNum: 0, size: 3, tileNum: 0, priority: 2, paletteNum: 0, affineParam: 0 };
+  // The Pokémon sprites' affine animations (src/data.c): BATTLER_AFFINE_NORMAL,
+  // EMERGE (out of a ball), RETURN (into one), and the rest by index.
+  const AF = (x, y, r, d) => U("AffineAnimCmd", { frame: { xScale: x, yScale: y, rotation: r, duration: d } });
+  const AF_END = () => U("AffineAnimCmd", { type: 0x7FFF }), AF_JUMP = (t) => U("AffineAnimCmd", { jump: { type: 0x7FFE, target: t } });
+  const BATTLER_AFFINE = {
+    normal: [AF(0x100, 0x100, 0, 0), AF_END()],
+    emerge: [AF(0x28, 0x28, 0, 0), AF(0x12, 0x12, 0, 12), AF_END()],
+    ret: [AF(-0x2, -0x2, 0, 18), AF(-0x10, -0x10, 0, 15), AF_END()],
+    squish: [AF(0xA0, 0x100, 0, 0), AF(0x4, 0x0, 0, 8), AF(-0x4, 0x0, 0, 8), AF_JUMP(1)],
+    grow: [AF(0x2, 0x2, 0, 20), AF_END()],
+    shrink: [AF(-0x2, -0x2, 0, 20), AF_END()],
+    bigToSmall: [AF(0x100, 0x100, 0, 0), AF(-0x10, -0x10, 0, 9), AF_END()],
+    growLarge: [AF(0x4, 0x4, 0, 63), AF_END()],
+    tipRight: [AF(0, 0, -3, 5), AF(0, 0, 3, 5), AF_END()],
+    spinShrink: [AF(-0x4, -0x4, 4, 63), AF_END()],
+    tipLeft: [AF(0, 0, 3, 5), AF(0, 0, -3, 5), AF_END()],
+    rotateUpAndBack: [AF(0, 0, -5, 20), AF(0, 0, 0, 20), AF(0, 0, 5, 20), AF_END()],
+    spin: [AF(0, 0, 9, 110), AF_END()]
+  };
+  const B = BATTLER_AFFINE;
+  const BATTLER_AFFINE_PLAYER = [B.normal, B.emerge, B.ret, B.squish, B.grow, B.shrink, B.growLarge, B.tipRight, B.bigToSmall].map((t) => sat(t, 0));
+  const BATTLER_AFFINE_OPPONENT = [B.normal, B.emerge, B.ret, B.squish, B.grow, B.shrink, B.spinShrink, B.tipLeft, B.rotateUpAndBack, B.bigToSmall, B.spin].map((t) => sat(t, 0));
 
   function init() {
     if (C) return;
@@ -853,9 +926,19 @@
   }
 
   // opts: { move (name or id), attacker, target (0 p1, 1 p2, 2 p1b, 3 p2b),
-  //   doubles, mons: [{ name, form, hp, maxHP, shiny, personality }...],
+  //   doubles, mons: [{ name, form, hp, maxHP, shiny, personality, ball }...],
   //   boxes: [{ cx, cy, size, top, bottom }...] (GBA px), hidden: [bools],
-  //   sound(name, pan), cry(name, mode), hideBoxes(on), seed }
+  //   substitute: [bools] (behind a Substitute: the doll shows), shown:
+  //   [bools] (seen whatever the page says),
+  //   sound(name, pan), cry(name, mode), hideBoxes(on), seed,
+  //   transform(attacker, target, kind) }
+  // Or, instead of a move: { anim: "general" | "status" | "special", id (a
+  //   B_ANIM_ name without the prefix, or its number), arg (a stat change's:
+  //   STAT_ANIM_PLUS1 + STAT_ATK...), ball (a ball's name, "great-ball"),
+  //   ballCase (0 no shakes, 1-2 shakes, 3 three and out, 4 caught, 5 a
+  //   trainer blocks it, 6 the ghost dodges), effectBattler, environment
+  //   ("grass", "cave"...: Secret Power's and Camouflage's) }
+  const ANIM_TYPES = { general: 0, move: 1, status: 2, special: 3 };
   function setup(opts) {
     init();
     seed = opts.seed >>> 0;
@@ -863,12 +946,13 @@
       const m = opts.mons && opts.mons[b];
       if (!m || (b >= 2 && !opts.doubles)) return null;
       return { name: m.name, form: m.form, species: speciesId(m.name, m.form), personality: m.personality >>> 0 || 0x12345678,
-        hp: m.hp == null ? 1 : m.hp, maxHP: m.maxHP || 1, shiny: !!m.shiny };
+        hp: m.hp == null ? 1 : m.hp, maxHP: m.maxHP || 1, shiny: !!m.shiny, ball: ballIdOf(m.ball) };
     });
     inst = { doubles: !!opts.doubles, mons, boxes: opts.boxes || [], frame: 0, seUntil: 0, cryUntil: 0,
       sound: opts.sound, cry: opts.cry, hideBoxes: opts.hideBoxes || (() => {}),
       moveType: D.types["TYPE_" + String(opts.type || "").toUpperCase()] || 0, physical: opts.category === "Physical",
-      moveTarget: 0, battlerTiles: [], pictures: [], picture: opts.picture, itemPicture: opts.itemPicture };
+      moveTarget: 0, battlerTiles: [], pictures: [], picture: opts.picture, itemPicture: opts.itemPicture,
+      doll: [false, false, false, false], transform: opts.transform };
     // The machine, cleared.
     new Uint8Array(VRAM).fill(0); new Uint8Array(PLTT).fill(0); new Uint8Array(OAMB).fill(0); io.fill(0);
     hdma.fill(null); bgBattler.fill(null); moveBg = false;
@@ -880,6 +964,12 @@
     const ext = C.__externs();
     for (const k of Object.keys(ext)) if (!(k in D.gfx) && D.labels[k] === undefined) E[k] = ext[k];
     Object.assign(E, C.__state());
+    E.gAffineAnims_BattleSpritePlayerSide = BATTLER_AFFINE_PLAYER;
+    E.gAffineAnims_BattleSpriteOpponentSide = BATTLER_AFFINE_OPPONENT;
+    // Where the battle is (Secret Power's and Camouflage's animations go by it).
+    const env = D.environments[String(opts.environment || "plain").toUpperCase().replace(/[^A-Z0-9]+/g, "_")] || D.environments.PLAIN || {};
+    E.gBattleEnvironment = 0;
+    E.gBattleEnvironmentInfo = [{ secretPowerAnimation: (env.secretPower && E[env.secretPower]) || E.gBattleAnimMove_Slam || null, camouflageBlend: env.camouflageBlend || 0x7FFF }];
     E.gBattleSpritesDataPtr = zero({ battlerData: [0, 1, 2, 3].map(() => zero(C.__shapes.BattleSpriteInfo())),
       healthBoxesData: [0, 1, 2, 3].map(() => zero(C.__shapes.BattleHealthboxInfo())),
       animationData: zero(C.__shapes.BattleAnimationInfo()), battleBars: [] });
@@ -922,11 +1012,15 @@
     for (let b = 0; b < 4; b++) {
       E.gBattlerSpriteIds[b] = 64;
       if (!mons[b] || b >= E.gBattlersCount) continue;
-      const template = { tileTag: 0xFFFF, paletteTag: 0xFFFF, oam: Object.assign({}, BATTLER_OAM),
+      // (As the GBA has them: rotating and scaling by their own affine
+      // animations, with an OAM matrix each, except during a move's
+      // animation: SetBattlerSpriteAffineMode(ST_OAM_AFFINE_OFF).)
+      const template = { tileTag: 0xFFFF, paletteTag: 0xFFFF, oam: Object.assign({}, BATTLER_OAM, { affineMode: 1 }),
         anims: C.gDummySpriteAnimTable, images: sat([{ data: P(new Uint8Array(2048), 0), size: 2048, relativeFrames: 0 }], 0),
-        affineAnims: C.gDummySpriteAffineAnimTable, callback: C.SpriteCallbackDummy };
+        affineAnims: (b & 1) ? BATTLER_AFFINE_OPPONENT : BATTLER_AFFINE_PLAYER, callback: C.SpriteCallbackDummy };
       const id = C.CreateSprite(template, coord(b, 2), coord(b, 4), C.GetBattlerSpriteSubpriority(b));
       const s = C.gSprites[id];
+      if (!opts.anim) { E.gBattleSpritesDataPtr.healthBoxesData[b].matrixNum = s.oam.matrixNum; s.oam.affineMode = 0; s.oam.matrixNum = 0; }
       s.oam.paletteNum = b;
       s.invisible = opts.hidden && opts.hidden[b] ? 1 : 0;
       E.gBattlerSpriteIds[b] = id;
@@ -940,12 +1034,23 @@
       E.gHealthboxSpriteIds[b] = id;
     }
     setRefPalette(BG_REF_SLOT);
+    for (let b = 0; b < 4; b++) {
+      if (!opts.substitute || !opts.substitute[b] || !mons[b] || b >= E.gBattlersCount) continue;
+      doll(b, true);
+      C.gSprites[E.gBattlerSpriteIds[b]].y = dollY(b);
+    }
     C.TransferPlttBuffer();
-    // The move.
-    let id = typeof opts.move === "number" ? opts.move : moveIdOf(opts.move);
+    // The move, or another animation.
+    const kind = opts.anim || "move";
+    let id = kind === "move" ? (typeof opts.move === "number" ? opts.move : moveIdOf(opts.move)) : animIdOf(kind, opts.id);
+    if (id == null) throw new Error("battle anim: no " + kind + " animation " + opts.id);
     E.gBattlerAttacker = E.gBattleAnimAttacker = opts.attacker | 0;
-    E.gBattlerTarget = E.gBattleAnimTarget = opts.target == null ? (opts.attacker ^ 1) : opts.target;
-    E.gCurrentMove = E.gAnimMoveIndex = id;
+    E.gBattlerTarget = E.gBattleAnimTarget = opts.target == null ? (kind === "move" ? (opts.attacker ^ 1) : opts.attacker | 0) : opts.target;
+    E.gEffectBattler = opts.effectBattler == null ? E.gBattleAnimTarget : opts.effectBattler;
+    E.gCurrentMove = E.gAnimMoveIndex = kind === "move" ? id : 0;
+    E.gLastUsedItem = ballIdOf(opts.ball);
+    E.gBattleSpritesDataPtr.animationData.animArg = opts.arg | 0;
+    E.gBattleSpritesDataPtr.animationData.ballThrowCaseId = opts.ballCase | 0;
     E.gAnimMoveTurn = opts.turn | 0;
     E.gAnimMoveDmg = opts.damage | 0;
     E.gAnimMovePower = opts.power | 0;
@@ -957,7 +1062,7 @@
       stockpileCounter: opts.stockpileCounter | 0, syrupBombIsShiny: 0 };
     E.gFieldTimers.terrain = opts.terrain | 0;
     E.gDoingBattleAnim = 1;
-    C.LaunchBattleAnimation(1, id);   // (ANIM_TYPE_MOVE)
+    C.LaunchBattleAnimation(ANIM_TYPES[kind], id);
     return inst;
   }
   function moveIdOf(name) {
@@ -965,6 +1070,23 @@
     return m ? m.id : 0;
   }
   const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
+  // "STATS_CHANGE", "stats change", 0: the id in its table.
+  function animIdOf(kind, id) {
+    const table = D.anims[kind];
+    if (!table) return null;
+    if (typeof id === "number") return Object.values(table).includes(id) ? id : null;
+    const key = String(id).toUpperCase().replace(/[^A-Z0-9]+/g, "_");
+    if (table[key] != null) return table[key];
+    const k = Object.keys(table).find((n) => norm(n) === norm(id));
+    return k == null ? null : table[k];
+  }
+  // "poke-ball", "Great Ball", a BALL_ name or its number: the ball's id.
+  function ballIdOf(ball) {
+    if (ball == null || ball === "") return 0;
+    if (typeof ball === "number") return ball;
+    const key = "BALL_" + String(ball).toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^BALL_/, "").replace(/_?BALL$/, "");
+    return D.balls[key] || D.balls.BALL_POKE;
+  }
   const normName = {};
   for (const n of Object.keys(D.moves)) normName[norm(n)] = n;
 
@@ -1094,6 +1216,10 @@
       return "url(#" + id + ")";
     }
     const pal = new Uint32Array(512), pltt = view(PLTT, 2), vram8 = view(VRAM, 1), vram16 = view(VRAM, 2);
+    // (the OBJ window, where a picture stands in a sprite: drawn here and read back)
+    const wcan = document.createElement("canvas");
+    wcan.width = W; wcan.height = H;
+    const wctx = wcan.getContext("2d", { willReadFrequently: true });
     const terrainBase = (o.terrain || []).map((t) => ({ el: t, filter: t.style.filter, transform: t.style.transform, posX: t.style.backgroundPositionX }));
 
     // A background, line by line, into px (where its window lets it).
@@ -1202,7 +1328,29 @@
       let objWin = null;
       if (disp & 0x8000) {
         objWin = new Uint8Array(W * H);
-        for (const e of oam) if ((e.objMode & 3) === 2 && (e.affineMode & 3) !== 2 && !battlerOf(e)) drawObj(e, oam, null, 0, objWin);
+        let pics = null;
+        for (const e of oam) {
+          if ((e.objMode & 3) !== 2 || (e.affineMode & 3) === 2) continue;
+          const who = battlerOf(e);
+          if (!who) { drawObj(e, oam, null, 0, objWin); continue; }
+          // (A Pokémon's picture as the window, a stat change's: its opaque pixels.)
+          const im = who.img;
+          if (!im || !im.complete || !im.naturalWidth) continue;
+          if (!pics) { pics = wctx; wctx.setTransform(1, 0, 0, 1, 0, 0); wctx.clearRect(0, 0, W, H); }
+          const { x, y, bw, bh } = objBox(e), M = matrixOf(e, oam), S = who.size;
+          let a = 1, bb = 0, c = 0, d = 1;
+          if (M) {
+            const det = (M[0] * M[3] - M[1] * M[2]) / 65536;
+            if (Math.abs(det) < 1e-6) continue;
+            a = M[3] / 256 / det; bb = -M[1] / 256 / det; c = -M[2] / 256 / det; d = M[0] / 256 / det;
+          } else { if (e.matrixNum & 8) a = -1; if (e.matrixNum & 16) d = -1; }
+          wctx.setTransform(a, c, bb, d, x + bw / 2, y + bh / 2);
+          wctx.drawImage(im, -S / 2, -S / 2, S, S);
+        }
+        if (pics) {
+          const data = wctx.getImageData(0, 0, W, H).data;
+          for (let k = 0; k < W * H; k++) if (data[k * 4 + 3] > 127) objWin[k] = 1;
+        }
       }
       const mask = new Uint8Array(W * H);
       for (let y = 0; y < H; y++) {
@@ -1240,6 +1388,7 @@
     function battlerOf(e) {
       const t = e.tileNum & 1023;
       for (let b = 0; b < 4; b++) {
+        if (inst.doll[b]) continue;   // (the doll: tiles)
         if (inst.battlerTiles[b] != null && t >= inst.battlerTiles[b] && t < inst.battlerTiles[b] + 64 && inst.boxes[b])
           return { img: o.sprites[b], size: inst.boxes[b].size, tint: o.tint ? o.tint(b) : "" };
       }
@@ -1248,10 +1397,20 @@
     }
     const battlerPic = (b) => (inst.boxes[b] ? { img: o.sprites[b], size: inst.boxes[b].size, tint: o.tint ? o.tint(b) : "" } : null);
     // A picture, where its sprite (or background) has it.
-    function drawBattler(pic, cx, cy, M, hf, vf, palOffset, alpha, comp, bright, clip, strips) {
-      const im = pic && pic.img;
+    // (mosaic: the picture in blocks that many GBA pixels wide, as REG_MOSAIC has it)
+    const mcan = document.createElement("canvas"), mctx = mcan.getContext("2d");
+    function drawBattler(pic, cx, cy, M, hf, vf, palOffset, alpha, comp, bright, clip, strips, mosaic) {
+      let im = pic && pic.img;
       if (!im || !im.complete || !im.naturalWidth) return;
       const S = pic.size;
+      if (mosaic > 1) {
+        const n = Math.max(1, Math.ceil(S / mosaic));
+        mcan.width = n; mcan.height = n;
+        mctx.imageSmoothingEnabled = false;
+        mctx.clearRect(0, 0, n, n);
+        mctx.drawImage(im, 0, 0, n, n);
+        im = mcan;
+      }
       ctx.save();
       if (clip) ctx.clip(clip);
       const tint = pic.tint || "";
@@ -1360,7 +1519,8 @@
             }
             const same = strips.every((s) => s[1] === strips[0][1] && s[2] === strips[0][2]);
             const ly = bl.at(strips[0][2]);
-            drawBattler(battlerPic(bb.battler), strips[0][1], strips[0][2], null, false, false, bb.pal * 16, bl.alpha[ly], bl.comp[ly], bl.bright ? bl.bright[ly] : 0, clipFor(mask, 1 << bg), same ? null : strips);
+            const mosaic = L[4 + bg] & 0x40 ? Math.max(L[0x26] & 15, (L[0x26] >> 4) & 15) + 1 : 0;
+            drawBattler(battlerPic(bb.battler), strips[0][1], strips[0][2], null, false, false, bb.pal * 16, bl.alpha[ly], bl.comp[ly], bl.bright ? bl.bright[ly] : 0, clipFor(mask, 1 << bg), same ? null : strips, mosaic);
           }
         } else {
           const e = it.obj, who = battlerOf(e), bl = blendOf(16, (e.objMode & 3) === 1);
@@ -1368,7 +1528,8 @@
             flush();
             const { x, y, bw, bh } = objBox(e);
             const ly = bl.at(y + bh / 2);
-            drawBattler(who, x + bw / 2, y + bh / 2, matrixOf(e, oam), e.matrixNum & 8, e.matrixNum & 16, 256 + (e.paletteNum & 15) * 16, bl.alpha[ly], bl.comp[ly], bl.bright ? bl.bright[ly] : 0, clipFor(mask, 16), null);
+            const mosaic = e.mosaic ? Math.max((L[0x26] >> 8) & 15, (L[0x26] >> 12) & 15) + 1 : 0;
+            drawBattler(who, x + bw / 2, y + bh / 2, matrixOf(e, oam), e.matrixNum & 8, e.matrixNum & 16, 256 + (e.paletteNum & 15) * 16, bl.alpha[ly], bl.comp[ly], bl.bright ? bl.bright[ly] : 0, clipFor(mask, 16), null, mosaic);
           } else {
             begin(bl);
             drawObj(e, oam, mask, bl.bright, null);
@@ -1415,7 +1576,8 @@
       const size = r.width * k, m = (o.metrics && o.metrics[b]) || { top: 0, bottom: 0 };
       return { cx: (r.left + r.width / 2 - fr.left) * k, cy: (r.top + r.width / 2 - fr.top) * k, size, top: m.top * size / 96, bottom: m.bottom * size / 96 };
     });
-    o.hidden = o.sprites.map((im) => !im || getComputedStyle(im).opacity === "0" || getComputedStyle(im).visibility === "hidden" || getComputedStyle(im).display === "none");
+    o.hidden = o.sprites.map((im, b) => (o.substitute && o.substitute[b] || o.shown && o.shown[b] ? false
+      : !im || getComputedStyle(im).opacity === "0" || getComputedStyle(im).visibility === "hidden" || getComputedStyle(im).display === "none"));
     try { setup(o); } catch (e) { console.error(e); return Promise.resolve(false); }
     const vis = o.sprites.map((im) => im && im.style.visibility);
     o.sprites.forEach((im) => { if (im) im.style.visibility = "hidden"; });
@@ -1450,6 +1612,10 @@
 
   const api = {
     run, play, has: (move) => !!moveIdOf(move) || false, moveId: moveIdOf, speciesId,
+    hasAnim: (kind, id) => animIdOf(kind, id) != null, animId: animIdOf, ballId: ballIdOf, dollPlace,
+    // (where a thrown ball comes to rest: 24 under its target's base line, in GBA px)
+    ballRest: (b, doubles) => BASE_Y[doubles ? 1 : 0][b] + 24,
+    get stats() { return D.stats; },
     get E() { return E; }, get C() { return C; },
     // (for the renderer)
     _: { io, VRAM, PLTT, hdma, bgBattler, get moveBg() { return moveBg; }, get inst() { return inst; },

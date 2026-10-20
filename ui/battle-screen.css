@@ -354,3 +354,9 @@ body {
 .raid-allies .bar span { display: block; height: 100%; width: 100%; background: #58d080; transition: width 0.3s; }
 .raid-allies .bar span.mid { background: #f8c030; }
 .raid-allies .bar span.low { background: #f05030; }
+
+/* The Substitute doll (pokeemerald-expansion's, assets/battle-anims/): in place
+   of a Pokémon behind a Substitute, 64 GBA pixels square where its picture stood. */
+.sprite-doll { position: absolute; width: 26.6667%; image-rendering: pixelated; pointer-events: none; }
+.sprite-doll.hidden { display: none; }
+.sprite.behind-sub { visibility: hidden; }

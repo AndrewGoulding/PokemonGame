@@ -9,7 +9,9 @@ FILES_GLOB = "src/battle_anim*.c"
 # The engine they run on, translated too: sprites (and their animations and
 # affine animations), tasks, palettes (and fades), backgrounds, scanline
 # effects, the sine table.
-ENGINE_FILES = ["src/sprite.c", "src/task.c", "src/palette.c", "src/bg.c", "src/scanline_effect.c", "src/trig.c"]
+# (pokeball.c: the balls' pictures and sprites, thrown to catch and to send
+# out)
+ENGINE_FILES = ["src/sprite.c", "src/task.c", "src/palette.c", "src/bg.c", "src/scanline_effect.c", "src/trig.c", "src/pokeball.c"]
 
 
 def parse_all(pex, stubs):

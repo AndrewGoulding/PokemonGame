@@ -11,6 +11,7 @@
 # arm-none-eabi-as (binutils-arm-none-eabi), pyelftools and Pillow.
 #
 # Writes:
+#   assets/battle-anims/substitute.png, substitute-back.png  the doll, for the battle screen
 #   ui/battle-anim-code.js   the C, translated (tools/battle_anims/c2js.py):
 #                            window.BattleAnimC(E) -> every function and table
 #   ui/battle-anim-data.js   window.BATTLE_ANIM_DATA: the scripts, assembled as
@@ -38,8 +39,11 @@ PTR_BASE = 0x10000000   # (a script's pointers: PTR_BASE + an index into `ptrs`)
 # are (this game's pictures, not the GBA's tables), the background
 # attributes (a cast of a register to a bitfield struct), and one written
 # with a GNU statement expression.
+# Pictures named by C that isn't translated (battle_gfx_sfx_util.c: the
+# Substitute doll, this runtime's to load).
+EXTRA_GFX = ["gBattleAnimSpriteGfx_Substitute", "gBattleAnimSpriteGfx_SubstituteBack", "gBattleAnimSpritePal_Substitute"]
 OVERRIDES = ["GetBattlerSpriteCoord", "GetBattlerSpriteFinal_Y", "GetBattlerSpriteCoordAttr",
-             "SetAnimBgAttribute", "GetAnimBgAttribute", "AnimTask_RandomBool"]
+             "SetAnimBgAttribute", "GetAnimBgAttribute", "AnimTask_RandomBool", "ItemIdToBallId"]
 
 
 def run(cmd, **kw):
@@ -152,8 +156,8 @@ def enum_values(pex, stubs, header, prefix):
 def png_indexed(path):
     from PIL import Image
     im = Image.open(path)
-    if im.mode != "P":
-        sys.exit("not an indexed PNG: " + path)
+    if im.mode != "P":   # (graphics/interface/blank.png: not indexed; a palette made for it)
+        im = im.convert("RGB").convert("P", palette=Image.ADAPTIVE, colors=16)
     return im
 
 
@@ -262,6 +266,67 @@ def convert(pex, path, ext):
     raise ValueError("unknown kind " + ext + " for " + path)
 
 
+def anim_tables(pex, ids):
+    """battle_anim.c's sBattleAnims_General, _StatusConditions, _Special: { B_ANIM_ name without the prefix: index }."""
+    s = open(os.path.join(pex, "src/battle_anim.c"), encoding="utf-8").read()
+    out = {}
+    for key, arr in [("general", "sBattleAnims_General"), ("status", "sBattleAnims_StatusConditions"), ("special", "sBattleAnims_Special")]:
+        m = re.search(arr + r"\[\w*\]\s*=\s*\{(.*?)\};", s, re.S)
+        out[key] = {}
+        for name in re.findall(r"\[(B_ANIM_\w+)\]\s*=", m.group(1)):
+            if name in ids and not re.search(r"_UNUSED_\d+$", name):
+                out[key][name[len("B_ANIM_"):]] = ids[name]
+    return out
+
+
+def environments(pex):
+    """src/data/battle_environment.h: { GRASS: { secretPower: the script's label, camouflageBlend: a colour } } (the modern choices)."""
+    s = open(os.path.join(pex, "src/data/battle_environment.h"), encoding="utf-8").read()
+    macros = {}
+    # (a macro's first definition is its newest generation's, the expansion's default)
+    for m in re.finditer(r"#define\s+(\w+_SECRET_POWER_ANIMATION)[ \t]+(.*)", s):
+        labels = re.findall(r"gBattleAnimMove_\w+", m.group(2))
+        if labels:
+            macros.setdefault(m.group(1), labels[0])
+    rgb = lambda v: ({"RGB_WHITE": 0x7FFF, "RGB_BLACK": 0}.get(v.strip()) if not v.strip().startswith("RGB(") else
+                     (lambda r, g, b: r | (g << 5) | (b << 10))(*[int(x) for x in re.findall(r"\d+", v)]))
+    out = {}
+    for m in re.finditer(r"^    \[BATTLE_ENVIRONMENT_(\w+)\]\s*=\s*\{(.*?)\n    \},", s, re.S | re.M):
+        body = m.group(2)
+        a = re.search(r"\.secretPowerAnimation\s*=\s*([^,\n]+)", body)
+        label = None
+        if a:
+            v = a.group(1).strip()
+            label = macros.get(v) or (re.findall(r"gBattleAnimMove_\w+", v) or [None])[0]
+        c = re.search(r"\.camouflageBlend\s*=\s*([^,\n]+)", body)
+        blend = None
+        if c:
+            v = c.group(1).strip()
+            mm = re.search(r"#define\s+" + re.escape(v) + r"[ \t]+(.*)", s) if re.match(r"^\w+$", v) and not v.startswith("RGB") else None
+            try:
+                blend = rgb(mm.group(1) if mm else v)
+            except Exception:
+                blend = None
+        out[m.group(1)] = {"secretPower": label, "camouflageBlend": blend}
+    return out
+
+
+def doll_pngs(pex):
+    """The Substitute doll, front and back, as PNGs for the battle screen (assets/battle-anims/)."""
+    from PIL import Image
+    out = os.path.join(ROOT, "assets/battle-anims")
+    os.makedirs(out, exist_ok=True)
+    for src, dst in [("substitute.png", "substitute.png"), ("substitute_back.png", "substitute-back.png")]:
+        im = png_indexed(os.path.join(pex, "graphics/battle_anims/sprites", src)).convert("RGBA")
+        px = im.load()
+        idx = png_indexed(os.path.join(pex, "graphics/battle_anims/sprites", src)).load()
+        for y in range(im.height):
+            for x in range(im.width):
+                if idx[x, y] == 0:
+                    px[x, y] = (0, 0, 0, 0)
+        im.save(os.path.join(out, dst))
+
+
 def sine_table(pex):
     s = open(os.path.join(pex, "src/trig.c"), encoding="utf-8").read()
     m = re.search(r"gSineTable\[\]\s*=\s*\{(.*?)\};", s, re.S)
@@ -302,10 +367,15 @@ def main():
     songs = enum_values(pex, stubs, "constants/songs.h", "SE_")
     species = enum_values(pex, stubs, "constants/species.h", "SPECIES_")
     types = enum_values(pex, stubs, "constants/pokemon.h", "TYPE_")
+    anims = anim_tables(pex, enum_values(pex, stubs, "constants/battle_anim.h", "B_ANIM_"))
+    # (the stat animations' arguments: STAT_ANIM_PLUS1 + STAT_ATK...; the balls)
+    stats = enum_values(pex, stubs, "battle_anim.h", "STAT_ANIM_")
+    stats.update(enum_values(pex, stubs, "constants/pokemon.h", "STAT_"))
+    balls = enum_values(pex, stubs, "constants/pokeball.h", "BALL_")
 
     # The pictures, palettes and tilemaps the C names.
     syms = graphics_symbols(pex)
-    used = sorted(set(re.findall(r"\bE\.(\w+)", code)) & set(syms))
+    used = sorted((set(re.findall(r"\bE\.(\w+)", code)) | set(EXTRA_GFX)) & set(syms))
     gfx, missing = {}, []
     for name in used:
         path, ext, width = syms[name]
@@ -326,14 +396,20 @@ def main():
         "sine": sine_table(pex),
         "species": species,
         "types": types,
+        "anims": anims,
+        "environments": environments(pex),
+        "stats": stats,
+        "balls": balls,
         "gfx": gfx,
     }
+    doll_pngs(pex)
     with open(os.path.join(ROOT, "ui/battle-anim-data.js"), "w", encoding="utf-8") as fh:
         fh.write("// Auto-generated by tools/build-battle-anims.py from pokeemerald-expansion. Do not edit by hand.\n")
         fh.write("window.BATTLE_ANIM_DATA = " + json.dumps(data, separators=(",", ":")) + ";\n")
     print("ui/battle-anim-code.js: %d tables, %d functions (%d not translated: %s)" % (len(lines), len(funcs), len(problems),
           ", ".join(p[0] for p in problems)))
-    print("ui/battle-anim-data.js: %d bytes of scripts, %d labels, %d moves, %d pictures%s" % (len(script), len(labels), len(moves), len(gfx),
+    print("ui/battle-anim-data.js: %d bytes of scripts, %d labels, %d moves, %d general, %d status, %d special, %d pictures%s" % (len(script), len(labels), len(moves),
+          len(anims["general"]), len(anims["status"]), len(anims["special"]), len(gfx),
           ("; missing: " + ", ".join(missing)) if missing else ""))
 
 

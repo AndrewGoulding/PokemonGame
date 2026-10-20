@@ -86,8 +86,21 @@ them, with its pictures, palettes and backgrounds and FireRed's sound effects
 (`ui/battle-anim.js`, `tools/build-battle-anims.py`). The Pokémon in them are
 this game's pictures, moved, turned, scaled, recoloured and blended as the
 GBA's sprites would be; the battle background is this game's, shaken and
-recoloured as the GBA's would be, and covered by a move's own background. Hits,
-fainting, stat changes, the balls and running animate too (BATTLE SCENE: OFF
+recoloured as the GBA's would be, and covered by a move's own background. The
+expansion's other battle animations run the same way: a stat rising or
+falling (the stat's colour over the Pokémon, "sharply" for two stages),
+being poisoned, burned, paralysed, put to sleep, frozen, confused or
+infatuated (on the status and each turn it acts), the weather going on each
+turn, Leech Seed's drain, a trapping move's turn, Ingrain's, Aqua Ring's and
+Wish's healing, a held Berry eaten, hanging on, Focus Punch's and Tailwind's
+set-up, the rooms, a stolen or knocked-off item flying across, a thrown Ball
+(the Pokémon shrinks into it in its colour, it drops, shakes and either stays
+shut or opens; the Ghost dodges it), and a Pokémon called back into its Ball.
+Substitute puts the expansion's doll in the Pokémon's place: it stands there
+between turns, the Pokémon comes out from behind it for its own move and
+goes back after, hits land on the doll, and it fades when it breaks. Transform
+is the expansion's mosaic, the picture changing at its coarsest. Hits,
+fainting and running animate too (BATTLE SCENE: OFF
 on the Option screen turns them off); a move that misses, fails or is blocked
 has no animation, as in FireRed. Text is
 written out a letter at a time at your TEXT SPEED (A finishes it), and FireRed's
@@ -913,16 +926,25 @@ node tools/build-party-menu.js pokefirered expansion
 animations: it assembles `data/battle_anim_scripts.s` as the ROM has it
 (through the expansion's preproc and arm-none-eabi-as), translates
 `src/battle_anim*.c` and the engine under them (`sprite.c`, `task.c`,
-`palette.c`, `bg.c`, `scanline_effect.c`, `trig.c`) to JavaScript through
-libclang (`tools/battle_anims/`), and decompresses the pictures, palettes and
-tilemaps they name, into `ui/battle-anim-code.js` and `ui/battle-anim-data.js`.
+`palette.c`, `bg.c`, `scanline_effect.c`, `trig.c`, `pokeball.c`) to
+JavaScript through libclang (`tools/battle_anims/`), and decompresses the
+pictures, palettes and tilemaps they name (the Substitute doll and the Balls
+among them), into `ui/battle-anim-code.js` and `ui/battle-anim-data.js`, with
+the general, status and special animation tables, the stat animations'
+arguments, the Balls' ids and each battle environment's Secret Power; the
+doll's pictures go to `assets/battle-anims/`. `ui/battle-anim.js` plays a
+move (`play({ move, ... })`) or one of the tables' animations (`play({ anim:
+"general" | "status" | "special", id, arg, ball, ballCase, substitute })`).
+Not played: the Safari Zone's and the catching tutorial's throws (a trainer's
+sprite), the Pokéblock throw and the Silph Scope's ghost (tilemaps this
+runtime hasn't), and the level-up flash (the healthboxes are this game's).
 It needs clang with Python's libclang, binutils-arm-none-eabi, pyelftools and
 Pillow:
 
 ```sh
 git clone --depth 1 --filter=blob:none --sparse https://github.com/rh-hideout/pokeemerald-expansion expansion
 cd expansion && git sparse-checkout add data/ src/ include/ asm/ constants/ graphics/battle_anims/ \
-  graphics/pokemon/ogerpon/ tools/preproc/ && make -C tools/preproc && cd ..
+  graphics/pokemon/ogerpon/ graphics/balls/ graphics/interface/ tools/preproc/ && make -C tools/preproc && cd ..
 python3 tools/build-battle-anims.py expansion
 ```
 

@@ -6199,4 +6199,29 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     }
   }
   console.log("ok: battle animations, " + names.length + " moves' scripts ran to their end " + runs + " times (" + frames + " frames)");
+  // The expansion's other animations (its general, status and special
+  // tables: stat changes, statuses, the weather, a ball thrown, the
+  // Substitute doll...): every one but the four that need a trainer's sprite
+  // or a tilemap this runtime hasn't (the Safari Zone's and the catching
+  // tutorial's throws, the Pokéblock, the Silph Scope's ghost).
+  const D = window.BATTLE_ANIM_DATA, skip = new Set(["POKEBLOCK_THROW", "ROCK_THROW", "GHOST_GET_OUT", "BALL_THROW_WITH_TRAINER"]);
+  let tables = 0;
+  for (const kind of ["general", "status", "special"]) {
+    for (const id of Object.keys(D.anims[kind])) {
+      if (skip.has(id)) continue;
+      for (const o of [{ attacker: 0, target: 1 }, { attacker: 1, target: 0, substitute: [true, false] }, { attacker: 3, target: 0, doubles: true }]) {
+        const r = BA.run(Object.assign({ anim: kind, id, boxes, mons, seed: 7, maxFrames: 3000, ball: "great-ball", ballCase: 4,
+          arg: id === "STATS_CHANGE" ? D.stats.STAT_ANIM_PLUS2 + D.stats.STAT_SPEED : id === "TURN_TRAP" ? BA.moveId("Wrap") : id === "LEECH_SEED_DRAIN" ? 1 : 0 }, o));
+        assert(!r.error && r.finished, kind + " " + id + " (" + o.attacker + "): " + (r.error ? r.error.stack : "didn't end"));
+        tables++;
+      }
+    }
+  }
+  // (A ball that opens again, and the doll in a move's way: Tackle on a Pokémon behind one, Substitute itself, Transform's hook.)
+  for (const c of [0, 2, 3]) assert(BA.run({ anim: "special", id: "BALL_THROW", attacker: 0, target: 1, boxes, mons, seed: 7, ball: "poke-ball", ballCase: c }).finished, "the ball opens (" + c + " shakes)");
+  assert(BA.run({ move: "Tackle", attacker: 0, target: 1, boxes, mons, seed: 7, substitute: [false, true] }).finished, "a hit on the doll");
+  let hooked = 0;
+  assert(BA.run({ move: "Transform", attacker: 0, target: 1, boxes, mons, seed: 7, transform: () => hooked++ }).finished && hooked === 1, "Transform changes the picture once");
+  for (const f of ["substitute.png", "substitute-back.png"]) assert(fs.existsSync(path.join(root, "assets/battle-anims", f)), "the doll: " + f);
+  console.log("ok: battle animations, " + tables + " runs of the general, status and special tables ended");
 }

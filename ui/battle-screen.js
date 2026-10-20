@@ -223,6 +223,13 @@
     el.sides.p1.sprite.after(el.sides.p1b.sprite);
   }
   const POSITIONS = ["p1", "p2", "p1b", "p2b"];
+  // The Substitute doll (pokeemerald-expansion's, assets/battle-anims/): in
+  // place of a Pokémon behind a Substitute, standing where its picture stood.
+  for (const p of POSITIONS) {
+    const d = Object.assign(document.createElement("img"), { className: "sprite-doll hidden", alt: "" });
+    el.sides[p].sprite.after(d);
+    el.sides[p].doll = d;
+  }
 
   // ---------- The healthboxes (src/battle_interface.c) ----------
   //
@@ -691,13 +698,49 @@
     sprite.style.translate = "0 " + pct.toFixed(2) + "%";
   }
 
+  // A Pokémon behind a Substitute: the doll where its picture stood (its
+  // feet where the picture's are; ui/battle-anim.js's dollPlace), the picture
+  // itself kept in place but unseen. (`subSwapped`: it has come out from
+  // behind the doll for its move's animation, as in FireRed.)
+  const subSwapped = {};
+  function placeDoll(id) {
+    const v = view[id], { sprite, doll } = el.sides[id];
+    const on = !!(v && v.species && v.substitute && !subSwapped[id] && !v.fainted && !v.inBall && !v.commanding);
+    doll.classList.toggle("hidden", !on);
+    sprite.classList.toggle("behind-sub", on);
+    if (!on) return;
+    const back = sideOf(id) === "p1";
+    doll.src = "assets/battle-anims/substitute" + (back ? "-back" : "") + ".png";
+    const box = monBox(id), BA = window.BattleAnim;
+    if (!box || !BA) return;
+    const d = BA.dollPlace(box, back);
+    doll.style.left = ((d.cx - 32) / 240 * 100).toFixed(3) + "%";
+    doll.style.top = ((d.cy - 32) / 112 * 100).toFixed(3) + "%";
+  }
+  // A Pokémon's picture's box in GBA pixels (as ui/battle-anim.js measures
+  // it): its middle, its size, and the empty rows above and below the picture.
+  function monBox(pos) {
+    const im = el.sides[pos].sprite, fr = el.field.getBoundingClientRect(), r = im.getBoundingClientRect();
+    if (!r.width || !fr.width) return null;
+    const k = 240 / fr.width, size = r.width * k, m = monMetrics(pos) || { top: 0, bottom: 0 };
+    return { cx: (r.left + r.width / 2 - fr.left) * k, cy: (r.top + r.width / 2 - fr.top) * k, size, top: m.top * size / 96, bottom: m.bottom * size / 96 };
+  }
+  function monMetrics(p) {
+    const M = window.SPRITE_METRICS || {}, v = view[p], dex = v && window.DEX && window.DEX[v.species];
+    if (!dex) return null;
+    const key = dex.id + (v.form ? "-" + v.form : ""), back = sideOf(p) === "p1";
+    const of = (t) => (t ? (t[key] != null ? t[key] : t[dex.id]) || 0 : 0);
+    return { top: back ? of(M.backTop) : 0, bottom: of(back ? M.back : M.front) };
+  }
+
   function renderSide(id) {
     const v = view[id];
     const { sprite, info } = el.sides[id];
     if (!v.species) {
       // Between battles: no picture, no leftover fainted pose to animate back from.
       sprite.classList.add("hidden");
-      sprite.classList.remove("fainted", "hit");
+      sprite.classList.remove("fainted", "hit", "behind-sub");
+      el.sides[id].doll.classList.add("hidden");
       window.Screen.clearSprite(sprite);
       info.classList.add("hidden");
       return;
@@ -711,6 +754,7 @@
     sprite.classList.toggle("hidden", !!v.inBall || !!v.commanding);   // (Commander: in Dondozo's mouth)
     sprite.classList.toggle("fainted", v.fainted);
     info.classList.toggle("hidden", v.fainted);
+    placeDoll(id);
 
     // The box: a new Pokémon's shows its HP and EXP at once; after that the
     // bars move to what changed.
@@ -825,39 +869,82 @@
   function expansionAnim(side, name, data, aims) {
     const BA = window.BattleAnim;
     if (!BA || !BA.has(name)) return Promise.resolve(false);
-    const M = window.SPRITE_METRICS || {};
+    const target = aims.find((a) => a !== side) || aims[0];
+    return playAnim(Object.assign(animOpts(side, target), {
+      move: name, type: data.type, category: data.cat,
+      turn: data.flags && data.flags.charge ? 1 : 0, power: data.power || 0, damage: 40,
+      itemPicture: heldItemPicture(name === "Poltergeist" ? target : side)
+    }));
+  }
+  // What ui/battle-anim.js is told of the battle: who's where (as the
+  // pictures are on the page), their species, HP, ball and whether they're
+  // behind a Substitute; the field to draw over; sounds and cries.
+  function animOpts(side, target) {
     const mons = POSITIONS.map((p) => {
       const v = view[p];
       if (!v || !v.species || v.fainted || (!battle.doubles && slotOf(p))) return null;
-      return { name: v.species, form: v.form, hp: v.hp, maxHP: v.maxhp, shiny: v.shiny };
+      const set = setOf(sideOf(p), v.teamIndex);
+      return { name: v.species, form: v.form, hp: v.hp, maxHP: v.maxhp, shiny: v.shiny, ball: set.ball };
     });
-    const metrics = POSITIONS.map((p) => {
-      const v = view[p], dex = v && window.DEX && window.DEX[v.species];
-      if (!dex) return null;
-      const key = dex.id + (v.form ? "-" + v.form : ""), back = sideOf(p) === "p1";
-      const of = (t) => (t ? (t[key] != null ? t[key] : t[dex.id]) || 0 : 0);
-      return { top: back ? of(M.backTop) : 0, bottom: of(back ? M.back : M.front) };
-    });
-    const target = aims.find((a) => a !== side) || aims[0];
-    return BA.play({
-      move: name, attacker: POSITIONS.indexOf(side), target: POSITIONS.indexOf(target),
-      doubles: !!battle.doubles, mons, metrics, type: data.type, category: data.cat,
-      turn: data.flags && data.flags.charge ? 1 : 0, power: data.power || 0, damage: 40,
+    return {
+      attacker: POSITIONS.indexOf(side), target: POSITIONS.indexOf(target == null ? side : target),
+      doubles: !!battle.doubles, mons, metrics: POSITIONS.map(monMetrics),
+      substitute: POSITIONS.map((p) => !!(view[p] && view[p].substitute && !subSwapped[p])),
+      environment: config && config.terrain,
       field: el.field, before: hbLayer, terrain: [...el.field.querySelectorAll(".terrain")],
       sprites: POSITIONS.map((p) => el.sides[p].sprite),
       tint: (b) => { const f = getComputedStyle(el.sides[POSITIONS[b]].sprite).filter; return f && f !== "none" ? f : ""; },
       sound: (se) => (window.GameAudio && window.GameAudio.se ? window.GameAudio.se(se) : null),
       cry: (species) => { if (window.GameAudio) window.GameAudio.cry(species); },
       hideBoxes: (on) => { hbLayer.style.visibility = on ? "hidden" : ""; },
-      picture: (species, form, back) => window.Screen.spriteUrl(species, form, back, false),
-      itemPicture: heldItemPicture(name === "Poltergeist" ? target : side)
-    });
+      picture: (species, form, back) => window.Screen.spriteUrl(species, form, back, false)
+    };
   }
-  // A Pokémon's held item's picture (for the animations that show it).
+  // Plays one (the dolls out of the way: the animation draws them itself).
+  async function playAnim(opts) {
+    for (const p of POSITIONS) el.sides[p].doll.classList.add("hidden");
+    try { return await window.BattleAnim.play(opts); } finally { for (const p of POSITIONS) placeDoll(p); }
+  }
+  // One of pokeemerald-expansion's other animations (its general, status and
+  // special tables): a stat change, a status, the weather going on, a ball
+  // thrown...; `o` adds to what animOpts says. False if it can't be played.
+  function tableAnim(kind, id, pos, o) {
+    const BA = window.BattleAnim;
+    if (!sceneOn() || !BA || !BA.hasAnim(kind, id) || !view[pos] || !view[pos].species) return Promise.resolve(false);
+    return playAnim(Object.assign(animOpts(pos, (o && o.targetPos) || pos), { anim: kind, id }, o || {}));
+  }
+  // A Pokémon's held item's picture (for the animations that show it): the
+  // item it holds now (view[].item follows -item and -enditem), or its set's.
   function heldItemPicture(pos) {
-    const v = view[pos], set = v && v.species ? setOf(sideOf(pos), v.teamIndex) : null;
-    const item = set && set.item;
-    return item && window.Bag && window.Bag.sprite ? window.Bag.sprite(item) : null;
+    const v = view[pos];
+    if (!v || !v.species) return null;
+    const item = v.item !== undefined ? v.item : (setOf(sideOf(pos), v.teamIndex) || {}).item;
+    return itemPicture(item);
+  }
+  function itemPicture(item) {
+    const Bag = window.Bag;
+    if (!item || !Bag || !Bag.sprite) return null;
+    return Bag.sprite(item) || Bag.sprite(String(item).toLowerCase().replace(/[^a-z0-9]+/g, "-")) || null;
+  }
+  // The animations FireRed plays with a status: on its start, each turn it
+  // hurts, and when it keeps a Pokémon from moving.
+  const STATUS_ANIM = { psn: "STATUS_PSN", tox: "STATUS_PSN", brn: "STATUS_BRN", par: "STATUS_PRZ", slp: "STATUS_SLP", frz: "STATUS_FRZ",
+    confusion: "STATUS_CONFUSION", attract: "STATUS_INFATUATION", nightmare: "STATUS_NIGHTMARE", curse: "STATUS_CURSED" };
+  const statusAnim = (pos, id) => (STATUS_ANIM[id] ? tableAnim("status", STATUS_ANIM[id], pos) : Promise.resolve(false));
+  // The weather going on (each turn, and when an Ability brings it).
+  const WEATHER_ANIM = { RainDance: "RAIN_CONTINUES", SunnyDay: "SUN_CONTINUES", Sandstorm: "SANDSTORM_CONTINUES", Hail: "HAIL_CONTINUES", Snow: "SNOW_CONTINUES" };
+  const TRAP_MOVES = new Set(["bind", "wrap", "firespin", "clamp", "whirlpool", "sandtomb", "magmastorm", "infestation", "snaptrap", "thundercage"]);
+  // A stat rising or falling: the expansion's (the stat's colour, "sharply"
+  // for two stages or more), or the glow below.
+  const STAT_ANIM = { atk: "STAT_ATK", def: "STAT_DEF", spe: "STAT_SPEED", spa: "STAT_SPATK", spd: "STAT_SPDEF", accuracy: "STAT_ACC", evasion: "STAT_EVASION" };
+  async function statAnim(pos, up, stat, amount) {
+    const BA = window.BattleAnim, S = BA && BA.stats;
+    if (!amount) return;   // (it can't go any higher or lower: no animation, as in FireRed)
+    if (S && STAT_ANIM[stat] && S[STAT_ANIM[stat]] != null) {
+      const arg = S[up ? (amount > 1 ? "STAT_ANIM_PLUS2" : "STAT_ANIM_PLUS1") : (amount > 1 ? "STAT_ANIM_MINUS2" : "STAT_ANIM_MINUS1")] + S[STAT_ANIM[stat]];
+      if (await tableAnim("general", "STATS_CHANGE", pos, { arg })) return;
+    }
+    await animateStat(pos, up);
   }
   // Mega Evolution's animation, pokeemerald-expansion's
   // gBattleAnimGeneral_MegaEvolution (tools/build-mega-anim.js), frame for
@@ -1222,6 +1309,8 @@
   // A double battle's move: the positions it aims at, from the "[spread] …"
   // list or its one target (null for none, e.g. the user itself).
   let lastAims = null;
+  // (Who just used Substitute: its doll is already there when "-start" comes.)
+  let madeSub = null;
   function moveAims(ev) {
     const list = /^\[spread\] (.*)$/.exec(ev[4] || "");
     const ids = list ? list[1].split(/,(?=p\d[ab]: )/) : /^p\d[ab]: /.test(ev[3] || "") ? [ev[3]] : [];
@@ -1274,7 +1363,8 @@
         view[pos] = { name: nameOf(a), species: m[1] || nameOf(a), level: m[2] || "?",
           hp: hp.hp, maxhp: hp.maxhp, status: hp.status, fainted: false,
           exp: ev[4] === "" || ev[4] == null ? null : +ev[4], teamIndex: +ev[5],
-          form: set.form || "", shiny: !!set.shiny, tera: teraShown[side + ":" + ev[5]] || null };
+          form: set.form || "", shiny: !!set.shiny, tera: teraShown[side + ":" + ev[5]] || null, item: set.item || null };
+        subSwapped[pos] = false;
         const ball = set.ball;
         if (battle.doubles) noteSwitchIn(pos);
         else if (side === "p1") foeHpAtSwitchIn = view.p2.species ? view.p2.hp : null;
@@ -1343,7 +1433,21 @@
         }
         if (b === "Transform") return async () => { el.sides[pos].sprite.classList.remove("flying"); await message(text, 400); };
         el.sides[pos].sprite.classList.remove("flying");
-        return async () => { await message(text, 400); if (b !== "Magnitude" && lands) await animateMove(pos, b, aims); };
+        if (b === "Substitute" && lands) madeSub = pos;
+        return async () => {
+          await message(text, 400);
+          if (b === "Magnitude" || !lands) return;
+          // (Behind a Substitute: it comes out for its move and goes back
+          // behind the doll after, as in FireRed.)
+          const behind = v.substitute && !subSwapped[pos];
+          if (behind && await tableAnim("special", "SUBSTITUTE_TO_MON", pos)) { subSwapped[pos] = true; placeDoll(pos); }
+          await animateMove(pos, b, aims);
+          if (subSwapped[pos] && v.substitute) {
+            await tableAnim("special", "MON_TO_SUBSTITUTE", pos, { substitute: POSITIONS.map((p) => p !== pos && !!(view[p] && view[p].substitute && !subSwapped[p])) });
+            subSwapped[pos] = false;
+            placeDoll(pos);
+          }
+        };
       }
       case "-magnitude": {
         const lands = moveLands(), aims = lastAims;
@@ -1375,7 +1479,15 @@
           };
         }
         const msg = fill(lookup(DAMAGE_FROM, effectId(c), "{who} was hurt by " + effectName(c) + "!"), a);
-        return async () => { if (changed) await hbSettled(); if (msg) await message(msg); };
+        // FireRed's animation first: the status's, the trapping move's, or
+        // Leech Seed's drain (the seeds' owner draws it in).
+        const id = effectId(c), BA = window.BattleAnim;
+        const anim = STATUS_ANIM[id] && id !== "confusion" ? () => statusAnim(pos, id)
+          : TRAP_MOVES.has(id) && BA ? () => tableAnim("general", "TURN_TRAP", pos, { arg: BA.moveId(effectName(c)) })
+          : id === "leechseed" && /^\[of\] /.test(ev[4] || "") && view[posOf(ev[4].slice(5))] && view[posOf(ev[4].slice(5))].species
+            ? () => tableAnim("general", "LEECH_SEED_DRAIN", pos, { arg: POSITIONS.indexOf(posOf(ev[4].slice(5))) | (POSITIONS.indexOf(pos) << 8) })
+          : null;
+        return async () => { if (anim) await anim(); if (changed) await hbSettled(); if (msg) await message(msg); };
       }
       case "-heal": {
         const changed = setHp(a, b);
@@ -1384,7 +1496,8 @@
         const hit = battle.doubles && effectId(c) === "drain" && lastAims && view[lastAims[0]];
         if (hit && tpl) tpl = tpl.replace("{foe}", capitalize(label(sideOf(lastAims[0]), hit.name)));
         const msg = fill(tpl, a);
-        return async () => { if (changed) await hbSettled(); if (msg) await message(msg); };
+        const healAnim = { ingrain: "INGRAIN_HEAL", aquaring: "AQUA_RING_HEAL", wish: "WISH_HEAL" }[effectId(c)];
+        return async () => { if (healAnim) await tableAnim("general", healAnim, pos); if (changed) await hbSettled(); if (msg) await message(msg); };
       }
       // Revival Blessing: [ident, name]
       case "-revive": return capitalize(label(side, b)) + " was revived and is ready to fight again!";
@@ -1408,6 +1521,7 @@
         }
         v.fainted = true;
         v.hp = 0;
+        v.substitute = false;
         renderSide(pos);
         return fill("{who} fainted!", a);
       case "-miss": return fill("{who}'s attack missed!", a);
@@ -1424,11 +1538,14 @@
         renderSide(pos);
         // (From another Pokémon's Ability, Effect Spore's: "… has been
         // poisoned due to the opposing …'s Effect Spore!")
-        if (/^\[from\] ability: /.test(c || "") && ev[4]) {
-          const owner = fill("{whom}", ev[4]), ability = String(c).replace(/^\[from\] ability: /, "");
-          return fill("{who} has been " + (STATUS_DONE[b] || "afflicted") + " due to\n" + owner + "'s " + ability + "!", a);
+        {
+          let text;
+          if (/^\[from\] ability: /.test(c || "") && ev[4]) {
+            const owner = fill("{whom}", ev[4]), ability = String(c).replace(/^\[from\] ability: /, "");
+            text = fill("{who} has been " + (STATUS_DONE[b] || "afflicted") + " due to\n" + owner + "'s " + ability + "!", a);
+          } else text = fill(lookup(STATUS_START, b, "{who} was afflicted by " + b + "!"), a);
+          return async () => { await statusAnim(pos, b); if (text) await message(text); };
         }
-        return fill(lookup(STATUS_START, b, "{who} was afflicted by " + b + "!"), a);
       case "-curestatus":
         v.status = "";
         renderSide(pos);
@@ -1439,12 +1556,16 @@
         const big = (+c || 1) > 1;
         const text = type === "-boost" ? fill("{who}'s " + stat + (big ? " rose sharply!" : " rose!"), a)
           : fill("{who}'s " + stat + (big ? " harshly fell!" : " fell!"), a);
-        return async () => { await animateStat(pos, type === "-boost"); await message(text); };
+        return async () => { await statAnim(pos, type === "-boost", b, +c || 0); await message(text); };
       }
       case "-setboost": return fill("{who} cut its own HP and maximized its " + (STAT_NAMES[b] || b) + "!", a);
       case "-clearallboost": return "All stat changes were eliminated!";
       case "-clearboost": return fill("{who}'s stat changes were removed!", a);
-      case "cant": return fill(lookup(CANT, effectId(b), "{who} can't move!"), a);
+      case "cant": {
+        const id = effectId(b), text = fill(lookup(CANT, id, "{who} can't move!"), a);
+        if (!STATUS_ANIM[id]) return text;
+        return async () => { await statusAnim(pos, id); if (text) await message(text); };
+      }
       case "-start": {
         const id = effectId(b);
         const perish = /^perish(\d)$/.exec(id);
@@ -1452,11 +1573,39 @@
         const stock = /^stockpile(\d)$/.exec(id);
         if (stock) return fill("{who} stockpiled " + stock[1] + "!", a);
         if (id === "disable" && c) return fill("{who}'s " + c + " was disabled!", a);
-        return fill(lookup(VOLATILE_START, id, null), a);
+        const text = fill(lookup(VOLATILE_START, id, null), a);
+        if (id === "substitute") {
+          // The doll: dropped in by the move's own animation (or, after Shed
+          // Tail's switch, appearing now), then the Pokémon stands behind it.
+          const appear = madeSub !== pos;
+          madeSub = null;
+          return async () => {
+            if (appear) await tableAnim("general", "SUBSTITUTE_APPEAR", pos);
+            v.substitute = true;
+            subSwapped[pos] = false;
+            renderSide(pos);
+            if (text) await message(text);
+          };
+        }
+        if (STATUS_ANIM[id]) return async () => { await statusAnim(pos, id); if (text) await message(text); };
+        if (id === "focuspunch") return async () => { await tableAnim("general", "FOCUS_PUNCH_SETUP", pos); if (text) await message(text); };
+        return text;
       }
-      case "-end":
+      case "-end": {
         if (effectId(b) === "commander" && view[pos]) { view[pos].commanding = false; renderSide(pos); return null; }
-        return fill(lookup(VOLATILE_END, effectId(b), null), a);
+        const text = fill(lookup(VOLATILE_END, effectId(b), null), a);
+        if (effectId(b) === "substitute" && v.substitute) {
+          // The doll fades and the Pokémon slides back in (SubstituteFade).
+          return async () => {
+            await tableAnim("general", "SUBSTITUTE_FADE", pos);
+            v.substitute = false;
+            subSwapped[pos] = false;
+            renderSide(pos);
+            if (text) await message(text);
+          };
+        }
+        return text;
+      }
       case "-activate":
         if (effectId(b) === "naturepower") return "Nature Power turned into " + c + "!";
         // (Commander: Tatsugiri disappears into Dondozo's mouth.)
@@ -1464,14 +1613,20 @@
           const msg = fill(ACTIVATE.commander, a);
           return async () => { await message(msg); view[pos].commanding = true; renderSide(pos); };
         }
-        return fill(lookup(ACTIVATE, effectId(b), "{who}'s " + effectName(b) + " activated!"), a);
+        {
+          const id = effectId(b), text = fill(lookup(ACTIVATE, id, "{who}'s " + effectName(b) + " activated!"), a);
+          if (id === "confusion") return async () => { await statusAnim(pos, "confusion"); if (text) await message(text); };
+          if (id === "endure") return async () => { await tableAnim("general", "HANGED_ON", pos); if (text) await message(text); };
+          return text;
+        }
       case "-prepare": return fill(lookup(PREPARE, effectId(b), "{who} is getting ready to use " + b + "!"), a);
       case "-singleturn": {
         const id = effectId(b);
-        if (id === "focuspunch") return fill("{who} is tightening its focus!", a);
-        if (id === "beakblast") return fill("{who} started heating up its beak!", a);
-        if (id === "shelltrap") return fill("{who} set a shell trap!", a);
-        return null;
+        const setup = { focuspunch: ["FOCUS_PUNCH_SETUP", "{who} is tightening its focus!"], beakblast: ["BEAK_BLAST_SETUP", "{who} started heating up its beak!"],
+          shelltrap: ["SHELL_TRAP_SETUP", "{who} set a shell trap!"] }[id];
+        if (!setup) return null;
+        const text = fill(setup[1], a);
+        return async () => { await tableAnim("general", setup[0], pos); await message(text); };
       }
       // (Gen 7: a forme an Ability brought about, Burn Up, Core Enforcer.)
       case "-text": case "-formechange": return fill(b, a);
@@ -1533,22 +1688,81 @@
       case "-transform": {
         const t = view[posOf(b)] || {}, text = fill("{who} transformed into " + nameOf(b) + "!", a);
         return async () => {
-          await transformAnim(pos, async () => {
-            v.species = t.species; v.form = t.form || "";
-            renderSide(pos);
-            await spriteReady(el.sides[pos].sprite);
-          });
+          const BA = window.BattleAnim, tpos = posOf(b);
+          const swap = () => { v.species = t.species; v.form = t.form || ""; renderSide(pos); };
+          if (sceneOn() && BA && BA.has("Transform") && t.species && view[tpos]) {
+            // pokeemerald-expansion's: the mosaic over the picture, which
+            // changes (loaded first) at its coarsest, then back to clear.
+            // (Behind a Substitute: out from behind the doll first, and back after.)
+            const pre = new Image();
+            pre.src = window.Screen.spriteUrl(t.species, t.form || "", sideOf(pos) === "p1", !!v.shiny);
+            await pre.decode().catch(() => {});
+            if (v.substitute && !subSwapped[pos] && await tableAnim("special", "SUBSTITUTE_TO_MON", pos)) { subSwapped[pos] = true; placeDoll(pos); }
+            await playAnim(Object.assign(animOpts(pos, tpos), { move: "Transform", transform: swap }));
+            swap();
+            if (subSwapped[pos] && v.substitute) { await tableAnim("special", "MON_TO_SUBSTITUTE", pos); subSwapped[pos] = false; placeDoll(pos); }
+          } else await transformAnim(pos, async () => { swap(); await spriteReady(el.sides[pos].sprite); });
           await message(text);
         };
       }
-      case "-enditem": return fill("{who} used its " + b + "!", a);
-      case "-weather":
+      case "-item": {
+        // [ident, item, "[from] move: Thief" | "[from] ability: Pickpocket"..., "[of] ident"]
+        v.item = b;
+        const Bag = window.Bag, itemName = Bag && Bag.name && Bag.name(b) ? Bag.name(b) : String(b);
+        const by = effectId(c || ""), from = /^\[of\] /.test(ev[4] || "") ? posOf(ev[4].slice(5)) : null;
+        const fromName = from && view[from] && view[from].species ? label(sideOf(from), view[from].name) : "its target";
+        if (/^(thief|covet|pickpocket|magician)$/.test(by))
+          return async () => {
+            // (The item flies from its holder to the thief: ItemSteal.)
+            if (from) await tableAnim("general", "ITEM_STEAL", pos, { targetPos: from, effectBattler: POSITIONS.indexOf(from), itemPicture: itemPicture(b) });
+            await message(fill("{who} stole " + fromName + "'s\n" + itemName + "!", a));
+          };
+        if (/^(trick|switcheroo)$/.test(by)) return fill("{who} obtained one " + itemName + ".", a);
+        return null;
+      }
+      case "-enditem": {
+        v.item = null;
+        const by = effectId(c || ""), eaten = c === "[eat]" || ev[4] === "[eat]";
+        if (/^(knockoff|corrosivegas)$/.test(by)) {
+          // (Knocked off: the item flies away: ItemKnockoff.)
+          const from = /^\[of\] /.test(ev[4] || "") ? posOf(ev[4].slice(5)) : null;
+          const who = from && view[from] && view[from].species ? capitalize(label(sideOf(from), view[from].name)) : "It";
+          const text = by === "knockoff" ? fill(who + " knocked off\n{who}'s " + b + "!", a) : fill("{who}'s " + b + " was corroded!", a);
+          return async () => {
+            if (by === "knockoff") await tableAnim("general", "ITEM_KNOCKOFF", from || pos, { targetPos: pos, itemPicture: itemPicture(b) });
+            await message(text);
+          };
+        }
+        const text = fill("{who} used its " + b + "!", a);
+        const anim = /^focus ?sash$/i.test(b) ? "HANGED_ON" : eaten ? "HELD_ITEM_BERRY" : /herb$/i.test(b) ? "HELD_ITEM_EFFECT" : null;
+        if (!anim) return text;
+        return async () => { await tableAnim("general", anim, pos); await message(text); };
+      }
+      case "-weather": {
         if (a === "none") return "The weather cleared up.";
-        if (b === "[upkeep]") return WEATHER_UPKEEP[a] || null;
-        return WEATHER_START[a] || "The weather became " + a + "!";
-      case "-sidestart": return fill(lookup(SIDE_START, effectId(b), b + " now protects {team}!"), a);
+        const upkeep = b === "[upkeep]";
+        const text = upkeep ? WEATHER_UPKEEP[a] || null : WEATHER_START[a] || "The weather became " + a + "!";
+        // (The weather going on each turn, and brought by an Ability: its
+        // animation; a move's comes with the move.)
+        const byAbility = /^\[from\] ability: /.test(b || "");
+        if (!WEATHER_ANIM[a] || !(upkeep || byAbility)) return text;
+        const who = POSITIONS.find((p) => view[p] && view[p].species && !view[p].fainted) || "p1";
+        return async () => { await tableAnim("general", WEATHER_ANIM[a], who); if (text) await message(text); };
+      }
+      case "-sidestart": {
+        const text = fill(lookup(SIDE_START, effectId(b), b + " now protects {team}!"), a);
+        if (effectId(b) !== "tailwind") return text;
+        const who = POSITIONS.find((p) => sideOf(p) === side && view[p] && view[p].species && !view[p].fainted);
+        return async () => { if (who) await tableAnim("general", "TAILWIND", who); if (text) await message(text); };
+      }
       case "-sideend": return fill("{Team}'s " + effectName(b) + " wore off!", a);
-      case "-fieldstart": return lookup(FIELD_START, effectId(a), effectName(a) + " took effect!");
+      case "-fieldstart": {
+        const text = lookup(FIELD_START, effectId(a), effectName(a) + " took effect!");
+        const room = { trickroom: "TRICK_ROOM", wonderroom: "WONDER_ROOM", magicroom: "MAGIC_ROOM" }[effectId(a)];
+        if (!room) return text;
+        const who = POSITIONS.find((p) => view[p] && view[p].species && !view[p].fainted) || "p1";
+        return async () => { await tableAnim("general", room, who); if (text) await message(text); };
+      }
       case "-fieldend": return lookup(FIELD_END, effectId(a), effectName(a) + " wore off.");
       case "-fieldactivate": return effectId(a) === "perishsong" ? VOLATILE_START.perishsong : null;
 
@@ -1620,7 +1834,7 @@
       case "-ghostdodge":   // [side, ball]
         return async () => {
           await message("You threw a " + ballName(b) + "!", 700);
-          sfx("se_ball_throw");
+          if (!await ballThrow("p2", b, 0, false, 6)) sfx("se_ball_throw");
           await message("It dodged the thrown Ball!\nThis Pokémon can't be caught!");
         };
 
@@ -1634,6 +1848,10 @@
             const t = trainerEl();
             (async () => { for (const [f, n] of [[1, 24], [2, 9], [3, 24], [0, 9]]) { t.style.backgroundPositionY = (f * 100 / 3) + "%"; await wait(n * 1000 / 60); } })();
           } else await message("You threw a " + ballName(b) + "!", 700);
+          if (!config.oldMan && await ballThrow("p2", b, +ev[4], ev[5] === "caught")) {
+            if (ev[5] !== "caught") await message(BREAK_FREE[+ev[4]] || BREAK_FREE[0]);
+            return;
+          }
           sfx("se_ball_throw");
           el.ball.src = "assets/sprites/items/ball/" + b.replace(/-ball$/, "") + ".png";
           el.ball.classList.remove("hidden", "shake", "caught");
@@ -2579,6 +2797,38 @@
     b.classList.add("hidden");
   }
 
+  // A ball thrown at the wild Pokémon, pokeemerald-expansion's animation
+  // (ui/battle-anim.js, BallThrow): it flies in an arc, the Pokémon shrinks
+  // into it in the ball's colour, it drops and bounces, shakes `shakes`
+  // times, and either stays shut (caught: the stars) or opens and lets the
+  // Pokémon out. `ballCase`: 6 for the Ghost dodging it. False if there's
+  // no animation to play (the DOM one below, then).
+  async function ballThrow(pos, ball, shakes, caught, ballCase) {
+    const BA = window.BattleAnim;
+    if (!sceneOn() || !BA || !BA.hasAnim("special", "BALL_THROW") || !view[pos] || !view[pos].species) return false;
+    const box = monBox(pos);
+    if (!box) return false;
+    const foe = view[pos];
+    foe.inBall = true;
+    renderSide(pos);
+    const o = Object.assign(animOpts("p1", pos), { anim: "special", id: "BALL_THROW", ball, ballCase: ballCase != null ? ballCase : caught ? 4 : Math.min(3, shakes),
+      shown: POSITIONS.map((p) => p === pos) });
+    await playAnim(o);
+    if (caught) {
+      // The ball stays shut where it came to rest (the GBA's: 24 under its target's base line).
+      el.ball.src = ballUrl(ball);
+      el.ball.style.left = ((box.cx - 8) / 240 * 100).toFixed(2) + "%";
+      el.ball.style.right = "auto";
+      el.ball.style.top = ((BA.ballRest(POSITIONS.indexOf(pos), !!battle.doubles) - 8) / 112 * 100).toFixed(2) + "%";
+      el.ball.classList.remove("hidden", "shake");
+      el.ball.classList.add("caught");
+      return true;
+    }
+    foe.inBall = false;
+    renderSide(pos);
+    return true;
+  }
+
   // ---------- Recalling ----------
   //
   // FireRed's words when you call a Pokémon back depend on how much of the
@@ -2616,6 +2866,19 @@
   const RECALL_RED = "brightness(0.55) sepia(1) saturate(12) hue-rotate(-38deg)";
   async function recall(side, text, ball) {
     const sprite = el.sides[side].sprite, b = throwBallEl(side);
+    const BA = window.BattleAnim, special = sideOf(side) === "p1" ? "SWITCH_OUT_PLAYER_MON" : "SWITCH_OUT_OPPONENT_MON";
+    if (sceneOn() && BA && BA.hasAnim("special", special) && view[side] && view[side].species && monBox(side)) {
+      // pokeemerald-expansion's: the ball's light opens on it, it turns the
+      // ball's colour and shrinks away (SwitchOutPlayerMon / OpponentMon).
+      el.sides[side].info.classList.add("hidden");
+      const said = message(text);
+      const o = animOpts(side, side);
+      if (o.mons[POSITIONS.indexOf(side)]) o.mons[POSITIONS.indexOf(side)].ball = ball;
+      await playAnim(Object.assign(o, { anim: "special", id: special }));
+      sprite.classList.add("in-ball");
+      await said;
+      return;
+    }
     const [x, y] = ballLand(side);
     b.src = ballUrl(ball);
     await b.decode().catch(() => {});
@@ -2879,5 +3142,7 @@
     return ball;
   }
 
-  window.BattleScreen = { run, oldManTutorial, ballName };
+  window.BattleScreen = { run, oldManTutorial, ballName,
+    // (for the browser tests: the animations on their own)
+    _test: { tableAnim, ballThrow, recall, get view() { return view; } } };
 })();
