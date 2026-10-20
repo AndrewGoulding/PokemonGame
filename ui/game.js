@@ -108,13 +108,34 @@
     lastTick = now;
   }
 
-  async function persist() {
+  // (No autosave: the game is saved when you choose to, from the START menu
+  // or your trainer card, or when it asks every 5 minutes of play
+  // (saveReminderStep). `persist` only keeps the play time up to date.)
+  async function persist() { tick(); }
+  // Saving, when you've chosen to: "{PLAYER} saved the game."
+  async function saveGame() {
     tick();
     const r = Save.write(player);
-    if (!r.ok && saveProblem !== r.error) {
-      saveProblem = r.error;
-      await message(r.error + " Use “Download save file” on your trainer card to keep your progress.");
-    }
+    savePromptAt = player.playTimeMs;
+    if (!r.ok && saveProblem !== r.error) saveProblem = r.error;
+    await message(r.ok ? player.name + " saved the game." : r.error + " Use “Download save file” on your trainer card to keep your progress.");
+    return r.ok;
+  }
+  // Every 5 minutes of play, out in the overworld (not in the Safari Zone or
+  // the Bug-Catching Contest, where you can't save), the game offers to save.
+  const SAVE_PROMPT_MS = 5 * 60 * 1000;
+  let savePromptAt = null;
+  function saveReminderStep() {
+    tick();
+    if (savePromptAt == null) savePromptAt = player.playTimeMs;
+    if (player.playTimeMs - savePromptAt < SAVE_PROMPT_MS) return null;
+    if (player.flags.safari || bugContest.here(player.location.map)) return null;
+    return { type: "save-prompt" };
+  }
+  async function savePrompt() {
+    savePromptAt = player.playTimeMs;
+    if (await confirm("It's been a while since you saved.\nWould you like to save the game?")) await saveGame();
+    else Screen.say("");
   }
 
   function downloadSave() {
@@ -189,7 +210,9 @@
         const loaded = await loadSaveFile();
         if (loaded && (!p || await confirm("Replace the game saved in this browser with this file?"))) {
           player = loaded;
-          await persist();
+          savePromptAt = null;
+          tick();
+          Save.write(player);   // (the game you loaded is the one saved now)
           return "play";
         }
         continue;
@@ -807,10 +830,12 @@
     let move;
     const eff = ItemUse.effect(item);
     if (eff && eff.oneMove) {
-      const v = await ask(eff.ppUp ? "Raise the max PP of which move?" : "Restore PP to which move?", record.moves.map((m, i) => ({
-        label: m.name + "  PP " + m.pp + "/" + Party.maxPp(m), value: i, disabled: !Bag.canUseOn(record, item, { move: i })
-      })).concat([back()]));
-      if (v === "back") return;
+      // FireRed's: the question in the text box (gText_BoostPp... "Boost PP of
+      // which move?", "Restore which move?") and the moves in a window at the
+      // right (ShowMoveSelectWindow); B goes back.
+      const v = await multichoice(eff.ppUp ? "Boost PP of which move?" : "Restore which move?", 29, 5, record.moves.map((m) => m.name));
+      Screen.say("");
+      if (v < 0) return;
       move = v;
     }
     if (!Bag.canUseOn(record, item, { move })) { await message(eff && eff.evDown ? "It would have no effect." : "It won't have any effect."); return; }
@@ -1129,7 +1154,14 @@
         if (spot) { sfx("se_select"); picked(spot); }
         return;
       }
-      if (e.key === "r" || e.key === "R") { e.preventDefault(); e.stopPropagation(); switchMap(); return; }
+      // (Flying: no buttons under the map, as in FireRed: B goes back, SELECT
+      // or R changes region.)
+      if (flying && ["x", "X", "Escape", "Backspace"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); picked(null); return; }
+      if (e.key === "r" || e.key === "R" || (flying && e.key === "Select")) {
+        e.preventDefault(); e.stopPropagation();
+        if (regions.length > 1) switchMap();
+        return;
+      }
       const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
       if (!d) return;
       e.preventDefault(); e.stopPropagation();
@@ -1137,9 +1169,10 @@
     };
     document.addEventListener("keydown", onKey, true);
     // (no text over the map)
-    const buttons = (regions.length > 1 ? [{ label: "Switch", value: "switch", className: "action" }] : []).concat([back(flying ? "Cancel" : "Close")]);
+    const buttons = (regions.length > 1 ? [{ label: "Switch", value: "switch", className: "action" }] : []).concat([back("Close")]);
     let r;
-    for (;;) {
+    if (flying) r = await choose;
+    else for (;;) {
       r = await Promise.race([ask("", buttons).then((v) => (v === "switch" ? "switch" : null)), choose]);
       if (r !== "switch") break;
       switchMap();
@@ -2144,7 +2177,7 @@
         (player.flags.hofBragState ? "<dt>Stickers</dt><dd>Hall of Fame " + "★".repeat(player.flags.hofBragState) + "</dd>" : "") +
         "<dt>Started</dt><dd>" + new Date(player.createdAt).toLocaleDateString() + "</dd>" +
         "<dt>Last saved</dt><dd>" + (player.savedAt ? new Date(player.savedAt).toLocaleString() : "never") + "</dd></dl>" +
-        '<p class="bag-line">The game saves automatically in this browser. Download a save file as a backup, or to move your game to another browser.</p></div>';
+        '<p class="bag-line">The game saves in this browser when you save it (START, Save; it asks every 5 minutes too). Download a save file as a backup, or to move your game to another browser.</p></div>';
       const v = await pick("Your trainer card.", html, [
         { label: "Save now", value: "save", className: "action" },
         { label: "Download save file", value: "download", className: "action" },
@@ -2154,8 +2187,7 @@
       if (v === "back") return;
       if (v === "debug") { if ((await debugMenu()) === "battled") return "battled"; continue; }
       if (v === "save") {
-        const r = (tick(), Save.write(player));
-        await message(r.ok ? player.name + " saved the game." : r.error);
+        await saveGame();
       } else if (v === "download") {
         downloadSave();
         await message("Your save file is downloading.");
@@ -2163,7 +2195,9 @@
         const loaded = await loadSaveFile();
         if (loaded && await confirm("Load " + loaded.name + "'s game? Your current game will be replaced.")) {
           player = loaded;
-          await persist();
+          savePromptAt = null;
+          tick();
+          Save.write(player);   // (the game you loaded is the one saved now)
           await message("Loaded " + player.name + "'s game.");
         }
       }
@@ -2279,9 +2313,7 @@
       else if (v === "option") { await optionScreen(false); continue; }
       else if (v === "save") {
         if (!(await confirm("Would you like to save the game?"))) continue;
-        tick();
-        const w = Save.write(player);
-        await message(w.ok ? player.name + " saved the game." : w.error);
+        await saveGame();
       }
       await persist();
     }
@@ -8177,8 +8209,9 @@
     // (Whatever goes wrong drawing it, you're Champion and the game goes on.)
     await HallOfFame.show($("#overlay"), entry, {
       cry, sfx, music, player: { name: player.name, id: player.trainerId, playTimeMs: player.playTimeMs, pic: Player.LOOKS[player.look].front },
-      save: async () => { await persist(); }
-    }).catch((e) => { console.error(e); return persist(); });
+      // (FireRed saves the game here, on its own: the one save that isn't asked.)
+      save: async () => { tick(); Save.write(player); savePromptAt = player.playTimeMs; }
+    }).catch((e) => { console.error(e); tick(); Save.write(player); });
     await creditsRoll();
   }
 
@@ -11622,7 +11655,7 @@
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           berryFarm.step();     // (Celadon's Berry Farm's trees growing)
-          return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step();
+          return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate(), allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
         onMap: (m) => {
@@ -11667,6 +11700,7 @@
       else if (ev.type === "red-forest") await redForest();
       else if (ev.type === "leaf-vermilion") await leafVermilion();
       else if (ev.type === "tera-aide") await teraAide();
+      else if (ev.type === "save-prompt") await savePrompt();
       else if (ev.type === "jessie-james") await jessieJames();
       else if (ev.type === "jessie-james-later") await laterJessieJames();
       else if (ev.type === "safari-over") await safariOver(ev.text, false);
@@ -11709,7 +11743,6 @@
     await explore();
   }
 
-  window.addEventListener("beforeunload", () => { if (player) { tick(); Save.write(player); } });
 
   window.Game = { get player() { return player; }, get pokegear() { return gear; } };
   main();

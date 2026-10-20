@@ -76,7 +76,7 @@ and Select there ("Switch which?") swaps two moves, for good, as in FireRed.
 The Pokémon's boxes are FireRed's healthboxes: name, gender, level, status icon
 and HP bar (and on yours the HP in numbers and the EXP bar), sliding in as each
 Pokémon comes out; the HP bar moves 1 HP a frame and the EXP bar 1 pixel a
-frame as FireRed's do, your box bobs while you choose, a box shakes when its
+frame as FireRed's do (at level 100 the EXP bar is empty, here and on the summary), your box bobs while you choose, a box shakes when its
 Pokémon is hit, and its frame flashes when yours levels up.
 Moves animate by kind and type with FireRed's sound effects (its own, for the
 moves FireRed has one for), and so do hits, fainting, stat changes, the balls
@@ -109,7 +109,7 @@ Then the Bag, FireRed's Bag screen with nine pockets (Items, Medicine,
 Power-up, Poké Balls, TMs & HMs, Berries, Held Items, Mega Stones, Key Items;
 left / right between them, and each pocket remembers where its ▶ was). Power-up
 holds what makes a Pokémon stronger for good (vitamins, Wings, PP Up and PP
-Max, mints, Rare Candy, Exp. Candies, Ability Capsule and Patch, Bottle Caps), Held Items
+Max (FireRed's "Boost PP of which move?", the moves in a window beside it), mints, Rare Candy, Exp. Candies, Ability Capsule and Patch, Bottle Caps), Held Items
 what is mainly for holding (Leftovers, Choice items, type boosters, weather
 rocks, Light Clay, Iron Ball...), Mega Stones the stones; every pocket shows
 FireRed's bag, its pockets opening left, middle, right in turn. In battle the Bag
@@ -141,7 +141,7 @@ used on a Pokémon, its stat's EVs go down 10 and it grows friendlier (10, 5
 or 2), as their descriptions now say; with no EVs in that stat, "It would have
 no effect." Berries sell to any Poké Mart by their tier (the Berry Pouch's
 nine, below): ₽50 for the Basic ones, then 100, 150, 200, 250, 300, 350, 425
-and ₽500 for the Enigma Berry; Tera Shards for ₽1,000 each.
+and ₽500 for the Enigma Berry; Tera Shards for ₽500 each.
 After the Bag come FireRed's Pokédex, the **National
 Pokédex** from the moment Oak hands it over (Pokémon from beyond Kanto turn
 up in the campaign; FireRed's IsNationalPokedexEnabled is `Player.nationalDex`:
@@ -278,9 +278,12 @@ hatching (two with a Flame Body or Magma Armor Pokémon in the party): then
 cracks three times, bursts in a white flash, the Pokémon's cry, "… hatched
 from the EGG!" to its fanfare, and a nickname if you like.
 
-**Saving**: the game saves automatically to this browser (including where you
-are on the map) after every battle, story event and menu change, and
-**Continue** picks up where you left off. Saves from before the overworld put
+**Saving**: there's no autosave. Save from the START menu (**Save**) or your
+trainer card (**Save now**); every 5 minutes of play, out in the overworld, the
+game asks "Would you like to save the game?" too (not in the Safari Zone or
+the Bug-Catching Contest, where you can't save). It saves to this browser
+(including where you are on the map), and **Continue** picks up from your last
+save; the Hall of Fame saves on its own, as FireRed's does. Saves from before the overworld put
 you outside your house in Pallet Town. Browser storage can be wiped (private windows, clearing site data), so
 download a save file from the trainer card as a backup, or to move a game to
 another browser.
@@ -1455,8 +1458,10 @@ go with it in the same turn). **Effect Spore** (and any status given by another 
 says so: "Machamp has been paralyzed due to the wild Breloom's Effect
 Spore!". **Wild Tera Pokémon** (this game's own, as in
 Scarlet and Violet): one wild Pokémon in ten (not in the Safari Zone) has a
-random Tera Type and is already Terastallized when it appears, battling as a
-trainer's Pokémon does; knock it out and you get 3 Tera Shards of its Tera
+random Tera Type: once you're both out, "The wild … is Terastallizing!" and it
+Terastallizes, animation and all, then battles as a
+trainer's Pokémon does (its Tera symbol after its name and gender, clear of the
+ball that marks a species you've caught); knock it out and you get 3 Tera Shards of its Tera
 Type, or catch it and it keeps that Tera Type. **Tera Shards** (one kind
 for each type, in the Power-up pocket): 50 of a type, used on a Pokémon,
 change its Tera Type to that type (not Ogerpon's or Terapagos's).
@@ -1507,7 +1512,7 @@ Battles; `game/raid-dens.js`): eighteen dens, one of each type: Route 1
 corner below the tall grass), Seafoam Islands 1F
 (Ice), the Power Plant (Electric), the Fighting Dojo's back room (Fighting),
 Rock Tunnel 1F (Rock), Diglett's Cave (Ground), Route 25 by the sea (Water),
-Route 18 among the Bird Keepers (Flying), Cinnabar Island's beach (Fire), Pokémon
+Route 18 among the Bird Keepers (Flying), Mt. Ember on One Island, just inside from Kindle Road (Fire), Pokémon
 Tower 1F (Ghost), Silph Co.'s lobby (Steel), outside the Indigo Plateau
 (Dragon), Celadon's Berry Farm (Grass), the Pokémon Mansion 1F (Poison),
 Mr. Psychic's back room (Psychic), the Rocket Hideout B1F (Dark; its
@@ -1526,7 +1531,12 @@ Badges, 4 stars). The raid is a
 battle with its Pokémon (from each type's list for that many stars, at Lv.
 12, 20, 35, 45 or 75 as in Scarlet and Violet, and up to 3 more, with IVs of 10 to 31), which
 comes out already Terastallized into the den's type (no animation: its
-Tera colours and symbol from the start) and has 5, 7.5, 10, 15 or 20 times
+Tera colours and symbol, after its name, from the start), with a competitive
+moveset (`RaidDens.movesetFor`: its strongest move of the den's type first, Tera
+Blast if it has none, its own types' best, a setup or status move such as
+Swords Dance, Calm Mind or Will-O-Wisp, and coverage; from what it learns by
+level and, from 3 stars, its TMs, tutor and Egg moves; never Explosion and the
+like, a charging or recharging move, or a one-hit KO) and has 5, 7.5, 10, 15 or 20 times
 its HP (2, 3, 4, 6 or 8 times, two and a half times over, for the four of
 you); it battles as a trainer's Pokémon does, and can't be caught
 mid-battle. As in Scarlet and Violet it also acts outside its turn: from 2
@@ -1548,9 +1558,10 @@ Tera Raid Pokémon's Tera Type hardest first). Each brings one Pokémon at about
 the raid's level: a Gym Leader one of their own type from the raid's list for
 that many stars (Misty's Lapras against a Grass raid), a trainer the
 Pokémon of theirs that hits it hardest, grown to that level (their Seadra
-from Horsea). They battle alongside yours (`game/raid-dens.js`
+from Horsea), with a moveset chosen against the raid's Tera Type: its strongest super
+effective moves first, then its own types'. They battle alongside yours (`game/raid-dens.js`
 `RaidDens.allies`, and the engine's `raidAllies`): each turn each uses its
-strongest move against the Tera Raid Pokémon, which aims at any of the four
+strongest move against the Tera Raid Pokémon (a super effective one before a stronger neutral one), which aims at any of the four
 of you; what they do is told in words ("Misty's Lapras used Ice Beam!"), and
 their HP shows in the corner of the screen. You have 10, 12, 15, 20 or 25 turns to win (as Scarlet and
 Violet's raids have a time limit): told at the start, then "3 turns left!",
@@ -2065,7 +2076,8 @@ with the same moves.)
 follower section of `ui/overworld.js`): your party's first Pokémon
 (the first that can still fight) walks a step behind you, on the tile you've
 just left, as fast as you go, hopping after you over ledges, round the
-corner onto the next map; through a door it comes out behind you. It's
+corner onto the next map; out of a door it comes out beside you, on your left (your right if
+that's blocked), not in the doorway. It's
 HGSS's own overworld sprite (every species to Arceus, its forms and females'
 own looks; Lugia, Steelix and the big ones at 64x64), and for the species and
 forms HGSS hasn't got, FireRed's look: its party icon
@@ -2628,7 +2640,8 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   you, Flash in a dark cave (`requires_flash`: dark but for a circle around you,
   which opens up), Fly from outdoors to any town you've been to (the Town Map,
   each place marked with FireRed's blinking wing icon; you land outside its Pokémon Center, FireRed's heal
-  locations, and Route 4's Center counts once you've been in) with FireRed's
+  locations, and Route 4's Center counts once you've been in; no buttons under the map: A flies, B goes back, SELECT or R
+  changes region) with FireRed's
   Fly animation out of battle (FLDEFF_FLY_OUT and FLY_IN, frame for frame, in
   `ui/overworld.js`): you raise a Poké Ball, your Pokémon slides across a band
   of streaks and cries, the bird leaves its Ball, swoops down for you and

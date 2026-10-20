@@ -742,7 +742,7 @@
         // Coming out of a door: step out onto the street.
         if (target.door) {
           const r = World.step({ map: me.map, x: me.x, y: me.y }, "down", occupiedForPlayer);
-          if (r.ok) startStep(r, "down");
+          if (r.ok) { startStep(r, "down"); followerOutOfDoor(r); }
         }
       };
     };
@@ -783,6 +783,18 @@
     const mv = me.move || { speed: WALK_SPEED, dist: TILE };
     pal.move = { fx: pal.x, fy: pal.y, t: 0, dist: n * TILE, speed: mv.speed * (n * TILE) / (mv.dist || TILE), hop: n === 2 };
     pal.x = me.x; pal.y = me.y; pal.parity ^= 1;
+  }
+  // Out of a door with you: it comes out beside you, on your left (or your
+  // right, if that's blocked), not in the doorway. (Out of it diagonally, as
+  // you step down onto the street.)
+  function followerOutOfDoor(r) {
+    if (!pal.def || me.avatar !== "walk") return;
+    const from = { map: r.map, x: r.x, y: r.y };
+    const side = ["left", "right"].map((d) => World.step(from, d, occupiedForPlayer)).find((s) => s.ok && s.map === r.map && !s.jump && !s.warp);
+    if (!side) return;
+    pal.facing = "down";
+    pal.move = { fx: me.x, fy: me.y, t: 0, dist: TILE, speed: me.move ? me.move.speed : WALK_SPEED, hop: false };
+    pal.x = side.x; pal.y = side.y; pal.parity ^= 1;
   }
   // (Over the edge onto the next map: where it is, in that map's tiles.)
   function followerCrossed(from) {

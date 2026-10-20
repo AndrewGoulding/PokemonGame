@@ -138,7 +138,7 @@
     return i >= 0 ? BERRY_SELL[i] : 0;
   }
   // Tera Shards (not sold anywhere): ₽1,000 each to a Poké Mart (this game's own).
-  const TERA_SHARD_SELL = 1000;
+  const TERA_SHARD_SELL = 500;
   const sellPrice = (item) => (/-berry$/.test(item) && berrySellPrice(item) ? berrySellPrice(item)
     : /-tera-shard$/.test(item) ? TERA_SHARD_SELL : Math.floor(price(item) / 2));
 

@@ -705,7 +705,20 @@ for (const share of [false, true]) {
     const rock = RaidDens.DENS.find((d) => d.type === "Rock");
     const golem = RaidDens.boss(rock, { stars: 5, species: "Golem", level: 75 }, rng).moves.map((m) => m.name);
     assert(golem.length === 4 && !golem.some((m) => MOVES[m].selfdestruct) && RandomTeam.levelUpMoves("Golem", 75).includes("Explosion"), "raid Golem: " + golem);
-    assert.deepStrictEqual(RandomTeam.levelUpMoves("Golem", 75, (m) => m === "Explosion"), golem);
+    assert.deepStrictEqual(RandomTeam.levelUpMoves("Golem", 75, (m) => m === "Explosion").length, 4);
+    // Competitive movesets: the boss's Tera Type's STAB first, a setup or status move, nothing awkward.
+    assert.deepStrictEqual(golem, RaidDens.movesetFor("Golem", 75, { stars: 5, tera: "Rock" }));
+    assert(MOVES[golem[0]].type === "Rock" && golem.some((m) => MOVES[m].cat === "Status"), "raid Golem: " + golem);
+    const zam = RaidDens.movesetFor("Alakazam", 75, { stars: 5, tera: "Psychic" });
+    assert(!zam.includes("Future Sight") && MOVES[zam[0]].type === "Psychic" && zam.includes("Calm Mind"), "raid Alakazam: " + zam);
+    for (const type of Object.keys(RaidDens.POOLS)) RaidDens.POOLS[type].forEach((pool, i) => pool.forEach((sp) => {
+      const ms = RaidDens.movesetFor(sp, RaidDens.LEVELS[i + 1], { stars: i + 1, tera: type });
+      assert(ms.length >= 1 && ms.length <= 4 && ms.every((m) => MOVES[m] && !MOVES[m].selfdestruct && !MOVES[m].ohko), sp + ": " + ms);
+    }));
+    // Allies: what's super effective against the raid's Tera Type first; and they choose it in battle.
+    const lap = RaidDens.movesetFor("Lapras", 45, { stars: 4, against: "Fire" });
+    assert(Damage.typeEffectiveness(MOVES[lap[0]].type, ["Fire"]) > 1 && Damage.typeEffectiveness(MOVES[lap[1]].type, ["Fire"]) > 1, "ally Lapras: " + lap);
+    assert(/mv\.power \* eff \* \(eff > 1 \? 2 : 1\)/.test(fs.readFileSync(path.join(root, "engine/battle.js"), "utf8")), "allies favour super effective moves");
     // The joining text wraps long names instead of running off the text box.
     const jt = RaidDens.joinedText(["Cooltrainer Nathan", "Bird Keeper Chester", "Crush Girl Sharon"]);
     assert(jt.split("\n").every((l) => l.length <= 34) && jt.replace(/\n/g, " ") === "Cooltrainer Nathan, Bird Keeper Chester and Crush Girl Sharon joined the Tera Raid!", jt);
@@ -720,6 +733,19 @@ for (const share of [false, true]) {
     assert(/smallNames: stock\.length > 0 && stock\.every\(\(id\) => \/\^\(tm\|hm\)\\d\/\.test\(id\)\)/.test(gJs0) && /\(it && st\.opts\.smallNames\) \|\| s\.textWidth\(name\) > room/.test(shopJs0), "TM counter: small names");
     assert(/kind: "count", n: 1, max: it\.qty, price: unit/.test(bagJs0) && !/Math\.min\(it\.qty, 99\)/.test(bagJs0), "sell more than 99");
     assert(/name \+ "'s base " \+ STAT_NAMES\[eff\.ev\] \+ "\\nrose\."/.test(gJs0) && ItemUse.effect("calcium").ev === "spa" && ItemUse.effect("swift-wing").ev === "spe", "vitamin message names the stat");
+    // PP Up asks as FireRed does; level 100's EXP bar is empty; a wild Tera
+    // Pokémon's symbol by its name, and it Terastallizes on screen; the Fire
+    // den on Mt. Ember; out of a door, the follower beside you; no autosave,
+    // a prompt every 5 minutes; Fly's map without buttons.
+    const bsJs0 = fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8"), owJs0 = fs.readFileSync(path.join(root, "ui/overworld.js"), "utf8");
+    assert(/multichoice\(eff\.ppUp \? "Boost PP of which move\?" : "Restore which move\?", 29, 5,/.test(gJs0), "PP Up's question");
+    assert.strictEqual(Experience.progress(Experience.growthRate("Mew"), 100, Experience.expForLevel(Experience.growthRate("Mew"), 100)), 0);
+    assert(/const wildTera = d\.tera && st\.foe && battle && battle\.wild;/.test(bsJs0) && /"The wild " \+ m\.name \+ " is\\nTerastallizing!"/.test(bsJs0), "wild Tera");
+    const ember = RaidDens.DENS.find((d) => d.type === "Fire"), oldFlags = { raidDens: { cinnabar: { stars: 1, species: "Vulpix", level: 12 } } };
+    assert(ember.map === "MtEmber_Exterior" && RaidDens.active(oldFlags, "mtEmber") && !oldFlags.raidDens.cinnabar, "the Fire den on Mt. Ember");
+    assert(/if \(r\.ok\) \{ startStep\(r, "down"\); followerOutOfDoor\(r\); \}/.test(owJs0) && /\["left", "right"\]\.map\(\(d\) => World\.step\(from, d, occupiedForPlayer\)\)/.test(owJs0), "follower out of a door");
+    assert(/async function persist\(\) \{ tick\(\); \}/.test(gJs0) && !/beforeunload/.test(gJs0) && /SAVE_PROMPT_MS = 5 \* 60 \* 1000/.test(gJs0) && /\|\| saveReminderStep\(\);/.test(gJs0), "no autosave; a prompt every 5 minutes");
+    assert(/if \(flying\) r = await choose;/.test(gJs0), "Fly's map: no buttons");
     // Inviting: A invites, B takes back the last one invited.
     const gJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
     assert(/if \(v < 0\) \{\n\s*if \(!picked\.length\) return \[\];\n\s*cursor = can\.indexOf\(picked\.pop\(\)\);/.test(gJs) && /RaidDens\.joinedText\(allies\.map/.test(gJs), "raid invite keys");
@@ -913,7 +939,7 @@ for (const share of [false, true]) {
   assert.deepStrictEqual(["oran", "sitrus", "razz", "pomeg", "spelon", "occa", "liechi", "kee", "enigma"].map((b) => Bag.sellPrice(b + "-berry")), [50, 100, 150, 200, 250, 300, 350, 425, 500]);
   // Tera Shards sell for ₽1,000 each; and the Bag opening on a Berry you've none of left
   // (the last one planted) mustn't trip over its CLOSE BAG row.
-  assert.deepStrictEqual(["fire-tera-shard", "water-tera-shard"].map((id) => Bag.sellPrice(id)), [1000, 1000]);
+  assert.deepStrictEqual(["fire-tera-shard", "water-tera-shard"].map((id) => Bag.sellPrice(id)), [500, 500]);
   // Faraway Island's Mew: Psychic, Nasty Plot, Aura Sphere, Ice Beam.
   assert(/const FARAWAY_MEW_MOVES = \["Psychic", "Nasty Plot", "Aura Sphere", "Ice Beam"\];/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")), "Mew's moves");
   assert.deepStrictEqual(Party.create("Mew", 50, { moves: ["Psychic", "Nasty Plot", "Aura Sphere", "Ice Beam"] }).moves.map((m) => m.name), ["Psychic", "Nasty Plot", "Aura Sphere", "Ice Beam"]);

@@ -389,13 +389,20 @@
     // (Terastallized, Mega Evolved or not: its Tera Type's indicator, under the
     // name's start, left of "HP", so "Lv" stays; theirs with a status, after
     // the status icon, which covers "HP".)
-    if (d.tera && hbTera.complete && TERA_TYPES.includes(d.tera)) {
+    // (A wild Pokémon's or a Tera Raid's: after its name and gender, where the
+    // ball for one you've caught before can't cover it, and after the shiny
+    // star if it has one.)
+    const wildTera = d.tera && st.foe && battle && battle.wild;
+    if (d.tera && hbTera.complete && TERA_TYPES.includes(d.tera) && !wildTera) {
       const afterStatus = HB_STATUS[d.status] != null && !st.singlesPlayer;
       g.drawImage(hbTera, TERA_TYPES.indexOf(d.tera) * 8, 0, 8, 16, afterStatus ? st.status[0] + 22 : st.nameX + 2, 8, 8, 16);
     }
-    else if (d.mega && hbMega.complete) g.drawImage(hbMega, lvAt + lvW - 10, -1);
+    else if (d.mega && hbMega.complete && !d.tera) g.drawImage(hbMega, lvAt + lvW - 10, -1);
     // (This game's own: a gold star after a shiny wild Pokémon's name, kept inside the name's window.)
-    if (d.shiny) drawStar(g, Math.min(nx + w + (gw || 0) + 1, nx + 56 - 7), 6);
+    const starX = Math.min(nx + w + (gw || 0) + 1, nx + 56 - 7 - (wildTera ? 9 : 0));
+    if (d.shiny) drawStar(g, starX, 6);
+    if (wildTera && hbTera.complete && TERA_TYPES.includes(d.tera))
+      g.drawImage(hbTera, TERA_TYPES.indexOf(d.tera) * 8, 0, 8, 16, Math.min(d.shiny ? starX + 8 : nx + w + (gw || 0) + 1, nx + 56 - 8), -3, 8, 16);
     b.layer = c;
     return c;
   }
@@ -2367,7 +2374,8 @@
     if (cfg.wild) {
       mon = battle.sides.p2.pokemon[0];
       view.p2 = { name: mon.name, species: mon.species, level: mon.level, hp: mon.hp, maxhp: mon.maxhp, status: "",
-        fainted: false, exp: null, teamIndex: 0, form: (cfg.p2.team[0] || {}).form || "", shiny: !!(cfg.p2.team[0] || {}).shiny };
+        fainted: false, exp: null, teamIndex: 0, form: (cfg.p2.team[0] || {}).form || "", shiny: !!(cfg.p2.team[0] || {}).shiny,
+        tera: teraShown["p2:0"] || null };   // (a Tera Raid's Pokémon: Terastallized from the start)
       renderSide("p2");
       el.sides.p2.info.classList.add("hidden");
       el.sides.p2.sprite.classList.add("silhouette");
@@ -2745,9 +2753,11 @@
     view = { p1: { species: null }, p2: { species: null }, p1b: { species: null }, p2b: { species: null } };
     teraShown = {};
     raidAlliesPanel(battle.raidAllies);
-    // (A Tera Raid's Pokémon comes out already Terastallized: no animation, just its look.)
+    // (A Tera Raid's Pokémon comes out already Terastallized: no animation, just its look.
+    // A wild Tera Pokémon Terastallizes once you're both out: wildTera below.)
+    const wildTera = cfg.wild && !cfg.raid ? battle.sides.p2.pokemon.filter((m) => m.teraStart && battle.canTera(m)) : [];
     for (const m of battle.sides.p2.pokemon) {
-      if (!m.teraStart || !battle.canTera(m)) continue;
+      if (!m.teraStart || !battle.canTera(m) || wildTera.includes(m)) continue;
       const n = battle.events.length;
       battle.terastallize(m);
       battle.events.splice(n);
@@ -2765,6 +2775,17 @@
     }
     battle.start();
     raidAnnounced = -1;
+    // A wild Tera Pokémon (this game's own): "The wild … is Terastallizing!",
+    // then the Terastallizing, animation and all, before the first turn.
+    if (wildTera.length) {
+      await playNewEvents();
+      for (const m of wildTera) {
+        if (!m.isActive || m.fainted) continue;
+        await message("The wild " + m.name + " is\nTerastallizing!");
+        battle.terastallize(m);
+        await playNewEvents();
+      }
+    }
     const status = await loop();
     // (A Tera Raid won: the battle goes on, to catch it if you like.)
     const raidBall = status !== "crashed" && cfg.raid && battle.winner === "p1" ? await raidCatch() : null;

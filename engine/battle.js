@@ -2204,8 +2204,9 @@
       return this.sample(pool);
     }
     // A Tera Raid ally's turn: its strongest move against the Tera Raid
-    // Pokémon (power, same-type bonus and type effectiveness), or, with none
-    // that hurts, any it has.
+    // Pokémon (power, same-type bonus and type effectiveness, a super
+    // effective one counted twice over, so it's chosen over a stronger
+    // neutral one), or, with none that hurts, any it has.
     raidAllyMove(m) {
       const boss = this.sides.p2.active;
       if (!boss || boss.fainted || m.fainted || m.hp <= 0) return;
@@ -2213,7 +2214,7 @@
         const mv = window.MOVES[name];
         if (!mv || mv.cat === "Status" || !mv.power || (mv.flags && (mv.flags.charge || mv.flags.recharge))) return 0;
         const eff = window.Damage.typeEffectiveness(mv.type, boss.types);
-        return mv.power * eff * (m.types.includes(mv.type) ? 1.5 : 1) * Math.min(1, (mv.acc === true ? 100 : mv.acc || 100) / 100);
+        return mv.power * eff * (eff > 1 ? 2 : 1) * (m.types.includes(mv.type) ? 1.5 : 1) * Math.min(1, (mv.acc === true ? 100 : mv.acc || 100) / 100);
       };
       const names = m.moveSlots.filter((sl) => sl.pp > 0).map((sl) => sl.name);
       if (!names.length) return;

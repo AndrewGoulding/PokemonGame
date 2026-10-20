@@ -43,7 +43,7 @@
     ["diglettsCave", "DiglettsCave_B1F", 36, 33, "Ground"],
     ["route25", "Route25", 62, 8, "Water"],
     ["route18", "Route18", 44, 13, "Flying"],   // (among the Bird Keepers, out of their sight)
-    ["cinnabar", "CinnabarIsland", 18, 13, "Fire"],
+    ["mtEmber", "MtEmber_Exterior", 24, 47, "Fire"],   // (Sevii's One Island: just west of the way in from Kindle Road)
     ["lavender", "PokemonTower_1F", 11, 2, "Ghost"],   // (at the top of Pokémon Tower's ground floor)
     ["silph", "SilphCo_1F", 27, 6, "Steel"],
     ["indigo", "IndigoPlateau_Exterior", 14, 12, "Dragon"],   // (in a corner of the plaza, off the way to the door)
@@ -161,6 +161,11 @@
   // (A raid left glowing by an older version, from before its den moved or
   // changed type, isn't one of its den's now: it's gone.)
   const active = (flags, id) => {
+    // (The Fire den was on Cinnabar Island's beach once: a raid glowing there moves with it.)
+    if (id === "mtEmber" && flags.raidDens && flags.raidDens.cinnabar) {
+      flags.raidDens.mtEmber = flags.raidDens.mtEmber || flags.raidDens.cinnabar;
+      delete flags.raidDens.cinnabar;
+    }
     const raid = flags.raidDens && flags.raidDens[id], den = DENS.find((d) => d.id === id);
     return raid && den && POOLS[den.type].some((pool) => pool.includes(raid.species)) ? raid : null;
   };
@@ -208,7 +213,8 @@
       if (!L || out.length >= 3) continue;
       const pool = POOLS[L.type] && POOLS[L.type][raid.stars - 1] || [];
       const sp = best(pool, type);
-      if (sp) out.push({ trainer: L.name, leader: true, record: window.Party.create(sp, lv(), { ivs: 31 }) });
+      const level = lv();
+      if (sp) out.push({ trainer: L.name, leader: true, record: window.Party.create(sp, level, { ivs: 31, moves: movesetFor(sp, level, { stars: raid.stars, against: type }) }) });
     }
     const region = ((window.WORLD_MAPS || {})[den.map] || {}).region === "johto" ? "johto" : "kanto";
     const T = window.WORLD_TRAINERS || {}, seen = new Set(out.map((a) => a.trainer));
@@ -220,8 +226,8 @@
       const name = trainerName(T[x.id]);
       if (seen.has(name)) continue;
       seen.add(name);
-      const level = lv();
-      out.push({ trainer: name, record: window.Party.create(grown(x.sp, level, type), level, { ivs: 20 }) });
+      const level = lv(), sp = grown(x.sp, level, type);
+      out.push({ trainer: name, record: window.Party.create(sp, level, { ivs: 20, moves: movesetFor(sp, level, { stars: raid.stars, against: type }) }) });
     }
     return out;
   }
@@ -237,13 +243,70 @@
   function finish(flags, id) {
     if (flags.raidDens) delete flags.raidDens[id];
   }
-  // The Tera Raid Pokémon: Terastallized into the den's type as soon as it's out.
-  // It never knows a move that takes itself out (Golem's Explosion, Memento,
-  // Final Gambit: Scarlet and Violet's raid bosses don't either); its earlier
-  // level-up moves fill in.
+  // ---------- Movesets ----------
+  // A raid's Pokémon, and those beside you, get competitive movesets (as
+  // Scarlet and Violet's raid Pokémon have), not just their latest level-up
+  // moves: from what they learn by level, and from 3 stars on their TMs,
+  // tutor and Egg moves too. Never a move that takes the user out (Golem's
+  // Explosion, Memento, Final Gambit), one that needs a turn to charge or
+  // recharge, or a one-hit KO.
+  //   movesetFor(species, level, { stars, tera })      // the boss: STAB of its Tera Type
+  //       first (Tera Blast if it has none), its own types', a setup or
+  //       status move, coverage
+  //   movesetFor(species, level, { stars, against })   // an ally: what's super
+  //       effective against the raid's Tera Type first, then its own STAB
   const selfDestructs = (move) => !!(window.MOVES[move] || {}).selfdestruct;
+  const SETUP = { Physical: ["Swords Dance", "Dragon Dance", "Bulk Up", "Shell Smash", "Coil", "Victory Dance", "Hone Claws"],
+    Special: ["Nasty Plot", "Quiver Dance", "Calm Mind", "Shell Smash", "Tail Glow", "Take Heart", "Work Up"],
+    any: ["Will-O-Wisp", "Thunder Wave", "Toxic", "Recover", "Roost", "Slack Off", "Soft-Boiled", "Synthesis", "Moonlight", "Leech Seed", "Iron Defense", "Amnesia"] };
+  // (Nor moves that only work some of the time, or later: Focus Punch, Dream
+  // Eater, Future Sight and the like.)
+  const AWKWARD = new Set(["Focus Punch", "Dream Eater", "Future Sight", "Doom Desire", "Snore", "Sleep Talk", "Last Resort", "Belch",
+    "Fling", "Natural Gift", "Spit Up", "Synchronoise", "Shell Trap", "Hidden Power", "Steel Roller", "Ice Spinner", "Dig", "Dive",
+    "Fly", "Bounce", "Phantom Force", "Shadow Force", "Sky Drop", "Outrage", "Petal Dance", "Thrash", "Uproar", "Rollout", "Ice Ball",
+    "Fake Out", "First Impression", "Counter", "Mirror Coat", "Metal Burst", "Bide", "Endeavor", "Final Gambit", "Struggle"]);
+  function movesetFor(species, level, opts) {
+    opts = opts || {};
+    const M = window.MOVES, dex = window.DEX[species], L = (window.LEARNSETS_GEN6 || {})[species];
+    if (!dex || !L) return window.RandomTeam.levelUpMoves(species, level, selfDestructs);
+    const known = new Set(L.levelup.filter(([lv]) => lv <= level).map(([, m]) => m));
+    if ((opts.stars || 0) >= 3) for (const k of ["tm", "tutor", "egg"]) for (const m of L[k] || []) known.add(m);
+    const pool = [...known].filter((m) => M[m] && !selfDestructs(m) && !M[m].ohko && !(M[m].flags && (M[m].flags.charge || M[m].flags.recharge))
+      && !M[m].isZ && !M[m].isMax && !AWKWARD.has(m));
+    const cat = dex.atk >= dex.spa ? "Physical" : "Special";
+    const close = Math.abs(dex.atk - dex.spa) <= Math.max(dex.atk, dex.spa) * 0.1;
+    const stab = new Set(dex.types.concat(opts.tera ? [opts.tera] : []));
+    const power = (m) => {
+      const mv = M[m];
+      if (mv.cat === "Status" || !mv.power) return 0;
+      const hits = Array.isArray(mv.multihit) ? (mv.multihit[0] + mv.multihit[1]) / 2 : mv.multihit || 1;
+      return mv.power * hits * Math.min(1, (mv.acc === true ? 100 : mv.acc || 100) / 100) * (stab.has(mv.type) ? 1.5 : 1)
+        * (mv.cat === cat || close ? 1 : 0.55);
+    };
+    const attacks = pool.filter((m) => power(m) > 0).sort((a, b) => power(b) - power(a) || (a < b ? -1 : 1));
+    const out = [];
+    const add = (m) => { if (m && !out.includes(m) && out.length < 4) out.push(m); };
+    const bestOf = (type) => attacks.find((m) => M[m].type === type);
+    if (opts.against) {
+      const eff = (m) => window.Damage.typeEffectiveness(M[m].type, [opts.against]);
+      attacks.filter((m) => eff(m) > 1).slice(0, 2).forEach(add);
+      for (const t of dex.types) add(bestOf(t));
+      attacks.filter((m) => eff(m) >= 1).forEach(add);
+    } else {
+      add(bestOf(opts.tera) || (opts.tera && M["Tera Blast"] && opts.stars >= 3 ? "Tera Blast" : null));
+      for (const t of dex.types) add(bestOf(t));
+      const setup = SETUP[cat].concat(SETUP.any).find((m) => known.has(m));
+      if (out.length < 4) add(setup);
+      // (Coverage: the strongest of another type than those it has.)
+      add(attacks.find((m) => !out.some((o) => M[o].type === M[m].type)));
+    }
+    attacks.forEach(add);
+    pool.forEach(add);
+    return out.length ? out : window.RandomTeam.levelUpMoves(species, level, selfDestructs);
+  }
+  // The Tera Raid Pokémon: Terastallized into the den's type as soon as it's out.
   function boss(den, raid, rng) {
-    const moves = RAID_MOVES[raid.species] || window.RandomTeam.levelUpMoves(raid.species, raid.level, selfDestructs);
+    const moves = RAID_MOVES[raid.species] || movesetFor(raid.species, raid.level, { stars: raid.stars, tera: den.type });
     const r = window.Party.create(raid.species, raid.level, { ivs: IVS[raid.stars], rng, moves });
     return Object.assign(r, { teraType: den.type, teraAce: true });
   }
@@ -300,5 +363,5 @@
     return { money: R.money, items: Object.entries(got) };
   }
 
-  window.RaidDens = { LEADERS, leaders, allies, ALLY_HP: 2.5, DENS, byScript, active, maxStars, rollStars, start, finish, boss, joinedText, rewards, POOLS, isKanto, RAID_MOVES, BADGES, LEVELS, IVS, HP, TURNS, LURE_STARS, REWARDS, SHARDS };
+  window.RaidDens = { LEADERS, leaders, allies, ALLY_HP: 2.5, DENS, byScript, active, maxStars, rollStars, start, finish, boss, movesetFor, joinedText, rewards, POOLS, isKanto, RAID_MOVES, BADGES, LEVELS, IVS, HP, TURNS, LURE_STARS, REWARDS, SHARDS };
 })();

@@ -49,7 +49,7 @@
 
   // How far through the current level `exp` is, from 0 to 1.
   function progress(group, level, exp) {
-    if (level >= MAX_LEVEL) return 1;
+    if (level >= MAX_LEVEL) return 0;   // (at level 100 the EXP bar is empty, as in FireRed)
     const lo = expForLevel(group, level), hi = expForLevel(group, level + 1);
     return Math.max(0, Math.min(1, (exp - lo) / (hi - lo)));
   }
