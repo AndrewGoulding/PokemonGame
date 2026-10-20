@@ -67,6 +67,11 @@ const TUTOR_MOVES = ["Mega Punch", "Swords Dance", "Mega Kick", "Body Slam", "Do
       if (sources.some((s) => /^\dM$/.test(s))) set.add(move);
       if (sources.some((s) => /^\dT$/.test(s))) tutor.add(move);
     }
+    // (Red, Blue and Yellow's TMs and Gold, Silver and Crystal's: their own learnsets, @pkmn/dex's for those generations.)
+    for (const g of [1, 2]) {
+      const old = await Dex.forGen(g).learnsets.get(toID(SHOWDOWN_NAME[species] || species));
+      for (const [move, sources] of Object.entries((old && old.learnset) || {})) if (sources.some((s) => s === g + "M")) set.add(move);
+    }
     machineMoves[species] = set;
     tutorMoves[species] = tutor;
   }

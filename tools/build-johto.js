@@ -547,7 +547,9 @@ const newMachine = (k) => {
   const had = Object.keys(extraItems).find((id) => extraItems[id].hgss === k);
   if (had) return had;
   const move = MACHINE_MOVES[k].replace(/^MOVE_/, "").split("_").map((w) => w[0] + w.slice(1).toLowerCase()).join(" ");
-  const n = Math.max(...Object.keys(window.ITEMS).concat(Object.keys(extraItems)).map((id) => (/^tm(\d+)$/.exec(id) || [0, 0])[1])) + 1;
+  // (Numbered from TM108 on, the first free numbers: TM114-TM165 are the older games' TMs in data/items.js.)
+  let n = 108;
+  while (window.ITEMS["tm" + n] || extraItems["tm" + n]) n++;
   extraItems["tm" + n] = { name: "tm" + n, category: "all-machines", effect: "Teaches " + move + " to a compatible Pokémon." };
   Object.defineProperty(extraItems["tm" + n], "hgss", { value: k });   // (for the build only: HGSS's TM it is)
   const num = +k.slice(2);

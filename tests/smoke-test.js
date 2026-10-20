@@ -753,6 +753,17 @@ for (const share of [false, true]) {
     assert(/species: Party\.speciesName\(r\.species\), level: r\.level/.test(gJs0), "PC: plain species");
     assert.deepStrictEqual(["Darmanitan-Galar", "Darmanitan-Galar-Zen", "Maushold-Four", "Raichu-Alola", "Ho-Oh", "Porygon-Z", "Kommo-o"].map(Party.speciesName),
       ["Darmanitan", "Darmanitan", "Maushold", "Raichu", "Ho-Oh", "Porygon-Z", "Kommo-o"]);
+    // Every TM of Red/Blue/Yellow, Gold/Silver/Crystal, FireRed/LeafGreen and
+    // HeartGold/SoulSilver has a machine here (TM114-TM165 the ones added),
+    // with Gen 1 and 2's learners.
+    const machineMoves = new Set(Bag.machines().map(Bag.machineMove));
+    assert.strictEqual(Bag.machines().length, machineMoves.size, "one machine a move");
+    for (const mv of ["Mega Punch", "Bubble Beam", "Tri Attack", "Dynamic Punch", "Nightmare", "Zap Cannon", "Drain Punch", "Pluck", "Silver Wind", "Recycle", "Endure"])
+      assert(machineMoves.has(mv), "a TM for " + mv);
+    assert.deepStrictEqual(["tm114", "tm143", "tm144", "tm161", "tm165"].map(Bag.machineMove), ["Mega Punch", "Tri Attack", "Dynamic Punch", "Nightmare", "Pluck"]);
+    assert(["tm114", "tm165"].every((t) => Bag.sprite(t)), "TM sprites");
+    const learns = (sp, mv) => Party.canLearnMachine(Party.create(sp, 30), mv);
+    assert(learns("Squirtle", "Bubble Beam") && learns("Gengar", "Nightmare") && learns("Pidgeot", "Pluck") && learns("Lucario", "Drain Punch") && !learns("Charmander", "Bubble Beam"));
     // Inviting: A invites, B takes back the last one invited.
     const gJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
     assert(/if \(v < 0\) \{\n\s*if \(!picked\.length\) return \[\];\n\s*cursor = can\.indexOf\(picked\.pop\(\)\);/.test(gJs) && /RaidDens\.joinedText\(allies\.map/.test(gJs), "raid invite keys");

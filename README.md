@@ -2685,10 +2685,26 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   TM01), Skill Swap (TM106, TM48) and Snatch (TM107, TM49, in the Rocket
   Hideout). `tools/build-maps.js` stops with an error if a map gives a FireRed
   TM this game has no machine for, so a new one is added the same way.
+  HeartGold and SoulSilver's TMs with no machine here are TM108–TM113 (Dragon Pulse,
+  Natural Gift, Captivate, Stealth Rock, Brine, Avalanche: `tools/build-johto.js`,
+  numbering them from TM108). TM114–TM165 are every other TM of Red, Blue and
+  Yellow, Gold, Silver and Crystal, and HeartGold and SoulSilver whose move had no
+  machine here, in those games' order: Mega Punch, Razor Wind, Whirlwind, Mega
+  Kick, Horn Drill, Body Slam, Take Down, Double-Edge, Bubble Beam, Water Gun, Pay
+  Day, Submission, Counter, Seismic Toss, Rage, Mega Drain, Dragon Rage, Fissure,
+  Teleport, Mimic, Bide, Metronome, Self-Destruct, Egg Bomb, Swift, Skull Bash,
+  Soft-Boiled, Sky Attack, Psywave, Tri Attack (Red, Blue and Yellow's, TM114–TM143);
+  Dynamic Punch, Headbutt, Curse, Rollout, Zap Cannon, Sweet Scent, Snore, Icy
+  Wind, Endure, Dragon Breath, Mud-Slap, Ice Punch, Defense Curl, Thunder Punch,
+  Detect, Fire Punch, Fury Cutter, Nightmare (Gold, Silver and Crystal's,
+  TM144–TM161); Drain Punch, Silver Wind, Recycle, Pluck (HeartGold and SoulSilver's,
+  TM162–TM165). FireRed and LeafGreen's are all here already. None of TM114–TM165
+  is found anywhere yet.
   Compatibility comes from the Gen 6
   learnsets; for HMs and for machines Gen 6 never had (Bullet Seed, Water
   Pulse, Shock Wave and the later ones), also from
-  any generation that taught the move by machine (`data/machine-learners.js`,
+  any generation that taught the move by machine, Red, Blue and Yellow's and Gold, Silver and
+  Crystal's included (`data/machine-learners.js`,
   built by `npm run build:machine-learners` from @pkmn/dex), which covers
   Bullet Seed, Whirlpool, Defog and Rock Climb. The same file has
   `TUTOR_LEARNERS`: who FireRed's move tutors can teach (Gen 6 had no tutor
