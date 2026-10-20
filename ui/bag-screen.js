@@ -19,6 +19,8 @@
 //                //   message or null
 //     fresh      // the cursors start at the top and aren't remembered
 //     select     // an item id: the ▶ starts on it
+//     reorder    // (pocketName, [ids]): SELECT moves an item (FireRed's), and
+//                //   this gets the pocket's new order
 //   })
 //   // -> null (B, or CANCEL), or { action, id, pocket }
 //   BagScreen.close()   // hides it (it stays up after open() for messages)
@@ -49,7 +51,7 @@
   const A = (n) => image("assets/bag/" + n + ".png");
   const ready = (img) => img && img.complete && img.naturalWidth;
 
-  const WHITE = [255, 255, 255], DARK = [98, 98, 98], LIGHT = [213, 213, 205];
+  const WHITE = [255, 255, 255], DARK = [98, 98, 98], LIGHT = [213, 213, 205], RED = [248, 48, 48];
   // The bag's frame for each pocket: FireRed's bag, its pockets opening in
   // turn, left, middle, right, then round again (bag_*.png: 2 the left
   // pocket, 3 the middle, 1 the right).
@@ -105,12 +107,16 @@
       const it = items[m.top + r], y = 10 + 16 * r;
       s.text(it ? it.name : "Cancel", 97, y, DARK, LIGHT);
       if (it && it.qty != null) s.text("×" + String(it.qty).padStart(3, " "), 198, y, DARK, LIGHT, "small");
-      if (m.top + r === m.cursor) s.text("▶", 89, y, menuOpen ? LIGHT : DARK, menuOpen ? DARK : LIGHT);
+      // (Moving an item: FireRed's red ▶ and the item's name in red where it'd go.)
+      if (m.top + r === m.cursor) s.text("▶", 89, y, st.moving ? RED : menuOpen ? LIGHT : DARK, menuOpen ? DARK : LIGHT);
+      if (st.moving && it && m.top + r === m.cursor) s.text(it.name, 97, y, RED, LIGHT);
     }
 
     // The description (or the prompts and menus over it).
     const cur = items[m.cursor];
-    if (!menuOpen) {
+    if (st.moving) {
+      wrap(s, "Where should the " + st.moving.name + "\nbe placed?", 200).slice(0, 3).forEach((l, i) => s.text(l, 40, 115 + 14 * i, WHITE, DARK));
+    } else if (!menuOpen) {
       wrap(s, cur ? cur.desc : "Close bag", 200).slice(0, 3).forEach((l, i) => s.text(l, 40, 115 + 14 * i, WHITE, DARK));
     } else {
       // The prompt (std frame) and the menu or number box (your frame).
@@ -235,7 +241,9 @@
   function moveCursor(dir) {
     const m = mem(), n = entries().length, shown = Math.min(n, 6);
     const c = m.cursor + dir;
-    if (c < 0 || c >= n) return;
+    // (Moving an item: it can't go past CANCEL, and it goes along with the ▶.)
+    if (c < 0 || c >= n - (st.moving ? 1 : 0)) return;
+    if (st.moving) { const list = pocket().items; list.splice(c, 0, list.splice(m.cursor, 1)[0]); }
     m.cursor = c;
     // (ListMenu: the ▶ stops at row 3 going down and row 2 going up while it scrolls.)
     if (dir > 0 && m.cursor - m.top > Math.ceil(shown / 2) && m.top + shown < n) m.top++;
@@ -346,7 +354,7 @@
 
   async function open(opts) {
     st = { opts, pockets: opts.pockets(), pocket: Math.max(0, opts.pocket || 0), female: !!opts.female, frame: opts.frame,
-      menu: null, prompt: null, hop: 5, hopY: 5, shake: -1 };
+      menu: null, prompt: null, moving: null, hop: 5, hopY: 5, shake: -1 };
     // (opts.fresh: a bag of its own, the old man's: every ▶ at the top, and
     // yours as you left them after.)
     if (opts.fresh) { saved = memory; memory = {}; }
@@ -361,12 +369,28 @@
     for (;;) {
       const key = await window.GbaMenus.keys((k) => {
         if (k === "up" || k === "down") moveCursor(k === "up" ? -1 : 1);
-        else if (k === "left" || k === "right") switchPocket(k === "left" ? -1 : 1);
-        else if (k === "a" || k === "b") return k;
+        else if (k === "left" || k === "right") { if (!st.moving) switchPocket(k === "left" ? -1 : 1); }
+        else if (k === "a" || k === "b" || (k === "select" && opts.reorder)) return k;
         return undefined;
       });
       const it = entries()[mem().cursor];
       se("se_select");
+      // SELECT: pick an item up; A or SELECT again puts it down where the ▶
+      // is, B puts it back (FireRed's Task_ItemContext_Move... in this game's
+      // Bag, whose pockets its own order).
+      if (st.moving) {
+        const from = st.moving.from;
+        if (key === "b") { const list = pocket().items; list.splice(from, 0, list.splice(mem().cursor, 1)[0]); mem().cursor = from; }
+        else opts.reorder(pocket().name, pocket().items.map((e) => e.id));
+        st.moving = null;
+        clampMem();
+        paint();
+        continue;
+      }
+      if (key === "select") {
+        if (it) { st.moving = { name: it.name, from: mem().cursor }; paint(); }
+        continue;
+      }
       if (key === "b" || !it) return null;
       if (opts.sell) {
         // (A Poké Mart's SELL: Task_ItemContext_Sell.)

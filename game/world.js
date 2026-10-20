@@ -371,7 +371,9 @@
     const base = Math.floor((opts.bike ? Math.floor(rate * 16 * 80 / 100) : rate * 16) * (opts.lure ? 2 : 1) * (opts.scale || 1));
     const chance = Math.min(MAX_ENCOUNTER_RATE, base + Math.floor((state.buff | 0) * 16 / 200));
     if (Math.floor(rng() * MAX_ENCOUNTER_RATE) >= chance) { buffAdd(); return null; }
-    const mon = pickWild(m, rng, opts.surf ? m.water : null);
+    // (`adjust(mon, table)`: the lead Pokémon's ability changing or turning it away: Encounters.leadWild.)
+    let mon = pickWild(m, rng, opts.surf ? m.water : null);
+    if (mon && opts.adjust) mon = opts.adjust(mon, table);
     if (!mon || (opts.allow && !opts.allow(mon))) { buffAdd(); return null; }
     state.buff = 0;
     state.steps = 0;

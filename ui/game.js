@@ -94,7 +94,9 @@
   // A wild Pokémon met in the grass, on the water, on a rod, under a rock or in
   // the Safari Zone, holding what it rolls (Encounters.withHeldItem; your lead
   // Pokémon's Compound Eyes helps). (Not the legendaries waiting on the map.)
-  const wildMon = (record) => Encounters.withHeldItem(record, player.party.find((r) => !r.egg && r.hp > 0));
+  // (Your lead Pokémon: Compound Eyes for what it holds, Synchronize for its nature, Cute Charm for its gender.)
+  const leadMon = () => player.party.find((r) => !r.egg && r.hp > 0);
+  const wildMon = (record) => Encounters.leadRecord(Encounters.withHeldItem(record, leadMon()), leadMon());
   let continued = false;   // (just continued a saved game: the area's name shows)
   const sfx = (name) => { if (window.GameAudio && window.GameAudio.se) window.GameAudio.se(name); };
 
@@ -449,6 +451,11 @@
       Player.addItem(player, item);
       await message("The wild " + dropped.name + " dropped\n" + article(name) + "!");
       await message(player.name + " put the " + name + "\nin the Bag.");
+    }
+    // (Pickup, after any battle but a Safari Game's: Encounters.pickup. The
+    // games say nothing; this one does.)
+    if (!opts.safari && result.outcome !== "lost") {
+      for (const [r, item] of Encounters.pickup(player.party)) await message(Party.displayName(r) + " picked up\n" + article(Bag.name(item)) + "!");
     }
     // (A wild Tera Pokémon knocked out: its Tera Type's Tera Shards.)
     if (wildTera && dropped && dropped.fainted) {
@@ -1386,10 +1393,14 @@
     const tiers = player.flags.berrySort === "tier" ? BERRY_TIER_ORDER() : null;
     const order = (id) => (Bag.isMachine(id) ? Bag.machines().indexOf(id)
       : tiers && /-berry$/.test(id) ? (tiers.includes(id) ? tiers.indexOf(id) : tiers.length) : 0);
+    // (A pocket you've rearranged (SELECT in the Bag: bagReorder) keeps its
+    // order, new items after; sorting the Berries forgets theirs.)
+    const kept = (bag === player.bag && player.flags.bagOrder) || {};
+    const at = (p, id) => (kept[p] ? (kept[p].indexOf(id) + 1 || kept[p].length + 1) : 0);
     return Bag.POCKETS.map((p) => ({
       name: p,
       items: Object.keys(bag).filter((id) => Bag.pocket(id) === p)
-        .sort((a, b) => order(a) - order(b) || Bag.name(a).localeCompare(Bag.name(b)))
+        .sort((a, b) => at(p, a) - at(p, b) || order(a) - order(b) || Bag.name(a).localeCompare(Bag.name(b)))
         .map((id) => ({
           id, name: Bag.name(id), icon: Bag.sprite(id),
           qty: Bag.isMachine(id) || Bag.isKeyItem(id) ? null : bag[id],
@@ -1397,12 +1408,15 @@
         }))
     }));
   }
+  function bagReorder(pocketName, ids) {
+    player.flags.bagOrder = Object.assign({}, player.flags.bagOrder, { [pocketName]: ids });
+  }
   async function bagScreen() {
     for (;;) {
       Screen.say("");
       clearMenu();
       const r = await BagScreen.open({
-        pockets: bagPockets, pocketName: bagPocket,
+        pockets: bagPockets, pocketName: bagPocket, reorder: bagReorder,
         female: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
         frame: GameOptions.get().frame,
         actions: (it) => {
@@ -1429,6 +1443,7 @@
         // Berries: by their tiers (Basic, Restoring, Contest, ...), or back to A to Z.
         const byTier = player.flags.berrySort !== "tier";
         player.flags.berrySort = byTier ? "tier" : "name";
+        if (player.flags.bagOrder) delete player.flags.bagOrder.Berries;
         await message("The berries are now sorted.");
       }
       else if (what === "use" && Bag.isKeyItem(id)) { if ((await useKeyItem(id)) === "escaped") return "escaped"; }
@@ -10917,6 +10932,8 @@
     if (map === "ThreeIsland_DunsparceTunnel") return f.gameClear ? ["dugout"] : [];
     // (Saffron's Magnet Train station's door, always there: tools/build-magnet-train.js.)
     if (map === "SaffronCity") return ["magnettrain"];
+    // (New Bark Town's Pokémon Center, this game's own: tools/build-new-bark-center.js.)
+    if (map === "NewBarkTown") return ["pokecenter"];
     // Five Island: the Rocket Warehouse's door open (FiveIsland_Meadow_OnLoad),
     // its arrows turned round once the Admin by them is beaten
     // (FiveIsland_RocketWarehouse_OnLoad); Icefall Cave 1F's ice, cracked or broken.
@@ -11846,7 +11863,8 @@
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           berryFarm.step();     // (Celadon's Berry Farm's trees growing)
           return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
-        }, encounterScale: () => gear.encounterRate(), allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
+        }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
+        adjustWild: (mon, table) => Encounters.leadWild(mon, leadMon(), table), allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
         onMap: (m) => {
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();

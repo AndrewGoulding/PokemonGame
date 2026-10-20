@@ -385,8 +385,16 @@
             starterSlot = await env.chooseStarter();
             const r = env.player().party[starterSlot];
             if (r) state().starterPid = r.personality;
-            // (And the Pokégear, Mom's in HGSS: this game has no Mom in Johto.)
+            break;
+          }
+          // (Elm gives the Pokégear, Mom's in HGSS: this game has no Mom in Johto. Its message is this game's own.)
+          case "ElmPokegear": {
+            await flush();
             setFlag("FLAG_GOT_POKEGEAR", true);
+            jingle = Promise.resolve(env.fanfare(DATA().sounds && DATA().sounds[1185]));
+            await say("msg_0543_T20R0101_pokegear");
+            await jingle; jingle = null;
+            env.close();
             break;
           }
           case "SetStarterChoice": state().starter = getVar(a[0]); break;

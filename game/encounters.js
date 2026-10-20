@@ -102,5 +102,91 @@
     return record;
   }
 
-  window.Encounters = { speciesFor, wild, trainer, heldItem, withHeldItem, minLevel: (s) => (minLevels || (minLevels = buildMinLevels()))[s] };
+  // ---------- The lead Pokémon's abilities outside of battle ----------
+  //
+  // As the latest games that have them (Sword and Shield, Scarlet and Violet)
+  // do: `lead` is your first Pokémon that's neither an Egg nor fainted.
+  //
+  // How often wild Pokémon appear: Stench, White Smoke, Quick Feet and
+  // Infiltrator halve it; Illuminate, Arena Trap and No Guard double it.
+  const RATE_HALF = ["Stench", "White Smoke", "Quick Feet", "Infiltrator"];
+  const RATE_DOUBLE = ["Illuminate", "Arena Trap", "No Guard"];
+  function leadRateScale(lead) {
+    if (!lead) return 1;
+    return RATE_HALF.includes(lead.ability) ? 0.5 : RATE_DOUBLE.includes(lead.ability) ? 2 : 1;
+  }
+  // Which wild Pokémon turns up (`mon`: World.pickWild's { species, level,
+  // slot }; `table`: the map's table it came from, { slots }): Static and
+  // Lightning Rod make it an Electric type half the time, Magnet Pull a Steel
+  // type, Flash Fire a Fire type, Storm Drain a Water type, Harvest a Grass
+  // type, if the table has one; Keen Eye and Intimidate turn away half the
+  // Pokémon five or more levels below the lead's; Hustle, Pressure and Vital
+  // Spirit make it its slot's highest level half the time. -> mon or null.
+  const TYPE_LURES = { "Static": "Electric", "Lightning Rod": "Electric", "Magnet Pull": "Steel", "Flash Fire": "Fire", "Storm Drain": "Water", "Harvest": "Grass" };
+  const slotSpecies = (s) => [s.species, s.morning, s.night, s.alt].filter((k, i, all) => k && all.indexOf(k) === i);
+  const hasType = (species, type) => !!window.DEX[species] && window.DEX[species].types.includes(type);
+  function leadWild(mon, lead, table, rng) {
+    if (!mon || !lead) return mon;
+    rng = rng || Math.random;
+    const a = lead.ability, slots = (table && table.slots) || [];
+    if (TYPE_LURES[a] && rng() < 0.5) {
+      const found = [];
+      slots.forEach((s, i) => slotSpecies(s).forEach((sp) => { if (hasType(sp, TYPE_LURES[a])) found.push([i, sp]); }));
+      if (found.length) {
+        const [slot, species] = found[Math.floor(rng() * found.length)], s = slots[slot];
+        mon = { species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)), slot };
+      }
+    }
+    if ((a === "Keen Eye" || a === "Intimidate") && mon.level <= lead.level - 5 && rng() < 0.5) return null;
+    if ((a === "Hustle" || a === "Pressure" || a === "Vital Spirit") && slots[mon.slot] && rng() < 0.5) mon.level = slots[mon.slot].max;
+    return mon;
+  }
+  // What it's like (`record`: its Party record): Synchronize gives it the
+  // lead's nature; Cute Charm makes it the opposite gender two times in three.
+  function leadRecord(record, lead, rng) {
+    if (!record || !lead) return record;
+    rng = rng || Math.random;
+    if (lead.ability === "Synchronize" && window.NATURES[lead.nature]) record.nature = lead.nature;
+    if (lead.ability === "Cute Charm" && record.gender !== "N" && (lead.gender === "M" || lead.gender === "F") && rng() < 2 / 3)
+      record.gender = lead.gender === "M" ? "F" : "M";
+    return record;
+  }
+
+  // Pickup, as Scarlet and Violet have it: after a battle, each of your
+  // Pokémon with Pickup that holds nothing has a one-in-ten chance of picking
+  // up an item, by its level. (The table is this game's rendering of theirs,
+  // ten levels a column; items this game hasn't got stand in for Big Nuggets.)
+  const PICKUP = [
+    [["potion", 35], ["tiny-mushroom", 20], ["full-heal", 15], ["super-potion", 10], ["ether", 5], ["revive", 5], ["hyper-potion", 4], ["big-mushroom", 3], ["nugget", 3]],
+    [["full-heal", 20], ["super-potion", 20], ["potion", 15], ["big-mushroom", 15], ["tiny-mushroom", 10], ["hyper-potion", 7], ["ether", 5], ["revive", 4], ["nugget", 3], ["rare-candy", 1]],
+    [["full-heal", 20], ["super-potion", 15], ["hyper-potion", 15], ["big-mushroom", 10], ["ether", 10], ["revive", 10], ["max-ether", 8], ["nugget", 6], ["max-potion", 5], ["rare-candy", 1]],
+    [["full-heal", 20], ["hyper-potion", 20], ["super-potion", 10], ["big-mushroom", 10], ["revive", 10], ["max-ether", 10], ["nugget", 8], ["max-potion", 7], ["rare-candy", 3], ["pp-up", 2]],
+    [["hyper-potion", 20], ["full-heal", 15], ["max-potion", 15], ["revive", 10], ["max-ether", 10], ["big-mushroom", 10], ["nugget", 8], ["elixir", 7], ["rare-candy", 3], ["pp-up", 2]],
+    [["max-potion", 20], ["hyper-potion", 15], ["full-heal", 15], ["max-ether", 10], ["revive", 10], ["elixir", 10], ["nugget", 8], ["full-restore", 5], ["rare-candy", 4], ["pp-up", 3]],
+    [["max-potion", 20], ["full-restore", 15], ["full-heal", 10], ["max-ether", 10], ["revive", 10], ["elixir", 10], ["nugget", 10], ["max-revive", 5], ["rare-candy", 5], ["pp-up", 5]],
+    [["full-restore", 20], ["max-potion", 15], ["elixir", 15], ["max-revive", 10], ["revive", 10], ["nugget", 10], ["max-elixir", 5], ["pp-max", 5], ["rare-candy", 5], ["pp-up", 5]],
+    [["full-restore", 25], ["max-revive", 15], ["elixir", 10], ["max-elixir", 10], ["max-potion", 10], ["nugget", 10], ["pp-max", 5], ["rare-candy", 5], ["pp-up", 5], ["big-mushroom", 5]],
+    [["full-restore", 25], ["max-revive", 15], ["max-elixir", 15], ["nugget", 15], ["rare-candy", 10], ["elixir", 5], ["pp-up", 5], ["pp-max", 5], ["max-potion", 5]]
+  ];
+  const PICKUP_CHANCE = 0.1;
+  function pickupItem(level, rng) {
+    const row = PICKUP[Math.min(PICKUP.length - 1, Math.max(0, Math.floor((level - 1) / 10)))];
+    let roll = (rng || Math.random)() * 100;
+    for (const [item, pct] of row) { if (roll < pct) return item; roll -= pct; }
+    return row[0][0];
+  }
+  // -> [[record, item]] for each of `party` that picked something up (it holds it now).
+  function pickup(party, rng) {
+    rng = rng || Math.random;
+    const out = [];
+    for (const r of party || []) {
+      if (r.egg || r.ability !== "Pickup" || r.item || rng() >= PICKUP_CHANCE) continue;
+      r.item = pickupItem(r.level, rng);
+      out.push([r, r.item]);
+    }
+    return out;
+  }
+
+  window.Encounters = { speciesFor, wild, trainer, heldItem, withHeldItem, minLevel: (s) => (minLevels || (minLevels = buildMinLevels()))[s],
+    leadRateScale, leadWild, leadRecord, pickup, pickupItem, PICKUP, PICKUP_CHANCE, RATE_HALF, RATE_DOUBLE, TYPE_LURES };
 })();

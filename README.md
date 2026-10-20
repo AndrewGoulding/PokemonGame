@@ -137,7 +137,11 @@ FireRed's bag, its pockets opening left, middle, right in turn. In battle the Ba
 shows only the pockets with something usable there (Items, Medicine, Poké
 Balls, Berries). Old saves simply sort into the new pockets, with FireRed's descriptions under the list
 (its own words and line breaks, for the items FireRed has). A opens Use / Give / Toss; Toss asks how
-many and throws them away right there. The Ability Capsule switches a
+many and throws them away right there. Select (Backspace) picks an item up to
+move it, as in FireRed ("Where should the … be placed?", the item in red as it
+goes along with the ▶); A or Select puts it down there, B puts it back. A
+pocket you've rearranged keeps its order (`player.flags.bagOrder`), new items
+after the rest; sorting the Berries forgets theirs. The Ability Capsule switches a
 Pokémon between its species' two ordinary Abilities (it asks first; not a
 Hidden Ability, nor a species with one). The Ability Patch (as in Scarlet and
 Violet; dig it up with the Explorer Kit) switches an ordinary Ability to the
@@ -294,7 +298,8 @@ level-up moves, then the Egg moves either parent knows, and the level-up
 moves both know (and Volt Tackle with a Light Ball). Eggs ride in the party
 (FireRed's EGG box, icon and Summary page with its Egg Watch), can't battle,
 hold items, learn moves or be traded, and every 255 steps are a cycle nearer
-hatching (two with a Flame Body or Magma Armor Pokémon in the party): then
+hatching (two with a Flame Body, Magma Armor or Steam Engine Pokémon in the
+party): then
 "Huh?" and FireRed's hatching scene (`ui/egg-hatch.js`): the Egg wobbles and
 cracks three times, bursts in a white flash, the Pokémon's cry, "… hatched
 from the EGG!" to its fanfare, and a nickname if you like.
@@ -1898,7 +1903,20 @@ Olivine, Cianwood, Mahogany and Blackthorn, the Lake of Rage, Mt. Silver and
 the routes, gatehouses, caves and towers between them; and the way to Kanto:
 **Route 27** (by sea east from New Bark Town), **Tohjo Falls** (the cave in
 its middle: Surf, and Waterfall up one of its falls and down the other, as in
-HGSS) and **Route 26**, north to the Pokémon League Reception Gate. That gate
+HGSS) and **Route 26**, north to the Pokémon League Reception Gate. Coming
+the other way, from Kanto, Route 27's man by the water (HGSS's "You've taken
+your first step into Kanto") tells you instead that Pokémon raised in Kanto
+won't listen to you in Johto at first, and to see the Rejuvenator upstairs in
+New Bark Town's Pokémon Center; and its Ace Trainer Reena asks "You came from
+Pallet Town? You must be exhausted." **New Bark Town has a Pokémon Center**,
+this game's own (HGSS's has none; Mom heals you there, and this game's Mom is
+in Pallet Town): Cherrygrove City's building, on the open ground south of
+Elm's lab (the map's patch `pokecenter`, always on), and Cherrygrove's two
+floors cloned with their own names (`NewBarkTown_PokemonCenter_1F` and `_2F`,
+drawn with Cherrygrove's pictures; its nurse, the gentleman by the PC, and
+upstairs the Move Relearner, Move Deleter and Rejuvenator), built by
+`tools/build-new-bark-center.js` into the end of `data/johto-maps.js`. Fly
+to New Bark Town lands in front of it, as in every other town. That gate
 is FireRed's own (Route 22's, to Victory Road), with a new way out west: a mat
 at its left wall to Route 26's door. A guard stands in front of it until
 you're the Champion: "The Johto region lies to the west." / "I'm sorry, but only the
@@ -2038,13 +2056,19 @@ ones, msg_0191, and a map's own), and a map's script moves its warps
 (its new game, `scr_seq_0149`: who's hidden until the story gets to them),
 except that you come to New Bark Town from Kanto first, as if you'd just
 left the house there (HGSS's Mom and Lyra's hello, inside it, are past):
-then **Prof. Elm's Lab** goes on as in HGSS. Step in and Elm walks you over,
-tells you about Mr. Pokémon's email, and his machine offers Chikorita,
+then **Prof. Elm's Lab** goes on as in HGSS, with this game's own words
+where HGSS's don't fit a Champion who's just arrived from Kanto: Elm
+recognises you ("The Champion of Kanto, right here in my lab!"), wants to
+see what a Pokémon becomes when a Champion raises it from its first step
+(not HGSS's walking with Pokémon, or "your friend Lyra"), and offers you one;
+then Mr. Pokémon's email, and his machine offers Chikorita,
 Cyndaquil or Totodile (each one's picture, "You'll take ...?"; Lv. 5, joining
-your party, and a nickname if you like); until he's given you one, New
-Bark's neighbour won't let you go west, and once he has, you've the
-Pokégear (HGSS's Mom gives it; this game's Mom is in Pallet Town) and Elm comes out to
-give you his number as you go. His aide's Potion, Lyra and her Marill
+your party, and a nickname if you like). Then he gives you the **Pokégear**
+("the newest technology from Johto's own labs... You won't find one in Kanto
+yet": HGSS's Mom gives it; this game's Mom is in Pallet Town), to its
+fanfare, before the healing machine and Mr. Pokémon's directions. Until he's
+given you a Pokémon, New Bark's neighbour won't let you go west, and once he
+has, Elm comes out to give you his number as you go. His aide's Potion, Lyra and her Marill
 outside ("So you picked... Chikorita!"), the Guide Gent in Cherrygrove,
 **Mr. Pokémon's house** on Route 30 (the Mystery Egg; Prof. Oak and the
 Pokédex) and the rest follow on as HGSS scripts them; HGSS's party slot 0,
@@ -2098,8 +2122,9 @@ rooms, doors and Hall of Fame are FireRed's, as for Kanto's League.)
 **Johto's trainers** (278) are HeartGold's (`files/poketool/trainer`):
 their classes, names, parties (each Pokémon knowing the last four moves it
 learns by its level, as Kanto's trainers' do), lines and sight; they battle
-as Kanto's do, with HGSS's own trainer pictures (Gen 4's 80x80, standing a
-little taller than FireRed's: `assets/sprites/trainers/front/hgss_*.png`,
+as Kanto's do, with HGSS's own trainer pictures (Gen 4's 80x80, drawn for the
+DS's bigger screen, so shown 64 tall, FireRed's size, where Kanto's trainers
+stand: `assets/sprites/trainers/front/hgss_*.png`,
 and Diamond and Pearl's `dp_*.png` for the classes HGSS shares with them),
 made by `tools/build-hgss-trainer-pics.js` from a
 [smogon/sprites](https://github.com/smogon/sprites) checkout
@@ -2588,7 +2613,23 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   from `node tools/build-wild-items.js <pokefirered> <pokeemerald's species_info.h>`.
   As in FireRed (SetWildMonHeldItem): 50% the common item, 5% the rare one,
   and always the item when both are the same (Shuckle's Berry Juice); a lead
-  Pokémon with Compound Eyes makes it 60% and 20%, as in Emerald. Thief and
+  Pokémon with Compound Eyes makes it 60% and 20%, as in Emerald. The lead
+  Pokémon's other field abilities work as in the latest games that have them
+  (Sword and Shield, Scarlet and Violet; `game/encounters.js`): Synchronize
+  gives a wild Pokémon its nature, Cute Charm makes it the opposite gender two
+  times in three; Static and Lightning Rod make it an Electric type half the
+  time (Magnet Pull a Steel type, Flash Fire a Fire type, Storm Drain a Water
+  type, Harvest a Grass type) when the area has one; Keen Eye and Intimidate
+  turn away half the Pokémon five or more levels below the lead's; Hustle,
+  Pressure and Vital Spirit make it its slot's highest level half the time;
+  Stench, White Smoke, Quick Feet and Infiltrator halve how often wild Pokémon
+  appear, Illuminate, Arena Trap and No Guard double it. (Sticky Hold and
+  Suction Cups would make fish bite more often, but every cast here bites.)
+  **Pickup**: after a battle, each of your Pokémon with Pickup that holds
+  nothing has a one-in-ten chance of picking up an item, by its level, from
+  this game's rendering of Scarlet and Violet's table (Potions, Full Heals
+  and mushrooms low down; Nuggets, Max Elixirs, PP Ups and Rare Candies high
+  up: `Encounters.PICKUP`); it holds the item, and the game says so. Thief and
   Covet can take it, a Berry gets eaten, and caught, it keeps what it still
   holds. Knock one out and it drops what it was still holding, which goes in
   your Bag (this game's own: "The wild … dropped a …!"). The legendaries

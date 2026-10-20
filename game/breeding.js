@@ -167,7 +167,8 @@
     state.hatchSteps = (state.hatchSteps | 0) + 1;
     if (state.hatchSteps < CYCLE_STEPS) return null;
     state.hatchSteps = 0;
-    const fast = party.some((r) => !r.egg && (r.ability === "Flame Body" || r.ability === "Magma Armor"));
+    // (Flame Body, Magma Armor and, since Sword and Shield, Steam Engine: Eggs hatch twice as fast.)
+    const fast = party.some((r) => !r.egg && ["Flame Body", "Magma Armor", "Steam Engine"].includes(r.ability));
     for (const r of party) {
       if (!r.egg) continue;
       if ((r.eggCycles | 0) <= 0) return r;

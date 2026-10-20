@@ -2653,12 +2653,12 @@
         t.src = "assets/sprites/trainers/front/" + pic + ".png";
         await t.decode().catch(() => {});
         // A wider picture (two trainers) keeps the same scale and centre (x 176 of 240).
-        const w = t.naturalWidth || 64;
+        // (Johto's, Gen 4's 80x80, drawn for the DS's bigger screen: shown 64
+        // tall, FireRed's size, so Johto's trainers stand as Kanto's do.)
+        const h = t.naturalHeight || 64, w = (t.naturalWidth || 64) * Math.min(1, 64 / h);
         t.style.width = (w / 240 * 100) + "%";
         t.style.right = ((240 - cx - w / 2) / 240 * 100) + "%";
-        // (Johto's, Gen 4's 80x80: their feet a little lower, their heads at the top of the field.)
-        const h = t.naturalHeight || 64;
-        t.style.top = h > 64 ? (Math.max(0, 72 - h) / 112 * 100) + "%" : "";
+        t.style.top = "";
         t.classList.remove("hidden");
         movers.push([t, -shift]);
       }

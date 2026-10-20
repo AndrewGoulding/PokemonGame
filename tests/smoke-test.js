@@ -1897,6 +1897,61 @@ for (const share of [false, true]) {
   assert(fs.existsSync(path.join(__dirname, "../assets/town-map/kanto.png")));
 }
 
+// New Bark Town's Pokémon Center (tools/build-new-bark-center.js): Cherrygrove's, cloned, Fly's spot;
+// Elm's lab's words for a Champion from Kanto, and his Pokégear; Route 27's man and Reena.
+if (WORLD_MAPS.NewBarkTown_PokemonCenter_1F) {
+  const town = WORLD_MAPS.NewBarkTown, f1 = WORLD_MAPS.NewBarkTown_PokemonCenter_1F, f2 = WORLD_MAPS.NewBarkTown_PokemonCenter_2F;
+  const door = town.warps.find((w) => w.map === f1.name);
+  assert(door && town.collision[door.y * town.width + door.x] === 1 && town.behavior[door.y * town.width + door.x] === 0x69, "its door");
+  assert(town.patches.pokecenter && town.patches.pokecenter.top && fs.existsSync(path.join(root, "assets/world/maps/NewBarkTown-patch-pokecenter.png")) && fs.existsSync(path.join(root, "assets/world/maps/NewBarkTown-patch-pokecenter-top.png")));
+  assert(f1.pokemonCenter && f1.image === "CherrygroveCity_PokemonCenter_1F" && f2.image === "CherrygroveCity_PokemonCenter_2F");
+  assert(f1.warps.filter((w) => w.map === "NewBarkTown").every((w) => town.warps[w.warp] === door) && f1.warps.some((w) => w.map === f2.name) && f2.warps.some((w) => w.map === f1.name));
+  assert(f1.people.some((p) => p.script === "NewBarkTown_PokemonCenter_1F_EventScript_Nurse") && window.JOHTO_SCRIPTS.maps[f1.name] === window.JOHTO_SCRIPTS.maps.CherrygroveCity_PokemonCenter_1F);
+  assert.deepStrictEqual(window.JOHTO_TOWN_MAP.fly.NEW_BARK_TOWN, { map: "NewBarkTown", x: door.x, y: door.y + 1, center: f1.name });
+  const M = window.JOHTO_SCRIPTS.messages, lab = window.JOHTO_SCRIPTS.zones.T20R0101;
+  assert(/Champion of Kanto/.test(M.msg_0543_T20R0101_00000.join(" ")) && !/Lyra|walk/.test(M.msg_0543_T20R0101_00000.join(" ")) && !/Ethan|walk/.test(M.msg_0543_T20R0101_00001.join(" ")));
+  assert(/Pokégear/.test(M.msg_0543_T20R0101_00010.join(" ")) && /received the Pokégear/.test(M.msg_0543_T20R0101_pokegear[0]) && !/walk with/.test(M.msg_0543_T20R0101_00102.join(" ")));
+  assert(lab.cmds.some((c, i) => c[0] === "ElmPokegear" && lab.cmds[i - 1][1] === "msg_0543_T20R0101_00010"), "Elm's Pokégear after his words about it");
+  assert(/Rejuvenator/.test(M.msg_0369_R27_00001.join(" ")) && /Rejuvenator/.test(WORLD_MAPS.Route27.people.find((p) => p.localId === "obj_R27_gsbigman").text.join(" ")));
+  assert(WORLD_TRAINERS.HGSS_TRAINER_ACE_TRAINER_F_REENA.intro.join(" ").includes("Pallet Town") && !JSON.stringify(WORLD_TRAINERS).includes("came from New Bark Town?"));
+}
+
+// The lead Pokémon's abilities on the map, and Pickup (game/encounters.js).
+{
+  const E = Encounters, table = { slots: [{ species: "Pidgey", min: 2, max: 4 }, { species: "Mareep", min: 3, max: 5 }] };
+  const lead = Party.create("Pikachu", 30);
+  for (const [a, want] of [["Static", "Mareep"], ["Lightning Rod", "Mareep"], ["Magnet Pull", "Pidgey"], ["Run Away", "Pidgey"]]) {
+    lead.ability = a;
+    assert.strictEqual(E.leadWild({ species: "Pidgey", level: 3, slot: 0 }, lead, table, () => 0.1).species, want, a);
+  }
+  lead.ability = "Static";
+  assert.strictEqual(E.leadWild({ species: "Pidgey", level: 3, slot: 0 }, lead, table, () => 0.9).species, "Pidgey", "half the time");
+  lead.ability = "Keen Eye";
+  assert.strictEqual(E.leadWild({ species: "Pidgey", level: 3, slot: 0 }, lead, table, () => 0.1), null);
+  assert.strictEqual(E.leadWild({ species: "Pidgey", level: 26, slot: 0 }, lead, table, () => 0.1).species, "Pidgey");
+  lead.ability = "Pressure";
+  assert.strictEqual(E.leadWild({ species: "Pidgey", level: 2, slot: 0 }, lead, table, () => 0.1).level, 4);
+  lead.ability = "Synchronize"; lead.nature = "Adamant";
+  assert.strictEqual(E.leadRecord(Party.create("Sentret", 5), lead).nature, "Adamant");
+  lead.ability = "Cute Charm"; lead.gender = "M";
+  assert.strictEqual(E.leadRecord(Party.create("Sentret", 5), lead, () => 0.1).gender, "F");
+  assert.strictEqual(E.leadRecord(Object.assign(Party.create("Sentret", 5), { gender: "M" }), lead, () => 0.9).gender, "M");
+  assert.strictEqual(E.leadRecord(Party.create("Magnemite", 5), lead, () => 0.1).gender, "N");
+  for (const [a, want] of [["Stench", 0.5], ["White Smoke", 0.5], ["Illuminate", 2], ["Arena Trap", 2], ["Blaze", 1]]) { lead.ability = a; assert.strictEqual(E.leadRateScale(lead), want, a); }
+  assert.strictEqual(E.leadRateScale(null), 1);
+  assert.strictEqual(E.PICKUP.length, 10);
+  for (const row of E.PICKUP) { assert.strictEqual(row.reduce((a, [, p]) => a + p, 0), 100); for (const [it] of row) assert(ITEMS[it], it); }
+  assert.strictEqual(E.pickupItem(1, () => 0), "potion");
+  assert.strictEqual(E.pickupItem(100, () => 0), "full-restore");
+  const z = Party.create("Zigzagoon", 12); z.ability = "Pickup"; z.item = "";
+  assert.deepStrictEqual(E.pickup([z], () => 0.5), []);
+  assert.strictEqual(E.pickup([z], () => 0.05).length, 1);
+  assert(z.item && ITEMS[z.item]);
+  assert.deepStrictEqual(E.pickup([z], () => 0.05), [], "holding something already");
+  const egg = Party.create("Zigzagoon", 1); egg.ability = "Pickup"; egg.egg = true; egg.item = "";
+  assert.deepStrictEqual(E.pickup([egg], () => 0.05), []);
+}
+
 // Johto's Town Map (tools/build-johto-town-map.js, at the end of data/johto-maps.js):
 // HGSS's Pokégear map, every Johto map in a section, Fly outside each Pokémon Center.
 if (window.JOHTO_TOWN_MAP) {
@@ -2145,7 +2200,8 @@ if (window.JOHTO_TOWN_MAP) {
     assert(m && m.region === "johto", name + " is built");
     for (const k of ["collision", "behavior", "elevation", "encounter"]) assert.strictEqual(m[k].length, m.width * m.height, name + " " + k);
     for (const c of m.connections) assert(J.includes(c.map), name + " connects only within Johto");
-    for (const part of ["", "-top", "-border"]) assert(fs.existsSync(path.join(root, "assets/world/maps", name + part + ".png")), name + part);
+    // (A map drawn with another's pictures, WORLD_MAPS[..].image: New Bark Town's Pokémon Center, Cherrygrove's.)
+    for (const part of ["", "-top", "-border"]) assert(fs.existsSync(path.join(root, "assets/world/maps", (m.image || name) + part + ".png")), name + part);
     for (const p of m.people) assert(fs.existsSync(path.join(root, "assets/world/sprites", p.sprite + ".png")), p.sprite);
     for (const t of [m.wild, m.water]) if (t) for (const s of t.slots) assert(DEX[s.species], name + ": " + s.species);
     for (const h of m.hidden) assert(ITEMS[h.item], h.item);
