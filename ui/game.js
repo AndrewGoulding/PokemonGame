@@ -11300,8 +11300,10 @@
   // glowing. Won: the battle goes on, to catch it in any Ball if you like (it
   // can't miss); then the rewards (money, Exp. Candies, vitamins, Berries and
   // Tera Shards) on their own screen (ui/raid-rewards.js).
-  // Inviting Gym Leaders you've beaten to a raid, up to three: each name
-  // toggles, "Done" when you're ready (the rest are the region's trainers).
+  // Inviting Gym Leaders you've beaten to a raid, up to three: A on a name
+  // invites them, B takes back the last one invited (B with nobody invited
+  // leaves with nobody), "Done" when you're ready (the rest are the region's
+  // trainers).
   async function inviteLeaders() {
     const can = RaidDens.leaders(player.flags).map((L) => L.name);
     if (!can.length || !(await confirm("Invite Gym Leaders to the Tera Raid?"))) return [];
@@ -11312,12 +11314,17 @@
       const v = await multichoice("Invite whom? (" + picked.length + "/3)", 0, 0,
         can.map((n) => (picked.includes(n) ? "+" : " ") + n).concat([" Done"]), { cursor });
       Screen.say("");
-      if (v < 0 || v >= can.length) return picked;
+      if (v < 0) {
+        if (!picked.length) return [];
+        cursor = can.indexOf(picked.pop());   // (the ▶ goes back to them)
+        continue;
+      }
+      if (v >= can.length) return picked;
       cursor = v;
       const n = can[v];
-      if (picked.includes(n)) picked.splice(picked.indexOf(n), 1);
-      else if (picked.length < 3) picked.push(n);
-      if (picked.length === 3) return picked;
+      if (picked.includes(n) || picked.length >= 3) { sfx("se_failure"); continue; }
+      picked.push(n);
+      if (picked.length === 3) cursor = can.length;   // (full: the ▶ moves to "Done")
     }
   }
   const LURES = ["lure", "super-lure", "max-lure"];
@@ -11362,8 +11369,7 @@
     const chosen = [player.party.indexOf(pick)];
     // The other three: the Gym Leaders you invite, then the region's trainers (RaidDens.allies).
     const allies = RaidDens.allies(den, raid, await inviteLeaders());
-    const names = allies.map((a) => a.trainer);
-    await say([names.length > 1 ? names.slice(0, -1).join(", ") + " and " + names[names.length - 1] + "\njoined the Tera Raid!" : names[0] + " joined the Tera Raid!"]);
+    await say(RaidDens.joinedText(allies.map((a) => a.trainer)));
     const boss = RaidDens.boss(den, raid);
     const ro = { foe: { name: "Wild", team: [boss], tera: true }, raid: raid.stars, noCatch: true, noBlackout: true,
       music: RAID_MUSIC[raid.stars], chosen, raidAllies: allies.map((a) => ({ set: Party.toBattleSet(a.record), trainer: a.trainer })) };

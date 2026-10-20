@@ -700,6 +700,20 @@ for (const share of [false, true]) {
   assert(RaidDens.POOLS.Fire[raid.stars - 1].includes(raid.species) && raid.level >= RaidDens.LEVELS[raid.stars] && raid.level <= RaidDens.LEVELS[raid.stars] + 3);
   const boss = RaidDens.boss(den, raid, rng);
   assert(boss.teraAce && boss.teraType === "Fire" && boss.level === raid.level && boss.ivs.atk === RaidDens.IVS[raid.stars]);
+  // No move that takes the boss out: Golem's Explosion gives way to an earlier move.
+  {
+    const rock = RaidDens.DENS.find((d) => d.type === "Rock");
+    const golem = RaidDens.boss(rock, { stars: 5, species: "Golem", level: 75 }, rng).moves.map((m) => m.name);
+    assert(golem.length === 4 && !golem.some((m) => MOVES[m].selfdestruct) && RandomTeam.levelUpMoves("Golem", 75).includes("Explosion"), "raid Golem: " + golem);
+    assert.deepStrictEqual(RandomTeam.levelUpMoves("Golem", 75, (m) => m === "Explosion"), golem);
+    // The joining text wraps long names instead of running off the text box.
+    const jt = RaidDens.joinedText(["Cooltrainer Nathan", "Bird Keeper Chester", "Crush Girl Sharon"]);
+    assert(jt.split("\n").every((l) => l.length <= 34) && jt.replace(/\n/g, " ") === "Cooltrainer Nathan, Bird Keeper Chester and Crush Girl Sharon joined the Tera Raid!", jt);
+    assert.strictEqual(RaidDens.joinedText(["Misty"]), "Misty joined the Tera Raid!");
+    // Inviting: A invites, B takes back the last one invited.
+    const gJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    assert(/if \(v < 0\) \{\n\s*if \(!picked\.length\) return \[\];\n\s*cursor = can\.indexOf\(picked\.pop\(\)\);/.test(gJs) && /RaidDens\.joinedText\(allies\.map/.test(gJs), "raid invite keys");
+  }
   // In battle: its HP times the stars' multiplier, at full; it Terastallizes when it moves.
   const bb = new Battle({ p1: { name: "P", team: [Party.toBattleSet(Party.create("Mewtwo", 100, { rng }))] },
     p2: { name: "Wild", tera: true, team: [Object.assign(Party.toBattleSet(boss), { raidHp: RaidDens.HP[5] })] }, wild: true, seed: 3 });

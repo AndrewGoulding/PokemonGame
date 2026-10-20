@@ -8,7 +8,8 @@
 # with a few strands; the rest is recoloured to the front picture's palette
 # (hair 180,41,57 / 230,115,90 / 120,30,46; top 90,98,115 / 65,74,82; skirt
 # 205,164,255 / 156,115,205; skin outlines 123,90,82); her glasses' earpiece
-# crosses the cheek at eye height. Leaf's bag strap becomes part of the top.
+# crosses the cheek at eye height to a lens past her profile; her wristband
+# (Leaf's) is skin. Leaf's bag strap becomes part of the top.
 #
 #   python3 tools/build-lorelei-back.py assets/sprites/trainers/back/lorelei.png
 #
@@ -24,7 +25,7 @@ HAIR=(180,41,57,255); HAIR_D=(120,30,46,255); HAIR_L=(230,115,90,255)
 SKIN_O=(123,90,82,255)
 TOP=(90,98,115,255); TOP_D=(65,74,82,255)
 SKIRT=(205,164,255,255); SKIRT_D=(156,115,205,255)
-GLASS=(65,74,82,255)
+GLASS=(65,74,82,255); LENS=(197,197,222,255)
 remap = {A:HAIR, C:HAIR_D, I:HAIR_L, Hn:TOP_D, L:TOP, K:TOP_D, M:TOP, J:SKIRT_D, N:SKIRT}
 HATC = {D, E}
 HAIRC = (HAIR, HAIR_D, HAIR_L)
@@ -105,8 +106,46 @@ for f in range(5):
             run=[]
     if 3 <= len(run) <= 9: best = run
     if best:
+        x1 = best[-1]
         for x in best[:-1]: npx[x,yg] = GLASS
-        npx[best[-2], yg+1] = GLASS
+        # the lens, past the profile: a rim round a glint (not when an arm is in front)
+        lens = [(x1,yg-1),(x1+1,yg-1),(x1+2,yg-1),(x1+2,yg),(x1+2,yg+1),(x1+1,yg+1),(x1,yg+1),(x1,yg)]
+        if all(x+1 < W and not npx[x+1,y][3] for (x,y) in lens if x > x1):
+            for (x,y) in lens: npx[x,y] = GLASS
+            npx[x1+1,yg] = LENS
+    # Leaf's wristband (small patches of her top's blues on the hand) becomes skin
+    comp_seen=set()
+    for y in range(H):
+        for x in range(W):
+            if npx[x,y] in (TOP, TOP_D) and (x,y) not in comp_seen:
+                comp=[(x,y)]; comp_seen.add((x,y)); k=0
+                while k < len(comp):
+                    for q in nb(*comp[k]):
+                        if q not in comp_seen and npx[q] in (TOP, TOP_D): comp_seen.add(q); comp.append(q)
+                    k+=1
+                if len(comp) <= 24:
+                    for q in comp: npx[q] = G
+                    # outline pixels between the band and the skin go too
+                    for q in comp:
+                        for r in nb(*q):
+                            if npx[r] == B:
+                                xs = [npx[(r[0]-1,r[1])] if r[0]>0 else None, npx[(r[0]+1,r[1])] if r[0]<W-1 else None]
+                                ys = [npx[(r[0],r[1]-1)] if r[1]>0 else None, npx[(r[0],r[1]+1)] if r[1]<H-1 else None]
+                                skin = (F, G, SKIN_O)
+                                if all(c in skin for c in xs) or all(c in skin for c in ys): npx[r] = G
+    # ...and where it's drawn black: a thick black patch (not a 1-pixel
+    # outline) among skin, with no hair or clothes around it, is skin too
+    skin = (F, G, SKIN_O)
+    for _ in range(3):
+        fill = []
+        for y in range(1, H-1):
+            for x in range(1, W-1):
+                if npx[x,y] != B: continue
+                around = [npx[q] for q in nb(x,y)]
+                if all(c[3] for c in around) and sum(c == B for c in around) >= 3 and any(c in skin for c in around) \
+                   and all(c in skin or c == B for c in around):
+                    fill.append((x,y))
+        for q in fill: npx[q] = G
     # drop specks
     seen=set()
     for y in range(H):

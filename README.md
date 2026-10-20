@@ -1540,7 +1540,8 @@ else, as likely either, it raises its better attacking stat and its weaker
 defence ("...is getting even stronger!") or attacks again. You send in one Pokémon, chosen from your party when you take
 the raid on (as in Scarlet and Violet), and **three others join you**, four
 on one as in Scarlet and Violet's raids: first you may invite any of Kanto's
-Gym Leaders you've beaten (not Giovanni; up to three; "+" marks those coming), and the rest
+Gym Leaders you've beaten (not Giovanni; up to three: A on a name invites them, B takes back the
+last one invited, "+" marks those coming), and the rest
 of the places fill with trainers from the den's region (FireRed's own,
 "Bug Catcher Garret", "Crush Girl Sharon": those with a Pokémon that hits the
 Tera Raid Pokémon's Tera Type hardest first). Each brings one Pokémon at about

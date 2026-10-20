@@ -238,10 +238,29 @@
     if (flags.raidDens) delete flags.raidDens[id];
   }
   // The Tera Raid Pokémon: Terastallized into the den's type as soon as it's out.
+  // It never knows a move that takes itself out (Golem's Explosion, Memento,
+  // Final Gambit: Scarlet and Violet's raid bosses don't either); its earlier
+  // level-up moves fill in.
+  const selfDestructs = (move) => !!(window.MOVES[move] || {}).selfdestruct;
   function boss(den, raid, rng) {
-    const r = window.Party.create(raid.species, raid.level, Object.assign({ ivs: IVS[raid.stars], rng },
-      RAID_MOVES[raid.species] ? { moves: RAID_MOVES[raid.species] } : {}));
+    const moves = RAID_MOVES[raid.species] || window.RandomTeam.levelUpMoves(raid.species, raid.level, selfDestructs);
+    const r = window.Party.create(raid.species, raid.level, { ivs: IVS[raid.stars], rng, moves });
     return Object.assign(r, { teraType: den.type, teraAce: true });
+  }
+  // "Bug Catcher Garret, Lass Janice and
+  //  Cooltrainer Nathan joined the Tera Raid!": the names and the rest in
+  // lines of at most `width` letters, so long names don't run off the text box.
+  function joinedText(names, width) {
+    width = width || 34;
+    const words = (names.length > 1 ? names.slice(0, -1).join(", ") + " and " + names[names.length - 1] : names[0] || "Nobody")
+      .split(" ").concat(["joined", "the", "Tera", "Raid!"]);
+    const lines = [""];
+    for (const w of words) {
+      const cur = lines[lines.length - 1];
+      if (cur && (cur + " " + w).length > width) lines.push(w);
+      else lines[lines.length - 1] = cur ? cur + " " + w : w;
+    }
+    return lines.join("\n");
   }
 
   // ---------- Rewards ----------
@@ -281,5 +300,5 @@
     return { money: R.money, items: Object.entries(got) };
   }
 
-  window.RaidDens = { LEADERS, leaders, allies, ALLY_HP: 2.5, DENS, byScript, active, maxStars, rollStars, start, finish, boss, rewards, POOLS, isKanto, RAID_MOVES, BADGES, LEVELS, IVS, HP, TURNS, LURE_STARS, REWARDS, SHARDS };
+  window.RaidDens = { LEADERS, leaders, allies, ALLY_HP: 2.5, DENS, byScript, active, maxStars, rollStars, start, finish, boss, joinedText, rewards, POOLS, isKanto, RAID_MOVES, BADGES, LEVELS, IVS, HP, TURNS, LURE_STARS, REWARDS, SHARDS };
 })();

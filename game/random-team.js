@@ -31,10 +31,12 @@
 
   // Like the main games: the four most recent level-up moves at or below `level`,
   // swapping one in for the latest damaging move if all four are status moves.
-  function levelUpMoves(species, level) {
+  // `skip(move)`: moves left out, the earlier ones taking their places
+  // (a Tera Raid boss's Explosion).
+  function levelUpMoves(species, level, skip) {
     const learned = [];
     for (const [lvl, move] of window.LEARNSETS_GEN6[species].levelup) {
-      if (lvl > level || !window.MOVES[move]) continue;
+      if (lvl > level || !window.MOVES[move] || (skip && skip(move))) continue;
       const i = learned.indexOf(move);
       if (i >= 0) learned.splice(i, 1);
       learned.push(move);
