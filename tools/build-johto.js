@@ -43,6 +43,7 @@ const { readPng, writePng } = require("./lib/png");
 const { renderMap } = require("./lib/hgss-map");
 const HC = require("./lib/hgss-classes");
 const Painter = require("./lib/fr-painter");
+const Room = require("./lib/fr-room");
 const { writeAnimSheet } = require("./lib/fr-tiles");
 const N = require("./lib/nitro");
 const HS = require("./lib/hgss-script");
@@ -625,7 +626,8 @@ MAPS.forEach((m, i) => {
   loadMessages(m.zone);
   // (Outdoors, drawn by the painter in FireRed's style: from what each tile is.)
   const painted = !HGSS_LOOK && m.type !== "indoor";
-  const r = renderMap(ROOT, m.c, { ground: m.ground, labels: painted });   // (ground: not flat, as Johto's first maps are)
+  const room = !HGSS_LOOK && m.type === "indoor" && !m.template;   // (a room, drawn in FireRed's style too: tools/lib/fr-room.js)
+  const r = renderMap(ROOT, m.c, { ground: m.ground, labels: painted || room });   // (ground: not flat, as Johto's first maps are)
   const W = r.width * 16, H = r.height * 16;
   // (Where a map that isn't flat was left with a gap, a folded triangle's, its neighbours' colour.)
   if (m.ground) for (let pass = 0, gaps = true; gaps && pass < 32; pass++) {
@@ -681,7 +683,21 @@ MAPS.forEach((m, i) => {
       }
       classes.forEach((c, i) => { if (!reach.has(i) && c !== "waterrock") classes[i] = "rock"; });
     }
-    const pic = Painter.compose(classes, r.width, r.height, { buildings: cave ? [] : HC.buildingsOf(r, classes, evw), signs, style: cave ? "cave" : "outdoor" });
+    if (!cave) HC.smooth(classes, r.width, r.height).forEach((c, i) => { classes[i] = c; });
+    const pic = Painter.compose(classes, r.width, r.height, { buildings: cave ? [] : HC.buildingsOf(r, classes, evw), signs, style: cave ? "cave" : "outdoor", minScore: 8, noFill: true });
+    // Buildings Kanto has none like (Goldenrod's towers and station, the
+    // Radio Tower, a city's blocks): HGSS's own pictures of them over the
+    // painted ground, where no stamp of Kanto's stands.
+    if (!cave && r.buildings) {
+      const stamped = new Set();
+      for (const p of pic.placed) for (let j = 0; j < p.stamp.h; j++) for (let i = 0; i < p.stamp.w; i++) if (p.stamp.blocks[j * p.stamp.w + i] != null) stamped.add((p.y + j) * r.width + p.x + i);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        if (stamped.has((y >> 4) * r.width + (x >> 4))) continue;
+        const o = (y * W + x) * 4;
+        if (r.buildings[o + 3]) { pic.below.set(r.buildings.subarray(o, o + 3), o); pic.below[o + 3] = 255; }
+        if (r.buildingsTop[o + 3]) { pic.above.set(r.buildingsTop.subarray(o, o + 3), o); pic.above[o + 3] = 255; }
+      }
+    }
     drawWhirlpools(r, pic);
     drawRockClimbs(r, pic);
     writePng(path.join(mapsDir, m.name + ".png"), W, H, pic.below);
@@ -698,6 +714,14 @@ MAPS.forEach((m, i) => {
     const outside = ["tree", "water", "rock"].sort((a, b) => (edge[b] || 0) - (edge[a] || 0))[0];
     const style = cave ? "cave" : "outdoor";
     writePng(path.join(mapsDir, m.name + "-border.png"), 32, 32, Painter.render(Painter.paint(Array(4).fill(outside), 2, 2, style), 2, 2, null, style).below);
+  } else if (room) {
+    // A room, drawn in FireRed's style from what's on each tile (tools/lib/fr-room.js).
+    const pic = Room.paintRoom(r, { kind: Room.kindOf(m.name) });
+    writePng(path.join(mapsDir, m.name + ".png"), W, H, pic.below);
+    writePng(path.join(mapsDir, m.name + "-top.png"), W, H, pic.above);
+    if (pic.anim.pics.length) { writeAnimSheet(animFile, pic.anim.pics); anim = { cells: pic.anim.cells, anims: pic.anims }; }
+    else if (fs.existsSync(animFile)) fs.unlinkSync(animFile);
+    writePng(path.join(mapsDir, m.name + "-border.png"), 32, 32, new Uint8ClampedArray(32 * 32 * 4));
   } else {
     writePng(path.join(mapsDir, m.name + ".png"), W, H, r.below);
     writePng(path.join(mapsDir, m.name + "-top.png"), W, H, r.top);
@@ -995,6 +1019,8 @@ for (const m of fs.readFileSync(path.join(ROOT, "include/constants/maps.h"), "ut
 const scripts = { zones, messages: SC.messages, init: SC.init().concat(START), maps: zoneOfMap, origins, mapConsts: Object.assign({}, mapIdConsts, byConst),
   marts: { standard: standardMart, special: specialMarts }, yesno: SC.yesno, version: SC.defines.VERSION_HEARTGOLD || 7 };
 // (In data/johto-maps.js, after the maps.)
+// (This game's own changes to the story: tools/lib/johto-changes.js.)
+require("./lib/johto-changes").apply({ maps: out, scripts, trainers });
 const scriptsJs = "// Johto's field scripts (tools/lib/hgss-script.js; run by ui/johto-script.js), its trainers, and the Apricorns.\n" +
   "window.JOHTO_SCRIPTS = " + JSON.stringify(scripts) + ";\n" +
   "Object.assign(window.WORLD_TRAINERS, " + JSON.stringify(trainers) + ");\n" +

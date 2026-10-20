@@ -101,4 +101,26 @@ function buildingsOf(r, classes, warps) {
   return out;
 }
 
-module.exports = { classify, textureClass, buildingsOf, kindOf };
+// Smooths the ground: a walkable tile of one class with six or more of its
+// eight neighbours of another walkable class is that class too (HGSS's
+// textures are finer than tiles; the odd tile of path in the grass was a
+// stripe's edge, not a path).
+const GROUND = new Set(["grass", "flowers", "path", "sand", "pavement"]);
+function smooth(classes, w, h) {
+  const out = classes.slice();
+  for (let i = 0; i < w * h; i++) {
+    if (!GROUND.has(classes[i])) continue;
+    const x = i % w, y = Math.floor(i / w), votes = {};
+    for (const [dx, dy] of [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]]) {
+      const u = x + dx, v = y + dy;
+      if (u < 0 || v < 0 || u >= w || v >= h) continue;
+      const c = classes[v * w + u];
+      if (GROUND.has(c)) votes[c] = (votes[c] || 0) + 1;
+    }
+    const best = Object.entries(votes).sort((a, b) => b[1] - a[1])[0];
+    if (best && best[0] !== classes[i] && best[1] >= 6) out[i] = best[0];
+  }
+  return out;
+}
+
+module.exports = { classify, textureClass, buildingsOf, kindOf, smooth };

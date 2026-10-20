@@ -136,9 +136,13 @@ function compose(classes, w, h, opts) {
   opts = opts || {};
   classes = classes.slice();
   const placed = [], covered = new Map();
+  // (opts.minScore: a stamp that fits worse than this isn't used, and the
+  // building is left for HGSS's own picture: tools/build-johto.js. opts.noFill:
+  // no made-up buildings on the rest of a footprint, or on buildings with no
+  // door: the ground round them instead, for that picture to stand on.)
   for (const b of opts.buildings || []) {
     const f = fit(b, classes, w, h);
-    if (!f) continue;
+    if (!f || (opts.minScore != null && f.score < opts.minScore)) continue;
     placed.push(f);
     const st = f.stamp;
     for (let j = 0; j < st.h; j++) for (let i = 0; i < st.w; i++) {
@@ -148,10 +152,25 @@ function compose(classes, w, h, opts) {
       classes[y * w + x] = "building";
     }
     // (The rest of its footprint, a big building's: more of Kanto's buildings.)
-    fill(new Set(b.tiles.map(([x, y]) => y * w + x).filter((i) => !covered.has(i))));
+    if (!opts.noFill) fill(new Set(b.tiles.map(([x, y]) => y * w + x).filter((i) => !covered.has(i))));
   }
   // Buildings with no door (a city's blocks): Kanto's buildings too.
-  fill(new Set([...classes.keys()].filter((i) => classes[i] === "building" && !covered.has(i))));
+  if (!opts.noFill) fill(new Set([...classes.keys()].filter((i) => classes[i] === "building" && !covered.has(i))));
+  else {
+    // (The ground round them, the commonest walkable class next door, spreading in.)
+    for (let pass = 0; pass < 24; pass++) {
+      const todo = [...classes.keys()].filter((i) => (classes[i] === "building" || classes[i] === "object") && !covered.has(i));
+      if (!todo.length) break;
+      let changed = false;
+      for (const i of todo) {
+        const x = i % w, y = Math.floor(i / w), votes = {};
+        for (const [dx, dy] of NEIGHBOURS) { const u = x + dx, v = y + dy; if (u < 0 || v < 0 || u >= w || v >= h) continue; const c = classes[v * w + u]; if (WALKABLE.has(c) && c !== "water") votes[c] = (votes[c] || 0) + 1; }
+        const best = Object.entries(votes).sort((a, b) => b[1] - a[1])[0];
+        if (best) { classes[i] = best[0]; changed = true; }
+      }
+      if (!changed) { for (const i of todo) classes[i] = "grass"; break; }
+    }
+  }
   // As many of Kanto's buildings as fit wholly on `left`, biggest first; the
   // rest trees, as round a building in Kanto.
   function fill(left) {

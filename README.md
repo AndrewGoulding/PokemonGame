@@ -1884,6 +1884,9 @@ with FireRed's own metatiles by one painter, `tools/lib/fr-painter.js`:
   2x2 blocks). It also keeps a library of Kanto's buildings, picked out by
   hand: Pokémon Centers, Marts, Gyms, houses of several sizes, Oak's Lab,
   big buildings, towers and a gate, each with its door; and FireRed's signs.
+  A stamp is used only where it fits a building's footprint well (`minScore`);
+  `noFill` leaves the rest of a footprint to the region's own picture of the
+  building instead of a made-up one of Kanto's.
   It learns two styles: outdoor (from Kanto's towns, cities, routes and
   islands) and cave (from the maps drawn with the Cave tileset); a class a
   style lacks (water in a cave) is drawn as outdoors, and waterfalls are
@@ -1941,8 +1944,15 @@ there, and its Pokémon Center trip brings you back.) Johto's towns, cities,
 routes and Ilex Forest are drawn in FireRed's style (above): their classes
 come from HGSS's tile behaviours and, for what's solid, the textures
 uppermost on each tile seen from above (`tools/lib/hgss-classes.js`: trees,
-rock, fences, buildings), and their buildings from their doors (a Pokémon
-Center's door gets a Pokémon Center, a Gym's a Gym, a gatehouse's a gate).
+rock, fences, buildings; the ground smoothed, so the odd tile of path in the
+grass that was a texture's edge is grass), and their buildings from their
+doors (a Pokémon Center's door gets a Pokémon Center, a Gym's a Gym, a
+gatehouse's a gate) where one of Kanto's buildings fits the footprint well;
+the rest, HGSS's own buildings that Kanto has none like (Goldenrod's Radio
+Tower, Magnet Train station and Department Store, Sprout Tower, the Gyms, a
+city's blocks), are HGSS's own pictures of them, rasterised from their 3D
+models, standing on the painted ground (`tools/lib/hgss-map.js` keeps their
+pixels apart in `buildings` and `buildingsTop`).
 Johto's caves (Tohjo Falls, Union Cave, Slowpoke Well, Dark Cave, Mt.
 Mortar, Ice Path, the Whirl Islands, Dragon's Den, Mt. Silver's cave, Cliff
 Cave) are drawn in the cave style (learned from Mt.
@@ -1950,7 +1960,7 @@ Moon, Victory Road and the Lost Cave: their floor, rock walls and ledges;
 water and waterfalls as outdoors), floor you can't reach from their ways in
 being rock as round Kanto's caves; its rooms, towers (Sprout Tower, the Bell
 and Burned Towers, the Lighthouse, the Radio Tower), the Ruins of Alph's
-chambers and the Rocket hideout as HGSS shows them. An Escape Rope works in
+chambers and the Rocket hideout in FireRed's Building tileset (below). An Escape Rope works in
 its caves, Ilex Forest and its towers and dungeons. Each gatehouse you go
 straight through is FireRed's own
 gate (Saffron's Route 5 gate for one you go through north to south, its Route
@@ -1969,6 +1979,8 @@ seen from above, from a
 
 ```sh
 node tools/build-johto.js <path to pret/pokeheartgold>
+# (what this game changes in Johto's story and maps, applied as it writes:
+# tools/lib/johto-changes.js, so a rebuild keeps them)
 ```
 
 It reads the map headers and the overworld matrix (or a cave's, forest's or
@@ -2102,7 +2114,17 @@ Gyms, says "Take care out there, Champion!" (not HGSS's "talk to your mom":
 this game's Mom is in Pallet Town). HGSS's party slot 0,
 in its scripts, is the starter you chose, wherever it is in your party.
 Rooms are as HGSS lays them out (so their scripts' steps and places hold),
-but for the **Pokémon Centers** and **Poké Marts**, FireRed's own rooms, as the
+drawn in FireRed's style too (`tools/lib/fr-room.js`): what you can walk to
+from a room's doors (and from where its people stand, a Gym's platforms) is
+its floor, the solid tiles with floor under them its back wall, two rows of
+it, and the rest of its edges aren't drawn, as FireRed's rooms have no side
+walls; the floor, walls and furniture get FireRed's Building tileset's
+metatiles by what HGSS's textures call each tile (yuka: floor, tatami,
+table, chair, shelf, bed, pc, plant, stairs, a doormat on the warp, and so
+on), a house's wooden floor and a lab's grey one, a two-tile piece of
+furniture its two tiles. (HGSS's own look of a room, as of its outdoors, is
+`node tools/build-johto.js <pokeheartgold> --hgss`.) But for the
+**Pokémon Centers** and **Poké Marts**, FireRed's own rooms, as the
 gatehouses are: a Pokémon Center's nurse heals as Kanto's do (and it's where
 you come to if you black out), upstairs is FireRed's Cable Club floor with
 the Move Relearner and Deleter, and a Mart's clerks keep HGSS's scripts: the

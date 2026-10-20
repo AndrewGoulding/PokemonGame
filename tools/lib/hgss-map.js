@@ -223,7 +223,7 @@ function renderMap(ROOT, MAPCONST, opts) {
   const SW = W * SS, SH = Hh * SS;
   // Two layers: below sprites, above sprites (the "top" layer).
   const color = new Float32Array(SW * SH * 4), depth = new Float32Array(SW * SH).fill(-1e9);
-  const isTop = new Uint8Array(SW * SH);
+  const isTop = new Uint8Array(SW * SH), isBld = new Uint8Array(SW * SH);   // (isBld: a building model's pixel)
   // (opts.ground: maps that aren't flat. Each tile's ground is the height the
   // game stands you at there (its BDHC) where you can walk or Surf, and a
   // solid tile's its neighbour's; everything is drawn from the ground
@@ -444,6 +444,7 @@ function renderMap(ROOT, MAPCONST, opts) {
       } else {
         color[idx * 4] = r; color[idx * 4 + 1] = g; color[idx * 4 + 2] = b; color[idx * 4 + 3] = 255;
         depth[idx] = d;
+        isBld[idx] = tri.building ? 1 : 0;
         // Top layer: the surface belongs to something standing further south
         // than the tile row it is drawn on (tree crowns, roofs, house fronts).
         const wz = w0 * V[0].p[2] + w1 * V[1].p[2] + w2 * V[2].p[2];
@@ -533,7 +534,10 @@ function renderMap(ROOT, MAPCONST, opts) {
       if (t.building) labels[i].building[t.building.id] = (labels[i].building[t.building.id] || 0) + 1;
     }
   }
-  return Object.assign(data, { below: layer(() => true), top: layer((i) => isTop[i]), perm, ground: G, labels });
+  // (buildings, buildingsTop: just the building models' pixels, below and in front of sprites: tools/build-johto.js
+  // draws HGSS's own buildings over Johto's painted ground where Kanto has none like them.)
+  return Object.assign(data, { below: layer(() => true), top: layer((i) => isTop[i]), buildings: layer((i) => isBld[i]), buildingsTop: layer((i) => isBld[i] && isTop[i]),
+    perm, ground: G, labels });
 }
 
 module.exports = { renderMap };
