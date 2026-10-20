@@ -590,7 +590,7 @@
     const mv = me.move;
     me.move = null;
     if (mv.inPlace) return finishHopInPlace();
-    if (mv.dismount) setAvatar("walk");
+    if (mv.dismount) setAvatar((ctx.landAvatar && ctx.landAvatar()) || "walk");
     const changedMap = mv.tmap !== me.map, from = me.map;
     me.map = mv.tmap; me.x = mv.tx; me.y = mv.ty;
     if (changedMap) {

@@ -891,7 +891,7 @@ for (const share of [false, true]) {
     assert([10, 11].every((x) => !farm.collision[x] && !farm.collision[farm.width + x]));
     assert(gd.map === farm.name && !farm.collision[gd.y * farm.width + gd.x]);
     const B = window.BERRY_FARM;
-    assert(B.spots.length === 68 && farm.people.filter((pp) => /^BerryFarm_Tree_\d+$/.test(pp.script)).length === 68 && farm.people.some((pp) => pp.script === "BerryFarm_Caretaker"));
+    assert(B.spots.length === 30 && farm.people.filter((pp) => /^BerryFarm_Tree_\d+$/.test(pp.script)).length === 30 && farm.people.some((pp) => pp.script === "BerryFarm_Caretaker"));
     assert(Object.keys(window.ITEMS).filter((id) => /-berry$/.test(id)).every((id) => B.berries[id] && fs.existsSync(path.join(root, "assets/world/sprites/berry_tree_" + B.berries[id].tree + ".png"))), "every berry grows as one of Emerald's trees");
     assert.deepStrictEqual([B.berries["cheri-berry"].hours, B.berries["lum-berry"].hours, B.berries["liechi-berry"].hours, B.berries["razz-berry"].max], [3, 12, 24, 6], "Emerald's gBerries");
     assert(window.ITEMS["wailmer-pail"] && fs.existsSync(path.join(root, "assets/sprites/items/key-item/wailmer-pail.png")));
@@ -1914,6 +1914,65 @@ if (WORLD_MAPS.NewBarkTown_PokemonCenter_1F) {
   assert(lab.cmds.some((c, i) => c[0] === "ElmPokegear" && lab.cmds[i - 1][1] === "msg_0543_T20R0101_00010"), "Elm's Pokégear after his words about it");
   assert(/Rejuvenator/.test(M.msg_0369_R27_00001.join(" ")) && /Rejuvenator/.test(WORLD_MAPS.Route27.people.find((p) => p.localId === "obj_R27_gsbigman").text.join(" ")));
   assert(WORLD_TRAINERS.HGSS_TRAINER_ACE_TRAINER_F_REENA.intro.join(" ").includes("Pallet Town") && !JSON.stringify(WORLD_TRAINERS).includes("came from New Bark Town?"));
+}
+
+// Cherrygrove's Guide Gent is gone (the Map card's yours from the start), Silver's name and
+// picture, Prof. Oak's words at Mr. Pokémon's, Elm's; HGSS's own Town Map picture.
+if (WORLD_MAPS.CherrygroveCity && WORLD_MAPS.CherrygroveCity.region === "johto") {
+  const c = WORLD_MAPS.CherrygroveCity;
+  assert(!c.people.some((p) => p.localId === "obj_T21_gsoldman1") && !c.triggers.some((t) => /scr_seq_T21_00[12]\?/.test(t.script)), "no Guide Gent");
+  assert(c.triggers.some((t) => /scr_seq_T21_003/.test(t.script)), "Silver still comes");
+  for (const id of ["HGSS_TRAINER_PASSERBY_BOY", "HGSS_TRAINER_PASSERBY_BOY_2", "HGSS_TRAINER_PASSERBY_BOY_3"])
+    assert.deepStrictEqual([WORLD_TRAINERS[id].className, WORLD_TRAINERS[id].name, WORLD_TRAINERS[id].pic], ["Rival", "Silver", "hgss_silver"], id);
+  const M = window.JOHTO_SCRIPTS.messages;
+  assert(/Champion of Kanto/.test(M.msg_0377_R30R0201_00008.join(" ")) && !/I'm Professor Oak/.test(M.msg_0377_R30R0201_00009.join(" ")));
+  assert(/still have the Pokédex/.test(M.msg_0377_R30R0201_00011.join(" ")) && /ready for/.test(M.msg_0377_R30R0201_00012[0]));
+  assert(!/mom/.test(M.msg_0543_T20R0101_00038.join(" ")) && !/mom/.test(M.msg_0543_T20R0101_00039.join(" ")));
+  assert(fs.existsSync(path.join(root, "assets/town-map/johto.png")) && fs.existsSync(path.join(root, "tools/build-johto-town-map-picture.js")));
+}
+
+// HMs in Johto need HGSS's Badges, Fly none (game/field-moves.js).
+{
+  const pl = Player.create("RED", 0);
+  const mon = Party.create("Pidgeot", 40);
+  mon.moves = [{ name: "Fly", pp: 15 }, { name: "Cut", pp: 30 }];
+  pl.location = { map: "NewBarkTown", x: 0, y: 0 };
+  assert.strictEqual(FieldMoves.check(pl, mon, "Fly"), null, "Fly in Johto with no Badges");
+  assert.strictEqual(FieldMoves.check(pl, mon, "Cut"), "badge", "Cut in Johto needs the Hive Badge");
+  pl.badges = ["cascade"];
+  assert.strictEqual(FieldMoves.check(pl, mon, "Cut"), "badge", "not Kanto's Cascade Badge");
+  pl.badges = ["hive"];
+  assert.strictEqual(FieldMoves.check(pl, mon, "Cut"), null);
+  pl.location = { map: "PalletTown", x: 0, y: 0 };
+  assert.strictEqual(FieldMoves.check(pl, mon, "Cut"), "badge", "in Kanto, the Cascade Badge");
+  assert.strictEqual(FieldMoves.check(pl, mon, "Fly"), "badge", "in Kanto, Fly needs the Thunder Badge");
+  pl.badges = ["cascade", "thunder"];
+  assert.strictEqual(FieldMoves.check(pl, mon, "Cut"), null);
+  assert.strictEqual(FieldMoves.check(pl, mon, "Fly"), null);
+}
+
+// Trainer Tower's reward pools, Crystal's Battle Tower's too (game/trainer-tower.js).
+{
+  for (const [tier, n] of [[1, 2], [2, 2], [3, 2]]) {
+    const r = TrainerTower.rewardsAt(tier, n, () => 0.5);
+    assert.strictEqual(r.length, n);
+    for (const id of r) assert(ITEMS[id], id);
+  }
+  const all = new Set(); for (let i = 0; i < 400; i++) for (const id of TrainerTower.rewardsAt(3, 1)) all.add(id);
+  assert(all.has("rare-candy") || all.has("exp-candy-m") || all.has("exp-candy-l") || all.has("exp-candy-xl"), "candies in the pools");
+}
+
+// Raids: the Elite Four, Blue, Red and Leaf can be invited once you've battled with or against them (game/raid-dens.js).
+{
+  const names = (f) => RaidDens.leaders(f).map((L) => L.name);
+  assert.deepStrictEqual(names({}), []);
+  assert.deepStrictEqual(names({ TRAINER_LEADER_BROCK: true, TRAINER_ELITE_FOUR_LANCE: true, TRAINER_CHAMPION_FIRST_SQUIRTLE: true, TRAINER_BOSS_GIOVANNI_2: true, megaTowerDone: true }),
+    ["Brock", "Lance", "Blue", "Red", "Leaf"]);
+  const den = RaidDens.DENS[0], raid = { stars: 3, species: "Pikachu", level: 30 };
+  const a = RaidDens.allies(den, raid, ["Lance", "Red"], () => 0.5);
+  assert.strictEqual(a.length, 3);
+  assert(a[0].trainer === "Lance" && a[0].leader && DEX[a[0].record.species], "Lance brings one of his own");
+  assert(a[1].trainer === "Red" && ["Pikachu", "Charizard", "Blastoise", "Venusaur", "Espeon", "Snorlax", "Lapras"].includes(a[1].record.species));
 }
 
 // The lead Pokémon's abilities on the map, and Pickup (game/encounters.js).

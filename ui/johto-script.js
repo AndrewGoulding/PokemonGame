@@ -401,7 +401,8 @@
           // (255: the bug you're holding in the Bug-Catching Contest.)
           case "NicknameInput": if (+getVar(a[0]) === 255) { const r = env.bugContest && env.bugContest.caught(); if (r) await env.nickname(r); } else await env.nickname(slot(a[0])); break;
           // (Named: 0, as HGSS's naming screen gives when it's done; 1 would ask again.)
-          case "NameRival": state().rival = await env.nameRival(state().rival || "Silver"); setVar(a[0], 0); break;
+          // (His name's Silver, no naming screen: this game's own.)
+          case "NameRival": state().rival = "Silver"; setVar(a[0], 0); break;
           case "HealParty": env.healParty(); break;
           case "GiveTogepiEgg": await env.giveEgg("Togepi"); break;
           case "TakeItemNoCheck": itemVars(a[0], a[1]); setVar("VAR_SPECIAL_RESULT", env.takeItem(getVar(a[0]), +getVar(a[1]) || 1) ? 1 : 0); break;

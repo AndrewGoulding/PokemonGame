@@ -56,12 +56,14 @@ beat("New Bark's west exit: Elm's number", async (g) => {
   if (!(await g.phone()).includes(1)) throw new Error("no Elm on the Pokégear: " + JSON.stringify(await g.phone()) + " " + JSON.stringify(await g.eval(() => window.Game.player.flags.johto.v)));
 });
 
-beat("Cherrygrove: the Guide Gent's tour (the Map card)", async (g) => {
+beat("Cherrygrove: no Guide Gent (the Map card's yours already)", async (g) => {
   await g.go("CherrygroveCity", 55, 14, "left");
   await g.walk("left", 1);
   await g.mash();
-  await g.expectVar("VAR_SCENE_CHERRYGROVE_CITY_OW", (v) => v > 0);
+  await g.expectVar("VAR_SCENE_CHERRYGROVE_CITY_OW", (v) => v === 0);
+  if ((await s_people(g)).some((p) => p.id === "obj_T21_gsoldman1")) throw new Error("the Guide Gent is there");
 });
+const s_people = (g) => g.people();
 
 beat("Mr. Pokémon: the Mystery Egg, Prof. Oak's Pokédex", async (g) => {
   await g.go("Route30_MrPokemonsHouse", 4, 8, "up");
@@ -171,6 +173,7 @@ function makeG(s) {
       await s.wait(600);
     },
     walk: (dir, n) => s.walk(dir, n || 1),
+    people: () => s.eval(page.people),
     // Talk to whoever matches (their local id or script, a regex), from the side they're open on.
     async talk(re) {
       const ps = await s.eval(page.people);

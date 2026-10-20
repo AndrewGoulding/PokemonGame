@@ -238,7 +238,9 @@
       { name: "VOLUME", key: "volume", values: [...Array(11).keys()].map(String), value: o.volume },
       { name: "FRAME", key: "frame", frame: true, values: [...Array(10).keys()].map((i) => "TYPE" + (i + 1)), value: o.frame },
       // (HGSS's walking Pokémon: in Johto, as in HGSS, everywhere, or not at all.)
-      { name: "FOLLOWER", key: "follower", values: ["ON", "OFF"], value: o.follower | 0 }
+      { name: "FOLLOWER", key: "follower", values: ["ON", "OFF"], value: o.follower | 0 },
+      // (The Pokégear's phone ringing with Johto's trainers' chatter: off keeps the story's calls.)
+      { name: "GEAR CALLS", key: "calls", values: ["ON", "OFF"], value: o.calls | 0 }
     ];
     if (fromTitle) rows.push({ name: "SAVE FILE", values: ["LOAD"], value: 0, action: "load" });
     rows.push({ name: "CANCEL" });
@@ -859,7 +861,7 @@
   }
 
   async function giveItem(record, item) {
-    if (record.egg) { await message("An EGG can't hold items."); return; }
+    if (record.egg) { await message("An Egg can't hold items."); return; }
     Player.removeItem(player, item);
     const old = Bag.give(record, item);
     if (old) {
@@ -1069,8 +1071,10 @@
       .concat((T.sevii || []).filter((r) => r.id === "SEVII_123" ? f.seviiMap123 || f.seviiMap4567 : f.seviiMap4567)
         .map((r) => Object.assign({ label: { SEVII_123: "Sevii Islands 1-2-3", SEVII_45: "Sevii Islands 4-5", SEVII_67: "Sevii Islands 6-7" }[r.id] }, r)))
       .map((r) => Object.assign({ x0: 32, y0: 32, width: T.width, height: T.height, towns: T.towns }, r));
-    const johto = JOHTO_MAP && (johtoHere || (!flying && beenToJohto())) ? [JOHTO_MAP] : [];
-    const regions = johtoHere ? johto.concat(flying ? [] : kanto) : (flying ? kanto : kanto.concat(johto));
+    // (Flying too: every map you have, the region you're in first, and SELECT
+    // turns through them, so you can fly between Kanto, the Sevii Islands and Johto.)
+    const johto = JOHTO_MAP && (johtoHere || beenToJohto()) ? [JOHTO_MAP] : [];
+    const regions = johtoHere ? johto.concat(kanto) : kanto.concat(johto);
     const sprite = (R, x, y) => "left:" + pct(R.x0 - 4 + 8 * x, 240) + ";top:" + pct(R.y0 - 4 + 8 * y, 160);
     const cellIn = (R, sec) => {
       if (!sec) return null;
@@ -1163,8 +1167,8 @@
       }
       // (Flying: no buttons under the map, as in FireRed: B goes back, SELECT
       // or R changes region.)
-      if (flying && ["x", "X", "Escape", "Backspace"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); picked(null); return; }
-      if (e.key === "r" || e.key === "R" || (flying && e.key === "Select")) {
+      if (flying && ["x", "X", "Escape"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); picked(null); return; }
+      if (e.key === "r" || e.key === "R" || (flying && (e.key === "Select" || e.key === "Backspace"))) {
         e.preventDefault(); e.stopPropagation();
         if (regions.length > 1) switchMap();
         return;
@@ -1309,7 +1313,7 @@
   function summaryView(r) {
     if (r.egg) {
       // An Egg (FireRed's summary of one): "EGG", the Egg Watch, where it came from.
-      return { egg: true, name: "EGG", species: "EGG", level: 0, gender: "", types: [], memo: Breeding.eggOrigin(r),
+      return { egg: true, name: "Egg", species: "Egg", level: 0, gender: "", types: [], memo: Breeding.eggOrigin(r),
         eggWatch: Breeding.eggWatch(r), hp: 1, maxhp: 1, status: "", shiny: false, moves: [], stats: {},
         pic: EGG_PIC, picEmpty: 0, icon: EGG_ICON, ball: "assets/sprites/items/ball/poke.png" };
     }
@@ -1808,7 +1812,7 @@
     return StorageScreen.open({
       mode, boxes: player.boxes, names: player.boxNames, wallpapers: player.boxWallpapers, party: player.party,
       box: lastBox, frame: GameOptions.get().frame,
-      view: (r) => (r.egg ? { egg: true, name: "EGG", species: "EGG", level: 0, gender: "", item: "", icon: EGG_ICON, pic: EGG_PIC, picEmpty: 0 } : {
+      view: (r) => (r.egg ? { egg: true, name: "Egg", species: "Egg", level: 0, gender: "", item: "", icon: EGG_ICON, pic: EGG_PIC, picEmpty: 0 } : {
         name: Party.displayName(r), species: Party.speciesName(r.species), level: r.level, gender: r.gender,
         item: r.item ? Bag.name(r.item) : "", icon: Screen.iconUrl(r.species, Party.form(r)),
         pic: Screen.spriteUrl(r.species, Party.form(r), false, r.shiny),
@@ -4355,7 +4359,7 @@
         const mine = await choosePartyFor("Choose a POKéMON.", null, player.party.map((r) => (evolves(r) ? "ABLE" : "NOT ABLE")));
         show("world");
         if (!mine) { await say("Okay! Come back anytime!"); return; }
-        if (mine.egg) { await say("An EGG can't be traded!"); return; }
+        if (mine.egg) { await say("An Egg can't be traded!"); return; }
         if (!evolves(mine)) {
           await say(["Hmm… " + Party.displayName(mine) + " won't evolve by\ntrading.", "I only trade Pokémon that evolve\nwhen they're traded. Sorry!"]);
           return;
@@ -6434,7 +6438,7 @@
     const mine = await choosePartyFor("Choose a POKéMON.");
     show("world");
     if (!mine) { await say(D("ComeAnytimeYouLike")); return; }
-    if (mine.egg) { await say("I can't raise an EGG!"); return; }
+    if (mine.egg) { await say("I can't raise an Egg!"); return; }
     if (!player.party.some((r) => r !== mine && Party.canFight(r))) { await say(D("WhatWillYouBattleWith")); return; }
     player.party.splice(player.party.indexOf(mine), 1);
     f.dayCare = DayCare.deposit(mine);
@@ -9476,7 +9480,7 @@
         const mine = await choosePartyFor("Choose a POKéMON.");
         show("world");
         if (!mine) { await comeAgain(); return; }
-        if (mine.egg) { await say("We can't raise an EGG!"); return; }
+        if (mine.egg) { await say("We can't raise an Egg!"); return; }
         if (!player.party.some((r) => r !== mine && Party.canFight(r))) { await say(DC("WhatWillYouBattleWith")); return; }
         player.party.splice(player.party.indexOf(mine), 1);
         list.push(DayCare.deposit(mine));
@@ -9818,7 +9822,7 @@
   }
   // An Egg hatching (EventScript_EggHatch, then FireRed's egg hatch scene,
   // ui/egg-hatch.js): "Huh?", the screen fades, the Egg wobbles and bursts to
-  // the evolution music, its cry, "X hatched from the EGG!" to its fanfare,
+  // the evolution music, its cry, "X hatched from the Egg!" to its fanfare,
   // and a nickname if you like.
   async function eggHatches(egg) {
     await say("Huh?");
@@ -9844,7 +9848,7 @@
       cry(egg.species);
       await sleep(1000);
       const jingle = fanfare("mus_evolved");
-      await message(name + " hatched from the EGG!");
+      await message(name + " hatched from the Egg!");
       await jingle;
       if (await confirm("Would you like to nickname the newly\nhatched " + name + "?")) {
         const typed = await enterText(name + "'s nickname?", name, 10);
@@ -10340,10 +10344,22 @@
     if (!m || m.cat === "Status" || !(m.power > 1)) return 16;
     return m.power <= 60 ? 8 : m.power <= 80 ? 16 : m.power <= 100 ? 24 : 32;
   }
+  // (And Pokémon XD's: the moves its Shadow Pokémon learn on being purified
+  // that they can't learn anywhere else, Lugia's Psycho Boost and the like;
+  // Colosseum's purified Pokémon learn nothing beyond their own learnsets.)
+  const XD_PURIFICATION_MOVES = {
+    Lugia: ["Psycho Boost", "Feather Dance"], Dragonite: ["Heal Bell"], Articuno: ["Heal Bell"], Zapdos: ["Baton Pass", "Metal Sound"],
+    Moltres: ["Morning Sun"], Butterfree: ["Morning Sun"], Hypno: ["Baton Pass"], Tauros: ["Refresh"], Snorlax: ["Refresh"],
+    Salamence: ["Refresh"], Arbok: ["Refresh"], Manectric: ["Refresh"], Zangoose: ["Refresh"], Seviper: ["Refresh"], Lapras: ["Refresh"],
+    Mawile: ["Sing"], Dodrio: ["Baton Pass"], Swellow: ["Baton Pass"], Ledian: ["Baton Pass"], Solrock: ["Baton Pass"], Lunatone: ["Baton Pass"],
+    Primeape: ["Helping Hand"], Nosepass: ["Helping Hand"], Rhydon: ["Helping Hand"], Pinsir: ["Helping Hand"],
+    Magmar: ["Follow Me"], Electabuzz: ["Follow Me"], Scizor: ["Morning Sun"], "Mr. Mime": ["Trick"]
+  };
   function bpTutorMoves(record) {
     const set = window.LEARNSETS_GEN6[record.species] || window.LEARNSETS_GEN6[String(record.species).split("-")[0]] || {};
     const fr = Object.keys(window.TUTOR_LEARNERS || {}).filter((m) => window.TUTOR_LEARNERS[m].includes(record.species));
-    return [...new Set((set.tutor || []).concat(fr))].filter((m) => window.MOVES[m] && !Party.knowsMove(record, m)).sort();
+    const xd = XD_PURIFICATION_MOVES[Party.speciesName(record.species)] || [];
+    return [...new Set((set.tutor || []).concat(fr, xd))].filter((m) => window.MOVES[m] && !Party.knowsMove(record, m)).sort();
   }
   const BP_TUTOR = "TrainerTower_Lobby_EventScript_BPTutor";
   {
@@ -10370,9 +10386,12 @@
   // and the clerk is the BP Shop. The sign keeps your best streak at each level.
   const BATTLE_TOWER = "BattleTower_Lobby", BT_ENTRY = "BattleTower_Lobby_EventScript_EntryTrigger", BT_RECEPTION = "BattleTower_Lobby_EventScript_Receptionist",
     BT_NURSE = "BattleTower_Lobby_EventScript_Nurse", BT_SIGN = "BattleTower_Lobby_EventScript_Sign";
-  const BT_LEVELS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100], BT_BATTLES = 7;
-  const BT_PRIZES = { 10: "hp-up", 20: "protein", 30: "iron", 40: "carbos", 50: "calcium", 60: "pp-up", 70: "rare-candy", 80: "rare-candy", 90: "pp-max", 100: "bottle-cap" };
+  const BT_BATTLES = 7;
+  // (The level: your three's highest, the trainers' Pokémon scaled to it; the
+  // BP by it, and the prizes Trainer Tower's, more of them the higher.)
   const btBP = (level) => 3 + Math.floor(level / 20);
+  const btLevel = (team) => Math.max(...team.map((r) => r.level));
+  const btRewards = (level) => TrainerTower.rewardsAt(level < 40 ? 1 : level < 70 ? 2 : 3, 2);
   {
     const src = window.WORLD_MAPS.TrainerTower_Lobby, gate = window.WORLD_MAPS.Route40_BattleFrontierGatehouse;
     if (src && gate && !window.WORLD_MAPS[BATTLE_TOWER]) {
@@ -10399,7 +10418,7 @@
   async function battleTowerEntry() {
     player.flags.battleTowerScene = 1;
     await Overworld.act([{ who: "player", moves: ["face_right"] }]);
-    await say(["Welcome to the Battle Tower!", "Here, Trainers from far and wide take\non seven battles in a row, at a level\nof their choosing."]);
+    await say(["Welcome to the Battle Tower!", "Here, Trainers from far and wide take\non seven battles in a row, against\nPokémon as strong as their own."]);
     await battleTowerChallenge();
   }
   async function battleTowerReception() {
@@ -10407,13 +10426,12 @@
     await battleTowerChallenge();
   }
   async function battleTowerSign() {
-    const best = btRecords().best, lines = BT_LEVELS.filter((l) => best[l]).map((l) => "Lv. " + l + ": " + best[l] + " win" + (best[l] > 1 ? "s" : "") + " in a row");
-    await say(["Battle Tower\nSeven battles in a row, at a level of\nyour choosing."].concat(lines.length ? ["Your best:\n" + lines.slice(0, 2).join("\n")].concat(lines.length > 2 ? [lines.slice(2, 4).join("\n")] : []) : ["No records yet."]));
+    const best = btRecords().best.open || 0;
+    await say(["Battle Tower\nSeven battles in a row, against Pokémon\nas strong as your own."].concat(best ? ["Your best: " + best + " win" + (best > 1 ? "s" : "") + " in a row."] : ["No records yet."]));
   }
   // Why three Pokémon can't enter at `level` (Crystal's rules), or null.
-  function btTeamProblem(team, level) {
+  function btTeamProblem(team) {
     if (team.some((r) => r.egg)) return "An Egg can't enter.";
-    if (team.some((r) => r.level > level)) return "Every Pokémon must be at Lv. " + level + "\nor under.";
     const species = team.map((r) => Party.speciesName(r.species));
     if (new Set(species).size < species.length) return "No two of the same Pokémon\nmay enter.";
     const items = team.map((r) => r.item).filter(Boolean);
@@ -10424,23 +10442,20 @@
     for (;;) {
       const i = await multichoice("Would you like to take the\nBattle Tower challenge?", 18, 6, ["Yes", "No", "Info"]);
       if (i === 2) {
-        await say(["Choose a level, from 10 to 100, and\nthree Pokémon at or under it.", "No two of the same Pokémon, and no\ntwo holding the same item.",
-          "Beat seven Trainers in a row at that\nlevel for a prize and Battle Points.\nYour Pokémon are healed between battles."]);
+        await say(["Choose three Pokémon. The Trainers'\nPokémon will be as strong as your\nstrongest.", "No two of the same Pokémon, and no\ntwo holding the same item.",
+          "Beat seven Trainers in a row for\nprizes and Battle Points.\nYour Pokémon are healed between battles."]);
         continue;
       }
       if (i !== 0) break;
-      const l = await multichoice("Which level?", 16, 1, BT_LEVELS.map((n) => "Lv. " + n).concat(["Exit"]));
-      if (l < 0 || l >= BT_LEVELS.length) break;
-      const level = BT_LEVELS[l];
-      if (player.party.filter((r) => !r.egg && r.level <= level).length < 3) { await say("You need three Pokémon at Lv. " + level + "\nor under to enter."); continue; }
+      if (player.party.filter((r) => !r.egg).length < 3) { await say("You need three Pokémon to enter."); continue; }
       const chosen = await chooseBattleTeam(3);
       if (!chosen) continue;
       const team = chosen.map((k) => player.party[k]);
-      const problem = btTeamProblem(team, level);
+      const problem = btTeamProblem(team);
       if (problem) { await say(problem); continue; }
       await say("Then let the Battle Tower challenge\nbegin! Good luck!");
       Screen.say("");
-      await battleTowerStreak(level, chosen);
+      await battleTowerStreak(btLevel(team), chosen);
       return;
     }
     await say("Please come again!");
@@ -10451,7 +10466,7 @@
     team.forEach(Party.heal);
     const pool = btTrainers().slice();
     let wins = 0;
-    const noteBest = () => { const best = btRecords().best; if (wins > (best[level] || 0)) best[level] = wins; };
+    const noteBest = () => { const best = btRecords().best; if (wins > (best.open || 0)) best.open = wins; };
     for (let n = 1; n <= BT_BATTLES; n++) {
       const t = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
       const mons = t.mons.slice().sort(() => Math.random() - 0.5).slice(0, 3).map((m) => TrainerTower.mon(m, level));
@@ -10479,10 +10494,12 @@
       }
     }
     noteBest();
-    const prize = BT_PRIZES[level] || "rare-candy", bp = btBP(level);
-    await say(["Congratulations! You've beaten all\nseven Trainers at Lv. " + level + "!", "Here is your prize."]);
-    Player.addItem(player, prize);
-    await sayWithJingle("mus_level_up", "{PLAYER} received the " + Bag.name(prize) + "!");
+    const bp = btBP(level);
+    await say(["Congratulations! You've beaten all\nseven Trainers!", "Here are your prizes."]);
+    for (const prize of btRewards(level)) {
+      Player.addItem(player, prize);
+      await sayWithJingle("mus_level_up", "{PLAYER} received the " + Bag.name(prize) + "!");
+    }
     f.bp = (f.bp || 0) + bp;
     await say("{PLAYER} earned " + bp + " BP!\n(" + f.bp + " BP in total.)");
     await persist();
@@ -11211,9 +11228,10 @@
       Overworld.addObject(id, { x: at.x, y: at.y, facing: at.facing });
     },
     hide: (id) => Overworld.removeObject(id),
+    // (Beyond the map's edge too: Silver comes into Cherrygrove from Route 29's side, off its east edge.)
     place: (id, x, y, facing) => {
       const map = window.WORLD_MAPS[player.location.map], at = Overworld.personPosition(id);
-      if (at && x >= 0 && y >= 0 && x < map.width && y < map.height) Overworld.addObject(id, { x, y, facing: facing || at.facing });
+      if (at && x >= -16 && y >= -16 && x < map.width + 16 && y < map.height + 16) Overworld.addObject(id, { x, y, facing: facing || at.facing });
     },
     // (253: HGSS's follower Pokémon, obj_partner_poke.)
     personAt: (id) => (id === "player" ? Overworld.position() : id === 253 ? Overworld.follower.position() : Overworld.personPosition(id)),
@@ -11547,13 +11565,14 @@
   // trainers).
   async function inviteLeaders() {
     const can = RaidDens.leaders(player.flags).map((L) => L.name);
-    if (!can.length || !(await confirm("Invite Gym Leaders to the Tera Raid?"))) return [];
+    if (!can.length || !(await confirm("Invite others to the raid?"))) return [];
     const picked = [];
     let cursor = 0;
     for (;;) {
       // ("+" before those coming; the ▶ stays where it was.)
+      // (A list that scrolls, six rows, so it stays clear of the text box.)
       const v = await multichoice("Invite whom? (" + picked.length + "/3)", 0, 0,
-        can.map((n) => (picked.includes(n) ? "+" : " ") + n).concat([" Done"]), { cursor });
+        can.map((n) => (picked.includes(n) ? "+" : " ") + n).concat([" Done"]), { cursor, shown: 6 });
       Screen.say("");
       if (v < 0) {
         if (!picked.length) return [];
@@ -11854,6 +11873,8 @@
         boulderSwitch: (map, x, y) => tanobySwitch(map, x, y) || victoryRoadSwitch(map, x, y),
         // (The Tanoby Ruins' chambers are dark until the Tanoby Key's solved: EventScript_TryDarkenRuins.)
         weather: (map) => (Sevii.tanobyLocked(player.flags, map) ? "shade" : null),
+        // (Off the water: on foot, or back on the Bicycle on Cycling Road, where you can't walk.)
+        landAvatar: () => (onCyclingRoad() ? "bike" : "walk"),
         onAvatar: (mode) => music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music),
         onStep: () => {
           Player.advanceClock(player);   // (the game's clock: Player.gameTime)

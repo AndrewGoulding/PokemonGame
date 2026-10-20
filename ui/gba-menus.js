@@ -333,11 +333,13 @@
     let cursor = Math.min(opts.cursor || 0, items.length - 1);
     const draw = () => {
       const s = Surface();
-      const h = items.length * 2 - 1;
+      // (Eight entries, with the Pokégear: closer together, the window
+      // ending at the help bar; FireRed's seven are 15 pixels apart.)
+      const pitch = items.length > 7 ? 14 : 15, h = items.length > 7 ? 14 : items.length * 2 - 1;
       s.frame(frame, G().frames[frame].palette, 22, 1, 7, h);
       s.fill(176, 8, 56, h * 8, std[1]);
-      items.forEach((it, i) => s.text(it.label, 176 + 8, 8 + i * 15, std[2], std[3]));
-      s.text("▶", 176, 8 + cursor * 15, std[2], std[3]);
+      items.forEach((it, i) => s.text(it.label, 176 + 8, 8 + i * pitch, std[2], std[3]));
+      s.text("▶", 176, 8 + cursor * pitch, std[2], std[3]);
       // The help bar: rows 15-19, tile 0 on top, 5 in the middle, 14 at the bottom.
       for (let row = 0; row < 5; row++) {
         const t = row === 0 ? 0 : row === 4 ? 14 : 5, tx = (t % (help.width / 8)) * 8, ty = Math.floor(t / (help.width / 8)) * 8;

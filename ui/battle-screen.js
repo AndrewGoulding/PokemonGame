@@ -404,7 +404,8 @@
       const afterStatus = HB_STATUS[d.status] != null && !st.singlesPlayer;
       g.drawImage(hbTera, TERA_TYPES.indexOf(d.tera) * 8, 0, 8, 16, afterStatus ? st.status[0] + 22 : st.nameX + 2, 8, 8, 16);
     }
-    else if (d.mega && hbMega.complete && !d.tera) g.drawImage(hbMega, lvAt + lvW - 10, -1);
+    // (Mega Evolved and Terastallized both: both marks, the Mega's where "Lv" was.)
+    if (d.mega && hbMega.complete) g.drawImage(hbMega, lvAt + lvW - 10, -1);
     // (This game's own: a gold star after a shiny wild Pokémon's name, kept inside the name's window.)
     const starX = Math.min(nx + w + (gw || 0) + 1, nx + 56 - 7 - (wildTera ? 9 : 0));
     if (d.shiny) drawStar(g, starX, 6);
@@ -625,11 +626,12 @@
     const c = config[side], all = c.partner && battle.sides[side].tag ? (c.team || []).slice(0, 3).concat((c.partner.team || []).slice(0, 3)) : c.team;
     return all[teamIndex] || {};
   };
-  const { message, ask, wait, say, clearMenu } = window.Screen;
-  // (A wait A can't cut short: the wild Pokémon sliding in and showing
-  // itself, and a thrown ball dropping and shaking, play out in full.
-  // Screen.wait ends early on A.)
+  const { message, ask, say, clearMenu } = window.Screen;
+  // (A wait A can't cut short: the battle's animations, a trainer sending
+  // out a Pokémon, a thrown ball dropping and shaking, play out in full.
+  // Screen.wait would end early on A; here every wait is a pause.)
   const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const wait = pause;
 
   // "Charizard" / "the opposing Blastoise" / "the wild Pidgey"
   function label(side, name) {
@@ -2153,10 +2155,15 @@
 
       let move;
       if (window.ItemUse.effect(item).oneMove) {
-        move = await ask("Restore PP to which move?", battle.ownMoves(mons[target]).map((m, i) => ({
-          label: m.name + "  PP " + m.pp + "/" + m.maxpp, value: i, disabled: m.pp >= m.maxpp
-        })).concat([back]));
-        if (move == null) continue;
+        // (FireRed's: "Restore which move?" in the text box and the moves in a
+        // window at the right, as on the map: ShowMoveSelectWindow; B goes back.)
+        say("Restore which move?");
+        const own = battle.ownMoves(mons[target]);
+        const v = await window.GbaMenus.multichoice(overlay(), { left: 29, top: 5, items: own.map((m) => m.name), frame: frame() });
+        say("");
+        if (v < 0) continue;
+        if (own[v].pp >= own[v].maxpp) { await message("It won't have any effect."); continue; }
+        move = v;
       }
       return { type: "item", item, target, move };
     }

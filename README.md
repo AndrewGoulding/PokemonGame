@@ -15,7 +15,7 @@ Pokédex and badges), NEW GAME and OPTION (B goes back to the title). The
 Option screen is FireRed's too: TEXT SPEED (how long battle messages stay up),
 BATTLE SCENE (OFF leaves out the hit animation), BATTLE STYLE (SHIFT: when a
 trainer is about to send out their next Pokémon you may switch first; SET: no
-switching), SOUND (mono, stereo or off), VOLUME (0 to 10: music, sound effects and cries),
+switching), SOUND (mono, stereo or off), VOLUME (0 to 10: music, sound effects and cries), GEAR CALLS (OFF: the Pokégear's phone doesn't ring with chatter),
 FRAME (the menus' windows: FireRed's ten window frames; the text box is always
 FireRed's message box, as in FireRed) and, from the main
 menu, SAVE FILE to load a downloaded save; it's also in the Start menu. Start a
@@ -213,8 +213,12 @@ long, wild Pokémon turning up twice as often (and with no quiet steps after
 a battle). Every Poké Mart that sells a Repel sells the Lure of the same kind
 beside it. One or the other at a time; when one wears off you're asked whether to use
 another of the same kind (as in Black and White). In battle you can fight, use items from the Bag (FireRed's Bag screen, Use on what
-can be used right now), switch, and in wild battles
-throw balls or run. Pokémon gain experience and EVs, level up mid-battle, learn
+can be used right now; an Ether or a Leppa Berry asks "Restore which move?"
+in the text box with the moves in FireRed's window at the right, as on the
+map), switch, and in wild battles
+throw balls or run. The battle's animations (a trainer sending out a Pokémon,
+a thrown Ball dropping and shaking, the moves) play out in full: A moves the
+text on, and doesn't cut them short. Pokémon gain experience and EVs, level up mid-battle, learn
 moves (with four already, FireRed's "Delete a move to make room for …?" and the
 Summary screen's move list to pick one to forget) and evolve afterwards (see
 **Double and tag battles** below for two-on-two), in FireRed's
@@ -296,7 +300,8 @@ stat first; an Everstone's nature; the mother's Hidden Ability 60% of the
 time, otherwise her Ability slot 80%; the mother's Poké Ball; Lv. 1 with its
 level-up moves, then the Egg moves either parent knows, and the level-up
 moves both know (and Volt Tackle with a Light Ball). Eggs ride in the party
-(FireRed's EGG box, icon and Summary page with its Egg Watch), can't battle,
+(FireRed's Egg box, "Egg" in Pokémon's own case, its icon and Summary page
+with the Egg in the middle of its panel and its Egg Watch), can't battle,
 hold items, learn moves or be traded, and every 255 steps are a cycle nearer
 hatching (two with a Flame Body, Magma Armor or Steam Engine Pokémon in the
 party): then
@@ -528,7 +533,7 @@ prize money) and the binoculars look out over Celadon and the sea. Its lower
 passage is Cycling Road's: without a Bicycle the guard calls you back to the
 counter ("No pedestrians are allowed on Cycling Road!"), and with one you're put
 on it as you ride out, and can't get off until you leave the road through a gate
-(or Fly away). Cycling Road runs from Route 16's Bikers and Cue Balls down the
+(or Fly away); Surf from it and you're back on the Bicycle as you land. Cycling Road runs from Route 16's Bikers and Cue Balls down the
 whole of Route 17, a slope as in FireRed: on it you coast downhill at full speed
 unless you press another way (you pedal that way at walking pace) or hold B (you
 stay where you are); its trainers, signs and hidden items (Rare Candy, Full
@@ -693,7 +698,11 @@ Points** (1 BP on floors 1-3, 2 on 4-6, 3 on 7 and 8; a double battle's pair
 count as two), and the gentleman by the lobby's right-hand counter teaches a
 Pokémon any of its tutor moves for BP (on the Move Relearner's screen, each
 move's price under the list: 16 BP for a status move, else 8 up to 60 power,
-16 up to 80, 24 up to 100, 32 above); the old woman beside him teaches its
+16 up to 80, 24 up to 100, 32 above; and Pokémon XD's purification moves,
+the ones its Shadow Pokémon learn on being purified that they can't learn
+anywhere else, Lugia's Psycho Boost and Feather Dance, Dragonite's and
+Articuno's Heal Bell, Zapdos's Baton Pass and Metal Sound, Moltres's Morning
+Sun and the rest: `XD_PURIFICATION_MOVES` in ui/game.js); the old woman beside him teaches its
 Egg moves (any its evolution line could have hatched knowing) at the same
 prices; and the lobby's shop is a BP Shop instead of a Poké Mart: Bottle Cap
 25 BP, Gold Bottle Cap 75, Tin Bottle Cap 10 (one IV down to 0, for Trick
@@ -1353,7 +1362,8 @@ battle: in the move menu, START switches Mega Evolution on for the move you
 pick, shown as pokeemerald-expansion shows it: its Mega trigger slides out
 from behind your healthbox while you choose a move and lights up while it's
 on. A Mega Evolved Pokémon's healthbox (either side, singles or doubles) shows
-the expansion's Mega symbol in place of "Lv" (tools/build-mega-icons.js).
+the expansion's Mega symbol in place of "Lv" (tools/build-mega-icons.js), and
+a Tera type's mark by its name when it's Terastallized too: both at once.
 Mega Evolving plays the expansion's BattleScript_MegaEvolution: "…'s
 Charizardite X is reacting to …'s Mega Ring!", then its Mega Evolution
 animation frame for frame (gBattleAnimGeneral_MegaEvolution, pictures by
@@ -1631,9 +1641,14 @@ stat drops and status ("...removed the negative effects affecting it!");
 else, as likely either, it raises its better attacking stat and its weaker
 defence ("...is getting even stronger!") or attacks again. You send in one Pokémon, chosen from your party when you take
 the raid on (as in Scarlet and Violet), and **three others join you**, four
-on one as in Scarlet and Violet's raids: first you may invite any of Kanto's
-Gym Leaders you've beaten (not Giovanni; up to three: A on a name invites them, B takes back the
-last one invited, "+" marks those coming), and the rest
+on one as in Scarlet and Violet's raids: first you may invite others
+("Invite others to the raid?"): any of Kanto's Gym Leaders you've beaten
+(not Giovanni), and the Elite Four once you've beaten them, Blue once you're
+Champion, Red once he's battled beside you at Silph Co. and Leaf once she has
+in Pokémon Tower, each bringing the one of their own team that hits the
+raid's Tera Type hardest (up to three in all: A on a name invites them, B
+takes back the last one invited, "+" marks those coming; the list scrolls,
+six rows, clear of the text box), and the rest
 of the places fill with trainers from the den's region (FireRed's own,
 "Bug Catcher Garret", "Crush Girl Sharon": those with a Pokémon that hits the
 Tera Raid Pokémon's Tera Type hardest first). Each brings one Pokémon at about
@@ -1676,9 +1691,9 @@ or changed type is gone.
 **Celadon's Berry Farm** is through a gap in the trees south of Celadon's
 Gym: a field of its own (`tools/build-berry-farm.js`, from a pret/pokeemerald
 checkout), ringed by FireRed's trees as Celadon is, the field in Emerald's
-tiles, laid out as X and Y's Berry Fields on Route 7: inside a fence, four
-long beds of Emerald's soft soil with a row of grass between them, 17 places
-to plant in each (68 in all). Its caretaker by the gate gives you the
+tiles, laid out as X and Y's Berry Fields on Route 7: inside a fence, three
+beds of Emerald's soft soil with a row of grass between them, 10 places to
+plant in each (30 in all). Its caretaker by the gate gives you the
 **Wailmer Pail**. Berry growing is Emerald's (`ui/berry-farm.js`, after
 `src/berry.c` and its berry tree scripts): talk to the soft, loamy soil to
 plant any Berry from your Berries pocket (the Bag opens on it, on the Berry
@@ -1996,7 +2011,12 @@ up its face) is in your way on foot until Rock Climb takes you up, down or
 along it, the way it goes ("The wall is very rocky… Would you like to use
 Rock Climb?"). Both are field moves on the party screen too, needing their
 HMs (HGSS's HM05 and HM08: this game's HM06 Whirlpool and HM11 Rock Climb,
-which Johto's scripts give; HGSS's Prof. Oak gives Rock Climb once you've sixteen Badges, so here he calls with it on the Pokégear as you get the Rising Badge) and Johto's Glacier and Rising Badges. Ice Path's
+which Johto's scripts give; HGSS's Prof. Oak gives Rock Climb once you've sixteen Badges, so here he calls with it on the Pokégear as you get the Rising Badge) and Johto's Glacier and Rising Badges.
+In Johto every HM move needs HGSS's Badge, not Kanto's (`game/field-moves.js`):
+Rock Smash and Flash the Zephyr Badge, Cut the Hive, Strength the Plain,
+Surf the Fog, Whirlpool the Glacier, Waterfall and Rock Climb the Rising;
+only Fly needs none there (this game's own, so Kanto's Champion can get
+about), and in Kanto FireRed's Badges hold as before. Ice Path's
 slides are FireRed's ice. Azalea's Gym has no Spinarak carts: you walk its
 webs to Bugsy. The other Gyms' tricks are HGSS's (`src/field/gymmick`,
 `ui/johto-gymmicks.js`), each Gym as it starts each time you go in:
@@ -2026,8 +2046,7 @@ to Rising), Pokémon and Eggs given, money and Coins, trainers beaten
 (`SetTrainerFlag`), the phone numbers people give you (they don't ask
 again), their story calls and the Pokégear's cards (see the Pokégear below), and elevators, leaving out what this game hasn't got (photos, the camera's
 pans and other DS screens). So the Apricorn man on Route 30 comes out of his house
-as you pass and gives you the Apricorn Box, Cherrygrove's Guide Gent shows you
-round, Team Rocket harasses a man in Azalea Town, Lyra takes you to the Day
+as you pass and gives you the Apricorn Box, Team Rocket harasses a man in Azalea Town, Lyra takes you to the Day
 Care on Route 34, the Kimono Girl is lost in Ilex Forest, and the Sudowoodo
 stands in the way on Route 36. **In-game trades and loans** are HGSS's
 (`src/npc_trade.c` and its NPCTrade data, `files/a/1/1/2`, with their
@@ -2069,9 +2088,18 @@ yet": HGSS's Mom gives it; this game's Mom is in Pallet Town), to its
 fanfare, before the healing machine and Mr. Pokémon's directions. Until he's
 given you a Pokémon, New Bark's neighbour won't let you go west, and once he
 has, Elm comes out to give you his number as you go. His aide's Potion, Lyra and her Marill
-outside ("So you picked... Chikorita!"), the Guide Gent in Cherrygrove,
-**Mr. Pokémon's house** on Route 30 (the Mystery Egg; Prof. Oak and the
-Pokédex) and the rest follow on as HGSS scripts them; HGSS's party slot 0,
+outside ("So you picked... Chikorita!"), **Mr. Pokémon's house** on Route 30
+(the Mystery Egg; Prof. Oak, who knows you, of course: he's glad to see
+Kanto's Champion running Elm's errands, and instead of a Pokédex he tells you
+yours will record Johto's Pokémon too, "{PLAYER}'s Pokédex is ready for
+Johto's Pokémon!", and gives you his number) and the rest follow on as HGSS
+scripts them. Cherrygrove's Guide Gent isn't in this game: the Pokégear's Map
+is yours from the start, and his tour and its triggers are gone. Silver is
+Silver from his first battle (no naming screen; HGSS's "Passerby Boy" is
+"Rival Silver", with his own picture), and comes into Cherrygrove from Route
+29's side, off the map's east edge, to meet you. Elm, seeing you off to the
+Gyms, says "Take care out there, Champion!" (not HGSS's "talk to your mom":
+this game's Mom is in Pallet Town). HGSS's party slot 0,
 in its scripts, is the starter you chose, wherever it is in your party.
 Rooms are as HGSS lays them out (so their scripts' steps and places hold),
 but for the **Pokémon Centers** and **Poké Marts**, FireRed's own rooms, as the
@@ -2143,17 +2171,18 @@ rod, 40/40/15/4/1) and Rock Smash's. Everything goes into
 warp and guard). Not here yet: the Battle Frontier, which comes with Sinnoh's;
 in its place, north of Route 40 through its gatehouse, stands Crystal's
 **Battle Tower** (this game's own, in FireRed's Trainer Tower lobby drawn
-again there). At the counter, or from its receptionist, choose a level, 10 to
-100 by tens, and three Pokémon at or under it (Crystal's rules: no two of
-the same Pokémon, no two holding the same item, no Eggs), then battle seven
-of the Trainer Tower's trainers in a row, each with three of their six
-Pokémon (FireRed's sets) at that level, your three healed between battles,
-with no Exp. or money; you may stop between battles, and a loss ends the
-challenge. Seven wins earn the level's prize (Crystal's: HP Up, Protein,
-Iron, Carbos and Calcium at Lv. 10 to 50, a PP Up at 60, a Rare Candy at 70
-and 80, a PP Max at 90 and a Bottle Cap at 100) and Battle Points (3, and 1
+again there). At the counter, or from its receptionist, choose three Pokémon
+(Crystal's rules: no two of the same Pokémon, no two holding the same item,
+no Eggs), then battle seven of the Trainer Tower's trainers in a row, each
+with three of their six Pokémon (FireRed's sets) scaled to your strongest's
+level, your three healed between battles, with no Exp. or money; you may
+stop between battles, and a loss ends the challenge. Seven wins earn two
+prizes from Trainer Tower's own pools (vitamins, PP Ups, Rare and Exp.
+Candies, mints and everyday held items; from Lv. 40 Bottle Caps, PP Maxes and
+the stronger held items too; from Lv. 70 Gold Bottle Caps and Ability
+Capsules and Patches: `TrainerTower.rewardsAt`) and Battle Points (3, and 1
 more for every 20 levels). The lobby's nurse heals, its clerk is the BP Shop,
-and the sign by the counter keeps your best streak at each level.
+and the sign by the counter keeps your best streak.
 (Its music is HGSS's own: see Music and cries.)
 
 **Goldenrod's Game Corner** is the international HeartGold's: Mr. Game's
@@ -2210,8 +2239,8 @@ about you (its friendship: "Pikachu is so happy, it started dancing!",
 something and holds it out to you: a Potion, a Berry, a Great Ball, more as
 you've more of Johto's Badges. In HGSS's scenes it keeps up with you
 (`ToggleFollowingPokemonMovement`, `FollowingPokemonMovement`,
-`WaitFollowingPokemonMovement`: Cherrygrove's Guide Gent shows the two of
-you round). It follows you in Kanto too (this game's: the tall ones stay out
+`WaitFollowingPokemonMovement`: Lyra takes the two of you to the Day Care).
+It follows you in Kanto too (this game's: the tall ones stay out
 of its rooms), unless the Option screen's **FOLLOWER** is OFF.
 
 **Headbutt trees**: HGSS's Headbutt trees on Johto's routes and towns, and
@@ -2383,27 +2412,33 @@ say which Areas changed. A slot's morning, day and night Pokémon are all
 equally likely, as everywhere else. Not here: the Safari Zone Link.
 
 **Johto's Town Map**: in Johto the Town Map (and Fly's) is Johto's: HGSS's
-Pokégear map, each place on the squares HGSS gives it, drawn in FireRed's
-region-map tiles (sea, land lighter up the hills, routes, sea routes, a town
-icon on each place you can fly to), with HGSS's place names, your icon where
-you are and FireRed's small icons on its caves, forests and towers. Fly takes
-you to the towns and cities you've been to (going into a Pokémon Center
-counts), landing outside the Pokémon Center as HGSS does; it keeps to the
-region you're in (Kanto's places in Kanto, Johto's in Johto). Once you've been
-to Johto, SWITCH (or R) on the Town Map turns between Johto's map and Kanto's
-(and the Sevii pages). `tools/build-johto-town-map.js` builds it (see Town Map
-above).
+Pokégear map of Johto, its own picture (`tools/build-johto-town-map-picture.js`
+copies it pixel for pixel from a pret/pokeheartgold checkout's
+`pgmap_gra`, the map the Pokégear draws, onto the 240x160 page; each place is
+on the square HGSS gives it, the grid's from `tools/build-johto-town-map.js`),
+with HGSS's place names, your icon where you are and FireRed's small icons
+on its caves, forests and towers. Fly takes you to the towns and cities
+you've been to (going into a Pokémon Center counts), landing outside the
+Pokémon Center as HGSS does. On the Town Map, and on Fly's map too, SELECT
+(Backspace) or R turns through every map you have, Kanto's, the Sevii
+Islands' pages and Johto's (once you've been there), the region you're in
+first, so you can fly from one region to another.
 
 **The Pokégear** (`ui/pokegear.js`) is HeartGold's, in FireRed's look: once
-Elm has given you your starter (HGSS's `FLAG_GOT_POKEGEAR`) it's on the start
-menu, under the Bag. Its cards are along the top in HeartGold's gold, with the
-day and time: the **Phone** (always), the **Map** once Cherrygrove's Guide Gent
-has shown you round, and the **Radio** once you've won its card at the Radio
+Elm has given it to you (HGSS's `FLAG_GOT_POKEGEAR`) it's on the start
+menu, under the Bag (eight entries then: a pixel closer together, so the
+window ends where the help bar begins). Its cards are along the top in HeartGold's gold, with the
+day and time: the **Phone** and the **Map** (always: HGSS's Guide Gent, who
+gives the Map, isn't in this game), and the **Radio** once you've won its card at the Radio
 Tower (the scripts' `RegisterPokegearCard`); left and right turn between them,
 B puts it away. The Phone lists the numbers you have (HGSS's names and classes:
 "Joey, Youngster", "Prof. Elm, Pokémon Professor"), and A calls one: the line
 rings ("...... ...... ......"), they answer with HGSS's own words, and it goes
-("Click! ......"). What they say is HGSS's call table (`src/application/pokegear/phone`):
+("Click! ......"). Whoever's on the line, calling or called, is pictured in a
+frame by their name (this game's own): the story's people by their overworld
+sprite (Mom, Elm, Oak, Lyra or Ethan, Kurt, Bill, Buena, the Day-Care couple,
+the Bike Shop, Baoba), a trainer by theirs where they stand, or else their
+trainer picture made small (the Gym Leaders). What they say is HGSS's call table (`src/application/pokegear/phone`):
 a trainer's greeting for the time of day (msg_0640), then the first of their
 call scripts whose test passes (`sGenericPhoneCallHeaders`: by chance, on
 their day and time, after the Radio Tower, during Team Rocket's takeover...):
@@ -2416,7 +2451,8 @@ the Gym Leaders have their own (Prof. Oak's tells you how many Pokémon you've
 seen and caught). The scripts' story calls (`PhoneCall`: Elm's panic call
 on Route 30 after Mr. Pokémon, his Egg call in Violet City, the radio, and
 Oak's and Baoba's) ring through it, and **calls come while you walk** as in
-HGSS (`GearPhoneRingManager`): once 150 steps have gone by (HGSS's ten
+HGSS (`GearPhoneRingManager`; the Option screen's **GEAR CALLS**: OFF stops
+the chatter, the story's calls still come): once 150 steps have gone by (HGSS's ten
 minutes; there's no real-time clock, so the Pokégear's day and time are the
 game's step clock), the next step
 has an even chance of a call from someone whose number you have (half the

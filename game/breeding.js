@@ -195,12 +195,12 @@
     if (c <= 5) return "It's making sounds.\nIt's almost ready\nto hatch!";
     if (c <= 10) return "It occasionally\nmoves. It should\nhatch soon.";
     if (c <= 40) return "What will hatch\nfrom this? It will\ntake some time.";
-    return "It looks like this\nEGG will take a\nlong time to hatch.";
+    return "It looks like this\nEgg will take a\nlong time to hatch.";
   }
   function eggOrigin(egg) {
     const from = egg.met && egg.met.from;
-    if (from === "traveling-man") return "An odd POKéMON EGG obtained from\nthe traveling man.";
-    return "An odd POKéMON EGG found by the\nDAY-CARE couple.";
+    if (from === "traveling-man") return "An odd Pokémon Egg obtained from\nthe traveling man.";
+    return "An odd Pokémon Egg found by the\nDAY-CARE couple.";
   }
 
   window.Breeding = { compatibility, compatibilityText, motherOf, eggSpecies, eggMoves, makeEgg, giftEgg, dayCareStep, hatchStep, hatch, eggWatch, eggOrigin, CYCLE_STEPS };

@@ -350,7 +350,10 @@
       if (pic && pic.complete && pic.naturalWidth) {
         g.save(); g.beginPath(); g.rect(0, 32, 120, 66); g.clip();
         g.translate(60 + 48, 0); g.scale(-1, 1);
-        g.drawImage(pic, 0, 97 - (96 - (v.picEmpty || 0)));
+        // (A smaller picture, the Egg's 64x64: in the middle of the panel.)
+        const pw = pic.naturalWidth, ph = pic.naturalHeight;
+        if (pw < 96) g.drawImage(pic, (96 - pw) >> 1, 97 - ph - ((96 - ph) >> 1));
+        else g.drawImage(pic, 0, 97 - (96 - (v.picEmpty || 0)));
         g.restore();
       }
       const ball = image(v.ball);

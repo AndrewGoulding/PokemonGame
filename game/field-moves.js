@@ -12,18 +12,23 @@
 (function () {
   "use strict";
 
+  // (`johto`: the Badge it needs in Johto, HGSS's: Rock Smash and Flash the
+  // Zephyr Badge, Cut the Hive, Strength the Plain, Surf the Fog, Whirlpool the
+  // Glacier, Waterfall and Rock Climb the Rising; Fly none, this game's own, so
+  // Kanto's Champion can get about Johto from the start.)
   const FIELD_MOVES = [
-    { move: "Flash", badge: "boulder", desc: "Light up darkness." },
-    { move: "Cut", badge: "cascade", desc: "Cut a tree or grass." },
-    { move: "Fly", badge: "thunder", desc: "Fly to a known town." },
-    { move: "Strength", badge: "rainbow", desc: "Move heavy boulders." },
-    { move: "Surf", badge: "soul", desc: "Travel on water." },
-    { move: "Rock Smash", badge: "marsh", desc: "Shatter a cracked rock." },
-    { move: "Waterfall", badge: "volcano", desc: "Climb a waterfall." },
+    { move: "Flash", badge: "boulder", johto: "zephyr", desc: "Light up darkness." },
+    { move: "Cut", badge: "cascade", johto: "hive", desc: "Cut a tree or grass." },
+    { move: "Fly", badge: "thunder", johto: null, desc: "Fly to a known town." },
+    { move: "Strength", badge: "rainbow", johto: "plain", desc: "Move heavy boulders." },
+    { move: "Surf", badge: "soul", johto: "fog", desc: "Travel on water." },
+    { move: "Rock Smash", badge: "marsh", johto: "zephyr", desc: "Shatter a cracked rock." },
+    { move: "Waterfall", badge: "volcano", johto: "rising", desc: "Climb a waterfall." },
     // (And Johto's, HGSS's: Whirlpool needs the Glacier Badge, Rock Climb the Rising Badge.)
-    { move: "Whirlpool", badge: "glacier", desc: "Cross a whirlpool." },
-    { move: "Rock Climb", badge: "rising", desc: "Scale rocky walls." }
+    { move: "Whirlpool", badge: "glacier", johto: "glacier", desc: "Cross a whirlpool." },
+    { move: "Rock Climb", badge: "rising", johto: "rising", desc: "Scale rocky walls." }
   ];
+  const inJohto = (player) => (((window.WORLD_MAPS || {})[(player.location || {}).map] || {}).region === "johto");
   const info = (move) => FIELD_MOVES.find((f) => f.move === move) || null;
 
   // The HM that teaches `move` (HM01 Cut ... HM08 Rock Smash here).
@@ -48,7 +53,8 @@
       if (!learnable(record, move)) return "unable";
       if (!hasHm(player, move)) return "hm";
     }
-    if (!player.badges.includes(f.badge)) return "badge";
+    const badge = inJohto(player) ? f.johto : f.badge;
+    if (badge && !player.badges.includes(badge)) return "badge";
     return null;
   }
 

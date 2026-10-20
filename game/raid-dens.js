@@ -183,6 +183,22 @@
     ["Lt. Surge", "TRAINER_LEADER_LT_SURGE", "Electric"], ["Erika", "TRAINER_LEADER_ERIKA", "Grass"],
     ["Koga", "TRAINER_LEADER_KOGA", "Poison"], ["Sabrina", "TRAINER_LEADER_SABRINA", "Psychic"],
     ["Blaine", "TRAINER_LEADER_BLAINE", "Fire"]].map(([name, id, type]) => ({ name, id, type }));
+  // And, once you've battled beside or against them, the Elite Four, Blue (as
+  // Champion), Red (beside you at Silph Co.) and Leaf (beside you in Pokémon
+  // Tower): each brings the one of their own team that hits the raid's Tera
+  // Type hardest (`team`: their Pokémon, or the trainers whose party is theirs).
+  const party = (ids) => ids.flatMap((id) => (((window.WORLD_TRAINERS || {})[id] || {}).party || []).map((m) => m.species));
+  const OTHERS = [
+    { name: "Lorelei", flags: ["TRAINER_ELITE_FOUR_LORELEI", "TRAINER_ELITE_FOUR_LORELEI_2"], team: () => party(["TRAINER_ELITE_FOUR_LORELEI_2", "TRAINER_ELITE_FOUR_LORELEI"]) },
+    { name: "Bruno", flags: ["TRAINER_ELITE_FOUR_BRUNO", "TRAINER_ELITE_FOUR_BRUNO_2"], team: () => party(["TRAINER_ELITE_FOUR_BRUNO_2", "TRAINER_ELITE_FOUR_BRUNO"]) },
+    { name: "Agatha", flags: ["TRAINER_ELITE_FOUR_AGATHA", "TRAINER_ELITE_FOUR_AGATHA_2"], team: () => party(["TRAINER_ELITE_FOUR_AGATHA_2", "TRAINER_ELITE_FOUR_AGATHA"]) },
+    { name: "Lance", flags: ["TRAINER_ELITE_FOUR_LANCE", "TRAINER_ELITE_FOUR_LANCE_2"], team: () => party(["TRAINER_ELITE_FOUR_LANCE_2", "TRAINER_ELITE_FOUR_LANCE"]) },
+    { name: "Blue", flags: ["TRAINER_CHAMPION_FIRST_BULBASAUR", "TRAINER_CHAMPION_FIRST_CHARMANDER", "TRAINER_CHAMPION_FIRST_SQUIRTLE"],
+      team: () => party(["TRAINER_CHAMPION_REMATCH_BULBASAUR", "TRAINER_CHAMPION_REMATCH_CHARMANDER", "TRAINER_CHAMPION_REMATCH_SQUIRTLE"]) },
+    { name: "Red", flags: ["TRAINER_BOSS_GIOVANNI_2"], team: () => ["Pikachu", "Charizard", "Blastoise", "Venusaur", "Espeon", "Snorlax", "Lapras"] },
+    { name: "Leaf", flags: ["megaTowerDone"], team: () => ["Pidgeot", "Alakazam", "Rhydon", "Arcanine", "Exeggutor", "Gyarados", "Venusaur", "Charizard", "Blastoise", "Butterfree", "Wigglytuff"] }
+  ];
+  const others = (flags) => OTHERS.filter((o) => o.flags.some((f) => flags[f]));
   // How hard a Pokémon's own types hit `type` (its best), and its base stats in all.
   const hits = (species, type) => Math.max(...(window.DEX[species].types || []).map((t) => window.Damage.typeEffectiveness(t, [type])));
   const total = (species) => { const d = window.DEX[species]; return d.hp + d.atk + d.def + d.spa + d.spd + d.spe; };
@@ -203,15 +219,15 @@
     johto: (id) => /^HGSS_TRAINER_/.test(id) && !/LEADER|ELITE|CHAMPION|RIVAL|PASSERBY|ROCKET|EXECUTIVE|GRUNT|TWINS|COUPLE|_\d+$/.test(id)
   };
   // The leaders you could invite: those you've beaten.
-  const leaders = (flags) => LEADERS.filter((L) => flags[L.id]);
+  const leaders = (flags) => LEADERS.filter((L) => flags[L.id]).concat(others(flags));
   // The three on your side: those of `invited` (leaders' names), then the region's trainers.
   function allies(den, raid, invited, rng) {
     rng = rng || Math.random;
     const type = den.type, lv = () => raid.level - 1 + Math.floor(rng() * 3), out = [];
     for (const name of invited || []) {
-      const L = LEADERS.find((x) => x.name === name);
+      const L = LEADERS.find((x) => x.name === name) || OTHERS.find((x) => x.name === name);
       if (!L || out.length >= 3) continue;
-      const pool = POOLS[L.type] && POOLS[L.type][raid.stars - 1] || [];
+      const pool = L.team ? L.team().filter((sp, i, all) => all.indexOf(sp) === i) : (POOLS[L.type] && POOLS[L.type][raid.stars - 1] || []);
       const sp = best(pool, type);
       const level = lv();
       if (sp) out.push({ trainer: L.name, leader: true, record: window.Party.create(sp, level, { ivs: 31, moves: movesetFor(sp, level, { stars: raid.stars, against: type }) }) });

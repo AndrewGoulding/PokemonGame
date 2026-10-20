@@ -53,8 +53,8 @@
     "expert-belt", "weakness-policy", "air-balloon"];
   const mints = () => Object.keys(window.ITEMS || {}).filter((id) => /-mint$/.test(id));
   const POOLS = [
-    () => VITAMINS.map((v) => [v, 3]).concat([["pp-up", 4]], mints().map((m) => [m, 0.5]), HELD_EVERYDAY.map((h) => [h, 1.5])),
-    () => [["bottle-cap", 6], ["pp-max", 3]].concat(HELD_STRONG.map((h) => [h, 2])),
+    () => VITAMINS.map((v) => [v, 3]).concat([["pp-up", 4], ["rare-candy", 3], ["exp-candy-m", 2], ["exp-candy-l", 2]], mints().map((m) => [m, 0.5]), HELD_EVERYDAY.map((h) => [h, 1.5])),
+    () => [["bottle-cap", 6], ["pp-max", 3], ["exp-candy-xl", 2]].concat(HELD_STRONG.map((h) => [h, 2])),
     () => [["gold-bottle-cap", 3], ["ability-capsule", 3], ["ability-patch", 1]]
   ];
   // The pace: 1 slow, 2 middling, 3 fast (minutes, by mode: a Knockout has three battles a floor).
@@ -64,8 +64,12 @@
     return frames <= fast * 3600 ? 3 : frames <= mid * 3600 ? 2 : 1;
   }
   function rewards(mode, frames, rng) {
+    const tier = pace(mode, frames);
+    return rewardsAt(tier, tier + (mode === 2 ? 2 : 0), rng);
+  }
+  // `count` items from the pools up to `tier` (1-3): Crystal's Battle Tower's too (ui/game.js).
+  function rewardsAt(tier, count, rng) {
     rng = rng || Math.random;
-    const tier = pace(mode, frames), count = tier + (mode === 2 ? 2 : 0);
     const pool = POOLS.slice(0, tier).map((f) => f()).flat().filter(([id]) => !window.ITEMS || window.ITEMS[id]);
     const total = pool.reduce((t, [, w]) => t + w, 0);
     const out = [];
@@ -135,6 +139,6 @@
     return 1;
   }
 
-  window.TrainerTower = { MODES, FLOORS, MAX_TIME, SINGLE_MONS, DOUBLE_MONS, KNOCKOUT_MONS, floor, prize, records, start, floorCleared,
+  window.TrainerTower = { MODES, FLOORS, MAX_TIME, SINGLE_MONS, DOUBLE_MONS, KNOCKOUT_MONS, floor, prize, records, start, floorCleared, rewardsAt,
     mon, team, partyLevel, tick, time, best, finalTime, rewards, pace, PACE };
 })();

@@ -103,9 +103,9 @@
     const registered = (i) => numbers().includes(i);
     const register = (i) => { if (!registered(i)) numbers().push(i); };
     const has = () => J().flag("FLAG_GOT_POKEGEAR");
-    // (The Map: once the Guide Gent's done, VAR_SCENE_CHERRYGROVE_CITY_OW 2; the Radio: FLAG_GOT_RADIO_CARD.)
-    const hasCard = (n) => n === 0 || state().cards.includes(n) ||
-      (n === 1 && +J().getVar("VAR_SCENE_CHERRYGROVE_CITY_OW") >= 2) || (n === 2 && J().flag("FLAG_GOT_RADIO_CARD"));
+    // (The Map from the start, this game's own: Cherrygrove's Guide Gent, who
+    // gives it in HGSS, isn't in this game; the Radio: FLAG_GOT_RADIO_CARD.)
+    const hasCard = (n) => n === 0 || n === 1 || state().cards.includes(n) || (n === 2 && J().flag("FLAG_GOT_RADIO_CARD"));
     function registerCard(n) { if (!state().cards.includes(n)) state().cards.push(n); }
 
     // ---------- Where and when ----------
@@ -369,6 +369,17 @@
       }
       out.clearRect(0, 0, W * 2, H * 2);
       out.drawImage(s.canvas(), 0, 0, W * 2, H * 2);
+      // (The caller's picture, in its frame: a sprite's first frame, facing you, or a trainer's picture made small.)
+      if (ui.call != null) {
+        const img = portrait(ui.call);
+        if (img && img.complete && img.naturalWidth) {
+          out.imageSmoothingEnabled = false;
+          if (img.ow) {
+            const fw = img.naturalHeight === 32 && img.naturalWidth % 32 === 0 ? 32 : 16, fh = img.naturalHeight;
+            out.drawImage(img, 0, 0, fw, fh, (148 - fw / 2) * 2, (44 - fh / 2) * 2, fw * 2, fh * 2);
+          } else out.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 132 * 2, 28 * 2, 64, 64);
+        }
+      }
       // (The Map card: the region's map, small, and where you are on it.)
       const M = ui.card === 1 && ui.call == null && miniMap();
       if (M && mapImage.complete && mapImage.naturalWidth) {
@@ -427,8 +438,36 @@
       if (M && !mapImage.src.endsWith(M.R.image)) mapImage.src = M.R.image;
       if (M) s.fill(M.x - 1, M.y - 1, M.w + 2, M.h + 2, DARK);
     }
+    // Who's calling, in a picture: their overworld sprite (the story's people
+    // by name, a trainer's where they stand), or else their trainer picture.
+    const PORTRAITS = { MOTHER: "hgss_gsmama", PROF__ELM: "hgss_doctor", PROF__OAK: "prof_oak", ETHAN: "hgss_hero", LYRA: "hgss_heroine",
+      KURT: "hgss_gantetsu", DAY_C_MAN: "hgss_gsoldman1", DAY_C_LADY: "hgss_gsoldwoman1", BUENA: "hgss_gswoman2", BILL: "hgss_masaki",
+      BIKE_SHOP: "hgss_gsmiddleman1", BAOBA: "hgss_gsgentleman" };
+    const portraits = {};
+    function portrait(i) {
+      const c = P().contacts[i];
+      if (!c) return null;
+      if (!(i in portraits)) {
+        let src = null, ow = true;
+        if (PORTRAITS[c.id]) src = "assets/world/sprites/" + PORTRAITS[c.id] + ".png";
+        else if (c.trainer) {
+          for (const m of Object.values(window.WORLD_MAPS || {})) {
+            const p = (m.people || []).find((q) => q.trainer && q.trainer.id === c.trainer && q.sprite);
+            if (p) { src = "assets/world/sprites/" + p.sprite + ".png"; break; }
+          }
+          const t = window.WORLD_TRAINERS && window.WORLD_TRAINERS[c.trainer];
+          if (!src && t && t.pic) { src = "assets/sprites/trainers/front/" + t.pic + ".png"; ow = false; }
+        }
+        const img = src ? new Image() : null;
+        if (img) { img.onload = () => { if (ui) paint(); }; img.src = src; img.ow = ow; }
+        portraits[i] = img;
+      }
+      return portraits[i];
+    }
     function paintCall(s) {
       const c = P().contacts[ui.call];
+      // (Their picture's place: a frame at the right of the name, by the handset.)
+      s.fill(130, 26, 36, 36, DARK); s.fill(132, 28, 32, 32, WHITE);
       s.text(c.name, 22, 30, DARK, LIGHT);
       if (c.cls) s.text(c.cls, 22, 48, DARK, LIGHT, "small");
       if (c.where) s.text(c.where, 22, 64, DARK, LIGHT, "small");
@@ -560,6 +599,8 @@
       const due = Object.keys(state().triggers).map(Number).find((n) => TRIGGERS[n] && !isHere(P().contacts[TRIGGERS[n][0]]));
       if (due != null) { pending = { who: TRIGGERS[due][0], script: TRIGGERS[due][1], trigger: due }; return { type: "phone" }; }
       walked = 0;
+      // (The Option screen's GEAR CALLS off: no one rings just to chat; the story's calls still come.)
+      if (window.GameOptions && window.GameOptions.get().calls) return null;
       if (rnd(100) > CALL_CHANCE) return null;
       const who = caller();
       if (who == null) return null;
