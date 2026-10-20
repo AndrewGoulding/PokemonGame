@@ -1794,7 +1794,7 @@
       mode, boxes: player.boxes, names: player.boxNames, wallpapers: player.boxWallpapers, party: player.party,
       box: lastBox, frame: GameOptions.get().frame,
       view: (r) => (r.egg ? { egg: true, name: "EGG", species: "EGG", level: 0, gender: "", item: "", icon: EGG_ICON, pic: EGG_PIC, picEmpty: 0 } : {
-        name: Party.displayName(r), species: r.species, level: r.level, gender: r.gender,
+        name: Party.displayName(r), species: Party.speciesName(r.species), level: r.level, gender: r.gender,
         item: r.item ? Bag.name(r.item) : "", icon: Screen.iconUrl(r.species, Party.form(r)),
         pic: Screen.spriteUrl(r.species, Party.form(r), false, r.shiny),
         picEmpty: ((window.SPRITE_METRICS || {}).front || {})[(window.DEX[r.species] || {}).id] || 0
@@ -7605,13 +7605,13 @@
   // Gym's trainers.
   // His team (this game's): Weezing, Muk (FireRed's), Arbok, and his ace,
   // Beedrill, holding its Beedrillite: it Mega Evolves, then Terastallizes
-  // into a Fire type.
+  // into a Ground type (in the rematch too).
   function kogaTeam() {
     const fr = trainerTeam("TRAINER_LEADER_KOGA");
     const weezing = fr.find((r) => r.species === "Weezing"), muk = fr.find((r) => r.species === "Muk");
     return [weezing, muk, Party.create("Arbok", 40, { ivs: 0 }),
       Object.assign(Party.create("Beedrill", 44, { ivs: 0 }),
-        { item: "beedrillite", teraType: "Fire", teraAce: true })];
+        { item: "beedrillite", teraType: "Ground", teraAce: true })];
   }
   async function koga(person) {
     const f = player.flags, ID = "TRAINER_LEADER_KOGA";
@@ -7840,7 +7840,7 @@
       intro: ["Erika: Oh, the Champion… How lovely.", "My Pokémon have grown, as flowers do.\nShall we battle?"],
       defeat: ["Erika: Such splendid strength…\nPlease, visit again."] },
     FuchsiaCity_Gym_EventScript_Koga: { id: "TRAINER_LEADER_KOGA", tm: "gotTM06FromKoga", name: "Koga", pic: "leader_koga",
-      team: () => leaderTeam("HGSS_TRAINER_ELITE_FOUR_KOGA_KOGA_2", null, null, [["Skuntank", "Beedrill", { item: "beedrillite", teraType: "Fire" }]]),
+      team: () => leaderTeam("HGSS_TRAINER_ELITE_FOUR_KOGA_KOGA_2", null, null, [["Skuntank", "Beedrill", { item: "beedrillite", teraType: "Ground" }]]),
       intro: ["Koga: Fwahahaha! The Champion!", "My ninja techniques have only grown\nsharper. Witness them!"],
       defeat: ["Koga: Humph! Your skill is beyond\ndoubt. I shall train harder still."] },
     SaffronCity_Gym_EventScript_Sabrina: { id: "TRAINER_LEADER_SABRINA", tm: "gotTM04", name: "Sabrina", pic: "leader_sabrina",
@@ -10169,7 +10169,7 @@
         // (Battle Points for each trainer beaten: a double battle's two, both.)
         const bp = towerBP(n) * (double ? 2 : 1);
         f.bp = (f.bp || 0) + bp;
-        await say("{PLAYER} earned " + bp + " BP!\n(" + f.bp + " BP in all.)");
+        await say("{PLAYER} earned " + bp + " BP!\n(" + f.bp + " BP in total.)");
         return true;
       }
       // TrainerTower_EventScript_WarpToLobbyLost: healed, and back to the lobby.

@@ -1487,7 +1487,7 @@ their Tera Type, with their last Pokémon, or their ace as soon as it's out:
 Leaf's Butterfree outside Pewter Gym Terastallizes into a pure Flying type,
 Brock's Onix into a Dragon type, Misty's Starmie into a
 pure Psychic type, Lt. Surge's Raichu into a Water type, Erika's Vileplume
-into a Poison type, Koga's Mega Beedrill into a Fire type, Sabrina's Mega
+into a Poison type, Koga's Mega Beedrill into a Ground type, Sabrina's Mega
 Alakazam into a Dark type and Blaine's Mega Houndoom (Lv. 48, with the
 Houndoominite; his team here is Magmortar, Magcargo, Rapidash, Arcanine and
 Houndoom) into a Dark type (a trainer with an ace keeps the Orb for it). Koga's

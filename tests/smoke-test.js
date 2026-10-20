@@ -746,6 +746,13 @@ for (const share of [false, true]) {
     assert(/if \(r\.ok\) \{ startStep\(r, "down"\); followerOutOfDoor\(r\); \}/.test(owJs0) && /\["left", "right"\]\.map\(\(d\) => World\.step\(from, d, occupiedForPlayer\)\)/.test(owJs0), "follower out of a door");
     assert(/async function persist\(\) \{ tick\(\); \}/.test(gJs0) && !/beforeunload/.test(gJs0) && /SAVE_PROMPT_MS = 5 \* 60 \* 1000/.test(gJs0) && /\|\| saveReminderStep\(\);/.test(gJs0), "no autosave; a prompt every 5 minutes");
     assert(/if \(flying\) r = await choose;/.test(gJs0), "Fly's map: no buttons");
+    // "… BP in total."; Koga's rematch Beedrill Tera Ground too; the PC's
+    // "/species" without its form; every form's species name plain.
+    assert(/BP!\\n\(" \+ f\.bp \+ " BP in total\.\)"/.test(gJs0) && !/BP in all/.test(gJs0), "BP in total");
+    assert(/\["Skuntank", "Beedrill", \{ item: "beedrillite", teraType: "Ground" \}\]/.test(gJs0), "Koga's rematch: Tera Ground");
+    assert(/species: Party\.speciesName\(r\.species\), level: r\.level/.test(gJs0), "PC: plain species");
+    assert.deepStrictEqual(["Darmanitan-Galar", "Darmanitan-Galar-Zen", "Maushold-Four", "Raichu-Alola", "Ho-Oh", "Porygon-Z", "Kommo-o"].map(Party.speciesName),
+      ["Darmanitan", "Darmanitan", "Maushold", "Raichu", "Ho-Oh", "Porygon-Z", "Kommo-o"]);
     // Inviting: A invites, B takes back the last one invited.
     const gJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
     assert(/if \(v < 0\) \{\n\s*if \(!picked\.length\) return \[\];\n\s*cursor = can\.indexOf\(picked\.pop\(\)\);/.test(gJs) && /RaidDens\.joinedText\(allies\.map/.test(gJs), "raid invite keys");
@@ -4474,8 +4481,8 @@ for (let seed = 1; seed <= GEN8; seed++) {
     for (const [sp, tu] of [["Snorlax", "Body Slam"], ["Snorlax", "Seismic Toss"], ["Charizard", "Blast Burn"], ["Gengar", "Shadow Ball"]]) assert(LEARNSETS_GEN6[sp].tutor.includes(tu) || (LEARNSETS_GEN6[sp].tm || []).includes(tu), sp + " " + tu);
     assert.deepStrictEqual(Party.create("Geodude", 12).moves.map((m) => m.name), RandomTeam.levelUpMoves("Geodude", 12));
     assert(/Houndoom to Mega Evolve into Mega Houndoom/.test(ITEMS.houndoominite.effect) && ITEM_SPRITES.houndoominite, "the Houndoominite");
-    assert(/return \[weezing, muk, Party\.create\("Arbok"/.test(gameSrc) && /item: "beedrillite", teraType: "Fire", teraAce: true/.test(gameSrc)
-      && /pic: "leader_koga", tera: true/.test(gameSrc), "Koga: Weezing, Muk, Arbok, Mega Beedrill (Tera Fire)");
+    assert(/return \[weezing, muk, Party\.create\("Arbok"/.test(gameSrc) && /item: "beedrillite", teraType: "Ground", teraAce: true/.test(gameSrc)
+      && /pic: "leader_koga", tera: true/.test(gameSrc), "Koga: Weezing, Muk, Arbok, Mega Beedrill (Tera Ground)");
     // Yours too: Mega Evolve and Terastallize in the same turn.
     const y = new Battle({ seed: 1, debug: true, p1: { name: "A", team: [g9("Charizard", ["Ember"], { item: "charizardite-x", teraType: "Dragon" })], tera: true },
       p2: { name: "B", team: [g9("Snorlax", ["Splash"])] } });
@@ -4490,11 +4497,11 @@ for (let seed = 1; seed <= GEN8; seed++) {
     assert(!e.sides.p2.pokemon[0].terastallized, "the Orb is kept for the ace");
     // A Mega Stone holder Mega Evolves and Terastallizes in the same turn, the Mega Evolution first.
     const k = new Battle({ seed: 1, debug: true, p1: { name: "A", team: [g9("Snorlax", ["Splash"])] },
-      p2: { name: "B", team: [g9("Beedrill", ["Poison Jab"], { item: "beedrillite", teraType: "Fire", teraAce: true })], tera: true } });
+      p2: { name: "B", team: [g9("Beedrill", ["Poison Jab"], { item: "beedrillite", teraType: "Ground", teraAce: true })], tera: true } });
     k.start();
     k.choose("p1", mv(0)); k.choose("p2", OpponentAI.choose(k, "p2", mulberry32(1)));
     const bee = k.sides.p2.pokemon[0], order = k.events.map((ev) => ev[0]).filter((t) => t === "-mega" || t === "-terastallize");
-    assert.deepStrictEqual([bee.species, bee.terastallized, bee.types, order], ["Beedrill-Mega", "Fire", ["Fire"], ["-mega", "-terastallize"]], "Mega Beedrill, Tera Fire");
+    assert.deepStrictEqual([bee.species, bee.terastallized, bee.types, order], ["Beedrill-Mega", "Ground", ["Ground"], ["-mega", "-terastallize"]], "Mega Beedrill, Tera Ground");
     assert(/script === "enter:PewterCity" \|\| script === "arrive:PewterCity"\) && !player\.flags\.gotTeraOrb/.test(gameSrc)
       && /Player\.addItem\(player, "tera-orb"\)/.test(gameSrc), "the Tera Orb from Prof. Oak's aide in Pewter"); }
   // Tera STAB: 2x for a Tera Type it already had, 1.5x for its own types or a new one; the 60-power floor.

@@ -40,13 +40,16 @@
 
   // "Wormadam-Sandy" -> "Wormadam", "Darmanitan-Standard" -> "Darmanitan".
   // Names that really contain a hyphen (Ho-Oh, Porygon-Z) are kept.
-  const FORME_SUFFIX = /-(Plant|Sandy|Trash|Shield|Blade|Standard|Zen|Normal|Attack|Defense|Speed|Altered|Origin|Land|Sky|Incarnate|Therian|Ordinary|Resolute|Aria|Pirouette|Confined|Unbound|Average|Small|Large|Super)$/;
+  const FORME_SUFFIX = /-(Plant|Sandy|Trash|Shield|Blade|Standard|Zen|Normal|Attack|Defense|Speed|Altered|Origin|Land|Sky|Incarnate|Therian|Ordinary|Resolute|Aria|Pirouette|Confined|Unbound|Average|Small|Large|Super|Four)$/;
   // (And the Nidoran, as the games write them: Nidoran♀ and Nidoran♂.)
   const GENDERED_NAMES = { "Nidoran-F": "Nidoran♀", "Nidoran-M": "Nidoran♂" };
   // A form's name as the games write it, its species' (Alolan Marowak,
   // "Marowak-Alola", is a Marowak; so are Megas, Rotom's appliances and the
   // like): a form (DEX id 10000 on) goes by the longest start of its name
   // that's a species of its own ("Necrozma-Dusk-Mane": Necrozma).
+  let defaultFormedCache = null;
+  const defaultFormed = () => defaultFormedCache || (defaultFormedCache = new Set(Object.keys(window.DEX)
+    .filter((k) => window.DEX[k].id < 10000 && FORME_SUFFIX.test(k)).map((k) => k.replace(FORME_SUFFIX, ""))));
   function speciesName(species) {
     if (GENDERED_NAMES[species]) return GENDERED_NAMES[species];
     const dex = window.DEX[species];
@@ -55,6 +58,9 @@
       for (let n = parts.length - 1; n > 0; n--) {
         const base = parts.slice(0, n).join("-"), d = window.DEX[base];
         if (d && d.id < 10000) return GENDERED_NAMES[base] || base;
+        // (A species kept only under its default form's name: "Darmanitan-Galar"
+        // is a Darmanitan, whose own entry is "Darmanitan-Standard".)
+        if (!d && defaultFormed().has(base)) return base;
       }
     }
     return species.replace(FORME_SUFFIX, "");
