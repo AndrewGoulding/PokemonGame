@@ -2166,7 +2166,10 @@ if (window.JOHTO_TOWN_MAP) {
   assert(Breeding.makeEgg(mom, dad, { rng }).moves.some((m) => m.name === "Volt Tackle"), "Light Ball: Volt Tackle");
   const marill = Object.assign(mk("Azumarill", "F"), { item: "sea-incense" });
   assert.strictEqual(Breeding.makeEgg(marill, mk("Azumarill", "M"), { rng }).species, "Azurill", "Sea Incense: Azurill");
-  assert.strictEqual(Breeding.makeEgg(mk("Azumarill", "F"), mk("Azumarill", "M"), { rng }).species, "Marill", "no incense: Marill");
+  assert.strictEqual(Breeding.makeEgg(mk("Azumarill", "F"), mk("Azumarill", "M"), { rng }).species, "Azurill", "no incense needed: Azurill");
+  assert.strictEqual(Breeding.makeEgg(mk("Blissey", "F"), mk("Ditto", "N"), { rng }).species, "Happiny", "Blissey: Happiny");
+  assert.strictEqual(Breeding.makeEgg(mk("Raichu", "F"), mk("Pikachu", "M"), { rng }).species, "Pichu", "Raichu: Pichu");
+  assert.deepStrictEqual(window.XD_PURIFICATION_MOVES.Zapdos.slice().sort(), ["Baton Pass", "Extrasensory", "Metal Sound", "Thunderbolt"], "XD: Zapdos's four");
   assert.strictEqual(Breeding.makeEgg(mk("Ditto", "N"), mk("Charizard", "M"), { rng }).species, "Charmander", "with Ditto, the other's");
   // Five IVs with a Destiny Knot.
   const a = Object.assign(Party.create("Eevee", 30, { ivs: 31 }), { gender: "F", item: "destiny-knot" });

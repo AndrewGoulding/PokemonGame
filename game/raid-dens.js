@@ -41,7 +41,7 @@
     ["dojo", "SaffronCity_Dojo_DenRoom", 6, 5, "Fighting"],
     ["rockTunnel", "RockTunnel_1F", 12, 21, "Rock"],
     ["diglettsCave", "DiglettsCave_B1F", 36, 33, "Ground"],
-    ["route25", "Route25", 62, 8, "Water"],
+    ["route25", "Route25", 60, 8, "Water"],   // (on the shore at the east end, by the sea: it was out in the water once, past anyone's reach)
     ["route18", "Route18", 44, 13, "Flying"],   // (among the Bird Keepers, out of their sight)
     ["mtEmber", "MtEmber_Exterior", 24, 47, "Fire"],   // (Sevii's One Island: just west of the way in from Kindle Road)
     ["lavender", "PokemonTower_1F", 11, 2, "Ghost"],   // (at the top of Pokémon Tower's ground floor)

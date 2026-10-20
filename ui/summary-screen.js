@@ -73,32 +73,8 @@
     }
   }
 
-  // The nature's mark on the stats page (the modern games'): the raised
-  // stat's label in red, the lowered one's in blue. The labels are the
-  // page's own tiles (ATTACK at rows 39-47, then every 13 pixels; the
-  // letters colour 14 of their tiles), recoloured in place.
+  // The nature's mark on the stats: the raised stat's number in red, the lowered one's in blue.
   const NATURE_UP = [248, 64, 64], NATURE_DOWN = [72, 128, 248];
-  const STAT_ROW = { atk: 0, def: 1, spa: 2, spd: 3, spe: 4 };
-  function natureLabels(s, map, pal0, nature) {
-    const n = window.NATURES && window.NATURES[nature];
-    if (!n || (!n.plus && !n.minus) || n.plus === n.minus) return;
-    const bg = D().sheets.bg, p = px("bg");
-    const rows = [];
-    if (n.plus && STAT_ROW[n.plus] != null) rows.push([39 + 13 * STAT_ROW[n.plus], NATURE_UP]);
-    if (n.minus && STAT_ROW[n.minus] != null) rows.push([39 + 13 * STAT_ROW[n.minus], NATURE_DOWN]);
-    for (let ty = 4; ty < 13; ty++) for (let tx = 14; tx < 21; tx++) {
-      const e = map[ty * 32 + tx], t = e & 0x3ff, hf = e & 0x400, vf = e & 0x800;
-      const sx = (t % 16) * 8, sy = Math.floor(t / 16) * 8;
-      for (let y = 0; y < 8; y++) {
-        const row = rows.find(([y0]) => ty * 8 + y >= y0 && ty * 8 + y < y0 + 9);
-        if (!row) continue;
-        for (let x = 0; x < 8; x++) {
-          const v = p[(sy + (vf ? 7 - y : y)) * bg.width + sx + (hf ? 7 - x : x)] & 15;
-          if (v === 14) s.put(tx * 8 + x, ty * 8 + y, row[1]);
-        }
-      }
-    }
-  }
 
   // sMenuInfoIcons: the types' 32x12 icons in graphics/interface/menu_info.png
   // (Fairy, which FireRed doesn't have, is the expansion's, in its "???" slot.)
@@ -175,7 +151,6 @@
     // (The EV / IV page: the SKILLS page's stats, without its lower panel.)
     else if (page === 4) layer(base, d.maps.pageSkills.map((e, i) => (i >= 32 * 13 ? 0 : e)), false, pal0);
     else layer(base, [v.egg ? d.maps.pageEgg : d.maps.pageInfo, d.maps.pageSkills, d.maps.pageMoves][page], false, pal0);
-    if ((page === 1 || page === 4) && !v.egg) natureLabels(base, d.maps.pageSkills, pal0, v.nature);
     // The page tabs (PokeSum_DrawPageProgressTiles): tiles 345 + n on rows 0-1,
     // two columns a tab: those before this page's are dots on the bar, this
     // one's is the white dot, those after it are on the lighter part, which
@@ -196,9 +171,12 @@
     layer(base, tabMap, false, pal0);
 
     const th = d.pals.textHeader, tm = d.pals.textMoves, ty = d.pals.types;
-    const T = (str, x, y, pal, fg, sh, font) => top.text(str, x, y, pal[fg], pal[sh], font || "normal", pal);
+    const T = (str, x, y, pal, fg, sh, font, colour) => top.text(str, x, y, colour || pal[fg], pal[sh], font || "normal", pal);
     const dark = (str, x, y) => T(str, x, y, ty, 14, 10);   // sLevelNickTextColors[0], palette 6
-    const right = (str, x, len, y) => dark(str, x + len - String(str).length * 6, y);
+    const right = (str, x, len, y, col) => (col ? T(str, x + len - String(str).length * 6, y, ty, 14, 10, null, col) : dark(str, x + len - String(str).length * 6, y));
+    // The nature's mark (the modern games'): the raised stat's number in red, the lowered one's in blue.
+    const nat = window.NATURES && window.NATURES[v.nature];
+    const natCol = (k) => (nat && nat.plus !== nat.minus ? (k === nat.plus ? NATURE_UP : k === nat.minus ? NATURE_DOWN : null) : null);
 
     // The header: page name, the buttons, and Lv / name / gender.
     T(pageName(page), 4, 1, th, 1, 2);
@@ -227,7 +205,7 @@
     } else if (page === 1) {
       const hp = v.hp + "/" + v.maxhp;
       right(hp, 174, 63, 20);
-      ["atk", "def", "spa", "spd", "spe"].forEach((k, i) => right(String(v.stats[k]), 210, 27, 38 + i * 13));
+      ["atk", "def", "spa", "spd", "spe"].forEach((k, i) => right(String(v.stats[k]), 210, 27, 38 + i * 13, natCol(k)));
       right(String(v.exp), 175, 63, 103);
       right(String(v.toNext), 175, 63, 116);
       dark("EXP. POINTS", 74, 103);
@@ -237,7 +215,7 @@
     } else if (page === 4) {
       // Each stat's EV (or IV) where the stats are.
       const vals = (st.ivs ? v.ivs : v.evs) || {};
-      ["hp", "atk", "def", "spa", "spd", "spe"].forEach((k, i) => right(String(vals[k] || 0), i ? 210 : 174, i ? 27 : 63, i ? 38 + (i - 1) * 13 : 20));
+      ["hp", "atk", "def", "spa", "spd", "spe"].forEach((k, i) => right(String(vals[k] || 0), i ? 210 : 174, i ? 27 : 63, i ? 38 + (i - 1) * 13 : 20, natCol(k)));
       // And its happiness (friendship, 0-255), below them on both.
       dark("HAPPINESS", 74, 103);
       right((v.happiness || 0) + "/255", 175, 63, 103);
@@ -350,9 +328,9 @@
       if (pic && pic.complete && pic.naturalWidth) {
         g.save(); g.beginPath(); g.rect(0, 32, 120, 66); g.clip();
         g.translate(60 + 48, 0); g.scale(-1, 1);
-        // (A smaller picture, the Egg's 64x64: in the middle of the panel.)
+        // (A smaller picture, the Egg's 64x64: in the middle of the panel, y 33-93.)
         const pw = pic.naturalWidth, ph = pic.naturalHeight;
-        if (pw < 96) g.drawImage(pic, (96 - pw) >> 1, 97 - ph - ((96 - ph) >> 1));
+        if (pw < 96) g.drawImage(pic, (96 - pw) >> 1, 63 - (ph >> 1));
         else g.drawImage(pic, 0, 97 - (96 - (v.picEmpty || 0)));
         g.restore();
       }

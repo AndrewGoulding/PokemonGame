@@ -57,13 +57,17 @@
   }
 
   function eggSpecies(mother, father, rng) {
-    let species = B().HATCHES[mother.species] || mother.species;
+    // An Egg always hatches into its family's first form (Gen 9 on: no
+    // incense needed for Happiny, Azurill, Munchlax and the other babies).
+    const H = B().HATCHES;
+    let species = H[mother.species] || mother.species;
+    for (let i = 0; i < 4 && H[species] && H[species] !== species; i++) species = H[species];
     // Gen 5 on: Nidoran♀'s and Illumise's Eggs can be either of the pair.
     if (species === "Nidoran-F" && rng() < 0.5) species = "Nidoran-M";
     if (species === "Illumise" && rng() < 0.5) species = "Volbeat";
     if (species === "Manaphy") species = "Phione";
-    const inc = B().INCENSE[mother.species];
-    if (inc && (mother.item === inc.item || father.item === inc.item)) species = inc.baby;
+    const baby = B().INCENSE[species] || B().INCENSE[mother.species];
+    if (baby) species = baby.baby;
     return species;
   }
 

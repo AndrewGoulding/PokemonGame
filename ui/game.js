@@ -10344,21 +10344,12 @@
     if (!m || m.cat === "Status" || !(m.power > 1)) return 16;
     return m.power <= 60 ? 8 : m.power <= 80 ? 16 : m.power <= 100 ? 24 : 32;
   }
-  // (And Pokémon XD's: the moves its Shadow Pokémon learn on being purified
-  // that they can't learn anywhere else, Lugia's Psycho Boost and the like;
-  // Colosseum's purified Pokémon learn nothing beyond their own learnsets.)
-  const XD_PURIFICATION_MOVES = {
-    Lugia: ["Psycho Boost", "Feather Dance"], Dragonite: ["Heal Bell"], Articuno: ["Heal Bell"], Zapdos: ["Baton Pass", "Metal Sound"],
-    Moltres: ["Morning Sun"], Butterfree: ["Morning Sun"], Hypno: ["Baton Pass"], Tauros: ["Refresh"], Snorlax: ["Refresh"],
-    Salamence: ["Refresh"], Arbok: ["Refresh"], Manectric: ["Refresh"], Zangoose: ["Refresh"], Seviper: ["Refresh"], Lapras: ["Refresh"],
-    Mawile: ["Sing"], Dodrio: ["Baton Pass"], Swellow: ["Baton Pass"], Ledian: ["Baton Pass"], Solrock: ["Baton Pass"], Lunatone: ["Baton Pass"],
-    Primeape: ["Helping Hand"], Nosepass: ["Helping Hand"], Rhydon: ["Helping Hand"], Pinsir: ["Helping Hand"],
-    Magmar: ["Follow Me"], Electabuzz: ["Follow Me"], Scizor: ["Morning Sun"], "Mr. Mime": ["Trick"]
-  };
+  // (And Pokémon XD's: the four moves each of its Shadow Pokémon has on being
+  // purified, window.XD_PURIFICATION_MOVES, Serebii's "Special Attacks".)
   function bpTutorMoves(record) {
     const set = window.LEARNSETS_GEN6[record.species] || window.LEARNSETS_GEN6[String(record.species).split("-")[0]] || {};
     const fr = Object.keys(window.TUTOR_LEARNERS || {}).filter((m) => window.TUTOR_LEARNERS[m].includes(record.species));
-    const xd = XD_PURIFICATION_MOVES[Party.speciesName(record.species)] || [];
+    const xd = window.XD_PURIFICATION_MOVES[Party.speciesName(record.species)] || [];
     return [...new Set((set.tutor || []).concat(fr, xd))].filter((m) => window.MOVES[m] && !Party.knowsMove(record, m)).sort();
   }
   const BP_TUTOR = "TrainerTower_Lobby_EventScript_BPTutor";

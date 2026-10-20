@@ -61,7 +61,7 @@
     Dragon: 0xA0, Dark: 0x8C, Fairy: 0xA4 };
   const LABEL = { type: 0xA8, power: 0xC0, accuracy: 0xC8, pp: 0xE0, effect: 0xE8 };
   const menuIcon = (s, tile, w, x, y) => blit(s, "menuInfo", (tile % 16) * 8, Math.floor(tile / 16) * 8, w, 12, x, y, D().pals.types);
-  // The move's category beside its name in the list (this game's, as the
+  // The move's category, above its effect (this game's, as the
   // Summary screen has it): Diamond and Pearl's 16x16 icons, Physical,
   // Special and Status (data sheet categoryIcons).
   const CATEGORIES = ["Physical", "Special", "Status"];
@@ -117,6 +117,8 @@
       s.text(m.cat === "Status" || !m.power ? "---" : right3(m.power), 121, 4, STD[2], STD[3]);
       s.text(m.acc === true || !m.acc ? "---" : right3(m.acc), 121, 18, STD[2], STD[3]);
       s.text(String(m.pp), 42, 18, STD[2], STD[3]);
+      // (Its category, Physical / Special / Status, above the effect, by the EFFECT label.)
+      categoryIcon(s, m.cat, 44, 32);
       const text = (d.moveText || {})[move] || m.shortDesc || "";
       wrap(s, text, 120).slice(0, 4).forEach((line, i) => s.text(line, 17, 48 + i * 14, STD[2], STD[3]));
     }
@@ -129,7 +131,6 @@
       const y = 8 + r * 14;
       if (y + 14 > 104) { s.text(it || "CANCEL", 160, y, STD[2], STD[3]); continue; }
       s.text(it || "CANCEL", 160, y, STD[2], STD[3]);
-      if (it && window.MOVES[it]) categoryIcon(s, window.MOVES[it].cat, 216, y - 1);
       if (st.top + r === st.cursor) s.text("▶", 152, y, STD[2], STD[3]);
     }
     // The message box (W7, in your frame).

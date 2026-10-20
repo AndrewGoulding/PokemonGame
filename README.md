@@ -292,9 +292,9 @@ from you (or Ditto with one of yours), never if they share no Egg Group
 the same gender, or are Ditto twice or Undiscovered. The Day-Care Man
 outside says how well they get on, and has the Egg for you ("You do want it,
 yes?"); the lady says he was looking for you. What's in it follows Gen 6's
-rules, as the battles do: the mother's first stage (or the one that isn't
-Ditto's), an incense baby only when a parent holds its incense (Sea Incense
-for Azurill...), Nidoran♀'s and Illumise's either of the pair, Manaphy's a
+rules, as the battles do: the mother's first form (or the one that isn't
+Ditto's), always the family's baby with no incense needed (Happiny from
+Blissey, Azurill from Azumarill, Pichu from Pikachu...), Nidoran♀'s and Illumise's either of the pair, Manaphy's a
 Phione; three IVs from the parents, five with a Destiny Knot, a Power item's
 stat first; an Everstone's nature; the mother's Hidden Ability 60% of the
 time, otherwise her Ability slot 80%; the mother's Poké Ball; Lv. 1 with its
@@ -699,10 +699,10 @@ count as two), and the gentleman by the lobby's right-hand counter teaches a
 Pokémon any of its tutor moves for BP (on the Move Relearner's screen, each
 move's price under the list: 16 BP for a status move, else 8 up to 60 power,
 16 up to 80, 24 up to 100, 32 above; and Pokémon XD's purification moves,
-the ones its Shadow Pokémon learn on being purified that they can't learn
-anywhere else, Lugia's Psycho Boost and Feather Dance, Dragonite's and
-Articuno's Heal Bell, Zapdos's Baton Pass and Metal Sound, Moltres's Morning
-Sun and the rest: `XD_PURIFICATION_MOVES` in ui/game.js); the old woman beside him teaches its
+the four each Shadow Pokémon has on being purified (Serebii's Gen 3 "Special
+Attacks", from PokeAPI's data: Zapdos's Baton Pass, Extrasensory, Metal Sound
+and Thunderbolt, Lugia's Psycho Boost and the rest: `XD_PURIFICATION_MOVES` in
+data/machine-learners.js, built by `tools/build-xd-moves.js`); the old woman beside him teaches its
 Egg moves (any its evolution line could have hatched knowing) at the same
 prices; and the lobby's shop is a BP Shop instead of a Poké Mart: Bottle Cap
 25 BP, Gold Bottle Cap 75, Tin Bottle Cap 10 (one IV down to 0, for Trick
@@ -2704,7 +2704,7 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   it could know by now (its own, or one its earlier forms learn by its level,
   so evolving early never loses a move), for a Heart Scale (dig them up with the Explorer Kit),
   on FireRed's Move Relearner screen (each move's category icon, physical,
-  special or status, beside it in the list, as on the Summary screen; the
+  special or status, above its effect, as on the Summary screen; the
   tutors' screens too); with four moves already, you pick one to
   forget on the Summary screen's move list, as for TMs and tutors;
   the Deleter makes it forget a move, free.

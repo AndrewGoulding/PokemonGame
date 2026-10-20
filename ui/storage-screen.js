@@ -228,7 +228,9 @@
     const pic = image(v.pic);
     if (ready(pic)) {
       g.save(); g.beginPath(); g.rect(8, 16, 64, 64); g.clip();
-      g.drawImage(pic, 40 - 48, 80 - (96 - (v.picEmpty || 0)));
+      // (A smaller picture, the Egg's 64x64: in the middle of the screen.)
+      if (pic.naturalWidth < 96) g.drawImage(pic, 40 - (pic.naturalWidth >> 1), 48 - (pic.naturalHeight >> 1));
+      else g.drawImage(pic, 40 - 48, 80 - (96 - (v.picEmpty || 0)));
       g.restore();
     }
     // Window 0 (0, 88): name, /species, gender and level, item.

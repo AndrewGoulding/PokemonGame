@@ -14364,3 +14364,506 @@ window.TUTOR_LEARNERS = {
    "Venusaur-Mega"
   ]
 };
+// XD-BEGIN (tools/build-xd-moves.js)
+// Pokémon XD's purification moves: species -> the four its Shadow Pokémon has.
+window.XD_PURIFICATION_MOVES = {
+  "Butterfree": [
+   "Psychic",
+   "Morning Sun",
+   "Sleep Powder",
+   "Aerial Ace"
+  ],
+  "Beedrill": [
+   "Sludge Bomb",
+   "Baton Pass",
+   "Twineedle",
+   "Swords Dance"
+  ],
+  "Pidgeotto": [
+   "Wing Attack",
+   "Refresh",
+   "Steel Wing",
+   "Feather Dance"
+  ],
+  "Raticate": [
+   "Super Fang",
+   "Refresh",
+   "Scary Face",
+   "Hyper Fang"
+  ],
+  "Spearow": [
+   "False Swipe",
+   "Baton Pass",
+   "Leer",
+   "Aerial Ace"
+  ],
+  "Arbok": [
+   "Sludge Bomb",
+   "Refresh",
+   "Glare",
+   "Bite"
+  ],
+  "Vulpix": [
+   "Heat Wave",
+   "Charm",
+   "Ember",
+   "Dig"
+  ],
+  "Paras": [
+   "Spore",
+   "Refresh",
+   "Slash",
+   "False Swipe"
+  ],
+  "Venomoth": [
+   "Silver Wind",
+   "Refresh",
+   "Substitute",
+   "Psychic"
+  ],
+  "Dugtrio": [
+   "Earthquake",
+   "Charm",
+   "Sandstorm",
+   "Tri Attack"
+  ],
+  "Meowth": [
+   "Slash",
+   "Sing",
+   "Pay Day",
+   "Bite"
+  ],
+  "Golduck": [
+   "Waterfall",
+   "Charm",
+   "Psych Up",
+   "Brick Break"
+  ],
+  "Primeape": [
+   "Cross Chop",
+   "Helping Hand",
+   "Focus Energy",
+   "Reversal"
+  ],
+  "Growlithe": [
+   "Flamethrower",
+   "Charm",
+   "Bite",
+   "Take Down"
+  ],
+  "Poliwrath": [
+   "Hydro Pump",
+   "Helping Hand",
+   "Rain Dance",
+   "Brick Break"
+  ],
+  "Weepinbell": [
+   "Magical Leaf",
+   "Morning Sun",
+   "Sludge Bomb",
+   "Sweet Scent"
+  ],
+  "Rapidash": [
+   "Solar Beam",
+   "Baton Pass",
+   "Sunny Day",
+   "Flamethrower"
+  ],
+  "Magneton": [
+   "Double-Edge",
+   "Refresh",
+   "Rain Dance",
+   "Thunder"
+  ],
+  "Farfetch'd": [
+   "Slash",
+   "Baton Pass",
+   "Swords Dance",
+   "Aerial Ace"
+  ],
+  "Dodrio": [
+   "Drill Peck",
+   "Baton Pass",
+   "Agility",
+   "Tri Attack"
+  ],
+  "Seel": [
+   "Surf",
+   "Helping Hand",
+   "Safeguard",
+   "Ice Beam"
+  ],
+  "Grimer": [
+   "Sludge Bomb",
+   "Helping Hand",
+   "Shadow Punch",
+   "Minimize"
+  ],
+  "Shellder": [
+   "Take Down",
+   "Refresh",
+   "Surf",
+   "Aurora Beam"
+  ],
+  "Hypno": [
+   "Psychic",
+   "Baton Pass",
+   "Meditate",
+   "Shadow Ball"
+  ],
+  "Voltorb": [
+   "Mirror Coat",
+   "Refresh",
+   "Spark",
+   "Swift"
+  ],
+  "Exeggutor": [
+   "Psychic",
+   "Refresh",
+   "Hypnosis",
+   "Ancient Power"
+  ],
+  "Marowak": [
+   "Earthquake",
+   "Sing",
+   "Swords Dance",
+   "Rock Slide"
+  ],
+  "Hitmonlee": [
+   "High Jump Kick",
+   "Refresh",
+   "Mind Reader",
+   "Mega Kick"
+  ],
+  "Hitmonchan": [
+   "Mega Punch",
+   "Helping Hand",
+   "Mind Reader",
+   "Sky Uppercut"
+  ],
+  "Lickitung": [
+   "Double-Edge",
+   "Helping Hand",
+   "Defense Curl",
+   "Rollout"
+  ],
+  "Rhydon": [
+   "Megahorn",
+   "Helping Hand",
+   "Scary Face",
+   "Earthquake"
+  ],
+  "Chansey": [
+   "Thunderbolt",
+   "Sweet Kiss",
+   "Soft-Boiled",
+   "Skill Swap"
+  ],
+  "Tangela": [
+   "Solar Beam",
+   "Morning Sun",
+   "Sunny Day",
+   "Ingrain"
+  ],
+  "Kangaskhan": [
+   "Earthquake",
+   "Sing",
+   "Tail Whip",
+   "Dizzy Punch"
+  ],
+  "Starmie": [
+   "Waterfall",
+   "Refresh",
+   "Ice Beam",
+   "Recover"
+  ],
+  "Mr. Mime": [
+   "Psychic",
+   "Follow Me",
+   "Encore",
+   "Thunder Punch"
+  ],
+  "Scyther": [
+   "Razor Wind",
+   "Morning Sun",
+   "Silver Wind",
+   "Slash"
+  ],
+  "Electabuzz": [
+   "Cross Chop",
+   "Follow Me",
+   "Thunder Wave",
+   "Thunderbolt"
+  ],
+  "Magmar": [
+   "Fire Blast",
+   "Follow Me",
+   "Cross Chop",
+   "Thunder Punch"
+  ],
+  "Pinsir": [
+   "Guillotine",
+   "Helping Hand",
+   "False Swipe",
+   "Submission"
+  ],
+  "Tauros": [
+   "Earthquake",
+   "Refresh",
+   "Tail Whip",
+   "Body Slam"
+  ],
+  "Lapras": [
+   "Hydro Pump",
+   "Heal Bell",
+   "Rain Dance",
+   "Blizzard"
+  ],
+  "Snorlax": [
+   "Fissure",
+   "Refresh",
+   "Curse",
+   "Body Slam"
+  ],
+  "Articuno": [
+   "Extrasensory",
+   "Heal Bell",
+   "Haze",
+   "Ice Beam"
+  ],
+  "Zapdos": [
+   "Extrasensory",
+   "Baton Pass",
+   "Metal Sound",
+   "Thunderbolt"
+  ],
+  "Moltres": [
+   "Extrasensory",
+   "Morning Sun",
+   "Will-O-Wisp",
+   "Flamethrower"
+  ],
+  "Dragonite": [
+   "Hyper Beam",
+   "Heal Bell",
+   "Dragon Dance",
+   "Earthquake"
+  ],
+  "Ledyba": [
+   "Psybeam",
+   "Refresh",
+   "Aerial Ace",
+   "Supersonic"
+  ],
+  "Spinarak": [
+   "Dig",
+   "Refresh",
+   "Signal Beam",
+   "Night Shade"
+  ],
+  "Togepi": [
+   "Follow Me",
+   "Tri Attack",
+   "Ancient Power",
+   "Helping Hand"
+  ],
+  "Natu": [
+   "Future Sight",
+   "Baton Pass",
+   "Night Shade",
+   "Aerial Ace"
+  ],
+  "Mareep": [
+   "Body Slam",
+   "Heal Bell",
+   "Thunder Shock",
+   "Thunder Wave"
+  ],
+  "Pineco": [
+   "Pin Missile",
+   "Refresh",
+   "Spikes",
+   "Counter"
+  ],
+  "Teddiursa": [
+   "Return",
+   "Refresh",
+   "Lick",
+   "Metal Claw"
+  ],
+  "Magcargo": [
+   "Heat Wave",
+   "Refresh",
+   "Earthquake",
+   "Flamethrower"
+  ],
+  "Swinub": [
+   "Ancient Power",
+   "Charm",
+   "Mist",
+   "Mud Shot"
+  ],
+  "Houndour": [
+   "Feint Attack",
+   "Charm",
+   "Ember",
+   "Roar"
+  ],
+  "Lugia": [
+   "Psycho Boost",
+   "Feather Dance",
+   "Earthquake",
+   "Hydro Pump"
+  ],
+  "Poochyena": [
+   "Dig",
+   "Heal Bell",
+   "Poison Fang",
+   "Howl"
+  ],
+  "Seedot": [
+   "Giga Drain",
+   "Refresh",
+   "Bullet Seed",
+   "Secret Power"
+  ],
+  "Swellow": [
+   "Sky Attack",
+   "Baton Pass",
+   "Agility",
+   "Facade"
+  ],
+  "Ralts": [
+   "Shock Wave",
+   "Sing",
+   "Reflect",
+   "Confusion"
+  ],
+  "Shroomish": [
+   "False Swipe",
+   "Refresh",
+   "Mega Drain",
+   "Stun Spore"
+  ],
+  "Makuhita": [
+   "Brick Break",
+   "Refresh",
+   "Arm Thrust",
+   "Rock Tomb"
+  ],
+  "Nosepass": [
+   "Thunderbolt",
+   "Helping Hand",
+   "Thunder Wave",
+   "Rock Slide"
+  ],
+  "Delcatty": [
+   "Secret Power",
+   "Sweet Kiss",
+   "Attract",
+   "Shock Wave"
+  ],
+  "Sableye": [
+   "Shadow Ball",
+   "Helping Hand",
+   "Feint Attack",
+   "Recover"
+  ],
+  "Mawile": [
+   "False Swipe",
+   "Sing",
+   "Vise Grip",
+   "Iron Defense"
+  ],
+  "Manectric": [
+   "Thunder",
+   "Refresh",
+   "Rain Dance",
+   "Bite"
+  ],
+  "Roselia": [
+   "Magical Leaf",
+   "Sweet Kiss",
+   "Grass Whistle",
+   "Leech Seed"
+  ],
+  "Gulpin": [
+   "Shock Wave",
+   "Sing",
+   "Sludge",
+   "Toxic"
+  ],
+  "Carvanha": [
+   "Water Pulse",
+   "Refresh",
+   "Scary Face",
+   "Bite"
+  ],
+  "Numel": [
+   "Take Down",
+   "Charm",
+   "Dig",
+   "Ember"
+  ],
+  "Altaria": [
+   "Dragon Breath",
+   "Heal Bell",
+   "Solar Beam",
+   "Aerial Ace"
+  ],
+  "Zangoose": [
+   "Brick Break",
+   "Refresh",
+   "Counter",
+   "Crush Claw"
+  ],
+  "Lunatone": [
+   "Psychic",
+   "Baton Pass",
+   "Rain Dance",
+   "Rock Tomb"
+  ],
+  "Solrock": [
+   "Psychic",
+   "Baton Pass",
+   "Sunny Day",
+   "Cosmic Power"
+  ],
+  "Baltoy": [
+   "Rock Tomb",
+   "Refresh",
+   "Mud-Slap",
+   "Psybeam"
+  ],
+  "Banette": [
+   "Feint Attack",
+   "Helping Hand",
+   "Shadow Ball",
+   "Curse"
+  ],
+  "Duskull": [
+   "Shadow Ball",
+   "Helping Hand",
+   "Astonish",
+   "Confuse Ray"
+  ],
+  "Snorunt": [
+   "Water Pulse",
+   "Sing",
+   "Bite",
+   "Icy Wind"
+  ],
+  "Spheal": [
+   "Aurora Beam",
+   "Charm",
+   "Water Gun",
+   "Mud-Slap"
+  ],
+  "Salamence": [
+   "Dragon Claw",
+   "Refresh",
+   "Dragon Dance",
+   "Aerial Ace"
+  ]
+};
+// XD-END

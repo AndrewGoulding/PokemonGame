@@ -97,6 +97,9 @@ const TUTOR_MOVES = ["Mega Punch", "Swords Dance", "Mega Kick", "Body Slam", "Do
     "window.MACHINE_LEARNERS = " + JSON.stringify(out, null, 1).replace(/\n /g, "\n  ") + ";\n" +
     "// Tutor moves -> species a tutor taught them in some generation, besides Gen 6's learnsets.\n" +
     "window.TUTOR_LEARNERS = " + JSON.stringify(tutors, null, 1).replace(/\n /g, "\n  ") + ";\n";
-  fs.writeFileSync(path.join(root, "data/machine-learners.js"), body);
+  // (Keep the XD block, which tools/build-xd-moves.js owns.)
+  const prev = fs.existsSync(path.join(root, "data/machine-learners.js")) ? fs.readFileSync(path.join(root, "data/machine-learners.js"), "utf8") : "";
+  const xd = prev.match(/\/\/ XD-BEGIN[\s\S]*?\/\/ XD-END\n/);
+  fs.writeFileSync(path.join(root, "data/machine-learners.js"), body + (xd ? xd[0] : ""));
   console.log("wrote data/machine-learners.js: " + Object.entries(out).concat(Object.entries(tutors)).map(([m, l]) => m + " +" + l.length).join(", "));
 })();
