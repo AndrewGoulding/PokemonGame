@@ -55,6 +55,7 @@
     ["oval-stone", 4, ["xxx", "xxx", "xxx"], 10],
     ["everstone", 5, ["xxxx", "xxxx"], 5],
     ["hard-stone", 5, ["xx", "xx"], 5],
+    ["metal-coat", 3, ["xx", "xx", "xx"], 25],
     ["star-piece", 5, ["xxx", "xxx", "xxx"], 10],
     ["revive", 5, ["xxx", "xxx", "xxx"], 10],
     ["max-revive", 1, ["xxx", "xxx", "xx."], 63],

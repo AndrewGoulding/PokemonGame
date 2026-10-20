@@ -671,7 +671,7 @@ move's price under the list: 16 BP for a status move, else 8 up to 60 power,
 Egg moves (any its evolution line could have hatched knowing) at the same
 prices; and the lobby's shop is a BP Shop instead of a Poké Mart: Bottle Cap
 25 BP, Gold Bottle Cap 75, Tin Bottle Cap 10 (one IV down to 0, for Trick
-Room), every mint 50 and the six vitamins 2 each. Lose and
+Room), every mint 25 and the six vitamins 2 each. Lose and
 you're back at the counter. The tower's owner on the roof stops the clock,
 gives the challenge's prize (once: Up-Grade, Dragon Scale, Metal Coat, King's
 Rock) and says whether you've set a record; the best times are on the lobby's
@@ -1314,6 +1314,25 @@ Alakazite with the Marsh Badge's TM, and Giovanni the Kangaskhanite with the
 Earth Badge's TM. (From a save that won those battles before: Sabrina gives
 hers when you talk to her again, Giovanni too if he's still in his Gym, and
 otherwise Gary's and Giovanni's are item balls where they stood.)
+
+**The older games' TM item balls** (this game's own): every TM that's an item
+ball in Red, Blue and Yellow, or Gold, Silver and Crystal, is one here too, in
+the same place: beside the ball FireRed or HeartGold put there instead (Mt.
+Moon's Bullet Seed, where Water Gun was), unless that map has a ball of the same
+TM already. Red, Blue and Yellow's: Water Gun (Mt. Moon 1F), Mega Punch (Mt. Moon
+B2F), Reflect (Power Plant), Horn Drill, Double-Edge and Razor Wind (Rocket
+Hideout B2F, B3F, B4F), Pay Day (Route 12), Rage (Route 15), Thunder Wave (Route
+24), Seismic Toss (Route 25), Whirlwind (Route 4), Teleport (Route 9), Body Slam
+(the S.S. Anne), Egg Bomb and Skull Bash (Safari Zone East and North), Earthquake,
+Take Down and Swords Dance (Silph Co. 10F, 5F, 7F), Sky Attack, Submission, Mega
+Kick and Explosion (Victory Road). Gold, Silver and Crystal's: Endure (Burned
+Tower B1F), Snore (Dark Cave), Rest (Ice Path B2F), Detect (Lake of Rage), Defense
+Curl (Mt. Mortar 2F), Steel Wing (Rock Tunnel 1F), Solar Beam (Route 27), Rollout
+(Route 35), Swift (Union Cave B1F) and Earthquake (Victory Road 3F). Each is on
+open floor you can reach, blocking no way through, ladder or door, no boulder's
+path and no spinner's or ice's slide. And a Metal Coat lies in Rock Tunnel (B1F).
+Johto's own item balls give HeartGold's TM by its move (its TM82 is Sleep Talk,
+this game's TM87).
 
 ## Generation 7
 
@@ -2526,6 +2545,7 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   Levels go up on a curve: 20 + L²/20 XP from level L to the next (20 at
   first, 40 at level 20, 145 at 50, 510 at 99; 18,365 XP in all for level 100). Only common treasures (Heart Scales and shards) turn up
   at first; rarer ones unlock along the way: Hard Stones and Everstones at 5,
+  Metal Coats at 25,
   Revives, Star Pieces and Oval Stones at 10, the vitamins (HP Up, Protein,
   Iron, Calcium, Zinc, Carbos) at 15, the evolution stones at 20,
   every fossil at 30, some held items at 38 and 51, Bottle Caps at 40, Max

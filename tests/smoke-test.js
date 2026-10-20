@@ -764,6 +764,21 @@ for (const share of [false, true]) {
     assert(["tm114", "tm165"].every((t) => Bag.sprite(t)), "TM sprites");
     const learns = (sp, mv) => Party.canLearnMachine(Party.create(sp, 30), mv);
     assert(learns("Squirtle", "Bubble Beam") && learns("Gengar", "Nightmare") && learns("Pidgeot", "Pluck") && learns("Lucario", "Drain Punch") && !learns("Charmander", "Bubble Beam"));
+    // Mints 25 BP; out of the elevator past the counter; a Metal Coat to dig
+    // and in Rock Tunnel; the older games' TM balls; Johto's balls by move.
+    assert(/walk_down", "walk_down", "walk_down"\] \}\]\);\n    towerCounterOpen = false;/.test(gJs0), "out past the counter");
+    assert.deepStrictEqual(Mining.TREASURES.find((t) => t[0] === "metal-coat"), ["metal-coat", 3, ["xx", "xx", "xx"], 25]);
+    const oldBalls = gJs0.slice(gJs0.indexOf("const OLD_GAME_BALLS = ["), gJs0.indexOf("].map((b, i) => Object.assign({ id: 1100"));
+    const ob = [...oldBalls.matchAll(/\{ map: "(\w+)", x: (\d+), y: (\d+), item: "([\w-]+)" \}/g)].map((m) => ({ map: m[1], x: +m[2], y: +m[3], item: m[4] }));
+    assert.strictEqual(ob.length, 33, "32 TMs and a Metal Coat");
+    assert(ob.some((b) => b.map === "RockTunnel_B1F" && b.item === "metal-coat") && ob.some((b) => b.map === "MtMoon_1F" && Bag.machineMove(b.item) === "Water Gun"));
+    for (const b of ob) {
+      const blk = World.blockAt(b.map, b.x, b.y), m = WORLD_MAPS[b.map];
+      assert(blk.map && !blk.collision && !World.warpAt(b.map, b.x, b.y) && !m.people.some((p) => p.x === b.x && p.y === b.y), "an open spot: " + b.map + " " + b.item);
+    }
+    const jb = Object.values(WORLD_MAPS).filter((m) => m.region === "johto").flatMap((m) => m.people.filter((p) => /_TM(\d+)$/.test(p.flag || "") && p.item));
+    const hgss = { 82: "Sleep Talk", 87: "Swagger", 72: "Avalanche", 60: "Drain Punch", 88: "Pluck" };
+    for (const p of jb) { const n = +/_TM(\d+)$/.exec(p.flag)[1]; if (hgss[n]) assert.strictEqual(Bag.machineMove(p.item), hgss[n], p.flag); }
     // Inviting: A invites, B takes back the last one invited.
     const gJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
     assert(/if \(v < 0\) \{\n\s*if \(!picked\.length\) return \[\];\n\s*cursor = can\.indexOf\(picked\.pop\(\)\);/.test(gJs) && /RaidDens\.joinedText\(allies\.map/.test(gJs), "raid invite keys");
@@ -976,7 +991,7 @@ for (const share of [false, true]) {
     const g = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
     // Trainer Tower's BP shop in place of its Poké Mart, and the Egg move tutor beside the tutor.
     assert(/case "TrainerTower_Lobby_EventScript_MartClerk": await bpShop\(\); return;/.test(g) && /const BP_SHOP = \[\["bottle-cap", 25\], \["gold-bottle-cap", 75\], \["tin-bottle-cap", 10\]\]/.test(g), "the BP shop");
-    assert(/\.concat\(\["hp-up", "protein", "iron", "calcium", "zinc", "carbos"\]\.map\(\(id\) => \[id, 2\]\)\)/.test(g) && /filter\(\(id\) => Bag\.mintNature\(id\)\)\.sort\(\)\.map\(\(id\) => \[id, 50\]\)/.test(g));
+    assert(/\.concat\(\["hp-up", "protein", "iron", "calcium", "zinc", "carbos"\]\.map\(\(id\) => \[id, 2\]\)\)/.test(g) && /filter\(\(id\) => Bag\.mintNature\(id\)\)\.sort\(\)\.map\(\(id\) => \[id, 25\]\)/.test(g));
     assert(/case "TrainerTower_Lobby_EventScript_BPEggTutor": await bpEggTutor\(\); return;/.test(g) && /const bpEggTutor = \(\) => bpTeacher\(bpEggMoves,/.test(g), "the Egg move tutor");
   }
   assert(/findIndex\(\(e\) => e && e\.id === opts\.select\)/.test(fs.readFileSync(path.join(root, "ui/bag-screen.js"), "utf8")), "the Bag's select");
@@ -5714,7 +5729,8 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
   assert(/const views = now\.map\(\(r, k\) => battleSummaryView\(r, mons\[k\]\)\)/.test(gameJs));
   assert(/if \(\(mon\.mega \|\| mon\.formeChanged\) && DEX\[mon\.species\]\)/.test(gameJs));
   // Mega Stones.
-  const balls = [...gameJs.matchAll(/\{ map: "(\w+)", x: (\d+), y: (\d+), item: "([\w-]+)"/g)].map((m) => ({ map: m[1], x: +m[2], y: +m[3], item: m[4] }));
+  const balls = [...gameJs.matchAll(/\{ map: "(\w+)", x: (\d+), y: (\d+), item: "([\w-]+)"/g)].map((m) => ({ map: m[1], x: +m[2], y: +m[3], item: m[4] }))
+    .filter((b) => ITEMS[b.item] && ITEMS[b.item].category === "mega-stones");
   const gifts = [...gameJs.matchAll(/megaStoneGift\("([\w-]+)"/g)].map((m) => m[1]);
   assert.deepStrictEqual(gifts.sort(), ["alakazite", "kangaskhanite", "pidgeotite"]);
   const all = new Set(balls.map((b) => b.item).concat(gifts));

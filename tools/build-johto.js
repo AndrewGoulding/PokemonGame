@@ -604,7 +604,9 @@ function trainer(id) {
 // (std_itemball_<map>_<item>, std_hiddenitem_...: the item is the longest ending that's an item.)
 function itemFromScript(s, prefix) {
   const parts = String(s).replace(prefix, "").split("_");
-  for (let k = 0; k < parts.length; k++) { const id = item(parts.slice(k).join("_")); if (id) return id; }
+  // (Upper case, as HGSS's constants are: "std_itemball_tm82" is ITEM_TM82, HGSS's TM82
+  // Sleep Talk, this game's machine for it, not this game's TM82.)
+  for (let k = 0; k < parts.length; k++) { const id = item(parts.slice(k).join("_").toUpperCase()); if (id) return id; }
   return null;
 }
 // What HGSS's own Day-Care Man says, outside his house on Route 34.

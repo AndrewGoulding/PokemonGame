@@ -5106,6 +5106,54 @@
     movement: "face_down", text: null, sprite: "item_ball", width: 16, height: 16, frames: 1, inanimate: true }, b));
   for (const b of MEGA_STONE_BALLS) ITEM_BALLS.add(b.script);
   const megaStoneBalls = (map) => MEGA_STONE_BALLS.filter((b) => b.map === map && (!b.when || b.when(player.flags)));
+  // ---------- Item balls of the older games (this game's own) ----------
+  //
+  // Every TM lying about as an item ball in Red, Blue and Yellow, or in Gold,
+  // Silver and Crystal, is one here too, where those games had it: beside the
+  // ball FireRed or HeartGold put in its place (FireRed's Mt. Moon Bullet Seed
+  // where Water Gun was), unless that map already has a ball of the same TM.
+  // Each spot is open floor you can reach and face, blocking no way through,
+  // no ladder or door, no boulder's path and no spinner's or ice's slide.
+  // And a Metal Coat in Rock Tunnel. Each has its own flag (flags["itemBall:<map>:<item>"]).
+  const OLD_GAME_BALLS = [
+    // Red, Blue and Yellow's:
+    { map: "MtMoon_1F", x: 11, y: 34, item: "tm123" },   // (Water Gun)
+    { map: "MtMoon_B2F", x: 34, y: 5, item: "tm114" },   // (Mega Punch)
+    { map: "PowerPlant", x: 41, y: 22, item: "tm33" },   // (Reflect)
+    { map: "RocketHideout_B2F", x: 5, y: 8, item: "tm118" },   // (Horn Drill)
+    { map: "RocketHideout_B3F", x: 20, y: 14, item: "tm121" },   // (Double-Edge)
+    { map: "RocketHideout_B4F", x: 2, y: 6, item: "tm115" },   // (Razor Wind)
+    { map: "Route12", x: 18, y: 35, item: "tm124" },   // (Pay Day)
+    { map: "Route15", x: 20, y: 5, item: "tm128" },   // (Rage)
+    { map: "Route24", x: 11, y: 3, item: "tm72" },   // (Thunder Wave)
+    { map: "Route25", x: 27, y: 2, item: "tm127" },   // (Seismic Toss)
+    { map: "Route4", x: 67, y: 4, item: "tm116" },   // (Whirlwind)
+    { map: "Route9", x: 12, y: 16, item: "tm132" },   // (Teleport)
+    { map: "SSAnne_1F_Room2", x: 5, y: 6, item: "tm119" },   // (Body Slam)
+    { map: "SafariZone_East", x: 30, y: 18, item: "tm137" },   // (Egg Bomb)
+    { map: "SafariZone_North", x: 27, y: 9, item: "tm139" },   // (Skull Bash)
+    { map: "SilphCo_10F", x: 2, y: 13, item: "tm26" },   // (Earthquake)
+    { map: "SilphCo_5F", x: 0, y: 18, item: "tm120" },   // (Take Down)
+    { map: "SilphCo_7F", x: 30, y: 10, item: "tm74" },   // (Swords Dance)
+    { map: "VictoryRoad_1F", x: 17, y: 1, item: "tm141" },   // (Sky Attack)
+    { map: "VictoryRoad_2F", x: 41, y: 9, item: "tm125" },   // (Submission)
+    { map: "VictoryRoad_2F", x: 2, y: 18, item: "tm117" },   // (Mega Kick)
+    { map: "VictoryRoad_3F", x: 12, y: 15, item: "tm64" },   // (Explosion)
+    // Gold, Silver and Crystal's:
+    { map: "BurnedTower_B1F", x: 9, y: 6, item: "tm152" },   // (Endure)
+    { map: "DarkCave_Route45Side", x: 13, y: 49, item: "tm150" },   // (Snore)
+    { map: "IcePath_B2F", x: 57, y: 10, item: "tm44" },   // (Rest)
+    { map: "LakeOfRage", x: 25, y: 2, item: "tm158" },   // (Detect)
+    { map: "MtMortar_2F", x: 29, y: 33, item: "tm156" },   // (Defense Curl)
+    { map: "RockTunnel_1F", x: 16, y: 29, item: "tm51" },   // (Steel Wing)
+    { map: "Route27", x: 88, y: 23, item: "tm22" },   // (Solar Beam)
+    { map: "Route35", x: 28, y: 60, item: "tm147" },   // (Rollout)
+    { map: "UnionCave_B1F", x: 12, y: 42, item: "tm138" },   // (Swift)
+    { map: "VictoryRoad_3F", x: 38, y: 9, item: "tm26" },   // (Earthquake)
+    { map: "RockTunnel_B1F", x: 24, y: 19, item: "metal-coat" },   // (Metal Coat)
+  ].map((b, i) => Object.assign({ id: 1100 + i, script: "Game_EventScript_ItemBall_" + b.map + "_" + b.item, flag: "itemBall:" + b.map + ":" + b.item,
+    movement: "face_down", text: null, sprite: "item_ball", width: 16, height: 16, frames: 1, inanimate: true }, b));
+  for (const b of OLD_GAME_BALLS) ITEM_BALLS.add(b.script);
   // A Mega Stone handed over: `lines` first, then "… received …!" with the jingle; once.
   async function megaStoneGift(item, lines, from) {
     const f = player.flags;
@@ -5118,7 +5166,7 @@
   }
 
   function extraPeople(map) {
-    const out = megaStoneBalls(map);
+    const out = megaStoneBalls(map).concat(OLD_GAME_BALLS.filter((b) => b.map === map));
     // The Tradeback Guy, upstairs in every Pokémon Center.
     if (/_PokemonCenter_2F$/.test(map)) {
       out.push(Object.assign({ id: 901, localId: "LOCALID_TRADEBACK_GUY", script: "Game_EventScript_TradebackGuy", x: 12, y: 5,
@@ -10341,7 +10389,7 @@
   // The lobby's shop takes BP instead of money (this game's own): Bottle Caps
   // (Gold, and Tin), every mint and the six vitamins.
   const BP_SHOP = [["bottle-cap", 25], ["gold-bottle-cap", 75], ["tin-bottle-cap", 10]]
-    .concat(Object.keys(window.ITEMS).filter((id) => Bag.mintNature(id)).sort().map((id) => [id, 50]))
+    .concat(Object.keys(window.ITEMS).filter((id) => Bag.mintNature(id)).sort().map((id) => [id, 25]))
     .concat(["hp-up", "protein", "iron", "calcium", "zinc", "carbos"].map((id) => [id, 2]));
   async function bpShop() {
     const f = player.flags, at = Overworld.position(), [dx, dy] = (World.DIRS || {})[at.facing] || [1, 0];
@@ -10388,7 +10436,9 @@
     await Overworld.act([{ who: "player", moves: ["walk_in_place_faster_down", "delay_16", "walk_down", "walk_right", "walk_right"] }]);
     towerCounterOpen = true;
     await Overworld.teleport({ map: "TrainerTower_Lobby", x: 17, y: 8, facing: "down" });
-    await Overworld.act([{ who: "player", moves: ["walk_down", "walk_down"] }]);
+    // (Out past the counter: FireRed's two steps leave you on its flap, (17, 10),
+    // as it shuts; a third takes you clear of it.)
+    await Overworld.act([{ who: "player", moves: ["walk_down", "walk_down", "walk_down"] }]);
     towerCounterOpen = false;
     applyPatches("TrainerTower_Lobby");
     sfx("se_click");
