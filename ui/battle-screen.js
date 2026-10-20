@@ -777,6 +777,7 @@
     if (!data || !sceneOn()) return;
     const foeSide = posAt(otherSide(sideOf(side)), slotOf(side));
     const aims = targets && targets.length ? targets : [battle.doubles ? foeSide : (side === "p1" ? "p2" : "p1")];
+    if (await expansionAnim(side, name, data, aims)) return;
     const user = el.sides[side].sprite;
     const color = TYPE_COLOR[data.type] || "#fff";
     const self = data.cat === "Status" && /^(self|allySide|allies|adjacentAllyOrSelf|all)$/.test(data.target);
@@ -817,6 +818,46 @@
       }
       fx.remove();
     }));
+  }
+  // The move's own animation, pokeemerald-expansion's (ui/battle-anim.js:
+  // its script and C, run as the GBA runs them over the field); false if
+  // there's none to play (the one above, then).
+  function expansionAnim(side, name, data, aims) {
+    const BA = window.BattleAnim;
+    if (!BA || !BA.has(name)) return Promise.resolve(false);
+    const M = window.SPRITE_METRICS || {};
+    const mons = POSITIONS.map((p) => {
+      const v = view[p];
+      if (!v || !v.species || v.fainted || (!battle.doubles && slotOf(p))) return null;
+      return { name: v.species, form: v.form, hp: v.hp, maxHP: v.maxhp, shiny: v.shiny };
+    });
+    const metrics = POSITIONS.map((p) => {
+      const v = view[p], dex = v && window.DEX && window.DEX[v.species];
+      if (!dex) return null;
+      const key = dex.id + (v.form ? "-" + v.form : ""), back = sideOf(p) === "p1";
+      const of = (t) => (t ? (t[key] != null ? t[key] : t[dex.id]) || 0 : 0);
+      return { top: back ? of(M.backTop) : 0, bottom: of(back ? M.back : M.front) };
+    });
+    const target = aims.find((a) => a !== side) || aims[0];
+    return BA.play({
+      move: name, attacker: POSITIONS.indexOf(side), target: POSITIONS.indexOf(target),
+      doubles: !!battle.doubles, mons, metrics, type: data.type, category: data.cat,
+      turn: data.flags && data.flags.charge ? 1 : 0, power: data.power || 0, damage: 40,
+      field: el.field, before: hbLayer, terrain: [...el.field.querySelectorAll(".terrain")],
+      sprites: POSITIONS.map((p) => el.sides[p].sprite),
+      tint: (b) => { const f = getComputedStyle(el.sides[POSITIONS[b]].sprite).filter; return f && f !== "none" ? f : ""; },
+      sound: (se) => (window.GameAudio && window.GameAudio.se ? window.GameAudio.se(se) : null),
+      cry: (species) => { if (window.GameAudio) window.GameAudio.cry(species); },
+      hideBoxes: (on) => { hbLayer.style.visibility = on ? "hidden" : ""; },
+      picture: (species, form, back) => window.Screen.spriteUrl(species, form, back, false),
+      itemPicture: heldItemPicture(name === "Poltergeist" ? target : side)
+    });
+  }
+  // A Pokémon's held item's picture (for the animations that show it).
+  function heldItemPicture(pos) {
+    const v = view[pos], set = v && v.species ? setOf(sideOf(pos), v.teamIndex) : null;
+    const item = set && set.item;
+    return item && window.Bag && window.Bag.sprite ? window.Bag.sprite(item) : null;
   }
   // Mega Evolution's animation, pokeemerald-expansion's
   // gBattleAnimGeneral_MegaEvolution (tools/build-mega-anim.js), frame for

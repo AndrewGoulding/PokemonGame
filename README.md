@@ -78,10 +78,18 @@ and HP bar (and on yours the HP in numbers and the EXP bar), sliding in as each
 Pokémon comes out; the HP bar moves 1 HP a frame and the EXP bar 1 pixel a
 frame as FireRed's do (at level 100 the EXP bar is empty, here and on the summary), your box bobs while you choose, a box shakes when its
 Pokémon is hit, and its frame flashes when yours levels up.
-Moves animate by kind and type with FireRed's sound effects (its own, for the
-moves FireRed has one for), and so do hits, fainting, stat changes, the balls
-and running (BATTLE SCENE: OFF on the Option screen turns them off); a move
-that misses, fails or is blocked has no animation, as in FireRed. Text is
+Every move has its own animation, pokeemerald-expansion's: its animation
+script and the C behind it (the sprites' callbacks, the visual tasks, and the
+engine they run on: sprites, tasks, palette fades, backgrounds, scanline
+effects), translated to JavaScript and run frame for frame as the GBA runs
+them, with its pictures, palettes and backgrounds and FireRed's sound effects
+(`ui/battle-anim.js`, `tools/build-battle-anims.py`). The Pokémon in them are
+this game's pictures, moved, turned, scaled, recoloured and blended as the
+GBA's sprites would be; the battle background is this game's, shaken and
+recoloured as the GBA's would be, and covered by a move's own background. Hits,
+fainting, stat changes, the balls and running animate too (BATTLE SCENE: OFF
+on the Option screen turns them off); a move that misses, fails or is blocked
+has no animation, as in FireRed. Text is
 written out a letter at a time at your TEXT SPEED (A finishes it), and FireRed's
 ▼ shows when it's waiting for you.
 
@@ -899,6 +907,23 @@ git clone --depth 1 --filter=blob:none --sparse https://github.com/rh-hideout/po
 cd expansion && git sparse-checkout set --no-cone '/graphics/pokemon/**/icon*.png' '/graphics/pokemon/icon_palettes/*' \
   '/src/data/pokemon/species_info/*' '/src/data/graphics/pokemon.h' && cd ..
 node tools/build-party-menu.js pokefirered expansion
+```
+
+`tools/build-battle-anims.py` converts pokeemerald-expansion's battle
+animations: it assembles `data/battle_anim_scripts.s` as the ROM has it
+(through the expansion's preproc and arm-none-eabi-as), translates
+`src/battle_anim*.c` and the engine under them (`sprite.c`, `task.c`,
+`palette.c`, `bg.c`, `scanline_effect.c`, `trig.c`) to JavaScript through
+libclang (`tools/battle_anims/`), and decompresses the pictures, palettes and
+tilemaps they name, into `ui/battle-anim-code.js` and `ui/battle-anim-data.js`.
+It needs clang with Python's libclang, binutils-arm-none-eabi, pyelftools and
+Pillow:
+
+```sh
+git clone --depth 1 --filter=blob:none --sparse https://github.com/rh-hideout/pokeemerald-expansion expansion
+cd expansion && git sparse-checkout add data/ src/ include/ asm/ constants/ graphics/battle_anims/ \
+  graphics/pokemon/ogerpon/ tools/preproc/ && make -C tools/preproc && cd ..
+python3 tools/build-battle-anims.py expansion
 ```
 
 `tools/order-learnsets.js` puts moves learned at the same level in

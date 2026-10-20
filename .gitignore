@@ -1,3 +1,5 @@
 node_modules/
 tests/browser/out/
 .claude/worktrees/
+tools/battle_anims/__pycache__/
+tools/battle_anims/stubs/

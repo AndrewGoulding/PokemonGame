@@ -6178,3 +6178,25 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   const scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8"), gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
   assert(/const contestWeekday = /.test(scriptJs) && /s\.contestRound = \(s\.contestRound \|\| 0\) \+ 1; johto\.setFlag\("FLAG_DAILY_DID_BUG_CONTEST", false\)/.test(gameJs));
 }
+
+// Battle animations (ui/battle-anim*.js): every move's, pokeemerald-expansion's script and C,
+// runs to its end without a screen: yours at the foe, and (every third move) the foe's at
+// you in a double battle.
+{
+  for (const f of ["ui/battle-anim-data.js", "ui/battle-anim-code.js", "ui/battle-anim.js"]) vm.runInThisContext(fs.readFileSync(path.join(root, f), "utf8"), { filename: f });
+  const BA = window.BattleAnim, names = Object.keys(window.MOVES);
+  const missing = names.filter((n) => !BA.has(n));
+  assert.deepStrictEqual(missing, [], "every move has its animation");
+  const boxes = [{ cx: 70, cy: 62, size: 96, top: 20, bottom: 10 }, { cx: 176, cy: 30, size: 72, top: 4, bottom: 10 },
+    { cx: 100, cy: 70, size: 96, top: 20, bottom: 10 }, { cx: 150, cy: 22, size: 72, top: 4, bottom: 10 }];
+  const mons = [{ name: "Pikachu", hp: 30, maxHP: 50 }, { name: "Charizard", hp: 50, maxHP: 50 }, { name: "Bulbasaur", hp: 9, maxHP: 9 }, { name: "Gengar", hp: 9, maxHP: 9 }];
+  let runs = 0, frames = 0;
+  for (const [attacker, target, doubles, every] of [[0, 1, false, 1], [3, 0, true, 3]]) {
+    for (const move of names.filter((n, i) => i % every === 0)) {
+      const r = BA.run({ move, attacker, target, doubles, boxes, mons, seed: 7, maxFrames: 3000 });
+      assert(!r.error && r.finished, move + " (" + attacker + " at " + target + "): " + (r.error ? r.error.stack : "didn't end"));
+      runs++; frames += r.frames;
+    }
+  }
+  console.log("ok: battle animations, " + names.length + " moves' scripts ran to their end " + runs + " times (" + frames + " frames)");
+}
