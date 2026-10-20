@@ -4400,7 +4400,7 @@ for (let seed = 1; seed <= GEN8; seed++) {
     assert(/Overworld\.addObject\(R, \{ x: 11, y: 6, facing: "down" \}, lookOf\("red"\)\)/.test(gameSrc) && /HallOfFame\.credits\(\$\("#overlay"\), \{ skippable: true,/.test(gameSrc), "Red at the Plateau; Start skips the credits");
     assert(/c\.direction === "down" \? \[c\.map, at, m\.height \* 16\]/.test(fs.readFileSync(path.join(__dirname, "../ui/hall-of-fame.js"), "utf8")), "the credits' joined maps");
     assert(WORLD_MAPS.Route10.connections.some((c) => c.map === "LavenderTown" && c.direction === "down"));
-    // Icefall Cave: Lorelei beside you against two Grunts (her back picture made from May's).
+    // Icefall Cave: Lorelei beside you against two Grunts (her back picture pixelled from her front one, Leaf's pose).
     assert(/partner: \{ name: "Lorelei", team: ICEFALL_LORELEI[^\n]*pic: "lorelei" \}/.test(gameSrc) && /foe2: \{ name: data\.className \+ " " \+ data\.name, team: ICEFALL_GRUNT2/.test(gameSrc), "Lorelei's tag battle");
     assert(fs.existsSync(path.join(__dirname, "../assets/sprites/trainers/back/lorelei.png")));
     for (const sp of ["Dewgong", "Jynx", "Lapras", "Sneasel", "Koffing", "Golbat"]) assert(DEX[sp], sp);

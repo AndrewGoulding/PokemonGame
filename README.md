@@ -604,8 +604,8 @@ waterfall at the back, Lorelei, home from the League, is facing down Team
 Rocket poaching the cave's Pokémon; she asks for your help and battles two of
 them beside you, a tag battle (this game's own: you choose three of yours; her
 Dewgong, Jynx and Lapras, about level 40, against FireRed's Grunt and another
-with Sneasel, Koffing and Golbat; her back picture is May's recoloured,
-`tools/build-lorelei-back.py`), then her Lapras gets the truth out of him (the Pokémon are in the Rocket Warehouse
+with Sneasel, Koffing and Golbat; her back picture is pixelled from her front
+one over Leaf's pose, `tools/build-lorelei-back.py`), then her Lapras gets the truth out of him (the Pokémon are in the Rocket Warehouse
 on Five Island) and they run; she's at home on Four Island after that.
 Five Island: its houses and Pokémon Center; Five Isle Meadow, Team Rocket's
 grunts, Cut trees and the Rocket Warehouse's door, which takes two passwords:
