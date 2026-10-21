@@ -155,6 +155,9 @@ function scriptText(mapName, script, depth) {
 const machineByMove = {};
 for (const [id, it] of Object.entries(window.ITEMS)) { const m = it.category === "all-machines" && /^Teaches (.+?) to a compatible/.exec(it.effect || ""); if (m) machineByMove[toID(m[1])] = id; }
 const itemId = (c) => {
+  if (/^ITEM_(MACH|ACRO)_BIKE$/.test(String(c))) return "bicycle";
+  if (c === "ITEM_X_SPECIAL") return "x-sp-atk";
+  if (c === "ITEM_X_DEFEND") return "x-defense";
   const mv = /^ITEM_(?:TM|HM)(?:\d+)?_(\w+)$/.exec(String(c));
   if (mv) return machineByMove[toID(mv[1])] || null;
   const k = String(c).replace(/^ITEM_/, "").toLowerCase().replace(/_/g, "-");

@@ -245,5 +245,27 @@ window.ITEM_DESCRIPTIONS = {
   "x-speed": "Raises the Speed stat of Pokémon\nin battle. Wears off if the Pokémon\nis withdrawn.",
   "yellow-flute": "A yellow glass flute that snaps one\nPokémon out of confusion.",
   "yellow-shard": "A small yellow shard.\nIt appears to be from some sort of\na tool made long ago.",
-  "zinc": "A nutritious drink for Pokémon.\nIt raises the base Sp. Def stat\nof one Pokémon."
+  "zinc": "A nutritious drink for Pokémon.\nIt raises the base Sp. Def stat\nof one Pokémon.",
+
+  // Emerald's items (tools/build-hoenn-items.js).
+  "orange-mail": "A Zigzagoon-print\nMail to be held by\na Pokémon.",
+  "harbor-mail": "A Wingull-print\nMail to be held by\na Pokémon.",
+  "glitter-mail": "A Pikachu-print\nMail to be held by\na Pokémon.",
+  "mech-mail": "A Magnemite-print\nMail to be held by\na Pokémon.",
+  "wood-mail": "A Slakoth-print\nMail to be held by\na Pokémon.",
+  "wave-mail": "A Wailmer-print\nMail to be held by\na Pokémon.",
+  "bead-mail": "Mail featuring a\nsketch of the\nholding Pokémon.",
+  "shadow-mail": "A Duskull-print\nMail to be held by\na Pokémon.",
+  "tropic-mail": "A Bellossom-print\nMail to be held by\na Pokémon.",
+  "dream-mail": "Mail featuring a\nsketch of the\nholding Pokémon.",
+  "fab-mail": "A gorgeous-print\nMail to be held\nby a Pokémon.",
+  "retro-mail": "Mail featuring the\ndrawings of three\nPokémon.",
+  "devon-goods": "A package that\ncontains Devon's\nmachine parts.",
+  "soot-sack": "A sack used to\ngather and hold\nvolcanic ash.",
+  "basement-key": "The key for New\nMauville beneath\nMauville City.",
+  "letter": "A letter to Steven\nfrom the President\nof the Devon Corp.",
+  "scanner": "A device found\ninside the\nAbandoned Ship.",
+  "storage-key": "The key to the\nstorage inside the\nAbandoned Ship.",
+  "magma-emblem": "A medal-like item in\nthe same shape as\nTeam Magma's mark.",
+  // (End of Emerald's items.)
 };

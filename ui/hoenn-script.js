@@ -59,8 +59,11 @@
     if (!machines) { machines = {}; for (const [id, it] of Object.entries(window.ITEMS)) { const m = it.category === "all-machines" && /^Teaches (.+?) to a compatible/.exec(it.effect || ""); if (m) machines[toID(m[1])] = id; } }
     return machines[toID(moveName)] || null;
   }
+  // (Emerald's names for what this game calls otherwise: both its bikes are the Bicycle here.)
+  const ITEM_ALIASES = { ITEM_MACH_BIKE: "bicycle", ITEM_ACRO_BIKE: "bicycle", ITEM_X_SPECIAL: "x-sp-atk", ITEM_X_DEFEND: "x-defense" };
   function item(x) {
     if (typeof x !== "string") return x;
+    if (ITEM_ALIASES[x]) return ITEM_ALIASES[x];
     { const m = /^ITEM_(?:TM|HM)(?:\d+)?_(\w+)$/.exec(x); if (m) return machine(m[1]); }
     const k = x.replace(/^ITEM_/, "").toLowerCase().replace(/_/g, "-");
     if (window.ITEMS[k]) return k;

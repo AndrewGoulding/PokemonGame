@@ -43,6 +43,9 @@
     "max-elixir": 4500, "rare-candy": 10000,
     // (Lavaridge's Herb Shop.)
     "energy-powder": 500, "energy-root": 800, "heal-powder": 450, "revival-herb": 2800, "fluffy-tail": 1000,
+    // (Hoenn's Marts' mails.)
+    "orange-mail": 50, "harbor-mail": 50, "glitter-mail": 50, "mech-mail": 50, "wood-mail": 50, "wave-mail": 50, "bead-mail": 50, "shadow-mail": 50,
+    "tropic-mail": 50, "dream-mail": 50, "fab-mail": 50, "retro-mail": 50,
     "hp-up": 9800, "protein": 9800, "iron": 9800, "calcium": 9800, "zinc": 9800, "carbos": 9800,
     // (This game's own: Wings, from Celadon's vitamin counter, and Exp. Candies, from Tera Raids.)
     "health-wing": 300, "muscle-wing": 300, "resist-wing": 300, "genius-wing": 300, "clever-wing": 300, "swift-wing": 300,
