@@ -1872,20 +1872,36 @@ sign is the Hall of Trophies.
 Not built from Pokémon Stadium: its rental Pokémon, the Kids Club's mini-games and the
 Free Battle.
 
-## Hoenn (in progress)
+## Hoenn
 
-Hoenn is imported from pret/pokeemerald with Emerald's own tilesets, by `tools/build-hoenn.js`
-(`node tools/build-hoenn.js <pokeemerald> [--list] [--only=A,B --out=dir]`). It reads each map's
-layout, metatiles, objects, warps, trainers, marts and wild tables, draws the pictures with
-`tools/lib/emerald-tiles.js`, writes the NPC sprites (`assets/world/sprites/em_*.png`) and trainer
-pictures (`assets/sprites/trainers/front/em_*.png`), and puts the maps in `data/emerald-maps.js`
-between the `Hoenn` markers (the other generators keep that block).
+Hoenn is imported from pret/pokeemerald with Emerald's own tilesets and scripts. Generators, all
+taking the pokeemerald checkout as their argument and all safe to run again:
 
-First slice: Littleroot Town, Route 101, Oldale Town, Route 102, Route 103, Petalburg City and
-their buildings (Pokémon Centers, Marts, houses, Birch's lab). Maps have `region: "hoenn"`
-(level cap and badges: `REGION_BADGES.hoenn`), Centers heal, clerks open the Mart, trainers battle.
-Visit it from the debug menu ("Visit Hoenn"). Not yet: the story scripts (truck, Birch, Wally,
-rival), step triggers, Emerald's music, the Hoenn Town Map and Fly.
+- `tools/build-hoenn.js` (`node tools/build-hoenn.js <pokeemerald> [--list] [--only=A,B --out=dir]`)
+  reads each map's layout, metatiles, objects, warps, triggers, trainers, marts and wild tables,
+  draws the pictures (`tools/lib/emerald-tiles.js`), writes the NPC and trainer sprites
+  (`em_*.png`), the metatile overlay sheets for maps whose scenery changes (`<Map>-mt.png`), the
+  compiled scripts (`window.HOENN_SCRIPTS`) and the Town Map, and puts it all in
+  `data/emerald-maps.js` between the `Hoenn` markers.
+- `tools/build-hoenn-audio.js` renders Emerald's songs and jingles with the same M4A engine as
+  the rest (`assets/audio/hoenn-music.js`, songs named `em_*`; in Hoenn `mus_x` plays `em_x`).
+- `tools/build-hoenn-items.js` adds Emerald's key items and mails.
+- `tools/lib/hoenn-town-map.js` draws Emerald's Town Map; Fly lands outside each town's Center.
+
+Emerald's event scripts (`tools/lib/emerald-script.js`) are compiled to JSON and run by an
+interpreter, `ui/hoenn-script.js`: the moving truck, Birch and the starter bag, Wally, the rivals,
+step triggers and frame tables, flags and vars (saved in `player.flags.hoenn`), movements, shops,
+item balls, trainers, the gym puzzles of Petalburg and Mauville. Pokémon Centers, Marts, Cut,
+Rock Smash, Strength, item balls and trainers on sight keep the game's own handling.
+
+Get there from Vermilion's Seagallop ("Hoenn", once Celio's machine is done). Your first visit
+starts in the truck; later ones land at Slateport's harbour, whose sailor takes you home. Hoenn's
+badges unlock Cut, Flash, Rock Smash, Strength, Surf, Fly, Dive and Waterfall; whiting out sends
+you to the last Center or your bedroom.
+
+Not built: berry trees, Dive's underwater maps, weather, secret bases, contests, the Battle
+Frontier and Safari Zone's rules, tents and decorations, rotating-tile puzzles, move tutors,
+trades, the Hall of Fame and the legendary scenes.
 
 ## Faraway Island
 
