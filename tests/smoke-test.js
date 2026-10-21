@@ -1273,7 +1273,7 @@ for (const share of [false, true]) {
   // (And in Johto: its caves, Ilex Forest and its towers and dungeons, as HGSS's.)
   for (const m of ["UnionCave_B2F", "IlexForest", "SproutTower_3F", "BellTower_5F", "TeamRocketHideout_B3F", "IcePath_B1F"]) assert(WORLD_MAPS[m].allowEscaping, m);
   for (const m of ["VioletCity", "Route36", "GoldenrodCity_DepartmentStore_1F", "EcruteakCity_Gym"]) assert(!WORLD_MAPS[m].allowEscaping, m);
-  assert.deepStrictEqual(Object.keys(WORLD_MAPS).filter((m) => WORLD_MAPS[m].allowEscaping && WORLD_MAPS[m].region !== "johto"), ["ViridianForest", "MtMoon_1F", "MtMoon_B1F", "MtMoon_B2F",
+  assert.deepStrictEqual(Object.keys(WORLD_MAPS).filter((m) => WORLD_MAPS[m].allowEscaping && !["johto", "hoenn"].includes(WORLD_MAPS[m].region)), ["ViridianForest", "MtMoon_1F", "MtMoon_B1F", "MtMoon_B2F",
     "DiglettsCave_NorthEntrance", "DiglettsCave_B1F", "DiglettsCave_SouthEntrance", "RockTunnel_1F", "RockTunnel_B1F",
     "PokemonTower_1F", "PokemonTower_2F", "PokemonTower_3F", "PokemonTower_4F", "PokemonTower_5F", "PokemonTower_6F", "PokemonTower_7F",
     "RocketHideout_B1F", "RocketHideout_B2F", "RocketHideout_B3F", "RocketHideout_B4F",
@@ -6400,7 +6400,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     const n = m.width * m.height;
     assert([m.collision, m.elevation, m.behavior, m.encounter].every((a) => a.length === n), name + ": layers match the size");
     assert(fs.existsSync(path.join(root, "assets/world/maps/" + name + ".png")), name + ": picture");
-    for (const w of m.warps) assert(WORLD_MAPS[w.map], name + ": warp to " + w.map);
+    for (const w of m.warps) assert(w.map ? WORLD_MAPS[w.map] : w.mapConst, name + ": warp to " + (w.map || w.mapConst) + " (a map in the game, or unbuilt)");
     for (const q of m.people) if (q.sprite && /^em_/.test(q.sprite)) assert(fs.existsSync(path.join(root, "assets/world/sprites/" + q.sprite + ".png")), name + ": sprite " + q.sprite);
   }
   assert(hoenn.some(([n]) => /_PokemonCenter_1F$/.test(n) && WORLD_MAPS[n].pokemonCenter), "Hoenn's Pokémon Centers heal");

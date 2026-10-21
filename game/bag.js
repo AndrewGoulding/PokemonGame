@@ -41,6 +41,8 @@
     "burn-heal": 250, "ice-heal": 250, "full-heal": 600, "fresh-water": 200, "soda-pop": 300,
     "lemonade": 400, "moomoo-milk": 500, "ether": 1200, "max-ether": 2000, "elixir": 3000,
     "max-elixir": 4500, "rare-candy": 10000,
+    // (Lavaridge's Herb Shop.)
+    "energy-powder": 500, "energy-root": 800, "heal-powder": 450, "revival-herb": 2800, "fluffy-tail": 1000,
     "hp-up": 9800, "protein": 9800, "iron": 9800, "calcium": 9800, "zinc": 9800, "carbos": 9800,
     // (This game's own: Wings, from Celadon's vitamin counter, and Exp. Candies, from Tera Raids.)
     "health-wing": 300, "muscle-wing": 300, "resist-wing": 300, "genius-wing": 300, "clever-wing": 300, "swift-wing": 300,

@@ -63,26 +63,34 @@ for (const k of Object.keys(window.DEX)) if (window.DEX[k].id < 10000) dexByID[t
 for (const k of Object.keys(window.MOVES)) moveByID[toID(k)] = k;
 
 // ---------- Which maps ----------
-// The outdoor maps to start with, and every building that leads off them.
-const OUTDOOR = ["LittlerootTown", "Route101", "OldaleTown", "Route102", "Route103", "PetalburgCity"];
-const INDOOR = /^(LittlerootTown|OldaleTown|PetalburgCity)_/;
+// Every map you can walk to from Littleroot Town (by warp or connection),
+// but for the Battle Frontier, the link rooms, the Contest halls, the Safari
+// Zone, Secret Bases and the islands this game has already (Faraway Island,
+// Birth Island, Navel Rock, Southern Island).
+const OUTDOOR = ["InsideOfTruck", "LittlerootTown", "SootopolisCity", "SeafloorCavern_Entrance", "CaveOfOrigin_Entrance", "SealedChamber_OuterRoom", "AquaHideout_1F", "MagmaHideout_1F", "NewMauville_Entrance", "ShoalCave_LowTideEntranceRoom", "ShoalCave_HighTideEntranceRoom", "SSTidalCorridor", "MirageTower_1F"];   // (The rest are reached through the story: Dive, Sootopolis's way in, the hideouts' doors, the tides.)
+const EXCLUDE = /^(BattleFrontier|BattleColosseum|BattlePyramid|BattleTower|SecretBase|TradeCenter|UnionRoom|RecordCorner|TrainerHill|SafariZone|.*Contest|.*Unused|.*Prototype|Dummy|BirthIsland|NavelRock|FarawayIsland|SouthernIsland|Test)/;
 const mapJson = (name) => JSON.parse(fs.readFileSync(P("data/maps", name, "map.json"), "utf8"));
 const byConst = {};
 for (const d of fs.readdirSync(P("data/maps"))) {
   const f = P("data/maps", d, "map.json");
   if (fs.existsSync(f)) byConst[JSON.parse(fs.readFileSync(f, "utf8")).id] = d;
 }
+// (Kanto has Victory Road's floors under these names already.)
+const RENAME = { VictoryRoad_1F: "HoennVictoryRoad_1F", VictoryRoad_B1F: "HoennVictoryRoad_B1F", VictoryRoad_B2F: "HoennVictoryRoad_B2F" };
+const ren = (d) => RENAME[d] || d;
 const MAPS = [];
 {
   const seen = new Set(OUTDOOR), queue = OUTDOOR.slice();
   while (queue.length) {
     const n = queue.shift();
     MAPS.push(n);
-    for (const w of mapJson(n).warp_events) {
-      const d = byConst[w.dest_map];
-      if (d && !seen.has(d) && INDOOR.test(d)) { seen.add(d); queue.push(d); }
+    const m = mapJson(n);
+    for (const dest of m.warp_events.map((w) => w.dest_map).concat((m.connections || []).map((c) => c.map))) {
+      const d = byConst[dest];
+      if (d && !seen.has(d) && !EXCLUDE.test(d)) { seen.add(d); queue.push(d); }
     }
   }
+  MAPS.sort();
 }
 if (process.argv.includes("--list")) { console.log(MAPS.join("\n")); process.exit(0); }
 
@@ -175,7 +183,7 @@ const gfxPointers = {}, gfxInfo = {}, picFiles = {}, palFiles = {}, palTags = {}
       images: (/\.images = (\w+)/.exec(b) || [])[1], inanimate: /\.inanimate = TRUE/.test(b) };
   }
   const tables = fs.readFileSync(P("src/data/object_events/object_event_pic_tables.h"), "utf8");
-  for (const m of tables.matchAll(/static const struct SpriteFrameImage (sPicTable_\w+)\[\] = \{\s*overworld_frame\((gObjectEventPic_\w+)/g)) picFiles[m[1]] = m[2];
+  for (const m of tables.matchAll(/static const struct SpriteFrameImage (sPicTable_\w+)\[\] = \{\s*(?:overworld_frame|obj_frame_tiles)\((gObjectEventPic_\w+)/g)) picFiles[m[1]] = m[2];
   const gfx = fs.readFileSync(P("src/data/object_events/object_event_graphics.h"), "utf8");
   for (const m of gfx.matchAll(/const u32 (gObjectEventPic_\w+)\[\] = INCGFX_U32\("([^"]+)"/g)) picFiles[m[1]] = m[2];
   for (const m of gfx.matchAll(/const u16 (gObjectEventPal_\w+)\[\] = INCGFX_U16\("([^"]+)"/g)) palFiles[m[1]] = m[2];
@@ -186,14 +194,16 @@ const spriteCache = {};
 // -> { sprite, width, height, frames, inanimate } for an OBJ_EVENT_GFX_*, converted to assets/world/sprites/em_*.png.
 function objectSprite(gfx) {
   if (spriteCache[gfx] !== undefined) return spriteCache[gfx];
+  if (gfx === "OBJ_EVENT_GFX_ITEM_BALL") return (spriteCache[gfx] = { sprite: "item_ball", width: 16, height: 16, frames: 1, inanimate: true });
   const pointer = gfxPointers[gfx], info = pointer && gfxInfo[pointer];
-  if (!info) return (spriteCache[gfx] = null);
+  if (!info) { console.log("no picture for " + gfx); return (spriteCache[gfx] = null); }
   const tableName = info.images, picLabel = picFiles[tableName];
   const file = picLabel && (picFiles[picLabel] || null);
   const palFile = palFiles[palTags[info.palette]];
-  if (!file || !palFile || !fs.existsSync(P(file)) || !fs.existsSync(P(palFile))) return (spriteCache[gfx] = null);
+  if (!file || !palFile || !fs.existsSync(P(file)) || !fs.existsSync(P(palFile))) { console.log("no picture for " + gfx); return (spriteCache[gfx] = null); }
   if (gfx === "OBJ_EVENT_GFX_ITEM_BALL") return (spriteCache[gfx] = { sprite: "item_ball", width: 16, height: 16, frames: 1, inanimate: true });
-  const name = "em_" + path.basename(file, ".png");
+  const parent = path.basename(path.dirname(file)), base = path.basename(file, ".png");
+  const name = "em_" + (parent === "people" ? "" : parent + "_") + base;   // (May's walking.png and Brendan's are two pictures)
   const png = readPng(P(file)), pal = readPal(P(palFile));
   const rgba = new Uint8ClampedArray(png.width * png.height * 4);
   for (let i = 0; i < png.px.length; i++) {
@@ -262,8 +272,11 @@ function trainerData(id) {
 function trainerScript(mapName, script) {
   const { scripts } = textsOf(mapName), lines = scripts[script] || [];
   for (const line of lines) {
-    const m = /^trainerbattle_(?:single|double)\s+(\w+),\s*(\w+),\s*(\w+)/.exec(line);
+    const m = /^trainerbattle_(single|double)\s+(\w+),\s*(\w+),\s*(\w+)(?:,\s*(\w+))?(?:,\s*(\w+))?/.exec(line);
     if (!m) continue;
+    // (A trainer with a script to go on to after the battle, a Gym Leader's, is run by ui/hoenn-script.js.)
+    if (m[1] === "single" ? m[5] && m[5] !== "FALSE" && m[5] !== "NO_MUSIC" : m[6] && m[6] !== "FALSE" && m[6] !== "NO_MUSIC") return null;
+    m.splice(1, 1);
     const t = textsOf(mapName).text, data = trainerData(m[1]);
     if (!data) return null;
     const after = ((lines.join("\n").match(/msgbox\s+(\w+PostBattle\w*|\w+After\w*),/) || [])[1]);
@@ -301,14 +314,33 @@ const slotsOf = (enc, kind) => {
 const MUSIC = { MUS_LITTLEROOT: "mus_pallet", MUS_LITTLEROOT_TEST: "mus_pallet", MUS_ROUTE101: "mus_route1", MUS_ROUTE102: "mus_route1", MUS_ROUTE103: "mus_route1", MUS_ROUTE104: "mus_route1",
   MUS_OLDALE: "mus_pewter", MUS_PETALBURG: "mus_celadon", MUS_POKE_CENTER: "mus_poke_center", MUS_GYM: "mus_gym" };
 const musicOf = (m) => MUSIC[m] || (/POKE_CENTER/.test(m) ? "mus_poke_center" : "mus_route1");
-// Emerald's behaviours as this game's (the General tileset's, and the interiors').
+// Emerald's metatile behaviours (include/constants/metatile_behaviors.h) as this
+// game's (FireRed's numbering, game/world.js's MB).
 function behavior(b) {
   switch (b) {
-    case 0x80: case 0x83: case 0x84: case 0x85: return b;   // a counter, the PC, the region map, a television
-    case 0x06: case 0x07: return 0;                          // deep sand, short grass
-    default: return E.frBehavior(b);
+    case 0x02: case 0x03: return b;                                  // tall grass, long grass
+    case 0x10: case 0x12: case 0x13: case 0x15: case 0x16: return b;   // pond, deep water, waterfall, ocean, puddle
+    case 0x11: return 0x11;                                          // an interior's deep water
+    case 0x14: case 0x18: case 0x19: case 0x1a: return 0x12;         // Sootopolis' deep water, water you can't dive from
+    case 0x17: return 0x17;                                          // shallow water
+    case 0x20: return 0x23;                                          // ice
+    case 0x21: return 0x21;                                          // sand
+    case 0x26: case 0x27: return b;                                  // thin ice, cracked ice
+    case 0x38: case 0x39: case 0x3a: case 0x3b: return b;            // ledges
+    case 0x50: case 0x51: case 0x52: case 0x53: return b;            // currents
+    case 0x60: case 0x61: case 0x62: case 0x63: case 0x64: case 0x65: case 0x69: case 0x6a: case 0x6b: return b;   // doors, ladders, arrow warps, escalators
+    case 0x66: case 0x0f: return 0x66;                               // a hole in the floor
+    case 0x67: case 0x68: case 0x0e: case 0x29: return 0x67;         // a warp pad (the hideout's, the Gyms')
+    case 0x6c: return 0x69;                                          // a door under the water
+    case 0x6d: case 0x6e: return 0x65;                               // a way up from the deep
+    case 0x80: case 0x83: return b;                                  // a counter, the PC
+    case 0x85: return 0x84;                                          // the region map
+    case 0x86: return 0x85;                                          // a television
+    default: return 0;
   }
 }
+// Where wild Pokémon are (Emerald's MetatileBehavior_IsLandWildEncounter).
+const WILD_BEHAVIOR = new Set([0x02, 0x03, 0x06, 0x08, 0x0b, 0x0c, 0x21, 0x24]);
 
 // ---------- Build ----------
 const out = {};
@@ -319,12 +351,12 @@ for (const name of MAPS) {
   const bin = fs.readFileSync(P(layout.blockdata_filepath));
   const blocks = Array.from({ length: w * h }, (_, i) => bin.readUInt16LE(i * 2));
   const r = E.render(blocks, w, h, primary, secondary, false);
-  writePng(path.join(mapsDir, name + ".png"), w * 16, h * 16, r.below);
-  const topFile = path.join(mapsDir, name + "-top.png");
+  writePng(path.join(mapsDir, ren(name) + ".png"), w * 16, h * 16, r.below);
+  const topFile = path.join(mapsDir, ren(name) + "-top.png");
   if (r.anyAbove) writePng(topFile, w * 16, h * 16, r.above); else if (fs.existsSync(topFile)) fs.unlinkSync(topFile);
   const bb = fs.readFileSync(P(layout.border_filepath));
-  writePng(path.join(mapsDir, name + "-border.png"), 32, 32, E.render([0, 1, 2, 3].map((i) => bb.readUInt16LE(i * 2)), 2, 2, primary, secondary, true).below);
-  const anim = E.animCells(blocks, w, h, primary, secondary), animFile = path.join(mapsDir, name + "-anim.png");
+  writePng(path.join(mapsDir, ren(name) + "-border.png"), 32, 32, E.render([0, 1, 2, 3].map((i) => bb.readUInt16LE(i * 2)), 2, 2, primary, secondary, true).below);
+  const anim = E.animCells(blocks, w, h, primary, secondary), animFile = path.join(mapsDir, ren(name) + "-anim.png");
   if (anim.pics.length) E.writeAnimSheet(animFile, anim.pics); else if (fs.existsSync(animFile)) fs.unlinkSync(animFile);
 
   const collision = [], elevation = [], behaviors = [], encounter = [];
@@ -333,53 +365,93 @@ for (const name of MAPS) {
     collision.push((b >> 10) & 3 ? 1 : 0);
     elevation.push(b >> 12);
     behaviors.push(beh);
-    encounter.push(mt.behavior === 0x02 || mt.behavior === 0x0b ? 1 : 0);
+    encounter.push(WILD_BEHAVIOR.has(mt.behavior) ? 1 : 0);
   }
+  // (Emerald's warps on plain ground are stepped onto: a doorway, as the engine has them.)
+  for (const wp of map.warp_events) { const i = wp.y * w + wp.x; if (i >= 0 && i < behaviors.length && behaviors[i] === 0) behaviors[i] = 0x60; }
   const mapType = map.map_type.replace(/^MAP_TYPE_/, "").toLowerCase();
   const enc = wild.find((e) => e.map === map.id);
   const people = [];
   map.object_events.forEach((o, i) => {
-    const sp = objectSprite(o.graphics_id);
-    // (Story people, hidden until a flag clears: left out for now; berry trees and the like have no look.)
-    if (!sp || (o.flag !== "0" && !/^FLAG_ITEM_/.test(o.flag))) return;
+    // (Someone whose look a var holds, the rival's or Wally's: shown once a script has set it: gfxVar.)
+    const gfxVar = (/^OBJ_EVENT_GFX_VAR_(\w)$/.exec(o.graphics_id) || [])[1];
+    const sp = gfxVar ? objectSprite("OBJ_EVENT_GFX_BOY_1") : objectSprite(o.graphics_id);
+    // (Berry trees and the like have no look yet.)
+    if (!sp) return;
     const item = ballItem(name, o.script), trainer = /^trainerbattle/m.test((textsOf(name).scripts[o.script] || []).join("\n")) ? trainerScript(name, o.script) : null;
     const stock = martStock(name, o.script);
+    // (An item ball's flag is its own; the others' hide them until the story gets to them: ui/hoenn-script.js.)
     people.push(Object.assign({ id: i, x: o.x, y: o.y, movement: o.movement_type.replace(/^MOVEMENT_TYPE_/, "").toLowerCase(),
       rangeX: o.movement_range_x, rangeY: o.movement_range_y, script: o.script, flag: o.flag !== "0" ? o.flag : null,
       text: scriptText(name, o.script), item: item || undefined, mart: stock,
-      trainer: trainer ? Object.assign({}, trainer, { sight: +o.trainer_sight_or_berry_tree_id || 0 }) : undefined, localId: "LOCALID_" + name.replace(/([a-z])([A-Z0-9])/g, "$1_$2").toUpperCase() + "_" + i }, sp));
+      trainer: trainer ? Object.assign({}, trainer, { sight: +o.trainer_sight_or_berry_tree_id || 0 }) : undefined,
+      gfxVar: gfxVar ? "VAR_OBJ_GFX_ID_" + gfxVar : undefined,
+      localId: typeof o.local_id === "string" && o.local_id !== "0" ? o.local_id : "LOCALID_" + name.replace(/([a-z])([A-Z0-9])/g, "$1_$2").toUpperCase() + "_" + i }, sp));
   });
-  out[name] = {
-    name, title: titleCase(sectionNames[map.region_map_section] || name.replace(/([a-z])([A-Z0-9])/g, "$1 $2")),
+  // (A step that starts a scene: while its var is at its value.)
+  const triggers = (map.coord_events || []).filter((c) => c.type === "trigger" && c.script && c.script !== "NULL")
+    .map((c) => ({ x: c.x, y: c.y, script: "hoenn:" + c.script, var: c.var, value: +c.var_value }));
+  out[ren(name)] = {
+    name: ren(name), scriptName: ren(name) !== name ? name : undefined, title: titleCase(sectionNames[map.region_map_section] || name.replace(/([a-z])([A-Z0-9])/g, "$1 $2")),
     width: w, height: h, type: mapType === "city" ? "city" : mapType, music: musicOf(map.music), region: "hoenn",
     cycling: !!map.allow_cycling || undefined, allowEscaping: map.allow_escaping || undefined,
     showName: !!map.show_map_name, pokemonCenter: /_PokemonCenter_1F$/.test(name) || undefined, top: r.anyAbove, borderWidth: 2, borderHeight: 2,
     anim: anim.cells.length ? { cells: anim.cells, anims: primary.anims.map((a) => a.name) } : undefined,
     collision, elevation, behavior: behaviors, encounter,
-    connections: (map.connections || []).map((c) => ({ map: byConst[c.map] || null, mapConst: c.map, direction: c.direction, offset: c.offset })),
-    warps: map.warp_events.map((wp) => ({ x: wp.x, y: wp.y, map: byConst[wp.dest_map] || null, mapConst: byConst[wp.dest_map] ? undefined : wp.dest_map, warp: +wp.dest_warp_id })),
-    signs: (map.bg_events || []).filter((b) => b.type === "sign").map((b) => ({ x: b.x, y: b.y, script: b.script, text: scriptText(name, b.script) })),
-    triggers: [],
+    connections: (map.connections || []).map((c) => ({ map: byConst[c.map] ? ren(byConst[c.map]) : null, mapConst: c.map, direction: c.direction, offset: c.offset })),
+    warps: map.warp_events.map((wp) => ({ x: wp.x, y: wp.y, map: byConst[wp.dest_map] ? ren(byConst[wp.dest_map]) : null, mapConst: wp.dest_map, warp: +wp.dest_warp_id })),
+    signs: (map.bg_events || []).filter((b) => b.type === "sign").map((b) => ({ x: b.x, y: b.y, script: b.script, text: scriptText(name, b.script),
+      facing: ({ BG_EVENT_PLAYER_FACING_NORTH: "up", BG_EVENT_PLAYER_FACING_SOUTH: "down", BG_EVENT_PLAYER_FACING_EAST: "right", BG_EVENT_PLAYER_FACING_WEST: "left" })[b.player_facing_dir] })),
+    triggers,
     hidden: (map.bg_events || []).filter((b) => b.type === "hidden_item").map((b) => ({ x: b.x, y: b.y, item: itemId(b.item), flag: b.flag, quantity: b.quantity || 1 })).filter((x) => x.item),
     people,
     wild: enc && enc.land_mons ? slotsOf(enc, "land_mons") : null,
     water: slotsOf(enc, "water_mons"), rockSmash: slotsOf(enc, "rock_smash_mons"), fishing: slotsOf(enc, "fishing_mons")
   };
-  console.log(name, w + "x" + h, "people", people.length, "signs", out[name].signs.length, "warps", out[name].warps.length);
+  console.log(name, w + "x" + h, "people", people.length, "signs", out[ren(name)].signs.length, "warps", out[ren(name)].warps.length);
 }
-// (Warps and connections to maps not imported yet are left out, until they are.)
+// (Warps and connections to maps that aren't in the game are "unbuilt", as the engine says.)
 for (const m of Object.values(out)) {
-  m.warps = m.warps.filter((w) => w.map && out[w.map]);
-  m.connections = m.connections.filter((c) => c.map && out[c.map]);
+  for (const x of m.warps.concat(m.connections)) {
+    if (x.map && !out[x.map]) x.map = null;
+    if (x.map) delete x.mapConst;
+  }
 }
 if (ONLY.length && OUT) process.exit(0);
 
+// ---------- The scripts ----------
+const Scripts = require("./lib/emerald-script")(EM);
+const compiled = Scripts.compile(MAPS);
+// (Every trainer a script battles: the rival's, the Gym Leaders', Wally's ...)
+for (const cmds of Object.values(compiled.s)) for (const c of cmds) for (const arg of c.slice(1)) if (typeof arg === "string" && /^TRAINER_[A-Z0-9_]+$/.test(arg) && /^trainerbattle/.test(c[0])) trainerData(arg);
+// What the interpreter needs besides them: where each map constant is, the heal locations, the menus' texts, and the flags a new game sets.
+const mapConsts = {};
+for (const [c, d] of Object.entries(byConst)) if (out[ren(d)]) mapConsts[c] = ren(d);
+const heal = {};
+for (const h of JSON.parse(fs.readFileSync(P("src/data/heal_locations.json"), "utf8")).heal_locations) if (mapConsts[h.map]) heal[h.id] = { map: mapConsts[h.map], x: h.x, y: h.y };
+const strings = {};
+for (const f of ["src/strings.c"]) for (const m of fs.readFileSync(P(f), "utf8").matchAll(/const u8 (gText_\w+)\[\]\s*=\s*_\("((?:[^"\\]|\\.)*)"\)/g)) strings[m[1]] = m[2];
+const multi = {};
+{
+  const menu = fs.readFileSync(P("src/data/script_menu.h"), "utf8"), lists = {};
+  for (const m of menu.matchAll(/static const struct MenuAction (MultichoiceList_\w+)\[\]\s*=\s*\{([\s\S]*?)\n\};/g)) {
+    lists[m[1]] = [...m[2].matchAll(/\{(gText_\w+)/g)].map((x) => Scripts.text(strings[x[1]] || "").join(" ") || x[1]);
+  }
+  for (const m of menu.matchAll(/\[(MULTI_\w+)\]\s*=\s*MULTICHOICE\((\w+)\)/g)) if (lists[m[2]]) multi[m[1]] = lists[m[2]];
+}
+const init = [];
+for (const c of compiled.s.EventScript_ResetAllMapFlags || []) if (/^(setflag|clearflag|setvar)$/.test(c[0])) init.push([c[0], c[1], c[2]]);
+// (The looks a script gives someone: setvar VAR_OBJ_GFX_ID_n, OBJ_EVENT_GFX_X; and a person made by createvobject.)
+const gfx = {};
+for (const cmds of Object.values(compiled.s)) for (const c of cmds) for (const arg of c.slice(1)) if (typeof arg === "string" && /^OBJ_EVENT_GFX_/.test(arg) && !gfx[arg]) { const sp = objectSprite(arg); if (sp) gfx[arg] = sp; }
+const hoennScripts = { gfx, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, consts: mapConsts };
+
 // ---------- The data file ----------
-const START = "// Hoenn (tools/build-hoenn.js, from pret/pokeemerald): its first maps and their trainers.\n", END = "// (End of Hoenn.)\n";
-const js = START + "Object.assign(window.WORLD_MAPS, " + JSON.stringify(out) + ");\nObject.assign(window.WORLD_TRAINERS, " + JSON.stringify(WORLD_TRAINERS) + ");\n" + END;
+const START = "// Hoenn (tools/build-hoenn.js, from pret/pokeemerald): its maps, trainers and scripts.\n", END = "// (End of Hoenn.)\n";
+const js = START + "Object.assign(window.WORLD_MAPS, " + JSON.stringify(out) + ");\nObject.assign(window.WORLD_TRAINERS, " + JSON.stringify(WORLD_TRAINERS) + ");\nwindow.HOENN_SCRIPTS = " + JSON.stringify(hoennScripts) + ";\n" + END;
 const file = path.join(root, "data/emerald-maps.js");
 let text = fs.readFileSync(file, "utf8");
-const a = text.indexOf(START);
-if (a >= 0) text = text.slice(0, a) + text.slice(text.indexOf(END, a) + END.length);
+// (Whichever block this tool wrote before, its start line worded as it was.)
+for (let a = text.indexOf("// Hoenn (tools/build-hoenn.js"); a >= 0; a = text.indexOf("// Hoenn (tools/build-hoenn.js")) text = text.slice(0, a) + text.slice(text.indexOf(END, a) + END.length);
 fs.writeFileSync(file, text + js);
 console.log("wrote " + MAPS.length + " Hoenn maps, " + Object.keys(WORLD_TRAINERS).length + " trainers to data/emerald-maps.js and assets/world/");

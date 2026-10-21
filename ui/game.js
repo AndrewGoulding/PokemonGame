@@ -1973,7 +1973,7 @@
         { label: "Tag battle", value: "tag", className: "action" },
         { label: "Go to the last Pokémon Center", value: "center", className: "action" },
         { label: "Visit Johto (New Bark Town)", value: "johto", className: "action" },
-        { label: "Visit Hoenn (Littleroot Town)", value: "hoenn", className: "action" },
+        { label: "Visit Hoenn (the moving truck)", value: "hoenn", className: "action" },
         { label: Orre.inOrre(player.location) ? "Leave Orre (back as yourself)" : "Visit Orre (Outskirt Stand)", value: "orre", className: "action" },
         back()]);
       if (v === "back") return;
@@ -2017,9 +2017,9 @@
         return "battled";
       } else if (v === "hoenn") {
         // Hoenn isn't joined to anywhere yet (data/emerald-maps.js, tools/build-hoenn.js):
-        // outside the houses in Littleroot Town; the debug menu's Pokémon Center trip brings you back.
+        // in the moving truck, as Emerald begins; the debug menu's Pokémon Center trip brings you back.
         Orre.leave(player);
-        player.location = { map: "LittlerootTown", x: 10, y: 9, facing: "down" };
+        player.location = { map: "InsideOfTruck", x: 2, y: 2, facing: "right" };
         await persist();
         return "battled";
       } else if (v === "repels") {
@@ -2614,6 +2614,7 @@
       dojoRematch(person.trainer.id)));
 
   function visible(person, map) {
+    if (isHoenn(map || player.location.map)) return hoennVisible(person, map || player.location.map);
     const f = player.flags;
     // (A Tera Raid den: glowing while its raid is on.)
     { const den = RaidDens.byScript(person.script); if (den) return RaidDens.active(f, den.id) ? { sprite: "raid_den_active" } : true; }
@@ -2895,6 +2896,13 @@
     // (Mom's deliveryman, and the Gym Leaders' numbers and Dojo rematches: ui/pokegear.js.)
     if (ev.person && await gear.talkPerson(ev.person, ev.map)) return;
     if (ev.person && await berryFarm.talk(ev.person)) return;   // (Celadon's Berry Farm: ui/berry-farm.js)
+    // Hoenn's: Emerald's scripts (ui/hoenn-script.js), and its maps' scenes as you come in.
+    if (/^(enter|arrive):/.test(script) && isHoenn(script.replace(/^\w+:/, ""))) {
+      const due = hoenn.frameScript(script.replace(/^\w+:/, ""), /^enter:/.test(script));
+      if (due) await runHoenn(due, null);
+      return;
+    }
+    { const hs = hoennScriptFor(ev); if (hs) { await runHoenn(hs, ev.person); return; } }
     // Johto's scripts (ui/johto-script.js), and its Apricorn trees.
     if (/^(enter|arrive):/.test(script)) { const due = johto.frameScript(script.replace(/^\w+:/, "")); if (due) { await runJohto(due, null); return; } }
     // (Ilex Forest's Headbutt tutor: ui/johto-field.js.)
@@ -11436,7 +11444,7 @@
     player: () => player, johto: { setFlag: (name, on) => johto.setFlag(name, on) }, music: (song) => music(song),
     sleep: (ms) => new Promise((r) => setTimeout(r, ms)), fadeOut: () => Overworld.fadeToBlack(), warp: johtoWarp
   });
-  const johto = JohtoScript.create({
+  const johtoEnv = {
     player: () => player,
     bugContest,
     pcSpace: () => player.boxes.reduce((n, box) => n + box.filter((r) => !r).length, 0),
@@ -11583,7 +11591,153 @@
     moveWarp: (map, i, x, y) => { const w = ((window.WORLD_MAPS[map || player.location.map] || {}).warps || [])[i]; if (w) Object.assign(w, { x, y }); },
     pcSpace: () => player.boxes.reduce((n, box) => n + box.filter((r) => !r).length, 0),
     itemPocket: (id) => (window.ITEMS[id] ? Bag.pocket(id) : "Items")
+  };
+  const johto = JohtoScript.create(johtoEnv);
+
+  // ---------- Hoenn (Emerald's scripts: ui/hoenn-script.js, tools/build-hoenn.js) ----------
+  //
+  // Its maps are data/emerald-maps.js's, with `region: "hoenn"`; its people say and do what
+  // Emerald's scripts say (window.HOENN_SCRIPTS), with this game's own battles, shops and menus.
+  const isHoenn = (map) => (window.WORLD_MAPS[map] || {}).region === "hoenn";
+  const hoennEnv = Object.assign({}, johtoEnv, {
+    map: () => player.location.map,
+    // (Someone a flag hid, onto the map where it has them, or where the script put them.)
+    show: (id) => {
+      const map = player.location.map, def = (window.WORLD_MAPS[map] || { people: [] }).people.find((p) => p.localId === id);
+      if (!def) return;
+      hoenn.setShown(map, id, true);
+      const at = hoenn.placed(map, id) || { x: def.x, y: def.y }, v = hoennVisible(def, map);
+      Overworld.addObject(id, { x: at.x, y: at.y, facing: (/^face_(\w+)/.exec((v && v.movement) || def.movement || "") || [, "down"])[1] }, v && v !== true ? v : null);
+    },
+    hide: (id) => { hoenn.setShown(player.location.map, id, false); Overworld.removeObject(id); },
+    place: (id, x, y, facing) => {
+      const at = Overworld.personPosition(id);
+      if (at) Overworld.addObject(id, { x, y, facing: facing || at.facing });
+    },
+    personAt: (id) => (id === "player" ? Overworld.position() : Overworld.personPosition(id)),
+    giveItem: async (id, n, verb) => {
+      if (!window.ITEMS[id]) return false;
+      Player.addItem(player, id, n);
+      if (!verb) return true;
+      const name = Bag.name(id);
+      await sayWithJingle(itemJingle(id), "{PLAYER} " + (verb === "found" ? "found " : "obtained ") + (n > 1 ? n + " " + name + (/s$/.test(name) ? "" : "s") : Bag.isKeyItem(id) ? "the " + name : article(name)) + "!");
+    },
+    beaten: (id) => !!player.flags[id],
+    setBeaten: (id, on) => { if (on) player.flags[id] = true; else delete player.flags[id]; },
+    trainerBattle: (id, o) => hoennBattle(id, o),
+    wildBattle: (species, level, item) => johtoBattle("wild", species, level),
+    warp: (mapConst, at) => hoennWarp(mapConst, at),
+    badge: (n, on) => {
+      const b = Player.REGION_BADGES.hoenn[n];
+      if (!b) return;
+      if (on && !player.badges.includes(b)) player.badges.push(b);
+      else if (!on) player.badges = player.badges.filter((x) => x !== b);
+    },
+    hasBadge: (n) => player.badges.includes(Player.REGION_BADGES.hoenn[n]),
+    save: () => persist(),
+    showPicture: (species) => showPicture(species), hidePicture: () => hidePicture(),
+    setMetatile: (map, x, y, id, impassable) => hoennMetatile(map, x, y, id, impassable),
+    setDynamicWarp: (mapConst, x, y) => { const name = window.HOENN_SCRIPTS.consts[mapConst]; if (name) setDynamicWarp({ map: name, x, y }); },
+    respawn: (id) => { const h = window.HOENN_SCRIPTS.heal[id]; if (h) player.flags.hoennRespawn = h; },
+    special: (name, api) => hoennSpecial(name, api)
   });
+  const hoenn = HoennScript.create(hoennEnv);
+  // The label of Emerald's script for what you've come to (a person, a sign, a step), unless this game has its own:
+  // the nurses and clerks, the trainers on their sight lines, item balls, trees and rocks.
+  function hoennScriptFor(ev) {
+    const thing = ev.person || ev.sign || ev.trigger;
+    if (!thing || !isHoenn(ev.map || player.location.map)) return null;
+    const script = thing.script || "";
+    if (SPECIAL.has(script) || /^EventScript_(CutTree|RockSmash|StrengthBoulder)$/.test(script)) return null;
+    if (ev.person && ((ev.person.trainer && ev.person.trainer.id) || ev.person.item)) return null;
+    return hoenn.scriptOf(thing);
+  }
+  // Whether someone's on a Hoenn map now: Emerald's flag for them (FLAG_HIDE_*), where a script put them, how they look.
+  function hoennVisible(person, map) {
+    const f = player.flags, id = person.localId, shown = hoenn.shown(map, id);
+    if (shown === false) return false;
+    if (person.item) { if (f[person.flag]) return false; }
+    else if (person.flag && hoenn.flag(person.flag) && shown !== true) return false;
+    const out = {};
+    if (person.gfxVar) {
+      const look = window.HOENN_SCRIPTS.gfx[hoenn.getVar(person.gfxVar)];
+      if (!look) return false;
+      Object.assign(out, look);
+    }
+    const at = hoenn.placed(map, id), mv = hoenn.movement(map, id);
+    if (at) { out.x = at.x; out.y = at.y; }
+    if (mv) out.movement = mv;
+    return Object.keys(out).length ? out : true;
+  }
+  // A trainer's battle in a script (EM_ ids: data/emerald-maps.js): "won" or "lost".
+  async function hoennBattle(id, o) {
+    if (!canBattle()) return "lost";
+    const data = window.WORLD_TRAINERS[id];
+    if (!data) return "won";
+    const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(id), pic: data.pic },
+      defeatText: (o && o.defeat) || data.defeat || ["…"], trainerId: id, prizeClass: data.className, double: !!((o && o.double) || data.double) && canDouble() });
+    if (outcome !== "lost") { show("world"); await Overworld.resume(); }
+    return outcome;
+  }
+  // warp MAP, x, y (or a warp's number): out of the way you were, into the map.
+  async function hoennWarp(mapConst, at) {
+    const name = window.HOENN_SCRIPTS.consts[mapConst], dest = name && window.WORLD_MAPS[name];
+    if (!dest) { await Overworld.fadeFromBlack(); return; }
+    let x, y;
+    if (at && at.warp != null && at.warp !== 255 && dest.warps[at.warp]) ({ x, y } = dest.warps[at.warp]);
+    else if (at && at.x != null && at.x >= 0) ({ x, y } = at);
+    else ({ x, y } = dest.warps[0] || { x: 0, y: 0 });
+    Screen.say("");
+    await Overworld.teleport({ map: name, x, y, facing: "down" });
+  }
+  // Emerald's setmetatile: not drawn yet, but it opens and closes the way.
+  function hoennMetatile(map, x, y, id, impassable) {
+    const m = window.WORLD_MAPS[map];
+    if (!m) return;
+    const base = baseCollision[map] || (baseCollision[map] = m.collision.slice());
+    void base;
+    m.collision[y * m.width + x] = impassable ? 1 : 0;
+  }
+  // Runs a script; then whatever the map's frame table has due (a scene it set going).
+  async function runHoenn(label, person) {
+    const seen = new Set();
+    for (let n = 0; label && n < 8; n++) {
+      seen.add(label);
+      await hoenn.run(label, { person });
+      person = null;
+      Screen.say("");
+      label = hoenn.frameScript(player.location.map, false);
+      if (label && seen.has(label)) break;
+    }
+    await persist();
+  }
+  // The specials Emerald's scripts call that this game answers itself.
+  async function hoennSpecial(name, api) {
+    switch (name) {
+      case "ChooseStarter": {
+        await api.flush();
+        const picks = ["Treecko", "Torchic", "Mudkip"];
+        for (;;) {
+          const i = await multichoice("Which Pokémon will you choose?", 0, 0, picks);
+          Screen.say("");
+          if (i < 0 || i >= picks.length) continue;
+          showPicture(picks[i]);
+          cry(picks[i]);
+          const yes = await confirm("You'll take " + picks[i] + ", the " + ["Grass", "Fire", "Water"][i] + "-type Pokémon?");
+          hidePicture();
+          if (!yes) continue;
+          api.setVar("VAR_STARTER_MON", i);
+          const record = Party.create(picks[i], 5);
+          Player.receive(player, record);
+          await say("{PLAYER} received " + picks[i] + "!");
+          // (Birch's first battle: a wild Poochyena, Lv. 2.)
+          await johtoBattle("wild", "Poochyena", 2);
+          return true;
+        }
+      }
+    }
+    return false;
+  }
   // HGSS's walking Pokémon (ui/follower.js), and Johto's Headbutt trees and
   // Kurt's Apricorn Balls (ui/johto-field.js).
   const follower = Follower.create({
@@ -11945,6 +12099,11 @@
   function special(script) {
     // Johto: its scripts (a step's, while its var has its value), its
     // Apricorn trees, and its maps' frame tables as you come in.
+    // Hoenn: a step's scene while its var has its value, and its maps' frame tables as you come in.
+    if (/^hoenn:/.test(script || "")) return hoenn.triggerDue(script);
+    // (Anyone or any sign in Hoenn that has an Emerald script, unless this game has its own for it.)
+    if (isHoenn(player.location.map) && hoenn.hasScript(script) && !SPECIAL.has(script) && !TRAINER_SCRIPTS.has(script) && !ITEM_BALLS.has(script)) return true;
+    if (/^(enter|arrive):/.test(script || "") && isHoenn(script.replace(/^\w+:/, ""))) return !!hoenn.frameScript(script.replace(/^\w+:/, ""), /^enter:/.test(script));
     if (/^hgss:/.test(script || "")) return johto.triggerDue(script);
     if (/^hgss_apricorn:/.test(script || "")) return true;
     if (/^BerryFarm_(Caretaker|Tree_\d+)$/.test(script || "")) return true;   // (Celadon's Berry Farm: ui/berry-farm.js)
@@ -12132,7 +12291,7 @@
           // Route 23 puts Victory Road back as it was: barriers up, boulders back (Route23_OnTransition).
           if (m !== tempFlagsMap && m === "Route23") LeagueRoad.reset(player.flags);
           // (Into a Johto map: its OnTransition script, before its people are placed.)
-          if (m !== tempFlagsMap) { magnetTrain.enter(m); johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); }
+          if (m !== tempFlagsMap) { magnetTrain.enter(m); johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); if (isHoenn(m)) hoenn.transition(m); }
           if (m === "SSAqua_1F") ssAquaExit();
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
           if (!gear.radioOn(m)) music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }   // (the Pokégear's radio plays on)
@@ -12199,6 +12358,6 @@
   }
 
 
-  window.Game = { get player() { return player; }, get pokegear() { return gear; } };
+  window.Game = { get player() { return player; }, get pokegear() { return gear; }, get hoenn() { return hoenn; } };
   main();
 })();
