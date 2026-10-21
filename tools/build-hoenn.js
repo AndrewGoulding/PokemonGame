@@ -512,7 +512,28 @@ const trades = {};
     };
   }
 }
-const hoennScripts = { songNames, seNames, gfx, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, trades, consts: mapConsts };
+// The numbers behind the constants the scripts compare and set (include/constants/*.h: #define NAME 5, a few of its expressions).
+const numConsts = {};
+{
+  const defs = {}, dir = P("include/constants");
+  for (const f of fs.readdirSync(dir)) if (/\.h$/.test(f)) for (const m of fs.readFileSync(path.join(dir, f), "utf8").matchAll(/^#define (\w+)[ \t]+(.+?)[ \t]*(?:\/\/.*|\/\*.*)?$/gm)) defs[m[1]] = m[2];
+  const val = (e, depth) => {
+    e = String(e).trim();
+    if (/^-?\d+$/.test(e)) return +e;
+    if (/^0x[0-9a-f]+$/i.test(e)) return parseInt(e, 16);
+    if ((depth || 0) < 6 && /^\w+$/.test(e) && defs[e] != null) return val(defs[e], (depth || 0) + 1);
+    const p = /^\((.*)\)$/.exec(e);
+    if (p) return val(p[1], (depth || 0) + 1);
+    const b = /^(\w+)\s*([+-])\s*(\w+)$/.exec(e);
+    if (b) { const x = val(b[1], (depth || 0) + 1), y = val(b[3], (depth || 0) + 1); return x == null || y == null ? null : b[2] === "+" ? x + y : x - y; }
+    return null;
+  };
+  const STRINGY = /^(VAR_|FLAG_|LOCALID_|MAP_|ITEM_|SPECIES_|MOVE_|TRAINER_|MOVEMENT_|SE_|MUS_|STR_VAR|MSGBOX_|MULTI_|CRY_|OBJ_EVENT_GFX|HEAL_LOCATION|WEATHER_|FLDEFF_|SPECIAL|NPC_|ABILITY_|TYPE_)/;
+  for (const cmds of Object.values(compiled.s)) for (const c of cmds) for (const a of c.slice(1)) {
+    if (typeof a === "string" && /^[A-Z][A-Z0-9_]+$/.test(a) && !STRINGY.test(a) && numConsts[a] == null) { const v = val(a); if (v != null) numConsts[a] = v; }
+  }
+}
+const hoennScripts = { songNames, seNames, gfx, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, trades, numConsts, consts: mapConsts };
 
 // ---------- The Town Map ----------
 // Each map's section (its name on the map, and where it is on it); a map whose section has no square (a cave's)

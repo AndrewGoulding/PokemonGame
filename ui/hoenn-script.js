@@ -110,6 +110,7 @@
         return o[x] == null ? 0 : o[x];
       }
       if (x in CONSTS) return CONSTS[x];
+      { const n = DATA().numConsts; if (n && x in n) return n[x]; }
       return x;
     }
     function setVar(n, val) {
@@ -295,6 +296,7 @@
       for (let guard = 0; !st.done && guard < 200000; guard++) {
         if (st.pc >= st.code.length) { if (!st.stack.length) break; [st.code, st.pc] = st.stack.pop(); continue; }
         const [op, ...a] = st.code[st.pc++];
+        if (window.HOENN_TRACE) window.HOENN_TRACE.push(op + " " + a.join(","));
         if (flow(st, op, a)) continue;
         // (Someone put on a tile: set down there at once, as well as remembered.)
         if (op === "setobjectxy" || op === "setobjectxyperm") {
