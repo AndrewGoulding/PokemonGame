@@ -73,9 +73,17 @@ const OUTDOOR = ["InsideOfTruck", "LittlerootTown", "SootopolisCity", "SeafloorC
   "AbandonedShip_HiddenFloorCorridors", "AbandonedShip_HiddenFloorRooms", "AbandonedShip_Underwater1", "AbandonedShip_Underwater2", "MarineCave_Entrance", "MarineCave_End", "Underwater_Route134", "Underwater_SealedChamber",
   "ArtisanCave_1F", "ArtisanCave_B1F", "ShoalCave_HighTideInnerRoom",
   // (The Secret Bases: your own, in whichever way the spot you made it in has it.)
-  ...["RedCave", "BrownCave", "BlueCave", "YellowCave", "Tree", "Shrub"].flatMap((t) => [1, 2, 3, 4].map((n) => "SecretBase_" + t + n))];   // (The rest are reached through the story: Dive, Sootopolis's way in, the hideouts' doors, the tides.)
-const EXCLUDE = /^(BattleFrontier|BattleColosseum|BattlePyramid|BattleTower|TradeCenter|UnionRoom|RecordCorner|TrainerHill|SafariZone|.*Contest|.*Unused|.*Prototype|Dummy|BirthIsland|NavelRock|FarawayIsland|SouthernIsland|Test)/;
-const mapJson = (name) => JSON.parse(fs.readFileSync(P("data/maps", name, "map.json"), "utf8"));
+  ...["RedCave", "BrownCave", "BlueCave", "YellowCave", "Tree", "Shrub"].flatMap((t) => [1, 2, 3, 4].map((n) => "SecretBase_" + t + n)),
+  // (The Battle Frontier's island, the three Battle Tents' rooms and the Contest Halls: script warps and the ferry go there.)
+  "BattleFrontier_OutsideWest", "BattleFrontier_OutsideEast", "BattleFrontier_ReceptionGate", "SlateportCity_BattleTentBattleRoom", "SlateportCity_BattleTentCorridor", "VerdanturfTown_BattleTentBattleRoom", "VerdanturfTown_BattleTentCorridor",
+  "FallarborTown_BattleTentBattleRoom", "FallarborTown_BattleTentCorridor", "ContestHall", "ContestHallBeauty", "ContestHallCool", "ContestHallCute", "ContestHallSmart", "ContestHallTough", "LilycoveCity_ContestHall", "LilycoveCity_ContestLobby"];   // (The rest are reached through the story: Dive, Sootopolis's way in, the hideouts' doors, the tides.)
+const EXCLUDE = /^(BattleColosseum|TradeCenter|UnionRoom|RecordCorner|TrainerHill|SafariZone|.*Unused|.*Prototype|Dummy|BirthIsland|NavelRock|FarawayIsland|SouthernIsland|Test)/;
+const mapJson = (name) => {
+  const j = JSON.parse(fs.readFileSync(P("data/maps", name, "map.json"), "utf8"));
+  // (Some maps, the Contest Halls', leave a kind of event out.)
+  for (const k of ["object_events", "warp_events", "coord_events", "bg_events"]) j[k] = j[k] || [];
+  return j;
+};
 const byConst = {};
 for (const d of fs.readdirSync(P("data/maps"))) {
   const f = P("data/maps", d, "map.json");
@@ -86,6 +94,8 @@ const RENAME = { VictoryRoad_1F: "HoennVictoryRoad_1F", VictoryRoad_B1F: "HoennV
 const ren = (d) => RENAME[d] || d;
 const MAPS = [];
 {
+  // (All the Battle Frontier's: its facilities' rooms are gone to by scripts.)
+  for (const d of fs.readdirSync(P("data/maps"))) if (/^BattleFrontier_/.test(d) && !OUTDOOR.includes(d)) OUTDOOR.push(d);
   const seen = new Set(OUTDOOR), queue = OUTDOOR.slice();
   while (queue.length) {
     const n = queue.shift();
