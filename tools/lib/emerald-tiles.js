@@ -26,14 +26,16 @@ module.exports = function emeraldTiles(EM) {
 
   function loadTileset(kind, dir, anims) {
     const d = P("data/tilesets", kind, dir);
+    // (The secret bases' kinds share their metatiles, in the folder above: secondary/secret_base/<kind>.)
+    const shared = fs.existsSync(path.join(d, "metatiles.bin")) ? d : path.dirname(d);
     const palettes = [];
     for (let i = 0; i < 16; i++) {
       const f = path.join(d, "palettes", String(i).padStart(2, "0") + ".pal");
       palettes.push(fs.existsSync(f) ? readPal(f) : null);
     }
     return {
-      tiles: readPng(path.join(d, "tiles.png")), meta: fs.readFileSync(path.join(d, "metatiles.bin")),
-      attrs: fs.readFileSync(path.join(d, "metatile_attributes.bin")), palettes,
+      tiles: readPng(path.join(d, "tiles.png")), meta: fs.readFileSync(path.join(shared, "metatiles.bin")),
+      attrs: fs.readFileSync(path.join(shared, "metatile_attributes.bin")), palettes,
       anims: (anims || []).map((a) => Object.assign({}, a, { frames: a.order.map((k) => readPng(path.join(d, "anim", a.dir, k + ".png"))) }))
     };
   }

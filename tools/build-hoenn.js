@@ -71,8 +71,10 @@ const OUTDOOR = ["InsideOfTruck", "LittlerootTown", "SootopolisCity", "SeafloorC
   // (Maps only a script or Dive goes to: the Trick House's puzzles, the Abandoned Ship's hidden floor, the deep Marine Cave, Dive's last Underwater maps, the Artisan Cave, the high tide in the Shoal Cave.)
   "Route110_TrickHousePuzzle1", "Route110_TrickHousePuzzle2", "Route110_TrickHousePuzzle3", "Route110_TrickHousePuzzle4", "Route110_TrickHousePuzzle5", "Route110_TrickHousePuzzle6", "Route110_TrickHousePuzzle7", "Route110_TrickHousePuzzle8",
   "AbandonedShip_HiddenFloorCorridors", "AbandonedShip_HiddenFloorRooms", "AbandonedShip_Underwater1", "AbandonedShip_Underwater2", "MarineCave_Entrance", "MarineCave_End", "Underwater_Route134", "Underwater_SealedChamber",
-  "ArtisanCave_1F", "ArtisanCave_B1F", "ShoalCave_HighTideInnerRoom"];   // (The rest are reached through the story: Dive, Sootopolis's way in, the hideouts' doors, the tides.)
-const EXCLUDE = /^(BattleFrontier|BattleColosseum|BattlePyramid|BattleTower|SecretBase|TradeCenter|UnionRoom|RecordCorner|TrainerHill|SafariZone|.*Contest|.*Unused|.*Prototype|Dummy|BirthIsland|NavelRock|FarawayIsland|SouthernIsland|Test)/;
+  "ArtisanCave_1F", "ArtisanCave_B1F", "ShoalCave_HighTideInnerRoom",
+  // (The Secret Bases: your own, in whichever way the spot you made it in has it.)
+  ...["RedCave", "BrownCave", "BlueCave", "YellowCave", "Tree", "Shrub"].flatMap((t) => [1, 2, 3, 4].map((n) => "SecretBase_" + t + n))];   // (The rest are reached through the story: Dive, Sootopolis's way in, the hideouts' doors, the tides.)
+const EXCLUDE = /^(BattleFrontier|BattleColosseum|BattlePyramid|BattleTower|TradeCenter|UnionRoom|RecordCorner|TrainerHill|SafariZone|.*Contest|.*Unused|.*Prototype|Dummy|BirthIsland|NavelRock|FarawayIsland|SouthernIsland|Test)/;
 const mapJson = (name) => JSON.parse(fs.readFileSync(P("data/maps", name, "map.json"), "utf8"));
 const byConst = {};
 for (const d of fs.readdirSync(P("data/maps"))) {
@@ -175,8 +177,10 @@ const layouts = {};
 for (const l of JSON.parse(fs.readFileSync(P("data/layouts/layouts.json"), "utf8")).layouts) if (l.id) layouts[l.id] = l;
 const tsCache = {};
 const tileset = (sym) => {
-  const isPrimary = !!layoutsPrimary[sym], folder = E.tilesetFolder(sym);
-  const kind = fs.existsSync(P("data/tilesets/primary", folder)) ? "primary" : "secondary";
+  const isPrimary = !!layoutsPrimary[sym];
+  // (The secret bases' secondaries are each a folder of secondary/secret_base.)
+  const folder = /^gTileset_SecretBase.+/.test(sym) ? "secret_base/" + sym.replace(/^gTileset_SecretBase/, "").replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase() : E.tilesetFolder(sym);
+  const kind = !folder.includes("/") && fs.existsSync(P("data/tilesets/primary", folder)) ? "primary" : "secondary";
   const key = kind + "/" + folder;
   return tsCache[key] || (tsCache[key] = E.loadTileset(kind, folder, folder === "general" ? E.GENERAL_ANIMS : []));
 };
@@ -379,6 +383,17 @@ for (const [label, cmds] of Object.entries(compiled.s)) {
   for (const c of cmds) if (c[0] === "setmetatile" && typeof c[3] === "string" && metatileIds[c[3]] != null) (metatilesOf[mp] = metatilesOf[mp] || new Set()).add(c[3]);
 }
 
+// Emerald's metatile behaviours by name and number (the secret bases' floors and walls decide where decorations go).
+const MBN = {};
+{
+  let n = 0;
+  const text = fs.readFileSync(P("include/constants/metatile_behaviors.h"), "utf8");
+  for (const line of text.slice(text.indexOf("{"), text.indexOf("};")).split("\n")) { const m = /^\s*(MB_\w+)/.exec(line); if (m) MBN[m[1]] = n++; }
+}
+// Secret base spots: the tile each is made of closed and, once it's somebody's base, open (src/secret_base.c).
+const spotOpen = {};
+for (const m of fs.readFileSync(P("src/secret_base.c"), "utf8").matchAll(/\.closedMetatileId = (\w+),\s*\.openMetatileId = (\w+)/g)) spotOpen[metatileIds[m[1]]] = metatileIds[m[2]];
+
 // The layouts a map's scripts swap in (setmaplayoutindex: the Mirage Tower gone, Sky Pillar cleaned ...), by map.
 const layoutSwaps = {};
 for (const [label, cmds] of Object.entries(compiled.s)) {
@@ -440,6 +455,8 @@ for (const name of MAPS) {
     if (list.length) layoutDiffs[lid] = list;
   }
   wanted = [...new Set(wanted)];
+  // (A secret base spot opens: its open tile.)
+  for (const bg of map.bg_events || []) if (bg.type === "secret_base" && spotOpen[blocks[bg.y * w + bg.x] & 0x3ff]) wanted.push("#" + spotOpen[blocks[bg.y * w + bg.x] & 0x3ff]);
   if (name === "PetalburgCity_Gym") for (let i = 0; i < 5; i++) wanted.push("#" + (metatileIds["METATILE_PetalburgGym_SlidingDoor_Frame" + i] + 8));   // (the half below each frame: METATILE_ROW_WIDTH on)
   const idOf = (l) => (l[0] === "#" ? +l.slice(1) : metatileIds[l]);
   if (wanted.length) {
@@ -455,6 +472,17 @@ for (const name of MAPS) {
   for (const wp of map.warp_events) { const i = wp.y * w + wp.x; if (i >= 0 && i < behaviors.length && behaviors[i] === 0) behaviors[i] = 0x60; }
   const mapType = map.map_type.replace(/^MAP_TYPE_/, "").toLowerCase();
   const enc = wild.find((e) => e.map === map.id);
+  // (Secret bases and your room: where decorations can go, by tile: f floor, w the wall's foot, s a spot for something small
+  // (a doll or a cushion), l one for something large, c the PC; as src/decoration.c reads the tiles' behaviours.)
+  let decorKind;
+  if (/^SecretBase_/.test(name) || /^LittlerootTown_(Brendans|Mays)House_2F$/.test(name)) {
+    decorKind = blocks.map((bl, i) => {
+      const beh = E.metatile(primary, secondary, bl & 0x3ff).behavior;
+      return beh === MBN.MB_NORMAL && !((bl >> 10) & 3) ? "f" : beh === MBN.MB_SECRET_BASE_NORTH_WALL ? "w" : beh === MBN.MB_HOLDS_SMALL_DECORATION ? "s" : beh === MBN.MB_HOLDS_LARGE_DECORATION ? "l" : beh === MBN.MB_SECRET_BASE_PC ? "c" : "x";
+    }).join("");
+    if (!/[fwsl]/.test(decorKind)) decorKind = undefined;
+  }
+  const decorPc = decorKind && decorKind.indexOf("c") >= 0 ? { x: decorKind.indexOf("c") % w, y: Math.floor(decorKind.indexOf("c") / w) } : null;
   const people = [];
   map.object_events.forEach((o, i) => {
     // (Someone whose look a var holds, the rival's or Wally's: shown once a script has set it: gfxVar.)
@@ -481,7 +509,7 @@ for (const name of MAPS) {
   const triggers = (map.coord_events || []).filter((c) => c.type === "trigger" && c.script && c.script !== "NULL")
     .map((c) => ({ x: c.x, y: c.y, script: "hoenn:" + c.script, var: c.var, value: +c.var_value }));
   out[ren(name)] = {
-    mt, layouts: Object.keys(layoutDiffs).length ? layoutDiffs : undefined, blocks: KEEP_BLOCKS.has(name) ? blocks.map((b) => b & 0x3ff) : undefined, name: ren(name), scriptName: ren(name) !== name ? name : undefined, title: titleCase(sectionNames[map.region_map_section] || name.replace(/([a-z])([A-Z0-9])/g, "$1 $2")),
+    mt, layouts: Object.keys(layoutDiffs).length ? layoutDiffs : undefined, blocks: KEEP_BLOCKS.has(name) ? blocks.map((b) => b & 0x3ff) : undefined, name: ren(name), scriptName: map.shared_scripts_map || (ren(name) !== name ? name : undefined), title: titleCase(sectionNames[map.region_map_section] || name.replace(/([a-z])([A-Z0-9])/g, "$1 $2")),
     width: w, height: h, type: mapType === "city" ? "city" : mapType, music: musicOf(map.music), region: "hoenn",
     cycling: !!map.allow_cycling || undefined, allowEscaping: map.allow_escaping || undefined,
     showName: !!map.show_map_name, pokemonCenter: /_PokemonCenter_1F$/.test(name) || undefined, top: r.anyAbove, borderWidth: 2, borderHeight: 2,
@@ -490,7 +518,12 @@ for (const name of MAPS) {
     connections: (map.connections || []).map((c) => ({ map: byConst[c.map] ? ren(byConst[c.map]) : null, mapConst: c.map, direction: c.direction, offset: c.offset })),
     warps: map.warp_events.map((wp) => ({ x: wp.x, y: wp.y, map: byConst[wp.dest_map] ? ren(byConst[wp.dest_map]) : null, mapConst: wp.dest_map, warp: +wp.dest_warp_id })),
     signs: (map.bg_events || []).filter((b) => b.type === "sign").map((b) => ({ x: b.x, y: b.y, script: b.script, text: scriptText(name, b.script),
-      facing: ({ BG_EVENT_PLAYER_FACING_NORTH: "up", BG_EVENT_PLAYER_FACING_SOUTH: "down", BG_EVENT_PLAYER_FACING_EAST: "right", BG_EVENT_PLAYER_FACING_WEST: "left" })[b.player_facing_dir] })),
+      facing: ({ BG_EVENT_PLAYER_FACING_NORTH: "up", BG_EVENT_PLAYER_FACING_SOUTH: "down", BG_EVENT_PLAYER_FACING_EAST: "right", BG_EVENT_PLAYER_FACING_WEST: "left" })[b.player_facing_dir] }))
+      // (A secret base spot: look at it and the base's scripts take over; once it's yours, it's open and the way in. `spot`: its place.)
+      .concat((map.bg_events || []).filter((b) => b.type === "secret_base").map((b) => ({ x: b.x, y: b.y, script: "SecretBase_EventScript_CheckEntrance", spot: b.secret_base_id, closed: blocks[b.y * w + b.x] & 0x3ff, open: spotOpen[blocks[b.y * w + b.x] & 0x3ff] })))
+      // (A secret base's PC.)
+      .concat(decorPc && /^SecretBase_/.test(name) ? [{ x: decorPc.x, y: decorPc.y, script: "SecretBase_EventScript_PC" }] : []),
+    decorKind, decorSheet: /^SecretBase_/.test(name) ? name.replace(/^SecretBase_/, "").replace(/\d$/, "") : undefined,
     triggers,
     // (Weather: the header's, which the map has as you come in, and the steps that change it: src/coord_event_weather.c.)
     weatherHeader: weatherKind(map.weather) || undefined,
@@ -589,7 +622,17 @@ const numConsts = {};
 }
 // Where the rotating-tile puzzles' arrows start in their tilesets (src/rotating_tile_puzzle.c): Mossdeep Gym's, and the Trick House's.
 const rotStart = { gym: metatileIds.METATILE_MossdeepGym_YellowArrow_Right, trick: metatileIds.METATILE_TrickHousePuzzle_Arrow_YellowOnWhite_Right };
-const hoennScripts = { songNames, seNames, gfx, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, trades, berryTrees, rotStart, numConsts, consts: mapConsts };
+// Decorations (src/data/decoration): the catalogue, and the pictures of their tiles for each kind of secret base.
+const decorData = require("./lib/hoenn-decor")(EM, metatileIds, (g) => { const sp = objectSprite(g); return sp ? { sprite: sp.sprite, width: sp.width, height: sp.height, frames: sp.frames } : null; });
+for (const type of ["RedCave", "BrownCave", "BlueCave", "YellowCave", "Tree", "Shrub"]) {
+  const L = layouts["LAYOUT_SECRET_BASE_" + type.replace(/([a-z])([A-Z])/g, "$1_$2").toUpperCase() + "1"];
+  const primary = tileset(L.primary_tileset), secondary = tileset(L.secondary_tileset), cols = 16, count = 0x341 - 512, rows = Math.ceil(count / cols);
+  const ids = Array.from({ length: cols * rows }, (_, i) => 512 + Math.min(i, count - 1));
+  const sheet = E.render(ids, cols, rows, primary, secondary, true);
+  writePng(path.join(mapsDir, "_decor_" + type + "-mt.png"), cols * 16, rows * 16, sheet.below);
+  writePng(path.join(mapsDir, "_decor_" + type + "-mt-top.png"), cols * 16, rows * 16, sheet.above);
+}
+const hoennScripts = { songNames, seNames, gfx, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, trades, berryTrees, rotStart, decor: decorData.list, decorCategories: decorData.CATEGORIES, numConsts, consts: mapConsts };
 
 // ---------- The Town Map ----------
 // Each map's section (its name on the map, and where it is on it); a map whose section has no square (a cave's)

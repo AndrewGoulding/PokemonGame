@@ -6414,8 +6414,8 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     assert(sec && (HT.names[sec] || sec === "DYNAMIC"), name + "'s section " + sec);
     if (!HT.map.some((r) => r.includes(sec)) && !HT.at[name]) off.push(name);
   }
-  // (Almost all are somewhere on it: only the truck, the ships, the Trick House and the like are nowhere.)
-  assert(off.length <= 40, "maps nowhere on the Town Map: " + off.join(" "));
+  // (Almost all are somewhere on it: only the truck, the ships, the Trick House, the Secret Bases and the like are nowhere.)
+  assert(off.length <= 70, "maps nowhere on the Town Map: " + off.join(" "));
   for (const t of HT.towns) {
     const spot = HT.fly[t], m = spot && WORLD_MAPS[spot.map];
     assert(m && m.region === "hoenn" && !m.collision[spot.y * m.width + spot.x], t + "'s Fly spot is open ground");
@@ -6488,6 +6488,23 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   assert(WORLD_MAPS.Route110_TrickHousePuzzle8 && WORLD_MAPS.MarineCave_End && WORLD_MAPS.Underwater_SealedChamber, "the maps only scripts go to");
   vm.runInThisContext(fs.readFileSync(path.join(root, "ui/rayquaza-scene.js"), "utf8"), { filename: "ui/rayquaza-scene.js" });
   assert.strictEqual(typeof window.RayquazaScene.play, "function");
+  // Secret Bases and decorations: the catalogue, its pictures, the spots and the rooms.
+  {
+    assert.strictEqual(HS.decor.length, 120);
+    for (const d of HS.decor) {
+      assert(d.name && d.price >= 0 && d.cat >= 0 && d.cat < 8 && d.w * d.h >= 1, d.key + " is in the catalogue");
+      if (d.perm === "sprite") assert(d.tiles[0] && fs.existsSync(path.join(root, "assets/world/sprites/" + d.tiles[0].sprite + ".png")), d.key + "'s picture");
+      else assert(d.tiles.length === d.w * d.h && d.tiles.every((t) => t >= 512 && t <= 0x340), d.key + "'s tiles");
+    }
+    for (const t of ["RedCave", "BrownCave", "BlueCave", "YellowCave", "Tree", "Shrub"]) assert(fs.existsSync(path.join(root, "assets/world/maps/_decor_" + t + "-mt.png")), t + "'s decoration tiles");
+    const bases = Object.values(WORLD_MAPS).filter((m) => /^SecretBase_/.test(m.name));
+    assert.strictEqual(bases.length, 24);
+    assert(bases.every((m) => m.decorSheet && /f/.test(m.decorKind) && m.signs.some((s) => s.script === "SecretBase_EventScript_PC") && m.scriptName === "SecretBase"), "the bases' rooms");
+    const spots = Object.values(WORLD_MAPS).flatMap((m) => (m.signs || []).filter((s) => s.spot));
+    assert(spots.length >= 70 && spots.every((s) => WORLD_MAPS["SecretBase_" + s.spot.replace(/^SECRET_BASE_/, "").replace(/_\d+$/, "").split("_").map((w) => w.charAt(0) + w.slice(1).toLowerCase()).join("")]), "each spot's room: " + spots.length);
+    assert(WORLD_MAPS.LittlerootTown_BrendansHouse_2F.decorKind.includes("l"), "your room holds dolls");
+    assert(HS.multi.MULTI_BASE_PC_NO_REGISTRY, "the base PC's menu");
+  }
   // In-game trades: Rustboro's Seedot for a Ralts.
   assert.deepStrictEqual([HS.trades.INGAME_TRADE_SEEDOT.species, HS.trades.INGAME_TRADE_SEEDOT.requested], ["Seedot", "Ralts"]);
   assert(Object.keys(HS.trades).length >= 4, "the trades are in");

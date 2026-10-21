@@ -144,10 +144,16 @@
   // sheet of them (-mt: below the people, -mt-top: above), 16 to a row.
   function drawMetatiles(name, x0, y0, top) {
     const list = ctx && ctx.metatiles ? ctx.metatiles(name) : null;
-    if (!list || !list.length) return;
-    const img = mapImage(name, top ? "mt-top" : "mt");
-    if (!ready(img)) return;
-    for (const [x, y, n] of list) g.drawImage(img, (n % 16) * 16, Math.floor(n / 16) * 16, 16, 16, x0 + x * TILE, y0 + y * TILE, 16, 16);
+    if (list && list.length) {
+      const img = mapImage(name, top ? "mt-top" : "mt");
+      if (ready(img)) for (const [x, y, n] of list) g.drawImage(img, (n % 16) * 16, Math.floor(n / 16) * 16, 16, 16, x0 + x * TILE, y0 + y * TILE, 16, 16);
+    }
+    // (Decorations put out in a secret base: the base's kind's tiles, a sheet each: ctx.decor(map) -> [[x, y, n]].)
+    const m = World.map(name), deco = ctx && ctx.decor && m && m.decorSheet ? ctx.decor(name) : null;
+    if (deco && deco.length) {
+      const img = mapImage("_decor_" + m.decorSheet, top ? "mt-top" : "mt");
+      if (ready(img)) for (const [x, y, n] of deco) g.drawImage(img, (n % 16) * 16, Math.floor(n / 16) * 16, 16, 16, x0 + x * TILE, y0 + y * TILE, 16, 16);
+    }
   }
 
   function preloadMap(name) {
@@ -156,6 +162,7 @@
     if (m.top) list.push(mapImage(name, "top"));
     if (m.anim) list.push(mapImage(name, "anim"));
     if (m.mt) list.push(mapImage(name, "mt"), mapImage(name, "mt-top"));
+    if (m.decorSheet) list.push(mapImage("_decor_" + m.decorSheet, "mt"), mapImage("_decor_" + m.decorSheet, "mt-top"));
     for (const p of Object.keys(m.patches || {})) list.push(mapImage(name, "patch-" + p), ...(m.patches[p].anim ? [mapImage(name, "patch-" + p + "-anim")] : []));
     for (const c of m.connections) if (c.map && World.map(c.map)) list.push(mapImage(c.map), ...(World.map(c.map).top ? [mapImage(c.map, "top")] : []));
     for (const p of m.people) { list.push(spriteImage(p.sprite)); if (p.alt) list.push(spriteImage(p.alt.sprite)); }

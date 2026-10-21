@@ -481,6 +481,11 @@
           case "hidemonpic": if (env.hidePicture) env.hidePicture(); break;
           case "playmoncry": env.cry(species(val(a[0]))); break;
           case "pokemart": await flush(); await env.mart(martList(a[0])); break;
+          // Decorations: a shop's counter (the DECOR_ names its list holds), and what scripts hand out.
+          case "pokemartdecoration": case "pokemartdecoration2": await flush(); if (env.decorMart) await env.decorMart((D.tb[a[0]] || []).map((r) => r[0])); break;
+          case "adddecoration": setVar("VAR_RESULT", env.decorAdd && env.decorAdd(getVar(a[0])) ? 1 : 0); break;
+          case "checkdecorspace": setVar("VAR_RESULT", env.decorSpace && env.decorSpace(getVar(a[0])) ? 1 : 0); break;
+          case "givedecoration": await flush(); setVar("VAR_RESULT", env.decorGive ? (await env.decorGive(a[0])) : 0); break;
           case "pokemartlistend": case "pokemartdecoration": case "pokemartdecoration2": break;
 
           // Trainers.

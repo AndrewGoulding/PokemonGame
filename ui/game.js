@@ -1322,6 +1322,66 @@
   const berryFarm = BerryFarm.create(berryEnv);
   // Hoenn's trees, along its routes (Emerald's own: the ones its new game starts with are grown): the same engine, another place to keep them.
   const hoennBerries = BerryFarm.create(berryEnv, { key: "hoennBerries", owns: (map) => isHoenn(map), spotRe: /^HoennBerry_Tree_(\d+)$/, initial: () => window.HOENN_SCRIPTS.berryTrees });
+  // Hoenn's decorations (ui/hoenn-decor.js): the ones you own, and those out in your Secret Base and your room.
+  const hoennDecor = HoennDecor.create({
+    player: () => player, say: (p) => say(p), confirm: (q) => confirm(q), sfx,
+    choose: async (q, texts) => { const i = await multichoice(q, 0, 0, texts); Screen.say(""); return i; },
+    canvas: () => overlayCanvas(), baseMap: () => (player.flags.secretBase || {}).map || null,
+    refresh: () => { hoennDecorApply(player.location.map); Overworld.refreshPeople(); }, persist: () => persist(),
+    money: () => player.money, addMoney: (n) => Player.addMoney(player, n)
+  });
+  // ---------- Your Secret Base (src/secret_base.c; the Decoration menu: ui/hoenn-decor.js) ----------
+  //
+  // A spot in a rock wall, a tree or a bush, found with Secret Power: once it's yours (player.flags.secretBase: { map:
+  // the base room it opens on, spot: { map, x, y, id } }) it stands open and A on it takes you in; the base's PC
+  // decorates it and packs it up. Only the one base: nobody else's to visit.
+  const secretBase = () => player.flags.secretBase || null;
+  const hoennOwnSpot = (sign) => { const b = secretBase(); return !!b && b.spot.id === sign.spot && b.spot.map === player.location.map; };
+  const BASE_ROOM = (id) => "SecretBase_" + id.replace(/^SECRET_BASE_/, "").replace(/_\d+$/, "").split("_").map((w) => w.charAt(0) + w.slice(1).toLowerCase()).join("");
+  // The spot you're facing.
+  function spotAhead() {
+    const L = player.location, m = window.WORLD_MAPS[L.map], at = Overworld.position(), d = World.DIRS[Overworld.ahead().facing] || [0, 0];
+    return m && (m.signs || []).find((s) => s.spot && s.x === at.x + d[0] && s.y === at.y + d[1]) || null;
+  }
+  // Your spot opened, when you're on its map.
+  function hoennSpotOpen(map) {
+    const b = secretBase();
+    if (!b || b.spot.map !== map) return;
+    const s = (window.WORLD_MAPS[map].signs || []).find((q) => q.spot === b.spot.id);
+    if (s && s.open) hoennMetatileId(map, s.x, s.y, s.open, true);
+  }
+  // In to the base, or back out to its spot.
+  async function secretBaseGo(into) {
+    const b = secretBase();
+    if (!b) return;
+    Screen.say("");
+    await Overworld.fadeToBlack();
+    if (into) {
+      const room = window.WORLD_MAPS[b.map], w = room.warps[0] || { x: 5, y: 7 };
+      setDynamicWarp({ map: b.spot.map, x: b.spot.x, y: b.spot.y + 1 });
+      await Overworld.teleport({ map: b.map, x: w.x, y: w.y, facing: "up" });
+    } else await Overworld.teleport({ map: b.spot.map, x: b.spot.x, y: b.spot.y + 1, facing: "down" });
+    await Overworld.fadeFromBlack();
+  }
+  // Packing up: everything back in your inventory, the spot closed.
+  function secretBaseClear() {
+    const b = secretBase();
+    if (!b) return;
+    const D = hoennDecor.state();
+    for (const p of D.base.splice(0)) D.have[p.id] = (D.have[p.id] || 0) + 1;
+    const m = window.WORLD_MAPS[b.spot.map], s = (m.signs || []).find((q) => q.spot === b.spot.id);
+    if (s && s.closed) hoennMetatileId(b.spot.map, s.x, s.y, s.closed, true);
+    delete player.flags.secretBase;
+  }
+  if (window.HOENN_DEBUG) window.HoennDebug = Object.assign(window.HoennDebug || {}, { decor: hoennDecor });
+  // The ones out on a map keep you out of their tiles.
+  function hoennDecorApply(map) {
+    const m = window.WORLD_MAPS[map];
+    if (!m || m.region !== "hoenn" || !m.decorKind) return;
+    const base = baseCollision[map] || (baseCollision[map] = m.collision.slice());
+    m.collision = base.slice();
+    for (const [x, y] of hoennDecor.overlay(map).solid) if (x >= 0 && y >= 0 && x < m.width && y < m.height) m.collision[y * m.width + x] = 1;
+  }
 
   // ---------- Summary ----------
   //
@@ -1892,9 +1952,12 @@
       Screen.say("What would you like to do?");
       await Screen.printed();
       clearMenu();
-      const { index } = await pcMenu(["Item storage", "Mailbox", "Turn off"], { width: 13 });
+      // (In Hoenn, your room's PC puts out your dolls and cushions too.)
+      const room = isHoenn(player.location.map) && hoennDecor.contextOf(player.location.map) === "room";
+      const { index } = await pcMenu(room ? ["Item storage", "Mailbox", "Decoration", "Turn off"] : ["Item storage", "Mailbox", "Turn off"], { width: 13 });
       if (index === 0) await itemStorage();
       else if (index === 1) await say("There's no mail here.");
+      else if (room && index === 2) { Screen.say(""); await hoennDecor.menu("room", player.location.map); }
       else { Screen.say(""); return; }
     }
   }
@@ -5251,7 +5314,7 @@
   }
 
   function extraPeople(map) {
-    const out = megaStoneBalls(map).concat(OLD_GAME_BALLS.filter((b) => b.map === map));
+    const out = megaStoneBalls(map).concat(OLD_GAME_BALLS.filter((b) => b.map === map), isHoenn(map) ? hoennDecor.overlay(map).people : []);
     // The Tradeback Guy, upstairs in every Pokémon Center.
     if (/_PokemonCenter_2F$/.test(map)) {
       out.push(Object.assign({ id: 901, localId: "LOCALID_TRADEBACK_GUY", script: "Game_EventScript_TradebackGuy", x: 12, y: 5,
@@ -11715,6 +11778,15 @@
     wildBattle: (species, level, item) => johtoBattle("wild", species, level, { weather: ({ Kyogre: "PrimordialSea", Groudon: "DesolateLand", Rayquaza: "DeltaStream" })[species] }),
     warp: (mapConst, at) => hoennWarp(mapConst, at),
     setWeather: (name) => { hoennSaved = hoennKind(name); },
+    decorMart: (keys) => hoennDecor.mart(keys),
+    decorAdd: (key) => { const d = hoennDecor.byKey(key); return !!d && hoennDecor.give(d.id); },
+    decorSpace: (key) => { const d = hoennDecor.byKey(key); return !!d && hoennDecor.count(d.cat) < HoennDecor.CAPACITY[d.cat]; },
+    decorGive: async (key) => {
+      const d = hoennDecor.byKey(key);
+      if (!d || !hoennDecor.give(d.id)) return 0;
+      await sayWithJingle("mus_obtain_item", "{PLAYER} obtained the " + d.name + "!");
+      return 1;
+    },
     metatileAt: (map, x, y) => metatileAt(map, x, y),
     setLayout: (map, layout) => hoennLayout(map, layout),
     syncSpecial: (name, api) => hoennSyncSpecial(name, api),
@@ -11749,6 +11821,8 @@
     const thing = ev.person || ev.sign || ev.trigger;
     if (!thing || !isHoenn(ev.map || player.location.map)) return null;
     const script = thing.script || "";
+    // (A secret base spot: the way into your base once it's yours, the way to make one if not.)
+    if (ev.sign && ev.sign.spot) return hoenn.scriptOf({ script: hoennOwnSpot(ev.sign) ? "SecretBase_EventScript_Enter" : "SecretBase_EventScript_CheckEntrance" });
     if (SPECIAL.has(script) || /^EventScript_(CutTree|RockSmash|StrengthBoulder)$/.test(script)) return null;
     if (ev.person && ((ev.person.trainer && ev.person.trainer.id) || ev.person.item)) return null;
     return hoenn.scriptOf(thing);
@@ -11870,7 +11944,7 @@
       }
     }
   }
-  if (window.HOENN_DEBUG) window.HoennDebug = { petalburgDoors, mauvilleGym, metatileAt, setWeather: (k) => { hoennSaved = k; } };
+  if (window.HOENN_DEBUG) window.HoennDebug = Object.assign(window.HoennDebug || {}, { petalburgDoors, mauvilleGym, metatileAt, setWeather: (k) => { hoennSaved = k; } });
   // Runs a script; then whatever the map's frame table has due (a scene it set going).
   async function runHoenn(label, person) {
     const seen = new Set();
@@ -12081,6 +12155,27 @@
       }
       case "StartMirageTowerFossilFallAndSink": sfx("se_fall"); await sleep(900); return true;
       case "DoMirageTowerCeilingCrumble": await api.flush(); sfx("se_ice_crack"); await Overworld.shake(30, { x: 1, y: 1, delay: 2 }); return true;
+      // The Secret Base (data/scripts/secret_base.inc).
+      case "GetSecretBaseTypeInFrontOfPlayer": {
+        const s = spotAhead();
+        if (s) api.setVar("VAR_0x8007", window.HOENN_SCRIPTS.numConsts["SECRET_BASE_" + s.spot.replace(/^SECRET_BASE_/, "").replace(/\d+_\d+$/, "")] || 0);
+        return true;
+      }
+      case "CheckPlayerHasSecretBase": api.set(secretBase() ? 1 : 0); return true;
+      case "SetPlayerSecretBase": {
+        const s = spotAhead();
+        if (s) player.flags.secretBase = { map: BASE_ROOM(s.spot), spot: { map: player.location.map, x: s.x, y: s.y, id: s.spot } };
+        return true;
+      }
+      case "EnterSecretBase": await api.flush(); hoennSpotOpen(player.location.map); await secretBaseGo(true); return true;
+      case "EnterNewlyCreatedSecretBase": await api.flush(); hoennSpotOpen(secretBase().spot.map); await persist(); return true;
+      case "ClearAndLeaveSecretBase": await api.flush(); await secretBaseGo(false); secretBaseClear(); await persist(); return true;
+      case "MoveOutOfSecretBase": await api.flush(); await secretBaseGo(false); secretBaseClear(); await persist(); return true;
+      case "MoveOutOfSecretBaseFromOutside": secretBaseClear(); await persist(); return true;
+      case "GetSecretBaseNearbyMapName": { const b = secretBase(); api.setBuffer(1, b ? (window.WORLD_MAPS[b.spot.map] || {}).title || "" : ""); return true; }
+      case "IsCurSecretBaseOwnedByAnotherPlayer": api.set(0); return true;
+      case "ShowSecretBaseDecorationMenu": await api.flush(); Screen.say(""); await hoennDecor.menu("base", player.location.map); return true;
+      case "InitSecretBaseDecorationSprites": case "InitSecretBaseVars": case "SetSecretBaseOwnerGfxId": case "DoSecretBasePCTurnOffEffect": case "DoPCTurnOnEffect": case "DoPCTurnOffEffect": case "ShowSecretBaseRegistryMenu": return true;
       // The red and blue orbs' light.
       case "DoOrbEffect": await api.flush(); sfx("se_orb"); await sleep(700); return true;
       case "FadeOutOrbEffect": await sleep(400); return true;
@@ -12628,7 +12723,7 @@
         // (A double battle's trainers don't see you without two Pokémon that
         // can fight: FireRed's CheckTrainer.)
         trainerWaiting: (person) => trainerWaiting(person) && !(person.trainer.double && !canDouble()),
-        hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, metatiles: hoennOverlay, extraPeople,
+        hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, metatiles: hoennOverlay, decor: (map) => hoennDecor.overlay(map).tiles, extraPeople,
         // (HGSS's: the Pokémon walking behind you, and Johto's Headbutt trees.)
         follower: (map) => follower.look(map), headbuttTree: (map, x, y) => johtoField.headbuttTree(map, x, y),
         diveHere: (avatar) => diveHere(avatar),
@@ -12677,7 +12772,7 @@
           // Route 23 puts Victory Road back as it was: barriers up, boulders back (Route23_OnTransition).
           if (m !== tempFlagsMap && m === "Route23") LeagueRoad.reset(player.flags);
           // (Into a Johto map: its OnTransition script, before its people are placed.)
-          if (m !== tempFlagsMap) { magnetTrain.enter(m); johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); if (isHoenn(m)) { restoreMetatiles(m); hoennWeatherEnter(m); hoenn.transition(m); } hoennLastType = (window.WORLD_MAPS[m] || {}).type; }
+          if (m !== tempFlagsMap) { magnetTrain.enter(m); johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); if (isHoenn(m)) { restoreMetatiles(m); hoennWeatherEnter(m); hoennDecorApply(m); hoennSpotOpen(m); hoenn.transition(m); } hoennLastType = (window.WORLD_MAPS[m] || {}).type; }
           if (m === "SSAqua_1F") ssAquaExit();
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
           if (!gear.radioOn(m)) music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }   // (the Pokégear's radio plays on)
