@@ -263,7 +263,7 @@ function trainerData(id) {
       moves: moves ? moves[1].split(",").map((x) => x.trim().replace(/^MOVE_/, "")).filter((x) => x && x !== "NONE").map((x) => moveByID[toID(x)]).filter(Boolean) : undefined };
   }).filter((p) => p.species);
   const enc = (/\.encounterMusic_gender = (?:F_TRAINER_FEMALE \| )?TRAINER_ENCOUNTER_MUSIC_(\w+)/.exec(b) || [])[1];
-  const music = ["FEMALE", "GIRL", "TWINS"].includes(enc) ? "mus_encounter_girl" : ["AQUA", "MAGMA", "SUSPICIOUS"].includes(enc) ? "mus_encounter_rocket" : "mus_encounter_boy";
+  const music = (enc && songOf("MUS_ENCOUNTER_" + enc)) || "em_encounter_male";
   const pic = trainerPic((/\.trainerPic = (\w+)/.exec(b) || [])[1]);
   return (WORLD_TRAINERS[key] = { className: titleCase(classNames[cls] || cls).replace(/\{Pkmn\}/gi, "Pokémon").replace(/Poke(?!mon|dex)/g, "Poké"),
     name: titleCase((/\.trainerName = _\("(.*?)"\)/.exec(b) || [, ""])[1]), pic, party, music, double: /\.doubleBattle = TRUE/.test(b) });
@@ -310,10 +310,11 @@ const slotsOf = (enc, kind) => {
   return { rate: e.encounter_rate, slots: e.mons.map((m) => ({ species: dexByID[toID(m.species.replace(/^SPECIES_/, ""))], min: m.min_level, max: m.max_level })) };
 };
 
-// ---------- Songs: the nearest of this game's ----------
-const MUSIC = { MUS_LITTLEROOT: "mus_pallet", MUS_LITTLEROOT_TEST: "mus_pallet", MUS_ROUTE101: "mus_route1", MUS_ROUTE102: "mus_route1", MUS_ROUTE103: "mus_route1", MUS_ROUTE104: "mus_route1",
-  MUS_OLDALE: "mus_pewter", MUS_PETALBURG: "mus_celadon", MUS_POKE_CENTER: "mus_poke_center", MUS_GYM: "mus_gym" };
-const musicOf = (m) => MUSIC[m] || (/POKE_CENTER/.test(m) ? "mus_poke_center" : "mus_route1");
+// ---------- Songs: Emerald's own (tools/build-hoenn-audio.js: em_<name>) ----------
+const EM_SONGS = new Set();
+for (const m of fs.readFileSync(P("sound/songs/midi/midi.cfg"), "utf8").matchAll(/^mus_(\w+)\.mid:/gm)) if (!/^(rg_|b_|link_|contest|c_|dummy|gsc_|intro_battle)/.test(m[1])) EM_SONGS.add("em_" + m[1]);
+const songOf = (c) => { const n = "em_" + String(c).replace(/^MUS_/, "").toLowerCase(); return EM_SONGS.has(n) ? n : null; };
+const musicOf = (m) => songOf(m) || (/POKE_CENTER/.test(m) ? "em_poke_center" : null);
 // Emerald's metatile behaviours (include/constants/metatile_behaviors.h) as this
 // game's (FireRed's numbering, game/world.js's MB).
 function behavior(b) {
@@ -467,7 +468,14 @@ for (const c of compiled.s.EventScript_ResetAllMapFlags || []) if (/^(setflag|cl
 // (The looks a script gives someone: setvar VAR_OBJ_GFX_ID_n, OBJ_EVENT_GFX_X; and a person made by createvobject.)
 const gfx = {};
 for (const cmds of Object.values(compiled.s)) for (const c of cmds) for (const arg of c.slice(1)) if (typeof arg === "string" && /^OBJ_EVENT_GFX_/.test(arg) && !gfx[arg]) { const sp = objectSprite(arg); if (sp) gfx[arg] = sp; }
-const hoennScripts = { gfx, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, consts: mapConsts };
+// (The songs and sounds a script plays, as this game's: Emerald's own, or FireRed's of that name.)
+const songNames = {}, seNames = {};
+for (const cmds of Object.values(compiled.s)) for (const c of cmds) for (const arg of c.slice(1)) {
+  if (typeof arg !== "string") continue;
+  if (/^MUS_[A-Z0-9_]+$/.test(arg) && !songNames[arg]) songNames[arg] = songOf(arg) || "mus_" + arg.slice(4).toLowerCase();
+  else if (/^SE_[A-Z0-9_]+$/.test(arg) && !seNames[arg]) seNames[arg] = "se_" + arg.slice(3).toLowerCase();
+}
+const hoennScripts = { songNames, seNames, gfx, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, consts: mapConsts };
 
 // ---------- The data file ----------
 const START = "// Hoenn (tools/build-hoenn.js, from pret/pokeemerald): its maps, trainers and scripts.\n", END = "// (End of Hoenn.)\n";

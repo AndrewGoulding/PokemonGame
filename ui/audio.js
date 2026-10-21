@@ -16,6 +16,11 @@
 // only allow sound after the player has pressed a key or tapped, so nothing
 // plays before that; the music then starts where the game is.
 //
+// Hoenn's ("em_" songs: GameAudio.music("em_littleroot")) are Emerald's, played by the same
+// engine with their own instruments from assets/audio/hoenn-music.js, loaded the first time one is
+// wanted; in Hoenn, FireRed's battle, victory and jingle songs play as Emerald's (the em_ song of
+// the same name, where there is one).
+//
 // In Johto (GameAudio.setRegion), FireRed's battle, victory, "eyes meet" and
 // jingle songs are asked for by their FireRed names and play as HGSS's
 // (JOHTO_SONGS).
@@ -86,6 +91,17 @@
     if (!dataLoading) dataLoading = loadScript("assets/audio/music.js");
     return dataLoading;
   }
+  // Hoenn's: Emerald's songs, the first time one's wanted.
+  let hoennLoading = null, hoennTried = false;
+  function loadHoenn() {
+    if (!hoennLoading) hoennLoading = (window.HOENN_MUSIC_DATA ? Promise.resolve(true) : loadScript("assets/audio/hoenn-music.js")).then((ok) => !!(ok && window.HOENN_MUSIC_DATA));
+    return hoennLoading;
+  }
+  const hoennReady = () => !!window.HOENN_MUSIC_DATA;
+  const inHoenn = () => { try { return region() === "hoenn"; } catch (e) { return false; } };
+  // Whether `name` is (or, here, stands for) one of Emerald's songs.
+  const wantsHoenn = (name) => !!name && (/^em_/.test(name) || (inHoenn() && /^mus_/.test(name)));
+  const hoennSong = (name) => (/^em_/.test(name) ? name : "em_" + name.replace(/^mus_/, ""));
   // Johto's: the DS's player and HGSS's songs, the first time one's wanted.
   let johtoLoading = null, johtoTried = false;
   function loadJohto() {
@@ -103,6 +119,12 @@
   // The song that plays for `name` (Johto's loaded, or tried): in Johto,
   // HGSS's for FireRed's; a gs_ song that isn't there, what it falls back to.
   function pick(name) {
+    // (Hoenn's: Emerald's song of that name, if it has one; else, as it was.)
+    if (wantsHoenn(name)) {
+      const em = hoennSong(name);
+      if (hoennReady() && window.HOENN_MUSIC_DATA.songs[em]) return em;
+      return /^em_/.test(name) ? null : name;
+    }
     let gs = name, fb;
     if (!/^gs_/.test(name)) {
       if (!JOHTO_SONGS[name] || !inJohto()) return name;
@@ -144,7 +166,11 @@
     if (isSe && seCache.has(name)) return seCache.get(name);
     if (cache.has(name)) return cache.get(name);
     let r;
-    if (/^gs_/.test(name)) {
+    if (/^em_/.test(name)) {
+      const H = window.HOENN_MUSIC_DATA, data = H && H.songs[name];
+      if (!data || !ctx) return null;
+      r = window.M4A.render(data, H.bank);
+    } else if (/^gs_/.test(name)) {
       const J = window.JOHTO_MUSIC_DATA, data = J && window.NDS && J.songs[name];
       if (!data || !ctx) return null;
       try { r = window.NDS.render(data, J); } catch (e) { return null; }
@@ -177,6 +203,14 @@
   // Plays `name` from `offset` seconds (looping if it loops). Resolves when a
   // song that doesn't loop has finished.
   function start(name, offset, fade) {
+    if (wantsHoenn(name) && !hoennReady() && !hoennTried) {
+      // (Not loaded yet: it starts once it is, if it's still the one wanted.)
+      loadHoenn().then(() => {
+        hoennTried = true;
+        if (enabled && ctx && wanted === name && !fanfareDepth && (!current || current.name !== name || current.play !== pick(name))) start(name);
+      });
+      return Promise.resolve();
+    }
     if (wantsJohto(name) && !johtoReady() && !johtoTried) {
       // (Not loaded yet: it starts once it is, if it's still the one wanted.)
       loadJohto().then(() => {
@@ -211,7 +245,7 @@
       if (!enabled || !ctx || !window.MUSIC_DATA || fanfareDepth) return;
       if (!name) { stopCurrent(0.5); return; }
       // (The same song; unless it stands for a different one now: off to or from Johto on a bike.)
-      if (current && current.name === name && (johtoTried || !wantsJohto(name)) && current.play === pick(name)) return;
+      if (current && current.name === name && (johtoTried || !wantsJohto(name)) && (hoennTried || !wantsHoenn(name)) && current.play === pick(name)) return;
       start(name);
     },
     // A jingle over the music: the music stops, the jingle plays, the music
@@ -219,9 +253,10 @@
     async fanfare(name) {
       if (!enabled || !ctx || !window.MUSIC_DATA || ctx.state !== "running") return;
       if (wantsJohto(name) && !johtoTried) { await loadJohto(); johtoTried = true; }
+      if (wantsHoenn(name) && !hoennTried) { await loadHoenn(); hoennTried = true; }
       const before = current && { name: current.name, at: position(current) };
       fanfareDepth++;
-      const frames = /^gs_/.test(pick(name)) ? 0 : FANFARE_FRAMES[name];   // (HGSS's play to their end)
+      const frames = /^(gs_|em_)/.test(pick(name) || "") ? 0 : FANFARE_FRAMES[name];   // (HGSS's and Emerald's play to their end)
       await Promise.race([start(name, 0, 0.05)].concat(frames ? [new Promise((r) => setTimeout(r, frames * 1000 / 60))] : []));
       fanfareDepth--;
       if (fanfareDepth) return;

@@ -3077,7 +3077,7 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
     for (const m of fs.readFileSync(path.join(root, f), "utf8").matchAll(/"(mus_[a-z0-9_]+)"/g)) named.add(m[1]);
   }
   // (Johto's gs_ songs are HGSS's, in assets/audio/johto-music.js: below.)
-  for (const name of named) if (!/^gs_/.test(name)) assert(songs[name], "missing song " + name);
+  for (const name of named) if (!/^(gs_|em_)/.test(name)) assert(songs[name], "missing song " + name);
   // Pallet Town: a loop, seamless (the loop part is the second time through), and in range.
   const r = M4A.render(songs.mus_pallet, bank);
   assert.strictEqual(r.rate, 13379);
@@ -6404,5 +6404,12 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     for (const q of m.people) if (q.sprite && /^em_/.test(q.sprite)) assert(fs.existsSync(path.join(root, "assets/world/sprites/" + q.sprite + ".png")), name + ": sprite " + q.sprite);
   }
   assert(hoenn.some(([n]) => /_PokemonCenter_1F$/.test(n) && WORLD_MAPS[n].pokemonCenter), "Hoenn's Pokémon Centers heal");
-  console.log("ok: Hoenn, " + hoenn.length + " maps from Emerald's tilesets");
+  // Its music: Emerald's own songs (assets/audio/hoenn-music.js), every one the maps and trainers ask for, and they play.
+  vm.runInThisContext(fs.readFileSync(path.join(root, "assets/audio/hoenn-music.js"), "utf8"), { filename: "assets/audio/hoenn-music.js" });
+  const H = window.HOENN_MUSIC_DATA;
+  for (const [name, m] of hoenn) if (m.music) assert(H.songs[m.music], name + "'s song " + m.music);
+  for (const [id, t] of Object.entries(WORLD_TRAINERS)) if (/^EM_/.test(id)) assert(H.songs[t.music], id + "'s song " + t.music);
+  const littleroot = M4A.render(H.songs.em_littleroot, H.bank);
+  assert(littleroot.left.length > littleroot.rate * 60 && littleroot.loopEnd > littleroot.loopStart && Math.max(...littleroot.left.filter((_, i) => i % 97 === 0)) > 0.1, "Littleroot's song plays");
+  console.log("ok: Hoenn, " + hoenn.length + " maps from Emerald's tilesets, " + Object.keys(H.songs).length + " of its songs");
 }

@@ -35,7 +35,7 @@
   // "eyes meet" and jingle songs as HGSS's there).
   // (Is a map in Johto: `map`, or where you are.)
   const inJohto = (map) => !!(map || (player && player.location)) && (window.WORLD_MAPS[map || player.location.map] || {}).region === "johto";
-  if (GA && GA.setRegion) GA.setRegion(() => (inJohto() ? "johto" : null));
+  if (GA && GA.setRegion) GA.setRegion(() => (inJohto() ? "johto" : ((window.WORLD_MAPS[player && player.location && player.location.map] || {}).region === "hoenn" ? "hoenn" : null)));
   const fanfare = (name) => (GA ? GA.fanfare(name) : Promise.resolve());
   const cry = (species, opts) => { if (GA) GA.cry(species, opts); };
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
