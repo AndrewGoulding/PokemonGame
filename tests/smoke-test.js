@@ -6404,6 +6404,23 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     for (const q of m.people) if (q.sprite && /^em_/.test(q.sprite)) assert(fs.existsSync(path.join(root, "assets/world/sprites/" + q.sprite + ".png")), name + ": sprite " + q.sprite);
   }
   assert(hoenn.some(([n]) => /_PokemonCenter_1F$/.test(n) && WORLD_MAPS[n].pokemonCenter), "Hoenn's Pokémon Centers heal");
+  // Its Town Map (Emerald's region map: tools/lib/hoenn-town-map.js): the grid, every map's section, and Fly's spots.
+  const HT = window.HOENN_TOWN_MAP;
+  assert.deepStrictEqual([HT.width, HT.height, HT.map.length, HT.towns.length], [28, 15, 15, 16]);
+  assert(fs.existsSync(path.join(root, "assets/town-map/hoenn.png")), "Hoenn's map picture");
+  const off = [];
+  for (const [name, m] of hoenn) {
+    const sec = HT.mapSections[name];
+    assert(sec && (HT.names[sec] || sec === "DYNAMIC"), name + "'s section " + sec);
+    if (!HT.map.some((r) => r.includes(sec)) && !HT.at[name]) off.push(name);
+  }
+  // (Almost all are somewhere on it: only the truck, the ships and the like are nowhere.)
+  assert(off.length <= 12, "maps nowhere on the Town Map: " + off.join(" "));
+  for (const t of HT.towns) {
+    const spot = HT.fly[t], m = spot && WORLD_MAPS[spot.map];
+    assert(m && m.region === "hoenn" && !m.collision[spot.y * m.width + spot.x], t + "'s Fly spot is open ground");
+  }
+  assert.strictEqual(HT.fly.LITTLEROOT_TOWN.girl.x, 14, "May's house, for a girl");
   // Its music: Emerald's own songs (assets/audio/hoenn-music.js), every one the maps and trainers ask for, and they play.
   vm.runInThisContext(fs.readFileSync(path.join(root, "assets/audio/hoenn-music.js"), "utf8"), { filename: "assets/audio/hoenn-music.js" });
   const H = window.HOENN_MUSIC_DATA;

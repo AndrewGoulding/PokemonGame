@@ -53,8 +53,15 @@
     if (!moveIDs) { moveIDs = {}; for (const k of Object.keys(window.MOVES)) moveIDs[toID(k)] = k; }
     return moveIDs[toID(x.replace(/^MOVE_/, ""))] || null;
   }
+  // (Emerald's TMs and HMs are numbered as Gen 3's: this game's, by the move: ITEM_TM27_RETURN is whichever machine teaches Return.)
+  let machines = null;
+  function machine(moveName) {
+    if (!machines) { machines = {}; for (const [id, it] of Object.entries(window.ITEMS)) { const m = it.category === "all-machines" && /^Teaches (.+?) to a compatible/.exec(it.effect || ""); if (m) machines[toID(m[1])] = id; } }
+    return machines[toID(moveName)] || null;
+  }
   function item(x) {
     if (typeof x !== "string") return x;
+    { const m = /^ITEM_(?:TM|HM)(?:\d+)?_(\w+)$/.exec(x); if (m) return machine(m[1]); }
     const k = x.replace(/^ITEM_/, "").toLowerCase().replace(/_/g, "-");
     if (window.ITEMS[k]) return k;
     if (!itemIDs) { itemIDs = {}; for (const i of Object.keys(window.ITEMS)) itemIDs[toID(i)] = i; }

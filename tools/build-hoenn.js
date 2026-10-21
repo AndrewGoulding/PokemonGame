@@ -151,7 +151,12 @@ function scriptText(mapName, script, depth) {
   }
   return null;
 }
+// (Emerald's TMs and HMs are numbered as Gen 3's: this game's, by the move: TM27 Return is whichever machine teaches Return.)
+const machineByMove = {};
+for (const [id, it] of Object.entries(window.ITEMS)) { const m = it.category === "all-machines" && /^Teaches (.+?) to a compatible/.exec(it.effect || ""); if (m) machineByMove[toID(m[1])] = id; }
 const itemId = (c) => {
+  const mv = /^ITEM_(?:TM|HM)(?:\d+)?_(\w+)$/.exec(String(c));
+  if (mv) return machineByMove[toID(mv[1])] || null;
   const k = String(c).replace(/^ITEM_/, "").toLowerCase().replace(/_/g, "-");
   if (window.ITEMS[k]) return k;
   const found = Object.keys(window.ITEMS).find((x) => toID(x) === toID(k));
@@ -299,6 +304,8 @@ function martStock(mapName, script) {
 function ballItem(mapName, script) {
   const { scripts } = textsOf(mapName), lines = scripts[script] || [];
   for (const line of lines) { const m = /^finditem\s+(ITEM_\w+)/.exec(line); if (m) return itemId(m[1]); }
+  // (Emerald's item balls' scripts are all in data/scripts/item_ball_scripts.inc.)
+  for (const c of compiled.s[script] || []) if (c[0] === "finditem") return itemId(c[1]) || undefined;
   return undefined;
 }
 
@@ -477,9 +484,29 @@ for (const cmds of Object.values(compiled.s)) for (const c of cmds) for (const a
 }
 const hoennScripts = { songNames, seNames, gfx, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, consts: mapConsts };
 
+// ---------- The Town Map ----------
+// Each map's section (its name on the map, and where it is on it); a map whose section has no square (a cave's)
+// is where the nearest map that has one is, by its warps and connections.
+const sectionOf = {};
+for (const name of MAPS) sectionOf[ren(name)] = String(mapJson(name).region_map_section || "").replace(/^MAPSEC_/, "");
+const townMapData = require("./lib/hoenn-town-map")(EM).build({ mapSections: sectionOf, heal, at: {} });
+{
+  const cellOf = {};
+  townMapData.map.forEach((row, y) => row.forEach((sec, x) => { if (sec && !cellOf[sec]) cellOf[sec] = [x, y, 0]; }));
+  for (const [name, m] of Object.entries(out)) {
+    if (cellOf[sectionOf[name]]) continue;
+    const seen = new Set([name]), queue = [name];
+    while (queue.length) {
+      const n = queue.shift();
+      if (cellOf[sectionOf[n]]) { townMapData.at[name] = cellOf[sectionOf[n]]; break; }
+      for (const x of out[n].warps.concat(out[n].connections)) if (x.map && !seen.has(x.map)) { seen.add(x.map); queue.push(x.map); }
+    }
+  }
+}
+
 // ---------- The data file ----------
 const START = "// Hoenn (tools/build-hoenn.js, from pret/pokeemerald): its maps, trainers and scripts.\n", END = "// (End of Hoenn.)\n";
-const js = START + "Object.assign(window.WORLD_MAPS, " + JSON.stringify(out) + ");\nObject.assign(window.WORLD_TRAINERS, " + JSON.stringify(WORLD_TRAINERS) + ");\nwindow.HOENN_SCRIPTS = " + JSON.stringify(hoennScripts) + ";\n" + END;
+const js = START + "Object.assign(window.WORLD_MAPS, " + JSON.stringify(out) + ");\nObject.assign(window.WORLD_TRAINERS, " + JSON.stringify(WORLD_TRAINERS) + ");\nwindow.HOENN_SCRIPTS = " + JSON.stringify(hoennScripts) + ";\nwindow.HOENN_TOWN_MAP = " + JSON.stringify(townMapData) + ";\n" + END;
 const file = path.join(root, "data/emerald-maps.js");
 let text = fs.readFileSync(file, "utf8");
 // (Whichever block this tool wrote before, its start line worded as it was.)

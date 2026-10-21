@@ -12,23 +12,28 @@
 (function () {
   "use strict";
 
+  // (`hoenn`: the Badge it needs in Hoenn, Emerald's: Cut the Stone Badge, Flash the Knuckle, Rock Smash the
+  // Dynamo, Strength the Heat, Surf the Balance, Fly the Feather, Dive the Mind, Waterfall the Rain.)
   // (`johto`: the Badge it needs in Johto, HGSS's: Rock Smash and Flash the
   // Zephyr Badge, Cut the Hive, Strength the Plain, Surf the Fog, Whirlpool the
   // Glacier, Waterfall and Rock Climb the Rising; Fly none, this game's own, so
   // Kanto's Champion can get about Johto from the start.)
   const FIELD_MOVES = [
-    { move: "Flash", badge: "boulder", johto: "zephyr", desc: "Light up darkness." },
-    { move: "Cut", badge: "cascade", johto: "hive", desc: "Cut a tree or grass." },
-    { move: "Fly", badge: "thunder", johto: null, desc: "Fly to a known town." },
-    { move: "Strength", badge: "rainbow", johto: "plain", desc: "Move heavy boulders." },
-    { move: "Surf", badge: "soul", johto: "fog", desc: "Travel on water." },
-    { move: "Rock Smash", badge: "marsh", johto: "zephyr", desc: "Shatter a cracked rock." },
-    { move: "Waterfall", badge: "volcano", johto: "rising", desc: "Climb a waterfall." },
+    { move: "Flash", badge: "boulder", johto: "zephyr", hoenn: "knuckle", desc: "Light up darkness." },
+    { move: "Cut", badge: "cascade", johto: "hive", hoenn: "stone", desc: "Cut a tree or grass." },
+    { move: "Fly", badge: "thunder", johto: null, hoenn: "feather", desc: "Fly to a known town." },
+    { move: "Strength", badge: "rainbow", johto: "plain", hoenn: "heat", desc: "Move heavy boulders." },
+    { move: "Surf", badge: "soul", johto: "fog", hoenn: "balance", desc: "Travel on water." },
+    { move: "Rock Smash", badge: "marsh", johto: "zephyr", hoenn: "dynamo", desc: "Shatter a cracked rock." },
+    { move: "Waterfall", badge: "volcano", johto: "rising", hoenn: "rain", desc: "Climb a waterfall." },
     // (And Johto's, HGSS's: Whirlpool needs the Glacier Badge, Rock Climb the Rising Badge.)
-    { move: "Whirlpool", badge: "glacier", johto: "glacier", desc: "Cross a whirlpool." },
-    { move: "Rock Climb", badge: "rising", johto: "rising", desc: "Scale rocky walls." }
+    { move: "Whirlpool", badge: "glacier", johto: "glacier", hoenn: "glacier", desc: "Cross a whirlpool." },
+    { move: "Rock Climb", badge: "rising", johto: "rising", hoenn: "rising", desc: "Scale rocky walls." },
+    // (Hoenn's: Dive, which Emerald's Mind Badge lets you use; HM09 here.)
+    { move: "Dive", badge: null, johto: null, hoenn: "mind", desc: "Dive underwater." }
   ];
   const inJohto = (player) => (((window.WORLD_MAPS || {})[(player.location || {}).map] || {}).region === "johto");
+  const inHoenn = (player) => (((window.WORLD_MAPS || {})[(player.location || {}).map] || {}).region === "hoenn");
   const info = (move) => FIELD_MOVES.find((f) => f.move === move) || null;
 
   // The HM that teaches `move` (HM01 Cut ... HM08 Rock Smash here).
@@ -53,7 +58,7 @@
       if (!learnable(record, move)) return "unable";
       if (!hasHm(player, move)) return "hm";
     }
-    const badge = inJohto(player) ? f.johto : f.badge;
+    const badge = inHoenn(player) ? f.hoenn : inJohto(player) ? f.johto : f.badge;
     if (badge && !player.badges.includes(badge)) return "badge";
     return null;
   }

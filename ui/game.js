@@ -1044,6 +1044,18 @@
     Object.assign(T.names, JOHTO_MAP.names);
     T.fly = Object.assign({}, T.fly, JOHTO_MAP.fly);
   }
+  // Hoenn's (window.HOENN_TOWN_MAP, in data/emerald-maps.js: tools/lib/hoenn-town-map.js): Emerald's region map,
+  // its maps' sections and names, and Fly's spots (outside each town's Pokémon Center), as Johto's join them.
+  const HOENN_MAP = window.HOENN_TOWN_MAP || null;
+  if (HOENN_MAP && window.TOWN_MAP && !window.TOWN_MAP.hoenn) {
+    const T = window.TOWN_MAP;
+    T.hoenn = HOENN_MAP;
+    Object.assign(T.mapSections, HOENN_MAP.mapSections);
+    Object.assign(T.names, HOENN_MAP.names);
+    T.fly = Object.assign({}, T.fly, HOENN_MAP.fly);
+  }
+  // (Have you been to Hoenn: any of its sections visited.)
+  const beenToHoenn = () => !!HOENN_MAP && (player.flags.visitedSections || []).some((sec) => sec in HOENN_MAP.names);
   // (And Kanto's Victory Road, once you've been inside: outside its entrance
   // on Route 23. This game's own; FireRed has no Fly to caves.)
   if (window.TOWN_MAP && window.TOWN_MAP.fly && !window.TOWN_MAP.fly.KANTO_VICTORY_ROAD)
@@ -1074,7 +1086,10 @@
     // (Flying too: every map you have, the region you're in first, and SELECT
     // turns through them, so you can fly between Kanto, the Sevii Islands and Johto.)
     const johto = JOHTO_MAP && (johtoHere || beenToJohto()) ? [JOHTO_MAP] : [];
-    const regions = johtoHere ? johto.concat(kanto) : kanto.concat(johto);
+    // (In Hoenn, its map alone; elsewhere, once you've been to Hoenn, its map to look at, but not to fly to.)
+    const hoennHere = !!HOENN_MAP && isHoenn(map);
+    const hoennMaps = HOENN_MAP && !flying && !hoennHere && beenToHoenn() ? [HOENN_MAP] : [];
+    const regions = hoennHere ? [HOENN_MAP] : (johtoHere ? johto.concat(kanto) : kanto.concat(johto)).concat(hoennMaps);
     const sprite = (R, x, y) => "left:" + pct(R.x0 - 4 + 8 * x, 240) + ";top:" + pct(R.y0 - 4 + 8 * y, 160);
     const cellIn = (R, sec) => {
       if (!sec) return null;
@@ -1085,6 +1100,8 @@
     // (In Johto, the square you're on: HGSS's world matrix has a square every
     // 32 tiles of a map outdoors; inside, where the building or cave is.)
     const johtoAt = (name, x, y) => {
+      // (Hoenn's: the square of its section, or, for a cave with none, of the place it's by.)
+      if (HOENN_MAP && HOENN_MAP.at[name] && regions.indexOf(HOENN_MAP) >= 0) return { region: regions.indexOf(HOENN_MAP), cell: HOENN_MAP.at[name].slice(0, 2) };
       const at = JOHTO_MAP && JOHTO_MAP.at[name], R = JOHTO_MAP;
       if (!at || regions.indexOf(R) < 0) return null;
       const cell = at[2] ? [at[0] + Math.floor((x | 0) / 32), at[1] + Math.floor((y | 0) / 32)] : [at[0], at[1]];
@@ -1094,7 +1111,7 @@
     // where you came in from outdoors.)
     const loc = player.location || {}, esc = f.escapeWarp || {};
     const here = johtoAt(loc.map, loc.x, loc.y) || find(T.mapSections[loc.map]) || johtoAt(esc.map, esc.x, esc.y) || find(T.mapSections[esc.map]) ||
-      (johtoHere ? { region: 0, cell: cellIn(regions[0], "NEW_BARK_TOWN") } : { region: 0, cell: cellIn(regions[0], "PALLET_TOWN") });
+      (hoennHere ? { region: 0, cell: cellIn(regions[0], "LITTLEROOT_TOWN") } : johtoHere ? { region: 0, cell: cellIn(regions[0], "NEW_BARK_TOWN") } : { region: 0, cell: cellIn(regions[0], "PALLET_TOWN") });
     let region = here.region, [cx, cy] = here.cell;
     visitSection(player.location && player.location.map);
     const visited = f.visitedSections || [];
@@ -6320,9 +6337,11 @@
   // FireRed's Fly out of battle (Overworld.flyOut, flyIn), unless you're
   // surfing (then just the sound and a fade).
   async function fly(mon) {
-    const spot = await townMap({ fly: true });
+    let spot = await townMap({ fly: true });
     await Overworld.resume();   // (the map was put away for the Town Map)
     if (!spot) return;
+    // (Littleroot's: outside your own house.)
+    if (spot.girl && isGirl()) spot = Object.assign({}, spot, spot.girl);
     if (Overworld.avatar() === "surf" || !mon) sfx("se_m_fly");
     else {
       Overworld.setAvatar("walk");
@@ -12374,6 +12393,6 @@
   }
 
 
-  window.Game = { get player() { return player; }, get pokegear() { return gear; }, get hoenn() { return hoenn; } };
+  window.Game = { get player() { return player; }, get pokegear() { return gear; }, get hoenn() { return hoenn; }, townMap: (o) => townMap(o) };
   main();
 })();
