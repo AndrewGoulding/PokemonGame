@@ -621,8 +621,13 @@ const DAYCARE_MAN = ["I'm the Day-Care Man.", "Do you know about Eggs? My wife a
   }
 }
 const out = {}, rendered = {};
-const mapsDir = path.join(root, "assets/world/maps");
+// (--only=Name,Name [--out=dir]: just those maps' pictures, to look at: nothing else is written.)
+const ONLY = (process.argv.find((a) => a.startsWith("--only=")) || "").slice(7).split(",").filter(Boolean);
+const OUT = (process.argv.find((a) => a.startsWith("--out=")) || "").slice(6);
+const mapsDir = ONLY.length && OUT ? OUT : path.join(root, "assets/world/maps");
+if (ONLY.length && OUT) fs.mkdirSync(OUT, { recursive: true });
 MAPS.forEach((m, i) => {
+  if (ONLY.length && !ONLY.includes(m.name)) return;
   loadMessages(m.zone);
   // (Outdoors, drawn by the painter in FireRed's style: from what each tile is.)
   const painted = !HGSS_LOOK && m.type !== "indoor";
@@ -656,7 +661,7 @@ MAPS.forEach((m, i) => {
     for (let k = 1; k <= 3; k++) r.below[i - k] = Math.round(r.below[i - k] * a);
     r.below[i] = 255;
   }
-  let anim;
+  let anim, solidFollowsDrawn = null;
   const animFile = path.join(mapsDir, m.name + "-anim.png");
   if (painted) {
     // What each tile is, its buildings (from their doors) and signs; drawn with
@@ -684,19 +689,46 @@ MAPS.forEach((m, i) => {
       classes.forEach((c, i) => { if (!reach.has(i) && c !== "waterrock") classes[i] = "rock"; });
     }
     if (!cave) HC.smooth(classes, r.width, r.height).forEach((c, i) => { classes[i] = c; });
-    const pic = Painter.compose(classes, r.width, r.height, { buildings: cave ? [] : HC.buildingsOf(r, classes, evw), signs, style: cave ? "cave" : "outdoor", minScore: 8, noFill: true });
-    // Buildings Kanto has none like (Goldenrod's towers and station, the
-    // Radio Tower, a city's blocks): HGSS's own pictures of them over the
-    // painted ground, where no stamp of Kanto's stands.
-    if (!cave && r.buildings) {
+    // (A forest's deep inside, out of reach behind two rows of trees: sparser, grass among them, not solid pines to the horizon.)
+    if (!cave) HC.thinForests(classes, r.width, r.height);
+    if (process.env.DUMP_CLASSES) {
+      const ch = { grass: ".", flowers: "f", path: "p", sand: "s", pavement: "v", bridge: "b", tallgrass: "g", water: "~", waterfall: "w", waterrock: "o", tree: "T", rock: "R", fence: "#", building: "B", object: "x" };
+      console.log(m.name + "\n" + Array.from({ length: r.height }, (_, y) => classes.slice(y * r.width, (y + 1) * r.width).map((c) => ch[c] || (c && c[0] === "l" ? "L" : "?")).join("")).join("\n"));
+    }
+    const pic = Painter.compose(classes, r.width, r.height, { buildings: cave ? [] : HC.buildingsOf(r, classes, evw), signs, style: cave ? "cave" : "outdoor", minScore: 8, noFill: true, stretch: true });
+    // HGSS's own pictures of what no stamp of Kanto's stands for (a city's
+    // blocks with no door), over the painted ground; a building with a stamp
+    // gets none (its picture's roof and walls overhang the stamp's tiles).
+    // And what's solid follows what's drawn: HGSS's solid tiles of a building drawn smaller are open ground.
+    if (!cave) {
       const stamped = new Set();
       for (const p of pic.placed) for (let j = 0; j < p.stamp.h; j++) for (let i = 0; i < p.stamp.w; i++) if (p.stamp.blocks[j * p.stamp.w + i] != null) stamped.add((p.y + j) * r.width + p.x + i);
-      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-        if (stamped.has((y >> 4) * r.width + (x >> 4))) continue;
+      // (Which of HGSS's building pictures' tiles are one building's: those joined, with a tile's gap allowed.)
+      const has = new Array(r.width * r.height).fill(false);
+      if (r.buildings) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (r.buildings[(y * W + x) * 4 + 3] || r.buildingsTop[(y * W + x) * 4 + 3]) has[(y >> 4) * r.width + (x >> 4)] = true;
+      const comp = new Array(r.width * r.height).fill(-1), keep = [];
+      for (let i0 = 0; i0 < has.length; i0++) {
+        if (!has[i0] || comp[i0] >= 0) continue;
+        const id = keep.length; keep.push(true);
+        const q = [i0]; comp[i0] = id;
+        while (q.length) {
+          const k = q.pop(), x = k % r.width, y = Math.floor(k / r.width);
+          if (stamped.has(k)) keep[id] = false;
+          for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+            const u = x + dx, v = y + dy, n = v * r.width + u;
+            if (u < 0 || v < 0 || u >= r.width || v >= r.height || !has[n] || comp[n] >= 0) continue;
+            comp[n] = id; q.push(n);
+          }
+        }
+      }
+      if (r.buildings) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const t = (y >> 4) * r.width + (x >> 4);
+        if (stamped.has(t) || (comp[t] >= 0 && !keep[comp[t]])) continue;
         const o = (y * W + x) * 4;
         if (r.buildings[o + 3]) { pic.below.set(r.buildings.subarray(o, o + 3), o); pic.below[o + 3] = 255; }
         if (r.buildingsTop[o + 3]) { pic.above.set(r.buildingsTop.subarray(o, o + 3), o); pic.above[o + 3] = 255; }
       }
+      solidFollowsDrawn = { stamped, classes: pic.classes, was: classes.slice(), doors: new Set(evw.map((w) => w.y * r.width + w.x)), pictured: (t) => stamped.has(t) || (comp[t] >= 0 && keep[comp[t]]) };
     }
     drawWhirlpools(r, pic);
     drawRockClimbs(r, pic);
@@ -738,6 +770,13 @@ MAPS.forEach((m, i) => {
   // its own: FireRed's are waterfalls you go up or down with Waterfall, onto
   // water. Whirlpools and rocky walls stay solid: Whirlpool and Rock Climb take you over them.)
   const collision = r.perm.map((v, i) => (inside && !drawn(i) ? 1 : (v & 0xff) === 0x13 || (v & 0xff) === 0x22 ? 0 : (v >> 15) & 1));
+  if (solidFollowsDrawn) {
+    const S = solidFollowsDrawn;
+    for (let i = 0; i < collision.length; i++) {
+      if (S.doors.has(i)) continue;
+      if (collision[i] && (S.was[i] === "building" || S.was[i] === "object") && !S.pictured(i) && S.classes[i] !== "building" && S.classes[i] !== "object") collision[i] = 0;
+    }
+  }
   const behavior = r.perm.map((v) => ((v & 0xff) === 0x22 ? 0x10 : frBehavior(v & 0xff)));
   // (Azalea's Gym: HGSS's Spinarak carts ride its webs between the floors;
   // this game has no carts, so you walk the webs.)
@@ -836,6 +875,7 @@ MAPS.forEach((m, i) => {
   };
   console.log(m.name, r.width + "x" + r.height, "people", people.length, "signs", out[m.name].signs.length, "warps", out[m.name].warps.length);
 });
+if (ONLY.length && OUT) process.exit(0);
 
 // Each pair of outdoor maps side by side on the matrix, joined where they
 // touch (FireRed's connections: the other map's offset along the edge, in tiles).

@@ -69,8 +69,10 @@ function pick(s, c, x, y, n) {
 }
 
 // (A few classes are one metatile, and look like another to their neighbours.)
-const SINGLE = { flowers: [4, "grass"] };
-const seenAs = { waterfall: "water" };
+const SINGLE = { flowers: [4, "grass"], lonetree: [5, "grass"] };
+// (A forest's deep inside, tools/lib/hgss-classes.js's thinForests: plain grass, as FireRed's, in its own two-by-two pattern.)
+const MEADOW = [[17, 16], [9, 17]];   // [x & 1][y & 1]
+const seenAs = { waterfall: "water", meadow: "grass" };
 // -> blocks: a metatile id a tile (or null: a building's or object's), and
 // `outdoor`: the tiles drawn in the outdoor style because `style` has nothing
 // of their class (a cave's water).
@@ -82,6 +84,7 @@ function paint(classes, w, h, style) {
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const c = classes[y * w + x];
     if (c === "building" || c === "object" || c == null) continue;
+    if (c === "meadow") { blocks[y * w + x] = MEADOW[x & 1][y & 1]; continue; }
     if (SINGLE[c]) { blocks[y * w + x] = SINGLE[c][0]; continue; }
     // (A waterfall: FireRed's General tileset's, a column's top, middle and foot.)
     if (c === "waterfall") {
@@ -130,6 +133,62 @@ function fit(b, classes, w, h) {
   return best;
 }
 
+
+// A building of Kanto's stretched to a footprint (the nine-slice way: the
+// columns beside its door and the rows above it repeated, or dropped, to fit)
+// when no stamp's size does: Johto's buildings aren't Kanto's sizes. The
+// stamp's door goes on the building's, so what's beside it grows or shrinks.
+// -> a stamp-like { kind, w, h, door, blocks (null off the footprint), primary, secondary }
+function stretch(b, classes, w, h) {
+  const foot = new Set(b.tiles.map(([x, y]) => y * w + x));
+  let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+  for (const [x, y] of b.tiles) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+  const kinds = KIND_FALLBACK[b.kind] || ["house"];
+  const W0 = x1 - x0 + 1, H0 = y1 - y0 + 1;
+  // The stamp whose width is nearest (HGSS's solid part is often only a building's foot: its roof overhangs, so its height is no guide).
+  let base = null, bestCost = 1e9;
+  for (const st of STYLE.stamps) {
+    const pref = kinds.indexOf(st.kind);
+    if (pref < 0 || st.w < 3 || st.h < 3 || st.door[0] < 1) continue;
+    const cost = pref * 6 + Math.abs(W0 - st.w) + (st.h > H0 + 4 ? (st.h - H0 - 4) * 0.7 : 0) + (st.h < H0 ? (H0 - st.h) * 1.5 : 0)
+      + Math.abs((b.door[0] - x0) - st.door[0]) * 1.2 + Math.abs((x1 - b.door[0]) - (st.w - 1 - st.door[0])) * 1.2;
+    if (cost < bestCost) { bestCost = cost; base = st; }
+  }
+  if (!base) return null;
+  // The size drawn: at least the footprint, and at least a small building's (4 x 4), its roof rising above the footprint.
+  const W = Math.max(W0, 4), H = Math.max(H0, Math.min(base.h, 5), 4);
+  const left = Math.min(b.door[0] - x0, Math.floor((W - W0) / 2) + b.door[0] - x0), dxo = b.door[0] - (x0 - Math.floor((W - W0) / 2));
+  const bx0 = x0 - Math.floor((W - W0) / 2), by0 = y1 - H + 1;
+  const dx = b.door[0] - bx0, dy = b.door[1] - by0;
+  if (dx < 1 || dy < 1 || bx0 < 0 || by0 < 0 || bx0 + W > w) return null;
+  // Source index for each target index along one axis: `at` is the door's, `n` the target length,
+  // `m` the source's, `d` its door's. Before the door the source's first index stays and the rest repeat
+  // its second (or drop from the middle); after it the same from the door.
+  const axis = (n, m, d, at, minRepeat) => {
+    // (A side with fewer than `minRepeat` source indexes has no middle to repeat: padded with -1, nothing, beyond its outer edge.)
+    const side = (len, from0, to, padFront) => {
+      const src = []; for (let i = from0; i < to; i++) src.push(i);
+      while (src.length > len && src.length > 1) src.splice(padFront ? Math.max(1, src.length >> 1) : Math.max(0, src.length - 2), 1);
+      while (src.length < len) {
+        if (src.length >= minRepeat) src.splice(1, 0, src[1]);
+        else if (padFront) src.unshift(-1); else src.push(-1);
+      }
+      return src.slice(0, len);
+    };
+    const a = side(at, 0, d, true), z = side(n - at, d, m, false);
+    return Array.from({ length: n }, (_, i) => (i < at ? a[i] : z[i - at]));
+  };
+  const cols = axis(W, base.w, base.door[0], dx, 3), rows = axis(H, base.h, base.door[1], dy, 2);
+  const blocks = new Array(W * H).fill(null);
+  const NOT = new Set(["water", "waterfall", "waterrock", "bridge"]);
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    const k = (by0 + j) * w + bx0 + i;
+    if (!foot.has(k) && (NOT.has(classes[k]) || (by0 + j) > y1)) continue;
+    blocks[j * W + i] = rows[j] < 0 || cols[i] < 0 ? null : base.blocks[rows[j] * base.w + cols[i]];
+  }
+  return { kind: base.kind, from: base.from, w: W, h: H, door: [dx, dy], blocks, primary: base.primary, secondary: base.secondary, ox: bx0, oy: by0, stretched: true };
+}
+
 // The whole map: ground, buildings, signs.
 const SIGN_METATILES = { sign: 3, tips: 2, object: 5 };
 function compose(classes, w, h, opts) {
@@ -140,9 +199,22 @@ function compose(classes, w, h, opts) {
   // building is left for HGSS's own picture: tools/build-johto.js. opts.noFill:
   // no made-up buildings on the rest of a footprint, or on buildings with no
   // door: the ground round them instead, for that picture to stand on.)
-  for (const b of opts.buildings || []) {
-    const f = fit(b, classes, w, h);
-    if (!f || (opts.minScore != null && f.score < opts.minScore)) continue;
+  const place = (b) => {
+    let f = fit(b, classes, w, h);
+    // (A stamp that leaves much of the building's footprint bare isn't it: stretch one to fit.)
+    let coverage = 1;
+    if (f) {
+      const foot = new Set(b.tiles.map(([x, y]) => y * w + x));
+      let n = 0;
+      for (let j = 0; j < f.stamp.h; j++) for (let i = 0; i < f.stamp.w; i++) if (f.stamp.blocks[j * f.stamp.w + i] != null && foot.has((f.y + j) * w + f.x + i)) n++;
+      coverage = n / Math.max(1, foot.size);
+    }
+    if ((!f || coverage < 0.8 || (opts.minScore != null && f.score < opts.minScore)) && opts.stretch) {
+      const st = stretch(b, classes, w, h);
+      f = st && { stamp: st, x: st.ox, y: st.oy, score: 99 };
+    }
+    if (process.env.DUMP_BUILDINGS) console.log("building", b.kind, b.dest || "(none)", "door", b.door.join(","), "tiles", b.tiles.length, f ? (f.stamp.stretched ? "stretched " : "stamp ") + f.stamp.kind + " score " + f.score.toFixed(1) : "none");
+    if (!f || (opts.minScore != null && f.score < opts.minScore)) return;
     placed.push(f);
     const st = f.stamp;
     for (let j = 0; j < st.h; j++) for (let i = 0; i < st.w; i++) {
@@ -153,6 +225,34 @@ function compose(classes, w, h, opts) {
     }
     // (The rest of its footprint, a big building's: more of Kanto's buildings.)
     if (!opts.noFill) fill(new Set(b.tiles.map(([x, y]) => y * w + x).filter((i) => !covered.has(i))));
+  };
+  const taken = new Set();
+  for (const b of opts.buildings || []) { for (const [x, y] of b.tiles) taken.add(y * w + x); place(b); }
+  if (opts.stretch) {
+    // (Buildings with no door, a city's blocks and houses: stretched stamps too, a door on the bottom row in the middle.
+    // Not what's left of one with a door, a tile beside a stamp.)
+    const nearStamp = (k) => { const x = k % w, y = Math.floor(k / w); for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (covered.has((y + dy) * w + x + dx)) return true; return false; };
+    const seen = new Set(), extra = [];
+    for (let i0 = 0; i0 < w * h; i0++) {
+      if (classes[i0] !== "building" || covered.has(i0) || taken.has(i0) || seen.has(i0)) continue;
+      const cells = [], q = [i0]; seen.add(i0);
+      let touching = false;
+      while (q.length) {
+        const k = q.pop(); cells.push([k % w, Math.floor(k / w)]);
+        if (nearStamp(k)) touching = true;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const u = (k % w) + dx, v = Math.floor(k / w) + dy, n = v * w + u;
+          if (u < 0 || v < 0 || u >= w || v >= h || classes[n] !== "building" || covered.has(n) || taken.has(n) || seen.has(n)) continue;
+          seen.add(n); q.push(n);
+        }
+      }
+      // (Small things, a bridge's posts and the like, aren't buildings.)
+      const xs = cells.map(([x]) => x), ys = cells.map(([, y]) => y);
+      if (touching || cells.length < 6 || Math.max(...xs) - Math.min(...xs) < 2 || Math.max(...ys) - Math.min(...ys) < 2) continue;
+      const bottom = Math.max(...ys), row = cells.filter(([, y]) => y === bottom).map(([x]) => x).sort((a, b) => a - b);
+      extra.push({ door: [row[row.length >> 1], bottom], tiles: cells, kind: cells.length >= 36 ? "dept" : "house", pseudo: true });
+    }
+    for (const b of extra) place(b);
   }
   // Buildings with no door (a city's blocks): Kanto's buildings too.
   if (!opts.noFill) fill(new Set([...classes.keys()].filter((i) => classes[i] === "building" && !covered.has(i))));

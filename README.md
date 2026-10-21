@@ -1884,9 +1884,12 @@ with FireRed's own metatiles by one painter, `tools/lib/fr-painter.js`:
   2x2 blocks). It also keeps a library of Kanto's buildings, picked out by
   hand: Pokémon Centers, Marts, Gyms, houses of several sizes, Oak's Lab,
   big buildings, towers and a gate, each with its door; and FireRed's signs.
-  A stamp is used only where it fits a building's footprint well (`minScore`);
-  `noFill` leaves the rest of a footprint to the region's own picture of the
-  building instead of a made-up one of Kanto's.
+  A stamp is used as it is only where it covers a building's footprint well
+  (`minScore`, and 80% of the footprint); otherwise the painter stretches one
+  to the footprint, nine-slice fashion (the columns beside its door and the
+  rows above it repeated or dropped, its door on the building's; a side with
+  nothing to repeat is left bare, not doubled), the roof rising above the solid
+  part as HGSS's do. `noFill` leaves door-less leftovers alone.
   It learns two styles: outdoor (from Kanto's towns, cities, routes and
   islands) and cave (from the maps drawn with the Cave tileset); a class a
   style lacks (water in a cave) is drawn as outdoors, and waterfalls are
@@ -1947,12 +1950,21 @@ uppermost on each tile seen from above (`tools/lib/hgss-classes.js`: trees,
 rock, fences, buildings; the ground smoothed, so the odd tile of path in the
 grass that was a texture's edge is grass), and their buildings from their
 doors (a Pokémon Center's door gets a Pokémon Center, a Gym's a Gym, a
-gatehouse's a gate) where one of Kanto's buildings fits the footprint well;
-the rest, HGSS's own buildings that Kanto has none like (Goldenrod's Radio
-Tower, Magnet Train station and Department Store, Sprout Tower, the Gyms, a
-city's blocks), are HGSS's own pictures of them, rasterised from their 3D
-models, standing on the painted ground (`tools/lib/hgss-map.js` keeps their
-pixels apart in `buildings` and `buildingsTop`).
+gatehouse's a gate): one of Kanto's buildings, stretched to the footprint
+where its own size doesn't fit, so every building is FireRed's own art (HGSS's
+3D pictures of them looked foreign beside it; a door-less block of a city is
+a stretched Kanto building too, with no way in). What's solid follows what's
+drawn: HGSS's solid tiles of a building drawn smaller are open ground. A
+forest's deep inside (three tiles or more from any ground you can reach, and
+from the map's edge) is plain meadow with single trees well apart, as
+FireRed's open routes have, not pines to the horizon
+(`thinForests` in `tools/lib/hgss-classes.js`). Any picture of HGSS's of a
+building with no stamp near it still stands on the painted ground
+(`tools/lib/hgss-map.js` keeps their pixels apart in `buildings` and
+`buildingsTop`). `node tools/build-johto.js <checkout> --only=Map,Map
+--out=<dir>` paints just those maps' pictures, in seconds, to look at;
+`DUMP_CLASSES=1` and `DUMP_BUILDINGS=1` print a map's tile classes and how each
+building was drawn.
 Johto's caves (Tohjo Falls, Union Cave, Slowpoke Well, Dark Cave, Mt.
 Mortar, Ice Path, the Whirl Islands, Dragon's Den, Mt. Silver's cave, Cliff
 Cave) are drawn in the cave style (learned from Mt.

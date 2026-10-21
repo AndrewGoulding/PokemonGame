@@ -123,4 +123,26 @@ function smooth(classes, w, h) {
   return out;
 }
 
-module.exports = { classify, textureClass, buildingsOf, kindOf, smooth };
+// A forest's deep inside: a tree three or more tiles from any ground you can
+// reach (and from the map's edge, where FireRed's own border trees meet it)
+// is meadow but for single trees, staggered, well apart (classes "meadow" and "lonetree": tools/lib/fr-painter.js draws them plain).
+const OPEN = new Set(["grass", "flowers", "path", "sand", "pavement", "bridge", "tallgrass", "water", "waterfall", "ledge_n", "ledge_s", "ledge_e", "ledge_w"]);
+function thinForests(classes, w, h) {
+  const near = (x, y, r) => {
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      const u = x + dx, v = y + dy;
+      if (u < 0 || v < 0 || u >= w || v >= h) continue;
+      if (OPEN.has(classes[v * w + u])) return true;
+    }
+    return false;
+  };
+  const out = classes.slice();
+  for (let y = 3; y < h - 3; y++) for (let x = 3; x < w - 3; x++) {
+    if (classes[y * w + x] !== "tree" || near(x, y, 2)) continue;
+    // (Single trees well apart, staggered, as on FireRed's open routes.)
+    out[y * w + x] = y % 4 === 0 && (x + 2 * (y >> 2)) % 5 === 0 ? "lonetree" : "meadow";
+  }
+  for (let i = 0; i < out.length; i++) classes[i] = out[i];
+}
+
+module.exports = { classify, textureClass, buildingsOf, kindOf, smooth, thinForests };
