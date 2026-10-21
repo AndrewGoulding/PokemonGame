@@ -11784,7 +11784,7 @@
   const PETALBURG_DOORS = { 1: [[1, 104], [7, 104]], 2: [[1, 78], [7, 78]], 3: [[1, 91], [7, 91]], 4: [[7, 39]], 5: [[1, 52], [7, 52]], 6: [[1, 65]], 7: [[7, 13]], 8: [[1, 26]] };
   function petalburgDoors(room, frame) {
     const map = "PetalburgCity_Gym", m = window.WORLD_MAPS[map], id = m.mt["METATILE_PetalburgGym_SlidingDoor_Frame" + frame][2];
-    for (const [x, y] of PETALBURG_DOORS[room] || []) { hoennMetatileId(map, x, y, id, true); hoennMetatileId(map, x, y + 1, id + 8, true); }
+    for (const [x, y] of PETALBURG_DOORS[room] || []) { hoennMetatileId(map, x, y, id, frame < 4); hoennMetatileId(map, x, y + 1, id + 8, frame < 4); }   // (Open at the last frame.)
   }
   // Mauville Gym's beams and switches (MauvilleGymSetDefaultBarriers and MauvilleGymDeactivatePuzzle, which turn the
   // whole puzzle over, or off), by the tiles' names; MauvilleGymPressSwitch (the switch you stepped on is pressed).
@@ -11820,6 +11820,7 @@
       }
     }
   }
+  if (window.HOENN_DEBUG) window.HoennDebug = { petalburgDoors, mauvilleGym, metatileAt };
   // Runs a script; then whatever the map's frame table has due (a scene it set going).
   async function runHoenn(label, person) {
     const seen = new Set();
