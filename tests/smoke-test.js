@@ -6463,6 +6463,13 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   assert.strictEqual(WORLD_MAPS.Underwater_Route124.type, "underwater");
   assert(WORLD_MAPS.Underwater_Route124.wild && WORLD_MAPS.Underwater_Route124.wild.weights.length === 5, "seaweed has the water's Pokémon");
   assert(fs.existsSync(path.join(root, "assets/world/sprites/em_brendan_underwater.png")), "the diving sprite");
+  // Berry trees: the ones along the routes are people on the Berry Farm's engine, and the new game's are grown.
+  {
+    const trees = Object.values(WORLD_MAPS).flatMap((m) => (m.region === "hoenn" ? m.people : [])).filter((p) => /^HoennBerry_Tree_\d+$/.test(p.script || ""));
+    assert(trees.length >= 80 && new Set(trees.map((p) => p.script)).size === trees.length, "berry trees: " + trees.length);
+    assert.strictEqual(HS.berryTrees[2].berry, "oran-berry");
+    assert(Object.keys(HS.berryTrees).every((id) => trees.some((p) => p.script === "HoennBerry_Tree_" + id)), "each grown tree is on a map");
+  }
   // In-game trades: Rustboro's Seedot for a Ralts.
   assert.deepStrictEqual([HS.trades.INGAME_TRADE_SEEDOT.species, HS.trades.INGAME_TRADE_SEEDOT.requested], ["Seedot", "Ralts"]);
   assert(Object.keys(HS.trades).length >= 4, "the trades are in");

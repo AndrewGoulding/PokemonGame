@@ -1296,7 +1296,7 @@
   // Celadon's Berry Farm (ui/berry-farm.js): Emerald's berry trees, grown on
   // the step clock, faster the higher your farming level; planting and
   // picking earn farming XP.
-  const berryFarm = BerryFarm.create({
+  const berryEnv = {
     player: () => player, say: (pages) => say(pages), confirm: (q) => confirm(q), jingle: (song, pages) => sayWithJingle(song, pages),
     farmingLevel: () => BerryPicking.level(farmingXp()),
     addFarmingXp: async (n) => {
@@ -1318,7 +1318,10 @@
       return r ? r.id : null;
     },
     refresh: () => Overworld.refreshPeople(), here: () => player.location && player.location.map
-  });
+  };
+  const berryFarm = BerryFarm.create(berryEnv);
+  // Hoenn's trees, along its routes (Emerald's own: the ones its new game starts with are grown): the same engine, another place to keep them.
+  const hoennBerries = BerryFarm.create(berryEnv, { key: "hoennBerries", owns: (map) => isHoenn(map), spotRe: /^HoennBerry_Tree_(\d+)$/, initial: () => window.HOENN_SCRIPTS.berryTrees });
 
   // ---------- Summary ----------
   //
@@ -2637,7 +2640,7 @@
       dojoRematch(person.trainer.id)));
 
   function visible(person, map) {
-    if (isHoenn(map || player.location.map)) return hoennVisible(person, map || player.location.map);
+    if (isHoenn(map || player.location.map)) { const b = hoennBerries.visible(person, map || player.location.map); return b !== undefined ? b : hoennVisible(person, map || player.location.map); }
     const f = player.flags;
     // (A Tera Raid den: glowing while its raid is on.)
     { const den = RaidDens.byScript(person.script); if (den) return RaidDens.active(f, den.id) ? { sprite: "raid_den_active" } : true; }
@@ -2919,6 +2922,7 @@
     // (Mom's deliveryman, and the Gym Leaders' numbers and Dojo rematches: ui/pokegear.js.)
     if (ev.person && await gear.talkPerson(ev.person, ev.map)) return;
     if (ev.person && await berryFarm.talk(ev.person)) return;   // (Celadon's Berry Farm: ui/berry-farm.js)
+    if (ev.person && await hoennBerries.talk(ev.person)) return;   // (Hoenn's trees)
     // (Hoenn's own: a sailor, the bedroom PCs, the Day Care.)
     if (script === "SlateportCity_Harbor_EventScript_Sailor") { await slateportSailor(); return; }
     if (isHoenn(ev.map || player.location.map) && /_EventScript_PC$/.test(script)) { await pc(); return; }
@@ -12401,7 +12405,7 @@
     if (/^(enter|arrive):/.test(script || "") && isHoenn(script.replace(/^\w+:/, ""))) return !!hoenn.frameScript(script.replace(/^\w+:/, ""), /^enter:/.test(script));
     if (/^hgss:/.test(script || "")) return johto.triggerDue(script);
     if (/^hgss_apricorn:/.test(script || "")) return true;
-    if (/^BerryFarm_(Caretaker|Tree_\d+)$/.test(script || "")) return true;   // (Celadon's Berry Farm: ui/berry-farm.js)
+    if (/^(BerryFarm_(Caretaker|Tree_\d+)|HoennBerry_Tree_\d+)$/.test(script || "")) return true;   // (Celadon's Berry Farm: ui/berry-farm.js)
     if (/_PokemonCenter_1F_EventScript_Nurse$/.test(script || "") && johto.zoneOf(player.location.map)) return true;
     if (/^(enter|arrive):/.test(script || "") && johto.frameScript(script.replace(/^\w+:/, ""))) return true;
     // Coming back into Pewter City: the Museum ticket was for one visit (FireRed's OnTransition).
@@ -12563,7 +12567,7 @@
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
-          berryFarm.step();     // (Celadon's Berry Farm's trees growing)
+          berryFarm.step(); hoennBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
           return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
         adjustWild: (mon, table) => Encounters.leadWild(mon, leadMon(), table), allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&

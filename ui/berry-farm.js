@@ -37,12 +37,23 @@
   const DRY = 9, WET = 18;            // (the same on dry soil, wanting water; on wet, watered)
   const rnd = (n) => Math.floor(Math.random() * n);
 
-  function create(env) {
-    const state = () => { const f = env.player().flags; return f.berryFarm || (f.berryFarm = { pail: false, trees: {} }); };
+  // opts (Hoenn's own farm, its trees along the routes: ui/game.js): key (where it's kept in player.flags), owns(map),
+  // spotRe (a person's script: its spot), initial() (the trees there from the start, as Emerald's new game has them).
+  function create(env, opts) {
+    opts = opts || {};
+    const KEY = opts.key || "berryFarm", SPOT_RE = opts.spotRe || /^BerryFarm_Tree_(\d+)$/;
+    const owns = opts.owns || ((map) => !!D() && map === D().map);
+    const state = () => {
+      const f = env.player().flags;
+      if (f[KEY]) return f[KEY];
+      const trees = {};
+      for (const [spot, t] of Object.entries(opts.initial ? opts.initial() : {})) trees[spot] = { berry: t.berry, stage: t.stage, left: 0, watered: [false, false, false, false], yield: t.stage === STAGES ? info(t.berry).min : 0 };
+      return (f[KEY] = { pail: false, trees });
+    };
     const info = (berry) => D().berries[berry];
     const stageSteps = (berry) => info(berry).hours * ((window.Player && window.Player.STEPS_PER_HOUR) || 100);
     const rate = () => 1 + (env.farmingLevel() || 1) / 50;
-    const spotOf = (person) => { const m = /^BerryFarm_Tree_(\d+)$/.exec(person.script || ""); return m ? +m[1] : -1; };
+    const spotOf = (person) => { const m = SPOT_RE.exec(person.script || ""); return m ? +m[1] : -1; };
     // (Its name, and as many: "Cheri Berry", "4 Cheri Berries".)
     const name = (berry, n) => { const s = window.Bag.name(berry); return n > 1 ? s.replace(/y$/, "ies") : s; };
     const fill = (pages, berry, n) => pages.map((p) => p.replace(/\{BERRY\}/g, name(berry, n)).replace(/\{N\}/g, n).replace(/\{PLAYER\}/g, env.player().name));
@@ -72,12 +83,12 @@
         t.left -= r;
         while (t.stage < STAGES && t.left <= 0) { grow(t); changed = true; }
       }
-      if (changed && env.here() === D().map) env.refresh();
+      if (changed && owns(env.here())) env.refresh();
     }
 
     // A spot as it is: its tree's picture at its stage, or nothing (empty soil).
     function visible(person, map) {
-      if (!D() || map !== D().map) return undefined;
+      if (!D() || !owns(map)) return undefined;
       const spot = spotOf(person);
       if (spot < 0) return undefined;
       const t = state().trees[spot];

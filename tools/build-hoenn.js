@@ -375,6 +375,10 @@ for (const [label, cmds] of Object.entries(compiled.s)) {
   for (const c of cmds) if (c[0] === "setmetatile" && typeof c[3] === "string" && metatileIds[c[3]] != null) (metatilesOf[mp] = metatilesOf[mp] || new Set()).add(c[3]);
 }
 
+// The berry trees' numbers (include/constants/berry.h), which the maps' people name.
+const berryTreeIds = {};
+for (const m of fs.readFileSync(P("include/constants/berry.h"), "utf8").matchAll(/^#define (BERRY_TREE_\w+)[ \t]+(\d+)/gm)) berryTreeIds[m[1]] = +m[2];
+
 // ---------- Build ----------
 const out = {};
 for (const name of MAPS) {
@@ -423,7 +427,12 @@ for (const name of MAPS) {
     // (Someone whose look a var holds, the rival's or Wally's: shown once a script has set it: gfxVar.)
     const gfxVar = (/^OBJ_EVENT_GFX_VAR_(\w)$/.exec(o.graphics_id) || [])[1];
     const sp = gfxVar ? objectSprite("OBJ_EVENT_GFX_BOY_1") : objectSprite(o.graphics_id);
-    // (Berry trees and the like have no look yet.)
+    // (A berry tree: a spot on the farm's engine, ui/berry-farm.js, its look decided as the map is drawn.)
+    if (/^OBJ_EVENT_GFX_BERRY_TREE/.test(o.graphics_id)) {
+      people.push({ id: i, x: o.x, y: o.y, movement: "face_down", rangeX: 0, rangeY: 0, script: "HoennBerry_Tree_" + (berryTreeIds[o.trainer_sight_or_berry_tree_id] || 0), flag: null, text: null,
+        sprite: "berry_soil", width: 16, height: 32, frames: 9, localId: "LOCALID_" + name.replace(/([a-z])([A-Z0-9])/g, "$1_$2").toUpperCase() + "_" + i });
+      return;
+    }
     if (!sp) return;
     const item = ballItem(name, o.script), trainer = /^trainerbattle/m.test((textsOf(name).scripts[o.script] || []).join("\n")) ? trainerScript(name, o.script) : null;
     const stock = martStock(name, o.script);
@@ -497,6 +506,15 @@ for (const cmds of Object.values(compiled.s)) for (const c of cmds) for (const a
   if (/^MUS_[A-Z0-9_]+$/.test(arg) && !songNames[arg]) songNames[arg] = songOf(arg) || "mus_" + arg.slice(4).toLowerCase();
   else if (/^SE_[A-Z0-9_]+$/.test(arg) && !seNames[arg]) seNames[arg] = "se_" + arg.slice(3).toLowerCase();
 }
+// The berry trees Emerald's new game starts with (data/scripts/new_game.inc: setberrytree: all fully grown), by tree number.
+const berryTrees = {};
+{
+  const defs = berryTreeIds;
+  for (const m of fs.readFileSync(P("data/scripts/new_game.inc"), "utf8").matchAll(/setberrytree (\w+),\s*ITEM_TO_BERRY\((\w+)\),\s*BERRY_STAGE_(\w+)/g)) {
+    const berry = itemId(m[2]);
+    if (defs[m[1]] != null && berry) berryTrees[defs[m[1]]] = { berry, stage: m[3] === "BERRIES" ? 5 : 1 };
+  }
+}
 // In-game trades (src/data/trade.h): what they ask for and what you get, by their INGAME_TRADE_ names.
 const trades = {};
 {
@@ -533,7 +551,7 @@ const numConsts = {};
     if (typeof a === "string" && /^[A-Z][A-Z0-9_]+$/.test(a) && !STRINGY.test(a) && numConsts[a] == null) { const v = val(a); if (v != null) numConsts[a] = v; }
   }
 }
-const hoennScripts = { songNames, seNames, gfx, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, trades, numConsts, consts: mapConsts };
+const hoennScripts = { songNames, seNames, gfx, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, trades, berryTrees, numConsts, consts: mapConsts };
 
 // ---------- The Town Map ----------
 // Each map's section (its name on the map, and where it is on it); a map whose section has no square (a cave's)
