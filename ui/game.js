@@ -11716,7 +11716,8 @@
     warp: (mapConst, at) => hoennWarp(mapConst, at),
     setWeather: (name) => { hoennSaved = hoennKind(name); },
     metatileAt: (map, x, y) => metatileAt(map, x, y),
-    syncSpecial: (name) => hoennSyncSpecial(name),
+    setLayout: (map, layout) => hoennLayout(map, layout),
+    syncSpecial: (name, api) => hoennSyncSpecial(name, api),
     fieldEffect: async (name) => { if (name === "FLDEFF_HALL_OF_FAME_RECORD") await HallOfFame.recordFlash($("#overlay")); },
     badge: (n, on) => {
       const b = Player.REGION_BADGES.hoenn[n];
@@ -11812,6 +11813,11 @@
     const m = window.WORLD_MAPS[map], key = Object.keys(m.mt || {}).find((k) => m.mt[k][2] === id);
     if (key) hoennMetatile(map, x, y, key, impassable);
     else { m.collision[y * m.width + x] = impassable ? 1 : 0; if (m.blocks) (metatileNow[map] = metatileNow[map] || m.blocks.slice())[y * m.width + x] = id; }
+  }
+  // A layout a script swaps in (setmaplayoutindex): the tiles it changes, as setmetatile would (tools/build-hoenn.js has the differences).
+  function hoennLayout(map, layout) {
+    const m = window.WORLD_MAPS[map], list = m && m.layouts && m.layouts[layout];
+    if (list) for (const [x, y, id, col] of list) hoennMetatileId(map, x, y, id, !!col);
   }
   // Coming into a Hoenn map: its own tiles again, before its scripts change them.
   function restoreMetatiles(map) {
@@ -11911,9 +11917,22 @@
     if (s) hoennSaved = s.weather;
   }
   // Specials of Route 119 and 123's transitions: the cycle, unless you walked in from another route.
-  function hoennSyncSpecial(name) {
+  function hoennSyncSpecial(name, api) {
     if (name === "SetRoute119Weather" || name === "SetRoute123Weather") {
       if (!hoennOutdoors(hoennLastType)) hoennSaved = name === "SetRoute119Weather" ? "route119_cycle" : "route123_cycle";
+      return true;
+    }
+    // The Mirage Tower shows itself on half the days, until its event is done (src/mirage_tower.c).
+    if (name === "SetMirageTowerVisibility") {
+      const done = hoenn.getVar("VAR_MIRAGE_TOWER_STATE");
+      hoenn.setFlag("FLAG_MIRAGE_TOWER_VISIBLE", !done && (hoenn.flag("FLAG_FORCE_MIRAGE_TOWER_VISIBLE") || Math.random() < 0.5));
+      return true;
+    }
+    // Mirage Island is there on the days one of your Pokémon's personality matches the day's number (src/field_specials.c).
+    if (name === "IsMirageIslandPresent") {
+      const f = player.flags, day = Player.gameTime(player).day;
+      if (f.mirageDay !== day) { f.mirageDay = day; f.mirageRnd = Math.floor(Math.random() * 0x10000); }
+      api.set(player.party.some((r) => !r.egg && r.personality != null && (r.personality & 0xffff) === f.mirageRnd) ? 1 : 0);
       return true;
     }
     return false;
@@ -12039,6 +12058,29 @@
         await Overworld.fadeFromBlack();
         return true;
       }
+      // Sootopolis' sky: Groudon and Kyogre's fight, then Rayquaza's coming (src/rayquaza_scene.c; ui/rayquaza-scene.js).
+      case "Script_DoRayquazaScene": {
+        await api.flush();
+        Screen.say("");
+        await RayquazaScene.play($("#overlay"), +api.getVar("VAR_0x8004") ? 1 : 0, { spriteUrl: (s) => Screen.spriteUrl(s, "", false), cry, sfx });
+        $("#overlay").classList.add("hidden");
+        show("world");
+        return true;
+      }
+      // The Mirage Tower's end (Route 111): the ground shakes, you fall, the tower comes apart a row at a time.
+      case "StartMirageTowerShake": await api.flush(); sfx("se_ice_crack"); await Overworld.shake(40, { x: 1, y: 1, delay: 2 }); return true;
+      case "StartPlayerDescendMirageTower": await sleep(700); return true;
+      case "StartMirageTowerDisintegration": {
+        const list = ((window.WORLD_MAPS.Route111.layouts || {}).LAYOUT_ROUTE111_NO_MIRAGE_TOWER || []).slice().sort((a, b) => b[1] - a[1] || a[0] - b[0]);
+        for (let i = 0; i < list.length; i += 3) {
+          for (const [x, y, id, col] of list.slice(i, i + 3)) hoennMetatileId("Route111", x, y, id, !!col);
+          sfx("se_ball_throw");
+          await sleep(160);
+        }
+        return true;
+      }
+      case "StartMirageTowerFossilFallAndSink": sfx("se_fall"); await sleep(900); return true;
+      case "DoMirageTowerCeilingCrumble": await api.flush(); sfx("se_ice_crack"); await Overworld.shake(30, { x: 1, y: 1, delay: 2 }); return true;
       // The red and blue orbs' light.
       case "DoOrbEffect": await api.flush(); sfx("se_orb"); await sleep(700); return true;
       case "FadeOutOrbEffect": await sleep(400); return true;

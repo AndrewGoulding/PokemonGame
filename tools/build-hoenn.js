@@ -379,6 +379,13 @@ for (const [label, cmds] of Object.entries(compiled.s)) {
   for (const c of cmds) if (c[0] === "setmetatile" && typeof c[3] === "string" && metatileIds[c[3]] != null) (metatilesOf[mp] = metatilesOf[mp] || new Set()).add(c[3]);
 }
 
+// The layouts a map's scripts swap in (setmaplayoutindex: the Mirage Tower gone, Sky Pillar cleaned ...), by map.
+const layoutSwaps = {};
+for (const [label, cmds] of Object.entries(compiled.s)) {
+  const mp = compiled.lm[label];
+  if (mp) for (const c of cmds) if (c[0] === "setmaplayoutindex" && typeof c[1] === "string") (layoutSwaps[mp] = layoutSwaps[mp] || new Set()).add(c[1]);
+}
+
 // The berry trees' numbers (include/constants/berry.h), which the maps' people name.
 const berryTreeIds = {};
 for (const m of fs.readFileSync(P("include/constants/berry.h"), "utf8").matchAll(/^#define (BERRY_TREE_\w+)[ \t]+(\d+)/gm)) berryTreeIds[m[1]] = +m[2];
@@ -417,7 +424,22 @@ for (const name of MAPS) {
   }
   // The metatiles this map's scripts put in (setmetatile): a sheet of them, 16 to a row, below and above the people.
   let mt;
-  const wanted = [...(metatilesOf[name] || [])].sort();
+  let wanted = [...(metatilesOf[name] || [])].sort();
+  // (The tiles each swapped-in layout changes: where, and to what, as setmetatile would.)
+  const layoutDiffs = {};
+  for (const lid of layoutSwaps[name] || []) {
+    const L = layouts[lid];
+    if (!L || L.width !== w || L.height !== h || L.primary_tileset !== layout.primary_tileset || L.secondary_tileset !== layout.secondary_tileset) continue;
+    const lbin = fs.readFileSync(P(L.blockdata_filepath)), list = [];
+    for (let i = 0; i < w * h; i++) {
+      const nb = lbin.readUInt16LE(i * 2);
+      if ((nb & 0xfff) === (blocks[i] & 0xfff)) continue;
+      list.push([i % w, Math.floor(i / w), nb & 0x3ff, (nb >> 10) & 3 ? 1 : 0]);
+      wanted.push("#" + (nb & 0x3ff));
+    }
+    if (list.length) layoutDiffs[lid] = list;
+  }
+  wanted = [...new Set(wanted)];
   if (name === "PetalburgCity_Gym") for (let i = 0; i < 5; i++) wanted.push("#" + (metatileIds["METATILE_PetalburgGym_SlidingDoor_Frame" + i] + 8));   // (the half below each frame: METATILE_ROW_WIDTH on)
   const idOf = (l) => (l[0] === "#" ? +l.slice(1) : metatileIds[l]);
   if (wanted.length) {
@@ -459,7 +481,7 @@ for (const name of MAPS) {
   const triggers = (map.coord_events || []).filter((c) => c.type === "trigger" && c.script && c.script !== "NULL")
     .map((c) => ({ x: c.x, y: c.y, script: "hoenn:" + c.script, var: c.var, value: +c.var_value }));
   out[ren(name)] = {
-    mt, blocks: KEEP_BLOCKS.has(name) ? blocks.map((b) => b & 0x3ff) : undefined, name: ren(name), scriptName: ren(name) !== name ? name : undefined, title: titleCase(sectionNames[map.region_map_section] || name.replace(/([a-z])([A-Z0-9])/g, "$1 $2")),
+    mt, layouts: Object.keys(layoutDiffs).length ? layoutDiffs : undefined, blocks: KEEP_BLOCKS.has(name) ? blocks.map((b) => b & 0x3ff) : undefined, name: ren(name), scriptName: ren(name) !== name ? name : undefined, title: titleCase(sectionNames[map.region_map_section] || name.replace(/([a-z])([A-Z0-9])/g, "$1 $2")),
     width: w, height: h, type: mapType === "city" ? "city" : mapType, music: musicOf(map.music), region: "hoenn",
     cycling: !!map.allow_cycling || undefined, allowEscaping: map.allow_escaping || undefined,
     showName: !!map.show_map_name, pokemonCenter: /_PokemonCenter_1F$/.test(name) || undefined, top: r.anyAbove, borderWidth: 2, borderHeight: 2,

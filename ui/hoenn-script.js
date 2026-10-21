@@ -205,7 +205,7 @@
         case "setobjectmovementtype": { const w = who(a[0]); if (w) state().mov[mapName() + ":" + w] = String(a[1]).replace(/^MOVEMENT_TYPE_/, "").toLowerCase(); return true; }
         case "setmetatile": env.setMetatile(mapName(), num(a[0]), num(a[1]), a[2], !!num(a[3])); return true;
         case "incrementgamestat": case "setstepcallback": case "setflashlevel": case "animateflash": case "doweather":
-        case "resetweather": case "setmaplayoutindex": case "setobjectsubpriority": case "resetobjectsubpriority": case "setworldmapflag":
+        case "resetweather": case "setobjectsubpriority": case "resetobjectsubpriority": case "setworldmapflag":
         case "initclock": case "dotimebasedevents": case "setvaddress": case "loadhelp": case "unloadhelp": case "textcolor": case "signmsg": case "normalmsg":
         case "setmonmetlocation": case "setmodernfatefulencounter": case "trywondercardscript": case "dofieldeffectsparkle": case "callnative": case "gotonative":
         case "waitstate": case "waitbuttonpress": case "waitmessage": case "waitse": case "waitfanfare": case "waitfieldeffect": case "waitdooranim": case "waitmoncry":
@@ -214,6 +214,7 @@
         case "register_matchcall": case "pokenavcall": case "dotrainerbattle": case "gotopostbattlescript": case "gotobeatenscript": case "selectapproachingtrainer":
         case "braillemessage": case "braillemsgbox": case "closebraillemessage": case "brailleformat": case "setwarp": case "setholewarp": case "setescapewarp":
           return true;
+        case "setmaplayoutindex": if (env.setLayout) env.setLayout(mapName(), a[0]); return true;
         case "setweather": if (env.setWeather) env.setWeather(a[0]); return true;
         case "setdivewarp": fixedDive = { map: a[0], x: num(a[1]), y: num(a[2]) }; return true;
         case "setdynamicwarp": { const at = a.length >= 4 ? { x: num(a[2]), y: num(a[3]) } : { x: num(a[1]), y: num(a[2]) }; if (env.setDynamicWarp) env.setDynamicWarp(a[0], at.x, at.y); return true; }

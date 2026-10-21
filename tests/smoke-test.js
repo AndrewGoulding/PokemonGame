@@ -6482,6 +6482,12 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     for (const k of ["rain", "thunderstorm", "downpour", "snow", "sandstorm", "drought", "sunny_clouds", "volcanic_ash", "underwater", "shade"]) for (let i = 0; i < 5; i++) { wx.update(k); wx.draw(k); }
     assert(ops.includes("stroke") && ops.includes("fillRect"), "the weather draws");
   }
+  // Swapped layouts (the Mirage Tower gone, Sky Pillar cleaned), the rotating-tile puzzles, the Rayquaza scene.
+  assert(WORLD_MAPS.Route111.layouts.LAYOUT_ROUTE111_NO_MIRAGE_TOWER.length > 10 && WORLD_MAPS.SkyPillar_Top.layouts.LAYOUT_SKY_PILLAR_TOP_CLEAN.length > 50);
+  assert(HS.rotStart.gym > 0 && HS.rotStart.trick > 0 && WORLD_MAPS.MossdeepCity_Gym.blocks && WORLD_MAPS.Route110_TrickHousePuzzle6.blocks, "the rotating tiles' arrows");
+  assert(WORLD_MAPS.Route110_TrickHousePuzzle8 && WORLD_MAPS.MarineCave_End && WORLD_MAPS.Underwater_SealedChamber, "the maps only scripts go to");
+  vm.runInThisContext(fs.readFileSync(path.join(root, "ui/rayquaza-scene.js"), "utf8"), { filename: "ui/rayquaza-scene.js" });
+  assert.strictEqual(typeof window.RayquazaScene.play, "function");
   // In-game trades: Rustboro's Seedot for a Ralts.
   assert.deepStrictEqual([HS.trades.INGAME_TRADE_SEEDOT.species, HS.trades.INGAME_TRADE_SEEDOT.requested], ["Seedot", "Ralts"]);
   assert(Object.keys(HS.trades).length >= 4, "the trades are in");
