@@ -2031,7 +2031,7 @@
       clearMenu();
       const frame = window.GameOptions ? window.GameOptions.get().frame : 0;
       const r = await window.PartyMenu.open({ mons, cursor, frame, canCancel: false, message: "Revive which Pokémon?",
-        actions: () => [{ label: "REVIVE", value: "revive" }, { label: "CANCEL", value: "cancel" }] });
+        actions: () => [{ label: "Revive", value: "revive" }, { label: "Cancel", value: "cancel" }] });
       if (!r || r.action === "cancel") continue;
       cursor = r.cursor;
       const p = team[r.slot];
@@ -2056,8 +2056,8 @@
       clearMenu();
       const frame = window.GameOptions ? window.GameOptions.get().frame : 0;
       const r = await window.PartyMenu.open({ mons, cursor, frame, canCancel,
-        actions: () => [{ label: canCancel ? "SHIFT" : "SEND OUT", value: "shift" }]
-          .concat(config.summary ? [{ label: "SUMMARY", value: "summary" }] : [], [{ label: "CANCEL", value: "cancel" }]) });
+        actions: () => [{ label: canCancel ? "Shift" : "Send Out", value: "shift" }]
+          .concat(config.summary ? [{ label: "Summary", value: "summary" }] : [], [{ label: "Cancel", value: "cancel" }]) });
       if (!r) { window.PartyMenu.close(); return null; }
       cursor = r.cursor;
       const p = team[r.slot];

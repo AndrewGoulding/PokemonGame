@@ -11,7 +11,7 @@
 //     frame,         // the Option screen's FRAME (0-9)
 //     message,       // "Choose a POKéMON." (the default)
 //     actions,       // (slot) => [{ label, value, field, desc }]: the menu A
-//                    // opens on a Pokémon (SUMMARY / SWITCH / ITEM / CANCEL);
+//                    // opens on a Pokémon (Summary / Switch / Item / Cancel);
 //                    // without it A picks the Pokémon. Field moves (`field`)
 //                    // are in blue, with `desc` in a box while chosen
 //     canCancel,     // B and CANCEL close it (true unless false)
@@ -132,11 +132,11 @@
     BOXES.forEach((box, i) => drawBox(s, st, box, i));
     // CANCEL (sCancelButtonWindowTemplate: tiles 24, 17; small font, centred).
     // (Choosing several: "OK" at tiles 24, 16 and CANCEL at 24, 18.)
-    const base = all.slice(48, 64), cw = s.textWidth("CANCEL", "small");
+    const base = all.slice(48, 64), cw = s.textWidth("Cancel", "small");
     if (st.multiple) {
       s.text("OK", 24 * 8 + Math.floor((48 - s.textWidth("OK", "small")) / 2), 16 * 8 + 1, base[3], base[2], "small");
-      s.text("CANCEL", 24 * 8 + Math.floor((48 - cw) / 2), 18 * 8 + 1, base[3], base[2], "small");
-    } else s.text("CANCEL", 24 * 8 + 3 + Math.floor((48 - cw) / 2), 17 * 8 + 1, base[3], base[2], "small");
+      s.text("Cancel", 24 * 8 + Math.floor((48 - cw) / 2), 18 * 8 + 1, base[3], base[2], "small");
+    } else s.text("Cancel", 24 * 8 + 3 + Math.floor((48 - cw) / 2), 17 * 8 + 1, base[3], base[2], "small");
     // Poké Balls: open on the chosen box (and the CANCEL button).
     st.mons.forEach((m, i) => {
       if (!m) return;
@@ -425,7 +425,7 @@
       let v = await menu("actions", items, "Do what with this {PKMN}?");
       if (v == null || v === "cancel") continue;
       if (v === "item") {
-        v = await menu("item", [{ label: "GIVE", value: "give" }, { label: "TAKE", value: "take" }, { label: "CANCEL", value: null }],
+        v = await menu("item", [{ label: "Give", value: "give" }, { label: "Take", value: "take" }, { label: "Cancel", value: null }],
           "Do what with an item?");
         if (v == null) continue;
       }

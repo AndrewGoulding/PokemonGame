@@ -512,8 +512,8 @@
         frame: GameOptions.get().frame, message: shown || "Choose POKéMON and confirm.",
         actions: (slot) => {
           const st = DoubleBattle.entryStatus(party, order, slot);
-          return (st === "able" ? [{ label: "ENTER", value: "enter" }] : st === "selected" ? [{ label: "NO ENTRY", value: "noentry" }] : [])
-            .concat([{ label: "SUMMARY", value: "summary" }, { label: "CANCEL", value: "cancel" }]);
+          return (st === "able" ? [{ label: "Enter", value: "enter" }] : st === "selected" ? [{ label: "No Entry", value: "noentry" }] : [])
+            .concat([{ label: "Summary", value: "summary" }, { label: "Cancel", value: "cancel" }]);
         } });
       if (!r) {
         PartyMenu.close();
@@ -2235,10 +2235,10 @@
     let cursor = 0;
     for (;;) {
       // (An Egg: SUMMARY, SWITCH and CANCEL only.)
-      const r = await openParty({ cursor, actions: (slot) => [{ label: "SUMMARY", value: "summary" }]
+      const r = await openParty({ cursor, actions: (slot) => [{ label: "Summary", value: "summary" }]
         .concat(FieldMoves.forMon(player.party[slot]).map((m) =>
           ({ label: m, value: "field:" + m, field: true, desc: FieldMoves.info(m).desc })))
-        .concat([{ label: "SWITCH", value: "switch" }].concat(player.party[slot].egg ? [] : [{ label: "ITEM", value: "item" }]), [{ label: "CANCEL", value: "cancel" }]) });
+        .concat([{ label: "Switch", value: "switch" }].concat(player.party[slot].egg ? [] : [{ label: "Item", value: "item" }]), [{ label: "Cancel", value: "cancel" }]) });
       if (!r) { PartyMenu.close(); return; }
       cursor = r.cursor;
       const mon = player.party[r.slot];
@@ -4197,6 +4197,14 @@
       case BT_RECEPTION: await battleTowerReception(); return;
       case BT_NURSE: await nurse(ev.map, ev.person); return;
       case BT_SIGN: await battleTowerSign(); return;
+      case ST_CUPS: await stadiumCups(); return;
+      case ST_CASTLE: await stadiumCastle(); return;
+      case ST_NURSE: await nurse(ev.map, ev.person); return;
+      case ST_SIGN: await stadiumSign(); return;
+      case "StadiumIsland_EventScript_Sailor": await stadiumSailor(); return;
+      case "StadiumIsland_EventScript_StadiumSign": await say(["Pokémon Stadium", "Cups and the Gym Leader Castle!\nOpen to all Trainers."]); return;
+      case "StadiumIsland_EventScript_PierSign": await say("Stadium Island\nThe Seagallop sails for Vermilion."); return;
+      case "StadiumIsland_EventScript_Spectator": await stadiumSpectator(ev.person); return;
       case "TrainerTower_Lobby_EventScript_BPEggTutor": await bpEggTutor(); return;
       case "TrainerTower_EventScript_SingleBattleTrigger": await towerBattle(ev.map, 0); return;
       case "TrainerTower_EventScript_DoubleBattleTriggerTop": await towerBattle(ev.map, 0); return;
@@ -8403,12 +8411,20 @@
         f.shownOldSeaMap = true;
         await say(["Oh! That's an Old Sea Map!\nNow that is rare.", "We'll be happy to take you to\nFaraway Island anytime."]);
       }
-      const i = await multichoice(T("VermilionCity_Text_BoardSeagallopFerry")[0], 17, 6, ["Sevii Islands", "Faraway Island", "Exit"]);
+      const i = await multichoice(T("VermilionCity_Text_BoardSeagallopFerry")[0], 17, 4, ["Sevii Islands", "Stadium Island", "Faraway Island", "Exit"]);
       if (i === 0) { await say(q.slice(0, -1)); await seagallopMenu("VERMILION_CITY", q, back); return; }
-      if (i !== 1) { Screen.say(""); await back(); return; }
+      if (i === 1) { await say(["All aboard SEAGALLOP HI-SPEED 8!"]); await ferry({ map: "StadiumIsland", x: 17, y: 25, facing: "up" }, true); return; }
+      if (i !== 2) { Screen.say(""); await back(); return; }
       await say(T("VermilionCity_Text_Seagallop10Departing"));
       await ferry({ map: "FarawayIsland_Entrance", x: 13, y: 38, facing: "up" }, false);
       return;
+    }
+    // (With the Rainbow Pass, Stadium Island too.)
+    if (scene >= 5) {
+      const i = await multichoice(T("VermilionCity_Text_BoardSeagallopFerry")[0], 17, 6, ["Sevii Islands", "Stadium Island", "Exit"]);
+      if (i === 0) { await say(q.slice(0, -1)); await seagallopMenu("VERMILION_CITY", q, back); return; }
+      if (i === 1) { await say(["All aboard SEAGALLOP HI-SPEED 8!"]); await ferry({ map: "StadiumIsland", x: 17, y: 25, facing: "up" }, true); return; }
+      Screen.say(""); await back(); return;
     }
     await say(q.slice(0, -1));
     await seagallopMenu("VERMILION_CITY", q, back);
@@ -10317,6 +10333,8 @@
     if (!t.spokeToOwner) {
       t.spokeToOwner = true;
       await say(R("ImOwnerBattledPerfectly"));
+      // (Your time, as the Time Board has it.)
+      await say("Your time was\n" + fill(T("TrainerTower_Text_XMinYZSec")[0], TrainerTower.time(t.frames)) + "…");
       const items = TrainerTower.rewards(t.mode, t.frames);
       const pace = TrainerTower.pace(t.mode, t.frames);
       await say(pace === 3 ? "And so quickly, too! Here, these are for you." : pace === 2 ? "Not bad at all. Here, these are for you." : R("ThisIsForYou"));
@@ -10328,6 +10346,7 @@
       if (r === 0) await say(R("DoneItInRecordTime"));
       else if (r === 1) await say(R("TookSweetTimeGettingHere"));
     }
+    else await say("Your time was\n" + fill(T("TrainerTower_Text_XMinYZSec")[0], TrainerTower.time(t.frames)) + "…");
     await say(R("IdLikeToSeeBetterTime"));
   }
   // ---------- Battle Points and the lobby's BP tutor (this game's own) ----------
@@ -10495,6 +10514,198 @@
     await say("{PLAYER} earned " + bp + " BP!\n(" + f.bp + " BP in total.)");
     await persist();
   }
+
+  // ---------- Stadium Island (this game's own: Pokémon Stadium's Cups and Gym Leader Castle) ----------
+  //
+  // A Sevii island, by Seagallop from Vermilion with the Rainbow Pass (the
+  // sailor offers it beside the Sevii Islands). Its Stadium's lobby is the
+  // Trainer Tower's, cloned at load (the receptionist's counter is the Cups',
+  // the clerk's the Gym Leader Castle's, and the nurse heals).
+  //
+  // The Cups (Pokémon Stadium's): the Pika Cup (Lv. 15-20, 50 in all, Pokémon
+  // that can still evolve), the Petit Cup (Lv. 25-30, 80 in all, under 2 m and
+  // 20 kg), the Poké Cup (Lv. 50-55, 155 in all, no Legendaries) and the Prime
+  // Cup (Lv. 100, anything). Choose three; they're set to the level the rules
+  // allow (copies: yours aren't touched), and eight Trainers in a row, three
+  // Pokémon each, better and better ones; your three are healed between
+  // battles and you may stop. Win all eight for the Cup's prize, Battle Points
+  // and its trophy. The Gym Leader Castle: Kanto's eight Gym Leaders, then,
+  // once you've beaten them, the Elite Four and the Champion, at your best's
+  // level, your three as they are. game/trainer-tower.js's Stadium has the rules.
+  const STADIUM_LOBBY = "StadiumIsland_Stadium", ST_CUPS = "StadiumIsland_Stadium_EventScript_Cups", ST_CASTLE = "StadiumIsland_Stadium_EventScript_Castle",
+    ST_NURSE = "StadiumIsland_Stadium_EventScript_Nurse", ST_SIGN = "StadiumIsland_Stadium_EventScript_Sign";
+  {
+    const src = window.WORLD_MAPS.TrainerTower_Lobby, isle = window.WORLD_MAPS.StadiumIsland;
+    if (src && isle && !window.WORLD_MAPS[STADIUM_LOBBY]) {
+      const m = JSON.parse(JSON.stringify(src));
+      const person = (localId, script) => Object.assign({}, src.people.find((p) => p.localId === localId), { script, localId: localId.replace("TOWER", "STADIUM") });
+      Object.assign(m, { name: STADIUM_LOBBY, title: "Pokémon Stadium", image: "TrainerTower_Lobby", patches: {}, showName: true, townMapSection: "SEVEN_ISLAND",
+        warps: [{ x: 9, y: 15, map: "StadiumIsland", warp: 0 }],
+        signs: [{ x: 8, y: 10, script: ST_SIGN, text: null }], triggers: [],
+        people: [person("LOCALID_TOWER_NURSE", ST_NURSE), person("LOCALID_TOWER_RECEPTIONIST", ST_CUPS), person("LOCALID_TOWER_MART_CLERK", ST_CASTLE)] });
+      m.collision[2 * m.width + 9] = 1;
+      m.collision[8 * m.width + 17] = 1;
+      window.WORLD_MAPS[STADIUM_LOBBY] = m;
+    }
+    for (const sc of [ST_CUPS, ST_CASTLE, ST_NURSE, ST_SIGN, "StadiumIsland_EventScript_Sailor", "StadiumIsland_EventScript_StadiumSign",
+      "StadiumIsland_EventScript_PierSign", "StadiumIsland_EventScript_Spectator"]) SPECIAL.add(sc);
+  }
+  const STADIUM_BANTER = ["I come here every week! The Cups are\nsomething else.", "They say the Prime Cup's trainers\nare ruthless.", "The Gym Leader Castle! I'd love to see\nthe Elite Four battle.",
+    "The Stadium's so big! I got lost\ninside for ten minutes.", "Bring three Pokémon you trust.\nThat's the first rule here."];
+  async function stadiumSpectator(person) {
+    const k = ((person && person.id) | 0) % STADIUM_BANTER.length;
+    await say(STADIUM_BANTER[k]);
+  }
+  // The Seagallop's sailor: home to Vermilion.
+  async function stadiumSailor() {
+    await say("Welcome to Stadium Island!\nWant to sail back to Vermilion?");
+    if (!(await confirm("Sail to Vermilion City?"))) { await say("Take your time. The Cups aren't\ngoing anywhere."); return; }
+    await say("Aye, aye! All aboard!");
+    Screen.say("");
+    const p = Sevii.port("VERMILION_CITY");
+    await ferry({ map: p.map, x: p.x, y: p.y, facing: "up" }, true);
+  }
+  async function stadiumSign() {
+    const r = Stadium.records(player.flags), keys = Object.keys(Stadium.CUPS);
+    const lines = keys.map((k) => Stadium.CUPS[k].name + ": " + (r.cups[k] && r.cups[k].cleared ? "won x" + r.cups[k].cleared : "not won yet"));
+    await say(["Pokémon Stadium\nHall of Trophies", lines.slice(0, 2).join("\n"), lines.slice(2).join("\n"),
+      "Gym Leader Castle: " + (r.castle[0] ? "Round 1 cleared" : "Round 1 to win") + "\n" + (r.castle[1] ? "Round 2 cleared" : r.castle[0] ? "Round 2 open" : "Round 2 locked")]);
+  }
+  // Three of your Pokémon for a Stadium challenge (null: backed out).
+  async function stadiumTeam(problemOf) {
+    for (;;) {
+      if (player.party.filter((r) => !r.egg).length < 3) { await say("You need three Pokémon to enter."); return null; }
+      const chosen = await chooseBattleTeam(3);
+      if (!chosen) return null;
+      const problem = problemOf(chosen.map((k) => player.party[k]));
+      if (problem) { await say(problem); continue; }
+      return chosen;
+    }
+  }
+  async function stadiumCups() {
+    const f = player.flags, rec = Stadium.records(f), keys = Object.keys(Stadium.CUPS);
+    await say("Welcome to the Pokémon Stadium!\nThe Cups are held right here.");
+    for (;;) {
+      const i = await multichoice("Which Cup will you enter?", 14, 2, keys.map((k) => Stadium.CUPS[k].name).concat(["Rules", "Exit"]));
+      if (i < 0 || i === keys.length + 1) break;
+      if (i === keys.length) { await say(keys.map((k) => Stadium.CUPS[k].name + "\n" + Stadium.CUPS[k].text)); continue; }
+      const key = keys[i], cup = Stadium.CUPS[key];
+      await say([cup.name + "!\n" + cup.text, "Eight Trainers in a row. Your Pokémon\nare set to Lv. " + Stadium.cupLevel(key) + " for it."]);
+      if (!(await confirm("Enter the " + cup.name + "?"))) continue;
+      const chosen = await stadiumTeam((team) => Stadium.cupProblem(key, team));
+      if (!chosen) continue;
+      await say("Then let the " + cup.name + "\nbegin! Good luck!");
+      Screen.say("");
+      await stadiumCup(key, chosen);
+      return;
+    }
+    await say("Come back for the Cups anytime!");
+    Screen.say("");
+  }
+  // Your three, scaled copies, as your party while the Cup lasts.
+  async function stadiumCup(key, chosen) {
+    const f = player.flags, rec = Stadium.records(f), cup = Stadium.CUPS[key], R = window.STADIUM.rounds;
+    const orig = player.party;
+    const clones = chosen.map((k) => Stadium.scaled(key, orig[k]));
+    f.stadiumParty = orig;
+    player.party = clones;
+    let wins = 0;
+    try {
+      const personas = Stadium.rivals();
+      for (let n = 1; n <= R; n++) {
+        const foe = Stadium.opponent(key, n, personas[n - 1]);
+        await say("Round " + n + " of " + R + ":\n" + foe.className + " " + foe.name + "!");
+        await say([foe.intro]);
+        const outcome = await battle("trainer", { foe: { name: foe.className + " " + foe.name, team: foe.mons, pic: foe.pic }, defeatText: [foe.lose],
+          noBlackout: true, noExp: true, noPrize: true, chosen: [0, 1, 2], music: "mus_vs_gym_leader" });
+        show("world");
+        await Overworld.resume();
+        if (outcome !== "won") { await say(["Too bad... Your " + cup.name + " ends at\n" + wins + " win" + (wins === 1 ? "" : "s") + ".", "Please try again!"]); break; }
+        wins++;
+        clones.forEach(Party.heal);
+        if (n < R) {
+          await say("That's " + wins + " in a row! Your Pokémon\nhave been healed.");
+          if (!(await confirm("Go on to the next round?"))) { await say("Then your " + cup.name + " ends at\n" + wins + " wins. Well done!"); break; }
+        }
+      }
+    } finally {
+      player.party = orig;
+      delete f.stadiumParty;
+    }
+    const best = rec.cups[key] || (rec.cups[key] = { best: 0, cleared: 0 });
+    if (wins > best.best) best.best = wins;
+    if (wins < R) { await persist(); return; }
+    best.cleared++;
+    await say(["Congratulations! You've won the\n" + cup.name + "!", "Here are your prizes."]);
+    for (const prize of TrainerTower.rewardsAt(cup.tier, cup.tier + 1)) {
+      Player.addItem(player, prize);
+      await sayWithJingle("mus_level_up", "{PLAYER} received the " + Bag.name(prize) + "!");
+    }
+    f.bp = (f.bp || 0) + cup.bp;
+    await say("{PLAYER} earned " + cup.bp + " BP!\n(" + f.bp + " BP in total.)");
+    await persist();
+  }
+  async function stadiumCastle() {
+    const f = player.flags, rec = Stadium.records(f);
+    await say("This is the Gym Leader Castle!\nBattle Kanto's Gym Leaders here.");
+    for (;;) {
+      const items = ["Round 1: Gym Leaders", rec.castle[0] ? "Round 2: Elite Four" : "Round 2 (locked)", "Info", "Exit"];
+      const i = await multichoice("Which round will you challenge?", 11, 4, items);
+      if (i < 0 || i === 3) break;
+      if (i === 2) { await say(["Round 1: Brock, Misty, Lt. Surge, Erika,\nKoga, Sabrina, Blaine and Giovanni.", "Round 2, once Round 1's won: the Elite Four\nand the Champion.", "Choose three Pokémon. The Trainers'\nPokémon match your strongest's level."]); continue; }
+      const round = i;
+      if (round === 1 && !rec.castle[0]) { await say("Win Round 1 first!"); continue; }
+      const chosen = await stadiumTeam(() => null);
+      if (!chosen) continue;
+      await say("Then let the battles begin!\nGood luck!");
+      Screen.say("");
+      await stadiumCastleRound(round, chosen);
+      return;
+    }
+    await say("Come back anytime!");
+    Screen.say("");
+  }
+  async function stadiumCastleRound(round, chosen) {
+    const f = player.flags, rec = Stadium.records(f), team = chosen.map((k) => player.party[k]);
+    team.forEach(Party.heal);
+    const level = Math.min(100, Math.max(30, Math.max(...team.map((r) => r.level))) + (round ? 3 : 0));
+    const list = window.STADIUM.castle[round];
+    let wins = 0;
+    for (let n = 0; n < list.length; n++) {
+      const foe = Stadium.castleFoe(round, n, level);
+      await say([foe.className + " " + foe.name + " waits!", foe.intro]);
+      const outcome = await battle("trainer", { foe: { name: foe.className + " " + foe.name, team: foe.mons, pic: foe.pic }, defeatText: [foe.lose],
+        noBlackout: true, noExp: true, noPrize: true, chosen, music: round ? "mus_vs_champion" : "mus_vs_gym_leader" });
+      show("world");
+      await Overworld.resume();
+      if (outcome !== "won") {
+        player.party.forEach(Party.heal);
+        await say(["Too bad... Round " + (round + 1) + " ends at\n" + wins + " win" + (wins === 1 ? "" : "s") + ".", "Please try again!"]);
+        return;
+      }
+      wins++;
+      team.forEach(Party.heal);
+      if (n < list.length - 1) {
+        await say("That's " + wins + " in a row! Your Pokémon\nhave been healed.");
+        if (!(await confirm("Go on to the next battle?"))) { await say("Then your challenge ends at\n" + wins + " wins. Well done!"); return; }
+      }
+    }
+    const first = !rec.castle[round];
+    rec.castle[round] = true;
+    await say(round ? ["Congratulations! You've beaten the Elite Four\nand the Champion!", "Here are your prizes."] : ["Congratulations! You've beaten all\neight Gym Leaders!", "Here are your prizes."]);
+    for (const prize of TrainerTower.rewardsAt(3, 3)) {
+      Player.addItem(player, prize);
+      await sayWithJingle("mus_level_up", "{PLAYER} received the " + Bag.name(prize) + "!");
+    }
+    if (round && first && window.STADIUM.castlePrizes.masterBall) {
+      Player.addItem(player, "master-ball");
+      await sayWithJingle("mus_level_up", "{PLAYER} received the " + Bag.name("master-ball") + "!");
+    }
+    const bp = window.STADIUM.castlePrizes.bp[round];
+    f.bp = (f.bp || 0) + bp;
+    await say("{PLAYER} earned " + bp + " BP!\n(" + f.bp + " BP in total.)");
+    await persist();
+  }
   // Its Egg moves (every game's): its own Egg list and its evolution line's,
   // the first stage's being where they're kept.
   function bpEggMoves(record) {
@@ -10549,10 +10760,22 @@
     await say("Earn more BP in the tower, and\ncome back anytime.");
   }
   // The lobby's shop takes BP instead of money (this game's own): Bottle Caps
-  // (Gold, and Tin), every mint and the six vitamins.
+  // (Gold, and Tin), every mint, the six vitamins and the competitive held
+  // items (as the Battle Frontier's BP shops had them): 48 BP the staples,
+  // 32 the rest, 16 the small ones.
+  const BP_HELD = [
+    ["choice-band", 48], ["choice-specs", 48], ["choice-scarf", 48], ["leftovers", 48], ["life-orb", 48], ["assault-vest", 48],
+    ["rocky-helmet", 48], ["eviolite", 48], ["focus-sash", 48], ["eject-button", 32], ["red-card", 32], ["expert-belt", 32],
+    ["weakness-policy", 32], ["shell-bell", 32], ["black-sludge", 32], ["light-clay", 32], ["big-root", 32], ["air-balloon", 32],
+    ["safety-goggles", 32], ["destiny-knot", 32], ["ability-capsule", 32], ["ability-patch", 64],
+    ["flame-orb", 16], ["toxic-orb", 16], ["scope-lens", 16], ["wide-lens", 16], ["muscle-band", 16], ["wise-glasses", 16],
+    ["quick-claw", 16], ["razor-claw", 16], ["focus-band", 16], ["power-herb", 16], ["white-herb", 16],
+    ["sitrus-berry", 16], ["lum-berry", 16]
+  ].filter(([id]) => window.ITEMS[id]);
   const BP_SHOP = [["bottle-cap", 25], ["gold-bottle-cap", 75], ["tin-bottle-cap", 10]]
     .concat(Object.keys(window.ITEMS).filter((id) => Bag.mintNature(id)).sort().map((id) => [id, 25]))
-    .concat(["hp-up", "protein", "iron", "calcium", "zinc", "carbos"].map((id) => [id, 2]));
+    .concat(["hp-up", "protein", "iron", "calcium", "zinc", "carbos"].map((id) => [id, 2]))
+    .concat(BP_HELD);
   async function bpShop() {
     const f = player.flags, at = Overworld.position(), [dx, dy] = (World.DIRS || {})[at.facing] || [1, 0];
     await say(["Welcome to the BP Shop!", "Battle Points from the tower buy\nthings here. (You have " + (f.bp || 0) + " BP.)"]);

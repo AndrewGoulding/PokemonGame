@@ -433,6 +433,26 @@
       }
     }
   };
+  // Eject Button: hit and still standing, the holder heads back to its Trainer (a wild Pokémon has nowhere to go).
+  items["eject-button"] = {
+    onDamagingHit(ctx) {
+      const p = ctx.pokemon, b = ctx.battle;
+      if (p.fainted || p.hp <= 0 || b.ended || (b.wild && p.side.id === "p2") || !p.side.bench(p.slot).length || p.volatiles.commanded) return;
+      b.add("-enditem", p, "Eject Button");
+      eat(ctx);
+      b.pendingSwitch = { side: p.side, copy: false, slot: p.slot };
+    }
+  };
+  // Red Card: hit and still standing, the attacker is dragged out for one of its side's others.
+  items["red-card"] = {
+    onDamagingHit(ctx) {
+      const p = ctx.pokemon, src = ctx.source, b = ctx.battle;
+      if (p.fainted || p.hp <= 0 || !src || src.fainted || b.ended || !src.side.bench(src.slot).length) return;
+      b.add("-enditem", p, "Red Card");
+      eat(ctx);
+      b.forceOut(src, p);
+    }
+  };
   items["air-balloon"] = {
     onDamagingHit(ctx) {
       ctx.add("-enditem", ctx.pokemon, "Air Balloon");

@@ -706,8 +706,14 @@ data/machine-learners.js, built by `tools/build-xd-moves.js`); the old woman bes
 Egg moves (any its evolution line could have hatched knowing) at the same
 prices; and the lobby's shop is a BP Shop instead of a Poké Mart: Bottle Cap
 25 BP, Gold Bottle Cap 75, Tin Bottle Cap 10 (one IV down to 0, for Trick
-Room), every mint 25 and the six vitamins 2 each. Lose and
-you're back at the counter. The tower's owner on the roof stops the clock,
+Room), every mint 25, the six vitamins 2 each, and the competitive held items:
+48 BP for Choice Band, Specs and Scarf, Leftovers, Life Orb, Assault Vest,
+Rocky Helmet, Eviolite and Focus Sash; 32 for Eject Button, Red Card, Expert
+Belt, Weakness Policy, Shell Bell, Black Sludge, Light Clay, Big Root, Air
+Balloon, Safety Goggles, Destiny Knot and Ability Capsule (Ability Patch 64);
+16 for the Orbs, lenses, Muscle Band, Wise Glasses, Quick Claw, Razor Claw,
+Focus Band, the Herbs and Sitrus and Lum Berries (`BP_HELD` in ui/game.js). Lose and
+you're back at the counter. The tower's owner on the roof stops the clock, tells you your time,
 hands over the challenge's rewards and says whether you've set a record; the
 best times are on the lobby's Time Board, and the elevator takes you back
 down. The rewards are this game's (not FireRed's once-only prizes): every
@@ -1837,6 +1843,35 @@ for a Dragon type; not with Focus Energy). Their Summary descriptions are pokeem
 battles 100 random Gen 9 teams. Heal Block works too now (five turns of no
 healing: healing moves can't be chosen, and Psychic Noise gives two).
 
+## Stadium Island
+
+This game's own, **Pokémon Stadium's content** on a Sevii island (`tools/build-stadium-island.js`
+paints its outside with the painter Johto uses, from a layout drawn there: a beach island,
+a plaza from the Seagallop's pier to the Stadium's door, a stretched Kanto building for the
+Stadium; its inside is the Trainer Tower's lobby, cloned at load in `ui/game.js`). With the
+Rainbow Pass, Vermilion's Seagallop sailor offers **Stadium Island** (Seagallop Hi-Speed 8)
+beside the Sevii Islands; the island's own sailor takes you home. In the lobby the
+receptionist runs the **Cups**, the clerk the **Gym Leader Castle**, the nurse heals, and the
+sign is the Hall of Trophies.
+
+- **The Cups** (Pokémon Stadium's rules, `window.STADIUM` in data/trainer-tower.js,
+  `Stadium` in game/trainer-tower.js): the **Pika Cup** (Lv. 15-20, 50 in all, only Pokémon
+  that can still evolve), the **Petit Cup** (Lv. 25-30, 80 in all, under 2 m and 20 kg), the
+  **Poké Cup** (Lv. 50-55, 155 in all, no Legendaries) and the **Prime Cup** (Lv. 100,
+  anything). Choose three, no two of a species; they're set to the level the rules allow, as
+  copies (yours aren't touched; a save made mid-Cup puts yours back on loading), and you
+  face eight Trainers in a row, three Pokémon each from random sets, better IVs each round;
+  your three are healed between rounds and you may stop. Win all eight for the Cup's
+  prizes (items from the Trainer Tower's pools), Battle Points (4, 6, 8 and 12) and its place
+  on the Hall of Trophies.
+- **The Gym Leader Castle**: Round 1 is Kanto's eight Gym Leaders, Brock to Giovanni, three
+  Pokémon each (this game's picks) at your best's level (at least 30), your three as they
+  are; once it's won, Round 2 is the Elite Four and the Champion, 3 levels higher. Prizes:
+  items, Battle Points (10, 15) and, the first time, a Master Ball for Round 2.
+
+Not built from Pokémon Stadium: its rental Pokémon, the Kids Club's mini-games and the
+Free Battle.
+
 ## Faraway Island
 
 Emerald's Old Sea Map event, for Mew. Once the Sapphire is in Celio's machine
@@ -2118,7 +2153,8 @@ Kanto's Champion running Elm's errands, and instead of a Pokédex he tells you
 yours will record Johto's Pokémon too, "{PLAYER}'s Pokédex is ready for
 Johto's Pokémon!", and gives you his number) and the rest follow on as HGSS
 scripts them. Cherrygrove's Guide Gent isn't in this game: the Pokégear's Map
-is yours from the start, and his tour and its triggers are gone. Silver is
+is yours from the start, and his tour and its triggers are gone. Nor is Route
+29's catching tutorial (Lyra and her Marill, the throws, the five Poké Balls). Silver is
 Silver from his first battle (no naming screen; HGSS's "Passerby Boy" is
 "Rival Silver", with his own picture), and comes into Cherrygrove from Route
 29's side, off the map's east edge, to meet you. Elm, seeing you off to the
@@ -2486,10 +2522,10 @@ seen and caught). The scripts' story calls (`PhoneCall`: Elm's panic call
 on Route 30 after Mr. Pokémon, his Egg call in Violet City, the radio, and
 Oak's and Baoba's) ring through it, and **calls come while you walk** as in
 HGSS (`GearPhoneRingManager`; the Option screen's **GEAR CALLS**: OFF stops
-the chatter, the story's calls still come): once 150 steps have gone by (HGSS's ten
+the chatter, the story's calls still come): once 300 steps have gone by (three times HGSS's ten
 minutes; there's no real-time clock, so the Pokégear's day and time are the
 game's step clock), the next step
-has an even chance of a call from someone whose number you have (half the
+has a one in three chance of a call from someone whose number you have (half the
 time one of the first group, then 30 and 20 percent), each in turn, never
 from the map you're on; Elm calls when his Mystery Egg hatches. A
 **trainer** with a phone number (HGSS's phone book, `files/tel`) asks for
@@ -2660,8 +2696,10 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   Kanto, then Johto, then the rest): in a region, your Pokémon grow no further
   than its cap for the Badges you have of that region's eight: Lv. 15 with
   none, then 25, 30, 35, 40, 45, 50 and 55, and no cap with all eight
-  (`Player.levelCap`). Kanto's side places (the Sevii Islands, Orre, Faraway
-  Island) go by Kanto's Badges, Johto's maps by Johto's. A Pokémon at the cap
+  (`Player.levelCap`). Kanto's side places (the Sevii Islands, Stadium Island, Orre, Faraway
+  Island, and everything east of New Bark Town: Route 27, Tohjo Falls, Route 26,
+  Route 28 and Mt. Silver, so the way home can be walked without your Pokémon
+  turning disobedient) go by Kanto's Badges, Johto's maps by Johto's. A Pokémon at the cap
   gains no Exp. Points in battle (said once a battle: "… is at the level cap
   (Lv. 25) and can't gain Exp. Points!"), Exp. Candies and Exp. Points from
   battle take it no further than the cap, a Rare Candy or Exp. Candy used on

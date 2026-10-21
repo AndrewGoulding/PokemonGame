@@ -139,6 +139,79 @@
     return 1;
   }
 
+
+  // ---------- Pokémon Stadium (Stadium Island: ui/game.js) ----------
+  //
+  //   Stadium.CUPS                        // window.STADIUM.cups
+  //   Stadium.cupLevel(key)               // the level your three are set to: the rules' (the total over three, within the levels)
+  //   Stadium.cupProblem(key, team)       // why three Pokémon can't enter the Cup, or null
+  //   Stadium.eligible(key, species)      // the Cup lets this species in
+  //   Stadium.scaled(key, record)         // a copy of a record at the Cup's level, healed
+  //   Stadium.rivals(rng)                 // the Cup's Trainers, a persona each round, no two the same
+  //   Stadium.opponent(key, round, persona, rng)   // { className, name, pic, mons: [records], intro, lose } (rounds from 1)
+  //   Stadium.castleFoe(round, index, level)       // the Castle's Trainer: { className, name, pic, mons, lose }
+  //   Stadium.records(flags)              // flags.stadium: { cups: { key: { wins, best } }, castle: [bool, bool] }
+  (function () {
+    const S = () => window.STADIUM;
+    const bst = (s) => { const d = window.DEX[s]; return d ? d.hp + d.atk + d.def + d.spa + d.spd + d.spe : 0; };
+    // A Legendary or Mythical Pokémon, as far as the data tells: in no Egg Group (a baby's stats are low).
+    const legendary = (s) => ((window.BREEDING && window.BREEDING.GROUPS[s]) || []).includes("Undiscovered") && bst(s) > 350;
+    const canEvolve = (s) => !!(window.EVOLUTIONS && window.EVOLUTIONS[s] && window.EVOLUTIONS[s].length);
+    const baseOf = (s) => String(s).split("-")[0] === s ? s : (window.DEX[s] ? s : String(s).split("-")[0]);
+    function eligible(key, species) {
+      const c = S().cups[key], d = window.DEX[species];
+      if (!c || !d) return false;
+      switch (c.rule) {
+        case "unevolved": return canEvolve(species) && !legendary(species);
+        case "small": return d.height <= 2.0 && d.weight <= 20 && !legendary(species);
+        case "common": return !legendary(species);
+        default: return true;
+      }
+    }
+    const cupLevel = (key) => { const c = S().cups[key]; return Math.max(c.levels[0], Math.min(c.levels[1], Math.floor(c.total / 3))); };
+    function cupProblem(key, team) {
+      const c = S().cups[key];
+      if (team.length !== 3 || team.some((r) => r.egg)) return "Three Pokémon are needed, and no Eggs.";
+      const names = team.map((r) => window.Party.speciesName(r.species));
+      if (new Set(names).size < names.length) return "No two of the same Pokémon\nmay enter.";
+      const bad = team.find((r) => !eligible(key, baseOf(r.species)));
+      if (bad) return window.Party.speciesName(bad.species) + " can't enter the " + c.name + ".\n(" + c.text.split("\n")[1] + ")";
+      return null;
+    }
+    function scaled(key, record) {
+      const r = JSON.parse(JSON.stringify(record)), L = cupLevel(key);
+      r.level = L;
+      r.exp = window.Experience.expForLevel(window.Experience.growthRate(r.species), L);
+      window.Party.heal(r);
+      return r;
+    }
+    function rivals(rng) {
+      rng = rng || Math.random;
+      const pool = S().personas.slice(), out = [];
+      while (out.length < S().rounds) out.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
+      return out;
+    }
+    function opponent(key, round, persona, rng) {
+      rng = rng || Math.random;
+      const c = S().cups[key], L = cupLevel(key);
+      const species = Object.keys(window.DEX).filter((s) => window.DEX[s].id < 10000 && window.LEARNSETS_GEN6[s] && window.EVOLUTIONS !== undefined && eligible(key, s) && (!window.EVOLUTIONS || true) && !(key !== "prime" && bst(s) > (c.rule === "any" ? 999 : 999)));
+      const pick = [];
+      while (pick.length < 3) { const s = species[Math.floor(rng() * species.length)]; if (!pick.includes(s) && window.RandomTeam.levelUpMoves(s, L).length) pick.push(s); }
+      // (Later rounds, better IVs: 8 in the first, 31 in the eighth.)
+      const iv = Math.min(31, 8 + Math.round((round - 1) * 23 / 7));
+      const mons = pick.map((s) => { const m = window.Party.create(s, L, { rng, ivs: iv }); delete m.shiny; return m; });
+      const k = (round - 1) % S().intros.length;
+      return { className: persona[0], name: persona[1], pic: persona[2], mons, intro: S().intros[k], lose: S().defeats[k] };
+    }
+    function castleFoe(round, index, level) {
+      const [id, species, say] = S().castle[round][index], t = (window.WORLD_TRAINERS || {})[id] || {};
+      const mons = species.map((s) => { const m = window.Party.create(s, level, { ivs: 31 }); delete m.shiny; return m; });
+      return { className: say.className || t.className || "Leader", name: say.name || t.name || "", pic: say.pic || t.pic, mons, lose: say.lose, intro: say.intro };
+    }
+    const records = (flags) => flags.stadium || (flags.stadium = { cups: {}, castle: [false, false] });
+    window.Stadium = { get CUPS() { return S().cups; }, eligible, cupLevel, cupProblem, scaled, rivals, opponent, castleFoe, records };
+  })();
+
   window.TrainerTower = { MODES, FLOORS, MAX_TIME, SINGLE_MONS, DOUBLE_MONS, KNOCKOUT_MONS, floor, prize, records, start, floorCleared, rewardsAt,
     mon, team, partyLevel, tick, time, best, finalTime, rewards, pace, PACE };
 })();

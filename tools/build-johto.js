@@ -133,6 +133,10 @@ const JOHTO_SIDE = new Set(["MAP_ROUTE_26_NORTH_HOUSE", "MAP_ROUTE_26_WEEK_SIBLI
 // (And Saffron's Magnet Train station, HGSS's, though it's Kanto's: FireRed's
 // Saffron has none, so it's built here, region "kanto", its door into Saffron
 // City new: tools/build-magnet-train.js.)
+// Everything east of New Bark Town (Route 27, Tohjo Falls, Route 26, Route 28, Mt. Silver and their houses)
+// is Kanto's, as far as Badges go: the level cap there is Kanto's (a Champion's Pokémon obey, so the way
+// to New Bark Town can be walked), not Johto's.
+const KANTO_EAST = /^(Route2[678]|TohjoFalls|MtSilver)/;
 const KANTO_SIDE = new Set(["MAP_SAFFRON_MAGNET_TRAIN_STATION_1F", "MAP_SAFFRON_MAGNET_TRAIN_STATION_2F", "MAP_SAFFRON_MAGNET_TRAIN_STATION_2F_EMPTY"]);
 const TOWNS = { NEW_BARK: "NewBarkTown", CHERRYGROVE: "CherrygroveCity", VIOLET: "VioletCity", AZALEA: "AzaleaTown", CIANWOOD: "CianwoodCity",
   GOLDENROD: "GoldenrodCity", OLIVINE: "OlivineCity", ECRUTEAK: "EcruteakCity", MAHOGANY: "MahoganyTown", BLACKTHORN: "BlackthornCity" };
@@ -199,10 +203,12 @@ const REAL_CAVES = /^MAPSEC_(UNION_CAVE|SLOWPOKE_WELL|MT_MORTAR|ICE_PATH|WHIRL_I
     MAPS.push(Object.assign({ c: m[1], name: mapName(m[1]), title,
       type: outdoors ? (kind === "MAP_TYPE_ROUTE" ? "route" : /Town$/.test(title) ? "town" : "city") : cave ? "underground" : "indoor",
       zone, music: MUSIC[get("dayMusicId")] || "mus_route1", ground: true },
-      kind === "MAP_TYPE_CAVE" && !cave ? { dungeon: true } : {}, KANTO_SIDE.has(m[1]) ? { region: "kanto" } : {},
+      kind === "MAP_TYPE_CAVE" && !cave ? { dungeon: true } : {}, KANTO_SIDE.has(m[1]) || KANTO_EAST.test(mapName(m[1])) ? { region: "kanto" } : {},
       /_POKECENTER_1F$/.test(m[1]) ? { template: "pc" } : /_POKEMART$/.test(m[1]) ? { template: "mart" } : {}));
   }
 }
+// (The east, Kanto's for Badges: those in the list above too.)
+for (const m of MAPS) if (KANTO_EAST.test(m.name) && !m.region) m.region = "kanto";
 // Each map's music: HGSS's own (its header's dayMusicId; tools/build-johto-audio.js
 // converted them, tools/lib/hgss-music.json names them), FireRed's nearest where
 // HGSS plays none (SEQ_SILENCE_*). (HGSS's night music is the same as its day's.)
@@ -1010,7 +1016,7 @@ if (!HGSS_LOOK) for (const m of MAPS) {
   // Upstairs: FireRed's Pokémon Center 2F, its stairs back down here.
   if (m.template === "pc") {
     const t2 = kanto()[tpl.map.replace(/_1F$/, "_2F")];
-    out[up] = Object.assign(JSON.parse(JSON.stringify(t2)), { name: up, title: m.title, region: "johto", showName: false,
+    out[up] = Object.assign(JSON.parse(JSON.stringify(t2)), { name: up, title: m.title, region: m.region || "johto", showName: false,
       warps: t2.warps.map((w) => (/_1F$/.test(w.map || "") ? { x: w.x, y: w.y, map: m.name, warp: warps.length - 1 } : Object.assign({}, w))) });
     for (const part of ["", "-top", "-border"]) {
       const from = path.join(mapsDir, tpl.map.replace(/_1F$/, "_2F") + part + ".png"), to = path.join(mapsDir, up + part + ".png");

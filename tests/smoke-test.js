@@ -79,6 +79,49 @@ for (let seed = 1; seed <= BATTLES; seed++) {
   turns += battle.turn;
 }
 
+// Pokémon Stadium (Stadium Island): the Cups' rules, their opponents, the Castle's Trainers.
+{
+  const have = (sp) => Object.assign(Party.create(sp, 5), {});
+  assert.strictEqual(Stadium.cupLevel("pika"), 16);
+  assert.strictEqual(Stadium.cupLevel("petit"), 26);
+  assert.strictEqual(Stadium.cupLevel("poke"), 51);
+  assert.strictEqual(Stadium.cupLevel("prime"), 100);
+  assert(Stadium.cupProblem("pika", [have("Charizard"), have("Pikachu"), have("Rattata")]), "a fully evolved Pokémon can't enter the Pika Cup");
+  assert.strictEqual(Stadium.cupProblem("pika", [have("Pikachu"), have("Charmander"), have("Pidgey")]), null);
+  assert(Stadium.cupProblem("petit", [have("Snorlax"), have("Pikachu"), have("Rattata")]), "Snorlax is too big for the Petit Cup");
+  assert(Stadium.cupProblem("poke", [have("Mewtwo"), have("Pikachu"), have("Rattata")]), "no Legendaries in the Poké Cup");
+  assert.strictEqual(Stadium.cupProblem("prime", [have("Mewtwo"), have("Mew"), have("Rattata")]), null);
+  assert(Stadium.cupProblem("pika", [have("Pikachu"), have("Pikachu"), have("Pidgey")]), "no two of a species");
+  const big = Party.create("Blastoise", 80);
+  const small = Stadium.scaled("poke", big);
+  assert.strictEqual(small.level, 51); assert.strictEqual(big.level, 80, "the scaled copy leaves the original alone");
+  assert(small.hp === Party.maxHp(small) && Party.maxHp(small) < Party.maxHp(big));
+  const people = Stadium.rivals();
+  assert.strictEqual(new Set(people.map((p) => p[1])).size, 8, "eight different Trainers");
+  for (const key of ["pika", "petit", "poke", "prime"]) {
+    const foe = Stadium.opponent(key, 8, people[7]);
+    assert.strictEqual(foe.mons.length, 3);
+    assert(foe.mons.every((m) => m.level === Stadium.cupLevel(key) && m.moves.length && Stadium.eligible(key, m.species)), key + "'s opponent follows its rules");
+  }
+  for (let r = 0; r < 2; r++) for (let i = 0; i < STADIUM.castle[r].length; i++) {
+    const t = Stadium.castleFoe(r, i, 60);
+    assert(t.mons.length === 3 && t.mons.every((m) => m.level === 60) && t.name && t.pic && t.lose && t.intro, "castle Trainer " + r + "/" + i);
+  }
+}
+
+// Eject Button: the holder, hit and standing, goes back to its Trainer; Red Card drags the attacker out.
+for (const item of ["eject-button", "red-card"]) {
+  const b = new Battle({ seed: 5,
+    p1: { name: "A", team: [{ species: "Snorlax", level: 50, item, moves: ["Splash"] }, { species: "Pikachu", level: 50, moves: ["Splash"] }] },
+    p2: { name: "B", team: [{ species: "Machamp", level: 50, moves: ["Karate Chop"] }, { species: "Geodude", level: 50, moves: ["Tackle"] }] } });
+  b.start();
+  b.choose("p1", { type: "move", move: "Splash" });
+  b.choose("p2", { type: "move", move: "Karate Chop" });
+  assert(b.events.some((e) => e[0] === "-enditem" && /Eject Button|Red Card/.test(e.join(" "))), item + " did not go off");
+  if (item === "eject-button") assert.strictEqual(b.phase, "switch", "Eject Button asks for a switch");
+  else assert.strictEqual(b.sides.p2.active.species, "Geodude", "Red Card drags Machamp out");
+}
+
 // Regression: a multi-hit move that breaks a substitute on the first hit used to
 // crash on the second hit.
 {
@@ -1246,7 +1289,8 @@ for (const share of [false, true]) {
     ["SixIsland_DottedHole_1F", "SixIsland_DottedHole_B1F", "SixIsland_DottedHole_B2F", "SixIsland_DottedHole_B3F", "SixIsland_DottedHole_B4F",
       "SixIsland_DottedHole_SapphireRoom", "SixIsland_PatternBush", "SixIsland_AlteringCave", "SevenIsland_SevaultCanyon_TanobyKey"],
     ["Monean", "Liptoo", "Weepth", "Dilford", "Scufib", "Rixy", "Viapois"].map((c) => "SevenIsland_TanobyRuins_" + c + "Chamber"),
-    ["CeruleanCave_1F", "CeruleanCave_2F", "CeruleanCave_B1F"]));
+    ["CeruleanCave_1F", "CeruleanCave_2F", "CeruleanCave_B1F", "TohjoFalls", "MtSilverCave_1F", "TohjoFallsHiddenRoom", "MtSilverCave_UpperMountainside", "MtSilverCave_LowerMountainside", "MtSilverCave_ExpertBeltChamber",
+    "MtSilverCave_MoltresChamber", "MtSilverCave_2F", "MtSilverCave_3F", "MtSilverCave_Summit"]));
   assert(WORLD_MAPS.MtMoon_1F.people.some((p) => p.item === "tm100"), "FireRed's TM09 in Mt. Moon is TM100 Bullet Seed here");
   assert(Bag.canUseOn(Party.create("Gyarados", 30, { rng }), "hm06"), "Gyarados can use Whirlpool");
   assert(Bag.canUseOn(Party.create("Pidgeot", 30, { rng }), "hm10"), "Pidgeot can use Defog");
@@ -1885,6 +1929,7 @@ for (const share of [false, true]) {
   // the Ember Spa, the Dunsparce Tunnel (Three Isle Path), the Rocket Warehouse, Trainer Tower's inside, the Tanoby Key and the Tanoby chambers no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
     if (["johto", "emerald", "orre"].includes(WORLD_MAPS[name].region)) continue;   // (Johto, Faraway Island and Orre aren't on Kanto's Town Map)
+    if (window.JOHTO_TOWN_MAP && window.JOHTO_TOWN_MAP.at[name]) continue;   // (nor Johto's maps east of New Bark Town, which are Kanto's for Badges but on Johto's)
     // (Saffron's Magnet Train station, HGSS's: its townMapSection, which ui/magnet-train.js adds.)
     if (WORLD_MAPS[name].townMapSection) { assert(onMap(WORLD_MAPS[name].townMapSection), name + " is on the Town Map"); continue; }
     assert(T.mapSections[name] && (onMap(T.mapSections[name]) || ["UNDERGROUND_PATH", "UNDERGROUND_PATH_2", "S_S_ANNE", "ROCKET_HIDEOUT", "SILPH_CO",
@@ -2252,14 +2297,16 @@ if (window.JOHTO_TOWN_MAP) {
 // Kanto, joined to each other; Kanto's only way in is the League gate's
 // west door (Route22_NorthEntrance), its guard there until you're Champion.
 {
-  const J = Object.keys(WORLD_MAPS).filter((n) => WORLD_MAPS[n].region === "johto");
+  // (Johto's maps: those east of New Bark Town, Route 26 to Mt. Silver, are Kanto's for Badges and level caps, so region "kanto".)
+  const EAST = /^(Route2[678]|TohjoFalls|MtSilver)/;
+  const J = Object.keys(WORLD_MAPS).filter((n) => WORLD_MAPS[n].region === "johto" || (EAST.test(n) && window.JOHTO_TOWN_MAP.at[n]));
   for (const n of ["CherrygroveCity", "Route29", "NewBarkTown", "Route27", "TohjoFalls", "Route26", "Route30", "Route31", "VioletCity", "Route32",
     "Route33", "AzaleaTown", "Route34", "GoldenrodCity", "Route35", "Route36", "RuinsOfAlph", "Route46", "UnionCave_1F", "IlexForest",
     "Route29_Route46_Gatehouse", "Route31_VioletGatehouse", "VioletCity_Route36_Gatehouse", "Route32_RuinsOfAlph_Gatehouse",
     "Route36_RuinsOfAlph_Gatehouse", "Route35_Goldenrod_Gatehouse", "AzaleaTown_IlexForest_Gatehouse", "Route34_IlexForest_Gatehouse"]) assert(J.includes(n), n + " is built");
   for (const name of J) {
     const m = WORLD_MAPS[name];
-    assert(m && m.region === "johto", name + " is built");
+    assert(m && m.region === (EAST.test(name) ? "kanto" : "johto"), name + " is built");
     for (const k of ["collision", "behavior", "elevation", "encounter"]) assert.strictEqual(m[k].length, m.width * m.height, name + " " + k);
     for (const c of m.connections) assert(J.includes(c.map), name + " connects only within Johto");
     // (A map drawn with another's pictures, WORLD_MAPS[..].image: New Bark Town's Pokémon Center, Cherrygrove's.)
@@ -2269,7 +2316,7 @@ if (window.JOHTO_TOWN_MAP) {
     for (const h of m.hidden) assert(ITEMS[h.item], h.item);
   }
   assert.deepStrictEqual(new Set(WORLD_MAPS.Route29.wild.slots.map((s) => s.species)), new Set(["Pidgey", "Sentret", "Rattata"]), "Route 29 by day");
-  assert(!Object.values(WORLD_MAPS).some((m) => m.region !== "johto" && m.connections.some((c) => J.includes(c.map))), "nothing in Kanto leads to Johto");
+  assert(!Object.values(WORLD_MAPS).some((m) => m.region !== "johto" && !EAST.test(m.name) && m.connections.some((c) => J.includes(c.map))), "nothing in Kanto leads to Johto");
   assert.strictEqual(World.step({ map: "NewBarkTown", x: 0, y: 15 }, "left").map, "Route29", "west out of New Bark Town");
   assert.strictEqual(World.fishingEncounter("NewBarkTown", "old-rod", () => 0).species, "Magikarp", "Gen 4 rods");
   assert.strictEqual(World.step({ map: "NewBarkTown", x: 23, y: 13 }, "up").warp.map, "NewBarkTown_PlayerHouse_1F", "New Bark's houses are built");
@@ -2759,7 +2806,8 @@ if (window.JOHTO_TOWN_MAP) {
   const r26 = WORLD_MAPS.Route26.warps.filter((w) => w.map === "Route22_NorthEntrance");
   assert(gw >= 0 && r26.length === 2 && r26.every((w) => w.warp === gw) && WORLD_MAPS.Route26.warps[gate.warps[gw].warp] === r26[0]);
   assert(gate.patches.johto && fs.existsSync(path.join(root, "assets/world/maps/Route22_NorthEntrance-patch-johto.png")));
-  assert(!Object.values(WORLD_MAPS).some((m) => m.region !== "johto" && m.name !== "Route22_NorthEntrance" && m.warps.some((w) => J.includes(w.map))), "only the gate");
+  // (Besides Johto's own east, Route 26 to Mt. Silver, Kanto's for Badges: they lead to Johto's maps.)
+  assert(!Object.values(WORLD_MAPS).some((m) => m.region !== "johto" && m.name !== "Route22_NorthEntrance" && !/^(Route2[678]|TohjoFalls|MtSilver)/.test(m.name) && m.warps.some((w) => J.includes(w.map))), "only the gate");
   const guard = gate.people.find((p) => p.script === "Route22_NorthEntrance_EventScript_JohtoGuard");
   assert(guard && guard.x === gate.warps[gw].x + 1 && guard.y === gate.warps[gw].y, "the guard stands before the way west");
   for (const y of [-1, 1]) assert(gate.collision[(gate.warps[gw].y + y) * gate.width + gate.warps[gw].x], "the mat's only way in is past him");

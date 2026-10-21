@@ -68,8 +68,8 @@
   // friend, Buena and Irwin), and how often (GearPhoneRingManager: once ten
   // minutes have gone by, the next step has an even chance of a call).
   const CALLERS = new Set([T.GENERIC, T.GYM_LEADER, T.FRIEND, T.BUENA, T.IRWIN]);
-  // (HGSS's ten minutes, here in steps: about an hour and a half on the step clock.)
-  const CALL_STEPS = 150, CALL_CHANCE = 50;
+  // (HGSS's ten minutes, here in steps, three times over, and a third of the time a call: someone rings about every nine hundred steps.)
+  const CALL_STEPS = 300, CALL_CHANCE = 33;
   // The call triggers' calls (ov02_02253C84): who, and what they say (12: Mom's, she's bought you something).
   const TRIGGERS = { 0: [1, 13], 1: [1, 7], 2: [15, 85], 3: [9, 93], 12: [0, 27],
     // (Baoba's: the new Pokémon in an Area, his next test, the objects: ui/johto-safari.js.)

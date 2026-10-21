@@ -389,6 +389,12 @@
       for (const [item, n] of Object.entries(stash.bag)) bag[RENAMED[item] || item] = Math.max(bag[RENAMED[item] || item] || 0, n);
       stash.bag = bag;
     }
+    // (Saved mid-Cup at the Pokémon Stadium, your Pokémon scaled to the Cup's level: yours are back.)
+    if (Array.isArray(player.flags.stadiumParty)) {
+      const back = player.flags.stadiumParty.map((r) => cleanRecord(r, warnings)).filter(Boolean).slice(0, PARTY_SIZE);
+      if (back.length) player.party = back;
+      delete player.flags.stadiumParty;
+    }
     // Saves from before key items: the Exp. Share, and Oak's Parcel if it's still to deliver.
     if (!player.bag["exp-share"] && !asWes) player.bag["exp-share"] = 1;
     if (player.flags.oaksParcel && !player.flags.parcelDelivered) player.bag["oaks-parcel"] = 1;

@@ -7,6 +7,8 @@
 //     doesn't send you to your mom; Prof. Oak at Mr. Pokémon's knows you and
 //     gives no Pokédex; Route 27's man tells you about the Rejuvenator
 //     instead of Kanto; Ace Trainer Reena asks about Pallet Town;
+//   - Route 29's catching tutorial (Lyra and her Marill by the gatehouse, the
+//     throws, the five Poké Balls) is gone: its triggers and its two people;
 //   - Cherrygrove's Guide Gent and his scene are gone (the Pokégear's Map is
 //     yours from the start: ui/pokegear.js); Silver is "Rival Silver" from his
 //     first battle, with his own picture (HGSS's "Passerby Boy").
@@ -57,6 +59,12 @@ function apply({ maps, scripts, trainers }) {
   if (c) {
     c.people = c.people.filter((p) => p.localId !== "obj_T21_gsoldman1");
     c.triggers = c.triggers.filter((t) => !/scr_seq_T21_00[12]\?/.test(t.script));
+  }
+  // Route 29: no catching tutorial (nor Lyra and her Marill who give it).
+  const r29 = maps.Route29;
+  if (r29) {
+    r29.triggers = r29.triggers.filter((t) => !/scr_seq_R29_001\?/.test(t.script));
+    r29.people = r29.people.filter((p) => p.localId !== "obj_R29_var_2" && p.localId !== "obj_R29_tsure_poke_static_marill");
   }
   // Silver, from his first battle.
   for (const id of ["HGSS_TRAINER_PASSERBY_BOY", "HGSS_TRAINER_PASSERBY_BOY_2", "HGSS_TRAINER_PASSERBY_BOY_3"]) {
