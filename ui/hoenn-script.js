@@ -268,6 +268,13 @@
         if (st.pc >= st.code.length) { if (!st.stack.length) break; [st.code, st.pc] = st.stack.pop(); continue; }
         const [op, ...a] = st.code[st.pc++];
         if (flow(st, op, a)) continue;
+        // (Someone put on a tile: set down there at once, as well as remembered.)
+        if (op === "setobjectxy" || op === "setobjectxyperm") {
+          const w = who(a[0]);
+          if (w === "player") { await flush(); env.moveTo(num(a[1]), num(a[2])); }
+          else if (w) { simple(st, op, a); await flush(); env.place(w, num(a[1]), num(a[2]), null); }
+          continue;
+        }
         if (op === "callstd" || op === "gotostd" || op === "callstd_if" || op === "gotostd_if") {
           const cond = /_if$/.test(op) ? COND[a[0]] : null, fn = /_if$/.test(op) ? a[1] : a[0];
           if (cond && !cond(st.cmp)) continue;
@@ -465,6 +472,8 @@
       }
 
       lastTalked = ctx.person ? (ctx.person.localId || "#" + ctx.person.id) : lastTalked;
+      // (VAR_FACING: the way you were facing as the script began.)
+      { const me = env.personAt("player"); setVar("VAR_FACING", DIR_NUM[(me || {}).facing] || 1); }
       await main();
     }
     const UNKNOWN = new Set();

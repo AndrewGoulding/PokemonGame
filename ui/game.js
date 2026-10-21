@@ -11615,6 +11615,7 @@
       if (at) Overworld.addObject(id, { x, y, facing: facing || at.facing });
     },
     personAt: (id) => (id === "player" ? Overworld.position() : Overworld.personPosition(id)),
+    moveTo: (x, y) => Overworld.moveTo(x, y),
     giveItem: async (id, n, verb) => {
       if (!window.ITEMS[id]) return false;
       Player.addItem(player, id, n);
@@ -11690,14 +11691,29 @@
     Screen.say("");
     await Overworld.teleport({ map: name, x, y, facing: "down" });
   }
-  // Emerald's setmetatile: not drawn yet, but it opens and closes the way.
-  function hoennMetatile(map, x, y, id, impassable) {
+  // Emerald's setmetatile: the tile is drawn over the map (from its sheet: assets/world/maps/<Map>-mt.png) and
+  // opens or closes the way, until you leave the map (its scripts put them back as you come in).
+  const metatileSet = {};
+  function hoennMetatile(map, x, y, label, impassable) {
     const m = window.WORLD_MAPS[map];
-    if (!m) return;
-    const base = baseCollision[map] || (baseCollision[map] = m.collision.slice());
-    void base;
-    m.collision[y * m.width + x] = impassable ? 1 : 0;
+    if (!m || x < 0 || y < 0 || x >= m.width || y >= m.height) return;
+    const i = y * m.width + x, t = m.mt && m.mt[label];
+    const base = baseCollision[map] || (baseCollision[map] = m.collision.slice()), baseB = baseBehavior[map] || (baseBehavior[map] = m.behavior.slice());
+    void base; void baseB;
+    m.collision[i] = impassable ? 1 : 0;
+    if (t) { m.behavior[i] = t[1]; (metatileSet[map] = metatileSet[map] || {})[i] = t[0]; }
   }
+  // Coming into a Hoenn map: its own tiles again, before its scripts change them.
+  function restoreMetatiles(map) {
+    const m = window.WORLD_MAPS[map];
+    if (!m || !baseCollision[map]) return;
+    m.collision = baseCollision[map].slice(); m.behavior = baseBehavior[map].slice();
+    delete metatileSet[map];
+  }
+  const hoennOverlay = (map) => {
+    const set = metatileSet[map], m = window.WORLD_MAPS[map];
+    return set ? Object.keys(set).map((i) => [i % m.width, Math.floor(i / m.width), set[i]]) : null;
+  };
   // Runs a script; then whatever the map's frame table has due (a scene it set going).
   async function runHoenn(label, person) {
     const seen = new Set();
@@ -12243,7 +12259,7 @@
         // (A double battle's trainers don't see you without two Pokémon that
         // can fight: FireRed's CheckTrainer.)
         trainerWaiting: (person) => trainerWaiting(person) && !(person.trainer.double && !canDouble()),
-        hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, extraPeople,
+        hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, metatiles: hoennOverlay, extraPeople,
         // (HGSS's: the Pokémon walking behind you, and Johto's Headbutt trees.)
         follower: (map) => follower.look(map), headbuttTree: (map, x, y) => johtoField.headbuttTree(map, x, y),
         canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
@@ -12291,7 +12307,7 @@
           // Route 23 puts Victory Road back as it was: barriers up, boulders back (Route23_OnTransition).
           if (m !== tempFlagsMap && m === "Route23") LeagueRoad.reset(player.flags);
           // (Into a Johto map: its OnTransition script, before its people are placed.)
-          if (m !== tempFlagsMap) { magnetTrain.enter(m); johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); if (isHoenn(m)) hoenn.transition(m); }
+          if (m !== tempFlagsMap) { magnetTrain.enter(m); johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); if (isHoenn(m)) { restoreMetatiles(m); hoenn.transition(m); } }
           if (m === "SSAqua_1F") ssAquaExit();
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
           if (!gear.radioOn(m)) music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }   // (the Pokégear's radio plays on)

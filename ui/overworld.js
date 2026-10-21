@@ -140,11 +140,22 @@
     }
   }
 
+  // Metatiles a script has put in (Emerald's setmetatile: ctx.metatiles(map) -> [[x, y, n]]), from the map's
+  // sheet of them (-mt: below the people, -mt-top: above), 16 to a row.
+  function drawMetatiles(name, x0, y0, top) {
+    const list = ctx && ctx.metatiles ? ctx.metatiles(name) : null;
+    if (!list || !list.length) return;
+    const img = mapImage(name, top ? "mt-top" : "mt");
+    if (!ready(img)) return;
+    for (const [x, y, n] of list) g.drawImage(img, (n % 16) * 16, Math.floor(n / 16) * 16, 16, 16, x0 + x * TILE, y0 + y * TILE, 16, 16);
+  }
+
   function preloadMap(name) {
     const m = World.map(name);
     const list = [mapImage(name), mapImage(name, "border")];
     if (m.top) list.push(mapImage(name, "top"));
     if (m.anim) list.push(mapImage(name, "anim"));
+    if (m.mt) list.push(mapImage(name, "mt"), mapImage(name, "mt-top"));
     for (const p of Object.keys(m.patches || {})) list.push(mapImage(name, "patch-" + p), ...(m.patches[p].anim ? [mapImage(name, "patch-" + p + "-anim")] : []));
     for (const c of m.connections) if (c.map && World.map(c.map)) list.push(mapImage(c.map), ...(World.map(c.map).top ? [mapImage(c.map, "top")] : []));
     for (const p of m.people) { list.push(spriteImage(p.sprite)); if (p.alt) list.push(spriteImage(p.alt.sprite)); }
@@ -1811,6 +1822,7 @@
       if (ready(img)) g.drawImage(img, ox - camX, oy - camY);
       drawAnimCells(name, ox - camX, oy - camY);
       drawPatches(name, ox - camX, oy - camY, "");
+      drawMetatiles(name, ox - camX, oy - camY, false);
       if (ctx.drawMap) ctx.drawMap(g, name, ox - camX, oy - camY);
     }
     g.filter = "none";
@@ -1907,6 +1919,7 @@
         } else g.drawImage(img, ox - camX, oy - camY);
       }
       drawPatches(name, ox - camX, oy - camY, "-top");
+      drawMetatiles(name, ox - camX, oy - camY, true);
     }
     g.filter = "none";
     // (Those up on raised ground, over the top layer.)
@@ -2053,6 +2066,10 @@
     // Someone (by local id) hidden or shown: still there, still in the way.
     setPersonHidden: (localId, hidden) => { const p = people.find((q) => q.def.localId === localId); if (p) p.hidden = !!hidden; },
     // Where someone on the map (by local id) stands, or null.
-    personPosition: (localId) => { const p = people.find((q) => q.def.localId === localId); return p ? { x: p.x, y: p.y, facing: p.facing } : null; }
+    personPosition: (localId) => { const p = people.find((q) => q.def.localId === localId); return p ? { x: p.x, y: p.y, facing: p.facing } : null; },
+    // The player set down on a tile of this map (a script's setobjectxy on them), with no fading.
+    moveTo: (x, y, facing) => { me.x = x; me.y = y; if (facing) me.facing = facing; me.move = null; tuckFollower(); savePosition(); },
+    // (For tests: who's on the map and its neighbours.)
+    debugPeople: () => ({ people: people.map((p) => [p.def.localId, p.x, p.y, p.def.sprite]), neighbours: neighbours.map((n) => [n.map, n.def.localId, n.x + n.ox, n.y + n.oy, n.def.sprite]) })
   };
 })();

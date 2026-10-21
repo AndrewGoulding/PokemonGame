@@ -57,7 +57,7 @@ module.exports = function emeraldScript(EM) {
     return out;
   };
 
-  const out = { s: {}, t: {}, m: {}, tb: {}, ms: {} };
+  const out = { s: {}, t: {}, m: {}, tb: {}, ms: {}, lm: {} };   // (lm: which map a script label is from)
   function parseFile(file, mapName) {
     if (!fs.existsSync(file)) return;
     let label = null, lines = [];
@@ -76,6 +76,7 @@ module.exports = function emeraldScript(EM) {
         out.m[label] = rest.filter((l) => l.cmd !== "step_end").map((l) => l.cmd);
       } else if (rest.length) {
         out.s[label] = rest.filter((l) => !l.cmd.startsWith(".")).map((l) => [l.cmd].concat(l.args.map(num)));
+        if (mapName) out.lm[label] = mapName;
       }
       lines = [];
     };

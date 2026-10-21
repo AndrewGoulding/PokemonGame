@@ -342,6 +342,19 @@ function behavior(b) {
 // Where wild Pokémon are (Emerald's MetatileBehavior_IsLandWildEncounter).
 const WILD_BEHAVIOR = new Set([0x02, 0x03, 0x06, 0x08, 0x0b, 0x0c, 0x21, 0x24]);
 
+// ---------- The scripts (compiled first: the maps' metatile changes come from them) ----------
+const Scripts = require("./lib/emerald-script")(EM);
+const compiled = Scripts.compile(MAPS);
+// The metatile labels (METATILE_General_X) and their numbers, and which of them each map's scripts set.
+const metatileIds = {};
+for (const m of fs.readFileSync(P("include/constants/metatile_labels.h"), "utf8").matchAll(/#define (METATILE_\w+)\s+(0x[0-9A-Fa-f]+)/g)) metatileIds[m[1]] = parseInt(m[2], 16);
+const metatilesOf = {};
+for (const [label, cmds] of Object.entries(compiled.s)) {
+  const mp = compiled.lm[label];
+  if (!mp) continue;
+  for (const c of cmds) if (c[0] === "setmetatile" && typeof c[3] === "string" && metatileIds[c[3]] != null) (metatilesOf[mp] = metatilesOf[mp] || new Set()).add(c[3]);
+}
+
 // ---------- Build ----------
 const out = {};
 for (const name of MAPS) {
@@ -366,6 +379,18 @@ for (const name of MAPS) {
     elevation.push(b >> 12);
     behaviors.push(beh);
     encounter.push(WILD_BEHAVIOR.has(mt.behavior) ? 1 : 0);
+  }
+  // The metatiles this map's scripts put in (setmetatile): a sheet of them, 16 to a row, below and above the people.
+  let mt;
+  const wanted = [...(metatilesOf[name] || [])].sort();
+  if (wanted.length) {
+    const cols = 16, rows = Math.ceil(wanted.length / cols), ids = wanted.map((l) => metatileIds[l]);
+    while (ids.length < cols * rows) ids.push(0);
+    const sheet = E.render(ids, cols, rows, primary, secondary, true);
+    writePng(path.join(mapsDir, ren(name) + "-mt.png"), cols * 16, rows * 16, sheet.below);
+    writePng(path.join(mapsDir, ren(name) + "-mt-top.png"), cols * 16, rows * 16, sheet.above);
+    mt = {};
+    wanted.forEach((l, i) => { mt[l] = [i, behavior(E.metatile(primary, secondary, metatileIds[l]).behavior)]; });
   }
   // (Emerald's warps on plain ground are stepped onto: a doorway, as the engine has them.)
   for (const wp of map.warp_events) { const i = wp.y * w + wp.x; if (i >= 0 && i < behaviors.length && behaviors[i] === 0) behaviors[i] = 0x60; }
@@ -392,7 +417,7 @@ for (const name of MAPS) {
   const triggers = (map.coord_events || []).filter((c) => c.type === "trigger" && c.script && c.script !== "NULL")
     .map((c) => ({ x: c.x, y: c.y, script: "hoenn:" + c.script, var: c.var, value: +c.var_value }));
   out[ren(name)] = {
-    name: ren(name), scriptName: ren(name) !== name ? name : undefined, title: titleCase(sectionNames[map.region_map_section] || name.replace(/([a-z])([A-Z0-9])/g, "$1 $2")),
+    mt, name: ren(name), scriptName: ren(name) !== name ? name : undefined, title: titleCase(sectionNames[map.region_map_section] || name.replace(/([a-z])([A-Z0-9])/g, "$1 $2")),
     width: w, height: h, type: mapType === "city" ? "city" : mapType, music: musicOf(map.music), region: "hoenn",
     cycling: !!map.allow_cycling || undefined, allowEscaping: map.allow_escaping || undefined,
     showName: !!map.show_map_name, pokemonCenter: /_PokemonCenter_1F$/.test(name) || undefined, top: r.anyAbove, borderWidth: 2, borderHeight: 2,
@@ -420,8 +445,6 @@ for (const m of Object.values(out)) {
 if (ONLY.length && OUT) process.exit(0);
 
 // ---------- The scripts ----------
-const Scripts = require("./lib/emerald-script")(EM);
-const compiled = Scripts.compile(MAPS);
 // (Every trainer a script battles: the rival's, the Gym Leaders', Wally's ...)
 for (const cmds of Object.values(compiled.s)) for (const c of cmds) for (const arg of c.slice(1)) if (typeof arg === "string" && /^TRAINER_[A-Z0-9_]+$/.test(arg) && /^trainerbattle/.test(c[0])) trainerData(arg);
 // What the interpreter needs besides them: where each map constant is, the heal locations, the menus' texts, and the flags a new game sets.
