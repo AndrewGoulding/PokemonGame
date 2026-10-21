@@ -497,7 +497,22 @@ for (const cmds of Object.values(compiled.s)) for (const c of cmds) for (const a
   if (/^MUS_[A-Z0-9_]+$/.test(arg) && !songNames[arg]) songNames[arg] = songOf(arg) || "mus_" + arg.slice(4).toLowerCase();
   else if (/^SE_[A-Z0-9_]+$/.test(arg) && !seNames[arg]) seNames[arg] = "se_" + arg.slice(3).toLowerCase();
 }
-const hoennScripts = { songNames, seNames, gfx, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, consts: mapConsts };
+// In-game trades (src/data/trade.h): what they ask for and what you get, by their INGAME_TRADE_ names.
+const trades = {};
+{
+  const src = fs.readFileSync(P("src/data/trade.h"), "utf8"), at = src.indexOf("sIngameTrades[]");
+  const title = (t) => t.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase());
+  const spec = (c) => dexByID[toID(String(c).replace(/^SPECIES_/, ""))];
+  for (const m of src.slice(at).matchAll(/\[(INGAME_TRADE_\w+)\] =\s*\{([\s\S]*?)\n    \},/g)) {
+    const b = m[2], g = (re) => (re.exec(b) || [])[1];
+    trades[m[1]] = {
+      nickname: title(g(/\.nickname = _\("([^"]*)"\)/)), species: spec(g(/\.species = (\w+)/)), requested: spec(g(/\.requestedSpecies = (\w+)/)),
+      ivs: g(/\.ivs = \{([^}]*)\}/).split(",").map((x) => +x.trim()), ability: +g(/\.abilityNum = (\d+)/), otId: +g(/\.otId = (\d+)/),
+      personality: parseInt(g(/\.personality = (\w+)/)), item: itemId(g(/\.heldItem = (\w+)/)) || undefined, otName: title(g(/\.otName = _\("([^"]*)"\)/)), otGender: g(/\.otGender = (\w+)/)
+    };
+  }
+}
+const hoennScripts = { songNames, seNames, gfx, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, trades, consts: mapConsts };
 
 // ---------- The Town Map ----------
 // Each map's section (its name on the map, and where it is on it); a map whose section has no square (a cave's)

@@ -209,7 +209,7 @@
         case "setmonmetlocation": case "setmodernfatefulencounter": case "trywondercardscript": case "dofieldeffectsparkle": case "callnative": case "gotonative":
         case "waitstate": case "waitbuttonpress": case "waitmessage": case "waitse": case "waitfanfare": case "waitfieldeffect": case "waitdooranim": case "waitmoncry":
         case "lockall": case "lock": case "releaseall": case "release": case "lockfortrainer": case "hideplayer": case "showplayer": case "createvobject": case "turnvobject":
-        case "opendoor": case "closedoor": case "setdooropen": case "setdoorclosed": case "dofieldeffect": case "setfieldeffectargument": case "updatemoneybox":
+        case "opendoor": case "closedoor": case "setdooropen": case "setdoorclosed": case "setfieldeffectargument": case "updatemoneybox":
         case "register_matchcall": case "pokenavcall": case "dotrainerbattle": case "gotopostbattlescript": case "gotobeatenscript": case "selectapproachingtrainer":
         case "braillemessage": case "braillemsgbox": case "closebraillemessage": case "brailleformat": case "setwarp": case "setholewarp": case "setescapewarp":
           return true;
@@ -222,10 +222,16 @@
       return false;
     }
     // The specials that need no screen.
+    // How the last wild battle ended (B_OUTCOME_*: won 1, lost 2, ran 4, caught 7).
+    let battleOutcome = 0;
+    const OUTCOMES = { won: 1, lost: 2, ran: 4, caught: 7 };
     function syncSpecial(st, name, out) {
       const set = (v) => { if (out) setVar(out, v); };
       switch (name) {
-        case "GetTrainerFlag": case "ShouldTryRematchBattle": case "IsTrainerReadyForRematch": case "GetBattleOutcome": case "GetLeadMonFriendshipScore": set(0); return true;
+        case "GetTrainerFlag": case "ShouldTryRematchBattle": case "IsTrainerReadyForRematch": case "GetLeadMonFriendshipScore": set(0); return true;
+        case "GetBattleOutcome": set(battleOutcome); return true;
+        case "BufferMonNickname": { const r = env.player().party[num("VAR_0x8004")]; if (r) buffers[1] = window.Party.displayName(r); return true; }
+        case "BufferTMHMMoveName": { const it = item(getVar("VAR_0x8004")); buffers[2] = (it && window.Bag.isMachine(it) && window.Bag.machineMove(it)) || ""; return true; }
         case "ScriptGetPartyMonSpecies": { const r = env.player().party[num("VAR_0x8004")]; set(r ? r.species : 0); return true; }
         case "IsSelectedMonEgg": { const r = env.player().party[num("VAR_0x8004")]; set(r && r.egg ? 1 : 0); return true; }
         case "CountPartyNonEggMons": case "CalculatePlayerPartyCount": set(env.player().party.filter((r) => !r.egg).length); return true;
@@ -419,8 +425,9 @@
           case "checkmoney": setVar("VAR_RESULT", env.money() >= num(a[0]) ? 1 : 0); break;
           case "showmoneybox": env.moneyBox(true); break;
           case "hidemoneybox": env.moneyBox(false); break;
+          case "dofieldeffect": if (env.fieldEffect) { await flush(); await env.fieldEffect(a[0]); } break;
           case "setwildbattle": wildSpec = { species: species(val(a[0])), level: num(a[1]), item: a[2] && a[2] !== "ITEM_NONE" ? item(a[2]) : null }; break;
-          case "dowildbattle": if (wildSpec) { await flush(); setVar("VAR_RESULT", 0); await env.wildBattle(wildSpec.species, wildSpec.level, wildSpec.item); } break;
+          case "dowildbattle": if (wildSpec) { await flush(); setVar("VAR_RESULT", 0); battleOutcome = OUTCOMES[await env.wildBattle(wildSpec.species, wildSpec.level, wildSpec.item)] || 1; } break;
           // The Game Corner: the Coin Case's Coins, and its slot machines.
           case "checkcoins": setVar(a[0], env.coins ? env.coins() : 0); break;
           case "addcoins": if (env.addCoins) env.addCoins(num(a[0])); break;
@@ -494,9 +501,19 @@
         switch (name) {
           case "ChoosePartyMon": { await flush(); const i = await env.choosePartyMon("Choose a POKéMON."); setVar("VAR_0x8004", i < 0 ? 255 : i); return; }
           case "ShakeCamera": await flush(); await env.shake(num("VAR_0x8004") || 4, { x: 1, y: 1, delay: 2 }); return;
-          case "GameClear": case "SaveGame": if (env.save) await env.save(); return;
+          // The legendaries' battles: the wild Pokémon setwildbattle named.
+          case "StartRegiBattle": case "BattleSetup_StartLegendaryBattle": case "StartGroudonKyogreBattle": case "StartLatiBattle": case "StartLegendaryBattle":
+            if (wildSpec) { await flush(); battleOutcome = OUTCOMES[await env.wildBattle(wildSpec.species, wildSpec.level, wildSpec.item)] || 1; }
+            return;
+          case "DoSealedChamberShakingEffect_Short": await flush(); await env.shake(3, { x: 1, y: 1, delay: 2 }); return;
+          case "DoSealedChamberShakingEffect_Long": await flush(); await env.shake(10, { x: 1, y: 1, delay: 2 }); return;
+          case "SaveGame": if (env.save) await env.save(); return;
+          case "GameClear":
+            if (env.special && (await env.special(name, { set, setBuffer: (n, v) => { buffers[n] = v; }, setVar, getVar, local, flush, ctx, st, cut, flag, setFlag, who })) !== false) return;
+            if (env.save) await env.save();
+            return;
           default:
-            if (env.special) { const r = await env.special(name, { set, setVar, getVar, local, flush, ctx, st, cut, flag, setFlag, who }); if (r !== undefined && r !== false) return; }
+            if (env.special) { const r = await env.special(name, { set, setBuffer: (n, v) => { buffers[n] = v; }, setVar, getVar, local, flush, ctx, st, cut, flag, setFlag, who }); if (r !== undefined && r !== false) return; }
             if (out) setVar(out, 0);
         }
       }

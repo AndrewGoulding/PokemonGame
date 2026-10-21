@@ -2627,6 +2627,7 @@
   // (Hoenn's nurses and clerks: tools/build-hoenn.js.)
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "hoenn") for (const p of m.people) if (/_PokemonCenter_1F_EventScript_Nurse$|_Mart_EventScript_Clerk$/.test(p.script || "")) SPECIAL.add(p.script);
   SPECIAL.add("SlateportCity_Harbor_EventScript_Sailor"); SPECIAL.add("Route117_PokemonDayCare_EventScript_DaycareWoman");
+  SPECIAL.add("LilycoveCity_MoveDeletersHouse_EventScript_MoveDeleter"); SPECIAL.add("FallarborTown_MoveRelearnersHouse_EventScript_MoveRelearner");
   const TRAINER_SCRIPTS = new Set();
   for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) if (p.trainer && p.trainer.id) TRAINER_SCRIPTS.add(p.script);
   // (or, signalled by the VS Seeker, want a rematch)
@@ -2922,6 +2923,8 @@
     if (script === "SlateportCity_Harbor_EventScript_Sailor") { await slateportSailor(); return; }
     if (isHoenn(ev.map || player.location.map) && /_EventScript_PC$/.test(script)) { await pc(); return; }
     if (script === "Route117_PokemonDayCare_EventScript_DaycareWoman") { await dayCareMan(); return; }
+    if (script === "LilycoveCity_MoveDeletersHouse_EventScript_MoveDeleter") { await moveDeleter(); return; }
+    if (script === "FallarborTown_MoveRelearnersHouse_EventScript_MoveRelearner") { await moveRelearner(); return; }
     // Hoenn's: Emerald's scripts (ui/hoenn-script.js), and its maps' scenes as you come in.
     if (/^(enter|arrive):/.test(script) && isHoenn(script.replace(/^\w+:/, ""))) {
       const due = hoenn.frameScript(script.replace(/^\w+:/, ""), /^enter:/.test(script));
@@ -11706,6 +11709,7 @@
     trainerBattle: (id, o) => hoennBattle(id, o),
     wildBattle: (species, level, item) => johtoBattle("wild", species, level),
     warp: (mapConst, at) => hoennWarp(mapConst, at),
+    fieldEffect: async (name) => { if (name === "FLDEFF_HALL_OF_FAME_RECORD") await HallOfFame.recordFlash($("#overlay")); },
     badge: (n, on) => {
       const b = Player.REGION_BADGES.hoenn[n];
       if (!b) return;
@@ -11866,6 +11870,12 @@
     }
     await persist();
   }
+  // Emerald's tutors' moves, in TUTOR_MOVE_ order (include/constants/party_menu.h).
+  const HOENN_TUTOR_MOVES = ["Mega Punch", "Swords Dance", "Mega Kick", "Body Slam", "Double-Edge", "Counter", "Seismic Toss", "Mimic", "Metronome", "Soft-Boiled",
+    "Dream Eater", "Thunder Wave", "Explosion", "Rock Slide", "Substitute", "Dynamic Punch", "Rollout", "Psych Up", "Snore", "Icy Wind", "Endure", "Mud-Slap",
+    "Ice Punch", "Swagger", "Sleep Talk", "Swift", "Defense Curl", "Thunder Punch", "Fire Punch", "Fury Cutter"];
+  let hoennTradeMon = null;
+  const speciesNumber = (name) => Object.keys(window.DEX).indexOf(name) + 1;
   // The specials Emerald's scripts call that this game answers itself.
   async function hoennSpecial(name, api) {
     switch (name) {
@@ -11880,6 +11890,111 @@
       case "MauvilleGymPressSwitch": mauvilleGym("press", +api.getVar("VAR_0x8004")); return true;
       case "MauvilleGymSetDefaultBarriers": mauvilleGym("flip"); return true;
       case "MauvilleGymDeactivatePuzzle": mauvilleGym("off"); return true;
+      // The move tutors (src/data/move_tutors? Emerald's own list, party_menu.h): VAR_0x8005 is which, and VAR_RESULT says if it was taught.
+      case "ChooseMonForMoveTutor": {
+        await api.flush();
+        const move = HOENN_TUTOR_MOVES[+api.getVar("VAR_0x8005")];
+        api.setVar("VAR_RESULT", 0);
+        if (!move) return true;
+        const notes = player.party.map((r) => (r.egg || !tutorCanLearn(r, move) ? "NOT ABLE" : Party.knowsMove(r, move) ? "LEARNED" : "ABLE"));
+        for (;;) {
+          const record = await choosePartyFor("Teach which {PKMN}?", null, notes);
+          show("world");
+          if (!record) return true;
+          const nm = Party.displayName(record);
+          if (record.egg || !tutorCanLearn(record, move)) { await say(nm + " can't learn " + move + "."); continue; }
+          if (Party.knowsMove(record, move)) { await say(nm + " already knows " + move + "."); continue; }
+          await learnMove(record, move);
+          if (Party.knowsMove(record, move)) api.setVar("VAR_RESULT", 1);
+          return true;
+        }
+      }
+      // In-game trades (src/trade.c): what they ask for, a Pokémon of yours, and what you get.
+      case "GetInGameTradeSpeciesInfo": {
+        const t = window.HOENN_SCRIPTS.trades[api.getVar("VAR_0x8004")];
+        if (!t) { api.set(0); return true; }
+        api.setBuffer(1, t.requested); api.setBuffer(2, t.species);
+        api.set(speciesNumber(t.requested));
+        return true;
+      }
+      case "GetTradeSpecies": { const r = player.party[+api.getVar("VAR_0x8005")]; api.set(!r || r.egg ? 0 : speciesNumber(r.species)); return true; }
+      case "CreateInGameTradePokemon": {
+        const t = window.HOENN_SCRIPTS.trades[api.getVar("VAR_0x8004")], mine = player.party[+api.getVar("VAR_0x8005")];
+        if (!t || !mine) return true;
+        const r = Party.create(t.species, mine.level, { nickname: t.nickname, shiny: false });
+        const [hp, atk, def, spe, spa, spd] = t.ivs;
+        Object.assign(r, { ivs: { hp, atk, def, spa, spd, spe }, personality: t.personality, ot: { name: t.otName, id: t.otId }, met: { level: mine.level, map: player.location.map, traded: true } });
+        const dex = window.DEX[t.species], ab = dex.abilities[t.ability] || dex.abilities[0];
+        if (ab) r.ability = ab;
+        if (t.item && window.ITEMS[t.item]) r.item = t.item;
+        r.hp = Party.maxHp(r);
+        hoennTradeMon = r;
+        return true;
+      }
+      case "DoInGameTradeScene": {
+        await api.flush();
+        const slot = +api.getVar("VAR_0x8005"), mine = player.party[slot];
+        if (!mine || !hoennTradeMon) return true;
+        await say(["Sending off " + Party.displayName(mine) + "…", "Please take good care of it!"]);
+        sfx("se_ball");
+        player.party[slot] = hoennTradeMon;
+        Player.markSeen(player, hoennTradeMon.species);
+        Player.markCaught(player, hoennTradeMon.species);
+        await say([Party.displayName(hoennTradeMon) + " was received!"]);
+        hoennTradeMon = null;
+        await persist();
+        return true;
+      }
+      // Naming a Pokémon you've been given (Common_EventScript_NameReceivedPartyMon, the Name Rater's).
+      case "ChangePokemonNickname": {
+        await api.flush();
+        const r = player.party[+api.getVar("VAR_0x8004")];
+        if (r) {
+          const typed = await enterText(Party.speciesName(r.species) + "'s nickname?", Party.displayName(r), 10);
+          if (typed && typed !== Party.speciesName(r.species)) r.nickname = typed;
+          else if (typed === Party.speciesName(r.species)) delete r.nickname;
+        }
+        show("world");
+        return true;
+      }
+      case "IsMonOTIDNotPlayers": { const r = player.party[+api.getVar("VAR_0x8004")]; api.set(r && r.ot && (r.ot.id !== player.trainerId || r.ot.name !== player.name) ? 1 : 0); return true; }
+      case "MonOTNameNotPlayer": { const r = player.party[+api.getVar("VAR_0x8004")]; api.set(r && r.ot && r.ot.name !== player.name ? 1 : 0); return true; }
+      // The Hall of Fame (ending the story: EverGrandeCity_HallOfFame): the team on record, the Hall of Fame screen, then home.
+      case "GameClear": {
+        await api.flush();
+        const f = player.flags, h = f.hoennRespawn || { map: "LittlerootTown_BrendansHouse_2F", x: 4, y: 2 };
+        League.reset(f);
+        player.party.forEach(Party.heal);
+        const entry = League.record(f, player.party.filter((r) => !r.egg).map((r) => Object.assign({}, r, { form: Party.form(r) })),
+          { name: player.name, id: player.trainerId, playTimeMs: player.playTimeMs });
+        player.location = Object.assign({ facing: "down" }, h);
+        music(null);
+        await Overworld.fadeToBlack();
+        await HallOfFame.show($("#overlay"), entry, {
+          cry, sfx, music, player: { name: player.name, id: player.trainerId, playTimeMs: player.playTimeMs, pic: Player.LOOKS[player.look].front },
+          save: async () => { tick(); Save.write(player); savePromptAt = player.playTimeMs; }
+        }).catch((e) => { console.error(e); tick(); Save.write(player); });
+        $("#overlay").classList.add("hidden");
+        show("world");
+        await Overworld.teleport({ map: h.map, x: h.x, y: h.y, facing: "down" });
+        await Overworld.fadeFromBlack();
+        return true;
+      }
+      // Mt. Chimney's cable car: across to the other station (the ride's scene isn't built).
+      case "CableCarWarp": return true;
+      case "CableCar": {
+        await api.flush();
+        const to = +api.getVar("VAR_0x8004") ? "Route112_CableCarStation" : "MtChimney_CableCarStation";
+        Screen.say("");
+        await Overworld.fadeToBlack();
+        await Overworld.teleport({ map: to, x: 6, y: 4, facing: "up" });
+        await Overworld.fadeFromBlack();
+        return true;
+      }
+      // The red and blue orbs' light.
+      case "DoOrbEffect": await api.flush(); sfx("se_orb"); await sleep(700); return true;
+      case "FadeOutOrbEffect": await sleep(400); return true;
+      case "FieldShowRegionMap": await api.flush(); await townMap(); show("world"); return true;
       // Wally's catching lesson (Petalburg's OnFrame): his Ralts, caught with your help, as a scene (Emerald's is a battle).
       case "StartWallyTutorialBattle": {
         await api.flush();
