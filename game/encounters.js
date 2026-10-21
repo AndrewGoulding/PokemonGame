@@ -154,10 +154,10 @@
 
   // Pickup, as Scarlet and Violet have it: after a battle, each of your
   // Pokémon with Pickup that holds nothing has a one-in-ten chance of picking
-  // up an item, by its level. (The table is this game's rendering of theirs,
-  // ten levels a column; items this game hasn't got stand in for Big Nuggets.)
+  // up an item, by its level. (Only the first row, Lv. 1-10, is checked against
+  // Serebii's; the others are this game's own rendering of theirs, to be checked.)
   const PICKUP = [
-    [["potion", 35], ["tiny-mushroom", 20], ["full-heal", 15], ["super-potion", 10], ["ether", 5], ["revive", 5], ["hyper-potion", 4], ["big-mushroom", 3], ["nugget", 3]],
+    [["potion", 35], ["tiny-mushroom", 20], ["super-potion", 15], ["poke-doll", 10], ["full-heal", 10], ["revive", 3], ["hyper-potion", 3], ["ether", 1], ["big-mushroom", 3]],   // (Lv. 1-10: Serebii's, checked)
     [["full-heal", 20], ["super-potion", 20], ["potion", 15], ["big-mushroom", 15], ["tiny-mushroom", 10], ["hyper-potion", 7], ["ether", 5], ["revive", 4], ["nugget", 3], ["rare-candy", 1]],
     [["full-heal", 20], ["super-potion", 15], ["hyper-potion", 15], ["big-mushroom", 10], ["ether", 10], ["revive", 10], ["max-ether", 8], ["nugget", 6], ["max-potion", 5], ["rare-candy", 1]],
     [["full-heal", 20], ["hyper-potion", 20], ["super-potion", 10], ["big-mushroom", 10], ["revive", 10], ["max-ether", 10], ["nugget", 8], ["max-potion", 7], ["rare-candy", 3], ["pp-up", 2]],

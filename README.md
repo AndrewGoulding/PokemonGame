@@ -2685,7 +2685,8 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   Suction Cups would make fish bite more often, but every cast here bites.)
   **Pickup**: after a battle, each of your Pokémon with Pickup that holds
   nothing has a one-in-ten chance of picking up an item, by its level, from
-  this game's rendering of Scarlet and Violet's table (Potions, Full Heals
+  this game's rendering of Scarlet and Violet's table (only its Lv. 1-10
+  row is checked against Serebii's; the rest are still to be checked) (Potions, Full Heals
   and mushrooms low down; Nuggets, Max Elixirs, PP Ups and Rare Candies high
   up: `Encounters.PICKUP`); it holds the item, and the game says so. Thief and
   Covet can take it, a Berry gets eaten, and caught, it keeps what it still
