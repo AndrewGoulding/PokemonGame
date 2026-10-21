@@ -230,8 +230,8 @@
       switch (name) {
         case "GetTrainerFlag": case "ShouldTryRematchBattle": case "IsTrainerReadyForRematch": case "GetLeadMonFriendshipScore": set(0); return true;
         case "GetBattleOutcome": set(battleOutcome); return true;
-        case "BufferMonNickname": { const r = env.player().party[num("VAR_0x8004")]; if (r) buffers[1] = window.Party.displayName(r); return true; }
-        case "BufferTMHMMoveName": { const it = item(getVar("VAR_0x8004")); buffers[2] = (it && window.Bag.isMachine(it) && window.Bag.machineMove(it)) || ""; return true; }
+        case "BufferMonNickname": { const r = env.player().party[num("VAR_0x8004")]; if (r) buffers[1] = window.Party ? window.Party.displayName(r) : r.nickname || r.species; return true; }
+        case "BufferTMHMMoveName": { const it = item(getVar("VAR_0x8004")); buffers[2] = (it && window.Bag && window.Bag.isMachine(it) && window.Bag.machineMove(it)) || ""; return true; }
         case "ScriptGetPartyMonSpecies": { const r = env.player().party[num("VAR_0x8004")]; set(r ? r.species : 0); return true; }
         case "IsSelectedMonEgg": { const r = env.player().party[num("VAR_0x8004")]; set(r && r.egg ? 1 : 0); return true; }
         case "CountPartyNonEggMons": case "CalculatePlayerPartyCount": set(env.player().party.filter((r) => !r.egg).length); return true;
