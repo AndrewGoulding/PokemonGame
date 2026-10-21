@@ -1973,6 +1973,7 @@
         { label: "Tag battle", value: "tag", className: "action" },
         { label: "Go to the last Pokémon Center", value: "center", className: "action" },
         { label: "Visit Johto (New Bark Town)", value: "johto", className: "action" },
+        { label: "Visit Hoenn (Littleroot Town)", value: "hoenn", className: "action" },
         { label: Orre.inOrre(player.location) ? "Leave Orre (back as yourself)" : "Visit Orre (Outskirt Stand)", value: "orre", className: "action" },
         back()]);
       if (v === "back") return;
@@ -2012,6 +2013,13 @@
         // house in New Bark Town; the debug menu's Pokémon Center trip brings you back.
         Orre.leave(player);
         player.location = { map: "NewBarkTown", x: 23, y: 13, facing: "down" };
+        await persist();
+        return "battled";
+      } else if (v === "hoenn") {
+        // Hoenn isn't joined to anywhere yet (data/emerald-maps.js, tools/build-hoenn.js):
+        // outside the houses in Littleroot Town; the debug menu's Pokémon Center trip brings you back.
+        Orre.leave(player);
+        player.location = { map: "LittlerootTown", x: 10, y: 9, facing: "down" };
         await persist();
         return "battled";
       } else if (v === "repels") {
@@ -2595,6 +2603,8 @@
   const ITEM_BALLS = new Set();
   for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) if (p.item) ITEM_BALLS.add(p.script);
   // Trainers: battle until beaten (a flag named for the trainer, as in FireRed).
+  // (Hoenn's nurses and clerks: tools/build-hoenn.js.)
+  for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "hoenn") for (const p of m.people) if (/_PokemonCenter_1F_EventScript_Nurse$|_Mart_EventScript_Clerk$/.test(p.script || "")) SPECIAL.add(p.script);
   const TRAINER_SCRIPTS = new Set();
   for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) if (p.trainer && p.trainer.id) TRAINER_SCRIPTS.add(p.script);
   // (or, signalled by the VS Seeker, want a rematch)
@@ -2891,6 +2901,8 @@
     if (script === "hgss:D36R0101:scr_seq_D36R0101_002") { await johtoField.headbuttTutor(); return; }
     { const js = johto.scriptOf(ev.person || ev.sign || ev.trigger); if (js) { await runJohto(js, ev.person); return; } }
     { const ap = /^hgss_apricorn:(\d+):(\w+)$/.exec(script || ""); if (ap) { await apricornTree(+ap[1], ap[2]); return; } }
+    // (Hoenn's Poké Mart clerks: their stock, from Emerald's scripts.)
+    if (ev.person && ev.person.mart && /_Mart_EventScript_Clerk$/.test(script || "") && (window.WORLD_MAPS[ev.map] || {}).region === "hoenn") { await mart(ev.person.mart); return; }
     // (Johto's Pokémon Centers' nurses heal as Kanto's do.)
     if (/_PokemonCenter_1F_EventScript_Nurse$/.test(script || "") && (window.WORLD_MAPS[ev.map] || {}).pokemonCenter) { await nurse(ev.map, ev.person); return; }
 

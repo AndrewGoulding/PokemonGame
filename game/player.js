@@ -447,7 +447,8 @@
   // no Exp. Points, and Rare Candies and Exp. Candies don't work on it.
   const REGION_BADGES = {
     kanto: ["boulder", "cascade", "thunder", "rainbow", "soul", "marsh", "volcano", "earth"],
-    johto: ["zephyr", "hive", "plain", "fog", "storm", "mineral", "glacier", "rising"]
+    johto: ["zephyr", "hive", "plain", "fog", "storm", "mineral", "glacier", "rising"],
+    hoenn: ["stone", "knuckle", "dynamo", "heat", "balance", "feather", "mind", "rain"]
   };
   const LEVEL_CAPS = [15, 25, 30, 35, 40, 45, 50, 55];
   const regionOf = (map) => ((window.WORLD_MAPS && window.WORLD_MAPS[map]) || {}).region || "kanto";

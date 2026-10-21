@@ -1928,7 +1928,7 @@ for (const share of [false, true]) {
   // (FireRed gives the Underground Path, the S.S. Anne, the Rocket Hideout, Silph Co., the Pokémon League,
   // the Ember Spa, the Dunsparce Tunnel (Three Isle Path), the Rocket Warehouse, Trainer Tower's inside, the Tanoby Key and the Tanoby chambers no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
-    if (["johto", "emerald", "orre"].includes(WORLD_MAPS[name].region)) continue;   // (Johto, Faraway Island and Orre aren't on Kanto's Town Map)
+    if (["johto", "emerald", "orre", "hoenn"].includes(WORLD_MAPS[name].region)) continue;   // (Johto, Hoenn, Faraway Island and Orre aren't on Kanto's Town Map)
     if (window.JOHTO_TOWN_MAP && window.JOHTO_TOWN_MAP.at[name]) continue;   // (nor Johto's maps east of New Bark Town, which are Kanto's for Badges but on Johto's)
     // (Saffron's Magnet Train station, HGSS's: its townMapSection, which ui/magnet-train.js adds.)
     if (WORLD_MAPS[name].townMapSection) { assert(onMap(WORLD_MAPS[name].townMapSection), name + " is on the Town Map"); continue; }
@@ -3052,7 +3052,7 @@ if (window.JOHTO_TOWN_MAP) {
 // The Move Relearner and Move Deleter sit on the cushions upstairs in every
 // Pokémon Center; the Marts have no upstairs, and a save made up there loads
 // just inside the Mart's door.
-for (const name of Object.keys(WORLD_MAPS).filter((n) => /_PokemonCenter_2F$/.test(n))) {
+for (const name of Object.keys(WORLD_MAPS).filter((n) => /_PokemonCenter_2F$/.test(n) && WORLD_MAPS[n].region !== "hoenn")) {   // (Hoenn's upstairs are Emerald's: link rooms)
   const m = WORLD_MAPS[name];
   const tutors = m.people.filter((q) => /^CenterUpstairs_/.test(q.script)).map((q) => q.script + "@" + q.x + "," + q.y).sort();
   assert.deepStrictEqual(tutors, ["CenterUpstairs_EventScript_MoveDeleter@10,7", "CenterUpstairs_EventScript_MoveRelearner@6,7"], name);
@@ -6390,4 +6390,19 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   assert(BA.run({ move: "Transform", attacker: 0, target: 1, boxes, mons, seed: 7, transform: () => hooked++ }).finished && hooked === 1, "Transform changes the picture once");
   for (const f of ["substitute.png", "substitute-back.png"]) assert(fs.existsSync(path.join(root, "assets/battle-anims", f)), "the doll: " + f);
   console.log("ok: battle animations, " + tables + " runs of the general, status and special tables ended");
+}
+
+// Hoenn (tools/build-hoenn.js, from pokeemerald): the first slice, imported with Emerald's tilesets.
+{
+  const hoenn = Object.entries(WORLD_MAPS).filter(([, m]) => m.region === "hoenn");
+  assert(hoenn.length >= 20, "Hoenn's maps are in: " + hoenn.length);
+  for (const [name, m] of hoenn) {
+    const n = m.width * m.height;
+    assert([m.collision, m.elevation, m.behavior, m.encounter].every((a) => a.length === n), name + ": layers match the size");
+    assert(fs.existsSync(path.join(root, "assets/world/maps/" + name + ".png")), name + ": picture");
+    for (const w of m.warps) assert(WORLD_MAPS[w.map], name + ": warp to " + w.map);
+    for (const q of m.people) if (q.sprite && /^em_/.test(q.sprite)) assert(fs.existsSync(path.join(root, "assets/world/sprites/" + q.sprite + ".png")), name + ": sprite " + q.sprite);
+  }
+  assert(hoenn.some(([n]) => /_PokemonCenter_1F$/.test(n) && WORLD_MAPS[n].pokemonCenter), "Hoenn's Pokémon Centers heal");
+  console.log("ok: Hoenn, " + hoenn.length + " maps from Emerald's tilesets");
 }

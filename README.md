@@ -1872,6 +1872,21 @@ sign is the Hall of Trophies.
 Not built from Pokémon Stadium: its rental Pokémon, the Kids Club's mini-games and the
 Free Battle.
 
+## Hoenn (in progress)
+
+Hoenn is imported from pret/pokeemerald with Emerald's own tilesets, by `tools/build-hoenn.js`
+(`node tools/build-hoenn.js <pokeemerald> [--list] [--only=A,B --out=dir]`). It reads each map's
+layout, metatiles, objects, warps, trainers, marts and wild tables, draws the pictures with
+`tools/lib/emerald-tiles.js`, writes the NPC sprites (`assets/world/sprites/em_*.png`) and trainer
+pictures (`assets/sprites/trainers/front/em_*.png`), and puts the maps in `data/emerald-maps.js`
+between the `Hoenn` markers (the other generators keep that block).
+
+First slice: Littleroot Town, Route 101, Oldale Town, Route 102, Route 103, Petalburg City and
+their buildings (Pokémon Centers, Marts, houses, Birch's lab). Maps have `region: "hoenn"`
+(level cap and badges: `REGION_BADGES.hoenn`), Centers heal, clerks open the Mart, trainers battle.
+Visit it from the debug menu ("Visit Hoenn"). Not yet: the story scripts (truck, Birch, Wally,
+rival), step triggers, Emerald's music, the Hoenn Town Map and Fly.
+
 ## Faraway Island
 
 Emerald's Old Sea Map event, for Mew. Once the Sapphire is in Celio's machine
