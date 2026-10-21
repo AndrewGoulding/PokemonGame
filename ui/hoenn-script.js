@@ -99,6 +99,7 @@
       // (A Gym's flag is its Badge.)
       const b = /^FLAG_BADGE0(\d)_GET$/.exec(n);
       if (b && env.badge) env.badge(+b[1] - 1, on);
+      if (env.onFlag) env.onFlag(n, !!on);
     }
     function getVar(x) {
       if (typeof x === "number") return x;
@@ -230,6 +231,16 @@
         case "GetPlayerFacingDirection": set(DIR_NUM[(env.personAt("player") || {}).facing] || 1); return true;
         case "HasEnoughMonsForDoubleBattle": set(env.player().party.filter((r) => !r.egg && r.hp > 0).length >= 2 ? 1 : 0); return true;
         case "HealPlayerParty": env.healParty(); return true;
+        case "GetPlayerBigGuyGirlString": buffers[1] = env.isGirl() ? "big girl" : "big guy"; return true;
+        case "GetRivalSonDaughterString": buffers[1] = env.isGirl() ? "son" : "daughter"; return true;
+        case "GetPlayerAvatarBike": set(0); return true;
+        case "IsStarterInParty": {
+          const family = [["Treecko", "Grovyle", "Sceptile"], ["Torchic", "Combusken", "Blaziken"], ["Mudkip", "Marshtomp", "Swampert"]][num("VAR_STARTER_MON")] || [];
+          set(env.player().party.some((r) => family.includes(r.species)) ? 1 : 0); return true;
+        }
+        case "IsGrassTypeInParty": set(env.player().party.some((r) => !r.egg && ((window.DEX[r.species] || {}).types || []).includes("Grass")) ? 1 : 0); return true;
+        case "CountPartyAliveNonEggMons": set(env.player().party.filter((r) => !r.egg && r.hp > 0).length); return true;
+        case "SavePlayerParty": case "LoadPlayerParty": case "LoadWallyZigzagoon": case "SwapRegisteredBike": case "TurnOffTVScreen": case "TurnOnTVScreen": return true;
         case "DrawWholeMapView": case "PlayerFaceTrainerAfterBattle": case "SpawnCameraObject": case "RemoveCameraObject": case "ShowFieldMessageStringVar4": case "SetCB2WhiteOut": return true;
       }
       return env.syncSpecial ? !!env.syncSpecial(name, { set, setVar, getVar, local }) : false;
@@ -274,7 +285,7 @@
         if (after && after !== "FALSE" && after !== 0 && D.s[after]) { st.code = D.s[after]; st.pc = 0; st.stack.length = 0; }
       }
       async function main() {
-      while (!st.done) {
+      for (let guard = 0; !st.done && guard < 200000; guard++) {
         if (st.pc >= st.code.length) { if (!st.stack.length) break; [st.code, st.pc] = st.stack.pop(); continue; }
         const [op, ...a] = st.code[st.pc++];
         if (flow(st, op, a)) continue;
@@ -409,6 +420,14 @@
           case "hidemoneybox": env.moneyBox(false); break;
           case "setwildbattle": wildSpec = { species: species(val(a[0])), level: num(a[1]), item: a[2] && a[2] !== "ITEM_NONE" ? item(a[2]) : null }; break;
           case "dowildbattle": if (wildSpec) { await flush(); setVar("VAR_RESULT", 0); await env.wildBattle(wildSpec.species, wildSpec.level, wildSpec.item); } break;
+          // The Game Corner: the Coin Case's Coins, and its slot machines.
+          case "checkcoins": setVar(a[0], env.coins ? env.coins() : 0); break;
+          case "addcoins": if (env.addCoins) env.addCoins(num(a[0])); break;
+          case "removecoins": if (env.addCoins) env.addCoins(-num(a[0])); break;
+          case "showcoinsbox": if (env.coinsBox) env.coinsBox(true); break;
+          case "hidecoinsbox": if (env.coinsBox) env.coinsBox(false); break;
+          case "updatecoinsbox": break;
+          case "playslotmachine": if (env.slotMachine) { await flush(); await env.slotMachine(num(a[0])); } break;
           case "showmonpic": if (env.showPicture) env.showPicture(species(val(a[0]))); break;
           case "hidemonpic": if (env.hidePicture) env.hidePicture(); break;
           case "playmoncry": env.cry(species(val(a[0]))); break;

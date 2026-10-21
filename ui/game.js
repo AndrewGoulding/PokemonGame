@@ -583,8 +583,11 @@
     League.reset(player.flags);
     // (DoWhiteOut heals the party as you go.)
     player.party.forEach(Party.heal);
-    const center = player.flags.lastCenter && centerOf(player.flags.lastCenter);
-    const to = Object.assign({}, center || Player.HOME);
+    // (In Hoenn: its last Pokémon Center, or, before you've used one, your bedroom: setrespawn.)
+    const inHoennNow = isHoenn(player.location.map);
+    const center = player.flags.lastCenter && (!inHoennNow || isHoenn(player.flags.lastCenter)) && centerOf(player.flags.lastCenter);
+    const hoennHome = inHoennNow && !center ? (player.flags.hoennRespawn || { map: "LittlerootTown_BrendansHouse_2F", x: 4, y: 2 }) : null;
+    const to = Object.assign({}, center || hoennHome || Player.HOME);
     music(null);
     Screen.say("");
     await GbaMenus.blackScreen($("#overlay"), fill(center
@@ -597,6 +600,7 @@
     $("#overlay").classList.add("hidden");
     await Overworld.teleport(to);
     if (center) await afterBlackoutNurse(to.map);
+    else if (hoennHome) player.party.forEach(Party.heal);
     else await afterBlackoutMom();
   }
   // EventScript_AfterWhiteOutHeal: the nurse behind the counter heals them
@@ -2622,6 +2626,7 @@
   // Trainers: battle until beaten (a flag named for the trainer, as in FireRed).
   // (Hoenn's nurses and clerks: tools/build-hoenn.js.)
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "hoenn") for (const p of m.people) if (/_PokemonCenter_1F_EventScript_Nurse$|_Mart_EventScript_Clerk$/.test(p.script || "")) SPECIAL.add(p.script);
+  SPECIAL.add("SlateportCity_Harbor_EventScript_Sailor"); SPECIAL.add("Route117_PokemonDayCare_EventScript_DaycareWoman");
   const TRAINER_SCRIPTS = new Set();
   for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) if (p.trainer && p.trainer.id) TRAINER_SCRIPTS.add(p.script);
   // (or, signalled by the VS Seeker, want a rematch)
@@ -2913,6 +2918,10 @@
     // (Mom's deliveryman, and the Gym Leaders' numbers and Dojo rematches: ui/pokegear.js.)
     if (ev.person && await gear.talkPerson(ev.person, ev.map)) return;
     if (ev.person && await berryFarm.talk(ev.person)) return;   // (Celadon's Berry Farm: ui/berry-farm.js)
+    // (Hoenn's own: a sailor, the bedroom PCs, the Day Care.)
+    if (script === "SlateportCity_Harbor_EventScript_Sailor") { await slateportSailor(); return; }
+    if (isHoenn(ev.map || player.location.map) && /_EventScript_PC$/.test(script)) { await pc(); return; }
+    if (script === "Route117_PokemonDayCare_EventScript_DaycareWoman") { await dayCareMan(); return; }
     // Hoenn's: Emerald's scripts (ui/hoenn-script.js), and its maps' scenes as you come in.
     if (/^(enter|arrive):/.test(script) && isHoenn(script.replace(/^\w+:/, ""))) {
       const due = hoenn.frameScript(script.replace(/^\w+:/, ""), /^enter:/.test(script));
@@ -2920,6 +2929,7 @@
       return;
     }
     { const hs = hoennScriptFor(ev); if (hs) { await runHoenn(hs, ev.person); return; } }
+
     // Johto's scripts (ui/johto-script.js), and its Apricorn trees.
     if (/^(enter|arrive):/.test(script)) { const due = johto.frameScript(script.replace(/^\w+:/, "")); if (due) { await runJohto(due, null); return; } }
     // (Ilex Forest's Headbutt tutor: ui/johto-field.js.)
@@ -8442,27 +8452,26 @@
     const back = async () => { if (walkBack) await Overworld.act([{ who: "player", moves: ["walk_up"] }]); };
     if (scene < 1) { await say(T("VermilionCity_Text_TheShipSetSail")); await back(); return; }
     const q = T(scene >= 5 ? "VermilionCity_Text_BoardSeagallopRainbowPass" : "VermilionCity_Text_BoardSeagallopTriPass");
-    // With the Old Sea Map, as FireRed's sailor is with an event ticket
-    // (VermilionCity_EventScript_HasMysticTicket): the first time, he's
-    // amazed; then the Sevii Islands, or Faraway Island on Seagallop 10.
-    if (scene >= 5 && Player.itemCount(player, "old-sea-map")) {
-      if (!f.shownOldSeaMap) {
+    // With the Rainbow Pass, Stadium Island and Hoenn too; and with the Old Sea Map, as FireRed's sailor is with
+    // an event ticket (VermilionCity_EventScript_HasMysticTicket): the first time, he's amazed; then Faraway
+    // Island, on Seagallop 10.
+    if (scene >= 5) {
+      const oldMap = Player.itemCount(player, "old-sea-map");
+      if (oldMap && !f.shownOldSeaMap) {
         f.shownOldSeaMap = true;
         await say(["Oh! That's an Old Sea Map!\nNow that is rare.", "We'll be happy to take you to\nFaraway Island anytime."]);
       }
-      const i = await multichoice(T("VermilionCity_Text_BoardSeagallopFerry")[0], 17, 4, ["Sevii Islands", "Stadium Island", "Faraway Island", "Exit"]);
-      if (i === 0) { await say(q.slice(0, -1)); await seagallopMenu("VERMILION_CITY", q, back); return; }
-      if (i === 1) { await say(["All aboard SEAGALLOP HI-SPEED 8!"]); await ferry({ map: "StadiumIsland", x: 17, y: 25, facing: "up" }, true); return; }
-      if (i !== 2) { Screen.say(""); await back(); return; }
-      await say(T("VermilionCity_Text_Seagallop10Departing"));
-      await ferry({ map: "FarawayIsland_Entrance", x: 13, y: 38, facing: "up" }, false);
-      return;
-    }
-    // (With the Rainbow Pass, Stadium Island too.)
-    if (scene >= 5) {
-      const i = await multichoice(T("VermilionCity_Text_BoardSeagallopFerry")[0], 17, 6, ["Sevii Islands", "Stadium Island", "Exit"]);
-      if (i === 0) { await say(q.slice(0, -1)); await seagallopMenu("VERMILION_CITY", q, back); return; }
-      if (i === 1) { await say(["All aboard SEAGALLOP HI-SPEED 8!"]); await ferry({ map: "StadiumIsland", x: 17, y: 25, facing: "up" }, true); return; }
+      const dests = ["Sevii Islands", "Stadium Island"].concat(oldMap ? ["Faraway Island"] : [], ["Hoenn", "Exit"]);
+      const i = await multichoice(T("VermilionCity_Text_BoardSeagallopFerry")[0], 17, dests.length >= 5 ? 2 : dests.length === 4 ? 4 : 6, dests);
+      const pick = i < 0 ? "Exit" : dests[i];
+      if (pick === "Sevii Islands") { await say(q.slice(0, -1)); await seagallopMenu("VERMILION_CITY", q, back); return; }
+      if (pick === "Stadium Island") { await say(["All aboard SEAGALLOP HI-SPEED 8!"]); await ferry({ map: "StadiumIsland", x: 17, y: 25, facing: "up" }, true); return; }
+      if (pick === "Faraway Island") {
+        await say(T("VermilionCity_Text_Seagallop10Departing"));
+        await ferry({ map: "FarawayIsland_Entrance", x: 13, y: 38, facing: "up" }, false);
+        return;
+      }
+      if (pick === "Hoenn") { await sailToHoenn(); return; }
       Screen.say(""); await back(); return;
     }
     await say(q.slice(0, -1));
@@ -8482,6 +8491,24 @@
     await Overworld.teleport(to);
     music((window.WORLD_MAPS[to.map] || {}).music);
     await persist();
+  }
+
+  // ---------- Hoenn: by Seagallop from Vermilion (this game's own) ----------
+  //
+  // The first time, the Seagallop takes you, and a moving truck, to Hoenn: the truck's inside, as Emerald
+  // begins (data/emerald-maps.js; ui/hoenn-script.js plays Emerald's scripts from there). After that, the
+  // Seagallop lands at Slateport's harbor, whose sailor sails you back to Vermilion.
+  const hoennStarted = () => hoenn.getVar("VAR_LITTLEROOT_INTRO_STATE") > 0;
+  async function sailToHoenn() {
+    await say(hoennStarted() ? ["All aboard SEAGALLOP HI-SPEED 9!", "Next stop, Slateport City in Hoenn!"]
+      : ["All aboard SEAGALLOP HI-SPEED 9!", "It's a long way to Hoenn. You can\nride in the moving truck we're taking."]);
+    if (hoennStarted()) await ferry({ map: "SlateportCity_Harbor", x: 6, y: 11, facing: "down" }, false);
+    else await ferry({ map: "InsideOfTruck", x: 2, y: 2, facing: "right" }, false);
+  }
+  async function slateportSailor() {
+    if (!(await confirm("Ahoy! This Seagallop sails to\nVermilion City. Want to go?"))) { await say("Come back any time."); return; }
+    await say(["All aboard SEAGALLOP HI-SPEED 9!"]);
+    await ferry({ map: "VermilionCity", x: 23, y: 32, facing: "up" }, true);
   }
 
   // ---------- Faraway Island (Emerald's Old Sea Map event) ----------
@@ -11655,6 +11682,15 @@
     },
     hasBadge: (n) => player.badges.includes(Player.REGION_BADGES.hoenn[n]),
     save: () => persist(),
+    // (Emerald's system flags, as this game's: the Pokédex Birch gives you.)
+    onFlag: (name, on) => { if (name === "FLAG_SYS_POKEDEX_GET") player.flags.pokedex = on; },
+    // (The Game Corner's slot machines: ui/slot-machine.js.)
+    slotMachine: async (id) => {
+      Screen.say("");
+      player.flags.coins = await window.SlotMachine.play({ machineId: id, coins: coins(), maxCoins: MAX_COINS, sfx, fanfare });
+      show("world");
+      await Overworld.resume();
+    },
     showPicture: (species) => showPicture(species), hidePicture: () => hidePicture(),
     setMetatile: (map, x, y, id, impassable) => hoennMetatile(map, x, y, id, impassable),
     setDynamicWarp: (mapConst, x, y) => { const name = window.HOENN_SCRIPTS.consts[mapConst]; if (name) setDynamicWarp({ map: name, x, y }); },
@@ -11749,6 +11785,20 @@
   // The specials Emerald's scripts call that this game answers itself.
   async function hoennSpecial(name, api) {
     switch (name) {
+      // Wally's catching lesson (Petalburg's OnFrame): his Ralts, caught with your help, as a scene (Emerald's is a battle).
+      case "StartWallyTutorialBattle": {
+        await api.flush();
+        music("em_vs_wild");
+        await say(["Wild Ralts appeared!"]);
+        sfx("se_ball_throw");
+        await say(["Wally threw a Poké Ball!"]);
+        sfx("se_ball");
+        await sleep(600);
+        await fanfare("mus_caught");
+        await say(["Gotcha! Ralts was caught!"]);
+        music(null);
+        return true;
+      }
       case "ChooseStarter": {
         await api.flush();
         const picks = ["Treecko", "Torchic", "Mudkip"];
