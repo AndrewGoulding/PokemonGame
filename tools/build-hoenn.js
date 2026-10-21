@@ -223,6 +223,8 @@ function objectSprite(gfx) {
   return (spriteCache[gfx] = { sprite: name, width: info.width, height: info.height, frames: Math.max(1, Math.floor(png.width / info.width)), inanimate: info.inanimate || undefined });
 }
 
+objectSprite("OBJ_EVENT_GFX_BRENDAN_UNDERWATER");   // (Diving: em_brendan_underwater.png, for ui/overworld.js)
+
 // ---------- Trainers ----------
 const trainerSrc = fs.readFileSync(P("src/data/trainers.h"), "utf8"), partySrc = fs.readFileSync(P("src/data/trainer_parties.h"), "utf8");
 const classNames = {};
@@ -332,7 +334,8 @@ function behavior(b) {
     case 0x02: case 0x03: return b;                                  // tall grass, long grass
     case 0x10: case 0x12: case 0x13: case 0x15: case 0x16: return b;   // pond, deep water, waterfall, ocean, puddle
     case 0x11: return 0x11;                                          // an interior's deep water
-    case 0x14: case 0x18: case 0x19: case 0x1a: return 0x12;         // Sootopolis' deep water, water you can't dive from
+    case 0x14: case 0x18: case 0x1a: return 0x12;                    // Sootopolis' deep water (the ones Dive goes down from)
+    case 0x19: case 0x22: case 0x2a: return b;                       // underwater: where you can't surface, seaweed, seaweed you can't surface from
     case 0x17: return 0x17;                                          // shallow water
     case 0x20: return 0x23;                                          // ice
     case 0x21: return 0x21;                                          // sand
@@ -351,7 +354,7 @@ function behavior(b) {
   }
 }
 // Where wild Pokémon are (Emerald's MetatileBehavior_IsLandWildEncounter).
-const WILD_BEHAVIOR = new Set([0x02, 0x03, 0x06, 0x08, 0x0b, 0x0c, 0x21, 0x24]);
+const WILD_BEHAVIOR = new Set([0x02, 0x03, 0x06, 0x08, 0x0b, 0x0c, 0x21, 0x22, 0x24, 0x2a]);   // (0x22 and 0x2a: underwater seaweed)
 
 // ---------- The scripts (compiled first: the maps' metatile changes come from them) ----------
 const Scripts = require("./lib/emerald-script")(EM);
@@ -449,8 +452,9 @@ for (const name of MAPS) {
     triggers,
     hidden: (map.bg_events || []).filter((b) => b.type === "hidden_item").map((b) => ({ x: b.x, y: b.y, item: itemId(b.item), flag: b.flag, quantity: b.quantity || 1 })).filter((x) => x.item),
     people,
-    wild: enc && enc.land_mons ? slotsOf(enc, "land_mons") : null,
-    water: slotsOf(enc, "water_mons"), rockSmash: slotsOf(enc, "rock_smash_mons"), fishing: slotsOf(enc, "fishing_mons")
+    // (Underwater, the seaweed has the water's Pokémon, with the water's odds.)
+    wild: mapType === "underwater" ? (slotsOf(enc, "water_mons") && Object.assign(slotsOf(enc, "water_mons"), { weights: [60, 30, 5, 4, 1] })) || null : enc && enc.land_mons ? slotsOf(enc, "land_mons") : null,
+    water: mapType === "underwater" ? undefined : slotsOf(enc, "water_mons"), rockSmash: slotsOf(enc, "rock_smash_mons"), fishing: slotsOf(enc, "fishing_mons")
   };
   console.log(name, w + "x" + h, "people", people.length, "signs", out[ren(name)].signs.length, "warps", out[ren(name)].warps.length);
 }

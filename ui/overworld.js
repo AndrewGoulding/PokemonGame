@@ -415,7 +415,7 @@
     const run = !spin && !speedOverride && !r.jump && me.avatar === "walk" && runHeld() && (!ctx.canRun || ctx.canRun());
     if (me.avatar === "bike") { me.bikeRun = dir === me.bikeDir ? (me.bikeRun || 0) + 1 : 0; me.bikeDir = dir; }
     const speed = me.avatar === "bike" ? BIKE_SPEEDS[Math.min(me.bikeRun, BIKE_SPEEDS.length - 1)]
-      : me.avatar === "surf" ? SURF_SPEED : run ? RUN_SPEED : WALK_SPEED;
+      : me.avatar === "surf" || me.avatar === "dive" ? SURF_SPEED : run ? RUN_SPEED : WALK_SPEED;
     // (Speeds that don't divide a tile: what's left over goes into the next step.)
     const carry = me.carry || 0;
     me.carry = 0;
@@ -483,6 +483,7 @@
     const m = World.map(me.map);
     if (me.avatar === "bike" && !(m && m.cycling)) setAvatar("walk");
     if (me.avatar === "surf" && !World.isSurfable(World.blockAt(me.map, me.x, me.y).behavior)) setAvatar("walk");
+    if (me.avatar === "dive" && !(m && m.type === "underwater")) setAvatar("walk");
   }
 
   // ---------- Strength: pushing boulders ----------
@@ -1083,6 +1084,8 @@
     } else if (World.facingWater({ map: me.map, x: me.x, y: me.y }, me.facing, occupiedForPlayer) && ctx.canSurf && ctx.canSurf()) {
       return finish({ type: "water", map: me.map });
     }
+    // (Hoenn's Dive: A on deep water, or, under it, anywhere you can come up: ctx.diveHere.)
+    if ((me.avatar === "surf" || me.avatar === "dive") && ctx.diveHere && ctx.diveHere(me.avatar)) return finish({ type: "dive", map: me.map });
     // Anything else the game does with the tile you face (ctx.faced: the Safari Zone's objects).
     const faced = ctx.faced && ctx.faced(me.map, tx, ty, me.avatar === "surf");
     if (faced) return finish(faced);
@@ -1877,6 +1880,11 @@
         sheet = look + "_wheelie";
         frame = { down: 0, up: 2, left: 4, right: 4 }[me.facing] + pose;
       }
+    } else if (me.avatar === "dive") {
+      // Under the water (Emerald's Brendan, diving): down, up or left.
+      sheet = "em_brendan_underwater"; w = 32; dx = -8;
+      frame = { down: 0, up: 1, left: 2, right: 2 }[me.facing];
+      bob = Math.floor(performance.now() / 500) % 2;
     } else if (me.avatar === "surf") {
       // On the water: down, up or left, bobbing up and down a pixel.
       sheet = look + "_surf"; w = 32; dx = -8;
@@ -1995,7 +2003,7 @@
       });
     }
     const look = "player_" + (ctx.player.look || "custom");
-    await Promise.all([preloadMap(me.map), ...["_run", "_bike", "_wheelie", "_surf", "_fish"].map((k) => spriteImage(look + k).loaded)]);
+    await Promise.all([preloadMap(me.map), ...["_run", "_bike", "_wheelie", "_surf", "_fish"].map((k) => spriteImage(look + k).loaded), spriteImage("em_brendan_underwater").loaded]);
     showControls();
     hint();
     ignoreInputUntil = performance.now() + 200;

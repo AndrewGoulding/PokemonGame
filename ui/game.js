@@ -6194,6 +6194,9 @@
         if (surfing) return "You're already surfing.";
         if (!a.water) return "No surfing here!";
         return () => startSurfing(mon);
+      case "Dive":
+        if (!diveTarget(Overworld.avatar())) return "Can't use that here.";
+        return () => dive(true);
       case "Rock Smash": {
         const rock = facingScript("EventScript_RockSmash");
         if (!rock) return "Can't use that here.";
@@ -6272,6 +6275,35 @@
     strengthOn = true;
     cry(mon.species);
     await say([usedMove(mon, "Strength"), Party.displayName(mon) + "'s Strength made it\npossible to move boulders around!"]);
+  }
+
+  // Dive (Hoenn: EventScript_UseDive and EventScript_UseDiveUnderwater, src/field_control_avatar.c's TrySetDiveWarp): on
+  // deep water, A goes down, to the map's dive connection (the same tile) or the fixed warp its scripts set; under it,
+  // anywhere but where you can't surface, A comes up.
+  const DIVEABLE = [0x11, 0x12];
+  function diveTarget(avatar) {
+    const L = player.location, m = window.WORLD_MAPS[L.map], pos = Overworld.position();
+    if (!m || m.region !== "hoenn") return null;
+    const beh = window.World.blockAt(L.map, pos.x, pos.y).behavior;
+    const down = avatar === "surf";
+    if (down ? !DIVEABLE.includes(beh) : (m.type !== "underwater" || beh === 0x19 || beh === 0x2a || beh === 0x69)) return null;
+    const c = (m.connections || []).find((q) => q.direction === (down ? "dive" : "emerge") && q.map);
+    if (c) return { map: c.map, x: pos.x, y: pos.y, down };
+    const w = hoenn.diveWarp(L.map), dest = w && window.HOENN_SCRIPTS.consts[w.map];
+    return dest ? { map: dest, x: w.x, y: w.y, down } : null;
+  }
+  const diveHere = (avatar) => !!diveTarget(avatar) && !!FieldMoves.user(player, "Dive");
+  async function dive(asked) {
+    const t = diveTarget(Overworld.avatar()), mon = FieldMoves.user(player, "Dive");
+    if (!t || !mon) { await say(t ? "The sea is deep here. A POKéMON\nmight be able to go underwater." : "Can't use that here."); return; }
+    if (!asked && !(await confirm(t.down ? "The sea is deep here.\nWould you like to use Dive?" : "Light is filtering down from above.\nWould you like to use Dive?"))) return;
+    await say(usedMove(mon, "Dive"));
+    Screen.say("");
+    sfx("se_m_dive");
+    await Overworld.fadeToBlack();
+    await Overworld.teleport({ map: t.map, x: t.x, y: t.y, facing: player.location.facing || "down" });
+    Overworld.setAvatar(t.down ? "dive" : "surf");
+    await Overworld.fadeFromBlack();
   }
 
   // Surf (EventScript_UseSurf): A in front of the water with a Pokémon that
@@ -12394,6 +12426,7 @@
         hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, metatiles: hoennOverlay, extraPeople,
         // (HGSS's: the Pokémon walking behind you, and Johto's Headbutt trees.)
         follower: (map) => follower.look(map), headbuttTree: (map, x, y) => johtoField.headbuttTree(map, x, y),
+        diveHere: (avatar) => diveHere(avatar),
         canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
         // (Johto's Gyms: Ecruteak's darkness, Violet's lift.)
         darkness: (map) => gymmicks.darkness(map), drawMap: (g, map, x, y) => { gymmicks.drawMap(g, map, x, y); johtoSafari.drawMap(g, map, x, y); },
@@ -12450,6 +12483,7 @@
       }
       else if (ev.type === "select") await useRegistered();
       else if (ev.type === "water") await surfPrompt();
+      else if (ev.type === "dive") await dive();
       else if (ev.type === "waterfall") await waterfall();
       else if (ev.type === "whirlpool") await whirlpool();
       else if (ev.type === "rockclimb") await rockClimb();

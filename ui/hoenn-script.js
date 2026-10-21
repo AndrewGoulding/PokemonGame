@@ -211,8 +211,9 @@
         case "lockall": case "lock": case "releaseall": case "release": case "lockfortrainer": case "hideplayer": case "showplayer": case "createvobject": case "turnvobject":
         case "opendoor": case "closedoor": case "setdooropen": case "setdoorclosed": case "dofieldeffect": case "setfieldeffectargument": case "updatemoneybox":
         case "register_matchcall": case "pokenavcall": case "dotrainerbattle": case "gotopostbattlescript": case "gotobeatenscript": case "selectapproachingtrainer":
-        case "braillemessage": case "braillemsgbox": case "closebraillemessage": case "brailleformat": case "setwarp": case "setholewarp": case "setdivewarp": case "setescapewarp":
+        case "braillemessage": case "braillemsgbox": case "closebraillemessage": case "brailleformat": case "setwarp": case "setholewarp": case "setescapewarp":
           return true;
+        case "setdivewarp": fixedDive = { map: a[0], x: num(a[1]), y: num(a[2]) }; return true;
         case "setdynamicwarp": { const at = a.length >= 4 ? { x: num(a[2]), y: num(a[3]) } : { x: num(a[1]), y: num(a[2]) }; if (env.setDynamicWarp) env.setDynamicWarp(a[0], at.x, at.y); return true; }
         case "setrespawn": if (env.respawn) env.respawn(a[0]); return true;
         case "special": case "specialvar": { const name = op === "special" ? a[0] : a[1]; return syncSpecial(st, name, op === "specialvar" ? a[0] : null); }
@@ -525,10 +526,17 @@
     }
     // Entering a map: its OnTransition, then its OnLoad (the flags and metatiles it sets).
     function transition(map) {
-      resetTemp();
+      resetTemp(); fixedDive = null;
       const ms = DATA().ms[map + "_MapScripts"] || DATA().ms[(window.WORLD_MAPS[map] || {}).scriptName + "_MapScripts"];
       if (!ms) return;
-      for (const k of ["ON_TRANSITION", "ON_LOAD"]) if (ms[k]) run(ms[k], { sync: true });
+      for (const k of ["ON_TRANSITION", "ON_LOAD", "ON_RESUME"]) if (ms[k]) run(ms[k], { sync: true });
+    }
+    // Where Dive goes from a map that has no dive connection: its OnDiveWarp script's setdivewarp, or the one its OnResume set.
+    let fixedDive = null;
+    function diveWarp(map) {
+      const ms = DATA().ms[map + "_MapScripts"] || DATA().ms[(window.WORLD_MAPS[map] || {}).scriptName + "_MapScripts"];
+      if (ms && ms.ON_DIVE_WARP) run(ms.ON_DIVE_WARP, { sync: true });
+      return fixedDive;
     }
     // A frame table's script that's due now (warp-into first, when you came through a warp).
     function frameScript(map, viaWarp) {
@@ -544,7 +552,7 @@
     }
     const hasScript = (label) => !!DATA().s[label];
 
-    return { run, scriptOf, triggerDue, transition, frameScript, hasScript, flag, setFlag, getVar, setVar, state, placed, movement, shown, resetTemp, local,
+    return { run, scriptOf, triggerDue, transition, diveWarp, frameScript, hasScript, flag, setFlag, getVar, setVar, state, placed, movement, shown, resetTemp, local,
       who, setShown: (map, id, on) => { temp.obj[map + ":" + id] = on; } };
   }
 
