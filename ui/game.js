@@ -11748,7 +11748,8 @@
   }
   // Emerald's setmetatile: the tile is drawn over the map (from its sheet: assets/world/maps/<Map>-mt.png) and
   // opens or closes the way, until you leave the map (its scripts put them back as you come in).
-  const metatileSet = {};
+  // A Gym's puzzle reads the metatiles too (src/field_specials.c): those maps keep theirs (`blocks`).
+  const metatileSet = {}, metatileNow = {};
   function hoennMetatile(map, x, y, label, impassable) {
     const m = window.WORLD_MAPS[map];
     if (!m || x < 0 || y < 0 || x >= m.width || y >= m.height) return;
@@ -11756,19 +11757,69 @@
     const base = baseCollision[map] || (baseCollision[map] = m.collision.slice()), baseB = baseBehavior[map] || (baseBehavior[map] = m.behavior.slice());
     void base; void baseB;
     m.collision[i] = impassable ? 1 : 0;
-    if (t) { m.behavior[i] = t[1]; (metatileSet[map] = metatileSet[map] || {})[i] = t[0]; }
+    if (t) {
+      m.behavior[i] = t[1]; (metatileSet[map] = metatileSet[map] || {})[i] = t[0];
+      if (m.blocks) (metatileNow[map] = metatileNow[map] || m.blocks.slice())[i] = t[2];
+    }
+  }
+  // The metatile at a tile now (its number), and one set by its number (a Gym's special: the sheet has it, by label or "#number").
+  const metatileAt = (map, x, y) => { const m = window.WORLD_MAPS[map]; return ((metatileNow[map] || m.blocks || [])[y * m.width + x]); };
+  function hoennMetatileId(map, x, y, id, impassable) {
+    const m = window.WORLD_MAPS[map], key = Object.keys(m.mt || {}).find((k) => m.mt[k][2] === id);
+    if (key) hoennMetatile(map, x, y, key, impassable);
+    else { m.collision[y * m.width + x] = impassable ? 1 : 0; if (m.blocks) (metatileNow[map] = metatileNow[map] || m.blocks.slice())[y * m.width + x] = id; }
   }
   // Coming into a Hoenn map: its own tiles again, before its scripts change them.
   function restoreMetatiles(map) {
     const m = window.WORLD_MAPS[map];
     if (!m || !baseCollision[map]) return;
     m.collision = baseCollision[map].slice(); m.behavior = baseBehavior[map].slice();
-    delete metatileSet[map];
+    delete metatileSet[map]; delete metatileNow[map];
   }
   const hoennOverlay = (map) => {
     const set = metatileSet[map], m = window.WORLD_MAPS[map];
     return set ? Object.keys(set).map((i) => [i % m.width, Math.floor(i / m.width), set[i]]) : null;
   };
+  // Petalburg Gym's sliding doors (PetalburgGymSetDoorMetatiles): a room's doors, by Norman's rooms' numbers.
+  const PETALBURG_DOORS = { 1: [[1, 104], [7, 104]], 2: [[1, 78], [7, 78]], 3: [[1, 91], [7, 91]], 4: [[7, 39]], 5: [[1, 52], [7, 52]], 6: [[1, 65]], 7: [[7, 13]], 8: [[1, 26]] };
+  function petalburgDoors(room, frame) {
+    const map = "PetalburgCity_Gym", m = window.WORLD_MAPS[map], id = m.mt["METATILE_PetalburgGym_SlidingDoor_Frame" + frame][2];
+    for (const [x, y] of PETALBURG_DOORS[room] || []) { hoennMetatileId(map, x, y, id, true); hoennMetatileId(map, x, y + 1, id + 8, true); }
+  }
+  // Mauville Gym's beams and switches (MauvilleGymSetDefaultBarriers and MauvilleGymDeactivatePuzzle, which turn the
+  // whole puzzle over, or off), by the tiles' names; MauvilleGymPressSwitch (the switch you stepped on is pressed).
+  function mauvilleGym(what, switchNo) {
+    const map = "MauvilleCity_Gym", m = window.WORLD_MAPS[map], L = (n) => m.mt["METATILE_MauvilleGym_" + n][2];
+    const name = (id) => { const k = Object.keys(m.mt).find((q) => m.mt[q][2] === id); return k ? k.replace("METATILE_MauvilleGym_", "") : null; };
+    const SWITCHES = [[0, 15], [4, 12], [3, 9], [8, 9]];
+    if (what === "press") {
+      SWITCHES.forEach(([x, y], i) => hoennMetatileId(map, x, y, L(i === switchNo ? "PressedSwitch" : "RaisedSwitch"), false));
+      return;
+    }
+    const set = (x, y, n, imp) => hoennMetatileId(map, x, y, L(n), !!imp);
+    if (what === "off") SWITCHES.forEach(([x, y]) => hoennMetatileId(map, x, y, L("PressedSwitch"), false));
+    for (let y = 5; y < 17; y++) for (let x = 0; x < 9; x++) {
+      const n = name(metatileAt(map, x, y)), beam = /^(Green|Red)BeamH(\d)_(On|Off)$/.exec(n || "");
+      if (beam) {
+        // (Each horizontal beam is turned over: on to off, and off to on, where its two top-most are walls: H3 and H4.)
+        if (beam[3] === "On") set(x, y, beam[1] + "BeamH" + beam[2] + "_Off");
+        else if (what === "flip") set(x, y, beam[1] + "BeamH" + beam[2] + "_On", beam[2] >= 3);
+        continue;
+      }
+      switch (n) {
+        case "GreenBeamV1_On": set(x, y, "PoleBottom_On", true); break;
+        case "RedBeamV1_On": set(x, y, "PoleBottom_Off", true); break;
+        case "GreenBeamV2_On": case "RedBeamV2_On": set(x, y, "FloorTile"); break;
+        case "PoleTop_On": set(x, y, "PoleTop_Off"); break;
+        case "PoleBottom_On": if (what === "flip") set(x, y, "GreenBeamV1_On", true); break;
+        case "PoleBottom_Off": if (what === "flip") set(x, y, "RedBeamV1_On", true); break;
+        case "PoleTop_Off": if (what === "flip") set(x, y, "PoleTop_On", true); break;
+        case "FloorTile":
+          if (what === "flip") set(x, y, name(metatileAt(map, x, y - 1)) === "GreenBeamV1_On" ? "GreenBeamV2_On" : "RedBeamV2_On", true);
+          break;
+      }
+    }
+  }
   // Runs a script; then whatever the map's frame table has due (a scene it set going).
   async function runHoenn(label, person) {
     const seen = new Set();
@@ -11785,6 +11836,17 @@
   // The specials Emerald's scripts call that this game answers itself.
   async function hoennSpecial(name, api) {
     switch (name) {
+      // The Gyms' puzzles (src/field_specials.c).
+      case "PetalburgGymSlideOpenRoomDoors": {
+        await api.flush();
+        sfx("se_unlock");
+        for (let frame = 0; frame < 5; frame++) { petalburgDoors(+api.getVar("VAR_0x8004"), frame); await sleep(frame ? 70 : 20); }
+        return true;
+      }
+      case "PetalburgGymUnlockRoomDoors": petalburgDoors(+api.getVar("VAR_0x8004"), 4); return true;
+      case "MauvilleGymPressSwitch": mauvilleGym("press", +api.getVar("VAR_0x8004")); return true;
+      case "MauvilleGymSetDefaultBarriers": mauvilleGym("flip"); return true;
+      case "MauvilleGymDeactivatePuzzle": mauvilleGym("off"); return true;
       // Wally's catching lesson (Petalburg's OnFrame): his Ralts, caught with your help, as a scene (Emerald's is a battle).
       case "StartWallyTutorialBattle": {
         await api.flush();
@@ -12443,6 +12505,6 @@
   }
 
 
-  window.Game = { get player() { return player; }, get pokegear() { return gear; }, get hoenn() { return hoenn; }, townMap: (o) => townMap(o) };
+  window.Game = { get player() { return player; }, get pokegear() { return gear; }, get hoenn() { return hoenn; }, townMap: (o) => townMap(o), sailToHoenn: () => sailToHoenn(), slateportSailor: () => slateportSailor() };
   main();
 })();

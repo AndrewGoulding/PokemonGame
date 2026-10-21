@@ -359,7 +359,13 @@ const compiled = Scripts.compile(MAPS);
 // The metatile labels (METATILE_General_X) and their numbers, and which of them each map's scripts set.
 const metatileIds = {};
 for (const m of fs.readFileSync(P("include/constants/metatile_labels.h"), "utf8").matchAll(/#define (METATILE_\w+)\s+(0x[0-9A-Fa-f]+)/g)) metatileIds[m[1]] = parseInt(m[2], 16);
+// (Metatiles a Gym's special sets besides its scripts' (src/field_specials.c): Petalburg's sliding doors and the
+// ones below them (a row of the tileset on), Mauville's beams and switches, Sootopolis' ice.)
+const EXTRA_METATILES = { PetalburgCity_Gym: /^METATILE_PetalburgGym_/, MauvilleCity_Gym: /^METATILE_MauvilleGym_/, SootopolisCity_Gym_1F: /^METATILE_SootopolisGym_/, SootopolisCity_Gym_B1F: /^METATILE_SootopolisGym_/ };
+// (The maps whose metatiles a special reads: their blocks stay, as metatile numbers.)
+const KEEP_BLOCKS = new Set(["MauvilleCity_Gym", "SootopolisCity_Gym_1F", "SootopolisCity_Gym_B1F", "PetalburgCity_Gym"]);
 const metatilesOf = {};
+for (const [mp, re] of Object.entries(EXTRA_METATILES)) for (const l of Object.keys(metatileIds)) if (re.test(l)) (metatilesOf[mp] = metatilesOf[mp] || new Set()).add(l);
 for (const [label, cmds] of Object.entries(compiled.s)) {
   const mp = compiled.lm[label];
   if (!mp) continue;
@@ -394,14 +400,16 @@ for (const name of MAPS) {
   // The metatiles this map's scripts put in (setmetatile): a sheet of them, 16 to a row, below and above the people.
   let mt;
   const wanted = [...(metatilesOf[name] || [])].sort();
+  if (name === "PetalburgCity_Gym") for (let i = 0; i < 5; i++) wanted.push("#" + (metatileIds["METATILE_PetalburgGym_SlidingDoor_Frame" + i] + 8));   // (the half below each frame: METATILE_ROW_WIDTH on)
+  const idOf = (l) => (l[0] === "#" ? +l.slice(1) : metatileIds[l]);
   if (wanted.length) {
-    const cols = 16, rows = Math.ceil(wanted.length / cols), ids = wanted.map((l) => metatileIds[l]);
+    const cols = 16, rows = Math.ceil(wanted.length / cols), ids = wanted.map(idOf);
     while (ids.length < cols * rows) ids.push(0);
     const sheet = E.render(ids, cols, rows, primary, secondary, true);
     writePng(path.join(mapsDir, ren(name) + "-mt.png"), cols * 16, rows * 16, sheet.below);
     writePng(path.join(mapsDir, ren(name) + "-mt-top.png"), cols * 16, rows * 16, sheet.above);
     mt = {};
-    wanted.forEach((l, i) => { mt[l] = [i, behavior(E.metatile(primary, secondary, metatileIds[l]).behavior)]; });
+    wanted.forEach((l, i) => { mt[l] = [i, behavior(E.metatile(primary, secondary, idOf(l)).behavior), idOf(l)]; });
   }
   // (Emerald's warps on plain ground are stepped onto: a doorway, as the engine has them.)
   for (const wp of map.warp_events) { const i = wp.y * w + wp.x; if (i >= 0 && i < behaviors.length && behaviors[i] === 0) behaviors[i] = 0x60; }
@@ -428,7 +436,7 @@ for (const name of MAPS) {
   const triggers = (map.coord_events || []).filter((c) => c.type === "trigger" && c.script && c.script !== "NULL")
     .map((c) => ({ x: c.x, y: c.y, script: "hoenn:" + c.script, var: c.var, value: +c.var_value }));
   out[ren(name)] = {
-    mt, name: ren(name), scriptName: ren(name) !== name ? name : undefined, title: titleCase(sectionNames[map.region_map_section] || name.replace(/([a-z])([A-Z0-9])/g, "$1 $2")),
+    mt, blocks: KEEP_BLOCKS.has(name) ? blocks.map((b) => b & 0x3ff) : undefined, name: ren(name), scriptName: ren(name) !== name ? name : undefined, title: titleCase(sectionNames[map.region_map_section] || name.replace(/([a-z])([A-Z0-9])/g, "$1 $2")),
     width: w, height: h, type: mapType === "city" ? "city" : mapType, music: musicOf(map.music), region: "hoenn",
     cycling: !!map.allow_cycling || undefined, allowEscaping: map.allow_escaping || undefined,
     showName: !!map.show_map_name, pokemonCenter: /_PokemonCenter_1F$/.test(name) || undefined, top: r.anyAbove, borderWidth: 2, borderHeight: 2,
