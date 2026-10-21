@@ -11715,6 +11715,7 @@
     wildBattle: (species, level, item) => johtoBattle("wild", species, level, { weather: ({ Kyogre: "PrimordialSea", Groudon: "DesolateLand", Rayquaza: "DeltaStream" })[species] }),
     warp: (mapConst, at) => hoennWarp(mapConst, at),
     setWeather: (name) => { hoennSaved = hoennKind(name); },
+    metatileAt: (map, x, y) => metatileAt(map, x, y),
     syncSpecial: (name) => hoennSyncSpecial(name),
     fieldEffect: async (name) => { if (name === "FLDEFF_HALL_OF_FAME_RECORD") await HallOfFame.recordFlash($("#overlay")); },
     badge: (n, on) => {

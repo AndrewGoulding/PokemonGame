@@ -67,7 +67,11 @@ for (const k of Object.keys(window.MOVES)) moveByID[toID(k)] = k;
 // but for the Battle Frontier, the link rooms, the Contest halls, the Safari
 // Zone, Secret Bases and the islands this game has already (Faraway Island,
 // Birth Island, Navel Rock, Southern Island).
-const OUTDOOR = ["InsideOfTruck", "LittlerootTown", "SootopolisCity", "SeafloorCavern_Entrance", "CaveOfOrigin_Entrance", "SealedChamber_OuterRoom", "AquaHideout_1F", "MagmaHideout_1F", "NewMauville_Entrance", "ShoalCave_LowTideEntranceRoom", "ShoalCave_HighTideEntranceRoom", "SSTidalCorridor", "MirageTower_1F"];   // (The rest are reached through the story: Dive, Sootopolis's way in, the hideouts' doors, the tides.)
+const OUTDOOR = ["InsideOfTruck", "LittlerootTown", "SootopolisCity", "SeafloorCavern_Entrance", "CaveOfOrigin_Entrance", "SealedChamber_OuterRoom", "AquaHideout_1F", "MagmaHideout_1F", "NewMauville_Entrance", "ShoalCave_LowTideEntranceRoom", "ShoalCave_HighTideEntranceRoom", "SSTidalCorridor", "MirageTower_1F",
+  // (Maps only a script or Dive goes to: the Trick House's puzzles, the Abandoned Ship's hidden floor, the deep Marine Cave, Dive's last Underwater maps, the Artisan Cave, the high tide in the Shoal Cave.)
+  "Route110_TrickHousePuzzle1", "Route110_TrickHousePuzzle2", "Route110_TrickHousePuzzle3", "Route110_TrickHousePuzzle4", "Route110_TrickHousePuzzle5", "Route110_TrickHousePuzzle6", "Route110_TrickHousePuzzle7", "Route110_TrickHousePuzzle8",
+  "AbandonedShip_HiddenFloorCorridors", "AbandonedShip_HiddenFloorRooms", "AbandonedShip_Underwater1", "AbandonedShip_Underwater2", "MarineCave_Entrance", "MarineCave_End", "Underwater_Route134", "Underwater_SealedChamber",
+  "ArtisanCave_1F", "ArtisanCave_B1F", "ShoalCave_HighTideInnerRoom"];   // (The rest are reached through the story: Dive, Sootopolis's way in, the hideouts' doors, the tides.)
 const EXCLUDE = /^(BattleFrontier|BattleColosseum|BattlePyramid|BattleTower|SecretBase|TradeCenter|UnionRoom|RecordCorner|TrainerHill|SafariZone|.*Contest|.*Unused|.*Prototype|Dummy|BirthIsland|NavelRock|FarawayIsland|SouthernIsland|Test)/;
 const mapJson = (name) => JSON.parse(fs.readFileSync(P("data/maps", name, "map.json"), "utf8"));
 const byConst = {};
@@ -366,7 +370,7 @@ for (const m of fs.readFileSync(P("include/constants/metatile_labels.h"), "utf8"
 // ones below them (a row of the tileset on), Mauville's beams and switches, Sootopolis' ice.)
 const EXTRA_METATILES = { PetalburgCity_Gym: /^METATILE_PetalburgGym_/, MauvilleCity_Gym: /^METATILE_MauvilleGym_/, SootopolisCity_Gym_1F: /^METATILE_SootopolisGym_/, SootopolisCity_Gym_B1F: /^METATILE_SootopolisGym_/ };
 // (The maps whose metatiles a special reads: their blocks stay, as metatile numbers.)
-const KEEP_BLOCKS = new Set(["MauvilleCity_Gym", "SootopolisCity_Gym_1F", "SootopolisCity_Gym_B1F", "PetalburgCity_Gym"]);
+const KEEP_BLOCKS = new Set(["MossdeepCity_Gym", "Route110_TrickHousePuzzle6", "Route110_TrickHousePuzzle7", "MauvilleCity_Gym", "SootopolisCity_Gym_1F", "SootopolisCity_Gym_B1F", "PetalburgCity_Gym"]);
 const metatilesOf = {};
 for (const [mp, re] of Object.entries(EXTRA_METATILES)) for (const l of Object.keys(metatileIds)) if (re.test(l)) (metatilesOf[mp] = metatilesOf[mp] || new Set()).add(l);
 for (const [label, cmds] of Object.entries(compiled.s)) {
@@ -561,7 +565,9 @@ const numConsts = {};
     if (typeof a === "string" && /^[A-Z][A-Z0-9_]+$/.test(a) && !STRINGY.test(a) && numConsts[a] == null) { const v = val(a); if (v != null) numConsts[a] = v; }
   }
 }
-const hoennScripts = { songNames, seNames, gfx, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, trades, berryTrees, numConsts, consts: mapConsts };
+// Where the rotating-tile puzzles' arrows start in their tilesets (src/rotating_tile_puzzle.c): Mossdeep Gym's, and the Trick House's.
+const rotStart = { gym: metatileIds.METATILE_MossdeepGym_YellowArrow_Right, trick: metatileIds.METATILE_TrickHousePuzzle_Arrow_YellowOnWhite_Right };
+const hoennScripts = { songNames, seNames, gfx, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, trades, berryTrees, rotStart, numConsts, consts: mapConsts };
 
 // ---------- The Town Map ----------
 // Each map's section (its name on the map, and where it is on it); a map whose section has no square (a cave's)

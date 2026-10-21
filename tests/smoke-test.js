@@ -6414,8 +6414,8 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     assert(sec && (HT.names[sec] || sec === "DYNAMIC"), name + "'s section " + sec);
     if (!HT.map.some((r) => r.includes(sec)) && !HT.at[name]) off.push(name);
   }
-  // (Almost all are somewhere on it: only the truck, the ships and the like are nowhere.)
-  assert(off.length <= 12, "maps nowhere on the Town Map: " + off.join(" "));
+  // (Almost all are somewhere on it: only the truck, the ships, the Trick House and the like are nowhere.)
+  assert(off.length <= 40, "maps nowhere on the Town Map: " + off.join(" "));
   for (const t of HT.towns) {
     const spot = HT.fly[t], m = spot && WORLD_MAPS[spot.map];
     assert(m && m.region === "hoenn" && !m.collision[spot.y * m.width + spot.x], t + "'s Fly spot is open ground");

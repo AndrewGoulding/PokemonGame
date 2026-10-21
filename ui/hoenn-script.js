@@ -271,7 +271,7 @@
       const D = DATA();
       const st = { code: D.s[label], pc: 0, cmp: 0, sw: 0, stack: [] };
       if (!st.code) return;
-      let question = null, wildSpec = null;
+      let question = null, wildSpec = null, rot = null;
       const pending = [];
       const flush = async () => { if (pending.length) { const t = pending.splice(0); await env.act(t); } };
       const speak = async (pages) => { if (!pages) return; await flush(); await env.say(pages); };
@@ -428,6 +428,43 @@
           case "checkmoney": setVar("VAR_RESULT", env.money() >= num(a[0]) ? 1 : 0); break;
           case "showmoneybox": env.moneyBox(true); break;
           case "hidemoneybox": env.moneyBox(false); break;
+          // The rotating-tile puzzle (Mossdeep Gym's floor, two of the Trick House's: src/rotating_tile_puzzle.c): a floor switch
+          // moves everyone standing on that colour's arrows a tile the way the arrow points, and turns them a quarter to the left.
+          case "initrotatingtilepuzzle": rot = { trick: !!num(a[0]), objects: [] }; break;
+          case "moverotatingtileobjects": {
+            if (!rot || !env.metatileAt) break;
+            const n = num(a[0]), start = D.rotStart[rot.trick ? "trick" : "gym"], STEP = [[1, 0, "right"], [0, 1, "down"], [-1, 0, "left"], [0, -1, "up"]];
+            await flush();
+            for (const p of peopleHere()) {
+              const w = p.localId || "#" + p.id, at = env.personAt(w);
+              if (!at || (env.shown && false)) continue;
+              const mt = env.metatileAt(mapName(), at.x, at.y);
+              if (mt == null || mt < start) continue;
+              const row = Math.floor((mt - start) / 8), idx = (mt - start) % 8;
+              if (row !== n || row >= 5 || idx >= 4) continue;
+              const [dx, dy, dir] = STEP[idx];
+              rot.objects.push({ w, prev: idx });
+              state().pos[mapName() + ":" + w] = { x: at.x + dx, y: at.y + dy };
+              pending.push({ who: w, moves: ["walk_" + dir] });
+            }
+            await flush();
+            break;
+          }
+          case "turnrotatingtileobjects": {
+            if (!rot || !env.metatileAt) break;
+            const start = D.rotStart[rot.trick ? "trick" : "gym"], LEFT = { right: "up", down: "right", left: "down", up: "left" };
+            for (const o of rot.objects) {
+              const at = env.personAt(o.w);
+              if (!at) continue;
+              const mt = env.metatileAt(mapName(), at.x, at.y), idx = mt == null ? -1 : (mt - start) % 8, diff = idx - o.prev;
+              if (idx < 0 || idx >= 4 || !(diff < 0 || diff === 3) || !LEFT[at.facing]) continue;
+              pending.push({ who: o.w, moves: ["face_" + LEFT[at.facing]] });
+              state().mov[mapName() + ":" + o.w] = "face_" + LEFT[at.facing];
+            }
+            await flush();
+            break;
+          }
+          case "freerotatingtilepuzzle": rot = null; await flush(); break;
           case "dofieldeffect": if (env.fieldEffect) { await flush(); await env.fieldEffect(a[0]); } break;
           case "setwildbattle": wildSpec = { species: species(val(a[0])), level: num(a[1]), item: a[2] && a[2] !== "ITEM_NONE" ? item(a[2]) : null }; break;
           case "dowildbattle": if (wildSpec) { await flush(); setVar("VAR_RESULT", 0); battleOutcome = OUTCOMES[await env.wildBattle(wildSpec.species, wildSpec.level, wildSpec.item)] || 1; } break;
