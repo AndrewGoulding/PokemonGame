@@ -1899,9 +1899,15 @@ starts in the truck; later ones land at Slateport's harbour, whose sailor takes 
 badges unlock Cut, Flash, Rock Smash, Strength, Surf, Fly, Dive and Waterfall; whiting out sends
 you to the last Center or your bedroom.
 
-Not built: berry trees, Dive's underwater maps, weather, secret bases, contests, the Battle
-Frontier and Safari Zone's rules, tents and decorations, rotating-tile puzzles, move tutors,
-trades, the Hall of Fame and the legendary scenes.
+Also in: Dive (A on deep water, with the Mind Badge; Underwater maps with Emerald's diving sprite and
+seaweed encounters), the move tutors, the Move Deleter and Relearner, in-game trades, the legendary and
+Regi battles, the Mt. Chimney cable car and the Hall of Fame (the team on record, then home; no Emerald credits).
+
+Not built: berry trees, weather, secret bases, contests, the Battle Frontier and Safari Zone's rules, tents,
+decorations, rotating-tile puzzles, the Mirage Tower and Rayquaza's scenes, the fan club and Link features.
+
+The smoke test runs a story scene (Norman and Wally) through the interpreter with a stub game; `HOENN_TRACE = []`
+in the console logs every command a script runs.
 
 ## Faraway Island
 

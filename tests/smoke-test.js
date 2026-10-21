@@ -6430,3 +6430,43 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   assert(littleroot.left.length > littleroot.rate * 60 && littleroot.loopEnd > littleroot.loopStart && Math.max(...littleroot.left.filter((_, i) => i % 97 === 0)) > 0.1, "Littleroot's song plays");
   console.log("ok: Hoenn, " + hoenn.length + " maps from Emerald's tilesets, " + Object.keys(H.songs).length + " of its songs");
 }
+// Hoenn's script interpreter (ui/hoenn-script.js) against a stub game: the constants, a story scene end to end, a frame table, Dive's connections, trades.
+{
+  const HS = window.HOENN_SCRIPTS;
+  assert.deepStrictEqual([HS.numConsts.DIR_SOUTH, HS.numConsts.DIR_NORTH, HS.numConsts.PARTY_NOTHING_CHOSEN, HS.numConsts.B_OUTCOME_CAUGHT], [1, 2, 255, 7]);
+  vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-script.js"), "utf8"), { filename: "ui/hoenn-script.js" });
+  const player = { flags: {}, party: [{ species: "Treecko", level: 10, hp: 30, moves: [{ name: "Cut" }] }], name: "ASH", badges: [] };
+  let here = "PetalburgCity_Gym", warped = null, said = 0;
+  const env = {
+    player: () => player, map: () => here, say: async () => { said++; }, confirm: async () => true, choose: async () => 0, close() {}, facePlayer: async () => {}, act: async () => {},
+    show() {}, hide() {}, place() {}, moveTo() {}, personAt: () => ({ x: 4, y: 108, facing: "up" }), giveItem: async () => {}, hasItem: () => true, takeItem: () => 1, itemCount: () => 1,
+    itemName: (x) => x, cry() {}, fade: async () => {}, trainerBattle: async () => "won", wildBattle: async () => "won", warp: async (m) => { warped = m; }, giveMon: async () => true,
+    mart: async () => {}, healParty() {}, money: () => 9999, addMoney() {}, music() {}, fanfare: async () => {}, se() {}, shake: async () => {}, sleep: async () => {}, isGirl: () => false,
+    choosePartyMon: async () => 0, beaten: () => false, setBeaten() {}, setMetatile() {}, badge() {}, respawn() {}, setDynamicWarp() {}, moneyBox() {}, save: async () => {}, special: async () => false
+  };
+  const H = window.HoennScript.create(env);
+  // Norman's first talk (it switches on the way you face: DIR_NORTH): Wally's lesson begins and you're sent out to Petalburg.
+  const done = H.run("PetalburgCity_Gym_EventScript_Norman", { person: { localId: "LOCALID_PETALBURG_GYM_NORMAN", id: 0 } }).then(() => {
+    assert.strictEqual(H.getVar("VAR_PETALBURG_GYM_STATE"), 1, "Norman starts Wally's lesson");
+    assert.strictEqual(H.getVar("VAR_PETALBURG_CITY_STATE"), 2);
+    assert.strictEqual(warped, "MAP_PETALBURG_CITY", "...and you're sent to Petalburg");
+    assert(said > 5, "with his words");
+    // (There, the map's frame table has Wally's lesson due.)
+    assert.strictEqual(H.frameScript("PetalburgCity", false), "PetalburgCity_EventScript_WallyTutorial");
+    assert.strictEqual(H.frameScript("PetalburgCity", true), "PetalburgCity_EventScript_WallyTutorial");
+  });
+  // Dive: each surface sea's deep water goes down to its Underwater map, which comes up again.
+  for (const n of ["Route105", "Route124", "Route125", "Route126", "Route127", "Route128", "Route129"]) {
+    assert(WORLD_MAPS[n].connections.some((c) => c.direction === "dive" && /^Underwater_/.test(c.map)), n + " dives");
+    assert(WORLD_MAPS[WORLD_MAPS[n].connections.find((c) => c.direction === "dive").map].connections.some((c) => c.direction === "emerge" && c.map === n), n + "'s deep comes up");
+  }
+  assert.strictEqual(WORLD_MAPS.Underwater_Route124.type, "underwater");
+  assert(WORLD_MAPS.Underwater_Route124.wild && WORLD_MAPS.Underwater_Route124.wild.weights.length === 5, "seaweed has the water's Pokémon");
+  assert(fs.existsSync(path.join(root, "assets/world/sprites/em_brendan_underwater.png")), "the diving sprite");
+  // In-game trades: Rustboro's Seedot for a Ralts.
+  assert.deepStrictEqual([HS.trades.INGAME_TRADE_SEEDOT.species, HS.trades.INGAME_TRADE_SEEDOT.requested], ["Seedot", "Ralts"]);
+  assert(Object.keys(HS.trades).length >= 4, "the trades are in");
+  // The gym puzzles' tiles are on their sheets.
+  assert(WORLD_MAPS.MauvilleCity_Gym.mt && Object.keys(WORLD_MAPS.MauvilleCity_Gym.mt).length > 20 && WORLD_MAPS.PetalburgCity_Gym.mt.METATILE_PetalburgGym_SlidingDoor_Frame4);
+  done.then(() => console.log("ok: Hoenn's scripts, Norman's scene and Wally's lesson, Dive, trades, " + Object.keys(HS.s).length + " scripts"));
+}
