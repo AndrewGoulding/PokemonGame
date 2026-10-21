@@ -6470,6 +6470,18 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     assert.strictEqual(HS.berryTrees[2].berry, "oran-berry");
     assert(Object.keys(HS.berryTrees).every((id) => trees.some((p) => p.script === "HoennBerry_Tree_" + id)), "each grown tree is on a map");
   }
+  // Weather: each map's header, the steps that change it, and the module that draws it.
+  {
+    vm.runInThisContext(fs.readFileSync(path.join(root, "ui/weather.js"), "utf8"), { filename: "ui/weather.js" });
+    assert.strictEqual(window.Weather.FILTERS.shade, "brightness(0.8125)");
+    assert(WORLD_MAPS.MtChimney.weatherHeader === "volcanic_ash" && WORLD_MAPS.PetalburgWoods.weatherHeader === "shade" && WORLD_MAPS.Underwater_Route124.weatherHeader === "underwater");
+    assert(WORLD_MAPS.Route119.weatherSteps.some((s) => s.weather === "route119_cycle") && WORLD_MAPS.Route113.weatherSteps.some((s) => s.weather === "volcanic_ash"));
+    const ops = [];
+    const cx = new Proxy({}, { get: (t, p) => (p in t ? t[p] : (...a) => { ops.push(p); }), set: (t, p, v) => { t[p] = v; return true; } });
+    const wx = window.Weather.create(cx, 240, 160, {});
+    for (const k of ["rain", "thunderstorm", "downpour", "snow", "sandstorm", "drought", "sunny_clouds", "volcanic_ash", "underwater", "shade"]) for (let i = 0; i < 5; i++) { wx.update(k); wx.draw(k); }
+    assert(ops.includes("stroke") && ops.includes("fillRect"), "the weather draws");
+  }
   // In-game trades: Rustboro's Seedot for a Ralts.
   assert.deepStrictEqual([HS.trades.INGAME_TRADE_SEEDOT.species, HS.trades.INGAME_TRADE_SEEDOT.requested], ["Seedot", "Ralts"]);
   assert(Object.keys(HS.trades).length >= 4, "the trades are in");

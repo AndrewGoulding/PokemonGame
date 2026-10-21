@@ -387,7 +387,7 @@
       dynamaxBand: Player.itemCount(player, "dynamax-band") > 0,
       teraOrb,
       safari: opts.safari ? { balls: player.flags.safari.balls, hgss: !!player.flags.safari.hgss } : undefined,
-      wild,
+      wild, weather: opts.weather,
       exp: !opts.safari && !opts.noExp, levelCap: Player.levelCap(player),
       expShare: expShareOn(),
       trainer: Player.LOOKS[player.look].back,
@@ -11711,8 +11711,11 @@
     beaten: (id) => !!player.flags[id],
     setBeaten: (id, on) => { if (on) player.flags[id] = true; else delete player.flags[id]; },
     trainerBattle: (id, o) => hoennBattle(id, o),
-    wildBattle: (species, level, item) => johtoBattle("wild", species, level),
+    // (The weather the legendaries bring: Kyogre's rain, Groudon's sun, Rayquaza's winds.)
+    wildBattle: (species, level, item) => johtoBattle("wild", species, level, { weather: ({ Kyogre: "PrimordialSea", Groudon: "DesolateLand", Rayquaza: "DeltaStream" })[species] }),
     warp: (mapConst, at) => hoennWarp(mapConst, at),
+    setWeather: (name) => { hoennSaved = hoennKind(name); },
+    syncSpecial: (name) => hoennSyncSpecial(name),
     fieldEffect: async (name) => { if (name === "FLDEFF_HALL_OF_FAME_RECORD") await HallOfFame.recordFlash($("#overlay")); },
     badge: (n, on) => {
       const b = Player.REGION_BADGES.hoenn[n];
@@ -11860,7 +11863,7 @@
       }
     }
   }
-  if (window.HOENN_DEBUG) window.HoennDebug = { petalburgDoors, mauvilleGym, metatileAt };
+  if (window.HOENN_DEBUG) window.HoennDebug = { petalburgDoors, mauvilleGym, metatileAt, setWeather: (k) => { hoennSaved = k; } };
   // Runs a script; then whatever the map's frame table has due (a scene it set going).
   async function runHoenn(label, person) {
     const seen = new Set();
@@ -11873,6 +11876,46 @@
       if (label && seen.has(label)) break;
     }
     await persist();
+  }
+  // ---------- Hoenn's weather (src/field_weather.c; ui/weather.js draws it) ----------
+  //
+  // The map's own as you come in (its header: SetSavedWeatherFromCurrMapHeader), then what its scripts and the steps
+  // you take put on it (setweather; src/coord_event_weather.c). Routes 119 and 123's cycle with the game's days, and the
+  // abnormal weather of Kyogre and Groudon's fight swings between a downpour and a drought.
+  const WEATHER_CYCLES = { route119_cycle: ["sunny", "rain", "thunderstorm", "rain"], route123_cycle: ["sunny", "sunny", "rain", "sunny"] };
+  const WEATHER_ALIASES = { rain_thunderstorm: "thunderstorm", underwater_bubbles: "underwater" };
+  let hoennSaved = "", hoennLastType = "";
+  const hoennKind = (c) => {
+    const k = String(c || "").replace(/^(COORD_EVENT_)?WEATHER_/, "").toLowerCase();
+    return !k || k === "none" ? "" : WEATHER_ALIASES[k] || k;
+  };
+  const hoennOutdoors = (type) => /^(town|city|route|ocean_route|underwater)$/.test(type || "");
+  function hoennWeatherNow() {
+    let k = hoennSaved;
+    if (WEATHER_CYCLES[k]) k = WEATHER_CYCLES[k][Player.gameTime(player).day % 4];
+    else if (k === "abnormal") k = Math.floor(performance.now() / 25000) % 2 ? "drought" : "downpour";
+    return k || "none";
+  }
+  // Coming into a map: its header's weather (before its scripts change it).
+  function hoennWeatherEnter(name) {
+    const m = window.WORLD_MAPS[name];
+    hoennSaved = (m && m.weatherHeader) || "";
+    return m;
+  }
+  // The steps that change it.
+  function hoennWeatherStep() {
+    const m = window.WORLD_MAPS[player.location.map];
+    if (!m || m.region !== "hoenn" || !m.weatherSteps || !m.weatherSteps.length) return;
+    const at = Overworld.position(), s = m.weatherSteps.find((q) => q.x === at.x && q.y === at.y);
+    if (s) hoennSaved = s.weather;
+  }
+  // Specials of Route 119 and 123's transitions: the cycle, unless you walked in from another route.
+  function hoennSyncSpecial(name) {
+    if (name === "SetRoute119Weather" || name === "SetRoute123Weather") {
+      if (!hoennOutdoors(hoennLastType)) hoennSaved = name === "SetRoute119Weather" ? "route119_cycle" : "route123_cycle";
+      return true;
+    }
+    return false;
   }
   // Emerald's tutors' moves, in TUTOR_MOVE_ order (include/constants/party_menu.h).
   const HOENN_TUTOR_MOVES = ["Mega Punch", "Swords Dance", "Mega Kick", "Body Slam", "Double-Edge", "Counter", "Seismic Toss", "Mimic", "Metronome", "Soft-Boiled",
@@ -12151,7 +12194,7 @@
     }
   }
   // A battle a script starts: a trainer (HGSS's, window.WORLD_TRAINERS) or a wild Pokémon.
-  async function johtoBattle(kind, id, level) {
+  async function johtoBattle(kind, id, level, extra) {
     if (!canBattle()) return "lost";
     let outcome;
     if (kind === "trainer") {
@@ -12161,7 +12204,7 @@
         defeatText: data.defeat || ["…"], trainerId: id, prizeClass: data.className, double: !!data.double && canDouble() });
     } else {
       if (!window.DEX[id]) return "won";
-      outcome = await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(id, level))] } });
+      outcome = await battle("wild", Object.assign({ foe: { name: "Wild", team: [wildMon(Party.create(id, level))] } }, extra));
     }
     if (outcome !== "lost") { show("world"); await Overworld.resume(); }
     return outcome;
@@ -12557,7 +12600,7 @@
         },
         boulderSwitch: (map, x, y) => tanobySwitch(map, x, y) || victoryRoadSwitch(map, x, y),
         // (The Tanoby Ruins' chambers are dark until the Tanoby Key's solved: EventScript_TryDarkenRuins.)
-        weather: (map) => (Sevii.tanobyLocked(player.flags, map) ? "shade" : null),
+        weather: (map) => (isHoenn(map) ? hoennWeatherNow() : Sevii.tanobyLocked(player.flags, map) ? "shade" : null),
         // (Off the water: on foot, or back on the Bicycle on Cycling Road, where you can't walk.)
         landAvatar: () => (onCyclingRoad() ? "bike" : "walk"),
         onAvatar: (mode) => music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music),
@@ -12567,7 +12610,7 @@
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
-          berryFarm.step(); hoennBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
+          hoennWeatherStep(); berryFarm.step(); hoennBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
           return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
         adjustWild: (mon, table) => Encounters.leadWild(mon, leadMon(), table), allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
@@ -12591,7 +12634,7 @@
           // Route 23 puts Victory Road back as it was: barriers up, boulders back (Route23_OnTransition).
           if (m !== tempFlagsMap && m === "Route23") LeagueRoad.reset(player.flags);
           // (Into a Johto map: its OnTransition script, before its people are placed.)
-          if (m !== tempFlagsMap) { magnetTrain.enter(m); johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); if (isHoenn(m)) { restoreMetatiles(m); hoenn.transition(m); } }
+          if (m !== tempFlagsMap) { magnetTrain.enter(m); johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); if (isHoenn(m)) { restoreMetatiles(m); hoennWeatherEnter(m); hoenn.transition(m); } hoennLastType = (window.WORLD_MAPS[m] || {}).type; }
           if (m === "SSAqua_1F") ssAquaExit();
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
           if (!gear.radioOn(m)) music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }   // (the Pokégear's radio plays on)

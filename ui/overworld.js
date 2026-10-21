@@ -1474,6 +1474,7 @@
     return (fogTiles[key] = c);
   }
   function updateWeather() {
+    if (WX) WX.update(weatherOf(me.map));
     const fog = weatherOf(me.map) === "fog_horizontal";
     if (fog && !fogState.on) Object.assign(fogState, { on: true, eva: 0, evb: 16, step: 0, steps: 0 });
     if (!fog) { fogState.on = false; return; }
@@ -1499,7 +1500,9 @@
     }
     g.restore();
   }
-  const SHADE = "brightness(" + 13 / 16 + ")";
+  // (Each frame the map and people are dimmed or warmed as the weather has it: ui/weather.js.)
+  let SHADE = "brightness(" + 13 / 16 + ")";
+  const WX = window.Weather ? window.Weather.create(g, VIEW_W, VIEW_H, { thunder: () => { if (window.GameAudio && window.GameAudio.se) window.GameAudio.se("se_thunder"); } }) : null;
 
   // The screen shaking a pixel up and down (FireRed's Task_ElevatorShake:
   // SetCameraPanning(0, ±1), the other way every 3 frames, `count` times).
@@ -1806,7 +1809,9 @@
     g.fillStyle = "#000";
     g.fillRect(0, 0, VIEW_W, VIEW_H);
     // The border pattern fills everything outside the maps.
-    const shade = weatherOf(me.map) === "shade";
+    const weatherKind = weatherOf(me.map), weatherFilter = WX ? WX.filter(weatherKind) : "";
+    const shade = weatherKind === "shade" || !!weatherFilter;
+    if (weatherFilter) SHADE = weatherFilter;
     if (shade) g.filter = SHADE;
     const border = mapImage(me.map, "border");
     if (ready(border)) {
@@ -1933,6 +1938,7 @@
     // (Those up on raised ground, over the top layer.)
     sprites.filter((s) => s.over).forEach((s) => s.draw());
     drawDarkness(px - camX, py - camY, camX, camY);
+    if (WX) WX.draw(weatherKind);
     if (fly) drawFly();
     // "!", "!!", "?" and "×" bubbles over someone's head.
     for (const [e, x, y] of emotes) {

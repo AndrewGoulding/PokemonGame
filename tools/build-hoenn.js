@@ -379,6 +379,13 @@ for (const [label, cmds] of Object.entries(compiled.s)) {
 const berryTreeIds = {};
 for (const m of fs.readFileSync(P("include/constants/berry.h"), "utf8").matchAll(/^#define (BERRY_TREE_\w+)[ \t]+(\d+)/gm)) berryTreeIds[m[1]] = +m[2];
 
+// A weather's name here: WEATHER_RAIN_THUNDERSTORM or COORD_EVENT_WEATHER_RAIN_THUNDERSTORM -> "thunderstorm" (ui/game.js has them by these).
+const WEATHER_ALIAS = { rain_thunderstorm: "thunderstorm", underwater_bubbles: "underwater" };
+const weatherKind = (w) => {
+  const k = String(w || "").replace(/^(COORD_EVENT_)?WEATHER_/, "").toLowerCase();
+  return !k || k === "none" ? "" : WEATHER_ALIAS[k] || k;
+};
+
 // ---------- Build ----------
 const out = {};
 for (const name of MAPS) {
@@ -459,6 +466,9 @@ for (const name of MAPS) {
     signs: (map.bg_events || []).filter((b) => b.type === "sign").map((b) => ({ x: b.x, y: b.y, script: b.script, text: scriptText(name, b.script),
       facing: ({ BG_EVENT_PLAYER_FACING_NORTH: "up", BG_EVENT_PLAYER_FACING_SOUTH: "down", BG_EVENT_PLAYER_FACING_EAST: "right", BG_EVENT_PLAYER_FACING_WEST: "left" })[b.player_facing_dir] })),
     triggers,
+    // (Weather: the header's, which the map has as you come in, and the steps that change it: src/coord_event_weather.c.)
+    weatherHeader: weatherKind(map.weather) || undefined,
+    weatherSteps: (map.coord_events || []).filter((c) => c.type === "weather").map((c) => ({ x: c.x, y: c.y, weather: weatherKind(c.weather) })),
     hidden: (map.bg_events || []).filter((b) => b.type === "hidden_item").map((b) => ({ x: b.x, y: b.y, item: itemId(b.item), flag: b.flag, quantity: b.quantity || 1 })).filter((x) => x.item),
     people,
     // (Underwater, the seaweed has the water's Pokémon, with the water's odds.)

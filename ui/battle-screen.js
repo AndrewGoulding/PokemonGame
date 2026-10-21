@@ -3091,6 +3091,8 @@
       hideBars();
     }
     battle.start();
+    // (A legendary's weather, Groudon's and Kyogre's and Rayquaza's: for good, over any its own Ability brought.)
+    if (cfg.weather) battle.setWeather(cfg.weather, null, null, Infinity);
     raidAnnounced = -1;
     // A wild Tera Pokémon (this game's own): "The wild … is Terastallizing!",
     // then the Terastallizing, animation and all, before the first turn.
