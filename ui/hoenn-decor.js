@@ -105,20 +105,27 @@
       return { take: () => pressed.splice(0), close: () => document.removeEventListener("keydown", down, true) };
     }
     async function place(ctx, map, d) {
-      const m = window.WORLD_MAPS[map], canvas = env.canvas(), g = canvas.getContext("2d"), keys = input();
+      // (Drawn at 240x160 on a layer of its own, then onto the overlay canvas, whatever size that is.)
+      const m = window.WORLD_MAPS[map], canvas = env.canvas(), out = canvas.getContext("2d"), layer = document.createElement("canvas"), keys = input();
+      layer.width = W; layer.height = H;
+      const g = layer.getContext("2d");
       const sheet = sheetOf(map), below = image("assets/world/maps/" + map + ".png"), top = m.top ? image("assets/world/maps/" + map + "-top.png") : null;
       const dBelow = sheet ? image("assets/world/maps/_decor_" + sheet + "-mt.png") : null, dTop = sheet ? image("assets/world/maps/_decor_" + sheet + "-mt-top.png") : null;
       await Promise.all([below, top, dBelow, dTop].filter(Boolean).map((i) => i.loaded));
       canvas.classList.remove("hidden");
       g.imageSmoothingEnabled = false;
       let cx = Math.min(m.width - 1, Math.max(0, (m.warps[0] || { x: 1 }).x)), cy = Math.max(0, Math.min(m.height - 1, (m.warps[0] || { y: m.height - 2 }).y - 2));
+      // (It starts on the first place it can go, if there is one.)
+      first: for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) if (canPlace(ctx, map, d, x, y)) { cx = x; cy = y; break first; }
       const ok = () => canPlace(ctx, map, d, cx, cy);
       const drawTiles = (list, sheetImg) => { if (!ready(sheetImg)) return; for (const [x, y, n] of list) g.drawImage(sheetImg, (n % 16) * 16, Math.floor(n / 16) * 16, 16, 16, x * TILE - camX, y * TILE - camY, 16, 16); };
       const ghostTiles = () => (d.perm === "sprite" ? [] : footprint(d, cx, cy).map(([x, y, r, c]) => [x, y, d.tiles[r * d.w + c] - 512]));
       let camX = 0, camY = 0;
       for (;;) {
         // (The camera keeps the cursor in the middle, as far as the map goes.)
-        camX = Math.max(0, Math.min(Math.max(0, m.width * TILE - W), cx * TILE + 8 - W / 2)); camY = Math.max(0, Math.min(Math.max(0, m.height * TILE - H), cy * TILE + 8 - H / 2));
+        // (A map smaller than the screen sits in the middle of it.)
+        camX = m.width * TILE <= W ? -Math.floor((W - m.width * TILE) / 2) : Math.max(0, Math.min(m.width * TILE - W, cx * TILE + 8 - W / 2));
+        camY = m.height * TILE <= H ? -Math.floor((H - m.height * TILE) / 2) : Math.max(0, Math.min(m.height * TILE - H, cy * TILE + 8 - H / 2));
         g.setTransform(1, 0, 0, 1, 0, 0);
         g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
         if (ready(below)) g.drawImage(below, -camX, -camY);
@@ -133,6 +140,7 @@
         for (const [x, y] of footprint(d, cx, cy)) g.strokeRect(x * TILE - camX + 0.5, y * TILE - camY + 0.5, TILE - 1, TILE - 1);
         g.fillStyle = "rgba(0,0,0,0.65)"; g.fillRect(0, 0, W, 12);
         g.fillStyle = "#fff"; g.font = "8px monospace"; g.textBaseline = "top"; g.fillText(d.name + "   A: place   B: back", 3, 2);
+        out.setTransform(1, 0, 0, 1, 0, 0); out.imageSmoothingEnabled = false; out.drawImage(layer, 0, 0, canvas.width, canvas.height);
         await nextFrame();
         for (const k of keys.take()) {
           if (k === "up") cy = Math.max(0, cy - 1);
