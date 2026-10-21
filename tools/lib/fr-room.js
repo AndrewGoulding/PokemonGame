@@ -53,7 +53,7 @@ const classOfTex = (n) => (TEX.find(([, re]) => re.test(n)) || [null])[0];
 const KINDS = {
   house: { secondary: "gTileset_GenericBuilding1", floor: 2, wall: 32, wallLow: 0 },
   lab: { secondary: "gTileset_Lab", floor: 129, wall: 104, wallLow: 112 },
-  gym: { secondary: "gTileset_GenericBuilding1", floor: 1, wall: 32, wallLow: 0 },
+  gym: { secondary: "gTileset_Lab", floor: 129, wall: 104, wallLow: 112 },
   tower: { secondary: "gTileset_GenericBuilding1", floor: 2, wall: 32, wallLow: 0 },
   office: { secondary: "gTileset_GenericBuilding1", floor: 129, wall: 104, wallLow: 112 },
   pc: { secondary: "gTileset_PokemonCenter", floor: 129, wall: 104, wallLow: 112 }

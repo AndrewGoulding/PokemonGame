@@ -1955,9 +1955,9 @@ where its own size doesn't fit, so every building is FireRed's own art (HGSS's
 3D pictures of them looked foreign beside it; a door-less block of a city is
 a stretched Kanto building too, with no way in). What's solid follows what's
 drawn: HGSS's solid tiles of a building drawn smaller are open ground. A
-forest's deep inside (three tiles or more from any ground you can reach, and
-from the map's edge) is plain meadow with single trees well apart, as
-FireRed's open routes have, not pines to the horizon
+forest's or mountain's deep inside (three tiles or more from any ground you can
+reach, and from the map's edge) is plain meadow with single trees well apart, as
+FireRed's open routes have, not pines or rock to the horizon, a mountain a green plateau behind its cliffs
 (`thinForests` in `tools/lib/hgss-classes.js`). Any picture of HGSS's of a
 building with no stamp near it still stands on the painted ground
 (`tools/lib/hgss-map.js` keeps their pixels apart in `buildings` and
