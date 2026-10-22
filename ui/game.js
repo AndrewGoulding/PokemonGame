@@ -11845,6 +11845,13 @@
     softReset: async () => { window.location.reload(); await new Promise(() => {}); }
   });
   hoennEnv.frontierOp = (op, a, api) => hoennFrontier.op(op, a, api);
+  // The Contests (ui/hoenn-contest.js).
+  const hoennContest = HoennContest.create({
+    player: () => player, say: (t) => say(t), gameClear: () => !!player.flags.gameClear,
+    pick: async (title, labels) => { const i = await multichoice(title, 0, 0, labels); Screen.say(""); return i; },
+    choosePartyMon: (prompt) => hoennEnv.choosePartyMon(prompt)
+  });
+  hoennEnv.contestOp = (op, a, api) => hoennContest.op(op, a, api);
   hoennEnv.healParty = () => { player.party.forEach(Party.heal); hoennFrontier.healTeam(); };
   async function pikeWildBattle(ev) {
     const s = hoennFrontier.state(), real = player.party, map = player.location.map;
@@ -12081,6 +12088,7 @@
   // The specials Emerald's scripts call that this game answers itself.
   async function hoennSpecial(name, api) {
     if (await hoennFrontier.special(name, api)) return true;
+    if (await hoennContest.special(name, api)) return true;
     switch (name) {
       // The Gyms' puzzles (src/field_specials.c).
       case "PetalburgGymSlideOpenRoomDoors": {

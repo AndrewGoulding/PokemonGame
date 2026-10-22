@@ -212,8 +212,9 @@
         case "lockall": case "lock": case "releaseall": case "release": case "lockfortrainer": case "hideplayer": case "showplayer": case "createvobject": case "turnvobject":
         case "opendoor": case "closedoor": case "setdooropen": case "setdoorclosed": case "setfieldeffectargument": case "updatemoneybox":
         case "register_matchcall": case "pokenavcall": case "dotrainerbattle": case "gotopostbattlescript": case "gotobeatenscript": case "selectapproachingtrainer":
-        case "braillemessage": case "braillemsgbox": case "closebraillemessage": case "brailleformat": case "setwarp": case "setholewarp": case "setescapewarp":
+        case "braillemessage": case "braillemsgbox": case "closebraillemessage": case "brailleformat": case "setholewarp": case "setescapewarp":
           return true;
+        case "setwarp": lastSetWarp = a.slice(); return true;
         case "setmaplayoutindex": if (env.setLayout) env.setLayout(mapName(), a[0]); return true;
         case "setweather": if (env.setWeather) env.setWeather(a[0]); return true;
         case "setdivewarp": fixedDive = { map: a[0], x: num(a[1]), y: num(a[2]) }; return true;
@@ -226,7 +227,7 @@
     }
     // The specials that need no screen.
     // How the last wild battle ended (B_OUTCOME_*: won 1, lost 2, ran 4, caught 7).
-    let battleOutcome = 0;
+    let battleOutcome = 0, lastSetWarp = null;
     const OUTCOMES = { won: 1, lost: 2, ran: 4, caught: 7 };
     function syncSpecial(st, name, out) {
       const set = (v) => { if (out) setVar(out, v); };
@@ -268,6 +269,7 @@
         }
       }
     }
+    const CONTEST_OPS = /^(choosecontestmon|startcontest|showcontestresults|buffercontestname|contestlinktransfer|showcontestpainting)$/;
     const FRONTIER_OPS = /^(frontier|tower|dome|palace|arena|factory|pike|pyramid|slateporttent|verdanturftent|fallarbortent|battletent|apprentice)_/;
 
     // `label`: a label of HOENN_SCRIPTS.s.
@@ -384,7 +386,10 @@
           case "bufferitemnameplural": { const n = env.itemName(item(val(a[1]))); buffers[a[0].replace(/\D/g, "")] = num(a[2]) > 1 && !/s$/.test(n) ? n + "s" : n; break; }
           case "buffermovename": buffers[a[0].replace(/\D/g, "")] = String(move(val(a[1])) || titleCase(String(val(a[1])).replace(/^MOVE_/, ""))); break;
           case "buffernumberstring": buffers[a[0].replace(/\D/g, "")] = String(num(a[1])); break;
-          case "bufferstdstring": case "bufferstring": case "bufferdecorationname": case "stringvar": case "buffertrainerclassname": case "buffertrainername": case "buffercontestname": case "bufferboxname": {
+          // (gStdStrings: the Contests' and the Bag's words.)
+          case "bufferstdstring": if (typeof val(a[1]) === "number") { buffers[a[0].replace(/\D/g, "")] = STD_STRINGS[val(a[1])] || ""; break; }
+          // falls through
+          case "bufferstring": case "bufferdecorationname": case "stringvar": case "buffertrainerclassname": case "buffertrainername": case "bufferboxname": {
             const label = a[1]; if (D.t[label]) buffers[a[0].replace(/\D/g, "")] = D.t[label].join(" ");
             break;
           }
@@ -545,7 +550,9 @@
               await flush();
               if (await env.frontierOp(op, a, apiFor(() => {}))) break;
             }
-            // (Contests, the apprentice and the rest: nothing happens.)
+            // (The Contests' commands: ui/hoenn-contest.js.)
+            if (env.contestOp && CONTEST_OPS.test(op)) { await flush(); if (await env.contestOp(op, a, apiFor(() => {}))) break; }
+            // (The apprentice and the rest: nothing happens.)
             if (!UNKNOWN.has(op)) { UNKNOWN.add(op); if (window.HOENN_DEBUG) console.warn("hoenn script: " + op); }
         }
       }
@@ -564,6 +571,8 @@
           case "DoSealedChamberShakingEffect_Short": await flush(); await env.shake(3, { x: 1, y: 1, delay: 2 }); return;
           case "DoSealedChamberShakingEffect_Long": await flush(); await env.shake(10, { x: 1, y: 1, delay: 2 }); return;
           case "SaveGame": if (env.save) await env.save(); return;
+          // (Into a Contest hall: where the last setwarp said.)
+          case "DoContestHallWarp": if (lastSetWarp) { await flush(); await env.warp(lastSetWarp[0], { x: num(lastSetWarp[1]), y: num(lastSetWarp[2]) }, "warp"); cut(); } return;
           case "GameClear":
             if (env.special && (await env.special(name, apiFor(set))) !== false) return;
             if (env.save) await env.save();
@@ -580,6 +589,7 @@
       await main();
     }
     const UNKNOWN = new Set();
+    const STD_STRINGS = ["COOL", "BEAUTY", "CUTE", "SMART", "TOUGH", "NORMAL", "SUPER", "HYPER", "MASTER", "COOL", "BEAUTY", "CUTE", "SMART", "TOUGH", "ITEMS", "KEY ITEMS", "POKé BALLS", "TMs & HMs", "BERRIES", "SINGLE", "DOUBLE", "MULTI", "MULTI"];
 
     // ---------- What a map thing runs ----------
     // A person's, sign's or step's label, if it's one of Emerald's scripts.
@@ -619,7 +629,7 @@
     }
     // A frame table's script that's due now (warp-into first, when you came through a warp).
     function frameScript(map, viaWarp) {
-      const ms = DATA().ms[map + "_MapScripts"];
+      const ms = DATA().ms[map + "_MapScripts"] || DATA().ms[(window.WORLD_MAPS[map] || {}).scriptName + "_MapScripts"];
       if (!ms) return null;
       for (const k of viaWarp ? ["ON_WARP_INTO_MAP_TABLE", "ON_FRAME_TABLE"] : ["ON_FRAME_TABLE"]) {
         const rows = ms[k] && DATA().tb[ms[k]];

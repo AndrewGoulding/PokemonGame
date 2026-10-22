@@ -6434,6 +6434,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
 {
   vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-script.js"), "utf8"), { filename: "ui/hoenn-script.js" });
   vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-frontier.js"), "utf8"), { filename: "ui/hoenn-frontier.js" });
+  vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-contest.js"), "utf8"), { filename: "ui/hoenn-contest.js" });
   const HF = window.HOENN_FRONTIER;
   assert(HF.mons.length === 882 && HF.trainers.length === 300 && HF.banned.length === 9 && HF.brain.length === 7 && HF.tents.slateport.mons.length === 70, "the Frontier's data");
   assert.deepStrictEqual(HF.brainStreaks[0], [35, 70, 35, 1]);
@@ -6454,7 +6455,9 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     pick: async () => 0, battle: async (spec) => { battles++; assert(spec.team.length >= 1 && spec.foe.team.length >= 1, "teams " + spec.team.length + " " + spec.foe.team.length + " facility " + H.getVar("VAR_FRONTIER_FACILITY") + " mode " + H.getVar("VAR_FRONTIER_BATTLE_MODE") + " " + JSON.stringify([F.state().A, F.state().lvl, F.state().num])); for (const r of spec.team.concat(spec.foe.team)) assert(r.hp > 0 && r.moves.length, "a made Pokémon: " + r.species); return "won"; },
     bpBox() {}, markHome() {}, save: async () => {}, softReset: async () => {}, rand: mulberry32(7)
   });
-  fenv.special = async (name, api) => (await F.special(name, api)) || undefined;
+  const CT = window.HoennContest.create({ player: () => fplayer, say: async (t) => { spoken.push(t); }, pick: async () => 0, choosePartyMon: async () => 0, rand: mulberry32(11) });
+  fenv.contestOp = (op, a, api) => CT.op(op, a, api);
+  fenv.special = async (name, api) => (await F.special(name, api)) || (await CT.special(name, api)) || undefined;
   const run = (label, localId) => H.run(label, { person: { localId, id: 0 } });
   const frontierDone = (async () => {
     // Singles, Level 50: the lobby, then the battle room carries the seven battles through.
@@ -6517,8 +6520,22 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
       await run("BattleFrontier_BattlePikeRoomFinal_EventScript_EnterRoom");
       assert.strictEqual(s.status, 3, "the Pike is cleared");
     }
+    // The Lilycove Contest Hall: enter a Pokémon in the Normal Rank Coolness Contest, and the hall's own scripts run the contest to its judges' marks.
+    {
+      assert(window.HOENN_CONTEST.opponents.length === 95 && Object.keys(window.HOENN_CONTEST.moves).length > 300, "the Contests' data");
+      H.resetTemp(); H.setVar("VAR_0x8006", 0);
+      await run("LilycoveCity_ContestLobby_EventScript_ContestReceptionist", "LOCALID_X");
+      assert.strictEqual(fenv.__warps.slice(-1)[0][0], "MAP_CONTEST_HALL_COOL", "into the Cool hall");
+      const ct = CT.state();
+      assert(ct.cont.length === 4 && ct.cont[3].nick, "four contestants, you last");
+      H.resetTemp(); spoken.length = 0;
+      await run("ContestHall_EventScript_Contest", "LOCALID_X");
+      assert(ct.final && ct.final.length === 4 && [...ct.final].sort().join() === "0,1,2,3", "four places");
+      assert(spoken.some((x) => /The judges' marks/.test(String(x))), "the marks are read out");
+      if (ct.final[ct.player] === 0) assert.strictEqual(fplayer.party[0].contestRibbons.cool, 1, "a winner's ribbon");
+    }
   })();
-  var frontierTest = frontierDone.then(() => console.log("ok: Battle Frontier, the Tower, the Brain's symbol, the Factory, Arena, Palace, Dome, Pike and the three tents through Emerald's scripts"));
+  var frontierTest = frontierDone.then(() => console.log("ok: Battle Frontier, the Tower, the Brain's symbol, the Factory, Arena, Palace, Dome, Pike, the three tents and a Contest through Emerald's scripts"));
 }
 
 // Hoenn's script interpreter (ui/hoenn-script.js) against a stub game: the constants, a story scene end to end, a frame table, Dive's connections, trades.
