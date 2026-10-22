@@ -12438,7 +12438,7 @@
       case "Script_DoRayquazaScene": {
         await api.flush();
         Screen.say("");
-        await RayquazaScene.play($("#overlay"), +api.getVar("VAR_0x8004") ? 1 : 0, { spriteUrl: (s) => Screen.spriteUrl(s, "", false), cry, sfx });
+        await RayquazaScene.play($("#overlay"), +api.getVar("VAR_0x8004") ? 1 : 0, { cry, sfx, music });
         $("#overlay").classList.add("hidden");
         show("world");
         return true;

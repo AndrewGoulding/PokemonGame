@@ -1886,6 +1886,8 @@ taking the pokeemerald checkout as their argument and all safe to run again:
 - `tools/build-hoenn-audio.js` renders Emerald's songs and jingles with the same M4A engine as
   the rest (`assets/audio/hoenn-music.js`, songs named `em_*`; in Hoenn `mus_x` plays `em_x`).
 - `tools/build-hoenn-items.js` adds Emerald's key items and mails.
+- `tools/build-rayquaza-scene.js` draws the Sootopolis scene's backgrounds and sprites (`graphics/rayquaza_scene/`)
+  into `assets/rayquaza-scene/`.
 - `tools/build-emerald-credits.js` draws the credits' rides, riders, scenery and THE END
   (`graphics/intro/scene_2/`, `graphics/credits/`, `graphics/starter_choose/`) into `assets/credits/emerald/`.
 - `tools/lib/hoenn-town-map.js` draws Emerald's Town Map; Fly lands outside each town's Center.
@@ -1916,7 +1918,13 @@ you both ride off, the long dark, and THE END, drawn from its letter tiles. Star
 
 Also: berry trees (Hoenn's own growth stages and mulch; picking from one is the Berry Pouch's game, as in Kanto's
 forests, and the Berry Pouch works in Petalburg Woods: the farming level counts there too), weather, your own secret base with its decorations,
-the rotating-tile puzzles, the Mirage Tower and Rayquaza's scenes.
+the rotating-tile puzzles, the Mirage Tower and Rayquaza's scenes. The scene over Sootopolis is Emerald's own
+(`ui/rayquaza-scene.js`, its pictures from `tools/build-rayquaza-scene.js` into `assets/rayquaza-scene/`), its
+five scenes timed as `src/rayquaza_scene.c` times them: Groudon and Kyogre facing one another under the storm
+(the clouds streaming by in bands, the rain, the lightning's flash), over Rayquaza's shoulder as it takes flight
+through the smoke, its descent through the clouds in a ray of light revealed line by line, the charge with the
+streaks and orbs flying past, and Rayquaza floating over the pair, roaring (the rings of its voice), as Groudon
+backs off and Kyogre sinks away; before Rayquaza's awakening, the shorter telling of the fight alone.
 
 Other people's secret bases (this game's own, since Emerald only has them through record mixing; `hoennNpcBases` in
 `ui/game.js`): a dozen of Hoenn's spots are taken, each by an owner of one of Emerald's ten kinds (its

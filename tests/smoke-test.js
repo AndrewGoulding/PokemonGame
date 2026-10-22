@@ -6855,6 +6855,17 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   assert(WORLD_MAPS.Route110_TrickHousePuzzle8 && WORLD_MAPS.MarineCave_End && WORLD_MAPS.Underwater_SealedChamber, "the maps only scripts go to");
   vm.runInThisContext(fs.readFileSync(path.join(root, "ui/rayquaza-scene.js"), "utf8"), { filename: "ui/rayquaza-scene.js" });
   assert.strictEqual(typeof window.RayquazaScene.play, "function");
+  // Emerald's five scenes from its own pictures (tools/build-rayquaza-scene.js), timed as src/rayquaza_scene.c times them.
+  {
+    for (const f of ["1-clouds-far", "1-clouds-near", "1-rain", "1-groudon", "1-kyogre", "1-kyogre-pectoral-fin", "2-bg", "2-rayquaza", "2-smoke", "3-bg", "3-light", "3-rayquaza", "3-rayquaza-tail",
+      "4-bg", "4-orbs", "4-streaks", "4-rayquaza", "5-bg", "5-light", "5-ring", "5-groudon", "5-groudon-tail", "5-kyogre", "5-rayquaza", "5-rayquaza-tail", "5-kyogre-splash"])
+      assert(fs.existsSync(path.join(root, "assets/rayquaza-scene", f + ".png")), "the scene's picture " + f);
+    const rs = fs.readFileSync(path.join(root, "ui/rayquaza-scene.js"), "utf8");
+    assert(/if \(timer === 32 \|\| timer === 112\) \{ sfx\("se_thunder"\); lightning\(16, 0, 0\); \}/.test(rs) && /else if \(timer === 380\) panning = true;/.test(rs) && /else if \(timer === 412\) break;/.test(rs), "the fight's lightning and its end");
+    assert(/if \(f === 0\) \{ R\.xp = 12; R\.yp = 8; \}/.test(rs) && /if \(\+\+timer === 368\)/.test(rs), "the descent's pace");
+    assert(/else if \(f === 328\) \{ float\(\); setAnim\(3, 48, 16\); Ry\.x2 = 1; if \(env\.cry\) env\.cry\("Rayquaza"\);/.test(rs) && /if \(timer === 448\) \{ timer = 0; state = 3; \}/.test(rs), "the roar, the ring, the pair's leaving");
+    assert(/await duoFight\(false\); await takesFlight\(\); await descends\(\); await charges\(\); await chasesAway\(\);/.test(rs) && /if \(mode === 0\) await duoFight\(true\);/.test(rs), "all five scenes, or the fight alone");
+  }
   // Secret Bases and decorations: the catalogue, its pictures, the spots and the rooms.
   {
     assert.strictEqual(HS.decor.length, 120);
