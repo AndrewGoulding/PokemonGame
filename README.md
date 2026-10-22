@@ -1930,8 +1930,8 @@ Other people's secret bases (this game's own, since Emerald only has them throug
 `ui/game.js`): a dozen of Hoenn's spots are taken, each by an owner of one of Emerald's ten kinds (its
 `sSecretBaseOwnerGfxIds` and `sSecretBaseFacilityClasses`: five boys, five girls), named after one of the Frontier's
 trainers, with decorations set out where Emerald's placement rules let them go (`ui/hoenn-decor.js` `furnish`) and a
-party of the Frontier's Pokémon at the level you were when you first came to a spot. They're made once from your
-trainer ID and kept. Go in and the owner talks and battles as Emerald's record-mixed owners do (its
+party of the Frontier's Pokémon at the level you were when you first came to a spot, raised to your party's level
+each time you battle them. They're made once from your trainer ID and kept. Go in and the owner talks and battles as Emerald's record-mixed owners do (its
 `SecretBase_EventScript_RecordMixTrainer`: once a day, after the Hall of Fame, their class's picture, Emerald's words
 for the loss, no money and no blacking out), and their PC registers the base, as Emerald's registry does.
 

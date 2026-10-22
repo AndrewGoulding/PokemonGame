@@ -1389,7 +1389,7 @@
   // A dozen of Hoenn's spots are taken. Each base has an owner of one of Emerald's ten kinds (sSecretBaseOwnerGfxIds and
   // sSecretBaseFacilityClasses: five boys, five girls), named after one of the Frontier's trainers, with decorations set out
   // as the rules allow (ui/hoenn-decor.js furnish) and a party of the Frontier's Pokémon at the level you were when you
-  // first came to Hoenn's spots. The owner talks and battles as Emerald's record-mixed owners do
+  // first came to Hoenn's spots, raised to your level each time you battle them (npcBaseBattle). The owner talks and battles as Emerald's record-mixed owners do
   // (SecretBase_EventScript_RecordMixTrainer: once a day, after the Hall of Fame), and the base's PC registers the base.
   // Made once from your trainer ID, and kept: player.flags.hoennNpcBases.
   const NPC_BASE_LOOKS = ["OBJ_EVENT_GFX_YOUNGSTER", "OBJ_EVENT_GFX_BUG_CATCHER", "OBJ_EVENT_GFX_RICH_BOY", "OBJ_EVENT_GFX_CAMPER", "OBJ_EVENT_GFX_MAN_3",
@@ -1432,6 +1432,9 @@
   // for the loss; no money, and no blacking out, as CB2_EndTrainerBattle has it. VAR_RESULT: 1 won, 2 lost, 3 drew.
   async function npcBaseBattle(api) {
     const v = hoennVisiting(), F = window.HOENN_FRONTIER || {}, T = window.HOENN_SCRIPTS.t, cls = NPC_BASE_CLASSES[v.type];
+    // Their party keeps pace with yours: each is raised to your party's level when you meet it (never lowered).
+    const lvl = Math.max(10, Math.min(100, Math.round(partyLevel())));
+    for (const p of v.party) p.level = Math.max(p.level, lvl);
     const team = v.party.map((p) => { const r = Party.create(p.species, p.level, { moves: p.moves.filter((m) => window.MOVES[m]) }); r.item = p.item || ""; return r; });
     const pic = ((F.trainers || []).find((t) => t && t.cls === cls) || {}).pic || null;
     const outcome = await battle("trainer", { foe: { name: npcBaseClass(v.type) + " " + v.name, team, pic }, defeatText: T["SecretBase_Text_Trainer" + v.type + "Defeated"] || ["…"], noBlackout: true, noPrize: true });
