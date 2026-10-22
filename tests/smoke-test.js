@@ -6608,6 +6608,11 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     const bs = fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8"), fr = fs.readFileSync(path.join(root, "ui/hoenn-frontier.js"), "utf8");
     assert(/if \(config\.palace\) return battle\.palaceChoice\("p1"/.test(bs) && /async function arenaJudgment/.test(bs) && /case "-arena":/.test(bs), "the screen: the Palace's FIGHT, the Arena's judgment window");
     assert(/arena: tentMode \? s\.A\.tent === "verdanturf" : f === FAC\.ARENA/.test(fr), "the Arena and the Verdanturf tent judge");
+    // The Factory's rental and swap screens and the Dome's tourney tree (ui/hoenn-frontier-screens.js), where the game gives them.
+    assert(scripts.indexOf("ui/hoenn-frontier-screens.js") > scripts.indexOf("ui/hoenn-frontier.js") && scripts.indexOf("ui/hoenn-frontier-screens.js") < scripts.indexOf("ui/game.js"), "the Frontier's screens load");
+    const fss = fs.readFileSync(path.join(root, "ui/hoenn-frontier-screens.js"), "utf8");
+    assert(/async function factorySelect/.test(fss) && /async function factorySwap/.test(fss) && /async function tourneyTree/.test(fss) && /X = \[\[68, 87, 95, 103, 120\], \[172, 153, 145, 137, 120\]\]/.test(fss), "Emerald's tree layout");
+    assert(/if \(what === "rentmons" && env\.factorySelect\)/.test(fr) && /if \(env\.domeTree\)/.test(fr) && /dm\.rounds \|\| \(dm\.rounds = /.test(fr), "the Frontier asks for them");
   }
   var frontierTest = frontierDone.then(() => console.log("ok: Battle Frontier, the Tower, the Brain's symbol, the Factory, Arena, Palace, Dome, Pike, the Pyramid, the three tents and a Contest through Emerald's scripts"));
 }

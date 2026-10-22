@@ -11837,6 +11837,10 @@
     pick: async (title, labels) => { const i = await multichoice(title, 0, 0, labels); Screen.say(""); return i; },
     battle: (spec) => frontierBattle(spec),
     bpBox: (on, n) => GbaMenus.fieldWindow("bp", on ? { x: 0, y: 0, amount: n, label: "BP" } : null),
+    // (The Factory's rental and swap screens and the Dome's tourney tree: ui/hoenn-frontier-screens.js.)
+    factorySelect: async (mons) => { Screen.say(""); const r = await HoennFrontierScreens.factorySelect($("#overlay"), { mons, summary: (i) => summary(i, mons) }); show("world"); await Overworld.resume(); return r; },
+    factorySwap: async (mine, theirs) => { Screen.say(""); const r = await HoennFrontierScreens.factorySwap($("#overlay"), { mine, theirs, summary: (which, i) => summary(i, which ? theirs : mine) }); show("world"); await Overworld.resume(); return r; },
+    domeTree: async (d) => { Screen.say(""); await HoennFrontierScreens.tourneyTree($("#overlay"), d); show("world"); await Overworld.resume(); },
     // (A challenge you pause is saved where you started it: the lobby. Then the game starts over, as Emerald's soft reset.)
     markHome: () => { const at = Overworld.position(); hoennFrontier.state().home = { map: player.location.map, x: at.x, y: at.y, facing: at.facing || "down" }; },
     save: async (paused) => {

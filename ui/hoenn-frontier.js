@@ -449,7 +449,7 @@
       // (Seeded by strength: the strongest face the weakest.)
       const order = ["me"].concat(ids).sort((x, y) => score[y] - score[x]), seeds = [0, 15, 7, 8, 3, 12, 4, 11, 1, 14, 6, 9, 2, 13, 5, 10];
       const leaves = seeds.map((i) => order[i]);
-      s.dome = { leaves, alive: leaves.slice(), round: 0, score, mons, seed: order.indexOf("me") + 1 };
+      s.dome = { leaves, alive: leaves.slice(), round: 0, score, mons, seed: order.indexOf("me") + 1, rounds: [leaves.slice()] };
     }
     const domeName = (x) => (x === "me" ? P().name : (D().trainers[x] || {}).name || "?");
     function domeOpponent() {
@@ -517,6 +517,12 @@
         case "showtourneytree": case "showstatictourneytree": case "showprevtourneytree": {
           const dm = s.dome;
           if (!dm) { await env.say("No tournament has been held yet."); return true; }
+          if (env.domeTree) {
+            const names = { me: P().name }, three = { me: s.team.map(Party_name) };
+            for (const id of dm.leaves) if (id !== "me") { names[id] = domeName(id); three[id] = (dm.mons[id] || []).map(Party_name); }
+            await env.domeTree({ rounds: dm.rounds || [dm.alive.slice()], names, mons: three, me: "me" });
+            return true;
+          }
           const lines = [];
           for (let i = 0; i < dm.alive.length; i += 2) lines.push(domeName(dm.alive[i]) + "  vs  " + domeName(dm.alive[i + 1]));
           await env.say(["The Battle Dome tourney: " + (ROUNDS[dm.round] || "") + ".\n" + "Your seed: " + dm.seed + " of 16."].concat(lines.reduce((acc, l, i) => { if (i % 4 === 0) acc.push([]); acc[acc.length - 1].push(l); return acc; }, []).map((g) => g.join("\n"))));
@@ -530,7 +536,8 @@
             else { const px = dm.score[x] ** 2 / (dm.score[x] ** 2 + dm.score[y] ** 2); next.push(rnd() < px ? x : y); }
           }
           dm.alive = next; dm.round++;
-          if (!won) { while (dm.alive.length > 1) { const n2 = []; for (let i = 0; i < dm.alive.length; i += 2) n2.push(rnd() < 0.5 ? dm.alive[i] : dm.alive[i + 1]); dm.alive = n2; dm.round++; } }
+          (dm.rounds || (dm.rounds = [dm.leaves.slice()])).push(next.slice());
+          if (!won) { while (dm.alive.length > 1) { const n2 = []; for (let i = 0; i < dm.alive.length; i += 2) n2.push(rnd() < 0.5 ? dm.alive[i] : dm.alive[i + 1]); dm.alive = n2; dm.round++; dm.rounds.push(n2.slice()); } }
           return true;
         }
       }
@@ -866,8 +873,8 @@
     }
 
     // ---------- Rental Pokémon (the Slateport Tent's; the Factory's) ----------
-    // The six to choose from, and the opponent's three; you choose three. (Emerald's screen shows the rentals with a
-    // Summary; this one reads each one out, then you pick; a swap lets you trade one of yours for one of the opponent's.)
+    // The six to choose from, and the opponent's three; you choose three on the Factory's rental screen, with a Summary
+    // of each (ui/hoenn-frontier-screens.js), and after a win its swap screen trades one of yours for one of the opponent's.
     const rentalCard = (r) => Party_name(r) + "  Lv." + r.level + (r.item ? "  holding " + env.itemName(r.item) : "") + "\n" + r.moves.map((m) => m.name).join(", ");
     const factoryIv = (challengeNum, last) => { const t = D().factory.ivs; return t[Math.min(challengeNum, t.length - 1)][last ? 1 : 0]; };
     function factoryMonId(lvl, challengeNum, better) {
@@ -919,6 +926,22 @@
       return false;
     }
     async function rentScreen(what, api, pool, s) {
+      // (Emerald's own screens, ui/hoenn-frontier-screens.js, where the game gives them; else read out and picked from.)
+      if (what === "rentmons" && env.factorySelect) {
+        const chosen = await env.factorySelect(pool);
+        s.team = chosen.map((i) => clone(pool[i]));
+        s.items = s.team.map((r) => r.item);
+        return true;
+      }
+      if (what !== "rentmons" && env.factorySwap) {
+        const sw = await env.factorySwap(s.team, s.foe);
+        if (!sw) { api.setVar("VAR_RESULT", 1); return true; }
+        s.team[sw.give] = clone(s.foe[sw.take]);
+        window.Party.heal(s.team[sw.give]);
+        s.items[sw.give] = s.team[sw.give].item;
+        api.setVar("VAR_RESULT", 0);
+        return true;
+      }
       if (what === "rentmons") {
         await env.say(pool.map(rentalCard));
         const chosen = [];

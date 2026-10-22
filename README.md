@@ -1910,10 +1910,12 @@ the rotating-tile puzzles, the Mirage Tower and Rayquaza's scenes.
 scripts use), with its trainers, Pokémon, Battle Point prizes and the Brains read from the decomp's tables by
 `tools/lib/hoenn-frontier.js`. The challenge fights with copies of the Pokémon you register (set to Lv. 50, or your
 own level in Open Level mode); your real party is never touched. Built: the Battle Tower (singles, doubles, and multis with
-a partner), Factory (the rental and swap screens are menus), Arena (three-turn bouts, no switching, and the
+a partner), Factory (its rental screen, six to choose three from with a Summary of each, and its swap screen after a
+win: `ui/hoenn-frontier-screens.js`), Arena (three-turn bouts, no switching, and the
 referee's judgment on Mind, Skill and Body when both still stand, Emerald's points: `engine/battle.js` `arenaJudge`, the
 judgment window on the battle screen; the Verdanturf tent judges too), Palace (each Pokémon picks its own move by
-its nature's odds, Emerald's tables, or can't bring itself to; the Fallarbor tent too), Dome (a 16-trainer bracket read out as text), Pike
+its nature's odds, Emerald's tables, or can't bring itself to; the Fallarbor tent too), Dome (a 16-trainer tourney, its tree
+drawn as Emerald lays it out, the winners' lines marked and each trainer's Pokémon under it), Pike
 (doors, hints, statuses, healing rooms and the hall of wild Pokémon), the Slateport, Verdanturf and Fallarbor tents, the
 Battle Pyramid, the Brains' Silver and Gold Symbols, Battle Points and the exchange shops. The Pyramid builds each of its
 seven dark floors from the decomp's squares and templates (`ui/hoenn-pyramid.js`), with your party and a two-item
