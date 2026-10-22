@@ -1886,6 +1886,8 @@ taking the pokeemerald checkout as their argument and all safe to run again:
 - `tools/build-hoenn-audio.js` renders Emerald's songs and jingles with the same M4A engine as
   the rest (`assets/audio/hoenn-music.js`, songs named `em_*`; in Hoenn `mus_x` plays `em_x`).
 - `tools/build-hoenn-items.js` adds Emerald's key items and mails.
+- `tools/build-emerald-credits.js` draws the credits' rides, riders, scenery and THE END
+  (`graphics/intro/scene_2/`, `graphics/credits/`, `graphics/starter_choose/`) into `assets/credits/emerald/`.
 - `tools/lib/hoenn-town-map.js` draws Emerald's Town Map; Fly lands outside each town's Center.
 
 Emerald's event scripts (`tools/lib/emerald-script.js`) are compiled to JSON and run by an
@@ -1901,7 +1903,16 @@ you to the last Center or your bedroom.
 
 Also in: Dive (A on deep water, with the Mind Badge; Underwater maps with Emerald's diving sprite and
 seaweed encounters), the move tutors, the Move Deleter and Relearner, in-game trades, the legendary and
-Regi battles, the Mt. Chimney cable car and the Hall of Fame (the team on record, then home; no Emerald credits).
+Regi battles, the Mt. Chimney cable car and the Hall of Fame (the team on record, then Emerald's credits, then home).
+
+Emerald's credits (`ui/hall-of-fame.js`, pictures from `tools/build-emerald-credits.js` into
+`assets/credits/emerald/`): you bike through Hoenn as the 57 pages roll (16 apart, titles in yellow,
+a page every 147 frames as Task_UpdatePage times it), along the sea by morning and at sunset,
+through the forest at sunset, where your rival overtakes you and then you catch them up, and
+through town at night with its windows blinking, the scenery drifting past at Emerald's speeds and
+the ground bobbing under you; between the rides, on Prof. Birch's grass, 71 slides of the Pokémon
+you caught (a random order, your starter last, each sliding out onto its coloured square); then
+you both ride off, the long dark, and THE END, drawn from its letter tiles. Start or B skips it.
 
 Also: berry trees (Hoenn's own growth stages and mulch; picking from one is the Berry Pouch's game, as in Kanto's
 forests, and the Berry Pouch works in Petalburg Woods: the farming level counts there too), weather, your own secret base with its decorations,
@@ -1925,6 +1936,12 @@ it brings a prize with the Battle Points (Emerald picks one, a vitamin, or past 
 but its scripts never hand it over; this game does). Challenges are saved and resumed through the game's own save; for the bots that
 play-test them, `HOENN_FORCE_WIN = "won"` or `"lost"` (with `HOENN_DEBUG`) settles each battle at once.
 
+Recorded battles, as Emerald keeps them: every Frontier battle is recorded as it's fought (the engine's seed and
+each side's choices, `ui/battle-screen.js`), the lobby attendant offers to save the last one on your Frontier Pass
+(`frontier_savebattle`: one record, the newest), and the Pass, which takes your name's place on the Start menu once
+Scott's gate has issued it, shows your Battle Points, Symbols and Trainer Card and plays the recorded battle back:
+the same battle from the same seed, choice for choice.
+
 **Contests** at Lilycove run the contest halls' scripts over a simplified engine (`ui/hoenn-contest.js`: the 95 contestants,
 353 moves, appeal and jam, five rounds, and the ribbons). A Pokémon's conditions are a little from its stats and what
 the **Pokéblocks** it's eaten gave it (`ui/hoenn-pokeblock.js`: Emerald's arithmetic, spicy for Cool, dry for Beauty,
@@ -1936,8 +1953,8 @@ odds; the best speed reached and the berries put in, theirs by Emerald's sets, m
 Emerald works them out); Lilycove's Pokémon Center lady takes one for her Pokémon. (Emerald's Contests have no dressing
 room; that's a later generation's.)
 
-Not built: recorded battles, e-Reader,
-Link and wireless features, the Apprentice, the fan club and Emerald's credits.
+Not built: the e-Reader and Link and wireless features (hardware; the Record Corner, Union Room, mixing records
+and the Battle Tower's link modes have no counterpart here), the Apprentice and the fan club.
 
 **The Safari Zone** (Route 121's) is Emerald's own: its six areas and rest house (`HoennSafariZone_*`, named apart
 from Kanto's), its gate's scripts (₽500 and the Pokéblock Case to go in, 30 Safari Balls, 500 steps), its battles

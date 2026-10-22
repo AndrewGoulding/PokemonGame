@@ -535,5 +535,352 @@
     g.fillStyle = "#000"; g.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  window.HallOfFame = { recordFlash, show, pc, credits, CREDITS, SCRIPT };
+  // ---------- Emerald's credits (pokeemerald's src/credits.c) ----------
+  // You bike through Hoenn while the names roll: along the sea in the morning and at sunset, through
+  // the forest at sunset (where your rival catches you up, then you catch them up), and through town at
+  // night; between the rides, the Pokémon you caught (71 slides, your starter the last) on Prof.
+  // Birch's grass. The pages (data/credits.h: [isTitle, text] a line, 16 apart from row 77, centred):
+  // nine scenes, one every sixth page. The pictures: assets/credits/emerald (tools/build-emerald-credits.js).
+  const EMERALD_PAGES = [
+    [[1, "POKéMON EMERALD VERSION"], [1, "Credits"]],
+    [[1, "Director"], [0, "Shigeki Morimoto"]],
+    [[1, "Art Director"], [0, "Ken Sugimori"]],
+    [[1, "World Director"], [0, "Junichi Masuda"]],
+    [[1, "Lead Programmer"], [0, "Hisashi Sogabe"], [1, "Lead Graphic Artist"], [0, "Motofumi Fujiwara"]],
+    [[1, "Programmers"], [0, "Hisashi Sogabe"], [0, "Tomomichi Ohta"], [0, "Nozomu Saito"]],
+    [[1, "Programmers"], [0, "Akito Mori"], [0, "Hiroyuki Nakamura"], [0, "Masao Taya"]],
+    [[1, "Programmers"], [0, "Satoshi Nohara"], [0, "Miyuki Iwasawa"], [0, "Yoshinori Matsuda"], [0, "Keita Kagaya"]],
+    [[1, "Programmers"], [0, "Tetsuya Watanabe"], [0, "Sosuke Tamada"], [0, "Takenori Ohta"]],
+    [[1, "Graphic Designers"], [0, "Motofumi Fujiwara"], [0, "Satoshi Ohta"]],
+    [[1, "Graphic Designers"], [0, "Kenkichi Toyama"], [0, "Asuka Iwashita"], [0, "Takao Unno"]],
+    [[1, "Graphic Designers"], [0, "Ken Sugimori"], [0, "Hironobu Yoshida"], [0, "Aimi Tomita"], [0, "Kanako Eo"]],
+    [[1, "Music Composition"], [0, "Go Ichinose"], [0, "Junichi Masuda"], [0, "Morikazu Aoki"], [0, "Hitomi Sato"]],
+    [[1, "Sound Effects & POKéMON Voices"], [0, "Go Ichinose"], [0, "Morikazu Aoki"]],
+    [[1, "Game Designers"], [0, "Shigeki Morimoto"], [0, "Teruyuki Shimoyamada"], [0, "Takeshi Kawachimaru"], [0, "Akihito Tomisawa"]],
+    [[1, "Game Designers"], [0, "Suguru Nakatsui"], [0, "Tetsuji Ohta"], [0, "Hitomi Sato"], [0, "Kenji Matsushima"]],
+    [[1, "Game Designers"], [0, "Junichi Masuda"], [0, "Koji Nishino"], [0, "Shigeru Ohmori"], [0, "Tadashi Takahashi"]],
+    [[1, "Scenario Plot"], [0, "Akihito Tomisawa"], [0, "Junichi Masuda"], [0, "Koji Nishino"]],
+    [[1, "Scenario"], [0, "Akihito Tomisawa"], [0, "Hitomi Sato"], [0, "Toshinobu Matsumiya"]],
+    [[1, "Script Designers"], [0, "Tomomichi Ohta"], [0, "Satoshi Nohara"]],
+    [[1, "Map Designers"], [0, "Suguru Nakatsui"], [0, "Teruyuki Shimoyamada"], [0, "Shigeru Ohmori"], [0, "Tetsuji Ohta"]],
+    [[1, "Battle Frontier Data"], [0, "Tetsuji Ohta"]],
+    [[1, "Parametric Designers"], [0, "Teruyuki Shimoyamada"], [0, "Shigeki Morimoto"], [0, "Tetsuji Ohta"], [0, "Koji Nishino"]],
+    [[1, "POKéDEX Text"], [0, "Kenji Matsushima"]],
+    [[1, "Environment & Tool Programmers"], [0, "Hisashi Sogabe"], [0, "Sosuke Tamada"], [0, "Hiroyuki Nakamura"], [0, "Akito Mori"]],
+    [[1, "POKéMON Designers"], [0, "Ken Sugimori"], [0, "Motofumi Fujiwara"], [0, "Shigeki Morimoto"]],
+    [[1, "POKéMON Designers"], [0, "Hironobu Yoshida"], [0, "Satoshi Ohta"], [0, "Asuka Iwashita"]],
+    [[1, "POKéMON Designers"], [0, "Takao Unno"], [0, "Kanako Eo"], [0, "Aimi Tomita"]],
+    [[1, "POKéMON Designers"], [0, "Atsuko Nishida"], [0, "Muneo Saito"], [0, "Rena Yoshikawa"], [0, "Jun Okutani"]],
+    [[1, "Support Programmers"], [0, "Satoshi Mitsuhara"], [0, "Daisuke Hoshino"]],
+    [[1, "NCL Product Testing"], [0, "NCL Super Mario Club"]],
+    [[1, "Package & Manual Illustration"], [0, "Ken Sugimori"]],
+    [[1, "Special Thanks"], [0, "Kenji Tominaga"], [0, "Hiroki Enomoto"]],
+    [[1, "Special Thanks"], [0, "Kazuya Suyama"], [0, "Kenjiro Ito"], [0, "Michiko Takizawa"], [0, "Makiko Takada"]],
+    [[1, "Special Thanks"], [0, "Mikiko Ohhashi"], [0, "Takanao Kondo"], [0, "Rui Kawaguchi"]],
+    [[1, "Special Thanks"], [0, "Takahiro Ohnishi"], [0, "Norihide Okamura"], [0, "Shunsuke Kohori"]],
+    [[1, "Information Supervisors"], [0, "Kazuyuki Terada"], [0, "Yuri Sakurai"], [0, "Yumi Funasaka"], [0, "Naoko Yanase"]],
+    [[1, "Artwork"], [0, "Sachiko Nakamichi"], [0, "Fujiko Nomura"]],
+    [[1, "Artwork"], [0, "Hideyuki Nakajima"], [0, "Hidenori Saeki"]],
+    [[1, "Artwork"], [0, "Yoko Watanabe"], [0, "Sakae Kimura"], [0, "Chiaki Shinkai"]],
+    [[1, "Coordinators"], [0, "Kazuki Yoshihara"], [0, "Akira Kinashi"], [0, "Retsuji Nomoto"]],
+    [[1, "English Version Coordinators"], [0, "Hiro Nakamura"], [0, "Seth McMahill"]],
+    [[1, "Translator"], [0, "Nob Ogasawara"]],
+    [[1, "Text Editor"], [0, "Teresa Lillygren"]],
+    [[1, "NCL Coordinator"], [0, "Kimiko Nakamichi"]],
+    [[1, "Programmers"], [0, "Teruki Murakawa"], [0, "Souichi Yamamoto"], [0, "Yuichiro Ito"], [0, "Akira Kinashi"]],
+    [[1, "Graphic Designer"], [0, "Akira Kinashi"]],
+    [[1, "Environment & Tool Programmers"], [0, "Teruki Murakawa"], [0, "Souichi Yamamoto"], [0, "Kimiko Nakamichi"]],
+    [[1, "NOA Product Testing"], [0, "Thomas Hertzog"], [0, "Erik Johnson"], [0, "Mika Kurosawa"]],
+    [[1, "Braille Code Check"], [0, "National Federation of the Blind"], [0, "Patricia A. Maurer"], [0, "Japan Braille Library"], [0, "European Blind Union"]],
+    [[1, "Braille Code Check"], [0, "Australian Braille Authority"], [0, "Royal New Zealand Federation for the Blind"]],
+    [[1, "Special Thanks"], [0, "Hiroyuki Uesugi"], [0, "Motoyasu Tojima"], [0, "Nicola Pratt-Barlow"], [0, "Shellie Dow"]],
+    [[1, "Task Managers"], [0, "Azusa Tajima"], [0, "Shusaku Egami"]],
+    [[1, "Producers"], [0, "Hiroyuki Jinnai"], [0, "Hitoshi Yamagami"], [0, "Gakuji Nomoto"], [0, "Hiroaki Tsuru"]],
+    [[1, "Executive Director"], [0, "Satoshi Tajiri"]],
+    [[1, "Executive Producers"], [0, "Satoru Iwata"]],
+    [[1, "Executive Producers"], [0, "Tsunekaz Ishihara"]]
+  ];
+  // (sCredits_Pal: a title is light yellow on red, a name white on gray; the words fade from the
+  // scene's green, COLOR_LIGHT_GREEN on the rides and COLOR_DARK_GREEN among the Pokémon.)
+  const EM_TITLE = [[255, 230, 123], [255, 82, 41]], EM_NAME = [[255, 255, 255], [164, 164, 164]];
+  const EM_LIGHT_GREEN = [107, 165, 99], EM_DARK_GREEN = [57, 90, 49];
+  const EM_SCENES = ["oceanMorning", "oceanSunset", "forestArrive", "forestCatch", "cityNight"];
+  // Each ride: its sky (two where Emerald cycles two palette colours), grass, what drifts past, and
+  // where you and your rival start (LoadBikeScene): off the right edge is 272, off the left -32.
+  const EM_RIDES = {
+    oceanMorning: { sky: ["sky-day-a", "sky-day-b"], grass: "grass-day", scenery: "clouds-day", me: 272, rival: 272 },
+    oceanSunset: { sky: ["sky-sunset-a", "sky-sunset-b"], grass: "grass-sunset", scenery: "clouds-sunset", me: 120, rival: 272 },
+    forestArrive: { sky: ["forest-sunset"], grass: "grass-sunset", scenery: "trees", vertical: true, me: 120, rival: 272, sinIdx: 69 },
+    forestCatch: { sky: ["forest-sunset"], grass: "grass-sunset", scenery: "trees", vertical: true, me: 120, rival: -32 },
+    cityNight: { sky: ["town-night-a", "town-night-b"], grass: "grass-night", scenery: "houses", vertical: true, me: 88, rival: 152 }
+  };
+  // (sSpriteMetadata_Clouds/Trees/HouseSilhouette: picture, x, y, how far it drifts a frame in 1/65536 px.)
+  const EM_SCENERY = {
+    "clouds-day": [[0, 72, 32, 0xc00], [0, 158, 32, 0xc00], [1, 192, 40, 0x800], [1, 56, 40, 0x800], [2, 100, 44, 0x400], [2, 152, 44, 0x400], [3, 8, 46, 0x100], [3, 56, 46, 0x100], [3, 240, 46, 0x100]],
+    trees: [[0, 16, 88, 0x2000], [0, 80, 88, 0x2000], [0, 144, 88, 0x2000], [0, 208, 88, 0x2000], [1, 40, 88, 0x1000], [1, 104, 88, 0x1000], [1, 168, 88, 0x1000], [1, 232, 88, 0x1000],
+      [2, 56, 88, 0x800], [2, 120, 88, 0x800], [2, 184, 88, 0x800], [2, 248, 88, 0x800]],
+    houses: [0, 1, 2, 3, 4, 5].map((i) => ["house", 24 + i * 40, 88, 0x1000])
+  };
+  EM_SCENERY["clouds-sunset"] = EM_SCENERY["clouds-day"];
+  // The riders' animations (sAnims_Player, sAnims_Rival): frames of the sheet and how long each holds; a
+  // loop, or the last frame kept.
+  const EM_ANIMS = {
+    slow: { frames: [[0, 8], [1, 8], [2, 8], [3, 8]], loop: true }, fast: { frames: [[0, 4], [1, 4], [2, 4], [3, 4]], loop: true },
+    lookBack: { frames: [[4, 4], [5, 4], [6, 4]] }, lookForward: { frames: [[6, 30], [5, 30], [4, 30], [4, 30]] }, still: { frames: [[0, 4]] }
+  };
+  const EM_MON_POS = [[104, 36], [120, 36], [136, 36]], EM_MON_BG = [[255, 255, 164], [255, 164, 164], [164, 164, 255]];
+  const EM_MON_SLIDES = 71;
+  const gbaSin = (i, amp) => Math.round(Math.sin((i & 0xff) * Math.PI / 128) * amp);
+
+  // DeterminePokemonToShow: the Pokémon caught, in a random order, 71 of them (round again if there are
+  // fewer), the starter last.
+  function emeraldSlides(caught, starter, rng) {
+    const pool = caught.slice(), picked = [];
+    while (pool.length && picked.length < EM_MON_SLIDES) picked.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
+    if (!picked.length) picked.push(starter);
+    const n = picked.length;
+    for (let i = n; i < EM_MON_SLIDES; i++) picked.push(picked[(i - n) % n]);
+    const at = picked.indexOf(starter);
+    if (n >= EM_MON_SLIDES && at >= 0 && at < n - 1) picked[at] = picked[EM_MON_SLIDES - 1];
+    picked[EM_MON_SLIDES - 1] = starter;
+    return picked;
+  }
+
+  async function hoennCredits(canvas, opts) {
+    canvas.classList.remove("hidden");
+    const keys = input(), L = Layer(), rng = opts.rng || Math.random;
+    let skip = false;
+    const tick = async () => {
+      await nextFrame();
+      for (const k of keys.take()) if (opts.skippable && (k === "start" || k === "b")) skip = true;
+    };
+    const A = (n) => image("assets/credits/emerald/" + n + ".png");
+    const me = opts.girl ? "may" : "brendan", rival = opts.girl ? "brendan" : "may";
+    await Promise.all(["sky-day-a", "sky-day-b", "sky-sunset-a", "sky-sunset-b", "forest-sunset", "town-night-a", "town-night-b", "grass-day", "grass-sunset", "grass-night",
+      "birch-grass", "the-end", "brendan", "may", "bicycle-brendan", "bicycle-may", "house", "trees-0", "trees-1", "trees-2"]
+      .concat([0, 1, 2, 3].flatMap((i) => ["clouds-day-" + i, "clouds-sunset-" + i])).map((n) => A(n).loaded));
+    const slides = emeraldSlides(opts.caught || [], opts.starter || "Treecko", rng);
+    const monPics = {};
+    const monPic = (species) => monPics[species] || (monPics[species] = image(Screen.spriteUrl(species, "", false, false)));
+    slides.slice(0, 8).forEach(monPic);
+
+    let frame = 0, mode = "bike", nextMode = null, sceneNum = 0, endCredits = false;
+    // The words: the page task (Task_UpdatePage).
+    const page = { state: 0, delay: 0, cur: 0, lines: null, fade: 16, printed: false, changed: false };
+    // The ride (Task_BikeScene and the sprites): the scene's bob, the riders and the scenery.
+    let ride = null, bob = 0, bg1 = 0, bg3 = 8 * 65536, scenery = [], riders = null;
+    const anim = (who, name) => { if (who.anim !== name) { who.anim = name; who.t = 0; } };
+    const animFrame = (who) => {
+      const a = EM_ANIMS[who.anim], total = a.frames.reduce((s, f) => s + f[1], 0);
+      let t = a.loop ? who.t % total : Math.min(who.t, total - 1);
+      for (const [f, n] of a.frames) { if (t < n) return f; t -= n; }
+      return a.frames[a.frames.length - 1][0];
+    };
+    const loadRide = (key) => {
+      const r = EM_RIDES[key];
+      ride = Object.assign({ key, state: 0, sinIdx: r.sinIdx || 0, delay: 0, timer: 0 }, r);
+      bob = 0; bg1 = 0; bg3 = 8 * 65536;
+      scenery = EM_SCENERY[r.scenery].map(([pic, x, y, xOff]) => ({ img: A(typeof pic === "number" ? r.scenery + "-" + pic : pic), x: x * 65536, y, xOff }));
+      riders = { me: { x: r.me, y: 46, y2: 0, state: 0, anim: "slow", t: 0, t7: 0 }, rival: { x: r.rival, y: 46, y2: 0, state: 0, anim: "slow", t: 0, t7: 0 } };
+    };
+    // The Pokémon interlude (Task_ShowMons): a slide every 51 frames, three positions in turn.
+    const mons = { state: 1, delay: 0, counter: 0, shown: 0, nextPos: 0, sprites: [] };
+
+    const stepRide = () => {
+      const b = ride, m = riders.me, v = riders.rival;
+      // Task_BikeScene.
+      switch (b.state) {
+        case 0: bob = gbaSin(b.sinIdx >> 1, 12); b.sinIdx++; break;
+        case 1: if (bob !== 0) { bob = gbaSin(b.sinIdx >> 1, 12); b.sinIdx++; } else { m.state = 2; b.sinIdx = 0; b.state++; } break;
+        case 2: if (b.sinIdx < 64) { b.sinIdx++; bob = gbaSin(b.sinIdx, 20); } else b.state++; break;
+        case 3: m.state = 3; v.state = 1; b.delay = 120; b.state++; break;
+        case 4: if (b.delay) b.delay--; else { b.sinIdx = 64; b.state++; } break;
+        case 5: if (b.sinIdx > 0) { b.sinIdx--; bob = gbaSin(b.sinIdx, 20); } else { m.state = 1; b.state++; } break;
+        case 6: b.state = 50; break;
+        case 10: v.state = 2; b.state = 50; break;
+        case 20: m.state = 4; b.state = 50; break;
+        case 30: m.state = 5; v.state = 3; b.state = 50; break;
+        case 50: b.state = 0; break;
+      }
+      // Task_CycleSceneryPalette: what sets the riders off in each scene.
+      if (b.timer !== -1) {
+        if (b.key === "oceanMorning" && page.cur === 2) { b.state = 20; b.timer = -1; }
+        else if (b.key === "forestArrive" && (b.sinIdx & -128) === 640) { b.state = 1; b.timer = -1; }
+        else if (b.key === "forestCatch") { if (b.timer === 584) { b.state = 10; b.timer = -1; } else b.timer++; }
+      }
+      // SpriteCB_Player.
+      switch (m.state) {
+        case 0: anim(m, "slow"); break;
+        case 1: anim(m, "fast"); if (m.x > -32) m.x--; break;
+        case 2: anim(m, "lookBack"); break;
+        case 3: anim(m, "lookForward"); break;
+        case 4: anim(m, "slow"); if (m.x > 120) m.x--; break;
+        case 5: anim(m, "slow"); if (m.x > -32) m.x--; break;
+      }
+      // SpriteCB_Rival.
+      switch (v.state) {
+        case 0: v.y2 = 0; anim(v, "slow"); break;
+        case 1: anim(v, v.x > 200 ? "fast" : "still"); if (v.x > -32) v.x -= 2; v.y2 = -bob; break;
+        case 2: v.t7++; anim(v, "slow"); if ((v.t7 & 3) === 0) v.x++; break;
+        case 3: anim(v, "slow"); if (v.x > -32) v.x--; break;
+      }
+      m.t++; v.t++;
+      // The scenery drifting by (SpriteCB_MovingScenery) and the backgrounds (Task_BicycleBgAnimation).
+      for (const s of scenery) { s.x += s.xOff; if ((s.x >> 16) > 255) s.x = -32 * 65536; }
+      bg1 -= 0x2000 << 4; bg3 -= 8 << 4;
+    };
+    const stepMons = () => {
+      switch (mons.state) {
+        case 1: if (!(mons.nextPos === 0 && !page.printed)) mons.state++; break;
+        case 2: {
+          if (mons.counter === EM_MON_SLIDES) break;
+          const species = slides[mons.shown], [x, y] = EM_MON_POS[mons.nextPos];
+          const sp = { species, pic: monPic(species), pos: mons.nextPos, x, y, scale: 16, state: 0, hold: 50, alpha: 16, t7: 0 };
+          if (mons.shown < EM_MON_SLIDES - 1) mons.shown++; else { mons.shown = 0; sp.hold = 512; }
+          mons.counter++;
+          mons.nextPos = mons.nextPos === 2 ? 0 : mons.nextPos + 1;
+          mons.sprites.push(sp);
+          if (slides[mons.shown + 1]) monPic(slides[mons.shown + 1]);
+          mons.delay = 50; mons.state++;
+          break;
+        }
+        case 3: if (mons.delay) mons.delay--; else mons.state = 1; break;
+      }
+      // SpriteCB_CreditsMon: out small, growing as it slides to its side, a while, then fading.
+      for (const sp of mons.sprites) {
+        sp.t7++;
+        if (sp.state === 0) { sp.scale = 16; sp.state = 1; }
+        else if (sp.state === 1) {
+          if (sp.scale < 256) sp.scale += 8; else sp.state = 2;
+          if (sp.pos === 0) { if ((sp.t7 & 3) === 0) sp.y++; sp.x -= 2; }
+          if (sp.pos === 2) { if ((sp.t7 & 3) === 0) sp.y++; sp.x += 2; }
+        } else if (sp.state === 2) { if (sp.hold) sp.hold--; else sp.state = 3; }
+        else if (sp.state === 3) { if (sp.alpha) sp.alpha--; else sp.state = 9; }
+      }
+      mons.sprites = mons.sprites.filter((sp) => sp.state !== 9);
+    };
+    // CheckChangeScene: one every sixth page, a Pokémon interlude and a ride by turns.
+    const checkChangeScene = (p) => {
+      const interval = Math.floor(EMERALD_PAGES.length / 9);
+      if (p === interval * 1 || p === interval * 3 || p === interval * 5 || p === interval * 7) nextMode = "mons";
+      if (p === interval * 2) { sceneNum = 1; nextMode = "bike"; }
+      if (p === interval * 4) { sceneNum = 2; nextMode = "bike"; }
+      if (p === interval * 6) { sceneNum = 3; nextMode = "bike"; }
+      if (p === interval * 8) { sceneNum = 4; nextMode = "bike"; }
+      return !!nextMode;
+    };
+    const stepPage = () => {
+      switch (page.state) {
+        case 0: page.delay = 72; page.printed = false; page.state = 1; break;
+        case 1: if (page.delay) page.delay--; else page.state = 2; break;
+        case 2:
+          if (page.cur < EMERALD_PAGES.length) { page.lines = EMERALD_PAGES[page.cur++]; page.printed = true; page.fade = 16; page.state = 3; }
+          else { endCredits = true; page.state = 10; }
+          break;
+        case 3: if (page.fade > 0) page.fade--; else { page.delay = 115; page.state = 4; } break;
+        case 4:
+          if (page.delay) { page.delay--; break; }
+          page.changed = checkChangeScene(page.cur);
+          page.state = 5;
+          break;
+        case 5:
+          if (page.changed) { page.lines = null; page.state = 2; page.changed = false; break; }
+          if (page.fade < 16) page.fade++; else { page.lines = null; page.state = 2; }
+          break;
+      }
+    };
+
+    const step = () => { frame++; if (mode === "bike") stepRide(); else stepMons(); };
+    const draw = (fade) => {
+      const g = L.g;
+      g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
+      if (mode === "bike") {
+        const sky = A(ride.sky[ride.sky.length > 1 && (frame & 4) ? 1 : 0]), grass = A(ride.grass);
+        const h3 = (((-(bg3 >> 16)) % 256) + 256) % 256, v3 = 34;
+        for (let x = h3 - 256; x < W; x += 256) if (ok(sky)) g.drawImage(sky, x, -v3);
+        for (const s of scenery) {
+          const img = s.img; if (!ok(img)) continue;
+          const y2 = -(34 + (ride.vertical ? bob : 0));
+          g.drawImage(img, (s.x >> 16) - img.naturalWidth / 2, s.y + y2 - img.naturalHeight / 2);
+        }
+        const h1 = (((-(bg1 >> 16)) % 256) + 256) % 256, v1 = 34 + bob;
+        for (let x = h1 - 256; x < W; x += 256) if (ok(grass)) g.drawImage(grass, x, -v1);
+        for (const [who, sheet] of [[riders.rival, rival], [riders.me, me]]) {
+          const pic = A(sheet), bike = A("bicycle-" + sheet);
+          if (ok(bike)) g.drawImage(bike, 0, (Math.floor(frame / 8) % 4) * 32, 64, 32, who.x - 32, who.y + 8 + who.y2 - 16, 64, 32);
+          if (ok(pic)) g.drawImage(pic, 0, animFrame(who) * 64, 64, 64, who.x - 32, who.y + who.y2 - 32, 64, 64);
+        }
+      } else {
+        const grass = A("birch-grass");
+        if (ok(grass)) { g.drawImage(grass, 0, -32); g.drawImage(grass, 0, 224); }
+        for (const sp of mons.sprites) {
+          const k = sp.scale / 256, size = 64 * k;
+          g.save();
+          g.globalAlpha = sp.alpha / 16;
+          const c = EM_MON_BG[sp.pos];
+          g.fillStyle = "rgb(" + c.join(",") + ")"; g.fillRect(sp.x - size / 2, sp.y - size / 2, size, size);
+          // (Emerald's 64x64 pictures fill their square; this game's 96x96 ones have margins, so they're drawn a little over it.)
+          const pw = 88 * k;
+          if (ok(sp.pic)) g.drawImage(sp.pic, sp.x - pw / 2, sp.y - pw / 2 + 4 * k, pw, pw);
+          g.restore();
+        }
+      }
+      present(canvas, L, (s) => {
+        if (!page.lines) return;
+        const green = mode === "bike" ? EM_LIGHT_GREEN : EM_DARK_GREEN;
+        const toward = (c) => c.map((v, i) => Math.round(v + (green[i] - v) * page.fade / 16));
+        page.lines.forEach(([title, text], i) => {
+          const [fg, sh] = title ? EM_TITLE : EM_NAME;
+          s.text(text, Math.floor((W - (s.textWidth(text) + text.length)) / 2), 77 + i * 16, toward(fg), toward(sh), undefined, undefined, 1);
+        });
+      }, fade);
+    };
+    const fadeScreen = async (from, to, delay) => {
+      const st = from < to ? 1 : -1;
+      for (let f = from; f !== to + st && !skip; f += st) for (let d = 0; d <= (delay || 0) && !skip; d++) { step(); draw(f); await tick(); }
+    };
+
+    try {
+      if (opts.music) opts.music("em_credits");
+      loadRide("oceanMorning");
+      ride.state = 40;   // (the first ride waits for you: you ride in at the second page)
+      await fadeScreen(16, 0);
+      while (!skip && !endCredits) {
+        step(); stepPage();
+        if (nextMode) {
+          // (Task_CreditsMain: a change of scene, through black.)
+          page.lines = null; page.printed = false;
+          await fadeScreen(0, 16);
+          const next = nextMode; nextMode = null;
+          if (next === "bike") loadRide(EM_SCENES[sceneNum]);
+          else { mons.state = 1; mons.delay = 0; mons.nextPos = 0; mons.sprites = []; }
+          mode = next;
+          await fadeScreen(16, 0);
+          continue;
+        }
+        draw(); await tick();
+      }
+      if (!skip) {
+        // THE END (Task_CreditsTheEnd1..6): you both ride off, the long dark, the words.
+        ride.state = 30;
+        for (let t = 0; t < 256 && !skip; t++) { step(); draw(); await tick(); }
+        await fadeScreen(0, 16, 12);
+        for (let t = 0; t < 144 + 235 + 112 && !skip; t++) { draw(16); await tick(); }
+        const end = A("the-end");
+        const drawEnd = (fade) => { L.g.fillStyle = "#000"; L.g.fillRect(0, 0, W, H); if (ok(end)) L.g.drawImage(end, 0, 0); present(canvas, L, null, fade); };
+        for (let t = 0; t < 7200 && !skip; t++) {
+          if (t === 56 && opts.music) opts.music(null);
+          if (t === 360 && opts.music) opts.music("em_end");
+          drawEnd(); await nextFrame();
+          if (keys.take().some((k) => k === "a" || k === "start" || k === "b")) break;
+        }
+      }
+    } finally { keys.close(); }
+    if (opts.music) opts.music(null);
+    const g = canvas.getContext("2d");
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.fillStyle = "#000"; g.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  window.HallOfFame = { recordFlash, show, pc, credits, hoennCredits, emeraldSlides, CREDITS, SCRIPT, EMERALD_PAGES };
 })();

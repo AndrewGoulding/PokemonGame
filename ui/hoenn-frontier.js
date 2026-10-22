@@ -213,7 +213,7 @@
           const d = need(api, a[0]), f = fac();
           const bits = [[1, 2], [4, 8], [16, 32], [64, 128], [256, 512], [1024, 2048], [4096, 8192]][f], sym = Math.min(1, symbols(f));
           const r = d === 0 ? s.status : d === 1 ? s.lvl : d === 2 ? s.num : d === 3 ? s.paused : d === 5 ? (() => { const o = s.outcome; s.outcome = 0; return o; })()
-            : d === 6 ? 1 : d === 7 ? (s.brain & bits[sym] ? 1 : 0) : 0;
+            : d === 6 ? s.noRecord : d === 7 ? (s.brain & bits[sym] ? 1 : 0) : 0;
           api.setVar("VAR_RESULT", r);
           return true;
         }
@@ -230,9 +230,14 @@
         }
         case "frontier_setpartyorder": if (fac() === FAC.PYRAMID) pyramidParty(need(api, a[0])); else buildTeam(need(api, a[0])); return true;
         case "frontier_reset": await env.softReset(); return true;
-        case "frontier_settrainers": case "frontier_saveparty": case "frontier_checkairshow": case "frontier_resetsketch": case "frontier_savebattle":
-          if (name === "frontier_savebattle") api.setVar("VAR_RESULT", 0);
+        case "frontier_settrainers": case "frontier_saveparty": case "frontier_checkairshow": case "frontier_resetsketch": return true;
+        // (The last battle, onto the Frontier Pass: one record, as Emerald keeps one; played back from the Pass.)
+        case "frontier_savebattle": {
+          const rec = env.lastRecord && env.lastRecord();
+          if (rec && env.saveRecord) { env.saveRecord(Object.assign({ facility: Object.keys(FAC)[fac()], lvl: s.lvl, mode: s.num, streak: s.streak[curKey()] || 0 }, rec)); api.setVar("VAR_RESULT", 1); }
+          else api.setVar("VAR_RESULT", 0);
           return true;
+        }
         case "frontier_results": await results(need(api, a[0]), a.length > 1 ? need(api, a[1]) : 0); return true;
         case "frontier_getbrainstatus": api.setVar("VAR_RESULT", brainStatus()); return true;
         case "frontier_isbrain": api.setVar("VAR_RESULT", s.A && s.A.kind === "brain" ? 1 : 0); return true;
@@ -1063,6 +1068,7 @@
         spec.double = true;
       }
       const outcome = await env.battle(spec);
+      s.noRecord = env.lastRecord && env.lastRecord() ? 0 : 1;   // (FRONTIER_DATA_RECORD_DISABLED: nothing to record unless a battle was fought through)
       s.outcome = outcome === "won" ? 1 : 2;
       api.setVar("VAR_RESULT", s.outcome);
     }

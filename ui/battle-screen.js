@@ -2454,9 +2454,16 @@
   // ---------- Turn flow ----------
 
   // Engine bugs shouldn't freeze the screen: report them and end the battle.
+  // (A recorded battle, Emerald's: every choice taken, in order, with the engine's seed; played
+  // back by feeding them to a battle built the same way: run's cfg.record and cfg.replay.)
+  let recording = null;
+  const RECORD_KEYS = ["p1", "p2", "format", "partnerTrainer", "foeTrainer2", "defeatText2", "ghost", "noCatch", "wild", "weather", "levelCap", "arena", "palace",
+    "trainer", "foeTrainer", "defeatText", "victoryMusic", "terrain"];
   function choose(side, choice) {
     try {
-      return battle.choose(side, choice);
+      const r = battle.choose(side, choice);
+      if (r && r.ok && recording) recording.choices.push([side, JSON.parse(JSON.stringify(choice === undefined ? null : choice))]);
+      return r;
     } catch (e) {
       console.error(e);
       return { ok: false, crashed: true };
@@ -3131,8 +3138,10 @@
       p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, ghost: !!cfg.ghost, noCatch: !!cfg.noCatch, exp: !!cfg.exp, expShare: !!cfg.expShare, catchContext: cfg.catchContext,
       safari: cfg.safari, raid: cfg.raid || 0, raidAllies: cfg.raidAllies || undefined,
       levelCap: cfg.levelCap,   // (the level cap, Player.levelCap: no Exp. past it, and a Pokémon over it may not obey)
+      seed: cfg.seed,   // (a recorded battle played back: the seed it was fought with)
       arena: !!cfg.arena, palace: !!cfg.palace   // (the Battle Arena's judging; the Battle Palace, where Pokémon choose their own moves: engine/battle.js)
     }, cfg.format === "doubles" ? { format: "doubles" } : {}));
+    recording = cfg.record && !cfg.replay ? { seed: battle.seed, choices: [], cfg: JSON.parse(JSON.stringify(Object.fromEntries(RECORD_KEYS.filter((k) => cfg[k] !== undefined).map((k) => [k, cfg[k]])))) } : null;
     // (The Palace: the opponents' Pokémon choose by their natures too.)
     if (cfg.palace) {
       const byNature = (id) => (b) => { const r = b.getRequest(id); return r && r.phase === "move" ? b.palaceChoice(id) : window.OpponentAI.choose(b, id); };
@@ -3182,7 +3191,7 @@
         await playNewEvents();
       }
     }
-    const status = await loop();
+    const status = cfg.replay ? await replayLoop(cfg.replay) : await loop();
     // (A Tera Raid won: the battle goes on, to catch it if you like.)
     const raidBall = status !== "crashed" && cfg.raid && battle.winner === "p1" ? await raidCatch() : null;
     let outcome;
@@ -3206,7 +3215,24 @@
     else outcome = "draw";
     hbStop();
     raidAlliesPanel(null);
-    return { outcome, battle, raidBall };
+    const record = recording;
+    recording = null;
+    return { outcome, battle, raidBall, record };
+  }
+
+  // A recorded battle played back (Emerald's PlayRecordedBattle): the choices as they were made, each
+  // side's in turn, the engine doing the rest the same way from the same seed.
+  async function replayLoop(choices) {
+    let at = 0;
+    for (;;) {
+      await playNewEvents();
+      if (battle.ended) return;
+      if (at >= choices.length) { await message("The recording ends here."); return "ended"; }
+      const [side, choice] = choices[at++];
+      const r = choose(side, choice);
+      if (r.crashed) return "crashed";
+      if (!r.ok) { console.error("replay: " + side + " refused " + JSON.stringify(choice) + ": " + r.error); return "ended"; }
+    }
   }
 
   // After a Tera Raid's Pokémon is beaten (this game's own): still there, worn

@@ -327,6 +327,7 @@
   // and only those are changed by the battle. opts.foe2 = { name, team, pic,
   // defeatText, prizeClass }: a second opposing trainer beside the first.
   // Returns the outcome ("cancelled" when you back out of choosing).
+  let lastRecord = null;   // (the last battle's record, if it was asked for: the Battle Frontier's, for the Frontier Pass)
   async function battle(kind, opts) {
     opts = opts || {};
     const wild = kind === "wild";
@@ -391,6 +392,7 @@
       wild, weather: opts.weather,
       exp: !opts.safari && !opts.noExp, levelCap: Player.levelCap(player),
       arena: !!opts.arena, palace: !!opts.palace,   // (the Battle Frontier's Arena and Palace rules: engine/battle.js)
+      record: !!opts.record,   // (the choices and seed kept, to play it back: a Frontier battle's)
       expShare: expShareOn(),
       trainer: Player.LOOKS[player.look].back,
       foeTrainer: foe.pic, defeatText: opts.defeatText && opts.defeatText.map((p) => fill(p)),
@@ -420,6 +422,7 @@
       }
     });
     const b = result.battle;
+    lastRecord = result.record || null;
     if (opts.raid) opts.raidBall = result.raidBall || null;   // (the Ball its Pokémon was caught in, if it was)
     for (const e of b.events) {
       if (opts.ghost) break;   // (an unidentified Ghost isn't seen)
@@ -2405,6 +2408,34 @@
     retire: "Retire from the Safari Game and return to\nthe registration counter.",
     retirePyramid: "Give up your Battle Pyramid challenge\nand go back to the lobby."
   };
+  // The Frontier Pass (Emerald's frontier_pass.c, as a menu): your Battle Points and Symbols, the Trainer Card, and
+  // the battle recorded on it played back (PlayRecordedBattle): the same battle, the same choices, from the same seed.
+  async function frontierPass() {
+    const s = player.flags.hoennFrontier || {}, rec = player.flags.hoennBattleRecord;
+    const FACS = ["TOWER", "DOME", "PALACE", "ARENA", "FACTORY", "PIKE", "PYRAMID"];
+    const sym = (F) => (hoenn.flag("FLAG_SYS_" + F + "_GOLD") ? "gold" : hoenn.flag("FLAG_SYS_" + F + "_SILVER") ? "silver" : null);
+    const have = FACS.filter(sym).map((F) => F.charAt(0) + F.slice(1).toLowerCase() + " (" + sym(F) + ")");
+    await message("FRONTIER PASS\nBATTLE PTS: " + (s.bp || 0));
+    await message(have.length ? "SYMBOLS: " + have.join(", ") : "No Symbols yet.");
+    if (rec) await message("Recorded: " + rec.cfg.p2.name + " at the " + rec.facility.charAt(0) + rec.facility.slice(1).toLowerCase() + ", Lv. " + (rec.lvl ? "Open" : "50") + ".");
+    const labels = ["TRAINER CARD"].concat(rec ? ["VIEW RECORDED BATTLE"] : []).concat(["CANCEL"]);
+    const i = await multichoice(null, 0, 0, labels);
+    Screen.say("");
+    if (labels[i] === "TRAINER CARD") return trainerCard();
+    if (labels[i] === "VIEW RECORDED BATTLE") await playRecord(rec);
+    return null;
+  }
+  async function playRecord(rec) {
+    music("mus_vs_trainer");
+    show("field");
+    const cfg = JSON.parse(JSON.stringify(rec.cfg));
+    try {
+      await BattleScreen.run(Object.assign(cfg, { replay: rec.choices, seed: rec.seed, exp: false, bag: {}, bagPockets: () => [], opponent: () => null,
+        summary: () => null, forgetMove: () => 0 }));
+    } catch (e) { console.error(e); }
+    show("world");
+    await Overworld.resume();
+  }
   async function startMenu() {
     player.flags.openedMenu = true;   // (FireRed's FLAG_OPENED_START_MENU: the Sign Lady's scene)
     for (;;) {
@@ -2425,7 +2456,10 @@
       if (player.party.length) items.push({ key: "party", label: "Pokémon" });
       if (!contest) items.push({ key: "bag", label: "Bag" });
       if (gear.has()) items.push({ key: "gear", label: "Pokégear" });   // (HGSS's, once you have it: ui/pokegear.js)
-      items.push({ key: "card", label: player.name });
+      // (Emerald's Frontier Pass, once Scott's gate has issued it: it holds the Trainer Card, your Battle Points,
+      // Symbols and the battle recorded on it; opened from your name, as the Trainer Card is.)
+      const pass = isHoenn(player.location.map) && hoenn.flag("FLAG_SYS_FRONTIER_PASS");
+      items.push({ key: "card", label: player.name, help: pass ? "Check your FRONTIER PASS: your Trainer Card,\nBattle Points, Symbols and recorded battle." : undefined });
       if (!safari && !contest) items.push({ key: "save", label: "Save" });
       items.push({ key: "option", label: "Option" }, { key: "exit", label: "Exit" });
       for (const it of items) it.help = it.help || START_HELP[it.key];
@@ -2451,7 +2485,7 @@
       else if (v === "bag") { if ((await bagScreen()) === "escaped") return; }
       else if (v === "dex") await pokedex();
       else if (v === "gear") await gear.open();
-      else if (v === "card") { if ((await trainerCard()) === "battled") return; }
+      else if (v === "card") { if ((await (pass ? frontierPass() : trainerCard())) === "battled") return; }
       else if (v === "option") { await optionScreen(false); continue; }
       else if (v === "save") {
         if (!(await confirm("Would you like to save the game?"))) continue;
@@ -11893,6 +11927,7 @@
     },
     pick: async (title, labels) => { const i = await multichoice(title, 0, 0, labels); Screen.say(""); return i; },
     battle: (spec) => frontierBattle(spec),
+    lastRecord: () => lastRecord, saveRecord: (rec) => { player.flags.hoennBattleRecord = rec; lastRecord = null; },
     bpBox: (on, n) => GbaMenus.fieldWindow("bp", on ? { x: 0, y: 0, amount: n, label: "BP" } : null),
     // (The Factory's rental and swap screens and the Dome's tourney tree: ui/hoenn-frontier-screens.js.)
     factorySelect: async (mons) => { Screen.say(""); const r = await HoennFrontierScreens.factorySelect($("#overlay"), { mons, summary: (i) => summary(i, mons) }); show("world"); await Overworld.resume(); return r; },
@@ -11990,7 +12025,7 @@
     player.party = spec.team;
     let outcome;
     try {
-      const opts = { foe: spec.foe, defeatText: spec.defeatText, double: !!spec.double, noExp: true, noPrize: true, noBlackout: true, noGimmicks: true, arena: !!spec.arena, palace: !!spec.palace };
+      const opts = { foe: spec.foe, defeatText: spec.defeatText, double: !!spec.double, noExp: true, noPrize: true, noBlackout: true, noGimmicks: true, arena: !!spec.arena, palace: !!spec.palace, record: true };
       if (spec.partner) { opts.partner = spec.partner; opts.chosen = spec.team.map((r, i) => i).slice(0, 2); }
       if (spec.foe2) opts.foe2 = spec.foe2;
       outcome = await battle("trainer", opts);
@@ -12307,6 +12342,9 @@
           cry, sfx, music, player: { name: player.name, id: player.trainerId, playTimeMs: player.playTimeMs, pic: Player.LOOKS[player.look].front },
           save: async () => { tick(); Save.write(player); savePromptAt = player.playTimeMs; }
         }).catch((e) => { console.error(e); tick(); Save.write(player); });
+        // Then Emerald's credits: you and your rival biking through Hoenn, the Pokémon you caught between.
+        await HallOfFame.hoennCredits($("#overlay"), { skippable: true, music, girl: isGirl(), caught: player.pokedex.caught.slice(),
+          starter: ["Treecko", "Torchic", "Mudkip"][+api.getVar("VAR_STARTER_MON")] || "Treecko" }).catch((e) => console.error(e));
         $("#overlay").classList.add("hidden");
         show("world");
         await Overworld.teleport({ map: h.map, x: h.x, y: h.y, facing: "down" });

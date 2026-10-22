@@ -6449,6 +6449,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-frontier.js"), "utf8"), { filename: "ui/hoenn-frontier.js" });
   vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-contest.js"), "utf8"), { filename: "ui/hoenn-contest.js" });
   vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-pokeblock.js"), "utf8"), { filename: "ui/hoenn-pokeblock.js" });
+  vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hall-of-fame.js"), "utf8"), { filename: "ui/hall-of-fame.js" });
   const HF = window.HOENN_FRONTIER;
   assert(HF.mons.length === 882 && HF.trainers.length === 300 && HF.banned.length === 9 && HF.brain.length === 7 && HF.tents.slateport.mons.length === 70, "the Frontier's data");
   assert.deepStrictEqual(HF.brainStreaks[0], [35, 70, 35, 1]);
@@ -6668,6 +6669,52 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     assert(sb.choose("p1", { type: "gonear" }).ok && sb.events.some((e) => e[0] === "-safarinear"));
     assert(/name === "EnterSafariMode"/.test(gj) && /HoennSafariZone_/.test(gj) && /runHoenn\("SafariZone_EventScript_RetirePrompt"\)/.test(gj) && /hoennSafari\.nature\(\)/.test(gj), "the game's Safari hooks");
     assert(/labels: hoenn \? \["BALL", "POKéBLOCK", "GO NEAR", "RUN"\]/.test(fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8")), "Emerald's Safari menu");
+    // Emerald's credits (ui/hall-of-fame.js hoennCredits, pictures from tools/build-emerald-credits.js): after Hoenn's Hall of Fame.
+    const hof = fs.readFileSync(path.join(root, "ui/hall-of-fame.js"), "utf8");
+    const pages = JSON.parse(/const EMERALD_PAGES = (\[[\s\S]*?\n  \]);/.exec(hof)[1]);
+    assert(pages.length === 57 && pages[0][0][1] === "POKéMON EMERALD VERSION" && pages[56][1][1] === "Tsunekaz Ishihara" && pages.every((p) => p.length <= 5), "Emerald's 57 credits pages");
+    for (const f of ["sky-day-a", "sky-sunset-b", "forest-sunset", "town-night-a", "grass-night", "birch-grass", "brendan", "may", "bicycle-may", "clouds-sunset-3", "trees-2", "house", "the-end"])
+      assert(fs.existsSync(path.join(root, "assets/credits/emerald", f + ".png")), "credits picture " + f);
+    assert(/case 30: m\.state = 5; v\.state = 3; b\.state = 50; break;/.test(hof) && /b\.key === "forestCatch"\) \{ if \(b\.timer === 584\)/.test(hof) && /Math\.floor\(EMERALD_PAGES\.length \/ 9\)/.test(hof), "Task_BikeScene and CheckChangeScene");
+    assert(/HallOfFame\.hoennCredits\(\$\("#overlay"\), \{ skippable: true, music, girl: isGirl\(\), caught: player\.pokedex\.caught\.slice\(\),/.test(gj), "the credits roll after Hoenn's Hall of Fame");
+    // Recorded battles (Emerald's): the engine plays the same battle again from its seed and the choices made; the Frontier
+    // keeps the last battle's on the Frontier Pass (frontier_savebattle), the Pass on the Start menu plays it back.
+    {
+      const teamRng = mulberry32(4242), team = (n) => RandomTeam.team(n, { level: 50, rng: teamRng, maxGen: 3 });
+      const p1 = { name: "A", team: team(3) }, p2 = { name: "B", team: team(3) };
+      const first = new Battle({ seed: 777, p1, p2 }), rng = mulberry32(9), choices = [];
+      first.start();
+      for (let step = 0; step < 3000 && !first.ended; step++) {
+        for (const id of ["p1", "p2"]) {
+          const req = first.getRequest(id);
+          if (req.phase !== "move" && req.phase !== "switch") continue;
+          const c = OpponentAI.choose(first, id, rng);
+          assert(first.choose(id, c).ok);
+          choices.push([id, JSON.parse(JSON.stringify(c))]);
+        }
+      }
+      assert(first.ended && choices.length > 2, "the recorded battle finished");
+      const again = new Battle({ seed: 777, p1, p2 });
+      again.start();
+      for (const [id, c] of choices) assert(again.choose(id, c).ok, "the replay took every choice");
+      assert(again.ended && again.winner === first.winner, "the replay ends as the battle did");
+      assert.deepStrictEqual(again.events.map((e) => e[0]), first.events.map((e) => e[0]), "the replay's events are the battle's");
+    }
+    const bs = fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8"), hf = fs.readFileSync(path.join(root, "ui/hoenn-frontier.js"), "utf8");
+    assert(/if \(r && r\.ok && recording\) recording\.choices\.push\(\[side, /.test(bs) && /seed: cfg\.seed,/.test(bs) && /cfg\.replay \? await replayLoop\(cfg\.replay\) : await loop\(\)/.test(bs)
+      && /return \{ outcome, battle, raidBall, record \};/.test(bs), "the battle screen records and replays");
+    assert(/case "frontier_savebattle": \{\s*const rec = env\.lastRecord && env\.lastRecord\(\);/.test(hf) && /d === 6 \? s\.noRecord/.test(hf) && /s\.noRecord = env\.lastRecord && env\.lastRecord\(\) \? 0 : 1;/.test(hf), "the Frontier saves the last battle");
+    assert(/record: true \};/.test(gj) && /lastRecord: \(\) => lastRecord, saveRecord: \(rec\) => \{ player\.flags\.hoennBattleRecord = rec;/.test(gj)
+      && /hoenn\.flag\("FLAG_SYS_FRONTIER_PASS"\)/.test(gj) && /labels\[i\] === "VIEW RECORDED BATTLE"\) await playRecord\(rec\)/.test(gj) && /replay: rec\.choices, seed: rec\.seed/.test(gj), "the Frontier Pass plays it back");
+    {
+      // DeterminePokemonToShow: 71 slides from what's caught, round again when there are fewer, the starter last.
+      let seed = 7; const rng = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x80000000);
+      const few = window.HallOfFame.emeraldSlides(["Poochyena", "Zigzagoon", "Treecko"], "Treecko", rng);
+      assert(few.length === 71 && few[70] === "Treecko" && few.slice(0, 3).sort().join() === "Poochyena,Treecko,Zigzagoon" && few[3] === few[0] && few[4] === few[1], "few caught: round again, the starter last");
+      const many = window.HallOfFame.emeraldSlides(Object.keys(window.DEX).slice(0, 120), "Torchic", rng);
+      assert(many.length === 71 && many[70] === "Torchic" && new Set(many).size === 71, "many caught: 71 different, the starter last");
+      assert(window.HallOfFame.emeraldSlides([], "Mudkip", rng).every((s) => s === "Mudkip"), "nothing caught: the starter");
+    }
   }
   var frontierTest = frontierDone.then(() => console.log("ok: Battle Frontier, the Tower, the Brain's symbol, the Factory, Arena, Palace, Dome, Pike, the Pyramid, the three tents and a Contest through Emerald's scripts"));
 }
