@@ -335,6 +335,7 @@ function ballItem(mapName, script) {
 // ---------- Wild Pokémon ----------
 const wildGroups = JSON.parse(fs.readFileSync(P("src/data/wild_encounters.json"), "utf8")).wild_encounter_groups;
 const wild = wildGroups[0].encounters;
+const pyramid = require("./lib/hoenn-pyramid")(EM, { species: (c) => dexByID[toID(String(c).replace(/^SPECIES_/, ""))], move: (c) => moveByID[toID(String(c).replace(/^MOVE_/, ""))], item: (c) => itemId(c) });
 const pikeWild = wildGroups.find((g) => g.label === "gBattlePikeWildMonHeaders").encounters[0];
 const slotsOf = (enc, kind) => {
   const e = enc && enc[kind];
@@ -428,10 +429,12 @@ const weatherKind = (w) => {
 const out = {};
 for (const name of MAPS) {
   if (ONLY.length && !ONLY.includes(name)) continue;
-  const map = mapJson(name), layout = layouts[map.layout], w = layout.width, h = layout.height;
+  // (The Battle Pyramid's floor is a 4 x 4 of its squares, laid out as you come in: the map's the plain floor, 32 x 32.)
+  const pyramidFloor = name === "BattleFrontier_BattlePyramidFloor";
+  const map = mapJson(name), layout = layouts[map.layout], w = pyramidFloor ? 32 : layout.width, h = pyramidFloor ? 32 : layout.height;
   const primary = tileset(layout.primary_tileset), secondary = tileset(layout.secondary_tileset);
   const bin = fs.readFileSync(P(layout.blockdata_filepath));
-  const blocks = Array.from({ length: w * h }, (_, i) => bin.readUInt16LE(i * 2));
+  const blocks = pyramidFloor ? Array(w * h).fill(0x28d) : Array.from({ length: w * h }, (_, i) => bin.readUInt16LE(i * 2));
   const r = E.render(blocks, w, h, primary, secondary, false);
   writePng(path.join(mapsDir, ren(name) + ".png"), w * 16, h * 16, r.below);
   const topFile = path.join(mapsDir, ren(name) + "-top.png");
@@ -448,11 +451,12 @@ for (const name of MAPS) {
     elevation.push(b >> 12);
     behaviors.push(beh);
     // (The Battle Pike's hall of wild Pokémon: any tile, as StandardWildEncounter has it.)
-    encounter.push(WILD_BEHAVIOR.has(mt.behavior) || name === "BattleFrontier_BattlePikeRoomWildMons" ? 1 : 0);
+    encounter.push(WILD_BEHAVIOR.has(mt.behavior) || name === "BattleFrontier_BattlePikeRoomWildMons" || pyramidFloor ? 1 : 0);
   }
   // The metatiles this map's scripts put in (setmetatile): a sheet of them, 16 to a row, below and above the people.
   let mt;
   let wanted = [...(metatilesOf[name] || [])].sort();
+  if (pyramidFloor) wanted = [...new Set(pyramid.squares.flat().map((t) => t.m))].filter((m) => m !== 0x28d).map((m) => "#" + m);
   // (The tiles each swapped-in layout changes: where, and to what, as setmetatile would.)
   const layoutDiffs = {};
   for (const lid of layoutSwaps[name] || []) {
@@ -485,7 +489,7 @@ for (const name of MAPS) {
   for (const wp of map.warp_events) { const i = wp.y * w + wp.x; if (i >= 0 && i < behaviors.length && behaviors[i] === 0) behaviors[i] = 0x60; }
   const mapType = map.map_type.replace(/^MAP_TYPE_/, "").toLowerCase();
   // (The Battle Pike's wild room has its own table, gBattlePike_1's Pokémon: ui/hoenn-frontier.js sets their levels.)
-  const enc = wild.find((e) => e.map === map.id) || (map.id === "MAP_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS" ? pikeWild : undefined);
+  const enc = wild.find((e) => e.map === map.id) || (map.id === "MAP_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS" || pyramidFloor ? pikeWild : undefined);
   // (Secret bases and your room: where decorations can go, by tile: f floor, w the wall's foot, s a spot for something small
   // (a doll or a cushion), l one for something large, c the PC; as src/decoration.c reads the tiles' behaviours.)
   let decorKind;
@@ -679,7 +683,7 @@ const townMapData = require("./lib/hoenn-town-map")(EM).build({ mapSections: sec
 
 // ---------- The data file ----------
 const START = "// Hoenn (tools/build-hoenn.js, from pret/pokeemerald): its maps, trainers and scripts.\n", END = "// (End of Hoenn.)\n";
-const js = START + "Object.assign(window.WORLD_MAPS, " + JSON.stringify(out) + ");\nObject.assign(window.WORLD_TRAINERS, " + JSON.stringify(WORLD_TRAINERS) + ");\nwindow.HOENN_SCRIPTS = " + JSON.stringify(hoennScripts) + ";\nwindow.HOENN_FRONTIER = " + JSON.stringify(frontier) + ";\nwindow.HOENN_CONTEST = " + JSON.stringify(contest) + ";\nwindow.HOENN_TOWN_MAP = " + JSON.stringify(townMapData) + ";\n" + END;
+const js = START + "Object.assign(window.WORLD_MAPS, " + JSON.stringify(out) + ");\nObject.assign(window.WORLD_TRAINERS, " + JSON.stringify(WORLD_TRAINERS) + ");\nwindow.HOENN_SCRIPTS = " + JSON.stringify(hoennScripts) + ";\nwindow.HOENN_FRONTIER = " + JSON.stringify(frontier) + ";\nwindow.HOENN_CONTEST = " + JSON.stringify(contest) + ";\nwindow.HOENN_PYRAMID = " + JSON.stringify(pyramid) + ";\nwindow.HOENN_TOWN_MAP = " + JSON.stringify(townMapData) + ";\n" + END;
 const file = path.join(root, "data/emerald-maps.js");
 let text = fs.readFileSync(file, "utf8");
 // (Whichever block this tool wrote before, its start line worded as it was.)

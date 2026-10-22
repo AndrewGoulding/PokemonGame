@@ -2494,7 +2494,7 @@ if (window.JOHTO_TOWN_MAP) {
     assert(!G.winch(), "the falls run again each time you come in");
     const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
     assert(/case "VioletGymElevator"/.test(scriptJs) && /case "CianwoodGymTurnWinch"/.test(scriptJs), "the Gyms' script commands run");
-    assert(/darkness: \(map\) => gymmicks\.darkness\(map\)/.test(gameJs) && /gymmicks\.enter\(m\)/.test(gameJs));
+    assert(/darkness: \(map\) => .*gymmicks\.darkness\(map\)/.test(gameJs) && /gymmicks\.enter\(m\)/.test(gameJs));
     // (Found playing the story: Falkner was away on Mondays from the start, HGSS's
     // days off counting from Kanto's Soul Badge, which you come to Johto with;
     // and the rival took your starter, the script's 152 never equal to "Chikorita".)
@@ -6433,6 +6433,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
 // The Battle Frontier (ui/hoenn-frontier.js) through Emerald's own scripts: a whole Battle Tower challenge, the Brain, the tents' rentals.
 {
   vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-script.js"), "utf8"), { filename: "ui/hoenn-script.js" });
+  vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-pyramid.js"), "utf8"), { filename: "ui/hoenn-pyramid.js" });
   vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-frontier.js"), "utf8"), { filename: "ui/hoenn-frontier.js" });
   vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-contest.js"), "utf8"), { filename: "ui/hoenn-contest.js" });
   const HF = window.HOENN_FRONTIER;
@@ -6520,6 +6521,35 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
       await run("BattleFrontier_BattlePikeRoomFinal_EventScript_EnterRoom");
       assert.strictEqual(s.status, 3, "the Pike is cleared");
     }
+    // The Battle Pyramid: every floor has a way out you can walk to from the way in, and the challenge's Pokémon and bag stand in for yours until the lobby.
+    {
+      const Y = window.HOENN_PYRAMID;
+      assert(Y.squares.length === 17 && Y.templates.length === 16 && Y.wild50.length === 20 && Y.pickups50.length === 20, "the Pyramid's data");
+      const pyrRng = mulberry32(99);
+      for (let i = 0; i < 700; i++) {
+        const seed = [0, 1, 2, 3].map(() => Math.floor(pyrRng() * 65536)), fl = window.HoennPyramid.floor(Y, seed, i % 7);
+        const wall = new Set(fl.tiles.filter((t) => t.c).map((t) => t.x + "," + t.y)), seen = new Set([fl.start.x + "," + fl.start.y]), q = [[fl.start.x, fl.start.y]];
+        while (q.length) { const [x, y] = q.shift(); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const k = (x + dx) + "," + (y + dy); if (x + dx < 0 || y + dy < 0 || x + dx > 31 || y + dy > 31 || seen.has(k) || wall.has(k)) continue; seen.add(k); q.push([x + dx, y + dy]); } }
+        assert(fl.exit && seen.has(fl.exit.x + "," + fl.exit.y), "a floor's way out can be reached");
+        assert.strictEqual(fl.trainers.length, Y.templates[fl.template].trainers); assert.strictEqual(fl.items.length, Y.templates[fl.template].items);
+      }
+      const realParty = fplayer.party, realBag = fplayer.bag;
+      H.resetTemp(); s = F.state(); s.status = 0; s.num = 0; H.setVar("VAR_0x8006", 0); H.setVar("VAR_TEMP_CHALLENGE_STATUS", 255);
+      await run("BattleFrontier_BattlePyramidLobby_EventScript_Attendant", "LOCALID_X");
+      assert(fenv.__warps.slice(-1)[0][0] === "MAP_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR" && fplayer.party === s.team && fplayer.bag !== realBag && fplayer.bag["hyper-potion"] === 1, "into the first floor with the challenge's team and bag");
+      for (let f = 0; f < 7; f++) {
+        H.resetTemp(); await H.transition("BattleFrontier_BattlePyramidFloor");
+        const L = F.pyramidLayout(); assert(L.tiles.length > 50 && F.pyramidPeople().length === L.trainers.length + L.items.length, "floor " + f + " is made");
+        const spec = F.pyramidTrainer(0); assert(spec.foe.team.length === 3 && spec.team === s.team, "a trainer's three");
+        await run("BattlePyramid_WarpToNextFloor");
+      }
+      assert.strictEqual(fenv.__warps.slice(-1)[0][0], "MAP_BATTLE_FRONTIER_BATTLE_PYRAMID_TOP", "the top after seven floors");
+      assert.strictEqual(s.streak["6.0.0"], 7);
+      s.status = 3; H.setVar("VAR_TEMP_CHALLENGE_STATUS", 3);
+      await run("BattleFrontier_BattlePyramidLobby_EventScript_WonChallenge", "LOCALID_X");
+      assert(fplayer.party === realParty && fplayer.bag === realBag, "your own Pokémon and bag come back");
+      assert(window.HoennFrontier.create && s.bp >= 1, "Battle Points for the Pyramid");
+    }
     // The Lilycove Contest Hall: enter a Pokémon in the Normal Rank Coolness Contest, and the hall's own scripts run the contest to its judges' marks.
     {
       assert(window.HOENN_CONTEST.opponents.length === 95 && Object.keys(window.HOENN_CONTEST.moves).length > 300, "the Contests' data");
@@ -6535,7 +6565,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
       if (ct.final[ct.player] === 0) assert.strictEqual(fplayer.party[0].contestRibbons.cool, 1, "a winner's ribbon");
     }
   })();
-  var frontierTest = frontierDone.then(() => console.log("ok: Battle Frontier, the Tower, the Brain's symbol, the Factory, Arena, Palace, Dome, Pike, the three tents and a Contest through Emerald's scripts"));
+  var frontierTest = frontierDone.then(() => console.log("ok: Battle Frontier, the Tower, the Brain's symbol, the Factory, Arena, Palace, Dome, Pike, the Pyramid, the three tents and a Contest through Emerald's scripts"));
 }
 
 // Hoenn's script interpreter (ui/hoenn-script.js) against a stub game: the constants, a story scene end to end, a frame table, Dive's connections, trades.

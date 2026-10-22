@@ -200,6 +200,8 @@
       switch (name) {
         // ----- frontier_util.c -----
         case "frontier_getstatus": {
+          // (Back in the Pyramid's lobby, your own Pokémon and bag are yours again.)
+          if (/BattlePyramidLobby/.test(env.map ? env.map() : "")) pyramidRestore();
           api.setVar("VAR_TEMP_CHALLENGE_STATUS", 255);
           if ([1, 2, 3, 4].includes(s.status)) api.setVar("VAR_TEMP_CHALLENGE_STATUS", s.status);
           return true;
@@ -223,7 +225,7 @@
           else if (d === 7) s.brain |= bits[sym];
           return true;
         }
-        case "frontier_setpartyorder": buildTeam(need(api, a[0])); return true;
+        case "frontier_setpartyorder": if (fac() === FAC.PYRAMID) pyramidParty(need(api, a[0])); else buildTeam(need(api, a[0])); return true;
         case "frontier_reset": await env.softReset(); return true;
         case "frontier_settrainers": case "frontier_saveparty": case "frontier_checkairshow": case "frontier_resetsketch": case "frontier_savebattle":
           if (name === "frontier_savebattle") api.setVar("VAR_RESULT", 0);
@@ -265,6 +267,7 @@
       if (/^(arena|palace|factory)_/.test(name)) return facility(name, a, api);
       if (/^dome_/.test(name)) return dome(name, a, api);
       if (/^pike_/.test(name)) return pike(name, a, api);
+      if (/^pyramid_/.test(name)) return pyramid(name, a, api);
       if (/^apprentice_/.test(name)) {
         // (The Tower's Apprentice isn't here: he's always gone.)
         if (name === "apprentice_shouldcheckgone") { api.setVar("VAR_0x8004", 1); api.setFlag("FLAG_DAILY_APPRENTICE_LEAVES", true); }
@@ -695,6 +698,138 @@
       return Object.assign({}, mon, { species: e.species, level, moves: e.moves });
     }
 
+    // ---------- The Battle Pyramid ----------
+    // Seven dark floors of trainers and items (ui/hoenn-pyramid.js builds each from four numbers); the challenge's
+    // Pokémon and the Pyramid's bag stand in for your party and bag while you're in it, and are put back at the lobby.
+    const PY = () => window.HOENN_PYRAMID;
+    const FLOOR_MAP = "BattleFrontier_BattlePyramidFloor", TOP_MAP = "BattleFrontier_BattlePyramidTop";
+    const pyr = () => { const s = S(); return s.pyr || (s.pyr = { seed: [1, 2, 3, 4], light: 32, swapped: false, t: [], i: [] }); };
+    const pyrKey = (lvl) => key(FAC.PYRAMID, 0, lvl);
+    const pyrRound = () => Math.floor((S().streak[pyrKey(S().lvl)] || 0) / STAGES) % 20;
+    let floorCache = null;
+    function pyramidLayout() {
+      const k = pyr(), s = S(), id = k.seed.join(",") + ":" + s.num;
+      if (!floorCache || floorCache.id !== id) floorCache = { id, floor: window.HoennPyramid.floor(PY(), k.seed, Math.min(6, s.num)) };
+      return floorCache.floor;
+    }
+    function pickupItem() {
+      const s = S(), Y = PY(), floor = Math.min(6, s.num), r = int(100);
+      let i = Y.slotStart[floor];
+      while (i < Y.slots.length - 1 && r >= Y.slots[i][0]) i++;
+      return ((s.lvl === 0 ? Y.pickups50 : Y.pickupsOpen)[pyrRound()] || [])[Y.slots[i][1]] || "hyper-potion";
+    }
+    // A new floor: its numbers, its trainers and its items.
+    function seedFloor() {
+      const s = S(), k = pyr(), flags = P().flags;
+      for (const f of Object.keys(flags)) if (/^PYRAMID_[TI]\d+$/.test(f)) delete flags[f];
+      k.seed = [int(65536), int(65536), int(65536), int(65536)]; k.light = 32; floorCache = null;
+      const F = pyramidLayout(), challengeNum = Math.floor((s.streak[pyrKey(s.lvl)] || 0) / STAGES), used = [];
+      k.t = F.trainers.map(() => { let id, n = 0; do { id = randomTrainerId(challengeNum, Math.min(6, s.num)); } while (used.includes(id) && ++n < 50); used.push(id); return id; });
+      k.i = F.items.map(pickupItem);
+    }
+    // The people on the floor, for the game to put on its map.
+    function pyramidPeople() {
+      const k = pyr();
+      if (!k.t || !k.t.length && !k.i.length) return [];
+      const F = pyramidLayout(), out = [];
+      F.trainers.forEach((p, n) => {
+        const t = trainerOf({ kind: "frontier", id: k.t[n] });
+        if (!t) return;
+        out.push({ id: 960 + n, localId: "PYRAMID_T" + n, script: "Game_EventScript_PyramidTrainer", x: p.x, y: p.y, movement: "face_" + p.facing, rangeX: 0, rangeY: 0, flag: null, text: null,
+          pyramid: n, look: t.look, pic: t.pic, className: className(t.cls), name: t.name,
+          trainer: { id: "PYRAMID_T" + n, sight: 4, intro: [t.before || "…"], defeat: [t.lose || "…"], after: [t.win || "…"] } });
+      });
+      F.items.forEach((p, n) => out.push({ id: 980 + n, localId: "PYRAMID_I" + n, script: "Game_EventScript_PyramidItem", x: p.x, y: p.y, movement: "face_down", rangeX: 0, rangeY: 0,
+        item: k.i[n], flag: "PYRAMID_I" + n, text: null, sprite: "item_ball", width: 16, height: 16, frames: 1, inanimate: true }));
+      return out;
+    }
+    // A trainer's battle on the floor.
+    function pyramidTrainer(n) {
+      const s = S(), k = pyr(), id = k.t[n], t = trainerOf({ kind: "frontier", id });
+      if (!t) return null;
+      s.A = { kind: "frontier", id };
+      const foe = pickMons(D().mons, D().heldItems, t.set, 3, foeLevel(), fixedIv(id), s.lvl !== 0);
+      return { team: s.team, foe: { name: fullName(t), team: foe, pic: t.pic }, defeatText: [t.lose || "…"] };
+    }
+    // What a beaten trainer lets on: the way out, or how many are left (src/battle_pyramid.c's hints, in fewer words).
+    function pyramidHint(n, at) {
+      const k = pyr(), F = pyramidLayout(), flags = P().flags;
+      const trainers = F.trainers.filter((p, i) => !flags["PYRAMID_T" + i]).length, items = F.items.filter((p, i) => !flags["PYRAMID_I" + i]).length;
+      const dx = F.exit.x - at.x, dy = F.exit.y - at.y, dist = Math.abs(dx) + Math.abs(dy);
+      const dir = (dy < -3 ? "north" : dy > 3 ? "south" : "") + (dx < -3 ? "west" : dx > 3 ? "east" : "") || "right here";
+      const plural = (c, w) => c + " " + w + (c === 1 ? "" : "s");
+      const left = [n % 2 ? "There " + (items === 1 ? "is" : "are") + " " + plural(items, "item") + " still lying around on this floor." : plural(trainers, "trainer") + " " + (trainers === 1 ? "is" : "are") + " still left on this floor."];
+      const kind = (n + k.seed[0]) % 3;
+      if (kind === 0) return dist < 8 ? "The exit is very close by!" : "The exit is somewhere to the " + dir + ".";
+      return kind === 1 ? left[0] : (dist < 16 ? "The exit is not far to the " + dir + ".\n" : "") + left[0];
+    }
+    const pyramidDark = () => { const k = pyr(); return k.light > 0 ? { radius: k.light, lights: [], rects: [] } : null; };
+    // The challenge's Pokémon and bag stand in for yours.
+    function pyramidParty(n) {
+      const s = S(), k = pyr(), bags = s.pyrBags || (s.pyrBags = {});
+      if (!k.swapped) {
+        buildTeam(n);
+        k.realParty = P().party; k.realBag = P().bag; k.swapped = true;
+        if (!bags[s.lvl]) bags[s.lvl] = { "hyper-potion": 1, ether: 1 };
+      }
+      P().party = s.team; P().bag = bags[s.lvl];
+    }
+    function pyramidRestore() {
+      const k = pyr();
+      if (!k.swapped) return;
+      if (k.realParty) P().party = k.realParty;
+      if (k.realBag) P().bag = k.realBag;
+      k.swapped = false; k.realParty = null; k.realBag = null;
+    }
+    function pyramidWild(mon) {
+      const s = S(), Y = PY(), list = (s.lvl === 0 ? Y.wild50 : Y.wildOpen)[pyrRound()] || Y.wild50[0], e = list[int(list.length)];
+      const level = s.lvl === 0 ? e.lvl - 5 + int(11) : Math.max(2, highest(s.team) - e.lvl - 5 + int(11));
+      return Object.assign({}, mon, { species: e.species, level, moves: e.moves });
+    }
+    async function pyramid(name, a, api) {
+      const s = S(), k = pyr(), what = name.slice(8), d = String(a[0] || "");
+      switch (what) {
+        case "init": {
+          pyramidRestore();
+          const lvl = s.lvl;
+          s.status = 0; s.num = 0; s.paused = 0; s.A = null; s.outcome = 0;
+          if (!s.active[pyrKey(lvl)]) { s.streak[pyrKey(lvl)] = 0; (s.pyrBags || (s.pyrBags = {}))[lvl] = { "hyper-potion": 1, ether: 1 }; }
+          if (env.markHome) env.markHome();
+          return true;
+        }
+        case "get": {
+          const lvlOf = (x) => (/_OPEN$/.test(x) ? 1 : /_50$/.test(x) ? 0 : s.lvl), kk = pyrKey(lvlOf(d));
+          const r = /PRIZE$/.test(d) ? "ITEM_NONE" : /WIN_STREAK_ACTIVE/.test(d) ? (s.active[kk] ? 1 : 0) : /WIN_STREAK/.test(d) ? s.streak[kk] || 0 : 0;
+          api.setVar("VAR_RESULT", r);
+          return true;
+        }
+        case "set": {
+          const val = a.length > 1 ? api.num(a[1]) : v("VAR_0x8006"), kk = pyrKey(s.lvl);
+          if (/TRAINER_FLAGS$/.test(d)) { for (let i = 0; i < 8; i++) if (val) P().flags["PYRAMID_T" + i] = true; }
+          else if (/WIN_STREAK_ACTIVE/.test(d)) { if (val) s.active[kk] = true; else delete s.active[kk]; }
+          else if (/WIN_STREAK/.test(d)) { s.streak[kk] = val; if (val > (s.best[kk] || 0)) s.best[kk] = val; }
+          return true;
+        }
+        case "save": s.status = api.num(a[0]); s.paused = 1; api.setVar("VAR_TEMP_CHALLENGE_STATUS", 0); await env.save(s.status === 2); return true;
+        case "setprize": return true;
+        case "seedfloor": seedFloor(); return true;
+        case "settrainers": case "resetparty": case "setitem": case "hideitem": return true;
+        case "showhint": return true;
+        case "getlocation": { const m = env.map ? env.map() : ""; api.setVar("VAR_RESULT", m === FLOOR_MAP ? 1 : m === TOP_MAP ? 2 : 0); return true; }
+        case "updatelight": {
+          const r = api.num(a[0]), incr = /INCR/.test(String(a[1])) || String(a[1]) === "1";
+          k.light = incr ? Math.min(120, k.light + r) : r;
+          // (A new floor's walls go up as it's lit: the map's scripts do this as it loads, before the game says which map it's on.)
+          if (!incr && r > 0 && r < 200 && env.pyramidApply) env.pyramidApply();
+          if (incr) api.setVar("VAR_RESULT", 2);
+          return true;
+        }
+        case "clearhelditems": pyramidRestore(); return true;
+        case "setfloorpal": if (env.pyramidApply) env.pyramidApply(); return true;
+      }
+      return false;
+    }
+
     // ---------- The tents ----------
     const tentOf = () => ({ 4: "slateport", 2: "verdanturf", 3: "fallarbor" })[fac()];
     async function tent(name, a, api) {
@@ -842,6 +977,18 @@
         case "CloseBattlePointsWindow": env.bpBox(false); return true;
         case "ShowFrontierExchangeCornerItemIconWindow": case "CloseFrontierExchangeCornerItemIconWindow": return true;
         case "ReducePlayerPartyToSelectedMons": case "CloseLink": case "SaveForBattleTowerLink": return true;
+        // The Pyramid: your own Pokémon and bag come back; the challenge's items aren't ones to hand over.
+        case "LoadPlayerParty": pyramidRestore(); return true;
+        case "DoBattlePyramidMonsHaveHeldItem": case "TryStoreHeldItemsInPyramidBag": api.set(0); return true;
+        case "BattlePyramidChooseMonHeldItems": case "ChooseItemsToTossFromPyramidBag": return true;
+        case "GetBattlePyramidHint": api.set(Math.floor(v("VAR_0x8004") / STAGES) % 20); return true;
+        case "CallBattlePyramidFunction": {
+          // (Only the light's: the rest are the pyramid_ commands.)
+          if (v("VAR_0x8004") !== 13) return false;
+          const k = pyr();
+          if (v("VAR_0x8006") === 1) { k.light = Math.min(120, k.light + v("VAR_0x8005")); api.setVar("VAR_RESULT", 2); } else k.light = v("VAR_0x8005");
+          return true;
+        }
       }
       return false;
     }
@@ -898,7 +1045,7 @@
       await env.say(lines.join("\n"));
     }
 
-    return { op, special, state: S, healTeam, pikeWild, FAC };
+    return { op, special, state: S, healTeam, pikeWild, FAC, pyramidLayout, pyramidPeople, pyramidTrainer, pyramidHint, pyramidDark, pyramidWild, pyramidRestore };
   }
 
   window.HoennFrontier = { create, FAC };

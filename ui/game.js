@@ -4799,6 +4799,7 @@
   // hear why not instead (EventScript_NotEnoughMonsForDoubleBattle), and
   // they don't come after you.
   async function trainerBattle(person, approach, facing) {
+    if (person.pyramid != null) return pyramidFight(person, approach, facing);
     const t = person.trainer, data = window.WORLD_TRAINERS[t.id];
     const who = "#" + person.id;
     if (t.double && approach == null && !canDouble()) {
@@ -5317,7 +5318,7 @@
   }
 
   function extraPeople(map) {
-    const out = megaStoneBalls(map).concat(OLD_GAME_BALLS.filter((b) => b.map === map), isHoenn(map) ? hoennDecor.overlay(map).people : []);
+    const out = megaStoneBalls(map).concat(OLD_GAME_BALLS.filter((b) => b.map === map), isHoenn(map) ? hoennDecor.overlay(map).people : [], map === PYRAMID_FLOOR ? pyramidPeople() : []);
     // The Tradeback Guy, upstairs in every Pokémon Center.
     if (/_PokemonCenter_2F$/.test(map)) {
       out.push(Object.assign({ id: 901, localId: "LOCALID_TRADEBACK_GUY", script: "Game_EventScript_TradebackGuy", x: 12, y: 5,
@@ -11820,7 +11821,7 @@
   const hoenn = HoennScript.create(hoennEnv);
   // The Battle Frontier (ui/hoenn-frontier.js): Emerald's lobbies and battle rooms run their own scripts; this is what they ask for.
   const hoennFrontier = HoennFrontier.create({
-    player: () => player, getVar: (n) => hoenn.getVar(n), flag: (n) => hoenn.flag(n),
+    player: () => player, map: () => player.location.map, pyramidApply: () => pyramidApply(), getVar: (n) => hoenn.getVar(n), flag: (n) => hoenn.flag(n),
     createMon: (species, level, o) => Party.create(species, level, o),
     say: (t) => say(t), caught: (sp) => Player.hasCaught(player, sp), itemName: (id) => Bag.name(id),
     itemConst: (id) => "ITEM_" + String(id).toUpperCase().replace(/-/g, "_"),
@@ -11853,6 +11854,46 @@
   });
   hoennEnv.contestOp = (op, a, api) => hoennContest.op(op, a, api);
   hoennEnv.healParty = () => { player.party.forEach(Party.heal); hoennFrontier.healTeam(); };
+  // ---------- The Battle Pyramid's floor ----------
+  const PYRAMID_FLOOR = "BattleFrontier_BattlePyramidFloor";
+  // Its walls (and the way out, with its step) in place of the plain floor the map's drawn as.
+  function pyramidApply() {
+    const m = window.WORLD_MAPS[PYRAMID_FLOOR], F = hoennFrontier.pyramidLayout();
+    if (!m || !F) return;
+    restoreMetatiles(PYRAMID_FLOOR);
+    for (const t of F.tiles) hoennMetatile(PYRAMID_FLOOR, t.x, t.y, "#" + t.m, !!t.c);
+    m.triggers = F.exit ? [{ x: F.exit.x, y: F.exit.y, script: "hoenn:BattlePyramid_WarpToNextFloor", var: "VAR_TEMP_0", value: 0 }] : [];
+  }
+  // Its trainers and items, looking as Emerald's classes do.
+  function pyramidPeople() {
+    return hoennFrontier.pyramidPeople().map((p) => {
+      if (p.pyramid == null) return p;
+      const look = window.HOENN_SCRIPTS.gfx[p.look] || window.HOENN_SCRIPTS.gfx.OBJ_EVENT_GFX_BOY_1;
+      window.WORLD_TRAINERS[p.trainer.id] = { className: p.className, name: p.name, pic: p.pic, party: [], music: "em_encounter_male", double: false, intro: p.trainer.intro, defeat: p.trainer.defeat };
+      return Object.assign({}, look, p);
+    });
+  }
+  TRAINER_SCRIPTS.add("Game_EventScript_PyramidTrainer");
+  // A trainer on the floor: the same walk up and word as anyone's, then a battle for the challenge's three, and the floor's scripts see how it went.
+  async function pyramidFight(person, approach, facing) {
+    const t = person.trainer, who = "#" + person.id, map = player.location.map, s = hoennFrontier.state();
+    const spec = hoennFrontier.pyramidTrainer(person.pyramid);
+    if (!spec) return;
+    music("em_encounter_male");
+    if (approach != null) {
+      await Overworld.act([{ who, moves: ["emote_exclamation_mark"].concat(Array(approach).fill("walk_" + facing)) }]);
+      await Overworld.act([{ who: "player", moves: ["face_" + World.OPPOSITE[facing]] }]);
+    }
+    await say(t.intro);
+    const outcome = await frontierBattle(spec);
+    if (outcome === "won") player.flags[t.id] = true;
+    s.outcome = outcome === "won" ? 1 : 2;
+    if (outcome === "lost") show("world");
+    await hoenn.resume(map);
+    const label = hoenn.frameScript(player.location.map, false);
+    if (label) await runHoenn(label);
+    if (outcome === "won") await say(hoennFrontier.pyramidHint(person.pyramid, Overworld.position()));
+  }
   async function pikeWildBattle(ev) {
     const s = hoennFrontier.state(), real = player.party, map = player.location.map;
     player.party = s.team;
@@ -11862,8 +11903,8 @@
     } finally { player.party = real; }
     s.outcome = ({ won: 1, lost: 2, ran: 4 })[outcome] || 1;
     show("world"); await Overworld.resume();
-    hoenn.resume(map);
-    const label = hoenn.frameScript(map, false);
+    await hoenn.resume(map);
+    const label = hoenn.frameScript(player.location.map, false);
     if (label) await runHoenn(label);
   }
   // A challenge's battle: the challenge's own Pokémon stand in for your party for its length.
@@ -11897,6 +11938,7 @@
   }
   // Whether someone's on a Hoenn map now: Emerald's flag for them (FLAG_HIDE_*), where a script put them, how they look.
   function hoennVisible(person, map) {
+    if (map === PYRAMID_FLOOR && /^LOCALID_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR_\d+$/.test(person.localId || "")) return false;   // (the floor's own people are put there as it's made: pyramidPeople)
     const f = player.flags, id = person.localId, shown = hoenn.shown(map, id);
     if (shown === false) return false;
     if (person.item) { if (f[person.flag]) return false; }
@@ -11930,6 +11972,8 @@
     if (at && at.warp != null && at.warp !== 255 && dest.warps[at.warp]) ({ x, y } = dest.warps[at.warp]);
     else if (at && at.x != null && at.x >= 0) ({ x, y } = at);
     else ({ x, y } = dest.warps[0] || { x: 0, y: 0 });
+    // (A Battle Pyramid floor: made as you go in, and you start where its way in is.)
+    if (name === PYRAMID_FLOOR && hoennFrontier.pyramidLayout) { ({ x, y } = hoennFrontier.pyramidLayout().start); pyramidApply(); }
     Screen.say("");
     await Overworld.teleport({ map: name, x, y, facing: "down" });
   }
@@ -12799,7 +12843,7 @@
         diveHere: (avatar) => diveHere(avatar),
         canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
         // (Johto's Gyms: Ecruteak's darkness, Violet's lift.)
-        darkness: (map) => gymmicks.darkness(map), drawMap: (g, map, x, y) => { gymmicks.drawMap(g, map, x, y); johtoSafari.drawMap(g, map, x, y); },
+        darkness: (map) => (map === PYRAMID_FLOOR ? hoennFrontier.pyramidDark() : gymmicks.darkness(map)), drawMap: (g, map, x, y) => { gymmicks.drawMap(g, map, x, y); johtoSafari.drawMap(g, map, x, y); },
         faced: (map, x, y, surfing) => johtoSafari.faced(map, x, y, surfing),
         boulderFell: (def) => {
           // (3F's boulder through the hole: it's on 2F now.)
@@ -12821,7 +12865,7 @@
           hoennWeatherStep(); berryFarm.step(); hoennBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
           return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
-        adjustWild: (mon, table) => { const m = Encounters.leadWild(mon, leadMon(), table); return m && player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
+        adjustWild: (mon, table) => { const m = Encounters.leadWild(mon, leadMon(), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
         onMap: (m) => {
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
@@ -12885,7 +12929,7 @@
         // (The Tanoby Ruins' Unown: each slot's letter, sUnownLetterSlots; the
         // Ruins of Alph's, a letter its solved puzzles have woken.)
         // (The Battle Pike's hall of wild Pokémon: your challenge's three fight it, and the room's own scripts see how it went.)
-        else if (at.map === "BattleFrontier_BattlePikeRoomWildMons") await pikeWildBattle(ev);
+        else if (at.map === "BattleFrontier_BattlePikeRoomWildMons" || at.map === PYRAMID_FLOOR) await pikeWildBattle(ev);
         else await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(ev.species, ev.level,
           { unown: Sevii.unownLetter(at.map, ev.slot) || JohtoAlph.unownLetter(at.map, alphSolved()) }))] },
           terrain, ghost: towerGhost() });
