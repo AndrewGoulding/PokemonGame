@@ -1638,6 +1638,14 @@
       }
       // (Gen 7: a forme an Ability brought about, Burn Up, Core Enforcer.)
       case "-text": case "-formechange": return fill(b, a);
+      // The Battle Arena's referee (engine/battle.js arenaJudge): [what, yours, theirs, ...].
+      case "-arena": {
+        const mine = nameOf(b), theirs = nameOf(c);
+        if (a === "commence") return "REFEREE: " + mine + " VS " + theirs + "!\nCommence battling!";
+        if (a === "judge") { const d = JSON.parse(ev[4]); return async () => { await arenaJudgment(mine, theirs, d); }; }
+        if (a === "decision") return mine + (ev[4] === "won" ? " defeated the opponent\n" : ev[4] === "lost" ? " lost to the opponent\n" : " tied the opponent\n") + theirs + " in a REFEREE's decision!";
+        return null;
+      }
       case "-endability": return fill("{who}'s Ability was suppressed!", a);
       case "-ability": return fill(lookup(ABILITY, effectId(b), "{who}'s " + b + "!"), a);
       case "-mega": {
@@ -2225,6 +2233,8 @@
       actionCursor = a.cursor;
       if (a.action === "back") return "back";
       if (a.action === "fight") {
+        // (The Battle Palace: it picks its own move, by its nature.)
+        if (config.palace) return battle.palaceChoice("p1", dbl ? req.slot : 0);
         if (active.struggle) { await message(active.name + " has no moves left!"); return { type: "move", move: "Struggle" }; }
         const slots = () => active.moves.map((m) => ({ name: m.name, type: m.type, pp: m.pp, maxpp: m.maxpp, index: m.index, disabled: m.disabled,
           target: m.target, targets: m.targets }));
@@ -2454,7 +2464,9 @@
         else if (left <= 3) await message(left === 1 ? "This is the last turn!" : left + " turns left!");
       }
       if (p1.phase === "move" || p1.phase === "switch" || p1.phase === "revive") {
-        const choice = p1.phase === "move" ? await chooseAction(p1) : p1.phase === "revive" ? await chooseRevive(p1) : await chooseSwitch(p1, false);
+        // (The Battle Arena: the next in order comes out, no choosing.)
+        const choice = p1.phase === "move" ? await chooseAction(p1) : p1.phase === "revive" ? await chooseRevive(p1)
+          : config.arena && p1.switches.length ? { type: "switch", index: p1.switches[0] } : await chooseSwitch(p1, false);
         const r = choose("p1", choice);
         if (r.crashed) return "crashed";
         if (!r.ok) await message(r.error);
@@ -3053,6 +3065,43 @@
     alliesTimer = setInterval(update, 150);
   }
 
+  // The Battle Arena's judgment (BattleArena_ShowJudgmentWindow): the referee's words in the text box, and a
+  // window over the field with the two Pokémon's names, the three categories, a mark for each as it's judged
+  // (a circle for the better, a triangle for a tie, a cross for the worse) and the totals under a line.
+  async function arenaJudgment(mine, theirs, d) {
+    const canvas = overlay(), S = window.GbaMenus.Surface;
+    const FG = [72, 72, 72], SH = [208, 208, 200], BG = [248, 248, 248], RED = [224, 48, 48], GOLD = [216, 160, 0], BLUE = [64, 96, 224];
+    const mark = (s, x, y, mineBetter, tie) => {
+      if (tie) { for (let i = 0; i <= 6; i++) { s.put(x - i, y + 6, GOLD); s.put(x + i, y + 6, GOLD); s.put(x - i, y + 6 - i, GOLD); s.put(x + i, y + 6 - i, GOLD); } }
+      else if (mineBetter) { for (let t = 0; t < 40; t++) { const r = t * Math.PI / 20; s.put(Math.round(x + 5.5 * Math.cos(r)), Math.round(y + 5.5 * Math.sin(r)), RED); } }
+      else for (let i = -5; i <= 5; i++) { s.put(x + i, y + i, BLUE); s.put(x + i, y - i, BLUE); }
+    };
+    const draw = (upTo) => {
+      const s = S();
+      s.fill(40, 0, 192, 104, FG); s.fill(42, 2, 188, 100, BG);
+      s.text(mine, 48, 8, FG, SH); s.text("VS", 128 - Math.floor(s.textWidth("VS") / 2), 8, FG, SH); s.text(theirs, 224 - s.textWidth(theirs), 8, FG, SH);
+      ["Mind", "Skill", "Body"].forEach((cat, i) => {
+        s.text(cat, 48, 32 + i * 16, FG, SH);
+        if (i < upTo) { const [x, y] = d.cats[i]; mark(s, 112, 32 + i * 16 + 5, x > y, x === y); mark(s, 184, 32 + i * 16 + 5, y > x, x === y); }
+      });
+      for (let x = 64; x < 192; x++) s.put(x, 84, FG);
+      if (upTo >= 3) { s.text(String(d.score[0]), 108, 88, FG, SH); s.text(String(d.score[1]), 180, 88, FG, SH); }
+      s.show(canvas);
+      canvas.classList.remove("hidden");
+    };
+    await message("REFEREE: That's it! We will now go to\njudging to determine the winner!");
+    draw(0);
+    await message("REFEREE: Judging category 1, Mind!\nThe POKéMON showing the most guts!");
+    draw(1);
+    await message("REFEREE: Judging category 2, Skill!\nThe POKéMON using moves the best!");
+    draw(2);
+    await message("REFEREE: Judging category 3, Body!\nThe POKéMON with the most vitality!");
+    draw(3);
+    if (d.result === "tie") await message("REFEREE: Judgment: 3 to 3!\nWe have a draw!");
+    else await message("REFEREE: Judgment: " + d.score[0] + " to " + d.score[1] + "!\nThe winner is " + (d.result === "won" ? battle.sides.p1.name + "'s " + mine : battle.sides.p2.name + "'s " + theirs) + "!");
+    canvas.classList.add("hidden");
+  }
+
   // Runs one battle to the end. See the header for `cfg`.
   async function run(cfg) {
     config = cfg;
@@ -3060,8 +3109,14 @@
     battle = new Battle(Object.assign({
       p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, ghost: !!cfg.ghost, noCatch: !!cfg.noCatch, exp: !!cfg.exp, expShare: !!cfg.expShare, catchContext: cfg.catchContext,
       safari: cfg.safari, raid: cfg.raid || 0, raidAllies: cfg.raidAllies || undefined,
-      levelCap: cfg.levelCap   // (the level cap, Player.levelCap: no Exp. past it, and a Pokémon over it may not obey)
+      levelCap: cfg.levelCap,   // (the level cap, Player.levelCap: no Exp. past it, and a Pokémon over it may not obey)
+      arena: !!cfg.arena, palace: !!cfg.palace   // (the Battle Arena's judging; the Battle Palace, where Pokémon choose their own moves: engine/battle.js)
     }, cfg.format === "doubles" ? { format: "doubles" } : {}));
+    // (The Palace: the opponents' Pokémon choose by their natures too.)
+    if (cfg.palace) {
+      const byNature = (id) => (b) => { const r = b.getRequest(id); return r && r.phase === "move" ? b.palaceChoice(id) : window.OpponentAI.choose(b, id); };
+      config = Object.assign({}, cfg, { opponent: byNature("p2"), opponent2: byNature("p2b") });
+    }
     safariCursor = 0;
     cursor = 0;
     hbStop();

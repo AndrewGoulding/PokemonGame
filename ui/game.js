@@ -389,6 +389,7 @@
       safari: opts.safari ? { balls: player.flags.safari.balls, hgss: !!player.flags.safari.hgss } : undefined,
       wild, weather: opts.weather,
       exp: !opts.safari && !opts.noExp, levelCap: Player.levelCap(player),
+      arena: !!opts.arena, palace: !!opts.palace,   // (the Battle Frontier's Arena and Palace rules: engine/battle.js)
       expShare: expShareOn(),
       trainer: Player.LOOKS[player.look].back,
       foeTrainer: foe.pic, defeatText: opts.defeatText && opts.defeatText.map((p) => fill(p)),
@@ -11917,7 +11918,7 @@
     player.party = spec.team;
     let outcome;
     try {
-      const opts = { foe: spec.foe, defeatText: spec.defeatText, double: !!spec.double, noExp: true, noPrize: true, noBlackout: true, noGimmicks: true };
+      const opts = { foe: spec.foe, defeatText: spec.defeatText, double: !!spec.double, noExp: true, noPrize: true, noBlackout: true, noGimmicks: true, arena: !!spec.arena, palace: !!spec.palace };
       if (spec.partner) { opts.partner = spec.partner; opts.chosen = spec.team.map((r, i) => i).slice(0, 2); }
       if (spec.foe2) opts.foe2 = spec.foe2;
       outcome = await battle("trainer", opts);

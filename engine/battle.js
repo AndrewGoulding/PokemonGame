@@ -441,6 +441,34 @@
   // ---------------------------------------------------------------
   // Battle
   // ---------------------------------------------------------------
+  // The Battle Palace's natures (Emerald's gBattlePalaceNatureToMoveGroupLikelihood: the odds, out of 100, of
+  // an attack and of a defending move, from full HP and once below half; the rest is support), who a move aimed
+  // at one of two foes goes for (gBattlePalaceNatureToMoveTarget), and what each says when worn down
+  // (sBattlePalaceNatureToFlavorTextId).
+  const PALACE_LIKELIHOOD = {
+    Hardy: [61, 68, 61, 68], Lonely: [20, 45, 84, 92], Brave: [70, 85, 32, 92], Adamant: [38, 69, 70, 85], Naughty: [20, 90, 70, 92],
+    Bold: [30, 50, 32, 90], Docile: [56, 78, 56, 78], Relaxed: [25, 40, 75, 90], Impish: [69, 75, 28, 83], Lax: [35, 45, 29, 35],
+    Timid: [62, 72, 30, 50], Hasty: [58, 95, 88, 94], Serious: [34, 45, 29, 40], Jolly: [35, 40, 35, 95], Naive: [56, 78, 56, 78],
+    Modest: [35, 80, 34, 94], Mild: [44, 94, 34, 40], Quiet: [56, 78, 56, 78], Bashful: [30, 88, 30, 88], Rash: [30, 43, 27, 33],
+    Calm: [40, 90, 25, 87], Gentle: [18, 88, 90, 95], Sassy: [88, 94, 22, 42], Careful: [42, 92, 42, 47], Quirky: [56, 78, 56, 78]
+  };
+  const PALACE_TARGET = {
+    Hardy: "stronger", Lonely: "stronger", Brave: "weaker", Adamant: "stronger", Naughty: "weaker", Bold: "weaker", Docile: "random", Relaxed: "stronger",
+    Impish: "stronger", Lax: "stronger", Timid: "weaker", Hasty: "weaker", Serious: "weaker", Jolly: "stronger", Naive: "random", Modest: "weaker",
+    Mild: "stronger", Quiet: "weaker", Bashful: "weaker", Rash: "stronger", Calm: "stronger", Gentle: "stronger", Sassy: "weaker", Careful: "weaker", Quirky: "stronger"
+  };
+  const PALACE_FLAVOR = ["A glint appears in\n{who}'s eyes!", "{who} is getting into\nposition!", "{who} began growling deeply!", "{who} is eager for more!"];
+  const PALACE_NATURE_FLAVOR = {
+    Hardy: 3, Lonely: 0, Brave: 1, Adamant: 0, Naughty: 0, Bold: 1, Docile: 3, Relaxed: 0, Impish: 1, Lax: 2, Timid: 2, Hasty: 0, Serious: 3,
+    Jolly: 1, Naive: 3, Modest: 1, Mild: 2, Quiet: 3, Bashful: 3, Rash: 2, Calm: 1, Gentle: 0, Sassy: 2, Careful: 2, Quirky: 3
+  };
+  // The Battle Arena's Mind points for a move (sMindRatings).
+  const arenaMindRating = (move) => {
+    if (move.id === "fakeout" || STALL_MOVES.has(move.id) && ["protect", "detect", "endure"].includes(move.id)) return -1;
+    if (move.id === "counter" || move.id === "mirrorcoat" || move.id === "bide") return 0;
+    return move.power > 0 ? 1 : 0;
+  };
+
   class Battle {
     // A Pokémon's Tera Type when nothing set one: Ogerpon's its mask's,
     // Terapagos Stellar, any other one of its own types (by its personality
@@ -474,6 +502,9 @@
       this.capNoted = new Set();
       this.expShare = !!opts.expShare;
       this.wild = !!opts.wild;
+      // (The Battle Arena, opts.arena: three-turn bouts judged on Mind, Skill and Body, no switching; the Battle
+      // Palace, opts.palace: each Pokémon picks its own moves by its nature. ARENA / PALACE below.)
+      this.arena = !!opts.arena; this.palace = !!opts.palace; this.arenaTurn = -1;
       // (A Tera Raid, its stars: its Pokémon acts outside its turn, raidAct.)
       this.raid = opts.raid || 0;
       this.raidThresholdsLeft = (RAID_THRESHOLDS[this.raid] || []).slice();
@@ -1327,6 +1358,9 @@
       mon.trapped = false;
       mon.moveThisTurn = false;
       mon.abilityState = {};
+      // (The Arena's points start over with whoever comes in, and so does its three-turn count; the Palace's half-HP flag.)
+      if (this.arena) { mon.arena = { mind: 0, skill: 0, startHp: mon.hp }; this.arenaTurn = -1; }
+      if (this.palace) mon.palaceFlag = false;
       if (carried) {
         mon.boosts = carried.boosts;
         for (const id of Object.keys(carried.volatiles)) mon.volatiles[id] = carried.volatiles[id];
@@ -1753,7 +1787,7 @@
       base.active.canCatch = this.wild && sideId === "p1";
       base.active.canRun = this.wild && sideId === "p1" &&
         (!base.active.trapped || mon.item === "smoke-ball" || mon.hasAbility("Run Away"));
-      base.switches = base.active.trapped ? [] : side.pokemon.map((p, i) => (!p.fainted && p !== side.active ? i : -1)).filter((i) => i >= 0);
+      base.switches = base.active.trapped || this.arena ? [] : side.pokemon.map((p, i) => (!p.fainted && p !== side.active ? i : -1)).filter((i) => i >= 0);
       return base;
     }
 
@@ -1794,6 +1828,8 @@
         } else if (choice && choice.type === "run") {
           if (!req.active.canRun) return { ok: false, error: "You can't escape!" };
           side.choice = { type: "run" };
+        } else if (choice && choice.type === "move" && choice.palaceIdle) {
+          side.choice = { type: "move", palaceIdle: true };   // (the Palace: it couldn't bring itself to, palaceChoice)
         } else if (choice && choice.type === "move") {
           let slot = null;
           if (req.active.struggle && (choice.move === "Struggle" || choice.move === 0 || choice.move === "struggle")) {
@@ -2108,6 +2144,8 @@
         } else if (c.type === "run") {
           if (!a.canRun) return err("You can't escape!");
           partial[slot] = { type: "run" };
+        } else if (c.type === "move" && c.palaceIdle) {
+          partial[slot] = { type: "move", palaceIdle: true };
         } else if (c.type === "move") {
           let picked;
           if (a.struggle && (c.move === "Struggle" || c.move === 0 || c.move === "struggle")) {
@@ -2269,6 +2307,16 @@
       this.sides.p1.partial = []; this.sides.p2.partial = [];
       for (const s of [this.sides.p1, this.sides.p2]) { s.faintedLastTurn = s.faintedThisTurn; s.faintedThisTurn = false; }
       this.add("turn", this.turn);
+      if (this.arena) {
+        this.arenaTurn++;
+        if (this.arenaTurn === 0 && this.sides.p1.active && this.sides.p2.active) this.add("-arena", "commence", this.sides.p1.active, this.sides.p2.active);
+      }
+      // (The Palace: a Pokémon down to half its HP, awake, says something of its nature, once: BattleScript_PalacePrintFlavorText.)
+      if (this.palace) for (const m of this.getActives()) {
+        if (!m || m.fainted || m.palaceFlag || m.hp * 2 > m.maxhp || m.status === "slp") continue;
+        m.palaceFlag = true;
+        this.add("-text", m, PALACE_FLAVOR[PALACE_NATURE_FLAVOR[m.nature] || 0]);
+      }
       this.markParticipants();
       this.autoFillForced();
       this.maybeCommit();
@@ -2289,6 +2337,7 @@
           else if (c.type === "switch") actions.push({ order: 1, type: "switch", mon, side: s, index: c.index, priority: 0, speed: this.getSpeed(mon) });
           else if (c.type === "recharge") actions.push({ order: 3, type: "move", mon, side: s, recharge: true, priority: 0, speed: this.getSpeed(mon) });
           else if (c.type === "commanding") continue;
+          else if (c.palaceIdle) actions.push({ order: 3, type: "move", mon, side: s, palaceIdle: true, priority: 0, frac: 0, speed: this.getSpeed(mon) });
           else {
             if (c.mega) actions.push({ order: 2, type: "mega", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
             if (c.ultra) actions.push({ order: 2, type: "ultra", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
@@ -2417,7 +2466,7 @@
     canShift(sideId) {
       if (this.doubles) return false;
       const side = this.sides[sideId], foe = this.sides[sideId === "p1" ? "p2" : "p1"];
-      return this.phase === "switch" && !this.wild && this.switchCause && this.switchCause.type === "faint"
+      return this.phase === "switch" && !this.wild && !this.arena && this.switchCause && this.switchCause.type === "faint"
         && this.switchSides.length === 1 && this.switchSides[0] === foe.id
         && !side.active.fainted && side.pokemon.some((m) => !m.fainted && m !== side.active);
     }
@@ -2783,6 +2832,8 @@
         mon.removeVolatile("mustrecharge");
         return;
       }
+      // (The Palace: a Pokémon that couldn't bring itself to use a move: palaceChoice.)
+      if (a.palaceIdle) { this.add("-text", mon, "{who} appears incapable\nof using its power!"); return; }
       // (Carried off by a foe's Sky Drop: it can't move.)
       if (mon.volatiles.skydrop) {
         delete mon.volatiles.twoturnmove; delete mon.volatiles.lockedmove;
@@ -2829,7 +2880,11 @@
         o.targetLoc = a.targetLoc;
         if (a.pursuitTarget) { o.target = a.pursuitTarget; o.pursuitSwitch = true; }
       }
+      // (The Arena: a move it obeys counts for Mind as it's used (BattleArena_AddMindPoints), and for Skill by how it went (AddSkillPoints).)
+      const at = this.events.length;
+      if (this.arena && mon.arena) mon.arena.mind += arenaMindRating(move);
       this.execMove(mon, move, o);
+      if (this.arena && mon.arena) mon.arena.skill += this.arenaSkill(at, move);
     }
 
     // FireRed's IsMonDisobedient, for a Pokémon over the level cap (its
@@ -3842,6 +3897,98 @@
         m.activeTurns++;
         if (m.hp && m.volatiles.roost === undefined && m.types.join() !== m.baseTypes.join() && !m.mega) { /* type changes persist */ }
       }
+      // (The Arena: three turns and both still standing, and the referee judges.)
+      if (this.arena && this.arenaTurn === 2) this.arenaJudge();
+    }
+
+    // ---------- The Battle Arena and the Battle Palace (Emerald's src/battle_arena.c, battle_gfx_sfx_util.c) ----------
+    //
+    // The Arena: each pair of Pokémon fights three turns (arenaTurn, starting over when either side sends one
+    // out); if both are still standing, the referee judges three categories, each worth 2 to the better, 1
+    // each for a tie: Mind, the points its moves earned as they were chosen (arenaMindRating: an attack 1,
+    // Counter, Mirror Coat and Bide none, Fake Out, Protect, Detect and Endure -1); Skill, how its moves went
+    // (arenaSkill: super effective 2, a plain hit 1, not very effective -1, a miss or no effect -2, a move an
+    // Ability blocked -3, none for a Pokémon protecting itself); and Body, its HP left as a share of what it
+    // came out with. The loser faints (both, on a draw: VARIOUS_ARENA_BOTH_MONS_LOST), and the next comes in,
+    // in party order (no switching: getRequest). Events: "-arena commence" as a pair starts, "-arena judge"
+    // with the marks, "-arena decision" won / lost / tie.
+    arenaSkill(from, move) {
+      const ev = this.events.slice(from);
+      const has = (t) => ev.some((e) => e[0] === t);
+      if (ev.some((e) => e[0] === "-immune" && /^\[from\] ability: /.test(e[2] || ""))) return -3;
+      const protectedBy = ev.some((e) => e[0] === "-activate" && /^move: (Protect|Detect|King's Shield|Spiky Shield|Baneful Bunker|Obstruct|Silk Trap|Burning Bulwark|Mat Block|Crafty Shield|Wide Guard|Quick Guard|Max Guard)$/.test(e[2] || ""));
+      if (has("-fail") || has("-immune") || has("-miss")) return protectedBy ? 0 : -2;
+      const se = has("-supereffective"), nve = has("-resisted");
+      if (se && nve) return 1;
+      if (se) return 2;
+      if (nve) return -1;
+      return STALL_MOVES.has(move.id) ? 0 : 1;
+    }
+    arenaJudge() {
+      const a = this.sides.p1.active, b = this.sides.p2.active;
+      if (!a || !b || a.fainted || b.fainted || !a.arena || !b.arena) return;
+      for (const m of [a, b]) { this.endSkyDrop(m); delete m.volatiles.twoturnmove; delete m.volatiles.lockedmove; delete m.volatiles.bide; }   // (CancelMultiTurnMoves)
+      const body = (m) => Math.floor(m.hp * 100 / Math.max(1, m.arena.startHp));
+      const cats = [[a.arena.mind, b.arena.mind], [a.arena.skill, b.arena.skill], [body(a), body(b)]];
+      let pa = 0, pb = 0;
+      for (const [x, y] of cats) { if (x > y) pa += 2; else if (x < y) pb += 2; else { pa++; pb++; } }
+      const result = pa > pb ? "won" : pa < pb ? "lost" : "tie";
+      this.add("-arena", "judge", a, b, JSON.stringify({ cats, score: [pa, pb], result }));
+      this.add("-arena", "decision", a, b, result);
+      if (result !== "won") this.faint(a);
+      if (result !== "lost") this.faint(b);
+    }
+    // The Palace: a Pokémon's move for the turn, chosen as ChooseMoveAndTargetInBattlePalace does. Its nature
+    // picks a group (PALACE_LIKELIHOOD: attack, defence (moves on itself) or support, a second pair of odds
+    // once it's been down to half its HP); among its moves of that group, the one the opponents' AI rates
+    // best; with none of that group, one of any (of its attacks, when it has two or more of those and fewer
+    // of the rest, as Emerald counts them), and half the time it then can't bring itself to use it
+    // ({ palaceIdle }). In a double battle a move aimed at one foe goes by its nature too (PALACE_TARGET:
+    // the stronger, the weaker, or either). `id`: "p1", "p2", "p1b" or "p2b"; `slot` for your second in doubles.
+    palaceChoice(id, slot) {
+      const side = this.sides[id.slice(0, 2)];
+      if (slot == null) slot = /b$/.test(id) ? 1 : this.doubles ? (this.getRequestDoubles(id).open || [0])[0] : 0;
+      const mon = side.actives[slot || 0];
+      if (!mon || mon.fainted) return null;
+      if (this.forcedAction(mon)) return { type: "move", move: 0 };
+      const slots = this.getMoveSlots(mon), usable = slots.filter((m) => !m.disabled && m.pp > 0);
+      if (!usable.length) return { type: "move", move: "Struggle" };
+      const groupOf = (m) => {
+        const d = window.MOVES[m.name] || {}, t = d.target;
+        if (t === "self" || t === "allySide" || t === "adjacentAllyOrSelf" || t === "allyTeam" || t === "allies" || t === "adjacentAlly") return 1;
+        if (t === "scripted" || t === "foeSide") return 2;
+        if (t === "all") return 0;
+        return d.power ? 0 : 2;
+      };
+      const odds = PALACE_LIKELIHOOD[mon.nature] || PALACE_LIKELIHOOD.Hardy, low = mon.palaceFlag ? 2 : 0, pct = this.randInt(0, 99);
+      const group = pct < odds[low] ? 0 : pct < odds[low + 1] ? 1 : 2;
+      const inGroup = usable.filter((m) => groupOf(m) === group);
+      let pick = null;
+      if (inGroup.length) {
+        const foes = this.doubles ? this.foesOf(mon) : (mon.side.foe.active && !mon.side.foe.active.fainted ? [mon.side.foe.active] : []);
+        let best = -Infinity;
+        for (const m of inGroup) {
+          const sc = (window.OpponentAI && foes.length ? Math.max(...foes.map((f) => window.OpponentAI.scoreMove(this, mon, f, m.name))) : 0) + this.random() * 0.01;
+          if (sc > best) { best = sc; pick = m; }
+        }
+      } else {
+        const count = [0, 1, 2].map((g) => usable.filter((m) => groupOf(m) === g).length);
+        const multi = [count[0] >= 2, count[1] >= 2, count[1] >= 2];   // (Emerald checks the Defense count for Support's too)
+        const from = multi.filter(Boolean).length === 1 ? usable.filter((m) => groupOf(m) === (multi[1] ? 1 : 0)) : usable;
+        pick = from[this.randInt(0, from.length - 1)];
+        if (this.randInt(0, 99) >= 50) return { type: "move", palaceIdle: true };
+      }
+      const choice = { type: "move", move: pick.index };
+      if (this.doubles) {
+        const foes = this.foesOf(mon), locs = this.targetLocs(mon, (window.MOVES[pick.name] || {}).target);
+        const foeLocs = foes.map((f) => f.slot + 1).filter((l) => locs.includes(l));
+        if (foeLocs.length > 1) {
+          const [f1, f2] = foes, how = PALACE_TARGET[mon.nature] || "stronger";
+          const t = f1.hp === f2.hp || how === "random" ? foes[this.randInt(0, 1)] : how === "stronger" ? (f1.hp > f2.hp ? f1 : f2) : (f1.hp < f2.hp ? f1 : f2);
+          choice.target = t.slot + 1;
+        } else if (foeLocs.length === 1) choice.target = foeLocs[0];
+      }
+      return choice;
     }
   }
 

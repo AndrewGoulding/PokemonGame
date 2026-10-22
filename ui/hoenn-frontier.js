@@ -380,7 +380,7 @@
     }
 
     // ---------- The Battle Arena, Palace and Factory (and their tents' commands that are the same) ----------
-    // (The Arena's judging and the Palace's Pokémon choosing their own moves are left out: their battles are ordinary ones.)
+    // (The Arena's judging and the Palace's Pokémon choosing their own moves are the engine's: battleSpecial's spec.arena and spec.palace.)
     async function facility(name, a, api) {
       const s = S(), pre = name.split("_")[0], what = name.slice(pre.length + 1), d = String(a[0] || "");
       switch (what) {
@@ -1014,7 +1014,9 @@
         const n = f === FAC.TOWER ? (m === 1 ? 4 : m >= 2 ? 2 : 3) : 3;
         foe = pickMons(tbl.mons, D().heldItems, t.set, n, level, tentMode ? 0 : fixedIv(s.A.id), s.lvl !== 0);
       }
-      const spec = { team: s.team, foe: { name: fullName(t), team: foe, pic: t.pic }, defeatText: t.lose ? [t.lose] : ["…"], double: m === 1 || kind === 9 };
+      const spec = { team: s.team, foe: { name: fullName(t), team: foe, pic: t.pic }, defeatText: t.lose ? [t.lose] : ["…"], double: m === 1 || kind === 9,
+        // (The Arena's three-turn bouts and judging, the Verdanturf tent's too; the Palace's Pokémon choosing their own moves, the Fallarbor tent's too: engine/battle.js.)
+        arena: tentMode ? s.A.tent === "verdanturf" : f === FAC.ARENA, palace: tentMode ? s.A.tent === "fallarbor" : f === FAC.PALACE };
       if (kind === 9) {
         const t2 = trainerOf(s.B);
         spec.foe2 = { name: fullName(t2), team: pickMons(D().mons, D().heldItems, t2.set, 2, level, fixedIv(s.B.id), s.lvl !== 0), pic: t2.pic, defeatText: t2.lose ? [t2.lose] : ["…"] };
