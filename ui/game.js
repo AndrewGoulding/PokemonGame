@@ -2971,7 +2971,8 @@
       const beaten = !!player.flags[ev.person.trainer.id];
       await trainerBattle(ev.person, ev.approach, ev.facing);
       if (!beaten) await afterRocket(ev.person);
-      if (!beaten && player.flags[ev.person.trainer.id]) await gear.beatTrainer(ev.person);   // (their number: ui/pokegear.js)
+      // (Their number, asked on the map once the battle screen's gone, as HGSS does: ui/pokegear.js.)
+      if (!beaten && player.flags[ev.person.trainer.id] && gear.wantsNumber(ev.person)) { show("world"); await Overworld.resume(); await gear.beatTrainer(ev.person); }
       return;
     }
     if (ev.type === "hidden") {
@@ -3048,7 +3049,7 @@
         const beaten = !!f[ev.person.trainer.id];
         await trainerBattle(ev.person, null);
         if (!beaten) await afterRocket(ev.person);
-        if (!beaten && f[ev.person.trainer.id]) await gear.beatTrainer(ev.person);
+        if (!beaten && f[ev.person.trainer.id] && gear.wantsNumber(ev.person)) { show("world"); await Overworld.resume(); await gear.beatTrainer(ev.person); }
         if (ev.person.trainer.id === DOJO_MASTER) await dojoDenDoor();
       } else if (await gear.talkTrainer(ev.person)) return;   // (a Johto trainer on the phone: a rematch, a gift)
       else await say(dojoAfter(ev.person.trainer.id) || ev.person.trainer.after || ev.person.text || []);

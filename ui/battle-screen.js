@@ -3059,7 +3059,8 @@
     partyOrder = null;
     battle = new Battle(Object.assign({
       p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, ghost: !!cfg.ghost, noCatch: !!cfg.noCatch, exp: !!cfg.exp, expShare: !!cfg.expShare, catchContext: cfg.catchContext,
-      safari: cfg.safari, raid: cfg.raid || 0, raidAllies: cfg.raidAllies || undefined
+      safari: cfg.safari, raid: cfg.raid || 0, raidAllies: cfg.raidAllies || undefined,
+      levelCap: cfg.levelCap   // (the level cap, Player.levelCap: no Exp. past it, and a Pokémon over it may not obey)
     }, cfg.format === "doubles" ? { format: "doubles" } : {}));
     safariCursor = 0;
     cursor = 0;

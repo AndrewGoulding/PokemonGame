@@ -14,7 +14,7 @@
 //   gear.setTrigger(n, on)        // HGSS's call triggers (ScrCmd_148, UnsetPhoneCallTrigger)
 //   gear.step()                   // each step: { type: "phone" } when it rings ...
 //   await gear.ring()             // ... and then the call
-//   await gear.beatTrainer(person)   // a phone trainer just beaten: may they have your number?
+//   gear.wantsNumber(person), await gear.beatTrainer(person)   // a phone trainer just beaten: may they have your number? (asked on the map)
 //   await gear.talkTrainer(person)   // talking to one beaten: a rematch, a gift, or asking
 //                                    // again (true), or nothing to do (false)
 //   gear.encounterRate()          // the radio's March (x2) or Lullaby (x0.5) on wild Pokémon, else 1
@@ -666,6 +666,10 @@
       await env.giveItem(item);
     }
     // (Only once you have the Pokégear; asked on the map, after the battle.)
+    function wantsNumber(person) {
+      const i = contactOf(person.trainer && person.trainer.id);
+      return i >= 0 && !registered(i) && has();
+    }
     async function beatTrainer(person) {
       const i = contactOf(person.trainer && person.trainer.id);
       if (i < 0 || registered(i) || !has()) return;
@@ -993,7 +997,7 @@
       }
     }
 
-    return { has, open, call, registerCard, rematch, setTrigger: trigger, step, ring, beatTrainer, talkTrainer, encounterRate,
+    return { has, open, call, registerCard, rematch, setTrigger: trigger, step, ring, wantsNumber, beatTrainer, talkTrainer, encounterRate,
       registered, contactOf, radioOn, timeOfDay, passwordSet, savePrize, momHome, talkPerson, visible, deliveryman, radioStations,
       // (For tests: a call due on the next step; what someone says on a call.)
       callDue: () => { walked = CALL_STEPS; }, callLines: (i, incoming) => whatTheySay(i, !!incoming, null) };
