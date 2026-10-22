@@ -23,7 +23,9 @@
 // env: player(), say(pages), confirm(question), chooseBerry() (an id from the
 // Bag's Berries pocket, or null), jingle(song, pages) (said over a jingle), farmingLevel(),
 // addFarmingXp(n) (and says if the level rose), refresh() (the people on the
-// map looked at again), here() (the map you're on).
+// map looked at again), here() (the map you're on); pickGame(berry, n), if the
+// berries are picked by a game of the farm's own (Hoenn's trees: the Berry
+// Pouch's, ui/game.js pickingGame), which puts them in the Bag itself.
 //
 // player.flags.berryFarm: { pail (got the Wailmer Pail), trees: { [spot]:
 // { berry, stage (1-5), left (steps till the next, at Emerald's pace), watered
@@ -131,6 +133,9 @@
         const n = Math.max(t.yield, Math.round(t.yield * (1 + (env.farmingLevel() || 1) / 100))), pages = fill([T.found, T.wantToPick], t.berry, n);
         await env.say([pages[0]]);
         if (!(await env.confirm(pages[1]))) { await env.say(fill(T.leftUnpicked, t.berry)); return; }
+        // (Hoenn's trees: the berries are picked by shaking the tree, the Berry Pouch's game, which brings them home
+        // and gives the farming XP itself: env.pickGame(berry, n).)
+        if (env.pickGame) { delete trees[spot]; env.refresh(); await env.pickGame(t.berry, n); return; }
         window.Player.addItem(env.player(), t.berry, n);
         delete trees[spot];
         env.refresh();

@@ -20,6 +20,9 @@
   const FACILITY_NAMES = ["Battle Tower", "Battle Dome", "Battle Palace", "Battle Arena", "Battle Factory", "Battle Pike", "Battle Pyramid"];
   const STAGES = 7, TENT_STAGES = 3, TENT_MIN = 30, MAX_STREAK = 9999, MAX_BP = 9999;
   const TENT_PRIZES = { slateport: "full-heal", verdanturf: "nest-ball", fallarbor: "hyper-potion" };
+  // The Pyramid's prizes (src/battle_pyramid.c sShortStreakRewardItems, sLongStreakRewardItems).
+  const PYRAMID_PRIZES_SHORT = ["hp-up", "protein", "iron", "calcium", "carbos", "zinc"];
+  const PYRAMID_PRIZES_LONG = ["bright-powder", "white-herb", "quick-claw", "leftovers", "mental-herb", "kings-rock", "focus-band", "scope-lens", "choice-band"];
   // The classes' names, as they show in front of a name.
   const className = (cls) => String(cls || "").replace(/_[mf]$/, "").split("_").map((w) => w === "pkmn" ? "Pokémon" : w === "pokefan" ? "Pokéfan" : w.replace(/^./, (c) => c.toUpperCase())).join(" ");
   // F_EV_SPREAD bits: the stats' order here is the record's.
@@ -818,7 +821,13 @@
           return true;
         }
         case "save": s.status = api.num(a[0]); s.paused = 1; api.setVar("VAR_TEMP_CHALLENGE_STATUS", 0); await env.save(s.status === 2); return true;
-        case "setprize": return true;
+        // (Emerald picks a prize here (SetBattlePyramidPrize: a vitamin, or past a streak of 41, a held item of worth)
+        // but its scripts never hand it over; this game does, at once.)
+        case "setprize": {
+          const wins = s.streak[pyrKey(s.lvl)] || 0, list = wins > 41 ? PYRAMID_PRIZES_LONG : PYRAMID_PRIZES_SHORT, id = list[int(list.length)];
+          if (await env.giveItem(id)) await env.say(["And for conquering the BATTLE PYRAMID,\nhere is your prize!", P().name + " received " + (/^[aeiou]/i.test(env.itemName(id)) ? "an " : "a ") + env.itemName(id) + "!"]);
+          return true;
+        }
         case "seedfloor": seedFloor(); return true;
         case "settrainers": case "resetparty": case "setitem": case "hideitem": return true;
         case "showhint": return true;

@@ -6561,6 +6561,12 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
       await run("BattleFrontier_BattlePyramidLobby_EventScript_WonChallenge", "LOCALID_X");
       assert(fplayer.party === realParty && fplayer.bag === realBag, "your own Pokémon and bag come back");
       assert(window.HoennFrontier.create && s.bp >= 1, "Battle Points for the Pyramid");
+      assert(spoken.some((x) => /here is your prize/.test(String(x))) && spoken.some((x) => /received an? (HP Up|Protein|Iron|Calcium|Carbos|Zinc|hp-up|protein|iron|calcium|carbos|zinc)/i.test(String(x))), "and a prize, a vitamin for a short streak: " + spoken.slice(-4).join("|"));
+      // (RETIRE on the Start menu in the Pyramid: BattlePyramid_Retire, the challenge lost and back to the lobby.)
+      const gjs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+      assert(window.HOENN_SCRIPTS.s.BattlePyramid_Retire && /key: "retirePyramid", label: "Retire"/.test(gjs) && /runHoenn\("BattlePyramid_Retire"\)/.test(gjs), "Retire in the Pyramid");
+      // (Hoenn's berry picking: the Berry Pouch in Petalburg Woods, and a tree's berries picked by its game.)
+      assert(/"PetalburgWoods"\]/.test(gjs) && /pickGame: \(berry, n\) => pickingGame\(\{ berry, n \}\)/.test(gjs) && /if \(env\.pickGame\)/.test(fs.readFileSync(path.join(root, "ui/berry-farm.js"), "utf8")), "Hoenn's berries are picked as Kanto's");
     }
     // The Lilycove Contest Hall: enter a Pokémon in the Normal Rank Coolness Contest, and the hall's own scripts run the contest to its judges' marks.
     {

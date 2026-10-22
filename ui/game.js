@@ -1262,19 +1262,27 @@
   // ui/berry-picking.js), in a forest: shake a tree and catch what falls.
   // Playing earns farming XP (flags.farmingXp): your farming level adds
   // berries and decides which kinds you can pick.
-  const FORESTS = ["ViridianForest", "ThreeIsland_BerryForest", "SixIsland_PatternBush"];
+  const FORESTS = ["ViridianForest", "ThreeIsland_BerryForest", "SixIsland_PatternBush", "PetalburgWoods"];
   const farmingXp = () => player.flags.farmingXp | 0;
   async function berryPouch() {
     if (!FORESTS.includes(player.location && player.location.map)) {
       await message("There are no berry trees to pick from here. Try using the Berry Pouch in a forest!");
       return false;
     }
+    await pickingGame();
+    return true;
+  }
+  // The picking game itself, and what it brings home: the forest's berries by your farming level (the Berry Pouch),
+  // or, at a tree of Hoenn's with berries on it (`tree`: its berry, and how many it bore), that tree's berries, as many
+  // as you caught and never fewer than it bore, and a gold berry's catch from the best tier you can pick.
+  async function pickingGame(tree) {
     show("scene");
     clearMenu();
     const f = player.flags, xp = farmingXp(), before = BerryPicking.level(xp);
     const game = await BerryPickingScreen.run(scene, BerryPicking.create(Math.random, before), xp, player.look || "custom");
     const r = BerryPicking.result(game);
-    const berries = BerryPicking.rewards(r, before);
+    const berries = tree ? Array(Math.max(tree.n, r.berries + Math.floor(r.berries * Math.min(before, 100) / 100))).fill(tree.berry)
+      .concat(Array.from({ length: r.gold }, () => BerryPicking.pickBerry(before, Math.random, true))) : BerryPicking.rewards(r, before);
     f.farmingXp = xp + r.xp;
     const berriesOf = (n, what) => n + " " + what + (n === 1 ? "y" : "ies");
     await BerryPickingScreen.message("Score " + r.score + ": " + berriesOf(r.ripe, "ripe berr") +
@@ -1290,8 +1298,9 @@
     const after = BerryPicking.level(f.farmingXp);
     if (after > before) await BerryPickingScreen.message(farmingLevelRose(before, after));
     BerryPickingScreen.clear();
+    show("world");
+    await Overworld.resume();
     await persist();
-    return true;
   }
   function farmingLevelRose(before, after) {
     const tier = BerryPicking.TIERS.find((t) => t.from > before && t.from <= after);
@@ -1325,7 +1334,9 @@
   };
   const berryFarm = BerryFarm.create(berryEnv);
   // Hoenn's trees, along its routes (Emerald's own: the ones its new game starts with are grown): the same engine, another place to keep them.
-  const hoennBerries = BerryFarm.create(berryEnv, { key: "hoennBerries", owns: (map) => isHoenn(map), spotRe: /^HoennBerry_Tree_(\d+)$/, initial: () => window.HOENN_SCRIPTS.berryTrees });
+  // (Picking from one of Hoenn's trees is the Berry Pouch's game, as in Kanto's forests: pickingGame.)
+  const hoennBerries = BerryFarm.create(Object.assign({}, berryEnv, { pickGame: (berry, n) => pickingGame({ berry, n }) }),
+    { key: "hoennBerries", owns: (map) => isHoenn(map), spotRe: /^HoennBerry_Tree_(\d+)$/, initial: () => window.HOENN_SCRIPTS.berryTrees });
   // Hoenn's decorations (ui/hoenn-decor.js): the ones you own, and those out in your Secret Base and your room.
   const hoennDecor = HoennDecor.create({
     player: () => player, say: (p) => say(p), confirm: (q) => confirm(q), sfx,
@@ -2389,7 +2400,8 @@
     save: "Save your game with a complete record\nof your progress to take a break.",
     option: "Adjust various game settings such as text\nspeed, game rules, etc.",
     exit: "Close this menu window.",
-    retire: "Retire from the Safari Game and return to\nthe registration counter."
+    retire: "Retire from the Safari Game and return to\nthe registration counter.",
+    retirePyramid: "Give up your Battle Pyramid challenge\nand go back to the lobby."
   };
   async function startMenu() {
     player.flags.openedMenu = true;   // (FireRed's FLAG_OPENED_START_MENU: the Sign Lady's scene)
@@ -2402,6 +2414,9 @@
       const items = [], safari = player.flags.safari;
       // (In the Bug-Catching Contest's park: RETIRE too, and no BAG or SAVE.)
       const contest = bugContest.here(player.location.map);
+      // (In the Battle Pyramid: RETIRE, Emerald's own (SetUpStartMenu_BattlePyramid), before anything else.)
+      const pyramid = player.location.map === PYRAMID_FLOOR;
+      if (pyramid) items.push({ key: "retirePyramid", label: "Retire" });
       if (safari) items.push({ key: "retire", label: "Retire" });
       if (contest) items.push({ key: "retire", label: "Retire", help: "Finish the Bug-Catching Contest now and\nwait for the judging." });
       if (player.flags.pokedex) items.push({ key: "dex", label: "Pokédex" });
@@ -2418,6 +2433,12 @@
       const v = r.key;
       if (v === "exit") return;
       if (v === "retire" && contest) { await runJohto(johtoStd("std_bug_contest_retire"), null); return; }
+      // (gText_BattlePyramidConfirmRetire, then BattlePyramid_Retire: the challenge lost, back to the lobby.)
+      if (v === "retirePyramid") {
+        if (!(await confirm("Are you sure you want to quit your\nPYRAMID quest?"))) continue;
+        await runHoenn("BattlePyramid_Retire");
+        return;
+      }
       if (v === "retire") {
         if (safari.hgss) { if (await johtoSafari.retire()) return; continue; }   // (Johto's: std_safari_exit)
         if (await confirm(fill(T("SafariZone_Text_WouldYouLikeToExit")[0]))) { await safariOver(null, false); return; }

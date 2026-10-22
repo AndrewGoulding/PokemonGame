@@ -1903,7 +1903,8 @@ Also in: Dive (A on deep water, with the Mind Badge; Underwater maps with Emeral
 seaweed encounters), the move tutors, the Move Deleter and Relearner, in-game trades, the legendary and
 Regi battles, the Mt. Chimney cable car and the Hall of Fame (the team on record, then home; no Emerald credits).
 
-Also: berry trees (Hoenn's own growth stages and mulch), weather, your own secret base with its decorations,
+Also: berry trees (Hoenn's own growth stages and mulch; picking from one is the Berry Pouch's game, as in Kanto's
+forests, and the Berry Pouch works in Petalburg Woods: the farming level counts there too), weather, your own secret base with its decorations,
 the rotating-tile puzzles, the Mirage Tower and Rayquaza's scenes.
 
 **The Battle Frontier** runs Emerald's own lobby and battle-room scripts over `ui/hoenn-frontier.js` (the commands those
@@ -1919,14 +1920,16 @@ drawn as Emerald lays it out, the winners' lines marked and each trainer's Poké
 (doors, hints, statuses, healing rooms and the hall of wild Pokémon), the Slateport, Verdanturf and Fallarbor tents, the
 Battle Pyramid, the Brains' Silver and Gold Symbols, Battle Points and the exchange shops. The Pyramid builds each of its
 seven dark floors from the decomp's squares and templates (`ui/hoenn-pyramid.js`), with your party and a two-item
-Pyramid bag swapped in until you leave. Challenges are saved and resumed through the game's own save; for the bots that
+Pyramid bag swapped in until you leave; RETIRE on its Start menu gives the challenge up (Emerald's own), and conquering
+it brings a prize with the Battle Points (Emerald picks one, a vitamin, or past a streak of 41 a held item of worth,
+but its scripts never hand it over; this game does). Challenges are saved and resumed through the game's own save; for the bots that
 play-test them, `HOENN_FORCE_WIN = "won"` or `"lost"` (with `HOENN_DEBUG`) settles each battle at once.
 
 **Contests** at Lilycove run the contest halls' scripts over a simplified engine (`ui/hoenn-contest.js`: the 95 contestants,
 353 moves, appeal and jam, five rounds, and the ribbons). Left out: Pokéblocks and the Berry Blender, the dressing room.
 
 Not built: recorded battles, e-Reader,
-Link and wireless features, the Apprentice, the Pyramid's Start-menu Retire, the fan club, Emerald's credits, and
+Link and wireless features, the Apprentice, the fan club, Emerald's credits, and
 Safari Zone's rules.
 
 The smoke test runs a story scene (Norman and Wally) through the interpreter with a stub game; `HOENN_TRACE = []`
