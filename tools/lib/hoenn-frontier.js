@@ -167,6 +167,20 @@ module.exports = function hoennFrontier(EM, h) {
     }
     data.brainLook = ["ANABEL", "TUCKER", "SPENSER", "GRETA", "NOLAND", "LUCY", "BRANDON"].map((n) => "OBJ_EVENT_GFX_" + n);
   }
+  // The Battle Pike: its wild Pokémon (by level mode and by how far you've come), the people in its rooms and what they say.
+  {
+    const pk = read("src/battle_pike.c"), lists = {};
+    for (const m of pk.matchAll(/static const struct PikeWildMon (sLvl(?:50|Open)_Mons\d)\[\] =\s*\{([\s\S]*?)\n\};/g)) {
+      lists[m[1]] = [...m[2].matchAll(/\.species = (\w+),\s*\.levelDelta = (\d+),\s*\.moves = \{([^}]*)\}/g)].map((x) => ({ species: h.species(x[1]), delta: +x[2], moves: x[3].split(",").map((y) => h.move(y.trim())).filter(Boolean) }));
+    }
+    const at = pk.indexOf("sNPCSpeeches[][") , sp = pk.slice(at, pk.indexOf("};", at));
+    const nt = pk.indexOf("sNPCTable[]"), table = pk.slice(nt, pk.indexOf("};", nt));
+    data.pike = {
+      wild: [1, 2, 3, 4].map((i) => lists["sLvl50_Mons" + i]).concat([1, 2, 3, 4].map((i) => lists["sLvlOpen_Mons" + i])),
+      npcs: [...table.matchAll(/\.graphicsId = (\w+),\s*\.speechId1 = (\d+),\s*\.speechId2 = (\d+),\s*\.speechId3 = (\d+)/g)].map((m) => ({ gfx: m[1], speech: [+m[2], +m[3], +m[4]] })),
+      speeches: [...sp.matchAll(/\{([^{}]*)\}/g)].map((m) => speech(m[1]))
+    };
+  }
   // The facility classes' pictures.
   const picOf = {};
   for (const m of read("src/data/pokemon/trainer_class_lookups.h").matchAll(/\[FACILITY_CLASS_(\w+)\] = (TRAINER_PIC_\w+)/g)) picOf[m[1].toLowerCase()] = m[2];

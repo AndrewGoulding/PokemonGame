@@ -86,7 +86,7 @@
       }
       return out;
     }
-    const healTeam = () => { const s = S(); for (const r of s.team) window.Party.heal(r); };
+    const healTeam = () => { const s = S(); if (s.pike && s.pike.noHeal && fac() === FAC.PIKE) return; for (const r of s.team) window.Party.heal(r); };
     function setLevel(r, level) {
       r.level = level; r.exp = window.Experience.expForLevel(window.Experience.growthRate(r.species), level);
       r.hp = maxHp(r);
@@ -136,7 +136,7 @@
     }
     function givePoints() {
       const s = S(), f = fac(), m = mode(), st = streak();
-      const per = f === FAC.DOME ? st : f === FAC.PIKE ? Math.floor(st / 10) : Math.floor(st / STAGES);
+      const per = f === FAC.DOME ? st : f === FAC.PIKE ? Math.floor(st / 14) : Math.floor(st / STAGES);
       let c = per > 0 ? per - 1 : 0;
       const tbl = D().points;
       if (c >= tbl.length) c = tbl.length - 1;
@@ -264,6 +264,7 @@
       if (/^tower_/.test(name)) return tower(name, a, api);
       if (/^(arena|palace|factory)_/.test(name)) return facility(name, a, api);
       if (/^dome_/.test(name)) return dome(name, a, api);
+      if (/^pike_/.test(name)) return pike(name, a, api);
       if (/^apprentice_/.test(name)) {
         // (The Tower's Apprentice isn't here: he's always gone.)
         if (name === "apprentice_shouldcheckgone") { api.setVar("VAR_0x8004", 1); api.setFlag("FLAG_DAILY_APPRENTICE_LEAVES", true); }
@@ -519,6 +520,167 @@
       return false;
     }
 
+    // ---------- The Battle Pike ----------
+    // Fourteen rooms, each of three doors away from the last, and what's behind a door is anyone's guess: a trainer or two, a
+    // Pokémon Center's worth of rest, a hall of wild Pokémon, a person with a word to say, someone who'll make one of yours sick.
+    // The Pike Queen waits at the end of some challenges. Your Pokémon don't heal between rooms but in the ones that heal them.
+    const ROOM = { SINGLE: 0, HEAL_FULL: 1, NPC: 2, STATUS: 3, HEAL_PART: 4, WILD: 5, HARD: 6, DOUBLE: 7, BRAIN: 8 };
+    const HINT_OF = [3, 3, 1, 0, 0, 2, 2, 1, 4];   // (people, people, whispering, nostalgia, nostalgia, Pokémon, Pokémon, whispering, brain)
+    const aliveMons = () => S().team.filter((r) => r.hp > 0);
+    const healthyMons = () => S().team.filter((r) => r.hp > 0 && !r.status);
+    const pikeCount = (num) => (num <= 4 ? 1 : num <= 9 ? 2 : 3);
+    const pikeBrain = (nextRoom) => {
+      const a = D().brainStreaks[FAC.PIKE], n = symbols(FAC.PIKE), w = streak() + nextRoom;
+      if (n < 2) return w === a[n] - a[3] ? n + 1 : 0;
+      if (w === a[0] - a[3]) return 3;
+      if (w === a[1] - a[3] || (w > a[1] && (w - a[1] + a[3]) % a[2] === 0)) return 4;
+      return 0;
+    };
+    function tryHeal(count) {
+      const s = S(), order = s.team.map((r, i) => i).sort(() => rnd() - 0.5);
+      for (const i of order) {
+        if (!count) break;
+        const r = s.team[i];
+        if (r.hp < maxHp(r) || r.status || r.moves.some((m) => m.pp < window.Party.maxPp(m))) { window.Party.heal(r); count--; }
+      }
+    }
+    function inflictStatus() {
+      const s = S(), count = pikeCount(s.num), prevent = { frz: ["Ice"], tox: ["Steel", "Poison"], par: ["Ground", "Electric"], brn: ["Fire"], slp: [] };
+      const typesOf = (r) => (window.DEX[r.species] || {}).types || [];
+      const order = s.team.map((r, i) => i).sort(() => rnd() - 0.5);
+      let status = null;
+      for (let tries = 0; tries < 60 && !status; tries++) {
+        const roll = int(100), st = roll < 35 ? "tox" : roll < 60 ? "frz" : roll < 80 ? "par" : roll < 90 ? "slp" : "brn";
+        let seen = 0;
+        for (const i of order) {
+          const r = s.team[i];
+          if (r.hp > 0 && !r.status) { seen++; if (!typesOf(r).some((t) => prevent[st].includes(t))) { status = st; break; } }
+          if (seen === count) break;
+        }
+        if (!seen) return false;
+      }
+      if (!status) return false;
+      s.pike.statusCode = ["frz", "brn", "tox", "par", "slp"].indexOf(status);
+      s.pike.statusMon = status === "frz" ? 1 : status === "brn" ? int(2) : 0;
+      let n = 0;
+      for (const i of order) {
+        const r = s.team[i];
+        if (r.hp > 0 && !r.status) {
+          n++;
+          const ab = r.ability, stops = { frz: "Magma Armor", brn: "Water Veil", par: "Limber", tox: "Immunity" }[status];
+          if (ab !== stops && !((status === "slp") && (ab === "Insomnia" || ab === "Vital Spirit")) && !typesOf(r).some((t) => prevent[status].includes(t))) r.status = status;
+        }
+        if (n === count) break;
+      }
+      return true;
+    }
+    function nextRoom(door) {
+      const s = S(), k = s.pike;
+      if (k.hintType === ROOM.BRAIN) return ROOM.BRAIN;
+      if (door === k.hintIndex) { if (k.hintType === ROOM.STATUS) inflictStatus(); return k.hintType; }
+      const off = new Set();
+      for (let i = 0; i < 8; i++) if (HINT_OF[i] === HINT_OF[k.hintType]) off.add(i);
+      if (aliveMons().length < 2) off.add(ROOM.DOUBLE);
+      if (!healthyMons().length) off.add(ROOM.STATUS);
+      if (k.noHeal) { off.add(ROOM.HEAL_FULL); off.add(ROOM.HEAL_PART); }
+      const cands = [0, 1, 2, 3, 4, 5, 6, 7].filter((i) => !off.has(i)), pick = cands[int(cands.length)] ?? ROOM.NPC;
+      if (pick === ROOM.STATUS) inflictStatus();
+      return pick;
+    }
+    function pikeTrainers(difficult, two) {
+      const s = S(), challengeNum = Math.floor(streak() / 14), used = s.ids.filter((x) => x != null && x >= 0);
+      const draw = () => { let id; do { id = randomTrainerId(challengeNum, difficult ? STAGES - 1 : 1); } while (used.includes(id)); used.push(id); return id; };
+      s.A = { kind: "frontier", id: draw() }; s.ids[s.num - 1] = s.A.id;
+      s.B = two ? { kind: "frontier", id: draw() } : null;
+    }
+    async function pike(name, a, api) {
+      const s = S(), k = s.pike || (s.pike = { room: 0, hintType: 0, hintIndex: 0, noHeal: false, statusCode: 0, statusMon: 0, npc: 0 }), what = name.slice(5), d = String(a[0] || "");
+      switch (what) {
+        case "init": s.status = 0; s.num = 0; s.paused = 0; s.A = null; s.outcome = 0; if (!s.active[curKey()]) s.streak[curKey()] = 0; if (env.markHome) env.markHome(); return true;
+        case "get": {
+          const key2 = curKey(), r = /PRIZE$/.test(d) ? "ITEM_NONE" : /WIN_STREAK_ACTIVE$/.test(d) ? (s.active[key2] ? 1 : 0) : /WIN_STREAK$/.test(d) ? streak() : /RECORD_STREAK$/.test(d) ? s.best[key2] || 0 : /TOTAL_STREAKS$/.test(d) ? s.wins["pike." + key2] || 0 : 0;
+          api.setVar("VAR_RESULT", r);
+          return true;
+        }
+        case "set": {
+          const val = a.length > 1 ? api.num(a[1]) : v("VAR_0x8006"), key2 = curKey();
+          if (/WIN_STREAK_ACTIVE$/.test(d)) { if (val) s.active[key2] = true; else delete s.active[key2]; }
+          else if (/RECORD_STREAK$/.test(d)) { if (val > (s.best[key2] || 0)) s.best[key2] = val; }
+          else if (/TOTAL_STREAKS$/.test(d)) s.wins["pike." + key2] = val;
+          else if (/WIN_STREAK$/.test(d)) s.streak[key2] = val;
+          return true;
+        }
+        case "save": s.status = api.num(a[0]); s.paused = 1; api.setVar("VAR_TEMP_CHALLENGE_STATUS", 0); await env.save(s.status === 2); return true;
+        case "setnextroom": k.room = nextRoom(v("VAR_0x8007")); return true;
+        case "getroomtype": api.setVar("VAR_RESULT", k.room); return true;
+        case "isfinalroom": api.setVar("VAR_RESULT", s.num > 14 ? 1 : 0); return true;
+        case "inwildmonroom": k.inWild = true; return true;
+        case "exitwildmonroom": k.inWild = false; return true;
+        case "inchallenge": api.setVar("VAR_RESULT", /Pike/.test(env.map ? env.map() : "") ? 1 : 0); return true;
+        case "setroomobjects": {
+          const gfx = (n) => D().look[n] || "OBJ_EVENT_GFX_BOY_1", LINK = "OBJ_EVENT_GFX_LINK_RECEPTIONIST";
+          api.setVar("VAR_OBJ_GFX_ID_0", LINK); api.setVar("VAR_OBJ_GFX_ID_1", "OBJ_EVENT_GFX_DUSCLOPS");
+          let g0 = null, g1 = null;
+          switch (k.room) {
+            case ROOM.SINGLE: pikeTrainers(false, false); g0 = trainerOf(s.A).look; break;
+            case ROOM.HEAL_FULL: g0 = LINK; break;
+            case ROOM.NPC: { k.npc = int(D().pike.npcs.length); g0 = D().pike.npcs[k.npc].gfx; break; }
+            case ROOM.STATUS: g0 = "OBJ_EVENT_GFX_GENTLEMAN"; g1 = k.statusMon === 1 ? "OBJ_EVENT_GFX_DUSCLOPS" : "OBJ_EVENT_GFX_KIRLIA"; break;
+            case ROOM.HEAL_PART: g0 = "OBJ_EVENT_GFX_GENTLEMAN"; break;
+            case ROOM.HARD: pikeTrainers(true, false); g0 = trainerOf(s.A).look; g1 = LINK; break;
+            case ROOM.DOUBLE: pikeTrainers(false, true); g0 = trainerOf(s.A).look; g1 = trainerOf(s.B).look; break;
+            case ROOM.BRAIN: s.A = { kind: "brain", fac: FAC.PIKE }; g0 = D().brainLook[FAC.PIKE]; g1 = LINK; break;
+          }
+          if (g0) api.setVar("VAR_OBJ_GFX_ID_0", g0);
+          if (g1) api.setVar("VAR_OBJ_GFX_ID_1", g1);
+          return true;
+        }
+        case "getstatus": api.setVar("VAR_RESULT", k.statusCode); return true;
+        case "getstatusmon": api.setVar("VAR_RESULT", k.statusMon); return true;
+        case "healonetwomons": { const n = 1 + int(2); tryHeal(n); api.setVar("VAR_RESULT", n); return true; }
+        case "getnpcmsg": {
+          const n = D().pike.npcs[k.npc] || D().pike.npcs[0], id = n.speech[s.num <= 4 ? 0 : s.num <= 10 ? 1 : 2];
+          await env.say(D().pike.speeches[id] || "…");
+          return true;
+        }
+        case "flashscreen": if (env.flash) await env.flash(); return true;
+        case "sethintroom": {
+          api.setVar("VAR_RESULT", 0);
+          if (pikeBrain(1)) { api.setVar("VAR_RESULT", 1); k.hintIndex = int(6); k.hintType = ROOM.BRAIN; return true; }
+          k.hintIndex = int(3);
+          const pool = k.noHeal ? [0, 2, 3, 5, 6, 7] : [0, 1, 2, 3, 4, 5, 6, 7];
+          k.hintType = pool[int(pool.length)];
+          if (k.hintType === ROOM.STATUS && !healthyMons().length) k.hintType = ROOM.NPC;
+          if (k.hintType === ROOM.DOUBLE && aliveMons().length < 2) k.hintType = ROOM.NPC;
+          return true;
+        }
+        case "gethintroomid": api.setVar("VAR_RESULT", k.hintIndex); return true;
+        case "gethint": api.setVar("VAR_RESULT", HINT_OF[k.hintType]); return true;
+        case "cleartrainerids": s.ids = []; return true;
+        case "gettrainerintro": { const t = trainerOf(d === "1" || a[0] === 1 ? s.B : s.A); if (t && t.before) await env.say(t.before); return true; }
+        case "getbrainstatus": api.setVar("VAR_RESULT", pikeBrain(0)); return true;
+        case "prequeenheal": {
+          const TABLE = [[2, 1, 0], [2, 0, 1], [1, 2, 0], [1, 0, 2], [0, 2, 1], [0, 1, 2]], n = TABLE[k.hintIndex][v("VAR_0x8007")] || 0;
+          tryHeal(n); api.setVar("VAR_RESULT", n);
+          return true;
+        }
+        case "nohealing": k.noHeal = a.length ? !!api.num(a[0]) : false; return true;
+        case "ispartyfullhealth": api.setVar("VAR_RESULT", s.team.every((r) => r.hp >= maxHp(r) && !r.status && r.moves.every((m) => m.pp >= window.Party.maxPp(m))) ? 1 : 0); return true;
+        case "savehelditems": k.items = s.team.map((r) => r.item); return true;
+        case "resethelditems": s.team.forEach((r, i) => { r.item = (k.items || s.items)[i] || ""; }); return true;
+      }
+      return false;
+    }
+    // A wild Pokémon in the Pike's hall: its level (Level 50's, or the best of yours) by how many rooms you've cleared.
+    function pikeWild(mon) {
+      const s = S(), lvl = s.lvl === 0 ? 0 : 1, w = streak(), header = w <= 20 * 14 ? 0 : w <= 40 * 14 ? 1 : w <= 60 * 14 ? 2 : 3, list = D().pike.wild[lvl * 4 + header];
+      const e = list.find((x) => x.species === mon.species) || list[2];
+      let level;
+      if (lvl === 0) level = 50 - e.delta;
+      else { level = Math.max(60, highest(s.team) - e.delta); }
+      return Object.assign({}, mon, { species: e.species, level, moves: e.moves });
+    }
+
     // ---------- The tents ----------
     const tentOf = () => ({ 4: "slateport", 2: "verdanturf", 3: "fallarbor" })[fac()];
     async function tent(name, a, api) {
@@ -686,11 +848,17 @@
           foe = pool;
         } else foe = D().brain[f][symbolBrain()].map((bm) => brainMon(bm, level));
       } else if (kind === 6 || kind === 3) foe = s.foe.map(clone);
+      else if (kind === 7 || kind === 9) foe = pickMons(D().mons, D().heldItems, t.set, kind === 9 ? 2 : 3, level, fixedIv(s.A.id), s.lvl !== 0);
       else {
         const n = f === FAC.TOWER ? (m === 1 ? 4 : m >= 2 ? 2 : 3) : 3;
         foe = pickMons(tbl.mons, D().heldItems, t.set, n, level, tentMode ? 0 : fixedIv(s.A.id), s.lvl !== 0);
       }
-      const spec = { team: s.team, foe: { name: fullName(t), team: foe, pic: t.pic }, defeatText: t.lose ? [t.lose] : ["…"], double: m === 1 };
+      const spec = { team: s.team, foe: { name: fullName(t), team: foe, pic: t.pic }, defeatText: t.lose ? [t.lose] : ["…"], double: m === 1 || kind === 9 };
+      if (kind === 9) {
+        const t2 = trainerOf(s.B);
+        spec.foe2 = { name: fullName(t2), team: pickMons(D().mons, D().heldItems, t2.set, 2, level, fixedIv(s.B.id), s.lvl !== 0), pic: t2.pic, defeatText: t2.lose ? [t2.lose] : ["…"] };
+        spec.partner = null;
+      }
       if (m >= 2 && f === FAC.TOWER) {
         const t2 = trainerOf(s.B);
         spec.foe2 = { name: fullName(t2), team: pickMons(D().mons, D().heldItems, t2.set, 2, level, fixedIv(s.B.id), s.lvl !== 0), pic: t2.pic, defeatText: t2.lose ? [t2.lose] : ["…"] };
@@ -716,7 +884,7 @@
       await env.say(lines.join("\n"));
     }
 
-    return { op, special, state: S, healTeam, FAC };
+    return { op, special, state: S, healTeam, pikeWild, FAC };
   }
 
   window.HoennFrontier = { create, FAC };

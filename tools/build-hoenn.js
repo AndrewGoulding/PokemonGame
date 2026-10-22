@@ -333,7 +333,9 @@ function ballItem(mapName, script) {
 }
 
 // ---------- Wild Pokémon ----------
-const wild = JSON.parse(fs.readFileSync(P("src/data/wild_encounters.json"), "utf8")).wild_encounter_groups[0].encounters;
+const wildGroups = JSON.parse(fs.readFileSync(P("src/data/wild_encounters.json"), "utf8")).wild_encounter_groups;
+const wild = wildGroups[0].encounters;
+const pikeWild = wildGroups.find((g) => g.label === "gBattlePikeWildMonHeaders").encounters[0];
 const slotsOf = (enc, kind) => {
   const e = enc && enc[kind];
   if (!e) return undefined;
@@ -372,7 +374,7 @@ function behavior(b) {
   }
 }
 // Where wild Pokémon are (Emerald's MetatileBehavior_IsLandWildEncounter).
-const WILD_BEHAVIOR = new Set([0x02, 0x03, 0x06, 0x08, 0x0b, 0x0c, 0x21, 0x22, 0x24, 0x2a]);   // (0x22 and 0x2a: underwater seaweed)
+const WILD_BEHAVIOR = new Set([0x02, 0x03, 0x05, 0x06, 0x08, 0x0b, 0x0c, 0x21, 0x22, 0x24, 0x25, 0x2a]);   // (0x22 and 0x2a: underwater seaweed)
 
 // ---------- The scripts (compiled first: the maps' metatile changes come from them) ----------
 const Scripts = require("./lib/emerald-script")(EM);
@@ -445,7 +447,8 @@ for (const name of MAPS) {
     collision.push((b >> 10) & 3 ? 1 : 0);
     elevation.push(b >> 12);
     behaviors.push(beh);
-    encounter.push(WILD_BEHAVIOR.has(mt.behavior) ? 1 : 0);
+    // (The Battle Pike's hall of wild Pokémon: any tile, as StandardWildEncounter has it.)
+    encounter.push(WILD_BEHAVIOR.has(mt.behavior) || name === "BattleFrontier_BattlePikeRoomWildMons" ? 1 : 0);
   }
   // The metatiles this map's scripts put in (setmetatile): a sheet of them, 16 to a row, below and above the people.
   let mt;
@@ -481,7 +484,8 @@ for (const name of MAPS) {
   // (Emerald's warps on plain ground are stepped onto: a doorway, as the engine has them.)
   for (const wp of map.warp_events) { const i = wp.y * w + wp.x; if (i >= 0 && i < behaviors.length && behaviors[i] === 0) behaviors[i] = 0x60; }
   const mapType = map.map_type.replace(/^MAP_TYPE_/, "").toLowerCase();
-  const enc = wild.find((e) => e.map === map.id);
+  // (The Battle Pike's wild room has its own table, gBattlePike_1's Pokémon: ui/hoenn-frontier.js sets their levels.)
+  const enc = wild.find((e) => e.map === map.id) || (map.id === "MAP_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS" ? pikeWild : undefined);
   // (Secret bases and your room: where decorations can go, by tile: f floor, w the wall's foot, s a spot for something small
   // (a doll or a cushion), l one for something large, c the PC; as src/decoration.c reads the tiles' behaviours.)
   let decorKind;
@@ -645,6 +649,7 @@ for (const type of ["RedCave", "BrownCave", "BlueCave", "YellowCave", "Tree", "S
 // The Battle Frontier's trainers, Pokémon and rules.
 const frontier = require("./lib/hoenn-frontier")(EM, { species: (c) => dexByID[toID(String(c).replace(/^SPECIES_/, ""))], move: (c) => moveByID[toID(String(c).replace(/^MOVE_/, ""))], item: (c) => itemId(c), trainerPic }).data;
 frontier.brainTrainers = ["ANABEL", "TUCKER", "SPENSER", "GRETA", "NOLAND", "LUCY", "BRANDON"].map((n) => { const t = trainerData("TRAINER_" + n); return { cls: t.className, name: t.name, pic: t.pic }; });
+for (const g of Object.values(frontier.look).concat(frontier.pike.npcs.map((n) => n.gfx), ["OBJ_EVENT_GFX_LINK_RECEPTIONIST", "OBJ_EVENT_GFX_DUSCLOPS", "OBJ_EVENT_GFX_KIRLIA", "OBJ_EVENT_GFX_GENTLEMAN"]))   if (!gfx[g]) { const sp = objectSprite(g); if (sp) gfx[g] = sp; }
 for (const g of Object.values(frontier.look).concat(frontier.brainLook, ["OBJ_EVENT_GFX_BOY_1"])) if (!gfx[g]) { const sp = objectSprite(g); if (sp) gfx[g] = sp; }
 const hoennScripts = { songNames, seNames, gfx, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, trades, berryTrees, rotStart, decor: decorData.list, decorCategories: decorData.CATEGORIES, numConsts, consts: mapConsts };
 

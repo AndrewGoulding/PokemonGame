@@ -262,9 +262,13 @@
       for (let guard = 0; guard < 20000 && !st.done; guard++) {
         if (st.pc >= st.code.length) { if (!st.stack.length) return; [st.code, st.pc] = st.stack.pop(); continue; }
         const [op, ...a] = st.code[st.pc++];
-        if (!flow(st, op, a)) simple(st, op, a);
+        if (!flow(st, op, a) && !simple(st, op, a) && env.frontierOp && FRONTIER_OPS.test(op)) {
+          // (The Frontier's commands that only set vars and objects, as a room's OnTransition has them: done before they'd even wait.)
+          env.frontierOp(op, a, { set() {}, setBuffer: (n, v) => { buffers[n] = v; }, setVar, getVar, num, local, flush: async () => {}, flag, setFlag, who });
+        }
       }
     }
+    const FRONTIER_OPS = /^(frontier|tower|dome|palace|arena|factory|pike|pyramid|slateporttent|verdanturftent|fallarbortent|battletent|apprentice)_/;
 
     // `label`: a label of HOENN_SCRIPTS.s.
     async function run(label, ctx) {
@@ -537,7 +541,7 @@
 
           default:
             // (The Battle Frontier's commands: ui/hoenn-frontier.js.)
-            if (env.frontierOp && /^(frontier|tower|dome|palace|arena|factory|pike|pyramid|slateporttent|verdanturftent|fallarbortent|battletent|apprentice)_/.test(op)) {
+            if (env.frontierOp && FRONTIER_OPS.test(op)) {
               await flush();
               if (await env.frontierOp(op, a, apiFor(() => {}))) break;
             }
@@ -597,8 +601,14 @@
     function transition(map) {
       resetTemp(); fixedDive = null;
       const ms = DATA().ms[map + "_MapScripts"] || DATA().ms[(window.WORLD_MAPS[map] || {}).scriptName + "_MapScripts"];
-      if (!ms) return;
-      for (const k of ["ON_TRANSITION", "ON_LOAD", "ON_RESUME"]) if (ms[k]) run(ms[k], { sync: true });
+      if (!ms) return Promise.resolve();
+      // (Started together, as they were; a promise for all of them, for whoever'd rather wait.)
+      return Promise.all(["ON_TRANSITION", "ON_LOAD", "ON_RESUME"].filter((k) => ms[k]).map((k) => run(ms[k], { sync: true })));
+    }
+    // After a battle (or a menu) on a map: its OnResume script.
+    function resume(map) {
+      const ms = DATA().ms[map + "_MapScripts"] || DATA().ms[(window.WORLD_MAPS[map] || {}).scriptName + "_MapScripts"];
+      return ms && ms.ON_RESUME ? run(ms.ON_RESUME, { sync: true }) : Promise.resolve();
     }
     // Where Dive goes from a map that has no dive connection: its OnDiveWarp script's setdivewarp, or the one its OnResume set.
     let fixedDive = null;
@@ -621,7 +631,7 @@
     }
     const hasScript = (label) => !!DATA().s[label];
 
-    return { run, scriptOf, triggerDue, transition, diveWarp, frameScript, hasScript, flag, setFlag, getVar, setVar, state, placed, movement, shown, resetTemp, local,
+    return { run, scriptOf, triggerDue, transition, resume, diveWarp, frameScript, hasScript, flag, setFlag, getVar, setVar, state, placed, movement, shown, resetTemp, local,
       who, setShown: (map, id, on) => { temp.obj[map + ":" + id] = on; } };
   }
 

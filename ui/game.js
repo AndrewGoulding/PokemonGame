@@ -11846,6 +11846,19 @@
   });
   hoennEnv.frontierOp = (op, a, api) => hoennFrontier.op(op, a, api);
   hoennEnv.healParty = () => { player.party.forEach(Party.heal); hoennFrontier.healTeam(); };
+  async function pikeWildBattle(ev) {
+    const s = hoennFrontier.state(), real = player.party, map = player.location.map;
+    player.party = s.team;
+    let outcome;
+    try {
+      outcome = await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(ev.species, ev.level, ev.moves ? { moves: ev.moves } : {}))] }, noExp: true, noBlackout: true, noGimmicks: true, noCatch: true });
+    } finally { player.party = real; }
+    s.outcome = ({ won: 1, lost: 2, ran: 4 })[outcome] || 1;
+    show("world"); await Overworld.resume();
+    hoenn.resume(map);
+    const label = hoenn.frameScript(map, false);
+    if (label) await runHoenn(label);
+  }
   // A challenge's battle: the challenge's own Pokémon stand in for your party for its length.
   async function frontierBattle(spec) {
     if (!canBattle()) return "lost";
@@ -12800,7 +12813,7 @@
           hoennWeatherStep(); berryFarm.step(); hoennBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
           return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
-        adjustWild: (mon, table) => Encounters.leadWild(mon, leadMon(), table), allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
+        adjustWild: (mon, table) => { const m = Encounters.leadWild(mon, leadMon(), table); return m && player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
         onMap: (m) => {
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
@@ -12863,6 +12876,8 @@
         else if (bugContest.here(at.map)) await bugContest.battle(terrain);
         // (The Tanoby Ruins' Unown: each slot's letter, sUnownLetterSlots; the
         // Ruins of Alph's, a letter its solved puzzles have woken.)
+        // (The Battle Pike's hall of wild Pokémon: your challenge's three fight it, and the room's own scripts see how it went.)
+        else if (at.map === "BattleFrontier_BattlePikeRoomWildMons") await pikeWildBattle(ev);
         else await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(ev.species, ev.level,
           { unown: Sevii.unownLetter(at.map, ev.slot) || JohtoAlph.unownLetter(at.map, alphSolved()) }))] },
           terrain, ghost: towerGhost() });

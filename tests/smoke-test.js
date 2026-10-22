@@ -6442,7 +6442,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   const fenv = {
     player: () => fplayer, map: () => "BattleFrontier_BattleTowerLobby", say: async (t) => { spoken.push(t); }, confirm: async () => true, choose: async (texts) => { const k = (texts || []).findIndex((x) => /^(Go on|Continue|Ready|Next round|Enter the)/i.test(x)); return k >= 0 ? k : 0; }, close() {}, facePlayer: async () => {}, act: async () => {},
     show() {}, hide() {}, place() {}, moveTo() {}, personAt: () => ({ x: 6, y: 6, facing: "up" }), giveItem: async () => true, hasItem: () => true, takeItem: () => 1, itemCount: () => 1,
-    itemName: (x) => x, cry() {}, fade: async () => {}, trainerBattle: async () => "won", wildBattle: async () => "won", warp: async () => {}, giveMon: async () => true,
+    itemName: (x) => x, cry() {}, fade: async () => {}, trainerBattle: async () => "won", wildBattle: async () => "won", warp: async (m, at) => { (fenv.__warps = fenv.__warps || []).push([m, at]); }, giveMon: async () => true,
     mart: async () => {}, healParty() { F.healTeam(); }, money: () => 9999, addMoney() {}, music() {}, fanfare: async () => {}, se() {}, shake: async () => {}, sleep: async () => {}, isGirl: () => false,
     choosePartyMon: async () => 0, beaten: () => false, setBeaten() {}, setMetatile() {}, badge() {}, respawn() {}, setDynamicWarp() {}, moneyBox() {}, save: async () => {}, special: async () => false,
     frontierOp: (op, a, api) => F.op(op, a, api)
@@ -6493,8 +6493,32 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
       for (let i = 0; i < 12 && s.status !== 3; i++) for (const l of loop) await run(map + l);
       assert.strictEqual(s.status, 3, map + " " + lobby + " is won"); assert.strictEqual(battles, n, map + " " + lobby + ": " + n + " battles, " + battles + " ");
     }
+    // The Battle Pike: fourteen rooms of three doors each (here always the left one), then the final room.
+    {
+      s = F.state(); battles = 0; s.status = 0; s.num = 0; H.resetTemp(); H.setVar("VAR_0x8006", 0); H.setVar("VAR_TEMP_CHALLENGE_STATUS", 255);
+      await run("BattleFrontier_BattlePikeLobby_EventScript_Attendant", "LOCALID_X");
+      assert.strictEqual(s.status, 1, "the Pike's challenge is on");
+      H.resetTemp(); await H.transition("BattleFrontier_BattlePikeCorridor");
+      await run("BattleFrontier_BattlePikeCorridor_EventScript_EnterCorridor");
+      let last = "", rooms = 0;
+      for (let i = 0; i < 20 && !/FINAL/.test(last); i++) {
+        H.resetTemp(); H.setVar("VAR_0x8007", i % 3); await H.transition("BattleFrontier_BattlePikeThreePathRoom");
+        await run("BattleFrontier_BattlePikeThreePathRoom_EventScript_RoomWarp");
+        last = fenv.__warps.slice(-1)[0][0]; if (/FINAL/.test(last)) break;
+        const wild = /WILD/.test(last), kind = wild ? "BattlePikeRoomWildMons" : "BattlePikeRoomNormal";
+        H.resetTemp(); await H.transition("BattleFrontier_" + kind);
+        if (wild) { await run("BattleFrontier_BattlePikeRoomWildMons_EventScript_SetInWildMonRoom"); await run("BattleFrontier_BattlePikeRoomWildMons_EventScript_Exit"); }
+        else { await run("BattleFrontier_BattlePikeRoomNormal_EventScript_EnterRoom"); if (s.pike.room >= 1 && s.pike.room <= 4) await run("BattleFrontier_BattlePikeRoomNormal_EventScript_NPC", "LOCALID_PIKE_ROOM_NPC_1"); await run("BattleFrontier_BattlePikeRoomNormal_EventScript_Exit"); }
+        last = fenv.__warps.slice(-1)[0][0]; rooms++;
+      }
+      assert(/FINAL/.test(last) && rooms === 7, "the final room after seven pairs of rooms: " + rooms);
+      assert.strictEqual(s.streak["5.0.0"], 14, "fourteen rooms");
+      H.resetTemp(); await H.transition("BattleFrontier_BattlePikeRoomFinal");
+      await run("BattleFrontier_BattlePikeRoomFinal_EventScript_EnterRoom");
+      assert.strictEqual(s.status, 3, "the Pike is cleared");
+    }
   })();
-  var frontierTest = frontierDone.then(() => console.log("ok: Battle Frontier, the Tower, the Brain's symbol, the Factory, Arena, Palace, Dome and the three tents through Emerald's scripts"));
+  var frontierTest = frontierDone.then(() => console.log("ok: Battle Frontier, the Tower, the Brain's symbol, the Factory, Arena, Palace, Dome, Pike and the three tents through Emerald's scripts"));
 }
 
 // Hoenn's script interpreter (ui/hoenn-script.js) against a stub game: the constants, a story scene end to end, a frame table, Dive's connections, trades.
