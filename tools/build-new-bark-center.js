@@ -8,7 +8,10 @@
 // front of it, as in every other town (JOHTO_TOWN_MAP.fly), and the
 // Rejuvenator is upstairs, as in every Pokémon Center (ui/game.js).
 //
-//   node tools/build-new-bark-center.js
+//   node tools/build-new-bark-center.js [<path to pret/pokeheartgold>]
+//   (with the checkout, the building's pixels alone are taken from HGSS's own
+//   picture of Cherrygrove's Center (tools/lib/hgss-map.js's buildings layers),
+//   none of the ground round it; without, they're cut from Cherrygrove's picture)
 //
 // Writes:
 //   assets/world/maps/NewBarkTown-patch-pokecenter.png (and -top)   the building
@@ -25,18 +28,22 @@ const { readPng, writePng } = require("./lib/png");
 const root = path.join(__dirname, "..");
 const mapsDir = path.join(root, "assets/world/maps");
 const T = 16;
-// Cherrygrove's Center building, in tiles, and where it goes in New Bark Town.
-const FROM = { x: 50, y: 4 }, SIZE = { w: 5, h: 4 }, TO = { x: 11, y: 18 }, DOOR = { x: 2, y: 3 };   // (DOOR: within the building)
+// Cherrygrove's Center building, in tiles (HGSS's, seen from above: five wide, its roof six rows over its
+// door's), and where it goes in New Bark Town: on the open ground south of Elm's lab, its door walked up
+// into from the sand by the town's sign.
+const FROM = { x: 50, y: 1 }, SIZE = { w: 5, h: 7 }, TO = { x: 11, y: 17 }, DOOR = { x: 2, y: 6 };   // (DOOR: within the building)
+const ROOT = process.argv[2] || process.env.POKEHEARTGOLD;
+const hgss = ROOT && fs.existsSync(path.join(ROOT, "files/fielddata")) ? require("./lib/hgss-map").renderMap(ROOT, "MAP_CHERRYGROVE", {}) : null;
 
 for (const part of ["", "-top"]) {
-  const src = readPng(path.join(mapsDir, "CherrygroveCity" + part + ".png"));
+  const src = hgss ? { width: hgss.width * 16, rgba: part ? hgss.buildingsTop : hgss.buildings } : readPng(path.join(mapsDir, "CherrygroveCity" + part + ".png"));
   const w = SIZE.w * T, h = SIZE.h * T, img = new Uint8ClampedArray(w * h * 4);
   for (let y = 0; y < h; y++) {
     const i = (FROM.y * T + y) * src.width + FROM.x * T;
     img.set(src.rgba.slice(i * 4, (i + w) * 4), y * w * 4);
   }
   // (Cherrygrove's flat green round the building, in from the edges: see-through, New Bark's ground.)
-  if (!part) {
+  if (!part && !hgss) {
     const bg = Array.from(img.slice(0, 4)), at = (x, y) => (y * w + x) * 4, same = (i) => bg.every((v, k) => img[i + k] === v);
     const stack = [];
     for (let x = 0; x < w; x++) stack.push([x, 0], [x, h - 1]);

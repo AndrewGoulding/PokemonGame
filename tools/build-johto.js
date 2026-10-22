@@ -49,10 +49,11 @@ const N = require("./lib/nitro");
 const HS = require("./lib/hgss-script");
 
 const ROOT = process.argv.slice(2).find((a) => !a.startsWith("--")) || process.env.POKEHEARTGOLD;
-// (Drawn in FireRed's style, as Kanto is (tools/lib/fr-painter.js); with --hgss, as HGSS draws them.)
-const HGSS_LOOK = process.argv.includes("--hgss");
+// (Drawn as HGSS draws them, seen from above (tools/lib/hgss-map.js); with --painted, in FireRed's style from
+// what each tile is, as Kanto is (tools/lib/fr-painter.js), the way Johto was first drawn.)
+const HGSS_LOOK = !process.argv.includes("--painted");
 if (!ROOT || !fs.existsSync(path.join(ROOT, "files/fielddata"))) {
-  console.error("Usage: node tools/build-johto.js <path to pret/pokeheartgold> [--hgss]");
+  console.error("Usage: node tools/build-johto.js <path to pret/pokeheartgold> [--painted]");
   process.exit(1);
 }
 const root = path.join(__dirname, "..");
@@ -361,12 +362,48 @@ const spritesDone = new Map();
 // small trees and breakable rocks are FireRed's, as the game uses them (and so
 // is anyone whose HGSS sprite isn't a person's sheet, FireRed's nearest).
 const FR_OBJECTS = new Set(["SPRITE_MONSTARBALL", "SPRITE_TREE", "SPRITE_BREAKROCK"]);
+// Anyone HGSS draws with one of its everyday sprites (a boy, a lass, a hiker,
+// a Rocket, a nurse: FR_PEOPLE) is drawn with Kanto's sheet for that look, so
+// Johto's crowds are Kanto's; only those with a sprite of their own (Lyra,
+// Silver, Prof. Elm, the Gym Leaders, the Kimono Girls, ...) keep HGSS's, at
+// Kanto's people's size (modelSprite scales them).
 function personSprite(sprite) {
   if (/^SPRITE_VAR_\d+$/.test(sprite)) return Object.assign(modelSprite("MMODEL_HEROINE", "hgss_heroine"), { girlLook: modelSprite("MMODEL_HERO", "hgss_hero") });
-  if (FR_OBJECTS.has(sprite)) return Object.assign({}, frPersonSprite(sprite));
-  if (!spritesDone.has(sprite)) spritesDone.set(sprite, modelSprite(spriteTable[sprite], "hgss_" + sprite.replace(/^SPRITE_/, "").toLowerCase(), sprite));
   const fr = frPersonSprite(sprite);
-  return spritesDone.get(sprite) || (fr && Object.assign({}, fr));
+  if (fr) return Object.assign({}, fr);
+  if (!spritesDone.has(sprite)) spritesDone.set(sprite, modelSprite(spriteTable[sprite], "hgss_" + sprite.replace(/^SPRITE_/, "").toLowerCase(), sprite));
+  return spritesDone.get(sprite);
+}
+// HGSS's people stand about 23 px tall, their feet 2 px up from the tile's
+// bottom; Kanto's are 20 px tall with their feet on it. A sheet of HGSS's
+// person frames is scaled to that (0.87, about its feet, each frame's bottom
+// centre), box-filtered, and each pixel snapped back to the sheet's own
+// colours, so it stays pixel art.
+const PERSON_SCALE = 20 / 23, HGSS_FEET = 30;
+function scalePersonSheet(rgba, W, H, n) {
+  const pal = new Map();
+  for (let i = 0; i < W * H; i++) if (rgba[i * 4 + 3] > 127) pal.set((rgba[i * 4] << 16) | (rgba[i * 4 + 1] << 8) | rgba[i * 4 + 2], true);
+  const colours = [...pal.keys()].map((c) => [(c >> 16) & 255, (c >> 8) & 255, c & 255]);
+  const out = new Uint8ClampedArray(W * H * 4), fw = W / n, S = 4;
+  for (let f = 0; f < n; f++) for (let y = 0; y < H; y++) for (let x = 0; x < fw; x++) {
+    let a = 0, r = 0, g = 0, b = 0;
+    for (let sy = 0; sy < S; sy++) for (let sx = 0; sx < S; sx++) {
+      // (A destination point, back in the source frame.)
+      const dx = x + (sx + 0.5) / S - fw / 2, dy = y + (sy + 0.5) / S - H;
+      const u = Math.floor(f * fw + fw / 2 + dx / PERSON_SCALE), v = Math.floor(HGSS_FEET + dy / PERSON_SCALE);
+      if (u < f * fw || u >= (f + 1) * fw || v < 0 || v >= H) continue;
+      const o = (v * W + u) * 4;
+      if (rgba[o + 3] < 128) continue;
+      a++; r += rgba[o]; g += rgba[o + 1]; b += rgba[o + 2];
+    }
+    if (a * 2 < S * S) continue;
+    r /= a; g /= a; b /= a;
+    let best = null, bd = Infinity;
+    for (const c of colours) { const d = (c[0] - r) ** 2 + (c[1] - g) ** 2 + (c[2] - b) ** 2; if (d < bd) { bd = d; best = c; } }
+    const o = (y * W + f * fw + x) * 4;
+    out[o] = best[0]; out[o + 1] = best[1]; out[o + 2] = best[2]; out[o + 3] = 255;
+  }
+  return out;
 }
 // A person's model (MMODEL_*) as one of this game's sprite sheets.
 function modelSprite(model, name, sprite) {
@@ -382,8 +419,11 @@ function modelSprite(model, name, sprite) {
     // right; an Apricorn tree: just itself.)
     const order = frames.length >= 12 ? FR_FRAMES : frames.length === 8 ? [2, 0, 4, 3, 2, 1, 0, 5, 4] : [0];
     if (frames.length && frames[0].w === 32 && frames[0].h === 32 && (frames.length >= 12 || frames.length === 8 || sprite === "SPRITE_BONGURI")) {
-      const W = 32 * order.length, rgba = new Uint8ClampedArray(W * 32 * 4);
+      const W = 32 * order.length;
+      let rgba = new Uint8ClampedArray(W * 32 * 4);
       order.forEach((f, n) => { for (let y = 0; y < 32; y++) rgba.set(frames[f].rgba.subarray(y * 128, (y + 1) * 128), (y * W + n * 32) * 4); });
+      // (A person: at Kanto's people's size. A Pokémon standing about, or an Apricorn tree, as it is.)
+      if (frames.length >= 12) rgba = scalePersonSheet(rgba, W, 32, order.length);
       writePng(path.join(root, "assets/world/sprites", name + ".png"), W, 32, rgba);
       // (32 wide, centred on the tile: offsetX.)
       out = { sprite: name, width: 32, height: 32, frames: order.length, offsetX: -8 };
@@ -986,6 +1026,25 @@ const ROOM_TEMPLATES = {
   pc: { map: "ViridianCity_PokemonCenter_1F", spots: [[12, 5, "face_left"], [4, 7, "face_up"], [2, 3, "face_down"], [10, 7, "face_up"], [13, 3, "face_left"]] },
   mart: { map: "ViridianCity_Mart", spots: [[6, 2, "face_down"], [9, 5, "face_left"], [5, 5, "face_right"]], clerks: [[2, 3, "face_right"], [2, 2, "face_right"]] }
 };
+// In HGSS's own look, the Centers and Marts are HGSS's rooms: the nurse, behind HGSS's counter, heals as Kanto's
+// nurses do (her script's name is theirs), the Wi-Fi and Union Room staff (this game has neither) aren't there, and
+// the stairs down to HGSS's Wi-Fi floor go up instead, to FireRed's Pokémon Center 2F, as below.
+if (HGSS_LOOK) for (const m of MAPS) {
+  if (m.template !== "pc") continue;
+  const g = out[m.name], t2 = kanto()[ROOM_TEMPLATES.pc.map.replace(/_1F$/, "_2F")], up = m.name.replace(/_1F$/, "_2F");
+  g.pokemonCenter = true;
+  g.people = g.people.filter((p) => !/FLAG_HIDE_(COMM|WIFI)/.test(p.hgssFlag || "")).map((p) => (p.hgssSprite === "SPRITE_PCWOMAN1" && p.script
+    ? Object.assign({}, p, { movement: "face_down", localId: "LOCALID_" + m.name.toUpperCase() + "_NURSE", script: m.name + "_EventScript_Nurse", text: null }) : p));
+  const stairs = g.warps.findIndex((w) => /_POKECENTER_B1F$/.test(w.mapConst || ""));
+  if (stairs < 0) continue;
+  g.warps[stairs] = { x: g.warps[stairs].x, y: g.warps[stairs].y, map: up, warp: t2.warps.findIndex((w) => /_1F$/.test(w.map || "")) };
+  out[up] = Object.assign(JSON.parse(JSON.stringify(t2)), { name: up, title: m.title, region: m.region || "johto", showName: false,
+    warps: t2.warps.map((w) => (/_1F$/.test(w.map || "") ? { x: w.x, y: w.y, map: m.name, warp: stairs } : Object.assign({}, w))) });
+  for (const part of ["", "-top", "-border"]) {
+    const from = path.join(mapsDir, ROOM_TEMPLATES.pc.map.replace(/_1F$/, "_2F") + part + ".png"), to = path.join(mapsDir, up + part + ".png");
+    if (fs.existsSync(from)) fs.copyFileSync(from, to); else if (fs.existsSync(to)) fs.unlinkSync(to);
+  }
+}
 if (!HGSS_LOOK) for (const m of MAPS) {
   if (!m.template) continue;
   const g = out[m.name], tpl = ROOM_TEMPLATES[m.template], t = kanto()[tpl.map];

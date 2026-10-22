@@ -1910,7 +1910,10 @@ the rotating-tile puzzles, the Mirage Tower and Rayquaza's scenes.
 scripts use), with its trainers, Pokémon, Battle Point prizes and the Brains read from the decomp's tables by
 `tools/lib/hoenn-frontier.js`. The challenge fights with copies of the Pokémon you register (set to Lv. 50, or your
 own level in Open Level mode); your real party is never touched. Built: the Battle Tower (singles, doubles, and multis with
-a partner), Factory (the rental and swap screens are menus), Arena, Palace, Dome (a 16-trainer bracket read out as text), Pike
+a partner), Factory (the rental and swap screens are menus), Arena (three-turn bouts, no switching, and the
+referee's judgment on Mind, Skill and Body when both still stand, Emerald's points: `engine/battle.js` `arenaJudge`, the
+judgment window on the battle screen; the Verdanturf tent judges too), Palace (each Pokémon picks its own move by
+its nature's odds, Emerald's tables, or can't bring itself to; the Fallarbor tent too), Dome (a 16-trainer bracket read out as text), Pike
 (doors, hints, statuses, healing rooms and the hall of wild Pokémon), the Slateport, Verdanturf and Fallarbor tents, the
 Battle Pyramid, the Brains' Silver and Gold Symbols, Battle Points and the exchange shops. The Pyramid builds each of its
 seven dark floors from the decomp's squares and templates (`ui/hoenn-pyramid.js`), with your party and a two-item
@@ -1920,7 +1923,7 @@ play-test them, `HOENN_FORCE_WIN = "won"` or `"lost"` (with `HOENN_DEBUG`) settl
 **Contests** at Lilycove run the contest halls' scripts over a simplified engine (`ui/hoenn-contest.js`: the 95 contestants,
 353 moves, appeal and jam, five rounds, and the ribbons). Left out: Pokéblocks and the Berry Blender, the dressing room.
 
-Not built: Arena judging and the Palace's self-chosen moves (those are ordinary battles), recorded battles, e-Reader,
+Not built: recorded battles, e-Reader,
 Link and wireless features, the Apprentice, the Pyramid's Start-menu Retire, the fan club, Emerald's credits, and
 Safari Zone's rules.
 
@@ -2022,7 +2025,9 @@ New Bark Town's Pokémon Center; and its Ace Trainer Reena asks "You came from
 Pallet Town? You must be exhausted." **New Bark Town has a Pokémon Center**,
 this game's own (HGSS's has none; Mom heals you there, and this game's Mom is
 in Pallet Town): Cherrygrove City's building, on the open ground south of
-Elm's lab (the map's patch `pokecenter`, always on), and Cherrygrove's two
+Elm's lab (HGSS's own picture of it, its building alone, cut from
+Cherrygrove by `tools/build-new-bark-center.js <checkout>`: the map's patch
+`pokecenter`, always on, by the town's sign), and Cherrygrove's two
 floors cloned with their own names (`NewBarkTown_PokemonCenter_1F` and `_2F`,
 drawn with Cherrygrove's pictures; its nurse, the gentleman by the PC, and
 upstairs the Move Relearner, Move Deleter and Rejuvenator), built by
@@ -2033,50 +2038,35 @@ at its left wall to Route 26's door. A guard stands in front of it until
 you're the Champion: "The Johto region lies to the west." / "I'm sorry, but only the
 Champion of the Pokémon League may go on to Johto." Become Champion and he's
 gone. (The debug menu's **Visit Johto (New Bark Town)** still takes you
-there, and its Pokémon Center trip brings you back.) Johto's towns, cities,
-routes and Ilex Forest are drawn in FireRed's style (above): their classes
-come from HGSS's tile behaviours and, for what's solid, the textures
-uppermost on each tile seen from above (`tools/lib/hgss-classes.js`: trees,
-rock, fences, buildings; the ground smoothed, so the odd tile of path in the
-grass that was a texture's edge is grass), and their buildings from their
-doors (a Pokémon Center's door gets a Pokémon Center, a Gym's a Gym, a
-gatehouse's a gate): one of Kanto's buildings, stretched to the footprint
-where its own size doesn't fit, so every building is FireRed's own art (HGSS's
-3D pictures of them looked foreign beside it; a door-less block of a city is
-a stretched Kanto building too, with no way in). What's solid follows what's
-drawn: HGSS's solid tiles of a building drawn smaller are open ground. A
-forest's or mountain's deep inside (three tiles or more from any ground you can
-reach, and from the map's edge) is plain meadow with single trees well apart, as
-FireRed's open routes have, not pines or rock to the horizon, a mountain a green plateau behind its cliffs
-(`thinForests` in `tools/lib/hgss-classes.js`). Any picture of HGSS's of a
-building with no stamp near it still stands on the painted ground
-(`tools/lib/hgss-map.js` keeps their pixels apart in `buildings` and
-`buildingsTop`). `node tools/build-johto.js <checkout> --only=Map,Map
---out=<dir>` paints just those maps' pictures, in seconds, to look at;
-`DUMP_CLASSES=1` and `DUMP_BUILDINGS=1` print a map's tile classes and how each
-building was drawn.
-Johto's caves (Tohjo Falls, Union Cave, Slowpoke Well, Dark Cave, Mt.
-Mortar, Ice Path, the Whirl Islands, Dragon's Den, Mt. Silver's cave, Cliff
-Cave) are drawn in the cave style (learned from Mt.
-Moon, Victory Road and the Lost Cave: their floor, rock walls and ledges;
-water and waterfalls as outdoors), floor you can't reach from their ways in
-being rock as round Kanto's caves; its rooms, towers (Sprout Tower, the Bell
-and Burned Towers, the Lighthouse, the Radio Tower), the Ruins of Alph's
-chambers and the Rocket hideout in FireRed's Building tileset (below). An Escape Rope works in
-its caves, Ilex Forest and its towers and dungeons. Each gatehouse you go
-straight through is FireRed's own
-gate (Saffron's Route 5 gate for one you go through north to south, its Route
-7 gate for west to east), its doorways leading where the gatehouse's did and
-its people standing where FireRed's guard stands and about the room (one with
-a scene on its floor, as Lyra's in Route 31's, or that isn't a way between two
-maps, as Route 43's toll gate, stays HGSS's).
-Johto's people are HGSS's own, sprites and all (Lyra, Silver, Prof. Elm, the
-Kimono Girls, everyone: `assets/world/sprites/hgss_*.png`, in FireRed's frame
-order); its item balls, small trees and breakable rocks are FireRed's.
+there, and its Pokémon Center trip brings you back.) Johto's maps are drawn
+as HGSS draws them, seen from above: its towns, routes, caves, rooms,
+gatehouses, Pokémon Centers and Marts are HGSS's own 3D maps rasterised
+(below), buildings, textures and all. (They were first painted in FireRed's
+style from what each tile is, with Kanto's buildings stamped on by their
+doors, `tools/lib/fr-painter.js` and `hgss-classes.js`; `--painted` still
+draws them that way, and `tools/build-fr-style.js` learns the painter's
+patterns from Kanto. It looked poor beside HGSS's own art, so HGSS's is the
+look now.) In HGSS's Pokémon Centers the nurse stands behind HGSS's counter
+and heals as Kanto's nurses do; the Wi-Fi and Union Room staff (this game has
+neither) aren't there, and the stairs down to HGSS's Wi-Fi floor go up
+instead, to FireRed's Pokémon Center 2F with its Move Relearner, Move Deleter,
+Tradeback Guy and Rejuvenator, as in Kanto. `node tools/build-johto.js
+<checkout> --only=Map,Map --out=<dir>` draws just those maps' pictures, in
+seconds, to look at. An Escape Rope works in its caves, Ilex Forest and its
+towers and dungeons.
+Johto's people: anyone HGSS draws with one of its everyday sprites (a boy, a
+lass, a hiker, a Rocket, a nurse, a clerk) is drawn with Kanto's sheet for
+that look, so Johto's crowds are Kanto's people; those with a sprite of their
+own (Lyra, Silver, Prof. Elm, the Gym Leaders, the Kimono Girls, everyone the
+story needs) keep HGSS's own (`assets/world/sprites/hgss_*.png`, in FireRed's
+frame order), scaled to Kanto's people's size as they're written (HGSS's
+stand about 23 px tall, Kanto's 20: `scalePersonSheet` in
+`tools/build-johto.js`, box-filtered and snapped back to the sheet's own
+colours); its item balls, small trees and breakable rocks are FireRed's.
 HGSS's maps are 3D, so
 `tools/build-johto.js` (with `tools/lib/hgss-map.js`, `nitro.js` and
-`narc.js`) reads them, and with `--hgss` draws them the way HGSS shows them
-seen from above, from a
+`narc.js`) reads them and draws them the way HGSS shows them seen from
+above, from a
 [pret/pokeheartgold](https://github.com/pret/pokeheartgold) checkout:
 
 ```sh

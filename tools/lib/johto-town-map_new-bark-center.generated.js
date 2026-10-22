@@ -6,8 +6,8 @@
   const clone = (src, name) => Object.assign(JSON.parse(JSON.stringify(src)), { name, title: "New Bark Town", image: src.image || src.name, townMapSection: "NEW_BARK_TOWN" });
   const f1 = clone(src1, F1), f2 = clone(src2, F2);
   // (The building, over the ground south of Elm's lab; its door, solid, walked up into.)
-  town.warps.push({ x: 13, y: 21, map: F1, warp: 0 });
-  town.patches = Object.assign({}, town.patches, { pokecenter: { x: 11, y: 18, w: 5, h: 4, top: true, collision: [[11,18,1,0],[12,18,1,0],[13,18,1,0],[14,18,1,0],[15,18,1,0],[11,19,1,0],[12,19,1,0],[13,19,1,0],[14,19,1,0],[15,19,1,0],[11,20,1,0],[12,20,1,0],[13,20,1,0],[14,20,1,0],[15,20,1,0],[11,21,1,0],[12,21,1,0],[13,21,1,105],[14,21,1,0],[15,21,1,0]] } });
+  town.warps.push({ x: 13, y: 23, map: F1, warp: 0 });
+  town.patches = Object.assign({}, town.patches, { pokecenter: { x: 11, y: 17, w: 5, h: 7, top: true, collision: [[11,17,1,0],[12,17,1,0],[13,17,1,0],[14,17,1,0],[15,17,1,0],[11,18,1,0],[12,18,1,0],[13,18,1,0],[14,18,1,0],[15,18,1,0],[11,19,1,0],[12,19,1,0],[13,19,1,0],[14,19,1,0],[15,19,1,0],[11,20,1,0],[12,20,1,0],[13,20,1,0],[14,20,1,0],[15,20,1,0],[11,21,1,0],[12,21,1,0],[13,21,1,0],[14,21,1,0],[15,21,1,0],[11,22,1,0],[12,22,1,0],[13,22,1,0],[14,22,1,0],[15,22,1,0],[11,23,1,0],[12,23,1,0],[13,23,1,105],[14,23,1,0],[15,23,1,0]] } });
   // (Its tiles solid in the map's own data too, the patch always on: the door's warp works wherever the map's walked, tests/smoke-test.js's ways round Johto too.)
   for (const [x, y, c, b] of town.patches.pokecenter.collision) { town.collision[y * town.width + x] = c; town.behavior[y * town.width + x] = b; }
   const back = town.warps.length - 1;
@@ -21,6 +21,6 @@
   const J = window.JOHTO_SCRIPTS;
   if (J && J.maps) { J.maps[F1] = J.maps[src1.name]; J.maps[F2] = J.maps[src2.name]; }
   // (Fly: in front of its door, as in every other town, instead of your house.)
-  const fly = () => { const M = window.JOHTO_TOWN_MAP; if (M && M.fly && M.fly.NEW_BARK_TOWN) M.fly.NEW_BARK_TOWN = { map: "NewBarkTown", x: 13, y: 22, center: F1 }; if (M && M.mapSections) { M.mapSections[F1] = "NEW_BARK_TOWN"; M.mapSections[F2] = "NEW_BARK_TOWN"; } };
+  const fly = () => { const M = window.JOHTO_TOWN_MAP; if (M && M.fly && M.fly.NEW_BARK_TOWN) M.fly.NEW_BARK_TOWN = { map: "NewBarkTown", x: 13, y: 24, center: F1 }; if (M && M.mapSections) { M.mapSections[F1] = "NEW_BARK_TOWN"; M.mapSections[F2] = "NEW_BARK_TOWN"; } };
   fly();
 })();

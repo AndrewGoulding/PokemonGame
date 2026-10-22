@@ -2767,21 +2767,33 @@ if (window.JOHTO_TOWN_MAP) {
     assert(/ctx\.faced && ctx\.faced\(/.test(owJs) && /6: \[24, null\], 7: \[24, 142\]/.test(gearJs) && /env\.baobaCall\(script\)/.test(gearJs), "the field and the Pokégear's sides");
     assert(scripts.indexOf("ui/johto-safari-objects.js") >= 0 && scripts.indexOf("ui/johto-safari-objects.js") < scripts.indexOf("ui/game.js"), "the arranging screen loads");
   }
-  // (Upstairs in a Pokémon Center is FireRed's own floor, its people too.)
+  // (Everyone's picture is there: Kanto's sheet for HGSS's everyday sprites, HGSS's own (hgss_*) for the rest,
+  // at Kanto's people's size: 32x32 frames, the person no taller than Kanto's; upstairs in a Pokémon Center
+  // is FireRed's own floor, its people too.)
+  const { readPng } = require(path.join(root, "tools/lib/png.js"));
   for (const n of J.filter((n) => !/_PokemonCenter_2F$/.test(n))) for (const p of WORLD_MAPS[n].people) {
-    const fr = /^(item_ball|cut_tree|rock_smash_rock)$/.test(p.sprite);
-    assert(fr || /^hgss_/.test(p.sprite), n + ": HGSS's sprite for " + p.sprite);
     assert(fs.existsSync(path.join(root, "assets/world/sprites", p.sprite + ".png")), n + ": " + p.sprite + "'s picture");
   }
-  // (But for one with a scene on its floor, as Lyra's in Route 31's, or that isn't a way between two maps, as Route 43's toll gate: HGSS's own.)
-  const ownGate = (m) => m.triggers.length || new Set(m.warps.map((w) => w.map || w.mapConst)).size !== 2;
-  assert(ownGate(WORLD_MAPS.Route31_VioletGatehouse) && WORLD_MAPS.Route31_VioletGatehouse.width === 32, "Route 31's gatehouse is HGSS's, for Lyra's scene");
-  for (const n of J.filter((n) => /Gatehouse$/.test(n) && !ownGate(WORLD_MAPS[n]))) {
-    const m = WORLD_MAPS[n], t = WORLD_MAPS[m.width === 13 ? "Route7_EastEntrance" : "Route5_SouthEntrance"];
-    assert(m.width === t.width && m.height === t.height && m.collision.join() === t.collision.join(), n + " is FireRed's gate");
-    for (const w of m.warps) assert(!m.collision[w.y * m.width + w.x], n + ": its doorways are floor");
+  for (const n of ["hgss_hero", "hgss_heroine", "hgss_gsleader1", "hgss_gsrivel"]) {
+    const png = readPng(path.join(root, "assets/world/sprites", n + ".png"));
+    let top = 32;
+    for (let y = 0; y < 32 && top === 32; y++) for (let x = 0; x < 32; x++) if (png.rgba[(y * png.width + x) * 4 + 3]) { top = y; break; }
+    assert(png.height === 32 && png.width === 32 * 9 && top >= 10, n + " stands no taller than Kanto's people (from row " + top + ")");
   }
-  assert(WORLD_MAPS.Route27.anim && fs.existsSync(path.join(root, "assets/world/maps/Route27-anim.png")), "Johto's sea moves");
+  assert(/scalePersonSheet\(rgba, W, 32, order\.length\)/.test(fs.readFileSync(path.join(root, "tools/build-johto.js"), "utf8")), "the build scales HGSS's people");
+  for (const n of ["hgss_gsboy1", "hgss_gsman1", "hgss_pcwoman1"]) assert(!fs.existsSync(path.join(root, "assets/world/sprites", n + ".png")), n + ": Kanto's sheet stands in");
+  // (The maps are HGSS's own, seen from above: the gatehouses and Pokémon Centers HGSS's rooms (their
+  // nurses healing as Kanto's), nothing painted in FireRed's style any more.)
+  for (const n of J.filter((n) => /Gatehouse$/.test(n))) assert(WORLD_MAPS[n].width === 32, n + " is HGSS's own gatehouse");
+  assert(!fs.existsSync(path.join(root, "assets/world/maps/Route27-anim.png")) && !WORLD_MAPS.Route27.anim, "HGSS's look: no painted water animation");
+  assert(fs.existsSync(path.join(root, "assets/world/maps/NewBarkTown.png")) && fs.existsSync(path.join(root, "assets/world/maps/NewBarkTown-top.png")));
+  {
+    const pc = WORLD_MAPS.CherrygroveCity_PokemonCenter_1F, up = WORLD_MAPS.CherrygroveCity_PokemonCenter_2F;
+    assert(pc.pokemonCenter && pc.width === 32 && pc.people.some((p) => p.script === "CherrygroveCity_PokemonCenter_1F_EventScript_Nurse" && p.sprite === "nurse"), "HGSS's Center, its nurse healing as Kanto's");
+    assert(!pc.people.some((p) => /FLAG_HIDE_(COMM|WIFI)/.test(p.hgssFlag || "")), "no Wi-Fi staff");
+    const stairs = pc.warps.find((w) => w.map === "CherrygroveCity_PokemonCenter_2F");
+    assert(stairs && up && up.warps.some((w) => w.map === "CherrygroveCity_PokemonCenter_1F" && w.warp === pc.warps.indexOf(stairs)), "its stairs go up to FireRed's 2F and back");
+  }
   {
     const Painter = require(path.join(root, "tools/lib/fr-painter.js"));
     // A pond in a meadow, a tree line above: grass, water with shores, trees, as Kanto has them.
@@ -6565,6 +6577,38 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
       if (ct.final[ct.player] === 0) assert.strictEqual(fplayer.party[0].contestRibbons.cool, 1, "a winner's ribbon");
     }
   })();
+  // The Battle Arena's rules in the engine (opts.arena): three turns with both standing, then the referee's judgment on
+  // Mind, Skill and Body, the loser fainting, the next in order coming out, no switching; the Battle Palace's (opts.palace):
+  // each Pokémon picks its own move by its nature's odds, or can't bring itself to (palaceIdle).
+  {
+    const mk = (sp, moves, nature) => Object.assign({ species: sp, level: 50, moves }, nature ? { nature } : {});
+    const b = new Battle({ seed: 5, arena: true, p1: { name: "A", team: [mk("Chansey", ["Growl", "Pound"]), mk("Blissey", ["Pound"])] },
+      p2: { name: "B", team: [mk("Snorlax", ["Growl"]), mk("Wobbuffet", ["Counter"])] } });
+    b.start();
+    assert.deepStrictEqual(b.events.find((e) => e[0] === "-arena"), ["-arena", "commence", "p1a: Chansey", "p2a: Snorlax"], "the referee starts the bout");
+    assert.deepStrictEqual(b.getRequest("p1").switches, [], "no switching in the Arena");
+    for (let t = 0; t < 3; t++) { b.choose("p1", { type: "move", move: t === 2 ? 1 : 0 }); b.choose("p2", { type: "move", move: 0 }); }
+    const judge = b.events.find((e) => e[0] === "-arena" && e[1] === "judge");
+    assert(judge && b.turn === 3, "judged after three turns");
+    const d = JSON.parse(judge[4]);
+    assert.deepStrictEqual(d.cats, [[1, 0], [3, 3], [100, 98]], "Mind (a Pound 1, Growls 0), Skill (three plain hits each), Body (HP left)");
+    assert.deepStrictEqual(d.score, [5, 1]);
+    assert(d.result === "won" && b.sides.p2.active.fainted && !b.sides.p1.active.fainted && b.phase === "switch", "the loser faints");
+    assert(!b.canShift("p1"), "no Shift prompt in the Arena");
+    b.choose("p2", { type: "switch", index: 1 });
+    assert(b.arenaTurn === 0 && b.events.filter((e) => e[0] === "-arena" && e[1] === "commence").length === 2, "the next bout's count starts over");
+    assert.strictEqual(window.Battle.prototype.arenaSkill.length, 2);
+    const pb = new Battle({ seed: 7, palace: true, p1: { name: "A", team: [mk("Snorlax", ["Tackle", "Curse", "Rest", "Yawn"], "Sassy")] }, p2: { name: "B", team: [mk("Chansey", ["Pound", "Soft-Boiled"], "Bold")] } });
+    pb.start();
+    const picks = {};
+    for (let i = 0; i < 60; i++) { const c = pb.palaceChoice("p1"); picks[c.palaceIdle ? "idle" : c.move] = (picks[c.palaceIdle ? "idle" : c.move] || 0) + 1; }
+    assert(picks[0] >= 40, "a Sassy Snorlax mostly attacks (88%): " + JSON.stringify(picks));
+    assert(pb.choose("p1", { type: "move", palaceIdle: true }).ok && pb.choose("p2", pb.palaceChoice("p2")).ok);
+    assert(pb.events.some((e) => e[0] === "-text" && /incapable/.test(e[2])), "it couldn't bring itself to");
+    const bs = fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8"), fr = fs.readFileSync(path.join(root, "ui/hoenn-frontier.js"), "utf8");
+    assert(/if \(config\.palace\) return battle\.palaceChoice\("p1"/.test(bs) && /async function arenaJudgment/.test(bs) && /case "-arena":/.test(bs), "the screen: the Palace's FIGHT, the Arena's judgment window");
+    assert(/arena: tentMode \? s\.A\.tent === "verdanturf" : f === FAC\.ARENA/.test(fr), "the Arena and the Verdanturf tent judge");
+  }
   var frontierTest = frontierDone.then(() => console.log("ok: Battle Frontier, the Tower, the Brain's symbol, the Factory, Arena, Palace, Dome, Pike, the Pyramid, the three tents and a Contest through Emerald's scripts"));
 }
 
