@@ -6430,6 +6430,73 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   assert(littleroot.left.length > littleroot.rate * 60 && littleroot.loopEnd > littleroot.loopStart && Math.max(...littleroot.left.filter((_, i) => i % 97 === 0)) > 0.1, "Littleroot's song plays");
   console.log("ok: Hoenn, " + hoenn.length + " maps from Emerald's tilesets, " + Object.keys(H.songs).length + " of its songs");
 }
+// The Battle Frontier (ui/hoenn-frontier.js) through Emerald's own scripts: a whole Battle Tower challenge, the Brain, the tents' rentals.
+{
+  vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-script.js"), "utf8"), { filename: "ui/hoenn-script.js" });
+  vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-frontier.js"), "utf8"), { filename: "ui/hoenn-frontier.js" });
+  const HF = window.HOENN_FRONTIER;
+  assert(HF.mons.length === 882 && HF.trainers.length === 300 && HF.banned.length === 9 && HF.brain.length === 7 && HF.tents.slateport.mons.length === 70, "the Frontier's data");
+  assert.deepStrictEqual(HF.brainStreaks[0], [35, 70, 35, 1]);
+  const fplayer = { flags: {}, party: ["Swampert", "Gardevoir", "Salamence", "Metagross"].map((sp) => Party.create(sp, 50)), name: "ASH", badges: [], bag: {} };
+  let F, H, spoken = [], battles = 0, wonAll = true;
+  const fenv = {
+    player: () => fplayer, map: () => "BattleFrontier_BattleTowerLobby", say: async (t) => { spoken.push(t); }, confirm: async () => true, choose: async (texts) => { const k = (texts || []).findIndex((x) => /^(Go on|Continue|Ready|Next round|Enter the)/i.test(x)); return k >= 0 ? k : 0; }, close() {}, facePlayer: async () => {}, act: async () => {},
+    show() {}, hide() {}, place() {}, moveTo() {}, personAt: () => ({ x: 6, y: 6, facing: "up" }), giveItem: async () => true, hasItem: () => true, takeItem: () => 1, itemCount: () => 1,
+    itemName: (x) => x, cry() {}, fade: async () => {}, trainerBattle: async () => "won", wildBattle: async () => "won", warp: async () => {}, giveMon: async () => true,
+    mart: async () => {}, healParty() { F.healTeam(); }, money: () => 9999, addMoney() {}, music() {}, fanfare: async () => {}, se() {}, shake: async () => {}, sleep: async () => {}, isGirl: () => false,
+    choosePartyMon: async () => 0, beaten: () => false, setBeaten() {}, setMetatile() {}, badge() {}, respawn() {}, setDynamicWarp() {}, moneyBox() {}, save: async () => {}, special: async () => false,
+    frontierOp: (op, a, api) => F.op(op, a, api)
+  };
+  H = window.HoennScript.create(fenv);
+  F = window.HoennFrontier.create({
+    player: () => fplayer, getVar: (n) => H.getVar(n), flag: (n) => H.flag(n), createMon: (sp, lv, o) => Party.create(sp, lv, o), say: async (t) => { spoken.push(t); }, caught: () => false,
+    itemName: (x) => x, itemConst: (x) => "ITEM_" + x.toUpperCase().replace(/-/g, "_"), giveItem: async () => true, chooseParty: async ({ max }) => [0, 1, 2, 3].slice(0, max),
+    pick: async () => 0, battle: async (spec) => { battles++; assert(spec.team.length >= 1 && spec.foe.team.length >= 1, "teams " + spec.team.length + " " + spec.foe.team.length + " facility " + H.getVar("VAR_FRONTIER_FACILITY") + " mode " + H.getVar("VAR_FRONTIER_BATTLE_MODE") + " " + JSON.stringify([F.state().A, F.state().lvl, F.state().num])); for (const r of spec.team.concat(spec.foe.team)) assert(r.hp > 0 && r.moves.length, "a made Pokémon: " + r.species); return "won"; },
+    bpBox() {}, markHome() {}, save: async () => {}, softReset: async () => {}, rand: mulberry32(7)
+  });
+  fenv.special = async (name, api) => (await F.special(name, api)) || undefined;
+  const run = (label, localId) => H.run(label, { person: { localId, id: 0 } });
+  const frontierDone = (async () => {
+    // Singles, Level 50: the lobby, then the battle room carries the seven battles through.
+    await run("BattleFrontier_BattleTowerLobby_EventScript_SinglesAttendant", "LOCALID_TOWER_ATTENDANT_SINGLES");
+    let s = F.state();
+    assert.strictEqual(s.status, 1, "the challenge is on"); assert.deepStrictEqual(s.order, [0, 1, 2]);
+    assert(s.active["0.0.0"], "the streak is live");
+    await run("BattleFrontier_BattleTowerBattleRoom_EventScript_EnterRoom", "LOCALID_PLAYER");
+    assert.strictEqual(battles, 7, "seven battles"); assert.strictEqual(s.streak["0.0.0"], 7); assert.strictEqual(s.status, 3, "won");
+    assert(s.team.every((r) => r.level === 50), "levelled to 50");
+    // (Back in the lobby: the Battle Points.)
+    H.setVar("VAR_TEMP_CHALLENGE_STATUS", 3);
+    await run("BattleFrontier_BattleTowerLobby_EventScript_WonChallenge", "LOCALID_TOWER_ATTENDANT_SINGLES");
+    assert.strictEqual(s.bp, 1, "a first challenge's Battle Point (" + s.bp + ")");
+    // The Brain: Anabel is the seventh opponent of the fifth challenge (a streak of 34 going in).
+    s.streak["0.0.0"] = 28; battles = 0;
+    await run("BattleFrontier_BattleTowerLobby_EventScript_SinglesAttendant", "LOCALID_TOWER_ATTENDANT_SINGLES");
+    s.status = 1; await run("BattleFrontier_BattleTowerBattleRoom_EventScript_EnterRoom", "LOCALID_PLAYER");
+    assert.strictEqual(s.streak["0.0.0"], 35, "28 and seven");
+    assert(H.flag("FLAG_SYS_TOWER_SILVER"), "Anabel's Silver Symbol");
+    // The other facilities and the tents, from their lobbies through every battle: each ends won, with the battles it has.
+    const PLANS = [
+      ["SlateportCity_BattleTent", "Lobby_EventScript_Attendant", ["Corridor_EventScript_EnterCorridor", "BattleRoom_EventScript_EnterRoom"], 3],
+      ["VerdanturfTown_BattleTent", "Lobby_EventScript_Attendant", ["Corridor_EventScript_EnterCorridor", "BattleRoom_EventScript_EnterRoom"], 3],
+      ["FallarborTown_BattleTent", "Lobby_EventScript_Attendant", ["Corridor_EventScript_EnterCorridor", "BattleRoom_EventScript_EnterRoom"], 3],
+      ["BattleFrontier_BattleFactory", "Lobby_EventScript_SinglesAttendant", ["PreBattleRoom_EventScript_EnterRoom", "BattleRoom_EventScript_EnterRoom"], 7],
+      ["BattleFrontier_BattleFactory", "Lobby_EventScript_DoublesAttendant", ["PreBattleRoom_EventScript_EnterRoom", "BattleRoom_EventScript_EnterRoom"], 7],
+      ["BattleFrontier_BattleArena", "Lobby_EventScript_Attendant", ["Corridor_EventScript_WalkToBattleRoom", "BattleRoom_EventScript_EnterRoom"], 7],
+      ["BattleFrontier_BattlePalace", "Lobby_EventScript_SinglesAttendant", ["Corridor_EventScript_WalkToBattleRoom", "BattleRoom_EventScript_EnterRoom"], 7],
+      ["BattleFrontier_BattlePalace", "Lobby_EventScript_DoublesAttendant", ["Corridor_EventScript_WalkToBattleRoom", "BattleRoom_EventScript_EnterRoom"], 7],
+      ["BattleFrontier_BattleDome", "Lobby_EventScript_SinglesAttendant", ["PreBattleRoom_EventScript_EnterRoom", "BattleRoom_EventScript_EnterRoom"], 4]
+    ];
+    for (const [map, lobby, loop, n] of PLANS) {
+      H.resetTemp(); s = F.state(); battles = 0; s.status = 0; s.num = 0; H.setVar("VAR_0x8006", 0); H.setVar("VAR_TEMP_CHALLENGE_STATUS", 255);
+      await run(map + lobby, "LOCALID_X");
+      for (let i = 0; i < 12 && s.status !== 3; i++) for (const l of loop) await run(map + l);
+      assert.strictEqual(s.status, 3, map + " " + lobby + " is won"); assert.strictEqual(battles, n, map + " " + lobby + ": " + n + " battles, " + battles + " ");
+    }
+  })();
+  var frontierTest = frontierDone.then(() => console.log("ok: Battle Frontier, the Tower, the Brain's symbol, the Factory, Arena, Palace, Dome and the three tents through Emerald's scripts"));
+}
+
 // Hoenn's script interpreter (ui/hoenn-script.js) against a stub game: the constants, a story scene end to end, a frame table, Dive's connections, trades.
 {
   const HS = window.HOENN_SCRIPTS;

@@ -74,13 +74,28 @@ module.exports = function hoennFrontier(EM, h) {
   // Trainers: a table of them, with each one's list of Pokémon (some are macros: a run of FRONTIER_MON_* shared by several).
   function trainerTable(file, name, monPrefix, setSrc) {
     const src = read(file), at = src.indexOf(name), body = src.slice(at, src.indexOf("\n};", at));
-    const macros = {};
-    for (const m of setSrc.matchAll(/#define (FRONTIER_MONS_\w+)\s*\\\n((?:[^\n]*\\\n)*[^\n]*)/g)) macros[m[1]] = m[2].replace(/\\/g, "");
+    const macros = {}, fnMacros = {};
+    for (const m of setSrc.matchAll(/#define (\w+_MONS_\w+)\s*\\\n((?:[^\n]*\\\n)*[^\n]*)/g)) macros[m[1]] = m[2].replace(/\\/g, "");
+    // (Macros with arguments: FRONTIER_MONS_BUG_CATCHER_1_EXTRA(SILCOON, CASCOON); `##` pastes an argument in.)
+    for (const m of setSrc.matchAll(/#define (\w+_MONS_\w+)\(([^)]*)\)\s*\\\n((?:[^\n]*\\\n)*[^\n]*)/g)) fnMacros[m[1]] = { params: m[2].split(",").map((x) => x.trim()), body: m[3].replace(/\\/g, "") };
+    const callMacros = (txt) => {
+      for (let n = 0; n < 8; n++) {
+        const next = txt.replace(/(\w+)\(([^()]*)\)/g, (all, name, args) => {
+          const f = fnMacros[name];
+          if (!f) return all;
+          const vals = args.split(",").map((x) => x.trim());
+          return f.params.reduce((b, p, i) => b.replace(new RegExp("##" + p + "\\b", "g"), vals[i]).replace(new RegExp("\\b" + p + "\\b", "g"), vals[i]), f.body);
+        });
+        if (next === txt) break;
+        txt = next;
+      }
+      return txt;
+    };
     const sets = {};
     for (const m of setSrc.matchAll(/const u16 (\w+)\[\]\s*=\s*\{([\s\S]*?)\};/g)) sets[m[1]] = m[2];
     const expand = (txt, depth) => {
       const out = [];
-      for (const t of txt.split(",").map((s) => s.trim()).filter(Boolean)) {
+      for (const t of callMacros(txt).split(",").map((s) => s.trim()).filter(Boolean)) {
         if (t === "-1") continue;
         if (macros[t] && depth < 6) out.push(...expand(macros[t], depth + 1));
         else if (defines[t] != null) out.push(defines[t]);
@@ -109,6 +124,48 @@ module.exports = function hoennFrontier(EM, h) {
   };
   for (const [key, label] of [["slateport", "Slateport"], ["verdanturf", "Verdanturf"], ["fallarbor", "Fallarbor"]]) {
     data.tents[key] = { mons: monTable("src/data/battle_frontier/battle_tent.h", "g" + label + "BattleTentMons"), trainers: trainerTable("src/data/battle_frontier/battle_tent.h", "g" + label + "BattleTentTrainers", label.toUpperCase() + "_TENT_MON_", tentSrc) };
+  }
+  // The rules and tables of frontier_util.c / battle_tower.c: who can't enter, the Battle Points, the Brains.
+  {
+    const fu = read("src/frontier_util.c"), bt = read("src/battle_tower.c");
+    const FAC = ["TOWER", "DOME", "PALACE", "ARENA", "FACTORY", "PIKE", "PYRAMID"];
+    const at = fu.indexOf("gFrontierBannedSpecies[]");
+    data.banned = [...fu.slice(at, fu.indexOf("};", at)).matchAll(/SPECIES_\w+/g)].map((m) => h.species(m[0])).filter(Boolean);
+    const bp = fu.slice(fu.indexOf("sBattlePointAwards[]"), fu.indexOf("sBattledBrainBitFlags"));
+    data.points = [...bp.matchAll(/\{\s*(\{[^}]*\}(?:,\s*\{[^}]*\})*)\s*,?\s*\}/g)].map((m) => [...m[1].matchAll(/\{([^}]*)\}/g)].map((r) => r[1].replace(/[{\s]/g, "").split(",").map((x) => +x)));
+    data.brainStreaks = FAC.map((f) => { const m = new RegExp("\\[FRONTIER_FACILITY_" + f + "\\]\\s*=\\s*\\{([^}]*)\\}").exec(fu.slice(fu.indexOf("sFrontierBrainStreakAppearances"))); return m[1].split(",").map((x) => +x.trim()); });
+    const ranges = (name) => [...bt.slice(bt.indexOf(name), bt.indexOf("};", bt.indexOf(name))).matchAll(/\{(FRONTIER_TRAINER_\w+),\s*(FRONTIER_TRAINER_\w+)\}/g)].map((m) => [defines[m[1]], defines[m[2]]]);
+    data.ranges = ranges("sFrontierTrainerIdRanges[]");
+    data.rangesHard = ranges("sFrontierTrainerIdRangesHard[]");
+    data.highTier = defines.FRONTIER_MONS_HIGH_TIER;
+    // The Brains' Pokémon: for each facility, the Silver Symbol's three and the Gold Symbol's.
+    const bm = fu.slice(fu.indexOf("sFrontierBrainsMons[][2]"), fu.indexOf("sFrontierBrainObjEventGfx"));
+    const mons = [...bm.matchAll(/\{\s*\.species = (\w+),\s*\.heldItem = (\w+),\s*\.fixedIV = (\w+),\s*\.nature = NATURE_(\w+),\s*\.evs = \{([^}]*)\},\s*\.moves = \{([^}]*)\},?\s*\}/g)];
+    const flat = mons.map((m) => ({ species: h.species(m[1]), item: m[2] === "ITEM_NONE" ? null : h.item(m[2]), iv: m[3] === "MAX_PER_STAT_IVS" ? 31 : +m[3], nature: m[4].toLowerCase().replace(/^./, (c) => c.toUpperCase()),
+      ev: m[5].split(",").map((x) => +x.trim()), moves: m[6].split(",").map((x) => x.trim()).filter((x) => x && x !== "MOVE_NONE").map(h.move).filter(Boolean) }));
+    data.brain = FAC.map((f, i) => [flat.slice(i * 6, i * 6 + 3), flat.slice(i * 6 + 3, i * 6 + 6)]);
+    data.brainPeople = FAC.map((f) => ({ TOWER: "ANABEL", DOME: "TUCKER", PALACE: "SPENSER", ARENA: "GRETA", FACTORY: "NOLAND", PIKE: "LUCY", PYRAMID: "BRANDON" })[f]);
+  }
+  // The Battle Factory's: the rental ranges, IVs by round, and the moves that give a team its "style".
+  {
+    const bf = read("src/battle_factory.c"), val = (t) => { t = t.trim(); const m = /^(\w+)\s*-\s*1$/.exec(t); return m ? (defines[m[1]] != null ? defines[m[1]] - 1 : null) : defines[t] != null ? defines[t] : +t; };
+    const body = (name) => { const at = bf.indexOf(name); return bf.slice(at, bf.indexOf("};", at)); };
+    data.factory = {
+      ranges: [...body("sInitialRentalMonRanges[]").matchAll(/\{\s*([\w ]+?(?:\s*-\s*1)?),\s*([\w ]+?(?:\s*-\s*1)?)\s*\}/g)].map((m) => [val(m[1]), val(m[2])]),
+      ivs: [...body("sFixedIVTable[]").matchAll(/\{(\d+),\s*(\d+)\}/g)].map((m) => [+m[1], +m[2]]),
+      styles: ["TotalPreparation", "SlowAndSteady", "Endurance", "HighRiskHighReturn", "WeakeningTheFoe", "ImpossibleToPredict", "DependsOnTheBattlesFlow"].map((n) =>
+        [...body("sMoves_" + n + "[]").matchAll(/MOVE_(\w+)/g)].map((m) => h.move("MOVE_" + m[1])).filter(Boolean))
+    };
+  }
+  // How each facility class looks walking about (gTower*FacilityClasses and their gfx ids), and the Brains'.
+  {
+    const bt = read("src/battle_tower.c"), list = (name) => { const at = bt.indexOf(name); return [...bt.slice(at, bt.indexOf("};", at)).matchAll(/\b((?:FACILITY_CLASS|OBJ_EVENT_GFX)_\w+)/g)].map((m) => m[1]); };
+    data.look = {};
+    for (const sex of ["Male", "Female"]) {
+      const cls = list("gTower" + sex + "FacilityClasses"), gfx = list("gTower" + sex + "TrainerGfxIds");
+      cls.forEach((c, i) => { data.look[c.replace(/^FACILITY_CLASS_/, "").toLowerCase()] = gfx[i]; });
+    }
+    data.brainLook = ["ANABEL", "TUCKER", "SPENSER", "GRETA", "NOLAND", "LUCY", "BRANDON"].map((n) => "OBJ_EVENT_GFX_" + n);
   }
   // The facility classes' pictures.
   const picOf = {};

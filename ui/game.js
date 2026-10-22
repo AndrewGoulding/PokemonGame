@@ -364,13 +364,13 @@
     }
     // (The Tera Orb: it lets a Pokémon Terastallize once a battle, and
     // recharges itself after every battle.)
-    const teraOrb = Player.itemCount(player, "tera-orb") > 0;
+    const teraOrb = !opts.noGimmicks && Player.itemCount(player, "tera-orb") > 0;
     // (A Tera Raid's Pokémon: more HP the more stars, RaidDens.HP, and already Terastallized.)
     const foeSets = (f) => f.team.map((r) => Object.assign(Party.toBattleSet(r), opts.ghost ? { name: "Ghost" } : {},
       opts.raid ? { raidHp: RaidDens.HP[opts.raid] * (opts.raidAllies && opts.raidAllies.length ? RaidDens.ALLY_HP : 1), teraStart: true } : {},
       wildTera ? { teraStart: true } : {}));
     const result = await BattleScreen.run({
-      p1: Object.assign({ name: player.name, team: own.map((r) => Party.toBattleSet(r, here)), dynamax: Player.itemCount(player, "dynamax-band") > 0, tera: teraOrb },
+      p1: Object.assign({ name: player.name, team: own.map((r) => Party.toBattleSet(r, here)), dynamax: !opts.noGimmicks && Player.itemCount(player, "dynamax-band") > 0, tera: teraOrb },
         opts.partner ? { partner: { name: opts.partner.name, team: opts.partner.team.map((r) => Party.toBattleSet(r)) } } : {}),
       // (Pokémon Tower's unidentified Ghost goes by "Ghost".)
       p2: Object.assign({ name: foe.name, team: foeSets(foe), tera: !!foe.tera || !!wildTera }, foe2 ? { partner: { name: foe2.name, team: foeSets(foe2) } } : {}),
@@ -382,9 +382,9 @@
       // as in Scarlet and Violet, where a raid's catch never fails anyway.)
       raidBalls: opts.raid ? () => Object.keys(player.bag).filter((id) => Bag.isBall(id) && id !== "master-ball" && Player.itemCount(player, id) > 0).slice(0, 8)
         .map((id) => ({ id, name: Bag.name(id) })) : null,
-      megaRing: Player.itemCount(player, "mega-ring") > 0,
-      zRing: Player.itemCount(player, "z-ring") > 0,
-      dynamaxBand: Player.itemCount(player, "dynamax-band") > 0,
+      megaRing: !opts.noGimmicks && Player.itemCount(player, "mega-ring") > 0,
+      zRing: !opts.noGimmicks && Player.itemCount(player, "z-ring") > 0,
+      dynamaxBand: !opts.noGimmicks && Player.itemCount(player, "dynamax-band") > 0,
       teraOrb,
       safari: opts.safari ? { balls: player.flags.safari.balls, hgss: !!player.flags.safari.hgss } : undefined,
       wild, weather: opts.weather,
@@ -498,7 +498,7 @@
   // SECOND, THIRD; the last one chosen takes the cursor to CONFIRM ("OK",
   // also START). B or CANCEL: "Cancel the battle?". Returns the party
   // indexes in order, or null.
-  async function chooseBattleTeam(max) {
+  async function chooseBattleTeam(max, rules) {
     const party = player.party;
     let order = [], cursor = 0, note = null;
     for (;;) {
@@ -522,7 +522,7 @@
       }
       cursor = r.cursor;
       if (r.action === "confirm") {
-        const err = DoubleBattle.confirmError(party, order, max);
+        const err = rules ? (order.length < max ? ["", "One", "Two", "Three", "Four"][max] + " POKéMON are needed." : null) : DoubleBattle.confirmError(party, order, max);
         if (err) { sfx("se_failure"); note = err; continue; }
         PartyMenu.close();
         return order;
@@ -530,6 +530,9 @@
       if (r.action === "summary") { PartyMenu.close(); await summary(r.slot); continue; }
       if (r.action === "noentry") { order = DoubleBattle.noEntry(order, r.slot); continue; }
       if (r.action === "enter") {
+        // (A challenge's own rules: not a kind twice, not an item twice ...)
+        const rule = rules && !order.includes(r.slot) && order.length < max && rules.check(party, order, r.slot);
+        if (rule) { sfx("se_failure"); if (/\n/.test(rule)) await message(rule); else note = rule; continue; }
         const res = DoubleBattle.enter(party, order, r.slot, max);
         if (res.error) { sfx("se_failure"); if (/\n/.test(res.error)) await message(res.error); else note = res.error; continue; }
         order = res.order;
@@ -11815,6 +11818,51 @@
     special: (name, api) => hoennSpecial(name, api)
   });
   const hoenn = HoennScript.create(hoennEnv);
+  // The Battle Frontier (ui/hoenn-frontier.js): Emerald's lobbies and battle rooms run their own scripts; this is what they ask for.
+  const hoennFrontier = HoennFrontier.create({
+    player: () => player, getVar: (n) => hoenn.getVar(n), flag: (n) => hoenn.flag(n),
+    createMon: (species, level, o) => Party.create(species, level, o),
+    say: (t) => say(t), caught: (sp) => Player.hasCaught(player, sp), itemName: (id) => Bag.name(id),
+    itemConst: (id) => "ITEM_" + String(id).toUpperCase().replace(/-/g, "_"),
+    giveItem: async (id) => { if (!window.ITEMS[id]) return false; Player.addItem(player, id, 1); return true; },
+    chooseParty: async ({ max, check, party }) => {
+      // (Choosing among some of them: those stand in for your party while you choose.)
+      const real = player.party;
+      if (party) player.party = party;
+      try { return await chooseBattleTeam(max, { check }); } finally { player.party = real; }
+    },
+    pick: async (title, labels) => { const i = await multichoice(title, 0, 0, labels); Screen.say(""); return i; },
+    battle: (spec) => frontierBattle(spec),
+    bpBox: (on, n) => GbaMenus.fieldWindow("bp", on ? { x: 0, y: 0, amount: n, label: "BP" } : null),
+    // (A challenge you pause is saved where you started it: the lobby. Then the game starts over, as Emerald's soft reset.)
+    markHome: () => { const at = Overworld.position(); hoennFrontier.state().home = { map: player.location.map, x: at.x, y: at.y, facing: at.facing || "down" }; },
+    save: async (paused) => {
+      tick();
+      const s = hoennFrontier.state(), here = player.location;
+      if (paused && s.home) player.location = Object.assign({}, s.home);
+      try { Save.write(player); } finally { player.location = here; }
+    },
+    softReset: async () => { window.location.reload(); await new Promise(() => {}); }
+  });
+  hoennEnv.frontierOp = (op, a, api) => hoennFrontier.op(op, a, api);
+  hoennEnv.healParty = () => { player.party.forEach(Party.heal); hoennFrontier.healTeam(); };
+  // A challenge's battle: the challenge's own Pokémon stand in for your party for its length.
+  async function frontierBattle(spec) {
+    if (!canBattle()) return "lost";
+    // (For the bots that play-test it: HOENN_FORCE_WIN = "won" | "lost" settles each battle at once.)
+    if (window.HOENN_DEBUG && window.HOENN_FORCE_WIN) return window.HOENN_FORCE_WIN;
+    const real = player.party;
+    player.party = spec.team;
+    let outcome;
+    try {
+      const opts = { foe: spec.foe, defeatText: spec.defeatText, double: !!spec.double, noExp: true, noPrize: true, noBlackout: true, noGimmicks: true };
+      if (spec.partner) { opts.partner = spec.partner; opts.chosen = spec.team.map((r, i) => i).slice(0, 2); }
+      if (spec.foe2) opts.foe2 = spec.foe2;
+      outcome = await battle("trainer", opts);
+    } finally { player.party = real; }
+    if (outcome !== "lost") { show("world"); await Overworld.resume(); }
+    return outcome;
+  }
   // The label of Emerald's script for what you've come to (a person, a sign, a step), unless this game has its own:
   // the nurses and clerks, the trainers on their sight lines, item balls, trees and rocks.
   function hoennScriptFor(ev) {
@@ -12019,6 +12067,7 @@
   const speciesNumber = (name) => Object.keys(window.DEX).indexOf(name) + 1;
   // The specials Emerald's scripts call that this game answers itself.
   async function hoennSpecial(name, api) {
+    if (await hoennFrontier.special(name, api)) return true;
     switch (name) {
       // The Gyms' puzzles (src/field_specials.c).
       case "PetalburgGymSlideOpenRoomDoors": {

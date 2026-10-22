@@ -60,7 +60,9 @@ module.exports = function emeraldScript(EM) {
   const out = { s: {}, t: {}, m: {}, tb: {}, ms: {}, lm: {} };   // (lm: which map a script label is from)
   function parseFile(file, mapName) {
     if (!fs.existsSync(file)) return;
-    let label = null, lines = [];
+    let label = null, lines = [], opened = null;
+    // (A script that runs off its end carries on into the label after it: Emerald's lobbies lean on that.)
+    const TERMINAL = new Set(["end", "goto", "return", "returnram", "vgoto", "killscript", "endscript"]);
     const flush = () => {
       if (!label) return;
       const strings = lines.filter((l) => l.str !== undefined), rest = lines.filter((l) => l.str === undefined);
@@ -77,6 +79,7 @@ module.exports = function emeraldScript(EM) {
       } else if (rest.length) {
         out.s[label] = rest.filter((l) => !l.cmd.startsWith(".")).map((l) => [l.cmd].concat(l.args.map(num)));
         if (mapName) out.lm[label] = mapName;
+        opened = label;
       }
       lines = [];
     };
@@ -84,7 +87,12 @@ module.exports = function emeraldScript(EM) {
       const l = strip(raw);
       if (!l) continue;
       const lab = /^(\w+):(:?)$/.exec(l);
-      if (lab) { flush(); label = lab[1]; continue; }
+      if (lab) {
+        flush();
+        const prev = opened && out.s[opened];
+        if (prev && prev.length && !TERMINAL.has(prev[prev.length - 1][0]) && out.s[opened] !== out.s[lab[1]]) prev.push(["goto", lab[1]]);
+        label = lab[1]; opened = null; continue;
+      }
       if (!label) continue;
       const s = /^\.string "(.*)"$/.exec(l);
       if (s) { lines.push({ str: s[1] }); continue; }

@@ -642,6 +642,10 @@ for (const type of ["RedCave", "BrownCave", "BlueCave", "YellowCave", "Tree", "S
   writePng(path.join(mapsDir, "_decor_" + type + "-mt.png"), cols * 16, rows * 16, sheet.below);
   writePng(path.join(mapsDir, "_decor_" + type + "-mt-top.png"), cols * 16, rows * 16, sheet.above);
 }
+// The Battle Frontier's trainers, Pokémon and rules.
+const frontier = require("./lib/hoenn-frontier")(EM, { species: (c) => dexByID[toID(String(c).replace(/^SPECIES_/, ""))], move: (c) => moveByID[toID(String(c).replace(/^MOVE_/, ""))], item: (c) => itemId(c), trainerPic }).data;
+frontier.brainTrainers = ["ANABEL", "TUCKER", "SPENSER", "GRETA", "NOLAND", "LUCY", "BRANDON"].map((n) => { const t = trainerData("TRAINER_" + n); return { cls: t.className, name: t.name, pic: t.pic }; });
+for (const g of Object.values(frontier.look).concat(frontier.brainLook, ["OBJ_EVENT_GFX_BOY_1"])) if (!gfx[g]) { const sp = objectSprite(g); if (sp) gfx[g] = sp; }
 const hoennScripts = { songNames, seNames, gfx, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, trades, berryTrees, rotStart, decor: decorData.list, decorCategories: decorData.CATEGORIES, numConsts, consts: mapConsts };
 
 // ---------- The Town Map ----------
@@ -666,7 +670,7 @@ const townMapData = require("./lib/hoenn-town-map")(EM).build({ mapSections: sec
 
 // ---------- The data file ----------
 const START = "// Hoenn (tools/build-hoenn.js, from pret/pokeemerald): its maps, trainers and scripts.\n", END = "// (End of Hoenn.)\n";
-const js = START + "Object.assign(window.WORLD_MAPS, " + JSON.stringify(out) + ");\nObject.assign(window.WORLD_TRAINERS, " + JSON.stringify(WORLD_TRAINERS) + ");\nwindow.HOENN_SCRIPTS = " + JSON.stringify(hoennScripts) + ";\nwindow.HOENN_TOWN_MAP = " + JSON.stringify(townMapData) + ";\n" + END;
+const js = START + "Object.assign(window.WORLD_MAPS, " + JSON.stringify(out) + ");\nObject.assign(window.WORLD_TRAINERS, " + JSON.stringify(WORLD_TRAINERS) + ");\nwindow.HOENN_SCRIPTS = " + JSON.stringify(hoennScripts) + ";\nwindow.HOENN_FRONTIER = " + JSON.stringify(frontier) + ";\nwindow.HOENN_TOWN_MAP = " + JSON.stringify(townMapData) + ";\n" + END;
 const file = path.join(root, "data/emerald-maps.js");
 let text = fs.readFileSync(file, "utf8");
 // (Whichever block this tool wrote before, its start line worded as it was.)

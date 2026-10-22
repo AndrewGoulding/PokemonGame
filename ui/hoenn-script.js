@@ -536,11 +536,17 @@
           }
 
           default:
-            // (Contests, the Frontier, the apprentice and the rest: nothing happens.)
+            // (The Battle Frontier's commands: ui/hoenn-frontier.js.)
+            if (env.frontierOp && /^(frontier|tower|dome|palace|arena|factory|pike|pyramid|slateporttent|verdanturftent|fallarbortent|battletent|apprentice)_/.test(op)) {
+              await flush();
+              if (await env.frontierOp(op, a, apiFor(() => {}))) break;
+            }
+            // (Contests, the apprentice and the rest: nothing happens.)
             if (!UNKNOWN.has(op)) { UNKNOWN.add(op); if (window.HOENN_DEBUG) console.warn("hoenn script: " + op); }
         }
       }
       // The specials (src/field_specials.c and friends): the ones a script needs; the rest do nothing.
+      const apiFor = (set) => ({ set, setBuffer: (n, v) => { buffers[n] = v; }, setVar, getVar, num, local, flush, ctx, st, cut, flag, setFlag, who });
       async function special(name, out) {
         const set = (v) => { if (out) setVar(out, v); };
         if (syncSpecial(st, name, out)) return;
@@ -555,11 +561,11 @@
           case "DoSealedChamberShakingEffect_Long": await flush(); await env.shake(10, { x: 1, y: 1, delay: 2 }); return;
           case "SaveGame": if (env.save) await env.save(); return;
           case "GameClear":
-            if (env.special && (await env.special(name, { set, setBuffer: (n, v) => { buffers[n] = v; }, setVar, getVar, local, flush, ctx, st, cut, flag, setFlag, who })) !== false) return;
+            if (env.special && (await env.special(name, apiFor(set))) !== false) return;
             if (env.save) await env.save();
             return;
           default:
-            if (env.special) { const r = await env.special(name, { set, setBuffer: (n, v) => { buffers[n] = v; }, setVar, getVar, local, flush, ctx, st, cut, flag, setFlag, who }); if (r !== undefined && r !== false) return; }
+            if (env.special) { const r = await env.special(name, apiFor(set)); if (r !== undefined && r !== false) return; }
             if (out) setVar(out, 0);
         }
       }
