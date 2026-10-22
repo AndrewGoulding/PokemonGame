@@ -82,7 +82,7 @@
       nickname: opts.nickname || null,
       level,
       exp: window.Experience.expForLevel(window.Experience.growthRate(species), level),
-      nature: pick(Object.keys(window.NATURES), rng),
+      nature: opts.nature && window.NATURES[opts.nature] ? opts.nature : pick(Object.keys(window.NATURES), rng),
       ability: pick(dex.abilities, rng),
       gender: rollGender(species, rng),
       personality: Math.floor(rng() * 4294967296),

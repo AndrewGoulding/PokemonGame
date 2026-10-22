@@ -1926,11 +1926,25 @@ but its scripts never hand it over; this game does). Challenges are saved and re
 play-test them, `HOENN_FORCE_WIN = "won"` or `"lost"` (with `HOENN_DEBUG`) settles each battle at once.
 
 **Contests** at Lilycove run the contest halls' scripts over a simplified engine (`ui/hoenn-contest.js`: the 95 contestants,
-353 moves, appeal and jam, five rounds, and the ribbons). Left out: Pokéblocks and the Berry Blender, the dressing room.
+353 moves, appeal and jam, five rounds, and the ribbons). A Pokémon's conditions are a little from its stats and what
+the **Pokéblocks** it's eaten gave it (`ui/hoenn-pokeblock.js`: Emerald's arithmetic, spicy for Cool, dry for Beauty,
+sweet for Cute, bitter for Smart, sour for Tough, the feel for sheen, and its nature deciding whether it ate happily or
+disdainfully; the Pokéblock Case, a key item used from the Bag, holds forty). They're made at the Contest Lobby's
+**Berry Blenders** with Mister, Laddie, Lassie or the Blend Master (`ui/berry-blender.js`: the arrow spins round the
+blender, A as it crosses your mark, BEST, GOOD or MISS speeding it up or slowing it, the others pressing by Emerald's
+odds; the best speed reached and the berries put in, theirs by Emerald's sets, make the block, its colour and level as
+Emerald works them out); Lilycove's Pokémon Center lady takes one for her Pokémon. (Emerald's Contests have no dressing
+room; that's a later generation's.)
 
 Not built: recorded battles, e-Reader,
-Link and wireless features, the Apprentice, the fan club, Emerald's credits, and
-Safari Zone's rules.
+Link and wireless features, the Apprentice, the fan club and Emerald's credits.
+
+**The Safari Zone** (Route 121's) is Emerald's own: its six areas and rest house (`HoennSafariZone_*`, named apart
+from Kanto's), its gate's scripts (₽500 and the Pokéblock Case to go in, 30 Safari Balls, 500 steps), its battles
+with BALL, POKéBLOCK (one from the case, which the Pokémon is curious about, enthralled by or ignores, by its
+nature, and flees the less for it: Emerald's sPkblToEscapeFactor) and GO NEAR (easier to catch, likelier to flee:
+`engine/safari.js`), RETIRE on the Start menu, and its Pokéblock feeders: a block put on one draws Pokémon that
+like it for 100 steps and five tiles round (`hoennSafari` in `ui/game.js`).
 
 The smoke test runs a story scene (Norman and Wally) through the interpreter with a stub game; `HOENN_TRACE = []`
 in the console logs every command a script runs.

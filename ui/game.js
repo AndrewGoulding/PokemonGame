@@ -386,7 +386,8 @@
       zRing: !opts.noGimmicks && Player.itemCount(player, "z-ring") > 0,
       dynamaxBand: !opts.noGimmicks && Player.itemCount(player, "dynamax-band") > 0,
       teraOrb,
-      safari: opts.safari ? { balls: player.flags.safari.balls, hgss: !!player.flags.safari.hgss } : undefined,
+      safari: opts.safari ? Object.assign({ balls: player.flags.safari.balls, hgss: !!player.flags.safari.hgss },
+        player.flags.safari.hoenn ? { hoenn: true, pokeblocks: () => hoennPokeblock.blocks().map(HoennPokeblock.name), usePokeblock: (i) => hoennPokeblock.blocks().splice(i, 1)[0] } : {}) : undefined,
       wild, weather: opts.weather,
       exp: !opts.safari && !opts.noExp, levelCap: Player.levelCap(player),
       arena: !!opts.arena, palace: !!opts.palace,   // (the Battle Frontier's Arena and Palace rules: engine/battle.js)
@@ -911,7 +912,7 @@
   }
 
   const RODS = ["fishing-rod"];
-  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box"].concat(RODS);
+  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
   const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map", "berry-pouch", "explorer-kit"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
@@ -928,6 +929,7 @@
   // closes the bag afterwards, back to the map: "escaped").
   async function useKeyItem(item) {
     if (item === "explorer-kit") return (await explorerKit()) ? "escaped" : null;
+    if (item === "pokeblock-case") { await hoennPokeblock.menu(); return null; }   // (Hoenn's Pokéblocks: ui/hoenn-pokeblock.js)
     if (item === "berry-pouch") return (await berryPouch()) ? "escaped" : null;
     if (item === "itemfinder") { fieldAction = itemfinder; return "escaped"; }
     if (item === "vs-seeker") { fieldAction = vsSeeker; return "escaped"; }
@@ -1318,13 +1320,13 @@
       const after = BerryPicking.level(player.flags.farmingXp);
       if (after > before) await say(farmingLevelRose(before, after));
     },
-    chooseBerry: async () => {
+    chooseBerry: async (label) => {
       Screen.say("");
       clearMenu();
       const r = await BagScreen.open({
         pockets: () => bagPockets().filter((p) => p.name === "Berries"), fresh: true, select: player.flags.lastPlanted,
         female: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl), frame: GameOptions.get().frame,
-        actions: () => [{ label: "Plant", value: "plant" }]
+        actions: () => [{ label: label || "Plant", value: "plant" }]
       });
       BagScreen.close();
       if (r) player.flags.lastPlanted = r.id;   // (the Bag opens on it next time)
@@ -2427,7 +2429,7 @@
       if (!safari && !contest) items.push({ key: "save", label: "Save" });
       items.push({ key: "option", label: "Option" }, { key: "exit", label: "Exit" });
       for (const it of items) it.help = it.help || START_HELP[it.key];
-      const stats = safari ? (safari.hgss ? [] : [String(safari.steps).padStart(3, " ") + "/" + Safari.STEPS]).concat("Balls  " + String(safari.balls).padStart(2, " ")) : bugContest.menuStats();
+      const stats = safari ? (safari.hgss ? [] : [String(safari.steps).padStart(3, " ") + "/" + (safari.hoenn ? 500 : Safari.STEPS)]).concat("Balls  " + String(safari.balls).padStart(2, " ")) : bugContest.menuStats();
       const r = await GbaMenus.startMenu($("#overlay"), { items, cursor: startCursor, frame: GameOptions.get().frame, stats });
       startCursor = r.cursor;
       const v = r.key;
@@ -2441,6 +2443,7 @@
       }
       if (v === "retire") {
         if (safari.hgss) { if (await johtoSafari.retire()) return; continue; }   // (Johto's: std_safari_exit)
+        if (safari.hoenn) { await runHoenn("SafariZone_EventScript_RetirePrompt"); return; }   // (Hoenn's: SafariZoneRetirePrompt)
         if (await confirm(fill(T("SafariZone_Text_WouldYouLikeToExit")[0]))) { await safariOver(null, false); return; }
         continue;
       }
@@ -11206,10 +11209,37 @@
   const SAFARI_EXIT = () => M("FuchsiaCity_SafariZone_Entrance_Movement_Exit").concat("walk_down");
   function safariStep() {
     const s = player.flags.safari;
-    if (!s || s.hgss || !/^SafariZone_/.test(player.location.map)) return null;   // (Johto's has no steps: ui/johto-safari.js)
+    if (!s || s.hgss) return null;   // (Johto's has no steps: ui/johto-safari.js)
+    // (Hoenn's: 500 steps in its areas, and its Pokéblock feeders' blocks last 100: SafariZoneTakeStep.)
+    if (s.hoenn) {
+      if (!/^HoennSafariZone_/.test(player.location.map)) return null;
+      hoennSafari.step();
+      s.steps = Math.max(0, s.steps - 1);
+      return s.steps === 0 ? { type: "safari-over", hoenn: true } : null;
+    }
+    if (!/^SafariZone_/.test(player.location.map)) return null;
     s.steps = Math.max(0, s.steps - 1);
     return s.steps === 0 ? { type: "safari-over", text: "SafariZone_Text_TimesUp" } : null;
   }
+  // Hoenn's Safari Zone (Emerald's src/safari_zone.c): entered at Route 121's gate for ₽500 with the Pokéblock Case, 30
+  // Safari Balls and 500 steps; its scripts are Emerald's own (EnterSafariMode and ExitSafariMode below, SafariZone_EventScript_*),
+  // and its Pokéblock feeders take a block from the case, which draws Pokémon that like it (a nature that does, four times in
+  // five) for 100 steps and five tiles round.
+  const hoennSafari = {
+    feeders: () => { const s = player.flags.safari; return s && s.hoenn ? (s.feeders || (s.feeders = [])) : []; },
+    front: () => { const at = Overworld.position(), [dx, dy] = World.DIRS[at.facing || "down"]; return { map: player.location.map, x: at.x + dx, y: at.y + dy }; },
+    feederInFront: () => { const f = hoennSafari.front(), i = hoennSafari.feeders().findIndex((d) => d.map === f.map && d.x === f.x && d.y === f.y); return i < 0 ? 65535 : i; },
+    placeOnFeeder: (block) => { const f = hoennSafari.front(); hoennSafari.feeders().push({ map: f.map, x: f.x, y: f.y, block, steps: 100 }); },
+    activeBlock: () => { const at = player.location, d = hoennSafari.feeders().find((f) => f.map === at.map && Math.abs(f.x - at.x) + Math.abs(f.y - at.y) <= 5); return d ? d.block : null; },
+    step: () => { const list = hoennSafari.feeders(); for (let i = list.length - 1; i >= 0; i--) if (--list[i].steps <= 0) list.splice(i, 1); },
+    // (PickWildMonNature: by a feeder's block, a nature that likes it, four times in five.)
+    nature: () => {
+      const b = hoennSafari.activeBlock();
+      if (!b || Math.random() >= 0.8) return null;
+      const liked = Object.keys(window.NATURES).filter((n) => HoennPokeblock.gain(n, b) > 0);
+      return liked.length ? liked[Math.floor(Math.random() * liked.length)] : null;
+    }
+  };
   // Talking to the attendant as you step up to the counter.
   async function safariEntry(side) {
     if (safariOn()) return;
@@ -11267,11 +11297,17 @@
     await Overworld.act([{ who: "player", moves: walkIn ? M("FuchsiaCity_SafariZone_Entrance_Movement_Exit2") : SAFARI_EXIT() }]);
   }
   // A wild Pokémon in the Safari Zone.
-  async function safariBattle(species, level, terrain) {
-    const outcome = await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(species, level))] }, terrain, safari: true });
+  async function safariBattle(species, level, terrain, nature) {
+    const outcome = await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(species, level, nature ? { nature } : {}))] }, terrain, safari: true });
     const s = player.flags.safari;
     // (Johto's, HGSS's: ui/johto-safari.js.)
     if (s && s.hgss) { show("world"); await Overworld.resume(); await johtoSafari.afterBattle(outcome); return; }
+    // (Hoenn's: Emerald's own scripts take you out when the Balls run out: CB2_EndSafariBattle.)
+    if (s && s.hoenn) {
+      if (outcome === "caught") s.caught = (s.caught || 0) + 1;
+      if (outcome === "noballs" || s.balls <= 0) { show("world"); await Overworld.resume(); await runHoenn(outcome === "noballs" ? "SafariZone_EventScript_OutOfBallsMidBattle" : "SafariZone_EventScript_OutOfBalls"); }
+      return;
+    }
     if (outcome === "noballs") {
       show("world");
       await Overworld.resume();
@@ -11880,7 +11916,18 @@
     choosePartyMon: (prompt) => hoennEnv.choosePartyMon(prompt)
   });
   hoennEnv.contestOp = (op, a, api) => hoennContest.op(op, a, api);
+  // Pokéblocks (ui/hoenn-pokeblock.js): the Berry Blender (ui/berry-blender.js), the Pokéblock Case, feeding them.
+  const hoennPokeblock = HoennPokeblock.create({
+    player: () => player, say: (t) => say(t), confirm: (q) => confirm(q), flag: (n) => hoenn.flag(n), itemName: (id) => Bag.name(id), fanfare, sfx, rand: Math.random,
+    pick: async (title, labels) => { const i = await multichoice(title, 0, 0, labels); Screen.say(""); return i; },
+    chooseBerry: () => berryEnv.chooseBerry("Use"), choosePartyMon: (prompt) => hoennEnv.choosePartyMon(prompt),
+    blender: async (players) => { show("scene"); clearMenu(); Screen.say(""); const r = await BerryBlender.run(scene, { players }); show("world"); await Overworld.resume(); return r; },
+    feederInFront: () => hoennFeederInFront(), placeOnFeeder: (b) => hoennPlaceOnFeeder(b)
+  });
   hoennEnv.healParty = () => { player.party.forEach(Party.heal); hoennFrontier.healTeam(); };
+  // (The Safari Zone's Pokéblock feeders: hoennSafari below.)
+  const hoennFeederInFront = () => (typeof hoennSafari !== "undefined" && hoennSafari.feederInFront ? hoennSafari.feederInFront() : 65535);
+  const hoennPlaceOnFeeder = (b) => { if (typeof hoennSafari !== "undefined" && hoennSafari.placeOnFeeder) hoennSafari.placeOnFeeder(b); };
   // ---------- The Battle Pyramid's floor ----------
   const PYRAMID_FLOOR = "BattleFrontier_BattlePyramidFloor";
   // Its walls (and the way out, with its step) in place of the plain floor the map's drawn as.
@@ -12158,8 +12205,12 @@
   const speciesNumber = (name) => Object.keys(window.DEX).indexOf(name) + 1;
   // The specials Emerald's scripts call that this game answers itself.
   async function hoennSpecial(name, api) {
+    // (The Safari Zone: in and out, Emerald's EnterSafariMode and ExitSafariMode.)
+    if (name === "EnterSafariMode") { player.flags.safari = { balls: 30, steps: 500, hoenn: true, feeders: [], caught: 0 }; return true; }
+    if (name === "ExitSafariMode") { delete player.flags.safari; return true; }
     if (await hoennFrontier.special(name, api)) return true;
     if (await hoennContest.special(name, api)) return true;
+    if (await hoennPokeblock.special(name, api)) return true;
     switch (name) {
       // The Gyms' puzzles (src/field_specials.c).
       case "PetalburgGymSlideOpenRoomDoors": {
@@ -12901,7 +12952,8 @@
           if (m !== tempFlagsMap) strengthOn = false;
           // (Flying, blacking out or teleporting out of the Safari Zone ends the
           // Safari Game: Overworld_ResetStateAfterFly and the like.)
-          if (player.flags.safari && !/^SafariZone_/.test(m) && m !== SAFARI_GATE) delete player.flags.safari;
+          if (player.flags.safari && !player.flags.safari.hoenn && !/^SafariZone_/.test(m) && m !== SAFARI_GATE) delete player.flags.safari;
+          if (player.flags.safari && player.flags.safari.hoenn && !/^HoennSafariZone_/.test(m) && m !== "Route121_SafariZoneEntrance") delete player.flags.safari;
           bugContest.onMap(m);   // (and away from the National Park, the Bug-Catching Contest)
           // (And off Cycling Road: VAR_MAP_SCENE_ROUTE16 back to 0.)
           if (player.flags.cyclingRoad && !CYCLING_ROAD_MAPS.includes(m)) delete player.flags.cyclingRoad;
@@ -12940,7 +12992,7 @@
       else if (ev.type === "save-prompt") await savePrompt();
       else if (ev.type === "jessie-james") await jessieJames();
       else if (ev.type === "jessie-james-later") await laterJessieJames();
-      else if (ev.type === "safari-over") await safariOver(ev.text, false);
+      else if (ev.type === "safari-over") { if (ev.hoenn) await runHoenn("SafariZone_EventScript_TimesUp"); else await safariOver(ev.text, false); }
       else if (ev.type === "johto-script") await runJohto(ev.js, null);
       else if (ev.type === "wild") {
         if (!canBattle() && !safariOn()) continue;
@@ -12950,7 +13002,7 @@
         const at = player.location, b = World.blockAt(at.map, at.x, at.y).behavior;
         const terrain = Overworld.avatar() === "surf" ? (b === 0x10 ? "pond" : "water")
           : here && ["route", "town", "city"].includes(here.type) ? "grass" : undefined;
-        if (safariOn()) await safariBattle(ev.species, ev.level, terrain);
+        if (safariOn()) await safariBattle(ev.species, ev.level, terrain, player.flags.safari.hoenn ? hoennSafari.nature() : null);
         // (The Bug-Catching Contest's own wild Pokémon, in its park.)
         else if (bugContest.here(at.map)) await bugContest.battle(terrain);
         // (The Tanoby Ruins' Unown: each slot's letter, sUnownLetterSlots; the

@@ -6316,7 +6316,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     assert(AB.SPOTS.length === 7 && AB.spotAt(27, 17) === 0 && AB.spotAt(75, 33) === 1 && AB.spotAt(50, 145) === 7 && AB.spotAt(200, 20) === -1, "the box's holes, top to bottom in turn, and its plate");
     assert(fs.existsSync(path.join(root, "assets/apricorn-box/box.png")));
     const gj = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
-    assert(/"unown-report", "apricorn-box"\]\.concat\(RODS\)/.test(gj) && /item === "apricorn-box"\) await apricornBox\("view"\)/.test(gj) && /apricornBox: \(\) => apricornBox\("give"\)/.test(gj), "the Bag and Kurt open the Apricorn Box");
+    assert(/"unown-report", "apricorn-box", "pokeblock-case"\]\.concat\(RODS\)/.test(gj) && /item === "apricorn-box"\) await apricornBox\("view"\)/.test(gj) && /apricornBox: \(\) => apricornBox\("give"\)/.test(gj), "the Bag and Kurt open the Apricorn Box");
   }
   const scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8"), owJs = fs.readFileSync(path.join(root, "ui/overworld.js"), "utf8");
   assert(/case "ScrCmd_739"/.test(scriptJs) && /case "WaitFollowingPokemonMovement"/.test(scriptJs) && /FLAG_DAILY_/.test(scriptJs), "Kurt's and the follower's script commands");
@@ -6448,6 +6448,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-pyramid.js"), "utf8"), { filename: "ui/hoenn-pyramid.js" });
   vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-frontier.js"), "utf8"), { filename: "ui/hoenn-frontier.js" });
   vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-contest.js"), "utf8"), { filename: "ui/hoenn-contest.js" });
+  vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-pokeblock.js"), "utf8"), { filename: "ui/hoenn-pokeblock.js" });
   const HF = window.HOENN_FRONTIER;
   assert(HF.mons.length === 882 && HF.trainers.length === 300 && HF.banned.length === 9 && HF.brain.length === 7 && HF.tents.slateport.mons.length === 70, "the Frontier's data");
   assert.deepStrictEqual(HF.brainStreaks[0], [35, 70, 35, 1]);
@@ -6619,6 +6620,54 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     const fss = fs.readFileSync(path.join(root, "ui/hoenn-frontier-screens.js"), "utf8");
     assert(/async function factorySelect/.test(fss) && /async function factorySwap/.test(fss) && /async function tourneyTree/.test(fss) && /X = \[\[68, 87, 95, 103, 120\], \[172, 153, 145, 137, 120\]\]/.test(fss), "Emerald's tree layout");
     assert(/if \(what === "rentmons" && env\.factorySelect\)/.test(fr) && /if \(env\.domeTree\)/.test(fr) && /dm\.rounds \|\| \(dm\.rounds = /.test(fr), "the Frontier asks for them");
+  }
+  // Pokéblocks (ui/hoenn-pokeblock.js): Emerald's blending arithmetic, the case, feeding for contest conditions; the Blender's game
+  // (ui/berry-blender.js) and the Pokéblock Case load for the game.
+  {
+    const PB = window.HoennPokeblock;
+    assert.deepStrictEqual(PB.blend(["cheri-berry", "chesto-berry"], 10000, () => 0), { color: 2, spicy: 0, dry: 12, sweet: 0, bitter: 0, sour: 0, feel: 23 }, "Cheri and Chesto at 100 RPM: a Blue Pokéblock");
+    assert.strictEqual(PB.blend(["cheri-berry", "cheri-berry"], 10000, () => 0.5).color, 12, "the same berry twice: black");
+    assert.deepStrictEqual(PB.blend(["spelon-berry", "pamtre-berry", "watmel-berry", "durin-berry"], 20000, () => 0), { color: 14, spicy: 0, dry: 0, sweet: 0, bitter: 61, sour: 0, feel: 66 }, "the Master's berries: gold");
+    assert.deepStrictEqual(PB.npcBerries("cheri-berry", 3, false), ["aspear-berry", "rawst-berry", "pecha-berry"]);
+    assert.deepStrictEqual(PB.npcBerries("oran-berry", 1, true), ["pamtre-berry"], "the Blend Master's own");
+    const pp = { name: "MAY", flags: {}, bag: { "cheri-berry": 2 }, party: [Party.create("Zigzagoon", 10)] };
+    pp.party[0].nature = "Adamant";
+    const said = [];
+    const pb = PB.create({ player: () => pp, say: async (t) => said.push([].concat(t).join(" ")), confirm: async () => true, pick: async () => 0, chooseBerry: async () => "cheri-berry",
+      choosePartyMon: async () => 0, blender: async (players) => { assert(players.length === 2 && players[1].name === "MISTER" && players[1].berry === "aspear-berry"); return { maxRPM: 9000 }; },
+      flag: () => true, itemName: (x) => x, fanfare() {}, sfx() {}, rand: () => 0 });
+    const vars = {}, api = { getVar: (k) => vars[k], setVar: (k, v) => { vars[k] = v; }, set() {}, setBuffer() {}, flush: async () => {} };
+    vars.VAR_0x8004 = 1;
+    pb.special("DoBerryBlending", api).then(() => {
+      assert(pp.flags.hoennPokeblocks.length === 1 && pp.bag["cheri-berry"] === 1 && pp.flags.hoennBlenderRecords[0] === 9000 && said.some((x) => /was made!/.test(x)), "a block made, the berry used, the record kept");
+      const b = pp.flags.hoennPokeblocks[0];
+      assert(b.color === 1 && b.spicy > 0, "Cheri and Aspear: a Red Pokéblock " + JSON.stringify(b));
+      assert.strictEqual(pb.feed(pp.party[0], b), "happily", "an Adamant Pokémon likes spicy");
+      assert(pp.party[0].contest.cool === b.spicy && pp.party[0].contest.sheen === b.feel, "Cool from spicy, sheen from the feel");
+      pp.party[0].contest.sheen = 255;
+      assert.strictEqual(pb.feed(pp.party[0], b), "full");
+      return pb.special("GetFirstFreePokeblockSlot", api);
+    }).then(() => assert.strictEqual(vars.VAR_RESULT, 1));
+    assert(scripts.indexOf("ui/hoenn-pokeblock.js") > scripts.indexOf("ui/hoenn-contest.js") && scripts.indexOf("ui/berry-blender.js") < scripts.indexOf("ui/game.js"), "the Pokéblock modules load");
+    const gj = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    assert(/if \(await hoennPokeblock\.special\(name, api\)\) return true;/.test(gj) && /item === "pokeblock-case"/.test(gj), "the game asks it");
+    assert(/const c = r\.contest \|\| \{\};/.test(fs.readFileSync(path.join(root, "ui/hoenn-contest.js"), "utf8")), "contests count what Pokéblocks gave");
+    // Hoenn's Safari Zone: Emerald's areas (named apart from Kanto's), rules (engine/safari.js's hoenn mode) and scripts.
+    for (const n of ["HoennSafariZone_South", "HoennSafariZone_North", "HoennSafariZone_Northeast", "HoennSafariZone_Southwest", "HoennSafariZone_RestHouse", "Route121_SafariZoneEntrance"]) assert(WORLD_MAPS[n] && WORLD_MAPS[n].region === "hoenn", n);
+    assert(WORLD_MAPS.SafariZone_North.width === 57 && !WORLD_MAPS.SafariZone_North.region, "Kanto's Safari Zone is still its own");
+    assert(WORLD_MAPS.HoennSafariZone_South.signs.some((x) => x.script === "EventScript_PokeBlockFeeder"), "the feeders are looked at");
+    assert(window.HOENN_SCRIPTS.s.SafariZone_EventScript_TimesUp && window.HOENN_SCRIPTS.s.SafariZone_EventScript_RetirePrompt && window.HOENN_SCRIPTS.consts.MAP_SAFARI_ZONE_SOUTH === "HoennSafariZone_South");
+    const sz = Safari.encounter("Pikachu", { hoenn: true });
+    assert(sz.escapeFactor === 3 && sz.catchFactor === Math.floor(DEX.Pikachu.captureRate * 100 / 1275), "Emerald's factors");
+    assert(Safari.throwPokeblock(sz, 1) === "enthralled" && sz.escapeFactor === 1, "a Pokéblock it's enthralled by: 5 off the escape factor, to 1 at least");
+    assert(Safari.goNear(sz) === "closer" && sz.catchFactor === Math.floor(DEX.Pikachu.captureRate * 100 / 1275) + 4 && sz.escapeFactor === 5);
+    Safari.goNear(sz); Safari.goNear(sz); assert(Safari.goNear(sz) === "cant" && sz.near === 3, "no closer than three times");
+    const sb = new Battle({ seed: 3, wild: true, safari: { balls: 30, hoenn: true }, p1: { name: "A", team: [{ species: "Pikachu", level: 20, moves: ["Tackle"] }] }, p2: { name: "Wild", team: [{ species: "Pikachu", level: 20, moves: ["Tackle"] }] } });
+    sb.start();
+    assert(sb.choose("p1", { type: "pokeblock", liking: 2, name: "RED POKéBLOCK" }).ok && sb.events.some((e) => e[0] === "-safaripokeblock" && e[2] === "ignored"), "a Pokéblock thrown in battle");
+    assert(sb.choose("p1", { type: "gonear" }).ok && sb.events.some((e) => e[0] === "-safarinear"));
+    assert(/name === "EnterSafariMode"/.test(gj) && /HoennSafariZone_/.test(gj) && /runHoenn\("SafariZone_EventScript_RetirePrompt"\)/.test(gj) && /hoennSafari\.nature\(\)/.test(gj), "the game's Safari hooks");
+    assert(/labels: hoenn \? \["BALL", "POKéBLOCK", "GO NEAR", "RUN"\]/.test(fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8")), "Emerald's Safari menu");
   }
   var frontierTest = frontierDone.then(() => console.log("ok: Battle Frontier, the Tower, the Brain's symbol, the Factory, Arena, Palace, Dome, Pike, the Pyramid, the three tents and a Contest through Emerald's scripts"));
 }

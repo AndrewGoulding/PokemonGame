@@ -1942,6 +1942,13 @@
       case "-safariwatch":
         return b === "angry" ? nameOf(a) + " is angry!" : b === "eating" ? nameOf(a) + " is eating!"
           : nameOf(a) + " is watching\ncarefully!";
+      // (Emerald's Safari Zone: a Pokéblock thrown, and going near.)
+      case "-safaripokeblock":
+        return async () => {
+          await message(battle.sides.p1.name + " threw a POKéBLOCK\nat the " + nameOf(a) + "!");
+          await message(nameOf(a) + (b === "enthralled" ? " is enthralled by\nthe " : b === "ignored" ? " completely ignored\nthe " : " is curious about\nthe ") + (c || "POKéBLOCK") + "!");
+        };
+      case "-safarinear": return b === "closer" ? battle.sides.p1.name + " crept closer to\n" + nameOf(a) + "!" : battle.sides.p1.name + " can't get any closer!";
       case "-safarifled":
         return async () => {
           sfx("se_flee");
@@ -2204,12 +2211,26 @@
   // The Safari Zone's menu (FireRed's gText_SafariZoneMenu): BALL / BAIT /
   // ROCK / RUN, "What will … throw?" (Johto's, HGSS's: MUD for ROCK).
   async function chooseSafariAction() {
-    say("");
-    clearMenu();
-    const a = await window.GbaMenus.battleAction(overlay(), { name: battle.sides.p1.name, cursor: safariCursor, frame: frame(),
-      labels: ["BALL", "BAIT", battle.safari.hgss ? "MUD" : "ROCK", "RUN"], prompt: ["What will " + battle.sides.p1.name, "throw?"] });
-    safariCursor = a.cursor;
-    return { type: ["ball", "bait", "rock", "run"][a.cursor] };
+    for (;;) {
+      say("");
+      clearMenu();
+      // (Emerald's Safari Zone: BALL, POKéBLOCK, GO NEAR, RUN; one of the case's blocks is thrown, and the wild
+      // Pokémon takes it by its nature: curious, enthralled, or it ignores it (ui/hoenn-pokeblock.js).)
+      const hoenn = !!(config.safari && config.safari.hoenn);
+      const a = await window.GbaMenus.battleAction(overlay(), { name: battle.sides.p1.name, cursor: safariCursor, frame: frame(),
+        labels: hoenn ? ["BALL", "POKéBLOCK", "GO NEAR", "RUN"] : ["BALL", "BAIT", battle.safari.hgss ? "MUD" : "ROCK", "RUN"], prompt: ["What will " + battle.sides.p1.name, hoenn ? "do?" : "throw?"] });
+      safariCursor = a.cursor;
+      if (!hoenn) return { type: ["ball", "bait", "rock", "run"][a.cursor] };
+      if (a.cursor === 1) {
+        const list = config.safari.pokeblocks();
+        if (!list.length) { await message("There are no POKéBLOCKS\nin the case!"); continue; }
+        const i = await window.GbaMenus.multichoice(overlay(), { left: 12, top: 1, items: list.concat(["CANCEL"]), frame: frame() });
+        if (i < 0 || i >= list.length) continue;
+        const block = config.safari.usePokeblock(i), g = window.HoennPokeblock.gain(battle.sides.p2.active.nature, block);
+        return { type: "pokeblock", liking: g > 0 ? 1 : g < 0 ? 2 : 0, name: list[i] };
+      }
+      return { type: ["ball", "pokeblock", "gonear", "run"][a.cursor] };
+    }
   }
   let safariCursor = 0;
   // req: the singles request, or (a double battle) the slot's: { active,

@@ -51,9 +51,29 @@
   const stageOf = (n, k) => Math.floor(HGSS_STAGES[k][0] * n / HGSS_STAGES[k][1]);
   const hgssFleeRate = (species) => (window.JOHTO_SAFARI && window.JOHTO_SAFARI.flee[species]) || 0;
 
-  // A Safari battle starting (BattleStartClearSetData; HGSS's: both stages 6).
+  // Emerald's (Hoenn's Safari Zone, opts.hoenn): the escape factor starts at 3 for everyone; a Pokéblock thrown
+  // lowers it by how the Pokémon takes it (sPkblToEscapeFactor, by throws so far and whether it's curious,
+  // enthralled or ignores it), and going near raises the catch factor (4, 3, 2, 1 over four tries) and the
+  // escape factor (4 each) (HandleAction_ThrowPokeblock, HandleAction_GoNear).
+  const PKBL_ESCAPE = [[0, 0, 0], [3, 5, 0], [2, 3, 0], [1, 2, 0], [1, 1, 0]];
+  const NEAR_CATCH = [4, 3, 2, 1], NEAR_ESCAPE = [4, 4, 4, 4];
+  function throwPokeblock(s, liking) {
+    if (s.pkbl < 3) s.pkbl++;
+    const d = PKBL_ESCAPE[s.pkbl][liking] || 0;
+    if (s.escapeFactor > 1) s.escapeFactor = s.escapeFactor <= d ? 1 : s.escapeFactor - d;
+    return ["curious", "enthralled", "ignored"][liking] || "curious";
+  }
+  function goNear(s) {
+    s.catchFactor = Math.min(20, s.catchFactor + NEAR_CATCH[s.near]);
+    s.escapeFactor = Math.min(20, s.escapeFactor + NEAR_ESCAPE[s.near]);
+    if (s.near < 3) { s.near++; return "closer"; }
+    return "cant";
+  }
+
+  // A Safari battle starting (BattleStartClearSetData; HGSS's: both stages 6; Emerald's: escape factor 3).
   function encounter(species, opts) {
     if (opts && opts.hgss) return { species, hgss: true, catchStage: 6, fleeStage: 6, fleeRate: hgssFleeRate(species) };
+    if (opts && opts.hoenn) return { species, hoenn: true, catchFactor: baseCatchFactor(species), escapeFactor: 3, bait: 0, rock: 0, pkbl: 0, near: 0 };
     const escape = Math.floor((FLEE_RATES[species] || 0) * 100 / 1275);
     return { species, catchFactor: baseCatchFactor(species), escapeFactor: escape <= 1 ? 2 : escape, bait: 0, rock: 0 };
   }
@@ -108,7 +128,7 @@
   // the anger's gone its catch factor is its own again (the bait's halving
   // isn't undone).
   function watch(s) {
-    if (s.hgss) return "watching";
+    if (s.hgss || s.hoenn) return "watching";
     if (s.rock) {
       if (--s.rock === 0) { s.catchFactor = baseCatchFactor(s.species); return "watching"; }
       return "angry";
@@ -147,6 +167,6 @@
     return { caught: shakes === 4, shakes };
   }
 
-  window.Safari = { ENTRY_FEE, BALLS, STEPS, FLEE_RATES, encounter, baseCatchFactor, fleeChance, flees, throwBait, throwRock, watch,
+  window.Safari = { throwPokeblock, goNear, ENTRY_FEE, BALLS, STEPS, FLEE_RATES, encounter, baseCatchFactor, fleeChance, flees, throwBait, throwRock, watch,
     odds, shakeOdds, chance, attempt, HGSS_STAGES };
 })();

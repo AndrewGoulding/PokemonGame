@@ -1800,9 +1800,9 @@
       const req = this.getRequest(sideId);
       if (req.phase === "wait") return { ok: false, error: "Not waiting for a choice from " + sideId };
       if (this.safari) {
-        if (!choice || !["ball", "bait", "rock", "run"].includes(choice.type)) return { ok: false, error: "Invalid choice" };
+        if (!choice || !["ball", "bait", "rock", "run", "pokeblock", "gonear"].includes(choice.type)) return { ok: false, error: "Invalid choice" };
         if (choice.type === "ball" && this.safari.balls <= 0) return { ok: false, error: "You have no Safari Balls left!" };
-        side.choice = { type: choice.type };
+        side.choice = { type: choice.type, liking: choice.liking | 0, name: choice.name };
       } else if (req.phase === "switch") {
         if (!choice || choice.type !== "switch" || !req.switches.includes(choice.index))
           return { ok: false, error: "Invalid switch" };
@@ -2759,6 +2759,11 @@
         // (HGSS's Mud, in the Rock's place.)
         const how = window.Safari.throwRock(s, rng);
         if (s.hgss) this.add("-safarimud", foe, how); else this.add("-safarirock", foe);
+      } else if (c.type === "pokeblock") {
+        // (Emerald's: a Pokéblock, which it's curious about, enthralled by or ignores, by its nature: the screen says which.)
+        this.add("-safaripokeblock", foe, window.Safari.throwPokeblock(s, c.liking), c.name || "POKéBLOCK");
+      } else if (c.type === "gonear") {
+        this.add("-safarinear", foe, window.Safari.goNear(s));
       }
       if (this.sides.p2.choice && this.sides.p2.choice.type === "flee") {
         this.add("-safarifled", foe);

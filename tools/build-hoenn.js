@@ -77,7 +77,7 @@ const OUTDOOR = ["InsideOfTruck", "LittlerootTown", "SootopolisCity", "SeafloorC
   // (The Battle Frontier's island, the three Battle Tents' rooms and the Contest Halls: script warps and the ferry go there.)
   "BattleFrontier_OutsideWest", "BattleFrontier_OutsideEast", "BattleFrontier_ReceptionGate", "SlateportCity_BattleTentBattleRoom", "SlateportCity_BattleTentCorridor", "VerdanturfTown_BattleTentBattleRoom", "VerdanturfTown_BattleTentCorridor",
   "FallarborTown_BattleTentBattleRoom", "FallarborTown_BattleTentCorridor", "ContestHall", "ContestHallBeauty", "ContestHallCool", "ContestHallCute", "ContestHallSmart", "ContestHallTough", "LilycoveCity_ContestHall", "LilycoveCity_ContestLobby"];   // (The rest are reached through the story: Dive, Sootopolis's way in, the hideouts' doors, the tides.)
-const EXCLUDE = /^(BattleColosseum|TradeCenter|UnionRoom|RecordCorner|TrainerHill|SafariZone|.*Unused|.*Prototype|Dummy|BirthIsland|NavelRock|FarawayIsland|SouthernIsland|Test)/;
+const EXCLUDE = /^(BattleColosseum|TradeCenter|UnionRoom|RecordCorner|TrainerHill|.*Unused|.*Prototype|Dummy|BirthIsland|NavelRock|FarawayIsland|SouthernIsland|Test)/;
 const mapJson = (name) => {
   const j = JSON.parse(fs.readFileSync(P("data/maps", name, "map.json"), "utf8"));
   // (Some maps, the Contest Halls', leave a kind of event out.)
@@ -89,8 +89,10 @@ for (const d of fs.readdirSync(P("data/maps"))) {
   const f = P("data/maps", d, "map.json");
   if (fs.existsSync(f)) byConst[JSON.parse(fs.readFileSync(f, "utf8")).id] = d;
 }
-// (Kanto has Victory Road's floors under these names already.)
-const RENAME = { VictoryRoad_1F: "HoennVictoryRoad_1F", VictoryRoad_B1F: "HoennVictoryRoad_B1F", VictoryRoad_B2F: "HoennVictoryRoad_B2F" };
+// (Kanto has Victory Road's floors, and its Safari Zone's areas, under these names already.)
+const RENAME = { VictoryRoad_1F: "HoennVictoryRoad_1F", VictoryRoad_B1F: "HoennVictoryRoad_B1F", VictoryRoad_B2F: "HoennVictoryRoad_B2F",
+  SafariZone_North: "HoennSafariZone_North", SafariZone_Northeast: "HoennSafariZone_Northeast", SafariZone_Northwest: "HoennSafariZone_Northwest", SafariZone_South: "HoennSafariZone_South",
+  SafariZone_Southeast: "HoennSafariZone_Southeast", SafariZone_Southwest: "HoennSafariZone_Southwest", SafariZone_RestHouse: "HoennSafariZone_RestHouse" };
 const ren = (d) => RENAME[d] || d;
 const MAPS = [];
 {
@@ -444,9 +446,11 @@ for (const name of MAPS) {
   const anim = E.animCells(blocks, w, h, primary, secondary), animFile = path.join(mapsDir, ren(name) + "-anim.png");
   if (anim.pics.length) E.writeAnimSheet(animFile, anim.pics); else if (fs.existsSync(animFile)) fs.unlinkSync(animFile);
 
-  const collision = [], elevation = [], behaviors = [], encounter = [];
+  const collision = [], elevation = [], behaviors = [], encounter = [], feeders = [];
   for (const b of blocks) {
     const mt = E.metatile(primary, secondary, b & 0x3ff), beh = behavior(mt.behavior);
+    // (The Safari Zone's Pokéblock feeders are tiles, MB_POKEBLOCK_FEEDER, looked at as a sign: EventScript_PokeBlockFeeder.)
+    if (mt.behavior === MBN.MB_POKEBLOCK_FEEDER) feeders.push({ x: collision.length % w, y: Math.floor(collision.length / w), script: "EventScript_PokeBlockFeeder" });
     collision.push((b >> 10) & 3 ? 1 : 0);
     elevation.push(b >> 12);
     behaviors.push(beh);
@@ -540,7 +544,8 @@ for (const name of MAPS) {
       // (A secret base spot: look at it and the base's scripts take over; once it's yours, it's open and the way in. `spot`: its place.)
       .concat((map.bg_events || []).filter((b) => b.type === "secret_base").map((b) => ({ x: b.x, y: b.y, script: "SecretBase_EventScript_CheckEntrance", spot: b.secret_base_id, closed: blocks[b.y * w + b.x] & 0x3ff, open: spotOpen[blocks[b.y * w + b.x] & 0x3ff] })))
       // (A secret base's PC.)
-      .concat(decorPc && /^SecretBase_/.test(name) ? [{ x: decorPc.x, y: decorPc.y, script: "SecretBase_EventScript_PC" }] : []),
+      .concat(decorPc && /^SecretBase_/.test(name) ? [{ x: decorPc.x, y: decorPc.y, script: "SecretBase_EventScript_PC" }] : [])
+      .concat(feeders),
     decorKind, decorSheet: /^SecretBase_/.test(name) ? name.replace(/^SecretBase_/, "").replace(/\d$/, "") : undefined,
     triggers,
     // (Weather: the header's, which the map has as you come in, and the steps that change it: src/coord_event_weather.c.)

@@ -37,10 +37,13 @@
     const ribbons = (r) => r.contestRibbons || (r.contestRibbons = { cool: 0, beauty: 0, cute: 0, smart: 0, tough: 0 });
     const keyOf = (cat) => CATS[cat].toLowerCase();
 
-    // A Pokémon's contest conditions, from its stats (Emerald's come from Pokéblocks).
+    // A Pokémon's contest conditions: a little from its stats, and what the Pokéblocks it's eaten gave it
+    // (record.contest, ui/hoenn-pokeblock.js: Emerald's own conditions come from those alone), to 255.
     function conditions(r) {
       const d = window.DEX[r.species] || {}, k = Math.min(1.6, 0.4 + (r.level || 1) / 60), f = (a, b) => Math.round(((d[a] || 40) + (d[b] || 40)) / 2 / 8 * k);
-      return { cool: f("atk", "spe"), beauty: f("spa", "spe"), cute: f("hp", "spd"), smart: f("spa", "spd"), tough: f("def", "hp"), sheen: 0 };
+      const c = r.contest || {};
+      return { cool: Math.min(255, f("atk", "spe") + (c.cool || 0)), beauty: Math.min(255, f("spa", "spe") + (c.beauty || 0)), cute: Math.min(255, f("hp", "spd") + (c.cute || 0)),
+        smart: Math.min(255, f("spa", "spd") + (c.smart || 0)), tough: Math.min(255, f("def", "hp") + (c.tough || 0)), sheen: c.sheen || 0 };
     }
     const MAIN = [["cool", "tough", "beauty"], ["beauty", "cool", "cute"], ["cute", "beauty", "smart"], ["smart", "cute", "tough"], ["tough", "smart", "cool"]];
     const round1 = (st, cat) => { const [m, a, b] = MAIN[cat]; return st[m] + Math.floor((st[a] + st[b] + st.sheen) / 2); };
