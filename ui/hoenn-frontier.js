@@ -282,6 +282,7 @@
         case "tower_init": {
           s.status = 1; s.num = 0; s.paused = 0; s.noRecord = 1; s.ids = []; s.A = null; s.B = null; s.partner = null;
           if (!s.active[curKey()]) s.streak[curKey()] = 0;
+          if (mode() >= 2) multiOpponents();
           if (env.markHome) env.markHome();
           return true;
         }
@@ -338,23 +339,36 @@
       }
       return false;
     }
-    // Multi battles with a partner (the Tower's): your partner is a trainer from the same ranges, who fights beside you.
+    // Multi battles with a partner (the Tower's): six trainers wait in the partner room, one of whom will fight beside you; the
+    // opponents are two trainers a battle, fourteen over the challenge.
+    function multiOpponents() {
+      const s = S(), challenge = Math.floor(streak() / STAGES), ids = [];
+      for (let b = 0; b < STAGES; b++) for (let k = 0; k < 2; k++) { let id; do { id = randomTrainerId(challenge, b); } while (ids.includes(id)); ids.push(id); }
+      s.ids = ids;
+    }
     async function multis(name, a, api) {
-      const s = S();
+      const s = S(), pick = () => { const w = String(api.who ? api.who("VAR_LAST_TALKED") : ""), m = /(\d+)$/.exec(w); return Math.min(5, Math.max(0, (m ? +m[1] : 1) - 1)); };
       switch (name) {
         case "tower_loadpartners": {
-          // Two candidates, a pair of the trainers you could meet.
-          s.cand = [randomTrainerId(Math.floor(streak() / STAGES), 0), randomTrainerId(Math.floor(streak() / STAGES), 0)];
+          const challenge = Math.floor(streak() / STAGES), cands = [];
+          while (cands.length < 6) { const id = randomTrainerId(challenge, 0); if (!cands.includes(id)) cands.push(id); }
+          s.cand = cands;
+          cands.forEach((id, i) => api.setVar("VAR_OBJ_GFX_ID_" + i, trainerOf({ kind: "frontier", id }).look));
           return true;
         }
         case "tower_dopartnermsg": {
-          const id = s.cand[api.num(a[0]) % 2 === 0 ? 0 : 1] != null ? s.cand[api.getVar("VAR_0x8005") === 1 ? 1 : 0] : s.cand[0], t = D().trainers[id];
-          if (t && t.before) await env.say(t.before);
+          const id = (s.cand || [])[pick()], t = D().trainers[id], msg = api.num(a[0]);
+          if (!t) return true;
+          const mons = pickMons(D().mons, D().heldItems, t.set, 2, 50, 0, false).map(Party_name);
+          // (PARTNER_MSGID_*: the greeting, the first and second Pokémon and the question, yes, no.)
+          const text = [t.before || "Hello!", "My first POKéMON is " + (mons[0] || "?") + ".", "My second is " + (mons[1] || "?") + ".\nWill you team up with me?", "Okay! Let's do our best together!", "Oh… I see. Maybe some other time."][msg] || "…";
+          if (msg === 3) s.partner = id;
+          await env.say(text);
           return true;
         }
         case "tower_setpartnergfx": {
-          const t = D().trainers[s.partner != null ? s.partner : s.cand[0]];
-          api.setVar("VAR_OBJ_GFX_ID_E", D().look[t.cls] || "OBJ_EVENT_GFX_BOY_1");
+          const t = D().trainers[s.partner != null ? s.partner : (s.cand || [])[0]];
+          if (t) api.setVar("VAR_OBJ_GFX_ID_E", D().look[t.cls] || "OBJ_EVENT_GFX_BOY_1");
           return true;
         }
         case "tower_loadlinkopponents": api.setVar("VAR_RESULT", 6); return true;

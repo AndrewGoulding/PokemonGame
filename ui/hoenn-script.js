@@ -138,7 +138,10 @@
     const peopleHere = () => (window.WORLD_MAPS[mapName()] || { people: [] }).people;
     // A local id (a LOCALID_ name, a number, or the player's 255) as the overworld's name for them.
     function who(x) {
+      // (VAR_LAST_TALKED: who a script set there, or else who you last spoke to.)
+      const named = x === "VAR_LAST_TALKED" || x === "LOCALID_LAST_TALKED";
       x = getVar(x);
+      if (named && !x) return lastTalked;
       if (x === "OBJ_EVENT_ID_PLAYER" || x === "LOCALID_PLAYER" || x === 255) return "player";
       if (x === "VAR_LAST_TALKED" || x === "LOCALID_LAST_TALKED") return lastTalked;
       if (typeof x === "number") { const p = peopleHere().find((q) => q.id === x - 1); return p ? (p.localId || "#" + p.id) : null; }
@@ -584,6 +587,7 @@
       }
 
       lastTalked = ctx.person ? (ctx.person.localId || "#" + ctx.person.id) : lastTalked;
+      if (ctx.person) local.VAR_LAST_TALKED = lastTalked;   // (gSpecialVar_LastTalked: whoever you spoke to)
       // (VAR_FACING: the way you were facing as the script began.)
       { const me = env.personAt("player"); setVar("VAR_FACING", DIR_NUM[(me || {}).facing] || 1); }
       await main();
