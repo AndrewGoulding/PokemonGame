@@ -1918,6 +1918,15 @@ Also: berry trees (Hoenn's own growth stages and mulch; picking from one is the 
 forests, and the Berry Pouch works in Petalburg Woods: the farming level counts there too), weather, your own secret base with its decorations,
 the rotating-tile puzzles, the Mirage Tower and Rayquaza's scenes.
 
+Other people's secret bases (this game's own, since Emerald only has them through record mixing; `hoennNpcBases` in
+`ui/game.js`): a dozen of Hoenn's spots are taken, each by an owner of one of Emerald's ten kinds (its
+`sSecretBaseOwnerGfxIds` and `sSecretBaseFacilityClasses`: five boys, five girls), named after one of the Frontier's
+trainers, with decorations set out where Emerald's placement rules let them go (`ui/hoenn-decor.js` `furnish`) and a
+party of the Frontier's Pokémon at the level you were when you first came to a spot. They're made once from your
+trainer ID and kept. Go in and the owner talks and battles as Emerald's record-mixed owners do (its
+`SecretBase_EventScript_RecordMixTrainer`: once a day, after the Hall of Fame, their class's picture, Emerald's words
+for the loss, no money and no blacking out), and their PC registers the base, as Emerald's registry does.
+
 **The Battle Frontier** runs Emerald's own lobby and battle-room scripts over `ui/hoenn-frontier.js` (the commands those
 scripts use), with its trainers, Pokémon, Battle Point prizes and the Brains read from the decomp's tables by
 `tools/lib/hoenn-frontier.js`. The challenge fights with copies of the Pokémon you register (set to Lv. 50, or your
@@ -1953,8 +1962,19 @@ odds; the best speed reached and the berries put in, theirs by Emerald's sets, m
 Emerald works them out); Lilycove's Pokémon Center lady takes one for her Pokémon. (Emerald's Contests have no dressing
 room; that's a later generation's.)
 
+The Apprentice (`ui/hoenn-frontier.js`, Emerald's `src/apprentice.c` through its own scripts): a young trainer
+in the Tower's lobby, one of sixteen, asks you to teach them. You pick their level mode, then a day at a time one
+Pokémon from each of three pairs (their ten shuffled), and then, in Emerald's shuffled order, which of two moves
+a Pokémon should know (its latest, or another it can learn, a TM's or an earlier one), what each should hold
+(from your Bag; an item suggested twice is refused, since Tower Pokémon may not hold the same one), which should
+lead, and at the last what they'll say on winning (one of eight speeches, in place of the Easy Chat screen).
+Each answer sends them off till the next day; the win speech ends the lessons, wherever it landed, and they're
+saved (four at most, numbered) to meet you in the Tower's singles at the streak their lessons earned
+(`sApprenticeChallengeThreshold`), with the Pokémon, moves and items you chose, full IVs and even EVs, and
+their challenge, win speech and loss as Emerald's. Then a new Apprentice waits.
+
 Not built: the e-Reader and Link and wireless features (hardware; the Record Corner, Union Room, mixing records
-and the Battle Tower's link modes have no counterpart here), the Apprentice and the fan club.
+and the Battle Tower's link modes have no counterpart here) and the fan club.
 
 **The Safari Zone** (Route 121's) is Emerald's own: its six areas and rest house (`HoennSafariZone_*`, named apart
 from Kanto's), its gate's scripts (₽500 and the Pokéblock Case to go in, 30 Safari Balls, 500 steps), its battles

@@ -13,6 +13,7 @@
 "use strict";
 
 const fs = require("fs");
+const { parseTextFile, cleanText } = require("./text");
 const path = require("path");
 
 module.exports = function hoennFrontier(EM, h) {
@@ -185,5 +186,33 @@ module.exports = function hoennFrontier(EM, h) {
   const picOf = {};
   for (const m of read("src/data/pokemon/trainer_class_lookups.h").matchAll(/\[FACILITY_CLASS_(\w+)\] = (TRAINER_PIC_\w+)/g)) picOf[m[1].toLowerCase()] = m[2];
   for (const t of [].concat(data.trainers, ...Object.values(data.tents).map((x) => x.trainers))) if (t) t.pic = h.trainerPic(picOf[t.cls]) || null;
+  // The Apprentices (src/apprentice.c, src/data/battle_frontier/apprentice.h, data/text/apprentice.inc): the sixteen who might
+  // ask to be taught, each with a class, ten Pokémon to choose their three from and what they say losing; their questions'
+  // words, by kind and apprentice; the moves they're glad to be told of (sValidApprenticeMoves); the eight the first can be;
+  // and the streak each is met at as a Tower opponent, by the questions they got through (sApprenticeChallengeThreshold).
+  {
+    const ap = read("src/data/battle_frontier/apprentice.h");
+    const body = ap.slice(ap.indexOf("gApprentices[NUM_APPRENTICES]"), ap.indexOf("sApprenticeFirstMeetingTexts"));
+    data.apprentices = [...body.matchAll(/\.name = \{([^}]*)\},\s*\.otId = (\d+),\s*\.facilityClass = FACILITY_CLASS_(\w+),\s*\.species = \{([^}]*)\},\s*\.id = (\d+),\s*\.speechLost = \{([^}]*)\}/g)].map((m) => ({
+      name: (m[1].match(/_\("([^"]*)"\)/g) || [])[1].replace(/_\("([^"]*)"\)/, "$1").toLowerCase().replace(/^./, (c) => c.toUpperCase()),
+      otId: +m[2], cls: m[3].toLowerCase(), species: m[4].split(",").map((s) => h.species(s.trim())).filter(Boolean), id: +m[5], lost: speech(m[6]),
+      pic: h.trainerPic(picOf[m[3].toLowerCase()]) || null
+    }));
+    const vm = ap.slice(ap.indexOf("sValidApprenticeMoves"), ap.indexOf("};", ap.indexOf("sValidApprenticeMoves")));
+    data.apprenticeMoves = [...vm.matchAll(/\[(MOVE_\w+)\] = TRUE/g)].map((m) => h.move(m[1])).filter(Boolean);
+    data.apprenticeFirst = (/sInitialApprenticeIds\[\d+\] = \{([^}]*)\}/.exec(ap) || [, "0, 1, 2, 3, 6, 7, 8, 9"])[1].split(",").map((x) => +x.trim());
+    const bt = read("src/battle_tower.c");
+    data.apprenticeThreshold = (/sApprenticeChallengeThreshold\[[^\]]*\] =\s*\{([^}]*)\}/.exec(bt) || [, "1, 2, 3, 4, 5, 8, 9, 10, 11, 12"])[1].split(",").map((x) => +x.trim());
+    const texts = parseTextFile(P("data/text/apprentice.inc"), {});
+    data.apprenticeText = {};
+    for (const kind of ["Challenge", "PleaseTeach", "RejectTeaching", "WhichLevelMode", "LevelModeThanks", "WhichMonFirst", "MonFirstThanks", "WhichMon", "MonThanks",
+      "WhichMove", "MoveThanks", "WhatHeldItem", "ThanksHeldItem", "HoldNothing", "ThanksNoHeldItem", "ItemAlreadyRecommended", "PickWinSpeech", "WinSpeechThanks"]) {
+      data.apprenticeText[kind] = data.apprentices.map((a) => cleanText(texts["gText_Apprentice" + kind + a.id] || ""));
+    }
+    // (The win speech is six Easy Chat words of the player's choosing in Emerald; here, one of these.)
+    data.apprenticeSpeeches = ["EC_WORD_I, EC_WORD_WON, EC_WORD_EXCL", "EC_WORD_THANK_YOU, EC_WORD_TEACHER, EC_WORD_EXCL", "EC_WORD_TOO_STRONG, EC_WORD_EXCL",
+      "EC_WORD_THAT, EC_WORD_WAS, EC_WORD_EASY, EC_WORD_EXCL", "EC_WORD_I, EC_WORD_NEVER, EC_WORD_GIVE_UP, EC_WORD_EXCL", "EC_WORD_YAY, EC_WORD_EXCL, EC_WORD_I, EC_WORD_WIN, EC_WORD_EXCL",
+      "EC_WORD_YOU_RE, EC_WORD_TOO, EC_WORD_WEAK, EC_WORD_EXCL", "EC_WORD_THAT_S, EC_WORD_HOW, EC_WORD_IT_S, EC_WORD_DONE, EC_WORD_EXCL"].map(speech);
+  }
   return { data, words };
 };

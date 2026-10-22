@@ -45,9 +45,11 @@
       return true;
     }
     const take = (id) => { const s = state(); if (s.have[id] > 0 && !--s.have[id]) delete s.have[id]; };
-    const placedOf = (ctx) => state()[ctx];
-    // Which a map's placed ones are: the Secret Base's, or your room's.
-    const contextOf = (map) => (map && map === env.baseMap() ? "base" : /^LittlerootTown_(Brendans|Mays)House_2F$/.test(map || "") ? "room" : null);
+    // (Someone else's base, while you're in it (env.visitMap / env.visitPlaced): its own decorations; "temp" while one is furnished.)
+    let tempPlaced = [];
+    const placedOf = (ctx) => (ctx === "visit" ? (env.visitPlaced ? env.visitPlaced() : []) : ctx === "temp" ? tempPlaced : state()[ctx]);
+    // Which a map's placed ones are: the base you're visiting, the Secret Base's, or your room's.
+    const contextOf = (map) => (map && env.visitMap && map === env.visitMap() ? "visit" : map && map === env.baseMap() ? "base" : /^LittlerootTown_(Brendans|Mays)House_2F$/.test(map || "") ? "room" : null);
     const sheetOf = (map) => (window.WORLD_MAPS[map] || {}).decorSheet;
 
     // ---------- What's out on a map ----------
@@ -94,6 +96,22 @@
         else if (d.perm === "sprite") { if (d.shape === "1x2" ? k !== "l" : k !== "s" && k !== "l") return false; }
       }
       return true;
+    }
+
+    // Someone else's base furnished (this game's own; Emerald's come through record mixing): n of the catalogue's decorations
+    // set out at random where the rules let them go (CanPlaceDecoration), no two on the same tiles.
+    function furnish(map, rng, n) {
+      const out = [], m = window.WORLD_MAPS[map], all = catalog();
+      if (!m || !m.decorKind || !all.length) return out;
+      const saved = tempPlaced;
+      tempPlaced = out;
+      try {
+        for (let tries = 0; out.length < n && tries < 600; tries++) {
+          const d = all[Math.floor(rng() * all.length)], x = Math.floor(rng() * m.width), y = Math.floor(rng() * m.height);
+          if (canPlace("temp", map, d, x, y)) out.push({ id: d.id, x, y });
+        }
+      } finally { tempPlaced = saved; }
+      return out;
     }
 
     // ---------- Putting one out: a screen of the map, a cursor, and the decoration under it ----------
@@ -237,7 +255,7 @@
       }
     }
 
-    return { give, has, count, overlay, menu, mart, byKey, byId, contextOf, state, placedOf, take };
+    return { give, has, count, overlay, menu, mart, byKey, byId, contextOf, state, placedOf, take, canPlace, furnish };
   }
 
   window.HoennDecor = { create, CAPACITY };

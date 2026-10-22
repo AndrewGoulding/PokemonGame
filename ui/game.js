@@ -1347,6 +1347,8 @@
     player: () => player, say: (p) => say(p), confirm: (q) => confirm(q), sfx,
     choose: async (q, texts) => { const i = await multichoice(q, 0, 0, texts); Screen.say(""); return i; },
     canvas: () => overlayCanvas(), baseMap: () => (player.flags.secretBase || {}).map || null,
+    // (Someone else's base, while you're in it: its decorations, not yours.)
+    visitMap: () => { const v = hoennVisiting(); return v && player.location.map === v.room ? v.room : null; }, visitPlaced: () => (hoennVisiting() || {}).placed || [],
     refresh: () => { hoennDecorApply(player.location.map); Overworld.refreshPeople(); }, persist: () => persist(),
     money: () => player.money, addMoney: (n) => Player.addMoney(player, n)
   });
@@ -1354,7 +1356,7 @@
   //
   // A spot in a rock wall, a tree or a bush, found with Secret Power: once it's yours (player.flags.secretBase: { map:
   // the base room it opens on, spot: { map, x, y, id } }) it stands open and A on it takes you in; the base's PC
-  // decorates it and packs it up. Only the one base: nobody else's to visit.
+  // decorates it and packs it up. Other people's bases: hoennNpcBases below.
   const secretBase = () => player.flags.secretBase || null;
   const hoennOwnSpot = (sign) => { const b = secretBase(); return !!b && b.spot.id === sign.spot && b.spot.map === player.location.map; };
   const BASE_ROOM = (id) => "SecretBase_" + id.replace(/^SECRET_BASE_/, "").replace(/_\d+$/, "").split("_").map((w) => w.charAt(0) + w.slice(1).toLowerCase()).join("");
@@ -1363,25 +1365,79 @@
     const L = player.location, m = window.WORLD_MAPS[L.map], at = Overworld.position(), d = World.DIRS[Overworld.ahead().facing] || [0, 0];
     return m && (m.signs || []).find((s) => s.spot && s.x === at.x + d[0] && s.y === at.y + d[1]) || null;
   }
-  // Your spot opened, when you're on its map.
+  // Your spot opened, when you're on its map; the other people's too.
   function hoennSpotOpen(map) {
+    const signs = window.WORLD_MAPS[map].signs || [], open = (id) => { const s = signs.find((q) => q.spot === id); if (s && s.open) hoennMetatileId(map, s.x, s.y, s.open, true); };
     const b = secretBase();
-    if (!b || b.spot.map !== map) return;
-    const s = (window.WORLD_MAPS[map].signs || []).find((q) => q.spot === b.spot.id);
-    if (s && s.open) hoennMetatileId(map, s.x, s.y, s.open, true);
+    if (b && b.spot.map === map) open(b.spot.id);
+    for (const n of hoennNpcBases()) if (n.map === map) open(n.id);
   }
-  // In to the base, or back out to its spot.
-  async function secretBaseGo(into) {
-    const b = secretBase();
-    if (!b) return;
+  // In to a base (room, from its spot), or back out to the spot.
+  async function baseGo(room, spot, into) {
     Screen.say("");
     await Overworld.fadeToBlack();
     if (into) {
-      const room = window.WORLD_MAPS[b.map], w = room.warps[0] || { x: 5, y: 7 };
-      setDynamicWarp({ map: b.spot.map, x: b.spot.x, y: b.spot.y + 1 });
-      await Overworld.teleport({ map: b.map, x: w.x, y: w.y, facing: "up" });
-    } else await Overworld.teleport({ map: b.spot.map, x: b.spot.x, y: b.spot.y + 1, facing: "down" });
+      const w = (window.WORLD_MAPS[room].warps || [])[0] || { x: 5, y: 7 };
+      setDynamicWarp({ map: spot.map, x: spot.x, y: spot.y + 1 });
+      await Overworld.teleport({ map: room, x: w.x, y: w.y, facing: "up" });
+    } else await Overworld.teleport({ map: spot.map, x: spot.x, y: spot.y + 1, facing: "down" });
     await Overworld.fadeFromBlack();
+  }
+  async function secretBaseGo(into) { const b = secretBase(); if (b) await baseGo(b.map, b.spot, into); }
+
+  // ---------- Other people's Secret Bases (this game's own: Emerald only has them through record mixing) ----------
+  // A dozen of Hoenn's spots are taken. Each base has an owner of one of Emerald's ten kinds (sSecretBaseOwnerGfxIds and
+  // sSecretBaseFacilityClasses: five boys, five girls), named after one of the Frontier's trainers, with decorations set out
+  // as the rules allow (ui/hoenn-decor.js furnish) and a party of the Frontier's Pokémon at the level you were when you
+  // first came to Hoenn's spots. The owner talks and battles as Emerald's record-mixed owners do
+  // (SecretBase_EventScript_RecordMixTrainer: once a day, after the Hall of Fame), and the base's PC registers the base.
+  // Made once from your trainer ID, and kept: player.flags.hoennNpcBases.
+  const NPC_BASE_LOOKS = ["OBJ_EVENT_GFX_YOUNGSTER", "OBJ_EVENT_GFX_BUG_CATCHER", "OBJ_EVENT_GFX_RICH_BOY", "OBJ_EVENT_GFX_CAMPER", "OBJ_EVENT_GFX_MAN_3",
+    "OBJ_EVENT_GFX_LASS", "OBJ_EVENT_GFX_GIRL_3", "OBJ_EVENT_GFX_WOMAN_2", "OBJ_EVENT_GFX_PICNICKER", "OBJ_EVENT_GFX_WOMAN_5"];
+  const NPC_BASE_CLASSES = ["youngster", "bug_catcher", "rich_boy", "camper", "cooltrainer_m", "lass", "school_kid_f", "lady", "picnicker", "cooltrainer_f"];
+  const NPC_BASE_COUNT = 12, GIRL_CLASS = /_f$|^(aroma_lady|beauty|lass|hex_maniac|parasol_lady|battle_girl|picnicker|lady)$/;
+  function seededRandom(seed) {
+    let a = seed | 0;
+    return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  function hoennNpcBases() {
+    const f = player.flags;
+    if (f.hoennNpcBases) return f.hoennNpcBases;
+    const rng = seededRandom((player.trainerId || 0) + 0x5B), F = window.HOENN_FRONTIER || {};
+    const trainers = (F.trainers || []).filter(Boolean), mons = (F.mons || []).filter(Boolean), spots = [];
+    for (const [map, m] of Object.entries(window.WORLD_MAPS)) if (m.region === "hoenn") for (const s of m.signs || []) if (s.spot) spots.push({ map, x: s.x, y: s.y, id: s.spot });
+    const level = Math.max(10, Math.min(100, Math.round(partyLevel()))), bases = [];
+    while (bases.length < NPC_BASE_COUNT && spots.length && trainers.length && mons.length) {
+      const spot = spots.splice(Math.floor(rng() * spots.length), 1)[0];
+      if (secretBase() && secretBase().spot.id === spot.id) continue;
+      const t = trainers[Math.floor(rng() * trainers.length)], type = Math.floor(rng() * 5) + (GIRL_CLASS.test(t.cls) ? 5 : 0), party = [];
+      const n = 2 + Math.floor(rng() * 3);
+      for (let tries = 0; party.length < n && tries < 60; tries++) {
+        const fm = mons[Math.floor(rng() * mons.length)];
+        if (!fm || !window.DEX[fm.species] || party.some((p) => p.species === fm.species)) continue;
+        party.push({ species: fm.species, level, moves: fm.moves.slice(0, 4), item: (fm.item && F.heldItems[fm.item]) || "" });
+      }
+      const room = BASE_ROOM(spot.id);
+      bases.push({ id: spot.id, map: spot.map, x: spot.x, y: spot.y, room, name: t.name, type, party, placed: hoennDecor.furnish(room, rng, 3 + Math.floor(rng() * 6)), registered: false, battledDay: null });
+    }
+    f.hoennNpcBases = bases;
+    return bases;
+  }
+  const hoennNpcBaseAt = (map, spotId) => hoennNpcBases().find((b) => b.map === map && b.id === spotId) || null;
+  // The base you came in to (player.flags.hoennVisit: its spot's id), until you go in to your own.
+  const hoennVisiting = () => { const v = player.flags.hoennVisit; return v ? hoennNpcBases().find((b) => b.id === v) || null : null; };
+  const dayKey = () => { const d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); };
+  const npcBaseClass = (type) => NPC_BASE_CLASSES[type].replace(/_[mf]$/, "").split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  // The owner's battle (DoSpecialTrainerBattle, SPECIAL_BATTLE_SECRET_BASE): their party, their class's picture, Emerald's words
+  // for the loss; no money, and no blacking out, as CB2_EndTrainerBattle has it. VAR_RESULT: 1 won, 2 lost, 3 drew.
+  async function npcBaseBattle(api) {
+    const v = hoennVisiting(), F = window.HOENN_FRONTIER || {}, T = window.HOENN_SCRIPTS.t, cls = NPC_BASE_CLASSES[v.type];
+    const team = v.party.map((p) => { const r = Party.create(p.species, p.level, { moves: p.moves.filter((m) => window.MOVES[m]) }); r.item = p.item || ""; return r; });
+    const pic = ((F.trainers || []).find((t) => t && t.cls === cls) || {}).pic || null;
+    const outcome = await battle("trainer", { foe: { name: npcBaseClass(v.type) + " " + v.name, team, pic }, defeatText: T["SecretBase_Text_Trainer" + v.type + "Defeated"] || ["…"], noBlackout: true, noPrize: true });
+    api.set(outcome === "won" ? 1 : outcome === "lost" ? 2 : 3);
+    show("world");
+    await Overworld.resume();
   }
   // Packing up: everything back in your inventory, the spot closed.
   function secretBaseClear() {
@@ -11928,6 +11984,14 @@
     pick: async (title, labels) => { const i = await multichoice(title, 0, 0, labels); Screen.say(""); return i; },
     battle: (spec) => frontierBattle(spec),
     lastRecord: () => lastRecord, saveRecord: (rec) => { player.flags.hoennBattleRecord = rec; lastRecord = null; },
+    // (The Apprentice asks what a Pokémon should hold: the Bag, for an item to suggest, which stays yours.)
+    chooseItem: async () => {
+      const r = await BagScreen.open({ pockets: bagPockets, pocketName: bagPocket, frame: GameOptions.get().frame, female: isGirl(),
+        actions: (it) => (holdable(it.id) ? [{ label: "Suggest", value: "give" }] : []) });
+      BagScreen.close();
+      show("world");
+      return r ? r.id : null;
+    },
     bpBox: (on, n) => GbaMenus.fieldWindow("bp", on ? { x: 0, y: 0, amount: n, label: "BP" } : null),
     // (The Factory's rental and swap screens and the Dome's tourney tree: ui/hoenn-frontier-screens.js.)
     factorySelect: async (mons) => { Screen.say(""); const r = await HoennFrontierScreens.factorySelect($("#overlay"), { mons, summary: (i) => summary(i, mons) }); show("world"); await Overworld.resume(); return r; },
@@ -12039,8 +12103,14 @@
     const thing = ev.person || ev.sign || ev.trigger;
     if (!thing || !isHoenn(ev.map || player.location.map)) return null;
     const script = thing.script || "";
-    // (A secret base spot: the way into your base once it's yours, the way to make one if not.)
-    if (ev.sign && ev.sign.spot) return hoenn.scriptOf({ script: hoennOwnSpot(ev.sign) ? "SecretBase_EventScript_Enter" : "SecretBase_EventScript_CheckEntrance" });
+    // (A secret base spot: the way into your base once it's yours, into someone else's if it's theirs, the way to make one if not.)
+    if (ev.sign && ev.sign.spot) {
+      const npc = !hoennOwnSpot(ev.sign) && hoennNpcBaseAt(ev.map || player.location.map, ev.sign.spot);
+      if (npc) { player.flags.hoennVisit = npc.id; return hoenn.scriptOf({ script: "SecretBase_EventScript_Enter" }); }
+      return hoenn.scriptOf({ script: hoennOwnSpot(ev.sign) ? "SecretBase_EventScript_Enter" : "SecretBase_EventScript_CheckEntrance" });
+    }
+    // (The PC in someone else's base registers it: SecretBase_EventScript_RecordMixingPC.)
+    if (ev.sign && script === "SecretBase_EventScript_PC" && hoennVisiting() && player.location.map === hoennVisiting().room) return hoenn.scriptOf({ script: "SecretBase_EventScript_RecordMixingPC" });
     if (SPECIAL.has(script) || /^EventScript_(CutTree|RockSmash|StrengthBoulder)$/.test(script)) return null;
     if (ev.person && ((ev.person.trainer && ev.person.trainer.id) || ev.person.item)) return null;
     return hoenn.scriptOf(thing);
@@ -12243,6 +12313,8 @@
     // (The Safari Zone: in and out, Emerald's EnterSafariMode and ExitSafariMode.)
     if (name === "EnterSafariMode") { player.flags.safari = { balls: 30, steps: 500, hoenn: true, feeders: [], caught: 0 }; return true; }
     if (name === "ExitSafariMode") { delete player.flags.safari; return true; }
+    // (A Secret Base owner's battle: SPECIAL_BATTLE_SECRET_BASE, in their base.)
+    if (name === "DoSpecialTrainerBattle" && hoennVisiting() && player.location.map === hoennVisiting().room && /SECRET_BASE|^1$/.test(String(api.getVar("VAR_0x8004")))) { await api.flush(); await npcBaseBattle(api); return true; }
     if (await hoennFrontier.special(name, api)) return true;
     if (await hoennContest.special(name, api)) return true;
     if (await hoennPokeblock.special(name, api)) return true;
@@ -12397,15 +12469,31 @@
         if (s) player.flags.secretBase = { map: BASE_ROOM(s.spot), spot: { map: player.location.map, x: s.x, y: s.y, id: s.spot } };
         return true;
       }
-      case "EnterSecretBase": await api.flush(); hoennSpotOpen(player.location.map); await secretBaseGo(true); return true;
+      case "EnterSecretBase": {
+        await api.flush();
+        const v = hoennVisiting(), s = spotAhead();
+        hoennSpotOpen(player.location.map);
+        if (v && s && s.spot === v.id && !hoennOwnSpot(s)) await baseGo(v.room, v, true);
+        else { delete player.flags.hoennVisit; await secretBaseGo(true); }
+        return true;
+      }
       case "EnterNewlyCreatedSecretBase": await api.flush(); hoennSpotOpen(secretBase().spot.map); await persist(); return true;
       case "ClearAndLeaveSecretBase": await api.flush(); await secretBaseGo(false); secretBaseClear(); await persist(); return true;
       case "MoveOutOfSecretBase": await api.flush(); await secretBaseGo(false); secretBaseClear(); await persist(); return true;
       case "MoveOutOfSecretBaseFromOutside": secretBaseClear(); await persist(); return true;
       case "GetSecretBaseNearbyMapName": { const b = secretBase(); api.setBuffer(1, b ? (window.WORLD_MAPS[b.spot.map] || {}).title || "" : ""); return true; }
-      case "IsCurSecretBaseOwnedByAnotherPlayer": api.set(0); return true;
+      case "IsCurSecretBaseOwnedByAnotherPlayer": { const s = spotAhead(); api.set(s && !hoennOwnSpot(s) && hoennNpcBaseAt(player.location.map, s.spot) ? 1 : 0); return true; }
+      // Someone else's base: its owner (secret_base.c's GetSecretBaseOwnerAndState and the rest), once a day.
+      case "SetSecretBaseOwnerGfxId": { const v = hoennVisiting(); if (v) api.setVar("VAR_OBJ_GFX_ID_F", NPC_BASE_LOOKS[v.type]); return true; }
+      case "GetSecretBaseOwnerAndState": { const v = hoennVisiting(); api.setVar("VAR_0x8004", v ? v.type : 0); api.set(v && v.battledDay === dayKey() ? 1 : 0); return true; }
+      case "SetBattledOwnerFromResult": { const v = hoennVisiting(); if (v) v.battledDay = +api.getVar("VAR_RESULT") ? dayKey() : null; return true; }
+      case "CopyCurSecretBaseOwnerName_StrVar1": { const v = hoennVisiting(); api.setBuffer(1, v ? v.name : ""); return true; }
+      case "GetCurSecretBaseRegistrationValidity": { const v = hoennVisiting(); api.set(!v ? 2 : v.registered ? 1 : hoennNpcBases().filter((b) => b.registered).length >= 10 ? 2 : 0); return true; }
+      case "ToggleCurSecretBaseRegistry": { const v = hoennVisiting(); if (v) v.registered = !v.registered; return true; }
+      case "PrepSecretBaseBattleFlags": case "DeclinedSecretBaseBattle": case "WonSecretBaseBattle": case "LostSecretBaseBattle": case "DrewSecretBaseBattle":
+      case "CheckInteractedWithFriendsDollDecor": case "CheckInteractedWithFriendsCushionDecor": return true;
       case "ShowSecretBaseDecorationMenu": await api.flush(); Screen.say(""); await hoennDecor.menu("base", player.location.map); return true;
-      case "InitSecretBaseDecorationSprites": case "InitSecretBaseVars": case "SetSecretBaseOwnerGfxId": case "DoSecretBasePCTurnOffEffect": case "DoPCTurnOnEffect": case "DoPCTurnOffEffect": case "ShowSecretBaseRegistryMenu": return true;
+      case "InitSecretBaseDecorationSprites": case "InitSecretBaseVars": case "DoSecretBasePCTurnOffEffect": case "DoPCTurnOnEffect": case "DoPCTurnOffEffect": case "ShowSecretBaseRegistryMenu": return true;
       // The red and blue orbs' light.
       case "DoOrbEffect": await api.flush(); sfx("se_orb"); await sleep(700); return true;
       case "FadeOutOrbEffect": await sleep(400); return true;

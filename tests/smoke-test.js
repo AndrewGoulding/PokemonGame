@@ -6450,11 +6450,33 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-contest.js"), "utf8"), { filename: "ui/hoenn-contest.js" });
   vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-pokeblock.js"), "utf8"), { filename: "ui/hoenn-pokeblock.js" });
   vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hall-of-fame.js"), "utf8"), { filename: "ui/hall-of-fame.js" });
+  vm.runInThisContext(fs.readFileSync(path.join(root, "ui/hoenn-decor.js"), "utf8"), { filename: "ui/hoenn-decor.js" });
   const HF = window.HOENN_FRONTIER;
+  // Other people's Secret Bases (ui/game.js hoennNpcBases, ui/hoenn-decor.js furnish): furnished where decorations may go, their owners Emerald's kinds.
+  {
+    const dp = { flags: {} };
+    const DC = window.HoennDecor.create({ player: () => dp, say: async () => {}, confirm: async () => true, sfx() {}, choose: async () => 0, canvas: () => null, baseMap: () => null, refresh() {}, persist() {}, money: () => 0, addMoney() {} });
+    const rng = mulberry32(99), placed = DC.furnish("SecretBase_RedCave1", rng, 6);
+    assert(placed.length === 6 && placed.every((p) => DC.byId(p.id)), "six decorations set out");
+    const cells = new Set();
+    for (const p of placed) {
+      const d = DC.byId(p.id), m = WORLD_MAPS.SecretBase_RedCave1;
+      const foot = d.perm === "sprite" ? [[p.x, p.y]] : [].concat(...Array.from({ length: d.h }, (_, r) => Array.from({ length: d.w }, (_, c) => [p.x + c, p.y - (d.h - 1) + r])));
+      for (const [x, y] of foot) { assert(x >= 0 && y >= 0 && x < m.width && y < m.height && !cells.has(x + "," + y), "a decoration on the map, on its own tiles"); cells.add(x + "," + y); }
+    }
+    assert(DC.furnish("LittlerootTown", rng, 3).length === 0, "nowhere to furnish but a base");
+    assert(DC.contextOf("SecretBase_RedCave1") === null, "no base, no context");
+    const gj = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    assert(/const NPC_BASE_LOOKS = \["OBJ_EVENT_GFX_YOUNGSTER", "OBJ_EVENT_GFX_BUG_CATCHER", "OBJ_EVENT_GFX_RICH_BOY", "OBJ_EVENT_GFX_CAMPER", "OBJ_EVENT_GFX_MAN_3",/.test(gj) && /"OBJ_EVENT_GFX_LASS", "OBJ_EVENT_GFX_GIRL_3", "OBJ_EVENT_GFX_WOMAN_2", "OBJ_EVENT_GFX_PICNICKER", "OBJ_EVENT_GFX_WOMAN_5"\]/.test(gj), "sSecretBaseOwnerGfxIds");
+    assert(/const NPC_BASE_CLASSES = \["youngster", "bug_catcher", "rich_boy", "camper", "cooltrainer_m", "lass", "school_kid_f", "lady", "picnicker", "cooltrainer_f"\]/.test(gj), "sSecretBaseFacilityClasses");
+    assert(/if \(npc\) \{ player\.flags\.hoennVisit = npc\.id; return hoenn\.scriptOf\(\{ script: "SecretBase_EventScript_Enter" \}\); \}/.test(gj) && /case "GetSecretBaseOwnerAndState": \{ const v = hoennVisiting\(\); api\.setVar\("VAR_0x8004", v \? v\.type : 0\); api\.set\(v && v\.battledDay === dayKey\(\) \? 1 : 0\);/.test(gj)
+      && /await npcBaseBattle\(api\); return true;/.test(gj) && /for \(const n of hoennNpcBases\(\)\) if \(n\.map === map\) open\(n\.id\);/.test(gj) && /"SecretBase_EventScript_RecordMixingPC"/.test(gj), "the way in, the owner, the battle, the spots open, the PC");
+    assert(window.HOENN_SCRIPTS.s.SecretBase_EventScript_RecordMixTrainer && window.HOENN_SCRIPTS.s.SecretBase_EventScript_RecordMixingPC && window.HOENN_SCRIPTS.t.SecretBase_Text_Trainer9Defeated, "Emerald's owner scripts and words");
+  }
   assert(HF.mons.length === 882 && HF.trainers.length === 300 && HF.banned.length === 9 && HF.brain.length === 7 && HF.tents.slateport.mons.length === 70, "the Frontier's data");
   assert.deepStrictEqual(HF.brainStreaks[0], [35, 70, 35, 1]);
   const fplayer = { flags: {}, party: ["Swampert", "Gardevoir", "Salamence", "Metagross"].map((sp) => Party.create(sp, 50)), name: "ASH", badges: [], bag: {} };
-  let F, H, spoken = [], battles = 0, wonAll = true;
+  let F, H, spoken = [], battles = 0, wonAll = true, pickFn = async () => 0, chooseItemFn = async () => null, lastSpec = null;
   const fenv = {
     player: () => fplayer, map: () => "BattleFrontier_BattleTowerLobby", say: async (t) => { spoken.push(t); }, confirm: async () => true, choose: async (texts) => { const k = (texts || []).findIndex((x) => /^(Go on|Continue|Ready|Next round|Enter the)/i.test(x)); return k >= 0 ? k : 0; }, close() {}, facePlayer: async () => {}, act: async () => {},
     show() {}, hide() {}, place() {}, moveTo() {}, personAt: () => ({ x: 6, y: 6, facing: "up" }), giveItem: async () => true, hasItem: () => true, takeItem: () => 1, itemCount: () => 1,
@@ -6467,7 +6489,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   F = window.HoennFrontier.create({
     player: () => fplayer, getVar: (n) => H.getVar(n), flag: (n) => H.flag(n), createMon: (sp, lv, o) => Party.create(sp, lv, o), say: async (t) => { spoken.push(t); }, caught: () => false,
     itemName: (x) => x, itemConst: (x) => "ITEM_" + x.toUpperCase().replace(/-/g, "_"), giveItem: async () => true, chooseParty: async ({ max }) => [0, 1, 2, 3].slice(0, max),
-    pick: async () => 0, battle: async (spec) => { battles++; assert(spec.team.length >= 1 && spec.foe.team.length >= 1, "teams " + spec.team.length + " " + spec.foe.team.length + " facility " + H.getVar("VAR_FRONTIER_FACILITY") + " mode " + H.getVar("VAR_FRONTIER_BATTLE_MODE") + " " + JSON.stringify([F.state().A, F.state().lvl, F.state().num])); for (const r of spec.team.concat(spec.foe.team)) assert(r.hp > 0 && r.moves.length, "a made Pokémon: " + r.species); return "won"; },
+    pick: async (title, labels) => pickFn(title, labels), chooseItem: async () => chooseItemFn(), battle: async (spec) => { battles++; lastSpec = spec; assert(spec.team.length >= 1 && spec.foe.team.length >= 1, "teams " + spec.team.length + " " + spec.foe.team.length + " facility " + H.getVar("VAR_FRONTIER_FACILITY") + " mode " + H.getVar("VAR_FRONTIER_BATTLE_MODE") + " " + JSON.stringify([F.state().A, F.state().lvl, F.state().num])); for (const r of spec.team.concat(spec.foe.team)) assert(r.hp > 0 && r.moves.length, "a made Pokémon: " + r.species); return "won"; },
     bpBox() {}, markHome() {}, save: async () => {}, softReset: async () => {}, rand: mulberry32(7)
   });
   const CT = window.HoennContest.create({ player: () => fplayer, say: async (t) => { spoken.push(t); }, pick: async () => 0, choosePartyMon: async () => 0, rand: mulberry32(11) });
@@ -6716,7 +6738,63 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
       assert(window.HallOfFame.emeraldSlides([], "Mudkip", rng).every((s) => s === "Mudkip"), "nothing caught: the starter");
     }
   }
-  var frontierTest = frontierDone.then(() => console.log("ok: Battle Frontier, the Tower, the Brain's symbol, the Factory, Arena, Palace, Dome, Pike, the Pyramid, the three tents and a Contest through Emerald's scripts"));
+  // The Apprentice (ui/hoenn-frontier.js apprentice, through Emerald's own scripts): taught over the days, saved, then met in the Tower.
+  const apprenticeDone = frontierDone.then(async () => {
+    assert(HF.apprentices.length === 16 && HF.apprentices[0].name === "Alann" && HF.apprentices[0].cls === "bug_catcher" && HF.apprentices[0].species.length === 10 && HF.apprentices[15].name === "Arturo", "the sixteen Apprentices");
+    assert(HF.apprenticeMoves.length >= 290 && HF.apprenticeMoves.includes("Swords Dance") && !HF.apprenticeMoves.includes("Pound"), "the moves they're glad of");
+    assert.deepStrictEqual(HF.apprenticeThreshold, [1, 2, 3, 4, 5, 8, 9, 10, 11, 12]);
+    assert(HF.apprenticeText.Challenge.length === 16 && /no\. \{STR_VAR_2\} apprentice/.test(HF.apprenticeText.Challenge[1][0]) && HF.apprenticeText.WhichMove[0].length === 4 && HF.apprenticeSpeeches.length === 8, "their words");
+    const s = F.state();
+    fplayer.flags.hoennFrontier.app = null; fplayer.flags.hoennFrontier.apprentices = [];
+    H.resetTemp(); spoken = [];
+    const talk = () => H.run("BattleFrontier_BattleTowerLobby_EventScript_Apprentice", { person: { localId: "LOCALID_APPRENTICE", id: 5 } });
+    const newDay = () => { s.appDay = "never"; H.setFlag("FLAG_DAILY_APPRENTICE_LEAVES", false); };
+    // The first meeting: "please teach me", yes, Open Level.
+    pickFn = async (title, labels) => (labels[1] === "Open Level" ? 1 : 0);
+    await talk();
+    assert(s.app && s.app.lvlMode === 2 && HF.apprenticeFirst.includes(s.app.id) && s.app.speciesIds.length === 3 && new Set(s.app.speciesIds.flatMap((x) => [x >> 4, x & 15])).size === 6, "an Apprentice, Open Level, six species shuffled into pairs");
+    assert(H.flag("FLAG_DAILY_APPRENTICE_LEAVES") && H.flag("FLAG_HIDE_APPRENTICE"), "gone for the day");
+    assert(spoken.some((p) => /Open Level/.test(p)), "thanked for the level mode: " + spoken.slice(-2).join(" | "));
+    // Three Pokémon, the second of each pair.
+    pickFn = async (title, labels) => 1;
+    for (let i = 0; i < 3; i++) { newDay(); await talk(); }
+    assert(s.app.answered === 3 && s.app.party === 7 && s.app.questions.length === 9, "three chosen (the second each time), the questions laid out (" + s.app.questions.length + ")");
+    const kinds = s.app.questions.map((q) => q.kind), numQ = kinds.includes(0) ? kinds.indexOf(0) : 9;
+    assert(kinds.filter((k) => k === 1).length <= 3 && kinds.filter((k) => k === 2).length <= 5 && kinds.filter((k) => k === 3).length <= 1 && kinds.filter((k) => k === 0).length <= 1, "items, moves, which first, the win speech once at most");
+    assert(s.app.questions.filter((q) => q.kind === 2).every((q) => q.data && window.MOVES[q.data]), "each move question offers another move");
+    const species = [0, 1, 2].map((i) => HF.apprentices[s.app.id].species[(s.app.speciesIds[i] >> 4) & 15]);   // (the second of each pair: the high nibble)
+    const itemQs = kinds.slice(0, numQ).filter((k) => k === 1).length, leadFirst = kinds.slice(0, numQ).includes(3);
+    // The rest: items (Leftovers, then it's refused again, so nothing), moves (the second), which first (the third), the win speech (the sixth).
+    let items = 0;
+    chooseItemFn = async () => { items++; return "leftovers"; };
+    pickFn = async (title, labels) => (labels[0] === "Give" ? 1 : labels.length === 3 ? 2 : labels.length === 8 ? 5 : 1);
+    for (let i = 0; i < 12 && s.apprentices.length === 0; i++) { newDay(); await talk(); }
+    assert(s.apprentices.length === 1, "taught through and saved (" + s.app.answered + " answered)");
+    const ap = s.apprentices[0];
+    assert(ap.number === 1 && ap.lvlMode === 2 && ap.numQuestions === numQ && ap.playerName === "ASH" && ap.speechWon === HF.apprenticeSpeeches[5], "the saved Apprentice: no. 1, " + numQ + " questions, the speech chosen: " + JSON.stringify(ap));
+    assert(ap.party.length === 3 && ap.party[0].species === species[leadFirst ? 2 : 0] && ap.party.every((p) => species.includes(p.species) && p.moves.length >= 1 && p.moves.length <= 4), "the party you taught, the lead first: " + JSON.stringify(ap.party.map((p) => p.species)));
+    assert(ap.party.filter((p) => p.item === "leftovers").length === Math.min(1, itemQs) && items >= Math.min(2, itemQs), "Leftovers once, refused after (" + items + " offered, " + itemQs + " asked)");
+    assert(s.app && s.app.id !== ap.id && s.app.lvlMode === 0, "a new Apprentice waits");
+    // In the Tower: at the streak their questions earned, in singles at their level mode, they're the opponent, with that party.
+    const T = F.state(); T.lvl = 1; T.streak["0.0.1"] = HF.apprenticeThreshold[numQ]; T.num = 0; T.ids = [];
+    H.setVar("VAR_FRONTIER_FACILITY", 0); H.setVar("VAR_FRONTIER_BATTLE_MODE", 0);
+    await F.op("tower_setopponent", [], { num: (x) => +x, setVar: (n, v) => H.setVar(n, v), getVar: (n) => H.getVar(n), setBuffer() {}, setFlag(n, v) { H.setFlag(n, v); }, flag: (n) => H.flag(n) });
+    assert(T.A && T.A.kind === "apprentice", "the Apprentice is the opponent at streak 8: " + JSON.stringify(T.A));
+    T.streak["0.0.1"] = HF.apprenticeThreshold[numQ] + 1;
+    await F.op("tower_setopponent", [], { num: (x) => +x, setVar: (n, v) => H.setVar(n, v), getVar: (n) => H.getVar(n), setBuffer() {}, setFlag(n, v) { H.setFlag(n, v); }, flag: (n) => H.flag(n) });
+    assert(T.A.kind === "frontier", "not at 9");
+    const hf = fs.readFileSync(path.join(root, "ui/hoenn-frontier.js"), "utf8");
+    assert(/if \(ref\.kind === "apprentice"\) return apprenticeTrainer\(ref\.idx\);/.test(hf) && /else if \(t\.apprentice\) foe = t\.party\.map\(\(p\) => apprenticeMon\(t, p, level\)\);/.test(hf), "they battle with what you taught");
+    assert(/case "ShowEasyChatScreen": \{\s*if \(v\("VAR_0x8004"\) !== 19\) return false;/.test(hf), "the win speech in place of the Easy Chat screen");
+    assert(/chooseItem: async \(\) => \{/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")), "the Bag opens to suggest an item");
+    assert(F.state().A && spoken.length >= 0, "the Apprentice as a trainer");
+    const at = F.state(); at.A = { kind: "apprentice", idx: 0 };
+    H.setVar("VAR_0x8004", 0); battles = 0;
+    await F.special("DoSpecialTrainerBattle", { num: (x) => +x, setVar: (n, v) => H.setVar(n, v), getVar: (n) => H.getVar(n), setBuffer() {}, setFlag(n, v) { H.setFlag(n, v); }, flag: (n) => H.flag(n), flush: async () => {} });
+    assert(battles === 1 && lastSpec && lastSpec.foe.team.length === 3 && lastSpec.foe.team.map((r) => r.species).join() === ap.party.map((p) => p.species).join() && /apprentice/.test(lastSpec.foe.name + " " + (lastSpec.foeIntro || "")) === false, "the Apprentice battles with the party you taught: " + JSON.stringify(lastSpec && lastSpec.foe.team.map((r) => [r.species, r.item, r.moves.map((m) => m.name)])));
+    console.log("ok: the Apprentice, taught over " + (s.apprentices[0].numQuestions + 4) + " days and met in the Tower");
+  });
+  var frontierTest = apprenticeDone.then(() => console.log("ok: Battle Frontier, the Tower, the Brain's symbol, the Factory, Arena, Palace, Dome, Pike, the Pyramid, the three tents and a Contest through Emerald's scripts"));
 }
 
 // Hoenn's script interpreter (ui/hoenn-script.js) against a stub game: the constants, a story scene end to end, a frame table, Dive's connections, trades.

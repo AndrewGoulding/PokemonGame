@@ -634,11 +634,11 @@ const numConsts = {};
     if ((depth || 0) < 6 && /^\w+$/.test(e) && defs[e] != null) return val(defs[e], (depth || 0) + 1);
     const p = /^\((.*)\)$/.exec(e);
     if (p) return val(p[1], (depth || 0) + 1);
-    const b = /^(\w+)\s*([+-])\s*(\w+)$/.exec(e);
-    if (b) { const x = val(b[1], (depth || 0) + 1), y = val(b[3], (depth || 0) + 1); return x == null || y == null ? null : b[2] === "+" ? x + y : x - y; }
+    const b = /^(\w+)\s*([-+*\/])\s*(\w+)$/.exec(e);
+    if (b) { const x = val(b[1], (depth || 0) + 1), y = val(b[3], (depth || 0) + 1); return x == null || y == null ? null : b[2] === "+" ? x + y : b[2] === "-" ? x - y : b[2] === "*" ? x * y : Math.floor(x / y); }
     return null;
   };
-  const STRINGY = /^(VAR_|FLAG_|LOCALID_|MAP_|ITEM_|SPECIES_|MOVE_|TRAINER_|MOVEMENT_|SE_|MUS_|STR_VAR|MSGBOX_|MULTI_|CRY_|OBJ_EVENT_GFX|HEAL_LOCATION|WEATHER_|FLDEFF_|SPECIAL|NPC_|ABILITY_|TYPE_)/;
+  const STRINGY = /^(VAR_|FLAG_|LOCALID_|MAP_|ITEM_|SPECIES_|MOVE_|TRAINER_|MOVEMENT_|SE_|MUS_|STR_VAR|MSGBOX_|MULTI_(?!PARTY_SIZE)|CRY_|OBJ_EVENT_GFX|HEAL_LOCATION|WEATHER_|FLDEFF_|SPECIAL|NPC_|ABILITY_|TYPE_)/;
   for (const cmds of Object.values(compiled.s)) for (const c of cmds) for (const a of c.slice(1)) {
     if (typeof a === "string" && /^[A-Z][A-Z0-9_]+$/.test(a) && !STRINGY.test(a) && numConsts[a] == null) { const v = val(a); if (v != null) numConsts[a] = v; }
   }

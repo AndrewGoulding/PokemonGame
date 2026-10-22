@@ -109,6 +109,7 @@
     // The opponent set up for the next battle: { kind: "frontier" | "tent" | "brain", id, tent }.
     function trainerOf(ref) {
       if (!ref) return null;
+      if (ref.kind === "apprentice") return apprenticeTrainer(ref.idx);
       if (ref.kind === "brain") { const b = D().brainTrainers[ref.fac]; return { cls: b.cls, name: b.name, pic: b.pic, before: "", win: "", lose: "", brain: true, look: D().brainLook[ref.fac] }; }
       const t = ref.kind === "tent" ? D().tents[ref.tent].trainers[ref.id] : D().trainers[ref.id];
       return t && Object.assign({ look: D().look[t.cls] || "OBJ_EVENT_GFX_BOY_1" }, t);
@@ -276,12 +277,7 @@
       if (/^dome_/.test(name)) return dome(name, a, api);
       if (/^pike_/.test(name)) return pike(name, a, api);
       if (/^pyramid_/.test(name)) return pyramid(name, a, api);
-      if (/^apprentice_/.test(name)) {
-        // (The Tower's Apprentice isn't here: he's always gone.)
-        if (name === "apprentice_shouldcheckgone") { api.setVar("VAR_0x8004", 1); api.setFlag("FLAG_DAILY_APPRENTICE_LEAVES", true); }
-        else if (name === "apprentice_gavelvlmode" || name === "apprentice_shouldleave") api.setVar("VAR_RESULT", 0);
-        return true;
-      }
+      if (/^apprentice_/.test(name)) return apprentice(name, a, api);
       if (/^(slateport|verdanturf|fallarbor)tent_|^battletent_/.test(name)) return tent(name, a, api);
       return false;
     }
@@ -318,6 +314,9 @@
             api.setVar("VAR_OBJ_GFX_ID_0", trainerOf(s.A).look); api.setVar("VAR_OBJ_GFX_ID_1", trainerOf(s.B).look);
             return true;
           }
+          // (ChooseSpecialBattleTowerTrainer: in singles, an Apprentice you taught, met at the streak their lessons earned.)
+          const apps = m === 0 ? (s.apprentices || []).map((ap, idx) => ({ ap, idx })).filter(({ ap }) => ap.lvlMode && D().apprenticeThreshold[ap.numQuestions] === w && ap.lvlMode - 1 === s.lvl) : [];
+          if (apps.length) { s.A = { kind: "apprentice", idx: apps[int(apps.length)].idx }; api.setVar("VAR_OBJ_GFX_ID_0", trainerOf(s.A).look); return true; }
           let id;
           do { id = randomTrainerId(challenge, s.num); } while (s.ids.slice(0, s.num).includes(id));
           s.A = { kind: "frontier", id };
@@ -986,6 +985,14 @@
     async function special(name, api) {
       const s = S();
       switch (name) {
+        // (The Apprentice's win speech: Emerald's Easy Chat screen, EASY_CHAT_TYPE_APPRENTICE; here one of a few.)
+        case "ShowEasyChatScreen": {
+          if (v("VAR_0x8004") !== 19) return false;
+          const list = D().apprenticeSpeeches || ["I won!"];
+          const i = await env.pick(null, list);
+          s.appSpeech = list[Math.max(0, Math.min(list.length - 1, i))];
+          return true;
+        }
         case "ChoosePartyForBattleFrontier": {
           const lvl = v("VAR_0x8004"), max = v("VAR_0x8005");
           // (The Dome's rounds: two of the three you registered.)
@@ -1030,6 +1037,214 @@
       return false;
     }
 
+    // ---------- The Apprentice (src/apprentice.c) ----------
+    // A young trainer in the Tower's lobby asks you to teach them: which level mode, then one Pokémon at a time from pairs
+    // (three of their ten), then, in a shuffled order, which of two moves a Pokémon should know (its latest move or
+    // another it can learn), what each should hold (from your Bag), which should lead, and at the last what they'll say
+    // on winning; each answer sends them off for the day. Taught through, they're saved (four at most, the newest first)
+    // and meet you in the Tower, in singles at their streak, with the Pokémon, moves and items you chose. Their state
+    // lives in the Frontier's save: s.app (PlayersApprentice) and s.apprentices (the saved ones).
+    const APP_Q = { WIN_SPEECH: 0, WHAT_ITEM: 1, WHICH_MOVE: 2, WHICH_FIRST: 3 };
+    const APP_ASK = { WHICH_FIRST: 1, WHICH_MON: 2, WHICH_MOVE: 3, WHAT_ITEM: 4, WIN_SPEECH: 5 };
+    // (sQuestionPossibilities: three items, five moves, which first and the win speech, shuffled, the first nine kept
+    // (APPRENTICE_MAX_QUESTIONS): the lessons end at the win speech, wherever it landed, so an Apprentice may be taught
+    // for a day or for ten.)
+    const APP_MAX_QUESTIONS = 9;
+    const APP_ORDER = [APP_Q.WHAT_ITEM, APP_Q.WHAT_ITEM, APP_Q.WHAT_ITEM, APP_Q.WHICH_MOVE, APP_Q.WHICH_MOVE, APP_Q.WHICH_MOVE, APP_Q.WHICH_MOVE, APP_Q.WHICH_MOVE, APP_Q.WHICH_FIRST, APP_Q.WIN_SPEECH];
+    const appData = (id) => D().apprentices[id];
+    const appLevel = (lvlMode) => (lvlMode === 1 ? 50 : 60);   // (level-up moves are read up to 60 in Open Level)
+    // The latest four moves a species has learned by a level (GetLatestLearnedMoves), the latest first.
+    function latestMoves(species, level) {
+      const ls = window.LEARNSETS_GEN6[species], learned = [];
+      for (const [lvl, move] of (ls && ls.levelup) || []) {
+        if (lvl > level || !window.MOVES[move]) continue;
+        const i = learned.indexOf(move); if (i >= 0) learned.splice(i, 1);
+        learned.push(move);
+      }
+      return learned.slice(-4).reverse();
+    }
+    const levelMovesOf = (species, level) => { const ls = window.LEARNSETS_GEN6[species]; return ((ls && ls.levelup) || []).filter(([l, m]) => l <= level && window.MOVES[m]).map(([, m]) => m); };
+    const machineMovesOf = (species) => { const ls = window.LEARNSETS_GEN6[species], tm = (ls && ls.tm) || []; return [...new Set(tm.concat(Object.keys(window.MACHINE_LEARNERS || {}).filter((m) => window.MACHINE_LEARNERS[m].includes(species))))].filter((m) => window.MOVES[m]); };
+    const appSpeciesOf = (app, monId) => appData(app.id).species[(app.speciesIds[monId] >> (((app.party >> monId) & 1) << 2)) & 0xF];
+    // GetRandomAlternateMove: the other move offered, a TM's or an earlier level-up move, not among the latest four
+    // nor one already offered for that Pokémon; one the Apprentice would want (sValidApprenticeMoves), five tries.
+    function alternateMove(app, monId, offered) {
+      const species = appSpeciesOf(app, monId), level = appLevel(app.lvlMode), latest = latestMoves(species, level);
+      const lv = levelMovesOf(species, level), early = lv.filter((m) => !latest.includes(m)), tms = machineMovesOf(species).filter((m) => !latest.includes(m));
+      let move = null;
+      for (let i = 0; i < 5; i++) {
+        const useTm = tms.length && (!early.length || int(2) === 0);
+        const pool = (useTm ? tms : early).filter((m) => !offered.includes(m));
+        if (!pool.length) break;
+        move = pool[int(pool.length)];
+        if (D().apprenticeMoves.includes(move)) break;
+      }
+      return move;
+    }
+    function appReset(s) {
+      // (SetApprenticeId: one of the first eight before any is saved, any of the sixteen after; never the last saved one's.)
+      const last = s.apprentices && s.apprentices[0] ? s.apprentices[0].id : -1, first = D().apprenticeFirst;
+      let id;
+      do { id = s.apprentices && s.apprentices.length ? int(16) : first[int(first.length)]; } while (id === last);
+      s.app = { id, lvlMode: 0, answered: 0, lead: 0, party: 0, speciesIds: [0, 0, 0], questions: [] };
+    }
+    const appQuestionNum = (app) => app.answered - 3;   // (CURRENT_QUESTION_NUM)
+    const appText = (s, kind, text) => String(text || "").replace(/\{STR_VAR_(\d)\}/g, (m, n) => (s.appBuf || {})[n] || "").replace(/\{PLAYER\}/g, P().name);
+    const todayKey = () => { const d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); };
+    async function apprentice(name, a, api) {
+      const s = S();
+      if (!s.app) appReset(s);
+      const app = s.app, q = app.questions, cur = () => q[appQuestionNum(app)];
+      switch (name) {
+        case "apprentice_gavelvlmode": api.setVar("VAR_RESULT", app.lvlMode ? 1 : 0); return true;
+        case "apprentice_shouldcheckgone":
+          // (FLAG_DAILY_APPRENTICE_LEAVES: they're gone for the day once answered; back the next day, as Emerald's daily flags clear.)
+          if (s.appDay !== todayKey()) { s.appDay = todayKey(); api.setFlag("FLAG_DAILY_APPRENTICE_LEAVES", false); }
+          api.setVar("VAR_0x8004", 1);
+          return true;
+        case "apprentice_shouldleave": api.setVar("VAR_0x8004", 1); return true;
+        case "apprentice_setlvlmode": app.lvlMode = need(api, a[0]) + 1; return true;
+        case "apprentice_shufflespecies": {
+          const sp = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+          for (let i = 0; i < 50; i++) { const x = int(10), y = int(10), t = sp[x]; sp[x] = sp[y]; sp[y] = t; }
+          app.speciesIds = [0, 1, 2].map((i) => ((sp[i * 2] & 0xF) << 4) | (sp[i * 2 + 1] & 0xF));
+          return true;
+        }
+        case "apprentice_getquestion": {
+          if (app.answered >= 3 && !q.length) await apprentice("apprentice_randomizequestions", [], api);   // (laid out as the third is chosen; here too if not)
+          const r = app.answered < 3 ? APP_ASK.WHICH_MON : app.answered > APP_MAX_QUESTIONS + 2 ? APP_ASK.WIN_SPEECH
+            : ({ [APP_Q.WHAT_ITEM]: APP_ASK.WHAT_ITEM, [APP_Q.WHICH_MOVE]: APP_ASK.WHICH_MOVE, [APP_Q.WHICH_FIRST]: APP_ASK.WHICH_FIRST })[(cur() || {}).kind] || APP_ASK.WIN_SPEECH;
+          api.setVar("VAR_RESULT", r);
+          return true;
+        }
+        case "apprentice_getnumpartymons": api.setVar("VAR_RESULT", app.answered); return true;
+        case "apprentice_answeredquestion": app.answered++; return true;
+        case "apprentice_setpartymon": if (v("VAR_0x8005")) app.party |= 1 << need(api, a[0]); return true;
+        case "apprentice_setleadmon": app.lead = need(api, a[0]); return true;
+        case "apprentice_setmove": { const c = cur(); if (c && app.answered >= 3) c.change = !!v("VAR_0x8005"); return true; }
+        case "apprentice_randomizequestions": {
+          // SetRandomQuestionData: the party's order for the item questions, the questions shuffled, each move question's
+          // Pokémon (at random) and slot, and its other move.
+          const order = [0, 1, 2];
+          for (let i = 0; i < 10; i++) { const x = int(3), y = int(3), t = order[x]; order[x] = order[y]; order[y] = t; }
+          const kinds = APP_ORDER.slice();
+          for (let i = 0; i < 50; i++) { const x = int(10), y = int(10), t = kinds[x]; kinds[x] = kinds[y]; kinds[y] = t; }
+          kinds.length = APP_MAX_QUESTIONS;
+          const slots = [[], [], []], offered = [[], [], []];
+          let partySlot = 0;
+          app.questions = kinds.map((kind) => {
+            const qq = { kind, monId: 0, slot: 0, change: false, data: null };
+            if (kind === APP_Q.WHICH_MOVE) {
+              qq.monId = int(3);
+              let slot; do { slot = int(4); } while (slots[qq.monId].includes(slot));
+              slots[qq.monId].push(slot); qq.slot = slot;
+              qq.data = alternateMove(app, qq.monId, offered[qq.monId]);
+              if (qq.data) offered[qq.monId].push(qq.data);
+            } else if (kind === APP_Q.WHAT_ITEM) qq.monId = order[partySlot++];
+            return qq;
+          });
+          return true;
+        }
+        case "apprentice_initquestion": {
+          const which = need(api, a[0]), c = cur(), d = s.appQ = {};
+          if (which === APP_ASK.WHICH_MON && app.answered < 3) {
+            d.alt = appData(app.id).species[app.speciesIds[app.answered] >> 4];
+            d.species = appData(app.id).species[app.speciesIds[app.answered] & 0xF];
+          } else if (c && which === APP_ASK.WHICH_MOVE && c.kind === APP_Q.WHICH_MOVE) {
+            d.species = appSpeciesOf(app, c.monId);
+            // (GetDefaultMove: its latest moves, with any change you've already told it of.)
+            const moves = latestMoves(d.species, appLevel(app.lvlMode));
+            for (let i = 0; i < appQuestionNum(app); i++) if (q[i].kind === APP_Q.WHICH_MOVE && q[i].monId === c.monId && q[i].change) moves[q[i].slot] = q[i].data;
+            d.move1 = moves[c.slot] || moves[0] || "Tackle"; d.move2 = c.data || "Tackle";
+          } else if (c && which === APP_ASK.WHAT_ITEM && c.kind === APP_Q.WHAT_ITEM) d.species = appSpeciesOf(app, c.monId);
+          return true;
+        }
+        case "apprentice_freequestion": s.appQ = null; return true;
+        case "apprentice_buff": {
+          const m = /STR_VAR_(\d)/.exec(String(a[0])), n = m ? +m[1] : need(api, a[0]) + 1, kind = need(api, a[1]), d = s.appQ || {};
+          const text = [d.species, d.alt, d.species, d.move1, d.move2, (cur() || {}).data && env.itemName((cur() || {}).data), appData(app.id).name,
+            s.apprentices && s.apprentices[0] ? s.apprentices[0].speechWon : "", app.lvlMode === 1 ? "Lv. 50" : "Open Level", appSpeciesOf(app, app.lead)][kind];
+          s.appBuf = Object.assign({}, s.appBuf, { [n]: text || "" });
+          api.setBuffer(n, text || "");
+          return true;
+        }
+        case "apprentice_msg": {
+          const which = need(api, a[1]), T = D().apprenticeText, id = app.id;
+          const table = ["PleaseTeach", "RejectTeaching", "WhichLevelMode", "LevelModeThanks", "WhichMonFirst", "MonFirstThanks", "WhichMon", "MonThanks", "WhichMove", "MoveThanks",
+            "WhatHeldItem", "PickWinSpeech", "ThanksHeldItem", "HoldNothing", "ThanksNoHeldItem", "WinSpeechThanks", "ItemAlreadyRecommended"][which];
+          const pages = (T[table] || [])[id] || [];
+          for (const p of pages) await env.say(appText(s, which, p));
+          return true;
+        }
+        case "apprentice_menu": {
+          const which = need(api, a[0]), d = s.appQ || {};
+          const labels = which === 0 ? ["Lv. 50", "Open Level"] : which === 1 ? [0, 1, 2].map((i) => appSpeciesOf(app, i)) : which === 2 ? [d.species, d.alt]
+            : which === 3 ? [d.move1, d.move2] : which === 4 ? ["Give", "No need"] : ["Yes", "No"];
+          const i = await env.pick(null, labels.map((l) => l || "…"));
+          api.setVar("VAR_RESULT", Math.max(0, Math.min(labels.length - 1, i)));
+          return true;
+        }
+        case "apprentice_openbag": {
+          // (The Bag, for an item to suggest; it stays yours.)
+          const id = env.chooseItem ? await env.chooseItem() : null;
+          s.appItem = id || null;
+          api.setVar("VAR_RESULT", id ? 1 : 0);
+          return true;
+        }
+        case "apprentice_trysetitem": {
+          const c = cur(), id = s.appItem;
+          if (!c || app.answered < 3) { api.setVar("VAR_RESULT", 0); return true; }
+          // (Battle Tower Pokémon may not hold the same item: one already suggested is refused.)
+          const dup = q.slice(0, appQuestionNum(app)).some((x) => x.kind === APP_Q.WHAT_ITEM && x.change && x.data === id);
+          c.change = !dup; c.data = id;
+          api.setVar("VAR_RESULT", dup ? 0 : 1);
+          return true;
+        }
+        case "apprentice_shiftsaved": {
+          // (ShiftSavedApprentices: the last one taught moves down to make room; four kept, the newest first.)
+          s.apprentices = s.apprentices || [];
+          if (s.apprentices[0]) { s.apprentices.splice(1, 0, s.apprentices[0]); s.apprentices = [s.apprentices[0]].concat(s.apprentices.slice(1, 4)); }
+          return true;
+        }
+        case "apprentice_save": {
+          // SaveApprentice / SaveApprenticeParty: their three, in the order you chose, with the latest moves, your move
+          // choices and held items; numbered by how many you've taught.
+          s.apprentices = s.apprentices || [];
+          const numQ = q.findIndex((x) => x.kind === APP_Q.WIN_SPEECH), nq = numQ < 0 ? q.length : numQ;
+          const prev = s.apprentices[1] && s.apprentices[1].playerName === P().name ? s.apprentices[1].number : (s.apprentices[0] && s.apprentices[0].number) || 0;
+          const party = [0, 1, 2].map((i) => { const sp = appSpeciesOf(app, i); return { species: sp, moves: latestMoves(sp, appLevel(app.lvlMode)), item: null }; });
+          for (let i = 0; i < nq; i++) {
+            const x = q[i];
+            if (x.kind === APP_Q.WHAT_ITEM && x.change) party[x.monId].item = x.data;
+            else if (x.kind === APP_Q.WHICH_MOVE && x.change && x.data) party[x.monId].moves[x.slot] = x.data;
+          }
+          const ordered = [0, 1, 2].map((i) => party[(app.lead + i) % 3]);
+          s.apprentices[0] = { id: app.id, lvlMode: app.lvlMode, numQuestions: nq, number: Math.min(255, prev + 1), party: ordered, speechWon: s.appSpeech || "I won!", playerName: P().name };
+          return true;
+        }
+        case "apprentice_reset": appReset(s); return true;
+        case "apprentice_setgfx": api.setVar("VAR_OBJ_GFX_ID_0", D().look[appData(app.id).cls] || "OBJ_EVENT_GFX_BOY_1"); return true;
+        case "apprentice_setgfxsaved": return true;
+      }
+      return true;
+    }
+    // A saved Apprentice as a Tower opponent: their class and name, their challenge (with your name and their number), their
+    // win speech and what they say losing, and the party you taught them.
+    function apprenticeTrainer(idx) {
+      const s = S(), ap = (s.apprentices || [])[idx];
+      if (!ap) return null;
+      const d = appData(ap.id), T = D().apprenticeText;
+      const before = ((T.Challenge || [])[ap.id] || []).map((p) => p.replace(/\{STR_VAR_1\}/g, ap.playerName || P().name).replace(/\{STR_VAR_2\}/g, String(ap.number))).join("\n");
+      return { cls: d.cls, name: d.name, pic: d.pic, before, win: ap.speechWon || "", lose: d.lost || "", look: D().look[d.cls] || "OBJ_EVENT_GFX_BOY_1", apprentice: true, party: ap.party, set: [] };
+    }
+    // CreateApprenticeMon: full IVs, 85 EVs in each stat, the moves and item you chose.
+    function apprenticeMon(t, p, level) {
+      const r = env.createMon(p.species, level, { ivs: 31, moves: p.moves.filter(Boolean).slice(0, 4), shiny: false });
+      r.evs = { hp: 85, atk: 85, def: 85, spe: 85, spa: 85, spd: 85 };
+      r.item = p.item || ""; r.happiness = 255; r.hp = maxHp(r);
+      return r;
+    }
+
     // ---------- Battles ----------
     async function battleSpecial(api) {
       const s = S(), kind = v("VAR_0x8004"), f = fac(), m = mode(), t = trainerOf(s.A);
@@ -1045,7 +1260,8 @@
           }
           foe = pool;
         } else foe = D().brain[f][symbolBrain()].map((bm) => brainMon(bm, level));
-      } else if (kind === 6 || kind === 3) foe = s.foe.map(clone);
+      } else if (t.apprentice) foe = t.party.map((p) => apprenticeMon(t, p, level));
+      else if (kind === 6 || kind === 3) foe = s.foe.map(clone);
       else if (kind === 7 || kind === 9) foe = pickMons(D().mons, D().heldItems, t.set, kind === 9 ? 2 : 3, level, fixedIv(s.A.id), s.lvl !== 0);
       else {
         const n = f === FAC.TOWER ? (m === 1 ? 4 : m >= 2 ? 2 : 3) : 3;
