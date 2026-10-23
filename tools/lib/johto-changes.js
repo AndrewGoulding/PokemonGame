@@ -9,6 +9,8 @@
 //     instead of Kanto; Ace Trainer Reena asks about Pallet Town;
 //   - Route 29's catching tutorial (Lyra and her Marill by the gatehouse, the
 //     throws, the five Poké Balls) is gone: its triggers and its two people;
+//   - Cameron the photographer is gone; Ethan's mother doesn't save your money
+//     (she's not your mother); Juggler Irwin has a Voltorb and three others;
 //   - Cherrygrove's Guide Gent and his scene are gone (the Pokégear's Map is
 //     yours from the start: ui/pokegear.js); Silver is "Rival Silver" from his
 //     first battle, with his own picture (HGSS's "Passerby Boy").
@@ -39,7 +41,9 @@ const MESSAGES = {
   msg_0543_T20R0101_00038: ELM_GYMS, msg_0543_T20R0101_00039: ELM_GYMS,
   msg_0377_R30R0201_00008: OAK_HELLO, msg_0377_R30R0201_00009: OAK_HELLO,
   msg_0377_R30R0201_00011: OAK_DEX, msg_0377_R30R0201_00012: ["{BUF0}'s Pokédex is ready for\nJohto's Pokémon!"],
-  msg_0369_R27_00001: R27_MAN
+  msg_0369_R27_00001: R27_MAN,
+  // (Ethan's mother, once Elm's errand's under way: hello, no savings.)
+  msg_0545_T20R0201_hello: ["Oh, hello again!\nYou're doing fine, I see.", "Pokémon are your friends.\nWhen you work as a team,", "you can accomplish anything!", "Take care out there!"]
 };
 
 function apply({ maps, scripts, trainers }) {
@@ -65,6 +69,15 @@ function apply({ maps, scripts, trainers }) {
   if (r29) {
     r29.triggers = r29.triggers.filter((t) => !/scr_seq_R29_001\?/.test(t.script));
     r29.people = r29.people.filter((p) => p.localId !== "obj_R29_var_2" && p.localId !== "obj_R29_tsure_poke_static_marill");
+  }
+  // Cameron the photographer: gone from every map he stands on.
+  for (const m of Object.values(maps)) if (m.people && m.people.some((p) => p.hgssFlag === "FLAG_HIDE_CAMERON")) m.people = m.people.filter((p) => p.hgssFlag !== "FLAG_HIDE_CAMERON");
+  // Ethan's mother (New Bark Town): she's not your mother, so she doesn't offer to save your prize money or keep
+  // your savings (HGSS's _0205 and its bank, _0275): a hello instead.
+  const home = scripts.zones.T20R0201;
+  if (home && "_0205" in home.labels) {
+    const at = home.labels._0205;
+    if (home.cmds[at + 3] && home.cmds[at + 3][0] === "GoToIfSet") home.cmds.splice(at + 3, 5, ["NPCMsg", "msg_0545_T20R0201_hello"], ["WaitButton"], ["CloseMsg"], ["ReleaseAll"], ["End"]);
   }
   // Route 35's Juggler Irwin: his strongest Voltorb (or Electrode, in his rematches), and three of a kind he juggles
   // with no more: Mr. Mime, Drowzee or Hypno, Magnemite or Magneton.

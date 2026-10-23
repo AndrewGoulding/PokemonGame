@@ -328,7 +328,8 @@ module.exports = function port(HN, out, opts) {
           for (const [i, j, v] of match(ai.map((i) => hs[i]), bj.map((j) => os[j]), cost, limit)) spairs.push([ai[i], bj[j], v]);
         };
         more((a, b) => { const k = key(b); return k.length >= 3 && says(a).includes(k) ? dist(src, a, b) : Infinity; }, 1e9);
-        if (hg.type !== "indoor") more((a, b) => dist(src, a, b), 12);
+        // (Indoors, nearer: a book to the bookshelf beside where it'd be.)
+        more((a, b) => (hg.type !== "indoor" || a.s.text ? dist(src, a, b) : Infinity), hg.type !== "indoor" ? 12 : 5);
       }
       const hh = (hg.hidden || []).map((h) => ({ h, x: h.x, y: h.y }));
       const oh = g.bgs.map((b, k) => ({ b, k, x: b.x, y: b.y })).filter((o) => o.b.type === "hidden_item");
@@ -417,7 +418,25 @@ module.exports = function port(HN, out, opts) {
         const m = sm.get(i);
         let x, y;
         if (m) { x = m.x; y = m.y; takenBg.add(m.k); rep.signsMatched++; }
-        else [x, y] = Coords.snap(...fwd(h.x, h.y), g.width, g.height, null);
+        else {
+          [x, y] = Coords.snap(...fwd(h.x, h.y), g.width, g.height, null);
+          // (Where you can check it from: beside a floor you can get to, nearest first, a wall or a thing on it before
+          // the floor itself, no other sign there; else where the fit puts it. Indoors these did nothing before: a
+          // sink or fridge on the wall's top row, a book on a solid shelf with no floor in front.)
+          const W = g.width, rch = reachable(g), onFloor = (u, v) => walkable(g, u, v) && rch[v * W + u];
+          const checkable = (u, v) => u >= 0 && v >= 0 && u < W && v < g.height && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => onFloor(u + dx, v + dy));
+          const signAt = (u, v) => signs.some((q) => q.x === u && q.y === v);
+          let best = null;
+          for (let r = 0; r <= 6 && !best; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+            if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+            const u = x + dx, v = y + dy;
+            if (!checkable(u, v) || signAt(u, v)) continue;
+            const score = Math.abs(dx) + Math.abs(dy) + (onFloor(u, v) ? 0.5 : 0);
+            if (!best || score < best[2]) best = [u, v, score];
+          }
+          // (A sign with words only: a scripted one, as Goldenrod Underground's switches, is left where the fit puts it.)
+          if (best && h.s.text && !(checkable(x, y) && !signAt(x, y))) [x, y] = best;
+        }
         rep.signs++;
         signs.push(Object.assign({}, h.s, { x, y }));
       });
@@ -547,7 +566,9 @@ module.exports = function port(HN, out, opts) {
       for (const c of HN.maps[p.hns].connections || []) {
         const tname = HN.byId[c.map];
         const G2 = paired.find((n) => plan[n].pieces.some((q) => q.hns === tname && q.rect[0] === 0 && q.rect[1] === 0));
-        if (!G2 || G2 === G) continue;
+        // (unlink: a neighbour of Heart & Soul's nobody can cross to, left out: Route 36's Ruins of Alph, whose darker
+        // trees showed past its edge; the map's own border there instead.)
+        if (!G2 || G2 === G || plan[G].unlink.includes(G2) || plan[G2].unlink.includes(G)) continue;
         const q = plan[G2].pieces.find((q) => q.hns === tname);
         const vertical = c.direction === "up" || c.direction === "down";
         const edge = c.direction === "up" ? p.at[1] === 0 : c.direction === "down" ? p.at[1] + p.rect[3] === g.height : c.direction === "left" ? p.at[0] === 0 : p.at[0] + p.rect[2] === g.width;

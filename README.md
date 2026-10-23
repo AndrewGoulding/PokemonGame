@@ -2138,7 +2138,8 @@ Safari Zone's grounds (whose Areas are HGSS's), so those keep HGSS's maps. On He
 there are no Rock Climb walls (its rock stairs you walk up), and its Gyms are its own puzzles:
 HGSS's lift, dark, winch and ice blocks (below) are off there. Its Apricorn trees stand on Heart & Soul's own trees (drawn by the map, with no sprite of HGSS's
 over them), HGSS's Cut trees, rocks and boulders only where Heart & Soul has its own (and Heart &
-Soul's own besides), the nurse and clerks behind its counters, Pokémon by the same Pokémon (Sudowoodo in its
+Soul's own besides: Ilex Forest's Cut tree, so Bugsy comes first, as in HGSS), the nurse and clerks behind its
+counters, the Bug-Catching Contest's officers behind the National Park gates' counters, Pokémon by the same Pokémon (Sudowoodo in its
 place), and no one stands in a way through the map that wasn't in the way in HGSS's (Route 30's
 youngsters step aside; Sudowoodo still blocks Route 36). A person matches only Heart & Soul's people of the
 same look (HGSS's and Heart & Soul's names for a look are one: a Mart clerk is a clerk), and the one-of-a-kind
@@ -2148,19 +2149,26 @@ trigger on one tile takes Heart & Soul's own triggers for that scene nearby (Spr
 `place` in `tools/data/hns-johto-maps.json` sets where someone stands by hand (Azalea's Rocket and the man he
 shoves; Slowpoke Well's Kurt by its ladder, and the Kurt of HGSS's B1F out of sight until his scene, the well's
 entrance being part of B1F here). Signs go onto Heart & Soul's signposts: the nearest, then by what they say
-(its `AzaleaTown_EventScript_KurtSign` is the sign that names Kurt), then outdoors the nearest left. In a
+(its `AzaleaTown_EventScript_KurtSign` is the sign that names Kurt), then the nearest left (indoors within five
+tiles); a sign with words that's still nowhere you could check it from (a sink on the wall's top row) moves to
+the nearest tile you can. Route 36 doesn't join the Ruins of Alph's map below it (nobody can cross there, and
+the Ruins' darker trees showed past the edge). In a
 scene your walking Pokémon walks too (`obj_partner_poke`): in Ilex Forest it goes over to the Kimono Girl and
 helps her, the shortest way round to her side, then comes back behind you. HGSS's Wi-Fi and Mystery Gift staff aren't there. Coming through a door into a scene (the Kimono
 Girl outside Violet's Mart), you step out of the doorway first; someone a script walks to a door walks onto
 Heart & Soul's door (Elm's aide out of the Mart). In the Ruins of Alph's chambers Heart & Soul's table is the
 panel: examine it from the front. Where Heart & Soul's ground is too unlike HGSS's for its walks, `sceneMoves` in
 `tools/data/hns-johto-maps.json` walks a scene its own way (by who and HGSS's movement label; `to:x,y` the shortest
-way there, `at:x,y` there at once, `@x>=14` for one part of the map): on Route 34 Lyra walks up to her grandpa
+way there, `to:player` to beside you, facing you, `face:<who>` turned to them, `at:x,y` there at once, `@x>=14`
+for one part of the map): Kurt's granddaughter comes over to you with his number; on Route 34 Lyra walks up to her grandpa
 and takes you into the Day-Care by Heart & Soul's side door, where she introduces you to her grandma across the
 counter, and coming out the Day-Care Man walks over and gives you his number and his wife's; in Goldenrod's
 Underground Lyra comes up the stairs of whichever entrance room you came in by. Route 34's Day-Care couple
 run this game's two-Pokémon Day-Care (Four Island's, with its Eggs, but their own: `player.flags.johtoDayCare`),
-the Pokégear's Day-Care calls about theirs. Everyone in Johto has HGSS's own sprite (`hgss_*`); you can't ride the
+the Pokégear's Day-Care calls about theirs. Cameron the photographer isn't in this game, and the Bug-Catching
+Contest's ten contestants are in the National Park only when the judging lines them up. Route 35's Juggler
+Irwin battles with his strongest Voltorb (Electrode, later), Mr. Mime, Drowzee (Hypno) and Magnemite (Magneton).
+Everyone in Johto has HGSS's own sprite (`hgss_*`); you can't ride the
 Bicycle in Johto's buildings (its Pokémon Centers included), as in Kanto.
 Johto's wild Pokémon are HeartGold's and SoulSilver's: a slot where they differ is either, as likely
 (Skarmory, Teddiursa, Ledyba...), with this game's changes for a smoother level curve (`WILD_CHANGES` in

@@ -2847,6 +2847,9 @@
     // (Johto's people: hidden while HGSS's flag for them is set, and where
     // the map's own script puts them this visit.)
     if ((person.hgssFlag && johto.flag(person.hgssFlag)) || person.offstage) return false;
+    // (The National Park's Bug-Catching Contest people, HGSS's out of sight at its edge, here outside the fence where
+    // they'd stand in the way: there only once the judging lines them up.)
+    if ((map || player.location.map) === "NationalPark" && /^hgss:BUG_CONTEST:/.test(person.script || "") && !johto.placed(person.localId)) return false;
     { const g = gear.visible(person); if (g !== undefined) return g; }   // (a Gym Leader at the Dojo: ui/pokegear.js)
     { const b = berryFarm.visible(person, map || player.location.map); if (b !== undefined) return b; }   // (a berry tree: ui/berry-farm.js)
     {
@@ -12145,13 +12148,35 @@
       // ("at:x,y": there now, as Lyra coming up the stairs of the room you're in.)
       const a = /^at:(-?\d+),(-?\d+)$/.exec(mv);
       if (a && who !== "player") { at = { x: +a[1], y: +a[2] }; Overworld.addObject(who, { x: at.x, y: at.y, facing: "down" }); continue; }
-      const r = /^to:(-?\d+),(-?\d+)$/.exec(mv);
-      if (!r) { out.push(mv); continue; }
-      const to = { x: +r[1], y: +r[2] };
+      // ("face:<who>": turned to someone where they are now, as you to Kurt's granddaughter come over to you.)
+      const fc = /^face:(.+)$/.exec(mv);
+      if (fc) {
+        const them = fc[1] === "player" ? Overworld.position() : Overworld.personPosition(fc[1]);
+        if (them && at) { const dx = them.x - at.x, dy = them.y - at.y; out.push("face_" + (Math.abs(dx) >= Math.abs(dy) ? (dx < 0 ? "left" : "right") : (dy < 0 ? "up" : "down"))); }
+        continue;
+      }
+      const r = /^to:(-?\d+),(-?\d+)$/.exec(mv), toYou = mv === "to:player";
+      if (!r && !toYou) { out.push(mv); continue; }
       if (!at) continue;
       const me = Overworld.position(), crowd = Overworld.people().filter((p) => p.def.localId !== who && !tracks.some((t) => t.who === p.def.localId));
       const taken = (x, y) => (who !== "player" && x === me.x && y === me.y) || crowd.some((p) => p.x === x && p.y === y);
-      for (const d of window.JohtoCoords.path(m, at, to, (x, y) => !m.collision[y * m.width + x] && !taken(x, y))) out.push("walk_" + d);
+      const ok = (x, y) => x >= 0 && y >= 0 && x < m.width && y < m.height && !m.collision[y * m.width + x] && !taken(x, y);
+      // ("to:player": the shortest way to a tile beside you, then facing you: Kurt's granddaughter with his number.)
+      if (toYou) {
+        let best = null;
+        for (const [d, dx, dy] of [["up", 0, 1], ["down", 0, -1], ["left", 1, 0], ["right", -1, 0]]) {
+          const t = { x: me.x + dx, y: me.y + dy };
+          const here = t.x === at.x && t.y === at.y, steps = here ? [] : ok(t.x, t.y) ? window.JohtoCoords.path(m, at, t, ok) : null;
+          if (steps && (here || steps.length) && (!best || steps.length < best.steps.length)) best = { t, steps, d };
+        }
+        if (!best) continue;
+        for (const d of best.steps) out.push("walk_" + d);
+        out.push("face_" + best.d);
+        at = best.t;
+        continue;
+      }
+      const to = { x: +r[1], y: +r[2] };
+      for (const d of window.JohtoCoords.path(m, at, to, ok)) out.push("walk_" + d);
       at = to;
     }
     return out;
