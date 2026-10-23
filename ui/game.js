@@ -13205,18 +13205,18 @@
       case "InitRoamer": player.flags.hoennRoamer = +api.getVar("VAR_0x8004") === 1 ? "Latios" : "Latias"; return true;
       // The S.S. Tidal's sailings from Lilycove (src/script_menu.c's CreateLilycoveSSTidalMultichoice; its
       // GetLilycoveSSTidalSelection is done here too): Slateport, the Battle Frontier once you've met Scott on board,
-      // and an island for each ticket (or the Old Sea Map) that's good (VAR_0x8004 1: only those just shown).
+      // and an island for a ticket (or the Old Sea Map) that's good (VAR_0x8004 1: only those just shown).
       case "ScriptMenu_CreateLilycoveSSTidalMultichoice": {
         await api.flush();
         const shown = +api.getVar("VAR_0x8004") === 1, sel = [];
         if (!shown) { sel.push(0); if (hoenn.flag("FLAG_MET_SCOTT_ON_SS_TIDAL")) sel.push(1); }
-        for (const [i, item, on, seen] of [[2, "eon-ticket", "FLAG_ENABLE_SHIP_SOUTHERN_ISLAND", "FLAG_SHOWN_EON_TICKET"], [3, "mystic-ticket", "FLAG_ENABLE_SHIP_NAVEL_ROCK", "FLAG_SHOWN_MYSTIC_TICKET"],
-          [4, "aurora-ticket", "FLAG_ENABLE_SHIP_BIRTH_ISLAND", "FLAG_SHOWN_AURORA_TICKET"], [5, "old-sea-map", "FLAG_ENABLE_SHIP_FARAWAY_ISLAND", "FLAG_SHOWN_OLD_SEA_MAP"]]) {
+        // (Not Navel Rock's or Birth Island's: this game hasn't them.)
+        for (const [i, item, on, seen] of [[2, "eon-ticket", "FLAG_ENABLE_SHIP_SOUTHERN_ISLAND", "FLAG_SHOWN_EON_TICKET"], [5, "old-sea-map", "FLAG_ENABLE_SHIP_FARAWAY_ISLAND", "FLAG_SHOWN_OLD_SEA_MAP"]]) {
           if (!Player.itemCount(player, item) || !hoenn.flag(on)) continue;
           if (!shown) sel.push(i); else if (!hoenn.flag(seen)) { sel.push(i); hoenn.setFlag(seen, true); }
         }
         sel.push(6);
-        const k = await hoennEnv.choose(sel.map((i) => ["Slateport City", "Battle Frontier", "Southern Island", "Navel Rock", "Birth Island", "Faraway Island", "Exit"][i]), null);
+        const k = await hoennEnv.choose(sel.map((i) => ({ 0: "Slateport City", 1: "Battle Frontier", 2: "Southern Island", 5: "Faraway Island", 6: "Exit" })[i]), null);
         api.set(k < 0 ? 127 : sel[k]);
         return true;
       }
