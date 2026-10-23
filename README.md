@@ -1433,8 +1433,8 @@ back, shiny, shiny back), and the party icons, evolutions (Ice Stone for
 Crabrawler and the Alolan Sandshrew and Vulpix, Thunder Stone for Charjabug,
 Lycanroc by day, night or at dusk, 5pm to 6pm), Egg Groups and machine
 compatibility (any generation's, for Gen 7's Pokémon) are built by the tools
-that build everyone else's. A Gen 7 TM this game hasn't got (Brutal Swing,
-Smart Strike, ...) isn't learnt by machine. Metronome, a Gen 6 move here,
+that build everyone else's. Gen 7's TMs are here (Brutal Swing,
+Smart Strike, ...: TM166 on, below). Metronome, a Gen 6 move here,
 doesn't call Gen 7's moves. Like the other generations' Pokémon after the
 first 386, they have no cries (FireRed has none).
 
@@ -3113,7 +3113,22 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   Detect, Fire Punch, Fury Cutter, Nightmare (Gold, Silver and Crystal's,
   TM144–TM161); Drain Punch, Silver Wind, Recycle, Pluck (HeartGold and SoulSilver's,
   TM162–TM165). FireRed and LeafGreen's are all here already. None of TM114–TM165
-  is found anywhere yet.
+  is found anywhere yet. TM166–TM347 are every other main game's TMs (and HMs) whose
+  move had no machine here, by game and in each game's own order
+  (`node tools/build-later-tms.js <PokeAPI csv folder>`, from PokeAPI's `machines.csv`):
+  Black and White and Black 2 and White 2's three (Telekinesis, Ally Switch, Work Up,
+  TM166–TM168), Sun and Moon and Ultra Sun and Ultra Moon's four (Leech Life, Brutal
+  Swing, Smart Strike, Aurora Veil), Brilliant Diamond and Shining Pearl's two (Bug Buzz,
+  Nasty Plot), Sword and Shield's 97, their TRs as TMs (Pin Missile to Body Press,
+  TM175–TM271), Scarlet and Violet's 58 with The Teal Mask's and The Indigo Disk's (Acid
+  Spray to Upper Hand, TM272–TM329) and Legends: Z-A's 18 with Mega Dimension's (Night
+  Slash to Sheer Cold, TM330–TM347). Ruby, Sapphire and Emerald's, Diamond, Pearl and
+  Platinum's, X and Y's and Omega Ruby and Alpha Sapphire's were all here already, and
+  Legends: Arceus has no machines. None of them is found anywhere yet either (the debug
+  menu's every-TM gift has them). Who can use them: any species that learnt the move by
+  machine in some generation (@pkmn/dex, as below); Legends: Z-A's moves that were never
+  a machine before (Comet Punch, Sing, Sheer Cold, Fake Out...), any species that learns
+  the move some way in some generation.
   Compatibility comes from the Gen 6
   learnsets; for HMs and for machines Gen 6 never had (Bullet Seed, Water
   Pulse, Shock Wave and the later ones), also from

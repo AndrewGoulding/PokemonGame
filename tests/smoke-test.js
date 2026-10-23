@@ -807,6 +807,14 @@ for (const share of [false, true]) {
     assert(["tm114", "tm165"].every((t) => Bag.sprite(t)), "TM sprites");
     const learns = (sp, mv) => Party.canLearnMachine(Party.create(sp, 30), mv);
     assert(learns("Squirtle", "Bubble Beam") && learns("Gengar", "Nightmare") && learns("Pidgeot", "Pluck") && learns("Lucario", "Drain Punch") && !learns("Charmander", "Bubble Beam"));
+    // And every later game's (TM166-TM347, tools/build-later-tms.js): Black and White's to Legends: Z-A's, Sword and
+    // Shield's TRs as TMs; Legends: Z-A's never-a-machine moves go to whoever learns them some other way.
+    assert.strictEqual(Bag.machines().filter((t) => /^tm/.test(t)).length, 347, "TM01-TM347");
+    assert.deepStrictEqual(["tm166", "tm169", "tm175", "tm271", "tm272", "tm347"].map(Bag.machineMove), ["Telekinesis", "Leech Life", "Pin Missile", "Body Press", "Acid Spray", "Sheer Cold"]);
+    for (const mv of ["Work Up", "Brutal Swing", "Aurora Veil", "Nasty Plot", "Body Press", "Liquidation", "Tera Blast", "Trailblaze", "Upper Hand", "Comet Punch", "Fake Out"])
+      assert(machineMoves.has(mv) || new Set(Bag.machines().map(Bag.machineMove)).has(mv), "a TM for " + mv);
+    for (const t of Bag.machines()) assert(MOVES[Bag.machineMove(t)] && Bag.sprite(t), t + ": its move and disc");
+    assert(learns("Snorlax", "Body Press") && learns("Hitmonchan", "Comet Punch") && learns("Lapras", "Sheer Cold") && learns("Pikachu", "Tera Blast") && !learns("Magikarp", "Body Press"));
     // Mints 25 BP; out of the elevator past the counter; a Metal Coat to dig
     // and in Rock Tunnel; the older games' TM balls; Johto's balls by move.
     assert(/walk_down", "walk_down", "walk_down"\] \}\]\);\n    towerCounterOpen = false;/.test(gJs0), "out past the counter");

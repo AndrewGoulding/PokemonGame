@@ -8,6 +8,11 @@
 // let it learn that move from a TM or HM (@pkmn/dex learnsets, sources like
 // "4M"). Formes without their own learnset use their base species'.
 //
+// A machine no generation @pkmn/dex knows made a machine (Legends: Z-A's
+// Comet Punch, Sing, Sheer Cold...: tools/build-later-tms.js) goes to the
+// species that learn its move in some generation in any way (by level, a
+// machine, a tutor or as an Egg move), as Legends: Z-A gave its TMs.
+//
 // GAME_EXTRA adds species this game lets use a machine besides (Fly for
 // Butterfree, Beedrill, Gyarados and Venomoth).
 //
@@ -56,16 +61,18 @@ const TUTOR_MOVES = ["Mega Punch", "Swords Dance", "Mega Kick", "Body Slam", "Do
 (async () => {
   const machineMoves = {};   // species -> Set of move ids learnable by machine in some generation
   const tutorMoves = {};     // species -> Set of move ids a tutor taught it in some generation
+  const anyMoves = {};       // species -> Set of move ids it learns in some generation, any way
   for (const species of Object.keys(window.DEX)) {
     let data = await Dex.learnsets.get(toID(SHOWDOWN_NAME[species] || species));
     if (!data || !data.learnset) {
       const base = Dex.species.get(SHOWDOWN_NAME[species] || species);
       data = base && base.exists ? await Dex.learnsets.get(toID(base.changesFrom || base.baseSpecies)) : null;
     }
-    const set = new Set(), tutor = new Set();
+    const set = new Set(), tutor = new Set(), any = new Set();
     for (const [move, sources] of Object.entries((data && data.learnset) || {})) {
       if (sources.some((s) => /^\dM$/.test(s))) set.add(move);
       if (sources.some((s) => /^\dT$/.test(s))) tutor.add(move);
+      if (sources.some((s) => /^\d[LMTE]/.test(s))) any.add(move);
     }
     // (Red, Blue and Yellow's TMs and Gold, Silver and Crystal's: their own learnsets, @pkmn/dex's for those generations.)
     for (const g of [1, 2]) {
@@ -74,13 +81,18 @@ const TUTOR_MOVES = ["Mega Punch", "Swords Dance", "Mega Kick", "Body Slam", "Do
     }
     machineMoves[species] = set;
     tutorMoves[species] = tutor;
+    anyMoves[species] = any;
   }
+  // (The machines no generation had: see above.)
+  const everMachine = new Set(Object.values(machineMoves).flatMap((m) => [...m]));
+  const neverMachine = new Set(allMachines.filter((m) => !everMachine.has(toID(m))));
   const out = {};
   for (const move of allMachines) {
     const extra = Object.keys(window.DEX).filter((species) => {
       if (!machineList.includes(move) && !(window.DEX[species].gen >= 7)) return false;
       const gen6 = (window.LEARNSETS_GEN6[species] || {}).tm || [];
-      return !gen6.includes(move) && (machineMoves[species].has(toID(move)) || (GAME_EXTRA[move] || []).includes(species));
+      return !gen6.includes(move) && (machineMoves[species].has(toID(move)) || (neverMachine.has(move) && anyMoves[species].has(toID(move)))
+        || (GAME_EXTRA[move] || []).includes(species));
     }).sort();
     if (extra.length) out[move] = extra;
   }
