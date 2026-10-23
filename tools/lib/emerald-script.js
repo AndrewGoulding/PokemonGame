@@ -34,13 +34,13 @@ module.exports = function emeraldScript(EM) {
     .replace(/POKéMON/g, "POKéMON")).map((p) => p.replace(/ +$/gm, ""));
 
   const strip = (line) => {
-    // (A comment starts at an @ outside a string.)
+    // (A comment starts at an @, or a //, outside a string.)
     let q = false;
     for (let i = 0; i < line.length; i++) {
       const c = line[i];
       if (c === "\\" && q) { i++; continue; }
       if (c === '"') q = !q;
-      else if (c === "@" && !q) return line.slice(0, i).trim();
+      else if ((c === "@" || (c === "/" && line[i + 1] === "/")) && !q) return line.slice(0, i).trim();
     }
     return line.trim();
   };
@@ -61,6 +61,12 @@ module.exports = function emeraldScript(EM) {
   function parseFile(file, mapName) {
     if (!fs.existsSync(file)) return;
     let label = null, lines = [], opened = null;
+    // (A file's own constants, .set NAME, value: the Glass Workshop's prices, the Game Corner's.)
+    const sets = {};
+    const resolve = (a) => {
+      for (let k = 0; k < 4 && sets[a] != null; k++) a = sets[a];
+      return /^\(.*\)$/.test(a) ? a.replace(/\b[A-Z_][A-Z0-9_]*\b/g, (n) => resolve(n)) : a;   // (and in an expression: (BET_AMOUNT_5 * 2))
+    };
     // (A script that runs off its end carries on into the label after it: Emerald's lobbies lean on that.)
     const TERMINAL = new Set(["end", "goto", "return", "returnram", "vgoto", "killscript", "endscript"]);
     const flush = () => {
@@ -86,6 +92,8 @@ module.exports = function emeraldScript(EM) {
     for (const raw of fs.readFileSync(file, "utf8").split("\n")) {
       const l = strip(raw);
       if (!l) continue;
+      const set = /^\.set\s+(\w+),\s*(\S+)$/.exec(l);
+      if (set) { sets[set[1]] = set[2]; continue; }
       const lab = /^(\w+):(:?)$/.exec(l);
       if (lab) {
         flush();
@@ -98,7 +106,7 @@ module.exports = function emeraldScript(EM) {
       if (s) { lines.push({ str: s[1] }); continue; }
       const m = /^(\.?\w+)\s*(.*)$/.exec(l);
       if (!m) continue;
-      lines.push({ cmd: m[1], args: split(m[2]) });
+      lines.push({ cmd: m[1], args: split(m[2]).map(resolve) });
     }
     flush();
   }

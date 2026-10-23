@@ -1942,6 +1942,8 @@ you both ride off, the long dark, and THE END, drawn from its letter tiles. Star
 
 Also: berry trees (Hoenn's own growth stages and mulch; picked as the Berry Farm's are, straight into the Bag, for
 farming XP, and the Berry Pouch works in Petalburg Woods: the farming level counts there too), weather, your own secret base with its decorations,
+the volcanic ash on Route 113's and Jagged Pass's grass (walk through it and it falls off till you come back; with
+the Soot Sack it's gathered, for the Glass Workshop's flutes and glass furniture at Emerald's prices),
 the rotating-tile puzzles, the Mirage Tower and Rayquaza's scenes. The scene over Sootopolis is Emerald's own
 (`ui/rayquaza-scene.js`, its pictures from `tools/build-rayquaza-scene.js` into `assets/rayquaza-scene/`), its
 five scenes timed as `src/rayquaza_scene.c` times them: Groudon and Kyogre facing one another under the storm

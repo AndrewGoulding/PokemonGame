@@ -12930,6 +12930,17 @@
     const at = Overworld.position(), s = m.weatherSteps.find((q) => q.x === at.x && q.y === at.y);
     if (s) hoennSaved = s.weather;
   }
+  // Ash on Route 113's and Jagged Pass's grass (Emerald's AshGrassPerStepCallback): walk through it and it falls off,
+  // the grass under it showing till you come back, and with the Soot Sack it's gathered (VAR_ASH_GATHER_COUNT, to
+  // 9,999: the Glass Workshop's).
+  function hoennAshStep() {
+    const map = player.location.map, m = window.WORLD_MAPS[map];
+    if (!m || !m.ash) return;
+    const at = Overworld.position(), a = m.ash.find((q) => q[0] === at.x && q[1] === at.y);
+    if (!a || (metatileSet[map] && metatileSet[map][at.y * m.width + at.x] != null)) return;
+    hoennMetatile(map, at.x, at.y, a[2], false);
+    if (Player.itemCount(player, "soot-sack") > 0) hoenn.setVar("VAR_ASH_GATHER_COUNT", Math.min(9999, hoenn.getVar("VAR_ASH_GATHER_COUNT") + 1));
+  }
   // Specials of Route 119 and 123's transitions: the cycle, unless you walked in from another route.
   function hoennSyncSpecial(name, api) {
     if (name === "SetRoute119Weather" || name === "SetRoute123Weather") {
@@ -13760,7 +13771,7 @@
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
-          hoennWeatherStep(); berryFarm.step(); hoennBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
+          hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
           return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
         adjustWild: (mon, table) => { const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&

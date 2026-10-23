@@ -36,7 +36,7 @@
   // Emerald's constants a script writes by name, as numbers.
   const CONSTS = { TRUE: 1, FALSE: 0, YES: 1, NO: 0, MALE: 0, FEMALE: 1, NULL: 0, LOCALID_NONE: 0, OBJ_EVENT_ID_PLAYER: 255, OBJ_EVENT_ID_CAMERA: 127,
     PLAYER_HAS_TWO_USABLE_MONS: 1, PLAYER_HAS_ONE_MON: 2, PLAYER_HAS_NO_MONS: 0, MULTI_B_PRESSED: 127, PARTY_SIZE: 6, DIR_NONE: 0,
-    FANFARE_GREEN: 0 };
+    FANFARE_GREEN: 0, MAX_COINS: 50000 };   // (this game's Coin Case: HGSS's 50,000)
   const COND = { 0: (c) => c < 0, 1: (c) => c === 0, 2: (c) => c > 0, 3: (c) => c <= 0, 4: (c) => c >= 0, 5: (c) => c !== 0,
     lt: (c) => c < 0, eq: (c) => c === 0, gt: (c) => c > 0, le: (c) => c <= 0, ge: (c) => c >= 0, ne: (c) => c !== 0 };
   // (Emerald's field gear: the badge flags and the badges they give, in Emerald's order.)
@@ -111,6 +111,11 @@
       }
       if (x in CONSTS) return CONSTS[x];
       { const n = DATA().numConsts; if (n && x in n) return n[x]; }
+      // (Sums Emerald's scripts leave to the assembler: (MAX_COINS + 1 - 50).)
+      if (/^\([\w\s+\-*/()]+\)$/.test(x)) {
+        const terms = x.replace(/\b[A-Za-z_]\w*\b/g, (n) => { const v = getVar(n); return typeof v === "number" ? "(" + v + ")" : "NaN"; });
+        if (/^[\d\s+\-*/().NaN]+$/.test(terms)) { const v = Function("return " + terms)(); if (Number.isFinite(v)) return Math.trunc(v); }
+      }
       return x;
     }
     function setVar(n, val) {
