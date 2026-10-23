@@ -151,7 +151,8 @@
   const isBall = (item) => /balls$/.test((window.ITEMS[item] || {}).category || "");
   const isStone = (item) => Object.values(window.EVOLUTIONS).some((l) => l.some((e) => e.method === "item" && e.item === item));
 
-  const isKeyItem = (item) => (window.ITEMS[item] || {}).category === "key-items";
+  // (Key items, and the "gameplay" ones, which are too: the Fashion Case, Pokéblock Case, Devon Scope, Go-Goggles...)
+  const isKeyItem = (item) => ["key-items", "gameplay"].includes((window.ITEMS[item] || {}).category);
 
   const POWER_UP = ["vitamins", "nature-mints", "exp-candy", "dynamax-candy", "tera-shards"];
   const HELD = ["held-items", "type-enhancement", "choice", "plates", "jewels", "bad-held-items", "effort-training", "species-specific", "training",
