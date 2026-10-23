@@ -13,6 +13,7 @@
 //     (she's not your mother); Juggler Irwin has a Voltorb and three others;
 //   - the S.S. Aqua sails once you've beaten Johto's League, for Vermilion
 //     or Hoenn (ui/game.js ssAquaBoard); Olivine's pier couple are the port's;
+//   - items HGSS put where Heart & Soul's maps are solid all round, at the nearest spot you can reach;
 //   - the Ruins of Alph's Hall door is Heart & Soul's alone (no doors in the rock beside it);
 //   - the Bell Tower roof's Ho-Oh scene and Route 34's trio start where you walk (HGSS's steps are on solid
 //     ground on Heart & Soul's maps);
@@ -129,6 +130,25 @@ function apply({ maps, scripts, trainers }) {
     const hall = keep.findIndex((w) => w.map === "RuinsOfAlph_UndergroundHall");
     alph.warps = keep;
     for (const m of Object.values(maps)) for (const w of m.warps || []) if (w.map === "RuinsOfAlph" && w.warp != null) w.warp = index[w.warp] != null ? index[w.warp] : hall;
+  }
+  // Items HGSS put where Heart & Soul's maps have trees or rock all round (a hidden Rare Candy in Olivine's woods, the
+  // Bell Tower's 4F Poké Ball): the nearest spot you can get to instead (an item ball on open ground; a hidden item on
+  // a tile you can face from open ground or water).
+  const SURFABLE = new Set([0x10, 0x11, 0x12, 0x13, 0x15, 0x1a, 0x1b, 0x50, 0x51, 0x52, 0x53, 0xf4, 0xf5]);
+  for (const m of Object.values(maps)) {
+    if (m.region !== "johto" && !m.hgss) continue;
+    const W = m.width, inside = (x, y) => x >= 0 && y >= 0 && x < W && y < m.height;
+    const open = (x, y) => inside(x, y) && (!m.collision[y * W + x] || SURFABLE.has(m.behavior[y * W + x]));
+    const walk = (x, y) => inside(x, y) && !m.collision[y * W + x];
+    const reachable = (x, y) => [[0, 1], [0, -1], [1, 0], [-1, 0]].some(([dx, dy]) => open(x + dx, y + dy));
+    const nearest = (x0, y0, ok) => {
+      for (let r = 1; r < 12; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++)
+        if (Math.max(Math.abs(dx), Math.abs(dy)) === r && ok(x0 + dx, y0 + dy)) return [x0 + dx, y0 + dy];
+      return null;
+    };
+    const taken = (x, y) => m.people.some((p) => p.x === x && p.y === y);
+    for (const h of m.hidden || []) if (!reachable(h.x, h.y)) { const at = nearest(h.x, h.y, (x, y) => inside(x, y) && reachable(x, y)); if (at) [h.x, h.y] = at; }
+    for (const p of m.people) if (/item_ball/.test(p.sprite || "") && !reachable(p.x, p.y)) { const at = nearest(p.x, p.y, (x, y) => walk(x, y) && !taken(x, y)); if (at) [p.x, p.y] = at; }
   }
   // Scenes whose step HGSS has where Heart & Soul's ground is solid (they'd never start): on the way they're walked.
   // The Bell Tower's roof, Ho-Oh's: the step up from its stairs; Route 34's trio, Irene's: the way into their nook.
