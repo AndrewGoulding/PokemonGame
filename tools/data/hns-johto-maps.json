@@ -59,6 +59,7 @@
   "SlowpokeWell_Entrance": { "drop": true },
   "SlowpokeWell_B1F": { "hns": "SlowpokeWell_B1F", "merge": ["SlowpokeWell_Entrance"], "place": { "obj_D26R0101_gantetsu": [27, 26], "obj_D26R0102_gantetsu": [0, 0], "obj_D26R0102_yadon_2": [15, 4] },
     "sceneMoves": { "obj_D26R0102_gantetsu _019C": ["at:19,10", "to:13,4", "face_right"], "player _01C0": ["delay_96", "delay_96", "delay_16", "face_left"], "player _01DC": ["delay_96", "delay_96", "delay_16", "face_left"] } },
+  "Route32": { "hns": "Route32", "place": { "obj_R32_gsgirl1": [21, 81] } },
   "NationalPark": "NationalPark_Normal",
   "NationalPark_BugCatchingContest": "NationalPark_BugContest",
   "Route35_NationalParkPokeathlonGatehouse": { "hns": "Gate_NationalPark", "rect": [0, 0, 16, 16] },

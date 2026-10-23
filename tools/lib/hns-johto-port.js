@@ -139,7 +139,8 @@ module.exports = function port(HN, out, opts) {
       obstacleLooks = {};
       for (const m of Object.values(out)) for (const p of m.people || []) {
         const k = kindOfHgss(p);
-        if (OBSTACLE.has(k) && !obstacleLooks[k] && !p.hgssFlag) {
+        // (Any of HGSS's: theirs come back when you return, FLAG_MAPTEMP_*, as these do.)
+        if (OBSTACLE.has(k) && !obstacleLooks[k]) {
           const t = Object.assign({}, p);
           delete t.hgssFlag; delete t.offstage;
           Object.defineProperty(t, "hgssSprite", { value: p.hgssSprite });
