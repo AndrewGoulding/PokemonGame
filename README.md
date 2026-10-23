@@ -2113,7 +2113,15 @@ patterns from Kanto. It looked poor beside HGSS's own art, so HGSS's is the
 look now. `--hybrid`, a trial, paints the ground in FireRed's style the same
 way, with full forests and no Kanto buildings, and stands every one of HGSS's
 own buildings on it redrawn as GBA pixel art: a few colours each, snapped to
-the GBA's 15-bit colour, with a dark outline.) In HGSS's Pokémon Centers the nurse stands behind HGSS's counter
+the GBA's 15-bit colour, with a dark outline.) `tools/build-johto-crystal.js`,
+another trial, draws Johto's maps from Pokémon Crystal's own instead
+([pret/pokecrystal](https://github.com/pret/pokecrystal)): its flat grids of
+blocks, each step's square told apart by its collision and its tiles' palettes
+(grass, paths, trees, cliffs, fences, water, ledges, the pier, cave mouths,
+buildings), painted in FireRed's style with a building of Kanto's at each door,
+of the kind the door leads to. It writes only pictures
+(`node tools/build-johto-crystal.js <checkout> --only=Map,Map --out=<dir>`):
+Crystal's layouts differ from HGSS's, so the game's maps still come from HGSS. In HGSS's Pokémon Centers the nurse stands behind HGSS's counter
 and heals as Kanto's nurses do; the Wi-Fi and Union Room staff (this game has
 neither) aren't there, and the stairs down to HGSS's Wi-Fi floor go up
 instead, to FireRed's Pokémon Center 2F with its Move Relearner, Move Deleter,

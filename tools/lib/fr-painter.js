@@ -76,9 +76,12 @@ const seenAs = { waterfall: "water", meadow: "grass" };
 // -> blocks: a metatile id a tile (or null: a building's or object's), and
 // `outdoor`: the tiles drawn in the outdoor style because `style` has nothing
 // of their class (a cave's water).
-function paint(classes, w, h, style) {
+// (parity: [dx, dy], shifting which tiles count as odd, for a map whose 2x2 trees sit a tile off Kanto's.)
+// (neighbourAs: { class: class } a neighbour is taken for, as a building for a tree, beside the ground.)
+function paint(classes, w, h, style, parity, neighbourAs) {
+  const [px, py] = parity || [0, 0];
   const s = STYLES[style || "outdoor"], fallback = STYLES.outdoor;
-  const seen = (c) => (SINGLE[c] ? SINGLE[c][1] : seenAs[c] || c);
+  const seen = (c) => (neighbourAs && neighbourAs[c]) || (SINGLE[c] ? SINGLE[c][1] : seenAs[c] || c);
   const at = (x, y) => seen(classes[Math.min(h - 1, Math.max(0, y)) * w + Math.min(w - 1, Math.max(0, x))]);
   const blocks = new Array(w * h).fill(null), outdoor = new Set();
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
@@ -94,7 +97,7 @@ function paint(classes, w, h, style) {
     }
     const own = s.patterns[c] || s.patterns[STAND_IN[c]];
     if (!own && s !== fallback) outdoor.add(y * w + x);
-    blocks[y * w + x] = pick(own ? s : fallback, c, x, y, NEIGHBOURS.map(([dx, dy]) => at(x + dx, y + dy)));
+    blocks[y * w + x] = pick(own ? s : fallback, c, x + px, y + py, NEIGHBOURS.map(([dx, dy]) => at(x + dx, y + dy)));
   }
   blocks.outdoor = outdoor;
   return blocks;
@@ -298,7 +301,7 @@ function compose(classes, w, h, opts) {
     }
     for (const k of left) classes[k] = "tree";
   }
-  const blocks = paint(classes, w, h, opts.style);
+  const blocks = paint(classes, w, h, opts.style, opts.parity, opts.neighbourAs);
   const signAt = new Map((opts.signs || []).map(([x, y, kind]) => [y * w + x, kind]));
   for (let i = 0; i < w * h; i++) if (classes[i] === "object") blocks[i] = SIGN_METATILES[signAt.get(i) || "object"];
   // The ground and signs, then each stamp's metatiles over it (with their own tilesets).
