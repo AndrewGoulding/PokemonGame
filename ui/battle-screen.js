@@ -199,7 +199,9 @@
   // "move: Light Screen" -> "lightscreen", "[from] bad poison" -> "badpoison"
   const effectId = (s) => String(s || "").replace(/^\[from\] /, "").replace(/^(move|ability|item): /, "")
     .toLowerCase().replace(/[^a-z0-9]/g, "");
-  const effectName = (s) => String(s || "").replace(/^\[from\] /, "").replace(/^(move|ability|item): /, "");
+  // (The engine's items go by their ids, "sitrus-berry": shown by their names, Sitrus Berry.)
+  const itemText = (s) => (/^[a-z0-9]+(-[a-z0-9]+)+$/.test(s) && window.Bag && window.Bag.name(s)) || s;
+  const effectName = (s) => itemText(String(s || "").replace(/^\[from\] /, "").replace(/^(move|ability|item): /, ""));
 
   // ---------- DOM ----------
 
@@ -1738,6 +1740,7 @@
       }
       case "-enditem": {
         v.item = null;
+        const b = itemText(ev[2]);
         const by = effectId(c || ""), eaten = c === "[eat]" || ev[4] === "[eat]";
         if (/^(knockoff|corrosivegas)$/.test(by)) {
           // (Knocked off: the item flies away: ItemKnockoff.)
