@@ -2430,8 +2430,10 @@ if (window.JOHTO_TOWN_MAP) {
   const JOHTO_BY_SCRIPT = /^(NationalPark_BugCatchingContest|SafariZone_EntranceInterior)$/;
   const JOHTO_NOT_WALKED = /^(NationalPark_BugCatchingContest|SafariZone_EntranceExterior|RuinsOfAlph_\w+HiddenRoom|RuinsOfAlph_\w*SinjohEvent2?|SinjohRuins_\w+|EmbeddedTower_\w+|GoldenrodCity_MagnetTrainStation_2F|GoldenrodCity_RadioTowerObservationDeck|OlivineCity_Lighthouse(Exterior|_5F|LightRoom))$/;
   // (Heart & Soul's ways that go one way: the Lighthouse's drops to the floor below, the Ruins' word rooms out to the
-  // hall, and the S.S. Aqua's way off, which ui/game.js's ssAquaExit sets as the ship docks.)
-  const ONE_WAY = (n, w) => /^OlivineCity_Lighthouse/.test(n) && /^OlivineCity_Lighthouse/.test(w.map) || /^RuinsOfAlph_\w+HiddenRoom$/.test(n) || (n === "SSAqua_1F" && /^SSAqua_OlivinePort/.test(w.map)) || (n === "SSAqua_OlivinePortExterior" && w.map === "SSAqua_1F");
+  // hall, the Ruins' entrance hall out through the Hall door (which leads down: tools/lib/johto-changes.js), and the
+  // S.S. Aqua's way off, which ui/game.js's ssAquaExit sets as the ship docks.)
+  const ONE_WAY = (n, w) => /^OlivineCity_Lighthouse/.test(n) && /^OlivineCity_Lighthouse/.test(w.map) || /^RuinsOfAlph_\w+HiddenRoom$/.test(n) ||
+    (/^RuinsOfAlph_HallEntrance/.test(n) && w.map === "RuinsOfAlph") || (n === "SSAqua_1F" && /^SSAqua_OlivinePort/.test(w.map)) || (n === "SSAqua_OlivinePortExterior" && w.map === "SSAqua_1F");
   for (const n of J.filter((n) => !JOHTO_BY_SCRIPT.test(n))) for (const [i, w] of WORLD_MAPS[n].warps.entries()) if (w.map && J.includes(w.map) && !ONE_WAY(n, w)) {
     const back = WORLD_MAPS[w.map].warps[w.warp];
     // (An elevator's way back: wherever you got in, FireRed's dynamic warp.)

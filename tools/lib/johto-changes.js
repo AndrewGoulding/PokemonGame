@@ -13,6 +13,9 @@
 //     (she's not your mother); Juggler Irwin has a Voltorb and three others;
 //   - the S.S. Aqua sails once you've beaten Johto's League, for Vermilion
 //     or Hoenn (ui/game.js ssAquaBoard); Olivine's pier couple are the port's;
+//   - the Ruins of Alph's Hall door is Heart & Soul's alone (no doors in the rock beside it);
+//   - the Bell Tower roof's Ho-Oh scene and Route 34's trio start where you walk (HGSS's steps are on solid
+//     ground on Heart & Soul's maps);
 //   - Cherrygrove's Guide Gent and his scene are gone (the Pokégear's Map is
 //     yours from the start: ui/pokegear.js); Silver is "Rival Silver" from his
 //     first battle, with his own picture (HGSS's "Passerby Boy").
@@ -116,6 +119,26 @@ function apply({ maps, scripts, trainers }) {
   // Olivine's pier: HGSS's couple who see the ship off (no words of their own) are the port's, there already.
   const olivine = maps.OlivineCity;
   if (olivine) olivine.people = olivine.people.filter((p) => p.localId !== "obj_T26_seaman_2_3" && p.localId !== "obj_T26_gswoman2");
+  // The Ruins of Alph: Heart & Soul's Hall door leads straight down to the Underground Hall; HGSS's doors to its
+  // entrance hall (and that hall's Sinjoh twin), which have no door of their own there, ended up in the rock beside it
+  // and beside Psychic Nathan, walked into unseen. Gone; the entrance hall's way out is the Hall door.
+  const alph = maps.RuinsOfAlph;
+  if (alph) {
+    const keep = [], index = [];
+    alph.warps.forEach((w, i) => { if (/^RuinsOfAlph_HallEntrance/.test(w.map || "")) index[i] = null; else { index[i] = keep.length; keep.push(w); } });
+    const hall = keep.findIndex((w) => w.map === "RuinsOfAlph_UndergroundHall");
+    alph.warps = keep;
+    for (const m of Object.values(maps)) for (const w of m.warps || []) if (w.map === "RuinsOfAlph" && w.warp != null) w.warp = index[w.warp] != null ? index[w.warp] : hall;
+  }
+  // Scenes whose step HGSS has where Heart & Soul's ground is solid (they'd never start): on the way they're walked.
+  // The Bell Tower's roof, Ho-Oh's: the step up from its stairs; Route 34's trio, Irene's: the way into their nook.
+  for (const [name, re, at] of [["BellTower_Roof", /scr_seq_D17R0110_006/, [[10, 13]]], ["Route34", /scr_seq_R34_00[45]/, [[22, 84]]]]) {
+    const m = maps[name];
+    if (!m || !m.triggers) continue;
+    const moved = m.triggers.filter((t) => re.test(t.script || ""));
+    m.triggers = m.triggers.filter((t) => !moved.includes(t)).concat(...moved.filter((t, i, a) => a.findIndex((u) => u.script === t.script) === i)
+      .map((t) => at.map(([x, y]) => Object.assign({}, t, { x, y }))));
+  }
   // Route 35's Juggler Irwin: his strongest Voltorb (or Electrode, in his rematches), and three of a kind he juggles
   // with no more: Mr. Mime, Drowzee or Hypno, Magnemite or Magneton.
   for (const [id, keep, more] of [["HGSS_TRAINER_JUGGLER_IRWIN", "Voltorb", [["Mr. Mime", 14], ["Drowzee", 13], ["Magnemite", 13]]],
