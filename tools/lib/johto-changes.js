@@ -66,6 +66,17 @@ function apply({ maps, scripts, trainers }) {
     r29.triggers = r29.triggers.filter((t) => !/scr_seq_R29_001\?/.test(t.script));
     r29.people = r29.people.filter((p) => p.localId !== "obj_R29_var_2" && p.localId !== "obj_R29_tsure_poke_static_marill");
   }
+  // Route 35's Juggler Irwin: his strongest Voltorb (or Electrode, in his rematches), and three of a kind he juggles
+  // with no more: Mr. Mime, Drowzee or Hypno, Magnemite or Magneton.
+  for (const [id, keep, more] of [["HGSS_TRAINER_JUGGLER_IRWIN", "Voltorb", [["Mr. Mime", 14], ["Drowzee", 13], ["Magnemite", 13]]],
+    ["HGSS_TRAINER_JUGGLER_IRWIN_2", "Voltorb", [["Mr. Mime", 32], ["Hypno", 32], ["Magneton", 32]]],
+    ["HGSS_TRAINER_JUGGLER_IRWIN_3", "Electrode", [["Mr. Mime", 40], ["Hypno", 40], ["Magneton", 40]]],
+    ["HGSS_TRAINER_JUGGLER_IRWIN_4", "Electrode", [["Mr. Mime", 48], ["Hypno", 48], ["Magneton", 48]]]]) {
+    const t = trainers[id];
+    if (!t) continue;
+    const top = t.party.filter((m) => m.species === keep).sort((a, b) => b.level - a.level)[0];
+    if (top) t.party = [top].concat(more.map(([species, level]) => ({ species, level, iv: top.iv })));
+  }
   // Silver, from his first battle.
   for (const id of ["HGSS_TRAINER_PASSERBY_BOY", "HGSS_TRAINER_PASSERBY_BOY_2", "HGSS_TRAINER_PASSERBY_BOY_3"]) {
     if (trainers[id]) Object.assign(trainers[id], { className: "Rival", name: "Silver", pic: "hgss_silver" });
