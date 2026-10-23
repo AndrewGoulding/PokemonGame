@@ -1878,7 +1878,9 @@ for (const share of [false, true]) {
     const png = fs.readFileSync(file);
     assert.deepStrictEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [512, 112], "battle background size " + t);
   }
-  assert.strictEqual(fs.readdirSync(path.join(root, "assets/battle")).length, 20, "all 20 FireRed battle terrains");
+  // (And this game's own: the meteoroid's, tools/build-delta-episode.js.)
+  assert.strictEqual(fs.readdirSync(path.join(root, "assets/battle")).filter((f) => f !== "space.png").length, 20, "all 20 FireRed battle terrains");
+  assert(fs.existsSync(path.join(root, "assets/battle/space.png")), "the meteoroid's background");
 }
 
 // The debug menu can add any species but battle-only forms: each must make a
@@ -2039,6 +2041,22 @@ if (WORLD_MAPS.CherrygroveCity && WORLD_MAPS.CherrygroveCity.region === "johto")
   assert(Object.keys(WORLD_MAPS).filter((n) => /PokemonCenter/.test(n)).every((n) => !WORLD_MAPS[n].cycling), "no cycling in Pokémon Centers");
   assert(Object.values(WORLD_MAPS).some((m) => m.region === "johto" && m.people.some((p) => p.sprite === "hgss_gsman3")), "HGSS's own Ace Trainers");
   assert(WORLD_MAPS.IlexForest.signs.some((s) => s.script === "hgss:D36R0101:scr_seq_D36R0101_012"), "Ilex Forest's shrine is there");
+}
+
+// The Delta Episode and Jirachi's observation deck (this game's own: ui/game.js, tools/build-delta-episode.js).
+{
+  const D = WORLD_MAPS.MossdeepCity_SpaceCenter_ObservationDeck, SC2 = WORLD_MAPS.MossdeepCity_SpaceCenter_2F;
+  assert(D && D.region === "hoenn" && D.signs.some((x) => x.script === "SpaceCenter_EventScript_WishRock") && D.warps[0].map === SC2.name, "the deck, its rock and its way out");
+  const door = SC2.warps.findIndex((w) => w.map === D.name);
+  assert(door >= 0 && D.warps[0].warp === door && SC2.patches.sealed && SC2.patches.open && SC2.patches.open.collision[0][3] === 0x69, "2F's door, sealed and open");
+  for (const f of ["MossdeepCity_SpaceCenter_ObservationDeck.png", "MossdeepCity_SpaceCenter_ObservationDeck-patch-glow.png", "MossdeepCity_SpaceCenter_ObservationDeck-patch-glow-top.png",
+    "MossdeepCity_SpaceCenter_ObservationDeck-patch-stars.png", "MossdeepCity_SpaceCenter_2F-patch-sealed.png", "MossdeepCity_SpaceCenter_2F-patch-open.png"])
+    assert(fs.existsSync(path.join(root, "assets/world/maps", f)), f);
+  assert(fs.existsSync(path.join(root, "assets/sprites/trainers/front/zinnia.png")) && fs.existsSync(path.join(root, "assets/world/sprites/em_zinnia.png")), "Zinnia's pictures");
+  const gj = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  assert(/hoenn\.setFlag\("FLAG_SYS_GAME_CLEAR", true\)/.test(gj), "Hoenn's Hall of Fame sets FLAG_SYS_GAME_CLEAR");
+  assert(/Party\.create\("Deoxys-Normal", 80\)/.test(gj) && /Party\.create\("Jirachi", 50\)/.test(gj) && /RayquazaScene\.play\(\$\("#overlay"\), 2,/.test(gj), "Deoxys, Jirachi, Rayquaza's flight");
+  assert(DEX["Deoxys-Normal"] && DEX.Jirachi && DEX.Zinnia === undefined);
 }
 
 // Raids: the Elite Four, Blue, Red and Leaf can be invited once you've battled with or against them (game/raid-dens.js).

@@ -2003,6 +2003,38 @@ like it for 100 steps and five tiles round (`hoennSafari` in `ui/game.js`).
 The smoke test runs a story scene (Norman and Wally) through the interpreter with a stub game; `HOENN_TRACE = []`
 in the console logs every command a script runs.
 
+## The Delta Episode and Jirachi (Hoenn's post-game, this game's own)
+
+After Omega Ruby and Alpha Sapphire's Delta Episode, told in Emerald's Hoenn. Once you've been through Hoenn's
+Hall of Fame (which now sets Emerald's `FLAG_SYS_GAME_CLEAR`, as Emerald's `GameClear` does, so its post-game
+scripts work too):
+
+1. **Mossdeep's Space Center**, as you come in: its director and Steven tell you a huge meteoroid is falling on
+   Hoenn, and Zinnia, the Draconids' lorekeeper, walks in and battles you (Tyrunt, Shelgon, Altaria and a Salamence
+   that Mega Evolves, Lv. 62-65), then sends you to Meteor Falls.
+2. **Meteor Falls**: a Draconid elder tells the old story (a star that fell, and Rayquaza, the sky's protector,
+   breaking it apart) and sends you up the Sky Pillar.
+3. **The Sky Pillar's top**: Zinnia again (Tyrantrum, Noivern, Goodra, Altaria and her ace, Mega Salamence,
+   Terastallizing, Lv. 70-74); then Rayquaza answers her call (your own, if you have one; caught or not, Emerald's
+   stays where it was) and carries you up: Emerald's Sootopolis scene's flight, Rayquaza taking off and charging
+   (`ui/rayquaza-scene.js`, mode 2), into the meteoroid, where **Deoxys** waits, wild at Lv. 80 over the
+   meteoroid's rock among the stars (`assets/battle/space.png`). The meteoroid breaks apart into shooting stars
+   and you're back at the Space Center, thanked.
+4. **Jirachi**: 2F's researcher has found a strange energy signature in the sealed observation room, its door in
+   2F's window wall (a red light; green once he's unsealed it). Inside, a small observation deck: a wide window
+   on the night sky and a white rock in the middle. Check the rock and make a wish (only words); it glows, the
+   stars outside draw into a line, and Jirachi appears: "A wish only holds power if the one who makes it is strong
+   enough to protect it." A wild Jirachi, Lv. 50; caught or beaten it's gone for good (run from it, and it comes
+   again for another wish). Back on 2F, the researcher sees the readings settle, and the instruments glitch as if
+   they'd recorded something impossible.
+
+Emerald has no Zinnia: her trainer picture and overworld sheet are its Hex Maniac's, recoloured (black hair, a
+dark green robe, no hat). `node tools/build-delta-episode.js` draws them, the space background (FireRed's cave
+background's platforms as meteoroid rock over stars), the observation deck from the Space Center's own tiles (its
+window, the rock, and the glow and the stars in line as patches) and 2F's door, and writes the deck's map and the
+door into `data/emerald-maps.js` between its markers. The story's in `ui/game.js` (`player.flags.delta`, 0-4;
+`jirachiMet`, `jirachiAfter`).
+
 ## Faraway Island
 
 Emerald's Old Sea Map event, for Mew. Once the Sapphire is in Celio's machine

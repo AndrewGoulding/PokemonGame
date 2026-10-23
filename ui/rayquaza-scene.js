@@ -8,6 +8,7 @@
 //
 //   await RayquazaScene.play(canvas, 0, env)   // 0: the fight alone (RAY_ANIM_DUO_FIGHT_PRE, ended early)
 //   await RayquazaScene.play(canvas, 1, env)   // 1: the fight and Rayquaza's coming, all five scenes
+//   await RayquazaScene.play(canvas, 2, env)   // 2: Rayquaza's flight alone, taking off and charging (the Delta Episode's, ui/game.js)
 //   env: { cry(species), sfx(name), music(name) }
 // The canvas is left black and showing; the caller hides it.
 (function () {
@@ -405,6 +406,7 @@
 
     try {
       if (mode === 0) await duoFight(true);
+      else if (mode === 2) { await takesFlight(); await charges(); }
       else { await duoFight(false); await takesFlight(); await descends(); await charges(); await chasesAway(); }
     } catch (e) { console.error(e); }
     out.save(); out.setTransform(1, 0, 0, 1, 0, 0); out.fillStyle = "#000"; out.fillRect(0, 0, canvas.width, canvas.height); out.restore();

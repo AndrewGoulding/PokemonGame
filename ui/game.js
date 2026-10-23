@@ -2837,7 +2837,7 @@
       dojoRematch(person.trainer.id)));
 
   function visible(person, map) {
-    if (isHoenn(map || player.location.map)) { const b = hoennBerries.visible(person, map || player.location.map); return b !== undefined ? b : hoennVisible(person, map || player.location.map); }
+    if (isHoenn(map || player.location.map)) { const dv = deltaVisible(person); if (dv !== undefined) return dv; const b = hoennBerries.visible(person, map || player.location.map); return b !== undefined ? b : hoennVisible(person, map || player.location.map); }
     const f = player.flags;
     // (A Tera Raid den: glowing while its raid is on.)
     { const den = RaidDens.byScript(person.script); if (den) return RaidDens.active(f, den.id) ? { sprite: "raid_den_active" } : true; }
@@ -3127,6 +3127,9 @@
     if (script === "Route117_PokemonDayCare_EventScript_DaycareWoman") { await dayCareMan(); return; }
     if (script === "LilycoveCity_MoveDeletersHouse_EventScript_MoveDeleter") { await moveDeleter(); return; }
     if (script === "FallarborTown_MoveRelearnersHouse_EventScript_MoveRelearner") { await moveRelearner(); return; }
+    // (The Delta Episode's scenes and people, and Jirachi's deck: this game's own.)
+    if (deltaDue(script)) { await deltaScene(script); return; }
+    if (isHoenn(ev.map || player.location.map) && await deltaTalk(script, ev)) return;
     // Hoenn's: Emerald's scripts (ui/hoenn-script.js), and its maps' scenes as you come in.
     if (/^(enter|arrive):/.test(script) && isHoenn(script.replace(/^\w+:/, ""))) {
       const due = hoenn.frameScript(script.replace(/^\w+:/, ""), /^enter:/.test(script));
@@ -8056,6 +8059,235 @@
     return { species: out[Math.floor(Math.random() * out.length)], level: 40 };
   }
 
+  // ---------- The Delta Episode (this game's own, after Omega Ruby and Alpha Sapphire's) ----------
+  //
+  // After Hoenn's Hall of Fame (FLAG_SYS_GAME_CLEAR): a meteoroid is falling on Hoenn. player.flags.delta:
+  //   0 (not yet)  Mossdeep's Space Center, 1F, as you come in: its director and Steven tell you of it,
+  //                and Zinnia, the Draconids' lorekeeper, comes in and battles you; then she's off
+  //   1            Meteor Falls: a Draconid elder tells the old story (the sky's protector, Rayquaza)
+  //                and sends you up the Sky Pillar
+  //   2            the Sky Pillar's top: Zinnia again, a battle; Rayquaza answers her call (yours, if
+  //                you have one), and carries you up into space (ui/rayquaza-scene.js's flight),
+  //                into the meteoroid, where Deoxys waits: Lv. 80, in the meteoroid's heart; the
+  //                meteoroid breaks apart and you're back at the Space Center
+  //   3            done; 2F's researcher has found a strange energy signature in the sealed
+  //                observation room, and unseals its door (4): Jirachi, below
+  // Zinnia's picture and sheet are Emerald's Hex Maniac's recoloured (tools/build-delta-episode.js).
+  const DELTA = { SC1: "MossdeepCity_SpaceCenter_1F", SC2: "MossdeepCity_SpaceCenter_2F", DECK: "MossdeepCity_SpaceCenter_ObservationDeck",
+    FALLS: "MeteorFalls_1F_1R", TOP: "SkyPillar_Top" };
+  const DELTA_PEOPLE = [
+    [DELTA.SC1, { id: 960, localId: "LOCALID_DELTA_STEVEN", x: 9, y: 3, movement: "face_down", script: "Delta_EventScript_Steven", sprite: "em_steven" }],
+    [DELTA.FALLS, { id: 961, localId: "LOCALID_DELTA_ELDER", x: 24, y: 18, movement: "face_right", script: "Delta_EventScript_Elder", sprite: "em_old_woman" }],
+    [DELTA.TOP, { id: 962, localId: "LOCALID_DELTA_ZINNIA", x: 12, y: 11, movement: "face_down", script: "Delta_EventScript_Zinnia", sprite: "em_zinnia" }]];
+  for (const [map, p] of DELTA_PEOPLE) {
+    const m = window.WORLD_MAPS[map];
+    if (!m || m.people.some((q) => q.localId === p.localId)) continue;
+    const look = lookOf(p.sprite) || { sprite: p.sprite, width: 16, height: 32, frames: 9 };
+    m.people.push(Object.assign({ rangeX: 0, rangeY: 0, flag: null, text: null }, p, { width: look.width, height: look.height, frames: look.frames }));
+  }
+  ["Delta_EventScript_Steven", "Delta_EventScript_Elder", "Delta_EventScript_Zinnia", "SpaceCenter_EventScript_DeckDoor", "SpaceCenter_EventScript_WishRock"].forEach((n) => SPECIAL.add(n));
+  const hoennCleared = () => hoenn.flag("FLAG_SYS_GAME_CLEAR") || hoenn.flag("FLAG_IS_CHAMPION");
+  const deltaStage = () => player.flags.delta | 0;
+  const ownsSpecies = (sp) => player.party.concat(...(player.boxes || [])).some((r) => r && !r.egg && r.species === sp);
+  // (Who's there: Steven at the Space Center but while you're off after the meteoroid; the elder from the
+  // telling on; Zinnia at the Sky Pillar's top while she waits for you there.)
+  function deltaVisible(person) {
+    if (person.localId === "LOCALID_DELTA_STEVEN") return hoennCleared() && deltaStage() !== 1 && deltaStage() !== 2;
+    if (person.localId === "LOCALID_DELTA_ELDER") return deltaStage() >= 1;
+    if (person.localId === "LOCALID_DELTA_ZINNIA") return deltaStage() === 2;
+    return undefined;
+  }
+  // The scenes as you come in: 1F's at the start, the Sky Pillar's top, 2F's after Jirachi.
+  function deltaDue(script) {
+    script = String(script || "").replace(/^enter:/, "arrive:");   // (through a door, or over a map's edge, the same)
+    if (script === "arrive:" + DELTA.SC1) return hoennCleared() && !deltaStage();
+    if (script === "arrive:" + DELTA.TOP) return deltaStage() === 2;
+    if (script === "arrive:" + DELTA.SC2) return !!player.flags.jirachiMet && !player.flags.jirachiAfter;
+    return false;
+  }
+  // Zinnia's teams: Omega Ruby and Alpha Sapphire's Pokémon, at the post-game's levels; her ace a Mega Salamence.
+  const zinniaTeam = (second) => (second
+    ? [["Tyrantrum", 70], ["Noivern", 70], ["Goodra", 71], ["Altaria", 71], ["Salamence", 74, { item: "salamencite", teraType: "Dragon", teraAce: true }]]
+    : [["Tyrunt", 62], ["Shelgon", 62], ["Altaria", 63], ["Salamence", 65, { item: "salamencite" }]])
+    .map(([sp, lv, extra]) => Object.assign(Party.create(sp, lv, { ivs: 31 }), extra || {}));
+  async function zinniaBattle(second) {
+    const team = zinniaTeam(second);
+    const outcome = await battle("trainer", { foe: { name: "Lorekeeper Zinnia", team, pic: "zinnia", tera: second },
+      defeatText: second ? ["Zinnia: Hah… So that's how strong you are.", "Then the sky's protector will listen to you, too."]
+        : ["Zinnia: Not bad. Not bad at all!"], prize: 200 * Math.max(...team.map((r) => r.level)),
+      music: second ? "em_vs_champion" : "em_vs_elite_four" });
+    if (outcome === "won") { show("world"); await Overworld.resume(); }
+    return outcome;
+  }
+  async function deltaScene(script) {
+    script = script.replace(/^enter:/, "arrive:");
+    const f = player.flags, Z = "LOCALID_DELTA_ZINNIA_1F", D = "LOCALID_SPACE_CENTER_1F_SCIENTIST_1";
+    if (script === "arrive:" + DELTA.SC1) {
+      await Overworld.act([{ who: D, moves: ["face_down", "emote_exclamation_mark"] }]);
+      await say(["Director: You're the Champion,\naren't you? Thank goodness!", "Our telescopes have found a\nmeteoroid. A huge one.",
+        "It's falling toward Hoenn.\nIf nothing changes, it will strike\nin a matter of days."]);
+      await say(["Steven: Devon is working on a way\nto send it somewhere else, but\nthere isn't time to finish it.",
+        "We need another answer, " + player.name + "."]);
+      music("mus_encounter_girl");
+      const from = await walkIn(Z, lookOf("em_zinnia"), { x: 7, y: 9 }, [{ x: 7, y: 6, face: "up" }, { x: 8, y: 6, face: "up" }]);
+      await say(["???: There is another answer.\nThere always was.", "Zinnia: I'm Zinnia. My people, the\nDraconids, have watched the sky\nfor a thousand years.",
+        "The one who guards Hoenn's sky\ncan stop that rock. But only if\nsomeone strong enough asks it.", "So. Let's see how strong the\nChampion really is!"]);
+      Screen.say("");
+      if (await zinniaBattle(false) !== "won") { if (Overworld.personPosition(Z)) Overworld.removeObject(Z); return; }
+      await say(["Zinnia: You'll do.", "Come to Meteor Falls. My people's\nstory is told there. You'd better\nhear it before the sky falls."]);
+      if (from) await walkOut(Z, from); else Overworld.removeObject(Z);
+      await say(["Steven: Rayquaza… Is that what\nshe means?", "Go, " + player.name + ". I'll help the\nSpace Center here."]);
+      f.delta = 1;
+      music((window.WORLD_MAPS[player.location.map] || {}).music);
+      await persist();
+      return;
+    }
+    if (script === "arrive:" + DELTA.TOP) {
+      if (!f.deltaZinnia) {
+        await say(["Zinnia: So you climbed all the way\nup. Good.", "Up there, past the clouds, the\nmeteoroid is coming.",
+          "When the sky's protector rises, it\nwill only carry someone it trusts.\nShow me you're that someone!"]);
+        Screen.say("");
+        if (await zinniaBattle(true) !== "won") return;
+        f.deltaZinnia = true;
+        await persist();
+      }
+      await deltaRide();
+      return;
+    }
+    if (script === "arrive:" + DELTA.SC2) {
+      // After Jirachi: the readings settle; the instruments glitch. (Out of the doorway first: the scene comes before the step out.)
+      const R = "LOCALID_SPACE_CENTER_2F_SCIENTIST";
+      if (Overworld.position().y === 1) await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
+      await Overworld.act([{ who: R, moves: ["emote_exclamation_mark"] }]);
+      await say(["Researcher: The energy readings\nfrom the observation room…", "They've settled. Whatever it was,\nit's gone quiet."]);
+      sfx("se_pc_off");
+      await Overworld.shake(16, { x: 1, y: 0, delay: 1 });
+      await screenFlash([255, 255, 255], 3);
+      await say(["Researcher: Wh-what?! The\ninstruments just…", "For a moment there, they recorded\nsomething impossible.",
+        "A wish… granted? Ha… ha ha. I must\nbe working too hard."]);
+      f.jirachiAfter = true;
+      await persist();
+    }
+  }
+  // Rayquaza carries you up, into the meteoroid; Deoxys; the meteoroid breaks apart; back to the Space Center.
+  async function deltaRide() {
+    const f = player.flags, yours = ownsSpecies("Rayquaza");
+    await say(["Zinnia: Lord Rayquaza! Protector of\nthe sky! Hear us!"].concat(yours
+      ? ["{PLAYER}'s Rayquaza let out a\ngreat roar!", "Zinnia: It answers you. Of course it\ndoes. Go on, Champion. Ride it!"]
+      : ["A roar came down from beyond the\nclouds, and Rayquaza descended!", "Zinnia: It came… Go on, Champion.\nIt will carry you. Ride it!"]));
+    cry("Rayquaza");
+    await sleep(600);
+    Screen.say("");
+    await Overworld.fadeToBlack();
+    await RayquazaScene.play($("#overlay"), 2, { cry, sfx, music });
+    $("#overlay").classList.add("hidden");
+    show("world");
+    await say(["Rayquaza tore up through the sky,\npast the clouds, into the black of\nspace…", "…and smashed into the meteoroid!",
+      "Deep in the meteoroid's heart,\nsomething stirred…"]);
+    if (!canBattle()) return;
+    const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create("Deoxys-Normal", 80)] }, music: "mus_vs_deoxys", terrain: "space" });
+    if (outcome === "lost") return;
+    show("world");
+    await Overworld.resume();
+    await Overworld.fadeToBlack();
+    await say(["The meteoroid broke apart into a\nshower of shooting stars!", "Rayquaza carried {PLAYER} back down\nto Hoenn…"]);
+    f.delta = 3;
+    delete f.deltaZinnia;
+    await Overworld.teleport({ map: DELTA.SC1, x: 7, y: 6, facing: "up" });
+    await Overworld.fadeFromBlack();
+    await say(["Director: The meteoroid… It's gone!\nIt simply broke apart!", "Hoenn is safe. You've saved us all,\n" + player.name + "!",
+      "Ah, and one more thing. Our\nresearcher upstairs has found\nsomething odd. Would you see him?"]);
+    music((window.WORLD_MAPS[player.location.map] || {}).music);
+    await persist();
+  }
+  async function deltaTalk(script, ev) {
+    const f = player.flags, st = deltaStage();
+    if (script === "Delta_EventScript_Steven") {
+      await say(st >= 3 ? ["Steven: The sky over Hoenn is clear\nagain, thanks to you.", "I'll never forget it, " + player.name + "."]
+        : ["Steven: A meteoroid… Hoenn has seen\nfalling stars before, but never one\nlike this."]);
+      return true;
+    }
+    if (script === "Delta_EventScript_Elder") {
+      if (st === 1) {
+        await say(["Elder: So you are the one Zinnia\nspoke of. Listen, then.", "Long ago a great rock fell from\nthe sky. Our people's ancestors\nfeared the end of the world.",
+          "But the sky's protector, Lord\nRayquaza, came down and broke the\nrock apart before it could fall.", "We Draconids have told that story\never since, so we'd be ready if a\nstar ever fell again.",
+          "Zinnia has gone up the Sky Pillar\nto call Lord Rayquaza.", "Go to her, child. Hurry."]);
+        f.delta = 2;
+        await persist();
+      } else await say(st >= 3 ? ["Elder: The star broke apart over\nthe sea. The story ends well, this\ntime.", "Thank you, child."] : ["Elder: Hurry to the Sky Pillar."]);
+      return true;
+    }
+    if (script === "Delta_EventScript_Zinnia") { await deltaScene("arrive:" + DELTA.TOP); return true; }
+    if (script === "MossdeepCity_SpaceCenter_2F_EventScript_Scientist" && st === 3) {
+      await say(["Researcher: Ah, the hero of the hour!", "Ever since the meteoroid broke up,\nwe've been picking up a strange\nenergy signature.",
+        "It's coming from the observation\nroom up here. That room's been\nsealed for years.", "I've unsealed the door. Would you\ntake a look? I can't explain it."]);
+      f.delta = 4;
+      sfx("se_door");
+      applyPatches(player.location.map);
+      await persist();
+      return true;
+    }
+    if (script === "SpaceCenter_EventScript_DeckDoor") {
+      await say(st >= 4 ? ["The observation room's door is open."] : ["OBSERVATION ROOM", "The door is sealed.\nAUTHORIZED PERSONNEL ONLY."]);
+      return true;
+    }
+    if (script === "SpaceCenter_EventScript_WishRock") { await wishRock(); return true; }
+    return false;
+  }
+
+  // ---------- Jirachi (this game's own: the Space Center's observation deck) ----------
+  //
+  // Once the 2F researcher has unsealed it: a small observation deck, a wide window on the night sky, a
+  // white rock in the middle (tools/build-delta-episode.js). Check the rock and make a wish (only words);
+  // it glows, the stars outside line up, and Jirachi appears, to test you: a wild Jirachi, Lv. 50. Caught
+  // or beaten it's gone for good (and 2F's researcher sees the readings settle); run from it, and it's back
+  // the next time you wish.
+  const deckFx = new Set();
+  async function screenFlash(rgb, times) {
+    const c = $("#overlay"), g = c.getContext("2d");
+    c.classList.remove("hidden");
+    for (let n = 0; n < (times || 1); n++) for (let a = 0; a <= 8; a++) {
+      g.clearRect(0, 0, c.width, c.height);
+      g.fillStyle = "rgba(" + rgb.join(",") + "," + (1 - Math.abs(a - 4) / 4) + ")";
+      g.fillRect(0, 0, c.width, c.height);
+      await sleep(30);
+    }
+    g.clearRect(0, 0, c.width, c.height);
+    c.classList.add("hidden");
+  }
+  async function wishRock() {
+    const f = player.flags, J = "LOCALID_DECK_JIRACHI";
+    if (f.jirachiMet) { await say(["It's a white rock.", "Its warmth has faded."]); return; }
+    await say(["It's a strange white rock.", "It feels warm… as if it's listening."]);
+    if (!(await confirm("Make a wish?"))) return;
+    await say("{PLAYER} closed their eyes and made\na wish…");
+    Screen.say("");
+    music(null);
+    await sleep(500);
+    deckFx.add("glow"); sfx("se_m_heal_bell");
+    await sleep(1200);
+    deckFx.add("stars"); sfx("se_m_moonlight");
+    await say("Outside the window, the stars drew\ninto a line across the sky…");
+    Screen.say("");
+    await screenFlash([255, 250, 210], 1);
+    Overworld.addObject(J, { x: 4, y: 2, facing: "down" }, { sprite: "follow/385", width: 32, height: 32, frames: 9, offsetX: -8 });
+    cry("Jirachi");
+    await sleep(700);
+    await say(["Jirachi: …", "A wish only holds power if the one\nwho makes it is strong enough to\nprotect it."]);
+    Screen.say("");
+    const outcome = canBattle() ? await battle("wild", { foe: { name: "Wild", team: [Party.create("Jirachi", 50)] }, music: "mus_vs_legend" }) : "ran";
+    if (outcome === "lost") { deckFx.clear(); Overworld.removeObject(J); return; }
+    show("world");
+    await Overworld.resume();
+    if (Overworld.personPosition(J)) Overworld.removeObject(J);
+    deckFx.clear();
+    if (outcome === "ran") { await say(["Jirachi vanished into the starlight…", "Maybe it will come again for\nanother wish."]); return; }
+    if (outcome === "won") await say("Jirachi faded back into the stars…");
+    f.jirachiMet = true;
+    music((window.WORLD_MAPS[player.location.map] || {}).music);
+    await persist();
+  }
+
   // ---------- The GS Ball (Pokémon Crystal's) ----------
   //
   // This game's way to it: once you've been through the Hall of Fame, Prof.
@@ -11540,6 +11772,10 @@
   // Which of a map's patches (WORLD_MAPS[..].patches) are on now.
   function mapPatches(map) {
     const f = player.flags;
+    // (The Space Center's sealed door, open once the Delta Episode's done and 2F's researcher has unsealed it;
+    // its observation deck's rock aglow and stars in line while you wish.)
+    if (map === "MossdeepCity_SpaceCenter_2F") return [(f.delta | 0) >= 4 ? "open" : "sealed"];
+    if (map === "MossdeepCity_SpaceCenter_ObservationDeck") return [...deckFx];
     if (map === "OutskirtStand") return Orre.patches(map, f);
     if (map === "VermilionCity_Gym") {
       if (f.vermilionGymLocksOpen) return ["off"];
@@ -12535,6 +12771,7 @@
       // The Hall of Fame (ending the story: EverGrandeCity_HallOfFame): the team on record, the Hall of Fame screen, then home.
       case "GameClear": {
         await api.flush();
+        hoenn.setFlag("FLAG_SYS_GAME_CLEAR", true);   // (Emerald's GameClear sets it, for the post-game's scripts, and the Delta Episode)
         const f = player.flags, h = f.hoennRespawn || { map: "LittlerootTown_BrendansHouse_2F", x: 4, y: 2 };
         League.reset(f);
         player.party.forEach(Party.heal);
@@ -13047,6 +13284,7 @@
   // ---------- Exploring ----------
 
   function special(script) {
+    if (deltaDue(script)) return true;   // (the Delta Episode's scenes as you come in)
     // Johto: its scripts (a step's, while its var has its value), its
     // Apricorn trees, and its maps' frame tables as you come in.
     // Hoenn: a step's scene while its var has its value, and its maps' frame tables as you come in.
