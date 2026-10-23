@@ -625,6 +625,23 @@ module.exports = function port(HN, out, opts) {
     for (const S of Object.keys(o.hgssWarps)) o.hgssWarps[S] = o.hgssWarps[S].map((j) => (j == null ? null : map[j]));
   }
   for (const G of paired) for (const w of out[G].warps) if (w.map && renumber[w.map] && w.warp != null) w.warp = renumber[w.map][w.warp];
+  // (And a door that led only to one of them, gone too: the Lighthouse's other side of each. Their own maps' doors
+  // renumbered again, and the doors to those.)
+  for (let again = true; again;) {
+    again = false;
+    const re = {};
+    for (const G of paired) {
+      const o = out[G];
+      if (!o.warps.some((w) => w.map && renumber[w.map] && w.warp === null && !w.hgssTo)) continue;
+      const map = [];
+      let k = 0;
+      o.warps.forEach((w, i) => { map[i] = w.map && renumber[w.map] && w.warp === null && !w.hgssTo ? null : k++; });
+      re[G] = map;
+      o.warps = o.warps.filter((w, i) => map[i] != null);
+      for (const S of Object.keys(o.hgssWarps)) o.hgssWarps[S] = o.hgssWarps[S].map((j) => (j == null ? null : map[j]));
+    }
+    for (const G of paired) for (const w of out[G].warps) if (w.map && re[w.map] && w.warp != null) { w.warp = re[w.map][w.warp]; if (w.warp === null) again = true; }
+  }
   // (HGSS's door numbers on maps drawn from Heart & Soul's: theirs there.)
   for (const G of paired) for (const w of out[G].warps) if (w.hgssTo) {
     const list = (out[w.map] && out[w.map].hgssWarps && out[w.map].hgssWarps[w.hgssTo]) || [];

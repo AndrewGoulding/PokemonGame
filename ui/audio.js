@@ -257,7 +257,10 @@
       const before = current && { name: current.name, at: position(current) };
       fanfareDepth++;
       const frames = /^(gs_|em_)/.test(pick(name) || "") ? 0 : FANFARE_FRAMES[name];   // (HGSS's and Emerald's play to their end)
-      await Promise.race([start(name, 0, 0.05)].concat(frames ? [new Promise((r) => setTimeout(r, frames * 1000 / 60))] : []));
+      // (A song that loops never ends by itself: once through it, then; and never more than 20 seconds, whatever it is.)
+      const s = pick(name) && song(pick(name)), once = s && s.loopEnd != null ? s.loopEnd * 1000 : 20000;
+      await Promise.race([start(name, 0, 0.05), new Promise((r) => setTimeout(r, Math.min(once, 20000)))]
+        .concat(frames ? [new Promise((r) => setTimeout(r, frames * 1000 / 60))] : []));
       fanfareDepth--;
       if (fanfareDepth) return;
       const next = wanted || (before && before.name);
