@@ -2169,8 +2169,10 @@ if (window.JOHTO_TOWN_MAP) {
     player: () => ({ name: "GOLD", location: { map: "VioletCity", x: 1, y: 1 } }), johto: () => johto, map: () => "VioletCity", isGirl: () => false,
     sfx() {}, music() {}, mapMusic() {}, fanfare() {}, say: async (p) => { said.push(...[].concat(p)); }, confirm: async (q) => { said.push(q); return yes; },
     giveItem: async () => {}, hasItem: () => false, beaten: (id) => !!flags[id], setBeaten: (id, on) => { flags[id] = on; },
-    badges: () => ({ johto: 2, all: 10 }), dex: () => ({ seen: 0, caught: 0 }), caught: () => false, dayCare: () => [], frame: () => 0
+    badges: () => ({ johto: 2, all: 10 }), dex: () => ({ seen: 0, caught: 0 }), caught: () => false, dayCare: () => [], frame: () => 0,
+    money: () => wallet, addMoney: (n) => { wallet += n; }
   });
+  let wallet = 500;
   s.f.FLAG_GOT_POKEGEAR = true;
   assert(gear.has() && gear.registered(10) && !gear.registered(4));
   // GetPhoneBookRematch: nothing until he wants one; then his party again until the
@@ -2221,13 +2223,15 @@ if (window.JOHTO_TOWN_MAP) {
   const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
   assert(/<script src="ui\/pokegear\.js"><\/script>/.test(html) && /key: "gear", label: "Pokégear"/.test(gameJs) && /gear\.step\(\)/.test(gameJs));
   assert(["PhoneCall", "RegisterPokegearCard", "GetPhoneBookRematch", "UnsetPhoneCallTrigger"].every((c) => scriptJs.includes('case "' + c + '"')));
-  // Mom (src/mom_gift.c): saving a quarter of each prize once you've said yes, her gifts
-  // as the savings pass their marks, the deliveryman with them; Mom's number from the start.
-  assert(gear.registered(0), "Mom's number");
-  assert.strictEqual(gear.savePrize(4000), 0, "not saving yet");
+  // Mom: not on the Pokégear, and saving nothing (she's Ethan's mother here, not yours); an older save's
+  // savings come back to you, and a gift she'd already bought is still with the deliveryman.
+  assert(!gear.registered(0), "no Mom's number");
+  s.phone.unshift(0);
+  assert(!gear.registered(0), "an older save's Mom's number gone");
   s.f.FLAG_SYS_MOMS_SAVINGS = true;
-  assert.strictEqual(gear.savePrize(4000), 1000);
-  assert(s.gear.mom.balance === 1000 - 600 && plain(s.gear.mom.queue).join() === "super-potion,1" && !s.f.FLAG_HIDE_MOM_GIFT_DELIVERYMAN && s.gear.triggers[12], "a Super Potion bought, the deliveryman there, her call due");
+  s.gear.mom = { balance: 1200, queue: [["super-potion", 1]], given: [0] };
+  assert.strictEqual(gear.savePrize(4000), 0, "nothing saved");
+  assert(wallet === 500 + 1200 && s.gear.mom.balance === 0 && !s.f.FLAG_SYS_MOMS_SAVINGS, "her savings back: " + wallet);
   said.length = 0;
   gear.deliveryman().then(() => {
     assert(s.gear.mom.queue.length === 0 && s.f.FLAG_HIDE_MOM_GIFT_DELIVERYMAN && /package for you/.test(said.join(" ")), "the deliveryman: " + said.join(" / "));

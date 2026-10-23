@@ -20,8 +20,9 @@
 //   gear.encounterRate()          // the radio's March (x2) or Lullaby (x0.5) on wild Pokémon, else 1
 //   gear.radioOn(map)             // the radio still playing there (the map's music waits)
 //   gear.passwordSet()            // GetBuenasPassword: today's password (0-29, a new one each day)
-//   gear.savePrize(prize)         // a battle's prize: what Mom saves of it (taken from it), or 0
-//   await gear.momHome()          // talking to Mom at home: her bank, once she's on the Pokégear (true)
+//   gear.savePrize(prize)         // a battle's prize: what Mom saves of it, 0 (she doesn't, here; an older save's
+//                                 // savings go back in your wallet)
+//   await gear.momHome()          // talking to Mom at home: false (no bank here; an older save's savings back too)
 //   await gear.talkPerson(person, map)  // the deliveryman, a Gym Leader with their number or
 //                                       // at the Fighting Dojo: true if they had something to do
 //   gear.visible(person)          // a Gym Leader at the Dojo: there while waiting for you (or undefined)
@@ -70,13 +71,12 @@
   const CALLERS = new Set([T.GENERIC, T.GYM_LEADER, T.FRIEND, T.BUENA, T.IRWIN]);
   // (HGSS's ten minutes, here in steps, three times over, and a third of the time a call: someone rings about every nine hundred steps.)
   const CALL_STEPS = 300, CALL_CHANCE = 33;
-  // The call triggers' calls (ov02_02253C84): who, and what they say (12: Mom's, she's bought you something).
-  const TRIGGERS = { 0: [1, 13], 1: [1, 7], 2: [15, 85], 3: [9, 93], 12: [0, 27],
+  // The call triggers' calls (ov02_02253C84): who, and what they say (not 12, Mom's: she isn't on your Pokégear here).
+  const TRIGGERS = { 0: [1, 13], 1: [1, 7], 2: [15, 85], 3: [9, 93],
     // (Baoba's: the new Pokémon in an Area, his next test, the objects: ui/johto-safari.js.)
     6: [24, null], 7: [24, 142], 8: [24, 143], 9: [24, 144], 10: [24, 145] };
-  // Mom (src/mom_gift.c, save_pokegear.c): her savings' cap, and how many
-  // things she can have waiting for you with the deliveryman.
-  const MOM_MAX = 999999, MOM_QUEUE = 5, MOM_STORY = "story";
+  // (The most money you can hold: an older save's savings with Mom, given back, no more than that.)
+  const MOM_MAX = 999999;
   // The Gym Leaders this game's Gyms have (FireRed's in Kanto, by their
   // scripts; HGSS's in Johto, by their sprite there), and how many can wait
   // at the Dojo at once (isDojoFull's five).
@@ -98,8 +98,9 @@
       s.phone = s.phone || [];
       return s.gear || (s.gear = { cards: [], seeking: {}, gifts: {}, triggers: {}, called: {} });
     };
-    // (Mom's number is in from the start: HGSS's Pokégear has it.)
-    const numbers = () => { state(); const n = J().state().phone; if (!n.includes(0) && has()) n.unshift(0); return n; };
+    // (Not Mom's: HGSS's Pokégear has her number from the start, but she's Ethan's mother here, not yours.
+    // An older save's has it taken out.)
+    const numbers = () => { state(); const n = J().state().phone; if (n.includes(0)) n.splice(n.indexOf(0), 1); return n; };
     const registered = (i) => numbers().includes(i);
     const register = (i) => { if (!registered(i)) numbers().push(i); };
     const has = () => J().flag("FLAG_GOT_POKEGEAR");
@@ -247,7 +248,7 @@
           if (incoming) return said(i, 15 + 2 * tod + girl(), 21 + rnd(9));
           return local ? scripted(i, 98, false, 0) : said(i, 3 + 2 * tod + girl(), 10 + rnd(3));
         }
-        case T.MOM: return mom(incoming, script);
+        case T.MOM: return false;   // (not in this game: she's Ethan's mother, not yours)
         case T.GYM_LEADER: return leaderCall(i, incoming);
         case T.BAOBA: {
           // (His calls change the Safari Zone, and say which Areas have new Pokémon: env.baobaCall.)
@@ -263,35 +264,6 @@
       }
     }
 
-    // Mom (PhoneCall_GetScriptId_Mother, GearPhoneCall_Mother): at home, how
-    // strange you sound on the phone; before you've told the officer your
-    // rival's name and talked to her, Elm's errand; else what she says about
-    // where you are (by HGSS's map: Kanto's for this game's Kanto), then, unless
-    // she's things waiting for you with the deliveryman, your savings: keep
-    // saving, or start? Her own call (the story's, PhoneCall 0 on Route 30:
-    // should she save your money?) and her call that she's bought you something.
-    // (Her home is this game's: Pallet Town's.)
-    const atHome = () => /^PalletTown_PlayersHouse_/.test(env.map());
-    function mom(incoming, script) {
-      const c = P().contacts[0], b = Object.assign(buffers(0), { 10: momState().balance }), msg = (n) => fill(c.msgs[n], b);
-      const askSaving = async (pages) => {
-        const yes = await ask(pages);
-        J().setFlag("FLAG_SYS_MOMS_SAVINGS", yes);
-        await talk(msg(yes ? 25 : 26));
-      };
-      if (script === MOM_STORY) return async () => { J().setFlag("FLAG_TALKED_TO_MOM_AFTER_NAMING_RIVAL", true); await askSaving(msg(22)); };
-      if (atHome()) return scripted(0, 23, false, 0);
-      if (incoming) return scripted(0, script != null ? script : 27, true, 0);
-      if (!J().flag("FLAG_GAVE_RIVAL_NAME_TO_OFFICER")) return scripted(0, 25, false, 0);
-      if (!J().flag("FLAG_TALKED_TO_MOM_AFTER_NAMING_RIVAL")) return scripted(0, 26, false, 0);
-      return async () => {
-        const at = hgssMap(env.map()), param = at && P().momCall[at] != null ? P().momCall[at] : 12;
-        await talk(msg(7 + param));
-        if (momState().queue.length >= MOM_QUEUE) { await talk(msg(21)); return; }
-        const on = J().flag("FLAG_SYS_MOMS_SAVINGS"), saved = momState().balance;
-        await askSaving(msg(on ? (saved ? 23 : 27) : (saved ? 24 : 28)));
-      };
-    }
     // A Gym Leader (GearPhoneCall_GymLeader_Outgoing): at the Dojo, they're
     // right here; until you've all sixteen Badges, not yet; waiting for you
     // already; not their day and time (the phone book's), not now; else a
@@ -584,7 +556,7 @@
     // A script's call (PhoneCall who, 2, n): Elm's story calls, Oak's and Baoba's.
     async function call(who, kind, n) {
       if (!P()) return;
-      const script = who === 0 ? MOM_STORY : who === 1 ? P().elmCalls[n] : who === 2 ? P().oakCall : who === 24 ? P().baobaCall : null;
+      const script = who === 0 ? null : who === 1 ? P().elmCalls[n] : who === 2 ? P().oakCall : who === 24 ? P().baobaCall : null;
       if (script == null) return;
       await phone(who, true, script);
     }
@@ -809,43 +781,17 @@
 
     // ---------- Mom's savings ----------
     //
-    // While she's saving (FLAG_SYS_MOMS_SAVINGS: she asks on the phone), a
-    // quarter of each battle's prize goes to her (sub_0205230C), up to
-    // $999,999. As your savings pass each mark of hers she buys you something
-    // with them (MomGift_TryEnqueueGiftOnBalanceChange: HGSS's nine, in turn,
-    // and otherwise a Berry, five of one of seventeen, each time they pass
-    // another $3,000), up to five waiting, and calls to say so; Johto's Poké
-    // Marts' deliveryman has it for you (std_moms_gift_deliveryman). At home
-    // she'll give you some back, or keep more (her bank).
+    // Not in this game: HGSS's Mom saves some of each prize and buys you things with it, but she's Ethan's mother
+    // here, not yours. Nothing's saved; an older save's savings come back to you, and what she'd bought already is
+    // still with Johto's Poké Marts' deliveryman (std_moms_gift_deliveryman) until you take it.
     const momState = () => { const g = state(); return g.mom || (g.mom = { balance: 0, queue: [], given: [] }); };
-    function savePrize(prize) {
+    function refundSavings() {
       const m = momState();
-      if (!J().flag("FLAG_SYS_MOMS_SAVINGS") || m.balance >= MOM_MAX) return 0;
-      let d = Math.floor(prize / 4);
-      if (d <= 0) return 0;
-      if (m.balance + d >= MOM_MAX) d = MOM_MAX - m.balance;
-      const old = m.balance;
-      m.balance += d;
-      if (buyGifts(old)) trigger(12, true);
-      syncDeliveryman();
-      return d;
+      if (J().flag("FLAG_SYS_MOMS_SAVINGS")) J().setFlag("FLAG_SYS_MOMS_SAVINGS", false);
+      if (m.balance > 0) { env.addMoney(Math.min(m.balance, Math.max(0, MOM_MAX - env.money()))); m.balance = 0; }
     }
-    function buyGifts(old) {
-      const m = momState(), M = P().mom, spend = (n) => { m.balance = Math.max(0, m.balance - n); };
-      if (m.queue.length >= MOM_QUEUE) return false;
-      let bought = 0;
-      for (let i = 0; i < M.gifts.length; i++) {
-        if (m.given.includes(i)) continue;
-        if (m.balance < M.gifts[i][1]) break;
-        m.given.push(i); m.queue.push([M.gifts[i][0], 1]); spend(M.gifts[i][2]); bought++;
-        if (m.queue.length >= MOM_QUEUE) break;
-      }
-      if (bought) return true;
-      if (Math.floor(m.balance / M.berryEvery) <= Math.floor(old / M.berryEvery)) return false;
-      const [berry, n, cost] = M.berries[rnd(M.berries.length)];
-      m.queue.push([berry, n]); spend(cost);
-      return true;
-    }
+    // (A battle's prize: nothing of it's saved.)
+    function savePrize() { if (P()) refundSavings(); return 0; }
     // (The deliveryman's there while she's something waiting for you: HGSS's flag for him.)
     const syncDeliveryman = () => { const hide = !momState().queue.length; if (J().flag("FLAG_HIDE_MOM_GIFT_DELIVERYMAN") !== hide) J().setFlag("FLAG_HIDE_MOM_GIFT_DELIVERYMAN", hide); };
     // The deliveryman (scr_seq_0144_002): good morning, day or evening (ScrCmd_379), a package from your mom.
@@ -859,35 +805,10 @@
       syncDeliveryman();
       await env.say(fill(D[20], b));
     }
-    // Mom at home (scr_seq_T20R0201's _0275), once she's on the Pokégear: is
-    // this about your money? WITHDRAW, DEPOSIT MONEY, CHANGE (keep saving, or
-    // not) or EXIT; how much (BankTransaction), and her word on it.
+    // (Home: no bank. An older save's savings come back to you.)
     async function momHome() {
-      if (!P() || !has()) return false;
-      const H = P().mom.home, b = { 0: env.player().name }, m = momState(), say = (n) => env.say(fill(H[n], b));
-      const q = fill(H[20], b);
-      await env.say(q.slice(0, -1));
-      const k = await env.choose([29, 30, 31, 32].map((n) => H[n][0]), q[q.length - 1].replace(/\s+$/, ""));
-      if (k === 0) {
-        if (env.money() >= MOM_MAX) return say(28).then(() => true);
-        if (!m.balance) return say(22).then(() => true);
-        const n = await env.amount("How much do you want to take?", Math.min(m.balance, MOM_MAX - env.money()), { saved: m.balance, held: env.money() });
-        if (!n) return say(21).then(() => true);
-        m.balance -= n; env.addMoney(n); env.sfx("se_shop");
-        await say(24);
-      } else if (k === 1) {
-        if (m.balance >= MOM_MAX) return say(27).then(() => true);
-        if (!env.money()) return say(26).then(() => true);
-        const n = await env.amount("How much do you want to save?", Math.min(env.money(), MOM_MAX - m.balance), { saved: m.balance, held: env.money() });
-        if (!n) return say(21).then(() => true);
-        m.balance += n; env.addMoney(-n); env.sfx("se_shop");
-        await say(23);
-      } else if (k === 2) {
-        const yes = await env.confirm(fill(H[25], b)[0].replace(/\s+$/, ""));
-        J().setFlag("FLAG_SYS_MOMS_SAVINGS", yes);
-        await say(yes ? 17 : 18);
-      } else await say(21);
-      return true;
+      if (P() && has()) refundSavings();
+      return false;
     }
 
     // ---------- The Gym Leaders ----------

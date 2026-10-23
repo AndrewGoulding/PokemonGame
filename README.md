@@ -2767,16 +2767,11 @@ talk to them. When one calls wanting a rematch, talk to them and they battle
 with their rematch party (`GetPhoneBookRematch`: HGSS's tiers, `TRAINER_X_2`,
 `_3`, `_4`, the next as the story lets it: after the Radio Tower, the Elite
 Four, then Blue), and give their gift when beaten (Joey's HP Up); a gift
-they called about is theirs to give when you talk to them. **Mom** is in the
-phone book from the start: at home she sounds strange on the phone, and
-elsewhere she says something about where you are, then asks about your
-savings. Say yes and she keeps a quarter of each battle's prize (up to
-$999,999); as your savings pass HGSS's marks she buys you something with them
-(`src/mom_gift.c`: a Super Potion, Repel, Silk Scarf, Moon Stone, Choice
-Scarf, Focus Sash and so on, then Berries each $3,000 more) and calls to say
-so, and the deliveryman in any of Johto's Poké Marts has it for you. Talk to
-her at home (Pallet Town's, in this game) to withdraw or deposit money or stop
-saving. **Gym Leaders' rematches**: once you've won Johto's League, each of the
+they called about is theirs to give when you talk to them. **Mom** isn't in the phone book, and
+nobody saves your prize money or buys you things with it (HGSS's Mom does, but
+she's Ethan's mother here, not yours; in New Bark Town she only says hello). An
+older save's savings with her go back into your wallet, and anything she'd
+already bought is still with the deliveryman in Johto's Poké Marts. **Gym Leaders' rematches**: once you've won Johto's League, each of the
 sixteen Gym Leaders gives you their number when you talk to them in their Gym.
 Call them on their day and time (HGSS's phone book: Whitney on Saturday
 afternoons, Falkner on Saturday mornings, and so on) once you've all sixteen
