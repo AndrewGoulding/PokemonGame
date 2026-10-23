@@ -12991,6 +12991,29 @@
     if (at.x !== 8 || at.y !== 21) return null;
     return { type: "hoenn-script", label: "IslandCave_EventScript_OpenRegiEntrance" };
   }
+  // Cracked floors (Emerald's CrackedFloorPerStepCallback): the floor gives way under you and you fall to the floor
+  // below (where the map's OnResume's setholewarp says), unless the Bicycle's going flat out: then it gives way
+  // behind you. A hole stays a hole till you come back.
+  const HOLE_WARPS = { GraniteCave_B1F: "GraniteCave_B2F", SkyPillar_2F: "SkyPillar_1F", SkyPillar_4F: "SkyPillar_3F", MirageTower_2F: "MirageTower_1F", MirageTower_3F: "MirageTower_2F" };
+  function hoennCrackedStep() {
+    const at = Overworld.position(), m = window.WORLD_MAPS[at.map];
+    const c = m && m.cracked && HOLE_WARPS[at.map] && m.cracked.find((q) => q[0] === at.x && q[1] === at.y);
+    if (!c) return null;
+    const now = metatileSet[at.map] && metatileSet[at.map][at.y * m.width + at.x], hole = m.mt[c[2]][0];
+    if (now != null && now !== hole) return null;   // (a sound floor laid over it: Sky Pillar's, before Rayquaza wakes)
+    hoennMetatile(at.map, at.x, at.y, c[2], false);
+    if (now == null && Overworld.bikeFastest()) return null;
+    return { type: "hoenn-fall", map: HOLE_WARPS[at.map] };
+  }
+  // EventScript_FallDownHole: down to the same spot on the floor below (warphole).
+  async function hoennFall(to) {
+    const at = Overworld.position();
+    await sleep(333);
+    await Overworld.act([{ who: "player", moves: ["set_invisible"] }]);
+    sfx("se_fall");
+    await sleep(1000);
+    await Overworld.teleport({ map: to, x: at.x, y: at.y, facing: at.facing });
+  }
   // Ash on Route 113's and Jagged Pass's grass (Emerald's AshGrassPerStepCallback): walk through it and it falls off,
   // the grass under it showing till you come back, and with the Soot Sack it's gathered (VAR_ASH_GATHER_COUNT, to
   // 9,999: the Glass Workshop's).
@@ -13835,7 +13858,7 @@
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
-          return hoennRegiceStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
+          return hoennRegiceStep() || hoennCrackedStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
         adjustWild: (mon, table) => { const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
@@ -13890,6 +13913,7 @@
       else if (ev.type === "safari-over") { if (ev.hoenn) await runHoenn("SafariZone_EventScript_TimesUp"); else await safariOver(ev.text, false); }
       else if (ev.type === "johto-script") await runJohto(ev.js, null);
       else if (ev.type === "hoenn-script") await runHoenn(ev.label);
+      else if (ev.type === "hoenn-fall") await hoennFall(ev.map);
       else if (ev.type === "wild") {
         if (!canBattle() && !safariOn()) continue;
         // Grass on routes; caves (and other maps) use their own scene.

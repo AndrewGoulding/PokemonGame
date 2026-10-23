@@ -1948,6 +1948,8 @@ the braille (shown in Braille's dots) and the Regis' puzzles as `src/braille_puz
 Sealed Chamber's DIG HERE (Dig is a field move, for a Pokémon that knows it: out of a cave too, as an Escape Rope),
 Wailord first and Relicanth last at its back wall, then Rock Smash in the Desert Ruins, Flash in the Ancient Tomb and a
 lap of Island Cave's wall,
+the cracked floors of Granite Cave, Sky Pillar and the Mirage Tower (they give way under you, down to the floor below,
+unless the Bicycle's going flat out: then they give way behind you, holes till you come back),
 the rotating-tile puzzles, the Mirage Tower and Rayquaza's scenes. The scene over Sootopolis is Emerald's own
 (`ui/rayquaza-scene.js`, its pictures from `tools/build-rayquaza-scene.js` into `assets/rayquaza-scene/`), its
 five scenes timed as `src/rayquaza_scene.c` times them: Groudon and Kyogre facing one another under the storm
