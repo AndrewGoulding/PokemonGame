@@ -9,10 +9,13 @@ const fs = require("fs");
 const path = require("path");
 const { readPng, writePng, readPal } = require("./png");
 
-module.exports = function emeraldTiles(EM) {
+// (opts: a hack's sizes, where it widens Emerald's primary tileset: { primaryTiles, primaryMetatiles, primaryPals },
+// as Pokémon Heart & Soul's 640, 640 and 7: its include/fieldmap.h.)
+module.exports = function emeraldTiles(EM, opts) {
   const P = (...p) => path.join(EM, ...p);
 
-  const NUM_PRIMARY_TILES = 512, NUM_PRIMARY_METATILES = 512, NUM_PRIMARY_PALS = 6;
+  const o = opts || {};
+  const NUM_PRIMARY_TILES = o.primaryTiles || 512, NUM_PRIMARY_METATILES = o.primaryMetatiles || 512, NUM_PRIMARY_PALS = o.primaryPals || 6;
 
   // Emerald's General tileset animations (TilesetAnim_General): VRAM tile, how
   // many tiles, the frames in order, and its slot in the 16-frame round.

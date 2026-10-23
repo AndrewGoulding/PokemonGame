@@ -2121,7 +2121,13 @@ blocks, each step's square told apart by its collision and its tiles' palettes
 buildings), painted in FireRed's style with a building of Kanto's at each door,
 of the kind the door leads to. It writes only pictures
 (`node tools/build-johto-crystal.js <checkout> --only=Map,Map --out=<dir>`):
-Crystal's layouts differ from HGSS's, so the game's maps still come from HGSS. In HGSS's Pokémon Centers the nurse stands behind HGSS's counter
+Crystal's layouts differ from HGSS's, so the game's maps still come from HGSS. A third,
+`tools/build-johto-hns.js`, draws them from
+[Pokémon Heart & Soul](https://github.com/PokemonHnS-Development/pokemonHnS), a GBA remake
+of Johto on the Emerald decomp, with its own hand-drawn GBA maps and tilesets
+(`node tools/build-johto-hns.js <checkout> <out dir> NewBarkTown VioletCity ...`),
+through `tools/lib/emerald-tiles.js` with Heart & Soul's wider primary tileset.
+It writes only pictures too, and none of Heart & Soul's art is in this repository. In HGSS's Pokémon Centers the nurse stands behind HGSS's counter
 and heals as Kanto's nurses do; the Wi-Fi and Union Room staff (this game has
 neither) aren't there, and the stairs down to HGSS's Wi-Fi floor go up
 instead, to FireRed's Pokémon Center 2F with its Move Relearner, Move Deleter,
