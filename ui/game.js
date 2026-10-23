@@ -13221,6 +13221,16 @@
         return true;
       }
       case "GetLilycoveSSTidalSelection": return true;
+      // A scrollable menu (src/field_specials.c's ShowScrollableMultichoice), VAR_0x8004's: the Battle Frontier's prize
+      // desks and move tutors, Slateport's Berry Powder shop.
+      case "ShowScrollableMultichoice": {
+        const items = (window.HOENN_SCRIPTS.scrollMulti || [])[+api.getVar("VAR_0x8004")];
+        if (!items) { api.set(127); return true; }
+        await api.flush();
+        const k = await hoennEnv.choose(items, null);
+        api.set(k < 0 ? 127 : k);
+        return true;
+      }
       // (On board, the voyage goes on as you walk about the ship: src/field_specials.c's cruise steps, 205 of them.)
       case "SetSSTidalFlag": hoenn.setFlag("FLAG_SYS_CRUISE_MODE", true); hoenn.setVar("VAR_CRUISE_STEP_COUNT", 0); return true;
       case "ResetSSTidalFlag": hoenn.setFlag("FLAG_SYS_CRUISE_MODE", false); return true;

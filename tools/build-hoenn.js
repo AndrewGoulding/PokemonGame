@@ -695,7 +695,17 @@ const hoennDex = (() => {
   return [...t.slice(i, t.indexOf("HOENN_DEX_COUNT", i)).matchAll(/HOENN_DEX_(\w+)/g)]
     .map((m) => dexByID[toID(m[1])] || Object.keys(dexByID).filter((k) => k.startsWith(toID(m[1]))).map((k) => dexByID[k])[0]);
 })();
-const hoennScripts = { songNames, seNames, gfx, hoennDex, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, trades, berryTrees, rotStart, decor: decorData.list, decorCategories: decorData.CATEGORIES, numConsts, consts: mapConsts };
+// The scrollable menus by their SCROLL_MULTI_* number (src/field_specials.c's sScrollableMultichoiceOptions; their
+// texts, src/strings.c's, keeping {CLEAR_TO} and {FONT_SMALL}): the Battle Frontier's prize desks and tutors, the Berry
+// Powder shop.
+const scrollMulti = (() => {
+  const strs = {};
+  for (const m of fs.readFileSync(P("src/strings.c"), "utf8").matchAll(/const u8 (gText_\w+)\[\] = _\("(.*)"\);/g)) strs[m[1]] = m[2];
+  const src = fs.readFileSync(P("src/field_specials.c"), "utf8"), at = src.indexOf("sScrollableMultichoiceOptions[][");
+  const label = (s) => cleanText(s.replace(/\{(CLEAR_TO \d+|FONT_SMALL)\}/g, (m, c) => "@@" + c.replace(" ", "~") + "@@"))[0].replace(/@@([\w~]+)@@/g, (m, c) => "{" + c.replace("~", " ") + "}");
+  return [...src.slice(at, src.indexOf("};", at)).matchAll(/\[(SCROLL_MULTI_\w+)\] =\s*\{([^}]*)\}/g)].map((m) => [...m[2].matchAll(/gText_\w+/g)].map((g) => label(strs[g[0]] || g[0])));
+})();
+const hoennScripts = { songNames, seNames, gfx, hoennDex, scrollMulti, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, trades, berryTrees, rotStart, decor: decorData.list, decorCategories: decorData.CATEGORIES, numConsts, consts: mapConsts };
 
 // ---------- The Town Map ----------
 // Each map's section (its name on the map, and where it is on it); a map whose section has no square (a cave's)
