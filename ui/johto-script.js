@@ -558,6 +558,9 @@
             await flush();
             lastBattle = await env.wildBattle(a[0], +getVar(a[1]) || 5);
             if (lastBattle === "lost") return;
+            // (The field coming back after a static Pokémon's battle: the map's OnLoad script, as HGSS runs it,
+            // which hides whoever was fought, as Route 36's Sudowoodo.)
+            if (z.hdr && z.hdr.load && flag("FLAG_ENGAGING_STATIC_POKEMON")) await run(zone, z.hdr.load, {});
             break;
           }
           // (A Rocket trap: a wild Pokémon jumps out. A battle alongside someone: each foe in turn.)
