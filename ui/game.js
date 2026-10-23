@@ -478,6 +478,7 @@
     if (opts.safari && player.flags.safari) player.flags.safari.balls = b.safari.balls;
     if (result.outcome === "caught") {
       if (player.flags.johtoRoamers) delete player.flags.johtoRoamers[foe.team[0].species];   // (a roaming beast caught: it roams no more)
+      if (player.flags.hoennRoamer === foe.team[0].species) delete player.flags.hoennRoamer;   // (and Hoenn's Latias or Latios)
       const record = Party.caught(foe.team[0], b.caught, ballUsed(b));
       delete record.teraAce;   // (a Tera Pokémon keeps its Tera Type)
       await addCaught(record, opts.keepCaught);
@@ -600,7 +601,7 @@
     // (In Hoenn: its last Pokémon Center, or, before you've used one, your bedroom: setrespawn.)
     const inHoennNow = isHoenn(player.location.map);
     const center = player.flags.lastCenter && (!inHoennNow || isHoenn(player.flags.lastCenter)) && centerOf(player.flags.lastCenter);
-    const hoennHome = inHoennNow && !center ? (player.flags.hoennRespawn || { map: "LittlerootTown_BrendansHouse_2F", x: 4, y: 2 }) : null;
+    const hoennHome = inHoennNow && !center ? (player.flags.hoennRespawn || hoennBedroom()) : null;
     const to = Object.assign({}, center || hoennHome || Player.HOME);
     music(null);
     Screen.say("");
@@ -7973,6 +7974,9 @@
   // ---------- Route 12 to Fuchsia City ----------
 
   const isGirl = () => !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl);
+  // (Your room in Littleroot, until a Pokémon Center's your place to come back to: Brendan's house, or May's for a girl, as
+  // the truck's step-off has it, ui/hoenn-changes.js.)
+  const hoennBedroom = () => ({ map: isGirl() ? "LittlerootTown_MaysHouse_2F" : "LittlerootTown_BrendansHouse_2F", x: 4, y: 2 });
 
   // A sign by a Pokémon statue: its picture with the sign's words (and it's
   // seen in the Pokédex).
@@ -8207,6 +8211,9 @@
     // (A save from past the Burned Tower before the beasts roamed: off they go.)
     if (!player.flags.johtoRoamers && johto.flag("FLAG_HIDE_BURNED_TOWER_B1F_RAIKOU")) player.flags.johtoRoamers = { Raikou: true, Entei: true };
     const r = player.flags.johtoRoamers, m = window.WORLD_MAPS[player.location.map] || {};
+    // (Hoenn's Latias or Latios, from the news flash on, in the grass or on the water of its routes: InitRoamer.)
+    if (mon && player.flags.hoennRoamer && m.region === "hoenn" && /route/.test(m.type || "") && (table === m.wild || table === m.water) && Math.random() < 1 / 16)
+      return { species: player.flags.hoennRoamer, level: 40 };
     if (!mon || table !== m.wild || !r || m.region !== "johto" || m.type === "indoor" || m.type === "underground") return mon;
     const out = JOHTO_ROAMERS.filter((sp) => r[sp]);
     if (!out.length || Math.random() >= 1 / 16) return mon;
@@ -13187,6 +13194,8 @@
         await say((T[done ? "gBirchDexRatingText_DexCompleted" : "gBirchDexRatingText_LessThan" + Math.min(200, (Math.floor(n / 10) + 1) * 10)] || []).map(fill));
         return true;
       }
+      // The news flash's Pokémon (src/roamer.c's InitRoamer): red, Latias; blue, Latios. It roams Hoenn till caught.
+      case "InitRoamer": player.flags.hoennRoamer = +api.getVar("VAR_0x8004") === 1 ? "Latios" : "Latias"; return true;
       case "HasAllHoennMons": api.set(hoennDexCount("caught", true) >= 200 ? 1 : 0); return true;
       // (The Sealed Chamber: Wailord first in the party, and Relicanth last.)
       case "CheckRelicanthWailord": { const p = player.party, last = p[p.length - 1]; api.set(p[0] && !p[0].egg && p[0].species === "Wailord" && last && !last.egg && last.species === "Relicanth" ? 1 : 0); return true; }
@@ -13195,7 +13204,7 @@
       case "GameClear": {
         await api.flush();
         hoenn.setFlag("FLAG_SYS_GAME_CLEAR", true);   // (Emerald's GameClear sets it, for the post-game's scripts, and the Delta Episode)
-        const f = player.flags, h = f.hoennRespawn || { map: "LittlerootTown_BrendansHouse_2F", x: 4, y: 2 };
+        const f = player.flags, h = f.hoennRespawn || hoennBedroom();
         League.reset(f);
         player.party.forEach(Party.heal);
         const entry = League.record(f, player.party.filter((r) => !r.egg).map((r) => Object.assign({}, r, { form: Party.form(r) })),

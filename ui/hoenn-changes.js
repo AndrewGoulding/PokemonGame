@@ -72,6 +72,12 @@
     PetalburgCity_Gym_Text_NormanPostRematch: ["Norman: {PLAYER}…\nWhat is your dream?", "My dream…\nHahaha…\nTo battle the best, and I've done it."],
     PlayersHouse_1F_Text_TicketFromBrineyCameForYou: ["Norman: Hm?", "Hey, it's {PLAYER}!", "It's been a while since I saw you,\nbut you look…stronger, somehow.",
       "That's the impression I get.\nBut this Gym Leader hasn't given up yet!", "Oh, yes, I have something for you.\nThis came for you from someone named\nMr. Briney."],
+    // (The house you came back to after the Hall of Fame is his family's: she's his wife, not your mom.)
+    PlayersHouse_1F_Text_BetterGetBackToGym: ["I'd better get back to Petalburg Gym.", "Dear, thanks for looking after the house\nwhile I'm away."],
+    PlayersHouse_1F_Text_DadShouldStayLonger: ["That husband of mine…", "He comes home for the first time in a\nwhile, but all he talks about is Pokémon.", "He should relax and stay a little longer."],
+    PlayersHouse_1F_Text_IsThatABreakingStory: ["Oh? Is that a breaking news story?"],
+    PlayersHouse_1F_Text_WhatColorDidTheySay: ["{PLAYER}, did you catch that?", "What color did the announcer say\nthat Pokémon was?"],
+    PlayersHouse_1F_Text_StillUnknownPokemon: ["Well, isn't that something!\nThere are still unknown Pokémon."],
     MatchCall_Text_Norman2: ["Norman: Hm… Little by little, but also\nvery surely, you're getting\ntougher, {PLAYER}.", "Hoenn's Gyms won't hold the Champion\nof Johto back for long."],
     MatchCall_Text_Norman4: ["Norman: {PLAYER}! I'm going to remain\nhere and redouble my training.", "The way of battling is deep\nand unforgiving!"]
   });
