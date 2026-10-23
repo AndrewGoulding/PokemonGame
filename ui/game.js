@@ -2622,7 +2622,7 @@
   // messages, in Braille (Unicode's Braille patterns).
   const BRAILLE = { A: 1, B: 3, C: 9, D: 25, E: 17, F: 11, G: 27, H: 19, I: 10, J: 26, K: 5, L: 7, M: 13, N: 29, O: 21, P: 15, Q: 31,
     R: 23, S: 14, T: 30, U: 37, V: 39, W: 58, X: 45, Y: 61, Z: 53, ".": 50, ",": 2, " ": 0 };
-  const braille = (s) => [...s].map((c) => String.fromCharCode(0x2800 + (BRAILLE[c] || 0))).join("");
+  const braille = (s) => [...s.toUpperCase()].map((c) => (c === "\n" ? c : String.fromCharCode(0x2800 + (BRAILLE[c] || 0)))).join("");
   const BRAILLE_SIGNS = {
     MtEmber_RubyPath_B4F_EventScript_BrailleABC: ["ABC"], MtEmber_RubyPath_B4F_EventScript_BrailleDEF: ["DEF"],
     MtEmber_RubyPath_B4F_EventScript_BrailleGHI: ["GHI"], MtEmber_RubyPath_B4F_EventScript_BrailleJKL: ["JKL"],
@@ -6501,6 +6501,9 @@
     const here = window.WORLD_MAPS[player.location.map] || {}, a = Overworld.ahead(), surfing = Overworld.avatar() === "surf";
     switch (move) {
       case "Flash": {
+        // (In the middle of the Ancient Tomb: Registeel's doorway opens.)
+        const tomb = braillePuzzle("Flash");
+        if (tomb) return async () => { await say(usedMove(mon, "Flash")); await tomb(); };
         // (In front of the Ruins of Alph's wall that says LIGHT: Task_UseFlashInField.)
         const js = JohtoAlph.chamberReaction(player.location.map, Overworld.position(), "flash");
         if (js) return async () => { await say(usedMove(mon, "Flash")); sfx("se_m_reflect"); johto.setVar("VAR_SPECIAL_RESULT", 0); await runJohto(js); };
@@ -6529,6 +6532,9 @@
         if (!diveTarget(Overworld.avatar())) return "Can't use that here.";
         return () => dive(true);
       case "Rock Smash": {
+        // (Before the Desert Ruins' braille: Regirock's doorway opens.)
+        const ruins = braillePuzzle("Rock Smash");
+        if (ruins) return async () => { await say(usedMove(mon, "Rock Smash")); await ruins(); };
         const rock = facingScript("EventScript_RockSmash");
         if (!rock) return "Can't use that here.";
         return async () => { await say(usedMove(mon, "Rock Smash")); await smashRock(rock); };
@@ -6542,6 +6548,21 @@
       case "Rock Climb":
         if (surfing || !World.climbable(a.behavior, a.facing)) return "Can't use that here.";
         return async () => { await say(usedMove(mon, "Rock Climb")); await climbRocks(); };
+      case "Dig": {
+        // (Under the Sealed Chamber's DIG HERE: its wall gives way.)
+        const wall = braillePuzzle("Dig");
+        if (wall) return async () => { await say(usedMove(mon, "Dig")); await wall(); };
+        // (Anywhere else you could use an Escape Rope, out as it takes you: FireRed's FldEff_UseDig.)
+        const to = player.flags.escapeWarp;
+        if (!here.allowEscaping || !to) return "Can't use that here.";
+        return async () => {
+          await say(usedMove(mon, "Dig"));
+          Screen.say("");
+          await Overworld.escapeRopeOut();
+          await Overworld.escapeRopeIn({ map: to.map, x: to.x, y: to.y, facing: "down" });
+          await persist();
+        };
+      }
     }
     return "Can't use that here.";
   }
@@ -12544,8 +12565,10 @@
   // Its maps are data/emerald-maps.js's, with `region: "hoenn"`; its people say and do what
   // Emerald's scripts say (window.HOENN_SCRIPTS), with this game's own battles, shops and menus.
   const isHoenn = (map) => (window.WORLD_MAPS[map] || {}).region === "hoenn";
+  let hoennEntering = null;
   const hoennEnv = Object.assign({}, johtoEnv, {
-    map: () => player.location.map,
+    // (While a map you're coming into runs its OnTransition and OnLoad, it's that map, not the one you left.)
+    map: () => hoennEntering || player.location.map,
     // (Someone a flag hid, onto the map where it has them, or where the script put them.)
     show: (id) => {
       const map = player.location.map, def = (window.WORLD_MAPS[map] || { people: [] }).people.find((p) => p.localId === id);
@@ -12612,6 +12635,7 @@
     },
     showPicture: (species) => showPicture(species), hidePicture: () => hidePicture(),
     setMetatile: (map, x, y, id, impassable) => hoennMetatile(map, x, y, id, impassable),
+    braille: (s) => braille(s),
     setDynamicWarp: (mapConst, x, y) => { const name = window.HOENN_SCRIPTS.consts[mapConst]; if (name) setDynamicWarp({ map: name, x, y }); },
     respawn: (id) => { const h = window.HOENN_SCRIPTS.heal[id]; if (h) player.flags.hoennRespawn = h; },
     special: (name, api) => hoennSpecial(name, api)
@@ -12930,6 +12954,43 @@
     const at = Overworld.position(), s = m.weatherSteps.find((q) => q.x === at.x && q.y === at.y);
     if (s) hoennSaved = s.weather;
   }
+  // Hoenn's braille puzzles (Emerald's src/braille_puzzles.c): where the field move opens a way in, and the flag
+  // that says it's open. Dig under the Sealed Chamber's DIG HERE; Rock Smash before the Desert Ruins' braille
+  // (Regirock); Flash in the middle of the Ancient Tomb (Registeel). Island Cave's (Regice) is a lap of its room:
+  // hoennRegiceStep.
+  const BRAILLE_PUZZLES = {
+    Dig: { map: "SealedChamber_OuterRoom", at: [[9, 3], [10, 3], [11, 3]], door: [9, 1], flag: "FLAG_SYS_BRAILLE_DIG" },
+    "Rock Smash": { map: "DesertRuins", at: [[5, 23], [6, 23], [7, 23]], door: [7, 19], flag: "FLAG_SYS_REGIROCK_PUZZLE_COMPLETED" },
+    Flash: { map: "AncientTomb", at: [[8, 25]], door: [7, 19], flag: "FLAG_SYS_REGISTEEL_PUZZLE_COMPLETED" }
+  };
+  function braillePuzzle(move) {
+    const p = BRAILLE_PUZZLES[move], at = Overworld.position();
+    if (!p || at.map !== p.map || hoenn.flag(p.flag) || !p.at.some(([x, y]) => x === at.x && y === at.y)) return null;
+    return async () => {
+      // (The doorway, its middle below the way in: DoBrailleRegirockEffect and the like.)
+      const [x, y] = p.door;
+      ["TopLeft", "TopMid", "TopRight", "BottomLeft", "BottomMid", "BottomRight"].forEach((part, i) =>
+        hoennMetatile(p.map, x + (i % 3), y + (i < 3 ? 0 : 1), "METATILE_Cave_SealedChamberEntrance_" + part, i !== 4));
+      sfx("se_bang");
+      hoenn.setFlag(p.flag, true);
+    };
+  }
+  // Island Cave (ShouldDoBrailleRegicePuzzle): once you've read its braille, a lap of the room along its wall, each
+  // of these steps, then back to the braille; a step anywhere else and it's to start again (from the braille).
+  const REGICE_PATH = [[4, 21], [5, 21], [6, 21], [7, 21], [8, 21], [9, 21], [10, 21], [11, 21], [12, 21], [12, 22], [12, 23], [13, 23],
+    [13, 24], [13, 25], [13, 26], [13, 27], [12, 27], [12, 28], [4, 29], [5, 29], [6, 29], [7, 29], [8, 29], [9, 29], [10, 29], [11, 29],
+    [12, 29], [4, 28], [4, 27], [3, 27], [3, 26], [3, 25], [3, 24], [3, 23], [4, 23], [4, 22]];
+  function hoennRegiceStep() {
+    const at = Overworld.position();
+    if (at.map !== "IslandCave" || hoenn.flag("FLAG_SYS_BRAILLE_REGICE_COMPLETED") || !hoenn.flag("FLAG_TEMP_REGICE_PUZZLE_STARTED") || hoenn.flag("FLAG_TEMP_REGICE_PUZZLE_FAILED")) return null;
+    const i = REGICE_PATH.findIndex(([x, y]) => x === at.x && y === at.y);
+    if (i < 0) { hoenn.setFlag("FLAG_TEMP_REGICE_PUZZLE_FAILED", true); hoenn.setFlag("FLAG_TEMP_REGICE_PUZZLE_STARTED", false); return null; }
+    const v = "VAR_REGICE_STEPS_" + (1 + (i >> 4));
+    hoenn.setVar(v, hoenn.getVar(v) | (1 << (i & 15)));
+    if (hoenn.getVar("VAR_REGICE_STEPS_1") !== 0xffff || hoenn.getVar("VAR_REGICE_STEPS_2") !== 0xffff || hoenn.getVar("VAR_REGICE_STEPS_3") !== 0xf) return null;
+    if (at.x !== 8 || at.y !== 21) return null;
+    return { type: "hoenn-script", label: "IslandCave_EventScript_OpenRegiEntrance" };
+  }
   // Ash on Route 113's and Jagged Pass's grass (Emerald's AshGrassPerStepCallback): walk through it and it falls off,
   // the grass under it showing till you come back, and with the Soot Sack it's gathered (VAR_ASH_GATHER_COUNT, to
   // 9,999: the Glass Workshop's).
@@ -13058,6 +13119,8 @@
         return true;
       }
       case "IsMonOTIDNotPlayers": { const r = player.party[+api.getVar("VAR_0x8004")]; api.set(r && r.ot && (r.ot.id !== player.trainerId || r.ot.name !== player.name) ? 1 : 0); return true; }
+      // (The Sealed Chamber: Wailord first in the party, and Relicanth last.)
+      case "CheckRelicanthWailord": { const p = player.party, last = p[p.length - 1]; api.set(p[0] && !p[0].egg && p[0].species === "Wailord" && last && !last.egg && last.species === "Relicanth" ? 1 : 0); return true; }
       case "MonOTNameNotPlayer": { const r = player.party[+api.getVar("VAR_0x8004")]; api.set(r && r.ot && r.ot.name !== player.name ? 1 : 0); return true; }
       // The Hall of Fame (ending the story: EverGrandeCity_HallOfFame): the team on record, the Hall of Fame screen, then home.
       case "GameClear": {
@@ -13772,7 +13835,7 @@
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
-          return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
+          return hoennRegiceStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
         adjustWild: (mon, table) => { const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
@@ -13797,7 +13860,7 @@
           if (m !== tempFlagsMap && m === "Route23") LeagueRoad.reset(player.flags);
           // (Into a Johto map: its OnTransition script, before its people are placed.)
           if (m !== tempFlagsMap && m === GOLDENROD_SWITCHES) goldenrodSwitchesEnter();
-          if (m !== tempFlagsMap) { magnetTrain.enter(m); johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); if (isHoenn(m)) { restoreMetatiles(m); hoennWeatherEnter(m); hoennDecorApply(m); hoennSpotOpen(m); hoenn.transition(m); } hoennLastType = (window.WORLD_MAPS[m] || {}).type; }
+          if (m !== tempFlagsMap) { magnetTrain.enter(m); johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); if (isHoenn(m)) { restoreMetatiles(m); hoennWeatherEnter(m); hoennDecorApply(m); hoennSpotOpen(m); hoennEntering = m; hoenn.transition(m).then(() => { if (hoennEntering === m) hoennEntering = null; }); } hoennLastType = (window.WORLD_MAPS[m] || {}).type; }
           if (m === "SSAqua_1F") ssAquaExit();
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
           if (!gear.radioOn(m)) music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }   // (the Pokégear's radio plays on)
@@ -13826,6 +13889,7 @@
       else if (ev.type === "jessie-james-later") await laterJessieJames();
       else if (ev.type === "safari-over") { if (ev.hoenn) await runHoenn("SafariZone_EventScript_TimesUp"); else await safariOver(ev.text, false); }
       else if (ev.type === "johto-script") await runJohto(ev.js, null);
+      else if (ev.type === "hoenn-script") await runHoenn(ev.label);
       else if (ev.type === "wild") {
         if (!canBattle() && !safariOn()) continue;
         // Grass on routes; caves (and other maps) use their own scene.

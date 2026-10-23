@@ -1945,13 +1945,16 @@
       const img = mapImage(name, "top");
       if (ready(img)) {
         // (Where a patch with its own top layer is on, the map's own top
-        // layer stays out of its way: no chair tops over a patched floor.)
+        // layer stays out of its way: no chair tops over a patched floor; nor
+        // over a tile a script has put in: Desert Ruins' sealed doorway.)
         const on = m.patches && ctx.patches ? ctx.patches(name).map((p) => m.patches[p]).filter((pt) => pt && pt.top) : [];
-        if (on.length) {
+        const set = (ctx && ctx.metatiles && ctx.metatiles(name)) || [];
+        if (on.length || set.length) {
           g.save();
           g.beginPath();
           g.rect(0, 0, canvas.width, canvas.height);
           for (const pt of on) g.rect(ox - camX + pt.x * TILE, oy - camY + pt.y * TILE, pt.w * TILE, pt.h * TILE);
+          for (const [x, y] of set) g.rect(ox - camX + x * TILE, oy - camY + y * TILE, TILE, TILE);
           g.clip("evenodd");
           g.drawImage(img, ox - camX, oy - camY);
           g.restore();

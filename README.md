@@ -1944,6 +1944,10 @@ Also: berry trees (Hoenn's own growth stages and mulch; picked as the Berry Farm
 farming XP, and the Berry Pouch works in Petalburg Woods: the farming level counts there too), weather, your own secret base with its decorations,
 the volcanic ash on Route 113's and Jagged Pass's grass (walk through it and it falls off till you come back; with
 the Soot Sack it's gathered, for the Glass Workshop's flutes and glass furniture at Emerald's prices),
+the braille (shown in Braille's dots) and the Regis' puzzles as `src/braille_puzzles.c` has them: Dig under the
+Sealed Chamber's DIG HERE (Dig is a field move, for a Pokémon that knows it: out of a cave too, as an Escape Rope),
+Wailord first and Relicanth last at its back wall, then Rock Smash in the Desert Ruins, Flash in the Ancient Tomb and a
+lap of Island Cave's wall,
 the rotating-tile puzzles, the Mirage Tower and Rayquaza's scenes. The scene over Sootopolis is Emerald's own
 (`ui/rayquaza-scene.js`, its pictures from `tools/build-rayquaza-scene.js` into `assets/rayquaza-scene/`), its
 five scenes timed as `src/rayquaza_scene.c` times them: Groudon and Kyogre facing one another under the storm

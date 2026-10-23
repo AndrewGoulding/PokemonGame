@@ -393,7 +393,10 @@ const metatileIds = {};
 for (const m of fs.readFileSync(P("include/constants/metatile_labels.h"), "utf8").matchAll(/#define (METATILE_\w+)\s+(0x[0-9A-Fa-f]+)/g)) metatileIds[m[1]] = parseInt(m[2], 16);
 // (Metatiles a Gym's special sets besides its scripts' (src/field_specials.c): Petalburg's sliding doors and the
 // ones below them (a row of the tileset on), Mauville's beams and switches, Sootopolis' ice.)
-const EXTRA_METATILES = { PetalburgCity_Gym: /^METATILE_PetalburgGym_/, MauvilleCity_Gym: /^METATILE_MauvilleGym_/, SootopolisCity_Gym_1F: /^METATILE_SootopolisGym_/, SootopolisCity_Gym_B1F: /^METATILE_SootopolisGym_/ };
+// (And the braille puzzles' doorways, src/braille_puzzles.c's; and the grass under Route 113's and Jagged Pass's ash.)
+const EXTRA_METATILES = { PetalburgCity_Gym: /^METATILE_PetalburgGym_/, MauvilleCity_Gym: /^METATILE_MauvilleGym_/, SootopolisCity_Gym_1F: /^METATILE_SootopolisGym_/, SootopolisCity_Gym_B1F: /^METATILE_SootopolisGym_/,
+  DesertRuins: /^METATILE_Cave_SealedChamberEntrance_/, AncientTomb: /^METATILE_Cave_SealedChamberEntrance_/, SealedChamber_OuterRoom: /^METATILE_Cave_SealedChamberEntrance_/,
+  Route113: /^METATILE_Fallarbor_NormalGrass$/, JaggedPass: /^METATILE_Lavaridge_NormalGrass$/ };
 // (The maps whose metatiles a special reads: their blocks stay, as metatile numbers.)
 const KEEP_BLOCKS = new Set(["MossdeepCity_Gym", "Route110_TrickHousePuzzle6", "Route110_TrickHousePuzzle7", "MauvilleCity_Gym", "SootopolisCity_Gym_1F", "SootopolisCity_Gym_B1F", "PetalburgCity_Gym"]);
 const metatilesOf = {};
@@ -463,6 +466,12 @@ for (const name of MAPS) {
     // (The Battle Pike's hall of wild Pokémon: any tile, as StandardWildEncounter has it.)
     encounter.push(WILD_BEHAVIOR.has(mt.behavior) || name === "BattleFrontier_BattlePikeRoomWildMons" || pyramidFloor ? 1 : 0);
   }
+  // (Ash on the grass, Emerald's MB_ASHGRASS: where, and the grass under it.)
+  const ash = [];
+  blocks.forEach((b, i) => {
+    if (E.metatile(primary, secondary, b & 0x3ff).behavior === MBN.MB_ASHGRASS)
+      ash.push([i % w, Math.floor(i / w), (b & 0x3ff) === metatileIds.METATILE_Fallarbor_AshGrass ? "METATILE_Fallarbor_NormalGrass" : "METATILE_Lavaridge_NormalGrass"]);
+  });
   // The metatiles this map's scripts put in (setmetatile): a sheet of them, 16 to a row, below and above the people.
   let mt;
   let wanted = [...(metatilesOf[name] || [])].sort();
@@ -539,7 +548,7 @@ for (const name of MAPS) {
   const triggers = (map.coord_events || []).filter((c) => c.type === "trigger" && c.script && c.script !== "NULL")
     .map((c) => ({ x: c.x, y: c.y, script: "hoenn:" + c.script, var: c.var, value: +c.var_value }));
   out[ren(name)] = {
-    mt, layouts: Object.keys(layoutDiffs).length ? layoutDiffs : undefined, blocks: KEEP_BLOCKS.has(name) ? blocks.map((b) => b & 0x3ff) : undefined, name: ren(name), scriptName: map.shared_scripts_map || (ren(name) !== name ? name : undefined), title: titleCase(sectionNames[map.region_map_section] || name.replace(/([a-z])([A-Z0-9])/g, "$1 $2")),
+    mt, ash: ash.length ? ash : undefined, layouts: Object.keys(layoutDiffs).length ? layoutDiffs : undefined, blocks: KEEP_BLOCKS.has(name) ? blocks.map((b) => b & 0x3ff) : undefined, name: ren(name), scriptName: map.shared_scripts_map || (ren(name) !== name ? name : undefined), title: titleCase(sectionNames[map.region_map_section] || name.replace(/([a-z])([A-Z0-9])/g, "$1 $2")),
     width: w, height: h, type: mapType === "city" ? "city" : mapType, music: musicOf(map.music), region: "hoenn",
     cycling: !!map.allow_cycling || undefined, allowEscaping: map.allow_escaping || undefined,
     showName: !!map.show_map_name, pokemonCenter: /_PokemonCenter_1F$/.test(name) || undefined, top: r.anyAbove, borderWidth: 2, borderHeight: 2,

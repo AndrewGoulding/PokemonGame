@@ -220,7 +220,7 @@
         case "lockall": case "lock": case "releaseall": case "release": case "lockfortrainer": case "hideplayer": case "showplayer": case "createvobject": case "turnvobject":
         case "opendoor": case "closedoor": case "setdooropen": case "setdoorclosed": case "setfieldeffectargument": case "updatemoneybox":
         case "register_matchcall": case "pokenavcall": case "dotrainerbattle": case "gotopostbattlescript": case "gotobeatenscript": case "selectapproachingtrainer":
-        case "braillemessage": case "braillemsgbox": case "closebraillemessage": case "brailleformat": case "setholewarp": case "setescapewarp":
+        case "closebraillemessage": case "brailleformat": case "setholewarp": case "setescapewarp":
           return true;
         case "setwarp": lastSetWarp = a.slice(); return true;
         case "setmaplayoutindex": if (env.setLayout) env.setLayout(mapName(), a[0]); return true;
@@ -367,6 +367,8 @@
       async function command(op, a) {
         switch (op) {
           // Messages.
+          // (Braille: its dots, ui/game.js's braille.)
+          case "braillemsgbox": case "braillemessage": { const pages = pagesOf(a[0]); if (pages) await speak(env.braille ? pages.map(env.braille) : pages); break; }
           case "msgbox": {
             const type = a[1] || "MSGBOX_DEFAULT", pages = pagesOf(a[0]);
             if (type === "MSGBOX_NPC" && ctx.person) await env.facePlayer(ctx.person);

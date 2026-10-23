@@ -30,7 +30,10 @@
     { move: "Whirlpool", badge: "glacier", johto: "glacier", hoenn: "glacier", desc: "Cross a whirlpool." },
     { move: "Rock Climb", badge: "rising", johto: "rising", hoenn: "rising", desc: "Scale rocky walls." },
     // (Hoenn's: Dive, which Emerald's Mind Badge lets you use; HM09 here.)
-    { move: "Dive", badge: null, johto: null, hoenn: "mind", desc: "Dive underwater." }
+    { move: "Dive", badge: null, johto: null, hoenn: "mind", desc: "Dive underwater." },
+    // (Dig, a TM's, so only a Pokémon that knows it: out of a cave as an Escape Rope takes you, and the Sealed
+    // Chamber's wall.)
+    { move: "Dig", badge: null, johto: null, hoenn: null, desc: "Escape from a cave." }
   ];
   const inJohto = (player) => (((window.WORLD_MAPS || {})[(player.location || {}).map] || {}).region === "johto");
   const inHoenn = (player) => (((window.WORLD_MAPS || {})[(player.location || {}).map] || {}).region === "hoenn");

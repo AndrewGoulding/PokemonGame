@@ -102,10 +102,11 @@ module.exports = function emeraldScript(EM) {
         label = lab[1]; opened = null; continue;
       }
       if (!label) continue;
-      const s = /^\.string "(.*)"$/.exec(l);
+      // (Braille is text too: .braille "GO UP HERE.$", shown in Braille's dots.)
+      const s = /^\.(?:string|braille) "(.*)"$/.exec(l);
       if (s) { lines.push({ str: s[1] }); continue; }
       const m = /^(\.?\w+)\s*(.*)$/.exec(l);
-      if (!m) continue;
+      if (!m || m[1] === "brailleformat") continue;
       lines.push({ cmd: m[1], args: split(m[2]).map(resolve) });
     }
     flush();
