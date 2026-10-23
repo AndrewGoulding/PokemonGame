@@ -280,7 +280,7 @@
 
           // People and movement.
           case "FacePlayer": if (ctx.person) await env.facePlayer(ctx.person); break;
-          case "ApplyMovement": if (z.moves[a[1]]) pending.push({ who: who(a[0]), moves: z.moves[a[1]] }); break;
+          case "ApplyMovement": if (z.moves[a[1]]) pending.push({ who: who(a[0]), moves: z.moves[a[1]], label: zone + ":" + a[1] }); break;
           case "WaitMovement": await flush(); break;
           case "ShowPerson": case "MakeObjectVisible": await flush(); env.show(a[0]); break;
           case "HidePerson": await flush(); env.hide(a[0]); break;

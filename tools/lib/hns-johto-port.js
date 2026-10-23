@@ -564,7 +564,7 @@ module.exports = function port(HN, out, opts) {
     const o = out[G];
     const keep = o.type === "indoor" || o.type === "underground" ? [] : o.connections.filter((c) => !paired.includes(c.map));
     Object.assign(o, { width: g.width, height: g.height, collision: g.collision, elevation: g.elevation, behavior: g.behavior, encounter: g.encounter,
-      top: true, borderWidth: 2, borderHeight: 2, anim: g.anim, patches: undefined, warps, people, signs, hidden, triggers,
+      top: true, borderWidth: 2, borderHeight: 2, anim: g.anim, patches: undefined, warps, people, signs, hidden, triggers, sceneMoves: plan[G].sceneMoves,
       connections: connections.concat(keep), headbutt: g.headbutt.length ? g.headbutt : undefined,
       // (A door a stamp brought, for a building this game adds: New Bark's Pokémon Center, its door's tile.)
       pokecenterDoor: plan[G].door || undefined,

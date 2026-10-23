@@ -2393,6 +2393,15 @@ if (window.JOHTO_TOWN_MAP) {
   assert(kurts.length === 2 && kurts.some((p) => p.x === 27 && p.y === 26) && kurts.some((p) => p.x === 0 && p.y === 0), "one Kurt in Slowpoke Well, by the ladder");
   assert(/who === "obj_partner_poke" \? \(followerShown\(\) \? pal : null\)/.test(fs.readFileSync(path.join(root, "ui/overworld.js"), "utf8"))
     && /function followerWalk\(map, t\)/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")), "your walking Pokémon walks in a scene (Ilex Forest's Kimono Girl)");
+  // (Scenes walked Heart & Soul's way, sceneMoves: Lyra to her grandpa and into the Day-Care by its side door, the
+  // Day-Care Man over to you with his number, Lyra up the stairs of whichever Underground room you came in by.)
+  assert(WORLD_MAPS.Route34.sceneMoves["obj_R34_var_1 _049C"][0] === "to:30,34" && WORLD_MAPS.Route34.sceneMoves["obj_R34_gsoldman1 _0130"]
+    && Object.keys(WORLD_MAPS.Route34_Daycare.sceneMoves).length >= 10, "Route 34's Day-Care scenes, on Heart & Soul's ground");
+  assert(WORLD_MAPS.GoldenrodCity_Tunnel_1F.sceneMoves["obj_D37R0101_var_1 _01C4 @x>=14"][0] === "at:23,3"
+    && WORLD_MAPS.GoldenrodCity_Tunnel_1F.sceneMoves["obj_D37R0101_var_1 _01C4 @x<14"][0] === "at:4,3", "the Underground's Lyra, in either room");
+  assert(WORLD_MAPS.Route34.people.some((p) => p.script === "Johto_DaycareMan") && WORLD_MAPS.Route34_Daycare.people.some((p) => p.script === "Johto_DaycareLady"),
+    "Route 34's Day-Care couple at work");
+  assert(/johto: \{ list: "johtoDayCare", eggs: "johtoDayCareEggs"/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")), "its own Day-Care, not Four Island's");
   // (This game's changes: the Ruins of Alph's grass at Lv. 7-11; Houndour, Slugma and Larvitar on Johto's routes.)
   assert(WORLD_MAPS.RuinsOfAlph.wild.slots.every((s) => s.min >= 7 && s.max <= 11), "the Ruins of Alph at Lv. 7-11");
   assert(WORLD_MAPS.Route37.wild.slots.some((s) => s.species === "Houndour") && WORLD_MAPS.Route42.wild.slots.some((s) => s.species === "Slugma")

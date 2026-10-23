@@ -156,7 +156,7 @@ module.exports = function hnsJohto(H) {
       pieces[0].stamps.push({ blocks: [[0, 5, 720], [1, 5, 721], [0, 6, 728 | 0x400], [1, 6, 729], [0, 7, 736], [1, 7, 737]] });
       doors.push({ x: 1, y: 6, to: "_PokemonCenter_2F$" });
     }
-    return { pieces, merge: e.merge || [], door: e.door, doors, redirect: e.redirect, link: e.link, place: e.place };
+    return { pieces, merge: e.merge || [], door: e.door, doors, redirect: e.redirect, link: e.link, place: e.place, sceneMoves: e.sceneMoves };
   }
 
   // ---------- A map's geometry, from its pieces ----------

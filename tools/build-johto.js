@@ -927,7 +927,9 @@ MAPS.forEach((m, i) => {
     } else if (s === "std_field_cut") Object.assign(def, { script: "EventScript_CutTree", flag: "JOHTO_CUT_" + p.id, text: ["This tree looks like it can be\ncut down!"], inanimate: true });
     else if (s === "std_field_rock_smash") Object.assign(def, { script: "EventScript_RockSmash", flag: "JOHTO_ROCK_" + p.id, inanimate: true });
     else if (s === "std_apricorn_tree") Object.assign(def, { script: "hgss_apricorn:" + (p.param0 | 0) + ":" + (treeApricorns[p.param0 | 0] || "red"), inanimate: true });
-    else if (s === "std_daycare_man") Object.assign(def, { text: DAYCARE_MAN });
+    // (Route 34's Day-Care couple: this game's two-Pokémon Day-Care, ui/game.js.)
+    else if (s === "std_daycare_man") Object.assign(def, { script: "Johto_DaycareMan", text: DAYCARE_MAN });
+    else if (s === "std_daycare_lady") Object.assign(def, { script: "Johto_DaycareLady" });
     // (Mahogany's Gym's ice blocks, pushed along the ice: ui/overworld.js.)
     else if (p.sprite === "SPRITE_ICE") Object.assign(def, { iceBlock: true, inanimate: true });
     else if (/^_EV_/.test(s)) Object.assign(def, { script: hgss(s), text: scriptText(m.zone, p.script) });

@@ -2786,6 +2786,7 @@
       "FourIsland_Harbor_EventScript_Sailor", "FiveIsland_Harbor_EventScript_Sailor",
       "FourIsland_PokemonCenter_1F_EventScript_Nurse", "FiveIsland_PokemonCenter_1F_EventScript_Nurse", "FourIsland_Mart_EventScript_Clerk",
       "FourIsland_EventScript_DaycareMan", "FourIsland_PokemonDayCare_EventScript_DaycareWoman", "FourIsland_EventScript_OldWoman",
+      "Johto_DaycareMan", "Johto_DaycareLady",
       "FourIsland_House1_EventScript_BodySlamTutor", "FourIsland_House2_EventScript_StickerMan", "FourIsland_LoreleisHouse_EventScript_Lorelei",
       "FourIsland_IcefallCave_Back_EventScript_LoreleiRocketsScene", "FourIsland_IcefallCave_1F_EventScript_FallDownHole",
       "FiveIsland_Meadow_EventScript_WarehouseDoor", "FiveIsland_RocketWarehouse_EventScript_Cage",
@@ -4376,6 +4377,9 @@
       case "FourIsland_Mart_EventScript_Clerk": await mart(ev.person.mart); return;
       case "enter:FourIsland": await fourIslandRival(); return;
       case "FourIsland_EventScript_DaycareMan": await fourIslandDayCareMan(); return;
+      // (Route 34's Day-Care, HGSS's std_daycare_man and std_daycare_lady: tools/build-johto.js.)
+      case "Johto_DaycareMan": await fourIslandDayCareMan("johto"); return;
+      case "Johto_DaycareLady": await fourIslandDayCareLady("johto"); return;
       case "FourIsland_PokemonDayCare_EventScript_DaycareWoman": await fourIslandDayCareLady(); return;
       case "FourIsland_EventScript_OldWoman":
         await say(T(f.canLinkWithRS ? "FourIsland_Text_LoreleiMetLaprasAsChild" : "FourIsland_Text_LoreleiHasReturned"));
@@ -10096,9 +10100,12 @@
     await say(pages.slice(0, -1), vars);
     return confirm(fill(pages[pages.length - 1], vars));
   }
-  async function fourIslandDayCareLady() {
-    const f = player.flags, list = f.dayCare2 || (f.dayCare2 = []);
-    if (f.dayCareEggs && f.dayCareEggs.eggWaiting && list.length === 2) { await say(DC("HusbandWasLookingForYou")); return; }
+  // (Route 34's in Johto is the same Day-Care, its own: player.flags.johtoDayCare and johtoDayCareEggs.)
+  const DAY_CARES = { four: { list: "dayCare2", eggs: "dayCareEggs", lady: "LOCALID_FOUR_ISLAND_DAYCARE_WOMAN" }, johto: { list: "johtoDayCare", eggs: "johtoDayCareEggs", lady: null } };
+  async function fourIslandDayCareLady(where) {
+    const D = DAY_CARES[where || "four"];
+    const f = player.flags, list = f[D.list] || (f[D.list] = []);
+    if (f[D.eggs] && f[D.eggs].eggWaiting && list.length === 2) { await say(DC("HusbandWasLookingForYou")); return; }
     const comeAgain = () => say(DC("ComeAgain"));
     // FourIsland_PokemonDayCare_GiveMonToRaise, and "one more?" while there's room.
     const give = async () => {
@@ -10133,7 +10140,7 @@
         if (!(await yesNo(DC("ItWillCostX"), [name, cost.toLocaleString("en-US")]))) { await comeAgain(); return; }
         if (player.money < cost) { await say(DC("NotEnoughMoney")); return; }
         Screen.say("");
-        await Overworld.act([{ who: "LOCALID_FOUR_ISLAND_DAYCARE_WOMAN", moves: M("FourIsland_PokemonDayCare_Movement_RetrieveMon") }]);
+        if (D.lady) await Overworld.act([{ who: D.lady, moves: M("FourIsland_PokemonDayCare_Movement_RetrieveMon") }]);
         list.splice(list.indexOf(dc), 1);
         const mon = DayCare.withdraw(dc, Player.levelCap(player));
         Player.addMoney(player, -cost);
@@ -10160,8 +10167,9 @@
     if (await yesNo(DC("TakeYourMonBack"))) { await retrieve(); return; }
     await comeAgain();
   }
-  async function fourIslandDayCareMan() {
-    const f = player.flags, list = f.dayCare2 || [], eggs = f.dayCareEggs || (f.dayCareEggs = {});
+  async function fourIslandDayCareMan(where) {
+    const D = DAY_CARES[where || "four"];
+    const f = player.flags, list = f[D.list] || [], eggs = f[D.eggs] || (f[D.eggs] = {});
     // An Egg waiting (FourIsland_EventScript_DaycareEggWaiting): "You do want it, yes?"
     if (eggs.eggWaiting && list.length === 2) {
       if (!(await yesNo(DC("DoYouWantEgg"))) && !(await confirm(fill(DC("IWillKeepDoYouWantIt").join(" "))))) {
@@ -10445,6 +10453,7 @@
     // (And the steps Gen 9's walkers count: Pawmo, Bramblin and Rellor, up to the 1,000 they need.)
     for (const r of player.party) if (!r.egg && STEP_EVOLVERS().has(r.species) && (r.steps | 0) < 1000) r.steps = (r.steps | 0) + 1;
     if (f.dayCare2 && f.dayCare2.length === 2) Breeding.dayCareStep(f.dayCareEggs || (f.dayCareEggs = {}), f.dayCare2);
+    if (f.johtoDayCare && f.johtoDayCare.length === 2) Breeding.dayCareStep(f.johtoDayCareEggs || (f.johtoDayCareEggs = {}), f.johtoDayCare);
     const egg = Breeding.hatchStep(f.eggHatch || (f.eggHatch = {}), player.party);
     return egg ? { type: "egg-hatch", record: egg } : null;
   }
@@ -12111,10 +12120,40 @@
     const at = (who) => (who === "player" ? Overworld.position() : who === "obj_partner_poke" ? Overworld.follower.position()
       : who === 253 || /^#/.test(String(who)) ? null : Overworld.personPosition(who));
     const others = (who) => [Overworld.position()].concat(tracks.filter((t) => t.who !== who && t.who !== "player").map((t) => at(t.who)).filter(Boolean));
-    return Overworld.act(window.JohtoCoords.retarget(tracks, {
+    // (A scene the map's table walks its own way on Heart & Soul's ground: sceneMoves, tools/data/hns-johto-maps.json.)
+    // (A key may say where you are, "@x>=14": Goldenrod's Underground has a room at each entrance.)
+    const own = (window.WORLD_MAPS[map].sceneMoves || {}), you = Overworld.position();
+    const where = (c) => { const r = /^@([xy])(>=|<)(\d+)$/.exec(c); return r && (r[2] === ">=" ? you[r[1]] >= +r[3] : you[r[1]] < +r[3]); };
+    const mine = (t) => {
+      const k = t.who + " " + String(t.label || "").replace(/^\w+:/, "");
+      const c = Object.keys(own).find((n) => n.startsWith(k + " @") && where(n.slice(k.length + 1)));
+      return own[c || k];
+    };
+    const planned = window.JohtoCoords.retarget(tracks.filter((t) => !mine(t)), {
       map, at, free: (x, y, who) => !others(who).some((p) => p && p.x === x && p.y === y && who !== "player")
-    }).map((t) => (t.who === "obj_partner_poke" ? followerWalk(map, tracks.find((u) => u.who === t.who)) : t)));
+    }).map((t) => (t.who === "obj_partner_poke" ? followerWalk(map, tracks.find((u) => u.who === t.who)) : t));
+    return Overworld.act(tracks.map((t) => (mine(t) ? Object.assign({}, t, { moves: sceneWalk(map, t.who, mine(t), tracks) }) : planned.shift())));
   };
+  // (Its steps, with "to:x,y" for the shortest way to a tile, round walls and everyone standing about, and "at:x,y".)
+  function sceneWalk(map, who, moves, tracks) {
+    const m = window.WORLD_MAPS[map];
+    let at = who === "player" ? Overworld.position() : Overworld.personPosition(who);
+    const out = [];
+    for (const mv of moves) {
+      // ("at:x,y": there now, as Lyra coming up the stairs of the room you're in.)
+      const a = /^at:(-?\d+),(-?\d+)$/.exec(mv);
+      if (a && who !== "player") { at = { x: +a[1], y: +a[2] }; Overworld.addObject(who, { x: at.x, y: at.y, facing: "down" }); continue; }
+      const r = /^to:(-?\d+),(-?\d+)$/.exec(mv);
+      if (!r) { out.push(mv); continue; }
+      const to = { x: +r[1], y: +r[2] };
+      if (!at) continue;
+      const me = Overworld.position(), crowd = Overworld.people().filter((p) => p.def.localId !== who && !tracks.some((t) => t.who === p.def.localId));
+      const taken = (x, y) => (who !== "player" && x === me.x && y === me.y) || crowd.some((p) => p.x === x && p.y === y);
+      for (const d of window.JohtoCoords.path(m, at, to, (x, y) => !m.collision[y * m.width + x] && !taken(x, y))) out.push("walk_" + d);
+      at = to;
+    }
+    return out;
+  }
   // (Your walking Pokémon in a scene, on Heart & Soul's ground: HGSS's walk ends facing someone, as Ilex Forest's
   // Kimono Girl, so it goes the shortest way round to the tile beside whoever it faces, no one in its way; with no one
   // near, back behind you. Then what it does there: HGSS's steps in place.)
@@ -12994,7 +13033,7 @@
     badges: () => ({ johto: Player.REGION_BADGES.johto.filter((b) => player.badges.includes(b)).length, all: player.badges.length }),
     dex: () => ({ seen: Player.dexCount(player, "seen"), caught: Player.dexCount(player, "caught") }),
     caught: (species) => Player.hasCaught(player, species),
-    dayCare: () => [].concat(player.flags.dayCare2 || []).map((r) => r && Party.displayName(r)).filter(Boolean),
+    dayCare: () => [].concat(player.flags.johtoDayCare || []).map((r) => r && Party.displayName(r.mon || r)).filter(Boolean),
     frame: () => GameOptions.get().frame,
     baobaCall: (script) => johtoSafari.phoneCall(script)   // (Baoba's calls: ui/johto-safari.js)
   });
@@ -13476,7 +13515,7 @@
         onAvatar: (mode) => music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music),
         onStep: () => {
           Player.advanceClock(player);   // (the game's clock: Player.gameTime)
-          leftPallet(player.location.map); DayCare.step(player.flags.dayCare); DayCare.step(player.flags.dayCare2); vsSeekerStep(); friendshipStep();
+          leftPallet(player.location.map); DayCare.step(player.flags.dayCare); DayCare.step(player.flags.dayCare2); DayCare.step(player.flags.johtoDayCare); vsSeekerStep(); friendshipStep();
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)

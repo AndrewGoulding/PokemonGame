@@ -2153,7 +2153,14 @@ scene your walking Pokémon walks too (`obj_partner_poke`): in Ilex Forest it go
 helps her, the shortest way round to her side, then comes back behind you. HGSS's Wi-Fi and Mystery Gift staff aren't there. Coming through a door into a scene (the Kimono
 Girl outside Violet's Mart), you step out of the doorway first; someone a script walks to a door walks onto
 Heart & Soul's door (Elm's aide out of the Mart). In the Ruins of Alph's chambers Heart & Soul's table is the
-panel: examine it from the front. Everyone in Johto has HGSS's own sprite (`hgss_*`); you can't ride the
+panel: examine it from the front. Where Heart & Soul's ground is too unlike HGSS's for its walks, `sceneMoves` in
+`tools/data/hns-johto-maps.json` walks a scene its own way (by who and HGSS's movement label; `to:x,y` the shortest
+way there, `at:x,y` there at once, `@x>=14` for one part of the map): on Route 34 Lyra walks up to her grandpa
+and takes you into the Day-Care by Heart & Soul's side door, where she introduces you to her grandma across the
+counter, and coming out the Day-Care Man walks over and gives you his number and his wife's; in Goldenrod's
+Underground Lyra comes up the stairs of whichever entrance room you came in by. Route 34's Day-Care couple
+run this game's two-Pokémon Day-Care (Four Island's, with its Eggs, but their own: `player.flags.johtoDayCare`),
+the Pokégear's Day-Care calls about theirs. Everyone in Johto has HGSS's own sprite (`hgss_*`); you can't ride the
 Bicycle in Johto's buildings (its Pokémon Centers included), as in Kanto.
 Johto's wild Pokémon are HeartGold's and SoulSilver's: a slot where they differ is either, as likely
 (Skarmory, Teddiursa, Ledyba...), with this game's changes for a smoother level curve (`WILD_CHANGES` in
