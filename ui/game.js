@@ -6770,6 +6770,21 @@
   // left behind, never reached). FireRed's bite is Random() & 1, one cast in
   // two; here it's twice that, every cast where there's something to catch.
   const BITE_CHANCE = 1;
+  // Feebas (Emerald's CheckFeebas): six of Route 119's fishing spots, where half the bites are Feebas, Lv. 20 to 25.
+  // Which six is your own (Emerald's go by Dewford's trendy phrase; here by your Trainer ID).
+  let feebasCache = null;
+  function feebasSpots() {
+    if (feebasCache && feebasCache.id === player.trainerId) return feebasCache.spots;
+    const m = window.WORLD_MAPS.Route119, water = [];
+    for (let i = 0; m && i < m.width * m.height; i++)
+      if (World.isSurfable(m.behavior[i]) && m.behavior[i] !== World.MB.WATERFALL && !m.collision[i]) water.push((i % m.width) + "," + Math.floor(i / m.width));
+    let seed = (player.trainerId | 0) || 1;
+    const spots = new Set();
+    while (spots.size < Math.min(6, water.length)) { seed = (Math.imul(seed, 1103515245) + 12345) >>> 0; spots.add(water[(seed >>> 16) % water.length]); }
+    feebasCache = { id: player.trainerId, spots };
+    return spots;
+  }
+  if (window.HOENN_DEBUG) window.HoennDebug = Object.assign(window.HoennDebug || {}, { feebasSpots: () => [...feebasSpots()] });
   async function fish() {
     const at = player.location;
     const here = window.WORLD_MAPS[at.map] || {};
@@ -6802,7 +6817,9 @@
     Overworld.emote(null);
     Overworld.rod(null);
     const before = Fishing.level(fishingXp());
-    const mon = Fishing.encounter(at.map, before);
+    const spot = Overworld.ahead();
+    const mon = at.map === "Route119" && feebasSpots().has(spot.x + "," + spot.y) && Math.random() < 0.5
+      ? { species: "Feebas", level: 20 + Math.floor(Math.random() * 6), xp: Fishing.XP[Fishing.pickRod(before)] } : Fishing.encounter(at.map, before);
     if (!mon) return;
     player.flags.fishingCaptures = (player.flags.fishingCaptures | 0) + 1;
     player.flags.fishingXp = fishingXp() + mon.xp;
