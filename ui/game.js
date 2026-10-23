@@ -13004,6 +13004,13 @@
   const REGICE_PATH = [[4, 21], [5, 21], [6, 21], [7, 21], [8, 21], [9, 21], [10, 21], [11, 21], [12, 21], [12, 22], [12, 23], [13, 23],
     [13, 24], [13, 25], [13, 26], [13, 27], [12, 27], [12, 28], [4, 29], [5, 29], [6, 29], [7, 29], [8, 29], [9, 29], [10, 29], [11, 29],
     [12, 29], [4, 28], [4, 27], [3, 27], [3, 26], [3, 25], [3, 24], [3, 23], [4, 23], [4, 22]];
+  // The S.S. Tidal's cruise (CountSSTidalStep): 205 steps on board and it's halfway, or there.
+  function hoennCruiseStep() {
+    if (!hoenn.flag("FLAG_SYS_CRUISE_MODE")) return null;
+    const n = hoenn.getVar("VAR_CRUISE_STEP_COUNT") + 1;
+    hoenn.setVar("VAR_CRUISE_STEP_COUNT", n);
+    return n >= 205 ? { type: "hoenn-script", label: "SSTidalCorridor_EventScript_ReachedStepCount" } : null;
+  }
   function hoennRegiceStep() {
     const at = Overworld.position();
     if (at.map !== "IslandCave" || hoenn.flag("FLAG_SYS_BRAILLE_REGICE_COMPLETED") || !hoenn.flag("FLAG_TEMP_REGICE_PUZZLE_STARTED") || hoenn.flag("FLAG_TEMP_REGICE_PUZZLE_FAILED")) return null;
@@ -13196,6 +13203,30 @@
       }
       // The news flash's Pokémon (src/roamer.c's InitRoamer): red, Latias; blue, Latios. It roams Hoenn till caught.
       case "InitRoamer": player.flags.hoennRoamer = +api.getVar("VAR_0x8004") === 1 ? "Latios" : "Latias"; return true;
+      // The S.S. Tidal's sailings from Lilycove (src/script_menu.c's CreateLilycoveSSTidalMultichoice; its
+      // GetLilycoveSSTidalSelection is done here too): Slateport, the Battle Frontier once you've met Scott on board,
+      // and an island for each ticket (or the Old Sea Map) that's good (VAR_0x8004 1: only those just shown).
+      case "ScriptMenu_CreateLilycoveSSTidalMultichoice": {
+        await api.flush();
+        const shown = +api.getVar("VAR_0x8004") === 1, sel = [];
+        if (!shown) { sel.push(0); if (hoenn.flag("FLAG_MET_SCOTT_ON_SS_TIDAL")) sel.push(1); }
+        for (const [i, item, on, seen] of [[2, "eon-ticket", "FLAG_ENABLE_SHIP_SOUTHERN_ISLAND", "FLAG_SHOWN_EON_TICKET"], [3, "mystic-ticket", "FLAG_ENABLE_SHIP_NAVEL_ROCK", "FLAG_SHOWN_MYSTIC_TICKET"],
+          [4, "aurora-ticket", "FLAG_ENABLE_SHIP_BIRTH_ISLAND", "FLAG_SHOWN_AURORA_TICKET"], [5, "old-sea-map", "FLAG_ENABLE_SHIP_FARAWAY_ISLAND", "FLAG_SHOWN_OLD_SEA_MAP"]]) {
+          if (!Player.itemCount(player, item) || !hoenn.flag(on)) continue;
+          if (!shown) sel.push(i); else if (!hoenn.flag(seen)) { sel.push(i); hoenn.setFlag(seen, true); }
+        }
+        sel.push(6);
+        const k = await hoennEnv.choose(sel.map((i) => ["Slateport City", "Battle Frontier", "Southern Island", "Navel Rock", "Birth Island", "Faraway Island", "Exit"][i]), null);
+        api.set(k < 0 ? 127 : sel[k]);
+        return true;
+      }
+      case "GetLilycoveSSTidalSelection": return true;
+      // (On board, the voyage goes on as you walk about the ship: src/field_specials.c's cruise steps, 205 of them.)
+      case "SetSSTidalFlag": hoenn.setFlag("FLAG_SYS_CRUISE_MODE", true); hoenn.setVar("VAR_CRUISE_STEP_COUNT", 0); return true;
+      case "ResetSSTidalFlag": hoenn.setFlag("FLAG_SYS_CRUISE_MODE", false); return true;
+      // (The Match Call tutorial in Rustboro: this game's Start menu has no PokéNav to pick, so it's picked for you.)
+      case "ScriptMenu_CreateStartMenuForPokenavTutorial": api.set(3); return true;
+      case "OpenPokenavForTutorial": return true;
       case "HasAllHoennMons": api.set(hoennDexCount("caught", true) >= 200 ? 1 : 0); return true;
       // (The Sealed Chamber: Wailord first in the party, and Relicanth last.)
       case "CheckRelicanthWailord": { const p = player.party, last = p[p.length - 1]; api.set(p[0] && !p[0].egg && p[0].species === "Wailord" && last && !last.egg && last.species === "Relicanth" ? 1 : 0); return true; }
@@ -13913,7 +13944,7 @@
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
-          return hoennRegiceStep() || hoennCrackedStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
+          return hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
         adjustWild: (mon, table) => { const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
