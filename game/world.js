@@ -291,11 +291,13 @@
     while (slot < weights.length - 1 && roll >= weights[slot]) roll -= weights[slot++];
     const s = t.slots[slot];
     if (!s || !s.species) return null;
-    // A slot where LeafGreen differs from FireRed: either version's Pokémon.
+    // A slot where LeafGreen differs from FireRed (or, in Johto, SoulSilver from
+    // HeartGold): either version's Pokémon, as likely as each other.
     // (Johto's slots that HGSS fills by the time of day: any of its morning's,
     // day's and night's Pokémon, this game having no clock for encounters.)
-    const kinds = [s.species, s.morning, s.night].filter((k, i, all) => k && all.indexOf(k) === i);
-    const species = kinds.length > 1 ? kinds[Math.floor(rng() * kinds.length)] : s.alt && rng() < 0.5 ? s.alt : s.species;
+    const alt = s.alt && rng() < 0.5;
+    const kinds = (alt ? [s.alt, s.altMorning, s.altNight] : [s.species, s.morning, s.night]).filter((k, i, all) => k && all.indexOf(k) === i);
+    const species = kinds.length > 1 ? kinds[Math.floor(rng() * kinds.length)] : kinds[0];
     // (`slot`: which one, for Tanoby's Unown, whose letter goes by it.)
     return { species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)), slot };
   }
@@ -322,7 +324,7 @@
       let roll = Math.floor(rng() * 100), k = 0;
       while (k < w.length - 1 && roll >= w[k]) roll -= w[k++];
       const s = r.slots[k];
-      return s && s.species ? { species: s.species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)), slot: k } : null;
+      return s && s.species ? { species: s.alt && rng() < 0.5 ? s.alt : s.species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)), slot: k } : null;
     }
     if (!t || !slots) return null;
     let roll = Math.floor(rng() * 100), k = 0;

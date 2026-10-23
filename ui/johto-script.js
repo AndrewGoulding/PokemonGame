@@ -411,6 +411,8 @@
           case "NameRival": state().rival = "Silver"; setVar(a[0], 0); break;
           case "HealParty": env.healParty(); break;
           case "GiveTogepiEgg": await env.giveEgg("Togepi"); break;
+          // (The Burned Tower's beasts, off to roam Johto: HGSS's ROAMER_RAIKOU, ROAMER_ENTEI.)
+          case "CreateRoamer": if (env.createRoamer) env.createRoamer(+getVar(a[0])); break;
           case "TakeItemNoCheck": itemVars(a[0], a[1]); setVar("VAR_SPECIAL_RESULT", env.takeItem(getVar(a[0]), +getVar(a[1]) || 1) ? 1 : 0); break;
           case "GetPlayerGender": setVar(a[0], env.isGirl() ? 1 : 0); break;
           case "GetWeekday": { const d = contestWeekday(zone, C, pc, state()); setVar(a[0], d != null ? d : gameTime().weekday); break; }

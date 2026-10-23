@@ -2099,7 +2099,14 @@ the Pokéathlon Dome, the Battle Frontier and its access, the Sinjoh Ruins, the 
 the Global Terminal, the Radio Tower's lift and observation deck, the Ruins of Alph's hall or the
 Safari Zone's grounds (whose Areas are HGSS's), so those keep HGSS's maps. On Heart & Soul's maps
 there are no Rock Climb walls (its rock stairs you walk up), and its Gyms are its own puzzles:
-HGSS's lift, dark, winch and ice blocks (below) are off there. New Bark Town's Pokémon Center (below) is Heart & Soul's Cherrygrove Center, drawn into the town's map south of Elm's lab. Without `--hns` the build draws
+HGSS's lift, dark, winch and ice blocks (below) are off there. Its Apricorn trees stand on Heart & Soul's own trees (drawn by the map, with no sprite of HGSS's
+over them), HGSS's Cut trees, rocks and boulders only where Heart & Soul has its own (and Heart &
+Soul's own besides), the nurse and clerks behind its counters, Pokémon by the same Pokémon (Sudowoodo in its
+place), and no one stands in a way through the map that wasn't in the way in HGSS's (Route 30's
+youngsters step aside; Sudowoodo still blocks Route 36). Prof. Elm, Mom and Elm's aide have HGSS's own sprites.
+Johto's wild Pokémon are HeartGold's and SoulSilver's: a slot where they differ is either, as likely
+(Skarmory, Teddiursa, Ledyba...). Raikou and Entei roam Johto after the Burned Tower (HGSS's
+CreateRoamer): 1 in 16 wild battles in its grass outdoors, Lv. 40, until caught. New Bark Town's Pokémon Center (below) is Heart & Soul's Cherrygrove Center, drawn into the town's map south of Elm's lab. Without `--hns` the build draws
 every map from HGSS as below. None of Heart & Soul's or HGSS's source is in this repository; the
 built pictures and data are.
 

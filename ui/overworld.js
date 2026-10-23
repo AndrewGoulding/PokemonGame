@@ -1848,7 +1848,8 @@
 
     // People and the player, back to front.
     const emotes = [];
-    const sprites = people.filter((p) => !p.hidden).map((p) => {
+    // (`drawnOnMap`: someone the map's picture already shows, as Johto's Apricorn trees on Heart & Soul's maps.)
+    const sprites = people.filter((p) => !p.hidden && !p.def.drawnOnMap).map((p) => {
       let x = p.x * TILE, y = p.y * TILE;
       if (p.move) {
         const [dx, dy] = World.DIRS[p.facing];

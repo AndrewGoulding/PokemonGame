@@ -475,6 +475,7 @@
     }
     if (opts.safari && player.flags.safari) player.flags.safari.balls = b.safari.balls;
     if (result.outcome === "caught") {
+      if (player.flags.johtoRoamers) delete player.flags.johtoRoamers[foe.team[0].species];   // (a roaming beast caught: it roams no more)
       const record = Party.caught(foe.team[0], b.caught, ballUsed(b));
       delete record.teraAce;   // (a Tera Pokémon keeps its Tera Type)
       await addCaught(record, opts.keepCaught);
@@ -2344,7 +2345,7 @@
       const secs = (window.TOWN_MAP || {}).mapSections || {};
       const walk = (o, sec) => {
         if (!o || typeof o !== "object") return;
-        for (const sp of [o.species, o.alt]) if (sp) (areaIndex[sp] = areaIndex[sp] || new Set()).add(sec);
+        for (const sp of [o.species, o.alt, o.morning, o.night, o.altMorning, o.altNight]) if (sp) (areaIndex[sp] = areaIndex[sp] || new Set()).add(sec);
         for (const v of Object.values(o)) walk(v, sec);
       };
       for (const [name, m] of Object.entries(window.WORLD_MAPS)) if (secs[name] && m.wild) walk(m.wild, secs[name]);
@@ -8028,6 +8029,24 @@
     }
   }
 
+  // ---------- Johto's roaming beasts ----------
+  //
+  // HGSS's CreateRoamer, after the Burned Tower (Raikou and Entei; Suicune
+  // waits at the Bell Tower, as in HGSS): each roams Johto until you catch it.
+  // Here one of them is the Pokémon in 1 of 16 wild battles in Johto's grass
+  // outdoors, at Lv. 40, as likely either; run from it, or knock it out, and it
+  // roams on.
+  const JOHTO_ROAMERS = ["Raikou", "Entei"];
+  function roamerWild(mon, table) {
+    // (A save from past the Burned Tower before the beasts roamed: off they go.)
+    if (!player.flags.johtoRoamers && johto.flag("FLAG_HIDE_BURNED_TOWER_B1F_RAIKOU")) player.flags.johtoRoamers = { Raikou: true, Entei: true };
+    const r = player.flags.johtoRoamers, m = window.WORLD_MAPS[player.location.map] || {};
+    if (!mon || table !== m.wild || !r || m.region !== "johto" || m.type === "indoor" || m.type === "underground") return mon;
+    const out = JOHTO_ROAMERS.filter((sp) => r[sp]);
+    if (!out.length || Math.random() >= 1 / 16) return mon;
+    return { species: out[Math.floor(Math.random() * out.length)], level: 40 };
+  }
+
   // ---------- The GS Ball (Pokémon Crystal's) ----------
   //
   // This game's way to it: once you've been through the Hall of Fame, Prof.
@@ -11890,6 +11909,7 @@
     fade: (out) => (out ? Overworld.fadeToBlack() : Overworld.fadeFromBlack()),
     trainerBattle: (id) => johtoBattle("trainer", id),
     wildBattle: (species, level) => johtoBattle("wild", species, level),
+    createRoamer: (i) => { const sp = JOHTO_ROAMERS[i]; if (sp) (player.flags.johtoRoamers || (player.flags.johtoRoamers = {}))[sp] = true; },
     warp: johtoWarp,
     // (The Magnet Train's ride, ScrCmd_722: ui/magnet-train.js.)
     magnetTrain: (toward, mapConst, x, y) => magnetTrain.ride(toward, mapConst, x, y),
@@ -13192,7 +13212,7 @@
           hoennWeatherStep(); berryFarm.step(); hoennBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
           return icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
-        adjustWild: (mon, table) => { const m = Encounters.leadWild(mon, leadMon(), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
+        adjustWild: (mon, table) => { const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
         onMap: (m) => {
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();

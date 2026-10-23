@@ -324,7 +324,8 @@ for (const m of fs.readFileSync(path.join(ROOT, "include/constants/mmodel.h"), "
 // FireRed's: stand down, up, left; walk down, down, up, up, left, left.
 const FR_FRAMES = [4, 0, 8, 5, 7, 1, 3, 9, 11];
 // FireRed's nearest to HGSS's people (their size and frames as Kanto's people
-// with that sprite have them), for those without a sheet of their own.
+// with that sprite have them), for those without a sheet of their own. (Not
+// Prof. Elm, Ethan's mom or Elm's aide: HGSS's own sprites for them.)
 const FR_PEOPLE = {
   SPRITE_GSBOY1: "boy", SPRITE_GSBOY2: "youngster", SPRITE_GSBOY3: "camper", SPRITE_GSBABYBOY1: "little_boy",
   SPRITE_GSGIRL1: "lass", SPRITE_GSGIRL2: "little_girl", SPRITE_GSGIRL3: "picnicker",
@@ -332,10 +333,10 @@ const FR_PEOPLE = {
   SPRITE_GSMAN1: "man", SPRITE_GSMAN2: "cooltrainer_m", SPRITE_GSMAN3: "cooltrainer_m", SPRITE_GSBIGMAN: "fat_man", SPRITE_GSMIDDLEMAN1: "balding_man",
   SPRITE_GSOLDMAN1: "old_man_1", SPRITE_GSOLDWOMAN1: "old_woman", SPRITE_JUGGRER: "gentleman", SPRITE_COUNTERM: "clerk",
   SPRITE_ROCKETM: "rocket_m", SPRITE_ROCKETW: "rocket_f", SPRITE_POLICEMAN: "policeman", SPRITE_PICNICGIRL_2: "picnicker",
-  SPRITE_CAMPBOY_2: "camper", SPRITE_FISHING_2: "fisher", SPRITE_MOUNT_2: "hiker", SPRITE_DOCTOR: "scientist", SPRITE_GSMAMA: "mom",
+  SPRITE_CAMPBOY_2: "camper", SPRITE_FISHING_2: "fisher", SPRITE_MOUNT_2: "hiker",
   SPRITE_GSFIGHTER: "black_belt", SPRITE_MANIA: "poke_maniac", SPRITE_SUIT: "gentleman",
   SPRITE_FIRE: "man", SPRITE_MYSTERY_2: "boy", SPRITE_OOKIDO: "prof_oak", SPRITE_PCWOMAN1: "nurse", SPRITE_SHOPM1_2: "clerk",
-  SPRITE_ASSISTANTM: "scientist", SPRITE_INSTRUCTOR: "man", SPRITE_GSGENTLEMAN: "gentleman", SPRITE_MIDDLEWOMAN1_2: "mom",
+  SPRITE_INSTRUCTOR: "man", SPRITE_GSGENTLEMAN: "gentleman", SPRITE_MIDDLEWOMAN1_2: "mom",
   SPRITE_GSDSBOY: "boy", SPRITE_GSBABYGIRL1: "little_girl",
   SPRITE_FOLLOWER_MON_STATIC_SLOWPOKE: "slowpoke", SPRITE_FOLLOWER_MON_STATIC_PIDGEY: "pidgey",
   // (Item balls, small trees and breakable rocks: FireRed's, as the game uses them.)
@@ -593,18 +594,26 @@ function cianwoodDry(m, r) {
 // ---------- The maps ----------
 
 const enc = JSON.parse(fs.readFileSync(F("fielddata/encountdata/gs_enc_data.json"), "utf8")).encounters;
-const ver = (v) => (v && typeof v === "object" && !Array.isArray(v) && "HEARTGOLD" in v ? v.HEARTGOLD : v);
+const ver = (v, g) => (v && typeof v === "object" && !Array.isArray(v) && "HEARTGOLD" in v ? (g === "SS" ? v.SOULSILVER : v.HEARTGOLD) : v);
 // (A grass slot's Pokémon by the time of day, as HGSS's: morning 4-10,
-// day 10-20, night 20-4; the morning's and night's only where they differ.)
+// day 10-20, night 20-4; the morning's and night's only where they differ.
+// HeartGold's, and SoulSilver's where they differ (`alt`, `altMorning`,
+// `altNight`): game/world.js picks either version's as likely as the other.)
 const slot = (s) => {
   const lv = ver(s.level);
   const timed = s.species && s.species.day !== undefined;
-  const sp = species(ver(timed ? s.species.day : s.species));
+  const pick = (g) => {
+    const sp = species(ver(timed ? s.species.day : s.species, g));
+    return timed ? [sp, species(ver(s.species.morn, g)), species(ver(s.species.nite, g))] : [sp, null, null];
+  };
+  const [sp, morn, nite] = pick("HG"), ss = pick("SS");
   const out = { species: sp, min: typeof lv === "object" ? lv.min : lv, max: typeof lv === "object" ? lv.max : lv };
-  if (timed) {
-    const morn = species(ver(s.species.morn)), nite = species(ver(s.species.nite));
-    if (morn && morn !== sp) out.morning = morn;
-    if (nite && nite !== sp) out.night = nite;
+  if (morn && morn !== sp) out.morning = morn;
+  if (nite && nite !== sp) out.night = nite;
+  if (ss.join() !== [sp, morn, nite].join() && ss[0]) {
+    out.alt = ss[0];
+    if (ss[1] && ss[1] !== ss[0]) out.altMorning = ss[1];
+    if (ss[2] && ss[2] !== ss[0]) out.altNight = ss[2];
   }
   return out;
 };
@@ -911,7 +920,7 @@ MAPS.forEach((m, i) => {
     // Everyone, each with HGSS's flag that hides them (hgssFlag: the story's),
     // and what they do: their script; or, for trainers, item balls, small
     // trees, breakable rocks and Apricorn trees, the game's own way.
-    const def = Object.assign({ id: people.length, localId: p.id, x: p.x, y: p.y, movement: movement(p), rangeX: p.rangeX || 1, rangeY: p.rangeY || 1,
+    const def = Object.assign({ id: people.length, localId: p.id, x: p.x, y: p.y, movement: FR_OBJECTS.has(p.sprite) ? "face_down" : movement(p), rangeX: p.rangeX || 1, rangeY: p.rangeY || 1,
       script: null, flag: null, text: null }, look, p.flag && p.flag !== "FLAG_NOTHING" ? { hgssFlag: p.flag } : {});
     let mt;
     if ((mt = /^std_trainer\((\w+)\)/.exec(s))) {

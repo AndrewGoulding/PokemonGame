@@ -123,7 +123,7 @@
   // Pokémon five or more levels below the lead's; Hustle, Pressure and Vital
   // Spirit make it its slot's highest level half the time. -> mon or null.
   const TYPE_LURES = { "Static": "Electric", "Lightning Rod": "Electric", "Magnet Pull": "Steel", "Flash Fire": "Fire", "Storm Drain": "Water", "Harvest": "Grass" };
-  const slotSpecies = (s) => [s.species, s.morning, s.night, s.alt].filter((k, i, all) => k && all.indexOf(k) === i);
+  const slotSpecies = (s) => [s.species, s.morning, s.night, s.alt, s.altMorning, s.altNight].filter((k, i, all) => k && all.indexOf(k) === i);
   const hasType = (species, type) => !!window.DEX[species] && window.DEX[species].types.includes(type);
   function leadWild(mon, lead, table, rng) {
     if (!mon || !lead) return mon;

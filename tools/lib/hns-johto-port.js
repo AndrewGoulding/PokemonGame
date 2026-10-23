@@ -90,8 +90,13 @@ module.exports = function port(HN, out, opts) {
   // (HGSS's sprites and Heart & Soul's that are the same people: the Gym guide, nurses, clerks, the Leaders.)
   const SAME = { SUNGLASSES: "GYMGUY", PCWOMAN: "NURSE", SHOPM: "MARTEMPLOYEE", LEADER1: "FALKNER", LEADER2: "BUGSY", LEADER3: "WHITNEY",
     LEADER4: "MORTY", LEADER5: "CHUCK", LEADER6: "JASMINE", LEADER7: "PRYCE", LEADER8: "CLAIR" };
+  // (And the Pokémon standing about: HGSS's by their Japanese names or as "following" Pokémon, Heart & Soul's as MON_BASE+SPECIES_.)
+  const MON = { USOKKY: "SUDOWOODO", RGYARADOSU: "GYARADOS", RAPURASU: "LAPRAS", YADON: "SLOWPOKE" };
+  const isMon = (s) => /MON_BASE\+SPECIES_|FOLLOWER_MON_STATIC|TSURE_POKE/.test(String(s || "").toUpperCase()) || !!MON[String(s || "").toUpperCase().replace(/^(SPRITE_|HGSS_)/, "")];
   const look = (s) => {
-    const k = String(s || "").toUpperCase().replace(/^(OBJ_EVENT_GFX_|SPRITE_)/, "").replace(/^(GS|HGSS_)/, "").replace(/_/g, "");
+    const k = String(s || "").toUpperCase().replace(/^(OBJ_EVENT_GFX_|SPRITE_)/, "").replace(/^(GS|HGSS_)/, "").replace(/_/g, "")
+      .replace(/^MONBASE\+SPECIES/, "").replace(/^(TSUREPOKE|FOLLOWERMON)STATIC/, "");
+    if (MON[k]) return MON[k];
     const m = /^(LEADER\d|PCWOMAN|SHOPM|SUNGLASSES)/.exec(k);
     return m ? SAME[m[1]] : k.replace(/\d+$/, "");
   };
@@ -100,7 +105,7 @@ module.exports = function port(HN, out, opts) {
     if (p.script === "EventScript_CutTree") return "cut";
     if (p.script === "EventScript_RockSmash") return "rock";
     if (/^hgss_apricorn/.test(p.script || "")) return "tree";
-    if (/BOULDER|ROCK/.test(p.hgssSprite || "")) return "boulder";
+    if (/^SPRITE_ROCK$/.test(p.hgssSprite || "")) return "boulder";   // (Strength's: not SPRITE_ROCKETM, nor SPRITE_BREAKROCK)
     return "person";
   }
   function kindOfHns(o) {
@@ -111,6 +116,24 @@ module.exports = function port(HN, out, opts) {
     if (/BERRY_TREE/.test(g)) return "tree";
     if (/BOULDER/.test(g)) return "boulder";
     return "person";
+  }
+  // Cut trees, breakable rocks and boulders: Heart & Soul's own where it has them (see below), each as one of HGSS's looks.
+  const OBSTACLE = new Set(["cut", "rock", "boulder"]);
+  let obstacleLooks = null;
+  function obstacleLook(kind) {
+    if (!obstacleLooks) {
+      obstacleLooks = {};
+      for (const m of Object.values(out)) for (const p of m.people || []) {
+        const k = kindOfHgss(p);
+        if (OBSTACLE.has(k) && !obstacleLooks[k] && !p.hgssFlag) {
+          const t = Object.assign({}, p);
+          delete t.hgssFlag; delete t.offstage;
+          Object.defineProperty(t, "hgssSprite", { value: p.hgssSprite });
+          obstacleLooks[k] = t;
+        }
+      }
+    }
+    return obstacleLooks[kind];
   }
   // Greedy one-to-one matching under a cost (lowest first), costs over `limit` left out.
   function match(as, bs, cost, limit) {
@@ -144,6 +167,48 @@ module.exports = function port(HN, out, opts) {
     while (q.length) { const k = q.pop(), x = k % W, y = (k / W) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (open(x + dx, y + dy)) add(x + dx, y + dy); }
     return (g.reach = seen);
   }
+  // How well a map's entrances (each door, and each edge it joins others by) get to one another with
+  // `blocked` tiles (people) in the way: the count of entrance-to-entrance ways there are, going as you
+  // would early on (ledges one way only, down them; no Surf).
+  const LEDGE = { 0x38: [1, 0], 0x39: [-1, 0], 0x3a: [0, -1], 0x3b: [0, 1] };
+  function reachScore(m, blocked, edges) {
+    const W = m.width, H = m.height;
+    const open = (k) => !m.collision[k] && !WATER.has(m.behavior[k]) && !blocked.has(k);
+    const groups = m.warps.map((w) => [w.y * W + w.x]);
+    if (edges) {
+      const sides = [[], [], [], []];
+      for (let x = 0; x < W; x++) { sides[0].push(x); sides[1].push((H - 1) * W + x); }
+      for (let y = 0; y < H; y++) { sides[2].push(y * W); sides[3].push(y * W + W - 1); }
+      for (const sd of sides) { const o = sd.filter(open); if (o.length) groups.push(o); }
+    }
+    const groupOf = new Map();
+    groups.forEach((gr, i) => gr.forEach((k) => { if (!groupOf.has(k)) groupOf.set(k, i); }));
+    let score = 0;
+    for (const gr of groups) {
+      const seen = new Uint8Array(W * H), q = gr.filter((k) => !blocked.has(k)), got = new Set();
+      for (const k of q) seen[k] = 1;
+      while (q.length) {
+        const k = q.pop(), x = k % W, y = (k / W) | 0;
+        if (groupOf.has(k)) got.add(groupOf.get(k));
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          let nx = x + dx, ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+          let n = ny * W + nx;
+          const L = LEDGE[m.behavior[n]];
+          if (L) { if (L[0] !== dx || L[1] !== dy) continue; nx += dx; ny += dy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; n = ny * W + nx; }
+          if (seen[n] || !(open(n) || groupOf.has(n) && !blocked.has(n))) continue;
+          // (Between heights only from or onto 0 or 15, as game/world.js steps.)
+          const za = m.elevation ? m.elevation[k] : 0, zb = m.elevation ? m.elevation[n] : 0;
+          if (!L && za !== zb && za !== 0 && zb !== 0 && za !== 15 && zb !== 15) continue;
+          seen[n] = 1; q.push(n);
+        }
+      }
+      score += got.size;
+    }
+    return score;
+  }
+  // Does `k` (a person there) cut ways between entrances that `blocked` leaves open?
+  const parts = (m, blocked, k, edges) => reachScore(m, new Set([...blocked, k]), edges) < reachScore(m, blocked, edges);
   function placeOn(g, fx, fy, free, doors) {
     let best = null, bc = Infinity;
     const reach = reachable(g);
@@ -185,23 +250,37 @@ module.exports = function port(HN, out, opts) {
         src = { map: S, width: hg.width, height: hg.height, fit: anchors.length >= 2 ? Coords.fit(anchors) : anchors.length === 1 ? (() => { const f = src.fit; return [f[0], anchors[0][2] - f[0] * anchors[0][0], f[2], anchors[0][3] - f[2] * anchors[0][1]]; })() : src.fit, anchors };
       }
       // People, signs and hidden items to Heart & Soul's: more anchors.
-      const hp = hg.people.map((p) => ({ p, x: p.x, y: p.y, kind: kindOfHgss(p), look: look(p.hgssSprite || p.sprite) }));
-      const op = g.objects.map((o, k) => ({ o, k, x: o.x, y: o.y, kind: kindOfHns(o), look: look(o.graphics_id) })).filter((o) => !takenObj.has(o.k));
-      // (Heart & Soul's people where you can stand, only.)
+      const hp = hg.people.map((p) => ({ p, x: p.x, y: p.y, kind: kindOfHgss(p), look: look(p.hgssSprite || p.sprite), mon: isMon(p.hgssSprite || p.sprite) }));
+      const op = g.objects.map((o, k) => ({ o, k, x: o.x, y: o.y, kind: kindOfHns(o), look: look(o.graphics_id), mon: isMon(o.graphics_id) })).filter((o) => !takenObj.has(o.k));
+      // (A Pokémon only to the same Pokémon: Sudowoodo to Sudowoodo, not to the man beside it.)
+      const monOk = (a, b) => a.mon === b.mon && (!a.mon || a.look === b.look);
+      // (Heart & Soul's people where you can stand, only; its trees, rocks and boulders where they are, solid as they are.)
       const rch = reachable(g);
-      const opw = op.filter((o) => walkable(g, o.x, o.y) && rch[o.y * g.width + o.x]);
+      // (Or where you can't get to but someone the same stands there: the nurse and the clerks behind their counters.)
+      const opw = op;
+      for (const o of opw) o.far = (o.kind === "person" || o.kind === "item") && !(walkable(g, o.x, o.y) && rch[o.y * g.width + o.x]);
       const ppairs = match(hp, opw, (a, b) => {
-        if (a.kind !== b.kind) return Infinity;
+        if (a.kind !== b.kind || !monOk(a, b) || (b.far && (a.kind !== "person" || a.look !== b.look))) return Infinity;
         return dist(src, a, b) + (a.kind === "person" && a.look !== b.look ? 2 : 0);
       }, 5);
       // (Then, further, the rest of each to the rest of Heart & Soul's of their kind: a trainer to a trainer.)
       {
         const ua = new Set(ppairs.map(([i]) => i)), ub = new Set(ppairs.map(([, j]) => j));
-        const ra = hp.map((h, i) => i).filter((i) => !ua.has(i) && !hp[i].p.offstage), rb = opw.map((o, j) => j).filter((j) => !ub.has(j));
+        const ra = hp.map((h, i) => i).filter((i) => !ua.has(i) && !hp[i].p.offstage), rb = opw.map((o, j) => j).filter((j) => !ub.has(j) && !opw[j].far);
         const trainerOf = (o) => o.o.trainer_type && o.o.trainer_type !== "TRAINER_TYPE_NONE";
-        const more = match(ra.map((i) => hp[i]), rb.map((j) => opw[j]), (a, b) => (a.kind !== b.kind ? Infinity
+        const more = match(ra.map((i) => hp[i]), rb.map((j) => opw[j]), (a, b) => (a.kind !== b.kind || !monOk(a, b) ? Infinity
           : dist(src, a, b) + (a.kind === "person" && !!a.p.trainer !== trainerOf(b) ? 5 : 0) + (a.kind === "person" && a.look !== b.look ? 1 : 0)), 11);
         for (const [i, j, v] of more) ppairs.push([ra[i], rb[j], v + 100]);
+        // (The same people where you can't stand, further: Sudowoodo in its tree's place.)
+        {
+          const ua3 = new Set(ppairs.map(([i]) => i)), ub3 = new Set(ppairs.map(([, j]) => j));
+          const fa = hp.map((h, i) => i).filter((i) => !ua3.has(i) && hp[i].kind === "person"), fb = opw.map((o, j) => j).filter((j) => !ub3.has(j) && opw[j].far && opw[j].kind === "person");
+          for (const [i, j, v] of match(fa.map((i) => hp[i]), fb.map((j) => opw[j]), (a, b) => (a.look === b.look ? dist(src, a, b) : Infinity), 11)) ppairs.push([fa[i], fb[j], v + 150]);
+        }
+        // (And the Apricorn trees left onto Heart & Soul's berry trees left, however far: they're only where the fruit grows.)
+        const ua2 = new Set(ppairs.map(([i]) => i)), ub2 = new Set(ppairs.map(([, j]) => j));
+        const ta = hp.map((h, i) => i).filter((i) => !ua2.has(i) && hp[i].kind === "tree"), tb = opw.map((o, j) => j).filter((j) => !ub2.has(j) && opw[j].kind === "tree");
+        for (const [i, j, v] of match(ta.map((i) => hp[i]), tb.map((j) => opw[j]), (a, b) => dist(src, a, b), Infinity)) ppairs.push([ta[i], tb[j], v + 200]);
       }
       const hs = hg.signs.map((s, i) => ({ s, i, x: s.x, y: s.y }));
       const os = g.bgs.map((b, k) => ({ b, k, x: b.x, y: b.y })).filter((o) => o.b.type === "sign" && !takenBg.has(o.k));
@@ -226,9 +305,20 @@ module.exports = function port(HN, out, opts) {
       // People.
       const pm = new Map(ppairs.map(([i, j]) => [i, opw[j]]));
       const doorTiles = new Set(warps.map((w) => w.x + "," + w.y));
+      // (Who stands in the way in HGSS's map, with everyone else there: kept so, as Sudowoodo and the guards are.)
+      const hgEdges = (hg.connections || []).length > 0, hgAll = new Set(hp.filter((x) => !x.p.offstage).map((x) => x.y * hg.width + x.x));
       hp.forEach((h, i) => {
         const p = Object.assign({}, h.p), m = pm.get(i);
+        if (!OBSTACLE.has(h.kind) && h.kind !== "tree") {
+          const others = new Set(hgAll); others.delete(h.y * hg.width + h.x);
+          Object.defineProperty(p, "inTheWay", { value: parts(hg, others, h.y * hg.width + h.x, hgEdges), writable: true });
+        }
+        // (A Cut tree, breakable rock or boulder of HGSS's with none of Heart & Soul's for it: Heart & Soul's
+        // ground has its own where it needs them, so it's left out.)
+        if (!m && OBSTACLE.has(h.kind)) { rep.obstaclesDropped = (rep.obstaclesDropped || 0) + 1; return; }
         let x, y;
+        // (An Apricorn tree on one of Heart & Soul's trees: its picture is the map's own, drawn already.)
+        if (m && h.kind === "tree") p.drawnOnMap = true;
         if (m) { x = m.x; y = m.y; takenObj.add(m.k); rep.peopleMatched++; if (p.trainer && +m.o.trainer_sight_or_berry_tree_id) p.trainer = Object.assign({}, p.trainer, { sight: +m.o.trainer_sight_or_berry_tree_id }); }
         else [x, y] = placeOn(g, ...fwd(h.x, h.y), (u, v) => !used.has(v * g.width + u) && !taken.has(v * g.width + u), doorTiles);
         rep.people++;
@@ -317,6 +407,37 @@ module.exports = function port(HN, out, opts) {
         idx[i] = warps.length - 1; rep.warpsAdded++;
       });
     }
+    // (No one in the way here who wasn't in HGSS's: whoever parts the map's entrances, as Route 30's Youngster
+    // Joey in its one gap would, moves to the nearest tile that doesn't.)
+    {
+      const gEdges = g.pieces.some((p) => (HN.maps[p.hns].connections || []).length), gm2 = { width: g.width, height: g.height, collision: g.collision, behavior: g.behavior, elevation: g.elevation, warps };
+      // (Cut trees, rocks and boulders in the way too, Heart & Soul's own among them: not yet cut early on.)
+      const W = g.width, kept = new Set(g.objects.filter((o, k) => OBSTACLE.has(kindOfHns(o)) && !takenObj.has(k)).map((o) => o.y * W + o.x));
+      for (const p of people) if (p.inTheWay === undefined) kept.add(p.y * W + p.x);
+      for (const p of people) {
+        if (p.inTheWay === undefined) continue;
+        if (p.inTheWay) { kept.add(p.y * W + p.x); continue; }
+        if (!parts(gm2, kept, p.y * W + p.x, gEdges)) { kept.add(p.y * W + p.x); continue; }
+        const was = [p.x, p.y], busy = new Set(people.map((q) => q.y * W + q.x));
+        let best = null;
+        for (let r = 1; r <= 12 && !best; r++) for (let dy = -r; dy <= r && !best; dy++) for (let dx = -r; dx <= r && !best; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const x = was[0] + dx, y = was[1] + dy, k = y * W + x;
+          if (!walkable(g, x, y) || busy.has(k) || used.has(k) || !reachable(g)[k] || parts(gm2, kept, k, gEdges)) continue;
+          best = [x, y];
+        }
+        if (best) { [p.x, p.y] = best; rep.movedAside = (rep.movedAside || 0) + 1; }
+        kept.add(p.y * W + p.x);
+      }
+    }
+    // (And Heart & Soul's own Cut trees, breakable rocks and boulders that none of HGSS's took: as HGSS's are.)
+    g.objects.forEach((o, k) => {
+      const kind = kindOfHns(o), t = obstacleLook(kind);
+      if (!OBSTACLE.has(kind) || takenObj.has(k) || !t) return;
+      takenObj.add(k);
+      people.push(Object.assign({}, t, { id: people.length, localId: "hns_" + kind + "_" + G + "_" + k, x: o.x, y: o.y, movement: "face_down", flag: null }));
+      rep.obstaclesAdded = (rep.obstaclesAdded || 0) + 1;
+    });
     // (Heart & Soul's doors to where this game has nothing, and that nothing took: gone (renumbered below).)
     for (const w of warps) if (w.loose) w.gone = true;
     // Connections: Heart & Soul's, between maps this game has, along this map's edges.
