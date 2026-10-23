@@ -52,6 +52,9 @@ const ROOT = process.argv.slice(2).find((a) => !a.startsWith("--")) || process.e
 // (Drawn as HGSS draws them, seen from above (tools/lib/hgss-map.js); with --painted, in FireRed's style from
 // what each tile is, as Kanto is (tools/lib/fr-painter.js), the way Johto was first drawn.)
 const HGSS_LOOK = !process.argv.includes("--painted");
+// (--hybrid: the ground painted in FireRed's style, as --painted paints it, with HGSS's own buildings over it,
+// every one of them, redrawn as GBA pixel art: a small palette each, flat shading, a dark outline (gbaBuildings).)
+const HYBRID = process.argv.includes("--hybrid");
 if (!ROOT || !fs.existsSync(path.join(ROOT, "files/fielddata"))) {
   console.error("Usage: node tools/build-johto.js <path to pret/pokeheartgold> [--painted]");
   process.exit(1);
@@ -440,6 +443,57 @@ function movement(p) {
   return "face_" + (FACING[p.facing] || "down");
 }
 
+// ---------- HGSS's buildings as GBA pixel art (--hybrid) ----------
+// Each building (comp: which one each tile's in) gets its own palette of a few colours, picked by k-means from its
+// pixels and snapped to the GBA's 15-bit colour, so the 3D textures' gradients go flat as FireRed's are; then its
+// silhouette's edge is darkened to an outline, as FireRed's buildings have.
+function gbaBuildings(below, above, W, H, comp, tw, colours = 14) {
+  const groups = new Map();
+  for (const [layer, img] of [[0, below], [1, above]]) for (let o = 0; o < W * H; o++) {
+    if (img[o * 4 + 3] < 128) continue;
+    const t = ((o / W / 16) | 0) * tw + ((o % W) >> 4), id = comp[t];
+    if (!groups.has(id)) groups.set(id, []);
+    groups.get(id).push(img, o * 4);
+  }
+  const snap = (v) => Math.round(Math.round(v / 255 * 31) * 255 / 31);
+  for (const list of groups.values()) {
+    const n = list.length / 2, k = Math.min(colours, n);
+    const px = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) for (let c = 0; c < 3; c++) px[i * 3 + c] = list[i * 2][list[i * 2 + 1] + c];
+    // (k-means++-ish start: spread by brightness.)
+    const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => (px[a * 3] + px[a * 3 + 1] + px[a * 3 + 2]) - (px[b * 3] + px[b * 3 + 1] + px[b * 3 + 2]));
+    const cent = new Float32Array(k * 3);
+    for (let j = 0; j < k; j++) { const i = order[Math.floor((j + 0.5) / k * n)]; for (let c = 0; c < 3; c++) cent[j * 3 + c] = px[i * 3 + c]; }
+    const lab = new Int32Array(n);
+    for (let it = 0; it < 10; it++) {
+      const sum = new Float64Array(k * 4);
+      for (let i = 0; i < n; i++) {
+        let best = 0, bd = Infinity;
+        for (let j = 0; j < k; j++) {
+          const dr = px[i * 3] - cent[j * 3], dg = px[i * 3 + 1] - cent[j * 3 + 1], db = px[i * 3 + 2] - cent[j * 3 + 2];
+          const d = 2 * dr * dr + 4 * dg * dg + 3 * db * db;
+          if (d < bd) { bd = d; best = j; }
+        }
+        lab[i] = best; sum[best * 4] += px[i * 3]; sum[best * 4 + 1] += px[i * 3 + 1]; sum[best * 4 + 2] += px[i * 3 + 2]; sum[best * 4 + 3]++;
+      }
+      for (let j = 0; j < k; j++) if (sum[j * 4 + 3]) for (let c = 0; c < 3; c++) cent[j * 3 + c] = sum[j * 4 + c] / sum[j * 4 + 3];
+    }
+    // (A touch more contrast than the 3D shading gives, as hand-drawn pixel art has.)
+    const mean = [0, 1, 2].map((c) => { let a = 0; for (let j = 0; j < k; j++) a += cent[j * 3 + c]; return a / k; });
+    for (let i = 0; i < n; i++) for (let c = 0; c < 3; c++) {
+      const v = mean[c] + (cent[lab[i] * 3 + c] - mean[c]) * 1.12;
+      list[i * 2][list[i * 2 + 1] + c] = snap(Math.max(0, Math.min(255, v)));
+    }
+  }
+  // The outline: a building pixel next to no building (in either layer) is drawn dark.
+  const solid = (x, y) => x >= 0 && y >= 0 && x < W && y < H && (below[(y * W + x) * 4 + 3] >= 128 || above[(y * W + x) * 4 + 3] >= 128);
+  const edge = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (solid(x, y) && (!solid(x - 1, y) || !solid(x + 1, y) || !solid(x, y - 1) || !solid(x, y + 1))) edge.push(y * W + x);
+  for (const o of edge) for (const img of [below, above]) if (img[o * 4 + 3] >= 128) {
+    for (let c = 0; c < 3; c++) img[o * 4 + c] = snap(img[o * 4 + c] * 0.35 + 16);
+  }
+}
+
 // ---------- Whirlpools and rocky walls, drawn over the painted map ----------
 
 // Each whirlpool (HGSS's are 3x3 tiles) a swirl over the water: two arms of
@@ -676,7 +730,7 @@ MAPS.forEach((m, i) => {
   if (ONLY.length && !ONLY.includes(m.name)) return;
   loadMessages(m.zone);
   // (Outdoors, drawn by the painter in FireRed's style: from what each tile is.)
-  const painted = !HGSS_LOOK && m.type !== "indoor";
+  const painted = (!HGSS_LOOK || HYBRID) && m.type !== "indoor";
   const room = !HGSS_LOOK && m.type === "indoor" && !m.template;   // (a room, drawn in FireRed's style too: tools/lib/fr-room.js)
   const r = renderMap(ROOT, m.c, { ground: m.ground, labels: painted || room });   // (ground: not flat, as Johto's first maps are)
   const W = r.width * 16, H = r.height * 16;
@@ -736,12 +790,12 @@ MAPS.forEach((m, i) => {
     }
     if (!cave) HC.smooth(classes, r.width, r.height).forEach((c, i) => { classes[i] = c; });
     // (A forest's deep inside, out of reach behind two rows of trees: sparser, grass among them, not solid pines to the horizon.)
-    if (!cave) HC.thinForests(classes, r.width, r.height);
+    if (!cave && !HYBRID) HC.thinForests(classes, r.width, r.height);
     if (process.env.DUMP_CLASSES) {
       const ch = { grass: ".", flowers: "f", path: "p", sand: "s", pavement: "v", bridge: "b", tallgrass: "g", water: "~", waterfall: "w", waterrock: "o", tree: "T", rock: "R", fence: "#", building: "B", object: "x" };
       console.log(m.name + "\n" + Array.from({ length: r.height }, (_, y) => classes.slice(y * r.width, (y + 1) * r.width).map((c) => ch[c] || (c && c[0] === "l" ? "L" : "?")).join("")).join("\n"));
     }
-    const pic = Painter.compose(classes, r.width, r.height, { buildings: cave ? [] : HC.buildingsOf(r, classes, evw), signs, style: cave ? "cave" : "outdoor", minScore: 8, noFill: true, stretch: true });
+    const pic = Painter.compose(classes, r.width, r.height, { buildings: cave || HYBRID ? [] : HC.buildingsOf(r, classes, evw), signs, style: cave ? "cave" : "outdoor", minScore: 8, noFill: true, stretch: !HYBRID });
     // HGSS's own pictures of what no stamp of Kanto's stands for (a city's
     // blocks with no door), over the painted ground; a building with a stamp
     // gets none (its picture's roof and walls overhang the stamp's tiles).
@@ -767,6 +821,7 @@ MAPS.forEach((m, i) => {
           }
         }
       }
+      if (HYBRID && r.buildings) gbaBuildings(r.buildings, r.buildingsTop, W, H, comp, r.width);
       if (r.buildings) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
         const t = (y >> 4) * r.width + (x >> 4);
         if (stamped.has(t) || (comp[t] >= 0 && !keep[comp[t]])) continue;

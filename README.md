@@ -2110,7 +2110,10 @@ style from what each tile is, with Kanto's buildings stamped on by their
 doors, `tools/lib/fr-painter.js` and `hgss-classes.js`; `--painted` still
 draws them that way, and `tools/build-fr-style.js` learns the painter's
 patterns from Kanto. It looked poor beside HGSS's own art, so HGSS's is the
-look now.) In HGSS's Pokémon Centers the nurse stands behind HGSS's counter
+look now. `--hybrid`, a trial, paints the ground in FireRed's style the same
+way, with full forests and no Kanto buildings, and stands every one of HGSS's
+own buildings on it redrawn as GBA pixel art: a few colours each, snapped to
+the GBA's 15-bit colour, with a dark outline.) In HGSS's Pokémon Centers the nurse stands behind HGSS's counter
 and heals as Kanto's nurses do; the Wi-Fi and Union Room staff (this game has
 neither) aren't there, and the stairs down to HGSS's Wi-Fi floor go up
 instead, to FireRed's Pokémon Center 2F with its Move Relearner, Move Deleter,
