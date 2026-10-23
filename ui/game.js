@@ -12376,7 +12376,7 @@
     bugContest,
     pcSpace: () => player.boxes.reduce((n, box) => n + box.filter((r) => !r).length, 0),
     say: (pages) => say(pages),
-    confirm: (question) => confirm(question),
+    confirm: (question) => confirm(fill(question)),   // (its {PLAYER}, as say()'s)
     choose: async (texts, question) => { const i = await multichoice(question || null, 0, 0, texts); Screen.say(""); return i; },
     close: () => Screen.say(""),
     facePlayer: (person) => Overworld.act([{ who: person.localId || "#" + person.id, moves: ["face_player"] }]),
@@ -13154,11 +13154,21 @@
           hidePicture();
           if (!yes) continue;
           api.setVar("VAR_STARTER_MON", i);
+          api.setVar("VAR_HOENN_STARTER_SPECIES", picks[i]);   // (Birch's "{PLAYER} received the ...": ui/hoenn-changes.js)
           const record = Party.create(picks[i], 5);
-          Player.receive(player, record);
+          // (Birch's first battle, a wild Poochyena, Lv. 2, is the Pokémon's own, whoever leads your party; with your
+          // party full, it's with you for the battle and goes to the PC after.)
+          const full = player.party.length >= 6;
+          if (full) player.party.push(record); else Player.receive(player, record);
           await say("{PLAYER} received " + picks[i] + "!");
-          // (Birch's first battle: a wild Poochyena, Lv. 2.)
-          await johtoBattle("wild", "Poochyena", 2);
+          await johtoBattle("wild", "Poochyena", 2, { chosen: [player.party.indexOf(record)] });
+          if (full) {
+            player.party.splice(player.party.indexOf(record), 1);
+            const to = Player.receive(player, record);
+            if (to) await say(Party.displayName(record) + " was sent to the PC" + (to.startsWith("box ") ? " (Box " + to.slice(4) + ")" : "") + ".");
+          }
+          // (Back from the battle to Route 101, faded in: Emerald's ChooseStarter returns to the field so.)
+          await Overworld.fadeFromBlack();
           return true;
         }
       }

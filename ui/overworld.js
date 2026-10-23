@@ -282,8 +282,12 @@
   // either side too, so you can't walk onto them. Snorlax's picture hardly
   // spills over its tile, so you walk right up to it.)
   const WIDE_BLOCKERS = new Set(["old_man_lying_down", "articuno", "zapdos", "moltres"]);
+  // (Emerald's moving trucks, three tiles wide and three high, stand on their bottom row's middle tile: they're in the
+  // way of all nine.)
+  const TRUCKS = new Set(["em_misc_truck"]);
   const personAt = (x, y) => people.find((p) => (p.x === x && p.y === y) || (p.move && p.move.tx === x && p.move.ty === y) ||
-    (!p.move && p.y === y && Math.abs(p.x - x) === 1 && WIDE_BLOCKERS.has(p.def.sprite)));
+    (!p.move && p.y === y && Math.abs(p.x - x) === 1 && WIDE_BLOCKERS.has(p.def.sprite)) ||
+    (!p.move && TRUCKS.has(p.def.sprite) && Math.abs(p.x - x) <= 1 && y <= p.y && y >= p.y - 2));
   // A sprite wider than a tile is centred on its tile, as FireRed's are.
   const spriteDx = (def) => (def.offsetX != null ? def.offsetX : def.width > 16 ? (16 - def.width) / 2 : 0);
   const occupiedForPlayer = (mapName, x, y) => (mapName === me.map ? !!personAt(x, y)

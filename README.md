@@ -1909,7 +1909,14 @@ Rock Smash, Strength, item balls and trainers on sight keep the game's own handl
 
 Get there from Vermilion's Seagallop ("Hoenn", once Celio's machine is done) or, once you've
 beaten Johto's League, Olivine's S.S. Aqua. Your first visit
-starts in the truck; later ones land at Slateport's harbour, whose sailor takes you home. Hoenn's
+starts in the truck; later ones land at Slateport's harbour, whose sailor takes you home. You come
+as Johto's Champion (`ui/hoenn-changes.js`, this game's changes to Emerald's story, made as the page
+loads): you hop down from the truck (it's solid, three tiles by three, and the Pokémon walking with you
+hops down too), with no Mom to take you in (she's Brendan's) and no May at home to meet, and no twin
+stops you going north: straight up Route 101, Prof. Birch is chased by a Zigzagoon and calls for help.
+Whichever Pokémon you take from his Bag fights the Poochyena (with your party full, it joins you for
+the battle and then goes to the PC), and Birch knows you, the Champion of Johto, and gives it to you.
+Oldale's Mart clerk, once she's walked you to the Mart with the Potion, stays there. Hoenn's
 badges unlock Cut, Flash, Rock Smash, Strength, Surf, Fly, Dive and Waterfall; whiting out sends
 you to the last Center or your bedroom.
 
