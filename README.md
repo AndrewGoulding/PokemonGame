@@ -1951,6 +1951,7 @@ lap of Island Cave's wall,
 the cracked floors of Granite Cave, Sky Pillar and the Mirage Tower (they give way under you, down to the floor below,
 unless the Bicycle's going flat out: then they give way behind you, holes till you come back),
 Feebas (six of Route 119's fishing spots, your own six by your Trainer ID, where half the bites are Feebas, Lv. 20 to 25),
+Shoal Cave's tides (high from 9:00 to 14:59 and from 21:00 to 2:59 by the game's clock, low between, as you come in from outside),
 the rotating-tile puzzles, the Mirage Tower and Rayquaza's scenes. The scene over Sootopolis is Emerald's own
 (`ui/rayquaza-scene.js`, its pictures from `tools/build-rayquaza-scene.js` into `assets/rayquaza-scene/`), its
 five scenes timed as `src/rayquaza_scene.c` times them: Groudon and Kyogre facing one another under the storm

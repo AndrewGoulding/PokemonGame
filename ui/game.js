@@ -12946,7 +12946,7 @@
   // abnormal weather of Kyogre and Groudon's fight swings between a downpour and a drought.
   const WEATHER_CYCLES = { route119_cycle: ["sunny", "rain", "thunderstorm", "rain"], route123_cycle: ["sunny", "sunny", "rain", "sunny"] };
   const WEATHER_ALIASES = { rain_thunderstorm: "thunderstorm", underwater_bubbles: "underwater" };
-  let hoennSaved = "", hoennLastType = "";
+  let hoennSaved = "", hoennLastType = "", hoennCameFrom = "";   // (hoennCameFrom: the last map's type, while a map's scripts run as you come in)
   const hoennKind = (c) => {
     const k = String(c || "").replace(/^(COORD_EVENT_)?WEATHER_/, "").toLowerCase();
     return !k || k === "none" ? "" : WEATHER_ALIASES[k] || k;
@@ -13045,7 +13045,7 @@
   // Specials of Route 119 and 123's transitions: the cycle, unless you walked in from another route.
   function hoennSyncSpecial(name, api) {
     if (name === "SetRoute119Weather" || name === "SetRoute123Weather") {
-      if (!hoennOutdoors(hoennLastType)) hoennSaved = name === "SetRoute119Weather" ? "route119_cycle" : "route123_cycle";
+      if (!hoennOutdoors(hoennCameFrom)) hoennSaved = name === "SetRoute119Weather" ? "route119_cycle" : "route123_cycle";
       return true;
     }
     // The Mirage Tower shows itself on half the days, until its event is done (src/mirage_tower.c).
@@ -13159,6 +13159,11 @@
         return true;
       }
       case "IsMonOTIDNotPlayers": { const r = player.party[+api.getVar("VAR_0x8004")]; api.set(r && r.ot && (r.ot.id !== player.trainerId || r.ot.name !== player.name) ? 1 : 0); return true; }
+      // (Shoal Cave's tide, by the clock, as you come in from outside: high from 21:00 to 2:59 and 9:00 to 14:59.)
+      case "UpdateShoalTideFlag": {
+        if (hoennOutdoors(hoennCameFrom)) { const h = Player.gameTime(player).hour; hoenn.setFlag("FLAG_SYS_SHOAL_TIDE", h < 3 || (h >= 9 && h < 15) || h >= 21); }
+        return true;
+      }
       // (The Sealed Chamber: Wailord first in the party, and Relicanth last.)
       case "CheckRelicanthWailord": { const p = player.party, last = p[p.length - 1]; api.set(p[0] && !p[0].egg && p[0].species === "Wailord" && last && !last.egg && last.species === "Relicanth" ? 1 : 0); return true; }
       case "MonOTNameNotPlayer": { const r = player.party[+api.getVar("VAR_0x8004")]; api.set(r && r.ot && r.ot.name !== player.name ? 1 : 0); return true; }
@@ -13900,7 +13905,7 @@
           if (m !== tempFlagsMap && m === "Route23") LeagueRoad.reset(player.flags);
           // (Into a Johto map: its OnTransition script, before its people are placed.)
           if (m !== tempFlagsMap && m === GOLDENROD_SWITCHES) goldenrodSwitchesEnter();
-          if (m !== tempFlagsMap) { magnetTrain.enter(m); johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); if (isHoenn(m)) { restoreMetatiles(m); hoennWeatherEnter(m); hoennDecorApply(m); hoennSpotOpen(m); hoennEntering = m; hoenn.transition(m).then(() => { if (hoennEntering === m) hoennEntering = null; }); } hoennLastType = (window.WORLD_MAPS[m] || {}).type; }
+          if (m !== tempFlagsMap) { hoennCameFrom = hoennLastType; magnetTrain.enter(m); johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); if (isHoenn(m)) { restoreMetatiles(m); hoennWeatherEnter(m); hoennDecorApply(m); hoennSpotOpen(m); hoennEntering = m; hoenn.transition(m).then(() => { if (hoennEntering === m) hoennEntering = null; }); } hoennLastType = (window.WORLD_MAPS[m] || {}).type; }
           if (m === "SSAqua_1F") ssAquaExit();
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
           if (!gear.radioOn(m)) music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }   // (the Pokégear's radio plays on)
