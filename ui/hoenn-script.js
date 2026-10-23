@@ -232,8 +232,27 @@
     // How the last wild battle ended (B_OUTCOME_*: won 1, lost 2, ran 4, caught 7).
     let battleOutcome = 0, lastSetWarp = null;
     const OUTCOMES = { won: 1, lost: 2, ran: 4, caught: 7 };
+    // (A special's answer goes to the var specialvar names; or, called with special, to VAR_RESULT if it's one of
+    // Emerald's that set gSpecialVar_Result themselves: those whose callers read VAR_RESULT straight after (found in
+    // the scripts once). Emerald drops the others' answers.)
+    let resultSpecials = null;
+    const writesResult = (name) => {
+      if (!resultSpecials) {
+        resultSpecials = new Set();
+        const own = /^(setvar|copyvar|setorcopyvar|specialvar|checkitem|checkplayergender|checkpartymove|checkmoney|random|getpartysize|msgbox|yesnobox|multichoice\w*|dowildbattle|special)$/;
+        for (const code of Object.values(DATA().s)) code.forEach((c, i) => {
+          if (c[0] !== "special") return;
+          for (let k = i + 1; k < Math.min(code.length, i + 3); k++) {
+            if (own.test(code[k][0])) break;
+            if (code[k].includes("VAR_RESULT")) { resultSpecials.add(c[1]); break; }
+          }
+        });
+      }
+      return resultSpecials.has(name);
+    };
+    const answer = (out, name) => (v) => { if (out) setVar(out, v); else if (writesResult(name)) setVar("VAR_RESULT", v); };
     function syncSpecial(st, name, out) {
-      const set = (v) => { if (out) setVar(out, v); };
+      const set = answer(out, name);
       switch (name) {
         case "GetTrainerFlag": case "ShouldTryRematchBattle": case "IsTrainerReadyForRematch": case "GetLeadMonFriendshipScore": set(0); return true;
         case "GetBattleOutcome": set(battleOutcome); return true;
@@ -565,7 +584,7 @@
       // The specials (src/field_specials.c and friends): the ones a script needs; the rest do nothing.
       const apiFor = (set) => ({ set, setBuffer: (n, v) => { buffers[n] = v; }, setVar, getVar, num, local, flush, ctx, st, cut, flag, setFlag, who });
       async function special(name, out) {
-        const set = (v) => { if (out) setVar(out, v); };
+        const set = answer(out, name);
         if (syncSpecial(st, name, out)) return;
         switch (name) {
           case "ChoosePartyMon": { await flush(); const i = await env.choosePartyMon("Choose a POKéMON."); setVar("VAR_0x8004", i < 0 ? 255 : i); return; }
