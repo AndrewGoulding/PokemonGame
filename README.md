@@ -1912,7 +1912,7 @@ beaten Johto's League, Olivine's S.S. Aqua. Your first visit
 starts in the truck; later ones land at Slateport's harbour, whose sailor takes you home. You come
 as Johto's Champion (`ui/hoenn-changes.js`, this game's changes to Emerald's story, made as the page
 loads): you hop down from the truck (it's solid, three tiles by three, and the Pokémon walking with you
-hops down too), with no Mom to take you in (she's Brendan's) and no May at home to meet, and no twin
+hops down too), with no Mom to take you in (she's Brendan's; nor, later, to give you Running Shoes) and no May at home to meet, and no twin
 stops you going north: straight up Route 101, Prof. Birch is chased by a Zigzagoon and calls for help.
 Whichever Pokémon you take from his Bag fights the Poochyena (with your party full, it joins you for
 the battle and then goes to the PC), and Birch knows you, the Champion of Johto, and gives it to you.

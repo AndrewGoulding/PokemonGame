@@ -1,9 +1,9 @@
 // This game's own changes to Hoenn's story (Emerald's scripts and maps, data/emerald-maps.js), made as the page
 // loads, before ui/game.js sets Emerald's scripts going (HoennScript.create):
 //   - you come to Hoenn as Johto's Champion, in the moving truck (by the S.S. Aqua or the Seagallop), and hop
-//     down from it: no Mom to take you in (she's Brendan's, or May's), no May (or Brendan) at home to meet, and
-//     Littleroot's twin isn't there to stop you going north without a Pokémon: it's straight up to Route 101,
-//     where Prof. Birch is being chased by a Zigzagoon and calls for help;
+//     down from it: no Mom to take you in (she's Brendan's, or May's; nor later, with Running Shoes), no May (or
+//     Brendan) at home to meet, and Littleroot's twin isn't there to stop you going north without a Pokémon: it's
+//     straight up to Route 101, where Prof. Birch is being chased by a Zigzagoon and calls for help;
 //   - Birch knows you, Johto's Champion, and gives you the Pokémon you saved him with: the one you chose from
 //     his Bag (ui/game.js's ChooseStarter keeps it, VAR_HOENN_STARTER_SPECIES), not your party's first;
 //   - you walk right behind Wally on the way to his lesson, which is Emerald's battle (ui/game.js's
@@ -28,6 +28,10 @@
   }
   // (Down, and a step away, so the Pokémon walking with you, behind you, is off the truck too.)
   H.m.Game_Movement_StepOffTruck = H.m.LittlerootTown_Movement_PlayerStepOffTruck.concat(["walk_right"]);
+  // (And no Running Shoes from her outside the lab: you have them, and she's not your mom. Emerald's VAR_LITTLEROOT_TOWN_STATE
+  // 3, her scene, straight to 4, after it.)
+  const pokedex = S.LittlerootTown_ProfessorBirchsLab_EventScript_GivePokedex;
+  if (pokedex) pokedex.forEach((c, i) => { if (c[0] === "setvar" && c[1] === "VAR_LITTLEROOT_TOWN_STATE" && c[2] === 3) pokedex[i] = ["setvar", "VAR_LITTLEROOT_TOWN_STATE", 4]; });
   // (No twin, and none of her triggers.)
   const town = W.LittlerootTown;
   town.people = town.people.filter((p) => p.localId !== "LOCALID_LITTLEROOT_TWIN");

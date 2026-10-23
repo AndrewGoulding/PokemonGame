@@ -12641,7 +12641,7 @@
       show("world");
       return r ? r.id : null;
     },
-    bpBox: (on, n) => GbaMenus.fieldWindow("bp", on ? { x: 0, y: 0, amount: n, label: "BP" } : null),
+    bpBox: (on, n) => GbaMenus.fieldWindow("bp", on ? { x: 0, y: 0, amount: n, label: "BP", text: String(n || 0) } : null),
     // (The Factory's rental and swap screens and the Dome's tourney tree: ui/hoenn-frontier-screens.js.)
     factorySelect: async (mons) => { Screen.say(""); const r = await HoennFrontierScreens.factorySelect($("#overlay"), { mons, summary: (i) => summary(i, mons) }); show("world"); await Overworld.resume(); return r; },
     factorySwap: async (mine, theirs) => { Screen.say(""); const r = await HoennFrontierScreens.factorySwap($("#overlay"), { mine, theirs, summary: (which, i) => summary(i, which ? theirs : mine) }); show("world"); await Overworld.resume(); return r; },

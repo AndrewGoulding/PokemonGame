@@ -467,6 +467,8 @@
       const s = S(), what = name.slice(5), d = String(a[0] || "");
       switch (what) {
         case "init": {
+          // (The last tournament's winner kept for the lobby's fan: Emerald keeps its results.)
+          if (s.dome && s.dome.alive && s.dome.alive.length) s.domeWinner = domeName(s.dome.alive[0]);
           s.status = 0; s.num = 0; s.paused = 0; s.noRecord = 1; s.ids = []; s.A = null; s.B = null; s.dome = null; s.full = null;
           if (!s.active[curKey()]) s.streak[curKey()] = 0;
           if (env.markHome) env.markHome();
@@ -506,7 +508,8 @@
         case "setopponentgfx": { const t = trainerOf(s.A); if (t) api.setVar("VAR_OBJ_GFX_ID_0", t.look); return true; }
         case "getroundtext": api.setBuffer(1, ROUNDS[s.dome.round] || ""); return true;
         case "getopponentname": { const t = trainerOf(s.A); api.setBuffer(2, t ? t.name : ""); api.setBuffer(1, ROUNDS[s.dome.round] || ""); return true; }
-        case "getwinnersname": api.setBuffer(1, domeName(s.dome.alive[0])); return true;
+        // (Before any tournament of yours: one of the Frontier's trainers won the last.)
+        case "getwinnersname": api.setBuffer(1, s.dome && s.dome.alive ? domeName(s.dome.alive[0]) : s.domeWinner || domeName(Object.keys(D().trainers)[0])); return true;
         case "compareseeds": api.setVar("VAR_RESULT", s.dome.leaves.indexOf("me") < s.dome.leaves.indexOf(domeOpponent()) ? 1 : 2); return true;
         case "initopponentparty": {
           // (The opponent brings the two of their three that you'd least like to see.)
