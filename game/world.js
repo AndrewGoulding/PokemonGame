@@ -127,6 +127,14 @@
     return m.connections.find((c) => c.direction === dir) || null;
   }
 
+  // Gen 3's one-way edges (MB_IMPASSABLE_*: IsMetatileDirectionallyImpassable): a tile whose side you'd leave by
+  // is shut, or the one you'd enter's side you'd come in by. (East 0x30, west 0x31, north 0x32, south 0x33, then
+  // the corners: north-east 0x34, north-west 0x35, south-east 0x36, south-west 0x37.) Heart & Soul's Goldenrod
+  // Underground walls, open and shut by its switches, are these.
+  const SHUT = { right: [0x30, 0x34, 0x36], left: [0x31, 0x35, 0x37], up: [0x32, 0x34, 0x35], down: [0x33, 0x36, 0x37] };
+  const OPPOSITE_SIDE = { up: "down", down: "up", left: "right", right: "left" };
+  const oneWayBlocked = (from, to, dir) => SHUT[dir].includes(from) || SHUT[OPPOSITE_SIDE[dir]].includes(to);
+
   // One step from `pos` in `dir`. `occupied(map, x, y)` says whether a person stands there.
   // Returns { ok: true, map, x, y, jump?, warp? } or { ok: false, warp?, unbuilt? }.
   // Surfing (opts.surf): onto water, or { ok, dismount: true } onto land you
@@ -179,6 +187,7 @@
     // (A rocky wall: only Rock Climb, the way it goes.)
     if (climbable(ahead.behavior, dir)) return { ok: false, climb: true };
     if (!free(ahead)) return { ok: false };
+    if (oneWayBlocked(here.behavior, ahead.behavior, dir)) return { ok: false };
     const result = { ok: true, map: ahead.map, x: ahead.x, y: ahead.y };
     const w = warpAt(ahead.map, ahead.x, ahead.y);
     // A cave or doorway into a map that isn't built yet (Diglett's Cave).

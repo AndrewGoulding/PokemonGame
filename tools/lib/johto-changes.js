@@ -79,6 +79,32 @@ function apply({ maps, scripts, trainers }) {
     const at = home.labels._0205;
     if (home.cmds[at + 3] && home.cmds[at + 3][0] === "GoToIfSet") home.cmds.splice(at + 3, 5, ["NPCMsg", "msg_0545_T20R0201_hello"], ["WaitButton"], ["CloseMsg"], ["ReleaseAll"], ["End"]);
   }
+  // The Burned Tower's 1F: HGSS's three dogs there are the basement's, seen through its broken floor in 3D; on a
+  // flat map they'd stand on 1F itself, round the hole, so they're left out (no script moves them; the basement's
+  // are the ones you meet).
+  const bt = maps.BurnedTower_1F;
+  if (bt) bt.people = bt.people.filter((p) => !/^obj_D18R0101_tsure_poke_static_(suicune|raikou|entei)$/.test(p.localId));
+  // The Marts' two clerks: the one with the Mart's own shelves (std_pokemart) below the one with its special ones
+  // (std_special_mart: Heal Balls and the like), nearer the door.
+  const stdOf = (p) => {
+    const m = /^hgss:(\w+):(\w+)$/.exec(p.script || ""), z = m && scripts.zones[m[1]];
+    if (!z || !(m[2] in z.labels)) return null;
+    for (let i = z.labels[m[2]]; i < z.cmds.length && z.cmds[i][0] !== "End"; i++) if (z.cmds[i][0] === "CallStd" && /^std_(pokemart|special_mart)$/.test(z.cmds[i][1])) return z.cmds[i][1];
+    return null;
+  };
+  for (const m of Object.values(maps)) {
+    if (!m.people || m.region !== "johto") continue;
+    const main = m.people.find((p) => stdOf(p) === "std_pokemart"), special = m.people.find((p) => stdOf(p) === "std_special_mart");
+    if (main && special && main.x === special.x && main.y < special.y) [main.y, special.y] = [special.y, main.y];
+  }
+  // Goldenrod Underground's switch room: Heart & Soul's three panels and walls (ui/game.js goldenrodPanel), in place of
+  // HGSS's gates and their switches, which its room has no place for.
+  const sw = maps.GoldenrodCity_Tunnel_B2F;
+  if (sw && sw.hgss) {
+    sw.people = sw.people.filter((p) => !/^obj_D37R0104_(gate\d|stop_|purplegate)/.test(p.localId));
+    sw.signs = sw.signs.filter((g) => !/scr_seq_D37R0104_00[0-3]$/.test(g.script || "")).concat(
+      [[22, 1, 1], [13, 1, 2], [5, 1, 3]].map(([x, y, n]) => ({ x, y, script: "Johto_GoldenrodPanel:" + n, text: null })));
+  }
   // Route 35's Juggler Irwin: his strongest Voltorb (or Electrode, in his rematches), and three of a kind he juggles
   // with no more: Mr. Mime, Drowzee or Hypno, Magnemite or Magneton.
   for (const [id, keep, more] of [["HGSS_TRAINER_JUGGLER_IRWIN", "Voltorb", [["Mr. Mime", 14], ["Drowzee", 13], ["Magnemite", 13]]],

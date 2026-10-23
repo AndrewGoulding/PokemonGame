@@ -560,6 +560,8 @@ module.exports = function port(HN, out, opts) {
     });
     // (Heart & Soul's doors to where this game has nothing, and that nothing took: gone (renumbered below).)
     for (const w of warps) if (w.loose) w.gone = true;
+    // (dropWarps: doors on plain floor that would take you somewhere you can't see, gone: the Lighthouse's.)
+    for (const [x, y] of plan[G].dropWarps) for (const w of warps) if (w.x === x && w.y === y) w.gone = true;
     // Connections: Heart & Soul's, between maps this game has, along this map's edges.
     const connections = [];
     plan[G].pieces.forEach((p) => {
@@ -592,6 +594,24 @@ module.exports = function port(HN, out, opts) {
       pokecenterDoor: plan[G].door || undefined,
       hgss: hgssSrc.map((s) => ({ map: s.map, width: s.width, height: s.height, fit: s.fit.map((v) => +v.toFixed(4)), anchors: s.anchors, doors: s.doors })),
       hgssWarps });
+    // (patches: { name: [[x, y, metatile], ...] }: metatiles a script swaps in, drawn now from the map's tilesets, for
+    // the game to put on when it says (ui/game.js mapPatches): Goldenrod Underground's walls, open.)
+    if (plan[G].patches) {
+      const p0 = plan[G].pieces[0], L = HN.layouts[HN.maps[p0.hns].layout];
+      const primary = HN.tileset("primary", L.primary_tileset), secondary = HN.tileset("secondary", L.secondary_tileset);
+      o.patches = {};
+      for (const [name, cells] of Object.entries(plan[G].patches)) {
+        const xs = cells.map((c) => c[0]), ys = cells.map((c) => c[1]);
+        const x0 = Math.min(...xs), y0 = Math.min(...ys), pw = Math.max(...xs) - x0 + 1, ph = Math.max(...ys) - y0 + 1;
+        const sub = new Array(pw * ph).fill(0);
+        for (const [x, y, mt] of cells) sub[(y - y0) * pw + x - x0] = mt;
+        const r = HN.E.render(sub, pw, ph, primary, secondary, false);
+        writePng(path.join(mapsDir, G + "-patch-" + name + ".png"), pw * 16, ph * 16, r.below);
+        if (r.anyAbove) writePng(path.join(mapsDir, G + "-patch-" + name + "-top.png"), pw * 16, ph * 16, r.above);
+        o.patches[name] = { x: x0, y: y0, w: pw, h: ph, top: r.anyAbove || undefined,
+          collision: cells.map(([x, y, mt, c]) => [x, y, c ? 1 : 0, HN.behavior(HN.E.metatile(primary, secondary, mt).behavior)]) };
+      }
+    }
   }
   // (The doors that went: each map's others renumbered, and every door to them.)
   const renumber = {};

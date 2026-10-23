@@ -2136,7 +2136,13 @@ the Pokéathlon Dome, the Battle Frontier and its access, the Sinjoh Ruins, the 
 the Global Terminal, the Radio Tower's lift and observation deck, the Ruins of Alph's hall or the
 Safari Zone's grounds (whose Areas are HGSS's), so those keep HGSS's maps. On Heart & Soul's maps
 there are no Rock Climb walls (its rock stairs you walk up), and its Gyms are its own puzzles:
-HGSS's lift, dark, winch and ice blocks (below) are off there. Its Apricorn trees stand on Heart & Soul's own trees (drawn by the map, with no sprite of HGSS's
+HGSS's lift, dark, winch and ice blocks (below) are off there. Goldenrod Underground's switch room is
+Heart & Soul's too: its three panels open and shut its six walls (3, then 2, then 1 opens the way to the
+warehouse, for good), in place of HGSS's gates; its walls are Gen 3's one-way edges (`MB_IMPASSABLE_*`,
+which `game/world.js` keeps everywhere), and the table's `patches` draw them open. A pair of trainers
+(Azalea's Gym's twins, Route 37's) says HGSS's double-battle lines, each her own after, and stands together.
+The Burned Tower's 1F has none of the three dogs HGSS shows down through its broken floor (you meet them in
+the basement), and the Lighthouse has no doors on plain floor (the table's `dropWarps`). Its Apricorn trees stand on Heart & Soul's own trees (drawn by the map, with no sprite of HGSS's
 over them), HGSS's Cut trees, rocks and boulders only where Heart & Soul has its own (and Heart &
 Soul's own besides: Ilex Forest's Cut tree, so Bugsy comes first, as in HGSS), the nurse and clerks behind its
 counters, the Bug-Catching Contest's officers behind the National Park gates' counters, Pokémon by the same Pokémon (Sudowoodo in its
@@ -2309,8 +2315,9 @@ Rock Smash and Flash the Zephyr Badge, Cut the Hive, Strength the Plain,
 Surf the Fog, Whirlpool the Glacier, Waterfall and Rock Climb the Rising;
 only Fly needs none there (this game's own, so Kanto's Champion can get
 about), and in Kanto FireRed's Badges hold as before. Ice Path's
-slides are FireRed's ice. Azalea's Gym has no Spinarak carts: you walk its
-webs to Bugsy. The other Gyms' tricks are HGSS's (`src/field/gymmick`,
+slides are FireRed's ice. In Azalea's Gym (Heart & Soul's) an Ariados carries you over each of its
+two pits: step on a station by a pit's pad and it comes up the web, you hop on, and it rides the web
+to the station it pairs with (Heart & Soul's pairs, fixed, where HGSS's Spinarak carts have switches). The other Gyms' tricks are HGSS's (`src/field/gymmick`,
 `ui/johto-gymmicks.js`), each Gym as it starts each time you go in:
 **Violet's** walkways are high above its floor, and the lift in the middle
 (step on its centre) takes you up to them, shaking as it goes, and back
@@ -2415,7 +2422,8 @@ furniture its two tiles. (HGSS's own look of a room, as of its outdoors, is
 **Pokémon Centers** and **Poké Marts**, FireRed's own rooms, as the
 gatehouses are: a Pokémon Center's nurse heals as Kanto's do (and it's where
 you come to if you black out), upstairs is FireRed's Cable Club floor with
-the Move Relearner and Deleter, and a Mart's clerks keep HGSS's scripts: the
+the Move Relearner and Deleter, and a Mart's clerks keep HGSS's scripts (the one with the town's own
+stock above, the one with the standard stock below, nearer the door): the
 standard stock by Johto's Badges (HGSS's tiers: Poké Balls, Potions,
 Antidotes and Paralyze Heals with none, and more with more) and the town's
 own.

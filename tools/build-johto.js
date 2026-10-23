@@ -699,6 +699,14 @@ function trainer(id) {
     party, music: cls === "TEAM_ROCKET" || cls === "TEAM_ROCKET_F" ? "mus_encounter_rocket" : GIRL_CLASSES.test(cls) ? "mus_encounter_girl" : "mus_encounter_boy",
     double: !!t.double, intro: msg("TRMSG_INTRO"), defeat: msg("TRMSG_LOSE"), after: msg("TRMSG_AFTER")
   };
+  // (A pair, as Azalea's Gym's twins: HGSS's double-battle lines, both of theirs before the battle, each her own
+  // after it; the second's by std_trainer_2. Without these they'd say nothing, and the game would wait on it.)
+  if (!trainers["HGSS_" + key].intro && msg("TRMSG_DBL_INTRO_1")) {
+    const both = (a, b) => [].concat(msg(a) || [], msg(b) || []);
+    Object.assign(trainers["HGSS_" + key], { intro: both("TRMSG_DBL_INTRO_1", "TRMSG_DBL_INTRO_2"), defeat: msg("TRMSG_DBL_LOSE_1") || msg("TRMSG_DBL_LOSE_2"),
+      after: msg("TRMSG_DBL_AFTER_1"), notEnough: msg("TRMSG_DBL_1POKE_1") });
+    Object.defineProperty(trainers["HGSS_" + key], "second", { value: { defeat: msg("TRMSG_DBL_LOSE_2"), after: msg("TRMSG_DBL_AFTER_2"), notEnough: msg("TRMSG_DBL_1POKE_2") } });
+  }
   return trainers["HGSS_" + key];
 }
 // (std_itemball_<map>_<item>, std_hiddenitem_...: the item is the longest ending that's an item.)
@@ -915,11 +923,14 @@ MAPS.forEach((m, i) => {
     const def = Object.assign({ id: people.length, localId: p.id, x: p.x, y: p.y, movement: FR_OBJECTS.has(p.sprite) ? "face_down" : movement(p), rangeX: p.rangeX || 1, rangeY: p.rangeY || 1,
       script: null, flag: null, text: null }, look, p.flag && p.flag !== "FLAG_NOTHING" ? { hgssFlag: p.flag } : {});
     let mt;
-    if ((mt = /^std_trainer\((\w+)\)/.exec(s))) {
-      const t = trainer(mt[1]);
+    if ((mt = /^std_trainer(_2)?\((\w+)\)/.exec(s))) {
+      const t = trainer(mt[2]);
       if (!t) continue;
-      Object.assign(def, { script: "hgss_trainer:HGSS_" + mt[1], text: t.after,
-        trainer: { id: "HGSS_" + mt[1], intro: t.intro, defeat: t.defeat, after: t.after, sight: p.param0 || 1, double: t.double } });
+      // (std_trainer_2: the second of a pair, her own words after.)
+      const own = mt[1] && t.second ? t.second : {};
+      Object.assign(def, { script: "hgss_trainer:HGSS_" + mt[2], text: own.after || t.after,
+        trainer: Object.assign({ id: "HGSS_" + mt[2], intro: t.intro, defeat: own.defeat || t.defeat, after: own.after || t.after, sight: p.param0 || 1, double: t.double },
+          (own.notEnough || t.notEnough) ? { notEnough: own.notEnough || t.notEnough } : {}) });
     } else if (/^std_itemball_/.test(s)) {
       const it = itemFromScript(s, /^std_itemball_/);
       if (!it) continue;
@@ -1161,7 +1172,13 @@ if (HNS_ROOT) {
   // Heart & Soul's, slid over).
   if (out.VioletCity_Gym && out.VioletCity_Gym.hgss) out.VioletCity_Gym.triggers = out.VioletCity_Gym.triggers.filter((t) => !/scr_seq_T22GYM0101_004\?/.test(t.script));
   if (out.EcruteakCity_Gym && out.EcruteakCity_Gym.hgss) out.EcruteakCity_Gym.triggers = [];
-  if (out.AzaleaTown_Gym && out.AzaleaTown_Gym.hgss) out.AzaleaTown_Gym.triggers = [];   // (its carts: walked, its edges opened: tools/data/hns-johto-maps.json)
+  // (Azalea's: Heart & Soul's Ariados carry you over its pits, from its twelve stations, in place of HGSS's
+  // Spinarak carts: ui/game.js's azaleaRide. HGSS's switches aren't there: Heart & Soul's webs are fixed.)
+  if (out.AzaleaTown_Gym && out.AzaleaTown_Gym.hgss) {
+    out.AzaleaTown_Gym.triggers = [];
+    [39, 27, 23, 11].forEach((y, row) => [6, 11, 16].forEach((x, col) => out.AzaleaTown_Gym.triggers.push({ x, y, script: "Johto_AzaleaRide:" + (row * 3 + col + 1) })));
+    out.AzaleaTown_Gym.signs = out.AzaleaTown_Gym.signs.filter((s) => !/scr_seq_T23GYM0102_01[45]$/.test(s.script || ""));
+  }
   if (out.CianwoodCity_Gym && out.CianwoodCity_Gym.hgss && zones.T24GYM0101) zones.T24GYM0101.cmds = zones.T24GYM0101.cmds.map((c) => (c[0] === "ClearFlag" && c[1] === "FLAG_SYS_CIANWOOD_WATERFALL_DISABLE" ? ["SetFlag", c[1]] : c));
   if (out.MahoganyTown_GymRoom1 && out.MahoganyTown_GymRoom1.hgss) out.MahoganyTown_GymRoom1.people = out.MahoganyTown_GymRoom1.people.filter((p) => !p.iceBlock);
   for (const [n, r] of Object.entries(res.report)) console.log("hns", n, "people", r.peopleMatched + "/" + r.people, "signs", r.signsMatched + "/" + r.signs, "doors matched", r.warpsMatched, "re-pointed", r.warpsRedirected, "added", r.warpsAdded);

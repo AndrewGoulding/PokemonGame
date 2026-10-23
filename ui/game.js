@@ -3159,6 +3159,8 @@
     if (script === "hgss:D36R0101:scr_seq_D36R0101_002") { await johtoField.headbuttTutor(); return; }
     { const js = johto.scriptOf(ev.person || ev.sign || ev.trigger); if (js) { await runJohto(js, ev.person); return; } }
     { const ap = /^hgss_apricorn:(\d+):(\w+)$/.exec(script || ""); if (ap) { await apricornTree(+ap[1], ap[2]); return; } }
+    { const ar = /^Johto_AzaleaRide:(\d+)$/.exec(script || ""); if (ar) { await azaleaRide(+ar[1]); return; } }
+    { const gp = /^Johto_GoldenrodPanel:(\d)$/.exec(script || ""); if (gp) { await goldenrodPanel(+gp[1]); return; } }
     // (Hoenn's Poké Mart clerks: their stock, from Emerald's scripts.)
     if (ev.person && ev.person.mart && /_Mart_EventScript_Clerk$/.test(script || "") && (window.WORLD_MAPS[ev.map] || {}).region === "hoenn") { await mart(ev.person.mart); return; }
     // (Johto's Pokémon Centers' nurses heal as Kanto's do.)
@@ -4966,7 +4968,9 @@
       await Overworld.act([{ who: "player", moves: ["face_" + World.OPPOSITE[facing]] }]);
     }
     const re = dojoRematch(t.id);
-    await say(re ? re.intro : t.intro);
+    // (Nothing to say, straight to the battle: no waiting on an empty message.)
+    const intro = re ? re.intro : t.intro;
+    if (intro && [].concat(intro).length) await say(intro);
     if (!canBattle()) return;
     const team = re ? re.team() : trainerTeam(t.id);
     const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team, pic: data.pic },
@@ -5472,6 +5476,66 @@
     f[megaFlag(item)] = true;
     await sayWithJingle(itemJingle(item), fill("{PLAYER} received the " + Bag.name(item) + "\nfrom " + from + "!"));
     return true;
+  }
+
+  // Azalea's Gym's Ariados (Heart & Soul's AzaleaTown_Gym_EventScript_Trigger_1-12; HGSS's Spinarak carts ride
+  // the same webs): step on a station beside one of the pits' pads and an Ariados comes up the web to the pad;
+  // you hop on and it carries you along the web, down the middle of the pit and across, to the station it pairs
+  // with, where you hop off. Stations 1-3 below the lower pit, 4-6 above it, 7-9 below the upper one, 10-12 above
+  // it, each in the left, middle and right columns; Heart & Soul's pairs: 1-5, 2-6, 3-4, 7-10, 8-12, 9-11.
+  const AZALEA_RIDE = { cols: [6, 11, 16], rows: [39, 27, 23, 11], pads: [38, 28, 22, 12], webs: [33, 33, 17, 17],
+    pairs: { 1: 5, 5: 1, 2: 6, 6: 2, 3: 4, 4: 3, 7: 10, 10: 7, 8: 12, 12: 8, 9: 11, 11: 9 } };
+  async function azaleaRide(n) {
+    const R = AZALEA_RIDE, to = R.pairs[n];
+    if (!to) return;
+    const row = Math.floor((n - 1) / 3), col = (n - 1) % 3, row2 = Math.floor((to - 1) / 3), col2 = (to - 1) % 3;
+    const x = R.cols[col], pad = R.pads[row], web = R.webs[row], x2 = R.cols[col2], pad2 = R.pads[row2], stop = R.rows[row2];
+    const into = pad < R.rows[row] ? "up" : "down", out = pad2 < stop ? "down" : "up";
+    const steps = (from, to, up, down) => Array(Math.abs(to - from)).fill(to < from ? up : down);
+    const ARIADOS = "LOCALID_AZALEA_ARIADOS";
+    const look = { sprite: "follow/168", width: 32, height: 32, frames: 9, offsetX: -8, inanimate: true };
+    await Overworld.act([{ who: "player", moves: ["face_" + into] }]);
+    // (It comes up the web to the pad.)
+    Overworld.addObject(ARIADOS, { x, y: web, facing: into === "up" ? "down" : "up" }, look);
+    await Overworld.act([{ who: ARIADOS, moves: steps(web, pad, "walk_up", "walk_down").concat(["face_" + into]) }]);
+    await Overworld.act([{ who: "player", moves: ["delay_16", "delay_16", "jump_" + into] }]);
+    sfx("se_bike_hop");
+    // (Along the web: to the middle of the pit, across, and on to the far pad.)
+    const ride = steps(pad, web, "walk_up", "walk_down").concat(steps(x, x2, "walk_left", "walk_right"), steps(web, pad2, "walk_up", "walk_down"));
+    await Overworld.act([{ who: ARIADOS, moves: ride }, { who: "player", moves: ride }]);
+    await Overworld.act([{ who: "player", moves: ["jump_" + out] }]);
+    sfx("se_bike_hop");
+    await Overworld.act([{ who: ARIADOS, moves: steps(pad2, R.webs[row2], "walk_up", "walk_down") }]);
+    Overworld.removeObject(ARIADOS);
+  }
+
+  // Goldenrod Underground's switch room (Heart & Soul's GoldenrodCity_UndergroundSwitches, in place of HGSS's
+  // gates): three panels on its top wall, each on or off, open and shut its six walls (3 across the top row, 3 the
+  // middle); 3, then 2, then 1 opens the way to the warehouse (2, 3 and 5), for good. The walls are shut each time
+  // you come in, until then (GoldenrodUnderground1_OnLoad). The walls: the map's patches open1-6.
+  const GOLDENROD_SWITCHES = "GoldenrodCity_Tunnel_B2F";
+  let goldenrodSw = { on: {}, order: false, open: [] };
+  function goldenrodSwitchesEnter() { goldenrodSw = { on: {}, order: false, open: player.flags.goldenrodSwitchesDone ? [2, 3, 5] : [] }; }
+  async function goldenrodPanel(n) {
+    const S = goldenrodSw;
+    let open = [], sound = "se_bang";
+    if (S.on[n]) {
+      S.on[n] = false;
+      if (n !== 1) S.order = false;
+    } else {
+      S.on[n] = true;
+      if (n === 3) { S.order = false; open = [1, 4]; sound = "se_click"; }
+      else if (n === 2) {
+        if (S.on[1]) { S.order = false; open = [1, 2, 3]; }
+        else if (S.on[3]) { S.order = true; open = [2, 3]; sound = "se_click"; }
+        else open = [1, 2, 3];
+      } else if (S.order) { player.flags.goldenrodSwitchesDone = true; open = [2, 3, 5]; sound = "se_click"; }
+      else open = [1, 2, 3];
+    }
+    sfx(sound);
+    await say("SWITCH " + n + (S.on[n] ? " activated." : " deactivated."));
+    S.open = open;
+    applyPatches(GOLDENROD_SWITCHES);
   }
 
   function extraPeople(map) {
@@ -11793,6 +11857,7 @@
   // Which of a map's patches (WORLD_MAPS[..].patches) are on now.
   function mapPatches(map) {
     const f = player.flags;
+    if (map === GOLDENROD_SWITCHES) return goldenrodSw.open.map((n) => "open" + n);
     // (The Space Center's sealed door, open once the Delta Episode's done and 2F's researcher has unsealed it;
     // its observation deck's rock aglow and stars in line while you wish.)
     if (map === "MossdeepCity_SpaceCenter_2F") return [(f.delta | 0) >= 4 ? "open" : "sealed"];
@@ -13384,6 +13449,8 @@
     if (/^(enter|arrive):/.test(script || "") && isHoenn(script.replace(/^\w+:/, ""))) return !!hoenn.frameScript(script.replace(/^\w+:/, ""), /^enter:/.test(script));
     if (/^hgss:/.test(script || "")) return johto.triggerDue(script);
     if (/^hgss_apricorn:/.test(script || "")) return true;
+    if (/^Johto_AzaleaRide:\d+$/.test(script || "")) return true;   // (Azalea's Gym's Ariados: azaleaRide())
+    if (/^Johto_GoldenrodPanel:\d$/.test(script || "")) return true;   // (Goldenrod Underground's switches: goldenrodPanel())
     if (/^(BerryFarm_(Caretaker|Tree_\d+)|HoennBerry_Tree_\d+)$/.test(script || "")) return true;   // (Celadon's Berry Farm: ui/berry-farm.js)
     if (/_PokemonCenter_1F_EventScript_Nurse$/.test(script || "") && johto.zoneOf(player.location.map)) return true;
     if (/^(enter|arrive):/.test(script || "") && johto.frameScript(script.replace(/^\w+:/, ""))) return true;
@@ -13571,6 +13638,7 @@
           // Route 23 puts Victory Road back as it was: barriers up, boulders back (Route23_OnTransition).
           if (m !== tempFlagsMap && m === "Route23") LeagueRoad.reset(player.flags);
           // (Into a Johto map: its OnTransition script, before its people are placed.)
+          if (m !== tempFlagsMap && m === GOLDENROD_SWITCHES) goldenrodSwitchesEnter();
           if (m !== tempFlagsMap) { magnetTrain.enter(m); johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); if (isHoenn(m)) { restoreMetatiles(m); hoennWeatherEnter(m); hoennDecorApply(m); hoennSpotOpen(m); hoenn.transition(m); } hoennLastType = (window.WORLD_MAPS[m] || {}).type; }
           if (m === "SSAqua_1F") ssAquaExit();
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);

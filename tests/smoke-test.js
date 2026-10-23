@@ -2462,15 +2462,20 @@ if (window.JOHTO_TOWN_MAP) {
   }
   // Drawn in FireRed's style (tools/lib/fr-painter.js), its gate rooms, water animated as Kanto's; its
   // people HGSS's own (Lyra, Silver, Prof. Elm, everyone), and its item balls, small trees and rocks FireRed's.
-  // Each Gym Leader can be walked up to from the Gym's door (Azalea's webs walked, as there are no carts).
+  // Each Gym Leader can be walked up to from the Gym's door (Azalea's: its Ariados ride from each station to the one
+  // it pairs with, ui/game.js azaleaRide).
   for (const g of J.filter((n) => /_Gym$|_GymLeaderRoom$|^MahoganyTown_GymRoom1$/.test(n))) {
     const m = WORLD_MAPS[g], leader = m.people.find((p) => /^hgss_gsleader\d$/.test(p.sprite));
     const start = { map: g, x: m.warps[0].x, y: m.warps[0].y - 1 }, key = (p) => p.x + ":" + p.y, seen = new Set([key(start)]), q = [start];
     const occupied = (mm, x, y) => m.people.some((p) => p.x === x && p.y === y && !p.trainer);
     let near = false;
+    const RIDE = { 1: 5, 5: 1, 2: 6, 6: 2, 3: 4, 4: 3, 7: 10, 10: 7, 8: 12, 12: 8, 9: 11, 11: 9 };
+    const station = (n) => m.triggers.find((t) => t.script === "Johto_AzaleaRide:" + n);
     while (q.length) {
       const p = q.shift();
       if (Math.abs(p.x - leader.x) + Math.abs(p.y - leader.y) === 1) near = true;
+      const ride = m.triggers.find((t) => t.x === p.x && t.y === p.y && /^Johto_AzaleaRide:/.test(t.script)), to = ride && station(RIDE[+ride.script.split(":")[1]]);
+      if (to && !seen.has(key(to))) { seen.add(key(to)); q.push({ map: g, x: to.x, y: to.y }); }
       for (const d of ["up", "down", "left", "right"]) {
         const r = World.step(p, d, occupied);
         if (r.ok && r.map === g && !r.warp && !seen.has(key(r))) { seen.add(key(r)); q.push({ map: g, x: r.x, y: r.y }); }

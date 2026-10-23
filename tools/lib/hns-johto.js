@@ -61,6 +61,7 @@ module.exports = function hnsJohto(H) {
       case 0x20: return 0x23;
       case 0x21: return 0x21;
       case 0x26: case 0x27: return b;
+      case 0x30: case 0x31: case 0x32: case 0x33: case 0x34: case 0x35: case 0x36: case 0x37: return b;   // (one-way edges: game/world.js)
       case 0x38: case 0x39: case 0x3a: case 0x3b: return b;
       case 0x50: case 0x51: case 0x52: case 0x53: return b;
       case 0x60: case 0x61: case 0x62: case 0x63: case 0x64: case 0x65: case 0x69: case 0x6a: case 0x6b: return b;
@@ -156,7 +157,7 @@ module.exports = function hnsJohto(H) {
       pieces[0].stamps.push({ blocks: [[0, 5, 720], [1, 5, 721], [0, 6, 728 | 0x400], [1, 6, 729], [0, 7, 736], [1, 7, 737]] });
       doors.push({ x: 1, y: 6, to: "_PokemonCenter_2F$" });
     }
-    return { pieces, merge: e.merge || [], door: e.door, doors, redirect: e.redirect, link: e.link, place: e.place, sceneMoves: e.sceneMoves, unlink: e.unlink || [] };
+    return { pieces, merge: e.merge || [], door: e.door, doors, redirect: e.redirect, link: e.link, place: e.place, sceneMoves: e.sceneMoves, unlink: e.unlink || [], dropWarps: e.dropWarps || [], patches: e.patches };
   }
 
   // ---------- A map's geometry, from its pieces ----------
