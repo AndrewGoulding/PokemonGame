@@ -2152,7 +2152,11 @@ Heart & Soul's door (Elm's aide out of the Mart). In the Ruins of Alph's chamber
 panel: examine it from the front. Everyone in Johto has HGSS's own sprite (`hgss_*`); you can't ride the
 Bicycle in Johto's buildings (its Pokémon Centers included), as in Kanto.
 Johto's wild Pokémon are HeartGold's and SoulSilver's: a slot where they differ is either, as likely
-(Skarmory, Teddiursa, Ledyba...). Raikou and Entei roam Johto after the Burned Tower (HGSS's
+(Skarmory, Teddiursa, Ledyba...), with this game's changes for a smoother level curve (`WILD_CHANGES` in
+`tools/build-johto.js`): the Ruins of Alph's Natu and Smeargle are Lv. 7-11 (HGSS's 18-24, reached
+right after Violet City), and three Pokémon HGSS keeps off Johto's routes are on them: Houndour
+on Route 37 (Lv. 14, 10%), Slugma on Route 42 (Lv. 16, 10%) and Larvitar on Route 45
+(Lv. 20, 5%). Raikou and Entei roam Johto after the Burned Tower (HGSS's
 CreateRoamer): 1 in 16 wild battles in its grass outdoors, Lv. 40, until caught. New Bark Town's Pokémon Center (below) is Heart & Soul's Cherrygrove Center, drawn into the town's map south of Elm's lab. Without `--hns` the build draws
 every map from HGSS as below. None of Heart & Soul's or HGSS's source is in this repository; the
 built pictures and data are.

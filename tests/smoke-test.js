@@ -2385,6 +2385,10 @@ if (window.JOHTO_TOWN_MAP) {
     for (const h of m.hidden) assert(ITEMS[h.item], h.item);
   }
   assert.deepStrictEqual(new Set(WORLD_MAPS.Route29.wild.slots.map((s) => s.species)), new Set(["Pidgey", "Sentret", "Rattata"]), "Route 29 by day");
+  // (This game's changes: the Ruins of Alph's grass at Lv. 7-11; Houndour, Slugma and Larvitar on Johto's routes.)
+  assert(WORLD_MAPS.RuinsOfAlph.wild.slots.every((s) => s.min >= 7 && s.max <= 11), "the Ruins of Alph at Lv. 7-11");
+  assert(WORLD_MAPS.Route37.wild.slots.some((s) => s.species === "Houndour") && WORLD_MAPS.Route42.wild.slots.some((s) => s.species === "Slugma")
+    && WORLD_MAPS.Route45.wild.slots.some((s) => s.species === "Larvitar"), "Houndour, Slugma and Larvitar on Johto's routes");
   assert(!Object.values(WORLD_MAPS).some((m) => m.region !== "johto" && !EAST.test(m.name) && m.connections.some((c) => J.includes(c.map))), "nothing in Kanto leads to Johto");
   // (Johto's maps are Pokémon Heart & Soul's (tools/lib/hns-johto.js), HGSS's events moved onto them: places by what's there.)
   const NB = WORLD_MAPS.NewBarkTown, west = [...Array(NB.height).keys()].find((y) => !NB.collision[y * NB.width]);
