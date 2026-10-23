@@ -1859,12 +1859,12 @@
         return async () => {
           if (ev[6] != null) showSafariBox(+ev[6]);
           // (The old man throws his: frames 1, 2, 3, back to 0, 24/9/24/9 frames.)
-          if (config.oldMan) {
-            await message("The old man used\n" + ballName(b) + "!", 700);
+          if (config.oldMan || config.wally) {
+            await message((config.wally ? "Wally" : "The old man") + " used\n" + ballName(b) + "!", 700);
             const t = trainerEl();
             (async () => { for (const [f, n] of [[1, 24], [2, 9], [3, 24], [0, 9]]) { t.style.backgroundPositionY = (f * 100 / 3) + "%"; await wait(n * 1000 / 60); } })();
           } else await message("You threw a " + ballName(b) + "!", 700);
-          if (!config.oldMan && await ballThrow("p2", b, +ev[4], ev[5] === "caught")) {
+          if (!config.oldMan && !config.wally && await ballThrow("p2", b, +ev[4], ev[5] === "caught")) {
             if (ev[5] !== "caught") await message(BREAK_FREE[+ev[4]] || BREAK_FREE[0]);
             return;
           }
@@ -2669,7 +2669,7 @@
     if (cfg.trainer) {
       trainer.style.backgroundImage = "url(assets/sprites/trainers/back/" + cfg.trainer + ".png)";
       trainer.style.backgroundPositionY = "0%";
-      trainer.classList.toggle("four", !!cfg.oldMan);   // (his picture has 4 frames, not 5)
+      trainer.classList.toggle("four", !!cfg.oldMan || !!cfg.wally);   // (his picture has 4 frames, not 5; Wally's too)
       trainer.classList.remove("hidden", "leaving");
       movers.push([trainer, shift]);
       trainerOut = true;
@@ -3191,7 +3191,7 @@
         await playNewEvents();
       }
     }
-    const status = cfg.replay ? await replayLoop(cfg.replay) : await loop();
+    const status = cfg.wally ? await wallyLoop() : cfg.replay ? await replayLoop(cfg.replay) : await loop();
     // (A Tera Raid won: the battle goes on, to catch it if you like.)
     const raidBall = status !== "crashed" && cfg.raid && battle.winner === "p1" ? await raidCatch() : null;
     let outcome;
@@ -3233,6 +3233,37 @@
       if (r.crashed) return "crashed";
       if (!r.ok) { console.error("replay: " + side + " refused " + JSON.stringify(choice) + ": " + r.error); return "ended"; }
     }
+  }
+
+  // Wally's catching lesson (Emerald's battle_controller_wally.c, StartWallyTutorialBattle): Wally from behind,
+  // with Norman's Zigzagoon, and no keys needed. After a pause his ▶ chooses FIGHT and the first move, Tackle; the
+  // wild Ralts does as it likes; then BAG, a Poké Ball, thrown as the old man throws his, and the Ralts is caught
+  // (the lesson's Ball always catches).
+  async function wallyLoop() {
+    const ask = async (keys) => {
+      say("");
+      clearMenu();
+      const chose = window.GbaMenus.battleAction(overlay(), { name: "", prompt: ["What will", "Wally do?"], cursor: 0, frame: frame() });
+      await window.GbaMenus.simulate(keys);
+      await chose;
+      say("");
+      clearMenu();
+    };
+    await playNewEvents();
+    if (battle.ended) return "ended";
+    await ask([[64, "a"]]);
+    if (choose("p1", { type: "move", index: 0 }).crashed) return "crashed";
+    let foe;
+    try { foe = config.opponent(battle); } catch (e) { console.error(e); return "crashed"; }
+    if (choose("p2", foe).crashed) return "crashed";
+    await playNewEvents();
+    if (battle.ended) return "ended";
+    await ask([[64, "right"], [64, "a"]]);
+    const mon = battle.sides.p2.active, ident = "p2a: " + mon.name;
+    battle.events.push(["-ball", "p1", "poke-ball", ident, "3", "caught"], ["caught", ident, "poke-ball"]);
+    Object.assign(battle, { caught: mon, ended: true, phase: "ended", winner: "p1" });
+    await playNewEvents();
+    return "ended";
   }
 
   // After a Tera Raid's Pokémon is beaten (this game's own): still there, worn

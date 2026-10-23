@@ -1916,7 +1916,14 @@ hops down too), with no Mom to take you in (she's Brendan's) and no May at home 
 stops you going north: straight up Route 101, Prof. Birch is chased by a Zigzagoon and calls for help.
 Whichever Pokémon you take from his Bag fights the Poochyena (with your party full, it joins you for
 the battle and then goes to the PC), and Birch knows you, the Champion of Johto, and gives it to you.
-Oldale's Mart clerk, once she's walked you to the Mart with the Potion, stays there. Hoenn's
+Oldale's Mart clerk, once she's walked you to the Mart with the Potion, stays there. Norman is
+Petalburg's Gym Leader, not your dad, and knows you as Johto's Champion; Wally walks into his Gym, and
+on the way to Route 102's grass you walk right behind him. His catching lesson is Emerald's battle: Wally
+from behind with Norman's Zigzagoon (Lv. 7, Tackle) against a wild Ralts, playing itself (FIGHT, Tackle,
+then BAG and a Poké Ball that always catches: `ui/battle-screen.js` `wallyLoop`). A person a script
+removes stays gone (Emerald's removeobject sets their flag: May leaves Route 103 for good once beaten),
+and every trainer with a script to go on to after the battle (Calvin's and the like) sees you too;
+trainers who spot you walk over and then say what their own script says. Hoenn's
 badges unlock Cut, Flash, Rock Smash, Strength, Surf, Fly, Dive and Waterfall; whiting out sends
 you to the last Center or your bedroom.
 
@@ -1933,8 +1940,8 @@ the ground bobbing under you; between the rides, on Prof. Birch's grass, 71 slid
 you caught (a random order, your starter last, each sliding out onto its coloured square); then
 you both ride off, the long dark, and THE END, drawn from its letter tiles. Start or B skips it.
 
-Also: berry trees (Hoenn's own growth stages and mulch; picking from one is the Berry Pouch's game, as in Kanto's
-forests, and the Berry Pouch works in Petalburg Woods: the farming level counts there too), weather, your own secret base with its decorations,
+Also: berry trees (Hoenn's own growth stages and mulch; picked as the Berry Farm's are, straight into the Bag, for
+farming XP, and the Berry Pouch works in Petalburg Woods: the farming level counts there too), weather, your own secret base with its decorations,
 the rotating-tile puzzles, the Mirage Tower and Rayquaza's scenes. The scene over Sootopolis is Emerald's own
 (`ui/rayquaza-scene.js`, its pictures from `tools/build-rayquaza-scene.js` into `assets/rayquaza-scene/`), its
 five scenes timed as `src/rayquaza_scene.c` times them: Groudon and Kyogre facing one another under the storm

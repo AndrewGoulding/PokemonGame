@@ -6,6 +6,9 @@
 //     where Prof. Birch is being chased by a Zigzagoon and calls for help;
 //   - Birch knows you, Johto's Champion, and gives you the Pokémon you saved him with: the one you chose from
 //     his Bag (ui/game.js's ChooseStarter keeps it, VAR_HOENN_STARTER_SPECIES), not your party's first;
+//   - you walk right behind Wally on the way to his lesson, which is Emerald's battle (ui/game.js's
+//     StartWallyTutorialBattle, ui/battle-screen.js's wallyLoop);
+//   - Norman is Petalburg's Gym Leader, not your dad: he knows you as Johto's Champion;
 //   - Oldale's Mart clerk, once she's walked you to the Mart and given you the Potion, stays there.
 (function () {
   "use strict";
@@ -41,6 +44,41 @@
   });
   const lab = S.LittlerootTown_ProfessorBirchsLab_EventScript_GiveStarterEvent;
   if (lab) lab.forEach((c, i) => { if (c[0] === "bufferleadmonspeciesname") lab[i] = ["bufferspeciesname", c[1], "VAR_HOENN_STARTER_SPECIES"]; });
+
+  // Norman: Petalburg's Gym Leader, not your dad (you're not his child, you're Johto's Champion), and Wally walks
+  // in to ask him for a Pokémon.
+  for (const [k, v] of Object.entries(H.t)) {
+    if (!/^(PetalburgCity_Gym_|MatchCall_Text_Norman|Route104_Text_(Dad|RegisteredDad)|PlayersHouse_1F_Text_(TicketFromBriney|PortsInSlateport))/.test(k)) continue;
+    H.t[k] = [].concat(v).map((page) => page.replace(/^Dad: /, "Norman: ").replace(/\nDad: /g, "\nNorman: ").replace(/ from\nDad!/, " from\nNorman!")
+      .replace("Registered Dad Norman", "Registered Norman"));
+  }
+  Object.assign(H.t, {
+    PetalburgCity_Gym_Text_DadYoureHereWithYourPokemon: ["Norman: Hm?", "Wait… Aren't you {PLAYER}?\nThe Champion of Johto!", "Prof. Birch told me you'd come to\nHoenn. I'm Norman, this Gym's Leader.",
+      "Oh, I see.\nYou're with your new Pokémon.", "Hm… Then you're going to take on\nHoenn's Gyms too, {PLAYER}.", "That's great news!\nI'll be looking forward to it!"],
+    PetalburgCity_Gym_Text_NormanIntro: ["Norman: Hm…\nSo, you did get four Gym Badges.", "Fine, as I promised, we will have\na Pokémon battle.", "{PLAYER}…",
+      "I've waited for the chance to have a\nreal battle with Johto's Champion.", "But, a battle is a battle!", "I will do everything in my power as\na Gym Leader to win.",
+      "{PLAYER}, you'd better give it your\nbest shot, too!"],
+    PetalburgCity_Gym_Text_DadHappyAndSad: ["Norman: As the Gym Leader, I can't\nexpress how upset I am…", "But to lose to the Champion of Johto…\nThere's no shame in that."],
+    PetalburgCity_Gym_Text_DadGoingToKeepTraining: ["Norman: {PLAYER}, Hoenn has plenty\nmore to show you.", "I'm going to stay here and redouble\nmy training.",
+      "It would bother me as a Trainer to\nnot avenge my loss to you, {PLAYER}!"],
+    PetalburgCity_Gym_Text_NormanPreRematch: ["Norman: {PLAYER}…\nI had a feeling that you would come.", "I would never refuse to accept\na challenge from you.",
+      "A Champion and a Gym Leader…\nWe owe it to each other to do the best\nwe can. Isn't that right, {PLAYER}?"],
+    PetalburgCity_Gym_Text_NormanRematchNeedTwoMons: ["Norman: {PLAYER}…\nI had a feeling that you would come.", "I would never refuse to accept\na challenge from you.",
+      "Hm? Wait a second, {PLAYER}.", "Do you only have one Pokémon that is\ncapable of battle?", "Sorry, but you'll have to come back\nwith at least two Pokémon."],
+    PetalburgCity_Gym_Text_NormanPostRematch: ["Norman: {PLAYER}…\nWhat is your dream?", "My dream…\nHahaha…\nTo battle the best, and I've done it."],
+    PlayersHouse_1F_Text_TicketFromBrineyCameForYou: ["Norman: Hm?", "Hey, it's {PLAYER}!", "It's been a while since I saw you,\nbut you look…stronger, somehow.",
+      "That's the impression I get.\nBut this Gym Leader hasn't given up yet!", "Oh, yes, I have something for you.\nThis came for you from someone named\nMr. Briney."],
+    MatchCall_Text_Norman2: ["Norman: Hm… Little by little, but also\nvery surely, you're getting\ntougher, {PLAYER}.", "Hoenn's Gyms won't hold the Champion\nof Johto back for long."],
+    MatchCall_Text_Norman4: ["Norman: {PLAYER}! I'm going to remain\nhere and redouble my training.", "The way of battling is deep\nand unforgiving!"]
+  });
+
+  // Wally's lesson, out to Route 102's grass: you walk his way, right behind him (Emerald walks you a row off his,
+  // through the corner of a building), from the Gym's door two tiles above where he starts.
+  const wallyWay = H.m.PetalburgCity_Movement_WallyTutorialWally;
+  if (wallyWay) {
+    const walks = wallyWay.filter((mv) => /^walk_(up|down|left|right)$/.test(mv));
+    H.m.PetalburgCity_Movement_WallyTutorialPlayer = ["delay_8", "walk_down", "walk_down"].concat(walks.slice(0, -1), ["walk_in_place_faster_right"]);
+  }
 
   // Oldale's Mart clerk: where she's walked you, by the Mart, from now on.
   const mart = S.OldaleTown_EventScript_ExplainPokemonMart;

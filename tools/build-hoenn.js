@@ -304,8 +304,11 @@ function trainerScript(mapName, script) {
   for (const line of lines) {
     const m = /^trainerbattle_(single|double)\s+(\w+),\s*(\w+),\s*(\w+)(?:,\s*(\w+))?(?:,\s*(\w+))?/.exec(line);
     if (!m) continue;
-    // (A trainer with a script to go on to after the battle, a Gym Leader's, is run by ui/hoenn-script.js.)
-    if (m[1] === "single" ? m[5] && m[5] !== "FALSE" && m[5] !== "NO_MUSIC" : m[6] && m[6] !== "FALSE" && m[6] !== "NO_MUSIC") return null;
+    // (A trainer with a script to go on to after the battle, a Gym Leader's, is run by ui/hoenn-script.js; but still
+    // sees you, walks over and runs it then: ui/game.js's trainerBattle.)
+    const double = m[1] === "double";
+    if (double ? m[6] && m[6] !== "FALSE" && m[6] !== "NO_MUSIC" : m[5] && m[5] !== "FALSE" && m[5] !== "NO_MUSIC")
+      return trainerData(m[2]) ? Object.assign({ id: "EM_" + m[2], intro: [], defeat: [], script: true }, double ? { double: true } : {}) : null;
     m.splice(1, 1);
     const t = textsOf(mapName).text, data = trainerData(m[1]);
     if (!data) return null;

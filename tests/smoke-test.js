@@ -6727,8 +6727,8 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
       // (RETIRE on the Start menu in the Pyramid: BattlePyramid_Retire, the challenge lost and back to the lobby.)
       const gjs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
       assert(window.HOENN_SCRIPTS.s.BattlePyramid_Retire && /key: "retirePyramid", label: "Retire"/.test(gjs) && /runHoenn\("BattlePyramid_Retire"\)/.test(gjs), "Retire in the Pyramid");
-      // (Hoenn's berry picking: the Berry Pouch in Petalburg Woods, and a tree's berries picked by its game.)
-      assert(/"PetalburgWoods"\]/.test(gjs) && /pickGame: \(berry, n\) => pickingGame\(\{ berry, n \}\)/.test(gjs) && /if \(env\.pickGame\)/.test(fs.readFileSync(path.join(root, "ui/berry-farm.js"), "utf8")), "Hoenn's berries are picked as Kanto's");
+      // (Hoenn's berry picking: the Berry Pouch in Petalburg Woods, and a tree's berries picked as the Berry Farm's, for farming XP.)
+      assert(/"PetalburgWoods"\]/.test(gjs) && /const hoennBerries = BerryFarm\.create\(berryEnv,/.test(gjs) && !/pickGame: \(berry, n\) => pickingGame/.test(gjs), "Hoenn's berries are picked as the Berry Farm's");
     }
     // The Lilycove Contest Hall: enter a Pokémon in the Normal Rank Coolness Contest, and the hall's own scripts run the contest to its judges' marks.
     {

@@ -133,8 +133,7 @@
         const n = Math.max(t.yield, Math.round(t.yield * (1 + (env.farmingLevel() || 1) / 100))), pages = fill([T.found, T.wantToPick], t.berry, n);
         await env.say([pages[0]]);
         if (!(await env.confirm(pages[1]))) { await env.say(fill(T.leftUnpicked, t.berry)); return; }
-        // (Hoenn's trees: the berries are picked by shaking the tree, the Berry Pouch's game, which brings them home
-        // and gives the farming XP itself: env.pickGame(berry, n).)
+        // (Or by a game of its own, which brings them home and gives the farming XP itself: env.pickGame(berry, n).)
         if (env.pickGame) { delete trees[spot]; env.refresh(); await env.pickGame(t.berry, n); return; }
         window.Player.addItem(env.player(), t.berry, n);
         delete trees[spot];

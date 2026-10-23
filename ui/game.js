@@ -1345,8 +1345,8 @@
   };
   const berryFarm = BerryFarm.create(berryEnv);
   // Hoenn's trees, along its routes (Emerald's own: the ones its new game starts with are grown): the same engine, another place to keep them.
-  // (Picking from one of Hoenn's trees is the Berry Pouch's game, as in Kanto's forests: pickingGame.)
-  const hoennBerries = BerryFarm.create(Object.assign({}, berryEnv, { pickGame: (berry, n) => pickingGame({ berry, n }) }),
+  // (Picked as the Berry Farm's are, straight into the Bag, for farming XP: no Berry Pouch game.)
+  const hoennBerries = BerryFarm.create(berryEnv,
     { key: "hoennBerries", owns: (map) => isHoenn(map), spotRe: /^HoennBerry_Tree_(\d+)$/, initial: () => window.HOENN_SCRIPTS.berryTrees });
   // Hoenn's decorations (ui/hoenn-decor.js): the ones you own, and those out in your Secret Base and your room.
   const hoennDecor = HoennDecor.create({
@@ -4968,6 +4968,16 @@
     if (approach != null) {
       await Overworld.act([{ who, moves: ["emote_exclamation_mark"].concat(Array(approach).fill("walk_" + facing)) }]);
       await Overworld.act([{ who: "player", moves: ["face_" + World.OPPOSITE[facing]] }]);
+    }
+    // (Hoenn's: their own script, Emerald's trainerbattle, says what they say before and after, and goes on to
+    // whatever follows: a rematch's registration, a Gym's, ...)
+    if (/^EM_/.test(t.id) && isHoenn(player.location.map) && window.HOENN_SCRIPTS.s[person.script]) {
+      await runHoenn(person.script, person);
+      if (approach && player.flags[t.id]) {
+        const [dx, dy] = World.DIRS[facing];
+        (player.flags.trainerSpots || (player.flags.trainerSpots = {}))[t.id] = { map: player.location.map, x: person.x + dx * approach, y: person.y + dy * approach, facing };
+      }
+      return;
     }
     const re = dojoRematch(t.id);
     // (Nothing to say, straight to the battle: no waiting on an empty message.)
@@ -12538,7 +12548,12 @@
       const at = hoenn.placed(map, id) || { x: def.x, y: def.y }, v = hoennVisible(def, map);
       Overworld.addObject(id, { x: at.x, y: at.y, facing: (/^face_(\w+)/.exec((v && v.movement) || def.movement || "") || [, "down"])[1] }, v && v !== true ? v : null);
     },
-    hide: (id) => { hoenn.setShown(player.location.map, id, false); Overworld.removeObject(id); },
+    // (Emerald's removeobject sets the person's flag too, so they're gone for good: May off Route 103 once beaten.)
+    hide: (id) => {
+      const def = ((window.WORLD_MAPS[player.location.map] || {}).people || []).find((p) => p.localId === id);
+      if (def && def.flag && !def.item && /^FLAG_/.test(def.flag)) hoenn.setFlag(def.flag, true);
+      hoenn.setShown(player.location.map, id, false); Overworld.removeObject(id);
+    },
     place: (id, x, y, facing) => {
       const at = Overworld.personPosition(id);
       if (at) Overworld.addObject(id, { x, y, facing: facing || at.facing });
@@ -13127,17 +13142,27 @@
       case "DoOrbEffect": await api.flush(); sfx("se_orb"); await sleep(700); return true;
       case "FadeOutOrbEffect": await sleep(400); return true;
       case "FieldShowRegionMap": await api.flush(); await townMap(); show("world"); return true;
-      // Wally's catching lesson (Petalburg's OnFrame): his Ralts, caught with your help, as a scene (Emerald's is a battle).
+      // Wally's catching lesson (Petalburg's OnFrame; Emerald's StartWallyTutorialBattle and LoadWallyZigzagoon): a
+      // wild Ralts, Lv. 5, and Wally with Norman's Zigzagoon, Lv. 7, knowing only Tackle; the battle plays itself
+      // (ui/battle-screen.js's wallyLoop) and the Ralts is caught. Your own party isn't touched.
+      case "LoadWallyZigzagoon": case "SavePlayerParty": case "LoadPlayerParty": return true;
       case "StartWallyTutorialBattle": {
         await api.flush();
+        const zig = Party.create("Zigzagoon", 7);
+        zig.moves = zig.moves.filter((m) => m.name === "Tackle").slice(0, 1);
+        if (!zig.moves.length) zig.moves = [{ name: "Tackle", pp: 35 }];
+        const ralts = Party.create("Ralts", 5);
+        ralts.gender = "M";   // (CreateMaleMon)
         music("em_vs_wild");
-        await say(["Wild Ralts appeared!"]);
-        sfx("se_ball_throw");
-        await say(["Wally threw a Poké Ball!"]);
-        sfx("se_ball");
-        await sleep(600);
-        await fanfare("mus_caught");
-        await say(["Gotcha! Ralts was caught!"]);
+        await Overworld.battleTransition();
+        show("field");
+        await BattleScreen.run({
+          p1: { name: "Wally", team: [Party.toBattleSet(zig)] }, p2: { name: "Wild", team: [Party.toBattleSet(ralts)] }, wild: true, wally: true,
+          trainer: "wally", exp: false, levelCap: 100, terrain: battleTerrain({}), bag: {}, bagPockets: () => [],
+          opponent: randomMove, forgetMove: () => 0, summary: () => null
+        }).catch((e) => console.error(e));
+        show("world");
+        await Overworld.resume();
         music(null);
         return true;
       }
