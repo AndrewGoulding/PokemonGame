@@ -2934,8 +2934,7 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   Island, and everything east of New Bark Town: Route 27, Tohjo Falls, Route 26,
   Route 28 and Mt. Silver, so the way home can be walked without your Pokémon
   turning disobedient) go by Kanto's Badges, Johto's maps by Johto's. A Pokémon at the cap
-  gains no Exp. Points in battle (said once a battle: "… is at the level cap
-  (Lv. 25) and can't gain Exp. Points!"), Exp. Candies and Exp. Points from
+  gains no Exp. Points in battle (and nothing's said about it), Exp. Candies and Exp. Points from
   battle take it no further than the cap, a Rare Candy or Exp. Candy used on
   it fails, and the Day-Care grows it no further either. One over the cap
   (traded, or brought to Johto from Kanto) may not obey, as in FireRed
