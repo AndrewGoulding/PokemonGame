@@ -2178,7 +2178,8 @@ scene your walking Pokémon walks too (`obj_partner_poke`): in Ilex Forest it go
 helps her, the shortest way round to her side, then comes back behind you. HGSS's Wi-Fi and Mystery Gift staff aren't there. Coming through a door into a scene (the Kimono
 Girl outside Violet's Mart), you step out of the doorway first; someone a script walks to a door walks onto
 Heart & Soul's door (Elm's aide out of the Mart). In the Ruins of Alph's chambers Heart & Soul's table is the
-panel: examine it from the front. Where Heart & Soul's ground is too unlike HGSS's for its walks, `sceneMoves` in
+panel: examine it from the front; each chamber's stone stands in its secret room's door until its riddle's
+solved (a door with someone in it doesn't open: `game/world.js`). Where Heart & Soul's ground is too unlike HGSS's for its walks, `sceneMoves` in
 `tools/data/hns-johto-maps.json` walks a scene its own way (by who and HGSS's movement label; `to:x,y` the shortest
 way there, `to:player` to beside you, facing you, `face:<who>` turned to them, `at:x,y` there at once, `@x>=14`
 for one part of the map): Kurt's granddaughter comes over to you with his number; on Route 34 Lyra walks up to her grandpa

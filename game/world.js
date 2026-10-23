@@ -169,9 +169,10 @@
       return { ok: false, warp: warpTarget(hereWarp) };
     }
 
-    // Doors are solid: walking up into one opens it and goes inside.
+    // Doors are solid: walking up into one opens it and goes inside (unless someone, or something, stands in it:
+    // the Ruins of Alph's stones in their secret rooms' doors).
     const aheadWarp = ahead.map && warpAt(ahead.map, ahead.x, ahead.y);
-    if (aheadWarp && ahead.behavior === MB.WARP_DOOR && dir === "up") {
+    if (aheadWarp && ahead.behavior === MB.WARP_DOOR && dir === "up" && !(occupied && occupied(ahead.map, ahead.x, ahead.y))) {
       // (A door into a map not built yet, as Johto's houses are: say so.)
       if (!aheadWarp.map && aheadWarp.mapConst && aheadWarp.mapConst !== "MAP_DYNAMIC") return { ok: false, door: true, unbuilt: aheadWarp.mapConst };
       return { ok: false, warp: warpTarget(aheadWarp), door: true };
