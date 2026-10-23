@@ -301,21 +301,28 @@
   // ---------- Trainers ----------
   //
   // As in FireRed: a trainer you haven't beaten sees you when you're straight
-  // ahead of them, within their sight range, with nothing in between.
+  // ahead of them, within their sight range, with nothing in between. (Emerald's
+  // trainers who see all round, and those buried in sand (trainer.all), look
+  // every way.)
 
   function trainerSees(p) {
     const t = p.def.trainer;
     if (!t || !t.sight || p.move || p.hidden || !ctx.trainerWaiting || !ctx.trainerWaiting(p.def)) return null;
-    const [dx, dy] = World.DIRS[p.facing];
     const blocked = (mapName, x, y) => mapName === me.map && !!personAt(x, y);
-    for (let d = 1; d <= t.sight; d++) {
-      const x = p.x + dx * d, y = p.y + dy * d;
-      if (x === me.x && y === me.y) return { type: "trainer", person: p.def, map: me.map, approach: d - 1, facing: p.facing };
-      const r = World.step({ map: me.map, x: x - dx, y: y - dy }, p.facing, blocked);
-      if (!r.ok || r.jump || r.map !== me.map) return null;
+    for (const facing of t.all ? ["down", "up", "left", "right"] : [p.facing]) {
+      const [dx, dy] = World.DIRS[facing];
+      for (let d = 1; d <= t.sight; d++) {
+        const x = p.x + dx * d, y = p.y + dy * d;
+        if (x === me.x && y === me.y) return { type: "trainer", person: p.def, map: me.map, approach: d - 1, facing };
+        const r = World.step({ map: me.map, x: x - dx, y: y - dy }, facing, blocked);
+        if (!r.ok || r.jump || r.map !== me.map) break;
+      }
     }
     return null;
   }
+  // (Emerald's buried trainers: out of sight under the sand until they've seen you (unbury); once beaten, they
+  // stand there, as Emerald's do.)
+  const buried = (p) => !!(p.def.trainer && p.def.trainer.buried && !p.unburied && ctx.trainerWaiting && ctx.trainerWaiting(p.def));
   function anyTrainerSees() {
     for (const p of people) {
       const seen = trainerSees(p);
@@ -1857,7 +1864,7 @@
     // People and the player, back to front.
     const emotes = [];
     // (`drawnOnMap`: someone the map's picture already shows, as Johto's Apricorn trees on Heart & Soul's maps.)
-    const sprites = people.filter((p) => !p.hidden && !p.def.drawnOnMap).map((p) => {
+    const sprites = people.filter((p) => !p.hidden && !p.def.drawnOnMap && !buried(p)).map((p) => {
       let x = p.x * TILE, y = p.y * TILE;
       if (p.move) {
         const [dx, dy] = World.DIRS[p.facing];
@@ -2063,7 +2070,7 @@
 
   window.Overworld = {
     explore, hide, read: (pages) => read(pages), showAreaName, forceStep, refreshPeople: () => loadPeople(),
-    act, addObject, removeObject, removePerson, teleport, battleTransition, resume, pokecenterHeal, flyOut, flyIn, escapeRopeOut, escapeRopeIn,
+    act, addObject, removeObject, unbury: (def) => { for (const p of people) if (p.def.id === def.id && p.def.script === def.script) p.unburied = true; }, removePerson, teleport, battleTransition, resume, pokecenterHeal, flyOut, flyIn, escapeRopeOut, escapeRopeIn,
     fadeToBlack: fadeOut, fadeFromBlack: fadeIn, shake,
     setAvatar, avatar: () => me.avatar, flash, follower: followerApi, rod: setRod, emote: (mark) => { me.emote = mark ? { mark } : null; }, isDark: () => light != null && !flashOn,
     // What's in front of you: the tile, whoever stands there, and whether

@@ -1923,7 +1923,7 @@ from behind with Norman's Zigzagoon (Lv. 7, Tackle) against a wild Ralts, playin
 then BAG and a Poké Ball that always catches: `ui/battle-screen.js` `wallyLoop`). A person a script
 removes stays gone (Emerald's removeobject sets their flag: May leaves Route 103 for good once beaten),
 and every trainer with a script to go on to after the battle (Calvin's and the like) sees you too;
-trainers who spot you walk over and then say what their own script says. Hoenn's
+trainers who spot you walk over and then say what their own script says. Trainers who see all round look every way, and those buried in sand (Lavaridge's Gym, Route 113's Lao) stay out of sight until you step beside them, then burst out. Hoenn's
 badges unlock Cut, Flash, Rock Smash, Strength, Surf, Fly, Dive and Waterfall; whiting out sends
 you to the last Center or your bedroom.
 

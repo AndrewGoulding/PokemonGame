@@ -302,6 +302,9 @@ function trainerData(id) {
 function trainerScript(mapName, script) {
   const { scripts } = textsOf(mapName), lines = scripts[script] || [];
   for (const line of lines) {
+    // (Emerald's general form, trainerbattle TRAINER_BATTLE_CONTINUE_SCRIPT, ...: Lavaridge's Gym's, run by its script.)
+    const g = /^trainerbattle\s+TRAINER_BATTLE_CONTINUE_SCRIPT\s*,\s*(\w+)/.exec(line);
+    if (g) return trainerData(g[1]) ? { id: "EM_" + g[1], intro: [], defeat: [], script: true } : null;
     const m = /^trainerbattle_(single|double)\s+(\w+),\s*(\w+),\s*(\w+)(?:,\s*(\w+))?(?:,\s*(\w+))?/.exec(line);
     if (!m) continue;
     // (A trainer with a script to go on to after the battle, a Gym Leader's, is run by ui/hoenn-script.js; but still
@@ -526,7 +529,9 @@ for (const name of MAPS) {
     people.push(Object.assign({ id: i, x: o.x, y: o.y, movement: o.movement_type.replace(/^MOVEMENT_TYPE_/, "").toLowerCase(),
       rangeX: o.movement_range_x, rangeY: o.movement_range_y, script: o.script, flag: o.flag !== "0" ? o.flag : null,
       text: scriptText(name, o.script), item: item || undefined, mart: stock,
-      trainer: trainer ? Object.assign({}, trainer, { sight: +o.trainer_sight_or_berry_tree_id || 0 }) : undefined,
+      // (Trainers who see all round, and those buried in sand, who also stay out of sight until they've seen you.)
+      trainer: trainer ? Object.assign({}, trainer, { sight: +o.trainer_sight_or_berry_tree_id || 0 },
+        /SEE_ALL|BURIED/.test(o.trainer_type) ? { all: true } : {}, o.trainer_type === "TRAINER_TYPE_BURIED" ? { buried: true } : {}) : undefined,
       gfxVar: gfxVar ? "VAR_OBJ_GFX_ID_" + gfxVar : undefined,
       localId: typeof o.local_id === "string" && o.local_id !== "0" ? o.local_id : "LOCALID_" + name.replace(/([a-z])([A-Z0-9])/g, "$1_$2").toUpperCase() + "_" + i }, sp));
   });

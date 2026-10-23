@@ -4965,6 +4965,12 @@
       return;
     }
     music(inJohto() ? johtoEyes(data) : data.music || "mus_encounter_boy");   // their "eyes meet" theme
+    // (Emerald's buried trainers burst up out of the sand: shown, a hop and "!", where they were.)
+    if (t.buried && approach != null) {
+      Overworld.unbury(person);
+      sfx("se_m_sand_attack");
+      await Overworld.act([{ who, moves: ["face_" + World.OPPOSITE[facing], "walk_in_place_fast_" + World.OPPOSITE[facing]] }]);
+    }
     if (approach != null) {
       await Overworld.act([{ who, moves: ["emote_exclamation_mark"].concat(Array(approach).fill("walk_" + facing)) }]);
       await Overworld.act([{ who: "player", moves: ["face_" + World.OPPOSITE[facing]] }]);
