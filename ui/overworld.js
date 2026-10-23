@@ -801,6 +801,7 @@
   // as you go (two tiles: a hop, after you over a ledge).
   function followerStep() {
     if (!pal.def || me.avatar !== "walk") { pal.away = true; return; }
+    if (scene && pal.scripted) return;   // (a scene has it walking on its own)
     const dx = me.x - pal.x, dy = me.y - pal.y, n = Math.abs(dx) + Math.abs(dy);
     if (n === 0) return;
     if (n > 2 || (dx && dy)) { tuckFollower(); return; }
@@ -879,7 +880,9 @@
   let scene = null;   // { tracks: [{ who, moves, i, wait }], resolve }
 
   // "player", a person's local id, or "#<id>" (their place in the map's list).
-  const actor = (who) => (who === "player" ? me : people.find((p) => p.def.localId === who || "#" + p.def.id === who));
+  // ("obj_partner_poke": your walking Pokémon, HGSS's, as Ilex Forest's Kimono Girl's scene walks it over to her.)
+  const actor = (who) => (who === "player" ? me : who === "obj_partner_poke" ? (followerShown() ? pal : null)
+    : people.find((p) => p.def.localId === who || "#" + p.def.id === who));
   // (walk_slower_*: the Seagallop pulling in at Cinnabar.)
   const SPEEDS = { "": WALK_SPEED, fast_: 2, faster_: 4, fastest_: 8, slow_: 0.5, slower_: 0.5 };
 
@@ -892,6 +895,7 @@
       const dir = m[2], [dx, dy] = World.DIRS[dir], speed = SPEEDS[m[1] || ""];
       if (!a.lockFacing) a.facing = dir;
       if (a === me) { me.move = { tx: me.x + dx, ty: me.y + dy, tmap: me.map, dir, t: 0, dist: TILE, speed, scripted: true }; me.parity ^= 1; followerStep(); }
+      else if (a === pal) { pal.move = { fx: pal.x, fy: pal.y, t: 0, dist: TILE, speed, hop: false }; pal.x += dx; pal.y += dy; pal.parity ^= 1; pal.scripted = true; }
       else a.move = { tx: a.x + dx, ty: a.y + dy, t: 0, speed };
       return 0;
     }
@@ -947,7 +951,7 @@
       t.emoting = /^emote_/.test(cmd);
       busy = true;
     }
-    if (!busy) { const done = scene.resolve; scene = null; savePosition(); done(); }   // keep any turn in place
+    if (!busy) { const done = scene.resolve; scene = null; pal.scripted = false; savePosition(); done(); }   // keep any turn in place
   }
 
   // Plays movement scripts side by side: act([{ who: "player" | localId, moves: [...] }]).

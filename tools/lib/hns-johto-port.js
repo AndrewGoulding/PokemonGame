@@ -316,6 +316,19 @@ module.exports = function port(HN, out, opts) {
       const hs = hg.signs.map((s, i) => ({ s, i, x: s.x, y: s.y }));
       const os = g.bgs.map((b, k) => ({ b, k, x: b.x, y: b.y })).filter((o) => o.b.type === "sign" && !takenBg.has(o.k));
       const spairs = match(hs, os, (a, b) => dist(src, a, b), 4);
+      // (Then by what they say: Heart & Soul's AzaleaTown_EventScript_KurtSign is the sign whose words name Kurt,
+      // however far the fit puts it; then the rest outdoors, each to the nearest sign left within 12 tiles.)
+      {
+        const key = (b) => String(b.b.script || "").replace(/^.*_(EventScript|MapScript)_/, "").replace(/(Sign|Signpost|Description|Descripton)$/, "").toLowerCase();
+        const says = (h) => [].concat(h.s.text || []).join(" ").toLowerCase().replace(/[^a-z]/g, "");
+        const more = (cost, limit) => {
+          const ua = new Set(spairs.map(([i]) => i)), ub = new Set(spairs.map(([, j]) => j));
+          const ai = hs.map((h, i) => i).filter((i) => !ua.has(i)), bj = os.map((o, j) => j).filter((j) => !ub.has(j));
+          for (const [i, j, v] of match(ai.map((i) => hs[i]), bj.map((j) => os[j]), cost, limit)) spairs.push([ai[i], bj[j], v]);
+        };
+        more((a, b) => { const k = key(b); return k.length >= 3 && says(a).includes(k) ? dist(src, a, b) : Infinity; }, 1e9);
+        if (hg.type !== "indoor") more((a, b) => dist(src, a, b), 12);
+      }
       const hh = (hg.hidden || []).map((h) => ({ h, x: h.x, y: h.y }));
       const oh = g.bgs.map((b, k) => ({ b, k, x: b.x, y: b.y })).filter((o) => o.b.type === "hidden_item");
       const hpairs = match(hh, oh, (a, b) => (itemOf(b.b.item) === a.h.item ? dist(src, a, b) : Infinity), 10);

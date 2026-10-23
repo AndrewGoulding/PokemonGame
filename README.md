@@ -2146,7 +2146,11 @@ same look (HGSS's and Heart & Soul's names for a look are one: a Mart clerk is a
 else's place; those left over stand where HGSS's neighbours put them, beside whoever they stood beside. A step
 trigger on one tile takes Heart & Soul's own triggers for that scene nearby (Sprout Tower's Silver scene);
 `place` in `tools/data/hns-johto-maps.json` sets where someone stands by hand (Azalea's Rocket and the man he
-shoves). HGSS's Wi-Fi and Mystery Gift staff aren't there. Coming through a door into a scene (the Kimono
+shoves; Slowpoke Well's Kurt by its ladder, and the Kurt of HGSS's B1F out of sight until his scene, the well's
+entrance being part of B1F here). Signs go onto Heart & Soul's signposts: the nearest, then by what they say
+(its `AzaleaTown_EventScript_KurtSign` is the sign that names Kurt), then outdoors the nearest left. In a
+scene your walking Pokémon walks too (`obj_partner_poke`): in Ilex Forest it goes over to the Kimono Girl and
+helps her, the shortest way round to her side, then comes back behind you. HGSS's Wi-Fi and Mystery Gift staff aren't there. Coming through a door into a scene (the Kimono
 Girl outside Violet's Mart), you step out of the doorway first; someone a script walks to a door walks onto
 Heart & Soul's door (Elm's aide out of the Mart). In the Ruins of Alph's chambers Heart & Soul's table is the
 panel: examine it from the front. Everyone in Johto has HGSS's own sprite (`hgss_*`); you can't ride the

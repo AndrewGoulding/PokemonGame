@@ -2385,6 +2385,14 @@ if (window.JOHTO_TOWN_MAP) {
     for (const h of m.hidden) assert(ITEMS[h.item], h.item);
   }
   assert.deepStrictEqual(new Set(WORLD_MAPS.Route29.wild.slots.map((s) => s.species)), new Set(["Pidgey", "Sentret", "Rattata"]), "Route 29 by day");
+  // (Signs on Heart & Soul's signposts, matched by what they say: Kurt's, the well's and the town's in Azalea, the
+  // shrine and Trainer Tips in Ilex Forest; Slowpoke Well's Kurt by its ladder, the other out of sight till his scene.)
+  const signAt = (n, x, y) => WORLD_MAPS[n].signs.some((g) => g.x === x && g.y === y && g.text);
+  assert([[17, 11], [55, 12], [50, 23]].every(([x, y]) => signAt("AzaleaTown", x, y)) && signAt("IlexForest", 32, 36) && signAt("IlexForest", 23, 27), "Azalea's and Ilex Forest's signs on their signposts");
+  const kurts = WORLD_MAPS.SlowpokeWell_B1F.people.filter((p) => p.sprite === "hgss_gantetsu");
+  assert(kurts.length === 2 && kurts.some((p) => p.x === 27 && p.y === 26) && kurts.some((p) => p.x === 0 && p.y === 0), "one Kurt in Slowpoke Well, by the ladder");
+  assert(/who === "obj_partner_poke" \? \(followerShown\(\) \? pal : null\)/.test(fs.readFileSync(path.join(root, "ui/overworld.js"), "utf8"))
+    && /function followerWalk\(map, t\)/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")), "your walking Pokémon walks in a scene (Ilex Forest's Kimono Girl)");
   // (This game's changes: the Ruins of Alph's grass at Lv. 7-11; Houndour, Slugma and Larvitar on Johto's routes.)
   assert(WORLD_MAPS.RuinsOfAlph.wild.slots.every((s) => s.min >= 7 && s.max <= 11), "the Ruins of Alph at Lv. 7-11");
   assert(WORLD_MAPS.Route37.wild.slots.some((s) => s.species === "Houndour") && WORLD_MAPS.Route42.wild.slots.some((s) => s.species === "Slugma")

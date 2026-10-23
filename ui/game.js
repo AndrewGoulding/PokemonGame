@@ -12108,12 +12108,29 @@
   const johtoAct = (tracks) => {
     const map = player.location.map;
     if (!window.JohtoCoords || !(window.WORLD_MAPS[map] || {}).hgss) return Overworld.act(tracks);
-    const at = (who) => (who === "player" ? Overworld.position() : who === 253 || /^#/.test(String(who)) ? null : Overworld.personPosition(who));
+    const at = (who) => (who === "player" ? Overworld.position() : who === "obj_partner_poke" ? Overworld.follower.position()
+      : who === 253 || /^#/.test(String(who)) ? null : Overworld.personPosition(who));
     const others = (who) => [Overworld.position()].concat(tracks.filter((t) => t.who !== who && t.who !== "player").map((t) => at(t.who)).filter(Boolean));
     return Overworld.act(window.JohtoCoords.retarget(tracks, {
       map, at, free: (x, y, who) => !others(who).some((p) => p && p.x === x && p.y === y && who !== "player")
-    }));
+    }).map((t) => (t.who === "obj_partner_poke" ? followerWalk(map, tracks.find((u) => u.who === t.who)) : t)));
   };
+  // (Your walking Pokémon in a scene, on Heart & Soul's ground: HGSS's walk ends facing someone, as Ilex Forest's
+  // Kimono Girl, so it goes the shortest way round to the tile beside whoever it faces, no one in its way; with no one
+  // near, back behind you. Then what it does there: HGSS's steps in place.)
+  function followerWalk(map, t) {
+    const m = window.WORLD_MAPS[map], from = Overworld.follower.position();
+    if (!from) return t;
+    const moves = [].concat(t.moves), lastWalk = moves.map((mv) => /^walk(_slow|_fast|_faster)?_(up|down|left|right)$/.test(mv)).lastIndexOf(true);
+    const after = moves.slice(lastWalk + 1), faced = /^(?:walk_in_place(?:_fast)?|face)_(up|down|left|right)$/.exec(after[0] || "");
+    const me = Overworld.position(), D = World.DIRS, crowd = Overworld.people().filter((p) => !p.def.inanimate);
+    const near = faced && crowd.map((p) => ({ p, d: Math.abs(p.x - from.x) + Math.abs(p.y - from.y) })).filter((c) => c.d <= 10).sort((a, b) => a.d - b.d)[0];
+    const to = near ? { x: near.p.x - D[faced[1]][0], y: near.p.y - D[faced[1]][1] } : { x: me.x - D[me.facing][0], y: me.y - D[me.facing][1] };
+    const taken = (x, y) => (x === me.x && y === me.y) || crowd.some((p) => p.x === x && p.y === y);
+    if (m.collision[to.y * m.width + to.x] || taken(to.x, to.y)) return Object.assign({}, t, { moves: after });
+    const steps = window.JohtoCoords.path(m, from, to, (x, y) => !m.collision[y * m.width + x] && !taken(x, y));
+    return Object.assign({}, t, { moves: steps.map((d) => "walk_" + d).concat(after) });
+  }
   // The Magnet Train between Goldenrod and Saffron (ui/magnet-train.js).
   const magnetTrain = MagnetTrain.create({
     player: () => player, johto: { setFlag: (name, on) => johto.setFlag(name, on) }, music: (song) => music(song),

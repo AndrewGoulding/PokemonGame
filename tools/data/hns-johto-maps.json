@@ -1,5 +1,5 @@
 {
-  "_comment": "Which of Pokemon Heart & Soul's maps (github.com/PokemonHnS-Development/pokemonHnS) draws each of this game's Johto maps (named as tools/build-johto.js names HGSS's). A string: that map, whole. An object: hns (a map), rect ([x, y, w, h]: that part of it), pieces ([{ hns, rect?, at: [x, y] }]: several, put side by side), merge (HGSS maps whose people and events move into this one: they're gone from the game), place ({ localId: [x, y] }: where someone stands, where nothing of Heart & Soul's says, as Azalea's Rocket and the man he shoves, beside each other above their scene's trigger). null: HGSS's own map is kept (HnS has none). A map not listed is HnS's map of the same name.",
+  "_comment": "Which of Pokemon Heart & Soul's maps (github.com/PokemonHnS-Development/pokemonHnS) draws each of this game's Johto maps (named as tools/build-johto.js names HGSS's). A string: that map, whole. An object: hns (a map), rect ([x, y, w, h]: that part of it), pieces ([{ hns, rect?, at: [x, y] }]: several, put side by side), merge (HGSS maps whose people and events move into this one: they're gone from the game), place ({ localId: [x, y] }: where someone stands, where nothing of Heart & Soul's says, as Azalea's Rocket and the man he shoves, beside each other above their scene's trigger, or out of sight until a scene brings them on, as Slowpoke Well's second Kurt; its entrance's Kurt where Heart & Soul has its own, by the ladder). null: HGSS's own map is kept (HnS has none). A map not listed is HnS's map of the same name.",
   "NewBarkTown": { "hns": "NewBarkTown", "stamps": [{ "from": "CherrygroveCity", "rect": [45, 3, 5, 5], "at": [19, 17] }], "door": { "x": 21, "y": 21 } },
   "TohjoFalls": "TohjoFalls_Cavern",
   "TohjoFallsHiddenRoom": "TohjoFalls_GiovanniRoom",
@@ -57,7 +57,7 @@
   "AzaleaTown_CharcoalKiln": "AzaleaTown_House1",
   "AzaleaTown_KurtHouse": "AzaleaTown_KurtsHouse",
   "SlowpokeWell_Entrance": { "drop": true },
-  "SlowpokeWell_B1F": { "hns": "SlowpokeWell_B1F", "merge": ["SlowpokeWell_Entrance"] },
+  "SlowpokeWell_B1F": { "hns": "SlowpokeWell_B1F", "merge": ["SlowpokeWell_Entrance"], "place": { "obj_D26R0101_gantetsu": [27, 26], "obj_D26R0102_gantetsu": [0, 0] } },
   "NationalPark": "NationalPark_Normal",
   "NationalPark_BugCatchingContest": "NationalPark_BugContest",
   "Route35_NationalParkPokeathlonGatehouse": { "hns": "Gate_NationalPark", "rect": [0, 0, 16, 16] },
