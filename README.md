@@ -2453,6 +2453,13 @@ sailor there takes you back to Olivine. To Hoenn it's as the Seagallop's
 crossing (the first time, the moving truck's inside), and Slateport's sailor
 sails you to Vermilion or, once you've beaten Johto's League, Olivine.
 
+**The Radio Tower's Lottery Corner** draws a lucky number a day (five
+digits, from the day and your ID) and checks it against your Pokémon's ID
+numbers, the party's and then the PC's, for HGSS's prizes; **the Lake of
+Rage's Fishing Guru** measures your Magikarp as Emerald's size records do
+(from its personality and IVs, in inches), keeps the biggest, and the sign
+outside shows it (`ui/johto-script.js`).
+
 **The Magnet Train** runs between Goldenrod City and Saffron City as in
 HGSS: its stations are HGSS's (Goldenrod's, and Saffron's, HGSS's Kanto map,
 built with Johto's but counted as Kanto's), with their people and scripts.

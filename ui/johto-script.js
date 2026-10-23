@@ -165,6 +165,26 @@
         return i >= 0 ? i : 0;
       };
       const mon = (n) => env.player().party[slot(n)];
+      const boxMons = () => [].concat(...(env.player().boxes || []));
+      const partyAt = (x) => env.player().party[+getVar(x) || 0];   // (a party slot as chosen: not mon()'s starter for 0)
+      // (Today's lucky number: one a day, from the day and your ID.)
+      const luckyNumber = () => { let h = (gameTime().day + 1) * 2654435761 ^ ((env.player().trainerId | 0) * 40503); h = Math.imul(h ^ (h >>> 15), 2246822519) >>> 0; return h % 100000; };
+      const SIZE_TABLE = [[290, 1, 0], [300, 1, 10], [400, 2, 110], [500, 4, 310], [600, 20, 710], [700, 50, 2710], [800, 100, 7710], [900, 150, 17710],
+        [1000, 150, 32710], [1100, 100, 47710], [1200, 50, 57710], [1300, 20, 62710], [1400, 5, 64710], [1500, 2, 65210], [1600, 1, 65410], [1700, 1, 65510]];
+      const sizeHash = (r) => {
+        if (!r) return 0x8000;
+        const iv = r.ivs || {}, p = (r.personality >>> 0) & 0xffff, v = (k) => (iv[k] | 0) & 0xf;
+        return ((((v("atk") ^ v("def")) * v("hp")) ^ (p & 0xff)) << 8) + ((((v("spa") ^ v("spd")) * v("spe")) ^ (p >> 8)) & 0xffff) & 0xffff;
+      };
+      const sizeFrom = (species, b) => {
+        let i = 1;
+        while (i < 15 && !(b < SIZE_TABLE[i][2])) i++;
+        const [u0, u2, u4] = SIZE_TABLE[i - 1], dm = Math.round(((window.DEX[species] || {}).height || 0) * 10);
+        return Math.floor(dm * (u0 + Math.floor((b - u4) / u2)) / 10);
+      };
+      const sizeOf = (r) => (r ? sizeFrom(r.species, sizeHash(r)) : 0);
+      const recordSize = (species) => sizeFrom(species, ((state().sizeRecords || {})[species]) != null ? state().sizeRecords[species] : 0x8000);
+      const inches = (mm) => { const t = Math.floor(mm * 10 / 25.4); return [String(Math.floor(t / 10)), String(t % 10)]; };
       // (An item a var holds by HGSS's number, as Buena's prizes, or a constant this game's names hadn't: JOHTO_SCRIPTS.itemIds.)
       const item = (x) => { const v = getVar(x), ids = DATA().itemIds; return ids && ids[v] != null ? ids[v] : v; };
       const itemVars = (it, n) => { setVar("VAR_SPECIAL_x8004", item(it)); setVar("VAR_SPECIAL_x8005", +getVar(n) || 1); };
@@ -272,7 +292,35 @@
           case "BufferPartyMonNick": { const r = mon(a[1]); buffers[a[0]] = r ? (r.nickname || r.species) : ""; break; }
           case "BufferSpeciesName": case "BufferSpeciesNameIndef": buffers[a[0]] = String(speciesOf(getVar(a[1]))); break;
           case "BufferDeptStoreFloorNo": buffers[a[0]] = (+getVar(a[1]) || 0) + "F"; break;
-          case "BufferInt": case "BufferIntEx": buffers[a[0]] = String(+getVar(a[1]) || 0); break;
+          // (BufferIntEx's mode 2: padded with zeros to its width, as the lottery's ticket number is.)
+          case "BufferInt": case "BufferIntEx": buffers[a[0]] = String(+getVar(a[1]) || 0).padStart(op === "BufferIntEx" && +a[2] === 2 ? +a[3] || 0 : 0, "0"); break;
+          case "BufferBoxMonNick": { const r = boxMons()[+getVar(a[1]) || 0]; buffers[a[0]] = r ? (r.nickname || r.species) : ""; break; }
+          case "BufferTrainerClassNameIndef": buffers[a[0]] = "a Pokémon Trainer"; break;
+          // The Radio Tower's Lucky Number Show (HGSS's LotoIDGet, LotoIDSearch): today's five-digit number, and the
+          // best match of its last digits against your Pokémon's ID numbers, party first, then the PC's.
+          case "LotoIDGet": setVar(a[0], luckyNumber()); break;
+          case "LotoIDSearch": {
+            const want = String(+getVar(a[3]) || 0).padStart(5, "0"), digits = (r) => String(((r.ot && r.ot.id) || 0) % 100000).padStart(5, "0");
+            const match = (r) => { let k = 0; while (k < 5 && want[4 - k] === digits(r)[4 - k]) k++; return k; };
+            let best = { n: 0, at: 0, box: 0 };
+            env.player().party.forEach((r, i) => { if (r && !r.egg && match(r) > best.n) best = { n: match(r), at: i, box: 0 }; });
+            boxMons().forEach((r, i) => { if (r && !r.egg && match(r) > best.n) best = { n: match(r), at: i, box: 1 }; });
+            setVar(a[0], best.at); setVar(a[1], best.n); setVar(a[2], best.box);
+            break;
+          }
+          // The Lake of Rage's Fishing Guru (Emerald's pokemon_size_record.c, as HGSS has it): a Pokémon's size from its
+          // personality and IVs, against the record (the largest he's seen; Emerald's DEFAULT_MAX_SIZE to start with),
+          // in inches.
+          case "BufferMonSize": { const [w, f] = inches(sizeOf(partyAt(a[2]))); buffers[a[0]] = w; buffers[a[1]] = f; break; }
+          case "BufferRecordSize": { const [w, f] = inches(recordSize(speciesOf(a[2]))); buffers[a[0]] = w; buffers[a[1]] = f; break; }
+          case "SizeRecordCompare": {
+            const r = partyAt(a[1]), now = sizeOf(r), best = recordSize(r && r.species);
+            setVar(a[0], now < best ? 0 : now === best ? 1 : 2);
+            break;
+          }
+          case "SizeRecordUpdate": { const r = partyAt(a[0]); if (r) (state().sizeRecords || (state().sizeRecords = {}))[r.species] = sizeHash(r); break; }
+          case "SetObjectMovementType": break;
+          case "GiveRunningShoes": break;   // (you have them already)
           case "BufferItemName": case "BufferItemNameIndef": case "BufferItemNamePlural": buffers[a[0]] = env.itemName(item(a[1])); break;
           case "BufferMoveName": buffers[a[0]] = String(getVar(a[1])).replace(/^MOVE_/, "").toLowerCase().replace(/(^|_)(\w)/g, (x, u, c) => (u ? " " : "") + c.toUpperCase()); break;
           // (A message by its number in the map's own bank, from a var.)
