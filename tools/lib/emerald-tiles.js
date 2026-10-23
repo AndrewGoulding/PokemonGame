@@ -59,7 +59,8 @@ module.exports = function emeraldTiles(EM, opts) {
     let sheet = (idx < NUM_PRIMARY_TILES ? primary : secondary).tiles;
     let t = idx < NUM_PRIMARY_TILES ? idx : idx - NUM_PRIMARY_TILES;
     const a = frames ? tileAnim(entry, primary) : -1;
-    if (a >= 0) { sheet = primary.anims[a].frames[frames[a]]; t = idx - primary.anims[a].first; }
+    // (from: where in each frame's sheet the anim's tiles start, as Heart & Soul's waterfall, 34 tiles into its water's frames.)
+    if (a >= 0) { sheet = primary.anims[a].frames[frames[a]]; t = idx - primary.anims[a].first + (primary.anims[a].from || 0); }
     const palette = (pal < NUM_PRIMARY_PALS ? primary : secondary).palettes[pal] || primary.palettes[0];
     const perRow = sheet.width / 8, tx = (t % perRow) * 8, ty = Math.floor(t / perRow) * 8;
     if (ty >= sheet.height) return;

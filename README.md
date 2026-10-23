@@ -2069,6 +2069,36 @@ and drawing metatiles).
 
 ## Johto (in progress)
 
+**Johto's maps are Pokémon Heart & Soul's**
+([PokemonHnS-Development/pokemonHnS](https://github.com/PokemonHnS-Development/pokemonHnS), a GBA
+remake of Johto on the Emerald decomp: its hand-drawn GBA maps and tilesets, with thanks to its team),
+and everything on them is still HGSS's: its scripts, people, trainers, signs, items, doors and
+triggers, moved onto Heart & Soul's ground. `tools/build-johto.js <pret/pokeheartgold>
+--hns=<pokemonHnS checkout>` builds HGSS's maps as below and then, for each one paired with a
+Heart & Soul map in `tools/data/hns-johto-maps.json`, draws Heart & Soul's instead
+(`tools/lib/hns-johto.js`, through `tools/lib/emerald-tiles.js` with its wider primary tileset and
+its own sand, flower and waterfall animations) and moves HGSS's events onto it
+(`tools/lib/hns-johto-port.js`): HGSS's tiles map onto Heart & Soul's by a fit through the doors,
+people, signs and hidden items both have (an affine fit, bent to each anchor), each door matched to
+Heart & Soul's own nearest of the same kind, each person onto the nearest of Heart & Soul's people
+or else the nearest tile you can reach, each step trigger stretched across the way it blocks.
+The same fit runs in the game (`ui/johto-coords.js`, `window.JOHTO_COORDS`): a script's warp,
+coordinates and the walks it sends people and you on (each run of steps followed in HGSS's tiles
+and walked the shortest way to where it ends) are HGSS's, taken onto the map as it is. A save from
+before is moved onto the new maps as it loads. Where Heart & Soul's places differ: Lyra's upstairs
+is on her house's floor, Bell Tower's top two floors are one, Mahogany's Gym is one room, Azalea's
+Gym takes in its entrance, Slowpoke Well's B1F its entrance, the Lighthouse's 1F its lift and its
+3F the balcony outside, the Magnet Train stations' platforms are on their 1F, Violet's gate to
+Route 36 is gone (Route 36 runs straight in), and so is Kirk's house in Cianwood; Whirl Islands' inner B1F and the way down, Ice Path's
+B4F and the Department Store's 7F are Heart & Soul's own, new here. Heart & Soul doesn't have
+the Pokéathlon Dome, the Battle Frontier and its access, the Sinjoh Ruins, the Embedded Tower,
+the Global Terminal, the Radio Tower's lift and observation deck, the Ruins of Alph's hall or the
+Safari Zone's grounds (whose Areas are HGSS's), so those keep HGSS's maps. On Heart & Soul's maps
+there are no Rock Climb walls (its rock stairs you walk up), and its Gyms are its own puzzles:
+HGSS's lift, dark, winch and ice blocks (below) are off there. New Bark Town's Pokémon Center (below) is Heart & Soul's Cherrygrove Center, drawn into the town's map south of Elm's lab. Without `--hns` the build draws
+every map from HGSS as below. None of Heart & Soul's or HGSS's source is in this repository; the
+built pictures and data are.
+
 Johto's maps are built from HeartGold and SoulSilver: all of them, every
 town, city, route, cave, tower, Gym, house, shop and room of HGSS's Johto
 (and the houses by Routes 26 and 27, Tohjo Falls' hidden room, Route 28 to
@@ -2102,7 +2132,7 @@ at its left wall to Route 26's door. A guard stands in front of it until
 you're the Champion: "The Johto region lies to the west." / "I'm sorry, but only the
 Champion of the Pokémon League may go on to Johto." Become Champion and he's
 gone. (The debug menu's **Visit Johto (New Bark Town)** still takes you
-there, and its Pokémon Center trip brings you back.) Johto's maps are drawn
+there, and its Pokémon Center trip brings you back.) Without `--hns`, Johto's maps are drawn
 as HGSS draws them, seen from above: its towns, routes, caves, rooms,
 gatehouses, Pokémon Centers and Marts are HGSS's own 3D maps rasterised
 (below), buildings, textures and all. (They were first painted in FireRed's

@@ -988,44 +988,6 @@ for (const a of MAPS) for (const b of MAPS) {
   const dir = touch(1, 0) ? ["right", oz] : touch(-1, 0) ? ["left", oz] : touch(0, 1) ? ["down", ox] : touch(0, -1) ? ["up", ox] : null;
   if (dir) out[a.name].connections.push({ map: b.name, direction: dir[0], offset: dir[1] });
 }
-// (The mats: patches over the gate's side walls, its floor with a red mat on it, as at its door.)
-for (const door of GATE_DOORS) {
-  const gate = readPng(path.join(mapsDir, GATE.name + ".png")), T = 16, img = new Uint8ClampedArray(T * 3 * T * 4);
-  for (let y = 0; y < 3 * T; y++) for (let x = 0; x < T; x++) {
-    const i = ((door.y - 1) * T + y) * gate.width + door.x * T + x;
-    img.set(gate.rgba.slice(i * 4, i * 4 + 4), (y * T + x) * 4);
-  }
-  // (Drawn for the left wall; on the right, mirrored.)
-  const px = (x, y, c) => img.set([parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16), 255],
-    (y * T + (door.side === "left" ? x : T - 1 - x)) * 4);
-  for (let y = T - 4; y < 2 * T + 4; y++) for (let x = 0; x < 12; x++) {
-    const edge = y === T - 4 || y === 2 * T + 3 || x === 11, rim = y === T - 3 || y === 2 * T + 2 || x === 10 || x === 0;
-    px(x, y, edge ? "#5a6a7a" : rim ? "#f0e8e0" : y === T - 2 || y === 2 * T + 1 || x === 9 || x === 1 ? "#c84838" : "#d85848");
-  }
-  writePng(path.join(mapsDir, GATE.name + "-patch-" + door.patch + ".png"), T, 3 * T, img);
-}
-// FireRed's gate: its ways out, mats at its side walls, to Route 26's door
-// (west) and Route 28's (east), each with a guard until you're Champion
-// (ui/game.js hides them once you are).
-const gateJs = "(function () {\n" +
-  "  const gate = window.WORLD_MAPS[" + JSON.stringify(GATE.name) + "];\n" +
-  "  if (!gate || gate.warps.some((w) => w.map === \"Route26\")) return;\n" +
-  "  const at = (x, y) => y * gate.width + x;\n" +
-  GATE_DOORS.map((door) => {
-    const back = out[door.to].warps.findIndex((w) => w.map === GATE.name);
-    out[door.to].warps.forEach((w) => { if (w.map === GATE.name) w.warp = door.patch; });
-    const guard = { id: door.guardId, x: door.x + (door.side === "left" ? 1 : -1), y: door.y, movement: door.side === "left" ? "face_right" : "face_left",
-      rangeX: 1, rangeY: 1, script: "Route22_NorthEntrance_EventScript_JohtoGuard", flag: null,
-      text: ["The Johto region lies to the west.", "I'm sorry, but only the Champion of\nthe Pokémon League may go on to Johto."],
-      sprite: "policeman", width: 16, height: 32, frames: 9 };
-    return "  gate.warps.push({ x: " + door.x + ", y: " + door.y + ", map: " + JSON.stringify(door.to) + ", warp: " + back + " });\n" +
-      "  gate.behavior[at(" + door.x + ", " + door.y + ")] = " + (door.side === "left" ? "0x63" : "0x62") + ";   // (a way out " + (door.side === "left" ? "west" : "east") + ")\n" +
-      "  for (const y of [" + (door.y - 1) + ", " + (door.y + 1) + "]) gate.collision[at(" + door.x + ", y)] = 1;\n" +
-      "  gate.patches = Object.assign({}, gate.patches, { " + JSON.stringify(door.patch) + ": { x: " + door.x + ", y: " + (door.y - 1) + ", w: 1, h: 3, top: false, collision: [] } });\n" +
-      "  gate.people.push(" + JSON.stringify(guard) + ");\n" +
-      "  for (const m of " + JSON.stringify([door.to]) + ") for (const x of window.WORLD_MAPS[m].warps) if (x.warp === " + JSON.stringify(door.patch) + ") x.warp = gate.warps.length - 1;\n";
-  }).join("") +
-  "})();\n";
 // ---------- Gatehouses, as FireRed's ----------
 //
 // In FireRed's style, each gatehouse inside is a copy of FireRed's own gate
@@ -1139,6 +1101,107 @@ if (!HGSS_LOOK) for (const m of MAPS) {
   }
 }
 
+// ---------- Heart & Soul's maps ----------
+// Each Johto map Pokémon Heart & Soul has (github.com/PokemonHnS-Development/pokemonHnS, a GBA remake of Johto on
+// the Emerald decomp; tools/data/hns-johto-maps.json pairs them) is drawn from it, with HGSS's people, signs,
+// hidden items, step triggers and doors moved onto it (tools/lib/hns-johto.js); ui/johto-coords.js takes the
+// scripts' HGSS coordinates there. The rest (HGSS's own places: the Pokéathlon, the Battle Frontier, ...) stay HGSS's.
+// (--hns=<checkout>, or POKEMONHNS; without it Johto keeps HGSS's maps.)
+const HNS_ROOT = (process.argv.find((a) => a.startsWith("--hns=")) || "").slice(6) || process.env.POKEMONHNS;
+let johtoCoords = { where: {}, warps: {} };
+// (HNS_DUMP=<file>: the HGSS-built maps as they are here, written out, to try the port on: its people's HGSS sprites kept.)
+if (process.env.HNS_DUMP) fs.writeFileSync(process.env.HNS_DUMP, JSON.stringify(out, (k, v) => (v && v.localId !== undefined && v.hgssSprite ? Object.assign({ _hgssSprite: v.hgssSprite }, v) : v)));
+if (HNS_ROOT) {
+  const HN = require("./lib/hns-johto")(HNS_ROOT);
+  const table = JSON.parse(fs.readFileSync(path.join(__dirname, "data/hns-johto-maps.json"), "utf8"));
+  const res = HN.port(out, { table, mapsDir, writePng, writeAnimSheet: HN.E.writeAnimSheet, log: console.log });
+  johtoCoords = { where: res.where, warps: res.warpIdx, like: res.like };
+  // Headbutt trees (tools/lib/johto-headbutt.generated.js has HGSS's, by its tiles): Heart & Soul's own
+  // (MB_HEADBUTT_TREE), each one HGSS's nearest tree where the fit takes them (so its table is that tree's:
+  // ui/johto-field.js); where Heart & Soul has none, HGSS's trees where the fit takes them, onto what's solid.
+  {
+    const ctx = { window: {} };
+    require("vm").runInNewContext(fs.readFileSync(path.join(__dirname, "lib/johto-headbutt.generated.js"), "utf8"), ctx);
+    const Coords = require("../ui/johto-coords.js");
+    for (const [name, hb] of Object.entries((ctx.window.JOHTO_HEADBUTT || {}).maps || {})) {
+      const g = out[name];
+      if (!g || !g.hgss) continue;
+      const src = g.hgss.find((s) => s.map === name) || g.hgss[0];
+      const hgssTrees = hb.trees.map((t, i) => ({ t, i, secret: false })).concat((hb.secretTrees || []).map((t, i) => ({ t, i, secret: true })))
+        .map((x) => Object.assign(x, { c: Coords.forward(src, x.t.reduce((a, p) => a + p[0], 0) / x.t.length, x.t.reduce((a, p) => a + p[1], 0) / x.t.length) }));
+      const trees = [];
+      if (g.headbutt && g.headbutt.length) {
+        const left = new Set(g.headbutt.map(([x, y]) => x + "," + y));
+        for (const [x0, y0] of g.headbutt) {
+          if (!left.has(x0 + "," + y0)) continue;
+          const tiles = [], q = [[x0, y0]]; left.delete(x0 + "," + y0);
+          while (q.length) {
+            const [x, y] = q.pop(); tiles.push([x, y]);
+            for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const k = (x + dx) + "," + (y + dy); if (left.has(k)) { left.delete(k); q.push([x + dx, y + dy]); } }
+          }
+          const cx = tiles.reduce((a, p) => a + p[0], 0) / tiles.length, cy = tiles.reduce((a, p) => a + p[1], 0) / tiles.length;
+          let best = hgssTrees[0], bd = Infinity;
+          for (const h of hgssTrees) { const d = Math.hypot(h.c[0] - cx, h.c[1] - cy); if (d < bd) { bd = d; best = h; } }
+          if (best) trees.push({ tiles, i: best.i, secret: best.secret || undefined });
+        }
+      } else {
+        for (const h of hgssTrees) trees.push({ tiles: h.t.map(([x, y]) => Coords.snap(...Coords.forward(src, x, y), g.width, g.height, (u, v) => !!g.collision[v * g.width + u], 2)), i: h.i, secret: h.secret || undefined });
+      }
+      g.headbuttTrees = trees;
+    }
+    for (const g of Object.values(out)) delete g.headbutt;
+  }
+  // HGSS's Gym gimmicks on Heart & Soul's Gyms (ui/johto-gymmicks.js leaves those alone): Violet's lift (its
+  // step trigger) and Ecruteak's pits (its falls: Heart & Soul's pits are its own doors) gone; Cianwood's falls
+  // stopped as you come in (its winch isn't there: Chuck battles you); Mahogany's ice blocks gone (its ice is
+  // Heart & Soul's, slid over).
+  if (out.VioletCity_Gym && out.VioletCity_Gym.hgss) out.VioletCity_Gym.triggers = out.VioletCity_Gym.triggers.filter((t) => !/scr_seq_T22GYM0101_004\?/.test(t.script));
+  if (out.EcruteakCity_Gym && out.EcruteakCity_Gym.hgss) out.EcruteakCity_Gym.triggers = [];
+  if (out.AzaleaTown_Gym && out.AzaleaTown_Gym.hgss) out.AzaleaTown_Gym.triggers = [];   // (its carts: walked, its edges opened: tools/data/hns-johto-maps.json)
+  if (out.CianwoodCity_Gym && out.CianwoodCity_Gym.hgss && zones.T24GYM0101) zones.T24GYM0101.cmds = zones.T24GYM0101.cmds.map((c) => (c[0] === "ClearFlag" && c[1] === "FLAG_SYS_CIANWOOD_WATERFALL_DISABLE" ? ["SetFlag", c[1]] : c));
+  if (out.MahoganyTown_GymRoom1 && out.MahoganyTown_GymRoom1.hgss) out.MahoganyTown_GymRoom1.people = out.MahoganyTown_GymRoom1.people.filter((p) => !p.iceBlock);
+  for (const [n, r] of Object.entries(res.report)) console.log("hns", n, "people", r.peopleMatched + "/" + r.people, "signs", r.signsMatched + "/" + r.signs, "doors matched", r.warpsMatched, "re-pointed", r.warpsRedirected, "added", r.warpsAdded);
+} else console.log("(no Heart & Soul checkout, --hns=: Johto keeps HGSS's maps)");
+
+// (The mats: patches over the gate's side walls, its floor with a red mat on it, as at its door.)
+for (const door of GATE_DOORS) {
+  const gate = readPng(path.join(mapsDir, GATE.name + ".png")), T = 16, img = new Uint8ClampedArray(T * 3 * T * 4);
+  for (let y = 0; y < 3 * T; y++) for (let x = 0; x < T; x++) {
+    const i = ((door.y - 1) * T + y) * gate.width + door.x * T + x;
+    img.set(gate.rgba.slice(i * 4, i * 4 + 4), (y * T + x) * 4);
+  }
+  // (Drawn for the left wall; on the right, mirrored.)
+  const px = (x, y, c) => img.set([parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16), 255],
+    (y * T + (door.side === "left" ? x : T - 1 - x)) * 4);
+  for (let y = T - 4; y < 2 * T + 4; y++) for (let x = 0; x < 12; x++) {
+    const edge = y === T - 4 || y === 2 * T + 3 || x === 11, rim = y === T - 3 || y === 2 * T + 2 || x === 10 || x === 0;
+    px(x, y, edge ? "#5a6a7a" : rim ? "#f0e8e0" : y === T - 2 || y === 2 * T + 1 || x === 9 || x === 1 ? "#c84838" : "#d85848");
+  }
+  writePng(path.join(mapsDir, GATE.name + "-patch-" + door.patch + ".png"), T, 3 * T, img);
+}
+// FireRed's gate: its ways out, mats at its side walls, to Route 26's door
+// (west) and Route 28's (east), each with a guard until you're Champion
+// (ui/game.js hides them once you are).
+const gateJs = "(function () {\n" +
+  "  const gate = window.WORLD_MAPS[" + JSON.stringify(GATE.name) + "];\n" +
+  "  if (!gate || gate.warps.some((w) => w.map === \"Route26\")) return;\n" +
+  "  const at = (x, y) => y * gate.width + x;\n" +
+  GATE_DOORS.map((door) => {
+    const back = out[door.to].warps.findIndex((w) => w.map === GATE.name);
+    out[door.to].warps.forEach((w) => { if (w.map === GATE.name) w.warp = door.patch; });
+    const guard = { id: door.guardId, x: door.x + (door.side === "left" ? 1 : -1), y: door.y, movement: door.side === "left" ? "face_right" : "face_left",
+      rangeX: 1, rangeY: 1, script: "Route22_NorthEntrance_EventScript_JohtoGuard", flag: null,
+      text: ["The Johto region lies to the west.", "I'm sorry, but only the Champion of\nthe Pokémon League may go on to Johto."],
+      sprite: "policeman", width: 16, height: 32, frames: 9 };
+    return "  gate.warps.push({ x: " + door.x + ", y: " + door.y + ", map: " + JSON.stringify(door.to) + ", warp: " + back + " });\n" +
+      "  gate.behavior[at(" + door.x + ", " + door.y + ")] = " + (door.side === "left" ? "0x63" : "0x62") + ";   // (a way out " + (door.side === "left" ? "west" : "east") + ")\n" +
+      "  for (const y of [" + (door.y - 1) + ", " + (door.y + 1) + "]) gate.collision[at(" + door.x + ", y)] = 1;\n" +
+      "  gate.patches = Object.assign({}, gate.patches, { " + JSON.stringify(door.patch) + ": { x: " + door.x + ", y: " + (door.y - 1) + ", w: 1, h: 3, top: false, collision: [] } });\n" +
+      "  gate.people.push(" + JSON.stringify(guard) + ");\n" +
+      "  for (const m of " + JSON.stringify([door.to]) + ") for (const x of window.WORLD_MAPS[m].warps) if (x.warp === " + JSON.stringify(door.patch) + ") x.warp = gate.warps.length - 1;\n";
+  }).join("") +
+  "})();\n";
+
 // The Poké Marts' stock (src/scrcmd_mart.c): the standard one, each item from
 // a tier of Badges (MartBuy), and the special ones (SpecialMartBuy's lists).
 const martSrc = fs.readFileSync(path.join(ROOT, "src/scrcmd_mart.c"), "utf8");
@@ -1185,6 +1248,7 @@ const scriptsJs = "// Johto's field scripts (tools/lib/hgss-script.js; run by ui
   "window.JOHTO_SCRIPTS = " + JSON.stringify(scripts) + ";\n" +
   "Object.assign(window.WORLD_TRAINERS, " + JSON.stringify(trainers) + ");\n" +
   "window.JOHTO_LEAGUE = " + JSON.stringify(johtoLeague) + ";\n" +
+  "window.JOHTO_COORDS = " + JSON.stringify(johtoCoords) + ";\n" +
   "Object.assign(window.ITEMS, " + JSON.stringify(extraItems) + ");\n" +
   "Object.assign(window.MACHINE_LEARNERS, " + JSON.stringify(newMachineLearners) + ");\n" +
   "Object.assign(window.ITEM_SPRITES || (window.ITEM_SPRITES = {}), " + JSON.stringify(Object.assign(
@@ -1203,5 +1267,17 @@ fs.writeFileSync(path.join(root, "data/johto-maps.js"),
   // (And what other builders made for Johto, tools/lib/johto-*.generated.js:
   // its Town Map, tools/build-johto-town-map.js, and the like.)
   fs.readdirSync(path.join(__dirname, "lib")).filter((f) => /^johto-.+\.generated\.js$/.test(f)).sort()
-    .map((f) => fs.readFileSync(path.join(__dirname, "lib", f), "utf8")).join(""));
+    .map((f) => fs.readFileSync(path.join(__dirname, "lib", f), "utf8")).join("") +
+  // (Fly lands a step out of the door of the town's Pokémon Center (or your house), HGSS's spot: on a map drawn
+  // from Pokémon Heart & Soul's, that door's there.)
+  "(function () {\n" +
+  "  const M = window.JOHTO_TOWN_MAP, W = window.WORLD_MAPS;\n" +
+  "  if (!M || !M.fly) return;\n" +
+  "  // (Heart & Soul's maps HGSS hasn't got: in the section of the map they're like.)\n" +
+  "  for (const [k, l] of Object.entries((window.JOHTO_COORDS || {}).like || {})) if (M.mapSections && M.mapSections[l]) { M.mapSections[k] = M.mapSections[l]; if (M.at && M.at[l]) M.at[k] = M.at[l]; }\n" +
+  "  for (const [k, spot] of Object.entries(M.fly)) {\n" +
+  "    const m = W[spot.map], door = m && m.hgss && spot.center && m.warps.find((w) => w.map === spot.center);\n" +
+  "    if (door && !m.collision[(door.y + 1) * m.width + door.x]) M.fly[k] = Object.assign({}, spot, { x: door.x, y: door.y + 1 });\n" +
+  "  }\n" +
+  "})();\n");
 console.log("wrote " + MAPS.length + " Johto maps to data/johto-maps.js and assets/world/");

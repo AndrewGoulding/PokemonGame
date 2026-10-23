@@ -324,7 +324,9 @@
       env.setVar("VAR_SCENE_SAFARI_ZONE_ENTRANCE", 2);
       // (HGSS's coordinates, from the room's corner on its matrix.)
       const J = window.JOHTO_SCRIPTS, name = J.mapConsts[ROOM], o = J.origins[J.maps[name]] || { x: 0, y: 0 };
-      await env.teleport({ map: name, x: (right ? 19 : 5) - o.x, y: 2 - o.y, facing: "down" });
+      // (On the room drawn from Pokémon Heart & Soul's, where ui/johto-coords.js takes HGSS's tile.)
+      const to = window.JohtoCoords ? window.JohtoCoords.toMap(name, (right ? 19 : 5) - o.x, 2 - o.y) : { map: name, x: (right ? 19 : 5) - o.x, y: 2 - o.y };
+      await env.teleport({ map: to.map, x: to.x, y: to.y, facing: "down" });
       await env.frameScript();
     }
     // A Safari battle over (Task_SafariEncounter): the last Ball missed, and

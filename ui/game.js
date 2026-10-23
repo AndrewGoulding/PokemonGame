@@ -2178,7 +2178,7 @@
         // Johto isn't joined to Kanto yet (data/johto-maps.js): outside your
         // house in New Bark Town; the debug menu's Pokémon Center trip brings you back.
         Orre.leave(player);
-        player.location = { map: "NewBarkTown", x: 23, y: 13, facing: "down" };
+        player.location = Object.assign({ facing: "down" }, window.JohtoCoords ? window.JohtoCoords.toMap("NewBarkTown", 23, 13) : { map: "NewBarkTown", x: 23, y: 13 });
         await persist();
         return "battled";
       } else if (v === "hoenn") {
@@ -5422,7 +5422,10 @@
     { map: "UnionCave_B1F", x: 12, y: 42, item: "tm138" },   // (Swift)
     { map: "VictoryRoad_3F", x: 38, y: 9, item: "tm26" },   // (Earthquake)
     { map: "RockTunnel_B1F", x: 24, y: 19, item: "metal-coat" },   // (Metal Coat)
-  ].map((b, i) => Object.assign({ id: 1100 + i, script: "Game_EventScript_ItemBall_" + b.map + "_" + b.item, flag: "itemBall:" + b.map + ":" + b.item,
+  // (Johto's are at HGSS's tiles: on its maps as they are now, Heart & Soul's, ui/johto-coords.js. Their scripts and
+  // flags keep the HGSS map's name, so one picked up stays picked up.)
+  ].map((b) => (window.JohtoCoords && ((window.JOHTO_COORDS || {}).where || {})[b.map] ? Object.assign({ hgssMap: b.map }, b, window.JohtoCoords.toMapFree(b.map, b.x, b.y)) : b))
+  .map((b, i) => Object.assign({ id: 1100 + i, script: "Game_EventScript_ItemBall_" + (b.hgssMap || b.map) + "_" + b.item, flag: "itemBall:" + (b.hgssMap || b.map) + ":" + b.item,
     movement: "face_down", text: null, sprite: "item_ball", width: 16, height: 16, frames: 1, inanimate: true }, b));
   for (const b of OLD_GAME_BALLS) ITEM_BALLS.add(b.script);
   // A Mega Stone handed over: `lines` first, then "… received …!" with the jingle; once.
@@ -10708,7 +10711,11 @@
       m.collision[2 * m.width + 9] = 1;
       m.collision[8 * m.width + 17] = 1;
       window.WORLD_MAPS[BATTLE_TOWER] = m;
-      gate.warps[1] = { x: 4, y: 1, map: BATTLE_TOWER, warp: 0 };
+      // (The gatehouse's door to the Battle Frontier's way in: HGSS's second, at its north wall; on the gatehouse
+      // drawn from Pokémon Heart & Soul's, the door that leads there, where it is.)
+      const fi = gate.warps.findIndex((w) => w.map === "BattleFrontier_FrontierAccess"), gi = gate.hgss && fi >= 0 ? fi : 1;
+      gate.warps[gi] = Object.assign(gate.hgss && fi >= 0 ? { x: gate.warps[gi].x, y: gate.warps[gi].y } : { x: 4, y: 1 }, { map: BATTLE_TOWER, warp: 0 });
+      m.warps[0].warp = gi;
     }
     for (const sc of [BT_ENTRY, BT_RECEPTION, BT_NURSE, BT_SIGN]) SPECIAL.add(sc);
   }
@@ -11611,7 +11618,10 @@
     const m = window.WORLD_MAPS.SSAqua_1F, w = m && m.warps[0];
     if (!w) return;
     const vermilion = +johto.getVar("VAR_BOAT_DIRECTION") === 1 && johto.flag("FLAG_BOAT_ARRIVED");
-    Object.assign(w, vermilion ? { map: "SSAnne_Exterior", warp: 0 } : { map: "SSAqua_OlivinePortExterior", warp: 1 });
+    // (Off at Olivine: where the ship's door leads, HGSS's port outside, or on the ship drawn from Pokémon Heart &
+    // Soul's, its port building, as it's built: kept the first time.)
+    if (!w.olivine) w.olivine = w.map === "SSAnne_Exterior" ? { map: "SSAqua_OlivinePortExterior", warp: 1 } : { map: w.map, warp: w.warp };
+    Object.assign(w, vermilion ? { map: "SSAnne_Exterior", warp: 0 } : w.olivine);
     // (Off in Vermilion, the ship's next voyage is back to Olivine.)
     if (vermilion) johto.setVar("VAR_BOAT_DIRECTION", 0);
   }
@@ -11621,7 +11631,10 @@
     await say(["{PLAYER} flashed the S.S. Ticket.", "Welcome aboard the S.S. Aqua!"]);
     Screen.say("");
     sfx("se_ship");
-    await Overworld.teleport({ map: "SSAqua_OlivinePortExterior", x: 27, y: 21, facing: "down" });
+    // (Off at the gangway: HGSS's, below the ship; on the port drawn from Pokémon Heart & Soul's, at the pier's end,
+    // the step off the boat's way aboard.)
+    const port = window.WORLD_MAPS.SSAqua_OlivinePortExterior, plank = port && port.hgss && port.warps.find((w) => w.map === "SSAqua_1F");
+    await Overworld.teleport(plank ? { map: "SSAqua_OlivinePortExterior", x: plank.x, y: plank.y + 1, facing: "down" } : { map: "SSAqua_OlivinePortExterior", x: 27, y: 21, facing: "down" });
     await say("We've arrived in Olivine City.\nWe hope to see you again!");
   }
 
@@ -11731,7 +11744,7 @@
     resume: async () => { show("world"); await Overworld.resume(); },
     setFlag: (name, on) => johto.setFlag(name, on), setVar: (name, val) => johto.setVar(name, val),
     runStd: (name) => runJohto(johtoStd(name), null),
-    judging: async () => { await Overworld.teleport({ map: "NationalPark", x: 46, y: 50, facing: "up" }); await runJohto(johto.frameScript("NationalPark"), null); }
+    judging: async () => { await Overworld.teleport(Object.assign({ facing: "up" }, window.JohtoCoords ? window.JohtoCoords.toMap("NationalPark", 46, 50) : { map: "NationalPark", x: 46, y: 50 })); await runJohto(johto.frameScript("NationalPark"), null); }
   });
   // (A std script by name, compiled as a zone of its own: { zone, label }.)
   const johtoStd = (name) => { const s = (window.JOHTO_SCRIPTS.std || {})[name]; return s ? { zone: s[0], label: s[1] } : null; };
@@ -11741,8 +11754,40 @@
     // (A map by its number, as the scripts' Warp has it: J.mapIds.)
     const J = window.JOHTO_SCRIPTS, name = J.mapConsts[typeof mapConst === "number" ? (J.mapIds || {})[mapConst] : mapConst], o = name && J.origins[J.maps[name]];
     if (!o) { await Overworld.fadeFromBlack(); return; }
-    await Overworld.teleport({ map: name, x: x - o.x, y: y - o.y, facing });
+    // (HGSS's map and tile: where they are now, Heart & Soul's, ui/johto-coords.js.)
+    const to = window.JohtoCoords ? window.JohtoCoords.toMap(name, x - o.x, y - o.y) : { map: name, x: x - o.x, y: y - o.y };
+    if (!window.WORLD_MAPS[to.map]) { await Overworld.fadeFromBlack(); return; }
+    await Overworld.teleport({ map: to.map, x: to.x, y: to.y, facing });
   }
+  // Johto's scripts' coordinates, HGSS's, on this map (Heart & Soul's, ui/johto-coords.js), and back; an HGSS
+  // map's door, by its number there, here.
+  const johtoMapOfZone = (zone) => { const J = window.JOHTO_SCRIPTS; for (const [m, z] of Object.entries(J.maps)) if (z === zone) return m; return null; };
+  const johtoHere = (zone, x, y) => {
+    const S = johtoMapOfZone(zone);
+    if (!S || !window.JohtoCoords) return { x, y };
+    const t = window.JohtoCoords.toMap(S, x, y);
+    return { x: t.x, y: t.y };
+  };
+  const johtoThere = (zone, x, y) => {
+    const map = player.location.map, m = window.WORLD_MAPS[map];
+    if (!m || !m.hgss || !window.JohtoCoords) return { x, y };
+    const t = window.JohtoCoords.toHgss(map, x, y, johtoMapOfZone(zone));
+    return { x: t.x, y: t.y };
+  };
+  const johtoWarpIndex = (zone, i) => {
+    const list = ((window.JOHTO_COORDS || {}).warps || {})[johtoMapOfZone(zone)];
+    return list && list[i] != null ? list[i] : i;
+  };
+  // (A scene's walks re-planned for the map, where it's Heart & Soul's: ui/johto-coords.js retarget.)
+  const johtoAct = (tracks) => {
+    const map = player.location.map;
+    if (!window.JohtoCoords || !(window.WORLD_MAPS[map] || {}).hgss) return Overworld.act(tracks);
+    const at = (who) => (who === "player" ? Overworld.position() : who === 253 || /^#/.test(String(who)) ? null : Overworld.personPosition(who));
+    const others = (who) => [Overworld.position()].concat(tracks.filter((t) => t.who !== who && t.who !== "player").map((t) => at(t.who)).filter(Boolean));
+    return Overworld.act(window.JohtoCoords.retarget(tracks, {
+      map, at, free: (x, y, who) => !others(who).some((p) => p && p.x === x && p.y === y && who !== "player")
+    }));
+  };
   // The Magnet Train between Goldenrod and Saffron (ui/magnet-train.js).
   const magnetTrain = MagnetTrain.create({
     player: () => player, johto: { setFlag: (name, on) => johto.setFlag(name, on) }, music: (song) => music(song),
@@ -11757,7 +11802,8 @@
     choose: async (texts, question) => { const i = await multichoice(question || null, 0, 0, texts); Screen.say(""); return i; },
     close: () => Screen.say(""),
     facePlayer: (person) => Overworld.act([{ who: person.localId || "#" + person.id, moves: ["face_player"] }]),
-    act: (tracks) => Overworld.act(tracks),
+    act: (tracks) => johtoAct(tracks),
+    here: johtoHere, there: johtoThere, warpIndex: johtoWarpIndex,
     // (Someone a flag hid, onto the map where it has them, or where the map's script put them.)
     show: (id) => {
       const def = (window.WORLD_MAPS[player.location.map] || { people: [] }).people.find((p) => p.localId === id);

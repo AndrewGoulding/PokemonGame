@@ -70,11 +70,16 @@ const js = "// New Bark Town's Pokémon Center (tools/build-new-bark-center.js):
   "  if (!town || !src1 || !src2 || W[F1]) return;\n" +
   "  const clone = (src, name) => Object.assign(JSON.parse(JSON.stringify(src)), { name, title: \"New Bark Town\", image: src.image || src.name, townMapSection: \"NEW_BARK_TOWN\" });\n" +
   "  const f1 = clone(src1, F1), f2 = clone(src2, F2);\n" +
-  "  // (The building, over the ground south of Elm's lab; its door, solid, walked up into.)\n" +
-  "  town.warps.push({ x: " + door.x + ", y: " + door.y + ", map: F1, warp: 0 });\n" +
-  "  town.patches = Object.assign({}, town.patches, { pokecenter: { x: " + TO.x + ", y: " + TO.y + ", w: " + SIZE.w + ", h: " + SIZE.h + ", top: true, collision: " + JSON.stringify(collision) + " } });\n" +
-  "  // (Its tiles solid in the map's own data too, the patch always on: the door's warp works wherever the map's walked, tests/smoke-test.js's ways round Johto too.)\n" +
-  "  for (const [x, y, c, b] of town.patches.pokecenter.collision) { town.collision[y * town.width + x] = c; town.behavior[y * town.width + x] = b; }\n" +
+  "  // (On New Bark drawn from Pokémon Heart & Soul's, the building's there already, Cherrygrove's copied in by\n" +
+  "  // tools/build-johto.js: its door, town.pokecenterDoor. On HGSS's: the building, over the ground south of Elm's\n" +
+  "  // lab, a patch; its door, solid, walked up into.)\n" +
+  "  const door = town.pokecenterDoor || { x: " + door.x + ", y: " + door.y + " };\n" +
+  "  town.warps.push({ x: door.x, y: door.y, map: F1, warp: 0 });\n" +
+  "  if (!town.pokecenterDoor) {\n" +
+  "    town.patches = Object.assign({}, town.patches, { pokecenter: { x: " + TO.x + ", y: " + TO.y + ", w: " + SIZE.w + ", h: " + SIZE.h + ", top: true, collision: " + JSON.stringify(collision) + " } });\n" +
+  "    // (Its tiles solid in the map's own data too, the patch always on: the door's warp works wherever the map's walked, tests/smoke-test.js's ways round Johto too.)\n" +
+  "    for (const [x, y, c, b] of town.patches.pokecenter.collision) { town.collision[y * town.width + x] = c; town.behavior[y * town.width + x] = b; }\n" +
+  "  }\n" +
   "  const back = town.warps.length - 1;\n" +
   "  f1.warps = f1.warps.map((w) => (w.map === \"CherrygroveCity\" ? Object.assign({}, w, { map: \"NewBarkTown\", warp: back }) : Object.assign({}, w, { map: F2 })));\n" +
   "  f2.warps = f2.warps.map((w) => (w.map === src1.name ? Object.assign({}, w, { map: F1 }) : w));\n" +
@@ -86,7 +91,7 @@ const js = "// New Bark Town's Pokémon Center (tools/build-new-bark-center.js):
   "  const J = window.JOHTO_SCRIPTS;\n" +
   "  if (J && J.maps) { J.maps[F1] = J.maps[src1.name]; J.maps[F2] = J.maps[src2.name]; }\n" +
   "  // (Fly: in front of its door, as in every other town, instead of your house.)\n" +
-  "  const fly = () => { const M = window.JOHTO_TOWN_MAP; if (M && M.fly && M.fly.NEW_BARK_TOWN) M.fly.NEW_BARK_TOWN = { map: \"NewBarkTown\", x: " + door.x + ", y: " + (door.y + 1) + ", center: F1 }; if (M && M.mapSections) { M.mapSections[F1] = \"NEW_BARK_TOWN\"; M.mapSections[F2] = \"NEW_BARK_TOWN\"; } };\n" +
+  "  const fly = () => { const M = window.JOHTO_TOWN_MAP; if (M && M.fly && M.fly.NEW_BARK_TOWN) M.fly.NEW_BARK_TOWN = { map: \"NewBarkTown\", x: door.x, y: door.y + 1, center: F1 }; if (M && M.mapSections) { M.mapSections[F1] = \"NEW_BARK_TOWN\"; M.mapSections[F2] = \"NEW_BARK_TOWN\"; } };\n" +
   "  fly();\n" +
   "})();\n";
 const file = path.join(__dirname, "lib/johto-town-map_new-bark-center.generated.js");

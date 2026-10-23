@@ -3,6 +3,8 @@
 // (Azalea's carts are walked webs: tools/build-johto.js. Mahogany's ice blocks
 // slide in ui/overworld.js, and its ice is FireRed's.) Each Gym's state, like
 // HGSS's (Save_Gymmick_Init on entering), starts over each time you go in.
+// (A Gym drawn from Pokémon Heart & Soul's, its map's `hgss`, is Heart & Soul's: none of these. Its pits are its
+// own doors back to the entrance, its falls and lift aren't there: tools/build-johto.js.)
 //
 //   const G = JohtoGymmicks.create(env)   // env: { sfx(name), shake(count, opts), people(), beaten(trainerId) }
 //   G.enter(map)              // arriving on a map (a new visit): its Gym as it starts
@@ -50,6 +52,7 @@
   function create(env) {
     const state = { lift: 0, liftMoving: null, lit: new Set(), out: {}, winch: false };
     const map = (name) => (window.WORLD_MAPS || {})[name];
+    const hgssGym = (name) => !(map(name) || {}).hgss;
 
     // The lift's height: the elevation under it and the walkways'.
     function setLift(up) {
@@ -63,6 +66,7 @@
     }
 
     function enter(name) {
+      if (!hgssGym(name)) return;
       if (name === VIOLET) setLift(false);
       // (Every candle lit: those whose Medium's still to beat, and those already beaten.)
       if (name === ECRUTEAK) { state.lit = new Set((map(ECRUTEAK) || { people: [] }).people.filter((d) => isMedium(d) && env.beaten(d.trainer.id)).map((d) => d.id)); state.out = {}; }
@@ -85,7 +89,7 @@
     // The lift, a plate of steel in the shaft: higher up, it's drawn a little
     // bigger, as it comes nearer (and moving, in between).
     function drawMap(g, name, ox, oy) {
-      if (name !== VIOLET) return;
+      if (name !== VIOLET || !hgssGym(name)) return;
       const k = state.liftMoving ? (state.liftMoving.up ? state.liftMoving.t : LIFT_FRAMES - state.liftMoving.t) / LIFT_FRAMES : state.lift;
       const grow = Math.round(3 * k), x = ox + LIFT.x * 16 - grow, y = oy + LIFT.y * 16 - grow, w = LIFT.w * 16 + grow * 2, h = LIFT.h * 16 + grow * 2;
       if (k > 0) { g.fillStyle = "rgba(0,0,0,0.35)"; g.fillRect(ox + LIFT.x * 16 + 2, oy + LIFT.y * 16 + 3, LIFT.w * 16, LIFT.h * 16); }
@@ -102,7 +106,7 @@
     }
 
     function darkness(name) {
-      if (name !== ECRUTEAK) return null;
+      if (name !== ECRUTEAK || !hgssGym(name)) return null;
       const lights = [];
       for (const p of env.people()) {
         if (!isMedium(p.def)) continue;
@@ -124,7 +128,7 @@
       env.sfx("se_m_strength");
       return true;
     }
-    const patches = (name) => (name === CIANWOOD && state.winch ? ["dry"] : []);
+    const patches = (name) => (name === CIANWOOD && state.winch && hgssGym(name) ? ["dry"] : []);
 
     return { enter, patches, darkness, drawMap, violetLift, turnWinch, winch: () => state.winch, liftUp: () => !!state.lift };
   }

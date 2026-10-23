@@ -103,7 +103,10 @@
   // (TilesetAnim_General): flowers, water, sand's edge, waterfalls, land's edge.
   const TILE_ANIMS = { water: { every: 16, at: 1, frames: 8 }, sand: { every: 8, at: 0, frames: 8 }, flower: { every: 16, at: 2, frames: 5 },
     e_flower: { every: 16, at: 0, frames: 4 }, e_water: { every: 16, at: 1, frames: 8 }, e_sand: { every: 16, at: 2, frames: 8 },
-    e_waterfall: { every: 16, at: 3, frames: 4 }, e_land: { every: 16, at: 4, frames: 4 } };
+    e_waterfall: { every: 16, at: 3, frames: 4 }, e_land: { every: 16, at: 4, frames: 4 },
+    // (Pokémon Heart & Soul's Johto tilesets, TilesetAnim_JohtoGeneral: its water and the sand's edge every 8,
+    // its flowers and waterfalls every 16: tools/lib/hns-johto.js.)
+    h_sand: { every: 8, at: 0, frames: 8 }, h_flower: { every: 16, at: 2, frames: 5 }, h_waterfall: { every: 16, at: 3, frames: 8 } };
   function animFrame(name) {
     const a = TILE_ANIMS[name], c = Math.floor(performance.now() / (1000 / 60)) % 640;
     return a ? Math.floor(((c - a.at + 640) % 640) / a.every) % a.frames : 0;

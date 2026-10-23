@@ -815,7 +815,10 @@ for (const share of [false, true]) {
     const ob = [...oldBalls.matchAll(/\{ map: "(\w+)", x: (\d+), y: (\d+), item: "([\w-]+)" \}/g)].map((m) => ({ map: m[1], x: +m[2], y: +m[3], item: m[4] }));
     assert.strictEqual(ob.length, 33, "32 TMs and a Metal Coat");
     assert(ob.some((b) => b.map === "RockTunnel_B1F" && b.item === "metal-coat") && ob.some((b) => b.map === "MtMoon_1F" && Bag.machineMove(b.item) === "Water Gun"));
-    for (const b of ob) {
+    // (Johto's at HGSS's tiles, on its maps as they are now, Heart & Soul's: ui/johto-coords.js, as ui/game.js places them.)
+    if (!window.JohtoCoords) vm.runInThisContext(fs.readFileSync(path.join(root, "ui/johto-coords.js"), "utf8"));
+    for (const b0 of ob) {
+      const b = (window.JOHTO_COORDS.where || {})[b0.map] ? Object.assign({}, b0, window.JohtoCoords.toMapFree(b0.map, b0.x, b0.y)) : b0;
       const blk = World.blockAt(b.map, b.x, b.y), m = WORLD_MAPS[b.map];
       assert(blk.map && !blk.collision && !World.warpAt(b.map, b.x, b.y) && !m.people.some((p) => p.x === b.x && p.y === b.y), "an open spot: " + b.map + " " + b.item);
     }
@@ -1947,8 +1950,13 @@ for (const share of [false, true]) {
 if (WORLD_MAPS.NewBarkTown_PokemonCenter_1F) {
   const town = WORLD_MAPS.NewBarkTown, f1 = WORLD_MAPS.NewBarkTown_PokemonCenter_1F, f2 = WORLD_MAPS.NewBarkTown_PokemonCenter_2F;
   const door = town.warps.find((w) => w.map === f1.name);
-  assert(door && town.collision[door.y * town.width + door.x] === 1 && town.behavior[door.y * town.width + door.x] === 0x69, "its door");
-  assert(town.patches.pokecenter && town.patches.pokecenter.top && fs.existsSync(path.join(root, "assets/world/maps/NewBarkTown-patch-pokecenter.png")) && fs.existsSync(path.join(root, "assets/world/maps/NewBarkTown-patch-pokecenter-top.png")));
+  // (On New Bark drawn from Pokémon Heart & Soul's, the building's Cherrygrove's, copied in as the map's built
+  // (tools/data/hns-johto-maps.json): its door one you walk onto, as Heart & Soul's are. On HGSS's: a patch, its door solid.)
+  if (town.pokecenterDoor) assert(door && door.x === town.pokecenterDoor.x && door.y === town.pokecenterDoor.y && town.behavior[door.y * town.width + door.x] === 0x69 && !town.patches, "its door");
+  else {
+    assert(door && town.collision[door.y * town.width + door.x] === 1 && town.behavior[door.y * town.width + door.x] === 0x69, "its door");
+    assert(town.patches.pokecenter && town.patches.pokecenter.top && fs.existsSync(path.join(root, "assets/world/maps/NewBarkTown-patch-pokecenter.png")) && fs.existsSync(path.join(root, "assets/world/maps/NewBarkTown-patch-pokecenter-top.png")));
+  }
   assert(f1.pokemonCenter && f1.image === "CherrygroveCity_PokemonCenter_1F" && f2.image === "CherrygroveCity_PokemonCenter_2F");
   assert(f1.warps.filter((w) => w.map === "NewBarkTown").every((w) => town.warps[w.warp] === door) && f1.warps.some((w) => w.map === f2.name) && f2.warps.some((w) => w.map === f1.name));
   assert(f1.people.some((p) => p.script === "NewBarkTown_PokemonCenter_1F_EventScript_Nurse") && window.JOHTO_SCRIPTS.maps[f1.name] === window.JOHTO_SCRIPTS.maps.CherrygroveCity_PokemonCenter_1F);
@@ -2302,7 +2310,7 @@ if (window.JOHTO_TOWN_MAP) {
   const J = Object.keys(WORLD_MAPS).filter((n) => WORLD_MAPS[n].region === "johto" || (EAST.test(n) && window.JOHTO_TOWN_MAP.at[n]));
   for (const n of ["CherrygroveCity", "Route29", "NewBarkTown", "Route27", "TohjoFalls", "Route26", "Route30", "Route31", "VioletCity", "Route32",
     "Route33", "AzaleaTown", "Route34", "GoldenrodCity", "Route35", "Route36", "RuinsOfAlph", "Route46", "UnionCave_1F", "IlexForest",
-    "Route29_Route46_Gatehouse", "Route31_VioletGatehouse", "VioletCity_Route36_Gatehouse", "Route32_RuinsOfAlph_Gatehouse",
+    "Route29_Route46_Gatehouse", "Route31_VioletGatehouse", "Route32_RuinsOfAlph_Gatehouse",
     "Route36_RuinsOfAlph_Gatehouse", "Route35_Goldenrod_Gatehouse", "AzaleaTown_IlexForest_Gatehouse", "Route34_IlexForest_Gatehouse"]) assert(J.includes(n), n + " is built");
   for (const name of J) {
     const m = WORLD_MAPS[name];
@@ -2317,9 +2325,16 @@ if (window.JOHTO_TOWN_MAP) {
   }
   assert.deepStrictEqual(new Set(WORLD_MAPS.Route29.wild.slots.map((s) => s.species)), new Set(["Pidgey", "Sentret", "Rattata"]), "Route 29 by day");
   assert(!Object.values(WORLD_MAPS).some((m) => m.region !== "johto" && !EAST.test(m.name) && m.connections.some((c) => J.includes(c.map))), "nothing in Kanto leads to Johto");
-  assert.strictEqual(World.step({ map: "NewBarkTown", x: 0, y: 15 }, "left").map, "Route29", "west out of New Bark Town");
+  // (Johto's maps are Pokémon Heart & Soul's (tools/lib/hns-johto.js), HGSS's events moved onto them: places by what's there.)
+  const NB = WORLD_MAPS.NewBarkTown, west = [...Array(NB.height).keys()].find((y) => !NB.collision[y * NB.width]);
+  assert(west != null && World.step({ map: "NewBarkTown", x: 0, y: west }, "left").map === "Route29", "west out of New Bark Town");
   assert.strictEqual(World.fishingEncounter("NewBarkTown", "old-rod", () => 0).species, "Magikarp", "Gen 4 rods");
-  assert.strictEqual(World.step({ map: "NewBarkTown", x: 23, y: 13 }, "up").warp.map, "NewBarkTown_PlayerHouse_1F", "New Bark's houses are built");
+  const home = NB.warps.find((w) => w.map === "NewBarkTown_PlayerHouse_1F");
+  assert(home && World.step({ map: "NewBarkTown", x: home.x, y: home.y + 1 }, "up").warp.map === "NewBarkTown_PlayerHouse_1F", "New Bark's houses are built");
+  // (Every Johto map Heart & Soul has is drawn from it, with HGSS's map it stands for, and where HGSS's maps went.)
+  for (const n of ["NewBarkTown", "VioletCity", "EcruteakCity", "Route32", "OlivineCity_Lighthouse_3F", "SSAqua_1F_NortheastRooms", "MahoganyTown_GymRoom1"]) assert(WORLD_MAPS[n].hgss && WORLD_MAPS[n].hgss.some((h) => h.map === n), n + " is Heart & Soul's");
+  assert(window.JOHTO_COORDS.where.MahoganyTown_GymLeaderRoom === "MahoganyTown_GymRoom1" && !WORLD_MAPS.MahoganyTown_GymLeaderRoom, "Pryce's room in his Gym");
+  assert(!WORLD_MAPS.PokeathlonDome.hgss && WORLD_MAPS.PokeathlonDome, "the Pokéathlon's dome HGSS's own");
   // (Not the Battle Frontier's halls, which need games of their own.)
   assert(WORLD_MAPS.BattleFrontier.warps.some((w) => w.mapConst === "MAP_BATTLE_FRONTIER_BATTLE_FACTORY"), "the Battle Factory isn't built");
   // Every built warp's way back; every map reached from New Bark Town (walking, Surf, Waterfall, Whirlpool, Rock Climb).
@@ -2328,19 +2343,24 @@ if (window.JOHTO_TOWN_MAP) {
   // Ruins of Alph's hidden rooms, the Sinjoh Ruins, the Magnet Train, the Radio Tower's deck, the Lighthouse's top.)
   const JOHTO_BY_SCRIPT = /^(NationalPark_BugCatchingContest|SafariZone_EntranceInterior)$/;
   const JOHTO_NOT_WALKED = /^(NationalPark_BugCatchingContest|SafariZone_EntranceExterior|RuinsOfAlph_\w+HiddenRoom|RuinsOfAlph_\w*SinjohEvent2?|SinjohRuins_\w+|EmbeddedTower_\w+|GoldenrodCity_MagnetTrainStation_2F|GoldenrodCity_RadioTowerObservationDeck|OlivineCity_Lighthouse(Exterior|_5F|LightRoom))$/;
-  for (const n of J.filter((n) => !JOHTO_BY_SCRIPT.test(n))) for (const [i, w] of WORLD_MAPS[n].warps.entries()) if (w.map && J.includes(w.map)) {
+  // (Heart & Soul's ways that go one way: the Lighthouse's drops to the floor below, the Ruins' word rooms out to the
+  // hall, and the S.S. Aqua's way off, which ui/game.js's ssAquaExit sets as the ship docks.)
+  const ONE_WAY = (n, w) => /^OlivineCity_Lighthouse/.test(n) && /^OlivineCity_Lighthouse/.test(w.map) || /^RuinsOfAlph_\w+HiddenRoom$/.test(n) || (n === "SSAqua_1F" && /^SSAqua_OlivinePort/.test(w.map)) || (n === "SSAqua_OlivinePortExterior" && w.map === "SSAqua_1F");
+  for (const n of J.filter((n) => !JOHTO_BY_SCRIPT.test(n))) for (const [i, w] of WORLD_MAPS[n].warps.entries()) if (w.map && J.includes(w.map) && !ONE_WAY(n, w)) {
     const back = WORLD_MAPS[w.map].warps[w.warp];
     // (An elevator's way back: wherever you got in, FireRed's dynamic warp.)
     assert(back && (back.map === n || back.mapConst === "MAP_DYNAMIC"), n + " warp " + i + " to " + w.map + " and back");
   }
   {
-    const key = (p) => p.map + ":" + p.x + ":" + p.y, start = { map: "NewBarkTown", x: 12, y: 14 }, seen = new Set([key(start)]), q = [start], reached = new Set();
+    const key = (p) => p.map + ":" + p.x + ":" + p.y, start = { map: "NewBarkTown", x: home.x, y: home.y + 1 }, seen = new Set([key(start)]), q = [start], reached = new Set();
     while (q.length) {
       const p = q.shift(); reached.add(p.map);
       for (const d of ["up", "down", "left", "right"]) for (const surf of [false, true]) {
         const r = World.step(p, d, null, surf ? { surf: true } : undefined);
         let n = r.warp && r.warp.map ? { map: r.warp.map, x: r.warp.x, y: r.warp.y } : r.ok ? { map: r.map, x: r.x, y: r.y } : null;
         if (!n && !surf) { const b = World.blockAt(p.map, p.x + World.DIRS[d][0], p.y + World.DIRS[d][1]); if (b.map && b.behavior === World.MB.WATERFALL) n = { map: b.map, x: b.x, y: b.y }; }
+        // (Onto the water from the shore, as Surf starts (facingWater), whatever its height: Heart & Soul's maps, as Emerald's, have the water lower.)
+        if (!n && surf && World.facingWater(p, d)) { const b = World.blockAt(p.map, p.x + World.DIRS[d][0], p.y + World.DIRS[d][1]); n = { map: b.map, x: b.x, y: b.y }; }
         // (Through a whirlpool, or over a rocky wall, to the far side: ui/game.js's crossWhirlpool and climbRocks.)
         if (!n && (r.whirlpool || r.climb)) {
           const [dx, dy] = World.DIRS[d];
@@ -2357,7 +2377,7 @@ if (window.JOHTO_TOWN_MAP) {
   // Drawn in FireRed's style (tools/lib/fr-painter.js), its gate rooms, water animated as Kanto's; its
   // people HGSS's own (Lyra, Silver, Prof. Elm, everyone), and its item balls, small trees and rocks FireRed's.
   // Each Gym Leader can be walked up to from the Gym's door (Azalea's webs walked, as there are no carts).
-  for (const g of J.filter((n) => /_Gym$|_GymLeaderRoom$/.test(n))) {
+  for (const g of J.filter((n) => /_Gym$|_GymLeaderRoom$|^MahoganyTown_GymRoom1$/.test(n))) {
     const m = WORLD_MAPS[g], leader = m.people.find((p) => /^hgss_gsleader\d$/.test(p.sprite));
     const start = { map: g, x: m.warps[0].x, y: m.warps[0].y - 1 }, key = (p) => p.x + ":" + p.y, seen = new Set([key(start)]), q = [start];
     const occupied = (mm, x, y) => m.people.some((p) => p.x === x && p.y === y && !p.trainer);
@@ -2376,13 +2396,14 @@ if (window.JOHTO_TOWN_MAP) {
   {
     const whirl = (n) => WORLD_MAPS[n].behavior.filter((b) => b === World.MB.WHIRLPOOL).length;
     const climbs = (n) => WORLD_MAPS[n].behavior.filter((b) => b === World.MB.ROCK_CLIMB_NS || b === World.MB.ROCK_CLIMB_EW).length;
-    assert(whirl("Route41") >= 36 && whirl("Route27") >= 18 && whirl("DragonsDen") >= 9, "Johto's whirlpools");
-    assert(climbs("Route47") >= 12 && climbs("MtSilverCave_UpperMountainside") >= 20 && climbs("CherrygroveCity") >= 2, "Johto's rocky walls");
+    // (Heart & Soul's: its whirlpools, people there: tools/lib/hns-johto.js. Its maps, as Gold and Silver's, have no
+    // rocky walls; the HGSS maps this game keeps have none either.)
+    assert(whirl("Route41") >= 6 && whirl("DragonsDen") >= 2, "Johto's whirlpools");
+    void climbs;
     const R = WORLD_MAPS.Route41, i = R.behavior.indexOf(World.MB.WHIRLPOOL), wx = i % R.width, wy = Math.floor(i / R.width);
     const from = [["up", 0, 1], ["down", 0, -1], ["left", 1, 0], ["right", -1, 0]].find(([, dx, dy]) => World.isSurfable(World.blockAt("Route41", wx + dx, wy + dy).behavior));
     assert(from && World.step({ map: "Route41", x: wx + from[1], y: wy + from[2] }, from[0], null, { surf: true }).whirlpool, "a whirlpool stops you surfing");
-    const C = WORLD_MAPS.CherrygroveCity, j = C.behavior.indexOf(World.MB.ROCK_CLIMB_NS);
-    assert(World.step({ map: "CherrygroveCity", x: j % C.width, y: Math.floor(j / C.width) + 2 }, "up").climb, "a rocky wall stops you walking");
+    assert(World.climbable(World.MB.ROCK_CLIMB_NS, "up") && World.climbable(World.MB.ROCK_CLIMB_EW, "left") && !World.climbable(World.MB.ROCK_CLIMB_NS, "left"), "rocky walls are climbed their way");
     assert(FieldMoves.info("Whirlpool").badge === "glacier" && FieldMoves.info("Rock Climb").badge === "rising", "Johto's field moves need Johto's Badges");
     assert.strictEqual(FieldMoves.hmFor("Whirlpool"), "hm06");
     assert.strictEqual(FieldMoves.hmFor("Rock Climb"), "hm11");
@@ -2412,13 +2433,15 @@ if (window.JOHTO_TOWN_MAP) {
   }
   assert.deepStrictEqual(JOHTO_LEAGUE.map((r) => WORLD_TRAINERS[r.trainer].name), ["Will", "Koga", "Bruno", "Karen", "Lance"]);
   // The S.S. Aqua: off at Vermilion's dock once it's arrived there, and its sailor back to Olivine.
-  assert(/function ssAquaExit\(\)/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")) && WORLD_MAPS.SSAqua_1F.warps[0].x === 24);
+  assert(/function ssAquaExit\(\)/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")) && /^SSAqua_OlivinePort/.test(WORLD_MAPS.SSAqua_1F.warps[0].map));
   // The Magnet Train (tools/build-magnet-train.js, ui/magnet-train.js): Saffron's station, Kanto's, and
   // its new door in FireRed's Saffron; no Pass at the gates; Goldenrod's always runs, Saffron's once
   // you're Champion; the ride off to the other station's platform.
   {
     const st = WORLD_MAPS.SaffronCity_MagnetTrainStation_1F, saffron = WORLD_MAPS.SaffronCity;
-    assert(st && st.region === "kanto" && WORLD_MAPS.SaffronCity_MagnetTrainStation_2F && WORLD_MAPS.SaffronCity_MagnetTrainStation_2F_Empty, "Saffron's station");
+    // (Its platform, 2F: a map of its own in HGSS; in Pokémon Heart & Soul's station, the same map, ui/johto-coords.js taking the scripts there.)
+    const platform = (n) => WORLD_MAPS[n] || window.JOHTO_COORDS.where[n] === st.name;
+    assert(st && st.region === "kanto" && platform("SaffronCity_MagnetTrainStation_2F") && platform("SaffronCity_MagnetTrainStation_2F_Empty"), "Saffron's station");
     const door = saffron.warps.find((w) => w.map === st.name);
     assert(door && st.warps[0].map === "SaffronCity" && saffron.warps[st.warps[0].warp] === door && saffron.patches.magnettrain, "its door");
     assert(fs.existsSync(path.join(root, "assets/world/maps/SaffronCity-patch-magnettrain.png")));
@@ -2459,39 +2482,53 @@ if (window.JOHTO_TOWN_MAP) {
       }
       return (x, y) => seen.has(x + ":" + y);
     };
-    G.enter("VioletCity_Gym");
-    assert(V.triggers.some((t) => t.x === 15 && t.y === 20), "the lift's step trigger");
-    const can = reach({ map: "VioletCity_Gym", x: V.warps[0].x, y: V.warps[0].y - 1 });
-    assert(can(15, 20) && !can(falkner.x, falkner.y + 1), "the lift down: Falkner's out of reach");
-    // (Up it goes: checked once it's there, the rest going on meanwhile; a failure there fails the run.)
-    G.violetLift().then(() => {
-      assert(G.liftUp() && sounds.includes("se_elevator"));
-      const up = reach({ map: "VioletCity_Gym", x: 15, y: 20 });
-      assert(up(falkner.x, falkner.y + 1) && !up(V.warps[0].x, V.warps[0].y - 1), "the lift up: the walkways to Falkner, and not the floor");
+    // (Gyms drawn from Pokémon Heart & Soul's, their maps' `hgss`, have its own puzzles: none of HGSS's gimmicks there.)
+    if (V.hgss) {
       G.enter("VioletCity_Gym");
-      assert(!G.liftUp(), "the lift's down again each time you come in");
-    });
-    // Mahogany's: ice blocks to push along the ice.
-    for (const n of ["MahoganyTown_GymRoom1", "MahoganyTown_GymRoom2", "MahoganyTown_GymLeaderRoom"]) {
-      const blocks = WORLD_MAPS[n].people.filter((p) => p.iceBlock);
-      assert(blocks.length >= 2 && blocks.every((p) => p.sprite === "hgss_ice" && WORLD_MAPS[n].behavior[p.y * WORLD_MAPS[n].width + p.x] === World.MB.ICE), n + "'s ice blocks, on the ice");
+      assert(!V.triggers.some((t) => /T22GYM0101_004/.test(t.script || "")), "no HGSS lift trigger on Heart & Soul's Violet Gym");
+      assert(!G.liftUp());
+      for (const n of ["MahoganyTown_GymRoom1", "MahoganyTown_GymRoom2", "MahoganyTown_GymLeaderRoom"]) assert(!WORLD_MAPS[n] || !WORLD_MAPS[n].people.some((p) => p.iceBlock), n + ": no HGSS ice blocks");
+      G.enter("EcruteakCity_Gym");
+      assert.strictEqual(G.darkness("EcruteakCity_Gym"), null, "Heart & Soul's Ecruteak Gym isn't dark");
+      G.enter("CianwoodCity_Gym");
+      G.turnWinch();
+      assert.deepStrictEqual([...G.patches("CianwoodCity_Gym")], []);
+      assert(JOHTO_SCRIPTS.zones.T24GYM0101.cmds.some((c) => c[0] === "SetFlag" && c.includes("FLAG_SYS_CIANWOOD_WATERFALL_DISABLE")), "Cianwood's falls off");
+    } else {
+      G.enter("VioletCity_Gym");
+      assert(V.triggers.some((t) => t.x === 15 && t.y === 20), "the lift's step trigger");
+      const can = reach({ map: "VioletCity_Gym", x: V.warps[0].x, y: V.warps[0].y - 1 });
+      assert(can(15, 20) && !can(falkner.x, falkner.y + 1), "the lift down: Falkner's out of reach");
+      // (Up it goes: checked once it's there, the rest going on meanwhile; a failure there fails the run.)
+      G.violetLift().then(() => {
+        assert(G.liftUp() && sounds.includes("se_elevator"));
+        const up = reach({ map: "VioletCity_Gym", x: 15, y: 20 });
+        assert(up(falkner.x, falkner.y + 1) && !up(V.warps[0].x, V.warps[0].y - 1), "the lift up: the walkways to Falkner, and not the floor");
+        G.enter("VioletCity_Gym");
+        assert(!G.liftUp(), "the lift's down again each time you come in");
+      });
+      // Mahogany's: ice blocks to push along the ice.
+      for (const n of ["MahoganyTown_GymRoom1", "MahoganyTown_GymRoom2", "MahoganyTown_GymLeaderRoom"]) {
+        const blocks = WORLD_MAPS[n].people.filter((p) => p.iceBlock);
+        assert(blocks.length >= 2 && blocks.every((p) => p.sprite === "hgss_ice" && WORLD_MAPS[n].behavior[p.y * WORLD_MAPS[n].width + p.x] === World.MB.ICE), n + "'s ice blocks, on the ice");
+      }
+      // Ecruteak's: dark but for you, its lit rooms and the Mediums' candles.
+      assert.strictEqual(G.darkness("VioletCity_Gym"), null);
+      G.enter("EcruteakCity_Gym");
+      const d = G.darkness("EcruteakCity_Gym");
+      assert(d && d.radius > 0 && d.rects.length === 2, "Ecruteak's Gym is dark");
+      const mediums = WORLD_MAPS.EcruteakCity_Gym.people.filter((p) => p.sprite === "hgss_itako" && p.trainer);
+      assert.strictEqual(mediums.length, 4, "four Mediums, each with a candle");
+      // Cianwood's: the winch turns once a visit, and the falls stop.
+      G.enter("CianwoodCity_Gym");
+      assert.deepStrictEqual([...G.patches("CianwoodCity_Gym")], []);
+      assert(G.turnWinch() && !G.turnWinch(), "the winch turns, and won't again");
+      assert.deepStrictEqual([...G.patches("CianwoodCity_Gym")], ["dry"]);
+      const CG = WORLD_MAPS.CianwoodCity_Gym;
+      assert(CG.patches && CG.patches.dry && fs.existsSync(path.join(root, "assets/world/maps/CianwoodCity_Gym-patch-dry.png")), "the falls stopped, drawn");
+      G.enter("CianwoodCity_Gym");
+      assert(!G.winch(), "the falls run again each time you come in");
     }
-    // Ecruteak's: dark but for you, its lit rooms and the Mediums' candles.
-    assert.strictEqual(G.darkness("VioletCity_Gym"), null);
-    G.enter("EcruteakCity_Gym");
-    const d = G.darkness("EcruteakCity_Gym");
-    assert(d && d.radius > 0 && d.rects.length === 2, "Ecruteak's Gym is dark");
-    const mediums = WORLD_MAPS.EcruteakCity_Gym.people.filter((p) => p.sprite === "hgss_itako" && p.trainer);
-    assert.strictEqual(mediums.length, 4, "four Mediums, each with a candle");
-    // Cianwood's: the winch turns once a visit, and the falls stop.
-    G.enter("CianwoodCity_Gym");
-    assert.deepStrictEqual([...G.patches("CianwoodCity_Gym")], []);
-    assert(G.turnWinch() && !G.turnWinch(), "the winch turns, and won't again");
-    assert.deepStrictEqual([...G.patches("CianwoodCity_Gym")], ["dry"]);
-    const CG = WORLD_MAPS.CianwoodCity_Gym;
-    assert(CG.patches && CG.patches.dry && fs.existsSync(path.join(root, "assets/world/maps/CianwoodCity_Gym-patch-dry.png")), "the falls stopped, drawn");
-    G.enter("CianwoodCity_Gym");
-    assert(!G.winch(), "the falls run again each time you come in");
     const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
     assert(/case "VioletGymElevator"/.test(scriptJs) && /case "CianwoodGymTurnWinch"/.test(scriptJs), "the Gyms' script commands run");
     assert(/darkness: \(map\) => .*gymmicks\.darkness\(map\)/.test(gameJs) && /gymmicks\.enter\(m\)/.test(gameJs));
@@ -2784,12 +2821,12 @@ if (window.JOHTO_TOWN_MAP) {
   for (const n of ["hgss_gsboy1", "hgss_gsman1", "hgss_pcwoman1"]) assert(!fs.existsSync(path.join(root, "assets/world/sprites", n + ".png")), n + ": Kanto's sheet stands in");
   // (The maps are HGSS's own, seen from above: the gatehouses and Pokémon Centers HGSS's rooms (their
   // nurses healing as Kanto's), nothing painted in FireRed's style any more.)
-  for (const n of J.filter((n) => /Gatehouse$/.test(n))) assert(WORLD_MAPS[n].width === 32, n + " is HGSS's own gatehouse");
-  assert(!fs.existsSync(path.join(root, "assets/world/maps/Route27-anim.png")) && !WORLD_MAPS.Route27.anim, "HGSS's look: no painted water animation");
+  for (const n of J.filter((n) => /Gatehouse$/.test(n))) assert(WORLD_MAPS[n].hgss || WORLD_MAPS[n].width === 32, n + " is HGSS's own gatehouse, or Heart & Soul's");
+  assert(WORLD_MAPS.Route27.hgss ? WORLD_MAPS.Route27.anim : !fs.existsSync(path.join(root, "assets/world/maps/Route27-anim.png")) && !WORLD_MAPS.Route27.anim, "HGSS's look: no painted water animation (Heart & Soul's: its tileset's own)");
   assert(fs.existsSync(path.join(root, "assets/world/maps/NewBarkTown.png")) && fs.existsSync(path.join(root, "assets/world/maps/NewBarkTown-top.png")));
   {
     const pc = WORLD_MAPS.CherrygroveCity_PokemonCenter_1F, up = WORLD_MAPS.CherrygroveCity_PokemonCenter_2F;
-    assert(pc.pokemonCenter && pc.width === 32 && pc.people.some((p) => p.script === "CherrygroveCity_PokemonCenter_1F_EventScript_Nurse" && p.sprite === "nurse"), "HGSS's Center, its nurse healing as Kanto's");
+    assert(pc.pokemonCenter && (pc.hgss || pc.width === 32) && pc.people.some((p) => p.script === "CherrygroveCity_PokemonCenter_1F_EventScript_Nurse" && p.sprite === "nurse"), "HGSS's Center, its nurse healing as Kanto's");
     assert(!pc.people.some((p) => /FLAG_HIDE_(COMM|WIFI)/.test(p.hgssFlag || "")), "no Wi-Fi staff");
     const stairs = pc.warps.find((w) => w.map === "CherrygroveCity_PokemonCenter_2F");
     assert(stairs && up && up.warps.some((w) => w.map === "CherrygroveCity_PokemonCenter_1F" && w.warp === pc.warps.indexOf(stairs)), "its stairs go up to FireRed's 2F and back");
@@ -2807,8 +2844,12 @@ if (window.JOHTO_TOWN_MAP) {
     assert(Painter.stamps.some((t) => t.kind === "pokecenter") && Painter.stamps.some((t) => t.kind === "mart") && Painter.stamps.every((t) => t.blocks[t.door[1] * t.w + t.door[0]] != null));
   }
   // East: Route 27, then Route 26 (north of its east end).
-  assert.strictEqual(World.step({ map: "NewBarkTown", x: 31, y: 15 }, "right", null, { surf: true }).map, "Route27", "east out of New Bark Town, by sea");
-  assert.deepStrictEqual(WORLD_MAPS.Route27.connections.find((c) => c.map === "Route26"), { map: "Route26", direction: "right", offset: -96 });
+  {
+    const NB = WORLD_MAPS.NewBarkTown, ex = NB.width - 1, ey = [...Array(NB.height).keys()].find((y) => ((b) => b >= 0x10 && b <= 0x15)(NB.behavior[y * NB.width + ex]));
+    assert.strictEqual(World.step({ map: "NewBarkTown", x: ex, y: ey }, "right", null, { surf: true }).map, "Route27", "east out of New Bark Town, by sea");
+    const r26 = WORLD_MAPS.Route27.connections.find((c) => c.map === "Route26");
+    assert(r26 && r26.direction === "right", "Route 26 east of Route 27's end");
+  }
   // Tohjo Falls: in and out of Route 27 both ways; its waterfalls are Waterfall's, not walls.
   for (const [i, w] of WORLD_MAPS.TohjoFalls.warps.entries()) if (w.map) assert.strictEqual(WORLD_MAPS[w.map].warps[w.warp].map, "TohjoFalls", "Tohjo Falls warp " + i);
   const tf = WORLD_MAPS.TohjoFalls, falls = tf.behavior.map((b, i) => [b, i]).filter(([b]) => b === World.MB.WATERFALL);
@@ -6280,7 +6321,8 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   assert.strictEqual(F.look("NewBarkTown_House").sprite, "follow/25-f", "a female Pikachu's own look, indoors too");
   assert.strictEqual(F.sheet(Party.create("Rotom-Heat", 20)), "479-heat");
   // Headbutt: Route 29's first tree is a rare one for an ID ending in 2, and nothing for one ending in 0.
-  const t0 = HB.maps.Route29.trees[0][0];
+  // (On Heart & Soul's Route 29, its own trees, each one of HGSS's: tools/build-johto.js.)
+  const own29 = WORLD_MAPS.Route29.headbuttTrees, t0 = own29 ? own29[0].tiles[0] : HB.maps.Route29.trees[0][0];
   const JF = (id) => sandbox.window.JohtoField.create({ player: () => Object.assign(p, { trainerId: id }) });
   assert(JF(12).headbuttTree("Route29", t0[0], t0[1]) && !JF(12).headbuttTree("Route29", 0, 0));
   const tree = { m: HB.maps.Route29, i: 0, secret: false };

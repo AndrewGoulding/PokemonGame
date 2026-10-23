@@ -58,6 +58,12 @@
     function treeAt(map, x, y) {
       const m = DATA().maps[map];
       if (!m) return null;
+      // (A map drawn from Pokémon Heart & Soul's: its own trees, each standing for one of HGSS's: tools/build-johto.js.)
+      const own = ((window.WORLD_MAPS || {})[map] || {}).headbuttTrees;
+      if (own) {
+        const t = own.find((q) => q.tiles.some(([tx, ty]) => tx === x && ty === y));
+        return t ? { m, i: t.i, secret: !!t.secret } : null;
+      }
       const i = m.trees.findIndex((t) => t.some(([tx, ty]) => tx === x && ty === y));
       if (i >= 0) return { m, i, secret: false };
       const s = m.secretTrees.findIndex((t) => t.some(([tx, ty]) => tx === x && ty === y));

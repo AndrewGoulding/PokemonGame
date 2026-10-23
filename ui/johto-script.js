@@ -143,6 +143,10 @@
       const z = DATA().zones[zone];
       if (!z || !(label in z.labels)) return;
       const C = z.cmds, L = z.labels, origin = env.origin(zone) || { x: 0, y: 0 };
+      // (This zone's HGSS coordinates on the map you're on, and back; its HGSS doors' numbers here.)
+      const here = (x, y) => (env.here ? env.here(zone, x, y) : { x, y });
+      const there = (p) => (p && env.there ? env.there(zone, p.x, p.y) : p);
+      const warpIndex = (i) => (env.warpIndex ? env.warpIndex(zone, i) : i);
       let pc = L[label], cmp = 1, sw = 0, lastBattle = null, menu = null, choice = 0, starterSlot = null;
       // (What a party screen, a move list or the Move Relearner chose, until
       // the command that reads it; the trade LoadNPCTrade loaded; a jingle playing.)
@@ -280,15 +284,17 @@
           case "WaitMovement": await flush(); break;
           case "ShowPerson": case "MakeObjectVisible": await flush(); env.show(a[0]); break;
           case "HidePerson": await flush(); env.hide(a[0]); break;
-          case "MovePersonFacing": await flush(); env.place(a[0], (+getVar(a[1]) || 0) - origin.x, (+getVar(a[3]) || 0) - origin.y, DIRS[+getVar(a[4])] || "down"); break;
-          case "GetPlayerCoords": { const p = env.personAt("player"); setVar(a[0], p.x + origin.x); setVar(a[1], p.y + origin.y); break; }
+          // (Coordinates are HGSS's, on its world matrix: here() brings them onto this map, Heart & Soul's
+          // (ui/johto-coords.js); there() takes this map's back.)
+          case "MovePersonFacing": { await flush(); const q = here((+getVar(a[1]) || 0) - origin.x, (+getVar(a[3]) || 0) - origin.y); env.place(a[0], q.x, q.y, DIRS[+getVar(a[4])] || "down"); break; }
+          case "GetPlayerCoords": { const p = there(env.personAt("player")); setVar(a[0], p.x + origin.x); setVar(a[1], p.y + origin.y); break; }
           case "GetPersonCoords": {
-            const p = env.personAt(a[0]);
+            const p = there(env.personAt(a[0]));
             setVar(a[1], p ? p.x + origin.x : 255); setVar(a[2], p ? p.y + origin.y : 255);
             break;
           }
           case "SetObjectFacing": await flush(); { const p = env.personAt(a[0]); if (p) env.place(a[0], p.x, p.y, DIRS[+getVar(a[1])] || "down"); } break;
-          case "MovePerson": await flush(); env.place(a[0], (+getVar(a[1]) || 0) - origin.x, (+getVar(a[2]) || 0) - origin.y, null); break;
+          case "MovePerson": { await flush(); const q = here((+getVar(a[1]) || 0) - origin.x, (+getVar(a[2]) || 0) - origin.y); env.place(a[0], q.x, q.y, null); break; }
           case "GetPlayerFacing": setVar(a[0], Math.max(0, DIRS.indexOf(env.personAt("player").facing))); break;
 
           // Items, Pokémon, badges.
@@ -536,7 +542,7 @@
           // (The screen shakes: HGSS's x and y, the frames between, how many times.)
           case "ScreenShake": await flush(); await env.shake(+getVar(a[3]) || 1, { x: +getVar(a[0]) || 0, y: +getVar(a[1]) || 0, delay: Math.max(1, +getVar(a[2]) || 1) * 2 }); break;
           // (One of the map's warps put elsewhere, as its OnTransition script does.)
-          case "MoveWarp": env.moveWarp(null, +getVar(a[0]), (+getVar(a[1]) || 0) - origin.x, (+getVar(a[2]) || 0) - origin.y); break;
+          case "MoveWarp": { const q = here((+getVar(a[1]) || 0) - origin.x, (+getVar(a[2]) || 0) - origin.y); env.moveWarp(null, warpIndex(+getVar(a[0])), q.x, q.y); break; }
 
           // Battles.
           case "TrainerBattle": {
@@ -695,7 +701,8 @@
         // (One of the map's warps put elsewhere: Route 47's to the Embedded Tower, HeartGold's room.)
         else if (op === "MoveWarp") {
           const o = env.origin(zone) || { x: 0, y: 0 };
-          env.moveWarp(map, +getVar(a[0]), (+getVar(a[1]) || 0) - o.x, (+getVar(a[2]) || 0) - o.y);
+          const q = env.here ? env.here(zone, (+getVar(a[1]) || 0) - o.x, (+getVar(a[2]) || 0) - o.y) : { x: (+getVar(a[1]) || 0) - o.x, y: (+getVar(a[2]) || 0) - o.y };
+          env.moveWarp(map, env.warpIndex ? env.warpIndex(zone, +getVar(a[0])) : +getVar(a[0]), q.x, q.y);
         }
         else if (op === "GetPhoneBookRematch") setVar(a[1], env.phoneRematch(+getVar(a[0])) ? 1 : 0);
         else if (op === "CheckRegisteredPhoneNumber") setVar(a[1], (state().phone || []).includes(a[0]) ? 1 : 0);
@@ -707,7 +714,8 @@
           // (Someone by their number on the map, from a var: the park's contestants lining up.)
           let id = getVar(a[0]);
           if (typeof id === "number") { const p = ((window.WORLD_MAPS || {})[map] || { people: [] }).people.find((q) => q.id === id); id = p ? p.localId : id; }
-          temp.pos[id] = { x: (+getVar(a[1]) || 0) - o.x, y: (+getVar(a[3]) || 0) - o.y, facing: DIRS[+getVar(a[4])] || "down" };
+          const q = env.here ? env.here(zone, (+getVar(a[1]) || 0) - o.x, (+getVar(a[3]) || 0) - o.y) : { x: (+getVar(a[1]) || 0) - o.x, y: (+getVar(a[3]) || 0) - o.y };
+          temp.pos[id] = { x: q.x, y: q.y, facing: DIRS[+getVar(a[4])] || "down" };
         }
       }
     }

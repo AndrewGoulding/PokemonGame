@@ -162,17 +162,45 @@ beat("Azalea's west side: the rival again", async (g) => {
 module.exports = { BEATS, makeG };
 
 // The helpers a beat gets (g), for a page started with tests/browser/lib.js.
+// (The beats' places are HGSS's maps and tiles, as Johto's scripts have them: on its maps as they are, Pokémon
+// Heart & Soul's, where ui/johto-coords.js takes them. A walk of so many steps goes, the shortest way, to where
+// those steps would take you in HGSS's tiles.)
 function makeG(s) {
-  let shots = 0;
+  let shots = 0, hg = null;
+  const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+  // (A step, held down: tried again, up to twice, when the key didn't take and nothing's going on.)
+  const step = async (d) => {
+    for (let i = 0; i < 3; i++) {
+      const was = await s.eval(page.where);
+      await s.walk(d, 1);
+      const now = await s.eval(page.where);
+      if (now.map !== was.map || now.x !== was.x || now.y !== was.y || !(await s.eval(page.idle))) return;
+    }
+  };
   const g = {
     s,
     eval: (fn, arg) => s.eval(fn, arg),
     where: () => s.eval(page.where),
     async go(map, x, y, facing) {
-      await s.eval((l) => window.Overworld.teleport(l), { map, x, y, facing: facing || "down" });
+      const to = await s.eval(([map, x, y]) => (window.JohtoCoords ? window.JohtoCoords.toMap(map, x, y) : { map, x, y }), [map, x, y]);
+      hg = { map, x, y };
+      await s.eval((l) => window.Overworld.teleport(l), { map: to.map, x: to.x, y: to.y, facing: facing || "down" });
       await s.wait(600);
     },
-    walk: (dir, n) => s.walk(dir, n || 1),
+    async walk(dir, n) {
+      n = n || 1;
+      const here = await s.eval(page.where);
+      if (!hg || !(await s.eval((m) => !!(window.WORLD_MAPS[m] || {}).hgss, here.map))) { hg = null; return s.walk(dir, n); }
+      const t = { map: hg.map, x: hg.x + DIRS[dir][0] * n, y: hg.y + DIRS[dir][1] * n };
+      const steps = await s.eval(([t, here]) => {
+        const to = window.JohtoCoords.toMap(t.map, t.x, t.y), m = window.WORLD_MAPS[here.map];
+        if (to.map !== here.map) return null;
+        return window.JohtoCoords.path(m, here, to, (x, y) => !m.collision[y * m.width + x]);
+      }, [t, here]);
+      hg = t;
+      if (!steps || !steps.length) return step(dir);
+      for (const d of steps) await step(d);
+    },
     people: () => s.eval(page.people),
     // Talk to whoever matches (their local id or script, a regex), from the side they're open on.
     async talk(re) {
@@ -188,8 +216,10 @@ function makeG(s) {
         return null;
       }, [p.x, p.y]);
       if (!spot) throw new Error("no way up to " + p.id);
+      // (The tile beside them on the map as it is: no translating.)
       const here = await s.eval(page.where);
-      await g.go(here.map, spot.x, spot.y, spot.facing);
+      await s.eval((l) => window.Overworld.teleport(l), { map: here.map, x: spot.x, y: spot.y, facing: spot.facing });
+      await s.wait(600);
       // (Fresh for whatever battle comes: PP and HP back.)
       await s.eval(() => window.Game.player.party.forEach(window.Party.heal));
       await s.press("z");
@@ -199,7 +229,11 @@ function makeG(s) {
     async check(x, y, from) {
       const [dx, dy, f] = { below: [0, 1, "up"], above: [0, -1, "down"], left: [-1, 0, "right"], right: [1, 0, "left"] }[from || "below"];
       const here = await s.eval(page.where);
-      await g.go(here.map, x + dx, y + dy, f);
+      // (HGSS's tile, where it is now, unrounded onto what's there; and the tile beside it you'd check it from.)
+      const raw = await s.eval(([m, x, y]) => { const M = window.WORLD_MAPS[m], f = window.JohtoCoords && (M.hgss || []).find((h) => h.map === m) || (M.hgss || [])[0];
+        return f ? window.JohtoCoords.forward(f, x, y).map(Math.round) : [x, y]; }, [here.map, x, y]);
+      await s.eval((l) => window.Overworld.teleport(l), { map: here.map, x: raw[0] + dx, y: raw[1] + dy, facing: f });
+      await s.wait(600);
       await s.press("z");
       await g.mash();
     },
@@ -243,10 +277,10 @@ if (require.main === module) {
     const s = await T.start((p) => {
       p.badges = ["boulder", "cascade", "thunder", "rainbow", "soul", "marsh", "volcano", "earth"];
       p.flags.gameClear = true;
-      // (Their first moves hit hard: A on FIGHT and A again wins.)
+      // (Their first moves hit hard: A on FIGHT and A again wins. No Rest: asleep, battles drag on.)
       p.party = [["Mewtwo", "Psystrike"], ["Rayquaza", "Dragon Ascent"]].map(([n, m]) => {
         const r = Party.create(n, 100);
-        r.moves = [{ name: m, pp: 99 }].concat(r.moves.filter((x) => x.name !== m).slice(0, 3));
+        r.moves = [{ name: m, pp: 99 }].concat(r.moves.filter((x) => x.name !== m && x.name !== "Rest").slice(0, 3));
         return r;
       });
       p.money = 50000;

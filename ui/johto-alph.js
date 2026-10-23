@@ -109,7 +109,11 @@
   };
   function chamberReaction(map, at, what) {
     const r = REACTIONS[what];
-    return r && map === r.map && at && at.x === 6 && at.y === 3 && at.facing === "up" ? { zone: r.zone, label: r.label } : null;
+    if (!r || map !== r.map || !at || at.facing !== "up") return null;
+    // (On a chamber drawn from Pokémon Heart & Soul's: HGSS's tile you're on, ui/johto-coords.js, a tile either way.)
+    const m = (window.WORLD_MAPS || {})[map], h = m && m.hgss && window.JohtoCoords ? window.JohtoCoords.toHgss(map, at.x, at.y, map) : at;
+    const near = m && m.hgss ? Math.abs(h.x - 6) <= 1 && Math.abs(h.y - 3) <= 1 : h.x === 6 && h.y === 3;
+    return near ? { zone: r.zone, label: r.label } : null;
   }
 
   // ---------- Drawing ----------

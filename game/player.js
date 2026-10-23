@@ -117,6 +117,7 @@
       pokedex: { seen: [], caught: [] },
       badges: [],
       flags: {},
+      johtoMaps: "hns",   // (Johto's maps are Heart & Soul's: see load)
       repelSteps: 0,
       lureSteps: 0,
       playTimeMs: 0,
@@ -410,6 +411,14 @@
     player.rival = String(data.rival || RIVAL_NAME).slice(0, 12);
     let loc = data.location;
     if (loc && /^(NavelRock|BirthIsland)_/.test(loc.map)) loc = VERMILION_DOCK;
+    // Saves made in Johto when its maps were HGSS's (before they were Pokémon Heart & Soul's): the same place on
+    // the map that has it now (ui/johto-coords.js). (johtoMaps "hns": a save made since.)
+    const C = typeof window !== "undefined" && window.JohtoCoords, J = typeof window !== "undefined" && window.JOHTO_COORDS;
+    if (loc && C && J && data.johtoMaps !== "hns" && J.where && loc.map in J.where && J.where[loc.map]) {
+      const t = C.toMap(loc.map, loc.x | 0, loc.y | 0);
+      loc = Object.assign({}, loc, { map: t.map, x: t.x, y: t.y });
+    }
+    player.johtoMaps = "hns";
     const known = (m) => !window.WORLD_MAPS || !!window.WORLD_MAPS[m];
     // Saves made upstairs in a Poké Mart (its 2F is gone: the Move Relearner and
     // Deleter are upstairs in the Pokémon Centers now): just inside its door.
