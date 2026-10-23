@@ -2013,19 +2013,38 @@ if (WORLD_MAPS.CherrygroveCity && WORLD_MAPS.CherrygroveCity.region === "johto")
   }
   const all = new Set(); for (let i = 0; i < 400; i++) for (const id of TrainerTower.rewardsAt(3, 1)) all.add(id);
   assert(all.has("rare-candy") || all.has("exp-candy-m") || all.has("exp-candy-l") || all.has("exp-candy-xl"), "candies in the pools");
+  // (Battle Points for finishing, by pace: a Knockout's 5 more.)
+  assert.deepStrictEqual([TrainerTower.finishBP(0, 60 * 60 * 5), TrainerTower.finishBP(0, 60 * 60 * 10), TrainerTower.finishBP(3, 60 * 60 * 40), TrainerTower.finishBP(2, 60 * 60 * 10)], [15, 10, 5, 20]);
 }
 
 // Raids: the Elite Four, Blue, Red and Leaf can be invited once you've battled with or against them (game/raid-dens.js).
 {
   const names = (f) => RaidDens.leaders(f).map((L) => L.name);
   assert.deepStrictEqual(names({}), []);
-  assert.deepStrictEqual(names({ TRAINER_LEADER_BROCK: true, TRAINER_ELITE_FOUR_LANCE: true, TRAINER_CHAMPION_FIRST_SQUIRTLE: true, TRAINER_BOSS_GIOVANNI_2: true, megaTowerDone: true }),
+  assert.deepStrictEqual(names({ TRAINER_LEADER_BROCK: true, TRAINER_ELITE_FOUR_LANCE: true, victoryRoadRival: true, TRAINER_BOSS_GIOVANNI_2: true, megaTowerDone: true }),
     ["Brock", "Lance", "Blue", "Red", "Leaf"]);
+  // (League.reset clears the League's trainers' flags: beaten once, they stay invited; the Hall of Fame counts for all.)
+  assert.deepStrictEqual(names({ leagueEverBeaten: { TRAINER_ELITE_FOUR_BRUNO: true } }), ["Bruno"]);
+  assert.deepStrictEqual(names({ gameClear: true }), ["Lorelei", "Bruno", "Agatha", "Lance", "Blue"], "the Elite Four and your rival, once you're Champion");
+  assert(/leagueEverBeaten \|\| \(player\.flags\.leagueEverBeaten = \{\}\)\)\[opts\.trainerId\] = true/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")));
+  // (Each brings one of their highest-levelled team: Lance's Champion team in Johto, Red's at Mt. Silver.)
+  const lanceTop = RaidDens.teamOf(RaidDens.OTHERS.find((o) => o.name === "Lance"));
+  assert(lanceTop.length && lanceTop.every((sp) => DEX[sp]), "Lance's team: " + lanceTop);
+  for (const L of RaidDens.LEADERS) assert(RaidDens.teamOf(L).length >= 3, L.name + "'s team");
+  RaidDens.setTeams({ Brock: () => [[{ species: "Onix", level: 12 }, { species: "Geodude", level: 14 }], [{ species: "Golem", level: 60 }, { species: "Steelix", level: 62 }]] }, { Blue: () => "GARY" });
+  assert.deepStrictEqual(RaidDens.teamOf(RaidDens.LEADERS[0]), ["Golem", "Steelix"], "the highest-levelled team");
+  assert.strictEqual(RaidDens.leaders({ gameClear: true }).find((L) => L.name === "Blue").label, "GARY", "your rival by his name");
+  const bro = RaidDens.allies(RaidDens.DENS.find((d) => d.type === "Fire"), { stars: 3, species: "Vulpix", level: 30 }, ["Brock", "Blue"], () => 0.5);
+  assert(["Golem", "Steelix"].includes(bro[0].record.species) && bro[1].trainer === "GARY", bro.map((a) => a.trainer + " " + a.record.species).join());
+  RaidDens.setTeams({});
   const den = RaidDens.DENS[0], raid = { stars: 3, species: "Pikachu", level: 30 };
   const a = RaidDens.allies(den, raid, ["Lance", "Red"], () => 0.5);
   assert.strictEqual(a.length, 3);
   assert(a[0].trainer === "Lance" && a[0].leader && DEX[a[0].record.species], "Lance brings one of his own");
-  assert(a[1].trainer === "Red" && ["Pikachu", "Charizard", "Blastoise", "Venusaur", "Espeon", "Snorlax", "Lapras"].includes(a[1].record.species));
+  assert(a[1].trainer === "Red" && ["Pikachu", "Charizard", "Blastoise", "Venusaur", "Espeon", "Snorlax"].includes(a[1].record.species));
+  // (The region's trainers: a Pokémon from their own team, not evolved past it.)
+  const own = (a2) => Object.values(WORLD_TRAINERS).some((t) => (t.className + " " + t.name) === a2.trainer && t.party.some((m) => m.species === a2.record.species));
+  assert(own(a[2]), "a trainer's own Pokémon: " + a[2].trainer + " " + a[2].record.species);
 }
 
 // The lead Pokémon's abilities on the map, and Pickup (game/encounters.js).

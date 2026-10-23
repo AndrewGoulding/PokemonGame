@@ -19,8 +19,10 @@
 //   RaidDens.HP / LEVELS / IVS / TURNS   // by stars (index 1-5)
 //   RaidDens.rewards(stars, rng, type)   // { money, items: [[id, count], ...] } (with the den type's Tera Shards)
 //   RaidDens.finish(flags, id)           // won: the den sleeps again
-//   RaidDens.leaders(flags)              // the Gym Leaders you could invite to a raid (beaten)
+//   RaidDens.leaders(flags)              // those you could invite to a raid: [{ name, label, ... }]
 //   RaidDens.allies(den, raid, invited, rng)  // the three on your side: [{ trainer, record, leader }]
+//   RaidDens.setTeams(teams, labels)     // the game's own teams for them ({ name: () => [team, ...] }), names shown
+//   RaidDens.teamOf(L)                   // the species of L's highest-levelled team
 //   RaidDens.ALLY_HP                     // the Tera Raid Pokémon's HP, times this again with allies
 //
 // player.flags.raidDens: { [den id]: { stars, species, level } } while it glows.
@@ -171,55 +173,74 @@
   };
   // ---------- The other three on your side ----------
   // A Tera Raid is four on one, as Scarlet and Violet's are (the engine's
-  // raidAllies): you, and three others. Kanto's Gym Leaders you've beaten
-  // come if you invite them, each with a Pokémon of their own type from the
-  // raid's tier (POOLS: as evolved as the raid's Pokémon are), the one that
-  // hits the Tera Raid Pokémon's Tera Type hardest; anyone else is one of the
-  // region's own trainers (WORLD_TRAINERS: FireRed's for Kanto, HeartGold and
-  // SoulSilver's for Johto), the ones with a Pokémon that hits it hardest
-  // first, bringing that Pokémon, grown to the raid's level (EVOLUTIONS).
-  // All of them at about the raid's level. (Not Giovanni: Kanto's seven.)
-  const LEADERS = [["Brock", "TRAINER_LEADER_BROCK", "Rock"], ["Misty", "TRAINER_LEADER_MISTY", "Water"],
-    ["Lt. Surge", "TRAINER_LEADER_LT_SURGE", "Electric"], ["Erika", "TRAINER_LEADER_ERIKA", "Grass"],
-    ["Koga", "TRAINER_LEADER_KOGA", "Poison"], ["Sabrina", "TRAINER_LEADER_SABRINA", "Psychic"],
-    ["Blaine", "TRAINER_LEADER_BLAINE", "Fire"]].map(([name, id, type]) => ({ name, id, type }));
-  // And, once you've battled beside or against them, the Elite Four, Blue (as
-  // Champion), Red (beside you at Silph Co.) and Leaf (beside you in Pokémon
-  // Tower): each brings the one of their own team that hits the raid's Tera
-  // Type hardest (`team`: their Pokémon, or the trainers whose party is theirs).
-  const party = (ids) => ids.flatMap((id) => (((window.WORLD_TRAINERS || {})[id] || {}).party || []).map((m) => m.species));
+  // raidAllies): you, and three others. Those you invite (Kanto's Gym Leaders
+  // you've beaten, and others you've battled: below) each bring the one of
+  // their own Pokémon that hits the Tera Raid Pokémon's Tera Type hardest,
+  // from their highest-levelled team in the game (`teams`: every team they
+  // battle with, the one with the highest level counted); anyone else is one
+  // of the region's own trainers (WORLD_TRAINERS: FireRed's for Kanto,
+  // HeartGold and SoulSilver's for Johto), the ones with a Pokémon that hits
+  // it hardest first, bringing that Pokémon from their own highest-levelled
+  // team (their rematches' too). All of them at about the raid's level. (Not
+  // Giovanni: Kanto's seven.)
+  const LEADERS = [["Brock", "TRAINER_LEADER_BROCK", "Rock", ["HGSS_TRAINER_LEADER_BROCK_BROCK_2"]],
+    ["Misty", "TRAINER_LEADER_MISTY", "Water", ["HGSS_TRAINER_LEADER_MISTY_MISTY_2"]],
+    ["Lt. Surge", "TRAINER_LEADER_LT_SURGE", "Electric", ["HGSS_TRAINER_LEADER_LT_SURGE_LT__SURGE_2"]],
+    ["Erika", "TRAINER_LEADER_ERIKA", "Grass", ["HGSS_TRAINER_LEADER_ERIKA_ERIKA_2"]],
+    ["Koga", "TRAINER_LEADER_KOGA", "Poison", ["HGSS_TRAINER_ELITE_FOUR_KOGA_KOGA_2"]],
+    ["Sabrina", "TRAINER_LEADER_SABRINA", "Psychic", ["HGSS_TRAINER_LEADER_SABRINA_SABRINA_2"]],
+    ["Blaine", "TRAINER_LEADER_BLAINE", "Fire", ["HGSS_TRAINER_LEADER_BLAINE_BLAINE_2"]]]
+    .map(([name, id, type, more]) => ({ name, id, type, ids: [id].concat(more) }));
+  // And, once you've battled beside or against them, the Elite Four (beaten
+  // once: League.reset clears their trainers' flags, so flags.leagueEverBeaten
+  // keeps them, and the Hall of Fame counts for all), your rival (beaten at
+  // Victory Road, or once you're Champion), Red (beside you at Silph Co.) and
+  // Leaf (beside you in Pokémon Tower).
   const OTHERS = [
-    { name: "Lorelei", flags: ["TRAINER_ELITE_FOUR_LORELEI", "TRAINER_ELITE_FOUR_LORELEI_2"], team: () => party(["TRAINER_ELITE_FOUR_LORELEI_2", "TRAINER_ELITE_FOUR_LORELEI"]) },
-    { name: "Bruno", flags: ["TRAINER_ELITE_FOUR_BRUNO", "TRAINER_ELITE_FOUR_BRUNO_2"], team: () => party(["TRAINER_ELITE_FOUR_BRUNO_2", "TRAINER_ELITE_FOUR_BRUNO"]) },
-    { name: "Agatha", flags: ["TRAINER_ELITE_FOUR_AGATHA", "TRAINER_ELITE_FOUR_AGATHA_2"], team: () => party(["TRAINER_ELITE_FOUR_AGATHA_2", "TRAINER_ELITE_FOUR_AGATHA"]) },
-    { name: "Lance", flags: ["TRAINER_ELITE_FOUR_LANCE", "TRAINER_ELITE_FOUR_LANCE_2"], team: () => party(["TRAINER_ELITE_FOUR_LANCE_2", "TRAINER_ELITE_FOUR_LANCE"]) },
-    { name: "Blue", flags: ["TRAINER_CHAMPION_FIRST_BULBASAUR", "TRAINER_CHAMPION_FIRST_CHARMANDER", "TRAINER_CHAMPION_FIRST_SQUIRTLE"],
-      team: () => party(["TRAINER_CHAMPION_REMATCH_BULBASAUR", "TRAINER_CHAMPION_REMATCH_CHARMANDER", "TRAINER_CHAMPION_REMATCH_SQUIRTLE"]) },
-    { name: "Red", flags: ["TRAINER_BOSS_GIOVANNI_2"], team: () => ["Pikachu", "Charizard", "Blastoise", "Venusaur", "Espeon", "Snorlax", "Lapras"] },
-    { name: "Leaf", flags: ["megaTowerDone"], team: () => ["Pidgeot", "Alakazam", "Rhydon", "Arcanine", "Exeggutor", "Gyarados", "Venusaur", "Charizard", "Blastoise", "Butterfree", "Wigglytuff"] }
+    { name: "Lorelei", flags: ["TRAINER_ELITE_FOUR_LORELEI", "TRAINER_ELITE_FOUR_LORELEI_2"], clear: true, ids: ["TRAINER_ELITE_FOUR_LORELEI", "TRAINER_ELITE_FOUR_LORELEI_2"] },
+    { name: "Bruno", flags: ["TRAINER_ELITE_FOUR_BRUNO", "TRAINER_ELITE_FOUR_BRUNO_2"], clear: true,
+      ids: ["TRAINER_ELITE_FOUR_BRUNO", "TRAINER_ELITE_FOUR_BRUNO_2", "HGSS_TRAINER_ELITE_FOUR_BRUNO_BRUNO", "HGSS_TRAINER_ELITE_FOUR_BRUNO_BRUNO_2"] },
+    { name: "Agatha", flags: ["TRAINER_ELITE_FOUR_AGATHA", "TRAINER_ELITE_FOUR_AGATHA_2"], clear: true, ids: ["TRAINER_ELITE_FOUR_AGATHA", "TRAINER_ELITE_FOUR_AGATHA_2"] },
+    { name: "Lance", flags: ["TRAINER_ELITE_FOUR_LANCE", "TRAINER_ELITE_FOUR_LANCE_2"], clear: true,
+      ids: ["TRAINER_ELITE_FOUR_LANCE", "TRAINER_ELITE_FOUR_LANCE_2", "HGSS_TRAINER_CHAMPION_LANCE", "HGSS_TRAINER_CHAMPION_LANCE_2"] },
+    { name: "Blue", flags: ["victoryRoadRival"], clear: true,
+      team: [["Pidgeot", 50], ["Arcanine", 50], ["Gyarados", 50], ["Exeggutor", 49], ["Alakazam", 50], ["Umbreon", 53]] },
+    { name: "Red", flags: ["TRAINER_BOSS_GIOVANNI_2"], ids: ["HGSS_TRAINER_PKMN_TRAINER_RED_RED"],
+      team: [["Pikachu", 72], ["Espeon", 72], ["Blastoise", 73], ["Venusaur", 73], ["Snorlax", 74], ["Charizard", 75]] },
+    { name: "Leaf", flags: ["megaTowerDone"],
+      team: [["Butterfree", 47], ["Wigglytuff", 47], ["Nidoqueen", 48], ["Politoed", 48], ["Venusaur", 50], ["Dragonite", 53]] }
   ];
-  const others = (flags) => OTHERS.filter((o) => o.flags.some((f) => flags[f]));
+  const ever = (flags, f) => !!(flags[f] || (flags.leagueEverBeaten || {})[f]);
+  const others = (flags) => OTHERS.filter((o) => o.flags.some((f) => ever(flags, f)) || (o.clear && flags.gameClear));
+  // The teams each battles with, as [{ species, level }]: from their trainers
+  // (WORLD_TRAINERS) and `team`; or, once the game has said (RaidDens.setTeams,
+  // ui/game.js: its own changes to them, its rematches), those.
+  let TEAMS = {}, LABELS = {};
+  const fromIds = (ids) => (ids || []).map((id) => ((window.WORLD_TRAINERS || {})[id] || {}).party).filter((p) => p && p.length)
+    .map((p) => p.map((m) => ({ species: m.species, level: m.level })));
+  function teamsOf(L) {
+    if (TEAMS[L.name]) return TEAMS[L.name]().map((t) => t.map((r) => ({ species: r.species, level: r.level })));
+    return fromIds(L.ids).concat(L.team ? [L.team.map(([species, level]) => ({ species, level }))] : []);
+  }
+  // The highest-levelled of them (its top level; then its levels in all).
+  const top = (t) => Math.max(...t.map((r) => r.level));
+  const sum = (t) => t.reduce((n, r) => n + r.level, 0);
+  const highest = (teams) => teams.filter((t) => t.length).sort((a, b) => top(b) - top(a) || sum(b) - sum(a))[0] || [];
+  const teamOf = (L) => highest(teamsOf(L)).map((r) => r.species);
+  // (ui/game.js: { name: () => [team, ...] } for their teams as it battles them; and names shown: { Blue: () => your rival's }.)
+  const setTeams = (teams, labels) => { TEAMS = teams || {}; LABELS = labels || {}; };
+  const label = (name) => (LABELS[name] ? LABELS[name]() : name);
   // How hard a Pokémon's own types hit `type` (its best), and its base stats in all.
   const hits = (species, type) => Math.max(...(window.DEX[species].types || []).map((t) => window.Damage.typeEffectiveness(t, [type])));
   const total = (species) => { const d = window.DEX[species]; return d.hp + d.atk + d.def + d.spa + d.spd + d.spe; };
   const best = (list, type) => list.filter((sp) => window.DEX[sp]).sort((a, b) => hits(b, type) - hits(a, type) || total(b) - total(a))[0];
-  // A species grown to `level`: its level evolutions by then (and the rest
-  // from Lv. 40 on), each time the one that hits `type` hardest.
-  function grown(species, level, type) {
-    for (let n = 0; n < 3; n++) {
-      const evos = ((window.EVOLUTIONS || {})[species] || []).filter((e) => window.DEX[e.into] && (e.method === "level" ? e.level <= level : level >= 40));
-      if (!evos.length) break;
-      species = best(evos.map((e) => e.into), type);
-    }
-    return species;
-  }
   const trainerName = (t) => (t.className ? t.className + " " : "") + t.name;
   const TRAINER_POOL = {
-    kanto: (id) => /^TRAINER_/.test(id) && !/LEADER|ELITE|CHAMPION|RIVAL|BOSS|ADMIN|GRUNT|TEAM_ROCKET|TWINS|COUPLE|SIS_AND_BRO|OLD_COUPLE|CRUSH_KIN|PAINTER|_\d+$/.test(id),
-    johto: (id) => /^HGSS_TRAINER_/.test(id) && !/LEADER|ELITE|CHAMPION|RIVAL|PASSERBY|ROCKET|EXECUTIVE|GRUNT|TWINS|COUPLE|_\d+$/.test(id)
+    kanto: (id) => /^TRAINER_/.test(id) && !/LEADER|ELITE|CHAMPION|RIVAL|BOSS|ADMIN|GRUNT|TEAM_ROCKET|TWINS|COUPLE|SIS_AND_BRO|OLD_COUPLE|CRUSH_KIN|PAINTER/.test(id),
+    johto: (id) => /^HGSS_TRAINER_/.test(id) && !/LEADER|ELITE|CHAMPION|RIVAL|PASSERBY|ROCKET|EXECUTIVE|GRUNT|TWINS|COUPLE/.test(id)
   };
-  // The leaders you could invite: those you've beaten.
-  const leaders = (flags) => LEADERS.filter((L) => flags[L.id]).concat(others(flags));
+  // The leaders you could invite: those you've beaten (`label`: the name shown).
+  const leaders = (flags) => LEADERS.filter((L) => flags[L.id]).concat(others(flags)).map((L) => Object.assign({}, L, { label: label(L.name) }));
   // The three on your side: those of `invited` (leaders' names), then the region's trainers.
   function allies(den, raid, invited, rng) {
     rng = rng || Math.random;
@@ -227,23 +248,29 @@
     for (const name of invited || []) {
       const L = LEADERS.find((x) => x.name === name) || OTHERS.find((x) => x.name === name);
       if (!L || out.length >= 3) continue;
-      const pool = L.team ? L.team().filter((sp, i, all) => all.indexOf(sp) === i) : (POOLS[L.type] && POOLS[L.type][raid.stars - 1] || []);
-      const sp = best(pool, type);
+      const sp = best(teamOf(L), type);
       const level = lv();
-      if (sp) out.push({ trainer: L.name, leader: true, record: window.Party.create(sp, level, { ivs: 31, moves: movesetFor(sp, level, { stars: raid.stars, against: type }) }) });
+      if (sp) out.push({ trainer: label(L.name), leader: true, record: window.Party.create(sp, level, { ivs: 31, moves: movesetFor(sp, level, { stars: raid.stars, against: type }) }) });
     }
     const region = ((window.WORLD_MAPS || {})[den.map] || {}).region === "johto" ? "johto" : "kanto";
     const T = window.WORLD_TRAINERS || {}, seen = new Set(out.map((a) => a.trainer));
-    const picks = Object.keys(T).filter((id) => TRAINER_POOL[region](id) && T[id].party && T[id].party.length && T[id].name && !/&/.test(T[id].name))
-      .map((id) => { const sp = best(T[id].party.map((m) => m.species), type); return { id, sp, score: sp ? hits(sp, type) : 0, r: rng() }; })
-      .filter((x) => x.sp).sort((a, b) => b.score - a.score || a.r - b.r);
+    // (Each trainer once: their rematches, TRAINER_..._2 and on, with them, their highest-levelled team theirs.)
+    const groups = {};
+    for (const id of Object.keys(T)) {
+      if (!TRAINER_POOL[region](id) || !T[id].party || !T[id].party.length || !T[id].name || /&/.test(T[id].name)) continue;
+      (groups[id.replace(/_\d+$/, "")] || (groups[id.replace(/_\d+$/, "")] = [])).push(id);
+    }
+    const picks = Object.keys(groups).map((base) => {
+      const ids = groups[base], party = highest(fromIds(ids)), sp = best(party.map((r) => r.species), type);
+      return { id: ids.find((id) => id === base) || ids[0], sp, score: sp ? hits(sp, type) : 0, r: rng() };
+    }).filter((x) => x.sp).sort((a, b) => b.score - a.score || a.r - b.r);
     for (const x of picks) {
       if (out.length >= 3) break;
       const name = trainerName(T[x.id]);
       if (seen.has(name)) continue;
       seen.add(name);
-      const level = lv(), sp = grown(x.sp, level, type);
-      out.push({ trainer: name, record: window.Party.create(sp, level, { ivs: 20, moves: movesetFor(sp, level, { stars: raid.stars, against: type }) }) });
+      const level = lv();
+      out.push({ trainer: name, record: window.Party.create(x.sp, level, { ivs: 20, moves: movesetFor(x.sp, level, { stars: raid.stars, against: type }) }) });
     }
     return out;
   }
@@ -379,5 +406,5 @@
     return { money: R.money, items: Object.entries(got) };
   }
 
-  window.RaidDens = { LEADERS, leaders, allies, ALLY_HP: 2.5, DENS, byScript, active, maxStars, rollStars, start, finish, boss, movesetFor, joinedText, rewards, POOLS, isKanto, RAID_MOVES, BADGES, LEVELS, IVS, HP, TURNS, LURE_STARS, REWARDS, SHARDS };
+  window.RaidDens = { LEADERS, OTHERS, leaders, allies, setTeams, teamOf, ALLY_HP: 2.5, DENS, byScript, active, maxStars, rollStars, start, finish, boss, movesetFor, joinedText, rewards, POOLS, isKanto, RAID_MOVES, BADGES, LEVELS, IVS, HP, TURNS, LURE_STARS, REWARDS, SHARDS };
 })();

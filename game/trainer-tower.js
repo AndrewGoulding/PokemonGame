@@ -7,6 +7,7 @@
 //   TrainerTower.floor(mode, n)           // floor n (1-8) of challenge `mode` (0-3): { type, prize, trainers, looks }
 //   TrainerTower.prize(mode)              // FireRed's prize for the challenge (its first floor's; not given here)
 //   TrainerTower.rewards(mode, frames, rng)   // this game's: the items for finishing it in `frames`
+//   TrainerTower.finishBP(mode, frames)   // this game's: the Battle Points for finishing it in `frames`
 //   TrainerTower.start(flags, mode)       // StartTrainerTowerChallenge: flags.tower = { mode, floorsCleared, frames, ... }
 //   TrainerTower.floorCleared(flags, n)   // GetFloorAlreadyCleared: no battle on floor n
 //   TrainerTower.team(floor, trainer, cleared, level)   // BuildEnemyParty: that trainer's Pokémon (party records)
@@ -29,7 +30,8 @@
 // everyday held items; a middling one adds Bottle Caps, PP Maxes and the
 // stronger held items (Choice items, Life Orb, Focus Sash...); a fast one
 // adds Gold Bottle Caps, Ability Capsules and the Ability Patch. One, two or
-// three items by pace; a Knockout two more than that.
+// three items by pace; a Knockout two more than that. Battle Points too, by
+// pace: 5, 10 or 15 (a Knockout 5 more), on top of each trainer's.
 (function () {
   "use strict";
 
@@ -67,6 +69,7 @@
     const tier = pace(mode, frames);
     return rewardsAt(tier, tier + (mode === 2 ? 2 : 0), rng);
   }
+  const finishBP = (mode, frames) => [5, 10, 15][pace(mode, frames) - 1] + (mode === 2 ? 5 : 0);
   // `count` items from the pools up to `tier` (1-3): Crystal's Battle Tower's too (ui/game.js).
   function rewardsAt(tier, count, rng) {
     rng = rng || Math.random;
@@ -213,5 +216,5 @@
   })();
 
   window.TrainerTower = { MODES, FLOORS, MAX_TIME, SINGLE_MONS, DOUBLE_MONS, KNOCKOUT_MONS, floor, prize, records, start, floorCleared, rewardsAt,
-    mon, team, partyLevel, tick, time, best, finalTime, rewards, pace, PACE };
+    mon, team, partyLevel, tick, time, best, finalTime, rewards, finishBP, pace, PACE };
 })();

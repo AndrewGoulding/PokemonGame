@@ -438,6 +438,9 @@
 
     if (result.outcome === "won" && opts.trainerId) {
       player.flags[opts.trainerId] = true;
+      // (The League's trainers' flags are cleared each time it starts over: League.reset. This keeps
+      // that you've beaten them, for the raids' invitations: game/raid-dens.js.)
+      if (/^TRAINER_(ELITE_FOUR|CHAMPION)_/.test(opts.trainerId)) (player.flags.leagueEverBeaten || (player.flags.leagueEverBeaten = {}))[opts.trainerId] = true;
       if (player.flags.vsRematch) delete player.flags.vsRematch[opts.trainerId];
     }
     if (result.outcome === "won" && !wild && !opts.noPrize) {
@@ -10616,8 +10619,8 @@
     await say([(fl.trainers[i] || fl.trainers[0]).after]);
   }
   // The owner, on the roof (TrainerTower_EventScript_SpeakToOwner): the
-  // clock stops; the rewards (this game's: items every challenge, by how
-  // fast it went, TrainerTower.rewards); your time, a record or not.
+  // clock stops; the rewards (this game's: items and Battle Points every challenge,
+  // by how fast it went, TrainerTower.rewards and finishBP); your time, a record or not.
   async function towerOwner() {
     const f = player.flags, R = (k) => T("TrainerTower_Roof_Text_" + k);
     tick();
@@ -10636,6 +10639,10 @@
         Player.addItem(player, item);
         await sayWithJingle("mus_level_up", "{PLAYER} obtained the " + Bag.name(item) + "!");
       }
+      // (And Battle Points, by the same pace: TrainerTower.finishBP.)
+      const bp = TrainerTower.finishBP(t.mode, t.frames);
+      f.bp = (f.bp || 0) + bp;
+      await say("{PLAYER} earned " + bp + " BP!\n(" + f.bp + " BP in total.)");
       const r = TrainerTower.finalTime(f);
       if (r === 0) await say(R("DoneItInRecordTime"));
       else if (r === 1) await say(R("TookSweetTimeGettingHere"));
@@ -12790,8 +12797,27 @@
   // invites them, B takes back the last one invited (B with nobody invited
   // leaves with nobody), "Done" when you're ready (the rest are the region's
   // trainers).
+  // (Each brings a Pokémon from their highest-levelled team as this game battles them: RaidDens.setTeams.)
+  {
+    const team = (id) => (window.WORLD_TRAINERS[id] ? swappedTeam(id) : []);
+    const listed = (list) => list.map(([sp, lv]) => ({ species: sp, level: lv }));
+    const johto = (name) => (window.JOHTO_LEAGUE || []).flatMap((J) => [J.trainer, J.rematch])
+      .filter((id) => id && window.WORLD_TRAINERS[id] && window.WORLD_TRAINERS[id].name === name).map(team);
+    const teams = {};
+    for (const L of RaidDens.LEADERS) {
+      const re = Object.values(KANTO_REMATCH).find((k) => k.id === L.id);
+      teams[L.name] = () => [team(L.id)].concat(re ? [re.team()] : []);
+    }
+    for (const o of RaidDens.OTHERS) if (o.ids && /^(Lorelei|Bruno|Agatha|Lance)$/.test(o.name))
+      teams[o.name] = () => o.ids.filter((id) => /^TRAINER_/.test(id)).map(team).concat(johto(o.name), o.name === "Lance" ? ["HGSS_TRAINER_CHAMPION_LANCE", "HGSS_TRAINER_CHAMPION_LANCE_2"].map(team) : []);
+    const mega = (key) => listed(MEGA_RIVALS.find((r) => r.key === key).team());
+    teams.Blue = () => [listed(VICTORY_ROAD_RIVAL_TEAM), mega("gary")];
+    teams.Red = () => [championTeam(false), championTeam(true), team("HGSS_TRAINER_PKMN_TRAINER_RED_RED"), mega("red")];
+    teams.Leaf = () => [route22LeafTeam(), mega("leaf")];
+    RaidDens.setTeams(teams, { Blue: () => player.rival });
+  }
   async function inviteLeaders() {
-    const can = RaidDens.leaders(player.flags).map((L) => L.name);
+    const who = RaidDens.leaders(player.flags), can = who.map((L) => L.name), shown = who.map((L) => L.label);
     if (!can.length || !(await confirm("Invite others to the raid?"))) return [];
     const picked = [];
     let cursor = 0;
@@ -12799,7 +12825,7 @@
       // ("+" before those coming; the ▶ stays where it was.)
       // (A list that scrolls, six rows, so it stays clear of the text box.)
       const v = await multichoice("Invite whom? (" + picked.length + "/3)", 0, 0,
-        can.map((n) => (picked.includes(n) ? "+" : " ") + n).concat([" Done"]), { cursor, shown: 6 });
+        can.map((n, i) => (picked.includes(n) ? "+" : " ") + shown[i]).concat([" Done"]), { cursor, shown: 6 });
       Screen.say("");
       if (v < 0) {
         if (!picked.length) return [];

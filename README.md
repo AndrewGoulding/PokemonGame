@@ -726,7 +726,8 @@ Up-Grade...); a middling one adds Bottle Caps, PP Maxes and the stronger held
 items (the Choice items, Life Orb, Focus Sash, Assault Vest, Eviolite...); a
 fast one adds Gold Bottle Caps, Ability Capsules and the Ability Patch. A
 slow, middling or fast finish gives one, two or three items; a Knockout two
-more than that. Canyon Entrance and Sevault
+more than that. The owner gives Battle Points for the finish too, by the same pace:
+5, 10 or 15 BP (a Knockout 5 more), on top of each trainer's. Canyon Entrance and Sevault
 Canyon (Cooltrainers, Young Couple Eve & Jon and Cool Couple Lex & Nya, Rock
 Smash rocks, the Chansey dance man's house, where dancing along heals your
 Pokémon), the Tanoby Key (push a boulder over each of its seven switches and
@@ -1649,19 +1650,22 @@ defence ("...is getting even stronger!") or attacks again. You send in one Poké
 the raid on (as in Scarlet and Violet), and **three others join you**, four
 on one as in Scarlet and Violet's raids: first you may invite others
 ("Invite others to the raid?"): any of Kanto's Gym Leaders you've beaten
-(not Giovanni), and the Elite Four once you've beaten them, Blue once you're
-Champion, Red once he's battled beside you at Silph Co. and Leaf once she has
-in Pokémon Tower, each bringing the one of their own team that hits the
-raid's Tera Type hardest (up to three in all: A on a name invites them, B
+(not Giovanni), and the Elite Four once you've beaten them (it counts once
+and for good: the League starting over doesn't take it back, and entering the
+Hall of Fame counts for all four), your rival (by the name you gave him) once
+you've beaten him at Victory Road or are Champion, Red once he's battled beside you at Silph Co. and Leaf once she has
+in Pokémon Tower, each bringing the one of their own Pokémon that hits the
+raid's Tera Type hardest, from their highest-levelled team in the game (of every
+team they battle with in it: the Gym Leaders' rematch teams, the Elite Four's
+rematch teams or, for Bruno and Lance, Johto's League's if higher, Red's at
+Mt. Silver, your rival's and Leaf's last) (up to three in all: A on a name invites them, B
 takes back the last one invited, "+" marks those coming; the list scrolls,
 six rows, clear of the text box), and the rest
 of the places fill with trainers from the den's region (FireRed's own,
 "Bug Catcher Garret", "Crush Girl Sharon": those with a Pokémon that hits the
 Tera Raid Pokémon's Tera Type hardest first). Each brings one Pokémon at about
-the raid's level: a Gym Leader one of their own type from the raid's list for
-that many stars (Misty's Lapras against a Grass raid), a trainer the
-Pokémon of theirs that hits it hardest, grown to that level (their Seadra
-from Horsea), with a moveset chosen against the raid's Tera Type: its strongest super
+the raid's level: a trainer the Pokémon of their own highest-levelled team (their
+rematches' too) that hits it hardest, as it is (not evolved past it), with a moveset chosen against the raid's Tera Type: its strongest super
 effective moves first, then its own types'. They battle alongside yours (`game/raid-dens.js`
 `RaidDens.allies`, and the engine's `raidAllies`): each turn each uses its
 strongest move against the Tera Raid Pokémon (a super effective one before a stronger neutral one), which aims at any of the four
