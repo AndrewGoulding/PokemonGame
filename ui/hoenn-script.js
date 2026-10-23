@@ -428,10 +428,13 @@
           case "givemon": { await flush(); const ok = await env.giveMon(species(val(a[0])), num(a[1]), a[2] && a[2] !== "ITEM_NONE" ? item(a[2]) : null); setVar("VAR_RESULT", ok ? 0 : 2); break; }
           case "giveegg": { await env.giveEgg(species(val(a[0]))); setVar("VAR_RESULT", 0); break; }
           case "setmonmove": if (env.setMove) env.setMove(num(a[0]), num(a[1]), move(a[2])); break;
+          // (Emerald's: the slot of the first Pokémon that knows it, PARTY_SIZE if none; a field move, also one
+          // that could use it here: game/field-moves.js.)
           case "checkpartymove": {
-            const mv = move(a[0]), party = env.player().party;
-            const i = party.findIndex((r) => !r.egg && r.moves.some((x) => x.name === mv));
-            setVar("VAR_RESULT", i >= 0 ? 1 : 0); setVar("VAR_0x8004", i >= 0 ? i : 0);
+            const mv = move(a[0]), party = env.player().party, F = window.FieldMoves;
+            let i = party.findIndex((r) => !r.egg && r.moves.some((x) => x.name === mv));
+            if (i < 0 && F && F.info && F.info(mv)) { const u = F.user(env.player(), mv); i = u ? party.indexOf(u) : -1; }
+            setVar("VAR_RESULT", i >= 0 ? i : 6); setVar("VAR_0x8004", i >= 0 ? i : 0);
             break;
           }
           case "getpartysize": setVar("VAR_RESULT", env.player().party.length); break;
