@@ -13070,6 +13070,12 @@
   let hoennTradeMon = null;
   const speciesNumber = (name) => Object.keys(window.DEX).indexOf(name) + 1;
   // The specials Emerald's scripts call that this game answers itself.
+  // How much of the Hoenn Pokédex you've seen or caught (`noMythicals`: but Jirachi and Deoxys, its last two).
+  function hoennDexCount(which, noMythicals) {
+    const list = (window.HOENN_SCRIPTS.hoennDex || []).slice(0, noMythicals ? -2 : undefined);
+    const have = new Set(player.pokedex[which === "seen" ? "seen" : "caught"].map(Player.dexNumber));
+    return list.filter((s) => have.has(Player.dexNumber(s))).length;
+  }
   async function hoennSpecial(name, api) {
     // (The Safari Zone: in and out, Emerald's EnterSafariMode and ExitSafariMode.)
     if (name === "EnterSafariMode") { player.flags.safari = { balls: 30, steps: 500, hoenn: true, feeders: [], caught: 0 }; return true; }
@@ -13164,6 +13170,24 @@
         if (hoennOutdoors(hoennCameFrom)) { const h = Player.gameTime(player).hour; hoenn.setFlag("FLAG_SYS_SHOAL_TIDE", h < 3 || (h >= 9 && h < 15) || h >= 21); }
         return true;
       }
+      // Birch's Pokédex rating (src/birch_pc.c): the Hoenn Pokédex's seen and caught (VAR_0x8004 0), or the National's
+      // (1, and yours is), and what he makes of the Hoenn count; and the Game Designer's diploma (all of the Hoenn
+      // Pokédex but Jirachi and Deoxys).
+      case "ScriptGetPokedexInfo": {
+        const national = +api.getVar("VAR_0x8004") !== 0;
+        api.setVar("VAR_0x8005", national ? Player.dexCount(player, "seen") : hoennDexCount("seen"));
+        api.setVar("VAR_0x8006", national ? Player.dexCount(player, "caught") : hoennDexCount("caught"));
+        api.set(1);
+        return true;
+      }
+      case "ShowPokedexRatingMessage": {
+        await api.flush();
+        const n = +api.getVar("VAR_0x8004"), T = window.HOENN_SCRIPTS.t;
+        const done = n >= 200 && hoennDexCount("caught", true) >= 200;
+        await say((T[done ? "gBirchDexRatingText_DexCompleted" : "gBirchDexRatingText_LessThan" + Math.min(200, (Math.floor(n / 10) + 1) * 10)] || []).map(fill));
+        return true;
+      }
+      case "HasAllHoennMons": api.set(hoennDexCount("caught", true) >= 200 ? 1 : 0); return true;
       // (The Sealed Chamber: Wailord first in the party, and Relicanth last.)
       case "CheckRelicanthWailord": { const p = player.party, last = p[p.length - 1]; api.set(p[0] && !p[0].egg && p[0].species === "Wailord" && last && !last.egg && last.species === "Relicanth" ? 1 : 0); return true; }
       case "MonOTNameNotPlayer": { const r = player.party[+api.getVar("VAR_0x8004")]; api.set(r && r.ot && r.ot.name !== player.name ? 1 : 0); return true; }

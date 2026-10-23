@@ -688,7 +688,14 @@ for (const g of Object.values(frontier.look).concat(frontier.brainLook, ["OBJ_EV
 const contest = require("./lib/hoenn-contest")(EM, { species: (c) => dexByID[toID(String(c).replace(/^SPECIES_/, ""))], move: (c) => moveByID[toID(String(c).replace(/^MOVE_/, ""))] });
 for (const o of contest.opponents) if (o && o.gfx && !gfx[o.gfx]) { const sp = objectSprite(o.gfx); if (sp) gfx[o.gfx] = sp; }
 for (const g of ["OBJ_EVENT_GFX_BRENDAN_NORMAL", "OBJ_EVENT_GFX_MAY_NORMAL"]) if (!gfx[g]) { const sp = objectSprite(g); if (sp) gfx[g] = sp; }
-const hoennScripts = { songNames, seNames, gfx, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, trades, berryTrees, rotStart, decor: decorData.list, decorCategories: decorData.CATEGORIES, numConsts, consts: mapConsts };
+// The Hoenn Pokédex's order (include/constants/pokedex.h's HOENN_DEX_*), as this game's species: Birch's rating, the
+// Game Designer's diploma.
+const hoennDex = (() => {
+  const t = fs.readFileSync(P("include/constants/pokedex.h"), "utf8"), i = t.indexOf("HOENN_DEX_TREECKO");
+  return [...t.slice(i, t.indexOf("HOENN_DEX_COUNT", i)).matchAll(/HOENN_DEX_(\w+)/g)]
+    .map((m) => dexByID[toID(m[1])] || Object.keys(dexByID).filter((k) => k.startsWith(toID(m[1]))).map((k) => dexByID[k])[0]);
+})();
+const hoennScripts = { songNames, seNames, gfx, hoennDex, s: compiled.s, t: compiled.t, m: compiled.m, tb: compiled.tb, ms: compiled.ms, multi, heal, init, trades, berryTrees, rotStart, decor: decorData.list, decorCategories: decorData.CATEGORIES, numConsts, consts: mapConsts };
 
 // ---------- The Town Map ----------
 // Each map's section (its name on the map, and where it is on it); a map whose section has no square (a cave's)
