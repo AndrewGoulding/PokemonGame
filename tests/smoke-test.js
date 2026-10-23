@@ -2017,6 +2017,15 @@ if (WORLD_MAPS.CherrygroveCity && WORLD_MAPS.CherrygroveCity.region === "johto")
   assert.deepStrictEqual([TrainerTower.finishBP(0, 60 * 60 * 5), TrainerTower.finishBP(0, 60 * 60 * 10), TrainerTower.finishBP(3, 60 * 60 * 40), TrainerTower.finishBP(2, 60 * 60 * 10)], [15, 10, 5, 20]);
 }
 
+// The GS Ball (Crystal's): Prof. Oak's once you're through the Hall of Fame; Ilex Forest's shrine takes it, and Celebi comes (ui/game.js).
+{
+  assert(ITEMS["gs-ball"] && ITEMS["gs-ball"].category === "key-items" && Bag.name("gs-ball") === "GS Ball" && Bag.sprite("gs-ball"), "the GS Ball, a Key Item with its picture");
+  const gJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  assert(/else if \(f\.gameClear && !f\.gotGsBall\) await oakGsBall\(\);/.test(gJs), "Oak gives it after the Hall of Fame");
+  assert(/script === "hgss:D36R0101:scr_seq_D36R0101_012" && Player\.itemCount\(player, "gs-ball"\) > 0/.test(gJs) && /Party\.create\("Celebi", 50\)/.test(gJs), "the shrine: a Lv. 50 Celebi");
+  assert(WORLD_MAPS.IlexForest.signs.some((s) => s.script === "hgss:D36R0101:scr_seq_D36R0101_012"), "Ilex Forest's shrine is there");
+}
+
 // Raids: the Elite Four, Blue, Red and Leaf can be invited once you've battled with or against them (game/raid-dens.js).
 {
   const names = (f) => RaidDens.leaders(f).map((L) => L.name);

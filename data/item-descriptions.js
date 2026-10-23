@@ -214,6 +214,7 @@ window.ITEM_DESCRIPTIONS = {
   "spell-tag": "An item to be held by a Pokémon.\nA sinister, eerie tag that boosts\nGhost-type moves.",
   "spelon-berry": "Can be ground up into a powder as\nan ingredient for medicine.",
   "ss-ticket": "The ticket required for sailing on\nthe ferry S.S. Anne.\nIt has a drawing of a ship on it.",
+  "gs-ball": "A mysterious Ball.",
   "star-piece": "A shard of a pretty gem that\nsparkles in a red color.\nIt can be sold at a high price.",
   "stardust": "A pretty red sand with a loose,\nsilky feel.\nIt can be sold at a high price.",
   "starf-berry": "When held by a Pokémon, it sharply\nraises one stat in a pinch.",

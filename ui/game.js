@@ -3127,6 +3127,8 @@
 
     // Johto's scripts (ui/johto-script.js), and its Apricorn trees.
     if (/^(enter|arrive):/.test(script)) { const due = johto.frameScript(script.replace(/^\w+:/, "")); if (due) { await runJohto(due, null); return; } }
+    // (Ilex Forest's shrine, with the GS Ball: Crystal's Celebi.)
+    if (script === "hgss:D36R0101:scr_seq_D36R0101_012" && Player.itemCount(player, "gs-ball") > 0 && !player.flags.gsBallCelebi) { await ilexShrineCelebi(); return; }
     // (Ilex Forest's Headbutt tutor: ui/johto-field.js.)
     if (script === "hgss:D36R0101:scr_seq_D36R0101_002") { await johtoField.headbuttTutor(); return; }
     { const js = johto.scriptOf(ev.person || ev.sign || ev.trigger); if (js) { await runJohto(js, ev.person); return; } }
@@ -3343,6 +3345,7 @@
 
       case "PalletTown_ProfessorOaksLab_EventScript_ProfOak":
         if (!f.starter) await say(ev.person.text);
+        else if (f.gameClear && !f.gotGsBall) await oakGsBall();
         else if (f.oaksParcel && !f.parcelDelivered) await pokedexScene();
         else if (f.parcelDelivered) await say(T("PalletTown_ProfessorOaksLab_Text_OakMonsAroundWorldWait"));
         else if (!f.rivalLabBattle) await say(T("PalletTown_ProfessorOaksLab_Text_OakCanReachNextTownWithMon"));
@@ -8023,6 +8026,51 @@
       await Overworld.act([{ who: "player", moves: ["jump_" + ride.dismount] }]);
       Overworld.setAvatar("walk");
     }
+  }
+
+  // ---------- The GS Ball (Pokémon Crystal's) ----------
+  //
+  // This game's way to it: once you've been through the Hall of Fame, Prof.
+  // Oak in his lab gives you the GS Ball (Crystal's came from Goldenrod's
+  // Pokémon Center, and Kurt looked it over first). Put it in Ilex Forest's
+  // shrine (Crystal's IlexForestShrineScript, its words) and Celebi appears,
+  // wild at Lv. 50 (Crystal's was 30). Catch it and the GS Ball is spent;
+  // run, or knock it out, and the Ball is still yours to try again.
+  async function oakGsBall() {
+    const f = player.flags;
+    await say(["Oak: Ah, {PLAYER}! Our new\nChampion! Ho ho!", "I have something for you.",
+      "A friend sent me this mysterious\nPoké Ball. It's called the GS Ball.", "I've studied it for months, but I\ncan't make heads or tails of it!",
+      "Kurt, the Ball maker in Johto's\nAzalea Town, says there's a shrine\nin Ilex Forest…", "Perhaps the GS Ball has something\nto do with it. Will you take it\nthere for me?"]);
+    Player.addItem(player, "gs-ball");
+    f.gotGsBall = true;
+    await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the GS Ball\nfrom Prof. Oak!");
+    await say(["Oak: Let me know what you find\nat the shrine!"]);
+    await persist();
+  }
+  async function ilexShrineCelebi() {
+    const f = player.flags;
+    await say(["Ilex Forest Shrine…", "It's in honor of the forest's\nprotector…", "Oh? What is this?", "It's a hole.\nIt looks like the GS Ball would fit\ninside it."]);
+    if (!(await confirm("Want to put the GS Ball here?"))) return;
+    await say("{PLAYER} put in the GS Ball.");
+    Screen.say("");
+    if (!canBattle()) return;
+    await sleep(333);
+    music(null);
+    await Overworld.act([{ who: "player", moves: ["face_down"] }]);
+    await sleep(500);
+    await Overworld.fadeToBlack();
+    cry("Celebi");
+    await Overworld.fadeFromBlack();
+    await sleep(300);
+    const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create("Celebi", 50)] }, music: "mus_vs_legend", terrain: "grass" });
+    if (outcome === "lost") return;
+    show("world");
+    await Overworld.resume();
+    music((window.WORLD_MAPS[player.location.map] || {}).music);
+    if (outcome === "ran" || outcome === "won") { await say(["Celebi vanished into the forest…", "The GS Ball rolled back out of\nthe shrine."]); return; }
+    Player.removeItem(player, "gs-ball");
+    f.gsBallCelebi = true;
+    await persist();
   }
 
   // The legendary birds: Articuno (SeafoamIslands_B4F_EventScript_Articuno)

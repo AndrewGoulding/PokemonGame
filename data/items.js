@@ -657,6 +657,7 @@ window.ITEMS = {
   "pearl": { name: "pearl", category: "loot", effect: "A somewhat-small pearl that sparkles in a pretty silver color. It can be sold cheaply." },
   "big-pearl": { name: "big-pearl", category: "loot", effect: "A quite-large pearl that sparkles in a pretty silver color. It can be sold at a high price." },
   "ss-ticket": { name: "ss-ticket", category: "key-items", effect: "The ticket required for sailing on the ship S.S. Anne. It has a drawing of the ship on it." },
+  "gs-ball": { name: "gs-ball", category: "key-items", effect: "A mysterious Ball. (Pokémon Crystal's: Prof. Oak's, for Ilex Forest's shrine.)" },
   "x-attack": { name: "x-attack", category: "stat-boosts", effect: "Raises the Attack of the Pokémon in battle by one stage." },
   "x-defense": { name: "x-defense", category: "stat-boosts", effect: "Raises the Defense of the Pokémon in battle by one stage." },
   "x-sp-atk": { name: "x-sp-atk", category: "stat-boosts", effect: "Raises the Special Attack of the Pokémon in battle by one stage." },

@@ -2251,6 +2251,13 @@ blocks slide along it when you walk into them, stopping at a wall (to be
 pushed again) or setting fast against someone, or frozen together against
 another block for good.
 
+**The GS Ball** (Pokémon Crystal's event): once you've been through the Hall of Fame, Prof.
+Oak in his lab in Pallet Town gives you the GS Ball (a Key Item; Crystal's came from Goldenrod's
+Pokémon Center and Kurt looked it over first). Check Ilex Forest's shrine with it and you're asked
+(Crystal's words) whether to put it in; yes, and a wild **Celebi** appears at Lv. 50 (Crystal's was
+30). Catch it and the GS Ball is spent; run from it or knock it out and the Ball rolls back out of
+the shrine, to try again.
+
 **Johto's scripts are HeartGold's own.** `tools/lib/hgss-script.js` compiles
 each map's field scripts (`files/fielddata/script/scr_seq`: its people's and
 signs' scripts, its step triggers, and its map scripts, on entering it and its
