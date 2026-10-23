@@ -15,6 +15,13 @@
     z.cmds = z.cmds.map((c) => (c[0] === "HasItem" && c[1] === "ITEM_PASS" ? ["SetVar", c[3], 1]
       : zone === "T25R0501" && c[0] === "GoToIfSet" && c[1] === "FLAG_RESTORED_POWER" ? ["GoTo", c[2]] : c));
   }
+  // (The trains' doors, Heart & Soul's, walked up into from the platform: ui/game.js's magnetTrainBoard.)
+  for (const [name, x, y] of [["GoldenrodCity_MagnetTrainStation_1F",19,5],["SaffronCity_MagnetTrainStation_1F",30,5]]) {
+    const m = W[name];
+    if (!m) continue;
+    m.collision[y * m.width + x] = 0;
+    m.triggers = (m.triggers || []).concat([{ x, y, script: "Johto_MagnetTrain" }]);
+  }
   // (Off the train, down to the station's floor, where its attendant sees you off: the scene goes on after its Warp.)
   for (const zone of ["T25R0502", "T11R0602"]) {
     const z = J.zones[zone];

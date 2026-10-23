@@ -68,7 +68,9 @@ module.exports = function hnsJohto(H) {
       case 0x66: case 0x0f: case 0xa2: return 0x66;
       case 0x67: case 0x68: case 0x0e: case 0x29: return 0x67;
       case 0x6c: return 0x69;
-      case 0x6d: case 0x6e: return 0x65;
+      case 0x6d: return 0xf4;   // (MB_WATER_SOUTH_ARROW_WARP: game/world.js's own code for it)
+      case 0xef: return 0xf5;   // (MB_WATER_NORTH_ARROW_WARP)
+      case 0x6e: return 0x65;
       case 0x80: case 0x83: return b;
       case 0x85: return 0x84;
       case 0x86: return 0x85;

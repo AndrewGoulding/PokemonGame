@@ -11,6 +11,8 @@
 //     throws, the five Poké Balls) is gone: its triggers and its two people;
 //   - Cameron the photographer is gone; Ethan's mother doesn't save your money
 //     (she's not your mother); Juggler Irwin has a Voltorb and three others;
+//   - the S.S. Aqua sails once you've beaten Johto's League, for Vermilion
+//     or Hoenn (ui/game.js ssAquaBoard); Olivine's pier couple are the port's;
 //   - Cherrygrove's Guide Gent and his scene are gone (the Pokégear's Map is
 //     yours from the start: ui/pokegear.js); Silver is "Rival Silver" from his
 //     first battle, with his own picture (HGSS's "Passerby Boy").
@@ -105,6 +107,15 @@ function apply({ maps, scripts, trainers }) {
     sw.signs = sw.signs.filter((g) => !/scr_seq_D37R0104_00[0-3]$/.test(g.script || "")).concat(
       [[22, 1, 1], [13, 1, 2], [5, 1, 3]].map(([x, y, n]) => ({ x, y, script: "Johto_GoldenrodPanel:" + n, text: null })));
   }
+  // Olivine's port: the S.S. Aqua's gangway (and the port's sailor, HGSS's, whose way to the ship Heart & Soul's port
+  // hasn't got) ask where you're sailing, once you've beaten Johto's League (ui/game.js ssAquaBoard).
+  const ext = maps.SSAqua_OlivinePortExterior, plank = ext && ext.warps.find((w) => w.map === "SSAqua_1F");
+  if (plank) ext.triggers = (ext.triggers || []).concat([{ x: plank.x, y: plank.y + 1, script: "Johto_SSAquaBoard" }]);
+  const port = maps.SSAqua_OlivinePortInterior;
+  if (port) for (const p of port.people) if (p.localId === "obj_P01R0101_seaman_2") Object.assign(p, { script: "Johto_SSAquaBoard", text: null });
+  // Olivine's pier: HGSS's couple who see the ship off (no words of their own) are the port's, there already.
+  const olivine = maps.OlivineCity;
+  if (olivine) olivine.people = olivine.people.filter((p) => p.localId !== "obj_T26_seaman_2_3" && p.localId !== "obj_T26_gswoman2");
   // Route 35's Juggler Irwin: his strongest Voltorb (or Electrode, in his rematches), and three of a kind he juggles
   // with no more: Mr. Mime, Drowzee or Hypno, Magnemite or Magneton.
   for (const [id, keep, more] of [["HGSS_TRAINER_JUGGLER_IRWIN", "Voltorb", [["Mr. Mime", 14], ["Drowzee", 13], ["Magnemite", 13]]],

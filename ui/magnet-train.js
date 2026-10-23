@@ -11,7 +11,8 @@
 //   T.enter(map)                          // going into a map (before its OnTransition script)
 //   await T.ride(toward, mapConst, x, y)  // HGSS's ScrCmd_722: the ride, then off at (x, y)
 //
-// ctx: player(), johto (JohtoScript's), music(song), sleep(ms), fadeOut(), warp(mapConst, x, y, facing).
+// ctx: player(), johto (JohtoScript's), music(song), sleep(ms), fadeOut(), warp(mapConst, x, y, facing),
+// teleport({ map, x, y, facing }).
 (function () {
   "use strict";
 
@@ -29,12 +30,14 @@
     // The ride: the screen fades as the doors close, the train's theme plays
     // a few seconds, and you're on the other station's platform, the doors
     // opening (its frame table's scene then walks you off the train).
-    // (toward: 0 for Saffron, 1 for Goldenrod; mapConst: its platform, by HGSS's number.)
+    // (toward: 0 for Saffron, 1 for Goldenrod; mapConst: its platform, by HGSS's number, or the station
+    // itself, its door, from Heart & Soul's: ui/game.js's magnetTrainBoard.)
     async function ride(toward, mapConst, x, y) {
       await ctx.fadeOut();
       ctx.music(RIDE_MUSIC);
       await ctx.sleep(RIDE_MS);
-      await ctx.warp(String(mapConst), x, y, "down");
+      if ((window.WORLD_MAPS || {})[mapConst]) await ctx.teleport({ map: mapConst, x, y, facing: "down" });
+      else await ctx.warp(String(mapConst), x, y, "down");
     }
     return { enter, ride };
   }

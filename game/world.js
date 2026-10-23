@@ -28,6 +28,9 @@
     WARP_DOOR: 0x69, UP_ESCALATOR: 0x6a, DOWN_ESCALATOR: 0x6b,
     UP_RIGHT_STAIR_WARP: 0x6c, UP_LEFT_STAIR_WARP: 0x6d, DOWN_RIGHT_STAIR_WARP: 0x6e, DOWN_LEFT_STAIR_WARP: 0x6f,
     WATERFALL: 0x13,
+    // (Heart & Soul's water arrow warps, MB_WATER_SOUTH/NORTH_ARROW_WARP, under codes of this game's own: surfed on,
+    // and you go through by heading their way, as Route 40's way down to Route 41.)
+    WATER_SOUTH_ARROW_WARP: 0xf4, WATER_NORTH_ARROW_WARP: 0xf5,
     // The Rocket Hideout's spinning arrows (MB_SPIN_*) and the tile that stops you.
     SPIN_RIGHT: 0x54, SPIN_LEFT: 0x55, SPIN_UP: 0x56, SPIN_DOWN: 0x57, STOP_SPINNING: 0x58,
     COUNTER: 0x80, PC: 0x83,
@@ -58,7 +61,8 @@
   const isWater = (b) => b >= 0x10 && b <= 0x15;
   // What you can Surf on (sBehaviorSurfable: the waters, the waterfall, the
   // currents), and the waterfall, which only Waterfall goes up.
-  const SURFABLE = new Set([0x10, 0x11, 0x12, 0x13, 0x15, 0x1a, 0x1b, 0x50, 0x51, 0x52, 0x53]);
+  const SURFABLE = new Set([0x10, 0x11, 0x12, 0x13, 0x15, 0x1a, 0x1b, 0x50, 0x51, 0x52, 0x53, 0xf4, 0xf5]);
+  const WATER_ARROW_DIR = { 0xf4: "down", 0xf5: "up" };
   const isSurfable = (b) => SURFABLE.has(b);
 
   const map = (name) => window.WORLD_MAPS[name];
@@ -206,6 +210,9 @@
       const c = edgeConnection(pos.map, pos.x, pos.y, dir);
       return { ok: false, unbuilt: c && !c.map ? c.mapConst : null };
     }
+    // (On a water arrow warp, heading its way: through it.)
+    const hereWarp = WATER_ARROW_DIR[here.behavior] === dir && warpAt(pos.map, pos.x, pos.y);
+    if (hereWarp && hereWarp.map) return { ok: false, warp: warpTarget(hereWarp) };
     if (ahead.behavior === MB.WHIRLPOOL) return { ok: false, whirlpool: true };
     if (ahead.collision || (occupied && occupied(ahead.map, ahead.x, ahead.y))) return { ok: false };
     if (ahead.behavior === MB.WATERFALL) return { ok: false, waterfall: true };

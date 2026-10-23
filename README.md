@@ -1907,7 +1907,8 @@ step triggers and frame tables, flags and vars (saved in `player.flags.hoenn`), 
 item balls, trainers, the gym puzzles of Petalburg and Mauville. Pokémon Centers, Marts, Cut,
 Rock Smash, Strength, item balls and trainers on sight keep the game's own handling.
 
-Get there from Vermilion's Seagallop ("Hoenn", once Celio's machine is done). Your first visit
+Get there from Vermilion's Seagallop ("Hoenn", once Celio's machine is done) or, once you've
+beaten Johto's League, Olivine's S.S. Aqua. Your first visit
 starts in the truck; later ones land at Slateport's harbour, whose sailor takes you home. Hoenn's
 badges unlock Cut, Flash, Rock Smash, Strength, Surf, Fly, Dive and Waterfall; whiting out sends
 you to the last Center or your bedroom.
@@ -2428,20 +2429,25 @@ standard stock by Johto's Badges (HGSS's tiers: Poké Balls, Potions,
 Antidotes and Paralyze Heals with none, and more with more) and the town's
 own.
 
-**The S.S. Aqua** sails between Olivine and Vermilion as in HGSS: Olivine's
-port boards you with the S.S. Ticket once you're Johto's Champion, and the
-voyage goes as HGSS's scripts have it; arrived, you step off onto FireRed's
-Vermilion dock, where the S.S. Anne was, and the S.S. Aqua's sailor there
-takes you back to Olivine.
+**The S.S. Aqua** sails from Olivine once you've beaten Johto's Pokémon
+League: at its gangway (or the port's sailor) you're asked where you're
+sailing, Vermilion City or Slateport City in Hoenn (before then, the ship is
+only for Trainers who've beaten the League, and you step back). To
+Vermilion the voyage goes as HGSS's scripts have it; arrived, you step off
+onto FireRed's Vermilion dock, where the S.S. Anne was, and the S.S. Aqua's
+sailor there takes you back to Olivine. To Hoenn it's as the Seagallop's
+crossing (the first time, the moving truck's inside), and Slateport's sailor
+sails you to Vermilion or, once you've beaten Johto's League, Olivine.
 
 **The Magnet Train** runs between Goldenrod City and Saffron City as in
 HGSS: its stations are HGSS's (Goldenrod's, and Saffron's, HGSS's Kanto map,
 built with Johto's but counted as Kanto's), with their people and scripts.
 The attendant greets you, the ticket gate checks you through (no Pass needed
-here: "Ping...fwip! This train is about to leave for Saffron City."), you
-board upstairs, the screen fades to the train's theme as it goes, and the
-other station's attendant sees you off the train ("We have arrived at
-Saffron! Saffron! The accent is on the "a"!"). FireRed's Saffron has no
+here: "Ping...fwip! This train is about to leave for Saffron City."), and on
+the stations drawn from Pokémon Heart & Soul's the train waits at the
+platform past the gate: walk up into its door, the screen fades to the
+train's theme as it goes, and you step off at the other station's door and
+down through its gate (`ui/game.js` `magnetTrainBoard`). FireRed's Saffron has no
 station, so the house at the west end of its top-left row gets a door (the
 Copycat's house's, next door), into it. Goldenrod's train always runs;
 Saffron's only once you're the Champion: until then its policeman stands in
@@ -2489,17 +2495,22 @@ rod, 40/40/15/4/1) and Rock Smash's. Everything goes into
 warp and guard). Not here yet: the Battle Frontier, which comes with Sinnoh's;
 in its place, north of Route 40 through its gatehouse, stands Crystal's
 **Battle Tower** (this game's own, in FireRed's Trainer Tower lobby drawn
-again there). At the counter, or from its receptionist, choose three Pokémon
-(Crystal's rules: no two of the same Pokémon, no two holding the same item,
-no Eggs), then battle seven of the Trainer Tower's trainers in a row, each
+again there, its stairs walled over: there are no floors above). At the
+counter, or from its receptionist, choose three Pokémon (Crystal's rules: no
+two of the same Pokémon, no two holding the same item, no Eggs), then go
+into its battle room (Emerald's Battle Tower's) and battle seven of the
+Trainer Tower's trainers in a row, each walking in and, once beaten, out
+again before the next walks in, each
 with three of their six Pokémon (FireRed's sets) scaled to your strongest's
 level, your three healed between battles, with no Exp. or money; you may
 stop between battles, and a loss ends the challenge. Seven wins earn two
 prizes from Trainer Tower's own pools (vitamins, PP Ups, Rare and Exp.
 Candies, mints and everyday held items; from Lv. 40 Bottle Caps, PP Maxes and
 the stronger held items too; from Lv. 70 Gold Bottle Caps and Ability
-Capsules and Patches: `TrainerTower.rewardsAt`) and Battle Points (3, and 1
-more for every 20 levels). The lobby's nurse heals, its clerk is the BP Shop,
+Capsules and Patches: `TrainerTower.rewardsAt`) and bonus Battle Points (3,
+and 1 more for every 20 levels); every win on the way earns BP too (1, and 1
+more for every 50 levels). The lobby's nurse heals, its clerk is the BP Shop,
+the BP tutors (the Trainer Tower's: their moves, and Egg moves) teach for BP,
 and the sign by the counter keeps your best streak.
 (Its music is HGSS's own: see Music and cries.)
 

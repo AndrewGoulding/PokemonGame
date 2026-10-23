@@ -3161,6 +3161,8 @@
     { const ap = /^hgss_apricorn:(\d+):(\w+)$/.exec(script || ""); if (ap) { await apricornTree(+ap[1], ap[2]); return; } }
     { const ar = /^Johto_AzaleaRide:(\d+)$/.exec(script || ""); if (ar) { await azaleaRide(+ar[1]); return; } }
     { const gp = /^Johto_GoldenrodPanel:(\d)$/.exec(script || ""); if (gp) { await goldenrodPanel(+gp[1]); return; } }
+    if (script === "Johto_MagnetTrain") { await magnetTrainBoard(); return; }
+    if (script === "Johto_SSAquaBoard") { await ssAquaBoard(); return; }
     // (Hoenn's Poké Mart clerks: their stock, from Emerald's scripts.)
     if (ev.person && ev.person.mart && /_Mart_EventScript_Clerk$/.test(script || "") && (window.WORLD_MAPS[ev.map] || {}).region === "hoenn") { await mart(ev.person.mart); return; }
     // (Johto's Pokémon Centers' nurses heal as Kanto's do.)
@@ -5507,6 +5509,24 @@
     sfx("se_bike_hop");
     await Overworld.act([{ who: ARIADOS, moves: steps(pad2, R.webs[row2], "walk_up", "walk_down") }]);
     Overworld.removeObject(ARIADOS);
+  }
+
+  // The Magnet Train's doors (Heart & Soul's stations, tools/build-magnet-train.js): walked up into from the
+  // platform, past the ticket gate, the ride (ui/magnet-train.js), and you're at the other station's door, off
+  // the train and down through its gate (Heart & Soul's ExitTrain). Saffron's runs once you're the Champion.
+  const MAGNET_DOORS = {
+    GoldenrodCity_MagnetTrainStation_1F: { x: 19, y: 5, to: "SaffronCity_MagnetTrainStation_1F" },
+    SaffronCity_MagnetTrainStation_1F: { x: 30, y: 5, to: "GoldenrodCity_MagnetTrainStation_1F" }
+  };
+  async function magnetTrainBoard() {
+    const from = MAGNET_DOORS[player.location.map], to = from && MAGNET_DOORS[from.to];
+    if (!to || (from.to === "GoldenrodCity_MagnetTrainStation_1F" && !player.flags.gameClear)) {
+      await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
+      return;
+    }
+    sfx("se_exit");
+    await magnetTrain.ride(from.to === MagnetTrain.SAFFRON ? 0 : 1, from.to, to.x, to.y);
+    await Overworld.act([{ who: "player", moves: ["walk_down", "walk_left", "walk_left", "walk_left", "walk_down", "walk_down", "walk_down"] }]);
   }
 
   // Goldenrod Underground's switch room (Heart & Soul's GoldenrodCity_UndergroundSwitches, in place of HGSS's
@@ -9118,14 +9138,25 @@
   // begins (data/emerald-maps.js; ui/hoenn-script.js plays Emerald's scripts from there). After that, the
   // Seagallop lands at Slateport's harbor, whose sailor sails you back to Vermilion.
   const hoennStarted = () => hoenn.getVar("VAR_LITTLEROOT_INTRO_STATE") > 0;
-  async function sailToHoenn() {
-    await say(hoennStarted() ? ["All aboard SEAGALLOP HI-SPEED 9!", "Next stop, Slateport City in Hoenn!"]
-      : ["All aboard SEAGALLOP HI-SPEED 9!", "It's a long way to Hoenn. You can\nride in the moving truck we're taking."]);
+  async function sailToHoenn(aqua) {
+    const ship = aqua ? "the S.S. Aqua" : "SEAGALLOP HI-SPEED 9";
+    await say(hoennStarted() ? ["All aboard " + ship + "!", "Next stop, Slateport City in Hoenn!"]
+      : ["All aboard " + ship + "!", "It's a long way to Hoenn. You can\nride in the moving truck we're taking."]);
     if (hoennStarted()) await ferry({ map: "SlateportCity_Harbor", x: 6, y: 11, facing: "down" }, false);
     else await ferry({ map: "InsideOfTruck", x: 2, y: 2, facing: "right" }, false);
   }
   async function slateportSailor() {
-    if (!(await confirm("Ahoy! This Seagallop sails to\nVermilion City. Want to go?"))) { await say("Come back any time."); return; }
+    // (Olivine too, by the S.S. Aqua, once you've beaten Johto's League.)
+    const dests = ["Vermilion City"].concat(player.flags.johtoLeagueClear ? ["Olivine City"] : [], ["Cancel"]);
+    const i = await multichoice("Ahoy! Where are you sailing?", 17, 12 - 2 * dests.length, dests);
+    const pick = dests[i];
+    if (!pick || pick === "Cancel") { await say("Come back any time."); return; }
+    if (pick === "Olivine City") {
+      await say(["All aboard the S.S. Aqua!"]);
+      const port = window.WORLD_MAPS.SSAqua_OlivinePortExterior, plank = port.warps.find((w) => w.map === "SSAqua_1F");
+      await ferry({ map: port.name, x: plank.x, y: plank.y + 1, facing: "down" }, false);
+      return;
+    }
     await say(["All aboard SEAGALLOP HI-SPEED 9!"]);
     await ferry({ map: "VermilionCity", x: 23, y: 32, facing: "up" }, true);
   }
@@ -11084,16 +11115,21 @@
   // as another, no Eggs (Crystal's rules); then seven battles in a row against
   // the Trainer Tower's trainers (three of their six Pokémon each, FireRed's
   // sets, at the chosen level), your three healed between battles, no Exp. or
-  // money, and you may stop between them. Lose and the challenge ends; win all
-  // seven for the level's prize (Crystal's vitamins and PP Ups at the lower
-  // levels, Rare Candies and better above) and Battle Points. The nurse heals
-  // and the clerk is the BP Shop. The sign keeps your best streak at each level.
+  // money, and you may stop between them. The battles are in a room of their
+  // own (Emerald's Battle Tower's battle room): each Trainer walks in, and out
+  // again once beaten, and the next walks in. Battle Points for each win, and
+  // a bonus for all seven with the level's prize (Crystal's vitamins and PP
+  // Ups at the lower levels, Rare Candies and better above); lose and the
+  // challenge ends. The nurse heals, the clerk is the BP Shop, and the BP
+  // tutors (the Trainer Tower's) teach for BP. The stairs up are gone (no
+  // floors above). The sign keeps your best streak at each level.
   const BATTLE_TOWER = "BattleTower_Lobby", BT_ENTRY = "BattleTower_Lobby_EventScript_EntryTrigger", BT_RECEPTION = "BattleTower_Lobby_EventScript_Receptionist",
     BT_NURSE = "BattleTower_Lobby_EventScript_Nurse", BT_SIGN = "BattleTower_Lobby_EventScript_Sign";
   const BT_BATTLES = 7;
   // (The level: your three's highest, the trainers' Pokémon scaled to it; the
   // BP by it, and the prizes Trainer Tower's, more of them the higher.)
-  const btBP = (level) => 3 + Math.floor(level / 20);
+  const btBP = (level) => 3 + Math.floor(level / 20), btWinBP = (level) => 1 + Math.floor(level / 50);
+  const BT_ROOM = "BattleTower_BattleRoom", BT_FOE = "LOCALID_BATTLE_TOWER_OPPONENT";
   const btLevel = (team) => Math.max(...team.map((r) => r.level));
   const btRewards = (level) => TrainerTower.rewardsAt(level < 40 ? 1 : level < 70 ? 2 : 3, 2);
   {
@@ -11106,11 +11142,22 @@
         signs: [{ x: 8, y: 10, script: BT_SIGN, text: null }],
         triggers: [{ x: 9, y: 7, script: BT_ENTRY }],
         people: [person("LOCALID_TOWER_NURSE", BT_NURSE), person("LOCALID_TOWER_MART_CLERK", "TrainerTower_Lobby_EventScript_MartClerk"),
-          person("LOCALID_TOWER_RECEPTIONIST", BT_RECEPTION)] });
-      // (No floors above and no elevator: the stairs and the lift's door are shut.)
-      m.collision[2 * m.width + 9] = 1;
+          person("LOCALID_TOWER_RECEPTIONIST", BT_RECEPTION),
+          // (The BP tutors, the Trainer Tower's: their moves, and the Egg moves.)
+          { id: 951, x: 17, y: 12, movement: "face_left", rangeX: 0, rangeY: 0, script: "TrainerTower_Lobby_EventScript_BPTutor", flag: null,
+            text: null, localId: "LOCALID_BATTLE_TOWER_BP_TUTOR", sprite: "gentleman", width: 16, height: 32, frames: 10 },
+          { id: 952, x: 17, y: 14, movement: "face_left", rangeX: 0, rangeY: 0, script: "TrainerTower_Lobby_EventScript_BPEggTutor", flag: null,
+            text: null, localId: "LOCALID_BATTLE_TOWER_BP_EGG_TUTOR", sprite: "old_woman", width: 16, height: 32, frames: 9 }] });
+      // (No floors above: the stairs are walled over, the corridor's wall and floor drawn on, as the patch "nostairs"
+      // (assets/world/maps/TrainerTower_Lobby-patch-nostairs.png: the corridor's column beside them); no elevator.)
+      m.patches = { nostairs: { x: 9, y: 0, w: 3, h: 4, top: false, collision: [[10, 2, 0], [11, 2, 0], [10, 3, 0], [11, 3, 0]] } };
       m.collision[8 * m.width + 17] = 1;
       window.WORLD_MAPS[BATTLE_TOWER] = m;
+      // (The battle room: Emerald's Battle Tower's, its attendant at the side.)
+      const room = window.WORLD_MAPS.BattleFrontier_BattleTowerBattleRoom;
+      if (room) window.WORLD_MAPS[BT_ROOM] = Object.assign(JSON.parse(JSON.stringify(room)), { name: BT_ROOM, title: "Battle Tower", region: "johto",
+        image: room.name, music: m.music, showName: false, warps: [], signs: [], triggers: [], townMapSection: m.townMapSection,
+        people: room.people.filter((p) => p.localId === "LOCALID_TOWER_BATTLE_ATTENDANT_1").map((p) => Object.assign({}, p, { script: null, flag: null })) });
       // (The gatehouse's door to the Battle Frontier's way in: HGSS's second, at its north wall; on the gatehouse
       // drawn from Pokémon Heart & Soul's, the door that leads there, where it is.)
       const fi = gate.warps.findIndex((w) => w.map === "BattleFrontier_FrontierAccess"), gi = gate.hgss && fi >= 0 ? fi : 1;
@@ -11151,7 +11198,7 @@
       const i = await multichoice("Would you like to take the\nBattle Tower challenge?", 18, 6, ["Yes", "No", "Info"]);
       if (i === 2) {
         await say(["Choose three Pokémon. The Trainers'\nPokémon will be as strong as your\nstrongest.", "No two of the same Pokémon, and no\ntwo holding the same item.",
-          "Beat seven Trainers in a row for\nprizes and Battle Points.\nYour Pokémon are healed between battles."]);
+          "Every win earns Battle Points. Beat\nall seven Trainers in a row for\nprizes and bonus BP!", "Your Pokémon are healed between\nbattles."]);
         continue;
       }
       if (i !== 0) break;
@@ -11169,15 +11216,34 @@
     await say("Please come again!");
     Screen.say("");
   }
+  // (The Trainer Tower's trainers, on the map: FireRed's people dressed as their class.)
+  const BT_LOOKS = { biker: "rocker", fisherman: "fisher", engineer: "worker_m", aroma_lady: "woman_1", lady: "woman_2", pokemon_breeder: "woman_2",
+    swimmer_m: "swimmer_m_land", swimmer_f: "swimmer_f_land", tuber_f: "lass", burglar: "balding_man", cue_ball: "balding_man", juggler: "man",
+    psychic_m: "channeler", super_nerd: "poke_maniac", pokemon_ranger_f: "cooltrainer_f", pokemon_ranger_m: "cooltrainer_m" };
+  const btLook = (pic) => ({ sprite: BT_LOOKS[pic] || (["sailor", "bug_catcher", "youngster", "camper", "hiker", "black_belt", "picnicker", "cooltrainer_f",
+    "cooltrainer_m", "gentleman", "beauty", "lass", "rocker", "scientist", "crush_girl"].includes(pic) ? pic : "boy"), width: 16, height: 32, frames: 10 });
   async function battleTowerStreak(level, chosen) {
     const f = player.flags, team = chosen.map((k) => player.party[k]);
     team.forEach(Party.heal);
     const pool = btTrainers().slice();
     let wins = 0;
     const noteBest = () => { const best = btRecords().best; if (wins > (best.open || 0)) best.open = wins; };
+    const earn = async (bp) => { f.bp = (f.bp || 0) + bp; await say("{PLAYER} earned " + bp + " BP!\n(" + f.bp + " BP in total.)"); };
+    // (In: through the room's door, up to the court; out: back to the lobby, at the corridor's top.)
+    sfx("se_exit");
+    await Overworld.teleport({ map: BT_ROOM, x: 4, y: 8, facing: "up" });
+    await Overworld.act([{ who: "player", moves: ["walk_up", "walk_up", "walk_up", "face_right"] }]);
+    const leave = async () => {
+      Screen.say("");
+      sfx("se_exit");
+      await Overworld.teleport({ map: BATTLE_TOWER, x: 9, y: 3, facing: "down" });
+      await persist();
+    };
     for (let n = 1; n <= BT_BATTLES; n++) {
       const t = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
       const mons = t.mons.slice().sort(() => Math.random() - 0.5).slice(0, 3).map((m) => TrainerTower.mon(m, level));
+      Overworld.addObject(BT_FOE, { x: 5, y: 1, facing: "down" }, btLook(t.pic));
+      await Overworld.act([{ who: BT_FOE, moves: ["walk_down", "walk_down", "walk_down", "walk_down", "face_left"] }]);
       await say("Battle " + n + " of " + BT_BATTLES + ":\n" + t.className + " " + t.name + "!");
       await say([t.intro]);
       const outcome = await battle("trainer", { foe: { name: t.className + " " + t.name, team: mons, pic: t.pic }, defeatText: [t.lose],
@@ -11188,29 +11254,34 @@
         player.party.forEach(Party.heal);
         noteBest();
         await say(["Too bad... Your challenge ends at\n" + wins + " win" + (wins === 1 ? "" : "s") + ".", "Please try again!"]);
+        Overworld.removeObject(BT_FOE);
+        await leave();
         return;
       }
       wins++;
       team.forEach(Party.heal);
+      await Overworld.act([{ who: BT_FOE, moves: ["walk_up", "walk_up", "walk_up", "walk_up"] }]);
+      Overworld.removeObject(BT_FOE);
+      await earn(btWinBP(level));
       if (n < BT_BATTLES) {
         await say("That's " + wins + " in a row! Your Pokémon\nhave been healed.");
         if (!(await confirm("Go on to the next battle?"))) {
           noteBest();
           await say("Then your challenge ends at\n" + wins + " win" + (wins === 1 ? "" : "s") + ". Well done!");
+          await leave();
           return;
         }
+        Screen.say("");
       }
     }
     noteBest();
-    const bp = btBP(level);
     await say(["Congratulations! You've beaten all\nseven Trainers!", "Here are your prizes."]);
     for (const prize of btRewards(level)) {
       Player.addItem(player, prize);
       await sayWithJingle("mus_level_up", "{PLAYER} received the " + Bag.name(prize) + "!");
     }
-    f.bp = (f.bp || 0) + bp;
-    await say("{PLAYER} earned " + bp + " BP!\n(" + f.bp + " BP in total.)");
-    await persist();
+    await earn(btBP(level));
+    await leave();
   }
 
   // ---------- Stadium Island (this game's own: Pokémon Stadium's Cups and Gym Leader Castle) ----------
@@ -11423,9 +11494,9 @@
     }
     SPECIAL.add(BP_EGG_TUTOR);
   }
-  const bpTutor = () => bpTeacher(bpTutorMoves, ["I teach Pokémon moves from tutors\nall over the world.", "In exchange, I ask for the Battle\nPoints you earn in Trainer Tower."]);
+  const bpTutor = () => bpTeacher(bpTutorMoves, ["I teach Pokémon moves from tutors\nall over the world.", "In exchange, I ask for the Battle\nPoints you earn in battle."]);
   // (The lady beside him: the Egg moves a Pokémon could have hatched knowing.)
-  const bpEggTutor = () => bpTeacher(bpEggMoves, ["I teach Pokémon the moves they\ncould have hatched knowing.", "In exchange, I ask for the Battle\nPoints you earn in Trainer Tower."]);
+  const bpEggTutor = () => bpTeacher(bpEggMoves, ["I teach Pokémon the moves they\ncould have hatched knowing.", "In exchange, I ask for the Battle\nPoints you earn in battle."]);
   async function bpTeacher(movesOf, intro) {
     const f = player.flags, bpTutorMoves = movesOf;
     await say(intro);
@@ -11872,6 +11943,8 @@
     // (Mr. Psychic's back room, once he's given you his TM; the way to Celadon's Berry Farm, always: the same file.)
     if (map === "SaffronCity_MrPsychicsHouse") return f.gotTM29 ? ["denroom"] : [];
     if (map === "CeladonCity") return ["farmpath"];
+    // (Route 40's Battle Tower: no stairs.)
+    if (map === "BattleTower_Lobby") return ["nostairs"];
     // (The League gate's ways west and east, to Johto's Routes 26 and 28: data/johto-maps.js.)
     if (map === "Route22_NorthEntrance") return ["johto", "johto-east"];
     // (Cianwood's Gym, its falls stopped once the winch is turned: ui/johto-gymmicks.js.)
@@ -12029,6 +12102,36 @@
     Object.assign(w, vermilion ? { map: "SSAnne_Exterior", warp: 0 } : w.olivine);
     // (Off in Vermilion, the ship's next voyage is back to Olivine.)
     if (vermilion) johto.setVar("VAR_BOAT_DIRECTION", 0);
+  }
+  // Olivine's port: the S.S. Aqua's gangway (and the port's sailor) ask where you're sailing, once you've beaten
+  // Johto's Pokémon League: Vermilion City (HGSS's voyage, as its port's sailor sets it going) or, this game's own,
+  // Slateport City in Hoenn (the first time, the moving truck's inside, as Emerald begins: sailToHoenn).
+  async function ssAquaBoard() {
+    if (Overworld.position().facing === "down") return;   // (off the ship, down the gangway)
+    const away = async () => { if (player.location.map === "SSAqua_OlivinePortExterior") await Overworld.act([{ who: "player", moves: ["walk_down"] }]); };
+    if (!player.flags.johtoLeagueClear) {
+      await say(["Welcome to Fast Ship S.S. Aqua.", "I'm sorry, but the S.S. Aqua sails\nonly for Trainers who have beaten", "the Pokémon League here in Johto."]);
+      await away();
+      return;
+    }
+    const dests = ["Vermilion City", "Slateport City", "Cancel"];
+    const i = await multichoice("Welcome to Fast Ship S.S. Aqua.\nWhere would you like to sail?", 17, 6, dests);
+    if (i < 0 || i === 2) { await say("We hope to see you again!"); await away(); return; }
+    Screen.say("");
+    if (i === 1) { await sailToHoenn(true); return; }
+    await say(["Welcome aboard the S.S. Aqua!", "We sail for Vermilion City in Kanto."]);
+    Screen.say("");
+    johto.setVar("VAR_BOAT_DIRECTION", 1);
+    johto.setVar("VAR_UNK_40DC", 0);
+    johto.setFlag("FLAG_BOAT_ARRIVED", false);
+    johto.setFlag("FLAG_UNK_22C", true);
+    johto.setFlag("FLAG_UNK_22B", true);
+    sfx("se_exit");
+    // (Aboard at the ship's door, where its scene walks you in.)
+    const door = window.WORLD_MAPS.SSAqua_1F.warps[0];
+    await Overworld.teleport({ map: "SSAqua_1F", x: door.x, y: door.y, facing: "down" });
+    const js = johto.frameScript("SSAqua_1F");
+    if (js) await runJohto(js, null);
   }
   async function ssAquaToOlivine() {
     if (!Player.itemCount(player, "ss-ticket")) { await say(["This is the S.S. Aqua's dock.", "You'll need an S.S. Ticket to sail\nto Olivine City in Johto."]); return; }
@@ -12265,7 +12368,8 @@
   // The Magnet Train between Goldenrod and Saffron (ui/magnet-train.js).
   const magnetTrain = MagnetTrain.create({
     player: () => player, johto: { setFlag: (name, on) => johto.setFlag(name, on) }, music: (song) => music(song),
-    sleep: (ms) => new Promise((r) => setTimeout(r, ms)), fadeOut: () => Overworld.fadeToBlack(), warp: johtoWarp
+    sleep: (ms) => new Promise((r) => setTimeout(r, ms)), fadeOut: () => Overworld.fadeToBlack(), warp: johtoWarp,
+    teleport: (loc) => Overworld.teleport(loc)
   });
   const johtoEnv = {
     player: () => player,
@@ -13451,6 +13555,8 @@
     if (/^hgss_apricorn:/.test(script || "")) return true;
     if (/^Johto_AzaleaRide:\d+$/.test(script || "")) return true;   // (Azalea's Gym's Ariados: azaleaRide())
     if (/^Johto_GoldenrodPanel:\d$/.test(script || "")) return true;   // (Goldenrod Underground's switches: goldenrodPanel())
+    if (script === "Johto_MagnetTrain") return true;   // (the Magnet Train's doors: magnetTrainBoard())
+    if (script === "Johto_SSAquaBoard") return true;   // (Olivine's port: ssAquaBoard())
     if (/^(BerryFarm_(Caretaker|Tree_\d+)|HoennBerry_Tree_\d+)$/.test(script || "")) return true;   // (Celadon's Berry Farm: ui/berry-farm.js)
     if (/_PokemonCenter_1F_EventScript_Nurse$/.test(script || "") && johto.zoneOf(player.location.map)) return true;
     if (/^(enter|arrive):/.test(script || "") && johto.frameScript(script.replace(/^\w+:/, ""))) return true;

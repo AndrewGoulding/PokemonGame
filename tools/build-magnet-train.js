@@ -13,6 +13,8 @@
 //     Plant, FLAG_RESTORED_POWER), and Saffron's only once you're the
 //     Champion: ui/magnet-train.js sets FLAG_RESTORED_POWER as you go in,
 //     and its policeman says so until then;
+//   - Heart & Soul's stations have their trains on the platform, past the
+//     gate: their doors are walked up into (ui/game.js's magnetTrainBoard);
 //   - off the train, the platform's scene goes on after its Warp down to the
 //     station's floor (ui/johto-script.js stops a scene at a Warp, unless it
 //     "goes on"), so its attendant sees you off ("We have arrived at ...").
@@ -37,6 +39,9 @@ const mapsDir = path.join(root, "assets/world/maps");
 // of houses, four tiles each, so the same tiles one house to the left.)
 const DOOR = { x: 18, y: 14 }, FROM = { x: 22, y: 14 };
 const STATION = "SaffronCity_MagnetTrainStation_1F";
+// (The trains' doors on the stations' platforms: Heart & Soul's warps onto them, GoldenrodCity_TrainStation's
+// and SaffronCity_TrainStation's, as the maps are cut out here: tools/data/hns-johto-maps.json's rects.)
+const DOORS = [["GoldenrodCity_MagnetTrainStation_1F", 19, 5], [STATION, 30, 5]];
 
 // The door's picture: the Copycat's house's door and the wall round it (2x2 tiles).
 const T = 16, saffron = readPng(path.join(mapsDir, "SaffronCity.png"));
@@ -74,6 +79,13 @@ const js = "// The Magnet Train (tools/build-magnet-train.js): Saffron City's do
   "    if (!z) continue;\n" +
   "    z.cmds = z.cmds.map((c) => (c[0] === \"HasItem\" && c[1] === \"ITEM_PASS\" ? [\"SetVar\", c[3], 1]\n" +
   "      : zone === \"T25R0501\" && c[0] === \"GoToIfSet\" && c[1] === \"FLAG_RESTORED_POWER\" ? [\"GoTo\", c[2]] : c));\n" +
+  "  }\n" +
+  "  // (The trains' doors, Heart & Soul's, walked up into from the platform: ui/game.js's magnetTrainBoard.)\n" +
+  "  for (const [name, x, y] of " + JSON.stringify(DOORS) + ") {\n" +
+  "    const m = W[name];\n" +
+  "    if (!m) continue;\n" +
+  "    m.collision[y * m.width + x] = 0;\n" +
+  "    m.triggers = (m.triggers || []).concat([{ x, y, script: \"Johto_MagnetTrain\" }]);\n" +
   "  }\n" +
   "  // (Off the train, down to the station's floor, where its attendant sees you off: the scene goes on after its Warp.)\n" +
   "  for (const zone of [\"T25R0502\", \"T11R0602\"]) {\n" +
