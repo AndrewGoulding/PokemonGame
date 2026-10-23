@@ -88,7 +88,8 @@
   function find(record, ctx) {
     ctx = ctx || {};
     if (window.Party.isFainted(record) && ctx.trigger === "level") return null;
-    if (record.item === "everstone" && ctx.trigger !== "item") return null;
+    // (An Everstone, or an Eviolite: held, no evolving, but by a stone or the like used on it.)
+    if ((record.item === "everstone" || record.item === "eviolite") && ctx.trigger !== "item") return null;
     // Most specific first, so an Eevee that knows a Fairy move becomes Sylveon
     // rather than Espeon.
     const specificity = (e) => (e.moveType ? 2 : 0) +

@@ -325,12 +325,13 @@ for (const m of fs.readFileSync(path.join(ROOT, "include/constants/mmodel.h"), "
 const FR_FRAMES = [4, 0, 8, 5, 7, 1, 3, 9, 11];
 // FireRed's nearest to HGSS's people (their size and frames as Kanto's people
 // with that sprite have them), for those without a sheet of their own. (Not
-// Prof. Elm, Ethan's mom or Elm's aide: HGSS's own sprites for them.)
+// Prof. Elm, Ethan's mom or Elm's aide, nor the Ace Trainers, GSMAN3 and GSWOMAN3:
+// HGSS's own sprites for them.)
 const FR_PEOPLE = {
   SPRITE_GSBOY1: "boy", SPRITE_GSBOY2: "youngster", SPRITE_GSBOY3: "camper", SPRITE_GSBABYBOY1: "little_boy",
   SPRITE_GSGIRL1: "lass", SPRITE_GSGIRL2: "little_girl", SPRITE_GSGIRL3: "picnicker",
-  SPRITE_GSWOMAN1: "woman_1", SPRITE_GSWOMAN2: "woman_2", SPRITE_GSWOMAN3: "woman_3", SPRITE_MIDDLEWOMAN1_2: "mom",
-  SPRITE_GSMAN1: "man", SPRITE_GSMAN2: "cooltrainer_m", SPRITE_GSMAN3: "cooltrainer_m", SPRITE_GSBIGMAN: "fat_man", SPRITE_GSMIDDLEMAN1: "balding_man",
+  SPRITE_GSWOMAN1: "woman_1", SPRITE_GSWOMAN2: "woman_2", SPRITE_MIDDLEWOMAN1_2: "mom",
+  SPRITE_GSMAN1: "man", SPRITE_GSMAN2: "cooltrainer_m", SPRITE_GSBIGMAN: "fat_man", SPRITE_GSMIDDLEMAN1: "balding_man",
   SPRITE_GSOLDMAN1: "old_man_1", SPRITE_GSOLDWOMAN1: "old_woman", SPRITE_JUGGRER: "gentleman", SPRITE_COUNTERM: "clerk",
   SPRITE_ROCKETM: "rocket_m", SPRITE_ROCKETW: "rocket_f", SPRITE_POLICEMAN: "policeman", SPRITE_PICNICGIRL_2: "picnicker",
   SPRITE_CAMPBOY_2: "camper", SPRITE_FISHING_2: "fisher", SPRITE_MOUNT_2: "hiker",
@@ -949,7 +950,8 @@ MAPS.forEach((m, i) => {
   out[m.name] = {
     name: m.name, title: m.title, width: r.width, height: r.height, type: m.type, music: m.music, region: m.region || "johto",
     allowEscaping: m.type === "underground" || m.dungeon || undefined,   // (an Escape Rope or Dig works: caves and dungeons)
-    cycling: true, showName: m.type !== "indoor", top: true, borderWidth: 2, borderHeight: 2,
+    // (No cycling indoors, as in Kanto: HGSS lets you ride in its Pokémon Centers and houses.)
+    cycling: m.type !== "indoor", showName: m.type !== "indoor", top: true, borderWidth: 2, borderHeight: 2,
     collision, elevation: collision.map(() => 0), behavior,
     encounter: r.perm.map((v, i) => ((behavior[i] === 0x02 || LAND_ENCOUNTER.has(v & 0xff)) && [0, 0x02, 0x21].includes(behavior[i]) ? 1 : 0)),
     connections: [],

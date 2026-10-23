@@ -936,6 +936,11 @@ node tools/build-unown.js pokefirered && node tools/build-sprite-metrics.js poke
 
 ### Party screen
 
+**EVOLVE** (this game's own): on the Start menu's party screen, under SUMMARY, for a Pokémon that
+could evolve now by its level, friendship, time or the like and didn't (stopped with B, or kept
+back): it evolves, the scene as levelling up would show it. A Pokémon holding an **Eviolite**, as one
+holding an Everstone, doesn't evolve (but by a stone or the like used on it).
+
 `tools/build-party-menu.js` converts FireRed's party screen
 (`graphics/party_menu/`, the status icons, the CONFIRM / CANCEL buttons for
 choosing several Pokémon) into `data/party-menu.js`, and
@@ -2103,7 +2108,7 @@ HGSS's lift, dark, winch and ice blocks (below) are off there. Its Apricorn tree
 over them), HGSS's Cut trees, rocks and boulders only where Heart & Soul has its own (and Heart &
 Soul's own besides), the nurse and clerks behind its counters, Pokémon by the same Pokémon (Sudowoodo in its
 place), and no one stands in a way through the map that wasn't in the way in HGSS's (Route 30's
-youngsters step aside; Sudowoodo still blocks Route 36). Prof. Elm, Mom and Elm's aide have HGSS's own sprites.
+youngsters step aside; Sudowoodo still blocks Route 36). Prof. Elm, Mom, Elm's aide and the Ace Trainers have HGSS's own sprites; you can't ride the Bicycle in Johto's buildings (its Pokémon Centers included), as in Kanto.
 Johto's wild Pokémon are HeartGold's and SoulSilver's: a slot where they differ is either, as likely
 (Skarmory, Teddiursa, Ledyba...). Raikou and Entei roam Johto after the Burned Tower (HGSS's
 CreateRoamer): 1 in 16 wild battles in its grass outdoors, Lv. 40, until caught. New Bark Town's Pokémon Center (below) is Heart & Soul's Cherrygrove Center, drawn into the town's map south of Elm's lab. Without `--hns` the build draws

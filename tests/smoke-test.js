@@ -537,6 +537,11 @@ for (const share of [false, true]) {
   assert.strictEqual(evo("Kirlia", 30, (r) => { r.gender = "M"; }), "Gardevoir");
   assert.strictEqual(evo("Kadabra", 50), null, "trade evolutions don't happen on level-up");
   assert.strictEqual(evo("Charmander", 20, (r) => { r.item = "everstone"; }), null);
+  assert.strictEqual(evo("Charmander", 20, (r) => { r.item = "eviolite"; }), null, "an Eviolite held: no evolving");
+  {
+    const gj = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    assert(/\.concat\(canEvolve\(player\.party\[slot\]\) \? \[\{ label: "Evolve", value: "evolve" \}\] : \[\]\)/.test(gj), "the party screen's EVOLVE, under SUMMARY");
+  }
   assert.strictEqual(evo("Charmander", 20, (r) => { r.hp = 0; }), null, "fainted Pokémon don't evolve");
   const pikachu = Party.create("Pikachu", 20, { rng });
   assert.strictEqual(Evolution.find(pikachu, { trigger: "item", item: "thunder-stone" }).into, "Raichu");
@@ -2031,6 +2036,8 @@ if (WORLD_MAPS.CherrygroveCity && WORLD_MAPS.CherrygroveCity.region === "johto")
   const gJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
   assert(/else if \(f\.gameClear && !f\.gotGsBall\) await oakGsBall\(\);/.test(gJs), "Oak gives it after the Hall of Fame");
   assert(/script === "hgss:D36R0101:scr_seq_D36R0101_012" && Player\.itemCount\(player, "gs-ball"\) > 0/.test(gJs) && /Party\.create\("Celebi", 50\)/.test(gJs), "the shrine: a Lv. 50 Celebi");
+  assert(Object.keys(WORLD_MAPS).filter((n) => /PokemonCenter/.test(n)).every((n) => !WORLD_MAPS[n].cycling), "no cycling in Pokémon Centers");
+  assert(Object.values(WORLD_MAPS).some((m) => m.region === "johto" && m.people.some((p) => p.sprite === "hgss_gsman3")), "HGSS's own Ace Trainers");
   assert(WORLD_MAPS.IlexForest.signs.some((s) => s.script === "hgss:D36R0101:scr_seq_D36R0101_012"), "Ilex Forest's shrine is there");
 }
 

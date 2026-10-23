@@ -2404,7 +2404,7 @@
   // ---------- The Start menu's screens ----------
 
   // The Start menu's POKéMON: FireRed's party screen. A on a Pokémon opens
-  // SUMMARY, its field moves, SWITCH / ITEM / CANCEL; SWITCH asks "Move to
+  // SUMMARY (and this game's EVOLVE, when it could), its field moves, SWITCH / ITEM / CANCEL; SWITCH asks "Move to
   // where?" and swaps the two; ITEM gives or takes a held item. The field
   // moves are the HM moves it knows or could learn (game/field-moves.js);
   // one that works here closes the menus and is used ("escaped").
@@ -2412,8 +2412,11 @@
     if (!player.party.length) { await message("You don't have any Pokémon yet."); return; }
     let cursor = 0;
     for (;;) {
-      // (An Egg: SUMMARY, SWITCH and CANCEL only.)
+      // (An Egg: SUMMARY, SWITCH and CANCEL only. EVOLVE, this game's, under SUMMARY: a Pokémon that could
+      // evolve by its level, friendship or the like now, as levelling up would, that didn't: stopped, or kept back.)
+      const canEvolve = (r) => !r.egg && Evolution.find(r, { trigger: "level", party: player.party, coins: coins() });
       const r = await openParty({ cursor, actions: (slot) => [{ label: "Summary", value: "summary" }]
+        .concat(canEvolve(player.party[slot]) ? [{ label: "Evolve", value: "evolve" }] : [])
         .concat(FieldMoves.forMon(player.party[slot]).map((m) =>
           ({ label: m, value: "field:" + m, field: true, desc: FieldMoves.info(m).desc })))
         .concat([{ label: "Switch", value: "switch" }].concat(player.party[slot].egg ? [] : [{ label: "Item", value: "item" }]), [{ label: "Cancel", value: "cancel" }]) });
@@ -2421,6 +2424,12 @@
       cursor = r.cursor;
       const mon = player.party[r.slot];
       if (r.action === "summary") { PartyMenu.close(); await summary(r.slot); continue; }
+      if (r.action === "evolve") {
+        const evo = canEvolve(mon);
+        PartyMenu.close();
+        if (evo) { await evolve(mon, evo, true); await persist(); }
+        continue;
+      }
       if (r.action.startsWith("field:")) {
         const move = r.action.slice(6);
         const blocked = fieldMoveBlocked(mon, move);
