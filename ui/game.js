@@ -51,6 +51,8 @@
     await j;
   }
   const plural = (n, word) => n + " " + word + (n === 1 ? "" : "s");
+  // (More than one of an item: "Berries", not "Berrys"; a name already ending in "s" as it is.)
+  const itemPlural = (name) => (/s$/i.test(name) ? name : /[^aeiou]y$/i.test(name) ? name.slice(0, -1) + "ies" : name + "s");
   const back = (label) => ({ label: label || "Back", value: "back", className: "action", wide: true });
 
   function playTime(ms) {
@@ -12208,7 +12210,7 @@
       if (id === "coin-case") player.flags.gotCoinCase = true;   // (Mr. Game's: Kanto's Game Corner takes it too)
       if (!verb) return true;   // (GiveItem: the script says so itself)
       const name = Bag.name(id);
-      await sayWithJingle(itemJingle(id), "{PLAYER} " + verb + " " + (n > 1 ? n + " " + name + (/s$/.test(name) ? "" : "s") : Bag.isKeyItem(id) ? "the " + name : article(name)) + "!");
+      await sayWithJingle(itemJingle(id), "{PLAYER} " + verb + " " + (n > 1 ? n + " " + itemPlural(name) : Bag.isKeyItem(id) ? "the " + name : article(name)) + "!");
     },
     hasItem: (id, n) => Player.itemCount(player, id) >= n,
     takeItem: (id, n) => Player.removeItem(player, id, n),
@@ -12354,7 +12356,7 @@
       Player.addItem(player, id, n);
       if (!verb) return true;
       const name = Bag.name(id);
-      await sayWithJingle(itemJingle(id), "{PLAYER} " + (verb === "found" ? "found " : "obtained ") + (n > 1 ? n + " " + name + (/s$/.test(name) ? "" : "s") : Bag.isKeyItem(id) ? "the " + name : article(name)) + "!");
+      await sayWithJingle(itemJingle(id), "{PLAYER} " + (verb === "found" ? "found " : "obtained ") + (n > 1 ? n + " " + itemPlural(name) : Bag.isKeyItem(id) ? "the " + name : article(name)) + "!");
     },
     beaten: (id) => !!player.flags[id],
     setBeaten: (id, on) => { if (on) player.flags[id] = true; else delete player.flags[id]; },
@@ -13017,7 +13019,7 @@
       if (!window.ITEMS[id]) return;
       Player.addItem(player, id, n || 1);
       const name = Bag.name(id);
-      await sayWithJingle(itemJingle(id), "{PLAYER} received " + (n > 1 ? n + " " + name + (/s$/.test(name) ? "" : "s") : article(name)) + "!");
+      await sayWithJingle(itemJingle(id), "{PLAYER} received " + (n > 1 ? n + " " + itemPlural(name) : article(name)) + "!");
     },
     hasItem: (id) => Player.itemCount(player, id) > 0,
     money: () => player.money, addMoney: (n) => Player.addMoney(player, n), removePerson: (person) => Overworld.removePerson(person),

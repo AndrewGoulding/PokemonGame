@@ -386,7 +386,7 @@
           case "bufferleadmonspeciesname": { const r = env.player().party.find((q) => !q.egg) || env.player().party[0]; buffers[a[0].replace(/\D/g, "")] = r ? r.species : ""; break; }
           case "bufferpartymonnick": { const r = env.player().party[num(a[1])]; buffers[a[0].replace(/\D/g, "")] = r ? (r.nickname || r.species) : ""; break; }
           case "bufferitemname": buffers[a[0].replace(/\D/g, "")] = env.itemName(item(val(a[1]))); break;
-          case "bufferitemnameplural": { const n = env.itemName(item(val(a[1]))); buffers[a[0].replace(/\D/g, "")] = num(a[2]) > 1 && !/s$/.test(n) ? n + "s" : n; break; }
+          case "bufferitemnameplural": { const n = env.itemName(item(val(a[1]))); buffers[a[0].replace(/\D/g, "")] = num(a[2]) > 1 && !/s$/.test(n) ? (/[^aeiou]y$/i.test(n) ? n.slice(0, -1) + "ies" : n + "s") : n; break; }
           case "buffermovename": buffers[a[0].replace(/\D/g, "")] = String(move(val(a[1])) || titleCase(String(val(a[1])).replace(/^MOVE_/, ""))); break;
           case "buffernumberstring": buffers[a[0].replace(/\D/g, "")] = String(num(a[1])); break;
           // (gStdStrings: the Contests' and the Bag's words.)
