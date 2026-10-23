@@ -328,19 +328,8 @@ const FR_FRAMES = [4, 0, 8, 5, 7, 1, 3, 9, 11];
 // Prof. Elm, Ethan's mom or Elm's aide, nor the Ace Trainers, GSMAN3 and GSWOMAN3:
 // HGSS's own sprites for them.)
 const FR_PEOPLE = {
-  SPRITE_GSBOY1: "boy", SPRITE_GSBOY2: "youngster", SPRITE_GSBOY3: "camper", SPRITE_GSBABYBOY1: "little_boy",
-  SPRITE_GSGIRL1: "lass", SPRITE_GSGIRL2: "little_girl", SPRITE_GSGIRL3: "picnicker",
-  SPRITE_GSWOMAN1: "woman_1", SPRITE_GSWOMAN2: "woman_2", SPRITE_MIDDLEWOMAN1_2: "mom",
-  SPRITE_GSMAN1: "man", SPRITE_GSMAN2: "cooltrainer_m", SPRITE_GSBIGMAN: "fat_man", SPRITE_GSMIDDLEMAN1: "balding_man",
-  SPRITE_GSOLDMAN1: "old_man_1", SPRITE_GSOLDWOMAN1: "old_woman", SPRITE_JUGGRER: "gentleman", SPRITE_COUNTERM: "clerk",
-  SPRITE_ROCKETM: "rocket_m", SPRITE_ROCKETW: "rocket_f", SPRITE_POLICEMAN: "policeman", SPRITE_PICNICGIRL_2: "picnicker",
-  SPRITE_CAMPBOY_2: "camper", SPRITE_FISHING_2: "fisher", SPRITE_MOUNT_2: "hiker",
-  SPRITE_GSFIGHTER: "black_belt", SPRITE_MANIA: "poke_maniac", SPRITE_SUIT: "gentleman",
-  SPRITE_FIRE: "man", SPRITE_MYSTERY_2: "boy", SPRITE_OOKIDO: "prof_oak", SPRITE_PCWOMAN1: "nurse", SPRITE_SHOPM1_2: "clerk",
-  SPRITE_INSTRUCTOR: "man", SPRITE_GSGENTLEMAN: "gentleman", SPRITE_MIDDLEWOMAN1_2: "mom",
-  SPRITE_GSDSBOY: "boy", SPRITE_GSBABYGIRL1: "little_girl",
-  SPRITE_FOLLOWER_MON_STATIC_SLOWPOKE: "slowpoke", SPRITE_FOLLOWER_MON_STATIC_PIDGEY: "pidgey",
-  // (Item balls, small trees and breakable rocks: FireRed's, as the game uses them.)
+  // (Johto's people are all HGSS's own now, their sheets scaled to Kanto's people's size; only the item balls,
+  // small trees and breakable rocks are FireRed's, as the game uses them.)
   SPRITE_MONSTARBALL: "item_ball", SPRITE_TREE: "cut_tree", SPRITE_BREAKROCK: "rock_smash_rock"
 };
 let krLooks = null, krMaps = null;
@@ -917,6 +906,8 @@ MAPS.forEach((m, i) => {
   for (const p of ev.people) {
     const look = personSprite(p.sprite);
     if (!look) continue;
+    // (Not the Wi-Fi rooms' receptionists, nor the Mystery Gift's deliveryman: this game has neither.)
+    if (p.sprite === "SPRITE_PCWOMAN2" || p.flag === "FLAG_HIDE_MYSTERY_GIFT_DELIVERYMAN") continue;
     const s = String(p.script);
     // Everyone, each with HGSS's flag that hides them (hgssFlag: the story's),
     // and what they do: their script; or, for trainers, item balls, small
@@ -1061,7 +1052,7 @@ if (HGSS_LOOK) for (const m of MAPS) {
   if (m.template !== "pc") continue;
   const g = out[m.name], t2 = kanto()[ROOM_TEMPLATES.pc.map.replace(/_1F$/, "_2F")], up = m.name.replace(/_1F$/, "_2F");
   g.pokemonCenter = true;
-  g.people = g.people.filter((p) => !/FLAG_HIDE_(COMM|WIFI)/.test(p.hgssFlag || "")).map((p) => (p.hgssSprite === "SPRITE_PCWOMAN1" && p.script
+  g.people = g.people.filter((p) => !/FLAG_HIDE_(COMM|WIFI)/.test(p.hgssFlag || "") && p.hgssSprite !== "SPRITE_PCWOMAN2").map((p) => (p.hgssSprite === "SPRITE_PCWOMAN1" && p.script
     ? Object.assign({}, p, { movement: "face_down", localId: "LOCALID_" + m.name.toUpperCase() + "_NURSE", script: m.name + "_EventScript_Nurse", text: null }) : p));
   const stairs = g.warps.findIndex((w) => /_POKECENTER_B1F$/.test(w.mapConst || ""));
   if (stairs < 0) continue;

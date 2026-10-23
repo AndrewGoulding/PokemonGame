@@ -465,6 +465,14 @@
   // word opens (SPRITE_BABYBOY1_12: the map's own wall shows): HGSS's models,
   // as tools/build-alph.js's sprites.
   const CHAMBERS = ["Northeast", "Southeast", "Southwest", "Northwest"].map((c) => "RuinsOfAlph_" + c + "EntranceFirstRoom");
+  // (On a chamber drawn from Pokémon Heart & Soul's, its own table is the panel and its own wall the wall:
+  // HGSS's panel goes, and its wall stands in the wall's tile, not in front of it.)
+  for (const name of CHAMBERS) {
+    const m = (window.WORLD_MAPS || {})[name];
+    if (!m || !m.hgss) continue;
+    m.people = m.people.filter((p) => p.sprite !== "hgss_babyboy1_13");
+    for (const p of m.people) if (p.sprite === "hgss_babyboy1_12" && m.collision[(p.y - 1) * m.width + p.x]) p.y--;
+  }
   for (const name of CHAMBERS) for (const p of ((window.WORLD_MAPS || {})[name] || { people: [] }).people) {
     if (p.sprite === "hgss_babyboy1_13") Object.assign(p, { sprite: "alph_panel", width: 32, height: 32, frames: 1, offsetX: 8, offsetY: 7, underfoot: true, inanimate: true });
     if (p.sprite === "hgss_babyboy1_12") Object.assign(p, { sprite: "alph_wall", width: 16, height: 32, frames: 1, inanimate: true });

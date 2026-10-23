@@ -145,7 +145,10 @@
         if (!run) return;
         const [fx, fy] = forward(src, h.x, h.y);
         let [tx, ty] = snap(fx, fy, m.width, m.height, (x, y) => !solid(x, y), 2);
-        let steps = path(m, g, { x: tx, y: ty }, (x, y) => !solid(x, y));
+        // (A walk that ends beside a door in HGSS, as someone leaving a building: onto the door's tile here, out of it.)
+        const door = (src.doors || []).find(([hx, hy]) => Math.abs(hx - h.x) + Math.abs(hy - h.y) === 1);
+        if (door && t.who !== "player") [tx, ty] = [door[2], door[3]];
+        let steps = path(m, g, { x: tx, y: ty }, (x, y) => !solid(x, y) || (x === tx && y === ty));
         // (Not onto someone else: a step short.)
         if (steps.length && !ctx.free(tx, ty, t.who)) {
           const last = steps.pop();

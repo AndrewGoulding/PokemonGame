@@ -459,12 +459,18 @@
     johto: ["zephyr", "hive", "plain", "fog", "storm", "mineral", "glacier", "rising"],
     hoenn: ["stone", "knuckle", "dynamo", "heat", "balance", "feather", "mind", "rain"]
   };
-  const LEVEL_CAPS = [15, 25, 30, 35, 40, 45, 50, 55];
+  // Each region's caps by its Badges held: the level of the next Gym Leader's ace (their highest-levelled
+  // Pokémon, as this game battles them first: FireRed's, HGSS's, Emerald's), never lower than the cap before.
+  const LEVEL_CAPS = {
+    kanto: [14, 21, 24, 29, 43, 43, 47, 50],   // Brock, Misty, Lt. Surge, Erika, Koga, Sabrina, Blaine, Giovanni
+    johto: [13, 17, 19, 25, 31, 35, 35, 41],   // Falkner, Bugsy, Whitney, Morty, Chuck, Jasmine, Pryce (34), Clair
+    hoenn: [15, 19, 24, 29, 31, 33, 42, 46]    // Roxanne, Brawly, Wattson, Flannery, Norman, Winona, Tate & Liza, Juan
+  };
   const regionOf = (map) => ((window.WORLD_MAPS && window.WORLD_MAPS[map]) || {}).region || "kanto";
   function levelCap(player, map) {
-    const badges = REGION_BADGES[regionOf(map || (player.location && player.location.map))] || REGION_BADGES.kanto;
-    const n = badges.filter((b) => (player.badges || []).includes(b)).length;
-    return n < LEVEL_CAPS.length ? LEVEL_CAPS[n] : 100;
+    const region = REGION_BADGES[regionOf(map || (player.location && player.location.map))] ? regionOf(map || (player.location && player.location.map)) : "kanto";
+    const n = REGION_BADGES[region].filter((b) => (player.badges || []).includes(b)).length;
+    return n < LEVEL_CAPS[region].length ? LEVEL_CAPS[region][n] : 100;
   }
 
   // The game's clock (this game's own: no real-time clock). Time goes by as

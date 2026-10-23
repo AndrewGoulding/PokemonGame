@@ -375,7 +375,8 @@
         if (img && img.complete && img.naturalWidth) {
           out.imageSmoothingEnabled = false;
           if (img.ow) {
-            const fw = img.naturalHeight === 32 && img.naturalWidth % 32 === 0 ? 32 : 16, fh = img.naturalHeight;
+            // (Its first frame alone, facing you: the sheet's own frame width, as its people have it.)
+            const fw = img.fw || 16, fh = img.naturalHeight;
             out.drawImage(img, 0, 0, fw, fh, (148 - fw / 2) * 2, (44 - fh / 2) * 2, fw * 2, fh * 2);
           } else out.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 132 * 2, 28 * 2, 64, 64);
         }
@@ -448,18 +449,19 @@
       const c = P().contacts[i];
       if (!c) return null;
       if (!(i in portraits)) {
-        let src = null, ow = true;
-        if (PORTRAITS[c.id]) src = "assets/world/sprites/" + PORTRAITS[c.id] + ".png";
+        let src = null, ow = true, fw = 16;
+        const widthOf = (sprite) => { for (const m of Object.values(window.WORLD_MAPS || {})) { const p = (m.people || []).find((q) => q.sprite === sprite); if (p) return p.width || 16; } return 16; };
+        if (PORTRAITS[c.id]) { src = "assets/world/sprites/" + PORTRAITS[c.id] + ".png"; fw = widthOf(PORTRAITS[c.id]); }
         else if (c.trainer) {
           for (const m of Object.values(window.WORLD_MAPS || {})) {
             const p = (m.people || []).find((q) => q.trainer && q.trainer.id === c.trainer && q.sprite);
-            if (p) { src = "assets/world/sprites/" + p.sprite + ".png"; break; }
+            if (p) { src = "assets/world/sprites/" + p.sprite + ".png"; fw = p.width || 16; break; }
           }
           const t = window.WORLD_TRAINERS && window.WORLD_TRAINERS[c.trainer];
           if (!src && t && t.pic) { src = "assets/sprites/trainers/front/" + t.pic + ".png"; ow = false; }
         }
         const img = src ? new Image() : null;
-        if (img) { img.onload = () => { if (ui) paint(); }; img.src = src; img.ow = ow; }
+        if (img) { img.onload = () => { if (ui) paint(); }; img.src = src; img.ow = ow; img.fw = fw; }
         portraits[i] = img;
       }
       return portraits[i];

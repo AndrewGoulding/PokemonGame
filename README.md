@@ -2140,7 +2140,17 @@ HGSS's lift, dark, winch and ice blocks (below) are off there. Its Apricorn tree
 over them), HGSS's Cut trees, rocks and boulders only where Heart & Soul has its own (and Heart &
 Soul's own besides), the nurse and clerks behind its counters, Pokémon by the same Pokémon (Sudowoodo in its
 place), and no one stands in a way through the map that wasn't in the way in HGSS's (Route 30's
-youngsters step aside; Sudowoodo still blocks Route 36). Prof. Elm, Mom, Elm's aide and the Ace Trainers have HGSS's own sprites; you can't ride the Bicycle in Johto's buildings (its Pokémon Centers included), as in Kanto.
+youngsters step aside; Sudowoodo still blocks Route 36). A person matches only Heart & Soul's people of the
+same look (HGSS's and Heart & Soul's names for a look are one: a Mart clerk is a clerk), and the one-of-a-kind
+(the Gym guide, the nurse, the clerks, Silver, the Elder, the Gym Leaders, Prof. Elm...) never take someone
+else's place; those left over stand where HGSS's neighbours put them, beside whoever they stood beside. A step
+trigger on one tile takes Heart & Soul's own triggers for that scene nearby (Sprout Tower's Silver scene);
+`place` in `tools/data/hns-johto-maps.json` sets where someone stands by hand (Azalea's Rocket and the man he
+shoves). HGSS's Wi-Fi and Mystery Gift staff aren't there. Coming through a door into a scene (the Kimono
+Girl outside Violet's Mart), you step out of the doorway first; someone a script walks to a door walks onto
+Heart & Soul's door (Elm's aide out of the Mart). In the Ruins of Alph's chambers Heart & Soul's table is the
+panel: examine it from the front. Everyone in Johto has HGSS's own sprite (`hgss_*`); you can't ride the
+Bicycle in Johto's buildings (its Pokémon Centers included), as in Kanto.
 Johto's wild Pokémon are HeartGold's and SoulSilver's: a slot where they differ is either, as likely
 (Skarmory, Teddiursa, Ledyba...). Raikou and Entei roam Johto after the Burned Tower (HGSS's
 CreateRoamer): 1 in 16 wild battles in its grass outdoors, Lv. 40, until caught. New Bark Town's Pokémon Center (below) is Heart & Soul's Cherrygrove Center, drawn into the town's map south of Elm's lab. Without `--hns` the build draws
@@ -2213,11 +2223,7 @@ Tradeback Guy and Rejuvenator, as in Kanto. `node tools/build-johto.js
 <checkout> --only=Map,Map --out=<dir>` draws just those maps' pictures, in
 seconds, to look at. An Escape Rope works in its caves, Ilex Forest and its
 towers and dungeons.
-Johto's people: anyone HGSS draws with one of its everyday sprites (a boy, a
-lass, a hiker, a Rocket, a nurse, a clerk) is drawn with Kanto's sheet for
-that look, so Johto's crowds are Kanto's people; those with a sprite of their
-own (Lyra, Silver, Prof. Elm, the Gym Leaders, the Kimono Girls, everyone the
-story needs) keep HGSS's own (`assets/world/sprites/hgss_*.png`, in FireRed's
+Johto's people are all drawn with HGSS's own sprites (`assets/world/sprites/hgss_*.png`, in FireRed's
 frame order), scaled to Kanto's people's size as they're written (HGSS's
 stand about 23 px tall, Kanto's 20: `scalePersonSheet` in
 `tools/build-johto.js`, box-filtered and snapped back to the sheet's own
@@ -2905,9 +2911,11 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   EVs, as in X and Y.
 - **Level caps** (this game's own: the adventure goes region by region,
   Kanto, then Johto, then the rest): in a region, your Pokémon grow no further
-  than its cap for the Badges you have of that region's eight: Lv. 15 with
-  none, then 25, 30, 35, 40, 45, 50 and 55, and no cap with all eight
-  (`Player.levelCap`). Kanto's side places (the Sevii Islands, Stadium Island, Orre, Faraway
+  than its cap for the Badges you have of that region's eight: the level of the
+  next Gym Leader's ace (in Kanto Lv. 14 with none, Brock's Onix, then 21, 24, 29,
+  43, 43, 47 and 50; in Johto 13, 17, 19, 25, 31, 35, 35 and 41, Pryce's 34 under
+  Jasmine's 35; in Hoenn 15, 19, 24, 29, 31, 33, 42 and 46), and no cap with all
+  eight (`Player.levelCap`). Kanto's side places (the Sevii Islands, Stadium Island, Orre, Faraway
   Island, and everything east of New Bark Town: Route 27, Tohjo Falls, Route 26,
   Route 28 and Mt. Silver, so the way home can be walked without your Pokémon
   turning disobedient) go by Kanto's Badges, Johto's maps by Johto's. A Pokémon at the cap

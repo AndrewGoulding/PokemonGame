@@ -1,9 +1,10 @@
 {
-  "_comment": "Which of Pokemon Heart & Soul's maps (github.com/PokemonHnS-Development/pokemonHnS) draws each of this game's Johto maps (named as tools/build-johto.js names HGSS's). A string: that map, whole. An object: hns (a map), rect ([x, y, w, h]: that part of it), pieces ([{ hns, rect?, at: [x, y] }]: several, put side by side), merge (HGSS maps whose people and events move into this one: they're gone from the game). null: HGSS's own map is kept (HnS has none). A map not listed is HnS's map of the same name.",
+  "_comment": "Which of Pokemon Heart & Soul's maps (github.com/PokemonHnS-Development/pokemonHnS) draws each of this game's Johto maps (named as tools/build-johto.js names HGSS's). A string: that map, whole. An object: hns (a map), rect ([x, y, w, h]: that part of it), pieces ([{ hns, rect?, at: [x, y] }]: several, put side by side), merge (HGSS maps whose people and events move into this one: they're gone from the game), place ({ localId: [x, y] }: where someone stands, where nothing of Heart & Soul's says, as Azalea's Rocket and the man he shoves, beside each other above their scene's trigger). null: HGSS's own map is kept (HnS has none). A map not listed is HnS's map of the same name.",
   "NewBarkTown": { "hns": "NewBarkTown", "stamps": [{ "from": "CherrygroveCity", "rect": [45, 3, 5, 5], "at": [19, 17] }], "door": { "x": 21, "y": 21 } },
   "TohjoFalls": "TohjoFalls_Cavern",
   "TohjoFallsHiddenRoom": "TohjoFalls_GiovanniRoom",
   "RuinsOfAlph": "RuinsOfAlph_Outside",
+  "AzaleaTown": { "hns": "AzaleaTown", "place": { "obj_T23_rocketm_3": [53, 16], "obj_T23_gsmiddleman1_2": [52, 16] } },
   "Route29_Route46_Gatehouse": "Gate_Route29_Route46",
   "Route31_VioletGatehouse": "Gate_Route31_VioletCity",
   "VioletCity_Route36_Gatehouse": { "drop": true },

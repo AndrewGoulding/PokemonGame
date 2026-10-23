@@ -88,8 +88,19 @@ module.exports = function port(HN, out, opts) {
   }
   // A person's kind and look, to match HGSS's with Heart & Soul's.
   // (HGSS's sprites and Heart & Soul's that are the same people: the Gym guide, nurses, clerks, the Leaders.)
-  const SAME = { SUNGLASSES: "GYMGUY", PCWOMAN: "NURSE", SHOPM: "MARTEMPLOYEE", LEADER1: "FALKNER", LEADER2: "BUGSY", LEADER3: "WHITNEY",
+  const SAME = { SUNGLASSES: "GYMGUY", PCWOMAN: "NURSE", SHOPM: "CLERK", LEADER1: "FALKNER", LEADER2: "BUGSY", LEADER3: "WHITNEY",
     LEADER4: "MORTY", LEADER5: "CHUCK", LEADER6: "JASMINE", LEADER7: "PRYCE", LEADER8: "CLAIR" };
+  // (HGSS's names for its everyday people and its story's, as Heart & Soul's: a hiker is HGSS's MOUNT, the Elder its CHOUROU, ...)
+  const ALIAS = { MIDDLEMAN1: "BALDINGMAN", GIRL1: "LASS", GIRL2: "LITTLEGIRL", GIRL3: "PICNICKER", BOY1: "BOY", BOY2: "YOUNGSTER", BOY3: "CAMPER",
+    BABYGIRL1: "LITTLEGIRL", BABYBOY1: "LITTLEBOY", MAN1: "MAN", MAN3: "COOLTRAINERM", WOMAN3: "COOLTRAINERF", MOUNT2: "HIKER", BIGMAN: "FATMAN",
+    COUNTERM: "CLERK", MARTEMPLOYEE: "CLERK", SEAMAN2: "SAILOR", DANCER: "KIMONOGIRL", FISHING2: "FISHER", FIGHTER: "BLACKBELT", OLDMAN1: "OLDMAN",
+    OLDWOMAN1: "OLDWOMAN", ASSISTANTM: "SCIENTISTM", MANIA: "SUPERNERD", BOZU: "SAGE", RIVEL: "SILVER", CAMPBOY2: "CAMPER", PICNICGIRL2: "PICNICKER",
+    SWIMMERM: "SWIMMERMWATER", SWIMMERW: "SWIMMERFWATER", WATARU: "LANCE", MINAKI: "EUSINE", JUGGRER: "JUGGLER", FIRE: "FIREBREATHER",
+    GANTETSU: "KURT", CHOUROU: "ELDER", MRFUJI: "ELDER", DOCTOR: "PROFELM", MAMA: "MOM", OOKIDO: "PROFOAK", MASAKI: "BILL", THIEF: "BURGLAR",
+    SAKAKI: "GIOVANNI", WORKMAN: "WORKERM", ROCKETW: "ROCKETF", ITAKO: "CHANNELER" };
+  // (People there's only one of where they are, matched however far: the guide, the nurse, the clerk, the Leaders, the story's own.)
+  const DISTINCT = new Set(["GYMGUY", "NURSE", "CLERK", "FALKNER", "BUGSY", "WHITNEY", "MORTY", "CHUCK", "JASMINE", "PRYCE", "CLAIR", "SILVER", "ELDER",
+    "PROFELM", "PROFOAK", "KURT", "EUSINE", "LANCE", "BILL", "MOM"]);
   // (And the Pokémon standing about: HGSS's by their Japanese names or as "following" Pokémon, Heart & Soul's as MON_BASE+SPECIES_.)
   const MON = { USOKKY: "SUDOWOODO", RGYARADOSU: "GYARADOS", RAPURASU: "LAPRAS", YADON: "SLOWPOKE" };
   const isMon = (s) => /MON_BASE\+SPECIES_|FOLLOWER_MON_STATIC|TSURE_POKE/.test(String(s || "").toUpperCase()) || !!MON[String(s || "").toUpperCase().replace(/^(SPRITE_|HGSS_)/, "")];
@@ -97,8 +108,11 @@ module.exports = function port(HN, out, opts) {
     const k = String(s || "").toUpperCase().replace(/^(OBJ_EVENT_GFX_|SPRITE_)/, "").replace(/^(GS|HGSS_)/, "").replace(/_/g, "")
       .replace(/^MONBASE\+SPECIES/, "").replace(/^(TSUREPOKE|FOLLOWERMON)STATIC/, "");
     if (MON[k]) return MON[k];
+    if (ALIAS[k]) return ALIAS[k];
+    if (/^PCWOMAN[23]/.test(k)) return k;   // (the Wi-Fi rooms' receptionists: no nurses)
     const m = /^(LEADER\d|PCWOMAN|SHOPM|SUNGLASSES)/.exec(k);
-    return m ? SAME[m[1]] : k.replace(/\d+$/, "");
+    const k2 = k.replace(/\d+$/, "");
+    return m ? SAME[m[1]] : ALIAS[k2] || k2;
   };
   function kindOfHgss(p) {
     if (p.item) return "item";
@@ -229,6 +243,7 @@ module.exports = function port(HN, out, opts) {
   }
   const where = {};
   for (const n of names) where[n] = into[n];
+  const usedCoordsOf = {};
   for (const G of paired) {
     const g = geo[G], sources = [G].concat(plan[G].merge).filter((s) => out[s] && !out[s].isNew);
     const gm = { width: g.width, height: g.height, collision: g.collision };
@@ -261,6 +276,7 @@ module.exports = function port(HN, out, opts) {
       for (const o of opw) o.far = (o.kind === "person" || o.kind === "item") && !(walkable(g, o.x, o.y) && rch[o.y * g.width + o.x]);
       const ppairs = match(hp, opw, (a, b) => {
         if (a.kind !== b.kind || !monOk(a, b) || (b.far && (a.kind !== "person" || a.look !== b.look))) return Infinity;
+        if (a.look !== b.look && (DISTINCT.has(a.look) || DISTINCT.has(b.look))) return Infinity;   // (the Elder is no one else, nor Silver)
         return dist(src, a, b) + (a.kind === "person" && a.look !== b.look ? 2 : 0);
       }, 5);
       // (Then, further, the rest of each to the rest of Heart & Soul's of their kind: a trainer to a trainer.)
@@ -268,7 +284,7 @@ module.exports = function port(HN, out, opts) {
         const ua = new Set(ppairs.map(([i]) => i)), ub = new Set(ppairs.map(([, j]) => j));
         const ra = hp.map((h, i) => i).filter((i) => !ua.has(i) && !hp[i].p.offstage), rb = opw.map((o, j) => j).filter((j) => !ub.has(j) && !opw[j].far);
         const trainerOf = (o) => o.o.trainer_type && o.o.trainer_type !== "TRAINER_TYPE_NONE";
-        const more = match(ra.map((i) => hp[i]), rb.map((j) => opw[j]), (a, b) => (a.kind !== b.kind || !monOk(a, b) ? Infinity
+        const more = match(ra.map((i) => hp[i]), rb.map((j) => opw[j]), (a, b) => (a.kind !== b.kind || !monOk(a, b) || (a.look !== b.look && (DISTINCT.has(a.look) || DISTINCT.has(b.look))) ? Infinity
           : dist(src, a, b) + (a.kind === "person" && !!a.p.trainer !== trainerOf(b) ? 5 : 0) + (a.kind === "person" && a.look !== b.look ? 1 : 0)), 11);
         for (const [i, j, v] of more) ppairs.push([ra[i], rb[j], v + 100]);
         // (The same people where you can't stand, further: Sudowoodo in its tree's place.)
@@ -281,6 +297,21 @@ module.exports = function port(HN, out, opts) {
         const ua2 = new Set(ppairs.map(([i]) => i)), ub2 = new Set(ppairs.map(([, j]) => j));
         const ta = hp.map((h, i) => i).filter((i) => !ua2.has(i) && hp[i].kind === "tree"), tb = opw.map((o, j) => j).filter((j) => !ub2.has(j) && opw[j].kind === "tree");
         for (const [i, j, v] of match(ta.map((i) => hp[i]), tb.map((j) => opw[j]), (a, b) => dist(src, a, b), Infinity)) ppairs.push([ta[i], tb[j], v + 200]);
+        // (And the one of a kind, however far: a distinct person, or a trainer, the only one of their look left on each map.)
+        {
+          const ua4 = new Set(ppairs.map(([i]) => i)), ub4 = new Set(ppairs.map(([, j]) => j));
+          const trainerOf = (o) => o.o.trainer_type && o.o.trainer_type !== "TRAINER_TYPE_NONE";
+          const looks = new Set(hp.filter((h, i) => !ua4.has(i) && h.kind === "person").map((h) => h.look));
+          for (const L of looks) {
+            const as = hp.map((h, i) => i).filter((i) => !ua4.has(i) && hp[i].kind === "person" && hp[i].look === L && !hp[i].p.offstage);
+            const bs = opw.map((o, j) => j).filter((j) => !ub4.has(j) && opw[j].kind === "person" && opw[j].look === L);
+            if (bs.length !== 1 || !as.length) continue;
+            const trainers = as.filter((i) => !!hp[i].p.trainer);
+            if (!DISTINCT.has(L) && !(trainers.length === 1 && as.length === 1 && trainerOf(opw[bs[0]]))) continue;
+            const i = as.slice().sort((a, b) => dist(src, hp[a], opw[bs[0]]) - dist(src, hp[b], opw[bs[0]]))[0];
+            ppairs.push([i, bs[0], 0.5]);   // (an anchor for the fit, as sure as a door)
+          }
+        }
       }
       const hs = hg.signs.map((s, i) => ({ s, i, x: s.x, y: s.y }));
       const os = g.bgs.map((b, k) => ({ b, k, x: b.x, y: b.y })).filter((o) => o.b.type === "sign" && !takenBg.has(o.k));
@@ -288,7 +319,7 @@ module.exports = function port(HN, out, opts) {
       const hh = (hg.hidden || []).map((h) => ({ h, x: h.x, y: h.y }));
       const oh = g.bgs.map((b, k) => ({ b, k, x: b.x, y: b.y })).filter((o) => o.b.type === "hidden_item");
       const hpairs = match(hh, oh, (a, b) => (itemOf(b.b.item) === a.h.item ? dist(src, a, b) : Infinity), 10);
-      const extra = [].concat(ppairs.filter(([, , v]) => v <= 3).map(([i, j]) => [hp[i].x, hp[i].y, opw[j].x, opw[j].y]),
+      const extra = [].concat(ppairs.filter(([i, , v]) => v <= 3 || DISTINCT.has(hp[i].look)).map(([i, j]) => [hp[i].x, hp[i].y, opw[j].x, opw[j].y]),
         spairs.map(([i, j]) => [hs[i].x, hs[i].y, os[j].x, os[j].y]), hpairs.map(([i, j]) => [hh[i].x, hh[i].y, oh[j].x, oh[j].y]));
       if (extra.length) {
         const anchors = src.anchors.concat(extra);
@@ -297,6 +328,8 @@ module.exports = function port(HN, out, opts) {
       // (Two anchors on one tile, or one tile two ways: the first kept.)
       const seenA = new Set();
       src.anchors = src.anchors.filter((a) => { const k = a[0] + "," + a[1]; if (seenA.has(k)) return false; seenA.add(k); return true; });
+      // (Its doors, HGSS's tile and Heart & Soul's: a scripted walk to beside one goes through it, ui/johto-coords.js.)
+      src.doors = wpairs.map(([i, j]) => [hw[i].x, hw[i].y, gw[j].x, gw[j].y]);
       hgssSrc.push(src);
       rep.warpsMatched += wpairs.length;
       const fwd = (x, y) => Coords.forward(src, x, y);
@@ -307,7 +340,10 @@ module.exports = function port(HN, out, opts) {
       const doorTiles = new Set(warps.map((w) => w.x + "," + w.y));
       // (Who stands in the way in HGSS's map, with everyone else there: kept so, as Sudowoodo and the guards are.)
       const hgEdges = (hg.connections || []).length > 0, hgAll = new Set(hp.filter((x) => !x.p.offstage).map((x) => x.y * hg.width + x.x));
-      hp.forEach((h, i) => {
+      const placed = [];
+      // (Those matched first, then the rest, who may go by them.)
+      const order = hp.map((h, i) => i).sort((a, b) => (pm.has(a) ? 0 : 1) - (pm.has(b) ? 0 : 1) || a - b);
+      order.map((i) => [hp[i], i]).forEach(([h, i]) => {
         const p = Object.assign({}, h.p), m = pm.get(i);
         if (!OBSTACLE.has(h.kind) && h.kind !== "tree") {
           const others = new Set(hgAll); others.delete(h.y * hg.width + h.x);
@@ -319,13 +355,48 @@ module.exports = function port(HN, out, opts) {
         let x, y;
         // (An Apricorn tree on one of Heart & Soul's trees: its picture is the map's own, drawn already.)
         if (m && h.kind === "tree") p.drawnOnMap = true;
+        const free = (u, v) => u >= 0 && v >= 0 && u < g.width && v < g.height && !used.has(v * g.width + u) && !taken.has(v * g.width + u);
         if (m) { x = m.x; y = m.y; takenObj.add(m.k); rep.peopleMatched++; if (p.trainer && +m.o.trainer_sight_or_berry_tree_id) p.trainer = Object.assign({}, p.trainer, { sight: +m.o.trainer_sight_or_berry_tree_id }); }
-        else [x, y] = placeOn(g, ...fwd(h.x, h.y), (u, v) => !used.has(v * g.width + u) && !taken.has(v * g.width + u), doorTiles);
+        else {
+          let spot = null;
+          // (Someone who stands in for another of their look, the two never there at once: the Gym guide before
+          // Sprout Tower and after, on the same spot.)
+          const alt = h.p.hgssFlag && DISTINCT.has(h.look) && placed.find((q) => q.look === h.look && q.flag && q.flag !== h.p.hgssFlag);
+          if (alt) spot = [alt.x, alt.y];
+          // (A second clerk: behind the counter beside the first.)
+          const twin = !spot && DISTINCT.has(h.look) && placed.find((q) => q.look === h.look && q.far);
+          if (twin) for (const [dx, dy] of [[0, 1], [0, -1], [0, 2], [0, -2], [1, 0], [-1, 0]]) {
+            const u = twin.x + dx, v = twin.y + dy;
+            if (!spot && walkable(g, u, v) && !rch[v * g.width + u] && free(u, v)) spot = [u, v];
+          }
+          // (Beside someone they stood beside in HGSS, as they stood: the Rocket and the man he harasses in Azalea.)
+          if (!spot) for (const q of placed) {
+            if (Math.abs(q.hx - h.x) + Math.abs(q.hy - h.y) > 2) continue;
+            const u = q.x + h.x - q.hx, v = q.y + h.y - q.hy;
+            if (walkable(g, u, v) && rch[v * g.width + u] && free(u, v)) { spot = [u, v]; break; }
+          }
+          [x, y] = spot || placeOn(g, ...fwd(h.x, h.y), free, doorTiles);
+          if (!spot) p.byFit = true;
+        }
+        placed.push({ look: h.look, flag: h.p.hgssFlag, x, y, hx: h.x, hy: h.y, far: !!(m && m.far), p });
         rep.people++;
         taken.add(y * g.width + x);
         Object.defineProperty(p, "hgssSprite", { value: h.p.hgssSprite });
         people.push(Object.assign(p, { id: people.length, x, y }));
       });
+      // (Then anyone put where the fit took them, beside someone they stood beside in HGSS who came after them.)
+      for (const a of placed) {
+        if (!a.p.byFit) continue;
+        for (const q of placed) {
+          if (q === a || Math.abs(q.hx - a.hx) + Math.abs(q.hy - a.hy) > 2) continue;
+          const u = q.x + a.hx - q.hx, v = q.y + a.hy - q.hy;
+          if (!(u >= 0 && v >= 0 && u < g.width && v < g.height) || !walkable(g, u, v) || !rch[v * g.width + u] || used.has(v * g.width + u) || taken.has(v * g.width + u)) continue;
+          taken.delete(a.y * g.width + a.x); taken.add(v * g.width + u);
+          a.x = a.p.x = u; a.y = a.p.y = v;
+          break;
+        }
+        delete a.p.byFit;
+      }
       // Signs (on what they're on: no snapping, but onto the map).
       const sm = new Map(spairs.map(([i, j]) => [i, os[j]]));
       hs.forEach((h, i) => {
@@ -344,7 +415,7 @@ module.exports = function port(HN, out, opts) {
         hidden.push(Object.assign({}, h.h, { x, y }));
       });
       // Step triggers: by script; a line stretched across the way.
-      const groups = {};
+      const groups = {}, usedCoords = usedCoordsOf[G] || (usedCoordsOf[G] = new Set());
       for (const t of hg.triggers || []) (groups[t.script] = groups[t.script] || []).push(t);
       for (const [script, ts] of Object.entries(groups)) {
         const tiles = new Set();
@@ -359,6 +430,20 @@ module.exports = function port(HN, out, opts) {
               if (!walkable(g, u, v)) break;
               tiles.add(u + "," + v);
             }
+          }
+        }
+        // (A single tile of HGSS's, with a scene trigger of Heart & Soul's near: Heart & Soul's tiles for it, its own scene's
+        // line, which its ground's way through needs: Sprout Tower's top floor's two-wide gap.)
+        if (ts.length === 1 && (g.coords || []).length) {
+          const [x0, y0] = [...tiles][0].split(",").map(Number);
+          const near = g.coords.filter((c) => Math.abs(c.x - x0) + Math.abs(c.y - y0) <= 6 && !usedCoords.has(c))
+            .sort((a, b) => Math.abs(a.x - x0) + Math.abs(a.y - y0) - (Math.abs(b.x - x0) + Math.abs(b.y - y0)));
+          if (near.length) {
+            // (One scene's line: the same var and value, a tile each side its own script, as Sprout Tower's Left and Right.)
+            const line = g.coords.filter((c) => (c.script === near[0].script || (c.var && c.var === near[0].var && c.var_value === near[0].var_value
+              && Math.abs(c.x - near[0].x) + Math.abs(c.y - near[0].y) <= 4)) && !usedCoords.has(c));
+            tiles.clear();
+            for (const c of line) { usedCoords.add(c); tiles.add(c.x + "," + c.y); }
           }
         }
         for (const k of tiles) { const [x, y] = k.split(",").map(Number); triggers.push({ x, y, script }); }
@@ -407,6 +492,8 @@ module.exports = function port(HN, out, opts) {
         idx[i] = warps.length - 1; rep.warpsAdded++;
       });
     }
+    // (Where the table puts someone: plan[G].place.)
+    for (const p of people) { const at = (plan[G].place || {})[p.localId]; if (at) [p.x, p.y] = at; }
     // (No one in the way here who wasn't in HGSS's: whoever parts the map's entrances, as Route 30's Youngster
     // Joey in its one gap would, moves to the nearest tile that doesn't.)
     {
@@ -468,7 +555,7 @@ module.exports = function port(HN, out, opts) {
       connections: connections.concat(keep), headbutt: g.headbutt.length ? g.headbutt : undefined,
       // (A door a stamp brought, for a building this game adds: New Bark's Pokémon Center, its door's tile.)
       pokecenterDoor: plan[G].door || undefined,
-      hgss: hgssSrc.map((s) => ({ map: s.map, width: s.width, height: s.height, fit: s.fit.map((v) => +v.toFixed(4)), anchors: s.anchors })),
+      hgss: hgssSrc.map((s) => ({ map: s.map, width: s.width, height: s.height, fit: s.fit.map((v) => +v.toFixed(4)), anchors: s.anchors, doors: s.doors })),
       hgssWarps });
   }
   // (The doors that went: each map's others renumbered, and every door to them.)

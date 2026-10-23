@@ -2865,7 +2865,7 @@ if (window.JOHTO_TOWN_MAP) {
     assert(/ctx\.faced && ctx\.faced\(/.test(owJs) && /6: \[24, null\], 7: \[24, 142\]/.test(gearJs) && /env\.baobaCall\(script\)/.test(gearJs), "the field and the Pokégear's sides");
     assert(scripts.indexOf("ui/johto-safari-objects.js") >= 0 && scripts.indexOf("ui/johto-safari-objects.js") < scripts.indexOf("ui/game.js"), "the arranging screen loads");
   }
-  // (Everyone's picture is there: Kanto's sheet for HGSS's everyday sprites, HGSS's own (hgss_*) for the rest,
+  // (Everyone's picture is there: HGSS's own (hgss_*) for everyone but the item balls, Cut trees and rocks,
   // at Kanto's people's size: 32x32 frames, the person no taller than Kanto's; upstairs in a Pokémon Center
   // is FireRed's own floor, its people too.)
   const { readPng } = require(path.join(root, "tools/lib/png.js"));
@@ -2879,7 +2879,8 @@ if (window.JOHTO_TOWN_MAP) {
     assert(png.height === 32 && png.width === 32 * 9 && top >= 10, n + " stands no taller than Kanto's people (from row " + top + ")");
   }
   assert(/scalePersonSheet\(rgba, W, 32, order\.length\)/.test(fs.readFileSync(path.join(root, "tools/build-johto.js"), "utf8")), "the build scales HGSS's people");
-  for (const n of ["hgss_gsboy1", "hgss_gsman1", "hgss_pcwoman1"]) assert(!fs.existsSync(path.join(root, "assets/world/sprites", n + ".png")), n + ": Kanto's sheet stands in");
+  for (const n of ["hgss_gsboy1", "hgss_gsman1", "hgss_pcwoman1"]) assert(fs.existsSync(path.join(root, "assets/world/sprites", n + ".png")), n + ": HGSS's own sheet");
+  assert(J.filter((n) => !/_PokemonCenter_2F$/.test(n)).every((n) => WORLD_MAPS[n].people.every((p) => /^hgss_/.test(p.sprite) || ["item_ball", "cut_tree", "rock_smash_rock"].includes(p.sprite) || p.apricorn)), "Johto's people all in HGSS's sprites");
   // (The maps are HGSS's own, seen from above: the gatehouses and Pokémon Centers HGSS's rooms (their
   // nurses healing as Kanto's), nothing painted in FireRed's style any more.)
   for (const n of J.filter((n) => /Gatehouse$/.test(n))) assert(WORLD_MAPS[n].hgss || WORLD_MAPS[n].width === 32, n + " is HGSS's own gatehouse, or Heart & Soul's");
@@ -2887,7 +2888,7 @@ if (window.JOHTO_TOWN_MAP) {
   assert(fs.existsSync(path.join(root, "assets/world/maps/NewBarkTown.png")) && fs.existsSync(path.join(root, "assets/world/maps/NewBarkTown-top.png")));
   {
     const pc = WORLD_MAPS.CherrygroveCity_PokemonCenter_1F, up = WORLD_MAPS.CherrygroveCity_PokemonCenter_2F;
-    assert(pc.pokemonCenter && (pc.hgss || pc.width === 32) && pc.people.some((p) => p.script === "CherrygroveCity_PokemonCenter_1F_EventScript_Nurse" && p.sprite === "nurse"), "HGSS's Center, its nurse healing as Kanto's");
+    assert(pc.pokemonCenter && (pc.hgss || pc.width === 32) && pc.people.some((p) => p.script === "CherrygroveCity_PokemonCenter_1F_EventScript_Nurse" && p.sprite === "hgss_pcwoman1"), "HGSS's Center, its nurse in HGSS's sprite");
     assert(!pc.people.some((p) => /FLAG_HIDE_(COMM|WIFI)/.test(p.hgssFlag || "")), "no Wi-Fi staff");
     const stairs = pc.warps.find((w) => w.map === "CherrygroveCity_PokemonCenter_2F");
     assert(stairs && up && up.warps.some((w) => w.map === "CherrygroveCity_PokemonCenter_1F" && w.warp === pc.warps.indexOf(stairs)), "its stairs go up to FireRed's 2F and back");
@@ -4888,12 +4889,16 @@ for (let seed = 1; seed <= GEN9; seed++) {
 {
   const p = Player.create("RED", 0);
   p.location = { map: "PalletTown", x: 5, y: 5 };
-  assert.strictEqual(Player.levelCap(p), 15);
+  assert.strictEqual(Player.levelCap(p), 14, "Brock's Onix");
   p.badges = ["boulder", "cascade", "thunder"];
-  assert.strictEqual(Player.levelCap(p), 35);
+  assert.strictEqual(Player.levelCap(p), 29, "Erika's Vileplume");
   p.badges = Player.REGION_BADGES.kanto.slice();
   assert.strictEqual(Player.levelCap(p), 100);
-  assert.strictEqual(Player.levelCap(p, "Route29"), 15, "Johto goes by Johto's Badges");
+  assert.strictEqual(Player.levelCap(p, "Route29"), 13, "Johto goes by Johto's Badges: Falkner's Pidgeotto");
+  assert.strictEqual(Player.levelCap(p, "Route101"), 15, "Hoenn by Hoenn's: Roxanne's Nosepass");
+  // (Each the next Leader's ace, as the game's teams have them.)
+  const ace = (id) => Math.max(...WORLD_TRAINERS[id].party.map((m) => m.level));
+  assert.deepStrictEqual(["BROCK", "MISTY", "LT_SURGE", "ERIKA", "KOGA", "SABRINA", "BLAINE", "GIOVANNI"].map((n) => ace("TRAINER_LEADER_" + n)), Player.LEVEL_CAPS.kanto);
   const b = new Battle({ seed: 3, exp: true, wild: true, levelCap: 15,
     p1: { name: "A", team: [Party.toBattleSet(Party.create("Charmander", 15), "PalletTown")] },
     p2: { name: "B", team: [{ species: "Caterpie", level: 2, moves: ["Tackle"] }] } });

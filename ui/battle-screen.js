@@ -366,11 +366,11 @@
     const w = s.text(d.name || "", nx, 3, HB_TEXT, HB_SHADOW, "small");
     const gw = d.gender === "M" || d.gender === "F" ? s.text(d.gender === "M" ? "♂" : "♀", nx + w, 3, d.gender === "M" ? HB_MALE : HB_FEMALE, HB_SHADOW, "small") : 0;
     // "Lv" and the level, right-aligned in 24 pixels (Mega Evolved, the
-    // level alone, the Mega symbol before it; Terastallized, "Lv" stays and
-    // its Tera Type's symbol goes left of "HP").
+    // level alone, the Mega symbol before it, Terastallized too; Terastallized
+    // alone, "Lv" stays: its Tera Type's symbol goes left of "HP").
     const lv = String(d.level || "");
     const lvW = s.textWidth("{LV}", "small"), lvAt = st.lvX + 5 * (3 - lv.length);
-    const gimmick = d.mega && !d.tera;
+    const gimmick = !!d.mega;
     s.text(gimmick ? lv : "{LV}" + lv, gimmick ? lvAt + lvW : lvAt, 3, HB_TEXT, HB_SHADOW, "small");
     // Your HP: "cur/" at (60, 21) and "max" at (80, 21), each right-aligned to 3.
     if (st.singlesPlayer) {

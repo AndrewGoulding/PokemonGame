@@ -3089,6 +3089,13 @@
     .replace(/\{STR_VAR_(\d)\}/g, (_, n) => (vars && vars[n - 1] != null ? vars[n - 1] : ""));
   async function say(pages, vars) { for (const p of [].concat(pages)) await window.Screen.read(fill(p, vars)); }
 
+  // (A scene as you come out of a building: out of its doorway first, as HGSS's and Emerald's step you out
+  // before their scenes run; the overworld's own step out waits for the scene, so you'd be left in the door.)
+  async function outOfDoorway() {
+    const at = Overworld.position(), b = World.blockAt(at.map, at.x, at.y);
+    if (b.behavior !== World.MB.WARP_DOOR && b.behavior !== World.MB.CAVE_DOOR) return;
+    if (World.step({ map: at.map, x: at.x, y: at.y }, "down", null).ok) await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
+  }
   async function story(ev) {
     if (ev.type === "pc") {
       // (While Bill's helping Celio on One Island, the PCs can't reach his storage: FLAG_SYS_PC_STORAGE_DISABLED.)
@@ -3133,13 +3140,13 @@
     // Hoenn's: Emerald's scripts (ui/hoenn-script.js), and its maps' scenes as you come in.
     if (/^(enter|arrive):/.test(script) && isHoenn(script.replace(/^\w+:/, ""))) {
       const due = hoenn.frameScript(script.replace(/^\w+:/, ""), /^enter:/.test(script));
-      if (due) await runHoenn(due, null);
+      if (due) { await outOfDoorway(); await runHoenn(due, null); }
       return;
     }
     { const hs = hoennScriptFor(ev); if (hs) { await runHoenn(hs, ev.person); return; } }
 
     // Johto's scripts (ui/johto-script.js), and its Apricorn trees.
-    if (/^(enter|arrive):/.test(script)) { const due = johto.frameScript(script.replace(/^\w+:/, "")); if (due) { await runJohto(due, null); return; } }
+    if (/^(enter|arrive):/.test(script)) { const due = johto.frameScript(script.replace(/^\w+:/, "")); if (due) { await outOfDoorway(); await runJohto(due, null); return; } }
     // (Ilex Forest's shrine, with the GS Ball: Crystal's Celebi.)
     if (script === "hgss:D36R0101:scr_seq_D36R0101_012" && Player.itemCount(player, "gs-ball") > 0 && !player.flags.gsBallCelebi) { await ilexShrineCelebi(); return; }
     // (Ilex Forest's Headbutt tutor: ui/johto-field.js.)
