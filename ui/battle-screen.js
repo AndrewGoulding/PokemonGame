@@ -1883,7 +1883,8 @@
             const t = trainerEl();
             (async () => { for (const [f, n] of [[1, 24], [2, 9], [3, 24], [0, 9]]) { t.style.backgroundPositionY = (f * 100 / 3) + "%"; await wait(n * 1000 / 60); } })();
           } else await message("You threw a " + ballName(b) + "!", 700);
-          if (!config.oldMan && !config.wally && await ballThrow("p2", b, +ev[4], ev[5] === "caught")) {
+          // (At the foe it's thrown at: a snag in a double battle may be the second.)
+          if (!config.oldMan && !config.wally && await ballThrow(/^p2b/.test(c || "") ? "p2b" : "p2", b, +ev[4], ev[5] === "caught")) {
             if (ev[5] !== "caught") await message(BREAK_FREE[+ev[4]] || BREAK_FREE[0]);
             return;
           }
@@ -1911,6 +1912,17 @@
           await message(BREAK_FREE[+ev[4]] || BREAK_FREE[0]);
         };
       case "caught":   // FireRed's catch jingle, then the caught theme
+        // (Snagged from its trainer: the jingle, and it's gone from the field; the battle goes on.)
+        if (c === "snag") return async () => {
+          const jingle = window.GameAudio ? window.GameAudio.fanfare("mus_caught_intro") : null;
+          await message("Gotcha! " + nameOf(a) + " was snagged!");
+          await jingle;
+          el.ball.classList.add("hidden");
+          el.ball.classList.remove("caught", "shake");
+          v.inBall = false; v.fainted = true; v.hp = 0; v.substitute = false;
+          renderSide(pos);
+          el.sides[pos].info.classList.add("hidden");
+        };
         return async () => {
           const GA = window.GameAudio;
           if (GA) GA.music("mus_caught");
@@ -2129,7 +2141,7 @@
     const bag = config.bag || {};
     const usableHere = (id) => {
       if (!(bag[id] > 0)) return false;
-      if (window.Bag.isBall(id)) return battle.wild;
+      if (window.Bag.isBall(id)) return battle.wild || !!battle.snag;   // (or a trainer's, with the Snag Machine)
       const eff = window.ItemUse.effect(id);
       return !!eff && !eff.outOfBattle;
     };
@@ -2476,7 +2488,7 @@
   // (A recorded battle, Emerald's: every choice taken, in order, with the engine's seed; played
   // back by feeding them to a battle built the same way: run's cfg.record and cfg.replay.)
   let recording = null;
-  const RECORD_KEYS = ["p1", "p2", "format", "partnerTrainer", "foeTrainer2", "defeatText2", "ghost", "noCatch", "wild", "weather", "levelCap", "arena", "palace",
+  const RECORD_KEYS = ["p1", "p2", "format", "partnerTrainer", "foeTrainer2", "defeatText2", "ghost", "noCatch", "snag", "wild", "weather", "levelCap", "arena", "palace",
     "trainer", "foeTrainer", "defeatText", "victoryMusic", "terrain"];
   function choose(side, choice) {
     try {
@@ -3160,7 +3172,7 @@
     config = cfg;
     partyOrder = null;
     battle = new Battle(Object.assign({
-      p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, ghost: !!cfg.ghost, noCatch: !!cfg.noCatch, exp: !!cfg.exp, expShare: !!cfg.expShare, catchContext: cfg.catchContext,
+      p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, ghost: !!cfg.ghost, noCatch: !!cfg.noCatch, snag: cfg.snag || null, exp: !!cfg.exp, expShare: !!cfg.expShare, catchContext: cfg.catchContext,
       safari: cfg.safari, raid: cfg.raid || 0, raidAllies: cfg.raidAllies || undefined,
       levelCap: cfg.levelCap,   // (the level cap, Player.levelCap: no Exp. past it, and a Pokémon over it may not obey)
       seed: cfg.seed,   // (a recorded battle played back: the seed it was fought with)

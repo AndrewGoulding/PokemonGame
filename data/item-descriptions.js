@@ -214,6 +214,7 @@ window.ITEM_DESCRIPTIONS = {
   "spell-tag": "An item to be held by a Pokémon.\nA sinister, eerie tag that boosts\nGhost-type moves.",
   "spelon-berry": "Can be ground up into a powder as\nan ingredient for medicine.",
   "hoenn-ticket": "A ticket for the Fast Ship\nS.S. Aqua's run from Olivine\nto Slateport City in Hoenn.",
+  "snag-machine": "Team Snagem's machine. It turns\nPoké Balls into Snag Balls that\ncatch other Trainers' Pokémon.",
   "sinnoh-ticket": "A ticket for the S.S. Tidal's\nrun to Sinnoh, sailing from\nLilycove City.",
   "ss-ticket": "The ticket required for sailing on\nthe ferry S.S. Anne.\nIt has a drawing of a ship on it.",
   "gs-ball": "A mysterious Ball.",

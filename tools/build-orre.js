@@ -1149,27 +1149,318 @@ const HIDE = {
 //
 // Inside: Mauville City's Pokémon Center (its picture and its layout, data/emerald-maps.js), the nurse at the counter
 // to heal your Pokémon (and where you come to if they all faint in Orre); its stairs lead nowhere yet.
-const PCI = (() => {
+// (Orre's Pokémon Centers: Mauville's inside, `name`, back out to `outside`'s door (its warp 0 there: `warp`), the nurse
+// and `people` of its own.)
+const emeraldMaps = (() => {
   const vm = require("vm"), ctx = { window: { WORLD_MAPS: {}, WORLD_TRAINERS: {} } };
   vm.createContext(ctx);
   try { vm.runInContext(fs.readFileSync(path.join(root, "data/emerald-maps.js"), "utf8"), ctx); } catch (e) { /* (only its maps are needed) */ }
-  const m = JSON.parse(JSON.stringify(ctx.window.WORLD_MAPS.MauvilleCity_PokemonCenter_1F));
+  return ctx.window.WORLD_MAPS;
+})();
+function pokemonCenterInside(name, title, outside, warp, people) {
+  const m = JSON.parse(JSON.stringify(emeraldMaps.MauvilleCity_PokemonCenter_1F));
   const stairs = m.warps.find((w) => /_2F$/.test(w.map));
   m.collision[stairs.y * m.width + stairs.x] = 1;
   const nurse = m.people.find((p) => /_EventScript_Nurse$/.test(p.script));
   return Object.assign(m, {
-    name: "OrreAirStrip_PokemonCenter_1F", title: "Orre Air Strip", image: "MauvilleCity_PokemonCenter_1F", region: "orre", showName: false,
-    warps: m.warps.filter((w) => w !== stairs).map((w) => ({ x: w.x, y: w.y, map: "OrreAirStrip", warp: 0 })),
+    name, title, image: "MauvilleCity_PokemonCenter_1F", region: "orre", showName: false,
+    warps: m.warps.filter((w) => w !== stairs).map((w) => ({ x: w.x, y: w.y, map: outside, warp })),
     signs: [], triggers: [], hidden: [], weatherSteps: undefined,
-    people: [
-      Object.assign({}, nurse, { id: 0, localId: "LOCALID_ORRE_NURSE", script: "OrreAirStrip_PokemonCenter_1F_EventScript_Nurse" }),
-      person(1, "PC_TRAVELLER", 11, 5, "em_woman_5", "face_left", "OrreAirStrip_PokemonCenter_1F_EventScript_Traveller",
-        ["There's hardly a Pokémon Center out\nhere in the desert.", "In Orre, a lot of the towns have\nhealing machines of their own instead."]),
-      person(2, "PC_MECHANIC", 3, 6, "hiker", "face_right", "OrreAirStrip_PokemonCenter_1F_EventScript_Pilot2",
-        ["The planes bring in supplies for this\nPokémon Center from far away.", "Folks who fly in are glad of the rest."])
-    ]
+    people: [Object.assign({}, nurse, { id: 0, localId: "LOCALID_ORRE_NURSE", script: name + "_EventScript_Nurse" })].concat(people)
   });
-})();
+}
+const PCI = pokemonCenterInside("OrreAirStrip_PokemonCenter_1F", "Orre Air Strip", "OrreAirStrip", 0, [
+  person(1, "PC_TRAVELLER", 11, 5, "em_woman_5", "face_left", "OrreAirStrip_PokemonCenter_1F_EventScript_Traveller",
+    ["There's hardly a Pokémon Center out\nhere in the desert.", "In Orre, a lot of the towns have\nhealing machines of their own instead."]),
+  person(2, "PC_MECHANIC", 3, 6, "hiker", "face_right", "OrreAirStrip_PokemonCenter_1F_EventScript_Pilot2",
+    ["The planes bring in supplies for this\nPokémon Center from far away.", "Folks who fly in are glad of the rest."])
+]);
+
+// ---------- The Snag Machine's icon ----------
+//
+// Team Snagem's machine, worn on the arm (Colosseum's): a purple-grey gauntlet, its red lens, the claw at its end.
+{
+  const c = canvas(32, 32), MET = [[200, 192, 216], [144, 128, 168], [96, 80, 120], [56, 48, 72]];
+  c.box(5, 12, 16, 11, { fill: MET[1], light: MET[0], dark: MET[2], line: MET[3] });
+  c.box(3, 14, 4, 7, { fill: MET[2], light: MET[1], line: MET[3] });
+  c.disc(13, 17, 3, [232, 56, 48]); c.ring(13, 17, 3, MET[3]); c.set(12, 16, [255, 200, 192]);
+  c.box(20, 10, 6, 15, { fill: MET[1], light: MET[0], dark: MET[2], line: MET[3] });
+  for (const [y, d] of [[9, -1], [16, 0], [23, 1]]) { c.box(25, y, 5, 3, { fill: MET[0], line: MET[3] }); c.set(29, y + 3 * d + 1, MET[3]); }
+  c.hl(7, 18, 21, MET[3]); c.hl(8, 11, 13, [248, 208, 72]);
+  save(c, path.join(root, "assets/sprites/items/key-item/snag-machine.png"));
+}
+
+// ---------- Phenac City (after Colosseum's) ----------
+//
+// The city of water in the desert: everything paved in sandstone, white-walled buildings with flat roofs and blue
+// trim, palms, and water everywhere, two channels running the length of the city and falling as waterfalls over each
+// terrace's edge. Three terraces: at the top Phenac Stadium (its great arched entrance, the Poké Ball over it), the
+// Mayor's house to its left and a house to its right; down the stairs, the fountain square, the round fountain in
+// the middle of rings of paving, the Pokémon Center (Emerald's, laid out as the Air Strip's) and a house; down
+// again, the entrance plaza with its palms, two more houses and the way out to the desert at the bottom. Drawn here.
+const PW = 40, PHH = 36;
+const PC2 = { x: 31, y: 14, w: 4, h: 4 }, PC2_DOOR = { x: 32, y: 17 };
+const pblocks = new Array(PW * PHH).fill(SAND);
+{
+  const L = layouts.LAYOUT_MAUVILLE_CITY, mv = fs.readFileSync(path.join(EM, L.blockdata_filepath));
+  for (let y = 0; y < PC2.h; y++) for (let x = 0; x < PC2.w; x++) pblocks[(PC2.y + y) * PW + PC2.x + x] = mv.readUInt16LE(((2 + y) * L.width + 21 + x) * 2);
+}
+const phenac = E.render(pblocks, PW, PHH, general, mauville, false);
+const STADIUM = { x: 13, y: 2, w: 14, h: 7 }, ST_DOOR = { x: 19, w: 2 };
+const MAYOR = { x: 2, y: 3, w: 7, h: 5 }, HOUSE_NE = { x: 31, y: 3, w: 7, h: 5 };
+const HOUSE_W = { x: 2, y: 14, w: 6, h: 4 }, HOUSE_SW = { x: 3, y: 27, w: 6, h: 4 }, HOUSE_SE = { x: 31, y: 27, w: 6, h: 4 };
+const CHANNELS = [10, 28];   // (each two tiles wide, from the top terrace down out of the city)
+const TERRACES = [12, 25], STAIRS = { x: 18, w: 4 }, EXIT = { x: 18, w: 4 };
+const BRIDGES = [6, 19, 30];   // (rows where the channels are bridged)
+const FOUNTAIN = { cx: 20 * 16, cy: 18 * 16 + 8, r: 44 };
+const PALMS = [[13, 27], [26, 27], [13, 32], [26, 32], [13, 15], [26, 22], [2, 9], [37, 9]];
+const PSIGN = { x: 16, y: 33 };
+// (Each of the city's doors: the door's tile, below its building.)
+const doorOf = (b) => ({ x: b.x + Math.floor(b.w / 2), y: b.y + b.h - 1 });
+const PDOORS = { MAYOR: doorOf(MAYOR), HOUSE_NE: doorOf(HOUSE_NE), HOUSE_W: doorOf(HOUSE_W), HOUSE_SW: doorOf(HOUSE_SW), HOUSE_SE: doorOf(HOUSE_SE) };
+const PAVE = [[232, 204, 152], [224, 192, 140], [200, 168, 116], [176, 144, 96]];
+const STONE = [[248, 244, 228], [232, 224, 200], [208, 196, 168], [176, 160, 128], [120, 104, 80]];
+const WATER = [[168, 216, 248], [104, 168, 232], [72, 128, 208], [48, 96, 176]];
+const TRIM = [[120, 176, 240], [64, 120, 208], [40, 80, 160]];
+const inFrame = (x, y) => x > 0 && x < PW - 1 && y > 0 && (y < PHH - 1 || (x >= EXIT.x && x < EXIT.x + EXIT.w));
+const onChannel = (x, y) => CHANNELS.some((cx) => x >= cx && x < cx + 2) && y >= 2;
+function drawPhenacGround() {
+  const c = canvas(PW * 16, PHH * 16);
+  seed = 71;
+  // The paving: sandstone slabs, two tones, the grout between.
+  for (let ty = 0; ty < PHH; ty++) for (let tx = 0; tx < PW; tx++) {
+    if (tx >= PC2.x && tx < PC2.x + PC2.w && ty >= PC2.y && ty < PC2.y + PC2.h) continue;   // (the Pokémon Center's own blocks)
+    const base = PAVE[(tx + ty) % 2 ? 0 : 1];
+    c.rect(tx * 16, ty * 16, 16, 16, base);
+    c.hl(tx * 16, tx * 16 + 15, ty * 16 + 15, PAVE[2]); c.vl(tx * 16 + 15, ty * 16, ty * 16 + 15, PAVE[2]);
+    for (let k = 0; k < 5; k++) c.set(tx * 16 + Math.floor(rand() * 15), ty * 16 + Math.floor(rand() * 15), rand() < 0.5 ? PAVE[0] : PAVE[2]);
+  }
+  // The fountain square's rings of paving.
+  for (let y = 13 * 16; y < 25 * 16; y++) for (let x = 2 * 16; x < 38 * 16; x++) {
+    const d = Math.hypot(x - FOUNTAIN.cx, y - FOUNTAIN.cy);
+    if (x >= PC2.x * 16 && x < (PC2.x + PC2.w) * 16 && y >= PC2.y * 16 && y < (PC2.y + PC2.h) * 16) continue;
+    if (d > FOUNTAIN.r + 6 && d < 130 && Math.floor(d / 12) % 2 === 0 && (x + y) % 16 !== 0) c.set(x, y, [216, 180, 128]);
+    if (Math.abs(d - 132) < 1.5 || Math.abs(d - FOUNTAIN.r - 6) < 1.2) c.set(x, y, PAVE[3]);
+  }
+  // The water channels, their stone rims; the bridges over them.
+  for (const cx of CHANNELS) {
+    const x0 = cx * 16, w = 32;
+    for (let y = 2 * 16; y < PHH * 16; y++) {
+      c.hl(x0, x0 + w - 1, y, WATER[1]);
+      for (let x = x0 + 3; x < x0 + w - 3; x++) {
+        const wave = Math.sin((y + x * 0.7) * 0.35) + Math.sin(y * 0.11 - x * 0.2);
+        if (wave > 1.3) c.set(x, y, WATER[0]); else if (wave < -1.2) c.set(x, y, WATER[2]);
+      }
+      c.rect(x0, y, 3, 1, STONE[1]); c.rect(x0 + w - 3, y, 3, 1, STONE[2]); c.set(x0 + 2, y, STONE[3]); c.set(x0 + w - 3, y, STONE[3]);
+    }
+    for (const by of BRIDGES) {
+      c.box(x0 - 2, by * 16 + 1, w + 4, 14, { fill: STONE[1], light: STONE[0], dark: STONE[2], line: STONE[3] });
+      for (let x = x0; x < x0 + w; x += 6) c.vl(x, by * 16 + 3, by * 16 + 12, STONE[2]);
+      c.rect(x0 - 2, by * 16 + 15, w + 4, 2, [24, 40, 80, 90]);
+    }
+  }
+  // The terraces' faces: a cream stone wall a tile high, the stairs down the middle, waterfalls where the channels
+  // go over; a shadow along the foot.
+  for (const ty of TERRACES) {
+    const y0 = ty * 16;
+    for (let x = 16; x < (PW - 1) * 16; x++) {
+      const tile = Math.floor(x / 16);
+      if (tile >= STAIRS.x && tile < STAIRS.x + STAIRS.w) continue;
+      if (CHANNELS.some((cx) => tile >= cx && tile < cx + 2)) continue;
+      for (let y = 0; y < 16; y++) c.set(x, y0 + y, y < 3 ? STONE[0] : y === 3 ? STONE[3] : (x % 32 === 0 || (y === 9 && x % 16 !== 8)) ? STONE[2] : STONE[1]);
+    }
+    c.rect(16, y0 + 16, (PW - 2) * 16, 3, C.shadow);
+    // The stairs.
+    const sx = STAIRS.x * 16, sw = STAIRS.w * 16;
+    for (let k = 0; k < 4; k++) { c.rect(sx, y0 + k * 4, sw, 4, STONE[k % 2 ? 1 : 0]); c.hl(sx, sx + sw - 1, y0 + k * 4 + 3, STONE[3]); }
+    c.box(sx - 4, y0 - 6, 6, 22, { fill: STONE[1], light: STONE[0], dark: STONE[2], line: STONE[3] });
+    c.box(sx + sw - 2, y0 - 6, 6, 22, { fill: STONE[1], light: STONE[0], dark: STONE[2], line: STONE[3] });
+    // The waterfalls.
+    for (const cx of CHANNELS) for (let y = 0; y < 18; y++) for (let x = cx * 16 + 2; x < cx * 16 + 30; x++) {
+      const streak = (x * 7 + Math.floor((y + x) / 3)) % 5;
+      c.set(x, y0 + y, y > 14 ? [248, 252, 255] : streak === 0 ? [248, 252, 255] : streak < 3 ? WATER[0] : WATER[1]);
+    }
+  }
+  // The city's outer wall all round (open at the bottom, the way out).
+  for (let ty = 0; ty < PHH; ty++) for (let tx = 0; tx < PW; tx++) {
+    if (inFrame(tx, ty) || (onChannel(tx, ty) && ty === PHH - 1)) continue;
+    const top = ty === 0 || ty === PHH - 1;
+    c.box(tx * 16, ty * 16, 16, 16, { fill: top ? STONE[2] : STONE[1], light: STONE[0], dark: STONE[3] });
+    if (!top) c.vl(tx * 16 + 8, ty * 16, ty * 16 + 15, STONE[2]);
+  }
+  return c;
+}
+pasteOn(phenac, PW, PHH, drawPhenacGround(), 0, 0, -1);
+// The round fountain: a stone basin, the water in it, the tiered spout and its sprays.
+{
+  const r = FOUNTAIN.r, c = canvas(r * 2 + 8, r * 2 + 40), cx = r + 4, cy = r + 36;
+  c.disc(cx, cy + 4, r + 3, C.shadow);
+  c.disc(cx, cy, r + 2, STONE[3]); c.disc(cx, cy, r, STONE[1]); c.disc(cx, cy - 1, r - 1, STONE[0]); c.disc(cx, cy, r - 5, STONE[3]);
+  c.disc(cx, cy, r - 6, WATER[1]);
+  for (let k = 0; k < 40; k++) { const a = k * 2.4, d = (k * 7) % (r - 10); c.hl(cx + Math.round(Math.cos(a) * d) - 2, cx + Math.round(Math.cos(a) * d) + 2, cy + Math.round(Math.sin(a) * d * 0.9), WATER[0]); }
+  c.disc(cx, cy, 12, STONE[2]); c.disc(cx, cy - 2, 10, STONE[1]); c.disc(cx, cy - 4, 8, STONE[0]);
+  c.box(cx - 3, cy - 30, 6, 28, { fill: STONE[1], light: STONE[0], dark: STONE[2], line: STONE[3] });
+  c.disc(cx, cy - 20, 7, STONE[1]); c.ring(cx, cy - 20, 7, STONE[3]); c.disc(cx, cy - 21, 5, WATER[1]);
+  for (const [dx, h] of [[-12, 18], [12, 18], [-6, 26], [6, 26], [0, 34]]) for (let k = 0; k < h; k++) {
+    const t = k / h, x = cx + Math.round(dx * t), y = cy - 30 - Math.round(Math.sin(t * Math.PI) * 6) + Math.round(t * (dx ? 24 : 0));
+    c.set(x, y, k % 3 ? WATER[0] : [248, 252, 255]); c.set(x + 1, y, WATER[0]);
+  }
+  pasteOn(phenac, PW, PHH, c, FOUNTAIN.cx - cx, FOUNTAIN.cy - cy, cy - 18);
+}
+// A building, Phenac's way: white walls a little shaded, a flat roof with a parapet, blue trim along the top, a blue
+// door under an arch, dark windows; `opts.sign` a word over the door.
+function phenacBuilding(b, opts) {
+  opts = opts || {};
+  const w = b.w * 16, up = opts.up || 24, h = b.h * 16 + up, c = canvas(w, h), roofH = up + 16 * Math.max(1, b.h - 3);
+  seed = 81 + b.x;
+  c.rect(4, h - 6, w - 4, 6, C.shadow);
+  // The roof: flat, the parapet round it.
+  c.box(0, 0, w, roofH, { fill: STONE[1], light: STONE[0], dark: STONE[2], line: STONE[3] });
+  c.box(4, 4, w - 8, roofH - 8, { fill: STONE[2], light: STONE[1], dark: STONE[3] });
+  for (let k = 0; k < (w * roofH) / 60; k++) c.set(5 + Math.floor(rand() * (w - 10)), 5 + Math.floor(rand() * (roofH - 10)), STONE[1]);
+  if (opts.dome) { c.disc(w / 2, roofH / 2, Math.min(w, roofH) / 3, TRIM[1]); c.disc(w / 2 - 3, roofH / 2 - 3, Math.min(w, roofH) / 6, TRIM[0]); c.ring(w / 2, roofH / 2, Math.min(w, roofH) / 3, TRIM[2]); }
+  // The front.
+  const fy = roofH, fh = h - roofH - 4;
+  c.box(0, fy, w, fh, { fill: STONE[0], light: [255, 255, 248], dark: STONE[2], line: STONE[3] });
+  c.rect(1, fy, w - 2, 4, TRIM[1]); c.hl(1, w - 2, fy, TRIM[0]); c.hl(1, w - 2, fy + 4, TRIM[2]);
+  const dx = Math.floor(b.w / 2) * 16;
+  for (let x = 8; x < w - 12; x += 22) {
+    if (Math.abs(x + 5 - (dx + 8)) < 16) continue;
+    c.box(x, fy + 10, 11, 11, { fill: [40, 64, 112], light: [96, 136, 200], line: STONE[3] });
+    c.vl(x + 5, fy + 11, fy + 19, STONE[2]);
+  }
+  // The door: blue, arched.
+  c.rect(dx + 1, fy + 8, 14, fh - 8, TRIM[2]); c.disc(dx + 8, fy + 9, 7, TRIM[2]);
+  c.rect(dx + 3, fy + 10, 10, fh - 10, TRIM[1]); c.disc(dx + 8, fy + 10, 5, TRIM[1]);
+  c.vl(dx + 8, fy + 6, fy + fh - 1, TRIM[2]);
+  if (opts.sign) { c.box(dx - 10, fy - 9, 36, 9, { fill: TRIM[1], light: TRIM[0], line: TRIM[2] }); text(c, opts.sign, dx + 8 - opts.sign.length * 2, fy - 7, [248, 248, 248]); }
+  return c;
+}
+for (const [b, o] of [[MAYOR, { dome: true, sign: "MAYOR" }], [HOUSE_NE, {}], [HOUSE_W, {}], [HOUSE_SW, {}], [HOUSE_SE, {}]]) {
+  const pic = phenacBuilding(b, o);
+  pasteOn(phenac, PW, PHH, pic, b.x * 16, b.y * 16 - (o.up || 24), (o.up || 24) + 16 * (b.h - 1));
+}
+// Phenac Stadium: a great curved front of white stone in tiers, columns along it, the arched entrance in the middle
+// with water falling either side of it, the Poké Ball over the arch.
+{
+  const b = STADIUM, w = b.w * 16, up = 32, h = b.h * 16 + up, c = canvas(w, h);
+  c.rect(6, h - 6, w - 8, 6, C.shadow);
+  // The tiers, curving: each a band of stone, narrower further up.
+  for (let k = 0; k < 4; k++) {
+    const inset = k * 10, y0 = k * 14, bh = h - 4 - k * 14;
+    for (let x = inset; x < w - inset; x++) {
+      const t = (x - w / 2) / (w / 2 - inset || 1), bulge = Math.round((1 - t * t) * 6);
+      c.vl(x, y0 + 6 - bulge, Math.min(h - 5, y0 + 18 - bulge), k % 2 ? STONE[1] : STONE[0]);
+      c.set(x, y0 + 6 - bulge, STONE[3]);
+    }
+  }
+  // The front wall, its columns.
+  const fy = up + 16, fh = h - fy - 4;
+  c.box(0, fy, w, fh, { fill: STONE[0], light: [255, 255, 248], dark: STONE[2], line: STONE[3] });
+  c.rect(1, fy, w - 2, 4, TRIM[1]); c.hl(1, w - 2, fy, TRIM[0]);
+  for (let x = 10; x < w - 8; x += 18) { c.box(x, fy + 6, 7, fh - 8, { fill: STONE[1], light: [255, 255, 248], dark: STONE[2], line: STONE[3] }); c.hl(x - 1, x + 7, fy + 6, STONE[3]); }
+  // The entrance: a tall arch, waterfalls either side, the Poké Ball above.
+  const ax = (ST_DOOR.x - b.x) * 16, aw = ST_DOOR.w * 16;
+  for (const wx of [ax - 22, ax + aw + 6]) for (let y = fy - 6; y < h - 4; y++) for (let x = wx; x < wx + 16; x++) {
+    const s = (x * 5 + Math.floor((y + x * 2) / 3)) % 4;
+    c.set(x, y, s === 0 ? [248, 252, 255] : s < 2 ? WATER[0] : WATER[1]);
+  }
+  c.rect(ax - 4, fy - 8, aw + 8, fh + 8, STONE[3]); c.disc(ax + aw / 2, fy - 8, aw / 2 + 4, STONE[3]);
+  c.rect(ax, fy - 4, aw, fh + 4, [40, 48, 72]); c.disc(ax + aw / 2, fy - 4, aw / 2, [40, 48, 72]);
+  for (let y = fy; y < h - 4; y += 4) c.hl(ax + 2, ax + aw - 3, y, [56, 64, 96]);
+  const bx = ax + aw / 2, by = fy - 28;
+  for (let y = -8; y <= 8; y++) for (let x = -8; x <= 8; x++) if (x * x + y * y <= 68) c.set(bx + x, by + y, y < 0 ? [232, 56, 48] : [248, 248, 248]);
+  c.ring(bx, by, 8, [24, 24, 32]); c.hl(bx - 8, bx + 8, by, [24, 24, 32]); c.disc(bx, by, 2, [248, 248, 248]); c.ring(bx, by, 2, [24, 24, 32]);
+  c.box(ax + aw / 2 - 30, fy + 2, 60, 9, { fill: TRIM[1], light: TRIM[0], line: TRIM[2] });
+  text(c, "STADIUM", ax + aw / 2 - 14, fy + 4, [248, 248, 248]);
+  pasteOn(phenac, PW, PHH, c, b.x * 16, b.y * 16 - up, up + 16 * (b.h - 1));
+}
+// Palms: a curved trunk in rings, fronds drooping all round.
+for (const [px, py] of PALMS) {
+  const c = canvas(48, 64);
+  c.rect(16, 56, 18, 5, C.shadow);
+  for (let y = 22; y < 60; y++) { const x = 22 + Math.round(Math.sin(y / 14) * 3); c.rect(x, y, 6, 1, y % 5 ? [168, 120, 72] : [120, 80, 48]); c.set(x, y, [96, 64, 40]); c.set(x + 5, y, [120, 80, 48]); }
+  const GREEN = [[120, 200, 96], [64, 152, 72], [40, 104, 56]];
+  for (let k = 0; k < 7; k++) {
+    const a = -Math.PI + (k / 6) * Math.PI, len = 18 + (k % 2) * 4;
+    for (let t = 0; t <= len; t++) {
+      const x = 25 + Math.cos(a) * t, y = 22 + Math.sin(a) * t * 0.5 + (t * t) / 40;
+      c.disc(Math.round(x), Math.round(y), t < len - 4 ? 2 : 1, GREEN[t % 3 === 0 ? 0 : 1]);
+      c.set(Math.round(x), Math.round(y) + 2, GREEN[2]);
+    }
+  }
+  c.disc(25, 21, 3, [120, 80, 48]);
+  pasteOn(phenac, PW, PHH, c, px * 16 - 16, py * 16 - 48, 48);
+}
+{
+  const c = canvas(16, 32);
+  c.rect(6, 18, 4, 12, C.wood[2]); c.vl(6, 18, 29, C.wood[3]);
+  c.box(0, 6, 16, 13, { fill: TRIM[1], light: TRIM[0], dark: TRIM[2], line: C.line });
+  c.rect(3, 9, 10, 1, [248, 248, 248]); c.rect(3, 12, 10, 1, [248, 248, 248]); c.rect(3, 15, 7, 1, [248, 248, 248]);
+  pasteOn(phenac, PW, PHH, c, PSIGN.x * 16, PSIGN.y * 16 - 16, 16);
+}
+// (The Pokémon Center's grass corners, as at the Air Strip: paving here, from the tile beside it.)
+for (let y = PC2.y * 16; y < (PC2.y + PC2.h) * 16; y++) for (let x = PC2.x * 16; x < (PC2.x + PC2.w) * 16; x++) {
+  const o = (x + y * PW * 16) * 4, green = (img) => img[o + 3] && img[o + 1] > img[o] + 24 && img[o + 1] > img[o + 2];
+  if (green(phenac.above)) phenac.above[o + 3] = 0;
+  if (!green(phenac.below)) continue;
+  const so = ((PC2.x - 1) * 16 + (x % 16) + y * PW * 16) * 4;
+  for (let k = 0; k < 4; k++) phenac.below[o + k] = phenac.below[so + k];
+}
+// Its people, with Colosseum's own words for them (assets/text/colosseum.json, Phenac's outside, M1_out).
+const COLO = JSON.parse(fs.readFileSync(path.join(root, "assets/text/colosseum.json"), "utf8"));
+const NAMES_COLO = [["POKéMON", "Pokémon"], ["PHENAC CITY", "Phenac City"], ["PYRITE TOWN", "Pyrite Town"], ["PYRITE", "Pyrite"], ["PRE GYM", "Pre Gym"],
+  ["JUSTY", "Justy"], ["LEADER", "Leader"], ["MAYOR", "Mayor"], ["TEAM SNAGEM", "Team Snagem"], ["ORRE", "Orre"]];
+const colo = (id) => COLO["M1_out/M1_out"][id].split("\f").map((p) => NAMES_COLO.reduce((t, [a, b]) => t.split(a).join(b), p.replace(/^\{speaker\}: /, "")));
+const PHENAC = {
+  name: "PhenacCity", title: "Phenac City", width: PW, height: PHH, type: "city", music: "em_lilycove",
+  region: "orre", battleScene: "sand", cycling: true, showName: true, top: true, borderWidth: 2, borderHeight: 2,
+  collision: [], elevation: [], behavior: [], encounter: [],
+  connections: [], triggers: [], hidden: [],
+  warps: [{ x: PC2_DOOR.x, y: PC2_DOOR.y, map: "PhenacCity_PokemonCenter_1F", warp: 0 }],
+  signs: [{ x: PSIGN.x, y: PSIGN.y, script: "PhenacCity_EventScript_Sign", text: ["PHENAC CITY", "The city of water in the desert."] },
+    ...[0, 1].map((k) => ({ x: ST_DOOR.x + k, y: STADIUM.y + STADIUM.h - 1, script: "PhenacCity_EventScript_Stadium",
+      text: ["PHENAC STADIUM", "The doors are shut. A notice says the\nnext tournament is coming soon."] })),
+    { x: PDOORS.MAYOR.x, y: PDOORS.MAYOR.y, script: "PhenacCity_EventScript_MayorsHouse", text: ["The Mayor's house.", "The door is locked."] },
+    ...["HOUSE_NE", "HOUSE_W", "HOUSE_SW", "HOUSE_SE"].map((k) => ({ x: PDOORS[k].x, y: PDOORS[k].y, script: "PhenacCity_EventScript_LockedDoor", text: ["The door is locked."] }))],
+  people: [
+    person(0, "PHENAC_TRAINER", 17, 23, "black_belt", "face_up", "PhenacCity_EventScript_Kodo", null),
+    person(1, "PHENAC_MAN", 24, 29, "man", "wander_around", "PhenacCity_EventScript_Man", colo(20121), { rangeX: 2, rangeY: 1 }),
+    person(2, "PHENAC_WOMAN", 8, 22, "woman_1", "look_around", "PhenacCity_EventScript_Woman", colo(20169)),
+    person(3, "PHENAC_BOY", 23, 15, "boy", "wander_around", "PhenacCity_EventScript_Boy", colo(20009), { rangeX: 2, rangeY: 1 }),
+    person(4, "PHENAC_LASS", 33, 21, "lass", "face_left", "PhenacCity_EventScript_Lass", colo(20170))
+  ],
+  wild: null
+};
+{
+  const solid = new Set(), fill = (b) => { for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) solid.add(x + "," + y); };
+  for (let y = 0; y < PHH; y++) for (let x = 0; x < PW; x++) {
+    if (!inFrame(x, y)) solid.add(x + "," + y);
+    if (onChannel(x, y) && !BRIDGES.includes(y)) solid.add(x + "," + y);
+    if (TERRACES.includes(y) && !(x >= STAIRS.x && x < STAIRS.x + STAIRS.w)) solid.add(x + "," + y);
+    if (Math.hypot(x * 16 + 8 - FOUNTAIN.cx, y * 16 + 8 - FOUNTAIN.cy) < FOUNTAIN.r + 2) solid.add(x + "," + y);
+  }
+  for (const b of [STADIUM, MAYOR, HOUSE_NE, HOUSE_W, HOUSE_SW, HOUSE_SE, PC2]) fill(b);
+  solid.delete(PC2_DOOR.x + "," + PC2_DOOR.y);
+  for (const [x, y] of PALMS) solid.add(x + "," + y);
+  solid.add(PSIGN.x + "," + PSIGN.y);
+  for (let i = 0; i < pblocks.length; i++) {
+    const x = i % PW, y = Math.floor(i / PW);
+    PHENAC.collision.push(solid.has(x + "," + y) ? 1 : 0);
+    PHENAC.elevation.push(3);
+    PHENAC.behavior.push(x === PC2_DOOR.x && y === PC2_DOOR.y ? 0x69 : 0);
+    PHENAC.encounter.push(0);
+  }
+  writePng(path.join(outMaps, "PhenacCity.png"), PW * 16, PHH * 16, phenac.below);
+  writePng(path.join(outMaps, "PhenacCity-top.png"), PW * 16, PHH * 16, phenac.above);
+  const b = canvas(32, 32);
+  for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) b.set(x, y, [[240, 216, 160], [232, 200, 144]][((x >> 3) + (y >> 3) + (Math.sin(x * 0.5 + y) > 0.6 ? 1 : 0)) % 2]);
+  save(b, path.join(outMaps, "PhenacCity-border.png"));
+}
+const PCP = pokemonCenterInside("PhenacCity_PokemonCenter_1F", "Phenac City", "PhenacCity", 0, [
+  person(1, "PHENAC_PC_GIRL", 11, 5, "em_woman_5", "face_left", "PhenacCity_PokemonCenter_1F_EventScript_Girl",
+    ["Phenac's water comes up from deep\nunder the desert.", "That's why there's a city here at all!"])
+]);
 
 // ---------- Leaving a place: Orre's map ----------
 //
@@ -1179,7 +1470,7 @@ function edgeExits(m, rows) {
   for (const y of rows) for (let x = 0; x < m.width; x++) if (!m.collision[y * m.width + x]) m.triggers.push({ x, y, script: "Orre_WorldMap" });
 }
 OUT.connections = []; AIR.connections = [];
-edgeExits(OUT, [0, H - 1]); edgeExits(AIR, [0]); edgeExits(HIDE, [HH - 1]);
+edgeExits(OUT, [0, H - 1]); edgeExits(AIR, [0]); edgeExits(HIDE, [HH - 1]); edgeExits(PHENAC, [PHH - 1]);
 AIR.signs[0].text = ["ORRE AIR STRIP", "Through the gate: the desert roads\nof Orre."];
 
 // The map of Orre (240 by 160, the town map's size): a desert of dunes, red mesas and canyons, the mountains to the
@@ -1237,5 +1528,5 @@ AIR.signs[0].text = ["ORRE AIR STRIP", "Through the gate: the desert roads\nof O
 fs.writeFileSync(path.join(root, "data/orre-maps.js"),
   "// Auto-generated by tools/build-orre.js (Emerald's desert tiles, and pictures drawn there). Do not edit by hand.\n" +
   "// Orre's Outskirt Stand and Snagem Hideout, from Pokémon Colosseum, and the Orre Air Strip, added to FireRed's maps (data/world-maps.js).\n" +
-  "Object.assign(window.WORLD_MAPS, " + JSON.stringify({ OutskirtStand: OUT, OutskirtStand_Diner: IN, OrreAirStrip: AIR, OrreAirStrip_PokemonCenter_1F: PCI, SnagemHideout: HIDE }) + ");\n");
+  "Object.assign(window.WORLD_MAPS, " + JSON.stringify({ OutskirtStand: OUT, OutskirtStand_Diner: IN, OrreAirStrip: AIR, OrreAirStrip_PokemonCenter_1F: PCI, SnagemHideout: HIDE, PhenacCity: PHENAC, PhenacCity_PokemonCenter_1F: PCP }) + ");\n");
 console.log("wrote the Outskirt Stand (" + W + "x" + H + "), its diner (" + IN_W + "x" + IN_H + ") and the Air Strip (" + AW + "x" + AH + "), the Snagem Hideout (" + HW + "x" + HH + ") and Orre's map to data/orre-maps.js and assets/");

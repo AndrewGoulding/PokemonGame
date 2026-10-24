@@ -39,6 +39,8 @@ const out = {
   "berry-pouch": "Use it in a forest to shake a\nberry tree and catch the Berries\nthat fall.",
   // (This game's: after Johto's Hall of Fame, for the S.S. Aqua's run to Hoenn.)
   "hoenn-ticket": "A ticket for the Fast Ship\nS.S. Aqua's run from Olivine\nto Slateport City in Hoenn.",
+  // (Pokémon Colosseum's: Team Snagem's, given you by its guards in Orre.)
+  "snag-machine": "Team Snagem's machine. It turns\nPoké Balls into Snag Balls that\ncatch other Trainers' Pokémon.",
   // (This game's: after Hoenn's Hall of Fame, for the S.S. Tidal's run to Sinnoh.)
   "sinnoh-ticket": "A ticket for the S.S. Tidal's\nrun to Sinnoh, sailing from\nLilycove City.",
   // (As since Gen 4: a quarter of its HP, not FireRed's 30.)

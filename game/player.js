@@ -455,7 +455,7 @@
   // then Johto, ...). In a region, your Pokémon grow no further than its cap
   // for the Badges you have of that region's eight: 15 with none, then 25, 30,
   // 35, 40, 45, 50 and 55; with all eight, no cap. Kanto's side places (the
-  // Sevii Islands, Orre, ...) go by Kanto's Badges. At the cap a Pokémon gains
+  // Sevii Islands, ...) go by Kanto's Badges; Orre has its own (ORRE_LEVEL_CAP). At the cap a Pokémon gains
   // no Exp. Points, and Rare Candies and Exp. Candies don't work on it.
   const REGION_BADGES = {
     kanto: ["boulder", "cascade", "thunder", "rainbow", "soul", "marsh", "volcano", "earth"],
@@ -470,7 +470,11 @@
     hoenn: [15, 19, 24, 29, 31, 33, 42, 46]    // Roxanne, Brawly, Wattson, Flannery, Norman, Winona, Tate & Liza, Juan
   };
   const regionOf = (map) => ((window.WORLD_MAPS && window.WORLD_MAPS[map]) || {}).region || "kanto";
+  // (Orre's, this game's own: one cap for the whole of it so far, 15, while you're with Team Snagem;
+  // player.flags.orreLevelCap raises it, for later in the story.)
+  const ORRE_LEVEL_CAP = 15;
   function levelCap(player, map) {
+    if (regionOf(map || (player.location && player.location.map)) === "orre") return (player.flags && player.flags.orreLevelCap) || ORRE_LEVEL_CAP;
     const region = REGION_BADGES[regionOf(map || (player.location && player.location.map))] ? regionOf(map || (player.location && player.location.map)) : "kanto";
     const n = REGION_BADGES[region].filter((b) => (player.badges || []).includes(b)).length;
     return n < LEVEL_CAPS[region].length ? LEVEL_CAPS[region][n] : 100;

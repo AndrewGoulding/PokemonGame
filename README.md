@@ -2982,11 +2982,32 @@ above, yellow-and-black hazard chains and a great round dish. Two **Snagem grunt
 vests as in Colosseum, guard the gate; a third keeps a lookout in the canyon.
 
 **Joining Team Snagem** (this game's own, as Oak asked: you're to go undercover). Talk to either guard and you can
-ask to join Team Snagem. The guards laugh, then the one you asked tests you, two on two (a Mightyena and a Zangoose,
-a few levels under your strongest Pokémon, between Lv. 30 and 60), his battle picture FireRed's Cue Ball in Snagem's
-red vest. Beat him and he'll put in a word for you with Master Gonzap, who's out on a job; lose and he'll test you
-again when you come back (`player.flags.orreStory`: 3 once you've asked, 4 once you've won). What comes next is
-still to be written.
+ask to join Team Snagem. The guards laugh, but Master Gonzap always wants more hands: you're in if you pass Snagem's
+tests. They give you the **Snag Machine** (a key item: worn on the arm, it turns your Poké Balls into Snag Balls that
+can catch another Trainer's Pokémon) and the first test:
+- **Test one: Phenac City.** Phenac opens on Orre's map. By its fountain, Black Belt Kodo battles you two on two with
+  a Makuhita and a Machop (Lv. 7 each): snag his Makuhita (a Ball thrown at it, with the Snag Machine) and win, and
+  it's yours; then go back to the guards, who pass you and report to Master Gonzap. Lose, or knock the Makuhita out
+  without snagging it, and you're taken back to the guards to try again.
+- The tests after that are still to be written (`player.flags.orreStory`: 3 with the first test, 4 with the Makuhita
+  snagged, 5 once the guards have seen it).
+
+**Snagging** (`engine/battle.js`, `opts.snag`): a trainer battle can be given the species that may be snagged in it.
+While one is out, you can throw a Ball (the Bag's Poké Balls pocket, as in a wild battle) and it's aimed at that
+Pokémon, whichever slot it's in; caught, it's snagged: "Gotcha! … was snagged!", it leaves its trainer's team (no
+fainting, no Exp. lost) and the battle goes on, their next Pokémon coming out. It's yours afterwards, unless you
+lose the battle.
+
+**Orre's level cap** is **15** for now (`Player.levelCap`, this game's own caps): your Pokémon gain no Exp. past it,
+and one over it may not obey. `player.flags.orreLevelCap` will raise it later in the story.
+
+**Phenac City** (after Colosseum's, drawn in code): the city of water in the desert, all paved in sandstone, its
+white-walled buildings with flat roofs and blue trim, palms, and two channels of water running the length of it and
+falling as waterfalls over the edge of each terrace. At the top, Phenac Stadium (its arched entrance between two
+waterfalls, the Poké Ball above it; shut for now), the Mayor's house (its blue dome) and a house; down the stairs,
+the fountain square with its round fountain in rings of paving, the Pokémon Center (Emerald's, as at the Air Strip,
+Mauville's inside) and a house; down again, the entrance plaza, its palms and two more houses, and the way out to
+the desert. Its townspeople say Colosseum's own words (`assets/text/colosseum.json`).
 
 **The Outskirt Stand**, not on the map yet: a diner made from an old locomotive out in Orre's desert. The first time you
 get there, two men come out of the diner, **Folly** and **Trudly**. They talk about their meal and the sack in

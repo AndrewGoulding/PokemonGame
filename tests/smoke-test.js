@@ -3068,7 +3068,16 @@ if (window.JOHTO_TOWN_MAP) {
   for (const w of D.warps) assert.strictEqual(World.warpTarget(w).map, "OutskirtStand");
   // No roads between places: their ways out (open edge tiles) bring up Orre's map, and it takes you to each place's
   // way in; only the plane goes there from elsewhere.
-  for (const m of [O, A, H]) {
+  // Phenac City, and its Pokémon Center.
+  const P = WORLD_MAPS.PhenacCity, PP = WORLD_MAPS.PhenacCity_PokemonCenter_1F;
+  for (const m of [P, PP]) for (const k of ["collision", "behavior", "elevation", "encounter"]) assert.strictEqual(m[k].length, m.width * m.height, m.name + " " + k);
+  for (const p of P.people) assert(fs.existsSync(path.join(root, "assets/world/sprites/" + p.sprite + ".png")), "missing sprite " + p.sprite);
+  assert(P.people.some((p) => p.script === "PhenacCity_EventScript_Kodo"), "the Trainer with the Makuhita");
+  assert(PP.pokemonCenter && World.warpTarget(P.warps[0]).map === PP.name && PP.warps.every((w) => World.warpTarget(w).map === "PhenacCity"));
+  assert(!Orre.isOpen({}, "PhenacCity") && Orre.isOpen({ orreMap: ["PhenacCity"] }, "PhenacCity"), "Phenac City opens with Snagem's first test");
+  assert.strictEqual(Player.levelCap({ badges: ["boulder", "cascade"], flags: {}, location: { map: "PhenacCity" } }), 15, "Orre's level cap");
+  assert.strictEqual(Player.levelCap({ badges: [], flags: { orreLevelCap: 30 }, location: { map: "PhenacCity" } }), 30);
+  for (const m of [O, A, H, P]) {
     assert.deepStrictEqual(m.connections, [], m.name);
     const exits = m.triggers.filter((t) => t.script === "Orre_WorldMap");
     assert(exits.length >= 2 && exits.every((t) => !m.collision[t.y * m.width + t.x] && (t.y === 0 || t.y === m.height - 1)), m.name + "'s way out");
@@ -3662,6 +3671,21 @@ const armored = (species, moves, level) => ({ species, level: level || 50, abili
   }
   // A Shadow Pokémon in the party goes into battle as one.
   assert.strictEqual(Party.toBattleSet(Object.assign(Party.create("Mightyena", 30), { shadow: true })).shadow, true);
+}
+
+// The Snag Machine (opts.snag): a Ball at a trainer's Pokémon of a species that can be snagged; snagged, it leaves the
+// trainer's team and the battle goes on; other trainers' Pokémon can't be caught.
+{
+  const b = doubles({ team: [armored("Snorlax", ["Splash"]), armored("Blissey", ["Splash"])] },
+    { team: [armored("Makuhita", ["Splash"]), armored("Machop", ["Splash"])] }, { snag: ["Makuhita"] });
+  assert(b.getRequest("p1").actives.every((a) => a.canCatch), "a Ball can be thrown while there's a Makuhita to snag");
+  const evs = play(b, { p1: [{ type: "ball", ball: "master-ball" }, mv(0)], p2: [mv(0), mv(0)] });
+  assert(evs.some((e) => e[0] === "caught" && /Makuhita/.test(e[1]) && e[3] === "snag"), "Makuhita snagged");
+  assert.strictEqual(b.snagged.length, 1);
+  assert(!b.ended && b.sides.p2.remaining === 1, "the battle goes on against the Machop");
+  assert(!b.getRequest("p1").actives.some((a) => a.canCatch), "nothing left to snag");
+  const plain = doubles({ team: [armored("Snorlax")] }, { team: [armored("Makuhita"), armored("Machop")] });
+  assert(!plain.getRequest("p1").actives.some((a) => a && a.canCatch), "no snagging without the Snag Machine");
 }
 
 // Spread moves do 0.75x to each target, and Earthquake hits the ally too.

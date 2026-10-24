@@ -517,6 +517,10 @@
       // balls miss, and running away always works.
       this.ghost = !!opts.ghost;
       this.noCatch = !!opts.noCatch;   // (the Ghost, seen through the Silph Scope: still dodges balls)
+      // (Orre's Snag Machine, this game's own way: in a trainer battle, the species that can be snagged, caught as a
+      // wild one is; a snagged Pokémon leaves its trainer's team and the battle goes on. battle.snagged: those caught.)
+      this.snag = Array.isArray(opts.snag) && opts.snag.length ? opts.snag.slice() : null;
+      this.snagged = [];
       this.catchContext = opts.catchContext || {};
       this.runAttempts = 0;
       this.caught = null;
@@ -1791,7 +1795,7 @@
       };
       if (forced) { base.switches = []; return base; }
       base.active.trapped = this.isTrapped(mon);
-      base.active.canCatch = this.wild && sideId === "p1";
+      base.active.canCatch = sideId === "p1" && (this.wild || this.snaggable(side.foe.active));
       base.active.canRun = this.wild && sideId === "p1" &&
         (!base.active.trapped || mon.item === "smoke-ball" || mon.hasAbility("Run Away"));
       base.switches = base.active.trapped || this.arena ? [] : side.pokemon.map((p, i) => (!p.fainted && p !== side.active ? i : -1)).filter((i) => i >= 0);
@@ -2090,7 +2094,7 @@
         r.trapped = this.isTrapped(mon);
         r.switches = r.trapped ? [] : side.bench(slot);
         // (A ball only while one wild Pokémon is left, as in Gen 5+.)
-        r.canCatch = this.wild && side.id === "p1" && this.foesOf(mon).length === 1;
+        r.canCatch = side.id === "p1" && ((this.wild && this.foesOf(mon).length === 1) || this.foesOf(mon).some((f) => this.snaggable(f)));
         r.canRun = this.wild && side.id === "p1" && (!r.trapped || mon.item === "smoke-ball" || mon.hasAbility("Run Away"));
         return r;
       });
@@ -2711,8 +2715,12 @@
       this.ended = true; this.phase = "ended"; this.winner = null;
     }
 
+    snaggable(mon) { return !!(this.snag && !this.wild && mon && !mon.fainted && mon.side.id === "p2" && this.snag.includes(mon.baseSpecies)); }
+
     throwBall(mon, ball) {
-      const target = this.doubles ? this.foesOf(mon)[0] : mon.side.foe.active;
+      const snagging = this.snag && !this.wild;
+      const target = snagging ? (this.doubles ? this.foesOf(mon) : [mon.side.foe.active]).find((f) => this.snaggable(f))
+        : this.doubles ? this.foesOf(mon)[0] : mon.side.foe.active;
       if (!target || target.fainted) return;
       if (this.ghost || this.noCatch) { this.add("-ghostdodge", mon.side.id, ball); return; }
       const ctx = this.catchContext;
@@ -2724,6 +2732,17 @@
         () => this.random());
       this.add("-ball", mon.side.id, ball, target, result.shakes, result.caught ? "caught" : "");
       if (!result.caught) return;
+      if (snagging) {
+        // Snagged: out of its trainer's team (as if fainted, but no faint), and the battle goes on.
+        this.add("caught", target, ball, "snag");
+        if (this.expEnabled) this.awardExp(target);
+        this.snagged.push(target);
+        target.hp = 0; target.fainted = true; target.snaggedAway = true; target.side.faintedThisTurn = true;
+        target.volatiles = {};
+        this.queue = this.queue.filter((q) => q.mon !== target);
+        this.checkWin();
+        return;
+      }
       this.add("caught", target, ball);
       if (this.expEnabled) this.awardExp(target); // Gen 6 gives experience for catches
       this.caught = target;
