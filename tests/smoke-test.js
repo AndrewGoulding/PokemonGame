@@ -4954,8 +4954,8 @@ for (let seed = 1; seed <= GEN8; seed++) {
     k.choose("p1", mv(0)); k.choose("p2", OpponentAI.choose(k, "p2", mulberry32(1)));
     const bee = k.sides.p2.pokemon[0], order = k.events.map((ev) => ev[0]).filter((t) => t === "-mega" || t === "-terastallize");
     assert.deepStrictEqual([bee.species, bee.terastallized, bee.types, order], ["Beedrill-Mega", "Ground", ["Ground"], ["-mega", "-terastallize"]], "Mega Beedrill, Tera Ground");
-    assert(/script === "enter:PewterCity" \|\| script === "arrive:PewterCity"\) && !player\.flags\.gotTeraOrb/.test(gameSrc)
-      && /Player\.addItem\(player, "tera-orb"\)/.test(gameSrc), "the Tera Orb from Prof. Oak's aide in Pewter"); }
+    assert(/script === "enter:Route2" && !player\.flags\.gotTeraOrb/.test(gameSrc)
+      && /Player\.addItem\(player, "tera-orb"\)/.test(gameSrc), "the Tera Orb from Prof. Oak's aide, out of Viridian Forest"); }
   // Tera STAB: 2x for a Tera Type it already had, 1.5x for its own types or a new one; the 60-power floor.
   { const tera = (sp, t) => Object.assign(Damage.makePokemon(sp, { level: 50 }), { terastallized: t, teraBaseTypes: window.DEX[sp].types.slice(), types: t === "Stellar" ? window.DEX[sp].types.slice() : [t] });
     const d = Damage.makePokemon("Snorlax", { level: 50 }), plain = Damage.makePokemon("Pikachu", { level: 50 });
