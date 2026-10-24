@@ -907,7 +907,12 @@
       if (!a.lockFacing) a.facing = dir;
       if (a === me) { me.move = { tx: me.x + dx, ty: me.y + dy, tmap: me.map, dir, t: 0, dist: TILE, speed, scripted: true }; me.parity ^= 1; followerStep(); }
       else if (a === pal) { pal.move = { fx: pal.x, fy: pal.y, t: 0, dist: TILE, speed, hop: false }; pal.x += dx; pal.y += dy; pal.parity ^= 1; pal.scripted = true; }
-      else a.move = { tx: a.x + dx, ty: a.y + dy, t: 0, speed };
+      else {
+        // (Someone walking where your Pokémon stands, Wally into Norman's Gym: it's back at your feet, out of their way,
+        // till you walk on.)
+        if (followerAt(a.x + dx, a.y + dy)) tuckFollower();
+        a.move = { tx: a.x + dx, ty: a.y + dy, t: 0, speed };
+      }
       return 0;
     }
     // A hop one tile (FireRed's jump_*: onto the water to Surf).

@@ -159,6 +159,36 @@ function apply({ maps, scripts, trainers }) {
     m.triggers = m.triggers.filter((t) => !moved.includes(t)).concat(...moved.filter((t, i, a) => a.findIndex((u) => u.script === t.script) === i)
       .map((t) => at.map(([x, y]) => Object.assign({}, t, { x, y }))));
   }
+  // Goldenrod Tunnel B1F's Kimono Girl (scr_seq_D37R0102_011, after the Radio Tower): HGSS's room has her come from
+  // the east to where you walk in; Heart & Soul's is a corridor with walls to the east, and HGSS's step and her place
+  // are in them. She waits in the corridor (here 1,29: HGSS's 4,32), and the step's the corridor's foot, up from the
+  // stairs to 1F (3,32 and 4,32: HGSS's 4,35 and 5,35); she comes down to you by which of them you're on (HGSS's x,
+  // as the script sees you, not its y), and goes back up the way she came. (Her walks are in HGSS's tiles, as the
+  // game re-plans them for the map: ui/johto-coords.js.)
+  {
+    const m = maps.GoldenrodCity_Tunnel_B1F, z = scripts && scripts.zones && scripts.zones.D37R0102;
+    const girl = m && m.people.find((p) => p.localId === "obj_D37R0102_dancer"), at = z && z.labels.scr_seq_D37R0102_011;
+    if (girl && at != null) {
+      Object.assign(girl, { x: 1, y: 29, movement: "face_down" });
+      const step = m.triggers.find((t) => /scr_seq_D37R0102_011/.test(t.script || ""));
+      m.triggers = m.triggers.filter((t) => !/scr_seq_D37R0102_011/.test(t.script || "")).concat([3, 4].map((x) => Object.assign({}, step, { x, y: 32 })));
+      const walks = [];
+      for (const c of z.cmds.slice(at, at + 30)) {
+        if (c[0] === "Compare" && c[1] === "VAR_SPECIAL_x8005" && c[2] === 31) { c[1] = "VAR_SPECIAL_x8004"; c[2] = 4; }
+        if (c[0] === "ApplyMovement" && c[1] === "obj_D37R0102_dancer") walks.push(c[2]);
+        if (c[0] === "End") break;
+      }
+      // (Her walks, in the script's order: to you on the left, to you on the right, her surprise, away from each.)
+      const spin = ["face_up", "delay_4", "face_right", "delay_4", "face_down", "delay_4", "face_left", "delay_4"];
+      const come = ["emote_exclamation_mark", "walk_in_place_down", "delay_16", "walk_down", "walk_down"];
+      if (walks.length === 5) {
+        z.moves[walks[0]] = come.concat(["face_down"]);
+        z.moves[walks[1]] = come.concat(["walk_right", "face_down"]);
+        z.moves[walks[3]] = ["walk_up", "walk_up"].concat(spin, ["walk_up"]);
+        z.moves[walks[4]] = ["walk_left", "walk_up", "walk_up"].concat(spin, ["walk_up"]);
+      }
+    }
+  }
   // Route 35's Juggler Irwin: his strongest Voltorb (or Electrode, in his rematches), and three of a kind he juggles
   // with no more: Mr. Mime, Drowzee or Hypno, Magnemite or Magneton.
   for (const [id, keep, more] of [["HGSS_TRAINER_JUGGLER_IRWIN", "Voltorb", [["Mr. Mime", 14], ["Drowzee", 13], ["Magnemite", 13]]],
