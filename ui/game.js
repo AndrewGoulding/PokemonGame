@@ -2299,7 +2299,7 @@
     return Object.assign({
       entries: dexList().map((e) => ({ id: e.id, species: e.species, seen: seen.has(e.species), caught: caught.has(e.species) })),
       areas: speciesAreas,
-      areaList: dexAreaList(),
+      areaRegions: dexAreaRegions(),
       trainer: "assets/sprites/trainers/front/" + Player.LOOKS[player.look].front + ".png",
       cry: (sp) => cry(sp),
       // (The National Pokédex from the start: Player.nationalDex.)
@@ -2318,19 +2318,26 @@
   // (Not the S.S. Anne: it only has the fishing and surfing of Vermilion's dock,
   // the same Pokémon as Vermilion City's.)
   const AREA_SKIP = ["S_S_ANNE"];
-  function dexAreaList() {
+  // (Kanto's, then Johto's and Hoenn's, each with its Town Map for the menu's picture.)
+  function dexAreaRegions() {
+    const pic = (R) => R && { src: R.image, x: R.x0, y: R.y0, w: 8 * R.width, h: 8 * R.height };
+    return [{ label: "Kanto", places: dexAreaList("kanto") }]
+      .concat(JOHTO_MAP ? [{ label: "Johto", places: dexAreaList("johto"), map: pic(JOHTO_MAP) }] : [],
+        HOENN_MAP ? [{ label: "Hoenn", places: dexAreaList("hoenn"), map: pic(HOENN_MAP) }] : []);
+  }
+  function dexAreaList(region) {
     const secs = (window.TOWN_MAP || {}).mapSections || {}, names = (window.TOWN_MAP || {}).names || {};
     const visited = player.flags.visitedSections || [], bySec = new Map();
     const walk = (o, out) => {
       if (!o || typeof o !== "object") return;
-      if (o.species) out.add(o.species);
-      if (o.alt) out.add(o.alt);   // (a slot's LeafGreen Pokémon, as likely as its FireRed one)
+      // (a slot's LeafGreen Pokémon, as likely as its FireRed one; Johto's by the time of day, and SoulSilver's)
+      for (const sp of [o.species, o.alt, o.morning, o.night, o.altMorning, o.altNight]) if (typeof sp === "string") out.add(sp);
       for (const v of Object.values(o)) walk(v, out);
     };
     for (const [name, m] of Object.entries(window.WORLD_MAPS)) {
       const sec = secs[name];
-      // (Kanto's: Johto's maps have their sections too, for its Town Map.)
-      if (!sec || m.region === "johto" || AREA_SKIP.includes(sec) || !AREA_KINDS.some(([, k]) => m[k])) continue;
+      // (The region's own: Johto's and Hoenn's maps have their sections too, for their Town Maps.)
+      if (!sec || (m.region || "kanto") !== region || AREA_SKIP.includes(sec) || !AREA_KINDS.some(([, k]) => m[k])) continue;
       if (!bySec.has(sec)) bySec.set(sec, AREA_KINDS.map(() => new Set()));
       AREA_KINDS.forEach(([, k], i) => walk(m[k], bySec.get(sec)[i]));
     }

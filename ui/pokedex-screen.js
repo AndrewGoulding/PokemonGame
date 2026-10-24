@@ -4,7 +4,7 @@
 //   the table of contents   the National Pokédex's (sListMenuItems_NatDexModeSelect):
 //                           POKéMON LIST (NUMERICAL MODE: KANTO and NATIONAL),
 //                           the nine habitats, SEARCH (A TO Z, TYPE, LIGHTEST and
-//                           SMALLEST MODE) and CLOSE; this game's AREA MODE: KANTO
+//                           SMALLEST MODE) and CLOSE; this game's AREA MODE: KANTO (and JOHTO, HOENN)
 //                           comes under the POKéMON LIST,
 //                           with each choice's picture and the Seen / Owned
 //                           counts, Kanto's and National; the ▶ starts on
@@ -28,6 +28,7 @@
 //     areas,       // (species) => [MAPSEC, ...] where it can be found
 //     areaList,    // [{ name, visited, groups: [{ title, species: [...] }] }] the places
 //                  //   with wild Pokémon, in order: Grass, Fishing, Surfing
+//     areaRegions, // [{ label, places (as areaList), map: { src, x, y, w, h } }] Area mode for each region (else Kanto's areaList)
 //     trainer,     // your front picture's URL (the size comparison)
 //     cry,         // (species) => void
 //     national,    // the National Pokédex (IsNationalPokedexEnabled): always, once you have one
@@ -166,11 +167,11 @@
 
   function menuItems() {
     const seen = new Set(st.entries.filter((e) => e.seen).map((e) => e.species));
-    // (This game's Area mode, Kanto's places, under the lists.)
-    const area = { label: "Area mode: Kanto", act: "areas", icon: "areas", locked: !areaRows().some((a) => a.visited) };
+    // (This game's Area mode, each region's places (Kanto's, Johto's, Hoenn's), under the lists.)
+    const area = regions().map((R, i) => ({ label: "Area mode: " + R.label, act: "areas", region: i, icon: "areas", locked: !areaRows(i).some((a) => a.visited) }));
     const it = [{ head: "Pokémon list" }].concat(st.national
       ? [{ label: "Numerical mode: Kanto", act: "kanto", icon: "numerical" }, { label: "Numerical mode: National", act: "national", icon: "numerical" }]
-      : [{ label: "Numerical mode", act: "kanto", icon: "numerical" }], [area, { head: "Pokémon habitats" }]);
+      : [{ label: "Numerical mode", act: "kanto", icon: "numerical" }], area, [{ head: "Pokémon habitats" }]);
     D().habitats.forEach((h, i) => it.push({ label: h.name + " Pokémon", act: "habitat", habitat: i, icon: h.icon,
       locked: !h.pages.some((p) => p.some((sp) => seen.has(sp))) }));
     it.push({ head: "Search" }, ...SEARCH.map(([act, label, icon]) => ({ label, act, icon })));
@@ -189,7 +190,7 @@
       if (m.top + r === m.cursor) s.text("▶", 12, y, BLACK, BEIGE);
     }
     const cur = items[m.cursor], icon = cur && cur.icon && cur.icon !== "areas" && A("cat-" + cur.icon);
-    if (cur && cur.icon === "areas") areaIcon(168, 88);
+    if (cur && cur.icon === "areas") areaIcon(168, 88, cur.region);
     else if (ready(icon)) g.drawImage(icon, 168, 88);
     const count = (key, kanto) => String(st.entries.filter((e) => e[key] && (!kanto || e.id <= KANTO_DEX_COUNT)).length).padStart(3, " ");
     if (st.national) {
@@ -277,11 +278,14 @@
   // complete, grassComplete }. Rows are dex entries under a { head } for each
   // way of finding them (Grass, Fishing, Surfing); caught and total count each
   // species once. grassComplete: all its Grass Pokémon caught.
-  function areaRows() {
-    if (st.areaRows) return st.areaRows;
+  // The regions with Area mode: opts.areaRegions ([{ label, places, map: { src, x, y, w, h } }]), or Kanto's alone (opts.areaList).
+  function regions() { return st.opts.areaRegions || [{ label: "Kanto", places: st.opts.areaList || [] }]; }
+  function areaRows(i) {
+    st.areaRows = st.areaRows || [];
+    if (st.areaRows[i]) return st.areaRows[i];
     const byName = {};
     for (const e of st.entries) byName[e.species] = e;
-    return (st.areaRows = (st.opts.areaList || []).map((a) => {
+    return (st.areaRows[i] = (regions()[i].places || []).map((a) => {
       const rows = [], all = new Set();
       let grassComplete = false;
       for (const gr of a.groups || []) {
@@ -303,13 +307,14 @@
   function crown(s, x, y, colours) {
     CROWN.forEach((row, j) => [...row].forEach((c, i) => { if (colours[c]) s.put(x + i, y + j, colours[c]); }));
   }
-  // The menu's picture for AREA MODE: the Kanto map (map_kanto.png), shrunk into the pictures' oval.
-  function areaIcon(x, y) {
-    const img = A("map-kanto");
+  // The menu's picture for AREA MODE: the Kanto map (map_kanto.png), or the region's Town Map, shrunk into the pictures' oval.
+  function areaIcon(x, y, i) {
+    const m = (regions()[i] || {}).map, img = m ? image(m.src) : A("map-kanto");
     if (!ready(img)) return;
     g.save();
     g.beginPath(); g.ellipse(x + 32, y + 24, 32, 24, 0, 0, 2 * Math.PI); g.clip();
-    g.drawImage(img, 0, 0, 96, 72, x, y, 64, 48);
+    if (m) g.drawImage(img, m.x, m.y, m.w, m.h, x, y, 64, 48);
+    else g.drawImage(img, 0, 0, 96, 72, x, y, 64, 48);
     g.restore();
   }
   function drawAreas() {
@@ -331,8 +336,9 @@
     g.drawImage(s.canvas(), 0, 0);
     arrows(L.top > 0, L.top + 9 < L.rows.length, 200, 19, 141);
   }
-  async function openAreas() {
-    st.areas = st.areas || { rows: areaRows(), cursor: 0, top: 0 };
+  async function openAreas(i) {
+    st.areasBy = st.areasBy || [];
+    st.areas = st.areasBy[i] = st.areasBy[i] || { rows: areaRows(i), cursor: 0, top: 0 };
     if (!st.areas.rows.length) return;
     await go("areas");
     for (;;) {
@@ -615,7 +621,7 @@
       const it = st.menu.items[st.menu.cursor];
       if (k === "b" || it.act === "close") break;
       if (it.act === "habitat") { if (!it.locked) await openHabitat(it.habitat, null, "menu"); }
-      else if (it.act === "areas") { if (!it.locked) await openAreas(); }
+      else if (it.act === "areas") { if (!it.locked) await openAreas(it.region); }
       else await openList(it.act);
     }
     await fade(1, "rgba(0,0,0,");

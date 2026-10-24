@@ -180,7 +180,8 @@ ones caught);
 this game's Area mode: Kanto, under the Pokémon list: every place with wild Pokémon (but the S.S. Anne, whose dock has Vermilion City's; FireRed's and LeafGreen's alike; ----- until you've been
 there) with how many of its Pokémon you've caught, a brown crown once you've
 caught all its Grass Pokémon and a gold crown once you've caught them all, and A on one lists them FireRed-style under the titles Grass
-(and caves), Fishing and Surfing; each entry's category,
+(and caves), Fishing and Surfing; Area mode: Johto and Area mode: Hoenn the same for their regions' places (Johto's
+by day and night, and Routes 26 to 28 and Mt. Silver in Kanto's, as HGSS's maps have them), each with its Town Map as its picture; each entry's category,
 height and weight in feet and pounds, footprint, picture and description, with
 Up / Down to the next one and Start for its cry; and the Area / Size page:
 where it lives on the map of Kanto and how big it is next to you. Catching a
