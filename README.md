@@ -3127,26 +3127,34 @@ not the game's files. It has the whole disc's text now, about 10,400 lines, by a
 
 ## Sinnoh (in progress)
 
-Sinnoh's first maps are here, from a Pokémon Essentials project of Sinnoh (an RPG Maker XP project, its tiles the
-DS games' own): **Twinleaf Town**, **Route 201**, **Verity Lakefront**, **Lake Verity**, **Sandgem Town**,
-**Route 202** and **Jubilife City**, joined as the project joins them, with their grass and water Pokémon (Starly,
-Bidoof and Kricketot on Route 201, and Shinx too on Route 202; Psyduck to Surf for and Magikarp, Goldeen and the like
-to fish for at Twinleaf's pond and the lake), Verity Lakefront's hidden Tiny Mushroom and the Potions lying on
-Route 202 and in Jubilife City. Each plays its own song from Diamond, Pearl and Platinum.
+Sinnoh is here, its whole map, from a Pokémon Essentials project of Sinnoh (an RPG Maker XP project, its tiles the DS
+games' own): every one of its 157 maps of Sinnoh, from Twinleaf Town to the Pokémon League, the Battle Zone and the
+islands, joined as the project joins them. That's every town and city (with their Pokémon Centers and Poké Marts), every
+route, the caves and mountains (Oreburgh Gate and Mine, Mt. Coronet, Wayward Cave, Iron Island, Stark Mountain, Victory
+Road, Turnback Cave...), the lakes and their caverns, the gates, Eterna Forest, the Great Marsh and Pal Park. Every tile
+is the project's own: none had to be borrowed from Kanto, Johto or Hoenn, or drawn.
 
 - **Getting there**: the S.S. Tidal. After Hoenn's Hall of Fame, Norman's Sinnoh Ticket adds **Sinnoh** to the
   sailings from Lilycove's harbor; the ship drops anchor off **Sandgem Town's beach**, where its sailor rows you
   back out to it and home to Lilycove whenever you like. (The debug menu's **Visit Sinnoh** goes to Twinleaf Town.)
-- **Sandgem Town** has its **Pokémon Center** (the nurse heals, the PC works, and blacking out in Sinnoh brings you
-  back to the last of Sinnoh's you used, or Sandgem's), its **Poké Mart** and **Prof. Rowan's lab**, where Rowan and
-  his aide talk about Sinnoh; **Jubilife City** its Pokémon Center and Poké Mart. The insides are the project's
-  (Jubilife's Pokémon Center and Mart, used for Sandgem's too, and Essentials's lab for Rowan's). The Marts sell
-  more for more Badges (any region's), as the project's do. Rowan is Prof. Oak's sprite in Rowan's colours (white
-  hair, a brown coat).
-- The other houses have no insides yet, and the ways on (Route 203 and 204, Route 218's gate, Route 219) aren't built.
+- **Wild Pokémon** everywhere the project has them: the grass, every step of a cave's floor, the water, the three
+  rods and the rocks you smash (morning, day and night lists put together, the rods' in Gen 4's five slots).
+- **On the maps**: their item balls and hidden items, the trees to Cut, rocks to smash and boulders to push
+  (FireRed's own, as Kanto's are), 122 berry trees (fully grown at first; Hoenn's engine), signs, and each map's own
+  song from Diamond, Pearl and Platinum.
+- **People**: the Pokémon Centers' nurses (they heal; the PCs work; blacking out in Sinnoh brings you back to the last
+  of Sinnoh's you used, or Sandgem's), the Poké Marts' clerks (more for more Badges, any region's, as the project's
+  do), Oreburgh's fossil scientist (as Cinnabar's), and the ferrymen: Canalave City's Eldritch to Iron Island and
+  back, and Snowpoint City's boat to the Fight Area and back. Sandgem Town, which has no insides in the project,
+  has copies of Jubilife's Pokémon Center and Mart and Essentials's lab for **Prof. Rowan's**, where Rowan (Prof.
+  Oak's sprite in Rowan's colours) and his aide talk about Sinnoh.
+- **Not here yet**: the project has no Gyms, houses or story, and its few trainers are placeholders with no teams, so
+  there are none of those; doors into insides it hasn't are shut. The places its story opens up (the ruins behind
+  Mt. Coronet, Iron Island and Route 228, the drained Lake Valor, Turnback Cave's other rooms, Pal Park, the Seabreak
+  Path and Flower Paradise, Fullmoon and Newmoon Islands) are built but can't be reached yet.
 
 `tools/build-sinnoh.js` builds them from the project (it needs Ruby, to read RPG Maker's `.rxdata` files through
-`tools/lib/rmxp-dump.rb`):
+`tools/lib/rmxp-dump.rb`, and uses ffmpeg, where it's installed, to make the songs smaller):
 
 ```sh
 node tools/build-sinnoh.js <path to the Essentials project>
@@ -3154,20 +3162,22 @@ node tools/build-sinnoh.js <path to the Essentials project>
 
 - **The pictures**: each map's three layers of 32x32 tiles, from its tileset and autotiles (put together from their
   16x16 quarters as RPG Maker does), halved to this game's 16 px a tile; tiles with a priority go over the people
-  (the map's `-top` picture). Animated autotiles become the map's animated cells (`s_auto4` and `s_auto8` in
-  `ui/overworld.js`); these first maps' water is still.
+  (the map's `-top` picture). Animated autotiles (the sea, the flowers, the fountains) become the map's animated cells
+  (`s_auto4`, `s_auto5` and `s_auto8` in `ui/overworld.js`).
 - **What the tiles are**: solid as RPG Maker's passages say (from the top layer down to the first under the people),
-  and Essentials's terrain tags made FireRed's behaviours: grass, tall grass, sand, water, waterfalls, ice and ledges
-  (jumped south, or, up and down, away from the raised ground).
-- **Connections** from `PBS/map_connections.txt`; the lake's entrances (Transfer Player events) are warps you step on,
-  the doors into the insides doors (Sandgem's, which aren't events in the project, placed by hand), the insides' mats
-  ways out; the nurse, PC, clerk (and her stock by Badges) and Rowan from the insides' events; hidden items and item
-  balls from its `HiddenItem` and `Item` events; wild Pokémon from `PBS/encounters.txt` (morning, day and night lists
-  put together, the rods' in Gen 4's five slots).
+  and Essentials's terrain tags made FireRed's behaviours: grass, tall grass, sand, water, waterfalls, ice, bridges
+  (walked on at any height) and ledges (jumped south, or, up and down, away from the raised ground).
+- **Names**: each map is named for its place (`OreburghCity`, `Route203`, `MtCoronet`), the insides as FireRed's are
+  (`OreburghCity_PokemonCenter_1F`, `OreburghCity_Mart`, `Route218_Gate`), and a second map of the same name gets
+  `_2` and so on.
+- **The ways between maps**: connections from `PBS/map_connections.txt`, and every Transfer Player event a warp: a
+  door outside (walked into going up), an inside's mat (walked off down, or a gate's side, its way), anything else
+  stepped on. Where one puts you is where you arrive. Warps the project left pointing at maps it has since renumbered
+  (Lake Verity's hut, Lake Valor's way in) are matched to the warp that leads back.
 - **The music**: the project's own recordings (`assets/audio/sinnoh/`, Ogg), played by `ui/audio.js` as `dp_` songs,
   looping where the files' `LOOPSTART` and `LOOPLENGTH` say (or whole).
 - The data goes into `data/orre-maps.js`, after Orre's (from its `// Sinnoh` line on, which `tools/build-orre.js`
-  keeps), with `window.SINNOH_MUSIC`.
+  keeps), with `window.SINNOH_MUSIC` and `window.SINNOH_BERRY_TREES`.
 
 ## Progression rules (Gen 6)
 

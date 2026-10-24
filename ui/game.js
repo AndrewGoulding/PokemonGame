@@ -1392,6 +1392,10 @@
   // (Picked as the Berry Farm's are, straight into the Bag, for farming XP: no Berry Pouch game.)
   const hoennBerries = BerryFarm.create(berryEnv,
     { key: "hoennBerries", owns: (map) => isHoenn(map), spotRe: /^HoennBerry_Tree_(\d+)$/, initial: () => window.HOENN_SCRIPTS.berryTrees });
+  // Sinnoh's (the Essentials project's: tools/build-sinnoh.js), the same again.
+  const isSinnoh = (map) => ((window.WORLD_MAPS[map] || {}).region === "sinnoh");
+  const sinnohBerries = BerryFarm.create(berryEnv,
+    { key: "sinnohBerries", owns: isSinnoh, spotRe: /^SinnohBerry_Tree_(\d+)$/, initial: () => window.SINNOH_BERRY_TREES || {} });
   // Hoenn's decorations (ui/hoenn-decor.js): the ones you own, and those out in your Secret Base and your room.
   const hoennDecor = HoennDecor.create({
     player: () => player, say: (p) => say(p), confirm: (q) => confirm(q), sfx,
@@ -2949,6 +2953,8 @@
   // (Sinnoh's: tools/build-sinnoh.js; and Sandgem's beach's sailor, sinnohSailor.)
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "sinnoh") for (const p of m.people) if (/_PokemonCenter_1F_EventScript_Nurse$|_Mart_EventScript_Clerk$/.test(p.script || "")) SPECIAL.add(p.script);
   SPECIAL.add("SandgemTown_EventScript_Sailor");
+  // (And its ferries, Canalave's to Iron Island and back, and Oreburgh's fossil scientist: sinnohFerry, fossilScientist.)
+  for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "sinnoh") for (const p of m.people) if (p.ferry || /_EventScript_FossilScientist$/.test(p.script || "")) SPECIAL.add(p.script);
   SPECIAL.add("SlateportCity_Harbor_EventScript_Sailor"); SPECIAL.add("Route117_PokemonDayCare_EventScript_DaycareWoman");
   SPECIAL.add("LilycoveCity_MoveDeletersHouse_EventScript_MoveDeleter"); SPECIAL.add("FallarborTown_MoveRelearnersHouse_EventScript_MoveRelearner");
   const TRAINER_SCRIPTS = new Set();
@@ -2972,6 +2978,7 @@
     if ((map || player.location.map) === "NationalPark" && /^hgss:BUG_CONTEST:/.test(person.script || "") && !johto.placed(person.localId)) return false;
     { const g = gear.visible(person); if (g !== undefined) return g; }   // (a Gym Leader at the Dojo: ui/pokegear.js)
     { const b = berryFarm.visible(person, map || player.location.map); if (b !== undefined) return b; }   // (a berry tree: ui/berry-farm.js)
+    { const b = sinnohBerries.visible(person, map || player.location.map); if (b !== undefined) return b; }   // (Sinnoh's)
     {
       // (Lyra, or Ethan for a girl: HGSS's friend.)
       const look = person.girlLook && isGirl() ? person.girlLook : null;
@@ -3261,6 +3268,7 @@
     if (ev.person && await gear.talkPerson(ev.person, ev.map)) return;
     if (ev.person && await berryFarm.talk(ev.person)) return;   // (Celadon's Berry Farm: ui/berry-farm.js)
     if (ev.person && await hoennBerries.talk(ev.person)) return;   // (Hoenn's trees)
+    if (ev.person && await sinnohBerries.talk(ev.person)) return;   // (Sinnoh's)
     // (Hoenn's own: a sailor, the bedroom PCs, the Day Care.)
     if (script === "SlateportCity_Harbor_EventScript_Sailor") { await slateportSailor(); return; }
     if (isHoenn(ev.map || player.location.map) && /_EventScript_PC$/.test(script)) { await pc(); return; }
@@ -3299,6 +3307,8 @@
       return;
     }
     if (script === "SandgemTown_EventScript_Sailor") { await sinnohSailor(); return; }
+    if (ev.person && ev.person.ferry && isSinnoh(ev.map)) { await sinnohFerry(ev.person); return; }
+    if (/_EventScript_FossilScientist$/.test(script || "") && isSinnoh(ev.map)) { await fossilScientist(); return; }
     // (Johto's Pokémon Centers' nurses heal as Kanto's do.)
     if (/_PokemonCenter_1F_EventScript_Nurse$/.test(script || "") && (window.WORLD_MAPS[ev.map] || {}).pokemonCenter) { await nurse(ev.map, ev.person); return; }
 
@@ -9544,6 +9554,17 @@
     player.flags.sinnohLanded = true;
     await say(["Sailor: Here we are: Sandgem Town,\nin the Sinnoh region!", "The ship's anchored offshore. Come\nand see me when you want to sail\nback to Hoenn."]);
   }
+  // A ferryman in Sinnoh (Canalave's Eldritch, to Iron Island; and back): his question, then off.
+  async function sinnohFerry(person) {
+    // (His question, what he says before it, and after you say yes.)
+    const text = [].concat(person.text || []), q = Math.max(0, text.map((t) => /\?/.test(t)).lastIndexOf(true));
+    if (q > 0) await say(text.slice(0, q));
+    if (!(await confirm(fill(text[q] || "Shall we set sail?")))) return;
+    if (text.length > q + 1) await say(text.slice(q + 1));
+    const to = window.WORLD_MAPS[person.ferry.map];
+    await voyage({ map: person.ferry.map, x: person.ferry.x, y: person.ferry.y, facing: "down" }, ["The boat sets out across the water…"]);
+    await say("We've arrived at " + (to ? to.title : "our stop") + "!");
+  }
   async function sinnohSailor() {
     await say(["Sailor: Ahoy! The S.S. Tidal's\nanchored just offshore."]);
     if (!(await confirm("Shall we sail back to Lilycove City\nin Hoenn?"))) { await say("Enjoy Sinnoh! I'll be right here."); return; }
@@ -14467,7 +14488,9 @@
     // Cinnabar Gym's door, locked until you've the Secret Key.
     if (script === "CinnabarIsland_EventScript_GymDoorLocked") return !player.flags.FLAG_HIDE_POKEMON_MANSION_B1F_SECRET_KEY;
     // Back in the Pokémon Lab (or Pewter's Museum), a fossil you left with the doctor is ready.
-    if (script === "enter:CinnabarIsland_PokemonLab_Entrance" || script === "enter:PewterCity_Museum_1F") {
+    // (Or Sinnoh's: Oreburgh's, the Essentials project's.)
+    const fossilHere = /^enter:/.test(script || "") && isSinnoh(script.slice(6)) && (window.WORLD_MAPS[script.slice(6)].people || []).some((p) => /_EventScript_FossilScientist$/.test(p.script || ""));
+    if (script === "enter:CinnabarIsland_PokemonLab_Entrance" || script === "enter:PewterCity_Museum_1F" || fossilHere) {
       if (player.flags.fossilRevive) player.flags.fossilRevive.ready = true;
       return false;
     }
@@ -14561,7 +14584,7 @@
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
-          hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
+          hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step(); sinnohBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
           return orreCallStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
         adjustWild: (mon, table) => { const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
