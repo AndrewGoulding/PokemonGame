@@ -1946,7 +1946,7 @@ for (const share of [false, true]) {
   // (FireRed gives the Underground Path, the S.S. Anne, the Rocket Hideout, Silph Co., the Pokémon League,
   // the Ember Spa, the Dunsparce Tunnel (Three Isle Path), the Rocket Warehouse, Trainer Tower's inside, the Tanoby Key and the Tanoby chambers no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
-    if (["johto", "emerald", "orre", "hoenn"].includes(WORLD_MAPS[name].region)) continue;   // (Johto, Hoenn, Faraway Island and Orre aren't on Kanto's Town Map)
+    if (["johto", "emerald", "orre", "hoenn", "sinnoh"].includes(WORLD_MAPS[name].region)) continue;   // (Johto, Hoenn, Faraway Island, Orre and Sinnoh aren't on Kanto's Town Map)
     if (window.JOHTO_TOWN_MAP && window.JOHTO_TOWN_MAP.at[name]) continue;   // (nor Johto's maps east of New Bark Town, which are Kanto's for Badges but on Johto's)
     // (Saffron's Magnet Train station, HGSS's: its townMapSection, which ui/magnet-train.js adds.)
     if (WORLD_MAPS[name].townMapSection) { assert(onMap(WORLD_MAPS[name].townMapSection), name + " is on the Town Map"); continue; }
@@ -3271,7 +3271,9 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
     for (const m of fs.readFileSync(path.join(root, f), "utf8").matchAll(/"(mus_[a-z0-9_]+)"/g)) named.add(m[1]);
   }
   // (Johto's gs_ songs are HGSS's, in assets/audio/johto-music.js: below.)
-  for (const name of named) if (!/^(gs_|em_)/.test(name)) assert(songs[name], "missing song " + name);
+  for (const name of named) if (!/^(gs_|em_|dp_)/.test(name)) assert(songs[name], "missing song " + name);
+  // (Sinnoh's dp_ songs: Ogg files, window.SINNOH_MUSIC.)
+  for (const name of named) if (/^dp_/.test(name)) assert(window.SINNOH_MUSIC[name] && fs.existsSync(path.join(root, window.SINNOH_MUSIC[name].file)), "missing song " + name);
   // Pallet Town: a loop, seamless (the loop part is the second time through), and in range.
   const r = M4A.render(songs.mus_pallet, bank);
   assert.strictEqual(r.rate, 13379);
@@ -4964,6 +4966,10 @@ for (let seed = 1; seed <= GEN8; seed++) {
     const plus = Player.newGamePlus(old, "RED", 0);
     assert.deepStrictEqual([plus.flags.bp, plus.flags.hoennFrontier], [42, { bp: 17 }], "Battle Points through New Game +");
     assert(/name: "DEBUG", action: "debug"/.test(fs.readFileSync(path.join(__dirname, "../ui/game.js"), "utf8")), "save, load and debug on the Option screen"); }
+  // Sinnoh's first maps (tools/build-sinnoh.js): Twinleaf Town up into Route 201, the lake's entrance, the grass's Pokémon.
+  { const tw = World.blockAt("TwinleafTown", 17, -1), lake = World.step({ map: "VerityLakefront", x: 10, y: 3 }, "up");
+    assert.deepStrictEqual([tw.map, tw.x, tw.y, lake.warp && lake.warp.map, lake.warp && lake.warp.y], ["Route201", 15, 29, "LakeVerity", 42], "Sinnoh's maps join");
+    assert(WORLD_MAPS.Route201.wild.slots.some((s) => s.species === "Starly") && WORLD_MAPS.TwinleafTown.music === "dp_twinleaf", "Sinnoh's Pokémon and music"); }
   // Tera STAB: 2x for a Tera Type it already had, 1.5x for its own types or a new one; the 60-power floor.
   { const tera = (sp, t) => Object.assign(Damage.makePokemon(sp, { level: 50 }), { terastallized: t, teraBaseTypes: window.DEX[sp].types.slice(), types: t === "Stellar" ? window.DEX[sp].types.slice() : [t] });
     const d = Damage.makePokemon("Snorlax", { level: 50 }), plain = Damage.makePokemon("Pikachu", { level: 50 });

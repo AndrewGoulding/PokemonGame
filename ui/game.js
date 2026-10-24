@@ -2190,6 +2190,7 @@
         { label: "Go to the last Pokémon Center", value: "center", className: "action" },
         { label: "Visit Johto (New Bark Town)", value: "johto", className: "action" },
         { label: "Visit Hoenn (the moving truck)", value: "hoenn", className: "action" },
+        { label: "Visit Sinnoh (Twinleaf Town)", value: "sinnoh", className: "action" },
         { label: Orre.inOrre(player.location) ? "Leave Orre" : "Visit Orre (the Air Strip)", value: "orre", className: "action" },
         back()]);
       if (v === "back") return;
@@ -2236,6 +2237,13 @@
         // in the moving truck, as Emerald begins; the debug menu's Pokémon Center trip brings you back.
         Orre.leave(player);
         player.location = { map: "InsideOfTruck", x: 2, y: 2, facing: "right" };
+        await persist();
+        return "battled";
+      } else if (v === "sinnoh") {
+        // Sinnoh's first maps (data/orre-maps.js, tools/build-sinnoh.js), not joined to anywhere yet: Twinleaf
+        // Town's crossroads; the debug menu's Pokémon Center trip brings you back.
+        Orre.leave(player);
+        player.location = { map: "TwinleafTown", x: 17, y: 13, facing: "down" };
         await persist();
         return "battled";
       } else if (v === "repels") {

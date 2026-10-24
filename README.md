@@ -3125,6 +3125,39 @@ not the game's files. It has the whole disc's text now, about 10,400 lines, by a
 - `common` (names, places, the TV news and mail), `fight` and `tool_fight` (what trainers say in battle), the menus,
   the P★DA and the world map.
 
+## Sinnoh (in progress)
+
+Sinnoh's first maps are here, from a Pokémon Essentials project of Sinnoh (an RPG Maker XP project, its tiles the
+DS games' own): **Twinleaf Town**, **Route 201**, **Verity Lakefront**, **Lake Verity** and **Sandgem Town**, joined
+as the project joins them, with their grass and water Pokémon (Starly, Bidoof and Kricketot on Route 201; Psyduck to
+Surf for and Magikarp, Goldeen and the like to fish for at Twinleaf's pond and the lake) and Verity Lakefront's hidden
+Tiny Mushroom. Each plays its own song from Diamond, Pearl and Platinum (Twinleaf Town's, Route 201's, the lake's,
+Sandgem Town's). They aren't joined to the rest of the game yet (the S.S. Tidal's run from Lilycove still isn't
+sailing, and the buildings have no insides): for now the debug menu's **Visit Sinnoh** takes you to Twinleaf Town,
+and its trip to the last Pokémon Center brings you back.
+
+`tools/build-sinnoh.js` builds them from the project (it needs Ruby, to read RPG Maker's `.rxdata` files through
+`tools/lib/rmxp-dump.rb`):
+
+```sh
+node tools/build-sinnoh.js <path to the Essentials project>
+```
+
+- **The pictures**: each map's three layers of 32x32 tiles, from its tileset and autotiles (put together from their
+  16x16 quarters as RPG Maker does), halved to this game's 16 px a tile; tiles with a priority go over the people
+  (the map's `-top` picture). Animated autotiles become the map's animated cells (`s_auto4` and `s_auto8` in
+  `ui/overworld.js`); these first maps' water is still.
+- **What the tiles are**: solid as RPG Maker's passages say (from the top layer down to the first under the people),
+  and Essentials's terrain tags made FireRed's behaviours: grass, tall grass, sand, water, waterfalls, ice and ledges
+  (jumped south, or, up and down, away from the raised ground).
+- **Connections** from `PBS/map_connections.txt`; the lake's entrances (Transfer Player events) are warps you step on;
+  hidden items from its `HiddenItem` events; wild Pokémon from `PBS/encounters.txt` (morning, day and night lists
+  put together, the rods' in Gen 4's five slots).
+- **The music**: the project's own recordings (`assets/audio/sinnoh/`, Ogg), played by `ui/audio.js` as `dp_` songs,
+  looping where the files' `LOOPSTART` and `LOOPLENGTH` say (or whole).
+- The data goes into `data/orre-maps.js`, after Orre's (from its `// Sinnoh` line on, which `tools/build-orre.js`
+  keeps), with `window.SINNOH_MUSIC`.
+
 ## Progression rules (Gen 6)
 
 - **Experience**: the six growth curves, and base exp × level / 7 split between

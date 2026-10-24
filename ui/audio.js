@@ -21,6 +21,10 @@
 // wanted; in Hoenn, FireRed's battle, victory and jingle songs play as Emerald's (the em_ song of
 // the same name, where there is one).
 //
+// Sinnoh's ("dp_" songs: GameAudio.music("dp_twinleaf")) are recordings of Diamond, Pearl and Platinum's, from the
+// Pokémon Essentials project Sinnoh's maps come from (tools/build-sinnoh.js: window.SINNOH_MUSIC, in
+// data/orre-maps.js, says which file and where it loops), decoded the first time each is wanted.
+//
 // In Johto (GameAudio.setRegion), FireRed's battle, victory, "eyes meet" and
 // jingle songs are asked for by their FireRed names and play as HGSS's
 // (JOHTO_SONGS).
@@ -160,8 +164,26 @@
     master.channelInterpretation = "speakers";
   }
 
+  // Sinnoh's: an Ogg file each, decoded once (and kept: there are few).
+  const dpSongs = new Map(), dpLoading = new Map();
+  function loadDp(name) {
+    const def = (window.SINNOH_MUSIC || {})[name];
+    if (!def || !ctx) return Promise.resolve(false);
+    if (!dpLoading.has(name)) {
+      dpLoading.set(name, fetch(def.file).then((r) => r.arrayBuffer()).then((b) => ctx.decodeAudioData(b))
+        .then((buffer) => {
+          // (One without loop points loops whole.)
+          dpSongs.set(name, { buffer, loopStart: def.loopStart || 0, loopEnd: def.loopEnd != null ? def.loopEnd : buffer.duration });
+          return true;
+        })
+        .catch(() => false));
+    }
+    return dpLoading.get(name);
+  }
+
   const seCache = new Map();        // sound effects: small, and played again and again
   function song(name) {
+    if (/^dp_/.test(name)) return dpSongs.get(name) || null;
     const isSe = /^se_/.test(name);
     if (isSe && seCache.has(name)) return seCache.get(name);
     if (cache.has(name)) return cache.get(name);
@@ -217,6 +239,11 @@
         johtoTried = true;
         if (enabled && ctx && wanted === name && !fanfareDepth && (!current || current.name !== name || current.play !== pick(name))) start(name);
       });
+      return Promise.resolve();
+    }
+    if (/^dp_/.test(name) && !dpSongs.has(name)) {
+      // (Not decoded yet: it starts once it is, if it's still the one wanted.)
+      loadDp(name).then((ok) => { if (ok && enabled && ctx && wanted === name && !fanfareDepth && (!current || current.name !== name)) start(name); });
       return Promise.resolve();
     }
     const play = pick(name), s = play && song(play);
