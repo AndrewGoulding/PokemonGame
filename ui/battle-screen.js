@@ -1925,6 +1925,7 @@
         };
         return async () => {
           const GA = window.GameAudio;
+          await nextPaint();   // (the ball on screen before the music's started: starting it can hold things up a moment)
           if (GA) GA.music("mus_caught");
           const jingle = GA ? GA.fanfare("mus_caught_intro") : null;
           await message("Gotcha! " + nameOf(a) + " was caught!");
@@ -2887,6 +2888,8 @@
   // times, and either stays shut (caught: the stars) or opens and lets the
   // Pokémon out. `ballCase`: 6 for the Ghost dodging it. False if there's
   // no animation to play (the DOM one below, then).
+  // (Once the browser has drawn what's on the page now.)
+  const nextPaint = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   async function ballThrow(pos, ball, shakes, caught, ballCase) {
     const BA = window.BattleAnim;
     if (!sceneOn() || !BA || !BA.hasAnim("special", "BALL_THROW") || !view[pos] || !view[pos].species) return false;
@@ -2903,8 +2906,10 @@
     foe.inBall = true;
     renderSide(pos);
     const o = Object.assign(animOpts("p1", pos), { anim: "special", id: "BALL_THROW", ball, ballCase: ballCase != null ? ballCase : caught ? 4 : Math.min(3, shakes),
-      shown: POSITIONS.map((p) => p === pos) });
+      shown: POSITIONS.map((p) => p === pos), hold: caught ? {} : null });
     await playAnim(o);
+    // (Caught: the ball that stays is drawn, and the screen shows it, before the animation's last frame goes: no gap.)
+    const release = async () => { await nextPaint(); if (o.hold && o.hold.release) o.hold.release(); };
     if (caught) {
       // The ball stays shut where it came to rest (the GBA's: 24 under its target's base line).
       el.ball.style.left = ((box.cx - 8) / 240 * 100).toFixed(2) + "%";
@@ -2912,6 +2917,7 @@
       el.ball.style.top = ((BA.ballRest(POSITIONS.indexOf(pos), !!battle.doubles) - 8) / 112 * 100).toFixed(2) + "%";
       el.ball.classList.remove("hidden", "shake");
       el.ball.classList.add("caught");
+      await release();
       return true;
     }
     foe.inBall = false;

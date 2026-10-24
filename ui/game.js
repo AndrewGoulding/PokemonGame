@@ -3286,13 +3286,8 @@
     { const den = RaidDens.byScript(script); if (den) { await raidDen(den); return; } }
     if (SILPH_WORKERS[script]) { await say(T(SILPH_WORKERS[script][silphFreed() ? 1 : 0])); return; }
     if (SILPH_DOORS.includes(script)) { await silphDoor(script); return; }
-    // (Coming out of the Gym with the Tera Orb still to get: the aide, then Leaf.)
-    if (teraAideDue(script)) {
-      const leaf = script === "enter:PewterCity" && leafPewterDue();
-      await teraAide();   // (stepping you out of the door first)
-      if (leaf) await leafPewter(true);
-      return;
-    }
+    // (Out of Viridian Forest's north gate with the Tera Orb still to get: the aide comes out after you.)
+    if (teraAideDue(script)) { await teraAide(); return; }
     if (script === "enter:Route23" && victoryRoadRivalDue()) { await victoryRoadRival(); return; }
     if (/^enter:/.test(script) && megaAideDue(script.slice(6))) { await megaAide(); return; }
     if ((script === "enter:PokemonTower_7F" || script === "Game_EventScript_MegaTower") && megaTowerDue()) { await megaTower(); return; }
@@ -6296,37 +6291,38 @@
   }
   const megaTowerDue = () => !!player.flags.megaAideMet && !player.flags.megaTowerDone;
 
-  // The Tera Orb (this game's own): the first time you come into Pewter
-  // City, walking in or out of a door, another of Prof. Oak's aides catches
-  // up with you (as the one above does, but from behind you) with it.
+  // The Tera Orb (this game's own): the first time you come out of Viridian Forest's north gate onto Route 2,
+  // another of Prof. Oak's aides comes out of the gate behind you, calling after you; he gives you the Tera Orb and
+  // goes back the way he came, into the gate, towards the forest.
   const TERA_AIDE = "LOCALID_TERA_AIDE";
-  // He runs up from behind you: as you come in if there's room behind you on
-  // Pewter's side, else a few steps on (teraAideStep).
-  const teraAideDue = (script) => (script === "enter:PewterCity" || script === "arrive:PewterCity") && !player.flags.gotTeraOrb && !!megaAideRoute("only");
-  const teraAideStep = () => (Overworld.position().map === "PewterCity" && !player.flags.gotTeraOrb && megaAideRoute("only")
-    ? { type: "tera-aide" } : null);
+  const TERA_GATE_DOORS = [5, 6];   // (Route 2's tiles out of the gate, y 13)
+  const teraAideDue = (script) => script === "enter:Route2" && !player.flags.gotTeraOrb && (() => {
+    const at = Overworld.position();
+    return at.map === "Route2" && at.y === 13 && TERA_GATE_DOORS.includes(at.x);
+  })();
   async function teraAide() {
-    await stepOutOfDoor();
-    const route = megaAideRoute("only") || megaAideRoute(true);
-    const give = async () => {
-      Player.addItem(player, "tera-orb");
-      player.flags.gotTeraOrb = true;
-      await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the Tera Orb\nfrom Prof. Oak's aide!");
-      await say(["With it, START on the move menu\nlets one of your Pokémon\nTerastallize, once a battle.",
-        "It becomes its Tera Type, and moves\nof that type get stronger!",
-        "Using it empties the Orb, but it\nrecharges itself after every\nbattle.", "Good luck, {PLAYER}!"]);
-    };
-    if (!route) { await say("I'm one of Prof. Oak's aides.\nThe Professor wanted you to have this!"); await give(); return; }
-    const back = route.walk.slice().reverse().map((d) => "walk_fast_" + World.OPPOSITE[d]);
-    Overworld.addObject(TERA_AIDE, { x: route.from.x, y: route.from.y, facing: route.walk[0] || route.face }, lookOf("scientist"));
+    const at = Overworld.position(), door = TERA_GATE_DOORS.find((x) => x !== at.x);
+    // Out of the gate a step, then he calls after you, comes out of the gate too and up beside you.
+    await Overworld.act([{ who: "player", moves: ["walk_up"] }]);
     await say("Hey! {PLAYER}! Wait up!");
-    await Overworld.act([{ who: TERA_AIDE, moves: route.walk.map((d) => "walk_fast_" + d).concat(["face_" + route.face]) }]);
-    await Overworld.act([{ who: "player", moves: ["face_" + World.OPPOSITE[route.face]] }]);
-    await say(["Phew… You're a hard one to\ncatch up with!",
+    Screen.say("");
+    sfx("se_door");
+    Overworld.addObject(TERA_AIDE, { x: door, y: 13, facing: "up" }, lookOf("scientist"));
+    await Overworld.act([{ who: TERA_AIDE, moves: ["walk_fast_up", door < at.x ? "face_right" : "face_left"] }]);
+    await Overworld.act([{ who: "player", moves: [door < at.x ? "face_left" : "face_right"] }]);
+    await say(["Phew… You're a hard one to\ncatch up with! I came all the way\nthrough the forest after you!",
       "I'm one of Prof. Oak's aides.\nThe Professor has been studying\nTerastallization, from far-off Paldea.",
       "He wanted you to have this Tera Orb!"]);
-    await give();
-    await Overworld.act([{ who: TERA_AIDE, moves: back.concat(["set_invisible"]) }]);
+    Player.addItem(player, "tera-orb");
+    player.flags.gotTeraOrb = true;
+    await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the Tera Orb\nfrom Prof. Oak's aide!");
+    await say(["With it, START on the move menu\nlets one of your Pokémon\nTerastallize, once a battle.",
+      "It becomes its Tera Type, and moves\nof that type get stronger!",
+      "Using it empties the Orb, but it\nrecharges itself after every\nbattle.", "Good luck, {PLAYER}! I'd better get\nback through the forest."]);
+    Screen.say("");
+    // Back into the gate, towards Viridian Forest.
+    await Overworld.act([{ who: TERA_AIDE, moves: ["walk_down", "set_invisible"] }]);
+    sfx("se_door");
     Overworld.removeObject(TERA_AIDE);
   }
   // Who's at the top of the Tower, waiting: Prof. Oak and Mr. Fuji at the
@@ -14427,7 +14423,7 @@
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
-          return orreCallStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
+          return orreCallStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
         adjustWild: (mon, table) => { const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
@@ -14477,7 +14473,6 @@
       else if (ev.type === "viridian-stop") await viridianOldManStop();
       else if (ev.type === "red-forest") await redForest();
       else if (ev.type === "leaf-vermilion") await leafVermilion();
-      else if (ev.type === "tera-aide") await teraAide();
       else if (ev.type === "save-prompt") await savePrompt();
       else if (ev.type === "jessie-james") await jessieJames();
       else if (ev.type === "jessie-james-later") await laterJessieJames();
@@ -14526,6 +14521,8 @@
   }
 
 
-  window.Game = { get player() { return player; }, get pokegear() { return gear; }, get hoenn() { return hoenn; }, runHoenn: (label) => runHoenn(label), townMap: (o) => townMap(o), sailToHoenn: () => sailToHoenn(), slateportSailor: () => slateportSailor() };
+  window.Game = { get player() { return player; }, get pokegear() { return gear; }, get hoenn() { return hoenn; }, runHoenn: (label) => runHoenn(label),
+    // (for the browser tests: a wild battle with this species, then back to the map)
+    wildBattle: async (species, level) => { await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(species, level))] } }); show("world"); await Overworld.resume(); }, townMap: (o) => townMap(o), sailToHoenn: () => sailToHoenn(), slateportSailor: () => slateportSailor() };
   main();
 })();

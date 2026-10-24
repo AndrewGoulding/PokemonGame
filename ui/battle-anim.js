@@ -1598,7 +1598,8 @@
       const finish = (ok) => {
         if (stopped) return;
         stopped = true;
-        rd.destroy();
+        // (o.hold: the last frame stays up until o.hold.release(), for what's to take its place to be drawn first.)
+        if (o.hold && ok) o.hold.release = () => rd.destroy(); else rd.destroy();
         o.sprites.forEach((im, b) => { if (im) im.style.visibility = vis[b] || ""; });
         if (o.hideBoxes) o.hideBoxes(false);
         playing = null;

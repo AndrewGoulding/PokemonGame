@@ -928,7 +928,12 @@
     if ((m = /^walk_(fast_|faster_|fastest_|slow_|slower_)?(up|down|left|right)$/.exec(cmd))) {
       const dir = m[2], [dx, dy] = World.DIRS[dir], speed = SPEEDS[m[1] || ""];
       if (!a.lockFacing) a.facing = dir;
-      if (a === me) { me.move = { tx: me.x + dx, ty: me.y + dy, tmap: me.map, dir, t: 0, dist: TILE, speed, scripted: true }; me.parity ^= 1; followerStep(); }
+      if (a === me) {
+        // (A scene walking you out of a door, your Pokémon still at your feet: it comes out beside you, not in the doorway.)
+        const outOfDoor = !!pal.def && pal.x === me.x && pal.y === me.y && World.blockAt(me.map, me.x, me.y).behavior === World.MB.WARP_DOOR;
+        me.move = { tx: me.x + dx, ty: me.y + dy, tmap: me.map, dir, t: 0, dist: TILE, speed, scripted: true }; me.parity ^= 1;
+        if (outOfDoor) followerOutOfDoor({ map: me.map, x: me.x + dx, y: me.y + dy }); else followerStep();
+      }
       else if (a === pal) { pal.move = { fx: pal.x, fy: pal.y, t: 0, dist: TILE, speed, hop: false }; pal.x += dx; pal.y += dy; pal.parity ^= 1; pal.scripted = true; }
       else {
         // (Someone walking where your Pokémon stands, Wally into Norman's Gym: it's back at your feet, out of their way,

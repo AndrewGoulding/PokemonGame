@@ -1565,8 +1565,9 @@ Dynamax: it becomes Eternamax Eternatus. `tools/build-max-moves.js` writes
 trainer has the Dynamax Band yet).
 
 **Terastallizing** (Scarlet and Violet): with the Tera Orb (a key item: the
-first time you come into Pewter City, one of Prof. Oak's aides runs up
-behind you and gives it to you), START
+first time you come out of Viridian Forest's north gate onto Route 2, one of
+Prof. Oak's aides comes out of the gate after you, gives it to you and goes
+back through the forest), START
 on the move menu Terastallizes a Pokémon into its Tera Type, once a battle;
 the Orb recharges itself after every battle. Its trigger is always offered,
 beside a Z-Move's, Dynamax's or Ultra Burst's too (only Mega Evolution can
