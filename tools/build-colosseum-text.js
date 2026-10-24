@@ -111,7 +111,9 @@ if (!inputs.length) {
   console.error("Usage: node tools/build-colosseum-text.js <.fsys or .msg files, or folders of them>");
   process.exit(1);
 }
-const outFile = path.join(__dirname, "..", "assets/text/colosseum.json");
+// (Into the repository's assets/text; or, run from a copy of this script on its own, colosseum.json where you are.)
+const repoText = path.join(__dirname, "..", "assets/text");
+const outFile = fs.existsSync(repoText) ? path.join(repoText, "colosseum.json") : path.resolve("colosseum.json");
 const out = fs.existsSync(outFile) ? JSON.parse(fs.readFileSync(outFile, "utf8")) : {};
 let count = 0;
 for (const file of inputs) {
@@ -134,4 +136,4 @@ for (const file of inputs) {
   }
 }
 fs.writeFileSync(outFile, JSON.stringify(out, null, 0).replace(/("\w[^"]*\/[^"]*":)/g, "\n$1") + "\n");
-console.log("wrote " + count + " strings from " + inputs.length + " archives to assets/text/colosseum.json");
+console.log("wrote " + count + " strings from " + inputs.length + " archives to " + outFile);
