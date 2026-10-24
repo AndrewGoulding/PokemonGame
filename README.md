@@ -13,7 +13,7 @@ START. Left alone for 45 seconds the title goes back to the opening. Press
 Start and FireRed's main menu comes up: CONTINUE (with your name, play time,
 Pokédex and badges), NEW GAME, NEW GAME + beside it once there's a game saved (this game's own: a new game, through
 Oak's intro, that keeps your Bag but for the story's key items and the HMs, the PC's items, your money, your mining,
-fishing and farming levels, your Pokédex's seen and caught (shown again once Oak gives you the Pokédex), your PC boxes with your party put in them, and your Trainer ID; your Pokémon still obey by
+fishing and farming levels, your Battle Points (Kanto's and the Battle Frontier's), your Pokédex's seen and caught (shown again once Oak gives you the Pokédex), your PC boxes with your party put in them, and your Trainer ID; your Pokémon still obey by
 your Badges, so high levels wait on them; `Player.newGamePlus`) and OPTION (B goes back to the title). The
 Option screen is FireRed's too: TEXT SPEED (how long battle messages stay up),
 BATTLE SCENE (OFF leaves out the hit animation), BATTLE STYLE (SHIFT: when a
@@ -189,7 +189,12 @@ height and weight in feet and pounds, footprint, picture and description, with
 Up / Down to the next one and Start for its cry; and the Area / Size page:
 where it lives on the map of Kanto and how big it is next to you. Catching a
 new kind shows its habitat page and entry, as in FireRed),
-your trainer card (under your name: save, download or load a save file, and **Debug**, for
+your Trainer Card (under your name: FireRed's card in Kanto, Johto, the Sevii Islands and Orre, Emerald's in Hoenn,
+drawn from their own graphics by `tools/build-trainer-cards.js` into `assets/trainer-card/`, its colour by its stars;
+the front has your name, ID No., money, Pokédex, play time and that region's Badges, and A turns it over to your
+Battle Points, Hall of Fame debut and mining, farming and fishing levels; B puts it away. HGSS's card for Johto
+needs its graphics from the ROM, which aren't in the decomp), OPTION (as below, and in a game also SAVE NOW,
+DOWNLOAD SAVE, LOAD SAVE FILE and **DEBUG**, for
 testing; it asks for a password the first time each session): add any Pokémon at any level (type its name, e.g. `charizard` or
 `rotom-wash`; a full party sends it to the PC), infinite Rare Candies, every TM
 and HM, 99 Max Repels, 99 Master Balls, a wild battle at your level, a
@@ -265,7 +270,7 @@ Pokémon bite; from 10 the Good Rod's too (60/40); from 25 the Super Rod's
 (30/40/30); from 50, 15/35/50, and from 75, 5/25/70. From level 50 the Super
 Rod's rarer slots come up more often too (35/35/20/7/3, and 30/30/25/10/5
 from 75). The XP and any new level are told after "on the hook!", and the
-trainer card shows your fishing level. In the Safari Zone it's a Safari
+back of your Trainer Card shows your fishing level. In the Safari Zone it's a Safari
 battle. You start the game with the Fishing Rod (in FireRed the Fishing
 Guru in Vermilion City gives you the Old Rod); he and his brothers in
 Fuchsia City and on Route 12 tell you your fishing level and what's next
@@ -316,13 +321,13 @@ cracks three times, bursts in a white flash, the Pokémon's cry, "… hatched
 from the EGG!" to its fanfare, and a nickname if you like.
 
 **Saving**: there's no autosave. Save from the START menu (**Save**) or your
-trainer card (**Save now**); every 5 minutes of play, out in the overworld, the
+Option screen (**SAVE NOW**); every 5 minutes of play, out in the overworld, the
 game asks "Would you like to save the game?" too (not in the Safari Zone or
 the Bug-Catching Contest, where you can't save). It saves to this browser
 (including where you are on the map), and **Continue** picks up from your last
 save; the Hall of Fame saves on its own, as FireRed's does. Saves from before the overworld put
 you outside your house in Pallet Town. Browser storage can be wiped (private windows, clearing site data), so
-download a save file from the trainer card as a backup, or to move a game to
+download a save file from the Option screen (**DOWNLOAD SAVE**) as a backup, or to move a game to
 another browser.
 
 To run the tests (needs Node.js):

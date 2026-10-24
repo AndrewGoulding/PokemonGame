@@ -4956,6 +4956,14 @@ for (let seed = 1; seed <= GEN8; seed++) {
     assert.deepStrictEqual([bee.species, bee.terastallized, bee.types, order], ["Beedrill-Mega", "Ground", ["Ground"], ["-mega", "-terastallize"]], "Mega Beedrill, Tera Ground");
     assert(/script === "enter:Route2" && !player\.flags\.gotTeraOrb/.test(gameSrc)
       && /Player\.addItem\(player, "tera-orb"\)/.test(gameSrc), "the Tera Orb from Prof. Oak's aide, out of Viridian Forest"); }
+  // The Trainer Cards (FireRed's and Emerald's), and Battle Points kept through New Game +.
+  { for (const r of ["kanto", "hoenn"]) for (const f of ["front-0", "back-4-f", "badges", "star"])
+      assert(fs.existsSync(path.join(__dirname, "../assets/trainer-card/" + r + "-" + f + ".png")), "the " + r + " Trainer Card's " + f);
+    const old = Player.create("RED", 0);
+    old.flags.bp = 42; old.flags.hoennFrontier = { bp: 17, team: [] };
+    const plus = Player.newGamePlus(old, "RED", 0);
+    assert.deepStrictEqual([plus.flags.bp, plus.flags.hoennFrontier], [42, { bp: 17 }], "Battle Points through New Game +");
+    assert(/name: "DEBUG", action: "debug"/.test(fs.readFileSync(path.join(__dirname, "../ui/game.js"), "utf8")), "save, load and debug on the Option screen"); }
   // Tera STAB: 2x for a Tera Type it already had, 1.5x for its own types or a new one; the 60-power floor.
   { const tera = (sp, t) => Object.assign(Damage.makePokemon(sp, { level: 50 }), { terastallized: t, teraBaseTypes: window.DEX[sp].types.slice(), types: t === "Stellar" ? window.DEX[sp].types.slice() : [t] });
     const d = Damage.makePokemon("Snorlax", { level: 50 }), plain = Damage.makePokemon("Pikachu", { level: 50 });

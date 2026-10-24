@@ -232,7 +232,9 @@
 
   // FireRed's Option screen (GameOptions keeps the settings). From the main
   // menu it also has SAVE FILE: LOAD, to load a downloaded save; returns "load"
-  // when that's picked.
+  // when that's picked. In a game it has this game's SAVE NOW, DOWNLOAD SAVE,
+  // LOAD SAVE FILE and DEBUG too (once on the Trainer Card): returns "save",
+  // "download", "load" or "debug" (optionActions does them).
   async function optionScreen(fromTitle) {
     const o = GameOptions.get();
     const rows = [
@@ -248,14 +250,36 @@
       { name: "GEAR CALLS", key: "calls", values: ["ON", "OFF"], value: o.calls | 0 }
     ];
     if (fromTitle) rows.push({ name: "SAVE FILE", values: ["LOAD"], value: 0, action: "load" });
+    else rows.push({ name: "SAVE NOW", action: "save" }, { name: "DOWNLOAD SAVE", action: "download" },
+      { name: "LOAD SAVE FILE", action: "load" }, { name: "DEBUG", action: "debug" });
     rows.push({ name: "CANCEL" });
     const wasShowing = !$("#scene").classList.contains("hidden") ? "scene" : null;
     Screen.say("");
     clearMenu();
     show("intro");
-    const r = await GbaMenus.optionMenu($("#intro"), rows, (i, value) => GameOptions.set({ [rows[i].key]: value }));
+    const r = await GbaMenus.optionMenu($("#intro"), rows, (i, value) => { if (rows[i].key) GameOptions.set({ [rows[i].key]: value }); });
     if (wasShowing) show(wasShowing);
     return r;
+  }
+  // The Start menu's OPTION: the screen, then what was picked on it; "battled" if the debug menu started a battle.
+  async function optionActions() {
+    const v = await optionScreen(false);
+    if (v === "debug") return debugMenu();
+    if (v === "save") await saveGame();
+    else if (v === "download") {
+      downloadSave();
+      await message("Your save file is downloading.");
+    } else if (v === "load") {
+      const loaded = await loadSaveFile();
+      if (loaded && await confirm("Load " + loaded.name + "'s game? Your current game will be replaced.")) {
+        player = loaded;
+        savePromptAt = null;
+        tick();
+        Save.write(player);   // (the game you loaded is the one saved now)
+        await message("Loaded " + player.name + "'s game.");
+      }
+    }
+    return null;
   }
 
   // A new game starts with FireRed's intro: the controls guide, then Prof. Oak
@@ -2384,50 +2408,101 @@
 
   // ---------- Trainer card ----------
 
-  async function trainerCard() {
-    for (;;) {
-      tick();
-      const html = '<div class="trainer-card"><img class="trainer-card-pic" alt="" src="assets/sprites/trainers/front/' +
-        Player.LOOKS[player.look].front + '.png"><h2>' + escapeHtml(player.name) + "</h2>" +
-        "<dl><dt>Money</dt><dd>" + money(player.money) + "</dd>" +
-        "<dt>Pokédex</dt><dd>" + Player.dexCount(player, "caught", !Player.nationalDex(player)) + " caught, " + Player.dexCount(player, "seen", !Player.nationalDex(player)) + " seen</dd>" +
-        "<dt>Badges</dt><dd>" + player.badges.length + "</dd>" +
-        "<dt>Mining</dt><dd>Lv. " + Mining.level(miningXp()) + (Mining.toNext(miningXp()) == null ? " (max)"
-          : " <small>(" + Mining.toNext(miningXp()) + " XP to the next level)</small>") + "</dd>" +
-        "<dt>Farming</dt><dd>Lv. " + BerryPicking.level(farmingXp()) + (BerryPicking.toNext(farmingXp()) == null ? " (max)"
-          : " <small>(" + BerryPicking.toNext(farmingXp()) + " XP to the next level)</small>") + "</dd>" +
-        "<dt>Fishing</dt><dd>Lv. " + Fishing.level(fishingXp()) + (Fishing.toNext(fishingXp()) == null ? " (max)"
-          : " <small>(" + Fishing.toNext(fishingXp()) + " XP to the next level)</small>") + "</dd>" +
-        "<dt>Play time</dt><dd>" + playTime(player.playTimeMs) + "</dd>" +
-        // (Four Island's sticker man: the Hall of Fame sticker, one of four by entries.)
-        (player.flags.hofBragState ? "<dt>Stickers</dt><dd>Hall of Fame " + "★".repeat(player.flags.hofBragState) + "</dd>" : "") +
-        "<dt>Started</dt><dd>" + new Date(player.createdAt).toLocaleDateString() + "</dd>" +
-        "<dt>Last saved</dt><dd>" + (player.savedAt ? new Date(player.savedAt).toLocaleString() : "never") + "</dd></dl>" +
-        '<p class="bag-line">The game saves in this browser when you save it (START, Save; it asks every 5 minutes too). Download a save file as a backup, or to move your game to another browser.</p></div>';
-      const v = await pick("Your trainer card.", html, [
-        { label: "Save now", value: "save", className: "action" },
-        { label: "Download save file", value: "download", className: "action" },
-        { label: "Load save file", value: "load", className: "action" },
-        { label: "Debug", value: "debug", className: "action" },
-        back()]);
-      if (v === "back") return;
-      if (v === "debug") { if ((await debugMenu()) === "battled") return "battled"; continue; }
-      if (v === "save") {
-        await saveGame();
-      } else if (v === "download") {
-        downloadSave();
-        await message("Your save file is downloading.");
-      } else if (v === "load") {
-        const loaded = await loadSaveFile();
-        if (loaded && await confirm("Load " + loaded.name + "'s game? Your current game will be replaced.")) {
-          player = loaded;
-          savePromptAt = null;
-          tick();
-          Save.write(player);   // (the game you loaded is the one saved now)
-          await message("Loaded " + player.name + "'s game.");
-        }
-      }
+  // The Trainer Card: FireRed's in Kanto (and, for now, Johto, the Sevii Islands and Orre), Emerald's in Hoenn
+  // (tools/build-trainer-cards.js: assets/trainer-card/), drawn as src/trainer_card.c lays them out. Its colour
+  // goes by its stars; the front has your name, ID No., money, Pokédex, play time and that region's Badges, the
+  // back your Battle Points (Kanto's, or the Battle Frontier's on Hoenn's card), your skills and the Hall of Fame.
+  // A turns it over, B puts it away. (Saving and loading are on the Option screen.)
+  const cardImages = {};
+  function cardImage(src) {
+    if (!cardImages[src]) {
+      const img = new Image();
+      img.loaded = new Promise((r) => { img.onload = img.onerror = () => r(img); });
+      img.src = src;
+      cardImages[src] = img;
     }
+    return cardImages[src];
+  }
+  function cardStars(region) {
+    const f = player.flags;
+    if (region === "hoenn") {
+      const sym = (c) => ["TOWER", "DOME", "PALACE", "ARENA", "FACTORY", "PIKE", "PYRAMID"].every((F) => hoenn.flag("FLAG_SYS_" + F + "_" + c));
+      return [hoennCleared(), hoennDexCount("caught", true) >= 202, sym("SILVER") || sym("GOLD"), sym("GOLD")].filter(Boolean).length;
+    }
+    // (FireRed's: the Hall of Fame, Kanto's Pokédex complete, the Sevii Islands' story done, and the National Pokédex.)
+    return [f.gameClear, Player.dexRating(player).complete, f.canLinkWithRS, Player.dexCount(player, "caught", false) >= 386].filter(Boolean).length;
+  }
+  async function trainerCard() {
+    tick();
+    const map = player.location && window.WORLD_MAPS[player.location.map];
+    const region = map && map.region === "hoenn" ? "hoenn" : "kanto", K = region === "kanto";
+    const stars = cardStars(region);
+    const dir = "assets/trainer-card/" + region;
+    const pics = { front: cardImage(dir + "-front-" + stars + ".png"), back: cardImage(dir + "-back-" + stars + ".png"),
+      badges: cardImage(dir + "-badges.png"), star: cardImage(dir + "-star.png"),
+      me: cardImage("assets/sprites/trainers/front/" + Player.LOOKS[player.look].front + ".png") };
+    await Promise.all(Object.values(pics).map((p) => p.loaded));
+    const ok = (img) => img.complete && img.naturalWidth > 0;
+    const BADGES = { kanto: ["boulder", "cascade", "thunder", "rainbow", "soul", "marsh", "volcano", "earth"],
+      hoenn: ["stone", "knuckle", "dynamo", "heat", "balance", "feather", "mind", "rain"] }[region];
+    const DARK = [96, 96, 96], LIGHT = [208, 208, 200], RED = [224, 8, 8], PINK = [248, 184, 184];
+    const time = (ms) => { const m = Math.floor((ms || 0) / 60000); return Math.min(999, Math.floor(m / 60)) + ":" + String(m % 60).padStart(2, "0"); };
+    const lv = (xp, skill) => "Lv. " + skill.level(xp);
+    const debut = (player.flags.hallOfFame || []).find((e) => e.number === 1);
+    const bp = K ? player.flags.bp || 0 : (player.flags.hoennFrontier || {}).bp || 0;
+    const rows = [
+      ["BATTLE POINTS", bp + " BP"],
+      // (With Four Island's sticker man's Hall of Fame sticker after it: one of four by entries.)
+      ["HALL OF FAME DEBUT", debut ? time(debut.playTimeMs) + (player.flags.hofBragState ? " " + "*".repeat(player.flags.hofBragState) : "") : "---"],
+      ["MINING", lv(miningXp(), Mining)],
+      ["FARMING", lv(farmingXp(), BerryPicking)],
+      ["FISHING", lv(fishingXp(), Fishing)]
+    ];
+    const canvas = overlayCanvas();
+    let side = "front";
+    function draw() {
+      const s = GbaMenus.Surface();
+      const right = (str, x, y, fg, sh) => s.text(str, x - s.textWidth(str), y, fg, sh);
+      if (side === "front") {
+        const x = K ? 28 : 24, y = K ? 0 : 1, r = K ? 152 : 136;
+        const id = "IDNo." + String(player.trainerId).padStart(5, "0");
+        s.text(id, 140 + ((80 - s.textWidth(id)) >> 1), 17, DARK, LIGHT);
+        s.text(player.name, x, K ? 36 : 41, DARK, LIGHT);
+        s.text("MONEY", x, 64 + y, DARK, LIGHT); right("¥" + player.money, r, 64 + y, DARK, LIGHT);
+        s.text("POKéDEX", x, 80 + y, DARK, LIGHT); right(String(Player.dexCount(player, "caught", K && !Player.nationalDex(player))), r, 80 + y, DARK, LIGHT);
+        s.text("TIME", x, 96 + y, DARK, LIGHT); right(time(player.playTimeMs), r, 96 + y, DARK, LIGHT);
+      } else {
+        if (K) s.text(player.name, 144, 17, DARK, LIGHT); else right(player.name, 224, 17, DARK, LIGHT);
+        rows.forEach(([label, value], i) => {
+          s.text(label, K ? 16 : 24, 41 + i * 16, DARK, LIGHT);
+          right(value, 224, 41 + i * 16, RED, PINK);
+        });
+      }
+      const g = canvas.getContext("2d");
+      g.save();
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.imageSmoothingEnabled = false;
+      g.clearRect(0, 0, canvas.width, canvas.height);
+      g.scale(canvas.width / 240, canvas.height / 160);
+      if (ok(pics[side])) g.drawImage(pics[side], 0, 0);
+      if (side === "front") {
+        if (ok(pics.me)) g.drawImage(pics.me, K ? 165 : 153, K ? 44 : 40);
+        BADGES.forEach((b, i) => { if (player.badges.includes(b) && ok(pics.badges)) g.drawImage(pics.badges, i * 16, 0, 16, 16, 32 + i * 24, K ? 128 : 120, 16, 16); });
+        for (let i = 0; i < stars && ok(pics.star); i++) g.drawImage(pics.star, 120 + i * 8, 56);
+      }
+      g.drawImage(s.canvas(), 0, 0);
+      g.restore();
+    }
+    canvas.classList.remove("hidden");
+    try {
+      for (;;) {
+        draw();
+        const k = await GbaMenus.keys((key) => (key === "a" || key === "b" ? key : undefined));
+        sfx("se_select");
+        if (k === "b") return;
+        side = side === "front" ? "back" : "front";
+      }
+    } finally { canvas.classList.add("hidden"); Screen.say(""); }
   }
 
   // ---------- The Start menu's screens ----------
@@ -2587,7 +2662,7 @@
       else if (v === "dex") await pokedex();
       else if (v === "gear") await gear.open();
       else if (v === "card") { if ((await (pass ? frontierPass() : trainerCard())) === "battled") return; }
-      else if (v === "option") { await optionScreen(false); continue; }
+      else if (v === "option") { if ((await optionActions()) === "battled") return; continue; }
       else if (v === "save") {
         if (!(await confirm("Would you like to save the game?"))) continue;
         await saveGame();

@@ -516,6 +516,9 @@
     for (const id of Object.keys(p.pcItems)) if (storyItem(id)) delete p.pcItems[id];
     p.money = old.money | 0;
     for (const k of ["miningXp", "fishingXp", "farmingXp"]) if (old.flags && old.flags[k] != null) p.flags[k] = old.flags[k];
+    // (Your Battle Points: Kanto's, and the Battle Frontier's in Hoenn.)
+    if (old.flags && old.flags.bp) p.flags.bp = old.flags.bp;
+    if (old.flags && old.flags.hoennFrontier && old.flags.hoennFrontier.bp) p.flags.hoennFrontier = { bp: old.flags.hoennFrontier.bp };
     p.boxes = old.boxes.map((box) => box.slice());
     p.boxNames = (old.boxNames || p.boxNames).slice();
     p.boxWallpapers = (old.boxWallpapers || p.boxWallpapers).slice();
