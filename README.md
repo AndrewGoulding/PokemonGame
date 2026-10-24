@@ -2975,8 +2975,14 @@ between the hideout's two weathered concrete wings, heavy rusty pipes snaking ov
 scrap and a broken girder. At its end is the hideout's front: rust-stained concrete blocks pierced with round holes
 either side of a steel gate with **Team Snagem's emblem** on it (two red arrows, interlocked), machinery stacked
 above, yellow-and-black hazard chains and a great round dish. Two **Snagem grunts**, bald, in sunglasses and red
-vests as in Colosseum, guard the gate and won't let you in without the boss's say-so; a third keeps a lookout in the
-canyon. The story inside comes next.
+vests as in Colosseum, guard the gate; a third keeps a lookout in the canyon.
+
+**Joining Team Snagem** (this game's own, as Oak asked: you're to go undercover). Talk to either guard and you can
+ask to join Team Snagem. The guards laugh, then the one you asked tests you, two on two (a Mightyena and a Zangoose,
+a few levels under your strongest Pokémon, between Lv. 30 and 60), his battle picture FireRed's Cue Ball in Snagem's
+red vest. Beat him and he'll put in a word for you with Master Gonzap, who's out on a job; lose and he'll test you
+again when you come back (`player.flags.orreStory`: 3 once you've asked, 4 once you've won). What comes next is
+still to be written.
 
 **The Outskirt Stand**, not on the map yet: a diner made from an old locomotive out in Orre's desert. The first time you
 get there, two men come out of the diner, **Folly** and **Trudly**. They talk about their meal and the sack in

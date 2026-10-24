@@ -1104,6 +1104,9 @@ for (const [x, y] of CRATES) {
   }
   save(c, path.join(outSprites, "orre_snagem_m.png"));
 }
+// Their battle picture: FireRed's Cue Ball (bald, a fur-collared vest), his vest Snagem's red.
+save(recolorRGBA(path.join(root, "assets/sprites/trainers/front/cue_ball.png"),
+  { "180,156,156": [216, 56, 48], "205,180,180": [248, 104, 88], "148,115,106": [152, 32, 32] }, 64), path.join(root, "assets/sprites/trainers/front/snagem_grunt.png"));
 const HIDE = {
   name: "SnagemHideout", title: "Snagem Hideout", width: HW, height: HH, type: "route", music: "em_aqua_magma_hideout",
   region: "orre", battleScene: "sand", cycling: true, showName: true, top: true, borderWidth: 2, borderHeight: 2,

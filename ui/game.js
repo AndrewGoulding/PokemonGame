@@ -4335,7 +4335,7 @@
       case "arrive:OutskirtStand": case "enter:OutskirtStand": if (!(f.orre | 0)) await orreArrival(); return;
       case "OrreAirStrip_EventScript_Pilot": await orrePilot(); return;
       case "Orre_WorldMap": await orreTravel(); return;
-      case "SnagemHideout_EventScript_Guard1": case "SnagemHideout_EventScript_Guard2": await snagemGuard(); return;
+      case "SnagemHideout_EventScript_Guard1": case "SnagemHideout_EventScript_Guard2": await snagemGuard(ev.person); return;
       case "OutskirtStand_Diner_EventScript_Willie":
         await say(["Willie: That bike out front yours?\nShe's a beauty.",
           "And those two Pokémon of yours… Tell you\nwhat, when you head out, I'll follow you."]);
@@ -9563,10 +9563,51 @@
     if (special("arrive:" + to.map)) await story({ type: "trigger", trigger: { script: "arrive:" + to.map }, map: to.map });
     await persist();
   }
-  // Team Snagem's guards at the hideout's door. (What comes next is for later.)
-  async function snagemGuard() {
-    await say(["Grunt: Hey! Who are you? This is\nTeam Snagem's hideout!",
-      "Nobody gets through this door without\nthe boss's say-so.", "Beat it, kid!"]);
+  // Team Snagem's guards at the hideout's gate. Talk to one and you can ask to join Team Snagem, as Prof. Oak asked:
+  // they laugh, then the one you asked tests you, two against two (player.flags.orreStory 3); beat him and he'll put
+  // in a word with Master Gonzap, who's out on a job (orreStory 4). Lose, and he'll test you again when you're back.
+  const SNAGEM_GUARDS = [ORRE("GUARD_1"), ORRE("GUARD_2")];
+  const snagemGuardTeam = () => {
+    const lv = Math.max(30, Math.min(60, partyLevel() - 3));
+    return [Party.create("Mightyena", lv), Party.create("Zangoose", lv)];
+  };
+  async function snagemGuard(person) {
+    const f = player.flags, step = f.orreStory | 0;
+    const me = (person && person.localId) || SNAGEM_GUARDS[0], other = SNAGEM_GUARDS.find((g) => g !== me);
+    if (step >= 4) {
+      await say(["Grunt: Master Gonzap's still out on\na job.", "Hang around, recruit. The boss will\nwant a look at you when he's back."]);
+      return;
+    }
+    if (step === 3) {
+      if (!(await confirm("Grunt: Back again, huh? Ready to show\nus what you've got this time?"))) { await say("Grunt: Then quit wasting my time!"); return; }
+    } else {
+      await say(["Grunt: Hey! Who are you? This is\nTeam Snagem's hideout!", "Nobody gets through this gate without\nthe boss's say-so."]);
+      if (!(await confirm("Ask to join Team Snagem?"))) { await say("Grunt: Then beat it, kid!"); return; }
+      await say([fill("{PLAYER}: I want to join Team Snagem!")]);
+      Screen.say("");
+      sfx("se_pin");
+      await Overworld.act([{ who: me, moves: ["emote_exclamation_mark"] }, { who: other, moves: ["emote_exclamation_mark"] }]);
+      await say(["Grunt: Huh?! You want to join\nTeam Snagem?"]);
+      await say(["Other grunt: Gahahaha! You hear that?\nThe kid wants to be a Snagem!"]);
+      await say(["Grunt: Team Snagem's no playground,\nkid. We snag other Trainers' Pokémon\nfor a living.",
+        "We don't take just anybody. Only\nTrainers with Pokémon tough enough\nto take whatever they want.",
+        "…But I'll give you a shot.", "Beat me, two on two, and I'll put in\na word for you with Master Gonzap!"]);
+      f.orreStory = 3;
+    }
+    const outcome = await battle("trainer", { foe: { name: "Snagem Grunt", team: snagemGuardTeam(), pic: "snagem_grunt" },
+      double: true, prizeClass: "Cue Ball", noBlackout: true, music: "em_vs_aqua_magma",
+      defeatText: ["Whoa… You're tougher than you look!"] });
+    show("world");
+    await Overworld.resume();
+    music(window.WORLD_MAPS.SnagemHideout.music);
+    if (outcome !== "won") { await say(["Grunt: Hah! Thought so.", "Come back when your Pokémon have\nsome teeth!"]); return; }
+    await say(["Grunt: Whoa… You're tougher than\nyou look, kid."]);
+    await say(["Other grunt: Heh. Maybe the boss could\nuse someone like you after all."]);
+    await say(["Grunt: Fine. A deal's a deal.\nI'll tell Master Gonzap about you.",
+      "But the boss is out on a job right\nnow. You'll have to wait till he's back.",
+      "And don't go blabbing about this\nplace to anyone, got it?"]);
+    f.orreStory = 4;
+    await persist();
   }
   // The pilot: back to Kanto, outside Prof. Oak's lab.
   async function orrePilot() {
