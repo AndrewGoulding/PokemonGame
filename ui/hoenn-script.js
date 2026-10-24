@@ -210,7 +210,12 @@
         case "checkplayergender": setVar("VAR_RESULT", env.isGirl() ? 1 : 0); return true;
         case "setobjectxyperm": { const w = who(a[0]); if (w && w !== "player") state().pos[mapName() + ":" + w] = { x: num(a[1]), y: num(a[2]) }; return true; }
         case "setobjectxy": { const w = who(a[0]); if (w && w !== "player") temp.pos[mapName() + ":" + w] = { x: num(a[1]), y: num(a[2]) }; return true; }
-        case "setobjectmovementtype": { const w = who(a[0]); if (w) state().mov[mapName() + ":" + w] = String(a[1]).replace(/^MOVEMENT_TYPE_/, "").toLowerCase(); return true; }
+        case "setobjectmovementtype": {
+          const w = who(a[0]), mv = String(a[1]).replace(/^MOVEMENT_TYPE_/, "").toLowerCase();
+          // (And whoever's on the map already moves so: Mr. Briney after Peeko, as you come in.)
+          if (w) { state().mov[mapName() + ":" + w] = mv; if (w !== "player" && env.setMovement) env.setMovement(w, mv); }
+          return true;
+        }
         case "setmetatile": env.setMetatile(mapName(), num(a[0]), num(a[1]), a[2], !!num(a[3])); return true;
         case "incrementgamestat": case "setstepcallback": case "setflashlevel": case "animateflash": case "doweather":
         case "resetweather": case "setobjectsubpriority": case "resetobjectsubpriority": case "setworldmapflag":

@@ -955,7 +955,7 @@
     if (cmd === "lock_facing_direction") { a.lockFacing = true; return 0; }
     if (cmd === "unlock_facing_direction") { a.lockFacing = false; return 0; }
     if (cmd === "set_invisible") { a.hidden = true; return 0; }
-    if (cmd === "set_visible") { a.hidden = false; return 0; }
+    if (cmd === "set_visible") { a.hidden = false; a.shown = true; return 0; }
     return 0;   // anything else (sounds, door animations) is skipped
   }
 
@@ -1936,7 +1936,8 @@
     // People and the player, back to front.
     const emotes = [];
     // (`drawnOnMap`: someone the map's picture already shows, as Johto's Apricorn trees on Heart & Soul's maps.)
-    const sprites = people.filter((p) => !p.hidden && !p.def.drawnOnMap && !buried(p)).map((p) => {
+    // (Emerald's MOVEMENT_TYPE_INVISIBLE: there to talk to, Mr. Stone across his desk, but not drawn till a script shows them.)
+    const sprites = people.filter((p) => !p.hidden && !p.def.drawnOnMap && !buried(p) && !(p.def.movement === "invisible" && !p.shown)).map((p) => {
       let x = p.x * TILE, y = p.y * TILE;
       if (p.move) {
         const [dx, dy] = World.DIRS[p.facing];
@@ -2179,6 +2180,14 @@
       p.move = { tx: p.x + dx, ty: p.y + dy, t: 0 };
     },
     // Someone (by local id) hidden or shown: still there, still in the way.
+    // (A script's new movement type for someone already on the map: Emerald's setobjectmovementtype.)
+    setPersonMovement: (localId, movement) => {
+      const p = people.find((q) => q.def.localId === localId);
+      if (!p || p.def.movement === movement) return;
+      p.def = Object.assign({}, p.def, { movement }); p.ox = p.x; p.oy = p.y; p.seq = 0; p.timer = 30;
+      const f = /^face_(up|down|left|right)$/.exec(movement);
+      if (f) p.facing = f[1];
+    },
     setPersonHidden: (localId, hidden) => { const p = people.find((q) => q.def.localId === localId); if (p) p.hidden = !!hidden; },
     // Where someone on the map (by local id) stands, or null.
     personPosition: (localId) => { const p = people.find((q) => q.def.localId === localId); return p ? { x: p.x, y: p.y, facing: p.facing } : null; },

@@ -1402,6 +1402,7 @@
   const NPC_BASE_LOOKS = ["OBJ_EVENT_GFX_YOUNGSTER", "OBJ_EVENT_GFX_BUG_CATCHER", "OBJ_EVENT_GFX_RICH_BOY", "OBJ_EVENT_GFX_CAMPER", "OBJ_EVENT_GFX_MAN_3",
     "OBJ_EVENT_GFX_LASS", "OBJ_EVENT_GFX_GIRL_3", "OBJ_EVENT_GFX_WOMAN_2", "OBJ_EVENT_GFX_PICNICKER", "OBJ_EVENT_GFX_WOMAN_5"];
   const NPC_BASE_CLASSES = ["youngster", "bug_catcher", "rich_boy", "camper", "cooltrainer_m", "lass", "school_kid_f", "lady", "picnicker", "cooltrainer_f"];
+  const NPC_BASE_SKIP = ["Route116"];
   const NPC_BASE_COUNT = 12, GIRL_CLASS = /_f$|^(aroma_lady|beauty|lass|hex_maniac|parasol_lady|battle_girl|picnicker|lady)$/;
   function seededRandom(seed) {
     let a = seed | 0;
@@ -1409,10 +1410,11 @@
   }
   function hoennNpcBases() {
     const f = player.flags;
-    if (f.hoennNpcBases) return f.hoennNpcBases;
+    // (None on Route 116, by Rustboro: a save that has one there loses it.)
+    if (f.hoennNpcBases) return (f.hoennNpcBases = f.hoennNpcBases.filter((b) => !NPC_BASE_SKIP.includes(b.map)));
     const rng = seededRandom((player.trainerId || 0) + 0x5B), F = window.HOENN_FRONTIER || {};
     const trainers = (F.trainers || []).filter(Boolean), mons = (F.mons || []).filter(Boolean), spots = [];
-    for (const [map, m] of Object.entries(window.WORLD_MAPS)) if (m.region === "hoenn") for (const s of m.signs || []) if (s.spot) spots.push({ map, x: s.x, y: s.y, id: s.spot });
+    for (const [map, m] of Object.entries(window.WORLD_MAPS)) if (m.region === "hoenn" && !NPC_BASE_SKIP.includes(map)) for (const s of m.signs || []) if (s.spot) spots.push({ map, x: s.x, y: s.y, id: s.spot });
     const level = Math.max(10, Math.min(100, Math.round(partyLevel()))), bases = [];
     while (bases.length < NPC_BASE_COUNT && spots.length && trainers.length && mons.length) {
       const spot = spots.splice(Math.floor(rng() * spots.length), 1)[0];
@@ -12710,6 +12712,7 @@
       const at = Overworld.personPosition(id);
       if (at) Overworld.addObject(id, { x, y, facing: facing || at.facing });
     },
+    setMovement: (id, movement) => Overworld.setPersonMovement(id, movement),
     personAt: (id) => (id === "player" ? Overworld.position() : Overworld.personPosition(id)),
     moveTo: (x, y) => Overworld.moveTo(x, y),
     giveItem: async (id, n, verb) => {

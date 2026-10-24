@@ -178,10 +178,11 @@
       return { ok: false, warp: warpTarget(aheadWarp), door: true };
     }
 
-    // Jumping down a ledge.
+    // Jumping down a ledge. (Whatever the height below: the games' ShouldJumpLedge looks at the ledge alone, so
+    // Route 115's ledges by Rustboro, a step up on the ledge's side, still drop you down.)
     if (ahead.behavior === LEDGE[dir]) {
       const land = blockAt(pos.map, pos.x + dx * 2, pos.y + dy * 2);
-      if (free(land)) return { ok: true, map: land.map, x: land.x, y: land.y, jump: true };
+      if (land.map && !land.collision && !isWater(land.behavior) && !(occupied && occupied(land.map, land.x, land.y))) return { ok: true, map: land.map, x: land.x, y: land.y, jump: true };
       return { ok: false };
     }
 

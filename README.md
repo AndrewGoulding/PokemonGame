@@ -1193,7 +1193,7 @@ Viridian's road and the legendary birds block the tiles either side of them
 too. Rules follow Gen 3: collision and elevation per block, solid doors you walk
 into, door mats you walk out through, stairs (as FireRed's: step onto the
 bottom step, then press toward the stairs to take them; you arrive on the
-other floor's stairs facing away from them), ledges you can jump down,
+other floor's stairs facing away from them), ledges you can jump down (whatever the height below, as the games' ShouldJumpLedge),
 connected maps you walk straight into, long grass (Faraway Island's) you
 walk in, not on (FireRed's FLDEFF_LONG_GRASS: its sprite over the feet of
 whoever stands in it, you, your Pokémon or anyone else, rustling as they step
@@ -1978,7 +1978,7 @@ streaks and orbs flying past, and Rayquaza floating over the pair, roaring (the 
 backs off and Kyogre sinks away; before Rayquaza's awakening, the shorter telling of the fight alone.
 
 Other people's secret bases (this game's own, since Emerald only has them through record mixing; `hoennNpcBases` in
-`ui/game.js`): a dozen of Hoenn's spots are taken, each by an owner of one of Emerald's ten kinds (its
+`ui/game.js`): a dozen of Hoenn's spots are taken (none on Route 116), each by an owner of one of Emerald's ten kinds (its
 `sSecretBaseOwnerGfxIds` and `sSecretBaseFacilityClasses`: five boys, five girls), named after one of the Frontier's
 trainers, with decorations set out where Emerald's placement rules let them go (`ui/hoenn-decor.js` `furnish`) and a
 party of the Frontier's Pokémon at the level you were when you first came to a spot, raised to your party's level
