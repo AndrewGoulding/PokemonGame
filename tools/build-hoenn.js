@@ -194,7 +194,7 @@ const tileset = (sym) => {
   const folder = /^gTileset_SecretBase.+/.test(sym) ? "secret_base/" + sym.replace(/^gTileset_SecretBase/, "").replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase() : E.tilesetFolder(sym);
   const kind = !folder.includes("/") && fs.existsSync(P("data/tilesets/primary", folder)) ? "primary" : "secondary";
   const key = kind + "/" + folder;
-  return tsCache[key] || (tsCache[key] = E.loadTileset(kind, folder, folder === "general" ? E.GENERAL_ANIMS : []));
+  return tsCache[key] || (tsCache[key] = E.loadTileset(kind, folder, folder === "general" ? E.GENERAL_ANIMS : kind === "secondary" ? E.SECONDARY_ANIMS[folder] || [] : []));
 };
 const layoutsPrimary = {};
 for (const l of Object.values(layouts)) layoutsPrimary[l.primary_tileset] = true;
@@ -562,7 +562,8 @@ for (const name of MAPS) {
     width: w, height: h, type: mapType === "city" ? "city" : mapType, music: musicOf(map.music), region: "hoenn",
     cycling: !!map.allow_cycling || undefined, allowEscaping: map.allow_escaping || undefined,
     showName: !!map.show_map_name, pokemonCenter: /_PokemonCenter_1F$/.test(name) || undefined, top: r.anyAbove, borderWidth: 2, borderHeight: 2,
-    anim: anim.cells.length ? { cells: anim.cells, anims: primary.anims.map((a) => a.name) } : undefined,
+    anim: anim.cells.length ? { cells: anim.cells, anims: E.allAnims(primary, secondary).map((a) => a.name) } : undefined,
+    reflect: (() => { const rf = E.reflections(blocks, primary, secondary); return rf.length ? rf : undefined; })(),
     collision, elevation, behavior: behaviors, encounter,
     connections: (map.connections || []).map((c) => ({ map: byConst[c.map] ? ren(byConst[c.map]) : null, mapConst: c.map, direction: c.direction, offset: c.offset })),
     warps: map.warp_events.map((wp) => ({ x: wp.x, y: wp.y, map: byConst[wp.dest_map] ? ren(byConst[wp.dest_map]) : null, mapConst: wp.dest_map, warp: +wp.dest_warp_id })),

@@ -1893,7 +1893,14 @@ taking the pokeemerald checkout as their argument and all safe to run again:
 
 - `tools/build-hoenn.js` (`node tools/build-hoenn.js <pokeemerald> [--list] [--only=A,B --out=dir]`)
   reads each map's layout, metatiles, objects, warps, triggers, trainers, marts and wild tables,
-  draws the pictures (`tools/lib/emerald-tiles.js`), writes the NPC and trainer sprites
+  draws the pictures (`tools/lib/emerald-tiles.js`, with the animated tiles: the General tileset's water, flowers,
+  sand and waterfalls, and the towns' own from `src/tileset_anims.c`: Rustboro's windy water (eight slots a frame
+  apart) and fountain, Pacifidlog's currents and log bridges, Sootopolis's stormy water and its Gym's waterfalls,
+  the seaweed under the sea, Dewford's and the Frontier's flags, Slateport's balloons, Lavaridge's steam and the
+  lava, Ever Grande's flowers, each at Emerald's pace), the tiles that show reflections (`reflect`: pond water,
+  puddles, Sootopolis's deep water, the water under bridges and ice, and the bridges over ponds, whose reflections
+  fall further and dark blue; `ui/overworld.js` drawReflection draws everyone's upside down and paler on them, as
+  Emerald's SetUpReflection), writes the NPC and trainer sprites
   (`em_*.png`), the metatile overlay sheets for maps whose scenery changes (`<Map>-mt.png`), the
   compiled scripts (`window.HOENN_SCRIPTS`) and the Town Map, and puts it all in
   `data/emerald-maps.js` between the `Hoenn` markers.

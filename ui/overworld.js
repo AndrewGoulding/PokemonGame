@@ -106,10 +106,24 @@
     e_waterfall: { every: 16, at: 3, frames: 4 }, e_land: { every: 16, at: 4, frames: 4 },
     // (Pokémon Heart & Soul's Johto tilesets, TilesetAnim_JohtoGeneral: its water and the sand's edge every 8,
     // its flowers and waterfalls every 16: tools/lib/hns-johto.js.)
-    h_sand: { every: 8, at: 0, frames: 8 }, h_flower: { every: 16, at: 2, frames: 5 }, h_waterfall: { every: 16, at: 3, frames: 8 } };
+    h_sand: { every: 8, at: 0, frames: 8 }, h_flower: { every: 16, at: 2, frames: 5 }, h_waterfall: { every: 16, at: 3, frames: 8 },
+    // (Emerald's towns' own, src/tileset_anims.c: tools/lib/emerald-tiles.js SECONDARY_ANIMS. Rustboro's windy water
+    // and Ever Grande's flowers in eight slots a frame apart, each that many frames behind (shift); Sootopolis Gym's
+    // round is 240 frames, not 640 (wrap).)
+    e_rustboro_fountain: { every: 8, at: 0, frames: 2 }, e_dewford_flag: { every: 8, at: 0, frames: 4 }, e_slateport_balloons: { every: 16, at: 0, frames: 4 },
+    e_lavaridge_steam0: { every: 16, at: 0, frames: 4 }, e_lavaridge_steam1: { every: 16, at: 0, frames: 4, shift: -2 }, e_lavaridge_lava: { every: 16, at: 1, frames: 8 },
+    e_pacifidlog_logs: { every: 16, at: 0, frames: 4 }, e_pacifidlog_currents: { every: 16, at: 1, frames: 8 }, e_sootopolis_water: { every: 16, at: 0, frames: 8 },
+    e_frontier_flag: { every: 8, at: 0, frames: 4 }, e_seaweed: { every: 16, at: 0, frames: 4 }, e_cave_lava: { every: 16, at: 1, frames: 8 },
+    e_soot_gym_side: { every: 8, at: 0, frames: 3, wrap: 240 }, e_soot_gym_front: { every: 8, at: 0, frames: 3, wrap: 240 } };
+  for (let k = 0; k < 8; k++) {
+    TILE_ANIMS["e_rustboro_water" + k] = { every: 8, at: k, frames: 8, shift: k };
+    TILE_ANIMS["e_evergrande_flowers" + k] = { every: 8, at: k, frames: 8, shift: k };
+  }
   function animFrame(name) {
-    const a = TILE_ANIMS[name], c = Math.floor(performance.now() / (1000 / 60)) % 640;
-    return a ? Math.floor(((c - a.at + 640) % 640) / a.every) % a.frames : 0;
+    const a = TILE_ANIMS[name];
+    if (!a) return 0;
+    const wrap = a.wrap || 640, c = Math.floor(performance.now() / (1000 / 60)) % wrap;
+    return ((Math.floor(((c - a.at + wrap) % wrap) / a.every) - (a.shift || 0)) % a.frames + a.frames) % a.frames;
   }
   // A map's animated 8x8 cells (tools/build-maps.js animCells) over its picture
   // at (x0, y0) on screen, in their current frames.
@@ -869,8 +883,11 @@
     const over = overTop(pal, me.map, pal.x, pal.y, me.map, pal.x, pal.y), d = pal.def;
     // (In a hot spring it's in the water too, as you are.)
     const sunk = !pal.move && !lift ? sunkAt(me.map, pal.x, pal.y) : 0;
-    return { y, over, draw: () => { if (shade) g.filter = SHADE; drawSprite(d.sprite, d.width, d.height, frameFor(pal.facing, walking, pal.parity, d.frames),
-      pal.facing === "right", x - camX + spriteDx(d), y - camY - lift, sunk); g.filter = "none"; } };
+    const ff = frameFor(pal.facing, walking, pal.parity, d.frames);
+    return { y, over, draw: () => { if (shade) g.filter = SHADE; drawSprite(d.sprite, d.width, d.height, ff,
+      pal.facing === "right", x - camX + spriteDx(d), y - camY - lift, sunk); g.filter = "none"; },
+      refl: () => !lift && drawReflection(d.sprite, d.width, d.height, ff, pal.facing === "right", x - camX + spriteDx(d), y - camY,
+        [[pal.x, pal.y]].concat(pal.move ? [[pal.move.fx, pal.move.fy]] : []), camX, camY) };
   }
   // (A facing it: it turns to you.)
   function followerAhead(dx, dy) {
@@ -1820,6 +1837,58 @@
     }
     if (sunk) drawHotSpring(x + w / 2, y + sh);
   }
+  // ---------- Reflections (Emerald's: src/field_effect_helpers.c SetUpReflection) ----------
+  //
+  // Someone standing above still water (a pond, a puddle, Sootopolis's deep water, the water under a bridge) or ice
+  // shows upside down below their feet, in the paler reflection palette (npc_1_reflection.pal and the like), on the
+  // water only. On a bridge over a pond it falls further, solid dark blue (Route 120's: bridge_reflection.pal).
+  // The map's tiles: m.reflect, run-length [start, run, kind] (tools/lib/emerald-tiles.js reflections).
+  const reflectCache = {};
+  function reflectAt(map, x, y) {
+    const m = World.map(map);
+    if (!m || !m.reflect || x < 0 || y < 0 || x >= m.width || y >= m.height) return 0;
+    let a = reflectCache[map];
+    if (!a) {
+      a = reflectCache[map] = new Uint8Array(m.width * m.height);
+      for (let i = 0; i < m.reflect.length; i += 3) a.fill(m.reflect[i + 2], m.reflect[i], m.reflect[i] + m.reflect[i + 1]);
+    }
+    return a[y * m.width + x];
+  }
+  const REFLECTS = (k) => k === 1 || k === 2;
+  // (ObjectEventGetNearbyReflectionType: the tiles below someone w x h, from either tile they're between.)
+  function reflectionType(map, w, h, spots) {
+    const W = (w + 8) >> 4, H = (h + 8) >> 4;
+    for (let i = 0; i < H; i++) for (let j = 0; j < W; j++) for (const [x, y] of spots) for (const sx of j ? [x + j, x - j] : [x])
+      if (REFLECTS(reflectAt(map, sx, y + 1 + i))) return true;
+    return false;
+  }
+  const BRIDGE_DROP = { 3: 12, 4: 28, 5: 44 };
+  const reflCanvas = document.createElement("canvas"), rg = reflCanvas.getContext("2d");
+  // (sx, sy: where drawSprite puts the sprite on screen; spots: the tiles they're on, or between.)
+  function drawReflection(name, w, h, frame, flip, sx, sy, spots, camX, camY) {
+    const m = World.map(me.map);
+    if (!m || !m.reflect || !reflectionType(me.map, w, h, spots)) return;
+    const img = spriteImage(name);
+    if (!ready(img)) return;
+    const bridge = spots.map(([x, y]) => reflectAt(me.map, x, y)).find((k) => BRIDGE_DROP[k]);
+    reflCanvas.width = w; reflCanvas.height = h;
+    rg.save(); rg.translate(flip ? w : 0, h); rg.scale(flip ? -1 : 1, -1); rg.drawImage(img, frame * w, 0, w, h, 0, 0, w, h); rg.restore();
+    rg.globalCompositeOperation = "source-atop";
+    rg.fillStyle = bridge ? "rgb(74,115,172)" : "rgba(215,235,255,0.5)";
+    rg.fillRect(0, 0, w, h);
+    rg.globalCompositeOperation = "source-over";
+    // (Its middle the sprite's height less 2 below the sprite's: GetReflectionVerticalOffset.)
+    const x = Math.round(sx), y = Math.round(sy + TILE - h) + h - 2 + (BRIDGE_DROP[bridge] || 0);
+    g.save();
+    g.beginPath();
+    const tx0 = Math.floor((x + camX) / TILE), ty0 = Math.floor((y + camY) / TILE);
+    for (let ty = ty0; ty * TILE - camY < y + h; ty++) for (let tx = tx0; tx * TILE - camX < x + w; tx++)
+      if (REFLECTS(reflectAt(me.map, tx, ty))) g.rect(tx * TILE - camX, ty * TILE - camY, TILE, TILE);
+    g.clip();
+    g.drawImage(reflCanvas, x, y);
+    g.restore();
+  }
+
   // Standing in a hot spring (FireRed's MB_HOT_SPRINGS: the Ember Spa), you're
   // in it up to the waist (its FLDEFF_HOT_SPRINGS_WATER), the water rippling round you.
   const HOT_SPRINGS = 0x28, SUNK = 6;
@@ -1949,8 +2018,11 @@
       const over = overTop(p, me.map, p.x, p.y, me.map, p.move ? p.move.tx : p.x, p.move ? p.move.ty : p.y);
       const sunk = !p.move && !p.def.inanimate ? sunkAt(me.map, p.x, p.y) : 0;
       // (Something on the floor, as the Ruins of Alph's stone panels: under everyone, offsetY down.)
+      const pf = p.def.frame != null ? p.def.frame : frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), pflip = p.facing === "right" && p.def.frame == null;
       return { y: p.def.underfoot ? -Infinity : y, over, draw: () => { if (shade) g.filter = SHADE; drawSprite(p.def.sprite, p.def.width, p.def.height,
-        p.def.frame != null ? p.def.frame : frameFor(p.facing, walking, (p.x + p.y) & 1, p.def.frames), p.facing === "right" && p.def.frame == null, x - camX + spriteDx(p.def), y - camY + (p.def.offsetY || 0), sunk); g.filter = "none"; } };
+        pf, pflip, x - camX + spriteDx(p.def), y - camY + (p.def.offsetY || 0), sunk); g.filter = "none"; },
+        refl: () => drawReflection(p.def.sprite, p.def.width, p.def.height, pf, pflip, x - camX + spriteDx(p.def), y - camY + (p.def.offsetY || 0),
+          [[p.x, p.y]].concat(p.move ? [[p.move.tx, p.move.ty]] : []), camX, camY) };
     });
     for (const n of neighbours) {
       const x = (n.ox + n.x) * TILE, y = (n.oy + n.y) * TILE;
@@ -2005,9 +2077,12 @@
     // (Up in the air on an Escape Rope: over everything once a tile up.)
     const lift = me.lift || 0;
     const meSunk = !me.move && me.avatar === "walk" && !lift ? sunkAt(me.map, me.x, me.y) : 0;
-    if (!me.hidden && !(fly && fly.player !== undefined)) sprites.push({ y: py, over: meOver || lift >= 16, draw: () => drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy - lift, meSunk) });
+    if (!me.hidden && !(fly && fly.player !== undefined)) sprites.push({ y: py, over: meOver || lift >= 16, draw: () => drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy - lift, meSunk),
+      refl: () => !lift && drawReflection(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy,
+        [[me.x, me.y]].concat(me.move && (me.move.tmap || me.map) === me.map ? [[me.move.tx, me.move.ty]] : []), camX, camY) });
     if (heal) drawHeal(camX, camY);   // the healing machine's balls and screen, under people
     for (const s of tallGrassSprites(camX, camY, shade)) sprites.push(s);
+    sprites.forEach((s) => s.refl && s.refl());   // (their reflections in the water, under everyone)
     sprites.sort((a, b) => a.y - b.y);
     sprites.filter((s) => !s.over).forEach((s) => s.draw());
 
