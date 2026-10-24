@@ -102,7 +102,7 @@
   // the Air Strip and Team Snagem's hideout are open (player.flags.orreMap lists the rest as
   // they open); a save that's been to the Outskirt Stand has that too.
   const PLACES = [
-    { map: "SnagemHideout", name: "Snagem Hideout", x: 38, y: 60, arrive: { x: 15, y: 20, facing: "up" } },
+    { map: "SnagemHideout", name: "Snagem Hideout", x: 196, y: 60, arrive: { x: 12, y: 18, facing: "up" } },
     { map: "OutskirtStand", name: "Outskirt Stand", x: 72, y: 110, arrive: { x: 18, y: 22, facing: "up" } },
     { map: "OrreAirStrip", name: "Orre Air Strip", x: 96, y: 132, arrive: { x: 21, y: 2, facing: "down" } }
   ];

@@ -2962,17 +2962,20 @@ pilot and a mechanic.
 
 **Getting about: Orre's map.** As in Colosseum, you don't walk from one place in Orre to the next. Oak gives you the
 **Orre Map** with Team Snagem's hideout marked on it, and whenever you walk out of a place (through the Air Strip's
-gate, down the hideout's road) the map of Orre comes up: a desert of dunes and red mesas, the mountains to the
-north-east, an oasis in the middle, with a marker on each place you can go. The arrows move to the nearest place
+gate, down the hideout's canyon) the map of Orre comes up: a desert of dunes and red mesas, the mountains and Eclo
+Canyon to the north-east, an oasis in the middle, with a marker on each place you can go. The arrows move to the nearest place
 that way, A sets off (your icon slides across the map, then you're there), and B stays where you are. At first only
 **the Air Strip and the Snagem Hideout** are open; more places open as the story goes on (`game/orre.js`'s
 `PLACES`, `player.flags.orreMap`; a save that's already been to the Outskirt Stand has that too).
 
-**The Snagem Hideout** (this game's own picture of it): a box canyon of red rock out in the western desert, the road
-in from the south. Built into the canyon's north wall is the hideout, a steel fortress with a radar dish and aerials
-on its roof and Team Snagem's emblem (a red claw snatching a Poké Ball) over its great shutter door. Two Snagem
-grunts guard the door and won't let you in without the boss's say-so; another one patrols the yard, among the
-barricades, crates and drums and the watchtower with its searchlight. The story inside comes next.
+**The Snagem Hideout**, as in Colosseum: at the head of **Eclo Canyon**, in Orre's north-east, walled in by the
+canyon's tan rock. The track up the canyon floor (yellow drums, crates, a warning sign) leads into a narrow courtyard
+between the hideout's two weathered concrete wings, heavy rusty pipes snaking over them, its dusty ground strewn with
+scrap and a broken girder. At its end is the hideout's front: rust-stained concrete blocks pierced with round holes
+either side of a steel gate with **Team Snagem's emblem** on it (two red arrows, interlocked), machinery stacked
+above, yellow-and-black hazard chains and a great round dish. Two **Snagem grunts**, bald, in sunglasses and red
+vests as in Colosseum, guard the gate and won't let you in without the boss's say-so; a third keeps a lookout in the
+canyon. The story inside comes next.
 
 **The Outskirt Stand**, not on the map yet: a diner made from an old locomotive out in Orre's desert. The first time you
 get there, two men come out of the diner, **Folly** and **Trudly**. They talk about their meal and the sack in
@@ -2998,8 +3001,10 @@ place in the GBA games' style instead, from a
 node tools/build-orre.js <path to pret/pokeemerald>
 ```
 
-- **The Snagem Hideout**: its canyon walls, the fortress, the watchtower, barricades, crates, drums and sign are all
-  drawn in code; its grunts are FireRed's Rocket Grunt recoloured in Snagem's purple and gold (`orre_snagem_m`).
+- **The Snagem Hideout** is drawn in code after Colosseum's (its intro, and the screenshots of its courtyard): the
+  canyon's rock, the two wings, the pipes, the front with its gate and emblem, the scrap, drums, crates and sign. Its
+  grunts are FireRed's Rocket Grunt redone as Colosseum's (`orre_snagem_m`): his cap a bald head, sunglasses, a red
+  vest over a white shirt and purple gloves.
 - **Orre's map** (`assets/town-map/orre.png`, 240 by 160 like the Town Map) is drawn in code too.
 - The places' open edges are triggers (`Orre_WorldMap`) that bring up Orre's map, not connections.
 - **The Air Strip** goes on from the Stand's desert (Route 111's next row, then sand), its fence, runway, apron,
