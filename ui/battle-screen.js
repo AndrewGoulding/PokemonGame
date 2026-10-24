@@ -3330,5 +3330,5 @@
 
   window.BattleScreen = { run, oldManTutorial, ballName,
     // (for the browser tests: the animations on their own)
-    _test: { tableAnim, ballThrow, recall, get view() { return view; } } };
+    _test: { tableAnim, ballThrow, recall, get view() { return view; }, get battle() { return battle; } } };
 })();
