@@ -2476,7 +2476,7 @@
     party: "Check and organize Pokémon that are\ntraveling with you in your party.",
     bag: "Equipped with pockets for storing items\nyou bought, received, or found.",
     card: "Check your money and other game data.",
-    gear: "Use the Pokégear's phone, map and radio.",
+    gear: "Use the Pokégear's phone, map and radio.",   // (the PokéNav's, once it is one: navName)
     save: "Save your game with a complete record\nof your progress to take a break.",
     option: "Adjust various game settings such as text\nspeed, game rules, etc.",
     exit: "Close this menu window.",
@@ -2530,7 +2530,7 @@
       if (player.flags.pokedex) items.push({ key: "dex", label: "Pokédex" });
       if (player.party.length) items.push({ key: "party", label: "Pokémon" });
       if (!contest) items.push({ key: "bag", label: "Bag" });
-      if (gear.has()) items.push({ key: "gear", label: "Pokégear" });   // (HGSS's, once you have it: ui/pokegear.js)
+      if (gear.has()) items.push({ key: "gear", label: hasPokenav() ? "PokéNav" : "Pokégear" });   // (HGSS's, once you have it: ui/pokegear.js)
       // (Emerald's Frontier Pass, once Scott's gate has issued it: it holds the Trainer Card, your Battle Points,
       // Symbols and the battle recorded on it; opened from your name, as the Trainer Card is.)
       const pass = isHoenn(player.location.map) && hoenn.flag("FLAG_SYS_FRONTIER_PASS");
@@ -3092,8 +3092,14 @@
 
   const T = (label) => window.WORLD_TEXT[label];
   // {PLAYER}, {RIVAL}, and {STR_VAR_1..3} from `vars` (["Abra", "Mr. Mime"]).
-  const fill = (s, vars) => s.replace(/\{PLAYER\}/g, player.name).replace(/\{RIVAL\}/g, player.rival)
-    .replace(/\{STR_VAR_(\d)\}/g, (_, n) => (vars && vars[n - 1] != null ? vars[n - 1] : ""));
+  // (Once Mr. Stone has made your Pokégear a PokéNav, it's that in everyone's words: "registered in your PokéNav".)
+  // ({OLDGEAR}: the Pokégear as it was, by that name still: what Mr. Stone made it from.)
+  const fill = (s, vars) => navName(s.replace(/\{PLAYER\}/g, player.name).replace(/\{RIVAL\}/g, player.rival)
+    .replace(/\{STR_VAR_(\d)\}/g, (_, n) => (vars && vars[n - 1] != null ? vars[n - 1] : ""))).replace(/\{OLDGEAR\}/g, "Pokégear");
+  const navName = (s) => (hasPokenav() ? s.replace(/Pok[ée]gear|POK[ÉéE]GEAR|Pok[ée]Gear/g, "PokéNav") : s);
+  // (The PokéNav: Mr. Stone's, in Devon's office, Emerald's FLAG_SYS_POKENAV_GET. It's your Pokégear made over, and
+  // does all it does: ui/pokegear.js, in its own colours.)
+  const hasPokenav = () => !!(player && player.flags && player.flags.hoenn && player.flags.hoenn.f && player.flags.hoenn.f.FLAG_SYS_POKENAV_GET);
   async function say(pages, vars) { for (const p of [].concat(pages)) await window.Screen.read(fill(p, vars)); }
 
   // (A scene as you come out of a building: out of its doorway first, as HGSS's and Emerald's step you out
@@ -9031,6 +9037,8 @@
     await Overworld.act([{ who: O, moves: M("Common_Movement_WalkInPlaceFasterLeft") }, { who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
     await sleep(300);
     await say(T("PokemonLeague_HallOfFame_Text_OakCongratulations"));
+    // (Johto's League won, this game's own: Oak has a ticket for the Fast Ship S.S. Aqua's run to Hoenn.)
+    if (f.johtoLeagueDone) await giveHoennTicket("Oak");
     Screen.say("");
     await Overworld.act([{ who: O, moves: M("Common_Movement_WalkInPlaceFasterUp") }, { who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
     await sleep(333);
@@ -12182,6 +12190,15 @@
   // Olivine's port: the S.S. Aqua's gangway (and the port's sailor) ask where you're sailing, once you've beaten
   // Johto's Pokémon League: Vermilion City (HGSS's voyage, as its port's sailor sets it going) or, this game's own,
   // Slateport City in Hoenn (the first time, the moving truck's inside, as Emerald begins: sailToHoenn).
+  // The Hoenn Ticket (this game's own), for the S.S. Aqua's run to Slateport: from Oak in the Hall of Fame once you've
+  // beaten Johto's League, or from the S.S. Aqua's clerk if you'd beaten it before there was one.
+  async function giveHoennTicket(from) {
+    if (Player.itemCount(player, "hoenn-ticket")) return;
+    await say(from === "Oak" ? ["Oak: Oh, and {PLAYER}…", "This came for Johto's new Champion.\nIt's from the Fast Ship S.S. Aqua!", "A ticket to sail from Olivine City\nto Slateport City, in Hoenn."]
+      : ["Ah, Champion! This was left for you.", "A ticket for our run to Slateport City,\nin Hoenn."]);
+    Player.addItem(player, "hoenn-ticket", 1);
+    await sayWithJingle("mus_obtain_key_item", fill("{PLAYER} received the " + Bag.name("hoenn-ticket") + "!"));
+  }
   async function ssAquaBoard() {
     if (Overworld.position().facing === "down") return;   // (off the ship, down the gangway)
     const away = async () => { if (player.location.map === "SSAqua_OlivinePortExterior") await Overworld.act([{ who: "player", moves: ["walk_down"] }]); };
@@ -12190,11 +12207,13 @@
       await away();
       return;
     }
-    const dests = ["Vermilion City", "Slateport City", "Cancel"];
-    const i = await multichoice("Welcome to Fast Ship S.S. Aqua.\nWhere would you like to sail?", 17, 6, dests);
-    if (i < 0 || i === 2) { await say("We hope to see you again!"); await away(); return; }
+    // (Slateport City with the Hoenn Ticket: Oak's, from the Hall of Fame; a save already past it gets it here.)
+    if (!Player.itemCount(player, "hoenn-ticket")) await giveHoennTicket("the S.S. Aqua's clerk");
+    const dests = ["Vermilion City"].concat(Player.itemCount(player, "hoenn-ticket") ? ["Slateport City"] : [], ["Cancel"]);
+    const i = await multichoice("Welcome to Fast Ship S.S. Aqua.\nWhere would you like to sail?", 17, 12 - 2 * dests.length, dests);
+    if (i < 0 || dests[i] === "Cancel") { await say("We hope to see you again!"); await away(); return; }
     Screen.say("");
-    if (i === 1) { await sailToHoenn(true); return; }
+    if (dests[i] === "Slateport City") { await say("{PLAYER} flashed the Hoenn Ticket."); await sailToHoenn(true); return; }
     await say(["Welcome aboard the S.S. Aqua!", "We sail for Vermilion City in Kanto."]);
     Screen.say("");
     johto.setVar("VAR_BOAT_DIRECTION", 1);
@@ -13476,7 +13495,7 @@
   // HeartGold's Pokégear (ui/pokegear.js): its phone (HGSS's people and
   // their calls, and the trainers' rematches), the Town Map and the radio.
   const gear = Pokegear.create({
-    player: () => player, johto: () => johto, map: () => player.location.map, isGirl, sfx, music, fanfare,
+    player: () => player, johto: () => johto, map: () => player.location.map, isGirl, sfx, music, fanfare, pokenav: () => hasPokenav(),
     mapMusic: () => music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[player.location.map] || {}).music),
     townMap: () => townMap(), say: (pages) => say(pages), confirm: (q) => confirm(q),
     choose: async (texts, question) => { const i = await multichoice(question || null, 0, 0, texts); Screen.say(""); return i; },

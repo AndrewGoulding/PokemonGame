@@ -37,6 +37,8 @@ const out = {
   "old-sea-map": "A faded sea chart\nthat shows the way\nto a certain island.",
   // (This game's: the Berry Pouch picks berries, game/berry-picking.js.)
   "berry-pouch": "Use it in a forest to shake a\nberry tree and catch the Berries\nthat fall.",
+  // (This game's: after Johto's Hall of Fame, for the S.S. Aqua's run to Hoenn.)
+  "hoenn-ticket": "A ticket for the Fast Ship\nS.S. Aqua's run from Olivine\nto Slateport City in Hoenn.",
   // (This game's: after Hoenn's Hall of Fame, for the S.S. Tidal's run to Sinnoh.)
   "sinnoh-ticket": "A ticket for the S.S. Tidal's\nrun to Sinnoh, sailing from\nLilycove City.",
   // (As since Gen 4: a quarter of its HP, not FireRed's 30.)

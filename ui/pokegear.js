@@ -6,7 +6,8 @@
 // (window.JOHTO_PHONE, tools/build-johto-phone.js).
 //
 //   const gear = Pokegear.create(env);
-//   gear.has()                    // you've the Pokégear (FLAG_GOT_POKEGEAR: Elm's starter)
+//   gear.has()                    // you've the Pokégear (FLAG_GOT_POKEGEAR: Elm's starter), or the PokéNav it becomes
+//                                 // (env.pokenav(): Mr. Stone's, in Hoenn; the same, in blue, and its name in what's said)
 //   await gear.open()             // the Pokégear, from the start menu
 //   await gear.call(who, kind, n) // a script's PhoneCall: a story call (Elm's)
 //   gear.registerCard(n)          // RegisterPokegearCard: 1 the Map, 2 the Radio
@@ -27,7 +28,7 @@
 //                                       // at the Fighting Dojo: true if they had something to do
 //   gear.visible(person)          // a Gym Leader at the Dojo: there while waiting for you (or undefined)
 //
-// env: player(), johto() (ui/johto-script.js's), map() (where you are), isGirl(),
+// env: player(), johto() (ui/johto-script.js's), map() (where you are), isGirl(), pokenav() (it's a PokéNav now),
 //   sfx(name), music(name), mapMusic(), fanfare(name), townMap(), say(pages),
 //   confirm(question), choose(texts, question) (an index, or -1), amount(text, max,
 //   { saved, held }) (Pokegear.amount's box: how much, or 0), giveItem(id, n) (and says
@@ -54,6 +55,8 @@
   const WHITE = [255, 255, 255], DARK = [98, 98, 98], LIGHT = [213, 213, 205];
   // (HeartGold's gold, for the Pokégear's case.)
   const GOLD = [216, 152, 48], GOLD_DARK = [152, 88, 24], GOLD_LIGHT = [248, 216, 136], CREAM = [248, 240, 216], RED = [224, 56, 40];
+  // (And Emerald's PokéNav's blue, once Mr. Stone has made it one: env.pokenav().)
+  const NAV = [64, 128, 216], NAV_DARK = [24, 64, 144], NAV_LIGHT = [152, 200, 248];
   const CARDS = ["Phone", "Map", "Radio"];
   const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -103,7 +106,9 @@
     const numbers = () => { state(); const n = J().state().phone; if (n.includes(0)) n.splice(n.indexOf(0), 1); return n; };
     const registered = (i) => numbers().includes(i);
     const register = (i) => { if (!registered(i)) numbers().push(i); };
-    const has = () => J().flag("FLAG_GOT_POKEGEAR");
+    const has = () => J().flag("FLAG_GOT_POKEGEAR") || !!(env.pokenav && env.pokenav());
+    // (Its case: the Pokégear's gold, or the PokéNav's blue.)
+    const look = () => (env.pokenav && env.pokenav() ? { base: NAV, dark: NAV_DARK, light: NAV_LIGHT } : { base: GOLD, dark: GOLD_DARK, light: GOLD_LIGHT });
     // (The Map from the start, this game's own: Cherrygrove's Guide Gent, who
     // gives it in HGSS, isn't in this game; the Radio: FLAG_GOT_RADIO_CARD.)
     const hasCard = (n) => n === 0 || n === 1 || state().cards.includes(n) || (n === 2 && J().flag("FLAG_GOT_RADIO_CARD"));
@@ -307,20 +312,21 @@
     function paint() {
       if (!ui || !canvas) return;
       const s = GbaMenus.Surface(), frame = "type" + ((env.frame() || 0) + 1), fp = GM().frames[frame].palette, std = GM().palettes.std3;
-      // The case: gold, a darker band along the top for the cards.
-      s.fill(0, 0, W, H, GOLD);
-      for (let y = 18; y < H; y += 8) s.fill(0, y, W, 1, GOLD_LIGHT);
-      s.fill(0, 0, W, 17, GOLD_DARK);
+      // The case: gold (or the PokéNav's blue), a darker band along the top for the cards.
+      const L = look();
+      s.fill(0, 0, W, H, L.base);
+      for (let y = 18; y < H; y += 8) s.fill(0, y, W, 1, L.light);
+      s.fill(0, 0, W, 17, L.dark);
       // The cards you have, the one you're on lit; the day and time.
       let x = 4;
       for (const n of cards()) {
         const on = n === ui.card && ui.call == null, w = s.textWidth(CARDS[n]) + 12;
-        s.fill(x, 2, w, 14, on ? CREAM : GOLD);
-        s.text(CARDS[n], x + 6, 2, on ? DARK : WHITE, on ? LIGHT : GOLD_DARK);
+        s.fill(x, 2, w, 14, on ? CREAM : L.base);
+        s.text(CARDS[n], x + 6, 2, on ? DARK : WHITE, on ? LIGHT : L.dark);
         x += w + 3;
       }
       const t = clock(), time = DAYS[t.weekday] + " " + t.hour + ":" + String(t.minute).padStart(2, "0");
-      s.text(time, W - 6 - s.textWidth(time), 2, WHITE, GOLD_DARK);
+      s.text(time, W - 6 - s.textWidth(time), 2, WHITE, L.dark);
       // The card's window (your frame), and the message box under it.
       s.frame(frame, fp, 1, 3, 28, 10);
       s.fill(8, 24, 224, 80, WHITE);
@@ -448,7 +454,7 @@
       // (A handset: ringing, or on the line.)
       const hx = 176, hy = 34;
       s.fill(hx, hy, 32, 8, DARK); s.fill(hx, hy + 8, 8, 24, DARK); s.fill(hx + 24, hy + 8, 8, 24, DARK);
-      s.fill(hx + 2, hy + 2, 28, 4, ui.ringing ? RED : GOLD);
+      s.fill(hx + 2, hy + 2, 28, 4, ui.ringing ? RED : look().base);
       const status = ui.ringing ? "Ringing..." : "On the line";
       s.text(status, 192 - (s.textWidth(status, "small") >> 1), 80, DARK, LIGHT, "small");
     }

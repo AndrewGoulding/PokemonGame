@@ -837,6 +837,7 @@ window.ITEMS = {
   "eon-ticket": { name: "eon-ticket", category: "gameplay", effect: "Allows passage to Southern Island to obtain Latios or Latias. (ORAS only)" },
   "aurora-ticket": { name: "aurora-ticket", category: "gameplay", effect: "Allows passage to Birth Island to obtain Deoxys. (ORAS only)" },
   // --- Diamond and Pearl's Underground (added): the Explorer Kit and treasures dug up with it ---
+  "hoenn-ticket": { name: "hoenn-ticket", category: "key-items", effect: "A ticket for the Fast Ship S.S. Aqua's run from Olivine City to Slateport City in Hoenn. (This game's own.)" },
   "sinnoh-ticket": { name: "sinnoh-ticket", category: "key-items", effect: "A ticket for the S.S. Tidal's run to the Sinnoh region, from Lilycove. (This game's own.)" },
   "explorer-kit": { name: "explorer-kit", category: "key-items", effect: "A bag of tools for exploring. Used in a cave, it lets you dig in the walls for buried treasure." },
   "rare-bone": { name: "rare-bone", category: "loot", effect: "A bone that is extremely valuable for Pokémon archaeology. It can be sold for a high price." },

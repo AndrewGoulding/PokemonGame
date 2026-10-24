@@ -2221,7 +2221,7 @@ if (window.JOHTO_TOWN_MAP) {
   const none = tries(1), march = tries(2), lullaby = tries(0.5);
   assert(march > none * 1.7 && lullaby < none * 0.65, "radio " + lullaby + " / " + none + " / " + march);
   const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
-  assert(/<script src="ui\/pokegear\.js"><\/script>/.test(html) && /key: "gear", label: "Pokégear"/.test(gameJs) && /gear\.step\(\)/.test(gameJs));
+  assert(/<script src="ui\/pokegear\.js"><\/script>/.test(html) && /key: "gear", label: hasPokenav\(\) \? "PokéNav" : "Pokégear"/.test(gameJs) && /gear\.step\(\)/.test(gameJs));
   assert(["PhoneCall", "RegisterPokegearCard", "GetPhoneBookRematch", "UnsetPhoneCallTrigger"].every((c) => scriptJs.includes('case "' + c + '"')));
   // Mom: not on the Pokégear, and saving nothing (she's Ethan's mother here, not yours); an older save's
   // savings come back to you, and a gift she'd already bought is still with the deliveryman.

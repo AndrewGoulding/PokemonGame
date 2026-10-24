@@ -10,6 +10,7 @@
 //     StartWallyTutorialBattle, ui/battle-screen.js's wallyLoop);
 //   - Norman is Petalburg's Gym Leader, not your dad: he knows you as Johto's Champion;
 //   - Oldale's Mart clerk, once she's walked you to the Mart and given you the Potion, stays there;
+//   - Mr. Stone makes your Pokégear a PokéNav;
 //   - after the Hall of Fame, Norman brings a ticket for the S.S. Tidal's run to Sinnoh too.
 (function () {
   "use strict";
@@ -90,6 +91,21 @@
     const walks = wallyWay.filter((mv) => /^walk_(up|down|left|right)$/.test(mv));
     H.m.PetalburgCity_Movement_WallyTutorialPlayer = ["delay_8", "walk_down", "walk_down"].concat(walks.slice(0, -1), ["walk_in_place_faster_right"]);
   }
+
+  // Mr. Stone's PokéNav: your Pokégear, made over (ui/pokegear.js: the same phone, map and radio, everyone you've
+  // registered still there, and its name and its colours now the PokéNav's). If you came to Hoenn without one (by the
+  // Seagallop, before Johto), it's Emerald's gift as it was. (What he says goes by which, as it's said.)
+  const geared = () => { const g = window.Game && window.Game.player, j = g && g.flags.johto; return !!(j && j.f && j.f.FLAG_GOT_POKEGEAR); };
+  const either = (key, withGear) => { const plain = H.t[key]; Object.defineProperty(H.t, key, { enumerable: true, configurable: true, get: () => (geared() ? withGear : plain) }); };
+  either("RustboroCity_DevonCorp_3F_Text_MrStoneWantYouToHaveThis", ["Mr. Stone: Now, you should know that\nI am a great President.",
+    "So, I'd never be so cheap as to ask\na favor for nothing in return.", "Hm? That's a Pokégear from Johto,\nisn't it? Let me see it a moment…",
+    "Our engineers can make it better!\nThere you go!"]);
+  either("RustboroCity_DevonCorp_3F_Text_ReceivedPokenav", ["{PLAYER}'s {OLDGEAR} became a PokéNav!"]);
+  either("RustboroCity_DevonCorp_3F_Text_MrStoneExplainPokenavRestUp", ["Mr. Stone: That device…", "It's a Pokémon Navigator, or PokéNav\nfor short.",
+    "It does all your {OLDGEAR} did, and\neveryone you'd registered is still in it.", "It has a map of the Hoenn region.",
+    "You can check the locations of\nDewford and Slateport easily!",
+    "By the way, I've heard that sinister\ncriminals--Magma and Aqua, I believe--\nhave been making trouble far and wide.",
+    "I think it would be best if you rested\nup before you go on your way."]);
 
   // After the Hall of Fame, with Mr. Briney's S.S. Ticket, a ticket of this game's own: the S.S. Tidal's run to Sinnoh
   // (from Lilycove: ui/game.js's ScriptMenu_CreateLilycoveSSTidalMultichoice).

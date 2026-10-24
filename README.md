@@ -1909,7 +1909,8 @@ item balls, trainers, the gym puzzles of Petalburg and Mauville. Pokémon Center
 Rock Smash, Strength, item balls and trainers on sight keep the game's own handling.
 
 Get there from Vermilion's Seagallop ("Hoenn", once Celio's machine is done) or, once you've
-beaten Johto's League, Olivine's S.S. Aqua. Your first visit
+beaten Johto's League, Olivine's S.S. Aqua with the **Hoenn Ticket** (Oak gives it in the Hall of Fame as you're
+crowned Johto's Champion; a save past that gets it from the ship's clerk). Your first visit
 starts in the truck; later ones land at Slateport's harbour, whose sailor takes you home. You come
 as Johto's Champion (`ui/hoenn-changes.js`, this game's changes to Emerald's story, made as the page
 loads): you hop down from the truck (it's solid, three tiles by three, and the Pokémon walking with you
@@ -1959,7 +1960,9 @@ after the Hall of Fame Norman's S.S. Ticket and the news flash at his family's h
 family's: Brendan's house, or May's for a girl), and the Pokémon it tells of roaming Hoenn's routes till caught (Latias for
 red, Latios for blue, Lv. 40, one wild Pokémon in 16),
 the S.S. Tidal (its sailings from Lilycove, by the tickets you hold, and the voyage on as you walk the ship, or rest;
-after the Hall of Fame Norman brings a Sinnoh Ticket too, this game's own, and Lilycove lists a run to Sinnoh, which
+in Devon's office Mr. Stone makes your Pokégear a **PokéNav**: from then on it's
+the PokéNav in the start menu and everyone's words, in blue, doing all the Pokégear did with everyone you'd registered
+still in it (and Johto's trainers who'd register now register in the PokéNav). After the Hall of Fame Norman brings a Sinnoh Ticket too, this game's own, and Lilycove lists a run to Sinnoh, which
 isn't sailing yet: Sinnoh's to come),
 the rotating-tile puzzles, the Mirage Tower and Rayquaza's scenes. The scene over Sootopolis is Emerald's own
 (`ui/rayquaza-scene.js`, its pictures from `tools/build-rayquaza-scene.js` into `assets/rayquaza-scene/`), its
@@ -2468,7 +2471,7 @@ own.
 
 **The S.S. Aqua** sails from Olivine once you've beaten Johto's Pokémon
 League: at its gangway (or the port's sailor) you're asked where you're
-sailing, Vermilion City or Slateport City in Hoenn (before then, the ship is
+sailing, Vermilion City or, flashing the Hoenn Ticket, Slateport City in Hoenn (before then, the ship is
 only for Trainers who've beaten the League, and you step back). To
 Vermilion the voyage goes as HGSS's scripts have it; arrived, you step off
 onto FireRed's Vermilion dock, where the S.S. Anne was, and the S.S. Aqua's
