@@ -826,8 +826,254 @@ const AIR = {
   writePng(path.join(outMaps, "OrreAirStrip-border.png"), 32, 32, E.render([0, 1, 2, 3].map((i) => bb.readUInt16LE(i * 2)), 2, 2, general, mauville, true).below);
 }
 
+// ---------- Team Snagem's hideout, outside ----------
+//
+// In a box canyon out in the desert: red rock walls all round, the road in from the south. Built into the canyon's
+// north wall, the hideout: a fortress of riveted steel plates, a radar dish and aerials on its roof, Team Snagem's
+// emblem over a great shutter door (two grunts on guard), barricades, crates and drums in the yard and a watchtower
+// with its searchlight. All drawn here.
+const HW = 32, HH = 22;
+const hblocks = new Array(HW * HH).fill(SAND);
+const hideout = E.render(hblocks, HW, HH, general, mauville, false);
+const HQ = { x: 8, y: 3, w: 16, h: 7 }, HDOOR = { x: 15, w: 2 }, ROAD = { x: 13, w: 6 };
+const WATCH = { x: 4, y: 9, w: 2, h: 2 }, CRATES = [[24, 10], [25, 10], [24, 11], [26, 11]], HDRUMS = { x: 5, y: 15, w: 2 };
+const BARRIERS = [[3, 13, 6], [23, 13, 6]], HSIGN = { x: 12, y: 18 };
+// The rock: the canyon's walls (rows 0-2 across the top, 3 tiles down each side, the bottom row but for the road).
+const rock = new Set();
+for (let y = 0; y < HH; y++) for (let x = 0; x < HW; x++) {
+  if (y < 3 || x < 3 || x >= HW - 3 || (y === HH - 1 && (x < ROAD.x || x >= ROAD.x + ROAD.w))) rock.add(x + "," + y);
+}
+for (let x = 3; x < HQ.x; x++) rock.add(x + "," + HQ.y);   // (a ledge of it either side of the hideout)
+for (let x = HQ.x + HQ.w; x < HW - 3; x++) rock.add(x + "," + HQ.y);
+const isRock = (x, y) => x < 0 || y < 0 || x >= HW || y >= HH || rock.has(x + "," + y);
+function pasteOn(img, W0, H0, pic, x0, y0, split) {
+  for (let y = 0; y < pic.h; y++) for (let x = 0; x < pic.w; x++) {
+    const p = pic.get(x, y);
+    if (!p[3] || x0 + x < 0 || y0 + y < 0 || x0 + x >= W0 * 16 || y0 + y >= H0 * 16) continue;
+    const o = ((y0 + y) * W0 * 16 + x0 + x) * 4, dst = y < split && p[3] === 255 ? img.above : img.below;
+    const a = p[3] / 255;
+    for (let k = 0; k < 3; k++) dst[o + k] = dst[o + 3] ? dst[o + k] * (1 - a) + p[k] * a : p[k];
+    dst[o + 3] = Math.max(dst[o + 3], p[3]);
+  }
+  img.anyAbove = true;
+}
+const ROCK = [[232, 152, 96], [208, 120, 72], [176, 96, 56], [136, 72, 48], [96, 48, 40]];
+const STEEL = [[176, 176, 192], [128, 128, 152], [88, 88, 112], [56, 56, 80], [32, 32, 48]];
+const PURPLE = [[184, 120, 216], [136, 80, 176], [88, 48, 128]], GOLD = [[248, 224, 120], [232, 176, 48], [168, 112, 24]];
+const HRED = [[248, 104, 88], [216, 56, 48], [152, 32, 32]];
+function drawGroundAndRock() {
+  const c = canvas(HW * 16, HH * 16);
+  seed = 41;
+  // Packed dirt: the road up to the door, and the yard before it.
+  const DIRT = [[216, 176, 120], [200, 160, 104], [176, 136, 88]];
+  const dirt = (x0, y0, w, h) => { c.rect(x0, y0, w, h, DIRT[1]); for (let k = 0; k < w * h / 24; k++) c.set(x0 + Math.floor(rand() * w), y0 + Math.floor(rand() * h), rand() < 0.5 ? DIRT[0] : DIRT[2]); };
+  dirt(ROAD.x * 16, (HQ.y + HQ.h) * 16, ROAD.w * 16, (HH - HQ.y - HQ.h) * 16);
+  dirt((HQ.x + 1) * 16, (HQ.y + HQ.h) * 16, (HQ.w - 2) * 16, 3 * 16);
+  for (let y = (HQ.y + HQ.h) * 16; y < HH * 16; y += 7) { c.set(ROAD.x * 16 + 20 + (y % 3), y, DIRT[2]); c.set((ROAD.x + ROAD.w) * 16 - 22 + (y % 2), y, DIRT[2]); }
+  // The rock, in bands; where open ground is below it, its face: darker, cracked, a shadow at its foot.
+  for (let y = 0; y < HH; y++) for (let x = 0; x < HW; x++) {
+    if (!isRock(x, y)) continue;
+    const face = !isRock(x, y + 1);
+    for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) {
+      const gx = x * 16 + px, gy = y * 16 + py, wob = Math.floor(Math.sin(gx * 0.21) * 2 + Math.sin(gx * 0.07 + y) * 2);
+      const band = Math.floor((gy + wob) / 5) % 3;
+      let col = face ? ROCK[2 + (band === 1 ? 1 : 0)] : ROCK[band === 0 ? 0 : 1];
+      if (face && py >= 10) col = ROCK[3];
+      if (face && (gx * 7 + y * 3) % 23 === 0 && py > 2) col = ROCK[4];
+      if (!face && rand() < 0.04) col = ROCK[2];
+      c.set(gx, gy, col);
+    }
+    // A lit edge where the rock meets open ground to its left or right.
+    if (!isRock(x - 1, y)) c.vl(x * 16, y * 16, y * 16 + 15, ROCK[0]);
+    if (!isRock(x + 1, y)) c.vl(x * 16 + 15, y * 16, y * 16 + 15, ROCK[3]);
+    if (face) { c.hl(x * 16, x * 16 + 15, y * 16 + 15, ROCK[4]); c.rect(x * 16, y * 16 + 16, 16, 3, C.shadow); }
+  }
+  return c;
+}
+pasteOn(hideout, HW, HH, drawGroundAndRock(), 0, 0, -1);
+// The hideout: 16 tiles wide, its footprint 7 deep, and 48 pixels of roof, dish and aerials over the rock behind.
+function drawHQ() {
+  const w = HQ.w * 16, h = HQ.h * 16 + 48, c = canvas(w, h);
+  seed = 53;
+  c.rect(4, h - 6, w - 4, 6, C.shadow);
+  // The roof: a parapet, the radar dish, two aerials with red lights.
+  c.box(4, 30, w - 8, 14, { fill: STEEL[2], light: STEEL[1], dark: STEEL[3], line: STEEL[4] });
+  c.box(40, 8, 30, 24, { fill: STEEL[1], light: STEEL[0], dark: STEEL[2], line: STEEL[4] });
+  for (let k = 0; k < 3; k++) c.hl(44, 66, 14 + k * 6, STEEL[2]);
+  c.disc(w - 64, 18, 12, STEEL[0]); c.ring(w - 64, 18, 12, STEEL[4]); c.disc(w - 64, 18, 6, STEEL[1]); c.disc(w - 64, 18, 2, STEEL[3]);
+  c.vl(w - 64, 30, 34, STEEL[3]);
+  for (const ax of [20, w - 26]) { c.vl(ax, 2, 30, STEEL[3]); c.hl(ax - 3, ax + 3, 10, STEEL[3]); c.hl(ax - 2, ax + 2, 16, STEEL[3]); c.disc(ax, 2, 1, HRED[1]); }
+  // The front: riveted plates, a purple band along the top, slit windows.
+  c.box(0, 42, w, h - 46, { fill: STEEL[2], light: STEEL[1], dark: STEEL[3], line: STEEL[4] });
+  for (let x = 16; x < w - 4; x += 32) c.vl(x, 52, h - 8, STEEL[3]);
+  for (let y = 62; y < h - 8; y += 22) c.hl(2, w - 3, y, STEEL[3]);
+  for (let x = 6; x < w - 4; x += 8) for (let y = 56; y < h - 8; y += 22) c.set(x, y, STEEL[0]);
+  for (let k = 0; k < 160; k++) c.set(2 + Math.floor(rand() * (w - 4)), 44 + Math.floor(rand() * (h - 52)), rand() < 0.5 ? STEEL[1] : STEEL[3]);
+  c.box(0, 42, w, 10, { fill: PURPLE[1], light: PURPLE[0], dark: PURPLE[2], line: STEEL[4] });
+  for (const x of [14, 46, w - 78, w - 46]) for (const y of [70, 92]) {
+    c.box(x, y, 24, 8, { fill: [40, 24, 56], line: STEEL[4] });
+    c.hl(x + 2, x + 9, y + 2, [120, 200, 248]);
+  }
+  // The emblem: a gold ring, a red claw snatching a Poké Ball.
+  const ex = w / 2, ey = 68;
+  c.disc(ex, ey, 13, GOLD[1]); c.ring(ex, ey, 13, STEEL[4]); c.disc(ex, ey, 10, PURPLE[2]);
+  c.disc(ex, ey + 3, 5, [248, 248, 248]); c.rect(ex - 5, ey - 2, 11, 5, HRED[1]); c.hl(ex - 5, ex + 5, ey + 3, STEEL[4]); c.ring(ex, ey + 3, 5, STEEL[4]); c.disc(ex, ey + 3, 1, STEEL[4]);
+  for (const dx of [-6, 0, 6]) { c.vl(ex + dx, ey - 9, ey - 3, GOLD[0]); c.set(ex + dx + (dx < 0 ? -1 : dx > 0 ? 1 : 0), ey - 10, GOLD[0]); }
+  text(c, "TEAM SNAGEM", ex - 22, 45, GOLD[0]);
+  // The shutter door: steel slats, warning stripes along its foot, a lamp either side.
+  const dx = (HDOOR.x - HQ.x) * 16 - 4, dw = HDOOR.w * 16 + 8, dy = h - 46;
+  c.box(dx - 3, dy - 4, dw + 6, 46, { fill: STEEL[3], line: STEEL[4] });
+  for (let y = dy; y < h - 10; y += 4) { c.hl(dx, dx + dw - 1, y, STEEL[1]); c.hl(dx, dx + dw - 1, y + 1, STEEL[2]); c.hl(dx, dx + dw - 1, y + 3, STEEL[3]); }
+  for (let x = dx; x < dx + dw; x++) for (let y = h - 10; y < h - 6; y++) c.set(x, y, ((x + y) >> 2) % 2 ? GOLD[1] : STEEL[4]);
+  for (const lx of [dx - 10, dx + dw + 6]) { c.box(lx, dy - 2, 5, 6, { fill: GOLD[0], line: STEEL[4] }); }
+  return c;
+}
+pasteOn(hideout, HW, HH, drawHQ(), HQ.x * 16, HQ.y * 16 - 48, 48 + 16 * (HQ.h - 1));
+// The watchtower: four legs, a cabin, the searchlight.
+{
+  const w = WATCH.w * 16, h = WATCH.h * 16 + 40, c = canvas(w, h);
+  c.rect(2, h - 5, w - 4, 4, C.shadow);
+  for (const lx of [3, w - 5]) c.box(lx, 20, 3, h - 22, { fill: STEEL[2], light: STEEL[1], line: STEEL[4] });
+  for (let y = 26; y < h - 4; y += 10) { for (let i = 0; i < w - 8; i++) { c.set(5 + i, y + Math.floor(i * 8 / (w - 8)), STEEL[3]); c.set(w - 6 - i, y + Math.floor(i * 8 / (w - 8)), STEEL[3]); } }
+  c.box(0, 8, w, 14, { fill: PURPLE[1], light: PURPLE[0], dark: PURPLE[2], line: STEEL[4] });
+  c.box(4, 11, w - 8, 6, { fill: [40, 24, 56], line: STEEL[4] });
+  c.box(0, 4, w, 5, { fill: STEEL[2], light: STEEL[1], line: STEEL[4] });
+  c.box(w / 2 - 5, 0, 10, 6, { fill: GOLD[0], light: [255, 255, 224], line: STEEL[4] });
+  pasteOn(hideout, HW, HH, c, WATCH.x * 16, WATCH.y * 16 - 40, 40 + 16 * (WATCH.h - 1));
+}
+// Crates, drums, the barricades and the sign.
+for (const [x, y] of CRATES) {
+  const c = canvas(16, 20);
+  c.rect(1, 17, 15, 3, C.shadow);
+  c.box(0, 2, 16, 16, { fill: C.wood[1], light: C.wood[0], dark: C.wood[2], line: C.line });
+  c.hl(1, 14, 9, C.wood[3]); for (let k = 2; k < 15; k++) c.set(k, 2 + k, C.wood[3]);
+  pasteOn(hideout, HW, HH, c, x * 16, y * 16 - 2, 2);
+}
+{
+  const c = canvas(HDRUMS.w * 16, 32);
+  for (let k = 0; k < HDRUMS.w; k++) {
+    const x = k * 16 + 2;
+    c.rect(x + 1, 28, 13, 3, C.shadow);
+    c.box(x, 6, 12, 22, { fill: PURPLE[1], light: PURPLE[0], dark: PURPLE[2], line: C.line });
+    c.hl(x + 1, x + 10, 12, PURPLE[2]); c.hl(x + 1, x + 10, 21, PURPLE[2]);
+    c.rect(x + 2, 4, 8, 3, C.iron[1]); c.frame(x + 2, 4, 8, 3, C.line);
+  }
+  pasteOn(hideout, HW, HH, c, HDRUMS.x * 16, HDRUMS.y * 16 - 16, 16);
+}
+for (const [bx, by, bw] of BARRIERS) {
+  const c = canvas(bw * 16, 24);
+  c.rect(0, 20, bw * 16, 3, C.shadow);
+  c.box(0, 6, bw * 16, 14, { fill: CONCRETE[1], light: CONCRETE[0], dark: CONCRETE[2], line: C.line });
+  for (let x = 1; x < bw * 16 - 1; x++) for (let y = 8; y < 12; y++) c.set(x, y, ((x + y) >> 2) % 2 ? GOLD[1] : STEEL[4]);
+  for (let x = 16; x < bw * 16; x += 16) c.vl(x, 7, 18, CONCRETE[2]);
+  pasteOn(hideout, HW, HH, c, bx * 16, by * 16 - 6, 6);
+}
+{
+  const c = canvas(16, 32);
+  c.rect(6, 18, 4, 12, C.iron[2]); c.vl(6, 18, 29, C.iron[3]);
+  c.box(0, 6, 16, 13, { fill: GOLD[1], light: GOLD[0], dark: GOLD[2], line: C.line });
+  c.rect(3, 9, 10, 1, STEEL[4]); c.rect(3, 12, 10, 1, STEEL[4]); c.rect(3, 15, 7, 1, STEEL[4]);
+  pasteOn(hideout, HW, HH, c, HSIGN.x * 16, HSIGN.y * 16 - 16, 16);
+}
+// Team Snagem's grunts: FireRed's Rocket Grunt in Snagem's purple and gold.
+save(recolorRGBA(path.join(outSprites, "rocket_m.png"),
+  { "74,74,90": [96, 64, 128], "139,139,148": [152, 120, 184], "230,106,74": [248, 208, 72], "148,57,41": [184, 128, 32] }, 32, 32), path.join(outSprites, "orre_snagem_m.png"));
+const HIDE = {
+  name: "SnagemHideout", title: "Snagem Hideout", width: HW, height: HH, type: "route", music: "em_aqua_magma_hideout",
+  region: "orre", battleScene: "sand", cycling: true, showName: true, top: true, borderWidth: 2, borderHeight: 2,
+  collision: [], elevation: [], behavior: [], encounter: [],
+  connections: [], warps: [], triggers: [], hidden: [],
+  signs: [{ x: HSIGN.x, y: HSIGN.y, script: "SnagemHideout_EventScript_Sign", text: ["TEAM SNAGEM'S HIDEOUT", "KEEP OUT!\nTrespassers will be snagged!"] },
+    ...[0, 1].map((k) => ({ x: HDOOR.x + k, y: HQ.y + HQ.h - 1, script: "SnagemHideout_EventScript_Door", text: ["A huge steel shutter.\nIt's shut tight."] }))],
+  people: [
+    person(0, "GUARD_1", HDOOR.x - 1, HQ.y + HQ.h, "orre_snagem_m", "face_down", "SnagemHideout_EventScript_Guard1", null),
+    person(1, "GUARD_2", HDOOR.x + HDOOR.w, HQ.y + HQ.h, "orre_snagem_m", "face_down", "SnagemHideout_EventScript_Guard2", null),
+    person(2, "LOOKOUT", 26, 15, "orre_snagem_m", "wander_around", "SnagemHideout_EventScript_Lookout",
+      ["Grunt: Quit loafing around the yard!", "…Huh, you're not one of the new\nrecruits? Then what're you doing here?"], { rangeX: 2, rangeY: 2 })
+  ],
+  wild: null
+};
+{
+  const solid = new Set(rock), fill = (x0, y0, w, h) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) solid.add(x + "," + y); };
+  fill(HQ.x, HQ.y, HQ.w, HQ.h); fill(WATCH.x, WATCH.y, WATCH.w, WATCH.h); fill(HDRUMS.x, HDRUMS.y, HDRUMS.w, 1); fill(HSIGN.x, HSIGN.y, 1, 1);
+  for (const [x, y] of CRATES) fill(x, y, 1, 1);
+  for (const [bx, by, bw] of BARRIERS) fill(bx, by, bw, 1);
+  for (let i = 0; i < hblocks.length; i++) {
+    const x = i % HW, y = Math.floor(i / HW);
+    HIDE.collision.push(solid.has(x + "," + y) ? 1 : 0);
+    HIDE.elevation.push(3);
+    HIDE.behavior.push(0);
+    HIDE.encounter.push(0);
+  }
+  writePng(path.join(outMaps, "SnagemHideout.png"), HW * 16, HH * 16, hideout.below);
+  writePng(path.join(outMaps, "SnagemHideout-top.png"), HW * 16, HH * 16, hideout.above);
+  // (Beyond the edges: more rock.)
+  const b = canvas(32, 32);
+  for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) b.set(x, y, ROCK[Math.floor((y + Math.floor(Math.sin(x * 0.4) * 2)) / 5) % 3 === 0 ? 0 : 1]);
+  save(b, path.join(outMaps, "SnagemHideout-border.png"));
+}
+
+// ---------- Leaving a place: Orre's map ----------
+//
+// As in Colosseum, you don't walk from one place in Orre to the next: step out of a place's way out (its open edge
+// tiles: these triggers) and the map of Orre comes up, to pick where to go (ui/game.js's orreWorldMap()).
+function edgeExits(m, rows) {
+  for (const y of rows) for (let x = 0; x < m.width; x++) if (!m.collision[y * m.width + x]) m.triggers.push({ x, y, script: "Orre_WorldMap" });
+}
+OUT.connections = []; AIR.connections = [];
+edgeExits(OUT, [0, H - 1]); edgeExits(AIR, [0]); edgeExits(HIDE, [HH - 1]);
+AIR.signs[0].text = ["ORRE AIR STRIP", "Through the gate: the desert roads\nof Orre."];
+
+// The map of Orre (240 by 160, the town map's size): a desert of dunes, red mesas and canyons, the mountains to the
+// north-east, an oasis in the middle, the roads as dotted tracks between the places (game/orre.js's PLACES).
+{
+  const MW = 240, MH = 160, c = canvas(MW, MH);
+  seed = 61;
+  const SANDS = [[248, 224, 168], [240, 208, 144], [224, 184, 120], [200, 160, 104]];
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+    const d = Math.sin(x * 0.09 + y * 0.05) + Math.sin(x * 0.031 - y * 0.11) * 0.8 + Math.sin((x + y) * 0.2) * 0.25;
+    c.set(x, y, SANDS[d > 1.1 ? 0 : d > 0 ? 1 : d > -1 ? 2 : 3]);
+  }
+  // Mesas: flat-topped red rocks with a shaded south face.
+  const mesa = (cx, cy, rx, ry) => {
+    for (let y = -ry - 4; y <= ry + 4; y++) for (let x = -rx; x <= rx; x++) {
+      const e = (x * x) / (rx * rx) + (y * y) / (ry * ry);
+      if (e <= 1) c.set(cx + x, cy + y, ROCK[e > 0.7 ? 1 : 0]);
+      else { const e2 = (x * x) / (rx * rx) + ((y - 4) * (y - 4)) / (ry * ry); if (e2 <= 1 && y > 0) c.set(cx + x, cy + y, ROCK[3]); }
+    }
+  };
+  for (const [x, y, rx, ry] of [[22, 34, 14, 7], [58, 22, 10, 5], [128, 120, 12, 6], [168, 138, 16, 6], [92, 50, 8, 4], [212, 66, 10, 5], [30, 140, 12, 5], [146, 30, 9, 4]]) mesa(x, y, rx, ry);
+  // Mountains to the north-east: Mt. Battle's range.
+  for (const [x, y, s] of [[188, 26, 18], [210, 20, 22], [228, 30, 16], [170, 18, 12]]) {
+    for (let k = 0; k <= s; k++) for (let i = -k; i <= k; i++) c.set(x + i, y - s + k + 8, i < 0 ? ROCK[3] : i < k / 3 ? C.iron[1] : C.iron[2]);
+    for (let k = 0; k < s / 3; k++) for (let i = -k; i <= k; i++) c.set(x + i, y - s + k + 8, [248, 248, 248]);
+  }
+  // A canyon winding across the west.
+  for (let t = 0; t < 1; t += 0.002) {
+    const x = 6 + t * 70 + Math.sin(t * 12) * 6, y = 64 + t * 30 + Math.cos(t * 9) * 5;
+    c.disc(Math.round(x), Math.round(y), 2, ROCK[3]); c.set(Math.round(x), Math.round(y) - 3, ROCK[0]);
+  }
+  // The oasis in the middle (Phenac City's).
+  c.disc(108, 86, 9, [96, 168, 88]); c.disc(108, 86, 5, [72, 152, 232]); c.disc(106, 84, 2, [152, 208, 248]);
+  // The sea along the south-east coast.
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (x + y * 1.4 + Math.sin(y * 0.3) * 3 > 400) c.set(x, y, x + y * 1.4 > 410 ? [72, 136, 216] : [152, 200, 240]);
+  // The roads: dotted tracks.
+  const track = (pts) => {
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+      for (let k = 0; k <= n; k++) if (k % 4 < 2) c.set(Math.round(x0 + (x1 - x0) * k / n), Math.round(y0 + (y1 - y0) * k / n), [168, 120, 72]);
+    }
+  };
+  track([[40, 62], [52, 92], [72, 112]]); track([[72, 112], [96, 132]]); track([[72, 112], [100, 92]]);
+  track([[116, 84], [156, 70]]); track([[156, 70], [180, 44]]); track([[156, 70], [204, 104]]);
+  // A frame, and ORRE in the corner.
+  c.frame(0, 0, MW, MH, [96, 48, 40]); c.frame(1, 1, MW - 2, MH - 2, [200, 120, 72]);
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 15; j++) if (FONT["ORRE"[i]][j] === "1") c.rect(8 + i * 10 + (j % 3) * 2, 146 + Math.floor(j / 3) * 2 - 6, 2, 2, [96, 48, 40]);
+  save(c, path.join(root, "assets/town-map/orre.png"));
+}
+
 fs.writeFileSync(path.join(root, "data/orre-maps.js"),
   "// Auto-generated by tools/build-orre.js (Emerald's desert tiles, and pictures drawn there). Do not edit by hand.\n" +
-  "// Orre's Outskirt Stand, from Pokémon Colosseum, and the Orre Air Strip, added to FireRed's maps (data/world-maps.js).\n" +
-  "Object.assign(window.WORLD_MAPS, " + JSON.stringify({ OutskirtStand: OUT, OutskirtStand_Diner: IN, OrreAirStrip: AIR }) + ");\n");
-console.log("wrote the Outskirt Stand (" + W + "x" + H + "), its diner (" + IN_W + "x" + IN_H + ") and the Air Strip (" + AW + "x" + AH + ") to data/orre-maps.js and assets/");
+  "// Orre's Outskirt Stand and Snagem Hideout, from Pokémon Colosseum, and the Orre Air Strip, added to FireRed's maps (data/world-maps.js).\n" +
+  "Object.assign(window.WORLD_MAPS, " + JSON.stringify({ OutskirtStand: OUT, OutskirtStand_Diner: IN, OrreAirStrip: AIR, SnagemHideout: HIDE }) + ");\n");
+console.log("wrote the Outskirt Stand (" + W + "x" + H + "), its diner (" + IN_W + "x" + IN_H + ") and the Air Strip (" + AW + "x" + AH + "), the Snagem Hideout (" + HW + "x" + HH + ") and Orre's map to data/orre-maps.js and assets/");

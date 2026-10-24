@@ -1,5 +1,7 @@
 // Orre, from Pokémon Colosseum: so far the Orre Air Strip, where Prof. Oak's
-// plane sets you down, and north of it the Outskirt Stand (data/orre-maps.js).
+// plane sets you down, Team Snagem's hideout and the Outskirt Stand
+// (data/orre-maps.js). As in Colosseum, you go from place to place on the map
+// of Orre that comes up as you leave one.
 // You're yourself there, with your own Pokémon (an older save made while you
 // were Wes, as Orre had you be at first, still swaps back as you leave:
 // player.flags.orreStash).
@@ -8,6 +10,8 @@
 //   Orre.inOrre(location)            // an Orre map
 //   Orre.enter(player, to)           // off to Orre: the Air Strip (or `to`); where you were is kept
 //   Orre.leave(player, location)     // back from Orre, where you were (or `location`)
+//   Orre.PLACES, Orre.openPlaces(flags)  // the places on Orre's map; those you can go to
+//   Orre.unlock(flags, map)          // a place opens on the map
 //   Orre.visible(person, flags)      // ui/game.js's visible() for Orre's people (or undefined)
 //   Orre.patches(map, flags)         // the Stand's patches on now (the truck parked)
 //   Orre.willieTeam()                // Rider Willie's two Zigzagoon
@@ -93,6 +97,24 @@
     delete f.orreStash;
   }
 
+  // Orre's map (ui/game.js's orreWorldMap): its places, where each is on the map (pixels of
+  // assets/town-map/orre.png, 240 by 160) and where you come in (by its way out). At first only
+  // the Air Strip and Team Snagem's hideout are open (player.flags.orreMap lists the rest as
+  // they open); a save that's been to the Outskirt Stand has that too.
+  const PLACES = [
+    { map: "SnagemHideout", name: "Snagem Hideout", x: 38, y: 60, arrive: { x: 15, y: 20, facing: "up" } },
+    { map: "OutskirtStand", name: "Outskirt Stand", x: 72, y: 110, arrive: { x: 18, y: 22, facing: "up" } },
+    { map: "OrreAirStrip", name: "Orre Air Strip", x: 96, y: 132, arrive: { x: 21, y: 2, facing: "down" } }
+  ];
+  const OPEN_AT_FIRST = ["OrreAirStrip", "SnagemHideout"];
+  const isOpen = (flags, map) => OPEN_AT_FIRST.includes(map) || (flags.orreMap || []).includes(map) || (map === "OutskirtStand" && (flags.orre | 0) > 0);
+  const openPlaces = (flags) => PLACES.filter((p) => isOpen(flags, p.map));
+  function unlock(flags, map) {
+    if (isOpen(flags, map)) return false;
+    (flags.orreMap = flags.orreMap || []).push(map);
+    return true;
+  }
+
   const ID = (k) => "LOCALID_ORRE_" + k;
   function visible(person, flags) {
     const step = flags.orre | 0;
@@ -109,5 +131,5 @@
   // Rider Willie's two Zigzagoon (Lv. 23 and 24).
   const willieTeam = () => [window.Party.create("Zigzagoon", 23), window.Party.create("Zigzagoon", 24)];
 
-  window.Orre = { START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
+  window.Orre = { PLACES, openPlaces, isOpen, unlock, START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
 })();

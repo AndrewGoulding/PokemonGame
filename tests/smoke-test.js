@@ -3051,11 +3051,12 @@ if (window.JOHTO_TOWN_MAP) {
   assert.strictEqual(Faraway.mewStep({ mew: { x: 13, y: 14 }, prev: { x: 13, y: 16 }, cur: { x: 13, y: 16 }, steps: 3, isGrass: grass }).dir, null, "turning isn't a step");
 }
 
-// Orre: the Air Strip and the Outskirt Stand (data/orre-maps.js, tools/build-orre.js), and going there (game/orre.js).
+// Orre: the Air Strip, the Snagem Hideout and the Outskirt Stand (data/orre-maps.js, tools/build-orre.js), and going
+// there and about (game/orre.js).
 {
-  const O = WORLD_MAPS.OutskirtStand, D = WORLD_MAPS.OutskirtStand_Diner, A = WORLD_MAPS.OrreAirStrip;
-  assert(O && D && A && [O, D, A].every((m) => m.region === "orre"), "the Outskirt Stand and the Air Strip are built");
-  for (const m of [O, D, A]) {
+  const O = WORLD_MAPS.OutskirtStand, D = WORLD_MAPS.OutskirtStand_Diner, A = WORLD_MAPS.OrreAirStrip, H = WORLD_MAPS.SnagemHideout;
+  assert(O && D && A && H && [O, D, A, H].every((m) => m.region === "orre"), "the Outskirt Stand, the Air Strip and the hideout are built");
+  for (const m of [O, D, A, H]) {
     for (const k of ["collision", "behavior", "elevation", "encounter"]) assert.strictEqual(m[k].length, m.width * m.height, m.name + " " + k);
     for (const p of m.people) assert(fs.existsSync(path.join(root, "assets/world/sprites/" + p.sprite + ".png")), "missing sprite " + p.sprite);
     for (const f of ["", "-border"].concat(m.top ? ["-top"] : [])) assert(fs.existsSync(path.join(root, "assets/world/maps/" + m.name + f + ".png")), m.name + f);
@@ -3065,15 +3066,29 @@ if (window.JOHTO_TOWN_MAP) {
   assert.strictEqual(O.behavior[door.y * O.width + door.x], World.MB.WARP_DOOR);
   assert.deepStrictEqual(World.step({ map: "OutskirtStand", x: door.x, y: door.y + 1 }, "up").warp.map, "OutskirtStand_Diner");
   for (const w of D.warps) assert.strictEqual(World.warpTarget(w).map, "OutskirtStand");
-  // North is a road not built yet; south, the Air Strip, the way to the Stand through its gate.
-  assert.deepStrictEqual(O.connections.map((c) => [c.direction, c.map, c.mapConst]), [["up", null, "MAP_PHENAC_CITY"], ["down", "OrreAirStrip", "MAP_ORRE_AIR_STRIP"]]);
-  assert.deepStrictEqual(A.connections.map((c) => [c.direction, c.map]), [["up", "OutskirtStand"]]);
-  assert(!Object.values(WORLD_MAPS).some((m) => m.region !== "orre" && (m.connections.some((c) => c.map === O.name || c.map === A.name) || m.warps.some((w) => w.map === O.name || w.map === A.name))), "only the plane goes there");
+  // No roads between places: their ways out (open edge tiles) bring up Orre's map, and it takes you to each place's
+  // way in; only the plane goes there from elsewhere.
+  for (const m of [O, A, H]) {
+    assert.deepStrictEqual(m.connections, [], m.name);
+    const exits = m.triggers.filter((t) => t.script === "Orre_WorldMap");
+    assert(exits.length >= 2 && exits.every((t) => !m.collision[t.y * m.width + t.x] && (t.y === 0 || t.y === m.height - 1)), m.name + "'s way out");
+  }
+  assert(!Object.values(WORLD_MAPS).some((m) => m.region !== "orre" && (m.connections.some((c) => [O, A, H].some((q) => c.map === q.name)) || m.warps.some((w) => [O, A, H].some((q) => w.map === q.name)))), "only the plane goes there");
+  for (const pl of Orre.PLACES) {
+    const m = WORLD_MAPS[pl.map], a = pl.arrive;
+    assert(m && !m.collision[a.y * m.width + a.x] && !m.triggers.some((t) => t.x === a.x && t.y === a.y), pl.map + ": room to come in");
+    assert(pl.x > 0 && pl.x < 240 && pl.y > 0 && pl.y < 160, pl.map + " on the map");
+  }
+  assert(fs.existsSync(path.join(root, "assets/town-map/orre.png")), "Orre's map");
+  // At first only the Air Strip and the hideout; the rest as they open (and the Stand, for a save that's been).
+  assert.deepStrictEqual(Orre.openPlaces({}).map((p) => p.map), ["SnagemHideout", "OrreAirStrip"]);
+  assert.deepStrictEqual(Orre.openPlaces({ orre: 3 }).map((p) => p.map), ["SnagemHideout", "OutskirtStand", "OrreAirStrip"]);
+  { const fl = {}; assert(Orre.unlock(fl, "OutskirtStand") && !Orre.unlock(fl, "OutskirtStand") && Orre.isOpen(fl, "OutskirtStand")); }
   const st = Orre.START;
   assert.strictEqual(st.map, "OrreAirStrip");
   assert.strictEqual(A.collision[st.y * A.width + st.x], 0, "room by the plane's door");
-  const gate = [...Array(A.width).keys()].filter((x) => !A.collision[1 * A.width + x] && !A.collision[0 * A.width + x] && !O.collision[(O.height - 1) * O.width + x]);
-  assert(gate.length >= 2, "a way through the fence's gate to the Stand");
+  // The hideout's door, its guards.
+  assert(H.people.filter((p) => /Guard/.test(p.script)).length === 2, "two guards at the door");
   assert(A.people.some((p) => p.script === "OrreAirStrip_EventScript_Pilot"), "the pilot, to fly you back");
   // Across the bar from the bartender: a counter.
   const bar = D.people.find((p) => p.script === "OutskirtStand_Diner_EventScript_Bartender");

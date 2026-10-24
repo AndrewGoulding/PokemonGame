@@ -519,5 +519,12 @@
 .tm-name { position: absolute; left: 0; right: 0; top: 0; height: 10%; display: flex; align-items: center; gap: 10px; padding: 0 3%;
   color: #fff; font-weight: 700; font-size: clamp(12px, 2.6vw, 18px); text-shadow: 1px 1px 0 #000; }
 .tm-name small { font-weight: 600; opacity: 0.85; }
+/* Orre's map (Colosseum's): a marker on each place you can go, the one you're at gold; your icon slides along to
+   where you pick. */
+.orre-map .tm-name { background: rgba(64, 32, 24, 0.78); justify-content: space-between; }
+.om-place { position: absolute; width: 3.3333%; height: 5%; margin: -1.6667% 0 0 -1.6667%; box-sizing: border-box; pointer-events: none;
+  background: #e84830; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px #402018; }
+.om-place.here { background: #f8c830; }
+.orre-map .tm-player { transition: left 0.9s ease-in-out, top 0.9s ease-in-out; }
 
 .shiny-star { color: #e0a800; text-shadow: 0 0 3px #fff3a0; }

@@ -4332,6 +4332,8 @@
       case "OutskirtStand_Diner_EventScript_Bartender": await orreBartender(); return;
       case "arrive:OutskirtStand": case "enter:OutskirtStand": if (!(f.orre | 0)) await orreArrival(); return;
       case "OrreAirStrip_EventScript_Pilot": await orrePilot(); return;
+      case "Orre_WorldMap": await orreTravel(); return;
+      case "SnagemHideout_EventScript_Guard1": case "SnagemHideout_EventScript_Guard2": await snagemGuard(); return;
       case "OutskirtStand_Diner_EventScript_Willie":
         await say(["Willie: That bike out front yours?\nShe's a beauty.",
           "And those two Pokémon of yours… Tell you\nwhat, when you head out, I'll follow you."]);
@@ -9390,7 +9392,9 @@
   // Pokémon, and asks you to go undercover in Team Snagem to find out what they're planning and stop it. Say yes and
   // his plane takes you to the Orre Air Strip (orreStory 2); say no and he asks again next time. In Orre you're
   // yourself, with your own Pokémon (game/orre.js); the pilot at the Air Strip flies you back to Kanto, and Oak sends
-  // you to Orre again whenever you ask him. (The other way on after Hoenn is the S.S. Tidal's to Sinnoh.)
+  // you to Orre again whenever you ask him. He gives you the Orre Map, Team Snagem's hideout marked on it: you go
+  // from place to place in Orre on its map (orreWorldMap()), at first only the Air Strip and the hideout. (The other
+  // way on after Hoenn is the S.S. Tidal's to Sinnoh.)
   function orreCallStep() {
     const f = player.flags;
     if (f.orreStory || !hasPokenav() || !hoenn.flag("FLAG_SYS_GAME_CLEAR")) return null;
@@ -9441,8 +9445,11 @@
       return;
     }
     await say(["Oak: I knew I could count on you!", "My plane is waiting to fly you to\nthe Orre Air Strip.",
-      "From there, head north through the\ndesert to a diner called the\nOutskirt Stand.",
-      "Team Snagem's people pass that way.\nThat's where your mission begins.",
+      "Team Snagem's hideout is in a\ncanyon out in the western desert.",
+      "I've had it marked on a map of Orre\nfor you. Here!"]);
+    await sayWithJingle("mus_obtain_key_item", fill("{PLAYER} received the Orre Map!"));
+    await say(["Oak: Places in Orre are far apart.\nWhen you leave one, pick where to\ngo next on the map.",
+      "Go to Team Snagem's hideout. That's\nwhere your mission begins.",
       "And remember: in Orre, every battle\nis a double battle. Take at least\ntwo Pokémon you can trust!",
       "Good luck, {PLAYER}!"]);
     f.orreStory = 2;
@@ -9470,10 +9477,94 @@
       await sleep(300);
       await Overworld.act([{ who: ORRE("PILOT"), moves: ["face_left", "walk_in_place_faster_left"] }]);
       await say(["Pilot: Here we are: the Orre Air\nStrip! Welcome to Orre.",
-        "That road north through the gate\ngoes to the Outskirt Stand.",
+        "Head out through the gate, and pick\nwhere to go on your map of Orre.",
         "Whenever you want to go back to\nKanto, come and see me. I'll be\nwaiting here with the plane."]);
     }
     await persist();
+  }
+  // ---------- Orre's map (Colosseum's) ----------
+  //
+  // Places in Orre are far apart, across the desert: walk out of one (its way out: the map's "Orre_WorldMap"
+  // triggers, tools/build-orre.js) and the map of Orre comes up, a marker on each place you can go (game/orre.js:
+  // at first the Air Strip and Team Snagem's hideout). The arrows go to the nearest place that way, A sets off (your
+  // icon slides across to it, then you're there, by its way in), B stays (a step back in from the edge).
+  async function orreWorldMap() {
+    const here = player.location.map, places = Orre.openPlaces(player.flags);
+    let at = Math.max(0, places.findIndex((p) => p.map === here));
+    const from = places[at];
+    const pos = (p) => "left:" + (p.x / 2.4) + "%;top:" + (p.y / 1.6) + "%";
+    const icon = (p) => "left:" + ((p.x - 8) / 2.4) + "%;top:" + ((p.y - 8) / 1.6) + "%";
+    show("scene");
+    clearMenu();
+    Screen.say("");
+    scene.innerHTML = '<div class="town-map orre-map"><img class="tm-map" src="assets/town-map/orre.png" alt="Map of Orre">' +
+      places.map((p) => '<div class="om-place' + (p.map === here ? " here" : "") + '" style="' + pos(p) + '"></div>').join("") +
+      '<img class="tm-player" src="assets/town-map/player.png" alt="You are here" style="' + icon(from) + '">' +
+      '<div class="tm-name"><b></b><small></small></div><div class="tm-cursor"></div></div>';
+    const draw = () => {
+      const p = places[at];
+      scene.querySelector(".tm-name b").textContent = p.name;
+      scene.querySelector(".tm-name small").textContent = p.map === here ? "You are here" : "Where do you want to go?";
+      scene.querySelector(".tm-cursor").setAttribute("style", icon(p));
+    };
+    draw();
+    let picked = null;
+    const choose = new Promise((resolve) => { picked = resolve; });
+    const onKey = (e) => {
+      if (["z", "Z", " ", "Enter"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); sfx("se_select"); picked(places[at]); return; }
+      if (["x", "X", "Escape"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); picked(null); return; }
+      const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
+      if (!d) return;
+      e.preventDefault(); e.stopPropagation();
+      // (The nearest place that way: distance, with places off to the side counting for more.)
+      const cur = places[at];
+      let best = -1, bestScore = Infinity;
+      places.forEach((p, k) => {
+        const dx = p.x - cur.x, dy = p.y - cur.y, along = dx * d[0] + dy * d[1];
+        if (k === at || along <= 0) return;
+        const score = along + 2 * Math.abs(dx * d[1] + dy * d[0]);
+        if (score < bestScore) { bestScore = score; best = k; }
+      });
+      if (best >= 0) { at = best; sfx("se_select"); draw(); }
+    };
+    document.addEventListener("keydown", onKey, true);
+    const r = await Promise.race([ask("", [back("Stay")]).then(() => null), choose]);
+    clearMenu();
+    document.removeEventListener("keydown", onKey, true);
+    if (r && r.map !== here) {
+      scene.querySelector(".tm-cursor").remove();
+      scene.querySelector(".tm-name small").textContent = "";
+      const me = scene.querySelector(".tm-player");
+      me.getBoundingClientRect();
+      me.setAttribute("style", icon(r));
+      await sleep(1000);
+    }
+    return r && r.map !== here ? r : null;
+  }
+  async function orreTravel() {
+    const to = await orreWorldMap();
+    show("world");
+    await Overworld.resume();
+    const loc = player.location, m = window.WORLD_MAPS[loc.map];
+    if (!to) {
+      // (Back in from the edge you were leaving by.)
+      const dir = loc.y === 0 ? "down" : loc.y === m.height - 1 ? "up" : loc.x === 0 ? "right" : "left";
+      await Overworld.act([{ who: "player", moves: ["walk_" + dir] }]);
+      return;
+    }
+    await Overworld.fadeToBlack();
+    Overworld.setAvatar("walk");
+    player.location = Object.assign({ map: to.map }, to.arrive);
+    await Overworld.teleport(player.location);
+    music(window.WORLD_MAPS[to.map].music);
+    // (A scene as you get there: Folly and Trudly at the Outskirt Stand.)
+    if (special("arrive:" + to.map)) await story({ type: "trigger", trigger: { script: "arrive:" + to.map }, map: to.map });
+    await persist();
+  }
+  // Team Snagem's guards at the hideout's door. (What comes next is for later.)
+  async function snagemGuard() {
+    await say(["Grunt: Hey! Who are you? This is\nTeam Snagem's hideout!",
+      "Nobody gets through this door without\nthe boss's say-so.", "Beat it, kid!"]);
   }
   // The pilot: back to Kanto, outside Prof. Oak's lab.
   async function orrePilot() {
@@ -14032,6 +14123,7 @@
     if (deltaDue(script)) return true;   // (the Delta Episode's scenes as you come in)
     // (Orre: up the road from the Air Strip to the Outskirt Stand the first time, Folly and Trudly come out.)
     if ((script === "arrive:OutskirtStand" || script === "enter:OutskirtStand") && !(player.flags.orre | 0)) return true;
+    if (script === "Orre_WorldMap") return true;   // (Orre: out of a place, its map: orreTravel())
     // Johto: its scripts (a step's, while its var has its value), its
     // Apricorn trees, and its maps' frame tables as you come in.
     // Hoenn: a step's scene while its var has its value, and its maps' frame tables as you come in.
