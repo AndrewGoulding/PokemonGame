@@ -225,7 +225,7 @@
         case "waitstate": case "waitbuttonpress": case "waitmessage": case "waitse": case "waitfanfare": case "waitfieldeffect": case "waitdooranim": case "waitmoncry":
         case "lockall": case "lock": case "releaseall": case "release": case "lockfortrainer": case "hideplayer": case "showplayer": case "createvobject": case "turnvobject":
         case "opendoor": case "closedoor": case "setdooropen": case "setdoorclosed": case "setfieldeffectargument": case "updatemoneybox":
-        case "register_matchcall": case "dotrainerbattle": case "gotopostbattlescript": case "gotobeatenscript": case "selectapproachingtrainer":
+        case "dotrainerbattle": case "gotopostbattlescript": case "gotobeatenscript": case "selectapproachingtrainer":
         case "closebraillemessage": case "brailleformat": case "setholewarp": case "setescapewarp":
           return true;
         case "setwarp": lastSetWarp = a.slice(); return true;
@@ -265,6 +265,7 @@
     function syncSpecial(st, name, out) {
       const set = answer(out, name);
       switch (name) {
+        case "IsTrainerRegistered": set(env.matchCallRegistered && env.matchCallRegistered("EM_" + getVar("VAR_0x8004")) ? 1 : 0); return true;
         case "GetTrainerFlag": case "ShouldTryRematchBattle": case "IsTrainerReadyForRematch": case "GetLeadMonFriendshipScore": set(0); return true;
         case "GetBattleOutcome": set(battleOutcome); return true;
         case "BufferMonNickname": { const r = env.player().party[num("VAR_0x8004")]; if (r) buffers[1] = window.Party ? window.Party.displayName(r) : r.nickname || r.species; return true; }
@@ -384,6 +385,18 @@
           case "braillemsgbox": case "braillemessage": { const pages = pagesOf(a[0]); if (pages) await speak(env.braille ? pages.map(env.braille) : pages); break; }
           // (A call on the PokéNav: Norman's as you sail to Dewford, the Gym Leaders' as they register. Std_MsgboxPokenav's
           // NULL: msgbox's MSGBOX_POKENAV says it itself.)
+          // (A trainer in the PokéNav's Match Call: register_matchcall's SetMatchCallRegisteredFlag, then
+          // Std_RegisteredInMatchCall's fanfare and "Registered … in the PokéNav.")
+          case "register_matchcall": {
+            await flush();
+            const id = trainerKey(val(a[0])), t = window.WORLD_TRAINERS && window.WORLD_TRAINERS[id];
+            if (!env.registerMatchCall || !t || !env.registerMatchCall(id)) break;
+            buffers[1] = t.className; buffers[2] = t.name;
+            const done = env.fanfare(songName("MUS_REGISTER_MATCH_CALL"));
+            await speak(pagesOf("gText_RegisteredTrainerinPokeNav"));
+            await done;
+            break;
+          }
           case "pokenavcall": { const pages = a[0] && a[0] !== "NULL" ? pagesOf(a[0]) : null; if (pages) await speak(pages); break; }
           case "msgbox": {
             const type = a[1] || "MSGBOX_DEFAULT", pages = pagesOf(a[0]);

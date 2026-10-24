@@ -311,6 +311,8 @@
 
     function paint() {
       if (!ui || !canvas) return;
+      if (nav) { navPaint(); return; }   // (in the PokéNav: its own window, navPaint)
+      if (env.pokenav && env.pokenav() && ui.call != null) { paintNavRing(); return; }
       const s = GbaMenus.Surface(), frame = "type" + ((env.frame() || 0) + 1), fp = GM().frames[frame].palette, std = GM().palettes.std3;
       // The case: gold (or the PokéNav's blue), a darker band along the top for the cards.
       const L = look();
@@ -485,17 +487,18 @@
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     // Pages in the message box, two lines at a time, A (or B) for the next.
     // (A line too wide for FireRed's box, as some of HGSS's are, wraps.)
-    const MAX_WIDTH = 212;
+    // (Narrower in the PokéNav's window over the map, beside its picture.)
+    const maxWidth = () => (env.pokenav && env.pokenav() && !nav ? 182 : 212);
     function wrap(text) {
       const s = GbaMenus.Surface(), out = [];
       let line = "";
       for (const w of text.split(" ")) {
         const t = line ? line + " " + w : w;
-        if (line && s.textWidth(t) > MAX_WIDTH) { out.push(line); line = w; } else line = t;
+        if (line && s.textWidth(t) > maxWidth()) { out.push(line); line = w; } else line = t;
       }
       return line ? out.concat(line) : out;
     }
-    const fits = (lines) => { const s = GbaMenus.Surface(); return lines.every((l) => s.textWidth(l) <= MAX_WIDTH); };
+    const fits = (lines) => { const s = GbaMenus.Surface(); return lines.every((l) => s.textWidth(l) <= maxWidth()); };
     const chunked = (pages) => {
       const chunks = [];
       for (const p of pages) {
@@ -881,7 +884,407 @@
     }
 
     // ---------- The Pokégear ----------
+    // ---------- The PokéNav (Emerald's: src/pokenav*.c) ----------
+    //
+    // Once Mr. Stone has made your Pokégear one (env.pokenav()), it's Emerald's PokéNav, its pictures
+    // (assets/pokenav/: tools/build-pokenav.js): the main menu's options sliding in at the right over the moving
+    // dots, the one you're on out to the left and glowing, what it does in the box below (sPageDescriptions);
+    //   HOENN MAP   the Town Map (Hoenn's, and the rest you've been to)
+    //   CONDITION   PARTY: each of your party's conditions on Emerald's graph, from the Pokéblocks they've eaten
+    //               (record.contest), their sheen and the contest Ribbons they've won; SEARCH: all your Pokémon,
+    //               party and boxes, best first at the condition you choose
+    //   MATCH CALL  Emerald's own (Mr. Stone, your father, Wally, the Gym Leaders ... by the story's flags:
+    //               window.HOENN_MATCH_CALL), the Hoenn trainers who've registered (register_matchcall: the
+    //               calls src/match_call.c makes for them), and everyone you'd registered in your Pokégear, still
+    //               there, calling as they did (HGSS's phone, in the PokéNav's window). CALL, CHECK (who they are,
+    //               where, their picture) or CANCEL
+    //   RIBBONS     your Pokémon with Ribbons, and theirs (once one has any)
+    //   SWITCH OFF
+    const MC = () => window.HOENN_MATCH_CALL || { contacts: [], trainers: [], topics: {}, places: {}, rematches: {} };
+    const HN = () => (env.hoenn ? env.hoenn() : null);
+    const hflag = (f) => !!(HN() && f && HN().flag(f));
+    const navImgs = {};
+    const navImg = (n) => navImgs[n] || (navImgs[n] = Object.assign(new Image(), { src: "assets/pokenav/" + n + ".png" }));
+        // (options.png's rows, headers.png's, as tools/build-pokenav.js makes them.)
+    const OPT_ROW = { map: 0, condition: 1, matchcall: 2, ribbons: 3, off: 4, party: 5, search: 6, cool: 7, beauty: 8, cute: 9, smart: 10, tough: 11, cancel: 12, cancel2: 12 };
+    const HEAD_ROW = { main: 0, condition: 1, ribbons: 2, matchcall: 3, map: 4, party: 5, search: 6, cool: 7, beauty: 8, cute: 9, smart: 10, tough: 11 };
+    const DESC = { map: "Check the map of the Hoenn region.", condition: "Check Pokémon in detail.", matchcall: "Call a registered Trainer.",
+      ribbons: "Check obtained Ribbons.", off: "Put away the PokéNav.", party: "Check party Pokémon in detail.", search: "Check all Pokémon in detail.",
+      cancel: "Return to the PokéNav menu.", cool: "Find cool Pokémon.", beauty: "Find beautiful Pokémon.", cute: "Find cute Pokémon.",
+      smart: "Find smart Pokémon.", tough: "Find tough Pokémon.", cancel2: "Return to the Condition menu." };
+    // (sPokenavMenuOptionLabelGfx: where the options start, how far apart.)
+    const MENUS = { main: { y: 42, dy: 20 }, condition: { y: 56, dy: 20 }, search: { y: 40, dy: 16 } };
+    const CONDITIONS = ["cool", "beauty", "cute", "smart", "tough"];
+    const NAV_TEXT = [74, 74, 74], NAV_SHADOW = [213, 213, 205], NAV_WHITE = [255, 255, 255];
+    let nav = null;   // { screen, menu, items, cursor, xs, frame, text, ... }
+    const titleCase = (s) => String(s || "").toLowerCase().replace(/(^|[ .\-&'])([a-z])/g, (m, a, b) => a + b.toUpperCase()).replace(/\bPokénav\b/gi, "PokéNav");
+
+    // -- Match Call: who's in it --
+    const hoennState = () => { const s = HN() && HN().state(); return s ? (s.mc || (s.mc = [])) : []; };
+    function contactEnabled(c) {
+      if (c.type === "rival") return (c.gender === "FEMALE") === !!env.isGirl() && hflag(c.flag);
+      return !c.flag || hflag(c.flag);
+    }
+    function contactName(c) {
+      if (c.type === "leader" && c.rematch) {
+        const t = window.WORLD_TRAINERS[MC().rematches[c.rematch]];
+        if (t) return { name: t.name, desc: c.desc ? titleCase(c.desc) : t.className };
+      }
+      return { name: titleCase(c.name), desc: titleCase(c.desc) };
+    }
+    const secName = (sec) => { const H2 = window.HOENN_TOWN_MAP; return (sec && H2 && H2.names[String(sec).replace(/^MAPSEC_/, "")]) || ""; };
+    const mapSecOf = (mapConst) => { const n = window.HOENN_SCRIPTS && window.HOENN_SCRIPTS.consts[mapConst], H2 = window.HOENN_TOWN_MAP; return n && H2 ? H2.mapSections[n] : null; };
+    function contactPlace(c) {
+      if (c.type === "wally") { for (const [f, sec] of c.at || []) if (!hflag(f)) return secName(sec); return ""; }
+      return secName(c.mapSec);
+    }
+    // Everyone in the list: Emerald's own, the trainers registered (in the rematch table's order), then your Pokégear's.
+    function navContacts() {
+      const out = [];
+      if (HN()) {
+        for (const c of MC().contacts) if (contactEnabled(c)) { const n = contactName(c); out.push({ kind: "hoenn", c, name: n.name, desc: n.desc, place: contactPlace(c) }); }
+        const reg = hoennState();
+        for (const t of MC().trainers) if (reg.includes(t.id)) {
+          const d = window.WORLD_TRAINERS[t.id] || {};
+          out.push({ kind: "trainer", t, name: d.name || t.id, desc: d.className || "", place: secName(mapSecOf(MC().places[t.id])) });
+        }
+      }
+      for (const i of list()) { const c = P().contacts[i]; out.push({ kind: "johto", i, name: c.name, desc: c.cls || "", place: c.where || "" }); }
+      return out;
+    }
+    const hoennPages = (label, vars) => ((window.HOENN_SCRIPTS && window.HOENN_SCRIPTS.t[label]) || []).map((p) => (env.fill ? env.fill(p, vars) : p));
+    // A special contact's words (MatchCall_BufferCallMessageText, ...ByRematchTeam for a Gym Leader's).
+    function contactLines(c) {
+      const L = c.lines || [];
+      if (c.type === "birch") return env.birchCall ? env.birchCall() : [];
+      if (!L.length) return [];
+      let i;
+      if (c.type === "leader") {
+        for (i = 0; i < L.length; i++) { if (L[i][1] === "REMATCH") break; if (L[i][1] && !hflag(L[i][1])) break; }
+        if (i < L.length && L[i][1] === "REMATCH") { if (hflag("FLAG_SYS_GAME_CLEAR")) i++; }
+        else i = Math.max(0, i - 1);
+      } else {
+        i = L.length - 1;
+        while (i && !(L[i][1] && hflag(L[i][1]))) i--;
+      }
+      i = Math.min(i, L.length - 1);
+      if (L[i][2] && HN()) HN().setFlag(L[i][2], true);
+      return hoennPages(L[i][0]);
+    }
+    // A registered trainer's call (SelectMatchCallMessage): two in three about a battle they had (wild, lost or won),
+    // else about themselves; the names and places put in.
+    function trainerLines(t) {
+      const M = MC(), d = window.WORLD_TRAINERS[t.id] || {}, rnd = (n) => Math.floor(Math.random() * n);
+      let text;
+      if (rnd(3)) { const topic = ["B_TOPIC_WILD", "B_TOPIC_NEGATIVE", "B_TOPIC_POSITIVE"][rnd(3)]; text = (M.topics[topic] || [])[t.battle - 1]; }
+      else if (t.general && t.general[0] === "GEN_TOPIC_PERSONAL") text = (M.topics.GEN_TOPIC_PERSONAL || [])[t.general[1] - 1];
+      if (!text) text = (M.topics.B_TOPIC_WILD || [])[t.battle - 1];
+      if (!text) return [];
+      const mapConst = M.places[t.id], party = d.party || [];
+      const VAR = { trainer_name: d.name || "", map_name: secName(mapSecOf(mapConst)), species_in_route: (env.wildOn && env.wildOn(mapConst)) || "Zigzagoon",
+        species_in_party: party.length ? party[rnd(party.length)].species : "Poochyena" };
+      return hoennPages(text[0], text[1].map((k) => VAR[k] != null ? VAR[k] : ""));
+    }
+    // (A trainer who's on the map you're on: talk to them in person, gText_TrainerCloseBy.)
+    const closeBy = (t) => { const n = window.HOENN_SCRIPTS && window.HOENN_SCRIPTS.consts[MC().places[t.id]]; return !!n && n === env.map(); };
+
+    // -- Drawing --
+    let navCanvas = null, navG = null;
+    function navPaint() {
+      if (!nav) return;
+      if (!navCanvas) { navCanvas = Object.assign(document.createElement("canvas"), { width: W, height: H }); navG = navCanvas.getContext("2d"); }
+      const g = navG, ready = (n) => { const i = navImg(n); return i.complete && i.naturalWidth ? i : null; };
+      g.imageSmoothingEnabled = false;
+      g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
+      // The dots, moving left half a pixel a frame (Task_MoveBgDots).
+      const dots = ready("dots");
+      if (dots) { const sx = Math.floor(nav.frame / 2) % 256; g.drawImage(dots, -sx, 0); g.drawImage(dots, 256 - sx, 0); }
+      const s = GbaMenus.Surface();
+      if (nav.screen === "menu") paintNavMenu(g, s, ready);
+      else if (nav.screen === "matchcall") paintNavMatchCall(g, s, ready);
+      else if (nav.screen === "condition") paintNavCondition(g, s, ready);
+      else if (nav.screen === "ribbons") paintNavRibbons(g, s, ready);
+      if (ready("header")) g.drawImage(navImg("header"), 0, 0, 240, 32, 0, 0, 240, 32);
+      const hd = ready("headers"), hr = HEAD_ROW[nav.head || "main"];
+      if (hd) g.drawImage(hd, 0, 32 * hr, 128, 32, nav.headX || 0, 0, 128, 32);
+      if (hd && nav.sub != null) g.drawImage(hd, 0, 32 * HEAD_ROW[nav.sub], 64, 16, 0, 34, 64, 16);
+      // (A message in the PokéNav's window: a call, or what's asked.)
+      if (ui && ui.msg != null && nav.screen === "matchcall") {
+        s.fill(8, 96, 224, 32, [255, 255, 255]);
+        for (let k = 0; k < 224; k++) { s.put(8 + k, 95, [16, 16, 8]); s.put(8 + k, 128, [16, 16, 8]); }
+        for (let k = 0; k < 34; k++) { s.put(7, 95 + k, [16, 16, 8]); s.put(232, 95 + k, [16, 16, 8]); }
+        String(ui.msg).split("\n").slice(0, 2).forEach((l, i) => s.text(l, 12, 97 + 15 * i, NAV_TEXT, NAV_SHADOW));
+        if (ui.more) s.text("▼", 222, 114, [224, 56, 40], NAV_SHADOW, "small");
+        if (ui.choice != null) {
+          s.fill(184, 60, 44, 34, [16, 16, 8]); s.fill(186, 62, 40, 30, [255, 255, 255]);
+          ["YES", "NO"].forEach((t, k) => { s.text(t, 200, 63 + 14 * k, NAV_TEXT, NAV_SHADOW); if (ui.choice === k) s.text("▶", 189, 63 + 14 * k, NAV_TEXT, NAV_SHADOW); });
+        }
+      }
+      g.drawImage(s.canvas(), 0, 0);
+      out.clearRect(0, 0, W * 2, H * 2);
+      out.imageSmoothingEnabled = false;
+      out.drawImage(navCanvas, 0, 0, W * 2, H * 2);
+    }
+    function paintNavMenu(g, s, ready) {
+      if (ready("device")) g.drawImage(navImg("device"), 0, 0);
+      if (ready("message")) g.drawImage(navImg("message"), 0, 0);
+      const M = MENUS[nav.menu], op = ready("options");
+      nav.items.forEach((it, i) => {
+        const x = nav.xs[i], y = M.y + M.dy * i - 8;
+        if (op) g.drawImage(op, 0, 16 * OPT_ROW[it], 128, 16, Math.round(x) - 16, y, 128, 16);
+        // (The one you're on glows: Task_CurrentMenuOptionGlow, a palette fading to white and back.)
+        if (i === nav.cursor) {
+          g.save(); g.globalCompositeOperation = "lighter";
+          g.globalAlpha = 0.18 + 0.14 * Math.sin(nav.frame / 10);
+          if (op) g.drawImage(op, 0, 16 * OPT_ROW[it], 128, 16, Math.round(x) - 16, y, 128, 16);
+          g.restore();
+        }
+      });
+      const d = nav.note || DESC[nav.items[nav.cursor]] || "";
+      s.text(d, 24, 137, NAV_TEXT, NAV_SHADOW);
+    }
+    // (The list, in the right panel under the bar along the top: six rows of it.)
+    const ROWS_MC = 6, MC_TOP = 36;
+    function paintNavMatchCall(g, s, ready) {
+      if (ready("matchcall")) g.drawImage(navImg("matchcall"), 0, 0);
+      g.fillStyle = "rgb(246,197,123)"; g.fillRect(104, 8, 136, 128);
+      const L = nav.list, PEACH = [246, 197, 123], GREY = [106, 115, 123];
+      nav.cursor = Math.max(0, Math.min(nav.cursor, L.length - 1));
+      nav.top = Math.max(0, Math.min(nav.top, nav.cursor), nav.cursor - ROWS_MC + 1);
+      L.slice(nav.top, nav.top + ROWS_MC).forEach((e, r) => {
+        const y = MC_TOP + 16 * r;
+        if (nav.top + r === nav.cursor) s.fill(106, y - 1, 130, 16, [255, 238, 164]);
+        s.text(e.name, 120, y, [49, 65, 74], PEACH);
+        if (e.kind === "johto") s.text("J", 226, y + 2, GREY, PEACH, "small");
+      });
+      if (!L.length) s.text("No one is registered.", 112, MC_TOP, [49, 65, 74], PEACH, "small");
+      const arrow = (ax, ay, up) => { for (let r = 0; r < 4; r++) s.fill(ax + r, ay + (up ? 3 - r : r), 7 - 2 * r, 1, GREY); };
+      if (nav.top > 0) arrow(168, MC_TOP - 6, true);
+      if (nav.top + ROWS_MC < L.length) arrow(168, 137, false);
+      // The left: where they are; then how many you've registered and your battles, or CALL / CHECK / CANCEL.
+      const e = L[nav.cursor], place = (e && e.place) || "Unknown";
+      s.text(place, 44 - (s.textWidth(place, "small") >> 1), 42, [49, 65, 74], PEACH, "small");
+      if (nav.options) {
+        nav.options.forEach((o, k) => { s.text(o, 18, 74 + 16 * k, [49, 65, 74], PEACH); if (k === nav.opt) s.text("▶", 6, 74 + 16 * k, [49, 65, 74], PEACH); });
+      } else if (nav.check && e) {
+        s.text(e.name, 6, 74, [49, 65, 74], PEACH);
+        s.text(e.desc, 6, 92, [49, 65, 74], PEACH, "small");
+      } else {
+        const n = String(L.length), b = String(env.trainerBattles ? env.trainerBattles() : 0);
+        s.text("No. registered", 6, 74, [49, 65, 74], PEACH, "small"); s.text(n, 86 - s.textWidth(n, "small"), 90, [49, 65, 74], PEACH, "small");
+        s.text("No. of battles", 6, 106, [49, 65, 74], PEACH, "small"); s.text(b, 86 - s.textWidth(b, "small"), 122, [49, 65, 74], PEACH, "small");
+      }
+      // (CHECK: their picture, as MatchCall's trainer pic at (44, 104).)
+      if (nav.check && e) { const img = navPortrait(e); if (img && img.complete && img.naturalWidth) g.drawImage(img, 0, 0, img.fw || img.naturalWidth, img.naturalHeight, 44 - (img.fw || 64) / 2 + 0, 104, img.fw || 64, img.fw ? img.naturalHeight : 64); }
+    }
+    const navPortraits = {};
+    function navPortrait(e) {
+      if (e.kind === "johto") return portrait(e.i);
+      const key = e.kind + ":" + (e.t ? e.t.id : e.c.key);
+      if (!(key in navPortraits)) {
+        const id = e.t ? e.t.id : e.c.rematch ? MC().rematches[e.c.rematch] : null, t = id && window.WORLD_TRAINERS[id];
+        const img = t && t.pic ? Object.assign(new Image(), { src: "assets/sprites/trainers/front/" + t.pic + ".png" }) : null;
+        if (img) img.onload = () => navPaint();
+        navPortraits[key] = img;
+      }
+      return navPortraits[key];
+    }
+    // Emerald's Condition screen (condition.png): the graph's pentagon, Cool at the top, then Beauty, Cute, Smart and
+    // Tough round it, filled out to each condition (CONDITION_GRAPH_CENTER_X/Y: 155, 91); who it is in the box below
+    // their picture, with their sheen and the contest Ribbons they've won.
+    // (A contest Ribbon by its rank: Cool, then Super, Hyper and Master Cool.)
+    const RIBBON_RANKS = ["", "", "Super ", "Hyper ", "Master "];
+    const ribbonName = (k, n) => RIBBON_RANKS[Math.min(4, n)] + k.charAt(0).toUpperCase() + k.slice(1);
+    function paintNavCondition(g, s, ready) {
+      const L = nav.mons, r = L[nav.cursor];
+      if (ready("condition")) g.drawImage(navImg("condition"), 0, 0);
+      if (!r) { s.text("There are no Pokémon.", 6, 68, NAV_TEXT, NAV_SHADOW, "small"); return; }
+      const c = r.contest || {}, cx = 155, cy = 91, R = 33;
+      g.save(); g.beginPath();
+      CONDITIONS.forEach((k, i) => {
+        const a = -Math.PI / 2 + i * 2 * Math.PI / 5, v = 2 + R * Math.min(255, c[k] || 0) / 255;
+        const x = cx + v * Math.cos(a), y = cy + v * Math.sin(a);
+        if (i) g.lineTo(x, y); else g.moveTo(x, y);
+      });
+      g.closePath(); g.fillStyle = "rgba(248,232,72,0.85)"; g.fill(); g.restore();
+      const img = navMonPic(r);
+      if (img && img.complete && img.naturalWidth) g.drawImage(img, 0, 0, Math.min(64, img.naturalWidth), Math.min(64, img.naturalHeight), 8, 2, 64, 64);
+      const name = window.Party ? window.Party.displayName(r) : r.species, n = (nav.cursor + 1) + "/" + L.length;
+      s.text(name, 4, 66, NAV_TEXT, NAV_SHADOW, "small");
+      s.text("Lv" + (r.level || 1), 4, 80, NAV_TEXT, NAV_SHADOW, "small");
+      s.text(n, 76 - s.textWidth(n, "small"), 80, NAV_TEXT, NAV_SHADOW, "small");
+      s.text("Sheen " + (c.sheen || 0), 4, 94, NAV_TEXT, NAV_SHADOW, "small");
+      const rib = r.contestRibbons || {};
+      CONDITIONS.filter((k) => rib[k]).slice(0, 2).forEach((k, i) => s.text(ribbonName(k, rib[k]), 4, 108 + 14 * i, NAV_TEXT, NAV_SHADOW, "small"));
+    }
+    function navMonPic(r) {
+      const url = window.Screen && window.Screen.spriteUrl ? window.Screen.spriteUrl(r.species, window.Party ? window.Party.form(r) : 0, false, r.shiny) : null;
+      if (!url) return null;
+      if (!navImgs[url]) { navImgs[url] = new Image(); navImgs[url].onload = () => navPaint(); navImgs[url].src = url; }
+      return navImgs[url];
+    }
+    function paintNavRibbons(g, s) {
+      const L = nav.mons;
+      s.fill(8, 36, 224, 100, [248, 248, 248]);
+      if (!L.length) { s.text("There are no Ribbon winners.", 16, 40, NAV_TEXT, NAV_SHADOW); return; }
+      nav.cursor = Math.max(0, Math.min(nav.cursor, L.length - 1));
+      const r = L[nav.cursor], rib = r.contestRibbons || {};
+      s.text(window.Party ? window.Party.displayName(r) : r.species, 16, 40, NAV_TEXT, NAV_SHADOW);
+      CONDITIONS.filter((k) => rib[k]).forEach((k, i) => s.text(ribbonName(k, rib[k]) + " Ribbon", 16, 58 + 14 * i, NAV_TEXT, NAV_SHADOW, "small"));
+      const n = (nav.cursor + 1) + "/" + L.length;
+      s.text(n, 224 - s.textWidth(n, "small"), 40, NAV_TEXT, NAV_SHADOW, "small");
+    }
+
+    // A call that comes while you walk, with the PokéNav: Emerald's window over the map (match_call.c's
+    // DrawMatchCallTextBoxBorder, the PokéNav's picture at its left), the words in it.
+    function paintNavRing() {
+      const s = GbaMenus.Surface(), INK = [16, 16, 8];
+      s.fill(0, 112, W, 48, INK); s.fill(2, 114, W - 4, 44, [255, 255, 255]);
+      const lines = String(ui.msg != null ? ui.msg : "").split("\n").slice(0, 2);
+      lines.forEach((l, i) => s.text(l, 46, 118 + 18 * i, NAV_TEXT, NAV_SHADOW));
+      if (ui.more) s.text("▼", 228, 144, [224, 56, 40], NAV_SHADOW, "small");
+      if (ui.choice != null) {
+        s.fill(184, 72, 52, 38, INK); s.fill(186, 74, 48, 34, [255, 255, 255]);
+        ["YES", "NO"].forEach((t, k) => { s.text(t, 202, 76 + 15 * k, NAV_TEXT, NAV_SHADOW); if (ui.choice === k) s.text("▶", 190, 76 + 15 * k, NAV_TEXT, NAV_SHADOW); });
+      }
+      out.clearRect(0, 0, W * 2, H * 2);
+      out.imageSmoothingEnabled = false;
+      out.drawImage(s.canvas(), 0, 0, W * 2, H * 2);
+      // (The PokéNav, spinning: a frame every 8, SpriteCB_SpinningPokenav's.)
+      const icon = navImg("navicon");
+      if (icon.complete && icon.naturalWidth) out.drawImage(icon, 0, 32 * (Math.floor(performance.now() / 133) % 8), 32, 32, 8 * 2, 120 * 2, 64, 64);
+      else icon.onload = () => paint();
+    }
+
+    // -- Running it --
+    const navKeys = (fn) => GbaMenus.keys(fn);
+    // A menu of options (sPokenavMenuOptionLabelGfx): they slide in from the right, the one you're on out to 130.
+    async function navMenu(menu, items, head, sub, cursor) {
+      Object.assign(nav, { screen: "menu", menu, items, head, sub, cursor: cursor || 0, note: null, xs: items.map(() => 256) });
+      const k = await navKeys((key) => {
+        if (key === "up" || key === "down") { const c = (nav.cursor + (key === "up" ? items.length - 1 : 1)) % items.length; if (c !== nav.cursor) { nav.cursor = c; nav.note = null; env.sfx("se_select"); } return undefined; }
+        if (key === "a") return "a";
+        if (key === "b") return "b";
+        return undefined;
+      });
+      if (k === "a") env.sfx("se_select");
+      return k === "a" ? items[nav.cursor] : null;
+    }
+    function navAnimate() {
+      if (!nav) return;
+      nav.frame++;
+      if (nav.screen === "menu") nav.xs = nav.xs.map((x, i) => { const to = i === nav.cursor ? 130 : 140; return Math.abs(x - to) < 1 ? to : x + (to - x) * 0.3; });
+      navPaint();
+      nav.raf = requestAnimationFrame(navAnimate);
+    }
+    async function openNav() {
+      ensureCanvas();
+      ui = { card: 0, cursor: 0, top: 0, call: null, msg: null, nav: true };
+      nav = { frame: 0, screen: "menu", items: [], xs: [], cursor: 0 };
+      showCanvas(true);
+      env.sfx("se_win_open");
+      navAnimate();
+      let at = 0;
+      try {
+        for (;;) {
+          const items = ["map", "condition"].concat(navContacts().length || hflag("FLAG_ADDED_MATCH_CALL_TO_POKENAV") ? ["matchcall"] : [], ribbonMons().length ? ["ribbons"] : [], ["off"]);
+          const pick = await navMenu("main", items, "main", null, Math.min(at, items.length - 1));
+          if (!pick || pick === "off") break;
+          at = items.indexOf(pick);
+          if (pick === "map") { cancelAnimationFrame(nav.raf); showCanvas(false); await env.townMap(); showCanvas(true); navAnimate(); }
+          else if (pick === "condition") await navConditionMenu();
+          else if (pick === "matchcall") await navMatchCall();
+          else if (pick === "ribbons") await navBrowse("ribbons", ribbonMons(), "ribbons");
+        }
+      } finally {
+        cancelAnimationFrame(nav.raf);
+        nav = null; ui = null;
+        showCanvas(false);
+      }
+    }
+    const allMons = () => (env.player().party || []).concat(...((env.player().boxes || []).map((b) => (b || []).filter(Boolean)))).filter((r) => r && !r.egg);
+    const ribbonMons = () => allMons().filter((r) => r.contestRibbons && CONDITIONS.some((k) => r.contestRibbons[k]));
+    async function navConditionMenu() {
+      let at = 0;
+      for (;;) {
+        const pick = await navMenu("condition", ["party", "search", "cancel"], "condition", null, at);
+        if (!pick || pick === "cancel") return;
+        at = ["party", "search", "cancel"].indexOf(pick);
+        if (pick === "party") await navBrowse("condition", (env.player().party || []).filter((r) => !r.egg), "condition");
+        else {
+          let s2 = 0;
+          for (;;) {
+            const items = CONDITIONS.concat(["cancel2"]), k = await navMenu("search", items, "condition", "search", s2);
+            if (!k || k === "cancel2") break;
+            s2 = items.indexOf(k);
+            const mons = allMons().slice().sort((a, b) => ((b.contest || {})[k] || 0) - ((a.contest || {})[k] || 0));
+            await navBrowse("condition", mons, "condition");
+          }
+        }
+      }
+    }
+    // Up and down through `mons` (Condition's graph, or their Ribbons); B back.
+    async function navBrowse(screen, mons, head) {
+      // (The submenu's header goes: their picture's there.)
+      Object.assign(nav, { screen, mons, head, sub: null, cursor: 0 });
+      await navKeys((key) => {
+        if ((key === "up" || key === "down") && mons.length > 1) { nav.cursor = (nav.cursor + (key === "up" ? mons.length - 1 : 1)) % mons.length; env.sfx("se_select"); return undefined; }
+        if (key === "b" || key === "a") return key;
+        return undefined;
+      });
+      env.sfx("se_select");
+      nav.sub = null;
+    }
+    async function navMatchCall() {
+      Object.assign(nav, { screen: "matchcall", head: "matchcall", sub: null, cursor: 0, top: 0, options: null, check: false, list: navContacts() });
+      for (;;) {
+        nav.list = navContacts();
+        const k = await navKeys((key) => {
+          const n = nav.list.length;
+          if ((key === "up" || key === "down") && n) { const c = Math.max(0, Math.min(n - 1, nav.cursor + (key === "up" ? -1 : 1))); if (c !== nav.cursor) { nav.cursor = c; env.sfx("se_select"); } return undefined; }
+          if ((key === "left" || key === "right") && n) { nav.cursor = Math.max(0, Math.min(n - 1, nav.cursor + (key === "left" ? -ROWS_MC : ROWS_MC))); env.sfx("se_select"); return undefined; }
+          if (key === "a" && n) return "a";
+          if (key === "b") return "b";
+          return undefined;
+        });
+        if (k === "b") { env.sfx("se_select"); return; }
+        env.sfx("se_select");
+        const e = nav.list[nav.cursor], opts = ["CALL", e.kind === "johto" ? null : "CHECK", "CANCEL"].filter(Boolean);
+        nav.options = opts; nav.opt = 0;
+        const o = await navKeys((key) => {
+          if (key === "up" || key === "down") { nav.opt = (nav.opt + (key === "up" ? opts.length - 1 : 1)) % opts.length; env.sfx("se_select"); return undefined; }
+          if (key === "a") return opts[nav.opt];
+          if (key === "b") return "CANCEL";
+          return undefined;
+        });
+        env.sfx("se_select");
+        nav.options = null;
+        if (o === "CALL") await navCall(e);
+        else if (o === "CHECK") {
+          nav.check = true;
+          await navKeys((key) => (key === "a" || key === "b" ? key : undefined));
+          env.sfx("se_select");
+          nav.check = false;
+        }
+      }
+    }
+    // A call from the list: Johto's on HGSS's phone (its rings, words and what follows: phone()); Hoenn's in the
+    // PokéNav's window, "… … … Beep!" first, as Emerald's.
+    async function navCall(e) {
+      if (e.kind === "johto") { await phone(e.i, false, null); return; }
+      ui.msg = "";
+      for (let k = 0; k < 3; k++) { env.sfx("se_select"); await sleep(400); }
+      let lines;
+      if (e.kind === "trainer" && closeBy(e.t)) lines = ["That Trainer is close by.\nTalk to the Trainer in person!"];
+      else lines = e.kind === "trainer" ? trainerLines(e.t) : contactLines(e.c);
+      if (!lines || !lines.length) lines = ["… … … … … …"];
+      await talk(lines);
+      env.sfx("se_click");
+      ui.msg = null; ui.more = false;
+    }
+
     async function open() {
+      if (env.pokenav && env.pokenav()) return openNav();
       ensureCanvas();
       ui = { card: cards().includes(open.last) ? open.last : 0, cursor: 0, top: 0, call: null, msg: null };
       if (ui.card === 2) ui.cursor = Math.max(0, radioStations().indexOf(radio.station));

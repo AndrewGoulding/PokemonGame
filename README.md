@@ -1907,6 +1907,9 @@ taking the pokeemerald checkout as their argument and all safe to run again:
 - `tools/build-hoenn-audio.js` renders Emerald's songs and jingles with the same M4A engine as
   the rest (`assets/audio/hoenn-music.js`, songs named `em_*`; in Hoenn `mus_x` plays `em_x`).
 - `tools/build-hoenn-items.js` adds Emerald's key items and mails.
+- `tools/build-pokenav.js` (`node tools/build-pokenav.js <pokeemerald>`) draws the PokéNav's screens from `graphics/pokenav/`
+  (its tilemaps and sprites put together) into `assets/pokenav/`, and puts Emerald's Match Call (`src/pokenav_match_call_data.c`,
+  `src/match_call.c`, the rematch table's places) in `data/emerald-maps.js` as `window.HOENN_MATCH_CALL`.
 - `tools/build-rayquaza-scene.js` draws the Sootopolis scene's backgrounds and sprites (`graphics/rayquaza_scene/`)
   into `assets/rayquaza-scene/`.
 - `tools/build-emerald-credits.js` draws the credits' rides, riders, scenery and THE END
@@ -1970,9 +1973,16 @@ Prof. Birch's Pokédex rating (on the Hoenn Pokédex, Emerald's order of 202, th
 Mr. Briney's voyages (you're aboard out of sight, your Pokémon back in its Ball, and land on his boat where you're bound: past the seas on screen the screen goes dark), Norman's and the Gym Leaders' PokéNav calls, Fly with no Badge needed, to any of Hoenn's towns you've been to and between Hoenn, Kanto and Johto, after the Hall of Fame Norman's S.S. Ticket and the news flash at his family's house (your room in Littleroot is his
 family's: Brendan's house, or May's for a girl), and the Pokémon it tells of roaming Hoenn's routes till caught (Latias for
 red, Latios for blue, Lv. 40, one wild Pokémon in 16),
-Mr. Stone making your Pokégear a **PokéNav** in Devon's office (from then on it's the PokéNav in the start
-menu and everyone's words, in blue, doing all the Pokégear did with everyone you'd registered still in it, and Johto's
-trainers who'd register now register in the PokéNav),
+Mr. Stone making your Pokégear a **PokéNav** in Devon's office: from then on it's the PokéNav in the start menu and
+everyone's words, and it's Emerald's own (`ui/pokegear.js`, its pictures from `tools/build-pokenav.js` into
+`assets/pokenav/`): the main menu's options sliding in over the moving dots, the one you're on glowing, what it does
+below; HOENN MAP (the Town Map); CONDITION (your party's conditions on Emerald's graph, from the Pokéblocks they've
+eaten, with their sheen and contest Ribbons; or SEARCH all your Pokémon, best first at a condition); MATCH CALL
+(Emerald's contacts by the story's flags, Mr. Stone, your father, Wally, the Gym Leaders and the rest, saying what
+Emerald's have them say; the Hoenn trainers who register after a battle, `register_matchcall`, whose calls are made as
+Emerald's `src/match_call.c` makes them; and everyone you'd registered in your Pokégear, still there and calling as
+before; CALL, CHECK or CANCEL); RIBBONS once a Pokémon has one; SWITCH OFF. Calls while you walk come in Emerald's window
+over the map, the PokéNav spinning at its side, and Johto's trainers who'd register now register in the PokéNav,
 the S.S. Tidal (its sailings from Lilycove, by the tickets you hold, and the voyage on as you walk the ship, or rest;
 after the Hall of Fame Norman brings a Sinnoh Ticket too, this game's own, and Lilycove lists a run to Sinnoh, which
 isn't sailing yet: Sinnoh's to come),

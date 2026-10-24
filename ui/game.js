@@ -12774,6 +12774,9 @@
       await sayWithJingle(itemJingle(id), "{PLAYER} " + (verb === "found" ? "found " : "obtained ") + (n > 1 ? n + " " + itemPlural(name) : Bag.isKeyItem(id) ? "the " + name : article(name)) + "!");
     },
     beaten: (id) => !!player.flags[id],
+    // (The PokéNav's Match Call: the Hoenn trainers registered, in Emerald's state: ui/pokegear.js.)
+    registerMatchCall: (id) => { const s = hoenn.state(), mc = s.mc || (s.mc = []); if (mc.includes(id)) return false; mc.push(id); return true; },
+    matchCallRegistered: (id) => ((hoenn.state().mc || []).includes(id)),
     setBeaten: (id, on) => { if (on) player.flags[id] = true; else delete player.flags[id]; },
     trainerBattle: (id, o) => hoennBattle(id, o),
     // (The weather the legendaries bring: Kyogre's rain, Groudon's sun, Rayquaza's winds.)
@@ -12984,6 +12987,19 @@
     if (at) { out.x = at.x; out.y = at.y; }
     if (mv) out.movement = mv;
     return Object.keys(out).length ? out : true;
+  }
+  // Prof. Birch's rating on the PokéNav (Match Call's MC_TYPE_BIRCH: BufferPokedexRatingForMatchCall): Hoenn's seen and
+  // caught, and what he says of it.
+  function birchRatingPages() {
+    const T = window.HOENN_SCRIPTS.t, seen = hoennDexCount("seen", true), caught = hoennDexCount("caught", true);
+    const head = (T.gBirchDexRatingText_SoYouveSeenAndCaught || []).map((p) => fill(p, [String(seen), String(caught)]));
+    const done = caught >= 200;
+    return head.concat((T[done ? "gBirchDexRatingText_DexCompleted" : "gBirchDexRatingText_LessThan" + Math.min(200, (Math.floor(caught / 10) + 1) * 10)] || []).map((p) => fill(p)));
+  }
+  // A Pokémon from a map's grass (a registered trainer's call: STR_SPECIES_IN_ROUTE), by its constant.
+  function wildOnMap(mapConst) {
+    const m = window.WORLD_MAPS[(window.HOENN_SCRIPTS.consts || {})[mapConst]], slots = m && m.wild && m.wild.slots;
+    return slots && slots.length ? Party.speciesName(slots[Math.floor(Math.random() * slots.length)].species) : null;
   }
   // A trainer's battle in a script (EM_ ids: data/emerald-maps.js): "won" or "lost".
   async function hoennBattle(id, o) {
@@ -13605,6 +13621,9 @@
   // their calls, and the trainers' rematches), the Town Map and the radio.
   const gear = Pokegear.create({
     player: () => player, johto: () => johto, map: () => player.location.map, isGirl, sfx, music, fanfare, pokenav: () => hasPokenav(),
+    // (The PokéNav's: Emerald's flags and state, its words filled in, Prof. Birch's rating, a map's wild Pokémon, your battles.)
+    hoenn: () => hoenn, fill: (s, vars) => fill(s, vars), birchCall: () => birchRatingPages(), wildOn: (mapConst) => wildOnMap(mapConst),
+    trainerBattles: () => Object.keys(player.flags).filter((k) => /^(EM_|HGSS_)?TRAINER_/.test(k) && player.flags[k] === true).length,
     mapMusic: () => music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[player.location.map] || {}).music),
     townMap: () => townMap(), say: (pages) => say(pages), confirm: (q) => confirm(q),
     choose: async (texts, question) => { const i = await multichoice(question || null, 0, 0, texts); Screen.say(""); return i; },
