@@ -495,7 +495,7 @@
 
   // New Game + (this game's own): a new game, as `name` and `look`, that keeps from `old` the Bag (but the story's
   // key items and the HMs: KEPT_KEY_ITEMS are the tools that stay), the PC's items, the money, the skills' XP
-  // (mining, fishing, farming), the PC's boxes with the party put in them (healed, in the first empty slots; any
+  // (mining, fishing, farming), the Pokédex's seen and caught, the PC's boxes with the party put in them (healed, in the first empty slots; any
   // that don't fit stay in the party), and the Trainer ID your Pokémon know you by.
   const KEPT_KEY_ITEMS = new Set(["berry-pouch", "bicycle", "exp-share", "fishing-rod", "old-rod", "good-rod", "super-rod", "mega-ring",
     "town-map", "coin-case", "powder-jar", "vs-seeker", "explorer-kit", "itemfinder", "zygarde-cube", "z-ring", "dynamax-band", "tera-orb",
@@ -513,6 +513,8 @@
     p.boxNames = (old.boxNames || p.boxNames).slice();
     p.boxWallpapers = (old.boxWallpapers || p.boxWallpapers).slice();
     p.trainerId = old.trainerId;
+    // (And the Pokédex's seen and caught: it fills in again once Oak gives you it.)
+    p.pokedex = { seen: (old.pokedex && old.pokedex.seen || []).slice(), caught: (old.pokedex && old.pokedex.caught || []).slice() };
     for (const r of old.party || []) {
       const i = p.boxes.findIndex((box) => firstEmpty(box) >= 0);
       if (i < 0) { p.party.push(r); continue; }

@@ -13,7 +13,7 @@ START. Left alone for 45 seconds the title goes back to the opening. Press
 Start and FireRed's main menu comes up: CONTINUE (with your name, play time,
 Pokédex and badges), NEW GAME, NEW GAME + beside it once there's a game saved (this game's own: a new game, through
 Oak's intro, that keeps your Bag but for the story's key items and the HMs, the PC's items, your money, your mining,
-fishing and farming levels, your PC boxes with your party put in them, and your Trainer ID; your Pokémon still obey by
+fishing and farming levels, your Pokédex's seen and caught (shown again once Oak gives you the Pokédex), your PC boxes with your party put in them, and your Trainer ID; your Pokémon still obey by
 your Badges, so high levels wait on them; `Player.newGamePlus`) and OPTION (B goes back to the title). The
 Option screen is FireRed's too: TEXT SPEED (how long battle messages stay up),
 BATTLE SCENE (OFF leaves out the hit animation), BATTLE STYLE (SHIFT: when a
