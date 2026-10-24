@@ -218,9 +218,10 @@
     const save = opts.save;
     // Windows: { action, tiles [left, top, width, height] } (sWindowTemplate);
     // OPTION is where FireRed puts MYSTERY GIFT.
+    // (With a game saved, NEW GAME + beside NEW GAME, this game's own: left and right between them.)
     const windows = save
-      ? [{ action: "continue", label: "CONTINUE", tiles: [3, 1, 24, 10] }, { action: "new", label: "NEW GAME", tiles: [3, 13, 24, 2] },
-        { action: "option", label: "OPTION", tiles: [3, 17, 24, 2] }]
+      ? [{ action: "continue", label: "CONTINUE", tiles: [3, 1, 24, 10] }, { action: "new", label: "NEW GAME", tiles: [3, 13, 11, 2] },
+        { action: "newplus", label: "NEW GAME +", tiles: [16, 13, 11, 2] }, { action: "option", label: "OPTION", tiles: [3, 17, 24, 2] }]
       : [{ action: "new", label: "NEW GAME", tiles: [3, 1, 24, 2] }, { action: "option", label: "OPTION", tiles: [3, 5, 24, 2] }];
     // The stats are in the player's colour (blue for a boy, pink for a girl).
     const genderColor = save && save.female ? [255, 24, 173] : [33, 132, 255];
@@ -247,15 +248,19 @@
       }
       // MoveWindowByMenuTypeAndCursorPos: window 0 round the chosen window,
       // everything else darkened (BLDY 7).
-      const [, t, , hh] = windows[cursor].tiles;
-      s.effect([18, 222, (t - 1) * 8 + 2, (t + hh + 1) * 8 - 2], "darken", 7);
+      const [l, t, ww, hh] = windows[cursor].tiles;
+      s.effect([(l - 1) * 8 + 2, (l + ww + 1) * 8 - 2, (t - 1) * 8 + 2, (t + hh + 1) * 8 - 2], "darken", 7);
       s.show(canvas, fadeColor, fadeLevel);
     };
 
     await fade(draw, [255, 255, 255], 16, 0);   // in from white
     const pick = await keys((k) => {
-      if (k === "up" && cursor > 0) { cursor--; draw(); }
-      else if (k === "down" && cursor < windows.length - 1) { cursor++; draw(); }
+      // (Up and down by rows: from NEW GAME + up to CONTINUE, down to OPTION; left and right along a row.)
+      const row = (i) => windows[i].tiles[1], rows = [...new Set(windows.map((w) => w.tiles[1]))];
+      const go = (dr) => { const r = rows.indexOf(row(cursor)) + dr; if (r < 0 || r >= rows.length) return; cursor = windows.findIndex((w) => w.tiles[1] === rows[r]); draw(); };
+      if (k === "up") go(-1);
+      else if (k === "down") go(1);
+      else if ((k === "left" || k === "right") && windows[cursor + (k === "left" ? -1 : 1)] && row(cursor + (k === "left" ? -1 : 1)) === row(cursor)) { cursor += k === "left" ? -1 : 1; draw(); }
       else if (k === "a") { se(); return windows[cursor].action; }
       else if (k === "b") { se(); return "back"; }
       return undefined;

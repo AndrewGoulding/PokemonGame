@@ -493,7 +493,37 @@
   }
   function advanceClock(player, n) { player.clockSteps = (player.clockSteps != null ? player.clockSteps : CLOCK_START) + (n == null ? 1 : n); }
 
+  // New Game + (this game's own): a new game, as `name` and `look`, that keeps from `old` the Bag (but the story's
+  // key items and the HMs: KEPT_KEY_ITEMS are the tools that stay), the PC's items, the money, the skills' XP
+  // (mining, fishing, farming), the PC's boxes with the party put in them (healed, in the first empty slots; any
+  // that don't fit stay in the party), and the Trainer ID your Pokémon know you by.
+  const KEPT_KEY_ITEMS = new Set(["berry-pouch", "bicycle", "exp-share", "fishing-rod", "old-rod", "good-rod", "super-rod", "mega-ring",
+    "town-map", "coin-case", "powder-jar", "vs-seeker", "explorer-kit", "itemfinder", "zygarde-cube", "z-ring", "dynamax-band", "tera-orb",
+    "soot-sack", "berry-pots", "vs-recorder", "apricorn-box", "wailmer-pail"]);
+  const storyItem = (id) => /^hm\d/.test(id) || (window.ITEMS[id] && window.ITEMS[id].category === "key-items" && !KEPT_KEY_ITEMS.has(id));
+  function newGamePlus(old, name, look) {
+    const p = create(name, look);
+    p.bag = {};
+    for (const [id, n] of Object.entries(old.bag || {})) if (!storyItem(id)) p.bag[id] = n;
+    p.pcItems = Object.assign({}, old.pcItems || {});
+    for (const id of Object.keys(p.pcItems)) if (storyItem(id)) delete p.pcItems[id];
+    p.money = old.money | 0;
+    for (const k of ["miningXp", "fishingXp", "farmingXp"]) if (old.flags && old.flags[k] != null) p.flags[k] = old.flags[k];
+    p.boxes = old.boxes.map((box) => box.slice());
+    p.boxNames = (old.boxNames || p.boxNames).slice();
+    p.boxWallpapers = (old.boxWallpapers || p.boxWallpapers).slice();
+    p.trainerId = old.trainerId;
+    for (const r of old.party || []) {
+      const i = p.boxes.findIndex((box) => firstEmpty(box) >= 0);
+      if (i < 0) { p.party.push(r); continue; }
+      p.boxes[i][firstEmpty(p.boxes[i])] = window.Party.heal(r);
+    }
+    p.flags.newGamePlus = ((old.flags && old.flags.newGamePlus) | 0) + 1;
+    return p;
+  }
+
   window.Player = {
+    newGamePlus, KEPT_KEY_ITEMS,
     STEPS_PER_HOUR, STEPS_PER_DAY, gameTime, advanceClock,
     REGION_BADGES, LEVEL_CAPS, levelCap,
     VERSION, LOOKS, PLAYER_LOOK, RIVAL_NAME, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG, STARTING_PC_ITEMS, NEW_GAME_LOCATION, HOME, CENTERS,

@@ -221,8 +221,11 @@
         }
         continue;
       }
-      if (p && !(await confirm("Start a new game? Your saved game in this browser will be overwritten."))) continue;
-      await newGame();
+      // (NEW GAME + : from the game saved, what Player.newGamePlus keeps.)
+      const plus = v === "newplus" && !!p;
+      if (plus && !(await confirm("New Game + keeps your Bag (not the story's key items or HMs), money, skills and PC boxes, your party put in them. Start over?"))) continue;
+      if (p && !plus && !(await confirm("Start a new game? Your saved game in this browser will be overwritten."))) continue;
+      await newGame(plus ? p : null);
       return "play";
     }
   }
@@ -257,10 +260,11 @@
 
   // A new game starts with FireRed's intro: the controls guide, then Prof. Oak
   // asks whether you're a boy or a girl and names you and your rival.
-  async function newGame() {
+  // (New Game +: from `old`, what Player.newGamePlus keeps.)
+  async function newGame(old) {
     show("intro");
     const r = await Intro.oakSpeech();
-    player = Player.create(r.name, r.look);   // the rival is Gary (Player.RIVAL_NAME)
+    player = old ? Player.newGamePlus(old, r.name, r.look) : Player.create(r.name, r.look);   // the rival is Gary (Player.RIVAL_NAME)
     await persist();
   }
 
