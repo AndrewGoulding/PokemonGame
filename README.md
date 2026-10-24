@@ -1967,7 +1967,7 @@ unless the Bicycle's going flat out: then they give way behind you, holes till y
 Feebas (six of Route 119's fishing spots, your own six by your Trainer ID, where half the bites are Feebas, Lv. 20 to 25),
 Shoal Cave's tides (high from 9:00 to 14:59 and from 21:00 to 2:59 by the game's clock, low between, as you come in from outside),
 Prof. Birch's Pokédex rating (on the Hoenn Pokédex, Emerald's order of 202, then nationwide) and the Game Designer's diploma,
-after the Hall of Fame Norman's S.S. Ticket and the news flash at his family's house (your room in Littleroot is his
+Mr. Briney's voyages (you're aboard out of sight, your Pokémon back in its Ball, and land on his boat where you're bound: past the seas on screen the screen goes dark), Norman's and the Gym Leaders' PokéNav calls, Fly with no Badge needed, to any of Hoenn's towns you've been to and between Hoenn, Kanto and Johto, after the Hall of Fame Norman's S.S. Ticket and the news flash at his family's house (your room in Littleroot is his
 family's: Brendan's house, or May's for a girl), and the Pokémon it tells of roaming Hoenn's routes till caught (Latias for
 red, Latios for blue, Lv. 40, one wild Pokémon in 16),
 Mr. Stone making your Pokégear a **PokéNav** in Devon's office (from then on it's the PokéNav in the start
@@ -1984,7 +1984,7 @@ through the smoke, its descent through the clouds in a ray of light revealed lin
 streaks and orbs flying past, and Rayquaza floating over the pair, roaring (the rings of its voice), as Groudon
 backs off and Kyogre sinks away; before Rayquaza's awakening, the shorter telling of the fight alone.
 
-Other people's secret bases (this game's own, since Emerald only has them through record mixing; `hoennNpcBases` in
+Other people's secret bases (switched off for now, `NPC_BASES_ON`: the only base is the one you make. When on: this game's own, since Emerald only has them through record mixing; `hoennNpcBases` in
 `ui/game.js`): a dozen of Hoenn's spots are taken (none on Route 116), each by an owner of one of Emerald's ten kinds (its
 `sSecretBaseOwnerGfxIds` and `sSecretBaseFacilityClasses`: five boys, five girls), named after one of the Frontier's
 trainers, with decorations set out where Emerald's placement rules let them go (`ui/hoenn-decor.js` `furnish`) and a

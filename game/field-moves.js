@@ -13,7 +13,8 @@
   "use strict";
 
   // (`hoenn`: the Badge it needs in Hoenn, Emerald's: Cut the Stone Badge, Flash the Knuckle, Rock Smash the
-  // Dynamo, Strength the Heat, Surf the Balance, Fly the Feather, Dive the Mind, Waterfall the Rain.)
+  // Dynamo, Strength the Heat, Surf the Balance, Dive the Mind, Waterfall the Rain; Fly none, this game's own,
+  // so Johto's Champion can fly about Hoenn from the start.)
   // (`johto`: the Badge it needs in Johto, HGSS's: Rock Smash and Flash the
   // Zephyr Badge, Cut the Hive, Strength the Plain, Surf the Fog, Whirlpool the
   // Glacier, Waterfall and Rock Climb the Rising; Fly none, this game's own, so
@@ -21,7 +22,7 @@
   const FIELD_MOVES = [
     { move: "Flash", badge: "boulder", johto: "zephyr", hoenn: "knuckle", desc: "Light up darkness." },
     { move: "Cut", badge: "cascade", johto: "hive", hoenn: "stone", desc: "Cut a tree or grass." },
-    { move: "Fly", badge: "thunder", johto: null, hoenn: "feather", desc: "Fly to a known town." },
+    { move: "Fly", badge: "thunder", johto: null, hoenn: null, desc: "Fly to a known town." },
     { move: "Strength", badge: "rainbow", johto: "plain", hoenn: "heat", desc: "Move heavy boulders." },
     { move: "Surf", badge: "soul", johto: "fog", hoenn: "balance", desc: "Travel on water." },
     { move: "Rock Smash", badge: "marsh", johto: "zephyr", hoenn: "dynamo", desc: "Shatter a cracked rock." },

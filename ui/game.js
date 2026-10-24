@@ -1091,8 +1091,8 @@
   // (or R) turns to the Sevii Islands' maps, as FireRed's switch menu does:
   // Kanto, Sevii 1-2-3, 4-5 and 6-7. It opens on the map you're on. In Johto
   // it's Johto's map (JOHTO_MAP), and once you've been to Johto SWITCH turns to
-  // it from Kanto's too. Fly keeps to the region you're in: Kanto's pages in
-  // Kanto, Johto's in Johto.
+  // it from Kanto's too; and Hoenn's once you've been there. Fly goes to any
+  // of them, the region you're in first.
   async function townMap(opts) {
     const T = window.TOWN_MAP, flying = !!(opts && opts.fly), f = player.flags;
     const pct = (n, of) => (n / of * 100) + "%";
@@ -1106,10 +1106,10 @@
     // (Flying too: every map you have, the region you're in first, and SELECT
     // turns through them, so you can fly between Kanto, the Sevii Islands and Johto.)
     const johto = JOHTO_MAP && (johtoHere || beenToJohto()) ? [JOHTO_MAP] : [];
-    // (In Hoenn, its map alone; elsewhere, once you've been to Hoenn, its map to look at, but not to fly to.)
+    // (Hoenn's too, once you've been: first when you're there, and to fly to from anywhere, and from it back home.)
     const hoennHere = !!HOENN_MAP && isHoenn(map);
-    const hoennMaps = HOENN_MAP && !flying && !hoennHere && beenToHoenn() ? [HOENN_MAP] : [];
-    const regions = hoennHere ? [HOENN_MAP] : (johtoHere ? johto.concat(kanto) : kanto.concat(johto)).concat(hoennMaps);
+    const hoennMaps = HOENN_MAP && !hoennHere && beenToHoenn() ? [HOENN_MAP] : [];
+    const regions = hoennHere ? [HOENN_MAP].concat(kanto, JOHTO_MAP && beenToJohto() ? [JOHTO_MAP] : []) : (johtoHere ? johto.concat(kanto) : kanto.concat(johto)).concat(hoennMaps);
     const sprite = (R, x, y) => "left:" + pct(R.x0 - 4 + 8 * x, 240) + ";top:" + pct(R.y0 - 4 + 8 * y, 160);
     const cellIn = (R, sec) => {
       if (!sec) return null;
@@ -1402,7 +1402,7 @@
   const NPC_BASE_LOOKS = ["OBJ_EVENT_GFX_YOUNGSTER", "OBJ_EVENT_GFX_BUG_CATCHER", "OBJ_EVENT_GFX_RICH_BOY", "OBJ_EVENT_GFX_CAMPER", "OBJ_EVENT_GFX_MAN_3",
     "OBJ_EVENT_GFX_LASS", "OBJ_EVENT_GFX_GIRL_3", "OBJ_EVENT_GFX_WOMAN_2", "OBJ_EVENT_GFX_PICNICKER", "OBJ_EVENT_GFX_WOMAN_5"];
   const NPC_BASE_CLASSES = ["youngster", "bug_catcher", "rich_boy", "camper", "cooltrainer_m", "lass", "school_kid_f", "lady", "picnicker", "cooltrainer_f"];
-  const NPC_BASE_SKIP = ["Route116"];
+  const NPC_BASE_SKIP = ["Route116"], NPC_BASES_ON = false;
   const NPC_BASE_COUNT = 12, GIRL_CLASS = /_f$|^(aroma_lady|beauty|lass|hex_maniac|parasol_lady|battle_girl|picnicker|lady)$/;
   function seededRandom(seed) {
     let a = seed | 0;
@@ -1410,6 +1410,8 @@
   }
   function hoennNpcBases() {
     const f = player.flags;
+    // (Off for now: no one's bases but the one you make. A save that had them loses them.)
+    if (!NPC_BASES_ON) { delete f.hoennNpcBases; return []; }
     // (None on Route 116, by Rustboro: a save that has one there loses it.)
     if (f.hoennNpcBases) return (f.hoennNpcBases = f.hoennNpcBases.filter((b) => !NPC_BASE_SKIP.includes(b.map)));
     const rng = seededRandom((player.trainerId || 0) + 0x5B), F = window.HOENN_FRONTIER || {};
@@ -12713,6 +12715,55 @@
       if (at) Overworld.addObject(id, { x, y, facing: facing || at.facing });
     },
     setMovement: (id, movement) => Overworld.setPersonMovement(id, movement),
+    // Mr. Briney's boat (ui/hoenn-script.js voyage): aboard, out of sight, your Pokémon back in its Ball; the sea on
+    // screen (the map you set out from and those joined to it); and landing on another map, on its boat.
+    boardBoat: async () => {
+      const at = Overworld.position(), m = window.WORLD_MAPS[at.map];
+      if (!m || !m.people.some((p) => /_BOAT$/.test(p.localId || "") && /BRINEY/.test(p.flag || ""))) return null;
+      Overworld.follower.hide(true);
+      await Overworld.act([{ who: "player", moves: ["set_invisible"] }]);
+      return at;
+    },
+    sailable: (map, x, y) => {
+      const m = window.WORLD_MAPS[map];
+      if (x >= 0 && y >= 0 && x < m.width && y < m.height) return true;
+      return m.connections.some((c) => {
+        const n = c.map && window.WORLD_MAPS[c.map];
+        if (!n) return false;
+        const [ox, oy] = World.connectionOrigin(m, c);
+        return x >= ox && y >= oy && x < ox + n.width && y < oy + n.height;
+      });
+    },
+    landBoat: async (v, mapConst) => {
+      const name = mapConst && window.HOENN_SCRIPTS.consts[mapConst];
+      let x = v.x, y = v.y;
+      if (name && name !== v.map) {
+        // (Where you are on that map: the maps' places from the joins between them, out from the one you set out from.)
+        const at = { [v.map]: [0, 0] }, queue = [v.map];
+        while (queue.length && !at[name]) {
+          const mn = queue.shift(), m = window.WORLD_MAPS[mn];
+          for (const c of m.connections || []) {
+            if (!c.map || at[c.map] || !window.WORLD_MAPS[c.map]) continue;
+            const [ox, oy] = World.connectionOrigin(m, c);
+            at[c.map] = [at[mn][0] + ox, at[mn][1] + oy];
+            queue.push(c.map);
+          }
+        }
+        if (at[name]) { x -= at[name][0]; y -= at[name][1]; }
+        if (!v.dark) await Overworld.fadeToBlack();
+        Screen.say("");
+        await Overworld.teleport({ map: name, x, y, facing: "down", hidden: true });
+        // (Its boat under you, as you came in on it.)
+        const boat = (window.WORLD_MAPS[name].people || []).find((p) => /_BOAT$/.test(p.localId || "") && /BRINEY/.test(p.flag || ""));
+        if (boat) { hoenn.setShown(name, boat.localId, true); Overworld.addObject(boat.localId, { x, y: y + 1, facing: "down" }); }
+        await Overworld.act([{ who: "player", moves: ["set_visible"] }]);
+        await Overworld.fadeFromBlack();
+      } else {
+        await Overworld.act([{ who: "player", moves: ["set_visible"] }]);
+        if (v.dark) await Overworld.fadeFromBlack();
+      }
+      Overworld.follower.hide(false);
+    },
     personAt: (id) => (id === "player" ? Overworld.position() : Overworld.personPosition(id)),
     moveTo: (x, y) => Overworld.moveTo(x, y),
     giveItem: async (id, n, verb) => {
@@ -12919,6 +12970,8 @@
     if (map === PYRAMID_FLOOR && /^LOCALID_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR_\d+$/.test(person.localId || "")) return false;   // (the floor's own people are put there as it's made: pyramidPeople)
     const f = player.flags, id = person.localId, shown = hoenn.shown(map, id);
     if (shown === false) return false;
+    // (A tree you've cut or a rock you've smashed, till you leave the map: cutDown, smashRock.)
+    if (person.flag && tempFlags.has(map + ":" + person.flag)) return false;
     if (person.item) { if (f[person.flag]) return false; }
     else if (person.flag && hoenn.flag(person.flag) && shown !== true) return false;
     const out = {};
@@ -14164,6 +14217,6 @@
   }
 
 
-  window.Game = { get player() { return player; }, get pokegear() { return gear; }, get hoenn() { return hoenn; }, townMap: (o) => townMap(o), sailToHoenn: () => sailToHoenn(), slateportSailor: () => slateportSailor() };
+  window.Game = { get player() { return player; }, get pokegear() { return gear; }, get hoenn() { return hoenn; }, runHoenn: (label) => runHoenn(label), townMap: (o) => townMap(o), sailToHoenn: () => sailToHoenn(), slateportSailor: () => slateportSailor() };
   main();
 })();

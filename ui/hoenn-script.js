@@ -31,6 +31,7 @@
 
   const DATA = () => window.HOENN_SCRIPTS || { s: {}, t: {}, m: {}, tb: {}, ms: {}, maps: {}, heal: {}, multi: {}, init: [] };
   const DIRS = { DIR_SOUTH: "down", DIR_NORTH: "up", DIR_WEST: "left", DIR_EAST: "right", 1: "down", 2: "up", 3: "left", 4: "right" };
+  const DIRS_XY = { down: [0, 1], up: [0, -1], left: [-1, 0], right: [1, 0] };
   const DIR_NUM = { down: 1, up: 2, left: 3, right: 4 };
   const toID = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
   // Emerald's constants a script writes by name, as numbers.
@@ -224,7 +225,7 @@
         case "waitstate": case "waitbuttonpress": case "waitmessage": case "waitse": case "waitfanfare": case "waitfieldeffect": case "waitdooranim": case "waitmoncry":
         case "lockall": case "lock": case "releaseall": case "release": case "lockfortrainer": case "hideplayer": case "showplayer": case "createvobject": case "turnvobject":
         case "opendoor": case "closedoor": case "setdooropen": case "setdoorclosed": case "setfieldeffectargument": case "updatemoneybox":
-        case "register_matchcall": case "pokenavcall": case "dotrainerbattle": case "gotopostbattlescript": case "gotobeatenscript": case "selectapproachingtrainer":
+        case "register_matchcall": case "dotrainerbattle": case "gotopostbattlescript": case "gotobeatenscript": case "selectapproachingtrainer":
         case "closebraillemessage": case "brailleformat": case "setholewarp": case "setescapewarp":
           return true;
         case "setwarp": lastSetWarp = a.slice(); return true;
@@ -313,6 +314,13 @@
       let question = null, wildSpec = null, rot = null;
       const pending = [];
       const flush = async () => { if (pending.length) { const t = pending.splice(0); await env.act(t); } };
+      // (Mr. Briney's boat: hideobjectat on the player where his boat is puts you aboard, out of sight, your Pokémon
+      // back in its Ball (env.boardBoat); the voyage's movements count where you are, from where you got on, and
+      // stop, the screen going dark, where they'd sail past the maps on screen (env.sailable); showobjectat on
+      // another map lands you there, on its boat (env.landBoat). voyage: { map, x, y, cut: {label: steps}, dark }.)
+      let voyage = null;
+      const STEP = /^(?:walk|slide|ride_water_current|walk_fast|walk_faster|walk_slow)\w*?_(up|down|left|right)$/;
+      const steps = (moves) => moves.filter((m) => STEP.test(m) && !/in_place/.test(m)).map((m) => DIRS_XY[STEP.exec(m)[1]]);
       const speak = async (pages) => { if (!pages) return; await flush(); await env.say(pages); };
       // (A `message` that's followed by yesnobox or a multichoice: its last page is the question.)
       const nextAsks = () => { const code = st.code; for (let k = st.pc; k < code.length && k < st.pc + 4; k++) { const o = code[k][0]; if (o === "yesnobox" || /^multichoice/.test(o)) return true; if (!/^(waitmessage|delay|playfanfare|waitfanfare)$/.test(o)) return false; } return false; };
@@ -374,6 +382,9 @@
           // Messages.
           // (Braille: its dots, ui/game.js's braille.)
           case "braillemsgbox": case "braillemessage": { const pages = pagesOf(a[0]); if (pages) await speak(env.braille ? pages.map(env.braille) : pages); break; }
+          // (A call on the PokéNav: Norman's as you sail to Dewford, the Gym Leaders' as they register. Std_MsgboxPokenav's
+          // NULL: msgbox's MSGBOX_POKENAV says it itself.)
+          case "pokenavcall": { const pages = a[0] && a[0] !== "NULL" ? pagesOf(a[0]) : null; if (pages) await speak(pages); break; }
           case "msgbox": {
             const type = a[1] || "MSGBOX_DEFAULT", pages = pagesOf(a[0]);
             if (type === "MSGBOX_NPC" && ctx.person) await env.facePlayer(ctx.person);
@@ -430,15 +441,41 @@
 
           // People and movement.
           case "applymovement": case "applywaitmovement": {
-            const mv = D.m[a[1]], target = who(a[0]);
+            let mv = D.m[a[1]];
+            const target = who(a[0]);
             if (!mv || target == null) break;
-            pending.push({ who: target, moves: mv });
+            if (voyage) {
+              if (target === "player" && voyage.cut[a[1]] == null) {
+                // (How far it can go on screen; the rest happens in the dark.)
+                let n = 0;
+                const all = steps(mv);
+                if (!voyage.dark) for (const [dx, dy] of all) { if (!env.sailable(voyage.map, voyage.x + dx, voyage.y + dy)) break; voyage.x += dx; voyage.y += dy; n++; }
+                for (const [dx, dy] of all.slice(n)) { voyage.x += dx; voyage.y += dy; }
+                voyage.cut[a[1]] = n < all.length ? mv.findIndex((m, i) => steps(mv.slice(0, i + 1)).length > n) : mv.length;
+                for (const p of pending) if (p.label === a[1]) p.moves = p.moves.slice(0, voyage.cut[a[1]]);
+              }
+              if (voyage.cut[a[1]] != null) mv = mv.slice(0, voyage.dark ? 0 : voyage.cut[a[1]]);
+            }
+            pending.push({ who: target, moves: mv, label: a[1] });
+            if (voyage && target === "player" && !voyage.dark && voyage.cut[a[1]] < D.m[a[1]].length) { await flush(); await env.fade(true); voyage.dark = true; }
             if (op === "applywaitmovement") await flush();
             break;
           }
           case "waitmovement": await flush(); break;
-          case "removeobject": case "hideobjectat": { await flush(); const w = who(a[0]); if (w && w !== "player") env.hide(w); break; }
-          case "addobject": case "showobjectat": { await flush(); const w = who(a[0]); if (w && w !== "player") env.show(w); break; }
+          case "removeobject": case "hideobjectat": {
+            await flush();
+            const w = who(a[0]);
+            if (w === "player" && op === "hideobjectat" && env.boardBoat) { const at = await env.boardBoat(); if (at) voyage = { map: at.map, x: at.x, y: at.y, cut: {}, dark: false }; }
+            else if (w && w !== "player") env.hide(w);
+            break;
+          }
+          case "addobject": case "showobjectat": {
+            await flush();
+            const w = who(a[0]);
+            if (w === "player" && voyage) { await env.landBoat(voyage, op === "showobjectat" ? a[1] : null); voyage = null; }
+            else if (w && w !== "player") env.show(w);
+            break;
+          }
           case "copyobjectxytoperm": { const w = who(a[0]); const at = w && env.personAt(w); if (at) state().pos[mapName() + ":" + w] = { x: at.x, y: at.y }; break; }
           case "turnobject": { const w = who(a[0]); if (w) { await flush(); const at = env.personAt(w); if (at) env.place(w, at.x, at.y, DIRS[val(a[1])] || DIRS[a[1]] || "down"); } break; }
 
