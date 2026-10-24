@@ -2939,28 +2939,33 @@ your Unown (`CheckSeenAllLetterUnown`: all 26 letters; how many kinds you've
 caught) and the puzzles solved, and the professor adds to your report as HGSS's
 does. (Script warps now name their maps, so every script's warp works.)
 
-## Orre: the Outskirt Stand (in progress)
+## Orre (in progress)
 
-Pokémon Colosseum's opening, at the **Outskirt Stand**: a diner made from an
-old locomotive out in Orre's desert. It isn't joined to anywhere yet: the
-debug menu's **Visit Orre (Outskirt Stand)** takes you there and **Leave Orre**
-brings you back (so do its Pokémon Center and Johto trips). In Orre you're
-**Wes**: `game/orre.js` puts your own name, look, party, Bag, money and
-trainer ID away and brings out Wes's (kept from one visit to the next), with
-his partners from the start of Colosseum: **Espeon** (Lv. 25: Confusion,
-Return, Reflect, Helping Hand) and **Umbreon** (Lv. 26: Bite, Secret Power,
-Taunt, Snatch). Leaving swaps everything back.
+Orre's story is Pokémon Colosseum's, with you as yourself rather than Wes, and this game's own content to fill in
+the gaps. After Hoenn there are two ways on: Orre, or Sinnoh on the S.S. Tidal.
 
-The first visit plays the opening. On a black screen Team Snagem's hideout
-blows up behind Wes as he gets away with its portable Snag Machine. He rides
-his bike in from the south of the desert and parks beside the Stand. Two men
-come out of the diner, **Folly** and **Trudly**. They talk about their meal
-and the sack in their truck, see Wes, tell him to mind his own business, and
-drive off with it. Inside, **Rider Willie** sits at the back. When Wes comes
-out again, Willie follows him and challenges him to a **double battle** (every
-battle in Colosseum is one) with two Zigzagoon (Lv. 23 and 24). Afterwards he
-points Wes north to Phenac City. Losing to Willie doesn't make you black out:
-he goes back in and challenges you again next time.
+**Getting there.** Once you've beaten Hoenn's Pokémon League (Emerald's FLAG_SYS_GAME_CLEAR), the next step you take
+outdoors **Prof. Oak calls on your PokéNav**: something troubling is happening in Orre, a region far away, and he'd
+like to see you at his lab in Pallet Town. There he explains it: two evil teams, **Team Snagem** (thieves who steal
+Trainers' Pokémon with a machine that snags them) and the mysterious **Cipher**, are wreaking havoc in Orre with
+**Shadow Pokémon**, Pokémon whose hearts have been shut tight so they fight like machines. He asks you to join Team
+Snagem as an undercover agent, find out what the two teams are planning and stop them. Say yes and his plane flies
+you to the **Orre Air Strip** (say no and he asks again whenever you talk to him). The pilot there flies you back to
+Kanto, and Oak sends you to Orre again whenever you like. In Orre you're yourself, with your own Pokémon and Bag
+(`game/orre.js`; an older save made while Orre had you play as Wes swaps back as it leaves). Every battle there is a
+double battle. The debug menu's **Visit Orre** takes the plane without the briefing; **Leave Orre** comes back.
+
+**The Orre Air Strip** (this game's own): south of the Outskirt Stand, in the same desert, fenced in, with the gate
+on the road north. Inside the fence: the runway with its markings, the concrete apron where Oak's little
+high-winged plane is parked, the terminal (locked: no flights today), the control tower, a windsock, fuel drums, the
+pilot and a mechanic.
+
+**The Outskirt Stand**, up the road: a diner made from an old locomotive out in Orre's desert. The first time you
+come up the road, two men come out of the diner, **Folly** and **Trudly**. They talk about their meal and the sack in
+their truck, see you, tell you to mind your own business, and drive off with it. Inside, **Rider Willie** sits at the
+back. When you come out again, Willie follows and challenges you to a **double battle** (every battle in Colosseum is
+one) with two Zigzagoon (Lv. 23 and 24). Afterwards he points you north to Phenac City. Losing to Willie doesn't
+make you black out: he goes back in and challenges you again next time.
 
 In the diner:
 - The bartender serves a free meal that heals your Pokémon, and runs the
@@ -2969,8 +2974,7 @@ In the diner:
 - The jukebox plays another song.
 - The travellers in the booths talk about the road.
 
-North is the way to Phenac City and south the way back to the hideout; both
-say they aren't built yet.
+North is the way to Phenac City, which isn't built yet; south, the Air Strip.
 
 Colosseum is 3D, so nothing of it converts. `tools/build-orre.js` builds the
 place in the GBA games' style instead, from a
@@ -2980,6 +2984,8 @@ place in the GBA games' style instead, from a
 node tools/build-orre.js <path to pret/pokeemerald>
 ```
 
+- **The Air Strip** goes on from the Stand's desert (Route 111's next row, then sand), its fence, runway, apron,
+  terminal, control tower, plane, windsock, fuel drums and sign drawn in code like the diner.
 - **The ground** is Emerald's Route 111 desert (sand, dunes and red cliffs
   from the General and Mauville tilesets), cleared of its rocks and the
   Mirage Tower.
@@ -2989,7 +2995,7 @@ node tools/build-orre.js <path to pret/pokeemerald>
     door and the orange steps;
   - Folly and Trudly's truck, a blue pickup with the sack in its bed, in
     front, back and side views;
-  - Wes's parked bike;
+  - Wes's parked bike (kept for the old Wes start, unused now);
   - the whole interior: plank walls with copper pipes, the curved wooden
     bar with its bottle shelves and stools, the TV with a Poké Ball on
     screen, the jukebox, three green booths and the yellow checkered floor.
@@ -3001,7 +3007,7 @@ node tools/build-orre.js <path to pret/pokeemerald>
 - **Folly, Trudly, the bartender and the travellers** use FireRed's
   sprites.
 
-Everything goes into `data/orre-maps.js`, `assets/world/maps/OutskirtStand*`,
+Everything goes into `data/orre-maps.js`, `assets/world/maps/OutskirtStand*` and `OrreAirStrip*`,
 `assets/world/sprites/player_wes*` and `orre_*`, and the `wes` and
 `rider_willie` trainer pictures. The words are this game's own, since
 Colosseum's script wasn't to hand. The music is FireRed's for now:

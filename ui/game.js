@@ -2155,7 +2155,7 @@
         { label: "Go to the last Pokémon Center", value: "center", className: "action" },
         { label: "Visit Johto (New Bark Town)", value: "johto", className: "action" },
         { label: "Visit Hoenn (the moving truck)", value: "hoenn", className: "action" },
-        { label: Orre.inOrre(player.location) ? "Leave Orre (back as yourself)" : "Visit Orre (Outskirt Stand)", value: "orre", className: "action" },
+        { label: Orre.inOrre(player.location) ? "Leave Orre" : "Visit Orre (the Air Strip)", value: "orre", className: "action" },
         back()]);
       if (v === "back") return;
       if (v === "add") await debugAddPokemon();
@@ -2180,12 +2180,12 @@
         // In front of the counter of the Center you last used (home before
         // you've used one), as blacking out takes you.
         const center = player.flags.lastCenter && centerOf(player.flags.lastCenter);
-        Orre.leave(player);   // (from Orre, as yourself again)
+        Orre.leave(player);   // (from Orre: an older save's Wes back to yourself)
         player.location = Object.assign({}, center || Player.HOME);
         await persist();
         return "battled";   // (back to the map, at the new place)
       } else if (v === "orre") {
-        // Orre isn't joined to anywhere yet (game/orre.js): you're Wes there.
+        // Orre: Prof. Oak's plane to the Air Strip, without his briefing (game/orre.js); and back.
         if (Orre.inOrre(player.location)) await leaveOrre();
         else fieldAction = visitOrre;
         return "battled";
@@ -3398,6 +3398,7 @@
 
       case "PalletTown_ProfessorOaksLab_EventScript_ProfOak":
         if (!f.starter) await say(ev.person.text);
+        else if (f.orreStory >= 1) await oakOrre();
         else if (f.gameClear && !f.gotGsBall) await oakGsBall();
         else if (f.oaksParcel && !f.parcelDelivered) await pokedexScene();
         else if (f.parcelDelivered) await say(T("PalletTown_ProfessorOaksLab_Text_OakMonsAroundWorldWait"));
@@ -4329,6 +4330,8 @@
       // ---------- Orre ----------
       case "enter:OutskirtStand": await willieChallenge(); return;
       case "OutskirtStand_Diner_EventScript_Bartender": await orreBartender(); return;
+      case "arrive:OutskirtStand": case "enter:OutskirtStand": if (!(f.orre | 0)) await orreArrival(); return;
+      case "OrreAirStrip_EventScript_Pilot": await orrePilot(); return;
       case "OutskirtStand_Diner_EventScript_Willie":
         await say(["Willie: That bike out front yours?\nShe's a beauty.",
           "And those two Pokémon of yours… Tell you\nwhat, when you head out, I'll follow you."]);
@@ -9361,74 +9364,134 @@
 
   // ---------- Orre: the Outskirt Stand (Pokémon Colosseum's opening) ----------
   //
-  // Not joined to the rest of the world yet: the debug menu takes you there,
-  // as Wes (game/orre.js swaps your party, Bag and look for his, and back).
-  // The first time: on a black screen, Team Snagem's hideout blows up behind
-  // Wes as he gets away with its portable Snag Machine; he rides across the
-  // desert to the Outskirt Stand, an old locomotive made a diner (the maps in
-  // data/orre-maps.js), and parks. Two men come out of the diner, Folly and
-  // Trudly, talking about their meal and the sack in their truck; seeing
-  // Wes, they tell him to get lost and drive off north with it. Inside, Rider
-  // Willie, at the back, wants a look at Wes's Pokémon: coming out again,
-  // Willie follows and challenges him to a double battle (every battle in
-  // Colosseum is one), and after it points him on to Phenac City; the bar
-  // sells to him from then on. (The words are this game's own: Colosseum's
-  // script isn't to hand.)
+  // Up the road from the Air Strip (Prof. Oak's plane: below) is the Outskirt
+  // Stand, an old locomotive made a diner (the maps in data/orre-maps.js).
+  // The first time you come, two men come out of the diner, Folly and Trudly,
+  // talking about their meal and the sack in their truck; seeing you, they
+  // tell you to get lost and drive off north with it. Inside, Rider Willie, at
+  // the back, wants a look at your Pokémon: coming out again, Willie follows
+  // and challenges you to a double battle (every battle in Colosseum is one),
+  // and after it points you on to Phenac City; the bar sells to you from then
+  // on. (The words are this game's own: Colosseum's script isn't to hand.)
   const ORRE = (k) => "LOCALID_ORRE_" + k;
+  // (The debug menu's way there: Prof. Oak's plane, without his briefing.)
   async function visitOrre() {
-    const first = !player.flags.orre;
     Screen.say("");
     show("world");
     Overworld.resume();
+    await flyToOrre();
+  }
+
+  // ---------- Orre: how you come to be there (this game's own) ----------
+  //
+  // Once you've beaten Hoenn's Pokémon League (Emerald's FLAG_SYS_GAME_CLEAR), the next step you take Prof. Oak calls
+  // on your PokéNav: something's wrong in Orre, far away, and he'd like to see you at his lab in Pallet Town
+  // (player.flags.orreStory 1). There he tells you of Orre's two evil teams, Cipher and Team Snagem, and the Shadow
+  // Pokémon, and asks you to go undercover in Team Snagem to find out what they're planning and stop it. Say yes and
+  // his plane takes you to the Orre Air Strip (orreStory 2); say no and he asks again next time. In Orre you're
+  // yourself, with your own Pokémon (game/orre.js); the pilot at the Air Strip flies you back to Kanto, and Oak sends
+  // you to Orre again whenever you ask him. (The other way on after Hoenn is the S.S. Tidal's to Sinnoh.)
+  function orreCallStep() {
+    const f = player.flags;
+    if (f.orreStory || !hasPokenav() || !hoenn.flag("FLAG_SYS_GAME_CLEAR")) return null;
+    // (Out and about, not inside: the League's rooms or the Hall of Fame.)
+    const here = window.WORLD_MAPS[player.location.map] || {};
+    return OUTDOORS.includes(here.type) ? { type: "orre-call" } : null;
+  }
+  async function orreOakCall() {
+    player.flags.orreStory = 1;
+    await gear.storyCall(["Prof. Oak: Hello, {PLAYER}! It's me,\nProf. Oak!",
+      "Congratulations on becoming the\nChampion of Hoenn! Splendid work!",
+      "But I'm afraid I'm not only calling\nto celebrate…",
+      "Something troubling is going on in a\nregion far away from here: Orre.",
+      "I'd rather not say more over the\nPokéNav. Could you come and see me\nat my lab in Pallet Town, in Kanto?",
+      "I'll be waiting for you!"].map((p) => fill(p)));
+    await persist();
+  }
+  // Prof. Oak in his lab: the briefing and his question; or, once you've been, the plane back.
+  async function oakOrre() {
+    const f = player.flags;
+    if (f.orreStory >= 2) {
+      if (!(await confirm(fill("Oak: {PLAYER}! How goes your mission\nin Orre? Shall I have my plane take\nyou back there?")))) { await say("Oak: Rest up, then. Orre is counting\non you."); return; }
+      await say("Oak: Good luck, {PLAYER}!");
+      await flyToOrre();
+      return;
+    }
+    if (!f.orreBriefed) {
+      await say(["Oak: Ah, {PLAYER}! You came!\nThank you.",
+        "Let me tell you why I called.\nHave you heard of the Orre region?",
+        "It's a vast desert land, very far\nfrom Kanto. Few wild Pokémon live\nthere.",
+        "So Orre's Trainers battle with the\nPokémon they've raised themselves,\ntwo against two.",
+        "Lately, terrible reports have been\ncoming out of Orre.",
+        "Two evil teams are wreaking havoc\nthere: Team Snagem and Cipher.",
+        "Team Snagem is a gang of thieves.\nThey steal other Trainers' Pokémon\nwith a machine that can snag them!",
+        "Cipher is more mysterious. No one\nknows who leads it, or what it truly\nwants…",
+        "But we do know this: Cipher has\nbeen turning Pokémon into something\ncalled Shadow Pokémon.",
+        "Shadow Pokémon have had the doors\nto their hearts shut tight. They feel\nnothing for anyone.",
+        "They battle like fighting machines,\nand will even attack people!",
+        "It's a cruel thing to do to a\nPokémon. And I fear the two teams are\nworking together somehow.",
+        "So here is what I'd ask of you,\n{PLAYER}.",
+        "Join Team Snagem as an undercover\nagent, and find out what they and\nCipher are planning.",
+        "Then put a stop to it!",
+        "It will be dangerous. You'll be far\nfrom home, and no one must find out\nwho you really are."]);
+      f.orreBriefed = true;
+    } else await say(["Oak: {PLAYER}, have you thought about\nwhat I asked?"]);
+    if (!(await confirm(fill("Oak: Will you go to Orre and help,\n{PLAYER}?")))) {
+      await say(["Oak: I see… It's a lot to ask of you.", "Come and talk to me again when\nyou're ready."]);
+      return;
+    }
+    await say(["Oak: I knew I could count on you!", "My plane is waiting to fly you to\nthe Orre Air Strip.",
+      "From there, head north through the\ndesert to a diner called the\nOutskirt Stand.",
+      "Team Snagem's people pass that way.\nThat's where your mission begins.",
+      "And remember: in Orre, every battle\nis a double battle. Take at least\ntwo Pokémon you can trust!",
+      "Good luck, {PLAYER}!"]);
+    f.orreStory = 2;
+    await flyToOrre(true);
+  }
+  // The flight: the screen goes black, the plane's engine and the words of the trip, and you're on the Air Strip by
+  // the plane's door; the first time, the pilot welcomes you to Orre.
+  async function flyToOrre(fromOak) {
+    const first = !player.flags.orreLanded;
     await Overworld.fadeToBlack();
     music(null);
     Overworld.setAvatar("walk");
+    Orre.leave(player);   // (an older save's Wes, back to yourself first)
     Orre.enter(player);
-    if (first) await snagemEscape();
+    if (first) {
+      const o = $("#overlay");
+      sfx("se_m_fly");
+      await GbaMenus.blackScreen(o, fromOak ? fill("Prof. Oak's little plane takes off\nfrom Kanto, and flies far, far away…") : "A little plane flies far, far away…");
+      await GbaMenus.blackScreen(o, "Over the sea, and on over a land of\nendless desert: the Orre region.");
+      o.classList.add("hidden");
+    }
     await Overworld.teleport(player.location);
-    if (first) await orreArrival();
+    player.flags.orreLanded = true;
+    if (first) {
+      await sleep(300);
+      await Overworld.act([{ who: ORRE("PILOT"), moves: ["face_left", "walk_in_place_faster_left"] }]);
+      await say(["Pilot: Here we are: the Orre Air\nStrip! Welcome to Orre.",
+        "That road north through the gate\ngoes to the Outskirt Stand.",
+        "Whenever you want to go back to\nKanto, come and see me. I'll be\nwaiting here with the plane."]);
+    }
+    await persist();
+  }
+  // The pilot: back to Kanto, outside Prof. Oak's lab.
+  async function orrePilot() {
+    if (!(await confirm("Pilot: Want me to fly you back to\nKanto?"))) { await say("Pilot: Just say the word when you\nwant to go."); return; }
+    await say("Pilot: Hop in! Next stop, Pallet Town.");
+    await Overworld.fadeToBlack();
+    music(null);
+    Orre.leave(player, { map: "PalletTown", x: 16, y: 14, facing: "down" });
+    await Overworld.teleport(player.location);
+    music((window.WORLD_MAPS[player.location.map] || {}).music);
     await persist();
   }
   async function leaveOrre(to) {
     Orre.leave(player, to);
     await persist();
   }
-  // Team Snagem's hideout: the narration on black, the blast (a white flash
-  // going orange, the screen shaking), and Wes riding away.
-  async function snagemEscape() {
-    const o = $("#overlay");
-    await GbaMenus.blackScreen(o, "Somewhere in the wastelands of Orre:\nthe hideout of Team Snagem, the gang\nthat steals other Trainers' Pokémon.");
-    await GbaMenus.blackScreen(o, "One of its own has turned on it. Wes\nhas taken the gang's portable Snag\nMachine, and set charges on his way out…");
-    const g = o.getContext("2d");
-    sfx("se_m_explosion");
-    for (let f = 0; f < 90; f++) {
-      const t = f / 90;
-      if (f === 30) sfx("se_m_explosion");
-      g.setTransform(1, 0, 0, 1, f < 60 ? (f % 4 < 2 ? -6 : 6) * (1 - t) : 0, f < 60 ? (f % 6 < 3 ? -4 : 4) * (1 - t) : 0);
-      g.fillStyle = "#000";
-      g.fillRect(-10, -10, o.width + 20, o.height + 20);
-      const r = 40 + t * 420, grad = g.createRadialGradient(240, 200, 0, 240, 200, r);
-      const fade = Math.max(0, 1 - t * 1.2);
-      grad.addColorStop(0, "rgba(255,255,240," + fade + ")");
-      grad.addColorStop(0.35, "rgba(255,200,80," + fade + ")");
-      grad.addColorStop(0.7, "rgba(232,96,40," + fade * 0.8 + ")");
-      grad.addColorStop(1, "rgba(0,0,0,0)");
-      g.fillStyle = grad;
-      g.fillRect(-10, -10, o.width + 20, o.height + 20);
-      await new Promise((r) => requestAnimationFrame(r));
-    }
-    g.setTransform(1, 0, 0, 1, 0, 0);
-    await GbaMenus.blackScreen(o, "With Espeon and Umbreon, and the Snag\nMachine on his arm, Wes rides off\ninto the desert…");
-    o.classList.add("hidden");
-  }
-  // Riding in from the south edge to beside the Stand, and parking.
+  // Coming up the road from the Air Strip the first time: Folly and Trudly come out of the diner.
   async function orreArrival() {
-    music("mus_cycling");
-    Overworld.setAvatar("bike");
-    await Overworld.act([{ who: "player", moves: Array(10).fill("walk_fast_up").concat(["walk_fast_left"]) }]);
-    await sleep(300);
-    Overworld.setAvatar("walk");
-    await Overworld.act([{ who: "player", moves: ["walk_left"] }]);
     player.flags.orre = 1;
     Overworld.refreshPeople();
     music(window.WORLD_MAPS.OutskirtStand.music);
@@ -13967,6 +14030,8 @@
 
   function special(script) {
     if (deltaDue(script)) return true;   // (the Delta Episode's scenes as you come in)
+    // (Orre: up the road from the Air Strip to the Outskirt Stand the first time, Folly and Trudly come out.)
+    if ((script === "arrive:OutskirtStand" || script === "enter:OutskirtStand") && !(player.flags.orre | 0)) return true;
     // Johto: its scripts (a step's, while its var has its value), its
     // Apricorn trees, and its maps' frame tables as you come in.
     // Hoenn: a step's scene while its var has its value, and its maps' frame tables as you come in.
@@ -14143,7 +14208,7 @@
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
-          return hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
+          return orreCallStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
         adjustWild: (mon, table) => { const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
@@ -14189,6 +14254,7 @@
       else if (ev.type === "repel-ended" || ev.type === "lure-ended") await repelWoreOff(ev.type === "lure-ended");
       else if (ev.type === "egg-hatch") await eggHatches(ev.record);
       else if (ev.type === "phone") await gear.ring();
+      else if (ev.type === "orre-call") await orreOakCall();
       else if (ev.type === "red-forest") await redForest();
       else if (ev.type === "leaf-vermilion") await leafVermilion();
       else if (ev.type === "tera-aide") await teraAide();

@@ -1,29 +1,30 @@
-// Orre, from Pokémon Colosseum: so far the Outskirt Stand (data/orre-maps.js),
-// where the game opens, reached from the debug menu. In Orre you're Wes,
-// with his Espeon and Umbreon: going there puts your own name, look, party,
-// Bag, money and trainer ID away (player.flags.orreStash) and brings out
-// Wes's (player.flags.orreWes, kept from one visit to the next); leaving
-// swaps them back.
+// Orre, from Pokémon Colosseum: so far the Orre Air Strip, where Prof. Oak's
+// plane sets you down, and north of it the Outskirt Stand (data/orre-maps.js).
+// You're yourself there, with your own Pokémon (an older save made while you
+// were Wes, as Orre had you be at first, still swaps back as you leave:
+// player.flags.orreStash).
 // Depends on: window.WORLD_MAPS, window.Party.
 //
 //   Orre.inOrre(location)            // an Orre map
-//   Orre.enter(player)               // become Wes, at the start of the opening (or where he was)
-//   Orre.leave(player, location)     // back to yourself, where you were (or `location`)
+//   Orre.enter(player, to)           // off to Orre: the Air Strip (or `to`); where you were is kept
+//   Orre.leave(player, location)     // back from Orre, where you were (or `location`)
 //   Orre.visible(person, flags)      // ui/game.js's visible() for Orre's people (or undefined)
 //   Orre.patches(map, flags)         // the Stand's patches on now (the truck parked)
 //   Orre.willieTeam()                // Rider Willie's two Zigzagoon
 //   Orre.SHOP                        // what the Stand's bar sells, once Willie's been beaten
 //
 // The opening's progress is player.flags.orre:
-//   0 / undefined  Wes rides in from the desert
-//   1              parked; Folly and Trudly's truck by the Stand
+//   0 / undefined  not yet at the Outskirt Stand (Folly and Trudly's truck by it)
+//   1              arrived from the Air Strip, and they've come out of the diner
 //   2              they've driven off with their sack
-//   3              Willie's battled (he points Wes to Phenac City; the bar sells)
+//   3              Willie's battled (he points you to Phenac City; the bar sells)
 (function () {
   "use strict";
 
-  // The south edge of the clearing, where Wes rides in; where he parks.
-  const START = { map: "OutskirtStand", x: 18, y: 23, facing: "up" };
+  // Where the plane sets you down: by its door at the Air Strip. (And the south edge of the Stand's clearing, where
+  // Wes rode in, and where he parked: an older save's.)
+  const START = { map: "OrreAirStrip", x: 17, y: 12, facing: "down" };
+  const WES_START = { map: "OutskirtStand", x: 18, y: 23, facing: "up" };
   const PARKED = { x: 17, y: 13 };
   const WES = { name: "Wes", look: "wes", money: 3000, trainerId: 10071 };
   // His partners at the start of Colosseum.
@@ -50,12 +51,18 @@
     });
   }
 
-  function enter(player) {
+  function enter(player, to) {
+    if (inOrre(player.location)) return;
+    player.flags.orreReturn = copy(player.location);
+    player.location = Object.assign({}, to || START);
+  }
+  // (As Wes: an older save's way in, kept for its tests and saves.)
+  function enterAsWes(player) {
     if (inOrre(player.location)) return;
     const f = player.flags;
     f.orreStash = copy({ name: player.name, look: player.look, party: player.party, bag: player.bag,
       money: player.money, trainerId: player.trainerId, location: player.location, avatar: f.avatar });
-    const wes = f.orreWes || { party: wesParty(), bag: {}, money: WES.money, location: START };
+    const wes = f.orreWes || { party: wesParty(), bag: {}, money: WES.money, location: WES_START };
     player.name = WES.name;
     player.look = WES.look;
     player.trainerId = WES.trainerId;
@@ -68,9 +75,13 @@
 
   function leave(player, location) {
     const f = player.flags, s = f.orreStash;
-    if (!s) return;
+    if (!s) {
+      if (inOrre(player.location) || location) player.location = Object.assign({}, location || f.orreReturn || { map: "PalletTown", x: 16, y: 14, facing: "down" });
+      delete f.orreReturn;
+      return;
+    }
     f.orreWes = copy({ party: player.party, bag: player.bag, money: player.money,
-      location: inOrre(player.location) ? player.location : START });
+      location: inOrre(player.location) ? player.location : WES_START });
     player.name = s.name;
     player.look = s.look;
     player.trainerId = s.trainerId;
@@ -87,7 +98,7 @@
     const step = flags.orre | 0;
     switch (person.localId) {
       case ID("TRUCK"): return step < 2;
-      case ID("BIKE"): return step >= 1;
+      case ID("BIKE"): return false;   // (Wes's, parked: you came on foot, from the Air Strip)
       case ID("FOLLY"): case ID("TRUDLY"): case ID("WILLIE"): return false;   // (only in their scenes)
       case ID("DINER_WILLIE"): return step < 3;
       default: return undefined;
@@ -98,5 +109,5 @@
   // Rider Willie's two Zigzagoon (Lv. 23 and 24).
   const willieTeam = () => [window.Party.create("Zigzagoon", 23), window.Party.create("Zigzagoon", 24)];
 
-  window.Orre = { START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, leave, visible, patches, willieTeam, wesParty };
+  window.Orre = { START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
 })();

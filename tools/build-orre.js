@@ -91,7 +91,8 @@ const FONT = {
   F: "111100110100100", H: "101101111101101", I: "111010010010111", K: "101101110101101", L: "100100100100111",
   M: "101111111101101", N: "111101101101101", O: "010101101101010", P: "110101110100100", R: "110101110101101",
   S: "011100010001110", T: "111010010010010", U: "101101101101111", V: "101101101101010", W: "101101111111101",
-  Y: "101101010010010", " ": "000000000000000", "!": "010010010000010", "'": "010010000000000"
+  Y: "101101010010010", G: "011100101101011", " ": "000000000000000", "!": "010010010000010", "'": "010010000000000",
+  0: "111101101101111", 2: "111001111100111", 7: "111001001001001", 9: "111101111001111"
 };
 function text(c, s, x, y, col) {
   for (const ch of s) {
@@ -527,7 +528,7 @@ const OUT = {
   region: "orre", battleScene: "sand", cycling: true, showName: true, top: true, borderWidth: 2, borderHeight: 2,
   collision: [], elevation: [], behavior: [], encounter: [],
   connections: [{ map: null, mapConst: "MAP_PHENAC_CITY", direction: "up", offset: 0 },
-    { map: null, mapConst: "MAP_SNAGEM_HIDEOUT", direction: "down", offset: 0 }],
+    { map: "OrreAirStrip", mapConst: "MAP_ORRE_AIR_STRIP", direction: "down", offset: 0 }],
   warps: [{ x: DOOR.x, y: DOOR.y, map: "OutskirtStand_Diner", warp: 0 }],
   signs: [], triggers: [], hidden: [],
   patches: { truck: { x: TRUCK.x, y: TRUCK.y, w: TRUCK.w, h: 1, top: false,
@@ -613,8 +614,220 @@ save(inside, path.join(outMaps, "OutskirtStand_Diner.png"));
   save(black, path.join(outMaps, "OutskirtStand_Diner-border.png"));
 }
 
+// ---------- The Orre Air Strip (this game's own) ----------
+//
+// Where Prof. Oak's plane sets you down in Orre: south of the Outskirt Stand, the desert going on from it (its top
+// row is Route 111's next, so the cliffs carry on), fenced off below that, the gate in the fence on the road north.
+// Inside the fence, drawn here: the runway across the middle (asphalt, its edge lines and centre dashes, the
+// threshold stripes and numbers at each end), the concrete apron before the terminal, the terminal with its sign,
+// the control tower, the little high-winged plane you came in on, a windsock and fuel drums.
+const AW = W, AH = 24, AOY = OY + H;
+const ablocks = [];
+for (let y = 0; y < AH; y++) for (let x = 0; x < AW; x++) ablocks.push(y === 0 ? r111.readUInt16LE(((AOY + y) * R111.width + OX + x) * 2) : SAND);
+for (let x = 0; x < AW; x++) if (GRASSY.has(ablocks[x] & 0x3ff) || x < 12) ablocks[x] = SAND;   // (and the trees at its west end)
+const GATE = { x: 20, w: 4 }, RUNWAY = { y: 15, h: 5 }, APRON = { x: 13, y: 8, w: 12, h: 7 };
+const TERMINAL = { x: 5, y: 4, w: 7, h: 4 }, TOWER = { x: 1, y: 5, w: 3, h: 3 }, PLANE = { x: 15, y: 10, w: 6, h: 2 };
+const SOCK = { x: 31, y: 5 }, DRUMS = { x: 27, y: 9, w: 2 }, ASIGN = { x: 18, y: 3 };
+const airstrip = E.render(ablocks, AW, AH, general, mauville, false);
+// (Paste a drawing over the map at pixel (x0, y0): rows above `split` over people (on top), the rest under.)
+function paste(pic, x0, y0, split) {
+  for (let y = 0; y < pic.h; y++) for (let x = 0; x < pic.w; x++) {
+    const p = pic.get(x, y);
+    if (!p[3] || x0 + x < 0 || y0 + y < 0 || x0 + x >= AW * 16 || y0 + y >= AH * 16) continue;
+    const o = ((y0 + y) * AW * 16 + x0 + x) * 4, img = y < split && p[3] === 255 ? airstrip.above : airstrip.below;
+    const a = p[3] / 255;
+    for (let k = 0; k < 3; k++) img[o + k] = img[o + 3] ? img[o + k] * (1 - a) + p[k] * a : p[k];
+    img[o + 3] = Math.max(img[o + 3], p[3]);
+  }
+  airstrip.anyAbove = true;
+}
+const ASPHALT = [[112, 112, 120], [88, 88, 96], [72, 72, 80]], CONCRETE = [[200, 200, 192], [176, 176, 168], [144, 144, 136]], WHITE = [248, 248, 240];
+function drawGround() {
+  const c = canvas(AW * 16, AH * 16);
+  seed = 23;
+  // The apron, its slabs' seams.
+  const ax = APRON.x * 16, ay = APRON.y * 16, aw = APRON.w * 16, ah = APRON.h * 16;
+  c.rect(ax, ay, aw, ah, CONCRETE[1]);
+  for (let k = 0; k < 260; k++) c.set(ax + Math.floor(rand() * aw), ay + Math.floor(rand() * ah), rand() < 0.5 ? CONCRETE[0] : CONCRETE[2]);
+  for (let x = ax; x < ax + aw; x += 32) c.vl(x, ay, ay + ah - 1, CONCRETE[2]);
+  for (let y = ay; y < ay + ah; y += 32) c.hl(ax, ax + aw - 1, y, CONCRETE[2]);
+  c.frame(ax, ay, aw, ah, CONCRETE[2]);
+  // A taxiway from the terminal's door to the apron.
+  c.rect(TERMINAL.x * 16 + 40, (TERMINAL.y + TERMINAL.h) * 16, ax - TERMINAL.x * 16 - 40, 32, CONCRETE[1]);
+  c.hl(TERMINAL.x * 16 + 40, ax, (TERMINAL.y + TERMINAL.h) * 16 + 31, CONCRETE[2]);
+  // The runway.
+  const ry = RUNWAY.y * 16, rh = RUNWAY.h * 16, rx = 16, rw = (AW - 2) * 16;
+  c.rect(rx, ry, rw, rh, ASPHALT[1]);
+  for (let k = 0; k < 900; k++) c.set(rx + Math.floor(rand() * rw), ry + Math.floor(rand() * rh), rand() < 0.5 ? ASPHALT[0] : ASPHALT[2]);
+  c.rect(rx, ry + 3, rw, 2, WHITE); c.rect(rx, ry + rh - 5, rw, 2, WHITE);
+  for (let x = rx + 48; x < rx + rw - 48; x += 28) c.rect(x, ry + rh / 2 - 1, 16, 2, WHITE);
+  for (const [x0, flip] of [[rx + 6, false], [rx + rw - 36, true]]) {
+    for (let k = 0; k < 6; k++) c.rect(x0 + (flip ? 24 : 0), ry + 10 + k * 10, 6, 6, WHITE);
+    const num = flip ? "27" : "09";
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 15; j++) if (FONT[num[i]][j] === "1") c.rect(x0 + (flip ? 2 : 12) + i * 8 + (j % 3) * 2, ry + 30 + Math.floor(j / 3) * 2, 2, 2, WHITE);
+  }
+  c.frame(rx, ry, rw, rh, ASPHALT[2]);
+  return c;
+}
+paste(drawGround(), 0, 0, -1);
+// The fence: a chain-link fence along row 1 (the gate left open), down both sides and along the bottom.
+function drawFence() {
+  const c = canvas(AW * 16, AH * 16), STEEL = [[216, 216, 224], [160, 160, 176], [104, 104, 120]];
+  const mesh = (x0, y0, w, h) => {
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if ((x + y) % 4 === 0 || (x - y + 64) % 4 === 0) c.set(x0 + x, y0 + y, [176, 176, 192, 200]);
+  };
+  // Along the top: posts every tile, a rail, the mesh; the gate's posts either side of it.
+  const fy = 16 + 2;
+  for (let x = 0; x < AW * 16; x++) {
+    const inGate = x >= GATE.x * 16 && x < (GATE.x + GATE.w) * 16;
+    if (inGate) continue;
+    if (x % 16 === 0) { c.rect(x, fy - 2, 3, 16, STEEL[1]); c.vl(x, fy - 2, fy + 13, STEEL[0]); c.vl(x + 2, fy - 2, fy + 13, STEEL[2]); }
+  }
+  for (const [a, b] of [[0, GATE.x * 16], [(GATE.x + GATE.w) * 16, AW * 16]]) { mesh(a, fy, b - a, 12); c.hl(a, b - 1, fy, STEEL[2]); c.hl(a, b - 1, fy - 1, STEEL[0]); }
+  for (const gx of [GATE.x * 16 - 4, (GATE.x + GATE.w) * 16]) c.box(gx, fy - 6, 4, 22, { fill: STEEL[1], light: STEEL[0], dark: STEEL[2] });
+  // Down the sides and along the bottom.
+  for (const x0 of [4, AW * 16 - 8]) { c.rect(x0, 32, 3, AH * 16 - 32, STEEL[1]); for (let y = 32; y < AH * 16; y += 16) c.rect(x0 - 1, y, 5, 3, STEEL[2]); }
+  const by = AH * 16 - 14;
+  mesh(4, by, AW * 16 - 8, 12); c.hl(4, AW * 16 - 5, by, STEEL[2]);
+  for (let x = 4; x < AW * 16; x += 16) c.rect(x, by - 2, 3, 14, STEEL[1]);
+  return c;
+}
+paste(drawFence(), 0, 0, -1);
+// The terminal: a low building, a flat roof with a rail, big windows, glass doors, its sign along the top.
+function drawTerminal() {
+  const w = TERMINAL.w * 16, h = TERMINAL.h * 16 + 16, c = canvas(w, h);
+  seed = 31;
+  c.rect(2, h - 6, w - 2, 6, C.shadow);
+  c.box(0, 4, w, 14, { fill: C.tin[1], light: C.tin[0], dark: C.tin[2], line: C.line });
+  for (let x = 4; x < w - 4; x += 6) c.vl(x, 0, 4, C.iron[1]);
+  c.hl(2, w - 3, 0, C.iron[0]);
+  c.box(0, 17, w, h - 21, { fill: C.cream[1], light: C.cream[0], dark: C.cream[2], line: C.line });
+  for (let k = 0; k < 120; k++) c.set(2 + Math.floor(rand() * (w - 4)), 19 + Math.floor(rand() * (h - 26)), C.cream[2]);
+  c.box(10, 21, w - 20, 11, { fill: [48, 88, 168], light: [96, 136, 216], dark: [32, 56, 120], line: C.line });
+  text(c, "ORRE AIR STRIP", Math.floor((w - 56) / 2), 24, WHITE);
+  for (const x of [6, 26, w - 46, w - 26]) {
+    c.box(x, 38, 18, 18, { fill: C.glass[1], light: C.glass[0], dark: C.glass[2], line: C.iron[3] });
+    c.hl(x + 2, x + 7, 40, [248, 248, 248]);
+  }
+  const dx = Math.floor(w / 2) - 12;
+  c.box(dx, 36, 24, h - 40, { fill: C.glass[2], light: C.glass[1], dark: [40, 64, 104], line: C.iron[3] });
+  c.vl(dx + 12, 37, h - 6, C.iron[3]);
+  c.hl(2, w - 3, h - 5, C.cream[2]);
+  return c;
+}
+paste(drawTerminal(), TERMINAL.x * 16, TERMINAL.y * 16 - 16, 16 + 16 * (TERMINAL.h - 1));
+// The control tower: a concrete shaft, the glass cab and its roof, an aerial on top.
+function drawTower() {
+  const w = TOWER.w * 16, h = TOWER.h * 16 + 64, c = canvas(w, h);
+  c.rect(4, h - 6, w - 4, 6, C.shadow);
+  c.box(12, 40, w - 24, h - 44, { fill: CONCRETE[1], light: CONCRETE[0], dark: CONCRETE[2], line: C.line });
+  for (let y = 52; y < h - 8; y += 12) c.hl(13, w - 14, y, CONCRETE[2]);
+  c.box(14, h - 22, w - 28, 18, { fill: C.wood[2], light: C.wood[1], dark: C.wood[3], line: C.line });
+  c.box(2, 18, w - 4, 24, { fill: C.glass[1], light: C.glass[0], dark: C.glass[2], line: C.iron[3] });
+  for (let x = 10; x < w - 6; x += 9) c.vl(x, 19, 40, C.iron[2]);
+  c.hl(4, 12, 21, [248, 248, 248]);
+  c.box(0, 12, w, 7, { fill: C.iron[1], light: C.iron[0], dark: C.iron[2], line: C.line });
+  c.box(0, 41, w, 5, { fill: C.iron[1], light: C.iron[0], dark: C.iron[2], line: C.line });
+  c.vl(w / 2, 0, 12, C.iron[3]); c.hl(w / 2 - 4, w / 2 + 4, 3, C.iron[3]); c.set(w / 2, 0, [232, 56, 40]);
+  return c;
+}
+paste(drawTower(), TOWER.x * 16, TOWER.y * 16 - 64, 64 + 16 * (TOWER.h - 1));
+// The plane: a little high-winged propeller plane, nose to the left, white with a blue stripe, its door open.
+function drawPlane() {
+  const w = PLANE.w * 16, h = PLANE.h * 16 + 32, c = canvas(w, h), BLUE = [[96, 152, 232], [56, 104, 200], [32, 64, 144]], RED = [[248, 104, 88], [216, 56, 48], [152, 32, 32]];
+  c.rect(6, h - 7, w - 12, 6, C.shadow);
+  // The tail, the fin and the tailplane.
+  c.box(w - 22, 6, 14, 26, { fill: WHITE, light: [255, 255, 255], dark: [200, 200, 208], line: C.line });
+  c.rect(w - 20, 8, 10, 4, RED[1]);
+  // The fuselage, tapering to the tail.
+  for (let y = 20; y <= 44; y++) {
+    const x1 = w - 10 - Math.max(0, (y - 32)) * 2;
+    c.hl(14, x1, y, y < 24 ? [255, 255, 255] : y < 38 ? WHITE : [208, 208, 216]);
+    c.set(x1, y, C.line);
+  }
+  c.hl(14, w - 10, 19, C.line); c.hl(14, w - 34, 45, C.line);
+  c.rect(14, 33, w - 28, 3, BLUE[1]); c.hl(14, w - 26, 33, BLUE[0]);
+  // The windows and the open door.
+  for (const x of [26, 40]) c.box(x, 23, 11, 8, { fill: C.glass[1], light: C.glass[0], dark: C.glass[2], line: C.iron[3] });
+  c.box(54, 22, 12, 21, { fill: [64, 64, 80], line: C.line });
+  c.rect(55, 23, 10, 3, [96, 96, 112]);
+  // The wing over the top, its strut.
+  c.box(16, 12, 60, 8, { fill: WHITE, light: [255, 255, 255], dark: [200, 200, 208], line: C.line });
+  c.rect(16, 16, 60, 2, BLUE[1]);
+  c.vl(44, 20, 30, C.iron[2]);
+  // The nose, the spinner and the propeller.
+  c.box(6, 22, 12, 20, { fill: RED[1], light: RED[0], dark: RED[2], line: C.line });
+  c.disc(6, 32, 3, C.iron[1]); c.ring(6, 32, 3, C.line);
+  c.box(4, 18, 3, 28, { fill: C.iron[2], light: C.iron[1], line: C.line });
+  // The wheels.
+  for (const x of [24, 62]) { c.disc(x, h - 9, 4, C.iron[3]); c.disc(x, h - 9, 1, C.iron[0]); c.vl(x, 44, h - 13, C.iron[2]); }
+  return c;
+}
+paste(drawPlane(), PLANE.x * 16, PLANE.y * 16 - 32, 32 + 16 * (PLANE.h - 1));
+// The windsock on its pole; the fuel drums; the sign by the gate.
+{
+  const c = canvas(32, 48);
+  c.rect(14, 42, 8, 4, C.shadow);
+  c.box(15, 4, 3, 42, { fill: C.iron[1], light: C.iron[0], dark: C.iron[2] });
+  for (let k = 0; k < 4; k++) c.box(18 + k * 3, 4 + k, 4, 9 - 2 * k, { fill: k % 2 ? WHITE : [248, 128, 48], line: C.line });
+  paste(c, SOCK.x * 16 - 8, SOCK.y * 16 - 32, 32);
+}
+{
+  const c = canvas(DRUMS.w * 16, 32);
+  for (let k = 0; k < DRUMS.w; k++) {
+    const x = k * 16 + 2;
+    c.rect(x + 1, 28, 13, 3, C.shadow);
+    c.box(x, 6, 12, 22, { fill: [200, 56, 48], light: [232, 104, 88], dark: [144, 32, 32], line: C.line });
+    c.hl(x + 1, x + 10, 12, [144, 32, 32]); c.hl(x + 1, x + 10, 21, [144, 32, 32]);
+    c.rect(x + 2, 4, 8, 3, C.iron[1]); c.frame(x + 2, 4, 8, 3, C.line);
+  }
+  paste(c, DRUMS.x * 16, DRUMS.y * 16 - 16, 16);
+}
+{
+  const c = canvas(16, 32);
+  c.rect(6, 18, 4, 12, C.wood[2]); c.vl(6, 18, 29, C.wood[3]);
+  c.box(0, 6, 16, 13, { fill: C.wood[1], light: C.wood[0], dark: C.wood[2], line: C.line });
+  c.rect(3, 9, 10, 1, C.wood[3]); c.rect(3, 12, 10, 1, C.wood[3]); c.rect(3, 15, 7, 1, C.wood[3]);
+  paste(c, ASIGN.x * 16, ASIGN.y * 16 - 16, 16);
+}
+const AIR = {
+  name: "OrreAirStrip", title: "Orre Air Strip", width: AW, height: AH, type: "route", music: "mus_sevii_route",
+  region: "orre", battleScene: "sand", cycling: true, showName: true, top: true, borderWidth: 2, borderHeight: 2,
+  collision: [], elevation: [], behavior: [], encounter: [],
+  connections: [{ map: "OutskirtStand", mapConst: "MAP_OUTSKIRT_STAND", direction: "up", offset: 0 }],
+  warps: [], triggers: [], hidden: [],
+  signs: [{ x: ASIGN.x, y: ASIGN.y, script: "OrreAirStrip_EventScript_Sign", text: ["ORRE AIR STRIP", "North: the Outskirt Stand"] },
+    ...[0, 1, 2].map((k) => ({ x: TERMINAL.x + 2 + k, y: TERMINAL.y + TERMINAL.h - 1, script: "OrreAirStrip_EventScript_Terminal",
+      text: ["The terminal's doors are locked.\nA notice: \"No flights today.\""] }))],
+  people: [
+    person(0, "PILOT", PLANE.x + 4, PLANE.y + PLANE.h, "worker_m", "face_left", "OrreAirStrip_EventScript_Pilot",
+      ["Here we are: the Orre Air Strip.\nThe road north goes to the Outskirt Stand."]),
+    person(1, "MECHANIC", DRUMS.x - 1, DRUMS.y, "hiker", "face_right", "OrreAirStrip_EventScript_Mechanic",
+      ["Not many planes come out this way.\nThe sand gets into everything.", "You're a long way from home, kid.\nWatch yourself out in the desert."])
+  ],
+  wild: null
+};
+{
+  const solid = new Set(), fill = (x0, y0, w, h) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) solid.add(x + "," + y); };
+  for (let x = 0; x < AW; x++) if (x < GATE.x || x >= GATE.x + GATE.w) solid.add(x + ",1");
+  fill(0, 1, 1, AH); fill(AW - 1, 1, 1, AH); fill(0, AH - 1, AW, 1);
+  fill(TERMINAL.x, TERMINAL.y, TERMINAL.w, TERMINAL.h); fill(TOWER.x, TOWER.y, TOWER.w, TOWER.h); fill(PLANE.x, PLANE.y, PLANE.w, PLANE.h);
+  fill(SOCK.x, SOCK.y, 1, 1); fill(DRUMS.x, DRUMS.y, DRUMS.w, 1); fill(ASIGN.x, ASIGN.y, 1, 1);
+  for (let i = 0; i < ablocks.length; i++) {
+    const b = ablocks[i], x = i % AW, y = Math.floor(i / AW);
+    AIR.collision.push(solid.has(x + "," + y) ? 1 : (b >> 10) & 3);
+    AIR.elevation.push(b >> 12);
+    AIR.behavior.push(E.frBehavior(E.metatile(general, mauville, b & 0x3ff).behavior));
+    AIR.encounter.push(0);
+  }
+  writePng(path.join(outMaps, "OrreAirStrip.png"), AW * 16, AH * 16, airstrip.below);
+  writePng(path.join(outMaps, "OrreAirStrip-top.png"), AW * 16, AH * 16, airstrip.above);
+  const bb = fs.readFileSync(path.join(EM, R111.border_filepath));
+  writePng(path.join(outMaps, "OrreAirStrip-border.png"), 32, 32, E.render([0, 1, 2, 3].map((i) => bb.readUInt16LE(i * 2)), 2, 2, general, mauville, true).below);
+}
+
 fs.writeFileSync(path.join(root, "data/orre-maps.js"),
   "// Auto-generated by tools/build-orre.js (Emerald's desert tiles, and pictures drawn there). Do not edit by hand.\n" +
-  "// Orre's Outskirt Stand, from Pokémon Colosseum, added to FireRed's maps (data/world-maps.js).\n" +
-  "Object.assign(window.WORLD_MAPS, " + JSON.stringify({ OutskirtStand: OUT, OutskirtStand_Diner: IN }) + ");\n");
-console.log("wrote the Outskirt Stand (" + W + "x" + H + ") and its diner (" + IN_W + "x" + IN_H + ") to data/orre-maps.js and assets/");
+  "// Orre's Outskirt Stand, from Pokémon Colosseum, and the Orre Air Strip, added to FireRed's maps (data/world-maps.js).\n" +
+  "Object.assign(window.WORLD_MAPS, " + JSON.stringify({ OutskirtStand: OUT, OutskirtStand_Diner: IN, OrreAirStrip: AIR }) + ");\n");
+console.log("wrote the Outskirt Stand (" + W + "x" + H + "), its diner (" + IN_W + "x" + IN_H + ") and the Air Strip (" + AW + "x" + AH + ") to data/orre-maps.js and assets/");

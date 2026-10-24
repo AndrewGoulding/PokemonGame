@@ -3051,11 +3051,11 @@ if (window.JOHTO_TOWN_MAP) {
   assert.strictEqual(Faraway.mewStep({ mew: { x: 13, y: 14 }, prev: { x: 13, y: 16 }, cur: { x: 13, y: 16 }, steps: 3, isGrass: grass }).dir, null, "turning isn't a step");
 }
 
-// Orre's Outskirt Stand (data/orre-maps.js, tools/build-orre.js) and Wes (game/orre.js).
+// Orre: the Air Strip and the Outskirt Stand (data/orre-maps.js, tools/build-orre.js), and going there (game/orre.js).
 {
-  const O = WORLD_MAPS.OutskirtStand, D = WORLD_MAPS.OutskirtStand_Diner;
-  assert(O && D && O.region === "orre" && D.region === "orre", "the Outskirt Stand is built");
-  for (const m of [O, D]) {
+  const O = WORLD_MAPS.OutskirtStand, D = WORLD_MAPS.OutskirtStand_Diner, A = WORLD_MAPS.OrreAirStrip;
+  assert(O && D && A && [O, D, A].every((m) => m.region === "orre"), "the Outskirt Stand and the Air Strip are built");
+  for (const m of [O, D, A]) {
     for (const k of ["collision", "behavior", "elevation", "encounter"]) assert.strictEqual(m[k].length, m.width * m.height, m.name + " " + k);
     for (const p of m.people) assert(fs.existsSync(path.join(root, "assets/world/sprites/" + p.sprite + ".png")), "missing sprite " + p.sprite);
     for (const f of ["", "-border"].concat(m.top ? ["-top"] : [])) assert(fs.existsSync(path.join(root, "assets/world/maps/" + m.name + f + ".png")), m.name + f);
@@ -3065,9 +3065,16 @@ if (window.JOHTO_TOWN_MAP) {
   assert.strictEqual(O.behavior[door.y * O.width + door.x], World.MB.WARP_DOOR);
   assert.deepStrictEqual(World.step({ map: "OutskirtStand", x: door.x, y: door.y + 1 }, "up").warp.map, "OutskirtStand_Diner");
   for (const w of D.warps) assert.strictEqual(World.warpTarget(w).map, "OutskirtStand");
-  // North and south are roads not built yet; nothing leads there from elsewhere.
-  assert.deepStrictEqual(O.connections.map((c) => [c.direction, c.map, c.mapConst]), [["up", null, "MAP_PHENAC_CITY"], ["down", null, "MAP_SNAGEM_HIDEOUT"]]);
-  assert(!Object.values(WORLD_MAPS).some((m) => m.connections.some((c) => c.map === O.name) || m.warps.some((w) => w.map === O.name && m !== D)), "only the debug menu goes there");
+  // North is a road not built yet; south, the Air Strip, the way to the Stand through its gate.
+  assert.deepStrictEqual(O.connections.map((c) => [c.direction, c.map, c.mapConst]), [["up", null, "MAP_PHENAC_CITY"], ["down", "OrreAirStrip", "MAP_ORRE_AIR_STRIP"]]);
+  assert.deepStrictEqual(A.connections.map((c) => [c.direction, c.map]), [["up", "OutskirtStand"]]);
+  assert(!Object.values(WORLD_MAPS).some((m) => m.region !== "orre" && (m.connections.some((c) => c.map === O.name || c.map === A.name) || m.warps.some((w) => w.map === O.name || w.map === A.name))), "only the plane goes there");
+  const st = Orre.START;
+  assert.strictEqual(st.map, "OrreAirStrip");
+  assert.strictEqual(A.collision[st.y * A.width + st.x], 0, "room by the plane's door");
+  const gate = [...Array(A.width).keys()].filter((x) => !A.collision[1 * A.width + x] && !A.collision[0 * A.width + x] && !O.collision[(O.height - 1) * O.width + x]);
+  assert(gate.length >= 2, "a way through the fence's gate to the Stand");
+  assert(A.people.some((p) => p.script === "OrreAirStrip_EventScript_Pilot"), "the pilot, to fly you back");
   // Across the bar from the bartender: a counter.
   const bar = D.people.find((p) => p.script === "OutskirtStand_Diner_EventScript_Bartender");
   assert.strictEqual(D.behavior[(bar.y + 1) * D.width + bar.x], World.MB.COUNTER);
@@ -3079,15 +3086,27 @@ if (window.JOHTO_TOWN_MAP) {
   // Who's there as the opening goes on.
   const who = (step) => O.people.concat(D.people).filter((p) => Orre.visible(p, { orre: step }) !== false).map((p) => p.localId.replace("LOCALID_ORRE_", ""));
   assert.deepStrictEqual(who(0).filter((k) => ["TRUCK", "BIKE", "DINER_WILLIE"].includes(k)), ["TRUCK", "DINER_WILLIE"]);
-  assert.deepStrictEqual(who(2).filter((k) => ["TRUCK", "BIKE", "DINER_WILLIE"].includes(k)), ["BIKE", "DINER_WILLIE"]);
+  assert.deepStrictEqual(who(2).filter((k) => ["TRUCK", "BIKE", "DINER_WILLIE"].includes(k)), ["DINER_WILLIE"], "no Wes, no bike");
   assert(!who(3).includes("DINER_WILLIE") && !who(3).includes("FOLLY") && !who(3).includes("WILLIE"), "Willie's gone once battled; Folly and Trudly only in their scene");
-  // Becoming Wes and back.
+  // Going to Orre as yourself, and back where you were.
+  const me = Player.create("Ash");
+  me.party = [Party.create("Pikachu", 12)];
+  me.location = { map: "PalletTown", x: 5, y: 6, facing: "up" };
+  const mineToo = JSON.stringify([me.name, me.look, me.party, me.bag, me.money, me.trainerId]);
+  Orre.enter(me);
+  assert.deepStrictEqual(me.location, Orre.START);
+  assert.strictEqual(JSON.stringify([me.name, me.look, me.party, me.bag, me.money, me.trainerId]), mineToo, "still you in Orre");
+  Orre.leave(me);
+  assert.deepStrictEqual(me.location, { map: "PalletTown", x: 5, y: 6, facing: "up" });
+  Orre.leave(me);
+  assert.deepStrictEqual(me.location.map, "PalletTown", "leaving when not in Orre leaves you be");
+  // An older save's Wes (Orre had you be him at first): becoming him and back.
   const pl = Player.create("Ash");
   pl.party = [Party.create("Pikachu", 12)];
   pl.bag = { potion: 3 };
   pl.location = { map: "PalletTown", x: 5, y: 6, facing: "up" };
   const mine = JSON.stringify([pl.name, pl.look, pl.party, pl.bag, pl.money, pl.trainerId]);
-  Orre.enter(pl);
+  Orre.enterAsWes(pl);
   assert.deepStrictEqual([pl.name, pl.look, pl.location.map], ["Wes", "wes", "OutskirtStand"]);
   assert.deepStrictEqual(pl.party.map((r) => [r.species, r.level, r.moves.map((m) => m.name).join("/")]),
     [["Espeon", 25, "Confusion/Return/Reflect/Helping Hand"], ["Umbreon", 26, "Bite/Secret Power/Taunt/Snatch"]]);
@@ -3099,11 +3118,11 @@ if (window.JOHTO_TOWN_MAP) {
   assert.strictEqual(JSON.stringify([pl.name, pl.look, pl.party, pl.bag, pl.money, pl.trainerId]), mine, "all yours again");
   assert.deepStrictEqual(pl.location, { map: "PalletTown", x: 5, y: 6, facing: "up" });
   assert(!pl.flags.orreStash);
-  Orre.enter(pl);
+  Orre.enterAsWes(pl);
   assert.deepStrictEqual([pl.party[0].level, pl.location.map], [26, "OutskirtStand_Diner"], "Wes as he was left");
   Orre.leave(pl);
   // A save made as Wes loads as Wes (and doesn't hand him an Exp. Share or the Explorer Kit).
-  Orre.enter(pl);
+  Orre.enterAsWes(pl);
   const back = Player.load(JSON.parse(JSON.stringify(pl))).player;
   assert.deepStrictEqual([back.name, back.look, back.bag], ["Wes", "wes", {}]);
   // Rider Willie, and the bar's stock (no Escape Rope: it would take Wes to Kanto).

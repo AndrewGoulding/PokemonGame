@@ -1156,6 +1156,22 @@
       else icon.onload = () => paint();
     }
 
+    // A story's call on the PokéNav (this game's own: Prof. Oak's about Orre), in its window over the map: it rings,
+    // "… … … Beep!", then `pages`, then "Click!".
+    async function navStoryCall(pages) {
+      if (!(env.pokenav && env.pokenav())) { await env.say(pages); return; }   // (no PokéNav: just what they say)
+      ensureCanvas();
+      const wasOpen = !!ui;
+      if (!wasOpen) ui = { card: 0, cursor: 0, top: 0 };
+      ui.call = -1; ui.msg = "";
+      showCanvas(true);
+      for (let k = 0; k < 3; k++) { paint(); env.sfx("se_ding_dong"); await sleep(700); }
+      await talk(["… … … … … …\n… … … … … Beep!"].concat(pages));
+      ui.msg = "Click! … … … …"; paint(); env.sfx("se_click"); await sleep(600);
+      ui.call = null; ui.msg = null;
+      if (!wasOpen) { ui = null; showCanvas(false); } else paint();
+    }
+
     // -- Running it --
     const navKeys = (fn) => GbaMenus.keys(fn);
     // A menu of options (sPokenavMenuOptionLabelGfx): they slide in from the right, the one you're on out to 130.
@@ -1330,7 +1346,7 @@
     }
 
     return { has, open, call, registerCard, rematch, setTrigger: trigger, step, ring, wantsNumber, beatTrainer, talkTrainer, encounterRate,
-      registered, contactOf, radioOn, timeOfDay, passwordSet, savePrize, momHome, talkPerson, visible, deliveryman, radioStations,
+      registered, contactOf, radioOn, storyCall: (pages) => navStoryCall(pages), timeOfDay, passwordSet, savePrize, momHome, talkPerson, visible, deliveryman, radioStations,
       // (For tests: a call due on the next step; what someone says on a call.)
       callDue: () => { walked = CALL_STEPS; }, callLines: (i, incoming) => whatTheySay(i, !!incoming, null) };
   }
