@@ -33,7 +33,9 @@ const Z = ["normalium", "firium", "waterium", "electrium", "grassium", "icium", 
 const POKESPRITE = [
   ["key-item/zygarde-cube", "key-item/zygarde-cube"], ["key-item/z-ring", "key-item/z-ring"],
   ["key-item/dynamax-band", "key-item/dynamax-band"], ["other-item/dynamax-candy", "other-item/dynamax-candy"],
-  ["other-item/ability-patch", "other-item/ability-patch"]
+  ["other-item/ability-patch", "other-item/ability-patch"],
+  // (Gen 4's: the Fashion Case, and HGSS's Berry Pots.)
+  ["key-item/fashion-case", "key-item/fashion-case"], ["key-item/berry-pots", "key-item/berry-pots"]
 ].concat(TYPES.map((t) => ["memory/" + t, "memory/" + t]), Z.map((z) => ["z-crystal/" + z + "-z", "z-crystals/" + z + "-z--bag"]));
 // [our folder/file, the expansion's icon]
 const EXPANSION = [

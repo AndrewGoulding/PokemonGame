@@ -223,8 +223,8 @@
       }
       // (NEW GAME + : from the game saved, what Player.newGamePlus keeps.)
       const plus = v === "newplus" && !!p;
-      if (plus && !(await confirm("New Game + keeps your Bag (not the story's key items or HMs), money, skills and PC boxes, your party put in them. Start over?"))) continue;
-      if (p && !plus && !(await confirm("Start a new game? Your saved game in this browser will be overwritten."))) continue;
+      if (plus && !(await confirm("New Game + keeps your Bag (but not\nthe story's key items or HMs), your\nmoney, your skills and your PC boxes,\nwith your party put in them.\nStart over with New Game +?"))) continue;
+      if (p && !plus && !(await confirm("Start a new game? Your saved game\nin this browser will be overwritten."))) continue;
       await newGame(plus ? p : null);
       return "play";
     }
@@ -5440,11 +5440,31 @@
     show("world");
     await Overworld.resume();
     if (outcome === "lost") await say(T("Text_RivalVictory"));
-    f.route22Rival = true;
+    // (Only a win counts: lose, and he's back to battle you the next time you come along Route 22.)
+    if (outcome !== "lost") f.route22Rival = true;
     await say(T("Route22_Text_EarlyRivalPostBattle"));
     music("mus_rival_exit");
     await Overworld.act([{ who: R, moves: ["delay_10"].concat(M(side === "Bottom" ? "Route22_Movement_EarlyRivalExitBottom" : "Route22_Movement_EarlyRivalExit")) }]);
     Overworld.removeObject(R);
+  }
+
+  // (This game's own: until you've beaten your rival on Route 22, the old man stops you on your way north out of
+  // Viridian City, towards Viridian Forest, and sends you west to Route 22, where the rival's waiting.)
+  function viridianStopStep() {
+    const f = player.flags, at = player.location;
+    if (at.map !== "ViridianCity" || at.y !== 4 || at.x < 19 || at.x > 23) return null;
+    return f.pokedex && !f.route22Rival && !hasBadge("boulder") ? { type: "viridian-stop" } : null;
+  }
+  async function viridianOldManStop() {
+    sfx("se_pin");
+    await Overworld.act([{ who: "player", moves: ["emote_exclamation_mark"] }]);
+    await say(["Hold on there, youngster!"]);
+    await Overworld.act([{ who: "player", moves: ["face_down"] }]);
+    await say(["A young fella came through here a\nlittle while ago. Said his name was\n{RIVAL}.",
+      "He went west, to Route 22. Said he'd\nwait for you there, to see how\nstrong your Pokémon are.",
+      "You'd best go and see him before you\nhead north to Viridian Forest!"]);
+    Screen.say("");
+    await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
   }
 
   // ---------- Leaf, outside Pewter Gym and in Vermilion City ----------
@@ -14343,7 +14363,7 @@
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
-          return orreCallStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
+          return orreCallStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || teraAideStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
         adjustWild: (mon, table) => { const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
@@ -14390,6 +14410,7 @@
       else if (ev.type === "egg-hatch") await eggHatches(ev.record);
       else if (ev.type === "phone") await gear.ring();
       else if (ev.type === "orre-call") await orreOakCall();
+      else if (ev.type === "viridian-stop") await viridianOldManStop();
       else if (ev.type === "red-forest") await redForest();
       else if (ev.type === "leaf-vermilion") await leafVermilion();
       else if (ev.type === "tera-aide") await teraAide();

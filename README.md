@@ -254,7 +254,9 @@ something to fish. Then a wild battle with one of the map's fishing
 Pokémon: FireRed's `fishing_mons`, still the Old Rod's two slots (70/30),
 the Good Rod's three (60/20/20) and the Super Rod's five (40/40/15/4/1),
 each version's Pokémon where FireRed and LeafGreen differ (Johto's maps,
-HeartGold and SoulSilver's three rods). Which rod's slots a bite comes from
+HeartGold and SoulSilver's three rods). (This game's own: Pallet Town's, Viridian City's and Route 22's waters
+have only Lv. 3-5 Pokémon and nothing evolved: no Gyarados, Seadra, Kingler or Poliwhirl, `tools/build-maps.js`'s
+FISHING_CHANGES.) Which rod's slots a bite comes from
 goes by your **fishing level** (`game/fishing.js`): every Pokémon hooked
 earns fishing XP (10 for an Old Rod Pokémon, 15 for a Good Rod one, 20 for a
 Super Rod one), and levels take 20 XP each up to level 20, then 40, 60, 80
@@ -1234,7 +1236,9 @@ Mr. Mime "Mimien" (every in-game trade plays FireRed's trade sequence,
 `ui/trade-scene.js`, pictures by `tools/build-trade.js`: yours leaves in its
 Poké Ball, down into the GBA and up the cable, passes theirs on the way, and
 theirs bounces in and comes out), Prof. Oak's Aide giving HM05 Flash for ten kinds
-caught, your rival Gary on Route 22 (Pidgey and Eevee, as in Yellow), Red
+caught, your rival Gary on Route 22 (Pidgey and Eevee, as in Yellow; not optional here: until you've beaten him,
+the old man in Viridian City stops you on your way north to Viridian Forest and sends you west to Route 22, and if
+you lose, Gary's back to battle you the next time you come along), Red
 catching up with you at the north end of Viridian Forest (with the starter
 that beats yours and Pikachu), the League gate guard, Pewter's Gym guide
 and Museum guide walking you over, the Museum's ₽50 ticket, the Old Amber (and, in its room, this game's own fossil doctor, who revives fossils as Cinnabar's does: one left with either is ready from either once you've left and come back),

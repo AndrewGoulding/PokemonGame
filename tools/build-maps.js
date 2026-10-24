@@ -939,8 +939,25 @@ for (const name of MAPS) {
     rockSmash: slotsOf(land, "rock_smash_mons"),
     // Fishing (fishing_mons): slots 0-1 the Old Rod's, 2-4 the Good Rod's,
     // 5-9 the Super Rod's; `alt` is LeafGreen's where it differs.
-    fishing: slotsOf(land, "fishing_mons", leafGreen)
+    fishing: fishingChanges(name, slotsOf(land, "fishing_mons", leafGreen))
   };
+}
+// (This game's own: near the start, Pallet Town's, Viridian City's and Route 22's waters have only low-level Pokémon,
+// Lv. 3-5, and none that's evolved: Pallet Town's Gyarados becomes a Tentacool and its Seadra (or Kingler) a Krabby
+// (or Horsea); Viridian City's and Route 22's Poliwhirl a Poliwag and Gyarados a Goldeen.)
+const FISHING_CHANGES = {
+  PalletTown: { Gyarados: ["Tentacool"], Seadra: ["Krabby", "Horsea"], Kingler: ["Horsea", "Krabby"] },
+  ViridianCity: { Gyarados: ["Goldeen"], Poliwhirl: ["Poliwag"] },
+  Route22: { Gyarados: ["Goldeen"], Poliwhirl: ["Poliwag"] }
+};
+function fishingChanges(name, t) {
+  const ch = FISHING_CHANGES[name];
+  if (!t || !ch) return t;
+  return Object.assign({}, t, { slots: t.slots.map((s) => {
+    const to = ch[s.species] || [s.species];
+    const alt = s.alt && (ch[s.alt] ? ch[s.alt][0] : s.alt);
+    return Object.assign({ species: to[0], min: 3, max: 5 }, to[1] ? { alt: to[1] } : alt && alt !== to[0] ? { alt } : {});
+  }) });
 }
 function slotsOf(enc, kind, other) {
   const e = enc && enc[kind];
