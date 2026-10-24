@@ -323,12 +323,17 @@
   // (Emerald's buried trainers: out of sight under the sand until they've seen you (unbury); once beaten, they
   // stand there, as Emerald's do.)
   const buried = (p) => !!(p.def.trainer && p.def.trainer.buried && !p.unburied && ctx.trainerWaiting && ctx.trainerWaiting(p.def));
+  // (Two at once, from different sides, as Emerald's: the second as `second`, and the game has them both walk up
+  // for a double battle against the two of them.)
   function anyTrainerSees() {
+    let first = null;
     for (const p of people) {
       const seen = trainerSees(p);
-      if (seen) return seen;
+      if (!seen) continue;
+      if (!first) first = seen;
+      else if (!first.second && seen.facing !== first.facing) first.second = seen;
     }
-    return null;
+    return first;
   }
 
   function updatePerson(p) {

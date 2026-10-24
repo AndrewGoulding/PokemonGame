@@ -1213,7 +1213,10 @@ walks up and battles with their FireRed party (fixed IVs, set moves where
 FireRed sets them); beaten, they say their after-battle line, and one that walked over to you stays
 where they stopped until you leave the map; come back and they're home again,
 doing what they did before. Those that turn
-(`face_down_and_up`, `look_around`) can spot you as they turn. Hidden items
+(`face_down_and_up`, `look_around`) can spot you as they turn. Step into two trainers' sight at once (from different
+sides) and, as in Emerald, both walk up, one then the other, and it's a double battle against the two of them, in
+Kanto, Johto and Hoenn alike (not Orre, whose battles are all doubles; and not with fewer than two Pokémon able to
+battle, a rematch or a trainer who battles two alone: then the first comes, and the other after). Hidden items
 are found by pressing A facing their tile. Water, its edges and the flowers move as in FireRed (its General tileset's
 animations and timing; `tools/build-maps.js` draws each animated 8x8 cell in
 every frame into `assets/world/maps/<Map>-anim.png`). Battles use the map's own FireRed

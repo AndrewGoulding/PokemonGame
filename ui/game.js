@@ -3126,6 +3126,7 @@
       return;
     }
     if (ev.type === "trainer") {
+      if (ev.second && await pairBattle(ev, ev.second)) return;
       const beaten = !!player.flags[ev.person.trainer.id];
       await trainerBattle(ev.person, ev.approach, ev.facing);
       if (!beaten) await afterRocket(ev.person);
@@ -5021,6 +5022,51 @@
       (player.flags.trainerSpots || (player.flags.trainerSpots = {}))[t.id] =
         { map: player.location.map, x: person.x + dx * approach, y: person.y + dy * approach, facing };
     }
+  }
+  // Two trainers who see you at once (Overworld's `second`): both walk up, one then the other, as Emerald's do, and
+  // it's a double battle against the two of them, in every region but Orre (where every battle is a double). Not
+  // for a trainer who battles two on their own, a rematch, the Battle Pyramid's or one buried in the sand; nor with
+  // fewer than two Pokémon able to battle. Then (false) the first one comes alone, and the other after.
+  function pairText(person) {
+    const t = person.trainer, data = t && window.WORLD_TRAINERS[t.id];
+    if (!data || data.double || t.double || t.buried || person.pyramid != null || dojoRematch(t.id) ||
+      (player.flags.vsRematch && player.flags.vsRematch[t.id])) return null;
+    if (!/^EM_/.test(t.id)) return { intro: t.intro || [], defeat: t.defeat || ["…"] };
+    // (Hoenn's: what its trainerbattle says, from Emerald's script.)
+    const c = (window.HOENN_SCRIPTS.s[person.script] || []).find((op) => /^trainerbattle/.test(op[0]));
+    const labels = !c ? null : c[0] === "trainerbattle_single" ? [c[2], c[3]]
+      : c[0] === "trainerbattle" && !/DOUBLE|NO_INTRO/.test(String(c[1])) ? [c[4], c[5]] : null;
+    const D = window.HOENN_SCRIPTS.t;
+    return labels && { intro: D[labels[0]] || [], defeat: D[labels[1]] || ["…"] };
+  }
+  async function pairBattle(one, two) {
+    if ((window.WORLD_MAPS[player.location.map] || {}).region === "orre" || !canDouble()) return false;
+    const tx1 = pairText(one.person), tx2 = pairText(two.person);
+    if (!tx1 || !tx2) return false;
+    const [d1, d2] = [one, two].map((ev) => window.WORLD_TRAINERS[ev.person.trainer.id]);
+    music(inJohto() ? johtoEyes(d1) : d1.music || "mus_encounter_boy");
+    for (const ev of [one, two]) {
+      await Overworld.act([{ who: "#" + ev.person.id, moves: ["emote_exclamation_mark"].concat(Array(ev.approach).fill("walk_" + ev.facing)) }]);
+      await Overworld.act([{ who: "player", moves: ["face_" + World.OPPOSITE[ev.facing]] }]);
+    }
+    await say(tx1.intro);
+    await Overworld.act([{ who: "player", moves: ["face_" + World.OPPOSITE[one.facing]] }]);
+    await say(tx2.intro);
+    if (!canBattle()) return true;
+    const foeOf = (ev, d) => ({ name: d.className + " " + d.name, team: trainerTeam(ev.person.trainer.id), pic: d.pic });
+    const outcome = await battle("trainer", { foe: foeOf(one, d1), defeatText: tx1.defeat, trainerId: one.person.trainer.id, prizeClass: d1.className,
+      foe2: Object.assign(foeOf(two, d2), { defeatText: tx2.defeat, prizeClass: d2.className }) });
+    if (outcome !== "won") return true;
+    player.flags[two.person.trainer.id] = true;
+    for (const ev of [one, two]) {
+      // (Where they stopped, as one who walked up alone: trainerBattle.)
+      const [dx, dy] = World.DIRS[ev.facing];
+      if (ev.approach) (player.flags.trainerSpots || (player.flags.trainerSpots = {}))[ev.person.trainer.id] =
+        { map: player.location.map, x: ev.person.x + dx * ev.approach, y: ev.person.y + dy * ev.approach, facing: ev.facing };
+      await afterRocket(ev.person);
+      if (gear.wantsNumber(ev.person)) { show("world"); await Overworld.resume(); await gear.beatTrainer(ev.person); }
+    }
+    return true;
   }
   // FireRed's temporary flags (FLAG_TEMP_*: the trees you've cut, as
   // "map:flag"), cleared when you go to another map.
