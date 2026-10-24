@@ -6549,6 +6549,21 @@
       case "Rock Climb":
         if (surfing || !World.climbable(a.behavior, a.facing)) return "Can't use that here.";
         return async () => { await say(usedMove(mon, "Rock Climb")); await climbRocks(); };
+      // FireRed's FldEff_TeleportWarpOut: from where Fly could go, back to the last Pokémon Center you were in (outside
+      // it, where Fly lands), as blacking out would take you (in Hoenn, only to Hoenn's; or your room there, or home).
+      case "Teleport": {
+        if (!OUTDOORS.includes(here.type)) return "Can't use that here.";
+        const to = teleportTarget();
+        if (!to || (to.map === player.location.map && to.x === Overworld.position().x && to.y === Overworld.position().y)) return "Can't use that here.";
+        return async () => {
+          await say(usedMove(mon, "Teleport"));
+          Screen.say("");
+          Overworld.setAvatar("walk");
+          await Overworld.escapeRopeOut();
+          await Overworld.escapeRopeIn(Object.assign({ facing: "down" }, to));
+          await persist();
+        };
+      }
       case "Dig": {
         // (Under the Sealed Chamber's DIG HERE: its wall gives way.)
         const wall = braillePuzzle("Dig");
@@ -12257,6 +12272,18 @@
       await persist();
     };
     return true;
+  }
+
+  // Where Teleport takes you: outside the last Pokémon Center (its Town Map Fly spot, else inside it), as blacking out
+  // goes (in Hoenn, Hoenn's only), or else your room in Littleroot (in Hoenn) or home.
+  function teleportTarget() {
+    const inHoennNow = isHoenn(player.location.map), last = player.flags.lastCenter;
+    const ok = last && (!inHoennNow || isHoenn(last)) && centerOf(last);
+    if (ok) {
+      const spot = Object.values(window.TOWN_MAP.fly || {}).find((s) => s.center === last);
+      return spot ? { map: spot.map, x: spot.x, y: spot.y } : { map: ok.map, x: ok.x, y: ok.y };
+    }
+    return inHoennNow ? (player.flags.hoennRespawn || hoennBedroom()) : Object.assign({}, Player.HOME);
   }
 
   // Where you come to in a Pokémon Center after blacking out: Kanto's

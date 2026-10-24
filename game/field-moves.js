@@ -33,7 +33,9 @@
     { move: "Dive", badge: null, johto: null, hoenn: "mind", desc: "Dive underwater." },
     // (Dig, a TM's, so only a Pokémon that knows it: out of a cave as an Escape Rope takes you, and the Sealed
     // Chamber's wall.)
-    { move: "Dig", badge: null, johto: null, hoenn: null, desc: "Escape from a cave." }
+    { move: "Dig", badge: null, johto: null, hoenn: null, desc: "Escape from a cave." },
+    // (Teleport, like Dig, for a Pokémon that knows it: back to the last Pokémon Center, from wherever Fly could go.)
+    { move: "Teleport", badge: null, johto: null, hoenn: null, desc: "Return to a healing spot." }
   ];
   const inJohto = (player) => (((window.WORLD_MAPS || {})[(player.location || {}).map] || {}).region === "johto");
   const inHoenn = (player) => (((window.WORLD_MAPS || {})[(player.location || {}).map] || {}).region === "hoenn");

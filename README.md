@@ -3170,7 +3170,10 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
   Strength, Surf, Rock Smash and Waterfall, each with the Gym Badge FireRed asks
   for (Boulder, Cascade, Thunder, Rainbow, Soul, Marsh, Volcano). A Pokémon can
   use one if it knows the move, or if you have the HM in the Bag and it could
-  learn the move from it, so nothing has to give up a move slot. On the party
+  learn the move from it, so nothing has to give up a move slot. Dig and Teleport
+  (no HM: a Pokémon that knows them) are there too: Dig out of a cave as an Escape
+  Rope takes you, Teleport from wherever Fly could go back outside the last
+  Pokémon Center you were in (where blacking out would take you). On the party
   screen a Pokémon's menu lists every one of them it knows or could learn, in
   FireRed's blue, with FireRed's line about it ("Travel on water.") while it's
   chosen (more than fit scroll). Picking one says why not ("This can't be used
