@@ -368,6 +368,7 @@ function behavior(b) {
     case 0x17: return 0x17;                                          // shallow water
     case 0x20: return 0x23;                                          // ice
     case 0x21: return 0x21;                                          // sand
+    case 0x06: return 0x06;                                          // deep sand (the desert's: deeper footprints)
     case 0x26: case 0x27: return b;                                  // thin ice, cracked ice
     case 0x38: case 0x39: case 0x3a: case 0x3b: return b;            // ledges
     case 0x50: case 0x51: case 0x52: case 0x53: return b;            // currents
@@ -383,7 +384,9 @@ function behavior(b) {
   }
 }
 // Where wild Pokémon are (Emerald's MetatileBehavior_IsLandWildEncounter).
-const WILD_BEHAVIOR = new Set([0x02, 0x03, 0x05, 0x06, 0x08, 0x0b, 0x0c, 0x21, 0x22, 0x24, 0x25, 0x2a]);   // (0x22 and 0x2a: underwater seaweed)
+// (src/metatile_behavior.c's TILE_FLAG_HAS_ENCOUNTERS on land: tall and long grass, deep sand, caves, ash, footprints;
+// and underwater seaweed, 0x22 and 0x2a. Not a beach's sand, MB_SAND, nor Mt. Chimney's top.)
+const WILD_BEHAVIOR = new Set([0x02, 0x03, 0x05, 0x06, 0x08, 0x0b, 0x22, 0x24, 0x25, 0x2a]);
 
 // ---------- The scripts (compiled first: the maps' metatile changes come from them) ----------
 const Scripts = require("./lib/emerald-script")(EM);

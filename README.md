@@ -1196,7 +1196,8 @@ other floor's stairs facing away from them), ledges you can jump down,
 connected maps you walk straight into, long grass (Faraway Island's) you
 walk in, not on (FireRed's FLDEFF_LONG_GRASS: its sprite over the feet of
 whoever stands in it, you, your Pokémon or anyone else, rustling as they step
-in; ordinary tall grass leaves you in view), and tall grass encounters at the map's
+in; ordinary tall grass leaves you in view), footprints you leave in sand (Emerald's: deeper in the desert's deep sand,
+tire tracks on the Bicycle, curving where you turn; gone after a moment, flickering out), and tall grass encounters at the map's
 rate (Random() % 2880 < rate × 16) using the 20/20/10/10/10/10/5/5/4/4/1/1
 encounter slots. Wild Pokémon come from both versions: where LeafGreen's table
 has a different Pokémon in a slot (Sandshrew for FireRed's Ekans on Route 4),
@@ -1948,7 +1949,8 @@ the braille (shown in Braille's dots) and the Regis' puzzles as `src/braille_puz
 Sealed Chamber's DIG HERE (Dig is a field move, for a Pokémon that knows it: out of a cave too, as an Escape Rope),
 Wailord first and Relicanth last at its back wall, then Rock Smash in the Desert Ruins, Flash in the Ancient Tomb and a
 lap of Island Cave's wall,
-the cracked floors of Granite Cave, Sky Pillar and the Mirage Tower (they give way under you, down to the floor below,
+no wild Pokémon on a beach's sand or Mt. Chimney's top (only where Emerald has them: grass, deep sand, caves, ash,
+water), the cracked floors of Granite Cave, Sky Pillar and the Mirage Tower (they give way under you, down to the floor below,
 unless the Bicycle's going flat out: then they give way behind you, holes till you come back),
 Feebas (six of Route 119's fishing spots, your own six by your Trainer ID, where half the bites are Feebas, Lv. 20 to 25),
 Shoal Cave's tides (high from 9:00 to 14:59 and from 21:00 to 2:59 by the game's clock, low between, as you come in from outside),

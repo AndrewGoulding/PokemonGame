@@ -625,6 +625,7 @@
     if (mv.inPlace) return finishHopInPlace();
     if (mv.dismount) setAvatar((ctx.landAvatar && ctx.landAvatar()) || "walk");
     const changedMap = mv.tmap !== me.map, from = me.map;
+    leaveTracks(from, me.x, me.y, mv);
     me.map = mv.tmap; me.x = mv.tx; me.y = mv.ty;
     if (changedMap) {
       followerCrossed(from);
@@ -1662,6 +1663,66 @@
     return !!OVER_TOP[a.elev];
   }
 
+  // ---------- Tracks in sand (Emerald's GetGroundEffectFlags_Tracks, src/event_object_movement.c) ----------
+  //
+  // Walking off sand (MB_SAND, 0x21) you leave footprints on it, the way you went, and off the desert's deep sand
+  // (MB_DEEP_SAND, 0x06) deeper ones; on the Bicycle, tire tracks, curving where you turned. They stay 40 frames,
+  // then flicker 56 more and are gone (FadeFootprintsTireTracks). The pictures: data/field-effects.js's
+  // sandFootprints, deepSandFootprints, bikeTireTracks.
+  const SAND = 0x21, DEEP_SAND = 0x06, TRACK_STAY_MS = 40 * 1000 / 60, TRACK_GONE_MS = 96 * 1000 / 60;
+  let tracks = [];   // { map, x, y, pic, frame, flipX, flipY, at (ms) }
+  // (A tire track's shape by the way you were going and the way you go: bikeTireTracks_Transitions; [frame, flipX].)
+  const TIRE = { down: { down: [2], up: [2], left: [3, true], right: [3] }, up: { down: [2], up: [2], left: [0, true], right: [0] },
+    left: { down: [0], up: [3], left: [1], right: [1] }, right: { down: [0, true], up: [3, true], left: [1], right: [1] } };
+  function leaveTracks(map, x, y, mv) {
+    if (mv.jump || mv.inPlace || (me.avatar !== "walk" && me.avatar !== "bike")) return;
+    const b = World.blockAt(map, x, y).behavior;
+    if (b !== SAND && b !== DEEP_SAND) { me.trackDir = mv.dir; return; }
+    let t;
+    if (me.avatar === "bike") { const [frame, flipX] = TIRE[me.trackDir || mv.dir][mv.dir]; t = { pic: "bikeTireTracks", frame, flipX: !!flipX, flipY: false }; }
+    else t = { pic: b === DEEP_SAND ? "deepSandFootprints" : "sandFootprints", frame: mv.dir === "up" || mv.dir === "down" ? 0 : 1, flipX: mv.dir === "right", flipY: mv.dir === "down" };
+    me.trackDir = mv.dir;
+    tracks.push(Object.assign(t, { map, x, y, at: performance.now() }));
+  }
+  const fxPics = {};
+  function fxPic(name, frame) {
+    const fx = window.FIELD_EFFECTS && window.FIELD_EFFECTS[name];
+    if (!fx) return null;
+    if (!fxPics[name]) {
+      fxPics[name] = [];
+      for (let f = 0; f < fx.frames; f++) {
+        const c = document.createElement("canvas");
+        c.width = fx.width; c.height = fx.height;
+        const cg = c.getContext("2d"), img = cg.createImageData(fx.width, fx.height), n = fx.width * fx.height;
+        for (let i = 0; i < n; i++) {
+          const v = parseInt(fx.px[f * n + i], 16);
+          if (!v) continue;
+          img.data.set(fx.palette[v], i * 4); img.data[i * 4 + 3] = 255;
+        }
+        cg.putImageData(img, 0, 0);
+        fxPics[name].push(c);
+      }
+    }
+    return fxPics[name][frame];
+  }
+  function drawTracks(name, x0, y0) {
+    if (!tracks.length) return;
+    const now = performance.now();
+    tracks = tracks.filter((t) => now - t.at < TRACK_GONE_MS);
+    for (const t of tracks) {
+      if (t.map !== name) continue;
+      const age = now - t.at;
+      if (age > TRACK_STAY_MS && Math.floor(age * 60 / 1000) % 2) continue;   // (flickering out, every other frame)
+      const pic = fxPic(t.pic, t.frame);
+      if (!pic) continue;
+      g.save();
+      g.translate(x0 + t.x * TILE + (t.flipX ? TILE : 0), y0 + t.y * TILE + (t.flipY ? TILE : 0));
+      g.scale(t.flipX ? -1 : 1, t.flipY ? -1 : 1);
+      g.drawImage(pic, 0, 0);
+      g.restore();
+    }
+  }
+
   // ---------- Long grass (FLDEFF_LONG_GRASS, src/field_effect_helpers.c) ----------
   //
   // Whoever stands in long grass (MB_LONG_GRASS, Faraway Island's: you, your
@@ -1861,6 +1922,7 @@
       drawAnimCells(name, ox - camX, oy - camY);
       drawPatches(name, ox - camX, oy - camY, "");
       drawMetatiles(name, ox - camX, oy - camY, false);
+      drawTracks(name, ox - camX, oy - camY);
       if (ctx.drawMap) ctx.drawMap(g, name, ox - camX, oy - camY);
     }
     g.filter = "none";
