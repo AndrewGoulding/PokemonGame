@@ -2834,7 +2834,8 @@
       // Orre (data/orre-maps.js).
       "OutskirtStand_Diner_EventScript_Bartender", "OutskirtStand_Diner_EventScript_Willie",
       "OutskirtStand_Diner_EventScript_TV", "OutskirtStand_Diner_EventScript_Jukebox",
-      "OrreAirStrip_EventScript_Pilot", "SnagemHideout_EventScript_Guard1", "SnagemHideout_EventScript_Guard2"
+      "OrreAirStrip_EventScript_Pilot", "OrreAirStrip_PokemonCenter_1F_EventScript_Nurse",
+      "SnagemHideout_EventScript_Guard1", "SnagemHideout_EventScript_Guard2"
     ]).concat(Object.keys(BRAILLE_SIGNS)).concat(League.ROOMS.map((r) => "enter:" + r.map), ["enter:" + League.HALL_OF_FAME]).concat(ROUTE23_BADGES.slice(1).flatMap((b) => ["", "Trigger"].map((t) => "Route23_EventScript_" + b + "BadgeGuard" + t))).concat([1, 2, 3, 4, 5, 6].flatMap((n) => ["Left", "Right"].map((s) => "CinnabarIsland_Gym_EventScript_Quiz" + n + s))).concat(CYCLING_ROAD_GATES.flatMap((g) => ["Top", "MidTop", "Mid", "MidBottom", "Bottom"].map((k) => g + "_EventScript_NeedBikeTrigger" + k))));
 
   for (const d of RaidDens.DENS) SPECIAL.add(d.script);

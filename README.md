@@ -2958,7 +2958,8 @@ double battle. The debug menu's **Visit Orre** takes the plane without the brief
 **The Orre Air Strip** (this game's own): south of the Outskirt Stand, in the same desert, fenced in, with the gate
 on the road north. Inside the fence: the runway with its markings, the concrete apron where Oak's little
 high-winged plane is parked, the terminal (locked: no flights today), the control tower, a windsock, fuel drums, the
-pilot and a mechanic.
+pilot and a mechanic. By the apron is a **Pokémon Center** (Emerald's, as Mauville City's, outside and in), where
+the nurse heals your Pokémon; it's where you come to if they all faint in Orre.
 
 **Getting about: Orre's map.** As in Colosseum, you don't walk from one place in Orre to the next. Oak gives you the
 **Orre Map** with Team Snagem's hideout marked on it, and whenever you walk out of a place (through the Air Strip's

@@ -3087,6 +3087,10 @@ if (window.JOHTO_TOWN_MAP) {
   const st = Orre.START;
   assert.strictEqual(st.map, "OrreAirStrip");
   assert.strictEqual(A.collision[st.y * A.width + st.x], 0, "room by the plane's door");
+  // The Air Strip's Pokémon Center: its door in, the nurse who heals (and where you come to if you black out).
+  const PCI = WORLD_MAPS.OrreAirStrip_PokemonCenter_1F, pcDoor = A.warps.find((w) => w.map === PCI.name);
+  assert(PCI.pokemonCenter && PCI.region === "orre" && pcDoor && A.behavior[pcDoor.y * A.width + pcDoor.x] === World.MB.WARP_DOOR);
+  assert(PCI.people.some((p) => /_PokemonCenter_1F_EventScript_Nurse$/.test(p.script)) && PCI.warps.every((w) => World.warpTarget(w).map === "OrreAirStrip"));
   // The hideout's door, its guards.
   assert(H.people.filter((p) => /Guard/.test(p.script)).length === 2, "two guards at the door");
   assert(A.people.some((p) => p.script === "OrreAirStrip_EventScript_Pilot"), "the pilot, to fly you back");

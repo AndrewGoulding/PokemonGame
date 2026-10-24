@@ -627,8 +627,23 @@ for (let y = 0; y < AH; y++) for (let x = 0; x < AW; x++) ablocks.push(y === 0 ?
 for (let x = 0; x < AW; x++) if (GRASSY.has(ablocks[x] & 0x3ff) || x < 12) ablocks[x] = SAND;   // (and the trees at its west end)
 const GATE = { x: 20, w: 4 }, RUNWAY = { y: 15, h: 5 }, APRON = { x: 13, y: 8, w: 12, h: 7 };
 const TERMINAL = { x: 5, y: 4, w: 7, h: 4 }, TOWER = { x: 1, y: 5, w: 3, h: 3 }, PLANE = { x: 15, y: 10, w: 6, h: 2 };
-const SOCK = { x: 31, y: 5 }, DRUMS = { x: 27, y: 9, w: 2 }, ASIGN = { x: 18, y: 3 };
+const SOCK = { x: 32, y: 5 }, DRUMS = { x: 27, y: 9, w: 2 }, ASIGN = { x: 18, y: 3 };
+// A Pokémon Center, by the apron: Emerald's (its General tileset's building, 4 by 4), laid out block for block as
+// Mauville City's (its door at the foot of the second column).
+const PC = { x: 26, y: 3, w: 4, h: 4 }, PC_DOOR = { x: PC.x + 1, y: PC.y + 3 };
+{
+  const L = layouts.LAYOUT_MAUVILLE_CITY, mv = fs.readFileSync(path.join(EM, L.blockdata_filepath));
+  for (let y = 0; y < PC.h; y++) for (let x = 0; x < PC.w; x++) ablocks[(PC.y + y) * AW + PC.x + x] = mv.readUInt16LE(((2 + y) * L.width + 21 + x) * 2);
+}
 const airstrip = E.render(ablocks, AW, AH, general, mauville, false);
+// (Mauville's grass round the building's corners: sand here, from the tile beside it.)
+for (let y = PC.y * 16; y < (PC.y + PC.h) * 16; y++) for (let x = PC.x * 16; x < (PC.x + PC.w) * 16; x++) {
+  const o = (x + y * AW * 16) * 4, green = (img) => img[o + 3] && img[o + 1] > img[o] + 24 && img[o + 1] > img[o + 2];
+  if (green(airstrip.above)) airstrip.above[o + 3] = 0;
+  if (!green(airstrip.below)) continue;
+  const so = ((PC.x - 1) * 16 + (x % 16) + y * AW * 16) * 4;
+  for (let k = 0; k < 4; k++) airstrip.below[o + k] = airstrip.below[so + k];
+}
 // (Paste a drawing over the map at pixel (x0, y0): rows above `split` over people (on top), the rest under.)
 function paste(pic, x0, y0, split) {
   for (let y = 0; y < pic.h; y++) for (let x = 0; x < pic.w; x++) {
@@ -795,7 +810,7 @@ const AIR = {
   region: "orre", battleScene: "sand", cycling: true, showName: true, top: true, borderWidth: 2, borderHeight: 2,
   collision: [], elevation: [], behavior: [], encounter: [],
   connections: [{ map: "OutskirtStand", mapConst: "MAP_OUTSKIRT_STAND", direction: "up", offset: 0 }],
-  warps: [], triggers: [], hidden: [],
+  warps: [{ x: PC_DOOR.x, y: PC_DOOR.y, map: "OrreAirStrip_PokemonCenter_1F", warp: 0 }], triggers: [], hidden: [],
   signs: [{ x: ASIGN.x, y: ASIGN.y, script: "OrreAirStrip_EventScript_Sign", text: ["ORRE AIR STRIP", "North: the Outskirt Stand"] },
     ...[0, 1, 2].map((k) => ({ x: TERMINAL.x + 2 + k, y: TERMINAL.y + TERMINAL.h - 1, script: "OrreAirStrip_EventScript_Terminal",
       text: ["The terminal's doors are locked.\nA notice: \"No flights today.\""] }))],
@@ -812,12 +827,13 @@ const AIR = {
   for (let x = 0; x < AW; x++) if (x < GATE.x || x >= GATE.x + GATE.w) solid.add(x + ",1");
   fill(0, 1, 1, AH); fill(AW - 1, 1, 1, AH); fill(0, AH - 1, AW, 1);
   fill(TERMINAL.x, TERMINAL.y, TERMINAL.w, TERMINAL.h); fill(TOWER.x, TOWER.y, TOWER.w, TOWER.h); fill(PLANE.x, PLANE.y, PLANE.w, PLANE.h);
-  fill(SOCK.x, SOCK.y, 1, 1); fill(DRUMS.x, DRUMS.y, DRUMS.w, 1); fill(ASIGN.x, ASIGN.y, 1, 1);
+  fill(SOCK.x, SOCK.y, 1, 1); fill(DRUMS.x, DRUMS.y, DRUMS.w, 1); fill(ASIGN.x, ASIGN.y, 1, 1); fill(PC.x, PC.y, PC.w, PC.h);
+  solid.delete(PC_DOOR.x + "," + PC_DOOR.y);
   for (let i = 0; i < ablocks.length; i++) {
     const b = ablocks[i], x = i % AW, y = Math.floor(i / AW);
     AIR.collision.push(solid.has(x + "," + y) ? 1 : (b >> 10) & 3);
     AIR.elevation.push(b >> 12);
-    AIR.behavior.push(E.frBehavior(E.metatile(general, mauville, b & 0x3ff).behavior));
+    AIR.behavior.push(x === PC_DOOR.x && y === PC_DOOR.y ? 0x69 : E.frBehavior(E.metatile(general, mauville, b & 0x3ff).behavior));
     AIR.encounter.push(0);
   }
   writePng(path.join(outMaps, "OrreAirStrip.png"), AW * 16, AH * 16, airstrip.below);
@@ -1126,6 +1142,32 @@ const HIDE = {
   save(b, path.join(outMaps, "SnagemHideout-border.png"));
 }
 
+// ---------- The Air Strip's Pokémon Center ----------
+//
+// Inside: Mauville City's Pokémon Center (its picture and its layout, data/emerald-maps.js), the nurse at the counter
+// to heal your Pokémon (and where you come to if they all faint in Orre); its stairs lead nowhere yet.
+const PCI = (() => {
+  const vm = require("vm"), ctx = { window: { WORLD_MAPS: {}, WORLD_TRAINERS: {} } };
+  vm.createContext(ctx);
+  try { vm.runInContext(fs.readFileSync(path.join(root, "data/emerald-maps.js"), "utf8"), ctx); } catch (e) { /* (only its maps are needed) */ }
+  const m = JSON.parse(JSON.stringify(ctx.window.WORLD_MAPS.MauvilleCity_PokemonCenter_1F));
+  const stairs = m.warps.find((w) => /_2F$/.test(w.map));
+  m.collision[stairs.y * m.width + stairs.x] = 1;
+  const nurse = m.people.find((p) => /_EventScript_Nurse$/.test(p.script));
+  return Object.assign(m, {
+    name: "OrreAirStrip_PokemonCenter_1F", title: "Orre Air Strip", image: "MauvilleCity_PokemonCenter_1F", region: "orre", showName: false,
+    warps: m.warps.filter((w) => w !== stairs).map((w) => ({ x: w.x, y: w.y, map: "OrreAirStrip", warp: 0 })),
+    signs: [], triggers: [], hidden: [], weatherSteps: undefined,
+    people: [
+      Object.assign({}, nurse, { id: 0, localId: "LOCALID_ORRE_NURSE", script: "OrreAirStrip_PokemonCenter_1F_EventScript_Nurse" }),
+      person(1, "PC_TRAVELLER", 11, 5, "em_woman_5", "face_left", "OrreAirStrip_PokemonCenter_1F_EventScript_Traveller",
+        ["There's hardly a Pokémon Center out\nhere in the desert.", "In Orre, a lot of the towns have\nhealing machines of their own instead."]),
+      person(2, "PC_MECHANIC", 3, 6, "hiker", "face_right", "OrreAirStrip_PokemonCenter_1F_EventScript_Pilot2",
+        ["The planes bring in supplies for this\nPokémon Center from far away.", "Folks who fly in are glad of the rest."])
+    ]
+  });
+})();
+
 // ---------- Leaving a place: Orre's map ----------
 //
 // As in Colosseum, you don't walk from one place in Orre to the next: step out of a place's way out (its open edge
@@ -1192,5 +1234,5 @@ AIR.signs[0].text = ["ORRE AIR STRIP", "Through the gate: the desert roads\nof O
 fs.writeFileSync(path.join(root, "data/orre-maps.js"),
   "// Auto-generated by tools/build-orre.js (Emerald's desert tiles, and pictures drawn there). Do not edit by hand.\n" +
   "// Orre's Outskirt Stand and Snagem Hideout, from Pokémon Colosseum, and the Orre Air Strip, added to FireRed's maps (data/world-maps.js).\n" +
-  "Object.assign(window.WORLD_MAPS, " + JSON.stringify({ OutskirtStand: OUT, OutskirtStand_Diner: IN, OrreAirStrip: AIR, SnagemHideout: HIDE }) + ");\n");
+  "Object.assign(window.WORLD_MAPS, " + JSON.stringify({ OutskirtStand: OUT, OutskirtStand_Diner: IN, OrreAirStrip: AIR, OrreAirStrip_PokemonCenter_1F: PCI, SnagemHideout: HIDE }) + ");\n");
 console.log("wrote the Outskirt Stand (" + W + "x" + H + "), its diner (" + IN_W + "x" + IN_H + ") and the Air Strip (" + AW + "x" + AH + "), the Snagem Hideout (" + HW + "x" + HH + ") and Orre's map to data/orre-maps.js and assets/");
