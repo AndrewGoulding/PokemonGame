@@ -13111,6 +13111,7 @@
   let hoennTradeMon = null;
   const speciesNumber = (name) => Object.keys(window.DEX).indexOf(name) + 1;
   // The specials Emerald's scripts call that this game answers itself.
+  let ssTidalPick = 127;   // (the S.S. Tidal's sailing just picked at Lilycove: ScriptMenu_CreateLilycoveSSTidalMultichoice)
   // How much of the Hoenn Pokédex you've seen or caught (`noMythicals`: but Jirachi and Deoxys, its last two).
   function hoennDexCount(which, noMythicals) {
     const list = (window.HOENN_SCRIPTS.hoennDex || []).slice(0, noMythicals ? -2 : undefined);
@@ -13242,12 +13243,22 @@
           if (!Player.itemCount(player, item) || !hoenn.flag(on)) continue;
           if (!shown) sel.push(i); else if (!hoenn.flag(seen)) { sel.push(i); hoenn.setFlag(seen, true); }
         }
+        // (This game's own: Sinnoh, with Norman's ticket from after the Hall of Fame; a save already past him gets it
+        // here. Its run isn't sailing yet: it's back to the desk.)
+        if (!shown && hoenn.flag("FLAG_SYS_GAME_CLEAR") && hoenn.flag("FLAG_RECEIVED_SS_TICKET") && !Player.itemCount(player, "sinnoh-ticket")) {
+          await say(fill("Oh, {PLAYER}! The ferry company left\nthis for Hoenn's new Champion."));
+          Player.addItem(player, "sinnoh-ticket", 1);
+          await sayWithJingle("mus_obtain_key_item", fill("{PLAYER} received the " + Bag.name("sinnoh-ticket") + "!"));
+        }
+        if (!shown && Player.itemCount(player, "sinnoh-ticket")) sel.push(7);
         sel.push(6);
-        const k = await hoennEnv.choose(sel.map((i) => ({ 0: "Slateport City", 1: "Battle Frontier", 2: "Southern Island", 5: "Faraway Island", 6: "Exit" })[i]), null);
-        api.set(k < 0 ? 127 : sel[k]);
+        const k = await hoennEnv.choose(sel.map((i) => ({ 0: "Slateport City", 1: "Battle Frontier", 2: "Southern Island", 5: "Faraway Island", 6: "Exit", 7: "Sinnoh" })[i]), null);
+        if (sel[k] === 7) { await say(["The S.S. Tidal's run to Sinnoh\nisn't sailing yet, I'm afraid.", "Please come back another time."]); ssTidalPick = 6; return true; }
+        ssTidalPick = k < 0 ? 127 : sel[k];
         return true;
       }
-      case "GetLilycoveSSTidalSelection": return true;
+      // (The script's switch reads it from here: the menu's pick, as Emerald's GetLilycoveSSTidalSelection gives it.)
+      case "GetLilycoveSSTidalSelection": api.set(ssTidalPick); return true;
       // A scrollable menu (src/field_specials.c's ShowScrollableMultichoice), VAR_0x8004's: the Battle Frontier's prize
       // desks and move tutors, Slateport's Berry Powder shop.
       case "ShowScrollableMultichoice": {

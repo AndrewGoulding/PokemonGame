@@ -1958,7 +1958,9 @@ Prof. Birch's Pokédex rating (on the Hoenn Pokédex, Emerald's order of 202, th
 after the Hall of Fame Norman's S.S. Ticket and the news flash at his family's house (your room in Littleroot is his
 family's: Brendan's house, or May's for a girl), and the Pokémon it tells of roaming Hoenn's routes till caught (Latias for
 red, Latios for blue, Lv. 40, one wild Pokémon in 16),
-the S.S. Tidal (its sailings from Lilycove, by the tickets you hold, and the voyage on as you walk the ship, or rest),
+the S.S. Tidal (its sailings from Lilycove, by the tickets you hold, and the voyage on as you walk the ship, or rest;
+after the Hall of Fame Norman brings a Sinnoh Ticket too, this game's own, and Lilycove lists a run to Sinnoh, which
+isn't sailing yet: Sinnoh's to come),
 the rotating-tile puzzles, the Mirage Tower and Rayquaza's scenes. The scene over Sootopolis is Emerald's own
 (`ui/rayquaza-scene.js`, its pictures from `tools/build-rayquaza-scene.js` into `assets/rayquaza-scene/`), its
 five scenes timed as `src/rayquaza_scene.c` times them: Groudon and Kyogre facing one another under the storm

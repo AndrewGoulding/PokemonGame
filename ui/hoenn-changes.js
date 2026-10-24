@@ -9,7 +9,8 @@
 //   - you walk right behind Wally on the way to his lesson, which is Emerald's battle (ui/game.js's
 //     StartWallyTutorialBattle, ui/battle-screen.js's wallyLoop);
 //   - Norman is Petalburg's Gym Leader, not your dad: he knows you as Johto's Champion;
-//   - Oldale's Mart clerk, once she's walked you to the Mart and given you the Potion, stays there.
+//   - Oldale's Mart clerk, once she's walked you to the Mart and given you the Potion, stays there;
+//   - after the Hall of Fame, Norman brings a ticket for the S.S. Tidal's run to Sinnoh too.
 (function () {
   "use strict";
   const H = window.HOENN_SCRIPTS, W = window.WORLD_MAPS;
@@ -88,6 +89,19 @@
   if (wallyWay) {
     const walks = wallyWay.filter((mv) => /^walk_(up|down|left|right)$/.test(mv));
     H.m.PetalburgCity_Movement_WallyTutorialPlayer = ["delay_8", "walk_down", "walk_down"].concat(walks.slice(0, -1), ["walk_in_place_faster_right"]);
+  }
+
+  // After the Hall of Fame, with Mr. Briney's S.S. Ticket, a ticket of this game's own: the S.S. Tidal's run to Sinnoh
+  // (from Lilycove: ui/game.js's ScriptMenu_CreateLilycoveSSTidalMultichoice).
+  Object.assign(H.t, {
+    PlayersHouse_1F_Text_SinnohTicketToo: ["Norman: And this came with it.", "It's from the ferry company…\nA ticket for the S.S. Tidal's run\nto the Sinnoh region!",
+      "Hoenn's new Champion, off to Sinnoh…\nThe S.S. Tidal sails from Lilycove."]
+  });
+  const ticket = S.PlayersHouse_1F_EventScript_GetSSTicketAndSeeLatiTV;
+  if (ticket) {
+    const i = ticket.findIndex((c) => c[0] === "msgbox" && c[1] === "PlayersHouse_1F_Text_PortsInSlateportLilycove");
+    if (i >= 0 && !ticket.some((c) => c[1] === "ITEM_SINNOH_TICKET"))
+      ticket.splice(i + 1, 0, ["msgbox", "PlayersHouse_1F_Text_SinnohTicketToo", "MSGBOX_DEFAULT"], ["giveitem", "ITEM_SINNOH_TICKET"]);
   }
 
   // Oldale's Mart clerk: where she's walked you, by the Mart, from now on.

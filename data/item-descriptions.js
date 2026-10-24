@@ -213,6 +213,7 @@ window.ITEM_DESCRIPTIONS = {
   "soul-dew": "An orb to be held by a Latios or\nLatias. It raises the Sp. Atk\nand Sp. Def stats.",
   "spell-tag": "An item to be held by a Pokémon.\nA sinister, eerie tag that boosts\nGhost-type moves.",
   "spelon-berry": "Can be ground up into a powder as\nan ingredient for medicine.",
+  "sinnoh-ticket": "A ticket for the S.S. Tidal's\nrun to Sinnoh, sailing from\nLilycove City.",
   "ss-ticket": "The ticket required for sailing on\nthe ferry S.S. Anne.\nIt has a drawing of a ship on it.",
   "gs-ball": "A mysterious Ball.",
   "star-piece": "A shard of a pretty gem that\nsparkles in a red color.\nIt can be sold at a high price.",
