@@ -2865,6 +2865,13 @@
     const box = monBox(pos);
     if (!box) return false;
     const foe = view[pos];
+    // (The ball that stays once it's caught, loaded before the throw: else the throw's ball goes, and this one only
+    // shows once its picture has come.)
+    if (caught) {
+      el.ball.classList.add("hidden");
+      el.ball.src = ballUrl(ball);
+      try { await el.ball.decode(); } catch (e) { /* (shown when it comes) */ }
+    }
     foe.inBall = true;
     renderSide(pos);
     const o = Object.assign(animOpts("p1", pos), { anim: "special", id: "BALL_THROW", ball, ballCase: ballCase != null ? ballCase : caught ? 4 : Math.min(3, shakes),
@@ -2872,7 +2879,6 @@
     await playAnim(o);
     if (caught) {
       // The ball stays shut where it came to rest (the GBA's: 24 under its target's base line).
-      el.ball.src = ballUrl(ball);
       el.ball.style.left = ((box.cx - 8) / 240 * 100).toFixed(2) + "%";
       el.ball.style.right = "auto";
       el.ball.style.top = ((BA.ballRest(POSITIONS.indexOf(pos), !!battle.doubles) - 8) / 112 * 100).toFixed(2) + "%";

@@ -450,7 +450,7 @@
     const measure = Surface();
     const width = Math.floor((Math.max(...items.map((it) => richWidth(measure, it))) + 9) / 8) + 1;
     const left = Math.min(opts.left || 0, 28 - width) + 1, wtop = (opts.top || 0) + 1;
-    const height = opts.shown ? Math.floor((shown * 14 + 2) / 8) : MC_HEIGHT[Math.min(n, 8)];   // (Silph Co.'s: 12 tiles)
+    const height = opts.shown ? Math.ceil((shown * 14 + 2) / 8) : MC_HEIGHT[Math.min(n, 8)];   // (Silph Co.'s: 12 tiles)
     const wrap = !opts.shown && n > 3;
     const draw = () => {
       const s = Surface(), x = left * 8, y = wtop * 8;
