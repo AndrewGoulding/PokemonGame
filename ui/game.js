@@ -6926,24 +6926,36 @@
     Screen.say("");
     Overworld.emote(null);
     Overworld.rod(null);
-    const before = Fishing.level(fishingXp());
-    const spot = Overworld.ahead();
+    const spot = Overworld.ahead(), before = Fishing.level(fishingXp());
     const mon = at.map === "Route119" && feebasSpots().has(spot.x + "," + spot.y) && Math.random() < 0.5
       ? { species: "Feebas", level: 20 + Math.floor(Math.random() * 6), xp: Fishing.XP[Fishing.pickRod(before)] } : Fishing.encounter(at.map, before);
     if (!mon) return;
     player.flags.fishingCaptures = (player.flags.fishingCaptures | 0) + 1;
-    player.flags.fishingXp = fishingXp() + mon.xp;
-    const after = Fishing.level(player.flags.fishingXp);
-    await say("Gained " + mon.xp + " fishing XP.");
-    const rarer = Fishing.TIERS.some(([from]) => from > before && from <= after);
-    if (after > before) await say("Your fishing level rose to " + after + "!" + (rarer ? "\nRarer Pokémon may bite now." : ""));
+    await gainFishingXp(mon.xp);
     Screen.say("");
     // (FireRed's pond, or the sea.)
     const ahead = Overworld.ahead();
     const terrain = ahead.behavior === 0x10 ? "pond" : "water";
     if (safariOn()) { await safariBattle(mon.species, mon.level, terrain); return; }
     if (!canBattle()) return;
-    await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(mon.species, mon.level))] }, terrain, fishing: true });
+    const outcome = await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(mon.species, mon.level))] }, terrain, fishing: true });
+    // (This game's own: more fishing XP for landing it, catching it (as much again as the bite) or beating it (half).)
+    const bonus = outcome === "caught" ? mon.xp : outcome === "won" ? Math.ceil(mon.xp / 2) : 0;
+    if (bonus) {
+      show("world");
+      await Overworld.resume();
+      await gainFishingXp(bonus, outcome === "caught" ? "for catching it" : "for beating it");
+      Screen.say("");
+    }
+  }
+  // Fishing XP, and the fishing level it brings (game/fishing.js).
+  async function gainFishingXp(n, why) {
+    const before = Fishing.level(fishingXp());
+    player.flags.fishingXp = fishingXp() + n;
+    const after = Fishing.level(player.flags.fishingXp);
+    await say("Gained " + n + " fishing XP" + (why ? " " + why : "") + ".");
+    const rarer = Fishing.TIERS.some(([from]) => from > before && from <= after);
+    if (after > before) await say("Your fishing level rose to " + after + "!" + (rarer ? "\nRarer Pokémon may bite now." : ""));
   }
 
   // ---------- Cycling Road ----------

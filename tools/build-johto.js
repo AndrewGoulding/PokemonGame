@@ -619,7 +619,6 @@ const extraItems = Object.fromEntries(APRICORNS.map((c, i) => [c + "-apricorn", 
 // (And the key items its scripts give or ask for that the game hasn't got.)
 extraItems.squirtbottle = { name: "squirtbottle", category: "key-items", effect: "A watering can shaped like a Squirtle. It helps promote healthy plant growth." };
 extraItems["mystery-egg"] = { name: "mystery-egg", category: "key-items", effect: "A mysterious Egg obtained from Mr. Pokémon." };
-extraItems["berry-pots"] = { name: "berry-pots", category: "key-items", effect: "Four pots for growing Berries." };
 extraItems["vs-recorder"] = { name: "vs-recorder", category: "key-items", effect: "A device that records battles." };
 extraItems["apricorn-box"] = { name: "apricorn-box", category: "key-items", effect: "A box for keeping Apricorns. It holds a whole lot of them." };
 extraItems["unown-report"] = { name: "unown-report", category: "key-items", effect: "A report of all the discovered kinds of Unown." };

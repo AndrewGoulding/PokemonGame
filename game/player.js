@@ -405,6 +405,9 @@
     // tickets for them go (the Mystic Ticket's no longer an item at all), and
     // with them their flags; a save made out there is back at Vermilion's dock.
     if (player.flags.gotEventTickets) delete player.bag["aurora-ticket"];
+    // (HGSS's Berry Pots, from Route 36's Floria, are gone: the game had nothing for them to do.)
+    delete player.bag["berry-pots"];
+    if (player.pcItems) delete player.pcItems["berry-pots"];
     for (const k of ["gotEventTickets", "enableShipNavelRock", "enableShipBirthIsland", "shownMysticTicket", "shownAuroraTicket",
       "worldMapNavelRock", "worldMapBirthIsland", "foughtHoOh", "hoOhFlewAway", "foughtLugia", "lugiaFlewAway", "foughtDeoxys", "deoxysFlewAway"]) delete player.flags[k];
     player.look = lookOf(data.look);
@@ -499,7 +502,7 @@
   // that don't fit stay in the party), and the Trainer ID your Pokémon know you by.
   const KEPT_KEY_ITEMS = new Set(["berry-pouch", "bicycle", "exp-share", "fishing-rod", "old-rod", "good-rod", "super-rod", "mega-ring",
     "town-map", "coin-case", "powder-jar", "vs-seeker", "explorer-kit", "itemfinder", "zygarde-cube", "z-ring", "dynamax-band", "tera-orb",
-    "soot-sack", "berry-pots", "vs-recorder", "apricorn-box", "wailmer-pail"]);
+    "soot-sack", "vs-recorder", "apricorn-box", "wailmer-pail"]);
   const storyItem = (id) => /^hm\d/.test(id) || (window.ITEMS[id] && window.ITEMS[id].category === "key-items" && !KEPT_KEY_ITEMS.has(id));
   function newGamePlus(old, name, look) {
     const p = create(name, look);

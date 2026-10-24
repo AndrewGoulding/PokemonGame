@@ -19,7 +19,8 @@
 //     ground on Heart & Soul's maps);
 //   - Cherrygrove's Guide Gent and his scene are gone (the Pokégear's Map is
 //     yours from the start: ui/pokegear.js); Silver is "Rival Silver" from his
-//     first battle, with his own picture (HGSS's "Passerby Boy").
+//     first battle, with his own picture (HGSS's "Passerby Boy");
+//   - Floria on Route 36 gives you her Berries but no Berry Pots (the game hasn't got them).
 //
 //   require("./lib/johto-changes").apply({ maps, scripts, trainers })
 "use strict";
@@ -48,6 +49,8 @@ const MESSAGES = {
   msg_0377_R30R0201_00008: OAK_HELLO, msg_0377_R30R0201_00009: OAK_HELLO,
   msg_0377_R30R0201_00011: OAK_DEX, msg_0377_R30R0201_00012: ["{BUF0}'s Pokédex is ready for\nJohto's Pokémon!"],
   msg_0369_R27_00001: R27_MAN,
+  // (Floria, after the wiggly tree: Berries, no Berry Pots.)
+  msg_0390_R36_00015: ["That was fun!", "I want to give you some Berries\nfor entertaining me!"],
   // (Ethan's mother, once Elm's errand's under way: hello, no savings.)
   msg_0545_T20R0201_hello: ["Oh, hello again!\nYou're doing fine, I see.", "Pokémon are your friends.\nWhen you work as a team,", "you can accomplish anything!", "Take care out there!"]
 };
@@ -57,6 +60,11 @@ function apply({ maps, scripts, trainers }) {
   // Elm's Pokégear: the CloseMsg after his words about it becomes the gift (ui/johto-script.js's ElmPokegear).
   const lab = scripts.zones.T20R0101;
   if (lab) lab.cmds.forEach((c, i) => { if (c[0] === "NPCMsg" && c[1] === "msg_0543_T20R0101_00010" && lab.cmds[i + 1] && lab.cmds[i + 1][0] === "CloseMsg") lab.cmds[i + 1] = ["ElmPokegear"]; });
+  // Floria: no Berry Pots, nor her words about them (Nop keeps the script's jumps where they were).
+  const r36 = scripts.zones.R36;
+  if (r36) r36.cmds.forEach((c, i) => {
+    if ((c[0] === "GiveItemNoCheck" && c[1] === "berry-pots") || (c[0] === "NPCMsg" && /^msg_0390_R36_0001[67]$/.test(c[1]))) r36.cmds[i] = ["Nop"];
+  });
   // Route 27's man says the same when spoken to.
   const r27 = maps.Route27;
   if (r27) for (const p of r27.people) if (p.localId === "obj_R27_gsbigman") p.text = R27_MAN.slice();

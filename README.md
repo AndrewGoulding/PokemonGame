@@ -259,7 +259,7 @@ have only Lv. 3-5 Pokémon and nothing evolved: no Gyarados, Seadra, Kingler or 
 FISHING_CHANGES.) Which rod's slots a bite comes from
 goes by your **fishing level** (`game/fishing.js`): every Pokémon hooked
 earns fishing XP (10 for an Old Rod Pokémon, 15 for a Good Rod one, 20 for a
-Super Rod one), and levels take 20 XP each up to level 20, then 40, 60, 80
+Super Rod one), and more for landing it: as much again for catching it, half as much again for beating it; levels take 20 XP each up to level 20, then 40, 60, 80
 and 100 (level 100 at 5,980 XP). Up to level 9 only the Old Rod's
 Pokémon bite; from 10 the Good Rod's too (60/40); from 25 the Super Rod's
 (30/40/30); from 50, 15/35/50, and from 75, 5/25/70. From level 50 the Super
