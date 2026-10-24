@@ -4969,7 +4969,14 @@ for (let seed = 1; seed <= GEN8; seed++) {
   // Sinnoh's first maps (tools/build-sinnoh.js): Twinleaf Town up into Route 201, the lake's entrance, the grass's Pokémon.
   { const tw = World.blockAt("TwinleafTown", 17, -1), lake = World.step({ map: "VerityLakefront", x: 10, y: 3 }, "up");
     assert.deepStrictEqual([tw.map, tw.x, tw.y, lake.warp && lake.warp.map, lake.warp && lake.warp.y], ["Route201", 15, 29, "LakeVerity", 42], "Sinnoh's maps join");
-    assert(WORLD_MAPS.Route201.wild.slots.some((s) => s.species === "Starly") && WORLD_MAPS.TwinleafTown.music === "dp_twinleaf", "Sinnoh's Pokémon and music"); }
+    assert(WORLD_MAPS.Route201.wild.slots.some((s) => s.species === "Starly") && WORLD_MAPS.TwinleafTown.music === "dp_twinleaf", "Sinnoh's Pokémon and music");
+    // (Sandgem Town's Pokémon Center through its door, and out again; Route 202 up into Jubilife City; the S.S. Tidal sails.)
+    const door = World.step({ map: "SandgemTown", x: 17, y: 10 }, "up"), jub = World.blockAt("Route202", 18, -1);
+    const out = World.step({ map: "SandgemTown_PokemonCenter_1F", x: 15, y: 16 }, "down");
+    assert.deepStrictEqual([door.warp && door.warp.map, out.warp && out.warp.map, out.warp && out.warp.door, jub.map],
+      ["SandgemTown_PokemonCenter_1F", "SandgemTown", true, "JubilifeCity"], "Sinnoh's doors and Route 202");
+    assert(WORLD_MAPS.JubilifeCity_Mart.people.some((p) => p.mart && p.martTiers.length) && WORLD_MAPS.SandgemTown_PokemonCenter_1F.pokemonCenter, "Sinnoh's Mart and Pokémon Center");
+    assert(/afterScript = sailToSinnoh/.test(fs.readFileSync(path.join(__dirname, "../ui/game.js"), "utf8")), "the S.S. Tidal sails to Sinnoh"); }
   // Tera STAB: 2x for a Tera Type it already had, 1.5x for its own types or a new one; the 60-power floor.
   { const tera = (sp, t) => Object.assign(Damage.makePokemon(sp, { level: 50 }), { terastallized: t, teraBaseTypes: window.DEX[sp].types.slice(), types: t === "Stellar" ? window.DEX[sp].types.slice() : [t] });
     const d = Damage.makePokemon("Snorlax", { level: 50 }), plain = Damage.makePokemon("Pikachu", { level: 50 });

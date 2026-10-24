@@ -1,6 +1,9 @@
 // Builds Sinnoh's first maps from a Pokémon Essentials project of Sinnoh (an RPG Maker XP project: Data/*.rxdata,
 // Graphics/Tilesets, Graphics/Autotiles, PBS/map_connections.txt and PBS/encounters.txt): Twinleaf Town,
-// Route 201, Verity Lakefront, Lake Verity and Sandgem Town.
+// Route 201, Verity Lakefront, Lake Verity, Sandgem Town (its Pokémon Center, Poké Mart and Prof. Rowan's lab, and
+// its beach's pier, where the S.S. Tidal calls), Route 202 and Jubilife City (its Pokémon Center and Poké Mart).
+// The insides are the project's: Jubilife's Pokémon Center and Poké Mart, in Sandgem Town too, and Essentials's own
+// lab for Rowan's.
 //
 //   node tools/build-sinnoh.js <path to the project>   (or set SINNOH_ESSENTIALS; needs Ruby, for the .rxdata files)
 //
@@ -10,7 +13,7 @@
 // the top layer down, to the first one under the people: Game_Map#passable?) and its terrain tag (Essentials's:
 // grass, sand, water, ledges...) is what it is (here: FireRed's behaviours). The Essentials graphics are the DS
 // games' at twice the size, so each map is drawn at 32 px a tile and halved. Animated autotiles (the sea, the
-// flowers) are the map's -anim cells (ui/overworld.js TILE_ANIMS's s_auto4 and s_auto8).
+// flowers) are the map's -anim cells (ui/overworld.js TILE_ANIMS's s_auto4, s_auto5 and s_auto8).
 //
 // Writes:
 //   assets/world/maps/<Map>.png, -top.png, -border.png, -anim.png
@@ -36,22 +39,41 @@ if (!PROJ || !fs.existsSync(path.join(PROJ, "Data/MapInfos.rxdata"))) {
 const root = path.join(__dirname, "..");
 const outMaps = path.join(root, "assets/world/maps");
 
-// The maps: their ids in the project, and their names, music and kind here.
+// The maps: their ids in the project (`id`; an inside, `src`: the project's map it's a copy of, in `parent`, through
+// the door at `door` there, or the parent's own door to that map), and their names, music and kind here.
 const MAPS = [
   { id: 194, name: "TwinleafTown", title: "Twinleaf Town", type: "town", music: "dp_twinleaf" },
   { id: 193, name: "Route201", title: "Route 201", type: "route", music: "dp_route201" },
   { id: 195, name: "VerityLakefront", title: "Verity Lakefront", type: "route", music: "dp_route201" },
   { id: 196, name: "LakeVerity", title: "Lake Verity", type: "route", music: "dp_lake" },
-  { id: 192, name: "SandgemTown", title: "Sandgem Town", type: "town", music: "dp_sandgem" }
+  { id: 192, name: "SandgemTown", title: "Sandgem Town", type: "town", music: "dp_sandgem" },
+  { id: 191, name: "Route202", title: "Route 202", type: "route", music: "dp_route201" },
+  { id: 106, name: "JubilifeCity", title: "Jubilife City", type: "city", music: "dp_jubilife" },
+  // (Sandgem Town's doors aren't events in the project: where they are on its map.)
+  { src: 133, kind: "center", parent: "SandgemTown", door: [17, 9], name: "SandgemTown_PokemonCenter_1F", music: "dp_pokecenter" },
+  { src: 134, kind: "mart", parent: "SandgemTown", door: [27, 9], name: "SandgemTown_Mart", music: "dp_mart" },
+  { src: 4, kind: "lab", parent: "SandgemTown", door: [9, 9], name: "SandgemTown_RowansLab", music: "dp_sandgem" },
+  { src: 133, kind: "center", parent: "JubilifeCity", name: "JubilifeCity_PokemonCenter_1F", music: "dp_pokecenter" },
+  { src: 134, kind: "mart", parent: "JubilifeCity", name: "JubilifeCity_Mart", music: "dp_mart" }
 ];
-const byId = Object.fromEntries(MAPS.map((m) => [m.id, m]));
+for (const m of MAPS) if (m.src) Object.assign(m, { title: MAPS.find((p) => p.name === m.parent).title, type: "indoor" });
+const byId = Object.fromEntries(MAPS.filter((m) => m.id).map((m) => [m.id, m]));
 // Their songs: the project's BGM files.
-const SONGS = { dp_twinleaf: "DPPT 006 Twinleaf Town", dp_route201: "DPPT 008 Route 201", dp_lake: "DPPT 009 Lake", dp_sandgem: "DPPT 016 Sandgem Town" };
-// (Those not built yet: the way on from Sandgem Town, north to Route 202 and south to Route 219.)
-const UNBUILT = { 191: "MAP_ROUTE202", 198: "MAP_ROUTE219" };
+const SONGS = { dp_twinleaf: "DPPT 006 Twinleaf Town", dp_route201: "DPPT 008 Route 201", dp_lake: "DPPT 009 Lake", dp_sandgem: "DPPT 016 Sandgem Town",
+  dp_jubilife: "DPPT 025 Jubilife City", dp_pokecenter: "DPPT 019 Pokemon Center", dp_mart: "DPPT 027 Poke Mart" };
+// (Those not built yet: the ways on from Sandgem Town south to Route 219, and from Jubilife City east to Route 203,
+// north to Route 204 and west to Route 218's gate.)
+const UNBUILT = { 198: "MAP_ROUTE219", 105: "MAP_ROUTE203", 110: "MAP_ROUTE204", 107: "MAP_ROUTE218_GATE" };
+// Sandgem Town's beach, where the S.S. Tidal drops anchor: its sailor (ui/game.js sinnohSailor), who rows you out to
+// it and back to Lilycove.
+const SAILOR = { map: "SandgemTown", x: 25, y: 30 };
+// Prof. Rowan, and his aide, in his lab.
+const ROWAN = ["Rowan: Hm? So you are the Trainer\nwho came across the sea.", "I am Rowan. I study Pokémon here\nin Sinnoh, and how they evolve.",
+  "Nine in ten Pokémon are thought to be\nlinked to evolution in some way.", "Go out and see Sinnoh's Pokémon for\nyourself. Route 202 leads north to\nJubilife City."];
+const AIDE = ["The Professor came back to Sinnoh\nfrom Kanto four years ago.", "He's stern, but he cares deeply\nabout Pokémon, and Trainers too."];
 
 const tmp = path.join(require("os").tmpdir(), "sinnoh-" + process.pid + ".json");
-execFileSync("ruby", [path.join(__dirname, "lib/rmxp-dump.rb"), PROJ, tmp].concat(MAPS.map((m) => String(m.id))));
+execFileSync("ruby", [path.join(__dirname, "lib/rmxp-dump.rb"), PROJ, tmp].concat([...new Set(MAPS.map((m) => String(m.id || m.src)))]));
 const RX = JSON.parse(fs.readFileSync(tmp, "utf8"));
 fs.unlinkSync(tmp);
 
@@ -201,7 +223,7 @@ function rodSlots(l) {
 // ---------- Connections (PBS/map_connections.txt) ----------
 
 const EDGE = { North: "up", South: "down", East: "right", West: "left" };
-const connections = Object.fromEntries(MAPS.map((m) => [m.id, []]));
+const connections = Object.fromEntries(MAPS.filter((m) => m.id).map((m) => [m.id, []]));
 for (const raw of fs.readFileSync(path.join(PROJ, "PBS/map_connections.txt"), "utf8").replace(/^﻿/, "").split(/\r?\n/)) {
   const line = raw.replace(/#.*/, "").trim();
   if (!line) continue;
@@ -221,9 +243,33 @@ for (const raw of fs.readFileSync(path.join(PROJ, "PBS/map_connections.txt"), "u
 // ---------- The maps ----------
 
 const out = {};
-const animNames = ["s_auto4", "s_auto8"];   // (ui/overworld.js TILE_ANIMS: an autotile of four frames, of eight)
+const animNames = ["s_auto4", "s_auto5", "s_auto8"];   // (ui/overworld.js TILE_ANIMS: an autotile of four frames, five, eight)
+// People in the insides, for Essentials's: the nurse, the clerk, Rowan (Essentials's Prof. Oak) and his aide.
+const sprites = path.join(root, "assets/world/sprites");
+const frames = (sprite) => readPng(path.join(sprites, sprite + ".png")).width / 16;
+const person = (id, def, x, y, sprite, movement, script, text, extra) => Object.assign({
+  id, x, y, movement, rangeX: 0, rangeY: 0, script: def.name + "_EventScript_" + script, flag: null, text,
+  localId: "LOCALID_" + squash(def.name) + "_" + squash(script), sprite, width: 16, height: 32, frames: frames(sprite) }, extra || {});
+// Professor Rowan: Prof. Oak's overworld sprite in Rowan's colours: his sandy hair white, his white coat Rowan's dark
+// brown one, his red shirt blue.
+{
+  const oak = readPng(path.join(sprites, "prof_oak.png"));
+  const rgba = oak.rgba ? Uint8ClampedArray.from(oak.rgba) : new Uint8ClampedArray(oak.width * oak.height * 4);
+  if (!oak.rgba) oak.px.forEach((v, i) => { if (v) { const c = oak.palette[v]; rgba.set([c[0], c[1], c[2], 255], i * 4); } });
+  const ROWAN_COLOURS = {
+    "205,172,98": [236, 236, 244], "123,115,65": [168, 168, 184], "57,57,24": [88, 88, 104],   // (hair)
+    "255,255,255": [120, 92, 72], "197,197,213": [88, 66, 52], "139,139,148": [58, 44, 36],   // (coat)
+    "230,106,74": [96, 128, 208], "148,57,41": [56, 80, 152]                                     // (shirt)
+  };
+  for (let i = 0; i < rgba.length; i += 4) {
+    const to = rgba[i + 3] && ROWAN_COLOURS[rgba[i] + "," + rgba[i + 1] + "," + rgba[i + 2]];
+    if (to) rgba.set(to, i);
+  }
+  writePng(path.join(sprites, "dp_rowan.png"), oak.width, oak.height, rgba);
+}
+
 for (const def of MAPS) {
-  const m = RX.maps[def.id], T = tilesetOf(RX.tilesets[m.tileset_id]);
+  const m = RX.maps[def.id || def.src], T = tilesetOf(RX.tilesets[m.tileset_id]);
   const W = m.width, H = m.height, d = m.data.data, at = (x, y, z) => d[(z * H + y) * W + x];
   const pass = T.ts.passages.data, prio = T.ts.priorities.data, tags = T.ts.terrain_tags.data;
   // The pictures, at 32 px a tile: below the people and above them.
@@ -267,9 +313,9 @@ for (const def of MAPS) {
   // terrain tag (the top layer's first), the lake's entrances.
   const entry = {
     name: def.name, title: def.title, width: W, height: H, type: def.type, music: def.music, region: "sinnoh",
-    cycling: true, showName: true, top: true, borderWidth: 2, borderHeight: 2,
+    cycling: !def.src, showName: !def.src, top: true, borderWidth: 2, borderHeight: 2,
     collision: [], elevation: [], behavior: [], encounter: [],
-    connections: connections[def.id], warps: [], signs: [], triggers: [], hidden: [], people: [], wild: null
+    connections: connections[def.id] || [], warps: [], signs: [], triggers: [], hidden: [], people: [], wild: null
   };
   const ledges = [];
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -304,22 +350,61 @@ for (const def of MAPS) {
     }
     entry.behavior[y * W + x] = b;
   }
-  // Events: hidden items (pbItemBall in a HiddenItem event) and the ways between maps (Transfer Player, code 201).
+  // Events: hidden items (pbItemBall in a HiddenItem event), item balls (in an Item event), the ways between maps
+  // (Transfer Player, code 201), and in the insides their people and machines.
+  const MB_PC = 0x83, MB_COUNTER = 0x80;
   for (const [, ev] of m.events) {
     const page = ev.pages[0], list = page.list || [];
-    const script = list.map((c) => (c.code === 111 && c.parameters[0] === 12) || c.code === 355 ? String(c.parameters[1] || c.parameters[0]) : "").join(" ");
+    const script = list.map((c) => ((c.code === 111 && c.parameters[0] === 12) || c.code === 355 || c.code === 655 ? String(c.code === 111 ? c.parameters[1] : c.parameters[0]) : "")).join(" ");
     const item = /pbItemBall\(:(\w+)/.exec(script) || /pbReceiveItem\(:(\w+)/.exec(script);
-    if (/hidden/i.test(ev.name) && item) {
+    if (item && (/hidden/i.test(ev.name) || /^item/i.test(ev.name))) {
       const id = ITEM[squash(item[1])];
-      if (id) entry.hidden.push({ x: ev.x, y: ev.y, item: id, flag: "FLAG_HIDDEN_ITEM_" + squash(def.name) + "_" + squash(id), quantity: 1 });
-      else console.warn("no such item: " + item[1]);
+      if (!id) { console.warn("no such item: " + item[1]); continue; }
+      const flag = "FLAG_" + (/hidden/i.test(ev.name) ? "HIDDEN_ITEM_" : "ITEM_") + squash(def.name) + "_" + squash(id);
+      if (/hidden/i.test(ev.name)) entry.hidden.push({ x: ev.x, y: ev.y, item: id, flag, quantity: 1 });
+      else entry.people.push({ id: entry.people.length, x: ev.x, y: ev.y, movement: "face_down", rangeX: 0, rangeY: 0,
+        script: def.name + "_EventScript_Item" + squash(id), flag, text: null, item: id, sprite: "item_ball", width: 16, height: 16, frames: 1, inanimate: true });
       continue;
     }
     const go = list.find((c) => c.code === 201 && c.parameters[0] === 0);
-    if (go) entry.warps.push({ x: ev.x, y: ev.y, to: { id: go.parameters[1], x: go.parameters[2], y: go.parameters[3] } });
+    if (go) { entry.warps.push({ x: ev.x, y: ev.y, to: { id: go.parameters[1], x: go.parameters[2], y: go.parameters[3] } }); continue; }
+    if (!def.src) continue;
+    const at_ = (x, y) => y * W + x;
+    if (def.kind === "center" && ev.name === "Nurse") {
+      entry.people.push(person(entry.people.length, def, ev.x, ev.y, "em_nurse", "face_down", "Nurse", null));
+      entry.behavior[at_(ev.x, ev.y + 1)] = MB_COUNTER;   // (the counter in front of her: Essentials's Nursemover)
+      entry.center = { x: ev.x, y: ev.y + 2 };              // (where you wake up after blacking out, at the counter)
+    } else if (def.kind === "center" && /pbPokeCenterPC/.test(script)) entry.behavior[at_(ev.x, ev.y)] = MB_PC;
+    else if (def.kind === "mart" && /pbPokemonMart/.test(script) && page.graphic.character_name) {
+      // (Its stock grows with your Badges: each pbPokemonMart list after "$player.badge_count >= n", and the last for
+      // none. `mart` is that last; `martTiers`, [n, stock] from the most Badges down: ui/game.js picks by yours.)
+      const tiers = [];
+      let need = 0, items = null;
+      for (const c of list) {
+        const text = String(c.code === 111 ? c.parameters[1] : c.parameters[0]);
+        if (c.code === 111) { const b = /badge_count >= (\d+)/.exec(text); need = b ? +b[1] : 0; }
+        else if (c.code === 412 || (c.code === 0 && c.indent === 0)) need = 0;
+        if (c.code === 355 && /pbPokemonMart\(\[/.test(text)) items = [];
+        if (items && (c.code === 355 || c.code === 655)) for (const y of text.matchAll(/:(\w+)/g)) if (ITEM[squash(y[1])]) items.push(ITEM[squash(y[1])]);
+        if (items && /\]\)/.test(text)) { tiers.push([need, items]); items = null; }
+      }
+      const base = (tiers.find(([n]) => n === 0) || [0, ["poke-ball", "potion"]])[1];
+      entry.people.push(person(entry.people.length, def, ev.x, ev.y, "em_mart_employee", "face_down", "Clerk", ["Welcome!", "How may I serve you?"],
+        { mart: base, martTiers: tiers.filter(([n]) => n > 0) }));
+      entry.behavior[at_(ev.x, ev.y + 1)] = MB_COUNTER;
+    } else if (def.kind === "lab" && ev.name === "Professor") {
+      entry.people.push(person(entry.people.length, def, ev.x, ev.y, "dp_rowan", "face_down", "Rowan", ROWAN));
+    } else if (def.kind === "lab" && ev.name === "Dex access") {
+      entry.people.push(person(entry.people.length, def, ev.x, ev.y, "em_scientist_1", "face_right", "Aide", AIDE));
+    } else if (def.kind === "lab" && /ball$/.test(ev.name)) {
+      entry.people.push(person(entry.people.length, def, ev.x, ev.y, "item_ball", "face_down", "Ball" + ev.x,
+        ["It's a Poké Ball. A Pokémon the\nProfessor caught is inside."], { width: 16, height: 16, frames: 1, inanimate: true }));
+    }
   }
+  if (def.kind === "center") entry.pokemonCenter = true;
+  if (def.name === SAILOR.map) entry.people.push(person(entry.people.length, def, SAILOR.x, SAILOR.y, "em_sailor", "face_up", "Sailor", null));
   // Wild Pokémon.
-  const e = encounters[def.id] || {};
+  const e = (def.id && encounters[def.id]) || {};
   entry.wild = merged(e, ["LandMorning", "Land", "LandDay", "LandNight"]);
   entry.water = merged(e, ["Water"]);
   const rods = { "old-rod": rodSlots(e.OldRod), "good-rod": rodSlots(e.GoodRod), "super-rod": rodSlots(e.SuperRod) };
@@ -328,9 +413,10 @@ for (const def of MAPS) {
   const big = halve(below, W * 32, H * 32);
   writePng(path.join(outMaps, def.name + ".png"), W * 16, H * 16, big);
   writePng(path.join(outMaps, def.name + "-top.png"), W * 16, H * 16, halve(above, W * 32, H * 32));
-  // (Past the edge where nothing joins on: the map's top-left 2x2 tiles, its trees.)
+  // (Past the edge where nothing joins on: outside, the map's top-left 2x2 tiles, its trees; inside, black.)
   const border = new Uint8ClampedArray(32 * 32 * 4);
-  for (let y = 0; y < 32; y++) border.set(big.subarray((y * W * 16) * 4, (y * W * 16 + 32) * 4), y * 32 * 4);
+  if (def.src) for (let i = 3; i < border.length; i += 4) border[i] = 255;
+  else for (let y = 0; y < 32; y++) border.set(big.subarray((y * W * 16) * 4, (y * W * 16 + 32) * 4), y * 32 * 4);
   writePng(path.join(outMaps, def.name + "-border.png"), 32, 32, border);
   if (animPics.length) {
     writeAnimSheet(path.join(outMaps, def.name + "-anim.png"), animPics);
@@ -338,30 +424,49 @@ for (const def of MAPS) {
   }
   out[def.name] = entry;
 }
-// The ways between maps: each Transfer Player event is a warp you step onto (MB_LADDER: no door, no stairs), to where
-// it puts you, a warp too (one that goes back the way you came, if you walk back off it into something).
-for (const def of MAPS) {
+// The ways between maps. A Transfer Player event outside, to another map outside, is a warp you step onto
+// (MB_LADDER: no door, no stairs), to where it puts you, a warp too (one that goes back the way you came, if you walk
+// back off it into something). An inside's way out (its exit mat, a warp you walk off downward) goes to its door
+// outside (MB_WARP_DOOR: walked into going up), and you come in on the tile in front of the mat.
+const MB_WARP_DOOR = 0x69;
+const warpAt = (e, x, y) => e.warps.findIndex((w) => w.x === x && w.y === y);
+const unbuiltConst = (id, def) => {
+  const info = RX.infos.find((i) => i[0] === id);
+  // (Named for the map, or, one Essentials left unnamed (Lake Verity's hut, its MAP009), for where it's from.)
+  const name = info && !/^MAP\d+$/.test(info[1]) ? info[1] : def.title + " inside";
+  return "MAP_" + name.toUpperCase().replace(/[^A-Z0-9]+/g, "_");
+};
+for (const def of MAPS.filter((d) => d.src)) {
+  const inside = out[def.name], outside = out[def.parent];
+  // (The parent's own door to it: its Transfer Player event to this map.)
+  if (!def.door) {
+    const ev = outside.warps.find((w) => w.to && w.to.id === def.src);
+    def.door = [ev.x, ev.y];
+    outside.warps.splice(outside.warps.indexOf(ev), 1);
+  }
+  const exits = inside.warps.splice(0);
+  const [dx, dy] = def.door;
+  const door = outside.warps.length;
+  for (const w of exits) {
+    inside.warps.push({ x: w.x, y: w.y, map: def.parent, warp: door });
+    inside.collision[w.y * inside.width + w.x] = 0;
+  }
+  // (In: in front of the first mat.)
+  inside.warps.push({ x: exits[0].x, y: exits[0].y - 1, map: def.parent, warp: door });
+  outside.warps.push({ x: dx, y: dy, map: def.name, warp: inside.warps.length - 1 });
+  outside.behavior[dy * outside.width + dx] = MB_WARP_DOOR;
+}
+for (const def of MAPS.filter((d) => d.id)) {
   const e = out[def.name];
   for (const w of e.warps.filter((w) => w.to)) {
-    const dest = byId[w.to.id] && out[byId[w.to.id].name];
-    const { x, y } = w.to;
-    w.to_id = w.to.id;
+    const to = w.to, dest = byId[to.id] && out[byId[to.id].name];
     delete w.to;
-    if (!dest) {
-      const info = RX.infos.find((i) => i[0] === w.to_id);
-      w.map = null;
-      // (Named for the map, or, one Essentials left unnamed (Lake Verity's hut, its MAP009), for where it's from.)
-      const name = info && !/^MAP\d+$/.test(info[1]) ? info[1] : def.title + " inside";
-      w.mapConst = "MAP_" + name.toUpperCase().replace(/[^A-Z0-9]+/g, "_");
-      delete w.to_id;
-      continue;
-    }
-    let k = dest.warps.findIndex((d) => d.x === x && d.y === y && !d.to);
-    if (k < 0) { k = dest.warps.length; dest.warps.push({ x, y, map: def.name, warp: e.warps.indexOf(w) }); }
-    delete w.to_id;
+    e.behavior[w.y * e.width + w.x] = MB.LADDER;
+    if (!dest) { w.map = null; w.mapConst = unbuiltConst(to.id, def); continue; }
+    let k = warpAt(dest, to.x, to.y);
+    if (k < 0) { k = dest.warps.length; dest.warps.push({ x: to.x, y: to.y, map: def.name, warp: e.warps.indexOf(w) }); }
     w.map = dest.name;
     w.warp = k;
-    e.behavior[w.y * e.width + w.x] = MB.LADDER;
   }
 }
 
@@ -380,7 +485,7 @@ for (const [name, file] of Object.entries(SONGS)) {
 
 const file = path.join(root, "data/orre-maps.js"), MARK = "\n// Sinnoh";
 const before = fs.readFileSync(file, "utf8").split(MARK)[0].replace(/\n*$/, "\n");
-fs.writeFileSync(file, before + MARK + "'s first maps, from a Pokémon Essentials project of Sinnoh: auto-generated by tools/build-sinnoh.js. Do not edit by hand.\n" +
+fs.writeFileSync(file, before + MARK + "'s maps, from a Pokémon Essentials project of Sinnoh: auto-generated by tools/build-sinnoh.js. Do not edit by hand.\n" +
   "Object.assign(window.WORLD_MAPS, " + JSON.stringify(out) + ");\n" +
   "window.SINNOH_MUSIC = " + JSON.stringify(music) + ";\n");
 console.log("wrote " + MAPS.map((m) => m.title + " (" + out[m.name].width + "x" + out[m.name].height + ")").join(", ") + " to data/orre-maps.js and assets/world/maps/");

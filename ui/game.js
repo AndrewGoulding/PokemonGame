@@ -639,7 +639,10 @@
     player.party.forEach(Party.heal);
     // (In Hoenn: its last Pokémon Center, or, before you've used one, your bedroom: setrespawn.)
     const inHoennNow = isHoenn(player.location.map);
-    const center = player.flags.lastCenter && (!inHoennNow || isHoenn(player.flags.lastCenter)) && centerOf(player.flags.lastCenter);
+    // (In Sinnoh: its last Pokémon Center, or Sandgem Town's.)
+    const sinnoh = (map) => (window.WORLD_MAPS[map] || {}).region === "sinnoh", inSinnohNow = sinnoh(player.location.map);
+    const center = inSinnohNow ? centerOf(sinnoh(player.flags.lastCenter) ? player.flags.lastCenter : "SandgemTown_PokemonCenter_1F")
+      : player.flags.lastCenter && (!inHoennNow || isHoenn(player.flags.lastCenter)) && centerOf(player.flags.lastCenter);
     const hoennHome = inHoennNow && !center ? (player.flags.hoennRespawn || hoennBedroom()) : null;
     const to = Object.assign({}, center || hoennHome || Player.HOME);
     music(null);
@@ -1013,6 +1016,7 @@
 
   // Something to do on the map once the menus close (the Itemfinder).
   let fieldAction = null;
+  let afterScript = null;   // (run once the event's script is over: sailToSinnoh)
   // The Itemfinder (FireRed's src/itemfinder.c): a hidden item within 7 steps
   // across and 5 up or down makes it respond, and you turn toward the nearest;
   // one right underfoot is dug up.
@@ -2942,6 +2946,9 @@
   // Trainers: battle until beaten (a flag named for the trainer, as in FireRed).
   // (Hoenn's nurses and clerks: tools/build-hoenn.js.)
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "hoenn") for (const p of m.people) if (/_PokemonCenter_1F_EventScript_Nurse$|_Mart_EventScript_Clerk$/.test(p.script || "")) SPECIAL.add(p.script);
+  // (Sinnoh's: tools/build-sinnoh.js; and Sandgem's beach's sailor, sinnohSailor.)
+  for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "sinnoh") for (const p of m.people) if (/_PokemonCenter_1F_EventScript_Nurse$|_Mart_EventScript_Clerk$/.test(p.script || "")) SPECIAL.add(p.script);
+  SPECIAL.add("SandgemTown_EventScript_Sailor");
   SPECIAL.add("SlateportCity_Harbor_EventScript_Sailor"); SPECIAL.add("Route117_PokemonDayCare_EventScript_DaycareWoman");
   SPECIAL.add("LilycoveCity_MoveDeletersHouse_EventScript_MoveDeleter"); SPECIAL.add("FallarborTown_MoveRelearnersHouse_EventScript_MoveRelearner");
   const TRAINER_SCRIPTS = new Set();
@@ -3285,6 +3292,13 @@
     if (script === "Johto_SSAquaBoard") { await ssAquaBoard(); return; }
     // (Hoenn's Poké Mart clerks: their stock, from Emerald's scripts.)
     if (ev.person && ev.person.mart && /_Mart_EventScript_Clerk$/.test(script || "") && (window.WORLD_MAPS[ev.map] || {}).region === "hoenn") { await mart(ev.person.mart); return; }
+    // (Sinnoh's, from the Essentials project: more for more Badges, any region's.)
+    if (ev.person && ev.person.mart && /_Mart_EventScript_Clerk$/.test(script || "") && (window.WORLD_MAPS[ev.map] || {}).region === "sinnoh") {
+      const tier = (ev.person.martTiers || []).find(([n]) => player.badges.length >= n);
+      await mart(tier ? tier[1] : ev.person.mart);
+      return;
+    }
+    if (script === "SandgemTown_EventScript_Sailor") { await sinnohSailor(); return; }
     // (Johto's Pokémon Centers' nurses heal as Kanto's do.)
     if (/_PokemonCenter_1F_EventScript_Nurse$/.test(script || "") && (window.WORLD_MAPS[ev.map] || {}).pokemonCenter) { await nurse(ev.map, ev.person); return; }
 
@@ -9503,6 +9517,41 @@
   // on. (The words are this game's own: Colosseum's script isn't to hand.)
   const ORRE = (k) => "LOCALID_ORRE_" + k;
   // (The debug menu's way there: Prof. Oak's plane, without his briefing.)
+  // ---------- Sinnoh: the S.S. Tidal's run (this game's own) ----------
+  //
+  // From Lilycove's harbor, with the Sinnoh Ticket (Norman's, after Hoenn's Hall of Fame): across the sea to Sinnoh,
+  // where the ship drops anchor off Sandgem Town's beach; its sailor there rows you out to it again, back to Lilycove.
+  const SANDGEM_BEACH = { map: "SandgemTown", x: 25, y: 29, facing: "down" };
+  const LILYCOVE_HARBOR = { map: "LilycoveCity_Harbor", x: 8, y: 11, facing: "down" };
+  async function voyage(to, lines) {
+    await Overworld.fadeToBlack();
+    music(null);
+    Overworld.setAvatar("walk");
+    Orre.leave(player);
+    const o = $("#overlay");
+    sfx("se_ship");
+    for (const l of lines) await GbaMenus.blackScreen(o, l);
+    o.classList.add("hidden");
+    player.location = Object.assign({}, to);
+    await Overworld.teleport(player.location);
+    await persist();
+  }
+  async function sailToSinnoh() {
+    Screen.say("");
+    show("world");
+    Overworld.resume();
+    await voyage(SANDGEM_BEACH, ["The S.S. Tidal sets sail from Lilycove,\nout across the open sea…", "Days later, a new land comes into\nview: the Sinnoh region."]);
+    player.flags.sinnohLanded = true;
+    await say(["Sailor: Here we are: Sandgem Town,\nin the Sinnoh region!", "The ship's anchored offshore. Come\nand see me when you want to sail\nback to Hoenn."]);
+  }
+  async function sinnohSailor() {
+    await say(["Sailor: Ahoy! The S.S. Tidal's\nanchored just offshore."]);
+    if (!(await confirm("Shall we sail back to Lilycove City\nin Hoenn?"))) { await say("Enjoy Sinnoh! I'll be right here."); return; }
+    await say("All aboard!");
+    await voyage(LILYCOVE_HARBOR, ["The S.S. Tidal sets sail from Sinnoh,\nback across the sea to Hoenn…"]);
+    await say("The S.S. Tidal has arrived in\nLilycove City.");
+  }
+
   async function visitOrre() {
     Screen.say("");
     show("world");
@@ -12728,7 +12777,8 @@
 
   // Where you come to in a Pokémon Center after blacking out: Kanto's
   // (Player.CENTERS), or one of Johto's, FireRed's own room (data/johto-maps.js).
-  const centerOf = (map) => Player.CENTERS[map] || ((window.WORLD_MAPS[map] || {}).pokemonCenter ? { map, x: 7, y: 4, facing: "up" } : null);
+  // (A map's own `center`, where its counter is: Sinnoh's, from the Essentials project.)
+  const centerOf = (map) => Player.CENTERS[map] || ((window.WORLD_MAPS[map] || {}).pokemonCenter ? Object.assign({ map, x: 7, y: 4, facing: "up" }, window.WORLD_MAPS[map].center) : null);
 
   // ---------- The Rejuvenator (this game's own) ----------
   //
@@ -13761,7 +13811,13 @@
         if (!shown && Player.itemCount(player, "sinnoh-ticket")) sel.push(7);
         sel.push(6);
         const k = await hoennEnv.choose(sel.map((i) => ({ 0: "Slateport City", 1: "Battle Frontier", 2: "Southern Island", 5: "Faraway Island", 6: "Exit", 7: "Sinnoh" })[i]), null);
-        if (sel[k] === 7) { await say(["The S.S. Tidal's run to Sinnoh\nisn't sailing yet, I'm afraid.", "Please come back another time."]); ssTidalPick = 6; return true; }
+        // (Sinnoh: off at once, to Sandgem Town's beach: sailToSinnoh.)
+        if (sel[k] === 7) {
+          await say(["The S.S. Tidal for Sinnoh.\nYou have your Sinnoh Ticket?", "All aboard! We'll be setting sail\nshortly."]);
+          afterScript = sailToSinnoh;
+          api.cut();
+          return true;
+        }
         ssTidalPick = k < 0 ? 127 : sel[k];
         return true;
       }
@@ -14581,7 +14637,11 @@
         else await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(ev.species, ev.level,
           { unown: Sevii.unownLetter(at.map, ev.slot) || JohtoAlph.unownLetter(at.map, alphSolved()) }))] },
           terrain, ghost: towerGhost() });
-      } else await story(ev);
+      } else {
+        await story(ev);
+        // (A voyage a script set off, once it's done: the S.S. Tidal to Sinnoh, from Lilycove's harbor.)
+        if (afterScript) { const act = afterScript; afterScript = null; await act(); }
+      }
       await persist();
     }
   }

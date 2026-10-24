@@ -115,9 +115,9 @@
     e_pacifidlog_logs: { every: 16, at: 0, frames: 4 }, e_pacifidlog_currents: { every: 16, at: 1, frames: 8 }, e_sootopolis_water: { every: 16, at: 0, frames: 8 },
     e_frontier_flag: { every: 8, at: 0, frames: 4 }, e_seaweed: { every: 16, at: 0, frames: 4 }, e_cave_lava: { every: 16, at: 1, frames: 8 },
     e_soot_gym_side: { every: 8, at: 0, frames: 3, wrap: 240 }, e_soot_gym_front: { every: 8, at: 0, frames: 3, wrap: 240 },
-    // (Sinnoh's maps, from RPG Maker XP: its animated autotiles, of four frames or eight, each the next every 24
-    // (RPG Maker's 16 at 40 a second): tools/build-sinnoh.js.)
-    s_auto4: { every: 24, at: 0, frames: 4, wrap: 96 * 5 }, s_auto8: { every: 24, at: 0, frames: 8, wrap: 192 * 5 } };
+    // (Sinnoh's maps, from RPG Maker XP: its animated autotiles, of four frames, five or eight, each the next every
+    // 24 (RPG Maker's 16 at 40 a second): tools/build-sinnoh.js.)
+    s_auto4: { every: 24, at: 0, frames: 4, wrap: 960 }, s_auto5: { every: 24, at: 0, frames: 5, wrap: 960 }, s_auto8: { every: 24, at: 0, frames: 8, wrap: 960 } };
   for (let k = 0; k < 8; k++) {
     TILE_ANIMS["e_rustboro_water" + k] = { every: 8, at: k, frames: 8, shift: k };
     TILE_ANIMS["e_evergrande_flowers" + k] = { every: 8, at: k, frames: 8, shift: k };

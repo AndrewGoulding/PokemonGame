@@ -1998,7 +1998,7 @@ before; CALL, CHECK or CANCEL); RIBBONS once a Pokémon has one; SWITCH OFF. Cal
 over the map, the PokéNav spinning at its side, and Johto's trainers who'd register now register in the PokéNav,
 the S.S. Tidal (its sailings from Lilycove, by the tickets you hold, and the voyage on as you walk the ship, or rest;
 after the Hall of Fame Norman brings a Sinnoh Ticket too, this game's own, and Lilycove lists a run to Sinnoh, which
-isn't sailing yet: Sinnoh's to come),
+sails to Sandgem Town's beach: see Sinnoh, below),
 the rotating-tile puzzles, the Mirage Tower and Rayquaza's scenes. The scene over Sootopolis is Emerald's own
 (`ui/rayquaza-scene.js`, its pictures from `tools/build-rayquaza-scene.js` into `assets/rayquaza-scene/`), its
 five scenes timed as `src/rayquaza_scene.c` times them: Groudon and Kyogre facing one another under the storm
@@ -3128,13 +3128,22 @@ not the game's files. It has the whole disc's text now, about 10,400 lines, by a
 ## Sinnoh (in progress)
 
 Sinnoh's first maps are here, from a Pokémon Essentials project of Sinnoh (an RPG Maker XP project, its tiles the
-DS games' own): **Twinleaf Town**, **Route 201**, **Verity Lakefront**, **Lake Verity** and **Sandgem Town**, joined
-as the project joins them, with their grass and water Pokémon (Starly, Bidoof and Kricketot on Route 201; Psyduck to
-Surf for and Magikarp, Goldeen and the like to fish for at Twinleaf's pond and the lake) and Verity Lakefront's hidden
-Tiny Mushroom. Each plays its own song from Diamond, Pearl and Platinum (Twinleaf Town's, Route 201's, the lake's,
-Sandgem Town's). They aren't joined to the rest of the game yet (the S.S. Tidal's run from Lilycove still isn't
-sailing, and the buildings have no insides): for now the debug menu's **Visit Sinnoh** takes you to Twinleaf Town,
-and its trip to the last Pokémon Center brings you back.
+DS games' own): **Twinleaf Town**, **Route 201**, **Verity Lakefront**, **Lake Verity**, **Sandgem Town**,
+**Route 202** and **Jubilife City**, joined as the project joins them, with their grass and water Pokémon (Starly,
+Bidoof and Kricketot on Route 201, and Shinx too on Route 202; Psyduck to Surf for and Magikarp, Goldeen and the like
+to fish for at Twinleaf's pond and the lake), Verity Lakefront's hidden Tiny Mushroom and the Potions lying on
+Route 202 and in Jubilife City. Each plays its own song from Diamond, Pearl and Platinum.
+
+- **Getting there**: the S.S. Tidal. After Hoenn's Hall of Fame, Norman's Sinnoh Ticket adds **Sinnoh** to the
+  sailings from Lilycove's harbor; the ship drops anchor off **Sandgem Town's beach**, where its sailor rows you
+  back out to it and home to Lilycove whenever you like. (The debug menu's **Visit Sinnoh** goes to Twinleaf Town.)
+- **Sandgem Town** has its **Pokémon Center** (the nurse heals, the PC works, and blacking out in Sinnoh brings you
+  back to the last of Sinnoh's you used, or Sandgem's), its **Poké Mart** and **Prof. Rowan's lab**, where Rowan and
+  his aide talk about Sinnoh; **Jubilife City** its Pokémon Center and Poké Mart. The insides are the project's
+  (Jubilife's Pokémon Center and Mart, used for Sandgem's too, and Essentials's lab for Rowan's). The Marts sell
+  more for more Badges (any region's), as the project's do. Rowan is Prof. Oak's sprite in Rowan's colours (white
+  hair, a brown coat).
+- The other houses have no insides yet, and the ways on (Route 203 and 204, Route 218's gate, Route 219) aren't built.
 
 `tools/build-sinnoh.js` builds them from the project (it needs Ruby, to read RPG Maker's `.rxdata` files through
 `tools/lib/rmxp-dump.rb`):
@@ -3150,8 +3159,10 @@ node tools/build-sinnoh.js <path to the Essentials project>
 - **What the tiles are**: solid as RPG Maker's passages say (from the top layer down to the first under the people),
   and Essentials's terrain tags made FireRed's behaviours: grass, tall grass, sand, water, waterfalls, ice and ledges
   (jumped south, or, up and down, away from the raised ground).
-- **Connections** from `PBS/map_connections.txt`; the lake's entrances (Transfer Player events) are warps you step on;
-  hidden items from its `HiddenItem` events; wild Pokémon from `PBS/encounters.txt` (morning, day and night lists
+- **Connections** from `PBS/map_connections.txt`; the lake's entrances (Transfer Player events) are warps you step on,
+  the doors into the insides doors (Sandgem's, which aren't events in the project, placed by hand), the insides' mats
+  ways out; the nurse, PC, clerk (and her stock by Badges) and Rowan from the insides' events; hidden items and item
+  balls from its `HiddenItem` and `Item` events; wild Pokémon from `PBS/encounters.txt` (morning, day and night lists
   put together, the rods' in Gen 4's five slots).
 - **The music**: the project's own recordings (`assets/audio/sinnoh/`, Ogg), played by `ui/audio.js` as `dp_` songs,
   looping where the files' `LOOPSTART` and `LOOPLENGTH` say (or whole).
