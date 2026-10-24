@@ -3049,6 +3049,9 @@ run it on the `.fsys` archives:
 node tools/build-colosseum-text.js <.fsys files or folders of them>
 ```
 
+It takes `.msg` files too: the message tables already unpacked from the archives (by QuickBMS, for instance), which
+are much smaller than the archives they come from.
+
 It unpacks each archive (its LZSS-packed files), finds the message tables (`.msg` files, and those inside
 `common.rel`), decodes their strings (UTF-16 with the game's control codes: `\n` a new line, `\f` a new page,
 `{speaker}` the speaker's name, `{xx}` another name or number put in) and adds them to `assets/text/colosseum.json`,

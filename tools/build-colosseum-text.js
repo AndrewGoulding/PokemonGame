@@ -5,6 +5,9 @@
 //
 //   node tools/build-colosseum-text.js <.fsys files or folders of them>
 //
+// (Message tables already unpacked from the archives, .msg files, can be
+// given too.)
+//
 // (The archives themselves aren't kept in the repository: only the text.)
 //
 // An .fsys archive: "FSYS", its file count at 0x0C, a table of pointers at
@@ -103,15 +106,22 @@ function tablesIn(d) {
 // ---------- Everything given ----------
 
 const inputs = process.argv.slice(2).flatMap((p) => (fs.statSync(p).isDirectory()
-  ? fs.readdirSync(p).filter((f) => /\.fsys$/i.test(f)).map((f) => path.join(p, f)) : [p]));
+  ? fs.readdirSync(p).filter((f) => /\.(fsys|msg)$/i.test(f)).map((f) => path.join(p, f)) : [p]));
 if (!inputs.length) {
-  console.error("Usage: node tools/build-colosseum-text.js <.fsys files or folders of them>");
+  console.error("Usage: node tools/build-colosseum-text.js <.fsys or .msg files, or folders of them>");
   process.exit(1);
 }
 const outFile = path.join(__dirname, "..", "assets/text/colosseum.json");
 const out = fs.existsSync(outFile) ? JSON.parse(fs.readFileSync(outFile, "utf8")) : {};
 let count = 0;
 for (const file of inputs) {
+  // (A message table already unpacked, by QuickBMS or another tool: keyed by its own name.)
+  if (/\.msg$/i.test(file)) {
+    const strings = table(fs.readFileSync(file), 0);
+    out["msg/" + path.basename(file).replace(/\.msg$/i, "")] = strings;
+    count += Object.keys(strings).length;
+    continue;
+  }
   const archive = path.basename(file).replace(/\.fsys$/i, "").replace(/^[0-9a-f]{8}-/, "");   // (an uploaded copy's prefix)
   for (const f of unpack(file)) {
     const offsets = f.type === 0x0a ? [0] : /_rel$/.test(f.name) ? tablesIn(f.data) : [];
