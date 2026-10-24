@@ -75,6 +75,7 @@
     poison: "{who} is hurt by poison!", badpoison: "{who} is hurt by poison!", burn: "{who} is hurt by its burn!",
     confusion: "It hurt itself in its confusion!", recoil: "{who} is damaged by the recoil!",
     sandstorm: "{who} is buffeted by the sandstorm!", hail: "{who} is buffeted by the hail!",
+    shadowsky: "{who} is hurt by the shadowy aura!",
     leechseed: "{who}'s health is sapped by Leech Seed!", stealthrock: "Pointed stones dug into {whom}!",
     spikes: "{who} is hurt by the spikes!", nightmare: "{who} is locked in a nightmare!",
     curse: "{who} is afflicted by the curse!",
@@ -89,6 +90,7 @@
   };
   const VOLATILE_START = {
     confusion: "{who} became confused!", substitute: "{who} put in a substitute!",
+    shadowhold: "{who} can no longer escape!",
     aquaring: "{who} surrounded itself with a veil of water!", attract: "{who} fell in love!",
     bide: "{who} is storing energy!", curse: "{who} was cursed!", disable: "{who}'s move was disabled!",
     encore: "{who} received an encore!", embargo: "{who} can't use items anymore!",
@@ -189,11 +191,13 @@
   };
   const WEATHER_START = {
     SunnyDay: "The sunlight turned harsh!", RainDance: "It started to rain!",
-    Sandstorm: "A sandstorm kicked up!", Hail: "It started to hail!", Snow: "It started to snow!"
+    Sandstorm: "A sandstorm kicked up!", Hail: "It started to hail!", Snow: "It started to snow!",
+    ShadowSky: "A shadowy aura filled the sky!"
   };
   const WEATHER_UPKEEP = {
     SunnyDay: "The sunlight is strong.", RainDance: "Rain continues to fall.",
-    Sandstorm: "The sandstorm rages.", Hail: "Hail continues to fall.", Snow: "Snow continues to fall."
+    Sandstorm: "The sandstorm rages.", Hail: "Hail continues to fall.", Snow: "Snow continues to fall.",
+    ShadowSky: "The shadowy aura continues."
   };
 
   // "move: Light Screen" -> "lightscreen", "[from] bad poison" -> "badpoison"
@@ -800,12 +804,14 @@
     Fighting: ["se_m_mega_kick", "se_m_vital_throw"], Poison: ["se_m_toxic", "se_m_toxic"], Ground: ["se_m_dig", "se_m_earthquake"],
     Flying: ["se_m_wing_attack", "se_m_gust"], Psychic: ["se_m_psybeam", "se_m_psybeam"], Bug: ["se_m_string_shot", "se_m_string_shot"],
     Rock: ["se_m_rock_throw", "se_m_rock_throw"], Ghost: ["se_m_lick", "se_m_nightmare"], Dragon: ["se_m_dragon_rage", "se_m_dragon_rage"],
-    Dark: ["se_m_bite", "se_m_faint_attack"], Steel: ["se_m_vicegrip", "se_m_harden"], Fairy: ["se_m_charm", "se_m_moonlight"]
+    Dark: ["se_m_bite", "se_m_faint_attack"], Steel: ["se_m_vicegrip", "se_m_harden"], Fairy: ["se_m_charm", "se_m_moonlight"],
+    Shadow: ["se_m_faint_attack", "se_m_nightmare"]
   };
   const TYPE_COLOR = {
     Normal: "#c6c6a7", Fire: "#f08030", Water: "#6890f0", Electric: "#f8d030", Grass: "#78c850", Ice: "#98d8d8",
     Fighting: "#c03028", Poison: "#a040a0", Ground: "#e0c068", Flying: "#a890f0", Psychic: "#f85888", Bug: "#a8b820",
-    Rock: "#b8a038", Ghost: "#705898", Dragon: "#7038f8", Dark: "#705848", Steel: "#b8b8d0", Fairy: "#ee99ac"
+    Rock: "#b8a038", Ghost: "#705898", Dragon: "#7038f8", Dark: "#705848", Steel: "#b8b8d0", Fairy: "#ee99ac",
+    Shadow: "#604878"
   };
   function moveSound(name, data) {
     const own = "se_m_" + name.toLowerCase().replace(/[^a-z0-9]+/g, "_");
@@ -867,6 +873,13 @@
       fx.remove();
     }));
   }
+  // A Shadow Pokémon's dark aura flaring up round it.
+  function shadowAura(side) {
+    const sprite = el.sides[side] && el.sides[side].sprite;
+    if (!sprite) return Promise.resolve();
+    const dark = "drop-shadow(0 0 5px #8040c0) drop-shadow(0 0 3px #301048) brightness(0.75)";
+    return sprite.animate([{ filter: "none" }, { filter: dark, offset: 0.3 }, { filter: dark, offset: 0.7 }, { filter: "none" }], { duration: 600 }).finished.catch(() => {});
+  }
   // The move's own animation, pokeemerald-expansion's (ui/battle-anim.js:
   // its script and C, run as the GBA runs them over the field); false if
   // there's none to play (the one above, then).
@@ -874,6 +887,9 @@
     const BA = window.BattleAnim;
     if (!BA || !BA.has(name)) return Promise.resolve(false);
     const target = aims.find((a) => a !== side) || aims[0];
+    // (A Shadow move: first the user's dark aura flares, as in Pokémon XD.)
+    if (data.type === "Shadow") return shadowAura(side).then(() => playAnim(Object.assign(animOpts(side, target), {
+      move: name, type: data.type, category: data.cat, turn: 0, power: data.power || 0, damage: 40, itemPicture: null })));
     return playAnim(Object.assign(animOpts(side, target), {
       move: name, type: data.type, category: data.cat,
       turn: data.flags && data.flags.charge ? 1 : 0, power: data.power || 0, damage: 40,

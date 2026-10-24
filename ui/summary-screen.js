@@ -81,7 +81,17 @@
   const TYPE_TILE = { Normal: 0x20, Fighting: 0x64, Flying: 0x60, Poison: 0x80, Ground: 0x48, Rock: 0x44, Bug: 0x6C,
     Ghost: 0x68, Steel: 0x88, Fire: 0x24, Water: 0x28, Grass: 0x2C, Electric: 0x40, Psychic: 0x84, Ice: 0x4C,
     Dragon: 0xA0, Dark: 0x8C, Fairy: 0xA4 };
+  // (Pokémon XD's Shadow type has no icon in the sheet: drawn, dark purple, SHADOW in tiny letters.)
+  const SHADOW_FONT = { S: "011100010001110", H: "101101111101101", A: "010101111101101", D: "110101101101110", O: "010101101101010", W: "101101111111101" };
   const typeIcon = (s, type, x, y) => {
+    if (type === "Shadow") {
+      for (let j = 0; j < 12; j++) for (let i = 0; i < 32; i++) {
+        const edge = i === 0 || j === 0 || i === 31 || j === 11, corner = (i === 0 || i === 31) && (j === 0 || j === 11);
+        if (!corner) s.put(x + i, y + j, edge ? [40, 24, 56] : j < 5 ? [128, 88, 168] : [96, 64, 136]);
+      }
+      [..."SHADOW"].forEach((ch, k) => { for (let p = 0; p < 15; p++) if (SHADOW_FONT[ch][p] === "1") s.put(x + 4 + k * 4 + (p % 3), y + 4 + Math.floor(p / 3), [248, 240, 255]); });
+      return;
+    }
     const t = TYPE_TILE[type] != null ? TYPE_TILE[type] : 0xA4;
     blit(s, "menuInfo", (t % 16) * 8, Math.floor(t / 16) * 8, 32, 12, x, y, D().pals.types);
   };
@@ -235,10 +245,10 @@
         const col = MOVE_COLOURS[i === 4 ? 0 : ppColour(m.pp, m.maxpp)];
         T(m.name, 163, y, tm, 7, 8);
         T("{PP}", 196, y + 11, tm, col[0], col[1]);
-        T(String(m.pp), 206 + 12 - String(m.pp).length * 6, y + 11, tm, col[0], col[1]);
+        const mv = window.MOVES[m.name], noPp = mv && mv.type === "Shadow";   // (Shadow moves have no PP)
+        T(noPp ? "--" : String(m.pp), 206 + 12 - (noPp ? 12 : String(m.pp).length * 6), y + 11, tm, col[0], col[1]);
         T("/", 218, y + 11, tm, col[0], col[1]);
-        T(String(m.maxpp), 224 + 12 - String(m.maxpp).length * 6, y + 11, tm, col[0], col[1]);
-        const mv = window.MOVES[m.name];
+        T(noPp ? "--" : String(m.maxpp), 224 + 12 - (noPp ? 12 : String(m.maxpp).length * 6), y + 11, tm, col[0], col[1]);
         if (mv) typeIcon(top, mv.type, 123, y);
       });
       if (page === 3 && st.mode !== "choose") T("CANCEL", 163, 21 + 112, tm, 7, 8);

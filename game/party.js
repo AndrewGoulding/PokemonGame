@@ -200,7 +200,8 @@
       dynamaxLevel: record.dynamaxLevel || 0,
       gmax: !!record.gmax,
       teraType: teraType(record), personality: record.personality,
-      teraAce: !!record.teraAce   // (a trainer's ace, which Terastallizes as soon as it can)
+      teraAce: !!record.teraAce,   // (a trainer's ace, which Terastallizes as soon as it can)
+      shadow: !!record.shadow   // (one of Orre's Shadow Pokémon)
     };
   }
 

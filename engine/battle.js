@@ -154,7 +154,9 @@
     sunnyday: "SunnyDay", raindance: "RainDance", sandstorm: "Sandstorm", hail: "Hail",
     // (Gen 9's snow, from Snowscape and Chilly Reception: no damage, Ice types' Defense ×1.5.)
     snow: "Snow", snowscape: "Snow",
-    desolateland: "DesolateLand", primordialsea: "PrimordialSea", deltastream: "DeltaStream"
+    desolateland: "DesolateLand", primordialsea: "PrimordialSea", deltastream: "DeltaStream",
+    // (Pokémon XD's Shadow Sky: Shadow moves stronger, and everything but Shadow Pokémon hurt each turn.)
+    shadowsky: "ShadowSky"
   };
   const TERRAIN_NAMES = {
     electricterrain: "ElectricTerrain", grassyterrain: "GrassyTerrain", mistyterrain: "MistyTerrain",
@@ -304,6 +306,8 @@
       this.koSpecies = Object.assign({}, set.koSpecies);
       // (Gen 9: its Tera Type, set.teraType; Terastallized: this.terastallized, that type.)
       // (Ogerpon's is its mask's, Terapagos's Stellar, whatever was set.)
+      // (Orre's Shadow Pokémon: what Shadow moves do to it, and Shadow Sky's.)
+      this.shadow = !!set.shadow;
       this.teraType = /^(Ogerpon|Terapagos)/.test(speciesKey) ? Battle.defaultTeraType(speciesKey) : set.teraType || Battle.defaultTeraType(speciesKey, set.personality);
       this.terastallized = null;
       this.teraAce = !!set.teraAce;
@@ -1738,6 +1742,9 @@
       const sh = mon.volatiles.shackled || mon.volatiles.octolock;
       if (sh && sh.source && sh.source.isActive && !sh.source.fainted) mon.trapped = true;
       if (mon.volatiles.noretreat) mon.trapped = true;
+      // (Shadow Hold: while the Shadow Pokémon that used it is still in.)
+      const hold = mon.volatiles.shadowhold;
+      if (hold && hold.source && hold.source.isActive && !hold.source.fainted) mon.trapped = true;
       // (Gen 9: Dondozo with a Tatsugiri in its mouth, and that Tatsugiri, can't leave.)
       if (mon.volatiles.commanded || mon.volatiles.commanding) mon.trapped = true;
       const pt = mon.volatiles.partiallytrapped;
@@ -2940,7 +2947,7 @@
 
     // ---------- Move execution ----------
     deductPP(user, move, target) {
-      if (move.id === "struggle") return;
+      if (move.id === "struggle" || move.shadow) return;   // (Shadow moves have no PP to use up)
       const slot = user.moves.find((m) => m.id === (move.ppFrom || move.id));
       if (!slot) return;
       let amount = 1;
@@ -3831,6 +3838,9 @@
           }
           if (w2 === "Hail" && !m.hasType("Ice") && this.runEvent("onImmunity", m, { relay: "hail" }) !== false) {
             this.damage(m, Math.floor(m.maxhp / 16), null, E("Weather", "hail", "Hail"));
+          }
+          if (w2 === "ShadowSky" && !m.shadow && this.runEvent("onImmunity", m, { relay: "shadowsky" }) !== false) {
+            this.damage(m, Math.floor(m.maxhp / 16), null, E("Weather", "shadowsky", "Shadow Sky"));
           }
           if (!m.fainted) this.runEvent("onWeather", m, { relay: E("Weather", w2.toLowerCase(), w2), only: "ability" });
         }

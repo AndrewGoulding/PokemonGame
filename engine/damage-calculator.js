@@ -470,6 +470,9 @@
     if (D.volatiles && D.volatiles.tarshot && move.type === "Fire") eff *= 2;
     // (Gen 9: a Stellar move is super effective on a Terastallized Pokémon, neutral otherwise.)
     if (move.type === "Stellar") eff = D.terastallized ? 2 : 1;
+    // (Pokémon XD's Shadow moves: super effective on anything but a Shadow Pokémon, whatever its types; not very
+    // effective on one.)
+    if (move.type === "Shadow") eff = D.shadow ? 0.5 : 2;
     result.typeEffectiveness = eff;
     env.eff = eff;   // (Tera Shell)
 
@@ -718,7 +721,7 @@
       if (move.type === "Fire" || move.id === "hydrosteam") weatherMult = 1.5; else if (move.type === "Water") weatherMult = 0.5;
     } else if (weather === "RainDance" || weather === "PrimordialSea") {
       if (move.type === "Water") weatherMult = 1.5; else if (move.type === "Fire") weatherMult = 0.5;
-    }
+    } else if (weather === "ShadowSky" && move.type === "Shadow") weatherMult = 1.5;
 
     const burned = A.status === "brn" && move.category === "Physical" &&
       A.ability !== "Guts" && move.id !== "facade";

@@ -1065,8 +1065,17 @@
     C.LaunchBattleAnimation(ANIM_TYPES[kind], id);
     return inst;
   }
+  // Pokémon XD's Shadow moves have no animation of their own here: each plays the nearest move's (ui/battle-screen.js
+  // wraps it in the user's dark aura).
+  const STAND_IN = {
+    "Shadow Blitz": "Tackle", "Shadow Rush": "Take Down", "Shadow Break": "Double-Edge", "Shadow End": "Giga Impact",
+    "Shadow Wave": "Dark Pulse", "Shadow Rave": "Night Daze", "Shadow Storm": "Twister", "Shadow Fire": "Flamethrower",
+    "Shadow Bolt": "Thunderbolt", "Shadow Chill": "Ice Beam", "Shadow Blast": "Air Slash", "Shadow Half": "Pain Split",
+    "Shadow Sky": "Haze", "Shadow Hold": "Mean Look", "Shadow Mist": "Mist", "Shadow Panic": "Confuse Ray",
+    "Shadow Down": "Screech", "Shadow Shed": "Defog"
+  };
   function moveIdOf(name) {
-    const m = D.moves[name] || D.moves[normName[norm(name)]];
+    const m = D.moves[name] || D.moves[STAND_IN[name]] || D.moves[normName[norm(name)]];
     return m ? m.id : 0;
   }
   const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, "");

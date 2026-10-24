@@ -22,6 +22,24 @@
   const status = {};
   const afterHit = {};
 
+  // ---- Shadow moves (Pokémon XD's) ----
+  // Shadow Half: every Pokémon in battle loses half its HP (the user too), then the user must rest a turn.
+  status.shadowhalf = (b, user) => {
+    for (const m of b.getActives()) {
+      const cut = Math.floor(m.hp / 2);
+      if (!m.fainted && cut > 0) b.damage(m, cut, user, E("Move", "shadowhalf", "Shadow Half"));
+    }
+    b.addVolatile(user, "mustrecharge", user);
+    return "done";
+  };
+  // Shadow Hold: the foes can't switch out or flee while the user's in (Battle.isTrapped).
+  status.shadowhold = (b, user, target) => (target.volatiles.shadowhold ? false : (b.addVolatile(target, "shadowhold", user), "done"));
+  // Shadow Shed: off with Reflect, Light Screen and Safeguard (and Aurora Veil), on both sides.
+  status.shadowshed = (b) => {
+    for (const side of [b.sides.p1, b.sides.p2]) for (const id of ["reflect", "lightscreen", "safeguard", "auroraveil"]) b.removeSideCondition(side, id);
+    return "done";
+  };
+
   // ---- No-effect moves ----
   for (const id of ["splash", "celebrate"]) status[id] = () => true;
 

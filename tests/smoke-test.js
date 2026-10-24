@@ -3613,6 +3613,57 @@ const armored = (species, moves, level) => ({ species, level: level || 50, abili
   assert(!b.choose("p1", [{ type: "switch", index: 1 }, mv(0)]).ok, "an active Pokémon can't be switched in");
 }
 
+// Shadow moves (Pokémon XD's, data/moves.js): super effective on anything but a Shadow Pokémon (a Ghost too), not very
+// effective on one; no PP used; no recoil; Shadow Sky, Half, Hold, Shed, Down.
+{
+  const shadow = (species, moves) => ({ species, level: 50, shadow: true, moves });
+  const SH = ["Shadow Rush", "Shadow End", "Shadow Wave", "Shadow Sky", "Shadow Half", "Shadow Hold", "Shadow Shed", "Shadow Down", "Shadow Mist", "Shadow Panic",
+    "Shadow Blitz", "Shadow Break", "Shadow Rave", "Shadow Storm", "Shadow Fire", "Shadow Bolt", "Shadow Chill", "Shadow Blast"];
+  assert(SH.every((n) => MOVES[n] && MOVES[n].type === "Shadow" && !MOVES[n].recoil), "the eighteen Shadow moves, none with recoil");
+  assert.strictEqual(MOVES["Shadow Rush"].power, 55, "Shadow Rush as XD has it");
+  {
+    const b = doubles({ team: [shadow("Mightyena", ["Shadow Rush", "Shadow End"]), armored("Snorlax")] },
+      { team: [armored("Gengar"), Object.assign(armored("Snorlax"), { shadow: true })] });
+    const me = b.sides.p1.actives[0];
+    const evs = play(b, { p1: [mv(0, 1), mv(0)], p2: [mv(0), mv(0)] });
+    assert(evs.some((e) => e[0] === "-supereffective" && /Gengar/.test(e[1])), "super effective on a Ghost that isn't a Shadow Pokémon");
+    const evs2 = play(b, { p1: [mv(0, 2), mv(0)], p2: [mv(0), mv(0)] });
+    assert(evs2.some((e) => e[0] === "-resisted" && /Snorlax/.test(e[1])), "not very effective on a Shadow Pokémon");
+    assert.strictEqual(me.hp, me.maxhp, "no recoil");
+    assert.strictEqual(me.moves[0].pp, me.moves[0].maxpp, "no PP used");
+  }
+  {
+    // Shadow Sky: everything but Shadow Pokémon loses 1/16 a turn.
+    const b = doubles({ team: [shadow("Mightyena", ["Shadow Sky"]), armored("Snorlax")] }, { team: [armored("Blissey"), armored("Chansey")] });
+    play(b, { p1: [mv(0), mv(0)], p2: [mv(0), mv(0)] });
+    assert.strictEqual(b.field.weather, "ShadowSky");
+    assert.strictEqual(b.sides.p1.actives[0].hp, b.sides.p1.actives[0].maxhp, "a Shadow Pokémon isn't hurt by Shadow Sky");
+    for (const m of [b.sides.p1.actives[1], ...b.sides.p2.actives]) assert.strictEqual(m.maxhp - m.hp, Math.floor(m.maxhp / 16), m.ident + " hurt by Shadow Sky");
+  }
+  {
+    // Shadow Half: everyone halved, then the user rests.
+    const b = doubles({ team: [shadow("Mightyena", ["Shadow Half"]), armored("Snorlax")] }, { team: [armored("Blissey"), armored("Chansey")] });
+    const before = b.getActives().map((m) => m.hp);
+    play(b, { p1: [mv(0), mv(0)], p2: [mv(0), mv(0)] });
+    b.getActives().forEach((m, i) => assert.strictEqual(m.hp, before[i] - Math.floor(before[i] / 2), m.ident + " halved"));
+    assert(b.sides.p1.actives[0].volatiles.mustrecharge, "Shadow Half: the user rests");
+  }
+  {
+    // Shadow Hold traps both foes; Shadow Down lowers both foes' Defense by 2; Shadow Shed takes Reflect away.
+    const b = doubles({ team: [shadow("Mightyena", ["Shadow Hold", "Shadow Down", "Shadow Shed"]), armored("Snorlax")] },
+      { team: [armored("Blissey", ["Reflect", "Splash"]), armored("Chansey")] }, { seed: 3 });
+    for (let i = 0; i < 4 && !b.sides.p2.actives.every((m) => m.volatiles.shadowhold); i++) play(b, { p1: [mv(0), mv(0)], p2: [mv(0), mv(0)] });
+    assert(b.sides.p2.actives.every((m) => b.isTrapped(m)), "Shadow Hold traps both foes");
+    play(b, { p1: [mv(1), mv(0)], p2: [mv(0), mv(0)] });
+    assert(b.sides.p2.actives.every((m) => m.boosts.def <= -2), "Shadow Down");
+    assert(b.sides.p2.conditions.reflect, "Reflect up");
+    play(b, { p1: [mv(2), mv(0)], p2: [mv(1), mv(0)] });
+    assert(!b.sides.p2.conditions.reflect, "Shadow Shed removes Reflect");
+  }
+  // A Shadow Pokémon in the party goes into battle as one.
+  assert.strictEqual(Party.toBattleSet(Object.assign(Party.create("Mightyena", 30), { shadow: true })).shadow, true);
+}
+
 // Spread moves do 0.75x to each target, and Earthquake hits the ally too.
 {
   const b = doubles({ team: [{ species: "Garchomp", level: 50, moves: ["Earthquake"] }, armored("Snorlax")] },

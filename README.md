@@ -3046,6 +3046,27 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
 - Willie's battle: Ruby and Sapphire's trainer battle.
 - the Snagem Hideout: Emerald's Team Aqua and Magma hideout theme.
 
+### Shadow moves
+
+All eighteen of Pokémon XD's Shadow moves are in (`data/moves.js`; Colosseum's only one, Shadow Rush, as XD has it),
+ready for Orre's Shadow Pokémon, which are the only ones to know them (a Pokémon record's `shadow: true` makes it a
+Shadow Pokémon in battle). As in XD:
+- **The Shadow type**: super effective on every Pokémon that isn't a Shadow Pokémon (Ghost and Normal types too) and
+  not very effective on one that is, whatever their types. Nothing has the Shadow type, so they never get STAB.
+- **No PP**: they never run out (the menus show `--/--`).
+- **Damage**: Shadow Blitz (40), Rush (55), Break (75), End (120, 60% accurate) and Blast (80, high critical hit
+  ratio) are physical; Shadow Wave (50), Rave (70) and Storm (95) hit both foes; Shadow Fire, Bolt and Chill (75)
+  may burn, paralyze or freeze.
+- **The rest**: Shadow Sky is a weather for 5 turns (Shadow moves do 1.5x, and every Pokémon but a Shadow Pokémon
+  loses 1/16 of its HP each turn); Shadow Half halves every Pokémon's HP and the user must rest a turn; Shadow Hold
+  (80%) keeps both foes from switching or fleeing while the user's in; Shadow Mist and Shadow Down sharply lower both
+  foes' evasiveness or Defense; Shadow Panic (60%) confuses both; Shadow Shed takes Reflect, Light Screen and
+  Safeguard (and Aurora Veil) off both sides.
+- **No recoil** (this game's own): Colosseum's Shadow Rush and XD's Shadow End hurt their user; here neither does.
+
+Each plays the nearest move's animation (Shadow Rush Take Down's, Shadow Storm Twister's, Shadow Bolt Thunderbolt's,
+and so on: `ui/battle-anim.js`), after the user's dark aura flares; the Summary shows a drawn SHADOW type icon.
+
 ### Colosseum's text
 
 `tools/build-colosseum-text.js` decodes Pokémon Colosseum's own text from your copy of the game, for Orre's story to

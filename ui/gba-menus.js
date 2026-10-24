@@ -834,7 +834,7 @@
       if (m) {
         const st = ppState(m.pp, m.maxpp), col = [pp[st * 2], pp[st * 2 + 1]];
         s.text("PP ", 21 * 8, 15 * 8 + 2, col[0], col[1], "small");
-        const num = m.pp + "/" + m.maxpp;
+        const num = m.type === "Shadow" ? "--/--" : m.pp + "/" + m.maxpp;   // (Shadow moves have no PP)
         s.text(num, 24 * 8 + 40 - s.textWidth(num, "small") - 2, 15 * 8 + 2, col[0], col[1], "small");
         s.text("TYPE/" + m.type.toUpperCase(), 21 * 8, 17 * 8 + 2, P5.fg, P5.shadow, "small");
       }
