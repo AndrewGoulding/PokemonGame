@@ -3054,11 +3054,17 @@ are much smaller than the archives they come from.
 
 It unpacks each archive (its LZSS-packed files), finds the message tables (`.msg` files, and those inside
 `common.rel`), decodes their strings (UTF-16 with the game's control codes: `\n` a new line, `\f` a new page,
-`{speaker}` the speaker's name, `{xx}` another name or number put in) and adds them to `assets/text/colosseum.json`,
-by archive and file, then by string id. Run it again with more archives to add theirs. Only the decoded English text
-is kept in the repository, not the game's files. So far it has `common.fsys` (names, places, menus, the TV news and
-mail), `fight_common.fsys` (what trainers say in battle) and `field_common.fsys`; the story's scenes are in each
-place's own archive.
+`{speaker}` the speaker's name, `{player}` yours, `{partner}` your partner's, `{xx}` another name or number put
+in) and adds them to `assets/text/colosseum.json`, by archive and file, then by string id. Run it again with more
+archives to add theirs. Many archives carry their own copy of the same table (the battle text, the menus): each is
+kept once. Only the decoded English text is kept in the repository,
+not the game's files. It has the whole disc's text now, about 10,400 lines, by area:
+- `S1`: the Outskirt Stand (outside, and the diner);
+- `S2`: the Snagem Hideout (as it is when you come back to it);
+- `M1` Phenac City, `M2` Pyrite Town (its building and cave), `M3` Agate Village, `M4` The Under;
+- `D1` the Shadow Pokémon Lab, `D2` Mt. Battle, `D4` Realgam Tower;
+- `common` (names, places, the TV news and mail), `fight` and `tool_fight` (what trainers say in battle), the menus,
+  the P★DA and the world map.
 
 ## Progression rules (Gen 6)
 

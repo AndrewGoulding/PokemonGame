@@ -61,21 +61,23 @@ function unpack(file) {
 
 // Codes followed by arguments (bytes), and the names of those that put something in.
 const ARGS = { 0x07: 1, 0x08: 4, 0x09: 1, 0x38: 1, 0x52: 1, 0x53: 1, 0x5b: 1, 0x5c: 1 };
-const NAMES = { 0x59: "speaker" };
+// (59 the speaker, 2B you, 2C your partner; 3D starts a line no one says: left out.)
+const NAMES = { 0x59: "speaker", 0x2b: "player", 0x2c: "partner" };
 
 function decode(d, at) {
   let s = "", reading = false;
   for (let j = at; j + 1 < d.length;) {
     const c = d.readUInt16BE(j); j += 2;
     if (c === 0) break;
-    if (c !== 0xffff) { if (!reading) s += String.fromCharCode(c); continue; }
+    // (The places' own scripts name their speaker with a glyph of the game's font, 0x2031.)
+    if (c !== 0xffff) { if (!reading) s += c === 0x2031 ? "{speaker}" : String.fromCharCode(c); continue; }
     const code = d[j++];
     j += ARGS[code] || 0;
     if (code === 0x00) s += "\n";
     else if (code === 0x02 || code === 0x03) s += "\f";
     else if (code === 0x05) reading = true;   // (a word's reading: left out)
     else if (code === 0x06) reading = false;
-    else if (code === 0x04 || ARGS[code]) continue;
+    else if (code === 0x04 || code === 0x3d || ARGS[code]) continue;
     else s += "{" + (NAMES[code] || code.toString(16).padStart(2, "0")) + "}";
   }
   return s.replace(/\f$/, "");
@@ -134,6 +136,13 @@ for (const file of inputs) {
       count += Object.keys(strings).length;
     });
   }
+}
+// (Many archives carry their own copy of the same table, the battle text or the menus: kept once, under the first
+// archive to have it.)
+const seen = new Map();
+for (const key of Object.keys(out).sort()) {
+  const json = JSON.stringify(out[key]);
+  if (seen.has(json)) delete out[key]; else seen.set(json, key);
 }
 fs.writeFileSync(outFile, JSON.stringify(out, null, 0).replace(/("\w[^"]*\/[^"]*":)/g, "\n$1") + "\n");
 console.log("wrote " + count + " strings from " + inputs.length + " archives to " + outFile);
