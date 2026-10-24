@@ -3039,6 +3039,24 @@ Colosseum's script wasn't to hand. The music is FireRed's for now:
 - Willie's battle: Ruby and Sapphire's trainer battle.
 - the Snagem Hideout: Emerald's Team Aqua and Magma hideout theme.
 
+### Colosseum's text
+
+`tools/build-colosseum-text.js` decodes Pokémon Colosseum's own text from your copy of the game, for Orre's story to
+use as it's built. Extract the disc's files with Dolphin (right-click the game, then Properties, then Filesystem) and
+run it on the `.fsys` archives:
+
+```
+node tools/build-colosseum-text.js <.fsys files or folders of them>
+```
+
+It unpacks each archive (its LZSS-packed files), finds the message tables (`.msg` files, and those inside
+`common.rel`), decodes their strings (UTF-16 with the game's control codes: `\n` a new line, `\f` a new page,
+`{speaker}` the speaker's name, `{xx}` another name or number put in) and adds them to `assets/text/colosseum.json`,
+by archive and file, then by string id. Run it again with more archives to add theirs. Only the decoded English text
+is kept in the repository, not the game's files. So far it has `common.fsys` (names, places, menus, the TV news and
+mail), `fight_common.fsys` (what trainers say in battle) and `field_common.fsys`; the story's scenes are in each
+place's own archive.
+
 ## Progression rules (Gen 6)
 
 - **Experience**: the six growth curves, and base exp × level / 7 split between
