@@ -1898,7 +1898,7 @@ taking the pokeemerald checkout as their argument and all safe to run again:
   apart) and fountain, Pacifidlog's currents and log bridges, Sootopolis's stormy water and its Gym's waterfalls,
   the seaweed under the sea, Dewford's and the Frontier's flags, Slateport's balloons, Lavaridge's steam and the
   lava, Ever Grande's flowers, each at Emerald's pace), the tiles that show reflections (`reflect`: pond water,
-  puddles, Sootopolis's deep water, the water under bridges and ice, and the bridges over ponds, whose reflections
+  puddles, Sootopolis's deep water and ice (the water under a bridge gives one, drawn only on the open water: the bridge is over it), and the bridges over ponds, whose reflections
   fall further and dark blue; `ui/overworld.js` drawReflection draws everyone's upside down and paler on them, as
   Emerald's SetUpReflection), writes the NPC and trainer sprites
   (`em_*.png`), the metatile overlay sheets for maps whose scenery changes (`<Map>-mt.png`), the

@@ -168,10 +168,11 @@ module.exports = function emeraldTiles(EM, opts) {
   }
 
   // Where someone standing above shows a reflection (MetatileBehavior_IsReflective, _IsIce, _GetBridgeType), run-length
-  // coded [start, run, kind, ...]: 1 water (pond, puddle, Sootopolis's deep water, under a bridge), 2 ice; and the
+  // coded [start, run, kind, ...]: 1 water (pond, puddle, Sootopolis's deep water), 2 ice, 6 the water under a bridge; and the
   // bridges over ponds, whose reflection falls further, 3 low, 4 middling, 5 high (Route 120's).
   function reflectKind(b) {
-    if (b === 0x10 || b === 0x16 || b === 0x1a || b === 0x14 || b === 0x2b) return 1;
+    if (b === 0x10 || b === 0x16 || b === 0x1a || b === 0x14) return 1;
+    if (b === 0x2b) return 6;   // (under a bridge: it gives a reflection, but the bridge is over it)
     if (b === 0x20) return 2;
     if (b >= 0x71 && b <= 0x73) return b - 0x70 + 2;
     if (b === 0x7a || b === 0x7b) return 4;

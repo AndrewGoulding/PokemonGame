@@ -1854,7 +1854,8 @@
     }
     return a[y * m.width + x];
   }
-  const REFLECTS = (k) => k === 1 || k === 2;
+  // (The water under a bridge gives someone a reflection (6), but it isn't drawn there: the bridge is over it.)
+  const REFLECTS = (k) => k === 1 || k === 2 || k === 6, SHOWS = (k) => k === 1 || k === 2;
   // (ObjectEventGetNearbyReflectionType: the tiles below someone w x h, from either tile they're between.)
   function reflectionType(map, w, h, spots) {
     const W = (w + 8) >> 4, H = (h + 8) >> 4;
@@ -1883,7 +1884,7 @@
     g.beginPath();
     const tx0 = Math.floor((x + camX) / TILE), ty0 = Math.floor((y + camY) / TILE);
     for (let ty = ty0; ty * TILE - camY < y + h; ty++) for (let tx = tx0; tx * TILE - camX < x + w; tx++)
-      if (REFLECTS(reflectAt(me.map, tx, ty))) g.rect(tx * TILE - camX, ty * TILE - camY, TILE, TILE);
+      if (SHOWS(reflectAt(me.map, tx, ty))) g.rect(tx * TILE - camX, ty * TILE - camY, TILE, TILE);
     g.clip();
     g.drawImage(reflCanvas, x, y);
     g.restore();
