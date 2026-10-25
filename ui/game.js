@@ -9677,24 +9677,70 @@
   }
   // ---------- Domino City's map ----------
   //
-  // As in The Sacred Cards, you go from place to place in Domino City on its map (tools/build-domino-map.py): step
-  // through the Realm Hub's golden portal and it comes up, and so it does as you walk out of a place (its way out:
-  // the "Domino_WorldMap" steps, tools/build-domino-high.py). So far there are two places on it, Domino High and the
-  // Kame Game shop; and the portal back to the Realm Hub. (`maps`: the maps that count as being at the place.)
+  // As in The Sacred Cards, you go from place to place in Domino City on its map screen, the game's own
+  // (tools/build-domino-map.py): the city from above, a red marker on each place, the gold cursor over the one you're
+  // on, and at the bottom its picture and name. Step through the Realm Hub's golden portal and it comes up, and so it
+  // does as you walk out of a place (its way out: the "Domino_WorldMap" steps, tools/build-domino-high.py). There are
+  // two places on it, Domino High and the Kame Game shop, each on one of the game's own markers' spots (x, y: the
+  // marker's corner, in pixels of the 240 by 160 map); back to the Realm Hub is a choice below the map. (`maps`: the
+  // maps that count as being at the place.)
   const DOMINO_PLACES = [
-    { map: "DH_00", name: "Domino High School", x: 68, y: 50, arrive: { x: 7, y: 8, facing: "up" }, maps: /^DH_/ },
-    { map: "RD_06", name: "Kame Game Shop", x: 82, y: 104, arrive: { x: 13, y: 6, facing: "left" }, maps: /^RD_0[67]$/ },
-    { map: "RealmHub", name: "Portal to the Realm Hub", x: 190, y: 46, maps: /^RealmHub$/ }
+    { map: "DH_00", name: "Domino High School", x: 44, y: 57, arrive: { x: 7, y: 8, facing: "up" }, maps: /^DH_/ },
+    { map: "RD_06", name: "Kame Game Shop", x: 106, y: 69, arrive: { x: 13, y: 6, facing: "left" }, maps: /^RD_0[67]$/ }
   ];
+  // (The arrows go to the nearest place that way, A sets off, B stays; "hub" back to the Realm Hub.)
+  async function dominoMap(here, fromHub) {
+    let at = Math.max(0, DOMINO_PLACES.findIndex((p) => p.map === here));
+    const spot = (x, y) => "left:" + (x / 2.4) + "%;top:" + (y / 1.6) + "%";
+    show("scene");
+    clearMenu();
+    Screen.say("");
+    scene.innerHTML = '<div class="town-map domino-map"><img class="tm-map" src="assets/town-map/domino.png" alt="Map of Domino City">' +
+      DOMINO_PLACES.map((p) => '<img class="dm-marker" src="assets/town-map/domino-marker.png" alt="" style="' + spot(p.x, p.y) + '">').join("") +
+      '<img class="dm-cursor" src="assets/town-map/domino-cursor.png" alt="">' +
+      '<div class="dm-inset"><img class="dm-pic" alt=""><img class="dm-frame" src="assets/town-map/domino-frame.png" alt=""></div>' +
+      '<div class="dm-name"></div></div>';
+    const draw = () => {
+      const p = DOMINO_PLACES[at];
+      scene.querySelector(".dm-cursor").setAttribute("style", spot(p.x, p.y - 10));
+      scene.querySelector(".dm-pic").src = "assets/town-map/domino-" + p.map + ".png";
+      scene.querySelector(".dm-name").textContent = p.name;
+    };
+    draw();
+    let picked = null;
+    const choose = new Promise((resolve) => { picked = resolve; });
+    // (Down from the lowest place goes to the choices below the map, where A and B are the menu's; up, back to it.)
+    const menuBox = document.getElementById("menu");
+    const onKey = (e) => {
+      const onChoice = menuBox.contains(document.activeElement) && document.activeElement.tagName === "BUTTON";
+      if (onChoice) {
+        if (e.key === "ArrowUp") { e.preventDefault(); e.stopPropagation(); document.activeElement.blur(); }
+        return;
+      }
+      if (["z", "Z", " ", "Enter"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); sfx("se_select"); picked(DOMINO_PLACES[at]); return; }
+      if (["x", "X", "Escape"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); picked(null); return; }
+      const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
+      if (!d) return;
+      e.preventDefault(); e.stopPropagation();
+      const best = nearestPlace(DOMINO_PLACES, at, d);
+      if (best >= 0) { at = best; sfx("se_select"); draw(); }
+      else if (e.key === "ArrowDown") { const first = menuBox.querySelector("button"); if (first) first.focus(); }
+    };
+    document.addEventListener("keydown", onKey, true);
+    const options = fromHub ? [back("Stay in the Realm Hub")] : [{ label: "Back to the Realm Hub", value: "hub", className: "action" }, back("Stay")];
+    const r = await Promise.race([ask("", options).then((v) => (v === "hub" ? "hub" : null)), choose]);
+    clearMenu();
+    document.removeEventListener("keydown", onKey, true);
+    return r === "hub" || (r && r.map !== here) ? r : null;
+  }
   async function dominoTravel() {
     const loc = player.location, m = window.WORLD_MAPS[loc.map], from = DOMINO_PLACES.find((p) => p.maps.test(loc.map));
-    const fromHub = !!from && from.map === "RealmHub";
-    const to = await placeMap({ image: "assets/town-map/domino.png", cls: "orre-map domino-map", alt: "Map of Domino City",
-      places: DOMINO_PLACES, here: from ? from.map : loc.map });
+    const fromHub = (m || {}).realm === "hub";
+    const to = await dominoMap(from ? from.map : null, fromHub);
     show("world");
     await Overworld.resume();
     if (!to) { if (!fromHub) await stepBackIn(loc, m); return; }
-    if (to.map === "RealmHub") {
+    if (to === "hub") {
       await voyage(HUB_YUGIOH_PORTAL, ["You step into the golden light…", "…and come out in the Realm Hub."], "se_warp_in");
       return;
     }
@@ -9842,7 +9888,19 @@
   function orreWorldMap() {
     return placeMap({ image: "assets/town-map/orre.png", cls: "orre-map", alt: "Map of Orre", places: Orre.openPlaces(player.flags), here: player.location.map });
   }
-  // (A map of places, Orre's or Domino City's: `places` [{ map, name, x, y }], where each is in pixels of its 240 by
+  // (The nearest place to places[at] the way `d` goes: distance, with places off to the side counting for more.)
+  function nearestPlace(places, at, d) {
+    const cur = places[at];
+    let best = -1, bestScore = Infinity;
+    places.forEach((p, k) => {
+      const dx = p.x - cur.x, dy = p.y - cur.y, along = dx * d[0] + dy * d[1];
+      if (k === at || along <= 0) return;
+      const score = along + 2 * Math.abs(dx * d[1] + dy * d[0]);
+      if (score < bestScore) { bestScore = score; best = k; }
+    });
+    return best;
+  }
+  // (A map of places, Orre's: `places` [{ map, name, x, y }], where each is in pixels of its 240 by
   // 160 `image`; `here` the place you're at. The place picked, or null.)
   async function placeMap({ image, cls, alt, places, here }) {
     let at = Math.max(0, places.findIndex((p) => p.map === here));
@@ -9871,15 +9929,7 @@
       const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
       if (!d) return;
       e.preventDefault(); e.stopPropagation();
-      // (The nearest place that way: distance, with places off to the side counting for more.)
-      const cur = places[at];
-      let best = -1, bestScore = Infinity;
-      places.forEach((p, k) => {
-        const dx = p.x - cur.x, dy = p.y - cur.y, along = dx * d[0] + dy * d[1];
-        if (k === at || along <= 0) return;
-        const score = along + 2 * Math.abs(dx * d[1] + dy * d[0]);
-        if (score < bestScore) { bestScore = score; best = k; }
-      });
+      const best = nearestPlace(places, at, d);
       if (best >= 0) { at = best; sfx("se_select"); draw(); }
     };
     document.addEventListener("keydown", onKey, true);

@@ -3220,10 +3220,12 @@ The Yu-Gi-Oh! realm follows the story of the original Yu-Gi-Oh! anime, starting 
 people's sprites and its portraits come from **Yu-Gi-Oh! The Sacred Cards** (GBA, the USA cartridge): only its
 pictures, none of its card game. Your Pokémon stay in their balls here (no follower), and there are no wild Pokémon.
 
-- **Domino City's map**: step through the Realm Hub's golden portal and the map of Domino City comes up, as The
-  Sacred Cards' map screen does (Orre's map screen, with Domino's picture, `assets/town-map/domino.png`): pick a
-  place with the arrows and A. For now there are two places on it, **Domino High School** and **the Kame Game
-  shop**, and the portal back to the Realm Hub. Walk out of either place and the map comes up again (B stays).
+- **Domino City's map**: step through the Realm Hub's golden portal and Domino City's map screen comes up, The
+  Sacred Cards' own (from the cartridge): the city from above, a red marker on each place, the gold cursor bobbing
+  over the one you're on, and at the bottom left its picture in a gold frame, its name beside it. There are two
+  places on it, **Domino High School** and **the Kame Game shop** (on two of the game's own markers' spots): the
+  arrows move the cursor, A goes there, B stays. Below the map, **Back to the Realm Hub** (down from the markers to
+  reach it). Walk out of either place and the map comes up again.
 - **Domino High School**: **Yugi, Téa, Joey and Tristan** are in its classroom, by the windows; talk to them and
   they introduce themselves. Pupils stand about the front, the hall and the classroom, with a teacher.
 - **The Kame Game shop**: Yugi's grandpa, at his counter, sells booster packs of **Legend of Blue Eyes White
@@ -3280,12 +3282,19 @@ python3 tools/build-sacred-cards.py "<path to Yu-Gi-Oh! - The Sacred Cards (USA)
 `tools/build-domino-high.py` builds the school from the two games' screens (no cartridge needed; run it after
 `tools/build-reshef.py`, whose Kame Game shop it changes): its pictures as `DH_00` to `DH_02`, its walls and ways
 drawn in the tool as grids, its people, and the Kame Game shop's ways out onto the map and its grandpa, into
-`data/emerald-maps.js` between its markers. `tools/build-domino-map.py` draws Domino City's map and the booster
-packs' icons (`assets/sprites/items/booster/`); where each place is on the map is `ui/game.js`'s `DOMINO_PLACES`.
+`data/emerald-maps.js` between its markers.
+
+`tools/build-domino-map.py` takes Domino City's map screen from The Sacred Cards' cartridge (its loader's literal
+pool, at `0x0c10`, points at it all): the city (8bpp tiles, LZ77 at `0x56d28`; its one-screen tile map at
+`0x5ffbc`; its 192 colours at `0x5fe3c`) as `assets/town-map/domino.png`, and the marker and the cursor (the
+screen's sprite tiles, LZ77 at `0x6aabc`, in their palettes at `0x6a9fc` and `0x6a93c`). The game's ten places'
+markers sit where a table at `0xd305e0` says; `ui/game.js`'s `DOMINO_PLACES` takes two of those spots. It also draws
+the picture frame, each place's picture (its screen made small) and the booster packs' icons
+(`assets/sprites/items/booster/`). Run it after `tools/build-domino-high.py`.
 
 ```sh
 python3 tools/build-domino-high.py
-python3 tools/build-domino-map.py
+python3 tools/build-domino-map.py "<path to Yu-Gi-Oh! - The Sacred Cards (USA).gba>"
 ```
 
 `tools/build-reshef.py` does the same for Reshef of Destruction (the USA cartridge, AY8E: your own dump of it):
