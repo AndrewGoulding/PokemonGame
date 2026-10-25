@@ -3281,6 +3281,14 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   and their text for the rest: 210 of the 280 Spells, 91 of the 160 Traps and 176 of the 410 Effect Monsters do
   what they say (equips, Field Spells, Fusions and Rituals, Trap Hole, Mirror Force, flip effects and the rest); a
   Spell or Trap with no effect yet can't be activated, and such a monster plays with its stats alone.
+- **The computer duelist** (`DuelMonsters.ai()`): EDS's, its Main Phase in EDS's order: the Spells that draw or clear
+  the field first, then the strongest summon it can make (tributing its weakest monsters; in Attack Position when it
+  beats your best, set otherwise, and flip monsters always set), its monsters' effects, the Spells that take or bring
+  back a monster, the rest and the equips, its positions, and in Main Phase 2 its Traps set. Its attacks are worked
+  out battle by battle (what each would destroy and lose and the damage), the best first, never one it loses; it
+  knows what your face-down cards are, as EDS's does. It springs its Traps on an attack it would lose to or a direct
+  one, on a strong monster summoned, and its Counter Traps on your cards. It beats random play in about 94 duels in
+  100.
 - **Not here yet**: the story, the rest of the city on the map, opening booster packs, and the duel screen.
 
 `tools/build-sacred-cards.py` builds it all from the cartridge (your own dump of it; it checks the game code, AY7E):

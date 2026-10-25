@@ -2058,3 +2058,283 @@
     return C.kind(no) !== "effect" || !!(e && Object.keys(e).length);
   };
 })();
+
+// (The computer duelist: The Eternal Duelist Soul's, include/ai.h and src/ai_*.c.)
+//
+//   DuelMonsters.create({ ..., controllers: [you, DuelMonsters.ai()] })
+//
+// Its Main Phase goes as EDS's steps go (AiStep): the simple Spells first, those that draw or clear the field
+// (AI_SPELL_DRAW_AND_CLEAR: Pot of Greed, Dark Hole, Raigeki...), then the summon (AI_MAIN_SUMMON: the strongest
+// monster it can, tributing its weakest, in Attack Position if it beats the best the other side has and set
+// otherwise, flip monsters set), its monsters' effects, the Spells that take or bring back a monster
+// (TAKE_AND_REVIVE: Change of Heart, Monster Reborn...), the rest (LISTS: the others, then the equips), its
+// positions (AI_STEP_CHANGE_POSITIONS), the Battle Phase, and in Main Phase 2 its Traps and Quick-Play Spells set
+// (AI_STEP_SET_SPELL_TRAPS). Its attacks are planned as EDS's AttackPlan: each attacker against each target, the
+// battle worked out (what it destroys, what it loses, the damage), the best first, none that loses. Like EDS it
+// knows what the face-down cards are. It answers with a Trap when it's worth it: an attack it would lose to or a
+// direct one, a strong monster summoned, a card the other side activates (Counter Traps).
+(function () {
+  "use strict";
+  const DM = window.DuelMonsters, C = DM.card, ICON = DM.ICON;
+  const text = (no) => ((window.YUGIOH_CARDS.cards[no] || [])[1] || "").replace(/@\d/g, "");
+  const kinds = {};
+  // What a card does, from its text: hurts the other side (a target there), helps its own, draws, clears...
+  function kind(no) {
+    if (kinds[no]) return kinds[no];
+    const t = text(no), k = {};
+    k.draw = /\bdraw (\d|one|two|three|1|2|3)\b|draw cards/i.test(t) && !/opponent draws/i.test(t);
+    k.clearAll = /destroy all (monsters|cards) on the field|destroy all monsters\b(?! your opponent)/i.test(t) && !/your opponent controls/i.test(t);
+    k.clearTheirs = /destroy all (face-up |face-down )?(monsters|cards|spell|attack position monsters)[^.]*your opponent controls/i.test(t);
+    k.clearST = /destroy all spell and trap cards/i.test(t);
+    k.revive = /special summon[^.]*graveyard/i.test(t);
+    k.take = /take control/i.test(t);
+    k.boost = /(increase|gains?|up by|\+)\s*\d+|increase[^.]*atk/i.test(t) && !/decrease|loses?/i.test(t);
+    k.harm = !k.boost && /destroy|decrease|loses?|take control|return[^.]*hand|remove[^.]*from play|cannot attack|negate|change[^.]*position|inflict/i.test(t);
+    k.attack = /attack/i.test(t);
+    k.summon = /summon/i.test(t);
+    k.counter = C.icon(no) === ICON.COUNTER || /negate the activation|negate the summon/i.test(t);
+    k.lpCost = /pay \d+ (life points|lp)/i.test(t);
+    return (kinds[no] = k);
+  }
+  const effect = (no) => DM.effectOf(no) || {};
+  function monValue(d, z) {
+    const s = d.stats(z), e = effect(z.card.no);
+    return Math.max(s.atk, s.def) + (z.card.token ? -300 : 0) + (Object.keys(e).length ? 300 : 0);
+  }
+  function cardValue(c) {
+    const no = c.no;
+    if (C.isMonster(no)) return Math.max(C.atk(no), C.def(no)) + C.level(no) * 50 + (Object.keys(effect(no)).length ? 300 : 0);
+    return 1200;
+  }
+  function zoneValue(d, z, i) { return i < 5 ? monValue(d, z) : z.faceUp ? 800 : 1000; }
+  const sum = (a) => a.reduce((n, x) => n + x, 0);
+  // The best ATK the other side can bring against a monster (its face-up or face-down ones, all of them known).
+  const bestAtk = (d, q) => Math.max(0, ...d.monsters(q).map((z) => d.atkOf(z)));
+  const boardValue = (d, p) => sum(d.monsters(p).map((z) => monValue(d, z)));
+
+  // A battle, as EDS's AttackPlan works it out: >0 is worth fighting.
+  function battleScore(d, att, target, p) {
+    const a = d.atkOf(att);
+    if (!target) return 1000 + a;
+    if (!target.defense) {
+      const t = d.atkOf(target);
+      if (a > t) return 1000 + monValue(d, target) + (a - t);
+      if (a === t) return monValue(d, target) - monValue(d, att);
+      return -1;
+    }
+    const def = d.defOf(target);
+    if (a > def) return 800 + monValue(d, target);
+    if (a === def && !target.faceUp) return 50;
+    return -1;
+  }
+
+  function create(opts) {
+    opts = opts || {};
+    let turn = -1, tried = {}, plan = null, attacks = new Map();
+
+    // The source of a question: the card most lately activated or flipped (for which side to target).
+    function source(d) {
+      for (let k = d.log.length - 1; k >= 0 && k > d.log.length - 40; k--) {
+        const ev = d.log[k];
+        if (ev.type === "activate" || ev.type === "flip") return ev.card || (ev.zone && ev.zone.card);
+      }
+      return null;
+    }
+
+    function spellScore(d, p, c) {
+      const no = c.no, k = kind(no), q = 1 - p, mine = d.monsters(p), theirs = d.monsters(q);
+      const theirST = d.allZones(q).filter((z, i) => z !== d.players[q].zones[10] && z.card && !C.isMonster(z.card.no)).length;
+      if (k.draw) return 5000;
+      if (k.clearAll) return boardValue(d, q) > boardValue(d, p) * 1.2 + 500 ? 4500 : -1;
+      if (k.clearTheirs) return theirs.length ? 4500 : -1;
+      if (k.clearST) return theirST > 0 ? 3500 : -1;
+      if (C.icon(no) === ICON.FIELD) return d.players[p].zones[10] ? -1 : 700;
+      if (C.icon(no) === ICON.EQUIP) return k.harm ? (theirs.length ? 900 : -1) : (mine.some((z) => z.faceUp) ? 900 : -1);
+      if (k.take) return theirs.length && d.freeMonsterZone(p) >= 0 ? 3000 : -1;
+      if (k.revive) return d.freeMonsterZone(p) >= 0 ? 3000 : -1;
+      if (C.icon(no) === ICON.RITUAL || /fusion/i.test(text(no))) return 2500;
+      if (k.harm) return theirs.length || !/monster/i.test(text(no)) ? 2000 : -1;
+      if (C.isTrap(no)) return k.attack || k.summon ? -1 : 300;
+      return 400;
+    }
+
+    function summonScore(d, p, a) {
+      const no = a.card.no, q = 1 - p, e = effect(no);
+      const tribs = d.tributable(p).map((z) => monValue(d, z)).sort((x, y) => x - y).slice(0, a.tributes);
+      const cost = sum(tribs), atk = C.atk(no), def = C.def(no);
+      const beats = !d.monsters(q).length || atk > bestAtk(d, q);
+      const flip = !!e.flip;
+      if (a.act === "summon") {
+        if (flip || (!beats && def > atk)) return -1;
+        const v = 1000 + atk - cost;
+        return a.tributes && atk <= Math.max(0, ...tribs) + 300 ? -1 : v;
+      }
+      if (beats && !flip) return -1;
+      const v = 800 + def + (flip ? 800 : 0) - cost;
+      return a.tributes && def <= Math.max(0, ...tribs) + 300 ? -1 : v;
+    }
+
+    function mainScore(d, p, a) {
+      const q = 1 - p;
+      switch (a.act) {
+        case "activate": return spellScore(d, p, a.card);
+        case "summon": case "set-monster": return summonScore(d, p, a);
+        case "special-hand": return 2800;
+        case "ignition": case "hand-effect": return kind((a.card || a.zone.card).no).lpCost && d.players[p].lp < 2000 ? -1 : 1500;
+        case "flip-summon": {
+          const z = a.zone;
+          return effect(z.card.no).flip || !d.monsters(q).length || d.atkOf(z) > bestAtk(d, q) ? 1200 : -1;
+        }
+        case "position": {
+          const z = a.zone, atk = d.atkOf(z), def = d.defOf(z), best = bestAtk(d, q);
+          if (z.defense) return d.phase === "main1" && (!d.monsters(q).length ? atk > 0 : atk > best) ? 1100 : -1;
+          return d.monsters(q).length && atk < best && def > atk && (d.phase === "main2" || !d.monsters(q).some((t) => battleScore(d, z, t, p) > 0)) ? 150 : -1;
+        }
+        case "set-spell": {
+          const no = a.card.no;
+          if (d.phase === "main1" && d.turn > 0) return -1;
+          return C.isTrap(no) || C.icon(no) === ICON.QUICK ? 100 : -1;
+        }
+        case "battle": return 0;
+        default: return -0.5;
+      }
+    }
+
+    function main(d, req, p) {
+      if (turn !== d.turn) { turn = d.turn; tried = {}; }
+      let best = -1, bestScore = -Infinity;
+      req.options.forEach((a, i) => {
+        let s = mainScore(d, p, a);
+        const key = d.phase + ":" + a.label;
+        if (a.act !== "battle" && a.act !== "end" && (tried[key] || 0) >= 2) s = -1;
+        if (s > bestScore) { bestScore = s; best = i; }
+      });
+      const a = req.options[best];
+      if (bestScore <= 0) {
+        const b = req.options.findIndex((o) => o.act === "battle");
+        return b >= 0 ? b : req.options.findIndex((o) => o.act === "end");
+      }
+      const key = d.phase + ":" + a.label;
+      tried[key] = (tried[key] || 0) + 1;
+      return best;
+    }
+
+    function battle(d, req, p) {
+      const q = 1 - p;
+      plan = null;
+      if (turn !== d.turn) { turn = d.turn; tried = {}; }
+      if (attacks.turn !== d.turn) { attacks = new Map(); attacks.turn = d.turn; }
+      let bestScore = 0, best = req.options.findIndex((o) => o.end);
+      req.options.forEach((o, i) => {
+        // (an attacker it can't pay for, or that didn't get to attack, isn't tried a third time)
+        if (o.end || (attacks.get(o.zone) || 0) >= 2) return;
+        const att = o.zone, targets = d.monsters(q).filter((z) => d.canBeAttacked(z, q, att));
+        const ae = effect(att.card.no);
+        const options = d.monsters(q).length ? targets.slice() : [null];
+        if (ae.directAttack && d.monsters(q).length) options.push(null);
+        for (const t of options) {
+          const s = battleScore(d, att, t, p);
+          if (s > bestScore) { bestScore = s; best = i; plan = { att, target: t }; }
+        }
+      });
+      if (plan) attacks.set(plan.att, (attacks.get(plan.att) || 0) + 1);
+      return best;
+    }
+
+    function attackTarget(d, req, p) {
+      let best = -1, bestScore = -Infinity;
+      req.options.forEach((o, i) => {
+        const t = o.direct ? null : o.zone;
+        let s = battleScore(d, req.attacker, t, p);
+        if (plan && plan.att === req.attacker && plan.target === t) s += 1e6;
+        if (s > bestScore) { bestScore = s; best = i; }
+      });
+      return best;
+    }
+
+    // Which zones: a cost or a tribute its weakest own, a harmful effect the other side's best, a helpful one its own best.
+    function zones(d, req, p) {
+      const opts = req.options.map((o, i) => ({ i, own: o.p === p, v: zoneValue(d, o.zone, o.i) }));
+      const src = source(d), k = src ? kind(src.no) : {};
+      const cost = /tribute|send|discard|sacrifice|offer/i.test(req.prompt);
+      let order;
+      if (cost) order = opts.sort((a, b) => (b.own - a.own) || a.v - b.v);
+      else if (k.harm || k.take) order = opts.sort((a, b) => (a.own - b.own) || b.v - a.v);
+      else order = opts.sort((a, b) => (b.own - a.own) || (a.own ? b.v - a.v : a.v - b.v));
+      const n = req.max > 1 ? (cost ? req.min : req.max) : 1;
+      const picked = order.slice(0, Math.max(n, req.min || 0)).map((o) => o.i);
+      return req.max > 1 ? picked : picked[0];
+    }
+
+    function cards(d, req, p) {
+      if (req.hidden) { const r = req.options.map((_, i) => i).slice(0, Math.max(1, req.min)); return req.max > 1 ? r : r[0]; }
+      const low = /discard|send|tribute|return|shuffle|banish|remove/i.test(req.prompt) && !/add|summon|to your hand/i.test(req.prompt);
+      const order = req.options.map((o, i) => ({ i, v: cardValue(o.card) })).sort((a, b) => low ? a.v - b.v : b.v - a.v);
+      const n = Math.max(req.min || 1, low ? req.min || 1 : req.max);
+      const picked = order.slice(0, n).map((o) => o.i);
+      return req.max > 1 ? picked : picked[0];
+    }
+
+    function choose(d, req, p) {
+      const q = 1 - p;
+      if (/in which position/i.test(req.prompt)) {
+        const no = DM.numberOf(req.prompt.replace(/^Summon /, "").replace(/ in which position\?$/, ""));
+        const atk = C.atk(no), def = C.def(no);
+        return !d.monsters(q).length || atk > bestAtk(d, q) || atk >= def ? 0 : 1;
+      }
+      if (/Declare a Type|Declare an Attribute/i.test(req.prompt)) {
+        const counts = req.options.map((o) => d.monsters(q).filter((z) => (/Type/.test(req.prompt) ? C.type(z.card.no) : C.attribute(z.card.no)) === o.value).length);
+        return counts.indexOf(Math.max(...counts));
+      }
+      // (a card to make or bring: the strongest)
+      const vals = req.options.map((o) => { const no = DM.numberOf(o.label); return no ? Math.max(C.atk(no), C.def(no)) : -1; });
+      const m = Math.max(...vals);
+      return m > 0 ? vals.indexOf(m) : 0;
+    }
+
+    function yesno(d, req, p) {
+      const pay = /pay (\d+)/i.exec(req.prompt);
+      return pay && d.players[p].lp <= +pay[1] + 1000 ? 1 : 0;
+    }
+
+    // Whether to answer: with each card it could, the first worth it, or none.
+    function respond(d, req, p) {
+      const q = 1 - p, ev = req.event, link = req.link;
+      for (let i = 0; i < req.options.length; i++) {
+        const o = req.options[i];
+        if (o.pass) continue;
+        const no = o.card.no, k = kind(no);
+        if (link) { if (link.p === q && (k.counter || /negate/i.test(text(no)))) return i; continue; }
+        if (!ev || ev.p === p) continue;
+        if (ev.type === "attack") {
+          const att = ev.attacker, t = ev.target;
+          const hurts = !t || d.atkOf(att) > d.battleValue(t) || d.atkOf(att) >= 1500;
+          if (hurts && (k.attack || k.harm)) return i;
+        } else if (/summoned/.test(ev.type)) {
+          if (ev.zone && d.atkOf(ev.zone) >= 1500 && (k.summon || k.harm) && !k.attack) return i;
+        } else if (ev.type === "activate" || ev.type === "lp-damage") {
+          if (k.counter) return i;
+        }
+      }
+      return req.options.findIndex((o) => o.pass);
+    }
+
+    return {
+      ai: true,
+      choose(d, req) {
+        const p = req.player;
+        switch (req.type) {
+          case "main": return main(d, req, p);
+          case "battle": return battle(d, req, p);
+          case "attack-target": return attackTarget(d, req, p);
+          case "zones": return zones(d, req, p);
+          case "cards": return cards(d, req, p);
+          case "yesno": return yesno(d, req, p);
+          case "respond": return respond(d, req, p);
+          default: return choose(d, req, p);
+        }
+      }
+    };
+  }
+  DM.ai = create;
+})();
