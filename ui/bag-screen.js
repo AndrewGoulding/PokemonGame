@@ -848,10 +848,19 @@
       const row = rows[i];
       if (!row.pack || !row.count) { se("se_failure"); continue; }
       se();
-      st.message = "Open a " + row.label + " pack?\nA: Yes   B: No"; paint();
-      const yes = (await window.GbaMenus.keys((key) => (key === "a" || key === "b" ? key : undefined))) === "a";
+      // (how many to open: left and right one more or less, up and down ten)
+      let n = 1;
+      const ask = () => { st.message = "Open how many " + row.label + "\npacks?   \u25c0 " + n + " \u25b6\nA: Open   B: Cancel"; paint(); };
+      ask();
+      const yes = (await window.GbaMenus.keys((key) => {
+        if (key === "left" || key === "right" || key === "up" || key === "down") {
+          const step = key === "up" || key === "down" ? 10 : 1;
+          n = Math.max(1, Math.min(row.count, n + (key === "left" || key === "down" ? -step : step))); se(); ask(); return undefined;
+        }
+        return key === "a" || key === "b" ? key : undefined;
+      })) === "a";
       st.message = null; paint();
-      if (yes) { await st.opts.openPack(row.pack); clamp(); }
+      if (yes) { await st.opts.openPack(row.pack, n); clamp(); }
     }
   }
   async function open(opts) {

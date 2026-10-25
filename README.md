@@ -3190,7 +3190,7 @@ realms to come (the **Yu-Gi-Oh! realm** first).
   the Realm Hub** goes straight there.)
 - **The Realm Hub**: a stone platform floating in the void between the realms, with a clock of light in its middle
   and Spear Pillar's song. The Time Machine at its south end takes you back beside Pallet Town. Along its north are
-  the realms' portals: the **Yu-Gi-Oh! realm's** (golden, a pyramid over it) takes you to Domino City (below), and
+  the realms' portals: the **Yu-Gi-Oh! realm's** (golden, a pyramid over it) takes you to Domino City (below), out beside the Time Machine under the Kame Game shop's street, and
   the two either side of it are dormant, for realms to come. Fly and Teleport don't work out of the Pokémon realm.
 - **Back from Domino City**: a **manhole** in the Kame Game shop's street, right of its door. A on it and you climb
   down a ladder to a room under the street, brick walls and a channel of water, where a Time Machine takes you back
@@ -3291,7 +3291,8 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   its count. A on a card opens its menu: TO MAIN DECK (TO TRUNK, in the deck), TO SIDE DECK, FILTER, SORT (by
   NUMBER, NAME, ATTACK, DEFENSE, CATEGORY, TYPE, ATTRIBUTE, ICON or LEVEL), CHANGE VIEW (names, or little cards
   seven a row), DECK MODE (the deck or its side deck) and EXIT, and below, this game's own **INVENTORY**: your
-  booster packs, Pack Tokens and cards' tokens, A on a pack to open it there. R (the S key) puts a card in the deck,
+  booster packs, Pack Tokens and cards' tokens, A on a pack to open as many of it as you like there (left and right one more or less,
+  up and down ten). R (the S key) puts a card in the deck,
   L (the A key) takes it out, START shows the card itself with its text. A deck holds 60 cards and 20 Fusion Monsters, its
   side deck 15, and three of any card in all. The cards are GX Duel Academy's 1200 (`window.YUGIOH_CARDS`), yours in
   `player.flags.yugioh` (the debug menu's **Fill the Trunk** gives you three of each).

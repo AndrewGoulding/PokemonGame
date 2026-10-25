@@ -9661,7 +9661,11 @@
     if (id === "yugioh") {
       await say(["A portal of swirling golden light.\nA pyramid shines above it.", "Beyond it lies the Yu-Gi-Oh! realm,\nthe world of Duel Monsters…"]);
       if (!(await confirm("Step through the portal?"))) return;
-      await dominoTravel();
+      // (out beside the Time Machine, in the room under the Kame Game shop's street)
+      await voyage(window.TIME_MACHINE.under, ["You step into the golden light…", "The world turns inside out…"], "se_warp_in");
+      if (!player.flags.dominoVisited) await say(["You've arrived in Domino City,\nin the Yu-Gi-Oh! realm!", "Your Bag stays behind in the\nPokémon realm. Here you have\na bag of this realm's own.", "Climb the ladder up to the street\nby the Kame Game shop."]);
+      player.flags.dominoVisited = true;
+      await persist();
       return;
     }
     await say(["A portal of cold stone. Its light\nhas gone out.", "Another realm may open here\nsomeday…"]);
@@ -9929,12 +9933,15 @@
       inventory: () => PACK_SETS.map((k) => ({ label: S[k].name, count: Player.itemCount(player, S[k].item), pack: k }))
         .concat([{ label: "Pack Tokens", count: y.packTokens || 0 }])
         .concat(["c", "r", "s", "u", "x"].map((r) => ({ label: RARITY_NAME[r] + " Tokens", count: (y.tokens || {})[r] || 0 }))),
-      openPack: async (key) => {
-        if (!Player.removeItem(player, S[key].item, 1)) return;
+      openPack: async (key, n) => {
+        n = Math.min(n || 1, Player.itemCount(player, S[key].item));
+        if (!n || !Player.removeItem(player, S[key].item, n)) return;
         CardShop.setup({ money: () => player.money, sets: S });
-        const [p] = openPacks(key, 1);
-        await CardShop.opening(key, p);
-        await CardShop.results({ sets: S, title: S[key].name, cards: p, comp: setCompletion(key), packKey: key });
+        // (one after another: each pack's opening, then its list; A, B or R there goes on to the next)
+        for (const p of openPacks(key, n)) {
+          await CardShop.opening(key, p);
+          await CardShop.results({ sets: S, title: S[key].name, cards: p, comp: setCompletion(key), packKey: key });
+        }
         CardShop.close();
         await persist();
       } });
