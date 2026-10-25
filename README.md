@@ -3260,6 +3260,17 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   hall (the Sacred Cards' hotel lobby, with a tiled floor, the vending machine and reception, the sofas its
   benches) and a classroom (the Sacred Cards' warehouse, cleared, with wooden boards, a blackboard, lockers, the
   teacher's desk and two rows of pupils' desks). Pupils and a teacher are about; the fountains' menu lists it.
+- **The Trunk**: the START menu's **Trunk** (in the Yu-Gi-Oh! realm) is Yu-Gi-Oh! GX Duel Academy's, its graphics
+  from that cartridge: your cards on the left, your deck on the right, a bar of filters along the top and the card
+  under the cursor along the bottom (its number, level, name, how many you have and how many are in the deck, its
+  attribute, type and ATK/DEF, and its picture). Its filters (up from a column's top, or B; left and right): ALL,
+  LOW LEVEL (1-4), MIDDLE LEVEL (5-6), HIGH LEVEL (7+), SPELL, TRAP, NORMAL, EFFECT, FUSION and RITUAL, each with
+  its count. A on a card opens its menu: TO MAIN DECK (TO TRUNK, in the deck), TO SIDE DECK, FILTER, SORT (by
+  NUMBER, NAME, ATTACK, DEFENSE, CATEGORY, TYPE, ATTRIBUTE, ICON or LEVEL), CHANGE VIEW (names, or little cards
+  seven a row), DECK MODE (the deck or its side deck) and EXIT. R (the S key) puts a card in the deck, L (the A
+  key) takes it out, START shows the card itself with its text. A deck holds 60 cards and 20 Fusion Monsters, its
+  side deck 15, and three of any card in all. The cards are GX Duel Academy's 1200 (`window.YUGIOH_CARDS`), yours in
+  `player.flags.yugioh` (the debug menu's **Fill the Trunk** gives you three of each).
 - **Not here yet**: the story, the rest of the city on the map, opening booster packs, and duels.
 
 `tools/build-sacred-cards.py` builds it all from the cartridge (your own dump of it; it checks the game code, AY7E):
@@ -3296,6 +3307,24 @@ the picture frame, each place's picture (its screen made small) and the booster 
 python3 tools/build-domino-high.py
 python3 tools/build-domino-map.py "<path to Yu-Gi-Oh! - The Sacred Cards (USA).gba>"
 ```
+
+`tools/build-gx-trunk.py` takes the cards and the Trunk from Yu-Gi-Oh! GX Duel Academy's cartridge (the USA one,
+BYGE: your own dump of it):
+
+```sh
+python3 tools/build-gx-trunk.py "<path to Yu-Gi-Oh! GX - Duel Academy (USA).gba>"
+```
+
+- **The cards**, by card number (1-1200): names and descriptions (tables of offsets at `0xf2a68c` and `0xf58294`;
+  their colour codes kept as `@4`/`@5`/`@7`), and stats, a packed word each at `0xf243cc`, as The Eternal Duelist
+  Soul packs them (its decompilation documents it): DEF and ATK (tens), the monster's kind or the Spell's or Trap's,
+  type, level and attribute. Into `data/items.js` between its markers, as `window.YUGIOH_CARDS`.
+- **Their pictures**: 80x80, 8bpp tiles of 64 colours at `0x7cfacc` (`0x1900` each), their palettes at `0x7aa24c`,
+  a hundred to a sheet in `assets/yugioh/cards/`.
+- **The Trunk's icons** (the attributes with Spell's and Trap's, the 20 types, the Spells' and Traps' kinds) and
+  **its screen's pieces** (its background, the filters' bar, digits, stars, the counts' icons, the cursors, the
+  card's frame and the command and sort menus): each tile straight from the ROM, laid out as the game lays them on
+  screen (`tools/lib/gx-trunk-pieces.json` says where each tile and palette is), in `assets/yugioh/trunk/`.
 
 `tools/build-reshef.py` does the same for Reshef of Destruction (the USA cartridge, AY8E: your own dump of it):
 

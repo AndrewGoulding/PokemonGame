@@ -2205,6 +2205,7 @@
         { label: "Visit Hoenn (the moving truck)", value: "hoenn", className: "action" },
         { label: "Visit Sinnoh (Twinleaf Town)", value: "sinnoh", className: "action" },
         { label: "Visit the Realm Hub", value: "hub", className: "action" },
+        { label: "Fill the Trunk (3 of every card)", value: "trunk", className: "action" },
         { label: Orre.inOrre(player.location) ? "Leave Orre" : "Visit Orre (the Air Strip)", value: "orre", className: "action" },
         back()]);
       if (v === "back") return;
@@ -2234,6 +2235,11 @@
         player.location = Object.assign({}, center || Player.HOME);
         await persist();
         return "battled";   // (back to the map, at the new place)
+      } else if (v === "trunk") {
+        const y = yugioh();
+        for (let n = 1; n < window.YUGIOH_CARDS.cards.length; n++) y.trunk[n] = 3;
+        await persist();
+        await message("Your Trunk has three of every card now.");
       } else if (v === "hub") {
         // The Realm Hub, by the Time Machine (its machine brings you back beside Pallet Town).
         fieldAction = visitRealmHub;
@@ -2602,6 +2608,7 @@
     dex: "A device that records Pokémon secrets\nupon meeting or catching them.",
     party: "Check and organize Pokémon that are\ntraveling with you in your party.",
     bag: "Equipped with pockets for storing items\nyou bought, received, or found.",
+    trunk: "Look through your Duel Monsters cards\nand build your deck.",
     card: "Check your money and other game data.",
     gear: "Use the Pokégear's phone, map and radio.",   // (the PokéNav's, once it is one: navName)
     save: "Save your game with a complete record\nof your progress to take a break.",
@@ -2657,6 +2664,7 @@
       if (player.flags.pokedex) items.push({ key: "dex", label: "Pokédex" });
       if (player.party.length) items.push({ key: "party", label: "Pokémon" });
       if (!contest) items.push({ key: "bag", label: "Bag" });
+      if ((window.WORLD_MAPS[player.location.map] || {}).realm === "yugioh") items.push({ key: "trunk", label: "Trunk" });   // (your Duel Monsters cards)
       if (gear.has()) items.push({ key: "gear", label: hasPokenav() ? "PokéNav" : "Pokégear" });   // (HGSS's, once you have it: ui/pokegear.js)
       // (Emerald's Frontier Pass, once Scott's gate has issued it: it holds the Trainer Card, your Battle Points,
       // Symbols and the battle recorded on it; opened from your name, as the Trainer Card is.)
@@ -2685,6 +2693,7 @@
       }
       if (v === "party") { if ((await partyMenu()) === "escaped") return; }
       else if (v === "bag") { if ((await bagScreen()) === "escaped") return; }
+      else if (v === "trunk") await trunkScreen();
       else if (v === "dex") await pokedex();
       else if (v === "gear") await gear.open();
       else if (v === "card") { if ((await (pass ? frontierPass() : trainerCard())) === "battled") return; }
@@ -9765,6 +9774,24 @@
     await martBuy(BOOSTER_PACKS);
     await persist();
     await say("Grandpa: Come again! And may the\nheart of the cards guide you!");
+  }
+  // ---------- Your Duel Monsters cards ----------
+  //
+  // The Yu-Gi-Oh! realm's cards (window.YUGIOH_CARDS: Yu-Gi-Oh! GX Duel Academy's 1200, tools/build-gx-trunk.py):
+  // the ones you have (player.flags.yugioh.trunk: how many of each, by card number) and your deck (its main deck,
+  // with any Fusion Monsters, and its side deck), looked through and built in the Trunk (ui/bag-screen.js's
+  // TrunkScreen, GX Duel Academy's), from the START menu in the Yu-Gi-Oh! realm.
+  function yugioh() {
+    const y = player.flags.yugioh = player.flags.yugioh || {};
+    y.trunk = y.trunk || {}; y.deck = y.deck || { main: [], side: [] };
+    return y;
+  }
+  async function trunkScreen() {
+    const y = yugioh();
+    Screen.say("");
+    clearMenu();
+    await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, deck: y.deck, deckName: y.deckName || "Deck" });
+    await persist();
   }
   async function visitRealmHub() {
     Screen.say("");

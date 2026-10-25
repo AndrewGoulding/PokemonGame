@@ -173,10 +173,12 @@
     for (let f = from; f !== to + step; f += step) { draw(color, f); await nextFrame(); await nextFrame(); }
   }
   // Calls onKey("up" | "down" | "left" | "right" | "a" | "b") until it returns
-  // something other than undefined; resolves with that.
-  function keys(onKey) {
+  // something other than undefined; resolves with that. (opts.shoulders: L and R
+  // too, the A and S keys, as "l" and "r".)
+  function keys(onKey, opts) {
     const KEY = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
       z: "a", Z: "a", " ": "a", Enter: "a", x: "b", X: "b", Escape: "b", Start: "start", m: "start", M: "start", Select: "select" };
+    if (opts && opts.shoulders) Object.assign(KEY, { a: "l", A: "l", s: "r", S: "r" });
     return new Promise((resolve) => {
       const handler = (e) => {
         const k = KEY[e.key];
