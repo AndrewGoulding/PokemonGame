@@ -749,15 +749,19 @@
       tooltip(top, g, SORTS[st.sortMenu.i].name, x + 8, 54);
     }
     if (st.inv && !st.message) {
-      const rows = st.inv.rows, h = 24 + 11 * rows.length;
+      // (INV_ROWS at a time, from st.inv.top, with marks for more above and below)
+      const rows = st.inv.rows, shown = Math.min(INV_ROWS, rows.length), h = 24 + 11 * shown;
       g.fillStyle = "#c8a020"; g.fillRect(16, 8, 208, h); g.fillStyle = BLUE_BOX; g.fillRect(17, 9, 206, h - 2);
       top.text("Inventory", 24, 10, YELLOW, SHADE);
-      rows.forEach((r, k) => {
-        const c = k === st.inv.i ? YELLOW : WHITE, y = 26 + 11 * k;
-        top.text(r.label, 32, y, c, SHADE, "small");
-        const v = String(r.count); top.text(v, 216 - top.textWidth(v, "small"), y, c, SHADE, "small");
+      for (let r = 0; r < shown; r++) {
+        const k = st.inv.top + r, row = rows[k], c = k === st.inv.i ? YELLOW : WHITE, y = 26 + 11 * r;
+        top.text(row.label, 32, y, c, SHADE, "small");
+        const v = String(row.count); top.text(v, 216 - top.textWidth(v, "small"), y, c, SHADE, "small");
         if (k === st.inv.i) top.text("▶", 22, y, c, SHADE, "small");
-      });
+      }
+      g.fillStyle = YELLOW_CSS;
+      if (st.inv.top > 0) g.fillRect(116, 12, 8, 2);
+      if (st.inv.top + shown < rows.length) g.fillRect(116, 8 + h - 4, 8, 2);
     }
     if (st.deckList && !st.message) {
       const d = st.deckList, decks = st.opts.decks, h = 24 + 11 * DECK_ROWS;
@@ -897,34 +901,53 @@
     clamp(); paint();
   }
   // INVENTORY (this game's own): what you have besides cards, your booster packs and your tokens (opts.inventory():
-  // [{ label, count, pack }]); A on a pack opens one (opts.openPack(pack), GX's opening over the Trunk).
+  // [{ label, count, pack, token }]), INV_ROWS at a time; A on a pack opens as many as you like (opts.openPack(pack, n),
+  // GX's opening over the Trunk), A on a card token trades TOKEN_TRADE of them for one of the next rarity's
+  // (opts.tradeTokens(token, n): n of those trades).
+  const INV_ROWS = 11, TOKEN_TRADE = 50, YELLOW_CSS = "#f8d830";
+  // (how many: left and right one more or less, up and down ten; null for B)
+  async function howMany(most, text) {
+    let n = 1;
+    const ask = () => { st.message = text(n) + "   \u25c0 " + n + " \u25b6\nA: Yes   B: Cancel"; paint(); };
+    ask();
+    const yes = (await window.GbaMenus.keys((key) => {
+      if (key === "left" || key === "right" || key === "up" || key === "down") {
+        const step = key === "up" || key === "down" ? 10 : 1;
+        n = Math.max(1, Math.min(most, n + (key === "left" || key === "down" ? -step : step))); se(); ask(); return undefined;
+      }
+      return key === "a" || key === "b" ? key : undefined;
+    })) === "a";
+    st.message = null; paint();
+    return yes ? n : null;
+  }
   async function inventory() {
-    let i = 0;
+    let i = 0, top = 0;
     for (;;) {
       const rows = st.opts.inventory();
       i = Math.max(0, Math.min(i, rows.length - 1));
-      st.inv = { rows, i }; paint();
+      const scroll = () => { top = Math.max(0, Math.min(top, i, rows.length - INV_ROWS)); if (i >= top + INV_ROWS) top = i - INV_ROWS + 1; };
+      scroll(); st.inv = { rows, i, top }; paint();
       const k = await window.GbaMenus.keys((key) => {
-        if (key === "up" || key === "down") { i = (i + (key === "up" ? rows.length - 1 : 1)) % rows.length; st.inv.i = i; se(); paint(); return undefined; }
+        if (key === "up" || key === "down") { i = (i + (key === "up" ? rows.length - 1 : 1)) % rows.length; scroll(); st.inv.i = i; st.inv.top = top; se(); paint(); return undefined; }
         return key === "a" || key === "b" ? key : undefined;
       });
       if (k === "b") { se(); st.inv = null; return; }
       const row = rows[i];
-      if (!row.pack || !row.count) { se("se_failure"); continue; }
-      se();
-      // (how many to open: left and right one more or less, up and down ten)
-      let n = 1;
-      const ask = () => { st.message = "Open how many " + row.label + "\npacks?   \u25c0 " + n + " \u25b6\nA: Open   B: Cancel"; paint(); };
-      ask();
-      const yes = (await window.GbaMenus.keys((key) => {
-        if (key === "left" || key === "right" || key === "up" || key === "down") {
-          const step = key === "up" || key === "down" ? 10 : 1;
-          n = Math.max(1, Math.min(row.count, n + (key === "left" || key === "down" ? -step : step))); se(); ask(); return undefined;
-        }
-        return key === "a" || key === "b" ? key : undefined;
-      })) === "a";
-      st.message = null; paint();
-      if (yes) { await st.opts.openPack(row.pack, n); clamp(); }
+      if (row.pack && row.count) {
+        se();
+        const n = await howMany(row.count, (n) => "Open how many " + row.label + "\npacks?");
+        if (n) { await st.opts.openPack(row.pack, n); clamp(); }
+        continue;
+      }
+      const next = row.token && st.opts.tradeTokens && "crsux"["crsux".indexOf(row.token) + 1];
+      if (next) {
+        if (row.count < TOKEN_TRADE) { se("se_failure"); await say("You need " + TOKEN_TRADE + " " + row.label + "\nfor one " + RARITY_NAME[next] + " Token."); continue; }
+        se();
+        const n = await howMany(Math.floor(row.count / TOKEN_TRADE), (n) => "Trade " + n * TOKEN_TRADE + " " + row.label + "\nfor " + n + " " + RARITY_NAME[next] + " Token" + (n > 1 ? "s" : "") + "?");
+        if (n) { se(); await say(st.opts.tradeTokens(row.token, n)); }
+        continue;
+      }
+      se("se_failure");
     }
   }
   async function open(opts) {
@@ -1904,15 +1927,18 @@
     const w = Math.max(1, Math.round(fw * (sx == null ? 1 : sx))), h = Math.max(1, Math.round(fh * (sy == null ? 1 : sy)));
     g.drawImage(off, 0, 0, fw, fh, Math.round(x - w / 2), Math.round(y - h / 2), w, h);
   }
-  async function opening(key, cards) {
+  // (packs: how many packs' cards these are, all opened at once: they come up as many times as fast, so it takes as
+  // long as one pack's)
+  async function opening(key, cards, packs) {
     show();
     let speed = 1, skip = false, help = false;
     const stop = listen((k) => { if (k === "a") speed = 4; else if (k === "b" || k === "r") skip = true; else if (k === "select") help = !help; });
     const before = document.createElement("canvas"); before.width = W; before.height = H;
     before.getContext("2d").drawImage(canvas, 0, 0, W, H);
     try {
-      const n = cards.length, rise = (k) => 193 + 43 * k;
-      const shiftAt = (j) => (j < n ? 219 + 43 * j : 219 + 43 * (n - 1) + 17 * (j - n + 1));
+      const n = cards.length, step = Math.max(3, 43 / (packs || 1)), after = Math.min(17, step);
+      const rise = (k) => 193 + Math.round(step * k);
+      const shiftAt = (j) => (j < n ? 219 + Math.round(step * j) : 219 + Math.round(step * (n - 1) + after * (j - n + 1)));
       const enterAt = (k) => shiftAt(k + 4);   // (the card at the machine goes in as the others move on)
       const end = shiftAt(n + 3) + 50;
       for (let f = 0; f <= end && !skip; f += speed) {

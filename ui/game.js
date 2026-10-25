@@ -9947,16 +9947,29 @@
     await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, decks: y.decks, slot: y.deckSlot, selectDeck: (i) => { y.deckSlot = i; },
       inventory: () => PACK_SETS.map((k) => ({ label: S[k].name, count: Player.itemCount(player, S[k].item), pack: k }))
         .concat([{ label: "Pack Tokens", count: y.packTokens || 0 }])
-        .concat(["c", "r", "s", "u", "x"].map((r) => ({ label: RARITY_NAME[r] + " Tokens", count: (y.tokens || {})[r] || 0 }))),
+        .concat(["c", "r", "s", "u", "x"].map((r) => ({ label: RARITY_NAME[r] + " Tokens", count: (y.tokens || {})[r] || 0, token: r }))),
+      // (50 of a rarity's tokens for one of the next's: Common to Rare, Rare to Super Rare, and so on to Secret Rare)
+      tradeTokens: (r, n) => {
+        const next = "crsux"["crsux".indexOf(r) + 1];
+        y.tokens = y.tokens || {};
+        n = Math.min(n, Math.floor((y.tokens[r] || 0) / 50));
+        y.tokens[r] -= 50 * n; y.tokens[next] = (y.tokens[next] || 0) + n;
+        return "You got " + n + " " + RARITY_NAME[next] + " Token" + (n > 1 ? "s" : "") + ".";
+      },
       openPack: async (key, n) => {
         n = Math.min(n || 1, Player.itemCount(player, S[key].item));
         if (!n || !Player.removeItem(player, S[key].item, n)) return;
         CardShop.setup({ money: () => player.money, sets: S });
-        // (one after another: each pack's opening, then its list; A, B or R there goes on to the next)
-        for (const p of openPacks(key, n)) {
-          await CardShop.opening(key, p);
-          await CardShop.results({ sets: S, title: S[key].name, cards: p, comp: setCompletion(key), packKey: key });
+        // (every pack at once: all their cards into the Trunk, one opening with all of them, then one list of them all,
+        // the rarest first, each card once with how many came out)
+        const all = openPacks(key, n).flat(), list = [], RANK = "xusrc";
+        await CardShop.opening(key, all, n);
+        for (const c of all) {
+          const m = list.find((x) => x.no === c.no);
+          if (m) m.count++; else list.push({ no: c.no, isNew: c.isNew, count: 1 });
         }
+        list.sort((a, b) => RANK.indexOf(rarityOf(a.no)) - RANK.indexOf(rarityOf(b.no)) || a.no - b.no);
+        await CardShop.results({ sets: S, title: S[key].name + (n > 1 ? " x" + n : ""), cards: list, comp: setCompletion(key), packKey: key });
         CardShop.close();
         await persist();
       } });
