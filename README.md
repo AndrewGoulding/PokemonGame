@@ -3271,7 +3271,17 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   key) takes it out, START shows the card itself with its text. A deck holds 60 cards and 20 Fusion Monsters, its
   side deck 15, and three of any card in all. The cards are GX Duel Academy's 1200 (`window.YUGIOH_CARDS`), yours in
   `player.flags.yugioh` (the debug menu's **Fill the Trunk** gives you three of each).
-- **Not here yet**: the story, the rest of the city on the map, opening booster packs, and duels.
+- **Duel Monsters' rules** (`window.DuelMonsters`, in `game/table-players.js`): the duel engine, ported from Yu-Gi-Oh!
+  The Eternal Duelist Soul's decompilation (github.com/CosmicScribe64/eds-decomp): 8000 life points, five cards to
+  start, the Draw, Standby, Main, Battle, second Main and End Phases (no attack on the duel's first turn, six cards
+  in hand at the end), a Normal Summon or Set a turn (a Tribute for levels 5-6, two for 7 and up), Flip Summons and
+  changes of position, ATK against ATK or DEF and the damage, and winning by life points, an empty deck or Exodia.
+  Chains: Spells at speed 1, Quick-Play Spells and Traps at 2, Counter Traps at 3, each link answerable in turn and
+  resolved from the last back. The cards' effects follow EDS's own handlers for its cards (about 460 of GX's 1200)
+  and their text for the rest: 210 of the 280 Spells, 91 of the 160 Traps and 176 of the 410 Effect Monsters do
+  what they say (equips, Field Spells, Fusions and Rituals, Trap Hole, Mirror Force, flip effects and the rest); a
+  Spell or Trap with no effect yet can't be activated, and such a monster plays with its stats alone.
+- **Not here yet**: the story, the rest of the city on the map, opening booster packs, and the duel screen.
 
 `tools/build-sacred-cards.py` builds it all from the cartridge (your own dump of it; it checks the game code, AY7E):
 
