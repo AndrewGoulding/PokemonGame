@@ -9640,7 +9640,7 @@
   // Domino Square's fountain (and Clock Tower Square's): back through the portal to the Realm Hub, or off round the
   // realm: Battle City's places (The Sacred Cards'), Domino City's and the world's (Reshef of Destruction's:
   // tools/build-reshef.py).
-  const RESHEF_DOMINO = ["Clock Tower Square", "Your House", "Domino Station", "Egypt Exhibition", "Domino Pier", "KaibaLand"];
+  const RESHEF_DOMINO = ["Clock Tower Square", "Domino High School", "Your House", "Domino Station", "Egypt Exhibition", "Domino Pier", "KaibaLand"];
   async function dominoFountain() {
     await say("The fountain's water shimmers with\na golden light.");
     const SC = window.SACRED_CARDS, RD = window.RESHEF;

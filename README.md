@@ -3240,7 +3240,12 @@ fountain. Your Pokémon stay in their balls here (no follower), and there are no
   beside **Battle City** (The Sacred Cards' places); Clock Tower Square's fountain does the same. Its people's 118
   sprites (`assets/world/sprites/rd_*.png`) and its 52 characters' portraits, with all their expressions
   (`assets/yugioh/portraits-reshef/`), come with it.
-- **Not here yet**: the story, its characters on the maps, and duels. Neither game has Domino High School in it.
+- **Domino High School**, which neither game has, is this game's own, put together from their screens: up the road
+  north of Clock Tower Square, its front (Pegasus Castle's door and gardens, its stone made a school's), its entrance
+  hall (the Sacred Cards' hotel lobby, with a tiled floor, the vending machine and reception, the sofas its
+  benches) and a classroom (the Sacred Cards' warehouse, cleared, with wooden boards, a blackboard, lockers, the
+  teacher's desk and two rows of pupils' desks). Pupils and a teacher are about; the fountains' menu lists it.
+- **Not here yet**: the story, its characters on the maps, and duels.
 
 `tools/build-sacred-cards.py` builds it all from the cartridge (your own dump of it; it checks the game code, AY7E):
 
@@ -3258,6 +3263,14 @@ python3 tools/build-sacred-cards.py "<path to Yu-Gi-Oh! - The Sacred Cards (USA)
   pieces (the eyes open and the mouth shut).
 - The data goes into `data/emerald-maps.js` between its markers, with `window.SACRED_CARDS`: where you arrive, and
   the fountain's places.
+
+`tools/build-domino-high.py` builds the school from the two games' screens (no cartridge needed; run it after
+`tools/build-reshef.py`, whose road north it joins): its pictures as `DH_00` to `DH_02`, its walls and ways
+drawn in the tool as grids, into `data/emerald-maps.js` between its markers.
+
+```sh
+python3 tools/build-domino-high.py
+```
 
 `tools/build-reshef.py` does the same for Reshef of Destruction (the USA cartridge, AY8E: your own dump of it):
 
