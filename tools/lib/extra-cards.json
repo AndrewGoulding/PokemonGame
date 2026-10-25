@@ -1,5 +1,5 @@
 {
- "about": "The Duel Monsters cards released (TCG or OCG) up to Legacy of Darkness (2003-06-06) that GX Duel Academy doesn't have, card numbers 1201 on in this order (by release), and the seven booster packs they're in: each named for its boss monster, with each card's rarity in it (x Secret, u Ultra, s Super, r Rare, c Common). tools/build-extra-cards.py. gxNames: the GX cards whose names differ from the TCG's, for their pictures. The packs also hold GX's own cards of their time that GX's five sets don't (by GX's names and its rarities); removed: GX's cards released after Legacy of Darkness, in no pack, out of the game.",
+ "about": "The Duel Monsters cards released (TCG or OCG) up to Legacy of Darkness (2003-06-06) that GX Duel Academy doesn't have, card numbers 1201 on in this order (by release), and the seven booster packs they're in: each named for its boss monster, with each card's rarity in it (x Secret, u Ultra, s Super, r Rare, c Common). tools/build-extra-cards.py. gxNames: the GX cards whose names differ from the TCG's, for their pictures. The packs also hold GX's own cards of their time that GX's five sets don't (by GX's names and its rarities); removed: GX's cards released after Legacy of Darkness, in no pack, out of the game. removedNumbers: GX cards out by number (663, its \"Luster Dragon\" at 2400, the TCG's Luster Dragon #2). GX's cards take their TCG names and text too (gxNames: their old names, still known to DuelMonsters.numberOf).",
  "cutoff": "2003-06-06",
  "cards": [
   "Archfiend Marmot of Nefariousness",
@@ -1407,7 +1407,7 @@
      "x"
     ],
     [
-     "Bright Castle",
+     "Shine Palace",
      "r"
     ],
     [
@@ -1419,7 +1419,7 @@
      "c"
     ],
     [
-     "Trakadon",
+     "Trakodon",
      "c"
     ],
     [
@@ -1443,7 +1443,7 @@
      "s"
     ],
     [
-     "Eternal Draught",
+     "Eternal Drought",
      "c"
     ],
     [
@@ -1914,7 +1914,7 @@
      "c"
     ],
     [
-     "Swordsman from a Foreign Land",
+     "Swordsman from a Distant Land",
      "c"
     ],
     [
@@ -1970,7 +1970,7 @@
      "r"
     ],
     [
-     "Meteor B. Dragon",
+     "Meteor Black Dragon",
      "s"
     ],
     [
@@ -2170,7 +2170,7 @@
      "x"
     ],
     [
-     "Dark Magic Ritual",
+     "Black Magic Ritual",
      "x"
     ]
    ],
@@ -2685,7 +2685,7 @@
      "c"
     ],
     [
-     "Dimensional Warrior",
+     "D.D. Warrior",
      "u"
     ],
     [
@@ -2857,7 +2857,7 @@
      "s"
     ],
     [
-     "Makiu",
+     "Makiu, the Magical Mist",
      "r"
     ],
     [
@@ -3336,7 +3336,7 @@
      "s"
     ],
     [
-     "Kinetic Soldier",
+     "Cipher Soldier",
      "s"
     ],
     [
@@ -3504,7 +3504,7 @@
      "c"
     ],
     [
-     "Cathedral of Nobles",
+     "Temple of the Kings",
      "u"
     ],
     [
@@ -3512,11 +3512,11 @@
      "u"
     ],
     [
-     "Reversal of Graves",
+     "Exchange of the Spirit",
      "u"
     ],
     [
-     "Mystical Beast Serket",
+     "Mystical Beast of Serket",
      "u"
     ],
     [
@@ -4179,7 +4179,7 @@
      "c"
     ],
     [
-     "Hidden Soldier",
+     "Hidden Soldiers",
      "u"
     ],
     [
@@ -4199,11 +4199,11 @@
      "r"
     ],
     [
-     "Master of Dragon Soldier",
+     "Dragon Master Knight",
      "u"
     ],
     [
-     "F.G.D.",
+     "Five-Headed Dragon",
      "u"
     ],
     [
@@ -4259,7 +4259,7 @@
      "c"
     ],
     [
-     "Vampire Orchis",
+     "Vampiric Orchis",
      "c"
     ],
     [
@@ -4794,10 +4794,6 @@
      "c"
     ],
     [
-     "Luster Dragon",
-     "u"
-    ],
-    [
      "Amazoness Paladin",
      "c"
     ],
@@ -4890,7 +4886,7 @@
      "c"
     ],
     [
-     "Hidden Book of Spell",
+     "Hidden Spellbook",
      "c"
     ],
     [
@@ -5553,7 +5549,7 @@
      "x"
     ],
     [
-     "Dark Magician's Tome of Black Magic",
+     "Magic Formula",
      "x"
     ],
     [
@@ -6095,5 +6091,8 @@
   "Wroughtweiler",
   "Yellow Gadget",
   "Zaborg the Thunder Monarch"
+ ],
+ "removedNumbers": [
+  663
  ]
 }

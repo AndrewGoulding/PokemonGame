@@ -8,6 +8,9 @@
 #
 # From YGOPRODeck's card database (db.ygoprodeck.com: the cards' names, text, kinds, types, attributes, levels and
 # stats) and its cards' pictures (images.ygoprodeck.com's cropped art), kept in the cache directory once downloaded:
+#   - GX's own cards' names and text as the TCG has them now (its current text, errata and all; their stats are
+#     GX's, the same), their old names kept as former names (window.YUGIOH_CARDS.formerNames) that
+#     DuelMonsters.numberOf still knows;
 #   - the cards, as GX's own are (data/items.js's YUGIOH_CARDS: name, text, kind, type, attribute, level, ATK, DEF,
 #     the Spell's or Trap's icon), added to its cards after GX's, between this tool's markers in data/items.js, with
 #     each one's rarity (YUGIOH_RARITY: its rarity in its pack) and the seven packs (YUGIOH_SETS);
@@ -57,6 +60,19 @@ for p in spec['packs']:
     s = {'item': p['item'], 'name': p['name'], 'full': p['full'], 'cover': p['cover'], 'text': p['text']}
     for k, v in NAMES.items(): s[v] = [n for n, r in p['cards'] if r == k]
     sets[p['key']] = s
+# (GX's cards by their TCG names, from GX's own data in data/items.js; those out of the game keep GX's)
+norm = lambda n: re.sub(r'[^a-z0-9]', '', n.lower())
+byNorm = {norm(c['name']): c for c in db}
+items = open(os.path.join(ROOT, 'data/items.js'), encoding='utf8').read()
+gx = json.loads(re.search(r'window\.YUGIOH_CARDS = (\{.*?\});\n', items, re.S).group(1))['cards']
+out = set(spec['removed']) | {gx[n][0] for n in spec['removedNumbers']}
+tcg, former = {}, {}
+for n, c in enumerate(gx[:FIRST]):
+    if not c or n in spec['removedNumbers'] or c[0] in spec['removed']: continue
+    t = byNorm.get(norm(spec['gxNames'].get(c[0], c[0])))
+    if not t: continue
+    tcg[n] = [t['name'], t['desc'].replace('\r\n', '\n').replace('\r', '\n').strip()]
+    if t['name'] != c[0]: former[c[0]] = n
 START = '// Duel Monsters\' cards beyond GX Duel Academy\'s (tools/build-extra-cards.py): cards 1201 on, their rarities and their seven packs.\n'
 END = '// (End of the cards beyond GX\'s.)\n'
 js = (START + '(function () {\n'
@@ -66,7 +82,11 @@ js = (START + '(function () {\n'
       '  window.YUGIOH_RARITY = window.YUGIOH_RARITY.slice(0, ' + str(FIRST) + ') + ' + json.dumps(''.join(rarity[n] for n in spec['cards'])) + ';\n'
       '  const R = window.YUGIOH_RARITY.split("");\n'
       '  for (const name of ' + json.dumps(spec['removed'], ensure_ascii=False) + ') R[C.cards.findIndex((c) => c && c[0] === name)] = "-";\n'
+      '  for (const no of ' + json.dumps(spec['removedNumbers']) + ') R[no] = "-";\n'
       '  window.YUGIOH_RARITY = R.join("");\n'
+      '  // (GX\'s cards\' TCG names and text; their old names, for DuelMonsters.numberOf)\n'
+      '  for (const [no, [name, text]] of Object.entries(' + json.dumps(tcg, separators=(',', ':'), ensure_ascii=False) + ')) { C.cards[no][0] = name; C.cards[no][1] = text; }\n'
+      '  C.formerNames = ' + json.dumps(former, ensure_ascii=False) + ';\n'
       '  Object.assign(window.YUGIOH_SETS, ' + json.dumps(sets, ensure_ascii=False) + ');\n'
       '})();\n' + END)
 path = os.path.join(ROOT, 'data/items.js')
@@ -78,10 +98,6 @@ open(path, 'w', encoding='utf8').write(s)
 # ---------- Their pictures, and GX's cards' ----------
 CARDS = os.path.join(ROOT, 'assets/yugioh/cards')
 last = FIRST + len(cards) - 1
-norm = lambda n: re.sub(r'[^a-z0-9]', '', n.lower())
-byNorm = {norm(c['name']): c for c in db}
-items = open(path, encoding='utf8').read()
-gx = json.loads(re.search(r'window\.YUGIOH_CARDS = (\{.*?\});\n', items, re.S).group(1))['cards'] if 'window.YUGIOH_CARDS = {' in items else None
 pics = {n: by[spec['cards'][n - FIRST]] for n in range(FIRST, last + 1)}
 for n, c in enumerate((gx or [])[:FIRST]):
     if c and norm(spec['gxNames'].get(c[0], c[0])) in byNorm: pics[n] = byNorm[norm(spec['gxNames'].get(c[0], c[0]))]

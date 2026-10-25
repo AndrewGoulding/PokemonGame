@@ -3440,7 +3440,10 @@ once into a cache directory; after `tools/build-gx-trunk.py`:
 python3 tools/build-extra-cards.py <cache directory>
 ```
 
-Into `data/items.js` between its own markers (the cards, their rarities and the packs, `window.YUGIOH_SETS`), and
+It also gives GX's own cards **their TCG names and current TCG text** (GX's names where they differ, such as Red-Eyes
+B. Dragon or F.G.D., stay known to `DuelMonsters.numberOf` as former names, `window.YUGIOH_CARDS.formerNames`), so
+every card reads as the TCG prints it now; GX's "Luster Dragon" at 2400 ATK, the TCG's Luster Dragon #2 (card 1707),
+is out of the game. Into `data/items.js` between its own markers (the cards, their rarities and the packs, `window.YUGIOH_SETS`), and
 their pictures on sheets 12-19 of `assets/yugioh/cards/`. It redraws GX's own 1200 cards' pictures from YGOPRODeck's
 art too, so every card looks alike (by their TCG names, the file's `gxNames` where GX's differ; the six GX made up
 keep the cartridge's). The packs' icons are `tools/build-domino-map.py`'s.
