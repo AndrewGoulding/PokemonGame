@@ -3278,16 +3278,23 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   changes of position, ATK against ATK or DEF and the damage, and winning by life points, an empty deck or Exodia.
   Chains: Spells at speed 1, Quick-Play Spells and Traps at 2, Counter Traps at 3, each link answerable in turn and
   resolved from the last back. The cards' effects follow EDS's own handlers for its cards (about 460 of GX's 1200)
-  and their text for the rest: 210 of the 280 Spells, 91 of the 160 Traps and 176 of the 410 Effect Monsters do
-  what they say (equips, Field Spells, Fusions and Rituals, Trap Hole, Mirror Force, flip effects and the rest); a
-  Spell or Trap with no effect yet can't be activated, and such a monster plays with its stats alone.
+  and their text for the rest: every one of the 280 Spells, 160 Traps and 410 Effect Monsters does what it says
+  (equips, Field Spells, Fusions and Rituals, Trap Hole, Mirror Force, flip effects and the rest). Among them:
+  Spell Counters (the Spellcasters of Spell Ruler, Mega Ton Magical Cannon, Pitch-Black Power Stone), Union monsters
+  (once a turn an Equip Card on their partner, or back; destroyed in its place in battle), the monsters summoned by
+  removing others from play (Chaos Sorcerer, the Envoys, Inferno, Megarock Dragon) or by a Tribute of their own (Red-
+  Eyes Darkness Dragon, Master Monk, Lava Golem on your opponent's side), Destiny Board's Spirit Messages and the
+  Sarcophagi, the cards that watch for others (Chain Energy, Skull Invitation, Curse of Darkness, Fire Princess),
+  that change battle damage (Amazoness Swords Woman, Stone Statue of the Aztecs, Rod of the Mind's Eye) or forbid
+  something (Spell Canceller, Jinzo, Mask of Restrict, Protector of the Sanctuary, Invader of Darkness), and the
+  hand shown face up while Respect Play, Ceremonial Bell or your Mind on Air is out.
 - **The computer duelist** (`DuelMonsters.ai()`): EDS's, its Main Phase in EDS's order: the Spells that draw or clear
   the field first, then the strongest summon it can make (tributing its weakest monsters; in Attack Position when it
   beats your best, set otherwise, and flip monsters always set), its monsters' effects, the Spells that take or bring
   back a monster, the rest and the equips, its positions, and in Main Phase 2 its Traps set. Its attacks are worked
   out battle by battle (what each would destroy and lose and the damage), the best first, never one it loses; it
   knows what your face-down cards are, as EDS's does. It springs its Traps on an attack it would lose to or a direct
-  one, on a strong monster summoned, and its Counter Traps on your cards. It beats random play in about 94 duels in
+  one, on a strong monster summoned, and its Counter Traps on your cards. It beats random play in about 99 duels in
   100.
 - **Duels**: Yugi, Téa, Joey and Tristan in Domino High's classroom will duel you after they've said hello (each
   with a deck of their own from the show, `window.YUGIOH_DUELISTS` in `data/items.js`); win, and they give you one

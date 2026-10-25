@@ -199,7 +199,14 @@
       return null;
     },
     controllerOf(z) { const l = this.locate(z); return l ? l.p : -1; },
-    freeMonsterZone(p) { const zs = this.players[p].zones; for (let i = 0; i < MZ; i++) if (!zs[i]) return i; return -1; },
+    freeMonsterZone(p) { const zs = this.players[p].zones; for (let i = 0; i < MZ; i++) if (!zs[i] && !this.closed(p, i)) return i; return -1; },
+    // (Ground Collapse: zones closed while it's face up on the field)
+    closed(p, i) { return (this.flags.closed || []).some((c) => c.p === p && c.i === i && this.locate(c.src) && this.live(c.src)); },
+    // Is any face-up card (on side q, or either) with this effect property live? Returns the first such zone.
+    liveWith(prop, q) {
+      for (const r of q == null ? [0, 1] : [q]) for (const z of this.allZones(r)) { const e = this.live(z); if (e && e[prop]) return z; }
+      return null;
+    },
     freeSpellZone(p) { const zs = this.players[p].zones; for (let i = 5; i < 5 + SZ; i++) if (!zs[i]) return i; return -1; },
     // Effective stats (GetZoneCardStats): base, then each continuous effect on the field, equips and links, and
     // this turn's changes; never below 0.
@@ -346,6 +353,7 @@
     async sendToGrave(c, why) {
       if (c.token) { const from = this.take(c); await this.emit({ type: "token-gone", card: c, from }); await this.afterLeave(c, from, why); return from; }
       const from = this.take(c);
+      if (why === "fusion") c.fusionMaterial = true;
       // (a card removed from play instead, while something says so: Banisher of the Light, Macro Cosmos)
       const banishInstead = [0, 1].some((q) => this.allZones(q).some((z) => z.faceUp && !z.negated && effectOf(z.card.no) && effectOf(z.card.no).graveToBanish));
       this.toPile(c, banishInstead ? "banished" : "grave");
@@ -353,6 +361,7 @@
       await this.afterLeave(c, from, why);
       const e = effectOf(c.no);
       if (!banishInstead && e && e.onToGrave) await e.onToGrave(this, c, c.owner, from, why);
+      await this.notify({ type: banishInstead ? "banished" : "sent-to-grave", card: c, p: c.owner, from, why });
       if (from && from.zone != null && from.zone < 5) await this.event({ type: "monster-to-grave", card: c, p: from.p, why });
       return from;
     },
@@ -361,12 +370,14 @@
       this.toPile(c, "banished");
       await this.emit({ type: "banish", card: c, from, why });
       await this.afterLeave(c, from, why);
+      await this.notify({ type: "banished", card: c, p: c.owner, from, why });
     },
     async toHand(c, why) {
       const from = this.take(c);
       this.toPile(c, CardInfo.isExtra(c.no) ? "fusion" : "hand");
       await this.emit({ type: "to-hand", card: c, from, why });
       await this.afterLeave(c, from, why);
+      if (from && from.zone != null && from.zone < 5) await this.notify({ type: "returned", card: c, p: from.p });
     },
     async toDeck(c, top, why) {
       const from = this.take(c);
@@ -391,15 +402,19 @@
       if (!l) return false;
       const e = effectOf(z.card.no);
       if (e && e.cannotBeDestroyed && z.faceUp && !z.negated && e.cannotBeDestroyed(this, z, l.p, why)) return false;
+      if (why === "battle" && l.i < 5) { const u = z.links.find((k) => k.kind === "equip" && k.from.data.union && this.locate(k.from)); if (u) { await this.destroy(u.from, "effect"); return false; } }
       await this.emit({ type: "destroy", zone: z, p: l.p, i: l.i, why });
       const c = z.card, wasUp = z.faceUp;
+      c.destroyedTurn = this.turn; if (why === "battle") c.battleDestroyedTurn = this.turn;
+      if (why === "battle" && c.token && c.token.burn) await this.damage(1 - l.p, c.token.burn, "effect");
       await this.sendToGrave(c, why === "battle" ? "battle" : "destroyed");
       if (e && e.onDestroyed && (wasUp || why === "battle") && !z.negated) await e.onDestroyed(this, z, l.p, why, by);
       await this.event({ type: why === "battle" ? "battle-destroyed" : "destroyed", card: c, p: l.p, by });
       return true;
     },
-    async drawCards(p, n) {
+    async drawCards(p, n, drawPhase) {
       const pl = this.players[p];
+      if (!drawPhase && this.liveWith("noOtherDraws", 1 - p)) return 0;
       for (let k = 0; k < n; k++) {
         if (!pl.deck.length) { pl.flags.deckOut = true; this.checkWin(); return k; }
         const c = pl.deck.shift();
@@ -413,9 +428,11 @@
       if (n <= 0) return;
       const pl = this.players[p];
       if (why === "battle" && pl.flags.noBattleDamage) return;
+      if (why !== "battle" && this.liveWith("noEffectDamage", p)) return;
       pl.lp = Math.max(0, pl.lp - n);
       await this.emit({ type: "lp", p, amount: -n, lp: pl.lp, why });
       this.checkWin();
+      if (why !== "battle") await this.notify({ type: "effect-damage", p, amount: n, why });
       await this.event({ type: "lp-damage", p, amount: n, why });
     },
     async heal(p, n, why) {
@@ -423,6 +440,7 @@
       const pl = this.players[p];
       pl.lp += n;
       await this.emit({ type: "lp", p, amount: n, lp: pl.lp, why });
+      await this.notify({ type: "healed", p, amount: n, why });
     },
     async payLp(p, n) {
       this.players[p].lp = Math.max(0, this.players[p].lp - n);
@@ -431,7 +449,7 @@
     },
     async discard(p, c, why) {
       await this.sendToGrave(c, why || "discard");
-      await this.event({ type: "discarded", p, card: c });
+      await this.event({ type: "discarded", p, card: c, why: why || "discard" });
     },
     // Put a monster on the field (a summon of any kind).
     async placeMonster(p, c, opts) {
@@ -440,6 +458,7 @@
       if (i < 0) return null;
       const from = this.take(c);
       const z = newZone(c, { faceUp: opts.faceUp !== false, defense: !!opts.defense, placedTurn: this.turn, summonedBy: opts.how || "normal" });
+      z.data.fromPile = from && from.pile;
       this.players[p].zones[i] = z;
       await this.emit({ type: "summon", p, i, zone: z, card: c, how: opts.how || "normal", from });
       return z;
@@ -450,6 +469,8 @@
       if (this.players[p].flags.noSpecialSummon) return null;
       const e0 = effectOf(c.no);
       if (e0 && e0.noSpecial && opts.how !== "normal") return null;
+      if (this.liveWith("noSpecials")) return null;
+      if (e0 && e0.noGraveSpecial && this.players[c.owner].grave.includes(c)) return null;
       if (opts.position === "choose") {
         const r = await this.choose(p, "Summon " + this.name(c) + " in which position?", [{ label: "Attack Position", value: false }, { label: "Defense Position", value: true }]);
         opts.defense = !!(r && r.value);
@@ -465,19 +486,27 @@
       await this.event({ type: how === "flip" ? "flip-summoned" : how === "special" ? "special-summoned" : "summoned", p, zone: z, card: z.card });
     },
     // A face-down monster turned face up (by a Flip Summon, an attack or an effect): its flip effect.
-    async flipUp(z, how) {
+    async flipUp(z, how, noEffect) {
       if (z.faceUp) return;
       const l = this.locate(z);
       z.faceUp = true;
       await this.emit({ type: "flip", zone: z, p: l.p, how });
       const e = effectOf(z.card.no);
-      if (e && e.flip) await this.runEffect({ card: z.card, zone: z, p: l.p, kind: "flip", resolve: e.flip, label: this.name(z.card) });
+      if (e && e.flip && !noEffect && !this.liveWith("negatesFlips")) await this.runEffect({ card: z.card, zone: z, p: l.p, kind: "flip", resolve: e.flip, label: this.name(z.card) });
     },
     async changePosition(z, defense) {
       if (z.defense === !!defense && z.faceUp) return;
+      const was = { faceUp: z.faceUp, defense: z.defense };
       if (!z.faceUp) await this.flipUp(z, "position");
       z.defense = !!defense;
       await this.emit({ type: "position", zone: z, p: this.controllerOf(z), defense: z.defense });
+      if (this.locate(z)) await this.notify({ type: "position-changed", zone: z, p: this.controllerOf(z), from: was, defense: z.defense });
+    },
+    // Turn a face-up monster face down (Desertapir, Tsukuyomi, Stealth Bird...).
+    async flipDown(z) {
+      if (!this.locate(z) || !z.faceUp) return;
+      z.faceUp = false; z.defense = true; z.changedTurn = this.turn;
+      await this.emit({ type: "position", zone: z, p: this.controllerOf(z), defense: true });
     },
     // Tokens: a card made for the duel (its stats given), gone when it leaves the field.
     async summonToken(p, stats, opts) {
@@ -494,6 +523,8 @@
     async takeControl(z, p) {
       const l = this.locate(z);
       if (!l || l.p === p) return false;
+      const ze = effectOf(z.card.no);
+      if (ze && ze.noControlChange && z.faceUp && !z.negated) return false;
       const i = this.freeMonsterZone(p);
       if (i < 0) return false;
       this.players[l.p].zones[l.i] = null;
@@ -519,13 +550,19 @@
     // An event of the duel: triggered effects, then the window for the players to respond (EventResponse_Run).
     async event(ev) {
       if (this.over) return;
-      for (const p of [0, 1]) for (const z of this.allZones(p).slice()) {
-        const e = effectOf(z.card.no);
-        if (e && e.onEvent && z.faceUp && !z.negated && this.locate(z)) await e.onEvent(this, z, p, ev);
-      }
+      await this.notify(ev);
       // (while a chain resolves, the window waits until it's done, as EDS queues its triggers: Chain_AddPending)
       if (this.resolving) { this.pendingEvents.push(ev); return; }
       await this.respondWindow(ev);
+    },
+    // The face-up cards that watch for something (their onEvent), without a window to respond.
+    async notify(ev) {
+      if (this.over) return;
+      for (const p of [0, 1]) for (const z of this.allZones(p).slice()) {
+        const e = effectOf(z.card.no);
+        if (e && e.onEvent && this.live(z) && this.locate(z)) await e.onEvent(this, z, p, ev);
+        if (this.over) return;
+      }
     },
     // Each player in turn, the turn player first, may activate a card that answers the event.
     async respondWindow(ev, chain) {
@@ -560,7 +597,7 @@
         const a = e.activate;
         const speed = this.speedOf(no, a);
         if (speed < minSpeed) continue;
-        if (CardInfo.isTrap(no) && (z.placedTurn === this.turn || this.negated("trap"))) continue;
+        if (CardInfo.isTrap(no) && ((z.placedTurn === this.turn && !this.liveWith("trapsSameTurn", p)) || this.negated("trap"))) continue;
         if (CardInfo.isSpell(no) && (CardInfo.icon(no) !== ICON.QUICK || z.faceUp || z.placedTurn === this.turn)) continue;
         if (z.faceUp && !a.repeatable) continue;
         if (!this.canActivate(p, z.card, a, { zone: z, event: ev, chain, last })) continue;
@@ -599,6 +636,7 @@
     canActivate(p, c, a, ctx) {
       if (this.players[p].flags.noActivate) return false;
       if (CardInfo.isSpell(c.no) && this.negated("spell")) return false;
+      if (this.locked(p, c, ctx)) return false;
       if (a.when) {
         const ev = ctx.event;
         const last = ctx.last;
@@ -611,6 +649,26 @@
       try { return !a.can || !!a.can(this, Object.assign({ p, card: c }, ctx)); } catch (e) { return false; }
     },
     isMain() { return this.phase === "main1" || this.phase === "main2"; },
+    // What the other side's cards forbid p to activate: Quick-Play Spells (Invader of Darkness), Spells while its
+    // controller's hand is empty (Mechanical Hound), Traps in the Battle Phase (Pitch-Black Warwolf), Traps answering a
+    // summon (Eagle Eye), Spells and Traps while an Ancient Gear attacks.
+    locked(p, c, ctx) {
+      const q = 1 - p, no = c.no, st = CardInfo.isSpell(no) || CardInfo.isTrap(no);
+      if (!st) return false;
+      for (const z of this.allZones(q)) {
+        const e = this.live(z);
+        if (!e) continue;
+        if (e.noQuickPlay && CardInfo.isSpell(no) && CardInfo.icon(no) === ICON.QUICK) return true;
+        if (e.noSpellsIfEmpty && CardInfo.isSpell(no) && !this.players[q].hand.length) return true;
+        if (e.noBattleTraps && CardInfo.isTrap(no) && this.phase === "battle") return true;
+        if (e.gearLock && this.attack && this.attack.attacker === z) return true;
+      }
+      for (const r of [0, 1]) for (const z of this.allZones(r)) { const e = this.live(z); if (e && e.forbids && e.forbids(this, z, r, p, c)) return true; }
+      const ev = ctx && ctx.event;
+      if (ev && ev.type === "summoned" && ev.zone && ev.p !== p && CardInfo.isTrap(no)) { const e = effectOf(ev.zone.card.no); if (e && e.noTrapsOnSummon && !ev.zone.negated) return true; }
+      if (CardInfo.isTrap(no) && this.flags.noTrapsTurn === this.turn) return true;
+      return false;
+    },
     // (Jinzo, Royal Decree: Traps negated; Imperial Order: Spells; each but the card itself)
     negated(kind, except) {
       for (const q of [0, 1]) for (const z of this.allZones(q)) {
@@ -646,6 +704,7 @@
       const link = { p, card: c, zone: z, prev, event: ev, speed: this.speedOf(c.no, a), resolve: a.resolve, targets: [], data: {}, label: this.name(c),
         stays: !!(a.stays || CardInfo.icon(c.no) === ICON.CONTINUOUS || CardInfo.icon(c.no) === ICON.FIELD || CardInfo.icon(c.no) === ICON.EQUIP) };
       await this.emit({ type: "activate", p, card: c, zone: z, link });
+      await this.notify({ type: "activated", p, card: c, zone: z, link, from: o.from });
       if (a.cost && (await a.cost(this, link)) === false) { link.negated = true; }
       if (!link.negated && a.target && (await a.target(this, link)) === false) link.negated = true;
       if (o.from !== "monster" && CardInfo.isSpell(c.no)) this.players[p].flags.spellThisTurn = true;
@@ -728,7 +787,7 @@
   // ---------- The turn ----------
   const TURN = {
     async run() {
-      for (const p of [0, 1]) await this.drawCards(p, HAND);
+      for (const p of [0, 1]) await this.drawCards(p, HAND, true);
       while (!this.over) {
         await this.playTurn();
         if (this.over) break;
@@ -743,11 +802,12 @@
       pl.normalSummoned = false; pl.flags.spellThisTurn = false;
       for (const q of [0, 1]) for (const z of this.allZones(q)) { z.attacks = 0; z.attackedThisTurn = false; }
       await this.emit({ type: "turn", p, turn: this.turn });
+      if (pl.flags.skipTurn) { pl.flags.skipTurn = false; return; }
       // Draw Phase
       this.phase = "draw"; await this.emit({ type: "phase", phase: "draw", p });
       if (pl.flags.skipDraw) pl.flags.skipDraw = false;
       else if (pl.flags.skipDraws > 0) pl.flags.skipDraws--;
-      else { await this.drawCards(p, 1); await this.event({ type: "drew", p }); }
+      else { await this.drawCards(p, 1, true); await this.event({ type: "drew", p, card: pl.hand[pl.hand.length - 1], drawPhase: true }); }
       if (this.over) return;
       // Standby Phase: its upkeep (maintenance costs and standby effects)
       this.phase = "standby"; await this.emit({ type: "phase", phase: "standby", p });
@@ -769,7 +829,7 @@
       this.phase = "main1"; await this.emit({ type: "phase", phase: "main1", p });
       const next = await this.mainPhase(p);
       if (this.over) return;
-      const noBattle = pl.flags.skipBattle || pl.flags.noBattleThisTurn === this.turn;
+      const noBattle = pl.flags.skipBattle || pl.flags.noBattleThisTurn === this.turn || [0, 1].some((q) => this.allZones(q).some((z) => { const e = this.live(z); return e && e.noBattlePhase && e.noBattlePhase(this, z, q); }));
       if (pl.flags.skipBattle) pl.flags.skipBattle = false;
       this.flags.endBattle = false;
       if (next === "battle" && this.turn > 0 && !noBattle) {
@@ -792,6 +852,9 @@
         // (Spirit monsters back to the hand on the turn they came; Karate Man and Limiter Removal; Change of Heart; Power Bond)
         if (e && e.spirit && z.placedTurn === this.turn && z.faceUp) { await this.toHand(z.card, "spirit"); continue; }
         if (z.data.destroyAtEnd === this.turn) { await this.destroy(z, "effect"); continue; }
+        if (z.data.toExtraAtEnd === this.turn) { await this.toDeck(z.card, true, "effect"); continue; }
+        if (z.data.banishAtEnd === this.turn) { await this.banish(z.card, "effect"); continue; }
+        z.links = z.links.filter((l) => l.until == null || l.until > this.turn);
         if (z.data.returnAtEnd && z.data.returnAtEnd.turn === this.turn) { const to = z.data.returnAtEnd.to; z.data.returnAtEnd = null; await this.takeControl(z, to); }
         if (z.data.powerBond && z.data.powerBond.turn === this.turn) { await this.damage(z.data.powerBond.p, CardInfo.atk(z.card.no), "effect"); z.data.powerBond = null; }
         if (z.data.toDefenseAtEnd) { z.data.toDefenseAtEnd = false; await this.changePosition(z, true); z.changedTurn = this.turn + 1; }
@@ -799,7 +862,7 @@
       for (const q of [0, 1]) if (this.players[q].flags.countdown && this.turn >= this.players[q].flags.countdown) { this.players[q].flags.specialWin = "countdown"; this.checkWin(); }
       this.temp = this.temp.filter((t) => t.until === "permanent");
       for (const k of ["spellsNegatedThisTurn"]) delete this.flags[k];
-      while (pl.hand.length > HAND_LIMIT && !this.over) {
+      while (pl.hand.length > HAND_LIMIT && !this.over && !this.liveWith("noHandLimit")) {
         const c = await this.pickCard(p, "Discard down to " + HAND_LIMIT + " cards.", pl.hand);
         await this.discard(p, c || pl.hand[0], "hand-limit");
       }
@@ -827,7 +890,7 @@
           const e = effectOf(no);
           const special = e && e.specialOnly;
           const fieldOk = !(e && e.needsField) || this.countOnField(numberOf(e.needsField)) > 0;
-          if (canNormal && !special && CardInfo.kind(no) !== "ritual" && fieldOk) {
+          if (canNormal && !special && CardInfo.kind(no) !== "ritual" && fieldOk && !(e && e.normalIf && !e.normalIf(this, p))) {
             const t = e && e.noTributeIfOnly && pl.hand.length === 1 ? 0 : tributesFor(no, e);
             if (this.tributable(p).length >= t && (t > 0 || this.freeMonsterZone(p) >= 0)) {
               acts.push({ act: "summon", card: c, tributes: t, label: "Summon " + CardInfo.name(no) });
@@ -835,7 +898,7 @@
             }
           }
           if (e && e.handActivate && this.canActivate(p, c, e.handActivate, { fromHand: true })) acts.push({ act: "hand-effect", card: c, label: "Use " + CardInfo.name(no) });
-          if (e && e.specialFromHand && !noSummon && this.freeMonsterZone(p) >= 0 && e.specialFromHand(this, p)) acts.push({ act: "special-hand", card: c, label: "Special Summon " + CardInfo.name(no) });
+          if (e && e.specialFromHand && !noSummon && this.freeMonsterZone(e.specialSide ? 1 - p : p) >= 0 && e.specialFromHand(this, p, c)) acts.push({ act: "special-hand", card: c, label: "Special Summon " + CardInfo.name(no) });
         } else if (CardInfo.isSpell(no) || CardInfo.isTrap(no)) {
           const e = effectOf(no), field = CardInfo.icon(no) === ICON.FIELD;
           const room = field || this.freeSpellZone(p) >= 0;
@@ -872,17 +935,29 @@
       acts.push({ act: "end", label: "End Turn" });
       return acts;
     },
-    tributable(p) { return this.monsters(p).filter((z) => !z.data.cannotTribute); },
+    tributable(p) { return this.liveWith("noTributes") ? [] : this.monsters(p).filter((z) => !z.data.cannotTribute); },
+    // (Chain Energy: 500 LP a card played or Set from the hand)
+    async handCost(p) {
+      const n = [0, 1].reduce((k, q) => k + this.allZones(q).filter((z) => { const e = this.live(z); return e && e.handCost; }).length, 0) * 500;
+      if (!n) return true;
+      if (this.players[p].lp <= n) return false;
+      await this.payLp(p, n);
+      return true;
+    },
     async doAction(p, a) {
       const pl = this.players[p];
       switch (a.act) {
         case "summon": case "set-monster": {
-          const set = a.act === "set-monster", e = effectOf(a.card.no);
+          // (Light of Intervention: a monster Set is summoned face up in Defense Position)
+          const lit = a.act === "set-monster" && this.liveWith("noSetMonsters");
+          const set = a.act === "set-monster" && !lit, e = effectOf(a.card.no);
           const tribs = a.tributes ? await this.pickZones(p, "Tribute " + a.tributes + " monster" + (a.tributes > 1 ? "s" : "") + ".", (z, q) => q === p && !z.data.cannotTribute, { sides: [p], area: "monster", count: a.tributes, cancel: true }) : [];
           if (tribs === null) return;
+          if (!(await this.handCost(p))) return;
           for (const z of tribs) await this.sendToGrave(z.card, "tribute");
           pl.normalSummoned = true;
-          const z = await this.placeMonster(p, a.card, { faceUp: !set, defense: set, how: set ? "set" : "normal" });
+          const z = await this.placeMonster(p, a.card, { faceUp: !set, defense: set || lit, how: set ? "set" : "normal" });
+          if (tribs.length) z.data.tributes = tribs.length;
           if (!z) return;
           if (set) await this.event({ type: "set", p, zone: z, card: z.card });
           else await this.summoned(p, z, "normal");
@@ -896,7 +971,11 @@
           return;
         }
         case "special-hand": {
-          const z = await this.specialSummon(p, a.card, { how: "special", position: "choose" });
+          const e = effectOf(a.card.no), side = e.specialSide ? 1 - p : p;
+          if (e.specialCost && (await e.specialCost(this, p, a.card)) === false) return;
+          if (!(await this.handCost(p))) return;
+          const z = await this.specialSummon(side, a.card, { how: e.specialHow || "special", position: e.specialPosition || "choose", byRule: true });
+          if (z && e.afterSpecial) await e.afterSpecial(this, z, side, p);
           return;
         }
         case "position":
@@ -907,6 +986,7 @@
         case "set-spell": {
           const i = this.freeSpellZone(p);
           if (i < 0) return;
+          if (!(await this.handCost(p))) return;
           this.take(a.card);
           const z = newZone(a.card, { faceUp: false, placedTurn: this.turn });
           pl.zones[i] = z;
@@ -915,6 +995,7 @@
         }
         case "activate": case "ignition": case "hand-effect": {
           const e = effectOf((a.card || a.zone.card).no);
+          if (a.act === "activate" && a.from === "hand" && !(await this.handCost(p))) return;
           const eff = a.act === "ignition" ? e.ignition : a.act === "hand-effect" ? e.handActivate : null;
           const o = { card: a.card || a.zone.card, zone: a.zone, from: a.act === "activate" ? a.from : a.act === "hand-effect" ? "hand-effect" : "monster", eff };
           if (a.act === "ignition" && a.zone.card && a.zone.data) a.zone.data.usedTurn = this.turn;
@@ -939,7 +1020,7 @@
         const att = o.zone;
         const targets = this.monsters(q).filter((z) => this.canBeAttacked(z, q, att));
         let target = null;
-        const ae = effectOf(att.card.no), direct = ae && ae.directAttack && !att.negated && (typeof ae.directAttack !== "function" || ae.directAttack(this, att, p));
+        const ae = effectOf(att.card.no), direct = att.data.directTurn === this.turn || (ae && ae.directAttack && !att.negated && (typeof ae.directAttack !== "function" || ae.directAttack(this, att, p)));
         if (this.monsters(q).length) {
           const opts2 = targets.map((z) => ({ label: z.faceUp ? CardInfo.name(z.card.no) : "Face-down monster", zone: z }));
           if (direct) opts2.push({ label: "Attack directly", direct: true });
@@ -965,6 +1046,7 @@
       if (!z.faceUp || z.data.cannotAttack || this.players[p].flags.noAttack) return false;
       if (z.defense && !(e && e.attacksFromDefense)) return false;
       if (z.data.cannotAttackTurn === this.turn || this.players[p].flags.noAttackTurn === this.turn) return false;
+      if (z.data.cannotAttackUntil > this.turn || this.liveWith("noAttacksAtAll")) return false;
       if (z.data.boundBy && this.locate(z.data.boundBy) && this.live(z.data.boundBy)) return false;
       if (e && e.noAttackOnSummonTurn && z.placedTurn === this.turn) return false;
       if (e && e.cannotAttack && !z.negated && e.cannotAttack(this, z, p)) return false;
@@ -974,7 +1056,9 @@
         if (se && se.noAttack && se.noAttack(this, s, q, p, z)) return false;
         if (se && se.oneAttacker && this.monsters(p).some((x) => x !== z && x.attacks > 0)) return false;
       }
-      return z.attacks < ((e && !z.negated && e.attacks) || 1);
+      if (!this.monsters(1 - p).length && ((e && e.noDirect && !z.negated) || z.data.noDirect)) return false;
+      const n = e && !z.negated && e.attacks ? (typeof e.attacks === "function" ? e.attacks(this, z, p) : e.attacks) : 1;
+      return z.attacks < (z.data.twiceTurn === this.turn ? Math.max(2, n) : n);
     },
     async attackWith(p, att, target) {
       const q = 1 - p;
@@ -1001,14 +1085,14 @@
       target = A.target;
       if (target && target.data && this.controllerOf(target) !== q) return;
       // (a face-down defender is turned face up: its flip effect)
-      if (target && !target.faceUp) { await this.flipUp(target, "attacked"); if (this.over || !this.locate(att) || !this.locate(target)) return; }
+      if (target && !target.faceUp) { target.data.attackedFaceDown = this.turn; await this.flipUp(target, "attacked", !!(ae0 && ae0.noFlipInBattle && !att.negated)); if (this.over || !this.locate(att) || !this.locate(target)) return; }
       const ae = att.negated ? null : effectOf(att.card.no);
       if (ae && ae.beforeDamage && (await ae.beforeDamage(this, att, p, target)) === "stop") return;
       if (target && !this.locate(target)) return;
       if (!target) {
         const dealt = await this.battleDamage(q, this.atkOf(att), att, null, A);
         if (dealt > 0 && ae && ae.onBattleDamage) await ae.onBattleDamage(this, att, p, null, dealt);
-        if (dealt > 0) await this.event({ type: "battle-damage", p: q, attacker: att, amount: dealt, direct: true });
+        if (dealt > 0) await this.event({ type: "battle-damage", p: q, attacker: att, dealer: att, amount: dealt, direct: true });
         if (ae && ae.afterAttack) await ae.afterAttack(this, att, p, null);
         return;
       }
@@ -1016,6 +1100,15 @@
       const te = target.negated ? null : effectOf(target.card.no);
       if (ae && ae.onBattle) { await ae.onBattle(this, att, p, target); if (!this.locate(att) || !this.locate(target)) return; }
       if (te && te.onBattle) { await te.onBattle(this, target, q, att); if (!this.locate(att) || !this.locate(target)) return; }
+      // (the Damage Step's own changes: Kinetic Soldier, Steamroid, Metalmorph, Injection Fairy Lily...)
+      const bt = [];
+      for (const [z, r, o, attacking] of [[att, p, target, true], [target, q, att, false]]) {
+        const ze = z.negated ? null : effectOf(z.card.no);
+        const mods = [ze && ze.battleStats && ze.battleStats(this, z, r, o, attacking)];
+        for (const l of z.links) if (l.kind === "equip" && l.from) { const le = effectOf(l.from.card.no); if (le && le.equipBattleStats) mods.push(le.equipBattleStats(this, z, r, o, attacking)); }
+        for (const m of mods) if (m) { const t = { zone: z, stats: m }; this.temp.push(t); bt.push(t); }
+        if (ze && ze.battleAsk && !z.negated) { const m = await ze.battleAsk(this, z, r, o, attacking); if (m) { const t = { zone: z, stats: m }; this.temp.push(t); bt.push(t); } }
+      }
       let a = this.atkOf(att);
       if (A.atkBonus) a += A.atkBonus;
       const res = { attackerDies: false, targetDies: false, damageTo: null, amount: 0 };
@@ -1026,29 +1119,47 @@
         else if (a > 0) { res.attackerDies = res.targetDies = true; }
       } else {
         const t = this.defOf(target);
-        if (a > t) { res.targetDies = true; if (ae && ae.piercing) { res.damageTo = q; res.amount = a - t; } }
+        if (a > t) { res.targetDies = true; if (this.pierces(att, p)) { res.damageTo = q; res.amount = a - t; } }
         else if (a < t) { res.damageTo = p; res.amount = t - a; }
       }
       if (te && te.battleImmune && !target.negated && te.battleImmune(this, target, q, att)) res.targetDies = false;
       if (ae && ae.battleImmune && !att.negated && ae.battleImmune(this, att, p, target)) res.attackerDies = false;
+      for (const [z, k] of [[target, "targetDies"], [att, "attackerDies"]]) { const sh = z.data.shield; if (sh && this.locate(sh) && this.live(sh)) res[k] = false; }
+      for (const [z, o] of [[att, target], [target, att]]) if (z.data.killsInBattle === this.turn) o.data.destroyAfterBattle = true;
       await this.emit({ type: "damage-calc", attacker: att, target, atk: a, value: this.battleValue(target), res });
       if (te && te.onAttacked && !target.negated) await te.onAttacked(this, target, q, att, res);
       if (ae && ae.destroysAttribute && this.stats(target).attribute === ae.destroysAttribute) res.targetDies = true;
+      // (Continuous Destruction Punch and the like: the field's cards on a battle's result)
+      for (const r of [0, 1]) for (const s of this.allZones(r)) { const se = this.live(s); if (se && se.battleResult) se.battleResult(this, s, r, att, target, res, p); }
+      this.temp = this.temp.filter((t) => !bt.includes(t));
       if (res.damageTo != null && res.amount > 0) {
         const dealer = res.damageTo === q ? att : target;
         const dealt = await this.battleDamage(res.damageTo, res.amount, dealer, res.damageTo === q ? target : att, A);
         const de = dealer.negated ? null : effectOf(dealer.card.no);
         if (dealt > 0 && de && de.onBattleDamage) await de.onBattleDamage(this, dealer, res.damageTo === q ? p : q, res.damageTo === q ? target : att, dealt);
-        if (dealt > 0) await this.event({ type: "battle-damage", p: res.damageTo, attacker: att, amount: dealt });
+        if (dealt > 0) await this.event({ type: "battle-damage", p: res.damageTo, attacker: att, dealer, amount: dealt });
       }
       if (this.over) return;
       // (Kishido Spirit: equal ATK doesn't destroy)
       if (res.attackerDies && res.targetDies) for (const [z, r] of [[att, p], [target, q]]) if (this.allZones(r).some((s) => this.live(s) && effectOf(s.card.no).kishido)) { if (z === att) res.attackerDies = false; else res.targetDies = false; }
-      if (res.targetDies && this.locate(target)) await this.destroy(target, "battle", att);
-      if (res.attackerDies && this.locate(att)) await this.destroy(att, "battle", target);
-      if (res.targetDies && ae && ae.onDestroyByBattle && this.locate(att)) await ae.onDestroyByBattle(this, att, p, target);
+      const tDied = res.targetDies && this.locate(target) && (await this.destroy(target, "battle", att));
+      const aDied = res.attackerDies && this.locate(att) && (await this.destroy(att, "battle", target));
+      // (a monster that destroyed the other in battle: its effect, and its equips')
+      for (const [z, r, victim, won] of [[att, p, target, tDied], [target, q, att, aDied]]) {
+        if (!won || !this.locate(z)) continue;
+        const ze = z.negated ? null : effectOf(z.card.no);
+        if (ze && ze.onDestroyByBattle) await ze.onDestroyByBattle(this, z, r, victim);
+        for (const l of z.links.slice()) if (l.kind === "equip" && l.from && this.locate(l.from)) { const le = effectOf(l.from.card.no); if (le && le.equipDestroyByBattle) await le.equipDestroyByBattle(this, z, r, victim, l.from); }
+      }
+      if (this.over) return;
       if (att.data.bounce && this.locate(att)) { att.data.bounce = false; await this.toHand(att.card, "effect"); }
-      if (target.data.destroyAfterBattle && this.locate(target)) await this.destroy(target, "effect");
+      for (const z of [target, att]) if (z.data.destroyAfterBattle && this.locate(z)) { z.data.destroyAfterBattle = false; await this.destroy(z, "effect"); }
+      // (after the Damage Step: Big Core's counters, Kangaroo Champ, D. D. Warrior Lady, Marshmallon...)
+      for (const [z, r, o] of [[att, p, target], [target, q, att]]) {
+        const ze = z.negated ? null : effectOf(z.card.no);
+        if (ze && ze.afterBattle && this.locate(z)) await ze.afterBattle(this, z, r, o, z === att);
+        if (this.over) return;
+      }
       if (ae && ae.afterAttack && this.locate(att)) await ae.afterAttack(this, att, p, target);
     },
     // Battle damage to player r from monster `dealer`: 0 under Waboku, Kuriboh, Spirit Barrier; halved (Susa Soldier).
@@ -1058,8 +1169,27 @@
       for (const s of this.allZones(r)) { const se = this.live(s); if (se && se.noBattleDamageFor && se.noBattleDamageFor(this, s, r)) return 0; }
       const de = dealer && !dealer.negated ? effectOf(dealer.card.no) : null;
       if (de && de.halfDamage) n = Math.floor(n / 2);
-      await this.damage(r, n, "battle");
-      return n;
+      // (the monsters in the battle: Amazoness Fighter, Stone Statue of the Aztecs, Piranha Army, Rod of the Mind's Eye...)
+      let why = "battle";
+      for (const z of [dealer, other]) {
+        if (!z || z.negated) continue;
+        const ze = effectOf(z.card.no), zp = this.controllerOf(z) >= 0 ? this.controllerOf(z) : z.card.owner;
+        const mods = [ze && ze.battleDamage];
+        for (const l of z.links) if (l.kind === "equip" && l.from) { const le = effectOf(l.from.card.no); if (le && le.equipBattleDamage) mods.push(le.equipBattleDamage); }
+        for (const f of mods) if (f) { const m = f(this, z, zp, r, n, z === dealer, other); if (m) { if (m.to != null) r = m.to; if (m.n != null) n = m.n; if (m.why) why = m.why; } }
+      }
+      if (n <= 0) return 0;
+      await this.damage(r, n, why);
+      return why === "battle" ? n : 0;
+    },
+    // Does this attacker deal piercing damage: its own effect, an equip's (Fairy Meteor Crush, a Union), the field's (Dragon's Rage, Meteorain)?
+    pierces(att, p) {
+      const ae = att.negated ? null : effectOf(att.card.no);
+      if (ae && ae.piercing && (typeof ae.piercing !== "function" || ae.piercing(this, att, p))) return true;
+      for (const l of att.links) if (l.kind === "equip" && l.from) { const le = effectOf(l.from.card.no); if (le && le.givesPiercing && (typeof le.givesPiercing !== "function" || le.givesPiercing(this, att, p))) return true; }
+      if (this.players[p].flags.meteorain === this.turn) return true;
+      for (const r of [0, 1]) for (const s of this.allZones(r)) { const se = this.live(s); if (se && se.piercingFor && se.piercingFor(this, s, r, att, p)) return true; }
+      return false;
     }
   };
   Object.assign(API, TURN);
@@ -1272,7 +1402,9 @@
   DM.applyTemplates = function () {
     let n = 0;
     window.YUGIOH_CARDS.cards.forEach((c, no) => {
-      if (!c || DM.EFFECTS[no]) return;
+      // (a Spell or Trap defined only for what it does later, Black Pendant's burn, still gets its activation here)
+      const had = DM.EFFECTS[no];
+      if (!c || (had && (had.activate || !(C.isSpell(no) || C.isTrap(no))))) return;
       const t = text(no);
       for (const [re, make] of TEMPLATES) {
         const m = re.exec(t);
@@ -2038,6 +2170,895 @@
   Object.assign(DM.EFFECTS[N("Toon Dark Magician Girl")] || {}, { selfStats: DM.EFFECTS[N("Dark Magician Girl")].selfStats });
   Object.assign(DM.EFFECTS[N("Swift Gaia the Fierce Knight")] = DM.EFFECTS[N("Swift Gaia the Fierce Knight")] || {}, { noTributeIfOnly: true });
   DM.TYPESLIST = () => window.YUGIOH_CARDS.types.slice(1).map((t, i) => ({ label: t, value: i + 1 }));
+})();
+
+// (The rest of GX Duel Academy's cards, from their text: Spell Counters, Union monsters, the monsters summoned by
+// removing others from play, and the Spells, Traps and monsters EDS has no handler for.)
+(function () {
+  "use strict";
+  const DM = window.DuelMonsters, C = DM.card, H = DM.H, ATTR = DM.ATTR, define = DM.define, N = DM.numberOf, typeNo = DM.typeNo, ICON = DM.ICON;
+  const ALIAS = { "Cyber Harpie Lady": "Harpie Lady", "Harpie Lady 1": "Harpie Lady", "Harpie Lady 2": "Harpie Lady", "Harpie Lady 3": "Harpie Lady" };
+  const nameOf = (c) => (c && !c.token ? C.name(c.no) : "");
+  const isName = (c, names) => !!c && !c.token && [].concat(names).some((n) => nameOf(c) === n || ALIAS[nameOf(c)] === n);
+  const has = (c, part) => !!c && !c.token && nameOf(c).includes(part);
+  const up = H.up, mons = H.mons, t0 = H.t, isMon = H.isMon;
+  const isT = (no, t) => C.type(no) === typeNo(t);
+  const isMonCard = (c) => C.isMonster(c.no) && !C.isExtra(c.no);
+  const once = (z, d) => !!z && z.data.usedTurn !== d.turn;
+  const mine = (d, ctx) => ctx.p === d.turnPlayer && d.isMain();
+  const noop = { resolve: async () => {} };
+  const ss = (d, p, c, opts) => d.specialSummon(p, c, Object.assign({ how: "special", position: "choose" }, opts));
+  const yes = (d, p, prompt) => d.yesNo(p, prompt);
+  const piles = (d, p, list) => list.reduce((a, k) => a.concat(d.players[p][k]), []);
+  const others = (d, p, z) => d.allZones(p).filter((x) => x !== z);
+  // (an effect that shows cards to one player: the card list, as a choice with nothing to choose)
+  async function show(d, p, prompt, cards) { if (cards.length) await d.ask(p, { type: "cards", prompt, min: 1, max: 1, options: cards.map((c) => ({ label: d.name(c), card: c })) }); }
+  const tributeCost = (filter, prompt) => async (d, link) => {
+    const z = await d.pickZone(link.p, prompt || "Tribute which monster?", (x, q) => q === link.p && x !== link.zone && (!filter || filter(d, x)), { sides: [link.p], area: "monster", cancel: true });
+    if (!z) return false;
+    link.data.tributed = { atk: d.atkOf(z), def: d.defOf(z), level: d.stats(z).level, card: z.card, base: C.atk(z.card.no) };
+    await d.sendToGrave(z.card, "tribute");
+    return true;
+  };
+  const canTribute = (d, p, filter, except) => d.monsters(p).some((x) => x !== except && (!filter || filter(d, x)));
+  const discardCost = (filter, prompt) => async (d, link) => !!(await H.discardOne(d, link.p, prompt || "Discard which card?", filter));
+  const handCount = (d, ctx, filter) => d.players[ctx.p].hand.filter((c) => c !== ctx.card && (!filter || filter(c))).length;
+  const destroyOne = async (d, p, prompt, filter, area, sides) => { const z = await d.pickZone(p, prompt, (x, q, i) => (!sides || sides.includes(q)) && (!filter || filter(x, q, i)), { area }); if (z) await d.destroy(z, "effect"); return z; };
+  const searchDeck = (d, p, filter, prompt) => H.searchDeck(d, p, filter, prompt);
+  const summonFromDeck = async (d, p, filter, prompt, opts) => {
+    if (!H.canSummonHere(d, p)) return null;
+    const pool = d.players[p].deck.filter((c) => isMonCard(c) && filter(c));
+    if (!pool.length || !(await yes(d, p, prompt))) return null;
+    const c = await d.pickCard(p, "Special Summon which monster?", pool);
+    const z = c ? await ss(d, p, c, opts) : null;
+    DM.shuffle(d, d.players[p].deck);
+    return z;
+  };
+  const umi = (d) => d.countOnField(N("Umi")) > 0 || (![0, 1].some((q) => d.fieldZone(q)) && [0, 1].some((q) => up(d, q).some((z) => isName(z.card, "Maiden of the Aqua") && d.live(z))));
+  const coins = async (d, p, n) => { let h = 0; for (let k = 0; k < n; k++) { const r = d.coin(); await d.emit({ type: "coin", p, heads: r }); if (r) h++; } return h; };
+
+  // ---------- Spell Counters ----------
+  // A card that can hold them says so (spellCounter: its most, or true for any number).
+  const SC = {
+    n: (z) => (z && z.counters.spell) || 0,
+    can: (d, z) => { const e = DM.effectOf(z.card.no); if (!z.faceUp || !e || !e.spellCounter) return false; return e.spellCounter === true || SC.n(z) < e.spellCounter; },
+    async add(d, z, k) { if (!d.locate(z)) return; const e = DM.effectOf(z.card.no), max = e && e.spellCounter !== true ? e.spellCounter : Infinity; z.counters.spell = Math.min(max, SC.n(z) + (k || 1)); await d.emit({ type: "counter", zone: z, n: z.counters.spell }); },
+    total: (d, p) => d.allZones(p).reduce((a, z) => a + SC.n(z), 0),
+    // (remove k from p's cards, from those p picks)
+    async remove(d, p, k) {
+      for (let j = 0; j < k; j++) {
+        const z = await d.pickZone(p, "Remove a Spell Counter from which card?", (x, q) => q === p && SC.n(x) > 0, { sides: [p] });
+        if (!z) return false;
+        z.counters.spell--;
+      }
+      return true;
+    },
+    // (put one on a face-up card p picks that can hold one)
+    async place(d, p, except) {
+      const z = await d.pickZone(p, "Put a Spell Counter on which card?", (x) => x !== except && SC.can(d, x));
+      if (z) await SC.add(d, z, 1);
+    },
+    // (each Spell activated: one more)
+    watch: (max, extra) => Object.assign({ spellCounter: max, onEvent: async (d, z, p, ev) => { if (ev.type === "activated" && C.isSpell(ev.card.no) && ev.from !== "monster" && SC.can(d, z)) await SC.add(d, z, 1); } }, extra)
+  };
+  DM.SC = SC;
+
+  // ---------- Union monsters ----------
+  // Once a turn in your Main Phase: equip it to one of its monsters (an Equip Card in a Spell & Trap Zone), or
+  // back as a monster in Attack Position. One Union to a monster; if the monster would be destroyed in battle,
+  // the Union is destroyed instead (the engine's destroy).
+  const unionOf = (z) => z.links.find((l) => l.kind === "equip" && l.from && l.from.data.union);
+  function union(targets, stats, extra) {
+    const okTarget = (d, x, p) => x.faceUp && isName(x.card, targets) && !unionOf(x);
+    return Object.assign({
+      ignition: {
+        can: (d, ctx) => {
+          if (!mine(d, ctx) || !once(ctx.zone, d)) return false;
+          const l = d.locate(ctx.zone);
+          if (l.i < 5) return d.freeSpellZone(ctx.p) >= 0 && d.monsters(ctx.p).some((x) => x !== ctx.zone && okTarget(d, x, ctx.p));
+          return H.canSummonHere(d, ctx.p);
+        },
+        resolve: async (d, link) => {
+          const z = link.zone, l = z && d.locate(z);
+          if (!l) return;
+          if (l.i < 5) {
+            const t = await d.pickZone(link.p, "Equip " + d.name(link.card) + " to which monster?", (x, q) => q === link.p && x !== z && okTarget(d, x, q), { sides: [link.p], area: "monster" });
+            if (!t) return;
+            const i = d.freeSpellZone(link.p);
+            if (i < 0) return;
+            d.take(link.card);
+            const nz = DM.newZone(link.card, { faceUp: true, placedTurn: d.turn });
+            nz.data.union = true; nz.data.usedTurn = d.turn;
+            d.players[link.p].zones[i] = nz;
+            d.equip(nz, t, stats);
+            await d.emit({ type: "equip", card: link.card, to: t });
+            await d.event({ type: "equipped", p: link.p, card: link.card, zone: t });
+          } else {
+            const nz = await d.specialSummon(link.p, link.card, { how: "special", defense: false });
+            if (nz) nz.data.usedTurn = d.turn;
+          }
+        }
+      }
+    }, extra);
+  }
+  define("Y-Dragon Head", union(["X-Head Cannon"], { atk: 400, def: 400 }));
+  define("Z-Metal Tank", union(["X-Head Cannon", "Y-Dragon Head"], { atk: 600, def: 600 }));
+  define("Pitch-Dark Dragon", union(["Dark Blade"], { atk: 400, def: 400 }, { givesPiercing: true }));
+  define("Koitsu", union(["Aitsu"], { atk: 3000, def: 3000 }, { givesPiercing: true }));
+  define("Doitsu", union(["Soitsu"], { atk: 2500 }));
+  define("Protective Soul Ailin", union(["Indomitable Fighter Lei Lei"], null, { freesPosition: true }));
+  define("Zombie Tiger", union(["Decayed Commander"], { atk: 500, def: 500 }, { equipDestroyByBattle: async (d, z, p) => { await H.discardRandom(d, 1 - p); } }));
+  define("Des Dendle", union(["Vampire Orchis"], null, { equipDestroyByBattle: async (d, z, p) => {
+    await d.summonToken(p, { name: "Wicked Plant Token", atk: 800, def: 800, level: 1, type: typeNo("Plant"), attribute: ATTR.EARTH }); } }));
+
+  // ---------- Summoned by removing monsters in the Graveyard from play ----------
+  // (Inferno, Fenrir, Gigantes, Silpheed, Chaos Sorcerer, the Envoys, Megarock Dragon)
+  const graveAttr = (d, p, a) => d.players[p].grave.filter((c) => C.isMonster(c.no) && C.attribute(c.no) === ATTR[a]);
+  const banishFromGrave = (need) => ({
+    specialOnly: true,
+    specialFromHand: (d, p) => need.every(([a, n]) => graveAttr(d, p, a).length >= n),
+    specialCost: async (d, p) => {
+      for (const [a, n] of need) {
+        const cs = await d.pickCards(p, "Remove " + n + " " + a + " monster" + (n > 1 ? "s" : "") + " in your Graveyard from play.", d.players[p].grave, (c) => C.isMonster(c.no) && C.attribute(c.no) === ATTR[a], { count: n, cancel: true });
+        if (!cs || cs.length < n) return false;
+        for (const c of cs) await d.banish(c, "cost");
+      }
+      return true;
+    }
+  });
+  define("Inferno", Object.assign(banishFromGrave([["FIRE", 1]]), { onDestroyByBattle: async (d, z, p, v) => { if (d.players[v.card.owner].grave.includes(v.card)) await d.damage(1 - p, 1500, "effect"); } }));
+  define("Fenrir", Object.assign(banishFromGrave([["WATER", 2]]), { onDestroyByBattle: async (d, z, p) => { d.players[1 - p].flags.skipDraw = true; } }));
+  define("Gigantes", Object.assign(banishFromGrave([["EARTH", 1]]), { onDestroyed: async (d, z, p, why) => { if (why === "battle") await H.destroyAll(d, H.st(d)); } }));
+  define("Silpheed", Object.assign(banishFromGrave([["WIND", 1]]), { onDestroyed: async (d, z, p, why) => { if (why === "battle") await H.discardRandom(d, 1 - p); } }));
+  const banishOne = { can: (d, ctx) => mine(d, ctx) && once(ctx.zone, d) && !ctx.zone.attackedThisTurn && up(d).some((x) => x !== ctx.zone),
+    resolve: async (d, link) => { const z = await d.pickZone(link.p, "Remove which face-up monster from play?", (x) => x.faceUp && x !== link.zone, { area: "monster" });
+      if (z) await d.banish(z.card, "effect"); if (link.zone && d.locate(link.zone)) link.zone.data.cannotAttackTurn = d.turn; } };
+  define("Chaos Sorcerer", Object.assign(banishFromGrave([["LIGHT", 1], ["DARK", 1]]), { ignition: banishOne }));
+  define("Black Luster Soldier - Envoy of the Beginning", Object.assign(banishFromGrave([["LIGHT", 1], ["DARK", 1]]), {
+    ignition: { can: (d, ctx) => mine(d, ctx) && once(ctx.zone, d), resolve: async (d, link) => {
+      const o = await d.choose(link.p, "Envoy of the Beginning's effect:", [{ label: "Remove a monster from play", v: 0 }, { label: "Attack again if it destroys a monster", v: 1 }]);
+      if (o && o.v === 1) { if (link.zone) link.zone.data.again = d.turn; return; }
+      if (!link.zone.attackedThisTurn) await banishOne.resolve(d, link); } },
+    onDestroyByBattle: async (d, z) => { if (z.data.again === d.turn) { z.data.again = null; z.attacks = Math.max(0, z.attacks - 1); } } }));
+  define("Chaos Emperor Dragon - Envoy of the End", Object.assign(banishFromGrave([["LIGHT", 1], ["DARK", 1]]), {
+    ignition: { can: (d, ctx) => mine(d, ctx) && d.players[ctx.p].lp > 1000, cost: async (d, link) => { await d.payLp(link.p, 1000); return true; }, resolve: async (d, link) => {
+      let n = 0;
+      for (const q of [0, 1]) { for (const c of d.players[q].hand.slice()) { await d.sendToGrave(c, "effect"); n++; } for (const z of d.allZones(q).slice()) if (d.locate(z)) { await d.sendToGrave(z.card, "effect"); n++; } }
+      await d.damage(1 - link.p, 300 * n, "effect"); } } }));
+  define("Megarock Dragon", { specialOnly: true, specialFromHand: (d, p) => d.players[p].grave.some((c) => C.isMonster(c.no) && isT(c.no, "Rock")),
+    specialCost: async (d, p, c) => { const cs = await d.pickCards(p, "Remove Rock monsters in your Graveyard from play.", d.players[p].grave, (x) => C.isMonster(x.no) && isT(x.no, "Rock"), { count: 99, min: 1, cancel: true });
+      if (!cs || !cs.length) return false; for (const x of cs) await d.banish(x, "cost"); c.megarock = cs.length; return true; },
+    afterSpecial: async (d, z) => { const n = 700 * (z.card.megarock || 0); z.data.base = { atk: n, def: n }; } });
+
+  // ---------- Summoned by a Tribute of a monster of their own ----------
+  const tributeFor = (names, extra) => Object.assign({ specialOnly: true,
+    specialFromHand: (d, p) => d.monsters(p).some((z) => z.faceUp && isName(z.card, names)) && (!extra || !extra.cond || extra.cond(d, p)),
+    specialCost: async (d, p) => { const z = await d.pickZone(p, "Tribute which monster?", (x, q) => q === p && x.faceUp && isName(x.card, names), { sides: [p], area: "monster", cancel: true }); if (!z) return false; await d.sendToGrave(z.card, "tribute"); return true; } }, extra);
+  define("Red-Eyes Darkness Dragon", tributeFor(["Red-Eyes B. Dragon"], { selfStats: (d, z) => ({ atk: 300 * d.players[d.controllerOf(z)].grave.filter((c) => C.isMonster(c.no) && isT(c.no, "Dragon")).length }) }));
+  define("Master Monk", tributeFor(["Monk Fighter"], { attacks: 2 }));
+  define("Ocean Dragon Lord - Neo-Daedalus", tributeFor(["Levia-Dragon - Daedalus"], {
+    ignition: { can: (d, ctx) => mine(d, ctx) && H.st(d, ctx.p).some((z) => z.faceUp && isName(z.card, "Umi")), cost: async (d, link) => { const z = H.st(d, link.p).find((x) => x.faceUp && isName(x.card, "Umi")); if (!z) return false; await d.sendToGrave(z.card, "cost"); return true; },
+      resolve: async (d, link) => { for (const q of [0, 1]) { for (const c of d.players[q].hand.slice()) await d.sendToGrave(c, "effect"); for (const z of d.allZones(q).slice()) if (z !== link.zone && d.locate(z)) await d.sendToGrave(z.card, "effect"); } } } }));
+  define("Archlord Zerato", tributeFor(["Warrior of Zera"], { cond: (d) => d.countOnField(N("The Sanctuary in the Sky")) > 0,
+    ignition: { repeatable: true, can: (d, ctx) => mine(d, ctx) && d.countOnField(N("The Sanctuary in the Sky"), ctx.p) > 0 && d.players[ctx.p].hand.some((c) => C.isMonster(c.no) && C.attribute(c.no) === ATTR.LIGHT) && d.monsters(1 - ctx.p).length > 0,
+      cost: discardCost((c) => C.isMonster(c.no) && C.attribute(c.no) === ATTR.LIGHT, "Discard which LIGHT monster?"), resolve: async (d, link) => H.destroyAll(d, d.monsters(1 - link.p)) } }));
+  define("Rare Metal Dragon", { specialOnly: true });
+  define("Mirage Knight", { specialOnly: true, battleStats: (d, z, p, o) => ({ atk: C.atk(o.card.no) }), afterBattle: async (d, z) => { z.data.banishAtEnd = d.turn; } });
+  define("Lava Golem", { specialOnly: true, specialSide: true, specialPosition: "attack",
+    specialFromHand: (d, p) => d.monsters(1 - p).length >= 2,
+    specialCost: async (d, p) => { const zs = await d.pickZones(p, "Tribute which 2 of your opponent's monsters?", (x, q) => q !== p, { sides: [1 - p], area: "monster", count: 2, cancel: true }); if (!zs || zs.length < 2) return false; for (const z of zs) await d.sendToGrave(z.card, "tribute"); return true; },
+    afterSpecial: async (d, z, side, p) => { d.players[p].normalSummoned = true; },
+    standby: async (d, z, p) => { if (d.turnPlayer === p) await d.damage(p, 1000, "effect"); } });
+  // (Special Summons from the hand on a condition)
+  define("Cyber Dragon", { specialFromHand: (d, p) => d.monsters(1 - p).length > 0 && d.monsters(p).length === 0 });
+  define("Elemental Hero Bubbleman", { specialFromHand: (d, p) => d.players[p].hand.length === 1,
+    onSummon: async (d, z, p) => { if (!d.players[p].hand.length && !others(d, p, z).length && (await yes(d, p, "Draw 2 cards with Elemental Hero Bubbleman?"))) await d.drawCards(p, 2); } });
+  define("Tricky", { specialFromHand: (d, p, c) => d.players[p].hand.length > 1, specialCost: async (d, p, c) => !!(await H.discardOne(d, p, "Discard a card to Special Summon Tricky.", (x) => x !== c)) });
+  for (const [n, stat] of [["Andro Sphinx", "atk"], ["Sphinx Teleia", "def"]]) define(n, { noGraveSpecial: true, noAttackOnSummonTurn: true,
+    specialFromHand: (d, p) => d.countOnField(N("Pyramid of Light")) > 0 && d.players[p].lp > 500, specialCost: async (d, p) => { await d.payLp(p, 500); return true; },
+    onDestroyByBattle: async (d, z, p, v) => { if (v.defense) await d.damage(1 - p, Math.floor((stat === "atk" ? C.atk(v.card.no) : C.def(v.card.no)) / 2), "effect"); } });
+  define("Theinen the Great Sphinx", { specialOnly: true,
+    specialFromHand: (d, p) => d.players[p].lp > 500 && ["Andro Sphinx", "Sphinx Teleia"].every((n) => d.players[p].grave.some((c) => isName(c, n) && c.destroyedTurn === d.turn)),
+    specialCost: async (d, p) => { await d.payLp(p, 500); return true; },
+    afterSpecial: async (d, z, s, p) => { if (d.players[p].lp > 500 && (await yes(d, p, "Pay 500 LP to give Theinen 3000 more ATK this turn?"))) { await d.payLp(p, 500); d.addTemp(z, { atk: 3000 }); } } });
+  define("Ancient Gear Golem", { noSpecial: true, piercing: true, gearLock: true });
+  define("Ancient Gear Beast", { noSpecial: true, gearLock: true });
+  define("Ancient Gear Soldier", { gearLock: true });
+  define("The Creator", { noGraveSpecial: true, ignition: { can: (d, ctx) => mine(d, ctx) && once(ctx.zone, d) && d.players[ctx.p].hand.length > 0 && H.graveMon(d, ctx.p).length > 0 && H.canSummonHere(d, ctx.p),
+    resolve: async (d, link) => { const c = await d.pickCard(link.p, "Special Summon which monster from your Graveyard?", H.graveMon(d, link.p, (x) => !C.isExtra(x.no)));
+      if (!c || !(await H.discardOne(d, link.p, "Discard a card for The Creator."))) return; await ss(d, link.p, c); } } });
+  // (Tribute itself to bring another from the hand)
+  const tributeSelfFor = (name, piles2) => ({ ignition: { can: (d, ctx) => mine(d, ctx) && piles(d, ctx.p, piles2 || ["hand"]).some((c) => isName(c, name)),
+    cost: async (d, link) => { await d.sendToGrave(link.card, "tribute"); return true; },
+    resolve: async (d, link) => { const c = await d.pickCard(link.p, "Special Summon " + name + ".", piles(d, link.p, piles2 || ["hand"]), (x) => isName(x, name)); if (c) await ss(d, link.p, c); DM.shuffle(d, d.players[link.p].deck); } } });
+  define("The Creator Incarnate", tributeSelfFor("The Creator"));
+  define("Kaibaman", tributeSelfFor("Blue-Eyes White Dragon"));
+  define("Red-Eyes B. Chick", tributeSelfFor("Red-Eyes B. Dragon"));
+  define("Skilled White Magician", SC.watch(3, { ignition: { can: (d, ctx) => SC.n(ctx.zone) >= 3 && piles(d, ctx.p, ["hand", "deck", "grave"]).some((c) => isName(c, "Buster Blader")), cost: async (d, link) => { await d.sendToGrave(link.card, "tribute"); return true; },
+    resolve: tributeSelfFor("Buster Blader", ["hand", "deck", "grave"]).ignition.resolve } }));
+  define("Skilled Dark Magician", SC.watch(3, { ignition: { can: (d, ctx) => SC.n(ctx.zone) >= 3 && piles(d, ctx.p, ["hand", "deck", "grave"]).some((c) => isName(c, "Dark Magician")), cost: async (d, link) => { await d.sendToGrave(link.card, "tribute"); return true; },
+    resolve: tributeSelfFor("Dark Magician", ["hand", "deck", "grave"]).ignition.resolve } }));
+  define("Royal Magical Library", SC.watch(3, { ignition: { repeatable: true, can: (d, ctx) => SC.n(ctx.zone) >= 3, cost: async (d, link) => { link.zone.counters.spell -= 3; return true; }, resolve: async (d, link) => d.drawCards(link.p, 1) } }));
+  define("Magical Marionette", SC.watch(true, { selfStats: (d, z) => ({ atk: 200 * SC.n(z) }),
+    ignition: { repeatable: true, can: (d, ctx) => SC.n(ctx.zone) >= 2 && mons(d).length > 0, cost: async (d, link) => { link.zone.counters.spell -= 2; return true; }, resolve: async (d, link) => { await destroyOne(d, link.p, "Destroy which monster?", null, "monster"); } } }));
+  define("Blast Magician", SC.watch(true, { ignition: { repeatable: true, can: (d, ctx) => SC.n(ctx.zone) > 0 && up(d).some((z) => d.atkOf(z) <= 700 * SC.n(ctx.zone)),
+    resolve: async (d, link) => { const z = await d.pickZone(link.p, "Destroy which face-up monster?", (x) => x.faceUp && d.atkOf(x) <= 700 * SC.n(link.zone), { area: "monster" }); if (!z) return;
+      const k = Math.max(1, Math.ceil(d.atkOf(z) / 700)); link.zone.counters.spell -= k; await d.destroy(z, "effect"); } } }));
+  define("Breaker the Magical Warrior", { spellCounter: 1, onSummon: async (d, z, p, how) => { if (how === "normal") await SC.add(d, z, 1); }, selfStats: (d, z) => ({ atk: 300 * SC.n(z) }),
+    ignition: { repeatable: true, can: (d, ctx) => SC.n(ctx.zone) > 0 && H.st(d).length > 0, cost: async (d, link) => { link.zone.counters.spell--; return true; },
+      resolve: async (d, link) => { await destroyOne(d, link.p, "Destroy which Spell or Trap Card?", (x, q, i) => i >= 5, "spell"); } } });
+  define("Hannibal Necromancer", { spellCounter: 1, onSummon: async (d, z) => SC.add(d, z, 1),
+    ignition: { repeatable: true, can: (d, ctx) => SC.n(ctx.zone) > 0 && H.st(d).some((z) => z.faceUp && C.isTrap(z.card.no)), cost: async (d, link) => { link.zone.counters.spell--; return true; },
+      resolve: async (d, link) => { await destroyOne(d, link.p, "Destroy which face-up Trap Card?", (x, q, i) => i >= 5 && x.faceUp && C.isTrap(x.card.no), "spell"); } } });
+  define("Apprentice Magician", { spellCounter: 1, onSummon: async (d, z, p) => SC.place(d, p),
+    onDestroyed: async (d, z, p, why) => { if (why === "battle") await summonFromDeck(d, p, (c) => isT(c.no, "Spellcaster") && C.level(c.no) <= 2, "Special Summon a Level 2 or lower Spellcaster from your Deck?", { faceUp: false, defense: true, position: null }); } });
+  define("Magical Plant Mandragola", { flip: async (d) => { for (const q of [0, 1]) for (const z of d.allZones(q)) if (SC.can(d, z)) await SC.add(d, z, 1); } });
+  define("Armor Exe", { noAttackOnSummonTurn: true, standby: async (d, z, p) => { if (SC.total(d, p) > 0 && (await yes(d, p, "Remove a Spell Counter to keep Armor Exe?"))) await SC.remove(d, p, 1); else await d.destroy(z, "cost"); } });
+  define("Pitch-Black Power Stone", { spellCounter: true, activate: { stays: true, resolve: async (d, link) => { if (link.zone) { link.zone.counters.spell = 3; } } },
+    ignition: { can: (d, ctx) => mine(d, ctx) && once(ctx.zone, d) && SC.n(ctx.zone) > 0 && [0, 1].some((q) => d.allZones(q).some((x) => x !== ctx.zone && SC.can(d, x))),
+      resolve: async (d, link) => { const z = link.zone; if (!d.locate(z)) return; z.counters.spell--; await SC.place(d, link.p, z); if (!SC.n(z)) await d.destroy(z, "effect"); } } });
+  define("Mega Ton Magical Cannon", { activate: { can: (d, ctx) => SC.total(d, ctx.p) >= 10, cost: async (d, link) => SC.remove(d, link.p, 10), resolve: async (d, link) => H.destroyAll(d, d.allZones(1 - link.p)) } });
+  define("Exhausting Spell", { activate: { resolve: async (d) => { for (const q of [0, 1]) for (const z of d.allZones(q)) z.counters.spell = 0; } } });
+  define("Miracle Restoring", { activate: { can: (d, ctx) => SC.total(d, ctx.p) >= 2 && H.canSummonHere(d, ctx.p) && d.players[ctx.p].grave.some((c) => isName(c, ["Dark Magician", "Buster Blader"])),
+    cost: async (d, link) => SC.remove(d, link.p, 2), resolve: async (d, link) => { const c = await d.pickCard(link.p, "Special Summon which monster?", d.players[link.p].grave, (c) => isName(c, ["Dark Magician", "Buster Blader"])); if (c) await ss(d, link.p, c); } } });
+  define("Anti-Spell", { activate: { when: "chain", can: (d, ctx) => !!ctx.last && ctx.last.p !== ctx.p && C.isSpell(ctx.last.card.no) && SC.total(d, ctx.p) >= 2,
+    cost: async (d, link) => SC.remove(d, link.p, 2), resolve: async (d, link) => { const v = link.prev; if (!v) return; v.negated = true; if (v.zone && d.locate(v.zone)) await d.destroy(v.zone, "negated"); } } });
+
+  DM.REST = { isName, show, tributeCost, canTribute, discardCost, handCount, destroyOne, summonFromDeck, umi, coins, once, mine, noop, ss, piles, union, unionOf, others };
+})();
+
+// (The rest: Spells and Traps.)
+(function () {
+  "use strict";
+  const DM = window.DuelMonsters, C = DM.card, H = DM.H, ATTR = DM.ATTR, define = DM.define, N = DM.numberOf, typeNo = DM.typeNo, ICON = DM.ICON, SC = DM.SC;
+  const { isName, show, tributeCost, canTribute, discardCost, handCount, destroyOne, umi, coins, once, mine, noop, ss, piles, others } = DM.REST;
+  const up = H.up, mons = H.mons, t0 = H.t, isMon = H.isMon;
+  const isT = (no, t) => C.type(no) === typeNo(t);
+  const isMonCard = (c) => C.isMonster(c.no) && !C.isExtra(c.no);
+  const pickMon = (d, link, prompt, filter, sides) => H.target(d, link, prompt, (z, q) => (!sides || sides.includes(q)) && (!filter || filter(z, q)), { area: "monster" });
+  const theirs = (d, sp, ev) => ev.p !== sp;
+  const stays = (extra) => Object.assign({ activate: Object.assign({ stays: true }, noop) }, extra);
+  const icon = (z) => C.icon(z.card.no);
+  // (an Equip Spell that takes a monster from a Graveyard: Autonomous Action Unit, Re-Fusion, Fulfillment of the Contract)
+  const reviveEquip = (lp, side, filter, banishOnLeave) => ({ activate: {
+    can: (d, ctx) => d.players[ctx.p].lp > lp && H.canSummonHere(d, ctx.p) && H.graveMon(d, side(ctx.p), filter).length > 0,
+    cost: async (d, link) => { await d.payLp(link.p, lp); return true; },
+    target: async (d, link) => { const c = await d.pickCard(link.p, "Special Summon which monster?", H.graveMon(d, side(link.p), filter)); if (!c) return false; link.data.c = c; return true; },
+    resolve: async (d, link) => {
+      const c = link.data.c;
+      if (!c || !d.players[c.owner].grave.includes(c) || !link.zone || !d.locate(link.zone)) { if (link.zone) link.zone.data.discard = true; return; }
+      const z = await d.specialSummon(link.p, c, { how: "special", defense: false });
+      if (!z) { link.zone.data.discard = true; return; }
+      d.equip(link.zone, z, null);
+      link.zone.data.revived = z;
+      if (!banishOnLeave) link.zone.data.boundTo = z;
+      await d.event({ type: "equipped", p: link.p, card: link.card, zone: z });
+    } },
+    onLeave: banishOnLeave ? async (d, z) => { const m = z.data.revived; if (m && d.locate(m)) await d.banish(m.card, "effect"); } : undefined });
+
+  // ===== Spells =====
+  // (the equips whose "sent to the Graveyard" EDS handles: their boosts)
+  for (const [n, st] of [["Axe of Despair", { atk: 1000 }], ["Black Pendant", { atk: 500 }], ["Horn of Light", { def: 800 }], ["Horn of the Unicorn", { atk: 700, def: 700 }],
+    ["Malevolent Nuzzler", { atk: 700 }], ["Sword of Deep-Seated", { atk: 500, def: 500 }]]) define(n, DM.equip(() => true, st));
+  define("Chain Energy", stays({ handCost: true }));
+  define("Infinite Cards", stays({ noHandLimit: true }));
+  define("Inspection", stays({ standby: async (d, z, p) => {
+    const h = d.players[1 - p].hand;
+    if (d.turnPlayer === p || !h.length || d.players[p].lp <= 500 || !(await d.yesNo(p, "Pay 500 LP to look at a random card in your opponent's hand?"))) return;
+    await d.payLp(p, 500); await show(d, p, "A card in your opponent's hand:", [h[Math.floor(d.rng() * h.length)]]); } }));
+  define("Senri Eye", stays({ standby: async (d, z, p) => {
+    const top = d.players[1 - p].deck[0];
+    if (d.turnPlayer !== p || !top || d.players[p].lp <= 100 || !(await d.yesNo(p, "Pay 100 LP to look at the top card of your opponent's Deck?"))) return;
+    await d.payLp(p, 100); await show(d, p, "The top card of your opponent's Deck:", [top]); } }));
+  define("Mask of Dispel", { activate: { stays: true, can: (d) => H.st(d).some((z) => z.faceUp && C.isSpell(z.card.no)), target: (d, link) => H.target(d, link, "Choose which face-up Spell Card?", (z, q, i) => i >= 5 && z.faceUp && C.isSpell(z.card.no) && z !== link.zone, { area: "spell" }),
+    resolve: async (d, link) => { const z = t0(d, link); if (z && link.zone) { link.zone.data.bound = z; z.data.boundBy = link.zone; } else if (link.zone) link.zone.data.discard = true; } },
+    standby: async (d, z, p) => { const t = z.data.bound; if (d.turnPlayer === p && t && d.locate(t)) await d.damage(d.controllerOf(t), 500, "effect"); } });
+  define("Mask of the Accursed", Object.assign(DM.equip(() => true, null), { noAttack: (d, s, q, p, z) => s.equippedTo === z,
+    standby: async (d, z, p) => { const t = z.equippedTo; if (d.turnPlayer === p && t && d.locate(t)) await d.damage(d.controllerOf(t), 500, "effect"); } }));
+  define("Nightmare's Steelcage", stays({ noAttacksAtAll: true, endPhase: async (d, z, q) => { if (d.turnPlayer === q) return; z.data.n = (z.data.n || 0) + 1; if (z.data.n >= 2) await d.destroy(z, "effect"); } }));
+  define("Card of Safe Return", stays({ onEvent: async (d, z, p, ev) => { if (ev.type === "special-summoned" && ev.p === p && ev.zone && ev.zone.data.fromPile === "grave" && ev.zone.card.owner === p) await d.drawCards(p, 1); } }));
+  define("Fairy Meteor Crush", Object.assign(DM.equip(() => true, null), { givesPiercing: true }));
+  define("Cyclon Laser", Object.assign(DM.equip((d, z) => isName(z.card, "Gradius"), { atk: 300 }), { givesPiercing: true }));
+  define("Rod of the Mind's Eye", Object.assign(DM.equip(() => true, null), { equipBattleDamage: (d, z, zp, r, n, dealer) => (dealer && r !== zp ? { n: 1000 } : null) }));
+  define("Legendary Black Belt", Object.assign(DM.equip((d, z) => isName(z.card, ["Chu-Ske the Mouse Fighter", "Monk Fighter", "Master Monk"]), null),
+    { equipDestroyByBattle: async (d, z, p, v) => { if (d.players[v.card.owner].grave.includes(v.card)) await d.damage(1 - p, C.def(v.card.no), "effect"); } }));
+  define("Spring of Rebirth", stays({ onEvent: async (d, z, p, ev) => { if (ev.type === "returned") await d.heal(p, 500); } }));
+  define("Ground Collapse", { activate: { stays: true, can: (d) => [0, 1].reduce((n, q) => n + [0, 1, 2, 3, 4].filter((i) => !d.players[q].zones[i] && !d.closed(q, i)).length, 0) >= 2,
+    resolve: async (d, link) => {
+      for (let k = 0; k < 2; k++) {
+        const opts = [];
+        for (const q of [1 - link.p, link.p]) for (let i = 0; i < 5; i++) if (!d.players[q].zones[i] && !d.closed(q, i)) opts.push({ label: (q === link.p ? "Your" : "Their") + " Monster Zone " + (i + 1), value: { p: q, i } });
+        const o = await d.choose(link.p, "Close which Monster Card Zone?", opts);
+        if (o) (d.flags.closed = d.flags.closed || []).push({ src: link.zone, p: o.value.p, i: o.value.i });
+      } } } });
+  define("Scroll of Bewitchment", { equip: true, activate: { can: (d) => up(d).length > 0, target: (d, link) => pickMon(d, link, "Equip Scroll of Bewitchment to which monster?", (z) => z.faceUp),
+    resolve: async (d, link) => { const t = t0(d, link); if (!t || !link.zone || !d.locate(link.zone)) { if (link.zone) link.zone.data.discard = true; return; }
+      const o = await d.choose(link.p, "Declare an Attribute.", [1, 2, 3, 4, 5, 6].map((a) => ({ label: window.YUGIOH_CARDS.attributes[a], value: a })));
+      d.equip(link.zone, t, { attribute: o ? o.value : ATTR.DARK }); await d.event({ type: "equipped", p: link.p, card: link.card, zone: t }); } } });
+  define("Cathedral of Nobles", stays({ trapsSameTurn: true, ignition: { can: (d, ctx) => mine(d, ctx) && up(d, ctx.p).some((z) => isName(z.card, "Mystical Beast Serket")),
+    resolve: async (d, link) => { const s = up(d, link.p).find((z) => isName(z.card, "Mystical Beast Serket")); if (!s) return; await d.sendToGrave(s.card, "cost"); if (link.zone && d.locate(link.zone)) await d.sendToGrave(link.card, "cost");
+      const c = await d.pickCard(link.p, "Special Summon which monster?", piles(d, link.p, ["hand", "deck", "fusion"]), (c) => C.isMonster(c.no)); if (c) await ss(d, link.p, c); DM.shuffle(d, d.players[link.p].deck); } } }));
+  // (placed only by another card: the Spirit Messages, the Sarcophagi)
+  for (const n of ['Spirit Message "I"', 'Spirit Message "N"', 'Spirit Message "A"', 'Spirit Message "L"', "The Second Sarcophagus", "The Third Sarcophagus"])
+    define(n, { activate: { can: () => false, resolve: async () => {} }, placedOnly: true });
+  define("Miracle Dig", { activate: { can: (d, ctx) => d.players[ctx.p].banished.filter((c) => C.isMonster(c.no)).length >= 5,
+    resolve: async (d, link) => { const cs = await d.pickCards(link.p, "Return which 3 to the Graveyard?", d.players[link.p].banished, (c) => C.isMonster(c.no), { count: 3 }); for (const c of cs || []) { d.take(c); d.toPile(c, "grave"); } } } });
+  define("Enchanted Arrow", { activate: { can: (d, ctx) => H.st(d, 1 - ctx.p).some((z) => z.faceUp && C.isSpell(z.card.no)),
+    resolve: async (d, link) => { const n = await H.destroyAll(d, H.st(d, 1 - link.p).filter((z) => z.faceUp && C.isSpell(z.card.no))); await d.damage(1 - link.p, 500 * n, "effect"); } } });
+  define("Spell Reproduction", { activate: { can: (d, ctx) => handCount(d, ctx, (c) => C.isSpell(c.no)) >= 2 && d.players[ctx.p].grave.some((c) => C.isSpell(c.no)),
+    cost: async (d, link) => { for (let k = 0; k < 2; k++) if (!(await H.discardOne(d, link.p, "Send which Spell Card to the Graveyard?", (c) => C.isSpell(c.no)))) return false; return true; },
+    resolve: async (d, link) => { const c = await d.pickCard(link.p, "Add which Spell Card to your hand?", d.players[link.p].grave, (c) => C.isSpell(c.no)); if (c) await d.toHand(c); } } });
+  define("Dark Room of Nightmare", stays({ onEvent: async (d, z, p, ev) => { if (ev.type === "effect-damage" && ev.p === 1 - p && ev.why !== "dark-room") await d.damage(1 - p, 300, "dark-room"); } }));
+  define("Autonomous Action Unit", reviveEquip(1500, (p) => 1 - p, null, false));
+  define("Re-Fusion", reviveEquip(800, (p) => p, (c) => C.kind(c.no) === "fusion", true));
+  define("Fulfillment of the Contract", reviveEquip(800, (p) => p, (c) => C.kind(c.no) === "ritual", true));
+  define("Continuous Destruction Punch", stays({ battleResult: (d, s, sp, att, target, res, p) => { if (p !== sp && d.controllerOf(target) === sp && target.defense && d.atkOf(att) < d.defOf(target)) res.attackerDies = true; } }));
+  define("Precious Cards from Beyond", stays({ onEvent: async (d, z, p, ev) => { if ((ev.type === "summoned" || ev.type === "set") && ev.p === p && ev.zone && (ev.zone.data.tributes || 0) >= 2) await d.drawCards(p, 2); } }));
+  define("Token Thanksgiving", { activate: { can: (d) => mons(d).some((z) => z.card.token), resolve: async (d, link) => { const n = await H.destroyAll(d, mons(d).filter((z) => z.card.token)); await d.heal(link.p, 800 * n); } } });
+  define("Morale Boost", stays({ onEvent: async (d, z, p, ev) => {
+    if (ev.type === "equipped") await d.heal(ev.p, 1000);
+    if ((ev.type === "sent-to-grave" || ev.type === "banished") && ev.from && ev.from.zone >= 5 && C.isSpell(ev.card.no) && C.icon(ev.card.no) === ICON.EQUIP && ev.from.z && ev.from.z.faceUp) await d.damage(ev.from.p, 1000, "effect"); } }));
+  const tributeInto = (from, into, piles2) => ({ activate: {
+    can: (d, ctx) => up(d, ctx.p).some((z) => isName(z.card, from)) && piles(d, ctx.p, piles2).some((c) => isName(c, into)),
+    cost: tributeCost((d, z) => z.faceUp && isName(z.card, from), "Tribute which " + from + "?"),
+    resolve: async (d, link) => { const c = await d.pickCard(link.p, "Special Summon " + into + ".", piles(d, link.p, piles2), (c) => isName(c, into)); if (c) await ss(d, link.p, c); DM.shuffle(d, d.players[link.p].deck); } } });
+  define("Knight's Title", tributeInto("Dark Magician", "Dark Magician Knight", ["hand", "deck", "grave"]));
+  define("Dedication through Light and Darkness", tributeInto("Dark Magician", "Dark Magician of Chaos", ["hand", "deck", "grave"]));
+  define("Release Restraint", tributeInto("Gearfried the Iron Knight", "Gearfried the Swordmaster", ["hand", "deck"]));
+  define("Heart of the Underdog", stays({ onEvent: async (d, z, p, ev) => {
+    if (ev.type === "drew" && ev.p === p && ev.drawPhase && ev.card && C.kind(ev.card.no) === "normal" && (await d.yesNo(p, "Show " + d.name(ev.card) + " to draw 1 more card?"))) { await d.emit({ type: "reveal", p, card: ev.card }); await d.drawCards(p, 1, true); } } }));
+  const nukeTheirs = (cond) => ({ activate: { can: (d, ctx) => cond(d, ctx.p) && d.allZones(1 - ctx.p).length > 0, resolve: async (d, link) => H.destroyAll(d, d.allZones(1 - link.p)) } });
+  define("Ojama Delta Hurricane!!", nukeTheirs((d, p) => ["Ojama Green", "Ojama Yellow", "Ojama Black"].every((n) => up(d, p).some((z) => isName(z.card, n)))));
+  define("Des Croaking", nukeTheirs((d, p) => up(d, p).filter((z) => isName(z.card, "Des Frog")).length >= 3));
+  define("Chaos Greed", { activate: { can: (d, ctx) => d.players[ctx.p].banished.length >= 4 && !d.players[ctx.p].grave.length, resolve: async (d, link) => d.drawCards(link.p, 2) } });
+  define("D. D. Borderline", stays({ noBattlePhase: (d, z, q) => !d.players[q].grave.some((c) => C.isSpell(c.no)) }));
+  define("Recycle", stays({ standby: async (d, z, p) => {
+    if (d.turnPlayer !== p || d.players[p].lp <= 300 || !d.players[p].grave.some((c) => !C.isMonster(c.no)) || !(await d.yesNo(p, "Pay 300 LP to put a card from your Graveyard at the bottom of your Deck?"))) return;
+    await d.payLp(p, 300); const c = await d.pickCard(p, "Return which card to the bottom of your Deck?", d.players[p].grave, (c) => !C.isMonster(c.no)); if (c) await d.toDeck(c, false); } }));
+  define("Primal Seed", { activate: { can: (d, ctx) => d.players[ctx.p].banished.length > 0 && up(d).some((z) => isName(z.card, ["Black Luster Soldier - Envoy of the Beginning", "Chaos Emperor Dragon - Envoy of the End"])),
+    resolve: async (d, link) => { const cs = await d.pickCards(link.p, "Add which 2 cards to your hand?", d.players[link.p].banished, null, { count: 2 }); for (const c of cs || []) await d.toHand(c); } } });
+  define("Soul Absorption", stays({ onEvent: async (d, z, p, ev) => { if (ev.type === "banished") await d.heal(p, 500); } }));
+  define("Gryphon's Feather Duster", { activate: { can: (d, ctx) => H.st(d, ctx.p).some((z) => z !== ctx.zone), resolve: async (d, link) => { const n = await H.destroyAll(d, H.st(d, link.p).filter((z) => z !== link.zone)); await d.heal(link.p, 500 * n); } } });
+  define("Dangerous Machine TYPE-6", stays({ standby: async (d, z, p) => {
+    if (d.turnPlayer !== p) return;
+    const r = await H.die(d, p);
+    if (r === 1) await H.discardOne(d, p); else if (r === 2) await H.discardOne(d, 1 - p); else if (r === 3) await d.drawCards(p, 1); else if (r === 4) await d.drawCards(1 - p, 1);
+    else if (r === 5) await destroyOne(d, p, "Destroy which of your opponent's cards?", null, undefined, [1 - p]); else await d.destroy(z, "effect"); } }));
+  define("Soul Reversal", { activate: { can: (d, ctx) => d.players[ctx.p].grave.some((c) => DM.effectOf(c.no) && DM.effectOf(c.no).flip),
+    resolve: async (d, link) => { const c = await d.pickCard(link.p, "Return which Flip Effect Monster to the top of your Deck?", d.players[link.p].grave, (c) => DM.effectOf(c.no) && DM.effectOf(c.no).flip); if (c) await d.toDeck(c, true); } } });
+  define("7", { activate: { stays: true, resolve: async (d, link) => {
+    const sevens = H.st(d, link.p).filter((z) => z.faceUp && isName(z.card, "7"));
+    if (sevens.length >= 3) { await d.drawCards(link.p, 3); await H.destroyAll(d, sevens); } } },
+    onToGrave: async (d, c, p, from) => { if (from && from.zone != null) await d.heal(p, 700); } });
+  define("The Law of the Normal", { activate: { can: (d, ctx) => up(d, ctx.p).filter((z) => C.kind(z.card.no) === "normal" && d.stats(z).level <= 2).length >= 5,
+    resolve: async (d, link) => { for (const q of [0, 1]) for (const c of d.players[q].hand.slice()) await d.discard(q, c, "effect");
+      await H.destroyAll(d, [0, 1].reduce((a, q) => a.concat(d.allZones(q)), []).filter((z) => z !== link.zone && !(H.isMon(d, z) && z.faceUp && C.kind(z.card.no) === "normal" && d.stats(z).level <= 2))); } } });
+  define("Inferno Tempest", { activate: { when: "battle-damage", can: (d, ctx) => ctx.event.p === ctx.p && ctx.event.amount >= 4000,
+    resolve: async (d) => { for (const q of [0, 1]) for (const c of d.players[q].deck.concat(d.players[q].grave).filter((c) => C.isMonster(c.no))) await d.banish(c, "effect"); } } });
+  define("Inferno Fire Blast", { activate: { can: (d, ctx) => up(d, ctx.p).some((z) => isName(z.card, "Red-Eyes B. Dragon")), target: (d, link) => pickMon(d, link, "Choose which Red-Eyes B. Dragon?", (z) => z.faceUp && isName(z.card, "Red-Eyes B. Dragon"), [link.p]),
+    resolve: async (d, link) => { const z = t0(d, link); if (!z) return; z.data.cannotAttackTurn = d.turn; await d.damage(1 - link.p, C.atk(z.card.no), "effect"); } } });
+  define("Tricky's Magic 4", { activate: { can: (d, ctx) => up(d, ctx.p).some((z) => isName(z.card, "Tricky")) && d.monsters(1 - ctx.p).length > 0,
+    cost: async (d, link) => { const z = await d.pickZone(link.p, "Send which Tricky to the Graveyard?", (x, q) => q === link.p && x.faceUp && isName(x.card, "Tricky"), { sides: [link.p], area: "monster" }); if (!z) return false; await d.sendToGrave(z.card, "cost"); return true; },
+    resolve: async (d, link) => { for (let k = d.monsters(1 - link.p).length; k > 0; k--) { const z = await d.summonToken(link.p, { name: "Tricky Token", atk: 2000, def: 1200, level: 5, type: typeNo("Spellcaster"), attribute: ATTR.WIND }, { defense: true }); if (!z) break; z.data.cannotAttack = true; } } } });
+  define("Mokey Mokey Smackdown", stays({ onEvent: async (d, z, p, ev) => {
+    if ((ev.type === "destroyed" || ev.type === "battle-destroyed") && ev.p === p && ev.card && isT(ev.card.no, "Fairy")) for (const m of up(d, p).filter((x) => isName(x.card, "Mokey Mokey"))) d.addTemp(m, { setAtk: 3000 }); } }));
+  const purge = (kind, ic) => ({ activate: { can: (d, ctx) => handCount(d, ctx) > 0 && H.st(d).some((z) => z.faceUp && C["is" + kind](z.card.no) && icon(z) === ic && z !== ctx.zone), cost: discardCost(),
+    resolve: async (d, link) => H.destroyAll(d, H.st(d).filter((z) => z.faceUp && C["is" + kind](z.card.no) && icon(z) === ic && z !== link.zone)) } });
+  define("Malice Dispersion", purge("Trap", ICON.CONTINUOUS));
+  define("Spell Purification", purge("Spell", ICON.CONTINUOUS));
+  define("Poison Fangs", stays({ onEvent: async (d, z, p, ev) => { if (ev.type === "battle-damage" && ev.p === 1 - p && ev.dealer && d.controllerOf(ev.dealer) === p && isT(ev.dealer.card.no, "Beast")) await d.damage(1 - p, 500, "effect"); } }));
+  const GAIA = ["Gaia The Fierce Knight", "Swift Gaia the Fierce Knight", "Gaia the Dragon Champion"];
+  define("Spiral Spear Strike", stays({ piercingFor: (d, s, sp, att, p) => p === sp && isName(att.card, GAIA),
+    onEvent: async (d, z, p, ev) => { if (ev.type === "battle-damage" && ev.p === 1 - p && ev.dealer && isName(ev.dealer.card, "Gaia the Dragon Champion") && d.controllerOf(ev.dealer) === p) { await d.drawCards(p, 2); await H.discardOne(d, p); } } }));
+  define("Overpowering Eye", { activate: { can: (d, ctx) => up(d, ctx.p).some((z) => isT(z.card.no, "Zombie") && d.atkOf(z) <= 2000),
+    target: (d, link) => pickMon(d, link, "Choose which Zombie?", (z) => z.faceUp && H.isType(d, z, "Zombie") && d.atkOf(z) <= 2000, [link.p]), resolve: async (d, link) => { const z = t0(d, link); if (z) z.data.directTurn = d.turn; } } });
+  const MONKS = ["Chu-Ske the Mouse Fighter", "Monk Fighter", "Master Monk"];
+  define("Kaminote Blow", { activate: { can: (d, ctx) => up(d, ctx.p).some((z) => isName(z.card, MONKS)), resolve: async (d, link) => { for (const z of up(d, link.p).filter((x) => isName(x.card, MONKS))) z.data.killsInBattle = d.turn; } } });
+  define("Transcendent Wings", { activate: { can: (d, ctx) => up(d, ctx.p).some((z) => isName(z.card, "Winged Kuriboh")) && handCount(d, ctx) >= 2 && piles(d, ctx.p, ["hand", "deck"]).some((c) => isName(c, "Winged Kuriboh LV10")),
+    cost: async (d, link) => { const z = up(d, link.p).find((x) => isName(x.card, "Winged Kuriboh")); if (!z) return false; await d.sendToGrave(z.card, "cost"); for (let k = 0; k < 2; k++) if (!(await H.discardOne(d, link.p, "Send which card to the Graveyard?", (c) => !isName(c, "Winged Kuriboh LV10")))) return false; return true; },
+    resolve: async (d, link) => { const c = piles(d, link.p, ["hand", "deck"]).find((c) => isName(c, "Winged Kuriboh LV10")); if (c) await ss(d, link.p, c); DM.shuffle(d, d.players[link.p].deck); } } });
+  define("Bubble Shuffle", { activate: { can: (d, ctx) => up(d, ctx.p).some((z) => isName(z.card, "Elemental Hero Bubbleman") && !z.defense) && up(d, 1 - ctx.p).some((z) => !z.defense),
+    resolve: async (d, link) => {
+      const b = await d.pickZone(link.p, "Which Elemental Hero Bubbleman?", (z, q) => q === link.p && z.faceUp && !z.defense && isName(z.card, "Elemental Hero Bubbleman"), { sides: [link.p], area: "monster" });
+      const o = await d.pickZone(link.p, "Change which of their monsters to Defense Position?", (z, q) => q !== link.p && z.faceUp && !z.defense, { sides: [1 - link.p], area: "monster" });
+      if (!b || !o) return; await d.changePosition(b, true); await d.changePosition(o, true); await d.sendToGrave(b.card, "tribute");
+      const c = await d.pickCard(link.p, "Special Summon which Elemental Hero?", d.players[link.p].hand, (c) => isMonCard(c) && C.name(c.no).includes("Elemental Hero")); if (c) await ss(d, link.p, c); } } });
+  define("Spark Gun", Object.assign(DM.equip((d, z) => isName(z.card, "Elemental Hero Sparkman"), null), { ignition: { can: (d, ctx) => mine(d, ctx) && up(d).length > 0 && ctx.zone.equippedTo,
+    resolve: async (d, link) => { const z = await d.pickZone(link.p, "Change the position of which monster?", (x) => x.faceUp, { area: "monster" }); if (z) await d.changePosition(z, !z.defense);
+      if (link.zone && d.locate(link.zone)) { link.zone.data.uses = (link.zone.data.uses || 0) + 1; if (link.zone.data.uses >= 3) await d.destroy(link.zone, "effect"); } } } }));
+  define("Fusion Recovery", { activate: { can: (d, ctx) => d.players[ctx.p].grave.some((c) => isName(c, "Polymerization")) && d.players[ctx.p].grave.some((c) => c.fusionMaterial && C.isMonster(c.no)),
+    resolve: async (d, link) => { const g = d.players[link.p].grave; const pol = g.find((c) => isName(c, "Polymerization")); const m = await d.pickCard(link.p, "Add which Fusion Material Monster to your hand?", g, (c) => c.fusionMaterial && C.isMonster(c.no)); if (pol) await d.toHand(pol); if (m) await d.toHand(m); } } });
+  define("System Down", { activate: { can: (d, ctx) => d.players[ctx.p].lp > 1000, cost: async (d, link) => { await d.payLp(link.p, 1000); return true; },
+    resolve: async (d, link) => { const q = 1 - link.p; for (const z of d.monsters(q).filter((z) => H.isType(d, z, "Machine") || (!z.faceUp && isT(z.card.no, "Machine")))) await d.banish(z.card, "effect");
+      for (const c of d.players[q].grave.filter((c) => C.isMonster(c.no) && isT(c.no, "Machine"))) await d.banish(c, "effect"); } } });
+
+  // ===== Traps =====
+  define("Metalmorph", { activate: { stays: true, can: (d, ctx) => up(d).length > 0, target: (d, link) => pickMon(d, link, "Equip Metalmorph to which monster?", (z) => z.faceUp),
+    resolve: async (d, link) => { const t = t0(d, link); if (!t || !t.faceUp || !link.zone || !d.locate(link.zone)) { if (link.zone) link.zone.data.discard = true; return; } d.equip(link.zone, t, { atk: 300, def: 300 }); await d.event({ type: "equipped", p: link.p, card: link.card, zone: t }); } },
+    equipBattleStats: (d, z, p, o, attacking) => (attacking && o ? { atk: Math.floor(d.atkOf(o) / 2) } : null) });
+  define("Tragedy", { activate: { when: "position", can: (d, ctx) => ctx.event.p !== ctx.p && ctx.event.zone && ctx.event.zone.faceUp && ctx.event.zone.defense, resolve: async (d, link) => H.destroyAll(d, d.monsters(1 - link.p).filter((z) => z.defense)) } });
+  define("Call of the Dark", stays({ forbids: (d, z, r, p, c) => isName(c, "Monster Reborn") }));
+  define("Magical Thorn", stays({ onEvent: async (d, z, p, ev) => { if (ev.type === "discarded" && ev.p === 1 - p && ev.why !== "hand-limit") await d.damage(1 - p, 500, "effect"); } }));
+  define("Robbin' Goblin", stays({ onEvent: async (d, z, p, ev) => { if (ev.type === "battle-damage" && ev.p === 1 - p && ev.dealer && d.controllerOf(ev.dealer) === p) await H.discardRandom(d, 1 - p); } }));
+  define("Robbin' Zombie", stays({ onEvent: async (d, z, p, ev) => { const c = d.players[1 - p].deck[0]; if (ev.type === "battle-damage" && ev.p === 1 - p && ev.dealer && d.controllerOf(ev.dealer) === p && c) await d.sendToGrave(c, "effect"); } }));
+  define("Gamble", { activate: { can: (d, ctx) => d.players[1 - ctx.p].hand.length >= 6 && d.players[ctx.p].hand.length <= 2,
+    resolve: async (d, link) => { if (await H.coinCall(d, link.p)) { const n = 5 - d.players[link.p].hand.length; if (n > 0) await d.drawCards(link.p, n); } else d.players[link.p].flags.skipTurn = true; } } });
+  define("Light of Intervention", stays({ noSetMonsters: true }));
+  define("Respect Play", stays({ revealsHands: "both" }));
+  define("Skull Invitation", stays({ onEvent: async (d, z, p, ev) => { if (ev.type === "sent-to-grave" && ev.card && !ev.card.token) await d.damage(ev.card.owner, 300, "effect"); } }));
+  define("Mask of Restrict", stays({ noTributes: true }));
+  define("Fairy Box", stays({ onEvent: async (d, z, p, ev) => { if (ev.type === "attack" && ev.p === 1 - p && ev.attacker && d.locate(ev.attacker) && (await H.coinCall(d, p))) d.addTemp(ev.attacker, { setAtk: 0 }); },
+    standby: async (d, z, p) => { if (d.turnPlayer !== p) return; if (d.players[p].lp > 500 && (await d.yesNo(p, "Pay 500 LP to keep Fairy Box?"))) await d.payLp(p, 500); else await d.destroy(z, "cost"); } }));
+  // Destiny Board: a Spirit Message at the end of each of the other player's turns, I, N, A and L, and the duel won.
+  const LETTERS = ['Spirit Message "I"', 'Spirit Message "N"', 'Spirit Message "A"', 'Spirit Message "L"'];
+  async function clearBoard(d, p) {
+    if (d.flags.clearingBoard) return; d.flags.clearingBoard = true;
+    try { for (const z of H.st(d, p).filter((z) => isName(z.card, LETTERS.concat(["Destiny Board"])))) if (d.locate(z)) await d.sendToGrave(z.card, "effect"); } finally { d.flags.clearingBoard = false; }
+  }
+  define("Destiny Board", stays({
+    endPhase: async (d, z, p) => {
+      if (d.turnPlayer === p) return;
+      const next = LETTERS.find((n) => !H.st(d, p).some((x) => isName(x.card, n)));
+      const i = d.freeSpellZone(p);
+      if (!next || i < 0) return;
+      const c = d.players[p].hand.find((x) => isName(x, next)) || d.players[p].deck.find((x) => isName(x, next));
+      if (!c) return;
+      const fromDeck = d.players[p].deck.includes(c);
+      d.take(c); d.players[p].zones[i] = DM.newZone(c, { faceUp: true, placedTurn: d.turn });
+      await d.emit({ type: "set-spell", p, i, zone: d.players[p].zones[i], card: c });
+      if (fromDeck) DM.shuffle(d, d.players[p].deck);
+      if (LETTERS.every((n) => H.st(d, p).some((x) => isName(x.card, n)))) { d.players[p].flags.specialWin = "destiny"; d.checkWin(); }
+    },
+    onLeave: async (d, z, p) => clearBoard(d, p) }));
+  for (const n of LETTERS) Object.assign(DM.EFFECTS[N(n)], { onLeave: async (d, z, p) => { if (H.st(d, p).some((x) => isName(x.card, "Destiny Board"))) await clearBoard(d, p); } });
+  // The First Sarcophagus: the Second and the Third at the ends of the other player's turns, then Spirit of the Pharaoh.
+  const SARC = ["The First Sarcophagus", "The Second Sarcophagus", "The Third Sarcophagus"];
+  async function clearSarc(d, p) {
+    if (d.flags.clearingSarc) return; d.flags.clearingSarc = true;
+    try { for (const z of H.st(d, p).filter((z) => isName(z.card, SARC))) if (d.locate(z)) await d.sendToGrave(z.card, "effect"); } finally { d.flags.clearingSarc = false; }
+  }
+  define("The First Sarcophagus", stays({
+    endPhase: async (d, z, p) => {
+      if (d.turnPlayer === p) return;
+      const next = SARC.find((n) => !H.st(d, p).some((x) => isName(x.card, n)));
+      const i = d.freeSpellZone(p);
+      if (next && i >= 0) {
+        const c = d.players[p].hand.find((x) => isName(x, next)) || d.players[p].deck.find((x) => isName(x, next));
+        if (c) { d.take(c); d.players[p].zones[i] = DM.newZone(c, { faceUp: true, placedTurn: d.turn }); await d.emit({ type: "set-spell", p, i, zone: d.players[p].zones[i], card: c }); DM.shuffle(d, d.players[p].deck); }
+      }
+      if (SARC.every((n) => H.st(d, p).some((x) => isName(x.card, n)))) {
+        d.flags.clearingSarc = true;
+        try { for (const x of H.st(d, p).filter((x) => isName(x.card, SARC))) await d.sendToGrave(x.card, "cost"); } finally { d.flags.clearingSarc = false; }
+        const ph = piles(d, p, ["hand", "deck"]).find((c) => isName(c, "Spirit of the Pharaoh"));
+        if (ph) await ss(d, p, ph); DM.shuffle(d, d.players[p].deck);
+      }
+    },
+    onLeave: async (d, z, p) => clearSarc(d, p) }));
+  for (const n of SARC.slice(1)) Object.assign(DM.EFFECTS[N(n)], { onLeave: async (d, z, p) => clearSarc(d, p) });
+  define("Royal Command", stays({ negatesFlips: true }));
+  define("Graverobber's Retribution", stays({ standby: async (d, z, p) => { if (d.turnPlayer === p) await d.damage(1 - p, 100 * d.players[1 - p].banished.filter((c) => C.isMonster(c.no)).length, "effect"); } }));
+  define("Deal of Phantom", { activate: { can: (d) => up(d).length > 0, target: (d, link) => pickMon(d, link, "Give which monster more ATK?", (z) => z.faceUp),
+    resolve: async (d, link) => { const z = t0(d, link); if (z) d.addTemp(z, { atk: 100 * H.graveMon(d, link.p).length }); } } });
+  define("Blind Destruction", stays({ standby: async (d, z, p) => { if (d.turnPlayer !== p) return; const r = await H.die(d, p);
+    await H.destroyAll(d, mons(d).filter((x) => x.faceUp && (r === 6 ? d.stats(x).level >= 6 : d.stats(x).level === r))); } }));
+  define("Dragon's Rage", stays({ piercingFor: (d, s, sp, att, p) => p === sp && H.isType(d, att, "Dragon") }));
+  define("Burst Breath", { activate: { can: (d, ctx) => d.monsters(ctx.p).some((z) => z.faceUp && H.isType(d, z, "Dragon")), cost: tributeCost((d, z) => z.faceUp && H.isType(d, z, "Dragon"), "Tribute which Dragon?"),
+    resolve: async (d, link) => H.destroyAll(d, up(d).filter((z) => d.defOf(z) <= link.data.tributed.atk)) } });
+  define("Reversal of Graves", { activate: { can: (d, ctx) => d.players[ctx.p].lp > 1000 && d.players[ctx.p].grave.length >= 15, cost: async (d, link) => { await d.payLp(link.p, 1000); return true; },
+    resolve: async (d) => { for (const q of [0, 1]) { const pl = d.players[q]; const g = pl.grave.splice(0), k = pl.deck.splice(0); pl.deck.push(...g); pl.grave.push(...k); DM.shuffle(d, pl.deck); await d.emit({ type: "shuffle", p: q }); } } } });
+  define("Disappear", { activate: { can: (d, ctx) => d.players[1 - ctx.p].grave.length > 0, resolve: async (d, link) => { const c = await d.pickCard(link.p, "Remove which card from play?", d.players[1 - link.p].grave); if (c) await d.banish(c, "effect"); } } });
+  define("Fiend Comedian", { activate: { resolve: async (d, link) => {
+    const q = 1 - link.p;
+    if (await H.coinCall(d, link.p)) { for (const c of d.players[q].grave.slice()) await d.banish(c, "effect"); }
+    else for (const c of d.players[link.p].deck.slice(0, d.players[q].grave.length)) await d.sendToGrave(c, "effect"); } } });
+  define("Bottomless Shifting Sand", stays({
+    endPhase: async (d, z, p) => { if (d.turnPlayer === p) return; const zs = up(d); if (!zs.length) return; const hi = Math.max(...zs.map((x) => d.atkOf(x))); await H.destroyAll(d, zs.filter((x) => d.atkOf(x) === hi)); },
+    standby: async (d, z, p) => { if (d.turnPlayer === p && d.players[p].hand.length <= 4) await d.destroy(z, "effect"); } }));
+  // (Set to be destroyed: Statue of the Wicked, Kozaky's Self-Destruct Button)
+  const whenDestroyedSet = (fn) => ({ activate: { can: () => false, resolve: async () => {} }, onToGrave: async (d, c, p, from, why) => { if (from && from.z && !from.z.faceUp && why === "destroyed") await fn(d, c, p); } });
+  define("Statue of the Wicked", whenDestroyedSet(async (d, c, p) => { if (d.freeMonsterZone(p) >= 0) {
+    const o = await d.choose(p, "Summon the Wicked Token in which position?", [{ label: "Attack Position", value: false }, { label: "Defense Position", value: true }]);
+    await d.summonToken(p, { name: "Wicked Token", atk: 1000, def: 1000, level: 4, type: typeNo("Fiend"), attribute: ATTR.DARK }, { defense: !!(o && o.value) }); } }));
+  // (whoever destroyed it: the player whose turn it is, most likely)
+  define("Kozaky's Self-Destruct Button", whenDestroyedSet(async (d) => d.damage(d.turnPlayer, 1000, "effect")));
+  define("Needle Wall", stays({ standby: async (d, z, p) => { if (d.turnPlayer !== p) return; let r; do r = await H.die(d, p); while (r === 6);
+    const t = d.players[1 - p].zones[r - 1]; if (t) await d.destroy(t, "effect"); } }));
+  define("Non Aggression Area", { activate: { when: "standby", can: (d, ctx) => ctx.event.p === ctx.p && handCount(d, ctx) > 0, cost: discardCost(),
+    resolve: async (d, link) => { d.players[link.p].flags.noSummonFor = d.turn + 1; } } });
+  define("Huge Revolution", { activate: { can: (d, ctx) => mine(d, ctx) && ["People Running About", "Oppressed People", "United Resistance"].every((n) => up(d, ctx.p).some((z) => isName(z.card, n))),
+    resolve: async (d, link) => { const q = 1 - link.p; for (const c of d.players[q].hand.slice()) await d.sendToGrave(c, "effect"); await H.destroyAll(d, d.allZones(q)); } } });
+  define("Thunder of Ruler", { activate: { when: "standby", can: (d, ctx) => ctx.event.p !== ctx.p, resolve: async (d, link) => { d.players[1 - link.p].flags.noBattleThisTurn = d.turn; } } });
+  define("Meteorain", { activate: { resolve: async (d, link) => { d.players[link.p].flags.meteorain = d.turn; } } });
+  define("Hidden Book of Spell", { activate: { can: (d, ctx) => ctx.p === d.turnPlayer && d.players[ctx.p].grave.filter((c) => C.isSpell(c.no)).length >= 2,
+    resolve: async (d, link) => { const cs = await d.pickCards(link.p, "Return which 2 Spell Cards to your Deck?", d.players[link.p].grave, (c) => C.isSpell(c.no), { count: 2 }); for (const c of cs || []) await d.toDeck(c, "shuffle"); DM.shuffle(d, d.players[link.p].deck); } } });
+  define("Ray of Hope", { activate: { can: (d, ctx) => H.graveMon(d, ctx.p, (c) => C.attribute(c.no) === ATTR.LIGHT).length >= 2,
+    resolve: async (d, link) => { const cs = await d.pickCards(link.p, "Return which 2 LIGHT monsters to your Deck?", H.graveMon(d, link.p, (c) => C.attribute(c.no) === ATTR.LIGHT), null, { count: 2 }); for (const c of cs || []) await d.toDeck(c, "shuffle"); DM.shuffle(d, d.players[link.p].deck); } } });
+  define("Tower of Babel", stays({ spellCounter: 4, onEvent: async (d, z, p, ev) => {
+    if (ev.type !== "activated" || !C.isSpell(ev.card.no) || ev.from === "monster") return;
+    z.counters.spell = SC.n(z) + 1; await d.emit({ type: "counter", zone: z, n: z.counters.spell });
+    if (z.counters.spell >= 4) { await d.destroy(z, "effect"); await d.damage(ev.p, 3000, "effect"); } } }));
+  define("Curse of Darkness", stays({ onEvent: async (d, z, p, ev) => { if (ev.type === "activated" && C.isSpell(ev.card.no) && ev.from !== "monster") await d.damage(ev.p, 1000, "effect"); } }));
+  define("Chain Burst", stays({ onEvent: async (d, z, p, ev) => { if (ev.type === "activated" && C.isTrap(ev.card.no) && ev.card !== z.card) await d.damage(ev.p, 1000, "effect"); } }));
+  define("Begone, Knave!", stays({ onEvent: async (d, z, p, ev) => { if (ev.type === "battle-damage" && ev.dealer && d.locate(ev.dealer)) await d.toHand(ev.dealer.card, "effect"); } }));
+  define("Des Counterblow", stays({ onEvent: async (d, z, p, ev) => { if (ev.type === "battle-damage" && ev.direct && ev.dealer && d.locate(ev.dealer)) await d.destroy(ev.dealer, "effect"); } }));
+  define("Backfire", stays({ onEvent: async (d, z, p, ev) => { if ((ev.type === "destroyed" || ev.type === "battle-destroyed") && ev.p === p && ev.card && C.attribute(ev.card.no) === ATTR.FIRE && d.players[ev.card.owner].grave.includes(ev.card)) await d.damage(1 - p, 500, "effect"); } }));
+  define("Light of Judgment", { activate: { can: (d, ctx) => d.countOnField(N("The Sanctuary in the Sky")) > 0 && handCount(d, ctx, (c) => C.isMonster(c.no) && C.attribute(c.no) === ATTR.LIGHT) > 0 && (d.allZones(1 - ctx.p).length || d.players[1 - ctx.p].hand.length),
+    cost: discardCost((c) => C.isMonster(c.no) && C.attribute(c.no) === ATTR.LIGHT, "Discard which LIGHT monster?"),
+    resolve: async (d, link) => { const q = 1 - link.p;
+      const o = await d.choose(link.p, "Light of Judgment:", [d.allZones(q).length && { label: "A card on their field", v: 0 }, d.players[q].hand.length && { label: "A card in their hand", v: 1 }].filter(Boolean));
+      if (o && o.v === 1) { const c = await d.pickCard(link.p, "Send which card to the Graveyard?", d.players[q].hand); if (c) await d.sendToGrave(c, "effect"); }
+      else { const z = await d.pickZone(link.p, "Send which card to the Graveyard?", (x, r) => r === q, { sides: [q] }); if (z) await d.sendToGrave(z.card, "effect"); } } } });
+  define("Ninjitsu Art of Transformation", { activate: { stays: true, can: (d, ctx) => up(d, ctx.p).some((z) => C.name(z.card.no).includes("Ninja")),
+    cost: tributeCost((d, z) => z.faceUp && C.name(z.card.no).includes("Ninja"), "Tribute which Ninja?"),
+    resolve: async (d, link) => { const lv = link.data.tributed.level + 3;
+      const c = await d.pickCard(link.p, "Special Summon which monster?", piles(d, link.p, ["hand", "deck"]), (c) => isMonCard(c) && ["Beast", "Winged Beast", "Insect"].some((t) => isT(c.no, t)) && C.level(c.no) <= lv);
+      DM.shuffle(d, d.players[link.p].deck);
+      const z = c ? await ss(d, link.p, c) : null;
+      if (z && link.zone) link.zone.data.boundTo = z; else if (link.zone) link.zone.data.discard = true; } } });
+  define("Beckoning Light", { activate: { can: (d, ctx) => handCount(d, ctx) > 0 && H.graveMon(d, ctx.p, (c) => C.attribute(c.no) === ATTR.LIGHT).length > 0,
+    resolve: async (d, link) => { const n = d.players[link.p].hand.length; for (const c of d.players[link.p].hand.slice()) await d.discard(link.p, c, "effect");
+      const cs = await d.pickCards(link.p, "Add which LIGHT monsters to your hand?", H.graveMon(d, link.p, (c) => C.attribute(c.no) === ATTR.LIGHT), null, { count: n }); for (const c of cs || []) await d.toHand(c); } } });
+  define("Corpse of Yata-Garasu", { activate: { resolve: async (d, link) => {
+    const spirit = up(d, 1 - link.p).some((z) => DM.effectOf(z.card.no) && DM.effectOf(z.card.no).spirit);
+    const o = spirit ? await d.choose(link.p, "Draw how many cards?", [{ label: "Draw 1 card", v: 1 }, { label: "Draw 2 cards", v: 2 }]) : null;
+    await d.drawCards(link.p, o ? o.v : 1); } } });
+  define("Labyrinth of Nightmare", stays({ endPhase: async (d) => { for (const z of up(d, d.turnPlayer)) await d.changePosition(z, !z.defense); } }));
+  define("Pyramid of Light", stays({ onLeave: async (d, z, p) => { for (const m of up(d, p).filter((x) => isName(x.card, ["Andro Sphinx", "Sphinx Teleia"]))) { if (await d.destroy(m, "effect")) { const c = m.card; if (d.players[c.owner].grave.includes(c)) await d.banish(c, "effect"); } } } }));
+  define("Ninjitsu Art of Decoy", { activate: { stays: true, can: (d, ctx) => up(d, ctx.p).some((z) => C.name(z.card.no).includes("Ninja")),
+    target: (d, link) => pickMon(d, link, "Choose which Ninja?", (z) => z.faceUp && C.name(z.card.no).includes("Ninja"), [link.p]),
+    resolve: async (d, link) => { const z = t0(d, link); if (z && link.zone) { z.data.shield = link.zone; link.zone.data.bound = z; z.data.boundBy = link.zone; } else if (link.zone) link.zone.data.discard = true; } } });
+  // (A Trap that becomes a monster)
+  define("Red Gadget - Stronghold", { activate: { stays: true, can: (d, ctx) => d.freeMonsterZone(ctx.p) >= 0, resolve: async (d, link) => {
+    if (!link.zone || !d.locate(link.zone) || d.freeMonsterZone(link.p) < 0) return;
+    const c = link.card; d.take(c);
+    const z = await d.placeMonster(link.p, c, { defense: true, how: "special" });
+    if (z) { z.data.base = { atk: 0, def: 2000, level: 4, type: typeNo("Machine"), attribute: ATTR.EARTH }; await d.summoned(link.p, z, "special"); } } },
+    selfStats: (d, z) => (H.isMon(d, z) && ["Green Gadget", "Red Gadget", "Yellow Gadget"].every((n) => up(d, d.controllerOf(z)).some((x) => isName(x.card, n))) ? { setAtk: 3000 } : null) });
+  define("Fruits of Kozaky's Studies", { activate: { can: (d, ctx) => d.players[ctx.p].deck.length > 1, resolve: async (d, link) => {
+    const pl = d.players[link.p], top = pl.deck.splice(0, 3), order = [];
+    while (top.length) { const c = top.length > 1 ? await d.pickCard(link.p, "Which card goes on top" + (order.length ? " of these" : "") + "?", top) : top[0]; const k = top.indexOf(c || top[0]); order.push(top.splice(k, 1)[0]); }
+    pl.deck.unshift(...order); } } });
+  define("Fuh-Rin-Ka-Zan", { activate: { can: (d) => ["WIND", "WATER", "FIRE", "EARTH"].every((a) => up(d).some((z) => H.attrOf(d, z) === ATTR[a])), resolve: async (d, link) => {
+    const q = 1 - link.p;
+    const o = await d.choose(link.p, "Fuh-Rin-Ka-Zan's effect:", [{ label: "Destroy all their monsters", v: 0 }, { label: "Destroy all their Spells and Traps", v: 1 }, { label: "Discard 2 random cards from their hand", v: 2 }, { label: "Draw 2 cards", v: 3 }]);
+    const v = o ? o.v : 0;
+    if (v === 0) await H.destroyAll(d, d.monsters(q)); else if (v === 1) await H.destroyAll(d, H.st(d, q)); else if (v === 2) { await H.discardRandom(d, q); await H.discardRandom(d, q); } else await d.drawCards(link.p, 2); } } });
+  define("Phoenix Wing Wind Blast", { activate: { can: (d, ctx) => handCount(d, ctx) > 0 && d.allZones(1 - ctx.p).length > 0, cost: discardCost(),
+    target: (d, link) => H.target(d, link, "Return which card to the top of its owner's Deck?", (z, q) => q !== link.p, { sides: [1 - link.p] }), resolve: async (d, link) => { const z = t0(d, link); if (z) await d.toDeck(z.card, true, "effect"); } } });
+  define("Good Goblin Housekeeping", { activate: { resolve: async (d, link) => {
+    await d.drawCards(link.p, 1 + d.players[link.p].grave.filter((c) => isName(c, "Good Goblin Housekeeping")).length);
+    const c = await d.pickCard(link.p, "Return which card to the bottom of your Deck?", d.players[link.p].hand); if (c) await d.toDeck(c, false); } } });
+  define("Assault on GHQ", { activate: { can: (d, ctx) => d.monsters(ctx.p).length > 0, target: (d, link) => pickMon(d, link, "Destroy which of your monsters?", null, [link.p]),
+    resolve: async (d, link) => { const z = t0(d, link); if (z) await d.destroy(z, "effect"); for (const c of d.players[1 - link.p].deck.slice(0, 2)) await d.sendToGrave(c, "effect"); } } });
+  define("Elemental Burst", { activate: { can: (d, ctx) => ["WIND", "WATER", "FIRE", "EARTH"].every((a) => d.monsters(ctx.p).some((z) => H.attrOf(d, z) === ATTR[a])),
+    cost: async (d, link) => { for (const a of ["WIND", "WATER", "FIRE", "EARTH"]) { const z = await d.pickZone(link.p, "Tribute which " + a + " monster?", (x, q) => q === link.p && H.attrOf(d, x) === ATTR[a], { sides: [link.p], area: "monster" }); if (!z) return false; await d.sendToGrave(z.card, "tribute"); } return true; },
+    resolve: async (d, link) => H.destroyAll(d, d.allZones(1 - link.p)) } });
+  define("Hero Signal", { activate: { when: "battle-destroyed", can: (d, ctx) => ctx.event.p === ctx.p && H.canSummonHere(d, ctx.p) && piles(d, ctx.p, ["hand", "deck"]).some((c) => isMonCard(c) && C.name(c.no).includes("Elemental Hero") && C.level(c.no) <= 4),
+    resolve: async (d, link) => { const c = await d.pickCard(link.p, "Special Summon which Elemental Hero?", piles(d, link.p, ["hand", "deck"]), (c) => isMonCard(c) && C.name(c.no).includes("Elemental Hero") && C.level(c.no) <= 4); if (c) await ss(d, link.p, c); DM.shuffle(d, d.players[link.p].deck); } } });
+  define("Minefield Eruption", { activate: { can: (d, ctx) => up(d, ctx.p).some((z) => isName(z.card, "Mine Golem")), resolve: async (d, link) => {
+    const zs = up(d, link.p).filter((z) => isName(z.card, "Mine Golem")); await d.damage(1 - link.p, 1000 * zs.length, "effect"); await H.destroyAll(d, zs); } } });
+  define("Mispolymerization", { activate: { when: "special-summoned", can: (d, ctx) => ctx.event.zone && C.kind(ctx.event.zone.card.no) === "fusion",
+    resolve: async (d) => { for (const z of up(d).filter((z) => C.kind(z.card.no) === "fusion")) await d.toDeck(z.card, true, "effect"); } } });
+  define("Rock Bombardment", { activate: { can: (d, ctx) => d.players[ctx.p].deck.some((c) => C.isMonster(c.no) && isT(c.no, "Rock")), resolve: async (d, link) => {
+    const c = await d.pickCard(link.p, "Send which Rock monster to the Graveyard?", d.players[link.p].deck, (c) => C.isMonster(c.no) && isT(c.no, "Rock")); if (c) await d.sendToGrave(c, "effect"); DM.shuffle(d, d.players[link.p].deck); await d.damage(1 - link.p, 500, "effect"); } } });
+  define("Token Feastevil", { activate: { when: "special-summoned", can: (d, ctx) => !!ctx.event.token, resolve: async (d, link) => { const n = await H.destroyAll(d, mons(d).filter((z) => z.card.token)); await d.damage(1 - link.p, 300 * n, "effect"); } } });
+  const art = (attr, can, resolve) => ({ activate: { can: (d, ctx) => d.monsters(ctx.p).some((z) => H.attrOf(d, z) === ATTR[attr]) && (!can || can(d, ctx)), cost: tributeCost((d, z) => H.attrOf(d, z) === ATTR[attr], "Tribute which " + attr + " monster?"), resolve } });
+  define("Spiritual Earth Art - Kurogane", art("EARTH", (d, ctx) => H.graveMon(d, ctx.p, (c) => C.attribute(c.no) === ATTR.EARTH && C.level(c.no) <= 4).length > 0, async (d, link) => {
+    const c = await d.pickCard(link.p, "Special Summon which EARTH monster?", H.graveMon(d, link.p, (c) => c !== link.data.tributed.card && C.attribute(c.no) === ATTR.EARTH && C.level(c.no) <= 4 && !C.isExtra(c.no))); if (c) await ss(d, link.p, c); }));
+  define("Spiritual Water Art - Aoi", art("WATER", (d, ctx) => d.players[1 - ctx.p].hand.length > 0, async (d, link) => {
+    const c = await d.pickCard(link.p, "Send which card in their hand to the Graveyard?", d.players[1 - link.p].hand); if (c) await d.sendToGrave(c, "effect"); }));
+  define("Spiritual Fire Art - Kurenai", art("FIRE", null, async (d, link) => d.damage(1 - link.p, link.data.tributed.base, "effect")));
+  define("Spiritual Wind Art - Miyabi", art("WIND", (d, ctx) => d.allZones(1 - ctx.p).length > 0, async (d, link) => {
+    const z = await d.pickZone(link.p, "Return which card to the bottom of its owner's Deck?", (x, q) => q !== link.p, { sides: [1 - link.p] }); if (z) await d.toDeck(z.card, false, "effect"); }));
+  define("A Rival Appears!", { activate: { can: (d, ctx) => H.canSummonHere(d, ctx.p) && up(d, 1 - ctx.p).some((z) => d.players[ctx.p].hand.some((c) => isMonCard(c) && C.level(c.no) === d.stats(z).level)),
+    target: (d, link) => pickMon(d, link, "Choose which of their monsters?", (z) => z.faceUp, [1 - link.p]),
+    resolve: async (d, link) => { const z = t0(d, link); if (!z) return; const lv = d.stats(z).level; const c = await d.pickCard(link.p, "Special Summon which monster?", d.players[link.p].hand, (c) => isMonCard(c) && C.level(c.no) === lv); if (c) await ss(d, link.p, c); } } });
+  define("Conscription", { activate: { can: (d, ctx) => d.players[1 - ctx.p].deck.length > 0, resolve: async (d, link) => {
+    const c = d.players[1 - link.p].deck[0]; if (!c) return; await d.emit({ type: "reveal", p: 1 - link.p, card: c });
+    const e = DM.effectOf(c.no);
+    if (isMonCard(c) && C.kind(c.no) !== "ritual" && !(e && (e.specialOnly || e.noSpecial)) && H.canSummonHere(d, link.p)) await ss(d, link.p, c); else await d.toHand(c); } } });
+})();
+
+// (The rest: monsters.)
+(function () {
+  "use strict";
+  const DM = window.DuelMonsters, C = DM.card, H = DM.H, ATTR = DM.ATTR, define = DM.define, N = DM.numberOf, typeNo = DM.typeNo, SC = DM.SC;
+  const { isName, show, tributeCost, canTribute, discardCost, handCount, destroyOne, summonFromDeck, umi, coins, once, mine, ss, piles, others, unionOf } = DM.REST;
+  const up = H.up, mons = H.mons, isMon = H.isMon;
+  const isT = (no, t) => C.type(no) === typeNo(t);
+  const isMonCard = (c) => C.isMonster(c.no) && !C.isExtra(c.no);
+  const inGrave = (d, c) => !!c && !c.token && d.players[c.owner].grave.includes(c);
+  const ctl = (d, z) => d.controllerOf(z);
+  const scarab = () => DM.EFFECTS[N("Swarm of Scarabs")].ignition;
+  const flipped = (fn) => async (d, z, p, how) => { if (how === "flip") await fn(d, z, p); };
+  const returnOpp = async (d, p) => { const t = await d.pickZone(p, "Return which monster to its owner's hand?", (x, q) => q !== p, { sides: [1 - p], area: "monster" }); if (t) await d.toHand(t.card, "effect"); };
+  const destroyOpp = async (d, p) => { const t = await d.pickZone(p, "Destroy which monster?", (x, q) => q !== p, { sides: [1 - p], area: "monster" }); if (t) await d.destroy(t, "effect"); };
+  const repeatTribute = (filter, prompt, resolve) => ({ ignition: { repeatable: true, can: (d, ctx) => canTribute(d, ctx.p, filter, ctx.zone), cost: tributeCost(filter, prompt), resolve } });
+  const burnStandby = (fn) => ({ standby: async (d, z, p) => { if (d.turnPlayer === p) await fn(d, z, p); } });
+  const coinIgnition = (fn) => ({ ignition: { can: (d, ctx) => mine(d, ctx) && once(ctx.zone, d), resolve: async (d, link) => fn(d, link) } });
+
+  define("Exodia the Forbidden One", { exodia: true });
+  for (const n of ["Cyber Harpie Lady"]) define(n, { alias: "Harpie Lady" });
+
+  // ----- Changed position -----
+  const onPosition = (test, fn) => ({ onEvent: async (d, z, p, ev) => { if (ev.type === "position-changed" && ev.zone === z && test(ev)) await fn(d, z, p); } });
+  define("Crass Clown", onPosition((ev) => ev.from.faceUp && ev.from.defense && !ev.defense, (d, z, p) => returnOpp(d, p)));
+  define("Dream Clown", onPosition((ev) => ev.from.faceUp && !ev.from.defense && ev.defense, (d, z, p) => destroyOpp(d, p)));
+  define("Blade Rabbit", onPosition((ev) => ev.from.faceUp && !ev.from.defense && ev.defense, (d, z, p) => destroyOpp(d, p)));
+  define("Tainted Wisdom", onPosition((ev) => ev.from.faceUp && !ev.from.defense && ev.defense, async (d, z, p) => DM.shuffle(d, d.players[p].deck)));
+
+  // ----- In the Damage Step -----
+  const vs = (test, stats) => ({ battleStats: (d, z, p, o, attacking) => (o && test(d, o, attacking) ? stats : null) });
+  define("Dark Artist", vs((d, o, a) => !a && H.attrOf(d, o) === ATTR.LIGHT, { defMult: 0.5 }));
+  define("Insect Soldiers of the Sky", vs((d, o, a) => a && H.attrOf(d, o) === ATTR.WIND, { atk: 1000 }));
+  define("Luminous Soldier", vs((d, o) => H.attrOf(d, o) === ATTR.DARK, { atk: 500 }));
+  define("Penumbral Soldier Lady", vs((d, o) => H.attrOf(d, o) === ATTR.LIGHT, { atk: 1000 }));
+  define("Kinetic Soldier", vs((d, o) => H.typeOf(d, o) === typeNo("Warrior"), { atk: 2000, def: 2000 }));
+  define("Steamroid", { battleStats: (d, z, p, o, attacking) => (o ? { atk: attacking ? 500 : -500 } : null) });
+  define("Injection Fairy Lily", { battleAsk: async (d, z, p) => { if (d.players[p].lp > 2000 && (await d.yesNo(p, "Pay 2000 LP to give Injection Fairy Lily 3000 more ATK?"))) { await d.payLp(p, 2000); return { atk: 3000 }; } return null; } });
+  define("The Hunter with 7 Weapons", { onSummon: async (d, z, p, how) => { if (how !== "normal") return; const o = await d.choose(p, "Declare a Type.", DM.TYPESLIST()); z.data.hunted = o ? o.value : 0; },
+    battleStats: (d, z, p, o) => (o && z.data.hunted && H.typeOf(d, o) === z.data.hunted ? { atk: 1000 } : null) });
+  const killAfter = (types) => ({ onBattle: async (d, z, p, o) => { if (o && types.some((t) => H.typeOf(d, o) === typeNo(t))) o.data.destroyAfterBattle = true; } });
+  define("Getsu Fuhma", killAfter(["Fiend", "Zombie"]));
+  define("Ryu Kokki", killAfter(["Warrior", "Spellcaster"]));
+  // (destroyed without damage calculation)
+  const strike = (test) => ({ beforeDamage: async (d, z, p, t) => { if (t && test(d, t) && d.locate(t)) { await d.destroy(t, "effect"); return "stop"; } } });
+  define("Disc Fighter", strike((d, t) => t.defense && d.defOf(t) >= 2000));
+  define("Ninja Grandmaster Sasuke", strike((d, t) => t.defense && t.data.attackedFaceDown !== d.turn));
+  define("Drillroid", strike((d, t) => t.defense));
+  define("Sasuke Samurai #4", { onBattle: async (d, z, p, o) => { if (o && d.locate(o) && (await H.coinCall(d, p))) await d.destroy(o, "effect"); } });
+  // (after damage calculation)
+  const needles = { onAttacked: async (d, z, p, att, res) => { if (z.defense && d.atkOf(att) < d.defOf(z)) res.attackerDies = true; } };
+  define("Thousand Needles", needles);
+  define("Two Thousand Needles", needles);
+  define("Des Kangaroo", { onAttacked: async (d, z, p, att, res) => { if (d.atkOf(att) < d.defOf(z)) res.attackerDies = true; } });
+  define("Kangaroo Champ", { afterBattle: async (d, z, p, o) => { if (o && d.locate(o) && o.faceUp) await d.changePosition(o, true); } });
+  define("D. D. Warrior Lady", { afterBattle: async (d, z, p, o) => { if (o && d.locate(o) && d.locate(z) && (await d.yesNo(p, "Remove D. D. Warrior Lady and the other monster from play?"))) { await d.banish(o.card, "effect"); await d.banish(z.card, "effect"); } } });
+  define("Marshmallon", { battleImmune: () => true, afterBattle: async (d, z, p, o, attacking) => { if (!attacking && z.data.attackedFaceDown === d.turn) await d.damage(1 - p, 1000, "effect"); } });
+  define("Castle Gate", { battleImmune: () => true, ignition: { can: (d, ctx) => mine(d, ctx) && once(ctx.zone, d) && !ctx.zone.defense && canTribute(d, ctx.p, (d2, x) => d2.stats(x).level <= 5, ctx.zone),
+    cost: tributeCost((d, x) => d.stats(x).level <= 5, "Tribute which Level 5 or lower monster?"), resolve: async (d, link) => d.damage(1 - link.p, link.data.tributed.base, "effect") } });
+  define("Gyroid", { cannotBeDestroyed: (d, z, p, why) => { if (why !== "battle" || z.data.gyroid === d.turn) return false; z.data.gyroid = d.turn; return true; } });
+  const core = (extra) => Object.assign({ battleImmune: () => true, onSummon: async (d, z, p, how) => { if (how === "normal") z.counters.core = 3; },
+    afterBattle: async (d, z) => { if (!d.locate(z)) return; if ((z.counters.core || 0) > 0) z.counters.core--; else await d.destroy(z, "effect"); } }, extra);
+  define("Big Core", core());
+  define("B.E.S. Crystal Core", core({ ignition: { can: (d, ctx) => mine(d, ctx) && once(ctx.zone, d) && up(d, 1 - ctx.p).some((x) => !x.defense),
+    resolve: async (d, link) => { const t = await d.pickZone(link.p, "Change which monster to Defense Position?", (x, q) => q !== link.p && x.faceUp && !x.defense, { sides: [1 - link.p], area: "monster" }); if (t) await d.changePosition(t, true); } } }));
+  define("Satellite Cannon", { battleImmune: (d, z, p, o) => d.stats(o).level <= 7, selfStats: (d, z) => ({ atk: z.data.charge || 0 }),
+    endPhase: async (d, z, p) => { if (d.turnPlayer === p) z.data.charge = (z.data.charge || 0) + 1000; }, afterAttack: async (d, z) => { z.data.charge = 0; } });
+  define("Harpie Lady 2", { alias: "Harpie Lady", noFlipInBattle: true });
+  define("Harpie Lady 3", { alias: "Harpie Lady", afterBattle: async (d, z, p, o) => { if (o && d.locate(o)) o.data.cannotAttackUntil = d.turn + (d.turnPlayer === p ? 4 : 5); } });
+  define("Harpie Lady 1", { alias: "Harpie Lady", auraSelf: true, aura: (d, src, sp, z) => (isMon(d, z) && z.faceUp && C.attribute(z.card.no) === ATTR.WIND ? { atk: 300 } : null) });
+
+  // ----- Battle damage -----
+  define("Stone Statue of the Aztecs", { battleDamage: (d, z, zp, r, n, dealer) => (dealer && r !== zp && d.turnPlayer !== zp ? { n: n * 2 } : null) });
+  define("Amazoness Swords Woman", { battleDamage: (d, z, zp, r) => (r === zp ? { to: 1 - zp } : null) });
+  for (const n of ["Amazoness Fighter", "Monk Fighter"]) define(n, { battleDamage: (d, z, zp, r) => (r === zp ? { n: 0 } : null) });
+  define("Piranha Army", { battleDamage: (d, z, zp, r, n, dealer, other) => (dealer && !other ? { n: n * 2 } : null) });
+  define("Gravekeeper's Vassal", { battleDamage: (d, z, zp, r, n, dealer) => (dealer ? { why: "effect" } : null) });
+  define("Mefist the Infernal General", { piercing: true, onBattleDamage: async (d, z, p) => { await H.discardRandom(d, 1 - p); } });
+  define("Sasuke Samurai #3", { onBattleDamage: async (d, z, p) => { const n = 7 - d.players[1 - p].hand.length; if (n > 0) await d.drawCards(1 - p, n); } });
+  define("Blood Sucker", { onBattleDamage: async (d, z, p) => { const c = d.players[1 - p].deck[0]; if (c) await d.sendToGrave(c, "effect"); } });
+  define("Kycoo the Ghost Destroyer", { onBattleDamage: async (d, z, p) => { const cs = await d.pickCards(p, "Remove up to 2 monsters in their Graveyard from play.", H.graveMon(d, 1 - p), null, { count: 2, min: 0 }); for (const c of cs || []) await d.banish(c, "effect"); } });
+  define("Aswan Apparition", { onBattleDamage: async (d, z, p) => { const c = await d.pickCard(p, "Return which Trap Card to the top of your Deck?", d.players[p].grave, (c) => C.isTrap(c.no), { min: 0 }); if (c) await d.toDeck(c, true); } });
+  define("Nubian Guard", { onBattleDamage: async (d, z, p) => { const c = await d.pickCard(p, "Return which Continuous Spell Card to the top of your Deck?", d.players[p].grave, (c) => C.isSpell(c.no) && C.icon(c.no) === DM.ICON.CONTINUOUS, { min: 0 }); if (c) await d.toDeck(c, true); } });
+  define("Decayed Commander", { onSummon: async (d, z, p, how) => { const c = how === "normal" && H.canSummonHere(d, p) && d.players[p].hand.find((x) => isName(x, "Zombie Tiger")); if (c && (await d.yesNo(p, "Special Summon Zombie Tiger from your hand?"))) await ss(d, p, c); },
+    onBattleDamage: async (d, z, p, other) => { if (!other) await H.discardRandom(d, 1 - p); } });
+  define("Vampire Orchis", { onSummon: async (d, z, p, how) => { const c = how === "normal" && H.canSummonHere(d, p) && d.players[p].hand.find((x) => isName(x, "Des Dendle")); if (c && (await d.yesNo(p, "Special Summon Des Dendle from your hand?"))) await ss(d, p, c); } });
+
+  // ----- Destroying a monster in battle -----
+  const onKill = (fn) => ({ onDestroyByBattle: async (d, z, p, v) => { if (inGrave(d, v.card)) await fn(d, z, p, v); } });
+  define("D.D. Crazy Beast", { onDestroyByBattle: async (d, z, p, v) => { if (inGrave(d, v.card)) await d.banish(v.card, "effect"); } });
+  define("Holy Knight Ishzark", DM.EFFECTS[N("D.D. Crazy Beast")]);
+  define("Guardian Angel Joan", onKill(async (d, z, p, v) => d.heal(p, C.atk(v.card.no))));
+  define("Inferno Hammer", onKill(async (d, z, p) => { const t = await d.pickZone(p, "Flip which monster face down?", (x, q) => q !== p && x.faceUp, { sides: [1 - p], area: "monster" }); if (t) await d.flipDown(t); }));
+  define("Emes the Infinity", onKill(async (d, z) => { z.links.push({ kind: "self", stats: { atk: 700 } }); }));
+  define("Millennium Scorpion", onKill(async (d, z) => { z.links.push({ kind: "self", stats: { atk: 500 } }); }));
+  for (const n of ["KA-2 Des Scissors", "Needle Burrower"]) define(n, onKill(async (d, z, p, v) => d.damage(1 - p, 500 * C.level(v.card.no), "effect")));
+  define("Absorbing Kid from the Sky", onKill(async (d, z, p, v) => d.heal(p, 300 * C.level(v.card.no))));
+  define("Element Dragon", { selfStats: (d) => (up(d).some((x) => H.attrOf(d, x) === ATTR.FIRE) ? { atk: 500 } : null),
+    onDestroyByBattle: async (d, z) => { if (up(d).some((x) => H.attrOf(d, x) === ATTR.WIND) && z.data.again !== d.turn) { z.data.again = d.turn; z.attacks = Math.max(0, z.attacks - 1); } } });
+
+  // ----- Destroyed -----
+  const inBattle = (fn) => ({ onDestroyed: async (d, z, p, why, by) => { if (why === "battle") await fn(d, z, p, by); } });
+  define("Newdoria", inBattle(async (d, z, p) => { await destroyOne(d, p, "Destroy which monster?", null, "monster"); }));
+  define("Yomi Ship", inBattle(async (d, z, p, by) => { if (by && d.locate(by)) await d.destroy(by, "effect"); }));
+  define("D. D. Assailant", inBattle(async (d, z, p, by) => { if (inGrave(d, z.card)) await d.banish(z.card, "effect"); if (by && d.locate(by)) await d.banish(by.card, "effect"); }));
+  define("Atomic Firefly", inBattle(async (d, z, p, by) => d.damage(by && d.locate(by) ? ctl(d, by) : 1 - p, 1000, "effect")));
+  define("Mine Golem", inBattle(async (d, z, p) => d.damage(1 - p, 500, "effect")));
+  define("Agido", inBattle(async (d, z, p) => {
+    if (!H.canSummonHere(d, p)) return; const r = await H.die(d, p);
+    const c = await d.pickCard(p, "Special Summon which monster?", H.graveMon(d, p, (c) => !C.isExtra(c.no) && c !== z.card && (r === 6 ? C.level(c.no) >= 6 : isT(c.no, "Fairy") && C.level(c.no) === r)), null, { min: 0 });
+    if (c) await ss(d, p, c); }));
+  const fromDeckOnBattle = (filter, prompt, opts) => inBattle(async (d, z, p) => { await summonFromDeck(d, p, filter, prompt, opts); });
+  define("Howling Insect", fromDeckOnBattle((c) => isT(c.no, "Insect") && C.atk(c.no) <= 1500, "Special Summon an Insect with 1500 ATK or less from your Deck?"));
+  define("Masked Dragon", fromDeckOnBattle((c) => isT(c.no, "Dragon") && C.atk(c.no) <= 1500, "Special Summon a Dragon with 1500 ATK or less from your Deck?"));
+  define("UFOroid", fromDeckOnBattle((c) => isT(c.no, "Machine") && C.atk(c.no) <= 1500, "Special Summon a Machine with 1500 ATK or less from your Deck?", { position: null, defense: false }));
+  define("Wasteland Amazon", fromDeckOnBattle((c) => isT(c.no, "Warrior") && C.attribute(c.no) === ATTR.EARTH && C.atk(c.no) <= 1500, "Special Summon an EARTH Warrior with 1500 ATK or less from your Deck?", { position: null, defense: false }));
+  define("Hyena", inBattle(async (d, z, p) => { for (const c of d.players[p].deck.filter((c) => isName(c, "Hyena"))) { if (!H.canSummonHere(d, p)) break; await ss(d, p, c); } DM.shuffle(d, d.players[p].deck); }));
+  define("T.A.D.P.O.L.E.", inBattle(async (d, z, p) => { for (const c of d.players[p].deck.filter((c) => isName(c, "T.A.D.P.O.L.E."))) await d.toHand(c, "search"); DM.shuffle(d, d.players[p].deck); }));
+  define("Wroughtweiler", inBattle(async (d, z, p) => { const g = d.players[p].grave; const h = await d.pickCard(p, "Add which Elemental Hero to your hand?", g, (c) => C.name(c.no).includes("Elemental Hero"), { min: 0 });
+    if (h) await d.toHand(h); const pol = g.find((c) => isName(c, "Polymerization")); if (pol) await d.toHand(pol); }));
+  define("Mecha-Dog Marron", { onDestroyed: async (d, z, p, why) => { if (why === "battle") { await d.damage(p, 1000, "effect"); await d.damage(1 - p, 1000, "effect"); } else await d.damage(1 - p, 1000, "effect"); } });
+  define("Balloon Lizard", { standby: async (d, z, p) => { if (d.turnPlayer === p) z.counters.balloon = (z.counters.balloon || 0) + 1; },
+    onDestroyed: async (d, z, p, why, by) => { const n = 400 * (z.counters.balloon || 0); if (n) await d.damage(by && d.locate(by) ? ctl(d, by) : d.turnPlayer, n, "effect"); } });
+  define("Granadora", { onSummon: async (d, z, p) => d.heal(p, 1000), onDestroyed: async (d, z, p) => d.damage(p, 2000, "effect") });
+  define("The Thing in the Crater", { onDestroyed: async (d, z, p) => { if (!H.canSummonHere(d, p)) return; const c = await d.pickCard(p, "Special Summon a Pyro from your hand?", d.players[p].hand, (c) => isMonCard(c) && isT(c.no, "Pyro"), { min: 0 }); if (c) await ss(d, p, c); } });
+  define("Winged Kuriboh", { onDestroyed: async (d, z, p) => { d.players[p].flags.waboku = d.turn; } });
+  define("Giant Kozaky", { onDestroyed: async (d, z, p) => d.damage(p, C.atk(z.card.no), "effect"),
+    onEvent: async (d, z, p) => { if (!up(d).some((x) => isName(x.card, "Kozaky")) && d.locate(z)) await d.destroy(z, "effect"); } });
+  define("King of the Skull Servants", { selfStats: (d, z) => ({ setAtk: 1000 * d.players[ctl(d, z)].grave.filter((c) => isName(c, ["King of the Skull Servants", "Skull Servant"])).length }),
+    onDestroyed: async (d, z, p, why) => { const g = d.players[p].grave; if (why !== "battle" || !g.includes(z.card) || !H.canSummonHere(d, p)) return;
+      const o = g.find((c) => c !== z.card && isName(c, ["King of the Skull Servants", "Skull Servant"])); if (!o || !(await d.yesNo(p, "Remove a Skull Servant from play to Special Summon King of the Skull Servants?"))) return;
+      await d.banish(o, "cost"); await ss(d, p, z.card); } });
+  define("Maji-Gire Panda", { onEvent: async (d, z, p, ev) => { if ((ev.type === "destroyed" || ev.type === "battle-destroyed") && ev.card && !ev.card.token && isT(ev.card.no, "Beast") && ev.card !== z.card) z.links.push({ kind: "self", stats: { atk: 500 } }); } });
+
+  // ----- To the Graveyard -----
+  define("Outstanding Dog Marron", { onToGrave: async (d, c) => d.toDeck(c, "shuffle") });
+  define("Burning Algae", { onToGrave: async (d, c, p) => d.heal(1 - p, 1000) });
+  define("Roc from the Valley of Haze", { onToGrave: async (d, c, p, from) => { if (from && from.pile === "hand") await d.toDeck(c, "shuffle"); } });
+  define("Poison Draw Frog", { onToGrave: async (d, c, p, from, why) => { if (from && from.z && from.z.faceUp && !(why === "battle" && from.z.data.attackedFaceDown === d.turn)) await d.drawCards(p, 1); } });
+  define("Peten the Dark Clown", { onToGrave: async (d, c, p) => {
+    const o = piles(d, p, ["hand", "deck"]).find((x) => isName(x, "Peten the Dark Clown"));
+    if (!o || !H.canSummonHere(d, p) || !(await d.yesNo(p, "Remove Peten from play to Special Summon another?"))) return;
+    await d.banish(c, "cost"); await ss(d, p, o); DM.shuffle(d, d.players[p].deck); } });
+  define("Return Zombie", { graveStandby: async (d, c, p) => { if (d.turnPlayer === p && !d.players[p].hand.length && d.players[p].lp > 500 && (await d.yesNo(p, "Pay 500 LP to return Return Zombie to your hand?"))) { await d.payLp(p, 500); await d.toHand(c); } } });
+
+  // ----- Flip effects -----
+  define("Old Vindictive Magician", { flip: async (d, link) => { await destroyOne(d, link.p, "Destroy which monster?", (x) => x !== link.zone, "monster"); } });
+  define("White Ninja", { flip: async (d, link) => { await destroyOne(d, link.p, "Destroy which Defense Position monster?", (x) => x.defense, "monster"); } });
+  define("Gravekeeper's Guard", { flip: async (d, link) => returnOpp(d, link.p) });
+  define("Gale Lizard", { flip: async (d, link) => returnOpp(d, link.p) });
+  define("Hade-Hane", { flip: async (d, link) => { const zs = await d.pickZones(link.p, "Return up to 3 monsters to their owners' hands.", (x) => x !== link.zone, { area: "monster", count: 3, min: 0 }); for (const z of zs || []) if (d.locate(z)) await d.toHand(z.card, "effect"); } });
+  define("Gravekeeper's Spy", { flip: async (d, link) => { await summonFromDeck(d, link.p, (c) => C.name(c.no).includes("Gravekeeper's") && C.atk(c.no) <= 1500, "Special Summon a Gravekeeper's with 1500 ATK or less from your Deck?"); } });
+  define("Cobra Jar", { flip: async (d, link) => { if (d.freeMonsterZone(link.p) < 0) return; const o = await d.choose(link.p, "Summon the Poisonous Snake Token in which position?", [{ label: "Attack Position", value: false }, { label: "Defense Position", value: true }]);
+    await d.summonToken(link.p, { name: "Poisonous Snake Token", atk: 1200, def: 1200, level: 3, type: typeNo("Reptile"), attribute: ATTR.EARTH, burn: 500 }, { defense: !!(o && o.value) }); } });
+  define("Summoner of Illusions", { flip: async (d, link) => {
+    const t = await d.pickZone(link.p, "Tribute which monster?", (x, q) => q === link.p && x !== link.zone, { sides: [link.p], area: "monster" }); if (!t) return;
+    await d.sendToGrave(t.card, "tribute"); const c = await d.pickCard(link.p, "Special Summon which Fusion Monster?", d.players[link.p].fusion);
+    const z = c ? await ss(d, link.p, c) : null; if (z) z.data.destroyAtEnd = d.turn; } });
+  define("Supply", { flip: async (d, link) => { const cs = await d.pickCards(link.p, "Return which 2 Fusion Material Monsters to your hand?", d.players[link.p].grave, (c) => c.fusionMaterial && C.isMonster(c.no), { count: 2 }); for (const c of cs || []) await d.toHand(c); } });
+  define("Iron Blacksmith Kotetsu", { flip: async (d, link) => { if (d.players[link.p].deck.some((c) => C.isSpell(c.no) && C.icon(c.no) === DM.ICON.EQUIP)) await H.searchDeck(d, link.p, (c) => C.isSpell(c.no) && C.icon(c.no) === DM.ICON.EQUIP, "Add which Equip Spell Card to your hand?"); } });
+  define("Des Koala", { flip: async (d, link) => d.damage(1 - link.p, 400 * d.players[1 - link.p].hand.length, "effect") });
+  define("Crimson Ninja", { flip: async (d, link) => { const z = await d.pickZone(link.p, "Choose which card?", (x, q, i) => i >= 5 && (!x.faceUp || C.isTrap(x.card.no)), { area: "spell" }); if (z && C.isTrap(z.card.no)) await d.destroy(z, "effect"); } });
+  define("Witch Doctor of Chaos", { flip: async (d, link) => { const c = await d.pickCard(link.p, "Remove which monster in a Graveyard from play?", H.graveMon(d, 1 - link.p).concat(H.graveMon(d, link.p))); if (c) await d.banish(c, "effect"); } });
+  define("Desertapir", { flip: async (d, link) => { const t = await d.pickZone(link.p, "Flip which monster face down?", (x) => x.faceUp && !isName(x.card, "Desertapir"), { area: "monster" }); if (t) await d.flipDown(t); } });
+  define("Spirit Caller", { flip: async (d, link) => { if (!H.canSummonHere(d, link.p)) return; const c = await d.pickCard(link.p, "Special Summon which Normal Monster?", H.graveMon(d, link.p, (c) => C.kind(c.no) === "normal" && C.level(c.no) <= 3), null, { min: 0 }); if (c) await ss(d, link.p, c); } });
+  define("Dekoichi the Battlechanted Locomotive", { flip: async (d, link) => d.drawCards(link.p, 1 + up(d, link.p).filter((z) => isName(z.card, "Bokoichi the Freightening Car")).length) });
+
+  // ----- Flip back face down, and their Flip Summons -----
+  define("Stealth Bird", { ignition: scarab(), onSummon: flipped(async (d, z, p) => d.damage(1 - p, 1000, "effect")) });
+  define("Moai Interceptor Cannons", { ignition: scarab() });
+  for (const n of ["Golem Sentry", "Guardian Statue"]) define(n, { ignition: scarab(), onSummon: flipped(async (d, z, p) => returnOpp(d, p)) });
+  define("Medusa Worm", { ignition: scarab(), onSummon: flipped(async (d, z, p) => destroyOpp(d, p)) });
+  define("Tsukuyomi", { spirit: true, noSpecial: true, onSummon: async (d, z, p, how) => { if (how === "special") return; const t = await d.pickZone(p, "Flip which monster face down?", (x) => x.faceUp && x !== z, { area: "monster" }); if (t) await d.flipDown(t); },
+    flip: async (d, link) => { const t = await d.pickZone(link.p, "Flip which monster face down?", (x) => x.faceUp && x !== link.zone, { area: "monster" }); if (t) await d.flipDown(t); } });
+
+  // ----- On summon -----
+  define("Gravekeeper's Curse", { onSummon: async (d, z, p) => d.damage(1 - p, 500, "effect") });
+  define("King's Knight", { onSummon: async (d, z, p, how) => { if (how === "special" || !up(d, p).some((x) => isName(x.card, "Queen's Knight"))) return; await summonFromDeck(d, p, (c) => isName(c, "Jack's Knight"), "Special Summon Jack's Knight from your Deck?"); } });
+  define("Molten Zombie", { onSummon: async (d, z, p, how) => { if (how === "special" && z.data.fromPile === "grave") await d.drawCards(p, 1); } });
+  define("Sacred Crane", { onSummon: async (d, z, p, how) => { if (how === "special") await d.drawCards(p, 1); } });
+  define("Don Turtle", { onSummon: async (d, z, p, how) => { if (how === "special") return; for (const c of d.players[p].hand.filter((c) => isName(c, "Don Turtle"))) { if (!H.canSummonHere(d, p) || !(await d.yesNo(p, "Special Summon another Don Turtle from your hand?"))) break; await ss(d, p, c); } } });
+  define("Manju of the Ten Thousand Hands", { onSummon: async (d, z, p, how) => { const f = (c) => C.kind(c.no) === "ritual" || (C.isSpell(c.no) && C.icon(c.no) === DM.ICON.RITUAL);
+    if (how !== "special" && d.players[p].deck.some(f) && (await d.yesNo(p, "Add a Ritual Monster or Ritual Spell from your Deck to your hand?"))) await H.searchDeck(d, p, f); } });
+  for (const [n, next] of [["Green Gadget", "Red Gadget"], ["Red Gadget", "Yellow Gadget"], ["Yellow Gadget", "Green Gadget"]])
+    define(n, { onSummon: async (d, z, p) => { if (d.players[p].deck.some((c) => isName(c, next)) && (await d.yesNo(p, "Add " + next + " from your Deck to your hand?"))) await H.searchDeck(d, p, (c) => isName(c, next)); } });
+  define("Gilasaurus", { onSummon: async (d, z, p, how) => {
+    if (how !== "normal" || !(await d.yesNo(p, "Treat Gilasaurus's summon as a Special Summon?"))) return;
+    z.summonedBy = "special"; const q = 1 - p;
+    if (H.canSummonHere(d, q) && H.graveMon(d, q, (c) => !C.isExtra(c.no)).length) { const c = await d.pickCard(q, "Special Summon a monster from your Graveyard?", H.graveMon(d, q, (c) => !C.isExtra(c.no)), null, { min: 0 }); if (c) await ss(d, q, c); } } });
+  const monarch = (fn) => ({ afterTribute: async (d, z, p) => { if (z.faceUp) await fn(d, z, p); } });
+  define("Zaborg the Thunder Monarch", monarch(async (d, z, p) => { await destroyOne(d, p, "Destroy which monster?", null, "monster"); }));
+  define("Mobius the Frost Monarch", monarch(async (d, z, p) => { const zs = await d.pickZones(p, "Destroy up to 2 Spell or Trap Cards.", (x, q, i) => i >= 5, { area: "spell", count: 2, min: 0 }); for (const x of zs || []) if (d.locate(x)) await d.destroy(x, "effect"); }));
+  define("Thestalos the Firestorm Monarch", monarch(async (d, z, p) => { const c = await H.discardRandom(d, 1 - p); if (c && C.isMonster(c.no)) await d.damage(1 - p, 100 * C.level(c.no), "effect"); }));
+  define("Granmarg the Rock Monarch", monarch(async (d, z, p) => { await destroyOne(d, p, "Destroy which face-down card?", (x) => !x.faceUp); }));
+  define("Des Frog", { afterTribute: async (d, z, p) => { let n = d.players[p].grave.filter((c) => isName(c, "T.A.D.P.O.L.E.")).length;
+    for (const c of piles(d, p, ["hand", "deck"]).filter((c) => isName(c, "Des Frog"))) { if (n-- <= 0 || !H.canSummonHere(d, p)) break; await ss(d, p, c); } DM.shuffle(d, d.players[p].deck); } });
+  for (const n of ["Eagle Eye", "Tactical Espionage Expert", "Invasion of Flames", "Creeping Doom Manta"]) define(n, { noTrapsOnSummon: true });
+
+  // ----- Ignition effects -----
+  define("Gravekeeper's Cannonholder", repeatTribute((d, x) => C.name(x.card.no).includes("Gravekeeper's") && !isName(x.card, "Gravekeeper's Cannonholder"), "Tribute which Gravekeeper's?", async (d, link) => d.damage(1 - link.p, 700, "effect")));
+  define("Anti-Aircraft Flower", repeatTribute((d, x) => H.isType(d, x, "Insect"), "Tribute which Insect?", async (d, link) => d.damage(1 - link.p, 800, "effect")));
+  define("Man-Thro' Tro'", repeatTribute((d, x) => !x.card.token && C.kind(x.card.no) === "normal", "Tribute which Normal Monster?", async (d, link) => d.damage(1 - link.p, 800, "effect")));
+  define("Ultimate Baseball Kid", Object.assign(repeatTribute((d, x) => H.attrOf(d, x) === ATTR.FIRE, "Send which FIRE monster to the Graveyard?", async (d, link) => d.damage(1 - link.p, 500, "effect")),
+    { selfStats: (d, z) => ({ atk: 1000 * up(d).filter((x) => x !== z && C.attribute(x.card.no) === ATTR.FIRE).length }) }));
+  define("The Forgiving Maiden", { ignition: { can: (d, ctx) => d.players[ctx.p].grave.some((c) => c.battleDestroyedTurn === d.turn && C.isMonster(c.no)), cost: async (d, link) => { await d.sendToGrave(link.card, "tribute"); return true; },
+    resolve: async (d, link) => { const c = await d.pickCard(link.p, "Return which monster to your hand?", d.players[link.p].grave, (c) => c.battleDestroyedTurn === d.turn && C.isMonster(c.no)); if (c) await d.toHand(c); } } });
+  define("Jowgen the Spiritualist", { noSpecials: true, ignition: { repeatable: true, can: (d, ctx) => d.players[ctx.p].hand.length > 0 && mons(d).some((z) => z.summonedBy && !["normal", "set", "flip"].includes(z.summonedBy)),
+    cost: async (d, link) => !!(await H.discardRandom(d, link.p)), resolve: async (d) => H.destroyAll(d, mons(d).filter((z) => z.summonedBy && !["normal", "set", "flip"].includes(z.summonedBy))) } });
+  define("Bazoo the Soul-Eater", { ignition: { can: (d, ctx) => mine(d, ctx) && once(ctx.zone, d) && H.graveMon(d, ctx.p).length > 0, resolve: async (d, link) => {
+    const cs = await d.pickCards(link.p, "Remove up to 3 monsters in your Graveyard from play.", H.graveMon(d, link.p), null, { count: 3, min: 1 });
+    for (const c of cs || []) await d.banish(c, "cost"); if (cs && cs.length && link.zone && d.locate(link.zone)) link.zone.links.push({ kind: "self", stats: { atk: 300 * cs.length }, until: d.turn + 1 }); } } });
+  define("Gray Wing", { ignition: { can: (d, ctx) => d.phase === "main1" && ctx.p === d.turnPlayer && once(ctx.zone, d) && d.players[ctx.p].hand.length > 0, cost: discardCost(), resolve: async (d, link) => { if (link.zone) link.zone.data.twiceTurn = d.turn; } } });
+  define("Tribe-Infecting Virus", { ignition: { repeatable: true, can: (d, ctx) => d.players[ctx.p].hand.length > 0 && up(d).length > 0, cost: discardCost(), resolve: async (d, link) => {
+    const o = await d.choose(link.p, "Declare a Type.", DM.TYPESLIST()); if (o) await H.destroyAll(d, up(d).filter((z) => H.typeOf(d, z) === o.value)); } } });
+  define("Magical Scientist", { ignition: { repeatable: true, can: (d, ctx) => d.players[ctx.p].lp > 1000 && H.canSummonHere(d, ctx.p) && d.players[ctx.p].fusion.some((c) => C.level(c.no) <= 6),
+    cost: async (d, link) => { await d.payLp(link.p, 1000); return true; },
+    resolve: async (d, link) => { const c = await d.pickCard(link.p, "Special Summon which Fusion Monster?", d.players[link.p].fusion, (c) => C.level(c.no) <= 6); const z = c ? await ss(d, link.p, c) : null; if (z) { z.data.noDirect = true; z.data.toExtraAtEnd = d.turn; } } } });
+  define("Lady Ninja Yae", { ignition: { repeatable: true, can: (d, ctx) => d.players[ctx.p].hand.some((c) => C.isMonster(c.no) && C.attribute(c.no) === ATTR.WIND) && H.st(d, 1 - ctx.p).length > 0,
+    cost: discardCost((c) => C.isMonster(c.no) && C.attribute(c.no) === ATTR.WIND, "Discard which WIND monster?"), resolve: async (d, link) => { for (const z of H.st(d, 1 - link.p)) if (d.locate(z)) await d.toHand(z.card, "effect"); } } });
+  define("Levia-Dragon - Daedalus", { ignition: { can: (d, ctx) => mine(d, ctx) && H.st(d, ctx.p).some((z) => z.faceUp && isName(z.card, "Umi")),
+    cost: async (d, link) => { const z = H.st(d, link.p).find((x) => x.faceUp && isName(x.card, "Umi")); if (!z) return false; await d.sendToGrave(z.card, "cost"); return true; },
+    resolve: async (d, link) => H.destroyAll(d, [0, 1].reduce((a, q) => a.concat(d.allZones(q)), []).filter((z) => z !== link.zone)) } });
+  define("Blowback Dragon", coinIgnition(async (d, link) => { if ((await coins(d, link.p, 3)) >= 2) await destroyOne(d, link.p, "Destroy which card?", null, undefined, [1 - link.p]); }));
+  define("Sand Gambler", coinIgnition(async (d, link) => { const h = await coins(d, link.p, 3); if (h === 3) await H.destroyAll(d, d.monsters(1 - link.p)); else if (h === 0) await H.destroyAll(d, d.monsters(link.p)); }));
+  define("Abare Ushioni", coinIgnition(async (d, link) => { if (await H.coinCall(d, link.p)) await d.damage(1 - link.p, 1000, "effect"); else await d.damage(link.p, 1000, "effect"); }));
+  define("Homunculus the Alchemic Being", { ignition: { can: (d, ctx) => once(ctx.zone, d), resolve: async (d, link) => {
+    const o = await d.choose(link.p, "Declare an Attribute.", [1, 2, 3, 4, 5, 6].map((a) => ({ label: window.YUGIOH_CARDS.attributes[a], value: a })));
+    if (o && link.zone) { link.zone.links = link.zone.links.filter((l) => l.kind !== "homunculus"); link.zone.links.push({ kind: "homunculus", stats: { attribute: o.value } }); } } } });
+  define("Patroid", { ignition: { can: (d, ctx) => mine(d, ctx) && once(ctx.zone, d) && d.allZones(1 - ctx.p).some((z) => !z.faceUp), resolve: async (d, link) => {
+    const z = await d.pickZone(link.p, "Look at which Set card?", (x, q) => q !== link.p && !x.faceUp, { sides: [1 - link.p] }); if (z) await show(d, link.p, "Their Set card:", [z.card]); } } });
+  define("D.D.M. - Different Dimension Master", { ignition: { can: (d, ctx) => mine(d, ctx) && once(ctx.zone, d) && d.players[ctx.p].hand.some((c) => C.isSpell(c.no)) && d.players[ctx.p].banished.some((c) => C.isMonster(c.no) && !C.isExtra(c.no)) && H.canSummonHere(d, ctx.p),
+    cost: discardCost((c) => C.isSpell(c.no), "Discard which Spell Card?"), resolve: async (d, link) => { const c = await d.pickCard(link.p, "Special Summon which monster?", d.players[link.p].banished, (c) => C.isMonster(c.no) && !C.isExtra(c.no)); if (c) await ss(d, link.p, c); } } });
+  // (quick effects: Tributed to negate)
+  const negator = (kind, onlyTheirTurn) => ({ quick: { when: "chain", can: (d, ctx) => !!ctx.last && ctx.last.p !== ctx.p && C["is" + kind](ctx.last.card.no) && (!onlyTheirTurn || d.turnPlayer !== ctx.p),
+    cost: async (d, link) => { await d.sendToGrave(link.card, "tribute"); return true; },
+    resolve: async (d, link) => { const v = link.prev; if (!v) return; v.negated = true; if (v.zone && d.locate(v.zone)) await d.destroy(v.zone, "negated"); } } });
+  define("Maryokutai", negator("Spell", true));
+  define("A-Team: Trap Disposal Unit", negator("Trap", false));
+
+  // ----- Standby Phases -----
+  define("Bowganian", burnStandby(async (d, z, p) => d.damage(1 - p, 600, "effect")));
+  define("Ebon Magician Curran", burnStandby(async (d, z, p) => d.damage(1 - p, 300 * d.monsters(1 - p).length, "effect")));
+  define("White Magician Pikeru", burnStandby(async (d, z, p) => d.heal(p, 400 * d.monsters(p).length)));
+
+  // ----- Their own stats -----
+  const self = (fn) => ({ selfStats: fn });
+  define("Amazoness Paladin", self((d, z) => ({ atk: 100 * up(d, ctl(d, z)).filter((x) => C.name(x.card.no).includes("Amazoness") || isName(x.card, "Amazon Archer")).length })));
+  define("Chaos Necromancer", self((d, z) => ({ setAtk: 300 * H.graveMon(d, ctl(d, z)).length })));
+  define("Gren Maju Da Eiza", self((d, z) => { const n = 400 * d.players[ctl(d, z)].banished.length; return { setAtk: n, setDef: n }; }));
+  define("Gyaku-Gire Panda", Object.assign(self((d, z) => ({ atk: 500 * d.monsters(1 - ctl(d, z)).length })), { piercing: true }));
+  define("Enraged Muka Muka", self((d, z) => { const n = 400 * d.players[ctl(d, z)].hand.length; return { atk: n, def: n }; }));
+  define("Theban Nightmare", self((d, z) => { const p = ctl(d, z); return !d.players[p].hand.length && !H.st(d, p).length ? { atk: 1500 } : null; }));
+  define("Cybernetic Cyclopean", self((d, z) => (!d.players[ctl(d, z)].hand.length ? { atk: 1000 } : null)));
+  define("Lost Guardian", self((d, z) => ({ setDef: 700 * d.players[ctl(d, z)].banished.filter((c) => C.isMonster(c.no) && isT(c.no, "Rock")).length })));
+  define("Tyranno Infinity", self((d, z) => ({ setAtk: 1000 * d.players[ctl(d, z)].banished.filter((c) => C.isMonster(c.no) && isT(c.no, "Dinosaur")).length })));
+  define("Batteryman AA", self((d, z) => { const aa = up(d, ctl(d, z)).filter((x) => isName(x.card, "Batteryman AA")), n = aa.length * 1000;
+    return aa.every((x) => !x.defense) ? { atk: n } : aa.every((x) => x.defense) ? { def: n } : null; }));
+  define("Batteryman C", { aura: (d, src, sp, z, zp) => { if (zp !== sp || !isMon(d, z) || !z.faceUp || C.type(z.card.no) !== typeNo("Machine")) return null;
+    const cs = up(d, sp).filter((x) => isName(x.card, "Batteryman C")), n = cs.length * 500; return cs.every((x) => !x.defense) ? { atk: n } : cs.every((x) => x.defense) ? { def: n } : null; }, auraSelf: true });
+
+  // ----- On the field -----
+  define("Spell Canceller", { negatesSpells: true });
+  define("Des Wombat", { noEffectDamage: true });
+  define("Protector of the Sanctuary", { noOtherDraws: true });
+  define("Invader of Darkness", { noQuickPlay: true });
+  define("Mechanical Hound", { noSpellsIfEmpty: true });
+  for (const n of ["Pitch-Black Warwolf", "Mirage Dragon"]) define(n, { noBattleTraps: true });
+  for (const n of ["Ceremonial Bell", "Mind on Air"]) define(n, { revealsHands: n === "Mind on Air" ? "theirs" : "both" });
+  define("Maiden of the Aqua", { umi: true });
+  define("Fire Princess", { onEvent: async (d, z, p, ev) => { if (ev.type === "healed" && ev.p === p) await d.damage(1 - p, 500, "effect"); } });
+  define("Gearfried the Iron Knight", { onEvent: async (d, z, p, ev) => { if (ev.type === "equipped" && ev.zone === z) { const l = d.zoneOf(ev.card); if (l) await d.destroy(l.z, "effect"); } } });
+  define("Spirit of the Pot of Greed", { onEvent: async (d, z, p, ev) => { if (ev.type === "activated" && !z.defense && isName(ev.card, "Pot of Greed")) await d.drawCards(ev.p, 1); } });
+  define("Cave Dragon", { normalIf: (d, p) => !d.monsters(p).length, cannotAttack: (d, z, p) => !up(d, p).some((x) => x !== z && H.isType(d, x, "Dragon")) });
+  define("Drillago", { directAttack: (d, z, p) => d.monsters(1 - p).length > 0 && d.monsters(1 - p).every((x) => x.faceUp && d.atkOf(x) >= 1600) });
+  define("Black Tyranno", { directAttack: (d, z, p) => d.monsters(1 - p).length > 0 && d.monsters(1 - p).every((x) => x.defense) && !H.st(d, 1 - p).length });
+  define("Shadowslayer", { directAttack: (d, z, p) => d.monsters(1 - p).length > 0 && d.monsters(1 - p).every((x) => x.defense) });
+  define("Amphibious Bugroth MK-3", { directAttack: (d) => umi(d) });
+  define("Mermaid Knight", { attacks: (d) => (umi(d) ? 2 : 1) });
+  define("Mataza the Zapper", { attacks: 2, noControlChange: true });
+  define("Enraged Battle Ox", { piercingFor: (d, s, sp, att, p) => p === sp && ["Beast", "Beast-Warrior", "Winged Beast"].some((t) => H.isType(d, att, t)) });
+  const oneTurnDefense = { afterAttack: async (d, z) => { z.data.toDefenseAtEnd = true; } };
+  for (const n of ["Giant Orc", "Goblin Elite Attack Force", "Indomitable Fighter Lei Lei"]) define(n, oneTurnDefense);
+  // (attacked while face down: it becomes an Equip Card on the attacker)
+  async function becomeEquip(d, z, p, att) {
+    const i = d.freeSpellZone(p);
+    if (i < 0 || !d.locate(att)) return null;
+    d.take(z.card);
+    const nz = DM.newZone(z.card, { faceUp: true, placedTurn: d.turn });
+    nz.data.parasite = true;
+    d.players[p].zones[i] = nz;
+    d.equip(nz, att, null);
+    await d.emit({ type: "equip", card: z.card, to: att });
+    return nz;
+  }
+  define("Blast Sphere", { onBattle: async (d, z, p, att) => { if (z.data.attackedFaceDown === d.turn) await becomeEquip(d, z, p, att); },
+    standby: async (d, z, p) => { if (!z.data.parasite || d.turnPlayer === p) return; const t = z.equippedTo; if (!t || !d.locate(t)) return; const a = d.atkOf(t), q = ctl(d, t);
+      await d.destroy(t, "effect"); if (d.locate(z)) await d.destroy(z, "effect"); await d.damage(q, a, "effect"); } });
+  define("Kiseitai", { onBattle: async (d, z, p, att) => { if (z.data.attackedFaceDown === d.turn) await becomeEquip(d, z, p, att); },
+    standby: async (d, z, p) => { if (!z.data.parasite || d.turnPlayer === p) return; const t = z.equippedTo; if (t && d.locate(t)) await d.heal(p, Math.floor(d.atkOf(t) / 2)); } });
+  // (a monster attacked by it is destroyed at the End Phase of the fifth turn after)
+  for (const n of ["Zone Eater", "Swordsman from a Foreign Land"]) define(n, { beforeDamage: async (d, z, p, t) => { if (t) t.data.destroyAtEnd = d.turn + 5; } });
 })();
 
 // (Last: the templates for the cards nothing above defines, and each Spell's and Trap's timing.)

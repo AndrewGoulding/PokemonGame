@@ -1121,7 +1121,9 @@
     counter(g, d.players[1].deck.length, 8); counter(g, d.players[0].deck.length, 112);
     // The hands: theirs, backs along the top; yours along the bottom, the card under the cursor raised.
     const theirs = d.players[1].hand.length, step = theirs > 1 ? Math.min(16, Math.floor(112 / (theirs - 1))) : 16;
-    for (let i = 0; i < theirs; i++) draw(g, "back", Math.round(120 - ((theirs - 1) * step + 16) / 2) + i * step, 0);
+    // (shown face up while Respect Play, Ceremonial Bell or your Mind on Air says so)
+    const shown = [0, 1].some((q) => d.allZones(q).some((z) => { const e = d.live(z); return e && (e.revealsHands === "both" || (e.revealsHands === "theirs" && q === 0)); }));
+    for (let i = 0; i < theirs; i++) draw(g, shown ? "hand-" + kindOf(d.players[1].hand[i].no) : "back", Math.round(120 - ((theirs - 1) * step + 16) / 2) + i * step, 0);
     const h = here(), mine = d.players[0].hand;
     mine.forEach((c, i) => { const up = h && h.hand === i && st.cursorOn; draw(g, "hand-" + kindOf(c.no), handX(i, mine.length), up ? 113 : 122); });
     st.infoZone = h && h.zone || null;
