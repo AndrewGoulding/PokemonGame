@@ -1,6 +1,6 @@
 // Drawing for the realms' maps, this game's own pictures: a canvas to draw
 // on, and the things drawn on more than one map (the Time Machine, the realms'
-// portals). Used by tools/build-time-machine.js and tools/build-domino-city.js.
+// portals). Used by tools/build-time-machine.js.
 "use strict";
 
 const hex = (s) => [parseInt(s.slice(1, 3), 16), parseInt(s.slice(3, 5), 16), parseInt(s.slice(5, 7), 16), 255];
@@ -113,43 +113,5 @@ function portal(kind) {
   return c;
 }
 
-// Domino City's clock tower: 3 tiles wide, 5 tall. A tower of warm brick on a
-// stone base, a big clock near its top and a copper roof, as on the square
-// where Battle City began.
-function clockTower() {
-  const c = canvas(48, 80);
-  const r = rng(21);
-  // The roof: a copper spire.
-  for (let y = 2; y < 20; y++) {
-    const half = Math.round((y - 2) * 0.95) + 1;
-    for (let x = 24 - half; x < 24 + half; x++) c.set(x, y, mix(hex("#58a890"), hex("#2c6c5c"), (x - (24 - half)) / (2 * half)));
-  }
-  c.rect(23, 0, 2, 3, "#c8a040");
-  c.rect(6, 20, 36, 2, "#2c5c50");
-  // The tower.
-  for (let y = 22; y < 66; y++) for (let x = 8; x < 40; x++) {
-    const brick = (y % 4 === 0) || ((x + (Math.floor(y / 4) % 2) * 4) % 8 === 0);
-    c.set(x, y, brick ? hex("#9c6c48") : mix(hex("#e0b888"), hex("#c89868"), (x - 8) / 32 * 0.8 + r() * 0.15));
-  }
-  c.rect(8, 22, 2, 44, "#f0d0a0");
-  c.rect(38, 22, 2, 44, "#a87850");
-  // The clock.
-  c.ellipse(24, 34, 12, 12, "#b08828"); c.ellipse(24, 34, 10.5, 10.5, "#f8f4e0");
-  for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; c.set(24 + Math.cos(a) * 8.5 - 0.5, 34 + Math.sin(a) * 8.5 - 0.5, "#403830"); }
-  for (let d = 0; d <= 7; d++) c.set(23.5, 34 - d - 0.5, "#282018");                   // (twelve o'clock)
-  for (let d = 0; d <= 5; d++) c.set(23.5 + d * 0.87, 33.5 + d * 0.5, "#282018");     // (and twenty past four)
-  c.ellipse(24, 34, 1.5, 1.5, "#282018");
-  // Its windows.
-  for (const y of [50]) for (const x of [14, 30]) { c.rect(x, y, 4, 7, "#384858"); c.rect(x, y, 4, 1, "#f0d0a0"); c.set(x + 1, y + 2, "#8098b0"); }
-  // The stone base and its door.
-  c.rect(4, 64, 40, 14, "#a8a8b0");
-  for (let y = 64; y < 78; y += 4) c.rect(4, y, 40, 1, "#808088");
-  for (let y = 64; y < 78; y++) for (let x = 4 + ((Math.floor((y - 64) / 4) % 2) * 5); x < 44; x += 10) c.set(x, y, "#808088");
-  c.rect(4, 64, 40, 1, "#d0d0d8");
-  c.ellipse(24, 69, 5, 5, "#403838"); c.rect(19, 69, 10, 9, "#403838"); c.rect(20, 70, 8, 8, "#604840");
-  c.rect(2, 77, 44, 3, "#888890");
-  c.outline("#282428", 0, 0, 47, 79);
-  return c;
-}
 
-module.exports = { hex, canvas, fromRgba, rng, mix, timeMachine, portal, clockTower };
+module.exports = { hex, canvas, fromRgba, rng, mix, timeMachine, portal };

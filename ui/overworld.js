@@ -1687,6 +1687,10 @@
   // and 15, a bridge, leaves it as it was).
   const OVER_TOP = [0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0];
   function overTop(a, map, x, y, tmap, tx, ty) {
+    // (A map with its own say, tile by tile, whether who stands there is drawn over its top layer: the Yu-Gi-Oh!
+    // realm's screens, from The Sacred Cards' depth plane: tools/build-sacred-cards.py.)
+    const tm = World.map(tmap);
+    if (tm && tm.overTop) return !!tm.overTop[ty * tm.width + tx];
     if (a.elev == null) a.elev = 3;
     const prev = World.blockAt(map, x, y).elevation, cur = World.blockAt(tmap, tx, ty).elevation;
     if (cur !== 15 && prev !== 15 && cur !== 0) a.elev = cur;
@@ -1978,7 +1982,9 @@
       if (me.move.bikeHop) hop = -JUMP_Y_LOW[Math.min(15, Math.floor(t))];
       else if (me.move.jump || me.move.dismount || me.move.hop) hop = Math.sin((t / me.move.dist) * Math.PI) * (me.move.jump ? 10 : 6);
     }
-    const camX = px - PLAYER_X + panX, camY = py - PLAYER_Y + panY;
+    // (A map that is one screen, as The Sacred Cards' are, stays still: the camera on the whole of it.)
+    const fixed = m && m.fixedCamera;
+    const camX = fixed ? (m.width * TILE - VIEW_W) / 2 + panX : px - PLAYER_X + panX, camY = fixed ? (m.height * TILE - VIEW_H) / 2 + panY : py - PLAYER_Y + panY;
 
     g.fillStyle = "#000";
     g.fillRect(0, 0, VIEW_W, VIEW_H);

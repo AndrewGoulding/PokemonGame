@@ -3212,26 +3212,44 @@ node tools/build-time-machine.js
 
 ## The Yu-Gi-Oh! realm (in progress)
 
-The Yu-Gi-Oh! realm follows the story of the original Yu-Gi-Oh! anime, starting in **Domino City**. Through the
-Realm Hub's golden portal you come out in **Domino Square**, under its clock tower, beside the portal home. Your
-Pokémon stay in their balls here (no follower), and there are no wild Pokémon.
+The Yu-Gi-Oh! realm follows the story of the original Yu-Gi-Oh! anime, starting in **Domino City**. Its maps, its
+people's sprites and its portraits come from **Yu-Gi-Oh! The Sacred Cards** (GBA, the USA cartridge): only its
+pictures, none of its card game. Through the Realm Hub's golden portal you come out in **Domino Square**, beside its
+fountain. Your Pokémon stay in their balls here (no follower), and there are no wild Pokémon.
 
-- **Domino City** is laid out after the anime's city. **Kaiba Corporation's** tower stands to the north, with
-  **Domino High School** and its schoolyard to the north-west. The **Kame Game** shop and its neighbours are to the
-  west. To the east are the **Domino Museum** (its exhibit from ancient Egypt), **Burger World** and the **Domino
-  Apartments**. The warehouses and **Domino Pier** are on the sea to the south. Signs name each place, and the
-  townspeople talk about Duel Monsters.
-- **Not here yet**: the buildings' insides (their doors are shut for now), the characters and the story, and duels.
+- **The maps**: all 58 of the game's screens, each its own map of one screen (15x10 tiles) with the camera fixed on
+  it, as in the game. Walk off a screen's edge or through a doorway and you're on the next, as the game links them.
+  Its own depth plane decides, tile by tile, whether you're in front of the scenery or behind it.
+- **Getting about**: Domino City's streets and plazas, its houses and shops, all join up on foot. The game reaches
+  the rest of the city from its map screen, so here the **fountain in Domino Square** does that: it takes you back to
+  the Realm Hub, or to Domino Park, the Pier, the Riverside, the Museum, the Game Center, the Aquarium, Kaiba
+  Corporation, the Card Shop, the Office Tower, the Battle Ship, Alcatraz, the Hotel and the Battle City Finals
+  arena. Most of them have a way back into town on foot; the few that don't let you head back to the square from
+  beside where you arrive.
+- **People**: 94 of the game's people as sprites (`assets/world/sprites/sc_*.png`: Yugi, Yami Yugi, Kaiba, Joey,
+  Téa, Bakura, Mai, Marik, Ishizu, Grandpa, the Rare Hunters, Weevil, Rex, the game's own hero and its townsfolk). A
+  few townsfolk stand about Domino City talking about Duel Monsters.
+- **Portraits**: the game's 32 dialogue portraits, put together from their pieces (`assets/yugioh/portraits/`), for
+  the story's scenes. The sprite sheets that aren't people (the Egyptian God cards, the Battle Ship) are in
+  `assets/yugioh/sheets/`.
+- **Not here yet**: the story, its characters on the maps, and duels.
 
-`tools/build-domino-city.js` draws it with the painter Johto uses (FireRed's tiles, Kanto's buildings stamped on at
-their own sizes: Silph Co.'s tower for Kaiba Corporation, Celadon's for the school and the apartments, Oak's Lab for
-the museum). The clock tower and the portal are drawn by `tools/lib/realm-art.js`, which the Time Machine's tool uses
-too. The map (`DominoCity`, with `realm: "yugioh"`) goes into `data/emerald-maps.js` between its markers, with
-`window.DOMINO_CITY`, where the portal puts you.
+`tools/build-sacred-cards.py` builds it all from the cartridge (your own dump of it; it checks the game code, AY7E):
 
 ```sh
-node tools/build-domino-city.js
+python3 tools/build-sacred-cards.py "<path to Yu-Gi-Oh! - The Sacred Cards (USA).gba>"
 ```
+
+- **The screens**: each one's tiles (LZ77), ground and overlay layouts and palette, from the table of pointers at
+  `0x0d511a0`; the overlay is the map's `-top` picture. Each screen's walking map (2x2-pixel cells) gives the
+  tiles' collision, the depth plane (`overTop`), and its exits: a code that isn't open or solid is an exit to screen
+  `code >> 2` (runs of 2, 4, 6... are heights, stairs and seats). Exits at an edge are mats you walk off; inside a
+  screen, spots you step onto. Where the game only goes one way, you come out on the far side.
+- **The people**: 4bpp sheets of 32x32 frames (down, left, up and right, three each), made FireRed's nine frames.
+- **The portraits**: Huffman-compressed and difference-filtered 8bpp sheets, each put together from its list of
+  pieces (the eyes open and the mouth shut).
+- The data goes into `data/emerald-maps.js` between its markers, with `window.SACRED_CARDS`: where you arrive, and
+  the fountain's places.
 
 ## Progression rules (Gen 6)
 
