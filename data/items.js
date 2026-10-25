@@ -998,4 +998,10 @@ window.ITEMS = {
   "storage-key": {"name":"storage-key","category":"key-items","effect":"The key to the storage inside the Abandoned Ship."},
   "magma-emblem": {"name":"magma-emblem","category":"key-items","effect":"A medal-like item in the same shape as Team Magma's mark."},
   // (End of Emerald's items.)
+  // (The Yu-Gi-Oh! realm's: the Kame Game shop's booster packs, for its own bag.)
+  "legend-of-blue-eyes-pack": { name: "legend-of-blue-eyes-pack", category: "duel-monsters", effect: "The first Duel Monsters booster set, Legend of Blue Eyes White Dragon: nine cards to a pack." },
+  "metal-raiders-pack": { name: "metal-raiders-pack", category: "duel-monsters", effect: "A Duel Monsters booster pack from the Metal Raiders set: nine cards to a pack." },
+  "spell-ruler-pack": { name: "spell-ruler-pack", category: "duel-monsters", effect: "A Duel Monsters booster pack from the Spell Ruler set (Magic Ruler): nine cards to a pack." },
+  "pharaohs-servant-pack": { name: "pharaohs-servant-pack", category: "duel-monsters", effect: "A Duel Monsters booster pack from the Pharaoh's Servant set: nine cards to a pack." },
+  "labyrinth-of-nightmare-pack": { name: "labyrinth-of-nightmare-pack", category: "duel-monsters", effect: "A Duel Monsters booster pack from the Labyrinth of Nightmare set: nine cards to a pack." },
 };

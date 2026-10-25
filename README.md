@@ -3192,6 +3192,10 @@ realms to come (the **Yu-Gi-Oh! realm** first).
   and Spear Pillar's song. The Time Machine at its south end takes you back beside Pallet Town. Along its north are
   the realms' portals: the **Yu-Gi-Oh! realm's** (golden, a pyramid over it) takes you to Domino City (below), and
   the two either side of it are dormant, for realms to come. Fly and Teleport don't work out of the Pokémon realm.
+- **Each realm's own bag**: your Bag, with everything you've had all along, is the Pokémon realm's. Leave that realm
+  and it's put away until you're back (`Player.enterRealm`, as each map's `realm` says: `flags.realmBags`), and the
+  realm you're in has a bag of its own (the Realm Hub's is empty; the Yu-Gi-Oh! realm's holds its booster packs).
+  Your money stays the same from realm to realm.
 
 `tools/build-time-machine.js` draws it all (run it after `tools/build-maps.js`, as it redraws Pallet's west trees):
 
@@ -3214,14 +3218,23 @@ node tools/build-time-machine.js
 
 The Yu-Gi-Oh! realm follows the story of the original Yu-Gi-Oh! anime, starting in **Domino City**. Its maps, its
 people's sprites and its portraits come from **Yu-Gi-Oh! The Sacred Cards** (GBA, the USA cartridge): only its
-pictures, none of its card game. Through the Realm Hub's golden portal you come out in **Domino Square**, beside its
-fountain. Your Pokémon stay in their balls here (no follower), and there are no wild Pokémon.
+pictures, none of its card game. Your Pokémon stay in their balls here (no follower), and there are no wild Pokémon.
+
+- **Domino City's map**: step through the Realm Hub's golden portal and the map of Domino City comes up, as The
+  Sacred Cards' map screen does (Orre's map screen, with Domino's picture, `assets/town-map/domino.png`): pick a
+  place with the arrows and A. For now there are two places on it, **Domino High School** and **the Kame Game
+  shop**, and the portal back to the Realm Hub. Walk out of either place and the map comes up again (B stays).
+- **Domino High School**: **Yugi, Téa, Joey and Tristan** are in its classroom, by the windows; talk to them and
+  they introduce themselves. Pupils stand about the front, the hall and the classroom, with a teacher.
+- **The Kame Game shop**: Yugi's grandpa, at his counter, sells booster packs of **Legend of Blue Eyes White
+  Dragon**, **Metal Raiders**, **Spell Ruler**, **Pharaoh's Servant** and **Labyrinth of Nightmare** (₽300 each,
+  on the Poké Mart's buy screen), into the Yu-Gi-Oh! realm's bag.
 
 - **The maps**: all 58 of the game's screens, each its own map of one screen (15x10 tiles) with the camera fixed on
   it, as in the game. Walk off a screen's edge or through a doorway and you're on the next, as the game links them.
   Its own depth plane decides, tile by tile, whether you're in front of the scenery or behind it.
-- **Getting about**: Domino City's streets and plazas, its houses and shops, all join up on foot. The game reaches
-  the rest of the city from its map screen, so here the **fountain in Domino Square** does that: it takes you back to
+- **Getting about** (in the screens not yet on the map): Domino City's streets and plazas, its houses and shops, all
+  join up on foot. The **fountain in Domino Square** takes you back to
   the Realm Hub, or to Domino Park, the Pier, the Riverside, the Museum, the Game Center, the Aquarium, Kaiba
   Corporation, the Card Shop, the Office Tower, the Battle Ship, Alcatraz, the Hotel and the Battle City Finals
   arena. Most of them have a way back into town on foot; the few that don't let you head back to the square from
@@ -3240,12 +3253,12 @@ fountain. Your Pokémon stay in their balls here (no follower), and there are no
   beside **Battle City** (The Sacred Cards' places); Clock Tower Square's fountain does the same. Its people's 118
   sprites (`assets/world/sprites/rd_*.png`) and its 52 characters' portraits, with all their expressions
   (`assets/yugioh/portraits-reshef/`), come with it.
-- **Domino High School**, which neither game has, is this game's own, put together from their screens: up the road
-  north of Clock Tower Square, its front (Pegasus Castle's door and gardens, its stone made a school's), its entrance
+- **Domino High School**, which neither game has, is this game's own, put together from their screens: its front
+  (Pegasus Castle's door and gardens, its stone made a school's), its entrance
   hall (the Sacred Cards' hotel lobby, with a tiled floor, the vending machine and reception, the sofas its
   benches) and a classroom (the Sacred Cards' warehouse, cleared, with wooden boards, a blackboard, lockers, the
   teacher's desk and two rows of pupils' desks). Pupils and a teacher are about; the fountains' menu lists it.
-- **Not here yet**: the story, its characters on the maps, and duels.
+- **Not here yet**: the story, the rest of the city on the map, opening booster packs, and duels.
 
 `tools/build-sacred-cards.py` builds it all from the cartridge (your own dump of it; it checks the game code, AY7E):
 
@@ -3265,11 +3278,14 @@ python3 tools/build-sacred-cards.py "<path to Yu-Gi-Oh! - The Sacred Cards (USA)
   the fountain's places.
 
 `tools/build-domino-high.py` builds the school from the two games' screens (no cartridge needed; run it after
-`tools/build-reshef.py`, whose road north it joins): its pictures as `DH_00` to `DH_02`, its walls and ways
-drawn in the tool as grids, into `data/emerald-maps.js` between its markers.
+`tools/build-reshef.py`, whose Kame Game shop it changes): its pictures as `DH_00` to `DH_02`, its walls and ways
+drawn in the tool as grids, its people, and the Kame Game shop's ways out onto the map and its grandpa, into
+`data/emerald-maps.js` between its markers. `tools/build-domino-map.py` draws Domino City's map and the booster
+packs' icons (`assets/sprites/items/booster/`); where each place is on the map is `ui/game.js`'s `DOMINO_PLACES`.
 
 ```sh
 python3 tools/build-domino-high.py
+python3 tools/build-domino-map.py
 ```
 
 `tools/build-reshef.py` does the same for Reshef of Destruction (the USA cartridge, AY8E: your own dump of it):

@@ -3,19 +3,22 @@
 # tools/build-reshef.py: run those first), which share one camera.
 #
 #   - the front: Pegasus Castle's door and gardens (Reshef's screen 50), its stone made a school's warm render and
-#     its gargoyles turned to lawn, up the road north of Clock Tower Square (Reshef's screen 10);
+#     its gargoyles turned to lawn: walk out of it and Domino City's map comes up (ui/game.js's dominoTravel);
 #   - the entrance hall: the Sacred Cards' hotel lobby (screen 54), its red carpet made a tiled floor, its sofas the
 #     hall's benches;
 #   - the classroom: the Sacred Cards' warehouse (screens 47 and 48, the same room with its crates in other places:
 #     each pixel from whichever has bare floor, and what's left of the crates painted over with the floor's own
 #     light), with a blackboard, a teacher's desk, lockers and pupils' desks drawn in.
 #
+# Yugi, Téa, Joey and Tristan are in its classroom, and its pupils all about. It also sets up the other place on
+# Domino City's map, the Kame Game shop (Reshef's screens 6 and 7): its ways out onto the map, and Yugi's grandpa
+# at its counter, who sells booster packs.
+#
 #   python3 tools/build-domino-high.py
-#   (after tools/build-reshef.py, whose road north it joins: run it again if you rebuild that)
+#   (after tools/build-reshef.py, whose Kame Game shop it changes: run it again if you rebuild that)
 #
 # Writes assets/world/maps/DH_00.png (the front), DH_01 (the hall), DH_02 (the classroom), with -top and -border;
-# data/emerald-maps.js (between its markers): their maps, the road up from Clock Tower Square, and the fountain's
-# entry for them.
+# data/emerald-maps.js (between its markers): their maps, the Kame Game shop's, and the fountain's entry for them.
 import json, os, random
 import numpy as np
 from PIL import Image, ImageFilter
@@ -178,7 +181,8 @@ for (tx, ty) in DESKS: pupil_desk(room, tx * 16, ty * 16 - 2)
 save('DH_02', room, np.zeros_like(room))
 
 # ---------- The maps ----------
-# (Walls and things: '#'. Exits: 'v' down off the screen, 'D' a door stepped into. Signs: 's'.)
+# (Walls and things: '#'. Exits: 'v' down off the screen, 'D' a door stepped into, 'm' out onto Domino City's map.
+# Signs: 's'.)
 GRIDS = {
     'DH_00': ['###############',
               '###############',
@@ -189,7 +193,7 @@ GRIDS = {
               '#####.....#####',
               '#####.....#####',
               '#####.....#####',
-              '....vvvvvvv....'],
+              '....mmmmmmm....'],
     'DH_01': ['###############',
               '###############',
               '###############',
@@ -212,7 +216,7 @@ GRIDS = {
               '###...vvv...###']}
 ARROW = {'v': 0x65, '^': 0x64}
 links = {   # (each map's exits: the map they lead to, and which of its warps you arrive on)
-    'DH_00': {'v': ('RD_10', 'road'), 'D': ('DH_01', 'v')},
+    'DH_00': {'D': ('DH_01', 'v')},
     'DH_01': {'v': ('DH_00', 'D'), 'D': ('DH_02', 'v')},
     'DH_02': {'v': ('DH_01', 'D')}}
 maps = {}
@@ -223,7 +227,8 @@ for name, grid in GRIDS.items():
             collision.append(1 if c in '#s' else 0)
             behavior.append(ARROW.get(c, 0x61 if c == 'D' else 0))
             if c in links[name]: warps.append({'x': x, 'y': y, 'kind': c})
-    maps[name] = {'grid': grid, 'collision': collision, 'behavior': behavior, 'warps': warps}
+    triggers = [{'x': x, 'y': y, 'script': 'Domino_WorldMap'} for y, row in enumerate(grid) for x, c in enumerate(row) if c == 'm']
+    maps[name] = {'grid': grid, 'collision': collision, 'behavior': behavior, 'warps': warps, 'triggers': triggers}
 def first_warp(name, kind):
     ws = [i for i, w in enumerate(maps[name]['warps']) if w['kind'] == kind]
     return ws[len(ws) // 2] if ws else 0
@@ -233,7 +238,7 @@ for name, m in maps.items():
     ws = []
     for w in m['warps']:
         dest, kind = links[name][w['kind']]
-        idx = 'ROAD' if dest == 'RD_10' else first_warp(dest, kind)
+        idx = first_warp(dest, kind)
         ws.append({'x': w['x'], 'y': w['y'], 'map': dest, 'warp': idx})
     people, signs = [], []
     for y, row in enumerate(m['grid']):
@@ -245,34 +250,53 @@ for name, m in maps.items():
         'music': 'mus_celadon' if name == 'DH_00' else 'mus_school', 'cycling': False, 'showName': name == 'DH_00', 'top': True,
         'borderWidth': 2, 'borderHeight': 2, 'fixedCamera': True, 'overTop': [1] * (W * H),
         'collision': m['collision'], 'elevation': [3] * (W * H), 'behavior': m['behavior'], 'encounter': [0] * (W * H),
-        'connections': [], 'warps': ws, 'signs': signs, 'triggers': [], 'hidden': [], 'people': people, 'wild': None}
-# A few of its pupils (Reshef's townsfolk) and a teacher.
+        'connections': [], 'warps': ws, 'signs': signs, 'triggers': m['triggers'], 'hidden': [], 'people': people, 'wild': None}
+# Yugi and his friends, a teacher, and pupils (The Sacred Cards' and Reshef's townsfolk) all about.
 def person(id_, x, y, sprite, move, text):
     return {'id': id_, 'x': x, 'y': y, 'movement': move, 'rangeX': 1, 'rangeY': 1, 'script': 'DominoHigh_Person%d' % id_, 'flag': None,
             'text': text, 'sprite': sprite, 'width': 32, 'height': 32, 'frames': 9, 'localId': 'LOCALID_DOMINO_HIGH_%d' % id_}
-out['DH_00']['people'] = [person(0, 9, 7, 'rd_person_049', 'wander_around', ['Classes start soon!', "Don't be late for homeroom."])]
+out['DH_00']['people'] = [person(0, 9, 7, 'rd_person_049', 'wander_around', ['Classes start soon!', "Don't be late for homeroom."]),
+                          person(6, 5, 6, 'sc_person_31', 'face_right', ['Did you see the new transfer student?', "I wonder if they play Duel Monsters."]),
+                          person(7, 6, 8, 'rd_person_050', 'wander_around', ["I was up all night building my deck.", "Now I'm going to fall asleep in\nmath class..."])]
 out['DH_01']['people'] = [person(1, 6, 5, 'rd_person_082', 'face_down', ['Welcome to Domino High.', 'Your classroom is upstairs, through\nthe door on the left.']),
-                          person(2, 11, 5, 'rd_person_056', 'wander_around', ['The vending machine here has the\nbest melon soda in town.'])]
+                          person(2, 11, 5, 'rd_person_056', 'wander_around', ['The vending machine here has the\nbest melon soda in town.']),
+                          person(8, 3, 5, 'sc_person_30', 'face_right', ["The school festival's coming up!", "Our class is doing a haunted house."]),
+                          person(9, 11, 7, 'sc_person_27', 'face_up', ["I traded my lunch for a Kuriboh card.", "Totally worth it."]),
+                          person(10, 4, 9, 'rd_person_081', 'wander_around', ["Running in the halls is against\nthe rules, you know!"])]
 out['DH_02']['people'] = [person(3, 7, 2, 'rd_person_087', 'face_down', ['Teacher: Take your seats, everyone!', "And no Duel Monsters in class!"]),
                           person(4, 4, 6, 'rd_person_053', 'face_up', ['Psst! Did you bring your deck?', "Let's duel at lunch!"]),
-                          person(5, 10, 8, 'rd_person_068', 'face_up', ['I heard there\'s a new kid who knows\nall about the Millennium Puzzle...'])]
+                          person(5, 10, 8, 'rd_person_068', 'face_up', ['I heard there\'s a new kid who knows\nall about the Millennium Puzzle...']),
+                          person(11, 2, 8, 'sc_person_47', 'face_right', ["Yugi solved the Millennium Puzzle,\nyou know.", "Nobody had done that in 5,000 years!"]),
+                          # (Yugi and his friends, by the windows)
+                          person(12, 10, 3, 'rd_yugi', 'face_down', ["Yugi: Hi! I'm Yugi Muto.", "My grandpa runs the Kame Game shop.\nHe has the best cards in Domino!",
+                                                                    "Do you play Duel Monsters too?\nLet's be friends!"]),
+                          person(13, 11, 3, 'rd_tea', 'face_down', ["Téa: Hi there! I'm Téa Gardner.", "I'm friends with Yugi and the guys.\nSomeone has to keep them out of\ntrouble!",
+                                                                   "Someday I'm going to dance on\nstage in New York!"]),
+                          person(14, 12, 4, 'rd_joey', 'face_left', ["Joey: Hey! The name's Joey Wheeler.", "Yugi's teachin' me to duel. I'm gonna\nbe the best duelist in Domino City!",
+                                                                    "...Well, after Yugi, anyway."]),
+                          person(15, 13, 4, 'rd_person_078', 'face_left', ["Tristan: Yo! I'm Tristan Taylor.", "Joey and I go way back. Now we've\ngot Yugi's back, too.",
+                                                                          "That's what friends are for!"])]
 START = '// Domino High School (tools/build-domino-high.py): its front, hall and classroom.\n'
 END = '// (End of Domino High School.)\n'
 js = START + ''.join('window.WORLD_MAPS[%s] = %s;\n' % (json.dumps(k), json.dumps(v, separators=(',', ':'))) for k, v in out.items()) + \
     '''(function () {
-  // The road north from Clock Tower Square (Reshef's screen 10, its top edge) up to the school's front, and back.
-  const road = window.WORLD_MAPS.RD_10, front = window.WORLD_MAPS.DH_00;
-  if (!road || !front) return;
-  const up = [6, 7, 8, 9], down = front.warps.map((w, i) => [w, i]).filter(([w]) => w.map === "RD_10");
-  for (const x of up) {
-    if (road.warps.some((w) => w.x === x && w.y === 0)) continue;
-    const [, i] = down[Math.min(down.length - 1, Math.max(0, down.findIndex(([w]) => w.x === x)))] || down[0];
-    road.warps.push({ x, y: 0, map: "DH_00", warp: i });
-    road.collision[x] = 0; road.behavior[x] = 0x64;
+  // The Kame Game shop (Reshef's screen 6, outside; 7, inside): out of it, Domino City's map (its east edge, and the
+  // road north at its west), and not Reshef's next screen; and Yugi's grandpa at its counter.
+  const W = window.WORLD_MAPS, shop = W.RD_06, inside = W.RD_07;
+  if (!shop || !inside) return;
+  const out = [[14, 0], [14, 1], [14, 2], [14, 3], [14, 4], [14, 5], [14, 6], [14, 7], [3, 0], [4, 0]];
+  const kept = {};
+  shop.warps = shop.warps.filter((w, i) => w.map === "RD_07" && ((kept[i] = Object.keys(kept).length), true));
+  for (const m of Object.values(W)) for (const w of m.warps || []) if (w.map === "RD_06") w.warp = kept[w.warp] != null ? kept[w.warp] : 0;
+  for (const [x, y] of out) {
+    shop.behavior[y * shop.width + x] = 0;
+    if (!shop.triggers.some((t) => t.x === x && t.y === y)) shop.triggers.push({ x, y, script: "Domino_WorldMap" });
   }
-  const first = road.warps.findIndex((w) => w.map === "DH_00");
-  for (const [w] of down) w.warp = road.warps.findIndex((v) => v.map === "DH_00" && v.x === Math.min(9, Math.max(6, w.x)));
-  for (const [w] of down) if (w.warp < 0) w.warp = first;
+  shop.realm = inside.realm = "yugioh";
+  shop.title = inside.title = "Kame Game Shop";
+  if (!inside.people.some((p) => p.script === "KameGame_Grandpa"))
+    inside.people.push({ id: 0, x: 5, y: 4, movement: "face_down", rangeX: 1, rangeY: 1, script: "KameGame_Grandpa", flag: null, text: null,
+      sprite: "rd_grandpa", width: 32, height: 32, frames: 9, localId: "LOCALID_KAME_GAME_GRANDPA" });
   // (and the fountains' menu: Domino City's places)
   if (window.RESHEF && !window.RESHEF.areas.some((a) => a.title === "Domino High School"))
     window.RESHEF.areas.splice(1, 0, { title: "Domino High School", map: "DH_00", x: 7, y: 8, facing: "up" });

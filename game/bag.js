@@ -27,7 +27,13 @@
     "x-accuracy": "X Accuracy", "x-attack": "X Attack", "x-defense": "X Defense", "x-speed": "X Speed",
     "x-sp-atk": "X Sp. Atk", "x-sp-def": "X Sp. Def", "poke-doll": "Poké Doll", "oddish-ball": "Oddish Ball",
     "exp-candy-xs": "Exp. Candy XS", "exp-candy-s": "Exp. Candy S", "exp-candy-m": "Exp. Candy M", "exp-candy-l": "Exp. Candy L",
-    "exp-candy-xl": "Exp. Candy XL"
+    "exp-candy-xl": "Exp. Candy XL",
+    // (The Yu-Gi-Oh! realm's booster packs.)
+    "legend-of-blue-eyes-pack": "Legend of B.E.W.D.",
+    "metal-raiders-pack": "Metal Raiders",
+    "spell-ruler-pack": "Spell Ruler",
+    "pharaohs-servant-pack": "Pharaoh's Servant",
+    "labyrinth-of-nightmare-pack": "Lab. of Nightmare"
   };
 
   // Gen 6 Poké Mart prices. Items sell for half. Anything else can't be bought or sold.
@@ -57,6 +63,8 @@
     // (FireRed's: without a price an item can't be bought, so a Mart that
     // stocks it leaves it out.)
     "guard-spec": 700, "dire-hit": 650,
+    // (The Yu-Gi-Oh! realm's booster packs, at the Kame Game shop.)
+    "legend-of-blue-eyes-pack": 300, "metal-raiders-pack": 300, "spell-ruler-pack": 300, "pharaohs-servant-pack": 300, "labyrinth-of-nightmare-pack": 300,
     "repel": 350, "super-repel": 500, "max-repel": 700, "lure": 400, "super-lure": 700, "max-lure": 900, "escape-rope": 550, "poke-doll": 1000, "lava-cookie": 200,
     // Treasures from digging (they sell for half, as in Gen 6).
     "star-piece": 9800, "rare-bone": 10000, "heart-scale": 200, "red-shard": 400, "blue-shard": 400,

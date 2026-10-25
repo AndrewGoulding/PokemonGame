@@ -255,6 +255,21 @@
     return true;
   }
 
+  // Each realm has a bag of its own (this game's own). Your Bag, with everything you've had all along, is the
+  // Pokémon realm's: it's put away (flags.realmBags) while you're out of that realm, and the realm you're in has
+  // its own instead (the Yu-Gi-Oh! realm's: its booster packs). Your money goes with you. True if it changed.
+  function enterRealm(player, realm) {
+    realm = realm || "pokemon";
+    const f = player.flags, now = f.bagRealm || "pokemon";
+    if (now === realm) return false;
+    const bags = f.realmBags = Object.assign({}, f.realmBags);
+    bags[now] = player.bag;
+    player.bag = bags[realm] || {};
+    delete bags[realm];
+    if (realm === "pokemon") delete f.bagRealm; else f.bagRealm = realm;
+    return true;
+  }
+
   // PC item storage: moves items between the bag and the PC.
   function depositItem(player, item, n) {
     if (!removeItem(player, item, n)) return false;
@@ -369,7 +384,8 @@
     }
     // Everyone has the Explorer Kit, the Berry Pouch and the Fishing Rod, saves from before
     // them too (not Wes, in Orre: game/orre.js has your own Bag put away).
-    const asWes = !!(data.flags && data.flags.orreStash);
+    // (Nor in another realm, where the bag's that realm's: enterRealm.)
+    const asWes = !!(data.flags && (data.flags.orreStash || data.flags.bagRealm));
     if (!asWes) player.bag["explorer-kit"] = player.bag["berry-pouch"] = player.bag["fishing-rod"] = 1;
     // Saves from before PC item storage get its starting Potion.
     player.pcItems = {};
@@ -398,7 +414,7 @@
     }
     // Saves from before key items: the Exp. Share, and Oak's Parcel if it's still to deliver.
     if (!player.bag["exp-share"] && !asWes) player.bag["exp-share"] = 1;
-    if (player.flags.oaksParcel && !player.flags.parcelDelivered) player.bag["oaks-parcel"] = 1;
+    if (player.flags.oaksParcel && !player.flags.parcelDelivered && !asWes) player.bag["oaks-parcel"] = 1;
     // Saves from before the Pokédex scene: Oak gave it with the parcel.
     if (player.flags.parcelDelivered && player.flags.pokedex === undefined) player.flags.pokedex = true;
     // Navel Rock and Birth Island are gone (left out on purpose): Celio's
@@ -540,6 +556,6 @@
     REGION_BADGES, LEVEL_CAPS, levelCap,
     VERSION, LOOKS, PLAYER_LOOK, RIVAL_NAME, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG, STARTING_PC_ITEMS, NEW_GAME_LOCATION, HOME, CENTERS,
     create, markSeen, markCaught, hasCaught, nationalDex, KANTO_DEX_COUNT, dexNumber, dexCount, dexRating, hasAllMons, receive, deposit, withdraw, swapWithBox, healBoxes, release, boxCount, firstEmpty, boxed,
-    itemCount, addItem, removeItem, depositItem, withdrawItem, addMoney, prizeMoney, blackoutLoss, serialize, load
+    itemCount, addItem, removeItem, enterRealm, depositItem, withdrawItem, addMoney, prizeMoney, blackoutLoss, serialize, load
   };
 })();

@@ -272,4 +272,10 @@ window.ITEM_DESCRIPTIONS = {
   "storage-key": "The key to the\nstorage inside the\nAbandoned Ship.",
   "magma-emblem": "A medal-like item in\nthe same shape as\nTeam Magma's mark.",
   // (End of Emerald's items.)
+  // (The Kame Game shop's booster packs.)
+  "legend-of-blue-eyes-pack": "A booster pack of\nLegend of Blue Eyes\nWhite Dragon cards.",
+  "metal-raiders-pack": "A booster pack of\nMetal Raiders\nDuel Monsters cards.",
+  "spell-ruler-pack": "A booster pack of\nSpell Ruler\nDuel Monsters cards.",
+  "pharaohs-servant-pack": "A booster pack of\nPharaoh's Servant\nDuel Monsters cards.",
+  "labyrinth-of-nightmare-pack": "A booster pack of\nLabyrinth of Nightmare\nDuel Monsters cards.",
 };

@@ -1640,6 +1640,11 @@
     for (;;) {
       Screen.say("");
       clearMenu();
+      // (Another realm's bag, the few things in it: open on a pocket with something in it.)
+      if (player.flags.bagRealm) {
+        const full = bagPockets().filter((p) => p.items.length);
+        if (full.length && !full.some((p) => p.name === bagPocket)) bagPocket = full[0].name;
+      }
       const r = await BagScreen.open({
         pockets: bagPockets, pocketName: bagPocket, reorder: bagReorder,
         female: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
@@ -2960,7 +2965,8 @@
   SPECIAL.add("SandgemTown_EventScript_Sailor");
   // (The Time Machine off Pallet Town, and the Realm Hub's: timeMachine, realmPortal.)
   for (const sc of ["TimeMachine_EventScript_Machine", "TimeMachine_EventScript_Sign", "TimeMachine_EventScript_Scientist", "RealmHub_EventScript_Machine",
-    "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_west", "RealmHub_EventScript_Portal_east", "SacredCards_Fountain", "SacredCards_BackToTown"]) SPECIAL.add(sc);
+    "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_west", "RealmHub_EventScript_Portal_east", "SacredCards_Fountain", "SacredCards_BackToTown",
+    "Domino_WorldMap", "KameGame_Grandpa"]) SPECIAL.add(sc);
   // (And its ferries, Canalave's to Iron Island and back, and Oreburgh's fossil scientist: sinnohFerry, fossilScientist.)
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "sinnoh") for (const p of m.people) if (p.ferry || /_EventScript_FossilScientist$/.test(p.script || "")) SPECIAL.add(p.script);
   SPECIAL.add("SlateportCity_Harbor_EventScript_Sailor"); SPECIAL.add("Route117_PokemonDayCare_EventScript_DaycareWoman");
@@ -3321,6 +3327,8 @@
     { const rp = /^RealmHub_EventScript_Portal_(\w+)$/.exec(script || ""); if (rp) { await realmPortal(rp[1]); return; } }
     if (script === "SacredCards_Fountain") { await dominoFountain(); return; }
     if (script === "SacredCards_BackToTown") { await dominoBackToTown(); return; }
+    if (script === "Domino_WorldMap") { await dominoTravel(); return; }
+    if (script === "KameGame_Grandpa") { await kameGameShop(); return; }
     if (ev.person && ev.person.ferry && isSinnoh(ev.map)) { await sinnohFerry(ev.person); return; }
     if (/_EventScript_FossilScientist$/.test(script || "") && isSinnoh(ev.map)) { await fossilScientist(); return; }
     // (Johto's Pokémon Centers' nurses heal as Kanto's do.)
@@ -9630,9 +9638,7 @@
     if (id === "yugioh") {
       await say(["A portal of swirling golden light.\nA pyramid shines above it.", "Beyond it lies the Yu-Gi-Oh! realm,\nthe world of Duel Monsters…"]);
       if (!(await confirm("Step through the portal?"))) return;
-      await voyage(window.SACRED_CARDS.arrive, ["You step into the golden light…", "The world turns inside out…"], "se_warp_in");
-      player.flags.dominoVisited = true;
-      await say("You've arrived in Domino City,\nin the Yu-Gi-Oh! realm!");
+      await dominoTravel();
       return;
     }
     await say(["A portal of cold stone. Its light\nhas gone out.", "Another realm may open here\nsomeday…"]);
@@ -9668,6 +9674,51 @@
     const to = rd ? Object.assign({ facing: "down" }, rd.areas.find((a) => a.title === "Clock Tower Square")) : window.SACRED_CARDS.arrive;
     if (!(await confirm(rd ? "Head back to Clock Tower Square?" : "Head back to Domino Square?"))) return;
     await voyage({ map: to.map, x: to.x, y: to.y, facing: to.facing || "down" }, ["You head back across Domino City…"], "se_door");
+  }
+  // ---------- Domino City's map ----------
+  //
+  // As in The Sacred Cards, you go from place to place in Domino City on its map (tools/build-domino-map.py): step
+  // through the Realm Hub's golden portal and it comes up, and so it does as you walk out of a place (its way out:
+  // the "Domino_WorldMap" steps, tools/build-domino-high.py). So far there are two places on it, Domino High and the
+  // Kame Game shop; and the portal back to the Realm Hub. (`maps`: the maps that count as being at the place.)
+  const DOMINO_PLACES = [
+    { map: "DH_00", name: "Domino High School", x: 68, y: 50, arrive: { x: 7, y: 8, facing: "up" }, maps: /^DH_/ },
+    { map: "RD_06", name: "Kame Game Shop", x: 82, y: 104, arrive: { x: 13, y: 6, facing: "left" }, maps: /^RD_0[67]$/ },
+    { map: "RealmHub", name: "Portal to the Realm Hub", x: 190, y: 46, maps: /^RealmHub$/ }
+  ];
+  async function dominoTravel() {
+    const loc = player.location, m = window.WORLD_MAPS[loc.map], from = DOMINO_PLACES.find((p) => p.maps.test(loc.map));
+    const fromHub = !!from && from.map === "RealmHub";
+    const to = await placeMap({ image: "assets/town-map/domino.png", cls: "orre-map domino-map", alt: "Map of Domino City",
+      places: DOMINO_PLACES, here: from ? from.map : loc.map });
+    show("world");
+    await Overworld.resume();
+    if (!to) { if (!fromHub) await stepBackIn(loc, m); return; }
+    if (to.map === "RealmHub") {
+      await voyage(HUB_YUGIOH_PORTAL, ["You step into the golden light…", "…and come out in the Realm Hub."], "se_warp_in");
+      return;
+    }
+    if (fromHub) {
+      await voyage(Object.assign({ map: to.map }, to.arrive), ["You step into the golden light…", "The world turns inside out…"], "se_warp_in");
+      if (!player.flags.dominoVisited) await say(["You've arrived in Domino City,\nin the Yu-Gi-Oh! realm!", "Your Bag stays behind in the\nPokémon realm. Here you have\na bag of this realm's own."]);
+      player.flags.dominoVisited = true;
+      await persist();
+      return;
+    }
+    await Overworld.fadeToBlack();
+    player.location = Object.assign({ map: to.map }, to.arrive);
+    await Overworld.teleport(player.location);
+    music(window.WORLD_MAPS[to.map].music);
+    await persist();
+  }
+  // The Kame Game shop: Yugi's grandpa, Solomon Muto, sells booster packs (game/bag.js's prices), into the Yu-Gi-Oh!
+  // realm's bag.
+  const BOOSTER_PACKS = ["legend-of-blue-eyes-pack", "metal-raiders-pack", "spell-ruler-pack", "pharaohs-servant-pack", "labyrinth-of-nightmare-pack"];
+  async function kameGameShop() {
+    await say(["Grandpa: Welcome to the Kame Game\nshop! I'm Solomon Muto, Yugi's\ngrandpa.", "We've got booster packs from every\nset. Have a look!"]);
+    await martBuy(BOOSTER_PACKS);
+    await persist();
+    await say("Grandpa: Come again! And may the\nheart of the cards guide you!");
   }
   async function visitRealmHub() {
     Screen.say("");
@@ -9788,8 +9839,12 @@
   // triggers, tools/build-orre.js) and the map of Orre comes up, a marker on each place you can go (game/orre.js:
   // at first the Air Strip and Team Snagem's hideout). The arrows go to the nearest place that way, A sets off (your
   // icon slides across to it, then you're there, by its way in), B stays (a step back in from the edge).
-  async function orreWorldMap() {
-    const here = player.location.map, places = Orre.openPlaces(player.flags);
+  function orreWorldMap() {
+    return placeMap({ image: "assets/town-map/orre.png", cls: "orre-map", alt: "Map of Orre", places: Orre.openPlaces(player.flags), here: player.location.map });
+  }
+  // (A map of places, Orre's or Domino City's: `places` [{ map, name, x, y }], where each is in pixels of its 240 by
+  // 160 `image`; `here` the place you're at. The place picked, or null.)
+  async function placeMap({ image, cls, alt, places, here }) {
     let at = Math.max(0, places.findIndex((p) => p.map === here));
     const from = places[at];
     const pos = (p) => "left:" + (p.x / 2.4) + "%;top:" + (p.y / 1.6) + "%";
@@ -9797,7 +9852,7 @@
     show("scene");
     clearMenu();
     Screen.say("");
-    scene.innerHTML = '<div class="town-map orre-map"><img class="tm-map" src="assets/town-map/orre.png" alt="Map of Orre">' +
+    scene.innerHTML = '<div class="town-map ' + cls + '"><img class="tm-map" src="' + image + '" alt="' + alt + '">' +
       places.map((p) => '<div class="om-place' + (p.map === here ? " here" : "") + '" style="' + pos(p) + '"></div>').join("") +
       '<img class="tm-player" src="assets/town-map/player.png" alt="You are here" style="' + icon(from) + '">' +
       '<div class="tm-name"><b></b><small></small></div><div class="tm-cursor"></div></div>';
@@ -9846,12 +9901,7 @@
     show("world");
     await Overworld.resume();
     const loc = player.location, m = window.WORLD_MAPS[loc.map];
-    if (!to) {
-      // (Back in from the edge you were leaving by.)
-      const dir = loc.y === 0 ? "down" : loc.y === m.height - 1 ? "up" : loc.x === 0 ? "right" : "left";
-      await Overworld.act([{ who: "player", moves: ["walk_" + dir] }]);
-      return;
-    }
+    if (!to) { await stepBackIn(loc, m); return; }
     await Overworld.fadeToBlack();
     Overworld.setAvatar("walk");
     player.location = Object.assign({ map: to.map }, to.arrive);
@@ -9860,6 +9910,11 @@
     // (A scene as you get there: Folly and Trudly at the Outskirt Stand.)
     if (special("arrive:" + to.map)) await story({ type: "trigger", trigger: { script: "arrive:" + to.map }, map: to.map });
     await persist();
+  }
+  // (Back in from the edge you were leaving by.)
+  async function stepBackIn(loc, m) {
+    const dir = loc.y === 0 ? "down" : loc.y === m.height - 1 ? "up" : loc.x === 0 ? "right" : "left";
+    await Overworld.act([{ who: "player", moves: ["walk_" + dir] }]);
   }
   // Team Snagem's guards at the hideout's gate. Talk to one and you can ask to join Team Snagem, as Prof. Oak asked
   // (player.flags.orreStory 3 once you have): they laugh, then give you the Snag Machine and Snagem's tests for a new
@@ -14696,6 +14751,7 @@
         adjustWild: (mon, table) => { const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
         onMap: (m) => {
+          Player.enterRealm(player, (window.WORLD_MAPS[m] || {}).realm);   // (each realm's own bag)
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
           if (m !== "VermilionCity") ticketChecked = false;
           if (m !== tempFlagsMap) delete player.flags.vsRematch;   // (rematches last while you stay on the map)
