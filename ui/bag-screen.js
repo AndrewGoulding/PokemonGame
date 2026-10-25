@@ -1727,44 +1727,97 @@
   // ---------- Opening a pack ----------
   // (its own keys, while it plays: A speeds it up, B skips it)
   function listen(onKey) {
-    const KEY = { z: "a", Z: "a", " ": "a", Enter: "a", x: "b", X: "b", Escape: "b", s: "r", S: "r" };
+    const KEY = { z: "a", Z: "a", " ": "a", Enter: "a", x: "b", X: "b", Escape: "b", s: "r", S: "r", Select: "select" };
     const h = (e) => { const k = KEY[e.key]; if (!k) return; e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) onKey(k); };
     document.addEventListener("keydown", h, true);
     return () => document.removeEventListener("keydown", h, true);
   }
+  // GX Duel Academy's own opening, as it plays (recorded from the game, frame by frame, at 60 a second): the shop
+  // fades out and the backdrop in (frames 0-53), the machine slides in from the right (76-136), the pack in from the
+  // left and down to the bottom left (144-174); then each card rises out of the pack (RISE, a card every 43 frames
+  // from 193), and as the next comes up, the cards move on one place along the arc (SHIFT: from the pack's place to
+  // four more, the last at the machine), a card's first move with the dots' flash over its picture (REVEAL); a card at
+  // the machine turns over and drops into it (ENTER: its face narrowing, its back widening, then smaller as it
+  // goes in). Once the pack's empty the cards move on every 17 frames. GX's cards are in its frames for each kind
+  // (assets/yugioh/shop/frame-*.png) with their pictures in them.
+  const RISE = [118, 115, 112, 110, 107, 104, 102, 99, 96, 94, 91, 88, 86, 83, 80, 78, 75, 72, 70, 67, 64, 62, 59, 56];
+  const SHIFT = [
+    [[16, 53], [19, 51], [22, 49], [24, 46], [27, 44], [30, 42], [32, 39], [35, 37], [38, 35], [40, 33], [43, 31], [46, 29], [48, 27], [51, 25], [54, 23], [57, 22]],
+    [[59, 20], [62, 19], [65, 17], [67, 16], [70, 14], [73, 13], [75, 12], [78, 11], [81, 10], [83, 10], [86, 9], [89, 8], [91, 8], [94, 8], [97, 8], [100, 8]],
+    [[102, 8], [105, 8], [108, 8], [110, 8], [113, 9], [116, 10], [118, 10], [121, 11], [124, 12], [126, 13], [129, 14], [132, 16], [134, 17], [137, 19], [140, 20], [143, 22]],
+    [[145, 23], [148, 25], [151, 27], [153, 29], [156, 31], [159, 33], [161, 35], [164, 37], [167, 39], [169, 42], [172, 44], [175, 46], [177, 49], [180, 51], [183, 53], [186, 56]]];
+  const SPOTS = [[14, 56], [57, 22], [100, 8], [143, 22], [186, 56]];
+  // (the card going into the machine: its centre, its scale across and down, and whether it shows its back)
+  const ENTER = [[216, 90, 320, 256, 0], [212, 92, 512, 256, 0], [210, 94, 832, 256, 0], [210, 97, 768, 256, 1], [212, 99, 544, 256, 1], [214, 101, 384, 256, 1],
+    [217, 104, 288, 256, 1], [218, 106, 256, 256, 1], [214, 108, 384, 384, 1], [212, 110, 512, 512, 1], [211, 112, 640, 640, 1], [210, 114, 768, 768, 1],
+    [210, 116, 896, 896, 1], [209, 118, 1024, 1024, 1], [209, 120, 1152, 1152, 1], [209, 121, 1280, 1280, 1]];
+  const REVEAL = [0, 1, 2, 3, 4, 5, "full", 5, 4, 3, 2, 1, 0];   // (every 2 frames, from a card's first move's 6th frame)
+  const FRAME_OF = { normal: "normal", effect: "effect", fusion: "fusion", ritual: "ritual", spell: "spell", trap: "trap" };
+  function card(g, no, x, y, sx, sy, back) {
+    const c = cardsData().cards[no], fw = 40, fh = 56;
+    const off = card.c || (card.c = Object.assign(document.createElement("canvas"), { width: fw, height: fh }));
+    const p = off.getContext("2d");
+    p.imageSmoothingEnabled = false; p.clearRect(0, 0, fw, fh);
+    if (back) draw(p, "card-back", 0, 0);
+    else { draw(p, "frame-" + (FRAME_OF[c[2]] || "normal"), 0, 0); art(p, no, 4, 12, 32, 32); }
+    const w = Math.max(1, Math.round(fw * (sx == null ? 1 : sx))), h = Math.max(1, Math.round(fh * (sy == null ? 1 : sy)));
+    g.drawImage(off, 0, 0, fw, fh, Math.round(x - w / 2), Math.round(y - h / 2), w, h);
+  }
   async function opening(key, cards) {
     show();
-    let speed = 1, skip = false;
-    const stop = listen((k) => { if (k === "a") speed = 3; else if (k === "b" || k === "r") skip = true; });
+    let speed = 1, skip = false, help = false;
+    const stop = listen((k) => { if (k === "a") speed = 4; else if (k === "b" || k === "r") skip = true; else if (k === "select") help = !help; });
+    const before = document.createElement("canvas"); before.width = W; before.height = H;
+    before.getContext("2d").drawImage(canvas, 0, 0, W, H);
     try {
-      const n = cards.length, start = 30, gap = 12, fly = 18, settle = start + gap * (n - 1) + fly + 20, end = settle + 30;
-      // (where each card waits: two rows across the middle)
-      const spot = (k) => [44 + (k % 5) * 26 - (k >= 5 ? -13 : 0), k >= 5 ? 58 : 22];
+      const n = cards.length, rise = (k) => 193 + 43 * k;
+      const shiftAt = (j) => (j < n ? 219 + 43 * j : 219 + 43 * (n - 1) + 17 * (j - n + 1));
+      const enterAt = (k) => shiftAt(k + 4);   // (the card at the machine goes in as the others move on)
+      const end = shiftAt(n + 3) + 50;
       for (let f = 0; f <= end && !skip; f += speed) {
         const g = surface();
+        if (f < 25) { g.drawImage(before, 0, 0); g.fillStyle = "rgba(0,0,0," + (f / 24) + ")"; g.fillRect(0, 0, W, H); present(g); await frame(); continue; }
         draw(g, "open-bg", 0, 0);
-        const mx = 240 - Math.min(64, f * 4);
-        draw(g, "machine", mx, 0);
-        pack(g, key, 6, 112, false);
+        draw(g, "machine", f < 76 ? W : Math.max(176, 236 - (f - 76)), 0);
+        if (f >= 144) pack(g, key, Math.min(8, -44 + 4 * (f - 144)), f < 156 ? 36 : Math.min(116, 36 + 4 * (f - 156)), false);
         for (let k = 0; k < n; k++) {
-          const t0 = start + gap * k;
-          if (f < t0) continue;
-          const [sx, sy] = spot(k);
-          let x, y;
-          if (f < t0 + fly) {
-            const u = (f - t0) / fly;
-            x = 20 + (sx - 20) * u; y = 112 + (sy - 112) * u - Math.sin(u * Math.PI) * 30;
-          } else if (f < settle) { x = sx; y = sy; }
+          const t = f - rise(k);
+          if (t < 0) continue;
+          let x = 14, y, sx = 1, sy = 1, back = 0, place = -1;
+          if (t < RISE.length) y = RISE[t];
           else {
-            const u = Math.min(1, (f - settle - k * 2) / 16);
-            x = sx + (mx + 20 - sx) * Math.max(0, u); y = sy + (70 - sy) * Math.max(0, u);
-            if (u >= 1) continue;
+            // (where it is along the arc: the moves since it came up)
+            let at = 0, moving = null;
+            for (let j = k; j < k + 4; j++) {
+              const u = f - shiftAt(j);
+              if (u >= SHIFT[0].length) at = j - k + 1;
+              else if (u >= 0) { moving = SHIFT[j - k][u]; at = j - k; }
+            }
+            [x, y] = moving || SPOTS[at];
+            place = moving ? at : -1;
+            const e = f - enterAt(k);
+            if (at === 4 && e >= 0) {
+              if (e >= ENTER.length) continue;
+              const [cx, cy, pa, pd, b] = ENTER[e];
+              // (GX turns the whole 64x64 sprite about its middle; the card's own middle is 12 left and 4 up of it)
+              card(g, cards[k].no, cx - 12 * 256 / pa, cy - 4 * 256 / pd, 256 / pa, 256 / pd, b);
+              continue;
+            }
           }
-          smallCard(g, cards[k].no, x, y);
+          card(g, cards[k].no, x + 20, y + 28, sx, sy, back);
+          // (the dots' flash over its picture, on its first move: GX shows it every other frame)
+          const r = Math.floor((f - shiftAt(k) - 6) / 2);
+          if (place === 0 && r >= 0 && r < REVEAL.length) {
+            g.globalAlpha = 0.5;
+            for (let i = 0; i < 4; i++) for (let jj = 0; jj < 4; jj++) draw(g, "dots-" + REVEAL[r], x + 4 + 8 * i, y + 12 + 8 * jj);
+            g.globalAlpha = 1;
+          }
         }
-        draw(g, "open-help", 96, 128);
+        draw(g, help ? "open-help" : "select", help ? 96 : 216, 128);
+        if (f < 54) { g.fillStyle = "rgba(0,0,0," + (1 - (f - 25) / 28) + ")"; g.fillRect(0, 0, W, H); }
+        if (f > end - 20) { g.fillStyle = "rgba(0,0,0," + Math.min(1, (f - end + 20) / 20) + ")"; g.fillRect(0, 0, W, H); }
         present(g);
-        await frame(); await frame();
+        await frame();
       }
     } finally { stop(); }
     return null;
