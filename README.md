@@ -3301,7 +3301,7 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   up and down ten), and **DECKS**: your **20 deck slots**, as GX Duel Academy keeps several (each with its main,
   Fusion and side decks' counts), A on one to build it, and the one you last picked is the one you duel with. R (the S key) puts a card in the deck,
   L (the A key) takes it out, START shows the card itself with its text. A deck holds 60 cards and 20 Fusion Monsters, its
-  side deck 15, and three of any card in all. The cards are GX Duel Academy's 1200 (`window.YUGIOH_CARDS`), yours in
+  side deck 15, and three of any card in all. The cards are GX Duel Academy's 1200 and the 754 beyond them (`window.YUGIOH_CARDS`), yours in
   `player.flags.yugioh` (the debug menu's **Fill the Trunk** gives you three of each).
 - **Duel Monsters' rules** (`window.DuelMonsters`, in `game/table-players.js`): the duel engine, ported from Yu-Gi-Oh!
   The Eternal Duelist Soul's decompilation (github.com/CosmicScribe64/eds-decomp): 8000 life points, five cards to
@@ -3319,7 +3319,12 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   Sarcophagi, the cards that watch for others (Chain Energy, Skull Invitation, Curse of Darkness, Fire Princess),
   that change battle damage (Amazoness Swords Woman, Stone Statue of the Aztecs, Rod of the Mind's Eye) or forbid
   something (Spell Canceller, Jinzo, Mask of Restrict, Protector of the Sanctuary, Invader of Darkness), and the
-  hand shown face up while Respect Play, Ceremonial Bell or your Mind on Air is out.
+  hand shown face up while Respect Play, Ceremonial Bell or your Mind on Air is out. The 404 cards with effects
+  among the 754 beyond GX's (their monsters, part of them the Fusions', their Spells and their Traps, four sections
+  of their own) follow their text too: the moths from Cocoon of Evolution, Gate Guardian, the Gravekeepers and
+  Necrovalley, the Archfiends and their upkeep, the Dark Scorpions, the Counter Traps that negate summons, Skill
+  Drain, Crush Card Virus and the rest; what the engine had no place for (effects that target, "by your
+  opponent's effect", cards that watch draws and returns) they add by wrapping the duel's own steps.
 - **The computer duelist** (`DuelMonsters.ai()`): EDS's, its Main Phase in EDS's order: the Spells that draw or clear
   the field first, then the strongest summon it can make (tributing its weakest monsters; in Attack Position when it
   beats your best, set otherwise, and flip monsters always set), its monsters' effects, the Spells that take or bring
