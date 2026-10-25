@@ -251,22 +251,14 @@ for name, m in maps.items():
         'borderWidth': 2, 'borderHeight': 2, 'fixedCamera': True, 'overTop': [1] * (W * H),
         'collision': m['collision'], 'elevation': [3] * (W * H), 'behavior': m['behavior'], 'encounter': [0] * (W * H),
         'connections': [], 'warps': ws, 'signs': signs, 'triggers': m['triggers'], 'hidden': [], 'people': people, 'wild': None}
-# Yugi and his friends, a teacher, and pupils (The Sacred Cards' and Reshef's townsfolk) all about.
+# Yugi and his friends, and three pupils (The Sacred Cards' and Reshef's townsfolk): one in front, one in the hall, one
+# in the classroom.
 def person(id_, x, y, sprite, move, text):
     return {'id': id_, 'x': x, 'y': y, 'movement': move, 'rangeX': 1, 'rangeY': 1, 'script': 'DominoHigh_Person%d' % id_, 'flag': None,
             'text': text, 'sprite': sprite, 'width': 32, 'height': 32, 'frames': 9, 'localId': 'LOCALID_DOMINO_HIGH_%d' % id_}
-out['DH_00']['people'] = [person(0, 9, 7, 'rd_person_049', 'wander_around', ['Classes start soon!', "Don't be late for homeroom."]),
-                          person(6, 5, 6, 'sc_person_31', 'face_right', ['Did you see the new transfer student?', "I wonder if they play Duel Monsters."]),
-                          person(7, 6, 8, 'rd_person_050', 'wander_around', ["I was up all night building my deck.", "Now I'm going to fall asleep in\nmath class..."])]
-out['DH_01']['people'] = [person(1, 6, 5, 'rd_person_082', 'face_down', ['Welcome to Domino High.', 'Your classroom is upstairs, through\nthe door on the left.']),
-                          person(2, 11, 5, 'rd_person_056', 'wander_around', ['The vending machine here has the\nbest melon soda in town.']),
-                          person(8, 3, 5, 'sc_person_30', 'face_right', ["The school festival's coming up!", "Our class is doing a haunted house."]),
-                          person(9, 11, 7, 'sc_person_27', 'face_up', ["I traded my lunch for a Kuriboh card.", "Totally worth it."]),
-                          person(10, 4, 9, 'rd_person_081', 'wander_around', ["Running in the halls is against\nthe rules, you know!"])]
-out['DH_02']['people'] = [person(3, 7, 2, 'rd_person_087', 'face_down', ['Teacher: Take your seats, everyone!', "And no Duel Monsters in class!"]),
-                          person(4, 4, 6, 'rd_person_053', 'face_up', ['Psst! Did you bring your deck?', "Let's duel at lunch!"]),
-                          person(5, 10, 8, 'rd_person_068', 'face_up', ['I heard there\'s a new kid who knows\nall about the Millennium Puzzle...']),
-                          person(11, 2, 8, 'sc_person_47', 'face_right', ["Yugi solved the Millennium Puzzle,\nyou know.", "Nobody had done that in 5,000 years!"]),
+out['DH_00']['people'] = [person(7, 6, 8, 'rd_person_050', 'wander_around', ["I was up all night building my deck.", "Now I'm going to fall asleep in\nmath class..."])]
+out['DH_01']['people'] = [person(9, 11, 7, 'sc_person_27', 'face_up', ["I traded my lunch for a Kuriboh card.", "Totally worth it."])]
+out['DH_02']['people'] = [person(4, 4, 6, 'rd_person_053', 'face_up', ['Psst! Did you bring your deck?', "Let's duel at lunch!"]),
                           # (Yugi and his friends, by the windows)
                           person(12, 10, 3, 'rd_yugi', 'face_down', ["Yugi: Hi! I'm Yugi Muto.", "My grandpa runs the Kame Game shop.\nHe has the best cards in Domino!",
                                                                     "Do you play Duel Monsters too?\nLet's be friends!"]),

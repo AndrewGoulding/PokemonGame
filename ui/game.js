@@ -9975,42 +9975,38 @@
       for (const no of main) { if (deck.filter((no2) => C[no2][2] !== "fusion").length >= 40) break; deck.push(no); }
     return deck;
   }
-  // Domino High's other pupils (and the teacher): each duels with a deck of the boosters they've opened, Legend of
-  // Blue Eyes White Dragon's and Metal Raiders' (window.YUGIOH_SETS): twelve packs, six of each, nine cards a pack
-  // (eight commons and a Rare, now and then a Super, Ultra or Secret Rare instead), and the best 40 of what came out
-  // (three of a card at most, about two dozen monsters, few that need Tributes), the Fusion Monsters in its Fusion
-  // Deck. Each pupil's packs are their own (seeded by who they are), so their deck is the same every time.
+  // Domino High's three other pupils: each duels with a deck of the few boosters they've opened, Legend of Blue Eyes
+  // White Dragon's and Metal Raiders' (window.YUGIOH_SETS): six packs, three of each, nine cards a pack, their Commons
+  // and Rares only (they've traded the rest away), 40 of them as they came (three of a card at most, about two dozen
+  // monsters, Commons that need no Tribute), filled with more Commons from the same sets. Weaker than Yugi's and
+  // his friends' decks, as a beginner's is. Each pupil's packs are their own (seeded by who they are), so their deck
+  // is the same every time.
   function boosterDeck(seedText) {
     let h = 2166136261;
     for (const ch of seedText) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
     const rng = () => { h = (h + 0x6D2B79F5) >>> 0; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
     const DM = window.DuelMonsters, C = window.YUGIOH_CARDS.cards, S = window.YUGIOH_SETS;
     const pulled = [];
-    for (let k = 0; k < 12; k++) pulled.push(...pullPack(S[k % 2 ? "mrd" : "lob"], rng));
-    const nos = pulled.map((n) => DM.numberOf(n)).filter((no) => no && C[no] && DM.playable(no));
-    const count = {}, deck = [], fusion = [];
-    const lv = (no) => C[no][5] || 0, power = (no) => Math.max(C[no][6] || 0, C[no][7] || 0) + (C[no][2] === "effect" ? 300 : 0);
+    for (let k = 0; k < 6; k++) pulled.push(...pullPack(S[k % 2 ? "mrd" : "lob"], rng));
+    // (more Commons, to fill the deck with if the packs come up short)
+    for (let k = 0; k < 30; k++) { const s = S[k % 2 ? "mrd" : "lob"]; pulled.push(s.common[Math.floor(rng() * s.common.length)]); }
+    const R = window.YUGIOH_RARITY;
+    const nos = pulled.map((n) => DM.numberOf(n)).filter((no) => no && C[no] && DM.playable(no) && "cr".includes(R[no]) && C[no][2] !== "fusion");
+    const count = {}, deck = [];
+    const lv = (no) => C[no][5] || 0;
     const isMon = (no) => ["normal", "effect", "ritual"].includes(C[no][2]) && !(DM.effectOf(no) || {}).specialOnly;
     const take = (no) => { if ((count[no] || 0) >= 3 || deck.length >= 40) return false; count[no] = (count[no] || 0) + 1; deck.push(no); return true; };
-    for (const no of new Set(nos.filter((no) => C[no][2] === "fusion"))) fusion.push(no);
-    // (the monsters, strongest first: up to 4 that need one Tribute and 2 that need two)
-    let one = 0, two = 0;
-    for (const no of nos.filter(isMon).sort((a, b) => power(b) - power(a))) {
-      if (deck.length >= 24) break;
-      if (lv(no) >= 7 && two >= 2) continue;
-      if (lv(no) >= 5 && lv(no) < 7 && one >= 4) continue;
-      if (take(no)) { if (lv(no) >= 7) two++; else if (lv(no) >= 5) one++; }
-    }
-    // (the Spells and Traps, the rarer first, then whatever's left to make 40)
-    const rank = (no) => { const n = C[no][0]; for (const [k, v] of [["secret", 5], ["ultra", 4], ["super", 3], ["rare", 2]]) if (S.lob[k].includes(n) || S.mrd[k].includes(n)) return v; return 1; };
-    for (const no of nos.filter((no) => !isMon(no) && C[no][2] !== "fusion").sort((a, b) => rank(b) - rank(a))) take(no);
-    for (const no of nos.filter(isMon)) take(no);
-    return deck.concat(fusion);
+    // (the monsters as they came, Commons that need no Tribute; then the Spells and Traps, and more monsters to make 40)
+    const weak = (no) => isMon(no) && lv(no) <= 4 && R[no] === "c";
+    for (const no of nos.filter(weak)) { if (deck.length >= 24) break; take(no); }
+    for (const no of nos.filter((no) => !isMon(no))) take(no);
+    for (const no of nos.filter(weak)) take(no);
+    return deck;
   }
   // (how likely each card of their deck is to be a prize, by its rarity)
   const DUEL_DROP = { c: 30, r: 10, s: 4, u: 2, x: 1 };
   function classmate(script) {
-    const c = window.YUGIOH_DUELISTS.classmates, name = script === "DominoHigh_Person3" ? c.teacher : c.name;
+    const c = window.YUGIOH_DUELISTS.classmates, name = c.name;
     return { name, ask: c.ask, win: name + ": " + c.win, lose: name + ": " + c.lose, nos: boosterDeck(script) };
   }
   async function dominoDuel(key, person) {

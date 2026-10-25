@@ -3230,13 +3230,13 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   places on it, **Domino High School** and **the Kame Game shop** (on two of the game's own markers' spots): the
   arrows move the cursor, A goes there, B stays. Walk out of either place and the map comes up again.
 - **Domino High School**: **Yugi, Téa, Joey and Tristan** are in its classroom, by the windows; talk to them and
-  they introduce themselves. Pupils stand about the front, the hall and the classroom, with a teacher.
+  they introduce themselves. Three pupils are about: one in front, one in the hall, one in the classroom.
 - **The Kame Game shop**: Yugi's grandpa, at his counter, on Yu-Gi-Oh! GX Duel Academy's shop screen (`CardShop` in
   `ui/bag-screen.js`, its pieces from the cartridge in `assets/yugioh/shop/`): its room, the translucent panels and
   the text box. He sells booster packs of **Legend of Blue Eyes White Dragon**, **Metal Raiders**, **Spell Ruler**,
   **Pharaoh's Servant** and **Labyrinth of Nightmare** (`window.YUGIOH_SETS` in `data/items.js`: the cards GX has of
   each, by rarity), and seven packs of this game's own with **every other card released in the TCG or OCG up to
-  Legacy of Darkness** (754 of them, about 108 to a pack), each named for and showing its boss monster:
+  Legacy of Darkness** (754 of them, and the 470 of GX's own of that time that its five sets don't have: about 175 to a pack), each named for and showing its boss monster:
   **Ultimate Great Moth**, **Gate Guardian**, **Dark Necrofear**, **Des Gardius**, **Dark Ruler Ha Des**,
   **Gilford** and **Berserk Dragon** (rarities by each card's stats and effect: the boss and one more Secret Rare,
   10 Ultra, 12 Super and 24 Rare a pack, the rest Common), ₽300 a pack: the packs down the left as GX shows them (each a card from its set in a pack's
@@ -3255,9 +3255,12 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   Rare; and **trades tokens for cards**: every card on the Trunk's screen, A on one for 3 tokens of its rarity
   (SELECT on either screen opens the Trunk's sort menu). A
   card's rarity (`window.YUGIOH_RARITY`) is its rarity in the first of the five sets it's in, or else in its first
-  printing (from YGOPRODeck's card database, under its TCG name where GX's differs). The Trunk shows each card's. The
-  six cards GX made up, in neither the TCG nor the OCG (Mechanical Spider, Guardian of the Sea, Call of the Dark, Marie
-  the Fallen One, Enchanted Arrow, Wasteland Amazon), aren't in the game.
+  printing (from YGOPRODeck's card database, under its TCG name where GX's differs). The Trunk shows each card's.
+  **Every card in the game comes from its booster packs**: GX's cards released up to Legacy of Darkness that GX's
+  five sets don't have are in the seven packs of this game's own (with their time's cards, keeping their rarities),
+  and the rest of GX's, 334 cards, aren't in the game: the 328 released after Legacy of Darkness, and the six GX made
+  up, in neither the TCG nor the OCG (Mechanical Spider, Guardian of the Sea, Call of the Dark, Marie the Fallen One,
+  Enchanted Arrow, Wasteland Amazon). Any you had leave your Trunk and decks.
 
 - **The maps**: all 58 of the game's screens, each its own map of one screen (15x10 tiles) with the camera fixed on
   it, as in the game. Walk off a screen's edge or through a doorway and you're on the next, as the game links them.
@@ -3286,7 +3289,7 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   (Pegasus Castle's door and gardens, its stone made a school's), its entrance
   hall (the Sacred Cards' hotel lobby, with a tiled floor, the vending machine and reception, the sofas its
   benches) and a classroom (the Sacred Cards' warehouse, cleared, with wooden boards, a blackboard, lockers, the
-  teacher's desk and two rows of pupils' desks). Pupils and a teacher are about; the fountains' menu lists it.
+  teacher's desk and two rows of pupils' desks). Three pupils are about; the fountains' menu lists it.
 - **The Trunk**: the START menu's **Trunk** (in the Yu-Gi-Oh! realm, whose START menu has no Pokédex, Pokémon,
   Bag or Trainer Card) is Yu-Gi-Oh! GX Duel Academy's, its graphics
   from that cartridge: your cards on the left, your deck on the right, a bar of filters along the top and the card
@@ -3340,11 +3343,12 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   those GX Duel Academy has: Yugi's Dark Magician, Gaia, Kuriboh and Multiply, Exodia, the Mythical Beasts and Black
   Luster Soldier; Joey's Red-Eyes, Flame Swordsman, Time Wizard and Baby Dragon, Alligator's Sword and Metalmorph;
   Téa's Magician of Faith from Bakura's Shadow Game, with Fairies; and Tristan, who doesn't duel that season (his
-  Cyber Commander isn't among GX's cards), keeps his machines. Domino High's other pupils, and the teacher, duel too,
-  each with a deck from the boosters they've opened (`boosterDeck` in `ui/game.js`): twelve packs of Legend of Blue
-  Eyes White Dragon and Metal Raiders (`window.YUGIOH_SETS` in `data/items.js`, the 88 and 95 cards of those sets GX
-  has, by rarity), nine cards a pack with a Rare or better, and the best 40 of what came out; each pupil's packs are
-  their own, so their deck is the same each time. You duel with your Trunk's deck, of 40 cards at least: there's no deck
+  Cyber Commander isn't among GX's cards), keeps his machines. Domino High's three other pupils duel too,
+  each with a beginner's deck from the few boosters they've opened (`boosterDeck` in `ui/game.js`): six packs of Legend
+  of Blue Eyes White Dragon and Metal Raiders (`window.YUGIOH_SETS` in `data/items.js`, the 88 and 95 cards of those
+  sets GX has, by rarity), their Commons and Rares only, Common monsters that need no Tribute, as they came, filled
+  with more Commons: weaker than Yugi's and his friends' (each of whom beats them about four times in five); each
+  pupil's packs are their own, so their deck is the same each time. You duel with your Trunk's deck, of 40 cards at least: there's no deck
   to borrow, you build your first from booster packs. The duel screen (`DuelScreen`, in `ui/bag-screen.js`) is GX Duel Academy's, its
   graphics from that cartridge (`assets/yugioh/duel/`): the field in perspective, the Gym's boards under it and the
   academy's mat between the two sides, the life points, the phases down the left (the one you're in lit) with the

@@ -46,6 +46,8 @@ def entry(c):
     return [c['name'], text, KIND[c['frameType']], TYPES.index(c['race']), ATTRS.index(c['attribute']), c.get('level') or 0, c['atk'], c.get('def') or 0, 0]
 cards = [entry(by[n]) for n in spec['cards']]
 number = {n: FIRST + i for i, n in enumerate(spec['cards'])}
+# (a pack's cards: the new ones, and GX's own of its time that GX's five sets don't have, by GX's names, keeping
+# GX's rarities; GX's cards released after Legacy of Darkness, in no pack, are out of the game: their rarity "-")
 rarity = {}
 for p in spec['packs']:
     for n, r in p['cards']: rarity[n] = r
@@ -62,6 +64,9 @@ js = (START + '(function () {\n'
       '  C.cards.length = ' + str(FIRST) + ';\n'
       '  C.cards.push(...' + json.dumps(cards, separators=(',', ':'), ensure_ascii=False) + ');\n'
       '  window.YUGIOH_RARITY = window.YUGIOH_RARITY.slice(0, ' + str(FIRST) + ') + ' + json.dumps(''.join(rarity[n] for n in spec['cards'])) + ';\n'
+      '  const R = window.YUGIOH_RARITY.split("");\n'
+      '  for (const name of ' + json.dumps(spec['removed'], ensure_ascii=False) + ') R[C.cards.findIndex((c) => c && c[0] === name)] = "-";\n'
+      '  window.YUGIOH_RARITY = R.join("");\n'
       '  Object.assign(window.YUGIOH_SETS, ' + json.dumps(sets, ensure_ascii=False) + ');\n'
       '})();\n' + END)
 path = os.path.join(ROOT, 'data/items.js')
