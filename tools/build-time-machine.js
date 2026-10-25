@@ -8,7 +8,10 @@
 // floating in the void between the realms, drawn here too: the Time Machine
 // back to the Pokémon realm at its south end, and the portals to the other
 // realms along its north (the Yu-Gi-Oh! realm's, and two still dormant).
-// ui/game.js runs them (timeMachine, realmPortal).
+// And in the Yu-Gi-Oh! realm, a manhole in the street by the Kame Game shop,
+// down to a room under the street where the Time Machine waits to take you
+// back to the Realm Hub.
+// ui/game.js runs them (timeMachine, realmPortal, dominoManhole).
 //
 //   node tools/build-time-machine.js
 //   (after tools/build-maps.js: it redraws PalletTown-top.png's west trees)
@@ -18,6 +21,8 @@
 //   assets/world/maps/PalletTown-top.png             the gap's trees' top layer
 //   assets/world/maps/PalletTown_TimeMachine.png, -top, -border
 //   assets/world/maps/RealmHub.png, -border
+//   assets/world/maps/RD_06-patch-manhole.png        the manhole (always on)
+//   assets/world/maps/KameGame_Underground.png, -border
 //   data/emerald-maps.js (its end, between the markers): both maps, Pallet's
 //       gap and its join to the clearing
 "use strict";
@@ -241,6 +246,79 @@ const hub = (() => {
   };
 })();
 
+// ---------- Under the street, by the Kame Game shop ----------
+// The manhole in the shop's street (Reshef of Destruction's screen 6, its tile
+// (10, 6), by the shop's door): an iron cover. Below it, a room under the street: brick walls, a
+// stone walkway, a channel of water along its foot, the ladder up at the top
+// left, and the Time Machine back to the Realm Hub.
+const MANHOLE = { map: "RD_06", x: 10, y: 6 };
+const manhole = (() => {
+  const c = canvas(TILE, TILE);
+  c.ellipse(8, 8.5, 7.5, 6.5, "#3c3c44");
+  c.ellipse(8, 8, 7, 6, (x, y, dx, dy) => mix(hex("#7c7c88"), hex("#4c4c58"), (dx + dy + 2) / 4));
+  for (let y = 4; y <= 12; y += 2) for (let x = 3; x <= 13; x++) if (Math.abs(x - 8) / 7 + Math.abs(y - 8) / 6 < 1.15) c.set(x, y, "#3c3c48");
+  c.ellipse(8, 8, 2, 1.6, "#9c9ca8");
+  writePng(path.join(MAPS, MANHOLE.map + "-patch-manhole.png"), TILE, TILE, c.rgba);
+})();
+void manhole;
+const UNDER = "KameGame_Underground", UW = 15, UH = 10;
+const UNDER_MACHINE = { x: 9, y: 2 }, UNDER_LADDER = { x: 4, y: 2 };
+const UNDER_ARRIVE = { x: UNDER_LADDER.x, y: UNDER_LADDER.y + 1 };
+const under = (() => {
+  const c = canvas(UW * TILE, UH * TILE), r = rng(13);
+  const wall = (tx, ty) => tx === 0 || tx === UW - 1 || ty <= 2 || ty === UH - 1;
+  const water = (tx, ty) => ty === UH - 2 && tx > 0 && tx < UW - 1;
+  for (let ty = 0; ty < UH; ty++) for (let tx = 0; tx < UW; tx++) {
+    const x0 = tx * TILE, y0 = ty * TILE;
+    for (let y = 0; y < TILE; y++) for (let x = 0; x < TILE; x++) {
+      let col;
+      if (wall(tx, ty)) {
+        // (bricks: rows of 4, staggered)
+        const row = Math.floor((y0 + y) / 4), off = row % 2 ? 4 : 0;
+        const joint = (y0 + y) % 4 === 3 || (x0 + x + off) % 8 === 7;
+        col = joint ? hex("#2a2420") : mix(hex("#6c5a4c"), hex("#4c3e34"), r() * 0.5 + (ty <= 2 ? (2 - ty) * 0.15 : 0));
+      } else if (water(tx, ty)) {
+        const w = Math.sin((x0 + x) * 0.4 + (y0 + y) * 0.9) * 0.5 + 0.5;
+        col = mix(hex("#24485c"), hex("#3c7088"), w * 0.7);
+      } else {
+        col = mix(hex("#6e6e74"), hex("#58585e"), r() * 0.4);
+        if (x === 0 || y === 0) col = mix(col, hex("#88888e"), 0.5);
+        if (x === TILE - 1 || y === TILE - 1) col = mix(col, hex("#3c3c42"), 0.5);
+      }
+      c.set(x0 + x, y0 + y, col);
+    }
+  }
+  // (the walkway's edge over the water)
+  c.rect(TILE, (UH - 2) * TILE, (UW - 2) * TILE, 2, "#3a3a40");
+  // The ladder, up the wall to the manhole.
+  const lx = UNDER_LADDER.x * TILE;
+  c.rect(lx + 3, 0, 2, 3 * TILE, "#8c8c98"); c.rect(lx + 11, 0, 2, 3 * TILE, "#8c8c98");
+  for (let y = 4; y < 3 * TILE; y += 6) c.rect(lx + 3, y, 10, 2, "#b0b0bc");
+  // A lamp on the wall, and its light on the walkway.
+  c.rect(7 * TILE + 5, TILE + 2, 6, 6, "#f8e080"); c.rect(7 * TILE + 4, TILE + 1, 8, 1, "#383430");
+  for (let y = 3 * TILE; y < (UH - 2) * TILE; y++) for (let x = 3 * TILE; x < 12 * TILE; x++) {
+    const d = Math.hypot(x - (7.5 * TILE), (y - 3 * TILE) * 1.4) / (4.5 * TILE);
+    if (d < 1) c.set(x, y, mix(c.get(x, y), hex("#c8b878"), (1 - d) * 0.18));
+  }
+  c.draw(timeMachine(), UNDER_MACHINE.x * TILE, UNDER_MACHINE.y * TILE);
+  writePng(path.join(MAPS, UNDER + ".png"), c.w, c.h, c.rgba);
+  const border = canvas(32, 32);
+  border.rect(0, 0, 32, 32, "#1a1614");
+  writePng(path.join(MAPS, UNDER + "-border.png"), 32, 32, border.rgba);
+  const collision = [];
+  for (let ty = 0; ty < UH; ty++) for (let tx = 0; tx < UW; tx++) collision.push(wall(tx, ty) || water(tx, ty) ? 1 : 0);
+  for (let y = 0; y < 3; y++) for (let x = 0; x < 3; x++) collision[(UNDER_MACHINE.y + y) * UW + UNDER_MACHINE.x + x] = 1;
+  return {
+    name: UNDER, title: "Under the Street", width: UW, height: UH, type: "indoor", realm: "yugioh", music: "mus_silph",
+    cycling: false, showName: true, top: false, borderWidth: 2, borderHeight: 2,
+    collision, elevation: collision.map(() => 0), behavior: collision.map(() => 0), encounter: collision.map(() => 0),
+    connections: [], warps: [],
+    signs: [0, 1, 2].map((k) => ({ x: UNDER_MACHINE.x + k, y: UNDER_MACHINE.y + 2, script: "Domino_TimeMachine", text: null }))
+      .concat([{ x: UNDER_LADDER.x, y: UNDER_LADDER.y, script: "Domino_ManholeUp", text: null }]),
+    triggers: [], hidden: [], people: [], wild: null
+  };
+})();
+
 // ---------- The maps' data ----------
 const open = [];
 for (let y = GAP.y; y < GAP.y + GAP.h; y++) for (let x = GAP.x; x < GAP.x + GAP.w; x++) open.push([x, y, 0, 0]);
@@ -248,17 +326,27 @@ const START = "// The Time Machine and the Realm Hub (tools/build-time-machine.j
 const js = START + "): Pallet Town's west gap, the Time Machine's clearing, and the Realm Hub.\n" +
   "window.WORLD_MAPS[" + JSON.stringify(LANE) + "] = " + JSON.stringify(lane) + ";\n" +
   "window.WORLD_MAPS[" + JSON.stringify(HUB) + "] = " + JSON.stringify(hub) + ";\n" +
-  "window.TIME_MACHINE = " + JSON.stringify({ lane: { map: LANE, x: LANE_DOOR.x, y: LANE_DOOR.y + 1, facing: "down" }, hub: { map: HUB, x: HUB_ARRIVE.x, y: HUB_ARRIVE.y, facing: "down" } }) + ";\n" +
+  "window.WORLD_MAPS[" + JSON.stringify(UNDER) + "] = " + JSON.stringify(under) + ";\n" +
+  "window.TIME_MACHINE = " + JSON.stringify({ lane: { map: LANE, x: LANE_DOOR.x, y: LANE_DOOR.y + 1, facing: "down" }, hub: { map: HUB, x: HUB_ARRIVE.x, y: HUB_ARRIVE.y, facing: "down" },
+    under: { map: UNDER, x: UNDER_ARRIVE.x, y: UNDER_ARRIVE.y, facing: "up" }, street: { map: MANHOLE.map, x: MANHOLE.x, y: MANHOLE.y + 1, facing: "down" } }) + ";\n" +
   "(function () {\n" +
   "  const town = window.WORLD_MAPS.PalletTown;\n" +
   "  if (!town) return;\n" +
   "  town.patches = Object.assign({}, town.patches, { timegap: { x: " + PATCH.x + ", y: " + PATCH.y + ", w: " + PATCH.w + ", h: " + PATCH.h + ", top: false, collision: " + JSON.stringify(open) + " } });\n" +
   "  for (const [x, y] of " + JSON.stringify(open) + ") town.collision[y * town.width + x] = 0;\n" +
   "  if (!town.connections.some((c) => c.map === " + JSON.stringify(LANE) + ")) town.connections.push({ map: " + JSON.stringify(LANE) + ", direction: \"left\", offset: 0 });\n" +
+  "})();\n" +
+  "(function () {\n" +
+  "  // (the manhole by the Kame Game shop: its cover, and A on it to climb down)\n" +
+  "  const street = window.WORLD_MAPS[" + JSON.stringify(MANHOLE.map) + "];\n" +
+  "  if (!street) return;\n" +
+  "  street.patches = Object.assign({}, street.patches, { manhole: { x: " + MANHOLE.x + ", y: " + MANHOLE.y + ", w: 1, h: 1, top: false, collision: [[" + MANHOLE.x + ", " + MANHOLE.y + ", 1, 0]] } });\n" +
+  "  street.collision[" + (MANHOLE.y * 15 + MANHOLE.x) + "] = 1;\n" +
+  "  street.signs = (street.signs || []).filter((s) => s.script !== \"Domino_Manhole\").concat([{ x: " + MANHOLE.x + ", y: " + MANHOLE.y + ", script: \"Domino_Manhole\", text: null }]);\n" +
   "})();\n" + END;
 const file = path.join(root, "data/emerald-maps.js");
 let text = fs.readFileSync(file, "utf8");
 const a = text.indexOf(START);
 if (a >= 0) text = text.slice(0, a) + text.slice(text.indexOf(END, a) + END.length);
 fs.writeFileSync(file, text + js);
-console.log(LANE, LW + "x" + LH + ";", HUB, HW + "x" + HH);
+console.log(LANE, LW + "x" + LH + ";", HUB, HW + "x" + HH + ";", UNDER, UW + "x" + UH);

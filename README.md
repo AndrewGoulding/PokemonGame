@@ -3192,12 +3192,16 @@ realms to come (the **Yu-Gi-Oh! realm** first).
   and Spear Pillar's song. The Time Machine at its south end takes you back beside Pallet Town. Along its north are
   the realms' portals: the **Yu-Gi-Oh! realm's** (golden, a pyramid over it) takes you to Domino City (below), and
   the two either side of it are dormant, for realms to come. Fly and Teleport don't work out of the Pokémon realm.
+- **Back from Domino City**: a **manhole** in the Kame Game shop's street, right of its door. A on it and you climb
+  down a ladder to a room under the street, brick walls and a channel of water, where a Time Machine takes you back
+  to the Realm Hub (the ladder takes you back up).
 - **Each realm's own bag**: your Bag, with everything you've had all along, is the Pokémon realm's. Leave that realm
   and it's put away until you're back (`Player.enterRealm`, as each map's `realm` says: `flags.realmBags`), and the
   realm you're in has a bag of its own (the Realm Hub's is empty; the Yu-Gi-Oh! realm's holds its booster packs).
   Your money stays the same from realm to realm (you can hold up to ₽10,000,000).
 
-`tools/build-time-machine.js` draws it all (run it after `tools/build-maps.js`, as it redraws Pallet's west trees):
+`tools/build-time-machine.js` draws it all, the manhole and the room under the street too (run it after
+`tools/build-maps.js`, as it redraws Pallet's west trees):
 
 ```sh
 node tools/build-time-machine.js
@@ -3236,9 +3240,14 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   R to fill the basket and L to empty it, START for what's in the set, SELECT for the help bar; your money by the
   star at the top right, where GX shows its Duel Points. A pack has nine cards, eight Commons and a Rare, now and
   then a Super Rare (1 in 6), an Ultra Rare (1 in 12) or a Secret Rare (1 in 72) instead. Each opens as GX opens
-  one, its cards popping out and flying into the machine (A speeds it up, B skips it), then GX's list of what came
+  one, its timing and paths recorded from the game frame by frame: the shop fades, the machine slides in from the
+  right and the pack drops in at the bottom left, each card rises out of it in GX's card frames (its kind's colour,
+  the frame and the card's back from the cartridge), moves along the arc with the dots' flash on its first move, and
+  turns over into the machine (A speeds it up, B skips it, SELECT shows the help bar); then GX's list of what came
   out, with the set's name, how much of it you have and NEW on the cards you didn't have; they go into your Trunk.
-  (Packs bought before, still in your bag, he opens for you.) He also **dismantles cards**: on the Trunk's screen,
+  The first time you visit, he gives you **15 Pack Tokens**, for a booster pack of your choice each ("Trade in Pack
+  Tokens.", on the same screen, a token a pack): those packs go into your bag, to open from the Trunk's INVENTORY,
+  and you build your first deck from them. He also **dismantles cards**: on the Trunk's screen,
   A on a spare card (one not in your deck) for a token of its rarity, Common, Rare, Super Rare, Ultra Rare or Secret
   Rare; and **trades tokens for cards**: every card on the Trunk's screen, A on one for 3 tokens of its rarity. A
   card's rarity (`window.YUGIOH_RARITY`) is its rarity in the first of the five sets it's in, or else in its first
@@ -3280,8 +3289,9 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   LOW LEVEL (1-4), MIDDLE LEVEL (5-6), HIGH LEVEL (7+), SPELL, TRAP, NORMAL, EFFECT, FUSION and RITUAL, each with
   its count. A on a card opens its menu: TO MAIN DECK (TO TRUNK, in the deck), TO SIDE DECK, FILTER, SORT (by
   NUMBER, NAME, ATTACK, DEFENSE, CATEGORY, TYPE, ATTRIBUTE, ICON or LEVEL), CHANGE VIEW (names, or little cards
-  seven a row), DECK MODE (the deck or its side deck) and EXIT. R (the S key) puts a card in the deck, L (the A
-  key) takes it out, START shows the card itself with its text. A deck holds 60 cards and 20 Fusion Monsters, its
+  seven a row), DECK MODE (the deck or its side deck) and EXIT, and below, this game's own **INVENTORY**: your
+  booster packs, Pack Tokens and cards' tokens, A on a pack to open it there. R (the S key) puts a card in the deck,
+  L (the A key) takes it out, START shows the card itself with its text. A deck holds 60 cards and 20 Fusion Monsters, its
   side deck 15, and three of any card in all. The cards are GX Duel Academy's 1200 (`window.YUGIOH_CARDS`), yours in
   `player.flags.yugioh` (the debug menu's **Fill the Trunk** gives you three of each).
 - **Duel Monsters' rules** (`window.DuelMonsters`, in `game/table-players.js`): the duel engine, ported from Yu-Gi-Oh!
@@ -3390,7 +3400,8 @@ python3 tools/build-gx-trunk.py "<path to Yu-Gi-Oh! GX - Duel Academy (USA).gba>
   its zone itself, in the hand's cards' colours.)
 - **The shop's pieces**, the same way (`tools/lib/gx-shop-pieces.json`): the shop's room, its translucent panels and
   the text box with its cursor, the pack picker's icons, arrows and digits, the SELECT tab and its help bar, the
-  pack opening's backdrop, machine and help bar, and the opened pack's list's background and NEW tag, in
+  pack opening's backdrop, machine and help bar, its card frames in each kind's colours (their palettes from 0x10bc058),
+  the cards' back and the dots of the flash, and the opened pack's list's background and NEW tag, in
   `assets/yugioh/shop/` (8bpp tiles too, with their 256 colours). (The packs' pictures the screen draws: GX makes its
   own as it runs, from a card's picture and its frame.)
 - **The Trunk's icons** (the attributes with Spell's and Trap's, the 20 types, the Spells' and Traps' kinds) and

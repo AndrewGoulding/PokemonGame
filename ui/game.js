@@ -2983,7 +2983,7 @@
   // (The Time Machine off Pallet Town, and the Realm Hub's: timeMachine, realmPortal.)
   for (const sc of ["TimeMachine_EventScript_Machine", "TimeMachine_EventScript_Sign", "TimeMachine_EventScript_Scientist", "RealmHub_EventScript_Machine",
     "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_west", "RealmHub_EventScript_Portal_east", "SacredCards_Fountain", "SacredCards_BackToTown",
-    "Domino_WorldMap", "KameGame_Grandpa", ...Object.keys(DOMINO_DUELISTS)]) SPECIAL.add(sc);
+    "Domino_WorldMap", "KameGame_Grandpa", "Domino_Manhole", "Domino_ManholeUp", "Domino_TimeMachine", ...Object.keys(DOMINO_DUELISTS)]) SPECIAL.add(sc);
   // (and the other pupils and the teacher, with their boosters' decks: classmate)
   for (let i = 0; i < 12; i++) SPECIAL.add("DominoHigh_Person" + i);
   // (And its ferries, Canalave's to Iron Island and back, and Oreburgh's fossil scientist: sinnohFerry, fossilScientist.)
@@ -3348,6 +3348,8 @@
     if (script === "SacredCards_BackToTown") { await dominoBackToTown(); return; }
     if (script === "Domino_WorldMap") { await dominoTravel(); return; }
     if (script === "KameGame_Grandpa") { await kameGameShop(); return; }
+    if (script === "Domino_Manhole" || script === "Domino_ManholeUp") { await dominoManhole(script === "Domino_Manhole"); return; }
+    if (script === "Domino_TimeMachine") { await dominoTimeMachine(); return; }
     if (DOMINO_DUELISTS[script]) { await dominoDuel(DOMINO_DUELISTS[script], ev.person); return; }
     if (/^DominoHigh_Person([0-9]|1[01])$/.test(script || "")) { await dominoDuel(classmate(script), ev.person); return; }
     if (ev.person && ev.person.ferry && isSinnoh(ev.map)) { await sinnohFerry(ev.person); return; }
@@ -9780,6 +9782,26 @@
     music(window.WORLD_MAPS[to.map].music);
     await persist();
   }
+  // The manhole in the Kame Game shop's street, down to the room under it (tools/build-time-machine.js), where the
+  // Time Machine takes you back to the Realm Hub; and the ladder back up.
+  async function dominoManhole(down) {
+    const to = window.TIME_MACHINE;
+    if (down) {
+      await say("It's a manhole. Its cover's loose,\nand there's a ladder going down…");
+      if (!(await confirm("Climb down the ladder?"))) return;
+    } else if (!(await confirm("Climb back up to the street?"))) return;
+    await Overworld.fadeToBlack();
+    sfx("se_exit");
+    player.location = Object.assign({}, down ? to.under : to.street);
+    await Overworld.teleport(player.location);
+    music(window.WORLD_MAPS[player.location.map].music);
+    await persist();
+  }
+  async function dominoTimeMachine() {
+    await say("It's the Time Machine! It hums\nsoftly in the dark.");
+    if (!(await confirm("Travel back to the Realm Hub?"))) return;
+    await voyage(window.TIME_MACHINE.hub, ["The Time Machine whirs to life…", "Domino City fades away…", "…and you come out in the Realm Hub."], "se_warp_in");
+  }
   // The Kame Game shop: Yugi's grandpa, Solomon Muto, on GX Duel Academy's shop screen (ui/bag-screen.js's CardShop).
   // He sells the five sets' booster packs (window.YUGIOH_SETS), 300 a pack (game/bag.js's price), opened as you buy
   // them, their cards into your Trunk; he dismantles your spare cards (those not in your deck) for tokens of their
@@ -9819,20 +9841,30 @@
     const price = Bag.price(window.YUGIOH_SETS.lob.item) || 300;
     Screen.say(""); clearMenu();
     CardShop.setup({ money: () => player.money, sets: window.YUGIOH_SETS });
-    await CardShop.say(["Grandpa: Welcome to the Kame Game\nshop! I'm Solomon Muto, Yugi's\ngrandpa.", "We've got booster packs from every\nset. Have a look!"]);
-    // (packs from before, in your bag: opened here)
-    for (const key of PACK_SETS) {
-      const item = window.YUGIOH_SETS[key].item, n = Player.itemCount(player, item);
-      if (!n) continue;
-      await CardShop.say("Grandpa: Oh, you've still got " + n + "\n" + window.YUGIOH_SETS[key].name + " pack" + (n > 1 ? "s" : "") + ".\nLet's open " + (n > 1 ? "them" : "it") + "!");
-      Player.removeItem(player, item, n);
-      for (const p of openPacks(key, n)) { await CardShop.opening(key, p); await CardShop.results({ sets: window.YUGIOH_SETS, title: window.YUGIOH_SETS[key].full, cards: p, comp: setCompletion(key), packKey: key }); }
+    if (!y.gotPackTokens) {
+      // (the first time: 15 Pack Tokens, a booster pack of your choice each, to build your first deck from)
+      await CardShop.say(["Grandpa: Welcome to the Kame Game\nshop! I'm Solomon Muto, Yugi's\ngrandpa.", "So you want to be a duelist? Then\nyou'll need a deck of your own!",
+        "Here, take these: 15 Pack Tokens.\nTrade them in for any booster packs\nyou like, one pack a token.", player.name + " got 15 Pack Tokens!",
+        "Open your packs from your Trunk's\nInventory, then build a deck of 40\ncards or more. Good luck!"]);
+      y.gotPackTokens = true; y.packTokens = (y.packTokens || 0) + 15;
       await persist();
-    }
+    } else await CardShop.say(["Grandpa: Welcome back to the Kame\nGame shop!"]);
     for (;;) {
-      const i = await CardShop.choose("Grandpa: What'll it be?", ["Buy booster packs.", "Dismantle cards.", "Trade in tokens."]);
+      const options = ["Buy booster packs.", "Dismantle cards.", "Trade in tokens."].concat(y.packTokens ? ["Trade in Pack Tokens."] : []);
+      const i = await CardShop.choose("Grandpa: What'll it be?", options);
       if (i < 0) break;
-      if (i === 0) {
+      if (i === 3) {
+        // (Pack Tokens for packs: a token a pack, into your bag, to open from your Trunk's Inventory)
+        await CardShop.picker({ sets: window.YUGIOH_SETS, order: PACK_SETS, money: () => y.packTokens || 0, price: 1, perPack: PACK_CARDS, comp: setCompletion,
+          buy: (key, n) => {
+            if ((y.packTokens || 0) < n) return { error: "Grandpa: You haven't that many\nPack Tokens." };
+            y.packTokens -= n;
+            Player.addItem(player, window.YUGIOH_SETS[key].item, n);
+            return { message: "Grandpa: Here you are, " + n + " pack" + (n > 1 ? "s" : "") + "!\nOpen them from your Trunk's\nInventory." };
+          } });
+        CardShop.setup({ money: () => player.money, sets: window.YUGIOH_SETS });
+        await persist();
+      } else if (i === 0) {
         await CardShop.picker({ sets: window.YUGIOH_SETS, order: PACK_SETS, money: () => player.money, price, perPack: PACK_CARDS, comp: setCompletion,
           buy: (key, n) => {
             if (player.money < n * price) return { error: "Grandpa: You can't quite afford that." };
@@ -9885,7 +9917,21 @@
     const y = yugioh();
     Screen.say("");
     clearMenu();
-    await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, deck: y.deck, deckName: y.deckName || "Deck" });
+    // (its INVENTORY: your booster packs, in this realm's bag, to open there; your Pack Tokens and your cards' tokens)
+    const S = window.YUGIOH_SETS;
+    await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, deck: y.deck, deckName: y.deckName || "Deck",
+      inventory: () => PACK_SETS.map((k) => ({ label: S[k].name, count: Player.itemCount(player, S[k].item), pack: k }))
+        .concat([{ label: "Pack Tokens", count: y.packTokens || 0 }])
+        .concat(["c", "r", "s", "u", "x"].map((r) => ({ label: RARITY_NAME[r] + " Tokens", count: (y.tokens || {})[r] || 0 }))),
+      openPack: async (key) => {
+        if (!Player.removeItem(player, S[key].item, 1)) return;
+        CardShop.setup({ money: () => player.money, sets: S });
+        const [p] = openPacks(key, 1);
+        await CardShop.opening(key, p);
+        await CardShop.results({ sets: S, title: S[key].name, cards: p, comp: setCompletion(key), packKey: key });
+        CardShop.close();
+        await persist();
+      } });
     await persist();
   }
   // Duels (ui/bag-screen.js's DuelScreen, GX Duel Academy's field, on DuelMonsters' rules): Yugi, Téa, Joey and
@@ -12935,6 +12981,7 @@
     if (map === "CeladonCity") return ["farmpath"];
     // (Pallet Town's gap in its west trees, to the Time Machine, always: tools/build-time-machine.js.)
     if (map === "PalletTown") return ["timegap"];
+    if (map === "RD_06") return ["manhole"];   // (the manhole by the Kame Game shop: tools/build-time-machine.js)
     // (Route 40's Battle Tower: no stairs.)
     if (map === "BattleTower_Lobby") return ["nostairs"];
     // (The League gate's ways west and east, to Johto's Routes 26 and 28: data/johto-maps.js.)

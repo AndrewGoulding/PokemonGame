@@ -523,7 +523,7 @@
     { name: "ICON", key: (n, c) => (c[2] === "spell" || c[2] === "trap" ? c[8] + (c[2] === "trap" ? 10 : 0) : 99) },
     { name: "LEVEL", key: (n, c) => -c[5] }
   ];
-  const COMMANDS = ["TO MAIN DECK", "FILTER", "SORT", "CHANGE VIEW", "DECK MODE", "EXIT", "TO SIDE DECK"];
+  const COMMANDS = ["TO MAIN DECK", "FILTER", "SORT", "CHANGE VIEW", "DECK MODE", "EXIT", "TO SIDE DECK", "INVENTORY"];
 
   let st = null, raf = 0;
 
@@ -695,8 +695,15 @@
     }
     // The card's menu, and the sort menu.
     if (st.menu) {
-      draw(g, "cmd-menu", 16, 64); draw(g, "cmd-icons", 16, 64);
-      const i = st.menu.i, [x, y] = i < 6 ? [24 + 24 * i, 68] : [24, 92];
+      draw(g, "cmd-menu", 16, 64);
+      // (INVENTORY, this game's own: a second slot below, the menu's own slot and edge copied along, a pack for its icon)
+      if (st.opts.inventory) {
+        const m = T("cmd-menu"), pk = image("assets/sprites/items/booster/legend-of-blue-eyes-pack.png");
+        if (ready(m)) g.drawImage(m, 8, 24, 32, 32, 16 + 32, 64 + 24, 32, 32);
+        if (ready(pk)) g.drawImage(pk, 4, 2, 24, 28, 50, 92, 20, 24);
+      }
+      draw(g, "cmd-icons", 16, 64);
+      const i = st.menu.i, [x, y] = i < 6 ? [24 + 24 * i, 68] : [24 + 24 * (i - 6), 92];
       box(g, x - 1, y - 1, 26, 26, "#f8d830"); box(g, x, y, 24, 24, "#b07818");
       const label = i === 0 && st.col === 1 ? "TO TRUNK" : COMMANDS[i];
       tooltip(top, g, label, x + 12, 50);
@@ -707,6 +714,17 @@
       const x = 24 + 16 * st.sortMenu.i;
       box(g, x - 2, 70, 20, 20, "#f8d830");
       tooltip(top, g, SORTS[st.sortMenu.i].name, x + 8, 54);
+    }
+    if (st.inv && !st.message) {
+      const rows = st.inv.rows, h = 24 + 11 * rows.length;
+      g.fillStyle = "#c8a020"; g.fillRect(16, 8, 208, h); g.fillStyle = BLUE_BOX; g.fillRect(17, 9, 206, h - 2);
+      top.text("Inventory", 24, 10, YELLOW, SHADE);
+      rows.forEach((r, k) => {
+        const c = k === st.inv.i ? YELLOW : WHITE, y = 26 + 11 * k;
+        top.text(r.label, 32, y, c, SHADE, "small");
+        const v = String(r.count); top.text(v, 216 - top.textWidth(v, "small"), y, c, SHADE, "small");
+        if (k === st.inv.i) top.text("▶", 22, y, c, SHADE, "small");
+      });
     }
     if (st.message) {
       const ml = st.message.split("\n"), mh = 12 + 14 * ml.length;
@@ -810,6 +828,29 @@
     if (i === 3) { st.grid = !st.grid; clamp(); return; }
     if (i === 4) { st.side = !st.side; st.cur[1] = { i: 0, top: 0 }; clamp(); return; }
     if (i === 5) return "exit";
+    if (i === 7) return inventory();
+  }
+  // INVENTORY (this game's own): what you have besides cards, your booster packs and your tokens (opts.inventory():
+  // [{ label, count, pack }]); A on a pack opens one (opts.openPack(pack), GX's opening over the Trunk).
+  async function inventory() {
+    let i = 0;
+    for (;;) {
+      const rows = st.opts.inventory();
+      i = Math.max(0, Math.min(i, rows.length - 1));
+      st.inv = { rows, i }; paint();
+      const k = await window.GbaMenus.keys((key) => {
+        if (key === "up" || key === "down") { i = (i + (key === "up" ? rows.length - 1 : 1)) % rows.length; st.inv.i = i; se(); paint(); return undefined; }
+        return key === "a" || key === "b" ? key : undefined;
+      });
+      if (k === "b") { se(); st.inv = null; return; }
+      const row = rows[i];
+      if (!row.pack || !row.count) { se("se_failure"); continue; }
+      se();
+      st.message = "Open a " + row.label + " pack?\nA: Yes   B: No"; paint();
+      const yes = (await window.GbaMenus.keys((key) => (key === "a" || key === "b" ? key : undefined))) === "a";
+      st.message = null; paint();
+      if (yes) { await st.opts.openPack(row.pack); clamp(); }
+    }
   }
   async function open(opts) {
     const deck = opts.deck;
@@ -832,9 +873,13 @@
           return undefined;
         }
         if (st.menu) {
-          if (k === "left" || k === "right") { const i = st.menu.i === 6 ? 0 : st.menu.i; st.menu.i = (i + (k === "left" ? 5 : 1)) % 6; se(); paint(); return undefined; }
-          if (k === "down" && st.menu.i === 0) { st.menu.i = 6; se(); paint(); return undefined; }
-          if (k === "up" && st.menu.i === 6) { st.menu.i = 0; se(); paint(); return undefined; }
+          if (st.menu.i >= 6) {
+            if ((k === "right" && st.menu.i === 6 || k === "left" && st.menu.i === 7) && st.opts.inventory) { st.menu.i = 13 - st.menu.i; se(); paint(); return undefined; }
+            if (k === "up") { st.menu.i -= 6; se(); paint(); return undefined; }
+            if (k === "left" || k === "right") return undefined;
+          }
+          if (k === "left" || k === "right") { st.menu.i = (st.menu.i + (k === "left" ? 5 : 1)) % 6; se(); paint(); return undefined; }
+          if (k === "down" && (st.menu.i === 0 || st.menu.i === 1 && st.opts.inventory)) { st.menu.i += 6; se(); paint(); return undefined; }
           if (k === "a") return "command";
           if (k === "b") { st.menu = null; paint(); return undefined; }
           return undefined;
@@ -1694,10 +1739,11 @@
       if (!yes) { paint(); continue; }
       const r = opts.buy(key, n);
       if (r.error) { await describe(r.error, paint); continue; }
+      if (r.message) { n = 0; await describe(r.message, paint); continue; }
       n = 0;
       for (let p = 0; p < r.packs.length; p++) {
         const skipAll = await opening(key, r.packs[p]);
-        await results({ title: set.full || set.name, cards: r.packs[p], comp: opts.comp ? opts.comp(key) : null, packKey: key, more: p < r.packs.length - 1 });
+        await results({ title: set.name, cards: r.packs[p], comp: opts.comp ? opts.comp(key) : null, packKey: key, more: p < r.packs.length - 1 });
         if (skipAll === "stop") break;
       }
       paint();
