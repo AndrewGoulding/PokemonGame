@@ -1255,10 +1255,17 @@
       }
     }
     // (the zones to pick from, blinking; the attack's line)
-    if (st.pick) for (const e of st.pick.list) if (st.blink || e.chosen) outline(g, e.q, e.chosen ? "#f86030" : "#f8f848");
+    if (st.pick) st.pick.list.forEach((e, k) => {
+      if (k === st.pick.at) { outline(g, e.q.map(([x, y], j) => [x + (j === 0 || j === 3 ? -1 : 1), y + (j < 2 ? -1 : 1)]), "#f86030"); outline(g, e.q, "#f86030"); }
+      else if (st.blink || e.chosen) outline(g, e.q, e.chosen ? "#f86030" : "#f8f848");
+    });
     if (st.arrow) {
       g.strokeStyle = "#f83018"; g.lineWidth = 2; g.beginPath(); g.moveTo(st.arrow[0][0], st.arrow[0][1]); g.lineTo(st.arrow[1][0], st.arrow[1][1]); g.stroke();
     }
+    // (the bottom line's right end, open in GX's frame where its icons and stats go: its stripes under them, so a
+    // Spell's or Trap's, with fewer, shows no floor through)
+    const hud = P("hud");
+    if (ready(hud)) for (let x = 152; x < W; x += 32) g.drawImage(hud, 112, 144, 32, 16, x, 144, 32, 16);
     draw(g, "hud", 0, 0);
     lpDigits(g, st.lp[1], 0); lpDigits(g, st.lp[0], 128);
     // The phases, this one lit, and the turn's count.
@@ -1275,10 +1282,12 @@
     for (let i = 0; i < theirs; i++) draw(g, shown ? "hand-" + kindOf(d.players[1].hand[i].no) : "back", Math.round(120 - ((theirs - 1) * step + 16) / 2) + i * step, 0);
     const h = here(), mine = d.players[0].hand;
     mine.forEach((c, i) => { const up = h && h.hand === i && st.cursorOn; draw(g, "hand-" + kindOf(c.no), handX(i, mine.length), up ? 113 : 122); });
-    st.infoZone = h && h.zone || null;
-    info(g, s, st.show != null ? st.show : (seen(h) || {}).no);
-    // The cursor: down at the hand, or at a zone.
-    if (h && st.cursorOn) {
+    st.infoZone = st.pick ? st.pick.list[st.pick.at].zone || null : h && h.zone || null;
+    info(g, s, st.show != null ? st.show : st.pick ? null : (seen(h) || {}).no);
+    if (st.showText && st.show == null) s.text(st.showText, 2, 145, NAME_BLUE, NAME_SHADE);
+    // The cursor: down at the hand, or at a zone (or at the one being picked).
+    if (st.pick) { const e = st.pick.list[st.pick.at]; draw(g, "cursor", Math.round(e.x) - 6, Math.round(e.y) - 6); }
+    else if (h && st.cursorOn) {
       if (h.hand != null) draw(g, "cursor-down", h.x + 1, 97);
       else draw(g, "cursor", Math.round(h.x) - 6, Math.round(h.y) - 6);
     }
@@ -1295,6 +1304,7 @@
       if (c[6] >= 0) top.text("ATK/" + c[6] + " DEF/" + c[7], 84, 121, [32, 32, 32], col[2], "small");
     }
     if (st.banner) box(g, top, [st.banner], 66);
+    if (st.prompt) { const pl = String(st.prompt).split("\n"); box(g, top, pl, 144 - (pl.length * 14 + 6)); }
     if (st.message) box(g, top, st.message.split("\n"), 40);
     if (st.menu) bars(g, top, st.menu);
     if (st.list) paintList(g, top);
@@ -1427,22 +1437,33 @@
     return r;
   }
   // Pick zones: the cursor goes from one to the next of them, A picks (or unpicks).
+  // (the one the cursor's on: outlined and pointed at, its name on the bottom line; the others blink; the question in a
+  // box over your hand, clear of the field. req.direct: a direct attack too, picked at your opponent's hand.)
+  const DIRECT_Q = [[72, 1], [168, 1], [168, 17], [72, 17]];
   async function pickZones(req) {
     const rows = places(), list = req.options.map((o, k) => {
       const e = rows.flat().find((e) => e.zone && e.zone === o.zone) || { q: zoneQuad(o.zone), x: 120, y: 80 };
       return { k, q: e.q, x: e.x, y: e.y, zone: o.zone, chosen: false };
     });
-    st.pick = { list }; let i = 0;
+    if (req.direct != null) list.push({ k: req.direct, q: DIRECT_Q, x: 120, y: 9, direct: true, chosen: false });
+    st.pick = { list, at: 0 }; let i = 0;
     const need = req.max > 1 ? req.max : 1;
-    st.message = req.prompt; paint();
+    st.prompt = req.prompt;
     const blink = setInterval(() => { st.blink = !st.blink; paint(); }, 220);
-    const place = () => { const rs = places(); for (let r = 0; r < rs.length; r++) { const j = rs[r].findIndex((e) => e.zone === list[i].zone); if (j >= 0) { st.cur = { r, i: j }; return; } } };
+    const place = () => {
+      st.pick.at = i;
+      const z = list[i].zone;
+      st.show = z && (z.faceUp || st.duel.controllerOf(z) === 0) ? z.card.no : null;
+      st.showText = list[i].direct ? "Attack directly" : z && st.show == null ? "(face down)" : null;
+      const rs = places(); for (let r = 0; r < rs.length; r++) { const j = rs[r].findIndex((e) => e.zone && e.zone === z); if (j >= 0) { st.cur = { r, i: j }; return; } }
+    };
     place(); paint();
     const r = await keys((k) => {
       if (k === "left" || k === "up") { i = (i + list.length - 1) % list.length; place(); se(); paint(); return undefined; }
       if (k === "right" || k === "down") { i = (i + 1) % list.length; place(); se(); paint(); return undefined; }
-      if (k === "start") { const z = list[i].zone; if (z.faceUp || st.duel.controllerOf(z) === 0) showDetail(z.card.no); return undefined; }
+      if (k === "start") { const z = list[i].zone; if (z && (z.faceUp || st.duel.controllerOf(z) === 0)) showDetail(z.card.no); return undefined; }
       if (k === "a") {
+        if (list[i].direct) { se(); return list[i].k; }
         list[i].chosen = !list[i].chosen; se(); paint();
         const chosen = list.filter((e) => e.chosen).map((e) => e.k);
         if (chosen.length >= Math.min(need, list.length)) return need > 1 ? chosen : chosen[0];
@@ -1452,7 +1473,7 @@
       return undefined;
     });
     clearInterval(blink);
-    st.pick = null; st.blink = false; st.message = null; paint();
+    st.pick = null; st.blink = false; st.prompt = null; st.show = null; st.showText = null; paint();
     return r;
   }
   // The Main Phase and the Battle Phase: the cursor over the hand and the field, each card's menu, START's phases.
@@ -1518,12 +1539,9 @@
   async function attackTarget(req) {
     const direct = req.options.findIndex((o) => o.direct);
     const targets = req.options.map((o, k) => ({ o, k })).filter(({ o }) => !o.direct);
-    if (direct >= 0) {
-      const r = await ask("Attack which?", targets.map(({ o }) => o.label).concat(["Attack directly"]), true);
-      return r < 0 ? -1 : r === targets.length ? direct : targets[r].k;
-    }
-    const r = await pickZones({ prompt: "Attack which monster?", options: targets.map(({ o }) => o), max: 1, cancel: true });
-    return r < 0 || r == null ? -1 : targets[r].k;
+    const r = await pickZones({ prompt: direct >= 0 ? "Attack which? (or directly, at the top)" : "Attack which monster?", options: targets.map(({ o }) => o), max: 1, cancel: true,
+      direct: direct >= 0 ? targets.length : null });
+    return r < 0 || r == null ? -1 : r === targets.length ? direct : targets[r].k;
   }
   const human = {
     async choose(d, req) {

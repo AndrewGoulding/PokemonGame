@@ -346,8 +346,9 @@
     toPile(c, pile, owner, top) {
       if (c.token) return;
       const pl = this.players[owner == null ? c.owner : owner];
-      if (pile === "deck") { if (top === false) pl.deck.push(c); else if (top === "shuffle") { pl.deck.push(c); shuffle(this, pl.deck); } else pl.deck.unshift(c); }
-      else if (pile === "fusion" || CardInfo.isExtra(c.no) && (pile === "hand" || pile === "deck")) pl.fusion.push(c);
+      // (a Fusion Monster back to the deck or the hand goes to the Fusion Deck)
+      if (pile === "fusion" || CardInfo.isExtra(c.no) && (pile === "hand" || pile === "deck")) pl.fusion.push(c);
+      else if (pile === "deck") { if (top === false) pl.deck.push(c); else if (top === "shuffle") { pl.deck.push(c); shuffle(this, pl.deck); } else pl.deck.unshift(c); }
       else pl[pile].push(c);
     },
     async sendToGrave(c, why) {
