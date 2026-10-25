@@ -3251,8 +3251,9 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   out, with the set's name, how much of it you have and NEW on the cards you didn't have; they go into your Trunk.
   The first time you visit, he gives you **10 Pack Tokens**, for a booster pack of your choice each ("Trade in Pack
   Tokens.", on the same screen, a token a pack), and you build your first deck from them. He also **dismantles cards**: on the Trunk's screen,
-  A on a spare card (one not in your deck) for a token of its rarity, Common, Rare, Super Rare, Ultra Rare or Secret
-  Rare; and **trades tokens for cards**: every card on the Trunk's screen, A on one for 3 tokens of its rarity. A
+  A on a spare card (one not in any of your decks) for a token of its rarity, Common, Rare, Super Rare, Ultra Rare or Secret
+  Rare; and **trades tokens for cards**: every card on the Trunk's screen, A on one for 3 tokens of its rarity
+  (SELECT on either screen opens the Trunk's sort menu). A
   card's rarity (`window.YUGIOH_RARITY`) is its rarity in the first of the five sets it's in, or else in its first
   printing (from YGOPRODeck's card database, under its TCG name where GX's differs). The Trunk shows each card's. The
   six cards GX made up, in neither the TCG nor the OCG (Mechanical Spider, Guardian of the Sea, Call of the Dark, Marie
@@ -3293,10 +3294,12 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   attribute, type and ATK/DEF, and its picture). Its filters (up from a column's top, or B; left and right): ALL,
   LOW LEVEL (1-4), MIDDLE LEVEL (5-6), HIGH LEVEL (7+), SPELL, TRAP, NORMAL, EFFECT, FUSION and RITUAL, each with
   its count. A on a card opens its menu: TO MAIN DECK (TO TRUNK, in the deck), TO SIDE DECK, FILTER, SORT (by
-  NUMBER, NAME, ATTACK, DEFENSE, CATEGORY, TYPE, ATTRIBUTE, ICON or LEVEL), CHANGE VIEW (names, or little cards
-  seven a row), DECK MODE (the deck or its side deck) and EXIT, and below, this game's own **INVENTORY**: your
+  NUMBER, NAME, ATTACK, DEFENSE, CATEGORY, TYPE, ATTRIBUTE, ICON or LEVEL, and this game's own QUANTITY: how many
+  copies you have, the most first), CHANGE VIEW (names, or little cards seven a row), DECK MODE (the deck or its
+  side deck) and EXIT, and below, this game's own **INVENTORY**: your
   booster packs, Pack Tokens and cards' tokens, A on a pack to open as many of it as you like there (left and right one more or less,
-  up and down ten). R (the S key) puts a card in the deck,
+  up and down ten), and **DECKS**: your **20 deck slots**, as GX Duel Academy keeps several (each with its main,
+  Fusion and side decks' counts), A on one to build it, and the one you last picked is the one you duel with. R (the S key) puts a card in the deck,
   L (the A key) takes it out, START shows the card itself with its text. A deck holds 60 cards and 20 Fusion Monsters, its
   side deck 15, and three of any card in all. The cards are GX Duel Academy's 1200 (`window.YUGIOH_CARDS`), yours in
   `player.flags.yugioh` (the debug menu's **Fill the Trunk** gives you three of each).

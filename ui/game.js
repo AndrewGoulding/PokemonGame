@@ -9880,18 +9880,21 @@
         await persist();
       } else if (i === 1) {
         await CardShop.say("Grandpa: Dismantle the cards you\ndon't need, and you'll get a token\nof the card's rarity for each.");
+        await CardShop.say("(SELECT sorts your cards.)");
         CardShop.close();
-        const inDeck = (no) => y.deck.main.filter((m) => m === no).length + (y.deck.side || []).filter((m) => m === no).length;
+        // (a card's copies in use: as many as the deck with the most of it has)
+        const inDeck = (no) => Math.max(...y.decks.map((d) => d.main.filter((m) => m === no).length + d.side.filter((m) => m === no).length));
         await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, deck: y.deck, mode: "dismantle", title: "Dismantle", tokens: () => y.tokens,
           action: (no) => {
             const spare = (y.trunk[no] || 0) - inDeck(no), r = rarityOf(no);
-            if (spare <= 0) return { error: "That card's in your deck. Take it\nout first to dismantle it." };
+            if (spare <= 0) return { error: "That card's in one of your decks.\nTake it out first to dismantle it." };
             return { ask: "Dismantle " + C[no][0] + "?\nYou'll get " + (r === "u" ? "an " : "a ") + RARITY_NAME[r] + " Token.",
               run: () => { y.trunk[no]--; if (!y.trunk[no]) delete y.trunk[no]; y.tokens[r] = (y.tokens[r] || 0) + 1; return null; } };
           } });
         await persist();
       } else {
         await CardShop.say("Grandpa: Bring me " + TOKENS_PER_CARD + " tokens of a\ncard's rarity, and the card's yours!");
+        await CardShop.say("(SELECT sorts the cards.)");
         CardShop.close();
         await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, deck: y.deck, mode: "trade", title: "Trade", tokens: () => y.tokens,
           action: (no) => {
@@ -9911,16 +9914,28 @@
   // ---------- Your Duel Monsters cards ----------
   //
   // The Yu-Gi-Oh! realm's cards (window.YUGIOH_CARDS: Yu-Gi-Oh! GX Duel Academy's 1200, tools/build-gx-trunk.py):
-  // the ones you have (player.flags.yugioh.trunk: how many of each, by card number) and your deck (its main deck,
-  // with any Fusion Monsters, and its side deck), looked through and built in the Trunk (ui/bag-screen.js's
-  // TrunkScreen, GX Duel Academy's), from the START menu in the Yu-Gi-Oh! realm.
+  // the ones you have (player.flags.yugioh.trunk: how many of each, by card number) and your decks, DECK_SLOTS of
+  // them as GX Duel Academy keeps several (flags.yugioh.decks: each { name, main deck with any Fusion Monsters,
+  // side deck }; flags.yugioh.deckSlot the one you duel with, y.deck), looked through and built in the Trunk
+  // (ui/bag-screen.js's TrunkScreen, GX Duel Academy's), from the START menu in the Yu-Gi-Oh! realm.
+  const DECK_SLOTS = 20;
   function yugioh() {
     const y = player.flags.yugioh = player.flags.yugioh || {};
-    y.trunk = y.trunk || {}; y.deck = y.deck || { main: [], side: [] };
-    // (the six cards GX made up, not in the game: gone from your Trunk and deck if you had any)
+    y.trunk = y.trunk || {};
+    // (a save from before the slots: its one deck, and its name, the first)
+    if (!Array.isArray(y.decks)) y.decks = [y.deck && y.deck.main ? Object.assign({ name: y.deckName }, y.deck) : null];
+    delete y.deck; delete y.deckName;
+    for (let i = 0; i < DECK_SLOTS; i++) {
+      const d = y.decks[i] = y.decks[i] || {};
+      d.name = d.name || "Deck " + (i + 1); d.main = d.main || []; d.side = d.side || [];
+    }
+    y.deckSlot = Math.max(0, Math.min(DECK_SLOTS - 1, y.deckSlot | 0));
+    // (y.deck: the one you duel with; not saved, the slots are)
+    Object.defineProperty(y, "deck", { get: () => y.decks[y.deckSlot], configurable: true, enumerable: false });
+    // (the six cards GX made up, not in the game: gone from your Trunk and decks if you had any)
     const gone = (no) => window.YUGIOH_RARITY[no] === "-";
     for (const no of Object.keys(y.trunk)) if (gone(+no)) delete y.trunk[no];
-    for (const k of ["main", "side"]) if (y.deck[k] && y.deck[k].some(gone)) y.deck[k] = y.deck[k].filter((no) => !gone(no));
+    for (const d of y.decks) for (const k of ["main", "side"]) if (d[k].some(gone)) d[k] = d[k].filter((no) => !gone(no));
     return y;
   }
   async function trunkScreen() {
@@ -9929,7 +9944,7 @@
     clearMenu();
     // (its INVENTORY: your booster packs, in this realm's bag, to open there; your Pack Tokens and your cards' tokens)
     const S = window.YUGIOH_SETS;
-    await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, deck: y.deck, deckName: y.deckName || "Deck",
+    await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, decks: y.decks, slot: y.deckSlot, selectDeck: (i) => { y.deckSlot = i; },
       inventory: () => PACK_SETS.map((k) => ({ label: S[k].name, count: Player.itemCount(player, S[k].item), pack: k }))
         .concat([{ label: "Pack Tokens", count: y.packTokens || 0 }])
         .concat(["c", "r", "s", "u", "x"].map((r) => ({ label: RARITY_NAME[r] + " Tokens", count: (y.tokens || {})[r] || 0 }))),

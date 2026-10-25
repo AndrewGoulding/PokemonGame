@@ -456,8 +456,10 @@
 //     FUSION, RITUAL, each with how many of the column's cards it has. Up from the top of a column (or B) goes to
 //     the bar; left and right pick a filter, and the column shows only those.
 //   - A on a card: its menu. TO MAIN DECK (or, in the deck, TO TRUNK), TO SIDE DECK, FILTER, SORT (by NUMBER, NAME,
-//     ATTACK, DEFENSE, CATEGORY, TYPE, ATTRIBUTE, ICON or LEVEL), CHANGE VIEW (names, or the cards as little
-//     coloured cards, seven a row), DECK MODE (the deck, or its side deck) and EXIT.
+//     ATTACK, DEFENSE, CATEGORY, TYPE, ATTRIBUTE, ICON or LEVEL, and this game's own QUANTITY: how many you have),
+//     CHANGE VIEW (names, or the cards as little coloured cards, seven a row), DECK MODE (the deck, or its side deck)
+//     and EXIT; and this game's own INVENTORY (below) and DECKS (opts.decks: your deck slots, as GX Duel Academy
+//     keeps several; A on one to build it, and it's the deck you duel with).
 //   - R puts the card in the deck, L takes it out; START shows the card itself, with its text.
 // A deck has at most 60 cards (Fusion Monsters go to the Fusion Deck, up to 20), its side deck 15, and three of
 // any card in all.
@@ -466,13 +468,14 @@
 //     cards,     // window.YUGIOH_CARDS
 //     trunk,     // { cardNumber: how many you have }
 //     deck,      // { main: [cardNumber, ...], side: [...] }: changed here as you build it
-//     deckName,  // shown at the top right
+//     deckName,  // shown at the top right (or the deck's own name)
+//     decks, slot, selectDeck(i),  // (all your decks, the one you're on, and what changing it does)
 //     mode,      // (or "dismantle" or "trade": the card shop's, below)
 //   })
 // Two more ways the card shop opens it (opts.mode): "dismantle" (your cards, A on one to dismantle a spare copy for a
 // token of its rarity) and "trade" (every card, A on one to trade tokens of its rarity for it); the right column
 // shows your tokens (opts.tokens()), opts.action(card) says what A does ({ ask, run() -> message } or { error }),
-// and B leaves. Each card's rarity (window.YUGIOH_RARITY) shows by its stars.
+// and B leaves; SELECT sorts the cards there. Each card's rarity (window.YUGIOH_RARITY) shows by its stars.
 (function () {
   "use strict";
 
@@ -521,9 +524,12 @@
     { name: "TYPE", key: (n, c) => (c[3] || 99) },
     { name: "ATTRIBUTE", key: (n, c) => (c[4] || (c[2] === "spell" ? 7 : 8)) },
     { name: "ICON", key: (n, c) => (c[2] === "spell" || c[2] === "trap" ? c[8] + (c[2] === "trap" ? 10 : 0) : 99) },
-    { name: "LEVEL", key: (n, c) => -c[5] }
+    { name: "LEVEL", key: (n, c) => -c[5] },
+    { name: "QUANTITY", key: (n) => -(st.opts.trunk[n] || 0) }
   ];
-  const COMMANDS = ["TO MAIN DECK", "FILTER", "SORT", "CHANGE VIEW", "DECK MODE", "EXIT", "TO SIDE DECK", "INVENTORY"];
+  const COMMANDS = ["TO MAIN DECK", "FILTER", "SORT", "CHANGE VIEW", "DECK MODE", "EXIT", "TO SIDE DECK", "INVENTORY", "DECKS"];
+  // (the menu's second row: TO SIDE DECK, and INVENTORY and DECKS when the Trunk has them)
+  const row2 = () => [6].concat(st.opts.inventory ? [7] : [], st.opts.decks ? [8] : []);
 
   let st = null, raf = 0;
 
@@ -583,6 +589,16 @@
 
   // ---------- Drawing ----------
   function draw(g, name, x, y) { const im = T(name); if (ready(im)) g.drawImage(im, x, y); }
+  // (a sort's icon: GX's nine, and QUANTITY's, this game's own, in their frame: three cards stacked)
+  function sortIcon(g, i, x, y) {
+    if (i < 9) return draw(g, "sort-" + i, x, y);
+    draw(g, "sort-0", x, y);
+    g.fillStyle = "#bdb5bd"; g.fillRect(x + 2, y + 3, 12, 9);
+    for (let k = 0; k < 3; k++) {
+      g.fillStyle = "#000000"; g.fillRect(x + 3 + 3 * k, y + 3 + k, 5, 7);
+      g.fillStyle = ["#e89830", "#30c070", "#d83890"][k]; g.fillRect(x + 4 + 3 * k, y + 4 + k, 3, 5);
+    }
+  }
   function digits(g, value, right, y, big) {
     const s = String(value), step = big ? 8 : s.length >= 3 ? 4 : 5;
     for (let i = 0; i < s.length; i++) draw(g, (big ? "digit-" : "small-") + s[i], right - (s.length - i) * step - (big ? 0 : 8 - step), y);
@@ -625,11 +641,11 @@
     s.text(st.opts.title || "Trunk", 3, 0, WHITE, SHADE);
     const fus = st.deck.main.filter(isFusion).length;
     if (!st.opts.mode) { digits(g, st.deck.main.length - fus, 111, 3); digits(g, fus, 135, 3); digits(g, st.deck.side.length, 159, 3); }
-    const dn = st.opts.mode ? "Tokens" : st.side ? "Side Deck" : st.opts.deckName || "Deck";
+    const dn = st.opts.mode ? "Tokens" : st.side ? "Side Deck" : st.deck.name || st.opts.deckName || "Deck";
     s.text(dn, 237 - s.textWidth(dn), 0, WHITE, SHADE);
     // The filters' counts, for the column the cursor's in, and the sort's icon.
     counts(st.col).forEach((v, i) => digits(g, v, COUNT_AT[i][0], COUNT_AT[i][1]));
-    draw(g, "sort-" + st.sort, 200, 16);
+    sortIcon(g, st.sort, 200, 16);
     // The columns.
     // (the card shop's: your tokens down the right, each rarity's)
     if (st.opts.mode) {
@@ -704,6 +720,12 @@
         if (ready(m)) g.drawImage(m, 8, 24, 32, 32, 16 + 32, 64 + 24, 32, 32);
         if (ready(pk)) g.drawImage(pk, 4, 2, 24, 28, 50, 92, 20, 24);
       }
+      // (and DECKS, a third: three cards' backs fanned for its icon)
+      if (st.opts.decks) {
+        const m = T("cmd-menu"), back = image("assets/yugioh/shop/card-back.png");
+        if (ready(m)) g.drawImage(m, 8, 24, 32, 32, 16 + 56, 64 + 24, 32, 32);
+        if (ready(back)) for (let k = 0; k < 3; k++) g.drawImage(back, 75 + 5 * k, 94 + k, 11, 16);
+      }
       draw(g, "cmd-icons", 16, 64);
       const i = st.menu.i, [x, y] = i < 6 ? [24 + 24 * i, 68] : [24 + 24 * (i - 6), 92];
       box(g, x - 1, y - 1, 26, 26, "#f8d830"); box(g, x, y, 24, 24, "#b07818");
@@ -712,7 +734,10 @@
     }
     if (st.sortMenu) {
       draw(g, "sort-menu", 16, 64);
-      for (let i = 0; i < 9; i++) draw(g, "sort-" + i, 24 + 16 * i, 72);
+      // (GX's menu, made one icon wider for QUANTITY: its middle copied along, its right edge moved)
+      const m = T("sort-menu");
+      if (ready(m)) { g.drawImage(m, 16, 0, 16, 32, 16 + 144, 64, 16, 32); g.drawImage(m, 144, 0, 16, 32, 16 + 160, 64, 16, 32); }
+      for (let i = 0; i < SORTS.length; i++) sortIcon(g, i, 24 + 16 * i, 72);
       const x = 24 + 16 * st.sortMenu.i;
       box(g, x - 2, 70, 20, 20, "#f8d830");
       tooltip(top, g, SORTS[st.sortMenu.i].name, x + 8, 54);
@@ -727,6 +752,19 @@
         const v = String(r.count); top.text(v, 216 - top.textWidth(v, "small"), y, c, SHADE, "small");
         if (k === st.inv.i) top.text("▶", 22, y, c, SHADE, "small");
       });
+    }
+    if (st.deckList && !st.message) {
+      const d = st.deckList, decks = st.opts.decks, h = 24 + 11 * DECK_ROWS;
+      g.fillStyle = "#c8a020"; g.fillRect(16, 8, 208, h); g.fillStyle = BLUE_BOX; g.fillRect(17, 9, 206, h - 2);
+      top.text("Decks", 24, 10, YELLOW, SHADE);
+      top.text("Main/Fusion/Side", 216 - top.textWidth("Main/Fusion/Side", "small"), 12, WHITE, SHADE, "small");
+      for (let r = 0; r < DECK_ROWS && d.top + r < decks.length; r++) {
+        const k = d.top + r, dk = decks[k], c = k === d.i ? YELLOW : WHITE, y = 26 + 11 * r;
+        const fus = dk.main.filter(isFusion).length, v = (dk.main.length - fus) + "/" + fus + "/" + dk.side.length;
+        top.text(dk.name + (dk === st.deck ? " (in use)" : ""), 32, y, c, SHADE, "small");
+        top.text(v, 216 - top.textWidth(v, "small"), y, c, SHADE, "small");
+        if (k === d.i) top.text("▶", 22, y, c, SHADE, "small");
+      }
     }
     if (st.message) {
       const ml = st.message.split("\n"), mh = 12 + 14 * ml.length;
@@ -818,19 +856,39 @@
       return;
     }
     if (i === 1) { st.bar = true; return; }
-    if (i === 2) {
-      st.sortMenu = { i: st.sort }; paint();
-      const k = await window.GbaMenus.keys((key) => {
-        if (key === "left" || key === "right") { st.sortMenu.i = (st.sortMenu.i + (key === "left" ? 8 : 1)) % 9; se(); paint(); return undefined; }
-        return key === "a" || key === "b" ? key : undefined;
-      });
-      if (k === "a") { st.sort = st.sortMenu.i; st.cur[0].i = st.cur[1].i = 0; st.cur[0].top = st.cur[1].top = 0; }
-      st.sortMenu = null; clamp(); return;
-    }
+    if (i === 2) return sortMenu();
     if (i === 3) { st.grid = !st.grid; clamp(); return; }
     if (i === 4) { st.side = !st.side; st.cur[1] = { i: 0, top: 0 }; clamp(); return; }
     if (i === 5) return "exit";
     if (i === 7) return inventory();
+    if (i === 8) return deckList();
+  }
+  async function sortMenu() {
+    st.sortMenu = { i: st.sort }; paint();
+    const k = await window.GbaMenus.keys((key) => {
+      if (key === "left" || key === "right") { st.sortMenu.i = (st.sortMenu.i + (key === "left" ? SORTS.length - 1 : 1)) % SORTS.length; se(); paint(); return undefined; }
+      return key === "a" || key === "b" ? key : undefined;
+    });
+    se();
+    if (k === "a") { st.sort = st.sortMenu.i; st.cur[0].i = st.cur[1].i = 0; st.cur[0].top = st.cur[1].top = 0; }
+    st.sortMenu = null; clamp(); paint();
+  }
+  // DECKS (this game's own): your deck slots (opts.decks: [{ name, main, side }]), DECK_ROWS at a time; A on one
+  // builds it from here on, and it's the one you duel with (opts.selectDeck(i)).
+  const DECK_ROWS = 10;
+  async function deckList() {
+    const decks = st.opts.decks, d = st.deckList = { i: Math.max(0, decks.indexOf(st.deck)), top: 0 };
+    const scroll = () => { d.top = Math.max(0, Math.min(d.top, d.i, decks.length - DECK_ROWS)); if (d.i >= d.top + DECK_ROWS) d.top = d.i - DECK_ROWS + 1; };
+    scroll(); paint();
+    const k = await window.GbaMenus.keys((key) => {
+      if (key === "up" || key === "down") { d.i = (d.i + (key === "up" ? decks.length - 1 : 1)) % decks.length; scroll(); se(); paint(); return undefined; }
+      if (key === "left" || key === "right") { d.i = Math.max(0, Math.min(decks.length - 1, d.i + (key === "left" ? -DECK_ROWS : DECK_ROWS))); scroll(); se(); paint(); return undefined; }
+      return key === "a" || key === "b" ? key : undefined;
+    });
+    se();
+    st.deckList = null;
+    if (k === "a") { st.deck = decks[d.i]; st.side = false; st.cur[1] = { i: 0, top: 0 }; if (st.opts.selectDeck) st.opts.selectDeck(d.i); }
+    clamp(); paint();
   }
   // INVENTORY (this game's own): what you have besides cards, your booster packs and your tokens (opts.inventory():
   // [{ label, count, pack }]); A on a pack opens one (opts.openPack(pack), GX's opening over the Trunk).
@@ -864,10 +922,10 @@
     }
   }
   async function open(opts) {
-    const deck = opts.deck;
+    const deck = opts.decks ? opts.decks[opts.slot || 0] : opts.deck;
     deck.main = deck.main || []; deck.side = deck.side || [];
     st = { opts, deck, col: 0, cur: [{ i: 0, top: 0 }, { i: 0, top: 0 }], filter: 0, sort: 0, bar: false, grid: false, side: false,
-      menu: null, sortMenu: null, message: null, detail: null, detailTop: 0 };
+      menu: null, sortMenu: null, deckList: null, message: null, detail: null, detailTop: 0 };
     clamp();
     canvas.classList.remove("hidden");
     paint();
@@ -885,12 +943,13 @@
         }
         if (st.menu) {
           if (st.menu.i >= 6) {
-            if ((k === "right" && st.menu.i === 6 || k === "left" && st.menu.i === 7) && st.opts.inventory) { st.menu.i = 13 - st.menu.i; se(); paint(); return undefined; }
+            const r = row2(), j = r.indexOf(st.menu.i) + (k === "left" ? -1 : 1);
+            if ((k === "left" || k === "right") && j >= 0 && j < r.length) { st.menu.i = r[j]; se(); paint(); return undefined; }
             if (k === "up") { st.menu.i -= 6; se(); paint(); return undefined; }
             if (k === "left" || k === "right") return undefined;
           }
           if (k === "left" || k === "right") { st.menu.i = (st.menu.i + (k === "left" ? 5 : 1)) % 6; se(); paint(); return undefined; }
-          if (k === "down" && (st.menu.i === 0 || st.menu.i === 1 && st.opts.inventory)) { st.menu.i += 6; se(); paint(); return undefined; }
+          if (k === "down" && row2().includes(st.menu.i + 6)) { st.menu.i += 6; se(); paint(); return undefined; }
           if (k === "a") return "command";
           if (k === "b") { st.menu = null; paint(); return undefined; }
           return undefined;
@@ -900,14 +959,16 @@
           return undefined;
         }
         if (st.opts.mode && (k === "a" || k === "b")) return k === "a" ? (current() != null ? "pick" : undefined) : "leave";
-        if (st.opts.mode && (k === "l" || k === "r" || k === "select")) return undefined;
+        if (st.opts.mode && k === "select") return "sort";
+        if (st.opts.mode && (k === "l" || k === "r")) return undefined;
         if (k === "b") { st.bar = true; se(); paint(); return undefined; }
         if (k === "a") { st.menu = { i: 0 }; se(); paint(); return undefined; }
         if (k === "start" && current() != null) { st.detail = current(); st.detailTop = 0; se(); paint(); return undefined; }
         return undefined;
       }, { shoulders: true });
       if (key === "close-detail") { st.detail = null; paint(); continue; }
-      if (key === "leave") { se(); close(); return opts.deck; }
+      if (key === "sort") { se(); await sortMenu(); continue; }
+      if (key === "leave") { se(); const d = st.deck; close(); return d; }
       if (key === "pick") {
         const a = opts.action(current());
         if (a.error) { se("se_failure"); await say(a.error); continue; }
@@ -922,7 +983,7 @@
       if (key === "command") {
         const i = st.menu.i; st.menu = null;
         const r = await command(i);
-        if (r === "exit") { close(); return opts.deck; }
+        if (r === "exit") { const d = st.deck; close(); return d; }
         paint();
         continue;
       }
