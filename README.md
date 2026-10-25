@@ -3179,6 +3179,38 @@ node tools/build-sinnoh.js <path to the Essentials project>
 - The data goes into `data/orre-maps.js`, after Orre's (from its `// Sinnoh` line on, which `tools/build-orre.js`
   keeps), with `window.SINNOH_MUSIC` and `window.SINNOH_BERRY_TREES`.
 
+## The Time Machine and the Realm Hub (other realms, in progress)
+
+Everything above happens in one realm, the **Pokémon realm**. The Time Machine is the way out of it, to the other
+realms to come (the **Yu-Gi-Oh! realm** first).
+
+- **Getting there**: a gap in the trees on **Pallet Town's west edge** (beside the sign lady's lawn) leads west, then
+  south, to a clearing with a scientist's **Time Machine**. Once you have a Pokémon of your own, step into it (face its
+  door and press A) and it takes you to the Realm Hub. The scientist explains the realms. (The debug menu's **Visit
+  the Realm Hub** goes straight there.)
+- **The Realm Hub**: a stone platform floating in the void between the realms, with a clock of light in its middle
+  and Spear Pillar's song. The Time Machine at its south end takes you back beside Pallet Town. Along its north are
+  the realms' portals: the **Yu-Gi-Oh! realm's** (golden, a pyramid over it) is still forming, and the two either
+  side of it are dormant, for realms to come. Fly and Teleport don't work there.
+- **Not here yet**: the Yu-Gi-Oh! realm itself.
+
+`tools/build-time-machine.js` draws it all (run it after `tools/build-maps.js`, as it redraws Pallet's west trees):
+
+```sh
+node tools/build-time-machine.js
+```
+
+- **Pallet's gap**: its trees at rows 12 and 13 cut away, as a patch always on (`PalletTown-patch-timegap.png`), and
+  the trees either side ending and starting as FireRed's do (`tools/lib/fr-painter.js`'s trees, on Pallet's own
+  ground, in `PalletTown-top.png` too).
+- **The clearing** (`PalletTown_TimeMachine`, joined to Pallet's west edge): painted the same way; the Time Machine,
+  a steel capsule with a clock on its dome and a glowing door, is drawn by the tool.
+- **The Realm Hub** (`RealmHub`): all drawn by the tool, the starry void, the stone, the portals and the machine.
+  Its maps have `realm: "hub"`; `ui/game.js` runs the machine, the scientist and the portals (`timeMachine`,
+  `realmPortal`).
+- The data goes into `data/emerald-maps.js` (between its markers), with `window.TIME_MACHINE`, where the machine
+  puts you on each side.
+
 ## Progression rules (Gen 6)
 
 - **Experience**: the six growth curves, and base exp × level / 7 split between

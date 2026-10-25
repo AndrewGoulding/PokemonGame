@@ -2199,6 +2199,7 @@
         { label: "Visit Johto (New Bark Town)", value: "johto", className: "action" },
         { label: "Visit Hoenn (the moving truck)", value: "hoenn", className: "action" },
         { label: "Visit Sinnoh (Twinleaf Town)", value: "sinnoh", className: "action" },
+        { label: "Visit the Realm Hub", value: "hub", className: "action" },
         { label: Orre.inOrre(player.location) ? "Leave Orre" : "Visit Orre (the Air Strip)", value: "orre", className: "action" },
         back()]);
       if (v === "back") return;
@@ -2228,6 +2229,10 @@
         player.location = Object.assign({}, center || Player.HOME);
         await persist();
         return "battled";   // (back to the map, at the new place)
+      } else if (v === "hub") {
+        // The Realm Hub, by the Time Machine (its machine brings you back beside Pallet Town).
+        fieldAction = visitRealmHub;
+        return "battled";
       } else if (v === "orre") {
         // Orre: Prof. Oak's plane to the Air Strip, without his briefing (game/orre.js); and back.
         if (Orre.inOrre(player.location)) await leaveOrre();
@@ -2953,6 +2958,9 @@
   // (Sinnoh's: tools/build-sinnoh.js; and Sandgem's beach's sailor, sinnohSailor.)
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "sinnoh") for (const p of m.people) if (/_PokemonCenter_1F_EventScript_Nurse$|_Mart_EventScript_Clerk$/.test(p.script || "")) SPECIAL.add(p.script);
   SPECIAL.add("SandgemTown_EventScript_Sailor");
+  // (The Time Machine off Pallet Town, and the Realm Hub's: timeMachine, realmPortal.)
+  for (const sc of ["TimeMachine_EventScript_Machine", "TimeMachine_EventScript_Sign", "TimeMachine_EventScript_Scientist", "RealmHub_EventScript_Machine",
+    "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_west", "RealmHub_EventScript_Portal_east"]) SPECIAL.add(sc);
   // (And its ferries, Canalave's to Iron Island and back, and Oreburgh's fossil scientist: sinnohFerry, fossilScientist.)
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "sinnoh") for (const p of m.people) if (p.ferry || /_EventScript_FossilScientist$/.test(p.script || "")) SPECIAL.add(p.script);
   SPECIAL.add("SlateportCity_Harbor_EventScript_Sailor"); SPECIAL.add("Route117_PokemonDayCare_EventScript_DaycareWoman");
@@ -3307,6 +3315,10 @@
       return;
     }
     if (script === "SandgemTown_EventScript_Sailor") { await sinnohSailor(); return; }
+    if (script === "TimeMachine_EventScript_Machine" || script === "RealmHub_EventScript_Machine") { await timeMachine(); return; }
+    if (script === "TimeMachine_EventScript_Scientist") { await timeMachineScientist(); return; }
+    if (script === "TimeMachine_EventScript_Sign") { await say("TIME MACHINE\nTravel beyond the Pokémon realm!"); return; }
+    { const rp = /^RealmHub_EventScript_Portal_(\w+)$/.exec(script || ""); if (rp) { await realmPortal(rp[1]); return; } }
     if (ev.person && ev.person.ferry && isSinnoh(ev.map)) { await sinnohFerry(ev.person); return; }
     if (/_EventScript_FossilScientist$/.test(script || "") && isSinnoh(ev.map)) { await fossilScientist(); return; }
     // (Johto's Pokémon Centers' nurses heal as Kanto's do.)
@@ -9533,13 +9545,13 @@
   // where the ship drops anchor off Sandgem Town's beach; its sailor there rows you out to it again, back to Lilycove.
   const SANDGEM_BEACH = { map: "SandgemTown", x: 25, y: 29, facing: "down" };
   const LILYCOVE_HARBOR = { map: "LilycoveCity_Harbor", x: 8, y: 11, facing: "down" };
-  async function voyage(to, lines) {
+  async function voyage(to, lines, sound) {
     await Overworld.fadeToBlack();
     music(null);
     Overworld.setAvatar("walk");
     Orre.leave(player);
     const o = $("#overlay");
-    sfx("se_ship");
+    sfx(sound || "se_ship");
     for (const l of lines) await GbaMenus.blackScreen(o, l);
     o.classList.add("hidden");
     player.location = Object.assign({}, to);
@@ -9571,6 +9583,56 @@
     await say("All aboard!");
     await voyage(LILYCOVE_HARBOR, ["The S.S. Tidal sets sail from Sinnoh,\nback across the sea to Hoenn…"]);
     await say("The S.S. Tidal has arrived in\nLilycove City.");
+  }
+
+  // ---------- The Time Machine and the Realm Hub (this game's own) ----------
+  //
+  // Everything so far happens in one realm, the Pokémon realm. Through the gap in the trees on Pallet Town's west
+  // edge, a scientist's Time Machine (tools/build-time-machine.js) takes you beyond it, once you have a Pokémon of
+  // your own, to the Realm Hub: a platform in the void between the realms, with the Time Machine back at its south
+  // end and the other realms' portals along its north. The Yu-Gi-Oh! realm's is still forming; the other two are
+  // dormant, for realms to come.
+  const inRealmHub = () => (window.WORLD_MAPS[(player.location || {}).map] || {}).realm === "hub";
+  async function timeMachine() {
+    const to = window.TIME_MACHINE;
+    if (inRealmHub()) {
+      await say("The Time Machine hums softly.");
+      if (!(await confirm("Travel back to the Pokémon realm?"))) return;
+      await voyage(to.lane, ["The Time Machine whirs to life…", "Time and space twist around you…", "…and settle back into place."], "se_warp_in");
+      await say("You're back in the Pokémon realm,\nbeside Pallet Town.");
+      return;
+    }
+    if (!player.flags.starter) { await say(["It's a strange machine with a clock\non its dome.", "Its door won't open."]); return; }
+    await say("It's the Time Machine!\nIts door glows with a strange light.");
+    if (!(await confirm("Step inside and travel beyond\nthe Pokémon realm?"))) return;
+    await voyage(to.hub, ["The Time Machine whirs to life…", "The years spin past in a blur\nof light…", "Beyond time itself, the machine\ncomes to rest."], "se_warp_in");
+    player.flags.realmHubVisited = true;
+    await say(["You've arrived at the Realm Hub,\nthe place between the realms!"]);
+  }
+  async function timeMachineScientist() {
+    const f = player.flags;
+    if (f.realmHubVisited) {
+      await say(["Scientist: Welcome back! How was\nthe Realm Hub?", "The portal to the Yu-Gi-Oh! realm\nis still forming.", "When it opens, a whole realm of\nDuel Monsters will be waiting!"]);
+      return;
+    }
+    await say(["Scientist: Ah, a visitor! This is my\nTime Machine.", "Every Pokémon and every region you\nknow lies in one realm: the\nPokémon realm.",
+      "But there are other realms out\nthere, worlds all their own!", "My machine travels beyond time\nto the Realm Hub, the place\nbetween them all."]
+      .concat(f.starter ? ["Step inside whenever you like!"] : ["It's no place to go alone, though.\nCome back with a Pokémon partner!"]));
+  }
+  async function realmPortal(id) {
+    if (id === "yugioh") {
+      await say(["A portal of swirling golden light.\nA pyramid shines above it.", "Beyond it lies the Yu-Gi-Oh! realm,\nthe world of Duel Monsters…",
+        "But the portal is still forming.\nIt won't let you through yet."]);
+      return;
+    }
+    await say(["A portal of cold stone. Its light\nhas gone out.", "Another realm may open here\nsomeday…"]);
+  }
+  async function visitRealmHub() {
+    Screen.say("");
+    show("world");
+    Overworld.resume();
+    await voyage(window.TIME_MACHINE.hub, ["The Time Machine whirs to life…"], "se_warp_in");
+    player.flags.realmHubVisited = true;
   }
 
   async function visitOrre() {
@@ -12518,6 +12580,8 @@
     // (Mr. Psychic's back room, once he's given you his TM; the way to Celadon's Berry Farm, always: the same file.)
     if (map === "SaffronCity_MrPsychicsHouse") return f.gotTM29 ? ["denroom"] : [];
     if (map === "CeladonCity") return ["farmpath"];
+    // (Pallet Town's gap in its west trees, to the Time Machine, always: tools/build-time-machine.js.)
+    if (map === "PalletTown") return ["timegap"];
     // (Route 40's Battle Tower: no stairs.)
     if (map === "BattleTower_Lobby") return ["nostairs"];
     // (The League gate's ways west and east, to Johto's Routes 26 and 28: data/johto-maps.js.)
