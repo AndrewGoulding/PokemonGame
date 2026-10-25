@@ -626,6 +626,12 @@
     while (str && s.textWidth(str, font) > width) str = str.slice(0, -1);
     return str;
   }
+  // (A name drawn in the width it has: in the small font if the usual one's too wide, cut only if that is too. The
+  // small font's line sits 2 lower, to stay on the usual one's.)
+  function fitText(s, str, x, y, width, colour, shade, font) {
+    if (s.textWidth(str, font) <= width) return s.text(str, x, y, colour, shade, font);
+    s.text(fit(s, str, width, "small"), x, font === "small" ? y : y + 2, colour, shade, "small");
+  }
   function paint() {
     if (!st) return;
     // (Two layers of text: the screen's, then the menus' and labels' over the pictures drawn over it.)
@@ -671,7 +677,7 @@
         for (let r = 0; r < ROWS; r++) {
           const n = list[m.top + r];
           if (n == null) break;
-          s.text(fit(s, card(n)[0], 110), x0 + 3, 33 + 16 * r, WHITE, SHADE);
+          fitText(s, card(n)[0], x0 + 3, 33 + 16 * r, 110, WHITE, SHADE);
           if (st.col === c && m.top + r === m.i && !st.bar) draw(g, "cursor-row", x0, 32 + 16 * r);
         }
       }
@@ -688,7 +694,7 @@
       const num = String(n).padStart(4, "0");
       for (let i = 0; i < 4; i++) draw(g, "digit-" + num[i], 48 + 8 * i, 120);
       for (let i = 0; i < c[5]; i++) draw(g, "star", 88 + 8 * i, 120);
-      s.text(fit(s, c[0], 188), 48, 128, WHITE, SHADE);
+      fitText(s, c[0], 48, 128, 188, WHITE, SHADE);
       const rar = RARITY_NAME[(window.YUGIOH_RARITY || "")[n]];
       if (rar) s.text(rar, 237 - s.textWidth(rar, "small"), 118, rar === "Common" ? WHITE : YELLOW, SHADE, "small");
       draw(g, "in-trunk", 48, 144); draw(g, "in-deck", 48, 152);
@@ -801,7 +807,7 @@
       : C.types[c[3]] + (c[2] === "normal" ? "" : "/" + c[2][0].toUpperCase() + c[2].slice(1));
     s.text(kind, 115, 0, [40, 40, 40], [200, 190, 60]);
     // (Its name small enough to fit its band, its stats, and its text wrapped beside it.)
-    s.text(c[0], 10, 9, [32, 32, 32], [200, 190, 160], "small");
+    fitText(s, c[0], 10, 9, 76, [32, 32, 32], [200, 190, 160], "small");
     if (c[6] >= 0) s.text("ATK/" + c[6] + "  DEF/" + c[7], 12, 121, [32, 32, 32], [200, 190, 160], "small");
     const words = c[1].replace(/@\d/g, "").split(/(\s+)/);
     const lines = [];
@@ -815,8 +821,8 @@
     }
     void words;
     lines.slice(st.detailTop, st.detailTop + 11).forEach((l, i) => s.text(l, 114, 16 + 11 * i, WHITE, SHADE, "small"));
-    const nm = c[0].toUpperCase();
-    s.text(nm, Math.max(2, 120 - Math.floor(s.textWidth(nm) / 2)), 145, WHITE, SHADE);
+    const nm = c[0].toUpperCase(), small = s.textWidth(nm) > 236;
+    fitText(s, nm, Math.max(2, 120 - Math.floor(s.textWidth(nm, small ? "small" : undefined) / 2)), 145, 236, WHITE, SHADE);
     st.detailLines = lines.length;
   }
   function loop() { if (!st) return; raf = requestAnimationFrame(loop); }
@@ -1007,7 +1013,7 @@
     st = { opts: { cards }, detailTop: topLine || 0 };
     try { paintDetail(g, s, n); return st.detailLines; } finally { st = saved; }
   }
-  window.TrunkScreen = { open, close, detail };
+  window.TrunkScreen = { open, close, detail, fitText };
 })();
 
 // ---------- The duel screen: Yu-Gi-Oh! GX Duel Academy's ----------
@@ -1208,9 +1214,7 @@
     draw(g, "info", 0, 145);
     if (!no) return;
     const c = cardOf(no);
-    let name = c[0];
-    while (name && s.textWidth(name) > 148) name = name.slice(0, -1);
-    s.text(name, 2, 145, NAME_BLUE, NAME_SHADE);
+    window.TrunkScreen.fitText(s, c[0], 2, 145, 148, NAME_BLUE, NAME_SHADE);
     if (c[2] === "spell" || c[2] === "trap") {
       drawT(g, "attr-" + (c[2] === "spell" ? 7 : 8), 152, 144);
       if (c[8]) drawT(g, c[2] + "-" + c[8], 168, 144);
@@ -1300,7 +1304,7 @@
       g.fillStyle = col[3]; g.fillRect(80, 29, 80, 10);
       g.fillStyle = "#202020"; g.fillRect(81, 42, 78, 78);
       art(g, st.big, 82, 43, 76, 76);
-      top.text(c[0], 82, 28, [32, 32, 32], col[2], "small");
+      window.TrunkScreen.fitText(top, c[0], 82, 28, 76, [32, 32, 32], col[2], "small");
       if (c[6] >= 0) top.text("ATK/" + c[6] + " DEF/" + c[7], 84, 121, [32, 32, 32], col[2], "small");
     }
     if (st.banner) box(g, top, [st.banner], 66);
@@ -1989,7 +1993,7 @@
         const c = cards[topRow + r];
         if (!c) break;
         const y = 33 + 16 * r;
-        top.text(C[c.no][0], 66, y, topRow + r === cur ? ORANGE : WHITE, SHADE);
+        window.TrunkScreen.fitText(top, C[c.no][0], 66, y, 162, topRow + r === cur ? ORANGE : WHITE, SHADE);
         if (c.isNew && blink % 40 < 28) draw(g, "new", 64, y - 1);
       }
       if (cards.length > ROWS) { g.fillStyle = "#f86030"; g.fillRect(232, 33 + Math.round((cur / Math.max(1, cards.length - 1)) * 70), 6, 8); }
@@ -1998,7 +2002,7 @@
       if (c) {
         g.fillStyle = "#202020"; g.fillRect(5, 117, 34, 34);
         art(g, c.no, 6, 118, 32, 32);
-        top.text(C[c.no][0], 46, 121, WHITE, SHADE);
+        window.TrunkScreen.fitText(top, C[c.no][0], 46, 121, 190, WHITE, SHADE);
         const rar = RARITY[(window.YUGIOH_RARITY || "")[c.no]] || "";
         top.text(rar + (c.count > 1 ? "  x" + c.count : ""), 46, 139, rar === "Common" ? WHITE : YELLOW, SHADE);
       }
