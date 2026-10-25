@@ -2982,6 +2982,8 @@
   for (const sc of ["TimeMachine_EventScript_Machine", "TimeMachine_EventScript_Sign", "TimeMachine_EventScript_Scientist", "RealmHub_EventScript_Machine",
     "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_west", "RealmHub_EventScript_Portal_east", "SacredCards_Fountain", "SacredCards_BackToTown",
     "Domino_WorldMap", "KameGame_Grandpa", ...Object.keys(DOMINO_DUELISTS)]) SPECIAL.add(sc);
+  // (and the other pupils and the teacher, with their boosters' decks: classmate)
+  for (let i = 0; i < 12; i++) SPECIAL.add("DominoHigh_Person" + i);
   // (And its ferries, Canalave's to Iron Island and back, and Oreburgh's fossil scientist: sinnohFerry, fossilScientist.)
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "sinnoh") for (const p of m.people) if (p.ferry || /_EventScript_FossilScientist$/.test(p.script || "")) SPECIAL.add(p.script);
   SPECIAL.add("SlateportCity_Harbor_EventScript_Sailor"); SPECIAL.add("Route117_PokemonDayCare_EventScript_DaycareWoman");
