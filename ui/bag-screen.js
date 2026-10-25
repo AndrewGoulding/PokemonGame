@@ -1584,7 +1584,7 @@
   // The top right: your money by the star.
   function hud(g, top) {
     draw(g, "star", 154, 0);
-    digits(g, Math.min(9999999, st.money ? st.money() : 0), 237, 4, "w");
+    digits(g, Math.min(99999999, st.money ? st.money() : 0), 237, 4, "w");
   }
   function room(g) { draw(g, "room", 0, 0); draw(g, "panels", 0, 0, 0.5); }
   function textbox(g, top, lines, cursor) {

@@ -13,7 +13,7 @@ START. Left alone for 45 seconds the title goes back to the opening. Press
 Start and FireRed's main menu comes up: CONTINUE (with your name, play time,
 Pokédex and badges), NEW GAME, NEW GAME + beside it once there's a game saved (this game's own: a new game, through
 Oak's intro, that keeps your Bag but for the story's key items and the HMs, the PC's items, your money, your mining,
-fishing and farming levels, your Battle Points (Kanto's and the Battle Frontier's), your Pokédex's seen and caught (shown again once Oak gives you the Pokédex), your PC boxes with your party put in them, and your Trainer ID; your Pokémon still obey by
+fishing and farming levels, your Battle Points (Kanto's and the Battle Frontier's), your Pokédex's seen and caught (shown again once Oak gives you the Pokédex), your PC boxes with your party put in them, your Trainer ID, and in the Yu-Gi-Oh! realm your cards, decks and tokens and that realm's bag; your Pokémon still obey by
 your Badges, so high levels wait on them; `Player.newGamePlus`) and OPTION (B goes back to the title). The
 Option screen is FireRed's too: TEXT SPEED (how long battle messages stay up),
 BATTLE SCENE (OFF leaves out the hit animation), BATTLE STYLE (SHIFT: when a
@@ -3195,7 +3195,7 @@ realms to come (the **Yu-Gi-Oh! realm** first).
 - **Each realm's own bag**: your Bag, with everything you've had all along, is the Pokémon realm's. Leave that realm
   and it's put away until you're back (`Player.enterRealm`, as each map's `realm` says: `flags.realmBags`), and the
   realm you're in has a bag of its own (the Realm Hub's is empty; the Yu-Gi-Oh! realm's holds its booster packs).
-  Your money stays the same from realm to realm.
+  Your money stays the same from realm to realm (you can hold up to ₽10,000,000).
 
 `tools/build-time-machine.js` draws it all (run it after `tools/build-maps.js`, as it redraws Pallet's west trees):
 
@@ -3224,8 +3224,7 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   Sacred Cards' own (from the cartridge): the city from above, a red marker on each place, the gold cursor bobbing
   over the one you're on, and at the bottom left its picture in a gold frame, its name beside it. There are two
   places on it, **Domino High School** and **the Kame Game shop** (on two of the game's own markers' spots): the
-  arrows move the cursor, A goes there, B stays. Below the map, **Back to the Realm Hub** (down from the markers to
-  reach it). Walk out of either place and the map comes up again.
+  arrows move the cursor, A goes there, B stays. Walk out of either place and the map comes up again.
 - **Domino High School**: **Yugi, Téa, Joey and Tristan** are in its classroom, by the windows; talk to them and
   they introduce themselves. Pupils stand about the front, the hall and the classroom, with a teacher.
 - **The Kame Game shop**: Yugi's grandpa, at his counter, on Yu-Gi-Oh! GX Duel Academy's shop screen (`CardShop` in
@@ -3273,7 +3272,8 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   hall (the Sacred Cards' hotel lobby, with a tiled floor, the vending machine and reception, the sofas its
   benches) and a classroom (the Sacred Cards' warehouse, cleared, with wooden boards, a blackboard, lockers, the
   teacher's desk and two rows of pupils' desks). Pupils and a teacher are about; the fountains' menu lists it.
-- **The Trunk**: the START menu's **Trunk** (in the Yu-Gi-Oh! realm) is Yu-Gi-Oh! GX Duel Academy's, its graphics
+- **The Trunk**: the START menu's **Trunk** (in the Yu-Gi-Oh! realm, whose START menu has no Pokédex, Pokémon,
+  Bag or Trainer Card) is Yu-Gi-Oh! GX Duel Academy's, its graphics
   from that cartridge: your cards on the left, your deck on the right, a bar of filters along the top and the card
   under the cursor along the bottom (its number, level, name, how many you have and how many are in the deck, its
   attribute, type and ATK/DEF, and its picture). Its filters (up from a column's top, or B; left and right): ALL,
@@ -3320,8 +3320,8 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   each with a deck from the boosters they've opened (`boosterDeck` in `ui/game.js`): twelve packs of Legend of Blue
   Eyes White Dragon and Metal Raiders (`window.YUGIOH_SETS` in `data/items.js`, the 88 and 95 cards of those sets GX
   has, by rarity), nine cards a pack with a Rare or better, and the best 40 of what came out; each pupil's packs are
-  their own, so their deck is the same each time. You duel with your Trunk's deck, or, while it has fewer than 40
-  cards, the starter deck you can borrow. The duel screen (`DuelScreen`, in `ui/bag-screen.js`) is GX Duel Academy's, its
+  their own, so their deck is the same each time. You duel with your Trunk's deck, of 40 cards at least: there's no deck
+  to borrow, you build your first from booster packs. The duel screen (`DuelScreen`, in `ui/bag-screen.js`) is GX Duel Academy's, its
   graphics from that cartridge (`assets/yugioh/duel/`): the field in perspective, the Gym's boards under it and the
   academy's mat between the two sides, the life points, the phases down the left (the one you're in lit) with the
   turn's count, the decks' counts, your hand along the bottom and your opponent's backs along the top, and the card

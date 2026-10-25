@@ -2665,15 +2665,17 @@
       if (pyramid) items.push({ key: "retirePyramid", label: "Retire" });
       if (safari) items.push({ key: "retire", label: "Retire" });
       if (contest) items.push({ key: "retire", label: "Retire", help: "Finish the Bug-Catching Contest now and\nwait for the judging." });
-      if (player.flags.pokedex) items.push({ key: "dex", label: "Pokédex" });
-      if (player.party.length) items.push({ key: "party", label: "Pokémon" });
-      if (!contest) items.push({ key: "bag", label: "Bag" });
-      if ((window.WORLD_MAPS[player.location.map] || {}).realm === "yugioh") items.push({ key: "trunk", label: "Trunk" });   // (your Duel Monsters cards)
+      // (In the Yu-Gi-Oh! realm: no Pokédex, Pokémon, Bag or Trainer Card; the Trunk instead, your Duel Monsters cards.)
+      const ygo = (window.WORLD_MAPS[player.location.map] || {}).realm === "yugioh";
+      if (player.flags.pokedex && !ygo) items.push({ key: "dex", label: "Pokédex" });
+      if (player.party.length && !ygo) items.push({ key: "party", label: "Pokémon" });
+      if (!contest && !ygo) items.push({ key: "bag", label: "Bag" });
+      if (ygo) items.push({ key: "trunk", label: "Trunk" });
       if (gear.has()) items.push({ key: "gear", label: hasPokenav() ? "PokéNav" : "Pokégear" });   // (HGSS's, once you have it: ui/pokegear.js)
       // (Emerald's Frontier Pass, once Scott's gate has issued it: it holds the Trainer Card, your Battle Points,
       // Symbols and the battle recorded on it; opened from your name, as the Trainer Card is.)
       const pass = isHoenn(player.location.map) && hoenn.flag("FLAG_SYS_FRONTIER_PASS");
-      items.push({ key: "card", label: player.name, help: pass ? "Check your FRONTIER PASS: your Trainer Card,\nBattle Points, Symbols and recorded battle." : undefined });
+      if (!ygo) items.push({ key: "card", label: player.name, help: pass ? "Check your FRONTIER PASS: your Trainer Card,\nBattle Points, Symbols and recorded battle." : undefined });
       if (!safari && !contest) items.push({ key: "save", label: "Save" });
       items.push({ key: "option", label: "Option" }, { key: "exit", label: "Exit" });
       for (const it of items) it.help = it.help || START_HELP[it.key];
@@ -9746,8 +9748,10 @@
       else if (e.key === "ArrowDown") { const first = menuBox.querySelector("button"); if (first) first.focus(); }
     };
     document.addEventListener("keydown", onKey, true);
-    const options = fromHub ? [back("Stay in the Realm Hub")] : [{ label: "Back to the Realm Hub", value: "hub", className: "action" }, back("Stay")];
-    const r = await Promise.race([ask("", options).then((v) => (v === "hub" ? "hub" : null)), choose]);
+    // (No choices below it: B closes it. The way back to the Realm Hub is the Time Machine under the manhole by the
+    // Kame Game shop.)
+    void fromHub;
+    const r = await choose;
     clearMenu();
     document.removeEventListener("keydown", onKey, true);
     return r === "hub" || (r && r.map !== here) ? r : null;
@@ -9886,7 +9890,7 @@
   }
   // Duels (ui/bag-screen.js's DuelScreen, GX Duel Academy's field, on DuelMonsters' rules): Yugi, Téa, Joey and
   // Tristan in Domino High's classroom, each with their own deck (window.YUGIOH_DUELISTS). Your deck is your
-  // Trunk's; while it has fewer than 40 cards, you may borrow the starter deck. Beat one of them and they give
+  // Trunk's, of 40 cards at least (there's no deck to borrow: you build your first from booster packs). Beat one of them and they give
   // you a card from their deck.
   // (A deck by its cards' names: those the game has, filled to 40 with second and third copies.)
   function duelDeck(names) {
@@ -9939,10 +9943,11 @@
     const foe = typeof key === "string" ? window.YUGIOH_DUELISTS[key] : key, y = yugioh(), C = window.YUGIOH_CARDS.cards;
     if (person && person.text) await say(person.text);
     if (!(await confirm(foe.name + ": " + (foe.ask || "How about a duel?")))) return;
-    let deck = y.deck.main.filter((no) => C[no]);
+    // (your own deck: 40 cards at least, built in the Trunk from your packs)
+    const deck = y.deck.main.filter((no) => C[no]);
     if (deck.filter((no) => C[no][2] !== "fusion").length < 40) {
-      if (!(await confirm("Your deck has fewer than 40 cards.\nBorrow the starter deck?"))) return;
-      deck = duelDeck(window.YUGIOH_DUELISTS.starter);
+      await say(["Your deck has fewer than 40 cards.", "Open booster packs and build a deck\nin your Trunk first!"]);
+      return;
     }
     Screen.say("");
     clearMenu();

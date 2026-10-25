@@ -25,7 +25,7 @@
   // and so are the Explorer Kit (for digging in cave walls) and the Fishing Rod.
   // No Poké Balls: as in FireRed, the first ones come from Prof. Oak with the Pokédex.
   const STARTING_BAG = { "exp-share": 1, "explorer-kit": 1, "berry-pouch": 1, "fishing-rod": 1 };
-  const MAX_MONEY = 9999999;
+  const MAX_MONEY = 10000000;
   const MAX_ITEM_COUNT = 999;
   // The item storage in your PC starts with a Potion, as in FireRed.
   const STARTING_PC_ITEMS = { "potion": 1 };
@@ -519,7 +519,8 @@
   // New Game + (this game's own): a new game, as `name` and `look`, that keeps from `old` the Bag (but the story's
   // key items and the HMs: KEPT_KEY_ITEMS are the tools that stay), the PC's items, the money, the skills' XP
   // (mining, fishing, farming), the Pokédex's seen and caught, the PC's boxes with the party put in them (healed, in the first empty slots; any
-  // that don't fit stay in the party), and the Trainer ID your Pokémon know you by.
+  // that don't fit stay in the party), and the Trainer ID your Pokémon know you by; and the Yu-Gi-Oh! realm's: your
+  // cards, your decks and your tokens (flags.yugioh) and that realm's bag (its booster packs).
   const KEPT_KEY_ITEMS = new Set(["berry-pouch", "bicycle", "exp-share", "fishing-rod", "old-rod", "good-rod", "super-rod", "mega-ring",
     "town-map", "coin-case", "powder-jar", "vs-seeker", "explorer-kit", "itemfinder", "zygarde-cube", "z-ring", "dynamax-band", "tera-orb",
     "soot-sack", "vs-recorder", "apricorn-box", "wailmer-pail"]);
@@ -527,7 +528,12 @@
   function newGamePlus(old, name, look) {
     const p = create(name, look);
     p.bag = {};
-    for (const [id, n] of Object.entries(old.bag || {})) if (!storyItem(id)) p.bag[id] = n;
+    // (saved in another realm: the bag you had is that realm's, your own put away)
+    const realm = old.flags && old.flags.bagRealm, away = (old.flags && old.flags.realmBags) || {};
+    const own = realm ? away.pokemon || {} : old.bag || {}, ygoBag = realm === "yugioh" ? old.bag : away.yugioh;
+    for (const [id, n] of Object.entries(own)) if (!storyItem(id)) p.bag[id] = n;
+    if (ygoBag && Object.keys(ygoBag).length) p.flags.realmBags = { yugioh: Object.assign({}, ygoBag) };
+    if (old.flags && old.flags.yugioh) p.flags.yugioh = JSON.parse(JSON.stringify(old.flags.yugioh));
     p.pcItems = Object.assign({}, old.pcItems || {});
     for (const id of Object.keys(p.pcItems)) if (storyItem(id)) delete p.pcItems[id];
     p.money = old.money | 0;
