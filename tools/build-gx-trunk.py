@@ -27,6 +27,13 @@
 #     cursor (pointing at the field, and down at the hand) and the menu's bars (grey, and lit in pink, blue and
 #     green), as assets/yugioh/duel/<piece>.png. (The cards on the field the screen draws itself, in the hand's
 #     cards' colours, as the game draws them: a card's shape in its zone.)
+#   - the shop's pieces, the same way (tools/lib/gx-shop-pieces.json): the shop's room, the translucent panels and
+#     the text box over it with its cursor, the pack picker's icons (the Duel Points' star, the basket's, the cards
+#     to a pack and the price), its arrows (the curled ones above and below the packs, and either side of how many),
+#     its digits (white, red and blue, and the big red ones), the SELECT tab and the help bar it opens; the pack
+#     opening's backdrop, the machine the cards go into and its help bar; and the opened pack's list's background
+#     with its NEW tag, as assets/yugioh/shop/<piece>.png. (The packs' pictures the screen draws itself: the game
+#     makes its own as it runs, from a card's picture and its frame.)
 import json, os, struct, sys
 from PIL import Image
 
@@ -36,8 +43,8 @@ rom = open(sys.argv[1], 'rb').read()
 if rom[0xac:0xb0] != b'BYGE': sys.exit('Not Yu-Gi-Oh! GX Duel Academy (USA): its game code is ' + repr(rom[0xac:0xb0]))
 N = 1201
 CARDS = os.path.join(ROOT, 'assets/yugioh/cards'); TRUNK = os.path.join(ROOT, 'assets/yugioh/trunk')
-DUEL = os.path.join(ROOT, 'assets/yugioh/duel')
-os.makedirs(CARDS, exist_ok=True); os.makedirs(TRUNK, exist_ok=True); os.makedirs(DUEL, exist_ok=True)
+DUEL = os.path.join(ROOT, 'assets/yugioh/duel'); SHOP = os.path.join(ROOT, 'assets/yugioh/shop')
+for d in (CARDS, TRUNK, DUEL, SHOP): os.makedirs(d, exist_ok=True)
 
 def colour(c): return ((c & 31) << 3 | (c & 31) >> 2, (c >> 5 & 31) << 3 | (c >> 5 & 31) >> 2, (c >> 10 & 31) << 3 | (c >> 10 & 31) >> 2)
 def palette(o, n=16): return [colour(struct.unpack_from('<H', rom, o + 2 * i)[0]) for i in range(n)]
@@ -56,7 +63,14 @@ def tile4(img, o, pal, x, y, hf=0, vf=0):
     for j in range(8):
         for i in range(8):
             v = rom[o + j * 4 + i // 2] >> (4 * (i & 1)) & 15
-            if v: img.putpixel((x + (7 - i if hf else i), y + (7 - j if vf else j)), pal[v] + (255,))
+            px, py = x + (7 - i if hf else i), y + (7 - j if vf else j)
+            if v and 0 <= px < img.width and 0 <= py < img.height: img.putpixel((px, py), pal[v] + (255,))
+def tile8(img, o, pal, x, y, hf=0, vf=0):
+    for j in range(8):
+        for i in range(8):
+            v = rom[o + j * 8 + i]
+            px, py = x + (7 - i if hf else i), y + (7 - j if vf else j)
+            if v and 0 <= px < img.width and 0 <= py < img.height: img.putpixel((px, py), pal[v] + (255,))
 def icon(o, pal):
     im = Image.new('RGBA', (16, 16), (0, 0, 0, 0))
     for q in range(4): tile4(im, o + q * 32, pal, q % 2 * 8, q // 2 * 8)
@@ -113,15 +127,16 @@ for k in range(1, 7):
     icon(0x10bd738 + k * 0x80, palette(0x10bdad8)).save(os.path.join(TRUNK, 'trap-%d.png' % k))
 
 # ---------- The Trunk screen's pieces ----------
-def pal_of(p): return palette(p) if isinstance(p, int) else [colour(c) for c in p]
+def pal_of(p, n=16): return palette(p, n) if isinstance(p, int) else [colour(c) for c in p]
 def build_pieces(recipes, out):
     pieces = json.load(open(os.path.join(ROOT, recipes)))
     for name, p in pieces.items():
         im = Image.new('RGBA', (p['w'], p['h']), (0, 0, 0, 0))
         for t in p['tiles']:
-            if len(t) == 8: x, y = t[6] + t[0] * 8, t[7] + t[1] * 8   # (a sprite's tile: the sprite's corner, and the tile in it)
+            if len(t) >= 8: x, y = t[6] + t[0] * 8, t[7] + t[1] * 8   # (a sprite's tile: the sprite's corner, and the tile in it)
             else: x, y = t[0] * 8, t[1] * 8
-            tile4(im, t[2], pal_of(t[5]), x, y, t[3], t[4])
+            if len(t) == 9 and t[8] == 8: tile8(im, t[2], pal_of(t[5], 256), x, y, t[3], t[4])   # (an 8bpp tile, its 256 colours)
+            else: tile4(im, t[2], pal_of(t[5]), x, y, t[3], t[4])
         im.save(os.path.join(out, name + '.png'))
     return pieces
 pieces = build_pieces('tools/lib/gx-trunk-pieces.json', TRUNK)
@@ -131,4 +146,7 @@ for d in range(10):   # (the small digits, all ten: 0x1458458 on, in the counts'
 
 # ---------- The duel screen's pieces ----------
 duel = build_pieces('tools/lib/gx-duel-pieces.json', DUEL)
-print('%d cards; the Trunk\'s %d pieces, the duel screen\'s %d' % (N - 1, len(pieces), len(duel)))
+
+# ---------- The shop's pieces ----------
+shop = build_pieces('tools/lib/gx-shop-pieces.json', SHOP)
+print('%d cards; the Trunk\'s %d pieces, the duel screen\'s %d, the shop\'s %d' % (N - 1, len(pieces), len(duel), len(shop)))

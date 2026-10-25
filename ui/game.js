@@ -9776,14 +9776,95 @@
     music(window.WORLD_MAPS[to.map].music);
     await persist();
   }
-  // The Kame Game shop: Yugi's grandpa, Solomon Muto, sells booster packs (game/bag.js's prices), into the Yu-Gi-Oh!
-  // realm's bag.
-  const BOOSTER_PACKS = ["legend-of-blue-eyes-pack", "metal-raiders-pack", "spell-ruler-pack", "pharaohs-servant-pack", "labyrinth-of-nightmare-pack"];
+  // The Kame Game shop: Yugi's grandpa, Solomon Muto, on GX Duel Academy's shop screen (ui/bag-screen.js's CardShop).
+  // He sells the five sets' booster packs (window.YUGIOH_SETS), 300 a pack (game/bag.js's price), opened as you buy
+  // them, their cards into your Trunk; he dismantles your spare cards (those not in your deck) for tokens of their
+  // rarity (window.YUGIOH_RARITY: Common, Rare, Super Rare, Ultra Rare, Secret Rare), and trades any card for
+  // TOKENS_PER_CARD tokens of its rarity. (Packs bought before, still in your bag, he opens for you first.)
+  const PACK_SETS = ["lob", "mrd", "srl", "psv", "lon"], PACK_CARDS = 9, TOKENS_PER_CARD = 3;
+  const RARITY_NAME = { c: "Common", r: "Rare", s: "Super Rare", u: "Ultra Rare", x: "Secret Rare" };
+  const rarityOf = (no) => window.YUGIOH_RARITY[no] || "c";
+  // A pack's nine cards: eight Commons and a Rare, or now and then a Super (1 in 6), an Ultra (1 in 12) or a Secret
+  // Rare (1 in 72) instead, as the sets' packs were.
+  function pullPack(set, rng) {
+    const pick = (a) => a[Math.floor(rng() * a.length)];
+    const out = [];
+    for (let j = 0; j < PACK_CARDS - 1; j++) out.push(pick(set.common));
+    const r = rng();
+    out.push(pick(r < 1 / 72 && set.secret.length ? set.secret : r < 1 / 12 && set.ultra.length ? set.ultra : r < 1 / 4 && set.super.length ? set.super : set.rare));
+    return out;
+  }
+  // (cards into your Trunk, each marked NEW if you had none)
+  function gainCards(nos) {
+    const y = yugioh();
+    return nos.map((no) => { const isNew = !(y.trunk[no] > 0); y.trunk[no] = (y.trunk[no] || 0) + 1; return { no, isNew }; });
+  }
+  function setCompletion(key) {
+    const set = window.YUGIOH_SETS[key], y = yugioh(), DM = window.DuelMonsters;
+    const all = ["common", "rare", "super", "ultra", "secret"].reduce((a, k) => a.concat(set[k]), []).map((n) => DM.numberOf(n)).filter(Boolean);
+    return all.length ? Math.floor(100 * all.filter((no) => y.trunk[no] > 0).length / all.length) : 0;
+  }
+  function openPacks(key, n) {
+    const set = window.YUGIOH_SETS[key], DM = window.DuelMonsters, packs = [];
+    for (let k = 0; k < n; k++) packs.push(gainCards(pullPack(set, Math.random).map((name) => DM.numberOf(name)).filter(Boolean)));
+    return packs;
+  }
   async function kameGameShop() {
-    await say(["Grandpa: Welcome to the Kame Game\nshop! I'm Solomon Muto, Yugi's\ngrandpa.", "We've got booster packs from every\nset. Have a look!"]);
-    await martBuy(BOOSTER_PACKS);
+    const y = yugioh(), C = window.YUGIOH_CARDS.cards;
+    y.tokens = y.tokens || {};
+    const price = Bag.price(window.YUGIOH_SETS.lob.item) || 300;
+    Screen.say(""); clearMenu();
+    CardShop.setup({ money: () => player.money, sets: window.YUGIOH_SETS });
+    await CardShop.say(["Grandpa: Welcome to the Kame Game\nshop! I'm Solomon Muto, Yugi's\ngrandpa.", "We've got booster packs from every\nset. Have a look!"]);
+    // (packs from before, in your bag: opened here)
+    for (const key of PACK_SETS) {
+      const item = window.YUGIOH_SETS[key].item, n = Player.itemCount(player, item);
+      if (!n) continue;
+      await CardShop.say("Grandpa: Oh, you've still got " + n + "\n" + window.YUGIOH_SETS[key].name + " pack" + (n > 1 ? "s" : "") + ".\nLet's open " + (n > 1 ? "them" : "it") + "!");
+      Player.removeItem(player, item, n);
+      for (const p of openPacks(key, n)) { await CardShop.opening(key, p); await CardShop.results({ sets: window.YUGIOH_SETS, title: window.YUGIOH_SETS[key].full, cards: p, comp: setCompletion(key), packKey: key }); }
+      await persist();
+    }
+    for (;;) {
+      const i = await CardShop.choose("Grandpa: What'll it be?", ["Buy booster packs.", "Dismantle cards.", "Trade in tokens."]);
+      if (i < 0) break;
+      if (i === 0) {
+        await CardShop.picker({ sets: window.YUGIOH_SETS, order: PACK_SETS, money: () => player.money, price, perPack: PACK_CARDS, comp: setCompletion,
+          buy: (key, n) => {
+            if (player.money < n * price) return { error: "Grandpa: You can't quite afford that." };
+            Player.addMoney(player, -n * price);
+            return { packs: openPacks(key, n) };
+          } });
+        await persist();
+      } else if (i === 1) {
+        await CardShop.say("Grandpa: Dismantle the cards you\ndon't need, and you'll get a token\nof the card's rarity for each.");
+        CardShop.close();
+        const inDeck = (no) => y.deck.main.filter((m) => m === no).length + (y.deck.side || []).filter((m) => m === no).length;
+        await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, deck: y.deck, mode: "dismantle", title: "Dismantle", tokens: () => y.tokens,
+          action: (no) => {
+            const spare = (y.trunk[no] || 0) - inDeck(no), r = rarityOf(no);
+            if (spare <= 0) return { error: "That card's in your deck. Take it\nout first to dismantle it." };
+            return { ask: "Dismantle " + C[no][0] + "?\nYou'll get " + (r === "u" ? "an " : "a ") + RARITY_NAME[r] + " Token.",
+              run: () => { y.trunk[no]--; if (!y.trunk[no]) delete y.trunk[no]; y.tokens[r] = (y.tokens[r] || 0) + 1; return null; } };
+          } });
+        await persist();
+      } else {
+        await CardShop.say("Grandpa: Bring me " + TOKENS_PER_CARD + " tokens of a\ncard's rarity, and the card's yours!");
+        CardShop.close();
+        await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, deck: y.deck, mode: "trade", title: "Trade", tokens: () => y.tokens,
+          action: (no) => {
+            const r = rarityOf(no);
+            if ((y.tokens[r] || 0) < TOKENS_PER_CARD) return { error: "You need " + TOKENS_PER_CARD + " " + RARITY_NAME[r] + " Tokens\nfor this card." };
+            return { ask: "Trade " + TOKENS_PER_CARD + " " + RARITY_NAME[r] + " Tokens\nfor " + C[no][0] + "?",
+              run: () => { y.tokens[r] -= TOKENS_PER_CARD; y.trunk[no] = (y.trunk[no] || 0) + 1; return null; } };
+          } });
+        await persist();
+      }
+    }
+    await CardShop.say("Grandpa: Come again! And may the\nheart of the cards guide you!");
+    CardShop.close();
+    show("world");
     await persist();
-    await say("Grandpa: Come again! And may the\nheart of the cards guide you!");
   }
   // ---------- Your Duel Monsters cards ----------
   //
@@ -9826,14 +9907,8 @@
     for (const ch of seedText) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
     const rng = () => { h = (h + 0x6D2B79F5) >>> 0; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
     const DM = window.DuelMonsters, C = window.YUGIOH_CARDS.cards, S = window.YUGIOH_SETS;
-    const pick = (a) => a[Math.floor(rng() * a.length)];
     const pulled = [];
-    for (let k = 0; k < 12; k++) {
-      const set = S[k % 2 ? "mrd" : "lob"];
-      for (let j = 0; j < 8; j++) pulled.push(pick(set.common));
-      const r = rng();
-      pulled.push(pick(r < 1 / 72 && set.secret.length ? set.secret : r < 1 / 12 ? set.ultra : r < 1 / 4 ? set.super : set.rare));
-    }
+    for (let k = 0; k < 12; k++) pulled.push(...pullPack(S[k % 2 ? "mrd" : "lob"], rng));
     const nos = pulled.map((n) => DM.numberOf(n)).filter((no) => no && C[no] && DM.playable(no));
     const count = {}, deck = [], fusion = [];
     const lv = (no) => C[no][5] || 0, power = (no) => Math.max(C[no][6] || 0, C[no][7] || 0) + (C[no][2] === "effect" ? 300 : 0);
@@ -9854,6 +9929,8 @@
     for (const no of nos.filter(isMon)) take(no);
     return deck.concat(fusion);
   }
+  // (how likely each card of their deck is to be a prize, by its rarity)
+  const DUEL_DROP = { c: 30, r: 10, s: 4, u: 2, x: 1 };
   function classmate(script) {
     const c = window.YUGIOH_DUELISTS.classmates, name = script === "DominoHigh_Person3" ? c.teacher : c.name;
     return { name, ask: c.ask, win: name + ": " + c.win, lose: name + ": " + c.lose, nos: boosterDeck(script) };
@@ -9873,9 +9950,20 @@
     const r = await DuelScreen.open({ cards: window.YUGIOH_CARDS, deck, foe: { name: foe.name, deck: foeDeck }, you: player.name });
     show("world");
     if (r.winner === 0) {
-      const prize = foeDeck[Math.floor(Math.random() * foeDeck.length)];
-      y.trunk[prize] = (y.trunk[prize] || 0) + 1;
-      await say([foe.lose, player.name + " got " + C[prize][0] + "!"]);
+      // (the prizes: money, and three cards from their deck, the rarer the rarer: DUEL_DROP's weights)
+      const money = foe.nos ? 400 : 1000;
+      Player.addMoney(player, money);
+      const weighted = foeDeck.map((no) => [no, DUEL_DROP[rarityOf(no)]]), total = weighted.reduce((a, w) => a + w[1], 0);
+      const won = [];
+      for (let k = 0; k < 3; k++) { let t = Math.random() * total; const w = weighted.find((x) => (t -= x[1]) < 0) || weighted[0]; won.push(w[0]); }
+      await say([foe.lose, player.name + " got ¥" + money + "!"]);
+      const cards = gainCards(won), merged = [];
+      for (const c of cards) { const m = merged.find((x) => x.no === c.no); if (m) { m.count++; m.isNew = m.isNew || c.isNew; } else merged.push(Object.assign({ count: 1 }, c)); }
+      Screen.say(""); clearMenu();
+      await CardShop.results({ title: foe.name + "'s cards", cards: merged });
+      CardShop.close();
+      show("world");
+      await say(player.name + " got " + merged.map((c) => C[c.no][0] + (c.count > 1 ? " x" + c.count : "")).join(", ") + "!");
     } else await say(foe.win);
     await persist();
   }

@@ -467,7 +467,12 @@
 //     trunk,     // { cardNumber: how many you have }
 //     deck,      // { main: [cardNumber, ...], side: [...] }: changed here as you build it
 //     deckName,  // shown at the top right
+//     mode,      // (or "dismantle" or "trade": the card shop's, below)
 //   })
+// Two more ways the card shop opens it (opts.mode): "dismantle" (your cards, A on one to dismantle a spare copy for a
+// token of its rarity) and "trade" (every card, A on one to trade tokens of its rarity for it); the right column
+// shows your tokens (opts.tokens()), opts.action(card) says what A does ({ ask, run() -> message } or { error }),
+// and B leaves. Each card's rarity (window.YUGIOH_RARITY) shows by its stars.
 (function () {
   "use strict";
 
@@ -531,7 +536,9 @@
     return list.slice().sort((a, b) => { const ka = key(a), kb = key(b); return ka < kb ? -1 : ka > kb ? 1 : a - b; });
   }
   // (The trunk: each card you have, once; the deck: each copy in it, its main deck's and Fusion Deck's, or its side deck's.)
-  const trunkAll = () => Object.keys(st.opts.trunk).map(Number).filter((n) => st.opts.trunk[n] > 0 && card(n));
+  const trunkAll = () => (st.opts.mode === "trade" ? st.opts.cards.cards.map((c, n) => n).filter((n) => n > 0 && card(n))
+    : Object.keys(st.opts.trunk).map(Number).filter((n) => st.opts.trunk[n] > 0 && card(n)));
+  const RARITY_NAME = { c: "Common", r: "Rare", s: "Super Rare", u: "Ultra Rare", x: "Secret Rare" };
   const deckAll = () => (st.side ? st.deck.side : st.deck.main).slice();
   function column(c) {
     const all = c === 0 ? trunkAll() : deckAll(), f = FILTERS[st.filter];
@@ -613,16 +620,24 @@
     if (st.detail != null) { paintDetail(g, top, st.detail); return finish(g, null, top); }
     draw(g, "bg", 0, 0); draw(g, "bar", 0, 0);
     // The top: "Trunk", the deck's counts (its main deck, Fusion Deck and side deck) and its name.
-    s.text("Trunk", 3, 0, WHITE, SHADE);
+    s.text(st.opts.title || "Trunk", 3, 0, WHITE, SHADE);
     const fus = st.deck.main.filter(isFusion).length;
-    digits(g, st.deck.main.length - fus, 111, 3); digits(g, fus, 135, 3); digits(g, st.deck.side.length, 159, 3);
-    const dn = st.side ? "Side Deck" : st.opts.deckName || "Deck";
+    if (!st.opts.mode) { digits(g, st.deck.main.length - fus, 111, 3); digits(g, fus, 135, 3); digits(g, st.deck.side.length, 159, 3); }
+    const dn = st.opts.mode ? "Tokens" : st.side ? "Side Deck" : st.opts.deckName || "Deck";
     s.text(dn, 237 - s.textWidth(dn), 0, WHITE, SHADE);
     // The filters' counts, for the column the cursor's in, and the sort's icon.
     counts(st.col).forEach((v, i) => digits(g, v, COUNT_AT[i][0], COUNT_AT[i][1]));
     draw(g, "sort-" + st.sort, 200, 16);
     // The columns.
-    for (const c of [0, 1]) {
+    // (the card shop's: your tokens down the right, each rarity's)
+    if (st.opts.mode) {
+      const t = st.opts.tokens();
+      ["c", "r", "s", "u", "x"].forEach((k, r) => {
+        s.text(RARITY_NAME[k], 123, 33 + 16 * r, WHITE, SHADE);
+        const v = String(t[k] || 0); s.text(v, 237 - s.textWidth(v), 33 + 16 * r, YELLOW, SHADE);
+      });
+    }
+    for (const c of st.opts.mode ? [0] : [0, 1]) {
       const list = column(c), m = st.cur[c], x0 = c === 0 ? 0 : 120;
       if (c === 0 && st.grid) {
         for (let k = 0; k < ROWS * GRID; k++) {
@@ -656,6 +671,8 @@
       for (let i = 0; i < 4; i++) draw(g, "digit-" + num[i], 48 + 8 * i, 120);
       for (let i = 0; i < c[5]; i++) draw(g, "star", 88 + 8 * i, 120);
       s.text(fit(s, c[0], 188), 48, 128, WHITE, SHADE);
+      const rar = RARITY_NAME[(window.YUGIOH_RARITY || "")[n]];
+      if (rar) s.text(rar, 237 - s.textWidth(rar, "small"), 118, rar === "Common" ? WHITE : YELLOW, SHADE, "small");
       draw(g, "in-trunk", 48, 144); draw(g, "in-deck", 48, 152);
       digits(g, st.opts.trunk[n] || 0, 72, 144, true); digits(g, inDeck(n), 72, 152, true);
       if (c[2] === "spell" || c[2] === "trap") {
@@ -692,8 +709,9 @@
       tooltip(top, g, SORTS[st.sortMenu.i].name, x + 8, 54);
     }
     if (st.message) {
-      g.fillStyle = "#c8a020"; g.fillRect(16, 60, 208, 40); g.fillStyle = BLUE_BOX; g.fillRect(17, 61, 206, 38);
-      st.message.split("\n").forEach((l, i) => top.text(l, 24, 64 + 14 * i, WHITE, SHADE));
+      const ml = st.message.split("\n"), mh = 12 + 14 * ml.length;
+      g.fillStyle = "#c8a020"; g.fillRect(16, 60, 208, mh); g.fillStyle = BLUE_BOX; g.fillRect(17, 61, 206, mh - 2);
+      ml.forEach((l, i) => top.text(l, 24, 64 + 14 * i, WHITE, SHADE));
     }
     finish(g, null, top);
   }
@@ -757,7 +775,7 @@
     if (st.col === 0 && st.grid) {
       if (dx) {
         const col = m.i % GRID;
-        if (dx > 0 && (col === GRID - 1 || m.i === list.length - 1)) { st.col = 1; return true; }
+        if (dx > 0 && (col === GRID - 1 || m.i === list.length - 1)) { if (st.opts.mode) return false; st.col = 1; return true; }
         if (dx < 0 && col === 0) return false;
         m.i += dx; clamp(); return true;
       }
@@ -765,7 +783,7 @@
       if (m.i + dy * GRID >= 0 && m.i + dy * GRID < list.length) { m.i += dy * GRID; clamp(); return true; }
       return false;
     }
-    if (dx) { if ((dx > 0) === (st.col === 0)) { st.col = dx > 0 ? 1 : 0; clamp(); return true; } return false; }
+    if (dx) { if (!st.opts.mode && (dx > 0) === (st.col === 0)) { st.col = dx > 0 ? 1 : 0; clamp(); return true; } return false; }
     if (dy < 0 && m.i === 0) { st.bar = true; return true; }
     if (m.i + dy >= 0 && m.i + dy < list.length) { m.i += dy; clamp(); return true; }
     return false;
@@ -825,12 +843,26 @@
           if (move(k === "up" ? -1 : k === "down" ? 1 : 0, k === "left" ? -1 : k === "right" ? 1 : 0)) { se(); paint(); }
           return undefined;
         }
+        if (st.opts.mode && (k === "a" || k === "b")) return k === "a" ? (current() != null ? "pick" : undefined) : "leave";
+        if (st.opts.mode && (k === "l" || k === "r" || k === "select")) return undefined;
         if (k === "b") { st.bar = true; se(); paint(); return undefined; }
         if (k === "a") { st.menu = { i: 0 }; se(); paint(); return undefined; }
         if (k === "start" && current() != null) { st.detail = current(); st.detailTop = 0; se(); paint(); return undefined; }
         return undefined;
       }, { shoulders: true });
       if (key === "close-detail") { st.detail = null; paint(); continue; }
+      if (key === "leave") { se(); close(); return opts.deck; }
+      if (key === "pick") {
+        const a = opts.action(current());
+        if (a.error) { se("se_failure"); await say(a.error); continue; }
+        se();
+        st.message = a.ask + "\nA: Yes   B: No"; paint();
+        const yes = (await window.GbaMenus.keys((k) => (k === "a" || k === "b" ? k : undefined))) === "a";
+        st.message = null;
+        if (yes) { const msg = a.run(); clamp(); se(); if (msg) await say(msg); }
+        paint();
+        continue;
+      }
       if (key === "command") {
         const i = st.menu.i; st.menu = null;
         const r = await command(i);
@@ -1427,4 +1459,389 @@
     canvas.classList.add("hidden");
   }
   window.DuelScreen = { open, close };
+})();
+
+
+// ---------- The card shop (Yu-Gi-Oh! GX Duel Academy's) ----------
+//
+// The Kame Game shop's booster packs, on GX Duel Academy's shop screen (its pieces from the cartridge:
+// tools/build-gx-trunk.py, assets/yugioh/shop/): the shop's room with its translucent panels, the text box below
+// with its cursor; the packs (window.YUGIOH_SETS) one above another down the left, the one you're on framed in red,
+// its name, nine cards to a pack and its price beside it, and how many you'll buy between its arrows; your money by
+// the star at the top right (where GX shows its Duel Points), what the basket costs and how many packs are in it.
+// Up and down pick a pack, left and right how many, R fills the basket (as many as you can pay for), L empties it,
+// START tells you about the pack and SELECT shows the help bar; A buys, after "Is this okay?". Each pack opens as GX
+// opens one: the pack at the bottom left, its cards popping out one by one and flying into the machine at the right
+// (A speeds it up, B skips it), then the list of what came out (GX's, grey): the set's name and how much of it you
+// have ("Comp."), the cards with NEW on those you didn't have, the one under the cursor at the bottom (START shows
+// it); A, B or R to the next pack. (The packs' pictures are drawn here: a card from the set in a pack's frame, as
+// GX makes its own as it runs.)
+//
+//   await CardShop.say(lines)                       // the room and the text box
+//   const i = await CardShop.choose(question, ["Buy packs.", ...])   // -> index, or -1 (B)
+//   await CardShop.picker({ sets, order, money: () => n, price, perPack, buy(key, count) -> { packs: [[{ no, isNew }]] } | { error } })
+//   await CardShop.results({ title, cards: [{ no, isNew }], comp })   // a list of cards (a duel's prizes, too)
+//   CardShop.close()
+(function () {
+  "use strict";
+  const W = 240, H = 160;
+  const canvas = document.createElement("canvas");
+  canvas.className = "party-menu hidden";
+  canvas.width = W * 2; canvas.height = H * 2;
+  const overlayEl = document.getElementById("overlay");
+  overlayEl.parentNode.insertBefore(canvas, overlayEl);
+  const out = canvas.getContext("2d");
+  out.imageSmoothingEnabled = false;
+  const images = {};
+  function image(url) {
+    if (!images[url]) { const img = new Image(); img.src = url; img.onload = () => st.paint && st.paint(); images[url] = img; }
+    return images[url];
+  }
+  const ready = (img) => img && img.complete && img.naturalWidth;
+  const S = (n) => image("assets/yugioh/shop/" + n + ".png");
+  const TR = (n) => image("assets/yugioh/trunk/" + n + ".png");
+  const WHITE = [255, 255, 255], SHADE = [40, 40, 48], YELLOW = [248, 216, 48], ORANGE = [248, 152, 56], GREY = [72, 72, 80];
+  const KIND_COLOUR = { normal: "#e8d040", effect: "#e89830", fusion: "#b048b8", ritual: "#5890e8", spell: "#30c070", trap: "#d83890" };
+  // (each set's colours, its pack item's: the pack's panel and its stripes)
+  const PACK_COLOUR = { lob: ["#c85028", "#e07848"], mrd: ["#3878d0", "#68a0e8"], srl: ["#b02828", "#d85050"], psv: ["#8040c0", "#a868e0"], lon: ["#289858", "#50c080"] };
+  const RARITY = { c: "Common", r: "Rare", s: "Super Rare", u: "Ultra Rare", x: "Secret Rare" };
+  let st = {};
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
+  const se = (n) => { if (window.GameAudio && window.GameAudio.se) window.GameAudio.se(n || "se_select"); };
+  const cardsData = () => window.YUGIOH_CARDS;
+
+  function draw(g, name, x, y, alpha) {
+    const im = S(name);
+    if (!ready(im)) return;
+    if (alpha != null) { g.globalAlpha = alpha; g.drawImage(im, x, y); g.globalAlpha = 1; } else g.drawImage(im, x, y);
+  }
+  // (digits: each glyph 7 apart, right-aligned to x; white, red, blue, or the big red ones 8 apart)
+  function digits(g, value, right, y, colour, width) {
+    const str = String(value).padStart(width || 1, "0");
+    const step = colour === "big" ? 8 : 7;
+    for (let i = 0; i < str.length; i++) draw(g, (colour === "big" ? "big-" : "digit-" + (colour || "w") + "-") + str[i], right - step * (str.length - i), y);
+  }
+  function art(g, n, x, y, w, h, crop) {
+    const C = cardsData(), sheet = image("assets/yugioh/cards/" + String(Math.floor(n / C.perSheet)).padStart(2, "0") + ".png");
+    if (!ready(sheet)) return;
+    const k = n % C.perSheet, sx = (k % C.across) * 80, sy = Math.floor(k / C.across) * 80;
+    const c = crop || 0;
+    g.drawImage(sheet, sx + c, sy, 80 - 2 * c, 80, x, y, w, h);
+  }
+  // A pack's picture, as GX frames one: its border (red for the pack you're on), the card's picture in its window,
+  // and the set's panel with its name below.
+  function pack(g, key, x, y, on, scale) {
+    const set = st.sets[key], col = PACK_COLOUR[key] || ["#38a858", "#58c878"];
+    const pw = 52, ph = 88;
+    const off = pack.c || (pack.c = Object.assign(document.createElement("canvas"), { width: pw, height: ph }));
+    const p = off.getContext("2d");
+    p.imageSmoothingEnabled = false;
+    p.clearRect(0, 0, pw, ph);
+    p.fillStyle = on ? "#c81818" : "#181818"; p.fillRect(0, 0, pw, ph);
+    p.fillStyle = "#c8c8c8"; p.fillRect(2, 2, pw - 4, ph - 4);
+    p.fillStyle = "#888888"; for (let i = 3; i < pw - 3; i += 2) { p.fillRect(i, 3, 1, 2); p.fillRect(i, ph - 5, 1, 2); }
+    p.fillStyle = "#101010"; p.fillRect(3, 6, pw - 6, 52);
+    const no = window.DuelMonsters ? window.DuelMonsters.numberOf(set.cover) : 0;
+    if (no) art(p, no, 4, 7, pw - 8, 50, 6);
+    p.fillStyle = col[0]; p.fillRect(3, 58, pw - 6, 22);
+    p.fillStyle = col[1]; for (let i = 59; i < 80; i += 3) p.fillRect(3, i, pw - 6, 1);
+    p.fillStyle = "#101010"; p.fillRect(3, 80, pw - 6, 3);
+    const bars = ["#e83030", "#f0d020", "#3050e8"];
+    bars.forEach((b, i) => { p.fillStyle = b; p.fillRect(5 + 5 * i, 80, 3, 3); });
+    const s = window.GbaMenus.Surface();
+    const label = key.toUpperCase();
+    s.text(label, Math.round(pw / 2 - s.textWidth(label) / 2), 62, WHITE, SHADE);
+    p.drawImage(s.canvas(), 0, 0, pw, ph, 0, 0, pw, ph);
+    const k = scale || 1;
+    g.drawImage(off, 0, 0, pw, ph, Math.round(x), Math.round(y), Math.round(pw * k), Math.round(ph * k));
+  }
+  // A card small, as GX shows one coming out of a pack: its kind's colour and its picture.
+  function smallCard(g, no, x, y) {
+    const c = cardsData().cards[no];
+    g.fillStyle = "#202020"; g.fillRect(Math.round(x) - 1, Math.round(y) - 1, 24, 32);
+    g.fillStyle = KIND_COLOUR[c[2]] || "#e8d040"; g.fillRect(Math.round(x), Math.round(y), 22, 30);
+    g.fillStyle = "#101010"; g.fillRect(Math.round(x) + 2, Math.round(y) + 5, 18, 18);
+    art(g, no, Math.round(x) + 3, Math.round(y) + 6, 16, 16);
+  }
+  function show() {
+    canvas.classList.remove("hidden");
+  }
+  function present(g, top) {
+    if (top) g.drawImage(top.canvas(), 0, 0);
+    out.imageSmoothingEnabled = false;
+    out.clearRect(0, 0, W * 2, H * 2);
+    out.drawImage(g.canvas, 0, 0, W * 2, H * 2);
+  }
+  function surface() {
+    const off = surface.c || (surface.c = Object.assign(document.createElement("canvas"), { width: W, height: H }));
+    const g = off.getContext("2d");
+    g.imageSmoothingEnabled = false; g.clearRect(0, 0, W, H);
+    return g;
+  }
+
+  // ---------- The room and the text box ----------
+  // The top right: your money by the star.
+  function hud(g, top) {
+    draw(g, "star", 154, 0);
+    digits(g, Math.min(9999999, st.money ? st.money() : 0), 237, 4, "w");
+  }
+  function room(g) { draw(g, "room", 0, 0); draw(g, "panels", 0, 0, 0.5); }
+  function textbox(g, top, lines, cursor) {
+    draw(g, "textbox", 0, 96, 0.75);
+    // (a line too long for the box goes on to the next)
+    const wrapped = [];
+    for (const l of lines) {
+      if (typeof l !== "string") { wrapped.push(l); continue; }
+      let line = "";
+      for (const w of l.split(" ")) { const next = line ? line + " " + w : w; if (line && top.textWidth(next) > 224) { wrapped.push(line); line = w; } else line = next; }
+      wrapped.push(line);
+    }
+    const gap = wrapped.length > 3 ? 14 : 16;
+    wrapped.forEach((l, i) => top.text(l.text != null ? l.text : l, l.x != null ? l.x : 8, 99 + gap * i, l.colour || WHITE, SHADE));
+    if (cursor != null) draw(g, "cursor", 8, 99 + gap * cursor);
+  }
+  function paintRoom(lines, cursor) {
+    st.paint = () => paintRoom(lines, cursor);
+    const g = surface(), top = window.GbaMenus.Surface();
+    room(g); hud(g, top); textbox(g, top, lines, cursor);
+    present(g, top);
+  }
+  async function say(lines) {
+    show();
+    for (const text of [].concat(lines)) {
+      paintRoom(String(text).split("\n"));
+      await window.GbaMenus.keys((k) => (k === "a" || k === "b" ? k : undefined));
+      se();
+    }
+  }
+  // A question and its answers (as many as the box holds below it, the rest a line at a time as you go down).
+  async function choose(question, options, opts) {
+    show();
+    let i = 0;
+    const room2 = 3;
+    const paint = () => {
+      const first = Math.max(0, Math.min(i - 1, options.length - room2));
+      const lines = [question].concat(options.slice(first, first + room2).map((o, k) => ({ text: o, x: 24, colour: first + k === i ? YELLOW : WHITE })));
+      paintRoom(lines, 1 + i - first);
+    };
+    paint();
+    const r = await window.GbaMenus.keys((k) => {
+      if (k === "up" || k === "down") { i = (i + (k === "up" ? options.length - 1 : 1)) % options.length; se(); paint(); return undefined; }
+      if (k === "a") return i;
+      if (k === "b") return opts && opts.noCancel ? undefined : -1;
+      return undefined;
+    });
+    se();
+    return r;
+  }
+
+  // ---------- The pack picker ----------
+  async function picker(opts) {
+    show();
+    st.sets = opts.sets; st.money = opts.money;
+    const order = opts.order, price = opts.price, per = opts.perPack;
+    let i = st.lastPack || 0, n = 0, help = false;
+    const paint = (extra) => {
+      st.paint = () => paint(extra);
+      const g = surface(), top = window.GbaMenus.Surface();
+      room(g); hud(g, top);
+      // (the basket: what it costs, and how many packs)
+      draw(g, "basket-dp", 153, 16); digits(g, n * price, 237, 20, "r");
+      draw(g, "basket-cards", 185, 32); digits(g, n, 214, 36, "r", 2); draw(g, "slash", 215, 36); digits(g, 99, 236, 36, "w");
+      // (the packs: the one before, the one you're on and the one after, with the arrows)
+      const prev = order[(i + order.length - 1) % order.length], next = order[(i + 1) % order.length];
+      if (order.length > 1) { pack(g, prev, 15, -54, false); pack(g, next, 15, 128, false); }
+      pack(g, order[i], 6, 36, true);
+      if (order.length > 1) { draw(g, "arrow-up", 22, 17); draw(g, "arrow-down", 22, 126); }
+      // (the pack: its name, its cards and its price; how many)
+      const set = st.sets[order[i]];
+      top.text(set.name, 74, 63, WHITE, SHADE);
+      draw(g, "cards-x", 72, 84); digits(g, per, 102, 84, "w", 2);
+      draw(g, "price", 111, 84); digits(g, price, 147, 84, "w");
+      draw(g, "basket", 70, 96);
+      if (n > 0) draw(g, "left", 84, 100);
+      digits(g, n, 112, 96, "big", 2);
+      draw(g, "right", 113, 100);
+      if (help) draw(g, "help", 96, 128); else draw(g, "select", 216, 128);
+      if (extra) extra(g, top);
+      present(g, top);
+    };
+    paint();
+    for (;;) {
+      const k = await window.GbaMenus.keys((key) => {
+        if (key === "up" || key === "down") { i = (i + (key === "up" ? order.length - 1 : 1)) % order.length; st.lastPack = i; se(); paint(); return undefined; }
+        if (key === "left" || key === "right") {
+          const most = Math.min(99, Math.floor(opts.money() / price));
+          const m = Math.max(0, Math.min(key === "left" ? n - 1 : n + 1, most));
+          if (m !== n) { n = m; se(); paint(); } else se("se_failure");
+          return undefined;
+        }
+        if (key === "r") { n = Math.min(99, Math.floor(opts.money() / price)); se(); paint(); return undefined; }
+        if (key === "l") { n = 0; se(); paint(); return undefined; }
+        if (key === "select") { help = !help; se(); paint(); return undefined; }
+        return key === "a" || key === "b" || key === "start" ? key : undefined;
+      }, { shoulders: true });
+      se();
+      if (k === "b") return;
+      const key = order[i], set = st.sets[key];
+      if (k === "start") {
+        await describe(set.text, paint);
+        continue;
+      }
+      if (n === 0) { await describe("Pick how many packs you'd like\nwith left and right.", paint); continue; }
+      const yes = await confirm(paint, "Is this okay?");
+      if (!yes) { paint(); continue; }
+      const r = opts.buy(key, n);
+      if (r.error) { await describe(r.error, paint); continue; }
+      n = 0;
+      for (let p = 0; p < r.packs.length; p++) {
+        const skipAll = await opening(key, r.packs[p]);
+        await results({ title: set.full || set.name, cards: r.packs[p], comp: opts.comp ? opts.comp(key) : null, packKey: key, more: p < r.packs.length - 1 });
+        if (skipAll === "stop") break;
+      }
+      paint();
+    }
+  }
+  // (a line or two in the text box over the picker, until A or B)
+  async function describe(text, under) {
+    under((g, top) => textbox(g, top, String(text).split("\n")));
+    await window.GbaMenus.keys((k) => (k === "a" || k === "b" || k === "start" ? k : undefined));
+    se();
+    under();
+  }
+  async function confirm(under, question) {
+    let i = 0;
+    const paint = () => under((g, top) => textbox(g, top, [question, { text: "Yes", x: 24, colour: i === 0 ? YELLOW : WHITE }, { text: "No", x: 24, colour: i === 1 ? YELLOW : WHITE }], 1 + i));
+    paint();
+    const r = await window.GbaMenus.keys((k) => {
+      if (k === "up" || k === "down") { i = 1 - i; se(); paint(); return undefined; }
+      if (k === "a") return i === 0;
+      if (k === "b") return false;
+      return undefined;
+    });
+    se();
+    return r;
+  }
+
+  // ---------- Opening a pack ----------
+  // (its own keys, while it plays: A speeds it up, B skips it)
+  function listen(onKey) {
+    const KEY = { z: "a", Z: "a", " ": "a", Enter: "a", x: "b", X: "b", Escape: "b", s: "r", S: "r" };
+    const h = (e) => { const k = KEY[e.key]; if (!k) return; e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) onKey(k); };
+    document.addEventListener("keydown", h, true);
+    return () => document.removeEventListener("keydown", h, true);
+  }
+  async function opening(key, cards) {
+    show();
+    let speed = 1, skip = false;
+    const stop = listen((k) => { if (k === "a") speed = 3; else if (k === "b" || k === "r") skip = true; });
+    try {
+      const n = cards.length, start = 30, gap = 12, fly = 18, settle = start + gap * (n - 1) + fly + 20, end = settle + 30;
+      // (where each card waits: two rows across the middle)
+      const spot = (k) => [44 + (k % 5) * 26 - (k >= 5 ? -13 : 0), k >= 5 ? 58 : 22];
+      for (let f = 0; f <= end && !skip; f += speed) {
+        const g = surface();
+        draw(g, "open-bg", 0, 0);
+        const mx = 240 - Math.min(64, f * 4);
+        draw(g, "machine", mx, 0);
+        pack(g, key, 6, 112, false);
+        for (let k = 0; k < n; k++) {
+          const t0 = start + gap * k;
+          if (f < t0) continue;
+          const [sx, sy] = spot(k);
+          let x, y;
+          if (f < t0 + fly) {
+            const u = (f - t0) / fly;
+            x = 20 + (sx - 20) * u; y = 112 + (sy - 112) * u - Math.sin(u * Math.PI) * 30;
+          } else if (f < settle) { x = sx; y = sy; }
+          else {
+            const u = Math.min(1, (f - settle - k * 2) / 16);
+            x = sx + (mx + 20 - sx) * Math.max(0, u); y = sy + (70 - sy) * Math.max(0, u);
+            if (u >= 1) continue;
+          }
+          smallCard(g, cards[k].no, x, y);
+        }
+        draw(g, "open-help", 96, 128);
+        present(g);
+        await frame(); await frame();
+      }
+    } finally { stop(); }
+    return null;
+  }
+
+  // ---------- The list of what came out ----------
+  async function results(opts) {
+    show();
+    if (opts.sets) st.sets = opts.sets;
+    const cards = opts.cards, C = cardsData().cards;
+    let cur = 0, topRow = 0, blink = 0, detail = null, detailTop = 0;
+    const ROWS = 5;
+    const paint = () => {
+      st.paint = paint;
+      const g = surface(), top = window.GbaMenus.Surface();
+      if (detail != null) {
+        const s = window.GbaMenus.Surface();
+        const lines = window.TrunkScreen.detail(g, s, detail, cardsData(), detailTop);
+        st.detailLines = lines;
+        g.drawImage(s.canvas(), 0, 0);
+        return present(g);
+      }
+      draw(g, "result-bg", 0, 0);
+      top.text(opts.title, 3, 0, WHITE, SHADE);
+      if (opts.comp != null) {
+        top.text("Comp.", 170, 0, WHITE, SHADE);
+        digits(g, opts.comp, 226, 4, "r");
+        top.text("%", 227, 0, [248, 88, 72], SHADE);
+      }
+      if (opts.packKey) pack(g, opts.packKey, 12, 36, false, 0.8); else if (cards[cur]) { g.fillStyle = "#101010"; g.fillRect(13, 39, 42, 42); art(g, cards[cur].no, 14, 40, 40, 40); }
+      for (let r = 0; r < ROWS; r++) {
+        const c = cards[topRow + r];
+        if (!c) break;
+        const y = 33 + 16 * r;
+        top.text(C[c.no][0], 66, y, topRow + r === cur ? ORANGE : WHITE, SHADE);
+        if (c.isNew && blink % 40 < 28) draw(g, "new", 64, y - 1);
+      }
+      if (cards.length > ROWS) { g.fillStyle = "#f86030"; g.fillRect(232, 33 + Math.round((cur / Math.max(1, cards.length - 1)) * 70), 6, 8); }
+      // (the card under the cursor: its picture, its name and its rarity)
+      const c = cards[cur];
+      if (c) {
+        g.fillStyle = "#202020"; g.fillRect(5, 117, 34, 34);
+        art(g, c.no, 6, 118, 32, 32);
+        top.text(C[c.no][0], 46, 121, WHITE, SHADE);
+        const rar = RARITY[(window.YUGIOH_RARITY || "")[c.no]] || "";
+        top.text(rar + (c.count > 1 ? "  x" + c.count : ""), 46, 139, rar === "Common" ? WHITE : YELLOW, SHADE);
+      }
+      present(g, top);
+    };
+    paint();
+    const timer = setInterval(() => { blink++; if (detail == null) paint(); }, 1000 / 30);
+    try {
+      for (;;) {
+        const k = await window.GbaMenus.keys((key) => {
+          if (detail != null) {
+            if (key === "up" || key === "down") { detailTop = Math.max(0, Math.min((st.detailLines || 0) - 11, detailTop + (key === "up" ? -1 : 1))); paint(); return undefined; }
+            if (key === "a" || key === "b" || key === "start") { detail = null; se(); paint(); }
+            return undefined;
+          }
+          if (key === "up" || key === "down") {
+            const m = Math.max(0, Math.min(cards.length - 1, cur + (key === "up" ? -1 : 1)));
+            if (m !== cur) { cur = m; if (cur < topRow) topRow = cur; if (cur >= topRow + ROWS) topRow = cur - ROWS + 1; se(); paint(); }
+            return undefined;
+          }
+          if (key === "start" && cards[cur]) { detail = cards[cur].no; detailTop = 0; se(); paint(); return undefined; }
+          return key === "a" || key === "b" || key === "r" ? key : undefined;
+        }, { shoulders: true });
+        se();
+        return k;
+      }
+    } finally { clearInterval(timer); }
+  }
+  function close() {
+    st = { money: st.money, sets: st.sets };
+    canvas.classList.add("hidden");
+  }
+  // (where your money comes from, for the top right)
+  function setup(opts) { st.money = opts.money; st.sets = opts.sets; }
+  window.CardShop = { setup, say, choose, picker, results, opening, close };
 })();

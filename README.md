@@ -3228,9 +3228,22 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   reach it). Walk out of either place and the map comes up again.
 - **Domino High School**: **Yugi, Téa, Joey and Tristan** are in its classroom, by the windows; talk to them and
   they introduce themselves. Pupils stand about the front, the hall and the classroom, with a teacher.
-- **The Kame Game shop**: Yugi's grandpa, at his counter, sells booster packs of **Legend of Blue Eyes White
-  Dragon**, **Metal Raiders**, **Spell Ruler**, **Pharaoh's Servant** and **Labyrinth of Nightmare** (₽300 each,
-  on the Poké Mart's buy screen), into the Yu-Gi-Oh! realm's bag.
+- **The Kame Game shop**: Yugi's grandpa, at his counter, on Yu-Gi-Oh! GX Duel Academy's shop screen (`CardShop` in
+  `ui/bag-screen.js`, its pieces from the cartridge in `assets/yugioh/shop/`): its room, the translucent panels and
+  the text box. He sells booster packs of **Legend of Blue Eyes White Dragon**, **Metal Raiders**, **Spell Ruler**,
+  **Pharaoh's Servant** and **Labyrinth of Nightmare** (`window.YUGIOH_SETS` in `data/items.js`: the cards GX has of
+  each, by rarity), ₽300 a pack: the packs down the left as GX shows them (each a card from its set in a pack's
+  frame, drawn by the screen, as GX makes its own as it runs), up and down to pick one, left and right for how many,
+  R to fill the basket and L to empty it, START for what's in the set, SELECT for the help bar; your money by the
+  star at the top right, where GX shows its Duel Points. A pack has nine cards, eight Commons and a Rare, now and
+  then a Super Rare (1 in 6), an Ultra Rare (1 in 12) or a Secret Rare (1 in 72) instead. Each opens as GX opens
+  one, its cards popping out and flying into the machine (A speeds it up, B skips it), then GX's list of what came
+  out, with the set's name, how much of it you have and NEW on the cards you didn't have; they go into your Trunk.
+  (Packs bought before, still in your bag, he opens for you.) He also **dismantles cards**: on the Trunk's screen,
+  A on a spare card (one not in your deck) for a token of its rarity, Common, Rare, Super Rare, Ultra Rare or Secret
+  Rare; and **trades tokens for cards**: every card on the Trunk's screen, A on one for 3 tokens of its rarity. A
+  card's rarity (`window.YUGIOH_RARITY`) is its rarity in the first of the five sets it's in, or else in its first
+  printing (from YGOPRODeck's card database); Rare for the few cards only GX has. The Trunk shows each card's.
 
 - **The maps**: all 58 of the game's screens, each its own map of one screen (15x10 tiles) with the camera fixed on
   it, as in the game. Walk off a screen's edge or through a doorway and you're on the next, as the game links them.
@@ -3297,8 +3310,9 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   one, on a strong monster summoned, and its Counter Traps on your cards. It beats random play in about 99 duels in
   100.
 - **Duels**: Yugi, Téa, Joey and Tristan in Domino High's classroom will duel you after they've said hello (each
-  with a deck of their own from the show, `window.YUGIOH_DUELISTS` in `data/items.js`); win, and they give you one
-  of their deck's cards for your Trunk. Their decks are the cards they play in the first season, Duelist Kingdom,
+  with a deck of their own from the show, `window.YUGIOH_DUELISTS` in `data/items.js`); win, and you get ₽1000 (₽400 from the
+  pupils below) and three cards from their deck, the rarer a card the less likely (Commons 30 to a Secret Rare's 1,
+  Rares 10, Super Rares 4, Ultra Rares 2), shown on the shop's list of cards. Their decks are the cards they play in the first season, Duelist Kingdom,
   those GX Duel Academy has: Yugi's Dark Magician, Gaia, Kuriboh and Multiply, Exodia, the Mythical Beasts and Black
   Luster Soldier; Joey's Red-Eyes, Flame Swordsman, Time Wizard and Baby Dragon, Alligator's Sword and Metalmorph;
   Téa's Magician of Faith from Bakura's Shadow Game, with Fairies; and Tristan, who doesn't duel that season (his
@@ -3318,7 +3332,7 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   Main Phase 2, End Turn). In the Battle Phase, A on a monster and then on its target. The cards' questions come up
   as menus, lists or the zones to pick from, blinking; and you're asked whether to answer with a card when your
   opponent plays one, summons or attacks. The debug menu's **Duel Yugi** starts one anywhere.
-- **Not here yet**: the story, the rest of the city on the map, and opening booster packs.
+- **Not here yet**: the story and the rest of the city on the map.
 
 `tools/build-sacred-cards.py` builds it all from the cartridge (your own dump of it; it checks the game code, AY7E):
 
@@ -3374,6 +3388,11 @@ python3 tools/build-gx-trunk.py "<path to Yu-Gi-Oh! GX - Duel Academy (USA).gba>
   and their digits, the cursors and the menu's bars, in `assets/yugioh/duel/`. (The cards on the field are drawn by
   the screen: the game builds each zone's card from its code's own tables, so the screen draws a card's shape in
   its zone itself, in the hand's cards' colours.)
+- **The shop's pieces**, the same way (`tools/lib/gx-shop-pieces.json`): the shop's room, its translucent panels and
+  the text box with its cursor, the pack picker's icons, arrows and digits, the SELECT tab and its help bar, the
+  pack opening's backdrop, machine and help bar, and the opened pack's list's background and NEW tag, in
+  `assets/yugioh/shop/` (8bpp tiles too, with their 256 colours). (The packs' pictures the screen draws: GX makes its
+  own as it runs, from a card's picture and its frame.)
 - **The Trunk's icons** (the attributes with Spell's and Trap's, the 20 types, the Spells' and Traps' kinds) and
   **its screen's pieces** (its background, the filters' bar, digits, stars, the counts' icons, the cursors, the
   card's frame and the command and sort menus): each tile straight from the ROM, laid out as the game lays them on

@@ -1011,72 +1011,159 @@ window.YUGIOH_CARDS = {"types":["","Dragon","Zombie","Fiend","Pyro","Sea Serpent
 // Duel Monsters' duelists (ui/game.js's dominoDuel): the decks Yugi, Joey, Téa and Tristan duel with in Domino High,
 // by card name (those Yu-Gi-Oh! GX Duel Academy has, filled to 40 with second and third copies), what they say,
 // and the starter deck you can borrow while your own has fewer than 40 cards.
-// Duel Monsters' first two booster sets, Legend of Blue Eyes White Dragon and Metal Raiders: the cards GX Duel Academy
-// has of each, by their rarity in the set (the others aren't among its 1200).
+// The Duel Monsters booster sets the Kame Game shop sells (ui/bag-screen.js's ShopScreen), from Legend of Blue Eyes White
+// Dragon to Labyrinth of Nightmare: the cards GX Duel Academy has of each (the others aren't among its 1200), by their
+// rarity in the set; each pack's item in the bag, the name the shop shows, the card on the pack's picture and what
+// Grandpa says of it. Nine cards to a pack, 300 a pack.
 window.YUGIOH_SETS = {
   lob: {
-    name: "Legend of Blue Eyes White Dragon",
+    item: "legend-of-blue-eyes-pack", name: "Legend of Blue Eyes", full: "Legend of Blue Eyes White Dragon", cover: "Blue-Eyes White Dragon",
+    text: "The very first set: Blue-Eyes White Dragon, the Dark Magician, Red-Eyes and the five pieces of Exodia.",
     common: [
-      "Armaill", "Beast Fangs", "Book of Secret Arts", "Dark Energy", "Darkworld Thorns", "Dissolverock", "Dragon Treasure", "Electro-Whip",
-      "Enchanting Mermaid", "Firegrass", "Fireyarou", "Flame Manipulator", "Follow Wind", "Forest", "Frenzied Panda", "Hinotama", "Hinotama Soul",
-      "Laser Cannon Armor", "Legendary Sword", "Lesser Dragon", "M-Warrior #1", "M-Warrior #2", "Machine Conversion Factory",
-      "Masaki the Legendary Swordsman", "Monster Egg", "Mountain", "Mystical Moon", "Mystical Sheep #2", "One-Eyed Shield Dragon", "Petit Angel",
-      "Petit Dragon", "Power of Kaishin", "Raise Body Heat", "Red Medicine", "Remove Trap", "Silver Bow and Arrow", "Silver Fang", "Skull Red Bird",
-      "Skull Servant", "Sogen", "Sparks", "Steel Ogre Grotto #1", "Tyhone", "Umi", "Vile Germs", "Violet Crystal", "Wasteland", "Yami"
+      "Tyhone", "Skull Servant", "Silver Fang", "Flame Manipulator", "Monster Egg", "Firegrass", "M-Warrior #1", "M-Warrior #2", "Armaill",
+      "Petit Dragon", "Frenzied Panda", "Petit Angel", "Hinotama Soul", "Dissolverock", "Enchanting Mermaid", "Mystical Sheep #2", "Fireyarou",
+      "Masaki the Legendary Swordsman", "One-Eyed Shield Dragon", "Legendary Sword", "Dark Energy", "Laser Cannon Armor", "Beast Fangs",
+      "Vile Germs", "Silver Bow and Arrow", "Dragon Treasure", "Electro-Whip", "Mystical Moon", "Violet Crystal", "Book of Secret Arts",
+      "Machine Conversion Factory", "Raise Body Heat", "Follow Wind", "Power of Kaishin", "Forest", "Wasteland", "Mountain", "Sogen", "Umi", "Yami",
+      "Red Medicine", "Sparks", "Hinotama", "Skull Red Bird", "Steel Ogre Grotto #1", "Lesser Dragon", "Darkworld Thorns", "Remove Trap"
     ],
     rare: [
-      "Aqua Madoor", "Armed Ninja", "Charubin the Fire Knight", "Darkfire Dragon", "Dragoness the Wicked Knight", "Final Flame", "Fissure",
-      "Flame Ghost", "Flower Wolf", "Fusionist", "Giant Soldier of Stone", "Goblin's Secret Remedy", "Gravedigger Ghoul", "Hane-Hane",
-      "Karbonala Warrior", "Metal Dragon", "Pot of Greed", "Spirit of the Harp", "Stop Defense"
+      "Karbonala Warrior", "Giant Soldier of Stone", "Charubin the Fire Knight", "Darkfire Dragon", "Spirit of the Harp", "Fusionist", "Aqua Madoor",
+      "Flame Ghost", "Dragoness the Wicked Knight", "Stop Defense", "Goblin's Secret Remedy", "Final Flame", "Metal Dragon", "Armed Ninja",
+      "Flower Wolf", "Hane-Hane", "Fissure", "Pot of Greed", "Gravedigger Ghoul"
     ],
     super: [
-      "Curse of Dragon", "Dark Hole", "Flame Swordsman", "Man-Eater Bug", "Mystical Elf", "Polymerization", "Raigeki", "Swords of Revealing Light",
-      "Trap Hole"
+      "Mystical Elf", "Flame Swordsman", "Curse of Dragon", "Dark Hole", "Raigeki", "Swords of Revealing Light", "Man-Eater Bug", "Trap Hole",
+      "Polymerization"
     ],
     ultra: [
-      "Blue-Eyes White Dragon", "Dark Magician", "Exodia the Forbidden One", "Gaia The Fierce Knight", "Left Arm of the Forbidden One",
-      "Left Leg of the Forbidden One", "Monster Reborn", "Red-Eyes B. Dragon", "Right Arm of the Forbidden One", "Right Leg of the Forbidden One"
+      "Blue-Eyes White Dragon", "Right Leg of the Forbidden One", "Left Leg of the Forbidden One", "Right Arm of the Forbidden One",
+      "Left Arm of the Forbidden One", "Exodia the Forbidden One", "Dark Magician", "Gaia The Fierce Knight", "Red-Eyes B. Dragon", "Monster Reborn"
     ],
     secret: [
       "Gaia the Dragon Champion", "Tri-Horned Dragon"
     ]
   },
   mrd: {
-    name: "Metal Raiders",
+    item: "metal-raiders-pack", name: "Metal Raiders", full: "Metal Raiders", cover: "Summoned Skull",
+    text: "The second set: Summoned Skull, Time Wizard, Barrel Dragon, Mirror Force and Change of Heart.",
     common: [
-      "7 Colored Fish", "Ancient Brain", "Ancient Elf", "Baby Dragon", "Bickuribox", "Big Eye", "Blackland Fire Dragon", "Blast Juggler",
-      "Block Attack", "Blue-Winged Crown", "Bottom Dweller", "Crass Clown", "Cyber Saurus", "Deepsea Shark", "Destroyer Golem", "Dream Clown",
-      "Empress Judge", "Feral Imp", "Flame Cerebrus", "Giga-Tech Wolf", "Giltia the D. Knight", "Ground Attacker Bugroth",
-      "Guardian of the Labyrinth", "Harpie Lady", "Hibikime", "Hyosube", "Insect Soldiers of the Sky", "Jinzo #7", "Jirai Gumo", "Kaminari Attack",
-      "Labyrinth Tank", "Lady of Faith", "Launcher Spider", "Lava Battleguard", "Leghul", "Mega Thunderball", "Musician King", "Mystic Horseman",
-      "Mystic Lamp", "Niwatori", "Ocubeam", "Ooguchi", "Prevent Rat", "Protector of the Throne", "Punished Eagle", "Queen's Double",
-      "Rabid Horseman", "Rainbow Flower", "Roaring Ocean Snake", "Skull Knight", "Soul Release", "Swamp Battleguard", "Sword of Deep-Seated",
-      "Tainted Wisdom", "The Bistro Butcher", "The Cheerful Coffin", "The Unhappy Maiden", "Thunder Dragon", "Tongyo", "Tremendous Fire",
-      "Winged Dragon,Guardian of the Fortress #1"
+      "Baby Dragon", "Feral Imp", "Winged Dragon,Guardian of the Fortress #1", "Blackland Fire Dragon", "Swamp Battleguard", "Harpie Lady",
+      "Mystic Horseman", "Rabid Horseman", "Crass Clown", "Dream Clown", "Tainted Wisdom", "Big Eye", "Ancient Brain", "Roaring Ocean Snake",
+      "Guardian of the Labyrinth", "Prevent Rat", "Ground Attacker Bugroth", "Protector of the Throne", "Tremendous Fire", "Jirai Gumo",
+      "Labyrinth Tank", "Bickuribox", "Mystic Lamp", "Giltia the D. Knight", "Launcher Spider", "Ocubeam", "Leghul", "Ooguchi", "Giga-Tech Wolf",
+      "Blast Juggler", "Jinzo #7", "Thunder Dragon", "Ancient Elf", "Deepsea Shark", "Bottom Dweller", "7 Colored Fish", "Destroyer Golem",
+      "Kaminari Attack", "Punished Eagle", "Insect Soldiers of the Sky", "Rainbow Flower", "Musician King", "Cyber Saurus", "The Bistro Butcher",
+      "Flame Cerebrus", "Mega Thunderball", "Niwatori", "Tongyo", "Lava Battleguard", "Empress Judge", "Lady of Faith", "Queen's Double",
+      "Blue-Winged Crown", "Hyosube", "Hibikime", "Skull Knight", "Soul Release", "The Cheerful Coffin", "Sword of Deep-Seated", "Block Attack",
+      "The Unhappy Maiden"
     ],
     rare: [
-      "Bladefly", "Cannon Soldier", "Dark Elf", "Elegant Egotist", "Hoshiningen", "Little Chimera", "Magician of Faith", "Mask of Darkness",
-      "Milus Radiant", "Muka Muka", "Princess of Tsurugi", "Robbin' Goblin", "Sangan", "Shadow Ghoul", "Star Boy", "White Magical Hat",
-      "Witch of the Black Forest", "Witch's Apprentice"
+      "Sangan", "Mask of Darkness", "White Magical Hat", "Princess of Tsurugi", "Elegant Egotist", "Shadow Ghoul", "Magician of Faith",
+      "Hoshiningen", "Cannon Soldier", "Muka Muka", "Star Boy", "Milus Radiant", "Dark Elf", "Witch of the Black Forest", "Little Chimera",
+      "Bladefly", "Witch's Apprentice", "Robbin' Goblin"
     ],
     super: [
-      "Catapult Turtle", "Gazelle the King of Mythical Beasts", "Harpie Lady Sisters", "Heavy Storm", "Kuriboh", "Tribute to the Doomed",
-      "Twin-Headed Thunder Dragon"
+      "Kuriboh", "Harpie Lady Sisters", "Catapult Turtle", "Twin-Headed Thunder Dragon", "Gazelle the King of Mythical Beasts",
+      "Tribute to the Doomed", "Heavy Storm"
     ],
     ultra: [
-      "Barrel Dragon", "B. Skull Dragon", "Change of Heart", "Magic Jammer", "Mirror Force", "Seven Tools of the Bandit", "Summoned Skull",
-      "Time Wizard"
+      "Time Wizard", "Summoned Skull", "B. Skull Dragon", "Barrel Dragon", "Change of Heart", "Magic Jammer", "Seven Tools of the Bandit",
+      "Mirror Force"
     ],
     secret: [
       "Thousand Dragon"
     ]
+  },
+  srl: {
+    item: "spell-ruler-pack", name: "Spell Ruler", full: "Spell Ruler", cover: "Relinquished",
+    text: "Magic Ruler: the Toons, Relinquished, Snatch Steal, Megamorph and Mystical Space Typhoon.",
+    common: [
+      "Horn of Light", "Malevolent Nuzzler", "Fire Kraken", "Tyhone #2", "Commencement Dance", "Hamburger Recipe", "House of Adhesive Tape",
+      "Eatgaboon", "Turtle Oath", "Performance of Sword", "Hungry Burger", "Crab Turtle", "Red Archery Girl", "Ryu-Ran", "Gravekeeper's Servant",
+      "Upstart Goblin", "Final Destiny", "Chorus of Sanctuary", "The Reliable Guardian", "Chain Energy", "Snake Fang", "Flash Assailant",
+      "Ceremonial Bell", "Sonic Bird", "Gaia Power", "Umiiruka", "Molten Destruction", "Rising Air Current", "Luminous Spark", "Mystic Plasma Zone"
+    ],
+    rare: [
+      "Horn of the Unicorn", "Manga Ryu-Ran", "Hyozanryu", "Rush Recklessly", "Cyber Jar", "Giant Rat", "Senju of the Thousand Hands", "UFO Turtle",
+      "Karate Man", "Giant Germ", "Nimble Momonga", "Shining Angel", "Mother Grizzly", "Flying Kamakiri #1", "Mystic Tomato"
+    ],
+    super: [
+      "Black Pendant", "Maha Vailo", "Eternal Rest", "Toon World", "Black Illusion Ritual", "Toll", "Confiscation", "Giant Trunade",
+      "Painful Choice", "Banisher of the Light", "Messenger of Peace"
+    ],
+    ultra: [
+      "Axe of Despair", "Spellbinding Circle", "Megamorph", "Toon Mermaid", "Toon Summoned Skull", "Relinquished", "Snatch Steal", "Delinquent Duo",
+      "The Forceful Sentry", "Mystical Space Typhoon"
+    ],
+    secret: [
+      "Serpent Night Dragon", "Blue-Eyes Toon Dragon"
+    ]
+  },
+  psv: {
+    item: "pharaohs-servant-pack", name: "Pharaoh's Servant", full: "Pharaoh's Servant", cover: "Jinzo",
+    text: "Jinzo, Imperial Order, Thousand-Eyes Restrict, Buster Blader and Call of the Haunted.",
+    common: [
+      "Thousand-Eyes Idol", "Steel Ogre Grotto #2", "Insect Barrier", "Numinous Healer", "Minor Goblin Official", "Gamble", "DNA Surgery",
+      "Attack and Receive", "Light of Intervention", "Respect Play", "Inspection", "Bubonic Vermin", "Flame Champion", "Twin-Headed Fire Dragon",
+      "Darkfire Soldier #1", "Mr. Volcano", "Darkfire Soldier #2", "Kiseitai", "Cyber Falcon", "Dark Bat", "Flying Kamakiri #2", "Harpie's Brother",
+      "Oni Tank T-34", "Overdrive", "Time Seal", "Gift of The Mystical Elf", "Solomon's Lawbook", "Enchanted Javelin", "Solemn Wishes",
+      "Burning Land", "Shadow of Eyes", "Girochin Kuwagata", "4-Starred Ladybug of Doom", "Gradius", "Skull Mariner", "The All-Seeing White Tiger",
+      "Island Turtle", "Wingweaver", "Science Soldier", "Souls of the Forgotten", "Dokuroyaiba", "Rain of Mercy", "Ground Collapse"
+    ],
+    rare: [
+      "Michizure", "Skull Invitation", "Nobleman of Extermination", "The Shallow Grave", "Morphing Jar #2", "Gravity Bind", "Hayabusa Knight",
+      "Mad Sword Beast"
+    ],
+    super: [
+      "Backup Soldier", "Nobleman of Crossout", "Dust Tornado", "Gearfried the Iron Knight", "Fairy Meteor Crush", "Limiter Removal"
+    ],
+    ultra: [
+      "Thousand-Eyes Restrict", "The Fiend Megacyber", "Beast of Talwar", "Chain Destruction", "Ceasefire", "Premature Burial", "Buster Blader",
+      "Call of the Haunted", "Goblin Attack Force"
+    ],
+    secret: [
+      "Jinzo", "Imperial Order"
+    ]
+  },
+  lon: {
+    item: "labyrinth-of-nightmare-pack", name: "Labyrinth of Nightmare", full: "Labyrinth of Nightmare", cover: "The Masked Beast",
+    text: "Destiny Board, Torrential Tribute, Gemini Elf, Magic Cylinder and The Masked Beast.",
+    common: [
+      "Boneheimer", "Flame Dancer", "Humanoid Slime", "Worm Drake", "Humanoid Worm Drake", "Flying Fish", "Lightning Conger", "Spherous Lady",
+      "Shining Abyss", "Gadget Soldier", "Grand Tiki Elder", "Melchid the Four-Face Beast", "Mask of Weakness", "Curse of the Masked Beast",
+      "Lightning Blade", "Fairy Box", "The Unfriendly Amazon", "Amazon Archer", "Lady Assailant of Flames", "Fire Sorcerer", "Dancing Fairy",
+      "Empress Mantis", "Cure Mermaid", "Hysteric Fairy", "Bio-Mage", "The Forgiving Maiden", "St. Joan", "Scroll of Bewitchment",
+      "Offerings to the Doomed", "The Portrait's Secret", "The Gross Ghost of Fled Dreams", "Headless Knight", "The Dark Door", "Earthbound Spirit",
+      "The Earl of Demise", "Zombyra the Dark", "Summoner of Illusions", "Soul of Purity and Light", "Spirit of Flames", "Aqua Spirit",
+      "The Rock Spirit", "Garuda the Wind Spirit", "Supply", "Maryokutai", "Graverobber's Retribution", "Deal of Phantom", "Blind Destruction",
+      "Cyclon Laser", "Fusion Gate", "Miracle Dig"
+    ],
+    rare: [
+      "Amphibian Beast", "Mask of Brutality", "Infinite Cards", "Spirit of the Breeze", "Jowgen the Spiritualist", "Gilasaurus",
+      "Spirit Message \"I\"", "Spirit Message \"N\"", "Spirit Message \"A\"", "Spirit Message \"L\""
+    ],
+    super: [
+      "Mask of Dispel", "Mask of the Accursed", "Fire Princess", "Jar of Greed", "Kycoo the Ghost Destroyer", "Bazoo the Soul-Eater"
+    ],
+    ultra: [
+      "The Last Warrior from Another Planet", "The Masked Beast", "Mask of Restrict", "Torrential Tribute", "Card of Safe Return", "United We Stand",
+      "Mage Power", "Destiny Board", "Royal Command"
+    ],
+    secret: [
+      "Gemini Elf", "Magic Cylinder"
+    ]
   }
 };
+// Each card's rarity, by card number (c Common, r Rare, s Super Rare, u Ultra Rare, x Secret Rare): its rarity in
+// the first of those sets it's in, or else in its first printing (YGOPRODeck's card database); Rare for the few cards
+// only GX Duel Academy has. A duel's prizes, dismantling and the tokens go by it.
+window.YUGIOH_RARITY = "-usccccccccsuuuuuuuccccucxusrrcscsccxrscucscccccscrcrcccrrcccccccccccrrcccrrrccrccrrrucccrcccccurcccccccrcrcccucsrcrcsccrcccrcrccccccccccccccssrcrrcccrccsusxcxuuscrccxcxcccxxcccccrurrcucucccrccccccrsccccccrcccxccccrccrscssrccrrcccrrccxscccrccrcrccrcccucccccrcucrscrcscrccrcccccccsxsuxscscrssxxxsccrccxcsxcrcccsrxxcuscrrsssxsrxxccruuucucurxxusxssrruxuuxxrxccxuusxucxussxssuxxsssxcrsscrrucrrrrcccssssccruuucussssscccrccccccussccscucsurcucusscrsrrrcrrrrrrccrccccccsrccccscuccxrsrrucrcccccccccccccuccsuccxrxxxxuccccuscccxccscsccccsccccrcccccucccsusrccuccruxccssrccrccrccuccccccccxcccsccrcccccccrscuucrscccrucccxuucruuxxcrscscccccrccuccccrrrrccurcuurcrrcucscsrscccccccuccucscrrcccuccxrucucccrcrsccccccurcuccrcscrurscsuscruxrcxrurscccccccccccscccccccsusxrrrcccrccccccruucccccccccsssucccucssrccucccrsrccrccccrrccccccuccussuccccscccccccccxxxcccrccrrrscrccccccccccccccrccccccccurcccccccccscccrcuxcrcccccccuccrccruccsrucrccrcscrcrrccrccrsxsssuccrcccsuscccccccucucscccccccrcxxxrscccccurccccccccrccccuccscscrcccuuucrccccrcscccrccsrrccrcuccrcccrucccrccccuccrccccsccccccsrrcrccccscsccrcrccccscccccsurccuscrcccccrcrcccrusccccsurcrccsccsccccccuruuccccrrcrccrrrrucccccssrrcusuusurrrcccccssccccccccccrcrcrccrcccccrrrcru";
 window.YUGIOH_DUELISTS = {
   // (Yugi's cards from the first season, Duelist Kingdom: the Dark Magician, Gaia and Curse of Dragon, Kuriboh and
   // Multiply, Exodia from his first duel with Kaiba, the Mythical Beasts he played against Bakura, Black Luster Soldier
   // against Kaiba at the castle, Catapult Turtle, Change of Heart, Spellbinding Circle and Swords of Revealing Light.)
-  yugi: { name: "Yugi", win: "Yugi: Good game! Believe in the heart\nof the cards, and you'll get stronger.", lose: "Yugi: Wow, you're good! Here, take\nthis card. You've earned it.",
+  yugi: { name: "Yugi", win: "Yugi: Good game! Believe in the heart\nof the cards, and you'll get stronger.", lose: "Yugi: Wow, you're good! Here, take\nthese cards. You've earned them.",
     deck: ["Dark Magician", "Curse of Dragon", "Gaia The Fierce Knight", "Gaia the Dragon Champion", "Feral Imp", "Giant Soldier of Stone", "Silver Fang",
       "Summoned Skull", "Kuriboh", "Mystical Elf", "Catapult Turtle", "Gazelle the King of Mythical Beasts", "Berfomet", "Chimera the Flying Mythical Beast",
       "Black Luster Soldier", "Black Luster Ritual", "Exodia the Forbidden One", "Right Arm of the Forbidden One", "Left Arm of the Forbidden One",
@@ -1085,13 +1172,13 @@ window.YUGIOH_DUELISTS = {
   // (Joey's from Duelist Kingdom: Red-Eyes from Rex Raptor, Flame Swordsman and its Masaki and Flame Manipulator,
   // Time Wizard and Baby Dragon for Thousand Dragon, Alligator's Sword, Garoozis, Axe Raider, Metalmorph against Bandit
   // Keith, and the dice.)
-  joey: { name: "Joey", win: "Joey: Yeah! Did ya see that? Nobody\nbeats Joey Wheeler!", lose: "Joey: Aw, man! Okay, okay, ya got me.\nHere, take this. Fair's fair!",
+  joey: { name: "Joey", win: "Joey: Yeah! Did ya see that? Nobody\nbeats Joey Wheeler!", lose: "Joey: Aw, man! Okay, okay, ya got me.\nHere, take these. Fair's fair!",
     deck: ["Red-Eyes B. Dragon", "Flame Swordsman", "Masaki the Legendary Swordsman", "Flame Manipulator", "Time Wizard", "Baby Dragon", "Thousand Dragon",
       "Alligator's Sword", "Alligator's Sword Dragon", "Garoozis", "Axe Raider", "Battle Warrior", "Red-Eyes Black Metal Dragon", "Metalmorph",
       "Salamandra", "Legendary Sword", "Dragon Treasure", "Graceful Dice", "Skull Dice", "Polymerization"] },
   // (Téa hardly duels in the first season: hers is the Magician of Faith she became in Bakura's Shadow Game, with the
   // Fairies she's known for.)
-  tea: { name: "Téa", win: "Téa: That was fun! Friendship's what\nmakes a deck strong.", lose: "Téa: You really know your cards! Here,\nI want you to have this one.",
+  tea: { name: "Téa", win: "Téa: That was fun! Friendship's what\nmakes a deck strong.", lose: "Téa: You really know your cards! Here,\nI want you to have these.",
     deck: ["Magician of Faith", "Dunames Dark Witch", "Petit Angel", "Hoshiningen", "Shining Angel", "Spirit of the Harp", "Dancing Fairy",
       "Marie the Fallen One", "Hysteric Fairy", "Mystical Elf", "Soul of Purity and Light", "Waboku", "Rush Recklessly", "Dian Keto the Cure Master",
       "Swords of Revealing Light", "Monster Reborn", "Gift of The Mystical Elf"] },
@@ -1102,7 +1189,7 @@ window.YUGIOH_DUELISTS = {
       "Machine Conversion Factory", "Fissure", "Trap Hole", "Steel Ogre Grotto #1", "Steel Ogre Grotto #2", "Cyber Jar", "Jinzo", "Reflect Bounder", "Mirror Force", "Raigeki",
       "Dark Hole", "Monster Reborn", "Pot of Greed", "Big Bang Shot", "Megamorph"] },
   // (Domino High's other pupils, and the teacher: each a deck from the boosters they've opened, YUGIOH_SETS's; ui/game.js's boosterDeck)
-  classmates: { name: "Student", teacher: "Teacher", win: "Ha! I knew my deck was good!", lose: "Aw, you win. Here, take this card.", ask: "Want to duel? I just opened some\nnew packs!" },
+  classmates: { name: "Student", teacher: "Teacher", win: "Ha! I knew my deck was good!", lose: "Aw, you win. Here, take these cards.", ask: "Want to duel? I just opened some\nnew packs!" },
   starter: ["Battle Ox", "Axe Raider", "Mystical Elf", "Giant Soldier of Stone", "Feral Imp", "Gemini Elf", "Vorse Raider", "La Jinn the Mystical Genie of the Lamp", "Luster Dragon",
     "Dark Blade", "Kuriboh", "Man-Eater Bug", "Sangan", "Witch of the Black Forest", "Summoned Skull", "Dark Hole", "Monster Reborn", "Pot of Greed", "Trap Hole", "Mirror Force",
     "Fissure", "Rush Recklessly", "Legendary Sword", "Waboku", "Dian Keto the Cure Master", "Mystical Space Typhoon"]
