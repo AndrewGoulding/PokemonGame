@@ -2206,6 +2206,7 @@
         { label: "Visit Sinnoh (Twinleaf Town)", value: "sinnoh", className: "action" },
         { label: "Visit the Realm Hub", value: "hub", className: "action" },
         { label: "Fill the Trunk (3 of every card)", value: "trunk", className: "action" },
+        { label: "Duel Yugi", value: "duel", className: "action" },
         { label: Orre.inOrre(player.location) ? "Leave Orre" : "Visit Orre (the Air Strip)", value: "orre", className: "action" },
         back()]);
       if (v === "back") return;
@@ -2240,6 +2241,9 @@
         for (let n = 1; n < window.YUGIOH_CARDS.cards.length; n++) y.trunk[n] = 3;
         await persist();
         await message("Your Trunk has three of every card now.");
+      } else if (v === "duel") {
+        await dominoDuel("yugi", null);
+        return "battled";
       } else if (v === "hub") {
         // The Realm Hub, by the Time Machine (its machine brings you back beside Pallet Town).
         fieldAction = visitRealmHub;
@@ -2972,10 +2976,12 @@
   // (Sinnoh's: tools/build-sinnoh.js; and Sandgem's beach's sailor, sinnohSailor.)
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "sinnoh") for (const p of m.people) if (/_PokemonCenter_1F_EventScript_Nurse$|_Mart_EventScript_Clerk$/.test(p.script || "")) SPECIAL.add(p.script);
   SPECIAL.add("SandgemTown_EventScript_Sailor");
+  // (Domino High's duelists: Yugi, Téa, Joey and Tristan, dominoDuel.)
+  const DOMINO_DUELISTS = { DominoHigh_Person12: "yugi", DominoHigh_Person13: "tea", DominoHigh_Person14: "joey", DominoHigh_Person15: "tristan" };
   // (The Time Machine off Pallet Town, and the Realm Hub's: timeMachine, realmPortal.)
   for (const sc of ["TimeMachine_EventScript_Machine", "TimeMachine_EventScript_Sign", "TimeMachine_EventScript_Scientist", "RealmHub_EventScript_Machine",
     "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_west", "RealmHub_EventScript_Portal_east", "SacredCards_Fountain", "SacredCards_BackToTown",
-    "Domino_WorldMap", "KameGame_Grandpa"]) SPECIAL.add(sc);
+    "Domino_WorldMap", "KameGame_Grandpa", ...Object.keys(DOMINO_DUELISTS)]) SPECIAL.add(sc);
   // (And its ferries, Canalave's to Iron Island and back, and Oreburgh's fossil scientist: sinnohFerry, fossilScientist.)
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "sinnoh") for (const p of m.people) if (p.ferry || /_EventScript_FossilScientist$/.test(p.script || "")) SPECIAL.add(p.script);
   SPECIAL.add("SlateportCity_Harbor_EventScript_Sailor"); SPECIAL.add("Route117_PokemonDayCare_EventScript_DaycareWoman");
@@ -3338,6 +3344,7 @@
     if (script === "SacredCards_BackToTown") { await dominoBackToTown(); return; }
     if (script === "Domino_WorldMap") { await dominoTravel(); return; }
     if (script === "KameGame_Grandpa") { await kameGameShop(); return; }
+    if (DOMINO_DUELISTS[script]) { await dominoDuel(DOMINO_DUELISTS[script], ev.person); return; }
     if (ev.person && ev.person.ferry && isSinnoh(ev.map)) { await sinnohFerry(ev.person); return; }
     if (/_EventScript_FossilScientist$/.test(script || "") && isSinnoh(ev.map)) { await fossilScientist(); return; }
     // (Johto's Pokémon Centers' nurses heal as Kanto's do.)
@@ -9791,6 +9798,40 @@
     Screen.say("");
     clearMenu();
     await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, deck: y.deck, deckName: y.deckName || "Deck" });
+    await persist();
+  }
+  // Duels (ui/bag-screen.js's DuelScreen, GX Duel Academy's field, on DuelMonsters' rules): Yugi, Téa, Joey and
+  // Tristan in Domino High's classroom, each with their own deck (window.YUGIOH_DUELISTS). Your deck is your
+  // Trunk's; while it has fewer than 40 cards, you may borrow the starter deck. Beat one of them and they give
+  // you a card from their deck.
+  // (A deck by its cards' names: those the game has, filled to 40 with second and third copies.)
+  function duelDeck(names) {
+    const DM = window.DuelMonsters, C = window.YUGIOH_CARDS.cards;
+    const nos = names.map((n) => DM.numberOf(n)).filter((no) => no && DM.playable(no));
+    const main = nos.filter((no) => C[no][2] !== "fusion"), deck = nos.slice();
+    for (let copy = 1; copy < 3 && deck.filter((no) => C[no][2] !== "fusion").length < 40; copy++)
+      for (const no of main) { if (deck.filter((no2) => C[no2][2] !== "fusion").length >= 40) break; deck.push(no); }
+    return deck;
+  }
+  async function dominoDuel(key, person) {
+    const foe = window.YUGIOH_DUELISTS[key], y = yugioh(), C = window.YUGIOH_CARDS.cards;
+    if (person && person.text) await say(person.text);
+    if (!(await confirm(foe.name + ": How about a duel?"))) return;
+    let deck = y.deck.main.filter((no) => C[no]);
+    if (deck.filter((no) => C[no][2] !== "fusion").length < 40) {
+      if (!(await confirm("Your deck has fewer than 40 cards.\nBorrow the starter deck?"))) return;
+      deck = duelDeck(window.YUGIOH_DUELISTS.starter);
+    }
+    Screen.say("");
+    clearMenu();
+    const foeDeck = duelDeck(foe.deck);
+    const r = await DuelScreen.open({ cards: window.YUGIOH_CARDS, deck, foe: { name: foe.name, deck: foeDeck }, you: player.name });
+    show("world");
+    if (r.winner === 0) {
+      const prize = foeDeck[Math.floor(Math.random() * foeDeck.length)];
+      y.trunk[prize] = (y.trunk[prize] || 0) + 1;
+      await say([foe.lose, player.name + " got " + C[prize][0] + "!"]);
+    } else await say(foe.win);
     await persist();
   }
   async function visitRealmHub() {

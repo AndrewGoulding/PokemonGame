@@ -852,5 +852,577 @@
     cancelAnimationFrame(raf);
     canvas.classList.add("hidden");
   }
-  window.TrunkScreen = { open, close };
+  // (The card itself, for another screen (DuelScreen's START): drawn as here, from line `topLine` of its text; how many lines it has.)
+  function detail(g, s, n, cards, topLine) {
+    const saved = st;
+    st = { opts: { cards }, detailTop: topLine || 0 };
+    try { paintDetail(g, s, n); return st.detailLines; } finally { st = saved; }
+  }
+  window.TrunkScreen = { open, close, detail };
+})();
+
+// ---------- The duel screen: Yu-Gi-Oh! GX Duel Academy's ----------
+//
+// A duel of Duel Monsters (game/table-players.js's DuelMonsters: The Eternal Duelist Soul's rules, its cards'
+// effects and its computer duelist), on GX Duel Academy's field, its graphics from that cartridge
+// (assets/yugioh/duel/, tools/build-gx-trunk.py): the floor and the zones in perspective with the academy's mat
+// between them, your life points at the bottom left and your opponent's at the top, the phases down the left
+// with the turn's count, the piles' counts at the right, your hand along the bottom (the card under the cursor
+// raised) and the backs of your opponent's along the top, and the card under the cursor along the bottom line
+// (its name, attribute, type, level and ATK/DEF). The cards on the field are drawn as the game draws them: a
+// card's shape in its zone, in its kind's colours (face up), or its back (face down), lying sideways in Defense
+// Position.
+//
+// The controls are the game's: the hand cursor moves over your hand and both sides of the field; A on a card
+// opens its menu (Summon, Set, Activate, Flip Summon, the change of position, its effect, Detail Screen), on a
+// Graveyard its cards; START opens the phases' menu (Battle Phase, Main Phase 2, End Turn) and, over a card,
+// B or START shows the card itself. In the Battle Phase, A on a monster that can attack, then on its target.
+// The questions the cards' effects ask come up as menus, or as the cursor over the zones to pick.
+//
+//   const result = await DuelScreen.open({
+//     cards,   // window.YUGIOH_CARDS
+//     deck,    // your deck: [cardNumber, ...] (its main deck and Fusion Deck)
+//     foe,     // { name, deck: [cardNumber, ...] }: the computer duelist (DuelMonsters.ai)
+//     you,     // your name
+//     floor,   // "gym" (the default: the Gym's boards) or "red" (the tutorial's)
+//   });        // -> { winner: 0 (you), 1 or -1 (a draw), reason }
+(function () {
+  "use strict";
+  const W = 240, H = 160;
+  const canvas = document.createElement("canvas");
+  canvas.className = "party-menu hidden";
+  canvas.width = W * 2; canvas.height = H * 2;
+  const overlayEl = document.getElementById("overlay");
+  overlayEl.parentNode.insertBefore(canvas, overlayEl);
+  const out = canvas.getContext("2d");
+  out.imageSmoothingEnabled = false;
+  const images = {};
+  function image(url) {
+    if (!images[url]) { const img = new Image(); img.src = url; img.onload = () => st && paint(); images[url] = img; }
+    return images[url];
+  }
+  const ready = (img) => img && img.complete && img.naturalWidth;
+  const P = (n) => image("assets/yugioh/duel/" + n + ".png");
+  const TR = (n) => image("assets/yugioh/trunk/" + n + ".png");
+  const WHITE = [255, 255, 255], SHADE = [40, 40, 48], NAME_BLUE = [24, 56, 240], NAME_SHADE = [184, 192, 248];
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const se = (n) => { if (window.GameAudio && window.GameAudio.se) window.GameAudio.se(n || "se_select"); };
+
+  // ---------- The field ----------
+  // Its zones, where GX Duel Academy's grid has them (each a quad: its top left, top right, bottom right and
+  // bottom left corners). Your monsters' row and your Spells' and Traps' along the bottom of the mat, your
+  // opponent's along its top (theirs from their side: their first zone at your right); the piles at the corners
+  // (your deck at the bottom right, your Fusion Deck at the bottom left, theirs opposite), the Graveyards and the
+  // Field Spells' zones beside the monsters' rows.
+  const row = (y0, y1, top, bottom) => top.slice(0, 5).map((x, i) => [[x, y0], [top[i + 1], y0], [bottom[i + 1], y1], [bottom[i], y1]]);
+  const quad = (x0, x1, y0, x2, x3, y1) => [[x0, y0], [x1, y0], [x3, y1], [x2, y1]];
+  const FIELD = [
+    { mon: row(65, 84, [54, 78, 105, 134, 161, 185], [48, 75, 104, 135, 164, 191]), st: row(88, 111, [46, 73, 103, 136, 166, 193], [40, 69, 102, 137, 170, 199]),
+      field: quad(30, 47, 65, 23, 41, 84), grave: quad(192, 209, 65, 198, 216, 84), banished: quad(214, 229, 65, 221, 238, 84),
+      deck: quad(200, 219, 90, 207, 227, 111), fusion: quad(20, 39, 90, 12, 32, 111), pile: { deck: ["pile-right", 200, 88], fusion: ["pile-left", 8, 88] } },
+    { mon: row(42, 57, [59, 82, 107, 132, 157, 180], [55, 79, 106, 133, 160, 184]).reverse(), st: row(27, 38, [63, 85, 109, 130, 154, 176], [60, 83, 108, 131, 156, 179]).reverse(),
+      field: quad(185, 200, 42, 190, 206, 57), grave: quad(39, 54, 42, 33, 49, 57), banished: quad(20, 33, 42, 12, 27, 57),
+      deck: quad(46, 60, 27, 42, 56, 38), fusion: quad(179, 193, 27, 183, 197, 38), pile: { deck: ["pile-opp-left", 40, 24], fusion: ["pile-opp-right", 176, 24] } }
+  ];
+  // (A point in a quad: u across it, v down it.)
+  function at(q, u, v) {
+    const tx = q[0][0] + (q[1][0] - q[0][0]) * u, ty = q[0][1] + (q[1][1] - q[0][1]) * u;
+    const bx = q[3][0] + (q[2][0] - q[3][0]) * u, by = q[3][1] + (q[2][1] - q[3][1]) * u;
+    return [tx + (bx - tx) * v, ty + (by - ty) * v];
+  }
+  const centre = (q) => at(q, 0.5, 0.5);
+  function shape(g, q, u0, u1, v0, v1, fill, dy) {
+    const pts = [at(q, u0, v0), at(q, u1, v0), at(q, u1, v1), at(q, u0, v1)];
+    g.beginPath();
+    pts.forEach(([x, y], i) => (i ? g.lineTo : g.moveTo).call(g, Math.round(x), Math.round(y) + (dy || 0)));
+    g.closePath(); g.fillStyle = fill; g.fill();
+  }
+  // The kinds' colours, the hand's cards' (their palettes' last four: dark to light), and the backs'.
+  const COLOURS = { normal: ["#847b18", "#a5a539", "#cece5a", "#f7f77b"], effect: ["#ad5a00", "#de8c10", "#ffa521", "#ffce7b"], fusion: ["#6b009c", "#9431bd", "#bd63de", "#e79cff"],
+    ritual: ["#426bd6", "#2984e7", "#109cef", "#00bdff"], spell: ["#007b29", "#00a54a", "#00d66b", "#00ff94"], trap: ["#940073", "#bd318c", "#ef63ad", "#ff9cef"] };
+  const BACK = ["#5a2100", "#944a08", "#ce7310", "#ffa500"];
+  // A card on the field: upright in Attack Position (and a Spell or Trap), sideways in Defense; its edge below it.
+  function fieldCard(g, q, no, faceUp, defense) {
+    const [u0, u1, v0, v1] = defense ? [0.08, 0.92, 0.2, 0.8] : [0.24, 0.76, 0.06, 0.94];
+    const c = faceUp ? COLOURS[kindOf(no)] : BACK, du = u1 - u0, dv = v1 - v0;
+    shape(g, q, u0, u1, v0, v1, "#848484", 1);
+    shape(g, q, u0, u1, v0, v1, c[0]);
+    shape(g, q, u0 + du * 0.06, u1 - du * 0.06, v0 + dv * 0.06, v1 - dv * 0.06, c[2]);
+    if (faceUp) {
+      // (its picture's window, dark, edged light)
+      const [a0, a1, b0, b1] = defense ? [0.3, 0.7, 0.18, 0.82] : [0.2, 0.8, 0.18, 0.62];
+      const iu0 = u0 + du * a0, iu1 = u0 + du * a1, iv0 = v0 + dv * b0, iv1 = v0 + dv * b1;
+      shape(g, q, iu0, iu1, iv0, iv1, "#c6c6c6");
+      shape(g, q, iu0 + (iu1 - iu0) * 0.12, iu1 - (iu1 - iu0) * 0.12, iv0 + (iv1 - iv0) * 0.12, iv1 - (iv1 - iv0) * 0.12, "#000000");
+    } else {
+      shape(g, q, u0 + du * 0.25, u1 - du * 0.25, v0 + dv * 0.25, v1 - dv * 0.25, c[0]);
+      shape(g, q, u0 + du * 0.38, u1 - du * 0.38, v0 + dv * 0.38, v1 - dv * 0.38, "#000000");
+    }
+  }
+  function outline(g, q, colour) {
+    g.beginPath();
+    q.forEach(([x, y], i) => (i ? g.lineTo : g.moveTo).call(g, x + 0.5, y + 0.5));
+    g.closePath(); g.strokeStyle = colour; g.lineWidth = 1; g.stroke();
+  }
+
+  let st = null, timer = 0;
+  const DMon = () => window.DuelMonsters;
+  const cardOf = (no) => st.opts.cards.cards[no];
+  const kindOf = (no) => (cardOf(no) || [])[2] || "normal";
+  const isMonster = (no) => ["normal", "effect", "fusion", "ritual"].includes(kindOf(no));
+
+  // ---------- The cursor's places ----------
+  // Its rows, bottom to top: your hand, your Spells and Traps (with your piles), your monsters (with your Field
+  // Spell's zone and your Graveyard), your opponent's monsters and their Spells and Traps.
+  function places() {
+    const d = st.duel, rows = [];
+    const hand = d.players[0].hand;
+    rows.push(hand.map((c, i) => ({ hand: i, card: c, x: handX(i, hand.length) + 12, y: 132 })));
+    for (const [p, list] of [[0, [["fusion"], ["st", 0], ["st", 1], ["st", 2], ["st", 3], ["st", 4], ["deck"]]],
+      [0, [["field"], ["mon", 0], ["mon", 1], ["mon", 2], ["mon", 3], ["mon", 4], ["grave"], ["banished"]]],
+      [1, [["banished"], ["grave"], ["mon", 4], ["mon", 3], ["mon", 2], ["mon", 1], ["mon", 0], ["field"]]],
+      [1, [["deck"], ["st", 4], ["st", 3], ["st", 2], ["st", 1], ["st", 0], ["fusion"]]]]) {
+      rows.push(list.map(([k, i]) => {
+        const F = FIELD[p], q = k === "mon" ? F.mon[i] : k === "st" ? F.st[i] : F[k], [x, y] = centre(q);
+        const zone = k === "mon" ? d.players[p].zones[i] : k === "st" ? d.players[p].zones[5 + i] : k === "field" ? d.players[p].zones[10] : null;
+        return { p, k, i: k === "mon" ? i : k === "st" ? 5 + i : k === "field" ? 10 : null, q, zone, x, y };
+      }));
+    }
+    return rows;
+  }
+  const handX = (i, n) => { const step = n > 1 ? Math.min(20, Math.floor(124 / (n - 1))) : 20; return Math.round(120 - ((n - 1) * step + 24) / 2) + i * step; };
+  function here() { const rows = places(), r = rows[st.cur.r] || []; return r[Math.min(st.cur.i, r.length - 1)] || null; }
+  function moveCursor(k) {
+    const rows = places();
+    if (k === "left" || k === "right") {
+      const r = rows[st.cur.r]; if (!r.length) return false;
+      const i = Math.max(0, Math.min(r.length - 1, Math.min(st.cur.i, r.length - 1) + (k === "left" ? -1 : 1)));
+      if (i === st.cur.i) return false;
+      st.cur.i = i; return true;
+    }
+    const h = here(), x = h ? h.x : 120;
+    let r = st.cur.r;
+    do { r += k === "up" ? 1 : -1; } while (r >= 0 && r < rows.length && !rows[r].length);
+    if (r < 0 || r >= rows.length) return false;
+    let best = 0;
+    rows[r].forEach((e, i) => { if (Math.abs(e.x - x) < Math.abs(rows[r][best].x - x)) best = i; });
+    st.cur = { r, i: best };
+    return true;
+  }
+  // (The card a place shows, if you may see it.)
+  function seen(e) {
+    if (!e) return null;
+    const d = st.duel, pl = d.players[e.p == null ? 0 : e.p];
+    if (e.hand != null) return e.card;
+    if (e.zone) return e.zone.faceUp || e.p === 0 ? e.zone.card : null;
+    if (e.k === "grave") return pl.grave[pl.grave.length - 1] || null;
+    if (e.k === "banished") return pl.banished[pl.banished.length - 1] || null;
+    return null;
+  }
+
+  // ---------- Drawing ----------
+  function draw(g, name, x, y) { const im = P(name); if (ready(im)) g.drawImage(im, x, y); }
+  function drawT(g, name, x, y) { const im = TR(name); if (ready(im)) g.drawImage(im, x, y); }
+  function art(g, n, x, y, w, h) {
+    const C = st.opts.cards, sheet = image("assets/yugioh/cards/" + String(Math.floor(n / C.perSheet)).padStart(2, "0") + ".png");
+    if (!ready(sheet)) return;
+    const k = n % C.perSheet;
+    g.drawImage(sheet, k % C.across * 80, Math.floor(k / C.across) * 80, 80, 80, x, y, w, h);
+  }
+  function box(g, s, lines, y) {
+    const w = Math.max(...lines.map((l) => s.textWidth(l))) + 16, h = lines.length * 14 + 6, x = Math.round((W - w) / 2);
+    g.fillStyle = "#c8a020"; g.fillRect(x, y, w, h); g.fillStyle = "#2830a8"; g.fillRect(x + 1, y + 1, w - 2, h - 2);
+    lines.forEach((l, i) => s.text(l, x + 8, y + 3 + 14 * i, WHITE, SHADE));
+  }
+  const BAR_TEXT = { pink: [255, 156, 239], blue: [0, 189, 255], green: [0, 255, 148], grey: [255, 255, 255] };
+  function barColour(label) {
+    if (/^(Summon|Special|Flip Summon|Attack|Battle Phase|Yes)/.test(label)) return "pink";
+    if (/^(Set|Attack Position|Defense Position|Main Phase 2|End Turn|End Battle)/.test(label)) return "blue";
+    if (/^(Activate|Use|Detail|Look)/.test(label)) return "green";
+    return "grey";
+  }
+  // (A menu of the game's bars, its top left at x, y: the chosen one lit in its colour.)
+  function bars(g, s, m) {
+    const n = m.labels.length, x = Math.max(0, Math.min(W - 96, m.x)), y = Math.max(0, Math.min(144 - 16 * Math.min(n, 7), m.y));
+    const top = Math.max(0, Math.min(m.i - 3, n - 7));
+    m.labels.slice(top, top + 7).forEach((label, k) => {
+      const i = top + k, col = barColour(label), lit = i === m.i;
+      draw(g, lit && col !== "grey" ? "bar-" + col : "bar", x, y + 16 * k);
+      if (lit && col === "grey") { g.fillStyle = "rgba(248,216,48,0.45)"; g.fillRect(x + 4, y + 16 * k + 3, 88, 10); }
+      let t = label;
+      while (t && s.textWidth(t, "small") > 84) t = t.slice(0, -1);
+      s.text(t, x + 7, y + 16 * k + 2, lit ? WHITE : BAR_TEXT[col], lit ? SHADE : [40, 40, 40], "small");
+    });
+    if (n > 7) { g.fillStyle = "#f8d830"; if (top > 0) g.fillRect(x + 44, y - 3, 8, 2); if (top + 7 < n) g.fillRect(x + 44, y + 113, 8, 2); }
+  }
+  function info(g, s, no) {
+    draw(g, "info", 0, 145);
+    if (!no) return;
+    const c = cardOf(no);
+    let name = c[0];
+    while (name && s.textWidth(name) > 148) name = name.slice(0, -1);
+    s.text(name, 2, 145, NAME_BLUE, NAME_SHADE);
+    if (c[2] === "spell" || c[2] === "trap") {
+      drawT(g, "attr-" + (c[2] === "spell" ? 7 : 8), 152, 144);
+      if (c[8]) drawT(g, c[2] + "-" + c[8], 168, 144);
+      return;
+    }
+    if (c[4]) drawT(g, "attr-" + c[4], 152, 144);
+    if (c[3]) drawT(g, "type-" + c[3], 168, 144);
+    draw(g, "star", 184, 144); draw(g, "stat-" + Math.min(9, c[5]), 184, 152);
+    draw(g, "atk", 192, 144); draw(g, "def", 192, 152);
+    const z = st.infoZone;
+    const atk = z && z.card.no === no && z.faceUp ? st.duel.atkOf(z) : c[6], def = z && z.card.no === no && z.faceUp ? st.duel.defOf(z) : c[7];
+    for (const [v, y] of [[atk, 144], [def, 152]]) { const t = String(Math.max(0, v)); for (let i = 0; i < t.length; i++) draw(g, "stat-" + t[i], 240 - 8 * (t.length - i), y); }
+  }
+  function lpDigits(g, v, y) { const t = String(Math.max(0, Math.round(v))).padStart(5, "0").slice(-5); for (let i = 0; i < 5; i++) draw(g, "lp-" + t[i], 8 + 8 * i, y); }
+  function counter(g, v, y) { draw(g, "count-top", 208, y); const t = String(v).padStart(3, "0"); for (let i = 0; i < 3; i++) draw(g, "count-" + t[i], 221 + 5 * i, y + 4); }
+
+  function paint() {
+    if (!st) return;
+    const s = window.GbaMenus.Surface(), top = window.GbaMenus.Surface();
+    const off = paint.c || (paint.c = Object.assign(document.createElement("canvas"), { width: W, height: H }));
+    const g = off.getContext("2d");
+    g.imageSmoothingEnabled = false;
+    g.clearRect(0, 0, W, H);
+    if (st.detail != null) {
+      st.detailLines = window.TrunkScreen.detail(g, s, st.detail, st.opts.cards, st.detailTop);
+      return finish(g, s, top);
+    }
+    const d = st.duel;
+    draw(g, "floor-" + (st.opts.floor || "gym"), 0, 0); draw(g, "grid", 0, 0);
+    // The piles, the Graveyards' and the removed cards' tops, and the cards in the zones.
+    for (const p of [0, 1]) {
+      const F = FIELD[p], pl = d.players[p];
+      if (pl.deck.length) draw(g, F.pile.deck[0], F.pile.deck[1], F.pile.deck[2]);
+      if (pl.fusion.length) draw(g, F.pile.fusion[0], F.pile.fusion[1], F.pile.fusion[2]);
+      for (const k of ["grave", "banished"]) { const c = pl[k][pl[k].length - 1]; if (c) fieldCard(g, F[k], c.no, true, false); }
+      for (let i = 0; i < 11; i++) {
+        const z = pl.zones[i];
+        if (!z) continue;
+        const q = i < 5 ? F.mon[i] : i < 10 ? F.st[i - 5] : F.field;
+        if (st.flash && st.flash.zone === z && st.blink) continue;
+        fieldCard(g, q, z.card.no, z.faceUp, i < 5 && z.defense);
+      }
+    }
+    // (the zones to pick from, blinking; the attack's line)
+    if (st.pick) for (const e of st.pick.list) if (st.blink || e.chosen) outline(g, e.q, e.chosen ? "#f86030" : "#f8f848");
+    if (st.arrow) {
+      g.strokeStyle = "#f83018"; g.lineWidth = 2; g.beginPath(); g.moveTo(st.arrow[0][0], st.arrow[0][1]); g.lineTo(st.arrow[1][0], st.arrow[1][1]); g.stroke();
+    }
+    draw(g, "hud", 0, 0);
+    lpDigits(g, st.lp[1], 0); lpDigits(g, st.lp[0], 128);
+    // The phases, this one lit, and the turn's count.
+    draw(g, "time-top", 0, 16); draw(g, "time-bottom", 0, 104); draw(g, "phases", 0, 32);
+    const ph = { draw: "dp", standby: "sp", main1: "m1", battle: "bp", main2: "m2", end: "ep" }[d.phase];
+    if (ph) draw(g, "phase-" + ph + "-lit", 0, 48 + 8 * ["dp", "sp", "m1", "bp", "m2", "ep"].indexOf(ph));
+    const turn = String(d.turn + 1);
+    for (let i = 0; i < turn.length && i < 3; i++) draw(g, "turn-" + turn[turn.length - 1 - i], 13 - 5 * i, 36);
+    counter(g, d.players[1].deck.length, 8); counter(g, d.players[0].deck.length, 112);
+    // The hands: theirs, backs along the top; yours along the bottom, the card under the cursor raised.
+    const theirs = d.players[1].hand.length, step = theirs > 1 ? Math.min(16, Math.floor(112 / (theirs - 1))) : 16;
+    for (let i = 0; i < theirs; i++) draw(g, "back", Math.round(120 - ((theirs - 1) * step + 16) / 2) + i * step, 0);
+    const h = here(), mine = d.players[0].hand;
+    mine.forEach((c, i) => { const up = h && h.hand === i && st.cursorOn; draw(g, "hand-" + kindOf(c.no), handX(i, mine.length), up ? 113 : 122); });
+    st.infoZone = h && h.zone || null;
+    info(g, s, st.show != null ? st.show : (seen(h) || {}).no);
+    // The cursor: down at the hand, or at a zone.
+    if (h && st.cursorOn) {
+      if (h.hand != null) draw(g, "cursor-down", h.x + 1, 97);
+      else draw(g, "cursor", Math.round(h.x) - 6, Math.round(h.y) - 6);
+    }
+    g.drawImage(s.canvas(), 0, 0);
+    // The card being played, big, at the middle.
+    if (st.big) {
+      const c = cardOf(st.big), col = COLOURS[c[2]] || COLOURS.normal;
+      g.fillStyle = "#202020"; g.fillRect(77, 26, 86, 108);
+      g.fillStyle = col[1]; g.fillRect(78, 27, 84, 106);
+      g.fillStyle = col[3]; g.fillRect(80, 29, 80, 10);
+      g.fillStyle = "#202020"; g.fillRect(81, 42, 78, 78);
+      art(g, st.big, 82, 43, 76, 76);
+      top.text(c[0], 82, 28, [32, 32, 32], col[2], "small");
+      if (c[6] >= 0) top.text("ATK/" + c[6] + " DEF/" + c[7], 84, 121, [32, 32, 32], col[2], "small");
+    }
+    if (st.banner) box(g, top, [st.banner], 66);
+    if (st.message) box(g, top, st.message.split("\n"), 40);
+    if (st.menu) bars(g, top, st.menu);
+    if (st.list) paintList(g, top);
+    finish(g, null, top);
+  }
+  // A list of cards (a Graveyard, a deck to search, a hand to pick from): their names, the one picked lit.
+  function paintList(g, s) {
+    const L = st.list, n = L.cards.length, rows = 7, topI = Math.max(0, Math.min(L.i - 3, n - rows));
+    g.fillStyle = "#c8a020"; g.fillRect(40, 20, 160, 120); g.fillStyle = "#182060"; g.fillRect(41, 21, 158, 118);
+    let title = L.title;
+    while (title && s.textWidth(title, "small") > 148) title = title.slice(0, -1);
+    s.text(title, 46, 22, [248, 216, 48], SHADE, "small");
+    L.cards.slice(topI, topI + rows).forEach((c, k) => {
+      const i = topI + k, y = 38 + 14 * k;
+      if (i === L.i) { g.fillStyle = "#3858d0"; g.fillRect(44, y - 1, 152, 13); }
+      g.fillStyle = (COLOURS[kindOf(c.no)] || COLOURS.normal)[2]; g.fillRect(47, y + 2, 6, 8);
+      let t = L.hidden ? "?" : cardOf(c.no)[0];
+      while (t && s.textWidth(t, "small") > 130) t = t.slice(0, -1);
+      s.text(t, 57, y, L.chosen && L.chosen.has(i) ? [248, 152, 72] : WHITE, SHADE, "small");
+    });
+    if (!n) s.text("(none)", 57, 38, WHITE, SHADE, "small");
+  }
+  function finish(g, s, top) {
+    if (s) g.drawImage(s.canvas(), 0, 0);
+    g.drawImage(top.canvas(), 0, 0);
+    out.imageSmoothingEnabled = false;
+    out.clearRect(0, 0, W * 2, H * 2);
+    out.drawImage(g.canvas, 0, 0, W * 2, H * 2);
+  }
+
+  // ---------- Showing what happens ----------
+  async function lpTo(p, v) {
+    const from = st.lp[p], steps = 16;
+    for (let k = 1; k <= steps; k++) { st.lp[p] = from + (v - from) * k / steps; paint(); await sleep(25); }
+    st.lp[p] = v; paint();
+  }
+  async function flash(z, times) {
+    st.flash = { zone: z };
+    for (let k = 0; k < (times || 3) * 2; k++) { st.blink = !st.blink; paint(); await sleep(70); }
+    st.flash = null; st.blink = false; paint();
+  }
+  async function bigCard(no, ms) { st.big = no; paint(); await sleep(ms || 650); st.big = null; paint(); }
+  async function banner(text, ms) { st.banner = text; paint(); await sleep(ms || 600); st.banner = null; paint(); }
+  const PHASES = { draw: "Draw Phase", standby: "Standby Phase", main1: "Main Phase 1", battle: "Battle Phase", main2: "Main Phase 2", end: "End Phase" };
+  function zoneQuad(z) {
+    const l = st.duel.locate(z);
+    if (!l) return null;
+    const F = FIELD[l.p];
+    return l.i < 5 ? F.mon[l.i] : l.i < 10 ? F.st[l.i - 5] : F.field;
+  }
+  async function onEvent(d, ev) {
+    if (!st) return;
+    const theirs = ev.p === 1;
+    switch (ev.type) {
+      case "turn": paint(); await banner(ev.p === 0 ? "Your turn" : st.opts.foe.name + "'s turn", 700); break;
+      case "phase": if (ev.phase === "battle" || ev.phase === "main2" || ev.phase === "end" && theirs) await banner(PHASES[ev.phase], 450); else paint(); break;
+      case "draw": paint(); await sleep(120); break;
+      case "summon": paint(); if (ev.zone && ev.zone.faceUp) await bigCard(ev.card.no, 600); else await sleep(250); break;
+      case "set-spell": paint(); await sleep(250); break;
+      case "flip": paint(); await bigCard(ev.zone.card.no, 500); break;
+      case "activate":
+        paint();
+        if (theirs) { st.message = st.opts.foe.name + " activates\n" + cardOf(ev.card.no)[0] + "!"; paint(); }
+        await bigCard(ev.card.no, theirs ? 900 : 600);
+        st.message = null; paint(); break;
+      case "attack": {
+        const a = zoneQuad(ev.attacker), t = ev.target ? zoneQuad(ev.target) : null;
+        if (a) { st.arrow = [centre(a), t ? centre(t) : ev.p === 0 ? [120, 12] : [120, 140]]; paint(); await sleep(450); st.arrow = null; paint(); }
+        break;
+      }
+      case "lp": await lpTo(ev.p, ev.lp); break;
+      case "destroy": if (ev.zone) await flash(ev.zone, 3); break;
+      case "position": case "control": paint(); await sleep(200); break;
+      case "over": paint(); break;
+      default: break;
+    }
+  }
+
+  // ---------- Your choices (the duel's controller for you) ----------
+  function keys(fn) { return window.GbaMenus.keys(fn); }
+  // A menu of bars; resolves with the label's index, or -1 for B (when it may be cancelled).
+  async function menu(labels, x, y, opts) {
+    opts = opts || {};
+    st.menu = { labels, x, y, i: opts.i || 0 }; se(); paint();
+    const r = await keys((k) => {
+      const m = st.menu;
+      if (k === "up" || k === "down") { m.i = (m.i + (k === "up" ? labels.length - 1 : 1)) % labels.length; se(); paint(); return undefined; }
+      if (k === "a") return m.i;
+      if (k === "b" && opts.cancel !== false) return -1;
+      if (k === "start" && opts.detail) { const no = opts.detail(m.i); if (no) { showDetail(no); } return undefined; }
+      return undefined;
+    });
+    st.menu = null; paint();
+    return r;
+  }
+  async function showDetail(no) {
+    st.detail = no; st.detailTop = 0; se(); paint();
+    await keys((k) => {
+      if (k === "up" || k === "down") { st.detailTop = Math.max(0, Math.min((st.detailLines || 0) - 11, st.detailTop + (k === "up" ? -1 : 1))); paint(); return undefined; }
+      return k === "a" || k === "b" || k === "start" ? true : undefined;
+    });
+    st.detail = null; paint();
+  }
+  // A question and its answers as bars, under the question's box.
+  async function ask(prompt, labels, cancel) {
+    st.message = prompt; paint();
+    const lines = String(prompt).split("\n").length;
+    const r = await menu(labels, 72, 46 + 14 * lines, { cancel });
+    st.message = null; paint();
+    return r;
+  }
+  // A list of cards to look through (and pick from: `count` of them, or none).
+  async function cardList(title, cards, opts) {
+    opts = opts || {};
+    st.list = { title, cards, i: 0, hidden: !!opts.hidden, chosen: opts.count ? new Set() : null }; st.cursorOn = false; se(); paint();
+    const r = await keys((k) => {
+      const L = st.list, n = L.cards.length;
+      if ((k === "up" || k === "down") && n) { L.i = (L.i + (k === "up" ? n - 1 : 1)) % n; st.show = L.hidden ? null : L.cards[L.i].no; se(); paint(); return undefined; }
+      if (k === "start" && n && !L.hidden) { showDetail(L.cards[L.i].no); return undefined; }
+      if (k === "a" && opts.count && n) {
+        if (L.chosen.has(L.i)) L.chosen.delete(L.i); else L.chosen.add(L.i);
+        se(); paint();
+        if (L.chosen.size >= Math.min(opts.count, n)) return [...L.chosen];
+        return undefined;
+      }
+      if (k === "b" || (k === "a" && !opts.count)) return opts.count ? (opts.cancel ? null : undefined) : null;
+      return undefined;
+    });
+    st.list = null; st.show = null; st.cursorOn = true; paint();
+    return r;
+  }
+  // Pick zones: the cursor goes from one to the next of them, A picks (or unpicks).
+  async function pickZones(req) {
+    const rows = places(), list = req.options.map((o, k) => {
+      const e = rows.flat().find((e) => e.zone && e.zone === o.zone) || { q: zoneQuad(o.zone), x: 120, y: 80 };
+      return { k, q: e.q, x: e.x, y: e.y, zone: o.zone, chosen: false };
+    });
+    st.pick = { list }; let i = 0;
+    const need = req.max > 1 ? req.max : 1;
+    st.message = req.prompt; paint();
+    const blink = setInterval(() => { st.blink = !st.blink; paint(); }, 220);
+    const place = () => { const rs = places(); for (let r = 0; r < rs.length; r++) { const j = rs[r].findIndex((e) => e.zone === list[i].zone); if (j >= 0) { st.cur = { r, i: j }; return; } } };
+    place(); paint();
+    const r = await keys((k) => {
+      if (k === "left" || k === "up") { i = (i + list.length - 1) % list.length; place(); se(); paint(); return undefined; }
+      if (k === "right" || k === "down") { i = (i + 1) % list.length; place(); se(); paint(); return undefined; }
+      if (k === "start") { const z = list[i].zone; if (z.faceUp || st.duel.controllerOf(z) === 0) showDetail(z.card.no); return undefined; }
+      if (k === "a") {
+        list[i].chosen = !list[i].chosen; se(); paint();
+        const chosen = list.filter((e) => e.chosen).map((e) => e.k);
+        if (chosen.length >= Math.min(need, list.length)) return need > 1 ? chosen : chosen[0];
+        return undefined;
+      }
+      if (k === "b" && req.cancel) return -1;
+      return undefined;
+    });
+    clearInterval(blink);
+    st.pick = null; st.blink = false; st.message = null; paint();
+    return r;
+  }
+  // The Main Phase and the Battle Phase: the cursor over the hand and the field, each card's menu, START's phases.
+  function actionsFor(req, e) {
+    const out = [];
+    req.options.forEach((o, k) => {
+      if (o.act === "battle" || o.act === "end" || o.end) return;
+      if (e.hand != null ? o.card === e.card && !o.zone : (o.zone && o.zone === e.zone) || (e.zone && o.card === e.zone.card && o.from === "field")) out.push(k);
+    });
+    return out;
+  }
+  function actionLabel(o) {
+    switch (o.act) {
+      case "summon": return "Summon"; case "set-monster": case "set-spell": return "Set";
+      case "activate": return "Activate"; case "ignition": case "hand-effect": return "Use effect";
+      case "special-hand": return "Special Summon"; case "flip-summon": return "Flip Summon";
+      case "position": return o.zone.defense ? "Attack Position" : "Defense Position";
+      default: return o.zone && o.label && /attacks$/.test(o.label) ? "Attack" : o.label;
+    }
+  }
+  async function fieldTurn(req) {
+    st.cursorOn = true;
+    // (the cursor starts at your hand in the Main Phase, at your monsters in the Battle Phase)
+    if (req.type === "battle") { const rows = places(); const j = rows[2].findIndex((e) => req.options.some((o) => o.zone && o.zone === e.zone)); if (j >= 0) st.cur = { r: 2, i: j }; }
+    else if (!places()[st.cur.r].length) st.cur = { r: places()[0].length ? 0 : 2, i: 1 };
+    paint();
+    for (;;) {
+      const k = await keys((key) => {
+        if (["up", "down", "left", "right"].includes(key)) { if (moveCursor(key)) { se(); paint(); } return undefined; }
+        return key === "a" || key === "start" || key === "b" || key === "select" ? key : undefined;
+      });
+      const e = here();
+      if (k === "b") { const no = seen(e); if (no) await showDetail(no.no); continue; }
+      if (k === "start" || k === "select") {
+        const opts = req.options.map((o, k2) => ({ o, k: k2 })).filter(({ o }) => o.act === "battle" || o.act === "end" || o.end);
+        const labels = opts.map(({ o }) => o.act === "battle" ? "Battle Phase" : o.end ? "Main Phase 2" : "End Turn");
+        const r = await menu(labels, 16, 48);
+        if (r >= 0) return opts[r].k;
+        continue;
+      }
+      if (!e) continue;
+      if (e.k === "grave" || e.k === "banished") {
+        const pl = st.duel.players[e.p];
+        await cardList((e.p ? st.opts.foe.name + "'s " : "Your ") + (e.k === "grave" ? "Graveyard" : "removed cards"), pl[e.k].slice().reverse());
+        continue;
+      }
+      const acts = actionsFor(req, e), card = seen(e);
+      const labels = acts.map((k2) => actionLabel(req.options[k2]));
+      if (card) labels.push("Detail Screen");
+      if (!labels.length) continue;
+      const r = await menu(labels, Math.round(e.x) - 30, (e.hand != null ? 120 : Math.round(e.y) - 8) - 16 * labels.length);
+      if (r < 0) continue;
+      if (r === acts.length) { await showDetail(card.no); continue; }
+      const choice = acts[r];
+      if (req.type === "battle") {
+        st.attacker = req.options[choice].zone;
+        return choice;
+      }
+      st.cursorOn = false; paint();
+      return choice;
+    }
+  }
+  async function attackTarget(req) {
+    const direct = req.options.findIndex((o) => o.direct);
+    const targets = req.options.map((o, k) => ({ o, k })).filter(({ o }) => !o.direct);
+    if (direct >= 0) {
+      const r = await ask("Attack which?", targets.map(({ o }) => o.label).concat(["Attack directly"]), true);
+      return r < 0 ? -1 : r === targets.length ? direct : targets[r].k;
+    }
+    const r = await pickZones({ prompt: "Attack which monster?", options: targets.map(({ o }) => o), max: 1, cancel: true });
+    return r < 0 || r == null ? -1 : targets[r].k;
+  }
+  const human = {
+    async choose(d, req) {
+      if (!st) return req.max > 1 ? [] : 0;
+      switch (req.type) {
+        case "main": case "battle": { const r = await fieldTurn(req); st.cursorOn = false; paint(); return r; }
+        case "attack-target": return attackTarget(req);
+        case "zones": return pickZones(req);
+        case "cards": {
+          const n = req.max > 1 ? req.max : 1;
+          if (req.hidden) return req.max > 1 ? req.options.map((_, i) => i).slice(0, n) : Math.floor(Math.random() * req.options.length);
+          const r = await cardList(req.prompt, req.options.map((o) => o.card), { count: n, cancel: req.cancel });
+          if (r == null) return -1;
+          return req.max > 1 ? r : r[0];
+        }
+        case "yesno": { const r = await ask(req.prompt, ["Yes", "No"], false); return r; }
+        case "respond": {
+          // (only when your opponent plays a card, summons or attacks: the rest of the duel's moments go by)
+          const ev = req.event, pass = req.options.length - 1;
+          if (req.link ? req.link.p !== 1 : !(ev && ev.p === 1 && /^(summoned|flip-summoned|special-summoned|attack)$/.test(ev.type))) return pass;
+          const labels = req.options.map((o) => (o.pass ? "Don't" : o.label));
+          const r = await ask(req.prompt + "\nActivate a card?", labels, false);
+          return r < 0 ? req.options.length - 1 : r;
+        }
+        default: { const r = await ask(req.prompt, req.options.map((o) => o.label), false); return r < 0 ? 0 : r; }
+      }
+    }
+  };
+
+  async function open(opts) {
+    const DM = DMon();
+    st = { opts, cur: { r: 0, i: 0 }, lp: [8000, 8000], cursorOn: false, blink: false, menu: null, message: null, detail: null, detailTop: 0, list: null, pick: null };
+    const duel = DM.create({ decks: [opts.deck, opts.foe.deck], controllers: [human, DM.ai()], names: [opts.you || "You", opts.foe.name], onEvent });
+    st.duel = duel;
+    canvas.classList.remove("hidden");
+    paint();
+    clearInterval(timer); timer = setInterval(() => st && paint(), 500);
+    let result;
+    try { result = await duel.run(); }
+    finally { clearInterval(timer); }
+    st.message = result.winner === 0 ? "You won the duel!" : result.winner === 1 ? "You lost the duel..." : "The duel is a draw.";
+    paint();
+    await keys((k) => (k === "a" || k === "b" ? true : undefined));
+    close();
+    return result;
+  }
+  function close() {
+    st = null;
+    clearInterval(timer);
+    canvas.classList.add("hidden");
+  }
+  window.DuelScreen = { open, close };
 })();

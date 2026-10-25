@@ -3289,7 +3289,21 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   knows what your face-down cards are, as EDS's does. It springs its Traps on an attack it would lose to or a direct
   one, on a strong monster summoned, and its Counter Traps on your cards. It beats random play in about 94 duels in
   100.
-- **Not here yet**: the story, the rest of the city on the map, opening booster packs, and the duel screen.
+- **Duels**: Yugi, Téa, Joey and Tristan in Domino High's classroom will duel you after they've said hello (each
+  with a deck of their own from the show, `window.YUGIOH_DUELISTS` in `data/items.js`); win, and they give you one
+  of their deck's cards for your Trunk. You duel with your Trunk's deck, or, while it has fewer than 40 cards, the
+  starter deck you can borrow. The duel screen (`DuelScreen`, in `ui/bag-screen.js`) is GX Duel Academy's, its
+  graphics from that cartridge (`assets/yugioh/duel/`): the field in perspective, the Gym's boards under it and the
+  academy's mat between the two sides, the life points, the phases down the left (the one you're in lit) with the
+  turn's count, the decks' counts, your hand along the bottom and your opponent's backs along the top, and the card
+  under the cursor along the bottom line. Cards on the field lie in their zones in their kinds' colours (face down,
+  their backs; sideways in Defense Position). The cursor goes over your hand and both sides of the field: A on a
+  card opens its menu (Summon, Set, Activate, Flip Summon, a change of position, its effect, Detail Screen), A on a
+  Graveyard lists its cards, B or START over a card shows it, START elsewhere is the phases' menu (Battle Phase,
+  Main Phase 2, End Turn). In the Battle Phase, A on a monster and then on its target. The cards' questions come up
+  as menus, lists or the zones to pick from, blinking; and you're asked whether to answer with a card when your
+  opponent plays one, summons or attacks. The debug menu's **Duel Yugi** starts one anywhere.
+- **Not here yet**: the story, the rest of the city on the map, and opening booster packs.
 
 `tools/build-sacred-cards.py` builds it all from the cartridge (your own dump of it; it checks the game code, AY7E):
 
@@ -3339,6 +3353,12 @@ python3 tools/build-gx-trunk.py "<path to Yu-Gi-Oh! GX - Duel Academy (USA).gba>
   type, level and attribute. Into `data/items.js` between its markers, as `window.YUGIOH_CARDS`.
 - **Their pictures**: 80x80, 8bpp tiles of 64 colours at `0x7cfacc` (`0x1900` each), their palettes at `0x7aa24c`,
   a hundred to a sheet in `assets/yugioh/cards/`.
+- **The duel screen's pieces**, the same way (`tools/lib/gx-duel-pieces.json`): the floors (the Gym's boards and the
+  tutorial's red), the zones and the mat, the life points' bars and the bottom line with their digits and icons, the
+  decks' piles, the hand's cards in each kind's colours and the backs, the phases (each lit and not), the counters
+  and their digits, the cursors and the menu's bars, in `assets/yugioh/duel/`. (The cards on the field are drawn by
+  the screen: the game builds each zone's card from its code's own tables, so the screen draws a card's shape in
+  its zone itself, in the hand's cards' colours.)
 - **The Trunk's icons** (the attributes with Spell's and Trap's, the 20 types, the Spells' and Traps' kinds) and
   **its screen's pieces** (its background, the filters' bar, digits, stars, the counts' icons, the cursors, the
   card's frame and the command and sort menus): each tile straight from the ROM, laid out as the game lays them on
