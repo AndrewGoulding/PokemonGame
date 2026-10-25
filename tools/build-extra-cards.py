@@ -12,8 +12,9 @@
 #     the Spell's or Trap's icon), added to its cards after GX's, between this tool's markers in data/items.js, with
 #     each one's rarity (YUGIOH_RARITY: its rarity in its pack) and the seven packs (YUGIOH_SETS);
 #   - their pictures, 80x80 in 64 colours as GX's are, on GX's sheets (assets/yugioh/cards/NN.png, a hundred to a
-#     sheet, ten across), from sheet 12 on (its first picture, card 1200's, kept).
-import json, os, sys, urllib.request
+#     sheet, ten across), from sheet 12 on; and GX's own cards' pictures redrawn the same way, so all look alike (by
+#     their TCG names: extra-cards.json's gxNames where GX's differ; the six GX made up keep GX's).
+import json, os, re, sys, urllib.request
 from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
@@ -69,21 +70,27 @@ a = s.find(START)
 s = s[:a] + js + s[s.index(END, a) + len(END):] if a >= 0 else s + js
 open(path, 'w', encoding='utf8').write(s)
 
-# ---------- Their pictures ----------
+# ---------- Their pictures, and GX's cards' ----------
 CARDS = os.path.join(ROOT, 'assets/yugioh/cards')
 last = FIRST + len(cards) - 1
-for sheet in range(FIRST // 100, last // 100 + 1):
+norm = lambda n: re.sub(r'[^a-z0-9]', '', n.lower())
+byNorm = {norm(c['name']): c for c in db}
+items = open(path, encoding='utf8').read()
+gx = json.loads(re.search(r'window\.YUGIOH_CARDS = (\{.*?\});\n', items, re.S).group(1))['cards'] if 'window.YUGIOH_CARDS = {' in items else None
+pics = {n: by[spec['cards'][n - FIRST]] for n in range(FIRST, last + 1)}
+for n, c in enumerate((gx or [])[:FIRST]):
+    if c and norm(spec['gxNames'].get(c[0], c[0])) in byNorm: pics[n] = byNorm[norm(spec['gxNames'].get(c[0], c[0]))]
+for sheet in range(0, last // 100 + 1):
     out = os.path.join(CARDS, '%02d.png' % sheet)
-    im = Image.open(out).convert('RGB') if sheet == FIRST // 100 and os.path.exists(out) else Image.new('RGB', (800, 800), (0, 0, 0))
-    if sheet != FIRST // 100: im = Image.new('RGB', (800, 800), (0, 0, 0))
+    im = Image.open(out).convert('RGB') if os.path.exists(out) else Image.new('RGB', (800, 800), (0, 0, 0))
     for k in range(100):
         n = sheet * 100 + k
-        if n < FIRST or n > last: continue
-        c = by[spec['cards'][n - FIRST]]
+        if n not in pics: continue
+        c = pics[n]
         art = Image.open(fetch(c['card_images'][0]['image_url_cropped'], os.path.join(CACHE, 'art', '%d.jpg' % c['id']))).convert('RGB')
         w, h = art.size; side = min(w, h)
         art = art.crop(((w - side) // 2, (h - side) // 2, (w - side) // 2 + side, (h - side) // 2 + side)).resize((80, 80), Image.LANCZOS)
         art = art.quantize(64, method=Image.MEDIANCUT, dither=Image.NONE).convert('RGB')   # (GX's 64 colours a picture)
         im.paste(art, (k % 10 * 80, k // 10 * 80))
     im.save(out, optimize=True)
-print('%d cards (%d to %d) in %d packs' % (len(cards), FIRST, last, len(spec['packs'])))
+print('%d cards (%d to %d) in %d packs; %d pictures' % (len(cards), FIRST, last, len(spec['packs']), len(pics)))

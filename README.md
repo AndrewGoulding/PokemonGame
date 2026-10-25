@@ -3434,7 +3434,9 @@ python3 tools/build-extra-cards.py <cache directory>
 ```
 
 Into `data/items.js` between its own markers (the cards, their rarities and the packs, `window.YUGIOH_SETS`), and
-their pictures on sheets 12-19 of `assets/yugioh/cards/`. The packs' icons are `tools/build-domino-map.py`'s.
+their pictures on sheets 12-19 of `assets/yugioh/cards/`. It redraws GX's own 1200 cards' pictures from YGOPRODeck's
+art too, so every card looks alike (by their TCG names, the file's `gxNames` where GX's differ; the six GX made up
+keep the cartridge's). The packs' icons are `tools/build-domino-map.py`'s.
 
 `tools/build-reshef.py` does the same for Reshef of Destruction (the USA cartridge, AY8E: your own dump of it):
 

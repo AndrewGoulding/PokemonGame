@@ -1,5 +1,5 @@
 {
- "about": "The Duel Monsters cards released (TCG or OCG) up to Legacy of Darkness (2003-06-06) that GX Duel Academy doesn't have, card numbers 1201 on in this order (by release), and the seven booster packs they're in: each named for its boss monster, with each card's rarity in it (x Secret, u Ultra, s Super, r Rare, c Common). tools/build-extra-cards.py.",
+ "about": "The Duel Monsters cards released (TCG or OCG) up to Legacy of Darkness (2003-06-06) that GX Duel Academy doesn't have, card numbers 1201 on in this order (by release), and the seven booster packs they're in: each named for its boss monster, with each card's rarity in it (x Secret, u Ultra, s Super, r Rare, c Common). tools/build-extra-cards.py. gxNames: the GX cards whose names differ from the TCG's, for their pictures.",
  "cutoff": "2003-06-06",
  "cards": [
   "Archfiend Marmot of Nefariousness",
@@ -3851,5 +3851,39 @@
    "cover": "Berserk Dragon",
    "text": "Berserk Dragon, Despair from the Dark, Chaos Command Magician and Victory Dragon."
   }
- ]
+ ],
+ "gxNames": {
+  "Red-Eyes B. Dragon": "Red-Eyes Black Dragon",
+  "B. Skull Dragon": "Black Skull Dragon",
+  "Dimensional Warrior": "D.D. Warrior",
+  "Swordsman from a Foreign Land": "Swordsman from a Distant Land",
+  "Trakadon": "Trakodon",
+  "Eternal Draught": "Eternal Drought",
+  "Meteor B. Dragon": "Meteor Black Dragon",
+  "Dark Magic Ritual": "Black Magic Ritual",
+  "Harpie's Brother": "Sky Scout",
+  "Kinetic Soldier": "Cipher Soldier",
+  "Amazon Archer": "Amazoness Archer",
+  "Cathedral of Nobles": "Temple of the Kings",
+  "Makiu": "Makiu, the Magical Mist",
+  "Mystical Beast Serket": "Mystical Beast of Serket",
+  "Hidden Soldier": "Hidden Soldiers",
+  "Calamity of the Wicked": "Malevolent Catastrophe",
+  "F.G.D.": "Five-Headed Dragon",
+  "Vampire Orchis": "Vampiric Orchis",
+  "Hidden Book of Spell": "Hidden Spellbook",
+  "Shield Crash": "Shield Crush",
+  "Red-Eyes B. Chick": "Black Dragon's Chick",
+  "Tricky": "The Tricky",
+  "Red Gadget - Stronghold": "Stronghold the Moving Fortress",
+  "Big Core": "B.E.S. Big Core",
+  "Spark Gun": "Spark Blaster",
+  "Bright Castle": "Shine Palace",
+  "Corpse of Yata-Garasu": "Legacy of Yata-Garasu",
+  "Tricky's Magic 4": "Tricky Spell 4",
+  "Holy Knight Ishzark": "Divine Knight Ishzark",
+  "Master of Dragon Soldier": "Dragon Master Knight",
+  "Dark Magician's Tome of Black Magic": "Magic Formula",
+  "Reversal of Graves": "Exchange of the Spirit"
+ }
 }
