@@ -3330,7 +3330,16 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   of their own) follow their text too: the moths from Cocoon of Evolution, Gate Guardian, the Gravekeepers and
   Necrovalley, the Archfiends and their upkeep, the Dark Scorpions, the Counter Traps that negate summons, Skill
   Drain, Crush Card Virus and the rest; what the engine had no place for (effects that target, "by your
-  opponent's effect", cards that watch draws and returns) they add by wrapping the duel's own steps.
+  opponent's effect", cards that watch draws and returns) they add by wrapping the duel's own steps. **Every card
+  plays as its current TCG text says**: GX's cards, whose effects followed GX's and The Eternal Duelist Soul's
+  2002 wording, were each checked against the TCG's text now, and the 131 whose effect has changed since (errata,
+  once-per-turn limits, costs, targeting, how they're summoned) follow it, in four sections of errata at the end:
+  Sangan and Witch of the Black Forest once a turn, Kuriboh in damage calculation, Mirror Force not negating the
+  attack, Imperial Order's upkeep every Standby Phase, Ring of Destruction, Scapegoat and Dark Magic Curtain's summon
+  locks, the Toons summoned by Tribute with Toon World, Chaos Emperor Dragon's lock, the Nobleman cards, the Spirit
+  monsters back to the hand when flipped too; and the monsters that had no way to be summoned or no effect at all
+  (Relinquished, Thousand-Eyes Restrict, Valkyrion, Dark Sage, the XYZ cannons by banishing their materials, Five-
+  Headed Dragon from any five Dragons, Dark Paladin, Exodia Necross, the elemental Spirits, Gradius' Option...).
 - **The computer duelist** (`DuelMonsters.ai()`): EDS's, its Main Phase in EDS's order: the Spells that draw or clear
   the field first, then the strongest summon it can make (tributing its weakest monsters; in Attack Position when it
   beats your best, set otherwise, and flip monsters always set), its monsters' effects, the Spells that take or bring

@@ -1756,12 +1756,13 @@
     }
     return out;
   }
+  // (the Fusion Spells ask DM.fusionsFrom, so a later section can widen what makes a Fusion: Five-Headed Dragon's five Dragons)
   DM.fusionsFrom = fusionsFrom;
   const fusionPool = (d, p) => d.players[p].hand.concat(d.monsters(p).filter((z) => z.faceUp || true).map((z) => z.card));
   const fusion = (poolFn, filter, banish) => ({ activate: {
-    can: (d, ctx) => fusionsFrom(d, ctx.p, poolFn(d, ctx.p).filter((c) => c !== ctx.card), filter).length > 0 && (d.freeMonsterZone(ctx.p) >= 0 || d.monsters(ctx.p).length > 0),
+    can: (d, ctx) => DM.fusionsFrom(d, ctx.p, poolFn(d, ctx.p).filter((c) => c !== ctx.card), filter).length > 0 && (d.freeMonsterZone(ctx.p) >= 0 || d.monsters(ctx.p).length > 0),
     resolve: async (d, link) => {
-      const opts = fusionsFrom(d, link.p, poolFn(d, link.p).filter((c) => c !== link.card), filter);
+      const opts = DM.fusionsFrom(d, link.p, poolFn(d, link.p).filter((c) => c !== link.card), filter);
       const o = await d.choose(link.p, "Fusion Summon which monster?", opts.map((x) => ({ label: d.name(x.fusion), x })));
       if (!o) return;
       for (const m of o.x.materials) { if (banish) await d.banish(m, "fusion"); else await d.sendToGrave(m, "fusion"); }
@@ -1773,8 +1774,8 @@
   define("Dragon's Mirror", fusion((d, p) => d.players[p].grave.concat(d.monsters(p).map((z) => z.card)), (f) => C.type(f.no) === typeNo("Dragon"), true));
   define("Power Bond", fusion(fusionPool, (f) => C.type(f.no) === typeNo("Machine")));
   DM.EFFECTS[N("Power Bond")].activate.target = async (d, link) => { link.data.onFused = async (d2, z) => { d2.addTemp(z, { atk: C.atk(z.card.no) }, link.card); z.data.powerBond = { p: link.p, turn: d2.turn }; }; return true; };
-  define("Fusion Gate", { activate: { resolve: async () => {} }, ignition: { repeatable: true, can: (d, ctx) => fusionsFrom(d, ctx.p, fusionPool(d, ctx.p)).length > 0, resolve: async (d, link) => {
-    const opts = fusionsFrom(d, link.p, fusionPool(d, link.p)); const o = await d.choose(link.p, "Fusion Summon which monster?", opts.map((x) => ({ label: d.name(x.fusion), x })));
+  define("Fusion Gate", { activate: { resolve: async () => {} }, ignition: { repeatable: true, can: (d, ctx) => DM.fusionsFrom(d, ctx.p, fusionPool(d, ctx.p)).length > 0, resolve: async (d, link) => {
+    const opts = DM.fusionsFrom(d, link.p, fusionPool(d, link.p)); const o = await d.choose(link.p, "Fusion Summon which monster?", opts.map((x) => ({ label: d.name(x.fusion), x })));
     if (!o) return; for (const m of o.x.materials) await d.banish(m, "fusion"); await d.specialSummon(link.p, o.x.fusion, { how: "fusion", position: "choose" }); } } });
   define("Cyber-Stein", { ignition: { can: (d, ctx) => d.players[ctx.p].lp > 5000 && d.players[ctx.p].fusion.length > 0 && d.freeMonsterZone(ctx.p) >= 0,
     cost: async (d, link) => { await d.payLp(link.p, 5000); return true; },
@@ -5524,6 +5525,959 @@
       DM.shuffle(d, idx);
       zs.forEach((z, k) => { pl.zones[idx[k]] = z; });
       atPhase(d, ["main2", "end"], async (d2) => H.destroyAll(d2, hats.filter((z) => d2.locate(z))), d.turn); } } });
+})();
+
+// (Errata: the current TCG text, part 1.)
+(function () {
+  "use strict";
+  const DM = window.DuelMonsters, C = DM.card, H = DM.H, define = DM.define, N = DM.numberOf;
+  const { isName, once, mine } = DM.REST;
+  const up = H.up, mons = H.mons;
+  const effectOf = DM.effectOf;
+
+  // ---------- What these cards need of the engine ----------
+  // A name lock: "you cannot activate cards, or the effects of cards, with that name for the rest of this turn"
+  // (Sangan, Witch of the Black Forest): players[p].flags.er1Lock = { turn, nos }.
+  const lockName = (d, p, c) => {
+    const f = d.players[p].flags;
+    if (!f.er1Lock || f.er1Lock.turn !== d.turn) f.er1Lock = { turn: d.turn, nos: [] };
+    f.er1Lock.nos.push(c.no);
+  };
+  const nameLocked = (d, p, c) => { const l = d.players[p].flags.er1Lock; return !!c && !!l && l.turn === d.turn && l.nos.includes(c.no); };
+  const create0 = DM.create;
+  DM.create = function (opts) {
+    const d = create0.apply(this, arguments);
+    const ca0 = d.canActivate, re0 = d.runEffect, bd0 = d.battleDamage, em0 = d.emit;
+    d.canActivate = function (p, c, a, ctx) { if (nameLocked(this, p, c)) return false; return ca0.call(this, p, c, a, ctx); };
+    d.runEffect = async function (link) {
+      if (link.kind === "flip" && link.card && link.zone && nameLocked(this, this.controllerOf(link.zone), link.card)) return;
+      return re0.call(this, link);
+    };
+    // (Kuriboh: during damage calculation, if the opponent's monster attacks, discard it to take no battle damage)
+    d.battleDamage = async function (r, n, dealer, other, A) {
+      const pl = this.players[r];
+      if (A && A.p === 1 - r && n > 0 && A.noDamageTo !== r && pl.flags.waboku !== this.turn && !pl.flags.noActivate) {
+        const c = pl.hand.find((x) => { const e = effectOf(x.no); return e && e.er1Kuriboh && !nameLocked(this, r, x); });
+        if (c && (await this.yesNo(r, "Discard " + this.name(c) + " to take no battle damage from this battle?"))) {
+          await this.discard(r, c, "cost");
+          A.noDamageTo = r;
+          return 0;
+        }
+      }
+      return bd0.call(this, r, n, dealer, other, A);
+    };
+    // (Sinister Serpent: 1 banished from the Graveyard in the opponent's next End Phase)
+    d.emit = async function (ev) {
+      await em0.call(this, ev);
+      if (this.over || ev.type !== "phase" || ev.phase !== "end") return;
+      for (const q of [0, 1]) {
+        const f = this.players[q].flags;
+        if (!f.er1Serpent || f.er1Serpent.turn !== this.turn) continue;
+        const k = f.er1Serpent.n; f.er1Serpent = null;
+        for (let i = 0; i < k; i++) {
+          const c = this.players[q].grave.find((x) => isName(x, "Sinister Serpent"));
+          if (c) await this.banish(c, "effect");
+        }
+      }
+    };
+    return d;
+  };
+
+  // ---------- The cards ----------
+  // Time Wizard: on a wrong call, destroy your monsters and take half the ATK the destroyed ones had face-up.
+  define("Time Wizard", { ignition: { can: (d, ctx) => once(ctx.zone, d) && mine(d, ctx) && d.monsters(1 - ctx.p).length > 0, resolve: async (d, link) => {
+    if (await H.coinCall(d, link.p)) { await H.destroyAll(d, d.monsters(1 - link.p)); return; }
+    let total = 0;
+    for (const z of d.monsters(link.p).slice()) {
+      const atk = z.faceUp ? d.atkOf(z) : 0;
+      if (d.locate(z) && (await d.destroy(z, "effect"))) total += atk;
+    }
+    await d.damage(link.p, Math.floor(total / 2), "effect");
+  } } });
+
+  // Sangan, Witch of the Black Forest: once per turn, and the card added is name-locked for the turn.
+  const searcher = (key, stat, prompt) => async (d, c, p, from) => {
+    const f = d.players[p].flags;
+    if (!from || from.zone == null || f[key] === d.turn) return;
+    const ok = (x) => C.isMonster(x.no) && !C.isExtra(x.no) && C[stat](x.no) <= 1500;
+    if (!H.deckMon(d, p, ok).length) return;
+    f[key] = d.turn;
+    const got = await H.searchDeck(d, p, ok, prompt);
+    if (got) lockName(d, p, got);
+  };
+  define("Sangan", { onToGrave: searcher("er1Sangan", "atk", "Add which monster with 1500 or less ATK to your hand?") });
+  define("Witch of the Black Forest", { onToGrave: searcher("er1Witch", "def", "Add which monster with 1500 or less DEF to your hand?") });
+
+  // Kuriboh: during damage calculation now (d.battleDamage above), not at the attack's declaration.
+  define("Kuriboh", { handQuick: undefined, er1Kuriboh: true });
+
+  // Catapult Turtle: once per turn.
+  { const e = DM.EFFECTS[N("Catapult Turtle")]; define("Catapult Turtle", { ignition: Object.assign({}, e.ignition, { repeatable: undefined,
+    can: (d, ctx) => once(ctx.zone, d) && d.monsters(ctx.p).length > 1 }) }); }
+
+  // Big Eye: look at the top 5 and put them back in any order.
+  define("Big Eye", { flip: async (d, link) => {
+    const deck = d.players[link.p].deck, top = deck.slice(0, 5);
+    if (!top.length) return;
+    await d.emit({ type: "look", p: link.p, cards: top.slice() });
+    const order = [];
+    while (top.length > 1) {
+      const c = await d.pickCard(link.p, "Place which card on top of your Deck next (" + (order.length + 1) + " of " + (order.length + top.length) + ")?", top);
+      const x = c || top[0];
+      order.push(x); top.splice(top.indexOf(x), 1);
+    }
+    order.push(top[0]);
+    deck.splice(0, order.length, ...order);
+  } });
+
+  // D.D. Warrior: after damage calculation, banish the monster it battled and itself (they're not destroyed by that battle).
+  define("D.D. Warrior", { onBattle: undefined,
+    battleResult: (d, s, r, att, target, res) => {
+      if (s !== att && s !== target) return;
+      res.attackerDies = false; res.targetDies = false;
+      s.data.er1Banish = { turn: d.turn, other: s === att ? target : att };
+    },
+    afterBattle: async (d, z, p, o) => {
+      const b = z.data.er1Banish; z.data.er1Banish = null;
+      if (!b || b.turn !== d.turn || b.other !== o) return;
+      if (o && d.locate(o)) await d.banish(o.card, "effect");
+      if (d.locate(z)) await d.banish(z.card, "effect");
+    } });
+
+  // "Harpie Lady": the cards whose name is treated as it (Cyber Harpie Lady, Harpie Lady 1, 2 and 3) count.
+  define("Cyber Shield", DM.equip((d, z) => isName(z.card, ["Harpie Lady", "Harpie Lady Sisters"]), { atk: 500 }));
+  define("Elegant Egotist", { activate: {
+    can: (d, ctx) => H.canSummonHere(d, ctx.p) && up(d).some((z) => isName(z.card, "Harpie Lady")) && d.players[ctx.p].hand.concat(d.players[ctx.p].deck).some((c) => isName(c, ["Harpie Lady", "Harpie Lady Sisters"])),
+    resolve: async (d, link) => {
+      if (!up(d).some((z) => isName(z.card, "Harpie Lady"))) return;
+      const pl = d.players[link.p];
+      const c = await d.pickCard(link.p, "Special Summon which Harpie?", pl.hand.concat(pl.deck), (x) => isName(x, ["Harpie Lady", "Harpie Lady Sisters"]));
+      const fromDeck = c && pl.deck.includes(c);
+      if (c) await d.specialSummon(link.p, c, { how: "special", position: "choose" });
+      if (fromDeck) DM.shuffle(d, pl.deck);
+    } } });
+  define("Harpie's Pet Dragon", { selfStats: (d) => { const n = 300 * up(d).filter((x) => isName(x.card, "Harpie Lady")).length; return { atk: n, def: n }; } });
+
+  // Metalzoa: Special Summoned from the Deck by Tributing "Zoa" equipped with "Metalmorph" (Zoa's side of it).
+  const metalmorphed = (d, z) => z.faceUp && z.links.some((l) => l.kind === "equip" && l.from && d.locate(l.from) && isName(l.from.card, "Metalmorph"));
+  define("Zoa", { ignition: {
+    can: (d, ctx) => mine(d, ctx) && metalmorphed(d, ctx.zone) && !d.players[ctx.p].flags.noSpecialSummon && d.players[ctx.p].deck.some((c) => isName(c, "Metalzoa")),
+    cost: async (d, link) => { if (!link.zone || !d.locate(link.zone)) return false; await d.sendToGrave(link.card, "tribute"); return true; },
+    resolve: async (d, link) => {
+      const pl = d.players[link.p], c = pl.deck.find((x) => isName(x, "Metalzoa"));
+      if (c) await d.specialSummon(link.p, c, { how: "special", position: "choose", byRule: true });
+      DM.shuffle(d, pl.deck);
+    } } });
+
+  // Swordsman from a Distant Land: destroyed in the 5th End Phase after the attack (this turn's is the 1st).
+  define("Swordsman from a Distant Land", { beforeDamage: async (d, z, p, t) => { if (t) t.data.destroyAtEnd = d.turn + 4; } });
+
+  // Blast Juggler: only in your Standby Phase; Tribute it to destroy 2 face-up monsters with 1000 or less ATK.
+  define("Blast Juggler", { ignition: undefined, standby: async (d, z, p) => {
+    if (d.turnPlayer !== p || !z.faceUp) return;
+    const ok = (x) => x !== z && x.faceUp && d.atkOf(x) <= 1000;
+    if (!up(d).some(ok)) return;
+    const ctl = d.opts.controllers[p];
+    if (ctl && ctl.ai && !up(d, 1 - p).some(ok)) return;
+    if (!(await d.yesNo(p, "Tribute Blast Juggler to destroy 2 face-up monsters with 1000 or less ATK?"))) return;
+    await d.sendToGrave(z.card, "tribute");
+    const zs = await d.pickZones(p, "Destroy which 2 face-up monsters with 1000 or less ATK?", (x) => x.faceUp && d.atkOf(x) <= 1000, { area: "monster", count: 2 });
+    for (const t of zs || []) if (d.locate(t)) await d.destroy(t, "effect");
+  } });
+
+  // Sinister Serpent: once per turn; 1 "Sinister Serpent" is banished from the GY in the opponent's next End Phase.
+  define("Sinister Serpent", { graveStandby: async (d, c, p) => {
+    const f = d.players[p].flags;
+    if (d.turnPlayer !== p || f.er1SerpentUsed === d.turn || !(await d.yesNo(p, "Add Sinister Serpent to your hand?"))) return;
+    f.er1SerpentUsed = d.turn;
+    await d.toHand(c, "effect");
+    const s = f.er1Serpent;
+    f.er1Serpent = { turn: d.turn + 1, n: s && s.turn === d.turn + 1 ? s.n + 1 : 1 };
+  } });
+
+  // Man-Eater Bug: targets now.
+  define("Man-Eater Bug", { flip: async (d, link) => {
+    if (!(await H.target(d, link, "Destroy which monster?", (x) => x !== link.zone, { area: "monster" }))) return;
+    const z = H.t(d, link);
+    if (z) await d.destroy(z, "effect");
+  } });
+
+  // Penguin Soldier: up to 2 targets (Lord of D. keeps Dragons out of them).
+  define("Penguin Soldier", { flip: async (d, link) => {
+    const zs = await d.pickZones(link.p, "Return up to 2 monsters to their owners' hands.", (x) => x !== link.zone && !(d.liveWith("noTargetDragons") && H.isType(d, x, "Dragon")), { area: "monster", count: 2, min: 0 });
+    for (const z of zs || []) if (d.locate(z)) await d.toHand(z.card, "effect");
+  } });
+
+  // Morphing Jar: both players discard their hands, then each draws 5.
+  define("Morphing Jar", { flip: async (d, link) => {
+    for (const p of [link.p, 1 - link.p]) for (const c of d.players[p].hand.slice()) await d.discard(p, c);
+    for (const p of [link.p, 1 - link.p]) { if (d.over) return; await d.drawCards(p, 5); }
+  } });
+})();
+
+// (Errata: the current TCG text, part 2.)
+(function () {
+  "use strict";
+  const DM = window.DuelMonsters, C = DM.card, H = DM.H, ATTR = DM.ATTR, define = DM.define, N = DM.numberOf, typeNo = DM.typeNo;
+  const { isName, once, mine, ss } = DM.REST;
+  const up = H.up, mons = H.mons, t0 = H.t;
+  const E = (name) => DM.EFFECTS[N(name)] || {};
+  const act = (name, extra) => Object.assign({}, E(name).activate, extra);
+  const isToon = (z) => !!z && z.faceUp && !z.card.token && !!(DM.effectOf(z.card.no) || {}).toon;
+  const freeZones = (d, p) => [0, 1, 2, 3, 4].filter((i) => !d.players[p].zones[i] && !d.closed(p, i)).length;
+  const summonedNow = (d, p) => d.players[p].flags.xSummonedTurn === d.turn;
+
+  // ---------- What these cards need of each duel ----------
+  // Player flags: xSummonedTurn (p Summoned a monster this turn), xSetOk (this turn's "you cannot Summon" lets p
+  // Normal Set). Effect properties: xNoSummons (neither player can Summon), xFreeze (other monsters can't change
+  // their battle positions); Light of Intervention's noSetMonsters keeps monsters from being flipped face-down.
+  const SUMMONS = ["summoned", "flip-summoned", "special-summoned"];
+  const REBD = N("Red-Eyes Black Dragon"), METAL = N("Metalmorph"), REBMD = N("Red-Eyes Black Metal Dragon");
+  const metalReds = (d, p) => up(d, p).filter((z) => z.card.no === REBD && z.links.some((l) => l.kind === "equip" && l.from && d.locate(l.from) && l.from.card.no === METAL));
+  function patch(d) {
+    const ma0 = d.mainActions, da0 = d.doAction, nt0 = d.notify, fd0 = d.flipDown;
+    d.notify = async function (ev) {
+      if (ev && SUMMONS.includes(ev.type) && ev.p != null) this.players[ev.p].flags.xSummonedTurn = this.turn;
+      return nt0.call(this, ev);
+    };
+    d.mainActions = function (p) {
+      const f = this.players[p].flags;
+      let acts;
+      if (f.xSetOk === this.turn && f.noSummonTurn === this.turn) {
+        f.noSummonTurn = -1;
+        try { acts = ma0.call(this, p).filter((a) => !["summon", "flip-summon", "special-hand"].includes(a.act)); } finally { f.noSummonTurn = this.turn; }
+      } else acts = ma0.call(this, p);
+      if (this.liveWith("xNoSummons")) acts = acts.filter((a) => !["summon", "flip-summon", "special-hand"].includes(a.act));
+      const freeze = [0, 1].reduce((a, q) => a.concat(this.allZones(q).filter((z) => { const e = this.live(z); return e && e.xFreeze; })), []);
+      if (freeze.length) acts = acts.filter((a) => !((a.act === "position" || a.act === "flip-summon") && freeze.some((s) => s !== a.zone)));
+      // (Red-Eyes Black Metal Dragon: from the Deck, by Tributing Red-Eyes Black Dragon equipped with Metalmorph)
+      const pl = this.players[p], c = pl.deck.find((x) => x.no === REBMD);
+      const noSummon = pl.flags.noSummonTurn === this.turn || this.players[1 - p].flags.noSummonFor === this.turn || this.liveWith("xNoSummons");
+      if (c && !noSummon && !pl.flags.noSpecialSummon && !this.liveWith("noSpecials")) {
+        const z = metalReds(this, p)[0];
+        if (z) {
+          const at = acts.findIndex((a) => a.act === "battle" || a.act === "end");
+          acts.splice(at < 0 ? acts.length : at, 0, { act: "special-hand", card: c, xMetal: z, label: "Special Summon " + C.name(REBMD) + " (Tribute Red-Eyes Black Dragon)" });
+        }
+      }
+      return acts;
+    };
+    d.doAction = async function (p, a) {
+      if (a && a.xMetal) {
+        const z = a.xMetal;
+        if (!this.locate(z) || !this.players[p].deck.includes(a.card)) return;
+        await this.sendToGrave(z.card, "tribute");
+        await this.specialSummon(p, a.card, { how: "special", position: "choose", byRule: true });
+        DM.shuffle(this, this.players[p].deck);
+        return;
+      }
+      return da0.call(this, p, a);
+    };
+    d.flipDown = async function (z) { if (this.liveWith("noSetMonsters")) return; return fd0.call(this, z); };
+  }
+  const create0 = DM.create;
+  DM.create = function (opts) { const d = create0.apply(this, arguments); patch(d); return d; };
+
+  // ---------- Spells ----------
+  // Blue Medicine: only you gain 400 LP.
+  define("Blue Medicine", { activate: { resolve: async (d, link) => d.heal(link.p, 400) } });
+  // Exile of the Wicked: all Fiend monsters, face-down ones too.
+  const fiend = (d, z) => (z.faceUp ? H.isType(d, z, "Fiend") : !z.card.token && C.type(z.card.no) === typeNo("Fiend"));
+  define("Exile of the Wicked", { activate: { can: (d) => mons(d).some((z) => fiend(d, z)), resolve: async (d) => H.destroyAll(d, mons(d).filter((z) => fiend(d, z))) } });
+  // Gravedigger Ghoul: up to 2.
+  define("Gravedigger Ghoul", { activate: act("Gravedigger Ghoul", { resolve: async (d, link) => {
+    const cs = await d.pickCards(link.p, "Remove up to 2 monsters from play.", H.graveMon(d, 1 - link.p), null, { count: 2, min: 1 }); for (const c of cs || []) await d.banish(c); } }) });
+  // Scapegoat: all 4 Tokens (4 free zones); no Summon this turn before or after, but a Normal Set.
+  define("Scapegoat", { activate: act("Scapegoat", {
+    can: (d, ctx) => freeZones(d, ctx.p) >= 4 && !summonedNow(d, ctx.p),
+    resolve: async (d, link) => {
+      if (freeZones(d, link.p) >= 4) for (let k = 0; k < 4; k++) await d.summonToken(link.p, { name: "Sheep Token", type: typeNo("Beast"), attribute: ATTR.EARTH, level: 1 }, { defense: true, noTribute: true });
+      const f = d.players[link.p].flags; f.noSummonTurn = d.turn; f.xSetOk = d.turn; } }) });
+  // Dark Magic Curtain: no other Summon this turn, before or after (a Set is allowed).
+  const curtain0 = E("Dark Magic Curtain").activate;
+  define("Dark Magic Curtain", { activate: act("Dark Magic Curtain", {
+    can: (d, ctx) => curtain0.can(d, ctx) && !summonedNow(d, ctx.p),
+    resolve: async (d, link) => { await curtain0.resolve(d, link); d.players[link.p].flags.xSetOk = d.turn; } }) });
+  // Gravekeeper's Servant: the top card of the Deck is the attack's cost; none, no attack.
+  define("Gravekeeper's Servant", { noAttack: (d, s, q, ap) => ap !== q && !d.players[ap].deck.length });
+
+  // ---------- Traps ----------
+  // Mirror Force: destroys the Attack Position monsters; the attack itself isn't negated.
+  define("Mirror Force", { activate: act("Mirror Force", { resolve: async (d, link) => H.destroyAll(d, d.monsters(1 - link.p).filter((z) => !z.defense)) }) });
+  // Waboku: no battle damage, and your monsters can't be destroyed by battle, this turn.
+  define("Waboku", { activate: act("Waboku", { resolve: async (d, link) => { const f = d.players[link.p].flags; f.waboku = d.turn; f.battleSafe = { turn: d.turn, test: () => true }; } }) });
+  // Imperial Order: 700 LP each Standby Phase, either player's, not optional.
+  define("Imperial Order", { standby: async (d, z, p) => { if (d.players[p].lp > 700) await d.payLp(p, 700); else await d.destroy(z, "cost"); } });
+  // Magical Thorn: any discard from their hand, the hand size limit's too.
+  define("Magical Thorn", { onEvent: async (d, z, p, ev) => { if (ev.type === "discarded" && ev.p === 1 - p) await d.damage(1 - p, 500, "effect"); } });
+  // Ceasefire: only with a face-down monster or an Effect Monster on the field.
+  define("Ceasefire", { activate: act("Ceasefire", { can: (d) => mons(d).some((z) => !z.faceUp || (!z.card.token && C.kind(z.card.no) === "effect")) }) });
+  // Michizure: a monster sent from the field to your GY (the card's owner's).
+  define("Michizure", { activate: act("Michizure", { can: (d, ctx) => !!ctx.event.card && ctx.event.card.owner === ctx.p && d.players[ctx.p].grave.includes(ctx.event.card) && mons(d).length > 0 }) });
+
+  // ---------- Monsters ----------
+  // The Toons: Special Summoned from the hand (Tributes by Level) while you control Toon World; they must attack a Toon if the other side has one.
+  for (const [n, k] of [["Manga Ryu-Ran", 2], ["Toon Mermaid", 0], ["Toon Summoned Skull", 1], ["Blue-Eyes Toon Dragon", 2]]) {
+    const pool = (d, p) => (d.liveWith("noTributes") ? [] : d.monsters(p));
+    define(n, { toon: true, specialOnly: true, needsField: undefined, attackCost: 500, noAttackOnSummonTurn: true,
+      specialFromHand: (d, p) => d.countOnField(N("Toon World"), p) > 0 && pool(d, p).length >= k,
+      specialCost: async (d, p) => {
+        if (!k) return true;
+        const zs = await d.pickZones(p, "Tribute " + k + " monster" + (k > 1 ? "s" : "") + " to Special Summon " + n + ".", (z, q) => q === p, { sides: [p], area: "monster", count: k, cancel: true });
+        if (!zs || zs.length < k) return false;
+        for (const z of zs) await d.sendToGrave(z.card, "tribute");
+        return true; },
+      directAttack: (d, z, p) => !d.monsters(1 - p).some(isToon),
+      canTarget: (d, z, p, t) => !d.monsters(1 - p).some(isToon) || isToon(t) });
+  }
+  // Relinquished, Thousand-Eyes Restrict: once per turn, a target the opponent controls becomes an Equip Card on it (max. 1).
+  const absorbed = (d, z) => { const l = z.links.find((x) => x.kind === "equip" && x.from && x.from.data.absorbedBy === z && d.locate(x.from)); return l ? l.from : null; };
+  async function absorb(d, p, z, t) {
+    const c = t.card, i = d.freeSpellZone(p);
+    if (i < 0 || !d.locate(t) || !d.locate(z)) return null;
+    if (c.token) { await d.sendToGrave(c, "effect"); return null; }
+    const from = d.take(c);
+    const nz = DM.newZone(c, { faceUp: true, placedTurn: d.turn });
+    nz.negated = true; nz.data.absorbedBy = z;
+    d.players[p].zones[i] = nz;
+    d.equip(nz, z, null);
+    await d.emit({ type: "equip", card: c, to: z });
+    await d.afterLeave(c, from, "effect");
+    return nz;
+  }
+  const relinquish = (name, extra) => Object.assign({
+    selfStats: (d, z) => { const s = absorbed(d, z); return s ? { setAtk: C.atk(s.card.no), setDef: C.def(s.card.no) } : null; },
+    ignition: {
+      can: (d, ctx) => mine(d, ctx) && once(ctx.zone, d) && !absorbed(d, ctx.zone) && d.monsters(1 - ctx.p).length > 0 && d.freeSpellZone(ctx.p) >= 0,
+      target: (d, link) => H.target(d, link, "Equip which monster to " + name + "?", (z, q) => q !== link.p, { area: "monster", sides: [1 - link.p] }),
+      resolve: async (d, link) => {
+        const t = t0(d, link), z = link.zone;
+        if (!t || !z || !d.locate(z) || !z.faceUp || d.controllerOf(t) === link.p || absorbed(d, z)) return;
+        await absorb(d, link.p, z, t); } },
+    // (destroyed by battle: the equipped monster instead)
+    battleResult: (d, s, r, att, target, res) => {
+      if (s !== att && s !== target) return;
+      const k = s === att ? "attackerDies" : "targetDies", eq = absorbed(d, s);
+      s.data.battleWith = s === att ? target : att; s.data.battleTurn = d.turn;
+      if (res[k] && eq) { res[k] = false; s.data.sacrifice = eq; } },
+    afterBattle: async (d, z) => { const eq = z.data.sacrifice; z.data.sacrifice = null; z.data.battleWith = null; if (eq && d.locate(eq)) await d.destroy(eq, "effect"); }
+  }, extra);
+  define("Relinquished", relinquish("Relinquished", {
+    // (battle damage you take from its battles: the same to your opponent, while it's equipped)
+    onEvent: async (d, z, p, ev) => {
+      if (ev.type !== "battle-damage" || ev.p !== p || !absorbed(d, z)) return;
+      if (ev.attacker === z || (z.data.battleTurn === d.turn && z.data.battleWith && z.data.battleWith === ev.attacker)) await d.damage(1 - p, ev.amount, "effect"); } }));
+  define("Thousand-Eyes Restrict", relinquish("Thousand-Eyes Restrict", { xFreeze: true, noAttack: (d, s, q, ap, att) => att !== s }));
+  // Chimera the Flying Mythical Beast: when destroyed, you can bring back Berfomet or Gazelle.
+  define("Chimera the Flying Mythical Beast", { onDestroyed: async (d, z, p) => {
+    const f = (c) => isName(c, ["Berfomet", "Gazelle the King of Mythical Beasts"]);
+    if (!H.canSummonHere(d, p) || !d.players[p].grave.some(f) || !(await d.yesNo(p, "Special Summon Berfomet or Gazelle from your Graveyard?"))) return;
+    const c = await d.pickCard(p, "Special Summon which monster?", d.players[p].grave, f); if (c) await ss(d, p, c); } });
+  // The Last Warrior from Another Planet: Special Summoned, destroys your other monsters; neither player can Summon.
+  define("The Last Warrior from Another Planet", { noSpecials: true, xNoSummons: true,
+    onSummon: async (d, z, p, how) => { if (how === "special") await H.destroyAll(d, d.monsters(p).filter((x) => x !== z)); } });
+  // Insect Queen: its Token at the End Phase, if it destroyed an opponent's monster by battle this turn.
+  define("Insect Queen", { onDestroyByBattle: async (d, z) => { z.data.queenTurn = d.turn; },
+    endPhase: async (d, z, p) => { if (z.data.queenTurn !== d.turn) return; z.data.queenTurn = -1;
+      await d.summonToken(p, { name: "Insect Monster Token", atk: 100, def: 100, level: 1, type: typeNo("Insect"), attribute: ATTR.EARTH }); } });
+  // Hannibal Necromancer: its Spell Counter only when Normal Summoned.
+  const hannibal0 = E("Hannibal Necromancer").onSummon;
+  define("Hannibal Necromancer", { onSummon: async (d, z, p, how) => { if (how === "normal") await hannibal0(d, z, p, how); } });
+  // Total Defense Shogun: to Defense Position when Normal or Flip Summoned.
+  define("Total Defense Shogun", { onSummon: async (d, z, p, how) => { if ((how === "normal" || how === "flip") && !z.defense) await d.changePosition(z, true); } });
+  // Barrel Dragon: targets, then the coins.
+  define("Barrel Dragon", { ignition: { can: (d, ctx) => once(ctx.zone, d) && ctx.p === d.turnPlayer && d.monsters(1 - ctx.p).length > 0,
+    target: (d, link) => H.target(d, link, "Target which monster?", (z, q) => q !== link.p, { area: "monster", sides: [1 - link.p] }),
+    resolve: async (d, link) => {
+      let h = 0; for (let k = 0; k < 3; k++) { const r = d.coin(); await d.emit({ type: "coin", p: link.p, heads: r }); if (r) h++; }
+      const z = t0(d, link); if (h >= 2 && z) await d.destroy(z, "effect"); } } });
+  // Giant Germ, Nimble Momonga: the copies from the Deck are optional.
+  define("Giant Germ", { onDestroyed: async (d, z, p, why) => { if (why !== "battle") return; await d.damage(1 - p, 500, "effect");
+    for (const c of d.players[p].deck.filter((c) => c.no === z.card.no)) { if (!H.canSummonHere(d, p) || !(await d.yesNo(p, "Special Summon a Giant Germ from your Deck?"))) break; await d.specialSummon(p, c, { how: "special" }); }
+    DM.shuffle(d, d.players[p].deck); } });
+  define("Nimble Momonga", { onDestroyed: async (d, z, p, why) => { if (why !== "battle") return; await d.heal(p, 1000);
+    for (const c of d.players[p].deck.filter((c) => c.no === z.card.no)) { if (!H.canSummonHere(d, p) || !(await d.yesNo(p, "Special Summon a Nimble Momonga from your Deck?"))) break; await d.specialSummon(p, c, { faceUp: false, defense: true }); }
+    DM.shuffle(d, d.players[p].deck); } });
+})();
+
+// (Errata: the current TCG text, part 3.)
+(function () {
+  "use strict";
+  const DM = window.DuelMonsters, C = DM.card, H = DM.H, ATTR = DM.ATTR, define = DM.define, N = DM.numberOf, ICON = DM.ICON;
+  const { isName, once, ss } = DM.REST;
+  const up = H.up, mons = H.mons, isMon = H.isMon, t0 = H.t;
+  const E = (n) => DM.EFFECTS[N(n)] || {};
+  // (a card by its name, as numberOf reads it: "Gamma the Magnet Warrior" too)
+  const is = (c, n) => !!c && !c.token && (c.no === N(n) || isName(c, n));
+  const text = (no) => (DM.text ? DM.text(no) : "");
+  const isFlipMon = (c) => !!c && !c.token && C.isMonster(c.no) && /FLIP:/.test(text(c.no));
+  const freeZones = (d, p) => [0, 1, 2, 3, 4].filter((i) => !d.players[p].zones[i] && !d.closed(p, i)).length;
+  const origAtk = (z) => { const b = z.data.base || {}, tk = z.card.token; return b.atk != null ? b.atk : tk ? tk.atk : C.atk(z.card.no); };
+  const graveAttr = (d, p, a) => d.players[p].grave.filter((c) => C.isMonster(c.no) && C.attribute(c.no) === ATTR[a]);
+  // (Kycoo the Ghost Destroyer: p's opponent controls one face up)
+  const kycoo = (d, p) => !!d.liveWith("e3Kycoo", 1 - p);
+  const banishesFromGrave = (no) => /(banish|remov\w* from play)[^.]*(Graveyard|GY)|(Graveyard|GY)[^.]*(banish|remov\w* from play)/i.test(text(no));
+
+  // ---------- Spells ----------
+  // Nobleman of Crossout: a Flip monster's name banished from both Main Decks.
+  define("Nobleman of Crossout", { activate: Object.assign({}, E("Nobleman of Crossout").activate, { resolve: async (d, link) => {
+    const z = t0(d, link); if (!z) return;
+    const c = z.card, flip = isFlipMon(c);
+    if (!(await d.destroy(z, "effect"))) return;
+    if (d.players[c.owner].grave.includes(c)) await d.banish(c, "effect");
+    if (flip) for (const q of [0, 1]) for (const x of d.players[q].deck.filter((x) => x.no === c.no)) await d.banish(x, "effect");
+  } }) });
+  // Nobleman of Extermination: a Trap's copies banished from both Decks.
+  define("Nobleman of Extermination", { activate: Object.assign({}, E("Nobleman of Extermination").activate, { resolve: async (d, link) => {
+    const z = t0(d, link); if (!z) return;
+    const c = z.card, trap = !c.token && C.isTrap(c.no);
+    if (!(await d.destroy(z, "effect"))) return;
+    if (d.players[c.owner].grave.includes(c)) await d.banish(c, "effect");
+    if (trap) for (const q of [0, 1]) for (const x of d.players[q].deck.filter((x) => x.no === c.no)) await d.banish(x, "effect");
+  } }) });
+  // Dust Tornado: then you can Set 1 Spell/Trap from your hand.
+  define("Dust Tornado", { activate: Object.assign({}, E("Dust Tornado").activate, { resolve: async (d, link) => {
+    const z = t0(d, link);
+    if (!z || !(await d.destroy(z, "effect"))) return;
+    const p = link.p, pl = d.players[p], i = d.freeSpellZone(p);
+    const ok = (c) => (C.isSpell(c.no) || C.isTrap(c.no)) && C.icon(c.no) !== ICON.FIELD;
+    if (i < 0 || !pl.hand.some(ok)) return;
+    const c = await d.pickCard(p, "Set a Spell or Trap Card from your hand?", pl.hand, ok, { min: 0, cancel: true });
+    if (!c) return;
+    d.take(c);
+    const s = DM.newZone(c, { faceUp: false, placedTurn: d.turn });
+    pl.zones[i] = s;
+    await d.emit({ type: "set-spell", p, i, zone: s, card: c });
+  } }) });
+  // Makiu, the Magical Mist: targets its monster; DEF less than or equal; no Battle Phase the turn it's activated.
+  const makiuSrc = (d, z) => z.faceUp && (is(z.card, "Summoned Skull") || H.isType(d, z, "Thunder"));
+  define("Makiu, the Magical Mist", { activate: {
+    can: (d, ctx) => d.phase !== "main2" && d.phase !== "battle" && up(d, ctx.p).some((z) => makiuSrc(d, z)),
+    cost: async (d, link) => { d.players[link.p].flags.noBattleThisTurn = d.turn; return true; },
+    target: (d, link) => H.target(d, link, "Which Summoned Skull or Thunder monster?", (z, q) => q === link.p && makiuSrc(d, z), { area: "monster" }),
+    resolve: async (d, link) => {
+      const s = t0(d, link); if (!s || !s.faceUp) return;
+      const a = d.atkOf(s);
+      await H.destroyAll(d, d.monsters(1 - link.p).filter((z) => d.defOf(z) <= a));
+    } } });
+  // Magic Formula: the LP only when it goes from the field to the GY.
+  define("Magic Formula", { onToGrave: async (d, c, p, from) => { if (from && from.zone != null) await d.heal(p, 1000, "effect"); } });
+  // Lightning Blade: all WATER monsters lose 500 ATK.
+  define("Lightning Blade", { aura: (d, src, sp, z, zp, s) => (src.equippedTo && d.locate(src.equippedTo) && isMon(d, z) && z.faceUp && (s ? s.attribute : C.attribute(z.card.no)) === ATTR.WATER ? { atk: -500 } : null) });
+  // Card of Safe Return: a monster from your GY, whoever summons it; "you can".
+  define("Card of Safe Return", { onEvent: async (d, z, p, ev) => {
+    if (ev.type === "special-summoned" && ev.zone && ev.zone.data.fromPile === "grave" && ev.zone.card.owner === p && (await d.yesNo(p, "Draw 1 card with Card of Safe Return?"))) await d.drawCards(p, 1);
+  } });
+  // Temple of the Kings: 1 Trap a turn the turn it was Set (from the Main Phase too); its other effect once per turn.
+  {
+    const ig = E("Temple of the Kings").ignition;
+    define("Temple of the Kings", {
+      onEvent: async (d, z, p, ev) => { if (ev.type === "activated" && ev.p === p && ev.card && C.isTrap(ev.card.no) && ev.zone && ev.zone.placedTurn === d.turn && ev.zone !== z) d.players[p].flags.e3Temple = d.turn; },
+      ignition: ig ? Object.assign({}, ig, { can: (d, ctx) => once(ctx.zone, d) && ig.can(d, ctx) }) : undefined
+    });
+  }
+  // Fusion Gate: the turn player's, whoever controls it.
+  // (in the create wrapper below)
+
+  // ---------- Traps ----------
+  // Ring of Destruction: the opponent's monster in their turn, ATK up to their LP; its original ATK to you, then the same to them; 1 a turn.
+  define("Ring of Destruction", { activate: { when: ["main", "any"],
+    can: (d, ctx) => d.turnPlayer !== ctx.p && d.players[ctx.p].flags.e3Ring !== d.turn && up(d, 1 - ctx.p).some((z) => d.atkOf(z) <= d.players[1 - ctx.p].lp),
+    cost: async (d, link) => { d.players[link.p].flags.e3Ring = d.turn; return true; },
+    target: (d, link) => H.target(d, link, "Destroy which monster?", (z, q) => q === 1 - link.p && z.faceUp && d.atkOf(z) <= d.players[1 - link.p].lp, { area: "monster" }),
+    resolve: async (d, link) => {
+      const z = t0(d, link); if (!z || !z.faceUp) return;
+      const a = origAtk(z);
+      if (!(await d.destroy(z, "effect"))) return;
+      const lp = d.players[link.p].lp;
+      await d.damage(link.p, a, "effect");
+      const took = d.players[link.p].lp < lp ? a : 0;
+      if (took > 0 && !d.over) await d.damage(1 - link.p, took, "effect");
+    } } });
+  // Embodiment of Apophis: in either player's Main Phase only.
+  { const a = E("Embodiment of Apophis").activate; if (a) define("Embodiment of Apophis", { activate: Object.assign({}, a, { can: (d, ctx) => d.isMain() && (!a.can || a.can(d, ctx)) }) }); }
+  // Exchange of the Spirit: both players 15 or more in the GY; 1 per Duel.
+  { const a = E("Exchange of the Spirit").activate; if (a) define("Exchange of the Spirit", { activate: Object.assign({}, a, {
+    can: (d, ctx) => !d.players[ctx.p].flags.e3Exchange && d.players[ctx.p].lp > 1000 && d.players[0].grave.length >= 15 && d.players[1].grave.length >= 15,
+    cost: async (d, link) => { d.players[link.p].flags.e3Exchange = true; await d.payLp(link.p, 1000); return true; } }) }); }
+
+  // ---------- Monsters ----------
+  // Morphing Jar #2: the excavated Level 4 or lower monsters Set, the rest to the GY.
+  define("Morphing Jar #2", { flip: async (d) => {
+    const n = [0, 0];
+    for (const p of [0, 1]) for (const z of d.monsters(p).slice()) { const c = z.card; if (!c.token && !C.isExtra(c.no)) n[c.owner]++; await d.toDeck(c, "shuffle"); }
+    for (const p of [0, 1]) {
+      const pl = d.players[p]; DM.shuffle(d, pl.deck);
+      let k = 0, got = 0;
+      while (got < n[p] && k < pl.deck.length) { if (C.isMonster(pl.deck[k].no)) got++; k++; }
+      for (const c of pl.deck.slice(0, k)) {
+        let z = null;
+        if (C.isMonster(c.no) && C.level(c.no) <= 4 && d.freeMonsterZone(p) >= 0) z = await d.specialSummon(p, c, { faceUp: false, defense: true });
+        if (!z && pl.deck.includes(c)) await d.sendToGrave(c, "effect");
+        if (d.over) return;
+      }
+    }
+  } });
+  // Valkyrion the Magna Warrior: Special Summoned by Tributing Alpha, Beta and Gamma from the hand and/or field; Tributed to bring them back.
+  const MAGNETS = ["Alpha The Magnet Warrior", "Beta The Magnet Warrior", "Gamma The Magnet Warrior"];
+  const magnetPool = (d, p) => d.players[p].hand.concat(d.monsters(p).filter((z) => !z.data.cannotTribute).map((z) => z.card));
+  define("Valkyrion the Magna Warrior", { specialOnly: true,
+    specialFromHand: (d, p) => !d.liveWith("noTributes") && MAGNETS.every((n) => magnetPool(d, p).some((c) => is(c, n))),
+    specialCost: async (d, p) => {
+      const picked = [];
+      for (const n of MAGNETS) {
+        const c = await d.pickCard(p, "Tribute " + n + ".", magnetPool(d, p), (x) => is(x, n) && !picked.includes(x), { cancel: true });
+        if (!c) return false;
+        picked.push(c);
+      }
+      for (const c of picked) await d.sendToGrave(c, "tribute");
+      return true;
+    },
+    ignition: {
+      can: (d, ctx) => !d.liveWith("noTributes") && !d.players[ctx.p].flags.noSpecialSummon && freeZones(d, ctx.p) >= 2 && MAGNETS.every((n) => d.players[ctx.p].grave.some((c) => is(c, n))),
+      cost: async (d, link) => { await d.sendToGrave(link.card, "tribute"); return true; },
+      target: async (d, link) => {
+        const cs = [];
+        for (const n of MAGNETS) { const c = d.players[link.p].grave.find((x) => is(x, n)); if (!c) return false; cs.push(c); }
+        link.data.magnets = cs; return true;
+      },
+      resolve: async (d, link) => {
+        const cs = (link.data.magnets || []).filter((c) => d.players[link.p].grave.includes(c));
+        if (cs.length < 3 || freeZones(d, link.p) < 3) return;
+        for (const c of cs) await ss(d, link.p, c);
+      } } });
+  // Alligator's Sword Dragon: directly, if the only face-up monsters they control are EARTH, WATER or FIRE.
+  define("Alligator's Sword Dragon", { directAttack: (d, z, p) => { const fu = up(d, 1 - p); return fu.length > 0 && fu.every((x) => [ATTR.EARTH, ATTR.WATER, ATTR.FIRE].includes(H.attrOf(d, x))); } });
+  // Birdface: "you can".
+  define("Birdface", { onDestroyed: async (d, z, p, why) => {
+    if (why !== "battle" || !d.players[p].deck.some((c) => is(c, "Harpie Lady")) || !(await d.yesNo(p, "Add a Harpie Lady from your Deck to your hand?"))) return;
+    await H.searchDeck(d, p, (c) => is(c, "Harpie Lady"), "Add which Harpie Lady to your hand?");
+  } });
+  // Fairy King Truesdale: while it's in Defense Position.
+  { const au = E("Fairy King Truesdale").aura; if (au) define("Fairy King Truesdale", { aura: (d, src, sp, z, zp, s) => (src.defense ? au(d, src, sp, z, zp, s) : null) }); }
+  // Woodland Sprite: 1 Equip Card, 500 damage.
+  const spriteEquips = (d, z) => z.links.filter((l) => l.kind === "equip" && l.from && d.locate(l.from)).map((l) => l.from);
+  define("Woodland Sprite", { ignition: { repeatable: true, can: (d, ctx) => spriteEquips(d, ctx.zone).length > 0,
+    cost: async (d, link) => {
+      const eqs = spriteEquips(d, link.zone);
+      const z = eqs.length > 1 ? await d.pickZone(link.p, "Send which Equip Card to the Graveyard?", (x) => eqs.includes(x), { cancel: true }) : eqs[0];
+      if (!z) return false;
+      await d.sendToGrave(z.card, "cost"); return true;
+    },
+    resolve: async (d, link) => d.damage(1 - link.p, 500, "effect") } });
+  // Slate Warrior: the monster that destroys it by battle loses 500 ATK and DEF.
+  define("Slate Warrior", { onDestroyed: async (d, z, p, why, by) => { if (why === "battle" && by && d.locate(by)) by.links.push({ kind: "self", stats: { atk: -500, def: -500 } }); } });
+  // Goblin Attack Force: in Defense Position after it attacks, and locked until the End Phase of your next turn.
+  define("Goblin Attack Force", { afterAttack: undefined,
+    beforeAttack: async (d, z) => { z.data.e3Gaf = d.turn; },
+    endPhase: async (d, z) => { if (z.data.e3Gaf !== d.turn || !d.locate(z)) return; z.data.e3Gaf = null; if (z.faceUp) await d.changePosition(z, true); z.changedTurn = d.turn + 2; } });
+  // Amazoness Archer, Hysteric Fairy: any 2 monsters, itself too.
+  const tribute2 = async (d, link) => {
+    const zs = await d.pickZones(link.p, "Tribute 2 monsters.", (x, q) => q === link.p && !x.data.cannotTribute, { sides: [link.p], area: "monster", count: 2, cancel: true });
+    if (!zs || zs.length < 2) return false;
+    for (const z of zs) await d.sendToGrave(z.card, "tribute");
+    return true;
+  };
+  define("Amazoness Archer", { ignition: { repeatable: true, can: (d, ctx) => d.tributable(ctx.p).length >= 2, cost: tribute2, resolve: async (d, link) => d.damage(1 - link.p, 1200, "effect") } });
+  define("Hysteric Fairy", { ignition: { repeatable: true, can: (d, ctx) => d.tributable(ctx.p).length >= 2, cost: tribute2, resolve: async (d, link) => d.heal(link.p, 1000, "effect") } });
+  // Mystical Beast of Serket: destroyed while you control no Temple of the Kings.
+  define("Mystical Beast of Serket", { onEvent: async (d, z, p) => {
+    if (z.data.e3Dying || !z.faceUp || d.countOnField(N("Temple of the Kings"), p) > 0) return;
+    z.data.e3Dying = true;
+    if (!(await d.destroy(z, "effect"))) z.data.e3Dying = false;
+  } });
+  // Dark Sage: Special Summoned (from the hand or Deck) by Tributing Dark Magician right after Time Wizard's right call; a Spell from the Deck.
+  async function darkSage(d, p) {
+    const pl = d.players[p];
+    const sages = pl.hand.concat(pl.deck).filter((c) => is(c, "Dark Sage"));
+    const dms = d.monsters(p).filter((z) => is(z.card, "Dark Magician") && !z.data.cannotTribute);
+    if (!sages.length || !dms.length || d.liveWith("noTributes") || pl.flags.noSpecialSummon) return;
+    if (!(await d.yesNo(p, "Tribute Dark Magician to Special Summon Dark Sage?"))) return;
+    const t = dms.length > 1 ? await d.pickZone(p, "Tribute which Dark Magician?", (x) => dms.includes(x), { sides: [p], area: "monster" }) : dms[0];
+    if (!t) return;
+    const c = sages.length > 1 ? await d.pickCard(p, "Special Summon which Dark Sage?", sages) : sages[0];
+    if (!c) return;
+    await d.sendToGrave(t.card, "tribute");
+    const z = await d.specialSummon(p, c, { how: "special", position: "choose", byRule: true });
+    DM.shuffle(d, pl.deck);
+    if (z && pl.deck.some((x) => C.isSpell(x.no))) await H.searchDeck(d, p, (x) => C.isSpell(x.no), "Add which Spell Card to your hand?");
+  }
+  define("Dark Sage", { specialOnly: true });
+  if (!H.e3Coin) {
+    const cc = H.coinCall;
+    H.coinCall = async function (d, p) { const r = await cc.apply(this, arguments); if (d) d.e3Call = { p, right: !!r, turn: d.turn }; return r; };
+    H.e3Coin = true;
+  }
+  // The Spirits summoned by banishing a monster of an Attribute from the GY: Soul of Purity and Light, Spirit of Flames, Aqua Spirit, The Rock Spirit, Garuda.
+  const fromGrave = (attr, n) => ({ specialOnly: true,
+    specialFromHand: (d, p) => graveAttr(d, p, attr).length >= n && !kycoo(d, p),
+    specialCost: async (d, p) => {
+      const cs = await d.pickCards(p, "Banish " + n + " " + attr + " monster" + (n > 1 ? "s" : "") + " from your Graveyard.", d.players[p].grave, (c) => C.isMonster(c.no) && C.attribute(c.no) === ATTR[attr], { count: n, cancel: true });
+      if (!cs || cs.length < n) return false;
+      for (const c of cs) await d.banish(c, "cost");
+      return true;
+    } });
+  define("Soul of Purity and Light", Object.assign(fromGrave("LIGHT", 2), {
+    aura: (d, src, sp, z, zp) => (zp !== sp && isMon(d, z) && z.faceUp && d.phase === "battle" && d.turnPlayer === zp ? { atk: -300 } : null) }));
+  define("Spirit of Flames", fromGrave("FIRE", 1));
+  define("The Rock Spirit", fromGrave("EARTH", 1));
+  const swapOne = async (d, p, prompt) => {
+    const t = await d.pickZone(p, prompt, (x, q) => q !== p && x.faceUp, { sides: [1 - p], area: "monster", min: 0, cancel: true });
+    if (!t || !d.locate(t)) return;
+    await d.changePosition(t, !t.defense);
+    t.changedTurn = d.turn;
+  };
+  define("Aqua Spirit", Object.assign(fromGrave("WATER", 1), {
+    standby: async (d, z, p) => { if (d.turnPlayer !== p && up(d, 1 - p).length) await swapOne(d, p, "Change the battle position of which of your opponent's monsters (Aqua Spirit)?"); } }));
+  define("Garuda the Wind Spirit", Object.assign(fromGrave("WIND", 1), {
+    endPhase: async (d, z, p) => { if (d.turnPlayer !== p && up(d, 1 - p).length) await swapOne(d, p, "Change the battle position of which of your opponent's monsters (Garuda)?"); } }));
+  // Gradius' Option: Special Summoned by selecting a face-up Gradius; its ATK and DEF; destroyed when that Gradius leaves the field.
+  define("Gradius' Option", { specialOnly: true,
+    specialFromHand: (d, p) => up(d, p).some((z) => is(z.card, "Gradius")),
+    specialCost: async (d, p, c) => {
+      const g = await d.pickZone(p, "Select which Gradius?", (x, q) => q === p && x.faceUp && is(x.card, "Gradius"), { sides: [p], area: "monster", cancel: true });
+      if (!g) return false; c.e3Gradius = g; return true;
+    },
+    afterSpecial: async (d, z) => { z.data.gradius = z.card.e3Gradius || null; z.card.e3Gradius = null; },
+    selfStats: (d, z) => { const g = z.data.gradius; return g && d.locate(g) && g.faceUp ? { setAtk: d.atkOf(g), setDef: d.defOf(g) } : null; },
+    onEvent: async (d, z) => { const g = z.data.gradius; if (g && !d.locate(g) && !z.data.e3Gone) { z.data.e3Gone = true; await d.destroy(z, "effect"); } } });
+  // Gilasaurus: Special Summoned from the hand; then the opponent can Special Summon 1 monster from their GY.
+  define("Gilasaurus", { onSummon: undefined, specialFromHand: () => true,
+    afterSpecial: async (d, z, side, p) => {
+      const q = 1 - p, pool = H.graveMon(d, q, (c) => !C.isExtra(c.no));
+      if (!H.canSummonHere(d, q) || !pool.length) return;
+      const c = await d.pickCard(q, "Special Summon a monster from your Graveyard (Gilasaurus)?", pool, null, { min: 0, cancel: true });
+      if (c) await ss(d, q, c);
+    } });
+  // Kycoo the Ghost Destroyer: the opponent can't banish cards from either GY (in the create wrapper below).
+  define("Kycoo the Ghost Destroyer", { e3Kycoo: true });
+  // Troop Dragon: destroyed by battle only.
+  { const od = E("Troop Dragon").onDestroyed; if (od) define("Troop Dragon", { onDestroyed: async (d, z, p, why, by) => { if (why === "battle") await od(d, z, p, why, by); } }); }
+  // Zolga: Tributed for a Tribute Summon (not a Set).
+  define("Zolga", { onToGrave: async (d, c, p, from, why) => { if (why === "tribute" && d.e3TribSummon) await d.heal(c.owner, 2000, "effect"); } });
+  // Hino-Kagu-Tsuchi: the opponent discards their hand in their next Draw Phase, before they draw.
+  define("Hino-Kagu-Tsuchi", { onBattleDamage: async (d, z, p) => { d.players[1 - p].flags.e3Hino = true; } });
+  // Giant Axe Mummy: an attacker with less ATK than its DEF, attacking it face down, destroyed.
+  define("Giant Axe Mummy", { onAttacked: async (d, z, q, att) => { if (z.data.attackedFaceDown === d.turn && d.locate(att) && d.atkOf(att) < d.defOf(z)) att.data.destroyAfterBattle = true; } });
+  // Exiled Force: targets.
+  define("Exiled Force", { ignition: {
+    can: (d, ctx) => mons(d).some((z) => z !== ctx.zone),
+    cost: async (d, link) => { await d.sendToGrave(link.card, "tribute"); return true; },
+    target: (d, link) => H.target(d, link, "Destroy which monster?", (z) => z !== link.zone, { area: "monster" }),
+    resolve: async (d, link) => { const z = t0(d, link); if (z) await d.destroy(z, "effect"); } } });
+  // The Spirit monsters: back to the hand at the End Phase of the turn they're flipped face up, too; Dark Dust Spirit's destruction when flipped.
+  const SPIRITS = ["Inaba White Rabbit", "Yata-Garasu", "Susa Soldier", "Yamata Dragon", "Great Long Nose", "Hino-Kagu-Tsuchi", "Fushi No Tori", "Dark Dust Spirit"];
+  for (const n of SPIRITS) if (N(n)) define(n, { endPhase: async (d, z) => { if (z.data.e3FlipTurn === d.turn && z.placedTurn !== d.turn && z.faceUp && d.locate(z)) await d.toHand(z.card, "spirit"); } });
+
+  // ---------- What these need of the duel ----------
+  const create0 = DM.create;
+  DM.create = function () {
+    const d = create0.apply(this, arguments);
+    const o = { emit: d.emit, runEffect: d.runEffect, doAction: d.doAction, activate: d.activate, banish: d.banish, liveWith: d.liveWith, mainActions: d.mainActions, canActivate: d.canActivate };
+    // (who's acting: the link resolving, the action or the activation; Kycoo reads it)
+    const acting = async (d0, p, fn) => { const prev = d0.e3Actor; d0.e3Actor = p; try { return await fn(); } finally { d0.e3Actor = prev; } };
+    Object.assign(d, {
+      async emit(ev) {
+        await o.emit.call(this, ev);
+        if (ev.type === "flip" && ev.zone) {
+          ev.zone.data.e3FlipTurn = this.turn;
+          if (ev.how !== "flip-summon" && is(ev.zone.card, "Dark Dust Spirit") && !ev.zone.negated && this.locate(ev.zone)) await H.destroyAll(this, up(this).filter((x) => x !== ev.zone));
+        }
+        if (ev.type === "phase" && ev.phase === "draw" && this.players[ev.p] && this.players[ev.p].flags.e3Hino) {
+          this.players[ev.p].flags.e3Hino = false;
+          for (const c of this.players[ev.p].hand.slice()) if (!this.over) await this.discard(ev.p, c, "effect");
+        }
+      },
+      async runEffect(link) {
+        const tw = link && link.card && is(link.card, "Time Wizard");
+        if (tw) this.e3Call = null;
+        await acting(this, link ? link.p : null, () => o.runEffect.call(this, link));
+        if (tw && this.e3Call && this.e3Call.p === link.p && this.e3Call.right && !this.over) { this.e3Call = null; await darkSage(this, link.p); }
+      },
+      async doAction(p, a) {
+        const prev = this.e3TribSummon;
+        this.e3TribSummon = !!(a && a.act === "summon" && a.tributes > 0);
+        try { return await acting(this, p, () => o.doAction.call(this, p, a)); } finally { this.e3TribSummon = prev; }
+      },
+      async activate(p, opt, prev, ev) { return acting(this, p, () => o.activate.call(this, p, opt, prev, ev)); },
+      async banish(c, why) {
+        const p = this.e3Actor;
+        if (p != null && c && !c.token && [0, 1].some((q) => this.players[q].grave.includes(c)) && kycoo(this, p)) return;
+        return o.banish.call(this, c, why);
+      },
+      // (Temple of the Kings: 1 Trap a turn)
+      liveWith(prop, q) {
+        if (prop === "trapsSameTurn" && q != null && this.players[q].flags.e3Temple === this.turn) return null;
+        return o.liveWith.call(this, prop, q);
+      },
+      canActivate(p, c, a, ctx) {
+        if (kycoo(this, p) && c && !c.token && banishesFromGrave(c.no) && (C.isMonster(c.no) || C.isSpell(c.no) || C.isTrap(c.no))) return false;
+        return o.canActivate.call(this, p, c, a, ctx);
+      },
+      mainActions(p) {
+        let acts = o.mainActions.call(this, p);
+        const extra = [];
+        // (Temple of the Kings: a Trap Set this turn, from the Main Phase too)
+        if (!this.negated("trap") && this.liveWith("trapsSameTurn", p)) for (let i = 5; i < 10; i++) {
+          const z = this.players[p].zones[i];
+          if (!z || z.faceUp || z.placedTurn !== this.turn || !C.isTrap(z.card.no)) continue;
+          const e = DM.effectOf(z.card.no);
+          if (e && e.activate && !acts.some((a) => a.zone === z && a.act === "activate") && this.canActivate(p, z.card, e.activate, { zone: z }))
+            extra.push({ act: "activate", card: z.card, zone: z, from: "field", label: "Activate " + C.name(z.card.no) });
+        }
+        // (Fusion Gate: the turn player's, on either side)
+        const fg = this.players[1 - p].zones[10];
+        if (fg && is(fg.card, "Fusion Gate") && this.live(fg) && !this.allZones(p).some((z) => is(z.card, "Fusion Gate") && this.live(z))) {
+          const e = DM.effectOf(fg.card.no);
+          if (e && e.ignition && this.canActivate(p, fg.card, e.ignition, { zone: fg })) extra.push({ act: "ignition", zone: fg, label: "Use Fusion Gate" });
+        }
+        // (Kycoo: no Special Summon whose cost banishes from the GY)
+        if (kycoo(this, p)) acts = acts.filter((a) => !(a.act === "special-hand" && banishesFromGrave(a.card.no)));
+        if (extra.length) { const k = acts.findIndex((a) => a.act === "battle" || a.act === "end"); acts.splice(k < 0 ? acts.length : k, 0, ...extra); }
+        return acts;
+      }
+    });
+    return d;
+  };
+})();
+
+// (Errata: the current TCG text, part 4.)
+(function () {
+  "use strict";
+  const DM = window.DuelMonsters, C = DM.card, H = DM.H, ATTR = DM.ATTR, define = DM.define, N = DM.numberOf, typeNo = DM.typeNo, ICON = DM.ICON, SC = DM.SC;
+  const { isName, once, mine, ss, piles, union, discardCost, handCount } = DM.REST;
+  const up = H.up, mons = H.mons, t0 = H.t, effectOf = DM.effectOf;
+  const ctl = (d, z) => d.controllerOf(z);
+  const typeOfCard = (c) => (c.token ? c.token.type : C.type(c.no));
+  const isDragon = (c) => !!c && typeOfCard(c) === typeNo("Dragon");
+  const isToon = (z) => !!z && z.faceUp && !!(effectOf(z.card.no) || {}).toon;
+  const isST = (c) => !!c && !c.token && (C.isSpell(c.no) || C.isTrap(c.no));
+  const curLink = (d) => d.resolvingLink || (d.fxStack && d.fxStack.length ? d.fxStack[d.fxStack.length - 1] : null);
+  const inGrave = (d, c) => !!c && !c.token && d.players[c.owner].grave.includes(c);
+  const redefine = (name, def) => { delete DM.EFFECTS[N(name)]; define(name, def); };
+  const EXODIA = ["Exodia the Forbidden One", "Right Arm of the Forbidden One", "Left Arm of the Forbidden One", "Right Leg of the Forbidden One", "Left Leg of the Forbidden One"];
+
+  // ---------- Rules these cards need ----------
+  // Effect properties read here: onlyBy (Special Summoned only by that card's effect), mustFusion (only by a Fusion
+  // Summon), contact (Special Summoned from the Extra Deck by banishing its materials; not from the GY), unionAlsoEffect
+  // (a Union destroyed instead of its monster by a card effect too). Player fields: xNoBewd (no Blue-Eyes attacks
+  // this turn), xAct (the turn p last activated a card or effect), xLock (no activations this turn).
+  const CONTACT = {};
+  for (const n of ["XY-Dragon Cannon", "XYZ-Dragon Cannon", "XZ-Tank Cannon", "YZ-Tank Dragon"]) {
+    const no = N(n);
+    if (no && DM.FUSIONS[no]) { CONTACT[no] = DM.FUSIONS[no].slice(); delete DM.FUSIONS[no]; }
+  }
+  const contactZones = (d, p, no) => {
+    const used = [];
+    for (const m of CONTACT[no] || []) { const z = d.monsters(p).find((x) => !used.includes(x) && x.card.no === m && !x.card.token); if (!z) return null; used.push(z); }
+    return used;
+  };
+  function patch(d) {
+    const ss0 = d.specialSummon, ma0 = d.mainActions, ds0 = d.destroy, fu0 = d.flipUp, ca0 = d.canAttack, cact0 = d.canActivate, act0 = d.activate, aw0 = d.attackWith;
+    d.specialSummon = async function (p, c, opts) {
+      const e = effectOf(c.no);
+      if (e && e.onlyBy) { const l = curLink(this); if (this.xBy !== e.onlyBy && !(l && l.card && !l.card.token && C.name(l.card.no) === e.onlyBy)) return null; }
+      if (e && e.mustFusion && !(opts && opts.how === "fusion")) return null;
+      if (e && e.contact && !(opts && opts.byRule) && !c.xProper) return null;
+      const z = await ss0.call(this, p, c, opts);
+      if (z && e && e.contact && opts && opts.byRule) c.xProper = true;
+      return z;
+    };
+    d.mainActions = function (p) {
+      const acts = ma0.call(this, p);
+      if (this.flags.toEnd === this.turn) return acts;
+      const pl = this.players[p];
+      if (pl.flags.noSummonTurn === this.turn || this.players[1 - p].flags.noSummonFor === this.turn || pl.flags.noSpecialSummon) return acts;
+      const extra = [];
+      for (const f of pl.fusion) { const e = effectOf(f.no); if (e && e.contact && contactZones(this, p, f.no) && !extra.some((a) => a.card.no === f.no)) extra.push({ act: "special-hand", card: f, label: "Special Summon " + C.name(f.no) }); }
+      const at = acts.findIndex((a) => a.act === "battle" || a.act === "end");
+      acts.splice(at < 0 ? acts.length : at, 0, ...extra);
+      return acts;
+    };
+    d.destroy = async function (z, why, by) {
+      const l = this.locate(z);
+      if (l && l.i < 5 && why !== "battle") {
+        const u = z.links.find((k) => k.kind === "equip" && k.from && k.from.data.union && this.locate(k.from) && (effectOf(k.from.card.no) || {}).unionAlsoEffect);
+        if (u) { await this.destroy(u.from, "effect"); return false; }
+      }
+      return ds0.call(this, z, why, by);
+    };
+    d.attackWith = async function (p, att, target) { const was = this.xCurAtt; this.xCurAtt = att; try { return await aw0.call(this, p, att, target); } finally { this.xCurAtt = was; } };
+    // (Paladin of White Dragon attacking a face-down monster: destroyed before it's flipped)
+    d.flipUp = async function (z, how, noEffect) {
+      const a = this.xCurAtt;
+      if (how === "attacked" && a && this.locate(a) && a.faceUp && !a.negated && isName(a.card, "Paladin of White Dragon") && !z.faceUp && z.defense) { await this.destroy(z, "effect"); return; }
+      return fu0.call(this, z, how, noEffect);
+    };
+    d.canAttack = function (z, p) {
+      if (this.players[p].xNoBewd === this.turn && isName(z.card, "Blue-Eyes White Dragon")) return false;
+      return ca0.call(this, z, p);
+    };
+    d.canActivate = function (p, c, a, ctx) { if (this.players[p].xLock === this.turn) return false; return cact0.call(this, p, c, a, ctx); };
+    d.activate = async function (p, o, prev, ev) { const link = await act0.call(this, p, o, prev, ev); if (link) this.players[p].xAct = this.turn; return link; };
+    return d;
+  }
+  const create0 = DM.create;
+  DM.create = function () { return patch(create0.apply(this, arguments)); };
+
+  // (Five-Headed Dragon: any 5 Dragon monsters)
+  const FHD = N("Five-Headed Dragon");
+  const ff0 = DM.fusionsFrom;
+  DM.fusionsFrom = function (d, p, pool, filter) {
+    const out = ff0.apply(this, arguments);
+    for (const f of d.players[p].fusion) {
+      if (f.no !== FHD || (filter && !filter(f)) || out.some((o) => o.fusion.no === FHD)) continue;
+      const dr = pool.filter((c) => C.isMonster(c.no) && isDragon(c)).sort((a, b) => C.atk(a.no) - C.atk(b.no));
+      if (dr.length >= 5) out.push({ fusion: f, materials: dr.slice(0, 5) });
+    }
+    return out;
+  };
+
+  // Spell Counters placed when the Spell resolves (its activation negated: none).
+  const onResolve = (after) => async (d, z, p, ev) => {
+    if (ev.type !== "activated" || !ev.card || !C.isSpell(ev.card.no) || ev.from === "monster" || !ev.link || typeof ev.link.resolve !== "function") return;
+    const l = ev.link, r0 = l.resolve;
+    l.resolve = async (d2, l2) => {
+      await r0(d2, l2);
+      if (d2.locate(z) && SC.can(d2, z)) { await SC.add(d2, z, 1); if (after) await after(d2, z, ctl(d2, z), l2); }
+    };
+  };
+  for (const n of ["Skilled White Magician", "Skilled Dark Magician", "Magical Marionette", "Royal Magical Library"]) define(n, { onEvent: onResolve() });
+  redefine("Tower of Babel", { spellCounter: 4, activate: { stays: true, resolve: async () => {} },
+    onEvent: onResolve(async (d, z, p, l) => { if (SC.n(z) >= 4 && (await d.destroy(z, "effect"))) await d.damage(l.p, 3000, "effect"); }) });
+
+  // ---------- Monsters ----------
+  define("8-Claws Scorpion", { battleStats: (d, z, p, o, attacking) => (attacking && o && o.defense && o.data.attackedFaceDown === d.turn ? { setAtk: 2400 } : null) });
+  // (The Toons: no Life Points paid to attack, as their text has it now)
+  for (const n of ["Toon Dark Magician Girl", "Toon Masked Sorcerer", "Toon Gemini Elf", "Toon Cannon Soldier", "Toon Goblin Attack Force"]) define(n, { attackCost: undefined });
+  define("Toon Dark Magician Girl", { specialOnly: true, noAttackOnSummonTurn: undefined,
+    specialFromHand: (d, p) => d.countOnField(N("Toon World"), p) > 0 && d.monsters(p).length > 0,
+    specialCost: async (d, p) => { const z = await d.pickZone(p, "Tribute which monster?", (x, q) => q === p, { sides: [p], area: "monster", cancel: true }); if (!z) return false; await d.sendToGrave(z.card, "tribute"); return true; },
+    canTarget: (d, att, p, z) => !d.monsters(1 - p).some(isToon) || isToon(z) });
+  define("Toon Masked Sorcerer", { onBattleDamage: async (d, z, p) => { await d.drawCards(p, 1); } });
+  define("Toon Gemini Elf", { onBattleDamage: async (d, z, p) => { await H.discardRandom(d, 1 - p); } });
+  define("Toon Cannon Soldier", { ignition: { repeatable: true, can: (d, ctx) => d.monsters(ctx.p).length > 0,
+    cost: async (d, link) => { const z = await d.pickZone(link.p, "Tribute which monster?", (x, q) => q === link.p, { sides: [link.p], area: "monster", cancel: true }); if (!z) return false; await d.sendToGrave(z.card, "tribute"); return true; },
+    resolve: async (d, link) => d.damage(1 - link.p, 500, "effect") } });
+  define("Toon Goblin Attack Force", { afterAttack: async (d, z) => { z.data.toDefenseAtEnd = true; } });
+  define("Five-Headed Dragon", { mustFusion: true, battleImmune: (d, z, p, o) => !!o && [ATTR.DARK, ATTR.EARTH, ATTR.WATER, ATTR.FIRE, ATTR.WIND].includes(d.stats(o).attribute) });
+  define("Dragon Master Knight", { mustFusion: true, selfStats: (d, z) => ({ atk: 500 * up(d, ctl(d, z)).filter((x) => x !== z && isDragon(x.card)).length }) });
+  define("Gravekeeper's Spy", { flip: async (d, link) => {
+    if (!H.canSummonHere(d, link.p)) return;
+    const c = await d.pickCard(link.p, "Special Summon which Gravekeeper's monster?", H.deckMon(d, link.p, (x) => C.name(x.no).includes("Gravekeeper's") && C.atk(x.no) <= 1500));
+    if (c) await ss(d, link.p, c); DM.shuffle(d, d.players[link.p].deck); } });
+  // (the Unions: Y-Dragon Head and Z-Metal Tank also take a card effect's destruction for their monster; Koitsu gives ATK only)
+  define(["Y-Dragon Head", "Z-Metal Tank"], { unionAlsoEffect: true });
+  define("Koitsu", union(["Aitsu"], { atk: 3000 }, { givesPiercing: true }));
+  // (XY-Dragon Cannon and its kin: from the Extra Deck by banishing their materials you control)
+  const contact = (prompt, filter, area) => ({ contact: true, noGraveSpecial: true,
+    specialFromHand: (d, p, c) => !!contactZones(d, p, c.no),
+    specialCost: async (d, p, c) => { const zs = contactZones(d, p, c.no); if (!zs) return false; for (const z of zs) await d.banish(z.card, "cost"); return true; },
+    ignition: { repeatable: true, can: (d, ctx) => handCount(d, ctx) > 0 && H.any(d, (z, q) => filter(z, q, ctx.p), { sides: [1 - ctx.p], area }),
+      cost: discardCost(),
+      target: (d, link) => H.target(d, link, prompt, (z, q) => filter(z, q, link.p), { sides: [1 - link.p], area }),
+      resolve: async (d, link) => { const z = t0(d, link); if (z && filter(z, ctl(d, z), link.p)) await d.destroy(z, "effect"); } } });
+  define("XY-Dragon Cannon", contact("Destroy which face-up Spell/Trap?", (z, q, p) => q !== p && z.faceUp, "spell"));
+  define("XYZ-Dragon Cannon", contact("Destroy which card?", (z, q, p) => q !== p, null));
+  define("XZ-Tank Cannon", contact("Destroy which face-down Spell/Trap?", (z, q, p) => q !== p && !z.faceUp, "spell"));
+  define("YZ-Tank Dragon", contact("Destroy which face-down monster?", (z, q, p) => q !== p && !z.faceUp, "monster"));
+  define("King's Knight", { onSummon: async (d, z, p, how) => {
+    if (how !== "normal" || !up(d, p).some((x) => isName(x.card, "Queen's Knight"))) return;
+    await DM.REST.summonFromDeck(d, p, (c) => isName(c, "Jack's Knight"), "Special Summon Jack's Knight from your Deck?"); } });
+  define("Drillago", { directAttack: (d, z, p) => d.monsters(1 - p).length > 0 && d.allZones(1 - p).every((x) => { const l = d.locate(x); return l.i < 5 && x.faceUp && d.atkOf(x) >= 1600; }) });
+  define("Paladin of White Dragon", { ignition: { can: (d, ctx) => mine(d, ctx) && !d.players[ctx.p].flags.noSpecialSummon && piles(d, ctx.p, ["hand", "deck"]).some((x) => isName(x, "Blue-Eyes White Dragon")),
+    cost: async (d, link) => { await d.sendToGrave(link.card, "tribute"); return true; },
+    resolve: async (d, link) => {
+      const c = await d.pickCard(link.p, "Special Summon which Blue-Eyes White Dragon?", piles(d, link.p, ["hand", "deck"]), (x) => isName(x, "Blue-Eyes White Dragon"));
+      if (c) await ss(d, link.p, c); DM.shuffle(d, d.players[link.p].deck); d.players[link.p].xNoBewd = d.turn; } } });
+  define("Dark Paladin", { mustFusion: true,
+    selfStats: (d, z) => ({ atk: 500 * (up(d).filter((x) => isDragon(x.card)).length + [0, 1].reduce((n, q) => n + d.players[q].grave.filter((c) => C.isMonster(c.no) && isDragon(c)).length, 0)) }),
+    quick: { when: "chain", speed: 2, can: (d, ctx) => !!ctx.last && !ctx.last.fromMonster && !!ctx.last.card && !ctx.last.card.token && C.isSpell(ctx.last.card.no) && !ctx.last.negated && handCount(d, ctx) > 0,
+      cost: discardCost(),
+      resolve: async (d, link) => { const z = link.zone, v = link.prev; if (!v || !z || !d.locate(z) || !z.faceUp) return; v.negated = true; if (v.zone && d.locate(v.zone)) await d.destroy(v.zone, "negated"); } } });
+  define("Old Vindictive Magician", { flip: async (d, link) => {
+    const z = await d.pickZone(link.p, "Destroy which of your opponent's monsters?", (x, q) => q !== link.p, { sides: [1 - link.p], area: "monster" }); if (z) await d.destroy(z, "effect"); } });
+  define("Shinato, King of a Higher Plane", { onDestroyByBattle: async (d, z, p, v) => { if (v && v.defense && inGrave(d, v.card)) await d.damage(1 - p, C.atk(v.card.no), "effect"); } });
+  define("Dark Flare Knight", { battleDamage: (d, z, zp, r) => (r === zp ? { n: 0 } : null),
+    onDestroyed: async (d, z, p, why) => {
+      if (why !== "battle" || !inGrave(d, z.card) || !H.canSummonHere(d, p)) return;
+      const c = await d.pickCard(p, "Special Summon Mirage Knight from your hand or Deck.", piles(d, p, ["hand", "deck"]), (x) => isName(x, "Mirage Knight"));
+      const was = d.xBy; d.xBy = "Dark Flare Knight";
+      try { if (c) await ss(d, p, c); } finally { d.xBy = was; }
+      DM.shuffle(d, d.players[p].deck); } });
+  define("Mirage Knight", { onlyBy: "Dark Flare Knight" });
+  define("Dark Magician Knight", { onlyBy: "Knight's Title", onSummon: async (d, z, p, how) => {
+    if (how !== "special") return;
+    const t = await d.pickZone(p, "Destroy which card?", () => true); if (t) await d.destroy(t, "effect"); } });
+  // (Exodia Necross: by Contract with Exodia only; not destroyed by battle or Spells and Traps; 500 ATK more each of your
+  // Standby Phases; destroyed when the 5 pieces aren't all in your GY)
+  define("Exodia Necross", { onlyBy: "Contract with Exodia",
+    cannotBeDestroyed: (d, z, p, why) => { if (z.data.necrossSelf) return false; if (why === "battle") return true; const l = curLink(d); return !!l && !l.fromMonster && isST(l.card); },
+    selfStats: (d, z) => ({ atk: 500 * (z.counters.necross || 0) }),
+    standby: async (d, z, p) => { if (d.turnPlayer === p) { z.counters.necross = (z.counters.necross || 0) + 1; await d.emit({ type: "counter", zone: z, n: z.counters.necross }); } },
+    onEvent: async (d, z, p) => {
+      if (z.data.necrossSelf || !d.locate(z) || EXODIA.every((n) => d.players[p].grave.some((c) => isName(c, n)))) return;
+      z.data.necrossSelf = true; try { await d.destroy(z, "effect"); } finally { z.data.necrossSelf = false; } } });
+  define("Tsukuyomi", { onSummon: async (d, z, p, how) => { if (how !== "normal") return; z.data.tsuTurn = d.turn; await tsukuyomi(d, p); },
+    flip: async (d, link) => { if (link.zone) link.zone.data.tsuTurn = d.turn; await tsukuyomi(d, link.p); },
+    endPhase: async (d, z) => { if (z.data.tsuTurn === d.turn && d.locate(z)) { z.data.tsuTurn = null; await d.toHand(z.card, "spirit"); } } });
+  async function tsukuyomi(d, p) { const t = await d.pickZone(p, "Change which face-up monster to face-down Defense Position?", (x) => x.faceUp, { area: "monster" }); if (t) await d.flipDown(t); }
+  define("Legendary Flame Lord", Object.assign({}, SC.watch(true), { ignition: { repeatable: true, can: (d, ctx) => SC.n(ctx.zone) >= 3 && mons(d).some((x) => x !== ctx.zone),
+    cost: async (d, link) => { link.zone.counters.spell -= 3; return true; }, resolve: async (d, link) => H.destroyAll(d, mons(d).filter((x) => x !== link.zone)) } }));
+  define("Dark Master - Zorc", { ignition: { can: (d, ctx) => mine(d, ctx) && once(ctx.zone, d), resolve: async (d, link) => {
+    const r = await H.die(d, link.p), q = 1 - link.p;
+    if (r <= 2) await H.destroyAll(d, d.monsters(q));
+    else if (r <= 5) { const z = await d.pickZone(link.p, "Destroy which of your opponent's monsters?", (x, s) => s === q, { sides: [q], area: "monster" }); if (z) await d.destroy(z, "effect"); }
+    else await H.destroyAll(d, d.monsters(link.p)); } } });
+  define("Des Kangaroo", { onAttacked: async (d, z, p, att, res) => { if (z.defense && d.atkOf(att) < d.defOf(z)) res.attackerDies = true; } });
+  define("Chaos Emperor Dragon - Envoy of the End", { ignition: {
+    can: (d, ctx) => mine(d, ctx) && once(ctx.zone, d) && d.players[ctx.p].lp > 1000 && d.players[ctx.p].xAct !== d.turn,
+    cost: async (d, link) => { await d.payLp(link.p, 1000); d.players[link.p].xLock = d.turn; return true; },
+    resolve: async (d, link) => {
+      const q = 1 - link.p, sent = [];
+      for (const r of [0, 1]) { for (const c of d.players[r].hand.slice()) { await d.sendToGrave(c, "effect"); sent.push(c); } for (const z of d.allZones(r).slice()) if (d.locate(z)) { const c = z.card; await d.sendToGrave(c, "effect"); sent.push(c); } }
+      const n = sent.filter((c) => !c.token && c.owner === q && d.players[q].grave.includes(c)).length;
+      await d.damage(q, 300 * n, "effect"); } } });
+
+  // ---------- Spells and Traps ----------
+  define("Precious Cards from Beyond", { onEvent: async (d, z, p, ev) => { if (ev.type === "summoned" && ev.p === p && ev.zone && (ev.zone.data.tributes || 0) >= 2) await d.drawCards(p, 2); } });
+  const equipCards = (d) => H.st(d).filter((z) => z.faceUp && ((z.equippedTo && d.locate(z.equippedTo)) || (C.isSpell(z.card.no) && C.icon(z.card.no) === ICON.EQUIP)));
+  define("Disarmament", { activate: { can: (d) => equipCards(d).length > 0, resolve: async (d) => H.destroyAll(d, equipCards(d)) } });
+  // (Coffin Seller: once for the monsters an effect sends together, from anywhere, to the opponent's GY)
+  define("Coffin Seller", { onEvent: async (d, z, p, ev) => {
+    if (ev.type !== "sent-to-grave" || !ev.card || ev.card.token || !C.isMonster(ev.card.no) || ev.card.owner === p) return;
+    const l = curLink(d);
+    if (l && z.data.coffinLink === l) return;
+    z.data.coffinLink = l;
+    await d.damage(1 - p, 300, "effect"); } });
+  const SUMMONS = ["summoned", "flip-summoned", "special-summoned"];
+  const lowAtk = (d, ev) => !!ev && !!ev.zone && !!d.locate(ev.zone) && ev.zone.faceUp && d.atkOf(ev.zone) <= 1000;
+  define("Chain Disappearance", { activate: { when: SUMMONS, can: (d, ctx) => lowAtk(d, ctx.event), resolve: async (d, link) => {
+    const z = link.event.zone; if (!lowAtk(d, link.event)) return;
+    const q = 1 - link.p, no = z.card.no, tk = !!z.card.token;
+    await d.banish(z.card, "effect");
+    if (!tk) for (const c of d.players[q].hand.concat(d.players[q].deck).filter((c) => c.no === no)) await d.banish(c, "effect");
+    DM.shuffle(d, d.players[q].deck); } } });
+  // (Contract with the Abyss: Tributes whose Levels add up exactly)
+  const ritualLevel = (d, c) => { const l = d.zoneOf(c); return l ? d.stats(l.z).level : C.level(c.no); };
+  const sumTo = (levels, n) => { let can = new Set([0]); for (const v of levels) { const nx = new Set(can); for (const s of can) if (s + v <= n) nx.add(s + v); can = nx; } return can.has(n); };
+  const abyssPool = (d, p, m) => d.players[p].hand.filter((c) => c !== m && C.isMonster(c.no)).concat(d.monsters(p).map((z) => z.card));
+  const abyssOk = (d, p, m) => C.kind(m.no) === "ritual" && C.attribute(m.no) === ATTR.DARK && sumTo(abyssPool(d, p, m).map((c) => ritualLevel(d, c)), C.level(m.no));
+  define("Contract with the Abyss", { activate: {
+    can: (d, ctx) => (H.canSummonHere(d, ctx.p) || d.monsters(ctx.p).length > 0) && d.players[ctx.p].hand.some((m) => abyssOk(d, ctx.p, m)),
+    resolve: async (d, link) => {
+      const p = link.p, m = await d.pickCard(p, "Ritual Summon which monster?", d.players[p].hand, (c) => abyssOk(d, p, c));
+      if (!m) return;
+      const need = C.level(m.no), pool = abyssPool(d, p, m), picked = [];
+      let total = 0;
+      while (total < need) {
+        const rest = (x) => pool.filter((c) => c !== x && !picked.includes(c)).map((c) => ritualLevel(d, c));
+        const c = await d.pickCard(p, "Tribute monsters whose Levels add up to exactly " + need + " (" + total + " so far).", pool, (x) => !picked.includes(x) && total + ritualLevel(d, x) <= need && sumTo(rest(x), need - total - ritualLevel(d, x)));
+        if (!c) return;
+        picked.push(c); total += ritualLevel(d, c);
+      }
+      for (const c of picked) await d.sendToGrave(c, "tribute");
+      await d.specialSummon(p, m, { how: "ritual", position: "choose" }); } } });
 })();
 
 // (Last: the templates for the cards nothing above defines, and each Spell's and Trap's timing.)
