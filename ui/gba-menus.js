@@ -78,6 +78,7 @@
           continue;
         }
         for (const ch of part) {
+          if (ch === "◀") { x += leftArrow(x) + spacing; continue; }
           const code = G().charmap[ch];
           if (code == null) { x += 6 + spacing; continue; }
           x += glyph(code, x) + spacing;
@@ -93,6 +94,16 @@
         }
         return font.widths[code];
       }
+      // (◀, which FireRed's font hasn't: its ▶ turned round, its shadow below and right as every letter's)
+      function leftArrow(gx) {
+        const code = G().charmap["▶"], base = code * font.cellW * font.cellH, on = [];
+        for (let j = 0; j < font.cellH; j++) for (let i = 0; i < font.cellW; i++) if (font.glyphs[base + j * font.cellW + i] === "1") on.push([i, j]);
+        const lo = Math.min(...on.map((p) => p[0])), hi = Math.max(...on.map((p) => p[0]));
+        const at = new Set(on.map(([i, j]) => (lo + hi - i) + "," + j));
+        for (const [i, j] of on) { const m = lo + hi - i; if (!at.has((m + 1) + "," + (j + 1))) put(gx + m + 1, y + j + 1, shadow); }
+        for (const [i, j] of on) put(gx + lo + hi - i, y + j, fg);
+        return font.widths[code];
+      }
     }
     const textWidth = (str, fontName) => {
       const font = G().fonts[fontName || "normal"];
@@ -100,7 +111,7 @@
       for (const part of String(str).split(/(\{[A-Z_]+\})/)) {
         const icon = /^\{([A-Z_]+)\}$/.exec(part);
         if (icon) { w += EXTRA[icon[1]] ? EXTRA[icon[1]].reduce((a, c) => a + font.widths[c], 0) : 8; continue; }
-        for (const ch of part) { const code = G().charmap[ch]; w += code == null ? 6 : font.widths[code]; }
+        for (const ch of part) { const code = G().charmap[ch === "◀" ? "▶" : ch]; w += code == null ? 6 : font.widths[code]; }
       }
       return w;
     };
