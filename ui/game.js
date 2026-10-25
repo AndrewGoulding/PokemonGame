@@ -2960,7 +2960,7 @@
   SPECIAL.add("SandgemTown_EventScript_Sailor");
   // (The Time Machine off Pallet Town, and the Realm Hub's: timeMachine, realmPortal.)
   for (const sc of ["TimeMachine_EventScript_Machine", "TimeMachine_EventScript_Sign", "TimeMachine_EventScript_Scientist", "RealmHub_EventScript_Machine",
-    "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_west", "RealmHub_EventScript_Portal_east"]) SPECIAL.add(sc);
+    "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_west", "RealmHub_EventScript_Portal_east", "DominoCity_EventScript_Portal"]) SPECIAL.add(sc);
   // (And its ferries, Canalave's to Iron Island and back, and Oreburgh's fossil scientist: sinnohFerry, fossilScientist.)
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "sinnoh") for (const p of m.people) if (p.ferry || /_EventScript_FossilScientist$/.test(p.script || "")) SPECIAL.add(p.script);
   SPECIAL.add("SlateportCity_Harbor_EventScript_Sailor"); SPECIAL.add("Route117_PokemonDayCare_EventScript_DaycareWoman");
@@ -3319,6 +3319,7 @@
     if (script === "TimeMachine_EventScript_Scientist") { await timeMachineScientist(); return; }
     if (script === "TimeMachine_EventScript_Sign") { await say("TIME MACHINE\nTravel beyond the Pokémon realm!"); return; }
     { const rp = /^RealmHub_EventScript_Portal_(\w+)$/.exec(script || ""); if (rp) { await realmPortal(rp[1]); return; } }
+    if (script === "DominoCity_EventScript_Portal") { await realmPortal("hub"); return; }
     if (ev.person && ev.person.ferry && isSinnoh(ev.map)) { await sinnohFerry(ev.person); return; }
     if (/_EventScript_FossilScientist$/.test(script || "") && isSinnoh(ev.map)) { await fossilScientist(); return; }
     // (Johto's Pokémon Centers' nurses heal as Kanto's do.)
@@ -6354,7 +6355,7 @@
   // Stepping out of a building onto a town or route, once both are done.
   function megaAideDue(map) {
     const m = window.WORLD_MAPS[map];
-    return megaReady() && !player.flags.megaAideMet && !!m && OUTDOORS.includes(m.type) && canBattle();
+    return megaReady() && !player.flags.megaAideMet && !!m && OUTDOORS.includes(m.type) && !m.realm && canBattle();
   }
   // He comes from just off the screen (within 10 steps), or else from 5 to 7
   // steps away, along tiles he can walk on (World.walkable), and goes back
@@ -6741,7 +6742,8 @@
         return async () => { await say(usedMove(mon, "Cut")); cutDown(tree); };
       }
       case "Fly":
-        if (!OUTDOORS.includes(here.type)) return "Can't use that here.";
+        // (Nor out of the Pokémon realm: the Realm Hub, Domino City.)
+        if (!OUTDOORS.includes(here.type) || here.realm) return "Can't use that here.";
         return () => fly(mon);
       case "Strength": {
         if (!facingScript("EventScript_StrengthBoulder")) return "Can't use that here.";
@@ -6774,7 +6776,7 @@
       // FireRed's FldEff_TeleportWarpOut: from where Fly could go, back to the last Pokémon Center you were in (outside
       // it, where Fly lands), as blacking out would take you (in Hoenn, only to Hoenn's; or your room there, or home).
       case "Teleport": {
-        if (!OUTDOORS.includes(here.type)) return "Can't use that here.";
+        if (!OUTDOORS.includes(here.type) || here.realm) return "Can't use that here.";
         const to = teleportTarget();
         if (!to || (to.map === player.location.map && to.x === Overworld.position().x && to.y === Overworld.position().y)) return "Can't use that here.";
         return async () => {
@@ -9591,7 +9593,10 @@
   // edge, a scientist's Time Machine (tools/build-time-machine.js) takes you beyond it, once you have a Pokémon of
   // your own, to the Realm Hub: a platform in the void between the realms, with the Time Machine back at its south
   // end and the other realms' portals along its north. The Yu-Gi-Oh! realm's is still forming; the other two are
-  // dormant, for realms to come.
+  // dormant, for realms to come. The Yu-Gi-Oh! realm's portal comes out in Domino City's square
+  // (tools/build-domino-city.js), under its clock tower, and the portal there brings you back. Your Pokémon stay
+  // in their balls in the Yu-Gi-Oh! realm (ui/follower.js), and Fly and Teleport don't work out of the Pokémon realm.
+  const HUB_YUGIOH_PORTAL = { map: "RealmHub", x: 10, y: 5, facing: "down" };
   const inRealmHub = () => (window.WORLD_MAPS[(player.location || {}).map] || {}).realm === "hub";
   async function timeMachine() {
     const to = window.TIME_MACHINE;
@@ -9612,7 +9617,7 @@
   async function timeMachineScientist() {
     const f = player.flags;
     if (f.realmHubVisited) {
-      await say(["Scientist: Welcome back! How was\nthe Realm Hub?", "The portal to the Yu-Gi-Oh! realm\nis still forming.", "When it opens, a whole realm of\nDuel Monsters will be waiting!"]);
+      await say(["Scientist: Welcome back! How was\nthe Realm Hub?", "The golden portal there leads to\nthe Yu-Gi-Oh! realm,", "to a city called Domino, where\neveryone plays Duel Monsters!"]);
       return;
     }
     await say(["Scientist: Ah, a visitor! This is my\nTime Machine.", "Every Pokémon and every region you\nknow lies in one realm: the\nPokémon realm.",
@@ -9621,8 +9626,17 @@
   }
   async function realmPortal(id) {
     if (id === "yugioh") {
-      await say(["A portal of swirling golden light.\nA pyramid shines above it.", "Beyond it lies the Yu-Gi-Oh! realm,\nthe world of Duel Monsters…",
-        "But the portal is still forming.\nIt won't let you through yet."]);
+      await say(["A portal of swirling golden light.\nA pyramid shines above it.", "Beyond it lies the Yu-Gi-Oh! realm,\nthe world of Duel Monsters…"]);
+      if (!(await confirm("Step through the portal?"))) return;
+      await voyage(window.DOMINO_CITY.arrive, ["You step into the golden light…", "The world turns inside out…"], "se_warp_in");
+      player.flags.dominoVisited = true;
+      await say("You've arrived in Domino City,\nin the Yu-Gi-Oh! realm!");
+      return;
+    }
+    if (id === "hub") {
+      await say("The golden portal back to the\nRealm Hub swirls gently.");
+      if (!(await confirm("Step through the portal?"))) return;
+      await voyage(HUB_YUGIOH_PORTAL, ["You step into the golden light…"], "se_warp_in");
       return;
     }
     await say(["A portal of cold stone. Its light\nhas gone out.", "Another realm may open here\nsomeday…"]);
@@ -9658,7 +9672,7 @@
     if (f.orreStory || !hasPokenav() || !hoenn.flag("FLAG_SYS_GAME_CLEAR")) return null;
     // (Out and about, not inside: the League's rooms or the Hall of Fame.)
     const here = window.WORLD_MAPS[player.location.map] || {};
-    return OUTDOORS.includes(here.type) ? { type: "orre-call" } : null;
+    return OUTDOORS.includes(here.type) && !here.realm ? { type: "orre-call" } : null;
   }
   async function orreOakCall() {
     player.flags.orreStory = 1;

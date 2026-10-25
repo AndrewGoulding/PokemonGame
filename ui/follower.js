@@ -53,6 +53,7 @@
       if (!m) return false;
       const opt = window.GameOptions ? window.GameOptions.get().follower | 0 : 0;
       if (opt === 1) return false;
+      if (m.realm === "yugioh") return false;   // (in the Yu-Gi-Oh! realm your Pokémon stay in their balls)
       if ((r.species === "Diglett" || r.species === "Dugtrio") && BELL_TOWER.test(map)) return false;
       const mode = map in DATA().modes ? DATA().modes[map] : m.type === "indoor" ? 1 : 2;
       return mode === 2 || (mode === 1 && !has("tall", name));

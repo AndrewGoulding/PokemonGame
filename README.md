@@ -3190,9 +3190,8 @@ realms to come (the **Yu-Gi-Oh! realm** first).
   the Realm Hub** goes straight there.)
 - **The Realm Hub**: a stone platform floating in the void between the realms, with a clock of light in its middle
   and Spear Pillar's song. The Time Machine at its south end takes you back beside Pallet Town. Along its north are
-  the realms' portals: the **Yu-Gi-Oh! realm's** (golden, a pyramid over it) is still forming, and the two either
-  side of it are dormant, for realms to come. Fly and Teleport don't work there.
-- **Not here yet**: the Yu-Gi-Oh! realm itself.
+  the realms' portals: the **Yu-Gi-Oh! realm's** (golden, a pyramid over it) takes you to Domino City (below), and
+  the two either side of it are dormant, for realms to come. Fly and Teleport don't work out of the Pokémon realm.
 
 `tools/build-time-machine.js` draws it all (run it after `tools/build-maps.js`, as it redraws Pallet's west trees):
 
@@ -3210,6 +3209,29 @@ node tools/build-time-machine.js
   `realmPortal`).
 - The data goes into `data/emerald-maps.js` (between its markers), with `window.TIME_MACHINE`, where the machine
   puts you on each side.
+
+## The Yu-Gi-Oh! realm (in progress)
+
+The Yu-Gi-Oh! realm follows the story of the original Yu-Gi-Oh! anime, starting in **Domino City**. Through the
+Realm Hub's golden portal you come out in **Domino Square**, under its clock tower, beside the portal home. Your
+Pokémon stay in their balls here (no follower), and there are no wild Pokémon.
+
+- **Domino City** is laid out after the anime's city. **Kaiba Corporation's** tower stands to the north, with
+  **Domino High School** and its schoolyard to the north-west. The **Kame Game** shop and its neighbours are to the
+  west. To the east are the **Domino Museum** (its exhibit from ancient Egypt), **Burger World** and the **Domino
+  Apartments**. The warehouses and **Domino Pier** are on the sea to the south. Signs name each place, and the
+  townspeople talk about Duel Monsters.
+- **Not here yet**: the buildings' insides (their doors are shut for now), the characters and the story, and duels.
+
+`tools/build-domino-city.js` draws it with the painter Johto uses (FireRed's tiles, Kanto's buildings stamped on at
+their own sizes: Silph Co.'s tower for Kaiba Corporation, Celadon's for the school and the apartments, Oak's Lab for
+the museum). The clock tower and the portal are drawn by `tools/lib/realm-art.js`, which the Time Machine's tool uses
+too. The map (`DominoCity`, with `realm: "yugioh"`) goes into `data/emerald-maps.js` between its markers, with
+`window.DOMINO_CITY`, where the portal puts you.
+
+```sh
+node tools/build-domino-city.js
+```
 
 ## Progression rules (Gen 6)
 
