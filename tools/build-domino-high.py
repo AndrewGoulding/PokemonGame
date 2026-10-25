@@ -274,7 +274,7 @@ out['DH_02']['people'] = [person(3, 7, 2, 'rd_person_087', 'face_down', ['Teache
                                                                    "Someday I'm going to dance on\nstage in New York!"]),
                           person(14, 12, 4, 'rd_joey', 'face_left', ["Joey: Hey! The name's Joey Wheeler.", "Yugi's teachin' me to duel. I'm gonna\nbe the best duelist in Domino City!",
                                                                     "...Well, after Yugi, anyway."]),
-                          person(15, 13, 4, 'rd_person_078', 'face_left', ["Tristan: Yo! I'm Tristan Taylor.", "Joey and I go way back. Now we've\ngot Yugi's back, too.",
+                          person(15, 13, 4, 'sc_person_49', 'face_left', ["Tristan: Yo! I'm Tristan Taylor.", "Joey and I go way back. Now we've\ngot Yugi's back, too.",
                                                                           "That's what friends are for!"])]
 START = '// Domino High School (tools/build-domino-high.py): its front, hall and classroom.\n'
 END = '// (End of Domino High School.)\n'

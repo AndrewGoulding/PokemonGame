@@ -363,21 +363,23 @@ for key, title, outdoors in PLACES:
     areas.append(area)
     m['showName'] = True
 
-# A few of Domino City's people, the game's own townsfolk (the story's cast is left for the story).
+# A few of Domino City's people, the game's own townsfolk (the story's cast is left for the story). A sprite by its
+# number here, or by name (the townsman by the fountain wears Reshef's rd_person_078: his own, Tristan's look, is
+# Tristan's in Domino High's classroom, tools/build-domino-high.py).
 TOWNSFOLK = [
     (0, 44, 3, 2, 'face_down', ['Everyone in Domino City plays Duel\nMonsters!', 'I keep my deck with me wherever\nI go.']),
     (0, 75, 11, 7, 'wander_around', ['This fountain is where everyone\nmeets up.', 'They say the clock on it has never\nonce been wrong.']),
-    (1, 49, 9, 6, 'face_left', ['Kaiba Corporation is putting on a\nbig tournament soon.', 'Duelists from all over are coming\nto Domino City!']),
+    (1, 'rd_person_078', 9, 6, 'face_left', ['Kaiba Corporation is putting on a\nbig tournament soon.', 'Duelists from all over are coming\nto Domino City!']),
     (2, 79, 5, 4, 'wander_around', ['The Kame Game shop sells every game\nyou can think of.', 'The old man who runs it knows them\nall!']),
     (3, 70, 10, 6, 'face_down', ['The cafe here makes the best\nlemonade in town.']),
     (6, 85, 7, 8, 'wander_around', ['Domino Park is the perfect place\nfor a duel on a sunny day.']),
     (11, 58, 7, 5, 'face_up', ['Ships come and go from Domino Pier\nall day long.', 'Some say there\'s an island out there\nwhere duelists gather...'])]
 for i, (s0, k, x, y, move, text) in enumerate(TOWNSFOLK):
-    if k not in people: continue
+    if k not in people and not isinstance(k, str): continue
     m = maps[name(s0)]
     x, y = (x, y) if free(s0, x, y) and not any(sg['x'] == x and sg['y'] == y for sg in m['signs']) else nearest_open(s0, x, y)
     m['people'].append({'id': len(m['people']), 'x': x, 'y': y, 'movement': move, 'rangeX': 1, 'rangeY': 1,
-        'script': 'SacredCards_Townsfolk%d' % i, 'flag': None, 'text': text, 'sprite': people[k], 'width': 32, 'height': 32, 'frames': 9,
+        'script': 'SacredCards_Townsfolk%d' % i, 'flag': None, 'text': text, 'sprite': k if isinstance(k, str) else people[k], 'width': 32, 'height': 32, 'frames': 9,
         'localId': 'LOCALID_SC_TOWNSFOLK_%d' % i})
 
 INFO = {'square': name(SQUARE), 'arrive': {'map': name(SQUARE), 'x': arrive[0], 'y': arrive[1], 'facing': 'right'}, 'areas': areas,
