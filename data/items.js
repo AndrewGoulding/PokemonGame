@@ -1153,9 +1153,11 @@ window.YUGIOH_SETS = {
   }
 };
 // Each card's rarity, by card number (c Common, r Rare, s Super Rare, u Ultra Rare, x Secret Rare): its rarity in
-// the first of those sets it's in, or else in its first printing (YGOPRODeck's card database); Rare for the few cards
-// only GX Duel Academy has. A duel's prizes, dismantling and the tokens go by it.
-window.YUGIOH_RARITY = "-usccccccccsuuuuuuuccccucxusrrcscsccxrscucscccccscrcrcccrrcccccccccccrrcccrrrccrccrrrucccrcccccurcccccccrcrcccucsrcrcsccrcccrcrccccccccccccccssrcrrcccrccsusxcxuuscrccxcxcccxxcccccrurrcucucccrccccccrsccccccrcccxccccrccrscssrccrrcccrrccxscccrccrcrccrcccucccccrcucrscrcscrccrcccccccsxsuxscscrssxxxsccrccxcsxcrcccsrxxcuscrrsssxsrxxccruuucucurxxusxssrruxuuxxrxccxuusxucxussxssuxxsssxcrsscrrucrrrrcccssssccruuucussssscccrccccccussccscucsurcucusscrsrrrcrrrrrrccrccccccsrccccscuccxrsrrucrcccccccccccccuccsuccxrxxxxuccccuscccxccscsccccsccccrcccccucccsusrccuccruxccssrccrccrccuccccccccxcccsccrcccccccrscuucrscccrucccxuucruuxxcrscscccccrccuccccrrrrccurcuurcrrcucscsrscccccccuccucscrrcccuccxrucucccrcrsccccccurcuccrcscrurscsuscruxrcxrurscccccccccccscccccccsusxrrrcccrccccccruucccccccccsssucccucssrccucccrsrccrccccrrccccccuccussuccccscccccccccxxxcccrccrrrscrccccccccccccccrccccccccurcccccccccscccrcuxcrcccccccuccrccruccsrucrccrcscrcrrccrccrsxsssuccrcccsuscccccccucucscccccccrcxxxrscccccurccccccccrccccuccscscrcccuuucrccccrcscccrccsrrccrcuccrcccrucccrccccuccrccccsccccccsrrcrccccscsccrcrccccscccccsurccuscrcccccrcrcccrusccccsurcrccsccsccccccuruuccccrrcrccrrrrucccccssrrcusuusurrrcccccssccccccccccrcrcrccrcccccrrrcru";
+// the first of those sets it's in, or else in its first printing (YGOPRODeck's card database, under its TCG name
+// where GX's differs). A duel's prizes, dismantling and the tokens go by it. "-" for the six cards GX made up,
+// in neither the TCG nor the OCG (Mechanical Spider, Guardian of the Sea, Call of the Dark, Marie the Fallen One,
+// Enchanted Arrow, Wasteland Amazon): they're not in the game.
+window.YUGIOH_RARITY = "-usccccccccsuuuuuuuccccucxusrrcscsccxrscucscccccscrcrcccrrcccccccccccrrcccrrrccrccrrrucccrcccccurcccccccrcrcccucsrcrcsccrcccrcrccccccccccccccssrcrrcccrccsusxcxuuscrccxcxcccxxcccccrur-cucucccrcccccc-sccccccrcccxccccrccrscssrccrrcccrrccxscccrccrcrccrcccucccccrcucrscrcscrccrcccccccsxsuxscscrssxxxsccrccxcsxcrcccsrxxcuscrrsssxsrxxccruuucucurxxusxssrruxuuxxrxccxuusxucxussxssuxxsssxcrsscrrucrrrrcccsssscc-uuucussssscccrccccccussccscucsurcucusscrsrrrcrrrrrrccrccccccsrccccscuccxrsrrucrcccccccccccccuccsuccxrxxxxuccccuscccxccscsccccsccccrcccccucccsusrccuccruxccssrccrccrccuccccccccxcccsccrccccccc-scuucrscccxucccxuucruuxxcrscscccccrccuccccrrrrccu-cuurcrrcucscsrscccccccuccucscrucccuccxrucucccrcrsccccccurcuccrcscrurscsuscruxrcxuurscccccccccccscccccccsusxrrrcccrccccccruucccccccccsssucccucssrccucccrsrccrccccrrccccccuccussuccccscccccccccxxxcccrccrrrscrccccccccccccccrccccccccurcccccccccscccrcuxcrcccccccuccrccruccsrucrccrcscrcrrccrccrsxsssuccrcccsuscccccccucucscccccccrcxxxxscccccurccccccccrccccuccscscrcccuuucrccccrcscccrccsrrccrcuccrcccruccccccccuccrccccsccccccsrrcrccccscsccrcrccccscccccsurccuscrcccccrcrcccrusccccsurcrccsccsccccccuruuccccrrcrccrrrsucccccssrrcusuusurrrcccccssccccccccccrcrcrccrcccccrrrc-u";
 // Duel Monsters' duelists (ui/game.js's dominoDuel): the decks Yugi, Joey, Téa and Tristan duel with in Domino High,
 // by card name (those Yu-Gi-Oh! GX Duel Academy has, filled to 40 with second and third copies), what they say,
 // and what Domino High's other pupils say.
@@ -1180,7 +1182,7 @@ window.YUGIOH_DUELISTS = {
   // Fairies she's known for.)
   tea: { name: "Téa", win: "Téa: That was fun! Friendship's what\nmakes a deck strong.", lose: "Téa: You really know your cards! Here,\nI want you to have these.",
     deck: ["Magician of Faith", "Dunames Dark Witch", "Petit Angel", "Hoshiningen", "Shining Angel", "Spirit of the Harp", "Dancing Fairy",
-      "Marie the Fallen One", "Hysteric Fairy", "Mystical Elf", "Soul of Purity and Light", "Waboku", "Rush Recklessly", "Dian Keto the Cure Master",
+      "Hysteric Fairy", "Mystical Elf", "Soul of Purity and Light", "Waboku", "Rush Recklessly", "Dian Keto the Cure Master",
       "Swords of Revealing Light", "Monster Reborn", "Gift of The Mystical Elf"] },
   // (Tristan doesn't duel in the first season, and his Cyber Commander from Bakura's Shadow Game isn't among GX Duel
   // Academy's cards: his deck stays the machines.)

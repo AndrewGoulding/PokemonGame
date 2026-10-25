@@ -536,8 +536,10 @@
     return list.slice().sort((a, b) => { const ka = key(a), kb = key(b); return ka < kb ? -1 : ka > kb ? 1 : a - b; });
   }
   // (The trunk: each card you have, once; the deck: each copy in it, its main deck's and Fusion Deck's, or its side deck's.)
-  const trunkAll = () => (st.opts.mode === "trade" ? st.opts.cards.cards.map((c, n) => n).filter((n) => n > 0 && card(n))
-    : Object.keys(st.opts.trunk).map(Number).filter((n) => st.opts.trunk[n] > 0 && card(n)));
+  // (never the six cards GX made up: "-" for their rarity)
+  const inGame = (n) => n > 0 && card(n) && (window.YUGIOH_RARITY || "")[n] !== "-";
+  const trunkAll = () => (st.opts.mode === "trade" ? st.opts.cards.cards.map((c, n) => n).filter(inGame)
+    : Object.keys(st.opts.trunk).map(Number).filter((n) => st.opts.trunk[n] > 0 && inGame(n)));
   const RARITY_NAME = { c: "Common", r: "Rare", s: "Super Rare", u: "Ultra Rare", x: "Secret Rare" };
   const deckAll = () => (st.side ? st.deck.side : st.deck.main).slice();
   function column(c) {

@@ -3239,19 +3239,20 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   frame, drawn by the screen, as GX makes its own as it runs), up and down to pick one, left and right for how many,
   R to fill the basket and L to empty it, START for what's in the set, SELECT for the help bar; your money by the
   star at the top right, where GX shows its Duel Points. A pack has nine cards, eight Commons and a Rare, now and
-  then a Super Rare (1 in 6), an Ultra Rare (1 in 12) or a Secret Rare (1 in 72) instead. Each opens as GX opens
-  one, its timing and paths recorded from the game frame by frame: the shop fades, the machine slides in from the
+  then a Super Rare (1 in 6), an Ultra Rare (1 in 12) or a Secret Rare (1 in 72) instead. Bought packs go into your bag, and every pack opens from the Trunk's
+  INVENTORY (below), as GX opens one, its timing and paths recorded from the game frame by frame: the shop fades, the machine slides in from the
   right and the pack drops in at the bottom left, each card rises out of it in GX's card frames (its kind's colour,
   the frame and the card's back from the cartridge), moves along the arc with the dots' flash on its first move, and
   turns over into the machine (A speeds it up, B skips it, SELECT shows the help bar); then GX's list of what came
   out, with the set's name, how much of it you have and NEW on the cards you didn't have; they go into your Trunk.
-  The first time you visit, he gives you **15 Pack Tokens**, for a booster pack of your choice each ("Trade in Pack
-  Tokens.", on the same screen, a token a pack): those packs go into your bag, to open from the Trunk's INVENTORY,
-  and you build your first deck from them. He also **dismantles cards**: on the Trunk's screen,
+  The first time you visit, he gives you **10 Pack Tokens**, for a booster pack of your choice each ("Trade in Pack
+  Tokens.", on the same screen, a token a pack), and you build your first deck from them. He also **dismantles cards**: on the Trunk's screen,
   A on a spare card (one not in your deck) for a token of its rarity, Common, Rare, Super Rare, Ultra Rare or Secret
   Rare; and **trades tokens for cards**: every card on the Trunk's screen, A on one for 3 tokens of its rarity. A
   card's rarity (`window.YUGIOH_RARITY`) is its rarity in the first of the five sets it's in, or else in its first
-  printing (from YGOPRODeck's card database); Rare for the few cards only GX has. The Trunk shows each card's.
+  printing (from YGOPRODeck's card database, under its TCG name where GX's differs). The Trunk shows each card's. The
+  six cards GX made up, in neither the TCG nor the OCG (Mechanical Spider, Guardian of the Sea, Call of the Dark, Marie
+  the Fallen One, Enchanted Arrow, Wasteland Amazon), aren't in the game.
 
 - **The maps**: all 58 of the game's screens, each its own map of one screen (15x10 tiles) with the camera fixed on
   it, as in the game. Walk off a screen's edge or through a doorway and you're on the next, as the game links them.

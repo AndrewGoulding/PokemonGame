@@ -2238,7 +2238,7 @@
         return "battled";   // (back to the map, at the new place)
       } else if (v === "trunk") {
         const y = yugioh();
-        for (let n = 1; n < window.YUGIOH_CARDS.cards.length; n++) y.trunk[n] = 3;
+        for (let n = 1; n < window.YUGIOH_CARDS.cards.length; n++) if (window.YUGIOH_RARITY[n] !== "-") y.trunk[n] = 3;
         await persist();
         await message("Your Trunk has three of every card now.");
       } else if (v === "duel") {
@@ -9803,8 +9803,8 @@
     await voyage(window.TIME_MACHINE.hub, ["The Time Machine whirs to life…", "Domino City fades away…", "…and you come out in the Realm Hub."], "se_warp_in");
   }
   // The Kame Game shop: Yugi's grandpa, Solomon Muto, on GX Duel Academy's shop screen (ui/bag-screen.js's CardShop).
-  // He sells the five sets' booster packs (window.YUGIOH_SETS), 300 a pack (game/bag.js's price), opened as you buy
-  // them, their cards into your Trunk; he dismantles your spare cards (those not in your deck) for tokens of their
+  // He sells the five sets' booster packs (window.YUGIOH_SETS), 300 a pack (game/bag.js's price), into your bag,
+  // opened from the Trunk's Inventory, their cards into your Trunk; he dismantles your spare cards (those not in your deck) for tokens of their
   // rarity (window.YUGIOH_RARITY: Common, Rare, Super Rare, Ultra Rare, Secret Rare), and trades any card for
   // TOKENS_PER_CARD tokens of its rarity. (Packs bought before, still in your bag, he opens for you first.)
   const PACK_SETS = ["lob", "mrd", "srl", "psv", "lon"], PACK_CARDS = 9, TOKENS_PER_CARD = 3;
@@ -9842,11 +9842,11 @@
     Screen.say(""); clearMenu();
     CardShop.setup({ money: () => player.money, sets: window.YUGIOH_SETS });
     if (!y.gotPackTokens) {
-      // (the first time: 15 Pack Tokens, a booster pack of your choice each, to build your first deck from)
+      // (the first time: 10 Pack Tokens, a booster pack of your choice each, to build your first deck from)
       await CardShop.say(["Grandpa: Welcome to the Kame Game\nshop! I'm Solomon Muto, Yugi's\ngrandpa.", "So you want to be a duelist? Then\nyou'll need a deck of your own!",
-        "Here, take these: 15 Pack Tokens.\nTrade them in for any booster packs\nyou like, one pack a token.", player.name + " got 15 Pack Tokens!",
+        "Here, take these: 10 Pack Tokens.\nTrade them in for any booster packs\nyou like, one pack a token.", player.name + " got 10 Pack Tokens!",
         "Open your packs from your Trunk's\nInventory, then build a deck of 40\ncards or more. Good luck!"]);
-      y.gotPackTokens = true; y.packTokens = (y.packTokens || 0) + 15;
+      y.gotPackTokens = true; y.packTokens = (y.packTokens || 0) + 10;
       await persist();
     } else await CardShop.say(["Grandpa: Welcome back to the Kame\nGame shop!"]);
     for (;;) {
@@ -9869,7 +9869,9 @@
           buy: (key, n) => {
             if (player.money < n * price) return { error: "Grandpa: You can't quite afford that." };
             Player.addMoney(player, -n * price);
-            return { packs: openPacks(key, n) };
+            // (into your bag: every pack opens from the Trunk's Inventory)
+            Player.addItem(player, window.YUGIOH_SETS[key].item, n);
+            return { message: "Grandpa: Thank you! Here " + (n > 1 ? "are your " + n + " packs" : "is your pack") + ".\nOpen " + (n > 1 ? "them" : "it") + " from your Trunk's\nInventory." };
           } });
         await persist();
       } else if (i === 1) {
@@ -9911,6 +9913,10 @@
   function yugioh() {
     const y = player.flags.yugioh = player.flags.yugioh || {};
     y.trunk = y.trunk || {}; y.deck = y.deck || { main: [], side: [] };
+    // (the six cards GX made up, not in the game: gone from your Trunk and deck if you had any)
+    const gone = (no) => window.YUGIOH_RARITY[no] === "-";
+    for (const no of Object.keys(y.trunk)) if (gone(+no)) delete y.trunk[no];
+    for (const k of ["main", "side"]) if (y.deck[k] && y.deck[k].some(gone)) y.deck[k] = y.deck[k].filter((no) => !gone(no));
     return y;
   }
   async function trunkScreen() {

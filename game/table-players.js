@@ -3074,6 +3074,8 @@
   }
   // A card with something to do: a Spell or Trap that can be activated, or a monster with an effect.
   DM.playable = (no) => {
+    // (not the six cards GX made up, out of the game: window.YUGIOH_RARITY's "-")
+    if (window.YUGIOH_RARITY && window.YUGIOH_RARITY[no] === "-") return false;
     const e = DM.EFFECTS[no];
     if (C.isSpell(no) || C.isTrap(no)) return !!(e && e.activate);
     return C.kind(no) !== "effect" || !!(e && Object.keys(e).length);
