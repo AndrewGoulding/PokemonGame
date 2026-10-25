@@ -99,9 +99,9 @@ END = '// (End of the Yu-Gi-Oh! cards.)\n'
 js = START + 'window.YUGIOH_CARDS = ' + json.dumps(data, separators=(',', ':'), ensure_ascii=False) + ';\n' + END
 path = os.path.join(ROOT, 'data/items.js')
 s = open(path, encoding='utf8').read()
-a = s.find(START)
-if a >= 0: s = s[:a] + s[s.index(END, a) + len(END):]
-open(path, 'w', encoding='utf8').write(s + js)
+a = s.find(START)   # (in place, where it was; at the end the first time)
+s = s[:a] + js + s[s.index(END, a) + len(END):] if a >= 0 else s + js
+open(path, 'w', encoding='utf8').write(s)
 
 # ---------- Their pictures ----------
 for sheet in range((N + 99) // 100):

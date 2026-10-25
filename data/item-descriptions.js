@@ -278,4 +278,11 @@ window.ITEM_DESCRIPTIONS = {
   "spell-ruler-pack": "A booster pack of\nSpell Ruler\nDuel Monsters cards.",
   "pharaohs-servant-pack": "A booster pack of\nPharaoh's Servant\nDuel Monsters cards.",
   "labyrinth-of-nightmare-pack": "A booster pack of\nLabyrinth of Nightmare\nDuel Monsters cards.",
+  "ultimate-great-moth-pack": "A booster pack of\nUltimate Great Moth\nDuel Monsters cards.",
+  "gate-guardian-pack": "A booster pack of\nGate Guardian\nDuel Monsters cards.",
+  "dark-necrofear-pack": "A booster pack of\nDark Necrofear\nDuel Monsters cards.",
+  "des-gardius-pack": "A booster pack of\nDes Gardius\nDuel Monsters cards.",
+  "dark-ruler-ha-des-pack": "A booster pack of\nDark Ruler Ha Des\nDuel Monsters cards.",
+  "gilford-pack": "A booster pack of\nGilford\nDuel Monsters cards.",
+  "berserk-dragon-pack": "A booster pack of\nBerserk Dragon\nDuel Monsters cards.",
 };

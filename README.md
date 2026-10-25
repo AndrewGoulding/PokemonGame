@@ -3235,7 +3235,11 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   `ui/bag-screen.js`, its pieces from the cartridge in `assets/yugioh/shop/`): its room, the translucent panels and
   the text box. He sells booster packs of **Legend of Blue Eyes White Dragon**, **Metal Raiders**, **Spell Ruler**,
   **Pharaoh's Servant** and **Labyrinth of Nightmare** (`window.YUGIOH_SETS` in `data/items.js`: the cards GX has of
-  each, by rarity), ₽300 a pack: the packs down the left as GX shows them (each a card from its set in a pack's
+  each, by rarity), and seven packs of this game's own with **every other card released in the TCG or OCG up to
+  Legacy of Darkness** (754 of them, about 108 to a pack), each named for and showing its boss monster:
+  **Ultimate Great Moth**, **Gate Guardian**, **Dark Necrofear**, **Des Gardius**, **Dark Ruler Ha Des**,
+  **Gilford** and **Berserk Dragon** (rarities by each card's stats and effect: the boss and one more Secret Rare,
+  10 Ultra, 12 Super and 24 Rare a pack, the rest Common), ₽300 a pack: the packs down the left as GX shows them (each a card from its set in a pack's
   frame, drawn by the screen, as GX makes its own as it runs), up and down to pick one, left and right for how many,
   R to fill the basket and L to empty it, START for what's in the set, SELECT for the help bar; your money by the
   star at the top right, where GX shows its Duel Points. A pack has nine cards, eight Commons and a Rare, now and
@@ -3410,6 +3414,19 @@ python3 tools/build-gx-trunk.py "<path to Yu-Gi-Oh! GX - Duel Academy (USA).gba>
   **its screen's pieces** (its background, the filters' bar, digits, stars, the counts' icons, the cursors, the
   card's frame and the command and sort menus): each tile straight from the ROM, laid out as the game lays them on
   screen (`tools/lib/gx-trunk-pieces.json` says where each tile and palette is), in `assets/yugioh/trunk/`.
+
+**The cards beyond GX's**, cards 1201-1954: every card released in the TCG or the OCG up to Legacy of Darkness
+(2003-06-06) that GX doesn't have, and the seven booster packs they come in (`tools/lib/extra-cards.json`: the cards
+in card-number order, and each pack's boss monster, cards and rarities). From YGOPRODeck's card database (names, text,
+kinds, types, attributes, levels and stats) and its cards' cropped art (80x80 in 64 colours, as GX's), downloaded
+once into a cache directory; after `tools/build-gx-trunk.py`:
+
+```sh
+python3 tools/build-extra-cards.py <cache directory>
+```
+
+Into `data/items.js` between its own markers (the cards, their rarities and the packs, `window.YUGIOH_SETS`), and
+their pictures on sheets 12-19 of `assets/yugioh/cards/`. The packs' icons are `tools/build-domino-map.py`'s.
 
 `tools/build-reshef.py` does the same for Reshef of Destruction (the USA cartridge, AY8E: your own dump of it):
 

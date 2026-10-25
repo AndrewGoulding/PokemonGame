@@ -101,6 +101,14 @@ PACKS = {
     'spell-ruler-pack': ((40, 130, 90), (180, 230, 190), (240, 236, 150)),
     'pharaohs-servant-pack': ((120, 64, 168), (236, 196, 88), (250, 236, 200)),
     'labyrinth-of-nightmare-pack': ((44, 40, 72), (196, 80, 56), (232, 220, 250)),
+    # (the seven packs of the cards beyond GX's: tools/build-extra-cards.py)
+    'ultimate-great-moth-pack': ((70, 120, 48), (214, 206, 120), (250, 246, 200)),
+    'gate-guardian-pack': ((84, 88, 112), (120, 176, 230), (240, 244, 255)),
+    'dark-necrofear-pack': ((58, 36, 80), (196, 196, 220), (250, 240, 255)),
+    'des-gardius-pack': ((118, 30, 40), (52, 48, 56), (236, 196, 88)),
+    'dark-ruler-ha-des-pack': ((96, 20, 24), (224, 160, 64), (255, 236, 180)),
+    'gilford-pack': ((40, 60, 112), (240, 220, 80), (255, 255, 220)),
+    'berserk-dragon-pack': ((44, 34, 34), (200, 64, 40), (250, 210, 170)),
 }
 out = os.path.join(ROOT, 'assets/sprites/items/booster')
 os.makedirs(out, exist_ok=True)
