@@ -3298,8 +3298,16 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   100.
 - **Duels**: Yugi, Téa, Joey and Tristan in Domino High's classroom will duel you after they've said hello (each
   with a deck of their own from the show, `window.YUGIOH_DUELISTS` in `data/items.js`); win, and they give you one
-  of their deck's cards for your Trunk. You duel with your Trunk's deck, or, while it has fewer than 40 cards, the
-  starter deck you can borrow. The duel screen (`DuelScreen`, in `ui/bag-screen.js`) is GX Duel Academy's, its
+  of their deck's cards for your Trunk. Their decks are the cards they play in the first season, Duelist Kingdom,
+  those GX Duel Academy has: Yugi's Dark Magician, Gaia, Kuriboh and Multiply, Exodia, the Mythical Beasts and Black
+  Luster Soldier; Joey's Red-Eyes, Flame Swordsman, Time Wizard and Baby Dragon, Alligator's Sword and Metalmorph;
+  Téa's Magician of Faith from Bakura's Shadow Game, with Fairies; and Tristan, who doesn't duel that season (his
+  Cyber Commander isn't among GX's cards), keeps his machines. Domino High's other pupils, and the teacher, duel too,
+  each with a deck from the boosters they've opened (`boosterDeck` in `ui/game.js`): twelve packs of Legend of Blue
+  Eyes White Dragon and Metal Raiders (`window.YUGIOH_SETS` in `data/items.js`, the 88 and 95 cards of those sets GX
+  has, by rarity), nine cards a pack with a Rare or better, and the best 40 of what came out; each pupil's packs are
+  their own, so their deck is the same each time. You duel with your Trunk's deck, or, while it has fewer than 40
+  cards, the starter deck you can borrow. The duel screen (`DuelScreen`, in `ui/bag-screen.js`) is GX Duel Academy's, its
   graphics from that cartridge (`assets/yugioh/duel/`): the field in perspective, the Gym's boards under it and the
   academy's mat between the two sides, the life points, the phases down the left (the one you're in lit) with the
   turn's count, the decks' counts, your hand along the bottom and your opponent's backs along the top, and the card

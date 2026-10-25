@@ -3345,6 +3345,7 @@
     if (script === "Domino_WorldMap") { await dominoTravel(); return; }
     if (script === "KameGame_Grandpa") { await kameGameShop(); return; }
     if (DOMINO_DUELISTS[script]) { await dominoDuel(DOMINO_DUELISTS[script], ev.person); return; }
+    if (/^DominoHigh_Person([0-9]|1[01])$/.test(script || "")) { await dominoDuel(classmate(script), ev.person); return; }
     if (ev.person && ev.person.ferry && isSinnoh(ev.map)) { await sinnohFerry(ev.person); return; }
     if (/_EventScript_FossilScientist$/.test(script || "") && isSinnoh(ev.map)) { await fossilScientist(); return; }
     // (Johto's Pokémon Centers' nurses heal as Kanto's do.)
@@ -9813,10 +9814,52 @@
       for (const no of main) { if (deck.filter((no2) => C[no2][2] !== "fusion").length >= 40) break; deck.push(no); }
     return deck;
   }
+  // Domino High's other pupils (and the teacher): each duels with a deck of the boosters they've opened, Legend of
+  // Blue Eyes White Dragon's and Metal Raiders' (window.YUGIOH_SETS): twelve packs, six of each, nine cards a pack
+  // (eight commons and a Rare, now and then a Super, Ultra or Secret Rare instead), and the best 40 of what came out
+  // (three of a card at most, about two dozen monsters, few that need Tributes), the Fusion Monsters in its Fusion
+  // Deck. Each pupil's packs are their own (seeded by who they are), so their deck is the same every time.
+  function boosterDeck(seedText) {
+    let h = 2166136261;
+    for (const ch of seedText) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+    const rng = () => { h = (h + 0x6D2B79F5) >>> 0; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const DM = window.DuelMonsters, C = window.YUGIOH_CARDS.cards, S = window.YUGIOH_SETS;
+    const pick = (a) => a[Math.floor(rng() * a.length)];
+    const pulled = [];
+    for (let k = 0; k < 12; k++) {
+      const set = S[k % 2 ? "mrd" : "lob"];
+      for (let j = 0; j < 8; j++) pulled.push(pick(set.common));
+      const r = rng();
+      pulled.push(pick(r < 1 / 72 && set.secret.length ? set.secret : r < 1 / 12 ? set.ultra : r < 1 / 4 ? set.super : set.rare));
+    }
+    const nos = pulled.map((n) => DM.numberOf(n)).filter((no) => no && C[no] && DM.playable(no));
+    const count = {}, deck = [], fusion = [];
+    const lv = (no) => C[no][5] || 0, power = (no) => Math.max(C[no][6] || 0, C[no][7] || 0) + (C[no][2] === "effect" ? 300 : 0);
+    const isMon = (no) => ["normal", "effect", "ritual"].includes(C[no][2]) && !(DM.effectOf(no) || {}).specialOnly;
+    const take = (no) => { if ((count[no] || 0) >= 3 || deck.length >= 40) return false; count[no] = (count[no] || 0) + 1; deck.push(no); return true; };
+    for (const no of new Set(nos.filter((no) => C[no][2] === "fusion"))) fusion.push(no);
+    // (the monsters, strongest first: up to 4 that need one Tribute and 2 that need two)
+    let one = 0, two = 0;
+    for (const no of nos.filter(isMon).sort((a, b) => power(b) - power(a))) {
+      if (deck.length >= 24) break;
+      if (lv(no) >= 7 && two >= 2) continue;
+      if (lv(no) >= 5 && lv(no) < 7 && one >= 4) continue;
+      if (take(no)) { if (lv(no) >= 7) two++; else if (lv(no) >= 5) one++; }
+    }
+    // (the Spells and Traps, the rarer first, then whatever's left to make 40)
+    const rank = (no) => { const n = C[no][0]; for (const [k, v] of [["secret", 5], ["ultra", 4], ["super", 3], ["rare", 2]]) if (S.lob[k].includes(n) || S.mrd[k].includes(n)) return v; return 1; };
+    for (const no of nos.filter((no) => !isMon(no) && C[no][2] !== "fusion").sort((a, b) => rank(b) - rank(a))) take(no);
+    for (const no of nos.filter(isMon)) take(no);
+    return deck.concat(fusion);
+  }
+  function classmate(script) {
+    const c = window.YUGIOH_DUELISTS.classmates, name = script === "DominoHigh_Person3" ? c.teacher : c.name;
+    return { name, ask: c.ask, win: name + ": " + c.win, lose: name + ": " + c.lose, nos: boosterDeck(script) };
+  }
   async function dominoDuel(key, person) {
-    const foe = window.YUGIOH_DUELISTS[key], y = yugioh(), C = window.YUGIOH_CARDS.cards;
+    const foe = typeof key === "string" ? window.YUGIOH_DUELISTS[key] : key, y = yugioh(), C = window.YUGIOH_CARDS.cards;
     if (person && person.text) await say(person.text);
-    if (!(await confirm(foe.name + ": How about a duel?"))) return;
+    if (!(await confirm(foe.name + ": " + (foe.ask || "How about a duel?")))) return;
     let deck = y.deck.main.filter((no) => C[no]);
     if (deck.filter((no) => C[no][2] !== "fusion").length < 40) {
       if (!(await confirm("Your deck has fewer than 40 cards.\nBorrow the starter deck?"))) return;
@@ -9824,7 +9867,7 @@
     }
     Screen.say("");
     clearMenu();
-    const foeDeck = duelDeck(foe.deck);
+    const foeDeck = foe.nos || duelDeck(foe.deck);
     const r = await DuelScreen.open({ cards: window.YUGIOH_CARDS, deck, foe: { name: foe.name, deck: foeDeck }, you: player.name });
     show("world");
     if (r.winner === 0) {

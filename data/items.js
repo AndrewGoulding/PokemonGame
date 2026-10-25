@@ -1011,24 +1011,98 @@ window.YUGIOH_CARDS = {"types":["","Dragon","Zombie","Fiend","Pyro","Sea Serpent
 // Duel Monsters' duelists (ui/game.js's dominoDuel): the decks Yugi, Joey, Téa and Tristan duel with in Domino High,
 // by card name (those Yu-Gi-Oh! GX Duel Academy has, filled to 40 with second and third copies), what they say,
 // and the starter deck you can borrow while your own has fewer than 40 cards.
+// Duel Monsters' first two booster sets, Legend of Blue Eyes White Dragon and Metal Raiders: the cards GX Duel Academy
+// has of each, by their rarity in the set (the others aren't among its 1200).
+window.YUGIOH_SETS = {
+  lob: {
+    name: "Legend of Blue Eyes White Dragon",
+    common: [
+      "Armaill", "Beast Fangs", "Book of Secret Arts", "Dark Energy", "Darkworld Thorns", "Dissolverock", "Dragon Treasure", "Electro-Whip",
+      "Enchanting Mermaid", "Firegrass", "Fireyarou", "Flame Manipulator", "Follow Wind", "Forest", "Frenzied Panda", "Hinotama", "Hinotama Soul",
+      "Laser Cannon Armor", "Legendary Sword", "Lesser Dragon", "M-Warrior #1", "M-Warrior #2", "Machine Conversion Factory",
+      "Masaki the Legendary Swordsman", "Monster Egg", "Mountain", "Mystical Moon", "Mystical Sheep #2", "One-Eyed Shield Dragon", "Petit Angel",
+      "Petit Dragon", "Power of Kaishin", "Raise Body Heat", "Red Medicine", "Remove Trap", "Silver Bow and Arrow", "Silver Fang", "Skull Red Bird",
+      "Skull Servant", "Sogen", "Sparks", "Steel Ogre Grotto #1", "Tyhone", "Umi", "Vile Germs", "Violet Crystal", "Wasteland", "Yami"
+    ],
+    rare: [
+      "Aqua Madoor", "Armed Ninja", "Charubin the Fire Knight", "Darkfire Dragon", "Dragoness the Wicked Knight", "Final Flame", "Fissure",
+      "Flame Ghost", "Flower Wolf", "Fusionist", "Giant Soldier of Stone", "Goblin's Secret Remedy", "Gravedigger Ghoul", "Hane-Hane",
+      "Karbonala Warrior", "Metal Dragon", "Pot of Greed", "Spirit of the Harp", "Stop Defense"
+    ],
+    super: [
+      "Curse of Dragon", "Dark Hole", "Flame Swordsman", "Man-Eater Bug", "Mystical Elf", "Polymerization", "Raigeki", "Swords of Revealing Light",
+      "Trap Hole"
+    ],
+    ultra: [
+      "Blue-Eyes White Dragon", "Dark Magician", "Exodia the Forbidden One", "Gaia The Fierce Knight", "Left Arm of the Forbidden One",
+      "Left Leg of the Forbidden One", "Monster Reborn", "Red-Eyes B. Dragon", "Right Arm of the Forbidden One", "Right Leg of the Forbidden One"
+    ],
+    secret: [
+      "Gaia the Dragon Champion", "Tri-Horned Dragon"
+    ]
+  },
+  mrd: {
+    name: "Metal Raiders",
+    common: [
+      "7 Colored Fish", "Ancient Brain", "Ancient Elf", "Baby Dragon", "Bickuribox", "Big Eye", "Blackland Fire Dragon", "Blast Juggler",
+      "Block Attack", "Blue-Winged Crown", "Bottom Dweller", "Crass Clown", "Cyber Saurus", "Deepsea Shark", "Destroyer Golem", "Dream Clown",
+      "Empress Judge", "Feral Imp", "Flame Cerebrus", "Giga-Tech Wolf", "Giltia the D. Knight", "Ground Attacker Bugroth",
+      "Guardian of the Labyrinth", "Harpie Lady", "Hibikime", "Hyosube", "Insect Soldiers of the Sky", "Jinzo #7", "Jirai Gumo", "Kaminari Attack",
+      "Labyrinth Tank", "Lady of Faith", "Launcher Spider", "Lava Battleguard", "Leghul", "Mega Thunderball", "Musician King", "Mystic Horseman",
+      "Mystic Lamp", "Niwatori", "Ocubeam", "Ooguchi", "Prevent Rat", "Protector of the Throne", "Punished Eagle", "Queen's Double",
+      "Rabid Horseman", "Rainbow Flower", "Roaring Ocean Snake", "Skull Knight", "Soul Release", "Swamp Battleguard", "Sword of Deep-Seated",
+      "Tainted Wisdom", "The Bistro Butcher", "The Cheerful Coffin", "The Unhappy Maiden", "Thunder Dragon", "Tongyo", "Tremendous Fire",
+      "Winged Dragon,Guardian of the Fortress #1"
+    ],
+    rare: [
+      "Bladefly", "Cannon Soldier", "Dark Elf", "Elegant Egotist", "Hoshiningen", "Little Chimera", "Magician of Faith", "Mask of Darkness",
+      "Milus Radiant", "Muka Muka", "Princess of Tsurugi", "Robbin' Goblin", "Sangan", "Shadow Ghoul", "Star Boy", "White Magical Hat",
+      "Witch of the Black Forest", "Witch's Apprentice"
+    ],
+    super: [
+      "Catapult Turtle", "Gazelle the King of Mythical Beasts", "Harpie Lady Sisters", "Heavy Storm", "Kuriboh", "Tribute to the Doomed",
+      "Twin-Headed Thunder Dragon"
+    ],
+    ultra: [
+      "Barrel Dragon", "B. Skull Dragon", "Change of Heart", "Magic Jammer", "Mirror Force", "Seven Tools of the Bandit", "Summoned Skull",
+      "Time Wizard"
+    ],
+    secret: [
+      "Thousand Dragon"
+    ]
+  }
+};
 window.YUGIOH_DUELISTS = {
+  // (Yugi's cards from the first season, Duelist Kingdom: the Dark Magician, Gaia and Curse of Dragon, Kuriboh and
+  // Multiply, Exodia from his first duel with Kaiba, the Mythical Beasts he played against Bakura, Black Luster Soldier
+  // against Kaiba at the castle, Catapult Turtle, Change of Heart, Spellbinding Circle and Swords of Revealing Light.)
   yugi: { name: "Yugi", win: "Yugi: Good game! Believe in the heart\nof the cards, and you'll get stronger.", lose: "Yugi: Wow, you're good! Here, take\nthis card. You've earned it.",
-    deck: ["Dark Magician", "Dark Magician Girl", "Kuriboh", "Alpha The Magnet Warrior", "Beta The Magnet Warrior", "Gamma The Magnet Warrior", "Valkyrion the Magna Warrior",
-      "Summoned Skull", "Feral Imp", "Giant Soldier of Stone", "Mystical Elf", "Silver Fang", "Curse of Dragon", "Gaia The Fierce Knight", "Magician of Faith", "Black Luster Soldier",
-      "Black Luster Ritual", "Monster Reborn", "Dark Hole", "Swords of Revealing Light", "Polymerization", "Mirror Force", "Spellbinding Circle", "Thousand Knives",
-      "Book of Secret Arts", "Dark Magic Attack", "Card of Sanctity", "Pot of Greed", "Queen's Knight", "Jack's Knight", "Buster Blader", "Dark Paladin", "Sangan"] },
+    deck: ["Dark Magician", "Curse of Dragon", "Gaia The Fierce Knight", "Gaia the Dragon Champion", "Feral Imp", "Giant Soldier of Stone", "Silver Fang",
+      "Summoned Skull", "Kuriboh", "Mystical Elf", "Catapult Turtle", "Gazelle the King of Mythical Beasts", "Berfomet", "Chimera the Flying Mythical Beast",
+      "Black Luster Soldier", "Black Luster Ritual", "Exodia the Forbidden One", "Right Arm of the Forbidden One", "Left Arm of the Forbidden One",
+      "Right Leg of the Forbidden One", "Left Leg of the Forbidden One", "Horn of the Unicorn", "Book of Secret Arts", "Swords of Revealing Light",
+      "Dark Hole", "Monster Reborn", "Polymerization", "Multiply", "Change of Heart", "Spellbinding Circle"] },
+  // (Joey's from Duelist Kingdom: Red-Eyes from Rex Raptor, Flame Swordsman and its Masaki and Flame Manipulator,
+  // Time Wizard and Baby Dragon for Thousand Dragon, Alligator's Sword, Garoozis, Axe Raider, Metalmorph against Bandit
+  // Keith, and the dice.)
   joey: { name: "Joey", win: "Joey: Yeah! Did ya see that? Nobody\nbeats Joey Wheeler!", lose: "Joey: Aw, man! Okay, okay, ya got me.\nHere, take this. Fair's fair!",
-    deck: ["Red-Eyes B. Dragon", "Flame Swordsman", "Time Wizard", "Baby Dragon", "Alligator's Sword", "Swamp Battleguard", "Lava Battleguard", "Battle Warrior", "Axe Raider",
-      "Panther Warrior", "Garoozis", "Graceful Dice", "Skull Dice", "Scapegoat", "Polymerization", "Graceful Charity", "Giltia the D. Knight", "Thousand Dragon",
-      "Alligator's Sword Dragon", "Red-Eyes Black Metal Dragon", "Salamandra", "Legendary Sword", "Dragon Treasure", "Copycat", "Jinzo", "Heavy Storm", "Dark Hole", "Monster Reborn"] },
+    deck: ["Red-Eyes B. Dragon", "Flame Swordsman", "Masaki the Legendary Swordsman", "Flame Manipulator", "Time Wizard", "Baby Dragon", "Thousand Dragon",
+      "Alligator's Sword", "Alligator's Sword Dragon", "Garoozis", "Axe Raider", "Battle Warrior", "Red-Eyes Black Metal Dragon", "Metalmorph",
+      "Salamandra", "Legendary Sword", "Dragon Treasure", "Graceful Dice", "Skull Dice", "Polymerization"] },
+  // (Téa hardly duels in the first season: hers is the Magician of Faith she became in Bakura's Shadow Game, with the
+  // Fairies she's known for.)
   tea: { name: "Téa", win: "Téa: That was fun! Friendship's what\nmakes a deck strong.", lose: "Téa: You really know your cards! Here,\nI want you to have this one.",
-    deck: ["Dunames Dark Witch", "Petit Angel", "Mystical Elf", "Marie the Fallen One", "Hysteric Fairy", "Spirit of the Harp", "Dancing Fairy", "Shining Angel", "Airknight Parshath",
-      "Rush Recklessly", "Dian Keto the Cure Master", "Monster Reborn", "Waboku", "Trap Hole", "Magician of Faith", "Gift of The Mystical Elf", "Hoshiningen",
-      "Soul of Purity and Light", "Cure Mermaid", "Mystical Sheep #2", "Mystic Lamp", "Swords of Revealing Light", "Pot of Greed", "Gemini Elf"] },
+    deck: ["Magician of Faith", "Dunames Dark Witch", "Petit Angel", "Hoshiningen", "Shining Angel", "Spirit of the Harp", "Dancing Fairy",
+      "Marie the Fallen One", "Hysteric Fairy", "Mystical Elf", "Soul of Purity and Light", "Waboku", "Rush Recklessly", "Dian Keto the Cure Master",
+      "Swords of Revealing Light", "Monster Reborn", "Gift of The Mystical Elf"] },
+  // (Tristan doesn't duel in the first season, and his Cyber Commander from Bakura's Shadow Game isn't among GX Duel
+  // Academy's cards: his deck stays the machines.)
   tristan: { name: "Tristan", win: "Tristan: Ha! Machines never let you\ndown, pal.", lose: "Tristan: Not bad! All right, a deal's\na deal. Here.",
     deck: ["Ground Attacker Bugroth", "Cannon Soldier", "Mechanicalchaser", "Launcher Spider", "Robotic Knight", "Blast Juggler", "Machine King", "Barrel Dragon", "Limiter Removal",
       "Machine Conversion Factory", "Fissure", "Trap Hole", "Steel Ogre Grotto #1", "Steel Ogre Grotto #2", "Cyber Jar", "Jinzo", "Reflect Bounder", "Mirror Force", "Raigeki",
       "Dark Hole", "Monster Reborn", "Pot of Greed", "Big Bang Shot", "Megamorph"] },
+  // (Domino High's other pupils, and the teacher: each a deck from the boosters they've opened, YUGIOH_SETS's; ui/game.js's boosterDeck)
+  classmates: { name: "Student", teacher: "Teacher", win: "Ha! I knew my deck was good!", lose: "Aw, you win. Here, take this card.", ask: "Want to duel? I just opened some\nnew packs!" },
   starter: ["Battle Ox", "Axe Raider", "Mystical Elf", "Giant Soldier of Stone", "Feral Imp", "Gemini Elf", "Vorse Raider", "La Jinn the Mystical Genie of the Lamp", "Luster Dragon",
     "Dark Blade", "Kuriboh", "Man-Eater Bug", "Sangan", "Witch of the Black Forest", "Summoned Skull", "Dark Hole", "Monster Reborn", "Pot of Greed", "Trap Hole", "Mirror Force",
     "Fissure", "Rush Recklessly", "Legendary Sword", "Waboku", "Dian Keto the Cure Master", "Mystical Space Typhoon"]
