@@ -3232,7 +3232,15 @@ fountain. Your Pokémon stay in their balls here (no follower), and there are no
 - **Portraits**: the game's 32 dialogue portraits, put together from their pieces (`assets/yugioh/portraits/`), for
   the story's scenes. The sprite sheets that aren't people (the Egyptian God cards, the Battle Ship) are in
   `assets/yugioh/sheets/`.
-- **Not here yet**: the story, its characters on the maps, and duels.
+- **Reshef of Destruction's places too**: the Sacred Cards' sequel, on the same engine, adds 61 more screens of its own
+  (its own Clock Tower Square, with **the Kame Game shop and its inside**, **your house and room**, the streets to
+  Kaiba Corporation and KaibaLand, **Domino Station** and its trains, the **Egypt Exhibition**, Domino Pier's cruise
+  ship and casino, and its journey round the world: Italy, China, Canada, the Galapagos, Pegasus Island and Castle,
+  the Dungeon and the Hall of Eternity). The fountain's menu has them as **Domino City** and **Around the world**,
+  beside **Battle City** (The Sacred Cards' places); Clock Tower Square's fountain does the same. Its people's 118
+  sprites (`assets/world/sprites/rd_*.png`) and its 52 characters' portraits, with all their expressions
+  (`assets/yugioh/portraits-reshef/`), come with it.
+- **Not here yet**: the story, its characters on the maps, and duels. Neither game has Domino High School in it.
 
 `tools/build-sacred-cards.py` builds it all from the cartridge (your own dump of it; it checks the game code, AY7E):
 
@@ -3250,6 +3258,21 @@ python3 tools/build-sacred-cards.py "<path to Yu-Gi-Oh! - The Sacred Cards (USA)
   pieces (the eyes open and the mouth shut).
 - The data goes into `data/emerald-maps.js` between its markers, with `window.SACRED_CARDS`: where you arrive, and
   the fountain's places.
+
+`tools/build-reshef.py` does the same for Reshef of Destruction (the USA cartridge, AY8E: your own dump of it):
+
+```sh
+python3 tools/build-reshef.py "<path to Yu-Gi-Oh! - Reshef of Destruction (USA).gba>"
+```
+
+- Its pictures are stored as The Sacred Cards' are, at other places in the ROM (the tool's header has them). Its
+  walking maps mark only where the exits are (`0x20 + n` in their second plane, which also says, with `0x10`, where
+  you're in front of the scenery); where each leads is in the screen's records, one a story state: exit n's slot
+  gives the screen and which of its entrances, and the records list the entrances. Each exit goes where most of its
+  screen's states send it.
+- Its people's palettes are shared: seven, chosen by a byte for each sheet. Its portraits are 64x64 pictures, one
+  for each expression, each character's palette their top 64 colours.
+- The data goes into `data/emerald-maps.js` between its markers, with `window.RESHEF`: its places.
 
 ## Progression rules (Gen 6)
 

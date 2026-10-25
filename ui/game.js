@@ -9637,21 +9637,37 @@
     }
     await say(["A portal of cold stone. Its light\nhas gone out.", "Another realm may open here\nsomeday…"]);
   }
-  // Domino Square's fountain: back through the portal to the Realm Hub, or off round Domino City.
+  // Domino Square's fountain (and Clock Tower Square's): back through the portal to the Realm Hub, or off round the
+  // realm: Battle City's places (The Sacred Cards'), Domino City's and the world's (Reshef of Destruction's:
+  // tools/build-reshef.py).
+  const RESHEF_DOMINO = ["Clock Tower Square", "Your House", "Domino Station", "Egypt Exhibition", "Domino Pier", "KaibaLand"];
   async function dominoFountain() {
     await say("The fountain's water shimmers with\na golden light.");
-    const SC = window.SACRED_CARDS;
-    const v = await ask("Where would you like to go?", [{ label: "The Realm Hub", value: "hub", className: "action" }]
-      .concat(SC.areas.map((a, i) => ({ label: a.title, value: String(i), className: "action" })), [back()]));
-    if (v === "hub") { await voyage(HUB_YUGIOH_PORTAL, ["You step into the golden light…"], "se_warp_in"); return; }
-    const a = SC.areas[+v];
-    if (!a) return;
-    await voyage({ map: a.map, x: a.x, y: a.y, facing: a.facing || "down" }, ["You set off across Domino City…"], "se_door");
+    const SC = window.SACRED_CARDS, RD = window.RESHEF;
+    const groups = [{ label: "Battle City", areas: SC.areas }];
+    if (RD) {
+      groups.push({ label: "Domino City", areas: RD.areas.filter((a) => RESHEF_DOMINO.includes(a.title)) });
+      groups.push({ label: "Around the world", areas: RD.areas.filter((a) => !RESHEF_DOMINO.includes(a.title)) });
+    }
+    for (;;) {
+      const v = await ask("Where would you like to go?", [{ label: "The Realm Hub", value: "hub", className: "action" }]
+        .concat(groups.map((g, i) => ({ label: g.label, value: String(i), className: "action" })), [back()]));
+      if (v === "hub") { await voyage(HUB_YUGIOH_PORTAL, ["You step into the golden light…"], "se_warp_in"); return; }
+      const g = groups[+v];
+      if (!g) return;
+      const w = await ask(g.label + ": where to?", g.areas.map((a, i) => ({ label: a.title, value: String(i), className: "action" })).concat([back()]));
+      const a = g.areas[+w];
+      if (!a) continue;
+      await voyage({ map: a.map, x: a.x, y: a.y, facing: a.facing || "down" }, [g.label === "Around the world" ? "You set off on a long journey…" : "You set off across Domino City…"], "se_door");
+      return;
+    }
   }
-  // (Somewhere with no way back into town of its own.)
+  // (Somewhere with no way back of its own: back to its square.)
   async function dominoBackToTown() {
-    if (!(await confirm("Head back to Domino Square?"))) return;
-    await voyage(window.SACRED_CARDS.arrive, ["You head back across Domino City…"], "se_door");
+    const rd = /^RD_/.test(player.location.map) && window.RESHEF;
+    const to = rd ? Object.assign({ facing: "down" }, rd.areas.find((a) => a.title === "Clock Tower Square")) : window.SACRED_CARDS.arrive;
+    if (!(await confirm(rd ? "Head back to Clock Tower Square?" : "Head back to Domino Square?"))) return;
+    await voyage({ map: to.map, x: to.x, y: to.y, facing: to.facing || "down" }, ["You head back across Domino City…"], "se_door");
   }
   async function visitRealmHub() {
     Screen.say("");
