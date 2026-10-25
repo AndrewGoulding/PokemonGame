@@ -1222,7 +1222,9 @@
   const TYPES = window.YUGIOH_CARDS.types;
   const typeNo = (name) => TYPES.findIndex((t) => t.toUpperCase() === String(name).trim().toUpperCase().replace(/-TYPE$/, ""));
   const ATTR = { LIGHT: 1, DARK: 2, WATER: 3, FIRE: 4, EARTH: 5, WIND: 6 };
-  const text = (no) => (window.YUGIOH_CARDS.cards[no] || ["", ""])[1].replace(/@\d/g, "").replace(/\s+/g, " ").trim();
+  // (its text on one line, GX's colour codes out, and the TCG's short "GY" and "LP" written out, as the effects read them)
+  const text = (no) => (window.YUGIOH_CARDS.cards[no] || ["", ""])[1].replace(/@\d/g, "").replace(/\s+/g, " ").trim()
+    .replace(/\bGY\b/g, "Graveyard").replace(/\bLP\b/g, "Life Points");
   const nameIs = (c, names) => [].concat(names).some((n) => c && !c.token && C.name(c.no) === n);
   const zoneName = (d, z) => d.name(z.card);
 
@@ -4980,7 +4982,8 @@
     pl.normalSummoned = was;
   }
   // (Union monsters: the monsters their text lets them equip to, or true for any)
-  const unionTargets = (c) => { const m = /equip it to (.*?) as an Equip/i.exec(text(c)); if (!m) return null; const ns = [...m[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]); return ns.length ? ns : true; };
+  // (its partners, from its text: "equip it to "X" as an Equip", or the TCG's now, "Target 1 "X" you control; equip this card")
+  const unionTargets = (c) => { const m = /equip it to (.*?) as an Equip/i.exec(text(c)) || /Target 1 (.*?) you control; equip this card/i.exec(text(c)); if (!m) return null; const ns = [...m[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]); return ns.length ? ns : true; };
   const unionFits = (d, c, x) => { const t = unionTargets(c); return !!t && x.faceUp && !x.card.token && (t === true || isName(x.card, t)) && !unionOf(x); };
 
   // ----- Answering an attack -----
@@ -5561,7 +5564,7 @@
 (function () {
   "use strict";
   const DM = window.DuelMonsters, C = DM.card, ICON = DM.ICON;
-  const text = (no) => ((window.YUGIOH_CARDS.cards[no] || [])[1] || "").replace(/@\d/g, "");
+  const text = (no) => DM.text(no);
   const kinds = {};
   // What a card does, from its text: hurts the other side (a target there), helps its own, draws, clears...
   function kind(no) {
