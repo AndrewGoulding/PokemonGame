@@ -93,6 +93,10 @@ function portal(kind) {
       const swirl = Math.sin(a * 3 + r * 9) * 0.5 + 0.5;
       return mix(mix(hex("#f8e070"), hex("#6828a8"), Math.min(1, r * 1.1)), hex("#c050f0"), swirl * 0.45);
     }
+    if (kind === "pokemon") {   // (the Pokémon realm's: a Poké Ball's red, white at its heart)
+      const swirl = Math.sin(a * 3 - r * 9) * 0.5 + 0.5;
+      return mix(mix(hex("#fff4f0"), hex("#c01828"), Math.min(1, r * 1.1)), hex("#f85848"), swirl * 0.45);
+    }
     const swirl = Math.sin(a * 2 + r * 7) * 0.5 + 0.5;
     return mix(mix(hex("#504c68"), hex("#201c34"), Math.min(1, r)), hex("#38344e"), swirl * 0.4);
   };
@@ -101,8 +105,12 @@ function portal(kind) {
     const dx = (x + 0.5 - 16) / 11, dy = (y + 0.5 - 19) / 26;
     if (Math.abs(dx) <= 1) c.set(x, y, inner(x, y, dx, Math.max(0, dy) * 0.9 + 0.1));
   }
-  // Its keystone: the Yu-Gi-Oh! realm's, a golden pyramid.
+  // Its keystone: the Yu-Gi-Oh! realm's, a golden pyramid; the Pokémon realm's, a Poké Ball.
   c.rect(12, 1, 8, 6, "#a8a4c4");
+  if (kind === "pokemon") {
+    c.ellipse(16, 4, 3.5, 3.5, (x, y, dx, dy) => (dy < -0.12 ? "#e83030" : dy > 0.12 ? "#f8f8f8" : "#202020"));
+    c.ellipse(16, 4, 1.2, 1.2, "#f8f8f8");
+  }
   if (kind === "yugioh") {
     for (let r = 0; r < 6; r++) for (let x = -r; x <= r; x++) c.set(16 + x - 0.5, 1 + r, r === 5 || Math.abs(x) === r ? "#b07808" : "#f8d038");
     c.rect(15, 3, 2, 2, "#283040");   // (its eye)

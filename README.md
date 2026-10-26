@@ -3189,9 +3189,11 @@ realms to come (the **Yu-Gi-Oh! realm** first).
   door and press A) and it takes you to the Realm Hub. The scientist explains the realms. (The debug menu's **Visit
   the Realm Hub** goes straight there.)
 - **The Realm Hub**: a stone platform floating in the void between the realms, with a clock of light in its middle
-  and Spear Pillar's song. The Time Machine at its south end takes you back beside Pallet Town. Along its north are
-  the realms' portals: the **Yu-Gi-Oh! realm's** (golden, a pyramid over it) takes you to Domino City (below), out beside the Time Machine under the Kame Game shop's street, and
-  the two either side of it are dormant, for realms to come. Fly and Teleport don't work out of the Pokémon realm.
+  and Spear Pillar's song; you arrive at its south end (each realm's Time Machine brings you here, and there's none on
+  the platform itself). Along its north are the realms' portals: the **Pokémon realm's** (red, a Poké Ball over it)
+  takes you back out beside the Time Machine off Pallet Town, the **Yu-Gi-Oh! realm's** (golden, a pyramid over it) to
+  Domino City (below), out beside the Time Machine under the Kame Game shop's street, and the one east of it is
+  dormant, for a realm to come. Fly and Teleport don't work out of the Pokémon realm.
 - **Back from Domino City**: a **manhole** in the Kame Game shop's street, right of its door. A on it and you climb
   down a ladder to a room under the street, brick walls and a channel of water, where a Time Machine takes you back
   to the Realm Hub (the ladder takes you back up).
@@ -3212,8 +3214,8 @@ node tools/build-time-machine.js
   ground, in `PalletTown-top.png` too).
 - **The clearing** (`PalletTown_TimeMachine`, joined to Pallet's west edge): painted the same way; the Time Machine,
   a steel capsule with a clock on its dome and a glowing door, is drawn by the tool.
-- **The Realm Hub** (`RealmHub`): all drawn by the tool, the starry void, the stone, the portals and the machine.
-  Its maps have `realm: "hub"`; `ui/game.js` runs the machine, the scientist and the portals (`timeMachine`,
+- **The Realm Hub** (`RealmHub`): all drawn by the tool, the starry void, the stone and the portals.
+  Its maps have `realm: "hub"`; `ui/game.js` runs the machines, the scientist and the portals (`timeMachine`,
   `realmPortal`).
 - The data goes into `data/emerald-maps.js` (between its markers), with `window.TIME_MACHINE`, where the machine
   puts you on each side.

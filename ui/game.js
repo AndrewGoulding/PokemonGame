@@ -2989,9 +2989,9 @@
   SPECIAL.add("SandgemTown_EventScript_Sailor");
   // (Domino High's duelists: Yugi, Téa, Joey and Tristan, dominoDuel.)
   const DOMINO_DUELISTS = { DominoHigh_Person12: "yugi", DominoHigh_Person13: "tea", DominoHigh_Person14: "joey", DominoHigh_Person15: "tristan" };
-  // (The Time Machine off Pallet Town, and the Realm Hub's: timeMachine, realmPortal.)
-  for (const sc of ["TimeMachine_EventScript_Machine", "TimeMachine_EventScript_Sign", "TimeMachine_EventScript_Scientist", "RealmHub_EventScript_Machine",
-    "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_west", "RealmHub_EventScript_Portal_east", "SacredCards_Fountain", "SacredCards_BackToTown",
+  // (The Time Machine off Pallet Town, and the Realm Hub's portals: timeMachine, realmPortal.)
+  for (const sc of ["TimeMachine_EventScript_Machine", "TimeMachine_EventScript_Sign", "TimeMachine_EventScript_Scientist",
+    "RealmHub_EventScript_Portal_pokemon", "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_east", "SacredCards_Fountain", "SacredCards_BackToTown",
     "Domino_WorldMap", "KameGame_Grandpa", "Domino_Manhole", "Domino_ManholeUp", "Domino_TimeMachine", ...Object.keys(DOMINO_DUELISTS)]) SPECIAL.add(sc);
   // (and the other pupils and the teacher, with their boosters' decks: classmate)
   for (let i = 0; i < 12; i++) SPECIAL.add("DominoHigh_Person" + i);
@@ -3349,7 +3349,7 @@
       return;
     }
     if (script === "SandgemTown_EventScript_Sailor") { await sinnohSailor(); return; }
-    if (script === "TimeMachine_EventScript_Machine" || script === "RealmHub_EventScript_Machine") { await timeMachine(); return; }
+    if (script === "TimeMachine_EventScript_Machine") { await timeMachine(); return; }
     if (script === "TimeMachine_EventScript_Scientist") { await timeMachineScientist(); return; }
     if (script === "TimeMachine_EventScript_Sign") { await say("TIME MACHINE\nTravel beyond the Pokémon realm!"); return; }
     { const rp = /^RealmHub_EventScript_Portal_(\w+)$/.exec(script || ""); if (rp) { await realmPortal(rp[1]); return; } }
@@ -9632,23 +9632,16 @@
   //
   // Everything so far happens in one realm, the Pokémon realm. Through the gap in the trees on Pallet Town's west
   // edge, a scientist's Time Machine (tools/build-time-machine.js) takes you beyond it, once you have a Pokémon of
-  // your own, to the Realm Hub: a platform in the void between the realms, with the Time Machine back at its south
-  // end and the other realms' portals along its north. The Yu-Gi-Oh! realm's is still forming; the other two are
-  // dormant, for realms to come. The Yu-Gi-Oh! realm's portal comes out by the fountain in Domino City's square:
+  // your own, to the Realm Hub: a platform in the void between the realms, with the realms' portals along its north:
+  // the Pokémon realm's (back out beside the Time Machine off Pallet Town), the Yu-Gi-Oh! realm's, and one dormant,
+  // for a realm to come. Each realm's Time Machine (Pallet's, and the one under the Kame Game shop's street) takes you
+  // to the Realm Hub; its portals take you out. The Yu-Gi-Oh! realm's portal comes out by the fountain in Domino City's square:
   // its screens are Yu-Gi-Oh! The Sacred Cards' (tools/build-sacred-cards.py), and its fountain takes you back, or
   // round the city's other places (window.SACRED_CARDS.areas). Your Pokémon stay in their balls in the Yu-Gi-Oh!
   // realm (ui/follower.js), and Fly and Teleport don't work out of the Pokémon realm.
   const HUB_YUGIOH_PORTAL = { map: "RealmHub", x: 10, y: 5, facing: "down" };
-  const inRealmHub = () => (window.WORLD_MAPS[(player.location || {}).map] || {}).realm === "hub";
   async function timeMachine() {
     const to = window.TIME_MACHINE;
-    if (inRealmHub()) {
-      await say("The Time Machine hums softly.");
-      if (!(await confirm("Travel back to the Pokémon realm?"))) return;
-      await voyage(to.lane, ["The Time Machine whirs to life…", "Time and space twist around you…", "…and settle back into place."], "se_warp_in");
-      await say("You're back in the Pokémon realm,\nbeside Pallet Town.");
-      return;
-    }
     if (!player.flags.starter) { await say(["It's a strange machine with a clock\non its dome.", "Its door won't open."]); return; }
     await say("It's the Time Machine!\nIts door glows with a strange light.");
     if (!(await confirm("Step inside and travel beyond\nthe Pokémon realm?"))) return;
@@ -9664,7 +9657,7 @@
     }
     await say(["Scientist: Ah, a visitor! This is my\nTime Machine.", "Every Pokémon and every region you\nknow lies in one realm: the\nPokémon realm.",
       "But there are other realms out\nthere, worlds all their own!", "My machine travels beyond time\nto the Realm Hub, the place\nbetween them all."]
-      .concat(f.starter ? ["Step inside whenever you like!"] : ["It's no place to go alone, though.\nCome back with a Pokémon partner!"]));
+      .concat(f.starter ? ["Step inside whenever you like!", "From the Realm Hub, the red portal\nbrings you back here."] : ["It's no place to go alone, though.\nCome back with a Pokémon partner!"]));
   }
   async function realmPortal(id) {
     if (id === "yugioh") {
@@ -9674,6 +9667,15 @@
       await voyage(window.TIME_MACHINE.under, ["You step into the golden light…", "The world turns inside out…"], "se_warp_in");
       if (!player.flags.dominoVisited) await say(["You've arrived in Domino City,\nin the Yu-Gi-Oh! realm!", "Your Bag stays behind in the\nPokémon realm. Here you have\na bag of this realm's own.", "Climb the ladder up to the street\nby the Kame Game shop."]);
       player.flags.dominoVisited = true;
+      await persist();
+      return;
+    }
+    if (id === "pokemon") {
+      await say(["A portal of swirling red light.\nA Poké Ball shines above it.", "Beyond it lies the Pokémon realm…"]);
+      if (!(await confirm("Step through the portal?"))) return;
+      // (out beside the Time Machine, in its clearing off Pallet Town)
+      await voyage(window.TIME_MACHINE.lane, ["You step into the red light…", "Time and space twist around you…", "…and settle back into place."], "se_warp_in");
+      await say("You're back in the Pokémon realm,\nbeside Pallet Town.");
       await persist();
       return;
     }

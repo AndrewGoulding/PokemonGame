@@ -162,12 +162,12 @@ function pallet_sign_block() {
 }
 
 // ---------- The Realm Hub ----------
-// A stone platform in the void between the realms: the Time Machine at its
-// south end (where you arrive), the realms' portals along its north.
+// A stone platform in the void between the realms: you arrive at its south end
+// (the realms' Time Machines bring you here), and the realms' portals stand
+// along its north: the Pokémon realm's, the Yu-Gi-Oh! realm's, and one dormant.
 const HUB = "RealmHub", HW = 22, HH = 18;
-const HUB_MACHINE = { x: 10, y: 12 };
-const HUB_ARRIVE = { x: HUB_MACHINE.x + 1, y: HUB_MACHINE.y + 3 };
-const PORTALS = [{ x: 4, y: 2, kind: "dormant", id: "west" }, { x: 10, y: 2, kind: "yugioh", id: "yugioh" }, { x: 16, y: 2, kind: "dormant", id: "east" }];
+const HUB_ARRIVE = { x: 11, y: 13 };
+const PORTALS = [{ x: 4, y: 2, kind: "pokemon", id: "pokemon" }, { x: 10, y: 2, kind: "yugioh", id: "yugioh" }, { x: 16, y: 2, kind: "dormant", id: "east" }];
 const EMBLEM = { x: 11, y: 8.5 };
 const hub = (() => {
   // The platform: a rounded slab, and a step out to each portal.
@@ -226,22 +226,19 @@ const hub = (() => {
   for (let d = 0; d <= 18; d++) c.set(ex + d * 0.7071, ey + d * 0.7071, "#68e0f8");
   c.ellipse(ex, ey, 3, 3, "#f8f8ff");
   for (const p of PORTALS) c.draw(portal(p.kind), p.x * TILE, p.y * TILE);
-  c.draw(timeMachine(), HUB_MACHINE.x * TILE, HUB_MACHINE.y * TILE);
   writePng(path.join(MAPS, HUB + ".png"), c.w, c.h, c.rgba);
   const border = canvas(32, 32);
   voidPic(border, 32, 32, 9);
   writePng(path.join(MAPS, HUB + "-border.png"), 32, 32, border.rgba);
   const collision = floor.map((f) => (f ? 0 : 1));
   for (const p of PORTALS) for (let y = 0; y < 3; y++) for (let x = 0; x < 2; x++) collision[(p.y + y) * HW + p.x + x] = 1;
-  for (let y = 0; y < 3; y++) for (let x = 0; x < 3; x++) collision[(HUB_MACHINE.y + y) * HW + HUB_MACHINE.x + x] = 1;
   return {
     name: HUB, title: "Realm Hub", width: HW, height: HH, type: "hub", realm: "hub", music: "dp_spear_pillar",
     townMapSection: "PALLET_TOWN",   // (the Town Map shows where its Time Machine is)
     cycling: false, showName: true, top: false, borderWidth: 2, borderHeight: 2,
     collision, elevation: collision.map(() => 0), behavior: collision.map(() => 0), encounter: collision.map(() => 0),
     connections: [], warps: [],
-    signs: [0, 1, 2].map((k) => ({ x: HUB_MACHINE.x + k, y: HUB_MACHINE.y + 2, script: "RealmHub_EventScript_Machine", text: null }))
-      .concat(PORTALS.flatMap((p) => [0, 1].map((k) => ({ x: p.x + k, y: p.y + 2, script: "RealmHub_EventScript_Portal_" + p.id, text: null })))),
+    signs: PORTALS.flatMap((p) => [0, 1].map((k) => ({ x: p.x + k, y: p.y + 2, script: "RealmHub_EventScript_Portal_" + p.id, text: null }))),
     triggers: [], hidden: [], people: [], wild: null
   };
 })();
