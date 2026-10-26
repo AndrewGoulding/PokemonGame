@@ -3334,8 +3334,8 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   Duelist Level and EXP, booster packs, Pack Tokens and cards' tokens (eleven rows at a time, scrolling), A on a pack to open as many of it as you like
   there (left and right one more or less, up and down ten): all of them at once, their cards into your Trunk together,
   one opening with every card flowing out as fast as one pack's would, then one list of them all, the rarest first,
-  each card once with how many came; A on a card token trades **50 of them for one of the next rarity's** (Common
-  for Rare, Rare for Super Rare, Super for Ultra, Ultra for Secret), as many times as you like, and **DECKS**: your **20 deck slots**, as GX Duel Academy keeps several (each with its main,
+  each card once with how many came; A on a card token trades them up for the next rarity's: **50 Common for a
+  Rare, 15 Rare for a Super Rare, 10 Super Rare for an Ultra Rare and 5 Ultra Rare for a Secret Rare**, as many times as you like, and **DECKS**: your **20 deck slots**, as GX Duel Academy keeps several (each with its main,
   Fusion and side decks' counts), A on one to build it, and the one you last picked is the one you duel with. R (the S key) puts a card in the deck,
   L (the A key) takes it out, START shows the card itself with its text. A deck holds 60 cards and 20 Fusion Monsters, its
   side deck 15, and three of any card in all. The cards are GX Duel Academy's 1200 and the 965 beyond them (2096 in all, those out of the game aside) (`window.YUGIOH_CARDS`), yours in

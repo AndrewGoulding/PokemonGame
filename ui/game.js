@@ -9828,7 +9828,7 @@
   // rarity (window.YUGIOH_RARITY: Common, Rare, Super Rare, Ultra Rare, Secret Rare), and trades any card whose
   // pack you've opened (only those are listed) for TOKENS_PER_CARD tokens of its rarity. (Packs of the old sets still in your bag he swaps for Pack Tokens.)
   const PACK_SETS = ["darkhole", "spellbinding", "redeyes", "darkmagician", "trihorned", "blueeyes", "raigeki", "traphole", "necrofear", "skull", "jinzo"],
-    PACK_CARDS = 9, TOKENS_PER_CARD = 3;
+    PACK_CARDS = 9, TOKENS_PER_CARD = 3, TOKEN_UP = { c: 50, r: 15, s: 10, u: 5 };
   // (the duelist level each pack's sold from: the weaker Spells', Traps' and monsters' from the start; the rest as you
   // rise, the stronger Spells and Traps with Blue-Eyes White Dragon's)
   const PACK_LEVEL = { darkhole: 1, spellbinding: 1, redeyes: 1, darkmagician: 10, trihorned: 15, blueeyes: 20, raigeki: 20, traphole: 20, necrofear: 25, skull: 30, jinzo: 35 };
@@ -10005,12 +10005,14 @@
         .concat(PACK_SETS.map((k) => ({ label: S[k].name, count: Player.itemCount(player, S[k].item), pack: k })))
         .concat([{ label: "Pack Tokens", count: y.packTokens || 0 }])
         .concat(["c", "r", "s", "u", "x"].map((r) => ({ label: RARITY_NAME[r] + " Tokens", count: (y.tokens || {})[r] || 0, token: r }))),
-      // (50 of a rarity's tokens for one of the next's: Common to Rare, Rare to Super Rare, and so on to Secret Rare)
+      // (a rarity's tokens for one of the next's: 50 Common for a Rare, 15 Rare for a Super Rare, 10 Super Rare for an
+      // Ultra Rare, 5 Ultra Rare for a Secret Rare)
+      tokenCost: TOKEN_UP,
       tradeTokens: (r, n) => {
         const next = "crsux"["crsux".indexOf(r) + 1];
         y.tokens = y.tokens || {};
-        n = Math.min(n, Math.floor((y.tokens[r] || 0) / 50));
-        y.tokens[r] -= 50 * n; y.tokens[next] = (y.tokens[next] || 0) + n;
+        n = Math.min(n, Math.floor((y.tokens[r] || 0) / TOKEN_UP[r]));
+        y.tokens[r] -= TOKEN_UP[r] * n; y.tokens[next] = (y.tokens[next] || 0) + n;
         return "You got " + n + " " + RARITY_NAME[next] + " Token" + (n > 1 ? "s" : "") + ".";
       },
       openPack: async (key, n) => {

@@ -907,9 +907,9 @@
   }
   // INVENTORY (this game's own): what you have besides cards, your booster packs and your tokens (opts.inventory():
   // [{ label, count, pack, token }]), INV_ROWS at a time; A on a pack opens as many as you like (opts.openPack(pack, n),
-  // GX's opening over the Trunk), A on a card token trades TOKEN_TRADE of them for one of the next rarity's
-  // (opts.tradeTokens(token, n): n of those trades).
-  const INV_ROWS = 11, TOKEN_TRADE = 50, YELLOW_CSS = "#f8d830";
+  // GX's opening over the Trunk), A on a card token trades some of them for one of the next rarity's
+  // (opts.tokenCost[token] of them; opts.tradeTokens(token, n): n of those trades).
+  const INV_ROWS = 11, YELLOW_CSS = "#f8d830";
   // (how many: left and right one more or less, up and down ten; null for B)
   async function howMany(most, text) {
     let n = 1;
@@ -946,9 +946,10 @@
       }
       const next = row.token && st.opts.tradeTokens && "crsux"["crsux".indexOf(row.token) + 1];
       if (next) {
-        if (row.count < TOKEN_TRADE) { se("se_failure"); await say("You need " + TOKEN_TRADE + " " + row.label + "\nfor one " + RARITY_NAME[next] + " Token."); continue; }
+        const cost = st.opts.tokenCost[row.token];
+        if (row.count < cost) { se("se_failure"); await say("You need " + cost + " " + row.label + "\nfor one " + RARITY_NAME[next] + " Token."); continue; }
         se();
-        const n = await howMany(Math.floor(row.count / TOKEN_TRADE), (n) => "Trade " + n * TOKEN_TRADE + " " + row.label + "\nfor " + n + " " + RARITY_NAME[next] + " Token" + (n > 1 ? "s" : "") + "?");
+        const n = await howMany(Math.floor(row.count / cost), (n) => "Trade " + n * cost + " " + row.label + "\nfor " + n + " " + RARITY_NAME[next] + " Token" + (n > 1 ? "s" : "") + "?");
         if (n) { se(); await say(st.opts.tradeTokens(row.token, n)); }
         continue;
       }
@@ -1847,7 +1848,7 @@
       // (how much of the pack you have)
       if (opts.comp) { const c = opts.comp(order[i]); top.text("Comp.", 151, 80, WHITE, SHADE); digits(g, c, 191, 84, "w"); top.text("%", 193, 80, [248, 88, 72], SHADE); }
       draw(g, "basket", 70, 96);
-      if (n > 0) draw(g, "left", 84, 100);
+      if (n > 0) draw(g, "left", 80, 100);   // (clear of the tens digit)
       digits(g, n, 112, 96, "big", 2);
       draw(g, "right", 113, 100);
       if (help) draw(g, "help", 96, 128); else draw(g, "select", 216, 128);
