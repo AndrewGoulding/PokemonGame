@@ -9901,21 +9901,23 @@
       if (i === 3) {
         // (Pack Tokens for packs: a token a pack, into your bag, to open from your Trunk's Inventory)
         await CardShop.picker({ sets: window.YUGIOH_SETS, order: packsSold(y), money: () => y.packTokens || 0, price: 1, perPack: PACK_CARDS, comp: setCompletion,
-          buy: (key, n) => {
+          buy: (basket) => {
+            const n = basket.reduce((a, b) => a + b.n, 0);
             if ((y.packTokens || 0) < n) return { error: "Grandpa: You haven't that many\nPack Tokens." };
             y.packTokens -= n;
-            Player.addItem(player, window.YUGIOH_SETS[key].item, n);
+            for (const b of basket) Player.addItem(player, window.YUGIOH_SETS[b.key].item, b.n);
             return { message: "Grandpa: Here you are, " + n + " pack" + (n > 1 ? "s" : "") + "!\nOpen them from your Trunk's\nInventory." };
           } });
         CardShop.setup({ money: () => player.money, sets: window.YUGIOH_SETS });
         await persist();
       } else if (i === 0) {
         await CardShop.picker({ sets: window.YUGIOH_SETS, order: packsSold(y), money: () => player.money, price, perPack: PACK_CARDS, comp: setCompletion,
-          buy: (key, n) => {
+          buy: (basket) => {
+            const n = basket.reduce((a, b) => a + b.n, 0);
             if (player.money < n * price) return { error: "Grandpa: You can't quite afford that." };
             Player.addMoney(player, -n * price);
             // (into your bag: every pack opens from the Trunk's Inventory)
-            Player.addItem(player, window.YUGIOH_SETS[key].item, n);
+            for (const b of basket) Player.addItem(player, window.YUGIOH_SETS[b.key].item, b.n);
             return { message: "Grandpa: Thank you! Here " + (n > 1 ? "are your " + n + " packs" : "is your pack") + ".\nOpen " + (n > 1 ? "them" : "it") + " from your Trunk's\nInventory." };
           } });
         await persist();

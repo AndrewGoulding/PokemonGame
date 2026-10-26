@@ -3248,8 +3248,9 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   35. Every duel earns EXP toward it (100 for beating Yugi, Joey, Téa or Tristan, 60 for one of the other pupils, 25
   for a loss; 50 EXP from level 1 to 2, and each level 10 more than the one before), shown with your level at the top
   of the Trunk's INVENTORY. ₽300 a pack: the packs down the left as GX shows them (each a card from its set in a pack's
-  frame, drawn by the screen, as GX makes its own as it runs), up and down to pick one, left and right for how many,
-  R to fill the basket and L to empty it, START for what's in the set, SELECT for the help bar; your money by the
+  frame, drawn by the screen, as GX makes its own as it runs), up and down to pick one, left and right for how many of it,
+  R for as many more of it as you can pay for and L to take it out: the basket holds several packs at once (three Dark
+  Hole and two Red-Eyes, say), bought together with A, START for what's in the set, SELECT for the help bar; your money by the
   star at the top right, where GX shows its Duel Points. A pack has nine cards, eight Commons and a Rare, now and
   then a Super Rare (1 in 6), an Ultra Rare (1 in 12) or a Secret Rare (1 in 72) instead. Bought packs go into your bag, and every pack opens from the Trunk's
   INVENTORY (below), as GX opens one, its timing and paths recorded from the game frame by frame: the shop fades, the machine slides in from the

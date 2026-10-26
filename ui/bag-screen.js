@@ -1632,10 +1632,11 @@
 // The Kame Game shop's booster packs, on GX Duel Academy's shop screen (its pieces from the cartridge:
 // tools/build-gx-trunk.py, assets/yugioh/shop/): the shop's room with its translucent panels, the text box below
 // with its cursor; the packs (window.YUGIOH_SETS) one above another down the left, the one you're on framed in red,
-// its name, nine cards to a pack and its price beside it, and how many you'll buy between its arrows; your money by
-// the star at the top right (where GX shows its Duel Points), what the basket costs and how many packs are in it.
-// Up and down pick a pack, left and right how many, R fills the basket (as many as you can pay for), L empties it,
-// START tells you about the pack and SELECT shows the help bar; A buys, after "Is this okay?". Each pack opens as GX
+// its name, nine cards to a pack and its price beside it, and how many of it are in your basket between its arrows;
+// your money by the star at the top right (where GX shows its Duel Points), what the basket costs and how many packs
+// are in it. The basket holds any of the packs at once: up and down pick a pack, left and right how many of it, R adds
+// as many more of it as you can pay for, L takes it out; START tells you about the pack and SELECT shows the help
+// bar; A buys the whole basket, after "Is this okay?". Each pack opens as GX
 // opens one: the pack at the bottom left, its cards popping out one by one and flying into the machine at the right
 // (A speeds it up, B skips it), then the list of what came out (GX's, grey): the set's name and how much of it you
 // have ("Comp."), the cards with NEW on those you didn't have, the one under the cursor at the bottom (START shows
@@ -1644,7 +1645,7 @@
 //
 //   await CardShop.say(lines)                       // the room and the text box
 //   const i = await CardShop.choose(question, ["Buy packs.", ...])   // -> index, or -1 (B)
-//   await CardShop.picker({ sets, order, money: () => n, price, perPack, buy(key, count) -> { packs: [[{ no, isNew }]] } | { error } })
+//   await CardShop.picker({ sets, order, money: () => n, price, perPack, buy([{ key, n }]) -> { message } | { packs: [{ key, cards: [{ no, isNew }] }] } | { error } })
 //   await CardShop.results({ title, cards: [{ no, isNew }], comp })   // a list of cards (a duel's prizes, too)
 //   CardShop.close()
 (function () {
@@ -1810,14 +1811,17 @@
     show();
     st.sets = opts.sets; st.money = opts.money;
     const order = opts.order, price = opts.price, per = opts.perPack;
-    let i = st.lastPack || 0, n = 0, help = false;
+    let i = st.lastPack || 0, help = false;
+    const basket = {};   // (pack key -> how many)
+    const total = () => Object.values(basket).reduce((a, b) => a + b, 0);
     const paint = (extra) => {
+      const n = basket[order[i]] || 0, all = total();
       st.paint = () => paint(extra);
       const g = surface(), top = window.GbaMenus.Surface();
       room(g); hud(g, top);
       // (the basket: what it costs, and how many packs)
-      draw(g, "basket-dp", 153, 16); digits(g, n * price, 237, 20, "r");
-      draw(g, "basket-cards", 185, 32); digits(g, n, 214, 36, "r", 2); draw(g, "slash", 215, 36); digits(g, 99, 236, 36, "w");
+      draw(g, "basket-dp", 153, 16); digits(g, all * price, 237, 20, "r");
+      draw(g, "basket-cards", 185, 32); digits(g, all, 214, 36, "r", 2); draw(g, "slash", 215, 36); digits(g, 99, 236, 36, "w");
       // (the packs: the one before, the one you're on and the one after, with the arrows)
       const prev = order[(i + order.length - 1) % order.length], next = order[(i + 1) % order.length];
       if (order.length > 1) { pack(g, prev, 15, -54, false); pack(g, next, 15, 128, false); }
@@ -1840,14 +1844,12 @@
     for (;;) {
       const k = await window.GbaMenus.keys((key) => {
         if (key === "up" || key === "down") { i = (i + (key === "up" ? order.length - 1 : 1)) % order.length; st.lastPack = i; se(); paint(); return undefined; }
-        if (key === "left" || key === "right") {
-          const most = Math.min(99, Math.floor(opts.money() / price));
-          const m = Math.max(0, Math.min(key === "left" ? n - 1 : n + 1, most));
-          if (m !== n) { n = m; se(); paint(); } else se("se_failure");
-          return undefined;
-        }
-        if (key === "r") { n = Math.min(99, Math.floor(opts.money() / price)); se(); paint(); return undefined; }
-        if (key === "l") { n = 0; se(); paint(); return undefined; }
+        // (this pack's count: the basket's packs, all told, no more than 99 or than you can pay for)
+        const here = order[i], n = basket[here] || 0, most = n + Math.max(0, Math.min(99, Math.floor(opts.money() / price)) - total());
+        const put = (m) => { if (m === n) { se("se_failure"); return; } if (m) basket[here] = m; else delete basket[here]; se(); paint(); };
+        if (key === "left" || key === "right") { put(Math.max(0, Math.min(key === "left" ? n - 1 : n + 1, most))); return undefined; }
+        if (key === "r") { put(most); return undefined; }
+        if (key === "l") { put(0); return undefined; }
         if (key === "select") { help = !help; se(); paint(); return undefined; }
         return key === "a" || key === "b" || key === "start" ? key : undefined;
       }, { shoulders: true });
@@ -1858,16 +1860,17 @@
         await describe(set.text, paint);
         continue;
       }
-      if (n === 0) { await describe("Pick how many packs you'd like\nwith left and right.", paint); continue; }
+      if (!total()) { await describe("Pick how many packs you'd like\nwith left and right.", paint); continue; }
       const yes = await confirm(paint, "Is this okay?");
       if (!yes) { paint(); continue; }
-      const r = opts.buy(key, n);
+      const r = opts.buy(order.filter((k2) => basket[k2]).map((k2) => ({ key: k2, n: basket[k2] })));
       if (r.error) { await describe(r.error, paint); continue; }
-      if (r.message) { n = 0; await describe(r.message, paint); continue; }
-      n = 0;
+      for (const k2 of Object.keys(basket)) delete basket[k2];
+      if (r.message) { await describe(r.message, paint); continue; }
       for (let p = 0; p < r.packs.length; p++) {
-        const skipAll = await opening(key, r.packs[p]);
-        await results({ title: set.name, cards: r.packs[p], comp: opts.comp ? opts.comp(key) : null, packKey: key, more: p < r.packs.length - 1 });
+        const pk = r.packs[p].key;
+        const skipAll = await opening(pk, r.packs[p].cards);
+        await results({ title: st.sets[pk].name, cards: r.packs[p].cards, comp: opts.comp ? opts.comp(pk) : null, packKey: pk, more: p < r.packs.length - 1 });
         if (skipAll === "stop") break;
       }
       paint();
