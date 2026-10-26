@@ -3229,8 +3229,17 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
 - **Domino City's map**: step through the Realm Hub's golden portal and Domino City's map screen comes up, The
   Sacred Cards' own (from the cartridge): the city from above, a red marker on each place, the gold cursor bobbing
   over the one you're on, and at the bottom left its picture in a gold frame, its name beside it. There are two
-  places on it, **Domino High School** and **the Kame Game shop** (on two of the game's own markers' spots): the
-  arrows move the cursor, A goes there, B stays. Walk out of either place and the map comes up again.
+  places on it, **Domino High School** and **the Kame Game shop** (on two of the game's own markers' spots), and a
+  third once Yugi sends you there (below), **Kaiba Corporation** (The Sacred Cards' four screens of it: the gate, the
+  yard, Level A and the room above; its marker on a spot of this game's own): the arrows move the cursor, A goes
+  there, B stays. Walk out of any of them and the map comes up again.
+- **The story: Kaiba and the Blue-Eyes White Dragon** (this game's own, after the anime's first episode): once you've
+  beaten Yugi, Téa, Joey and Tristan at least once each, a scene plays. Meanwhile, at the Kame Game shop, Seto Kaiba
+  walks in and asks to see Grandpa's Blue-Eyes White Dragon, and offers a case of rare cards for it; Grandpa won't
+  trade it, so Kaiba duels him for it and wins with a Blue-Eyes of his own. Grandpa collapses, and Kaiba tears the
+  Blue-Eyes in two and leaves. Back in the classroom, Yugi tells you what happened, Joey, Téa and Tristan with him,
+  and asks you to meet them at Kaiba Corporation's headquarters to defeat Kaiba; Kaiba Corporation is on the map
+  from then on.
 - **Domino High School**: **Yugi, Téa, Joey and Tristan** are in its classroom, by the windows; talk to them and
   they introduce themselves. Three pupils are about: one in front, one in the hall, one in the classroom.
 - **The Kame Game shop**: Yugi's grandpa, at his counter, on Yu-Gi-Oh! GX Duel Academy's shop screen (`CardShop` in
@@ -3452,7 +3461,8 @@ drawn in the tool as grids, its people, and the Kame Game shop's ways out onto t
 pool, at `0x0c10`, points at it all): the city (8bpp tiles, LZ77 at `0x56d28`; its one-screen tile map at
 `0x5ffbc`; its 192 colours at `0x5fe3c`) as `assets/town-map/domino.png`, and the marker and the cursor (the
 screen's sprite tiles, LZ77 at `0x6aabc`, in their palettes at `0x6a9fc` and `0x6a93c`). The game's ten places'
-markers sit where a table at `0xd305e0` says; `ui/game.js`'s `DOMINO_PLACES` takes two of those spots. It also draws
+markers sit where a table at `0xd305e0` says; `ui/game.js`'s `DOMINO_PLACES` takes two of those spots
+(and Kaiba Corporation's one of its own). It also draws
 the picture frame, each place's picture (its screen made small) and the booster packs' icons
 (`assets/sprites/items/booster/`). Run it after `tools/build-domino-high.py`.
 

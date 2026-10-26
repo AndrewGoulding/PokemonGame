@@ -10,7 +10,8 @@
 #   - assets/town-map/domino-marker.png and domino-cursor.png: a place's red marker and the gold cursor over the one
 #     you're on (16 by 16): the screen's sprite tiles (LZ77, 0x6aabc, 4bpp, laid out 32 tiles across) in their
 #     palettes (0x6a9fc, 0x6a93c). Where the game puts its ten places' markers is a table at 0xd305e0 (the cursor's,
-#     ten pixels higher, at 0xd30564): ui/game.js's DOMINO_PLACES takes two of those spots.
+#     ten pixels higher, at 0xd30564): ui/game.js's DOMINO_PLACES takes two of those spots
+#     (and a third, Kaiba Corporation's, of its own).
 # This game's own:
 #   - assets/town-map/domino-frame.png: the frame round the place's picture at the bottom left (80 by 48), as the
 #     game's; and domino-<map>.png, the pictures in it, each place's screen made small.
@@ -82,7 +83,7 @@ frame.save(os.path.join(TOWN, 'domino-frame.png'))
 # The pictures: each place's screen (its ground and what's over it), made small, filling the frame's inside.
 MAPS = os.path.join(ROOT, 'assets/world/maps')
 IW, IH = FW - 4, FH - 4
-for name in ('DH_00', 'RD_06'):
+for name in ('DH_00', 'RD_06', 'SC_22'):
     shot = Image.open(os.path.join(MAPS, name + '.png')).convert('RGBA')
     top = os.path.join(MAPS, name + '-top.png')
     if os.path.exists(top): shot.alpha_composite(Image.open(top).convert('RGBA'))

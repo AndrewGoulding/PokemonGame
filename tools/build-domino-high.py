@@ -289,6 +289,13 @@ js = START + ''.join('window.WORLD_MAPS[%s] = %s;\n' % (json.dumps(k), json.dump
   if (!inside.people.some((p) => p.script === "KameGame_Grandpa"))
     inside.people.push({ id: 0, x: 5, y: 4, movement: "face_down", rangeX: 1, rangeY: 1, script: "KameGame_Grandpa", flag: null, text: null,
       sprite: "rd_grandpa", width: 32, height: 32, frames: 9, localId: "LOCALID_KAME_GAME_GRANDPA" });
+  // (Kaiba Corporation, The Sacred Cards' (screens 22, 23, 41 and 40): out of its gate, Domino City's map, and not the
+  // Sacred Cards' street; it's on the map once Yugi's sent you there.)
+  const kc = W.SC_22;
+  if (kc) {
+    for (const w of kc.warps) if (w.map === "SC_01") { kc.behavior[w.y * kc.width + w.x] = 0; kc.triggers.push({ x: w.x, y: w.y, script: "Domino_WorldMap" }); }
+    kc.warps = kc.warps.filter((w) => w.map !== "SC_01");
+  }
   // (and the fountains' menu: Domino City's places)
   if (window.RESHEF && !window.RESHEF.areas.some((a) => a.title === "Domino High School"))
     window.RESHEF.areas.splice(1, 0, { title: "Domino High School", map: "DH_00", x: 7, y: 8, facing: "up" });

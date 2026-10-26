@@ -9720,26 +9720,31 @@
   // on, and at the bottom its picture and name. Step through the Realm Hub's golden portal and it comes up, and so it
   // does as you walk out of a place (its way out: the "Domino_WorldMap" steps, tools/build-domino-high.py). There are
   // two places on it, Domino High and the Kame Game shop, each on one of the game's own markers' spots (x, y: the
-  // marker's corner, in pixels of the 240 by 160 map); back to the Realm Hub is a choice below the map. (`maps`: the
-  // maps that count as being at the place.)
+  // marker's corner, in pixels of the 240 by 160 map), and once Yugi has sent you there (player.flags.kaibaStory),
+  // Kaiba Corporation, The Sacred Cards' (on a spot of this game's own); back to the Realm Hub is a choice below the
+  // map. (`maps`: the maps that count as being at the place.)
   const DOMINO_PLACES = [
     { map: "DH_00", name: "Domino High School", x: 44, y: 57, arrive: { x: 7, y: 8, facing: "up" }, maps: /^DH_/ },
-    { map: "RD_06", name: "Kame Game Shop", x: 106, y: 69, arrive: { x: 13, y: 6, facing: "left" }, maps: /^RD_0[67]$/ }
+    { map: "RD_06", name: "Kame Game Shop", x: 106, y: 69, arrive: { x: 13, y: 6, facing: "left" }, maps: /^RD_0[67]$/ },
+    { map: "SC_22", name: "Kaiba Corporation", x: 164, y: 44, arrive: { x: 7, y: 8, facing: "up" }, maps: /^SC_(22|23|40|41)$/, flag: "kaibaStory" }
   ];
+  // (the places on the map now, and the one you're at)
+  const dominoPlaces = (here) => DOMINO_PLACES.filter((p) => !p.flag || player.flags[p.flag] || p.map === here);
   // (The arrows go to the nearest place that way, A sets off, B stays; "hub" back to the Realm Hub.)
   async function dominoMap(here, fromHub) {
-    let at = Math.max(0, DOMINO_PLACES.findIndex((p) => p.map === here));
+    const PLACES = dominoPlaces(here);
+    let at = Math.max(0, PLACES.findIndex((p) => p.map === here));
     const spot = (x, y) => "left:" + (x / 2.4) + "%;top:" + (y / 1.6) + "%";
     show("scene");
     clearMenu();
     Screen.say("");
     scene.innerHTML = '<div class="town-map domino-map"><img class="tm-map" src="assets/town-map/domino.png" alt="Map of Domino City">' +
-      DOMINO_PLACES.map((p) => '<img class="dm-marker" src="assets/town-map/domino-marker.png" alt="" style="' + spot(p.x, p.y) + '">').join("") +
+      PLACES.map((p) => '<img class="dm-marker" src="assets/town-map/domino-marker.png" alt="" style="' + spot(p.x, p.y) + '">').join("") +
       '<img class="dm-cursor" src="assets/town-map/domino-cursor.png" alt="">' +
       '<div class="dm-inset"><img class="dm-pic" alt=""><img class="dm-frame" src="assets/town-map/domino-frame.png" alt=""></div>' +
       '<div class="dm-name"></div></div>';
     const draw = () => {
-      const p = DOMINO_PLACES[at];
+      const p = PLACES[at];
       scene.querySelector(".dm-cursor").setAttribute("style", spot(p.x, p.y - 10));
       scene.querySelector(".dm-pic").src = "assets/town-map/domino-" + p.map + ".png";
       scene.querySelector(".dm-name").textContent = p.name;
@@ -9755,12 +9760,12 @@
         if (e.key === "ArrowUp") { e.preventDefault(); e.stopPropagation(); document.activeElement.blur(); }
         return;
       }
-      if (["z", "Z", " ", "Enter"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); sfx("se_select"); picked(DOMINO_PLACES[at]); return; }
+      if (["z", "Z", " ", "Enter"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); sfx("se_select"); picked(PLACES[at]); return; }
       if (["x", "X", "Escape"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); picked(null); return; }
       const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
       if (!d) return;
       e.preventDefault(); e.stopPropagation();
-      const best = nearestPlace(DOMINO_PLACES, at, d);
+      const best = nearestPlace(PLACES, at, d);
       if (best >= 0) { at = best; sfx("se_select"); draw(); }
       else if (e.key === "ArrowDown") { const first = menuBox.querySelector("button"); if (first) first.focus(); }
     };
@@ -10090,6 +10095,8 @@
     const r = await DuelScreen.open({ cards: window.YUGIOH_CARDS, deck, foe: { name: foe.name, deck: foeDeck }, you: player.name });
     show("world");
     if (r.winner === 0) {
+      // (Yugi and his friends: who you've beaten, for the story: kaibaScene)
+      if (typeof key === "string") y.beaten = Object.assign({}, y.beaten, { [key]: true });
       // (the prizes: money, and three cards from their deck, the rarer the rarer: DUEL_DROP's weights)
       const money = foe.nos ? 400 : 1000;
       Player.addMoney(player, money);
@@ -10114,6 +10121,66 @@
       const opened = PACK_SETS.filter((k) => PACK_LEVEL[k] > was && PACK_LEVEL[k] <= L.lv);
       await say(["Your Duelist Level went up to " + L.lv + "!"].concat(opened.length ? ["New packs at the Kame Game shop:\n" + opened.map((k) => window.YUGIOH_SETS[k].name).join(",\n") + "!"] : []));
     }
+    await persist();
+    if (!player.flags.kaibaStory && ["yugi", "tea", "joey", "tristan"].every((k) => y.beaten && y.beaten[k])) await kaibaScene();
+  }
+  // ---------- Kaiba and the Blue-Eyes White Dragon (this game's own, after the anime's first episode) ----------
+  //
+  // Once you've beaten Yugi, Téa, Joey and Tristan, each at least once: meanwhile, at the Kame Game shop, Seto Kaiba
+  // walks in wanting Grandpa's Blue-Eyes White Dragon. Grandpa won't trade it, so Kaiba duels him for it, and wins
+  // with a Blue-Eyes of his own; Grandpa collapses, and Kaiba tears the Blue-Eyes in two and leaves. Back in Domino
+  // High's classroom, Yugi tells you what happened: meet them at Kaiba Corporation's headquarters, to defeat Kaiba.
+  // Kaiba Corporation is on Domino City's map from then on (player.flags.kaibaStory).
+  async function kaibaScene() {
+    const back = Object.assign({}, Overworld.position()), GRANDPA = "LOCALID_KAME_GAME_GRANDPA", KAIBA = "LOCALID_KAIBA";
+    const KAIBA_LOOK = { sprite: "rd_kaiba", width: 32, height: 32, frames: 9 };
+    await Overworld.fadeToBlack();
+    await say("Meanwhile, at the Kame Game shop…");
+    // (the shop, you not in it: Kaiba in at the door, up to the counter)
+    await Overworld.teleport({ map: "RD_07", x: 7, y: 8, facing: "up", hidden: true });
+    music("mus_encounter_rival");
+    Overworld.addObject(KAIBA, { x: 7, y: 9, facing: "up" }, KAIBA_LOOK);
+    await Overworld.act([{ who: KAIBA, moves: ["walk_up", "walk_up", "walk_up", "walk_left", "walk_left", "face_up"] },
+      { who: GRANDPA, moves: ["delay_16", "face_down"] }]);
+    await Overworld.act([{ who: GRANDPA, moves: ["emote_exclamation_mark"] }]);
+    await say(["Grandpa: Welcome! Oh… Seto Kaiba.", "Kaiba: Spare me the welcome, old man.\nI hear you have a Blue-Eyes White\nDragon. Show it to me.",
+      "Grandpa: …Here it is. A friend gave\nit to me long ago. There are only\nfour in the whole world.",
+      "Kaiba: I'll trade you for it. This case\nholds the rarest cards there are.\nTake them all.",
+      "Grandpa: I'm sorry, but this card isn't\nfor trade. It means more to me than\nany card could.",
+      "Kaiba: Then I'll win it from you.\nA duel, old man: your Blue-Eyes\nagainst my case of cards.",
+      "Grandpa: …Very well. A duelist never\nbacks down from a challenge."]);
+    // (the duel, Kaiba's way)
+    sfx("se_select");
+    await say("Kaiba and Grandpa duel!");
+    await say("Kaiba: I summon Blue-Eyes White\nDragon!");
+    await say("Grandpa: What?! You have one too?!");
+    await say("Kaiba: Blue-Eyes, attack!\nWhite Lightning!");
+    Overworld.flash();
+    await Overworld.shake(8, { y: 2 });
+    await say(["Grandpa's Life Points fell to 0!", "Kaiba: Pathetic. The Blue-Eyes is mine."]);
+    await Overworld.act([{ who: GRANDPA, moves: ["emote_x"] }]);
+    await Overworld.shake(3, { y: 1 });
+    await say(["Grandpa clutched his chest…", "…and collapsed!"]);
+    await say("Kaiba: With this, no one will ever use\na Blue-Eyes White Dragon against me.");
+    await Overworld.shake(2, { x: 1, y: 0 });
+    await say(["Kaiba tore the Blue-Eyes White Dragon\nin two!", "Kaiba: The only Blue-Eyes in this world\nwill be mine."]);
+    await Overworld.act([{ who: KAIBA, moves: ["walk_right", "walk_right", "walk_down", "walk_down", "walk_down", "set_invisible"] }]);
+    Overworld.removeObject(KAIBA);
+    // (back to the classroom, Yugi and his friends)
+    await Overworld.fadeToBlack();
+    await say("Later…");
+    await Overworld.teleport({ map: back.map, x: back.x, y: back.y, facing: back.facing });
+    music(window.WORLD_MAPS[back.map].music);
+    await Overworld.act([{ who: "player", moves: ["emote_exclamation_mark"] }]);
+    await say(["Yugi: " + player.name + "! Something terrible's\nhappened!",
+      "Yugi: Seto Kaiba went to my grandpa's\nshop. He wanted Grandpa's Blue-Eyes\nWhite Dragon.",
+      "Yugi: Grandpa wouldn't trade it, so\nKaiba challenged him to a duel…\nand won.",
+      "Yugi: Grandpa collapsed. He's resting\nnow… but then Kaiba tore the\nBlue-Eyes in half!",
+      "Joey: That creep! Who does Kaiba think\nhe is?!", "Téa: Your grandpa's going to be all\nright, Yugi.",
+      "Tristan: So what do we do now?", "Yugi: We go to Kaiba Corporation.\nI'll duel Kaiba, for Grandpa!",
+      "Yugi: " + player.name + ", meet us at Kaiba\nCorporation's headquarters. Together,\nwe'll defeat Kaiba!"]);
+    player.flags.kaibaStory = 1;
+    await say("Kaiba Corporation is now on\nDomino City's map!");
     await persist();
   }
   async function visitRealmHub() {
