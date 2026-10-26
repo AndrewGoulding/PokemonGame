@@ -3258,9 +3258,12 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   printing (from YGOPRODeck's card database, under its TCG name where GX's differs). The Trunk shows each card's.
   **Every card in the game comes from its booster packs**: GX's cards released up to Legacy of Darkness that GX's
   five sets don't have are in the seven packs of this game's own (with their time's cards, keeping their rarities),
-  and the rest of GX's, 334 cards, aren't in the game: the 328 released after Legacy of Darkness, and the six GX made
-  up, in neither the TCG nor the OCG (Mechanical Spider, Guardian of the Sea, Call of the Dark, Marie the Fallen One,
-  Enchanted Arrow, Wasteland Amazon). Any you had leave your Trunk and decks.
+  and the rest of GX's, 333 cards, aren't in the game: the 328 released after Legacy of Darkness, and five GX had
+  that neither the TCG nor the OCG printed as GX has them (Mechanical Spider, Call of the Dark, Marie the Fallen One,
+  Enchanted Arrow, Wasteland Amazon). Any you had leave your Trunk and decks. Two Fusions' materials are in for them:
+  GX's "Guardian of the Sea", the OCG's card the TCG never printed, as **Defender of the Sea** (Amphibious Bugroth's,
+  in the Ultimate Great Moth pack), and **Nightmare Horse** (Reaper on the Nightmare's, in the Berserk Dragon pack),
+  the one card from after Legacy of Darkness.
 
 - **The maps**: all 58 of the game's screens, each its own map of one screen (15x10 tiles) with the camera fixed on
   it, as in the game. Walk off a screen's edge or through a doorway and you're on the next, as the game links them.
@@ -3307,7 +3310,7 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   for Rare, Rare for Super Rare, Super for Ultra, Ultra for Secret), as many times as you like, and **DECKS**: your **20 deck slots**, as GX Duel Academy keeps several (each with its main,
   Fusion and side decks' counts), A on one to build it, and the one you last picked is the one you duel with. R (the S key) puts a card in the deck,
   L (the A key) takes it out, START shows the card itself with its text. A deck holds 60 cards and 20 Fusion Monsters, its
-  side deck 15, and three of any card in all. The cards are GX Duel Academy's 1200 and the 754 beyond them (`window.YUGIOH_CARDS`), yours in
+  side deck 15, and three of any card in all. The cards are GX Duel Academy's 1200 and the 755 beyond them (`window.YUGIOH_CARDS`), yours in
   `player.flags.yugioh` (the debug menu's **Fill the Trunk** gives you three of each).
 - **Duel Monsters' rules** (`window.DuelMonsters`, in `game/table-players.js`): the duel engine, ported from Yu-Gi-Oh!
   The Eternal Duelist Soul's decompilation (github.com/CosmicScribe64/eds-decomp): 8000 life points, five cards to
@@ -3340,6 +3343,16 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   monsters back to the hand when flipped too; and the monsters that had no way to be summoned or no effect at all
   (Relinquished, Thousand-Eyes Restrict, Valkyrion, Dark Sage, the XYZ cannons by banishing their materials, Five-
   Headed Dragon from any five Dragons, Dark Paladin, Exodia Necross, the elemental Spirits, Gradius' Option...).
+  The rules they need are the engine's own: **summoning conditions** (a monster that "must first be" summoned its own
+  way, and every Fusion and Ritual Monster, comes back from the Graveyard or from being removed from play by another
+  effect, Monster Reborn's, only if it was properly summoned before, and again after it's been in the hand or a deck;
+  "must be Special Summoned" without "first", or "cannot be Special Summoned by other ways", only its own way); a
+  **Damage Step window** before damage calculation, for the effects used then (Kuriboh's, a Quick Effect from the
+  hand that can be chained to, which the computer uses on a battle that would cost it 1000 or more), which the Traps
+  that answer anything don't; "**becomes**" ATK and DEF applied in order, as the TCG's timestamps have it (Megamorph's
+  double or half of the original ATK replaces the boosts before it, and those after add to it); effects whose parts
+  are **together** (Ring of Destruction's damage to both players: both at 0, a draw); and Five-Headed Dragon's five
+  Dragons the player's choice.
 - **The computer duelist** (`DuelMonsters.ai()`): EDS's, its Main Phase in EDS's order: the Spells that draw or clear
   the field first, then the strongest summon it can make (tributing its weakest monsters; in Attack Position when it
   beats your best, set otherwise, and flip monsters always set), its monsters' effects, the Spells that take or bring
@@ -3439,7 +3452,7 @@ python3 tools/build-gx-trunk.py "<path to Yu-Gi-Oh! GX - Duel Academy (USA).gba>
   card's frame and the command and sort menus): each tile straight from the ROM, laid out as the game lays them on
   screen (`tools/lib/gx-trunk-pieces.json` says where each tile and palette is), in `assets/yugioh/trunk/`.
 
-**The cards beyond GX's**, cards 1201-1954: every card released in the TCG or the OCG up to Legacy of Darkness
+**The cards beyond GX's**, cards 1201-1955: every card released in the TCG or the OCG up to Legacy of Darkness
 (2003-06-06) that GX doesn't have, and the seven booster packs they come in (`tools/lib/extra-cards.json`: the cards
 in card-number order, and each pack's boss monster, cards and rarities). From YGOPRODeck's card database (names, text,
 kinds, types, attributes, levels and stats) and its cards' cropped art (80x80 in 64 colours, as GX's), downloaded

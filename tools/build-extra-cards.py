@@ -73,6 +73,7 @@ for n, c in enumerate(gx[:FIRST]):
     if not t: continue
     tcg[n] = [t['name'], t['desc'].replace('\r\n', '\n').replace('\r', '\n').strip()]
     if t['name'] != c[0]: former[c[0]] = n
+for n, (name, r) in spec['restored'].items(): former[gx[int(n)][0]] = int(n)
 START = '// Duel Monsters\' cards beyond GX Duel Academy\'s (tools/build-extra-cards.py): cards 1201 on, their rarities and their seven packs.\n'
 END = '// (End of the cards beyond GX\'s.)\n'
 js = (START + '(function () {\n'
@@ -83,6 +84,8 @@ js = (START + '(function () {\n'
       '  const R = window.YUGIOH_RARITY.split("");\n'
       '  for (const name of ' + json.dumps(spec['removed'], ensure_ascii=False) + ') R[C.cards.findIndex((c) => c && c[0] === name)] = "-";\n'
       '  for (const no of ' + json.dumps(spec['removedNumbers']) + ') R[no] = "-";\n'
+      '  // (GX\'s cards back in under their own names, with their rarities: a Fusion\'s material the TCG never printed)\n'
+      '  for (const [no, [name, r]] of Object.entries(' + json.dumps(spec['restored'], ensure_ascii=False) + ')) { R[no] = r; C.cards[no][0] = name; }\n'
       '  window.YUGIOH_RARITY = R.join("");\n'
       '  // (GX\'s cards\' TCG names and text; their old names, for DuelMonsters.numberOf)\n'
       '  for (const [no, [name, text]] of Object.entries(' + json.dumps(tcg, separators=(',', ':'), ensure_ascii=False) + ')) { C.cards[no][0] = name; C.cards[no][1] = text; }\n'

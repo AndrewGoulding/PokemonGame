@@ -1,5 +1,5 @@
 {
- "about": "The Duel Monsters cards released (TCG or OCG) up to Legacy of Darkness (2003-06-06) that GX Duel Academy doesn't have, card numbers 1201 on in this order (by release), and the seven booster packs they're in: each named for its boss monster, with each card's rarity in it (x Secret, u Ultra, s Super, r Rare, c Common). tools/build-extra-cards.py. gxNames: the GX cards whose names differ from the TCG's, for their pictures. The packs also hold GX's own cards of their time that GX's five sets don't (by GX's names and its rarities); removed: GX's cards released after Legacy of Darkness, in no pack, out of the game. removedNumbers: GX cards out by number (663, its \"Luster Dragon\" at 2400, the TCG's Luster Dragon #2). GX's cards take their TCG names and text too (gxNames: their old names, still known to DuelMonsters.numberOf).",
+ "about": "The Duel Monsters cards released (TCG or OCG) up to Legacy of Darkness (2003-06-06) that GX Duel Academy doesn't have, card numbers 1201 on in this order (by release), and the seven booster packs they're in: each named for its boss monster, with each card's rarity in it (x Secret, u Ultra, s Super, r Rare, c Common). tools/build-extra-cards.py. gxNames: the GX cards whose names differ from the TCG's, for their pictures. The packs also hold GX's own cards of their time that GX's five sets don't (by GX's names and its rarities); removed: GX's cards released after Legacy of Darkness, in no pack, out of the game. removedNumbers: GX cards out by number (663, its \"Luster Dragon\" at 2400, the TCG's Luster Dragon #2). GX's cards take their TCG names and text too (gxNames: their old names, still known to DuelMonsters.numberOf). Two for Fusions that would otherwise have no material: Nightmare Horse (after Legacy of Darkness, the one exception: Reaper on the Nightmare's), and restored: GX's card 197, the OCG's \"Defender of the Sea\" (Amphibious Bugroth's; GX called it Guardian of the Sea), never printed in the TCG.",
  "cutoff": "2003-06-06",
  "cards": [
   "Archfiend Marmot of Nefariousness",
@@ -755,7 +755,8 @@
   "Strike Ninja",
   "Stumbling",
   "Wild Nature's Release",
-  "Magical Dimension"
+  "Magical Dimension",
+  "Nightmare Horse"
  ],
  "packs": [
   {
@@ -1460,6 +1461,10 @@
     ],
     [
      "Faith Bird",
+     "c"
+    ],
+    [
+     "Defender of the Sea",
      "c"
     ]
    ],
@@ -5719,6 +5724,10 @@
     [
      "Chaos Emperor Dragon - Envoy of the End",
      "x"
+    ],
+    [
+     "Nightmare Horse",
+     "c"
     ]
    ],
    "item": "berserk-dragon-pack",
@@ -6094,5 +6103,11 @@
  ],
  "removedNumbers": [
   663
- ]
+ ],
+ "restored": {
+  "197": [
+   "Defender of the Sea",
+   "c"
+  ]
+ }
 }

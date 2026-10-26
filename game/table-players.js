@@ -159,6 +159,33 @@
       equippedTo: null, negated: false, data: {} }, opts);
   }
 
+  // ---------- Summoning conditions ----------
+  // A monster that must be summoned its own way, from its text (and the effects' specialOnly):
+  //   - "Must first be Special Summoned ..." (and the old "can only be Special Summoned"), "Must be Fusion Summoned",
+  //     and every Fusion and Ritual Monster: its own way (its procedure, byRule; the card its text names, resolving;
+  //     a Fusion or Ritual Summon) always; from the Graveyard or removed from play by another effect only if it was
+  //     properly summoned before (card.proper); a Fusion Monster from the Fusion Deck by others' effects too
+  //     (Cyber-Stein, Metamorphosis), unless its text says it must be Fusion Summoned;
+  //   - "Must be Special Summoned ..." without "first", "cannot be Special Summoned by other ways" or "except":
+  //     its own way only.
+  const RULES = {};
+  function summonRule(no) {
+    if (no in RULES) return RULES[no];
+    const t = window.DuelMonsters.text ? window.DuelMonsters.text(no) : "", e = effectOf(no) || {}, kind = CardInfo.kind(no);
+    const strict = /cannot be Special Summoned by other ways|cannot be Special Summoned except/i.test(t) || (/\bMust be Special Summoned\b/.test(t) && !/Must first be/.test(t));
+    let r = null;
+    if (kind === "fusion") r = { how: "fusion", strict, extraFree: !/Must (?:first )?be Fusion Summoned/.test(t) };
+    else if (kind === "ritual") r = { how: "ritual", strict };
+    else if (e.specialOnly || /Must (?:first )?be Special Summoned|can only be Special Summoned/.test(t)) r = { strict };
+    return (RULES[no] = r);
+  }
+  // (the effect resolving is the card its text names: "Elegant Egotist" for Harpie Lady Sisters, "Zoa" for Metalzoa)
+  function namedBy(d, c) {
+    // (or a hook that says whose effect it is, d.xBy: Dark Flare Knight's for Mirage Knight)
+    const l = d.effectLink, by = typeof d.xBy === "string" ? d.xBy : l && l.card && !l.card.token ? CardInfo.name(l.card.no) : null;
+    return !!by && by !== CardInfo.name(c.no) && window.DuelMonsters.text(c.no).includes('"' + by + '"');
+  }
+
   // ---------- The duel ----------
   function create(opts) {
     const rng = opts.rng || Math.random;
@@ -229,14 +256,15 @@
     fullStats(z, base, raw) {
       const no = z.card.no;
       const s = Object.assign({}, base);
-      const set = { atk: null, def: null };
       let mult = { atk: 1, def: 1 };
       const apply = (m) => {
         if (!m) return;
         if (m.type != null) s.type = m.type;
         if (m.attribute != null) s.attribute = m.attribute;
-        if (m.setAtk != null) set.atk = m.setAtk;
-        if (m.setDef != null) set.def = m.setDef;
+        // ("becomes": in the order the effects apply, so it replaces what came before and what comes after adds to it,
+        // as the TCG's timestamps have it: Megamorph over an earlier boost, an equip on Chaos Necromancer)
+        if (m.setAtk != null) s.atk = m.setAtk;
+        if (m.setDef != null) s.def = m.setDef;
         s.atk += m.atk || 0; s.def += m.def || 0;
         if (m.atkMult) mult.atk *= m.atkMult;
         if (m.defMult) mult.def *= m.defMult;
@@ -256,8 +284,6 @@
       }
       for (const l of z.links) if (l.stats) apply(typeof l.stats === "function" ? l.stats(this, z) : l.stats);
       for (const t of this.temp) if (t.zone === z && t.stats) apply(t.stats);
-      if (set.atk != null) s.atk = set.atk;
-      if (set.def != null) s.def = set.def;
       s.atk = Math.max(0, Math.round(s.atk * mult.atk)); s.def = Math.max(0, Math.round(s.def * mult.def));
       if (this.flags.swapAtkDef) [s.atk, s.def] = [s.def, s.atk];
       return s;
@@ -349,6 +375,7 @@
     pendingEquipLoss: null,
     toPile(c, pile, owner, top) {
       if (c.token) return;
+      if (pile !== "grave" && pile !== "banished") c.proper = false;   // (back in the hand or a deck: to be summoned properly again)
       const pl = this.players[owner == null ? c.owner : owner];
       // (a Fusion Monster back to the deck or the hand goes to the Fusion Deck)
       if (pile === "fusion" || CardInfo.isExtra(c.no) && (pile === "hand" || pile === "deck")) pl.fusion.push(c);
@@ -476,12 +503,19 @@
       if (e0 && e0.noSpecial && opts.how !== "normal") return null;
       if (this.liveWith("noSpecials")) return null;
       if (e0 && e0.noGraveSpecial && this.players[c.owner].grave.includes(c)) return null;
+      // (its summoning condition: summoned its own way, or back from the Graveyard or removed from play only if it was)
+      const rule = summonRule(c.no), own = rule && (opts.byRule || (rule.how && opts.how === rule.how) || namedBy(this, c));
+      if (rule && !own) {
+        const pl = this.players[c.owner], back = pl.grave.includes(c) || pl.banished.includes(c);
+        if (rule.strict || (back ? !c.proper : !(rule.extraFree && pl.fusion.includes(c)))) return null;
+      }
       if (opts.position === "choose") {
         const r = await this.choose(p, "Summon " + this.name(c) + " in which position?", [{ label: "Attack Position", value: false }, { label: "Defense Position", value: true }]);
         opts.defense = !!(r && r.value);
       }
       const z = await this.placeMonster(p, c, opts);
       if (!z) return null;
+      if (own) c.proper = true;
       await this.summoned(p, z, "special");
       return z;
     },
@@ -550,7 +584,8 @@
     // Run an effect (a link of a chain, or a trigger on its own).
     async runEffect(link) {
       if (link.negated) return;
-      try { await link.resolve(this, link); } catch (e) { if (e !== STOP) throw e; }
+      const prev = this.effectLink; this.effectLink = link;   // (the effect resolving: summonRule's namedBy)
+      try { await link.resolve(this, link); } catch (e) { if (e !== STOP) throw e; } finally { this.effectLink = prev; }
     },
     // An event of the duel: triggered effects, then the window for the players to respond (EventResponse_Run).
     async event(ev) {
@@ -646,7 +681,7 @@
         const ev = ctx.event;
         const last = ctx.last;
         const ok = [].concat(a.when).some((w) => w === "main" ? !ev && !last && this.isMain() && p === this.turnPlayer
-          : w === "any" ? true
+          : w === "any" ? !ev || !ev.damageStep   // (not the Damage Step's window: only what says so answers there)
           : w === "chain" ? !!last
           : !!ev && !last && ev.type === w);
         if (!ok) return false;
@@ -759,6 +794,7 @@
     // ---------- Win ----------
     checkWin() {
       if (this.over) return true;
+      if (this.holdWin) return false;   // (an effect still resolving its parts: together)
       const lose = [0, 1].map((p) => this.players[p].lp <= 0 || this.players[p].flags.deckOut);
       const win = [0, 1].map((p) => hasExodia(this, p) || this.players[p].flags.specialWin);
       let winner = null, reason = null;
@@ -767,6 +803,13 @@
       if (winner == null) return false;
       this.over = { winner, reason };
       return true;
+    },
+    // An effect's parts at once: the duel is won or lost (or drawn) only when all of them are done (Ring of
+    // Destruction's damage to both players: both at 0, a draw).
+    async together(fn) {
+      this.holdWin = (this.holdWin || 0) + 1;
+      try { await fn(); } finally { this.holdWin--; }
+      this.checkWin();
     }
   };
   const STOP = {};
@@ -783,6 +826,7 @@
       case "summoned": case "flip-summoned": case "special-summoned": return who(ev.p) + " summoned " + n + ".";
       case "attack": return d.name(ev.attacker.card) + " attacks" + (ev.target ? " " + (ev.target.faceUp ? d.name(ev.target.card) : "a face-down monster") : " directly") + ".";
       case "set": return who(ev.p) + " set a card.";
+      case "before-damage": return "Damage calculation: " + d.name(ev.attacker.card) + " attacks" + (ev.target ? " " + (ev.target.faceUp ? d.name(ev.target.card) : "a face-down monster") : " directly") + ".";
       case "phase": return who(d.turnPlayer) + "'s " + ev.phase + ".";
       default: return "Respond to " + ev.type.replace(/-/g, " ") + "?";
     }
@@ -1094,6 +1138,12 @@
       const ae = att.negated ? null : effectOf(att.card.no);
       if (ae && ae.beforeDamage && (await ae.beforeDamage(this, att, p, target)) === "stop") return;
       if (target && !this.locate(target)) return;
+      // (the Damage Step, before damage calculation: a window for the effects used then, Kuriboh's from the hand; only
+      // those whose `when` says "before-damage" answer it)
+      this.attack = A;
+      await this.event({ type: "before-damage", damageStep: true, attacker: att, target, p, card: att.card });
+      this.attack = null;
+      if (this.over || A.negated || !this.locate(att) || (target && !this.locate(target))) return;
       if (!target) {
         const dealt = await this.battleDamage(q, this.atkOf(att), att, null, A);
         if (dealt > 0 && ae && ae.onBattleDamage) await ae.onBattleDamage(this, att, p, null, dealt);
@@ -1472,7 +1522,8 @@
   define("Shine Palace", DM.equip((d, z) => d.stats(z).attribute === ATTR.LIGHT, { atk: 700 }));
   define("Megamorph", DM.equip(() => true, (d, z) => {
     const p = d.controllerOf(z), mine = d.players[p].lp, theirs = d.players[1 - p].lp, base = C.atk(z.card.no);
-    return mine < theirs ? { atk: base } : mine > theirs ? { atk: -Math.ceil(base / 2) } : null;
+    // (its ATK becomes double its original ATK, or half: set, in the order it applies)
+    return mine < theirs ? { setAtk: base * 2 } : mine > theirs ? { setAtk: Math.floor(base / 2) } : null;
   }));
   define("United We Stand", DM.equip(() => true, (d, z) => { const n = up(d, d.controllerOf(z)).length * 800; return { atk: n, def: n }; }));
   define("Mage Power", DM.equip(() => true, (d, z) => { const n = H.st(d, d.controllerOf(z)).filter((s) => s.card.no && (C.isSpell(s.card.no) || C.isTrap(s.card.no))).length * 500; return { atk: n, def: n }; }));
@@ -1758,6 +1809,13 @@
   }
   // (the Fusion Spells ask DM.fusionsFrom, so a later section can widen what makes a Fusion: Five-Headed Dragon's five Dragons)
   DM.fusionsFrom = fusionsFrom;
+  // (a Fusion's materials: those it names; or, for one made from "any" of a kind (Five-Headed Dragon's five Dragons),
+  // the ones the player picks from those that can be, x.choose: { from, count })
+  DM.fusionMaterials = async (d, p, x) => {
+    if (!x.choose) return x.materials;
+    const picked = await d.pickCards(p, "Choose " + x.choose.count + " Fusion Materials to send away for " + d.name(x.fusion) + ".", x.choose.from, null, { count: x.choose.count, min: x.choose.count });
+    return picked && picked.length === x.choose.count ? picked : x.materials;
+  };
   const fusionPool = (d, p) => d.players[p].hand.concat(d.monsters(p).filter((z) => z.faceUp || true).map((z) => z.card));
   const fusion = (poolFn, filter, banish) => ({ activate: {
     can: (d, ctx) => DM.fusionsFrom(d, ctx.p, poolFn(d, ctx.p).filter((c) => c !== ctx.card), filter).length > 0 && (d.freeMonsterZone(ctx.p) >= 0 || d.monsters(ctx.p).length > 0),
@@ -1765,7 +1823,7 @@
       const opts = DM.fusionsFrom(d, link.p, poolFn(d, link.p).filter((c) => c !== link.card), filter);
       const o = await d.choose(link.p, "Fusion Summon which monster?", opts.map((x) => ({ label: d.name(x.fusion), x })));
       if (!o) return;
-      for (const m of o.x.materials) { if (banish) await d.banish(m, "fusion"); else await d.sendToGrave(m, "fusion"); }
+      for (const m of await DM.fusionMaterials(d, link.p, o.x)) { if (banish) await d.banish(m, "fusion"); else await d.sendToGrave(m, "fusion"); }
       const z = await d.specialSummon(link.p, o.x.fusion, { how: "fusion", position: "choose" });
       if (z && link.data.onFused) await link.data.onFused(d, z);
     } } });
@@ -1776,7 +1834,7 @@
   DM.EFFECTS[N("Power Bond")].activate.target = async (d, link) => { link.data.onFused = async (d2, z) => { d2.addTemp(z, { atk: C.atk(z.card.no) }, link.card); z.data.powerBond = { p: link.p, turn: d2.turn }; }; return true; };
   define("Fusion Gate", { activate: { resolve: async () => {} }, ignition: { repeatable: true, can: (d, ctx) => DM.fusionsFrom(d, ctx.p, fusionPool(d, ctx.p)).length > 0, resolve: async (d, link) => {
     const opts = DM.fusionsFrom(d, link.p, fusionPool(d, link.p)); const o = await d.choose(link.p, "Fusion Summon which monster?", opts.map((x) => ({ label: d.name(x.fusion), x })));
-    if (!o) return; for (const m of o.x.materials) await d.banish(m, "fusion"); await d.specialSummon(link.p, o.x.fusion, { how: "fusion", position: "choose" }); } } });
+    if (!o) return; for (const m of await DM.fusionMaterials(d, link.p, o.x)) await d.banish(m, "fusion"); await d.specialSummon(link.p, o.x.fusion, { how: "fusion", position: "choose" }); } } });
   define("Cyber-Stein", { ignition: { can: (d, ctx) => d.players[ctx.p].lp > 5000 && d.players[ctx.p].fusion.length > 0 && d.freeMonsterZone(ctx.p) >= 0,
     cost: async (d, link) => { await d.payLp(link.p, 5000); return true; },
     resolve: async (d, link) => { const c = await d.pickCard(link.p, "Special Summon which Fusion Monster?", d.players[link.p].fusion); if (c) await d.specialSummon(link.p, c, { how: "special" }); } } });
@@ -1977,7 +2035,7 @@
   define("Ring of Destruction", { activate: { can: (d) => up(d).length > 0, target: (d, link) => pickMon(d, link, "Destroy which monster?", (z) => z.faceUp),
     resolve: async (d, link) => { const z = t0(d, link); if (!z) return; const a = d.atkOf(z); if (await d.destroy(z, "effect")) { await d.damage(0, a, "effect"); await d.damage(1, a, "effect"); } } } });
   define("Destruction Ring", { activate: { can: (d, ctx) => up(d, ctx.p).length > 0, target: (d, link) => pickMon(d, link, "Destroy which of your monsters?", (z) => z.faceUp, [link.p]),
-    resolve: async (d, link) => { const z = t0(d, link); if (z && (await d.destroy(z, "effect"))) { await d.damage(0, 1000, "effect"); await d.damage(1, 1000, "effect"); } } } });
+    resolve: async (d, link) => { const z = t0(d, link); if (z && (await d.destroy(z, "effect"))) await d.together(async () => { await d.damage(0, 1000, "effect"); await d.damage(1, 1000, "effect"); }); } } });
   define("Altar for Tribute", { activate: { can: (d, ctx) => d.monsters(ctx.p).length > 0, target: (d, link) => pickMon(d, link, "Send which monster to the Graveyard?", null, [link.p]),
     resolve: async (d, link) => { const z = t0(d, link); if (z) { const a = C.atk(z.card.no); await d.sendToGrave(z.card, "effect"); await d.heal(link.p, a); } } } });
   define("Michizure", { activate: { when: "monster-to-grave", can: (d, ctx) => ctx.event.p === ctx.p && mons(d).length > 0, target: (d, link) => pickMon(d, link, "Destroy which monster?"), resolve: async (d, link) => { const z = t0(d, link); if (z) await d.destroy(z, "effect"); } } });
@@ -3264,7 +3322,7 @@
       const opts = fusionsWithSubs(d, link.p, fusePool(d, link.p).filter((c) => c !== link.card), filter);
       const o = await d.choose(link.p, "Fusion Summon which monster?", opts.map((x) => ({ label: d.name(x.fusion), x })));
       if (!o) return;
-      for (const m of o.x.materials) await d.sendToGrave(m, "fusion");
+      for (const m of await DM.fusionMaterials(d, link.p, o.x)) await d.sendToGrave(m, "fusion");
       const z = await d.specialSummon(link.p, o.x.fusion, { how: "fusion", position: "choose" });
       if (z && link.data.onFused) await link.data.onFused(d, z);
     };
@@ -4790,13 +4848,13 @@
   // (the engine's fullStats, with Reverse Trap's additions reversed and the Equip Cards' effects negated)
   function fullStatsX(z, base, raw) {
     const no = z.card.no, rev = this.flags.xReverse === this.turn ? -1 : 1, eqOff = equipsOff(this);
-    const s = Object.assign({}, base), set = { atk: null, def: null }, mult = { atk: 1, def: 1 };
+    const s = Object.assign({}, base), mult = { atk: 1, def: 1 };
     const apply = (m) => {
       if (!m) return;
       if (m.type != null) s.type = m.type;
       if (m.attribute != null) s.attribute = m.attribute;
-      if (m.setAtk != null) set.atk = m.setAtk;
-      if (m.setDef != null) set.def = m.setDef;
+      if (m.setAtk != null) s.atk = m.setAtk;   // (in order, as the engine's)
+      if (m.setDef != null) s.def = m.setDef;
       s.atk += rev * (m.atk || 0); s.def += rev * (m.def || 0);
       if (m.atkMult) mult.atk *= m.atkMult;
       if (m.defMult) mult.def *= m.defMult;
@@ -4812,8 +4870,6 @@
     }
     for (const l of z.links) if (l.stats && !(eqOff && l.kind === "equip")) apply(typeof l.stats === "function" ? l.stats(this, z) : l.stats);
     for (const t of this.temp) if (t.zone === z && t.stats) apply(t.stats);
-    if (set.atk != null) s.atk = set.atk;
-    if (set.def != null) s.def = set.def;
     s.atk = Math.max(0, Math.round(s.atk * mult.atk)); s.def = Math.max(0, Math.round(s.def * mult.def));
     if (this.flags.swapAtkDef) [s.atk, s.def] = [s.def, s.atk];
     return s;
@@ -5547,24 +5603,11 @@
   const create0 = DM.create;
   DM.create = function (opts) {
     const d = create0.apply(this, arguments);
-    const ca0 = d.canActivate, re0 = d.runEffect, bd0 = d.battleDamage, em0 = d.emit;
+    const ca0 = d.canActivate, re0 = d.runEffect, em0 = d.emit;
     d.canActivate = function (p, c, a, ctx) { if (nameLocked(this, p, c)) return false; return ca0.call(this, p, c, a, ctx); };
     d.runEffect = async function (link) {
       if (link.kind === "flip" && link.card && link.zone && nameLocked(this, this.controllerOf(link.zone), link.card)) return;
       return re0.call(this, link);
-    };
-    // (Kuriboh: during damage calculation, if the opponent's monster attacks, discard it to take no battle damage)
-    d.battleDamage = async function (r, n, dealer, other, A) {
-      const pl = this.players[r];
-      if (A && A.p === 1 - r && n > 0 && A.noDamageTo !== r && pl.flags.waboku !== this.turn && !pl.flags.noActivate) {
-        const c = pl.hand.find((x) => { const e = effectOf(x.no); return e && e.er1Kuriboh && !nameLocked(this, r, x); });
-        if (c && (await this.yesNo(r, "Discard " + this.name(c) + " to take no battle damage from this battle?"))) {
-          await this.discard(r, c, "cost");
-          A.noDamageTo = r;
-          return 0;
-        }
-      }
-      return bd0.call(this, r, n, dealer, other, A);
     };
     // (Sinister Serpent: 1 banished from the Graveyard in the opponent's next End Phase)
     d.emit = async function (ev) {
@@ -5609,7 +5652,10 @@
   define("Witch of the Black Forest", { onToGrave: searcher("er1Witch", "def", "Add which monster with 1500 or less DEF to your hand?") });
 
   // Kuriboh: during damage calculation now (d.battleDamage above), not at the attack's declaration.
-  define("Kuriboh", { handQuick: undefined, er1Kuriboh: true });
+  // (Kuriboh: a Quick Effect from the hand during damage calculation, when your opponent's monster attacks: discard it,
+  // and you take no battle damage from that battle; chainable, in the Damage Step's window)
+  define("Kuriboh", { handQuick: { when: "before-damage", can: (d, ctx) => !!d.attack && d.attack.p !== ctx.p,
+    resolve: async (d, link) => { if (d.attack) d.attack.noDamageTo = link.p; } } });
 
   // Catapult Turtle: once per turn.
   { const e = DM.EFFECTS[N("Catapult Turtle")]; define("Catapult Turtle", { ignition: Object.assign({}, e.ignition, { repeatable: undefined,
@@ -5989,10 +6035,13 @@
       const z = t0(d, link); if (!z || !z.faceUp) return;
       const a = origAtk(z);
       if (!(await d.destroy(z, "effect"))) return;
-      const lp = d.players[link.p].lp;
-      await d.damage(link.p, a, "effect");
-      const took = d.players[link.p].lp < lp ? a : 0;
-      if (took > 0 && !d.over) await d.damage(1 - link.p, took, "effect");
+      // (you take its original ATK, then your opponent the damage you took; the duel's end checked after both)
+      await d.together(async () => {
+        const lp = d.players[link.p].lp;
+        await d.damage(link.p, a, "effect");
+        const took = d.players[link.p].lp < lp ? a : 0;
+        if (took > 0) await d.damage(1 - link.p, took, "effect");
+      });
     } } });
   // Embodiment of Apophis: in either player's Main Phase only.
   { const a = E("Embodiment of Apophis").activate; if (a) define("Embodiment of Apophis", { activate: Object.assign({}, a, { can: (d, ctx) => d.isMain() && (!a.can || a.can(d, ctx)) }) }); }
@@ -6277,7 +6326,6 @@
     d.specialSummon = async function (p, c, opts) {
       const e = effectOf(c.no);
       if (e && e.onlyBy) { const l = curLink(this); if (this.xBy !== e.onlyBy && !(l && l.card && !l.card.token && C.name(l.card.no) === e.onlyBy)) return null; }
-      if (e && e.mustFusion && !(opts && opts.how === "fusion")) return null;
       if (e && e.contact && !(opts && opts.byRule) && !c.xProper) return null;
       const z = await ss0.call(this, p, c, opts);
       if (z && e && e.contact && opts && opts.byRule) c.xProper = true;
@@ -6328,7 +6376,7 @@
     for (const f of d.players[p].fusion) {
       if (f.no !== FHD || (filter && !filter(f)) || out.some((o) => o.fusion.no === FHD)) continue;
       const dr = pool.filter((c) => C.isMonster(c.no) && isDragon(c)).sort((a, b) => C.atk(a.no) - C.atk(b.no));
-      if (dr.length >= 5) out.push({ fusion: f, materials: dr.slice(0, 5) });
+      if (dr.length >= 5) out.push({ fusion: f, materials: dr.slice(0, 5), choose: { from: dr, count: 5 } });
     }
     return out;
   };
@@ -6752,6 +6800,11 @@
           const att = ev.attacker, t = ev.target;
           const hurts = !t || d.atkOf(att) > d.battleValue(t) || d.atkOf(att) >= 1500;
           if (hurts && (k.attack || k.harm)) return i;
+        } else if (ev.type === "before-damage") {
+          // (Kuriboh and the like: when the battle would cost it 1000 or more, or the duel)
+          const att = ev.attacker, t = ev.target, a = d.atkOf(att);
+          const dmg = !t ? a : !t.defense ? Math.max(0, a - d.atkOf(t)) : 0;
+          if (dmg >= 1000 || dmg >= d.players[p].lp) return i;
         } else if (/summoned/.test(ev.type)) {
           if (ev.zone && d.atkOf(ev.zone) >= 1500 && (k.summon || k.harm) && !k.attack) return i;
         } else if (ev.type === "activate" || ev.type === "lp-damage") {

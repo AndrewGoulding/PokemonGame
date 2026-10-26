@@ -1588,7 +1588,7 @@
         case "respond": {
           // (only when your opponent plays a card, summons or attacks: the rest of the duel's moments go by)
           const ev = req.event, pass = req.options.length - 1;
-          if (req.link ? req.link.p !== 1 : !(ev && ev.p === 1 && /^(summoned|flip-summoned|special-summoned|attack)$/.test(ev.type))) return pass;
+          if (req.link ? req.link.p !== 1 : !(ev && ev.p === 1 && /^(summoned|flip-summoned|special-summoned|attack|before-damage)$/.test(ev.type))) return pass;
           const labels = req.options.map((o) => (o.pass ? "Don't" : o.label));
           const r = await ask(req.prompt + "\nActivate a card?", labels, false);
           return r < 0 ? req.options.length - 1 : r;
