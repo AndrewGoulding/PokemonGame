@@ -475,7 +475,9 @@
 // Two more ways the card shop opens it (opts.mode): "dismantle" (your cards, A on one to dismantle a spare copy for a
 // token of its rarity) and "trade" (every card, A on one to trade tokens of its rarity for it); the right column
 // shows your tokens (opts.tokens()), opts.action(card) says what A does ({ ask, run() -> message } or { error }),
-// and B leaves; SELECT sorts the cards there. Each card's rarity (window.YUGIOH_RARITY) shows by its stars.
+// and B leaves; SELECT sorts the cards there. Each card's rarity (window.YUGIOH_RARITY) shows by its stars. And
+// "list" (the shop's card list: opts.only's cards, A or START on one shows it, the right column opts.tokens()'s
+// lines under opts.rightTitle).
 (function () {
   "use strict";
 
@@ -544,7 +546,7 @@
   // (The trunk: each card you have, once; the deck: each copy in it, its main deck's and Fusion Deck's, or its side deck's.)
   // (never the six cards GX made up: "-" for their rarity)
   const inGame = (n) => n > 0 && card(n) && (window.YUGIOH_RARITY || "")[n] !== "-";
-  const trunkAll = () => (st.opts.mode === "trade" ? st.opts.cards.cards.map((c, n) => n).filter(inGame)
+  const trunkAll = () => (st.opts.only ? st.opts.only.filter(inGame) : st.opts.mode === "trade" ? st.opts.cards.cards.map((c, n) => n).filter(inGame)
     : Object.keys(st.opts.trunk).map(Number).filter((n) => st.opts.trunk[n] > 0 && inGame(n)));
   const RARITY_NAME = { c: "Common", r: "Rare", s: "Super Rare", u: "Ultra Rare", x: "Secret Rare" };
   const deckAll = () => (st.side ? st.deck.side : st.deck.main).slice();
@@ -646,10 +648,10 @@
     if (st.detail != null) { paintDetail(g, top, st.detail); return finish(g, null, top); }
     draw(g, "bg", 0, 0); draw(g, "bar", 0, 0);
     // The top: "Trunk", the deck's counts (its main deck, Fusion Deck and side deck) and its name.
-    s.text(st.opts.title || "Trunk", 3, 0, WHITE, SHADE);
+    fitText(s, st.opts.title || "Trunk", 3, 0, 82, WHITE, SHADE);
     const fus = st.deck.main.filter(isFusion).length;
     if (!st.opts.mode) { digits(g, st.deck.main.length - fus, 111, 3); digits(g, fus, 135, 3); digits(g, st.deck.side.length, 159, 3); }
-    const dn = st.opts.mode ? "Tokens" : st.side ? "Side Deck" : st.deck.name || st.opts.deckName || "Deck";
+    const dn = st.opts.mode ? st.opts.rightTitle || "Tokens" : st.side ? "Side Deck" : st.deck.name || st.opts.deckName || "Deck";
     s.text(dn, 237 - s.textWidth(dn), 0, WHITE, SHADE);
     // The filters' counts, for the column the cursor's in, and the sort's icon.
     counts(st.col).forEach((v, i) => digits(g, v, COUNT_AT[i][0], COUNT_AT[i][1]));
@@ -989,6 +991,7 @@
           if (move(k === "up" ? -1 : k === "down" ? 1 : 0, k === "left" ? -1 : k === "right" ? 1 : 0)) { se(); paint(); }
           return undefined;
         }
+        if (st.opts.mode === "list" && k === "a" && current() != null) { st.detail = current(); st.detailTop = 0; se(); paint(); return undefined; }
         if (st.opts.mode && (k === "a" || k === "b")) return k === "a" ? (current() != null ? "pick" : undefined) : "leave";
         if (st.opts.mode && k === "select") return "sort";
         if (st.opts.mode && (k === "l" || k === "r")) return undefined;
@@ -1630,22 +1633,23 @@
 // ---------- The card shop (Yu-Gi-Oh! GX Duel Academy's) ----------
 //
 // The Kame Game shop's booster packs, on GX Duel Academy's shop screen (its pieces from the cartridge:
-// tools/build-gx-trunk.py, assets/yugioh/shop/): the shop's room with its translucent panels, the text box below
-// with its cursor; the packs (window.YUGIOH_SETS) one above another down the left, the one you're on framed in red,
-// its name, nine cards to a pack and its price beside it, and how many of it are in your basket between its arrows;
-// your money by the star at the top right (where GX shows its Duel Points), what the basket costs and how many packs
-// are in it. The basket holds any of the packs at once: up and down pick a pack, left and right how many of it, R adds
-// as many more of it as you can pay for, L takes it out; START tells you about the pack and SELECT shows the help
-// bar; A buys the whole basket, after "Is this okay?". Each pack opens as GX
+// tools/build-gx-trunk.py, assets/yugioh/shop/): the shop's room with its translucent panels, the text box below with
+// its cursor; the packs (window.YUGIOH_SETS) one above another down the left, the one you're on framed in red, its
+// name, nine cards to a pack and its price beside it, and how many of it are in your basket between its arrows; your
+// money by the star at the top right (where GX shows its Duel Points), what the basket costs and how many packs are
+// in it, and how much of the pack you have ("Comp."). The basket holds any of the packs at once: up and down pick a
+// pack, left and right how many of it, R adds as many more of it as you can pay for, L takes it out; START tells you
+// about the pack and SELECT asks: its CARD LIST (every card in the pack on the Trunk's screen, sortable, and how many
+// of each rarity you have) or the help bar; A buys the whole basket, after "Is this okay?". Each pack opens as GX
 // opens one: the pack at the bottom left, its cards popping out one by one and flying into the machine at the right
 // (A speeds it up, B skips it), then the list of what came out (GX's, grey): the set's name and how much of it you
 // have ("Comp."), the cards with NEW on those you didn't have, the one under the cursor at the bottom (START shows
-// it); A, B or R to the next pack. (The packs' pictures are drawn here: a card from the set in a pack's frame, as
-// GX makes its own as it runs.)
+// it); A, B or R to the next pack. (The packs' pictures are drawn here: a card from the set in a pack's frame, as GX
+// makes its own as it runs.)
 //
 //   await CardShop.say(lines)                       // the room and the text box
 //   const i = await CardShop.choose(question, ["Buy packs.", ...])   // -> index, or -1 (B)
-//   await CardShop.picker({ sets, order, money: () => n, price, perPack, buy([{ key, n }]) -> { message } | { packs: [{ key, cards: [{ no, isNew }] }] } | { error } })
+//   await CardShop.picker({ sets, order, money: () => n, price, perPack, comp(key) -> %, trunk: () => { no: count }, buy([{ key, n }]) -> { message } | { packs: [{ key, cards: [{ no, isNew }] }] } | { error } })
 //   await CardShop.results({ title, cards: [{ no, isNew }], comp })   // a list of cards (a duel's prizes, too)
 //   CardShop.close()
 (function () {
@@ -1809,7 +1813,7 @@
   // ---------- The pack picker ----------
   async function picker(opts) {
     show();
-    st.sets = opts.sets; st.money = opts.money;
+    st.sets = opts.sets; st.money = opts.money; st.trunk = opts.trunk;
     const order = opts.order, price = opts.price, per = opts.perPack;
     let i = st.lastPack || 0, help = false;
     const basket = {};   // (pack key -> how many)
@@ -1832,6 +1836,8 @@
       top.text(set.name, 74, 63, WHITE, SHADE);
       draw(g, "cards-x", 72, 84); digits(g, per, 102, 84, "w", 2);
       draw(g, "price", 111, 84); digits(g, price, 147, 84, "w");
+      // (how much of the pack you have)
+      if (opts.comp) { const c = opts.comp(order[i]); top.text("Comp.", 151, 80, WHITE, SHADE); digits(g, c, 191, 84, "w"); top.text("%", 193, 80, [248, 88, 72], SHADE); }
       draw(g, "basket", 70, 96);
       if (n > 0) draw(g, "left", 84, 100);
       digits(g, n, 112, 96, "big", 2);
@@ -1850,7 +1856,7 @@
         if (key === "left" || key === "right") { put(Math.max(0, Math.min(key === "left" ? n - 1 : n + 1, most))); return undefined; }
         if (key === "r") { put(most); return undefined; }
         if (key === "l") { put(0); return undefined; }
-        if (key === "select") { help = !help; se(); paint(); return undefined; }
+        if (key === "select") { if (help) { help = false; se(); paint(); return undefined; } return key; }
         return key === "a" || key === "b" || key === "start" ? key : undefined;
       }, { shoulders: true });
       se();
@@ -1858,6 +1864,13 @@
       const key = order[i], set = st.sets[key];
       if (k === "start") {
         await describe(set.text, paint);
+        continue;
+      }
+      if (k === "select") {
+        const c = await menuOver(paint, ["Card list", "Help", "Back"]);
+        if (c === 0) { await cardList(key); show(); }
+        else if (c === 1) help = true;
+        paint();
         continue;
       }
       if (!total()) { await describe("Pick how many packs you'd like\nwith left and right.", paint); continue; }
@@ -1875,6 +1888,30 @@
       }
       paint();
     }
+  }
+  // (a few choices in the text box over the picker: which, or -1 for B)
+  async function menuOver(under, options) {
+    let i = 0;
+    const paint = () => under((g, top) => textbox(g, top, options.map((o, k) => ({ text: o, x: 24, colour: k === i ? YELLOW : WHITE })), i));
+    paint();
+    const r = await window.GbaMenus.keys((k) => {
+      if (k === "up" || k === "down") { i = (i + (k === "up" ? options.length - 1 : 1)) % options.length; se(); paint(); return undefined; }
+      return k === "a" ? i : k === "b" || k === "select" ? -1 : undefined;
+    });
+    se();
+    return r;
+  }
+  // (every card in a pack, on the Trunk's screen, sortable, with how many of each rarity you have)
+  async function cardList(key) {
+    const set = st.sets[key], DM = window.DuelMonsters, trunk = st.trunk ? st.trunk() : {};
+    const RAR = [["common", "Common"], ["rare", "Rare"], ["super", "Super Rare"], ["ultra", "Ultra Rare"], ["secret", "Secret Rare"]];
+    const nos = {};
+    for (const [k] of RAR) nos[k] = (set[k] || []).map((n) => DM.numberOf(n)).filter(Boolean);
+    const lines = {};
+    RAR.forEach(([k], r) => { lines["crsux"[r]] = nos[k].filter((no) => trunk[no] > 0).length + "/" + nos[k].length; });
+    canvas.classList.add("hidden");
+    await window.TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk, deck: { main: [], side: [] }, mode: "list", title: "Card List",
+      only: [].concat(...RAR.map(([k]) => nos[k])), rightTitle: "Owned", tokens: () => lines });
   }
   // (a line or two in the text box over the picker, until A or B)
   async function describe(text, under) {

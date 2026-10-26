@@ -3250,7 +3250,10 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   of the Trunk's INVENTORY. ₽300 a pack: the packs down the left as GX shows them (each a card from its set in a pack's
   frame, drawn by the screen, as GX makes its own as it runs), up and down to pick one, left and right for how many of it,
   R for as many more of it as you can pay for and L to take it out: the basket holds several packs at once (three Dark
-  Hole and two Red-Eyes, say), bought together with A, START for what's in the set, SELECT for the help bar; your money by the
+  Hole and two Red-Eyes, say), bought together with A; beside each pack's price, how much of it you have ("Comp.", as a percentage); START for
+  what's in the set, and SELECT for a menu: **Card list** (every card in the pack on the Trunk's screen, how many of each
+  rarity you have of it down the right, SELECT to sort them as the Trunk sorts, A or START to read a card) or the
+  help bar; your money by the
   star at the top right, where GX shows its Duel Points. A pack has nine cards, eight Commons and a Rare, now and
   then a Super Rare (1 in 6), an Ultra Rare (1 in 12) or a Secret Rare (1 in 72) instead. Bought packs go into your bag, and every pack opens from the Trunk's
   INVENTORY (below), as GX opens one, its timing and paths recorded from the game frame by frame: the shop fades, the machine slides in from the

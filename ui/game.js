@@ -9900,7 +9900,7 @@
       if (i < 0) break;
       if (i === 3) {
         // (Pack Tokens for packs: a token a pack, into your bag, to open from your Trunk's Inventory)
-        await CardShop.picker({ sets: window.YUGIOH_SETS, order: packsSold(y), money: () => y.packTokens || 0, price: 1, perPack: PACK_CARDS, comp: setCompletion,
+        await CardShop.picker({ sets: window.YUGIOH_SETS, order: packsSold(y), money: () => y.packTokens || 0, price: 1, perPack: PACK_CARDS, comp: setCompletion, trunk: () => y.trunk,
           buy: (basket) => {
             const n = basket.reduce((a, b) => a + b.n, 0);
             if ((y.packTokens || 0) < n) return { error: "Grandpa: You haven't that many\nPack Tokens." };
@@ -9911,7 +9911,7 @@
         CardShop.setup({ money: () => player.money, sets: window.YUGIOH_SETS });
         await persist();
       } else if (i === 0) {
-        await CardShop.picker({ sets: window.YUGIOH_SETS, order: packsSold(y), money: () => player.money, price, perPack: PACK_CARDS, comp: setCompletion,
+        await CardShop.picker({ sets: window.YUGIOH_SETS, order: packsSold(y), money: () => player.money, price, perPack: PACK_CARDS, comp: setCompletion, trunk: () => y.trunk,
           buy: (basket) => {
             const n = basket.reduce((a, b) => a + b.n, 0);
             if (player.money < n * price) return { error: "Grandpa: You can't quite afford that." };
