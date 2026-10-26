@@ -1,5 +1,5 @@
 {
- "about": "The Duel Monsters cards released (TCG or OCG) up to Legacy of Darkness (2003-06-06) that GX Duel Academy doesn't have, card numbers 1201 on in this order (by release), and the seven booster packs they're in: each named for its boss monster, with each card's rarity in it (x Secret, u Ultra, s Super, r Rare, c Common). tools/build-extra-cards.py. gxNames: the GX cards whose names differ from the TCG's, for their pictures. The packs also hold GX's own cards of their time that GX's five sets don't (by GX's names and its rarities); removed: GX's cards released after Legacy of Darkness, in no pack, out of the game. removedNumbers: GX cards out by number (663, its \"Luster Dragon\" at 2400, the TCG's Luster Dragon #2). GX's cards take their TCG names and text too (gxNames: their old names, still known to DuelMonsters.numberOf). Two for Fusions that would otherwise have no material: Nightmare Horse (after Legacy of Darkness, the one exception: Reaper on the Nightmare's), and restored: GX's card 197, the OCG's \"Defender of the Sea\" (Amphibious Bugroth's; GX called it Guardian of the Sea), never printed in the TCG.",
+ "about": "The Duel Monsters cards released (TCG or OCG) up to Legacy of Darkness (2003-06-06) that GX Duel Academy doesn't have, card numbers 1201 on in this order (by release), and the seven booster packs they're in: each named for its boss monster, with each card's rarity in it (x Secret, u Ultra, s Super, r Rare, c Common). tools/build-extra-cards.py. gxNames: the GX cards whose names differ from the TCG's, for their pictures. The packs also hold GX's own cards of their time that GX's five sets don't (by GX's names and its rarities); removed: GX's cards released after Legacy of Darkness, in no pack, out of the game. removedNumbers: GX cards out by number (663, its \"Luster Dragon\" at 2400, the TCG's Luster Dragon #2). GX's cards take their TCG names and text too (gxNames: their old names, still known to DuelMonsters.numberOf). Checked against Yugipedia's OCG set lists up to Legacy of Darkness: the cards YGOPRODeck has not, or dated too late, are in (manual: their data and pictures from Yugipedia); aliases: names a card's text uses for another card.",
  "cutoff": "2003-06-06",
  "cards": [
   "Archfiend Marmot of Nefariousness",
@@ -756,7 +756,13 @@
   "Stumbling",
   "Wild Nature's Release",
   "Magical Dimension",
-  "Nightmare Horse"
+  "Final Attack Orders",
+  "Slifer the Sky Dragon",
+  "Obelisk the Tormentor",
+  "The Winged Dragon of Ra",
+  "Masahiro the Dark Clown",
+  "Yasushi the Skull Knight",
+  "Tomohiro the Mountain Warrior"
  ],
  "packs": [
   {
@@ -1461,10 +1467,6 @@
     ],
     [
      "Faith Bird",
-     "c"
-    ],
-    [
-     "Defender of the Sea",
      "c"
     ]
    ],
@@ -3599,6 +3601,18 @@
     [
      "Dice Jar",
      "c"
+    ],
+    [
+     "Masahiro the Dark Clown",
+     "u"
+    ],
+    [
+     "Yasushi the Skull Knight",
+     "u"
+    ],
+    [
+     "Tomohiro the Mountain Warrior",
+     "u"
     ]
    ],
    "item": "des-gardius-pack",
@@ -4310,6 +4324,18 @@
     [
      "Huge Revolution",
      "c"
+    ],
+    [
+     "Slifer the Sky Dragon",
+     "x"
+    ],
+    [
+     "Obelisk the Tormentor",
+     "x"
+    ],
+    [
+     "The Winged Dragon of Ra",
+     "x"
     ]
    ],
    "item": "dark-ruler-ha-des-pack",
@@ -5016,6 +5042,18 @@
     ],
     [
      "Zolga",
+     "c"
+    ],
+    [
+     "Shapesnatch",
+     "c"
+    ],
+    [
+     "Inpachi",
+     "c"
+    ],
+    [
+     "Curse of Aging",
      "c"
     ]
    ],
@@ -5726,8 +5764,12 @@
      "x"
     ],
     [
-     "Nightmare Horse",
+     "Morale Boost",
      "c"
+    ],
+    [
+     "Final Attack Orders",
+     "r"
     ]
    ],
    "item": "berserk-dragon-pack",
@@ -5821,7 +5863,6 @@
   "Conscription",
   "Corpse of Yata-Garasu",
   "Creeping Doom Manta",
-  "Curse of Aging",
   "Curse of Darkness",
   "Cyber Dragon",
   "Cyber End Dragon",
@@ -5920,7 +5961,6 @@
   "Inferno Fire Blast",
   "Inferno Hammer",
   "Inferno Tempest",
-  "Inpachi",
   "Insect Knight",
   "Invader of Darkness",
   "Invasion of Flames",
@@ -5976,7 +6016,6 @@
   "Monk Fighter",
   "Monster Gate",
   "Monster Reincarnation",
-  "Morale Boost",
   "Multiplication of Ants",
   "Mystical Shine Ball",
   "Mystik Wok",
@@ -6033,7 +6072,6 @@
   "Sealmaster Meisei",
   "Self-Destruct Button",
   "Shadowslayer",
-  "Shapesnatch",
   "Shield Crash",
   "Skull Dog Marron",
   "Skull-Mark Ladybug",
@@ -6104,10 +6142,39 @@
  "removedNumbers": [
   663
  ],
- "restored": {
-  "197": [
-   "Defender of the Sea",
-   "c"
-  ]
+ "aliases": {
+  "Defender of the Sea": "Sentinel of the Seas"
+ },
+ "manual": {
+  "Masahiro the Dark Clown": {
+   "kind": "effect",
+   "type": "Spellcaster",
+   "attribute": "DARK",
+   "level": 3,
+   "atk": 600,
+   "def": 1500,
+   "image": "MasahirotheDarkClown-T2-JP-UR.png",
+   "text": "FLIP: You can target 1 Flip monster in your Graveyard; this card's effect becomes that target's effect.\n\"The key to victory is to never quit believing in your Deck!\""
+  },
+  "Yasushi the Skull Knight": {
+   "kind": "fusion",
+   "type": "Spellcaster",
+   "attribute": "DARK",
+   "level": 7,
+   "atk": 2650,
+   "def": 2250,
+   "image": "YasushitheSkullKnight-T2-JP-UR.jpg",
+   "text": "\"Ultimate Offering\" + \"Witch of the Black Forest\"\n\"The path to victory is fighting with a level head!\""
+  },
+  "Tomohiro the Mountain Warrior": {
+   "kind": "effect",
+   "type": "Beast-Warrior",
+   "attribute": "EARTH",
+   "level": 3,
+   "atk": 600,
+   "def": 1000,
+   "image": "TomohirotheMountainWarrior-T2-JP-UR.jpg",
+   "text": "You can Tribute 1 monster; inflict 500 damage to your opponent.\n\"Missing out on a win is frustrating! Next time, aim at being the champ!\""
+  }
  }
 }

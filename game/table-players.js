@@ -6528,6 +6528,95 @@
       await d.specialSummon(p, m, { how: "ritual", position: "choose" }); } } });
 })();
 
+// (The OCG's cards beyond the others, from Yugipedia's set lists: the Egyptian Gods, the Second National Tournament's
+// prize cards, Final Attack Orders.)
+(function () {
+  "use strict";
+  const DM = window.DuelMonsters, C = DM.card, H = DM.H, define = DM.define, N = DM.numberOf;
+  const { isName, tributeCost, mine } = DM.REST;
+  const up = H.up, ctl = (d, z) => d.controllerOf(z);
+  const fx = (z) => (z && !z.card.token && DM.effectOf(z.card.no)) || {};
+
+  // ----- The Egyptian Gods: three Tributes, never Set; their Normal Summon not negated, nothing activated in answer;
+  // Special Summoned (Slifer, Obelisk), back to the Graveyard in the End Phase -----
+  const god = (extra) => Object.assign({ tributes: 3, noNormalSet: true, noChainOnSummon: true,
+    onSummon: async (d, z, p, how) => { if (how === "special") z.data.godSpecial = true; },
+    endPhase: async (d, z) => { if (z.data.godSpecial && d.locate(z)) await d.sendToGrave(z.card, "effect"); } }, extra);
+  // Slifer: 1000 ATK and DEF a card in your hand; a monster summoned to your opponent's field in Attack Position loses
+  // 2000 ATK, and is destroyed if that brings it to 0
+  define("Slifer the Sky Dragon", god({
+    selfStats: (d, z) => { const n = 1000 * d.players[ctl(d, z)].hand.length; return { atk: n, def: n }; },
+    onEvent: async (d, z, p, ev) => {
+      if (!/^(summoned|flip-summoned|special-summoned)$/.test(ev.type) || ev.p === p || !ev.zone || !d.locate(ev.zone) || !ev.zone.faceUp || ev.zone.defense) return;
+      const t = ev.zone, before = d.atkOf(t);
+      t.links.push({ kind: "self", from: z, stats: { atk: -2000 } });
+      await d.emit({ type: "stat", zone: t, atk: -2000 });
+      if (before > 0 && d.atkOf(t) === 0 && d.locate(t)) await d.destroy(t, "effect");
+    } }));
+  // Obelisk: never targeted; Tribute 2 monsters: destroy all your opponent's monsters, and it can't attack that turn
+  define("Obelisk the Tormentor", god({ noTarget: true,
+    ignition: { repeatable: true, can: (d, ctx) => mine(d, ctx) && d.monsters(ctx.p).filter((x) => x !== ctx.zone).length >= 2 && d.monsters(1 - ctx.p).length > 0,
+      cost: async (d, link) => (await tributeCost(null, "Tribute a monster (1 of 2).")(d, link)) && (await tributeCost(null, "Tribute a monster (2 of 2).")(d, link)),
+      resolve: async (d, link) => {
+        if (link.zone && d.locate(link.zone)) link.zone.data.cannotAttackTurn = d.turn;
+        await H.destroyAll(d, d.monsters(1 - link.p).slice());
+      } } }));
+  // Ra: never Special Summoned; on its Normal Summon, pay all but 100 LP for that much ATK and DEF; pay 1000 LP to
+  // destroy a monster
+  define("The Winged Dragon of Ra", god({ noSpecial: true,
+    onSummon: async (d, z, p, how) => {
+      const lp = d.players[p].lp;
+      if (how !== "normal" || lp <= 100 || !(await d.yesNo(p, "Pay " + (lp - 100) + " LP for The Winged Dragon of Ra to gain that much ATK and DEF?"))) return;
+      await d.payLp(p, lp - 100);
+      z.links.push({ kind: "self", stats: { atk: lp - 100, def: lp - 100 } });
+    },
+    ignition: { repeatable: true, can: (d, ctx) => mine(d, ctx) && d.players[ctx.p].lp > 1000 && up(d).some((x) => x !== ctx.zone),
+      cost: async (d, link) => { await d.payLp(link.p, 1000); return true; },
+      target: (d, link) => H.target(d, link, "Destroy which monster?", (z) => z !== link.zone, { area: "monster" }),
+      resolve: async (d, link) => { const t = H.t(d, link); if (t) await d.destroy(t, "effect"); } } }));
+  // (the rules they need: no Normal Set; nothing activated in answer to their Normal Summon; Obelisk not targeted)
+  const create0 = DM.create;
+  DM.create = function (opts) {
+    const d = create0.call(this, opts), ma0 = d.mainActions, ev0 = d.event;
+    d.mainActions = function (p) { return ma0.call(this, p).filter((a) => !(a.act === "set-monster" && a.card && fx({ card: a.card }).noNormalSet)); };
+    d.event = async function (ev) {
+      if (ev && ev.type === "summoned" && ev.zone && fx(ev.zone).noChainOnSummon && !this.over) return this.notify(ev);
+      return ev0.call(this, ev);
+    };
+    return d;
+  };
+  const target0 = H.target;
+  H.target = function (d, link, prompt, filter, opts) {
+    return target0.call(this, d, link, prompt, (z, q, i) => (!filter || filter(z, q, i)) && !(i < 5 && z.faceUp && !z.negated && fx(z).noTarget), opts);
+  };
+
+  // ----- The Second National Tournament's prize cards -----
+  // Masahiro the Dark Clown: FLIP: its effect becomes a Flip monster's in your Graveyard (that effect, resolved as it)
+  define("Masahiro the Dark Clown", { flip: async (d, link) => {
+    const pool = d.players[link.p].grave.filter((c) => C.isMonster(c.no) && fx({ card: c }).flip && !isName(c, "Masahiro the Dark Clown"));
+    if (!pool.length || !(await d.yesNo(link.p, "Use the effect of a Flip monster in your Graveyard?"))) return;
+    const c = await d.pickCard(link.p, "Which Flip monster's effect?", pool);
+    if (c) await fx({ card: c }).flip(d, link);
+  } });
+  // Tomohiro the Mountain Warrior: Tribute 1 monster: 500 damage to your opponent
+  define("Tomohiro the Mountain Warrior", { ignition: { repeatable: true, can: (d, ctx) => mine(d, ctx) && d.monsters(ctx.p).length > 0,
+    cost: async (d, link) => { const z = await d.pickZone(link.p, "Tribute which monster?", (x, q) => q === link.p, { sides: [link.p], area: "monster", cancel: true }); if (!z) return false; await d.sendToGrave(z.card, "tribute"); return true; },
+    resolve: async (d, link) => d.damage(1 - link.p, 500, "effect") } });
+
+  // ----- Final Attack Orders: every face-up monster in Attack Position, and no battle position changes -----
+  const fao = (d) => [0, 1].some((q) => d.allZones(q).some((z) => z.faceUp && !z.negated && d.live(z) && isName(z.card, "Final Attack Orders")));
+  const allAttack = async (d) => { for (const z of up(d).filter((x) => x.defense)) await d.changePosition(z, false); };
+  define("Final Attack Orders", { activate: { stays: true, resolve: async (d) => allAttack(d) },
+    onEvent: async (d, z, p, ev) => { if (/summoned|flip|position/.test(ev.type) && d.live(z)) await allAttack(d); } });
+  const create1 = DM.create;
+  DM.create = function (opts) {
+    const d = create1.call(this, opts), ma0 = d.mainActions, cp0 = d.changePosition;
+    d.mainActions = function (p) { const a = ma0.call(this, p); return fao(this) ? a.filter((x) => x.act !== "position" && x.act !== "flip-summon") : a; };
+    d.changePosition = async function (z, defense) { if (defense && z.faceUp && fao(this)) return; return cp0.call(this, z, defense); };
+    return d;
+  };
+})();
+
 // (Last: the templates for the cards nothing above defines, and each Spell's and Trap's timing.)
 (function () {
   "use strict";

@@ -2206,6 +2206,7 @@
         { label: "Visit Sinnoh (Twinleaf Town)", value: "sinnoh", className: "action" },
         { label: "Visit the Realm Hub", value: "hub", className: "action" },
         { label: "Fill the Trunk (3 of every card)", value: "trunk", className: "action" },
+        { label: "Clear the Trunk (no cards at all)", value: "clear-trunk", className: "action" },
         { label: "Duel Yugi", value: "duel", className: "action" },
         { label: Orre.inOrre(player.location) ? "Leave Orre" : "Visit Orre (the Air Strip)", value: "orre", className: "action" },
         back()]);
@@ -2241,6 +2242,14 @@
         for (let n = 1; n < window.YUGIOH_CARDS.cards.length; n++) if (window.YUGIOH_RARITY[n] !== "-") y.trunk[n] = 3;
         await persist();
         await message("Your Trunk has three of every card now.");
+      } else if (v === "clear-trunk") {
+        // (every Duel Monsters card you have: the Trunk's, and so your decks' too; your packs and tokens stay)
+        if (!(await confirm("Delete every Duel Monsters card you\nhave, your decks' too?"))) return;
+        const y = yugioh();
+        for (const n of Object.keys(y.trunk)) delete y.trunk[n];
+        for (const d of y.decks) { d.main.length = 0; d.side.length = 0; }
+        await persist();
+        await message("Your Trunk and your decks are empty now.");
       } else if (v === "duel") {
         await dominoDuel("yugi", null);
         return "battled";

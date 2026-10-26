@@ -522,7 +522,7 @@
     { name: "DEFENSE", key: (n, c) => -c[7] },
     { name: "CATEGORY", key: (n, c) => CATEGORY[c[2]] },
     { name: "TYPE", key: (n, c) => (c[3] || 99) },
-    { name: "ATTRIBUTE", key: (n, c) => (c[4] || (c[2] === "spell" ? 7 : 8)) },
+    { name: "ATTRIBUTE", key: (n, c) => (c[4] === 7 ? 6.5 : c[4] || (c[2] === "spell" ? 7 : 8)) },   // (DIVINE after WIND)
     { name: "ICON", key: (n, c) => (c[2] === "spell" || c[2] === "trap" ? c[8] + (c[2] === "trap" ? 10 : 0) : 99) },
     { name: "LEVEL", key: (n, c) => -c[5] },
     { name: "QUANTITY", key: (n) => -(st.opts.trunk[n] || 0) }
@@ -589,6 +589,8 @@
 
   // ---------- Drawing ----------
   function draw(g, name, x, y) { const im = T(name); if (ready(im)) g.drawImage(im, x, y); }
+  // (an attribute's icon: GX's six; DIVINE, the Egyptian Gods', its own, as GX's 7 and 8 are the Spells' and Traps')
+  const attrIcon = (a) => (a === 7 ? "attr-divine" : "attr-" + a);
   // (a sort's icon: GX's nine, and QUANTITY's, this game's own, in their frame: three cards stacked)
   function sortIcon(g, i, x, y) {
     if (i < 9) return draw(g, "sort-" + i, x, y);
@@ -703,7 +705,7 @@
         draw(g, "attr-" + (c[2] === "spell" ? 7 : 8), 80, 144);
         if (c[8]) draw(g, c[2] + "-" + c[8], 96, 144);
       } else {
-        if (c[4]) draw(g, "attr-" + c[4], 80, 144);
+        if (c[4]) draw(g, attrIcon(c[4]), 80, 144);
         if (c[3]) draw(g, "type-" + c[3], 96, 144);
         draw(g, "atk", 120, 144); draw(g, "def", 120, 152);
         digits(g, c[6], 160, 144, true); digits(g, c[7], 160, 152, true);
@@ -802,7 +804,7 @@
     art(g, n, 16, 34, 80, 80);
     g.fillStyle = "#f0e8c8"; g.fillRect(8, 118, 96, 18);
     const attr = c[2] === "spell" ? 7 : c[2] === "trap" ? 8 : c[4];
-    if (attr) draw(g, "attr-" + attr, 88, 7);
+    if (attr) draw(g, c[2] === "spell" || c[2] === "trap" ? "attr-" + attr : attrIcon(attr), 88, 7);
     for (let i = 0; i < c[5]; i++) draw(g, "star", 96 - 8 * (i + 1) + 0, 24);
     g.fillStyle = "#e8e8e8"; g.fillRect(112, 0, 128, 14);
     g.fillStyle = "#f8f040"; g.fillRect(112, 0, 128, 14);
@@ -1036,7 +1038,7 @@
     st = { opts: { cards }, detailTop: topLine || 0 };
     try { paintDetail(g, s, n); return st.detailLines; } finally { st = saved; }
   }
-  window.TrunkScreen = { open, close, detail, fitText };
+  window.TrunkScreen = { open, close, detail, fitText, attrIcon };
 })();
 
 // ---------- The duel screen: Yu-Gi-Oh! GX Duel Academy's ----------
@@ -1243,7 +1245,7 @@
       if (c[8]) drawT(g, c[2] + "-" + c[8], 168, 144);
       return;
     }
-    if (c[4]) drawT(g, "attr-" + c[4], 152, 144);
+    if (c[4]) drawT(g, window.TrunkScreen.attrIcon(c[4]), 152, 144);
     if (c[3]) drawT(g, "type-" + c[3], 168, 144);
     draw(g, "star", 184, 144); draw(g, "stat-" + Math.min(9, c[5]), 184, 152);
     draw(g, "atk", 192, 144); draw(g, "def", 192, 152);

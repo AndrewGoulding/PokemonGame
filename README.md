@@ -3260,10 +3260,18 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   five sets don't have are in the seven packs of this game's own (with their time's cards, keeping their rarities),
   and the rest of GX's, 333 cards, aren't in the game: the 328 released after Legacy of Darkness, and five GX had
   that neither the TCG nor the OCG printed as GX has them (Mechanical Spider, Call of the Dark, Marie the Fallen One,
-  Enchanted Arrow, Wasteland Amazon). Any you had leave your Trunk and decks. Two Fusions' materials are in for them:
-  GX's "Guardian of the Sea", the OCG's card the TCG never printed, as **Defender of the Sea** (Amphibious Bugroth's,
-  in the Ultimate Great Moth pack), and **Nightmare Horse** (Reaper on the Nightmare's, in the Berserk Dragon pack),
-  the one card from after Legacy of Darkness.
+  Enchanted Arrow, Wasteland Amazon: under their TCG names, Karakuri Spider, Call of Darkness, Darklord Marie and
+  Spell Shattering Arrow, already in the packs; Warrior Lady of the Wasteland came later). Any you had leave your Trunk
+  and decks. **Every OCG card up to Legacy of Darkness is in**, checked against Yugipedia's lists of every OCG set,
+  promotion and prize to then (YGOPRODeck, the cards' source, misses some and dates others too late): GX's Shapesnatch,
+  Inpachi, Curse of Aging and Morale Boost back, and Final Attack Orders; **the three Egyptian Gods** (the OCG's
+  promotional cards of December 2000, in the Dark Ruler Ha Des pack as Secret Rares: three Tributes, never Set,
+  nothing answers their summon; Slifer's 1000 ATK a card in your hand and its 2000 off what your opponent summons,
+  Obelisk untargetable and destroying their field for two Tributes, Ra's LP for ATK and 1000 LP to destroy a monster;
+  their own DIVINE attribute and Divine-Beast type, their icons GX's LIGHT and Dragon in gold); and the Second National
+  Tournament's three prize cards, Masahiro the Dark Clown, Yasushi the Skull Knight and Tomohiro the Mountain Warrior
+  (Ultra Rares in the Des Gardius pack). Amphibious Bugroth's "Defender of the Sea" is Sentinel of the Seas; Reaper on
+  the Nightmare stays, though Nightmare Horse, from after Legacy of Darkness, isn't in the game to make it.
 
 - **The maps**: all 58 of the game's screens, each its own map of one screen (15x10 tiles) with the camera fixed on
   it, as in the game. Walk off a screen's edge or through a doorway and you're on the next, as the game links them.
@@ -3310,8 +3318,9 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   for Rare, Rare for Super Rare, Super for Ultra, Ultra for Secret), as many times as you like, and **DECKS**: your **20 deck slots**, as GX Duel Academy keeps several (each with its main,
   Fusion and side decks' counts), A on one to build it, and the one you last picked is the one you duel with. R (the S key) puts a card in the deck,
   L (the A key) takes it out, START shows the card itself with its text. A deck holds 60 cards and 20 Fusion Monsters, its
-  side deck 15, and three of any card in all. The cards are GX Duel Academy's 1200 and the 755 beyond them (`window.YUGIOH_CARDS`), yours in
-  `player.flags.yugioh` (the debug menu's **Fill the Trunk** gives you three of each).
+  side deck 15, and three of any card in all. The cards are GX Duel Academy's 1200 and the 761 beyond them (`window.YUGIOH_CARDS`), yours in
+  `player.flags.yugioh` (the debug menu's **Fill the Trunk** gives you three of each, and **Clear the Trunk** takes every
+  card away, your decks' too).
 - **Duel Monsters' rules** (`window.DuelMonsters`, in `game/table-players.js`): the duel engine, ported from Yu-Gi-Oh!
   The Eternal Duelist Soul's decompilation (github.com/CosmicScribe64/eds-decomp): 8000 life points, five cards to
   start, the Draw, Standby, Main, Battle, second Main and End Phases (no attack on the duel's first turn, six cards
@@ -3452,7 +3461,7 @@ python3 tools/build-gx-trunk.py "<path to Yu-Gi-Oh! GX - Duel Academy (USA).gba>
   card's frame and the command and sort menus): each tile straight from the ROM, laid out as the game lays them on
   screen (`tools/lib/gx-trunk-pieces.json` says where each tile and palette is), in `assets/yugioh/trunk/`.
 
-**The cards beyond GX's**, cards 1201-1955: every card released in the TCG or the OCG up to Legacy of Darkness
+**The cards beyond GX's**, cards 1201-1961: every card released in the TCG or the OCG up to Legacy of Darkness
 (2003-06-06) that GX doesn't have, and the seven booster packs they come in (`tools/lib/extra-cards.json`: the cards
 in card-number order, and each pack's boss monster, cards and rarities). From YGOPRODeck's card database (names, text,
 kinds, types, attributes, levels and stats) and its cards' cropped art (80x80 in 64 colours, as GX's), downloaded
