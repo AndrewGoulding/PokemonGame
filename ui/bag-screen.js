@@ -474,7 +474,8 @@
 //   })
 // Two more ways the card shop opens it (opts.mode): "dismantle" (your cards, A on one to dismantle a spare copy for a
 // token of its rarity) and "trade" (every card, A on one to trade tokens of its rarity for it); the right column
-// shows your tokens (opts.tokens()), opts.action(card) says what A does ({ ask, run() -> message } or { error }),
+// shows your tokens (opts.tokens()), opts.action(card) says what A does ({ ask, run() -> message } or { error }, or
+// { most, many(n) -> question, run(n) } to do it to up to `most` copies at once),
 // and B leaves; SELECT sorts the cards there. Each card's rarity (window.YUGIOH_RARITY) shows by its stars. And
 // "list" (the shop's card list: opts.only's cards, A or START on one shows it, the right column opts.tokens()'s
 // lines under opts.rightTitle).
@@ -1007,6 +1008,13 @@
         const a = opts.action(current());
         if (a.error) { se("se_failure"); await say(a.error); continue; }
         se();
+        // (several copies at once: how many, then a.run(n))
+        if (a.most > 1) {
+          const n = await howMany(a.most, a.many);
+          if (n) { const msg = a.run(n); clamp(); se(); if (msg) await say(msg); }
+          paint();
+          continue;
+        }
         st.message = a.ask + "\nA: Yes   B: No"; paint();
         const yes = (await window.GbaMenus.keys((k) => (k === "a" || k === "b" ? k : undefined))) === "a";
         st.message = null;

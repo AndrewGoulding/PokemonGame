@@ -3263,9 +3263,10 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   out, with the set's name, how much of it you have and NEW on the cards you didn't have; they go into your Trunk.
   The first time you visit, he gives you **10 Pack Tokens**, for a booster pack of your choice each ("Trade in Pack
   Tokens.", on the same screen, a token a pack), and you build your first deck from them. He also **dismantles cards**: on the Trunk's screen,
-  A on a spare card (one not in any of your decks) for a token of its rarity, Common, Rare, Super Rare, Ultra Rare or Secret
-  Rare; and **trades tokens for cards**: every card on the Trunk's screen, A on one for 3 tokens of its rarity, if
-  your Duelist Level has opened its pack (SELECT on either screen opens the Trunk's sort menu). A card's rarity
+  A on a spare card (one not in any of your decks) for a token of its rarity (with more than one spare, as many
+  of them at once as you like), Common, Rare, Super Rare, Ultra Rare or Secret
+  Rare; and **trades tokens for cards**: every card of the packs your Duelist Level has opened (no others are listed) on
+  the Trunk's screen, A on one for 3 tokens of its rarity (SELECT on either screen opens the Trunk's sort menu). A card's rarity
   (`window.YUGIOH_RARITY`) is its rarity in its pack; the Trunk shows each card's. Packs of the sets the shop sold
   before (Legend of Blue Eyes, Metal Raiders and the rest) still in a save's bag become a Pack Token each.
   **Every card in the game comes from its booster packs**; 333 of GX's own cards aren't in the game: the 328 released after Legacy of Darkness, and five GX had

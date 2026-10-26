@@ -9819,9 +9819,9 @@
   }
   // The Kame Game shop: Yugi's grandpa, Solomon Muto, on GX Duel Academy's shop screen (ui/bag-screen.js's CardShop).
   // He sells the booster packs your duelist level has opened (window.YUGIOH_SETS, PACK_LEVEL), 300 a pack (game/bag.js's price), into your bag,
-  // opened from the Trunk's Inventory, their cards into your Trunk; he dismantles your spare cards (those not in your deck) for tokens of their
+  // opened from the Trunk's Inventory, their cards into your Trunk; he dismantles your spare cards (those not in your deck, several at once) for tokens of their
   // rarity (window.YUGIOH_RARITY: Common, Rare, Super Rare, Ultra Rare, Secret Rare), and trades any card whose
-  // pack you've opened for TOKENS_PER_CARD tokens of its rarity. (Packs of the old sets still in your bag he swaps for Pack Tokens.)
+  // pack you've opened (only those are listed) for TOKENS_PER_CARD tokens of its rarity. (Packs of the old sets still in your bag he swaps for Pack Tokens.)
   const PACK_SETS = ["darkhole", "spellbinding", "redeyes", "darkmagician", "trihorned", "blueeyes", "raigeki", "traphole", "necrofear", "skull", "jinzo"],
     PACK_CARDS = 9, TOKENS_PER_CARD = 3;
   // (the duelist level each pack's sold from: the weaker Spells', Traps' and monsters' from the start; the rest as you
@@ -9931,19 +9931,22 @@
           action: (no) => {
             const spare = (y.trunk[no] || 0) - inDeck(no), r = rarityOf(no);
             if (spare <= 0) return { error: "That card's in one of your decks.\nTake it out first to dismantle it." };
+            const take = (n) => { y.trunk[no] -= n; if (!y.trunk[no]) delete y.trunk[no]; y.tokens[r] = (y.tokens[r] || 0) + n; };
+            if (spare > 1) return { most: spare, many: () => "Dismantle how many?",
+              run: (n) => { take(n); return "You got " + n + " " + RARITY_NAME[r] + " Token" + (n > 1 ? "s" : "") + "!"; } };
             return { ask: "Dismantle " + C[no][0] + "?\nYou'll get " + (r === "u" ? "an " : "a ") + RARITY_NAME[r] + " Token.",
-              run: () => { y.trunk[no]--; if (!y.trunk[no]) delete y.trunk[no]; y.tokens[r] = (y.tokens[r] || 0) + 1; return null; } };
+              run: () => { take(1); return null; } };
           } });
         await persist();
       } else {
         await CardShop.say("Grandpa: Bring me " + TOKENS_PER_CARD + " tokens of a\ncard's rarity, and the card's yours!");
         await CardShop.say("(SELECT sorts the cards.)");
         CardShop.close();
-        await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, deck: y.deck, mode: "trade", title: "Trade", tokens: () => y.tokens,
+        // (only the cards of the packs your Duelist Level has opened)
+        const opened = packsSold(y), tradeable = window.YUGIOH_CARDS.cards.map((c, no) => no).filter((no) => no && opened.includes(packOf(no)));
+        await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, deck: y.deck, mode: "trade", title: "Trade", tokens: () => y.tokens, only: tradeable,
           action: (no) => {
-            const r = rarityOf(no), pk = packOf(no);
-            if (pk && !packsSold(y).includes(pk))
-              return { error: "Its pack opens at Duelist Level\n" + PACK_LEVEL[pk] + ": trade for it then!" };
+            const r = rarityOf(no);
             if ((y.tokens[r] || 0) < TOKENS_PER_CARD) return { error: "You need " + TOKENS_PER_CARD + " " + RARITY_NAME[r] + " Tokens\nfor this card." };
             return { ask: "Trade " + TOKENS_PER_CARD + " " + RARITY_NAME[r] + " Tokens\nfor " + C[no][0] + "?",
               run: () => { y.tokens[r] -= TOKENS_PER_CARD; y.trunk[no] = (y.trunk[no] || 0) + 1; return null; } };
