@@ -376,11 +376,13 @@
       return Number.isInteger(v) && v >= 0 && v < 16 ? v : w;
     });
     player.bag = {};
+    let oldPacks = 0;
     const RENAMED = renamedItems(data.version);
     for (const r of player.party.concat(boxed(player))) if (r.item) r.item = RENAMED[r.item] || r.item;
     for (let [item, n] of Object.entries(data.bag || {})) {
       item = RENAMED[item] || item;
       if (window.ITEMS[item] && n > 0) player.bag[item] = Math.min(MAX_ITEM_COUNT, n | 0);
+      else if (/-pack$/.test(item) && n > 0) oldPacks += n | 0;   // (Duel Monsters packs of the old sets: Pack Tokens, below)
     }
     // Everyone has the Explorer Kit, the Berry Pouch and the Fishing Rod, saves from before
     // them too (not Wes, in Orre: game/orre.js has your own Bag put away).
@@ -398,6 +400,7 @@
     for (const s of dex.caught || []) markCaught(player, s);
     player.badges = Array.isArray(data.badges) ? data.badges.slice() : [];
     player.flags = Object.assign({}, data.flags);
+    if (oldPacks) { const y = player.flags.yugioh = Object.assign({}, player.flags.yugioh); y.packTokens = (y.packTokens || 0) + oldPacks; }
     if (RENAMED[player.flags.registered]) player.flags.registered = RENAMED[player.flags.registered];
     // (Your own Bag, put away while you're Wes in Orre.)
     const stash = player.flags.orreStash;

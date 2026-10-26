@@ -1,5 +1,5 @@
 {
- "about": "The Duel Monsters cards released (TCG or OCG) up to Legacy of Darkness (2003-06-06) that GX Duel Academy doesn't have, card numbers 1201 on in this order (by release), and the seven booster packs they're in: each named for its boss monster, with each card's rarity in it (x Secret, u Ultra, s Super, r Rare, c Common). tools/build-extra-cards.py. gxNames: the GX cards whose names differ from the TCG's, for their pictures. The packs also hold GX's own cards of their time that GX's five sets don't (by GX's names and its rarities); removed: GX's cards released after Legacy of Darkness, in no pack, out of the game. removedNumbers: GX cards out by number (663, its \"Luster Dragon\" at 2400, the TCG's Luster Dragon #2). GX's cards take their TCG names and text too (gxNames: their old names, still known to DuelMonsters.numberOf). Checked against Yugipedia's OCG set lists up to Legacy of Darkness: the cards YGOPRODeck has not, or dated too late, are in (manual: their data and pictures from Yugipedia); aliases: names a card's text uses for another card. Then every card of the OCG and the TCG to Structure Deck: Fury from the Deep (2005-05-06), in four more packs (GX's own of that time back, keeping their rarities).",
+ "about": "The Duel Monsters cards released (TCG or OCG) up to Legacy of Darkness (2003-06-06) that GX Duel Academy doesn't have, card numbers 1201 on in this order (by release), and the seven booster packs they're in: each named for its boss monster, with each card's rarity in it (x Secret, u Ultra, s Super, r Rare, c Common). tools/build-extra-cards.py. gxNames: the GX cards whose names differ from the TCG's, for their pictures. The packs also hold GX's own cards of their time that GX's five sets don't (by GX's names and its rarities); removed: GX's cards released after Legacy of Darkness, in no pack, out of the game. removedNumbers: GX cards out by number (663, its \"Luster Dragon\" at 2400, the TCG's Luster Dragon #2). GX's cards take their TCG names and text too (gxNames: their old names, still known to DuelMonsters.numberOf). Checked against Yugipedia's OCG set lists up to Legacy of Darkness: the cards YGOPRODeck has not, or dated too late, are in (manual: their data and pictures from Yugipedia); aliases: names a card's text uses for another card. Then every card of the OCG and the TCG to Structure Deck: Fury from the Deep (2005-05-06), in four more packs (GX's own of that time back, keeping their rarities). packs: the eleven the shop sells, every card in the game in one, by power (Spells in two, Traps in two, monsters in seven, weakest first; each named for a Secret Rare in it); a card's rarity is its rarity there.",
  "cutoff": "2003-06-06",
  "cards": [
   "Archfiend Marmot of Nefariousness",
@@ -970,9 +970,1676 @@
  ],
  "packs": [
   {
-   "key": "moth",
-   "boss": "Perfectly Ultimate Great Moth",
+   "key": "darkhole",
+   "item": "dark-hole-pack",
+   "name": "Dark Hole",
+   "full": "Dark Hole",
+   "cover": "Dark Hole",
+   "boss": "Dark Hole",
+   "text": "Spells, the gentler half: Dark Hole the prize among them.",
    "cards": [
+    [
+     "Sword of Dark Destruction",
+     "c"
+    ],
+    [
+     "Insect Armor with Laser Cannon",
+     "c"
+    ],
+    [
+     "Elf's Light",
+     "c"
+    ],
+    [
+     "Steel Shell",
+     "c"
+    ],
+    [
+     "Horn of Light",
+     "x"
+    ],
+    [
+     "Cyber Shield",
+     "c"
+    ],
+    [
+     "Invigoration",
+     "c"
+    ],
+    [
+     "Dark Hole",
+     "x"
+    ],
+    [
+     "Mooyan Curry",
+     "c"
+    ],
+    [
+     "Soul of the Pure",
+     "c"
+    ],
+    [
+     "Dian Keto the Cure Master",
+     "c"
+    ],
+    [
+     "Ookazi",
+     "r"
+    ],
+    [
+     "Dark-Piercing Light",
+     "c"
+    ],
+    [
+     "Warrior Elimination",
+     "c"
+    ],
+    [
+     "Salamandra",
+     "s"
+    ],
+    [
+     "Acid Rain",
+     "c"
+    ],
+    [
+     "Eradicating Aerosol",
+     "c"
+    ],
+    [
+     "Breath of Light",
+     "c"
+    ],
+    [
+     "Eternal Drought",
+     "c"
+    ],
+    [
+     "Shine Palace",
+     "c"
+    ],
+    [
+     "Black Luster Ritual",
+     "u"
+    ],
+    [
+     "Zera Ritual",
+     "c"
+    ],
+    [
+     "War-Lion Ritual",
+     "c"
+    ],
+    [
+     "Beastly Mirror Ritual",
+     "c"
+    ],
+    [
+     "Commencement Dance",
+     "r"
+    ],
+    [
+     "Hamburger Recipe",
+     "s"
+    ],
+    [
+     "Novox's Prayer",
+     "c"
+    ],
+    [
+     "Turtle Oath",
+     "r"
+    ],
+    [
+     "Resurrection of Chakra",
+     "c"
+    ],
+    [
+     "Javelin Beetle Pact",
+     "c"
+    ],
+    [
+     "Garma Sword Oath",
+     "c"
+    ],
+    [
+     "Revival of Dokurorider",
+     "c"
+    ],
+    [
+     "Fortress Whale's Oath",
+     "c"
+    ],
+    [
+     "Black Magic Ritual",
+     "r"
+    ],
+    [
+     "Blue Medicine",
+     "c"
+    ],
+    [
+     "Raimei",
+     "c"
+    ],
+    [
+     "Burning Spear",
+     "c"
+    ],
+    [
+     "Gust Fan",
+     "c"
+    ],
+    [
+     "Ancient Telescope",
+     "c"
+    ],
+    [
+     "Last Day of Witch",
+     "c"
+    ],
+    [
+     "Exile of the Wicked",
+     "r"
+    ],
+    [
+     "Restructer Revolution",
+     "c"
+    ],
+    [
+     "The Forceful Sentry",
+     "u"
+    ],
+    [
+     "Inspection",
+     "u"
+    ],
+    [
+     "Sebek's Blessing",
+     "c"
+    ],
+    [
+     "Curse of the Masked Beast",
+     "u"
+    ],
+    [
+     "Mask of Dispel",
+     "s"
+    ],
+    [
+     "Multiplication of Ants",
+     "r"
+    ],
+    [
+     "Fairy Meteor Crush",
+     "r"
+    ],
+    [
+     "Rain of Mercy",
+     "s"
+    ],
+    [
+     "Yellow Luster Shield",
+     "c"
+    ],
+    [
+     "Spring of Rebirth",
+     "r"
+    ],
+    [
+     "Scroll of Bewitchment",
+     "r"
+    ],
+    [
+     "Meteor of Destruction",
+     "u"
+    ],
+    [
+     "Makiu, the Magical Mist",
+     "c"
+    ],
+    [
+     "Cyclon Laser",
+     "r"
+    ],
+    [
+     "Spirit Message \"N\"",
+     "u"
+    ],
+    [
+     "Spirit Message \"L\"",
+     "u"
+    ],
+    [
+     "Miracle Dig",
+     "r"
+    ],
+    [
+     "Cestus of Dagla",
+     "u"
+    ],
+    [
+     "Dark Snake Syndrome",
+     "r"
+    ],
+    [
+     "White Dragon Ritual",
+     "r"
+    ],
+    [
+     "Demotion",
+     "c"
+    ],
+    [
+     "Kishido Spirit",
+     "c"
+    ],
+    [
+     "Mass Driver",
+     "r"
+    ],
+    [
+     "Senri Eye",
+     "c"
+    ],
+    [
+     "Emblem of Dragon Destroyer",
+     "u"
+    ],
+    [
+     "Jar Robber",
+     "c"
+    ],
+    [
+     "Mega Ton Magical Cannon",
+     "c"
+    ],
+    [
+     "Continuous Destruction Punch",
+     "c"
+    ],
+    [
+     "Shinato's Ark",
+     "c"
+    ],
+    [
+     "Precious Cards from Beyond",
+     "r"
+    ],
+    [
+     "Rod of the Mind's Eye",
+     "c"
+    ],
+    [
+     "Token Thanksgiving",
+     "c"
+    ],
+    [
+     "Morale Boost",
+     "c"
+    ],
+    [
+     "Knight's Title",
+     "c"
+    ],
+    [
+     "Sage's Stone",
+     "r"
+    ],
+    [
+     "Incandescent Ordeal",
+     "c"
+    ],
+    [
+     "Contract with the Abyss",
+     "s"
+    ],
+    [
+     "Contract with the Dark Master",
+     "c"
+    ],
+    [
+     "Fuhma Shuriken",
+     "c"
+    ],
+    [
+     "Chaos End",
+     "r"
+    ],
+    [
+     "Chaos Greed",
+     "r"
+    ],
+    [
+     "D.D. Borderline",
+     "c"
+    ],
+    [
+     "Recycle",
+     "c"
+    ],
+    [
+     "Primal Seed",
+     "x"
+    ],
+    [
+     "Thunder Crash",
+     "c"
+    ],
+    [
+     "Dimension Distortion",
+     "c"
+    ],
+    [
+     "Gryphon's Feather Duster",
+     "c"
+    ],
+    [
+     "Stray Lambs",
+     "s"
+    ],
+    [
+     "Ultra Evolution Pill",
+     "c"
+    ],
+    [
+     "Earth Chant",
+     "c"
+    ],
+    [
+     "Dangerous Machine Type-6",
+     "r"
+    ],
+    [
+     "Mystik Wok",
+     "s"
+    ],
+    [
+     "Earthquake",
+     "s"
+    ],
+    [
+     "Goblin Thief",
+     "c"
+    ],
+    [
+     "Special Hurricane",
+     "r"
+    ],
+    [
+     "Order to Charge",
+     "c"
+    ],
+    [
+     "Soul Reversal",
+     "c"
+    ],
+    [
+     "7",
+     "c"
+    ],
+    [
+     "The Law of the Normal",
+     "c"
+    ],
+    [
+     "The Third Sarcophagus",
+     "c"
+    ],
+    [
+     "The Second Sarcophagus",
+     "c"
+    ],
+    [
+     "Inferno Tempest",
+     "r"
+    ],
+    [
+     "Mind Wipe",
+     "c"
+    ],
+    [
+     "Fusion Weapon",
+     "c"
+    ],
+    [
+     "Ritual Weapon",
+     "c"
+    ],
+    [
+     "Mokey Mokey Smackdown",
+     "r"
+    ],
+    [
+     "Malice Dispersion",
+     "c"
+    ],
+    [
+     "Poison Fangs",
+     "c"
+    ],
+    [
+     "Spiral Spear Strike",
+     "s"
+    ],
+    [
+     "Release Restraint",
+     "c"
+    ],
+    [
+     "Fulfillment of the Contract",
+     "r"
+    ],
+    [
+     "The Big March of Animals",
+     "c"
+    ],
+    [
+     "Overpowering Eye",
+     "c"
+    ],
+    [
+     "Battery Charger",
+     "r"
+    ],
+    [
+     "Kaminote Blow",
+     "c"
+    ],
+    [
+     "Doriado's Blessing",
+     "c"
+    ],
+    [
+     "Final Ritual of the Ancients",
+     "c"
+    ],
+    [
+     "Legendary Black Belt",
+     "c"
+    ],
+    [
+     "The Inexperienced Spy",
+     "c"
+    ],
+    [
+     "Mesmeric Control",
+     "c"
+    ],
+    [
+     "Seal of the Ancients",
+     "c"
+    ],
+    [
+     "Sword of Dragon's Soul",
+     "c"
+    ],
+    [
+     "Dimensionhole",
+     "u"
+    ],
+    [
+     "Chosen One",
+     "u"
+    ],
+    [
+     "Return of the Doomed",
+     "u"
+    ],
+    [
+     "The Mask of Remnants",
+     "r"
+    ],
+    [
+     "Dragonic Attack",
+     "r"
+    ],
+    [
+     "Spirit Elimination",
+     "r"
+    ],
+    [
+     "Array of Revealing Light",
+     "r"
+    ],
+    [
+     "Double Snare",
+     "s"
+    ],
+    [
+     "Dragon's Gunfire",
+     "s"
+    ],
+    [
+     "The Puppet Magic of Dark Ruler",
+     "r"
+    ],
+    [
+     "After the Struggle",
+     "c"
+    ],
+    [
+     "Convulsion of Nature",
+     "r"
+    ],
+    [
+     "Fengsheng Mirror",
+     "c"
+    ],
+    [
+     "Fusion Sword Murasame Blade",
+     "u"
+    ],
+    [
+     "Heart of Clear Water",
+     "r"
+    ],
+    [
+     "Magic Reflector",
+     "s"
+    ],
+    [
+     "Smoke Grenade of the Thief",
+     "s"
+    ],
+    [
+     "Spiritual Energy Settle Machine",
+     "r"
+    ],
+    [
+     "The Secret of the Bandit",
+     "c"
+    ],
+    [
+     "Pyramid Energy",
+     "c"
+    ],
+    [
+     "Secret Pass to the Treasures",
+     "c"
+    ],
+    [
+     "Timidity",
+     "c"
+    ],
+    [
+     "Buster Rancher",
+     "c"
+    ],
+    [
+     "Card Shuffle",
+     "c"
+    ],
+    [
+     "Dark Designator",
+     "r"
+    ],
+    [
+     "Hieroglyph Lithograph",
+     "c"
+    ],
+    [
+     "Question",
+     "r"
+    ],
+    [
+     "Reversal Quiz",
+     "c"
+    ],
+    [
+     "Spell Shattering Arrow",
+     "c"
+    ],
+    [
+     "Spell of Pain",
+     "c"
+    ],
+    [
+     "Ante",
+     "r"
+    ],
+    [
+     "Combination Attack",
+     "c"
+    ],
+    [
+     "Metalsilver Armor",
+     "r"
+    ],
+    [
+     "Raregold Armor",
+     "c"
+    ],
+    [
+     "Tribute Doll",
+     "s"
+    ],
+    [
+     "Amazoness Spellcaster",
+     "r"
+    ],
+    [
+     "Double Spell",
+     "r"
+    ],
+    [
+     "Gather Your Mind",
+     "c"
+    ],
+    [
+     "Spellbook Organization",
+     "c"
+    ],
+    [
+     "Unity",
+     "c"
+    ],
+    [
+     "Yu-Jo Friendship",
+     "c"
+    ],
+    [
+     "Butterfly Dagger - Elma",
+     "c"
+    ],
+    [
+     "Different Dimension Gate",
+     "s"
+    ],
+    [
+     "Fairy of the Spring",
+     "c"
+    ],
+    [
+     "Non-Spellcasting Area",
+     "c"
+    ],
+    [
+     "Rod of Silence - Kay'est",
+     "r"
+    ],
+    [
+     "Shooting Star Bow - Ceal",
+     "r"
+    ],
+    [
+     "Twin Swords of Flashing Light - Tryce",
+     "s"
+    ],
+    [
+     "Wicked-Breaking Flamberge - Baou",
+     "r"
+    ],
+    [
+     "Archfiend's Oath",
+     "s"
+    ],
+    [
+     "Checkmate",
+     "c"
+    ],
+    [
+     "Falling Down",
+     "r"
+    ],
+    [
+     "Mustering of the Dark Scorpions",
+     "c"
+    ],
+    [
+     "Pandemonium",
+     "s"
+    ],
+    [
+     "D.D. Designator",
+     "c"
+    ],
+    [
+     "Wild Nature's Release",
+     "c"
+    ],
+    [
+     "Jade Insect Whistle",
+     "c"
+    ],
+    [
+     "Amplifier",
+     "s"
+    ],
+    [
+     "Opti-Camouflage Armor",
+     "c"
+    ],
+    [
+     "Talisman of Trap Sealing",
+     "c"
+    ],
+    [
+     "Weapon Change",
+     "c"
+    ],
+    [
+     "Blessings of the Nile",
+     "c"
+    ],
+    [
+     "Delta Attacker",
+     "c"
+    ],
+    [
+     "Dust Barrier",
+     "c"
+    ],
+    [
+     "Enchanting Fitting Room",
+     "s"
+    ],
+    [
+     "Spell Economics",
+     "c"
+    ],
+    [
+     "Sword of the Soul-Eater",
+     "c"
+    ],
+    [
+     "Thousand Energy",
+     "c"
+    ],
+    [
+     "Triangle Power",
+     "c"
+    ],
+    [
+     "Marshmallon Glasses",
+     "c"
+    ],
+    [
+     "Tricky Spell 4",
+     "c"
+    ],
+    [
+     "Abyssal Designator",
+     "c"
+    ],
+    [
+     "Big Wave Small Wave",
+     "r"
+    ],
+    [
+     "The Graveyard in the Fourth Dimension",
+     "c"
+    ],
+    [
+     "Two-Man Cell Battle",
+     "c"
+    ],
+    [
+     "Flint",
+     "c"
+    ],
+    [
+     "Lighten the Load",
+     "c"
+    ],
+    [
+     "Necklace of Command",
+     "c"
+    ],
+    [
+     "Serial Spell",
+     "c"
+    ],
+    [
+     "Triangle Ecstasy Spark",
+     "c"
+    ],
+    [
+     "Owner's Seal",
+     "c"
+    ],
+    [
+     "Union Attack",
+     "c"
+    ],
+    [
+     "Ballista of Rampart Smashing",
+     "c"
+    ],
+    [
+     "Centrifugal Field",
+     "c"
+    ],
+    [
+     "Spell Absorption",
+     "s"
+    ],
+    [
+     "Double Attack",
+     "c"
+    ],
+    [
+     "Gift of the Martyr",
+     "c"
+    ],
+    [
+     "Impenetrable Formation",
+     "c"
+    ],
+    [
+     "Nitro Unit",
+     "c"
+    ],
+    [
+     "Shifting Shadows",
+     "c"
+    ]
+   ]
+  },
+  {
+   "key": "spellbinding",
+   "item": "spellbinding-circle-pack",
+   "name": "Spellbinding Circle",
+   "full": "Spellbinding Circle",
+   "cover": "Spellbinding Circle",
+   "boss": "Spellbinding Circle",
+   "text": "Traps, the gentler half: Spellbinding Circle the prize among them.",
+   "cards": [
+    [
+     "Spellbinding Circle",
+     "x"
+    ],
+    [
+     "Tragedy",
+     "c"
+    ],
+    [
+     "Reinforcements",
+     "r"
+    ],
+    [
+     "Castle Walls",
+     "c"
+    ],
+    [
+     "White Hole",
+     "c"
+    ],
+    [
+     "Call of the Grave",
+     "c"
+    ],
+    [
+     "Anti Raigeki",
+     "c"
+    ],
+    [
+     "Magical Thorn",
+     "c"
+    ],
+    [
+     "Gryphon Wing",
+     "c"
+    ],
+    [
+     "Solomon's Lawbook",
+     "s"
+    ],
+    [
+     "Aqua Chorus",
+     "c"
+    ],
+    [
+     "Royal Command",
+     "r"
+    ],
+    [
+     "Deal of Phantom",
+     "r"
+    ],
+    [
+     "Fatal Abacus",
+     "r"
+    ],
+    [
+     "Disappear",
+     "s"
+    ],
+    [
+     "Bottomless Shifting Sand",
+     "s"
+    ],
+    [
+     "Statue of the Wicked",
+     "c"
+    ],
+    [
+     "Hidden Soldiers",
+     "c"
+    ],
+    [
+     "Curse of Aging",
+     "c"
+    ],
+    [
+     "Non Aggression Area",
+     "r"
+    ],
+    [
+     "Huge Revolution",
+     "c"
+    ],
+    [
+     "Meteorain",
+     "c"
+    ],
+    [
+     "Pitch-Black Power Stone",
+     "s"
+    ],
+    [
+     "Exhausting Spell",
+     "c"
+    ],
+    [
+     "Hidden Spellbook",
+     "r"
+    ],
+    [
+     "Miracle Restoring",
+     "r"
+    ],
+    [
+     "Disarmament",
+     "c"
+    ],
+    [
+     "The Spell Absorbing Life",
+     "c"
+    ],
+    [
+     "Really Eternal Rest",
+     "c"
+    ],
+    [
+     "Altar for Tribute",
+     "c"
+    ],
+    [
+     "Frozen Soul",
+     "c"
+    ],
+    [
+     "Ray of Hope",
+     "c"
+    ],
+    [
+     "Blasting the Ruins",
+     "r"
+    ],
+    [
+     "Tower of Babel",
+     "c"
+    ],
+    [
+     "Chain Disappearance",
+     "s"
+    ],
+    [
+     "Destruction Ring",
+     "c"
+    ],
+    [
+     "Self-Destruct Button",
+     "c"
+    ],
+    [
+     "Curse of Darkness",
+     "u"
+    ],
+    [
+     "Begone, Knave!",
+     "r"
+    ],
+    [
+     "DNA Transplant",
+     "r"
+    ],
+    [
+     "Robbin' Zombie",
+     "c"
+    ],
+    [
+     "Backfire",
+     "s"
+    ],
+    [
+     "Light of Judgment",
+     "c"
+    ],
+    [
+     "Solar Ray",
+     "c"
+    ],
+    [
+     "Armor Break",
+     "c"
+    ],
+    [
+     "The First Sarcophagus",
+     "c"
+    ],
+    [
+     "Desert Sunlight",
+     "c"
+    ],
+    [
+     "Des Counterblow",
+     "c"
+    ],
+    [
+     "Labyrinth of Nightmare",
+     "r"
+    ],
+    [
+     "Soul Resurrection",
+     "c"
+    ],
+    [
+     "Pyramid of Light",
+     "c"
+    ],
+    [
+     "Ninjitsu Art of Decoy",
+     "c"
+    ],
+    [
+     "Heavy Slump",
+     "r"
+    ],
+    [
+     "Cemetary Bomb",
+     "c"
+    ],
+    [
+     "Fruits of Kozaky's Studies",
+     "c"
+    ],
+    [
+     "Fuh-Rin-Ka-Zan",
+     "r"
+    ],
+    [
+     "Chain Burst",
+     "c"
+    ],
+    [
+     "Spell Purification",
+     "c"
+    ],
+    [
+     "Good Goblin Housekeeping",
+     "x"
+    ],
+    [
+     "Assault on GHQ",
+     "c"
+    ],
+    [
+     "Elemental Burst",
+     "r"
+    ],
+    [
+     "Minefield Eruption",
+     "c"
+    ],
+    [
+     "Kozaky's Self-Destruct Button",
+     "c"
+    ],
+    [
+     "Mispolymerization",
+     "s"
+    ],
+    [
+     "Rock Bombardment",
+     "s"
+    ],
+    [
+     "Token Feastevil",
+     "c"
+    ],
+    [
+     "Spell-Stopping Statute",
+     "c"
+    ],
+    [
+     "Royal Surrender",
+     "c"
+    ],
+    [
+     "Reverse Trap",
+     "c"
+    ],
+    [
+     "Call of Darkness",
+     "c"
+    ],
+    [
+     "Goblin Fan",
+     "c"
+    ],
+    [
+     "Major Riot",
+     "u"
+    ],
+    [
+     "Metal Detector",
+     "s"
+    ],
+    [
+     "Mystic Probe",
+     "u"
+    ],
+    [
+     "World Suppression",
+     "u"
+    ],
+    [
+     "Mystical Refpanel",
+     "c"
+    ],
+    [
+     "Destruction Punch",
+     "s"
+    ],
+    [
+     "Riryoku Field",
+     "r"
+    ],
+    [
+     "The Emperor's Holiday",
+     "s"
+    ],
+    [
+     "Virus Cannon",
+     "c"
+    ],
+    [
+     "Ready for Intercepting",
+     "r"
+    ],
+    [
+     "Soul Demolition",
+     "r"
+    ],
+    [
+     "The Dragon's Bead",
+     "s"
+    ],
+    [
+     "Bubble Crash",
+     "r"
+    ],
+    [
+     "Drop Off",
+     "s"
+    ],
+    [
+     "Ominous Fortunetelling",
+     "u"
+    ],
+    [
+     "Spirit's Invitation",
+     "r"
+    ],
+    [
+     "Dark Coffin",
+     "u"
+    ],
+    [
+     "Pharaoh's Treasure",
+     "c"
+    ],
+    [
+     "Pyro Clock of Destiny",
+     "c"
+    ],
+    [
+     "Toon Defense",
+     "r"
+    ],
+    [
+     "Barrel Behind the Door",
+     "r"
+    ],
+    [
+     "D. Tribe",
+     "c"
+    ],
+    [
+     "Disturbance Strategy",
+     "u"
+    ],
+    [
+     "Narrow Pass",
+     "c"
+    ],
+    [
+     "Trap of Board Eraser",
+     "c"
+    ],
+    [
+     "Relieve Monster",
+     "c"
+    ],
+    [
+     "Armored Glass",
+     "u"
+    ],
+    [
+     "Formation Union",
+     "c"
+    ],
+    [
+     "Physical Double",
+     "c"
+    ],
+    [
+     "Pineapple Blast",
+     "c"
+    ],
+    [
+     "Amazoness Archers",
+     "r"
+    ],
+    [
+     "Dramatic Rescue",
+     "r"
+    ],
+    [
+     "Arsenal Robber",
+     "c"
+    ],
+    [
+     "Staunch Defender",
+     "c"
+    ],
+    [
+     "Judgment of the Pharaoh",
+     "c"
+    ],
+    [
+     "Archfiend's Roar",
+     "r"
+    ],
+    [
+     "Battle-Scarred",
+     "r"
+    ],
+    [
+     "Blast Held by a Tribute",
+     "c"
+    ],
+    [
+     "Dark Scorpion Combination",
+     "c"
+    ],
+    [
+     "Dice Re-Roll",
+     "r"
+    ],
+    [
+     "Spell Vanishing",
+     "c"
+    ],
+    [
+     "Cloning",
+     "r"
+    ],
+    [
+     "Big Burn",
+     "c"
+    ],
+    [
+     "Spatial Collapse",
+     "c"
+    ],
+    [
+     "Fiend's Hand Mirror",
+     "c"
+    ],
+    [
+     "Sixth Sense",
+     "c"
+    ],
+    [
+     "Micro Ray",
+     "c"
+    ],
+    [
+     "Talisman of Spell Sealing",
+     "c"
+    ],
+    [
+     "Soul Rope",
+     "c"
+    ],
+    [
+     "Dora of Fate",
+     "c"
+    ],
+    [
+     "Human-Wave Tactics",
+     "r"
+    ],
+    [
+     "Judgment of the Desert",
+     "c"
+    ],
+    [
+     "Order to Smash",
+     "c"
+    ],
+    [
+     "Stronghold the Moving Fortress",
+     "c"
+    ],
+    [
+     "Absolute End",
+     "c"
+    ],
+    [
+     "Enervating Mist",
+     "c"
+    ],
+    [
+     "Gorgon's Eye",
+     "r"
+    ],
+    [
+     "Greed",
+     "c"
+    ],
+    [
+     "Hallowed Life Barrier",
+     "c"
+    ],
+    [
+     "Muko",
+     "u"
+    ],
+    [
+     "Taunt",
+     "c"
+    ],
+    [
+     "Astral Barrier",
+     "s"
+    ],
+    [
+     "Covering Fire",
+     "c"
+    ],
+    [
+     "Mind Haxorz",
+     "c"
+    ],
+    [
+     "Pikeru's Circle of Enchantment",
+     "c"
+    ],
+    [
+     "Rare Metalmorph",
+     "s"
+    ],
+    [
+     "Call of the Earthbound",
+     "c"
+    ],
+    [
+     "Beast Soul Swap",
+     "c"
+    ],
+    [
+     "Cross Counter",
+     "x"
+    ],
+    [
+     "Forced Ceasefire",
+     "c"
+    ],
+    [
+     "Penalty Game!",
+     "c"
+    ],
+    [
+     "Pole Position",
+     "c"
+    ],
+    [
+     "Grave Lure",
+     "c"
+    ],
+    [
+     "Level Conversion Lab",
+     "c"
+    ],
+    [
+     "Lone Wolf",
+     "c"
+    ],
+    [
+     "Pikeru's Second Sight",
+     "c"
+    ]
+   ]
+  },
+  {
+   "key": "redeyes",
+   "item": "red-eyes-pack",
+   "name": "Red-Eyes Black Dragon",
+   "full": "Red-Eyes Black Dragon",
+   "cover": "Red-Eyes Black Dragon",
+   "boss": "Red-Eyes Black Dragon",
+   "text": "Monsters to start with: Red-Eyes Black Dragon the prize.",
+   "cards": [
+    [
+     "Shadow Specter",
+     "c"
+    ],
+    [
+     "Red-Eyes Black Dragon",
+     "x"
+    ],
+    [
+     "Wings of Wicked Flame",
+     "c"
+    ],
+    [
+     "Curtain of the Dark Ones",
+     "c"
+    ],
+    [
+     "Fiend's Hand",
+     "c"
+    ],
+    [
+     "Fire Reaper",
+     "c"
+    ],
+    [
+     "Fire Eye",
+     "c"
+    ],
+    [
+     "Mech Mole Zombie",
+     "c"
+    ],
+    [
+     "Phantom Ghost",
+     "c"
+    ],
+    [
+     "Trap Master",
+     "u"
+    ],
+    [
+     "Dark Artist",
+     "r"
+    ],
+    [
+     "Zone Eater",
+     "c"
+    ],
+    [
+     "Swordsman from a Distant Land",
+     "c"
+    ],
+    [
+     "Monster Eye",
+     "c"
+    ],
+    [
+     "Needle Ball",
+     "r"
+    ],
+    [
+     "Bone Mouse",
+     "c"
+    ],
+    [
+     "The Wandering Doomed",
+     "c"
+    ],
+    [
+     "Flame Viper",
+     "c"
+    ],
+    [
+     "Satellite Cannon",
+     "c"
+    ],
+    [
+     "Boneheimer",
+     "x"
+    ],
+    [
+     "Flame Dancer",
+     "c"
+    ],
+    [
+     "Lightning Conger",
+     "c"
+    ],
+    [
+     "Spherous Lady",
+     "r"
+    ],
+    [
+     "Gradius' Option",
+     "u"
+    ],
+    [
+     "People Running About",
+     "r"
+    ],
+    [
+     "Aitsu",
+     "c"
+    ],
+    [
+     "Magical Plant Mandragola",
+     "r"
+    ],
+    [
+     "Outstanding Dog Marron",
+     "s"
+    ],
+    [
+     "Soul Tiger",
+     "u"
+    ],
+    [
+     "Anti-Aircraft Flower",
+     "r"
+    ],
+    [
+     "Atomic Firefly",
+     "c"
+    ],
+    [
+     "Piranha Army",
+     "r"
+    ],
+    [
+     "Gigobyte",
+     "c"
+    ],
+    [
+     "Kozaky",
+     "c"
+    ],
+    [
+     "Fiend Scorpion",
+     "c"
+    ],
+    [
+     "Pharaoh's Servant",
+     "s"
+    ],
+    [
+     "Pharaonic Protector",
+     "r"
+    ],
+    [
+     "Aswan Apparition",
+     "c"
+    ],
+    [
+     "Nubian Guard",
+     "c"
+    ],
+    [
+     "Goblin Calligrapher",
+     "c"
+    ],
+    [
+     "Mighty Guard",
+     "r"
+    ],
+    [
+     "Bokoichi the Freightening Car",
+     "c"
+    ],
+    [
+     "Harpie Girl",
+     "s"
+    ],
+    [
+     "A-Team: Trap Disposal Unit",
+     "s"
+    ],
+    [
+     "Castle Gate",
+     "c"
+    ],
+    [
+     "Blade Rabbit",
+     "s"
+    ],
+    [
+     "Lost Guardian",
+     "s"
+    ],
+    [
+     "Megarock Dragon",
+     "x"
+    ],
+    [
+     "Batteryman AA",
+     "r"
+    ],
     [
      "Archfiend Marmot of Nefariousness",
      "c"
@@ -984,10 +2651,6 @@
     [
      "Candle of Fate",
      "c"
-    ],
-    [
-     "Dark Gray",
-     "r"
     ],
     [
      "Eyearmor",
@@ -1002,19 +2665,7 @@
      "c"
     ],
     [
-     "Hitotsu-Me Giant",
-     "s"
-    ],
-    [
      "Hourglass of Life",
-     "c"
-    ],
-    [
-     "Kagemusha of the Blue Flame",
-     "c"
-    ],
-    [
-     "Kurama",
      "c"
     ],
     [
@@ -1022,15 +2673,7 @@
      "c"
     ],
     [
-     "Mammoth Graveyard",
-     "s"
-    ],
-    [
      "Meotoko",
-     "c"
-    ],
-    [
-     "Nemuriko",
      "c"
     ],
     [
@@ -1039,10 +2682,6 @@
     ],
     [
      "The Drdek",
-     "c"
-    ],
-    [
-     "The Furious Sea King",
      "c"
     ],
     [
@@ -1056,10 +2695,6 @@
     [
      "Winged Cleaver",
      "c"
-    ],
-    [
-     "Kanan the Swordmistress",
-     "u"
     ],
     [
      "Ancient Jar",
@@ -1099,7 +2734,7 @@
     ],
     [
      "Happy Lover",
-     "c"
+     "u"
     ],
     [
      "Hurricail",
@@ -1131,7 +2766,7 @@
     ],
     [
      "Synchar",
-     "r"
+     "c"
     ],
     [
      "The Melting Red Shadow",
@@ -1143,18 +2778,14 @@
     ],
     [
      "Twin Long Rods #1",
-     "r"
+     "c"
     ],
     [
      "Vishwar Randi",
-     "r"
+     "c"
     ],
     [
      "Water Element",
-     "r"
-    ],
-    [
-     "Wattkid",
      "c"
     ],
     [
@@ -1178,32 +2809,12 @@
      "r"
     ],
     [
-     "Basic Insect",
-     "c"
-    ],
-    [
      "Change Slime",
      "c"
     ],
     [
-     "Dark King of the Abyss",
-     "s"
-    ],
-    [
      "Dark Prisoner",
      "c"
-    ],
-    [
-     "Dragon Capture Jar",
-     "x"
-    ],
-    [
-     "Fiend Reflection #2",
-     "s"
-    ],
-    [
-     "Green Phantom King",
-     "r"
     ],
     [
      "Key Mace",
@@ -1223,7 +2834,7 @@
     ],
     [
      "Monsturtle",
-     "r"
+     "c"
     ],
     [
      "Mountain Warrior",
@@ -1235,14 +2846,6 @@
     ],
     [
      "Necrolancer the Time-lord",
-     "c"
-    ],
-    [
-     "Ray & Temperature",
-     "s"
-    ],
-    [
-     "Root Water",
      "r"
     ],
     [
@@ -1250,63 +2853,27 @@
      "c"
     ],
     [
-     "Trial of Nightmare",
-     "s"
-    ],
-    [
-     "Turtle Tiger",
-     "s"
-    ],
-    [
-     "Two-Mouth Darkruler",
-     "c"
-    ],
-    [
-     "Two-Pronged Attack",
-     "u"
-    ],
-    [
-     "Celtic Guardian",
-     "u"
-    ],
-    [
      "Genin",
      "c"
     ],
     [
      "Kageningen",
-     "c"
-    ],
-    [
-     "King Fog",
-     "s"
+     "r"
     ],
     [
      "Rock Ogre Grotto #2",
-     "r"
-    ],
-    [
-     "Spiked Snail",
-     "r"
-    ],
-    [
-     "The 13th Grave",
-     "s"
-    ],
-    [
-     "Blue-Eyed Silver Zombie",
      "c"
     ],
     [
-     "Claw Reacher",
-     "r"
+     "Spiked Snail",
+     "c"
+    ],
+    [
+     "Blue-Eyed Silver Zombie",
+     "s"
     ],
     [
      "Dorover",
-     "r"
-    ],
-    [
-     "Hard Armor",
      "c"
     ],
     [
@@ -1314,36 +2881,12 @@
      "r"
     ],
     [
-     "Kumootoko",
-     "r"
-    ],
-    [
-     "Larvas",
-     "r"
-    ],
-    [
-     "Meda Bat",
-     "c"
-    ],
-    [
      "Solitude",
-     "s"
-    ],
-    [
-     "Stone Armadiller",
-     "r"
+     "u"
     ],
     [
      "Supporter in the Shadows",
-     "s"
-    ],
-    [
-     "Terra the Terrible",
-     "u"
-    ],
-    [
-     "Uraby",
-     "u"
+     "r"
     ],
     [
      "Wood Remains",
@@ -1358,31 +2901,11 @@
      "c"
     ],
     [
-     "Kamakiriman",
-     "u"
-    ],
-    [
      "Abyss Flower",
      "c"
     ],
     [
-     "Akihiron",
-     "u"
-    ],
-    [
      "Alinsection",
-     "r"
-    ],
-    [
-     "Ansatsu",
-     "u"
-    ],
-    [
-     "Bean Soldier",
-     "u"
-    ],
-    [
-     "Bolt Penguin",
      "s"
     ],
     [
@@ -1390,315 +2913,8 @@
      "c"
     ],
     [
-     "Corroding Shark",
-     "r"
-    ],
-    [
      "Fairywitch",
      "r"
-    ],
-    [
-     "Giant Flea",
-     "u"
-    ],
-    [
-     "Perfectly Ultimate Great Moth",
-     "x"
-    ],
-    [
-     "Curtain of the Dark Ones",
-     "c"
-    ],
-    [
-     "Fiend's Hand",
-     "r"
-    ],
-    [
-     "Fire Reaper",
-     "c"
-    ],
-    [
-     "Ryu-Kishin",
-     "c"
-    ],
-    [
-     "Battle Warrior",
-     "s"
-    ],
-    [
-     "Wings of Wicked Flame",
-     "c"
-    ],
-    [
-     "Fire Eye",
-     "r"
-    ],
-    [
-     "Mech Mole Zombie",
-     "r"
-    ],
-    [
-     "Phantom Ghost",
-     "r"
-    ],
-    [
-     "Blue Medicine",
-     "r"
-    ],
-    [
-     "Raimei",
-     "r"
-    ],
-    [
-     "Shadow Specter",
-     "c"
-    ],
-    [
-     "Mooyan Curry",
-     "r"
-    ],
-    [
-     "Zombie Warrior",
-     "c"
-    ],
-    [
-     "Kamionwizard",
-     "c"
-    ],
-    [
-     "Mavelus",
-     "c"
-    ],
-    [
-     "De-Spell",
-     "c"
-    ],
-    [
-     "Bone Mouse",
-     "r"
-    ],
-    [
-     "Sword of Dark Destruction",
-     "c"
-    ],
-    [
-     "Elf's Light",
-     "r"
-    ],
-    [
-     "Steel Shell",
-     "r"
-    ],
-    [
-     "Invigoration",
-     "c"
-    ],
-    [
-     "Soul of the Pure",
-     "r"
-    ],
-    [
-     "Ookazi",
-     "c"
-    ],
-    [
-     "Dark-Piercing Light",
-     "s"
-    ],
-    [
-     "Burning Spear",
-     "r"
-    ],
-    [
-     "Gust Fan",
-     "r"
-    ],
-    [
-     "Barox",
-     "c"
-    ],
-    [
-     "Rare Fish",
-     "c"
-    ],
-    [
-     "Skelengel",
-     "c"
-    ],
-    [
-     "The Wandering Doomed",
-     "r"
-    ],
-    [
-     "Yamadron",
-     "c"
-    ],
-    [
-     "Millennium Shield",
-     "u"
-    ],
-    [
-     "Hercules Beetle",
-     "c"
-    ],
-    [
-     "Temple of Skulls",
-     "c"
-    ],
-    [
-     "Rhaimundos of the Red Sword",
-     "c"
-    ],
-    [
-     "Doriado",
-     "r"
-    ],
-    [
-     "Beautiful Headhuntress",
-     "r"
-    ],
-    [
-     "Wodan the Resident of the Forest",
-     "c"
-    ],
-    [
-     "Dark Artist",
-     "c"
-    ],
-    [
-     "Sonic Maid",
-     "r"
-    ],
-    [
-     "Vermillion Sparrow",
-     "c"
-    ],
-    [
-     "Kuwagata α",
-     "c"
-    ],
-    [
-     "Skullbird",
-     "c"
-    ],
-    [
-     "Kwagar Hercules",
-     "s"
-    ],
-    [
-     "Takuhee",
-     "c"
-    ],
-    [
-     "Warrior of Tradition",
-     "r"
-    ],
-    [
-     "Reinforcements",
-     "c"
-    ],
-    [
-     "Castle Walls",
-     "c"
-    ],
-    [
-     "Ancient Telescope",
-     "c"
-    ],
-    [
-     "Insect Armor with Laser Cannon",
-     "s"
-    ],
-    [
-     "Cyber Shield",
-     "c"
-    ],
-    [
-     "Salamandra",
-     "x"
-    ],
-    [
-     "Shine Palace",
-     "r"
-    ],
-    [
-     "Harpie's Feather Duster",
-     "x"
-    ],
-    [
-     "Pragtical",
-     "c"
-    ],
-    [
-     "Trakodon",
-     "c"
-    ],
-    [
-     "Flame Viper",
-     "c"
-    ],
-    [
-     "Warrior Elimination",
-     "s"
-    ],
-    [
-     "Acid Rain",
-     "s"
-    ],
-    [
-     "Eradicating Aerosol",
-     "c"
-    ],
-    [
-     "Breath of Light",
-     "s"
-    ],
-    [
-     "Eternal Drought",
-     "c"
-    ],
-    [
-     "Revival of Dokurorider",
-     "r"
-    ],
-    [
-     "Dokurorider",
-     "r"
-    ],
-    [
-     "Axe Raider",
-     "s"
-    ],
-    [
-     "Faith Bird",
-     "c"
-    ]
-   ],
-   "item": "ultimate-great-moth-pack",
-   "full": "Perfectly Ultimate Great Moth",
-   "name": "Ultimate Great Moth",
-   "cover": "Perfectly Ultimate Great Moth",
-   "text": "The oldest cards of all, and the moths: Petit Moth to Perfectly Ultimate Great Moth."
-  },
-  {
-   "key": "gate",
-   "boss": "Gate Guardian",
-   "cards": [
-    [
-     "Giant Mech-Soldier",
-     "u"
-    ],
-    [
-     "Key Mace #2",
-     "c"
-    ],
-    [
-     "Little D",
-     "c"
-    ],
-    [
-     "Mabarrel",
-     "u"
     ],
     [
      "Megirus Light",
@@ -1709,148 +2925,36 @@
      "c"
     ],
     [
-     "One Who Hunts Souls",
-     "c"
-    ],
-    [
-     "Oscillo Hero",
-     "c"
-    ],
-    [
-     "Rogue Doll",
-     "r"
-    ],
-    [
-     "Shining Friendship",
-     "c"
-    ],
-    [
-     "Stone Ghost",
-     "c"
-    ],
-    [
-     "The Inexperienced Spy",
-     "c"
-    ],
-    [
-     "The Statue of Easter Island",
-     "c"
-    ],
-    [
      "White Dolphin",
      "c"
     ],
     [
      "Wilmee",
-     "c"
-    ],
-    [
-     "Winged Dragon, Guardian of the Fortress #2",
-     "c"
+     "s"
     ],
     [
      "Wood Clown",
-     "c"
-    ],
-    [
-     "Wow Warrior",
-     "c"
+     "r"
     ],
     [
      "Zarigun",
      "c"
     ],
     [
-     "Anthrosaurus",
-     "c"
-    ],
-    [
-     "Armored Starfish",
-     "c"
-    ],
-    [
-     "Beaver Warrior",
-     "r"
-    ],
-    [
      "Binding Chain",
-     "c"
-    ],
-    [
-     "Drooling Lizard",
-     "c"
+     "u"
     ],
     [
      "Eldeen",
-     "c"
-    ],
-    [
-     "Misairuzame",
-     "s"
-    ],
-    [
-     "Reaper of the Cards",
-     "x"
-    ],
-    [
-     "Sand Stone",
      "r"
-    ],
-    [
-     "Skull Stalker",
-     "c"
     ],
     [
      "Sleeping Lion",
-     "c"
-    ],
-    [
-     "Spike Seadra",
      "s"
-    ],
-    [
-     "Succubus Knight",
-     "s"
-    ],
-    [
-     "Tripwire Beast",
-     "c"
-    ],
-    [
-     "Witty Phantom",
-     "r"
     ],
     [
      "Wretched Ghost of the Attic",
      "c"
-    ],
-    [
-     "Fairy's Gift",
-     "r"
-    ],
-    [
-     "Flying Penguin",
-     "c"
-    ],
-    [
-     "Megasonic Eye",
-     "u"
-    ],
-    [
-     "Stuffed Animal",
-     "c"
-    ],
-    [
-     "Takriminos",
-     "r"
-    ],
-    [
-     "Three-Legged Zombies",
-     "c"
-    ],
-    [
-     "Yaranzo",
-     "r"
     ],
     [
      "Barrel Lily",
@@ -1858,251 +2962,43 @@
     ],
     [
      "Dokuroizo the Grim Reaper",
-     "c"
-    ],
-    [
-     "Fiend Reflection #1",
-     "r"
-    ],
-    [
-     "Cyber Soldier of Darkworld",
-     "r"
-    ],
-    [
-     "Golgoil",
-     "c"
-    ],
-    [
-     "Great White",
-     "r"
-    ],
-    [
-     "Hourglass of Courage",
-     "s"
+     "u"
     ],
     [
      "Kappa Avenger",
-     "c"
-    ],
-    [
-     "LaMoon",
-     "r"
-    ],
-    [
-     "Leo Wizard",
-     "r"
-    ],
-    [
-     "Lisark",
-     "r"
+     "u"
     ],
     [
      "Living Vase",
      "c"
     ],
     [
-     "Minomushi Warrior",
-     "r"
-    ],
-    [
-     "Mon Larvas",
-     "r"
-    ],
-    [
      "Muse-A",
-     "c"
-    ],
-    [
-     "Mystic Clown",
      "r"
-    ],
-    [
-     "Patrol Robo",
-     "s"
-    ],
-    [
-     "Reverse Trap",
-     "c"
-    ],
-    [
-     "Spirit of the Books",
-     "r"
-    ],
-    [
-     "Tatsunootoshigo",
-     "s"
-    ],
-    [
-     "That Which Feeds on Life",
-     "c"
-    ],
-    [
-     "The Judgement Hand",
-     "c"
-    ],
-    [
-     "Tiger Axe",
-     "c"
-    ],
-    [
-     "Ultimate Offering",
-     "s"
     ],
     [
      "Yashinoki",
      "c"
     ],
     [
-     "Yormungarde",
-     "c"
-    ],
-    [
-     "Acid Trap Hole",
-     "r"
-    ],
-    [
-     "Crush Card Virus",
-     "u"
-    ],
-    [
-     "Kunai with Chain",
-     "u"
-    ],
-    [
-     "Seiyaryu",
-     "u"
-    ],
-    [
-     "Ancient Lizard Warrior",
-     "r"
-    ],
-    [
-     "Armored Lizard",
-     "r"
-    ],
-    [
-     "Cocoon of Evolution",
-     "u"
-    ],
-    [
-     "Crawling Dragon",
-     "s"
-    ],
-    [
-     "D. Human",
-     "c"
-    ],
-    [
-     "Dark Assailant",
-     "c"
-    ],
-    [
-     "Doma The Angel of Silence",
-     "s"
-    ],
-    [
-     "Electric Lizard",
-     "u"
-    ],
-    [
-     "Great Bill",
-     "c"
-    ],
-    [
-     "Hunter Spider",
-     "s"
-    ],
-    [
      "Kattapillar",
      "c"
     ],
     [
-     "Kojikocy",
-     "r"
-    ],
-    [
-     "Morinphen",
-     "s"
-    ],
-    [
-     "Nekogal #1",
-     "c"
-    ],
-    [
-     "Ogre of the Black Shadow",
-     "c"
-    ],
-    [
-     "Petit Moth",
-     "c"
-    ],
-    [
-     "Rock Ogre Grotto #1",
-     "c"
-    ],
-    [
-     "Steel Scorpion",
-     "c"
-    ],
-    [
      "Tao the Chanter",
-     "c"
-    ],
-    [
-     "Trent",
      "u"
     ],
     [
-     "Water Girl",
-     "c"
-    ],
-    [
-     "Water Omotics",
-     "r"
-    ],
-    [
      "Barrel Rock",
-     "c"
-    ],
-    [
-     "Fairy of the Fountain",
-     "s"
-    ],
-    [
-     "Fiend Kraken",
-     "c"
-    ],
-    [
-     "Big Insect",
-     "r"
-    ],
-    [
-     "Brave Scizzar",
-     "c"
+     "u"
     ],
     [
      "Dancing Elf",
      "c"
     ],
     [
-     "Dark Titan of Terror",
-     "c"
-    ],
-    [
      "Dharma Cannon",
      "c"
-    ],
-    [
-     "Emperor of the Land and Sea",
-     "u"
-    ],
-    [
-     "Gate Guardian",
-     "x"
-    ],
-    [
-     "Goddess of Whim",
-     "r"
     ],
     [
      "Gorgon Egg",
@@ -2113,354 +3009,23 @@
      "c"
     ],
     [
-     "La Jinn the Mystical Genie of the Lamp",
-     "c"
-    ],
-    [
-     "Blue-Eyes Ultimate Dragon",
-     "x"
-    ],
-    [
-     "Zone Eater",
-     "c"
-    ],
-    [
-     "Swordsman from a Distant Land",
-     "c"
-    ],
-    [
-     "Mechanicalchaser",
-     "u"
-    ],
-    [
-     "Aqua Dragon",
-     "c"
-    ],
-    [
-     "Giant Red Seasnake",
-     "s"
-    ],
-    [
-     "Sea Kamen",
-     "c"
-    ],
-    [
-     "Cockroach Knight",
-     "c"
-    ],
-    [
-     "Man-eating Black Shark",
-     "c"
-    ],
-    [
-     "Fairy Dragon",
-     "c"
-    ],
-    [
-     "Amazon of the Seas",
-     "c"
-    ],
-    [
-     "Gruesome Goo",
-     "c"
-    ],
-    [
-     "Sengenjin",
-     "s"
-    ],
-    [
-     "Cosmo Queen",
-     "u"
-    ],
-    [
-     "Mikazukinoyaiba",
-     "r"
-    ],
-    [
-     "Meteor Dragon",
-     "r"
-    ],
-    [
-     "Meteor Black Dragon",
-     "s"
-    ],
-    [
-     "Firewing Pegasus",
-     "s"
-    ],
-    [
-     "Magician of Black Chaos",
-     "x"
-    ],
-    [
-     "Graceful Charity",
-     "s"
-    ],
-    [
-     "White Hole",
-     "s"
-    ],
-    [
-     "Call of the Grave",
-     "s"
-    ],
-    [
-     "Rose Spectre of Dunn",
-     "c"
-    ],
-    [
-     "Snakeyashi",
-     "c"
-    ],
-    [
-     "Anti Raigeki",
-     "s"
-    ],
-    [
-     "Two-Headed King Rex",
-     "c"
-    ],
-    [
-     "The Snake Hair",
-     "c"
-    ],
-    [
-     "Crawling Dragon #2",
-     "c"
-    ],
-    [
-     "Dragon Zombie",
-     "c"
-    ],
-    [
-     "Lord of the Lamp",
-     "c"
-    ],
-    [
-     "Mysterious Puppeteer",
-     "c"
-    ],
-    [
-     "Trap Master",
-     "c"
-    ],
-    [
-     "Machine King",
-     "u"
-    ],
-    [
-     "Water Magician",
-     "c"
-    ],
-    [
-     "Soul Hunter",
-     "c"
-    ],
-    [
-     "Needle Ball",
-     "c"
-    ],
-    [
-     "Dragon Seeker",
-     "s"
-    ],
-    [
-     "Bracchio-raidus",
-     "c"
-    ],
-    [
-     "Behegon",
-     "c"
-    ],
-    [
-     "Invader from Another Dimension",
-     "c"
-    ],
-    [
-     "Needle Worm",
-     "u"
-    ],
-    [
-     "Great Mammoth of Goldfine",
-     "c"
-    ],
-    [
-     "Morphing Jar",
-     "u"
-    ],
-    [
-     "Marine Beast",
-     "c"
-    ],
-    [
-     "Just Desserts",
-     "c"
-    ],
-    [
-     "Royal Decree",
-     "u"
-    ],
-    [
-     "Battle Ox",
-     "c"
-    ],
-    [
-     "Garoozis",
-     "c"
-    ],
-    [
-     "Monster Eye",
-     "r"
-    ],
-    [
-     "Cyber-Stein",
-     "u"
-    ],
-    [
-     "Kaiser Dragon",
-     "c"
-    ],
-    [
-     "Crimson Sunbird",
-     "c"
-    ],
-    [
-     "Gale Dogra",
-     "r"
-    ],
-    [
-     "Mystical Sand",
-     "c"
-    ],
-    [
-     "Skelgon",
-     "c"
-    ],
-    [
-     "Penguin Soldier",
-     "s"
-    ],
-    [
-     "Amphibious Bugroth",
-     "c"
-    ],
-    [
-     "Last Day of Witch",
-     "s"
-    ],
-    [
-     "Exile of the Wicked",
-     "s"
-    ],
-    [
-     "Magical Thorn",
-     "s"
-    ],
-    [
-     "Restructer Revolution",
-     "s"
-    ],
-    [
-     "Fusion Sage",
-     "s"
-    ],
-    [
-     "Harpie's Pet Dragon",
-     "x"
-    ],
-    [
-     "Zoa",
-     "x"
-    ],
-    [
-     "Metalzoa",
-     "x"
-    ],
-    [
-     "Metalmorph",
-     "x"
-    ],
-    [
-     "Black Magic Ritual",
-     "x"
-    ]
-   ],
-   "item": "gate-guardian-pack",
-   "full": "Gate Guardian",
-   "name": "Gate Guardian",
-   "cover": "Gate Guardian",
-   "text": "Gate Guardian, and Reaper of the Cards, Crush Card Virus and Seiyaryu."
-  },
-  {
-   "key": "necrofear",
-   "boss": "Dark Necrofear",
-   "cards": [
-    [
-     "Maiden of the Moonlight",
-     "c"
-    ],
-    [
-     "Mech Bass",
-     "r"
-    ],
-    [
-     "Orion the Battle King",
-     "r"
-    ],
-    [
-     "Queen of Autumn Leaves",
-     "r"
-    ],
-    [
      "Slime Toad",
      "c"
-    ],
-    [
-     "Spirit of the Mountain",
-     "c"
-    ],
-    [
-     "The Wicked Worm Beast",
-     "r"
-    ],
-    [
-     "Turtle Bird",
-     "s"
     ],
     [
      "Turu-Purun",
      "c"
     ],
     [
-     "Winged Egg of New Life",
-     "c"
-    ],
-    [
      "Acid Crawler",
-     "c"
-    ],
-    [
-     "Armored Rat",
-     "c"
-    ],
-    [
-     "Armored Zombie",
-     "c"
-    ],
-    [
-     "Bio Plant",
-     "c"
-    ],
-    [
-     "Call of Darkness",
-     "c"
-    ],
-    [
-     "Crow Goblin",
      "r"
     ],
     [
-     "Dark Rabbit",
+     "Armored Rat",
+     "r"
+    ],
+    [
+     "Bio Plant",
      "c"
     ],
     [
@@ -2468,88 +3033,24 @@
      "c"
     ],
     [
-     "Disk Magician",
-     "c"
-    ],
-    [
-     "Dungeon Worm",
-     "r"
-    ],
-    [
-     "Fake Trap",
-     "c"
-    ],
-    [
      "Hyo",
      "c"
     ],
     [
-     "Kazejin",
-     "u"
-    ],
-    [
-     "Killer Needle",
-     "c"
-    ],
-    [
-     "Larvae Moth",
-     "r"
-    ],
-    [
-     "Leogun",
-     "r"
-    ],
-    [
-     "Magical Ghost",
-     "c"
-    ],
-    [
-     "Masked Sorcerer",
-     "u"
-    ],
-    [
-     "Master & Expert",
-     "c"
-    ],
-    [
-     "Pale Beast",
-     "c"
-    ],
-    [
-     "Rude Kaiser",
-     "r"
-    ],
-    [
-     "Sanga of the Thunder",
-     "u"
-    ],
-    [
-     "Suijin",
-     "u"
-    ],
-    [
-     "The Thing That Hides in the Mud",
-     "c"
-    ],
-    [
      "Toad Master",
-     "c"
+     "r"
     ],
     [
      "Unknown Warrior of Fiend",
-     "c"
+     "r"
     ],
     [
      "Wing Egg Elf",
      "c"
     ],
     [
-     "Yaiba Robo",
-     "c"
-    ],
-    [
      "Aqua Snake",
-     "c"
+     "s"
     ],
     [
      "Beaked Snake",
@@ -2564,24 +3065,8 @@
      "c"
     ],
     [
-     "30,000-Year White Turtle",
-     "c"
-    ],
-    [
-     "Krokodilus",
-     "c"
-    ],
-    [
-     "Machine Attacker",
-     "c"
-    ],
-    [
      "Pot the Trick",
      "c"
-    ],
-    [
-     "Rainbow Marine Mermaid",
-     "r"
     ],
     [
      "Tentacle Plant",
@@ -2593,26 +3078,6 @@
     ],
     [
      "Wetha",
-     "c"
-    ],
-    [
-     "Wing Eagle",
-     "r"
-    ],
-    [
-     "Wolf",
-     "c"
-    ],
-    [
-     "Bolt Escargot",
-     "c"
-    ],
-    [
-     "Air Eater",
-     "u"
-    ],
-    [
-     "Battle Steer",
      "r"
     ],
     [
@@ -2621,6 +3086,1492 @@
     ],
     [
      "Cyber Commander",
+     "s"
+    ],
+    [
+     "Giant Scorpion of the Tundra",
+     "s"
+    ],
+    [
+     "Kanikabuto",
+     "c"
+    ],
+    [
+     "Laughing Flower",
+     "c"
+    ],
+    [
+     "Prisman",
+     "r"
+    ],
+    [
+     "Shovel Crusher",
+     "r"
+    ],
+    [
+     "Tenderness",
+     "r"
+    ],
+    [
+     "Dragon Statue",
+     "s"
+    ],
+    [
+     "Mechaleon",
+     "c"
+    ],
+    [
+     "Akakieisu",
+     "r"
+    ],
+    [
+     "Arlownay",
+     "c"
+    ],
+    [
+     "Arma Knight",
+     "s"
+    ],
+    [
+     "Waterdragon Fairy",
+     "s"
+    ],
+    [
+     "Job-Change Mirror",
+     "r"
+    ],
+    [
+     "Mushroom Man",
+     "c"
+    ],
+    [
+     "Electromagnetic Bagworm",
+     "c"
+    ],
+    [
+     "Robolady",
+     "s"
+    ],
+    [
+     "Mucus Yolk",
+     "c"
+    ],
+    [
+     "Charm of Shabti",
+     "s"
+    ],
+    [
+     "Dimension Jar",
+     "r"
+    ],
+    [
+     "Second Goblin",
+     "r"
+    ],
+    [
+     "Cat's Ear Tribe",
+     "c"
+    ],
+    [
+     "Maju Garzett",
+     "u"
+    ],
+    [
+     "Sasuke Samurai #2",
+     "c"
+    ],
+    [
+     "Goblin King",
+     "r"
+    ],
+    [
+     "Sonic Jammer",
+     "c"
+    ],
+    [
+     "The Agent of Force - Mars",
+     "c"
+    ],
+    [
+     "The Unhappy Girl",
+     "c"
+    ],
+    [
+     "Emissary of the Oasis",
+     "r"
+    ],
+    [
+     "Grave Protector",
+     "s"
+    ],
+    [
+     "Horus' Servant",
+     "r"
+    ],
+    [
+     "Rafflesia Seduction",
+     "r"
+    ],
+    [
+     "Ultimate Insect LV1",
+     "c"
+    ],
+    [
+     "Fox Fire",
+     "s"
+    ],
+    [
+     "Watapon",
+     "c"
+    ],
+    [
+     "Brain Jacker",
+     "r"
+    ],
+    [
+     "Catnipped Kitty",
+     "c"
+    ],
+    [
+     "Mid Shield Gardna",
+     "u"
+    ]
+   ]
+  },
+  {
+   "key": "darkmagician",
+   "item": "dark-magician-pack",
+   "name": "Dark Magician",
+   "full": "Dark Magician",
+   "cover": "Dark Magician",
+   "boss": "Dark Magician",
+   "text": "Stronger monsters: Dark Magician the prize.",
+   "cards": [
+    [
+     "Ryu-Kishin",
+     "c"
+    ],
+    [
+     "Dark Magician",
+     "x"
+    ],
+    [
+     "Clown Zombie",
+     "r"
+    ],
+    [
+     "Battle Warrior",
+     "s"
+    ],
+    [
+     "Temple of Skulls",
+     "c"
+    ],
+    [
+     "Lord of the Lamp",
+     "u"
+    ],
+    [
+     "Rhaimundos of the Red Sword",
+     "c"
+    ],
+    [
+     "Mysterious Puppeteer",
+     "r"
+    ],
+    [
+     "Hinotama Soul",
+     "s"
+    ],
+    [
+     "Doriado",
+     "r"
+    ],
+    [
+     "Wodan the Resident of the Forest",
+     "c"
+    ],
+    [
+     "Mavelus",
+     "r"
+    ],
+    [
+     "Sonic Maid",
+     "s"
+    ],
+    [
+     "Mystic Lamp",
+     "r"
+    ],
+    [
+     "Ooguchi",
+     "c"
+    ],
+    [
+     "Water Magician",
+     "s"
+    ],
+    [
+     "Sea Kamen",
+     "c"
+    ],
+    [
+     "Cockroach Knight",
+     "u"
+    ],
+    [
+     "Kuwagata α",
+     "r"
+    ],
+    [
+     "Rainbow Flower",
+     "c"
+    ],
+    [
+     "Hoshiningen",
+     "s"
+    ],
+    [
+     "Gale Dogra",
+     "r"
+    ],
+    [
+     "Star Boy",
+     "s"
+    ],
+    [
+     "Milus Radiant",
+     "c"
+    ],
+    [
+     "Mega Thunderball",
+     "c"
+    ],
+    [
+     "Niwatori",
+     "r"
+    ],
+    [
+     "Behegon",
+     "r"
+    ],
+    [
+     "Invader from Another Dimension",
+     "c"
+    ],
+    [
+     "Trakodon",
+     "r"
+    ],
+    [
+     "Little Chimera",
+     "s"
+    ],
+    [
+     "Fairy Dragon",
+     "c"
+    ],
+    [
+     "Snakeyashi",
+     "c"
+    ],
+    [
+     "Witch's Apprentice",
+     "u"
+    ],
+    [
+     "Queen's Double",
+     "r"
+    ],
+    [
+     "Gruesome Goo",
+     "c"
+    ],
+    [
+     "Thousand-Eyes Idol",
+     "u"
+    ],
+    [
+     "Copycat",
+     "s"
+    ],
+    [
+     "The Unhappy Maiden",
+     "r"
+    ],
+    [
+     "Dark Bat",
+     "c"
+    ],
+    [
+     "Woodland Sprite",
+     "c"
+    ],
+    [
+     "Souleater",
+     "c"
+    ],
+    [
+     "Servant of Catabolism",
+     "c"
+    ],
+    [
+     "Flying Fish",
+     "c"
+    ],
+    [
+     "The All-Seeing White Tiger",
+     "x"
+    ],
+    [
+     "Science Soldier",
+     "c"
+    ],
+    [
+     "Souls of the Forgotten",
+     "r"
+    ],
+    [
+     "Dokuroyaiba",
+     "c"
+    ],
+    [
+     "Spirit of the Breeze",
+     "c"
+    ],
+    [
+     "Byser Shock",
+     "c"
+    ],
+    [
+     "Ryu-Kishin Clown",
+     "u"
+    ],
+    [
+     "Lizard Soldier",
+     "r"
+    ],
+    [
+     "Fiber Jar",
+     "c"
+    ],
+    [
+     "Inaba White Rabbit",
+     "s"
+    ],
+    [
+     "8-Claws Scorpion",
+     "r"
+    ],
+    [
+     "Gravekeeper's Vassal",
+     "c"
+    ],
+    [
+     "Cobra Jar",
+     "c"
+    ],
+    [
+     "Oppressed People",
+     "c"
+    ],
+    [
+     "United Resistance",
+     "c"
+    ],
+    [
+     "Des Dendle",
+     "r"
+    ],
+    [
+     "Koitsu",
+     "c"
+    ],
+    [
+     "D.D. Trainer",
+     "c"
+    ],
+    [
+     "Ojama Green",
+     "u"
+    ],
+    [
+     "Ojama Yellow",
+     "r"
+    ],
+    [
+     "Ojama Black",
+     "x"
+    ],
+    [
+     "Crimson Ninja",
+     "r"
+    ],
+    [
+     "Spirit of the Pot of Greed",
+     "c"
+    ],
+    [
+     "Sasuke Samurai #3",
+     "s"
+    ],
+    [
+     "Witch Doctor of Chaos",
+     "c"
+    ],
+    [
+     "Chaos Necromancer",
+     "r"
+    ],
+    [
+     "Burning Algae",
+     "c"
+    ],
+    [
+     "Sealmaster Meisei",
+     "c"
+    ],
+    [
+     "KA-2 Des Scissors",
+     "c"
+    ],
+    [
+     "Disc Fighter",
+     "c"
+    ],
+    [
+     "Lady Ninja Yae",
+     "c"
+    ],
+    [
+     "White Magician Pikeru",
+     "c"
+    ],
+    [
+     "Return Zombie",
+     "s"
+    ],
+    [
+     "Mokey Mokey",
+     "c"
+    ],
+    [
+     "Desertapir",
+     "c"
+    ],
+    [
+     "Sand Gambler",
+     "c"
+    ],
+    [
+     "Spirit Caller",
+     "u"
+    ],
+    [
+     "Man-Thro' Tro'",
+     "c"
+    ],
+    [
+     "Charcoal Inpachi",
+     "c"
+    ],
+    [
+     "Ultimate Baseball Kid",
+     "c"
+    ],
+    [
+     "Hade-Hane",
+     "r"
+    ],
+    [
+     "Woodborg Inpachi",
+     "c"
+    ],
+    [
+     "Raging Flame Sprite",
+     "c"
+    ],
+    [
+     "Mokey Mokey King",
+     "c"
+    ],
+    [
+     "Chu-Ske the Mouse Fighter",
+     "c"
+    ],
+    [
+     "Maji-Gire Panda",
+     "c"
+    ],
+    [
+     "Kangaroo Champ",
+     "c"
+    ],
+    [
+     "Hyena",
+     "r"
+    ],
+    [
+     "Shadowslayer",
+     "c"
+    ],
+    [
+     "Wattkid",
+     "c"
+    ],
+    [
+     "Claw Reacher",
+     "c"
+    ],
+    [
+     "Meda Bat",
+     "u"
+    ],
+    [
+     "Stone Armadiller",
+     "c"
+    ],
+    [
+     "Kamakiriman",
+     "u"
+    ],
+    [
+     "Bolt Penguin",
+     "c"
+    ],
+    [
+     "Corroding Shark",
+     "c"
+    ],
+    [
+     "Key Mace #2",
+     "c"
+    ],
+    [
+     "Little D",
+     "c"
+    ],
+    [
+     "One Who Hunts Souls",
+     "c"
+    ],
+    [
+     "Oscillo Hero",
+     "c"
+    ],
+    [
+     "Stone Ghost",
+     "c"
+    ],
+    [
+     "The Statue of Easter Island",
+     "u"
+    ],
+    [
+     "Winged Dragon, Guardian of the Fortress #2",
+     "s"
+    ],
+    [
+     "Wow Warrior",
+     "r"
+    ],
+    [
+     "Anthrosaurus",
+     "c"
+    ],
+    [
+     "Skull Stalker",
+     "c"
+    ],
+    [
+     "Flying Penguin",
+     "r"
+    ],
+    [
+     "Stuffed Animal",
+     "c"
+    ],
+    [
+     "Three-Legged Zombies",
+     "c"
+    ],
+    [
+     "Fiend Reflection #1",
+     "c"
+    ],
+    [
+     "Golgoil",
+     "c"
+    ],
+    [
+     "Hourglass of Courage",
+     "c"
+    ],
+    [
+     "Leo Wizard",
+     "c"
+    ],
+    [
+     "Lisark",
+     "c"
+    ],
+    [
+     "Minomushi Warrior",
+     "c"
+    ],
+    [
+     "Mon Larvas",
+     "c"
+    ],
+    [
+     "Patrol Robo",
+     "c"
+    ],
+    [
+     "That Which Feeds on Life",
+     "c"
+    ],
+    [
+     "The Judgement Hand",
+     "s"
+    ],
+    [
+     "Yormungarde",
+     "c"
+    ],
+    [
+     "D. Human",
+     "r"
+    ],
+    [
+     "Dark Assailant",
+     "r"
+    ],
+    [
+     "Great Bill",
+     "c"
+    ],
+    [
+     "Nekogal #1",
+     "c"
+    ],
+    [
+     "Ogre of the Black Shadow",
+     "r"
+    ],
+    [
+     "Petit Moth",
+     "c"
+    ],
+    [
+     "Steel Scorpion",
+     "c"
+    ],
+    [
+     "Water Girl",
+     "c"
+    ],
+    [
+     "Brave Scizzar",
+     "c"
+    ],
+    [
+     "Dark Titan of Terror",
+     "s"
+    ],
+    [
+     "Goddess of Whim",
+     "c"
+    ],
+    [
+     "Spirit of the Mountain",
+     "s"
+    ],
+    [
+     "Master & Expert",
+     "c"
+    ],
+    [
+     "The Thing That Hides in the Mud",
+     "c"
+    ],
+    [
+     "Yaiba Robo",
+     "c"
+    ],
+    [
+     "Krokodilus",
+     "c"
+    ],
+    [
+     "Wolf",
+     "c"
+    ],
+    [
+     "Ice Water",
+     "c"
+    ],
+    [
+     "Lord of Zemia",
+     "c"
+    ],
+    [
+     "Torike",
+     "c"
+    ],
+    [
+     "Violent Rain",
+     "r"
+    ],
+    [
+     "Greenkappa",
+     "r"
+    ],
+    [
+     "Mystical Sheep #1",
+     "c"
+    ],
+    [
+     "Sentinel of the Seas",
+     "c"
+    ],
+    [
+     "Fiend Sword",
+     "c"
+    ],
+    [
+     "Hero of the East",
+     "c"
+    ],
+    [
+     "Ancient Sorcerer",
+     "c"
+    ],
+    [
+     "Blocker",
+     "c"
+    ],
+    [
+     "Grappler",
+     "s"
+    ],
+    [
+     "Moon Envoy",
+     "c"
+    ],
+    [
+     "Night Lizard",
+     "c"
+    ],
+    [
+     "Dark-Eyes Illusionist",
+     "c"
+    ],
+    [
+     "Griggle",
+     "c"
+    ],
+    [
+     "Liquid Beast",
+     "c"
+    ],
+    [
+     "Mechanical Snail",
+     "c"
+    ],
+    [
+     "Psychic Kappa",
+     "c"
+    ],
+    [
+     "Twin Long Rods #2",
+     "c"
+    ],
+    [
+     "Bite Shoes",
+     "c"
+    ],
+    [
+     "Bombardment Beetle",
+     "r"
+    ],
+    [
+     "Dreamsprite",
+     "c"
+    ],
+    [
+     "Rigorous Reaver",
+     "s"
+    ],
+    [
+     "Dragon Manipulator",
+     "r"
+    ],
+    [
+     "Winged Minion",
+     "c"
+    ],
+    [
+     "Otohime",
+     "c"
+    ],
+    [
+     "Roboyarou",
+     "c"
+    ],
+    [
+     "Viser Des",
+     "c"
+    ],
+    [
+     "Cobraman Sakuzy",
+     "r"
+    ],
+    [
+     "Jowls of Dark Demise",
+     "c"
+    ],
+    [
+     "An Owl of Luck",
+     "c"
+    ],
+    [
+     "Great Phantom Thief",
+     "r"
+    ],
+    [
+     "Neko Mane King",
+     "c"
+    ],
+    [
+     "Union Rider",
+     "s"
+    ],
+    [
+     "Puppet Master",
+     "c"
+    ],
+    [
+     "Dark Cat with White Tail",
+     "c"
+    ],
+    [
+     "Guardian Baou",
+     "c"
+    ],
+    [
+     "Darkbishop Archfiend",
+     "r"
+    ],
+    [
+     "Great Maju Garzett",
+     "c"
+    ],
+    [
+     "Metallizing Parasite - Lunatite",
+     "u"
+    ],
+    [
+     "Chopman the Desperate Outlaw",
+     "c"
+    ],
+    [
+     "Tomohiro the Mountain Warrior",
+     "r"
+    ],
+    [
+     "Cannonball Spear Shellfish",
+     "s"
+    ],
+    [
+     "Torpedo Fish",
+     "r"
+    ],
+    [
+     "Nightmare Horse",
+     "c"
+    ],
+    [
+     "Rocket Jumper",
+     "c"
+    ],
+    [
+     "The Agent of Wisdom - Mercury",
+     "c"
+    ],
+    [
+     "The Kick Man",
+     "s"
+    ],
+    [
+     "Elephant Statue of Blessing",
+     "r"
+    ],
+    [
+     "Legacy Hunter",
+     "c"
+    ],
+    [
+     "Gemini Imps",
+     "c"
+    ],
+    [
+     "Arcane Archer of the Forest",
+     "r"
+    ],
+    [
+     "Heavy Mech Support Platform",
+     "r"
+    ],
+    [
+     "Firebird",
+     "c"
+    ],
+    [
+     "Dummy Golem",
+     "r"
+    ],
+    [
+     "Wynn the Wind Charmer",
+     "u"
+    ]
+   ]
+  },
+  {
+   "key": "trihorned",
+   "item": "tri-horned-dragon-pack",
+   "name": "Tri-Horned Dragon",
+   "full": "Tri-Horned Dragon",
+   "cover": "Tri-Horned Dragon",
+   "boss": "Tri-Horned Dragon",
+   "text": "Stronger still: Tri-Horned Dragon the prize.",
+   "cards": [
+    [
+     "Right Leg of the Forbidden One",
+     "s"
+    ],
+    [
+     "Left Leg of the Forbidden One",
+     "r"
+    ],
+    [
+     "Right Arm of the Forbidden One",
+     "r"
+    ],
+    [
+     "Left Arm of the Forbidden One",
+     "s"
+    ],
+    [
+     "Skull Servant",
+     "r"
+    ],
+    [
+     "Zombie Warrior",
+     "r"
+    ],
+    [
+     "Kuriboh",
+     "u"
+    ],
+    [
+     "Dragon Zombie",
+     "s"
+    ],
+    [
+     "Kamionwizard",
+     "c"
+    ],
+    [
+     "Faith Bird",
+     "c"
+    ],
+    [
+     "Monster Egg",
+     "c"
+    ],
+    [
+     "Firegrass",
+     "c"
+    ],
+    [
+     "M-Warrior #2",
+     "c"
+    ],
+    [
+     "Ancient Brain",
+     "c"
+    ],
+    [
+     "Petit Dragon",
+     "c"
+    ],
+    [
+     "Petit Angel",
+     "c"
+    ],
+    [
+     "Beautiful Headhuntress",
+     "c"
+    ],
+    [
+     "Guardian of the Labyrinth",
+     "s"
+    ],
+    [
+     "Prevent Rat",
+     "r"
+    ],
+    [
+     "Princess of Tsurugi",
+     "s"
+    ],
+    [
+     "Protector of the Throne",
+     "c"
+    ],
+    [
+     "Mystical Sheep #2",
+     "c"
+    ],
+    [
+     "Millennium Shield",
+     "c"
+    ],
+    [
+     "Leghul",
+     "c"
+    ],
+    [
+     "Blast Juggler",
+     "c"
+    ],
+    [
+     "Jinzo #7",
+     "c"
+    ],
+    [
+     "Armed Ninja",
+     "u"
+    ],
+    [
+     "Muka Muka",
+     "c"
+    ],
+    [
+     "Skelengel",
+     "c"
+    ],
+    [
+     "Tongyo",
+     "r"
+    ],
+    [
+     "Needle Worm",
+     "c"
+    ],
+    [
+     "Takuhee",
+     "c"
+    ],
+    [
+     "Bladefly",
+     "c"
+    ],
+    [
+     "Marine Beast",
+     "s"
+    ],
+    [
+     "Amazon of the Seas",
+     "c"
+    ],
+    [
+     "Tri-Horned Dragon",
+     "x"
+    ],
+    [
+     "Relinquished",
+     "u"
+    ],
+    [
+     "Skull-Mark Ladybug",
+     "c"
+    ],
+    [
+     "Baron of the Fiend Sword",
+     "c"
+    ],
+    [
+     "Man-Eating Treasure Chest",
+     "r"
+    ],
+    [
+     "Sorcerer of the Doomed",
+     "c"
+    ],
+    [
+     "Ceremonial Bell",
+     "c"
+    ],
+    [
+     "Kiseitai",
+     "c"
+    ],
+    [
+     "Molten Behemoth",
+     "c"
+    ],
+    [
+     "Shapesnatch",
+     "c"
+    ],
+    [
+     "Gradius",
+     "s"
+    ],
+    [
+     "Bio-Mage",
+     "c"
+    ],
+    [
+     "The Hunter with 7 Weapons",
+     "c"
+    ],
+    [
+     "Gray Wing",
+     "u"
+    ],
+    [
+     "Troop Dragon",
+     "c"
+    ],
+    [
+     "Yata-Garasu",
+     "c"
+    ],
+    [
+     "Fushi No Tori",
+     "c"
+    ],
+    [
+     "Gora Turtle",
+     "c"
+    ],
+    [
+     "Sasuke Samurai",
+     "c"
+    ],
+    [
+     "Dice Jar",
+     "c"
+    ],
+    [
+     "Des Lacooda",
+     "u"
+    ],
+    [
+     "Gravekeeper's Curse",
+     "c"
+    ],
+    [
+     "Pitch-Dark Dragon",
+     "c"
+    ],
+    [
+     "Sonic Duck",
+     "u"
+    ],
+    [
+     "Magical Scientist",
+     "c"
+    ],
+    [
+     "Battle Footballer",
+     "r"
+    ],
+    [
+     "Acrobat Monkey",
+     "c"
+    ],
+    [
+     "Iron Blacksmith Kotetsu",
+     "c"
+    ],
+    [
+     "The Thing in the Crater",
+     "c"
+    ],
+    [
+     "Don Turtle",
+     "c"
+    ],
+    [
+     "Balloon Lizard",
+     "c"
+    ],
+    [
+     "Inferno Hammer",
+     "s"
+    ],
+    [
+     "Mystical Shine Ball",
+     "c"
+    ],
+    [
+     "Mermaid Knight",
+     "x"
+    ],
+    [
+     "Theban Nightmare",
+     "c"
+    ],
+    [
+     "Absorbing Kid from the Sky",
+     "c"
+    ],
+    [
+     "Peten the Dark Clown",
+     "c"
+    ],
+    [
+     "Mind on Air",
+     "c"
+    ],
+    [
+     "Enraged Muka Muka",
+     "c"
+    ],
+    [
+     "Eagle Eye",
+     "c"
+    ],
+    [
+     "Tactical Espionage Expert",
+     "c"
+    ],
+    [
+     "Invasion of Flames",
+     "c"
+    ],
+    [
+     "Creeping Doom Manta",
+     "c"
+    ],
+    [
+     "Mecha-Dog Marron",
+     "c"
+    ],
+    [
+     "Abare Ushioni",
+     "s"
+    ],
+    [
+     "Blood Sucker",
+     "c"
+    ],
+    [
+     "Kaibaman",
+     "c"
+    ],
+    [
+     "Winged Kuriboh",
+     "r"
+    ],
+    [
+     "Mine Golem",
+     "r"
+    ],
+    [
+     "Monk Fighter",
+     "c"
+    ],
+    [
+     "Guardian Statue",
+     "c"
+    ],
+    [
+     "Medusa Worm",
+     "c"
+    ],
+    [
+     "Elemental Mistress Doriado",
+     "c"
+    ],
+    [
+     "Dark Gray",
+     "c"
+    ],
+    [
+     "Kagemusha of the Blue Flame",
+     "c"
+    ],
+    [
+     "Kurama",
+     "s"
+    ],
+    [
+     "Nemuriko",
+     "c"
+    ],
+    [
+     "The Furious Sea King",
+     "r"
+    ],
+    [
+     "Kanan the Swordmistress",
+     "c"
+    ],
+    [
+     "Basic Insect",
+     "c"
+    ],
+    [
+     "Root Water",
+     "r"
+    ],
+    [
+     "Two-Mouth Darkruler",
+     "r"
+    ],
+    [
+     "Hard Armor",
+     "c"
+    ],
+    [
+     "Larvas",
+     "r"
+    ],
+    [
+     "Akihiron",
+     "r"
+    ],
+    [
+     "Bean Soldier",
+     "r"
+    ],
+    [
+     "Giant Flea",
+     "c"
+    ],
+    [
+     "Mabarrel",
+     "c"
+    ],
+    [
+     "Shining Friendship",
+     "c"
+    ],
+    [
+     "Drooling Lizard",
+     "r"
+    ],
+    [
+     "Fairy's Gift",
+     "s"
+    ],
+    [
+     "Takriminos",
+     "c"
+    ],
+    [
+     "Yaranzo",
+     "c"
+    ],
+    [
+     "Cyber Soldier of Darkworld",
+     "r"
+    ],
+    [
+     "LaMoon",
+     "c"
+    ],
+    [
+     "Mystic Clown",
+     "c"
+    ],
+    [
+     "Spirit of the Books",
+     "c"
+    ],
+    [
+     "Tatsunootoshigo",
+     "c"
+    ],
+    [
+     "Tiger Axe",
+     "c"
+    ],
+    [
+     "Electric Lizard",
+     "r"
+    ],
+    [
+     "Rock Ogre Grotto #1",
+     "c"
+    ],
+    [
+     "Fairy of the Fountain",
+     "c"
+    ],
+    [
+     "Fiend Kraken",
+     "c"
+    ],
+    [
+     "Big Insect",
+     "c"
+    ],
+    [
+     "Emperor of the Land and Sea",
+     "s"
+    ],
+    [
+     "Maiden of the Moonlight",
+     "s"
+    ],
+    [
+     "Mech Bass",
+     "r"
+    ],
+    [
+     "Orion the Battle King",
+     "x"
+    ],
+    [
+     "The Wicked Worm Beast",
+     "c"
+    ],
+    [
+     "Winged Egg of New Life",
+     "c"
+    ],
+    [
+     "Dark Rabbit",
+     "c"
+    ],
+    [
+     "Larvae Moth",
+     "c"
+    ],
+    [
+     "Magical Ghost",
+     "c"
+    ],
+    [
+     "Machine Attacker",
+     "c"
+    ],
+    [
+     "Rainbow Marine Mermaid",
+     "r"
+    ],
+    [
+     "Wing Eagle",
+     "c"
+    ],
+    [
+     "Bolt Escargot",
      "c"
     ],
     [
@@ -2632,18 +4583,6 @@
      "s"
     ],
     [
-     "Giant Scorpion of the Tundra",
-     "c"
-    ],
-    [
-     "Gokibore",
-     "c"
-    ],
-    [
-     "Great Moth",
-     "x"
-    ],
-    [
      "Griffore",
      "c"
     ],
@@ -2652,467 +4591,28 @@
      "c"
     ],
     [
-     "Horn of Heaven",
-     "r"
-    ],
-    [
-     "Ice Water",
-     "c"
-    ],
-    [
-     "Kanikabuto",
-     "c"
-    ],
-    [
-     "Laughing Flower",
-     "c"
-    ],
-    [
-     "Lord of Zemia",
-     "c"
-    ],
-    [
-     "Nekogal #2",
-     "s"
-    ],
-    [
-     "Prisman",
-     "c"
-    ],
-    [
-     "Sea King Dragon",
-     "s"
-    ],
-    [
-     "Shovel Crusher",
-     "c"
-    ],
-    [
-     "Solemn Judgment",
-     "u"
-    ],
-    [
-     "Tenderness",
-     "c"
-    ],
-    [
-     "Torike",
-     "c"
-    ],
-    [
-     "Violent Rain",
-     "c"
-    ],
-    [
      "Beastking of the Swamps",
      "s"
     ],
     [
-     "Boulder Tortoise",
-     "r"
-    ],
-    [
-     "Dragon Statue",
-     "c"
-    ],
-    [
-     "Garvas",
-     "s"
-    ],
-    [
-     "Goddess with the Third Eye",
-     "u"
-    ],
-    [
-     "Greenkappa",
-     "c"
-    ],
-    [
      "Ill Witch",
-     "r"
-    ],
-    [
-     "Kairyu-Shin",
-     "r"
-    ],
-    [
-     "Mechaleon",
      "c"
-    ],
-    [
-     "Mystical Sheep #1",
-     "c"
-    ],
-    [
-     "Neck Hunter",
-     "s"
-    ],
-    [
-     "Parrot Dragon",
-     "r"
     ],
     [
      "Rock Spirit",
      "r"
     ],
     [
-     "Sentinel of the Seas",
-     "c"
-    ],
-    [
-     "Sky Dragon",
-     "s"
-    ],
-    [
      "Spirit of the Winds",
-     "r"
-    ],
-    [
-     "Sword Arm of Dragon",
-     "s"
-    ],
-    [
-     "Ushi Oni",
-     "u"
+     "c"
     ],
     [
      "Versago the Destroyer",
-     "s"
-    ],
-    [
-     "Gyakutenno Megami",
-     "s"
-    ],
-    [
-     "Judge Man",
      "u"
-    ],
-    [
-     "Koumori Dragon",
-     "c"
-    ],
-    [
-     "Last Will",
-     "r"
-    ],
-    [
-     "Lord of D.",
-     "u"
-    ],
-    [
-     "Ryu-Kishin Powered",
-     "c"
-    ],
-    [
-     "Swordstalker",
-     "s"
-    ],
-    [
-     "The Flute of Summoning Dragon",
-     "r"
     ],
     [
      "The Stern Mystic",
-     "r"
-    ],
-    [
-     "Akakieisu",
      "c"
-    ],
-    [
-     "Ancient Tool",
-     "r"
-    ],
-    [
-     "Dark Necrofear",
-     "x"
-    ],
-    [
-     "Red-Eyes Black Metal Dragon",
-     "x"
-    ],
-    [
-     "Dian Keto the Cure Master",
-     "c"
-    ],
-    [
-     "Wall of Illusion",
-     "c"
-    ],
-    [
-     "Neo the Magic Swordsman",
-     "c"
-    ],
-    [
-     "Baron of the Fiend Sword",
-     "c"
-    ],
-    [
-     "Man-Eating Treasure Chest",
-     "c"
-    ],
-    [
-     "Sorcerer of the Doomed",
-     "c"
-    ],
-    [
-     "Waboku",
-     "c"
-    ],
-    [
-     "Super War-Lion",
-     "x"
-    ],
-    [
-     "Zera The Mant",
-     "x"
-    ],
-    [
-     "Black Luster Soldier",
-     "u"
-    ],
-    [
-     "Fiend's Mirror",
-     "s"
-    ],
-    [
-     "Black Luster Ritual",
-     "s"
-    ],
-    [
-     "Zera Ritual",
-     "x"
-    ],
-    [
-     "War-Lion Ritual",
-     "x"
-    ],
-    [
-     "Beastly Mirror Ritual",
-     "s"
-    ],
-    [
-     "Clown Zombie",
-     "c"
-    ],
-    [
-     "D.D. Warrior",
-     "u"
-    ],
-    [
-     "Millennium Golem",
-     "c"
-    ],
-    [
-     "Gryphon Wing",
-     "s"
-    ],
-    [
-     "Novox's Prayer",
-     "r"
-    ],
-    [
-     "Resurrection of Chakra",
-     "s"
-    ],
-    [
-     "Javelin Beetle Pact",
-     "x"
-    ],
-    [
-     "Fortress Whale's Oath",
-     "c"
-    ],
-    [
-     "Skull Guardian",
-     "r"
-    ],
-    [
-     "Chakra",
-     "s"
-    ],
-    [
-     "Javelin Beetle",
-     "x"
-    ],
-    [
-     "Fortress Whale",
-     "s"
-    ],
-    [
-     "Blast Sphere",
-     "u"
-    ],
-    [
-     "Alligator's Sword",
-     "r"
-    ],
-    [
-     "Sinister Serpent",
-     "x"
-    ],
-    [
-     "Widespread Ruin",
-     "x"
-    ],
-    [
-     "Garma Sword Oath",
-     "c"
-    ],
-    [
-     "Garma Sword",
-     "s"
-    ],
-    [
-     "Alpha The Magnet Warrior",
-     "x"
-    ],
-    [
-     "Panther Warrior",
-     "x"
-    ],
-    [
-     "Beta The Magnet Warrior",
-     "x"
-    ],
-    [
-     "Insect Queen",
-     "x"
-    ],
-    [
-     "Dunames Dark Witch",
-     "s"
-    ],
-    [
-     "Cyber-Tech Alligator",
-     "c"
-    ],
-    [
-     "Dark Magician Girl",
-     "x"
-    ],
-    [
-     "Card Destruction",
-     "s"
-    ],
-    [
-     "Berfomet",
-     "r"
-    ],
-    [
-     "Gamma The Magnet Warrior",
-     "x"
-    ],
-    [
-     "Negate Attack",
-     "x"
-    ],
-    [
-     "Valkyrion the Magna Warrior",
-     "x"
-    ],
-    [
-     "Alligator's Sword Dragon",
-     "r"
-    ],
-    [
-     "Vorse Raider",
-     "x"
-    ],
-    [
-     "Ring of Destruction",
-     "x"
-    ],
-    [
-     "Aqua Chorus",
-     "x"
-    ],
-    [
-     "Sebek's Blessing",
-     "x"
-    ],
-    [
-     "Chimera the Flying Mythical Beast",
-     "r"
-    ],
-    [
-     "Multiply",
-     "s"
-    ],
-    [
-     "Nightmare's Steelcage",
-     "c"
-    ],
-    [
-     "Dark Magic Curtain",
-     "x"
-    ],
-    [
-     "Thousand Knives",
-     "x"
-    ],
-    [
-     "Total Defense Shogun",
-     "x"
-    ],
-    [
-     "Shadow Spell",
-     "s"
-    ],
-    [
-     "Copycat",
-     "u"
-    ],
-    [
-     "Scapegoat",
-     "s"
-    ],
-    [
-     "Makiu, the Magical Mist",
-     "r"
-    ],
-    [
-     "Cyber Harpie Lady",
-     "u"
-    ],
-    [
-     "Swift Gaia the Fierce Knight",
-     "x"
-    ],
-    [
-     "Obnoxious Celtic Guard",
-     "x"
-    ],
-    [
-     "Graceful Dice",
-     "x"
-    ],
-    [
-     "Skull Dice",
-     "x"
-    ],
-    [
-     "Dark Sage",
-     "x"
-    ]
-   ],
-   "item": "dark-necrofear-pack",
-   "full": "Dark Necrofear",
-   "name": "Dark Necrofear",
-   "cover": "Dark Necrofear",
-   "text": "Dark Necrofear, Great Moth, Lord of D. and Sanga, Kazejin and Suijin."
-  },
-  {
-   "key": "gardius",
-   "boss": "Masked Beast Des Gardius",
-   "cards": [
-    [
-     "Arma Knight",
-     "c"
-    ],
-    [
-     "B. Dragon Jungle King",
-     "s"
     ],
     [
      "Crazy Fish",
@@ -3120,283 +4620,39 @@
     ],
     [
      "Cyber Soldier",
-     "c"
-    ],
-    [
-     "Dark Chimera",
-     "c"
-    ],
-    [
-     "Fiend Sword",
-     "c"
-    ],
-    [
-     "Gatekeeper",
-     "c"
-    ],
-    [
-     "Germ Infection",
-     "c"
+     "s"
     ],
     [
      "Ghoul with an Appetite",
      "c"
     ],
     [
-     "Giganto",
-     "r"
-    ],
-    [
-     "Hero of the East",
-     "c"
-    ],
-    [
-     "Illusionist Faceless Mage",
-     "c"
-    ],
-    [
-     "Monstrous Bird",
-     "s"
-    ],
-    [
-     "Mushroom Man #2",
-     "s"
-    ],
-    [
-     "Paralyzing Potion",
-     "r"
-    ],
-    [
-     "Pendulum Machine",
-     "s"
-    ],
-    [
-     "Royal Guard",
-     "s"
-    ],
-    [
-     "Saggi the Dark Clown",
-     "c"
-    ],
-    [
-     "Shield & Sword",
-     "r"
-    ],
-    [
      "Sword Slasher",
-     "c"
-    ],
-    [
-     "The Immortal of Thunder",
-     "u"
-    ],
-    [
-     "Togex",
      "r"
-    ],
-    [
-     "Waterdragon Fairy",
-     "c"
-    ],
-    [
-     "Zanki",
-     "c"
-    ],
-    [
-     "Ancient Sorcerer",
-     "c"
     ],
     [
      "Beautiful Beast Trainer",
-     "c"
-    ],
-    [
-     "Blocker",
-     "c"
-    ],
-    [
-     "Castle of Dark Illusions",
-     "u"
-    ],
-    [
-     "Grappler",
-     "c"
-    ],
-    [
-     "Jellyfish",
-     "c"
-    ],
-    [
-     "Job-Change Mirror",
-     "c"
-    ],
-    [
-     "King of Yamimakai",
      "r"
-    ],
-    [
-     "Megazowler",
-     "s"
     ],
     [
      "Metal Guardian",
-     "c"
-    ],
-    [
-     "Monster Tamer",
      "r"
-    ],
-    [
-     "Moon Envoy",
-     "c"
-    ],
-    [
-     "Mushroom Man",
-     "c"
-    ],
-    [
-     "Night Lizard",
-     "c"
-    ],
-    [
-     "Pumpking the King of Ghosts",
-     "u"
-    ],
-    [
-     "Ring of Magnetism",
-     "r"
-    ],
-    [
-     "Share the Pain",
-     "r"
-    ],
-    [
-     "Stim-Pack",
-     "r"
-    ],
-    [
-     "Stone Dragon",
-     "u"
     ],
     [
      "The Little Swordsman of Aile",
-     "s"
-    ],
-    [
-     "Yado Karu",
-     "u"
+     "r"
     ],
     [
      "Ameba",
      "c"
     ],
     [
-     "Ancient One of the Deep Forest",
-     "r"
-    ],
-    [
-     "Curse of Fiend",
-     "r"
-    ],
-    [
-     "Dark Witch",
-     "r"
-    ],
-    [
-     "Dark-Eyes Illusionist",
-     "c"
-    ],
-    [
-     "Darkness Approaches",
-     "c"
-    ],
-    [
-     "Electric Snake",
-     "s"
-    ],
-    [
-     "Fairy's Hand Mirror",
-     "c"
-    ],
-    [
-     "Giant Turtle Who Feeds on Flames",
-     "c"
-    ],
-    [
-     "Griggle",
-     "c"
-    ],
-    [
-     "Guardian of the Throne Room",
-     "c"
-    ],
-    [
-     "High Tide Gyojin",
-     "c"
-    ],
-    [
      "Hiro's Shadow Scout",
-     "r"
-    ],
-    [
-     "Invader of the Throne",
-     "u"
-    ],
-    [
-     "Liquid Beast",
      "c"
-    ],
-    [
-     "Mechanical Snail",
-     "c"
-    ],
-    [
-     "Metal Fish",
-     "r"
     ],
     [
      "Minar",
-     "s"
-    ],
-    [
-     "Peacock",
-     "c"
-    ],
-    [
-     "Penguin Knight",
-     "s"
-    ],
-    [
-     "Queen Bird",
-     "c"
-    ],
-    [
-     "Slot Machine",
      "u"
-    ],
-    [
-     "Tailor of the Fickle",
-     "c"
-    ],
-    [
-     "Weather Report",
-     "s"
-    ],
-    [
-     "Whiptail Crow",
-     "c"
-    ],
-    [
-     "Boar Soldier",
-     "u"
-    ],
-    [
-     "Dark Zebra",
-     "u"
-    ],
-    [
-     "Goblin Fan",
-     "c"
     ],
     [
      "Jigen Bakudan",
@@ -3407,11 +4663,1617 @@
      "c"
     ],
     [
+     "Spear Cretin",
+     "r"
+    ],
+    [
+     "Man Eater",
+     "c"
+    ],
+    [
+     "Parasite Paracide",
+     "c"
+    ],
+    [
+     "Drill Bug",
+     "c"
+    ],
+    [
+     "Vampire Baby",
+     "c"
+    ],
+    [
+     "Ancient Lamp",
+     "s"
+    ],
+    [
+     "Fairy Guardian",
+     "c"
+    ],
+    [
+     "Swordsman of Landstar",
+     "c"
+    ],
+    [
+     "Tornado Bird",
+     "r"
+    ],
+    [
+     "Mysterious Guard",
+     "c"
+    ],
+    [
+     "Shadow Tamer",
+     "c"
+    ],
+    [
+     "Skull Knight #2",
+     "s"
+    ],
+    [
+     "Spirit Ryu",
+     "r"
+    ],
+    [
+     "Super Robolady",
+     "r"
+    ],
+    [
+     "Super Roboyarou",
+     "s"
+    ],
+    [
+     "Dark Scorpion Burglars",
+     "r"
+    ],
+    [
+     "Toon Alligator",
+     "c"
+    ],
+    [
+     "A Cat of Ill Omen",
+     "u"
+    ],
+    [
+     "Gravekeeper's Watcher",
+     "u"
+    ],
+    [
+     "Spirit Reaper",
+     "u"
+    ],
+    [
+     "Amazoness Blowpiper",
+     "c"
+    ],
+    [
+     "Pixie Knight",
+     "c"
+    ],
+    [
+     "Dark Scorpion - Chick the Yellow",
+     "c"
+    ],
+    [
+     "Guardian Kay'est",
+     "r"
+    ],
+    [
+     "Goblin of Greed",
+     "r"
+    ],
+    [
+     "Infernalqueen Archfiend",
+     "u"
+    ],
+    [
+     "Vilepawn Archfiend",
+     "c"
+    ],
+    [
+     "Coach Goblin",
+     "r"
+    ],
+    [
+     "D.D. Scout Plane",
+     "r"
+    ],
+    [
+     "Masahiro the Dark Clown",
+     "c"
+    ],
+    [
+     "Gora Turtle of Illusion",
+     "c"
+    ],
+    [
+     "Prickle Fairy",
+     "c"
+    ],
+    [
+     "Avatar of The Pot",
+     "r"
+    ],
+    [
+     "Soul-Absorbing Bone Tower",
+     "r"
+    ],
+    [
+     "Elephant Statue of Disaster",
+     "c"
+    ],
+    [
+     "Dark Mimic LV1",
+     "s"
+    ],
+    [
+     "Nobleman-Eater Bug",
+     "c"
+    ],
+    [
+     "Familiar Knight",
+     "c"
+    ],
+    [
+     "Ultimate Insect LV3",
+     "r"
+    ],
+    [
+     "Armed Samurai - Ben Kei",
+     "c"
+    ],
+    [
+     "Hand of Nephthys",
+     "r"
+    ],
+    [
+     "Aussa the Earth Charmer",
+     "c"
+    ],
+    [
+     "Eria the Water Charmer",
+     "c"
+    ],
+    [
+     "Hiita the Fire Charmer",
+     "c"
+    ]
+   ]
+  },
+  {
+   "key": "blueeyes",
+   "item": "blue-eyes-pack",
+   "name": "Blue-Eyes White Dragon",
+   "full": "Blue-Eyes White Dragon",
+   "cover": "Blue-Eyes White Dragon",
+   "boss": "Blue-Eyes White Dragon",
+   "text": "Monsters of the middle rank: Blue-Eyes White Dragon the prize.",
+   "cards": [
+    [
+     "Blue-Eyes White Dragon",
+     "x"
+    ],
+    [
+     "Time Wizard",
+     "c"
+    ],
+    [
+     "Two-Headed King Rex",
+     "u"
+    ],
+    [
+     "The Snake Hair",
+     "r"
+    ],
+    [
+     "Hercules Beetle",
+     "s"
+    ],
+    [
+     "Crawling Dragon #2",
+     "c"
+    ],
+    [
+     "Barox",
+     "r"
+    ],
+    [
+     "Charubin the Fire Knight",
+     "c"
+    ],
+    [
+     "Flame Manipulator",
+     "c"
+    ],
+    [
+     "M-Warrior #1",
+     "c"
+    ],
+    [
+     "Tainted Wisdom",
+     "c"
+    ],
+    [
+     "Armaill",
+     "c"
+    ],
+    [
+     "Fusionist",
+     "r"
+    ],
+    [
+     "Rare Fish",
+     "c"
+    ],
+    [
+     "Dissolverock",
+     "c"
+    ],
+    [
+     "One-Eyed Shield Dragon",
+     "c"
+    ],
+    [
+     "Yamadron",
+     "c"
+    ],
+    [
+     "Fiend's Mirror",
+     "r"
+    ],
+    [
+     "Giga-Tech Wolf",
+     "c"
+    ],
+    [
+     "Cyber-Stein",
+     "r"
+    ],
+    [
+     "Magician of Faith",
+     "c"
+    ],
+    [
+     "Soul Hunter",
+     "u"
+    ],
+    [
+     "Vermillion Sparrow",
+     "c"
+    ],
+    [
+     "Sinister Serpent",
+     "c"
+    ],
+    [
+     "Insect Soldiers of the Sky",
+     "c"
+    ],
+    [
+     "Pragtical",
+     "r"
+    ],
+    [
+     "Man-Eater Bug",
+     "c"
+    ],
+    [
+     "Skullbird",
+     "c"
+    ],
+    [
+     "Hane-Hane",
+     "c"
+    ],
+    [
+     "Man-Eating Black Shark",
+     "r"
+    ],
+    [
+     "Darkworld Thorns",
+     "u"
+    ],
+    [
+     "Morphing Jar",
+     "r"
+    ],
+    [
+     "Rose Spectre of Dunn",
+     "r"
+    ],
+    [
+     "Penguin Soldier",
+     "c"
+    ],
+    [
+     "Lady of Faith",
+     "c"
+    ],
+    [
+     "Warrior of Tradition",
+     "r"
+    ],
+    [
+     "Amphibious Bugroth",
+     "c"
+    ],
+    [
+     "Hyosube",
+     "s"
+    ],
+    [
+     "Hibikime",
+     "c"
+    ],
+    [
+     "Thousand-Eyes Restrict",
+     "c"
+    ],
+    [
+     "Stone Statue of the Aztecs",
+     "c"
+    ],
+    [
+     "Pinch Hopper",
+     "s"
+    ],
+    [
+     "Total Defense Shogun",
+     "r"
+    ],
+    [
+     "Neo the Magic Swordsman",
+     "r"
+    ],
+    [
+     "Banisher of the Light",
+     "c"
+    ],
+    [
+     "Karate Man",
+     "c"
+    ],
+    [
+     "Giant Germ",
+     "r"
+    ],
+    [
+     "Bubonic Vermin",
+     "c"
+    ],
+    [
+     "Cyber Falcon",
+     "c"
+    ],
+    [
+     "Flying Kamakiri #2",
+     "u"
+    ],
+    [
+     "Oni Tank T-34",
+     "r"
+    ],
+    [
+     "Luminous Soldier",
+     "s"
+    ],
+    [
+     "Wolf Axwielder",
+     "c"
+    ],
+    [
+     "The Illusory Gentleman",
+     "c"
+    ],
+    [
+     "Kryuel",
+     "c"
+    ],
+    [
+     "Fairy King Truesdale",
+     "s"
+    ],
+    [
+     "Maiden of the Aqua",
+     "c"
+    ],
+    [
+     "Injection Fairy Lily",
+     "c"
+    ],
+    [
+     "Hayabusa Knight",
+     "r"
+    ],
+    [
+     "Skull Mariner",
+     "c"
+    ],
+    [
+     "Island Turtle",
+     "r"
+    ],
+    [
+     "Fire Sorcerer",
+     "c"
+    ],
+    [
+     "The Forgiving Maiden",
+     "s"
+    ],
+    [
+     "The Portrait's Secret",
+     "r"
+    ],
+    [
+     "Earthbound Spirit",
+     "c"
+    ],
+    [
+     "Jowgen the Spiritualist",
+     "r"
+    ],
+    [
+     "Summoner of Illusions",
+     "c"
+    ],
+    [
+     "Supply",
+     "c"
+    ],
+    [
+     "Maryokutai",
+     "c"
+    ],
+    [
+     "Keldo",
+     "u"
+    ],
+    [
+     "Poison Mummy",
+     "c"
+    ],
+    [
+     "Swarm of Scarabs",
+     "c"
+    ],
+    [
+     "Swarm of Locusts",
+     "r"
+    ],
+    [
+     "Master Kyonshee",
+     "s"
+    ],
+    [
+     "Gravekeeper's Cannonholder",
+     "r"
+    ],
+    [
+     "Decayed Commander",
+     "c"
+    ],
+    [
+     "Zombie Tiger",
+     "x"
+    ],
+    [
+     "Vampiric Orchis",
+     "s"
+    ],
+    [
+     "D.D. Crazy Beast",
+     "c"
+    ],
+    [
+     "Apprentice Magician",
+     "c"
+    ],
+    [
+     "Old Vindictive Magician",
+     "c"
+    ],
+    [
+     "Royal Magical Library",
+     "r"
+    ],
+    [
+     "Bowganian",
+     "c"
+    ],
+    [
+     "Nin-Ken Dog",
+     "c"
+    ],
+    [
+     "Gyaku-Gire Panda",
+     "c"
+    ],
+    [
+     "Thousand Needles",
+     "r"
+    ],
+    [
+     "Gren Maju Da Eiza",
+     "c"
+    ],
+    [
+     "Blazing Inpachi",
+     "c"
+    ],
+    [
+     "Molten Zombie",
+     "c"
+    ],
+    [
+     "Mataza the Zapper",
+     "r"
+    ],
+    [
+     "Warrior of Zera",
+     "r"
+    ],
+    [
+     "Needle Burrower",
+     "c"
+    ],
+    [
+     "Marshmallon",
+     "c"
+    ],
+    [
+     "Protector of the Sanctuary",
+     "c"
+    ],
+    [
+     "Skull Dog Marron",
+     "c"
+    ],
+    [
+     "Howling Insect",
+     "s"
+    ],
+    [
+     "Ojama King",
+     "u"
+    ],
+    [
+     "Harpie Lady 2",
+     "r"
+    ],
+    [
+     "Harpie Lady 3",
+     "c"
+    ],
+    [
+     "Space Mambo",
+     "c"
+    ],
+    [
+     "Divine Dragon Ragnarok",
+     "c"
+    ],
+    [
+     "Ancient Gear Soldier",
+     "s"
+    ],
+    [
+     "Moai Interceptor Cannons",
+     "c"
+    ],
+    [
+     "Master Monk",
+     "s"
+    ],
+    [
+     "Des Wombat",
+     "c"
+    ],
+    [
+     "King of the Skull Servants",
+     "c"
+    ],
+    [
+     "Green Phantom King",
+     "c"
+    ],
+    [
+     "Ray & Temperature",
+     "c"
+    ],
+    [
+     "King Fog",
+     "c"
+    ],
+    [
+     "Kumootoko",
+     "c"
+    ],
+    [
+     "Ansatsu",
+     "c"
+    ],
+    [
+     "Giant Mech-Soldier",
+     "c"
+    ],
+    [
+     "Rogue Doll",
+     "s"
+    ],
+    [
+     "Armored Starfish",
+     "r"
+    ],
+    [
+     "Megasonic Eye",
+     "c"
+    ],
+    [
+     "Great White",
+     "r"
+    ],
+    [
+     "Ancient Lizard Warrior",
+     "c"
+    ],
+    [
+     "Cocoon of Evolution",
+     "c"
+    ],
+    [
+     "Queen of Autumn Leaves",
+     "c"
+    ],
+    [
+     "Turtle Bird",
+     "c"
+    ],
+    [
+     "Armored Zombie",
+     "s"
+    ],
+    [
+     "Crow Goblin",
+     "c"
+    ],
+    [
+     "Disk Magician",
+     "c"
+    ],
+    [
+     "Dungeon Worm",
+     "c"
+    ],
+    [
+     "Killer Needle",
+     "c"
+    ],
+    [
+     "Gokibore",
+     "c"
+    ],
+    [
+     "Nekogal #2",
+     "c"
+    ],
+    [
+     "Sea King Dragon",
+     "r"
+    ],
+    [
+     "Boulder Tortoise",
+     "c"
+    ],
+    [
+     "Garvas",
+     "c"
+    ],
+    [
+     "Goddess with the Third Eye",
+     "r"
+    ],
+    [
+     "Kairyu-Shin",
+     "r"
+    ],
+    [
+     "Neck Hunter",
+     "c"
+    ],
+    [
+     "Sky Dragon",
+     "s"
+    ],
+    [
+     "Sword Arm of Dragon",
+     "s"
+    ],
+    [
+     "Ancient Tool",
+     "c"
+    ],
+    [
+     "Dark Chimera",
+     "c"
+    ],
+    [
+     "Gatekeeper",
+     "c"
+    ],
+    [
+     "Giganto",
+     "c"
+    ],
+    [
+     "Monstrous Bird",
+     "u"
+    ],
+    [
+     "Mushroom Man #2",
+     "c"
+    ],
+    [
+     "Pendulum Machine",
+     "s"
+    ],
+    [
+     "Royal Guard",
+     "u"
+    ],
+    [
+     "Saggi the Dark Clown",
+     "c"
+    ],
+    [
+     "Togex",
+     "c"
+    ],
+    [
+     "Zanki",
+     "c"
+    ],
+    [
+     "Megazowler",
+     "r"
+    ],
+    [
+     "Monster Tamer",
+     "r"
+    ],
+    [
+     "Stone Dragon",
+     "r"
+    ],
+    [
+     "Yado Karu",
+     "c"
+    ],
+    [
+     "Electric Snake",
+     "c"
+    ],
+    [
+     "Penguin Knight",
+     "c"
+    ],
+    [
+     "Queen Bird",
+     "c"
+    ],
+    [
+     "Weather Report",
+     "c"
+    ],
+    [
      "Labyrinth Wall",
      "c"
     ],
     [
-     "Magical Labyrinth",
+     "Crimson Sentry",
+     "x"
+    ],
+    [
+     "Lady Panther",
+     "r"
+    ],
+    [
+     "Possessed Dark Soul",
+     "c"
+    ],
+    [
+     "Maharaghi",
+     "c"
+    ],
+    [
+     "Wandering Mummy",
+     "u"
+    ],
+    [
+     "Reaper on the Nightmare",
+     "r"
+    ],
+    [
+     "Three-Headed Geedo",
+     "c"
+    ],
+    [
+     "Burning Beast",
+     "c"
+    ],
+    [
+     "Freezing Beast",
+     "r"
+    ],
+    [
+     "Helping Robo for Combat",
+     "c"
+    ],
+    [
+     "Amazoness Tiger",
+     "r"
+    ],
+    [
+     "Magical Merchant",
+     "c"
+    ],
+    [
+     "Different Dimension Dragon",
+     "c"
+    ],
+    [
+     "Guardian Ceal",
+     "u"
+    ],
+    [
+     "Guardian Elma",
+     "c"
+    ],
+    [
+     "Dark Scorpion - Meanae the Thorn",
+     "c"
+    ],
+    [
+     "Pandemonium Watchbear",
+     "c"
+    ],
+    [
+     "Gernia",
+     "r"
+    ],
+    [
+     "Chaosrider Gustaph",
+     "c"
+    ],
+    [
+     "Slifer the Sky Dragon",
+     "c"
+    ],
+    [
+     "The Winged Dragon of Ra",
+     "r"
+    ],
+    [
+     "Insect Princess",
+     "s"
+    ],
+    [
+     "Maximum Six",
+     "u"
+    ],
+    [
+     "Twinheaded Beast",
+     "c"
+    ],
+    [
+     "3-Hump Lacooda",
+     "c"
+    ],
+    [
+     "Night Assailant",
+     "c"
+    ],
+    [
+     "Black Dragon's Chick",
+     "c"
+    ],
+    [
+     "Dark Mimic LV3",
+     "s"
+    ],
+    [
+     "Element Soldier",
+     "c"
+    ],
+    [
+     "Mystic Swordsman LV2",
+     "c"
+    ],
+    [
+     "The Trojan Horse",
+     "s"
+    ],
+    [
+     "Unshaven Angler",
+     "u"
+    ],
+    [
+     "Teva",
+     "c"
+    ],
+    [
+     "Element Magician",
+     "c"
+    ],
+    [
+     "Element Saurus",
+     "s"
+    ],
+    [
+     "Silent Swordsman LV3",
+     "c"
+    ],
+    [
+     "Element Doom",
+     "c"
+    ],
+    [
+     "Element Valkyrie",
+     "c"
+    ],
+    [
+     "Flame Ruler",
+     "c"
+    ],
+    [
+     "Rescue Cat",
+     "c"
+    ],
+    [
+     "The Earth - Hex-Sealed Fusion",
+     "c"
+    ],
+    [
+     "Whirlwind Prodigy",
+     "c"
+    ],
+    [
+     "Grave Ohja",
+     "r"
+    ]
+   ]
+  },
+  {
+   "key": "necrofear",
+   "item": "dark-necrofear-pack",
+   "name": "Dark Necrofear",
+   "full": "Dark Necrofear",
+   "cover": "Dark Necrofear",
+   "boss": "Dark Necrofear",
+   "text": "Strong monsters: Dark Necrofear the prize.",
+   "cards": [
+    [
+     "Mystical Elf",
+     "r"
+    ],
+    [
+     "Baby Dragon",
+     "c"
+    ],
+    [
+     "Feral Imp",
+     "r"
+    ],
+    [
+     "Winged Dragon, Guardian of the Fortress #1",
+     "r"
+    ],
+    [
+     "Blackland Fire Dragon",
+     "r"
+    ],
+    [
+     "Exodia the Forbidden One",
+     "r"
+    ],
+    [
+     "Sangan",
+     "r"
+    ],
+    [
+     "Silver Fang",
+     "r"
+    ],
+    [
+     "Mystic Horseman",
+     "c"
+    ],
+    [
+     "Mask of Darkness",
+     "c"
+    ],
+    [
+     "White Magical Hat",
+     "c"
+    ],
+    [
+     "Dream Clown",
+     "c"
+    ],
+    [
+     "Spirit of the Harp",
+     "r"
+    ],
+    [
+     "Big Eye",
+     "r"
+    ],
+    [
+     "Frenzied Panda",
+     "c"
+    ],
+    [
+     "Flame Ghost",
+     "c"
+    ],
+    [
+     "Enchanting Mermaid",
+     "c"
+    ],
+    [
+     "D.D. Warrior",
+     "c"
+    ],
+    [
+     "Ground Attacker Bugroth",
+     "c"
+    ],
+    [
+     "Fireyarou",
+     "u"
+    ],
+    [
+     "Masaki the Legendary Swordsman",
+     "r"
+    ],
+    [
+     "Dragoness the Wicked Knight",
+     "r"
+    ],
+    [
+     "Super War-Lion",
+     "c"
+    ],
+    [
+     "Ocubeam",
+     "c"
+    ],
+    [
+     "Kaiser Dragon",
+     "c"
+    ],
+    [
+     "Ancient Elf",
+     "c"
+    ],
+    [
+     "Bottom Dweller",
+     "u"
+    ],
+    [
+     "Aqua Dragon",
+     "c"
+    ],
+    [
+     "Giant Red Seasnake",
+     "c"
+    ],
+    [
+     "Millennium Golem",
+     "c"
+    ],
+    [
+     "Destroyer Golem",
+     "c"
+    ],
+    [
+     "Crimson Sunbird",
+     "c"
+    ],
+    [
+     "Bracchio-raidus",
+     "c"
+    ],
+    [
+     "Fire Kraken",
+     "r"
+    ],
+    [
+     "Mystical Sand",
+     "c"
+    ],
+    [
+     "Kwagar Hercules",
+     "c"
+    ],
+    [
+     "Skelgon",
+     "c"
+    ],
+    [
+     "Tyhone #2",
+     "s"
+    ],
+    [
+     "Lesser Dragon",
+     "c"
+    ],
+    [
+     "Skull Guardian",
+     "c"
+    ],
+    [
+     "Chakra",
+     "c"
+    ],
+    [
+     "Mikazukinoyaiba",
+     "c"
+    ],
+    [
+     "Meteor Dragon",
+     "c"
+    ],
+    [
+     "Firewing Pegasus",
+     "s"
+    ],
+    [
+     "Garma Sword",
+     "c"
+    ],
+    [
+     "Javelin Beetle",
+     "c"
+    ],
+    [
+     "Dokurorider",
+     "c"
+    ],
+    [
+     "Red Archery Girl",
+     "c"
+    ],
+    [
+     "Hannibal Necromancer",
+     "r"
+    ],
+    [
+     "Gear Golem the Moving Fortress",
+     "c"
+    ],
+    [
+     "Alligator's Sword",
+     "c"
+    ],
+    [
+     "Cyber-Tech Alligator",
+     "c"
+    ],
+    [
+     "Nimble Momonga",
+     "c"
+    ],
+    [
+     "Morphing Jar #2",
+     "c"
+    ],
+    [
+     "Flame Champion",
+     "c"
+    ],
+    [
+     "Darkfire Soldier #1",
+     "r"
+    ],
+    [
+     "Darkfire Soldier #2",
+     "c"
+    ],
+    [
+     "Overdrive",
+     "r"
+    ],
+    [
+     "Robotic Knight",
+     "c"
+    ],
+    [
+     "Cipher Soldier",
+     "r"
+    ],
+    [
+     "Slate Warrior",
+     "s"
+    ],
+    [
+     "Humanoid Slime",
+     "c"
+    ],
+    [
+     "Worm Drake",
+     "c"
+    ],
+    [
+     "Grand Tiki Elder",
+     "c"
+    ],
+    [
+     "Melchid the Four-Face Beast",
+     "r"
+    ],
+    [
+     "Girochin Kuwagata",
+     "c"
+    ],
+    [
+     "4-Starred Ladybug of Doom",
+     "r"
+    ],
+    [
+     "Mad Sword Beast",
+     "c"
+    ],
+    [
+     "Amazoness Archer",
+     "u"
+    ],
+    [
+     "Fire Princess",
+     "r"
+    ],
+    [
+     "Lady Assailant of Flames",
+     "c"
+    ],
+    [
+     "Dancing Fairy",
+     "u"
+    ],
+    [
+     "Empress Mantis",
+     "s"
+    ],
+    [
+     "Cure Mermaid",
+     "c"
+    ],
+    [
+     "The Gross Ghost of Fled Dreams",
+     "s"
+    ],
+    [
+     "Gilasaurus",
+     "r"
+    ],
+    [
+     "Amazoness Fighter",
+     "c"
+    ],
+    [
+     "Throwstone Unit",
+     "c"
+    ],
+    [
+     "Marauding Captain",
+     "r"
+    ],
+    [
+     "Exiled Force",
+     "r"
+    ],
+    [
+     "The Dragon Dwelling in the Cave",
+     "c"
+    ],
+    [
+     "Agido",
+     "c"
+    ],
+    [
+     "Legendary Fiend",
+     "c"
+    ],
+    [
+     "Toon Masked Sorcerer",
+     "c"
+    ],
+    [
+     "Toon Cannon Soldier",
+     "r"
+    ],
+    [
+     "Gil Garth",
+     "c"
+    ],
+    [
+     "Kabazauls",
+     "r"
+    ],
+    [
+     "Inpachi",
+     "c"
+    ],
+    [
+     "Gravekeeper's Spear Soldier",
+     "c"
+    ],
+    [
+     "Yomi Ship",
+     "c"
+    ],
+    [
+     "Great Angus",
+     "c"
+    ],
+    [
+     "Amazoness Paladin",
+     "c"
+    ],
+    [
+     "Exodia Necross",
+     "c"
+    ],
+    [
+     "Des Kangaroo",
+     "r"
+    ],
+    [
+     "Gale Lizard",
+     "c"
+    ],
+    [
+     "Inferno",
+     "c"
+    ],
+    [
+     "Fenrir",
+     "c"
+    ],
+    [
+     "Silpheed",
+     "c"
+    ],
+    [
+     "Neo Bug",
+     "r"
+    ],
+    [
+     "Sea Serpent Warrior of Darkness",
+     "c"
+    ],
+    [
+     "Stealth Bird",
+     "c"
+    ],
+    [
+     "Amphibious Bugroth MK-3",
+     "c"
+    ],
+    [
+     "Getsu Fuhma",
+     "c"
+    ],
+    [
+     "Emes the Infinity",
+     "c"
+    ],
+    [
+     "Two Thousand Needles",
+     "r"
+    ],
+    [
+     "Rare Metal Dragon",
+     "c"
+    ],
+    [
+     "Neo Aqua Madoor",
+     "c"
+    ],
+    [
+     "Element Dragon",
+     "c"
+    ],
+    [
+     "Penumbral Soldier Lady",
+     "c"
+    ],
+    [
+     "Green Gadget",
+     "c"
+    ],
+    [
+     "Red Gadget",
+     "s"
+    ],
+    [
+     "Yellow Gadget",
+     "c"
+    ],
+    [
+     "Roc from the Valley of Haze",
+     "s"
+    ],
+    [
+     "Sasuke Samurai #4",
+     "c"
+    ],
+    [
+     "Pitch-Black Warwolf",
+     "s"
+    ],
+    [
+     "B.E.S. Big Core",
+     "c"
+    ],
+    [
+     "Blast Magician",
+     "c"
+    ],
+    [
+     "Golem Sentry",
+     "c"
+    ],
+    [
+     "Elemental HERO Avian",
+     "c"
+    ],
+    [
+     "Elemental HERO Burstinatrix",
+     "r"
+    ],
+    [
+     "Elemental HERO Clayman",
+     "r"
+    ],
+    [
+     "White Ninja",
+     "s"
+    ],
+    [
+     "Hitotsu-Me Giant",
+     "s"
+    ],
+    [
+     "Mammoth Graveyard",
+     "c"
+    ],
+    [
+     "Dark King of the Abyss",
+     "c"
+    ],
+    [
+     "Fiend Reflection #2",
+     "r"
+    ],
+    [
+     "Trial of Nightmare",
+     "s"
+    ],
+    [
+     "Turtle Tiger",
+     "c"
+    ],
+    [
+     "The 13th Grave",
+     "c"
+    ],
+    [
+     "Terra the Terrible",
+     "s"
+    ],
+    [
+     "Tripwire Beast",
+     "r"
+    ],
+    [
+     "Armored Lizard",
+     "x"
+    ],
+    [
+     "Crawling Dragon",
+     "u"
+    ],
+    [
+     "Doma The Angel of Silence",
+     "s"
+    ],
+    [
+     "Hunter Spider",
+     "c"
+    ],
+    [
+     "Morinphen",
+     "c"
+    ],
+    [
+     "Trent",
+     "r"
+    ],
+    [
+     "Water Omotics",
+     "c"
+    ],
+    [
+     "Masked Sorcerer",
+     "c"
+    ],
+    [
+     "Pale Beast",
+     "c"
+    ],
+    [
+     "Rude Kaiser",
+     "c"
+    ],
+    [
+     "30,000-Year White Turtle",
+     "r"
+    ],
+    [
+     "Air Eater",
+     "c"
+    ],
+    [
+     "Parrot Dragon",
+     "u"
+    ],
+    [
+     "Ushi Oni",
+     "c"
+    ],
+    [
+     "Gyakutenno Megami",
+     "c"
+    ],
+    [
+     "Koumori Dragon",
+     "c"
+    ],
+    [
+     "Lord of D.",
+     "s"
+    ],
+    [
+     "B. Dragon Jungle King",
+     "c"
+    ],
+    [
+     "Castle of Dark Illusions",
+     "u"
+    ],
+    [
+     "Jellyfish",
+     "c"
+    ],
+    [
+     "Giant Turtle Who Feeds on Flames",
+     "c"
+    ],
+    [
+     "High Tide Gyojin",
+     "s"
+    ],
+    [
+     "Invader of the Throne",
+     "c"
+    ],
+    [
+     "Metal Fish",
+     "c"
+    ],
+    [
+     "Peacock",
      "c"
     ],
     [
@@ -3419,40 +6281,2968 @@
      "c"
     ],
     [
-     "Psychic Kappa",
-     "c"
-    ],
-    [
-     "Spear Cretin",
-     "r"
-    ],
-    [
      "Stone Ogre Grotto",
      "c"
     ],
     [
-     "Twin Long Rods #2",
+     "Spikebot",
+     "r"
+    ],
+    [
+     "Nuvia the Wicked",
+     "u"
+    ],
+    [
+     "Big Shield Gardna",
+     "c"
+    ],
+    [
+     "Dark Necrofear",
+     "x"
+    ],
+    [
+     "Amazoness Chain Master",
+     "c"
+    ],
+    [
+     "Frontier Wiseman",
+     "r"
+    ],
+    [
+     "Twin-Headed Wolf",
+     "c"
+    ],
+    [
+     "Command Knight",
+     "s"
+    ],
+    [
+     "Des Volstgalph",
+     "c"
+    ],
+    [
+     "Exarion Universe",
+     "c"
+    ],
+    [
+     "Great Dezard",
+     "u"
+    ],
+    [
+     "Royal Keeper",
+     "s"
+    ],
+    [
+     "Mystical Knight of Jackal",
+     "u"
+    ],
+    [
+     "Winged Sage Falcos",
+     "c"
+    ],
+    [
+     "Dark Scorpion - Cliff the Trap Remover",
+     "c"
+    ],
+    [
+     "Cyber Raider",
+     "c"
+    ],
+    [
+     "Fear from the Dark",
+     "r"
+    ],
+    [
+     "Little-Winguard",
+     "s"
+    ],
+    [
+     "Dark Scorpion - Gorg the Strong",
+     "c"
+    ],
+    [
+     "Desrook Archfiend",
+     "c"
+    ],
+    [
+     "Victory Dragon",
+     "s"
+    ],
+    [
+     "Lekunga",
+     "r"
+    ],
+    [
+     "Orca Mega-Fortress of Darkness",
+     "r"
+    ],
+    [
+     "Solar Flare Dragon",
+     "c"
+    ],
+    [
+     "The Agent of Judgment - Saturn",
+     "c"
+    ],
+    [
+     "Vampire Lady",
+     "r"
+    ],
+    [
+     "Emissary of the Afterlife",
+     "c"
+    ],
+    [
+     "Ghost Knight of Jackal",
+     "c"
+    ],
+    [
+     "King of the Swamp",
+     "c"
+    ],
+    [
+     "Armed Dragon LV3",
+     "s"
+    ],
+    [
+     "Meteo the Matchless",
+     "c"
+    ],
+    [
+     "Ulevo",
+     "r"
+    ],
+    [
+     "Gaia Soul the Combustible Collective",
+     "c"
+    ],
+    [
+     "Nightmare Penguin",
+     "c"
+    ],
+    [
+     "Vampire's Curse",
+     "c"
+    ],
+    [
+     "Big-Tusked Mammoth",
+     "c"
+    ],
+    [
+     "The Dark - Hex-Sealed Fusion",
+     "u"
+    ],
+    [
+     "The Light - Hex-Sealed Fusion",
+     "x"
+    ],
+    [
+     "Criosphinx",
+     "c"
+    ],
+    [
+     "Hieracosphinx",
+     "u"
+    ]
+   ]
+  },
+  {
+   "key": "skull",
+   "item": "summoned-skull-pack",
+   "name": "Summoned Skull",
+   "full": "Summoned Skull",
+   "cover": "Summoned Skull",
+   "boss": "Summoned Skull",
+   "text": "Very strong monsters: Summoned Skull the prize.",
+   "cards": [
+    [
+     "Tyhone",
+     "c"
+    ],
+    [
+     "Summoned Skull",
+     "x"
+    ],
+    [
+     "Battle Ox",
+     "c"
+    ],
+    [
+     "Karbonala Warrior",
+     "r"
+    ],
+    [
+     "Harpie Lady",
+     "c"
+    ],
+    [
+     "Garoozis",
+     "c"
+    ],
+    [
+     "Axe Raider",
+     "c"
+    ],
+    [
+     "Catapult Turtle",
+     "c"
+    ],
+    [
+     "Crass Clown",
+     "r"
+    ],
+    [
+     "Darkfire Dragon",
+     "u"
+    ],
+    [
+     "Aqua Madoor",
+     "s"
+    ],
+    [
+     "Zera the Mant",
+     "c"
+    ],
+    [
+     "Shadow Ghoul",
+     "u"
+    ],
+    [
+     "La Jinn the Mystical Genie of the Lamp",
+     "c"
+    ],
+    [
+     "Harpie's Pet Dragon",
+     "s"
+    ],
+    [
+     "Zoa",
+     "c"
+    ],
+    [
+     "Metalzoa",
+     "c"
+    ],
+    [
+     "Machine King",
+     "c"
+    ],
+    [
+     "Flower Wolf",
+     "r"
+    ],
+    [
+     "Dragon Seeker",
+     "c"
+    ],
+    [
+     "Cannon Soldier",
+     "r"
+    ],
+    [
+     "The Bistro Butcher",
+     "s"
+    ],
+    [
+     "Lava Battleguard",
+     "s"
+    ],
+    [
+     "Steel Ogre Grotto #1",
+     "r"
+    ],
+    [
+     "Witch of the Black Forest",
+     "c"
+    ],
+    [
+     "Blue-Winged Crown",
+     "c"
+    ],
+    [
+     "Performance of Sword",
+     "r"
+    ],
+    [
+     "Sengenjin",
+     "c"
+    ],
+    [
+     "Meteor Black Dragon",
+     "s"
+    ],
+    [
+     "Fortress Whale",
+     "c"
+    ],
+    [
+     "Steel Ogre Grotto #2",
+     "c"
+    ],
+    [
+     "Blast Sphere",
+     "c"
+    ],
+    [
+     "Alpha The Magnet Warrior",
+     "c"
+    ],
+    [
+     "Panther Warrior",
+     "r"
+    ],
+    [
+     "Gazelle the King of Mythical Beasts",
+     "r"
+    ],
+    [
+     "Berfomet",
+     "c"
+    ],
+    [
+     "Reflect Bounder",
+     "s"
+    ],
+    [
+     "Beta The Magnet Warrior",
+     "u"
+    ],
+    [
+     "Dunames Dark Witch",
+     "c"
+    ],
+    [
+     "Beast of Talwar",
+     "c"
+    ],
+    [
+     "Gamma the Magnet Warrior",
+     "r"
+    ],
+    [
+     "Wall of Illusion",
+     "c"
+    ],
+    [
+     "Cyber Jar",
+     "c"
+    ],
+    [
+     "Senju of the Thousand Hands",
+     "r"
+    ],
+    [
+     "UFO Turtle",
+     "s"
+    ],
+    [
+     "Shining Angel",
+     "r"
+    ],
+    [
+     "Mother Grizzly",
+     "r"
+    ],
+    [
+     "Flying Kamakiri #1",
+     "c"
+    ],
+    [
+     "Sonic Bird",
+     "c"
+    ],
+    [
+     "Mr. Volcano",
+     "c"
+    ],
+    [
+     "Sky Scout",
+     "c"
+    ],
+    [
+     "Birdface",
+     "c"
+    ],
+    [
+     "Arsenal Bug",
+     "c"
+    ],
+    [
+     "Shining Abyss",
+     "c"
+    ],
+    [
+     "Gadget Soldier",
+     "c"
+    ],
+    [
+     "The Unfriendly Amazon",
+     "u"
+    ],
+    [
+     "Hysteric Fairy",
+     "c"
+    ],
+    [
+     "Headless Knight",
+     "c"
+    ],
+    [
+     "The Earl of Demise",
+     "c"
+    ],
+    [
+     "Cyber Harpie Lady",
+     "c"
+    ],
+    [
+     "Mystical Beast of Serket",
+     "c"
+    ],
+    [
+     "Swift Gaia the Fierce Knight",
+     "s"
+    ],
+    [
+     "Obnoxious Celtic Guard",
+     "c"
+    ],
+    [
+     "Bazoo the Soul-Eater",
+     "r"
+    ],
+    [
+     "Spirit of Flames",
+     "r"
+    ],
+    [
+     "The Rock Spirit",
+     "r"
+    ],
+    [
+     "Garuda the Wind Spirit",
+     "c"
+    ],
+    [
+     "Amazoness Swords Woman",
+     "c"
+    ],
+    [
+     "Lesser Fiend",
+     "r"
+    ],
+    [
+     "Opticlops",
+     "c"
+    ],
+    [
+     "Warrior Dai Grepher",
+     "c"
+    ],
+    [
+     "Spear Dragon",
+     "c"
+    ],
+    [
+     "Cave Dragon",
+     "c"
+    ],
+    [
+     "Mudora",
+     "s"
+    ],
+    [
+     "Zolga",
+     "u"
+    ],
+    [
+     "Susa Soldier",
+     "r"
+    ],
+    [
+     "Great Long Nose",
+     "r"
+    ],
+    [
+     "Giant Axe Mummy",
+     "c"
+    ],
+    [
+     "Pyramid Turtle",
+     "r"
+    ],
+    [
+     "Don Zaloog",
+     "c"
+    ],
+    [
+     "Toon Goblin Attack Force",
+     "s"
+    ],
+    [
+     "Newdoria",
+     "c"
+    ],
+    [
+     "Queen's Knight",
+     "s"
+    ],
+    [
+     "Gravekeeper's Guard",
+     "c"
+    ],
+    [
+     "Z-Metal Tank",
+     "r"
+    ],
+    [
+     "Drillago",
+     "c"
+    ],
+    [
+     "Giant Orc",
+     "s"
+    ],
+    [
+     "Armor Exe",
+     "s"
+    ],
+    [
+     "Des Koala",
+     "c"
+    ],
+    [
+     "Granadora",
+     "u"
+    ],
+    [
+     "Shinato, King of a Higher Plane",
+     "c"
+    ],
+    [
+     "Mirage Knight",
+     "r"
+    ],
+    [
+     "Dark Magician Knight",
+     "r"
+    ],
+    [
+     "Gagagigo",
+     "u"
+    ],
+    [
+     "Mefist the Infernal General",
+     "u"
+    ],
+    [
+     "Tsukuyomi",
+     "c"
+    ],
+    [
+     "Legendary Flame Lord",
+     "c"
+    ],
+    [
+     "Big Koala",
+     "r"
+    ],
+    [
+     "Giga Gagagigo",
+     "u"
+    ],
+    [
+     "Mad Dog of Darkness",
+     "x"
+    ],
+    [
+     "Terrorking Salmon",
+     "c"
+    ],
+    [
+     "Sacred Crane",
+     "c"
+    ],
+    [
+     "Enraged Battle Ox",
+     "c"
+    ],
+    [
+     "Dark Driceratops",
+     "c"
+    ],
+    [
+     "Black Tyranno",
+     "r"
+    ],
+    [
+     "Manju of the Ten Thousand Hands",
+     "u"
+    ],
+    [
+     "Metal Armored Bug",
+     "c"
+    ],
+    [
+     "Archlord Zerato",
+     "r"
+    ],
+    [
+     "Spirit of the Pharaoh",
+     "c"
+    ],
+    [
+     "Andro Sphinx",
+     "c"
+    ],
+    [
+     "Sphinx Teleia",
+     "c"
+    ],
+    [
+     "Theinen the Great Sphinx",
+     "c"
+    ],
+    [
+     "Masked Dragon",
+     "c"
+    ],
+    [
+     "The Creator Incarnate",
+     "c"
+    ],
+    [
+     "Harpie Lady 1",
+     "c"
+    ],
+    [
+     "Mirage Dragon",
+     "c"
+    ],
+    [
+     "Dekoichi the Battlechanted Locomotive",
+     "r"
+    ],
+    [
+     "Homunculus the Alchemic Being",
+     "r"
+    ],
+    [
+     "Millennium Scorpion",
+     "c"
+    ],
+    [
+     "Reshef the Dark Being",
+     "c"
+    ],
+    [
+     "Ocean Dragon Lord - Neo-Daedalus",
+     "r"
+    ],
+    [
+     "Celtic Guardian",
+     "c"
+    ],
+    [
+     "Uraby",
+     "c"
+    ],
+    [
+     "Beaver Warrior",
+     "c"
+    ],
+    [
+     "Misairuzame",
+     "r"
+    ],
+    [
+     "Sand Stone",
+     "c"
+    ],
+    [
+     "Spike Seadra",
+     "r"
+    ],
+    [
+     "Witty Phantom",
+     "c"
+    ],
+    [
+     "Seiyaryu",
+     "u"
+    ],
+    [
+     "Kojikocy",
+     "c"
+    ],
+    [
+     "Leogun",
+     "c"
+    ],
+    [
+     "Battle Steer",
+     "c"
+    ],
+    [
+     "Judge Man",
+     "c"
+    ],
+    [
+     "Ryu-Kishin Powered",
+     "r"
+    ],
+    [
+     "Swordstalker",
+     "c"
+    ],
+    [
+     "Illusionist Faceless Mage",
+     "c"
+    ],
+    [
+     "The Immortal of Thunder",
+     "c"
+    ],
+    [
+     "Ancient One of the Deep Forest",
+     "c"
+    ],
+    [
+     "Dark Witch",
+     "c"
+    ],
+    [
+     "Guardian of the Throne Room",
+     "c"
+    ],
+    [
+     "Whiptail Crow",
+     "c"
+    ],
+    [
+     "Boar Soldier",
+     "r"
+    ],
+    [
+     "Dark Zebra",
+     "c"
+    ],
+    [
+     "Garnecia Elefantis",
+     "c"
+    ],
+    [
+     "Deepsea Warrior",
+     "r"
+    ],
+    [
+     "Invitation to a Dark Sleep",
+     "c"
+    ],
+    [
+     "Rocket Warrior",
+     "c"
+    ],
+    [
+     "Darklord Marie",
+     "c"
+    ],
+    [
+     "Revival Jam",
+     "c"
+    ],
+    [
+     "Luster Dragon #2",
+     "s"
+    ],
+    [
+     "Patrician of Darkness",
+     "s"
+    ],
+    [
+     "Serpentine Princess",
+     "c"
+    ],
+    [
+     "Thunder Nyan Nyan",
+     "r"
+    ],
+    [
+     "Twin-Headed Behemoth",
+     "r"
+    ],
+    [
+     "Makyura the Destructor",
+     "r"
+    ],
+    [
+     "Kaiser Sea Horse",
+     "r"
+    ],
+    [
+     "Fushioh Richie",
+     "c"
+    ],
+    [
+     "King Tiger Wanghu",
+     "s"
+    ],
+    [
+     "Timeater",
+     "c"
+    ],
+    [
+     "A Man with Wdjat",
+     "c"
+    ],
+    [
+     "Dark Jeroid",
+     "c"
+    ],
+    [
+     "Gravekeeper's Assailant",
+     "c"
+    ],
+    [
+     "Gravekeeper's Chief",
+     "c"
+    ],
+    [
+     "Helpoemer",
+     "r"
+    ],
+    [
+     "Blade Knight",
+     "s"
+    ],
+    [
+     "Kiryu",
+     "c"
+    ],
+    [
+     "Roulette Barrel",
+     "c"
+    ],
+    [
+     "Arsenal Summoner",
+     "c"
+    ],
+    [
+     "Berserk Dragon",
+     "x"
+    ],
+    [
+     "Blindly Loyal Goblin",
+     "c"
+    ],
+    [
+     "Guardian Grarl",
+     "c"
+    ],
+    [
+     "Guardian Tryce",
+     "c"
+    ],
+    [
+     "Terrorking Archfiend",
+     "c"
+    ],
+    [
+     "Magician's Valkyria",
+     "c"
+    ],
+    [
+     "Goblin Zombie",
+     "c"
+    ],
+    [
+     "Lord Poison",
+     "c"
+    ],
+    [
+     "Strike Ninja",
+     "c"
+    ],
+    [
+     "Yasushi the Skull Knight",
+     "s"
+    ],
+    [
+     "Hyper Hammerhead",
+     "c"
+    ],
+    [
+     "Manticore of Darkness",
+     "c"
+    ],
+    [
+     "Legendary Jujitsu Master",
+     "c"
+    ],
+    [
+     "Mazera DeVille",
+     "c"
+    ],
+    [
+     "The Agent of Creation - Venus",
+     "c"
+    ],
+    [
+     "Double Coston",
+     "c"
+    ],
+    [
+     "Regenerating Mummy",
+     "u"
+    ],
+    [
+     "Horus the Black Flame Dragon LV4",
+     "c"
+    ],
+    [
+     "Malice Doll of Demise",
+     "c"
+    ],
+    [
+     "Mystic Swordsman LV6",
+     "c"
+    ],
+    [
+     "Perfect Machine King",
+     "c"
+    ],
+    [
+     "Behemoth the King of All Animals",
+     "c"
+    ],
+    [
+     "Chiron the Mage",
+     "s"
+    ],
+    [
+     "Ultimate Insect LV5",
+     "c"
+    ],
+    [
+     "Vampire Genesis",
+     "s"
+    ],
+    [
+     "Infernal Flame Emperor",
+     "c"
+    ],
+    [
+     "D.D. Survivor",
+     "r"
+    ],
+    [
+     "Ultimate Insect LV7",
+     "c"
+    ],
+    [
+     "The Wicked Dreadroot",
+     "c"
+    ]
+   ]
+  },
+  {
+   "key": "jinzo",
+   "item": "jinzo-pack",
+   "name": "Jinzo",
+   "full": "Jinzo",
+   "cover": "Jinzo",
+   "boss": "Jinzo",
+   "text": "The strongest monsters: Jinzo the prize.",
+   "cards": [
+    [
+     "Swamp Battleguard",
+     "c"
+    ],
+    [
+     "Flame Swordsman",
+     "c"
+    ],
+    [
+     "Gaia the Dragon Champion",
+     "s"
+    ],
+    [
+     "Gaia The Fierce Knight",
+     "r"
+    ],
+    [
+     "Curse of Dragon",
+     "c"
+    ],
+    [
+     "Harpie Lady Sisters",
+     "r"
+    ],
+    [
+     "Thousand Dragon",
+     "c"
+    ],
+    [
+     "Giant Soldier of Stone",
+     "c"
+    ],
+    [
+     "Rabid Horseman",
+     "c"
+    ],
+    [
+     "Black Skull Dragon",
+     "s"
+    ],
+    [
+     "Roaring Ocean Snake",
+     "r"
+    ],
+    [
+     "Black Luster Soldier",
+     "s"
+    ],
+    [
+     "Jirai Gumo",
+     "c"
+    ],
+    [
+     "Labyrinth Tank",
+     "r"
+    ],
+    [
+     "Blue-Eyes Ultimate Dragon",
+     "u"
+    ],
+    [
+     "Bickuribox",
+     "c"
+    ],
+    [
+     "Giltia the D. Knight",
+     "c"
+    ],
+    [
+     "Launcher Spider",
+     "c"
+    ],
+    [
+     "Metal Dragon",
+     "c"
+    ],
+    [
+     "Mechanicalchaser",
+     "c"
+    ],
+    [
+     "Thunder Dragon",
+     "c"
+    ],
+    [
+     "Deepsea Shark",
+     "c"
+    ],
+    [
+     "7 Colored Fish",
+     "c"
+    ],
+    [
+     "Kaminari Attack",
+     "c"
+    ],
+    [
+     "Punished Eagle",
+     "c"
+    ],
+    [
+     "Skull Red Bird",
+     "c"
+    ],
+    [
+     "Maha Vailo",
+     "c"
+    ],
+    [
+     "Musician King",
+     "c"
+    ],
+    [
+     "Cyber Saurus",
+     "c"
+    ],
+    [
+     "Flame Cerebrus",
+     "c"
+    ],
+    [
+     "Gemini Elf",
+     "c"
+    ],
+    [
+     "Dark Elf",
+     "c"
+    ],
+    [
+     "Great Mammoth of Goldfine",
+     "c"
+    ],
+    [
+     "Empress Judge",
+     "r"
+    ],
+    [
+     "Twin-Headed Thunder Dragon",
+     "s"
+    ],
+    [
+     "Hungry Burger",
+     "c"
+    ],
+    [
+     "Serpent Night Dragon",
+     "c"
+    ],
+    [
+     "Skull Knight",
+     "c"
+    ],
+    [
+     "Cosmo Queen",
+     "c"
+    ],
+    [
+     "Crab Turtle",
+     "c"
+    ],
+    [
+     "Magician of Black Chaos",
+     "c"
+    ],
+    [
+     "Ryu-Ran",
+     "c"
+    ],
+    [
+     "Manga Ryu-Ran",
+     "s"
+    ],
+    [
+     "Toon Mermaid",
+     "c"
+    ],
+    [
+     "Toon Summoned Skull",
+     "r"
+    ],
+    [
+     "Hyozanryu",
+     "r"
+    ],
+    [
+     "Red-Eyes Black Metal Dragon",
+     "c"
+    ],
+    [
+     "Barrel Dragon",
+     "r"
+    ],
+    [
+     "Chimera the Flying Mythical Beast",
+     "s"
+    ],
+    [
+     "Jinzo",
+     "x"
+    ],
+    [
+     "The Fiend Megacyber",
+     "r"
+    ],
+    [
+     "Dark Magician Girl",
+     "r"
+    ],
+    [
+     "Insect Queen",
+     "c"
+    ],
+    [
+     "Blue-Eyes Toon Dragon",
+     "u"
+    ],
+    [
+     "The Last Warrior from Another Planet",
+     "u"
+    ],
+    [
+     "Giant Rat",
+     "c"
+    ],
+    [
+     "Flash Assailant",
+     "c"
+    ],
+    [
+     "Mystic Tomato",
+     "c"
+    ],
+    [
+     "Twin-Headed Fire Dragon",
+     "c"
+    ],
+    [
+     "Buster Blader",
+     "s"
+    ],
+    [
+     "Valkyrion the Magna Warrior",
+     "s"
+    ],
+    [
+     "Alligator's Sword Dragon",
+     "c"
+    ],
+    [
+     "Vorse Raider",
+     "c"
+    ],
+    [
+     "Airknight Parshath",
+     "c"
+    ],
+    [
+     "Gearfried the Iron Knight",
+     "r"
+    ],
+    [
+     "Humanoid Worm Drake",
+     "r"
+    ],
+    [
+     "Amphibian Beast",
+     "c"
+    ],
+    [
+     "The Masked Beast",
+     "c"
+    ],
+    [
+     "Goblin Attack Force",
+     "c"
+    ],
+    [
+     "Wingweaver",
+     "c"
+    ],
+    [
+     "St. Joan",
+     "c"
+    ],
+    [
+     "Dark Sage",
+     "c"
+    ],
+    [
+     "Zombyra the Dark",
+     "c"
+    ],
+    [
+     "Kycoo the Ghost Destroyer",
+     "c"
+    ],
+    [
+     "Soul of Purity and Light",
+     "c"
+    ],
+    [
+     "Aqua Spirit",
+     "c"
+    ],
+    [
+     "Kaiser Glider",
+     "r"
+    ],
+    [
+     "Des Feral Imp",
+     "c"
+    ],
+    [
+     "Kelbek",
+     "c"
+    ],
+    [
+     "Yamata Dragon",
+     "c"
+    ],
+    [
+     "Hino-Kagu-Tsuchi",
+     "c"
+    ],
+    [
+     "Dark Dust Spirit",
+     "s"
+    ],
+    [
+     "Guardian Sphinx",
+     "c"
+    ],
+    [
+     "Toon Dark Magician Girl",
+     "c"
+    ],
+    [
+     "Toon Gemini Elf",
+     "c"
+    ],
+    [
+     "Lava Golem",
+     "u"
+    ],
+    [
+     "Dragon Master Knight",
+     "r"
+    ],
+    [
+     "Five-Headed Dragon",
+     "u"
+    ],
+    [
+     "X-Head Cannon",
+     "c"
+    ],
+    [
+     "Gravekeeper's Spy",
+     "c"
+    ],
+    [
+     "Y-Dragon Head",
+     "c"
+    ],
+    [
+     "XY-Dragon Cannon",
+     "c"
+    ],
+    [
+     "XYZ-Dragon Cannon",
+     "u"
+    ],
+    [
+     "King's Knight",
+     "c"
+    ],
+    [
+     "Jack's Knight",
+     "c"
+    ],
+    [
+     "Dark Blade",
+     "c"
+    ],
+    [
+     "Spell Canceller",
+     "c"
+    ],
+    [
+     "Paladin of White Dragon",
+     "c"
+    ],
+    [
+     "XZ-Tank Cannon",
+     "r"
+    ],
+    [
+     "YZ-Tank Dragon",
+     "c"
+    ],
+    [
+     "Dark Paladin",
+     "u"
+    ],
+    [
+     "Luster Dragon",
+     "c"
+    ],
+    [
+     "Skilled White Magician",
+     "c"
+    ],
+    [
+     "Skilled Dark Magician",
+     "r"
+    ],
+    [
+     "Magical Marionette",
+     "c"
+    ],
+    [
+     "Breaker the Magical Warrior",
+     "c"
+    ],
+    [
+     "Tribe-Infecting Virus",
+     "c"
+    ],
+    [
+     "Dark Flare Knight",
+     "c"
+    ],
+    [
+     "D.D. Warrior Lady",
+     "c"
+    ],
+    [
+     "Archfiend Soldier",
+     "c"
+    ],
+    [
+     "Dark Master - Zorc",
+     "c"
+    ],
+    [
+     "Gigantes",
+     "s"
+    ],
+    [
+     "Chaos Sorcerer",
+     "u"
+    ],
+    [
+     "Black Luster Soldier - Envoy of the Beginning",
+     "x"
+    ],
+    [
+     "Chaos Emperor Dragon - Envoy of the End",
+     "u"
+    ],
+    [
+     "Dark Magician of Chaos",
+     "u"
+    ],
+    [
+     "Levia-Dragon - Daedalus",
+     "c"
+    ],
+    [
+     "Guardian Angel Joan",
+     "c"
+    ],
+    [
+     "Ryu Kokki",
+     "s"
+    ],
+    [
+     "Invader of Darkness",
+     "c"
+    ],
+    [
+     "D.D. Assailant",
+     "c"
+    ],
+    [
+     "Gogiga Gagagigo",
+     "r"
+    ],
+    [
+     "Blowback Dragon",
+     "r"
+    ],
+    [
+     "Zaborg the Thunder Monarch",
+     "s"
+    ],
+    [
+     "Ninja Grandmaster Sasuke",
+     "c"
+    ],
+    [
+     "Mobius the Frost Monarch",
+     "r"
+    ],
+    [
+     "Master of Oz",
+     "s"
+    ],
+    [
+     "Sanwitch",
+     "c"
+    ],
+    [
+     "The Creator",
+     "c"
+    ],
+    [
+     "Thestalos the Firestorm Monarch",
+     "r"
+    ],
+    [
+     "Dark Blade the Dragon Knight",
+     "r"
+    ],
+    [
+     "Insect Knight",
+     "c"
+    ],
+    [
+     "Granmarg the Rock Monarch",
+     "c"
+    ],
+    [
+     "Gearfried the Swordmaster",
+     "c"
+    ],
+    [
+     "Gatling Dragon",
+     "r"
+    ],
+    [
+     "Red-Eyes Darkness Dragon",
+     "r"
+    ],
+    [
+     "Elemental HERO Sparkman",
+     "c"
+    ],
+    [
+     "Ancient Gear Golem",
+     "u"
+    ],
+    [
+     "Ancient Gear Beast",
+     "c"
+    ],
+    [
+     "Elemental HERO Flame Wingman",
+     "r"
+    ],
+    [
+     "Elemental HERO Thunder Giant",
+     "r"
+    ],
+    [
+     "Reaper of the Cards",
+     "c"
+    ],
+    [
+     "Succubus Knight",
+     "c"
+    ],
+    [
+     "Perfectly Ultimate Great Moth",
+     "c"
+    ],
+    [
+     "Gate Guardian",
+     "s"
+    ],
+    [
+     "Kazejin",
+     "r"
+    ],
+    [
+     "Sanga of the Thunder",
+     "r"
+    ],
+    [
+     "Suijin",
+     "r"
+    ],
+    [
+     "Great Moth",
+     "r"
+    ],
+    [
+     "King of Yamimakai",
+     "c"
+    ],
+    [
+     "Pumpking the King of Ghosts",
+     "c"
+    ],
+    [
+     "Slot Machine",
      "c"
     ],
     [
      "Wall Shadow",
+     "c"
+    ],
+    [
+     "Sword Hunter",
+     "c"
+    ],
+    [
+     "The Legendary Fisherman",
+     "c"
+    ],
+    [
+     "Archfiend of Gilfer",
+     "c"
+    ],
+    [
+     "Masked Beast Des Gardius",
+     "c"
+    ],
+    [
+     "Dark Balter the Terrible",
+     "r"
+    ],
+    [
+     "Dark Ruler Ha Des",
+     "s"
+    ],
+    [
+     "Fiend Skull Dragon",
+     "r"
+    ],
+    [
+     "Freed the Matchless General",
+     "c"
+    ],
+    [
+     "Ryu Senshi",
+     "r"
+    ],
+    [
+     "Tyrant Dragon",
+     "r"
+    ],
+    [
+     "Asura Priest",
+     "c"
+    ],
+    [
+     "Gilford the Lightning",
+     "c"
+    ],
+    [
+     "Vampire Lord",
+     "r"
+    ],
+    [
+     "Moisture Creature",
+     "c"
+    ],
+    [
+     "Chaos Command Magician",
+     "c"
+    ],
+    [
+     "Ultimate Obedient Fiend",
+     "c"
+    ],
+    [
+     "Despair from the Dark",
+     "r"
+    ],
+    [
+     "Shadowknight Archfiend",
+     "c"
+    ],
+    [
+     "Skull Archfiend of Lightning",
+     "c"
+    ],
+    [
+     "Berserk Gorilla",
+     "c"
+    ],
+    [
+     "Freed the Brave Wanderer",
+     "c"
+    ],
+    [
+     "Obelisk the Tormentor",
      "x"
     ],
     [
-     "Garnecia Elefantis",
+     "The End of Anubis",
+     "c"
+    ],
+    [
+     "The Tricky",
+     "c"
+    ],
+    [
+     "Armed Dragon LV5",
+     "s"
+    ],
+    [
+     "Armed Dragon LV7",
+     "r"
+    ],
+    [
+     "Horus the Black Flame Dragon LV6",
+     "s"
+    ],
+    [
+     "Horus the Black Flame Dragon LV8",
+     "r"
+    ],
+    [
+     "Mystic Swordsman LV4",
+     "c"
+    ],
+    [
+     "Abyss Soldier",
+     "c"
+    ],
+    [
+     "Fusilier Dragon, the Dual-Mode Beast",
+     "r"
+    ],
+    [
+     "Blue-Eyes Shining Dragon",
+     "c"
+    ],
+    [
+     "Sorcerer of Dark Magic",
+     "c"
+    ],
+    [
+     "King Dragun",
+     "s"
+    ],
+    [
+     "Sacred Phoenix of Nephthys",
+     "s"
+    ],
+    [
+     "Silent Swordsman LV5",
+     "c"
+    ],
+    [
+     "Silent Swordsman LV7",
+     "c"
+    ],
+    [
+     "Van'Dalgyon the Dark Dragon Lord",
+     "c"
+    ]
+   ]
+  },
+  {
+   "key": "raigeki",
+   "item": "raigeki-pack",
+   "name": "Raigeki",
+   "full": "Raigeki",
+   "cover": "Raigeki",
+   "boss": "Raigeki",
+   "text": "Spells, the stronger half: Raigeki the prize among them.",
+   "cards": [
+    [
+     "Legendary Sword",
+     "c"
+    ],
+    [
+     "Dark Energy",
+     "c"
+    ],
+    [
+     "Axe of Despair",
+     "r"
+    ],
+    [
+     "Laser Cannon Armor",
+     "c"
+    ],
+    [
+     "Beast Fangs",
+     "c"
+    ],
+    [
+     "Vile Germs",
+     "c"
+    ],
+    [
+     "Black Pendant",
+     "c"
+    ],
+    [
+     "Silver Bow and Arrow",
+     "c"
+    ],
+    [
+     "Horn of the Unicorn",
+     "c"
+    ],
+    [
+     "Dragon Treasure",
+     "c"
+    ],
+    [
+     "Electro-Whip",
+     "c"
+    ],
+    [
+     "Elegant Egotist",
+     "r"
+    ],
+    [
+     "Mystical Moon",
+     "c"
+    ],
+    [
+     "Stop Defense",
+     "c"
+    ],
+    [
+     "Malevolent Nuzzler",
+     "r"
+    ],
+    [
+     "Violet Crystal",
+     "c"
+    ],
+    [
+     "Book of Secret Arts",
+     "r"
+    ],
+    [
+     "Machine Conversion Factory",
+     "c"
+    ],
+    [
+     "Raise Body Heat",
+     "c"
+    ],
+    [
+     "Follow Wind",
+     "c"
+    ],
+    [
+     "Power of Kaishin",
+     "c"
+    ],
+    [
+     "Forest",
+     "r"
+    ],
+    [
+     "Wasteland",
+     "r"
+    ],
+    [
+     "Mountain",
+     "r"
+    ],
+    [
+     "Sogen",
+     "c"
+    ],
+    [
+     "Umi",
+     "r"
+    ],
+    [
+     "Yami",
+     "r"
+    ],
+    [
+     "Raigeki",
+     "x"
+    ],
+    [
+     "Red Medicine",
+     "c"
+    ],
+    [
+     "Goblin's Secret Remedy",
+     "c"
+    ],
+    [
+     "Sparks",
+     "c"
+    ],
+    [
+     "Hinotama",
+     "r"
+    ],
+    [
+     "Final Flame",
+     "c"
+    ],
+    [
+     "Tremendous Fire",
+     "c"
+    ],
+    [
+     "Swords of Revealing Light",
+     "s"
+    ],
+    [
+     "Eternal Rest",
+     "c"
+    ],
+    [
+     "Megamorph",
+     "r"
+    ],
+    [
+     "Harpie's Feather Duster",
      "u"
     ],
     [
-     "Man Eater",
+     "Toon World",
+     "r"
+    ],
+    [
+     "Black Illusion Ritual",
+     "c"
+    ],
+    [
+     "Multiply",
+     "r"
+    ],
+    [
+     "Graceful Charity",
+     "u"
+    ],
+    [
+     "Graceful Dice",
+     "c"
+    ],
+    [
+     "Scapegoat",
+     "u"
+    ],
+    [
+     "Card Destruction",
+     "s"
+    ],
+    [
+     "Dark Magic Curtain",
+     "c"
+    ],
+    [
+     "Insect Barrier",
+     "c"
+    ],
+    [
+     "Fissure",
+     "s"
+    ],
+    [
+     "Polymerization",
+     "s"
+    ],
+    [
+     "Remove Trap",
+     "r"
+    ],
+    [
+     "Monster Reborn",
+     "x"
+    ],
+    [
+     "De-Spell",
+     "c"
+    ],
+    [
+     "Pot of Greed",
+     "u"
+    ],
+    [
+     "Gravedigger Ghoul",
+     "c"
+    ],
+    [
+     "Tribute to the Doomed",
+     "r"
+    ],
+    [
+     "Soul Release",
+     "r"
+    ],
+    [
+     "The Cheerful Coffin",
+     "c"
+    ],
+    [
+     "Change of Heart",
+     "s"
+    ],
+    [
+     "Fusion Sage",
+     "c"
+    ],
+    [
+     "Sword of Deep-Seated",
+     "c"
+    ],
+    [
+     "Block Attack",
+     "c"
+    ],
+    [
+     "Heavy Storm",
+     "u"
+    ],
+    [
+     "Gravekeeper's Servant",
+     "r"
+    ],
+    [
+     "Upstart Goblin",
+     "u"
+    ],
+    [
+     "Toll",
+     "c"
+    ],
+    [
+     "Final Destiny",
+     "c"
+    ],
+    [
+     "Snatch Steal",
+     "s"
+    ],
+    [
+     "Chorus of Sanctuary",
+     "c"
+    ],
+    [
+     "Confiscation",
+     "c"
+    ],
+    [
+     "Delinquent Duo",
+     "c"
+    ],
+    [
+     "Rush Recklessly",
+     "c"
+    ],
+    [
+     "The Reliable Guardian",
+     "c"
+    ],
+    [
+     "Chain Energy",
+     "r"
+    ],
+    [
+     "Mystical Space Typhoon",
+     "u"
+    ],
+    [
+     "Giant Trunade",
+     "r"
+    ],
+    [
+     "Painful Choice",
+     "c"
+    ],
+    [
+     "Gaia Power",
+     "c"
+    ],
+    [
+     "Umiiruka",
+     "c"
+    ],
+    [
+     "Molten Destruction",
+     "c"
+    ],
+    [
+     "Rising Air Current",
+     "c"
+    ],
+    [
+     "Luminous Spark",
+     "c"
+    ],
+    [
+     "Mystic Plasma Zone",
+     "c"
+    ],
+    [
+     "Messenger of Peace",
+     "r"
+    ],
+    [
+     "Nobleman of Crossout",
+     "u"
+    ],
+    [
+     "Nobleman of Extermination",
+     "r"
+    ],
+    [
+     "The Shallow Grave",
+     "r"
+    ],
+    [
+     "Premature Burial",
+     "u"
+    ],
+    [
+     "Mask of the Accursed",
+     "r"
+    ],
+    [
+     "Mask of Brutality",
+     "c"
+    ],
+    [
+     "Lightning Blade",
+     "c"
+    ],
+    [
+     "Nightmare's Steelcage",
+     "c"
+    ],
+    [
+     "Infinite Cards",
+     "c"
+    ],
+    [
+     "Card of Safe Return",
+     "c"
+    ],
+    [
+     "Burning Land",
+     "c"
+    ],
+    [
+     "Limiter Removal",
+     "s"
+    ],
+    [
+     "Thousand Knives",
+     "c"
+    ],
+    [
+     "Ground Collapse",
+     "c"
+    ],
+    [
+     "United We Stand",
+     "r"
+    ],
+    [
+     "Mage Power",
+     "r"
+    ],
+    [
+     "Offerings to the Doomed",
+     "r"
+    ],
+    [
+     "Lightning Vortex",
+     "s"
+    ],
+    [
+     "Magic Formula",
+     "c"
+    ],
+    [
+     "The Dark Door",
+     "c"
+    ],
+    [
+     "Temple of the Kings",
+     "c"
+    ],
+    [
+     "Foolish Burial",
+     "s"
+    ],
+    [
+     "Spirit Message \"I\"",
+     "c"
+    ],
+    [
+     "Spirit Message \"A\"",
+     "c"
+    ],
+    [
+     "Fusion Gate",
+     "r"
+    ],
+    [
+     "Reinforcement of the Army",
+     "u"
+    ],
+    [
+     "The Warrior Returning Alive",
+     "s"
+    ],
+    [
+     "Emergency Provisions",
+     "c"
+    ],
+    [
+     "Spell Reproduction",
+     "c"
+    ],
+    [
+     "A Legendary Ocean",
+     "r"
+    ],
+    [
+     "Book of Taiyou",
+     "c"
+    ],
+    [
+     "Book of Moon",
+     "s"
+    ],
+    [
+     "Toon Table of Contents",
+     "s"
+    ],
+    [
+     "Card of Sanctity",
+     "c"
+    ],
+    [
+     "Dark Room of Nightmare",
+     "c"
+    ],
+    [
+     "Terraforming",
+     "x"
+    ],
+    [
+     "Banner of Courage",
+     "c"
+    ],
+    [
+     "Metamorphosis",
+     "s"
+    ],
+    [
+     "Autonomous Action Unit",
+     "c"
+    ],
+    [
+     "Poison of the Old Man",
+     "c"
+    ],
+    [
+     "Wave-Motion Cannon",
+     "s"
+    ],
+    [
+     "Big Bang Shot",
+     "c"
+    ],
+    [
+     "Contract with Exodia",
+     "c"
+    ],
+    [
+     "Final Countdown",
+     "c"
+    ],
+    [
+     "Heart of the Underdog",
+     "c"
+    ],
+    [
+     "Ojama Delta Hurricane!!",
+     "c"
+    ],
+    [
+     "Reload",
+     "c"
+    ],
+    [
+     "Soul Absorption",
+     "r"
+    ],
+    [
+     "Smashing Ground",
+     "s"
+    ],
+    [
+     "Dedication through Light and Darkness",
+     "c"
+    ],
+    [
+     "Salvage",
+     "r"
+    ],
+    [
+     "Burst Stream of Destruction",
+     "c"
+    ],
+    [
+     "Monster Gate",
+     "s"
+    ],
+    [
+     "The Sanctuary in the Sky",
+     "c"
+    ],
+    [
+     "Dark Magic Attack",
+     "s"
+    ],
+    [
+     "Dark Factory of Mass Production",
+     "r"
+    ],
+    [
+     "Hammer Shot",
+     "c"
+    ],
+    [
+     "Inferno Fire Blast",
+     "c"
+    ],
+    [
+     "Harpies' Hunting Ground",
+     "c"
+    ],
+    [
+     "Back to Square One",
+     "c"
+    ],
+    [
+     "Monster Reincarnation",
+     "r"
+    ],
+    [
+     "A Feather of the Phoenix",
+     "c"
+    ],
+    [
+     "Re-Fusion",
+     "c"
+    ],
+    [
+     "Last Will",
+     "c"
+    ],
+    [
+     "The Flute of Summoning Dragon",
+     "c"
+    ],
+    [
+     "Germ Infection",
+     "c"
+    ],
+    [
+     "Paralyzing Potion",
+     "c"
+    ],
+    [
+     "Shield & Sword",
+     "r"
+    ],
+    [
+     "Ring of Magnetism",
+     "c"
+    ],
+    [
+     "Share the Pain",
+     "c"
+    ],
+    [
+     "Stim-Pack",
+     "c"
+    ],
+    [
+     "Curse of Fiend",
+     "c"
+    ],
+    [
+     "Darkness Approaches",
+     "c"
+    ],
+    [
+     "Tailor of the Fickle",
+     "c"
+    ],
+    [
+     "Magical Labyrinth",
+     "c"
+    ],
+    [
+     "7 Completed",
+     "c"
+    ],
+    [
+     "Prohibition",
+     "r"
+    ],
+    [
+     "Soul Exchange",
+     "r"
+    ],
+    [
+     "Riryoku",
+     "c"
+    ],
+    [
+     "Cold Wave",
+     "c"
+    ],
+    [
+     "Insect Imitation",
+     "c"
+    ],
+    [
+     "Monster Recovery",
+     "c"
+    ],
+    [
+     "Mystic Box",
+     "c"
+    ],
+    [
+     "Jam Breeding Machine",
+     "c"
+    ],
+    [
+     "Exchange",
+     "c"
+    ],
+    [
+     "Bait Doll",
+     "c"
+    ],
+    [
+     "De-Fusion",
+     "r"
+    ],
+    [
+     "Ekibyo Drakmord",
+     "c"
+    ],
+    [
+     "Spiritualism",
+     "c"
+    ],
+    [
+     "Vengeful Bog Spirit",
+     "c"
+    ],
+    [
+     "A Wingbeat of Giant Dragon",
+     "c"
+    ],
+    [
+     "Stamping Destruction",
+     "c"
+    ],
+    [
+     "Super Rejuvenation",
+     "c"
+    ],
+    [
+     "The A. Forces",
+     "c"
+    ],
+    [
+     "Creature Swap",
+     "r"
+    ],
+    [
+     "Second Coin Toss",
+     "c"
+    ],
+    [
+     "Book of Life",
+     "s"
+    ],
+    [
+     "Call of the Mummy",
+     "c"
+    ],
+    [
+     "Mirage of Nightmare",
+     "c"
+    ],
+    [
+     "Different Dimension Capsule",
+     "r"
+    ],
+    [
+     "Necrovalley",
+     "u"
+    ],
+    [
+     "Reasoning",
+     "u"
+    ],
+    [
+     "Royal Tribute",
+     "c"
+    ],
+    [
+     "Dark Core",
+     "c"
+    ],
+    [
+     "Frontline Base",
+     "c"
+    ],
+    [
+     "Kaiser Colosseum",
+     "c"
+    ],
+    [
+     "Diffusion Wave-Motion",
+     "c"
+    ],
+    [
+     "My Body as a Shield",
+     "r"
+    ],
+    [
+     "Fiend's Sanctuary",
+     "c"
+    ],
+    [
+     "A Deal with Dark Ruler",
+     "c"
+    ],
+    [
+     "Cost Down",
+     "c"
+    ],
+    [
+     "Gravity Axe - Grarl",
+     "c"
+    ],
+    [
+     "Dragged Down into the Grave",
+     "r"
+    ],
+    [
+     "Silent Doom",
+     "c"
+    ],
+    [
+     "Soul Taker",
+     "c"
+    ],
+    [
+     "Stumbling",
+     "c"
+    ],
+    [
+     "Magical Dimension",
+     "c"
+    ],
+    [
+     "Dimension Fusion",
+     "c"
+    ],
+    [
+     "Enemy Controller",
+     "s"
+    ],
+    [
+     "Shrink",
+     "c"
+    ],
+    [
+     "Level Limit - Area B",
+     "r"
+    ],
+    [
+     "Shield Crush",
+     "c"
+    ],
+    [
+     "Magical Stone Excavation",
+     "c"
+    ],
+    [
+     "Ectoplasmer",
+     "c"
+    ],
+    [
+     "Level Up!",
+     "c"
+    ],
+    [
+     "Machine Duplication",
+     "u"
+    ],
+    [
+     "Swords of Concealing Light",
+     "r"
+    ],
+    [
+     "Mind Control",
+     "s"
+    ],
+    [
+     "Brain Control",
+     "s"
+    ]
+   ]
+  },
+  {
+   "key": "traphole",
+   "item": "trap-hole-pack",
+   "name": "Trap Hole",
+   "full": "Trap Hole",
+   "cover": "Trap Hole",
+   "boss": "Trap Hole",
+   "text": "Traps, the stronger half: Trap Hole the prize among them.",
+   "cards": [
+    [
+     "Metalmorph",
+     "r"
+    ],
+    [
+     "Shadow Spell",
+     "r"
+    ],
+    [
+     "House of Adhesive Tape",
+     "c"
+    ],
+    [
+     "Eatgaboon",
+     "c"
+    ],
+    [
+     "Widespread Ruin",
+     "c"
+    ],
+    [
+     "Negate Attack",
+     "s"
+    ],
+    [
+     "Chain Destruction",
+     "c"
+    ],
+    [
+     "Skull Dice",
+     "c"
+    ],
+    [
+     "Trap Hole",
+     "x"
+    ],
+    [
+     "Magic Jammer",
+     "s"
+    ],
+    [
+     "Seven Tools of the Bandit",
+     "r"
+    ],
+    [
+     "Just Desserts",
+     "r"
+    ],
+    [
+     "Royal Decree",
+     "s"
+    ],
+    [
+     "Robbin' Goblin",
+     "r"
+    ],
+    [
+     "Waboku",
+     "s"
+    ],
+    [
+     "Mirror Force",
+     "u"
+    ],
+    [
+     "Snake Fang",
+     "c"
+    ],
+    [
+     "Michizure",
+     "r"
+    ],
+    [
+     "Numinous Healer",
+     "c"
+    ],
+    [
+     "Minor Goblin Official",
+     "c"
+    ],
+    [
+     "Gamble",
+     "c"
+    ],
+    [
+     "DNA Surgery",
+     "r"
+    ],
+    [
+     "Backup Soldier",
+     "c"
+    ],
+    [
+     "Attack and Receive",
+     "c"
+    ],
+    [
+     "Ceasefire",
+     "r"
+    ],
+    [
+     "Light of Intervention",
+     "c"
+    ],
+    [
+     "Respect Play",
+     "c"
+    ],
+    [
+     "Imperial Order",
+     "u"
+    ],
+    [
+     "Skull Invitation",
+     "c"
+    ],
+    [
+     "Time Seal",
+     "c"
+    ],
+    [
+     "Gift of The Mystical Elf",
+     "c"
+    ],
+    [
+     "Dust Tornado",
+     "s"
+    ],
+    [
+     "Call of the Haunted",
+     "x"
+    ],
+    [
+     "Enchanted Javelin",
+     "c"
+    ],
+    [
+     "Ring of Destruction",
+     "u"
+    ],
+    [
+     "Mask of Weakness",
+     "c"
+    ],
+    [
+     "Mask of Restrict",
+     "r"
+    ],
+    [
+     "Fairy Box",
+     "r"
+    ],
+    [
+     "Torrential Tribute",
+     "u"
+    ],
+    [
+     "Magic Cylinder",
+     "u"
+    ],
+    [
+     "Solemn Wishes",
+     "r"
+    ],
+    [
+     "Gravity Bind",
+     "s"
+    ],
+    [
+     "Shadow of Eyes",
+     "c"
+    ],
+    [
+     "Jar of Greed",
+     "s"
+    ],
+    [
+     "Destiny Board",
+     "c"
+    ],
+    [
+     "Embodiment of Apophis",
+     "c"
+    ],
+    [
+     "Graverobber's Retribution",
+     "c"
+    ],
+    [
+     "Blind Destruction",
+     "c"
+    ],
+    [
+     "Nightmare Wheel",
+     "r"
+    ],
+    [
+     "Dragon's Rage",
+     "c"
+    ],
+    [
+     "Burst Breath",
+     "c"
+    ],
+    [
+     "Exchange of the Spirit",
+     "c"
+    ],
+    [
+     "Bottomless Trap Hole",
+     "u"
+    ],
+    [
+     "Fiend Comedian",
+     "c"
+    ],
+    [
+     "Needle Wall",
+     "c"
+    ],
+    [
+     "Reckless Greed",
+     "u"
+    ],
+    [
+     "Coffin Seller",
+     "c"
+    ],
+    [
+     "Raigeki Break",
+     "s"
+    ],
+    [
+     "Thunder of Ruler",
+     "c"
+    ],
+    [
+     "Secret Barrel",
+     "r"
+    ],
+    [
+     "Anti-Spell",
+     "c"
+    ],
+    [
+     "Metal Reflect Slime",
+     "u"
+    ],
+    [
+     "Ojama Trio",
+     "s"
+    ],
+    [
+     "Sakuretsu Armor",
+     "s"
+    ],
+    [
+     "Zero Gravity",
+     "c"
+    ],
+    [
+     "Dark Mirror Force",
+     "c"
+    ],
+    [
+     "Compulsory Evacuation Device",
+     "s"
+    ],
+    [
+     "A Hero Emerges",
+     "c"
+    ],
+    [
+     "Trap Jammer",
+     "c"
+    ],
+    [
+     "Ninjitsu Art of Transformation",
+     "c"
+    ],
+    [
+     "Beckoning Light",
+     "c"
+    ],
+    [
+     "Draining Shield",
+     "r"
+    ],
+    [
+     "Spirit Barrier",
+     "c"
+    ],
+    [
+     "Divine Wrath",
+     "r"
+    ],
+    [
+     "Threatening Roar",
+     "s"
+    ],
+    [
+     "Phoenix Wing Wind Blast",
+     "r"
+    ],
+    [
+     "D.D. Dynamite",
+     "c"
+    ],
+    [
+     "Hero Signal",
+     "c"
+    ],
+    [
+     "Dragon Capture Jar",
+     "c"
+    ],
+    [
+     "Two-Pronged Attack",
+     "c"
+    ],
+    [
+     "Ultimate Offering",
+     "c"
+    ],
+    [
+     "Acid Trap Hole",
+     "c"
+    ],
+    [
+     "Crush Card Virus",
+     "s"
+    ],
+    [
+     "Kunai with Chain",
+     "r"
+    ],
+    [
+     "Fake Trap",
+     "c"
+    ],
+    [
+     "Horn of Heaven",
+     "r"
+    ],
+    [
+     "Solemn Judgment",
+     "x"
+    ],
+    [
+     "Fairy's Hand Mirror",
      "c"
     ],
     [
      "Time Machine",
      "c"
-    ],
-    [
-     "7 Completed",
-     "r"
     ],
     [
      "Appropriate",
@@ -3480,373 +9270,30 @@
     ],
     [
      "Lightforce Sword",
-     "r"
+     "c"
     ],
     [
      "Magical Hats",
-     "s"
-    ],
-    [
-     "Major Riot",
-     "c"
-    ],
-    [
-     "Metal Detector",
-     "c"
+     "r"
     ],
     [
      "Mirror Wall",
      "r"
     ],
     [
-     "Mystic Probe",
-     "c"
-    ],
-    [
-     "Parasite Paracide",
-     "r"
-    ],
-    [
-     "Prohibition",
-     "r"
-    ],
-    [
      "The Eye of Truth",
-     "r"
+     "c"
     ],
     [
      "The Regulation of Tribe",
      "c"
     ],
     [
-     "World Suppression",
-     "c"
-    ],
-    [
-     "Soul Exchange",
-     "r"
-    ],
-    [
      "Anti-Spell Fragrance",
-     "r"
+     "s"
     ],
     [
      "Magical Arm Shield",
-     "c"
-    ],
-    [
-     "Masked Beast Des Gardius",
-     "x"
-    ],
-    [
-     "Embodiment of Apophis",
-     "u"
-    ],
-    [
-     "Fairy King Truesdale",
-     "s"
-    ],
-    [
-     "Cipher Soldier",
-     "s"
-    ],
-    [
-     "Slate Warrior",
-     "s"
-    ],
-    [
-     "Lesser Fiend",
-     "r"
-    ],
-    [
-     "Ryu-Kishin Clown",
-     "c"
-    ],
-    [
-     "Opticlops",
-     "r"
-    ],
-    [
-     "Fatal Abacus",
-     "r"
-    ],
-    [
-     "Marauding Captain",
-     "u"
-    ],
-    [
-     "Warrior Dai Grepher",
-     "c"
-    ],
-    [
-     "Exiled Force",
-     "s"
-    ],
-    [
-     "The Hunter with 7 Weapons",
-     "c"
-    ],
-    [
-     "Reinforcement of the Army",
-     "s"
-    ],
-    [
-     "The Warrior Returning Alive",
-     "r"
-    ],
-    [
-     "Spear Dragon",
-     "s"
-    ],
-    [
-     "The Dragon dwelling in the Cave",
-     "c"
-    ],
-    [
-     "Lizard Soldier",
-     "c"
-    ],
-    [
-     "Cave Dragon",
-     "c"
-    ],
-    [
-     "Gray Wing",
-     "c"
-    ],
-    [
-     "Troop Dragon",
-     "c"
-    ],
-    [
-     "Dragon's Rage",
-     "c"
-    ],
-    [
-     "Burst Breath",
-     "c"
-    ],
-    [
-     "Emergency Provisions",
-     "c"
-    ],
-    [
-     "Luminous Soldier",
-     "u"
-    ],
-    [
-     "Wolf Axwielder",
-     "c"
-    ],
-    [
-     "The Illusory Gentleman",
-     "c"
-    ],
-    [
-     "Airknight Parshath",
-     "u"
-    ],
-    [
-     "Robotic Knight",
-     "c"
-    ],
-    [
-     "Injection Fairy Lily",
-     "x"
-    ],
-    [
-     "Woodland Sprite",
-     "c"
-    ],
-    [
-     "Spring of Rebirth",
-     "c"
-    ],
-    [
-     "Fiber Jar",
-     "u"
-    ],
-    [
-     "Gradius' Option",
-     "c"
-    ],
-    [
-     "Inaba White Rabbit",
-     "c"
-    ],
-    [
-     "Yata-Garasu",
-     "x"
-    ],
-    [
-     "Susa Soldier",
-     "r"
-    ],
-    [
-     "Yamata Dragon",
-     "u"
-    ],
-    [
-     "Great Long Nose",
-     "c"
-    ],
-    [
-     "Hino-Kagu-Tsuchi",
-     "u"
-    ],
-    [
-     "Fushi No Tori",
-     "c"
-    ],
-    [
-     "A Legendary Ocean",
-     "c"
-    ],
-    [
-     "Disappear",
-     "c"
-    ],
-    [
-     "Bottomless Trap Hole",
-     "r"
-    ],
-    [
-     "Fiend Comedian",
-     "c"
-    ],
-    [
-     "Temple of the Kings",
-     "u"
-    ],
-    [
-     "Toon Dark Magician Girl",
-     "u"
-    ],
-    [
-     "Exchange of the Spirit",
-     "u"
-    ],
-    [
-     "Mystical Beast of Serket",
-     "u"
-    ],
-    [
-     "Legendary Fiend",
-     "r"
-    ],
-    [
-     "Birdface",
-     "c"
-    ],
-    [
-     "Kryuel",
-     "c"
-    ],
-    [
-     "Maiden of the Aqua",
-     "c"
-    ],
-    [
-     "Molten Behemoth",
-     "c"
-    ],
-    [
-     "Arsenal Bug",
-     "c"
-    ],
-    [
-     "Souleater",
-     "c"
-    ],
-    [
-     "Servant of Catabolism",
-     "c"
-    ],
-    [
-     "Gora Turtle",
-     "r"
-    ],
-    [
-     "Sasuke Samurai",
-     "s"
-    ],
-    [
-     "Poison Mummy",
-     "c"
-    ],
-    [
-     "Dark Dust Spirit",
-     "c"
-    ],
-    [
-     "Swarm of Scarabs",
-     "c"
-    ],
-    [
-     "Swarm of Locusts",
-     "c"
-    ],
-    [
-     "Giant Axe Mummy",
-     "c"
-    ],
-    [
-     "8-Claws Scorpion",
-     "c"
-    ],
-    [
-     "Guardian Sphinx",
-     "u"
-    ],
-    [
-     "Pyramid Turtle",
-     "r"
-    ],
-    [
-     "Dice Jar",
-     "c"
-    ],
-    [
-     "Masahiro the Dark Clown",
-     "u"
-    ],
-    [
-     "Yasushi the Skull Knight",
-     "u"
-    ],
-    [
-     "Tomohiro the Mountain Warrior",
-     "u"
-    ]
-   ],
-   "item": "des-gardius-pack",
-   "full": "Masked Beast Des Gardius",
-   "name": "Des Gardius",
-   "cover": "Masked Beast Des Gardius",
-   "text": "Masked Beast Des Gardius, Pumpking and the Castle of Dark Illusions."
-  },
-  {
-   "key": "hades",
-   "boss": "Dark Ruler Ha Des",
-   "cards": [
-    [
-     "Arlownay",
-     "c"
-    ],
-    [
-     "Mesmeric Control",
-     "c"
-    ],
-    [
-     "Riryoku",
-     "c"
-    ],
-    [
-     "Seal of the Ancients",
-     "c"
-    ],
-    [
-     "Sword of Dragon's Soul",
      "c"
     ],
     [
@@ -3854,111 +9301,19 @@
      "c"
     ],
     [
-     "Bite Shoes",
-     "c"
-    ],
-    [
-     "Bombardment Beetle",
-     "c"
-    ],
-    [
-     "Cold Wave",
-     "r"
-    ],
-    [
-     "Deepsea Warrior",
-     "u"
-    ],
-    [
-     "Dimensionhole",
-     "c"
-    ],
-    [
-     "Drill Bug",
-     "c"
-    ],
-    [
      "Infinite Dismissal",
      "c"
-    ],
-    [
-     "Insect Imitation",
-     "r"
-    ],
-    [
-     "Invitation to a Dark Sleep",
-     "u"
     ],
     [
      "Magic Drain",
      "r"
     ],
     [
-     "Monster Recovery",
-     "c"
-    ],
-    [
      "Shift",
      "c"
     ],
     [
-     "Spikebot",
-     "r"
-    ],
-    [
-     "Sword Hunter",
-     "u"
-    ],
-    [
-     "The Legendary Fisherman",
-     "u"
-    ],
-    [
      "Type Zero Magic Crusher",
-     "c"
-    ],
-    [
-     "Vampire Baby",
-     "r"
-    ],
-    [
-     "Rocket Warrior",
-     "u"
-    ],
-    [
-     "Mystic Box",
-     "c"
-    ],
-    [
-     "Archfiend of Gilfer",
-     "u"
-    ],
-    [
-     "Ancient Lamp",
-     "r"
-    ],
-    [
-     "Mystical Refpanel",
-     "c"
-    ],
-    [
-     "Chosen One",
-     "c"
-    ],
-    [
-     "Crimson Sentry",
-     "s"
-    ],
-    [
-     "Darklord Marie",
-     "u"
-    ],
-    [
-     "Fairy Guardian",
-     "r"
-    ],
-    [
-     "Jam Breeding Machine",
      "c"
     ],
     [
@@ -3966,43 +9321,7 @@
      "c"
     ],
     [
-     "Lady Panther",
-     "s"
-    ],
-    [
-     "Nuvia the Wicked",
-     "s"
-    ],
-    [
-     "Return of the Doomed",
-     "c"
-    ],
-    [
-     "Revival Jam",
-     "u"
-    ],
-    [
-     "Swordsman of Landstar",
-     "c"
-    ],
-    [
      "Tornado Wall",
-     "r"
-    ],
-    [
-     "Big Shield Gardna",
-     "s"
-    ],
-    [
-     "Exchange",
-     "r"
-    ],
-    [
-     "The Mask of Remnants",
-     "c"
-    ],
-    [
-     "Bait Doll",
      "c"
     ],
     [
@@ -4014,67 +9333,7 @@
      "c"
     ],
     [
-     "De-Fusion",
-     "r"
-    ],
-    [
-     "Destruction Punch",
-     "c"
-    ],
-    [
-     "Dragonic Attack",
-     "c"
-    ],
-    [
-     "Dreamsprite",
-     "c"
-    ],
-    [
-     "Ekibyo Drakmord",
-     "c"
-    ],
-    [
-     "Riryoku Field",
-     "c"
-    ],
-    [
      "Skull Lair",
-     "r"
-    ],
-    [
-     "Spirit Elimination",
-     "c"
-    ],
-    [
-     "Spiritualism",
-     "r"
-    ],
-    [
-     "The Emperor's Holiday",
-     "c"
-    ],
-    [
-     "Tornado Bird",
-     "r"
-    ],
-    [
-     "Vengeful Bog Spirit",
-     "r"
-    ],
-    [
-     "Amazoness Chain Master",
-     "s"
-    ],
-    [
-     "Electromagnetic Bagworm",
-     "c"
-    ],
-    [
-     "Rigorous Reaver",
-     "c"
-    ],
-    [
-     "Virus Cannon",
      "c"
     ],
     [
@@ -4082,167 +9341,19 @@
      "c"
     ],
     [
-     "A Wingbeat of Giant Dragon",
-     "r"
-    ],
-    [
-     "Array of Revealing Light",
-     "c"
-    ],
-    [
      "Bark of Dark Ruler",
      "c"
-    ],
-    [
-     "Dark Balter the Terrible",
-     "r"
-    ],
-    [
-     "Dark Ruler Ha Des",
-     "x"
-    ],
-    [
-     "Double Snare",
-     "c"
-    ],
-    [
-     "Dragon Manipulator",
-     "c"
-    ],
-    [
-     "Dragon's Gunfire",
-     "c"
-    ],
-    [
-     "Fiend Skull Dragon",
-     "r"
-    ],
-    [
-     "Freed the Matchless General",
-     "u"
-    ],
-    [
-     "Frontier Wiseman",
-     "s"
     ],
     [
      "Life Absorbing Machine",
      "c"
     ],
     [
-     "Luster Dragon #2",
-     "s"
-    ],
-    [
-     "Mysterious Guard",
-     "r"
-    ],
-    [
-     "Possessed Dark Soul",
-     "s"
-    ],
-    [
-     "Ready for Intercepting",
-     "c"
-    ],
-    [
-     "Ryu Senshi",
-     "s"
-    ],
-    [
-     "Shadow Tamer",
-     "c"
-    ],
-    [
-     "Skull Knight #2",
-     "r"
-    ],
-    [
-     "Soul Demolition",
-     "c"
-    ],
-    [
-     "Spirit Ryu",
-     "r"
-    ],
-    [
-     "Stamping Destruction",
-     "r"
-    ],
-    [
-     "Super Rejuvenation",
-     "r"
-    ],
-    [
-     "The A. Forces",
-     "c"
-    ],
-    [
-     "The Dragon's Bead",
-     "c"
-    ],
-    [
-     "The Puppet Magic of Dark Ruler",
-     "c"
-    ],
-    [
-     "Twin-Headed Wolf",
-     "s"
-    ],
-    [
-     "Tyrant Dragon",
-     "x"
-    ],
-    [
-     "Winged Minion",
-     "c"
-    ],
-    [
-     "Command Knight",
-     "s"
-    ],
-    [
-     "After the Struggle",
-     "c"
-    ],
-    [
-     "Asura Priest",
-     "u"
-    ],
-    [
      "Bad Reaction to Simochi",
-     "r"
+     "c"
     ],
     [
      "Blast with Chain",
-     "c"
-    ],
-    [
-     "Bubble Crash",
-     "c"
-    ],
-    [
-     "Convulsion of Nature",
-     "c"
-    ],
-    [
-     "Creature Swap",
-     "r"
-    ],
-    [
-     "Drop Off",
-     "c"
-    ],
-    [
-     "Fengsheng Mirror",
-     "c"
-    ],
-    [
-     "Fusion Sword Murasame Blade",
-     "c"
-    ],
-    [
-     "Heart of Clear Water",
      "c"
     ],
     [
@@ -4250,326 +9361,7 @@
      "c"
     ],
     [
-     "Magic Reflector",
-     "c"
-    ],
-    [
-     "Maharaghi",
-     "s"
-    ],
-    [
      "Nutrient Z",
-     "c"
-    ],
-    [
-     "Don Zaloog",
-     "u"
-    ],
-    [
-     "Des Lacooda",
-     "c"
-    ],
-    [
-     "Book of Taiyou",
-     "c"
-    ],
-    [
-     "Book of Moon",
-     "r"
-    ],
-    [
-     "Bottomless Shifting Sand",
-     "c"
-    ],
-    [
-     "Statue of the Wicked",
-     "s"
-    ],
-    [
-     "Needle Wall",
-     "c"
-    ],
-    [
-     "Reckless Greed",
-     "r"
-    ],
-    [
-     "Toon Table of Contents",
-     "s"
-    ],
-    [
-     "Toon Masked Sorcerer",
-     "c"
-    ],
-    [
-     "Toon Gemini Elf",
-     "s"
-    ],
-    [
-     "Toon Cannon Soldier",
-     "u"
-    ],
-    [
-     "Toon Goblin Attack Force",
-     "s"
-    ],
-    [
-     "Nightmare Wheel",
-     "u"
-    ],
-    [
-     "Byser Shock",
-     "u"
-    ],
-    [
-     "Newdoria",
-     "r"
-    ],
-    [
-     "Coffin Seller",
-     "r"
-    ],
-    [
-     "Lava Golem",
-     "x"
-    ],
-    [
-     "Master Kyonshee",
-     "c"
-    ],
-    [
-     "Kabazauls",
-     "c"
-    ],
-    [
-     "Gravekeeper's Spy",
-     "c"
-    ],
-    [
-     "Gravekeeper's Curse",
-     "c"
-    ],
-    [
-     "Gravekeeper's Guard",
-     "c"
-    ],
-    [
-     "Gravekeeper's Spear Soldier",
-     "c"
-    ],
-    [
-     "Gravekeeper's Vassal",
-     "c"
-    ],
-    [
-     "Gravekeeper's Cannonholder",
-     "c"
-    ],
-    [
-     "Yomi Ship",
-     "c"
-    ],
-    [
-     "Cobra Jar",
-     "c"
-    ],
-    [
-     "Dark Room of Nightmare",
-     "s"
-    ],
-    [
-     "Dark Snake Syndrome",
-     "c"
-    ],
-    [
-     "Terraforming",
-     "c"
-    ],
-    [
-     "Banner of Courage",
-     "c"
-    ],
-    [
-     "Metamorphosis",
-     "c"
-    ],
-    [
-     "Raigeki Break",
-     "c"
-    ],
-    [
-     "Non Aggression Area",
-     "c"
-    ],
-    [
-     "Hidden Soldiers",
-     "u"
-    ],
-    [
-     "Gil Garth",
-     "x"
-    ],
-    [
-     "Queen's Knight",
-     "r"
-    ],
-    [
-     "King's Knight",
-     "r"
-    ],
-    [
-     "Jack's Knight",
-     "r"
-    ],
-    [
-     "Dragon Master Knight",
-     "u"
-    ],
-    [
-     "Five-Headed Dragon",
-     "u"
-    ],
-    [
-     "X-Head Cannon",
-     "s"
-    ],
-    [
-     "Y-Dragon Head",
-     "s"
-    ],
-    [
-     "XY-Dragon Cannon",
-     "u"
-    ],
-    [
-     "Z-Metal Tank",
-     "s"
-    ],
-    [
-     "XYZ-Dragon Cannon",
-     "x"
-    ],
-    [
-     "People Running About",
-     "c"
-    ],
-    [
-     "Oppressed People",
-     "c"
-    ],
-    [
-     "United Resistance",
-     "c"
-    ],
-    [
-     "Dark Blade",
-     "r"
-    ],
-    [
-     "Pitch-Dark Dragon",
-     "c"
-    ],
-    [
-     "Decayed Commander",
-     "c"
-    ],
-    [
-     "Zombie Tiger",
-     "c"
-    ],
-    [
-     "Giant Orc",
-     "c"
-    ],
-    [
-     "Vampiric Orchis",
-     "c"
-    ],
-    [
-     "Des Dendle",
-     "c"
-    ],
-    [
-     "D.D. Crazy Beast",
-     "r"
-    ],
-    [
-     "Spell Canceller",
-     "u"
-    ],
-    [
-     "Paladin of White Dragon",
-     "u"
-    ],
-    [
-     "White Dragon Ritual",
-     "c"
-    ],
-    [
-     "Demotion",
-     "c"
-    ],
-    [
-     "Autonomous Action Unit",
-     "c"
-    ],
-    [
-     "Poison of the Old Man",
-     "c"
-    ],
-    [
-     "Kishido Spirit",
-     "c"
-    ],
-    [
-     "Wave-Motion Cannon",
-     "c"
-    ],
-    [
-     "Huge Revolution",
-     "c"
-    ],
-    [
-     "Slifer the Sky Dragon",
-     "x"
-    ],
-    [
-     "Obelisk the Tormentor",
-     "x"
-    ],
-    [
-     "The Winged Dragon of Ra",
-     "x"
-    ]
-   ],
-   "item": "dark-ruler-ha-des-pack",
-   "full": "Dark Ruler Ha Des",
-   "name": "Dark Ruler Ha Des",
-   "cover": "Dark Ruler Ha Des",
-   "text": "Dark Ruler Ha Des, Tyrant Dragon, Sword Hunter and Freed the Matchless General."
-  },
-  {
-   "key": "gilford",
-   "boss": "Gilford the Lightning",
-   "cards": [
-    [
-     "Ominous Fortunetelling",
-     "c"
-    ],
-    [
-     "Otohime",
-     "c"
-    ],
-    [
-     "Patrician of Darkness",
-     "u"
-    ],
-    [
-     "Robolady",
-     "c"
-    ],
-    [
-     "Roboyarou",
      "c"
     ],
     [
@@ -4577,123 +9369,7 @@
      "r"
     ],
     [
-     "Second Coin Toss",
-     "r"
-    ],
-    [
-     "Serpentine Princess",
-     "s"
-    ],
-    [
-     "Smoke Grenade of the Thief",
-     "c"
-    ],
-    [
-     "Spirit's Invitation",
-     "c"
-    ],
-    [
-     "Spiritual Energy Settle Machine",
-     "c"
-    ],
-    [
-     "Super Robolady",
-     "c"
-    ],
-    [
-     "Super Roboyarou",
-     "c"
-    ],
-    [
-     "The Secret of the Bandit",
-     "c"
-    ],
-    [
-     "Thunder Nyan Nyan",
-     "s"
-    ],
-    [
-     "Twin-Headed Behemoth",
-     "u"
-    ],
-    [
-     "Des Volstgalph",
-     "s"
-    ],
-    [
-     "Exarion Universe",
-     "r"
-    ],
-    [
-     "Gilford the Lightning",
-     "x"
-    ],
-    [
-     "Makyura the Destructor",
-     "u"
-    ],
-    [
-     "Kaiser Sea Horse",
-     "u"
-    ],
-    [
-     "Vampire Lord",
-     "u"
-    ],
-    [
-     "Viser Des",
-     "c"
-    ],
-    [
-     "Book of Life",
-     "r"
-    ],
-    [
-     "Call of the Mummy",
-     "r"
-    ],
-    [
-     "Cobraman Sakuzy",
-     "c"
-    ],
-    [
      "Curse of Royal",
-     "c"
-    ],
-    [
-     "Dark Coffin",
-     "c"
-    ],
-    [
-     "Dark Scorpion Burglars",
-     "r"
-    ],
-    [
-     "Fushioh Richie",
-     "u"
-    ],
-    [
-     "Great Dezard",
-     "s"
-    ],
-    [
-     "Jowls of Dark Demise",
-     "c"
-    ],
-    [
-     "King Tiger Wanghu",
-     "u"
-    ],
-    [
-     "Mirage of Nightmare",
-     "c"
-    ],
-    [
-     "Moisture Creature",
-     "x"
-    ],
-    [
-     "Mucus Yolk",
      "c"
     ],
     [
@@ -4702,42 +9378,6 @@
     ],
     [
      "Ordeal of a Traveler",
-     "r"
-    ],
-    [
-     "Pharaoh's Treasure",
-     "c"
-    ],
-    [
-     "Pyramid Energy",
-     "c"
-    ],
-    [
-     "Pyro Clock of Destiny",
-     "c"
-    ],
-    [
-     "Royal Keeper",
-     "s"
-    ],
-    [
-     "Secret Pass to the Treasures",
-     "c"
-    ],
-    [
-     "Timeater",
-     "s"
-    ],
-    [
-     "Timidity",
-     "c"
-    ],
-    [
-     "Toon Alligator",
-     "c"
-    ],
-    [
-     "Toon Defense",
      "c"
     ],
     [
@@ -4749,106 +9389,6 @@
      "c"
     ],
     [
-     "Wandering Mummy",
-     "r"
-    ],
-    [
-     "A Cat of Ill Omen",
-     "r"
-    ],
-    [
-     "A Man with Wdjat",
-     "s"
-    ],
-    [
-     "An Owl of Luck",
-     "c"
-    ],
-    [
-     "Barrel Behind the Door",
-     "c"
-    ],
-    [
-     "Buster Rancher",
-     "c"
-    ],
-    [
-     "Card Shuffle",
-     "c"
-    ],
-    [
-     "Charm of Shabti",
-     "c"
-    ],
-    [
-     "D. Tribe",
-     "c"
-    ],
-    [
-     "Dark Designator",
-     "c"
-    ],
-    [
-     "Dark Jeroid",
-     "s"
-    ],
-    [
-     "Different Dimension Capsule",
-     "r"
-    ],
-    [
-     "Disturbance Strategy",
-     "c"
-    ],
-    [
-     "Gravekeeper's Assailant",
-     "s"
-    ],
-    [
-     "Gravekeeper's Chief",
-     "u"
-    ],
-    [
-     "Gravekeeper's Watcher",
-     "r"
-    ],
-    [
-     "Helpoemer",
-     "u"
-    ],
-    [
-     "Hieroglyph Lithograph",
-     "c"
-    ],
-    [
-     "Mystical Knight of Jackal",
-     "s"
-    ],
-    [
-     "Narrow Pass",
-     "c"
-    ],
-    [
-     "Necrovalley",
-     "r"
-    ],
-    [
-     "Question",
-     "c"
-    ],
-    [
-     "Reaper on the Nightmare",
-     "c"
-    ],
-    [
-     "Reasoning",
-     "r"
-    ],
-    [
-     "Reversal Quiz",
-     "c"
-    ],
-    [
      "Rite of Spirit",
      "c"
     ],
@@ -4857,494 +9397,15 @@
      "c"
     ],
     [
-     "Royal Tribute",
-     "r"
-    ],
-    [
-     "Spirit Reaper",
-     "r"
-    ],
-    [
-     "Trap of Board Eraser",
-     "c"
-    ],
-    [
-     "Winged Sage Falcos",
-     "r"
-    ],
-    [
-     "Blade Knight",
-     "u"
-    ],
-    [
-     "Relieve Monster",
-     "c"
-    ],
-    [
-     "Armored Glass",
-     "c"
-    ],
-    [
-     "Three-Headed Geedo",
-     "c"
-    ],
-    [
-     "Spell Shattering Arrow",
-     "c"
-    ],
-    [
-     "Spell of Pain",
-     "c"
-    ],
-    [
      "Adhesion Trap Hole",
-     "r"
-    ],
-    [
-     "Ante",
-     "c"
-    ],
-    [
-     "Burning Beast",
-     "r"
-    ],
-    [
-     "Combination Attack",
-     "c"
-    ],
-    [
-     "Dark Core",
-     "r"
-    ],
-    [
-     "Dimension Jar",
-     "c"
-    ],
-    [
-     "Formation Union",
-     "c"
-    ],
-    [
-     "Freezing Beast",
-     "r"
-    ],
-    [
-     "Frontline Base",
-     "c"
-    ],
-    [
-     "Great Phantom Thief",
-     "c"
-    ],
-    [
-     "Helping Robo for Combat",
-     "r"
-    ],
-    [
-     "Kaiser Colosseum",
-     "c"
-    ],
-    [
-     "Kiryu",
-     "s"
-    ],
-    [
-     "Metalsilver Armor",
-     "c"
-    ],
-    [
-     "Neko Mane King",
-     "c"
-    ],
-    [
-     "Physical Double",
-     "c"
-    ],
-    [
-     "Pineapple Blast",
-     "c"
-    ],
-    [
-     "Raregold Armor",
      "c"
     ],
     [
      "Rivalry of Warlords",
-     "r"
-    ],
-    [
-     "Roulette Barrel",
      "s"
     ],
-    [
-     "Second Goblin",
-     "c"
-    ],
-    [
-     "Thunder of Ruler",
-     "c"
-    ],
-    [
-     "Meteorain",
-     "c"
-    ],
-    [
-     "Secret Barrel",
-     "s"
-    ],
-    [
-     "XZ-Tank Cannon",
-     "s"
-    ],
-    [
-     "YZ-Tank Dragon",
-     "s"
-    ],
-    [
-     "Amazoness Swords Woman",
-     "u"
-    ],
-    [
-     "Amazoness Fighter",
-     "c"
-    ],
-    [
-     "Luster Dragon",
-     "u"
-    ],
-    [
-     "Dark Paladin",
-     "u"
-    ],
-    [
-     "Great Angus",
-     "c"
-    ],
-    [
-     "Aitsu",
-     "c"
-    ],
-    [
-     "Sonic Duck",
-     "c"
-    ],
-    [
-     "Amazoness Paladin",
-     "c"
-    ],
-    [
-     "Skilled White Magician",
-     "s"
-    ],
-    [
-     "Skilled Dark Magician",
-     "s"
-    ],
-    [
-     "Apprentice Magician",
-     "r"
-    ],
-    [
-     "Old Vindictive Magician",
-     "c"
-    ],
-    [
-     "Magical Marionette",
-     "c"
-    ],
-    [
-     "Breaker the Magical Warrior",
-     "u"
-    ],
-    [
-     "Magical Plant Mandragola",
-     "c"
-    ],
-    [
-     "Magical Scientist",
-     "c"
-    ],
-    [
-     "Royal Magical Library",
-     "c"
-    ],
-    [
-     "Armor Exe",
-     "r"
-    ],
-    [
-     "Tribe-Infecting Virus",
-     "s"
-    ],
-    [
-     "Des Koala",
-     "r"
-    ],
-    [
-     "Koitsu",
-     "c"
-    ],
-    [
-     "Pitch-Black Power Stone",
-     "c"
-    ],
-    [
-     "Big Bang Shot",
-     "r"
-    ],
-    [
-     "Mass Driver",
-     "c"
-    ],
-    [
-     "Senri Eye",
-     "c"
-    ],
-    [
-     "Emblem of Dragon Destroyer",
-     "c"
-    ],
-    [
-     "Jar Robber",
-     "c"
-    ],
-    [
-     "Mega Ton Magical Cannon",
-     "r"
-    ],
-    [
-     "Continuous Destruction Punch",
-     "r"
-    ],
-    [
-     "Exhausting Spell",
-     "c"
-    ],
-    [
-     "Hidden Spellbook",
-     "c"
-    ],
-    [
-     "Miracle Restoring",
-     "c"
-    ],
-    [
-     "Disarmament",
-     "c"
-    ],
-    [
-     "Anti-Spell",
-     "c"
-    ],
-    [
-     "The Spell Absorbing Life",
-     "c"
-    ],
-    [
-     "Metal Reflect Slime",
-     "u"
-    ],
-    [
-     "Reflect Bounder",
-     "u"
-    ],
-    [
-     "Kaiser Glider",
-     "u"
-    ],
-    [
-     "Des Feral Imp",
-     "r"
-    ],
-    [
-     "Shinato, King of a Higher Plane",
-     "u"
-    ],
-    [
-     "Dark Flare Knight",
-     "s"
-    ],
-    [
-     "Mirage Knight",
-     "s"
-    ],
-    [
-     "Exodia Necross",
-     "u"
-    ],
-    [
-     "Battle Footballer",
-     "c"
-    ],
-    [
-     "Nin-Ken Dog",
-     "c"
-    ],
-    [
-     "Acrobat Monkey",
-     "c"
-    ],
-    [
-     "Gyaku-Gire Panda",
-     "c"
-    ],
-    [
-     "D. D. Warrior Lady",
-     "s"
-    ],
-    [
-     "Thousand Needles",
-     "c"
-    ],
-    [
-     "Shinato's Ark",
-     "c"
-    ],
-    [
-     "Contract with Exodia",
-     "c"
-    ],
-    [
-     "Precious Cards from Beyond",
-     "c"
-    ],
-    [
-     "Rod of the Mind's Eye",
-     "c"
-    ],
-    [
-     "Token Thanksgiving",
-     "c"
-    ],
-    [
-     "Ojama Trio",
-     "c"
-    ],
-    [
-     "Really Eternal Rest",
-     "c"
-    ],
-    [
-     "Keldo",
-     "c"
-    ],
-    [
-     "Spell Reproduction",
-     "c"
-    ],
-    [
-     "Mudora",
-     "s"
-    ],
-    [
-     "Cestus of Dagla",
-     "c"
-    ],
-    [
-     "Kelbek",
-     "c"
-    ],
-    [
-     "Zolga",
-     "c"
-    ],
-    [
-     "Shapesnatch",
-     "c"
-    ],
-    [
-     "Inpachi",
-     "c"
-    ],
-    [
-     "Curse of Aging",
-     "c"
-    ]
-   ],
-   "item": "gilford-pack",
-   "full": "Gilford the Lightning",
-   "name": "Gilford",
-   "cover": "Gilford the Lightning",
-   "text": "Gilford the Lightning, Moisture Creature, Vampire Lord and Makyura the Destructor."
-  },
-  {
-   "key": "berserk",
-   "boss": "Berserk Dragon",
-   "cards": [
     [
      "Spell Shield Type-8",
-     "c"
-    ],
-    [
-     "Tribute Doll",
-     "c"
-    ],
-    [
-     "Union Rider",
-     "c"
-    ],
-    [
-     "Puppet Master",
-     "c"
-    ],
-    [
-     "Amazoness Archers",
-     "c"
-    ],
-    [
-     "Amazoness Blowpiper",
-     "r"
-    ],
-    [
-     "Amazoness Spellcaster",
-     "c"
-    ],
-    [
-     "Amazoness Tiger",
-     "r"
-    ],
-    [
-     "Cat's Ear Tribe",
-     "c"
-    ],
-    [
-     "Chaos Command Magician",
-     "u"
-    ],
-    [
-     "Dark Cat with White Tail",
-     "c"
-    ],
-    [
-     "Dark Scorpion - Cliff the Trap Remover",
-     "r"
-    ],
-    [
-     "Diffusion Wave-Motion",
-     "c"
-    ],
-    [
-     "Double Spell",
-     "c"
-    ],
-    [
-     "Dramatic Rescue",
-     "c"
-    ],
-    [
-     "Gather Your Mind",
-     "c"
-    ],
-    [
-     "Magical Merchant",
-     "r"
-    ],
-    [
-     "My Body as a Shield",
-     "r"
-    ],
-    [
-     "Pixie Knight",
      "c"
     ],
     [
@@ -5352,307 +9413,15 @@
      "c"
     ],
     [
-     "Spellbook Organization",
-     "c"
-    ],
-    [
-     "Ultimate Obedient Fiend",
-     "x"
-    ],
-    [
-     "Fiend's Sanctuary",
-     "c"
-    ],
-    [
-     "Unity",
-     "c"
-    ],
-    [
-     "Yu-Jo Friendship",
-     "c"
-    ],
-    [
-     "A Deal with Dark Ruler",
-     "c"
-    ],
-    [
-     "Arsenal Robber",
-     "c"
-    ],
-    [
-     "Arsenal Summoner",
-     "s"
-    ],
-    [
-     "Berserk Dragon",
-     "x"
-    ],
-    [
-     "Blindly Loyal Goblin",
-     "u"
-    ],
-    [
-     "Butterfly Dagger - Elma",
-     "c"
-    ],
-    [
-     "Cost Down",
-     "c"
-    ],
-    [
-     "Cyber Raider",
-     "s"
-    ],
-    [
-     "Dark Scorpion - Chick the Yellow",
-     "c"
-    ],
-    [
-     "Despair from the Dark",
-     "u"
-    ],
-    [
-     "Different Dimension Dragon",
-     "r"
-    ],
-    [
-     "Different Dimension Gate",
-     "c"
-    ],
-    [
-     "Fairy of the Spring",
-     "c"
-    ],
-    [
-     "Fear from the Dark",
-     "s"
-    ],
-    [
-     "Gravity Axe - Grarl",
-     "c"
-    ],
-    [
-     "Guardian Baou",
-     "c"
-    ],
-    [
-     "Guardian Ceal",
-     "r"
-    ],
-    [
-     "Guardian Elma",
-     "r"
-    ],
-    [
-     "Guardian Grarl",
-     "s"
-    ],
-    [
-     "Guardian Kay'est",
-     "r"
-    ],
-    [
-     "Guardian Tryce",
-     "s"
-    ],
-    [
      "Interdimensional Matter Transporter",
-     "r"
-    ],
-    [
-     "Little-Winguard",
-     "s"
-    ],
-    [
-     "Maju Garzett",
-     "c"
-    ],
-    [
-     "Non-Spellcasting Area",
-     "c"
-    ],
-    [
-     "Rod of Silence - Kay'est",
-     "c"
-    ],
-    [
-     "Shooting Star Bow - Ceal",
      "c"
     ],
     [
      "Skill Drain",
-     "r"
-    ],
-    [
-     "Staunch Defender",
-     "c"
-    ],
-    [
-     "Twin Swords of Flashing Light - Tryce",
-     "c"
-    ],
-    [
-     "Wicked-Breaking Flamberge - Baou",
-     "c"
-    ],
-    [
-     "Judgment of the Pharaoh",
-     "c"
-    ],
-    [
-     "Archfiend's Oath",
-     "c"
-    ],
-    [
-     "Archfiend's Roar",
-     "c"
-    ],
-    [
-     "Battle-Scarred",
-     "c"
-    ],
-    [
-     "Blast Held by a Tribute",
-     "c"
-    ],
-    [
-     "Checkmate",
-     "c"
-    ],
-    [
-     "Dark Scorpion - Gorg the Strong",
-     "s"
-    ],
-    [
-     "Dark Scorpion - Meanae the Thorn",
-     "r"
-    ],
-    [
-     "Dark Scorpion Combination",
-     "c"
-    ],
-    [
-     "Darkbishop Archfiend",
-     "c"
-    ],
-    [
-     "Desrook Archfiend",
-     "s"
-    ],
-    [
-     "Dice Re-Roll",
-     "c"
-    ],
-    [
-     "Dragged Down into the Grave",
-     "r"
-    ],
-    [
-     "Falling Down",
-     "c"
-    ],
-    [
-     "Goblin of Greed",
-     "r"
-    ],
-    [
-     "Great Maju Garzett",
-     "c"
-    ],
-    [
-     "Infernalqueen Archfiend",
-     "r"
+     "u"
     ],
     [
      "Judgment of Anubis",
-     "r"
-    ],
-    [
-     "Metallizing Parasite - Lunatite",
-     "c"
-    ],
-    [
-     "Mustering of the Dark Scorpions",
-     "c"
-    ],
-    [
-     "Pandemonium",
-     "c"
-    ],
-    [
-     "Pandemonium Watchbear",
-     "r"
-    ],
-    [
-     "Sasuke Samurai #2",
-     "c"
-    ],
-    [
-     "Shadowknight Archfiend",
-     "u"
-    ],
-    [
-     "Skull Archfiend of Lightning",
-     "u"
-    ],
-    [
-     "Spell Vanishing",
-     "c"
-    ],
-    [
-     "Terrorking Archfiend",
-     "s"
-    ],
-    [
-     "Vilepawn Archfiend",
-     "c"
-    ],
-    [
-     "Gernia",
-     "r"
-    ],
-    [
-     "Cloning",
-     "c"
-    ],
-    [
-     "Magician's Valkyria",
-     "u"
-    ],
-    [
-     "Silent Doom",
-     "r"
-    ],
-    [
-     "Soul Taker",
-     "c"
-    ],
-    [
-     "Victory Dragon",
-     "u"
-    ],
-    [
-     "Goblin Zombie",
-     "s"
-    ],
-    [
-     "Berserk Gorilla",
-     "u"
-    ],
-    [
-     "Big Burn",
-     "c"
-    ],
-    [
-     "Chaosrider Gustaph",
-     "r"
-    ],
-    [
-     "Chopman the Desperate Outlaw",
-     "c"
-    ],
-    [
-     "Coach Goblin",
      "r"
     ],
     [
@@ -5660,1057 +9429,19 @@
      "r"
     ],
     [
-     "D.D. Designator",
-     "c"
-    ],
-    [
-     "D.D. Scout Plane",
-     "r"
-    ],
-    [
      "Energy Drain",
      "c"
     ],
     [
-     "Freed the Brave Wanderer",
-     "u"
-    ],
-    [
-     "Lekunga",
-     "s"
-    ],
-    [
-     "Lord Poison",
-     "s"
-    ],
-    [
-     "Spatial Collapse",
-     "c"
-    ],
-    [
-     "Strike Ninja",
-     "u"
-    ],
-    [
-     "Stumbling",
-     "c"
-    ],
-    [
-     "Wild Nature's Release",
-     "c"
-    ],
-    [
-     "Magical Dimension",
-     "r"
-    ],
-    [
-     "Agido",
-     "c"
-    ],
-    [
-     "Gagagigo",
-     "c"
-    ],
-    [
-     "D. D. Trainer",
-     "c"
-    ],
-    [
-     "Ojama Green",
-     "c"
-    ],
-    [
-     "Archfiend Soldier",
-     "r"
-    ],
-    [
-     "Outstanding Dog Marron",
-     "c"
-    ],
-    [
-     "Iron Blacksmith Kotetsu",
-     "c"
-    ],
-    [
-     "Mefist the Infernal General",
-     "r"
-    ],
-    [
-     "Tsukuyomi",
-     "r"
-    ],
-    [
-     "Legendary Flame Lord",
-     "r"
-    ],
-    [
-     "Dark Master - Zorc",
-     "s"
-    ],
-    [
-     "Incandescent Ordeal",
-     "c"
-    ],
-    [
-     "Contract with the Abyss",
-     "r"
-    ],
-    [
-     "Contract with the Dark Master",
-     "c"
-    ],
-    [
-     "Final Countdown",
-     "c"
-    ],
-    [
-     "Altar for Tribute",
-     "c"
-    ],
-    [
-     "Frozen Soul",
-     "c"
-    ],
-    [
-     "Sakuretsu Armor",
-     "c"
-    ],
-    [
-     "Ray of Hope",
-     "c"
-    ],
-    [
-     "Satellite Cannon",
-     "u"
-    ],
-    [
-     "Dark Magician Knight",
-     "x"
-    ],
-    [
-     "Knight's Title",
-     "x"
-    ],
-    [
-     "Sage's Stone",
-     "x"
-    ],
-    [
-     "Magic Formula",
-     "x"
-    ],
-    [
-     "Hannibal Necromancer",
-     "s"
-    ],
-    [
-     "Yellow Luster Shield",
-     "c"
-    ],
-    [
-     "Throwstone Unit",
-     "c"
-    ],
-    [
-     "Drillago",
-     "r"
-    ],
-    [
-     "Bowganian",
-     "c"
-    ],
-    [
-     "Granadora",
-     "c"
-    ],
-    [
-     "Ojama Yellow",
-     "c"
-    ],
-    [
-     "Ojama Black",
-     "c"
-    ],
-    [
-     "Soul Tiger",
-     "c"
-    ],
-    [
-     "Big Koala",
-     "c"
-    ],
-    [
-     "Des Kangaroo",
-     "c"
-    ],
-    [
-     "Crimson Ninja",
-     "c"
-    ],
-    [
-     "Gale Lizard",
-     "c"
-    ],
-    [
-     "Spirit of the Pot of Greed",
-     "c"
-    ],
-    [
-     "Sasuke Samurai #3",
-     "r"
-    ],
-    [
-     "Witch Doctor of Chaos",
-     "c"
-    ],
-    [
-     "Chaos Necromancer",
-     "c"
-    ],
-    [
-     "Inferno",
-     "c"
-    ],
-    [
-     "Fenrir",
-     "c"
-    ],
-    [
-     "Gigantes",
-     "c"
-    ],
-    [
-     "Silpheed",
-     "c"
-    ],
-    [
-     "Chaos Sorcerer",
-     "c"
-    ],
-    [
-     "Gren Maju Da Eiza",
-     "c"
-    ],
-    [
-     "Black Luster Soldier - Envoy of the Beginning",
-     "u"
-    ],
-    [
-     "Fuhma Shuriken",
-     "r"
-    ],
-    [
-     "Heart of the Underdog",
-     "c"
-    ],
-    [
-     "Ojama Delta Hurricane!!",
-     "c"
-    ],
-    [
-     "Chaos End",
-     "c"
-    ],
-    [
-     "Chaos Greed",
-     "c"
-    ],
-    [
-     "D. D. Borderline",
-     "c"
-    ],
-    [
-     "Recycle",
-     "c"
-    ],
-    [
-     "Primal Seed",
-     "c"
-    ],
-    [
-     "Thunder Crash",
-     "c"
-    ],
-    [
-     "Dimension Distortion",
-     "c"
-    ],
-    [
-     "Reload",
-     "s"
-    ],
-    [
-     "Soul Absorption",
-     "c"
-    ],
-    [
-     "Blasting the Ruins",
-     "c"
-    ],
-    [
-     "Tower of Babel",
-     "c"
-    ],
-    [
-     "Chain Disappearance",
-     "r"
-    ],
-    [
-     "Zero Gravity",
-     "c"
-    ],
-    [
-     "Dark Mirror Force",
-     "u"
-    ],
-    [
-     "Chaos Emperor Dragon - Envoy of the End",
-     "x"
-    ],
-    [
-     "Morale Boost",
-     "c"
-    ],
-    [
      "Final Attack Orders",
-     "r"
-    ]
-   ],
-   "item": "berserk-dragon-pack",
-   "full": "Berserk Dragon",
-   "name": "Berserk Dragon",
-   "cover": "Berserk Dragon",
-   "text": "Berserk Dragon, Despair from the Dark, Chaos Command Magician and Victory Dragon."
-  },
-  {
-   "key": "chaos",
-   "boss": "Dark Magician of Chaos",
-   "cards": [
-    [
-     "Nightmare Horse",
      "c"
-    ],
-    [
-     "A Hero Emerges",
-     "c"
-    ],
-    [
-     "Amphibious Bugroth MK-3",
-     "c"
-    ],
-    [
-     "Anti-Aircraft Flower",
-     "c"
-    ],
-    [
-     "Balloon Lizard",
-     "c"
-    ],
-    [
-     "Begone, Knave!",
-     "c"
-    ],
-    [
-     "Black Tyranno",
-     "u"
-    ],
-    [
-     "Blazing Inpachi",
-     "c"
-    ],
-    [
-     "Burning Algae",
-     "c"
-    ],
-    [
-     "Cannonball Spear Shellfish",
-     "r"
-    ],
-    [
-     "Compulsory Evacuation Device",
-     "r"
-    ],
-    [
-     "Curse of Darkness",
-     "r"
-    ],
-    [
-     "DNA Transplant",
-     "c"
-    ],
-    [
-     "Dark Driceratops",
-     "r"
-    ],
-    [
-     "Dark Magician of Chaos",
-     "u"
-    ],
-    [
-     "Dedication through Light and Darkness",
-     "s"
-    ],
-    [
-     "Destruction Ring",
-     "r"
-    ],
-    [
-     "Dimension Fusion",
-     "c"
-    ],
-    [
-     "Don Turtle",
-     "c"
-    ],
-    [
-     "Earth Chant",
-     "c"
-    ],
-    [
-     "Enraged Battle Ox",
-     "r"
-    ],
-    [
-     "Fiend's Hand Mirror",
-     "c"
-    ],
-    [
-     "Getsu Fuhma",
-     "r"
-    ],
-    [
-     "Giga Gagagigo",
-     "c"
-    ],
-    [
-     "Gora Turtle of Illusion",
-     "r"
-    ],
-    [
-     "Gryphon's Feather Duster",
-     "c"
-    ],
-    [
-     "Guardian Angel Joan",
-     "u"
-    ],
-    [
-     "Hyper Hammerhead",
-     "s"
-    ],
-    [
-     "Insect Princess",
-     "s"
-    ],
-    [
-     "Invader of Darkness",
-     "x"
-    ],
-    [
-     "Jade Insect Whistle",
-     "c"
-    ],
-    [
-     "Levia-Dragon - Daedalus",
-     "s"
-    ],
-    [
-     "Mad Dog of Darkness",
-     "r"
-    ],
-    [
-     "Manju of the Ten Thousand Hands",
-     "c"
-    ],
-    [
-     "Manticore of Darkness",
-     "u"
-    ],
-    [
-     "Mataza the Zapper",
-     "r"
-    ],
-    [
-     "Molten Zombie",
-     "c"
-    ],
-    [
-     "Multiplication of Ants",
-     "c"
-    ],
-    [
-     "Neo Bug",
-     "c"
-    ],
-    [
-     "Orca Mega-Fortress of Darkness",
-     "u"
-    ],
-    [
-     "Pinch Hopper",
-     "c"
-    ],
-    [
-     "Prickle Fairy",
-     "r"
-    ],
-    [
-     "Robbin' Zombie",
-     "r"
-    ],
-    [
-     "Ryu Kokki",
-     "c"
-    ],
-    [
-     "Sacred Crane",
-     "c"
-    ],
-    [
-     "Salvage",
-     "c"
-    ],
-    [
-     "Sea Serpent Warrior of Darkness",
-     "c"
-    ],
-    [
-     "Self-Destruct Button",
-     "c"
-    ],
-    [
-     "Skull-Mark Ladybug",
-     "c"
-    ],
-    [
-     "Smashing Ground",
-     "c"
-    ],
-    [
-     "Stealth Bird",
-     "c"
-    ],
-    [
-     "Stray Lambs",
-     "r"
-    ],
-    [
-     "Terrorking Salmon",
-     "c"
-    ],
-    [
-     "The Thing in the Crater",
-     "c"
-    ],
-    [
-     "Torpedo Fish",
-     "r"
-    ],
-    [
-     "Trap Jammer",
-     "s"
-    ],
-    [
-     "Ultra Evolution Pill",
-     "r"
-    ],
-    [
-     "Foolish Burial",
-     "c"
-    ],
-    [
-     "Dangerous Machine TYPE-6",
-     "u"
-    ],
-    [
-     "Maximum Six",
-     "s"
-    ],
-    [
-     "Sixth Sense",
-     "c"
-    ],
-    [
-     "Amplifier",
-     "c"
-    ],
-    [
-     "Arcane Archer of the Forest",
-     "c"
-    ],
-    [
-     "Archlord Zerato",
-     "u"
-    ],
-    [
-     "Armor Break",
-     "c"
-    ],
-    [
-     "Atomic Firefly",
-     "c"
-    ],
-    [
-     "Avatar of The Pot",
-     "r"
-    ],
-    [
-     "Backfire",
-     "c"
-    ],
-    [
-     "Beckoning Light",
-     "c"
-    ],
-    [
-     "Blowback Dragon",
-     "u"
-    ],
-    [
-     "Burst Stream of Destruction",
-     "u"
-    ],
-    [
-     "Disc Fighter",
-     "c"
-    ],
-    [
-     "Draining Shield",
-     "r"
-    ],
-    [
-     "Earthquake",
-     "c"
-    ],
-    [
-     "Enemy Controller",
-     "r"
-    ],
-    [
-     "Gear Golem the Moving Fortress",
-     "u"
-    ],
-    [
-     "Goblin King",
-     "c"
-    ],
-    [
-     "Goblin Thief",
-     "c"
-    ],
-    [
-     "Gogiga Gagagigo",
-     "c"
-    ],
-    [
-     "KA-2 Des Scissors",
-     "c"
-    ],
-    [
-     "Lady Ninja Yae",
-     "c"
-    ],
-    [
-     "Legendary Jujitsu Master",
-     "u"
-    ],
-    [
-     "Light of Judgment",
-     "c"
-    ],
-    [
-     "Mazera DeVille",
-     "u"
-    ],
-    [
-     "Mermaid Knight",
-     "c"
-    ],
-    [
-     "Metal Armored Bug",
-     "c"
-    ],
-    [
-     "Micro Ray",
-     "c"
-    ],
-    [
-     "Monster Gate",
-     "c"
-    ],
-    [
-     "Mystical Shine Ball",
-     "c"
-    ],
-    [
-     "Mystik Wok",
-     "c"
-    ],
-    [
-     "Needle Burrower",
-     "s"
-    ],
-    [
-     "Ninjitsu Art of Transformation",
-     "c"
-    ],
-    [
-     "Opti-Camouflage Armor",
-     "c"
-    ],
-    [
-     "Piranha Army",
-     "c"
-    ],
-    [
-     "Rocket Jumper",
-     "c"
-    ],
-    [
-     "Sealmaster Meisei",
-     "r"
-    ],
-    [
-     "Solar Flare Dragon",
-     "r"
-    ],
-    [
-     "Solar Ray",
-     "c"
-    ],
-    [
-     "Sonic Jammer",
-     "c"
-    ],
-    [
-     "Soul-Absorbing Bone Tower",
-     "r"
-    ],
-    [
-     "Stone Statue of the Aztecs",
-     "s"
-    ],
-    [
-     "Talisman of Spell Sealing",
-     "c"
-    ],
-    [
-     "Talisman of Trap Sealing",
-     "c"
-    ],
-    [
-     "The Agent of Creation - Venus",
-     "r"
-    ],
-    [
-     "The Agent of Force - Mars",
-     "c"
-    ],
-    [
-     "The Agent of Judgment - Saturn",
-     "s"
-    ],
-    [
-     "The Agent of Wisdom - Mercury",
-     "c"
-    ],
-    [
-     "The Kick Man",
-     "r"
-    ],
-    [
-     "The Sanctuary in the Sky",
-     "s"
-    ],
-    [
-     "The Unhappy Girl",
-     "c"
-    ],
-    [
-     "Two Thousand Needles",
-     "c"
-    ],
-    [
-     "Vampire Lady",
-     "s"
     ],
     [
      "Wall of Revealing Light",
-     "c"
-    ],
-    [
-     "Warrior of Zera",
-     "c"
-    ],
-    [
-     "Weapon Change",
-     "c"
-    ],
-    [
-     "White Magician Pikeru",
-     "c"
-    ],
-    [
-     "Zaborg the Thunder Monarch",
-     "s"
-    ]
-   ],
-   "item": "dark-magician-of-chaos-pack",
-   "full": "Dark Magician of Chaos",
-   "name": "Dark Magician of Chaos",
-   "cover": "Dark Magician of Chaos",
-   "text": "Invasion of Chaos's time: Dark Magician of Chaos, Archlord Zerato and the Monarchs' beginnings."
-  },
-  {
-   "key": "horus",
-   "boss": "Horus the Black Flame Dragon LV8",
-   "cards": [
-    [
-     "Shrink",
-     "c"
-    ],
-    [
-     "D. D. Assailant",
-     "s"
-    ],
-    [
-     "Emes the Infinity",
-     "s"
-    ],
-    [
-     "Soul Rope",
-     "c"
-    ],
-    [
-     "Twinheaded Beast",
      "r"
-    ],
-    [
-     "3-Hump Lacooda",
-     "r"
-    ],
-    [
-     "7",
-     "c"
-    ],
-    [
-     "Absorbing Kid from the Sky",
-     "c"
-    ],
-    [
-     "Aswan Apparition",
-     "c"
-    ],
-    [
-     "Blessings of the Nile",
-     "c"
     ],
     [
      "Curse of Anubis",
-     "c"
-    ],
-    [
-     "Dark Magic Attack",
-     "u"
-    ],
-    [
-     "Delta Attacker",
-     "c"
-    ],
-    [
-     "Des Counterblow",
-     "s"
-    ],
-    [
-     "Desert Sunlight",
-     "c"
-    ],
-    [
-     "Desertapir",
-     "c"
-    ],
-    [
-     "Dora of Fate",
-     "c"
-    ],
-    [
-     "Double Coston",
-     "s"
-    ],
-    [
-     "Dust Barrier",
-     "c"
-    ],
-    [
-     "Elephant Statue of Blessing",
-     "c"
-    ],
-    [
-     "Elephant Statue of Disaster",
-     "r"
-    ],
-    [
-     "Emissary of the Afterlife",
-     "r"
-    ],
-    [
-     "Emissary of the Oasis",
-     "c"
-    ],
-    [
-     "Enchanting Fitting Room",
-     "c"
-    ],
-    [
-     "Fiend Scorpion",
-     "c"
-    ],
-    [
-     "Ghost Knight of Jackal",
-     "r"
-    ],
-    [
-     "Gigobyte",
-     "c"
-    ],
-    [
-     "Grave Protector",
-     "c"
-    ],
-    [
-     "Human-Wave Tactics",
-     "c"
-    ],
-    [
-     "Judgment of the Desert",
-     "c"
-    ],
-    [
-     "King of the Swamp",
-     "r"
-    ],
-    [
-     "Kozaky",
-     "c"
-    ],
-    [
-     "Labyrinth of Nightmare",
-     "c"
-    ],
-    [
-     "Legacy Hunter",
-     "c"
-    ],
-    [
-     "Level Limit - Area B",
-     "c"
-    ],
-    [
-     "Man-Thro' Tro'",
-     "c"
-    ],
-    [
-     "Mokey Mokey",
-     "s"
-    ],
-    [
-     "Night Assailant",
-     "c"
-    ],
-    [
-     "Nubian Guard",
-     "c"
-    ],
-    [
-     "Order to Charge",
-     "c"
-    ],
-    [
-     "Order to Smash",
-     "c"
-    ],
-    [
-     "Pharaoh's Servant",
-     "c"
-    ],
-    [
-     "Pharaonic Protector",
-     "c"
-    ],
-    [
-     "Protector of the Sanctuary",
-     "c"
-    ],
-    [
-     "Regenerating Mummy",
-     "s"
-    ],
-    [
-     "Sand Gambler",
-     "c"
-    ],
-    [
-     "Soul Resurrection",
-     "r"
-    ],
-    [
-     "Soul Reversal",
-     "c"
-    ],
-    [
-     "Special Hurricane",
-     "r"
-    ],
-    [
-     "Spell Economics",
-     "c"
-    ],
-    [
-     "Spirit Caller",
-     "c"
-    ],
-    [
-     "Spirit of the Pharaoh",
-     "u"
-    ],
-    [
-     "Sword of the Soul-Eater",
-     "c"
-    ],
-    [
-     "The End of Anubis",
-     "s"
-    ],
-    [
-     "The First Sarcophagus",
-     "s"
-    ],
-    [
-     "The Law of the Normal",
-     "c"
-    ],
-    [
-     "The Second Sarcophagus",
-     "c"
-    ],
-    [
-     "The Third Sarcophagus",
-     "c"
-    ],
-    [
-     "Theban Nightmare",
-     "r"
-    ],
-    [
-     "Thousand Energy",
-     "c"
-    ],
-    [
-     "Triangle Power",
-     "c"
-    ],
-    [
-     "Gemini Imps",
      "c"
     ],
     [
@@ -6718,330 +9449,11 @@
      "c"
     ],
     [
-     "Marshmallon",
-     "x"
-    ],
-    [
-     "Marshmallon Glasses",
-     "c"
-    ],
-    [
-     "Return Zombie",
-     "x"
-    ],
-    [
-     "Shield Crush",
-     "c"
-    ],
-    [
-     "Magical Stone Excavation",
-     "c"
-    ],
-    [
      "Malevolent Catastrophe",
      "c"
     ],
     [
-     "Stronghold the Moving Fortress",
-     "c"
-    ],
-    [
-     "Green Gadget",
-     "u"
-    ],
-    [
-     "Red Gadget",
-     "c"
-    ],
-    [
-     "The Tricky",
-     "u"
-    ],
-    [
-     "Tricky Spell 4",
-     "c"
-    ],
-    [
-     "Yellow Gadget",
-     "c"
-    ],
-    [
-     "Card of Sanctity",
-     "c"
-    ],
-    [
-     "Absolute End",
-     "c"
-    ],
-    [
-     "Abyssal Designator",
-     "c"
-    ],
-    [
-     "Armed Dragon LV3",
-     "r"
-    ],
-    [
-     "Armed Dragon LV5",
-     "u"
-    ],
-    [
-     "Armed Dragon LV7",
-     "u"
-    ],
-    [
-     "Big Wave Small Wave",
-     "c"
-    ],
-    [
-     "Black Dragon's Chick",
-     "r"
-    ],
-    [
-     "Cemetary Bomb",
-     "c"
-    ],
-    [
-     "Charcoal Inpachi",
-     "r"
-    ],
-    [
-     "Dark Factory of Mass Production",
-     "c"
-    ],
-    [
-     "Dark Mimic LV1",
-     "c"
-    ],
-    [
-     "Dark Mimic LV3",
-     "r"
-    ],
-    [
-     "Ectoplasmer",
-     "c"
-    ],
-    [
-     "Element Dragon",
-     "c"
-    ],
-    [
-     "Element Soldier",
-     "r"
-    ],
-    [
-     "Enervating Mist",
-     "c"
-    ],
-    [
-     "Enraged Muka Muka",
-     "c"
-    ],
-    [
-     "Fusion Weapon",
-     "c"
-    ],
-    [
-     "Goblin Calligrapher",
-     "c"
-    ],
-    [
-     "Gorgon's Eye",
-     "c"
-    ],
-    [
-     "Greed",
-     "c"
-    ],
-    [
-     "Hade-Hane",
-     "c"
-    ],
-    [
-     "Hallowed Life Barrier",
-     "c"
-    ],
-    [
-     "Hammer Shot",
-     "r"
-    ],
-    [
-     "Heavy Slump",
-     "c"
-    ],
-    [
-     "Horus the Black Flame Dragon LV4",
-     "s"
-    ],
-    [
-     "Horus the Black Flame Dragon LV6",
-     "u"
-    ],
-    [
-     "Horus the Black Flame Dragon LV8",
-     "x"
-    ],
-    [
-     "Horus' Servant",
-     "c"
-    ],
-    [
-     "Howling Insect",
-     "c"
-    ],
-    [
-     "Inferno Fire Blast",
-     "u"
-    ],
-    [
-     "Level Up!",
-     "c"
-    ],
-    [
-     "Malice Doll of Demise",
-     "s"
-    ],
-    [
-     "Masked Dragon",
-     "c"
-    ],
-    [
-     "Master of Oz",
-     "r"
-    ],
-    [
      "Mind Crush",
-     "c"
-    ],
-    [
-     "Mind Wipe",
-     "c"
-    ],
-    [
-     "Mind on Air",
-     "r"
-    ],
-    [
-     "Mobius the Frost Monarch",
-     "s"
-    ],
-    [
-     "Muko",
-     "c"
-    ],
-    [
-     "Mystic Swordsman LV2",
-     "c"
-    ]
-   ],
-   "item": "horus-pack",
-   "full": "Horus the Black Flame Dragon LV8",
-   "name": "Horus LV8",
-   "cover": "Horus the Black Flame Dragon LV8",
-   "text": "The LV monsters arrive: Horus, Armed Dragon, Mystic Swordsman, and Master of Oz."
-  },
-  {
-   "key": "shining",
-   "boss": "Blue-Eyes Shining Dragon",
-   "cards": [
-    [
-     "Mystic Swordsman LV4",
-     "s"
-    ],
-    [
-     "Neo Aqua Madoor",
-     "c"
-    ],
-    [
-     "Ninja Grandmaster Sasuke",
-     "r"
-    ],
-    [
-     "Ninjitsu Art of Decoy",
-     "c"
-    ],
-    [
-     "Nobleman-Eater Bug",
-     "c"
-    ],
-    [
-     "Ojama King",
-     "r"
-    ],
-    [
-     "Penumbral Soldier Lady",
-     "s"
-    ],
-    [
-     "Rafflesia Seduction",
-     "c"
-    ],
-    [
-     "Ritual Weapon",
-     "c"
-    ],
-    [
-     "Sanwitch",
-     "c"
-    ],
-    [
-     "Skull Dog Marron",
-     "c"
-    ],
-    [
-     "Spirit Barrier",
-     "r"
-    ],
-    [
-     "Taunt",
-     "c"
-    ],
-    [
-     "The Graveyard in the Fourth Dimension",
-     "c"
-    ],
-    [
-     "The Trojan Horse",
-     "r"
-    ],
-    [
-     "Two-Man Cell Battle",
-     "c"
-    ],
-    [
-     "Ultimate Baseball Kid",
-     "c"
-    ],
-    [
-     "Ultimate Insect LV1",
-     "c"
-    ],
-    [
-     "Unshaven Angler",
-     "r"
-    ],
-    [
-     "Andro Sphinx",
-     "u"
-    ],
-    [
-     "Familiar Knight",
-     "c"
-    ],
-    [
-     "Inferno Tempest",
-     "c"
-    ],
-    [
-     "Meteo the Matchless",
-     "s"
-    ],
-    [
-     "Peten the Dark Clown",
-     "c"
-    ],
-    [
-     "Rare Metal Dragon",
      "c"
     ],
     [
@@ -7049,287 +9461,7 @@
      "c"
     ],
     [
-     "Sphinx Teleia",
-     "u"
-    ],
-    [
-     "Theinen the Great Sphinx",
-     "u"
-    ],
-    [
-     "Ulevo",
-     "u"
-    ],
-    [
-     "Abyss Soldier",
-     "s"
-    ],
-    [
-     "Inferno Hammer",
-     "s"
-    ],
-    [
-     "Teva",
-     "c"
-    ],
-    [
-     "A-Team: Trap Disposal Unit",
-     "r"
-    ],
-    [
-     "Astral Barrier",
-     "c"
-    ],
-    [
-     "Back to Square One",
-     "c"
-    ],
-    [
-     "Ballista of Rampart Smashing",
-     "c"
-    ],
-    [
-     "Big Core",
-     "s"
-    ],
-    [
-     "Bokoichi the Freightening Car",
-     "c"
-    ],
-    [
-     "Chain Burst",
-     "r"
-    ],
-    [
-     "Covering Fire",
-     "c"
-    ],
-    [
-     "Creeping Doom Manta",
-     "c"
-    ],
-    [
-     "Dark Blade the Dragon Knight",
-     "r"
-    ],
-    [
-     "Dekoichi the Battlechanted Locomotive",
-     "r"
-    ],
-    [
-     "Divine Wrath",
-     "s"
-    ],
-    [
-     "Eagle Eye",
-     "c"
-    ],
-    [
-     "Element Magician",
-     "c"
-    ],
-    [
-     "Element Saurus",
-     "r"
-    ],
-    [
-     "Flint",
-     "c"
-    ],
-    [
-     "Fox Fire",
-     "c"
-    ],
-    [
-     "Fruits of Kozaky's Studies",
-     "c"
-    ],
-    [
-     "Fuh-Rin-Ka-Zan",
-     "c"
-    ],
-    [
-     "Fusilier Dragon, the Dual-Mode Beast",
-     "u"
-    ],
-    [
-     "Gaia Soul the Combustible Collective",
-     "r"
-    ],
-    [
-     "Harpie Girl",
-     "c"
-    ],
-    [
-     "Harpie Lady 1",
-     "c"
-    ],
-    [
-     "Harpie Lady 2",
-     "c"
-    ],
-    [
-     "Harpie Lady 3",
-     "c"
-    ],
-    [
-     "Harpies' Hunting Ground",
-     "c"
-    ],
-    [
-     "Heavy Mech Support Platform",
-     "c"
-    ],
-    [
-     "Homunculus the Alchemic Being",
-     "c"
-    ],
-    [
-     "Invasion of Flames",
-     "c"
-    ],
-    [
-     "Lighten the Load",
-     "c"
-    ],
-    [
-     "Machine Duplication",
-     "c"
-    ],
-    [
-     "Malice Dispersion",
-     "c"
-    ],
-    [
-     "Mighty Guard",
-     "c"
-    ],
-    [
-     "Mind Haxorz",
-     "c"
-    ],
-    [
-     "Mirage Dragon",
-     "c"
-    ],
-    [
-     "Mokey Mokey King",
-     "c"
-    ],
-    [
-     "Mokey Mokey Smackdown",
-     "c"
-    ],
-    [
-     "Monster Reincarnation",
-     "s"
-    ],
-    [
-     "Mystic Swordsman LV6",
-     "s"
-    ],
-    [
-     "Necklace of Command",
-     "c"
-    ],
-    [
-     "Nightmare Penguin",
-     "r"
-    ],
-    [
-     "Perfect Machine King",
-     "u"
-    ],
-    [
-     "Pikeru's Circle of Enchantment",
-     "c"
-    ],
-    [
-     "Pitch-Black Warwolf",
-     "c"
-    ],
-    [
-     "Raging Flame Sprite",
-     "c"
-    ],
-    [
-     "Rare Metalmorph",
-     "c"
-    ],
-    [
-     "Roc from the Valley of Haze",
-     "c"
-    ],
-    [
-     "Sasuke Samurai #4",
-     "r"
-    ],
-    [
-     "Serial Spell",
-     "c"
-    ],
-    [
-     "Silent Swordsman LV3",
-     "r"
-    ],
-    [
-     "Spell Purification",
-     "c"
-    ],
-    [
-     "Tactical Espionage Expert",
-     "c"
-    ],
-    [
-     "The Creator",
-     "u"
-    ],
-    [
-     "The Creator Incarnate",
-     "c"
-    ],
-    [
-     "Thestalos the Firestorm Monarch",
-     "s"
-    ],
-    [
-     "Tragedy",
-     "s"
-    ],
-    [
-     "Triangle Ecstasy Spark",
-     "c"
-    ],
-    [
-     "Ultimate Insect LV3",
-     "c"
-    ],
-    [
-     "Woodborg Inpachi",
-     "c"
-    ],
-    [
      "Xing Zhen Hu",
-     "c"
-    ],
-    [
-     "Blue-Eyes Shining Dragon",
-     "x"
-    ],
-    [
-     "Pyramid of Light",
-     "c"
-    ],
-    [
-     "Sorcerer of Dark Magic",
-     "u"
-    ],
-    [
-     "Watapon",
-     "c"
-    ],
-    [
-     "Call of the Earthbound",
      "c"
     ],
     [
@@ -7337,558 +9469,10 @@
      "c"
     ],
     [
-     "Castle Gate",
-     "r"
-    ],
-    [
-     "Owner's Seal",
-     "c"
-    ],
-    [
-     "Union Attack",
-     "c"
-    ],
-    [
-     "Vampire's Curse",
-     "r"
-    ],
-    [
-     "A Feather of the Phoenix",
-     "s"
-    ],
-    [
-     "Abare Ushioni",
-     "c"
-    ],
-    [
-     "Armed Samurai - Ben Kei",
-     "c"
-    ],
-    [
-     "Assault on GHQ",
-     "r"
-    ],
-    [
-     "Beast Soul Swap",
-     "c"
-    ],
-    [
-     "Behemoth the King of All Animals",
-     "s"
-    ],
-    [
-     "Big-Tusked Mammoth",
-     "r"
-    ],
-    [
-     "Blade Rabbit",
-     "c"
-    ],
-    [
-     "Blast Magician",
-     "s"
-    ],
-    [
-     "Brain Jacker",
-     "c"
-    ],
-    [
-     "Catnipped Kitty",
-     "c"
-    ],
-    [
-     "Centrifugal Field",
-     "c"
-    ],
-    [
-     "Chiron the Mage",
-     "r"
-    ]
-   ],
-   "item": "blue-eyes-shining-pack",
-   "full": "Blue-Eyes Shining Dragon",
-   "name": "Blue-Eyes Shining",
-   "cover": "Blue-Eyes Shining Dragon",
-   "text": "Blue-Eyes Shining Dragon, the Sphinxes, Sorcerer of Dark Magic and the Monarchs."
-  },
-  {
-   "key": "dreadroot",
-   "boss": "The Wicked Dreadroot",
-   "cards": [
-    [
-     "Chu-Ske the Mouse Fighter",
-     "c"
-    ],
-    [
-     "Cross Counter",
-     "c"
-    ],
-    [
-     "D.D. Dynamite",
-     "c"
-    ],
-    [
      "Deck Devastation Virus",
-     "c"
-    ],
-    [
-     "Divine Dragon Ragnarok",
-     "c"
-    ],
-    [
-     "Element Doom",
      "r"
-    ],
-    [
-     "Element Valkyrie",
-     "r"
-    ],
-    [
-     "Elemental Burst",
-     "c"
-    ],
-    [
-     "Firebird",
-     "c"
-    ],
-    [
-     "Flame Ruler",
-     "r"
-    ],
-    [
-     "Forced Ceasefire",
-     "c"
-    ],
-    [
-     "Fulfillment of the Contract",
-     "c"
-    ],
-    [
-     "Gatling Dragon",
-     "u"
-    ],
-    [
-     "Gearfried the Swordmaster",
-     "u"
-    ],
-    [
-     "Golem Sentry",
-     "c"
-    ],
-    [
-     "Good Goblin Housekeeping",
-     "c"
-    ],
-    [
-     "Granmarg the Rock Monarch",
-     "s"
-    ],
-    [
-     "Hand of Nephthys",
-     "c"
-    ],
-    [
-     "Hyena",
-     "c"
-    ],
-    [
-     "Insect Knight",
-     "c"
-    ],
-    [
-     "Kangaroo Champ",
-     "c"
-    ],
-    [
-     "King Dragun",
-     "c"
-    ],
-    [
-     "Lightning Vortex",
-     "s"
-    ],
-    [
-     "Maji-Gire Panda",
-     "c"
-    ],
-    [
-     "Mecha-Dog Marron",
-     "c"
-    ],
-    [
-     "Meteor of Destruction",
-     "r"
-    ],
-    [
-     "Penalty Game!",
-     "c"
-    ],
-    [
-     "Phoenix Wing Wind Blast",
-     "r"
-    ],
-    [
-     "Poison Fangs",
-     "c"
-    ],
-    [
-     "Pole Position",
-     "c"
-    ],
-    [
-     "Re-Fusion",
-     "c"
-    ],
-    [
-     "Release Restraint",
-     "c"
-    ],
-    [
-     "Rescue Cat",
-     "c"
-    ],
-    [
-     "Sacred Phoenix of Nephthys",
-     "u"
-    ],
-    [
-     "Shadowslayer",
-     "r"
-    ],
-    [
-     "Silent Swordsman LV5",
-     "s"
-    ],
-    [
-     "Space Mambo",
-     "c"
-    ],
-    [
-     "Spell Absorption",
-     "c"
-    ],
-    [
-     "Spiral Spear Strike",
-     "r"
-    ],
-    [
-     "Swords of Concealing Light",
-     "c"
-    ],
-    [
-     "The Big March of Animals",
-     "c"
-    ],
-    [
-     "The Dark - Hex-Sealed Fusion",
-     "r"
-    ],
-    [
-     "The Earth - Hex-Sealed Fusion",
-     "r"
-    ],
-    [
-     "The Light - Hex-Sealed Fusion",
-     "r"
-    ],
-    [
-     "Threatening Roar",
-     "c"
-    ],
-    [
-     "Ultimate Insect LV5",
-     "s"
-    ],
-    [
-     "Whirlwind Prodigy",
-     "r"
-    ],
-    [
-     "Red-Eyes Darkness Dragon",
-     "u"
-    ],
-    [
-     "Vampire Genesis",
-     "u"
-    ],
-    [
-     "Blood Sucker",
-     "c"
-    ],
-    [
-     "Elemental Hero Avian",
-     "c"
-    ],
-    [
-     "Elemental Hero Burstinatrix",
-     "c"
-    ],
-    [
-     "Elemental Hero Flame Wingman",
-     "u"
-    ],
-    [
-     "Overpowering Eye",
-     "r"
-    ],
-    [
-     "Kaibaman",
-     "s"
-    ],
-    [
-     "Mind Control",
-     "c"
-    ],
-    [
-     "Silent Swordsman LV7",
-     "u"
-    ],
-    [
-     "Infernal Flame Emperor",
-     "s"
-    ],
-    [
-     "Ocean Dragon Lord - Neo-Daedalus",
-     "u"
-    ],
-    [
-     "Ancient Gear Beast",
-     "r"
-    ],
-    [
-     "Ancient Gear Golem",
-     "u"
-    ],
-    [
-     "Ancient Gear Soldier",
-     "c"
-    ],
-    [
-     "Aussa the Earth Charmer",
-     "c"
-    ],
-    [
-     "Battery Charger",
-     "c"
-    ],
-    [
-     "Batteryman AA",
-     "c"
-    ],
-    [
-     "Brain Control",
-     "c"
-    ],
-    [
-     "Criosphinx",
-     "r"
-    ],
-    [
-     "D.D. Survivor",
-     "r"
-    ],
-    [
-     "Des Wombat",
-     "c"
-    ],
-    [
-     "Doriado's Blessing",
-     "c"
-    ],
-    [
-     "Double Attack",
-     "c"
-    ],
-    [
-     "Dummy Golem",
-     "c"
-    ],
-    [
-     "Elemental Hero Clayman",
-     "c"
-    ],
-    [
-     "Elemental Hero Sparkman",
-     "c"
-    ],
-    [
-     "Elemental Hero Thunder Giant",
-     "u"
-    ],
-    [
-     "Elemental Mistress Doriado",
-     "r"
-    ],
-    [
-     "Eria the Water Charmer",
-     "c"
-    ],
-    [
-     "Final Ritual of the Ancients",
-     "c"
-    ],
-    [
-     "Gift of the Martyr",
-     "c"
-    ],
-    [
-     "Grave Lure",
-     "c"
-    ],
-    [
-     "Grave Ohja",
-     "r"
-    ],
-    [
-     "Guardian Statue",
-     "c"
-    ],
-    [
-     "Hero Signal",
-     "r"
-    ],
-    [
-     "Hieracosphinx",
-     "s"
-    ],
-    [
-     "Hiita the Fire Charmer",
-     "c"
-    ],
-    [
-     "Impenetrable Formation",
-     "c"
-    ],
-    [
-     "Kaminote Blow",
-     "c"
-    ],
-    [
-     "King of the Skull Servants",
-     "c"
-    ],
-    [
-     "Kozaky's Self-Destruct Button",
-     "r"
-    ],
-    [
-     "Legendary Black Belt",
-     "r"
-    ],
-    [
-     "Level Conversion Lab",
-     "c"
-    ],
-    [
-     "Lone Wolf",
-     "c"
-    ],
-    [
-     "Lost Guardian",
-     "c"
-    ],
-    [
-     "Master Monk",
-     "s"
-    ],
-    [
-     "Medusa Worm",
-     "c"
-    ],
-    [
-     "Megarock Dragon",
-     "s"
-    ],
-    [
-     "Mid Shield Gardna",
-     "c"
-    ],
-    [
-     "Millennium Scorpion",
-     "r"
-    ],
-    [
-     "Mine Golem",
-     "c"
-    ],
-    [
-     "Minefield Eruption",
-     "c"
-    ],
-    [
-     "Mispolymerization",
-     "c"
-    ],
-    [
-     "Moai Interceptor Cannons",
-     "c"
-    ],
-    [
-     "Monk Fighter",
-     "c"
-    ],
-    [
-     "Nitro Unit",
-     "c"
-    ],
-    [
-     "Pikeru's Second Sight",
-     "c"
-    ],
-    [
-     "Reshef the Dark Being",
-     "u"
-    ],
-    [
-     "Rock Bombardment",
-     "c"
-    ],
-    [
-     "Royal Surrender",
-     "r"
-    ],
-    [
-     "Shifting Shadows",
-     "c"
-    ],
-    [
-     "Spell-Stopping Statute",
-     "r"
-    ],
-    [
-     "Token Feastevil",
-     "r"
-    ],
-    [
-     "Ultimate Insect LV7",
-     "s"
-    ],
-    [
-     "White Ninja",
-     "c"
-    ],
-    [
-     "Winged Kuriboh",
-     "s"
-    ],
-    [
-     "Wynn the Wind Charmer",
-     "c"
-    ],
-    [
-     "Van'Dalgyon the Dark Dragon Lord",
-     "u"
-    ],
-    [
-     "The Wicked Dreadroot",
-     "x"
     ]
-   ],
-   "item": "wicked-dreadroot-pack",
-   "full": "The Wicked Dreadroot",
-   "name": "Wicked Dreadroot",
-   "cover": "The Wicked Dreadroot",
-   "text": "The Wicked Gods' time: Dreadroot, Ancient Gear Golem, Sacred Phoenix of Nephthys."
+   ]
   }
  ],
  "gxNames": {

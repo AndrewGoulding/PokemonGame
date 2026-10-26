@@ -29,22 +29,17 @@
     "exp-candy-xs": "Exp. Candy XS", "exp-candy-s": "Exp. Candy S", "exp-candy-m": "Exp. Candy M", "exp-candy-l": "Exp. Candy L",
     "exp-candy-xl": "Exp. Candy XL",
     // (The Yu-Gi-Oh! realm's booster packs.)
-    "legend-of-blue-eyes-pack": "Legend of B.E.W.D.",
-    "metal-raiders-pack": "Metal Raiders",
-    "spell-ruler-pack": "Spell Ruler",
-    "pharaohs-servant-pack": "Pharaoh's Servant",
-    "labyrinth-of-nightmare-pack": "Lab. of Nightmare",
-    "ultimate-great-moth-pack": "Ultimate Great Moth",
-    "gate-guardian-pack": "Gate Guardian",
+    "dark-hole-pack": "Dark Hole",
+    "spellbinding-circle-pack": "Spellbinding Circle",
+    "red-eyes-pack": "Red-Eyes B. Dragon",
+    "dark-magician-pack": "Dark Magician",
+    "tri-horned-dragon-pack": "Tri-Horned Dragon",
+    "blue-eyes-pack": "Blue-Eyes W. Dragon",
     "dark-necrofear-pack": "Dark Necrofear",
-    "des-gardius-pack": "Des Gardius",
-    "dark-ruler-ha-des-pack": "Dark Ruler Ha Des",
-    "gilford-pack": "Gilford",
-    "berserk-dragon-pack": "Berserk Dragon",
-    "dark-magician-of-chaos-pack": "Dark Magician of Chaos",
-    "horus-pack": "Horus LV8",
-    "blue-eyes-shining-pack": "Blue-Eyes Shining",
-    "wicked-dreadroot-pack": "Wicked Dreadroot"
+    "summoned-skull-pack": "Summoned Skull",
+    "jinzo-pack": "Jinzo",
+    "raigeki-pack": "Raigeki",
+    "trap-hole-pack": "Trap Hole",
   };
 
   // Gen 6 Poké Mart prices. Items sell for half. Anything else can't be bought or sold.
@@ -75,9 +70,8 @@
     // stocks it leaves it out.)
     "guard-spec": 700, "dire-hit": 650,
     // (The Yu-Gi-Oh! realm's booster packs, at the Kame Game shop.)
-    "legend-of-blue-eyes-pack": 300, "metal-raiders-pack": 300, "spell-ruler-pack": 300, "pharaohs-servant-pack": 300, "labyrinth-of-nightmare-pack": 300,
-    "ultimate-great-moth-pack": 300, "gate-guardian-pack": 300, "dark-necrofear-pack": 300, "des-gardius-pack": 300, "dark-ruler-ha-des-pack": 300, "gilford-pack": 300, "berserk-dragon-pack": 300,
-    "dark-magician-of-chaos-pack": 300, "horus-pack": 300, "blue-eyes-shining-pack": 300, "wicked-dreadroot-pack": 300,
+    "dark-hole-pack": 300, "spellbinding-circle-pack": 300, "red-eyes-pack": 300, "dark-magician-pack": 300, "tri-horned-dragon-pack": 300, "blue-eyes-pack": 300,
+    "dark-necrofear-pack": 300, "summoned-skull-pack": 300, "jinzo-pack": 300, "raigeki-pack": 300, "trap-hole-pack": 300,
     "repel": 350, "super-repel": 500, "max-repel": 700, "lure": 400, "super-lure": 700, "max-lure": 900, "escape-rope": 550, "poke-doll": 1000, "lava-cookie": 200,
     // Treasures from digging (they sell for half, as in Gen 6).
     "star-piece": 9800, "rare-bone": 10000, "heart-scale": 200, "red-shard": 400, "blue-shard": 400,

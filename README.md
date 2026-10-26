@@ -3235,16 +3235,19 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   they introduce themselves. Three pupils are about: one in front, one in the hall, one in the classroom.
 - **The Kame Game shop**: Yugi's grandpa, at his counter, on Yu-Gi-Oh! GX Duel Academy's shop screen (`CardShop` in
   `ui/bag-screen.js`, its pieces from the cartridge in `assets/yugioh/shop/`): its room, the translucent panels and
-  the text box. He sells booster packs of **Legend of Blue Eyes White Dragon**, **Metal Raiders**, **Spell Ruler**,
-  **Pharaoh's Servant** and **Labyrinth of Nightmare** (`window.YUGIOH_SETS` in `data/items.js`: the cards GX has of
-  each, by rarity), and seven packs of this game's own with **every other card released in the TCG or OCG up to
-  Legacy of Darkness** (754 of them, and the 470 of GX's own of that time that its five sets don't have: about 175 to a pack), each named for and showing its boss monster:
-  **Ultimate Great Moth**, **Gate Guardian**, **Dark Necrofear**, **Des Gardius**, **Dark Ruler Ha Des**,
-  **Gilford** and **Berserk Dragon** (rarities by each card's stats and effect: the boss and one more Secret Rare,
-  10 Ultra, 12 Super and 24 Rare a pack, the rest Common); and four more with **every card of the OCG and the TCG to
-  Structure Deck: Fury from the Deep** (2005-05-06), the original Duel Monsters series' cards, about 117 to a pack:
-  **Dark Magician of Chaos**, **Horus LV8**, **Blue-Eyes Shining** and **Wicked Dreadroot** (GX's own cards of that time
-  back in them with their rarities, the new ones' by stats and effect); ₽300 a pack: the packs down the left as GX shows them (each a card from its set in a pack's
+  the text box. He sells **eleven booster packs**, this game's own (`window.YUGIOH_SETS` in `data/items.js`), with
+  **every card in the game** (all 2,096: 1,397 monsters, 426 Spells, 293 Traps) grouped by power, so that the packs
+  get stronger as you go: two of Spells, **Dark Hole** (the weaker half) and **Raigeki** (the stronger); two of Traps,
+  **Spellbinding Circle** and **Trap Hole**; and seven of monsters, in seven groups from the weakest up: **Red-Eyes
+  Black Dragon**, **Dark Magician**, **Tri-Horned Dragon**, **Blue-Eyes White Dragon**, **Dark Necrofear**, **Summoned
+  Skull** and **Jinzo**, each pack named for one of its Secret Rares (a card's power: for a monster, its ATK and DEF and
+  how widely played the card is; for a Spell or Trap, how widely played; each about 150 to 200 cards, its rarities its
+  own: three Secret Rares, about 6% Ultra, 10% Super and 20% Rare, the rest Common). Your **Duelist Level** opens them:
+  Dark Hole, Spellbinding Circle and Red-Eyes Black Dragon from the start, Dark Magician at level 10, Tri-Horned Dragon
+  at 15, Blue-Eyes White Dragon, Raigeki and Trap Hole at 20, Dark Necrofear at 25, Summoned Skull at 30 and Jinzo at
+  35. Every duel earns EXP toward it (100 for beating Yugi, Joey, Téa or Tristan, 60 for one of the other pupils, 25
+  for a loss; 50 EXP from level 1 to 2, and each level 10 more than the one before), shown with your level at the top
+  of the Trunk's INVENTORY. ₽300 a pack: the packs down the left as GX shows them (each a card from its set in a pack's
   frame, drawn by the screen, as GX makes its own as it runs), up and down to pick one, left and right for how many,
   R to fill the basket and L to empty it, START for what's in the set, SELECT for the help bar; your money by the
   star at the top right, where GX shows its Duel Points. A pack has nine cards, eight Commons and a Rare, now and
@@ -3257,25 +3260,23 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   The first time you visit, he gives you **10 Pack Tokens**, for a booster pack of your choice each ("Trade in Pack
   Tokens.", on the same screen, a token a pack), and you build your first deck from them. He also **dismantles cards**: on the Trunk's screen,
   A on a spare card (one not in any of your decks) for a token of its rarity, Common, Rare, Super Rare, Ultra Rare or Secret
-  Rare; and **trades tokens for cards**: every card on the Trunk's screen, A on one for 3 tokens of its rarity
-  (SELECT on either screen opens the Trunk's sort menu). A
-  card's rarity (`window.YUGIOH_RARITY`) is its rarity in the first of the five sets it's in, or else in its first
-  printing (from YGOPRODeck's card database, under its TCG name where GX's differs). The Trunk shows each card's.
-  **Every card in the game comes from its booster packs**: GX's cards released up to Legacy of Darkness that GX's
-  five sets don't have are in the seven packs of this game's own (with their time's cards, keeping their rarities),
-  and the rest of GX's, 333 cards, aren't in the game: the 328 released after Legacy of Darkness, and five GX had
+  Rare; and **trades tokens for cards**: every card on the Trunk's screen, A on one for 3 tokens of its rarity, if
+  your Duelist Level has opened its pack (SELECT on either screen opens the Trunk's sort menu). A card's rarity
+  (`window.YUGIOH_RARITY`) is its rarity in its pack; the Trunk shows each card's. Packs of the sets the shop sold
+  before (Legend of Blue Eyes, Metal Raiders and the rest) still in a save's bag become a Pack Token each.
+  **Every card in the game comes from its booster packs**; 333 of GX's own cards aren't in the game: the 328 released after Legacy of Darkness, and five GX had
   that neither the TCG nor the OCG printed as GX has them (Mechanical Spider, Call of the Dark, Marie the Fallen One,
   Enchanted Arrow, Wasteland Amazon: under their TCG names, Karakuri Spider, Call of Darkness, Darklord Marie and
   Spell Shattering Arrow, already in the packs; Warrior Lady of the Wasteland came later). Any you had leave your Trunk
   and decks. **Every OCG card up to Legacy of Darkness is in**, checked against Yugipedia's lists of every OCG set,
   promotion and prize to then (YGOPRODeck, the cards' source, misses some and dates others too late): GX's Shapesnatch,
   Inpachi, Curse of Aging and Morale Boost back, and Final Attack Orders; **the three Egyptian Gods** (the OCG's
-  promotional cards of December 2000, in the Dark Ruler Ha Des pack as Secret Rares: three Tributes, never Set,
+  promotional cards of December 2000: three Tributes, never Set,
   nothing answers their summon; Slifer's 1000 ATK a card in your hand and its 2000 off what your opponent summons,
   Obelisk untargetable and destroying their field for two Tributes, Ra's LP for ATK and 1000 LP to destroy a monster;
   their own DIVINE attribute and Divine-Beast type, their icons GX's LIGHT and Dragon in gold); and the Second National
   Tournament's three prize cards, Masahiro the Dark Clown, Yasushi the Skull Knight and Tomohiro the Mountain Warrior
-  (Ultra Rares in the Des Gardius pack). Amphibious Bugroth's "Defender of the Sea" is Sentinel of the Seas; Reaper on
+  Amphibious Bugroth's "Defender of the Sea" is Sentinel of the Seas; Reaper on
   the Nightmare's Nightmare Horse came with the cards to Fury from the Deep.
 
 - **The maps**: all 58 of the game's screens, each its own map of one screen (15x10 tiles) with the camera fixed on
@@ -3316,7 +3317,7 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   NUMBER, NAME, ATTACK, DEFENSE, CATEGORY, TYPE, ATTRIBUTE, ICON or LEVEL, and this game's own QUANTITY: how many
   copies you have, the most first), CHANGE VIEW (names, or little cards seven a row), DECK MODE (the deck or its
   side deck) and EXIT, and below, this game's own **INVENTORY**: your
-  booster packs, Pack Tokens and cards' tokens (eleven rows at a time, scrolling), A on a pack to open as many of it as you like
+  Duelist Level and EXP, booster packs, Pack Tokens and cards' tokens (eleven rows at a time, scrolling), A on a pack to open as many of it as you like
   there (left and right one more or less, up and down ten): all of them at once, their cards into your Trunk together,
   one opening with every card flowing out as fast as one pack's would, then one list of them all, the rarest first,
   each card once with how many came; A on a card token trades **50 of them for one of the next rarity's** (Common
@@ -3396,16 +3397,17 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
 - **Duels**: Yugi, Téa, Joey and Tristan in Domino High's classroom will duel you after they've said hello (each
   with a deck of their own from the show, `window.YUGIOH_DUELISTS` in `data/items.js`); win, and you get ₽1000 (₽400 from the
   pupils below) and three cards from their deck, the rarer a card the less likely (Commons 30 to a Secret Rare's 1,
-  Rares 10, Super Rares 4, Ultra Rares 2), shown on the shop's list of cards. Their decks are the cards they play in the first season, Duelist Kingdom,
-  those GX Duel Academy has: Yugi's Dark Magician, Gaia, Kuriboh and Multiply, Exodia, the Mythical Beasts and Black
-  Luster Soldier; Joey's Red-Eyes, Flame Swordsman, Time Wizard and Baby Dragon, Alligator's Sword and Metalmorph;
-  Téa's Magician of Faith from Bakura's Shadow Game, with Fairies; and Tristan, who doesn't duel that season (his
-  Cyber Commander isn't among GX's cards), keeps his machines. Domino High's three other pupils duel too,
-  each with a beginner's deck from the few boosters they've opened (`boosterDeck` in `ui/game.js`): six packs of Legend
-  of Blue Eyes White Dragon and Metal Raiders (`window.YUGIOH_SETS` in `data/items.js`, the 88 and 95 cards of those
-  sets GX has, by rarity), their Commons and Rares only, Common monsters that need no Tribute, as they came, filled
-  with more Commons: weaker than Yugi's and his friends' (each of whom beats them about four times in five); each
-  pupil's packs are their own, so their deck is the same each time. You duel with your Trunk's deck, of 40 cards at least: there's no deck
+  Rares 10, Super Rares 4, Ultra Rares 2), shown on the shop's list of cards. Their decks are the cards they play in the first season, Duelist Kingdom:
+  Yugi's Dark Magician, Celtic Guardian, Gaia, Kuriboh and Multiply, Beaver Warrior, Big Shield Gardna, Exodia, the
+  Mythical Beasts, Gate Guardian, Black Luster Soldier and Magical Hats; Joey's Red-Eyes, Flame Swordsman, Time Wizard
+  and Baby Dragon, Alligator's Sword, Panther Warrior, Rocket Warrior, the Battleguards, Shield & Sword and Metalmorph;
+  Téa's Magician of Faith from Bakura's Shadow Game, with Fairies, Happy Lover and Shining Friendship; and Tristan, who
+  duels only with Cyber Commander that season, has it with the machines of Duelist Kingdom, Bandit Keith's among them.
+  Domino High's three other pupils duel too, each with a beginner's deck from the few boosters they've opened
+  (`boosterDeck` in `ui/game.js`): four Red-Eyes Black Dragon packs, a Dark Hole and a Spellbinding Circle, their
+  Commons and Rares only, Common monsters that need no Tribute, as they came, filled with more Commons from those
+  packs: far weaker than Yugi's and his friends' (each of whom beats them almost every time); each
+  pupil's packs are their own, so their deck is the same each time.pupil's packs are their own, so their deck is the same each time. You duel with your Trunk's deck, of 40 cards at least: there's no deck
   to borrow, you build your first from booster packs. The duel screen (`DuelScreen`, in `ui/bag-screen.js`) is GX Duel Academy's, its
   graphics from that cartridge (`assets/yugioh/duel/`): the field in perspective, the Gym's boards under it and the
   academy's mat between the two sides, the life points, the phases down the left (the one you're in lit) with the
@@ -3486,8 +3488,8 @@ python3 tools/build-gx-trunk.py "<path to Yu-Gi-Oh! GX - Duel Academy (USA).gba>
 
 **The cards beyond GX's**, cards 1201-2165: every card released in the TCG or the OCG up to Structure Deck: Fury from
 the Deep (2005-05-06; first up to Legacy of Darkness, then the rest)
-(2003-06-06) that GX doesn't have, and the seven booster packs they come in (`tools/lib/extra-cards.json`: the cards
-in card-number order, and each pack's boss monster, cards and rarities). From YGOPRODeck's card database (names, text,
+(2003-06-06) that GX doesn't have, and the eleven booster packs every card in the game comes in (`tools/lib/extra-cards.json`: the cards
+in card-number order, and each pack's cards and rarities, its cards grouped by power). From YGOPRODeck's card database (names, text,
 kinds, types, attributes, levels and stats) and its cards' cropped art (80x80 in 64 colours, as GX's), downloaded
 once into a cache directory; after `tools/build-gx-trunk.py`:
 

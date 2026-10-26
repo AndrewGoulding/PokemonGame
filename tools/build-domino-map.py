@@ -96,24 +96,18 @@ def shade(c, k): return tuple(max(0, min(255, int(v * k))) for v in c[:3]) + (25
 # ---------- The booster packs ----------
 # Each a foil pack, seen a little turned: its set's colours, a card's shape on it, crimped top and bottom.
 PACKS = {
-    'legend-of-blue-eyes-pack': ((56, 104, 200), (210, 230, 250), (250, 250, 255)),
-    'metal-raiders-pack': ((150, 40, 40), (70, 60, 64), (236, 196, 88)),
-    'spell-ruler-pack': ((40, 130, 90), (180, 230, 190), (240, 236, 150)),
-    'pharaohs-servant-pack': ((120, 64, 168), (236, 196, 88), (250, 236, 200)),
-    'labyrinth-of-nightmare-pack': ((44, 40, 72), (196, 80, 56), (232, 220, 250)),
-    # (the seven packs of the cards beyond GX's: tools/build-extra-cards.py)
-    'ultimate-great-moth-pack': ((70, 120, 48), (214, 206, 120), (250, 246, 200)),
-    'gate-guardian-pack': ((84, 88, 112), (120, 176, 230), (240, 244, 255)),
+    # (the eleven packs, by power: tools/build-extra-cards.py)
+    'dark-hole-pack': ((30, 26, 44), (120, 70, 170), (230, 210, 255)),
+    'spellbinding-circle-pack': ((120, 40, 110), (236, 196, 88), (255, 240, 200)),
+    'red-eyes-pack': ((40, 30, 34), (200, 40, 40), (255, 200, 190)),
+    'dark-magician-pack': ((70, 40, 140), (90, 150, 220), (240, 230, 255)),
+    'tri-horned-dragon-pack': ((150, 50, 40), (200, 170, 90), (255, 240, 200)),
+    'blue-eyes-pack': ((56, 104, 200), (210, 230, 250), (250, 250, 255)),
     'dark-necrofear-pack': ((58, 36, 80), (196, 196, 220), (250, 240, 255)),
-    'des-gardius-pack': ((118, 30, 40), (52, 48, 56), (236, 196, 88)),
-    'dark-ruler-ha-des-pack': ((96, 20, 24), (224, 160, 64), (255, 236, 180)),
-    'gilford-pack': ((40, 60, 112), (240, 220, 80), (255, 255, 220)),
-    'berserk-dragon-pack': ((44, 34, 34), (200, 64, 40), (250, 210, 170)),
-    # (and the four to Structure Deck: Fury from the Deep)
-    'dark-magician-of-chaos-pack': ((40, 36, 96), (196, 64, 180), (250, 220, 255)),
-    'horus-pack': ((40, 40, 44), (220, 96, 36), (255, 220, 150)),
-    'blue-eyes-shining-pack': ((200, 210, 230), (90, 150, 230), (255, 255, 255)),
-    'wicked-dreadroot-pack': ((56, 20, 28), (150, 30, 40), (250, 190, 170)),
+    'summoned-skull-pack': ((70, 60, 64), (220, 200, 90), (255, 250, 220)),
+    'jinzo-pack': ((40, 110, 70), (120, 200, 140), (240, 255, 240)),
+    'raigeki-pack': ((40, 60, 112), (240, 220, 80), (255, 255, 220)),
+    'trap-hole-pack': ((140, 30, 50), (80, 50, 40), (250, 200, 180)),
 }
 out = os.path.join(ROOT, 'assets/sprites/items/booster')
 os.makedirs(out, exist_ok=True)

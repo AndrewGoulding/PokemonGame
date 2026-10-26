@@ -724,7 +724,7 @@
       draw(g, "cmd-menu", 16, 64);
       // (INVENTORY, this game's own: a second slot below, the menu's own slot and edge copied along, a pack for its icon)
       if (st.opts.inventory) {
-        const m = T("cmd-menu"), pk = image("assets/sprites/items/booster/legend-of-blue-eyes-pack.png");
+        const m = T("cmd-menu"), pk = image("assets/sprites/items/booster/red-eyes-pack.png");
         if (ready(m)) g.drawImage(m, 8, 24, 32, 32, 16 + 32, 64 + 24, 32, 32);
         if (ready(pk)) g.drawImage(pk, 4, 2, 24, 28, 50, 92, 20, 24);
       }
@@ -1668,8 +1668,11 @@
   const WHITE = [255, 255, 255], SHADE = [40, 40, 48], YELLOW = [248, 216, 48], ORANGE = [248, 152, 56], GREY = [72, 72, 80];
   const KIND_COLOUR = { normal: "#e8d040", effect: "#e89830", fusion: "#b048b8", ritual: "#5890e8", spell: "#30c070", trap: "#d83890" };
   // (each set's colours, its pack item's: the pack's panel and its stripes)
-  const PACK_COLOUR = { lob: ["#c85028", "#e07848"], mrd: ["#3878d0", "#68a0e8"], srl: ["#b02828", "#d85050"], psv: ["#8040c0", "#a868e0"], lon: ["#289858", "#50c080"],
-    moth: ["#58902c", "#90c050"], gate: ["#585c78", "#8890b0"], necrofear: ["#4a2c68", "#7a58a0"], gardius: ["#901c28", "#c04850"], hades: ["#701418", "#a83830"], gilford: ["#283c78", "#5070b0"], berserk: ["#3c2a28", "#704840"], chaos: ["#38306c", "#6058a8"], horus: ["#303034", "#5c5c64"], shining: ["#7088b8", "#a0b8e0"], dreadroot: ["#401018", "#702838"] };
+  const PACK_COLOUR = { darkhole: ["#2c2840", "#5c4c80"], spellbinding: ["#782868", "#a85098"], redeyes: ["#c02828", "#e05050"], darkmagician: ["#5030a0", "#7858c8"], trihorned: ["#a83828", "#d06048"], blueeyes: ["#3878d0", "#68a0e8"],
+    necrofear: ["#4a2c68", "#7a58a0"], skull: ["#484048", "#787078"], jinzo: ["#287048", "#50a070"], raigeki: ["#283c78", "#5070b0"], traphole: ["#a01c38", "#c84860"] };
+  // (and the short name on its pack)
+  const PACK_LABEL = { darkhole: "DH", spellbinding: "SBC", redeyes: "REBD", darkmagician: "DM", trihorned: "THD", blueeyes: "BEWD",
+    necrofear: "DNF", skull: "SKULL", jinzo: "JINZO", raigeki: "RGK", traphole: "TH" };
   const RARITY = { c: "Common", r: "Rare", s: "Super Rare", u: "Ultra Rare", x: "Secret Rare" };
   let st = {};
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -1716,7 +1719,7 @@
     const bars = ["#e83030", "#f0d020", "#3050e8"];
     bars.forEach((b, i) => { p.fillStyle = b; p.fillRect(5 + 5 * i, 80, 3, 3); });
     const s = window.GbaMenus.Surface();
-    const label = key.toUpperCase();
+    const label = PACK_LABEL[key] || key.toUpperCase();
     s.text(label, Math.round(pw / 2 - s.textWidth(label) / 2), 62, WHITE, SHADE);
     p.drawImage(s.canvas(), 0, 0, pw, ph, 0, 0, pw, ph);
     const k = scale || 1;

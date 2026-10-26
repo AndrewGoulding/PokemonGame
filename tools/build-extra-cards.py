@@ -1,7 +1,8 @@
 # The Duel Monsters cards beyond Yu-Gi-Oh! GX Duel Academy's 1200: every card released in the TCG or the OCG up to
-# Legacy of Darkness (2003-06-06) that GX doesn't have, 754 of them, and the seven booster packs they come in (this
-# game's own, each named for its boss monster: tools/lib/extra-cards.json, which lists the cards in card-number order,
-# 1201 on, and each pack's cards with their rarities).
+# Structure Deck: Fury from the Deep (2005-05-06) that GX doesn't have, 965 of them, and the eleven booster packs
+# every card in the game comes in (this game's own, its cards grouped by power, each pack named for its Secret Rare:
+# tools/lib/extra-cards.json, which lists the cards in card-number order, 1201 on, and each pack's cards with their
+# rarities).
 #
 #   python3 tools/build-extra-cards.py <cache directory>
 #   (after tools/build-gx-trunk.py: its cards come first, and its last picture sheet is added to here)
@@ -13,7 +14,7 @@
 #     DuelMonsters.numberOf still knows;
 #   - the cards, as GX's own are (data/items.js's YUGIOH_CARDS: name, text, kind, type, attribute, level, ATK, DEF,
 #     the Spell's or Trap's icon), added to its cards after GX's, between this tool's markers in data/items.js, with
-#     each one's rarity (YUGIOH_RARITY: its rarity in its pack) and the seven packs (YUGIOH_SETS);
+#     each one's rarity (YUGIOH_RARITY: every card's rarity in its pack) and the eleven packs (YUGIOH_SETS);
 #   - their pictures, 80x80 in 64 colours as GX's are, on GX's sheets (assets/yugioh/cards/NN.png, a hundred to a
 #     sheet, ten across), from sheet 12 on; and GX's own cards' pictures redrawn the same way, so all look alike (by
 #     their TCG names: extra-cards.json's gxNames where GX's differ; the six GX made up keep GX's).
@@ -54,8 +55,8 @@ def manual(n):
     return [n, m['text'], m['kind'], TYPES.index(m['type']), ATTRS.index(m['attribute']), m['level'], m['atk'], m['def'], 0]
 cards = [manual(n) if n in spec['manual'] else entry(by[n]) for n in spec['cards']]
 number = {n: FIRST + i for i, n in enumerate(spec['cards'])}
-# (a pack's cards: the new ones, and GX's own of its time that GX's five sets don't have, by GX's names, keeping
-# GX's rarities; GX's cards released after Legacy of Darkness, in no pack, are out of the game: their rarity "-")
+# (the packs: every card in the game in one of them, by its name now; a card's rarity, its rarity there; GX's cards in
+# no pack are out of the game, their rarity "-")
 rarity = {}
 for p in spec['packs']:
     for n, r in p['cards']: rarity[n] = r
@@ -78,24 +79,37 @@ for n, c in enumerate(gx[:FIRST]):
     if not t: continue
     tcg[n] = [t['name'], t['desc'].replace('\r\n', '\n').replace('\r', '\n').strip()]
     if t['name'] != c[0]: former[c[0]] = n
-START = '// Duel Monsters\' cards beyond GX Duel Academy\'s (tools/build-extra-cards.py): cards 1201 on, their rarities and their seven packs.\n'
+# (every card's rarity, by number: its pack's; out of the game, "-")
+base = list(re.search(r'window\.YUGIOH_RARITY = "([^"]*)"', items).group(1))[:FIRST]
+base += ['c'] * (FIRST - len(base))
+byNameNo = {}
+for n, c in enumerate(gx[:FIRST]):
+    if not c: continue
+    if c[0] in spec['removed'] or n in spec['removedNumbers']: base[n] = '-'; continue
+    byNameNo[norm(tcg[n][0] if n in tcg else c[0])] = n
+for n, name in enumerate(spec['cards']): byNameNo[norm(name)] = FIRST + n
+full = base + [rarity[n] for n in spec['cards']]
+for n, r in rarity.items():
+    no = byNameNo.get(norm(n)) or byNameNo.get(norm(spec['aliases'].get(n, n)))
+    assert no, n
+    full[no] = r
+missing = [n for n in range(1, len(full)) if full[n] != '-' and not any(byNameNo.get(norm(x)) == n for x in rarity)]
+assert not missing, missing[:10]
+START = '// Duel Monsters\' cards beyond GX Duel Academy\'s (tools/build-extra-cards.py): cards 1201 on, their rarities and the eleven packs.\n'
 END = '// (End of the cards beyond GX\'s.)\n'
 js = (START + '(function () {\n'
       '  const C = window.YUGIOH_CARDS;\n'
       '  C.cards.length = ' + str(FIRST) + ';\n'
       '  C.cards.push(...' + json.dumps(cards, separators=(',', ':'), ensure_ascii=False) + ');\n'
-      '  window.YUGIOH_RARITY = window.YUGIOH_RARITY.slice(0, ' + str(FIRST) + ') + ' + json.dumps(''.join(rarity[n] for n in spec['cards'])) + ';\n'
-      '  const R = window.YUGIOH_RARITY.split("");\n'
-      '  for (const name of ' + json.dumps(spec['removed'], ensure_ascii=False) + ') R[C.cards.findIndex((c) => c && c[0] === name)] = "-";\n'
-      '  for (const no of ' + json.dumps(spec['removedNumbers']) + ') R[no] = "-";\n'
-      '  window.YUGIOH_RARITY = R.join("");\n'
+      '  // (every card\'s rarity: its rarity in its pack; "-" for those out of the game)\n'
+      '  window.YUGIOH_RARITY = ' + json.dumps(''.join(full)) + ';\n'
       '  // (GX\'s cards\' TCG names and text; their old names, for DuelMonsters.numberOf)\n'
       '  for (const [no, [name, text]] of Object.entries(' + json.dumps(tcg, separators=(',', ':'), ensure_ascii=False) + ')) { C.cards[no][0] = name; C.cards[no][1] = text; }\n'
       '  C.formerNames = ' + json.dumps(former, ensure_ascii=False) + ';\n'
       '  // (names a card\'s text uses for another card: Amphibious Bugroth\'s "Defender of the Sea", Sentinel of the Seas)\n'
       '  for (const [a, t] of Object.entries(' + json.dumps(spec['aliases'], ensure_ascii=False) + ')) C.formerNames[a] = C.cards.findIndex((c) => c && c[0] === t);\n'
       '  C.types[' + str(TYPES.index('Divine-Beast')) + '] = "Divine-Beast"; C.attributes[' + str(ATTRS.index('DIVINE')) + '] = "DIVINE";\n'
-      '  Object.assign(window.YUGIOH_SETS, ' + json.dumps(sets, ensure_ascii=False) + ');\n'
+      '  window.YUGIOH_SETS = ' + json.dumps(sets, ensure_ascii=False) + ';\n'
       '})();\n' + END)
 path = os.path.join(ROOT, 'data/items.js')
 s = open(path, encoding='utf8').read()

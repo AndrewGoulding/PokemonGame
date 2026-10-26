@@ -9818,13 +9818,42 @@
     await voyage(window.TIME_MACHINE.hub, ["The Time Machine whirs to life…", "Domino City fades away…", "…and you come out in the Realm Hub."], "se_warp_in");
   }
   // The Kame Game shop: Yugi's grandpa, Solomon Muto, on GX Duel Academy's shop screen (ui/bag-screen.js's CardShop).
-  // He sells the sixteen sets' booster packs (window.YUGIOH_SETS: GX's five, and eleven of the cards beyond GX's), 300 a pack (game/bag.js's price), into your bag,
+  // He sells the booster packs your duelist level has opened (window.YUGIOH_SETS, PACK_LEVEL), 300 a pack (game/bag.js's price), into your bag,
   // opened from the Trunk's Inventory, their cards into your Trunk; he dismantles your spare cards (those not in your deck) for tokens of their
-  // rarity (window.YUGIOH_RARITY: Common, Rare, Super Rare, Ultra Rare, Secret Rare), and trades any card for
-  // TOKENS_PER_CARD tokens of its rarity. (Packs bought before, still in your bag, he opens for you first.)
-  const PACK_SETS = ["lob", "mrd", "srl", "psv", "lon", "moth", "gate", "necrofear", "gardius", "hades", "gilford", "berserk", "chaos", "horus", "shining", "dreadroot"], PACK_CARDS = 9, TOKENS_PER_CARD = 3;
+  // rarity (window.YUGIOH_RARITY: Common, Rare, Super Rare, Ultra Rare, Secret Rare), and trades any card whose
+  // pack you've opened for TOKENS_PER_CARD tokens of its rarity. (Packs of the old sets still in your bag he swaps for Pack Tokens.)
+  const PACK_SETS = ["darkhole", "spellbinding", "redeyes", "darkmagician", "trihorned", "blueeyes", "raigeki", "traphole", "necrofear", "skull", "jinzo"],
+    PACK_CARDS = 9, TOKENS_PER_CARD = 3;
+  // (the duelist level each pack's sold from: the weaker Spells', Traps' and monsters' from the start; the rest as you
+  // rise, the stronger Spells and Traps with Blue-Eyes White Dragon's)
+  const PACK_LEVEL = { darkhole: 1, spellbinding: 1, redeyes: 1, darkmagician: 10, trihorned: 15, blueeyes: 20, raigeki: 20, traphole: 20, necrofear: 25, skull: 30, jinzo: 35 };
+  // (the packs before these, a save's: each a Pack Token, for one of these)
+  const OLD_PACK_ITEMS = ["legend-of-blue-eyes-pack", "metal-raiders-pack", "spell-ruler-pack", "pharaohs-servant-pack", "labyrinth-of-nightmare-pack",
+    "ultimate-great-moth-pack", "gate-guardian-pack", "des-gardius-pack", "dark-ruler-ha-des-pack", "gilford-pack", "berserk-dragon-pack",
+    "dark-magician-of-chaos-pack", "horus-pack", "blue-eyes-shining-pack", "wicked-dreadroot-pack"];
+  // ---------- Your duelist level ----------
+  // EXP after every duel (dominoDuel): 100 for beating Yugi, Téa, Joey or Tristan, 60 for one of the pupils, 25 for a
+  // loss; each level takes 10 more than the one before (50 from level 1 to 2). It opens the Kame Game shop's packs
+  // (PACK_LEVEL); the Trunk's Inventory shows it.
+  const expToNext = (lv) => 50 + 10 * (lv - 1);
+  function duelistLevel(y) {
+    let lv = 1, e = y.exp || 0;
+    while (lv < 99 && e >= expToNext(lv)) { e -= expToNext(lv); lv++; }
+    return { lv, into: e, next: expToNext(lv) };
+  }
+  const packsSold = (y) => PACK_SETS.filter((k) => duelistLevel(y).lv >= PACK_LEVEL[k]);
   const RARITY_NAME = { c: "Common", r: "Rare", s: "Super Rare", u: "Ultra Rare", x: "Secret Rare" };
   const rarityOf = (no) => window.YUGIOH_RARITY[no] || "c";
+  // (each card's pack, by number: its Duelist Level unlocks trading for it too)
+  let packIndex = null;
+  function packOf(no) {
+    if (!packIndex) {
+      packIndex = {};
+      for (const k of PACK_SETS) for (const [field, names] of Object.entries(window.YUGIOH_SETS[k]))
+        if (Array.isArray(names)) for (const n of names) { const m = window.DuelMonsters.numberOf(n); if (m && !packIndex[m]) packIndex[m] = k; }
+    }
+    return packIndex[no];
+  }
   // A pack's nine cards: eight Commons and a Rare, or now and then a Super (1 in 6), an Ultra (1 in 12) or a Secret
   // Rare (1 in 72) instead, as the sets' packs were.
   function pullPack(set, rng) {
@@ -9853,14 +9882,15 @@
   async function kameGameShop() {
     const y = yugioh(), C = window.YUGIOH_CARDS.cards;
     y.tokens = y.tokens || {};
-    const price = Bag.price(window.YUGIOH_SETS.lob.item) || 300;
+    const price = Bag.price(window.YUGIOH_SETS.darkhole.item) || 300;
     Screen.say(""); clearMenu();
     CardShop.setup({ money: () => player.money, sets: window.YUGIOH_SETS });
     if (!y.gotPackTokens) {
       // (the first time: 10 Pack Tokens, a booster pack of your choice each, to build your first deck from)
       await CardShop.say(["Grandpa: Welcome to the Kame Game\nshop! I'm Solomon Muto, Yugi's\ngrandpa.", "So you want to be a duelist? Then\nyou'll need a deck of your own!",
         "Here, take these: 10 Pack Tokens.\nTrade them in for any booster packs\nyou like, one pack a token.", player.name + " got 10 Pack Tokens!",
-        "Open your packs from your Trunk's\nInventory, then build a deck of 40\ncards or more. Good luck!"]);
+        "Open your packs from your Trunk's\nInventory, then build a deck of 40\ncards or more. Good luck!",
+        "Duel, and your Duelist Level will\nrise. The higher it is, the more\npacks I'll have for you!"]);
       y.gotPackTokens = true; y.packTokens = (y.packTokens || 0) + 10;
       await persist();
     } else await CardShop.say(["Grandpa: Welcome back to the Kame\nGame shop!"]);
@@ -9870,7 +9900,7 @@
       if (i < 0) break;
       if (i === 3) {
         // (Pack Tokens for packs: a token a pack, into your bag, to open from your Trunk's Inventory)
-        await CardShop.picker({ sets: window.YUGIOH_SETS, order: PACK_SETS, money: () => y.packTokens || 0, price: 1, perPack: PACK_CARDS, comp: setCompletion,
+        await CardShop.picker({ sets: window.YUGIOH_SETS, order: packsSold(y), money: () => y.packTokens || 0, price: 1, perPack: PACK_CARDS, comp: setCompletion,
           buy: (key, n) => {
             if ((y.packTokens || 0) < n) return { error: "Grandpa: You haven't that many\nPack Tokens." };
             y.packTokens -= n;
@@ -9880,7 +9910,7 @@
         CardShop.setup({ money: () => player.money, sets: window.YUGIOH_SETS });
         await persist();
       } else if (i === 0) {
-        await CardShop.picker({ sets: window.YUGIOH_SETS, order: PACK_SETS, money: () => player.money, price, perPack: PACK_CARDS, comp: setCompletion,
+        await CardShop.picker({ sets: window.YUGIOH_SETS, order: packsSold(y), money: () => player.money, price, perPack: PACK_CARDS, comp: setCompletion,
           buy: (key, n) => {
             if (player.money < n * price) return { error: "Grandpa: You can't quite afford that." };
             Player.addMoney(player, -n * price);
@@ -9909,7 +9939,9 @@
         CardShop.close();
         await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, deck: y.deck, mode: "trade", title: "Trade", tokens: () => y.tokens,
           action: (no) => {
-            const r = rarityOf(no);
+            const r = rarityOf(no), pk = packOf(no);
+            if (pk && !packsSold(y).includes(pk))
+              return { error: "Its pack opens at Duelist Level\n" + PACK_LEVEL[pk] + ": trade for it then!" };
             if ((y.tokens[r] || 0) < TOKENS_PER_CARD) return { error: "You need " + TOKENS_PER_CARD + " " + RARITY_NAME[r] + " Tokens\nfor this card." };
             return { ask: "Trade " + TOKENS_PER_CARD + " " + RARITY_NAME[r] + " Tokens\nfor " + C[no][0] + "?",
               run: () => { y.tokens[r] -= TOKENS_PER_CARD; y.trunk[no] = (y.trunk[no] || 0) + 1; return null; } };
@@ -9943,6 +9975,9 @@
     y.deckSlot = Math.max(0, Math.min(DECK_SLOTS - 1, y.deckSlot | 0));
     // (y.deck: the one you duel with; not saved, the slots are)
     Object.defineProperty(y, "deck", { get: () => y.decks[y.deckSlot], configurable: true, enumerable: false });
+    // (packs from before the packs were rewritten, in this realm's bag: a Pack Token each)
+    const ygoBag = player.flags.bagRealm === "yugioh" ? player.bag : (player.flags.realmBags || {}).yugioh;
+    if (ygoBag) for (const it of OLD_PACK_ITEMS) if (ygoBag[it]) { y.packTokens = (y.packTokens || 0) + ygoBag[it]; delete ygoBag[it]; }
     // (the six cards GX made up, not in the game: gone from your Trunk and decks if you had any)
     const gone = (no) => window.YUGIOH_RARITY[no] === "-";
     for (const no of Object.keys(y.trunk)) if (gone(+no)) delete y.trunk[no];
@@ -9956,7 +9991,8 @@
     // (its INVENTORY: your booster packs, in this realm's bag, to open there; your Pack Tokens and your cards' tokens)
     const S = window.YUGIOH_SETS;
     await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, decks: y.decks, slot: y.deckSlot, selectDeck: (i) => { y.deckSlot = i; },
-      inventory: () => PACK_SETS.map((k) => ({ label: S[k].name, count: Player.itemCount(player, S[k].item), pack: k }))
+      inventory: () => [(() => { const L = duelistLevel(y); return { label: "Duelist Level " + L.lv, count: L.into + "/" + L.next + " EXP" }; })()]
+        .concat(PACK_SETS.map((k) => ({ label: S[k].name, count: Player.itemCount(player, S[k].item), pack: k })))
         .concat([{ label: "Pack Tokens", count: y.packTokens || 0 }])
         .concat(["c", "r", "s", "u", "x"].map((r) => ({ label: RARITY_NAME[r] + " Tokens", count: (y.tokens || {})[r] || 0, token: r }))),
       // (50 of a rarity's tokens for one of the next's: Common to Rare, Rare to Super Rare, and so on to Secret Rare)
@@ -9999,10 +10035,10 @@
       for (const no of main) { if (deck.filter((no2) => C[no2][2] !== "fusion").length >= 40) break; deck.push(no); }
     return deck;
   }
-  // Domino High's three other pupils: each duels with a deck of the few boosters they've opened, Legend of Blue Eyes
-  // White Dragon's and Metal Raiders' (window.YUGIOH_SETS): six packs, three of each, nine cards a pack, their Commons
-  // and Rares only (they've traded the rest away), 40 of them as they came (three of a card at most, about two dozen
-  // monsters, Commons that need no Tribute), filled with more Commons from the same sets. Weaker than Yugi's and
+  // Domino High's three other pupils: each duels with a deck of the few boosters they've opened, the beginner's
+  // packs (window.YUGIOH_SETS): four Red-Eyes Black Dragon packs, a Dark Hole and a Spellbinding Circle, nine cards a
+  // pack, their Commons and Rares only (they've traded the rest away), 40 of them as they came (three of a card at
+  // most, about two dozen monsters, Commons that need no Tribute), filled with more Commons from the same sets. Weaker than Yugi's and
   // his friends' decks, as a beginner's is. Each pupil's packs are their own (seeded by who they are), so their deck
   // is the same every time.
   function boosterDeck(seedText) {
@@ -10011,9 +10047,9 @@
     const rng = () => { h = (h + 0x6D2B79F5) >>> 0; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
     const DM = window.DuelMonsters, C = window.YUGIOH_CARDS.cards, S = window.YUGIOH_SETS;
     const pulled = [];
-    for (let k = 0; k < 6; k++) pulled.push(...pullPack(S[k % 2 ? "mrd" : "lob"], rng));
+    for (const key of ["redeyes", "redeyes", "redeyes", "redeyes", "darkhole", "spellbinding"]) pulled.push(...pullPack(S[key], rng));
     // (more Commons, to fill the deck with if the packs come up short)
-    for (let k = 0; k < 30; k++) { const s = S[k % 2 ? "mrd" : "lob"]; pulled.push(s.common[Math.floor(rng() * s.common.length)]); }
+    for (let k = 0; k < 30; k++) { const s = S[k % 6 < 4 ? "redeyes" : k % 6 === 4 ? "darkhole" : "spellbinding"]; pulled.push(s.common[Math.floor(rng() * s.common.length)]); }
     const R = window.YUGIOH_RARITY;
     const nos = pulled.map((n) => DM.numberOf(n)).filter((no) => no && C[no] && DM.playable(no) && "cr".includes(R[no]) && C[no][2] !== "fusion");
     const count = {}, deck = [];
@@ -10064,6 +10100,15 @@
       show("world");
       await say(player.name + " got " + merged.map((c) => C[c.no][0] + (c.count > 1 ? " x" + c.count : "")).join(", ") + "!");
     } else await say(foe.win);
+    // (EXP, and the packs a new duelist level opens)
+    const was = duelistLevel(y).lv, exp = r.winner === 0 ? (foe.nos ? 60 : 100) : 25;
+    y.exp = (y.exp || 0) + exp;
+    const L = duelistLevel(y);
+    await say(player.name + " got " + exp + " EXP!");
+    if (L.lv > was) {
+      const opened = PACK_SETS.filter((k) => PACK_LEVEL[k] > was && PACK_LEVEL[k] <= L.lv);
+      await say(["Your Duelist Level went up to " + L.lv + "!"].concat(opened.length ? ["New packs at the Kame Game shop:\n" + opened.map((k) => window.YUGIOH_SETS[k].name).join(",\n") + "!"] : []));
+    }
     await persist();
   }
   async function visitRealmHub() {
