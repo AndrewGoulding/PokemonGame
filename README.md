@@ -3360,8 +3360,11 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   hand that can be chained to, which the computer uses on a battle that would cost it 1000 or more), which the Traps
   that answer anything don't; "**becomes**" ATK and DEF applied in order, as the TCG's timestamps have it (Megamorph's
   double or half of the original ATK replaces the boosts before it, and those after add to it); effects whose parts
-  are **together** (Ring of Destruction's damage to both players: both at 0, a draw); and Five-Headed Dragon's five
-  Dragons the player's choice.
+  are **together** (Ring of Destruction's damage to both players: both at 0, a draw); Five-Headed Dragon's five
+  Dragons the player's choice; and a card that must target **can't be activated with nothing it could target**:
+  its target step tried first on a stand-in for the duel, which counts what it could pick, every rule against
+  targeting applied (Obelisk the Tormentor's, Lord of D.'s for Dragons, the Spells some monsters can't be targeted
+  by), so Change of Heart isn't offered against a lone Obelisk and isn't spent for nothing.
 - **The computer duelist** (`DuelMonsters.ai()`): EDS's, its Main Phase in EDS's order: the Spells that draw or clear
   the field first, then the strongest summon it can make (tributing its weakest monsters; in Attack Position when it
   beats your best, set otherwise, and flip monsters always set), its monsters' effects, the Spells that take or bring

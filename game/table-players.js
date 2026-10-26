@@ -179,6 +179,32 @@
     else if (e.specialOnly || /Must (?:first )?be Special Summoned|can only be Special Summoned/.test(t)) r = { strict };
     return (RULES[no] = r);
   }
+  // Whether an effect's target step would find a target: a dry run of it on a stand-in for the duel that, at its
+  // first pick of zones, counts what could be picked (the card's own filter, and every rule against targeting:
+  // Obelisk's, Lord of D.'s...) and stops there, the duel untouched. False if there's none; null when it can't tell
+  // (it asks something else first, or waits before it picks, or may pick none), as before: activatable.
+  const PROBE = {};
+  function targetsSomething(d, p, c, a, ctx) {
+    let found = null;
+    const probe = Object.create(d);
+    probe.pickZones = function (q, prompt, filter, opts) {
+      opts = opts || {};
+      let n = 0;
+      for (const r of opts.sides || [0, 1]) for (let i = 0; i < 11; i++) {
+        const z = d.players[r].zones[i];
+        if (z && (!opts.area || (opts.area === "monster" ? i < 5 : opts.area === "spell" ? i >= 5 : true)) && filter(z, r, i)) n++;
+      }
+      found = n > 0 || opts.min === 0 ? null : false;
+      throw PROBE;
+    };
+    probe.ask = function () { throw PROBE; };
+    const link = { p, card: c, zone: ctx.zone || null, prev: ctx.last || null, event: ctx.event || null, targets: [], data: {}, probe: true };
+    try {
+      const r = a.target(probe, link);
+      if (r && typeof r.catch === "function") r.catch(() => {});
+    } catch (e) { if (e !== PROBE) return null; }
+    return found;
+  }
   // (the effect resolving is the card its text names: "Elegant Egotist" for Harpie Lady Sisters, "Zoa" for Metalzoa)
   function namedBy(d, c) {
     // (or a hook that says whose effect it is, d.xBy: Dark Flare Knight's for Mirage Knight)
@@ -686,7 +712,9 @@
           : !!ev && !last && ev.type === w);
         if (!ok) return false;
       } else if (ctx.event || ctx.last) return false;
-      try { return !a.can || !!a.can(this, Object.assign({ p, card: c }, ctx)); } catch (e) { return false; }
+      try { if (a.can && !a.can(this, Object.assign({ p, card: c }, ctx))) return false; } catch (e) { return false; }
+      // (one that must target: not if there's nothing it could, Obelisk or Lord of D.'s Dragons the only monsters)
+      return !a.target || targetsSomething(this, p, c, a, ctx) !== false;
     },
     isMain() { return this.phase === "main1" || this.phase === "main2"; },
     // What the other side's cards forbid p to activate: Quick-Play Spells (Invader of Darkness), Spells while its
