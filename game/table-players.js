@@ -308,7 +308,7 @@
         if (!this.live(src)) continue;
         apply(e.aura(this, src, p, z, self ? self.p : 0, s));
       }
-      for (const l of z.links) if (l.stats) apply(typeof l.stats === "function" ? l.stats(this, z) : l.stats);
+      for (const l of z.links) if (l.stats && !(l.kind === "equip" && l.from && CardInfo.isSpell(l.from.card.no) && !this.live(l.from))) apply(typeof l.stats === "function" ? l.stats(this, z) : l.stats);
       for (const t of this.temp) if (t.zone === z && t.stats) apply(t.stats);
       s.atk = Math.max(0, Math.round(s.atk * mult.atk)); s.def = Math.max(0, Math.round(s.def * mult.def));
       if (this.flags.swapAtkDef) [s.atk, s.def] = [s.def, s.atk];
@@ -610,6 +610,14 @@
     // Run an effect (a link of a chain, or a trigger on its own).
     async runEffect(link) {
       if (link.negated) return;
+      // (a Spell's or Trap's effect while those on the field are negated: activated, and nothing happens; an Equip Spell
+      // is still equipped, its own effects negated with it)
+      const lc = link.card && !link.card.token ? link.card.no : 0;
+      if (lc && link.kind !== "flip" && !(CardInfo.isSpell(lc) && CardInfo.icon(lc) === ICON.EQUIP)
+        && ((CardInfo.isSpell(lc) && this.negated("spell", link.zone)) || (CardInfo.isTrap(lc) && this.negated("trap", link.zone)))) {
+        await this.emit({ type: "negated", card: link.card, link });
+        return;
+      }
       const prev = this.effectLink; this.effectLink = link;   // (the effect resolving: summonRule's namedBy)
       try { await link.resolve(this, link); } catch (e) { if (e !== STOP) throw e; } finally { this.effectLink = prev; }
     },
@@ -663,7 +671,7 @@
         const a = e.activate;
         const speed = this.speedOf(no, a);
         if (speed < minSpeed) continue;
-        if (CardInfo.isTrap(no) && ((z.placedTurn === this.turn && !this.liveWith("trapsSameTurn", p)) || this.negated("trap"))) continue;
+        if (CardInfo.isTrap(no) && ((z.placedTurn === this.turn && !this.liveWith("trapsSameTurn", p)) || this.stopped("trap", p))) continue;
         if (CardInfo.isSpell(no) && (CardInfo.icon(no) !== ICON.QUICK || z.faceUp || z.placedTurn === this.turn)) continue;
         if (z.faceUp && !a.repeatable) continue;
         if (!this.canActivate(p, z.card, a, { zone: z, event: ev, chain, last })) continue;
@@ -681,7 +689,7 @@
       for (const c of this.players[p].hand) {
         const e = effectOf(c.no);
         if (!e || !e.handQuick || !this.canActivate(p, c, e.handQuick, { event: ev, chain, last, fromHand: true })) continue;
-        out.push({ label: this.name(c), card: c, from: "hand-quick", eff: e.handQuick });
+        out.push({ label: this.name(c), card: c, from: e.handQuick.keep ? "hand-effect" : "hand-quick", eff: e.handQuick });
       }
       // (monsters' quick effects)
       for (const z of this.monsters(p)) {
@@ -701,7 +709,9 @@
     // Can this card's effect be activated now (its prepare handler, and the rules round it)?
     canActivate(p, c, a, ctx) {
       if (this.players[p].flags.noActivate) return false;
-      if (CardInfo.isSpell(c.no) && this.negated("spell")) return false;
+      // (Spells or Traps that can't be activated at all: Spell Canceller, Jinzo, the Talismans; those whose effects are
+      // only negated, Imperial Order's, Royal Decree's, Silent Swordsman LV7's, are activated, and do nothing)
+      if ((CardInfo.isSpell(c.no) && this.stopped("spell", p)) || (CardInfo.isTrap(c.no) && this.stopped("trap", p))) return false;
       if (this.locked(p, c, ctx)) return false;
       if (a.when) {
         const ev = ctx.event;
@@ -743,6 +753,14 @@
         if (!z.faceUp || z.negated || z === except) continue;
         const e = effectOf(z.card.no);
         if (e && (kind === "trap" ? e.negatesTraps : e.negatesSpells)) return true;
+      }
+      return false;
+    },
+    // (Spells or Traps that can't be activated: a face-up card that says so, stopsSpells / stopsTraps)
+    stopped(kind, p) {
+      for (const q of [0, 1]) for (const z of this.allZones(q)) {
+        const e = this.live(z);
+        if (e && (kind === "trap" ? e.stopsTraps : e.stopsSpells)) return true;
       }
       return false;
     },
@@ -854,6 +872,7 @@
       case "summoned": case "flip-summoned": case "special-summoned": return who(ev.p) + " summoned " + n + ".";
       case "attack": return d.name(ev.attacker.card) + " attacks" + (ev.target ? " " + (ev.target.faceUp ? d.name(ev.target.card) : "a face-down monster") : " directly") + ".";
       case "set": return who(ev.p) + " set a card.";
+      case "added-from-deck": return who(ev.p) + " added " + n + " from the Deck to the hand.";
       case "before-damage": return "Damage calculation: " + d.name(ev.attacker.card) + " attacks" + (ev.target ? " " + (ev.target.faceUp ? d.name(ev.target.card) : "a face-down monster") : " directly") + ".";
       case "phase": return who(d.turnPlayer) + "'s " + ev.phase + ".";
       default: return "Respond to " + ev.type.replace(/-/g, " ") + "?";
@@ -1003,7 +1022,7 @@
         const no = z.card.no, e = effectOf(no);
         if (!z.faceUp && CardInfo.isSpell(no) && e && e.activate && this.canActivate(p, z.card, e.activate, { zone: z }))
           acts.push({ act: "activate", card: z.card, zone: z, from: "field", label: "Activate " + CardInfo.name(no) });
-        if (!z.faceUp && CardInfo.isTrap(no) && z.placedTurn !== this.turn && !this.negated("trap") && e && e.activate && this.canActivate(p, z.card, e.activate, { zone: z }))
+        if (!z.faceUp && CardInfo.isTrap(no) && z.placedTurn !== this.turn && !this.stopped("trap", p) && e && e.activate && this.canActivate(p, z.card, e.activate, { zone: z }))
           acts.push({ act: "activate", card: z.card, zone: z, from: "field", label: "Activate " + CardInfo.name(no) });
         if (z.faceUp && e && e.ignition && !z.negated && this.canActivate(p, z.card, e.ignition, { zone: z }))
           acts.push({ act: "ignition", zone: z, label: "Use " + CardInfo.name(no) });
@@ -1221,6 +1240,16 @@
         const de = dealer.negated ? null : effectOf(dealer.card.no);
         if (dealt > 0 && de && de.onBattleDamage) await de.onBattleDamage(this, dealer, res.damageTo === q ? p : q, res.damageTo === q ? target : att, dealt);
         if (dealt > 0) await this.event({ type: "battle-damage", p: res.damageTo, attacker: att, dealer, amount: dealt });
+      }
+      if (this.over) return;
+      // (after damage calculation: a monster's trigger on beating the other, its own chain link that can be answered,
+      // afterDamageCalc: Dark Magician of Chaos banishing it)
+      for (const [z, r, o, k] of [[att, p, target, "targetDies"], [target, q, att, "attackerDies"]]) {
+        const ze = z.negated ? null : effectOf(z.card.no), tr = ze && ze.afterDamageCalc;
+        if (!tr || !res[k] || this.over || !this.locate(z) || !this.locate(o) || (tr.can && !tr.can(this, z, r, o))) continue;
+        const ev = { type: "after-damage-calc", damageStep: true, p: r, zone: z, other: o };
+        const link = await this.activate(r, { label: this.name(z.card), card: z.card, zone: z, from: "monster", eff: { resolve: (d, l) => tr.resolve(d, l, o) } }, null, ev);
+        if (link) await this.buildChain([link], ev);
       }
       if (this.over) return;
       // (Kishido Spirit: equal ATK doesn't destroy)
@@ -2284,7 +2313,7 @@
   define("Spirit of Flames", self((d, z) => (d.phase === "battle" && d.turnPlayer === d.controllerOf(z) ? { atk: 300 } : null)));
   define("The Rock Spirit", self((d, z) => (d.phase === "battle" && d.turnPlayer !== d.controllerOf(z) ? { atk: 300 } : null)));
   define("Fairy King Truesdale", { aura: (d, src, sp, z, zp) => (zp === sp && isMon(d, z) && z.faceUp && C.type(z.card.no) === typeNo("Plant") ? { atk: 500, def: 500 } : null) });
-  define("Jinzo", { negatesTraps: true });
+  define("Jinzo", { negatesTraps: true, stopsTraps: true });
   define("Banisher of the Light", { graveToBanish: true });
   define("Gora Turtle", { noAttack: (d, z, p, ap, att) => d.atkOf(att) >= 1900 });
 
@@ -3148,7 +3177,7 @@
     const cs = up(d, sp).filter((x) => isName(x.card, "Batteryman C")), n = cs.length * 500; return cs.every((x) => !x.defense) ? { atk: n } : cs.every((x) => x.defense) ? { def: n } : null; }, auraSelf: true });
 
   // ----- On the field -----
-  define("Spell Canceller", { negatesSpells: true });
+  define("Spell Canceller", { negatesSpells: true, stopsSpells: true });
   define("Des Wombat", { noEffectDamage: true });
   define("Protector of the Sanctuary", { noOtherDraws: true });
   define("Invader of Darkness", { noQuickPlay: true });
@@ -4896,7 +4925,7 @@
       if (!e || !e.aura || (src === z && !e.auraSelf) || !this.live(src)) continue;
       apply(e.aura(this, src, p, z, self ? self.p : 0, s));
     }
-    for (const l of z.links) if (l.stats && !(eqOff && l.kind === "equip")) apply(typeof l.stats === "function" ? l.stats(this, z) : l.stats);
+    for (const l of z.links) if (l.stats && !(eqOff && l.kind === "equip") && !(l.kind === "equip" && l.from && C.isSpell(l.from.card.no) && !this.live(l.from))) apply(typeof l.stats === "function" ? l.stats(this, z) : l.stats);
     for (const t of this.temp) if (t.zone === z && t.stats) apply(t.stats);
     s.atk = Math.max(0, Math.round(s.atk * mult.atk)); s.def = Math.max(0, Math.round(s.def * mult.def));
     if (this.flags.swapAtkDef) [s.atk, s.def] = [s.def, s.atk];
@@ -6717,7 +6746,7 @@
   DM.create = function (opts) {
     const d = create0.apply(this, arguments);
     const o = {};
-    for (const k of ["negated", "responses", "mainActions", "doAction", "canActivate", "activate", "payLp", "sendToGrave", "destroy", "summoned", "pickCards", "emit"]) o[k] = d[k];
+    for (const k of ["negated", "stopped", "responses", "mainActions", "doAction", "canActivate", "activate", "payLp", "sendToGrave", "destroy", "summoned", "pickCards", "emit"]) o[k] = d[k];
     d.e51End = [];
     Object.assign(d, {
       // (Amplifier: Jinzo doesn't negate its controller's Traps; whose Trap it is: its zone's, or the player asking)
@@ -6728,6 +6757,14 @@
           if (!z.faceUp || z.negated || z === except) continue;
           const e = effectOf(z.card.no);
           if (e && e.negatesTraps && !(p != null && q === p && amplified(this, z))) return true;
+        }
+        return false;
+      },
+      stopped(kind, p) {
+        if (kind !== "trap") return o.stopped.call(this, kind, p);
+        for (const q of [0, 1]) for (const z of this.allZones(q)) {
+          const e = this.live(z);
+          if (e && e.stopsTraps && !(p != null && q === p && amplified(this, z))) return true;
         }
         return false;
       },
@@ -6930,7 +6967,7 @@
     resolve: async (d, link) => { const t = t0(d, link); if (t && t.faceUp) d.addTemp(t, { setDef: 0 }, link.card); } } });
   // (Talismans: while Sealmaster Meisei is face up on your side; gone with it)
   const meisei = (d, p) => up(d, p).some((z) => isName(z.card, "Sealmaster Meisei"));
-  const talisman = (prop) => ({ [prop]: true, activate: { stays: true, can: (d, ctx) => meisei(d, ctx.p), resolve: async () => {} },
+  const talisman = (prop) => ({ [prop]: true, [prop === "negatesSpells" ? "stopsSpells" : "stopsTraps"]: true, activate: { stays: true, can: (d, ctx) => meisei(d, ctx.p), resolve: async () => {} },
     onEvent: async (d, z, p) => { if (d.locate(z) && z.faceUp && !meisei(d, p)) await d.destroy(z, "effect"); } });
   define("Talisman of Spell Sealing", talisman("negatesSpells"));
   define("Talisman of Trap Sealing", talisman("negatesTraps"));
@@ -7562,13 +7599,23 @@
     if (hit.length) { for (const c of hit) await d.discard(q, c, "effect"); }
     else await H.discardRandom(d, link.p);
   } } });
-  define("Muko", { activate: { when: "drew-outside",
-    can: (d, ctx) => !!ctx.event && (ctx.event.cards || []).some((c) => d.players[ctx.event.p].hand.includes(c)),
-    resolve: async (d, link) => {
-      const q = link.event.p, cs = (link.event.cards || []).filter((c) => d.players[q].hand.includes(c));
-      await show(d, link.p, "The cards drawn:", cs);
-      for (const c of cs) await d.discard(q, c, "effect");
-    } } });
+  // (Muko: chained to an effect that draws; that effect's draws, when it resolves, shown and discarded)
+  define("Muko", { activate: { when: "chain",
+    can: (d, ctx) => !!ctx.last && !!ctx.last.card && !ctx.last.card.token && /\bdraws?\b/i.test(DM.text(ctx.last.card.no)) && !/cannot draw/i.test(DM.text(ctx.last.card.no)),
+    resolve: async (d, link) => { if (link.prev) link.prev.data.muko = true; } } });
+  const createMuko = DM.create;
+  DM.create = function () {
+    const d = createMuko.apply(this, arguments), dc0 = d.drawCards;
+    d.drawCards = async function (p, n, drawPhase) {
+      const l = this.effectLink;
+      if (!l || !l.data || !l.data.muko) return dc0.call(this, p, n, drawPhase);
+      const before = this.players[p].hand.slice(), got = await dc0.call(this, p, n, drawPhase);
+      const cs = this.players[p].hand.filter((c) => !before.includes(c));
+      if (cs.length) { await show(this, 1 - p, "Muko: the cards drawn by the effect", cs); for (const c of cs) if (this.players[p].hand.includes(c)) await this.discard(p, c, "effect"); }
+      return got;
+    };
+    return d;
+  };
   define("Taunt", { activate: {
     can: (d, ctx) => d.phase === "main1" && d.turnPlayer !== ctx.p && d.monsters(ctx.p).length > 0,
     target: (d, link) => pickMon(d, link, "Which monster must they attack?", null, [link.p]),
@@ -7724,7 +7771,7 @@
       if (ev.type === "draw" && ev.card) await drawn(this, ev.p, ev.card);
       else if (ev.type === "to-hand" && ev.card && !ev.card.token && (effectOf(ev.card.no) || {}).x5Watapon && ev.from && ev.from.pile === "deck" && ev.why !== "draw") {
         const p = ev.card.owner;
-        if (this.players[p].hand.includes(ev.card) && H.canSummonHere(this, p) && (await this.yesNo(p, "Special Summon " + this.name(ev.card) + "?"))) await ss(this, p, ev.card);
+        if (this.players[p].hand.includes(ev.card)) await this.event({ type: "added-from-deck", p, card: ev.card });
       } else if (ev.type === "phase" && ev.phase === "end") {
         const x = X(this), due = x.tasks.filter((t) => t.turn === this.turn);
         x.tasks = x.tasks.filter((t) => !due.includes(t));
@@ -7815,12 +7862,15 @@
     specialCost: async (d, p) => { const z = await d.pickZone(p, "Tribute which monster?", (x, q) => q === p && x.faceUp && isName(x.card, names) && !x.data.cannotTribute, { sides: [p], area: "monster", cancel: true }); if (!z) return false; await d.sendToGrave(z.card, "tribute"); return true; } });
   define("Blue-Eyes Shining Dragon", Object.assign(tributeOf(["Blue-Eyes Ultimate Dragon"]), {
     selfStats: (d, z) => ({ atk: 300 * d.players[ctl(d, z) < 0 ? z.card.owner : ctl(d, z)].grave.filter((c) => C.isMonster(c.no) && isT(c.no, "Dragon")).length }),
-    onTargeted: async (d, z, p, l) => { if (l.p !== p && (await d.yesNo(p, "Negate " + d.name(l.card) + "'s effect (Blue-Eyes Shining Dragon)?"))) return negateLink(d, l, false); } }));
+    onTargeted: async (d, z, p, l) => {
+      if (l.p === p && d.opts.controllers[p] && d.opts.controllers[p].ai) return;
+      if (await d.yesNo(p, "Negate " + d.name(l.card) + "'s effect (Blue-Eyes Shining Dragon)?")) return negateLink(d, l, false);
+    } }));
   const caster6 = (d, x, p) => x.faceUp && H.isType(d, x, "Spellcaster") && H.lvl(d, x) >= 6 && !x.data.cannotTribute;
   define("Sorcerer of Dark Magic", { specialOnly: true,
     specialFromHand: (d, p) => d.monsters(p).filter((x) => caster6(d, x, p)).length >= 2,
     specialCost: async (d, p) => { const zs = await d.pickZones(p, "Tribute 2 Level 6 or higher Spellcasters.", (x, q) => q === p && caster6(d, x, p), { sides: [p], area: "monster", count: 2, cancel: true }); if (!zs || zs.length < 2) return false; for (const z of zs) await d.sendToGrave(z.card, "tribute"); return true; },
-    quick: { when: "chain", can: (d, ctx) => !!ctx.last && ctx.last.p !== ctx.p && !ctx.last.fromMonster && !!ctx.last.card && !ctx.last.card.token && C.isTrap(ctx.last.card.no) && !ctx.last.negated,
+    quick: { when: "chain", can: (d, ctx) => !!ctx.last && !ctx.last.fromMonster && !!ctx.last.card && !ctx.last.card.token && C.isTrap(ctx.last.card.no) && !ctx.last.negated,
       resolve: async (d, link) => { if (link.prev && link.zone && d.locate(link.zone) && link.zone.faceUp) await negateLink(d, link.prev, true); } } });
   define("Vampire Genesis", { specialOnly: true,
     specialFromHand: (d, p) => up(d, p).some((z) => isName(z.card, "Vampire Lord")),
@@ -7984,7 +8034,10 @@
     const q = ev.card.owner;
     if (d.players[q].hand.length) await H.discardOne(d, q, "Send a card from your hand to the Graveyard (Criosphinx).");
   } });
-  define("Watapon", { x5Watapon: true });
+  // (Watapon: its Special Summon, its own effect from the hand once the effect that added it is done)
+  define("Watapon", { x5Watapon: true, handQuick: { keep: true, when: "added-from-deck",
+    can: (d, ctx) => ctx.event.card === ctx.card && d.players[ctx.p].hand.includes(ctx.card) && H.canSummonHere(d, ctx.p),
+    resolve: async (d, link) => { if (d.players[link.p].hand.includes(link.card)) await ss(d, link.p, link.card); } } });
   define("Van'Dalgyon the Dark Dragon Lord", { x5Vandal: true });
 
   // ----- Spells -----
@@ -8158,13 +8211,11 @@
       const l = this.locate(z);
       if (!l) return ds0.call(this, z, why, by);
       if (l.i < 5) z.card.xUpAttr = z.faceUp ? this.stats(z).attribute : null;
-      const f = z.data && z.data.xBanishBy;
-      if (why === "battle" && f && f.turn === this.turn && f.by === by) { z.data.xBanishBy = null; z.card.xBanishNow = true; }
-      try { return await ds0.call(this, z, why, by); } finally { z.card.xBanishNow = false; }
+      return ds0.call(this, z, why, by);
     };
     d.sendToGrave = async function (c, why) {
-      const l = c && !c.token && (c.xBanishNow ? this.zoneOf(c) : leavesBanished(this, c));
-      if (l) { c.xBanishNow = false; await this.banish(c, why); return { p: l.p, zone: l.i, z: l.z }; }
+      const l = c && !c.token && leavesBanished(this, c);
+      if (l) { await this.banish(c, why); return { p: l.p, zone: l.i, z: l.z }; }
       return sg0.call(this, c, why);
     };
     d.toHand = async function (c, why) { if (leavesBanished(this, c)) return this.banish(c, why); return th0.call(this, c, why); };
@@ -8187,10 +8238,9 @@
       const c = await d.pickCard(p, "Add which Spell to your hand?", d.players[p].grave, sp);
       if (c && inGrave(d, c)) await d.toHand(c, "effect");
     },
-    battleResult: (d, s, r, att, target, res) => {
-      if (s === att && target && res.targetDies) target.data.xBanishBy = { turn: d.turn, by: s };
-      else if (s === target && res.attackerDies) att.data.xBanishBy = { turn: d.turn, by: s };
-    } });
+    // (an opponent's monster it destroys by battle: after damage calculation, banished, an effect of its own that can be
+    // answered; banished from the field, never destroyed)
+    afterDamageCalc: { can: (d, z, p, o) => d.controllerOf(o) === 1 - p, resolve: async (d, link, o) => { if (d.locate(o)) await d.banish(o.card, "effect"); } } });
 
   // Gear Golem the Moving Fortress: once per turn, in Main Phase 1, 800 Life Points for a direct attack this turn.
   define("Gear Golem the Moving Fortress", { ignition: {
@@ -8734,7 +8784,7 @@
     function mainScore(d, p, a) {
       const q = 1 - p;
       switch (a.act) {
-        case "activate": return spellScore(d, p, a.card);
+        case "activate": return (C.isSpell(a.card.no) && d.negated("spell")) || (C.isTrap(a.card.no) && d.negated("trap")) ? -1 : spellScore(d, p, a.card);
         case "summon": case "set-monster": return summonScore(d, p, a);
         case "special-hand": return 2800;
         case "ignition": case "hand-effect": return kind((a.card || a.zone.card).no).lpCost && d.players[p].lp < 2000 ? -1 : 1500;
@@ -8861,7 +8911,12 @@
         const o = req.options[i];
         if (o.pass) continue;
         const no = o.card.no, k = kind(no);
+        if ((C.isSpell(no) && d.negated("spell")) || (C.isTrap(no) && d.negated("trap"))) continue;
+        // (Muko: the other side's effect that draws)
+        if (link && link.p === q && /cards drawn by the effect/i.test(text(no))) { if (link.card && /\bdraw/i.test(text(link.card.no))) return i; continue; }
         if (link) { if (link.p === q && (k.counter || /negate/i.test(text(no)))) return i; continue; }
+        // (its own card's effect on being added from the Deck: Watapon's)
+        if (ev && ev.type === "added-from-deck" && ev.card === o.card) return i;
         if (!ev || ev.p === p) continue;
         if (ev.type === "attack") {
           const att = ev.attacker, t = ev.target;

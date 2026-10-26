@@ -3374,7 +3374,15 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   Dragons the player's choice; and a card that must target **can't be activated with nothing it could target**:
   its target step tried first on a stand-in for the duel, which counts what it could pick, every rule against
   targeting applied (Obelisk the Tormentor's, Lord of D.'s for Dragons, the Spells some monsters can't be targeted
-  by), so Change of Heart isn't offered against a lone Obelisk and isn't spent for nothing.
+  by), so Change of Heart isn't offered against a lone Obelisk and isn't spent for nothing. **Negated** is not
+  **can't be activated**: under Imperial Order, Royal Decree or Silent Swordsman LV7 ("negate all Spell/Trap effects
+  on the field") the cards are activated and do nothing (an Equip Spell still equipped, its boost negated), while
+  Spell Canceller, Jinzo and the Talismans keep them from being activated at all (Amplifier sparing Jinzo's own
+  side); the computer doesn't waste a card that would be negated. Monsters' triggers **after damage calculation** are
+  chain links of their own that can be answered (Dark Magician of Chaos banishing what it beats, from the field);
+  Sorcerer of Dark Magic can negate any Trap, its own side's too, and Blue-Eyes Shining Dragon any effect that targets
+  it (the computer leaving its own be); Watapon's Special Summon is its own effect from the hand once the effect that
+  added it is done; and Muko is chained to an effect that draws, whose draws are then shown and discarded.
 - **The computer duelist** (`DuelMonsters.ai()`): EDS's, its Main Phase in EDS's order: the Spells that draw or clear
   the field first, then the strongest summon it can make (tributing its weakest monsters; in Attack Position when it
   beats your best, set otherwise, and flip monsters always set), its monsters' effects, the Spells that take or bring
