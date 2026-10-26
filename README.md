@@ -3355,6 +3355,13 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   monsters back to the hand when flipped too; and the monsters that had no way to be summoned or no effect at all
   (Relinquished, Thousand-Eyes Restrict, Valkyrion, Dark Sage, the XYZ cannons by banishing their materials, Five-
   Headed Dragon from any five Dragons, Dark Paladin, Exodia Necross, the elemental Spirits, Gradius' Option...).
+  The cards to Structure Deck: Fury from the Deep follow theirs too: the 204 new ones (three sections: the LV
+  monsters stepping up from the hand or Deck, each knowing what summoned it, the Ultimate Insects', Silent Swordsmen's,
+  Horus's, Armed Dragon's and Dark Mimic's; the Charmers, the Elemental HEROes' partners, the Wicked Gods, Ancient
+  Gear's, Van'Dalgyon, the Talismans, Amplifier, Hex-Sealed Fusion...), and GX's own of that time back in the game,
+  each checked against its current text as the others were (61 changed, two sections: Dark Magician of Chaos, Card of
+  Sanctity, Ojama King, Gatling Dragon, Flame Wingman, Thunder Giant, Reshef, Elemental Mistress Doriado's four
+  Attributes, Gear Golem the Moving Fortress...).
   The rules they need are the engine's own: **summoning conditions** (a monster that "must first be" summoned its own
   way, and every Fusion and Ritual Monster, comes back from the Graveyard or from being removed from play by another
   effect, Monster Reborn's, only if it was properly summoned before, and again after it's been in the hand or a deck;
