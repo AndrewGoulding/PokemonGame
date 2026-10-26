@@ -9816,11 +9816,11 @@
     await voyage(window.TIME_MACHINE.hub, ["The Time Machine whirs to life…", "Domino City fades away…", "…and you come out in the Realm Hub."], "se_warp_in");
   }
   // The Kame Game shop: Yugi's grandpa, Solomon Muto, on GX Duel Academy's shop screen (ui/bag-screen.js's CardShop).
-  // He sells the twelve sets' booster packs (window.YUGIOH_SETS: GX's five, and seven of the cards beyond GX's), 300 a pack (game/bag.js's price), into your bag,
+  // He sells the sixteen sets' booster packs (window.YUGIOH_SETS: GX's five, and eleven of the cards beyond GX's), 300 a pack (game/bag.js's price), into your bag,
   // opened from the Trunk's Inventory, their cards into your Trunk; he dismantles your spare cards (those not in your deck) for tokens of their
   // rarity (window.YUGIOH_RARITY: Common, Rare, Super Rare, Ultra Rare, Secret Rare), and trades any card for
   // TOKENS_PER_CARD tokens of its rarity. (Packs bought before, still in your bag, he opens for you first.)
-  const PACK_SETS = ["lob", "mrd", "srl", "psv", "lon", "moth", "gate", "necrofear", "gardius", "hades", "gilford", "berserk"], PACK_CARDS = 9, TOKENS_PER_CARD = 3;
+  const PACK_SETS = ["lob", "mrd", "srl", "psv", "lon", "moth", "gate", "necrofear", "gardius", "hades", "gilford", "berserk", "chaos", "horus", "shining", "dreadroot"], PACK_CARDS = 9, TOKENS_PER_CARD = 3;
   const RARITY_NAME = { c: "Common", r: "Rare", s: "Super Rare", u: "Ultra Rare", x: "Secret Rare" };
   const rarityOf = (no) => window.YUGIOH_RARITY[no] || "c";
   // A pack's nine cards: eight Commons and a Rare, or now and then a Super (1 in 6), an Ultra (1 in 12) or a Secret

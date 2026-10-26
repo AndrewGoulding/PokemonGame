@@ -109,6 +109,11 @@ PACKS = {
     'dark-ruler-ha-des-pack': ((96, 20, 24), (224, 160, 64), (255, 236, 180)),
     'gilford-pack': ((40, 60, 112), (240, 220, 80), (255, 255, 220)),
     'berserk-dragon-pack': ((44, 34, 34), (200, 64, 40), (250, 210, 170)),
+    # (and the four to Structure Deck: Fury from the Deep)
+    'dark-magician-of-chaos-pack': ((40, 36, 96), (196, 64, 180), (250, 220, 255)),
+    'horus-pack': ((40, 40, 44), (220, 96, 36), (255, 220, 150)),
+    'blue-eyes-shining-pack': ((200, 210, 230), (90, 150, 230), (255, 255, 255)),
+    'wicked-dreadroot-pack': ((56, 20, 28), (150, 30, 40), (250, 190, 170)),
 }
 out = os.path.join(ROOT, 'assets/sprites/items/booster')
 os.makedirs(out, exist_ok=True)

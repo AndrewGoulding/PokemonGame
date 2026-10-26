@@ -285,4 +285,8 @@ window.ITEM_DESCRIPTIONS = {
   "dark-ruler-ha-des-pack": "A booster pack of\nDark Ruler Ha Des\nDuel Monsters cards.",
   "gilford-pack": "A booster pack of\nGilford\nDuel Monsters cards.",
   "berserk-dragon-pack": "A booster pack of\nBerserk Dragon\nDuel Monsters cards.",
+  "dark-magician-of-chaos-pack": "A booster pack of\nDark Magician of Chaos\nDuel Monsters cards.",
+  "horus-pack": "A booster pack of\nHorus LV8\nDuel Monsters cards.",
+  "blue-eyes-shining-pack": "A booster pack of\nBlue-Eyes Shining\nDuel Monsters cards.",
+  "wicked-dreadroot-pack": "A booster pack of\nWicked Dreadroot\nDuel Monsters cards.",
 };

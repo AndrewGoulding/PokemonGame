@@ -3239,7 +3239,10 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   Legacy of Darkness** (754 of them, and the 470 of GX's own of that time that its five sets don't have: about 175 to a pack), each named for and showing its boss monster:
   **Ultimate Great Moth**, **Gate Guardian**, **Dark Necrofear**, **Des Gardius**, **Dark Ruler Ha Des**,
   **Gilford** and **Berserk Dragon** (rarities by each card's stats and effect: the boss and one more Secret Rare,
-  10 Ultra, 12 Super and 24 Rare a pack, the rest Common), ₽300 a pack: the packs down the left as GX shows them (each a card from its set in a pack's
+  10 Ultra, 12 Super and 24 Rare a pack, the rest Common); and four more with **every card of the OCG and the TCG to
+  Structure Deck: Fury from the Deep** (2005-05-06), the original Duel Monsters series' cards, about 117 to a pack:
+  **Dark Magician of Chaos**, **Horus LV8**, **Blue-Eyes Shining** and **Wicked Dreadroot** (GX's own cards of that time
+  back in them with their rarities, the new ones' by stats and effect); ₽300 a pack: the packs down the left as GX shows them (each a card from its set in a pack's
   frame, drawn by the screen, as GX makes its own as it runs), up and down to pick one, left and right for how many,
   R to fill the basket and L to empty it, START for what's in the set, SELECT for the help bar; your money by the
   star at the top right, where GX shows its Duel Points. A pack has nine cards, eight Commons and a Rare, now and
@@ -3271,7 +3274,7 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   their own DIVINE attribute and Divine-Beast type, their icons GX's LIGHT and Dragon in gold); and the Second National
   Tournament's three prize cards, Masahiro the Dark Clown, Yasushi the Skull Knight and Tomohiro the Mountain Warrior
   (Ultra Rares in the Des Gardius pack). Amphibious Bugroth's "Defender of the Sea" is Sentinel of the Seas; Reaper on
-  the Nightmare stays, though Nightmare Horse, from after Legacy of Darkness, isn't in the game to make it.
+  the Nightmare's Nightmare Horse came with the cards to Fury from the Deep.
 
 - **The maps**: all 58 of the game's screens, each its own map of one screen (15x10 tiles) with the camera fixed on
   it, as in the game. Walk off a screen's edge or through a doorway and you're on the next, as the game links them.
@@ -3318,7 +3321,7 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   for Rare, Rare for Super Rare, Super for Ultra, Ultra for Secret), as many times as you like, and **DECKS**: your **20 deck slots**, as GX Duel Academy keeps several (each with its main,
   Fusion and side decks' counts), A on one to build it, and the one you last picked is the one you duel with. R (the S key) puts a card in the deck,
   L (the A key) takes it out, START shows the card itself with its text. A deck holds 60 cards and 20 Fusion Monsters, its
-  side deck 15, and three of any card in all. The cards are GX Duel Academy's 1200 and the 761 beyond them (`window.YUGIOH_CARDS`), yours in
+  side deck 15, and three of any card in all. The cards are GX Duel Academy's 1200 and the 965 beyond them (2096 in all, those out of the game aside) (`window.YUGIOH_CARDS`), yours in
   `player.flags.yugioh` (the debug menu's **Fill the Trunk** gives you three of each, and **Clear the Trunk** takes every
   card away, your decks' too).
 - **Duel Monsters' rules** (`window.DuelMonsters`, in `game/table-players.js`): the duel engine, ported from Yu-Gi-Oh!
@@ -3464,7 +3467,8 @@ python3 tools/build-gx-trunk.py "<path to Yu-Gi-Oh! GX - Duel Academy (USA).gba>
   card's frame and the command and sort menus): each tile straight from the ROM, laid out as the game lays them on
   screen (`tools/lib/gx-trunk-pieces.json` says where each tile and palette is), in `assets/yugioh/trunk/`.
 
-**The cards beyond GX's**, cards 1201-1961: every card released in the TCG or the OCG up to Legacy of Darkness
+**The cards beyond GX's**, cards 1201-2165: every card released in the TCG or the OCG up to Structure Deck: Fury from
+the Deep (2005-05-06; first up to Legacy of Darkness, then the rest)
 (2003-06-06) that GX doesn't have, and the seven booster packs they come in (`tools/lib/extra-cards.json`: the cards
 in card-number order, and each pack's boss monster, cards and rarities). From YGOPRODeck's card database (names, text,
 kinds, types, attributes, levels and stats) and its cards' cropped art (80x80 in 64 colours, as GX's), downloaded

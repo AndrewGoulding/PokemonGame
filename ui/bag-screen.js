@@ -1668,7 +1668,7 @@
   const KIND_COLOUR = { normal: "#e8d040", effect: "#e89830", fusion: "#b048b8", ritual: "#5890e8", spell: "#30c070", trap: "#d83890" };
   // (each set's colours, its pack item's: the pack's panel and its stripes)
   const PACK_COLOUR = { lob: ["#c85028", "#e07848"], mrd: ["#3878d0", "#68a0e8"], srl: ["#b02828", "#d85050"], psv: ["#8040c0", "#a868e0"], lon: ["#289858", "#50c080"],
-    moth: ["#58902c", "#90c050"], gate: ["#585c78", "#8890b0"], necrofear: ["#4a2c68", "#7a58a0"], gardius: ["#901c28", "#c04850"], hades: ["#701418", "#a83830"], gilford: ["#283c78", "#5070b0"], berserk: ["#3c2a28", "#704840"] };
+    moth: ["#58902c", "#90c050"], gate: ["#585c78", "#8890b0"], necrofear: ["#4a2c68", "#7a58a0"], gardius: ["#901c28", "#c04850"], hades: ["#701418", "#a83830"], gilford: ["#283c78", "#5070b0"], berserk: ["#3c2a28", "#704840"], chaos: ["#38306c", "#6058a8"], horus: ["#303034", "#5c5c64"], shining: ["#7088b8", "#a0b8e0"], dreadroot: ["#401018", "#702838"] };
   const RARITY = { c: "Common", r: "Rare", s: "Super Rare", u: "Ultra Rare", x: "Secret Rare" };
   let st = {};
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
