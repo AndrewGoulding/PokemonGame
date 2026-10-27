@@ -3882,12 +3882,13 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   name (♂ Male, ♀ Female); it stays yours as you change the rest (`appearance.gender`). A race's characters are men
   but for its `female` ones (Bulma, Chi-Chi and the townswoman, Android 18, Peach, Francesca, Goombella), and its
   `presets` add more, put together from its family's parts: a Hylian man and woman, a Kokiri boy and girl, a Zora
-  and a Zora maiden, a Gerudo woman and man, and a woman for the Saiyans (Chi-Chi's face and hair on Vegeta's armour),
-  Namekians (in Namekian green), the Majin (Videl's, from Buu's Fury, in pink), the Frieza Clan and the Kais (heads of
-  their own race's made for them, as neither has a woman to draw on and another race's never sat right: Frieza's
-  head with winged lashes, lips, a softer chin and a pink gem at her brow, in frost white; Kibito's face with lashes
-  and lips under his long white hair, on his robe, in Kai purple: `tools/build-player-looks.py`'s `MADE_HEADS`, each
-  in its race's Face row), the Mushroom People and the Koopas (in pink: neither game has a woman of
+  and a Zora maiden, a Gerudo woman and man, and a woman for the Saiyans, the Namekians, the Majin, the Frieza Clan
+  and the Kais (heads of their own race's made for them, as none has a woman to draw on and another race's never sat
+  right: Gohan's face with lashes and lips under Bulma's hairstyle, a Saiyan's to share, in black, on Vegeta's armour;
+  Dende's with lashes and lips, in Namekian green; Kid Buu's with lashes and his grin painted, in pink; Frieza's head
+  with winged lashes, lips, a softer chin and a pink gem at her brow, in frost white; Kibito's face with lashes and
+  lips under his long white hair, on his robe, in Kai purple: `tools/build-player-looks.py`'s `MADE_HEADS`, each in
+  its race's Face row), the Mushroom People and the Koopas (in pink: neither game has a woman of
   theirs to draw on).
 - **Walking**: four frames a stride where the sprites have them (the Dragon World's: a step, the frame between, the
   other step, the frame between, in the walk's own order: the steps the walk's opposite frames, 0 and 2 or 1 and 3),

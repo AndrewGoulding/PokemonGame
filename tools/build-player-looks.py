@@ -917,7 +917,7 @@ def paper_kingdom():
         character(pid, name, 'ttyd', frames15(f9[:3], [f9[3:5], f9[5:7], f9[7:9]]), (16, 32), split=pid in ('koops',), hair=False)
 
 # ---------- Heads made here: the women of races with none ----------
-# The Frieza Clan and the Kais have no woman among their sprites, and another race's head never sat right on their
+# The Frieza Clan, the Kais, the Saiyans, the Namekians and the Majin have no woman among their sprites, and another race's head never sat right on their
 # bodies; so each has one made from its own: a head of the race's (`base`, standing each way, its hair and face as
 # cut) with a woman's touches drawn on, a pixel each (`touches`: for each way it faces, down, up and the side,
 # {(x, y): colour (role, 'rrggbb'), or None to take it away}, in the base's frame). It goes on the race's bodies as
@@ -935,8 +935,25 @@ MADE_HEADS = [
         0: {(5, -13): LASH, (10, -13): LASH, (7, -11): LIP},
         1: {},
         2: {(3, -14): LASH, (3, -11): LIP}}),
+    # (The Saiyans, the Namekians and the Majin have no woman either; each had another race's head, Chi-Chi's or
+    # Videl's. Now their own: Gohan's face, lashes and lips, under a hairstyle a Saiyan shares (Chi-Chi's bun); Dende's,
+    # lashes at his eyes and lips; Kid Buu's, lashes and his grin painted.)
+    ('saiyan_woman', 'Saiyan Woman', 'gohan', {
+        0: {(5, -10): LASH, (11, -10): LASH, (8, -8): LIP},
+        1: {},
+        2: {(8, -10): LASH, (5, -8): LIP}}),
+    ('namekian_woman', 'Namekian Woman', 'dende', {
+        0: {(4, -13): LASH, (10, -13): LASH, (4, -14): LASH, (10, -14): LASH, (7, -11): LIP},
+        1: {},
+        2: {(5, -15): LASH, (6, -15): LASH, (3, -11): LIP}}),
+    ('majin_girl', 'Majin Girl', 'kid_buu', {
+        0: {(3, -12): LASH, (11, -12): LASH, (3, -13): LASH, (11, -13): LASH, (7, -10): LIP},
+        1: {},
+        2: {(8, -13): LASH, (8, -12): LASH, (4, -10): LIP}}),
 ]
-OWN_HAIR_OF = {'kai_woman': 'kibito'}   # (her hair is Kibito's, as it is: no hairstyle of her own to choose twice)
+# (Her hair is Kibito's, as it is: no hairstyle of her own to choose twice; and the Saiyan woman's Gohan's spikes are
+# Gohan's, so she has none of her own: hers is one that fits her face, the bun.)
+OWN_HAIR_OF = {'kai_woman': 'kibito', 'saiyan_woman': 'gohan'}
 def made_heads():
     for pid, name, base, touches in MADE_HEADS:
         shift, fam = SHIFTS[base], PARTS[base + '_face']['family']

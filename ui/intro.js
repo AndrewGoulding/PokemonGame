@@ -800,9 +800,9 @@
   // Goku's body, his colours his own), and the race's own start. You're your own: any preset is only where you start,
   // every row of it yours to change. A face takes only the hairstyles that cover where its own hair was (its `hairs`,
   // "" for none: tools/build-player-looks.py), and a body only the faces of its own family (its sprites' game).
-  // (The Face row offers only the race's own faces: a preset with another race's, the Saiyan Woman's Chi-Chi or the
-  // Majin Girl's Videl, keeps it, and so does a look saved with one (`known`), but it isn't one to choose: another
-  // race's head never sat right on the race's bodies.)
+  // (The Face row offers only the race's own faces: a look saved with another race's, from before every race had a
+  // woman's head of its own, keeps it (`known`), but it isn't one to choose: another race's head never sat right on
+  // the race's bodies.)
   const hairsOf = (r) => r.looks.bodies.map((b) => b + "_hair").concat((r.looks.heads || []).map((h) => h + "_hair"));
   function looksOf(r) {
     const P = window.PLAYER_LOOK_PARTS, L = r.looks;
