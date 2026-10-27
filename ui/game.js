@@ -9887,8 +9887,8 @@
     if (d.battle) return '<div class="rb-pic big" style="background-image:url(' + d.battle + ')"></div>';
     return '<div class="rb-pic sheet' + (d.big ? " big" : "") + '" style="background-image:url(assets/world/sprites/' + d.sprite + '.png)"></div>';
   }
-  // The screen: the street where you stand behind it, the party's windows along the top (name, HP, MP, level),
-  // the foes in a row in the middle.
+  // The screen (ui/ultimax-screen.js, FireRed's double battle's way): the street where you stand behind it, the foes
+  // at the left with their HP bars, the party's healthboxes down the right.
   function realmDraw(b) {
     const m = window.WORLD_MAPS[player.location.map];
     let back;
@@ -9902,96 +9902,76 @@
     }
     show("scene");
     scene.classList.add("evo");
-    scene.innerHTML = '<div class="rb"><div class="rb-back" style="' + back + '"></div>' +
-      '<div class="rb-party">' + b.allies.map((f, i) => '<div class="rb-card" data-i="' + i + '"><b>' + escapeHtml(f.name) + '</b><span class="hp"></span><span class="mp"></span><span class="lv">Lv ' + f.lv + '</span><i class="rb-status"></i></div>').join("") + '</div>' +
-      '<div class="rb-foes">' + b.foes.map((f, i) => '<div class="rb-foe" data-i="' + i + '">' + realmFoePic(f) + '<i class="rb-status"></i></div>').join("") + '</div></div>';
-    realmShow(b, { allies: b.allies.map((f) => [f.hp, f.mp, f.name, f.lv, !!f.mon, f.maxHp, ""]), foes: b.foes.map((f) => f.hp), foeStatus: b.foes.map(() => "") });
+    UltimaxScreen.build(scene, b, { back, pic: realmFoePic });
   }
-  function realmShow(b, snap) {
-    scene.querySelectorAll(".rb-card").forEach((el, i) => {
-      // (who's in each place: a swap changes it)
-      const [hp, mp, name, lv, mon, maxHp, status] = snap.allies[i];
-      el.querySelector("b").textContent = name;
-      el.querySelector(".hp").textContent = "HP " + hp;
-      el.querySelector(".mp").textContent = mon ? "" : "MP " + mp;
-      el.querySelector(".lv").textContent = "Lv " + lv;
-      realmStatusTag(el, status);
-      el.classList.toggle("down", hp <= 0);
-      el.classList.toggle("low", hp > 0 && hp <= maxHp / 4);
-    });
-    scene.querySelectorAll(".rb-foe").forEach((el, i) => { el.classList.toggle("gone", snap.foes[i] <= 0); realmStatusTag(el, (snap.foeStatus || [])[i]); });
-  }
-  // (A status's tag, the Pokémon realm's short name for it in its colour: PAR, SLP, PSN, BRN, FRZ.)
-  function realmStatusTag(el, status) {
-    const t = el.querySelector(".rb-status");
-    if (!t) return;
-    t.textContent = status || "";
-    t.className = "rb-status" + (status ? " " + status.toLowerCase() : "");
-  }
-  function realmFx(fx) {
-    if (!fx) return;
-    const el = fx.side === "foe" ? scene.querySelector('.rb-foe[data-i="' + fx.i + '"]') : scene.querySelector('.rb-card[data-i="' + fx.i + '"]');
-    const flash = (cls, ms) => { if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(() => el.classList.remove(cls), ms); };
-    if (fx.kind === "hit") {
-      sfx(fx.eff >= 2 ? "se_super_effective" : fx.eff > 0 && fx.eff < 1 ? "se_not_effective" : fx.crit ? "se_m_mega_kick" : "se_effective");
-      flash("hit", 400);
-      if (fx.side === "ally") { const r = scene.querySelector(".rb"); if (r) { r.classList.remove("shake"); void r.offsetWidth; r.classList.add("shake"); } }
-    } else if (fx.kind === "down") sfx("se_faint");
-    else if (fx.kind === "heal" || fx.kind === "buff") { sfx("se_m_reflect"); flash("healed", 500); }
-    else if (fx.kind === "swap") { sfx("se_ball_throw"); flash("healed", 500); }
-    else if (fx.kind === "run") sfx("se_flee");
-    else if (fx.kind === "status") flash("hit", 400);
-  }
-  // Each of the party's choices for the turn (B goes back to the one before), or "run".
+  // Each of the party's choices for the turn, or "run": for each in turn, FireRed's FIGHT / BAG / PARTY / RUN (B on
+  // the second and after goes back to the one before). FIGHT: Attack, Defend and their skills (a Pokémon's moves) in
+  // FireRed's move box, what each costs and its element at the right; BAG: the items; PARTY: one of the reserve in.
+  // Whom it's for: the ▼ over a foe, or one of the party's boxes bobbing.
   async function realmChoices(b) {
-    const fight = await ask("What will you do?", [{ label: "Fight", value: "fight", className: "action" }, { label: "Run", value: "run", className: "action" }]);
-    if (fight === "run") return "run";
-    const choices = b.allies.map(() => null), foes = () => b.foes.map((f, i) => [f, i]).filter(([f]) => f.hp > 0);
-    const P = b.items || {}, I = window.REALM_ITEMS;
+    const choices = b.allies.map(() => null), P = b.items || {}, I = window.REALM_ITEMS;
+    const ov = $("#overlay"), frame = GameOptions.get().frame, cursor = b.cursors || (b.cursors = {});
     const who = b.allies.map((f, i) => i).filter((i) => b.allies[i].hp > 0);
+    const element = (e) => "TYPE/" + String(e || "Neutral").toUpperCase();
+    // (Whom: the foe or one of the party, said in the message box as you move; the last one picked first.)
     const target = async (kind, text) => {
       if (kind === "all" || kind === "self" || kind === "party") return 0;
-      const list = kind === "ally" ? b.allies.map((f, i) => [f, i]) : foes();
-      if (kind !== "ally" && list.length === 1) return list[0][1];
-      const v = await ask(text, list.map(([f, i]) => ({ label: f.name + (kind === "ally" ? "  " + f.hp + "/" + f.maxHp : ""), value: i })).concat([back()]));
-      return v === "back" ? null : v;
+      const ally = kind === "ally", list = ally ? b.allies : b.foes;
+      const at = await UltimaxScreen.pick(ally ? "ally" : "foe", b, cursor[kind] || 0,
+        (i) => instant(text + "\n" + list[i].name + (ally ? "   HP " + list[i].hp + "/" + list[i].maxHp : "")));
+      instant("");
+      if (at != null) cursor[kind] = at;
+      return at;
     };
+    const box = (moves, at) => GbaMenus.battleMoves(ov, { moves, cursor: at || 0, frame });
     for (let k = 0; k < who.length;) {
       const i = who[k], f = b.allies[i];
-      // (Swap: one of the reserve comes in, this one's turn; each of them once a turn.)
-      const bench = b.reserve.map((x, j) => [x, j]).filter(([x, j]) => x.hp > 0 && !choices.some((c, ci) => ci !== i && c && c.act === "swap" && c.reserve === j));
-      const v = await ask(f.name + ": what will you do?", [{ label: "Attack", value: "attack", className: "action" }, { label: "Skills", value: "skill", className: "action", disabled: !f.skills.length },
-        { label: "Defend", value: "defend", className: "action" }, { label: "Items", value: "item", className: "action", disabled: !Object.keys(P).some((id) => P[id] > 0) }]
-        .concat(b.reserve.length ? [{ label: "Swap", value: "swap", className: "action", disabled: !bench.length }] : [])
-        .concat(k > 0 ? [back()] : []));
-      if (v === "back") { k--; continue; }
-      if (v === "swap") {
-        const j = await ask("Who comes in for " + f.name + "?", bench.map(([x, j2]) => ({ label: x.name + "  Lv " + x.lv + "  HP " + x.hp + "/" + x.maxHp, value: j2 })).concat([back()]));
-        if (j === "back") continue;
-        choices[i] = { act: "swap", reserve: j }; k++; continue;
+      instant("");
+      const a = await GbaMenus.battleAction(ov, { prompt: ["What will", f.name + " do?"], labels: ["FIGHT", "BAG", "PARTY", "RUN"],
+        cursor: cursor["act" + i] || 0, frame, canBack: k > 0 });
+      cursor["act" + i] = a.cursor;
+      if (a.action === "back") { k--; continue; }
+      if (a.action === "run") return "run";
+      if (a.action === "pokemon") {
+        // (Swap: one of the reserve comes in, this one's turn; each of them once a turn.)
+        const bench = b.reserve.map((x, j) => [x, j]).filter(([x, j]) => x.hp > 0 && !choices.some((c, ci) => ci !== i && c && c.act === "swap" && c.reserve === j));
+        if (!bench.length) { await message(b.reserve.length ? "There's no one else who can fight!" : "There's no one in reserve!"); continue; }
+        const r = await box(bench.map(([x]) => ({ name: x.name, info: [["Lv " + x.lv], ["HP " + x.hp + "/" + x.maxHp]] })));
+        if (!r) continue;
+        choices[i] = { act: "swap", reserve: bench[r.index][1] }; k++; continue;
       }
-      if (v === "defend") { choices[i] = { act: "defend" }; k++; continue; }
-      if (v === "attack") {
+      if (a.action === "bag") {
+        const ids = Object.keys(P).filter((x) => P[x] > 0 && I[x]);
+        if (!ids.length) { await message("There are no items!"); continue; }
+        const what = (it) => [it.heal ? "HP+" + (it.heal === "all" ? "all" : it.heal * Ultimax.HP_SCALE) : "", it.mp ? "MP+" + it.mp : "", it.revive ? "Revives" : ""].filter(Boolean);
+        const r = await box(ids.map((x) => { const w = what(I[x]); return { name: I[x].name, info: [["×" + P[x] + "  " + (w[0] || "")], [w.slice(1).join(" ")]] }; }), cursor.item);
+        if (!r) continue;
+        cursor.item = r.cursor;
+        const t = await target("ally", "Use " + I[ids[r.index]].name + " on whom?");
+        if (t == null) continue;
+        choices[i] = { act: "item", item: ids[r.index], target: t }; k++; continue;
+      }
+      // FIGHT: Attack, Defend, then the skills.
+      const sk = (id) => Ultimax.skillOf(f, id);
+      const moves = [{ name: "Attack", info: [[f.mon ? "No PP" : "No MP"], [element((f.elements || [])[0])]] }, { name: "Defend", info: [["Halves damage"], ["TYPE/GUARD"]] }]
+        .concat(f.skills.map((id) => {
+          const s2 = sk(id), short = f.mon ? !(f.pp[id] > 0) : s2.mp > f.mp;
+          return { name: s2.name, dim: short, info: [[f.mon ? "PP " + f.pp[id] + "/" + ((f.mon.moves || []).find((m) => "move:" + m.name === id) || {}).maxpp : "MP " + s2.mp + " of " + f.mp, short], [element(s2.element)]] };
+        }));
+      const r = await box(moves, cursor["fight" + i]);
+      if (!r) continue;
+      cursor["fight" + i] = r.cursor;
+      if (r.index === 1) { choices[i] = { act: "defend" }; k++; continue; }
+      if (r.index === 0) {
         const t = await target("one", "Attack whom?");
         if (t == null) continue;
         choices[i] = { act: "attack", target: t }; k++; continue;
       }
-      if (v === "skill") {
-        // (A Pokémon's moves cost PP, each its own.)
-        const sk = (id) => Ultimax.skillOf(f, id), cost = (id) => (f.mon ? f.pp[id] + " PP" : sk(id).mp + " MP");
-        const s = await ask(f.mon ? f.name + "'s moves" : f.name + "'s skills (MP " + f.mp + ")",
-          f.skills.map((id) => ({ label: sk(id).name + "  " + cost(id) + (sk(id).element !== "Neutral" ? "  (" + sk(id).element + ")" : ""), value: id, disabled: f.mon ? !(f.pp[id] > 0) : sk(id).mp > f.mp }))
-          .concat([back()]));
-        if (s === "back") continue;
-        const t = await target(sk(s).target, sk(s).name + ": on whom?");
-        if (t == null) continue;
-        choices[i] = { act: "skill", skill: s, target: sk(s).target === "self" ? i : t }; k++; continue;
-      }
-      const id = await ask("Use which item?", Object.keys(P).filter((x) => P[x] > 0 && I[x]).map((x) => ({ label: I[x].name + "  ×" + P[x], value: x })).concat([back()]));
-      if (id === "back") continue;
-      const t = await target("ally", I[id].name + ": on whom?");
+      const id = f.skills[r.index - 2], s2 = sk(id);
+      if (moves[r.index].dim) { await message(f.mon ? "There's no PP left for this move!" : "Not enough MP!"); continue; }
+      const t = await target(s2.target, s2.name + ": on whom?");
       if (t == null) continue;
-      choices[i] = { act: "item", item: id, target: t }; k++;
+      choices[i] = { act: "skill", skill: id, target: s2.target === "self" ? i : t }; k++;
     }
     return choices;
   }
@@ -10008,7 +9988,7 @@
     await message(realmWrap(opts.intro || (names.length === 1 ? names[0] + " picks a fight!" : names.slice(0, -1).join(", ") + " and " + names[names.length - 1] + " pick a fight!")));
     while (!b.over) {
       const choices = await realmChoices(b);
-      for (const st of Ultimax.turn(b, choices)) { realmShow(b, st.snap); realmFx(st.fx); await message(realmWrap(st.text)); }
+      for (const st of Ultimax.turn(b, choices)) { UltimaxScreen.show(b, st.snap); UltimaxScreen.fx(st.fx); await message(realmWrap(st.text)); }
     }
     Ultimax.keep(b);
     for (const k of Object.keys(P.items)) if (!(P.items[k] > 0)) delete P.items[k];
@@ -10036,6 +10016,7 @@
     if (b.over !== "lost") for (const rec of realmAll(P)) { const r = realmMon(rec) || rec; if (r.hp <= 0) r.hp = 1; }
     realmQuiet = 10;
     const here = window.WORLD_MAPS[player.location.map];
+    UltimaxScreen.stop();
     scene.classList.remove("evo");
     Screen.say(""); clearMenu();
     if (Street.isStreet(player.location.map)) show("street");
@@ -10137,21 +10118,33 @@
     await Overworld.refreshPeople();
   }
   // Poppo's clerk: the realm's items (REALM_ITEMS), for your money.
+  // Poppo's counter: FireRed's Poké Mart buy screen (ui/shop-screen.js), the realm's items (a Pokémon item's picture
+  // standing in for each, REALM_ITEMS' icon) for the realm's party, the shop round you at its left.
   async function kamurochoShop() {
     await say("Clerk: Welcome to Poppo!");
     const P = realmParty("yakuza"), I = window.REALM_ITEMS;
-    for (;;) {
-      const id = await ask("You have ¥" + player.money + ". What'll it be?", Object.keys(I).map((k) => ({ label: I[k].name + "  ¥" + I[k].price, value: k })).concat([back("Done")]));
-      if (id === "back") break;
-      await say(Ultimax.itemText(id));
-      if (player.money < I[id].price) { await say("Clerk: Sorry, you're a little short."); continue; }
-      if (!(await confirm("Buy a " + I[id].name + " for ¥" + I[id].price + "?"))) continue;
-      player.money -= I[id].price;
-      P.items[id] = (P.items[id] || 0) + 1;
-      sfx("se_shop");
-      await say("Clerk: Thank you!");
-    }
-    await say("Clerk: Come again!");
+    // (the street's screen, 336x224, as the 240x160 the shop screen shows a corner of)
+    const street = $("#street"), map = Object.assign(document.createElement("canvas"), { width: 240, height: 160 });
+    if (street) { const g = map.getContext("2d"); g.imageSmoothingEnabled = false; g.drawImage(street, 0, 0, 240, 160); }
+    Screen.say("");
+    clearMenu();
+    await ShopScreen.open({
+      frame: GameOptions.get().frame,
+      items: Object.keys(I).map((id) => ({ id, name: I[id].name, price: I[id].price, desc: Ultimax.itemText(id), icon: Bag.sprite(I[id].icon) })),
+      money: () => player.money,
+      inBag: (id) => P.items[id] || 0,
+      limit: (id) => ({ max: Math.max(0, 99 - (P.items[id] || 0)), why: "You can't carry any more of\nthose." }),
+      buy: (id, n) => {
+        Player.addMoney(player, -I[id].price * n);
+        P.items[id] = (P.items[id] || 0) + n;
+        persist();
+        return null;
+      },
+      map: { canvas: map, x: 136, y: 80 }
+    });
+    ShopScreen.close();
+    show("street");
+    await say("Clerk: Thank you! Come again!");
   }
   // Domino Square's fountain (and Clock Tower Square's): back through the portal to the Realm Hub, or off round the
   // realm: Battle City's places (The Sacred Cards'), Domino City's and the world's (Reshef of Destruction's:

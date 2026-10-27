@@ -436,22 +436,23 @@ window.REALM_FOES = {
 // keeps them (flags.realmParty[realm].items). As in the Like a Dragon games, Heat is MP here: Staminan gives back
 // health and Heat, Toughness health, Tauriner Heat, and the food a little health.
 // heal: HP back ("all": all of it), times Ultimax.HP_SCALE as everyone's HP ("{hp}" in its text: that many); mp: MP back
-// ("all"); revive: gets someone who's down back up as well.
+// ("all"); revive: gets someone who's down back up as well. icon: the Pokémon item whose picture stands in for it in
+// Poppo's shop (ui/shop-screen.js), the Like a Dragon games' own not to hand: a bottle for a drink, a cake for food.
 window.REALM_ITEMS = {
-  staminan:           { name: "Staminan",           price: 300,  heal: 40,    mp: 10,    text: "An energy tonic: {hp} HP and\n10 MP back." },
-  staminan_spark:     { name: "Staminan Spark",     price: 1000, heal: 100,   mp: 25,    text: "A strong energy tonic: {hp} HP\nand 25 MP back." },
-  staminan_royale:    { name: "Staminan Royale",    price: 5000, heal: "all", mp: "all", text: "The finest tonic there is: all\nHP and MP back." },
-  toughness_zero:     { name: "Toughness Zero",     price: 500,  heal: 80,               text: "A health drink: {hp} HP back." },
-  toughness_infinity: { name: "Toughness Infinity", price: 3000, heal: "all", revive: true, text: "All HP back, even for someone\nwho's down." },
-  tauriner:           { name: "Tauriner",           price: 300,  mp: 15,                 text: "A Heat drink: 15 MP back." },
-  tauriner_plus:      { name: "Tauriner+",          price: 800,  mp: 40,                 text: "A stronger Heat drink: 40 MP\nback." },
-  tauriner_maxx:      { name: "Tauriner Maxx",      price: 2000, mp: "all",              text: "The strongest Heat drink: all\nMP back." },
-  rice_ball:          { name: "Rice Ball",          price: 100,  heal: 20,               text: "A salmon rice ball: {hp} HP\nback." },
-  sandwich:           { name: "Sandwich",           price: 150,  heal: 25,               text: "A mixed sandwich: {hp} HP back." },
-  hot_dog:            { name: "Hot Dog",            price: 200,  heal: 30,               text: "A hot dog: {hp} HP back." },
-  fried_chicken:      { name: "Fried Chicken",      price: 250,  heal: 40,               text: "Poppo's fried chicken: {hp} HP\nback." },
-  bento:              { name: "Bento Box",          price: 500,  heal: 60,               text: "A boxed lunch: {hp} HP back." },
-  pudding:            { name: "Pudding",            price: 150,  heal: 10,    mp: 5,     text: "A custard pudding: {hp} HP and\n5 MP back." }
+  staminan:           { name: "Staminan",           icon: "soda-pop", price: 300,  heal: 40,    mp: 10,    text: "An energy tonic: {hp} HP and\n10 MP back." },
+  staminan_spark:     { name: "Staminan Spark",     icon: "lemonade", price: 1000, heal: 100,   mp: 25,    text: "A strong energy tonic: {hp} HP\nand 25 MP back." },
+  staminan_royale:    { name: "Staminan Royale",    icon: "max-elixir", price: 5000, heal: "all", mp: "all", text: "The finest tonic there is: all\nHP and MP back." },
+  toughness_zero:     { name: "Toughness Zero",     icon: "fresh-water", price: 500,  heal: 80,               text: "A health drink: {hp} HP back." },
+  toughness_infinity: { name: "Toughness Infinity", icon: "full-restore", price: 3000, heal: "all", revive: true, text: "All HP back, even for someone\nwho's down." },
+  tauriner:           { name: "Tauriner",           icon: "ether", price: 300,  mp: 15,                 text: "A Heat drink: 15 MP back." },
+  tauriner_plus:      { name: "Tauriner+",          icon: "max-ether", price: 800,  mp: 40,                 text: "A stronger Heat drink: 40 MP\nback." },
+  tauriner_maxx:      { name: "Tauriner Maxx",      icon: "elixir", price: 2000, mp: "all",              text: "The strongest Heat drink: all\nMP back." },
+  rice_ball:          { name: "Rice Ball",          icon: "lava-cookie", price: 100,  heal: 20,               text: "A salmon rice ball: {hp} HP\nback." },
+  sandwich:           { name: "Sandwich",           icon: "shalour-sable", price: 150,  heal: 25,               text: "A mixed sandwich: {hp} HP back." },
+  hot_dog:            { name: "Hot Dog",            icon: "old-gateau", price: 200,  heal: 30,               text: "A hot dog: {hp} HP back." },
+  fried_chicken:      { name: "Fried Chicken",      icon: "lumiose-galette", price: 250,  heal: 40,               text: "Poppo's fried chicken: {hp} HP\nback." },
+  bento:              { name: "Bento Box",          icon: "tea", price: 500,  heal: 60,               text: "A boxed lunch: {hp} HP back." },
+  pudding:            { name: "Pudding",            icon: "honey", price: 150,  heal: 10,    mp: 5,     text: "A custard pudding: {hp} HP and\n5 MP back." }
 };
 
 // Each realm's random fights: the chance a step on its streets starts one, and the groups met (weight, foes).

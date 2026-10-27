@@ -230,14 +230,15 @@ body {
   text-shadow: calc(100cqw / 240) calc(100cqw / 240) 0 #6a5a73;
 }
 
-/* Under the screen, the choices (FIGHT's moves, Yes / No, a list's options):
-   always the same height; more choices than fit scroll. */
+/* Under the screen, the choices (a list's options, the card tables' windows): the same height while there are
+   some, more than fit scroll; and nothing at all, the buttons right under the screen, while there are none. */
 .panel {
   height: 150px;
   padding: 8px 10px;
   background: #2e3440;
   overflow: hidden;
 }
+.panel:has(> .menu:empty) { display: none; }
 
 .menu {
   height: 100%;

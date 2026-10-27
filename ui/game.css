@@ -528,39 +528,24 @@
 
 .shiny-star { color: #e0a800; text-shadow: 0 0 3px #fff3a0; }
 
-/* ---------- The other realms' battles (Dragon Quest's way: ui/game.js's realmFight) ----------
-   The street behind, dimmed; the party's windows along the top, black edged white as Dragon Quest's are; the foes
-   in a row in the middle. A foe hit blinks, one beaten fades; when the party's hit, the screen shakes. */
+/* ---------- The other realms' battles (ui/game.js's realmFight, ui/ultimax-screen.js) ----------
+   As FireRed's double battle: the street behind, dimmed; the foes standing at the left, their feet on line 104 of the
+   112 over the message box; the canvas over them (the foes' names and HP bars, the party's healthboxes). A foe hit
+   blinks, one beaten fades; when the party's hit, the screen shakes. */
 .rb { position: relative; width: 100%; aspect-ratio: 240 / 160; overflow: hidden; container-type: size; background: #000; user-select: none; }
 .rb-back { position: absolute; inset: 0; image-rendering: pixelated; filter: brightness(0.55) saturate(0.8); }
-.rb-party { position: absolute; left: 2%; right: 2%; top: 2.5%; display: flex; gap: 1.5%; }
-.rb-card { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; padding: 1.2cqh 1.5cqw; background: #000; color: #fff;
-  border: 0.6cqh solid #fff; border-radius: 1.6cqh; font-size: 5cqh; line-height: 1.25; box-shadow: 0 0 0 0.4cqh #000; }
-.rb-card b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
-.rb-card.low { color: #f8d038; }
-.rb-card.down { color: #f05048; }
-.rb-card.hit { animation: rb-flash 0.4s steps(2) 1; }
-.rb-card.healed { animation: rb-heal 0.5s ease-out 1; }
-/* A status, the Pokémon realm's tags and colours (PAR, SLP, PSN, BRN, FRZ): on a card under its level, on a foe above it. */
-.rb-card { position: relative; }
-.rb-status { font-style: normal; font-weight: 700; font-size: 4cqh; line-height: 1; padding: 0.3cqh 0.8cqh; border-radius: 0.8cqh; color: #fff; align-self: flex-start; }
-.rb-status:empty { display: none; }
-.rb-card .rb-status { position: absolute; right: 1cqw; bottom: 1cqh; }
-.rb-foe { position: relative; }
-.rb-foe .rb-status { position: absolute; top: 0; left: 50%; transform: translateX(-50%); }
-.rb-status.par { background: #b8a038; } .rb-status.slp { background: #8c888c; } .rb-status.psn { background: #a040a0; }
-.rb-status.brn { background: #e07038; } .rb-status.frz { background: #68b0d0; }
-.rb-foes { position: absolute; left: 0; right: 0; top: 38%; height: 44%; display: flex; justify-content: center; align-items: flex-end; gap: 4%; }
-.rb-foe { height: 100%; display: flex; align-items: flex-end; transition: opacity 0.5s; }
+.rb-layer { position: absolute; left: 0; top: 0; width: 100%; height: 70%; image-rendering: pixelated; pointer-events: none; z-index: 2; }
+.rb-foes { position: absolute; inset: 0; }
+.rb-foe { position: absolute; bottom: 35%; transform: translateX(-50%); display: flex; align-items: flex-end; transition: opacity 0.5s; }
 .rb-foe.gone { opacity: 0; }
 .rb-foe.hit { animation: rb-blink 0.4s steps(2) 2; }
-.rb-pic { height: 70%; aspect-ratio: 1; image-rendering: pixelated; background-repeat: no-repeat; background-size: 100% 100%; }
+.rb-foe.healed { animation: rb-glow 0.5s ease-out 1; }
+.rb-pic { height: 40cqh; aspect-ratio: 1; image-rendering: pixelated; background-repeat: no-repeat; background-size: 100% 100%; }
 .rb-pic.sheet { background-size: 900% 100%; background-position: 0 0; }
-.rb-pic.big { height: 100%; }
+.rb-pic.big { height: 56cqh; }
 /* Kamurocho's foes (ui/game.js realmFoePic): Streets of Kamurocho's, as tall as on its 224-high streets, facing left. */
 .rb-street { height: 36cqh; image-rendering: pixelated; transform: scaleX(-1); }
 .rb.shake { animation: rb-shake 0.3s linear 1; }
 @keyframes rb-blink { 50% { opacity: 0; } }
-@keyframes rb-flash { 50% { background: #a01818; } }
-@keyframes rb-heal { 0% { background: #187830; } 100% { background: #000; } }
+@keyframes rb-glow { 0% { filter: brightness(1.8); } 100% { filter: none; } }
 @keyframes rb-shake { 25% { transform: translate(-1.5%, 0.8%); } 50% { transform: translate(1.5%, -0.8%); } 75% { transform: translate(-1%, 0); } }

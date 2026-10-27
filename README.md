@@ -3648,7 +3648,7 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   street is drawn there too (a vault of wet concrete, pipes, a culvert, the ladder up, and the Time Machine three times
   over), and the manhole cover on the pavement. You're drawn twice your size, to stand as tall as its people. Walk off the street's end into
   the alley (and back); stand at Bacchus's or Poppo's door and press A to go in (out of Bacchus, walk off its left; out of Poppo, walk up into its glass door); in Poppo, stand at the counter
-  and press A to talk to the clerk and buy; on the manhole by Serena, A climbs down (the ladder, A, back up); the Time
+  and press A to talk to the clerk and buy (FireRed's Poké Mart buy screen, `ui/shop-screen.js`: each item's picture a Pokémon item's standing in, `REALM_ITEMS`' `icon`); on the manhole by Serena, A climbs down (the ladder, A, back up); the Time
   Machine's spot, A, is its menu. The floor you can walk on is each scene's polygon (along the slope, you go up or down it as
   you walk). You're placed by `player.location.street` ({ scene, x, y, facing }); the overworld rests while you're
   there (ui/game.js's explore loop asks `Street.explore` instead).
@@ -3734,11 +3734,16 @@ taken from a Dragon Quest cartridge.
 - **Winning**: the foes' EXP is split between those still standing, and their money is yours. EXP to reach level
   L is 10 × (L − 1)^2.5. Each level adds that fighter's growth to every stat and may teach a skill. Anyone who fell
   gets up afterwards with 1 HP.
-- **The screen**: the street where you stand, dimmed, behind the fight; the party's windows along the top, black
-  edged white as Dragon Quest's (yellow when low on HP, red when down); the foes in a row in the middle, in their
-  overworld sprites' first frame, facing you, or a battle picture. A foe hit blinks and one beaten fades; when the
-  party's hit, the screen shakes. It uses the game's own text box and menu, and FireRed's hit, faint and flee sounds
-  and its battle and victory songs.
+- **The screen** (`ui/ultimax-screen.js`): drawn as FireRed draws a double battle. The street where you stand,
+  dimmed, behind the fight; the foes standing at the left, each with its name and FireRed's HP bar over its head (a
+  bar that would run into the one before goes a row up); the party's FireRed healthboxes (name, level, HP bar, status)
+  down the right, staggered as a double battle's; FireRed's battle message box under it all. For each of the party in
+  turn, FireRed's command box: FIGHT (Attack, Defend and their skills, or a Pokémon's moves, in FireRed's move box,
+  scrolling past four, with the MP each costs against what's left, or the PP, and its element), BAG (the realm's
+  items), PARTY (one of the reserve in) and RUN; B on the second and after goes back to the one before. Whom a skill
+  or item is for: left and right, a ▼ over the foe or the party member's box bobbing, their name in the message box.
+  The bars move as FireRed's do; a foe hit blinks and one beaten fades; when the party's hit, its box and the screen
+  shake. FireRed's hit, faint and flee sounds and its battle and victory songs.
 - **The data** (in `data/type-chart.js`, beside the elements): `REALM_SKILLS`, `REALM_FIGHTERS` (each companion's
   elements, stats at level 1, growth and skills by level; "you" is you), `REALM_FOES`, `REALM_ITEMS` and
   `REALM_ENCOUNTERS` (each map's chance a step and its groups). The Like a Dragon cast's elements: you Neutral,

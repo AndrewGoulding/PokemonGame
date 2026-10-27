@@ -18,6 +18,7 @@
 //     // opts.canBack: B gives { action: "back" }, a double battle's second Pokémon)
 //   const m = await GbaMenus.battleMoves(overlay, { moves, cursor, frame })
 //     // moves: [{ name, type, pp, maxpp }] -> { index, cursor } or null (B)
+//     // (or any number, scrolling, each with info: [[text, dim?], [text, dim?]] in place of PP and TYPE)
 //     // (opts.onCursor(cursor) as the cursor moves; opts.keep leaves the menu
 //     // showing after A, for a double battle's target cursor)
 //   const i = await GbaMenus.multichoice(overlay, { left, top, items, cursor, frame })
@@ -801,6 +802,10 @@
     const frame = "type" + ((opts.frame || 0) + 1), pp = G().battle.pp;
     let moves = opts.moves;
     let cursor = Math.min(opts.cursor || 0, Math.max(0, moves.length - 1));
+    // (This game's own, for the other realms' battles: more than four, two rows of them showing at a time, scrolled
+    // by the cursor, ▲ / ▼ at the right when there are more; a move's `info` two lines in place of PP and TYPE, each
+    // [text, "dim"?: grey, as when there's not enough MP]; a move `dim` in grey too.)
+    let top = Math.max(0, (cursor >> 1) - 1);
     // GetCurrentPpToMaxPpState: 3 full / over half, 0 half or less, 1 a quarter or less, 2 none.
     const ppState = (cur, max) => {
       if (max === cur) return 3;
@@ -818,9 +823,11 @@
       if (opts.onCursor) opts.onCursor(cursor);
       const s = Surface();
       battlePanel(s, "move", frame);
+      const DIM = [176, 176, 176];
       // B_WIN_MOVE_NAME_1-4 (tiles 2 / 11, rows 15 / 17), small font.
-      for (let i = 0; i < 4; i++) {
-        const x = (i & 1 ? 11 : 2) * 8, y = (i & 2 ? 17 : 15) * 8 + 1;
+      for (let j = 0; j < 4; j++) {
+        const i = top * 2 + j;
+        const x = (j & 1 ? 11 : 2) * 8, y = (j & 2 ? 17 : 15) * 8 + 1;
         // (A Z-Move or Dynamax switched on: the moves they make, "-" for none,
         // shortened to fit the column: "G-Max Wildfire" as "G-Wildfire", then cut.)
         const z = opts.mega && opts.mega.on && opts.mega.names;
@@ -830,7 +837,13 @@
           while (label.length > 3 && s.textWidth(label + ".", "small") > 64) label = label.slice(0, -1);
           if (s.textWidth(label, "small") > 64 || label !== (z(moves[i]) || "").replace(/^G-Max /, "G-")) label = label.trimEnd() + ".";
         }
-        s.text(label, x, y, P5.fg, P5.shadow, "small");
+        s.text(label, x, y, moves[i] && moves[i].dim ? DIM : P5.fg, P5.shadow, "small");
+      }
+      if (moves.length > 4) {
+        // (a 7-wide triangle, its shadow under it, as the list menus' arrows)
+        const tri = (x, y, up) => { for (let r = 0; r < 4; r++) for (let c = r; c < 7 - r; c++) { s.put(x + c + 1, y + (up ? 3 - r : r) + 1, P5.shadow); s.put(x + c, y + (up ? 3 - r : r), P5.fg); } };
+        if (top > 0) tri(19 * 8, 15 * 8 + 4, true);
+        if (top * 2 + 4 < moves.length) tri(19 * 8, 17 * 8 + 6, false);
       }
       if (swapping != null) {
         if (swapping !== cursor) battleCursor(s, frame, ...at(swapping), 29);
@@ -840,12 +853,14 @@
         s.show(canvas);
         return;
       }
-      battleCursor(s, frame, ...at(cursor));
+      battleCursor(s, frame, ...at(cursor - top * 2));
       // (This game's own) Mega Evolution, with the Mega Ring: START switches
       // it on for the move you pick. The battle shows it as
       // pokeemerald-expansion's trigger beside your healthbox (opts.mega.toggled).
       const m = moves[cursor];
-      if (m) {
+      if (m && m.info) {
+        m.info.forEach(([t, dim], k) => s.text(t, 21 * 8, (15 + 2 * k) * 8 + 2, dim ? DIM : P5.fg, P5.shadow, "small"));
+      } else if (m) {
         const st = ppState(m.pp, m.maxpp), col = [pp[st * 2], pp[st * 2 + 1]];
         s.text("PP ", 21 * 8, 15 * 8 + 2, col[0], col[1], "small");
         const num = m.type === "Shadow" ? "--/--" : m.pp + "/" + m.maxpp;   // (Shadow moves have no PP)
@@ -870,10 +885,22 @@
     };
     if (two) document.addEventListener("keyup", startUp, true);
     const r = await keys((k) => {
-      const go = (c) => { if (c < moves.length && c !== cursor) { cursor = c; if (swapping != null) se(); draw(); } };
+      const go = (c) => {
+        if (c < 0 || c >= moves.length || c === cursor) return;
+        cursor = c;
+        top = Math.min(top, cursor >> 1); top = Math.max(top, (cursor >> 1) - 1);
+        if (swapping != null) se();
+        draw();
+      };
+      // (More than four: up and down go on past the second row, to the last one's column if it's short.)
+      const vert = (d) => {
+        if (moves.length <= 4) return cursor ^ 2;
+        const c = cursor + 2 * d;
+        return c < 0 ? -1 : c < moves.length ? c : (cursor >> 1) + d <= (moves.length - 1) >> 1 ? moves.length - 1 : -1;
+      };
       if (startHeld && ["left", "right", "up", "down"].includes(k)) { se(); g.focus = g.focus ? 0 : 1; changed(); }
       else if (k === "left" || k === "right") go(cursor ^ 1);
-      else if (k === "up" || k === "down") go(cursor ^ 2);
+      else if (k === "up" || k === "down") go(vert(k === "up" ? -1 : 1));
       else if (swapping != null) {
         if (k === "a" || k === "select") {
           se();
