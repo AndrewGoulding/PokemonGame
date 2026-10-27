@@ -10,7 +10,8 @@
 #     +0  width, height in screens (240x160);  +4  width, height in tiles
 #     +8, +c, +10  bitmaps, a bit for each 8x8 tile, rows of the whole map, least significant bit first: +8 is where
 #                  people can walk (the other two are the air and the ground under things)
-#     +1c  a list of pointers to {pointer, flags}: the map's 8bpp tiles, loaded to end at VRAM tile 896
+#     +1c  a list of pointers to {pointer, flags} (some empty), then those: the map's 8bpp tile sets, each loaded to
+#          end at VRAM tile 896; the game swaps between them as you go
 #     +20, +24, +28  the three backgrounds, front to back: a pointer for each screen, to 30x20 u16 entries (0: empty)
 #     +2c  the palette (256 colours);  +30  {pointer, flags} of more tiles, loaded just before the map's own
 #   People: 0x5c1328 on, 0x2c bytes each: a palette (16 colours), then the animations: 19 actions, a pointer for each
@@ -101,27 +102,39 @@ for o in range(0, len(rom) - 0x34, 4):
 entries = {}
 for n, e in enumerate(maps):
     ws, hs, wt, ht = struct.unpack_from('<HHHH', rom, e)
-    T = np.zeros((1024, 8, 8), np.uint8)
-    own = b''.join(unpack(R(p), R(p + 4)) for p in [R(R(e + 0x1c))])
+    # The map's tile sets: the list at +1c holds pointers to {pointer, flags} (some empty), then those. Each loads to
+    # end at VRAM tile 896, the extra tiles at +30 just before it. Which set a screen uses is the game's business
+    # (it swaps them as you go); here each screen gets the one that draws it most smoothly.
     more = unpack(R(R(e + 0x30)), R(R(e + 0x30) + 4))
-    first = 896 - len(own) // 64
-    for base, data in ((first, own), (first - len(more) // 64, more)):
-        for i in range(len(data) // 64):
-            if 0 <= base + i < 1024: T[base + i] = np.frombuffer(data[i * 64:i * 64 + 64], np.uint8).reshape(8, 8)
+    # (the first one there points just past the list, so that's how long it is)
+    lst = R(e + 0x1c) & 0x1ffffff; k = 0
+    while not R(lst + 4 * k): k += 1
+    ptrs = [R(lst + 4 * i) for i in range(((R(lst + 4 * k) & 0x1ffffff) - lst) // 4)]
+    sets = []
+    for p in ptrs:
+        if not p: continue
+        own = unpack(R(p), R(p + 4)); T = np.zeros((1024, 8, 8), np.uint8)
+        first = 896 - len(own) // 64
+        for base, data in ((first, own), (first - len(more) // 64, more)):
+            for i in range(len(data) // 64):
+                if 0 <= base + i < 1024: T[base + i] = np.frombuffer(data[i * 64:i * 64 + 64], np.uint8).reshape(8, 8)
+        # (every tile in its four flips, indexed as the map's entries are: flips << 10 | tile)
+        sets.append(np.concatenate([T, T[:, :, ::-1], T[:, ::-1, :], T[:, ::-1, ::-1]]))
     P = palette(R(e + 0x2c))
-    layers = []
-    for k in range(3):
-        a = np.zeros((ht * 8, wt * 8), np.uint8); screens = R(e + 0x20 + 4 * k)
-        for sy in range(hs):
-            for sx in range(ws):
-                p = R(screens + 4 * (sy * ws + sx))
-                if not p: continue
-                for i, v in enumerate(struct.unpack_from('<600H', rom, p & 0x1ffffff)):
-                    t = T[v & 0x3ff]
-                    if v & 0x400: t = t[:, ::-1]
-                    if v & 0x800: t = t[::-1]
-                    y, x = sy * 160 + (i // 30) * 8, sx * 240 + (i % 30) * 8; a[y:y + 8, x:x + 8] = t
-        layers.append(a)
+    luma = P.astype(np.int32).sum(1)
+    layers = [np.zeros((ht * 8, wt * 8), np.uint8) for k in range(3)]
+    for sy in range(hs):
+        for sx in range(ws):
+            maps_ = [R(R(e + 0x20 + 4 * k) + 4 * (sy * ws + sx)) for k in range(3)]
+            best = None
+            cells = [np.frombuffer(rom[p & 0x1ffffff:(p & 0x1ffffff) + 1200], '<u2') & 0xfff if p else None for p in maps_]
+            for T in sets:
+                screen = [T[v].reshape(20, 30, 8, 8).transpose(0, 2, 1, 3).reshape(160, 240) if v is not None
+                          else np.zeros((160, 240), np.uint8) for v in cells]
+                c = np.where(screen[0] != 0, screen[0], np.where(screen[1] != 0, screen[1], screen[2]))
+                c = luma[c]; cost = np.abs(np.diff(c, axis=0)).sum() + np.abs(np.diff(c, axis=1)).sum()
+                if best is None or cost < best[0]: best = (cost, screen)
+            for k in range(3): layers[k][sy * 160:sy * 160 + 160, sx * 240:sx * 240 + 240] = best[1][k]
     ground = np.where(layers[1] != 0, layers[1], layers[2])
     save(Image.fromarray(P[ground], 'RGB'), 'maps', 'LG1_%02d.png' % n)
     if layers[0].any():
