@@ -117,7 +117,8 @@ def sheet(name, frames, shift):
 BODY_SLOTS = [0, 3, 6, 1, 2, 4, 5, 7, 8]
 def tmc_roles(px, pal, roles, brown=False):
     """{(x, y): index} -> {(x, y): (role, colour)}. roles: {role: set of indices}. brown: the hair shares the skin's
-    brown ramp, so a patch of its light shades (12, 13) is hair when most of what's round it is hair (10, 11)."""
+    brown ramp, so a patch of its light shades (12, 13) is hair when most of what's round it is hair (10, 11) and none
+    of it the outline or an eye."""
     out = {}
     for (x, y), v in px.items():
         out[(x, y)] = (next((r for r, s in roles.items() if v in s), None), pal[v])
@@ -133,7 +134,8 @@ def tmc_roles(px, pal, roles, brown=False):
                         if n not in patch: patch.add(n); todo.append(n)
                     else: round_.append(px.get(n))
             seen |= patch
-            if sum(n in (10, 11) for n in round_) >= 0.6 * len(round_):
+            # (A face touches the outline or the eyes; a highlight in the hair doesn't.)
+            if not any(n in (14, 15) for n in round_) and sum(n in (10, 11) for n in round_) >= 0.6 * len(round_):
                 for q in patch: out[q] = ('hair', pal[px[q]])
     return out
 def head_roles(hair):
@@ -192,7 +194,7 @@ def hyrule():
                     if n not in px: px[n] = 15
             return px
         return add
-    for pid, name, length in [('zora_fin', 'Tail-Fin', 7), ('zora_long', 'Long Tail-Fin', 11)]:
+    for pid, name, length in [('zora_fin', 'Tail-Fin', 7), ('zora_long', 'Long Tail-Fin', 9)]:
         tmc_part(pid, name, 'head', 58, [k for k in (4, 0, 6, 4, 4, 0, 0, 6, 6)], adults, {'skin': {10, 11, 12, 13}}, False, adult_at, SHIFT, fin(length))
     for base, name in [(9, 'Tunic'), (0, 'Smock'), (18, 'Overalls'), (27, 'Waistcoat'), (36, 'Slim Tunic'), (45, 'Apron'),
                        (54, 'Skirt'), (63, 'Pinafore')]:
