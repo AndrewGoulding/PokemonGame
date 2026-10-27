@@ -919,7 +919,8 @@ def made_heads():
 
 # ---------- Side views drawn here ----------
 # Paper Mario's people are paper: the models have a front and a back and no side (it's their front, a little to the
-# left), and Superstar Saga's Toad, shrunk, is his front with his face gone. So their sides are drawn here, a pixel at
+# left), and Superstar Saga's Toad, shrunk, is his back half turned (and facing you his eyes were lost: FRONT_EYES
+# puts them back). So their sides are drawn here, a pixel at
 # a time, each facing left: `SIDE_ART[pid]` = (the picture, a row a string, its feet on the bottom row; how many rows
 # at the bottom are its legs; its own colours). In the picture: 1-4 its skin, darkest first, A-D its clothes, P-S its
 # trim, E-H its hair (each the part's own four shades, as the sheet has them), k its outline, w white, e an eye's
@@ -964,7 +965,11 @@ def drawn_side(pid, frames):
         steps.append(g)
     out = list(frames)
     out[2], out[7], out[8], out[13], out[14] = stand, steps[0], steps[1], stand, stand
+    # (and eyes where shrinking took them: Toad's, facing you)
+    if pid in FRONT_EYES:
+        out[0] = dict(out[0]); out[0].update({k: (None, plain[0]) for k in FRONT_EYES[pid]})
     return out
+FRONT_EYES = {'toad': [(-2, -10), (-2, -9), (1, -10), (1, -9)]}
 SIDE_ART = {
     'goomba': ("""
 ....kk.........

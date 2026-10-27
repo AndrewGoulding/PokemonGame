@@ -7410,6 +7410,12 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
       for (const c of C[k]) assert(c.length === 6 && c.slice(2).every((h, i, a) => /^#[0-9a-f]{6}$/.test(h) && (!i || lum(h) > lum(a[i - 1]))), k + ": " + c[0]);
     }
     for (const r of window.REALM_RACES) assert(r.looks.skin.length >= 7, r.id + "'s skins");
+    // (the Frieza Clan's and the Kais' women have heads of their own race's, made for them, in the Face row)
+    const P = window.PLAYER_LOOK_PARTS;
+    for (const [id, head] of [["arcosian", "arcosian_woman"], ["kai", "kai_woman"]]) {
+      const L = window.REALM_RACES.find((r) => r.id === id).looks, w = L.presets.find((p) => p.gender === "female");
+      assert(L.heads.includes(head) && w.face === head + "_face" && P[w.face].family === P[w.body].family && P[w.face].ref.length === 15, id + "'s woman");
+    }
   }
   // (Android 20 is Dr. Gero, not Mr. Popo; the Frieza Clan by that name)
   assert.strictEqual(window.REALM_RACES.find((r) => r.id === "arcosian").name, "Frieza Clan");
