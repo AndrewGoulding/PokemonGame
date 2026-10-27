@@ -121,6 +121,9 @@ def letters(atlas, s, colour=None, scale=1, gap=0):
     for k, ch in enumerate(s):
         if ch == ' ': continue
         g = atlas.crop((glyph_x(ch), FONT_Y, glyph_x(ch) + 7, FONT_Y + FONT_H))
+        if ch == 'O':
+            # (its O is square on the left, a D at a glance: its round right side turned round onto its left)
+            r = g.crop((4, 0, 7, FONT_H)).transpose(Image.FLIP_LEFT_RIGHT); g.paste(r, (0, 0))
         if colour:
             # (the letters' own shading kept, made the neon's colour: their light rows its colour, their dark its shade)
             px = g.load()
@@ -220,7 +223,7 @@ def tenkaichi(P, atlas):
     x = S.bay(P['taxi'])     # (the corner of Nakamichi Street: x 726-951)
     S.at(neon(board(atlas, 'NAKAMICHI', (20, 30, 60), (160, 230, 255), 1), (120, 200, 255)), x + 74, 300)
     x = S.bay(hue(P['gyudon'], 245, 1.4, 1.05))
-    S.at(neon(board(atlas, 'SMILE BURGER', (230, 180, 30), (180, 30, 20), 2), (255, 200, 80)), x + 20, 258)
+    S.at(neon(board(atlas, 'SMILE BURGER', (190, 30, 24), (255, 236, 150), 2), (255, 200, 80)), x + 20, 258)
     S.bay(hue(P['serena'], 12, 1.0, 1.1))
     S.bay(P['block'])
     lamps(S, P, (330, 690, 940, 1290))
@@ -315,7 +318,7 @@ def theater(P, atlas):
     x = S.bay(P['poppo'])
     x = S.bay(hue(P['fujibashi'], 200, 1.2))
     S.at(board(atlas, 'KARAOKE', (240, 200, 40), (40, 20, 10), 2), x + 30, 266)
-    lamps(S, P, (300, 560, 840, 1110))
+    lamps(S, P, (40, 300, 990, 1170))
     for rx in (420, 700): S.put(P['rail'], rx, BASE + 8)
     S.put(P['kamuro'], 380, BASE + 6); S.put(P['busstop'], 920, BASE + 6)
     S.put(P['bike2'], 1000, BASE + 6)

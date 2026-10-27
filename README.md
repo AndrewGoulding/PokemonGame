@@ -3645,16 +3645,19 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   through its door (every convenience store on the street can be gone into; Poppo's the one). **Serena's Backlot**:
   down the passage beside Serena's door, the yard behind the bar, its manhole cover on the asphalt. **Under the
   Street**: down that manhole, a storm drain where the Time Machine stands. And the rest of Yakuza 0's Kamurocho:
-  **Taihei Boulevard** along the south (a pachinko parlour, the bank, karaoke, a drugstore, an izakaya), the red gate
-  of **Tenkaichi Street** off it (ramen, sushi, a game centre, Smile Burger, robatayaki), **Nakamichi Street** across
-  the middle (a coffee shop, a hostess club, a pawn shop, the love hotel's sign), **Pink Street**'s cabarets and host
-  club, the **Champion District**'s lanes of tiny bars, and **Theater Square** with the Kamuro Theater and its
-  fountain. Streets of Kamurocho has no insides of its shops and only its one street, so those are this game's own,
-  drawn in the street's colours: Poppo, the backlot and the storm drain by `tools/build-kamurocho-insides.py` (Poppo's
-  sign off its shopfront, its shelves, drinks fridge and counter, its clerk, a man at ease in Poppo's blue uniform;
-  the backlot's green tiles, back door, crates, bin bags and fence; the drain's wet concrete, pipes, culvert and
-  ladder, and the Time Machine three times over), the streets by `tools/build-kamurocho-streets.py` (their signs in
-  Japanese, from the IPA Gothic font). You're drawn twice your size, to stand as tall as its people. Walk off a
+  **Taihei Boulevard** along the south (Poppo, a pachinko hall, the yakiniku place up its steps, the gyudon place),
+  the red gate of **Tenkaichi Street** off it (ramen, yakiniku, Smile Burger, the corner of Nakamichi),
+  **Nakamichi Street** across the middle (a coffee shop, the hostess club, a bar, a pawn shop), **Pink Street**'s
+  cabaret, host club, Club Moon and lounge in pink neon, the **Champion District**'s lanes of tiny bars under their
+  wires, and **Theater Square** with the Kamuro Cinema and the Kamuro Theater's arcade and marquee. Streets of
+  Kamurocho has no insides of its shops and only its one street, so those are this game's own: Poppo, the backlot
+  and the storm drain drawn in the street's colours by `tools/build-kamurocho-insides.py` (Poppo's sign off its
+  shopfront, its shelves, drinks fridge and counter, its clerk, a man at ease in Poppo's blue uniform; the backlot's
+  green tiles, back door, crates, bin bags and fence; the drain's wet concrete, pipes, culvert and ladder, and the
+  Time Machine three times over), and the streets put together by `tools/build-kamurocho-streets.py` out of Streets
+  of Kamurocho's own pieces (given the game's folder): the street's shopfronts and pavement, the alley's back doors,
+  its title screen's Tenkaichi gate and neon, its atlas's lamp posts, bicycles, signboards and overhead wires, and
+  its own letters for the new signs, recoloured and relit. You're drawn twice your size, to stand as tall as its people. Walk off a
   street's end into the next (the street's left end is Nakamichi Street's right, its right the alley; Tenkaichi
   runs from Taihei's gate to Theater Square, Pink Street from Taihei's end to Nakamichi, the Champion District from
   Pink Street to the square); stand at a turning (Tenkaichi's gate, the corner of Nakamichi, the way into Pink
@@ -3880,8 +3883,11 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   but for its `female` ones (Bulma, Chi-Chi and the townswoman, Android 18, Peach, Francesca, Goombella), and its
   `presets` add more, put together from its family's parts: a Hylian man and woman, a Kokiri boy and girl, a Zora
   and a Zora maiden, a Gerudo woman and man, and a woman for the Saiyans (Chi-Chi's face and hair on Vegeta's armour),
-  Namekians (in Namekian green), the Frieza Clan (Android 18's, frost white), the Majin and the Kais (Videl's, from
-  Buu's Fury, in pink and in Kai purple), the Mushroom People and the Koopas (in pink: neither game has a woman of
+  Namekians (in Namekian green), the Majin (Videl's, from Buu's Fury, in pink), the Frieza Clan and the Kais (heads of
+  their own race's made for them, as neither has a woman to draw on and another race's never sat right: Frieza's
+  head with winged lashes, lips, a softer chin and a pink gem at her brow, in frost white; Kibito's face with lashes
+  and lips under his long white hair, on his robe, in Kai purple: `tools/build-player-looks.py`'s `MADE_HEADS`, each
+  in its race's Face row), the Mushroom People and the Koopas (in pink: neither game has a woman of
   theirs to draw on).
 - **Walking**: four frames a stride where the sprites have them (the Dragon World's: a step, the frame between, the
   other step, the frame between, in the walk's own order: the steps the walk's opposite frames, 0 and 2 or 1 and 3),
@@ -3904,8 +3910,10 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   spots are their "hair"; Superstar Saga has no Toadsworth); and Bowser for the Koopas (shrunk to the others' size, Bowser more). And from Paper Mario:
   The Thousand-Year Door, drawn from its models: a Pianta, Don Pianta, Frankie and Francesca for the Piantas (their
   sprouts are their "hair", their grass skirts the trim); a Goomba and Goombella for the Goombas; Koops for the Koopas.
-  Paper Mario's people are paper: they face you a little to the left, so that's their side too, and turned round
-  it's their backs.
+  Paper Mario's people are paper: the models face you a little to the left and have no side, and Superstar Saga's
+  Toad, shrunk, is his back half turned; so their sides are drawn a pixel at a time (`SIDE_ART`: a Pianta's, used for
+  all four in their own colours, a Goomba's, Goombella's, Koops's and Toad's, each facing left, its legs striding as
+  it walks), and Toad's eyes, lost in the shrinking, are put back facing you.
 - **Colours**: your hair, your tunic or gi, its trim and your skin, each "Original" (the part's own) or one of
   `LOOK_COLOURS` (30 hair colours, Super Saiyan gold, platinum, auburn, mint and the rest; 33 for clothes; each
   race's own skins, seven or more: people's five and porcelain, olive, golden and deep, the Zora's river blue,

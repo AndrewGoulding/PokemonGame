@@ -1,7 +1,7 @@
 // Kamurocho, side on (ui/street.js): Streets of Kamurocho's own streets (tools/build-kamurocho-sok.py), and the rest
-// of Yakuza 0's drawn in their colours (tools/build-kamurocho-streets.py, build-kamurocho-insides.py), walked as its
-// beat-'em-up's are, along the street and up and down its pavement. Each scene: its picture (480 high, the floor at
-// the bottom), the floor you can walk on (a polygon, in the picture's pixels), its ways out (`exits`: walk off an
+// of Yakuza 0's put together out of its pieces (tools/build-kamurocho-streets.py; the insides drawn by
+// build-kamurocho-insides.py), walked as its beat-'em-up's are, along the street and up and down its pavement.
+// Each scene: its picture (480 high, the floor at the bottom), the floor you can walk on (a polygon, in the picture's pixels), its ways out (`exits`: walk off an
 // edge, a door's spot and A, or a spot with `walk`: walking that way out of it, as through Poppo's door; to the
 // other scene's x and y), its spots (stand in one and press A: its
 // script), its `things` (pictures laid on it: the manhole cover), and its people (each a SoK sprite from
@@ -97,8 +97,8 @@ window.KAMUROCHO_STREET = {
       exits: [{ spot: [40, 124, 414, 446], to: "backlot", x: 422, y: 446, facing: "down", text: "Ladder up" }],
       spots: [{ x0: 236, x1: 364, y0: 414, y1: 470, script: "Kamurocho_TimeMachine", text: "Time Machine" }]
     },
-    // (Yakuza 0's other streets, this game's own, drawn in the street's colours (tools/build-kamurocho-streets.py),
-    // each 480 high, the pavement you walk on at the bottom. Taihei Boulevard along the south, the gate of Tenkaichi
+    // (Yakuza 0's other streets, this game's own, put together out of Streets of Kamurocho's pieces
+    // (tools/build-kamurocho-streets.py), each 480 high, the pavement you walk on at the bottom. Taihei Boulevard along the south, the gate of Tenkaichi
     // Street off it; Tenkaichi north to Theater Square, Nakamichi Street off its corner across to the street above
     // (Streets of Kamurocho's), Pink Street off Nakamichi and back down to Taihei, and the Champion District's lanes
     // between Pink Street and Theater Square. Turnings are spots: stand in one and press A.)
