@@ -7172,10 +7172,10 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   done.then(() => console.log("ok: Hoenn's scripts, Norman's scene and Wally's lesson, Dive, trades, " + Object.keys(HS.s).length + " scripts"));
 }
 
-// The other realms' battles (engine/battle.js's RealmBattle): Kamurocho's fights, played with random choices, end;
+// The other realms' battles (engine/battle.js's Ultimax): Kamurocho's fights, played with random choices, end;
 // the chart's immunities hold; EXP levels a member up and teaches their skills.
 {
-  const R = window.RealmBattle, S = window.REALM_SKILLS, groups = window.REALM_ENCOUNTERS.Kamurocho.groups;
+  const R = window.Ultimax, S = window.REALM_SKILLS, groups = window.REALM_ENCOUNTERS.Kamurocho.groups;
   assert.strictEqual(R.effect("Psychic", ["Dark"]), 0);
   assert.strictEqual(R.effect("Ground", ["Dark", "Steel"]), 2);
   for (const id in window.REALM_FIGHTERS) for (const [, s] of window.REALM_FIGHTERS[id].skills) assert(S[s], id + "'s " + s);
@@ -7197,6 +7197,37 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   assert(rec.lv === 5 && ups.length === 4 && ups.some((u) => u.learned.includes("rush")));
   // (Each race is a fighter of its own, levelling up through all its skills.)
   for (const r of window.REALM_RACES) { const x = R.recruit(r.id, 1); R.gainExp(x, R.expFor(20)); assert.strictEqual(R.skillsAt(r.id, x.lv).length, 7, r.id); }
+  // (A Pokémon out of its realm: the Ultimax system's rules, its stats as theirs, its types as elements.)
+  const TYPES = { Dragon: "Air", Flying: "Air", Normal: "Neutral", Electric: "Electric", Water: "Water", Grass: "Grass", Psychic: "Psychic",
+    Fire: "Fire", Rock: "Ground", Ground: "Ground", Steel: "Steel", Ghost: "Dark", Fairy: "Light", Poison: "Poison", Bug: "Grass",
+    Fighting: "Neutral", Ice: "Ice", Dark: "Dark" };
+  for (const t in TYPES) assert.deepStrictEqual(R.pokemonElements([t]), [TYPES[t]], t);
+  assert.deepStrictEqual(R.pokemonElements(["Normal", "Flying"]), ["Air"]);
+  assert.deepStrictEqual(R.pokemonElements(["Rock", "Ground"]), ["Ground"]);
+  assert.deepStrictEqual(R.pokemonElements(["Fighting", "Normal"]), ["Neutral"]);
+  assert.deepStrictEqual(R.pokemonElements(["Ghost", "Fairy"]), ["Dark", "Light"]);
+  for (const e of Object.values(TYPES)) assert(window.REALM_ELEMENTS.includes(e), e);
+  const pika = Party.create("Pikachu", 20, { moves: ["Thunderbolt", "Quick Attack", "Thunder Wave", "Growl"] }), ps = Party.stats(pika);
+  const pf = R.pokemon(pika, ps, "Pikachu");
+  assert(pf.str === ps.atk && pf.def === ps.def && pf.int === ps.spa && pf.wis === ps.spd && pf.spd === ps.spe && pf.maxHp === ps.hp);
+  assert.deepStrictEqual(pf.elements, ["Electric"]);
+  assert.deepStrictEqual(pf.skills, ["move:Thunderbolt", "move:Quick Attack", "move:Thunder Wave"], "Growl doesn't come out of its realm");
+  assert(pf.own["move:Thunderbolt"].kind === "magic" && pf.own["move:Thunderbolt"].element === "Electric" && pf.own["move:Thunderbolt"].status === "stun");
+  assert(pf.own["move:Quick Attack"].kind === "phys" && pf.own["move:Thunder Wave"].kind === "status" && pf.own["move:Thunder Wave"].status === "stun");
+  assert(R.pokemonSkill("Recover", 30, 100).kind === "heal" && R.pokemonSkill("Protect", 30, 100).kind === "guard" && R.pokemonSkill("Harden", 30, 100).kind === "guard");
+  assert(R.pokemonSkill("Sleep Powder", 30, 100).status === "sleep" && R.pokemonSkill("Toxic", 30, 100).status === "poison" && !R.pokemonSkill("Swords Dance", 30, 100));
+  {
+    const b = R.create([R.member(R.recruit("hylian", 20), "Red"), pf], ["thug", "knife"], { seed: 7 });
+    const pp0 = pf.pp["move:Thunderbolt"];
+    for (let n = 0; !b.over; n++) {
+      assert(n < 100, "a fight with a Pokémon in it ends");
+      for (const st of R.turn(b, [{ act: "attack", target: 0 }, { act: "skill", skill: "move:Thunderbolt", target: 0 }])) assert(!/NaN|undefined/.test(st.text), st.text);
+    }
+    assert(pf.pp["move:Thunderbolt"] < pp0, "its moves cost PP");
+    R.keep(b);
+    assert(pika.moves[0].pp === pf.pp["move:Thunderbolt"] && pika.hp === pf.hp, "its PP and HP go back to it");
+    assert(R.pokemonExp(pika, 20) > 0);
+  }
   // (And each has its looks: parts that are drawn, and skins that are colours.)
   const skins = window.LOOK_COLOURS.skin.map((c) => c[0]);
   for (const r of window.REALM_RACES) {

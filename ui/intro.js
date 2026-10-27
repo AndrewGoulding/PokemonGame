@@ -911,7 +911,7 @@
       // (The race's stats and its skills, with the levels they come at, wrapped to the page: the text box covers
       // it below y 112.)
       g.font = "7px 'Trebuchet MS', Verdana, sans-serif";
-      text(["hp", "mp", "atk", "def", "agi", "wis"].map((k) => k.toUpperCase() + " " + f.base[k]).join("  "), 7, 90, { size: 7, color: "#fff" });
+      text(["hp", "mp", "str", "def", "int", "wis", "spd"].map((k) => k.toUpperCase() + " " + f.base[k]).join("  "), 7, 90, { size: 7, color: "#fff" });
       const lines = [""];
       for (const w of f.skills.map(([lv, k]) => S[k].name.replace(/ /g, " ") + " (" + lv + ")").join(", ").split(" ")) {
         const l = lines[lines.length - 1], next = l ? l + " " + w : w;

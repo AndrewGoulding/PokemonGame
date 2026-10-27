@@ -3696,21 +3696,34 @@ python3 tools/build-kamurocho.py
   also writes each one's fighting stance (the fifth row's first frame, full size) as `lad_kiryu_battle.png` and
   `lad_majima_battle.png`, their pictures in battle.
 
-## The other realms' battles (Dragon Quest's way)
+## The Ultimax system: the other realms' battles (Dragon Quest's way)
 
-Outside the Pokémon realm and the Yu-Gi-Oh! realm (which has its card duels), fights are turn-based, as in Dragon
-Quest: you and up to three companions against a group of foes. The Like a Dragon realm has them so far; the Dragon
+The game has two battle systems: the **Pokémon system** (the Pokémon realm's battles, Gen 6's, above) and the
+**Ultimax system** (every other realm's but the Yu-Gi-Oh! realm, which has its card duels). In the Ultimax system,
+fights are turn-based, as in Dragon Quest: you and up to three companions against a group of foes. The Like a Dragon realm has them so far; the Dragon
 Ball realm will use the same system. This system is this game's own, written from how Dragon Quest plays; nothing is
 taken from a Dragon Quest cartridge.
 
+- **The stats**: HP, MP, and five that are each a Pokémon stat's counterpart:
+
+  | Ultimax | Pokémon | Does |
+  |---|---|---|
+  | Strength (STR) | Attack | physical attacks and skills |
+  | Defence (DEF) | Defence | against them |
+  | Intelligence (INT) | Special Attack | magic, and healing |
+  | Wisdom (WIS) | Special Defence | against magic |
+  | Speed (SPD) | Speed | who goes first, and running away |
+
 - **A turn**: first **Fight** or **Run**. Then each of the party picks **Attack** (and whom), **Skills** (each costs
   MP; on one foe, all of them, an ally or yourself), **Defend** (half damage this turn) or **Items**. B goes back to
-  the one before. Then everyone acts, the quickest first: agility times a random half to whole, and defending always
+  the one before. Then everyone acts, the quickest first: speed times a random half to whole, and defending always
   comes first. Running away works about half the time, more if your party's quicker, and never in a boss fight.
-- **Damage** (Dragon Quest's formula): attack/2 − defence/4, times 7/8 to 9/8; at less than 1, 0 or 1. One attack
-  in 32 is a critical hit (attack times 0.95 to 1.05, whatever the defence), and one in 32 misses. A skill multiplies
-  that by its power. Elements multiply by `REALM_TYPE_CHART` against the target's elements, and by 1.25 for one of
-  the user's own elements. Magic and healing skills do a set range, plus up to half again for wisdom.
+- **Damage** (Dragon Quest's formula): strength/2 − defence/4, times 7/8 to 9/8; at less than 1, 0 or 1. One
+  attack in 32 is a critical hit (strength times 0.95 to 1.05, whatever the defence), and one in 32 misses. A
+  physical skill multiplies that by its power. A magic skill does its set range times (1 + intelligence/200) /
+  (1 + the target's wisdom/200); a healing one its range times (1 + intelligence/200). Elements multiply by
+  `REALM_TYPE_CHART` against the target's elements, and by 1.25 for one of the user's own elements. (Wisdom, new
+  with these stats, starts at the average of each fighter's intelligence and defence, and grows the same way.)
 - **Status**: sleep (a turn's lost, half a chance a turn to wake), stun (a turn or two lost) and poison (an eighth of HP at the end of each
   turn). Guard skills raise the user's defence by half for the rest of the fight.
 - **Winning**: the foes' EXP is split between those still standing, and their money is yours. EXP to reach level
@@ -3745,8 +3758,28 @@ taken from a Dragon Quest cartridge.
   Host Essence of Door Slamming (it can knock you out cold: sleep), a Biker Essence of Throwing, a Yakuza Grunt
   Essence of Wall Smashing and Mr. Shakedown Essence of No Mercy.
 
-- **The code**: the engine is `RealmBattle` at the end of `engine/battle.js` (headless: a turn in, its steps out, each with its text and everyone's HP and MP after it); the
+- **The code**: the engine is `Ultimax` at the end of `engine/battle.js` (headless: a turn in, its steps out, each with its text and everyone's HP and MP after it); the
   screen and the scripts are in `ui/game.js` (`realmFight`), and the party is saved in `flags.realmParty`.
+- **Pokémon out of their realm**: at the Kamurocho Time Machine, **Pokémon** brings one of your party Pokémon into
+  the realm's party (four in the party at most; Kiryu sends the last one back to make room), or sends one back. It
+  fights by the Ultimax system's rules (`Ultimax.pokemon` in `engine/battle.js`):
+  - **Its stats** are its own (`Party.stats`): Attack its strength, Defence its defence, Special Attack its
+    intelligence, Special Defence its wisdom, Speed its speed, HP its HP.
+  - **Its types are elements**: Dragon and Flying are Air; Normal and Fighting Neutral; Rock and Ground Ground; Bug
+    and Grass Grass; Ghost and Dark Dark; Fairy Light; Electric, Water, Psychic, Fire, Steel, Poison and Ice their
+    own. Two types that come to one element are that one, and Neutral only when it's all there is (Normal/Flying is
+    Air).
+  - **Its moves are skills** that cost PP, each its own, and no MP. A physical move hits as an attack times its
+    base power / 40 (two to five hits count as three). A special move is magic: its base power times its level /
+    40, an eighth either way. Both can sleep, poison or stun as their side effects do (paralysis is stun). A move
+    that puts to sleep, poisons or paralyses is a status skill at its accuracy; one that heals its user heals about
+    half its HP; one that raises its Defence or protects it is a guard. Its other moves (stat changes and the like)
+    don't work here: shown when it joins, and left out.
+  - **Afterwards** its HP and PP stay as the fight left them (it's the same Pokémon in your party). Like the rest of
+    the party, it gets up with 1 HP if it fell, and a Rest at the Time Machine heals it as a Pokémon Center would. A
+    fight's EXP is as much of a level to it as to a fighter of its level (`Ultimax.pokemonExp`: Ultimax's curve
+    against its growth rate's). Its levels, new moves and evolving come as from Exp. Candies, up to the level cap.
+    A Pokémon brought along and later left in a box or traded leaves the realm's party.
 - **Your race**: you fight as the race you chose at the start (below), with its elements, stats and skills, and
   not as plain "you" (whose Essence skills above are for a game with no race yet). A Kamurocho party saved before
   races keeps your level and EXP and becomes your race.
@@ -3756,16 +3789,19 @@ taken from a Dragon Quest cartridge.
 A new game starts by making you, on a page of its own (`ui/intro.js`'s `racePage`), before your name. Up and
 down go through what you can choose, left and right change it, A (and YES) is you:
 
-- **Race**: the twelve below, each with its element, stats at level 1 and skills (with the levels they come at) on
+- **Race**: the sixteen below, each with its element, stats at level 1 and skills (with the levels they come at) on
   the page and its description in the text box. Your race is `player.race`; each is a fighter in `REALM_FIGHTERS`
   (by its id), and it's who you fight as in the realms' battles. Hyrule's four are for the Zelda realm to come, the
-  Dragon World's three for the Dragon Ball realm; until then they fight in Kamurocho.
+  Dragon World's seven for the Dragon Ball realm; until then they fight in Kamurocho.
 - **Body and head**: Hyrule's people are a head on a body, any head on any body (The Minish Cap draws its townsfolk
   and children that way): 16 grown-ups' heads (hair and faces) and 8 bodies (costumes), the children's 8 and 5 for
   the Kokiri, and Link whole for the Hylians. The Zora have the bald head with a tail-fin drawn on (The Minish Cap has
   no Zora), short or long. The Dragon World's are whole characters: Goku, Vegeta, Gohan, Kid Gohan and Trunks for the
   Saiyans; Krillin, Yamcha, Tien, Bulma, Chi-Chi, a townsman and a townswoman for the Humans; Fat Buu, Kid Buu and
-  Super Buu for the Majin. The Mushroom Kingdom's are whole characters from Mario & Luigi: Superstar Saga: Mario,
+  Super Buu for the Majin; Piccolo (caped and in his gi), Dende, Nail, Elder Moori and a villager for the Namekians;
+  Androids 16, 17, 18, 19 and 20 and Cell for the Androids (Cell and King Cold halved, as the Buus are); Frieza, his
+  first form, Mecha Frieza and King Cold for Frieza's race; the Supreme Kai, Kibito, Kibito Kai and King Kai for
+  the Kais. The Mushroom Kingdom's are whole characters from Mario & Luigi: Superstar Saga: Mario,
   Luigi and Peach for its Humans; Toad, a Toad Brigade Toad and Toadsworth for the Mushroom People (their caps'
   spots are their "hair"); and Bowser for the Koopas (shrunk to the others' size, Bowser more). And from Paper Mario:
   The Thousand-Year Door, drawn from its models: a Pianta, Don Pianta, Frankie and Francesca for the Piantas (their
@@ -3775,7 +3811,7 @@ down go through what you can choose, left and right change it, A (and YES) is yo
 - **Colours**: your hair, your tunic or gi, its trim and your skin, each "Original" (the part's own) or one of
   `LOOK_COLOURS` (15 hair colours, golden for a Super Saiyan; 17 for clothes; each race's own skins: the Zora's
   river blue, silver, sea green and coral, the Majin's pinks, lilac, grey and blue, the Koopas' and Piantas' yellow
-  and orange). What each colour's called is the race's (`labels`: a Koopa's shell and belly) or a body's own
+  and orange, the Namekians' green and olive, Frieza's race's frost white, the Kais' purple). What each colour's called is the race's (`labels`: a Koopa's shell and belly) or a body's own
   (`bodyLabels`: Koops's hood, Goombella's helmet).
 
 You turn and walk about in the picture as you choose. Your look is `player.appearance` ({ body, head, hair, outfit,
@@ -3836,13 +3872,18 @@ colours) between its markers; each race's choices are `REALM_RACES[..].looks`.
 | Human (Neutral) | quick, every technique | Wolf Fang Fist (1), Solar Flare (3, stun), Afterimage (5, guard), Kamehameha (7), Destructo Disc (10, Steel), Tri-Beam (14, all), Spirit Ball (19, Light) |
 | Majin (Psychic) | most HP, slow, heals itself | Rubber Punch (1), Regeneration (2, self heal), Belly Bounce (4, guard), Candy Beam (6), Angry Explosion (10, all), Absorption (14, Dark, big self heal), Vanishing Ball (19, Dark, all) |
 | Saiyan (Light, for the Super Saiyan's golden aura) | hardest hitter, little magic | Ki Blast (1), Meteor Smash (3), Saiyan Pride (5, guard), Galick Gun (8, Dark), Big Bang Attack (11, Fire, all), Final Flash (15), Super Saiyan Rage (20) |
+| Namekian (Grass) | sturdy, heals its friends | Demon Hand (1), Namekian Healing (2, heal), Weighted Cape (4, guard), Evil Containment Wave (6, Psychic, stun), Masenko (9), Hellzone Grenade (13, all), Special Beam Cannon (18) |
+| Android (Steel) | strong and tough, endless MP, little magic | Rocket Punch (1), Android Barrier (3, guard), Photon Flash (5, Electric), Energy Absorption (7, self heal), Power Blitz (10, Light), Accel Dance (14, all), Hell's Flash (19) |
+| Frieza Race (Ice) | quick and deadly | Death Beam (1, Dark), Tail Whip (3), Transformation (5, guard), Psychokinesis (7, Psychic, stun), Death Saucer (10, Steel), Death Ball (14, all), Supernova (19, Fire) |
+| Kai (Psychic) | frail, the strongest magic, a healer | Telekinesis (1), Restoration (2, Light, heal), Kai Kai (4, guard), Divine Paralysis (6, stun), Kaio-ken Attack (9, Fire), Spirit Bomb (13, Light, all), Z Sword Slash (18, Steel) |
 | Human, of the Mushroom Kingdom (Fire) | all-round | Jump (1), Mushroom (2, heal), Superguard (4, guard), Fireball (7), Super Jump (10), Fire Flower (14, all), Super Star (19, Light, all) |
 | Mushroom Person (Grass) | quick healer | Turnip Toss (1), Super Mushroom (2, heal), Sleepy Spores (4, sleep), Toad Dash (7), Life Mushroom (10, big heal), Mega Mushroom (14, all), Toad Brigade (18, all) |
 | Pianta (Water) | most HP of the five, slow | Chuckster Toss (1), Sturdy Belly (3, guard), Squirt Nozzle (5), Durian Drop (8, Grass), Shine Sprite (11, Light, heal), Hover Nozzle Splash (14, all), Turbo Nozzle (19) |
 | Goomba (Ground) | nimble | Headbonk (1), Goomba Huddle (3, guard), Multibonk (5), Goomba Tower (8, all), Paragoomba Dive (11, Air), Big Goomba Stomp (14), Goomboss Charge (19, all) |
 | Koopa (Earth) | toughest defence | Shell Toss (1), Shell Shield (3, guard), Shell Spin (5, all), Dizzy Shell (7, stun), Power Shell (10, all), Fire Shell (14, Fire), Shell Slam (19) |
 
-The Mushroom Kingdom's five are for its realm to come; their looks are above. Some skill names are this game's own:
+The Mushroom Kingdom's five are for its realm to come; their looks are above. Some skill names are this game's own
+(the Dragon World's Weighted Cape, Android Barrier, Divine Paralysis, Kaio-ken Attack and Z Sword Slash, and):
 Sleepy Spores, Toad Dash, Toad Brigade, Chuckster Toss, Sturdy Belly, Durian Drop, Goomba Huddle, Goomba Tower,
 Big Goomba Stomp and Goomboss Charge.
 

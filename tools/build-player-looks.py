@@ -261,6 +261,10 @@ SKIN = ['ffbdad', 'e79c84', 'ce8463', 'b56339']
 TAN = ['f7c673', 'dead63', 'c69452', 'ad7b39']
 BUU = ['ffa5ce', 'ff8cbd', 'ff73b5', 'de5294', 'bd397b', '9c185a']
 WHITE = ['ffffff', 'dedede', 'c6c6c6', 'adadad', 'a5a5a5', '949494', '7b7b7b', '737373']
+GREY_CAPE = ['ffffff', 'dedede', 'c6c6c6', 'adadad', '949494', '737373']
+NAMEK = ['52d600', '31ad00', '107b00']
+NAMEK1 = ['29ad39', '188421', '086310']
+KAI = ['de84ff', 'ce63ce', 'ad63ad', '9c00d6', '7b00ad']
 DB_PARTS = [
     ('goku', 'Goku', 'LG2_057', 1, {'hair': ['000000', '210084', '21217b'], 'outfit': ['ff7300', 'd66300', 'ad4a00', '7b3100'],
                                       'trim': ['4221d6', '3110ad', '21217b', '210084'], 'skin': SKIN}),
@@ -285,6 +289,40 @@ DB_PARTS = [
     ('fat_buu', 'Fat Buu', 'BF_034', 2, {'outfit': ['944ace', '7329bd', '6308ad', '420073'], 'trim': ['ffad00', 'd66300', 'ad4a00'], 'skin': BUU}),
     ('super_buu', 'Super Buu', 'BF_040', 2, {'outfit': ['ffffff', 'dedede', 'c6c6c6', 'a5a5a5'], 'trim': ['ffad00', 'ff7300', 'd66300', 'ad4a00'],
                                               'skin': BUU}),
+    # (The Namekians: Piccolo, caped and not, Dende, Nail, Elder Moori and a villager; their antennae are skin.)
+    ('piccolo', 'Piccolo', 'LG2_100', 1, {'outfit': ['6308ad', '520084'], 'trim': GREY_CAPE, 'skin': NAMEK}),
+    ('piccolo_gi', 'Piccolo (Gi)', 'LG2_101', 1, {'outfit': ['6308ad', '520084'], 'trim': ['2184ff', '2163ce', '0039b5'], 'skin': NAMEK}),
+    ('dende', 'Dende', 'LG2_092', 1, {'outfit': ['2184ff', '2163ce', '0039b5'], 'trim': ['ffffff', 'c6c6c6', '949494'], 'skin': NAMEK}),
+    ('nail', 'Nail', 'LG1_55', 1, {'outfit': ['ffffff', 'ced6de', 'a5adb5', '737b7b'], 'trim': ['b54a00', '7b4200'], 'skin': NAMEK1}),
+    ('moori', 'Elder Moori', 'LG2_070', 1, {'outfit': ['4221d6', '3110ad', '210084'], 'trim': ['ffffff', 'c6c6c6', '737373'], 'skin': NAMEK}),
+    ('namekian', 'Namekian', 'LG1_52', 1, {'outfit': ['ffffff', 'c6cece', '848c94'], 'trim': ['0010ad', '000873'], 'skin': NAMEK1}),
+    # (The Androids: 16, 17, 18, 19 and 20 (Dr. Gero), and Cell.)
+    ('android_16', 'Android 16', 'LG2_005', 1, {'hair': ['ff7300', 'd66300', 'ad4a00'], 'outfit': ['ffff39', '9c9c00', '6b6b00'], 'skin': SKIN}),
+    ('android_17', 'Android 17', 'LG2_007', 1, {'hair': ['000000', '424242'], 'outfit': ['7b63e7', '5a31ff', '4221d6', '3110ad', '21217b'],
+                                                'trim': ['d66300', 'ad4a00'], 'skin': ['f7dead'] + TAN}),
+    ('android_18', 'Android 18', 'LG2_008', 1, {'hair': ['ffff7b', 'ffd642', 'e7a542'], 'outfit': ['4221d6', '3110ad', '210084', '21217b'],
+                                                'trim': ['ad7b39', '845218'], 'skin': SKIN}),
+    ('android_19', 'Android 19', 'LG2_009', 1, {'outfit': ['e7ef7b', 'e7bd42', 'c69452', '946329', '845218'], 'trim': ['ad0810', '7b0000'],
+                                                'skin': ['ffffff', 'c6c6c6', '949494']}),
+    ('android_20', 'Android 20', 'LG2_090', 1, {'hair': ['ffffff', 'dedede', 'adadad'], 'outfit': ['d61029', 'ad0810', '7b0000'],
+                                                'trim': ['ffd642', 'ff9418', 'd66300']}),
+    ('cell', 'Cell', 'LG2_027', 2, {'outfit': ['e7d6ff', 'ad63ad', '7b217b', '5a007b'], 'skin': ['ced67b', '7bbd42', '7ba542', '6b6b00']}),
+    # (Frieza's race: Frieza, his first form and as Mecha Frieza, and King Cold; their plates are the trim.)
+    ('frieza', 'Frieza', 'LG2_045', 1, {'trim': ['de84ff', 'ad21ff', '7b21ad', '5a007b'], 'skin': ['ffffff', 'adbde7', '7ba5ce']}),
+    ('frieza_first', 'Frieza (First Form)', 'LG1_23', 1, {'outfit': ['de7b94', 'bd5a73', '8c394a', '732939'], 'trim': ['de8cf7', '732994', '421063'],
+                                                           'skin': ['ffffff', 'dec6de', 'c6c6c6']}),
+    ('mecha_frieza', 'Mecha Frieza', 'LG2_046', 1, {'trim': ['7b63e7', '7b63ad', '7b21ad', '5a007b', '210084'], 'skin': ['ffffff', 'adbde7', '7ba5ce']}),
+    ('king_cold', 'King Cold', 'LG2_071', 2, {'outfit': ['d61029', 'ad0810', '7b0000'], 'trim': ['7bffce', '00a5a5', '21637b'],
+                                              'skin': ['efadff', 'de84ff', 'ce29ff', '9c00d6', '5a007b']}),
+    # (The Kais: the Supreme Kai, Kibito, the two fused, and King Kai.)
+    ('supreme_kai', 'Supreme Kai', 'BF_073', 1, {'hair': ['ffffff', 'dedede', 'd6adef'], 'outfit': ['00ced6', '009cb5', '006b84', '004263'],
+                                                 'trim': ['ff8400', 'd66300', 'ad4a00', '733900'], 'skin': KAI}),
+    ('kibito', 'Kibito', 'BF_150', 1, {'hair': ['ffffff', 'dedede', 'c6c6c6', 'a5a5a5', '7b7b7b'], 'outfit': ['ffad00', 'ff8400', 'd66300', 'ad4a00', '733900'],
+                                       'trim': ['21a5ce', '2163ad', '210084'], 'skin': KAI}),
+    ('kibito_kai', 'Kibito Kai', 'BF_249', 1, {'hair': ['f7f7f7', 'ceefff', 'add6e7', '7ba5ce'], 'outfit': ['00ced6', '009cb5', '006b84', '004263'],
+                                               'trim': ['ffb529', 'd66300', '733900'], 'skin': KAI}),
+    ('king_kai', 'King Kai', 'BF_214', 1, {'outfit': ['c60000', '940000', '5a0000'], 'trim': ['8cce39', '529c00', '315a00'],
+                                           'skin': ['add6ff', '18bdef', '188cef', '2184ff']}),
 ]
 def db_roles(px, roles):
     """{(x, y): colour} -> {(x, y): (role, colour)}. Hair only on the head (the top two-fifths of the figure); black
@@ -516,7 +554,7 @@ PIANTA = [(('kao', 'hana', 'm_te', 'h_te', 'm_ashi', 'h_ashi'), 'skin', yellow),
 TTYD_PARTS = [
     ('pianta', 'Pianta', 'c_m_buka', '', 0.9, PIANTA),
     ('don_pianta', 'Don Pianta', 'c_m_boss', '', 0.85, [(('kao', 'hana'), 'skin', any_)] + PIANTA),
-    ('frankie', 'Frankie', 'c_m_waka', '', 0.9, PIANTA),
+    ('frankie', 'Frankie', 'c_m_waka', '', 0.9, [(('kao', 'hana', 'm_te', 'h_te', 'm_ashi', 'h_ashi'), 'skin', blue)] + PIANTA[1:]),
     ('francesca', 'Francesca', 'c_m_ojo', '', 0.85, [(('kao', 'hana', 'm_te', 'h_te', 'm_ashi', 'h_ashi', 'm_ude', 'h_ude'), 'skin', yellow),
                                                     (('karada',), 'outfit', any_), (('skirt',), 'trim', any_), (('happa', 'kuki'), 'hair', any_)]),
     ('goomba', 'Goomba', 'c_kuribo', 'KUR_', 1.3, [(('hon',), 'skin', brown), (('hidariashi', 'migiashi'), 'outfit', any_)]),

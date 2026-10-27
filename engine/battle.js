@@ -4031,22 +4031,33 @@
   window.Battle = Battle;
 })();
 
-// ---------- RealmBattle: the other realms' battles (Dragon Quest's way, headless) ----------
+// ---------- Ultimax: the battle system of every realm but the Pokémon realm's (Dragon Quest's way, headless) ----------
 //
-// A party of up to four against a group of foes (data/type-chart.js: REALM_FIGHTERS, REALM_FOES, REALM_SKILLS,
-// REALM_ITEMS, REALM_TYPE_CHART). Each turn every one of the party still standing picks what to do; the foes pick
-// theirs; then all of them act, the quickest first (agility times a random half to whole). What happens comes back
-// as steps, each with its text and the HP and MP of everyone after it, for the screen to play out.
+// (The Pokémon realm's battles are the Pokémon system, above; these are the Ultimax system.) A party of up to four
+// against a group of foes (data/type-chart.js: REALM_FIGHTERS, REALM_FOES, REALM_SKILLS, REALM_ITEMS,
+// REALM_TYPE_CHART). Each turn every one of the party still standing picks what to do; the foes pick theirs; then all
+// of them act, the quickest first (speed times a random half to whole). What happens comes back as steps, each with
+// its text and the HP and MP of everyone after it, for the screen to play out.
 //
-//   const b = RealmBattle.create(members, ["punk", "punk"], { seed });    // members: RealmBattle.member(...)s
-//   const steps = RealmBattle.turn(b, [{ act: "attack", target: 0 }, { act: "skill", skill: "rush", target: 1 }, ...]);
-//   // or RealmBattle.turn(b, "run"); b.over: null, "won", "lost" or "ran"
-//   RealmBattle.spoils(b)   // { exp, money } for a win
+// The stats: HP, MP, and five more, each a Pokémon stat's counterpart (so a Pokémon brought out of its realm keeps
+// its own: Ultimax.pokemon, below):
+//   str  Strength       (Attack)            physical attacks and skills
+//   def  Defence        (Defence)           against them
+//   int  Intelligence   (Special Attack)    magic, and healing
+//   wis  Wisdom         (Special Defence)   against magic
+//   spd  Speed          (Speed)             who goes first, and running away
 //
-// Damage (Dragon Quest's): an attack does attack/2 - defence/4 (but at least 0 or 1), times 7/8 to 9/8; 1 in 32 is
-// a critical hit, attack times 0.95 to 1.05 whatever the defence. A skill multiplies that by its power, by the
-// element chart against the target's elements, and by 1.25 if it's one of the user's own elements. Defending
-// halves what you take. Running away works half the time, more if you're quicker; never from a boss.
+//   const b = Ultimax.create(members, ["punk", "punk"], { seed });    // members: Ultimax.member(...)s
+//   const steps = Ultimax.turn(b, [{ act: "attack", target: 0 }, { act: "skill", skill: "rush", target: 1 }, ...]);
+//   // or Ultimax.turn(b, "run"); b.over: null, "won", "lost" or "ran"
+//   Ultimax.spoils(b)   // { exp, money } for a win
+//
+// Damage (Dragon Quest's): an attack does strength/2 - defence/4 (but at least 0 or 1), times 7/8 to 9/8; 1 in 32
+// is a critical hit, strength times 0.95 to 1.05 whatever the defence. A physical skill multiplies that by its
+// power; a magic skill does its power (low to high) times (1 + intelligence/200) / (1 + the target's wisdom/200).
+// Either is then multiplied by the element chart against the target's elements, and by 1.25 if it's one of the
+// user's own elements. Defending halves what you take. Running away works half the time, more if you're quicker;
+// never from a boss.
 (function () {
   "use strict";
   const D = () => ({ skills: window.REALM_SKILLS, fighters: window.REALM_FIGHTERS, foes: window.REALM_FOES, items: window.REALM_ITEMS, chart: window.REALM_TYPE_CHART });
@@ -4066,12 +4077,71 @@
   function member(rec, name) {
     const f = D().fighters[rec.id], s = stats(rec.id, rec.lv);
     return { side: "ally", id: rec.id, name: f.name || name, elements: f.elements, lv: rec.lv, hp: Math.min(rec.hp, s.hp), mp: Math.min(rec.mp, s.mp),
-      maxHp: s.hp, maxMp: s.mp, atk: s.atk, def: s.def, agi: s.agi, wis: s.wis, skills: skillsAt(rec.id, rec.lv), status: null, guard: 1, rec };
+      maxHp: s.hp, maxMp: s.mp, str: s.str, def: s.def, int: s.int, wis: s.wis, spd: s.spd, skills: skillsAt(rec.id, rec.lv), status: null, guard: 1, rec };
   }
+  // ---------- A Pokémon out of its realm ----------
+  // Brought into an Ultimax fight, a Pokémon fights by these rules with its own stats (Attack its strength, Defence
+  // its defence, Special Attack its intelligence, Special Defence its wisdom, Speed its speed; its HP its HP), its
+  // types as elements (TYPE_ELEMENT; Neutral only when it's all there is), and its moves as skills, each costing
+  // one of its own PP (it has no MP): a physical move its base power / 40 times an attack (two to five hits, three);
+  // a special one magic, its base power times its level / 40 (an eighth either way); one that puts to sleep,
+  // poisons or paralyses (paralysis: stunned) a status skill, at its accuracy; one that heals the user a heal of
+  // about half its HP; one that raises its Defence or protects it a guard. Its other moves (stat changes and the
+  // like) don't come with it. Its HP and PP go back to it after; and Ultimax EXP, as Pokémon EXP (pokemonExp).
+  const TYPE_ELEMENT = { Dragon: "Air", Flying: "Air", Normal: "Neutral", Electric: "Electric", Water: "Water", Grass: "Grass",
+    Psychic: "Psychic", Fire: "Fire", Rock: "Ground", Ground: "Ground", Steel: "Steel", Ghost: "Dark", Fairy: "Light", Poison: "Poison",
+    Bug: "Grass", Fighting: "Neutral", Ice: "Ice", Dark: "Dark" };
+  function pokemonElements(types) {
+    const out = [];
+    for (const t of types) { const e = TYPE_ELEMENT[t] || "Neutral"; if (!out.includes(e)) out.push(e); }
+    return out.length > 1 ? out.filter((e) => e !== "Neutral") : out;
+  }
+  const STATUS_OF = { slp: "sleep", psn: "poison", tox: "poison", par: "stun" };
+  // A move as a skill (null: one that doesn't come out of the Pokémon realm).
+  function pokemonSkill(name, level, maxHp) {
+    const m = window.MOVES[name];
+    if (!m) return null;
+    const element = TYPE_ELEMENT[m.type] || "Neutral";
+    const target = /^all/.test(m.target) ? "all" : "one";
+    const base = { name, mp: 0, element, target };
+    if (m.cat !== "Status") {
+      const bp = m.power || 60, hits = Array.isArray(m.multihit) ? 3 : m.multihit || 1;
+      const sec = m.secondary && STATUS_OF[m.secondary.status] ? { status: STATUS_OF[m.secondary.status], chance: m.secondary.chance / 100 } : {};
+      if (m.cat === "Physical") return Object.assign(base, { kind: "phys", power: Math.round(bp * hits / 40 * 100) / 100 }, sec);
+      const mid = bp * hits * level / 40;
+      return Object.assign(base, { kind: "magic", power: [Math.round(mid * 7 / 8), Math.round(mid * 9 / 8)] }, sec);
+    }
+    if (STATUS_OF[m.status]) return Object.assign(base, { kind: "status", status: STATUS_OF[m.status], chance: m.acc == null || m.acc === true ? 1 : m.acc / 100 });
+    if (m.target === "self" && m.flags && m.flags.heal) return Object.assign(base, { kind: "heal", power: [Math.round(maxHp * 0.45), Math.round(maxHp * 0.55)], target: "self" });
+    if ((m.boosts && m.boosts.def > 0 && m.target === "self") || m.stallingMove) return Object.assign(base, { kind: "guard", target: "self" });
+    return null;
+  }
+  // A party Pokémon (its record, as game/party.js keeps it) as a fighter; `stats`: Party.stats(record).
+  function pokemon(record, stats, name) {
+    const own = {}, pp = {}, skills = [];
+    for (const slot of record.moves || []) {
+      const s = pokemonSkill(slot.name, record.level, stats.hp);
+      if (!s) continue;
+      const id = "move:" + slot.name;
+      own[id] = s; pp[id] = slot.pp; skills.push(id);
+    }
+    return { side: "ally", id: "pokemon", name: name || record.nickname || record.species, elements: pokemonElements(window.DEX[record.species].types),
+      lv: record.level, hp: Math.min(record.hp, stats.hp), mp: 0, maxHp: stats.hp, maxMp: 0,
+      str: stats.atk, def: stats.def, int: stats.spa, wis: stats.spd, spd: stats.spe, skills, own, pp, status: null, guard: 1, mon: record };
+  }
+  // Ultimax EXP as a Pokémon's: as much of a level to it as to a fighter of its level (Ultimax's curve, expFor,
+  // against its own growth rate's).
+  function pokemonExp(record, exp) {
+    const E = window.Experience, rate = E.growthRate(record.species), L = record.level;
+    if (L >= E.MAX_LEVEL) return 0;
+    return Math.max(1, Math.round(exp * (E.expForLevel(rate, L + 1) - E.expForLevel(rate, L)) / (expFor(L + 1) - expFor(L))));
+  }
+  // A skill by its id: the fighter's own (a Pokémon's moves) or REALM_SKILLS'.
+  const skillOf = (who, id) => (who.own && who.own[id]) || D().skills[id];
   function foe(id, letter) {
     const f = D().foes[id];
     return { side: "foe", id, name: f.name + (letter ? " " + letter : ""), elements: f.elements, hp: f.hp, mp: f.mp, maxHp: f.hp, maxMp: f.mp,
-      atk: f.atk, def: f.def, agi: f.agi, wis: f.wis || 0, skills: f.skills || [], status: null, guard: 1, boss: !!f.boss };
+      str: f.str, def: f.def, int: f.int || 0, wis: f.wis || 0, spd: f.spd, skills: f.skills || [], status: null, guard: 1, boss: !!f.boss };
   }
   function create(members, foeIds, opts) {
     opts = opts || {};
@@ -4091,9 +4161,9 @@
   function physical(b, user, target, power, element) {
     const r = b.rand;
     let crit = false, dmg;
-    if (power === 1 && r() < 1 / 32) { crit = true; dmg = user.atk * (0.95 + r() * 0.1); }
+    if (power === 1 && r() < 1 / 32) { crit = true; dmg = user.str * (0.95 + r() * 0.1); }
     else {
-      const base = user.atk / 2 - target.def * target.guard / 4;
+      const base = user.str / 2 - target.def * target.guard / 4;
       dmg = base < 1 ? Math.floor(r() * 2) : base * (0.875 + r() * 0.25);
       dmg *= power;
     }
@@ -4126,8 +4196,8 @@
     for (const f of b.allies.concat(b.foes)) f.defending = false;
     let order;
     if (choices === "run") {
-      const mine = up(b.allies).reduce((s, f) => s + f.agi, 0) / Math.max(1, up(b.allies).length);
-      const theirs = up(b.foes).reduce((s, f) => s + f.agi, 0) / Math.max(1, up(b.foes).length);
+      const mine = up(b.allies).reduce((s, f) => s + f.spd, 0) / Math.max(1, up(b.allies).length);
+      const theirs = up(b.foes).reduce((s, f) => s + f.spd, 0) / Math.max(1, up(b.foes).length);
       if (b.boss) say("There's no running from this fight!");
       else if (r() < Math.max(0.25, Math.min(0.9, 0.5 + (mine - theirs) / 60))) { say("You got away!", { kind: "run" }); b.over = "ran"; return steps; }
       else say("But you couldn't get away!");
@@ -4138,7 +4208,7 @@
       for (const f of up(b.foes)) acts.push({ who: f, c: foeChoice(b, f) });
       // (Defending happens first, whatever the order.)
       for (const a of acts) if (a.c.act === "defend") a.who.defending = true;
-      order = acts.map((a) => Object.assign(a, { speed: a.c.act === "defend" ? 1e9 : a.who.agi * (0.5 + r() * 0.5) })).sort((x, y) => y.speed - x.speed);
+      order = acts.map((a) => Object.assign(a, { speed: a.c.act === "defend" ? 1e9 : a.who.spd * (0.5 + r() * 0.5) })).sort((x, y) => y.speed - x.speed);
     }
     for (const { who, c } of order) {
       if (b.over) break;
@@ -4212,16 +4282,22 @@
       return;
     }
     // A skill.
-    const s = D().skills[c.skill];
-    if (!s || who.mp < (s.mp || 0)) { say(who.name + " tries " + (s ? s.name : "a skill") + ", but hasn't the MP!"); return; }
-    who.mp -= s.mp || 0;
+    const s = skillOf(who, c.skill);
+    // (A Pokémon's move costs one of its PP.)
+    if (s && who.pp && c.skill in who.pp) {
+      if (!(who.pp[c.skill] > 0)) { say(who.name + " tries " + s.name + ", but there's no PP left!"); return; }
+      who.pp[c.skill]--;
+    } else {
+      if (!s || who.mp < (s.mp || 0)) { say(who.name + " tries " + (s ? s.name : "a skill") + ", but hasn't the MP!"); return; }
+      who.mp -= s.mp || 0;
+    }
     const opener = who.name + " uses " + s.name + "! ";
     if (s.kind === "guard") { who.guard = 1.5; say(opener + who.name + "'s defence goes up!", { kind: "buff", side: who.side, i: ix(who) }); return; }
     if (s.kind === "heal") {
       const f = (typeof c.target === "number" ? mine[c.target] : c.target) || who;
       if (f.hp <= 0) { say(opener + "But " + f.name + " is down!"); return; }
       const before = f.hp;
-      f.hp = Math.min(f.maxHp, f.hp + Math.round((s.power[0] + r() * (s.power[1] - s.power[0])) * (1 + who.wis / 200)));
+      f.hp = Math.min(f.maxHp, f.hp + Math.round((s.power[0] + r() * (s.power[1] - s.power[0])) * (1 + who.int / 200)));
       say(opener + f.name + " gets " + (f.hp - before) + " HP back.", { kind: "heal", side: f.side, i: ix(f) });
       return;
     }
@@ -4237,7 +4313,7 @@
     let first = true;
     for (const f of targets) {
       if (f.hp <= 0) continue;
-      const res = s.kind === "magic" ? finish(b, who, f, (s.power[0] + r() * (s.power[1] - s.power[0])) * (1 + who.wis / 200), s.element, false)
+      const res = s.kind === "magic" ? finish(b, who, f, (s.power[0] + r() * (s.power[1] - s.power[0])) * (1 + who.int / 200) / (1 + f.wis / 200), s.element, false)
         : physical(b, who, f, s.power, s.element);
       struck(f, res, first ? opener : "");
       first = false;
@@ -4266,6 +4342,14 @@
     return out;
   }
   // Back from a battle: each member's HP and MP into their saved record.
-  function keep(b) { for (const f of b.allies) { f.rec.hp = f.hp; f.rec.mp = f.mp; } }
-  window.RealmBattle = { create, turn, spoils, gainExp, keep, member, recruit, stats, skillsAt, expFor, effect, foeChoice, up };
+  function keep(b) {
+    for (const f of b.allies) {
+      if (f.mon) {
+        f.mon.hp = f.hp;
+        for (const slot of f.mon.moves) if ("move:" + slot.name in f.pp) slot.pp = f.pp["move:" + slot.name];
+      } else { f.rec.hp = f.hp; f.rec.mp = f.mp; }
+    }
+  }
+  window.Ultimax = { create, turn, spoils, gainExp, keep, member, recruit, stats, skillsAt, expFor, effect, foeChoice, up,
+    pokemon, pokemonSkill, pokemonElements, pokemonExp, skillOf, TYPE_ELEMENT };
 })();
