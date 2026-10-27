@@ -3756,7 +3756,7 @@ taken from a Dragon Quest cartridge.
 A new game starts by making you, on a page of its own (`ui/intro.js`'s `racePage`), before your name. Up and
 down go through what you can choose, left and right change it, A (and YES) is you:
 
-- **Race**: the seven below, each with its element, stats at level 1 and skills (with the levels they come at) on
+- **Race**: the twelve below, each with its element, stats at level 1 and skills (with the levels they come at) on
   the page and its description in the text box. Your race is `player.race`; each is a fighter in `REALM_FIGHTERS`
   (by its id), and it's who you fight as in the realms' battles. Hyrule's four are for the Zelda realm to come, the
   Dragon World's three for the Dragon Ball realm; until then they fight in Kamurocho.
@@ -3813,6 +3813,16 @@ colours) between its markers; each race's choices are `REALM_RACES[..].looks`.
 | Human (Neutral) | quick, every technique | Wolf Fang Fist (1), Solar Flare (3, stun), Afterimage (5, guard), Kamehameha (7), Destructo Disc (10, Steel), Tri-Beam (14, all), Spirit Ball (19, Light) |
 | Majin (Psychic) | most HP, slow, heals itself | Rubber Punch (1), Regeneration (2, self heal), Belly Bounce (4, guard), Candy Beam (6), Angry Explosion (10, all), Absorption (14, Dark, big self heal), Vanishing Ball (19, Dark, all) |
 | Saiyan (Light, for the Super Saiyan's golden aura) | hardest hitter, little magic | Ki Blast (1), Meteor Smash (3), Saiyan Pride (5, guard), Galick Gun (8, Dark), Big Bang Attack (11, Fire, all), Final Flash (15), Super Saiyan Rage (20) |
+| Human, of the Mushroom Kingdom (Fire) | all-round | Jump (1), Mushroom (2, heal), Superguard (4, guard), Fireball (7), Super Jump (10), Fire Flower (14, all), Super Star (19, Light, all) |
+| Mushroom Person (Grass) | quick healer | Turnip Toss (1), Super Mushroom (2, heal), Sleepy Spores (4, sleep), Toad Dash (7), Life Mushroom (10, big heal), Mega Mushroom (14, all), Toad Brigade (18, all) |
+| Pianta (Water) | most HP of the five, slow | Chuckster Toss (1), Sturdy Belly (3, guard), Squirt Nozzle (5), Durian Drop (8, Grass), Shine Sprite (11, Light, heal), Hover Nozzle Splash (14, all), Turbo Nozzle (19) |
+| Goomba (Ground) | nimble | Headbonk (1), Goomba Huddle (3, guard), Multibonk (5), Goomba Tower (8, all), Paragoomba Dive (11, Air), Big Goomba Stomp (14), Goomboss Charge (19, all) |
+| Koopa (Earth) | toughest defence | Shell Toss (1), Shell Shield (3, guard), Shell Spin (5, all), Dizzy Shell (7, stun), Power Shell (10, all), Fire Shell (14, Fire), Shell Slam (19) |
+
+The Mushroom Kingdom's five are for its realm to come. Their looks aren't in yet (no sprites of theirs are in the
+repo): on the creator they show a crest, and you walk about as the trainer. Some skill names are this game's own:
+Sleepy Spores, Toad Dash, Toad Brigade, Chuckster Toss, Sturdy Belly, Durian Drop, Goomba Huddle, Goomba Tower,
+Big Goomba Stomp and Goomboss Charge.
 
 ## Progression rules (Gen 6)
 

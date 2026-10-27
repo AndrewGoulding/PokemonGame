@@ -798,10 +798,10 @@
   // -> { race, appearance }. Your race is who you are in the realms' battles (Kamurocho's and on); your look is
   // you everywhere you walk.
   const racePics = {};
-  function crest(kind, color, x, y) {
+  function crest(kind, color, x, y, line) {
     g.save();
     g.translate(x, y);
-    g.fillStyle = color; g.strokeStyle = "#fff"; g.lineWidth = 1;
+    g.fillStyle = color; g.strokeStyle = line || "#fff"; g.lineWidth = 1;
     const path = (pts) => { g.beginPath(); pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py))); g.closePath(); g.fill(); g.stroke(); };
     if (kind === "triforce") { path([[32, 8], [44, 30], [20, 30]]); path([[20, 30], [32, 52], [8, 52]]); path([[44, 30], [56, 52], [32, 52]]); }
     if (kind === "leaf") {
@@ -812,6 +812,32 @@
       g.beginPath(); g.moveTo(32, 6); g.bezierCurveTo(50, 28, 52, 40, 32, 56); g.bezierCurveTo(12, 40, 14, 28, 32, 6); g.fill(); g.stroke();
       g.beginPath(); g.moveTo(20, 40); g.quadraticCurveTo(32, 30, 44, 40); g.moveTo(22, 47); g.quadraticCurveTo(32, 38, 42, 47); g.stroke();
     }
+    if (kind === "star") {
+      const pts = [];
+      for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 11 : 26; pts.push([32 + r * Math.cos(a), 34 + r * Math.sin(a)]); }
+      path(pts);
+    }
+    if (kind === "mushroom") {
+      g.beginPath(); g.moveTo(6, 34); g.quadraticCurveTo(8, 8, 32, 8); g.quadraticCurveTo(56, 8, 58, 34); g.closePath(); g.fill(); g.stroke();
+      path([[22, 34], [42, 34], [44, 54], [20, 54]]);
+      for (const [cx, cy, r] of [[32, 20, 6], [17, 28, 4], [47, 28, 4]]) { g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke(); }
+    }
+    if (kind === "palm") {
+      path([[30, 26], [34, 26], [38, 58], [26, 58]]);
+      for (const [dx, dy] of [[-22, 6], [-16, -10], [0, -16], [16, -10], [22, 6]]) {
+        g.beginPath(); g.moveTo(32, 24); g.quadraticCurveTo(32 + dx / 2, 24 + dy - 6, 32 + dx, 24 + dy); g.quadraticCurveTo(32 + dx / 2, 24 + dy / 2, 32, 26); g.fill(); g.stroke();
+      }
+    }
+    if (kind === "goomba") {
+      g.beginPath(); g.moveTo(10, 44); g.quadraticCurveTo(10, 10, 32, 10); g.quadraticCurveTo(54, 10, 54, 44); g.closePath(); g.fill(); g.stroke();
+      path([[14, 44], [28, 44], [26, 56], [12, 56]]); path([[36, 44], [50, 44], [52, 56], [38, 56]]);
+      for (const x of [24, 40]) { g.beginPath(); g.ellipse(x, 30, 3, 6, 0, 0, Math.PI * 2); g.stroke(); }
+    }
+    if (kind === "shell") {
+      g.beginPath(); g.ellipse(32, 34, 24, 20, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+      path([[32, 22], [42, 28], [42, 40], [32, 46], [22, 40], [22, 28]]);
+      for (const [x1, y1, x2, y2] of [[32, 22, 32, 14], [42, 28, 52, 22], [42, 40, 52, 46], [32, 46, 32, 54], [22, 40, 12, 46], [22, 28, 12, 22]]) { g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); }
+    }
     if (kind === "moon") {
       g.beginPath(); g.arc(30, 32, 22, 0, Math.PI * 2); g.arc(38, 28, 18, 0, Math.PI * 2, true); g.fill("evenodd");
       path([[46, 40], [49, 47], [56, 48], [50, 52], [52, 59], [46, 55], [40, 59], [42, 52], [36, 48], [43, 47]]);
@@ -819,8 +845,9 @@
     g.restore();
   }
   // A race's look to start with: its own start, every colour the part's own unless it says.
-  const startLook = (r) => Object.assign({ body: r.looks.bodies[0], head: (r.looks.heads || [])[0] || null,
-    hair: "own", outfit: "own", trim: "own", skin: "own" }, r.looks.start);
+  // (A race with no looks yet, the Mushroom Kingdom's: no body, and you're the trainer.)
+  const startLook = (r) => (r.looks ? Object.assign({ body: r.looks.bodies[0], head: (r.looks.heads || [])[0] || null,
+    hair: "own", outfit: "own", trim: "own", skin: "own" }, r.looks.start) : { body: null, head: null });
   async function racePage(name, was) {
     const races = window.REALM_RACES, F = window.REALM_FIGHTERS, S = window.REALM_SKILLS, P = window.PLAYER_LOOK_PARTS, C = window.LOOK_COLOURS;
     for (const r of races) if (r.pic && !racePics[r.id]) { const i = new Image(); i.src = r.pic; racePics[r.id] = i; }
@@ -833,8 +860,9 @@
     // The rows: [label, the choices, the one chosen, its name].
     const colourRow = (label, role, list) => [label, ["own"].concat(list), role, (id) => (id === "own" ? "Original" : (Object.values(C).flat().find((c) => c[0] === id) || [, id])[1])];
     const rows = () => {
-      const r = race(), out = [["Race", races.map((x) => x.id), "race", (id) => races.find((x) => x.id === id).name],
-        [P[look.body] && P[look.body].kind === "whole" ? "Who" : "Body", r.looks.bodies, "body", (id) => P[id].name]];
+      const r = race(), out = [["Race", races.map((x) => x.id), "race", (id) => races.find((x) => x.id === id).name]];
+      if (!r.looks) return out;
+      out.push([P[look.body] && P[look.body].kind === "whole" ? "Who" : "Body", r.looks.bodies, "body", (id) => P[id].name]);
       if (P[look.body] && P[look.body].kind !== "whole" && r.looks.heads) out.push(["Head", r.looks.heads, "head", (id) => P[id].name]);
       if (has("hair")) out.push(colourRow("Hair", "hair", C.hair.map((c) => c[0])));
       if (has("outfit")) out.push(colourRow(r.home === "Hyrule" ? "Tunic" : "Gi", "outfit", C.cloth.map((c) => c[0])));
@@ -858,10 +886,10 @@
       // (You, turning round every second and a half and walking on the spot, over your race's portrait or crest.)
       g.fillStyle = "#0008"; g.fillRect(6, 20, 68, 68);
       g.fillStyle = r.color; g.fillRect(8, 22, 64, 64);
-      g.globalAlpha = 0.35;
+      g.globalAlpha = r.looks ? 0.35 : 1;
       const pic = racePics[r.id];
       if (pic && pic.complete && pic.naturalWidth) g.drawImage(pic, 8, 22, 64, 64);
-      else if (r.crest) crest(r.crest, "#fff", 8, 22);
+      else if (r.crest) crest(r.crest, "#fff", 8, 22, r.looks ? null : "#0008");
       g.globalAlpha = 1;
       if (sheet) {
         const dir = ["down", "left", "up", "right"][Math.floor(t / 90) % 4], step = Math.floor(t / 12) % 4;
@@ -872,6 +900,7 @@
         else g.drawImage(sheet, fr * 32, 0, 32, 32, 8, 22, 64, 64);
         g.restore();
       }
+      if (!r.looks) text("(Its look is to come:\nyou're the trainer\nfor now.)", 84, 32, { size: 7, color: "#e8e8e8", lineHeight: 9 });
       rows().forEach(([label, , key, nameOf], i) => {
         const y = 19 + i * 10, value = key === "race" ? r.id : look[key];
         if (i === row) { g.fillStyle = "#fff3"; g.fillRect(80, y - 1, 156, 10); }

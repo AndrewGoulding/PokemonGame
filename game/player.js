@@ -434,7 +434,9 @@
     if (data.race && (window.REALM_RACES || []).some((r) => r.id === data.race)) player.race = data.race;
     // (And how you look: the character creator's parts and colours, PLAYER_LOOK_PARTS and LOOK_COLOURS.)
     const a = data.appearance, parts = window.PLAYER_LOOK_PARTS || {};
-    if (player.race && a && typeof a === "object" && parts[a.body]) {
+    const race = (window.REALM_RACES || []).find((r) => r.id === player.race);
+    if (race && !race.looks && a && typeof a === "object") player.appearance = { body: null, head: null };
+    else if (player.race && a && typeof a === "object" && parts[a.body]) {
       player.appearance = { body: a.body, head: parts[a.head] ? a.head : null };
       for (const k of ["hair", "outfit", "trim", "skin"]) player.appearance[k] = typeof a[k] === "string" ? a[k].slice(0, 20) : "own";
     }

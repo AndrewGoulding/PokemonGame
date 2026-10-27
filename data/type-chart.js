@@ -141,6 +141,46 @@ window.REALM_SKILLS = {
   galick_gun:    { name: "Galick Gun",             mp: 9,  element: "Dark",    kind: "magic", power: [38, 48], target: "one" },
   big_bang:      { name: "Big Bang Attack",        mp: 12, element: "Fire",    kind: "magic", power: [34, 44], target: "all" },
   final_flash:   { name: "Final Flash",            mp: 16, element: "Light",   kind: "magic", power: [80, 100], target: "one" },
+  // Mushroom Kingdom human
+  jump:          { name: "Jump",                   mp: 3,  element: "Neutral", kind: "phys",  power: 1.6, target: "one" },
+  mushroom:      { name: "Mushroom",               mp: 4,  element: "Grass",   kind: "heal",  power: [30, 40], target: "ally" },
+  superguard:    { name: "Superguard",             mp: 2,  element: "Neutral", kind: "guard", target: "self" },
+  fireball:      { name: "Fireball",               mp: 7,  element: "Fire",    kind: "magic", power: [30, 40], target: "one" },
+  super_jump:    { name: "Super Jump",             mp: 9,  element: "Neutral", kind: "phys",  power: 2.5, target: "one" },
+  fire_flower:   { name: "Fire Flower",            mp: 12, element: "Fire",    kind: "magic", power: [34, 44], target: "all" },
+  star_power:    { name: "Super Star",             mp: 18, element: "Light",   kind: "phys",  power: 2.2, target: "all" },
+  // Mushroom people
+  turnip_toss:   { name: "Turnip Toss",            mp: 2,  element: "Grass",   kind: "phys",  power: 1.4, target: "one" },
+  toad_mushroom: { name: "Super Mushroom",         mp: 4,  element: "Grass",   kind: "heal",  power: [35, 45], target: "ally" },
+  sleepy_spores: { name: "Sleepy Spores",          mp: 4,  element: "Grass",   kind: "status", status: "sleep", chance: 0.6, target: "one" },
+  toad_dash:     { name: "Toad Dash",              mp: 6,  element: "Neutral", kind: "phys",  power: 2.0, target: "one" },
+  life_mushroom: { name: "Life Mushroom",          mp: 10, element: "Grass",   kind: "heal",  power: [80, 100], target: "ally" },
+  mega_mushroom: { name: "Mega Mushroom",          mp: 13, element: "Grass",   kind: "phys",  power: 1.8, target: "all" },
+  toad_brigade:  { name: "Toad Brigade",           mp: 17, element: "Neutral", kind: "phys",  power: 2.2, target: "all" },
+  // Pianta
+  chuckster:     { name: "Chuckster Toss",         mp: 3,  element: "Neutral", kind: "phys",  power: 1.6, target: "one" },
+  sturdy_belly:  { name: "Sturdy Belly",           mp: 2,  element: "Neutral", kind: "guard", target: "self" },
+  squirt_nozzle: { name: "Squirt Nozzle",          mp: 6,  element: "Water",   kind: "magic", power: [24, 32], target: "one" },
+  durian_drop:   { name: "Durian Drop",            mp: 8,  element: "Grass",   kind: "phys",  power: 2.3, target: "one" },
+  shine_sprite:  { name: "Shine Sprite",           mp: 10, element: "Light",   kind: "heal",  power: [70, 90], target: "ally" },
+  hover_splash:  { name: "Hover Nozzle Splash",    mp: 13, element: "Water",   kind: "magic", power: [36, 46], target: "all" },
+  turbo_nozzle:  { name: "Turbo Nozzle",           mp: 17, element: "Water",   kind: "phys",  power: 3.3, target: "one" },
+  // Goomba
+  headbonk:      { name: "Headbonk",               mp: 3,  element: "Neutral", kind: "phys",  power: 1.5, target: "one" },
+  goomba_huddle: { name: "Goomba Huddle",          mp: 2,  element: "Neutral", kind: "guard", target: "self" },
+  multibonk:     { name: "Multibonk",              mp: 6,  element: "Neutral", kind: "phys",  power: 2.0, target: "one" },
+  goomba_tower:  { name: "Goomba Tower",           mp: 8,  element: "Ground",  kind: "phys",  power: 1.4, target: "all" },
+  paragoomba:    { name: "Paragoomba Dive",        mp: 10, element: "Air",     kind: "phys",  power: 2.6, target: "one" },
+  big_goomba:    { name: "Big Goomba Stomp",       mp: 13, element: "Ground",  kind: "phys",  power: 3.0, target: "one" },
+  goomboss:      { name: "Goomboss Charge",        mp: 17, element: "Ground",  kind: "phys",  power: 2.1, target: "all" },
+  // Koopa
+  shell_toss:    { name: "Shell Toss",             mp: 3,  element: "Earth",   kind: "phys",  power: 1.5, target: "one" },
+  shell_shield:  { name: "Shell Shield",           mp: 2,  element: "Neutral", kind: "guard", target: "self" },
+  shell_spin:    { name: "Shell Spin",             mp: 6,  element: "Earth",   kind: "phys",  power: 1.2, target: "all" },
+  power_shell:   { name: "Power Shell",            mp: 9,  element: "Earth",   kind: "phys",  power: 1.6, target: "all" },
+  dizzy_shell:   { name: "Dizzy Shell",            mp: 5,  element: "Psychic", kind: "status", status: "stun", chance: 0.6, target: "one" },
+  fire_shell:    { name: "Fire Shell",             mp: 11, element: "Fire",    kind: "phys",  power: 2.6, target: "one" },
+  shell_slam:    { name: "Shell Slam",             mp: 16, element: "Earth",   kind: "phys",  power: 3.2, target: "one" },
   super_saiyan:  { name: "Super Saiyan Rage",      mp: 18, element: "Light",    kind: "phys",  power: 3.4, target: "one" }
 };
 
@@ -176,7 +216,23 @@ window.REALM_FIGHTERS = {
             skills: [[1, "rubber_punch"], [2, "regenerate"], [4, "belly_bounce"], [6, "candy_beam"], [10, "angry_burst"], [14, "absorption"], [19, "vanishing_ball"]] },
   saiyan: { name: null, elements: ["Light"], base: { hp: 32, mp: 10, atk: 17, def: 10, agi: 12, wis: 8 },
             growth: { hp: 5.4, mp: 1.8, atk: 2.7, def: 1.5, agi: 1.7, wis: 1.1 },
-            skills: [[1, "ki_blast"], [3, "meteor_smash"], [5, "saiyan_pride"], [8, "galick_gun"], [11, "big_bang"], [15, "final_flash"], [20, "super_saiyan"]] }
+            skills: [[1, "ki_blast"], [3, "meteor_smash"], [5, "saiyan_pride"], [8, "galick_gun"], [11, "big_bang"], [15, "final_flash"], [20, "super_saiyan"]] },
+  // (The Mushroom Kingdom's: for the realm to come.)
+  mk_human: { name: null, elements: ["Fire"], base: { hp: 30, mp: 12, atk: 14, def: 11, agi: 12, wis: 11 },
+            growth: { hp: 5, mp: 2.1, atk: 2.1, def: 1.6, agi: 1.7, wis: 1.5 },
+            skills: [[1, "jump"], [2, "mushroom"], [4, "superguard"], [7, "fireball"], [10, "super_jump"], [14, "fire_flower"], [19, "star_power"]] },
+  toad:   { name: null, elements: ["Grass"], base: { hp: 24, mp: 16, atk: 10, def: 9, agi: 14, wis: 15 },
+            growth: { hp: 4.2, mp: 2.7, atk: 1.5, def: 1.4, agi: 2, wis: 2.1 },
+            skills: [[1, "turnip_toss"], [2, "toad_mushroom"], [4, "sleepy_spores"], [7, "toad_dash"], [10, "life_mushroom"], [14, "mega_mushroom"], [18, "toad_brigade"]] },
+  pianta: { name: null, elements: ["Water"], base: { hp: 44, mp: 10, atk: 16, def: 12, agi: 6, wis: 9 },
+            growth: { hp: 7.2, mp: 1.8, atk: 2.4, def: 1.9, agi: 0.9, wis: 1.3 },
+            skills: [[1, "chuckster"], [3, "sturdy_belly"], [5, "squirt_nozzle"], [8, "durian_drop"], [11, "shine_sprite"], [14, "hover_splash"], [19, "turbo_nozzle"]] },
+  goomba: { name: null, elements: ["Ground"], base: { hp: 26, mp: 10, atk: 13, def: 9, agi: 15, wis: 10 },
+            growth: { hp: 4.6, mp: 1.8, atk: 2.2, def: 1.4, agi: 2.1, wis: 1.3 },
+            skills: [[1, "headbonk"], [3, "goomba_huddle"], [5, "multibonk"], [8, "goomba_tower"], [11, "paragoomba"], [14, "big_goomba"], [19, "goomboss"]] },
+  koopa:  { name: null, elements: ["Earth"], base: { hp: 32, mp: 11, atk: 12, def: 16, agi: 8, wis: 10 },
+            growth: { hp: 5.4, mp: 1.9, atk: 1.8, def: 2.4, agi: 1.2, wis: 1.4 },
+            skills: [[1, "shell_toss"], [3, "shell_shield"], [5, "shell_spin"], [7, "dizzy_shell"], [10, "power_shell"], [14, "fire_shell"], [19, "shell_slam"]] }
 };
 
 // The races you can be, chosen at the start (ui/intro.js's race page; player.race): each is a fighter above, its
@@ -213,7 +269,18 @@ window.REALM_RACES = [
              start: { body: "fat_buu" } } },
   { id: "saiyan", name: "Saiyan", home: "Dragon World", pic: "assets/dragonball/portraits/BF_047.png", color: "#e0c040",
     text: "A warrior race from Planet\nVegeta. The hardest hitters of\nall, and the proudest.",
-    looks: { bodies: ["goku", "vegeta", "gohan", "kid_gohan", "trunks"], skin: ["light", "fair", "tan", "brown", "dark"], start: { body: "goku" } } }
+    looks: { bodies: ["goku", "vegeta", "gohan", "kid_gohan", "trunks"], skin: ["light", "fair", "tan", "brown", "dark"], start: { body: "goku" } } },
+  // (The Mushroom Kingdom's have no looks yet: you're the trainer, until their sprites come.)
+  { id: "mk_human", name: "Human", home: "Mushroom Kingdom", crest: "star", color: "#d83830",
+    text: "Plumbers, princesses and heroes.\nGood at everything: jumping on\nthings above all, and fireballs." },
+  { id: "toad", name: "Mushroom Person", home: "Mushroom Kingdom", crest: "mushroom", color: "#e05858",
+    text: "The Toads, loyal to the Princess.\nSmall and quick, and never short\nof a mushroom to heal with." },
+  { id: "pianta", name: "Pianta", home: "Mushroom Kingdom", crest: "palm", color: "#3898c8",
+    text: "Big, cheerful islanders from Isle\nDelfino. Slow but mighty, and\nhandy with a water nozzle." },
+  { id: "goomba", name: "Goomba", home: "Mushroom Kingdom", crest: "goomba", color: "#a86830",
+    text: "Stubby, stubborn and everywhere.\nNimble on their little feet, and\nthey stack up into towers." },
+  { id: "koopa", name: "Koopa", home: "Mushroom Kingdom", crest: "shell", color: "#40a048",
+    text: "Turtle folk who never leave home\nwithout their shells: the\ntoughest hides of any race." }
 ];
 // A race's `looks` (the race page's choices; tools/build-player-looks.py made the parts, PLAYER_LOOK_PARTS below):
 // the bodies (a "whole" part is a whole character, with no head to choose), the heads, the skin colours, and what
