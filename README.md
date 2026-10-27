@@ -3795,17 +3795,26 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   the page and its description in the text box. Your race is `player.race`; each is a fighter in `REALM_FIGHTERS`
   (by its id), and it's who you fight as in the realms' battles. Hyrule's four are for the Zelda realm to come, the
   Dragon World's seven for the Dragon Ball realm; until then they fight in Kamurocho.
+- **You're your own character**: every race's look is a **head** (hair and face) on a **body** (clothes), any of
+  its heads on any of its bodies, and the established characters below are its **presets**: the Preset row puts
+  you as one (Goku is Goku's head on Goku's body, in his own colours), and every row after it is yours to change, Goku's
+  head on Vegeta's body or in your colours ("Custom"). The characters are cut in two at the neck, frame by frame (the
+  narrowest row from 30% to 60% of the way down the figure: `tools/build-player-looks.py`'s `whole`), each head
+  saying where its neck is (`anchor`) and each body where a head goes (`neck`); on another body a head moves by the
+  difference, frame by frame (`composeLook`), so a character's own head on its own body is drawn as it was. The
+  Goombas and the Piantas have no necks: theirs are whole, their presets only. A look saved as a whole character
+  (before) loads as its own head on its body.
 - **Body and head**: Hyrule's people are a head on a body, any head on any body (The Minish Cap draws its townsfolk
   and children that way): 16 grown-ups' heads (hair and faces) and 8 bodies (costumes), the children's 8 and 5 for
-  the Kokiri, and Link whole for the Hylians. The Zora have the bald head with a tail-fin drawn on (The Minish Cap has
+  the Kokiri, and Link (cut, as above) for the Hylians. The Zora have the bald head with a tail-fin drawn on (The Minish Cap has
   no Zora), short or long. The Dragon World's are whole characters: Goku, Vegeta, Gohan, Kid Gohan and Trunks for the
   Saiyans; Krillin, Yamcha, Tien, Bulma, Chi-Chi, a townsman and a townswoman for the Humans; Fat Buu, Kid Buu and
   Super Buu for the Majin; Piccolo (caped and in his gi), Dende, Nail, Elder Moori and a villager for the Namekians;
   Androids 16, 17, 18, 19 and 20 and Cell for the Androids (Cell and King Cold halved, as the Buus are); Frieza, his
   first form, Mecha Frieza and King Cold for Frieza's race; the Supreme Kai, Kibito, Kibito Kai and King Kai for
   the Kais. The Mushroom Kingdom's are whole characters from Mario & Luigi: Superstar Saga: Mario,
-  Luigi and Peach for its Humans; Toad, a Toad Brigade Toad and Toadsworth for the Mushroom People (their caps'
-  spots are their "hair"); and Bowser for the Koopas (shrunk to the others' size, Bowser more). And from Paper Mario:
+  Luigi and Peach for its Humans; Toad and a Toad Brigade Toad for the Mushroom People (their caps'
+  spots are their "hair"; Superstar Saga has no Toadsworth); and Bowser for the Koopas (shrunk to the others' size, Bowser more). And from Paper Mario:
   The Thousand-Year Door, drawn from its models: a Pianta, Don Pianta, Frankie and Francesca for the Piantas (their
   sprouts are their "hair", their grass skirts the trim); a Goomba and Goombella for the Goombas; Koops for the Koopas.
   Paper Mario's people are paper: they face you a little to the left, so that's their side too, and turned round

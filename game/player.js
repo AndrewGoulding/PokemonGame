@@ -437,7 +437,9 @@
     const race = (window.REALM_RACES || []).find((r) => r.id === player.race);
     if (race && !race.looks && a && typeof a === "object") player.appearance = { body: null, head: null };
     else if (player.race && a && typeof a === "object" && parts[a.body]) {
-      player.appearance = { body: a.body, head: parts[a.head] ? a.head : null };
+      // (A look saved as a whole character, from before they were cut into heads and bodies: its own head.)
+      const head = parts[a.head] && (parts[a.body].kind !== "body" || parts[a.head].kind === "head") ? a.head : null;
+      player.appearance = { body: a.body, head: head || (parts[a.body].kind === "body" && parts[a.body + "_head"] ? a.body + "_head" : null) };
       for (const k of ["hair", "outfit", "trim", "skin"]) player.appearance[k] = typeof a[k] === "string" ? a[k].slice(0, 20) : "own";
     }
     player.rival = String(data.rival || RIVAL_NAME).slice(0, 12);

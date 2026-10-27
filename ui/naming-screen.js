@@ -8,7 +8,9 @@
 //   const ns = NamingScreen.create({ title, maxChars, icon, fallback });
 //     // title: "YOUR NAME?" (gText_YourName); maxChars: 7 (PLAYER_NAME_LENGTH);
 //     // icon: the overworld sheet of who's being named (16x32 frames, FireRed's
-//     // order: frame 0 facing down, 3 and 4 walking down); fallback: the name
+//     // order: frame 0 facing down, 3 and 4 walking down; or a canvas of the
+//     // character creator's look, 32x32 frames in the same order, with
+//     // iconWidth: 32); fallback: the name
 //     // OK gives with nothing typed (FireRed keeps the one already there)
 //   ns.step()       // one frame (60 a second): the screen's tasks and sprites
 //   ns.draw(g)      // onto a 2D context in GBA pixels (240x160)
@@ -132,7 +134,8 @@
     opts = opts || {};
     const title = opts.title || "YOUR NAME?";
     const maxChars = opts.maxChars || 7;
-    const icon = opts.icon ? img(opts.icon) : null;
+    const icon = !opts.icon ? null : typeof opts.icon === "string" ? img(opts.icon) : Object.assign(opts.icon, { complete: true, naturalWidth: opts.icon.width });
+    const iconW = opts.iconWidth || 16;
     preload();
 
     // NamingScreen_Init
@@ -476,7 +479,7 @@
       // Priority 3 sprites: who's being named (walking on the spot,
       // ANIM_STD_GO_SOUTH: frames 3, 0, 4, 0, 8 frames each) at (56, 37), the
       // arrow and the underscores.
-      if (ready(icon)) blit(icon, [3, 0, 4, 0][Math.floor(walkTime / 8) % 4] * 16, 0, 16, 32, 56 - 8, 37 - 16);
+      if (ready(icon)) blit(icon, [3, 0, 4, 0][Math.floor(walkTime / 8) % 4] * iconW, 0, iconW, 32, 56 - iconW / 2, 37 - 16);
       blit("input-arrow", 0, 0, 8, 8, ns.inputCharBaseXPos - 5 - 4 + arrow.x2, 56 - 4);
       underscores.forEach((u, i) => blit("underscore", 0, 0, 8, 8, ns.inputCharBaseXPos + i * 8 + 3 - 4, 60 - 4 + u.y2));
       // BG2 and BG1, the keyboard pages, the one behind first.
@@ -535,7 +538,7 @@
   // The screen on a canvas of its own, faded in and out (to black, 16 steps
   // of 2 frames) as FireRed's MainState_FadeIn / MainState_FadeOut do.
   async function run(canvas, opts) {
-    await preload(opts && opts.icon);
+    await preload(opts && typeof opts.icon === "string" ? opts.icon : null);
     const ns = create(opts);
     const g = canvas.getContext("2d");
     let fade = 16, fading = -1, last = 0, acc = 0, running = true, name = null;

@@ -33,7 +33,10 @@ body {
      240x160), the text box and menu under it, then the buttons. */
   container-type: inline-size;
   width: 100%;
-  max-width: 720px;
+  /* (880px at most: 3.67 game pixels a pixel, room for the Ultimax battles' party; less in a short window, so the
+     screen, the text box and menu (about 150px) and the buttons (about 190px) still fit its height) */
+  max-width: min(880px, calc((100vh - 32px - 350px) * 1.5));
+  min-width: min(100%, 480px);
   border: 4px solid #0d1017;
   border-radius: 12px;
   overflow: hidden;

@@ -7237,6 +7237,13 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     }
     for (const s of r.looks.skin) assert(skins.includes(s), r.id + ": " + s);
     for (const b of Object.keys(r.looks.bodyLabels || {})) assert(r.looks.bodies.includes(b), r.id + ": " + b);
+    // (a character cut in two: its head says where its neck is, its body where a head goes, in each of 9 frames)
+    for (const b of r.looks.bodies) {
+      const P = window.PLAYER_LOOK_PARTS[b];
+      if (P.kind === "body") assert(P.neck && P.neck.length === 9, b + "'s neck");
+      const H = window.PLAYER_LOOK_PARTS[b + "_head"];
+      if (H) assert(H.kind === "head" && H.anchor.length === 9 && P.kind === "body", b + "'s head");
+    }
   }
   console.log("ok: realm battles, 60 of Kamurocho's fights finished (" + turns + " turns)");
 }

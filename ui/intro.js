@@ -844,10 +844,26 @@
     }
     g.restore();
   }
+  // A race's choices: its bodies; its heads (each of its characters' own, cut from them: PLAYER_LOOK_PARTS's
+  // "<body>_head", then any it lists, Hyrule's); and its presets, the characters as they are (Goku is Goku's head on
+  // Goku's body, his colours his own), and the race's own start where it's built of parts (Hyrule's). You're your
+  // own: any preset is only where you start, every row of it yours to change.
+  function looksOf(r) {
+    const P = window.PLAYER_LOOK_PARTS, L = r.looks;
+    if (!L) return null;
+    const bodies = L.bodies.filter((b) => P[b]);
+    const heads = bodies.filter((b) => P[b].kind === "body" && P[b + "_head"]).map((b) => b + "_head").concat((L.heads || []).filter((h) => P[h]));
+    const presets = bodies.filter((b) => P[b].kind === "whole" || P[b + "_head"]).map((b) => ({ name: P[b].name, body: b, head: P[b].kind === "whole" ? null : b + "_head" }));
+    if (L.heads) presets.push(Object.assign({ name: r.name, head: null }, L.start));
+    return { bodies, heads, presets };
+  }
   // A race's look to start with: its own start, every colour the part's own unless it says.
   // (A race with no looks: no body, and you're the trainer.)
-  const startLook = (r) => (r.looks ? Object.assign({ body: r.looks.bodies[0], head: (r.looks.heads || [])[0] || null,
+  const startLook = (r) => (r.looks ? Object.assign({ body: r.looks.bodies[0], head: window.PLAYER_LOOK_PARTS[r.looks.bodies[0] + "_head"] ? r.looks.bodies[0] + "_head" : (r.looks.heads || [])[0] || null,
     hair: "own", outfit: "own", trim: "own", skin: "own" }, r.looks.start) : { body: null, head: null });
+  // A preset as your look: its head and body, its colours its own (or its own start's).
+  const COLOUR_KEYS = ["hair", "outfit", "trim", "skin"];
+  const presetLook = (pr) => { const q = Object.assign({ hair: "own", outfit: "own", trim: "own", skin: "own" }, pr); delete q.name; return q; };
   async function racePage(name, was) {
     const races = window.REALM_RACES, F = window.REALM_FIGHTERS, S = window.REALM_SKILLS, P = window.PLAYER_LOOK_PARTS, C = window.LOOK_COLOURS;
     for (const r of races) if (r.pic && !racePics[r.id]) { const i = new Image(); i.src = r.pic; racePics[r.id] = i; }
@@ -859,11 +875,19 @@
     const has = (role) => parts().some((p) => p.roles.includes(role));
     // The rows: [label, the choices, the one chosen, its name].
     const colourRow = (label, role, list) => [label, ["own"].concat(list), role, (id) => (id === "own" ? "Original" : (Object.values(C).flat().find((c) => c[0] === id) || [, id])[1])];
+    // (The preset you look like: one whose head, body and colours are yours; or none, "Custom".)
+    const presetAt = () => {
+      const X = looksOf(race());
+      return X && P[look.body] ? X.presets.findIndex((pr) => { const q = presetLook(pr); return q.body === look.body && (q.head || null) === (P[look.body].kind === "whole" ? null : look.head || null) &&
+        COLOUR_KEYS.every((k) => (q[k] || "own") === (look[k] || "own")); }) : -1;
+    };
     const rows = () => {
       const r = race(), out = [["Race", races.map((x) => x.id), "race", (id) => races.find((x) => x.id === id).name]];
       if (!r.looks) return out;
-      out.push([P[look.body] && P[look.body].kind === "whole" ? "Who" : "Body", r.looks.bodies, "body", (id) => P[id].name]);
-      if (P[look.body] && P[look.body].kind !== "whole" && r.looks.heads) out.push(["Head", r.looks.heads, "head", (id) => P[id].name]);
+      const X = looksOf(r);
+      out.push(["Preset", X.presets.map((_, i) => i), "preset", (i) => (i < 0 ? "Custom" : X.presets[i].name)]);
+      if (P[look.body] && P[look.body].kind !== "whole" && X.heads.length) out.push(["Head", X.heads, "head", (id) => P[id].name]);
+      if (X.bodies.some((b) => P[b].kind !== "whole")) out.push(["Body", X.bodies, "body", (id) => P[id].name]);
       const L = Object.assign({}, r.looks.labels, (r.looks.bodyLabels || {})[look.body]);
       if (has("hair")) out.push(colourRow(L.hair || "Hair", "hair", C.hair.map((c) => c[0])));
       if (has("outfit")) out.push(colourRow(L.outfit || { Hyrule: "Tunic", "Dragon World": "Gi" }[r.home] || "Clothes", "outfit", C.cloth.map((c) => c[0])));
@@ -903,21 +927,27 @@
       }
       if (!r.looks) text("(Its look is to come:\nyou're the trainer\nfor now.)", 84, 32, { size: 7, color: "#e8e8e8", lineHeight: 9 });
       rows().forEach(([label, , key, nameOf], i) => {
-        const y = 19 + i * 10, value = key === "race" ? r.id : look[key];
-        if (i === row) { g.fillStyle = "#fff3"; g.fillRect(80, y - 1, 156, 10); }
+        const y = 19 + i * 9, value = key === "race" ? r.id : key === "preset" ? presetAt() : look[key];
+        if (i === row) { g.fillStyle = "#fff3"; g.fillRect(80, y - 1, 156, 9); }
         text(label, 84, y, { size: 7, bold: true, color: i === row ? "#fff" : "#d8d8d8" });
         text((i === row ? "◀ " : "") + nameOf(value) + (key === "race" ? " · " + f.elements.join("/") : "") + (i === row ? " ▶" : ""), 120, y, { size: 7, color: i === row ? "#ffe890" : "#e8e8e8" });
       });
       // (The race's stats and its skills, with the levels they come at, wrapped to the page: the text box covers
       // it below y 112.)
-      g.font = "7px 'Trebuchet MS', Verdana, sans-serif";
-      text(["hp", "mp", "str", "def", "int", "wis", "spd"].map((k) => k.toUpperCase() + " " + f.base[k]).join("  "), 7, 90, { size: 7, color: "#fff" });
-      const lines = [""];
-      for (const w of f.skills.map(([lv, k]) => S[k].name.replace(/ /g, " ") + " (" + lv + ")").join(", ").split(" ")) {
-        const l = lines[lines.length - 1], next = l ? l + " " + w : w;
-        if (l && g.measureText(next).width > W - 14) lines.push(w); else lines[lines.length - 1] = next;
-      }
-      text(lines.slice(0, 2).join("\n"), 7, 99, { size: 7, color: "#ffe890", lineHeight: 8 });
+      text(["hp", "mp", "str", "def", "int", "wis", "spd"].map((k) => k.toUpperCase() + " " + f.base[k]).join("  "), 7, 92, { size: 7, color: "#fff" });
+      // (in two lines: the type smaller, for a race whose skills' names are long)
+      const wrap = (size) => {
+        g.font = size + "px 'Trebuchet MS', Verdana, sans-serif";
+        const lines = [""];
+        for (const w of f.skills.map(([lv, k]) => S[k].name.replace(/ /g, "\u00a0") + "\u00a0(" + lv + ")").join(", ").split(" ")) {
+          const l = lines[lines.length - 1], next = l ? l + " " + w : w;
+          if (l && g.measureText(next).width > W - 14) lines.push(w); else lines[lines.length - 1] = next;
+        }
+        return lines;
+      };
+      let size = 7, lines = wrap(size);
+      while (lines.length > 2 && size > 5) lines = wrap(size -= 0.5);
+      text(lines.slice(0, 2).join("\n"), 7, 101, { size, color: "#ffe890", lineHeight: size + 0.5 });
     };
     const ticker = () => { t++; };
     actors.add(ticker);
@@ -938,7 +968,11 @@
       if (k === "up" || k === "down") { row = (row + (k === "up" ? list.length - 1 : 1)) % list.length; continue; }
       const [, choices, key] = list[row], d = k === "left" ? -1 : 1;
       if (key === "race") { at = (at + d + races.length) % races.length; look = startLook(race()); }
-      else {
+      else if (key === "preset") {
+        const X = looksOf(race()), i = presetAt();
+        look = presetLook(X.presets[((i < 0 ? (d > 0 ? -1 : 0) : i) + d + X.presets.length) % X.presets.length]);
+        if (P[look.body].kind !== "whole" && !look.head) look.head = X.heads[0] || null;
+      } else {
         const i = choices.indexOf(look[key]);
         look[key] = choices[((i < 0 ? 0 : i) + d + choices.length) % choices.length];
       }
@@ -968,11 +1002,13 @@
     fade = { color: "#000", level: 16 };
     if (window.GameAudio) window.GameAudio.music("mus_new_game_intro");
     const made = await racePage(null);
+    // (you, walking on the spot beside your name, as FireRed's trainer does)
+    const icon = await window.Overworld.composeLook(made.appearance);
     let name;
     for (;;) {
       show(""); window.Screen.clearMenu();
       await window.NamingScreen.preload(null);
-      const ns = window.NamingScreen.create({ title: "YOUR NAME?", maxChars: 7, fallback: BOY_NAMES[Math.floor(Math.random() * BOY_NAMES.length)], icon: null });
+      const ns = window.NamingScreen.create({ title: "YOUR NAME?", maxChars: 7, fallback: BOY_NAMES[Math.floor(Math.random() * BOY_NAMES.length)], icon, iconWidth: 32 });
       paint = () => ns.draw(g);
       actors.add(() => (paint ? ns.step() : false));
       await fadeTo("#000", 16, 0, 0);

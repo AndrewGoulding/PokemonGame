@@ -1861,7 +1861,7 @@
   function lookParts(a) {
     const P = window.PLAYER_LOOK_PARTS || {};
     if (!a || !P[a.body]) return [];
-    return P[a.body].kind === "whole" || !P[a.head] ? [a.body] : [a.body, a.head];
+    return P[a.body].kind === "whole" || !P[a.head] || P[a.head].kind !== "head" ? [a.body] : [a.body, a.head];
   }
   function lookRamp(a, part, role) {
     const list = (window.LOOK_COLOURS || {})[role === "outfit" || role === "trim" ? "cloth" : role] || [];
@@ -1876,16 +1876,28 @@
     const out = document.createElement("canvas"), tmp = document.createElement("canvas");
     out.width = tmp.width = 288; out.height = tmp.height = 32;
     const o = out.getContext("2d"), t = tmp.getContext("2d");
+    // (A head on a body goes where the body's neck is, frame by frame: moved by the body's neck less the head's.)
+    const P = window.PLAYER_LOOK_PARTS, body = P[names[0]];
     names.forEach((n, k) => {
-      const img = imgs[k], part = window.PLAYER_LOOK_PARTS[n];
+      const img = imgs[k], part = P[n];
       if (!ready(img)) return;
-      o.drawImage(img, 0, 0, 288, 32, 0, 0, 288, 32);
+      const off = [...Array(9)].map((_, f) => (part.kind === "head" && part.anchor && body.neck ? [body.neck[f][0] - part.anchor[f][0], body.neck[f][1] - part.anchor[f][1]] : [0, 0]));
+      const row = (ctx, sy) => {
+        for (let f = 0; f < 9; f++) {
+          ctx.save(); ctx.beginPath(); ctx.rect(f * 32, 0, 32, 32); ctx.clip();
+          ctx.drawImage(img, f * 32, sy, 32, 32, f * 32 + off[f][0], off[f][1], 32, 32);
+          ctx.restore();
+        }
+      };
+      row(o, 0);
       LOOK_ROLES.forEach((role, r) => {
         const ramp = part.roles.includes(role) && lookRamp(a, part, role);
         if (!ramp) return;
         for (let l = 0; l < 4; l++) {
           t.globalCompositeOperation = "copy";
-          t.drawImage(img, 0, (1 + r * 4 + l) * 32, 288, 32, 0, 0, 288, 32);
+          t.clearRect(0, 0, 288, 32);
+          t.globalCompositeOperation = "source-over";
+          row(t, (1 + r * 4 + l) * 32);
           t.globalCompositeOperation = "source-in";
           t.fillStyle = ramp[l];
           t.fillRect(0, 0, 288, 32);

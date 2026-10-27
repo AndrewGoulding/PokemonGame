@@ -152,6 +152,42 @@ def sheet(name, frames, shift):
         own[r] = [hexc(c) for c in by]
     return sorted(has, key=ROLES.index), own
 
+# ---------- Heads and bodies: any head on any body of its race ----------
+# A whole character (Goku, Mario, Link, ...) is cut in two at its neck, frame by frame, into a head (hair and face)
+# and a body (its clothes), so you can be one character's head on another's body: the characters are the creator's
+# presets, and you're your own. The neck: the narrowest row from 30% to 60% of the way down the figure.
+# Each head keeps where its frames are, and says where its neck is (`anchor`: the middle of its bottom row, and the
+# row under it), each body where a head goes (`neck`); on a body, a head is drawn moved by the difference, frame by
+# frame (ui/overworld.js composeLook), so a character's own head on its own body is drawn as it was.
+def anchor_of(f, shift):
+    if not f: return [16, 16]
+    y = max(y for x, y in f); xs = [x for x, yy in f if yy == y]
+    return [(min(xs) + max(xs) + 1) // 2 + shift[0], y + 1 + shift[1]]
+def neck_row(f):
+    ys = sorted({y for x, y in f}); top, bot = ys[0], ys[-1]; h = bot - top + 1
+    best, at = None, None
+    for y in range(top + h * 3 // 10, top + h * 3 // 5 + 1):
+        xs = [x for x, yy in f if yy == y]
+        if not xs: continue
+        w = max(xs) - min(xs) + 1
+        if best is None or w < best: best, at = w, y
+    return at if at is not None else top + h // 3
+def whole(pid, name, f9, shift, split=True):
+    # (A character with no neck, the Goombas and Piantas, stays whole.)
+    if not split:
+        roles, own = sheet(pid, f9, shift)
+        PARTS[pid] = {'name': name, 'kind': 'whole', 'roles': roles, 'own': own}
+        return
+    heads, bodies = [], []
+    for f in f9:
+        n = neck_row(f) if f else 0
+        heads.append({k: v for k, v in f.items() if k[1] < n}); bodies.append({k: v for k, v in f.items() if k[1] >= n})
+    at = [anchor_of(h, shift) for h in heads]
+    roles, own = sheet(pid + '_head', heads, shift)
+    PARTS[pid + '_head'] = {'name': name, 'kind': 'head', 'roles': roles, 'own': own, 'anchor': at}
+    roles, own = sheet(pid, bodies, shift)
+    PARTS[pid] = {'name': name, 'kind': 'body', 'roles': roles, 'own': own, 'neck': at}
+
 # ---------- Hyrule: The Minish Cap's people ----------
 # FireRed's nine frames from a Minish Cap body's nine (down 0-2, up 3-5, the side 6-8, facing left).
 BODY_SLOTS = [0, 3, 6, 1, 2, 4, 5, 7, 8]
@@ -192,8 +228,12 @@ def tmc_part(pid, name, kind, si, frames, pal, roles, brown, offsets, shift, ext
         if offsets: px = {(x + offsets[i][0], y + offsets[i][1]): v for (x, y), v in px.items()}
         if extra: px = extra(i, px)
         f9.append(tmc_roles(px, pal, roles, brown))
+    if kind == 'whole': return whole(pid, name, f9, shift)
     roles, own = sheet(pid, f9, shift)
     PARTS[pid] = {'name': name, 'kind': kind, 'roles': roles, 'own': own}
+    # (A head's neck, for other bodies; The Minish Cap's own bodies all take its heads where they're drawn: the
+    # bodies' necks are the heads', the middle of them, set once all are made: minish_necks.)
+    if kind == 'head': PARTS[pid]['anchor'] = [anchor_of(f, shift) for f in f9]
 
 def hyrule():
     adults, kids = palette(62), palette(58)
@@ -250,9 +290,16 @@ def hyrule():
                                (111, 'Jerkin', {1, 2, 3})]:
         tmc_part('kidbody_%d' % base, name, 'body', 59, [base + s for s in BODY_SLOTS], kids,
                  {'outfit': outfit, 'trim': {4, 5} | ({6, 7, 8, 9} - outfit), 'skin': {12, 13}}, False, None, SHIFT)
-    # Link, whole: standing (down 0, side 1, up 2) and a stride each way from his walks (7-16, 17-26, 27-36).
+    # Link, whole (and so cut, a head and a body): standing (down 0, side 1, up 2) and a stride each way from his
+    # walks (7-16, 17-26, 27-36).
     tmc_part('link', 'Link', 'whole', 1, [0, 2, 1, 9, 14, 29, 34, 19, 24], palette(22),
              {'hair': {8, 9}, 'outfit': {3, 4, 5, 7}, 'skin': {10, 11, 12, 13}}, False, None, SHIFT)
+    # (The Minish Cap's bodies' necks: where its heads' are, frame by frame, the middle one of them.)
+    for prefix, heads in (('body_', 'head_'), ('kidbody_', 'kidhead_')):
+        hs = [p for k, p in PARTS.items() if k.startswith(heads) or (heads == 'head_' and k.startswith('zora_'))]
+        mid = [[sorted(h['anchor'][f][i] for h in hs)[len(hs) // 2] for i in (0, 1)] for f in range(9)]
+        for k, p in PARTS.items():
+            if k.startswith(prefix): p['neck'] = mid
 
 # ---------- The Dragon World: the Dragon Ball realm's people ----------
 # Each sheet: a row an animation, in fours (down, up, left, right); the first four stand, the next four walk.
@@ -364,8 +411,7 @@ def dragon_world():
         # (Feet at the cell's bottom and the figure in its middle, by where it stands facing down.)
         xs = [x for x, y in f9[0]]; ys = [y for x, y in f9[0]]
         shift = (16 - (min(xs) + max(xs) + 1) // 2, 31 - max(ys))
-        roles, own = sheet(pid, f9, shift)
-        PARTS[pid] = {'name': name, 'kind': 'whole', 'roles': roles, 'own': own}
+        whole(pid, name, f9, shift)
 
 # ---------- The Mushroom Kingdom: Mario & Luigi: Superstar Saga's people ----------
 # How Superstar Saga keeps its sprites (the USA cartridge, A88E; after Yoshi Magic's sprite viewer and the game's own
@@ -501,7 +547,6 @@ SS_PARTS = [
     ('peach', 'Peach', (3, 88), (0, 5, 10), None, {'hair': {12, 13, 14}, 'outfit': {5, 6, 7}, 'trim': {8, 9, 10}, 'skin': {2}}, 0.75),
     ('toad', 'Toad', (3, 102), (20, 0, 10), True, {'hair': {8, 9, 10}, 'outfit': {6, 7}, 'skin': {2, 3}}, 0.75),
     ('star_toad', 'Toad Brigade', (3, 121), (0, 5, 10), None, {'hair': {3, 4}, 'outfit': {6, 7}, 'skin': {8, 9}}, 0.75),
-    ('toadsworth', 'Toadsworth', (3, 108), (0, 5, 10), True, {'hair': {2, 3, 4}, 'outfit': {12, 13}, 'skin': {8, 9}}, 0.75),
     ('bowser', 'Bowser', (3, 23), (10, 0, 5), None, {'hair': {10}, 'outfit': {8, 9}, 'trim': {2, 3}, 'skin': {4, 5, 6}}, 0.6),
 ]
 def mushroom_kingdom():
@@ -524,8 +569,7 @@ def mushroom_kingdom():
                         if v: out[(X, Y - 1)] = v
                 px = out
             f9.append({k: (next((r for r, s_ in roles.items() if v % 16 in s_), None), pal[v]) for k, v in px.items()})
-        r, own = sheet(pid, f9, (16, 32))
-        PARTS[pid] = {'name': name, 'kind': 'whole', 'roles': r, 'own': own}
+        whole(pid, name, f9, (16, 32))
 
 # ---------- More of the Mushroom Kingdom: Paper Mario: The Thousand-Year Door's people ----------
 # The Piantas, the Goombas and Koops, from the disc's character models (tools/lib/ttyd.py), drawn flat at FireRed's
@@ -631,9 +675,9 @@ def ttyd_committed():
     return parts
 def paper_kingdom():
     frames = ttyd_draw(sys.argv[sys.argv.index('--ttyd') + 1]) if '--ttyd' in sys.argv else ttyd_committed()
+    # (The Piantas and the Goombas have no necks: whole. Koops is cut.)
     for pid, name, *_ in TTYD_PARTS:
-        r, own = sheet(pid, frames[pid], (16, 32))
-        PARTS[pid] = {'name': name, 'kind': 'whole', 'roles': r, 'own': own}
+        whole(pid, name, frames[pid], (16, 32), split=pid in ('koops',))
 
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
