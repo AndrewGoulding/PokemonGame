@@ -842,7 +842,9 @@
     const races = window.REALM_RACES, F = window.REALM_FIGHTERS, S = window.REALM_SKILLS, P = window.PLAYER_LOOK_PARTS, C = window.LOOK_COLOURS;
     for (const r of races) if (r.pic && !racePics[r.id]) { const i = new Image(); i.src = r.pic; racePics[r.id] = i; }
     let at = Math.max(0, races.findIndex((r) => was && r.id === was.race));
-    let look = was && was.appearance && was.appearance.body ? fit(looksOf(races[at]) || { faces: [], hairs: [] }, Object.assign({}, was.appearance)) : startLook(races[at]);
+    // (a look saved with another race's face and hair, from a preset that had them before, keeps them: they're known)
+    const known = (X, a) => (X ? Object.assign({}, X, { known: X.known.concat(P[a.face] ? [a.face] : []), hairs: X.hairs.concat(P[a.hairstyle] ? [a.hairstyle] : []) }) : X);
+    let look = was && was.appearance && was.appearance.body ? fit(known(looksOf(races[at]), was.appearance) || { faces: [], hairs: [] }, Object.assign({}, was.appearance)) : startLook(races[at]);
     let row = 0, t = 0, sheet = null, asked = 0;
     const race = () => races[at];
     const parts = () => window.Overworld.lookParts(look).map((n) => P[n]);

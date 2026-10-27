@@ -206,6 +206,7 @@ def split_head(head):
 
 # (Each character's head standing each way, for which hair goes with which face: HEADS[pid] = [(hair, face, neck point)] by way.)
 HEADS = {}
+SHIFTS = {}   # (each character's: where its (0, 0) is in a cell)
 def parts_of(pid, name, family, frames, shift, heads, head_at, ref):
     """A character's body, face and hair sheets. frames: its N bodies; heads: its (hair, face) each way."""
     roles, own = sheet(pid, frames, shift)
@@ -224,6 +225,8 @@ NECK = {'krillin': 1, 'tien': 1, 'townswoman': -4, 'piccolo': 4, 'piccolo_gi': 3
 def character(pid, name, family, frames, shift, split=True, neck=0, hair=True):
     """frames: N dicts {(x, y): (role, colour)} (standing, steps, betweens). split False: whole (no neck to cut at, the
     Goombas and Piantas). neck: rows lower (+) or higher (-) than the narrowest. hair False: its head's all face."""
+    if pid in SIDE_ART: frames = drawn_side(pid, frames)
+    SHIFTS[pid] = shift
     if not split:
         roles, own = sheet(pid, frames, shift)
         PARTS[pid] = {'name': name, 'kind': 'whole', 'family': family, 'roles': roles, 'own': own}
@@ -875,6 +878,208 @@ def paper_kingdom():
         f9 = frames[pid]
         character(pid, name, 'ttyd', frames15(f9[:3], [f9[3:5], f9[5:7], f9[7:9]]), (16, 32), split=pid in ('koops',), hair=False)
 
+# ---------- Heads made here: the women of races with none ----------
+# The Frieza Clan and the Kais have no woman among their sprites, and another race's head never sat right on their
+# bodies; so each has one made from its own: a head of the race's (`base`, standing each way, its hair and face as
+# cut) with a woman's touches drawn on, a pixel each (`touches`: for each way it faces, down, up and the side,
+# {(x, y): colour (role, 'rrggbb'), or None to take it away}, in the base's frame). It goes on the race's bodies as
+# the base's head does (its neck, `ref`, the base's), and it's the race's own: offered in the Face row.
+#   The Frieza Clan woman: Frieza's head, a winged lash at each eye's outer corner, lips, a softer chin, and a pink
+#   gem at her brow. The Kai woman: Kibito's face (the Kais' purple, the pointed ears), with lashes and lips, under
+#   his long white hair (Kibito's hairstyle, hers too), on his robe.
+LIP, GEM, LASH = (None, (0xd0, 0x40, 0x80)), (None, (0xff, 0x60, 0xb0)), (None, (0x10, 0x00, 0x18))
+MADE_HEADS = [
+    ('arcosian_woman', 'Frieza Clan Woman', 'frieza', {
+        0: {(5, -11): LASH, (9, -11): LASH, (6, -12): LASH, (8, -12): LASH, (7, -10): LIP, (11, -10): None, (7, -15): GEM},
+        1: {},
+        2: {(3, -13): LASH, (3, -10): LIP, (2, -10): None, (4, -15): GEM}}),
+    ('kai_woman', 'Kai Woman', 'kibito', {
+        0: {(5, -13): LASH, (10, -13): LASH, (7, -11): LIP},
+        1: {},
+        2: {(3, -14): LASH, (3, -11): LIP}}),
+]
+OWN_HAIR_OF = {'kai_woman': 'kibito'}   # (her hair is Kibito's, as it is: no hairstyle of her own to choose twice)
+def made_heads():
+    for pid, name, base, touches in MADE_HEADS:
+        shift, fam = SHIFTS[base], PARTS[base + '_face']['family']
+        heads = []
+        for d, (h, f, np_) in enumerate(HEADS[base]):
+            f = dict(f); h = dict(h)
+            for k, v in touches[d].items():
+                if v is None: f.pop(k, None); h.pop(k, None)
+                else: f[k] = v; h.pop(k, None)
+            heads.append((h, f, np_))
+        HEADS[pid] = heads
+        ref = PARTS[base + '_face']['ref']
+        roles, own = sheet(pid + '_face', [heads[FRAME_DIR[i]][1] for i in range(N)], shift)
+        PARTS[pid + '_face'] = {'name': name, 'kind': 'face', 'family': fam, 'roles': roles, 'own': own, 'ref': ref}
+        if any(h for h, f, n in heads) and pid not in OWN_HAIR_OF:
+            roles, own = sheet(pid + '_hair', [heads[FRAME_DIR[i]][0] for i in range(N)], shift)
+            PARTS[pid + '_hair'] = {'name': name, 'kind': 'hair', 'family': fam, 'roles': roles, 'own': own, 'ref': ref}
+
+# ---------- Side views drawn here ----------
+# Paper Mario's people are paper: the models have a front and a back and no side (it's their front, a little to the
+# left), and Superstar Saga's Toad, shrunk, is his front with his face gone. So their sides are drawn here, a pixel at
+# a time, each facing left: `SIDE_ART[pid]` = (the picture, a row a string, its feet on the bottom row; how many rows
+# at the bottom are its legs; its own colours). In the picture: 1-4 its skin, darkest first, A-D its clothes, P-S its
+# trim, E-H its hair (each the part's own four shades, as the sheet has them), k its outline, w white, e an eye's
+# black, g grey; any other letter its own colour (the third: {letter: (role or None, 'rrggbb')}). The picture's
+# middle goes where its middle is facing you, its feet where its feet are. Walking: its legs (the bottom rows) apart,
+# the front one forward and the back one back, then the other way; between the steps it stands, as Paper Mario's
+# people walk in two steps.
+def own_shades(frames, role):
+    """A role's four shades in a character's frames (the colours most drawn at each of its four levels)."""
+    cols = [c for f in frames for r, c in f.values() if r == role]
+    if not cols: return None
+    lv = levels(cols); count = {}
+    for c in cols: count[c] = count.get(c, 0) + 1
+    by = [max([c for c in count if lv[c] == l] or [None], key=lambda c: count.get(c, 0)) for l in range(4)]
+    for l in range(4):
+        if by[l] is None: by[l] = next(by[k] for k in list(range(l, 4)) + list(range(l, -1, -1)) if by[k] is not None)
+    return by
+def drawn_side(pid, frames):
+    art, legs, extra = SIDE_ART[pid]
+    rows = [r for r in art.strip('\n').split('\n')]
+    pal = {}
+    for role, codes in (('skin', '1234'), ('outfit', 'ABCD'), ('trim', 'PQRS'), ('hair', 'EFGH')):
+        sh = own_shades(frames, role)
+        if sh: pal.update({c: (role, sh[i]) for i, c in enumerate(codes)})
+    plain = sorted({c for f in frames for r, c in f.values() if r is None}, key=lum)
+    pal.update({'k': (None, plain[0]), 'e': (None, plain[0]), 'w': (None, plain[-1]),
+                'g': (None, min(plain, key=lambda c: abs(lum(c) - 150)))})
+    pal.update({c: (r, tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))) for c, (r, h) in extra.items()})
+    down = frames[0]; xs = [x for x, y in down]; mid = (min(xs) + max(xs) + 1) // 2; bot = max(y for x, y in down)
+    w = max(len(r.rstrip('.')) for r in rows); left = mid - w // 2
+    stand = {}
+    for i, r in enumerate(rows):
+        for j, c in enumerate(r):
+            if c != '.': stand[(left + j, bot - len(rows) + 1 + i)] = pal[c]
+    # (its steps: the legs' pixels left of its middle one way, the rest the other)
+    lx = [x for (x, y) in stand if y > bot - legs]; lmid = (min(lx) + max(lx) + 1) / 2
+    steps = []
+    for d in (1, -1):
+        g = {k: v for k, v in stand.items() if k[1] <= bot - legs}
+        for (x, y), v in sorted(stand.items(), key=lambda kv: (kv[0][0] < lmid) == (d > 0)):
+            if y > bot - legs: g[(x + (-d if x < lmid else d), y)] = v
+        steps.append(g)
+    out = list(frames)
+    out[2], out[7], out[8], out[13], out[14] = stand, steps[0], steps[1], stand, stand
+    return out
+SIDE_ART = {
+    'goomba': ("""
+....kk.........
+...kkkkkk......
+..kkk3333333k..
+.k3ww33333333k.
+.kwwwe3333332k.
+k3wwee33333332k
+k33ww333333322k
+k3333333333222k
+k3333333332222k
+k3333333322222k
+.k33333332221k.
+.k44w44442211k.
+..kk44444kkkk..
+..kCCk...kCCk..
+.kCDDCk.kCDDk..
+kBCCCBk.kBCCCk.
+.kkkkk...kkkk..
+""", 4, {}),
+    'goombella': ("""
+......kkkkk........
+....kkSSSSRkk.kkk..
+...kSSSSRRRRQkGHHk.
+..kSSRRRRRQQQkGHGk.
+kkRRRRRQQQQQPkFGGk.
+kQQkkkkkkkkkkkFFk..
+.kk444444444333kFk.
+.k4kkk44444333332k.
+k44kwek4444333322k.
+k44keek4443333322k.
+k444kk444443333221k
+k4k444444433332221k
+.kk44444443332221k.
+..k3k4444333322kk..
+...kk3333332kkk....
+...kABk....kBAk....
+..kBCCBk..kBCCk....
+.kACCCBk.kACCCBk...
+..kkkkk...kkkkk....
+""", 4, {}),
+    'pianta': ("""
+............kk.kk....
+...........kFGkGHk...
+..........kEFGGHk....
+............kFk......
+..........kkkEkkk....
+.........k4444444k...
+........k4ww444443k..
+.......k44wek44443k..
+.....kk4444444443k...
+....k44444k444433k...
+....k3333kk44433kk...
+.....kkkkCDDDCCBBAk..
+....kkBCDDDDDDCCBBAk.
+...kBCDDDDDDDDDCCBAAk
+..kBCDDDDDDDDDDCCBBAk
+..kBCDDDDDDDDDDCCBBAk
+..kBCDk444kDDDDCCBBAk
+..kBCk44443kDDDCCBBAk
+...kBCk333kDDDCCBBAk.
+....kPQRRSSRRRQQPPk..
+....kPQkRSkRRkQPkPk..
+.....kk.kk.kk.kk.k...
+......k34k...k34k....
+.....k3344k.k3344k...
+....kkkkkkk.kkkkkkk..
+""", 3, {'w': (None, 'f4f4f0')}),
+    'koops': ("""
+.......kkkk.........
+......kwwwwk........
+......kwwek.........
+.....kkwwekk........
+...kk44kk444k.......
+.kk444444444k.......
+k4444444444443k.....
+k34444k44444443k....
+.k333kk.k444433k....
+..kkk...kSRR33k.....
+.......kSRRRQPkk....
+......kRRSRRQPkwk...
+.....kRSSRRQPkwwwk..
+....k4kSRRQPkwCDDDk.
+....k44kRRQPkwCDDDk.
+.....kkRRRQPkwBCDDk.
+......kRQQPPkwBCCDk.
+......kPPPPPkkwBCk..
+.......k33kk3kwwk...
+.......k3k..k3k.....
+......kggk.kggk.....
+.....kwwgk.kwwgk....
+......kkk...kkk.....
+""", 5, {}),
+    'toad': ("""
+...kkkkk....
+..kwwwwwkk..
+.kwwGGwwwwk.
+kwwGHHGwwwwk
+kwwGHGwwwgwk
+kgwwwwwwGGgk
+kggwwwwgHGgk
+.kkk44kkkkk.
+..k4e44k....
+.k44444k....
+..k3444k....
+...kBCk.....
+..kBCC4k....
+..kBCCk.....
+...kwwgk....
+...k4kk4k...
+..kkk.kkk...
+""", 2, {'g': (None, 'd5d5d5')}),
+}
+SIDE_ART['don_pianta'] = SIDE_ART['frankie'] = SIDE_ART['francesca'] = SIDE_ART['pianta']
+
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
     hyrule()
@@ -883,6 +1088,7 @@ if __name__ == '__main__':
     mushroom_kingdom()
     if isinstance(SS, SuperstarSaga): SS.save()
     paper_kingdom()
+    made_heads()
     hair_fitting()
     # (Parts no longer made, from before: gone.)
     for fn in os.listdir(OUT):

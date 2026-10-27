@@ -67,25 +67,50 @@ RECOLOUR = {
     'tourist': lambda r, g, b: (min(255, int(g * 1.15) + 16), min(255, int(g * 1.0) + 6), int(g * 0.7)) if abs(r - g) < 14 and abs(g - b) < 18 and 40 < g < 200 else None,
 }
 # The street's foes' walks, as they come up the street at you (Streets of Rage 2's: squared up as they come), as
-# people/<foe>_walk.png, four frames each as those above; their standing frames are PEOPLE's. (The knife punk, the
-# host and Majima have no walk of their own in the atlas: they come at you standing.)
+# people/<foe>_walk.png, four frames each as those above; their standing frames are PEOPLE's. (Majima's: his
+# stance's steps, his feet together and apart, out of his boss fight's frames.)
 FOE_WALKS = {
     'punk': (15, [(2482, 40, 42, 82), (3046, 544, 54, 82), (3938, 1264, 56, 82), (3316, 802, 54, 82)]),
     'biker': (15, [(3708, 1034, 46, 82), (3284, 148, 44, 78), (3022, 166, 50, 80), (3772, 372, 44, 78)]),
     'shakedown': (15, [(2938, 890, 52, 84), (2494, 378, 50, 84), (2376, 40, 52, 82), (3956, 1862, 52, 84)]),
     'grunt': (15, [(3478, 548, 46, 80), (3754, 1016, 44, 80), (2942, 2, 50, 80), (3754, 1016, 44, 80)]),
     'thug': WALKS['thug_idle'], 'drunk': WALKS['drunk_idle'],
+    'majima': (15, [(2716, 214, 52, 84), (3832, 1684, 52, 84), (3060, 628, 52, 82), (3832, 1684, 52, 84)]),
 }
+# (The knife punk and the host have no walk in the atlas at all, only their stances (every frame of them the same
+# legs: their breath, their spear's sway, the host's cigarette): theirs are made from their standing frame, its
+# legs below the hip sheared apart and together about the crotch a stride at a time, the lifting foot raised, the
+# body bobbing down on the strides. (frame, the hip's row, the crotch's column, the stride))
+SYNTH_WALKS = {'knife': ((15, 2797, 1065, 88, 81), 50, 46, 6), 'host': ((15, 2741, 472, 35, 82), 46, 17, 4)}
+
+def stride(im, hip, split, d):
+    W, H = im.width + 2 * d + 4, im.height + 2
+    px, bottom, out = im.load(), im.height - 1, []
+    for dd, lift, bob in ((0, 0, 0), (d, 0, 1), (0, 2, 0), (-d, 0, 1)):
+        f = Image.new('RGBA', (W, H), (0, 0, 0, 0)); fp = f.load()
+        for y in range(im.height):
+            for x in range(im.width):
+                c = px[x, y]
+                if not c[3]: continue
+                if y < hip: nx, ny = x + d + 2, y + bob + 1
+                elif c[:3] == (0, 0, 0) and y > bottom - 4: nx, ny = x + d + 2, y + 1      # (the shadow stays put)
+                else:
+                    t, left = (y - hip) / max(1, bottom - hip), x < split
+                    nx, ny = x + d + 2 + round((-dd if left else dd) * t), y + 1 - (round(lift * t) if lift and not left else 0)
+                if 0 <= nx < W and 0 <= ny < H: fp[nx, ny] = c
+        out.append(f)
+    return out
 
 # (Those whose frames face left in the atlas: turned round, so all of them face right.)
 FACING_LEFT = {'kiryu_idle', 'majima_idle', 'host_idle', 'loiterer', 'drunk_idle', 'drunk_walk'}
 
-def strip(atlas, pid, rects):
+def strip(atlas, pid, rects, ims=None):
     # (each frame trimmed to itself, turned to face right, and set in a frame of one width: its head (the middle of
     # its top rows) in the middle, its feet on the bottom)
     frames = []
-    for (x, y, w, h) in rects:
-        im = atlas.crop((x, y, x + w, y + h)); im = im.crop(im.getbbox())
+    for k, r in enumerate(ims or rects):
+        im = r if ims else atlas.crop((r[0], r[1], r[0] + r[2], r[1] + r[3]))
+        im = im.crop(im.getbbox())
         if pid in FACING_LEFT: im = im.transpose(Image.FLIP_LEFT_RIGHT)
         if pid in RECOLOUR:
             px = im.load()
@@ -134,7 +159,10 @@ def main():
         im.crop((0, 0, fw, im.height)).save(os.path.join(OUT, 'people', pid + '.png'), optimize=True)
     for foe, (e, rects) in FOE_WALKS.items():
         strip(atlas[e], foe + '_walk', rects)[0].save(os.path.join(OUT, 'people', foe + '_walk.png'), optimize=True)
-    print('Kamurocho: %d scenes, %d people, %d of them walking, %d foes' % (3, len(PEOPLE) + len(WALKS), len(WALKS), len(FOE_WALKS)))
+    for foe, ((e, x, y, w, h), hip, split, d) in SYNTH_WALKS.items():
+        ims = stride(atlas[e].crop((x, y, x + w, y + h)), hip, split, d)
+        strip(None, foe + '_walk', None, ims)[0].save(os.path.join(OUT, 'people', foe + '_walk.png'), optimize=True)
+    print('Kamurocho: %d scenes, %d people, %d of them walking, %d foes' % (3, len(PEOPLE) + len(WALKS), len(WALKS), len(FOE_WALKS) + len(SYNTH_WALKS)))
 
 if __name__ == '__main__':
     main()

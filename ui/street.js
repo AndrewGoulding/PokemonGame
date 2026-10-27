@@ -200,6 +200,7 @@
     const enc = window.REALM_ENCOUNTERS && window.REALM_ENCOUNTERS.Kamurocho, S = scene();
     if (!enc) return null;
     const lv = partyLevel(opts), groups = enc.groups.filter((gr) => (gr[2] || 1) <= lv), total = groups.reduce((n, gr) => n + gr[0], 0);
+    if (!groups.length) return null;
     let r = Math.random() * total, foes = groups[0][1];
     for (const gr of groups) if ((r -= gr[0]) < 0) { foes = gr[1]; break; }
     // (somewhere on the floor, out of your sight: off the screen, a way along the street)

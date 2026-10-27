@@ -22,7 +22,7 @@ window.KAMUROCHO_STREET = {
   arrive: { scene: "sewer", x: 200, y: 446, facing: "right" },
   // (The foes with walks of their own, people/<street>_walk.png (REALM_FOES' `street`); and what each gang's leader
   // says when they've caught you, by his foe.)
-  foeWalks: ["punk", "biker", "shakedown", "grunt", "thug", "drunk"],
+  foeWalks: ["punk", "biker", "shakedown", "grunt", "thug", "drunk", "knife", "host", "majima"],
   barks: {
     punk: ["Hey, you! Got a problem?", "Oi! You lookin' at me?", "Nice face. Shame about it."],
     drunk: ["Whaddya starin' at, huh? *hic*", "You spilled my drink! ...Where's my drink?"],
@@ -105,7 +105,7 @@ window.KAMUROCHO_STREET = {
     taihei: {
       title: "Taihei Boulevard", image: "assets/kamurocho/taihei.png", width: 1600, encounters: true,
       floor: [[0, 410], [1600, 410], [1600, 470], [0, 470]],
-      exits: [{ spot: [830, 1010, 410, 426], to: "tenkaichi", x: 60, y: 440, facing: "right", text: "Tenkaichi Street" },
+      exits: [{ spot: [990, 1200, 410, 426], to: "tenkaichi", x: 60, y: 440, facing: "right", text: "Tenkaichi Street" },
         { edge: "right", to: "pink", x: 30, y: 440, facing: "right" }],
       people: [
         { script: "Kamurocho_Gambler", sprite: "loiterer", x: 150, y: 418, face: "right",
@@ -121,8 +121,8 @@ window.KAMUROCHO_STREET = {
     tenkaichi: {
       title: "Tenkaichi Street", image: "assets/kamurocho/tenkaichi.png", width: 1400, encounters: true,
       floor: [[0, 410], [1400, 410], [1400, 470], [0, 470]],
-      exits: [{ edge: "left", to: "taihei", x: 920, y: 440, facing: "down" },
-        { spot: [726, 856, 410, 426], to: "nakamichi", x: 30, y: 440, facing: "right", text: "Nakamichi Street" },
+      exits: [{ edge: "left", to: "taihei", x: 1095, y: 440, facing: "down" },
+        { spot: [745, 940, 410, 426], to: "nakamichi", x: 30, y: 440, facing: "right", text: "Nakamichi Street" },
         { edge: "right", to: "theater", x: 30, y: 440, facing: "right" }],
       people: [
         { script: "Kamurocho_Foodie", sprite: "clubgoer", walk: "clubgoer_walk", range: 70, x: 330, y: 444, face: "right",
@@ -140,7 +140,7 @@ window.KAMUROCHO_STREET = {
       floor: [[0, 410], [1400, 410], [1400, 470], [0, 470]],
       exits: [{ edge: "left", to: "tenkaichi", x: 790, y: 440, facing: "down" },
         { edge: "right", to: "street", x: 30, y: 190, facing: "right" },
-        { spot: [524, 656, 410, 426], to: "pink", x: 1170, y: 440, facing: "left", text: "Pink Street" }],
+        { spot: [460, 660, 410, 426], to: "pink", x: 1170, y: 440, facing: "left", text: "Pink Street" }],
       people: [
         { script: "Kamurocho_Regular", sprite: "salaryman_idle", walk: "salaryman_idle_walk", range: 70, x: 140, y: 440, face: "right",
           text: ["The coffee at Alps is awful.\nI come every night anyway."] },
@@ -156,8 +156,8 @@ window.KAMUROCHO_STREET = {
       title: "Pink Street", image: "assets/kamurocho/pink.png", width: 1200, encounters: true,
       floor: [[0, 410], [1200, 410], [1200, 470], [0, 470]],
       exits: [{ edge: "left", to: "taihei", x: 1570, y: 440, facing: "left" },
-        { edge: "right", to: "nakamichi", x: 590, y: 440, facing: "down" },
-        { spot: [446, 596, 410, 426], to: "champion", x: 30, y: 444, facing: "right", text: "Champion District" }],
+        { edge: "right", to: "nakamichi", x: 560, y: 440, facing: "down" },
+        { spot: [470, 580, 410, 426], to: "champion", x: 30, y: 444, facing: "right", text: "Champion District" }],
       people: [
         { script: "Kamurocho_PinkTout", sprite: "host_idle", x: 160, y: 418, face: "right",
           text: ["Cabaret Bijin! First drink's\non the house!", "...The second one's 8,000 yen."] },
