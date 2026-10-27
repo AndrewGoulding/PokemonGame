@@ -28,6 +28,8 @@
 #
 # Writes:
 #   assets/dragonball/maps/<LG2|BF>_<nnn>.png, -top.png      each map (the top: what's drawn over people)
+#   assets/dragonball/maps/<LG2|BF>_<nnn>-walk.png           where people can walk: a pixel for each 8x8 cell, white
+#   assets/dragonball/maps/index.json                       each map's area name, size and where the player starts
 #   assets/dragonball/people/<LG2|BF>_<nnn>.png             each person's animations: a row each, in the ROM's
 #                                                           order (down, up, left, right for each)
 #   assets/dragonball/people/index.json                     each sheet's cell size, the anchor in each cell (the
@@ -41,9 +43,9 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 OUT = os.path.join(ROOT, 'assets/dragonball')
 GAMES = {
     b'ALFE': dict(prefix='LG2', layer_fn=0x080056a1, bg_pal=0x1da4c8, obj_pal=0x1da6c8,
-                  people=0x3b4e80, portraits=0x3ec9f4, n_portraits=107),
+                  people=0x3b4e80, portraits=0x3ec9f4, n_portraits=107, strings=0xe2840, utf16=False),
     b'BG3E': dict(prefix='BF', layer_fn=0x08008087, bg_pal=0x5632c, obj_pal=0x5652c,
-                  people=0x6b6bd8, portraits=0x6f395c, n_portraits=155),
+                  people=0x6b6bd8, portraits=0x6f395c, n_portraits=155, strings=0x6bce8, utf16=True),
 }
 rom = open(sys.argv[1], 'rb').read()
 G = GAMES.get(rom[0xac:0xb0]) or sys.exit('Not Legacy of Goku II or Buu\'s Fury (USA): its game code is ' + repr(rom[0xac:0xb0]))
@@ -157,9 +159,15 @@ def map_layer(m, k, T):
                 y, x = cy * 256 + (i // 32) * 8, cx * 256 + (i % 32) * 8; a[y:y + 8, x:x + 8] = t
     return a
 def build_map(m):
-    T = map_tiles(m); layers = [map_layer(m, k, T) for k in range(4)]
-    h = max(l.shape[0] for l in layers); w = max(l.shape[1] for l in layers)
-    layers = [np.pad(l, ((0, h - l.shape[0]), (0, w - l.shape[1]))) for l in layers]
+    T = map_tiles(m)
+    # Everything in the map's own coordinates: its rectangle is the camera's range plus a screen, and each
+    # background's screens start where its +c and +10 say (in 1/1024ths of a pixel) before the map's corner.
+    w, h = H(m + 8) + 239, H(m + 10) + 159
+    layers = []
+    for k in range(4):
+        L = R(m + 0x14 + 4 * k); ox, oy = R(L + 0xc) >> 10, R(L + 0x10) >> 10
+        a = map_layer(m, k, T)[oy:oy + h, ox:ox + w]
+        layers.append(np.pad(a, ((0, h - a.shape[0]), (0, w - a.shape[1]))))
     prio = [rom[(m & 0x1ffffff) + 4 + k] & 3 for k in range(4)]
     bldcnt, bldalpha = H(m), H(m + 2); eva, evb = min(bldalpha & 31, 16), min(bldalpha >> 8 & 31, 16)
     blending = bldcnt >> 6 & 3 == 1
@@ -185,16 +193,35 @@ def build_map(m):
     tmask = np.zeros((h, w), bool)
     if top:
         t, tmask = compose(top)
-    # The maps sit somewhere in their screens: crop to what's drawn.
-    ys, xs = np.nonzero(gmask | tmask)
-    if not len(ys): return None, None
-    y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
-    gi = Image.fromarray(g[y0:y1, x0:x1], 'RGB')
+    gi = Image.fromarray(g, 'RGB')
     ti = None
     if top and tmask.any():
-        a = np.zeros((y1 - y0, x1 - x0, 4), np.uint8); a[..., :3] = t[y0:y1, x0:x1]; a[..., 3] = tmask[y0:y1, x0:x1] * 255
+        a = np.zeros((h, w, 4), np.uint8); a[..., :3] = t; a[..., 3] = tmask * 255
         ti = Image.fromarray(a, 'RGBA')
-    return gi, ti
+    # Where people can walk: a bitmap of 8x8-pixel cells, 256 to a row, in the map's own coordinates (header +34).
+    walk = None
+    if R(m + 0x34):
+        bits = np.unpackbits(np.frombuffer(blob(R(m + 0x34)), np.uint8), bitorder='little').reshape(256, 256)
+        walk = Image.fromarray((bits[:-(-h // 8), :-(-w // 8)] * 255).astype(np.uint8), 'L')
+    return gi, ti, walk
+
+def map_names(maps):
+    # Each area's entry (its name, a string number, at +c) points at the place in its level that points at the map.
+    where = {}
+    for o in range(0, len(rom) - 4, 4):
+        v = R(o)
+        if v in maps: where[o + 0x08000000] = v
+    names = {}
+    for o in range(0, len(rom) - 4, 4):
+        m = where.get(R(o))
+        if m is not None and 0 < R(o - 0x20) < 1000: names.setdefault(m, set()).add(R(o - 0x20))
+    def string(i):
+        a = R(G['strings'] + 4 * i) & 0x1ffffff; out = []
+        while True:
+            c = struct.unpack_from('<H', rom, a)[0] if G['utf16'] else rom[a]
+            if c == 0: return ''.join(out)
+            out.append(chr(c)); a += 2 if G['utf16'] else 1
+    return {m: [string(i) for i in sorted(ids)] for m, ids in names.items()}
 
 # ---------- People ----------
 def tiles_image(data, w, h):
@@ -263,13 +290,21 @@ def save(im, *path):
     os.makedirs(os.path.dirname(os.path.join(OUT, *path)), exist_ok=True); im.save(os.path.join(OUT, *path), optimize=True)
 pre = G['prefix']
 if ONLY in (None, 'maps'):
-    maps = find_maps()
+    maps = find_maps(); names = map_names(set(maps))
+    index_path = os.path.join(OUT, 'maps', 'index.json')
+    index = json.load(open(index_path)) if os.path.exists(index_path) else {}
+    index = {k: v for k, v in index.items() if not k.startswith(pre + '_')}
     for i, m in enumerate(maps):
-        g, t = build_map(m)
+        g, t, walk = build_map(m)
         if g is None: continue
-        save(g, 'maps', '%s_%03d.png' % (pre, i))
-        if t is not None: save(t, 'maps', '%s_%03d-top.png' % (pre, i))
-    print(len(maps), 'maps')
+        name = '%s_%03d' % (pre, i)
+        save(g, 'maps', name + '.png')
+        if t is not None: save(t, 'maps', name + '-top.png')
+        if walk is not None: save(walk, 'maps', name + '-walk.png')
+        index[name] = dict(name=(names.get(m) or [''])[0], size=[g.width, g.height], start=[H(m + 0x30), H(m + 0x32)])
+        if len(names.get(m, [])) > 1: index[name]['also'] = names[m][1:]
+    json.dump(dict(sorted(index.items())), open(index_path, 'w'), indent=0, separators=(',', ':'))
+    print(len(maps), 'maps', sum(1 for m in maps if names.get(m)), 'named')
 if ONLY in (None, 'people'):
     o = G['people']; defs = []
     while isptr(R(o)): defs.append(R(o)); o += 4

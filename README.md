@@ -3551,10 +3551,17 @@ python3 tools/build-dbz-webfoot.py "<path to Dragonball Z - Buu's Fury (USA).gba
 
 - **The packing**: nearly everything is packed with Webfoot's own LZ bitstream behind an 8-byte header (the kind,
   then the size). The tool unpacks it with a Python port of the ARM routine the game copies into IWRAM.
-- **The maps** (291 and 226): each map's header has its four backgrounds (grids of packed 32x32 screens), the list of
-  its tiles from the shared 256-tile banks, its animated tiles (the first frame is used), the backgrounds' priorities
-  and its blending. The light and shade layers indoors are blended in as the game does. The backgrounds the game draws
-  over people are the map's `-top` picture. Each map is cropped to what's drawn. Collision isn't taken yet.
+- **The maps** (291 and 226): each map's header has its four backgrounds (grids of packed 32x32 screens, each
+  starting where its own origin says), the list of its tiles from the shared 256-tile banks, its animated tiles (the
+  first frame is used), the backgrounds' priorities and its blending. The light and shade layers indoors are blended
+  in as the game does. The backgrounds the game draws over people are the map's `-top` picture. Each picture is the
+  map's own rectangle (the camera's range plus a screen).
+  - **Where people can walk**: `-walk.png`, a pixel for each 8x8 cell, white where the game lets people stand (the
+    header's walking bitmap, the one the game tests a body's box against; things like boulders are taken out of it
+    while the game runs).
+  - **Names**: `maps/index.json` gives each map's area name (from the game's list of areas, which points at the map's
+    place in its level), its size and where the player starts. 487 of the 517 have one; the rest are title and
+    story screens.
 - **The people** (154 and 298): the game's table of everyone's animations. One sheet each, a row an animation in
   the ROM's order (each in fours: down, up, left, right). `people/index.json` gives each sheet's cell size, the
   anchor in a cell (where the person stands) and each row's frame count.
