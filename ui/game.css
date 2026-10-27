@@ -541,6 +541,15 @@
 .rb-card.down { color: #f05048; }
 .rb-card.hit { animation: rb-flash 0.4s steps(2) 1; }
 .rb-card.healed { animation: rb-heal 0.5s ease-out 1; }
+/* A status, the Pokémon realm's tags and colours (PAR, SLP, PSN, BRN, FRZ): on a card under its level, on a foe above it. */
+.rb-card { position: relative; }
+.rb-status { font-style: normal; font-weight: 700; font-size: 4cqh; line-height: 1; padding: 0.3cqh 0.8cqh; border-radius: 0.8cqh; color: #fff; align-self: flex-start; }
+.rb-status:empty { display: none; }
+.rb-card .rb-status { position: absolute; right: 1cqw; bottom: 1cqh; }
+.rb-foe { position: relative; }
+.rb-foe .rb-status { position: absolute; top: 0; left: 50%; transform: translateX(-50%); }
+.rb-status.par { background: #b8a038; } .rb-status.slp { background: #8c888c; } .rb-status.psn { background: #a040a0; }
+.rb-status.brn { background: #e07038; } .rb-status.frz { background: #68b0d0; }
 .rb-foes { position: absolute; left: 0; right: 0; top: 38%; height: 44%; display: flex; justify-content: center; align-items: flex-end; gap: 4%; }
 .rb-foe { height: 100%; display: flex; align-items: flex-end; transition: opacity 0.5s; }
 .rb-foe.gone { opacity: 0; }

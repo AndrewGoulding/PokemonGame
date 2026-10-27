@@ -54,8 +54,8 @@ window.REALM_TYPE_CHART = {
 // Drop, Majima's Thug, Slugger and Breaker styles', and the ones anyone can do); Yakuza 0 has none that heal or guard,
 // so yours that do keep names of this game's own. kind: "phys" (the user's strength times `power`), "magic" (power: [low, high], plus the user's
 // intelligence, less the target's wisdom), "heal" (power: [low, high], plus intelligence), "guard" (the user's defence up half again for the battle) or "status" (status:
-// "sleep", "stun" (as sleep, but a flash or a blinding: a turn or two) or "poison", chance). target: "one" foe, "all" foes, "ally" (one of your side), "self". A "phys" or
-// "magic" skill can also poison (status, chance) as it hits.
+// the Pokémon realm's: "sleep", "paralysis", "poison", "toxic", "burn", "freeze" or "confusion", chance). target: "one" foe, "all" foes, "ally" (one of your side), "self".
+// A "phys" or "magic" skill can also give one (status, chance) as it hits. Heals are times Ultimax.HP_SCALE, as everyone's HP.
 window.REALM_SKILLS = {
   // (anyone's)
   rush:          { name: "Essence of Face Twisting",                  mp: 3, element: "Neutral", kind: "phys",  power: 1.5, target: "one" },
@@ -98,7 +98,7 @@ window.REALM_SKILLS = {
   sword_beam:    { name: "Master Sword Beam",      mp: 16, element: "Light",   kind: "phys",  power: 3.2, target: "one" },
   // Kokiri
   slingshot:     { name: "Fairy Slingshot",        mp: 2,  element: "Grass",   kind: "phys",  power: 1.4, target: "one" },
-  deku_nut:      { name: "Deku Nut",               mp: 3,  element: "Light",   kind: "status", status: "stun", chance: 0.6, target: "one" },
+  deku_nut:      { name: "Deku Nut",               mp: 3,  element: "Light",   kind: "status", status: "paralysis", chance: 0.6, target: "one" },
   navi_heal:     { name: "Fairy Companion",        mp: 4,  element: "Neutral", kind: "heal",  power: [25, 35], target: "ally" },
   deku_volley:   { name: "Deku Seed Volley",       mp: 6,  element: "Grass",   kind: "phys",  power: 1.2, target: "all" },
   sarias_song:   { name: "Saria's Song",           mp: 5,  element: "Psychic", kind: "status", status: "sleep", chance: 0.7, target: "one" },
@@ -122,7 +122,7 @@ window.REALM_SKILLS = {
   gerudo_fang:   { name: "Gerudo Fang",            mp: 16, element: "Ground",  kind: "phys",  power: 3.3, target: "one" },
   // Human
   wolf_fang:     { name: "Wolf Fang Fist",         mp: 3,  element: "Neutral", kind: "phys",  power: 1.6, target: "one" },
-  solar_flare:   { name: "Solar Flare",            mp: 3,  element: "Light",   kind: "status", status: "stun", chance: 0.7, target: "one" },
+  solar_flare:   { name: "Solar Flare",            mp: 3,  element: "Light",   kind: "status", status: "paralysis", chance: 0.7, target: "one" },
   afterimage:    { name: "Afterimage",             mp: 2,  element: "Neutral", kind: "guard", target: "self" },
   kamehameha:    { name: "Kamehameha",             mp: 8,  element: "Neutral", kind: "magic", power: [34, 44], target: "one" },
   destructo_disc:{ name: "Destructo Disc",         mp: 10, element: "Steel",   kind: "phys",  power: 2.7, target: "one" },
@@ -147,7 +147,7 @@ window.REALM_SKILLS = {
   demon_hand:    { name: "Demon Hand",             mp: 3,  element: "Neutral", kind: "phys",  power: 1.6, target: "one" },
   namek_heal:    { name: "Namekian Healing",       mp: 4,  element: "Grass",   kind: "heal",  power: [30, 40], target: "ally" },
   weighted_cape: { name: "Weighted Cape",          mp: 2,  element: "Neutral", kind: "guard", target: "self" },
-  mafuba:        { name: "Evil Containment Wave",  mp: 4,  element: "Psychic", kind: "status", status: "stun", chance: 0.6, target: "one" },
+  mafuba:        { name: "Evil Containment Wave",  mp: 4,  element: "Psychic", kind: "status", status: "paralysis", chance: 0.6, target: "one" },
   masenko:       { name: "Masenko",                mp: 8,  element: "Grass",   kind: "magic", power: [36, 46], target: "one" },
   hellzone:      { name: "Hellzone Grenade",       mp: 14, element: "Grass",   kind: "magic", power: [36, 48], target: "all" },
   beam_cannon:   { name: "Special Beam Cannon",    mp: 16, element: "Neutral", kind: "magic", power: [80, 100], target: "one" },
@@ -163,7 +163,7 @@ window.REALM_SKILLS = {
   death_beam:    { name: "Death Beam",             mp: 2,  element: "Dark",    kind: "magic", power: [10, 14], target: "one" },
   tail_whip:     { name: "Tail Whip",              mp: 4,  element: "Neutral", kind: "phys",  power: 1.7, target: "one" },
   transform:     { name: "Transformation",         mp: 2,  element: "Neutral", kind: "guard", target: "self" },
-  psychokinesis: { name: "Psychokinesis",          mp: 4,  element: "Psychic", kind: "status", status: "stun", chance: 0.65, target: "one" },
+  psychokinesis: { name: "Psychokinesis",          mp: 4,  element: "Psychic", kind: "status", status: "paralysis", chance: 0.65, target: "one" },
   death_saucer:  { name: "Death Saucer",           mp: 10, element: "Steel",   kind: "phys",  power: 2.7, target: "one" },
   death_ball:    { name: "Death Ball",             mp: 14, element: "Ice",     kind: "magic", power: [38, 50], target: "all" },
   supernova:     { name: "Supernova",              mp: 16, element: "Fire",    kind: "magic", power: [82, 102], target: "one" },
@@ -171,7 +171,7 @@ window.REALM_SKILLS = {
   telekinesis:   { name: "Telekinesis",            mp: 2,  element: "Psychic", kind: "magic", power: [10, 14], target: "one" },
   restoration:   { name: "Restoration",            mp: 4,  element: "Light",   kind: "heal",  power: [34, 44], target: "ally" },
   kai_kai:       { name: "Kai Kai",                mp: 2,  element: "Neutral", kind: "guard", target: "self" },
-  paralysis:     { name: "Divine Paralysis",       mp: 4,  element: "Psychic", kind: "status", status: "stun", chance: 0.7, target: "one" },
+  paralysis:     { name: "Divine Paralysis",       mp: 4,  element: "Psychic", kind: "status", status: "paralysis", chance: 0.7, target: "one" },
   kaioken:       { name: "Kaio-ken Attack",        mp: 9,  element: "Fire",    kind: "phys",  power: 2.5, target: "one" },
   spirit_bomb:   { name: "Spirit Bomb",            mp: 16, element: "Light",   kind: "magic", power: [44, 56], target: "all" },
   z_sword:       { name: "Z Sword Slash",          mp: 14, element: "Steel",   kind: "phys",  power: 3.0, target: "one" },
@@ -212,7 +212,7 @@ window.REALM_SKILLS = {
   shell_shield:  { name: "Shell Shield",           mp: 2,  element: "Neutral", kind: "guard", target: "self" },
   shell_spin:    { name: "Shell Spin",             mp: 6,  element: "Earth",   kind: "phys",  power: 1.2, target: "all" },
   power_shell:   { name: "Power Shell",            mp: 9,  element: "Earth",   kind: "phys",  power: 1.6, target: "all" },
-  dizzy_shell:   { name: "Dizzy Shell",            mp: 5,  element: "Psychic", kind: "status", status: "stun", chance: 0.6, target: "one" },
+  dizzy_shell:   { name: "Dizzy Shell",            mp: 5,  element: "Psychic", kind: "status", status: "paralysis", chance: 0.6, target: "one" },
   fire_shell:    { name: "Fire Shell",             mp: 11, element: "Fire",    kind: "phys",  power: 2.6, target: "one" },
   shell_slam:    { name: "Shell Slam",             mp: 16, element: "Earth",   kind: "phys",  power: 3.2, target: "one" },
   super_saiyan:  { name: "Super Saiyan Rage",      mp: 18, element: "Light",    kind: "phys",  power: 3.4, target: "one" }
@@ -418,22 +418,23 @@ window.REALM_FOES = {
 // Things to use in battle, bought from the realm's shops (Poppo's, in Kamurocho, sells them all); the realm's party
 // keeps them (flags.realmParty[realm].items). As in the Like a Dragon games, Heat is MP here: Staminan gives back
 // health and Heat, Toughness health, Tauriner Heat, and the food a little health.
-// heal: HP back ("all": all of it); mp: MP back ("all"); revive: gets someone who's down back up as well.
+// heal: HP back ("all": all of it), times Ultimax.HP_SCALE as everyone's HP ("{hp}" in its text: that many); mp: MP back
+// ("all"); revive: gets someone who's down back up as well.
 window.REALM_ITEMS = {
-  staminan:           { name: "Staminan",           price: 300,  heal: 40,    mp: 10,    text: "An energy tonic: 40 HP and\n10 MP back." },
-  staminan_spark:     { name: "Staminan Spark",     price: 1000, heal: 100,   mp: 25,    text: "A strong energy tonic: 100 HP\nand 25 MP back." },
+  staminan:           { name: "Staminan",           price: 300,  heal: 40,    mp: 10,    text: "An energy tonic: {hp} HP and\n10 MP back." },
+  staminan_spark:     { name: "Staminan Spark",     price: 1000, heal: 100,   mp: 25,    text: "A strong energy tonic: {hp} HP\nand 25 MP back." },
   staminan_royale:    { name: "Staminan Royale",    price: 5000, heal: "all", mp: "all", text: "The finest tonic there is: all\nHP and MP back." },
-  toughness_zero:     { name: "Toughness Zero",     price: 500,  heal: 80,               text: "A health drink: 80 HP back." },
+  toughness_zero:     { name: "Toughness Zero",     price: 500,  heal: 80,               text: "A health drink: {hp} HP back." },
   toughness_infinity: { name: "Toughness Infinity", price: 3000, heal: "all", revive: true, text: "All HP back, even for someone\nwho's down." },
   tauriner:           { name: "Tauriner",           price: 300,  mp: 15,                 text: "A Heat drink: 15 MP back." },
   tauriner_plus:      { name: "Tauriner+",          price: 800,  mp: 40,                 text: "A stronger Heat drink: 40 MP\nback." },
   tauriner_maxx:      { name: "Tauriner Maxx",      price: 2000, mp: "all",              text: "The strongest Heat drink: all\nMP back." },
-  rice_ball:          { name: "Rice Ball",          price: 100,  heal: 20,               text: "A salmon rice ball: 20 HP\nback." },
-  sandwich:           { name: "Sandwich",           price: 150,  heal: 25,               text: "A mixed sandwich: 25 HP back." },
-  hot_dog:            { name: "Hot Dog",            price: 200,  heal: 30,               text: "A hot dog: 30 HP back." },
-  fried_chicken:      { name: "Fried Chicken",      price: 250,  heal: 40,               text: "Poppo's fried chicken: 40 HP\nback." },
-  bento:              { name: "Bento Box",          price: 500,  heal: 60,               text: "A boxed lunch: 60 HP back." },
-  pudding:            { name: "Pudding",            price: 150,  heal: 10,    mp: 5,     text: "A custard pudding: 10 HP and\n5 MP back." }
+  rice_ball:          { name: "Rice Ball",          price: 100,  heal: 20,               text: "A salmon rice ball: {hp} HP\nback." },
+  sandwich:           { name: "Sandwich",           price: 150,  heal: 25,               text: "A mixed sandwich: {hp} HP back." },
+  hot_dog:            { name: "Hot Dog",            price: 200,  heal: 30,               text: "A hot dog: {hp} HP back." },
+  fried_chicken:      { name: "Fried Chicken",      price: 250,  heal: 40,               text: "Poppo's fried chicken: {hp} HP\nback." },
+  bento:              { name: "Bento Box",          price: 500,  heal: 60,               text: "A boxed lunch: {hp} HP back." },
+  pudding:            { name: "Pudding",            price: 150,  heal: 10,    mp: 5,     text: "A custard pudding: {hp} HP and\n5 MP back." }
 };
 
 // Each realm's random fights: the chance a step on its streets starts one, and the groups met (weight, foes).

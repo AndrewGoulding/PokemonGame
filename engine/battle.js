@@ -4059,36 +4059,106 @@
 // Either is then multiplied by the element chart against the target's elements, and by 1.25 if it's one of the
 // user's own elements. Defending halves what you take. Running away works half the time, more if you're quicker;
 // never from a boss.
+//
+// HP: everyone's is HP_SCALE times what their stats say (a fighter's, a foe's and a Pokémon's alike), and every heal
+// with it, so fights last a while. A Pokémon's HP goes back to it divided again.
+//
+// The Pokémon realm's ways come with its Pokémon, and work for everyone:
+//   stat stages   -6 to +6 on Strength, Defense, Intelligence, Wisdom and Speed (2/2 → 8/2, as Attack and the rest),
+//                 and on accuracy and evasiveness (3/3 → 9/3); Swords Dance, Growl, Agility, Sand Attack, Close
+//                 Combat's drop... Gone after the fight.
+//   protection    Protect and Detect (nothing that targets them lands that turn), Endure (left with 1 HP at
+//                 worst), King's Shield, Spiky Shield, Baneful Bunker, Wide Guard and Quick Guard: each a third as
+//                 likely to work again straight after.
+//   status        sleep (1 to 3 turns), poison (an eighth each turn), bad poison (a sixteenth more each turn),
+//                 paralysis (a quarter of the time it can't move, and half its speed), burn (a sixteenth each turn,
+//                 and its attacks do half), freeze (can't move; a fifth of the time it thaws, and fire thaws it),
+//                 and confusion besides (2 to 5 turns; a third of the time it hits itself). Elements are immune as
+//                 Pokémon types are: Electric to paralysis, Fire to burns, Ice to freezing, Poison and Steel to
+//                 poison. A Pokémon's status comes with it, and goes back with it.
+//   and           priority (Quick Attack first), accuracy, flinching, draining, recoil, Leech Seed, Rest, Haze...
 (function () {
   "use strict";
   const D = () => ({ skills: window.REALM_SKILLS, fighters: window.REALM_FIGHTERS, foes: window.REALM_FOES, items: window.REALM_ITEMS, chart: window.REALM_TYPE_CHART });
   function rng(seed) { let s = (seed >>> 0) || 1; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+  const HP_SCALE = 3;
 
   // EXP to reach `lv` (from level 1), and a fighter's stats and skills at a level.
   const expFor = (lv) => Math.round(10 * Math.pow(lv - 1, 2.5));
   function stats(id, lv) {
     const f = D().fighters[id], s = {};
     for (const k in f.base) s[k] = Math.floor(f.base[k] + f.growth[k] * (lv - 1));
+    s.hp *= HP_SCALE;
     return s;
   }
   const skillsAt = (id, lv) => D().fighters[id].skills.filter(([l]) => l <= lv).map(([, s]) => s);
-  // A party member as saved: { id, lv, exp, hp, mp }, new at level `lv`, at full health.
-  function recruit(id, lv) { const s = stats(id, lv); return { id, lv, exp: expFor(lv), hp: s.hp, mp: s.mp }; }
+  // A party member as saved: { id, lv, exp, hp, mp, hpScale }, new at level `lv`, at full health.
+  function recruit(id, lv) { const s = stats(id, lv); return { id, lv, exp: expFor(lv), hp: s.hp, mp: s.mp, hpScale: HP_SCALE }; }
+  // (A member saved before HP_SCALE, or with another: their HP as much of their maximum as it was.)
+  function rescale(rec) {
+    if (rec.pokemon != null || rec.hpScale === HP_SCALE) return rec;
+    rec.hp = Math.round(rec.hp * HP_SCALE / (rec.hpScale || 1));
+    rec.hpScale = HP_SCALE;
+    return rec;
+  }
   // A member as a fighter in battle (`name` for "you").
   function member(rec, name) {
+    rescale(rec);
     const f = D().fighters[rec.id], s = stats(rec.id, rec.lv);
-    return { side: "ally", id: rec.id, name: f.name || name, elements: f.elements, lv: rec.lv, hp: Math.min(rec.hp, s.hp), mp: Math.min(rec.mp, s.mp),
-      maxHp: s.hp, maxMp: s.mp, str: s.str, def: s.def, int: s.int, wis: s.wis, spd: s.spd, skills: skillsAt(rec.id, rec.lv), status: null, guard: 1, rec };
+    return fighter({ side: "ally", id: rec.id, name: f.name || name, elements: f.elements, lv: rec.lv, hp: Math.min(rec.hp, s.hp), mp: Math.min(rec.mp, s.mp),
+      maxHp: s.hp, maxMp: s.mp, str: s.str, def: s.def, int: s.int, wis: s.wis, spd: s.spd, skills: skillsAt(rec.id, rec.lv), rec });
   }
+  // (What every fighter has in battle besides: no status, no stat stages, nothing guarding them.)
+  const fighter = (f) => Object.assign({ status: null, guard: 1, boosts: { str: 0, def: 0, int: 0, wis: 0, spd: 0, acc: 0, eva: 0 }, confused: 0, protectChain: 0 }, f);
+
+  // ---------- Status conditions ----------
+  const STATUS_OF = { slp: "sleep", psn: "poison", tox: "toxic", par: "paralysis", brn: "burn", frz: "freeze" };
+  const STATUS_CODE = { sleep: "slp", poison: "psn", toxic: "tox", paralysis: "par", burn: "brn", freeze: "frz" };
+  // (The short names the battle screen shows, as the Pokémon realm's.)
+  const STATUS_TAG = { sleep: "SLP", poison: "PSN", toxic: "PSN", paralysis: "PAR", burn: "BRN", freeze: "FRZ" };
+  const STATUS_IMMUNE = { paralysis: ["Electric"], burn: ["Fire"], freeze: ["Ice"], poison: ["Poison", "Steel"], toxic: ["Poison", "Steel"] };
+  const STATUS_TEXT = { sleep: " fell asleep!", poison: " was poisoned!", toxic: " was badly poisoned!", paralysis: " is paralyzed! It may be unable to move!",
+    burn: " was burned!", freeze: " was frozen solid!", confusion: " became confused!" };
+  // (Whether `f` can be given it: no status already (confusion apart), and not of an element that's immune.)
+  const canHave = (f, status) => (status === "confusion" ? !f.confused : !f.status && !(STATUS_IMMUNE[status] || []).some((e) => f.elements.includes(e)));
+  function inflict(b, f, status) {
+    if (status === "confusion") { f.confused = 2 + Math.floor(b.rand() * 4); return; }
+    f.status = status;
+    if (status === "sleep") f.sleepTurns = 1 + Math.floor(b.rand() * 3);
+    if (status === "toxic") f.toxic = 0;
+  }
+
+  // ---------- Stat stages ----------
+  const STAT_OF = { atk: "str", def: "def", spa: "int", spd: "wis", spe: "spd", accuracy: "acc", evasion: "eva" };
+  const STAT_NAME = { str: "Strength", def: "Defense", int: "Intelligence", wis: "Wisdom", spd: "Speed", acc: "accuracy", eva: "evasiveness" };
+  const stageMult = (n) => (n >= 0 ? (2 + n) / 2 : 2 / (2 - n));
+  const accMult = (n) => { n = Math.max(-6, Math.min(6, n)); return n >= 0 ? (3 + n) / 3 : 3 / (3 - n); };
+  // (A stat as it is now: its stage, and paralysis halving speed.)
+  const stat = (f, k) => f[k] * stageMult((f.boosts && f.boosts[k]) || 0) * (k === "spd" && f.status === "paralysis" ? 0.5 : 1);
+  // Stages up or down (Pokémon's names for them: { atk: 2 }); the text of what happened.
+  function boost(f, boosts) {
+    const out = [];
+    for (const k in boosts) {
+      const s = STAT_OF[k], n = boosts[k];
+      if (!s || !n) continue;
+      const was = f.boosts[s];
+      f.boosts[s] = Math.max(-6, Math.min(6, was + n));
+      const moved = f.boosts[s] - was;
+      out.push(f.name + "'s " + STAT_NAME[s] + (!moved ? (n > 0 ? " won't go any higher!" : " won't go any lower!")
+        : moved > 0 ? (moved >= 3 ? " rose drastically!" : moved === 2 ? " sharply rose!" : " rose!") : (moved <= -3 ? " severely fell!" : moved === -2 ? " harshly fell!" : " fell!")));
+    }
+    return out.join(" ");
+  }
+
   // ---------- A Pokémon out of its realm ----------
   // Brought into an Ultimax fight, a Pokémon fights by these rules with its own stats (Attack its strength, Defence
-  // its defence, Special Attack its intelligence, Special Defence its wisdom, Speed its speed; its HP its HP), its
-  // types as elements (TYPE_ELEMENT; Neutral only when it's all there is), and its moves as skills, each costing
-  // one of its own PP (it has no MP): a physical move its base power / 40 times an attack (two to five hits, three);
-  // a special one magic, its base power times its level / 40 (an eighth either way); one that puts to sleep,
-  // poisons or paralyses (paralysis: stunned) a status skill, at its accuracy; one that heals the user a heal of
-  // about half its HP; one that raises its Defence or protects it a guard. Its other moves (stat changes and the
-  // like) don't come with it. Its HP and PP go back to it after; and Ultimax EXP, as Pokémon EXP (pokemonExp).
+  // its defence, Special Attack its intelligence, Special Defence its wisdom, Speed its speed; its HP its HP, times
+  // HP_SCALE), its types as elements (TYPE_ELEMENT; Neutral only when it's all there is), and its moves as skills,
+  // each costing one of its own PP (it has no MP): a physical move its base power / 40 times an attack (two to five
+  // hits, three); a special one magic, its base power times its level / 40 (an eighth either way); each with its
+  // accuracy, priority and what else it does (a status, a stat change, flinching, draining, recoil...). Status moves
+  // as they are: a status, stat changes, a heal, protection. What's left (UNSUPPORTED says why) doesn't come with
+  // it. Its HP, PP and status go back to it after; and Ultimax EXP, as Pokémon EXP (pokemonExp).
   const TYPE_ELEMENT = { Dragon: "Air", Flying: "Air", Normal: "Neutral", Electric: "Electric", Water: "Water", Grass: "Grass",
     Psychic: "Psychic", Fire: "Fire", Rock: "Ground", Ground: "Ground", Steel: "Steel", Ghost: "Dark", Fairy: "Light", Poison: "Poison",
     Bug: "Grass", Fighting: "Neutral", Ice: "Ice", Dark: "Dark" };
@@ -4097,38 +4167,82 @@
     for (const t of types) { const e = TYPE_ELEMENT[t] || "Neutral"; if (!out.includes(e)) out.push(e); }
     return out.length > 1 ? out.filter((e) => e !== "Neutral") : out;
   }
-  const STATUS_OF = { slp: "sleep", psn: "poison", tox: "poison", par: "stun" };
+  // (The protection moves: what each does besides, to whoever touches the user.)
+  const PROTECT = { Protect: "protect", Detect: "protect", "King's Shield": "kingsshield", "Spiky Shield": "spikyshield", "Baneful Bunker": "banefulbunker",
+    Obstruct: "obstruct", "Silk Trap": "silktrap", "Burning Bulwark": "burningbulwark", Endure: "endure", "Wide Guard": "wideguard", "Quick Guard": "quickguard" };
+  // (The heals for someone else: one of the party, or all of it.)
+  const HEAL_OTHER = { "Heal Pulse": "ally", "Floral Healing": "ally", "Life Dew": "party", "Jungle Healing": "party", "Lunar Blessing": "party" };
+  // (Status moves that do something of their own.)
+  const SPECIAL = { Rest: "rest", Haze: "haze", "Belly Drum": "bellydrum", "Leech Seed": "leechseed", "Aqua Ring": "aquaring", Ingrain: "aquaring",
+    Refresh: "refresh", "Heal Bell": "healbell", Aromatherapy: "healbell", "Pain Split": "painsplit" };
+  // (A move's extra effects, as Pokémon Showdown lists them: { chance, status, confusion, flinch, boosts, selfBoosts }.)
+  function extras(m) {
+    return [m.secondary].concat(m.secondaries || []).filter(Boolean).map((s) => ({ chance: (s.chance || 100) / 100, status: STATUS_OF[s.status] || null,
+      confusion: s.volatileStatus === "confusion", flinch: s.volatileStatus === "flinch", boosts: s.boosts || null, selfBoosts: (s.self && s.self.boosts) || null }))
+      .filter((x) => x.status || x.confusion || x.flinch || x.boosts || x.selfBoosts);
+  }
+  // Why a move doesn't come out of the Pokémon realm (null: it does).
+  function unsupported(name) {
+    const m = window.MOVES[name];
+    if (!m) return "unknown move";
+    if (m.cat !== "Status") return null;
+    if (m.slotCondition && m.selfdestruct) return "faints to heal whoever comes in next";
+    if (PROTECT[name] || SPECIAL[name] || HEAL_OTHER[name] || STATUS_OF[m.status] || m.volatileStatus === "confusion" || m.boosts || (m.self && m.self.boosts)) return null;
+    if (m.flags && m.flags.heal && m.target === "self") return null;
+    if (m.weather) return "weather";
+    if (m.terrain) return "terrain";
+    if (m.pseudoWeather) return "a field effect";
+    if (m.sideCondition) return "a side condition (screens, hazards, Tailwind...)";
+    if (m.slotCondition) return "a slot effect";
+    if (m.forceSwitch || m.selfSwitch) return "switching";
+    if (m.callsMove) return "calls another move";
+    if (m.volatileStatus) return "a lasting effect (" + m.volatileStatus + ")";
+    if (m.ohko) return "one-hit KO";
+    return "an effect of its own";
+  }
   // A move as a skill (null: one that doesn't come out of the Pokémon realm).
   function pokemonSkill(name, level, maxHp) {
     const m = window.MOVES[name];
-    if (!m) return null;
+    if (!m || unsupported(name)) return null;
     const element = TYPE_ELEMENT[m.type] || "Neutral";
-    const target = /^all/.test(m.target) ? "all" : "one";
-    const base = { name, mp: 0, element, target };
+    const target = m.target === "self" || m.target === "allySide" || m.target === "allies" || m.target === "adjacentAllyOrSelf" ? "self"
+      : /^all/.test(m.target) || m.target === "foeSide" ? "all" : "one";
+    const base = { name, mp: 0, element, target, acc: m.acc == null || m.acc === true ? null : m.acc / 100, priority: m.priority || 0,
+      contact: !!(m.flags && m.flags.contact), extras: extras(m), selfBoosts: (m.self && m.self.boosts) || null, selfdestruct: !!m.selfdestruct };
     if (m.cat !== "Status") {
       const bp = m.power || 60, hits = Array.isArray(m.multihit) ? 3 : m.multihit || 1;
-      const sec = m.secondary && STATUS_OF[m.secondary.status] ? { status: STATUS_OF[m.secondary.status], chance: m.secondary.chance / 100 } : {};
-      if (m.cat === "Physical") return Object.assign(base, { kind: "phys", power: Math.round(bp * hits / 40 * 100) / 100 }, sec);
+      Object.assign(base, { drain: m.drain ? m.drain[0] / m.drain[1] : 0, recoil: m.recoil ? m.recoil[0] / m.recoil[1] : 0,
+        breaksProtect: !!m.breaksProtect, fakeOut: name === "Fake Out" });
+      // (Its first status effect, for the screen to say what it can do: "status" and "chance", as before.)
+      const st = base.extras.find((x) => x.status);
+      if (st) Object.assign(base, { status: st.status, chance: st.chance });
+      if (m.cat === "Physical") return Object.assign(base, { kind: "phys", power: Math.round(bp * hits / 40 * 100) / 100 });
       const mid = bp * hits * level / 40;
-      return Object.assign(base, { kind: "magic", power: [Math.round(mid * 7 / 8), Math.round(mid * 9 / 8)] }, sec);
+      return Object.assign(base, { kind: "magic", power: [Math.round(mid * 7 / 8), Math.round(mid * 9 / 8)] });
     }
-    if (STATUS_OF[m.status]) return Object.assign(base, { kind: "status", status: STATUS_OF[m.status], chance: m.acc == null || m.acc === true ? 1 : m.acc / 100 });
-    if (m.target === "self" && m.flags && m.flags.heal) return Object.assign(base, { kind: "heal", power: [Math.round(maxHp * 0.45), Math.round(maxHp * 0.55)], target: "self" });
-    if ((m.boosts && m.boosts.def > 0 && m.target === "self") || m.stallingMove) return Object.assign(base, { kind: "guard", target: "self" });
-    return null;
+    if (PROTECT[name]) return Object.assign(base, { kind: "protect", protect: PROTECT[name], target: "self", acc: null });
+    if (HEAL_OTHER[name]) return Object.assign(base, { kind: "heal", power: [Math.round(maxHp * (HEAL_OTHER[name] === "party" ? 0.22 : 0.45)), Math.round(maxHp * (HEAL_OTHER[name] === "party" ? 0.28 : 0.55))],
+      target: HEAL_OTHER[name], acc: null });
+    if (SPECIAL[name]) return Object.assign(base, { kind: "special", special: SPECIAL[name], target: name === "Leech Seed" || name === "Pain Split" ? "one" : name === "Haze" ? "all" : "self" });
+    if (STATUS_OF[m.status] || m.volatileStatus === "confusion")
+      return Object.assign(base, { kind: "status", status: STATUS_OF[m.status] || "confusion", chance: base.acc == null ? 1 : base.acc, boosts: m.boosts || null });
+    if (m.boosts || (m.self && m.self.boosts)) return Object.assign(base, { kind: "boost", boosts: m.boosts || null });
+    return Object.assign(base, { kind: "heal", power: [Math.round(maxHp * 0.45), Math.round(maxHp * 0.55)], target: "self", acc: null });
   }
   // A party Pokémon (its record, as game/party.js keeps it) as a fighter; `stats`: Party.stats(record).
   function pokemon(record, stats, name) {
     const own = {}, pp = {}, skills = [];
     for (const slot of record.moves || []) {
-      const s = pokemonSkill(slot.name, record.level, stats.hp);
+      const s = pokemonSkill(slot.name, record.level, stats.hp * HP_SCALE);
       if (!s) continue;
       const id = "move:" + slot.name;
       own[id] = s; pp[id] = slot.pp; skills.push(id);
     }
-    return { side: "ally", id: "pokemon", name: name || record.nickname || record.species, elements: pokemonElements(window.DEX[record.species].types),
-      lv: record.level, hp: Math.min(record.hp, stats.hp), mp: 0, maxHp: stats.hp, maxMp: 0,
-      str: stats.atk, def: stats.def, int: stats.spa, wis: stats.spd, spd: stats.spe, skills, own, pp, status: null, guard: 1, mon: record };
+    const f = fighter({ side: "ally", id: "pokemon", name: name || record.nickname || record.species, elements: pokemonElements(window.DEX[record.species].types),
+      lv: record.level, hp: Math.min(record.hp, stats.hp) * HP_SCALE, mp: 0, maxHp: stats.hp * HP_SCALE, maxMp: 0,
+      str: stats.atk, def: stats.def, int: stats.spa, wis: stats.spd, spd: stats.spe, skills, own, pp, mon: record });
+    if (STATUS_OF[record.status] && f.hp > 0) inflict({ rand: Math.random }, f, STATUS_OF[record.status]);
+    return f;
   }
   // Ultimax EXP as a Pokémon's: as much of a level to it as to a fighter of its level (Ultimax's curve, expFor,
   // against its own growth rate's).
@@ -4141,8 +4255,8 @@
   const skillOf = (who, id) => (who.own && who.own[id]) || D().skills[id];
   function foe(id, letter) {
     const f = D().foes[id];
-    return { side: "foe", id, name: f.name + (letter ? " " + letter : ""), elements: f.elements, hp: f.hp, mp: f.mp, maxHp: f.hp, maxMp: f.mp,
-      str: f.str, def: f.def, int: f.int || 0, wis: f.wis || 0, spd: f.spd, skills: f.skills || [], status: null, guard: 1, boss: !!f.boss };
+    return fighter({ side: "foe", id, name: f.name + (letter ? " " + letter : ""), elements: f.elements, hp: f.hp * HP_SCALE, mp: f.mp, maxHp: f.hp * HP_SCALE, maxMp: f.mp,
+      str: f.str, def: f.def, int: f.int || 0, wis: f.wis || 0, spd: f.spd, skills: f.skills || [], boss: !!f.boss });
   }
   function create(members, foeIds, opts) {
     opts = opts || {};
@@ -4153,8 +4267,10 @@
     return { allies: members, reserve: opts.reserve || [], foes, over: null, rand: rng(opts.seed == null ? Date.now() : opts.seed), boss: foes.some((f) => f.boss), turnNo: 0 };
   }
   const up = (list) => list.filter((f) => f.hp > 0);
-  // (Each ally's HP, MP, name, level and whether it's a Pokémon (PP, not MP): a swap changes who's where.)
-  const snap = (b) => ({ allies: b.allies.map((f) => [f.hp, f.mp, f.name, f.lv, !!f.mon, f.maxHp]), foes: b.foes.map((f) => f.hp) });
+  // (Each ally's HP, MP, name, level, whether it's a Pokémon (PP, not MP), max HP and status; each foe's HP and
+  // status: a swap changes who's where.)
+  const tag = (f) => (f.hp > 0 && STATUS_TAG[f.status]) || "";
+  const snap = (b) => ({ allies: b.allies.map((f) => [f.hp, f.mp, f.name, f.lv, !!f.mon, f.maxHp, tag(f)]), foes: b.foes.map((f) => f.hp), foeStatus: b.foes.map(tag) });
   // The chart's multiplier of `element` on `elements`.
   function effect(element, elements) {
     const row = D().chart[element] || {};
@@ -4163,12 +4279,14 @@
   function physical(b, user, target, power, element) {
     const r = b.rand;
     let crit = false, dmg;
-    if (power === 1 && r() < 1 / 32) { crit = true; dmg = user.str * (0.95 + r() * 0.1); }
+    if (power === 1 && r() < 1 / 32) { crit = true; dmg = Math.max(user.str, stat(user, "str")) * (0.95 + r() * 0.1); }
     else {
-      const base = user.str / 2 - target.def * target.guard / 4;
+      const base = stat(user, "str") / 2 - stat(target, "def") * target.guard / 4;
       dmg = base < 1 ? Math.floor(r() * 2) : base * (0.875 + r() * 0.25);
       dmg *= power;
     }
+    // (Burned: half.)
+    if (user.status === "burn") dmg /= 2;
     return finish(b, user, target, dmg, element, crit);
   }
   function finish(b, user, target, dmg, element, crit) {
@@ -4177,8 +4295,14 @@
     if (target.defending) dmg /= 2;
     dmg = Math.max(0, Math.round(dmg));
     if (eff > 0 && dmg === 0 && crit) dmg = 1;
+    // (Enduring: left with 1 HP at worst.)
+    let endured = false;
+    if (target.enduring && target !== user && dmg >= target.hp && target.hp > 0) { dmg = target.hp - 1; endured = true; }
     target.hp = Math.max(0, target.hp - dmg);
-    return { dmg, eff, crit };
+    // (Fire thaws the frozen.)
+    let thawed = false;
+    if (element === "Fire" && target.status === "freeze" && target.hp > 0 && dmg > 0) { target.status = null; thawed = true; }
+    return { dmg, eff, crit, endured, thawed };
   }
   // A foe picks: a skill now and then (a third of the time, a boss half), otherwise an attack, at someone standing.
   function foeChoice(b, f) {
@@ -4187,22 +4311,25 @@
     if (usable.length && r() < (f.boss ? 0.5 : 0.34)) return { act: "skill", skill: usable[Math.floor(r() * usable.length)], target: targets[Math.floor(r() * targets.length)] };
     return { act: "attack", target: targets[Math.floor(r() * targets.length)] };
   }
-  const STATUS_TEXT = { sleep: " fell asleep!", stun: " is stunned!", poison: " was poisoned!" };
 
   // One turn. `choices`: for each ally (in order; a fallen one's is skipped), { act: "attack" | "skill" | "defend" |
   // "item" | "swap", target (an index: a foe's, or an ally's for healing), skill, item, reserve (an index into
-  // b.reserve: who comes in, for "swap") }; or "run". -> the steps. Swapping happens first, before anyone else acts;
-  // and at the end of the turn, anyone who fell is replaced by the first of the reserve still standing. The fight's
-  // lost only when everyone, the reserve too, is down.
+  // b.reserve: who comes in, for "swap") }; or "run". -> the steps. Swapping happens first, before anyone else acts,
+  // then defending, then by priority (a Pokémon's move's: Protect's +4, Quick Attack's +1) and speed; and at the end
+  // of the turn, anyone who fell is replaced by the first of the reserve still standing. The fight's lost only when
+  // everyone, the reserve too, is down.
   function turn(b, choices) {
     const steps = [], r = b.rand;
     const say = (text, fx) => steps.push({ text, fx: fx || null, snap: snap(b) });
+    const ix = (f) => (f.side === "ally" ? b.allies : b.foes).indexOf(f);
+    const down = (f) => say(f.side === "ally" ? f.name + " collapsed!" : f.name + " is beaten!", { kind: "down", side: f.side, i: ix(f) });
     b.turnNo++;
-    for (const f of b.allies.concat(b.foes)) f.defending = false;
+    b.guards = { ally: {}, foe: {} };
+    for (const f of b.allies.concat(b.foes)) { f.defending = false; f.protected = null; f.enduring = false; f.flinched = false; f.moved = false; }
     let order;
     if (choices === "run") {
-      const mine = up(b.allies).reduce((s, f) => s + f.spd, 0) / Math.max(1, up(b.allies).length);
-      const theirs = up(b.foes).reduce((s, f) => s + f.spd, 0) / Math.max(1, up(b.foes).length);
+      const mine = up(b.allies).reduce((s, f) => s + stat(f, "spd"), 0) / Math.max(1, up(b.allies).length);
+      const theirs = up(b.foes).reduce((s, f) => s + stat(f, "spd"), 0) / Math.max(1, up(b.foes).length);
       if (b.boss) say("There's no running from this fight!");
       else if (r() < Math.max(0.25, Math.min(0.9, 0.5 + (mine - theirs) / 60))) { say("You got away!", { kind: "run" }); b.over = "ran"; return steps; }
       else say("But you couldn't get away!");
@@ -4213,41 +4340,66 @@
       for (const f of up(b.foes)) acts.push({ who: f, c: foeChoice(b, f) });
       // (Defending and swapping happen first, whatever the order.)
       for (const a of acts) if (a.c.act === "defend") a.who.defending = true;
-      order = acts.map((a) => Object.assign(a, { speed: a.c.act === "swap" ? 2e9 : a.c.act === "defend" ? 1e9 : a.who.spd * (0.5 + r() * 0.5) })).sort((x, y) => y.speed - x.speed);
+      const prio = (a) => { const s = a.c.act === "skill" && skillOf(a.who, a.c.skill); return (s && s.priority) || 0; };
+      order = acts.map((a) => Object.assign(a, { speed: a.c.act === "swap" ? 2e9 : a.c.act === "defend" ? 1e9 : prio(a) * 1e6 + stat(a.who, "spd") * (0.5 + r() * 0.5) }))
+        .sort((x, y) => y.speed - x.speed);
     }
     for (const { who, c } of order) {
       if (b.over) break;
       if (who.hp <= 0) continue;
-      if (who.status === "sleep") {
-        if (r() < 0.5) { who.status = null; say(who.name + " woke up!"); }
-        else { say(who.name + " is fast asleep."); continue; }
-      }
-      // (Stunned: blinded or dazed, a turn or two at most.)
-      if (who.status === "stun") {
-        say(who.name + " is stunned and can't move!");
-        who.stunTurns = (who.stunTurns || 0) + 1;
-        if (who.stunTurns >= 2 || r() < 0.5) { who.status = null; who.stunTurns = 0; }
-        continue;
+      who.moved = true;
+      if (!statusLets(b, who, say)) continue;
+      if (who.flinched) { say(who.name + " flinched and couldn't move!"); who.protectChain = 0; continue; }
+      if (who.confused) {
+        who.confused--;
+        if (!who.confused) say(who.name + " snapped out of its confusion!");
+        else {
+          say(who.name + " is confused!");
+          if (r() < 1 / 3) {
+            const res = physical(b, who, who, 1, "Neutral");
+            say("It hurt itself in its confusion! (" + res.dmg + ")", { kind: "hit", side: who.side, i: ix(who), eff: 1 });
+            if (who.hp === 0) down(who);
+            who.protectChain = 0;
+            checkOver(b);
+            continue;
+          }
+        }
       }
       act(b, who, c, say);
       checkOver(b);
     }
-    // Poison, at the end of the turn: an eighth of their HP.
+    // At the end of the turn: poison, bad poison and burns; Leech Seed; Aqua Ring and Ingrain.
     if (!b.over) for (const f of b.allies.concat(b.foes)) {
-      if (f.hp > 0 && f.status === "poison") {
-        const d = Math.max(1, Math.floor(f.maxHp / 8));
+      if (f.hp <= 0) continue;
+      const hurt = (d, text) => {
+        d = Math.max(1, Math.floor(d));
         f.hp = Math.max(0, f.hp - d);
-        say(f.name + " is hurt by the poison! (" + d + ")", { kind: "hit", side: f.side, i: (f.side === "ally" ? b.allies : b.foes).indexOf(f) });
-        if (f.hp === 0) say(f.side === "ally" ? f.name + " collapsed!" : f.name + " is beaten!", { kind: "down", side: f.side, i: (f.side === "ally" ? b.allies : b.foes).indexOf(f) });
+        say(f.name + text + " (" + d + ")", { kind: "hit", side: f.side, i: ix(f) });
+        if (f.hp === 0) down(f);
+        return d;
+      };
+      if (f.status === "poison") hurt(f.maxHp / 8, " is hurt by the poison!");
+      else if (f.status === "toxic") { f.toxic = Math.min(15, (f.toxic || 0) + 1); hurt(f.maxHp * f.toxic / 16, " is hurt by the poison!"); }
+      else if (f.status === "burn") hurt(f.maxHp / 16, " is hurt by its burn!");
+      if (f.hp > 0 && f.seededBy) {
+        const by = f.seededBy;
+        const d = hurt(Math.min(f.hp, f.maxHp / 8), "'s health is sapped by Leech Seed!");
+        if (by.hp > 0) by.hp = Math.min(by.maxHp, by.hp + d);
+      }
+      if (f.hp > 0 && f.aquaRing && f.hp < f.maxHp) {
+        const before = f.hp;
+        f.hp = Math.min(f.maxHp, f.hp + Math.max(1, Math.floor(f.maxHp / 16)));
+        say(f.name + " restored a little HP. (" + (f.hp - before) + ")", { kind: "heal", side: f.side, i: ix(f) });
       }
     }
+    checkOver(b);
     // (The fallen replaced from the reserve.)
     if (!b.over || b.over === "lost") {
       b.allies.forEach((f, i) => {
         if (f.hp > 0) return;
         const j = b.reserve.findIndex((x) => x.hp > 0);
         if (j < 0) return;
-        const inn = b.reserve[j]; b.reserve[j] = f; b.allies[i] = inn; inn.defending = false;
+        const inn = b.reserve[j]; b.reserve[j] = f; b.allies[i] = inn; inn.defending = false; inn.entered = b.turnNo + 1;
         say(inn.name + " steps in for " + f.name + "!", { kind: "swap", side: "ally", i });
       });
       if (b.over === "lost" && up(b.allies).length) b.over = null;
@@ -4256,6 +4408,24 @@
     if (b.over === "won") say("You won the fight!", { kind: "won" });
     if (b.over === "lost") say("Everyone has fallen...", { kind: "lost" });
     return steps;
+  }
+  // (Whether `who` can act this turn, for its status: asleep, paralysed or frozen it may not.)
+  function statusLets(b, who, say) {
+    const r = b.rand;
+    if (who.status === "sleep") {
+      if (--who.sleepTurns < 0) { who.status = null; say(who.name + " woke up!"); return true; }
+      say(who.name + " is fast asleep.", { kind: "status", side: who.side, i: (who.side === "ally" ? b.allies : b.foes).indexOf(who) });
+      who.protectChain = 0;
+      return false;
+    }
+    if (who.status === "freeze") {
+      if (r() < 0.2) { who.status = null; say(who.name + " thawed out!"); return true; }
+      say(who.name + " is frozen solid!");
+      who.protectChain = 0;
+      return false;
+    }
+    if (who.status === "paralysis" && r() < 0.25) { say(who.name + " is paralyzed! It can't move!"); who.protectChain = 0; return false; }
+    return true;
   }
   function checkOver(b) {
     if (b.over) return;
@@ -4271,22 +4441,62 @@
       f.name + " takes " + res.dmg + " damage!" + (res.eff >= 2 ? " It's super effective!" : res.eff > 0 && res.eff < 1 ? " It's not very effective..." : ""));
     const struck = (f, res, text) => {
       say(text + hitText(f, res), { kind: "hit", side: f.side, i: ix(f), eff: res.eff, crit: res.crit });
+      if (res.endured) say(f.name + " endured the hit!");
+      if (res.thawed) say(f.name + " thawed out!");
       if (f.hp === 0) say(f.side === "ally" ? f.name + " collapsed!" : f.name + " is beaten!", { kind: "down", side: f.side, i: ix(f) });
     };
+    const stage = (f, text, fx) => { if (text) say(text, fx || { kind: f.side === who.side ? "buff" : "status", side: f.side, i: ix(f) }); };
+    // (Whether a move at `f` lands: its protection (and what that does back), then the move's accuracy against the
+    // stages; s null for an attack.)
+    const lands = (f, s, opener) => {
+      const g = b.guards[f.side];
+      const guarded = f.protected || (s && s.target === "all" && g.wide) || (s && s.priority > 0 && g.quick);
+      if (guarded && !(s && s.breaksProtect)) {
+        say(opener + f.name + " protected itself!");
+        const contact = !s || s.contact;
+        if (contact && f.protected === "spikyshield" && who.hp > 0) {
+          const d = Math.max(1, Math.floor(who.maxHp / 8)); who.hp = Math.max(0, who.hp - d);
+          say(who.name + " was hurt by the spikes! (" + d + ")", { kind: "hit", side: who.side, i: ix(who) });
+          if (who.hp === 0) say(who.side === "ally" ? who.name + " collapsed!" : who.name + " is beaten!", { kind: "down", side: who.side, i: ix(who) });
+        }
+        if (contact && f.protected === "kingsshield") stage(who, boost(who, { atk: -2 }));
+        if (contact && f.protected === "obstruct") stage(who, boost(who, { def: -2 }));
+        if (contact && f.protected === "silktrap") stage(who, boost(who, { spe: -1 }));
+        const bites = { banefulbunker: "poison", burningbulwark: "burn" }[f.protected];
+        if (contact && bites && canHave(who, bites)) { inflict(b, who, bites); say(who.name + STATUS_TEXT[bites], { kind: "status", side: who.side, i: ix(who) }); }
+        return false;
+      }
+      // (An attack: 1 in 32 dodged. A move: its accuracy (null: it never misses, but for the stages). A realm
+      // skill: never misses, but a status skill works only its chance of the time.)
+      let acc = !s ? 31 / 32 : s.acc != null ? s.acc : s.kind === "status" && !(who.own && who.own[c.skill]) ? s.chance : null;
+      const n = who.boosts.acc - f.boosts.eva;
+      if (acc == null) { if (n >= 0) return true; acc = 1; }
+      if (r() >= acc * accMult(n)) {
+        say(opener + (!s ? f.name + " dodges out of the way!" : s.kind === "status" ? "It doesn't work on " + f.name + "." : who.name + "'s attack missed!"), { kind: "miss", side: f.side, i: ix(f) });
+        return false;
+      }
+      return true;
+    };
+    // (Protecting again straight after: a third as likely each time.)
+    const isProtect = c.act === "skill" && (skillOf(who, c.skill) || {}).kind === "protect";
+    if (!isProtect) who.protectChain = 0;
     if (c.act === "defend") { say(who.name + " is on guard."); return; }
     if (c.act === "swap") {
       const j = c.reserve, inn = b.reserve[j], i = b.allies.indexOf(who);
       if (!inn || inn.hp <= 0 || i < 0) { say(who.name + " looks round, but no one can come in."); return; }
-      b.reserve[j] = who; b.allies[i] = inn;
+      b.reserve[j] = who; b.allies[i] = inn; inn.entered = b.turnNo + 1;
+      // (Stat stages and confusion go when you step out, as a Pokémon's when it's switched out.)
+      who.boosts = { str: 0, def: 0, int: 0, wis: 0, spd: 0, acc: 0, eva: 0 }; who.confused = 0; who.seededBy = null;
       say(who.name + " steps back, and " + inn.name + " steps in!", { kind: "swap", side: "ally", i });
       return;
     }
     if (c.act === "attack") {
       const f = pickFoe(c.target);
       if (!f) return;
-      if (r() < 1 / 32) { say(who.name + " attacks! " + f.name + " dodges out of the way!", { kind: "miss", side: f.side, i: ix(f) }); return; }
+      const opener = who.name + " attacks! ";
+      if (!lands(f, null, opener)) return;
       const res = physical(b, who, f, 1, "Neutral");
-      struck(f, res, who.name + " attacks! " + (res.crit ? "A critical hit! " : ""));
+      struck(f, res, opener + (res.crit ? "A critical hit! " : ""));
       return;
     }
     if (c.act === "item") {
@@ -4297,7 +4507,7 @@
       if (f.hp <= 0 && !it.revive) { say(who.name + " used " + it.name + ", but " + f.name + " is down."); return; }
       // (HP and MP back, said together: "Kiryu gets 40 HP and 10 MP back.")
       const hp0 = f.hp, mp0 = f.mp;
-      if (it.heal) f.hp = Math.min(f.maxHp, f.hp + (it.heal === "all" ? f.maxHp : it.heal));
+      if (it.heal) f.hp = Math.min(f.maxHp, f.hp + (it.heal === "all" ? f.maxHp : it.heal * HP_SCALE));
       if (it.mp) f.mp = Math.min(f.maxMp, f.mp + (it.mp === "all" ? f.maxMp : it.mp));
       if (hp0 <= 0) f.status = null;
       const got = [f.hp - hp0 ? f.hp - hp0 + " HP" : "", f.mp - mp0 ? f.mp - mp0 + " MP" : ""].filter(Boolean).join(" and ");
@@ -4316,32 +4526,151 @@
     }
     const opener = who.name + " uses " + s.name + "! ";
     if (s.kind === "guard") { who.guard = 1.5; say(opener + who.name + "'s defence goes up!", { kind: "buff", side: who.side, i: ix(who) }); return; }
+    if (s.kind === "protect") {
+      // (Last to move this turn, there's nothing left to protect from.)
+      const last = !b.allies.concat(b.foes).some((f) => f.hp > 0 && !f.moved && f.side !== who.side);
+      if (last || r() >= 1 / Math.pow(3, who.protectChain)) { who.protectChain = 0; say(opener + "But it failed!"); return; }
+      who.protectChain++;
+      if (s.protect === "endure") { who.enduring = true; say(opener + who.name + " braced itself!", { kind: "buff", side: who.side, i: ix(who) }); return; }
+      if (s.protect === "wideguard" || s.protect === "quickguard") {
+        b.guards[who.side][s.protect === "wideguard" ? "wide" : "quick"] = true;
+        say(opener + (s.protect === "wideguard" ? "Wide Guard" : "Quick Guard") + " protects the whole party!", { kind: "buff", side: who.side, i: ix(who) });
+        return;
+      }
+      who.protected = s.protect;
+      say(opener + who.name + " protected itself!", { kind: "buff", side: who.side, i: ix(who) });
+      return;
+    }
+    if (s.kind === "heal" && s.target === "party") {
+      const amount = () => Math.round((s.power[0] + r() * (s.power[1] - s.power[0])) * (1 + who.int / 200));
+      const got = up(mine).map((f) => { const before = f.hp; f.hp = Math.min(f.maxHp, f.hp + amount()); return f.name + " " + (f.hp - before); });
+      say(opener + "HP back: " + got.join(", ") + ".", { kind: "heal", side: who.side, i: ix(who) });
+      return;
+    }
     if (s.kind === "heal") {
       const f = (typeof c.target === "number" ? mine[c.target] : c.target) || who;
       if (f.hp <= 0) { say(opener + "But " + f.name + " is down!"); return; }
       const before = f.hp;
-      f.hp = Math.min(f.maxHp, f.hp + Math.round((s.power[0] + r() * (s.power[1] - s.power[0])) * (1 + who.int / 200)));
+      // (A Pokémon's heal is already as much of its HP as it should be; a skill's is HP_SCALE times its power.)
+      const amount = (s.power[0] + r() * (s.power[1] - s.power[0])) * (who.own && who.own[c.skill] ? 1 : HP_SCALE);
+      f.hp = Math.min(f.maxHp, f.hp + Math.round(amount * (1 + who.int / 200)));
       say(opener + f.name + " gets " + (f.hp - before) + " HP back.", { kind: "heal", side: f.side, i: ix(f) });
       return;
     }
-    const targets = s.target === "all" ? up(theirs) : [pickFoe(c.target)].filter(Boolean);
-    if (s.kind === "status") {
-      const f = targets[0];
-      if (!f) return;
-      if (f.status || effect(s.element, f.elements) === 0 || r() >= s.chance) { say(opener + "It doesn't work on " + f.name + "."); return; }
-      f.status = s.status;
-      say(opener + f.name + STATUS_TEXT[s.status], { kind: "status", side: f.side, i: ix(f) });
+    if (s.kind === "special") { special(b, who, s, c, say, { opener, pickFoe, lands, stage, ix, mine, theirs }); return; }
+    if (s.kind === "boost" && s.target === "self") {
+      const text = boost(who, s.boosts || s.selfBoosts || {});
+      say(opener + text, { kind: "buff", side: who.side, i: ix(who) });
       return;
     }
-    let first = true;
+    const targets = s.target === "all" ? up(theirs) : [pickFoe(c.target)].filter(Boolean);
+    if (s.kind === "status" || s.kind === "boost") {
+      let first = true;
+      for (const f of targets) {
+        const head = first ? opener : "";
+        first = false;
+        if (!lands(f, s, head)) continue;
+        if (s.kind === "boost") { say(head + boost(f, s.boosts), { kind: "status", side: f.side, i: ix(f) }); continue; }
+        // (Swagger and Flatter: the stat up, then the confusion.)
+        if (s.boosts) say(head + boost(f, s.boosts), { kind: "status", side: f.side, i: ix(f) });
+        const lead = s.boosts ? "" : head;
+        if (!canHave(f, s.status) || (s.status !== "confusion" && effect(s.element, f.elements) === 0)) { say(lead + "It doesn't work on " + f.name + "."); continue; }
+        inflict(b, f, s.status);
+        say(lead + f.name + STATUS_TEXT[s.status], { kind: "status", side: f.side, i: ix(f) });
+      }
+      if (s.selfBoosts) stage(who, boost(who, s.selfBoosts));
+      if (s.selfdestruct && who.hp > 0) { who.hp = 0; say(who.side === "ally" ? who.name + " collapsed!" : who.name + " is beaten!", { kind: "down", side: who.side, i: ix(who) }); }
+      return;
+    }
+    // (Fake Out: only on its first turn out.)
+    if (s.fakeOut && b.turnNo !== (who.entered || 1)) { say(opener + "But it failed!"); return; }
+    let first = true, dealt = 0;
     for (const f of targets) {
       if (f.hp <= 0) continue;
-      const res = s.kind === "magic" ? finish(b, who, f, (s.power[0] + r() * (s.power[1] - s.power[0])) * (1 + who.int / 200) / (1 + f.wis / 200), s.element, false)
-        : physical(b, who, f, s.power, s.element);
-      struck(f, res, first ? opener : "");
+      const head = first ? opener : "";
       first = false;
-      if (s.status && f.hp > 0 && !f.status && res.eff > 0 && r() < s.chance) { f.status = s.status; say(f.name + STATUS_TEXT[s.status], { kind: "status", side: f.side, i: ix(f) }); }
+      if (!lands(f, s, head)) continue;
+      const res = s.kind === "magic" ? finish(b, who, f, (s.power[0] + r() * (s.power[1] - s.power[0])) * (1 + stat(who, "int") / 200) / (1 + stat(f, "wis") / 200), s.element, false)
+        : physical(b, who, f, s.power, s.element);
+      struck(f, res, head);
+      dealt += res.dmg;
+      if (res.eff === 0) continue;
+      // (What else it does: a realm skill's status; a Pokémon move's extras.)
+      if (!s.extras && s.status && f.hp > 0 && canHave(f, s.status) && r() < s.chance) { inflict(b, f, s.status); say(f.name + STATUS_TEXT[s.status], { kind: "status", side: f.side, i: ix(f) }); }
+      for (const x of s.extras || []) {
+        if (r() >= x.chance) continue;
+        if (x.selfBoosts && who.hp > 0) stage(who, boost(who, x.selfBoosts));
+        if (f.hp <= 0) continue;
+        if (x.status && canHave(f, x.status)) { inflict(b, f, x.status); say(f.name + STATUS_TEXT[x.status], { kind: "status", side: f.side, i: ix(f) }); }
+        if (x.confusion && canHave(f, "confusion")) { inflict(b, f, "confusion"); say(f.name + STATUS_TEXT.confusion, { kind: "status", side: f.side, i: ix(f) }); }
+        if (x.flinch && !f.moved) f.flinched = true;
+        if (x.boosts) stage(f, boost(f, x.boosts));
+      }
     }
+    if (who.hp > 0 && dealt > 0 && s.drain) {
+      const before = who.hp;
+      who.hp = Math.min(who.maxHp, who.hp + Math.max(1, Math.round(dealt * s.drain)));
+      if (who.hp > before) say(who.name + " drained some energy! (" + (who.hp - before) + ")", { kind: "heal", side: who.side, i: ix(who) });
+    }
+    if (who.hp > 0 && dealt > 0 && s.recoil) {
+      const d = Math.max(1, Math.round(dealt * s.recoil));
+      who.hp = Math.max(0, who.hp - d);
+      say(who.name + " is damaged by the recoil! (" + d + ")", { kind: "hit", side: who.side, i: ix(who) });
+      if (who.hp === 0) say(who.side === "ally" ? who.name + " collapsed!" : who.name + " is beaten!", { kind: "down", side: who.side, i: ix(who) });
+    }
+    if (who.hp > 0 && s.selfBoosts && !first) stage(who, boost(who, s.selfBoosts));
+    if (s.selfdestruct && who.hp > 0) { who.hp = 0; say(who.side === "ally" ? who.name + " collapsed!" : who.name + " is beaten!", { kind: "down", side: who.side, i: ix(who) }); }
+  }
+  // The status moves with ways of their own (SPECIAL).
+  function special(b, who, s, c, say, h) {
+    const r = b.rand, { opener, ix } = h;
+    switch (s.special) {
+      case "rest":
+        if (who.hp >= who.maxHp || who.status === "sleep") { say(opener + "But it failed!"); return; }
+        who.hp = who.maxHp; who.status = "sleep"; who.sleepTurns = 2;
+        say(opener + who.name + " slept and became healthy!", { kind: "heal", side: who.side, i: ix(who) });
+        return;
+      case "haze":
+        for (const f of b.allies.concat(b.foes)) f.boosts = { str: 0, def: 0, int: 0, wis: 0, spd: 0, acc: 0, eva: 0 };
+        say(opener + "All stat changes were eliminated!");
+        return;
+      case "bellydrum":
+        if (who.hp <= Math.floor(who.maxHp / 2) || who.boosts.str >= 6) { say(opener + "But it failed!"); return; }
+        who.hp -= Math.floor(who.maxHp / 2); who.boosts.str = 6;
+        say(opener + who.name + " cut its own HP and maximized its Strength!", { kind: "buff", side: who.side, i: ix(who) });
+        return;
+      case "aquaring":
+        if (who.aquaRing) { say(opener + "But it failed!"); return; }
+        who.aquaRing = true;
+        say(opener + who.name + " surrounded itself with a veil of water!", { kind: "buff", side: who.side, i: ix(who) });
+        return;
+      case "refresh":
+        if (!who.status) { say(opener + "But it failed!"); return; }
+        who.status = null;
+        say(opener + who.name + "'s status returned to normal!", { kind: "heal", side: who.side, i: ix(who) });
+        return;
+      case "healbell":
+        for (const f of h.mine) f.status = null;
+        say(opener + "Everyone's status returned to normal!", { kind: "heal", side: who.side, i: ix(who) });
+        return;
+      case "leechseed": {
+        const f = h.pickFoe(c.target);
+        if (!f || !h.lands(f, s, opener)) return;
+        if (f.seededBy || f.elements.includes("Grass")) { say(opener + "It doesn't work on " + f.name + "."); return; }
+        f.seededBy = who;
+        say(opener + f.name + " was seeded!", { kind: "status", side: f.side, i: ix(f) });
+        return;
+      }
+      case "painsplit": {
+        const f = h.pickFoe(c.target);
+        if (!f || !h.lands(f, s, opener)) return;
+        const avg = Math.floor((who.hp + f.hp) / 2);
+        who.hp = Math.min(who.maxHp, avg); f.hp = Math.min(f.maxHp, avg);
+        say(opener + "The battlers shared their pain!", { kind: "hit", side: f.side, i: ix(f) });
+        return;
+      }
+    }
+    say(opener + "But nothing happened!");
   }
   // What a win gives: EXP (each of the party still standing gets it all, as in Dragon Quest the total split
   // between them) and money.
@@ -4354,6 +4683,7 @@
   // maximums add.)
   function gainExp(rec, exp) {
     const out = [];
+    rescale(rec);
     rec.exp += exp;
     while (rec.lv < 99 && rec.exp >= expFor(rec.lv + 1)) {
       const was = stats(rec.id, rec.lv), had = skillsAt(rec.id, rec.lv);
@@ -4364,15 +4694,19 @@
     }
     return out;
   }
-  // Back from a battle: each member's HP and MP into their saved record.
+  // Back from a battle: each member's HP and MP into their saved record (a Pokémon's HP divided by HP_SCALE again,
+  // rounded up while it's standing; its status too).
   function keep(b) {
     for (const f of b.allies.concat(b.reserve || [])) {
       if (f.mon) {
-        f.mon.hp = f.hp;
+        f.mon.hp = f.hp <= 0 ? 0 : Math.max(1, Math.ceil(f.hp / HP_SCALE));
+        f.mon.status = f.hp > 0 ? STATUS_CODE[f.status] || "" : "";
         for (const slot of f.mon.moves) if ("move:" + slot.name in f.pp) slot.pp = f.pp["move:" + slot.name];
-      } else { f.rec.hp = f.hp; f.rec.mp = f.mp; }
+      } else { f.rec.hp = f.hp; f.rec.mp = f.mp; f.rec.hpScale = HP_SCALE; }
     }
   }
-  window.Ultimax = { create, turn, spoils, gainExp, keep, member, recruit, stats, skillsAt, expFor, effect, foeChoice, up,
-    pokemon, pokemonSkill, pokemonElements, pokemonExp, skillOf, TYPE_ELEMENT };
+  // An item's text, its HP as HP_SCALE makes it ("{hp}" in REALM_ITEMS' text).
+  const itemText = (id) => String(D().items[id].text).replace(/\{hp\}/g, () => String(D().items[id].heal * HP_SCALE));
+  window.Ultimax = { create, turn, spoils, gainExp, keep, member, recruit, rescale, stats, skillsAt, expFor, effect, foeChoice, up,
+    pokemon, pokemonSkill, pokemonElements, pokemonExp, skillOf, unsupported, itemText, TYPE_ELEMENT, HP_SCALE, STATUS_TAG };
 })();

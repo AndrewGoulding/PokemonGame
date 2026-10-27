@@ -4,7 +4,8 @@
 // edge, or into a door's spot facing up, to the other scene's x and y), its spots (stand in one and press A: its
 // script), and its people (each a SoK sprite from assets/kamurocho/people, their scripts and words as ui/game.js
 // knows them: Kamurocho_Kiryu and the rest; `face` the way they look). Fights start on the street as you walk
-// (REALM_ENCOUNTERS.Kamurocho), never in the alley or the bar.
+// (REALM_ENCOUNTERS.Kamurocho), never in the alley, the bar or a shop. Every convenience store on the street (Poppo's
+// the one) has a door in, and its clerk inside sells the realm's items.
 window.KAMUROCHO_STREET = {
   // Where the Time Machine leaves you: in the alley, before it.
   arrive: { scene: "alley", x: 300, y: 446, facing: "down" },
@@ -15,8 +16,8 @@ window.KAMUROCHO_STREET = {
       // Bacchus)
       floor: [[0, 150], [800, 150], [1300, 392], [2900, 394], [3075, 462], [3075, 470], [1000, 470], [460, 220], [0, 220]],
       exits: [{ edge: "right", to: "alley", x: 30, y: 446, facing: "right" },
-        { spot: [2960, 3040, 425, 452], to: "bacchus", x: 40, y: 448, facing: "right", text: "Bacchus" }],
-      spots: [{ x0: 670, x1: 770, y0: 150, y1: 168, script: "Kamurocho_Clerk", text: "Poppo" }],
+        { spot: [2960, 3040, 425, 452], to: "bacchus", x: 40, y: 448, facing: "right", text: "Bacchus" },
+        { spot: [670, 770, 150, 168], to: "poppo", x: 130, y: 440, facing: "right", text: "Poppo" }],
       people: [
         { script: "Kamurocho_Tout", sprite: "host", x: 150, y: 172, face: "right",
           text: ["Maharaja's the hottest disco in\nKamurocho!", "The dance floor never sleeps.\nNeither does this town."] },
@@ -44,6 +45,14 @@ window.KAMUROCHO_STREET = {
         { script: "Kamurocho_Lookout", sprite: "grunt", x: 120, y: 452, face: "right",
           text: ["Keep away from that empty lot.", "A man was shot there, and every\nfamily in the Tojo Clan wants\nthe 100 billion yen that's gone."] }
       ]
+    },
+    // (Inside Poppo, the convenience store: this game's own, tools/build-kamurocho-poppo.py. Its clerk's behind the
+    // counter: stand before it and press A to buy.)
+    poppo: {
+      title: "Poppo", image: "assets/kamurocho/poppo.png", width: 800,
+      floor: [[0, 414], [800, 414], [800, 470], [0, 470]],
+      exits: [{ edge: "left", to: "street", x: 720, y: 172, facing: "down" }],
+      spots: [{ x0: 548, x1: 790, y0: 414, y1: 470, script: "Kamurocho_Clerk", text: "Clerk" }]
     },
     bacchus: {
       title: "Bacchus", image: "assets/kamurocho/bacchus.png", width: 1632,

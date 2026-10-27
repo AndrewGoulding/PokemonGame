@@ -1906,7 +1906,7 @@
           }
           if (ev[5] === "caught") { el.ball.classList.add("caught"); return; }
           sfx("se_ball_trade");
-          el.ball.classList.add("hidden");
+          hideBall();
           view.p2.inBall = false;
           renderSide("p2");
           await message(BREAK_FREE[+ev[4]] || BREAK_FREE[0]);
@@ -1917,7 +1917,7 @@
           const jingle = window.GameAudio ? window.GameAudio.fanfare("mus_caught_intro") : null;
           await message("Gotcha! " + nameOf(a) + " was snagged!");
           await jingle;
-          el.ball.classList.add("hidden");
+          hideBall();
           el.ball.classList.remove("caught", "shake");
           v.inBall = false; v.fainted = true; v.hp = 0; v.substitute = false;
           renderSide(pos);
@@ -2890,34 +2890,32 @@
   // no animation to play (the DOM one below, then).
   // (Once the browser has drawn what's on the page now.)
   const nextPaint = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  // (The caught ball, the throw's last frame held: released as the ball goes.)
+  let caughtBall = null;
+  function releaseCaughtBall() { if (caughtBall) { const r = caughtBall; caughtBall = null; r(); } }
+  function hideBall() { el.ball.classList.add("hidden"); releaseCaughtBall(); }
   async function ballThrow(pos, ball, shakes, caught, ballCase) {
     const BA = window.BattleAnim;
     if (!sceneOn() || !BA || !BA.hasAnim("special", "BALL_THROW") || !view[pos] || !view[pos].species) return false;
     const box = monBox(pos);
     if (!box) return false;
     const foe = view[pos];
-    // (The ball that stays once it's caught, loaded before the throw: else the throw's ball goes, and this one only
-    // shows once its picture has come.)
-    if (caught) {
-      el.ball.classList.add("hidden");
-      el.ball.src = ballUrl(ball);
-      try { await el.ball.decode(); } catch (e) { /* (shown when it comes) */ }
-    }
     foe.inBall = true;
     renderSide(pos);
+    // (Caught: the animation stops once the ball's shut and darkened, and its last frame stays up, the same ball,
+    // until the battle's over.)
     const o = Object.assign(animOpts("p1", pos), { anim: "special", id: "BALL_THROW", ball, ballCase: ballCase != null ? ballCase : caught ? 4 : Math.min(3, shakes),
-      shown: POSITIONS.map((p) => p === pos), hold: caught ? {} : null });
-    await playAnim(o);
-    // (Caught: the ball that stays is drawn, and the screen shows it, before the animation's last frame goes: no gap.)
-    const release = async () => { await nextPaint(); if (o.hold && o.hold.release) o.hold.release(); };
+      shown: POSITIONS.map((p) => p === pos), hold: caught ? {} : null, untilIdle: !!caught });
+    const ok = await playAnim(o);
     if (caught) {
-      // The ball stays shut where it came to rest (the GBA's: 24 under its target's base line).
+      if (ok && o.hold.release) { releaseCaughtBall(); caughtBall = o.hold.release; return true; }
+      // (The animation couldn't finish: the ball's picture stays instead.)
+      el.ball.src = ballUrl(ball);
       el.ball.style.left = ((box.cx - 8) / 240 * 100).toFixed(2) + "%";
       el.ball.style.right = "auto";
       el.ball.style.top = ((BA.ballRest(POSITIONS.indexOf(pos), !!battle.doubles) - 8) / 112 * 100).toFixed(2) + "%";
       el.ball.classList.remove("hidden", "shake");
       el.ball.classList.add("caught");
-      await release();
       return true;
     }
     foe.inBall = false;
@@ -3081,7 +3079,7 @@
       battle.events.splice(n);
       teraShown["p2:" + m.teamIndex] = m.terastallized;
     }
-    el.ball.classList.add("hidden");
+    hideBall();
     for (const k of POSITIONS) renderSide(k);
     await intro(Object.assign({}, config, { trainer: "old_man", p2: { team: [{}] } }));
     say("");
@@ -3106,7 +3104,7 @@
     await jingle;
     await wait(500);
     hbStop();
-    el.ball.classList.add("hidden");
+    hideBall();
     trainerEl().classList.remove("four");
     config = null;
   }
@@ -3209,7 +3207,7 @@
       battle.events.splice(n);
       teraShown["p2:" + m.teamIndex] = m.terastallized;
     }
-    el.ball.classList.add("hidden");
+    hideBall();
     for (const k of POSITIONS) renderSide(k);
     await intro(cfg);
     if (!cfg.wild) {

@@ -3637,13 +3637,17 @@ The Like a Dragon realm is **Kamurocho** in 1988, as in Yakuza 0, and it looks a
 its beat-'em-up's are, along the street and up and down the pavement, its own pictures. Your Pokémon stay in their
 balls here (bring them along at the Time Machine to fight), and there are no wild Pokémon.
 
-- **The streets** (`ui/street.js`, `data/kamurocho-street.js`): three scenes, each one of Streets of Kamurocho's stage
+- **The streets** (`ui/street.js`, `data/kamurocho-street.js`): four scenes, three of them Streets of Kamurocho's stage
   backdrops (480 pixels high, the floor at the bottom), on a screen of their own, 336x224 (Streets of Rage 2's height,
   3:2 as the game's), the camera following you along and up and down. **The street**: the pavement by the Stardust
   and Poppo, down the corner past the Gyudon place to the batting cages and Bacchus (its two backdrops side by side,
   3103 pixels long). **The Empty Lot**: the back alley off its end, where the Time Machine stands. **Bacchus**: the
-  bar, through its door. You're drawn twice your size, to stand as tall as its people. Walk off the street's end into
-  the alley (and back); stand at Bacchus's door and press A to go in; Poppo's door, A, is its shop; the Time Machine's
+  bar, through its door. **Poppo**: the convenience store, through its door (every convenience store on the street
+  can be gone into; Poppo's the one). Streets of Kamurocho has no insides of its shops, so this one is this game's own
+  (`tools/build-kamurocho-poppo.py`): Poppo's sign off its shopfront, its shelves, drinks fridge and counter drawn in
+  the street's colours, and its clerk the Salaryman in Poppo's blue, behind the counter. You're drawn twice your size, to stand as tall as its people. Walk off the street's end into
+  the alley (and back); stand at Bacchus's or Poppo's door and press A to go in (walk out the left to leave); in Poppo, stand at the counter
+  and press A to talk to the clerk and buy; the Time Machine's
   spot, A, is its menu. The floor you can walk on is each scene's polygon (along the slope, you go up or down it as
   you walk). You're placed by `player.location.street` ({ scene, x, y, facing }); the overworld rests while you're
   there (ui/game.js's explore loop asks `Street.explore` instead).
@@ -3741,8 +3745,23 @@ taken from a Dragon Quest cartridge.
   (1 + the target's wisdom/200); a healing one its range times (1 + intelligence/200). Elements multiply by
   `REALM_TYPE_CHART` against the target's elements, and by 1.25 for one of the user's own elements. (Wisdom, new
   with these stats, starts at the average of each fighter's intelligence and defence, and grows the same way.)
-- **Status**: sleep (a turn's lost, half a chance a turn to wake), stun (a turn or two lost) and poison (an eighth of HP at the end of each
-  turn). Guard skills raise the user's defence by half for the rest of the fight.
+- **HP**: everyone's is `Ultimax.HP_SCALE` (3) times what their stats say: the fighters', the foes' and Pokémon's
+  alike, so fights last a while. Heals scale with it (an item's text shows the scaled amount), and a Pokémon's HP
+  goes back to it divided again (rounded up while it's standing). A party saved before keeps as much of its HP.
+- **Status**: the Pokémon realm's. Sleep (1 to 3 turns), poison (an eighth of HP at the end of each turn), bad
+  poison (a sixteenth more each turn), paralysis (a quarter of the time it can't move, and half its speed), burn (a
+  sixteenth each turn, and its physical damage halved), freeze (it can't move; a fifth of the time it thaws, and a
+  Fire hit thaws it), and confusion besides (2 to 5 turns; a third of the time it hits itself). Elements are immune
+  as Pokémon types are: Electric to paralysis, Fire to burns, Ice to freezing, Poison and Steel to poison. Each
+  shows as its tag (PAR, SLP, PSN, BRN, FRZ) on a party window or over a foe. Guard skills raise the user's defence
+  by half for the rest of the fight.
+- **Stat stages**: −6 to +6 on Strength, Defence, Intelligence, Wisdom and Speed (as Attack and the rest: 2/8 to
+  8/2), and on accuracy and evasiveness (3/9 to 9/3). Swords Dance, Growl, Agility, Sand Attack, Close Combat's
+  drop and the like change them; they go when you step out (Swap) or the fight ends.
+- **Protection**: Protect and Detect (nothing aimed at the user lands that turn), Endure (left with 1 HP at worst),
+  King's Shield, Spiky Shield, Baneful Bunker, Obstruct, Silk Trap and Burning Bulwark (with what each does to
+  whoever touches them), Wide Guard (the party, from moves on all of it) and Quick Guard (from priority moves). Each
+  is a third as likely to work again straight after, and fails if no foe's left to move.
 - **Winning**: the foes' EXP is split between those still standing, and their money is yours. EXP to reach level
   L is 10 × (L − 1)^2.5. Each level adds that fighter's growth to every stat and may teach a skill. Anyone who fell
   gets up afterwards with 1 HP.
@@ -3796,10 +3815,23 @@ taken from a Dragon Quest cartridge.
     Air).
   - **Its moves are skills** that cost PP, each its own, and no MP. A physical move hits as an attack times its
     base power / 40 (two to five hits count as three). A special move is magic: its base power times its level /
-    40, an eighth either way. Both can sleep, poison or stun as their side effects do (paralysis is stun). A move
-    that puts to sleep, poisons or paralyses is a status skill at its accuracy; one that heals its user heals about
-    half its HP; one that raises its Defence or protects it is a guard. Its other moves (stat changes and the like)
-    don't work here: shown when it joins, and left out.
+    40, an eighth either way. Each keeps its accuracy, priority (Quick Attack goes first) and what else it does: a
+    status, a stat change (its own or the target's), flinching, draining, recoil, exploding. Status moves do as they
+    do in its realm: a status (Thunder Wave, Toxic, Will-O-Wisp, Confuse Ray, Swagger...), stat changes (Swords
+    Dance, Growl...), a heal (Recover; Heal Pulse on an ally; Life Dew on the party), protection (above), and Rest,
+    Haze, Belly Drum, Leech Seed, Aqua Ring and Ingrain, Refresh, Heal Bell and Aromatherapy, Pain Split. A
+    Pokémon's status comes into the fight with it and goes back with it.
+  - **Moves that don't work here** (`Ultimax.unsupported(name)` says why; shown when it joins, and left out), 144
+    of the 843 there are (Z-Moves and Max Moves apart):
+    - **Effects of their own (type, ability, item or stat swaps, copying, trapping...)** (64): Acupressure, After You, Ally Switch, Bestow, Block, Camouflage, Celebrate, Conversion, Conversion 2, Corrosive Gas, Court Change, Defog, Doodle, Entrainment, Flower Shield, Forest's Curse, Gear Up, Guard Split, Guard Swap, Happy Hour, Heart Swap, Hold Hands, Instruct, Lock-On, Magic Powder, Magnetic Flux, Mean Look, Mimic, Mind Reader, Perish Song, Power Split, Power Swap, Psych Up, Psycho Shift, Purify, Quash, Recycle, Reflect Type, Role Play, Rototiller, Shadow Half, Shadow Hold, Shadow Shed, Simple Beam, Sketch, Skill Swap, Soak, Speed Swap, Spider Web, Spite, Splash, Strength Sap, Stuff Cheeks, Switcheroo, Take Heart, Teatime, Teleport, Tidy Up, Topsy-Turvy, Transform, Trick, Trick-or-Treat, Venom Drench, Worry Seed
+    - **Lasting effects on a Pokémon (Substitute, Taunt, Encore, Yawn...)** (34): Attract, Curse, Destiny Bond, Disable, Dragon Cheer, Electrify, Embargo, Encore, Focus Energy, Follow Me, Foresight, Gastro Acid, Grudge, Heal Block, Helping Hand, Imprison, Laser Focus, Magic Coat, Magnet Rise, Miracle Eye, Nightmare, Octolock, Odor Sleuth, Powder, Power Trick, Rage Powder, Snatch, Spotlight, Stockpile, Substitute, Taunt, Telekinesis, Torment, Yawn
+    - **Screens, entry hazards and other side effects** (13): Aurora Veil, Crafty Shield, Light Screen, Lucky Chant, Mat Block, Mist, Reflect, Safeguard, Spikes, Stealth Rock, Sticky Web, Tailwind, Toxic Spikes
+    - **Field effects (Trick Room, Gravity...)** (8): Fairy Lock, Gravity, Ion Deluge, Magic Room, Mud Sport, Trick Room, Water Sport, Wonder Room
+    - **Moves that call other moves** (7): Assist, Copycat, Me First, Metronome, Mirror Move, Nature Power, Sleep Talk
+    - **Weather** (7): Chilly Reception, Hail, Rain Dance, Sandstorm, Shadow Sky, Snowscape, Sunny Day
+    - **Switching out or forcing a switch** (5): Baton Pass, Parting Shot, Roar, Shed Tail, Whirlwind
+    - **Terrain** (4): Electric Terrain, Grassy Terrain, Misty Terrain, Psychic Terrain
+    - **Faint to heal the next one in** (2): Healing Wish, Lunar Dance
   - **Afterwards** its HP and PP stay as the fight left them (it's the same Pokémon in your party). Like the rest of
     the party, it gets up with 1 HP if it fell, and a Rest at the Time Machine heals it as a Pokémon Center would. A
     fight's EXP is as much of a level to it as to a fighter of its level (`Ultimax.pokemonExp`: Ultimax's curve

@@ -915,8 +915,13 @@
     let n = 1;
     const ask = () => { st.message = text(n) + "   \u25c0 " + n + " \u25b6\nA: Yes   B: Cancel"; paint(); };
     ask();
-    const yes = (await window.GbaMenus.keys((key) => {
+    let lastStep = 0;
+    const yes = (await window.GbaMenus.keys((key, e) => {
       if (key === "left" || key === "right" || key === "up" || key === "down") {
+        // (held: a step at most every 70ms, as the Card Shop's count)
+        const now = performance.now();
+        if (e && e.repeat && now - lastStep < 70) return undefined;
+        lastStep = now;
         const step = key === "up" || key === "down" ? 10 : 1;
         n = Math.max(1, Math.min(most, n + (key === "left" || key === "down" ? -step : step))); se(); ask(); return undefined;
       }
@@ -940,7 +945,7 @@
       const row = rows[i];
       if (row.pack && row.count) {
         se();
-        const n = await howMany(row.count, (n) => "Open how many " + row.label + "\npacks?");
+        const n = await howMany(row.count, (n) => "Open how many\n" + row.label + "s?");
         if (n) { await st.opts.openPack(row.pack, n); clamp(); }
         continue;
       }
@@ -1499,6 +1504,9 @@
       const e = rows.flat().find((e) => e.zone && e.zone === o.zone) || { q: zoneQuad(o.zone), x: 120, y: 80 };
       return { k, q: e.q, x: e.x, y: e.y, zone: o.zone, chosen: false };
     });
+    // (In the order they're on the screen, row by row, left to right: the foe's zones are drawn the other way round
+    // from their numbers, so left and right go the way the cursor looks to go.)
+    list.sort((a, b) => Math.round(a.y) - Math.round(b.y) || a.x - b.x);
     if (req.direct != null) list.push({ k: req.direct, q: DIRECT_Q, x: 120, y: 9, direct: true, chosen: false });
     st.pick = { list, at: 0 }; let i = 0;
     const need = req.max > 1 ? req.max : 1;
@@ -1871,18 +1879,29 @@
       present(g, top);
     };
     paint();
+    // (Held keys: a step at most every REPEAT_MS, each drawn on the next frame, so a held arrow counts up one at a
+    // time however fast the keyboard repeats or however long a paint takes.)
+    const REPEAT_MS = 70;
+    let lastStep = 0, painting = 0;
+    const repaint = () => { if (!painting) painting = requestAnimationFrame(() => { painting = 0; paint(); }); };
     for (;;) {
-      const k = await window.GbaMenus.keys((key) => {
-        if (key === "up" || key === "down") { i = (i + (key === "up" ? order.length - 1 : 1)) % order.length; st.lastPack = i; se(); paint(); return undefined; }
+      const k = await window.GbaMenus.keys((key, e) => {
+        const now = performance.now();
+        if (e && e.repeat && ["up", "down", "left", "right"].includes(key)) { if (now - lastStep < REPEAT_MS) return undefined; }
+        if (["up", "down", "left", "right"].includes(key)) lastStep = now;
+        if (key === "up" || key === "down") { i = (i + (key === "up" ? order.length - 1 : 1)) % order.length; st.lastPack = i; se(); repaint(); return undefined; }
         // (this pack's count: the basket's packs, all told, no more than 99 or than you can pay for)
         const here = order[i], n = basket[here] || 0, most = n + Math.max(0, Math.min(99, Math.floor(opts.money() / price)) - total());
-        const put = (m) => { if (m === n) { se("se_failure"); return; } if (m) basket[here] = m; else delete basket[here]; se(); paint(); };
+        // (Held against the most there can be, it stays there quietly: only a fresh press buzzes.)
+        const put = (m) => { if (m === n) { if (!(e && e.repeat)) se("se_failure"); return; } if (m) basket[here] = m; else delete basket[here]; se(); repaint(); };
         if (key === "left" || key === "right") { put(Math.max(0, Math.min(key === "left" ? n - 1 : n + 1, most))); return undefined; }
         if (key === "r") { put(most); return undefined; }
         if (key === "l") { put(0); return undefined; }
         if (key === "select") { if (help) { help = false; se(); paint(); return undefined; } return key; }
         return key === "a" || key === "b" || key === "start" ? key : undefined;
       }, { shoulders: true });
+      // (A paint still to come is done now: else it'd draw over what comes next.)
+      if (painting) { cancelAnimationFrame(painting); painting = 0; paint(); }
       se();
       if (k === "b") return;
       const key = order[i], set = st.sets[key];

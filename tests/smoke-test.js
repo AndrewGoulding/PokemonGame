@@ -7209,13 +7209,16 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   for (const e of Object.values(TYPES)) assert(window.REALM_ELEMENTS.includes(e), e);
   const pika = Party.create("Pikachu", 20, { moves: ["Thunderbolt", "Quick Attack", "Thunder Wave", "Growl"] }), ps = Party.stats(pika);
   const pf = R.pokemon(pika, ps, "Pikachu");
-  assert(pf.str === ps.atk && pf.def === ps.def && pf.int === ps.spa && pf.wis === ps.spd && pf.spd === ps.spe && pf.maxHp === ps.hp);
+  assert(pf.str === ps.atk && pf.def === ps.def && pf.int === ps.spa && pf.wis === ps.spd && pf.spd === ps.spe && pf.maxHp === ps.hp * R.HP_SCALE);
   assert.deepStrictEqual(pf.elements, ["Electric"]);
-  assert.deepStrictEqual(pf.skills, ["move:Thunderbolt", "move:Quick Attack", "move:Thunder Wave"], "Growl doesn't come out of its realm");
-  assert(pf.own["move:Thunderbolt"].kind === "magic" && pf.own["move:Thunderbolt"].element === "Electric" && pf.own["move:Thunderbolt"].status === "stun");
-  assert(pf.own["move:Quick Attack"].kind === "phys" && pf.own["move:Thunder Wave"].kind === "status" && pf.own["move:Thunder Wave"].status === "stun");
-  assert(R.pokemonSkill("Recover", 30, 100).kind === "heal" && R.pokemonSkill("Protect", 30, 100).kind === "guard" && R.pokemonSkill("Harden", 30, 100).kind === "guard");
-  assert(R.pokemonSkill("Sleep Powder", 30, 100).status === "sleep" && R.pokemonSkill("Toxic", 30, 100).status === "poison" && !R.pokemonSkill("Swords Dance", 30, 100));
+  assert.deepStrictEqual(pf.skills, ["move:Thunderbolt", "move:Quick Attack", "move:Thunder Wave", "move:Growl"]);
+  assert(pf.own["move:Thunderbolt"].kind === "magic" && pf.own["move:Thunderbolt"].element === "Electric" && pf.own["move:Thunderbolt"].status === "paralysis");
+  assert(pf.own["move:Quick Attack"].kind === "phys" && pf.own["move:Quick Attack"].priority === 1 && pf.own["move:Thunder Wave"].kind === "status" && pf.own["move:Thunder Wave"].status === "paralysis");
+  assert(pf.own["move:Growl"].kind === "boost" && pf.own["move:Growl"].boosts.atk === -1);
+  assert(R.pokemonSkill("Recover", 30, 100).kind === "heal" && R.pokemonSkill("Protect", 30, 100).kind === "protect" && R.pokemonSkill("Harden", 30, 100).kind === "boost");
+  assert(R.pokemonSkill("Sleep Powder", 30, 100).status === "sleep" && R.pokemonSkill("Toxic", 30, 100).status === "toxic" && R.pokemonSkill("Will-O-Wisp", 30, 100).status === "burn");
+  assert(R.pokemonSkill("Swords Dance", 30, 100).kind === "boost" && R.pokemonSkill("Confuse Ray", 30, 100).status === "confusion" && !R.pokemonSkill("Rain Dance", 30, 100));
+  for (const id in S) assert(S[id].status !== "stun", id + ": stun is paralysis now");
   {
     const b = R.create([R.member(R.recruit("hylian", 20), "Red"), pf], ["thug", "knife"], { seed: 7 });
     const pp0 = pf.pp["move:Thunderbolt"];
@@ -7225,7 +7228,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     }
     assert(pf.pp["move:Thunderbolt"] < pp0, "its moves cost PP");
     R.keep(b);
-    assert(pika.moves[0].pp === pf.pp["move:Thunderbolt"] && pika.hp === pf.hp, "its PP and HP go back to it");
+    assert(pika.moves[0].pp === pf.pp["move:Thunderbolt"] && pika.hp === Math.ceil(pf.hp / R.HP_SCALE), "its PP and HP go back to it");
     assert(R.pokemonExp(pika, 20) > 0);
   }
   // (Four fight and four wait in reserve: Swap brings one in, and one comes in for anyone who falls; the fight's lost
@@ -7242,6 +7245,64 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     const lost = R.create([mk("hylian", 1)], ["shakedown"], { seed: 5, reserve: [mk("hylian", 1)] });
     for (let n = 0; !lost.over && n < 200; n++) R.turn(lost, [{ act: "defend" }]);
     assert(lost.over === "lost" && lost.allies.concat(lost.reserve).every((f) => f.hp === 0), "lost once everyone's down");
+  }
+  // (HP_SCALE: everyone's HP that many times, a save's from before as much of the new; the Pokémon realm's ways:
+  // stat stages, Protect, paralysis and the rest.)
+  {
+    const old = { id: "kiryu", lv: 5, exp: R.expFor(5), hp: 20, mp: 5 };
+    R.rescale(old);
+    assert(old.hp === 20 * R.HP_SCALE && old.hpScale === R.HP_SCALE && R.stats("kiryu", 5).hp % R.HP_SCALE === 0);
+    assert.strictEqual(R.create([], ["punk"]).foes[0].maxHp, window.REALM_FOES.punk.hp * R.HP_SCALE);
+    const mon = (moves) => { const m = Party.create("Machamp", 50, { moves }); return R.pokemon(m, Party.stats(m), "Machamp"); };
+    // (Swords Dance: Strength two stages up, the damage with it.)
+    const sd = mon(["Swords Dance", "Protect", "Thunder Punch", "Bulk Up"]);
+    const b1 = R.create([sd], ["shakedown"], { seed: 11 });
+    const t1 = R.turn(b1, [{ act: "skill", skill: "move:Swords Dance" }]).map((x) => x.text).join(" ");
+    assert(sd.boosts.str === 2 && /Strength sharply rose/.test(t1), t1);
+    // (Protect: nothing lands; straight after, a third as likely; Thunder Punch can paralyse, and paralysis halves speed.)
+    let guarded = 0;
+    for (let seed = 1; seed < 40; seed++) {
+      const p = mon(["Protect"]), b = R.create([p], ["grunt"], { seed });
+      const hp = p.hp, text = R.turn(b, [{ act: "skill", skill: "move:Protect" }]).map((x) => x.text).join(" ");
+      if (/protected itself/.test(text) && p.hp === hp) guarded++;
+    }
+    assert(guarded >= 35, "Protect works: " + guarded);
+    let again = 0;
+    for (let seed = 1; seed <= 90; seed++) {
+      const p = mon(["Protect"]), b = R.create([p], ["punk"], { seed });
+      R.turn(b, [{ act: "skill", skill: "move:Protect" }]);
+      if (p.protectChain === 1 && /protected itself/.test(R.turn(b, [{ act: "skill", skill: "move:Protect" }])[0].text)) again++;
+    }
+    assert(again > 10 && again < 50, "Protect straight after works a third of the time: " + again);
+    const z = R.create([sd], ["grunt"], { seed: 1 }).foes[0];
+    const spd = z.spd;
+    z.status = "paralysis";
+    assert(R.TYPE_ELEMENT.Electric === "Electric" && z.spd === spd);
+    // (Thunder Wave doesn't paralyse the Electric; Will-O-Wisp doesn't burn the Fire.)
+    const tw = R.pokemon(Party.create("Jolteon", 50, { moves: ["Thunder Wave"] }), Party.stats(Party.create("Jolteon", 50)), "Jolteon");
+    const b3 = R.create([tw], ["punk"], { seed: 3 });
+    b3.foes[0].elements = ["Electric"];
+    const t3 = R.turn(b3, [{ act: "skill", skill: "move:Thunder Wave", target: 0 }]).map((x) => x.text).join(" ");
+    assert(!b3.foes[0].status && /doesn't work|no effect/.test(t3), t3);
+    b3.foes[0].elements = ["Neutral"]; b3.foes[0].hp = b3.foes[0].maxHp;
+    for (let n = 0; n < 10 && !b3.foes[0].status; n++) { tw.pp["move:Thunder Wave"] = 20; R.turn(b3, [{ act: "skill", skill: "move:Thunder Wave", target: 0 }]); }
+    assert.strictEqual(b3.foes[0].status, "paralysis");
+    // (Fights with every kind of move in them end, and say nothing undefined.)
+    const all = ["Swords Dance", "Protect", "Toxic", "Will-O-Wisp", "Confuse Ray", "Leech Seed", "Rest", "Close Combat", "Giga Drain", "Double-Edge", "Fake Out",
+      "Sand Attack", "Endure", "Wide Guard", "Spiky Shield", "Haze", "Belly Drum", "Swagger", "Ice Beam", "Fire Fang", "Explosion", "Aqua Ring"];
+    for (let g = 0; g < 30; g++) {
+      const ms = [0, 1, 2, 3].map((k) => all[(g * 4 + k) % all.length]);
+      const m = Party.create("Mew", 40, { moves: ms }), f = R.pokemon(m, Party.stats(m), "Mew");
+      const b = R.create([f, R.member(R.recruit("kai", 10), "Red")], ["thug", "biker"], { seed: g + 5, reserve: [R.member(R.recruit("kiryu", 12), "Red")] });
+      for (let n = 0; !b.over; n++) {
+        assert(n < 400, "a fight with " + ms.join(", ") + " ends");
+        const choices = b.allies.map((x) => (x.mon ? { act: "skill", skill: x.skills[n % x.skills.length], target: 0 } : { act: "attack", target: 0 }));
+        if (f.mon && f.pp) for (const id in f.pp) f.pp[id] = 10;
+        for (const st of R.turn(b, choices)) assert(!/NaN|undefined/.test(st.text), st.text);
+      }
+      R.keep(b);
+      assert(m.hp >= 0 && m.hp <= Party.stats(m).hp && (m.hp > 0 || !m.status));
+    }
   }
   // (Kamurocho's streets, side on: every scene's picture and people drawn, everyone and every way in on its floor.)
   {

@@ -952,7 +952,7 @@
       sound: opts.sound, cry: opts.cry, hideBoxes: opts.hideBoxes || (() => {}),
       moveType: D.types["TYPE_" + String(opts.type || "").toUpperCase()] || 0, physical: opts.category === "Physical",
       moveTarget: 0, battlerTiles: [], pictures: [], picture: opts.picture, itemPicture: opts.itemPicture,
-      doll: [false, false, false, false], transform: opts.transform };
+      doll: [false, false, false, false], transform: opts.transform, untilIdle: !!opts.untilIdle };
     // The machine, cleared.
     new Uint8Array(VRAM).fill(0); new Uint8Array(PLTT).fill(0); new Uint8Array(OAMB).fill(0); io.fill(0);
     hdma.fill(null); bgBattler.fill(null); moveBg = false;
@@ -1128,7 +1128,9 @@
     C.TransferPlttBuffer();
     C.ScanlineEffect_InitHBlankDmaTransfer();
   }
-  const done = () => !E.gAnimScriptActive;
+  // (inst.untilIdle: done as soon as the battle would go on (gDoingBattleAnim cleared): a ball that's caught is
+  // left shut and darkened there, before its fade-out.)
+  const done = () => !E.gAnimScriptActive || (inst.untilIdle && !E.gDoingBattleAnim);
 
   // Run a move's animation without a screen: { frames, error }.
   function run(opts) {

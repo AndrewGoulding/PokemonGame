@@ -185,7 +185,8 @@
   }
   // Calls onKey("up" | "down" | "left" | "right" | "a" | "b") until it returns
   // something other than undefined; resolves with that. (opts.shoulders: L and R
-  // too, the A and S keys, as "l" and "r".)
+  // too, the A and S keys, as "l" and "r".) onKey's second argument is the
+  // key event (e.repeat: the key held down).
   function keys(onKey, opts) {
     const KEY = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
       z: "a", Z: "a", " ": "a", Enter: "a", x: "b", X: "b", Escape: "b", Start: "start", m: "start", M: "start", Select: "select" };
@@ -197,7 +198,7 @@
         e.preventDefault(); e.stopImmediatePropagation();
         if (autopilot && !e.autopilot) return;   // (only the scripted presses)
         if (e.repeat && (k === "a" || k === "b")) return;
-        const r = onKey(k);
+        const r = onKey(k, e);
         if (r !== undefined) { document.removeEventListener("keydown", handler, true); resolve(r); }
       };
       document.addEventListener("keydown", handler, true);

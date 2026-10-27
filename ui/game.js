@@ -9781,6 +9781,8 @@
     P.reserve = P.reserve || []; P.stored = P.stored || [];
     // (A Pokémon brought along who's no longer in your party, left in a box or traded, goes back.)
     for (const k of ["party", "reserve", "stored"]) P[k] = P[k].filter((r) => !r.pokemon || realmMon(r));
+    // (HP saved before Ultimax.HP_SCALE: as much of the new maximum.)
+    for (const r of P.party.concat(P.reserve, P.stored)) Ultimax.rescale(r);
     // (Four at most fighting, four in reserve.)
     while (P.party.length > 4) P.reserve.unshift(P.party.pop());
     while (P.reserve.length > 4) P.stored.unshift(P.reserve.pop());
@@ -9814,7 +9816,7 @@
     for (const rec of realmAll(P)) {
       const mon = realmMon(rec);
       if (mon) Party.heal(mon);
-      else { const s = Ultimax.stats(rec.id, rec.lv); rec.hp = s.hp; rec.mp = s.mp; }
+      else { const s = Ultimax.stats(rec.id, rec.lv); rec.hp = s.hp; rec.mp = s.mp; rec.hpScale = Ultimax.HP_SCALE; }
     }
   }
   // Bringing a Pokémon from your party into the realm's (as anyone joins: realmJoin), or sending one back.
@@ -9904,22 +9906,30 @@
     show("scene");
     scene.classList.add("evo");
     scene.innerHTML = '<div class="rb"><div class="rb-back" style="' + back + '"></div>' +
-      '<div class="rb-party">' + b.allies.map((f, i) => '<div class="rb-card" data-i="' + i + '"><b>' + escapeHtml(f.name) + '</b><span class="hp"></span><span class="mp"></span><span>Lv ' + f.lv + '</span></div>').join("") + '</div>' +
-      '<div class="rb-foes">' + b.foes.map((f, i) => '<div class="rb-foe" data-i="' + i + '">' + realmFoePic(f) + '</div>').join("") + '</div></div>';
-    realmShow(b, { allies: b.allies.map((f) => [f.hp, f.mp, f.name, f.lv, !!f.mon, f.maxHp]), foes: b.foes.map((f) => f.hp) });
+      '<div class="rb-party">' + b.allies.map((f, i) => '<div class="rb-card" data-i="' + i + '"><b>' + escapeHtml(f.name) + '</b><span class="hp"></span><span class="mp"></span><span class="lv">Lv ' + f.lv + '</span><i class="rb-status"></i></div>').join("") + '</div>' +
+      '<div class="rb-foes">' + b.foes.map((f, i) => '<div class="rb-foe" data-i="' + i + '">' + realmFoePic(f) + '<i class="rb-status"></i></div>').join("") + '</div></div>';
+    realmShow(b, { allies: b.allies.map((f) => [f.hp, f.mp, f.name, f.lv, !!f.mon, f.maxHp, ""]), foes: b.foes.map((f) => f.hp), foeStatus: b.foes.map(() => "") });
   }
   function realmShow(b, snap) {
     scene.querySelectorAll(".rb-card").forEach((el, i) => {
       // (who's in each place: a swap changes it)
-      const [hp, mp, name, lv, mon, maxHp] = snap.allies[i];
+      const [hp, mp, name, lv, mon, maxHp, status] = snap.allies[i];
       el.querySelector("b").textContent = name;
       el.querySelector(".hp").textContent = "HP " + hp;
       el.querySelector(".mp").textContent = mon ? "" : "MP " + mp;
-      el.querySelector("span:last-child").textContent = "Lv " + lv;
+      el.querySelector(".lv").textContent = "Lv " + lv;
+      realmStatusTag(el, status);
       el.classList.toggle("down", hp <= 0);
       el.classList.toggle("low", hp > 0 && hp <= maxHp / 4);
     });
-    scene.querySelectorAll(".rb-foe").forEach((el, i) => el.classList.toggle("gone", snap.foes[i] <= 0));
+    scene.querySelectorAll(".rb-foe").forEach((el, i) => { el.classList.toggle("gone", snap.foes[i] <= 0); realmStatusTag(el, (snap.foeStatus || [])[i]); });
+  }
+  // (A status's tag, the Pokémon realm's short name for it in its colour: PAR, SLP, PSN, BRN, FRZ.)
+  function realmStatusTag(el, status) {
+    const t = el.querySelector(".rb-status");
+    if (!t) return;
+    t.textContent = status || "";
+    t.className = "rb-status" + (status ? " " + status.toLowerCase() : "");
   }
   function realmFx(fx) {
     if (!fx) return;
@@ -9943,7 +9953,7 @@
     const P = b.items || {}, I = window.REALM_ITEMS;
     const who = b.allies.map((f, i) => i).filter((i) => b.allies[i].hp > 0);
     const target = async (kind, text) => {
-      if (kind === "all" || kind === "self") return 0;
+      if (kind === "all" || kind === "self" || kind === "party") return 0;
       const list = kind === "ally" ? b.allies.map((f, i) => [f, i]) : foes();
       if (kind !== "ally" && list.length === 1) return list[0][1];
       const v = await ask(text, list.map(([f, i]) => ({ label: f.name + (kind === "ally" ? "  " + f.hp + "/" + f.maxHp : ""), value: i })).concat([back()]));
@@ -10136,7 +10146,7 @@
     for (;;) {
       const id = await ask("You have ¥" + player.money + ". What'll it be?", Object.keys(I).map((k) => ({ label: I[k].name + "  ¥" + I[k].price, value: k })).concat([back("Done")]));
       if (id === "back") break;
-      await say(I[id].text);
+      await say(Ultimax.itemText(id));
       if (player.money < I[id].price) { await say("Clerk: Sorry, you're a little short."); continue; }
       if (!(await confirm("Buy a " + I[id].name + " for ¥" + I[id].price + "?"))) continue;
       player.money -= I[id].price;
@@ -10467,7 +10477,7 @@
     const S = window.YUGIOH_SETS;
     await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, decks: y.decks, slot: y.deckSlot, selectDeck: (i) => { y.deckSlot = i; },
       inventory: () => [(() => { const L = duelistLevel(y); return { label: "Duelist Level " + L.lv, count: L.into + "/" + L.next + " EXP" }; })()]
-        .concat(PACK_SETS.map((k) => ({ label: S[k].name, count: Player.itemCount(player, S[k].item), pack: k })))
+        .concat(PACK_SETS.map((k) => ({ label: S[k].name + " Pack", count: Player.itemCount(player, S[k].item), pack: k })))
         .concat([{ label: "Pack Tokens", count: y.packTokens || 0 }])
         .concat(["c", "r", "s", "u", "x"].map((r) => ({ label: RARITY_NAME[r] + " Tokens", count: (y.tokens || {})[r] || 0, token: r }))),
       // (a rarity's tokens for one of the next's: 50 Common for a Rare, 15 Rare for a Super Rare, 10 Super Rare for an
