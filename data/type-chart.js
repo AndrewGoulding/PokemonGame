@@ -48,41 +48,43 @@ window.REALM_TYPE_CHART = {
 // A party of up to four against a group of foes, turn by turn: each of the party picks Attack, a skill (for MP),
 // Defend or an item, then everyone acts in order of agility. Elements as REALM_TYPE_CHART says.
 
-// Skills: Heat Actions, as the Like a Dragon games call them ("Essence of ..."). kind: "phys" (the user's attack times `power`), "magic" (power: [low, high], plus wisdom), "heal" (power:
+// Skills: Yakuza 0's Heat Actions, by their names in the game (Kiryu's Brawler, Rush and Beast styles' and Tiger
+// Drop, Majima's Thug, Slugger and Breaker styles', and the ones anyone can do); Yakuza 0 has none that heal or guard,
+// so yours that do keep names of this game's own. kind: "phys" (the user's attack times `power`), "magic" (power: [low, high], plus wisdom), "heal" (power:
 // [low, high], plus wisdom), "guard" (the user's defence up half again for the battle) or "status" (status:
 // "sleep" or "poison", chance). target: "one" foe, "all" foes, "ally" (one of your side), "self". A "phys" or
 // "magic" skill can also poison (status, chance) as it hits.
 window.REALM_SKILLS = {
   // (anyone's)
-  rush:          { name: "Essence of Face Smashing",                  mp: 3, element: "Neutral", kind: "phys",  power: 1.5, target: "one" },
+  rush:          { name: "Essence of Face Twisting",                  mp: 3, element: "Neutral", kind: "phys",  power: 1.5, target: "one" },
   first_aid:     { name: "Essence of Second Wind",             mp: 4, element: "Neutral", kind: "heal",  power: [25, 35], target: "ally" },
   brace:         { name: "Essence of Composure",                 mp: 2, element: "Neutral", kind: "guard", target: "self" },
   patch_up:      { name: "Essence of Recovery",              mp: 8, element: "Neutral", kind: "heal",  power: [70, 90], target: "ally" },
   // (Kiryu's: the Dragon of Dojima, his Heat Actions)
-  fisticuffs:    { name: "Essence of Fisticuffs", mp: 3, element: "Neutral", kind: "phys",  power: 1.6, target: "one" },
-  staunch:       { name: "Essence of Endurance",               mp: 3, element: "Neutral", kind: "guard", target: "self" },
-  beast:         { name: "Essence of the Beast",  mp: 6, element: "Fire",    kind: "phys",  power: 1.3, target: "all" },
-  tiger_drop:    { name: "Essence of the Tiger Drop",            mp: 8, element: "Fire",    kind: "phys",  power: 2.5, target: "one" },
-  rush_flurry:   { name: "Essence of Extreme Rush",           mp: 5, element: "Neutral", kind: "phys",  power: 1.2, target: "all" },
-  dragon_essence:{ name: "Essence of the Dragon", mp: 12, element: "Fire",   kind: "phys",  power: 1.9, target: "all" },
-  dragon_spirit: { name: "Essence of Dragon Spirit",         mp: 16, element: "Fire",   kind: "phys",  power: 3.2, target: "one" },
+  fisticuffs:    { name: "Essence of Brawling", mp: 3, element: "Neutral", kind: "phys",  power: 1.6, target: "one" },
+  staunch:       { name: "Essence of Steadfast Counter",               mp: 3, element: "Neutral", kind: "guard", target: "self" },
+  beast:         { name: "Essence of the Beast: Swing",  mp: 6, element: "Fire",    kind: "phys",  power: 1.3, target: "all" },
+  tiger_drop:    { name: "Tiger Drop",            mp: 8, element: "Fire",    kind: "phys",  power: 2.5, target: "one" },
+  rush_flurry:   { name: "Essence of Relentless Barrage",           mp: 5, element: "Neutral", kind: "phys",  power: 1.2, target: "all" },
+  dragon_essence:{ name: "Essence of the Beast: Lob Crush", mp: 12, element: "Fire",   kind: "phys",  power: 1.9, target: "all" },
+  dragon_spirit: { name: "Essence of the Flying Fist",         mp: 16, element: "Fire",   kind: "phys",  power: 3.2, target: "one" },
   // (Majima's: the Mad Dog of Shimano)
-  mad_dog_lunge: { name: "Essence of the Mad Dog",         mp: 3, element: "Dark",    kind: "phys",  power: 1.6, target: "one" },
-  breaker_spin:  { name: "Essence of Breakdancing",          mp: 5, element: "Air",     kind: "phys",  power: 1.1, target: "all" },
-  thug_slash:    { name: "Essence of the Thug",            mp: 4, element: "Steel",   kind: "phys",  power: 1.5, target: "one" },
+  mad_dog_lunge: { name: "Essence of the Thug: Pursuit",         mp: 3, element: "Dark",    kind: "phys",  power: 1.6, target: "one" },
+  breaker_spin:  { name: "Essence of Aerial Whirl",          mp: 5, element: "Air",     kind: "phys",  power: 1.1, target: "all" },
+  thug_slash:    { name: "Essence of Dagger Deflection",            mp: 4, element: "Steel",   kind: "phys",  power: 1.5, target: "one" },
   slugger_swing: { name: "Essence of the Slugger",         mp: 7, element: "Dark",    kind: "phys",  power: 2.2, target: "one" },
-  mad_dog_grin:  { name: "Essence of Taunting",          mp: 3, element: "Neutral", kind: "guard", target: "self" },
-  mad_dog_frenzy:{ name: "Essence of Rampage",        mp: 12, element: "Dark",   kind: "phys",  power: 1.7, target: "all" },
-  mad_dog_shimano:{ name: "Essence of the Mad Dog of Shimano",   mp: 16, element: "Dark",   kind: "phys",  power: 3.2, target: "one" },
+  mad_dog_grin:  { name: "Essence of the Last Stand",          mp: 3, element: "Neutral", kind: "guard", target: "self" },
+  mad_dog_frenzy:{ name: "Essence of Pole Pandemonium",        mp: 12, element: "Dark",   kind: "phys",  power: 1.7, target: "all" },
+  mad_dog_shimano:{ name: "Essence of the Thug: Finisher",   mp: 16, element: "Dark",   kind: "phys",  power: 3.2, target: "one" },
   // (the street's)
-  cheap_shot:    { name: "Essence of Cheap Shots",            mp: 0, element: "Neutral", kind: "phys",  power: 1.3, target: "one" },
-  dirty_kick:    { name: "Essence of Dirty Fighting",            mp: 0, element: "Poison",  kind: "phys",  power: 1.1, target: "one", status: "poison", chance: 0.3 },
-  bottle_smash:  { name: "Essence of Bottle Smashing",          mp: 0, element: "Earth",   kind: "phys",  power: 1.4, target: "one" },
-  slash:         { name: "Essence of the Knife",           mp: 0, element: "Steel",   kind: "phys",  power: 1.4, target: "one" },
-  sweet_talk:    { name: "Essence of Sweet Talk",            mp: 0, element: "Psychic", kind: "status", status: "sleep", chance: 0.5, target: "one" },
-  headbutt:      { name: "Essence of Head Crushing",              mp: 0, element: "Ground",  kind: "phys",  power: 1.5, target: "one" },
-  haymaker:      { name: "Essence of the Haymaker",              mp: 0, element: "Ground",  kind: "phys",  power: 2.0, target: "one" },
-  revving:       { name: "Essence of Revving",                mp: 0, element: "Electric", kind: "magic", power: [10, 16], target: "all" }
+  cheap_shot:    { name: "Essence of Ass Crushing",            mp: 0, element: "Neutral", kind: "phys",  power: 1.3, target: "one" },
+  dirty_kick:    { name: "Essence of Self-Destruct",            mp: 0, element: "Poison",  kind: "phys",  power: 1.1, target: "one", status: "poison", chance: 0.3 },
+  bottle_smash:  { name: "Essence of Wreckage",          mp: 0, element: "Earth",   kind: "phys",  power: 1.4, target: "one" },
+  slash:         { name: "Essence of Back Breaking",           mp: 0, element: "Steel",   kind: "phys",  power: 1.4, target: "one" },
+  sweet_talk:    { name: "Essence of Door Slamming",            mp: 0, element: "Psychic", kind: "status", status: "sleep", chance: 0.5, target: "one" },
+  headbutt:      { name: "Essence of Wall Smashing",              mp: 0, element: "Ground",  kind: "phys",  power: 1.5, target: "one" },
+  haymaker:      { name: "Essence of No Mercy",              mp: 0, element: "Ground",  kind: "phys",  power: 2.0, target: "one" },
+  revving:       { name: "Essence of Throwing",                mp: 0, element: "Electric", kind: "magic", power: [10, 16], target: "all" }
 };
 
 // The party's fighters: elements, stats at level 1 and what they gain each level, and the skills they know by

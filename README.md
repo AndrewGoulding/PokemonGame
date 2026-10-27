@@ -3717,21 +3717,28 @@ taken from a Dragon Quest cartridge.
 - **The data** (in `data/type-chart.js`, beside the elements): `REALM_SKILLS`, `REALM_FIGHTERS` (each companion's
   elements, stats at level 1, growth and skills by level; "you" is you), `REALM_FOES`, `REALM_ITEMS` and
   `REALM_ENCOUNTERS` (each map's chance a step and its groups). The Like a Dragon cast's elements: you Neutral,
-  Kiryu Fire, Majima Dark. Every skill is a Heat Action, named as the games name them ("Essence of ..."). Yours:
-  Essence of Second Wind (heals an ally, level 1), Essence of Face Smashing (one foe, 1.5×, level 3), Essence of
-  Composure (defence up, level 5) and Essence of Recovery (a bigger heal, level 10). Kiryu's and Majima's, by level:
+  Kiryu Fire, Majima Dark. The skills are Yakuza 0's Heat Actions, by their names in the game (and Kiryu's Tiger
+  Drop); what each does here is this game's own. Yours: Essence of Second Wind (heals an ally, level 1), Essence of
+  Face Twisting (one foe, 1.5×, level 3), Essence of Composure (defence up, level 5) and Essence of Recovery (a
+  bigger heal, level 10); Yakuza 0 has no Heat Actions that heal or guard, so those three keep names of this game's
+  own. Kiryu's and Majima's, by level:
 
   | Level | Kiryu (Fire) | Level | Majima (Dark) |
   |---|---|---|---|
-  | 1 | Essence of Fisticuffs (Neutral, one foe, 1.6×, 3 MP) | 1 | Essence of the Mad Dog (Dark, one foe, 1.6×, 3 MP) |
-  | 3 | Essence of Endurance (defence up, 3 MP) | 1 | Essence of Breakdancing (Air, all foes, 1.1×, 5 MP) |
-  | 5 | Essence of the Beast (Fire, all foes, 1.3×, 6 MP) | 4 | Essence of the Thug (Steel, one foe, 1.5×, 4 MP) |
-  | 8 | Essence of the Tiger Drop (Fire, one foe, 2.5×, 8 MP) | 6 | Essence of the Slugger (Dark, one foe, 2.2×, 7 MP) |
-  | 11 | Essence of Extreme Rush (Neutral, all foes, 1.2×, 5 MP) | 9 | Essence of Taunting (defence up, 3 MP) |
-  | 14 | Essence of the Dragon (Fire, all foes, 1.9×, 12 MP) | 12 | Essence of Rampage (Dark, all foes, 1.7×, 12 MP) |
-  | 18 | Essence of Dragon Spirit (Fire, one foe, 3.2×, 16 MP) | 16 | Essence of the Mad Dog of Shimano (Dark, one foe, 3.2×, 16 MP) |
- The engine is `RealmBattle` at the end of
-  `engine/battle.js` (headless: a turn in, its steps out, each with its text and everyone's HP and MP after it); the
+  | 1 | Essence of Brawling (Neutral, one foe, 1.6×, 3 MP) | 1 | Essence of the Thug: Pursuit (Dark, one foe, 1.6×, 3 MP) |
+  | 3 | Essence of Steadfast Counter (defence up, 3 MP) | 1 | Essence of Aerial Whirl (Air, all foes, 1.1×, 5 MP) |
+  | 5 | Essence of the Beast: Swing (Fire, all foes, 1.3×, 6 MP) | 4 | Essence of Dagger Deflection (Steel, one foe, 1.5×, 4 MP) |
+  | 8 | Tiger Drop (Fire, one foe, 2.5×, 8 MP) | 6 | Essence of the Slugger (Dark, one foe, 2.2×, 7 MP) |
+  | 11 | Essence of Relentless Barrage (Neutral, all foes, 1.2×, 5 MP) | 9 | Essence of the Last Stand (defence up, 3 MP) |
+  | 14 | Essence of the Beast: Lob Crush (Fire, all foes, 1.9×, 12 MP) | 12 | Essence of Pole Pandemonium (Dark, all foes, 1.7×, 12 MP) |
+  | 18 | Essence of the Flying Fist (Fire, one foe, 3.2×, 16 MP) | 16 | Essence of the Thug: Finisher (Dark, one foe, 3.2×, 16 MP) |
+
+  The street's foes use the Heat Actions anyone can do: a Street Punk Essence of Ass Crushing, a Drunk Salaryman
+  Essence of Self-Destruct (it can poison), a Thug Essence of Wreckage, a Knife Punk Essence of Back Breaking, a
+  Host Essence of Door Slamming (it can knock you out cold: sleep), a Biker Essence of Throwing, a Yakuza Grunt
+  Essence of Wall Smashing and Mr. Shakedown Essence of No Mercy.
+
+  The engine is `RealmBattle` at the end of `engine/battle.js` (headless: a turn in, its steps out, each with its text and everyone's HP and MP after it); the
   screen and the scripts are in `ui/game.js` (`realmFight`), and the party is saved in `flags.realmParty`.
 
 ## Progression rules (Gen 6)
