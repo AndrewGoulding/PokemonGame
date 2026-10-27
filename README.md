@@ -3713,7 +3713,9 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
 - **Heat is MP**: the Like a Dragon games' Heat is this realm's MP, which skills (Heat Actions) spend. Poppo sells
   Staminan, Staminan Spark and Staminan Royale (health and Heat), Toughness Zero and Toughness Infinity (health; the
   Infinity also gets someone who's down back up), Tauriner, Tauriner+ and Tauriner Maxx (Heat), and food: a Rice
-  Ball, a Sandwich, a Hot Dog, Fried Chicken, a Bento Box (health) and Pudding (a little of both).
+  Ball, a Sandwich, a Hot Dog, Fried Chicken, a Bento Box (health) and Pudding (a little of both). Each has its own picture in
+  Poppo's shop, drawn as it looks at FireRed's item size (`tools/build-kamurocho-items.py`): the tonic bottles, the
+  onigiri, the bento and the rest.
 - **Fighting** (the other realms' battles, below): you start alone, at level 1. Ask Kiryu and he joins you (at
   level 3, or yours if that's higher). Beat Majima and he joins too (at level 8 or more). On the street (not in the
   alley, the shops or under it) you're jumped now and then, by groups that come as your party's best grows

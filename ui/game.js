@@ -10254,7 +10254,7 @@
     clearMenu();
     await ShopScreen.open({
       frame: GameOptions.get().frame,
-      items: Object.keys(I).map((id) => ({ id, name: I[id].name, price: I[id].price, desc: Ultimax.itemText(id), icon: Bag.sprite(I[id].icon) })),
+      items: Object.keys(I).map((id) => ({ id, name: I[id].name, price: I[id].price, desc: Ultimax.itemText(id), icon: I[id].icon })),
       money: () => player.money,
       inBag: (id) => P.items[id] || 0,
       limit: (id) => ({ max: Math.max(0, 99 - (P.items[id] || 0)), why: "You can't carry any more of\nthose." }),
