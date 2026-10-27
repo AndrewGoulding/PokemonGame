@@ -1,0 +1,23 @@
+{
+  "people": [
+    {"name": "Kiryu", "x": 54, "y": 175, "sprite": "lad_kiryu", "movement": "face_left",
+     "text": ["Kiryu: ...Name's Kazuma Kiryu.\nDojima family.", "Or I was, till they pinned a\nkilling in that empty lot on me.", "I'll find who set me up.\nWhatever it takes."]},
+    {"name": "Majima", "x": 51, "y": 95, "sprite": "lad_majima", "movement": "wander_around",
+     "text": ["Majima: Heeey! You look like ya\ncan handle yerself!", "Name's Goro Majima.\nThe Mad Dog of Shimano!", "Next time we meet, you an' me...\nwe're gonna FIGHT! Hee hee!"]},
+    {"name": "Tout", "x": 86, "y": 65, "sprite": "sc_person_77", "movement": "face_down",
+     "text": ["Maharaja's the hottest disco in\nKamurocho!", "The dance floor never sleeps.\nNeither does this town."]},
+    {"name": "Hostess", "x": 133, "y": 128, "sprite": "sc_person_79", "movement": "face_left",
+     "text": ["Pink Street's lit up all night.", "Every club round here wants a\nregular. Will you be ours?"]},
+    {"name": "Drinker", "x": 177, "y": 110, "sprite": "sc_person_86", "movement": "wander_around",
+     "text": ["Champion District... a maze of\nbars no bigger than a closet.", "Get lost in there and you might\nnot want to find your way out."]},
+    {"name": "Lookout", "x": 68, "y": 110, "sprite": "sc_person_58", "movement": "face_right",
+     "text": ["Keep away from that empty lot.", "A man was shot there, and every\nfamily in the Tojo Clan wants\nthe land under it."]},
+    {"name": "Thug", "x": 97, "y": 164, "sprite": "sc_person_71", "movement": "face_up",
+     "text": ["Whaddya lookin' at?", "...Hmph. Smile Burger's got the\nbest burgers in town. Don't tell\nanyone I said that."]},
+    {"name": "Salaryman", "x": 100, "y": 194, "sprite": "sc_person_47", "movement": "wander_around",
+     "text": ["Taihei Boulevard's that way.\nThe last train's long gone.", "Guess it's another night in\nKamurocho..."]},
+    {"name": "Bowler", "x": 3, "y": 97, "sprite": "sc_person_49", "movement": "face_right",
+     "text": ["Mach Bowl's right here.\nStrikes all night!"]}
+  ],
+  "signs": []
+}

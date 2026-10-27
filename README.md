@@ -3192,8 +3192,9 @@ realms to come (the **Yu-Gi-Oh! realm** first).
   and Spear Pillar's song; you arrive at its south end (each realm's Time Machine brings you here, and there's none on
   the platform itself). Along its north are the realms' portals: the **Pokémon realm's** (red, a Poké Ball over it)
   takes you back out beside the Time Machine off Pallet Town, the **Yu-Gi-Oh! realm's** (golden, a pyramid over it) to
-  Domino City (below), out beside the Time Machine under the Kame Game shop's street, and the one east of it is
-  dormant, for a realm to come. Fly and Teleport don't work out of the Pokémon realm.
+  Domino City (below), out beside the Time Machine under the Kame Game shop's street, and the **Like a Dragon
+  realm's** (crimson, a dragon's crest over it) to Kamurocho (below), out beside the Time Machine in the Empty Lot.
+  Fly and Teleport don't work out of the Pokémon realm.
 - **Back from Domino City**: a **manhole** in the Kame Game shop's street, right of its door. A on it and you climb
   down a ladder to a room under the street, brick walls and a channel of water, where a Time Machine takes you back
   to the Realm Hub (the ladder takes you back up).
@@ -3620,6 +3621,53 @@ python3 tools/build-dbz-advanced-adventure.py "<path to Dragon Ball - Advanced A
   script of durations and frames, and of commands that load the tiles and palette it draws with. One sheet each,
   a row an animation, each different frame once, in the palette its script had loaded by then. `side/index.json` gives each sheet's cell size, the anchor in a
   cell and each row's frame count.
+
+## The Like a Dragon realm (in progress)
+
+The Like a Dragon realm is **Kamurocho** in 1988, as in Yakuza 0. There's no top-down 2D Kamurocho in any game to
+take pictures from, so its map is this game's own: its streets traced from Yakuza 0's map, its pictures cut from **Yu-Gi-Oh!
+The Sacred Cards** (the same cartridge as Domino City's screens). Your Pokémon stay in their balls here, and there
+are no wild Pokémon.
+
+- **Getting there**: the Realm Hub's crimson portal. You come out in the **Empty Lot**, the fenced plot of dirt in
+  the middle of town that Yakuza 0's story is fought over, beside the Time Machine, which takes you back to the Realm
+  Hub.
+- **The streets**: one map, 200 by 217 tiles. West Park fills the north-east corner. The outer roads ring the town,
+  and Pink Street's curved lane and the Champion District's alleys run through the blocks. Beyond the ring the city
+  goes on, but you can't walk into it.
+- **The people**: **Kazuma Kiryu** outside Serena, and **Goro Majima** wandering by Theater Square, from sprite sheets
+  you supplied (halved to The Sacred Cards' 32x32 frames). Townsfolk, in The Sacred Cards' people, stand outside
+  Maharaja, on Pink Street, in the Champion District, by the Empty Lot, by Smile Burger, on Taihei Boulevard and by
+  Mach Bowl. Nothing else happens yet: no doors, battles or story.
+
+`tools/build-kamurocho.py` builds it:
+
+```sh
+python3 tools/build-kamurocho.py "<path to Yu-Gi-Oh! - The Sacred Cards (USA).gba>" [<Kiryu and Majima's sheet>]
+```
+
+- **The layout**: `tools/data/kamurocho.txt`, one character a tile, two pixels of Yakuza 0's map to a tile: `.`
+  street, `#` building, `+` the line between two buildings, `P` West Park, `E` the Empty Lot, and a space for the
+  city beyond. Edit it and rebuild to change the streets.
+- **The pictures**: The Sacred Cards' screens, read from the cartridge as `tools/build-sacred-cards.py` reads them.
+  The ground textures come from Domino's road (the streets), its back alley (the alleys: any street a tile or two
+  across), the Office Tower's roof (every rooftop, each building tinted a little differently), Kaiba Corporation's
+  yard (the Empty Lot) and the graveyard's lawn (West Park). Each texture keeps the patch's grain over its average
+  colour, so its tiling doesn't show. Each building gets a rooftop with a lit lip along its north edge. The Office
+  Tower's water tanks, skylight and vents go on roofs with room for them. Along any stretch of a building's south
+  side that faces open ground, the builder adds shopfronts: the Game Center's, the card shop's, the café's and
+  their neighbours', cut from their screens at their foot, one after another along the stretch, with a strip of the
+  Game Center's pavement under them. Now and then the bank's red sign hangs down a wall (from Domino Square's
+  overlay). The city beyond is drawn as darker rooftops in blocks of 12. West Park's trees come from Domino City's
+  overlays, and the bottom row of each is solid. The Time Machine is `tools/lib/realm-art.js`'s.
+- **The people**: `tools/data/kamurocho.json`, each with a place, a sprite, a way of standing and what they say. The
+  optional second argument is Kiryu and Majima's sheet: two people side by side, each 3 columns of 64x64 frames
+  (standing, two steps) by 5 rows (two facing down-right, two facing up, a fighting stance), on magenta. Each frame is
+  halved (each 2x2 averaged) to 32x32: down is the first row, up the third, left the second mirrored. They are
+  `assets/world/sprites/lad_kiryu.png` and `lad_majima.png`.
+- It writes `assets/world/maps/Kamurocho.png` and `-border.png`, and the map's data into `data/emerald-maps.js`
+  (between its markers, before the Time Machine's), with `window.KAMUROCHO` (where the portal puts you).
+  `ui/game.js` runs the portal and the Time Machine (`realmPortal`, `kamurochoTimeMachine`).
 
 ## Progression rules (Gen 6)
 

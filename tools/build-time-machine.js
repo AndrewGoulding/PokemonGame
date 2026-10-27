@@ -7,7 +7,7 @@
 // drawn here. Step into it and it takes you to the Realm Hub, a stone platform
 // floating in the void between the realms, drawn here too: the Time Machine
 // back to the Pokémon realm at its south end, and the portals to the other
-// realms along its north (the Yu-Gi-Oh! realm's, and two still dormant).
+// realms along its north (the Yu-Gi-Oh! realm's and the Like a Dragon realm's).
 // And in the Yu-Gi-Oh! realm, a manhole in the street by the Kame Game shop,
 // down to a room under the street where the Time Machine waits to take you
 // back to the Realm Hub.
@@ -164,10 +164,10 @@ function pallet_sign_block() {
 // ---------- The Realm Hub ----------
 // A stone platform in the void between the realms: you arrive at its south end
 // (the realms' Time Machines bring you here), and the realms' portals stand
-// along its north: the Pokémon realm's, the Yu-Gi-Oh! realm's, and one dormant.
+// along its north: the Pokémon realm's, the Yu-Gi-Oh! realm's and the Like a Dragon realm's.
 const HUB = "RealmHub", HW = 22, HH = 18;
 const HUB_ARRIVE = { x: 11, y: 13 };
-const PORTALS = [{ x: 4, y: 2, kind: "pokemon", id: "pokemon" }, { x: 10, y: 2, kind: "yugioh", id: "yugioh" }, { x: 16, y: 2, kind: "dormant", id: "east" }];
+const PORTALS = [{ x: 4, y: 2, kind: "pokemon", id: "pokemon" }, { x: 10, y: 2, kind: "yugioh", id: "yugioh" }, { x: 16, y: 2, kind: "yakuza", id: "yakuza" }];
 const EMBLEM = { x: 11, y: 8.5 };
 const hub = (() => {
   // The platform: a rounded slab, and a step out to each portal.

@@ -1947,7 +1947,7 @@ for (const share of [false, true]) {
   // the Ember Spa, the Dunsparce Tunnel (Three Isle Path), the Rocket Warehouse, Trainer Tower's inside, the Tanoby Key and the Tanoby chambers no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
     if (["johto", "emerald", "orre", "hoenn", "sinnoh"].includes(WORLD_MAPS[name].region)) continue;
-    if (WORLD_MAPS[name].realm === "yugioh") continue;   // (nor the Yu-Gi-Oh! realm's)   // (Johto, Hoenn, Faraway Island, Orre and Sinnoh aren't on Kanto's Town Map)
+    if (["yugioh", "yakuza"].includes(WORLD_MAPS[name].realm)) continue;   // (nor the Yu-Gi-Oh! and Like a Dragon realms')   // (Johto, Hoenn, Faraway Island, Orre and Sinnoh aren't on Kanto's Town Map)
     if (window.JOHTO_TOWN_MAP && window.JOHTO_TOWN_MAP.at[name]) continue;   // (nor Johto's maps east of New Bark Town, which are Kanto's for Badges but on Johto's)
     // (Saffron's Magnet Train station, HGSS's: its townMapSection, which ui/magnet-train.js adds.)
     if (WORLD_MAPS[name].townMapSection) { assert(onMap(WORLD_MAPS[name].townMapSection), name + " is on the Town Map"); continue; }

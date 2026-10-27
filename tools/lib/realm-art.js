@@ -80,7 +80,7 @@ function timeMachine() {
 // light (or none, dormant).
 function portal(kind) {
   const c = canvas(32, 48);
-  const stone = rng(kind === "yugioh" ? 7 : 11);
+  const stone = rng(kind === "yugioh" ? 7 : kind === "yakuza" ? 5 : 11);
   // The arch.
   c.ellipse(16, 18, 15.5, 17.5, () => mix(hex("#8a86a8"), hex("#5c587a"), stone() * 0.5));
   for (let y = 18; y < 46; y++) for (let x = 1; x < 31; x++) c.set(x, y, mix(hex("#8a86a8"), hex("#5c587a"), stone() * 0.5));
@@ -92,6 +92,10 @@ function portal(kind) {
     if (kind === "yugioh") {
       const swirl = Math.sin(a * 3 + r * 9) * 0.5 + 0.5;
       return mix(mix(hex("#f8e070"), hex("#6828a8"), Math.min(1, r * 1.1)), hex("#c050f0"), swirl * 0.45);
+    }
+    if (kind === "yakuza") {   // (the Like a Dragon realm's: crimson, neon pink at its heart)
+      const swirl = Math.sin(a * 3 + r * 8) * 0.5 + 0.5;
+      return mix(mix(hex("#ff9ce0"), hex("#801028"), Math.min(1, r * 1.1)), hex("#e02858"), swirl * 0.45);
     }
     if (kind === "pokemon") {   // (the Pokémon realm's: a Poké Ball's red, white at its heart)
       const swirl = Math.sin(a * 3 - r * 9) * 0.5 + 0.5;
@@ -105,11 +109,15 @@ function portal(kind) {
     const dx = (x + 0.5 - 16) / 11, dy = (y + 0.5 - 19) / 26;
     if (Math.abs(dx) <= 1) c.set(x, y, inner(x, y, dx, Math.max(0, dy) * 0.9 + 0.1));
   }
-  // Its keystone: the Yu-Gi-Oh! realm's, a golden pyramid; the Pokémon realm's, a Poké Ball.
+  // Its keystone: the Yu-Gi-Oh! realm's, a golden pyramid; the Pokémon realm's, a Poké Ball; the Like a Dragon
+  // realm's, a dragon's crest (a gold ring round a red heart).
   c.rect(12, 1, 8, 6, "#a8a4c4");
   if (kind === "pokemon") {
     c.ellipse(16, 4, 3.5, 3.5, (x, y, dx, dy) => (dy < -0.12 ? "#e83030" : dy > 0.12 ? "#f8f8f8" : "#202020"));
     c.ellipse(16, 4, 1.2, 1.2, "#f8f8f8");
+  }
+  if (kind === "yakuza") {
+    c.ellipse(16, 4, 3.5, 3.5, "#f8d038"); c.ellipse(16, 4, 2.4, 2.4, "#b07808"); c.ellipse(16, 4, 1.6, 1.6, "#d02838");
   }
   if (kind === "yugioh") {
     for (let r = 0; r < 6; r++) for (let x = -r; x <= r; x++) c.set(16 + x - 0.5, 1 + r, r === 5 || Math.abs(x) === r ? "#b07808" : "#f8d038");

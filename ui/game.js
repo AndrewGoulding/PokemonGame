@@ -2991,7 +2991,7 @@
   const DOMINO_DUELISTS = { DominoHigh_Person12: "yugi", DominoHigh_Person13: "tea", DominoHigh_Person14: "joey", DominoHigh_Person15: "tristan" };
   // (The Time Machine off Pallet Town, and the Realm Hub's portals: timeMachine, realmPortal.)
   for (const sc of ["TimeMachine_EventScript_Machine", "TimeMachine_EventScript_Sign", "TimeMachine_EventScript_Scientist",
-    "RealmHub_EventScript_Portal_pokemon", "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_east", "SacredCards_Fountain", "SacredCards_BackToTown",
+    "RealmHub_EventScript_Portal_pokemon", "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_yakuza", "Kamurocho_TimeMachine", "SacredCards_Fountain", "SacredCards_BackToTown",
     "Domino_WorldMap", "KameGame_Grandpa", "Domino_Manhole", "Domino_ManholeUp", "Domino_TimeMachine", ...Object.keys(DOMINO_DUELISTS)]) SPECIAL.add(sc);
   // (and the other pupils and the teacher, with their boosters' decks: classmate)
   for (let i = 0; i < 12; i++) SPECIAL.add("DominoHigh_Person" + i);
@@ -3359,6 +3359,7 @@
     if (script === "KameGame_Grandpa") { await kameGameShop(); return; }
     if (script === "Domino_Manhole" || script === "Domino_ManholeUp") { await dominoManhole(script === "Domino_Manhole"); return; }
     if (script === "Domino_TimeMachine") { await dominoTimeMachine(); return; }
+    if (script === "Kamurocho_TimeMachine") { await kamurochoTimeMachine(); return; }
     if (DOMINO_DUELISTS[script]) { await dominoDuel(DOMINO_DUELISTS[script], ev.person); return; }
     if (/^DominoHigh_Person([0-9]|1[01])$/.test(script || "")) { await dominoDuel(classmate(script), ev.person); return; }
     if (ev.person && ev.person.ferry && isSinnoh(ev.map)) { await sinnohFerry(ev.person); return; }
@@ -9633,13 +9634,13 @@
   // Everything so far happens in one realm, the Pokémon realm. Through the gap in the trees on Pallet Town's west
   // edge, a scientist's Time Machine (tools/build-time-machine.js) takes you beyond it, once you have a Pokémon of
   // your own, to the Realm Hub: a platform in the void between the realms, with the realms' portals along its north:
-  // the Pokémon realm's (back out beside the Time Machine off Pallet Town), the Yu-Gi-Oh! realm's, and one dormant,
-  // for a realm to come. Each realm's Time Machine (Pallet's, and the one under the Kame Game shop's street) takes you
+  // the Pokémon realm's (back out beside the Time Machine off Pallet Town), the Yu-Gi-Oh! realm's and the Like a
+  // Dragon realm's (Kamurocho: tools/build-kamurocho.py, its Time Machine in the Empty Lot). Each realm's Time Machine (Pallet's, and the one under the Kame Game shop's street) takes you
   // to the Realm Hub; its portals take you out. The Yu-Gi-Oh! realm's portal comes out by the fountain in Domino City's square:
   // its screens are Yu-Gi-Oh! The Sacred Cards' (tools/build-sacred-cards.py), and its fountain takes you back, or
   // round the city's other places (window.SACRED_CARDS.areas). Your Pokémon stay in their balls in the Yu-Gi-Oh!
   // realm (ui/follower.js), and Fly and Teleport don't work out of the Pokémon realm.
-  const HUB_YUGIOH_PORTAL = { map: "RealmHub", x: 10, y: 5, facing: "down" };
+  const HUB_YUGIOH_PORTAL = { map: "RealmHub", x: 10, y: 5, facing: "down" }, HUB_YAKUZA_PORTAL = { map: "RealmHub", x: 16, y: 5, facing: "down" };
   async function timeMachine() {
     const to = window.TIME_MACHINE;
     if (!player.flags.starter) { await say(["It's a strange machine with a clock\non its dome.", "Its door won't open."]); return; }
@@ -9679,7 +9680,25 @@
       await persist();
       return;
     }
+    if (id === "yakuza") {
+      await say(["A portal of swirling crimson light.\nA dragon's crest shines above it.", "Beyond it lies the Like a Dragon\nrealm, the city that never sleeps…"]);
+      if (!(await confirm("Step through the portal?"))) return;
+      // (out beside the Time Machine, in Kamurocho's Empty Lot)
+      const to = window.KAMUROCHO.arrive;
+      await voyage({ map: to.map, x: to.x, y: to.y, facing: to.facing }, ["You step into the crimson light…", "Neon blurs past you…"], "se_warp_in");
+      if (!player.flags.kamurochoVisited) await say(["You've arrived in Kamurocho,\nin the Like a Dragon realm!", "It's 1988. The streets are packed,\nthe money's flowing, and the\nTojo Clan runs the town.",
+        "Your Bag stays behind in the\nPokémon realm. Here you have\na bag of this realm's own."]);
+      player.flags.kamurochoVisited = true;
+      await persist();
+      return;
+    }
     await say(["A portal of cold stone. Its light\nhas gone out.", "Another realm may open here\nsomeday…"]);
+  }
+  // The Time Machine in Kamurocho's Empty Lot: back to the Realm Hub, by the crimson portal.
+  async function kamurochoTimeMachine() {
+    await say("It's the Time Machine, standing in\nthe middle of the Empty Lot.");
+    if (!(await confirm("Travel back to the Realm Hub?"))) return;
+    await voyage(HUB_YAKUZA_PORTAL, ["The Time Machine whirs to life…", "Kamurocho's lights fade away…", "…and you come out in the Realm Hub."], "se_warp_in");
   }
   // Domino Square's fountain (and Clock Tower Square's): back through the portal to the Realm Hub, or off round the
   // realm: Battle City's places (The Sacred Cards'), Domino City's and the world's (Reshef of Destruction's:
