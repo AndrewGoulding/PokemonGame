@@ -3767,12 +3767,16 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   Saiyans; Krillin, Yamcha, Tien, Bulma, Chi-Chi, a townsman and a townswoman for the Humans; Fat Buu, Kid Buu and
   Super Buu for the Majin. The Mushroom Kingdom's are whole characters from Mario & Luigi: Superstar Saga: Mario,
   Luigi and Peach for its Humans; Toad, a Toad Brigade Toad and Toadsworth for the Mushroom People (their caps'
-  spots are their "hair"); a Goomba (its battle frames: it faces you whichever way it walks) and Bowser for the Koopas
-  (shrunk to the others' size, Bowser more). The Piantas' look is still to come: on the creator they show their crest,
-  and you walk as the trainer.
+  spots are their "hair"); and Bowser for the Koopas (shrunk to the others' size, Bowser more). And from Paper Mario:
+  The Thousand-Year Door, drawn from its models: a Pianta, Don Pianta, Frankie and Francesca for the Piantas (their
+  sprouts are their "hair", their grass skirts the trim); a Goomba and Goombella for the Goombas; Koops for the Koopas.
+  Paper Mario's people are paper: they face you a little to the left, so that's their side too, and turned round
+  it's their backs.
 - **Colours**: your hair, your tunic or gi, its trim and your skin, each "Original" (the part's own) or one of
   `LOOK_COLOURS` (15 hair colours, golden for a Super Saiyan; 17 for clothes; each race's own skins: the Zora's
-  river blue, silver, sea green and coral, the Majin's pinks, lilac, grey and blue).
+  river blue, silver, sea green and coral, the Majin's pinks, lilac, grey and blue, the Koopas' and Piantas' yellow
+  and orange). What each colour's called is the race's (`labels`: a Koopa's shell and belly) or a body's own
+  (`bodyLabels`: Koops's hood, Goombella's helmet).
 
 You turn and walk about in the picture as you choose. Your look is `player.appearance` ({ body, head, hair, outfit,
 trim, skin }), and it's you everywhere you walk, in every realm (riding the Bicycle, surfing and fishing you're
@@ -3797,6 +3801,14 @@ game's own OAM builders at `0x0801EEBC` on, in the jellees/mlss decompilation's 
 sprites at `0x39EE60` (a palette, a sheet and an animation each), the sheets packed in the game's own LZ (the routine
 at `0x08000534`); an animation's sequences of (frame, duration) and its frames, each a piece count and a type (0-5,
 pieces of 6, 5, 4, 4, 3 or 3 bytes, as each builder reads them) and the runs of the sheet it loads into VRAM.
+The Thousand-Year Door's are drawn from the disc's character models (`files/a/<name>`, its textures in
+`<name>-`, a TPL; `tools/lib/ttyd.py`, after MeltyTool's importer, PistonMiner's notes and noclip.website): each
+posed at its stand's first frame and its walk's quarter and three quarters, drawn flat six times over and each
+pixel then made of its 6x6 (an outline where a third of them are; otherwise the role most of them have, by their
+texture and colour: a Pianta's suit, skirt, sprout and skin), and its colours made fewer, six a role.
+`tools/data/ttyd-people.png` has each part's nine frames (32x32 cells of indices, feet on the bottom row) and
+`.json` its colours, each with its role; `--ttyd <the disc's files/a folder>` (extracted with nodtool) draws them
+again.
 Only The Minish Cap's people's sprites are taken; the Dragon World's come from the Dragon Ball realm's people
 sheets already here (Legacy of Goku II's, and Buu's Fury's for the Buus, Fat Buu and Super Buu halved). Each part is
 FireRed's nine frames (standing down, up and left, then two steps each way), 32x32, in 17 rows: the part's own
@@ -3830,7 +3842,7 @@ colours) between its markers; each race's choices are `REALM_RACES[..].looks`.
 | Goomba (Ground) | nimble | Headbonk (1), Goomba Huddle (3, guard), Multibonk (5), Goomba Tower (8, all), Paragoomba Dive (11, Air), Big Goomba Stomp (14), Goomboss Charge (19, all) |
 | Koopa (Earth) | toughest defence | Shell Toss (1), Shell Shield (3, guard), Shell Spin (5, all), Dizzy Shell (7, stun), Power Shell (10, all), Fire Shell (14, Fire), Shell Slam (19) |
 
-The Mushroom Kingdom's five are for its realm to come; their looks are above (the Piantas', not yet). Some skill names are this game's own:
+The Mushroom Kingdom's five are for its realm to come; their looks are above. Some skill names are this game's own:
 Sleepy Spores, Toad Dash, Toad Brigade, Chuckster Toss, Sturdy Belly, Durian Drop, Goomba Huddle, Goomba Tower,
 Big Goomba Stomp and Goomboss Charge.
 
@@ -4157,8 +4169,9 @@ run without it (`tools/data/roms/` has each cartridge's once it's been run so):
   Domino City's map), Legacy of Goku (ALGE), Legacy of Goku II (ALFE), Buu's Fury (BG3E), Supersonic Warriors
   (AZJE), Reshef of Destruction (AY8E), GX Duel Academy (BYGE) and Advanced Adventure (BDVE): all of them. (GX's
   card sheets are drawn again after by `tools/build-extra-cards.py`, from YGOPRODeck, so run that after it.)
-- **The Minish Cap's and Superstar Saga's** (`tools/build-player-looks.py`): the frames it takes, already decoded, in
-  `tools/data/minish-cap-people.*` and `tools/data/superstar-saga-people.*`.
+- **The Minish Cap's, Superstar Saga's and The Thousand-Year Door's** (`tools/build-player-looks.py`): the frames it
+  takes, already decoded (or drawn), in `tools/data/minish-cap-people.*`, `tools/data/superstar-saga-people.*` and
+  `tools/data/ttyd-people.*`.
 - **Pokémon Colosseum's text** (`tools/build-colosseum-text.js`): `assets/text/colosseum.json` keeps it all; with
   no archives the tool writes it again from itself.
 

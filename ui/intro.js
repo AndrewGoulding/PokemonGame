@@ -845,7 +845,7 @@
     g.restore();
   }
   // A race's look to start with: its own start, every colour the part's own unless it says.
-  // (A race with no looks yet, the Mushroom Kingdom's: no body, and you're the trainer.)
+  // (A race with no looks: no body, and you're the trainer.)
   const startLook = (r) => (r.looks ? Object.assign({ body: r.looks.bodies[0], head: (r.looks.heads || [])[0] || null,
     hair: "own", outfit: "own", trim: "own", skin: "own" }, r.looks.start) : { body: null, head: null });
   async function racePage(name, was) {
@@ -864,7 +864,7 @@
       if (!r.looks) return out;
       out.push([P[look.body] && P[look.body].kind === "whole" ? "Who" : "Body", r.looks.bodies, "body", (id) => P[id].name]);
       if (P[look.body] && P[look.body].kind !== "whole" && r.looks.heads) out.push(["Head", r.looks.heads, "head", (id) => P[id].name]);
-      const L = r.looks.labels || {};
+      const L = Object.assign({}, r.looks.labels, (r.looks.bodyLabels || {})[look.body]);
       if (has("hair")) out.push(colourRow(L.hair || "Hair", "hair", C.hair.map((c) => c[0])));
       if (has("outfit")) out.push(colourRow(L.outfit || { Hyrule: "Tunic", "Dragon World": "Gi" }[r.home] || "Clothes", "outfit", C.cloth.map((c) => c[0])));
       if (has("trim")) out.push(colourRow(L.trim || "Trim", "trim", C.cloth.map((c) => c[0])));

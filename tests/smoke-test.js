@@ -7197,5 +7197,15 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   assert(rec.lv === 5 && ups.length === 4 && ups.some((u) => u.learned.includes("rush")));
   // (Each race is a fighter of its own, levelling up through all its skills.)
   for (const r of window.REALM_RACES) { const x = R.recruit(r.id, 1); R.gainExp(x, R.expFor(20)); assert.strictEqual(R.skillsAt(r.id, x.lv).length, 7, r.id); }
+  // (And each has its looks: parts that are drawn, and skins that are colours.)
+  const skins = window.LOOK_COLOURS.skin.map((c) => c[0]);
+  for (const r of window.REALM_RACES) {
+    assert(r.looks, r.id);
+    for (const p of r.looks.bodies.concat(r.looks.heads || [])) {
+      assert(window.PLAYER_LOOK_PARTS[p] && fs.existsSync(require("path").join(__dirname, "..", "assets/world/sprites/looks", p + ".png")), r.id + ": " + p);
+    }
+    for (const s of r.looks.skin) assert(skins.includes(s), r.id + ": " + s);
+    for (const b of Object.keys(r.looks.bodyLabels || {})) assert(r.looks.bodies.includes(b), r.id + ": " + b);
+  }
   console.log("ok: realm battles, 60 of Kamurocho's fights finished (" + turns + " turns)");
 }

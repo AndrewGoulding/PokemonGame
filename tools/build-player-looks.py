@@ -4,7 +4,7 @@
 #
 #   python3 tools/build-player-looks.py
 #
-# (No cartridge: it builds from what's committed. See DATA below for taking The Minish Cap's frames again.)
+# (No cartridge or disc: it builds from what's committed. See DATA, SS_DATA and TTYD_DATA below for taking them again.)
 # Hyrule's people are The Minish Cap's (only their sprites): its townsfolk and children are drawn as a head on a body,
 # so any head goes on any body; and Link, whole. The Dragon World's are the Dragon Ball realm's people sheets already
 # in the repo (assets/dragonball/people/, from Legacy of Goku II and Buu's Fury), whole characters.
@@ -464,18 +464,13 @@ SS_PARTS = [
     ('toad', 'Toad', (3, 102), (20, 0, 10), True, {'hair': {8, 9, 10}, 'outfit': {6, 7}, 'skin': {2, 3}}, 0.75),
     ('star_toad', 'Toad Brigade', (3, 121), (0, 5, 10), None, {'hair': {3, 4}, 'outfit': {6, 7}, 'skin': {8, 9}}, 0.75),
     ('toadsworth', 'Toadsworth', (3, 108), (0, 5, 10), True, {'hair': {2, 3, 4}, 'outfit': {12, 13}, 'skin': {8, 9}}, 0.75),
-    ('goomba', 'Goomba', (4, 2), None, None, {'skin': {9, 10}, 'outfit': {6, 7}}, 0.75),
     ('bowser', 'Bowser', (3, 23), (10, 0, 5), None, {'hair': {10}, 'outfit': {8, 9}, 'trim': {2, 3}, 'skin': {4, 5, 6}}, 0.6),
 ]
-# (The Goomba's are its battle frames: it faces you, a little to the left, whichever way it walks.)
-GOOMBA_FRAMES = [7, 7, 7, 5, 9, 5, 9, 5, 9]
 def mushroom_kingdom():
     for pid, name, (g, i), walks, right, roles, scale in SS_PARTS:
         pal = SS.palette(g, i)
-        if walks:
-            d, u, sd = walks
-            frames = [(d, 0), (u, 0), (sd, 1), (d + 2, 0), (d + 4, 0), (u + 2, 0), (u + 4, 0), (sd + 2, 1), (sd + 4, 1)]
-        else: frames = [(c, 0) for c in GOOMBA_FRAMES]
+        d, u, sd = walks
+        frames = [(d, 0), (u, 0), (sd, 1), (d + 2, 0), (d + 4, 0), (u + 2, 0), (u + 4, 0), (sd + 2, 1), (sd + 4, 1)]
         f9 = []
         for ci, side in frames:
             px = SS.frame(g, i, ci)
@@ -494,6 +489,114 @@ def mushroom_kingdom():
         r, own = sheet(pid, f9, (16, 32))
         PARTS[pid] = {'name': name, 'kind': 'whole', 'roles': r, 'own': own}
 
+# ---------- More of the Mushroom Kingdom: Paper Mario: The Thousand-Year Door's people ----------
+# The Piantas, the Goombas and Koops, from the disc's character models (tools/lib/ttyd.py), drawn flat at FireRed's
+# size: standing (their S_1 animation's first frame) and two steps (their walk, W_1, a quarter and three quarters
+# through), facing you (the model's front: Paper Mario's people face a little to the left, so it's their side too)
+# and away (turned round: the model's back). Committed, already drawn (so no disc's needed):
+#   tools/data/ttyd-people.png    each frame a 32x32 cell of colour indices (0 is clear), its feet on the bottom row
+#   tools/data/ttyd-people.json   each part's nine cells, and its colours: each [colour, role or null]
+# `--ttyd <the disc's files/a folder>` (nodtool extract) draws them from the models again (and builds as well).
+TTYD_DATA = os.path.join(ROOT, 'tools/data/ttyd-people')
+import colorsys
+def hsv(c):
+    h, s, v = colorsys.rgb_to_hsv(*(x / 255 for x in c)); return h * 360, s, v
+def yellow(c): h, s, v = hsv(c); return 30 <= h <= 66 and s > .45 and v > .3
+def brown(c): h, s, v = hsv(c); return 15 <= h <= 50 and s > .3 and v > .25
+def skin_peach(c): h, s, v = hsv(c); return h < 28 and .2 < s < .8 and v > .3
+def blonde(c): h, s, v = hsv(c); return 28 <= h <= 60 and s > .6
+def khaki(c): h, s, v = hsv(c); return 50 <= h <= 170 and s < .45 and v > .3
+def green(c): h, s, v = hsv(c); return 80 <= h <= 170 and s > .45
+def blue(c): h, s, v = hsv(c); return 185 <= h <= 245 and s > .15 and v > .25
+def any_(c): return True
+PIANTA = [(('kao', 'hana', 'm_te', 'h_te', 'm_ashi', 'h_ashi'), 'skin', yellow), (('suit', 'm_ude', 'h_ude'), 'outfit', any_),
+          (('skirt',), 'trim', any_), (('happa', 'kuki'), 'hair', any_)]
+# Each: the model, its animations' prefix, pixels a unit, and its roles: (textures (their names' beginnings), role,
+# which of their colours).
+TTYD_PARTS = [
+    ('pianta', 'Pianta', 'c_m_buka', '', 0.9, PIANTA),
+    ('don_pianta', 'Don Pianta', 'c_m_boss', '', 0.85, [(('kao', 'hana'), 'skin', any_)] + PIANTA),
+    ('frankie', 'Frankie', 'c_m_waka', '', 0.9, PIANTA),
+    ('francesca', 'Francesca', 'c_m_ojo', '', 0.85, [(('kao', 'hana', 'm_te', 'h_te', 'm_ashi', 'h_ashi', 'm_ude', 'h_ude'), 'skin', yellow),
+                                                    (('karada',), 'outfit', any_), (('skirt',), 'trim', any_), (('happa', 'kuki'), 'hair', any_)]),
+    ('goomba', 'Goomba', 'c_kuribo', 'KUR_', 1.3, [(('hon',), 'skin', brown), (('hidariashi', 'migiashi'), 'outfit', any_)]),
+    ('goombella', 'Goombella', 'c_pkr', 'PKR_', 1.3, [(('parts',), 'hair', blonde), (('parts',), 'skin', skin_peach), (('parts',), 'trim', khaki),
+                                                      (('1kutu', '2kutu'), 'outfit', any_)]),
+    ('koops', 'Koops', 'c_pnk', 'PNK_', 1.2, [(('koura', 'parts'), 'outfit', green), (('hana', 'mte', 'hte', 'parts'), 'skin', yellow),
+                                               (('parts', 'mte', 'hte'), 'trim', blue)]),
+]
+UP = 6   # (drawn six times over, then each pixel made of its 6x6)
+def ttyd_frame(m, rules, scale, anim, frame, yaw):
+    T, V = m.pose(m.anim(anim), frame)
+    img, texof = m.draw(m.triangles(T, V, yaw), scale * UP, (32 * UP, 32 * UP), (16 * UP, 32 * UP))
+    names = [t['name'] for t in m.textures]
+    out = {}
+    for Y in range(32):
+        for X in range(32):
+            block, tb = img[Y * UP:(Y + 1) * UP, X * UP:(X + 1) * UP].reshape(-1, 4), texof[Y * UP:(Y + 1) * UP, X * UP:(X + 1) * UP].reshape(-1)
+            solid = block[:, 3] > 0.5
+            if solid.sum() < 0.4 * UP * UP: continue
+            cols, texs = [tuple(int(v * 255 + .5) for v in c[:3]) for c in block[solid]], tb[solid]
+            dark = [c for c in cols if lum(c) < 40]
+            # (An outline's kept where it's a third of what's drawn there, as Paper Mario's are thin at this size.)
+            if len(dark) >= 0.3 * len(cols): pick = [(None, c) for c in dark]
+            else:
+                pick = []
+                for c, t in zip(cols, texs):
+                    if lum(c) < 40: continue
+                    name = names[t] if t >= 0 else ''
+                    pick.append((next((r for pre, r, ok in rules if name.startswith(pre) and ok(c)), None), c))
+            roles = [r for r, c in pick]; role = max([None] + ROLES, key=roles.count)   # (a tie: the first)
+            sel = [c for r, c in pick if r == role]
+            out[(X - 16, Y - 32)] = (role, tuple(sum(c[k] for c in sel) // len(sel) for k in range(3)))
+    return out
+def ttyd_draw(folder):
+    """Draws the parts from the models -> {pid: nine frames}, and commits them."""
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')); import ttyd
+    parts = {}
+    for pid, name, model, pre, scale, rules in TTYD_PARTS:
+        m = ttyd.Model(folder, model)
+        stand, walk = pre + 'S_1', pre + 'W_1'; end = m.anim(walk)['end']
+        f = lambda anim, t, yaw: ttyd_frame(m, rules, scale, anim, t, yaw)
+        down, up = f(stand, 0, 0), f(stand, 0, 180)
+        steps = [f(walk, end * q, yaw) for yaw in (0, 180) for q in (0.25, 0.75)]
+        parts[pid] = [down, up, down, steps[0], steps[1], steps[2], steps[3], steps[0], steps[1]]
+        print(pid, 'drawn')
+    # (Each part's colours made fewer: up to 6 a role, 12 not to be recoloured, so its shades are few and clear.)
+    for pid, frames in parts.items():
+        remap = {}
+        for role in [None] + ROLES:
+            cs = [c for f in frames for r, c in f.values() if r == role]
+            if not cs: continue
+            q = Image.new('RGB', (len(cs), 1)); q.putdata(cs)
+            q = q.quantize(colors=12 if role is None else 6, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
+            pal = q.getpalette()
+            for c, i in zip(cs, q.tobytes()): remap[(role, c)] = tuple(pal[3 * i:3 * i + 3])
+        parts[pid] = [{k: (r, remap[(r, c)]) for k, (r, c) in f.items()} for f in frames]
+    cells, palettes, img = {}, {}, Image.new('P', (32 * 9, 32 * len(parts)), 0)
+    img.putpalette([v for i in range(256) for v in ((i * 8) % 256,) * 3]); px = img.load()
+    for row, (pid, frames) in enumerate(parts.items()):
+        pal = sorted({v for f in frames for v in f.values()}, key=lambda v: (ROLES.index(v[0]) if v[0] else -1, lum(v[1]), v[1]))
+        index = {v: i + 1 for i, v in enumerate(pal)}
+        for n, f in enumerate(frames):
+            for (x, y), v in f.items(): px[n * 32 + x + 16, row * 32 + y + 32] = index[v]
+        cells[pid] = row; palettes[pid] = [[hexc(c)[1:], r] for r, c in pal]
+    img.save(TTYD_DATA + '.png', optimize=True)
+    json.dump({'rows': cells, 'palettes': palettes}, open(TTYD_DATA + '.json', 'w'), separators=(',', ':'))
+    return parts
+def ttyd_committed():
+    j = json.load(open(TTYD_DATA + '.json')); px = Image.open(TTYD_DATA + '.png').load(); parts = {}
+    for pid, row in j['rows'].items():
+        pal = [(r, tuple(int(h[k:k + 2], 16) for k in (0, 2, 4))) for h, r in j['palettes'][pid]]
+        parts[pid] = [{(x - 16, y - 32): pal[px[n * 32 + x, row * 32 + y] - 1] for y in range(32) for x in range(32) if px[n * 32 + x, row * 32 + y]}
+                      for n in range(9)]
+    return parts
+def paper_kingdom():
+    frames = ttyd_draw(sys.argv[sys.argv.index('--ttyd') + 1]) if '--ttyd' in sys.argv else ttyd_committed()
+    for pid, name, *_ in TTYD_PARTS:
+        r, own = sheet(pid, frames[pid], (16, 32))
+        PARTS[pid] = {'name': name, 'kind': 'whole', 'roles': r, 'own': own}
+
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
     hyrule()
@@ -501,6 +604,7 @@ if __name__ == '__main__':
     dragon_world()
     mushroom_kingdom()
     if isinstance(SS, SuperstarSaga): SS.save()
+    paper_kingdom()
     f = os.path.join(ROOT, 'data/type-chart.js')
     src = open(f).read()
     START, END = "// The character creator's parts (tools/build-player-looks.py):", "// (End of the character creator's parts.)"
