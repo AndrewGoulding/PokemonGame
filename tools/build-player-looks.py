@@ -241,7 +241,11 @@ def character(pid, name, family, frames, shift, split=True, neck=0, hair=True):
         if hair: h.update({k: v for k, v in frames[d].items() if k[1] >= n and v[0] == 'hair'})
         # (Its neck point: the middle of the neck, the head's bottom row; not of its face, as from behind there's
         # little of the face, at one side (the townsman's ear), and a head put there sat off to that side.)
-        xs = [x for x, y in head if y == n - 1] or [x for x, y in (f or head)]
+        # (Facing the side, the bottom row of its face, not its hair: hair hanging behind, Kibito's, put his neck
+        # point back, and his head on another's body forward of its neck. Not Link: Hyrule's heads go by their
+        # bottom rows, hair and all, as the game puts them.)
+        side = {k for k in f if k[1] == max((y for x, y in f), default=None)} if d == 2 and f and family != 'hyrule' else None
+        xs = ([x for x, y in side] if side else None) or [x for x, y in head if y == n - 1] or [x for x, y in (f or head)]
         np_ = [(min(xs) + max(xs) + 1) // 2 + shift[0] if xs else 16, n + shift[1]]
         heads.append((h, f))
         HEADS[pid] = HEADS.get(pid, []) + [(h, f, (np_[0] - shift[0], n))]
@@ -1151,6 +1155,12 @@ if __name__ == '__main__':
     paper_kingdom()
     made_heads()
     hair_fitting()
+    # (Each face's and hair's top row, frame by frame: a head too tall for where a body's neck is, a Frieza's on King
+    # Cold's shoulders, goes down into them until it's in the frame: ui/overworld.js composeLook.)
+    for pid, part in PARTS.items():
+        if part['kind'] not in ('face', 'hair'): continue
+        im = Image.open(os.path.join(OUT, pid + '.png')); a = im.getchannel('A').load()
+        part['top'] = [min((y % 32 for y in range(im.height) for x in range(f * 32, f * 32 + 32) if a[x, y]), default=32) for f in range(N)]
     # (Parts no longer made, from before: gone.)
     for fn in os.listdir(OUT):
         if fn.endswith('.png') and fn[:-4] not in PARTS: os.remove(os.path.join(OUT, fn))

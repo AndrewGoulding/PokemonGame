@@ -3873,7 +3873,10 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   face (its skin, what the skin holds, its eyes and mouth, and the outline round that) and its hair (the rest: ribbons
   and clips with it). A face and a hairstyle are the head standing, each way it faces; on any body they move with that
   body's own head, frame by frame, as far as it moved in its own frames (the body's `headAt`, theirs `ref`, each the
-  middle of the neck, the head's bottom row: `composeLook`), so a head walks as the body's own did, and the body's own head is cut off, never left peeping out.
+  middle of the neck, the head's bottom row, or facing the side its face's, as hair hanging behind put it back:
+  `composeLook`), so a head walks as the body's own did, and the body's own head is cut off, never left peeping out.
+  A head too tall for where a body's neck is (a Frieza's on King Cold's shoulders) goes down into them until its top
+  is in the frame (each part's `top`).
   A hairstyle fits a face when it covers (nearly) all of where the face's own hair was, every way it faces (the face's
   `hairs`). Faces go only on bodies from the same game's sprites. The Goombas and the Piantas have no necks: theirs
   are whole, their presets only; Superstar Saga's and Koops's heads are all face (caps and crowns, not hair). A look

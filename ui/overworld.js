@@ -1891,11 +1891,17 @@
     const o = out.getContext("2d"), t = tmp.getContext("2d");
     // (A face and hair on a body go where the body's head is, frame by frame: moved by where the body's neck is less
     // where theirs is.)
+    // (A head too tall for where the neck is, a Frieza's on King Cold's shoulders, goes down into them until its top
+    // is in the frame: each part's `top`, its top row.)
     const P = window.PLAYER_LOOK_PARTS, body = P[names[0]];
+    const offs = names.map((n) => { const part = P[n]; return [...Array(N)].map((_, f) => (part.ref && body.headAt && body.headAt[f] && part.ref[f] ? [body.headAt[f][0] - part.ref[f][0], body.headAt[f][1] - part.ref[f][1]] : [0, 0])); });
+    for (let f = 0; f < N; f++) {
+      const top = Math.min(...names.map((n, k) => (P[n].top && k ? P[n].top[f] + offs[k][f][1] : 0)));
+      if (top < 0) names.forEach((n, k) => { if (k) offs[k][f] = [offs[k][f][0], offs[k][f][1] - top]; });
+    }
     names.forEach((n, k) => {
-      const img = imgs[k], part = P[n];
+      const img = imgs[k], part = P[n], off = offs[k];
       if (!ready(img)) return;
-      const off = [...Array(N)].map((_, f) => (part.ref && body.headAt && body.headAt[f] && part.ref[f] ? [body.headAt[f][0] - part.ref[f][0], body.headAt[f][1] - part.ref[f][1]] : [0, 0]));
       const row = (ctx, sy) => {
         for (let f = 0; f < N; f++) {
           ctx.save(); ctx.beginPath(); ctx.rect(f * 32, 0, 32, 32); ctx.clip();
