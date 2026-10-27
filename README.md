@@ -3758,6 +3758,14 @@ taken from a Dragon Quest cartridge.
 - **Winning**: the foes' EXP is split between those still standing, and their money is yours. EXP to reach level
   L is 10 × (L − 1)^2.5. Each level adds that fighter's growth to every stat and may teach a skill. Anyone who fell
   gets up afterwards with 1 HP.
+- **Stat points**: three each level (`Ultimax.POINTS`), put into the stats you like in a window right after the
+  level-up (or later, from the party screen's Stat points): a point is one more Strength, Defence, Intelligence,
+  Wisdom or Speed, 6 more HP or 2 more MP (`rec.alloc`, `rec.points`). A party saved before them gets the points of
+  the levels it already has.
+- **Categories**: every skill is Physical, Magical or Status (`Ultimax.category`), shown in the move box. Physical:
+  the user's Strength against the target's Defence, times its power; Magical: Intelligence against Wisdom, the same
+  way; Status: heals (by the healer's Wisdom: as strong as their power at 10 Wisdom, half again at 20), guards and
+  statuses. A Pokémon's Physical moves are Physical and its Special moves Magical (power: base power / 40).
 - **The screen** (`ui/ultimax-screen.js`): drawn as FireRed draws a double battle. The street where you stand,
   dimmed, behind the fight; the foes standing at the left, each with its name and FireRed's HP bar over its head (a
   bar that would run into the one before goes a row up); the party's FireRed healthboxes (name, level, HP bar, status)
