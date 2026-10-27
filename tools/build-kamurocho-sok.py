@@ -19,7 +19,7 @@
 #   street.png    the street: the stage's long backdrop (the Stardust and Poppo, down past the Gyudon place to the
 #                 batting cages and Bacchus), its two pieces side by side, 3103x480
 #   alley.png     the back alley, 609x480 (the Empty Lot, with the Time Machine: time-machine.png)
-#   bacchus.png   the bar, 1632x480
+#   bacchus.png   the bar, 816x480 (the first half of its stage: the rest is more of the same)
 #   people/<id>.png   each one standing, facing right, their feet on the bottom row
 import os, struct, sys
 from PIL import Image
@@ -29,7 +29,7 @@ OUT = os.path.join(ROOT, 'assets/kamurocho')
 KEY = (b'e13b293bec6' + bytes(16))[:16]
 
 # The backdrops in entry 15: (x, y, width, height).
-BACKDROPS = {'street_a': (1, 3142, 2000, 480), 'street_b': (1, 824, 1103, 480), 'alley': (1960, 908, 609, 480), 'bacchus': (1, 1507, 1632, 480)}
+BACKDROPS = {'street_a': (1, 3142, 2000, 480), 'street_b': (1, 824, 1103, 480), 'alley': (1960, 908, 609, 480), 'bacchus': (1, 1507, 816, 480)}
 # Each one's frame: (entry, x, y, width, height), standing in a fight, facing right.
 PEOPLE = {
     'kiryu': (15, 3858, 1100, 54, 80), 'majima': (29, 1922, 1774, 56, 66), 'punk': (15, 3657, 1034, 49, 81),
@@ -37,7 +37,15 @@ PEOPLE = {
     'host': (15, 2741, 472, 35, 82), 'biker': (15, 3632, 870, 44, 80), 'grunt': (15, 3978, 512, 49, 77),
     'shakedown': (15, 3770, 293, 41, 77), 'host2': (15, 2865, 1360, 54, 90), 'salaryman': (15, 3613, 466, 56, 78),
     'dancer': (15, 1612, 144, 36, 91),
+    # (The street's people standing about, not squaring up: each one's frame walking or at ease, where the game has
+    # one. Their fights keep the frames above.)
+    'kiryu_idle': (15, 3260, 649, 30, 83), 'majima_idle': (15, 2336, 311, 34, 86), 'host_idle': (15, 3198, 486, 37, 82),
+    'host2_idle': (15, 1904, 241, 47, 90), 'thug_idle': (15, 3614, 1371, 54, 85), 'drunk_idle': (15, 2931, 292, 47, 83),
+    'grunt_idle': (15, 2271, 641, 43, 90), 'suit_walk': (15, 3478, 548, 47, 81), 'loiterer': (15, 4054, 276, 38, 77),
 }
+
+# (Those whose frame faces left in the atlas: turned round, so all of them face right.)
+FACING_LEFT = {'kiryu_idle', 'majima_idle', 'host_idle', 'drunk_idle', 'suit_walk', 'loiterer'}
 
 def entries(folder):
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -62,7 +70,9 @@ def main():
         bg = Image.new('RGBA', im.size, (0, 0, 0, 255)); bg.alpha_composite(im)
         bg.convert('RGB').save(os.path.join(OUT, name + '.png'), optimize=True)
     for pid, (e, x, y, w, h) in PEOPLE.items():
-        atlas[e].crop((x, y, x + w, y + h)).save(os.path.join(OUT, 'people', pid + '.png'), optimize=True)
+        im = atlas[e].crop((x, y, x + w, y + h))
+        if pid in FACING_LEFT: im = im.transpose(Image.FLIP_LEFT_RIGHT)
+        im.save(os.path.join(OUT, 'people', pid + '.png'), optimize=True)
     # (The Time Machine, as Kamurocho's Empty Lot had it, off its ground: the lot's dirt colours made clear.)
     lot = Image.open(os.path.join(ROOT, 'assets/world/maps/Kamurocho.png')).convert('RGBA')
     tm = lot.crop((1246, 1716, 1298, 1784)); g = lot.crop((1120, 1700, 1236, 1800)).load(); px = tm.load()

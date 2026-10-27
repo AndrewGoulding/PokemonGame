@@ -2686,8 +2686,10 @@
   }
   async function startMenu() {
     player.flags.openedMenu = true;   // (FireRed's FLAG_OPENED_START_MENU: the Sign Lady's scene)
+    // (On Kamurocho's side-on streets, the street stays behind the menu.)
+    const onStreet = window.Street && Street.isStreet(player.location.map);
     for (;;) {
-      show("world");
+      show(onStreet ? "street" : "world");
       Screen.say("");
       clearMenu();
       // POKéDEX once Prof. Oak has given you one, POKéMON once you have one.
@@ -9724,7 +9726,7 @@
     if (id === "yakuza") {
       await say(["A portal of swirling crimson light.\nA dragon's crest shines above it.", "Beyond it lies the Like a Dragon\nrealm, the city that never sleeps…"]);
       if (!(await confirm("Step through the portal?"))) return;
-      // (out beside the Time Machine, in Kamurocho's Empty Lot)
+      // (out beside the Time Machine, under the manhole by Serena)
       const to = window.KAMUROCHO.arrive;
       await voyage({ map: to.map, x: to.x, y: to.y, facing: to.facing }, ["You step into the crimson light…", "Neon blurs past you…"], "se_warp_in");
       if (!player.flags.kamurochoVisited) await say(["You've arrived in Kamurocho,\nin the Like a Dragon realm!", "It's 1988. The streets are packed,\nthe money's flowing, and the\nTojo Clan runs the town.",
@@ -9735,10 +9737,10 @@
     }
     await say(["A portal of cold stone. Its light\nhas gone out.", "Another realm may open here\nsomeday…"]);
   }
-  // The Time Machine in Kamurocho's Empty Lot: back to the Realm Hub, by the crimson portal; or a rest beside it
+  // The Time Machine, under the manhole by Serena on Kamurocho's street: back to the Realm Hub, by the crimson portal; or a rest beside it
   // (the party's HP and MP back), a look at the party, or a Pokémon of yours to fight beside you (realmPokemon).
   async function kamurochoTimeMachine() {
-    await say("It's the Time Machine, standing in\nthe middle of the Empty Lot.");
+    await say("It's the Time Machine, hidden down\nhere under the street.");
     for (;;) {
       const v = await ask("What will you do?", [{ label: "Rest", value: "rest", className: "action" }, { label: "Party", value: "party", className: "action" },
         { label: "Pokémon", value: "pokemon", className: "action" }, { label: "Look", value: "look", className: "action" },
@@ -9766,7 +9768,7 @@
   // (data/type-chart.js's REALM_FIGHTERS), each with HP, MP, a level and skills, against a group of foes. Each
   // realm's party and its items: flags.realmParty[realm] = { party: [{ id, lv, exp, hp, mp }], items: { id: n } }.
   // In Kamurocho you start alone; Kiryu joins when you ask him, and Majima once you've beaten him. Walking its streets
-  // (not the Empty Lot) you're jumped now and then (REALM_ENCOUNTERS); fall, and you wake by the Time Machine with
+  // (not in the alley, the shops or under the street) you're jumped now and then (REALM_ENCOUNTERS); fall, and you wake by the Time Machine with
   // half your money gone.
   // You fight as your race (player.race: REALM_RACES); a party saved before that had you as plain "you", and
   // becomes your race at the same level and EXP (as does a party you've changed race since, at a Time Machine).
@@ -9877,9 +9879,12 @@
     return Math.random() < enc.rate ? { type: "realm-battle" } : null;
   }
   async function realmEncounter() {
-    const enc = window.REALM_ENCOUNTERS[player.location.map], total = enc.groups.reduce((s, [w]) => s + w, 0);
-    let r = Math.random() * total, group = enc.groups[0][1];
-    for (const [w, g] of enc.groups) if ((r -= w) < 0) { group = g; break; }
+    // (Only the groups your party's level has come to: its best's, a Pokémon's or a fighter's.)
+    const realm = (window.WORLD_MAPS[player.location.map] || {}).realm, P = realmParty(realm);
+    const lv = Math.max(1, ...P.party.map((rec) => (realmMon(rec) ? realmMon(rec).level : rec.lv || 1)));
+    const groups = Ultimax.groupsFor(window.REALM_ENCOUNTERS[player.location.map], lv), total = groups.reduce((s, [w]) => s + w, 0);
+    let r = Math.random() * total, group = groups[0][1];
+    for (const [w, g] of groups) if ((r -= w) < 0) { group = g; break; }
     await realmFight(group);
   }
   // A foe's picture: its battle picture, or its overworld sheet's first frame (facing you).
@@ -10048,7 +10053,7 @@
       player.money -= lost;
       realmRestore(P);
       const to = window.KAMUROCHO.arrive;
-      await voyage({ map: to.map, x: to.x, y: to.y, facing: to.facing }, ["Everything goes black…", "You come to in the Empty Lot,\nyour wallet ¥" + lost + " lighter."], "se_faint");
+      await voyage({ map: to.map, x: to.x, y: to.y, facing: to.facing }, ["Everything goes black…", "You come to by the Time Machine,\nyour wallet ¥" + lost + " lighter."], "se_faint");
       return b.over;
     }
     if (b.over === "lost") for (const rec of realmAll(P)) { const r = realmMon(rec) || rec; if (r.hp <= 0) r.hp = 1; }

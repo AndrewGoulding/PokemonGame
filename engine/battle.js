@@ -4705,8 +4705,10 @@
       } else { f.rec.hp = f.hp; f.rec.mp = f.mp; f.rec.hpScale = HP_SCALE; }
     }
   }
+  // A place's random fights as your party's level has them: each group (weight, foes, the level it comes from).
+  const groupsFor = (enc, lv) => enc.groups.filter((g) => (g[2] || 1) <= lv);
   // An item's text, its HP as HP_SCALE makes it ("{hp}" in REALM_ITEMS' text).
   const itemText = (id) => String(D().items[id].text).replace(/\{hp\}/g, () => String(D().items[id].heal * HP_SCALE));
   window.Ultimax = { create, turn, spoils, gainExp, keep, member, recruit, rescale, stats, skillsAt, expFor, effect, foeChoice, up,
-    pokemon, pokemonSkill, pokemonElements, pokemonExp, skillOf, unsupported, itemText, TYPE_ELEMENT, HP_SCALE, STATUS_TAG };
+    pokemon, pokemonSkill, pokemonElements, pokemonExp, skillOf, unsupported, itemText, groupsFor, TYPE_ELEMENT, HP_SCALE, STATUS_TAG };
 })();

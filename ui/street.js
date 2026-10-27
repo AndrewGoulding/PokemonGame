@@ -77,7 +77,7 @@
     if (ready(bg)) g.drawImage(bg, cam.x, cam.y, W, H, 0, 0, W, H);
     // (everyone and everything, the furthest back first)
     const list = [];
-    for (const th of S.things || []) list.push({ y: th.y, draw: () => { const i = image(th.image); if (ready(i)) g.drawImage(i, Math.round(th.x - i.width * th.scale / 2 - cam.x), Math.round(th.y - i.height * th.scale - cam.y), i.width * th.scale, i.height * th.scale); } });
+    for (const th of S.things || []) list.push({ y: th.floor ? -Infinity : th.y, draw: () => { const i = image(th.image); if (ready(i)) g.drawImage(i, Math.round(th.x - i.width * th.scale / 2 - cam.x), Math.round(th.y - i.height * th.scale - cam.y), i.width * th.scale, i.height * th.scale); } });
     for (const p of people(opts)) list.push({ y: p.y, draw: () => {
       const i = image("assets/kamurocho/people/" + p.sprite + ".png");
       if (!ready(i)) return;
@@ -100,10 +100,10 @@
     const x = Math.round(me.x - cam.x), y = Math.round(me.y - cam.y);
     shadow(x, y, 14);
     if (!sheet) return;
-    // (FireRed's frames: standing down 0, up 1, left 2; stepping down 3 4, up 5 6, left 7 8. Right is left turned.)
-    const d = me.facing, step = me.moving ? Math.floor(t / (run ? 5 : 8)) % 4 : 0;
-    const stand = { down: 0, up: 1, left: 2, right: 2 }[d], walk = { down: 3, up: 5, left: 7, right: 7 }[d];
-    const f = step % 2 === 0 ? stand : walk + (step === 3 ? 1 : 0);
+    // (FireRed's frames: standing down 0, up 1, left 2; stepping down 3 4, up 5 6, left 7 8; and between the steps,
+    // ui/overworld.js's lookFrame. Right is left turned.)
+    const d = me.facing;
+    const f = me.moving ? window.Overworld.lookFrame(d, Math.floor(t / (run ? 5 : 8))) : { down: 0, up: 1, left: 2, right: 2 }[d];
     g.save(); g.translate(x, y + 2);
     if (d === "right") g.scale(-1, 1);
     g.drawImage(sheet, f * 32, 0, 32, 32, -16 * SCALE, -32 * SCALE, 32 * SCALE, 32 * SCALE);

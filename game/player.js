@@ -435,11 +435,16 @@
     // (And how you look: the character creator's parts and colours, PLAYER_LOOK_PARTS and LOOK_COLOURS.)
     const a = data.appearance, parts = window.PLAYER_LOOK_PARTS || {};
     const race = (window.REALM_RACES || []).find((r) => r.id === player.race);
-    if (race && !race.looks && a && typeof a === "object") player.appearance = { body: null, head: null };
+    if (race && !race.looks && a && typeof a === "object") player.appearance = { body: null, face: null, hairstyle: "" };
     else if (player.race && a && typeof a === "object" && parts[a.body]) {
-      // (A look saved as a whole character, from before they were cut into heads and bodies: its own head.)
-      const head = parts[a.head] && (parts[a.body].kind !== "body" || parts[a.head].kind === "head") ? a.head : null;
-      player.appearance = { body: a.body, head: head || (parts[a.body].kind === "body" && parts[a.body + "_head"] ? a.body + "_head" : null) };
+      // (A look saved with a head, from before heads were a face and hair (Goku's "goku_head", Hyrule's "head_64"):
+      // that head's face and hair; and one saved as a whole character, from before they were cut: its own.)
+      const head = typeof a.head === "string" ? a.head.replace(/_head$/, "") : null;
+      const own = (k) => (parts[k] && parts[k].kind === "face" || parts[k] && parts[k].kind === "hair" ? k : null);
+      const whole = parts[a.body].kind === "whole";
+      const face = whole ? null : own(a.face) || (head && own(head + "_face")) || own(a.body + "_face");
+      const hairstyle = whole ? "" : typeof a.hairstyle === "string" ? (own(a.hairstyle) || "") : (head && own(head + "_hair")) || own(a.body + "_hair") || "";
+      player.appearance = { body: a.body, face, hairstyle };
       for (const k of ["hair", "outfit", "trim", "skin"]) player.appearance[k] = typeof a[k] === "string" ? a[k].slice(0, 20) : "own";
     }
     player.rival = String(data.rival || RIVAL_NAME).slice(0, 12);

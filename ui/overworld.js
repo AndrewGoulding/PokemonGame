@@ -1851,17 +1851,25 @@
   }
   // ---------- Your look (the character creator: ui/intro.js's race page) ----------
   //
-  // You're put together from data/type-chart.js's PLAYER_LOOK_PARTS (tools/build-player-looks.py): a body and a
-  // head on it, or a whole character. Each part's sheet is its own colours, then 16 masks: its hair, clothes, trim
-  // and skin, four shades each, darkest first; each mask is filled with that shade of the colour you chose
-  // (LOOK_COLOURS), or of the part's own ("own"). Only compositing, never reading pixels back, so it works when the
-  // game's opened straight from disk. -> a sheet of FireRed's nine frames, 32x32 each.
+  // You're put together from data/type-chart.js's PLAYER_LOOK_PARTS (tools/build-player-looks.py): a body, a face
+  // and a hairstyle on it (player.appearance: body, face, hairstyle), or a whole character. Each part's sheet is its
+  // own colours, then 16 masks: its hair, clothes, trim and skin, four shades each, darkest first; each mask is
+  // filled with that shade of the colour you chose (LOOK_COLOURS), or of the part's own ("own"). Only compositing,
+  // never reading pixels back, so it works when the game's opened straight from disk. -> a sheet of FireRed's nine
+  // frames, then the six between its steps (lookFrame), 32x32 each.
   // (Riding the Bicycle, surfing and fishing you're still the trainer: no part has those.)
   const LOOK_ROLES = ["hair", "outfit", "trim", "skin"];
   function lookParts(a) {
     const P = window.PLAYER_LOOK_PARTS || {};
     if (!a || !P[a.body]) return [];
-    return P[a.body].kind === "whole" || !P[a.head] || P[a.head].kind !== "head" ? [a.body] : [a.body, a.head];
+    if (P[a.body].kind === "whole") return [a.body];
+    return [a.body].concat([a.face, a.hairstyle].filter((n) => n && P[n] && (P[n].kind === "face" || P[n].kind === "hair")));
+  }
+  // (A look's frame walking: a step, the frame between, the other step, the frame between; each step's frames in the
+  // sheet as FireRed's, the betweens after them: lookFrame(facing, quarter of the stride 0-3).)
+  function lookFrame(facing, q) {
+    const d = { down: 0, up: 1, left: 2, right: 2 }[facing];
+    return [3 + 2 * d, 9 + 2 * d, 4 + 2 * d, 10 + 2 * d][q & 3];
   }
   function lookRamp(a, part, role) {
     const list = (window.LOOK_COLOURS || {})[role === "outfit" || role === "trim" ? "cloth" : role] || [];
@@ -1874,16 +1882,18 @@
     const imgs = names.map((n) => spriteImage("looks/" + n));
     await Promise.all(imgs.map((i) => i.loaded));
     const out = document.createElement("canvas"), tmp = document.createElement("canvas");
-    out.width = tmp.width = 288; out.height = tmp.height = 32;
+    const N = Math.max(9, Math.round((imgs[0].width || 288) / 32)), Wd = N * 32;
+    out.width = tmp.width = Wd; out.height = tmp.height = 32;
     const o = out.getContext("2d"), t = tmp.getContext("2d");
-    // (A head on a body goes where the body's neck is, frame by frame: moved by the body's neck less the head's.)
+    // (A face and hair on a body go where the body's head is, frame by frame: moved by where the body's neck is less
+    // where theirs is.)
     const P = window.PLAYER_LOOK_PARTS, body = P[names[0]];
     names.forEach((n, k) => {
       const img = imgs[k], part = P[n];
       if (!ready(img)) return;
-      const off = [...Array(9)].map((_, f) => (part.kind === "head" && part.anchor && body.neck ? [body.neck[f][0] - part.anchor[f][0], body.neck[f][1] - part.anchor[f][1]] : [0, 0]));
+      const off = [...Array(N)].map((_, f) => (part.ref && body.headAt && body.headAt[f] && part.ref[f] ? [body.headAt[f][0] - part.ref[f][0], body.headAt[f][1] - part.ref[f][1]] : [0, 0]));
       const row = (ctx, sy) => {
-        for (let f = 0; f < 9; f++) {
+        for (let f = 0; f < N; f++) {
           ctx.save(); ctx.beginPath(); ctx.rect(f * 32, 0, 32, 32); ctx.clip();
           ctx.drawImage(img, f * 32, sy, 32, 32, f * 32 + off[f][0], off[f][1], 32, 32);
           ctx.restore();
@@ -1895,12 +1905,12 @@
         if (!ramp) return;
         for (let l = 0; l < 4; l++) {
           t.globalCompositeOperation = "copy";
-          t.clearRect(0, 0, 288, 32);
+          t.clearRect(0, 0, Wd, 32);
           t.globalCompositeOperation = "source-over";
           row(t, (1 + r * 4 + l) * 32);
           t.globalCompositeOperation = "source-in";
           t.fillStyle = ramp[l];
-          t.fillRect(0, 0, 288, 32);
+          t.fillRect(0, 0, Wd, 32);
           o.drawImage(tmp, 0, 0);
         }
       });
@@ -2130,7 +2140,8 @@
     // (Your look, walking or running: its steps, a stride a tile.)
     if (mine()) {
       sheet = "player_look"; w = 32; dx = -8;
-      if (me.move && me.move.run) frame = frameFor(me.facing, (me.move.t % TILE) < TILE / 2, me.parity, 9);
+      // (a stride a tile: its step for the first half, then the frame between; the next tile the other step)
+      if (me.move && !me.move.slip) frame = lookFrame(me.facing, ((me.move.t % TILE) < TILE / 2 ? 0 : 1) + 2 * me.parity);
     }
     if (me.avatar === "bike") {
       // The Bicycle's sheet (32 wide): standing, and pedalling while moving.
@@ -2311,7 +2322,7 @@
     explore, hide, read: (pages) => read(pages), showAreaName, forceStep, refreshPeople: () => loadPeople(),
     act, addObject, removeObject, unbury: (def) => { for (const p of people) if (p.def.id === def.id && p.def.script === def.script) p.unburied = true; }, removePerson, teleport, battleTransition, resume, pokecenterHeal, flyOut, flyIn, escapeRopeOut, escapeRopeIn,
     fadeToBlack: fadeOut, fadeFromBlack: fadeIn, shake,
-    setAvatar, avatar: () => me.avatar, composeLook, setPlayerLook, playerLook: () => myLook, lookParts, bikeFastest: () => me.avatar === "bike" && (me.bikeRun || 0) >= BIKE_SPEEDS.length - 1, flash, follower: followerApi, rod: setRod, emote: (mark) => { me.emote = mark ? { mark } : null; }, isDark: () => light != null && !flashOn,
+    setAvatar, avatar: () => me.avatar, composeLook, setPlayerLook, playerLook: () => myLook, lookParts, lookFrame, bikeFastest: () => me.avatar === "bike" && (me.bikeRun || 0) >= BIKE_SPEEDS.length - 1, flash, follower: followerApi, rod: setRod, emote: (mark) => { me.emote = mark ? { mark } : null; }, isDark: () => light != null && !flashOn,
     // What's in front of you: the tile, whoever stands there, and whether
     // it's water you could start surfing on.
     ahead: () => {

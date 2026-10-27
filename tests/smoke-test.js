@@ -7321,18 +7321,25 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   const skins = window.LOOK_COLOURS.skin.map((c) => c[0]);
   for (const r of window.REALM_RACES) {
     assert(r.looks, r.id);
-    for (const p of r.looks.bodies.concat(r.looks.heads || [])) {
-      assert(window.PLAYER_LOOK_PARTS[p] && fs.existsSync(require("path").join(__dirname, "..", "assets/world/sprites/looks", p + ".png")), r.id + ": " + p);
-    }
+    const P = window.PLAYER_LOOK_PARTS, part = (p) => P[p] && fs.existsSync(require("path").join(__dirname, "..", "assets/world/sprites/looks", p + ".png"));
+    for (const p of r.looks.bodies) assert(part(p), r.id + ": " + p);
+    for (const h of r.looks.heads || []) assert(part(h + "_face"), r.id + ": " + h);
     for (const s of r.looks.skin) assert(skins.includes(s), r.id + ": " + s);
     for (const b of Object.keys(r.looks.bodyLabels || {})) assert(r.looks.bodies.includes(b), r.id + ": " + b);
-    // (a character cut in two: its head says where its neck is, its body where a head goes, in each of 9 frames)
+    // (a character cut in three: its body says where its head is, in each of its 15 frames, its face and hair where
+    // theirs is; each face's hairstyles are parts, its own among them)
     for (const b of r.looks.bodies) {
-      const P = window.PLAYER_LOOK_PARTS[b];
-      if (P.kind === "body") assert(P.neck && P.neck.length === 9, b + "'s neck");
-      const H = window.PLAYER_LOOK_PARTS[b + "_head"];
-      if (H) assert(H.kind === "head" && H.anchor.length === 9 && P.kind === "body", b + "'s head");
+      if (P[b].kind === "whole") continue;
+      assert(P[b].kind === "body" && P[b].headAt && P[b].headAt.length === 15, b + "'s neck");
+      const F = P[b + "_face"];
+      if (!F && r.looks.heads) continue;   // (Hyrule's bodies, with no heads of their own: they take its heads)
+      assert(F && F.kind === "face" && F.ref.length === 15 && F.family === P[b].family, b + "'s face");
+      for (const h of F.hairs) assert(h === "" || (P[h] && P[h].kind === "hair"), b + ": " + h);
+      assert(F.hairs.includes(P[b + "_hair"] ? b + "_hair" : ""), b + " takes its own hair");
     }
+    if (r.looks.start) for (const k of ["body", "face", "hairstyle"]) assert(!r.looks.start[k] || P[r.looks.start[k]], r.id + "'s start: " + k);
   }
+  // (Android 20 is Dr. Gero, not Mr. Popo; the Frieza Clan by that name)
+  assert.strictEqual(window.REALM_RACES.find((r) => r.id === "arcosian").name, "Frieza Clan");
   console.log("ok: realm battles, 60 of Kamurocho's fights finished (" + turns + " turns)");
 }

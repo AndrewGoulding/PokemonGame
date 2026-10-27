@@ -844,31 +844,51 @@
     }
     g.restore();
   }
-  // A race's choices: its bodies; its heads (each of its characters' own, cut from them: PLAYER_LOOK_PARTS's
-  // "<body>_head", then any it lists, Hyrule's); and its presets, the characters as they are (Goku is Goku's head on
-  // Goku's body, his colours his own), and the race's own start where it's built of parts (Hyrule's). You're your
-  // own: any preset is only where you start, every row of it yours to change.
+  // A race's choices: its bodies; its faces (each of its characters' own, cut from them: PLAYER_LOOK_PARTS's
+  // "<body>_face", then its heads', Hyrule's); its hairstyles (its characters' and heads' own, and those of the races
+  // it shares with, looks.hairFrom); and its presets, the characters as they are (Goku is Goku's face and hair on
+  // Goku's body, his colours his own), and the race's own start. You're your own: any preset is only where you start,
+  // every row of it yours to change. A face takes only the hairstyles that cover where its own hair was (its `hairs`,
+  // "" for none: tools/build-player-looks.py), and a body only the faces of its own family (its sprites' game).
+  const hairsOf = (r) => r.looks.bodies.map((b) => b + "_hair").concat((r.looks.heads || []).map((h) => h + "_hair"));
   function looksOf(r) {
     const P = window.PLAYER_LOOK_PARTS, L = r.looks;
     if (!L) return null;
     const bodies = L.bodies.filter((b) => P[b]);
-    const heads = bodies.filter((b) => P[b].kind === "body" && P[b + "_head"]).map((b) => b + "_head").concat((L.heads || []).filter((h) => P[h]));
-    const presets = bodies.filter((b) => P[b].kind === "whole" || P[b + "_head"]).map((b) => ({ name: P[b].name, body: b, head: P[b].kind === "whole" ? null : b + "_head" }));
-    if (L.heads) presets.push(Object.assign({ name: r.name, head: null }, L.start));
-    return { bodies, heads, presets };
+    const faces = bodies.map((b) => b + "_face").concat((L.heads || []).map((h) => h + "_face")).filter((f) => P[f]);
+    let hairs = hairsOf(r);
+    for (const id of L.hairFrom || []) { const o = window.REALM_RACES.find((x) => x.id === id); if (o && o.looks) hairs = hairs.concat(hairsOf(o)); }
+    hairs = [...new Set(hairs)].filter((h) => P[h]);
+    const presets = bodies.filter((b) => P[b].kind === "whole" || P[b + "_face"])
+      .map((b) => ({ name: P[b].name, body: b, face: P[b].kind === "whole" ? null : b + "_face", hairstyle: P[b + "_hair"] ? b + "_hair" : "" }));
+    if (L.heads) presets.push(Object.assign({ name: r.name }, L.start));
+    return { bodies, faces, hairs, presets };
   }
-  // A race's look to start with: its own start, every colour the part's own unless it says.
+  // (What can go with what: the faces of a body's family; the hairstyles a face takes, of those the race has.)
+  const facesFor = (X, body) => X.faces.filter((f) => window.PLAYER_LOOK_PARTS[f].family === window.PLAYER_LOOK_PARTS[body].family);
+  const hairsFor = (X, face) => { const ok = (window.PLAYER_LOOK_PARTS[face] || {}).hairs || [""]; return ok.filter((h) => h === "" || X.hairs.includes(h)); };
+  // (A look made to fit: a face of its body's family, a hairstyle its face takes; else the body's own, the face's own.)
+  function fit(X, look) {
+    const P = window.PLAYER_LOOK_PARTS;
+    if (!P[look.body] || P[look.body].kind === "whole") { look.face = null; look.hairstyle = ""; return look; }
+    const faces = facesFor(X, look.body);
+    if (!faces.includes(look.face)) look.face = faces.includes(look.body + "_face") ? look.body + "_face" : faces[0];
+    const hairs = hairsFor(X, look.face), own = look.face.replace(/_face$/, "_hair");
+    if (!hairs.includes(look.hairstyle || "")) look.hairstyle = hairs.includes(own) ? own : hairs[0] || "";
+    return look;
+  }
+  // A race's look to start with: its own start, or its first preset, every colour the part's own unless it says.
   // (A race with no looks: no body, and you're the trainer.)
-  const startLook = (r) => (r.looks ? Object.assign({ body: r.looks.bodies[0], head: window.PLAYER_LOOK_PARTS[r.looks.bodies[0] + "_head"] ? r.looks.bodies[0] + "_head" : (r.looks.heads || [])[0] || null,
-    hair: "own", outfit: "own", trim: "own", skin: "own" }, r.looks.start) : { body: null, head: null });
-  // A preset as your look: its head and body, its colours its own (or its own start's).
+  const startLook = (r) => (r.looks ? fit(looksOf(r), Object.assign({ hair: "own", outfit: "own", trim: "own", skin: "own" }, r.looks.start || presetLook(looksOf(r).presets[0])))
+    : { body: null, face: null, hairstyle: "" });
+  // A preset as your look: its body, face and hairstyle, its colours its own (or its own start's).
   const COLOUR_KEYS = ["hair", "outfit", "trim", "skin"];
   const presetLook = (pr) => { const q = Object.assign({ hair: "own", outfit: "own", trim: "own", skin: "own" }, pr); delete q.name; return q; };
   async function racePage(name, was) {
     const races = window.REALM_RACES, F = window.REALM_FIGHTERS, S = window.REALM_SKILLS, P = window.PLAYER_LOOK_PARTS, C = window.LOOK_COLOURS;
     for (const r of races) if (r.pic && !racePics[r.id]) { const i = new Image(); i.src = r.pic; racePics[r.id] = i; }
     let at = Math.max(0, races.findIndex((r) => was && r.id === was.race));
-    let look = was && was.appearance ? Object.assign({}, was.appearance) : startLook(races[at]);
+    let look = was && was.appearance && was.appearance.body ? fit(looksOf(races[at]) || { faces: [], hairs: [] }, Object.assign({}, was.appearance)) : startLook(races[at]);
     let row = 0, t = 0, sheet = null, asked = 0;
     const race = () => races[at];
     const parts = () => window.Overworld.lookParts(look).map((n) => P[n]);
@@ -878,18 +898,22 @@
     // (The preset you look like: one whose head, body and colours are yours; or none, "Custom".)
     const presetAt = () => {
       const X = looksOf(race());
-      return X && P[look.body] ? X.presets.findIndex((pr) => { const q = presetLook(pr); return q.body === look.body && (q.head || null) === (P[look.body].kind === "whole" ? null : look.head || null) &&
-        COLOUR_KEYS.every((k) => (q[k] || "own") === (look[k] || "own")); }) : -1;
+      return X && P[look.body] ? X.presets.findIndex((pr) => { const q = presetLook(pr); return q.body === look.body && (q.face || null) === (look.face || null) &&
+        (q.hairstyle || "") === (look.hairstyle || "") && COLOUR_KEYS.every((k) => (q[k] || "own") === (look[k] || "own")); }) : -1;
     };
     const rows = () => {
       const r = race(), out = [["Race", races.map((x) => x.id), "race", (id) => races.find((x) => x.id === id).name]];
       if (!r.looks) return out;
       const X = looksOf(r);
       out.push(["Preset", X.presets.map((_, i) => i), "preset", (i) => (i < 0 ? "Custom" : X.presets[i].name)]);
-      if (P[look.body] && P[look.body].kind !== "whole" && X.heads.length) out.push(["Head", X.heads, "head", (id) => P[id].name]);
-      if (X.bodies.some((b) => P[b].kind !== "whole")) out.push(["Body", X.bodies, "body", (id) => P[id].name]);
+      if (P[look.body] && P[look.body].kind !== "whole") {
+        const faces = facesFor(X, look.body), hairs = hairsFor(X, look.face);
+        if (faces.length > 1) out.push(["Face", faces, "face", (id) => P[id].name]);
+        if (hairs.length > 1) out.push(["Hairstyle", hairs, "hairstyle", (id) => (id ? P[id].name : "None")]);
+      }
+      if (X.bodies.length > 1) out.push(["Body", X.bodies, "body", (id) => P[id].name]);
       const L = Object.assign({}, r.looks.labels, (r.looks.bodyLabels || {})[look.body]);
-      if (has("hair")) out.push(colourRow(L.hair || "Hair", "hair", C.hair.map((c) => c[0])));
+      if (has("hair")) out.push(colourRow(L.hair || "Hair colour", "hair", C.hair.map((c) => c[0])));
       if (has("outfit")) out.push(colourRow(L.outfit || { Hyrule: "Tunic", "Dragon World": "Gi" }[r.home] || "Clothes", "outfit", C.cloth.map((c) => c[0])));
       if (has("trim")) out.push(colourRow(L.trim || "Trim", "trim", C.cloth.map((c) => c[0])));
       if (has("skin")) out.push(colourRow(L.skin || "Skin", "skin", r.looks.skin));
@@ -917,20 +941,20 @@
       else if (r.crest) crest(r.crest, "#fff", 8, 22, r.looks ? null : "#0008");
       g.globalAlpha = 1;
       if (sheet) {
-        const dir = ["down", "left", "up", "right"][Math.floor(t / 90) % 4], step = Math.floor(t / 12) % 4;
-        const stand = { down: 0, up: 1, left: 2, right: 2 }[dir], walk = { down: 3, up: 5, left: 7, right: 7 }[dir];
-        const fr = step % 2 === 0 ? stand : walk + (step === 3 ? 1 : 0);
+        const dir = ["down", "left", "up", "right"][Math.floor(t / 90) % 4];
+        const fr = window.Overworld.lookFrame(dir, Math.floor(t / 12));
         g.save();
         if (dir === "right") { g.translate(72, 22); g.scale(-1, 1); g.drawImage(sheet, fr * 32, 0, 32, 32, 0, 0, 64, 64); }
         else g.drawImage(sheet, fr * 32, 0, 32, 32, 8, 22, 64, 64);
         g.restore();
       }
       if (!r.looks) text("(Its look is to come:\nyou're the trainer\nfor now.)", 84, 32, { size: 7, color: "#e8e8e8", lineHeight: 9 });
-      rows().forEach(([label, , key, nameOf], i) => {
-        const y = 19 + i * 9, value = key === "race" ? r.id : key === "preset" ? presetAt() : look[key];
-        if (i === row) { g.fillStyle = "#fff3"; g.fillRect(80, y - 1, 156, 9); }
+      const all = rows(), gap = all.length > 7 ? 8 : 9;   // (closer together when there are more, above the stats)
+      all.forEach(([label, , key, nameOf], i) => {
+        const y = 19 + i * gap, value = key === "race" ? r.id : key === "preset" ? presetAt() : look[key];
+        if (i === row) { g.fillStyle = "#fff3"; g.fillRect(80, y - 1, 156, gap); }
         text(label, 84, y, { size: 7, bold: true, color: i === row ? "#fff" : "#d8d8d8" });
-        text((i === row ? "◀ " : "") + nameOf(value) + (key === "race" ? " · " + f.elements.join("/") : "") + (i === row ? " ▶" : ""), 120, y, { size: 7, color: i === row ? "#ffe890" : "#e8e8e8" });
+        text((i === row ? "◀ " : "") + nameOf(value) + (key === "race" ? " · " + f.elements.join("/") : "") + (i === row ? " ▶" : ""), 132, y, { size: 7, color: i === row ? "#ffe890" : "#e8e8e8" });
       });
       // (The race's stats and its skills, with the levels they come at, wrapped to the page: the text box covers
       // it below y 112.)
@@ -957,7 +981,8 @@
     for (;;) {
       const list = rows();
       row = Math.min(row, list.length - 1);
-      show(row === 0 ? race().text : "Choose your " + list[row][0].toLowerCase() + ".\n▲▼: something else  ◀▶: change it\nⒶ: that's me!");
+      // (two lines, as the text box holds)
+      show(row === 0 ? race().text : "Choose your " + list[row][0].toLowerCase() + " with ◀▶.\n▲▼: another row.  Ⓐ: done!");
       const k = await window.GbaMenus.keys((k) => (["left", "right", "up", "down", "a"].includes(k) ? k : undefined));
       se();
       if (k === "a") {
@@ -970,11 +995,11 @@
       if (key === "race") { at = (at + d + races.length) % races.length; look = startLook(race()); }
       else if (key === "preset") {
         const X = looksOf(race()), i = presetAt();
-        look = presetLook(X.presets[((i < 0 ? (d > 0 ? -1 : 0) : i) + d + X.presets.length) % X.presets.length]);
-        if (P[look.body].kind !== "whole" && !look.head) look.head = X.heads[0] || null;
+        look = fit(X, presetLook(X.presets[((i < 0 ? (d > 0 ? -1 : 0) : i) + d + X.presets.length) % X.presets.length]));
       } else {
         const i = choices.indexOf(look[key]);
         look[key] = choices[((i < 0 ? 0 : i) + d + choices.length) % choices.length];
+        if (key === "body" || key === "face") fit(looksOf(race()), look);
       }
       await redraw();
     }

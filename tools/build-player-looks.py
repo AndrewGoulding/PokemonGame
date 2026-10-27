@@ -117,7 +117,12 @@ palette, frame, attach = SRC.palette, SRC.frame, SRC.attach
 
 lum = lambda c: 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2]
 
-# ---------- A part: nine frames of {(x, y): (role or None, colour)} into a sheet ----------
+# ---------- A part: its frames of {(x, y): (role or None, colour)} into a sheet ----------
+# FireRed's nine frames (standing down, up, left; two steps down, up, left), then six of this game's own: the frames
+# between the steps (down, up, left: each two), so a walk of four frames goes step, between, the other step, between.
+# (Where the source has walks of only two steps, they're the standing frames.)
+N = 15
+FRAME_DIR = [0, 1, 2, 0, 0, 1, 1, 2, 2, 0, 0, 1, 1, 2, 2]
 def levels(cols):
     """A role's colours, darkest first, onto its four shades (fewer colours: the lighter shades)."""
     cols = sorted(set(cols), key=lum)
@@ -125,8 +130,8 @@ def levels(cols):
     if n <= 4: return {c: 4 - n + i for i, c in enumerate(cols)}
     return {c: min(3, i * 4 // n) for i, c in enumerate(cols)}
 def sheet(name, frames, shift):
-    """frames: nine dicts {(x, y): (role, (r, g, b))}; shift: where (0, 0) goes in a 32x32 cell."""
-    img = Image.new('RGBA', (32 * 9, 32 * 17), (0, 0, 0, 0)); px = img.load()
+    """frames: N dicts {(x, y): (role, (r, g, b))}; shift: where (0, 0) goes in a 32x32 cell."""
+    img = Image.new('RGBA', (32 * len(frames), 32 * 17), (0, 0, 0, 0)); px = img.load()
     shade = {r: levels([c for f in frames for (rr, c) in f.values() if rr == r]) for r in ROLES}
     has = set()
     for i, f in enumerate(frames):
@@ -152,13 +157,16 @@ def sheet(name, frames, shift):
         own[r] = [hexc(c) for c in by]
     return sorted(has, key=ROLES.index), own
 
-# ---------- Heads and bodies: any head on any body of its race ----------
-# A whole character (Goku, Mario, Link, ...) is cut in two at its neck, frame by frame, into a head (hair and face)
-# and a body (its clothes), so you can be one character's head on another's body: the characters are the creator's
-# presets, and you're your own. The neck: the narrowest row from 30% to 60% of the way down the figure.
-# Each head keeps where its frames are, and says where its neck is (`anchor`: the middle of its bottom row, and the
-# row under it), each body where a head goes (`neck`); on a body, a head is drawn moved by the difference, frame by
-# frame (ui/overworld.js composeLook), so a character's own head on its own body is drawn as it was.
+# ---------- Bodies, faces and hair: each character in three ----------
+# A character (Goku, Mario, Link, ...) is cut into its body, its face and its hair, so you can be one character's
+# face with another's hair on a third's body: the characters are the creator's presets, and you're your own.
+# Where it's cut: at its neck, the narrowest row from 30% to 60% of the way down it standing facing you, and the same
+# height facing every way (its feet are on the same row). Its head (above the neck) is its hair (the pixels that are
+# its hair's colours, and the outline round them) and its face (the rest).
+# The face and hair are its head standing, each way it faces: on a walk they don't change, but move with the body's
+# head, frame by frame, as far as the body's own head moved in its frames (`headAt`: where the neck's middle is,
+# each frame; a face's and hair's `ref`: where theirs is). So a head goes on any body of its family and walks as that
+# body's own did, and the body's own head is never left peeping out (it's cut off).
 def anchor_of(f, shift):
     if not f: return [16, 16]
     y = max(y for x, y in f); xs = [x for x, yy in f if yy == y]
@@ -172,21 +180,105 @@ def neck_row(f):
         w = max(xs) - min(xs) + 1
         if best is None or w < best: best, at = w, y
     return at if at is not None else top + h // 3
-def whole(pid, name, f9, shift, split=True):
-    # (A character with no neck, the Goombas and Piantas, stays whole.)
+def motion(head, f):
+    """How far `head` (a standing frame's) has moved in frame f: the shift that lines up most of its pixels."""
+    best, at = -1, (0, 0)
+    for dy in range(-3, 4):
+        for dx in range(-3, 4):
+            m = sum(1 for (x, y), v in head.items() if (f.get((x + dx, y + dy)) or (None, None))[1] == v[1])
+            if m > best or (m == best and abs(dx) + abs(dy) < abs(at[0]) + abs(at[1])): best, at = m, (dx, dy)
+    return at
+def dark(v): return v[0] is None and lum(v[1]) < 70
+def split_head(head):
+    """A head -> (hair, face). Its face: its skin, what the skin holds (two or more of its four round it are the face:
+    eyes, a mouth), and the dark outline round that; the rest of it is its hair (and what's in the hair: a ribbon, a
+    clip, the hair's own outline). A head with no hair (a bald one) is all face; one with no skin showing (from behind)
+    all hair."""
+    if not any(v[0] == 'hair' for v in head.values()): return {}, dict(head)
+    face = {k for k, v in head.items() if v[0] == 'skin'}
+    N4 = ((1, 0), (-1, 0), (0, 1), (0, -1))
+    for _ in range(3):
+        add = {k for k, v in head.items() if k not in face and v[0] != 'hair' and sum((k[0] + a, k[1] + b) in face for a, b in N4) >= 2}
+        if not add: break
+        face |= add
+    face |= {k for k, v in head.items() if k not in face and v[0] != 'hair' and dark(v) and any((k[0] + a, k[1] + b) in face for a, b in N4)}
+    return {k: v for k, v in head.items() if k not in face}, {k: v for k, v in head.items() if k in face}
+
+# (Each character's head standing each way, for which hair goes with which face: HEADS[pid] = [(hair, face, neck point)] by way.)
+HEADS = {}
+def parts_of(pid, name, family, frames, shift, heads, head_at, ref):
+    """A character's body, face and hair sheets. frames: its N bodies; heads: its (hair, face) each way."""
+    roles, own = sheet(pid, frames, shift)
+    PARTS[pid] = {'name': name, 'kind': 'body', 'family': family, 'roles': roles, 'own': own, 'headAt': head_at}
+    roles, own = sheet(pid + '_face', [heads[FRAME_DIR[i]][1] for i in range(N)], shift)
+    PARTS[pid + '_face'] = {'name': name, 'kind': 'face', 'family': family, 'roles': roles, 'own': own, 'ref': ref}
+    if any(h for h, f in heads):
+        roles, own = sheet(pid + '_hair', [heads[FRAME_DIR[i]][0] for i in range(N)], shift)
+        PARTS[pid + '_hair'] = {'name': name, 'kind': 'hair', 'family': family, 'roles': roles, 'own': own, 'ref': ref}
+# (Where the narrowest row isn't the neck: these are chibi, their heads wider than their shoulders, so it can fall in
+# the face. Rows lower (+) or higher (-), each by eye, so the body keeps none of the face and the head all of it.)
+NECK = {'krillin': 1, 'tien': 1, 'townswoman': -4, 'piccolo': 4, 'piccolo_gi': 3, 'dende': 3, 'nail': 2, 'moori': 2, 'namekian': 2,
+        'android_16': 5, 'android_17': 5, 'android_18': 3, 'android_19': 5, 'android_20': 1, 'frieza': 1, 'frieza_first': 2,
+        'mecha_frieza': 2, 'king_cold': 4, 'kid_buu': 1, 'fat_buu': 4, 'super_buu': 4, 'supreme_kai': 2, 'kibito': 4,
+        'kibito_kai': 1, 'king_kai': 1, 'peach': 6, 'toad': 3, 'star_toad': 3, 'bowser': 2, 'koops': 1}
+def character(pid, name, family, frames, shift, split=True, neck=0, hair=True):
+    """frames: N dicts {(x, y): (role, colour)} (standing, steps, betweens). split False: whole (no neck to cut at, the
+    Goombas and Piantas). neck: rows lower (+) or higher (-) than the narrowest. hair False: its head's all face."""
     if not split:
-        roles, own = sheet(pid, f9, shift)
-        PARTS[pid] = {'name': name, 'kind': 'whole', 'roles': roles, 'own': own}
+        roles, own = sheet(pid, frames, shift)
+        PARTS[pid] = {'name': name, 'kind': 'whole', 'family': family, 'roles': roles, 'own': own}
         return
-    heads, bodies = [], []
-    for f in f9:
-        n = neck_row(f) if f else 0
-        heads.append({k: v for k, v in f.items() if k[1] < n}); bodies.append({k: v for k, v in f.items() if k[1] >= n})
-    at = [anchor_of(h, shift) for h in heads]
-    roles, own = sheet(pid + '_head', heads, shift)
-    PARTS[pid + '_head'] = {'name': name, 'kind': 'head', 'roles': roles, 'own': own, 'anchor': at}
-    roles, own = sheet(pid, bodies, shift)
-    PARTS[pid] = {'name': name, 'kind': 'body', 'roles': roles, 'own': own, 'neck': at}
+    n = neck_row(frames[0]) + neck + NECK.get(pid, 0)
+    bodies, head_at, ref, heads = [None] * N, [None] * N, [None] * N, []
+    for d in range(3):
+        head = {k: v for k, v in frames[d].items() if k[1] < n}
+        h, f = split_head(head) if hair else ({}, dict(head))
+        # (Hair hanging below the neck, Android 18's or a ponytail, is the hair's, not the body's.)
+        if hair: h.update({k: v for k, v in frames[d].items() if k[1] >= n and v[0] == 'hair'})
+        xs = [x for x, y in (f or head)]
+        np_ = [(min(xs) + max(xs) + 1) // 2 + shift[0] if xs else 16, n + shift[1]]
+        heads.append((h, f))
+        HEADS[pid] = HEADS.get(pid, []) + [(h, f, (np_[0] - shift[0], n))]
+        for i in range(N):
+            if FRAME_DIR[i] != d: continue
+            dx, dy = motion(head, frames[i]) if i != d else (0, 0)
+            bodies[i] = {k: v for k, v in frames[i].items() if k[1] >= n + dy and not (hair and v[0] == 'hair')}
+            head_at[i] = [np_[0] + dx, np_[1] + dy]; ref[i] = list(np_)
+    parts_of(pid, name, family, bodies, shift, heads, head_at, ref)
+def steps_of(stand, walk):
+    """A walk's four frames -> (its two steps, its two betweens): the steps the two most unlike standing."""
+    diff = lambda f: len(set(f.items()) ^ set(stand.items()))
+    order = sorted(range(len(walk)), key=lambda i: -diff(walk[i]))
+    st = sorted(order[:2]); between = sorted(order[2:4]) or st
+    return [walk[i] for i in st], [walk[i] for i in between]
+def frames15(stands, walks):
+    """stands: [down, up, left]; walks: [[...] down, up, left] (two steps, or four) -> the N frames."""
+    out = list(stands) + [None] * 12
+    for d in range(3):
+        w = walks[d]
+        if len(w) >= 4: st, bt = steps_of(stands[d], w)
+        else: st, bt = w[:2], [stands[d], stands[d]]
+        out[3 + 2 * d], out[4 + 2 * d] = st
+        out[9 + 2 * d], out[10 + 2 * d] = bt
+    return out
+# Which hair goes with which face: a hair can go on a face when it covers (nearly) all of where that face's own
+# hair was (else there'd be a gap in the head), each way it faces; a face with no hair of its own (a bald one) takes
+# any, or none. -> each face's `hairs` (its hair ids; "" for none).
+def hair_fits(h, f):
+    worst = 1
+    for (hh, _, nh), (fh, _, nf) in zip(HEADS[h], HEADS[f]):
+        if not fh: continue
+        mine = {(x - nf[0], y - nf[1]) for (x, y) in fh}
+        theirs = {(x - nh[0], y - nh[1]) for (x, y) in hh}
+        worst = min(worst, len(mine & theirs) / len(mine))
+    return worst >= 0.7
+def hair_fitting():
+    for f in HEADS:
+        fp = PARTS.get(f + '_face')
+        if not fp: continue
+        bald = not any(h for h, _, _ in HEADS[f])
+        fp['hairs'] = ([''] if bald else []) + [h + '_hair' for h in HEADS if h + '_hair' in PARTS and PARTS[h + '_hair']['family'] == fp['family']
+                                                  and (h == f or hair_fits(h, f))]
 
 # ---------- Hyrule: The Minish Cap's people ----------
 # FireRed's nine frames from a Minish Cap body's nine (down 0-2, up 3-5, the side 6-8, facing left).
@@ -228,12 +320,31 @@ def tmc_part(pid, name, kind, si, frames, pal, roles, brown, offsets, shift, ext
         if offsets: px = {(x + offsets[i][0], y + offsets[i][1]): v for (x, y), v in px.items()}
         if extra: px = extra(i, px)
         f9.append(tmc_roles(px, pal, roles, brown))
-    if kind == 'whole': return whole(pid, name, f9, shift)
-    roles, own = sheet(pid, f9, shift)
-    PARTS[pid] = {'name': name, 'kind': kind, 'roles': roles, 'own': own}
-    # (A head's neck, for other bodies; The Minish Cap's own bodies all take its heads where they're drawn: the
-    # bodies' necks are the heads', the middle of them, set once all are made: minish_necks.)
-    if kind == 'head': PARTS[pid]['anchor'] = [anchor_of(f, shift) for f in f9]
+    # (The Minish Cap walks in two steps: its betweens are its standing frames.)
+    f15 = f9 + [f9[0], f9[0], f9[1], f9[1], f9[2], f9[2]]
+    if kind == 'whole': return character(pid, name, 'hyrule', f15, shift)
+    if kind == 'body':
+        roles, own = sheet(pid, f15, shift)
+        PARTS[pid] = {'name': name, 'kind': 'body', 'family': 'hyrule', 'roles': roles, 'own': own}
+        return
+    # (A head: its face and its hair, standing each way, and where its neck is: the middle of its bottom row. The Minish
+    # Cap's own bodies take its heads where the game draws them: the bodies' necks are the heads', frame by frame, the
+    # middle of them, set once all are made, at the end of hyrule().)
+    heads, ref = [], [None] * N
+    for d in range(3):
+        h, f = split_head(f9[d])
+        heads.append((h, f))
+        at = anchor_of(f9[d], shift)
+        HEADS[pid] = HEADS.get(pid, []) + [(h, f, (at[0] - shift[0], at[1] - shift[1]))]
+        for i in range(N):
+            if FRAME_DIR[i] == d: ref[i] = at
+    TMC_HEADS[pid] = [anchor_of(f, shift) for f in f15]
+    roles, own = sheet(pid + '_face', [heads[FRAME_DIR[i]][1] for i in range(N)], shift)
+    PARTS[pid + '_face'] = {'name': name, 'kind': 'face', 'family': 'hyrule', 'roles': roles, 'own': own, 'ref': ref}
+    if any(h for h, f in heads):
+        roles, own = sheet(pid + '_hair', [heads[FRAME_DIR[i]][0] for i in range(N)], shift)
+        PARTS[pid + '_hair'] = {'name': name, 'kind': 'hair', 'family': 'hyrule', 'roles': roles, 'own': own, 'ref': ref}
+TMC_HEADS = {}   # (each Minish Cap head's neck, frame by frame, where the game draws it)
 
 def hyrule():
     adults, kids = palette(62), palette(58)
@@ -296,10 +407,10 @@ def hyrule():
              {'hair': {8, 9}, 'outfit': {3, 4, 5, 7}, 'skin': {10, 11, 12, 13}}, False, None, SHIFT)
     # (The Minish Cap's bodies' necks: where its heads' are, frame by frame, the middle one of them.)
     for prefix, heads in (('body_', 'head_'), ('kidbody_', 'kidhead_')):
-        hs = [p for k, p in PARTS.items() if k.startswith(heads) or (heads == 'head_' and k.startswith('zora_'))]
-        mid = [[sorted(h['anchor'][f][i] for h in hs)[len(hs) // 2] for i in (0, 1)] for f in range(9)]
+        hs = [a for k, a in TMC_HEADS.items() if k.startswith(heads) or (heads == 'head_' and k.startswith('zora_'))]
+        mid = [[sorted(h[f][i] for h in hs)[len(hs) // 2] for i in (0, 1)] for f in range(N)]
         for k, p in PARTS.items():
-            if k.startswith(prefix): p['neck'] = mid
+            if k.startswith(prefix) and p['kind'] == 'body': p['headAt'] = mid
 
 # ---------- The Dragon World: the Dragon Ball realm's people ----------
 # Each sheet: a row an animation, in fours (down, up, left, right); the first four stand, the next four walk.
@@ -351,10 +462,11 @@ DB_PARTS = [
                                                 'trim': ['ad7b39', '845218'], 'skin': SKIN}),
     ('android_19', 'Android 19', 'LG2_009', 1, {'outfit': ['e7ef7b', 'e7bd42', 'c69452', '946329', '845218'], 'trim': ['ad0810', '7b0000'],
                                                 'skin': ['ffffff', 'c6c6c6', '949494']}),
-    ('android_20', 'Android 20', 'LG2_090', 1, {'hair': ['ffffff', 'dedede', 'adadad'], 'outfit': ['d61029', 'ad0810', '7b0000'],
-                                                'trim': ['ffd642', 'ff9418', 'd66300']}),
+    # (Android 20 is Dr. Gero, from Legacy of Goku's sheets: white hair and moustache, his lab coat.)
+    ('android_20', 'Android 20', 'LG1_21', 1, {'hair': ['ffffff', 'cecece', '949494'], 'outfit': ['cecece', '949494', '636363'],
+                                               'trim': ['8c1000', '00085a'], 'skin': ['ffce94', 'e7a542', 'b57b31', '8c5218']}),
     ('cell', 'Cell', 'LG2_027', 2, {'outfit': ['e7d6ff', 'ad63ad', '7b217b', '5a007b'], 'skin': ['ced67b', '7bbd42', '7ba542', '6b6b00']}),
-    # (Frieza's race: Frieza, his first form and as Mecha Frieza, and King Cold; their plates are the trim.)
+    # (The Frieza Clan: Frieza, his first form and as Mecha Frieza, and King Cold; their plates are the trim.)
     ('frieza', 'Frieza', 'LG2_045', 1, {'trim': ['de84ff', 'ad21ff', '7b21ad', '5a007b'], 'skin': ['ffffff', 'adbde7', '7ba5ce']}),
     ('frieza_first', 'Frieza (First Form)', 'LG1_23', 1, {'outfit': ['de7b94', 'bd5a73', '8c394a', '732939'], 'trim': ['de8cf7', '732994', '421063'],
                                                            'skin': ['ffffff', 'dec6de', 'c6c6c6']}),
@@ -389,14 +501,11 @@ def db_roles(px, roles):
 def hexc(c): return '#%02x%02x%02x' % c[:3]
 def dragon_world():
     index = json.load(open(os.path.join(DB, 'index.json')))
-    for pid, name, src, scale, roles in DB_PARTS:
+    for pid, name, src, scale, roles, *more in DB_PARTS:
+        opts = more[0] if more else {}
         e = index[src]; (w, h), (ax, ay) = e['cell'], e['anchor']
         img = Image.open(os.path.join(DB, src + '.png')).convert('RGBA')
-        walk = 4 if len(e['frames']) >= 8 and e['frames'][4] >= 3 else 0
-        cells = [(0, 0), (1, 0), (2, 0), (walk, 1), (walk, 3), (walk + 1, 1), (walk + 1, 3), (walk + 2, 1), (walk + 2, 3)]
-        cells = [(r, c if r >= 4 else 0) for r, c in cells]
-        f9 = []
-        for r, c in cells:
+        def cell(r, c):
             f = img.crop((c * w, r * h, (c + 1) * w, (r + 1) * h)); p = f.load(); px = {}
             for y in range(h):
                 for x in range(w):
@@ -407,11 +516,16 @@ def dragon_world():
                 for (x, y), col in px.items():
                     half.setdefault((x // 2, y // 2), []).append(col)
                 px = {k: max(set(v), key=v.count) for k, v in half.items() if len(v) >= 2}
-            f9.append(db_roles(px, roles))
+            return db_roles(px, roles)
+        # (Standing: rows 0-2's first frames; walking: rows 4-6, all four of each, when it has them.)
+        stands = [cell(r, 0) for r in range(3)]
+        walk = len(e['frames']) >= 8 and e['frames'][4] >= 3
+        walks = [[cell(4 + d, c) for c in range(min(4, e['frames'][4 + d]))] if walk else [stands[d], stands[d]] for d in range(3)]
+        f15 = frames15(stands, walks)
         # (Feet at the cell's bottom and the figure in its middle, by where it stands facing down.)
-        xs = [x for x, y in f9[0]]; ys = [y for x, y in f9[0]]
+        xs = [x for x, y in f15[0]]; ys = [y for x, y in f15[0]]
         shift = (16 - (min(xs) + max(xs) + 1) // 2, 31 - max(ys))
-        whole(pid, name, f9, shift)
+        character(pid, name, 'lg' if src.startswith('LG') else 'bf', f15, shift, neck=opts.get('neck', 0), hair=opts.get('hair', True))
 
 # ---------- The Mushroom Kingdom: Mario & Luigi: Superstar Saga's people ----------
 # How Superstar Saga keeps its sprites (the USA cartridge, A88E; after Yoshi Magic's sprite viewer and the game's own
@@ -569,7 +683,9 @@ def mushroom_kingdom():
                         if v: out[(X, Y - 1)] = v
                 px = out
             f9.append({k: (next((r for r, s_ in roles.items() if v % 16 in s_), None), pal[v]) for k, v in px.items()})
-        whole(pid, name, f9, (16, 32))
+        # (Superstar Saga's walks are a step, standing, the other step: its betweens are its standing frames. Its heads
+        # are all face: a cap or a crown, not hair.)
+        character(pid, name, 'ss', frames15(f9[:3], [f9[3:5], f9[5:7], f9[7:9]]), (16, 32), hair=False)
 
 # ---------- More of the Mushroom Kingdom: Paper Mario: The Thousand-Year Door's people ----------
 # The Piantas, the Goombas and Koops, from the disc's character models (tools/lib/ttyd.py), drawn flat at FireRed's
@@ -677,7 +793,8 @@ def paper_kingdom():
     frames = ttyd_draw(sys.argv[sys.argv.index('--ttyd') + 1]) if '--ttyd' in sys.argv else ttyd_committed()
     # (The Piantas and the Goombas have no necks: whole. Koops is cut.)
     for pid, name, *_ in TTYD_PARTS:
-        whole(pid, name, frames[pid], (16, 32), split=pid in ('koops',))
+        f9 = frames[pid]
+        character(pid, name, 'ttyd', frames15(f9[:3], [f9[3:5], f9[5:7], f9[7:9]]), (16, 32), split=pid in ('koops',), hair=False)
 
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
@@ -687,6 +804,10 @@ if __name__ == '__main__':
     mushroom_kingdom()
     if isinstance(SS, SuperstarSaga): SS.save()
     paper_kingdom()
+    hair_fitting()
+    # (Parts no longer made, from before: gone.)
+    for fn in os.listdir(OUT):
+        if fn.endswith('.png') and fn[:-4] not in PARTS: os.remove(os.path.join(OUT, fn))
     f = os.path.join(ROOT, 'data/type-chart.js')
     src = open(f).read()
     START, END = "// The character creator's parts (tools/build-player-looks.py):", "// (End of the character creator's parts.)"

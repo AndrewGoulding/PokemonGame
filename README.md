@@ -3637,25 +3637,30 @@ The Like a Dragon realm is **Kamurocho** in 1988, as in Yakuza 0, and it looks a
 its beat-'em-up's are, along the street and up and down the pavement, its own pictures. Your Pokémon stay in their
 balls here (bring them along at the Time Machine to fight), and there are no wild Pokémon.
 
-- **The streets** (`ui/street.js`, `data/kamurocho-street.js`): four scenes, three of them Streets of Kamurocho's stage
+- **The streets** (`ui/street.js`, `data/kamurocho-street.js`): five scenes, three of them Streets of Kamurocho's stage
   backdrops (480 pixels high, the floor at the bottom), on a screen of their own, 336x224 (Streets of Rage 2's height,
   3:2 as the game's), the camera following you along and up and down. **The street**: the pavement by the Stardust
   and Poppo, down the corner past the Gyudon place to the batting cages and Bacchus (its two backdrops side by side,
-  3103 pixels long). **The Empty Lot**: the back alley off its end, where the Time Machine stands. **Bacchus**: the
-  bar, through its door. **Poppo**: the convenience store, through its door (every convenience store on the street
+  3103 pixels long). **The Empty Lot**: the back alley off its end. **Bacchus**: the bar, through its door (the first
+  half of its stage, 816 pixels: the rest is more of the same corridor). **Under the Street**: down the manhole on
+  the pavement outside Serena, a storm drain where the Time Machine stands. **Poppo**: the convenience store, through its door (every convenience store on the street
   can be gone into; Poppo's the one). Streets of Kamurocho has no insides of its shops, so this one is this game's own
-  (`tools/build-kamurocho-poppo.py`): Poppo's sign off its shopfront, its shelves, drinks fridge and counter drawn in
-  the street's colours, and its clerk the Salaryman in Poppo's blue, behind the counter. You're drawn twice your size, to stand as tall as its people. Walk off the street's end into
+  (`tools/build-kamurocho-insides.py`): Poppo's sign off its shopfront, its shelves, drinks fridge and counter drawn in
+  the street's colours, and its clerk the Salaryman in Poppo's blue, behind the counter. The storm drain under the
+  street is drawn there too (a vault of wet concrete, pipes, a culvert, the ladder up, and the Time Machine three times
+  over), and the manhole cover on the pavement. You're drawn twice your size, to stand as tall as its people. Walk off the street's end into
   the alley (and back); stand at Bacchus's or Poppo's door and press A to go in (walk out the left to leave); in Poppo, stand at the counter
-  and press A to talk to the clerk and buy; the Time Machine's
-  spot, A, is its menu. The floor you can walk on is each scene's polygon (along the slope, you go up or down it as
+  and press A to talk to the clerk and buy; on the manhole by Serena, A climbs down (the ladder, A, back up); the Time
+  Machine's spot, A, is its menu. The floor you can walk on is each scene's polygon (along the slope, you go up or down it as
   you walk). You're placed by `player.location.street` ({ scene, x, y, facing }); the overworld rests while you're
   there (ui/game.js's explore loop asks `Street.explore` instead).
-- **Getting there**: the Realm Hub's crimson portal; you come out in the Empty Lot, before the Time Machine, which
+- **Getting there**: the Realm Hub's crimson portal; you come out under the street, beside the Time Machine, which
   takes you back to the Realm Hub.
-- **The people**: Streets of Kamurocho's own, standing as they do before a fight, turning to face you when you talk:
+- **The people**: Streets of Kamurocho's own, standing about at ease or walking (frames of its own picked out of its
+  atlas: `kiryu_idle`, `majima_idle` and the rest, not their fighting stances), turning to face you when you talk:
   **Kazuma Kiryu** on the street below the corner, **Goro Majima** in Bacchus, a host touting outside the Stardust,
-  another along from him, a thug on the corner, a brawler by the batting cages, a salaryman and a drunk by Bacchus,
+  another along from him, a thug on the corner, a loiterer in a hoodie by the batting cages, a salaryman and a drunk
+  by Bacchus,
   and a Yakuza lookout in the alley. Its foes fight in the same: the street punk, the drunk salaryman, the thug, the
   knife punk (a spear in Streets of Kamurocho), the host, the biker, the Yakuza grunt, Mr. Shakedown and Majima
   (`REALM_FOES[..].street`), facing you over the street behind you.
@@ -3672,9 +3677,12 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   Infinity also gets someone who's down back up), Tauriner, Tauriner+ and Tauriner Maxx (Heat), and food: a Rice
   Ball, a Sandwich, a Hot Dog, Fried Chicken, a Bento Box (health) and Pudding (a little of both).
 - **Fighting** (the other realms' battles, below): you start alone, at level 1. Ask Kiryu and he joins you (at
-  level 3, or yours if that's higher). Beat Majima and he joins too (at level 8 or more). On the streets (not in the
-  Empty Lot) you're jumped now and then: street punks, drunk salarymen, thugs, knife punks, hosts, bikers, Yakuza
-  grunts, and now and then Mr. Shakedown, who hits hard and pays ¥1,000. Fall in a fight and you wake by the Time
+  level 3, or yours if that's higher). Beat Majima and he joins too (at level 8 or more). On the street (not in the
+  alley, the shops or under it) you're jumped now and then, by groups that come as your party's best grows
+  (`REALM_ENCOUNTERS`: each its weight, foes and the level it comes from): street punks and drunk salarymen from the
+  start; a thug or a host from level 3; two hosts, or a knife punk and a punk, from 5; a thug and a knife punk, or a
+  biker and a punk, from 7; a Yakuza grunt from 8; three together from 11; and Mr. Shakedown from 14, who hits hard
+  and pays ¥10,000. Each is winnable alone at the level it comes (tested in simulation). Fall in a fight and you wake by the Time
   Machine with half your money gone. The Time Machine also lets you rest (the party's HP and MP back) and look over
   your party.
 
@@ -3850,23 +3858,32 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   the page and its description in the text box. Your race is `player.race`; each is a fighter in `REALM_FIGHTERS`
   (by its id), and it's who you fight as in the realms' battles. Hyrule's four are for the Zelda realm to come, the
   Dragon World's seven for the Dragon Ball realm; until then they fight in Kamurocho.
-- **You're your own character**: every race's look is a **head** (hair and face) on a **body** (clothes), any of
-  its heads on any of its bodies, and the established characters below are its **presets**: the Preset row puts
-  you as one (Goku is Goku's head on Goku's body, in his own colours), and every row after it is yours to change, Goku's
-  head on Vegeta's body or in your colours ("Custom"). The characters are cut in two at the neck, frame by frame (the
-  narrowest row from 30% to 60% of the way down the figure: `tools/build-player-looks.py`'s `whole`), each head
-  saying where its neck is (`anchor`) and each body where a head goes (`neck`); on another body a head moves by the
-  difference, frame by frame (`composeLook`), so a character's own head on its own body is drawn as it was. The
-  Goombas and the Piantas have no necks: theirs are whole, their presets only. A look saved as a whole character
-  (before) loads as its own head on its body.
+- **You're your own character**: every race's look is a **body** (clothes), a **face** and a **hairstyle**, and the
+  established characters below are its **presets**: the Preset row puts you as one (Goku is Goku's face and hair on
+  Goku's body, in his own colours), and every row after it is yours to change: **Face** (any of the race's
+  characters'), **Hairstyle** (any that fits that face: the race's, and Humans, Saiyans and Androids share theirs, as
+  Hylians and Gerudo do; "None" for a bald face) and **Body** ("Custom" once it's no preset). Each character is cut at
+  its neck (the narrowest row from 30% to 60% of the way down it standing facing you, the same height every way it
+  faces, and by eye where that's in the face: `tools/build-player-looks.py`'s `NECK`), its head then split into its
+  face (its skin, what the skin holds, its eyes and mouth, and the outline round that) and its hair (the rest: ribbons
+  and clips with it). A face and a hairstyle are the head standing, each way it faces; on any body they move with that
+  body's own head, frame by frame, as far as it moved in its own frames (the body's `headAt`, theirs `ref`:
+  `composeLook`), so a head walks as the body's own did, and the body's own head is cut off, never left peeping out.
+  A hairstyle fits a face when it covers (nearly) all of where the face's own hair was, every way it faces (the face's
+  `hairs`). Faces go only on bodies from the same game's sprites. The Goombas and the Piantas have no necks: theirs
+  are whole, their presets only; Superstar Saga's and Koops's heads are all face (caps and crowns, not hair). A look
+  saved with a head (before) loads as that head's face and hair.
+- **Walking**: four frames a stride where the sprites have them (the Dragon World's: a step, the frame between, the
+  other step, the frame between), FireRed's nine frames then the six between (`lookFrame`), and so too running and on
+  Kamurocho's streets.
 - **Body and head**: Hyrule's people are a head on a body, any head on any body (The Minish Cap draws its townsfolk
   and children that way): 16 grown-ups' heads (hair and faces) and 8 bodies (costumes), the children's 8 and 5 for
   the Kokiri, and Link (cut, as above) for the Hylians. The Zora have the bald head with a tail-fin drawn on (The Minish Cap has
   no Zora), short or long. The Dragon World's are whole characters: Goku, Vegeta, Gohan, Kid Gohan and Trunks for the
   Saiyans; Krillin, Yamcha, Tien, Bulma, Chi-Chi, a townsman and a townswoman for the Humans; Fat Buu, Kid Buu and
   Super Buu for the Majin; Piccolo (caped and in his gi), Dende, Nail, Elder Moori and a villager for the Namekians;
-  Androids 16, 17, 18, 19 and 20 and Cell for the Androids (Cell and King Cold halved, as the Buus are); Frieza, his
-  first form, Mecha Frieza and King Cold for Frieza's race; the Supreme Kai, Kibito, Kibito Kai and King Kai for
+  Androids 16, 17, 18, 19 and 20 (Dr. Gero, from Legacy of Goku's sheets) and Cell for the Androids (Cell and King Cold halved, as the Buus are); Frieza, his
+  first form, Mecha Frieza and King Cold for the Frieza Clan; the Supreme Kai, Kibito, Kibito Kai and King Kai for
   the Kais. The Mushroom Kingdom's are whole characters from Mario & Luigi: Superstar Saga: Mario,
   Luigi and Peach for its Humans; Toad and a Toad Brigade Toad for the Mushroom People (their caps'
   spots are their "hair"; Superstar Saga has no Toadsworth); and Bowser for the Koopas (shrunk to the others' size, Bowser more). And from Paper Mario:
@@ -3877,14 +3894,14 @@ down go through what you can choose, left and right change it, A (and YES) is yo
 - **Colours**: your hair, your tunic or gi, its trim and your skin, each "Original" (the part's own) or one of
   `LOOK_COLOURS` (15 hair colours, golden for a Super Saiyan; 17 for clothes; each race's own skins: the Zora's
   river blue, silver, sea green and coral, the Majin's pinks, lilac, grey and blue, the Koopas' and Piantas' yellow
-  and orange, the Namekians' green and olive, Frieza's race's frost white, the Kais' purple). What each colour's called is the race's (`labels`: a Koopa's shell and belly) or a body's own
+  and orange, the Namekians' green and olive, the Frieza Clan's frost white, the Kais' purple). What each colour's called is the race's (`labels`: a Koopa's shell and belly) or a body's own
   (`bodyLabels`: Koops's hood, Goombella's helmet).
 
-You turn and walk about in the picture as you choose. Your look is `player.appearance` ({ body, head, hair, outfit,
-trim, skin }), and it's you everywhere you walk, in every realm (riding the Bicycle, surfing and fishing you're
+You turn and walk about in the picture as you choose. Your look is `player.appearance` ({ body, face, hairstyle,
+hair, outfit, trim, skin }), and it's you everywhere you walk, in every realm (riding the Bicycle, surfing and fishing you're
 still the trainer, and Wes in Orre is Wes). `ui/overworld.js`'s `composeLook` puts it together when the game starts
-or loads. A game saved before races or looks asks on CONTINUE, and the Time Machines (Pallet Town's, and the one in
-Kamurocho's Empty Lot) have a mirror to change it: a new race is who you fight as from then on, at your level.
+or loads. A game saved before races or looks asks on CONTINUE, and the Time Machines (Pallet Town's, and the one
+under the manhole by Serena in Kamurocho) have a mirror to change it: a new race is who you fight as from then on, at your level.
 
 **The parts** (`assets/world/sprites/looks/`, built by `tools/build-player-looks.py` with no cartridge):
 
@@ -3913,7 +3930,8 @@ texture and colour: a Pianta's suit, skirt, sprout and skin), and its colours ma
 again.
 Only The Minish Cap's people's sprites are taken; the Dragon World's come from the Dragon Ball realm's people
 sheets already here (Legacy of Goku II's, and Buu's Fury's for the Buus, Fat Buu and Super Buu halved). Each part is
-FireRed's nine frames (standing down, up and left, then two steps each way), 32x32, in 17 rows: the part's own
+FireRed's nine frames (standing down, up and left, then two steps each way) and six more (the frames between the
+steps, each way: the standing frames where a sprite walks in two steps), 32x32, in 17 rows: the part's own
 colours where nothing's recoloured, then four masks each (darkest shade to lightest) for its hair, clothes, trim and
 skin. A colour is four shades, one for each mask; `composeLook` only composites (never reads pixels back), so it
 works opened from disk. `data/type-chart.js` gets `PLAYER_LOOK_PARTS` (each part's name, kind, roles and its own
@@ -3932,21 +3950,21 @@ colours) between its markers; each race's choices are `REALM_RACES[..].looks`.
 | Race (element) | Strengths | Skills (level) |
 |---|---|---|
 | Hylian (Light) | balanced, some magic | Spin Attack (1, all foes), Hylian Shield (3, guard), Fairy's Blessing (5, heal), Din's Fire (8, Fire, all), Light Arrow (11), Great Spin Attack (15, all), Master Sword Beam (20) |
-| Kokiri (Grass) | quickest, frail, a healer | Fairy Slingshot (1), Fairy Companion (2, heal), Deku Nut (4, stun), Deku Seed Volley (7, all), Saria's Song (10, sleep), Kokiri Jump Attack (13), Great Deku Tree's Blessing (17, big heal) |
+| Kokiri (Grass) | quickest, frail, a healer | Fairy Slingshot (1), Fairy Companion (2, heal), Deku Nut (4, paralysis), Deku Seed Volley (7, all), Saria's Song (10, sleep), Kokiri Jump Attack (13), Great Deku Tree's Blessing (17, big heal) |
 | Zora (Water) | most MP and wisdom | Boomerang Fins (1), Healing Waters (2, heal), Zora Scale (4, guard), Electric Barrier (7, Electric, all), Nayru's Wave (10), Mipha's Grace (13, big heal), Tidal Fins (18, all) |
 | Gerudo (Ground) | strong and sturdy | Scimitar Slash (1, Steel), Desert Stance (3, guard), Twin Scimitars (5, Steel, all), Sandstorm (8, all), Fire Arrow (11), Urbosa's Fury (14, Electric, all), Gerudo Fang (19) |
-| Human (Neutral) | quick, every technique | Wolf Fang Fist (1), Solar Flare (3, stun), Afterimage (5, guard), Kamehameha (7), Destructo Disc (10, Steel), Tri-Beam (14, all), Spirit Ball (19, Light) |
+| Human (Neutral) | quick, every technique | Wolf Fang Fist (1), Solar Flare (3, paralysis), Afterimage (5, guard), Kamehameha (7), Destructo Disc (10, Steel), Tri-Beam (14, all), Spirit Ball (19, Light) |
 | Majin (Psychic) | most HP, slow, heals itself | Rubber Punch (1), Regeneration (2, self heal), Belly Bounce (4, guard), Candy Beam (6), Angry Explosion (10, all), Absorption (14, Dark, big self heal), Vanishing Ball (19, Dark, all) |
 | Saiyan (Light, for the Super Saiyan's golden aura) | hardest hitter, little magic | Ki Blast (1), Meteor Smash (3), Saiyan Pride (5, guard), Galick Gun (8, Dark), Big Bang Attack (11, Fire, all), Final Flash (15), Super Saiyan Rage (20) |
-| Namekian (Grass) | sturdy, heals its friends | Demon Hand (1), Namekian Healing (2, heal), Weighted Cape (4, guard), Evil Containment Wave (6, Psychic, stun), Masenko (9), Hellzone Grenade (13, all), Special Beam Cannon (18) |
+| Namekian (Grass) | sturdy, heals its friends | Demon Hand (1), Namekian Healing (2, heal), Weighted Cape (4, guard), Evil Containment Wave (6, Psychic, paralysis), Masenko (9), Hellzone Grenade (13, all), Special Beam Cannon (18) |
 | Android (Steel) | strong and tough, endless MP, little magic | Rocket Punch (1), Android Barrier (3, guard), Photon Flash (5, Electric), Energy Absorption (7, self heal), Power Blitz (10, Light), Accel Dance (14, all), Hell's Flash (19) |
-| Frieza Race (Ice) | quick and deadly | Death Beam (1, Dark), Tail Whip (3), Transformation (5, guard), Psychokinesis (7, Psychic, stun), Death Saucer (10, Steel), Death Ball (14, all), Supernova (19, Fire) |
-| Kai (Psychic) | frail, the strongest magic, a healer | Telekinesis (1), Restoration (2, Light, heal), Kai Kai (4, guard), Divine Paralysis (6, stun), Kaio-ken Attack (9, Fire), Spirit Bomb (13, Light, all), Z Sword Slash (18, Steel) |
+| Frieza Clan (Ice) | quick and deadly | Death Beam (1, Dark), Tail Whip (3), Transformation (5, guard), Psychokinesis (7, Psychic, paralysis), Death Saucer (10, Steel), Death Ball (14, all), Supernova (19, Fire) |
+| Kai (Psychic) | frail, the strongest magic, a healer | Telekinesis (1), Restoration (2, Light, heal), Kai Kai (4, guard), Divine Paralysis (6, paralysis), Kaio-ken Attack (9, Fire), Spirit Bomb (13, Light, all), Z Sword Slash (18, Steel) |
 | Human, of the Mushroom Kingdom (Fire) | all-round | Jump (1), Mushroom (2, heal), Superguard (4, guard), Fireball (7), Super Jump (10), Fire Flower (14, all), Super Star (19, Light, all) |
 | Mushroom Person (Grass) | quick healer | Turnip Toss (1), Super Mushroom (2, heal), Sleepy Spores (4, sleep), Toad Dash (7), Life Mushroom (10, big heal), Mega Mushroom (14, all), Toad Brigade (18, all) |
 | Pianta (Water) | most HP of the five, slow | Chuckster Toss (1), Sturdy Belly (3, guard), Squirt Nozzle (5), Durian Drop (8, Grass), Shine Sprite (11, Light, heal), Hover Nozzle Splash (14, all), Turbo Nozzle (19) |
 | Goomba (Ground) | nimble | Headbonk (1), Goomba Huddle (3, guard), Multibonk (5), Goomba Tower (8, all), Paragoomba Dive (11, Air), Big Goomba Stomp (14), Goomboss Charge (19, all) |
-| Koopa (Earth) | toughest defence | Shell Toss (1), Shell Shield (3, guard), Shell Spin (5, all), Dizzy Shell (7, stun), Power Shell (10, all), Fire Shell (14, Fire), Shell Slam (19) |
+| Koopa (Earth) | toughest defence | Shell Toss (1), Shell Shield (3, guard), Shell Spin (5, all), Dizzy Shell (7, paralysis), Power Shell (10, all), Fire Shell (14, Fire), Shell Slam (19) |
 
 The Mushroom Kingdom's five are for its realm to come; their looks are above. Some skill names are this game's own
 (the Dragon World's Weighted Cape, Android Barrier, Divine Paralysis, Kaio-ken Attack and Z Sword Slash, and):
