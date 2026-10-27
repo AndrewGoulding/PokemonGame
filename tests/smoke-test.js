@@ -7394,6 +7394,13 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     // (the karaoke box: its spot, and each song's words within its bars, each line done before the next, a
     // syllable a note)
     assert(K.scenes.theater.spots.some((sp) => sp.script === "Kamurocho_Karaoke"), "the karaoke box");
+    // (every realm… and kamurocho… function ui/game.js calls is one it defines: a missing one hangs the game where it's
+    // called, as realmPoints once did after a level-up)
+    {
+      const gj = fs.readFileSync(require("path").join(__dirname, "..", "ui/game.js"), "utf8");
+      for (const [, name] of gj.matchAll(/(?<![\w.])((?:realm|kamurocho)[A-Z]\w*)\(/g))
+        assert(new RegExp("(function\\s+" + name + "\\b|(const|let)\\s+" + name + "\\s*=)").test(gj), "ui/game.js defines " + name);
+    }
     for (const song of window.KARAOKE_SONGS) {
       let end = 0;
       for (const [start, syl] of song.lines) {

@@ -10184,6 +10184,20 @@
     clearInterval(tick);
     ov.classList.add("hidden");
   }
+  // Putting a member's stat points in (Ultimax.spend): each stat as it is and what a point adds, until they're all in
+  // or "Later" keeps the rest for the party screen.
+  async function realmPoints(rec) {
+    const NAMES = { hp: "HP", mp: "MP", str: "Strength", def: "Defence", int: "Intelligence", wis: "Wisdom", spd: "Speed" };
+    const ADDS = { hp: 2 * Ultimax.HP_SCALE, mp: 2 };
+    while (Ultimax.pointsOf(rec).points > 0) {
+      const s = Ultimax.statsOf(rec);
+      const v = await ask(realmName(rec) + " has " + rec.points + " stat point" + (rec.points > 1 ? "s" : "") + ".\nWhich stat goes up?",
+        Ultimax.POINT_STATS.map((k) => ({ label: NAMES[k] + "  " + s[k] + " +" + (ADDS[k] || 1), value: k })).concat([back("Later")]));
+      if (v === "back") return;
+      Ultimax.spend(rec, v);
+      sfx("se_select");
+    }
+  }
   // In a battle: the party screen, everyone as they stand; a summary, or one of the reserve to come in for the one
   // choosing (b.allies[i]): -> its index in b.reserve, or null.
   async function realmBattleParty(b, i, taken) {
