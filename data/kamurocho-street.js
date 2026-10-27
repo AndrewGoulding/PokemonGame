@@ -1,7 +1,8 @@
 // Kamurocho, side on (ui/street.js): Streets of Kamurocho's own streets (tools/build-kamurocho-sok.py), walked as its
 // beat-'em-up's are, along the street and up and down its pavement. Each scene: its picture (480 high, the floor at
 // the bottom), the floor you can walk on (a polygon, in the picture's pixels), its ways out (`exits`: walk off an
-// edge, or into a door's spot facing up, to the other scene's x and y), its spots (stand in one and press A: its
+// edge, a door's spot and A, or a spot with `walk`: walking that way out of it, as through Poppo's door; to the
+// other scene's x and y), its spots (stand in one and press A: its
 // script), and its people (each a SoK sprite from assets/kamurocho/people, standing about or walking rather than
 // squaring up as in a fight (the "_idle" frames), their scripts and words as ui/game.js
 // knows them: Kamurocho_Kiryu and the rest; `face` the way they look). Fights start on the street as you walk
@@ -24,7 +25,7 @@ window.KAMUROCHO_STREET = {
       floor: [[0, 150], [800, 150], [1300, 392], [2900, 394], [3075, 462], [3075, 470], [1000, 470], [460, 220], [0, 220]],
       exits: [{ edge: "right", to: "alley", x: 30, y: 446, facing: "right" },
         { spot: [2960, 3040, 425, 452], to: "bacchus", x: 40, y: 448, facing: "right", text: "Bacchus" },
-        { spot: [670, 770, 150, 168], to: "poppo", x: 130, y: 440, facing: "right", text: "Poppo" },
+        { spot: [670, 770, 150, 168], to: "poppo", x: 59, y: 420, facing: "down", text: "Poppo" },
         { spot: [520, 576, 184, 206], to: "sewer", x: 90, y: 440, facing: "right", text: "Manhole" }],
       // (the manhole cover on the pavement outside Serena: the way down to the Time Machine)
       things: [{ image: "assets/kamurocho/manhole.png", x: 548, y: 204, scale: 1, floor: true }],
@@ -58,8 +59,9 @@ window.KAMUROCHO_STREET = {
     // counter: stand before it and press A to buy.)
     poppo: {
       title: "Poppo", image: "assets/kamurocho/poppo.png", width: 800,
-      floor: [[0, 414], [800, 414], [800, 470], [0, 470]],
-      exits: [{ edge: "left", to: "street", x: 720, y: 172, facing: "down" }],
+      floor: [[16, 414], [800, 414], [800, 470], [16, 470]],
+      // (out through the glass door on the left: walk up into it, or press A before it)
+      exits: [{ spot: [20, 98, 414, 424], walk: "up", to: "street", x: 720, y: 172, facing: "down", text: "Door" }],
       spots: [{ x0: 548, x1: 790, y0: 414, y1: 470, script: "Kamurocho_Clerk", text: "Clerk" }]
     },
     // (Under the manhole by Serena: the storm drain where the Time Machine stands, tools/build-kamurocho-insides.py.

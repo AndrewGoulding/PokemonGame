@@ -4060,8 +4060,9 @@
 // user's own elements. Defending halves what you take. Running away works half the time, more if you're quicker;
 // never from a boss.
 //
-// HP: everyone's is HP_SCALE times what their stats say (a fighter's, a foe's and a Pokémon's alike), and every heal
-// with it, so fights last a while. A Pokémon's HP goes back to it divided again.
+// HP: everyone's is HP_SCALE times what their stats say (a fighter's, a boss's and a Pokémon's alike), and every heal
+// with it, so fights last a while; the street's random foes keep their own HP (FOE_HP_SCALE), so they go down quickly.
+// A Pokémon's HP goes back to it divided again.
 //
 // The Pokémon realm's ways come with its Pokémon, and work for everyone:
 //   stat stages   -6 to +6 on Strength, Defense, Intelligence, Wisdom and Speed (2/2 → 8/2, as Attack and the rest),
@@ -4081,7 +4082,7 @@
   "use strict";
   const D = () => ({ skills: window.REALM_SKILLS, fighters: window.REALM_FIGHTERS, foes: window.REALM_FOES, items: window.REALM_ITEMS, chart: window.REALM_TYPE_CHART });
   function rng(seed) { let s = (seed >>> 0) || 1; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
-  const HP_SCALE = 3;
+  const HP_SCALE = 3, FOE_HP_SCALE = 1;
 
   // EXP to reach `lv` (from level 1), and a fighter's stats and skills at a level.
   const expFor = (lv) => Math.round(10 * Math.pow(lv - 1, 2.5));
@@ -4254,8 +4255,8 @@
   // A skill by its id: the fighter's own (a Pokémon's moves) or REALM_SKILLS'.
   const skillOf = (who, id) => (who.own && who.own[id]) || D().skills[id];
   function foe(id, letter) {
-    const f = D().foes[id];
-    return fighter({ side: "foe", id, name: f.name + (letter ? " " + letter : ""), elements: f.elements, hp: f.hp * HP_SCALE, mp: f.mp, maxHp: f.hp * HP_SCALE, maxMp: f.mp,
+    const f = D().foes[id], hp = f.hp * (f.boss ? HP_SCALE : FOE_HP_SCALE);
+    return fighter({ side: "foe", id, name: f.name + (letter ? " " + letter : ""), elements: f.elements, hp, mp: f.mp, maxHp: hp, maxMp: f.mp,
       str: f.str, def: f.def, int: f.int || 0, wis: f.wis || 0, spd: f.spd, skills: f.skills || [], boss: !!f.boss });
   }
   function create(members, foeIds, opts) {
@@ -4710,5 +4711,5 @@
   // An item's text, its HP as HP_SCALE makes it ("{hp}" in REALM_ITEMS' text).
   const itemText = (id) => String(D().items[id].text).replace(/\{hp\}/g, () => String(D().items[id].heal * HP_SCALE));
   window.Ultimax = { create, turn, spoils, gainExp, keep, member, recruit, rescale, stats, skillsAt, expFor, effect, foeChoice, up,
-    pokemon, pokemonSkill, pokemonElements, pokemonExp, skillOf, unsupported, itemText, groupsFor, TYPE_ELEMENT, HP_SCALE, STATUS_TAG };
+    pokemon, pokemonSkill, pokemonElements, pokemonExp, skillOf, unsupported, itemText, groupsFor, TYPE_ELEMENT, HP_SCALE, FOE_HP_SCALE, STATUS_TAG };
 })();

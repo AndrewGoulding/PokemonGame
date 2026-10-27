@@ -3644,10 +3644,10 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   the pavement outside Serena, a storm drain where the Time Machine stands. **Poppo**: the convenience store, through its door (every convenience store on the street
   can be gone into; Poppo's the one). Streets of Kamurocho has no insides of its shops, so this one is this game's own
   (`tools/build-kamurocho-insides.py`): Poppo's sign off its shopfront, its shelves, drinks fridge and counter drawn in
-  the street's colours, and its clerk the Salaryman in Poppo's blue, behind the counter. The storm drain under the
+  the street's colours, and its clerk, a man standing at ease in Poppo's blue uniform, behind the counter. The storm drain under the
   street is drawn there too (a vault of wet concrete, pipes, a culvert, the ladder up, and the Time Machine three times
   over), and the manhole cover on the pavement. You're drawn twice your size, to stand as tall as its people. Walk off the street's end into
-  the alley (and back); stand at Bacchus's or Poppo's door and press A to go in (walk out the left to leave); in Poppo, stand at the counter
+  the alley (and back); stand at Bacchus's or Poppo's door and press A to go in (out of Bacchus, walk off its left; out of Poppo, walk up into its glass door); in Poppo, stand at the counter
   and press A to talk to the clerk and buy; on the manhole by Serena, A climbs down (the ladder, A, back up); the Time
   Machine's spot, A, is its menu. The floor you can walk on is each scene's polygon (along the slope, you go up or down it as
   you walk). You're placed by `player.location.street` ({ scene, x, y, facing }); the overworld rests while you're
@@ -3713,8 +3713,9 @@ taken from a Dragon Quest cartridge.
   (1 + the target's wisdom/200); a healing one its range times (1 + intelligence/200). Elements multiply by
   `REALM_TYPE_CHART` against the target's elements, and by 1.25 for one of the user's own elements. (Wisdom, new
   with these stats, starts at the average of each fighter's intelligence and defence, and grows the same way.)
-- **HP**: everyone's is `Ultimax.HP_SCALE` (3) times what their stats say: the fighters', the foes' and Pokémon's
-  alike, so fights last a while. Heals scale with it (an item's text shows the scaled amount), and a Pokémon's HP
+- **HP**: everyone's is `Ultimax.HP_SCALE` (3) times what their stats say: the fighters', a boss's and Pokémon's
+  alike, so fights last a while. The street's random foes keep the HP their stats say (`Ultimax.FOE_HP_SCALE`, 1),
+  so a Street Punk goes down in three or four hits at level 1. Heals scale with it (an item's text shows the scaled amount), and a Pokémon's HP
   goes back to it divided again (rounded up while it's standing). A party saved before keeps as much of its HP.
 - **Status**: the Pokémon realm's. Sleep (1 to 3 turns), poison (an eighth of HP at the end of each turn), bad
   poison (a sixteenth more each turn), paralysis (a quarter of the time it can't move, and half its speed), burn (a

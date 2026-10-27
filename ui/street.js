@@ -174,6 +174,9 @@
           // (off the street's end: the next scene)
           const edge = (S.exits || []).find((e) => (e.edge === "left" && nx < 4) || (e.edge === "right" && nx > S.width - 4));
           if (edge) { go(edge); continue; }
+          // (out of a door: walking into it, from the spot before it, the way it's `walk`ed)
+          const door = (S.exits || []).find((e) => e.walk === dir && e.spot && me.x >= e.spot[0] && me.x <= e.spot[1] && me.y >= e.spot[2] && me.y <= e.spot[3] && !onFloor(nx, ny));
+          if (door) { go(door); continue; }
           if (onFloor(nx, ny) && !blocked(nx, ny, opts)) { me.x = nx; me.y = ny; }
           else if (onFloor(nx, me.y) && !blocked(nx, me.y, opts)) me.x = nx;
           else if (dx) {

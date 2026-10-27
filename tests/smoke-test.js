@@ -7250,7 +7250,8 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     const old = { id: "kiryu", lv: 5, exp: R.expFor(5), hp: 20, mp: 5 };
     R.rescale(old);
     assert(old.hp === 20 * R.HP_SCALE && old.hpScale === R.HP_SCALE && R.stats("kiryu", 5).hp % R.HP_SCALE === 0);
-    assert.strictEqual(R.create([], ["punk"]).foes[0].maxHp, window.REALM_FOES.punk.hp * R.HP_SCALE);
+    assert.strictEqual(R.create([], ["punk"]).foes[0].maxHp, window.REALM_FOES.punk.hp * R.FOE_HP_SCALE, "the street's foes keep their own HP");
+    assert.strictEqual(R.create([], ["majima"]).foes[0].maxHp, window.REALM_FOES.majima.hp * R.HP_SCALE, "a boss's is scaled");
     const mon = (moves) => { const m = Party.create("Machamp", 50, { moves }); return R.pokemon(m, Party.stats(m), "Machamp"); };
     // (Swords Dance: Strength two stages up, the damage with it.)
     const sd = mon(["Swords Dance", "Protect", "Thunder Punch", "Bulk Up"]);

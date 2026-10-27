@@ -80,7 +80,7 @@ window.REALM_SKILLS = {
   mad_dog_shimano:{ name: "Essence of the Thug: Finisher",   mp: 16, element: "Dark",   kind: "phys",  power: 3.2, target: "one" },
   // (the street's)
   cheap_shot:    { name: "Essence of Ass Crushing",            mp: 0, element: "Neutral", kind: "phys",  power: 1.3, target: "one" },
-  dirty_kick:    { name: "Essence of Self-Destruct",            mp: 0, element: "Poison",  kind: "phys",  power: 1.1, target: "one", status: "poison", chance: 0.3 },
+  dirty_kick:    { name: "Drunken Kick",                        mp: 0, element: "Poison",  kind: "phys",  power: 1.1, target: "one", status: "poison", chance: 0.3 },
   bottle_smash:  { name: "Essence of Wreckage",          mp: 0, element: "Earth",   kind: "phys",  power: 1.4, target: "one" },
   slash:         { name: "Essence of Back Breaking",           mp: 0, element: "Steel",   kind: "phys",  power: 1.4, target: "one" },
   sweet_talk:    { name: "Essence of Door Slamming",            mp: 0, element: "Psychic", kind: "status", status: "sleep", chance: 0.5, target: "one" },

@@ -3,8 +3,8 @@
 # has no insides of its shops, nor anything under its streets.
 #
 # Poppo, the convenience store, put together from the street's own pictures: Poppo's
-# sign off its shopfront on the street (assets/kamurocho/street.png), and its clerk the Salaryman
-# (people/salaryman.png) in Poppo's blue and white, behind the counter; the shelves, the drinks fridge, the counter
+# sign off its shopfront on the street (assets/kamurocho/street.png), and its clerk (people/loiterer.png, standing
+# at ease) in Poppo's blue and white uniform, behind the counter; the shelves, the drinks fridge, the counter
 # and the floor are drawn here, in the street's colours and its 480-high frame (the floor at the bottom).
 #
 # Under the manhole by Serena: a storm drain's chamber, the ladder down at its left, a culvert behind, and the Time
@@ -82,22 +82,23 @@ def poppo():
                 d.line((x, y + 16 - h, min(x + w, x1 - 4), y + 16 - h), fill=shade(c, 1.25))
                 d.line((x, y + 16 - h, x, y + 15), fill=shade(c, 0.7))
                 x += w + 2
-    # The clerk, behind the counter: the Salaryman, his jacket Poppo's blue and his shirt white.
-    clerk = Image.open(os.path.join(K, 'people/salaryman.png')).convert('RGBA').transpose(Image.FLIP_LEFT_RIGHT)
+    # The clerk, behind the counter: someone standing at ease (people/loiterer.png, hands at his sides, not squaring
+    # up), his grey-green jacket made Poppo's blue uniform, a white stripe across it at the chest as the shop's own.
+    clerk = Image.open(os.path.join(K, 'people/loiterer.png')).convert('RGBA').transpose(Image.FLIP_LEFT_RIGHT)
     px = clerk.load()
     for y in range(clerk.height):
         for x in range(clerk.width):
             r, g, b, a = px[x, y]
             if not a: continue
             lum = (r + g + b) / 3
-            # (the dark suit: Poppo's blue, as bright as it was dark)
-            if max(r, g, b) - min(r, g, b) < 40 and lum < 90 and y > 14:
-                k = 0.6 + lum / 90
-                px[x, y] = (int(46 * k), int(98 * k), int(178 * k), a)
+            # (the jacket: greener than it is red, above the waist; as bright a blue as it was)
+            if g > r + 4 and 30 < lum < 150 and 14 < y < 46:
+                k = 0.45 + lum / 110
+                px[x, y] = (255, 255, 255, a) if y in (27, 28) else (min(255, int(46 * k)), min(255, int(98 * k)), min(255, int(178 * k)), a)
     cs = 2
     clerk = clerk.resize((clerk.width * cs, clerk.height * cs), Image.NEAREST)
     cx = (COUNTER[0] + COUNTER[1]) // 2 + 10
-    im.alpha_composite(clerk, (cx - clerk.width // 2, FLOOR_Y + 58 - clerk.height))
+    im.alpha_composite(clerk, (cx - clerk.width // 2, FLOOR_Y + 34 - clerk.height))
     # The counter: its top, the till, the hot food case, and its front.
     top = FLOOR_Y - 46
     d.rectangle((COUNTER[0], top, COUNTER[1], top + 8), fill=(214, 206, 188))
