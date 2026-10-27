@@ -4,6 +4,8 @@
 # card game.
 #
 #   python3 tools/build-sacred-cards.py <path to the .gba>
+#   python3 tools/build-sacred-cards.py   (no cartridge: from tools/data/roms/AY7E.bin, which a run with it keeps;
+#                                          tools/lib/romcache.py)
 #
 # What's in the ROM (the table of pointers at 0x0d511a0):
 #   0-101     each person's sprite sheet: 4bpp tiles, 16 a row, 32x32 frames, 4 a row (down x3, left x3, up x3, right x3);
@@ -35,7 +37,8 @@ YGO = os.path.join(ROOT, 'assets/yugioh')
 TABLE = 0xd511a0
 N_SCREENS = 58
 
-rom = open(sys.argv[1], 'rb').read()
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')); import romcache
+rom = romcache.load(sys.argv[1] if len(sys.argv) > 1 else None, ['AY7E'])   # (the cartridge, or tools/data/roms: tools/lib/romcache.py)
 if rom[0xac:0xb0] != b'AY7E': sys.exit('Not Yu-Gi-Oh! The Sacred Cards (USA): its game code is ' + repr(rom[0xac:0xb0]))
 def P(k): return struct.unpack_from('<I', rom, TABLE + 4 * k)[0] - 0x08000000
 def ptr(a): return struct.unpack_from('<I', rom, a)[0] - 0x08000000

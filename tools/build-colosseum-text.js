@@ -4,6 +4,7 @@
 // assets/text/colosseum.json, for Orre's story to use as it's built.
 //
 //   node tools/build-colosseum-text.js <.fsys files or folders of them>
+//   node tools/build-colosseum-text.js      (no disc: colosseum.json again, from itself)
 //
 // (Message tables already unpacked from the archives, .msg files, can be
 // given too.)
@@ -109,10 +110,7 @@ function tablesIn(d) {
 
 const inputs = process.argv.slice(2).flatMap((p) => (fs.statSync(p).isDirectory()
   ? fs.readdirSync(p).filter((f) => /\.(fsys|msg)$/i.test(f)).map((f) => path.join(p, f)) : [p]));
-if (!inputs.length) {
-  console.error("Usage: node tools/build-colosseum-text.js <.fsys or .msg files, or folders of them>");
-  process.exit(1);
-}
+// (With none, no disc: it writes colosseum.json again from what it holds, the text of every archive read before.)
 // (Into the repository's assets/text; or, run from a copy of this script on its own, colosseum.json where you are.)
 const repoText = path.join(__dirname, "..", "assets/text");
 const outFile = fs.existsSync(repoText) ? path.join(repoText, "colosseum.json") : path.resolve("colosseum.json");

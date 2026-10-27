@@ -3,6 +3,8 @@
 # graphics; the screen itself is ui/bag-screen.js's TrunkScreen, the game's own controls, filters and sorts.
 #
 #   python3 tools/build-gx-trunk.py "<path to Yu-Gi-Oh! GX - Duel Academy (USA).gba>"
+#   python3 tools/build-gx-trunk.py   (no cartridge: from tools/data/roms/BYGE.bin, which a run with it keeps;
+#                                      tools/lib/romcache.py)
 #
 # From the cartridge (its card tables are indexed by card number, 1 to 1200, slot 0 empty; their stats word
 # packs as The Eternal Duelist Soul's does, which its decompilation documents):
@@ -38,8 +40,8 @@ import json, os, struct, sys
 from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-if len(sys.argv) < 2: sys.exit('usage: python3 tools/build-gx-trunk.py <Yu-Gi-Oh! GX - Duel Academy (USA).gba>')
-rom = open(sys.argv[1], 'rb').read()
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')); import romcache
+rom = romcache.load(sys.argv[1] if len(sys.argv) > 1 else None, ['BYGE'])   # (the cartridge, or tools/data/roms: tools/lib/romcache.py)
 if rom[0xac:0xb0] != b'BYGE': sys.exit('Not Yu-Gi-Oh! GX Duel Academy (USA): its game code is ' + repr(rom[0xac:0xb0]))
 N = 1201
 CARDS = os.path.join(ROOT, 'assets/yugioh/cards'); TRUNK = os.path.join(ROOT, 'assets/yugioh/trunk')

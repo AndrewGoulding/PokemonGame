@@ -2,6 +2,8 @@
 # 2002; the USA cartridge, game code ALGE). Only its pictures: the maps and everyone's sprites. None of its game.
 #
 #   python3 tools/build-dbz-legacy-of-goku.py <path to the .gba>
+#   python3 tools/build-dbz-legacy-of-goku.py   (no cartridge: from tools/data/roms/ALGE.bin, which a run with it keeps;
+#                                                tools/lib/romcache.py)
 #
 # How the ROM keeps them:
 #   Packed pictures go through one routine (0x8009524) with a byte of flags, each a BIOS step in turn: 0x10 Huffman,
@@ -29,7 +31,8 @@ from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 OUT = os.path.join(ROOT, 'assets/dragonball')
-rom = open(sys.argv[1], 'rb').read()
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')); import romcache
+rom = romcache.load(sys.argv[1] if len(sys.argv) > 1 else None, ['ALGE'])   # (the cartridge, or tools/data/roms: tools/lib/romcache.py)
 if rom[0xac:0xb0] != b'ALGE': sys.exit('Not Dragon Ball Z: The Legacy of Goku (USA): its game code is ' + repr(rom[0xac:0xb0]))
 def R(a): return struct.unpack_from('<I', rom, a & 0x1ffffff)[0]
 def isptr(v): return 0x08000000 <= v < 0x08000000 + len(rom)
@@ -140,7 +143,7 @@ for n, e in enumerate(maps):
     if layers[0].any():
         top = np.zeros(layers[0].shape + (4,), np.uint8); top[..., :3] = P[layers[0]]; top[..., 3] = (layers[0] != 0) * 255
         save(Image.fromarray(top, 'RGBA'), 'maps', 'LG1_%02d-top.png' % n)
-    bits = np.unpackbits(np.frombuffer(rom[R(e + 8) & 0x1ffffff:][:-(-wt * ht // 8)], np.uint8), bitorder='little')
+    bits = np.unpackbits(np.frombuffer(rom[R(e + 8) & 0x1ffffff:(R(e + 8) & 0x1ffffff) - (-wt * ht // 8)], np.uint8), bitorder='little')
     save(Image.fromarray((bits[:wt * ht].reshape(ht, wt) * 255).astype(np.uint8), 'L'), 'maps', 'LG1_%02d-walk.png' % n)
     entries['LG1_%02d' % n] = dict(name='', size=[wt * 8, ht * 8])
 merge_index('maps', entries)
@@ -163,7 +166,7 @@ def frames_of(p):
     n = max(1, min(16, (nxt - data) // (count * 32)))
     out = []
     for f in range(n):
-        d = np.frombuffer(rom[(data & 0x1ffffff) + f * count * 32:][:count * 32], np.uint8)
+        d = np.frombuffer(rom[(data & 0x1ffffff) + f * count * 32:(data & 0x1ffffff) + (f + 1) * count * 32], np.uint8)
         px = np.zeros(count * 64, np.uint8); px[0::2] = d & 15; px[1::2] = d >> 4
         img = np.zeros((h, w), np.uint8); tw = w // 8
         for t in range(count): img[(t // tw) * 8:(t // tw) * 8 + 8, (t % tw) * 8:(t % tw) * 8 + 8] = px[t * 64:t * 64 + 64].reshape(8, 8)

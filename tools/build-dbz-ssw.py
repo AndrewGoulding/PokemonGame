@@ -2,6 +2,8 @@
 # 2004; the USA cartridge, game code AZJE). Only its fighters' pictures. None of its game.
 #
 #   python3 tools/build-dbz-ssw.py <path to the .gba>
+#   python3 tools/build-dbz-ssw.py   (no cartridge: from tools/data/roms/AZJE.bin, which a run with it keeps;
+#                                     tools/lib/romcache.py)
 #
 # How the ROM keeps them (nothing's packed):
 #   0x608000  "AGBD", then 48 pointers to the fighters (the same one more than once: its slots); 26 different ones,
@@ -31,7 +33,8 @@ from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 OUT = os.path.join(ROOT, 'assets/dragonball/fighters')
-rom = open(sys.argv[1], 'rb').read()
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')); import romcache
+rom = romcache.load(sys.argv[1] if len(sys.argv) > 1 else None, ['AZJE'])   # (the cartridge, or tools/data/roms: tools/lib/romcache.py)
 if rom[0xac:0xb0] != b'AZJE': sys.exit('Not Dragonball Z: Supersonic Warriors (USA): its game code is ' + repr(rom[0xac:0xb0]))
 def R(a): return struct.unpack_from('<I', rom, a & 0x1ffffff)[0]
 def isptr(v): return 0x08000000 <= v < 0x08000000 + len(rom)

@@ -2,6 +2,8 @@
 # USA cartridge, game code BDVE): the first series, Goku as a boy. Only its sprites' pictures. None of its game.
 #
 #   python3 tools/build-dbz-advanced-adventure.py <path to the .gba>
+#   python3 tools/build-dbz-advanced-adventure.py   (no cartridge: from tools/data/roms/BDVE.bin, which a run with it keeps;
+#                                                    tools/lib/romcache.py)
 #
 # How the ROM keeps them (nothing's packed), from the sprite set at 0x811855c:
 #   +0   each object's list of animations (214 objects)
@@ -23,7 +25,8 @@ from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 OUT = os.path.join(ROOT, 'assets/dragonball/side')
-rom = open(sys.argv[1], 'rb').read()
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')); import romcache
+rom = romcache.load(sys.argv[1] if len(sys.argv) > 1 else None, ['BDVE'])   # (the cartridge, or tools/data/roms: tools/lib/romcache.py)
 if rom[0xac:0xb0] != b'BDVE': sys.exit('Not Dragon Ball: Advanced Adventure (USA): its game code is ' + repr(rom[0xac:0xb0]))
 def R(a): return struct.unpack_from('<I', rom, a & 0x1ffffff)[0]
 def isptr(v): return 0x08000000 <= v < 0x08000000 + len(rom)

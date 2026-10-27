@@ -2,6 +2,8 @@
 # dump of it), for the Yu-Gi-Oh! realm; and the Kame Game shop's booster packs' icons (this game's own).
 #
 #   python3 tools/build-domino-map.py "<path to Yu-Gi-Oh! - The Sacred Cards (USA).gba>"
+#   python3 tools/build-domino-map.py   (no cartridge: from tools/data/roms/AY7E.bin, which a run with it keeps;
+#                                        tools/lib/romcache.py)
 #
 # From the cartridge (the map screen's loader, its literal pool at 0x0c10, points at them all):
 #   - assets/town-map/domino.png: the city, rendered from above (240 by 160): its 8bpp tiles (LZ77, 0x56d28), its
@@ -21,8 +23,8 @@ from PIL import Image, ImageDraw
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 TOWN = os.path.join(ROOT, 'assets/town-map')
-if len(sys.argv) < 2: sys.exit(__doc__ or 'usage: python3 tools/build-domino-map.py <The Sacred Cards (USA).gba>')
-rom = open(sys.argv[1], 'rb').read()
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')); import romcache
+rom = romcache.load(sys.argv[1] if len(sys.argv) > 1 else None, ['AY7E'])   # (the cartridge, or tools/data/roms: tools/lib/romcache.py)
 if rom[0xac:0xb0] != b'AY7E': sys.exit('Not Yu-Gi-Oh! The Sacred Cards (USA): its game code is ' + repr(rom[0xac:0xb0]))
 
 def lz77(o):

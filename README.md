@@ -12,7 +12,7 @@ skips it) and leads to the title screen: Charizard, rising flames and PRESS
 START. Left alone for 45 seconds the title goes back to the opening. Press
 Start and FireRed's main menu comes up: CONTINUE (with your name, play time,
 Pokédex and badges), NEW GAME, NEW GAME + beside it once there's a game saved (this game's own: a new game, through
-Oak's intro, that keeps your Bag but for the story's key items and the HMs, the PC's items, your money, your mining,
+the character creator, that keeps your Bag but for the story's key items and the HMs, the PC's items, your money, your mining,
 fishing and farming levels, your Battle Points (Kanto's and the Battle Frontier's), your Pokédex's seen and caught (shown again once Oak gives you the Pokédex), your PC boxes with your party put in them, your Trainer ID, and in the Yu-Gi-Oh! realm your cards, decks and tokens and that realm's bag; your Pokémon still obey by
 your Badges, so high levels wait on them; `Player.newGamePlus`) and OPTION (B goes back to the title). The
 Option screen is FireRed's too: TEXT SPEED (how long battle messages stay up),
@@ -22,11 +22,11 @@ switching), SOUND (mono, stereo or off), VOLUME (0 to 10: music, sound effects a
 FRAME (the menus' windows: FireRed's ten window frames; the text box is always
 FireRed's message box, as in FireRed) and, from the main
 menu, SAVE FILE to load a downloaded save; it's also in the Start menu. Start a
-**NEW GAME** and you get FireRed's new-game intro (without its controls
-guide): the Pikachu pages (A turns the page, B goes back), then Prof. Oak, who shows you a Nidoran♀ and has you name
-yourself on FireRed's naming screen (up to 7 letters on its UPPER / lower / OTHERS keyboard: the D-pad
-moves, A types, B deletes, Select changes the page, Start jumps to OK; OK with nothing typed picks a name
-for you) before you shrink away into Pallet Town, just outside Red's house. Try
+**NEW GAME** and you make your character (the character creator: your race and your look, "The character
+creator" below), then name yourself on FireRed's naming screen (up to 7 letters on its UPPER / lower / OTHERS
+keyboard: the D-pad moves, A types, B deletes, Select changes the page, Start jumps to OK; OK with nothing typed
+picks a name for you), and you start in the Realm Hub with ¥10,000. Its red portal takes you to the Pokémon realm,
+by Pallet Town, just west of Red's house. Try
 to leave town through the tall grass to the north and Prof. Oak stops you and
 walks you to his lab, where Leaf is waiting; pick Bulbasaur, Squirtle or Charmander from the
 Poké Balls on his table (each one shows you its Pokémon before you decide).
@@ -4128,6 +4128,28 @@ Big Goomba Stomp and Goomboss Charge.
 - **Money**: trainers pay their class's base payout × their last Pokémon's
   level. Blacking out costs your highest level × 8 (more with badges). Buying
   10+ Poké Balls at once gets a free Premier Ball.
+
+## Rebuilding without cartridges
+
+Everything the game needs is in the repo, already built: nothing in it needs a cartridge or a disc to play. The
+tools that took pictures (and the Yu-Gi-Oh! cards) out of one keep what they read, so after one run with it they
+run without it (`tools/data/roms/` has each cartridge's once it's been run so):
+
+- **The GBA cartridges'** (`tools/build-sacred-cards.py`, `build-domino-map.py`, `build-reshef.py`, `build-gx-trunk.py`,
+  `build-dbz-webfoot.py`, `build-dbz-legacy-of-goku.py`, `build-dbz-ssw.py`, `build-dbz-advanced-adventure.py`):
+  `tools/lib/romcache.py`. Run with the cartridge, a tool notes each byte it reads (its indexing, slicing, find and
+  index, `struct.unpack_from` and `numpy.frombuffer`), and keeps just those in `tools/data/roms/<game code>.bin`
+  (LZMA: the ROM's size, each run of bytes read and where, then the bytes; two tools reading one cartridge share its
+  file). Run with no cartridge (or its game code, where a tool reads two: `build-dbz-webfoot.py ALFE` or `BG3E`), it
+  reads them from there, the same bytes where it read them before, and stops, saying so, should it read one it
+  didn't then.
+- **The Minish Cap's** (`tools/build-player-looks.py`): the frames it takes, already decoded, in `tools/data/minish-cap-people.*`.
+- **Pokémon Colosseum's text** (`tools/build-colosseum-text.js`): `assets/text/colosseum.json` keeps it all; with
+  no archives the tool writes it again from itself.
+
+The other tools build from source projects, not games: pret's decompilations (pokefirered, pokeemerald,
+pokeheartgold, pokecrystal, whose graphics and data are in their own repositories), pokeemerald-expansion,
+PokeAPI's tables and sprites, smogon/sprites, a Pokémon Essentials project, YGOPRODeck and the like, as each says.
 
 ## Layout
 

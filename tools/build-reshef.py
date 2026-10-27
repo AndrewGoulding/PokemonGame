@@ -4,6 +4,8 @@
 # its portraits. None of its card game.
 #
 #   python3 tools/build-reshef.py <path to the .gba>
+#   python3 tools/build-reshef.py   (no cartridge: from tools/data/roms/AY8E.bin, which a run with it keeps;
+#                                    tools/lib/romcache.py)
 #   (after tools/build-sacred-cards.py: its places join the Sacred Cards' fountain's)
 #
 # What's in the ROM, as The Sacred Cards has it (tools/build-sacred-cards.py) but moved about:
@@ -38,7 +40,8 @@ REC, REC_INDEX = 0xe17e28, 0xe19274
 PERSON_PALETTES, PERSON_PALETTE_BASE = 0x2ad20c, 913
 PORTRAITS, PIC0, CHAR0, PAL0, N_CHARS = 0xfa2bac, 190, 389, 441, 52
 
-rom = open(sys.argv[1], 'rb').read()
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')); import romcache
+rom = romcache.load(sys.argv[1] if len(sys.argv) > 1 else None, ['AY8E'])   # (the cartridge, or tools/data/roms: tools/lib/romcache.py)
 if rom[0xac:0xb0] != b'AY8E': sys.exit('Not Yu-Gi-Oh! Reshef of Destruction (USA): its game code is ' + repr(rom[0xac:0xb0]))
 def P(k): return struct.unpack_from('<I', rom, TABLE + 4 * k)[0] - 0x08000000
 def ptr(a): return struct.unpack_from('<I', rom, a)[0] - 0x08000000

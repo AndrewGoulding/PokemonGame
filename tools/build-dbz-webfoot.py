@@ -3,6 +3,8 @@
 # Only their pictures: the maps, everyone's sprites and the dialogue portraits. None of their game.
 #
 #   python3 tools/build-dbz-webfoot.py <path to either .gba> [only]
+#   python3 tools/build-dbz-webfoot.py ALFE | BG3E [only]   (no cartridge: from tools/data/roms/<its code>.bin, which a run with it keeps;
+#                                         tools/lib/romcache.py)
 #
 # ("only" is maps, people or portraits, to build just that part.)
 #
@@ -47,7 +49,8 @@ GAMES = {
     b'BG3E': dict(prefix='BF', layer_fn=0x08008087, bg_pal=0x5632c, obj_pal=0x5652c,
                   people=0x6b6bd8, portraits=0x6f395c, n_portraits=155, strings=0x6bce8, utf16=True),
 }
-rom = open(sys.argv[1], 'rb').read()
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib')); import romcache
+rom = romcache.load(sys.argv[1] if len(sys.argv) > 1 else None, ['ALFE', 'BG3E'])   # (the cartridge, or tools/data/roms: tools/lib/romcache.py)
 G = GAMES.get(rom[0xac:0xb0]) or sys.exit('Not Legacy of Goku II or Buu\'s Fury (USA): its game code is ' + repr(rom[0xac:0xb0]))
 ONLY = sys.argv[2] if len(sys.argv) > 2 else None
 def R(a): return struct.unpack_from('<I', rom, a & 0x1ffffff)[0]
