@@ -3535,6 +3535,32 @@ python3 tools/build-reshef.py "<path to Yu-Gi-Oh! - Reshef of Destruction (USA).
   for each expression, each character's palette their top 64 colours.
 - The data goes into `data/emerald-maps.js` between its markers, with `window.RESHEF`: its places.
 
+## The Dragon Ball realm (in progress)
+
+The next realm: Dragon Ball, Z, Super and GT, with turn-based battles. Nothing of it is in the game yet; so far
+there are only its pictures, taken from the cartridges below (your own dumps of them), in `assets/dragonball/`.
+
+`tools/build-dbz-webfoot.py` builds the maps, people and portraits of Webfoot's two games on one engine,
+**Dragon Ball Z: The Legacy of Goku II** (USA, game code ALFE; files `LG2_*`) and **Dragonball Z: Buu's Fury**
+(USA, BG3E; files `BF_*`). Run it once for each cartridge; add `maps`, `people` or `portraits` to build just that:
+
+```sh
+python3 tools/build-dbz-webfoot.py "<path to Dragon Ball Z - The Legacy of Goku II (USA).gba>"
+python3 tools/build-dbz-webfoot.py "<path to Dragonball Z - Buu's Fury (USA).gba>"
+```
+
+- **The packing**: nearly everything is packed with Webfoot's own LZ bitstream behind an 8-byte header (the kind,
+  then the size). The tool unpacks it with a Python port of the ARM routine the game copies into IWRAM.
+- **The maps** (291 and 226): each map's header has its four backgrounds (grids of packed 32x32 screens), the list of
+  its tiles from the shared 256-tile banks, its animated tiles (the first frame is used), the backgrounds' priorities
+  and its blending. The light and shade layers indoors are blended in as the game does. The backgrounds the game draws
+  over people are the map's `-top` picture. Each map is cropped to what's drawn. Collision isn't taken yet.
+- **The people** (154 and 298): the game's table of everyone's animations. One sheet each, a row an animation in
+  the ROM's order (each in fours: down, up, left, right). `people/index.json` gives each sheet's cell size, the
+  anchor in a cell (where the person stands) and each row's frame count.
+- **The portraits** (107 and 155): the dialogue faces, 64x64. A few of Legacy of Goku II's first ones use colours the
+  game changes while they're on screen, so they come out wrong.
+
 ## Progression rules (Gen 6)
 
 - **Experience**: the six growth curves, and base exp × level / 7 split between
