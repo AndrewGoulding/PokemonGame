@@ -3540,6 +3540,13 @@ python3 tools/build-reshef.py "<path to Yu-Gi-Oh! - Reshef of Destruction (USA).
 The next realm: Dragon Ball, Z, Super and GT, with turn-based battles. Nothing of it is in the game yet; so far
 there are only its pictures, taken from the cartridges below (your own dumps of them), in `assets/dragonball/`.
 
+- **Battles** (to come): turn-based, Dragon Quest style, a party of four with MP and many skills each. Every character
+  is one or two of 13 elements, and so is every move: Neutral, Light, Dark, Fire, Water, Grass, Earth (rock,
+  sturdiness), Ice, Steel, Ground (raw force), Poison, Psychic and Electric. Their chart is `REALM_TYPE_CHART` in
+  `data/type-chart.js` (attacking element to defending element; two elements multiply). It's only for the realms
+  outside the Pokémon one, which keeps the games' own types and `TYPE_CHART`. Neutral hits everything and is hit by
+  everything at 1x; the only immunities are Psychic on Dark and Electric on Ground.
+
 `tools/build-dbz-webfoot.py` builds the maps, people and portraits of Webfoot's two games on one engine,
 **Dragon Ball Z: The Legacy of Goku II** (USA, game code ALFE; files `LG2_*`) and **Dragonball Z: Buu's Fury**
 (USA, BG3E; files `BF_*`). Run it once for each cartridge; add `maps`, `people` or `portraits` to build just that:
@@ -3940,7 +3947,7 @@ python3 tools/build-dbz-advanced-adventure.py "<path to Dragon Ball - Advanced A
 Every file sets a global on `window` (for example `window.DEX` or `window.Battle`),
 and later files read those globals, so scripts must load in this order:
 
-1. `data/type-chart.js` → `TYPE_CHART`
+1. `data/type-chart.js` → `TYPE_CHART` (and `REALM_ELEMENTS`, `REALM_TYPE_CHART` for the other realms)
 2. `data/natures.js` → `NATURES`
 3. `data/dex.js` → `DEX`
 4. `data/moves.js` → `MOVES`
