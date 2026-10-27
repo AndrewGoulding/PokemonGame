@@ -270,7 +270,7 @@ out['DH_02']['people'] = [person(4, 4, 6, 'rd_person_053', 'face_up', ['Psst! Di
                                                                           "That's what friends are for!"])]
 START = '// Domino High School (tools/build-domino-high.py): its front, hall and classroom.\n'
 END = '// (End of Domino High School.)\n'
-js = START + ''.join('window.WORLD_MAPS[%s] = %s;\n' % (json.dumps(k), json.dumps(v, separators=(',', ':'))) for k, v in out.items()) + \
+js = START + ''.join('window.WORLD_MAPS[%s] = %s;\n' % (json.dumps(k), json.dumps(v, separators=(',', ':'), ensure_ascii=False)) for k, v in out.items()) + \
     '''(function () {
   // The Kame Game shop (Reshef's screen 6, outside; 7, inside): out of it, Domino City's map (its east edge, and the
   // road north at its west), and not Reshef's next screen; and Yugi's grandpa at its counter.
@@ -303,7 +303,7 @@ js = START + ''.join('window.WORLD_MAPS[%s] = %s;\n' % (json.dumps(k), json.dump
 ''' + END
 path = os.path.join(ROOT, 'data/emerald-maps.js')
 text = open(path, encoding='utf8').read()
-a0 = text.find(START)
-if a0 >= 0: text = text[:a0] + text[text.index(END, a0) + len(END):]
-open(path, 'w', encoding='utf8').write(text + js)
+a0 = text.find(START)   # (in place, where it was, after Reshef's; at the end the first time)
+text = text[:a0] + js + text[text.index(END, a0) + len(END):] if a0 >= 0 else text + js
+open(path, 'w', encoding='utf8').write(text)
 print('Domino High School: front, hall, classroom')
