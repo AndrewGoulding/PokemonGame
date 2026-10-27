@@ -329,11 +329,178 @@ def dragon_world():
         roles, own = sheet(pid, f9, shift)
         PARTS[pid] = {'name': name, 'kind': 'whole', 'roles': roles, 'own': own}
 
+# ---------- The Mushroom Kingdom: Mario & Luigi: Superstar Saga's people ----------
+# How Superstar Saga keeps its sprites (the USA cartridge, A88E; after Yoshi Magic's sprite viewer and the game's own
+# OAM builders, 0x0801EEBC.., in the jellees/mlss decompilation's disassembly):
+#   0x39EE60  for each of 11 groups, a table of sprites: a u32 each, palette (bits 0-8), sheet (9-17), animation
+#             (18-26), and whether the sheet is stored as it is (bit 31) or packed
+#   0x39EEE4, 0x39EEB8, 0x39EE8C  each group's palettes (32 colours), sheets (offsets from the table) and animations
+#   a packed sheet: 1 + (b0 >> 6) header bytes, then the game's own LZ (0x08000534): a byte with its top bit clear
+#             copies 2 + (b >> 2) bytes from 1024 - (b2 | (b & 3) << 8) back (7F FF ends it); with it set, (b & 0x1F)
+#             + 1 literal bytes, or zero-and-byte pairs, a byte repeated, or zeros
+#   an animation: u16 back to its frames' table, u16 back to each frame's tiles, u8 pieces at most (+6), u8 how many
+#             sequences (+7), then each sequence's offset: a frame count and (frame, duration) pairs
+#   a frame: (affine entries, when bit 7 of its first byte), a piece count, its type (0-5: pieces of 6, 5, 4, 4, 3, 3
+#             bytes, x and y and shape, size, flips, tile, palette as each OAM builder reads them), the pieces, then
+#             the runs of the sheet it loads into VRAM (offset, count)
+SS_DATA = os.path.join(ROOT, 'tools/data/superstar-saga-people')
+class SuperstarSaga:
+    MAIN, ANIM, SPR, PAL, DIMS = 0x39EE60, 0x39EE8C, 0x39EEB8, 0x39EEE4, 0x39EE04
+    STRIDE = {0: 6, 1: 5, 2: 4, 3: 4, 4: 3, 5: 3}
+    def __init__(self, path):
+        self.rom = open(path, 'rb').read()
+        if self.rom[0xAC:0xB0] != b'A88E': sys.exit('That isn\'t Mario & Luigi: Superstar Saga (USA).')
+        self.frames, self.palettes = {}, {}
+    def u8(self, a): return self.rom[a]
+    def s8(self, a): return struct.unpack_from('b', self.rom, a)[0]
+    def u16(self, a): return struct.unpack_from('<H', self.rom, a)[0]
+    def u32(self, a): return struct.unpack_from('<I', self.rom, a)[0]
+    def unpack(self, o):
+        R = self.rom; o += 1 + (R[o] >> 6); out = bytearray()
+        while True:
+            c = R[o]; o += 1
+            if c & 0x80:
+                n, k = (c & 0x1f) + 1, c & 0x60
+                if k == 0x00: out += R[o:o + n]; o += n
+                elif k == 0x20:
+                    for _ in range(n): out += bytes([0, R[o]]); o += 1
+                elif k == 0x40: out += bytes([R[o]]) * (n + 1); o += 1
+                else:
+                    if c == 0xff: n = R[o] + 32; o += 1
+                    out += bytes(n)
+            else:
+                b = R[o]; o += 1
+                if c == 0x7f and b == 0xff: return bytes(out)
+                off = (b | (c & 3) << 8) - 1024
+                for _ in range(2 + (c >> 2)): out.append(out[len(out) + off])
+    def sprite(self, g, i):
+        P = lambda v: v - 0x08000000
+        m = self.u32(P(self.u32(self.MAIN + g * 4 - 4)) + i * 4)
+        A = P(self.u32(P(self.u32(self.ANIM + g * 4 - 4)) + (m >> 18 & 0x1ff) * 4))
+        pp = P(self.u32(P(self.u32(self.PAL + g * 4 - 4)) + (m & 0x1ff) * 4))
+        pal = [((c & 31) * 255 // 31, (c >> 5 & 31) * 255 // 31, (c >> 10 & 31) * 255 // 31) for c in (self.u16(pp + 2 * k) for k in range(32))]
+        base = self.u32(self.SPR + g * 4 - 4); d = P(base + self.u32(P(base) + (m >> 9 & 0x1ff) * 4))
+        tiles = self.rom[d:d + (self.u16(A + 4) & 0x1ff) * 32] if m >> 31 else self.unpack(d)
+        return A, pal, tiles
+    def palette(self, g, i):
+        self.palettes['%d:%d' % (g, i)] = pal = self.sprite(g, i)[1]
+        return pal
+    def frame(self, g, i, ci):
+        """Frame ci of sprite (g, i) as {(x, y): colour index 1-31}, from its origin (where it stands)."""
+        A, pal, tiles = self.sprite(g, i)
+        u8, s8, u16, R = self.u8, self.s8, self.u16, self.rom
+        clp = A - u16(A); tofs = A - u16(A + 2); maxl = u8(A + 6) & 0x7f
+        cp = clp + u16(clp + 2 * ci + 1); E = cp + ((u8(cp) & 0x7f) * 6 + 1 if u8(cp) & 0x80 else 0)
+        n, t = u8(E) & 0x7f, u8(E + 1); st = self.STRIDE[t]; e0 = E + 2
+        pieces = []
+        for k in range(n):
+            b = R[e0 + k * st:e0 + (k + 1) * st]
+            if t == 0:
+                y = b[0] - 256 if b[0] >= 128 else b[0]; x = b[2] | (b[3] & 1) << 8; x = x - 512 if x >= 256 else x
+                si, tile, hf, vf, ps = (b[1] >> 6) * 4 + (b[3] >> 6), b[4] | (b[5] & 3) << 8, b[3] >> 4 & 1, b[3] >> 5 & 1, b[5] >> 4
+            elif t == 1:
+                x, y = s8(e0 + k * st), s8(e0 + k * st + 1)
+                si, tile, hf, vf, ps = b[4] >> 4, b[3] | (b[4] & 1) << 8, b[2] >> 2 & 1, b[2] >> 3 & 1, b[2] >> 4
+            elif t in (2, 3):
+                x, y = s8(e0 + k * st), s8(e0 + k * st + 1)
+                si, tile, hf, vf, ps = b[3] >> 4, b[2] | ((b[3] & 1) << 8 if t == 3 else 0), b[3] >> 2 & 1, b[3] >> 3 & 1, (b[3] & 3) if t == 2 else 0
+            else:
+                x, y = b[0] & 0x3f, b[1] & 0x3f
+                x, y = (x - 64 if x & 0x20 else x), (y - 64 if y & 0x20 else y)
+                si, tile, hf, vf, ps = (b[0] >> 6) * 4 + (b[1] >> 6), (b[2] & 0x7f if t == 4 else b[2]), (b[2] >> 7 if t == 4 else 0), 0, 0
+            pieces.append([x, y, u8(self.DIMS + 2 * si), u8(self.DIMS + 2 * si + 1), tile, hf, vf, ps])
+        at = e0 + n * st
+        secs = [(u16(at + 1 + 3 * j), u8(at + 3 + 3 * j)) for j in range(u8(at))] if u16(A + 2) else []
+        if u16(A + 2):
+            for k, pc in enumerate(pieces): pc[4] = u8(tofs + 1 + ci * (maxl + 1) + k)
+        def sheet_tile(v):
+            for off, cnt in secs:
+                if v < cnt: return off + v
+                v -= cnt
+            return None if secs else v
+        out = {}
+        for x, y, w, h, tile, hf, vf, ps in reversed(pieces):   # (the first piece is on top)
+            t0 = sheet_tile(tile)
+            if t0 is None: continue
+            pb = t0 << 5
+            for ty in range(h // 8):
+                for tx in range(w // 8):
+                    for yy in range(8):
+                        for xx in range(8):
+                            q = pb + yy * 4 + xx // 2
+                            v = tiles[q] >> (4 * (xx & 1)) & 15 if q < len(tiles) else 0
+                            if v: out[(x + (w - 8 - tx * 8 if hf else tx * 8) + (7 - xx if hf else xx), y + (h - 8 - ty * 8 if vf else ty * 8) + (7 - yy if vf else yy))] = v + 16 * (ps & 1)
+                    pb += 32
+        self.frames['%d:%d:%d' % (g, i, ci)] = out
+        return out
+    def save(self):
+        keys = sorted(self.frames); cols = 16
+        img = Image.new('P', (64 * cols, 64 * ((len(keys) + cols - 1) // cols)), 0)
+        img.putpalette([v for i in range(256) for v in ((i * 8) % 256,) * 3])
+        px = img.load()
+        for n, k in enumerate(keys):
+            for (x, y), v in self.frames[k].items():
+                if -32 <= x < 32 and -56 <= y < 8: px[(n % cols) * 64 + x + 32, (n // cols) * 64 + y + 56] = v
+        img.save(SS_DATA + '.png', optimize=True)
+        json.dump({'frames': {k: n for n, k in enumerate(keys)}, 'palettes': {k: ['%02x%02x%02x' % c for c in v] for k, v in self.palettes.items()}},
+                  open(SS_DATA + '.json', 'w'), separators=(',', ':'))
+class SuperstarSagaCommitted:
+    def __init__(self):
+        self.j = json.load(open(SS_DATA + '.json')); self.px = Image.open(SS_DATA + '.png').load()
+    def palette(self, g, i): return [tuple(int(h[k:k + 2], 16) for k in (0, 2, 4)) for h in self.j['palettes']['%d:%d' % (g, i)]]
+    def frame(self, g, i, ci):
+        n = self.j['frames']['%d:%d:%d' % (g, i, ci)]; X, Y = (n % 16) * 64, (n // 16) * 64
+        return {(x - 32, y - 56): self.px[X + x, Y + y] for y in range(64) for x in range(64) if self.px[X + x, Y + y]}
+SS = SuperstarSaga(sys.argv[sys.argv.index('--superstar-saga') + 1]) if '--superstar-saga' in sys.argv else SuperstarSagaCommitted()
+
+# Each: its sprite (group, number), its walks' first frames (each a stand, a step, a stand, the other step: the
+# stand and its two steps are frames +0, +2, +4) facing down, up and to the side (the side faces right: `right`), its
+# colour indices for hair, clothes, trim and skin, and how much it's shrunk (Superstar Saga's people are a third again
+# FireRed's height; Bowser more).
+SS_PARTS = [
+    ('mario', 'Mario', (1, 1), (20, 0, 10), True, {'outfit': {8, 9}, 'trim': {6, 7}, 'skin': {3, 4, 5}}, 0.75),
+    ('luigi', 'Luigi', (1, 2), (20, 0, 10), True, {'outfit': {8, 9}, 'trim': {6, 7}, 'skin': {3, 4, 5}}, 0.75),
+    ('peach', 'Peach', (3, 88), (0, 5, 10), None, {'hair': {12, 13, 14}, 'outfit': {5, 6, 7}, 'trim': {8, 9, 10}, 'skin': {2}}, 0.75),
+    ('toad', 'Toad', (3, 102), (20, 0, 10), True, {'hair': {8, 9, 10}, 'outfit': {6, 7}, 'skin': {2, 3}}, 0.75),
+    ('star_toad', 'Toad Brigade', (3, 121), (0, 5, 10), None, {'hair': {3, 4}, 'outfit': {6, 7}, 'skin': {8, 9}}, 0.75),
+    ('toadsworth', 'Toadsworth', (3, 108), (0, 5, 10), True, {'hair': {2, 3, 4}, 'outfit': {12, 13}, 'skin': {8, 9}}, 0.75),
+    ('goomba', 'Goomba', (4, 2), None, None, {'skin': {9, 10}, 'outfit': {6, 7}}, 0.75),
+    ('bowser', 'Bowser', (3, 23), (10, 0, 5), None, {'hair': {10}, 'outfit': {8, 9}, 'trim': {2, 3}, 'skin': {4, 5, 6}}, 0.6),
+]
+# (The Goomba's are its battle frames: it faces you, a little to the left, whichever way it walks.)
+GOOMBA_FRAMES = [7, 7, 7, 5, 9, 5, 9, 5, 9]
+def mushroom_kingdom():
+    for pid, name, (g, i), walks, right, roles, scale in SS_PARTS:
+        pal = SS.palette(g, i)
+        if walks:
+            d, u, sd = walks
+            frames = [(d, 0), (u, 0), (sd, 1), (d + 2, 0), (d + 4, 0), (u + 2, 0), (u + 4, 0), (sd + 2, 1), (sd + 4, 1)]
+        else: frames = [(c, 0) for c in GOOMBA_FRAMES]
+        f9 = []
+        for ci, side in frames:
+            px = SS.frame(g, i, ci)
+            # (FireRed's side frames face left: a side facing right is turned round.)
+            if side and right: px = {(-1 - x, y): v for (x, y), v in px.items()}
+            if scale != 1:
+                # (Shrunk: each pixel the colour nearest its middle, from where it falls in the frame.)
+                out = {}
+                ys = [y for x, y in px]; xs = [x for x, y in px]
+                for Y in range(int(min(ys) * scale) - 1, 1):
+                    for X in range(int(min(xs) * scale) - 1, int(max(xs) * scale) + 2):
+                        v = px.get((int((X + 0.5) / scale) if X >= 0 else -int((-X - 0.5) / scale) - 1, int((Y - 0.5) / scale)))
+                        if v: out[(X, Y - 1)] = v
+                px = out
+            f9.append({k: (next((r for r, s_ in roles.items() if v % 16 in s_), None), pal[v]) for k, v in px.items()})
+        r, own = sheet(pid, f9, (16, 32))
+        PARTS[pid] = {'name': name, 'kind': 'whole', 'roles': r, 'own': own}
+
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
     hyrule()
     if isinstance(SRC, Cartridge): SRC.save()
     dragon_world()
+    mushroom_kingdom()
+    if isinstance(SS, SuperstarSaga): SS.save()
     f = os.path.join(ROOT, 'data/type-chart.js')
     src = open(f).read()
     START, END = "// The character creator's parts (tools/build-player-looks.py):", "// (End of the character creator's parts.)"

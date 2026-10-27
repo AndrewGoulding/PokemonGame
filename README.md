@@ -3765,7 +3765,11 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   the Kokiri, and Link whole for the Hylians. The Zora have the bald head with a tail-fin drawn on (The Minish Cap has
   no Zora), short or long. The Dragon World's are whole characters: Goku, Vegeta, Gohan, Kid Gohan and Trunks for the
   Saiyans; Krillin, Yamcha, Tien, Bulma, Chi-Chi, a townsman and a townswoman for the Humans; Fat Buu, Kid Buu and
-  Super Buu for the Majin.
+  Super Buu for the Majin. The Mushroom Kingdom's are whole characters from Mario & Luigi: Superstar Saga: Mario,
+  Luigi and Peach for its Humans; Toad, a Toad Brigade Toad and Toadsworth for the Mushroom People (their caps'
+  spots are their "hair"); a Goomba (its battle frames: it faces you whichever way it walks) and Bowser for the Koopas
+  (shrunk to the others' size, Bowser more). The Piantas' look is still to come: on the creator they show their crest,
+  and you walk as the trainer.
 - **Colours**: your hair, your tunic or gi, its trim and your skin, each "Original" (the part's own) or one of
   `LOOK_COLOURS` (15 hair colours, golden for a Super Saiyan; 17 for clothes; each race's own skins: the Zora's
   river blue, silver, sea green and coral, the Majin's pinks, lilac, grey and blue).
@@ -3786,6 +3790,13 @@ It builds from files in the repo: The Minish Cap's frames it uses, as the cartri
 `tools/data/minish-cap-people.png` (each frame a 64x64 cell of colour indices, its origin at 32, 48) and
 `minish-cap-people.json` (which cell is which sprite's frame, the palettes, where each body frame puts its head).
 `--from-rom "<path to Legend of Zelda, The - The Minish Cap (USA).gba>"` takes them from the cartridge again.
+Superstar Saga's are in `tools/data/superstar-saga-people.png` and `.json` the same way (each frame a 64x64 cell of
+colour indices 1-31, its origin at 32, 56; and each sprite's 32 colours); `--superstar-saga "<path to Mario & Luigi -
+Superstar Saga (USA).gba>"` takes them again. How it keeps its sprites (after Yoshi Magic's sprite viewer and the
+game's own OAM builders at `0x0801EEBC` on, in the jellees/mlss decompilation's disassembly): a table of each group's
+sprites at `0x39EE60` (a palette, a sheet and an animation each), the sheets packed in the game's own LZ (the routine
+at `0x08000534`); an animation's sequences of (frame, duration) and its frames, each a piece count and a type (0-5,
+pieces of 6, 5, 4, 4, 3 or 3 bytes, as each builder reads them) and the runs of the sheet it loads into VRAM.
 Only The Minish Cap's people's sprites are taken; the Dragon World's come from the Dragon Ball realm's people
 sheets already here (Legacy of Goku II's, and Buu's Fury's for the Buus, Fat Buu and Super Buu halved). Each part is
 FireRed's nine frames (standing down, up and left, then two steps each way), 32x32, in 17 rows: the part's own
@@ -3819,8 +3830,7 @@ colours) between its markers; each race's choices are `REALM_RACES[..].looks`.
 | Goomba (Ground) | nimble | Headbonk (1), Goomba Huddle (3, guard), Multibonk (5), Goomba Tower (8, all), Paragoomba Dive (11, Air), Big Goomba Stomp (14), Goomboss Charge (19, all) |
 | Koopa (Earth) | toughest defence | Shell Toss (1), Shell Shield (3, guard), Shell Spin (5, all), Dizzy Shell (7, stun), Power Shell (10, all), Fire Shell (14, Fire), Shell Slam (19) |
 
-The Mushroom Kingdom's five are for its realm to come. Their looks aren't in yet (no sprites of theirs are in the
-repo): on the creator they show a crest, and you walk about as the trainer. Some skill names are this game's own:
+The Mushroom Kingdom's five are for its realm to come; their looks are above (the Piantas', not yet). Some skill names are this game's own:
 Sleepy Spores, Toad Dash, Toad Brigade, Chuckster Toss, Sturdy Belly, Durian Drop, Goomba Huddle, Goomba Tower,
 Big Goomba Stomp and Goomboss Charge.
 
@@ -4143,7 +4153,8 @@ run without it (`tools/data/roms/` has each cartridge's once it's been run so):
   file). Run with no cartridge (or its game code, where a tool reads two: `build-dbz-webfoot.py ALFE` or `BG3E`), it
   reads them from there, the same bytes where it read them before, and stops, saying so, should it read one it
   didn't then.
-- **The Minish Cap's** (`tools/build-player-looks.py`): the frames it takes, already decoded, in `tools/data/minish-cap-people.*`.
+- **The Minish Cap's and Superstar Saga's** (`tools/build-player-looks.py`): the frames it takes, already decoded, in
+  `tools/data/minish-cap-people.*` and `tools/data/superstar-saga-people.*`.
 - **Pokémon Colosseum's text** (`tools/build-colosseum-text.js`): `assets/text/colosseum.json` keeps it all; with
   no archives the tool writes it again from itself.
 

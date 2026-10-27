@@ -864,10 +864,11 @@
       if (!r.looks) return out;
       out.push([P[look.body] && P[look.body].kind === "whole" ? "Who" : "Body", r.looks.bodies, "body", (id) => P[id].name]);
       if (P[look.body] && P[look.body].kind !== "whole" && r.looks.heads) out.push(["Head", r.looks.heads, "head", (id) => P[id].name]);
-      if (has("hair")) out.push(colourRow("Hair", "hair", C.hair.map((c) => c[0])));
-      if (has("outfit")) out.push(colourRow(r.home === "Hyrule" ? "Tunic" : "Gi", "outfit", C.cloth.map((c) => c[0])));
-      if (has("trim")) out.push(colourRow("Trim", "trim", C.cloth.map((c) => c[0])));
-      if (has("skin")) out.push(colourRow("Skin", "skin", r.looks.skin));
+      const L = r.looks.labels || {};
+      if (has("hair")) out.push(colourRow(L.hair || "Hair", "hair", C.hair.map((c) => c[0])));
+      if (has("outfit")) out.push(colourRow(L.outfit || { Hyrule: "Tunic", "Dragon World": "Gi" }[r.home] || "Clothes", "outfit", C.cloth.map((c) => c[0])));
+      if (has("trim")) out.push(colourRow(L.trim || "Trim", "trim", C.cloth.map((c) => c[0])));
+      if (has("skin")) out.push(colourRow(L.skin || "Skin", "skin", r.looks.skin));
       return out;
     };
     const redraw = async () => {
