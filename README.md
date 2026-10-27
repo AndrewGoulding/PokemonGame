@@ -3574,6 +3574,19 @@ python3 tools/build-dbz-ssw.py "<path to Dragonball Z - Supersonic Warriors (USA
   in the ROM's order (the moves come in runs). `fighters/index.json` gives each sheet's cell size, the anchor in a
   cell and its frame count.
 
+`tools/build-dbz-advanced-adventure.py` builds the first series' side-on sprites from **Dragon Ball: Advanced
+Adventure** (USA, game code BDVE; files `side/DBA_*`): Goku as a boy, his friends, his rivals and the enemies.
+
+```sh
+python3 tools/build-dbz-advanced-adventure.py "<path to Dragon Ball - Advanced Adventure (USA).gba>"
+```
+
+- **The objects** (214, people, enemies, effects and pieces of its menus): the game's sprite set at `0x811855c`.
+  Each object has its animations, frames (parts and an anchor) and parts (OAM attributes). An animation is a
+  script of durations and frames, and of commands that load the tiles and palette it draws with. One sheet each,
+  a row an animation, each different frame once. `side/index.json` gives each sheet's cell size, the anchor in a
+  cell and each row's frame count.
+
 ## Progression rules (Gen 6)
 
 - **Experience**: the six growth curves, and base exp × level / 7 split between
