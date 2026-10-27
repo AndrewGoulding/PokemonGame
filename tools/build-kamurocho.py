@@ -109,6 +109,12 @@ SIGN = over(5, (0, 40, 26, 150))                               # (the bank's red
 TREES = [over(5, (118, 40, 186, 116)), over(25, (8, 0, 46, 78)), over(0, (0, 0, 66, 72))]
 TREES = [t.crop(t.getbbox()) for t in TREES]
 VENT = ground(30, (54, 104, 82, 118))
+AIRCON = ground(29, (0, 98, 28, 118))                          # (an air conditioner, on the alley's rooftops)
+# Plain wall with windows (the Game Center's grey neighbour), its mirror image beside it so it runs on: under a
+# shopfront's height for the gaps between shopfronts, and its upper floors for a building rising over the next.
+def run_on(im): out = Image.new('RGBA', (im.size[0] * 2, im.size[1])); out.paste(im, (0, 0)); out.paste(im.transpose(Image.FLIP_LEFT_RIGHT), (im.size[0], 0)); return out
+WALL = run_on(ground(36, (0, 84 - 76, 36, 84)))
+WINDOWS = run_on(ground(36, (0, 4, 36, 60)))
 
 # ---------- The layout ----------
 rows = open(os.path.join(ROOT, 'tools/data/kamurocho.txt')).read().rstrip('\n').split('\n')
@@ -145,6 +151,43 @@ for y in range(H):
 def solid(x, y): return not (0 <= x < W and 0 <= y < H) or L[y][x] not in WALK
 def lab(x, y): return label[y][x] if 0 <= x < W and 0 <= y < H else -2
 
+# A big building is cut into lots, 9 to 14 tiles each way (a block in Kamurocho is many buildings); a scrap of a lot
+# goes to the lot beside it. Each lot (and each block of the city beyond) is 1 to 3 storeys of the others.
+# (label0 keeps the buildings as the layout has them: a shopfront goes as high as its building does.)
+label0 = [r[:] for r in label]
+rnd0 = random.Random(88)
+size = {}
+for y in range(H):
+    for x in range(W):
+        if label[y][x] >= 0: size[label[y][x]] = size.get(label[y][x], 0) + 1
+cuts = {}
+for b in size:
+    if b >= OUT0 or size[b] <= 120: continue
+    cuts[b] = ([rnd0.randrange(9, 15) for _ in range(40)], [rnd0.randrange(9, 15) for _ in range(40)], rnd0.randrange(9), rnd0.randrange(9))
+def lot(b, x, y):
+    sx, sy, ox, oy = cuts[b]
+    i = j = 0; a = -ox
+    while a + sx[i] <= x: a += sx[i]; i += 1
+    a = -oy
+    while a + sy[j] <= y: a += sy[j]; j += 1
+    return OUT0 + 100000 + b * 1000 + i * 40 + j
+for y in range(H):
+    for x in range(W):
+        if label[y][x] in cuts: label[y][x] = lot(label[y][x], x, y)
+size = {}
+for y in range(H):
+    for x in range(W):
+        if label[y][x] >= 0: size[label[y][x]] = size.get(label[y][x], 0) + 1
+for y in range(H):
+    for x in range(W):
+        a = label[y][x]
+        if a >= 0 and size[a] < 20:
+            for nx, ny in nb4(x, y):
+                b = label[ny][nx]
+                if b >= 0 and b != a and size[b] >= 20 and label0[ny][nx] == label0[y][x]:
+                    size[b] += 1; size[a] -= 1; label[y][x] = b; break
+storeys = {b: rnd0.randrange(1, 4) for b in size}
+
 img = Image.new('RGBA', (W * T, H * T))
 px = img.load()
 def tex(t, X, Y, ox=0, oy=0):
@@ -168,7 +211,7 @@ for y in range(H):
 rnd = random.Random(1988)
 labels = sorted(set(label[y][x] for y in range(H) for x in range(W) if label[y][x] >= 0))
 TINTS = [(1, 1, 1), (0.92, 0.92, 0.96), (1.02, 0.98, 0.9), (0.86, 0.86, 0.9), (0.95, 0.9, 0.86), (0.8, 0.82, 0.88)]
-tint_of = {b: TINTS[rnd.randrange(len(TINTS))] if b < OUT0 else (0.62, 0.62, 0.7) for b in labels}
+tint_of = {b: TINTS[rnd.randrange(len(TINTS))] if b < OUT0 or b >= OUT0 + 100000 else (0.62, 0.62, 0.7) for b in labels}
 off_of = {b: (rnd.randrange(96), rnd.randrange(96)) for b in labels}
 for y in range(H):
     for x in range(W):
@@ -192,21 +235,37 @@ for y in range(H):
         if lab(x, y + 1) != b and lab(x, y + 1) >= 0:
             for u in range(T): px[X + u, Y + T - 1] = tint(px[X + u, Y + T - 1], (0.5, 0.5, 0.55))
 
+# Upper floors: where a building stands taller than the one in front of it (to its south), its wall shows above
+# that one's roof, 20 pixels a storey.
+for y in range(H - 1):
+    for x in range(W):
+        a, c = label[y][x], label[y + 1][x]
+        if a < 0 or c < 0 or a == c or storeys[a] <= storeys[c]: continue
+        k = 0
+        while lab(x, y - k - 1) == a and k < 3: k += 1
+        h = min((storeys[a] - storeys[c]) * 20, k * T + T - 6)
+        foot = (y + 1) * T
+        for u in range(T):
+            X = x * T + u
+            for v in range(h): px[X, foot - 1 - v] = WINDOWS.getpixel((X % WINDOWS.size[0], WINDOWS.size[1] - 1 - v))
+            px[X, foot - 1 - h] = (120, 120, 132, 255); px[X, foot - 2 - h] = (232, 232, 236, 255)
+
 # Rooftop things: tanks, or a skylight on a big roof, on roofs with room (clear of the shopfronts).
 cells_of = {}
 for y in range(H):
     for x in range(W):
         if label[y][x] >= 0: cells_of.setdefault(label[y][x], []).append((x, y))
 def fits(b, x0, y0, w, h):
-    return all(lab(x, y) == b and all(lab(x, y + k) == b for k in range(1, 7)) for y in range(y0, y0 + h) for x in range(x0, x0 + w))
+    # (on the roof, clear of a wall below it: a shopfront's six rows, or an upper floor's three)
+    return all(lab(x, y) == b and all(lab(x, y + k) == b for k in range(1, 7 if label0[y][x] < OUT0 and not solid(x, y + 7) else 4)) for y in range(y0, y0 + h) for x in range(x0, x0 + w))
 taken = set()
 for b in labels:
     cells = cells_of[b]
-    things = ([SKYLIGHT] if len(cells) > 300 else []) + [TANKS] * (1 + len(cells) // 400) + [VENT] * (len(cells) // 120)
+    things = ([SKYLIGHT] if len(cells) > 100 and rnd.random() < 0.3 else []) + [TANKS] * (len(cells) // 60) + [AIRCON] * (1 + len(cells) // 30) + [VENT] * (len(cells) // 50)
     for thing in things:
         w, h = (thing.size[0] + T - 1) // T, (thing.size[1] + T - 1) // T
         spots = [(x, y) for x, y in cells if fits(b, x, y, w, h) and not any((x + dx, y + dy) in taken for dx in range(-1, w + 1) for dy in range(-1, h + 1))]
-        if not spots or rnd.random() < (0.5 if b >= OUT0 else 0.15): continue
+        if not spots or rnd.random() < 0.25: continue
         x, y = spots[rnd.randrange(len(spots))]
         img.paste(thing, (x * T, y * T))
         taken.update((x + dx, y + dy) for dx in range(w) for dy in range(h))
@@ -224,21 +283,31 @@ for y, x in cols + [(None, None)]:
 for x0, x1, y in fronts:
     # (how far up the shopfront can go here: its building's own rows above, leaving a lip of roof)
     def room(x):
-        b, k = label[y][x], 0
-        while lab(x, y - k - 1) == b and k < 6: k += 1
+        b, k = label0[y][x], 0
+        while 0 <= y - k - 1 and label0[y - k - 1][x] == b and k < 6: k += 1
         return k * T + T - 6
+    # Whole shopfronts only, as many as fit, never the same twice running; what's left over is plain wall, shared
+    # out between them and at the ends.
     order = list(range(len(FRONTS))); rnd.shuffle(order)
-    X, i, foot = x0 * T, 0, (y + 1) * T
-    while X < x1 * T:
-        f = FRONTS[order[i % len(order)]]; i += 1
-        w = min(f.size[0], x1 * T - X)
-        for u in range(w):
-            h = min(FH, room((X + u) // T))
-            for v in range(h):
-                px[X + u, foot - 1 - v] = f.getpixel((u, FH - 1 - v))
-            for v in (h, h + 1):   # (the parapet over it)
-                px[X + u, foot - 1 - v] = (232, 232, 236, 255) if v == h + 1 else (120, 120, 132, 255)
-        X += w
+    width, chosen, last = (x1 - x0) * T, [], None
+    while True:
+        fit = [k for k in order if FRONTS[k].size[0] <= width - sum(FRONTS[j].size[0] for j in chosen) and k != last]
+        if not fit: break
+        last = fit[0]; chosen.append(last); order = order[1:] + order[:1]
+    spare = width - sum(FRONTS[k].size[0] for k in chosen)
+    gaps = [spare // (len(chosen) + 1) + (1 if g < spare % (len(chosen) + 1) else 0) for g in range(len(chosen) + 1)]
+    strip = []
+    for g, k in zip(gaps, chosen + [None]):
+        strip += [(WALL, (x0 * T + len(strip) + u) % WALL.size[0]) for u in range(g)]
+        if k is not None: strip += [(FRONTS[k], u) for u in range(FRONTS[k].size[0])]
+    foot = (y + 1) * T
+    for u, (f, fu) in enumerate(strip):
+        X = x0 * T + u
+        h = min(FH, room(X // T))
+        for v in range(h):
+            px[X, foot - 1 - v] = f.getpixel((fu, FH - 1 - v))
+        for v in (h, h + 1):   # (the parapet over it)
+            px[X, foot - 1 - v] = (232, 232, 236, 255) if v == h + 1 else (120, 120, 132, 255)
     # (a red sign down the wall, now and then)
     if x1 - x0 >= 4 and rnd.random() < 0.35 and room(x0) >= 70:
         sx = x0 * T + rnd.randrange(0, (x1 - x0) * T - 26)

@@ -3632,7 +3632,7 @@ are no wild Pokémon.
 - **Getting there**: the Realm Hub's crimson portal. You come out in the **Empty Lot**, the fenced plot of dirt in
   the middle of town that Yakuza 0's story is fought over, beside the Time Machine, which takes you back to the Realm
   Hub.
-- **The streets**: one map, 200 by 217 tiles. West Park fills the north-east corner. The outer roads ring the town,
+- **The streets**: one map, 200 by 216 tiles. West Park fills the north-east corner. The outer roads ring the town,
   and Pink Street's curved lane and the Champion District's alleys run through the blocks. Beyond the ring the city
   goes on, but you can't walk into it.
 - **The people**: **Kazuma Kiryu** outside Serena, and **Goro Majima** wandering by Theater Square, from sprite sheets
@@ -3648,16 +3648,23 @@ python3 tools/build-kamurocho.py "<path to Yu-Gi-Oh! - The Sacred Cards (USA).gb
 
 - **The layout**: `tools/data/kamurocho.txt`, one character a tile, two pixels of Yakuza 0's map to a tile: `.`
   street, `#` building, `+` the line between two buildings, `P` West Park, `E` the Empty Lot, and a space for the
-  city beyond. Edit it and rebuild to change the streets.
+  city beyond. Edit it and rebuild to change the streets. Under the map's icons (the save points, taxis, the
+  bowling ball and the people), each street and block was carried on from where it shows round the icon. The
+  Champion District's lanes were drawn by hand from the map: a ring of alley round its bars, two lanes through and
+  short alleys across.
 - **The pictures**: The Sacred Cards' screens, read from the cartridge as `tools/build-sacred-cards.py` reads them.
   The ground textures come from Domino's road (the streets), its back alley (the alleys: any street a tile or two
   across), the Office Tower's roof (every rooftop, each building tinted a little differently), Kaiba Corporation's
   yard (the Empty Lot) and the graveyard's lawn (West Park). Each texture keeps the patch's grain over its average
-  colour, so its tiling doesn't show. Each building gets a rooftop with a lit lip along its north edge. The Office
-  Tower's water tanks, skylight and vents go on roofs with room for them. Along any stretch of a building's south
-  side that faces open ground, the builder adds shopfronts: the Game Center's, the card shop's, the café's and
-  their neighbours', cut from their screens at their foot, one after another along the stretch, with a strip of the
-  Game Center's pavement under them. Now and then the bank's red sign hangs down a wall (from Domino Square's
+  colour, so its tiling doesn't show. A big building is cut into lots 9 to 14 tiles each way, since a Kamurocho
+  block is many buildings. Each lot is 1 to 3 storeys, and where one stands taller than the lot in front of it, its
+  upper floors (the Game Center's grey neighbour's windows) show above that lot's roof, 20 pixels a storey. Each
+  roof has a lit lip along its north edge, and the Office Tower's water tanks, skylight and vents and the alley's air
+  conditioners go on roofs with room for them. Along any stretch of a building's south side that faces open ground,
+  the builder adds shopfronts: the Game Center's, the card shop's, the café's and their neighbours', cut from their
+  screens at their foot. Only whole shopfronts are used, as many as fit and never the same one twice running. The
+  plain wall of windows fills the space left over, shared out between them, with a strip of the Game Center's
+  pavement under them. Now and then the bank's red sign hangs down a wall (from Domino Square's
   overlay). The city beyond is drawn as darker rooftops in blocks of 12. West Park's trees come from Domino City's
   overlays, and the bottom row of each is solid. The Time Machine is `tools/lib/realm-art.js`'s.
 - **The people**: `tools/data/kamurocho.json`, each with a place, a sprite, a way of standing and what they say. The
