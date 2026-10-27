@@ -2640,6 +2640,8 @@
   const START_HELP = {
     dex: "A device that records Pokémon secrets\nupon meeting or catching them.",
     party: "Check and organize Pokémon that are\ntraveling with you in your party.",
+    realmparty: "Check the party: who fights, who waits\nin reserve, and their stats and skills.",
+    realmmap: "A map of Kamurocho, and where you are\nin it.",
     bag: "Equipped with pockets for storing items\nyou bought, received, or found.",
     trunk: "Look through your Duel Monsters cards\nand build your deck.",
     card: "Check your money and other game data.",
@@ -2698,8 +2700,12 @@
       if (contest) items.push({ key: "retire", label: "Retire", help: "Finish the Bug-Catching Contest now and\nwait for the judging." });
       // (In the Yu-Gi-Oh! realm: no Pokédex, Pokémon, Bag or Trainer Card; the Trunk instead, your Duel Monsters cards.)
       const ygo = (window.WORLD_MAPS[player.location.map] || {}).realm === "yugioh";
-      if (player.flags.pokedex && !ygo) items.push({ key: "dex", label: "Pokédex" });
-      if (player.party.length && !ygo) items.push({ key: "party", label: "Pokémon" });
+      // (In the Like a Dragon realm: no Pokédex or Pokémon; its party instead (the party screen, ui/realm-party.js),
+      // and its map.)
+      const lad = (window.WORLD_MAPS[player.location.map] || {}).realm === "yakuza";
+      if (player.flags.pokedex && !ygo && !lad) items.push({ key: "dex", label: "Pokédex" });
+      if (player.party.length && !ygo && !lad) items.push({ key: "party", label: "Pokémon" });
+      if (lad) items.push({ key: "realmparty", label: "Party" }, { key: "realmmap", label: "Map" });
       if (!contest && !ygo) items.push({ key: "bag", label: "Bag" });
       if (ygo) items.push({ key: "trunk", label: "Trunk" });
       if (gear.has()) items.push({ key: "gear", label: hasPokenav() ? "PokéNav" : "Pokégear" });   // (HGSS's, once you have it: ui/pokegear.js)
@@ -2729,6 +2735,8 @@
         continue;
       }
       if (v === "party") { if ((await partyMenu()) === "escaped") return; }
+      else if (v === "realmparty") await realmPartyScreen("yakuza");
+      else if (v === "realmmap") await realmMap();
       else if (v === "bag") { if ((await bagScreen()) === "escaped") return; }
       else if (v === "trunk") await trunkScreen();
       else if (v === "dex") await pokedex();
@@ -9746,7 +9754,7 @@
         await say("You rest a while in the shadow of\nthe Time Machine. Everyone's\nback to full strength!");
         continue;
       }
-      if (v === "party") { await realmPartyScreen("yakuza"); continue; }
+      if (v === "party") { await realmPartyScreen("yakuza", true); continue; }
       if (v === "hub") {
         if (!(await confirm("Travel back to the Realm Hub?"))) continue;
         await voyage(HUB_YAKUZA_PORTAL, ["The Time Machine whirs to life…", "Kamurocho's lights fade away…", "…and you come out in the Realm Hub."], "se_warp_in");
@@ -9811,7 +9819,7 @@
   function realmRestore(P) {
     for (const rec of realmAll(P)) {
       const mon = realmMon(rec);
-      if (mon) Party.heal(mon);
+      if (mon) { Party.heal(mon); delete mon.realmMp; }
       else { const s = Ultimax.statsOf(rec); rec.hp = s.hp; rec.mp = s.mp; rec.hpScale = Ultimax.HP_SCALE; }
     }
   }
@@ -9908,10 +9916,11 @@
     scene.classList.add("evo");
     UltimaxScreen.build(scene, b, { back, pic: realmFoePic });
   }
-  // Each of the party's choices for the turn, or "run": for each in turn, FireRed's FIGHT / BAG / PARTY / RUN (B on
-  // the second and after goes back to the one before). FIGHT: Attack, Defend and their skills (a Pokémon's moves) in
-  // FireRed's move box, what each costs and its element at the right; BAG: the items; PARTY: one of the reserve in.
-  // Whom it's for: the ▼ over a foe, or one of the party's boxes bobbing.
+  // Each of the party's choices for the turn, or "run": for each in turn, ATTACK / DEFEND / SKILLS / BAG / PARTY / RUN
+  // (B on the second and after goes back to the one before). SKILLS: their skills (a Pokémon's moves) in FireRed's
+  // move box, a line each, what each costs and its element at the right; BAG: the items; PARTY: the party screen
+  // (ui/realm-party.js), its summaries, and one of the reserve in. Whom it's for: the ▼ over a foe, or one of the
+  // party's boxes bobbing.
   async function realmChoices(b) {
     const choices = b.allies.map(() => null), P = b.items || {}, I = window.REALM_ITEMS;
     const ov = $("#overlay"), frame = GameOptions.get().frame, cursor = b.cursors || (b.cursors = {});
@@ -9927,57 +9936,53 @@
       if (at != null) cursor[kind] = at;
       return at;
     };
-    const box = (moves, at) => GbaMenus.battleMoves(ov, { moves, cursor: at || 0, frame });
+    const box = (moves, at, wide) => GbaMenus.battleMoves(ov, { moves, cursor: at || 0, frame, wide });
     for (let k = 0; k < who.length;) {
       const i = who[k], f = b.allies[i];
       instant("");
-      const a = await GbaMenus.battleAction(ov, { prompt: ["What will", f.name + " do?"], labels: ["FIGHT", "BAG", "PARTY", "RUN"],
-        cursor: cursor["act" + i] || 0, frame, canBack: k > 0 });
+      const a = await GbaMenus.battleAction(ov, { prompt: ["What will", f.name + " do?"], labels: ["Attack", "Defend", "Skills", "Bag", "Party", "Run"],
+        actions: ["attack", "defend", "skills", "bag", "party", "run"], cursor: cursor["act" + i] || 0, frame, canBack: k > 0 });
       cursor["act" + i] = a.cursor;
       if (a.action === "back") { k--; continue; }
       if (a.action === "run") return "run";
-      if (a.action === "pokemon") {
-        // (Swap: one of the reserve comes in, this one's turn; each of them once a turn.)
-        const bench = b.reserve.map((x, j) => [x, j]).filter(([x, j]) => x.hp > 0 && !choices.some((c, ci) => ci !== i && c && c.act === "swap" && c.reserve === j));
-        if (!bench.length) { await message(b.reserve.length ? "There's no one else who can fight!" : "There's no one in reserve!"); continue; }
-        const r = await box(bench.map(([x]) => ({ name: x.name, info: [["Lv " + x.lv], ["HP " + x.hp + "/" + x.maxHp]] })));
-        if (!r) continue;
-        choices[i] = { act: "swap", reserve: bench[r.index][1] }; k++; continue;
+      if (a.action === "defend") { choices[i] = { act: "defend" }; k++; continue; }
+      if (a.action === "attack") {
+        const t = await target("one", "Attack whom?");
+        if (t == null) continue;
+        choices[i] = { act: "attack", target: t }; k++; continue;
+      }
+      if (a.action === "party") {
+        // (The party screen: anyone's summary; one of the reserve in, this one's turn, each of them once a turn.)
+        const taken = (j) => choices.some((c, ci) => ci !== i && c && c.act === "swap" && c.reserve === j);
+        const r = await realmBattleParty(b, i, taken);
+        if (r == null) continue;
+        choices[i] = { act: "swap", reserve: r }; k++; continue;
       }
       if (a.action === "bag") {
         const ids = Object.keys(P).filter((x) => P[x] > 0 && I[x]);
         if (!ids.length) { await message("There are no items!"); continue; }
         const what = (it) => [it.heal ? "HP+" + (it.heal === "all" ? "all" : it.heal * Ultimax.HP_SCALE) : "", it.mp ? "MP+" + it.mp : "", it.revive ? "Revives" : ""].filter(Boolean);
-        const r = await box(ids.map((x) => { const w = what(I[x]); return { name: I[x].name, info: [["×" + P[x] + "  " + (w[0] || "")], [w.slice(1).join(" ")]] }; }), cursor.item);
+        const r = await box(ids.map((x) => { const w = what(I[x]); return { name: I[x].name, info: [["×" + P[x] + "  " + (w[0] || "")], [w.slice(1).join(" ")]] }; }), cursor.item, true);
         if (!r) continue;
         cursor.item = r.cursor;
         const t = await target("ally", "Use " + I[ids[r.index]].name + " on whom?");
         if (t == null) continue;
         choices[i] = { act: "item", item: ids[r.index], target: t }; k++; continue;
       }
-      // FIGHT: Attack, Defend, then the skills.
+      // SKILLS: each one's category, as a Pokémon move's (Physical, Magical or Status, and a damaging one's base
+      // power), then its MP and its element.
+      if (!f.skills.length) { await message(f.name + " has no skills yet!"); continue; }
       const sk = (id) => Ultimax.skillOf(f, id);
-      // (Each one's category, as a Pokémon move's: Physical, Magical or Status, and a damaging one's base power; then its
-      // cost and its element.)
       const cat = (s2) => Ultimax.category(s2).toUpperCase() + (s2.kind === "phys" || s2.kind === "magic" ? " " + s2.power : "");
-      const moves = [{ name: "Attack", info: [["PHYSICAL " + Ultimax.ATTACK_POWER], [f.mon ? "No PP" : "No MP"], [element((f.elements || [])[0])]] },
-        { name: "Defend", info: [["STATUS"], [f.mon ? "No PP" : "No MP"], ["Halves damage"]] }]
-        .concat(f.skills.map((id) => {
-          const s2 = sk(id), short = f.mon ? !(f.pp[id] > 0) : s2.mp > f.mp;
-          return { name: s2.name, dim: short, info: [[cat(s2)],
-            [f.mon ? "PP " + f.pp[id] + "/" + ((f.mon.moves || []).find((m) => "move:" + m.name === id) || {}).maxpp : "MP " + s2.mp + " of " + f.mp, short], [element(s2.element)]] };
-        }));
-      const r = await box(moves, cursor["fight" + i]);
+      const moves = f.skills.map((id) => {
+        const s2 = sk(id), short = (s2.mp || 0) > f.mp;
+        return { name: s2.name, dim: short, info: [[cat(s2)], ["MP " + (s2.mp || 0) + " of " + f.mp, short], [element(s2.element)]] };
+      });
+      const r = await box(moves, cursor["skill" + i], true);
       if (!r) continue;
-      cursor["fight" + i] = r.cursor;
-      if (r.index === 1) { choices[i] = { act: "defend" }; k++; continue; }
-      if (r.index === 0) {
-        const t = await target("one", "Attack whom?");
-        if (t == null) continue;
-        choices[i] = { act: "attack", target: t }; k++; continue;
-      }
-      const id = f.skills[r.index - 2], s2 = sk(id);
-      if (moves[r.index].dim) { await message(f.mon ? "There's no PP left for this move!" : "Not enough MP!"); continue; }
+      cursor["skill" + i] = r.cursor;
+      const id = f.skills[r.index], s2 = sk(id);
+      if (moves[r.index].dim) { await message("Not enough MP!"); continue; }
       const t = await target(s2.target, s2.name + ": on whom?");
       if (t == null) continue;
       choices[i] = { act: "skill", skill: id, target: s2.target === "self" ? i : t }; k++;
@@ -10005,12 +10010,12 @@
       const { exp, money } = Ultimax.spoils(b);
       music(b.boss ? "mus_victory_gym_leader" : "mus_victory_wild");
       Player.addMoney(player, money);
-      await message(realmWrap(b.allies.filter((f) => f.hp > 0).length > 1 ? "Each of you gets " + exp + " EXP." : player.name + " gets " + exp + " EXP."));
+      // (Everyone the same, the reserve and the fallen too; a Pokémon's as its own EXP, Ultimax.pokemonExp, said once
+      // with everyone's.)
+      await message(realmWrap((b.allies.length + b.reserve.length > 1 ? "Everyone gains " : player.name + " gains ") + exp + " EXP points!"));
       if (money) await message("You picked up ¥" + money + ".");
-      // (the reserve too, as in Dragon Quest XI)
       for (const f of b.allies.concat(b.reserve)) {
-        if (f.hp <= 0) continue;
-        if (f.mon) { await realmMonExp(f.mon, exp); continue; }
+        if (f.mon) { await realmMonExp(f.mon, exp, true); continue; }
         const levels = Ultimax.gainExp(f.rec, exp);
         for (const l of levels) {
           await fanfare("mus_level_up");
@@ -10044,80 +10049,147 @@
     music(here.music);
     return b.over;
   }
-  // The party, out of battle: each one's level, HP, MP, stats, elements, skills and EXP to the next level.
-  async function realmPartyScreen(realm) {
-    const P = realmParty(realm);
+  // The party screen (ui/realm-party.js): the four who fight and the four in reserve, each one's picture (you as your
+  // look, Kiryu and Majima as Streets of Kamurocho draws them, a Pokémon its party icon), level, HP and MP. Pick one
+  // for their summary (stats, elements, skills, EXP to the next level), to switch them with another box (you always
+  // fight), or to put in their stat points; at the Time Machine (`atMachine`), to leave them there, or to bring back
+  // one who waits there into an empty box.
+  const realmIcons = {};
+  function realmIconOf(rec, f) {
+    const img = (src) => realmIcons[src] || (realmIcons[src] = Object.assign(new Image(), { src }));
+    const mon = rec && realmMon(rec);
+    if (mon || (f && f.mon)) return { icon: img(Screen.iconUrl((mon || f.mon).species)), rect: [0, 0, 32, 32] };
+    if (f && f.form) return { icon: img(Screen.iconUrl(f.form)), rect: [0, 0, 32, 32] };
+    const id = rec && rec.id;
+    if (id === "kiryu" || id === "majima") return { icon: img("assets/kamurocho/people/" + id + "_idle.png") };
+    const look = Overworld.playerLook();
+    return look ? { icon: look, rect: [0, 0, 32, 32] } : { icon: img("assets/world/sprites/player_custom.png"), rect: [0, 0, 16, 32] };
+  }
+  const realmIconsLoaded = () => Promise.all(Object.values(realmIcons).map((i) => (i.complete ? null : new Promise((r) => { i.onload = i.onerror = r; }))));
+  // (One box: a member as saved, or as a fighter in a battle.)
+  function realmSlot(rec, f) {
+    if (!rec && !f) return null;
+    f = f || realmMember(rec);
+    const s = Ultimax.skillOf, S = window.REALM_SKILLS, F = window.REALM_FIGHTERS;
+    const mon = f.mon, base = !mon && rec && F[rec.id];
+    const lines = [f.elements.join("/") + (mon ? "  Pokémon" : base && !base.name && raceName() ? "  " + raceName() : ""),
+      "HP " + f.hp + "/" + f.maxHp + "   MP " + f.mp + "/" + f.maxMp,
+      "Strength     " + f.str, "Defence      " + f.def, "Intelligence " + f.int, "Wisdom       " + f.wis, "Speed        " + f.spd];
+    if (!mon && rec) lines.push("Next Lv     " + (Ultimax.expFor(rec.lv + 1) - rec.exp) + " EXP");
+    if (!mon && rec && Ultimax.pointsOf(rec).points) lines.push("Stat points " + rec.points);
+    const skills = f.skills.map((id) => { const k = s(f, id) || S[id]; return [k.name, "MP " + (k.mp || 0)]; });
+    return Object.assign({ name: f.name, lv: f.lv, hp: f.hp, maxHp: f.maxHp, mp: f.mp, maxMp: f.maxMp, rec, summary: { lines, skills } }, realmIconOf(rec, f));
+  }
+  async function realmPartyScreen(realm, atMachine) {
+    const P = realmParty(realm), ov = $("#overlay"), frame = GameOptions.get().frame;
+    let cursor = 0;
     for (;;) {
-      const all = realmAll(P), where = (rec) => (P.party.includes(rec) ? "Fighting" : P.reserve.includes(rec) ? "Reserve" : "Time Machine");
-      const v = await ask(realmWrap("Fighting " + P.party.length + "/4, in reserve " + P.reserve.length + "/4, at the Time Machine " + P.stored.length + "."),
-        [{ label: "Look", value: "look", className: "action" }, { label: "Stat points", value: "points", className: "action", disabled: !all.some((rec) => !realmMon(rec) && Ultimax.pointsOf(rec).points > 0) },
-          { label: "Arrange", value: "arrange", className: "action", disabled: all.length < 2 }, back()]);
-      if (v === "back") return;
-      if (v === "look") { await realmPartyLook(P); continue; }
-      if (v === "points") {
-        const has = all.filter((rec) => !realmMon(rec) && rec.points > 0);
-        const i = has.length === 1 ? 0 : await ask("Whose stat points?", has.map((rec, k) => ({ label: realmName(rec) + "  " + rec.points, value: k })).concat([back()]));
-        if (i !== "back") await realmPoints(has[i]);
+      const recs = [0, 1, 2, 3].map((i) => P.party[i] || null).concat([0, 1, 2, 3].map((i) => P.reserve[i] || null));
+      const slots = recs.map((rec) => realmSlot(rec));
+      await realmIconsLoaded();
+      Screen.say(""); clearMenu();
+      const r = await RealmParty.open(ov, { slots, cursor, frame, title: P.stored.length ? P.stored.length + " at the Time Machine" : "PARTY",
+        choices: (i) => {
+          const rec = recs[i];
+          if (!rec) return atMachine && P.stored.length ? [{ key: "bring", label: "Bring" }] : [];
+          return [{ key: "summary", label: "Summary" }, { key: "switch", label: "Switch" }]
+            .concat(!realmMon(rec) && Ultimax.pointsOf(rec).points > 0 ? [{ key: "points", label: "Points" }] : [])
+            .concat(atMachine && rec !== realmMe(P) ? [{ key: "leave", label: "Leave" }] : []);
+        } });
+      if (!r) return;
+      cursor = r.cursor;
+      const rec = recs[r.index];
+      if (r.action === "summary") { await RealmParty.summary(ov, slots[r.index], frame); continue; }
+      if (r.action === "points") { show(Street.isStreet(player.location.map) ? "street" : "world"); await realmPoints(rec); await persist(); continue; }
+      if (r.action === "leave") { P[P.party.includes(rec) ? "party" : "reserve"].splice(P[P.party.includes(rec) ? "party" : "reserve"].indexOf(rec), 1); P.stored.push(rec); await persist(); continue; }
+      if (r.action === "bring") {
+        const pick = await ask("Bring whom from the Time Machine?", P.stored.map((x, k) => ({ label: realmName(x) + "  Lv " + (realmMon(x) ? realmMon(x).level : x.lv), value: k })).concat([back()]));
+        if (pick !== "back") { const x = P.stored.splice(pick, 1)[0]; (r.index < 4 && P.party.length < 4 ? P.party : P.reserve.length < 4 ? P.reserve : P.party).push(x); }
+        await persist(); continue;
+      }
+      if (r.action === "switch") {
+        const a = r.index, b2 = r.with;
+        if (a === b2) continue;
+        const me = realmMe(P);
+        if ((recs[a] === me && b2 >= 4) || (recs[b2] === me && a >= 4)) { await message("You always fight: you can't go\ninto the reserve."); continue; }
+        [recs[a], recs[b2]] = [recs[b2], recs[a]];
+        P.party = recs.slice(0, 4).filter(Boolean); P.reserve = recs.slice(4).filter(Boolean);
+        sfx("se_select");
         await persist();
-        continue;
       }
-      // (Arranging: who fights, who waits in reserve and who at the Time Machine; you always fight.)
-      const pick = await ask("Move whom?", all.map((rec, i) => ({ label: realmName(rec) + "  Lv " + (realmMon(rec) ? realmMon(rec).level : rec.lv) + "  (" + where(rec) + ")", value: i, disabled: rec === realmMe(P) })).concat([back()]));
-      if (pick === "back") continue;
-      const rec = all[pick], from = P.party.includes(rec) ? "party" : P.reserve.includes(rec) ? "reserve" : "stored";
-      const to = await ask(realmName(rec) + ": where?", [
-        { label: "Fighting", value: "party", className: "action", disabled: from === "party" || P.party.length >= 4 },
-        { label: "Reserve", value: "reserve", className: "action", disabled: from === "reserve" || P.reserve.length >= 4 },
-        { label: "Time Machine", value: "stored", className: "action", disabled: from === "stored" }, back()]);
-      if (to === "back") continue;
-      P[from].splice(P[from].indexOf(rec), 1); P[to].push(rec);
-      await persist();
     }
   }
-  // Putting a member's stat points in (Ultimax.spend): each stat as it is and what a point adds, until they're all in
-  // or "Later" keeps the rest for the party screen.
-  async function realmPoints(rec) {
-    const NAMES = { hp: "HP", mp: "MP", str: "Strength", def: "Defence", int: "Intelligence", wis: "Wisdom", spd: "Speed" };
-    const ADDS = { hp: 2 * Ultimax.HP_SCALE, mp: 2 };
-    while (Ultimax.pointsOf(rec).points > 0) {
-      const s = Ultimax.statsOf(rec);
-      const v = await ask(realmName(rec) + " has " + rec.points + " stat point" + (rec.points > 1 ? "s" : "") + ".\nWhich stat goes up?",
-        Ultimax.POINT_STATS.map((k) => ({ label: NAMES[k] + "  " + s[k] + " +" + (ADDS[k] || 1), value: k })).concat([back("Later")]));
-      if (v === "back") return;
-      Ultimax.spend(rec, v);
-      sfx("se_select");
-    }
-  }
-  async function realmPartyLook(P) {
-    const S = window.REALM_SKILLS, F = window.REALM_FIGHTERS;
-    for (const rec of realmAll(P)) {
-      const mon = realmMon(rec);
-      if (mon) {
-        const f = realmMember(rec);
-        await say([f.name + "  Lv " + f.lv + "  (" + f.elements.join("/") + ")\nHP " + f.hp + "/" + f.maxHp,
-          "STR " + f.str + "  DEF " + f.def + "  INT " + f.int + "\nWIS " + f.wis + "  SPD " + f.spd,
-          realmWrap("Moves: " + (f.skills.map((id) => f.own[id].name + " (" + f.pp[id] + " PP)").join(", ") || "none that work here"))]);
-        continue;
+  // Kamurocho's map (the start menu's MAP; KAMUROCHO_STREET.map): its streets on the night-blue ground, Yakuza 0's
+  // way, each named, the one you're on lit, and you a blinking mark along it as far as you've walked. A or B closes it.
+  async function realmMap() {
+    const K = window.KAMUROCHO_STREET, Mp = K.map.scenes, ov = $("#overlay"), loc = player.location.street || K.arrive;
+    const here = Mp[loc.scene] && Mp[loc.scene].at ? Mp[loc.scene].at[0] : loc.scene;
+    const frac = Mp[loc.scene] && Mp[loc.scene].at ? Mp[loc.scene].at[1] : Math.max(0, Math.min(1, loc.x / ((K.scenes[loc.scene] || {}).width || 1)));
+    // (a point that far along a line)
+    const along = (line, t) => {
+      const seg = line.slice(1).map((p, i) => Math.hypot(p[0] - line[i][0], p[1] - line[i][1])), total = seg.reduce((x, y) => x + y, 0);
+      let d = t * total;
+      for (let i = 0; i < seg.length; i++) { if (d <= seg[i] || i === seg.length - 1) { const k = seg[i] ? d / seg[i] : 0; return [line[i][0] + (line[i + 1][0] - line[i][0]) * k, line[i][1] + (line[i + 1][1] - line[i][1]) * k]; } d -= seg[i]; }
+      return line[0];
+    };
+    const draw = (blink) => {
+      const sf = GbaMenus.Surface(), W = [248, 248, 248];
+      sf.fill(0, 0, 240, 160, [16, 24, 48]);
+      // (the blocks between: a faint grid)
+      for (let y = 0; y < 160; y += 8) for (let x = (y / 8) % 2 ? 4 : 0; x < 240; x += 8) sf.put(x, y, [28, 40, 72]);
+      const road = (line, w, col) => {
+        for (let i = 1; i < line.length; i++) {
+          const [x0, y0] = line[i - 1], [x1, y1] = line[i], n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
+          for (let k = 0; k <= n; k++) { const x = Math.round(x0 + (x1 - x0) * k / n), y = Math.round(y0 + (y1 - y0) * k / n); sf.fill(x - (w >> 1), y - (w >> 1), w, w, col); }
+        }
+      };
+      for (const [id, m] of Object.entries(Mp)) if (m.line) road(m.line, m.w + 2, [56, 72, 112]);
+      for (const [id, m] of Object.entries(Mp)) if (m.line) road(m.line, m.w, id === here ? [248, 200, 64] : [150, 164, 196]);
+      for (const [id, m] of Object.entries(Mp)) if (m.label) String(m.name || K.scenes[id].title).split("\n").forEach((t, k) => sf.text(t, m.label[0], m.label[1] + k * 9, id === here ? [255, 224, 120] : W, [16, 24, 48], "small"));
+      sf.fill(0, 0, 240, 11, [8, 12, 28]);
+      sf.text("KAMUROCHO", 4, 0, W, [8, 12, 28], "small");
+      const name = (K.scenes[loc.scene] || {}).title || "";
+      sf.text(name, 236 - sf.textWidth(name, "small"), 0, [255, 224, 120], [8, 12, 28], "small");
+      if (Mp[here] && Mp[here].line && blink) {
+        const [x, y] = along(Mp[here].line, frac).map(Math.round);
+        sf.fill(x - 3, y - 3, 7, 7, [16, 24, 48]); sf.fill(x - 2, y - 2, 5, 5, [232, 56, 56]); sf.put(x, y, W);
       }
-      const s = Ultimax.statsOf(rec);
-      const race = F[rec.id].name || !raceName() ? "" : " the " + raceName();
-      await say([realmName(rec) + race + "  Lv " + rec.lv + (race ? "\n" + F[rec.id].elements.join("/") + "  " : "  (" + F[rec.id].elements.join("/") + ")\n") +
-        "HP " + rec.hp + "/" + s.hp + "  MP " + rec.mp + "/" + s.mp,
-        "STR " + s.str + "  DEF " + s.def + "  INT " + s.int + "\nWIS " + s.wis + "  SPD " + s.spd,
-        realmWrap("Skills: " + (Ultimax.skillsAt(rec.id, rec.lv).map((k) => S[k].name + " (" + Ultimax.category(S[k]) + ")").join(", ") || "none")),
-        "Next level: " + (Ultimax.expFor(rec.lv + 1) - rec.exp) + " EXP" + (rec.points ? "\nStat points to put in: " + rec.points : "")]);
+      sf.show(ov);
+    };
+    Screen.say(""); clearMenu();
+    ov.classList.remove("hidden");
+    let on = true;
+    draw(on);
+    const tick = setInterval(() => { on = !on; draw(on); }, 400);
+    await GbaMenus.keys((k) => (k === "a" || k === "b" ? true : undefined));
+    clearInterval(tick);
+    ov.classList.add("hidden");
+  }
+  // In a battle: the party screen, everyone as they stand; a summary, or one of the reserve to come in for the one
+  // choosing (b.allies[i]): -> its index in b.reserve, or null.
+  async function realmBattleParty(b, i, taken) {
+    const ov = $("#overlay"), frame = GameOptions.get().frame;
+    const fs = [0, 1, 2, 3].map((k) => b.allies[k] || null).concat([0, 1, 2, 3].map((k) => b.reserve[k] || null));
+    const slots = fs.map((f) => (f ? realmSlot(f.rec, f) : null));
+    await realmIconsLoaded();
+    let cursor = 4;
+    for (;;) {
+      const r = await RealmParty.open(ov, { slots, cursor, frame, title: "PARTY",
+        choices: (k) => (!fs[k] ? [] : [{ key: "summary", label: "Summary" }].concat(k >= 4 ? [{ key: "in", label: "Send in", disabled: fs[k].hp <= 0 || taken(k - 4) }] : [])) });
+      if (!r) return null;
+      cursor = r.cursor;
+      if (r.action === "summary") { await RealmParty.summary(ov, slots[r.index], frame); continue; }
+      if (r.action === "in") return r.index - 4;
     }
-    const items = Object.keys(P.items).filter((k) => P.items[k] > 0);
-    await say("Items: " + (items.map((k) => window.REALM_ITEMS[k].name + " ×" + P.items[k]).join(", ") || "none"));
   }
   // A Pokémon's share of a won fight: Ultimax EXP as its own (Ultimax.pokemonExp), and its levels, new moves and
   // evolving as from Exp. Candies (to the level cap).
-  async function realmMonExp(mon, exp) {
+  async function realmMonExp(mon, exp, quiet) {
     const E = Experience, rate = E.growthRate(mon.species), top = Math.min(E.MAX_LEVEL, Player.levelCap(player)), name = Party.displayName(mon);
     if (mon.level >= top) return;
     const before = mon.exp;
     mon.exp = Math.min(E.expForLevel(rate, top), mon.exp + Ultimax.pokemonExp(mon, exp));
-    await message(name + " gained " + (mon.exp - before).toLocaleString("en-US") + " Exp. Points!");
+    if (!quiet) await message(name + " gained " + (mon.exp - before).toLocaleString("en-US") + " Exp. Points!");
     let grew = false;
     while (mon.level < top && mon.exp >= E.expForLevel(rate, mon.level + 1)) {
       const moves = Bag.levelUp(mon, { here: player.location && player.location.map });

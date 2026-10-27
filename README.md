@@ -3767,7 +3767,9 @@ taken from a Dragon Quest cartridge.
   King's Shield, Spiky Shield, Baneful Bunker, Obstruct, Silk Trap and Burning Bulwark (with what each does to
   whoever touches them), Wide Guard (the party, from moves on all of it) and Quick Guard (from priority moves). Each
   is a third as likely to work again straight after, and fails if no foe's left to move.
-- **Winning**: the foes' EXP is split between those still standing, and their money is yours. EXP to reach level
+- **Winning**: the foes' EXP is split between those still standing, everyone in the party (the reserve and the
+  fallen too) gains that much ("Everyone gains X EXP points!", a Pokémon's as its own EXP, said once with
+  everyone's), and their money is yours. EXP to reach level
   L is 10 × (L − 1)^2.5. Each level adds that fighter's growth to every stat and may teach a skill. Anyone who fell
   gets up afterwards with 1 HP.
 - **Stat points**: three each level (`Ultimax.POINTS`), put into the stats you like in a window right after the
@@ -3785,9 +3787,10 @@ taken from a Dragon Quest cartridge.
   dimmed, behind the fight; the foes standing at the left, each with its name and FireRed's HP bar over its head (a
   bar that would run into the one before goes a row up); the party's FireRed healthboxes (name, level, HP bar, status)
   down the right, staggered as a double battle's; FireRed's battle message box under it all. For each of the party in
-  turn, FireRed's command box: FIGHT (Attack, Defend and their skills, or a Pokémon's moves, in FireRed's move box,
-  scrolling past four, with the MP each costs against what's left, or the PP, and its element), BAG (the realm's
-  items), PARTY (one of the reserve in) and RUN; B on the second and after goes back to the one before. Whom a skill
+  turn, the command box: ATTACK, DEFEND, SKILLS (their skills, or a Pokémon's moves, in FireRed's move box a line
+  each, so long names like Kiryu's fit, with the MP each costs against what's left and its element), BAG (the
+  realm's items), PARTY (the party screen, below: anyone's summary, or one of the reserve sent in) and RUN, in two
+  columns of three; B on the second and after goes back to the one before. Whom a skill
   or item is for: left and right, a ▼ over the foe or the party member's box bobbing, their name in the message box.
   The bars move as FireRed's do; a foe hit blinks and one beaten fades; when the party's hit, its box and the screen
   shake. FireRed's hit, faint and flee sounds and its battle and victory songs.
@@ -3810,7 +3813,7 @@ taken from a Dragon Quest cartridge.
   | 14 | Essence of the Beast: Lob Crush (Fire, all foes, 1.9×, 12 MP) | 12 | Essence of Pole Pandemonium (Dark, all foes, 1.7×, 12 MP) |
   | 18 | Essence of the Flying Fist (Fire, one foe, 3.2×, 16 MP) | 16 | Essence of the Thug: Finisher (Dark, one foe, 3.2×, 16 MP) |
 
-  The street's foes use the Heat Actions anyone can do: a Street Punk Essence of Ass Crushing, a Drunk Salaryman
+  The street's foes are all Neutral, and use the Heat Actions anyone can do: a Street Punk Essence of Ass Crushing, a Drunk Salaryman
   Essence of Self-Destruct (it can poison), a Thug Essence of Wreckage, a Knife Punk Essence of Back Breaking, a
   Host Essence of Door Slamming (it can knock you out cold: sleep), a Biker Essence of Throwing, a Yakuza Grunt
   Essence of Wall Smashing and Mr. Shakedown Essence of No Mercy.
@@ -3821,10 +3824,17 @@ taken from a Dragon Quest cartridge.
   in reserve, and **Swap** (on a fighter's turn, before anyone acts) brings one in for them; at the end of a turn,
   anyone who fell is replaced by the first of the reserve still standing, and the fight's only lost once the
   reserve's down too. The reserve gets EXP as the fighters do (Dragon Quest XI's way). Anyone else waits at the Time
-  Machine, out of the fights. Whoever joins (Kiryu, Majima, a Pokémon) goes in the first with room. At the Time
-  Machine, **Party** shows everyone (**Look**) and moves them about (**Arrange**: fighting, reserve or the Time
-  Machine; you always fight); **Rest** heals everyone. Saved as `flags.realmParty[realm]` = { party, reserve,
-  stored, items }.
+  Machine, out of the fights. Whoever joins (Kiryu, Majima, a Pokémon) goes in the first with room. **The party
+  screen** (`ui/realm-party.js`, in FireRed's menus' font and frames; the start menu's PARTY, which replaces POKéMON
+  and the POKéDEX in Kamurocho, the Time Machine's Party, and in battle): the four READY down the left and the four
+  in RESERVE down the right, each box with their picture (you as your look, Kiryu and Majima as Streets of
+  Kamurocho draws them, a Pokémon its party icon), name, level, HP and MP; one person is enough to look. A on someone:
+  **Summary** (elements, HP, MP, stats, EXP to the next level, stat points, skills and their MP), **Switch** (with
+  any other box, an empty one too; you always fight), **Points** (stat points to put in), and at the Time Machine
+  **Leave** (to wait there) or, on an empty box, **Bring** (one who waits there). **Rest** at the Time Machine heals
+  everyone. Saved as `flags.realmParty[realm]` = { party, reserve, stored, items }.
+- **The map** (the start menu's MAP in Kamurocho; `KAMUROCHO_STREET.map`): this game's own, drawn in Yakuza 0's
+  night-blue way from how its streets join, each named; the one you're on lit, you a blinking mark along it.
 - **Pokémon out of their realm**: at the Kamurocho Time Machine, **Pokémon** brings one of your party Pokémon into
   the realm's party (as anyone joins: fighting, reserve or the Time Machine), or sends one back. It
   fights by the Ultimax system's rules (`Ultimax.pokemon` in `engine/battle.js`):
@@ -3834,9 +3844,11 @@ taken from a Dragon Quest cartridge.
     and Grass Grass; Ghost and Dark Dark; Fairy Light; Electric, Water, Psychic, Fire, Steel, Poison and Ice their
     own. Two types that come to one element are that one, and Neutral only when it's all there is (Normal/Flying is
     Air).
-  - **Its moves are skills** that cost PP, each its own, and no MP. A physical move hits as an attack times its
-    base power / 40 (two to five hits count as three). A special move is magic: its base power times its level /
-    40, an eighth either way. Each keeps its accuracy, priority (Quick Attack goes first) and what else it does: a
+  - **Its moves are skills** that cost MP, as everyone's do (`Ultimax.moveMp`: a damaging move a twentieth of its
+    power, a status move 2-6 by how few PP it has), not PP. Its MP is its species' (`Ultimax.monMp`): the first 386
+    each have a base MP (`data/mon-mp.js`, by `tools/build-mon-mp.js`: 45% of its Special Attack, 30% of its Special
+    Defense and 25% of its HP), and at a level it's twice that times the level / 100, plus 10 and half the level (a
+    later Pokémon's worked out the same way). Its Physical moves are Physical and its Special moves Magical. Each keeps its accuracy, priority (Quick Attack goes first) and what else it does: a
     status, a stat change (its own or the target's), flinching, draining, recoil, exploding. Status moves do as they
     do in its realm: a status (Thunder Wave, Toxic, Will-O-Wisp, Confuse Ray, Swagger...), stat changes (Swords
     Dance, Growl...), a heal (Recover; Heal Pulse on an ally; Life Dew on the party), protection (above), and Rest,
@@ -3853,7 +3865,8 @@ taken from a Dragon Quest cartridge.
     - **Switching out or forcing a switch** (5): Baton Pass, Parting Shot, Roar, Shed Tail, Whirlwind
     - **Terrain** (4): Electric Terrain, Grassy Terrain, Misty Terrain, Psychic Terrain
     - **Faint to heal the next one in** (2): Healing Wish, Lunar Dance
-  - **Afterwards** its HP and PP stay as the fight left them (it's the same Pokémon in your party). Like the rest of
+  - **Afterwards** its HP and MP stay as the fight left them (it's the same Pokémon in your party; its MP,
+    `realmMp`, is full again at a Rest or a Pokémon Center). Like the rest of
     the party, it gets up with 1 HP if it fell, and a Rest at the Time Machine heals it as a Pokémon Center would. A
     fight's EXP is as much of a level to it as to a fighter of its level (`Ultimax.pokemonExp`: Ultimax's curve
     against its growth rate's). Its levels, new moves and evolving come as from Exp. Candies, up to the level cap.
@@ -3923,7 +3936,7 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   spots are their "hair"; Superstar Saga has no Toadsworth); and Bowser for the Koopas (shrunk to the others' size, Bowser more). And from Paper Mario:
   The Thousand-Year Door, drawn from its models: a Pianta, Don Pianta, Frankie and Francesca for the Piantas (their
   sprouts are their "hair", their grass skirts the trim); a Goomba and Goombella for the Goombas; Koops for the Koopas.
-  Kanto's Humans are FireRed's own Red, Leaf and Gary (`FRLG_PARTS`, from their overworld sheets), each cut at the row
+  Kanto's Pokémon Trainers are FireRed's own Red, Leaf and Gary (`FRLG_PARTS`, from their overworld sheets), each cut at the row
   under the chin by eye, as they're chibi; Red's cap and Leaf's hat go with the hairstyle, coloured as his jacket and her
   skirt.
   Paper Mario's people are paper: the models face you a little to the left and have no side, and Superstar Saga's
@@ -4013,7 +4026,7 @@ colours) between its markers; each race's choices are `REALM_RACES[..].looks`.
 | Pianta (Water) | most HP of the five, slow | Chuckster Toss (1), Sturdy Belly (3, guard), Squirt Nozzle (5), Durian Drop (8, Grass), Shine Sprite (11, Light, heal), Hover Nozzle Splash (14, all), Turbo Nozzle (19) |
 | Goomba (Ground) | nimble | Headbonk (1), Goomba Huddle (3, guard), Multibonk (5), Goomba Tower (8, all), Paragoomba Dive (11, Air), Big Goomba Stomp (14), Goomboss Charge (19, all) |
 | Koopa (Earth) | toughest defence | Shell Toss (1), Shell Shield (3, guard), Shell Spin (5, all), Dizzy Shell (7, paralysis), Power Shell (10, all), Fire Shell (14, Fire), Shell Slam (19) |
-| Human, of Kanto (Neutral) | the trainer's stats, all-round | Poké Ball Throw (1), Potion (3, heal), X Defend (5, guard), Super Potion (8, heal), Pikachu's Thunderbolt (11, Electric), Charizard's Fire Blast (14, Fire, all), Master Ball (19) |
+| Pokémon Trainer, of Kanto (Neutral) | the weakest of all but the quickest | Go! Pikachu (1), Go! Bulbasaur (3), Go! Charmander (5), Go! Squirtle (8), Go! Eevee (11), Go! Lapras (14), Go! Snorlax (19): each sends the Pokémon out and they become it, at their own level, its stats, types (as elements), MP and four latest level-up moves that work here, with Return to be themselves again (`transform` in `engine/battle.js`); their HP and MP go as much of the one's maximum as of the other's, and out of the fight they're themselves |
 
 The Mushroom Kingdom's five are for its realm to come; their looks are above. Some skill names are this game's own
 (the Dragon World's Weighted Cape, Android Barrier, Divine Paralysis, Kaio-ken Attack and Z Sword Slash, and):

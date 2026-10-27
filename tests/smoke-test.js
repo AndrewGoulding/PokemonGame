@@ -7186,7 +7186,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     b.items = { staminan: 2 };
     for (let n = 0; !b.over; n++) {
       assert(n < 300, "a realm battle ends");
-      const choices = b.allies.map((f, i) => (g % 4 === 0 && i === 0 ? { act: "item", item: "staminan", target: 1 } : f.skills[n % 3] && S[f.skills[n % 3]].mp <= f.mp ? { act: "skill", skill: f.skills[n % 3], target: 0 } : { act: "attack", target: 0 }));
+      const choices = b.allies.map((f, i) => (g % 4 === 0 && i === 0 ? { act: "item", item: "staminan", target: 1 } : f.skills[n % 3] && R.skillOf(f, f.skills[n % 3]).mp <= f.mp ? { act: "skill", skill: f.skills[n % 3], target: 0 } : { act: "attack", target: 0 }));
       for (const st of R.turn(b, n % 9 === 8 ? "run" : choices)) assert(!/NaN|undefined/.test(st.text), st.text);
       turns++;
     }
@@ -7219,15 +7219,39 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   for (const id in S) assert(S[id].status !== "stun", id + ": stun is paralysis now");
   {
     const b = R.create([R.member(R.recruit("hylian", 20), "Red"), pf], ["thug", "knife"], { seed: 7 });
-    const pp0 = pf.pp["move:Thunderbolt"];
+    // (its moves cost MP, not PP: its MP its species', data/mon-mp.js)
+    const mp0 = pf.mp, pp0 = pika.moves[0].pp;
+    assert(mp0 === R.monMp("Pikachu", 20) && mp0 > 0 && pf.own["move:Thunderbolt"].mp === 5, "a Pokémon's MP and its moves' costs");
     for (let n = 0; !b.over; n++) {
       assert(n < 100, "a fight with a Pokémon in it ends");
       for (const st of R.turn(b, [{ act: "attack", target: 0 }, { act: "skill", skill: "move:Thunderbolt", target: 0 }])) assert(!/NaN|undefined/.test(st.text), st.text);
     }
-    assert(pf.pp["move:Thunderbolt"] < pp0, "its moves cost PP");
+    assert(pf.mp < mp0, "its moves cost MP");
     R.keep(b);
-    assert(pika.moves[0].pp === pf.pp["move:Thunderbolt"] && pika.hp === Math.ceil(pf.hp / R.HP_SCALE), "its PP and HP go back to it");
+    assert(pika.moves[0].pp === pp0 && pika.realmMp === pf.mp && pika.hp === Math.ceil(pf.hp / R.HP_SCALE), "its MP and HP go back to it, its PP untouched");
+    assert(R.pokemon(pika, ps, "Pikachu").mp === pf.mp, "and it comes back with that MP");
+    Party.heal(pika);
+    assert(pika.realmMp === undefined && R.pokemon(pika, ps, "Pikachu").mp === mp0, "a Pokémon Center fills it again");
     assert(R.pokemonExp(pika, 20) > 0);
+    assert(Object.keys(window.MON_MP).length === 386 && window.MON_MP.Bulbasaur > 0 && window.MON_MP["Deoxys-Normal"] > 0, "the first 386's MP");
+  }
+  // (Kanto's Pokémon Trainers: weak but for speed; Go! sends one out, and they become it at their level, its stats,
+  // elements, four moves and Return; Return, and the fight's end, make them themselves again.)
+  {
+    const rec = R.recruit("kanto", 12), me = R.member(rec, "Red"), hyl = R.member(R.recruit("hylian", 12), "Red");
+    assert(me.str < hyl.str && me.def < hyl.def && me.spd > hyl.spd && me.maxHp < hyl.maxHp, "a trainer's weak, but quick");
+    assert.deepStrictEqual(R.skillsAt("kanto", 1), ["go_pikachu"], "one Pokémon to send out at first");
+    const b = R.create([me], ["punk"], { seed: 11 });
+    R.turn(b, [{ act: "skill", skill: "go_bulbasaur", target: 0 }]);
+    const st = R.monStats("Bulbasaur", 12);
+    assert(me.form === "Bulbasaur" && me.str === st.atk && me.spd === st.spe && me.maxHp === st.hp * R.HP_SCALE && me.maxMp === R.monMp("Bulbasaur", 12), "they become it, at their level");
+    assert.deepStrictEqual(me.elements, ["Grass", "Poison"]);
+    assert(me.skills.length === 5 && me.skills[4] === "return_mon" && me.skills.slice(0, 4).every((id) => me.own[id]), "its four moves, and Return");
+    R.turn(b, [{ act: "skill", skill: "return_mon", target: 0 }]);
+    assert(!me.form && me.name === "Red" && me.str === hyl.str - (hyl.str - me.str) && me.skills[0] === "go_pikachu", "Return: themselves again");
+    R.turn(b, [{ act: "skill", skill: "go_pikachu", target: 0 }]);
+    R.keep(b);
+    assert(rec.hp <= R.statsOf(rec).hp && rec.mp <= R.statsOf(rec).mp, "out of the fight, themselves");
   }
   // (Four fight and four wait in reserve: Swap brings one in, and one comes in for anyone who falls; the fight's lost
   // only when the reserve's down too.)
@@ -7314,7 +7338,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     const t3 = R.turn(b3, [{ act: "skill", skill: "move:Thunder Wave", target: 0 }]).map((x) => x.text).join(" ");
     assert(!b3.foes[0].status && /doesn't work|no effect/.test(t3), t3);
     b3.foes[0].elements = ["Neutral"]; b3.foes[0].hp = b3.foes[0].maxHp;
-    for (let n = 0; n < 10 && !b3.foes[0].status; n++) { tw.pp["move:Thunder Wave"] = 20; R.turn(b3, [{ act: "skill", skill: "move:Thunder Wave", target: 0 }]); }
+    for (let n = 0; n < 10 && !b3.foes[0].status; n++) { tw.mp = tw.maxMp; R.turn(b3, [{ act: "skill", skill: "move:Thunder Wave", target: 0 }]); }
     assert.strictEqual(b3.foes[0].status, "paralysis");
     // (Fights with every kind of move in them end, and say nothing undefined.)
     const all = ["Swords Dance", "Protect", "Toxic", "Will-O-Wisp", "Confuse Ray", "Leech Seed", "Rest", "Close Combat", "Giga Drain", "Double-Edge", "Fake Out",
@@ -7326,7 +7350,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
       for (let n = 0; !b.over; n++) {
         assert(n < 400, "a fight with " + ms.join(", ") + " ends");
         const choices = b.allies.map((x) => (x.mon ? { act: "skill", skill: x.skills[n % x.skills.length], target: 0 } : { act: "attack", target: 0 }));
-        if (f.mon && f.pp) for (const id in f.pp) f.pp[id] = 10;
+        if (f.mon) f.mp = f.maxMp;
         for (const st of R.turn(b, choices)) assert(!/NaN|undefined/.test(st.text), st.text);
       }
       R.keep(b);

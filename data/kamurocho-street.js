@@ -33,6 +33,32 @@ window.KAMUROCHO_STREET = {
     grunt: ["This is Tojo turf. Pay up.", "The family don't like strangers."],
     shakedown: ["Hand over your cash, kid.", "Everybody pays Mr. Shakedown."]
   },
+  // The map (the start menu's MAP, ui/game.js realmMap), Yakuza 0's way: Kamurocho's streets on the night-blue
+  // ground, the avenues wider than the streets and the streets than the alleys, each named; you're a blinking mark
+  // along the street you're on, as far along it as you've walked. Each scene: its line (points, on a 240x160 map,
+  // its picture's left end first), how wide (`w`), and where its name goes (`label`, or none; `name`, shorter than
+  // its title or on two lines); a place inside one
+  // (a shop, a bar) is a spot on the line of the street it's off (`at`: that scene, and how far along it).
+  map: {
+    scenes: {
+      showa: { line: [[14, 132], [64, 132]], w: 5, label: [16, 137] },
+      taihei: { line: [[64, 132], [206, 132]], w: 7, label: [104, 137] },
+      tenkaichi: { line: [[100, 132], [100, 46]], w: 5, label: [104, 104] },
+      nakamichi: { line: [[100, 86], [172, 86]], w: 5, label: [104, 74] },
+      street: { line: [[172, 86], [186, 86], [200, 104]], w: 5, label: [146, 92] },
+      pink: { line: [[206, 132], [206, 86]], w: 5, label: [154, 116] },
+      champion: { line: [[172, 64], [206, 64]], w: 2, label: [128, 54] },
+      theater: { line: [[80, 30], [124, 30], [124, 46], [80, 46], [80, 30]], w: 3, label: [82, 34] },
+      shichifuku: { line: [[124, 22], [212, 22]], w: 5, label: [140, 12] },
+      hotels: { line: [[212, 22], [228, 22], [228, 44]], w: 4, label: [168, 30] },
+      senryo: { line: [[228, 132], [228, 44]], w: 6, label: [184, 146], name: "Senryo Ave." },
+      "pink-alley": { line: [[206, 110], [228, 110]], w: 2, label: null },
+      "nakamichi-alley": { line: [[44, 132], [44, 70]], w: 2, label: [48, 98], name: "Nakamichi\nAlley" },
+      "theater-alley": { line: [[44, 70], [44, 38], [80, 38]], w: 2, label: [48, 50], name: "Theater\nAlley" },
+      alley: { line: [[200, 104], [208, 116]], w: 2, label: null },
+      poppo: { at: ["street", 0.24] }, backlot: { at: ["street", 0.17] }, sewer: { at: ["street", 0.17] }, bacchus: { at: ["street", 0.97] }
+    }
+  },
   scenes: {
     street: {
       title: "Kamurocho", image: "assets/kamurocho/street.png", width: 3103, encounters: true,

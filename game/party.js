@@ -275,6 +275,7 @@
     record.hp = maxHp(record);
     record.status = "";
     for (const m of record.moves) m.pp = maxPp(m);
+    delete record.realmMp;   // (its MP in the other realms' battles, full again: engine/battle.js Ultimax.monMp)
     return record;
   }
 

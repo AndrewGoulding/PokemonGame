@@ -14,11 +14,13 @@
 //     // FireRed's YES / NO box: -> true (YES) or false (NO, or B)
 //   const a = await GbaMenus.battleAction(overlay, { name, cursor, frame })
 //     // FIGHT / BAG / POKéMON / RUN (B moves to RUN) -> { action: "fight" | "bag" | "pokemon" | "run", cursor }
-//     // (opts.labels and opts.prompt: other choices and words, e.g. the Safari Zone's;
+//     // (opts.labels and opts.prompt: other choices and words, e.g. the Safari Zone's; six labels, with
+//     // opts.actions their keys, in two columns of three: the other realms';
 //     // opts.canBack: B gives { action: "back" }, a double battle's second Pokémon)
 //   const m = await GbaMenus.battleMoves(overlay, { moves, cursor, frame })
 //     // moves: [{ name, type, pp, maxpp }] -> { index, cursor } or null (B)
-//     // (or any number, scrolling, each with info: two or three [text, dim?] lines in place of PP and TYPE)
+//     // (or any number, scrolling, each with info: two or three [text, dim?] lines in place of PP and TYPE;
+//     // opts.wide: one to a row, for long names)
 //     // (opts.onCursor(cursor) as the cursor moves; opts.keep leaves the menu
 //     // showing after A, for a double battle's target cursor)
 //   const i = await GbaMenus.multichoice(overlay, { left, top, items, cursor, frame })
@@ -773,12 +775,23 @@
     // (The Safari Zone's: BALL BAIT / ROCK RUN, "What will …\nthrow?".)
     const LABELS = opts.labels || ["FIGHT", "BAG", "POKéMON", "RUN"];
     const prompt = opts.prompt || ["What will", opts.name + " do?"];
+    // (This game's own, for the other realms' battles: six, opts.actions their keys, in two columns of three in the
+    // small font, the last of them where B goes.)
+    const six = LABELS.length === 6, KEYS = opts.actions || ["fight", "bag", "pokemon", "run"], last = LABELS.length - 1;
     const draw = () => {
       const s = Surface();
       battlePanel(s, "action", frame);
       // B_WIN_ACTION_PROMPT (tiles 1, 15): "What will\n… do?", white on the message box.
       s.text(prompt[0], 8 + 2, 120 + 2, msg[1], msg[6]);
       s.text(prompt[1], 8 + 2, 120 + 2 + 16, msg[1], msg[6]);
+      if (six) {
+        LABELS.forEach((l, i) => s.text(l, 144 + (i & 1) * 48, 119 + (i >> 1) * 11, P5.fg, P5.shadow, "small"));
+        const x = 137 + (cursor & 1) * 48, y = 121 + (cursor >> 1) * 11;
+        for (let r = 0; r < 4; r++) for (let c = 0; c < 4 - r; c++) { s.put(x + c + 1, y + 3 - r + 1, P5.shadow); s.put(x + c + 1, y + 3 + r + 1, P5.shadow); }
+        for (let r = 0; r < 4; r++) for (let c = 0; c < 4 - r; c++) { s.put(x + c, y + 3 - r, P5.fg); s.put(x + c, y + 3 + r, P5.fg); }
+        s.show(canvas);
+        return;
+      }
       // B_WIN_ACTION_MENU (tiles 17, 15): FIGHT BAG / POKéMON RUN, 56 apart.
       LABELS.forEach((l, i) => s.text(l, 136 + (i & 1) * 56, 120 + 2 + (i & 2) * 8, P5.fg, P5.shadow));
       battleCursor(s, frame, 16 + 7 * (cursor & 1), 15 + (cursor & 2));
@@ -787,6 +800,15 @@
     canvas.classList.remove("hidden");
     draw();
     const r = await keys((k) => {
+      if (six) {
+        if (k === "left" || k === "right") { cursor ^= 1; draw(); }
+        else if (k === "up") { cursor = (cursor + 4) % 6; draw(); }
+        else if (k === "down") { cursor = (cursor + 2) % 6; draw(); }
+        else if (k === "a") { se(); return KEYS[cursor]; }
+        else if (k === "b" && opts.canBack) { se(); return "back"; }
+        else if (k === "b" && cursor !== last) { cursor = last; draw(); }
+        return undefined;
+      }
       if (k === "left" || k === "right") { cursor ^= 1; draw(); }
       else if (k === "up" || k === "down") { cursor ^= 2; draw(); }
       else if (k === "a") { se(); return ["fight", "bag", "pokemon", "run"][cursor]; }
@@ -819,11 +841,36 @@
     // move to trade places with; A or SELECT swaps them, B stops.
     let swapping = null;   // the cursor of the move being moved
     const at = (c) => [9 * (c & 1) + 1, 15 + (c & 2)];
+    // (opts.wide: one to a row, the whole left of the box, for names too long for half of it, Kiryu's Heat Actions:
+    // two rows showing, scrolled.)
+    const wide = !!opts.wide;
+    if (wide) top = Math.max(0, cursor - 1);
     const draw = () => {
       if (opts.onCursor) opts.onCursor(cursor);
       const s = Surface();
       battlePanel(s, "move", frame);
       const DIM = [176, 176, 176];
+      if (wide) {
+        for (let j = 0; j < 2; j++) {
+          const m = moves[top + j];
+          if (!m) continue;
+          let label = m.name;
+          while (label.length > 3 && s.textWidth(label, "small") > 148) label = label.slice(0, -1);
+          if (label !== m.name) label = label.trimEnd() + ".";
+          s.text(label, 2 * 8, (j ? 17 : 15) * 8 + 1, m.dim ? DIM : P5.fg, P5.shadow, "small");
+        }
+        const tri = (x, y, up) => { for (let r = 0; r < 4; r++) for (let c = r; c < 7 - r; c++) { s.put(x + c + 1, y + (up ? 3 - r : r) + 1, P5.shadow); s.put(x + c, y + (up ? 3 - r : r), P5.fg); } };
+        if (top > 0) tri(19 * 8, 15 * 8 + 4, true);
+        if (top + 2 < moves.length) tri(19 * 8, 17 * 8 + 6, false);
+        battleCursor(s, frame, 1, cursor - top ? 17 : 15);
+        const m = moves[cursor];
+        if (m && m.info) {
+          const gap = m.info.length > 2 ? 11 : 16;
+          m.info.forEach(([t, dim], k) => s.text(t, 21 * 8, 15 * 8 + (m.info.length > 2 ? 0 : 2) + gap * k, dim ? DIM : P5.fg, P5.shadow, "small"));
+        }
+        s.show(canvas);
+        return;
+      }
       // B_WIN_MOVE_NAME_1-4 (tiles 2 / 11, rows 15 / 17), small font.
       for (let j = 0; j < 4; j++) {
         const i = top * 2 + j;
@@ -900,6 +947,14 @@
         const c = cursor + 2 * d;
         return c < 0 ? -1 : c < moves.length ? c : (cursor >> 1) + d <= (moves.length - 1) >> 1 ? moves.length - 1 : -1;
       };
+      if (wide) {
+        if (k === "up" || k === "down") {
+          const c = cursor + (k === "up" ? -1 : 1);
+          if (c >= 0 && c < moves.length) { cursor = c; top = Math.min(top, cursor); top = Math.max(top, cursor - 1); draw(); }
+        } else if (k === "a") { se(); return { index: cursor, cursor }; }
+        else if (k === "b") { se(); return null; }
+        return undefined;
+      }
       if (startHeld && ["left", "right", "up", "down"].includes(k)) { se(); g.focus = g.focus ? 0 : 1; changed(); }
       else if (k === "left" || k === "right") go(cursor ^ 1);
       else if (k === "up" || k === "down") go(vert(k === "up" ? -1 : 1));
@@ -925,6 +980,8 @@
 
   window.GbaMenus = {
     simulate,
+    // (the drawing and the keys, for screens of this game's own built the same way: ui/realm-party.js)
+    Surface, keys, during, P5: null,
     battleAction: (canvas, ...a) => during("battle", battleAction(canvas, ...a)),
     battleMoves: (canvas, ...a) => during("moves", battleMoves(canvas, ...a)),
     battleYesNo: (canvas, ...a) => during("battleyesno", battleYesNo(canvas, ...a)),
@@ -942,6 +999,7 @@
     Surface, keys, se: () => se()
   };
   // (The canvas is the intro's: show it. The next show() of another screen hides it again.)
+  window.GbaMenus.P5 = P5;
   function during(name, promise) {
     window.GbaMenus.showing = name;
     return promise.finally(() => { if (window.GbaMenus.showing === name) window.GbaMenus.showing = null; });

@@ -92,14 +92,16 @@ window.REALM_SKILLS = {
   haymaker:      { name: "Essence of No Mercy",              mp: 0, element: "Ground",  kind: "phys",  power: 80, target: "one" },
   revving:       { name: "Essence of Throwing",                mp: 0, element: "Electric", kind: "magic", power: 45, target: "all" },
   // (the races' own: yours, by the race you chose at the start, REALM_RACES below)
-  // Kanto (a Pokémon Trainer's: the Bag's, and the partners')
-  ball_throw:    { name: "Poké Ball Throw",        mp: 3,  element: "Neutral", kind: "phys",  power: 60, target: "one" },
-  potion:        { name: "Potion",                 mp: 4,  element: "Neutral", kind: "heal",  power: [25, 35], target: "ally" },
-  x_defend:      { name: "X Defend",               mp: 2,  element: "Neutral", kind: "guard", target: "self" },
-  super_potion:  { name: "Super Potion",           mp: 7,  element: "Neutral", kind: "heal",  power: [55, 70], target: "ally" },
-  pika_bolt:     { name: "Pikachu's Thunderbolt",  mp: 8,  element: "Electric", kind: "magic", power: 85, target: "one" },
-  zard_blast:    { name: "Charizard's Fire Blast", mp: 12, element: "Fire",    kind: "magic", power: 70, target: "all" },
-  master_ball:   { name: "Master Ball",            mp: 16, element: "Neutral", kind: "phys",  power: 130, target: "one" },
+  // Kanto's Pokémon Trainers: each skill sends out a Pokémon, and they become it (engine/battle.js transform), with
+  // its four latest moves and Return to be themselves again.
+  go_pikachu:   { name: "Go! Pikachu",      mp: 3,  element: "Neutral", kind: "transform", species: "Pikachu", target: "self" },
+  go_bulbasaur: { name: "Go! Bulbasaur",    mp: 3,  element: "Neutral", kind: "transform", species: "Bulbasaur", target: "self" },
+  go_charmander: { name: "Go! Charmander",   mp: 3,  element: "Neutral", kind: "transform", species: "Charmander", target: "self" },
+  go_squirtle:  { name: "Go! Squirtle",     mp: 3,  element: "Neutral", kind: "transform", species: "Squirtle", target: "self" },
+  go_eevee:     { name: "Go! Eevee",        mp: 3,  element: "Neutral", kind: "transform", species: "Eevee", target: "self" },
+  go_lapras:    { name: "Go! Lapras",       mp: 3,  element: "Neutral", kind: "transform", species: "Lapras", target: "self" },
+  go_snorlax:   { name: "Go! Snorlax",      mp: 3,  element: "Neutral", kind: "transform", species: "Snorlax", target: "self" },
+  return_mon:    { name: "Return",                 mp: 0,  element: "Neutral", kind: "return", target: "self" },
   // Hylian
   spin_attack:   { name: "Spin Attack",            mp: 4,  element: "Neutral", kind: "phys",  power: 45, target: "all" },
   hylian_shield: { name: "Hylian Shield",          mp: 2,  element: "Neutral", kind: "guard", target: "self" },
@@ -241,11 +243,11 @@ window.REALM_FIGHTERS = {
   majima: { name: "Majima", elements: ["Dark"],
             base: { hp: 40, mp: 14, str: 19, def: 11, int: 6, wis: 8, spd: 16 }, growth: { hp: 6, mp: 2, str: 2.8, def: 1.5, int: 0.8, wis: 1.1, spd: 2 },
             skills: [[1, "mad_dog_lunge"], [1, "breaker_spin"], [4, "thug_slash"], [6, "slugger_swing"], [9, "mad_dog_grin"], [12, "mad_dog_frenzy"], [16, "mad_dog_shimano"]] },
-  // (The races: you, as the race you chose at the start (player.race), instead of "you" above. Kanto's people have
-  // the trainer's stats, "you"'s, and a Pokémon Trainer's skills: the Bag's, and Red's partners'.)
-  kanto:  { name: null, elements: ["Neutral"], base: { hp: 30, mp: 10, str: 14, def: 10, int: 10, wis: 10, spd: 10 },
-            growth: { hp: 5, mp: 2, str: 2, def: 1.6, int: 1.5, wis: 1.6, spd: 1.5 },
-            skills: [[1, "ball_throw"], [3, "potion"], [5, "x_defend"], [8, "super_potion"], [11, "pika_bolt"], [14, "zard_blast"], [19, "master_ball"]] },
+  // (The races: you, as the race you chose at the start (player.race), instead of "you" above. Kanto's Pokémon
+  // Trainers are weak but for their speed: they fight as the Pokémon they send out, one more to send at each few levels.)
+  kanto:  { name: null, elements: ["Neutral"], base: { hp: 10, mp: 12, str: 5, def: 4, int: 5, wis: 4, spd: 18 },
+            growth: { hp: 1.6, mp: 1.6, str: 0.7, def: 0.6, int: 0.7, wis: 0.6, spd: 2.4 },
+            skills: [[1, "go_pikachu"], [3, "go_bulbasaur"], [5, "go_charmander"], [8, "go_squirtle"], [11, "go_eevee"], [14, "go_lapras"], [19, "go_snorlax"]] },
   hylian: { name: null, elements: ["Light"], base: { hp: 30, mp: 13, str: 13, def: 11, int: 13, wis: 12, spd: 10 },
             growth: { hp: 5, mp: 2.2, str: 2, def: 1.7, int: 1.8, wis: 1.8, spd: 1.4 },
             skills: [[1, "spin_attack"], [3, "hylian_shield"], [5, "fairy_blessing"], [8, "dins_fire"], [11, "light_arrow"], [15, "great_spin"], [20, "sword_beam"]] },
@@ -384,8 +386,8 @@ window.REALM_RACES = [
              bodyLabels: { koops: { trim: "Hood" } },
              presets: [{ name: "Koopa Girl", gender: "female", body: "koops", outfit: "pink", trim: "pink" }], start: { body: "koops" } } },
   // (Kanto's: FireRed's Red, Leaf and Gary.)
-  { id: "kanto", name: "Human", home: "Kanto", crest: "pokeball", color: "#e04038",
-    text: "Kanto's own Pokémon Trainers:\nsteady, ready for anything.",
+  { id: "kanto", name: "Pokémon Trainer", home: "Kanto", crest: "pokeball", color: "#e04038",
+    text: "Weak, but quick: they fight as\nthe Pokémon they send out.",
     looks: { bodies: ["red", "leaf", "gary"], skin: ["fair", "light", "tan", "brown", "dark", "porcelain", "olive_skin", "golden_skin", "deep"], female: ["leaf"],
              bodyLabels: { red: { outfit: "Cap & Jacket", trim: "Jeans" }, leaf: { outfit: "Top", trim: "Hat & Skirt" }, gary: { outfit: "Trousers", trim: "Collar" } },
              start: { body: "red" } } }
@@ -469,16 +471,16 @@ window.LOOK_COLOURS = {
 // Foes: their level (for their damage, as a Pokémon's), their stats, what beating them gives (EXP, split between the party still standing, and money), and their
 // skills (used now and then, instead of attacking). `sprite`: an overworld sheet (its first frame, facing you), or
 // `battle`: a picture; `street`: on Kamurocho's streets, Streets of Kamurocho's own (assets/kamurocho/people).
-// `boss`: no running away.
+// `boss`: no running away. (The street's thugs are all Neutral: only their skills have elements of their own.)
 window.REALM_FOES = {
   punk:      { name: "Street Punk", lv: 2,     elements: ["Neutral"], street: "punk", sprite: "sc_person_68", hp: 18, mp: 0, str: 10, def: 6, int: 0, wis: 3, spd: 8, exp: 6, money: 120, skills: ["cheap_shot"] },
-  drunk:     { name: "Drunk Salaryman", lv: 2, elements: ["Poison"], street: "drunk", sprite: "sc_person_47", hp: 15, mp: 0, str: 8, def: 4, int: 0, wis: 2, spd: 4, exp: 4, money: 200, skills: ["dirty_kick"] },
-  thug:      { name: "Thug", lv: 4,            elements: ["Earth"], street: "thug", sprite: "sc_person_71", hp: 30, mp: 0, str: 14, def: 10, int: 0, wis: 5, spd: 6, exp: 12, money: 250, skills: ["bottle_smash"] },
-  knife:     { name: "Knife Punk", lv: 5,      elements: ["Steel"], street: "knife", sprite: "sc_person_50", hp: 22, mp: 0, str: 15, def: 6, int: 0, wis: 3, spd: 14, exp: 11, money: 180, skills: ["slash"] },
-  host:      { name: "Host", lv: 5,            elements: ["Psychic"], street: "host", sprite: "sc_person_66", hp: 24, mp: 0, str: 12, def: 8, int: 0, wis: 4, spd: 12, exp: 12, money: 400, skills: ["sweet_talk"] },
-  biker:     { name: "Biker", lv: 7,           elements: ["Steel", "Electric"], street: "biker", sprite: "sc_person_58", hp: 34, mp: 0, str: 17, def: 12, int: 14, wis: 6, spd: 11, exp: 16, money: 300, skills: ["revving"] },
-  grunt:     { name: "Yakuza Grunt", lv: 9,    elements: ["Dark"], street: "grunt", sprite: "sc_person_77", hp: 40, mp: 0, str: 19, def: 14, int: 0, wis: 7, spd: 10, exp: 22, money: 500, skills: ["headbutt"] },
-  shakedown: { name: "Mr. Shakedown", lv: 15,   elements: ["Ground", "Earth"], street: "shakedown", sprite: "sc_person_71", big: true, hp: 160, mp: 0, str: 32, def: 22, int: 0, wis: 11, spd: 6, exp: 150, money: 10000, skills: ["haymaker"] },
+  drunk:     { name: "Drunk Salaryman", lv: 2, elements: ["Neutral"], street: "drunk", sprite: "sc_person_47", hp: 15, mp: 0, str: 8, def: 4, int: 0, wis: 2, spd: 4, exp: 4, money: 200, skills: ["dirty_kick"] },
+  thug:      { name: "Thug", lv: 4,            elements: ["Neutral"], street: "thug", sprite: "sc_person_71", hp: 30, mp: 0, str: 14, def: 10, int: 0, wis: 5, spd: 6, exp: 12, money: 250, skills: ["bottle_smash"] },
+  knife:     { name: "Knife Punk", lv: 5,      elements: ["Neutral"], street: "knife", sprite: "sc_person_50", hp: 22, mp: 0, str: 15, def: 6, int: 0, wis: 3, spd: 14, exp: 11, money: 180, skills: ["slash"] },
+  host:      { name: "Host", lv: 5,            elements: ["Neutral"], street: "host", sprite: "sc_person_66", hp: 24, mp: 0, str: 12, def: 8, int: 0, wis: 4, spd: 12, exp: 12, money: 400, skills: ["sweet_talk"] },
+  biker:     { name: "Biker", lv: 7,           elements: ["Neutral"], street: "biker", sprite: "sc_person_58", hp: 34, mp: 0, str: 17, def: 12, int: 14, wis: 6, spd: 11, exp: 16, money: 300, skills: ["revving"] },
+  grunt:     { name: "Yakuza Grunt", lv: 9,    elements: ["Neutral"], street: "grunt", sprite: "sc_person_77", hp: 40, mp: 0, str: 19, def: 14, int: 0, wis: 7, spd: 10, exp: 22, money: 500, skills: ["headbutt"] },
+  shakedown: { name: "Mr. Shakedown", lv: 15,   elements: ["Neutral"], street: "shakedown", sprite: "sc_person_71", big: true, hp: 160, mp: 0, str: 32, def: 22, int: 0, wis: 11, spd: 6, exp: 150, money: 10000, skills: ["haymaker"] },
   majima:    { name: "Goro Majima", lv: 12,     elements: ["Dark"], street: "majima", boss: true,
                hp: 260, mp: 99, str: 34, def: 18, int: 0, wis: 9, spd: 22, exp: 300, money: 0, skills: ["mad_dog_lunge", "breaker_spin", "slugger_swing"] }
 };

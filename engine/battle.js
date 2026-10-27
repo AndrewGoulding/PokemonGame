@@ -4040,7 +4040,7 @@
 // its text and the HP and MP of everyone after it, for the screen to play out.
 //
 // The stats: HP, MP, and five more, each a Pokémon stat's counterpart (so a Pokémon brought out of its realm keeps
-// its own: Ultimax.pokemon, below):
+// its own: Ultimax.pokemon, below), and its MP too (Ultimax.monMp: data/mon-mp.js):
 //   str  Strength       (Attack)            physical attacks and skills
 //   def  Defence        (Defence)           against them
 //   int  Intelligence   (Special Attack)    magic, and healing
@@ -4181,11 +4181,12 @@
   // Brought into an Ultimax fight, a Pokémon fights by these rules with its own stats (Attack its strength, Defence
   // its defence, Special Attack its intelligence, Special Defence its wisdom, Speed its speed; its HP its HP, times
   // HP_SCALE), its types as elements (TYPE_ELEMENT; Neutral only when it's all there is), and its moves as skills,
-  // each costing one of its own PP (it has no MP): a physical move its base power / 40 times an attack (two to five
-  // hits, three); a special one magic, its base power times its level / 40 (an eighth either way); each with its
-  // accuracy, priority and what else it does (a status, a stat change, flinching, draining, recoil...). Status moves
-  // as they are: a status, stat changes, a heal, protection. What's left (UNSUPPORTED says why) doesn't come with
-  // it. Its HP, PP and status go back to it after; and Ultimax EXP, as Pokémon EXP (pokemonExp).
+  // each costing MP, as everyone's skills do (moveMp: a damaging move a twentieth of its power, a status move by how
+  // few PP it has), its MP its species' (monMp); a physical move Strength against Defence, a special one Intelligence
+  // against Wisdom; each with its accuracy, priority and what else it does (a status, a stat change, flinching,
+  // draining, recoil...). Status moves as they are: a status, stat changes, a heal, protection. What's left
+  // (UNSUPPORTED says why) doesn't come with it. Its HP, MP (record.realmMp: gone, full again, at a rest or a Pokémon
+  // Center) and status go back to it after; and Ultimax EXP, as Pokémon EXP (pokemonExp).
   const TYPE_ELEMENT = { Dragon: "Air", Flying: "Air", Normal: "Neutral", Electric: "Electric", Water: "Water", Grass: "Grass",
     Psychic: "Psychic", Fire: "Fire", Rock: "Ground", Ground: "Ground", Steel: "Steel", Ghost: "Dark", Fairy: "Light", Poison: "Poison",
     Bug: "Grass", Fighting: "Neutral", Ice: "Ice", Dark: "Dark" };
@@ -4227,6 +4228,20 @@
     if (m.ohko) return "one-hit KO";
     return "an effect of its own";
   }
+  // A move's MP: a damaging one a twentieth of its power (its hits in it), a status one by its PP (the fewer, the dearer).
+  function moveMp(m) {
+    if (m.cat !== "Status") return Math.max(1, Math.round((m.power || 60) * (Array.isArray(m.multihit) ? 3 : m.multihit || 1) / 20));
+    const pp = m.pp || 10;
+    return pp >= 30 ? 2 : pp >= 20 ? 3 : pp >= 10 ? 4 : 6;
+  }
+  // A Pokémon's MP at a level: its species' base MP (data/mon-mp.js, the first 386; a later one's, or a form's, as
+  // tools/build-mon-mp.js works it out), twice it times its level / 100, plus 10 and half its level.
+  function monMp(species, level) {
+    const d = window.DEX[species] || {}, M = window.MON_MP || {};
+    const own = M[species] != null ? M[species] : M[String(species).split("-")[0]];
+    const base = own != null ? own : Math.round(0.45 * (d.spa || 50) + 0.3 * (d.spd || 50) + 0.25 * (d.hp || 50));
+    return Math.floor(2 * base * level / 100) + 10 + Math.floor(level / 2);
+  }
   // A move as a skill (null: one that doesn't come out of the Pokémon realm).
   function pokemonSkill(name, level, maxHp) {
     const m = window.MOVES[name];
@@ -4234,7 +4249,7 @@
     const element = TYPE_ELEMENT[m.type] || "Neutral";
     const target = m.target === "self" || m.target === "allySide" || m.target === "allies" || m.target === "adjacentAllyOrSelf" ? "self"
       : /^all/.test(m.target) || m.target === "foeSide" ? "all" : "one";
-    const base = { name, mp: 0, element, target, acc: m.acc == null || m.acc === true ? null : m.acc / 100, priority: m.priority || 0,
+    const base = { name, mp: moveMp(m), element, target, acc: m.acc == null || m.acc === true ? null : m.acc / 100, priority: m.priority || 0,
       contact: !!(m.flags && m.flags.contact), extras: extras(m), selfBoosts: (m.self && m.self.boosts) || null, selfdestruct: !!m.selfdestruct };
     if (m.cat !== "Status") {
       const bp = m.power || 60, hits = Array.isArray(m.multihit) ? 3 : m.multihit || 1;
@@ -4258,16 +4273,17 @@
   }
   // A party Pokémon (its record, as game/party.js keeps it) as a fighter; `stats`: Party.stats(record).
   function pokemon(record, stats, name) {
-    const own = {}, pp = {}, skills = [];
+    const own = {}, skills = [];
     for (const slot of record.moves || []) {
       const s = pokemonSkill(slot.name, record.level, stats.hp * HP_SCALE);
       if (!s) continue;
       const id = "move:" + slot.name;
-      own[id] = s; pp[id] = slot.pp; skills.push(id);
+      own[id] = s; skills.push(id);
     }
+    const maxMp = monMp(record.species, record.level);
     const f = fighter({ side: "ally", id: "pokemon", name: name || record.nickname || record.species, elements: pokemonElements(window.DEX[record.species].types),
-      lv: record.level, hp: Math.min(record.hp, stats.hp) * HP_SCALE, mp: 0, maxHp: stats.hp * HP_SCALE, maxMp: 0,
-      str: stats.atk, def: stats.def, int: stats.spa, wis: stats.spd, spd: stats.spe, skills, own, pp, mon: record });
+      lv: record.level, hp: Math.min(record.hp, stats.hp) * HP_SCALE, mp: record.realmMp == null ? maxMp : Math.min(maxMp, record.realmMp), maxHp: stats.hp * HP_SCALE, maxMp,
+      str: stats.atk, def: stats.def, int: stats.spa, wis: stats.spd, spd: stats.spe, skills, own, mon: record });
     if (STATUS_OF[record.status] && f.hp > 0) inflict({ rand: Math.random }, f, STATUS_OF[record.status]);
     return f;
   }
@@ -4300,8 +4316,8 @@
     return { allies: members, reserve: opts.reserve || [], foes, over: null, rand: rng(opts.seed == null ? Date.now() : opts.seed), boss: foes.some((f) => f.boss), turnNo: 0 };
   }
   const up = (list) => list.filter((f) => f.hp > 0);
-  // (Each ally's HP, MP, name, level, whether it's a Pokémon (PP, not MP), max HP and status; each foe's HP and
-  // status: a swap changes who's where.)
+  // (Each ally's HP, MP, name, level, whether it's a Pokémon, max HP and status; each foe's HP and status: a swap
+  // changes who's where.)
   const tag = (f) => (f.hp > 0 && STATUS_TAG[f.status]) || "";
   const snap = (b) => ({ allies: b.allies.map((f) => [f.hp, f.mp, f.name, f.lv, !!f.mon, f.maxHp, tag(f)]), foes: b.foes.map((f) => f.hp), foeStatus: b.foes.map(tag) });
   // The chart's multiplier of `element` on `elements`.
@@ -4549,16 +4565,12 @@
       say(who.name + " used " + it.name + "! " + (hp0 <= 0 ? f.name + " is back on their feet!" : got ? f.name + " gets " + got + " back." : "Nothing happened."), { kind: "heal", side: "ally", i: ix(f) });
       return;
     }
-    // A skill.
+    // A skill (a Pokémon's move too): its MP.
     const s = skillOf(who, c.skill);
-    // (A Pokémon's move costs one of its PP.)
-    if (s && who.pp && c.skill in who.pp) {
-      if (!(who.pp[c.skill] > 0)) { say(who.name + " tries " + s.name + ", but there's no PP left!"); return; }
-      who.pp[c.skill]--;
-    } else {
-      if (!s || who.mp < (s.mp || 0)) { say(who.name + " tries " + (s ? s.name : "a skill") + ", but hasn't the MP!"); return; }
-      who.mp -= s.mp || 0;
-    }
+    if (!s || who.mp < (s.mp || 0)) { say(who.name + " tries " + (s ? s.name : "a skill") + ", but hasn't the MP!"); return; }
+    who.mp -= s.mp || 0;
+    if (s.kind === "transform") { transform(b, who, s.species, say, ix); return; }
+    if (s.kind === "return") { const was = who.name; unTransform(who); say(was + ", return! " + who.name + " is back!", { kind: "buff", side: who.side, i: ix(who) }); return; }
     const opener = who.name + " uses " + s.name + "! ";
     if (s.kind === "guard") { who.guard = 1.5; say(opener + who.name + "'s defence goes up!", { kind: "buff", side: who.side, i: ix(who) }); return; }
     if (s.kind === "protect") {
@@ -4655,6 +4667,44 @@
     if (who.hp > 0 && s.selfBoosts && !first) stage(who, boost(who, s.selfBoosts));
     if (s.selfdestruct && who.hp > 0) { who.hp = 0; say(who.side === "ally" ? who.name + " collapsed!" : who.name + " is beaten!", { kind: "down", side: who.side, i: ix(who) }); }
   }
+  // ---------- A Pokémon Trainer's Pokémon ----------
+  // Kanto's people (REALM_RACES' "kanto") fight by sending out a Pokémon: "Go! Pikachu" (a skill of kind "transform",
+  // its `species`), and they become it, at their own level: its stats there (as a Pokémon's: IVs of 15, no EVs, no
+  // nature), its types as elements, its MP (monMp) and its four latest level-up moves that come out of the Pokémon
+  // realm (an earlier one for any that doesn't), with Return beside them to be themselves again. Their HP and MP go as much of
+  // the one's maximum as they were of the other's. Out of the fight, they're themselves again (keep).
+  function monStats(species, lv) {
+    const d = window.DEX[species], st = window.Stats, out = {};
+    for (const k of ["hp", "atk", "def", "spa", "spd", "spe"]) out[k] = st.calcStat(k, d[k], 15, 0, lv, "Hardy");
+    return out;
+  }
+  const FORM_KEYS = ["name", "elements", "maxHp", "maxMp", "str", "def", "int", "wis", "spd", "skills", "own"];
+  function transform(b, who, species, say, ix) {
+    if (who.form) unTransform(who);
+    const d = window.DEX[species], lv = who.lv || 1, st = monStats(species, lv);
+    const hpFrac = who.maxHp ? who.hp / who.maxHp : 1, mpFrac = who.maxMp ? who.mp / who.maxMp : 1;
+    who.self = {}; for (const k of FORM_KEYS) who.self[k] = who[k];
+    // (its latest four level-up moves that work here: one that doesn't, an earlier one in its place)
+    const own = {}, skills = [], learned = [];
+    for (const [l, m] of (window.LEARNSETS_GEN6[species] || { levelup: [] }).levelup) if (l <= lv && !learned.includes(m)) learned.push(m);
+    for (const m of learned.reverse()) {
+      const sk = skills.length < 4 && pokemonSkill(m, lv, st.hp * HP_SCALE);
+      if (sk) { own["move:" + m] = sk; skills.unshift("move:" + m); }
+    }
+    const was = who.name;
+    Object.assign(who, { form: species, name: species, elements: pokemonElements(d.types), maxHp: st.hp * HP_SCALE, maxMp: monMp(species, lv),
+      str: st.atk, def: st.def, int: st.spa, wis: st.spd, spd: st.spe, own, skills: skills.concat("return_mon") });
+    who.hp = Math.max(1, Math.round(hpFrac * who.maxHp)); who.mp = Math.round(mpFrac * who.maxMp);
+    say(was + ": Go! " + species + "!", { kind: "buff", side: who.side, i: ix(who) });
+    say(was + " became " + species + "! (" + who.elements.join("/") + ")");
+  }
+  function unTransform(who) {
+    if (!who.form) return;
+    const hpFrac = who.hp / who.maxHp, mpFrac = who.maxMp ? who.mp / who.maxMp : 1;
+    Object.assign(who, who.self);
+    who.hp = hpFrac > 0 ? Math.max(1, Math.round(hpFrac * who.maxHp)) : 0; who.mp = Math.round(mpFrac * who.maxMp);
+    who.form = null; who.self = null;
+  }
   // The status moves with ways of their own (SPECIAL).
   function special(b, who, s, c, say, h) {
     const r = b.rand, { opener, ix } = h;
@@ -4736,8 +4786,8 @@
       if (f.mon) {
         f.mon.hp = f.hp <= 0 ? 0 : Math.max(1, Math.ceil(f.hp / HP_SCALE));
         f.mon.status = f.hp > 0 ? STATUS_CODE[f.status] || "" : "";
-        for (const slot of f.mon.moves) if ("move:" + slot.name in f.pp) slot.pp = f.pp["move:" + slot.name];
-      } else { f.rec.hp = f.hp; f.rec.mp = f.mp; f.rec.hpScale = HP_SCALE; }
+        if (f.mp >= f.maxMp) delete f.mon.realmMp; else f.mon.realmMp = f.mp;
+      } else { unTransform(f); f.rec.hp = f.hp; f.rec.mp = f.mp; f.rec.hpScale = HP_SCALE; }
     }
   }
   // A place's random fights as your party's level has them: each group (weight, foes, the level it comes from).
@@ -4745,5 +4795,5 @@
   // An item's text, its HP as HP_SCALE makes it ("{hp}" in REALM_ITEMS' text).
   const itemText = (id) => String(D().items[id].text).replace(/\{hp\}/g, () => String(D().items[id].heal * HP_SCALE));
   window.Ultimax = { create, turn, spoils, gainExp, keep, member, recruit, rescale, stats, skillsAt, expFor, effect, foeChoice, up,
-    pokemon, pokemonSkill, pokemonElements, pokemonExp, skillOf, category, statsOf, spend, pointsOf, POINTS, POINT_STATS, unsupported, itemText, groupsFor, TYPE_ELEMENT, HP_SCALE, FOE_HP_SCALE, ATTACK_POWER, STATUS_TAG };
+    pokemon, pokemonSkill, pokemonElements, pokemonExp, monMp, moveMp, monStats, unTransform, skillOf, category, statsOf, spend, pointsOf, POINTS, POINT_STATS, unsupported, itemText, groupsFor, TYPE_ELEMENT, HP_SCALE, FOE_HP_SCALE, ATTACK_POWER, STATUS_TAG };
 })();
