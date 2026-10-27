@@ -3715,7 +3715,7 @@ taken from a Dragon Quest cartridge.
   with these stats, starts at the average of each fighter's intelligence and defence, and grows the same way.)
 - **HP**: everyone's is `Ultimax.HP_SCALE` (3) times what their stats say: the fighters', a boss's and Pokémon's
   alike, so fights last a while. The street's random foes keep the HP their stats say (`Ultimax.FOE_HP_SCALE`, 1),
-  so a Street Punk goes down in three or four hits at level 1. Heals scale with it (an item's text shows the scaled amount), and a Pokémon's HP
+  so a Street Punk goes down in about four hits at level 1. Heals scale with it (an item's text shows the scaled amount), and a Pokémon's HP
   goes back to it divided again (rounded up while it's standing). A party saved before keeps as much of its HP.
 - **Status**: the Pokémon realm's. Sleep (1 to 3 turns), poison (an eighth of HP at the end of each turn), bad
   poison (a sixteenth more each turn), paralysis (a quarter of the time it can't move, and half its speed), burn (a
