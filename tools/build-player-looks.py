@@ -2,8 +2,9 @@
 # The character creator's looks: the parts you're put together from (a head and a body, or a whole character), each
 # with its hair, clothes, trim and skin apart so they can be coloured as you choose.
 #
-#   python3 tools/build-player-looks.py "<path to Legend of Zelda, The - The Minish Cap (USA).gba>"
+#   python3 tools/build-player-looks.py
 #
+# (No cartridge: it builds from what's committed. See DATA below for taking The Minish Cap's frames again.)
 # Hyrule's people are The Minish Cap's (only their sprites): its townsfolk and children are drawn as a head on a body,
 # so any head goes on any body; and Link, whole. The Dragon World's are the Dragon Ball realm's people sheets already
 # in the repo (assets/dragonball/people/, from Legacy of Goku II and Buu's Fury), whole characters.
@@ -32,48 +33,87 @@ OUT = os.path.join(ROOT, 'assets/world/sprites/looks')
 DB = os.path.join(ROOT, 'assets/dragonball/people')
 ROLES = ['hair', 'outfit', 'trim', 'skin']
 
-if len(sys.argv) < 2: sys.exit('usage: python3 tools/build-player-looks.py <The Minish Cap (USA).gba>')
-ROM = open(sys.argv[1], 'rb').read()
-if ROM[0xAC:0xB0] != b'BZME': sys.exit('That isn\'t The Minish Cap (USA).')
-u8 = lambda a: ROM[a]
-s8 = lambda a: struct.unpack_from('b', ROM, a)[0]
-u16 = lambda a: struct.unpack_from('<H', ROM, a)[0]
-u32 = lambda a: struct.unpack_from('<I', ROM, a)[0]
-SPRITES, OBJ, EFO, PALS, GFX = 0x29B4, 0x2F3D74, 0x9FB770, 0x133368, 0x5A2E80
+# The Minish Cap's frames this takes, as the cartridge has them (committed, so no cartridge is needed to build):
+#   tools/data/minish-cap-people.png    each frame a 64x64 cell of colour indices (0 is clear), its origin at (32, 48)
+#   tools/data/minish-cap-people.json   which cell each sprite's frame is, the palettes, and the heads' places
+# `--from-rom <The Minish Cap (USA).gba>` takes them from the cartridge again (and builds as well).
+DATA = os.path.join(ROOT, 'tools/data/minish-cap-people')
 SHAPES = {(0, 0): (8, 8), (0, 1): (16, 16), (0, 2): (32, 32), (0, 3): (64, 64), (1, 0): (16, 8), (1, 1): (32, 8), (1, 2): (32, 16),
           (1, 3): (64, 32), (2, 0): (8, 16), (2, 1): (8, 32), (2, 2): (16, 32), (2, 3): (32, 64)}
 
-def palette(pid):
-    w = u32(PALS + (pid - 0x16) * 4); off = w & 0xffffff
-    return [((v & 31) * 255 // 31, ((v >> 5) & 31) * 255 // 31, ((v >> 10) & 31) * 255 // 31) for v in (u16(GFX + off + c * 2) for c in range(16))]
+class Cartridge:
+    SPRITES, OBJ, EFO, PALS, GFX = 0x29B4, 0x2F3D74, 0x9FB770, 0x133368, 0x5A2E80
+    def __init__(self, path):
+        self.rom = open(path, 'rb').read()
+        if self.rom[0xAC:0xB0] != b'BZME': sys.exit('That isn\'t The Minish Cap (USA).')
+        self.frames, self.attaches, self.palettes = {}, {}, {}
+    def u8(self, a): return self.rom[a]
+    def s8(self, a): return struct.unpack_from('b', self.rom, a)[0]
+    def u16(self, a): return struct.unpack_from('<H', self.rom, a)[0]
+    def u32(self, a): return struct.unpack_from('<I', self.rom, a)[0]
+    def palette(self, pid):
+        w = self.u32(self.PALS + (pid - 0x16) * 4); off = w & 0xffffff
+        out = [((v & 31) * 255 // 31, ((v >> 5) & 31) * 255 // 31, ((v >> 10) & 31) * 255 // 31)
+               for v in (self.u16(self.GFX + off + c * 2) for c in range(16))]
+        self.palettes[pid] = out
+        return out
+    def frame(self, si, fi):
+        """A sprite's frame as {(x, y): colour index}, x and y from its origin."""
+        rom = self.rom
+        frames, tiles = self.u32(self.SPRITES + si * 16 + 4) - 0x08000000, self.u32(self.SPRITES + si * 16 + 8) - 0x08000000
+        first = self.u16(frames + fi * 4 + 2)
+        p = self.OBJ + self.u32(self.OBJ + self.u32(self.OBJ + si * 4) + fi * 4)
+        out, pieces = {}, []
+        for k in range(self.u8(p)):
+            q = p + 1 + k * 5
+            pieces.append((self.s8(q), self.s8(q + 1), self.u8(q + 2), self.u8(q + 3) + ((self.u8(q + 4) & 3) << 8)))
+        for x0, y0, fl, t0 in reversed(pieces):   # (the first piece is drawn on top)
+            w, h = SHAPES[(fl >> 6, (fl >> 4) & 3)]
+            for ty in range(h // 8):
+                for tx in range(w // 8):
+                    a = tiles + (first + t0 + ty * (w // 8) + tx) * 32
+                    for r in range(8):
+                        for c in range(8):
+                            b = rom[a + r * 4 + c // 2]; v = (b >> 4) if c & 1 else (b & 15)
+                            if not v: continue
+                            X, Y = tx * 8 + c, ty * 8 + r
+                            if fl & 4: X = w - 1 - X
+                            if fl & 8: Y = h - 1 - Y
+                            out[(x0 + X, y0 + Y)] = v
+        self.frames[(si, fi)] = out
+        return out
+    def attach(self, si, fi):
+        E = self.EFO
+        p = E + self.u32(E) + self.u8(E + self.u16(E + 0x10 + si * 2) + fi) * 4
+        self.attaches[(si, fi)] = (self.s8(p), self.s8(p + 1))
+        return self.attaches[(si, fi)]
+    def save(self):
+        """What was taken, into tools/data."""
+        keys = sorted(self.frames); cols = 16
+        img = Image.new('P', (64 * cols, 64 * ((len(keys) + cols - 1) // cols)), 0)
+        img.putpalette([v for i in range(256) for v in ((i * 17) % 256,) * 3])
+        px = img.load()
+        for n, k in enumerate(keys):
+            for (x, y), v in self.frames[k].items():
+                if -32 <= x < 32 and -48 <= y < 16: px[(n % cols) * 64 + x + 32, (n // cols) * 64 + y + 48] = v
+        img.save(DATA + '.png', optimize=True)
+        json.dump({'frames': {'%d:%d' % k: n for n, k in enumerate(keys)}, 'palettes': {str(k): ['%02x%02x%02x' % c for c in v] for k, v in self.palettes.items()},
+                   'attach': {'%d:%d' % k: v for k, v in sorted(self.attaches.items())}}, open(DATA + '.json', 'w'), separators=(',', ':'))
 
-def frame(si, fi):
-    """A sprite's frame as {(x, y): colour index}, x and y from its origin."""
-    frames, tiles = u32(SPRITES + si * 16 + 4) - 0x08000000, u32(SPRITES + si * 16 + 8) - 0x08000000
-    first = u16(frames + fi * 4 + 2)
-    p = OBJ + u32(OBJ + u32(OBJ + si * 4) + fi * 4)
-    out, pieces = {}, []
-    for k in range(u8(p)):
-        q = p + 1 + k * 5
-        pieces.append((s8(q), s8(q + 1), u8(q + 2), u8(q + 3) + ((u8(q + 4) & 3) << 8)))
-    for x0, y0, fl, t0 in reversed(pieces):   # (the first piece is drawn on top)
-        w, h = SHAPES[(fl >> 6, (fl >> 4) & 3)]
-        for ty in range(h // 8):
-            for tx in range(w // 8):
-                a = tiles + (first + t0 + ty * (w // 8) + tx) * 32
-                for r in range(8):
-                    for c in range(8):
-                        b = ROM[a + r * 4 + c // 2]; v = (b >> 4) if c & 1 else (b & 15)
-                        if not v: continue
-                        X, Y = tx * 8 + c, ty * 8 + r
-                        if fl & 4: X = w - 1 - X
-                        if fl & 8: Y = h - 1 - Y
-                        out[(x0 + X, y0 + Y)] = v
-    return out
+class Committed:
+    def __init__(self):
+        self.j = json.load(open(DATA + '.json')); self.img = Image.open(DATA + '.png'); self.px = self.img.load()
+    def palette(self, pid): return [tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) for h in self.j['palettes'][str(pid)]]
+    def frame(self, si, fi):
+        n = self.j['frames']['%d:%d' % (si, fi)]; X, Y = (n % 16) * 64, (n // 16) * 64
+        return {(x - 32, y - 48): self.px[X + x, Y + y] for y in range(64) for x in range(64) if self.px[X + x, Y + y]}
+    def attach(self, si, fi): return tuple(self.j['attach']['%d:%d' % (si, fi)])
 
-def attach(si, fi):
-    p = EFO + u32(EFO) + u8(EFO + u16(EFO + 0x10 + si * 2) + fi) * 4
-    return s8(p), s8(p + 1)
+if '--from-rom' in sys.argv:
+    SRC = Cartridge(sys.argv[sys.argv.index('--from-rom') + 1])
+else:
+    SRC = Committed()
+palette, frame, attach = SRC.palette, SRC.frame, SRC.attach
 
 lum = lambda c: 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2]
 
@@ -292,6 +332,7 @@ def dragon_world():
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
     hyrule()
+    if isinstance(SRC, Cartridge): SRC.save()
     dragon_world()
     f = os.path.join(ROOT, 'data/type-chart.js')
     src = open(f).read()

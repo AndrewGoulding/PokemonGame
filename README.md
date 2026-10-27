@@ -3770,12 +3770,16 @@ still the trainer, and Wes in Orre is Wes). `ui/overworld.js`'s `composeLook` pu
 or loads. A game saved before races or looks asks on CONTINUE, and the Time Machines (Pallet Town's, and the one in
 Kamurocho's Empty Lot) have a mirror to change it: a new race is who you fight as from then on, at your level.
 
-**The parts** (`assets/world/sprites/looks/`, built by `tools/build-player-looks.py`, the output committed):
+**The parts** (`assets/world/sprites/looks/`, built by `tools/build-player-looks.py` with no cartridge):
 
 ```sh
-python3 tools/build-player-looks.py "<path to Legend of Zelda, The - The Minish Cap (USA).gba>"
+python3 tools/build-player-looks.py
 ```
 
+It builds from files in the repo: The Minish Cap's frames it uses, as the cartridge has them, are in
+`tools/data/minish-cap-people.png` (each frame a 64x64 cell of colour indices, its origin at 32, 48) and
+`minish-cap-people.json` (which cell is which sprite's frame, the palettes, where each body frame puts its head).
+`--from-rom "<path to Legend of Zelda, The - The Minish Cap (USA).gba>"` takes them from the cartridge again.
 Only The Minish Cap's people's sprites are taken; the Dragon World's come from the Dragon Ball realm's people
 sheets already here (Legacy of Goku II's, and Buu's Fury's for the Buus, Fat Buu and Super Buu halved). Each part is
 FireRed's nine frames (standing down, up and left, then two steps each way), 32x32, in 17 rows: the part's own
