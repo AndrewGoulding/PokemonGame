@@ -210,7 +210,7 @@
 .starters img.look { width: 64px; height: 128px; object-fit: cover; object-position: 0 0; image-rendering: pixelated; }
 
 /* The highlighted choice (the D-pad moves it, A picks it, B goes back). */
-#menu button:focus, #scene [data-pick]:focus, #scene [data-swap]:focus { outline: 3px solid #f3b400; outline-offset: 2px; }
+#scene [data-pick]:focus, #scene [data-swap]:focus { outline: 3px solid #f3b400; outline-offset: 2px; }
 /* A card picked up with Select, to swap with the next one. */
 #scene [data-swap].held { box-shadow: 0 0 0 4px #2b6fd6; }
 
@@ -465,7 +465,6 @@
 /* The tables' panel under the screen (ui/table-ui.js): FireRed's windows,
    twice a game pixel (--p): what's happening in the standard frame, the
    choices in yours with the ▶. */
-.menu.table-menu { display: block; height: 100%; margin: 0; padding: 0; }
 .tbl-panel { --p: calc(100cqw / 360); display: flex; gap: calc(var(--p) * 2); height: 100%; font-size: calc(var(--p) * 16); font-size-adjust: none;
   line-height: 1.05; color: #626262; text-shadow: var(--p) var(--p) 0 #d5d5cd; user-select: none; }
 .tbl-win { border: calc(var(--p) * 8) solid transparent; border-image: var(--std) 8 fill / calc(var(--p) * 8) round; image-rendering: pixelated;

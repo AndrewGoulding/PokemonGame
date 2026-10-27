@@ -20,7 +20,8 @@ BATTLE SCENE (OFF leaves out the hit animation), BATTLE STYLE (SHIFT: when a
 trainer is about to send out their next Pokémon you may switch first; SET: no
 switching), SOUND (mono, stereo or off), VOLUME (0 to 10: music, sound effects and cries), GEAR CALLS (OFF: the Pokégear's phone doesn't ring with chatter),
 FRAME (the menus' windows: FireRed's ten window frames; the text box is always
-FireRed's message box, as in FireRed) and, from the main
+FireRed's message box, as in FireRed; every menu is on the screen in FireRed's windows, a list's choices in a window
+in your frame at the right, standing on the message box, and the buttons are right under the screen) and, from the main
 menu, SAVE FILE to load a downloaded save; it's also in the Start menu. Start a
 **NEW GAME** and you make your character (the character creator: your race and your look, "The character
 creator" below), then name yourself on FireRed's naming screen (up to 7 letters on its UPPER / lower / OTHERS
@@ -422,7 +423,7 @@ overworld sprite. It's fixed limit: bets and raises of the big blind before
 the flop and on it, and twice that on the turn and river, four bets a round
 at most (the table shows its stakes); short stacks go all
 in, with side pots. At all three tables what's happening and your choices
-are in FireRed's windows in the panel under the screen (`ui/table-ui.js`):
+are in FireRed's windows along the bottom of the screen (`ui/table-ui.js`):
 the message in the standard frame, the choices in the frame you picked in
 the Options with FireRed's ▶, in FireRed's font; the screen above is all
 table, the cards, tiles and portraits as big as it allows. On your turn pick Fold, Check or Call, or Bet or Raise

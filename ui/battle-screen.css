@@ -33,9 +33,9 @@ body {
      240x160), the text box and menu under it, then the buttons. */
   container-type: inline-size;
   width: 100%;
-  /* (880px at most: 3.67 game pixels a pixel, room for the Ultimax battles' party; less in a short window, so the
-     screen, the text box and menu (about 150px) and the buttons (about 190px) still fit its height) */
-  max-width: min(880px, calc((100vh - 32px - 350px) * 1.5));
+  /* (880px at most: 3.67 game pixels a pixel; less in a short window, so the screen (its text box and menus on it)
+     and the buttons (about 190px) still fit its height) */
+  max-width: min(880px, calc((100vh - 32px - 200px) * 1.5));
   min-width: min(100%, 480px);
   border: 4px solid #0d1017;
   border-radius: 12px;
@@ -230,51 +230,49 @@ body {
   text-shadow: calc(100cqw / 240) calc(100cqw / 240) 0 #6a5a73;
 }
 
-/* Under the screen, the choices (a list's options, the card tables' windows): the same height while there are
-   some, more than fit scroll; and nothing at all, the buttons right under the screen, while there are none. */
-.panel {
-  height: 150px;
-  padding: 8px 10px;
-  background: #2e3440;
-  overflow: hidden;
-}
-.panel:has(> .menu:empty) { display: none; }
-
+/* The choices (ui/screen.js's ask: a list's options), on the screen as FireRed's multichoice windows: a window in your
+   frame (the Option screen's FRAME, --frame, set by ui/screen.js) at the right, standing on the message box, the
+   choices down it in FireRed's font, ▶ at the one picked, those you can't pick grey; more than fit scroll. The card
+   tables' windows and the dig's message (ui/table-ui.js, ui/mining.js) are a band along the screen's bottom instead,
+   the scene above it made shorter. Nothing under the screen: the buttons are right below it. */
+.panel { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
 .menu {
-  height: 100%;
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  grid-auto-rows: min-content;
-  align-content: start;
-  gap: 5px;
+  --p: calc(100cqw / 240);
+  position: absolute; right: 0; bottom: 30%;
+  max-height: 70%; max-width: 100%; min-width: calc(var(--p) * 72);
+  display: flex; flex-direction: column;
   overflow-y: auto;
-  padding: 3px;           /* room for the highlight's outline */
-  margin: -3px;
+  padding: calc(var(--p) * 2) calc(var(--p) * 4) calc(var(--p) * 2) calc(var(--p) * 2);
+  border: calc(var(--p) * 8) solid transparent;
+  border-image: var(--frame) 8 fill / calc(var(--p) * 8) round;
+  image-rendering: pixelated;
+  pointer-events: auto;
+  font-size: calc(var(--p) * 16); font-size-adjust: none; line-height: 1;
+  color: #626262; text-shadow: var(--p) var(--p) 0 #d5d5cd;
 }
-.menu button { grid-column: span 3; }
-.menu button.small { grid-column: span 2; }
-.menu button.wide { grid-column: 1 / -1; }
-
+.menu:empty { display: none; }
+/* (No prompt in the message box: the window stands on the screen's bottom.) */
+.screen:has(> .textbox.empty) .menu:not(.table-menu) { bottom: 0; }
 .menu button {
-  padding: 5px 9px;
-  border: 2px solid rgba(0, 0, 0, 0.35);
-  border-radius: 8px;
-  background: #e8e8e8;
-  color: #111;
-  font: inherit;
-  font-size: 20px;
-  line-height: 1.1;
-  text-align: left;
+  all: unset; display: block; position: relative; flex: 0 0 auto;
+  padding: calc(var(--p) * 1) calc(var(--p) * 2) calc(var(--p) * 1) calc(var(--p) * 10);
+  font: inherit; color: inherit; text-shadow: inherit; white-space: nowrap; cursor: pointer; text-align: left;
 }
-.menu button:disabled { opacity: 0.45; cursor: not-allowed; }
+.menu button:focus { outline: none; }
+.menu button:focus::before { content: "▶"; position: absolute; left: 0; }
+.menu button:disabled { color: #b0b0b0; cursor: default; }
+.menu button small { font-size: calc(var(--p) * 12); }
+.menu button img { height: calc(var(--p) * 14); vertical-align: middle; image-rendering: pixelated; }
+/* (a typed line, the debug menu's or a box's name) */
+.menu .intro-name input { font: inherit; font-size: calc(var(--p) * 14); padding: calc(var(--p) * 2) calc(var(--p) * 4); border: calc(var(--p)) solid #626262; border-radius: 0; }
+/* The card tables' and the dig's: a band along the bottom, no window of its own (theirs are inside). */
+.menu.table-menu, .menu:has(> .panel-text) { left: 0; right: 0; bottom: 0; top: auto; height: 30%; max-height: none; min-width: 0;
+  display: block; padding: 0; border: 0; overflow: hidden; }
+.screen:has(.menu.table-menu) > .scene, .screen:has(.menu > .panel-text) > .scene { padding-bottom: 20cqw !important; }
+.screen:has(.menu.table-menu) > .textbox, .screen:has(.menu > .panel-text) > .textbox { display: none; }
 
-.move-name { display: block; font-size: 20px; }
-.move-meta { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; opacity: 0.85; }
-
-.menu button.action { text-align: center; background: #f4f1e6; }
-.menu button.empty-move { text-align: center; color: #888; background: #e9e6dc; }
-.menu button.empty-move:disabled { opacity: 0.6; cursor: default; }
-.menu small { font-weight: 600; opacity: 0.7; }
+.move-name { display: block; }
+.move-meta { display: flex; justify-content: space-between; gap: calc(var(--p) * 8); font-size: calc(var(--p) * 12); }
 
 /* Type colours for move buttons (text stays dark for contrast) */
 .type-Normal   { background: #c6c6a7 !important; }
@@ -295,6 +293,8 @@ body {
 .type-Dark     { background: #a29288 !important; }
 .type-Steel    { background: #d1d1e0 !important; }
 .type-Fairy    { background: #f4bdc9 !important; }
+/* (Not in the on-screen menu's window: its choices are FireRed's, plain text.) */
+.menu button[class*="type-"] { background: none !important; }
 
 .party-hp { font-size: 11px; font-weight: 600; opacity: 0.85; }
 

@@ -65,5 +65,5 @@
     el.classList.remove("table-menu");
     el.innerHTML = "";
   }
-  window.TableUI = { panel, move, clear };
+  window.TableUI = { panel, move, clear, frameUrl };
 })();

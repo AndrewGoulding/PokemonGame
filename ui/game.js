@@ -9679,7 +9679,7 @@
     if (!player.flags.starter && !player.flags.realmHubVisited) { await say(["It's a strange machine with a clock\non its dome.", "Its door won't open."]); return; }
     await say("It's the Time Machine!\nIts door glows with a strange light.");
     // (Its mirror: the character creator again.)
-    const v = await ask("What will you do?", [{ label: "Travel", value: "go", className: "action" }, { label: "Change Look", value: "look", className: "action" }, back("Leave")]);
+    const v = ["go", "look", "back"][await multichoice("What will you do?", 17, 6, ["Travel", "Change Look", "Leave"])] || "back";
     if (v === "look") { await changeLook(); return; }
     if (v !== "go" || !(await confirm("Step inside and travel beyond\nthe Pokémon realm?"))) return;
     await voyage(to.hub, ["The Time Machine whirs to life…", "The years spin past in a blur\nof light…", "Beyond time itself, the machine\ncomes to rest."], "se_warp_in");
@@ -9736,9 +9736,8 @@
   async function kamurochoTimeMachine() {
     await say("It's the Time Machine, hidden down\nhere under the street.");
     for (;;) {
-      const v = await ask("What will you do?", [{ label: "Rest", value: "rest", className: "action" }, { label: "Party", value: "party", className: "action" },
-        { label: "Pokémon", value: "pokemon", className: "action" }, { label: "Look", value: "look", className: "action" },
-        { label: "Realm Hub", value: "hub", className: "action" }, back("Leave")]);
+      // (FireRed's multichoice window, at the right over the street.)
+      const v = ["rest", "party", "pokemon", "look", "hub", "back"][await multichoice("What will you do?", 19, 0, ["Rest", "Party", "Pokémon", "Look", "Realm Hub", "Leave"])] || "back";
       if (v === "look") { await changeLook(); continue; }
       if (v === "pokemon") { await realmPokemon("yakuza"); continue; }
       if (v === "rest") {

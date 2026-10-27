@@ -106,6 +106,12 @@
   }
 
   function clearMenu() { asking++; menu.innerHTML = ""; }
+  // The menu's window is drawn in your frame (the Option screen's FRAME): set whenever something's put in it.
+  new MutationObserver(() => {
+    if (!menu.firstChild || !window.TableUI || !window.TableUI.frameUrl) return;
+    const url = window.TableUI.frameUrl("type" + (((window.GameOptions && window.GameOptions.get().frame) || 0) + 1));
+    if (url && menu.dataset.frame !== url) { menu.dataset.frame = url; menu.style.setProperty("--frame", "url(" + url + ")"); }
+  }).observe(menu, { childList: true });
 
   function addButton(opt, onClick) {
     const b = document.createElement("button");
