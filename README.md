@@ -3945,7 +3945,9 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   first form, Mecha Frieza and King Cold for the Frieza Clan; the Supreme Kai, Kibito, Kibito Kai and King Kai for
   the Kais. The Mushroom Kingdom's are whole characters from Mario & Luigi: Superstar Saga: Mario,
   Luigi and Peach for its Humans; Toad and a Toad Brigade Toad for the Mushroom People (their caps'
-  spots are their "hair"; Superstar Saga has no Toadsworth); and Bowser for the Koopas (shrunk to the others' size, Bowser more). And from Paper Mario:
+  spots are their "hair"), and Toadsworth from Partners in Time (decoded from its cartridge, `tools/lib/pit.py`: the
+  NDS file table, its FObj.dat's sprite table, AlphaDream's DS compression and its OAM frames; committed as
+  `tools/data/pit-people.png`, `--pit <nds>` to take it again); and Bowser for the Koopas (shrunk to the others' size, Bowser more). And from Paper Mario:
   The Thousand-Year Door, drawn from its models: a Pianta, Don Pianta, Frankie and Francesca for the Piantas (their
   sprouts are their "hair", their grass skirts the trim); a Goomba and Goombella for the Goombas; Koops for the Koopas.
   Kanto's Pokémon Trainers are FireRed's own Red, Leaf and Gary (`FRLG_PARTS`, from their overworld sheets), each cut at the row

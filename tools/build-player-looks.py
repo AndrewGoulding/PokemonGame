@@ -4,7 +4,7 @@
 #
 #   python3 tools/build-player-looks.py
 #
-# (No cartridge or disc: it builds from what's committed. See DATA, SS_DATA and TTYD_DATA below for taking them again.)
+# (No cartridge or disc: it builds from what's committed. See DATA, SS_DATA, TTYD_DATA and PIT_DATA below for taking them again.)
 # Hyrule's people are The Minish Cap's (only their sprites): its townsfolk and children are drawn as a head on a body,
 # so any head goes on any body; and Link, whole. The Dragon World's are the Dragon Ball realm's people sheets already
 # in the repo (assets/dragonball/people/, from Legacy of Goku II and Buu's Fury), whole characters. Kanto's are
@@ -651,6 +651,30 @@ def kanto():
         f15 = frames15([cell(0), cell(1), cell(2)], [[cell(3), cell(4)], [cell(5), cell(6)], [cell(7), cell(8)]])
         character(pid, name, 'frlg', f15, (8, 0), neck=neck - neck_row(f15[0]))
 
+# ---------- Toadsworth: Mario & Luigi: Partners in Time's ----------
+# Superstar Saga has no Toadsworth; Partners in Time has, walking its fields (tools/lib/pit.py decodes them from the
+# cartridge, ARME). Committed, already drawn (so no cartridge is needed):
+#   tools/data/pit-people.png   his fifteen frames, 32x32 each: facing you, away and to the left, each standing and
+#                               four of his walk (the game's a, b, c, b, a, d, e, d: its steps c and e)
+# `--pit <Partners in Time (USA).nds>` takes them from the cartridge again (and builds as well). His colours: his cap's
+# spots its "hair" (as a Toad's), his vest the clothes, his bow tie the trim; cut at the row under his moustache.
+PIT_DATA = os.path.join(ROOT, 'tools/data/pit-people.png')
+PIT_PARTS = [('toadsworth', 'Toadsworth', 21, {'hair': ['733900'], 'outfit': ['6210ac', 'ac29cd'], 'trim': ['39418b', '5a62cd'],
+                                              'skin': ['e6b452', 'cd8339', 'dea418']})]
+def pit_people():
+    if '--pit' in sys.argv:
+        sys.path.insert(0, os.path.join(ROOT, 'tools/lib')); import pit
+        frames = pit.toadsworth(open(sys.argv[sys.argv.index('--pit') + 1], 'rb').read())
+        sheet_ = Image.new('RGBA', (32 * len(frames), 32), (0, 0, 0, 0))
+        for i, f in enumerate(frames): sheet_.alpha_composite(f, (i * 32, 0))
+        sheet_.save(PIT_DATA, optimize=True)
+    img = Image.open(PIT_DATA).convert('RGBA'); p = img.load()
+    for pid, name, neck, roles in PIT_PARTS:
+        def cell(i):
+            return kanto_roles({(x, y): p[i * 32 + x, y][:3] for y in range(32) for x in range(32) if p[i * 32 + x, y][3] > 128}, roles, neck)
+        f15 = frames15([cell(0), cell(5), cell(10)], [[cell(d * 5 + k) for k in (1, 2, 3, 4)] for d in range(3)])
+        character(pid, name, 'pit', f15, (0, 0), neck=neck - neck_row(f15[0]))
+
 # ---------- The Mushroom Kingdom: Mario & Luigi: Superstar Saga's people ----------
 # How Superstar Saga keeps its sprites (the USA cartridge, A88E; after Yoshi Magic's sprite viewer and the game's own
 # OAM builders, 0x0801EEBC.., in the jellees/mlss decompilation's disassembly):
@@ -1151,6 +1175,7 @@ if __name__ == '__main__':
     dragon_world()
     kanto()
     mushroom_kingdom()
+    pit_people()
     if isinstance(SS, SuperstarSaga): SS.save()
     paper_kingdom()
     made_heads()
