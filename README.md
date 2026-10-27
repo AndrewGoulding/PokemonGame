@@ -3579,7 +3579,10 @@ python3 tools/build-dbz-ssw.py "<path to Dragonball Z - Supersonic Warriors (USA
   `0x608000`). Each has a palette, a bank of 4bpp tiles and a table of frames. A frame is a list of the tiles the game
   copies to VRAM and its parts (OAM shape, size and offset into that copy). One sheet each, every frame 16 to a row
   in the ROM's order (the moves come in runs). `fighters/index.json` gives each sheet's cell size, the anchor in a
-  cell and its frame count.
+  cell, its frame count and its animations: each one's frames (with durations), its action and what that is, and
+  which of the action's angles it's for. The 63 actions are the same for every fighter. The ones the buttons set
+  were found by playing (A: rush, B: ki blasts, R: dash, R then A or B: the dash attacks, and the hurt and clash
+  ones from being hit), the rest named from their pictures.
 
 `tools/build-dbz-advanced-adventure.py` builds the first series' side-on sprites from **Dragon Ball: Advanced
 Adventure** (USA, game code BDVE; files `side/DBA_*`): Goku as a boy, his friends, his rivals and the enemies.

@@ -8,6 +8,11 @@
 #             19 fighters and 7 smaller ones
 #   a fighter: its animations (offsets), its palettes (16 colours each; we take the first), its 4bpp tiles, and the
 #             table of pointers to its frames
+#   0x6cc88   for each of those 48 slots, its actions: 63 pointers, each to 32 u16s, the animation it plays at each of
+#             32 angles (0x8000: mirrored). The actions are the same for every fighter (labelled below, from playing
+#             the game and watching which action each button sets, at fighter +8c, and the rest by their pictures)
+#   an animation (at the animations table + its offset): 8 bytes, then 4-byte steps (0, duration, frame) until one
+#             that isn't 0
 #   a frame (24 bytes): x, y, two u16s, 8 bytes, then pointers to its tile list and its parts
 #     the tile list (u16s, to 0xfffe) is what the game copies to VRAM: a tile number; 0x8000 | n then the first of a
 #     run of n; 0xc000 | n blank tiles; 0xffff one blank tile
@@ -17,7 +22,9 @@
 # Writes:
 #   assets/dragonball/fighters/SSW_<nn>.png     every frame of each fighter, 16 to a row, in the ROM's order
 #   assets/dragonball/fighters/index.json       each sheet's cell size, the anchor in each cell (the fighter's
-#                                               position), and how many frames it has
+#                                               position), how many frames it has, and its animations: each one's
+#                                               action, what that is, which of the action's angles it is, and its
+#                                               frames (frame number on the sheet, duration in 60ths of a second)
 import json, os, struct, sys
 import numpy as np
 from PIL import Image
@@ -60,12 +67,40 @@ def frame(rec, base):
             img[(k // tw) * 8:(k // tw) * 8 + 8, (k % tw) * 8:(k % tw) * 8 + 8] = tile(tiles[t + k] if t + k < len(tiles) else None)
         parts.append((img, x, y))
     return parts
+ACTIONS = ['hover (by angle)', 'rise', 'hover', 'turn', 'turn back', 'stand', 'move', 'fly fast', 'fly fast',
+           'guard', 'aura dash', 'aura dash', 'aura dash', 'climb', 'lift off', 'dash: start', 'dash', 'brace',
+           'hit: reel', 'hurt', 'hurt (by ki)', 'knocked flying', 'stance', 'pose', 'vanish', 'recover',
+           'ki blast 1', 'ki blast 2', 'ki blast 3', 'ki blast 4', 'ki blast 1: after', 'ki blast 2: after',
+           'ki blast 3: after', 'ki blast 4: after', 'rush', 'rush: finish', 'combo hit', 'combo hit 2',
+           'lunge', 'special', 'dash ki attack', 'dash ki attack 2', 'dash ki attack: finish', 'dash attack',
+           'dash attack: finish', 'aimed attack', 'aimed attack 2', 'charge', 'throw', 'clash: ready', 'clash',
+           'clash: push', 'knocked down', 'block', 'thrown', 'fall', 'lying down', 'spun', 'bounce', 'tumble',
+           'tumble 2', 'get up', 'taunt']
+def animations(table, slot):
+    A = table; n = 0
+    while R(A + 4 * n) < 0x10000 and (n == 0 or R(A + 4 * n) >= R(A + 4 * n - 4)): n += 1
+    acts = R(0x6cc88 + 4 * slot); which = {}
+    for a in range(63):
+        p = R(acts + 4 * a)
+        if not isptr(p): break
+        seen = []
+        for v in struct.unpack_from('<32H', rom, p & 0x1ffffff):
+            if (v & 0x7fff) not in seen: seen.append(v & 0x7fff)
+        for k, v in enumerate(seen): which.setdefault(v, (a, k))
+    out = []
+    for i in range(n):
+        o = (A + R(A + 4 * i)) & 0x1ffffff; steps = []
+        o += 8
+        while rom[o] == 0 and len(steps) < 64: steps.append([struct.unpack_from('<H', rom, o + 2)[0], rom[o + 1]]); o += 4
+        a, k = which.get(i, (None, None))
+        out.append(dict(action=a, label=ACTIONS[a] if a is not None else '', angle=k, frames=steps))
+    return out
 def valid(rec): return isptr(rec) and isptr(R(rec + 16)) and isptr(R(rec + 20))
 
-fighters = []
+fighters, slots = [], []
 for i in range(48):
     h = R(0x608004 + 4 * i)
-    if h not in fighters: fighters.append(h)
+    if h not in fighters: fighters.append(h); slots.append(i)
 os.makedirs(OUT, exist_ok=True)
 index = {}
 for n, h in enumerate(fighters):
@@ -87,6 +122,6 @@ for n, h in enumerate(fighters):
     rgba = np.zeros(idx.shape + (4,), np.uint8); rgba[..., :3] = P[idx]; rgba[..., 3] = np.where(idx != 0, 255, 0)
     name = 'SSW_%02d' % n
     Image.fromarray(rgba, 'RGBA').save(os.path.join(OUT, name + '.png'), optimize=True)
-    index[name] = dict(cell=[cw, ch], anchor=[half, up], frames=count)
+    index[name] = dict(cell=[cw, ch], anchor=[half, up], frames=count, animations=animations(anims, slots[n]))
 json.dump(index, open(os.path.join(OUT, 'index.json'), 'w'), separators=(',', ':'))
 print(len(fighters), 'fighters')
