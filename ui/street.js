@@ -112,7 +112,7 @@
   function draw(opts) {
     const S = scene(), bg = image(S.image);
     cam.x = Math.max(0, Math.min(S.width - W, Math.round(me.x - W / 2)));
-    cam.y = Math.max(0, Math.min(480 - H, Math.round(me.y - H * 0.72)));
+    cam.y = Math.max(0, Math.min((S.height || 480) - H, Math.round(me.y - H * 0.72)));
     g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
     if (ready(bg)) g.drawImage(bg, cam.x, cam.y, W, H, 0, 0, W, H);
     // (everyone and everything, the furthest back first)
@@ -358,8 +358,9 @@
   // screen now.
   function backdrop() {
     const S = scene();
-    return { url: S.image, size: (S.width / W * 100) + "% " + (480 / H * 100) + "%",
-      position: (cam.x / Math.max(1, S.width - W) * 100) + "% " + (cam.y / (480 - H) * 100) + "%" };
+    const SH = S.height || 480;
+    return { url: S.image, size: (S.width / W * 100) + "% " + (SH / H * 100) + "%",
+      position: (cam.x / Math.max(1, S.width - W) * 100) + "% " + (cam.y / (SH - H) * 100) + "%" };
   }
   const isStreet = (map) => map === "Kamurocho";
   window.Street = { explore, show, backdrop, isStreet, place: (loc) => place(loc), here: () => me && Object.assign({}, me), people: () => me ? people({}) : [],

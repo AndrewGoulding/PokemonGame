@@ -3645,11 +3645,17 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   through its door (every convenience store on the street can be gone into; Poppo's the one). **Serena's Backlot**:
   down the passage beside Serena's door, the yard behind the bar, its manhole cover on the asphalt. **Under the
   Street**: down that manhole, a storm drain where the Time Machine stands. And the rest of Yakuza 0's Kamurocho:
-  **Taihei Boulevard** along the south (Poppo, a pachinko hall, the yakiniku place up its steps, the gyudon place),
+  **Taihei Boulevard** along the south (Poppo, a pachinko hall, the yakiniku place up its steps, the gyudon place; and
+  its wide road below the pavement, a scene 640 high (`height`) so the camera pans down as you walk out onto it: two
+  lanes each way in the street's dithered asphalt, worn dashes, a zebra crossing at the gate, the far kerb's guard
+  rail), **Showa Street** off its west end (a discount store, sushi, a mahjong parlour, a real estate office),
   the red gate of **Tenkaichi Street** off it (ramen, yakiniku, Smile Burger, the corner of Nakamichi),
   **Nakamichi Street** across the middle (a coffee shop, the hostess club, a bar, a pawn shop), **Pink Street**'s
   cabaret, host club, Club Moon and lounge in pink neon, the **Champion District**'s lanes of tiny bars under their
-  wires, and **Theater Square** with the Kamuro Cinema and the Kamuro Theater's arcade and marquee. Streets of
+  wires, **Theater Square** with the Kamuro Cinema and the Kamuro Theater's arcade and marquee, **Senryo Avenue**
+  along the east (a bank, a game centre, a pharmacy, a clinic, the bus stop), the **Hotel District**'s love hotels
+  in violet, **Shichifuku Street** across the north (oden, an izakaya, a pawn shop, ramen, the construction site's
+  hoardings), and three back alleys with no fights: **Nakamichi Alley**, **Pink Alley** and **Theater Alley**. Streets of
   Kamurocho has no insides of its shops and only its one street, so those are this game's own: Poppo, the backlot
   and the storm drain drawn in the street's colours by `tools/build-kamurocho-insides.py` (Poppo's sign off its
   shopfront, its shelves, drinks fridge and counter, its clerk, a man at ease in Poppo's blue uniform; the backlot's
@@ -3660,8 +3666,11 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   its own letters for the new signs, recoloured and relit. You're drawn twice your size, to stand as tall as its people. Walk off a
   street's end into the next (the street's left end is Nakamichi Street's right, its right the alley; Tenkaichi
   runs from Taihei's gate to Theater Square, Pink Street from Taihei's end to Nakamichi, the Champion District from
-  Pink Street to the square); stand at a turning (Tenkaichi's gate, the corner of Nakamichi, the way into Pink
-  Street or the Champion District), at Bacchus's, Poppo's or Serena's door and press A to go in (out of Bacchus,
+  Pink Street to the square, Showa Street off Taihei's west end, Senryo Avenue to the Hotel District to Shichifuku
+  Street, Nakamichi Alley to Theater Alley to the square); stand at a turning (Tenkaichi's gate, the corner of
+  Nakamichi, the way into Pink Street or the Champion District, Showa's passage to Nakamichi Alley, Pink Street's and
+  Senryo's ways into Pink Alley, the Kamuro Theater's arcade to Theater Alley or Shichifuku Street and Shichifuku's
+  lane back to the square), at Bacchus's, Poppo's or Serena's door and press A to go in (out of Bacchus,
   walk off its left; out of Poppo, walk up into its glass door; out of the backlot, off its left); in Poppo, stand
   at the counter and press A to talk to the clerk and buy; on the backlot's manhole, A climbs down (the ladder, A,
   back up); the Time Machine's spot, A, is its menu. The floor you can walk on is each scene's polygon (along the

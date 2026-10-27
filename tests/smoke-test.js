@@ -7361,8 +7361,12 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     for (const id of Object.keys(K.scenes)) assert(reach(K.arrive.scene).has(id) && reach(id).has(K.arrive.scene), id + " is reached, and left");
     for (const f of K.foeWalks) assert(here("assets/kamurocho/people/" + f + "_walk.png"), f + "'s walk");
     for (const [, foes] of window.REALM_ENCOUNTERS.Kamurocho.groups) assert(K.barks[foes[0]] && K.barks[foes[0]].length, foes[0] + "'s bark");
-    for (const id of ["alley", "backlot", "sewer", "poppo", "bacchus", "champion"]) assert(!K.scenes[id].encounters, id + ": no fights");
-    for (const id of ["street", "taihei", "tenkaichi", "nakamichi", "pink", "theater"]) assert(K.scenes[id].encounters, id + ": its gangs");
+    for (const id of ["alley", "backlot", "sewer", "poppo", "bacchus", "champion", "nakamichi-alley", "pink-alley", "theater-alley"]) assert(!K.scenes[id].encounters, id + ": no fights");
+    for (const id of ["street", "taihei", "tenkaichi", "nakamichi", "pink", "theater", "showa", "senryo", "hotels", "shichifuku"]) assert(K.scenes[id].encounters, id + ": its gangs");
+    // (each picture as wide and as high as its scene says; Taihei Boulevard's road below its pavement, walked on)
+    const size = (f) => { const b = fs.readFileSync(require("path").join(__dirname, "..", f)); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
+    for (const [id, S] of Object.entries(K.scenes)) assert.deepStrictEqual(size(S.image), [S.width, S.height || 480], id + "'s size");
+    assert(inside(K.scenes.taihei.floor, 800, 590), "Taihei Boulevard's road");
   }
   // (And each has its looks: parts that are drawn, and skins that are colours.)
   const skins = window.LOOK_COLOURS.skin.map((c) => c[0]);

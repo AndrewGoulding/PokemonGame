@@ -1,7 +1,7 @@
 // Kamurocho, side on (ui/street.js): Streets of Kamurocho's own streets (tools/build-kamurocho-sok.py), and the rest
 // of Yakuza 0's put together out of its pieces (tools/build-kamurocho-streets.py; the insides drawn by
 // build-kamurocho-insides.py), walked as its beat-'em-up's are, along the street and up and down its pavement.
-// Each scene: its picture (480 high, the floor at the bottom), the floor you can walk on (a polygon, in the picture's pixels), its ways out (`exits`: walk off an
+// Each scene: its picture (480 high, or its `height`, the floor at the bottom), the floor you can walk on (a polygon, in the picture's pixels), its ways out (`exits`: walk off an
 // edge, a door's spot and A, or a spot with `walk`: walking that way out of it, as through Poppo's door; to the
 // other scene's x and y), its spots (stand in one and press A: its
 // script), its `things` (pictures laid on it: the manhole cover), and its people (each a SoK sprite from
@@ -103,10 +103,13 @@ window.KAMUROCHO_STREET = {
     // (Streets of Kamurocho's), Pink Street off Nakamichi and back down to Taihei, and the Champion District's lanes
     // between Pink Street and Theater Square. Turnings are spots: stand in one and press A.)
     taihei: {
-      title: "Taihei Boulevard", image: "assets/kamurocho/taihei.png", width: 1600, encounters: true,
-      floor: [[0, 410], [1600, 410], [1600, 470], [0, 470]],
+      // (640 high: its road below the pavement, two lanes each way and a zebra crossing at the gate, the far side's
+      // guard rail; walk out across it and the street goes up off the top)
+      title: "Taihei Boulevard", image: "assets/kamurocho/taihei.png", width: 1600, height: 640, encounters: true,
+      floor: [[0, 410], [1600, 410], [1600, 600], [0, 600]],
       exits: [{ spot: [990, 1200, 410, 426], to: "tenkaichi", x: 60, y: 440, facing: "right", text: "Tenkaichi Street" },
-        { edge: "right", to: "pink", x: 30, y: 440, facing: "right" }],
+        { edge: "right", to: "pink", x: 30, y: 440, facing: "right" },
+        { edge: "left", to: "showa", x: 1470, y: 440, facing: "left" }],
       people: [
         { script: "Kamurocho_Gambler", sprite: "loiterer", x: 150, y: 418, face: "right",
           text: ["Lost it all on number 7 again.", "One more go. Just one more..."] },
@@ -115,7 +118,9 @@ window.KAMUROCHO_STREET = {
         { script: "Kamurocho_Tourist", sprite: "tourist", walk: "tourist_walk", range: 80, x: 1150, y: 430, face: "right",
           text: ["So this is Kamurocho!\nThe red gate's even bigger\nthan the postcards."] },
         { script: "Kamurocho_Izakaya", sprite: "drunk_idle", walk: "drunk_idle_walk", range: 50, x: 1450, y: 456, face: "left",
-          text: ["Daikichi does the best\nyakitori in town. *hic*", "...Which way's home again?"] }
+          text: ["Daikichi does the best\nyakitori in town. *hic*", "...Which way's home again?"] },
+        { script: "Kamurocho_Cabbie", sprite: "salaryman_idle", x: 700, y: 560, face: "right",
+          text: ["No fares tonight. Everybody's\nwalking.", "Taihei's the widest road in\nKamurocho. Mind the lanes."] }
       ]
     },
     tenkaichi: {
@@ -157,7 +162,8 @@ window.KAMUROCHO_STREET = {
       floor: [[0, 410], [1200, 410], [1200, 470], [0, 470]],
       exits: [{ edge: "left", to: "taihei", x: 1570, y: 440, facing: "left" },
         { edge: "right", to: "nakamichi", x: 560, y: 440, facing: "down" },
-        { spot: [470, 580, 410, 426], to: "champion", x: 30, y: 444, facing: "right", text: "Champion District" }],
+        { spot: [470, 580, 410, 426], to: "champion", x: 30, y: 444, facing: "right", text: "Champion District" },
+        { spot: [250, 325, 410, 426], to: "pink-alley", x: 30, y: 440, facing: "right", text: "Pink Alley" }],
       people: [
         { script: "Kamurocho_PinkTout", sprite: "host_idle", x: 160, y: 418, face: "right",
           text: ["Cabaret Bijin! First drink's\non the house!", "...The second one's 8,000 yen."] },
@@ -187,7 +193,10 @@ window.KAMUROCHO_STREET = {
       title: "Theater Square", image: "assets/kamurocho/theater.png", width: 1200, encounters: true,
       floor: [[0, 410], [1200, 410], [1200, 470], [0, 470]],
       exits: [{ edge: "left", to: "tenkaichi", x: 1370, y: 440, facing: "left" },
-        { edge: "right", to: "champion", x: 870, y: 440, facing: "left" }],
+        { edge: "right", to: "champion", x: 870, y: 440, facing: "left" },
+        // (through the Kamuro Theater's arcade: behind it, and out the far side to Shichifuku Street)
+        { spot: [400, 520, 410, 426], to: "theater-alley", x: 660, y: 440, facing: "left", text: "Theater Alley" },
+        { spot: [840, 960, 410, 426], to: "shichifuku", x: 580, y: 440, facing: "down", text: "Shichifuku Street" }],
       people: [
         { script: "Kamurocho_Moviegoer", sprite: "tourist", walk: "tourist_walk", range: 80, x: 160, y: 440, face: "right",
           text: ["The late show at Kamuro Cinema\nis a yakuza picture.", "Like we don't get enough\nof that out here."] },
@@ -197,6 +206,109 @@ window.KAMUROCHO_STREET = {
           text: ["The Kamuro Theater! Opening\nnight's sold out.", "The square's the heart of\nKamurocho, they say."] },
         { script: "Kamurocho_Square", sprite: "grunt_idle", walk: "grunt_idle_walk", range: 60, x: 1080, y: 430, face: "left",
           text: ["The Tojo Clan's got eyes all\nover this square."] }
+      ]
+    },
+    // (More of Yakuza 0's Kamurocho, put together the same way: Showa Street off Taihei Boulevard's west end, Nakamichi
+    // Alley off its passage and Theater Alley behind the Kamuro Theater; Pink Alley off Pink Street, out onto Senryo
+    // Avenue along the east, the Hotel District off that, and Shichifuku Street across the north, back to Theater
+    // Square.)
+    showa: {
+      title: "Showa Street", image: "assets/kamurocho/showa.png", width: 1500, encounters: true,
+      floor: [[0, 410], [1500, 410], [1500, 470], [0, 470]],
+      exits: [{ edge: "right", to: "taihei", x: 30, y: 440, facing: "right" },
+        { spot: [980, 1140, 410, 426], to: "nakamichi-alley", x: 30, y: 440, facing: "right", text: "Nakamichi Alley" }],
+      people: [
+        { script: "Kamurocho_Bargain", sprite: "tourist", walk: "tourist_walk", range: 80, x: 320, y: 444, face: "right",
+          text: ["The discount store's got\neverything. Everything!", "I came for toothpaste. I'm\nleaving with a massage chair."] },
+        { script: "Kamurocho_Mahjong", sprite: "loiterer", x: 760, y: 418, face: "left",
+          text: ["The mahjong parlour upstairs\nnever closes.", "Neither do the debts."] },
+        { script: "Kamurocho_Realtor", sprite: "salaryman_idle", walk: "salaryman_idle_walk", range: 70, x: 1300, y: 452, face: "left",
+          text: ["Land's the only thing worth\nhaving in this town.", "Every lot in Kamurocho's worth\na fortune. And a funeral."] }
+      ]
+    },
+    senryo: {
+      title: "Senryo Avenue", image: "assets/kamurocho/senryo.png", width: 1400, encounters: true,
+      floor: [[0, 410], [1400, 410], [1400, 470], [0, 470]],
+      exits: [{ spot: [800, 905, 410, 426], to: "pink-alley", x: 770, y: 440, facing: "left", text: "Pink Alley" },
+        { edge: "right", to: "hotels", x: 30, y: 440, facing: "right" }],
+      people: [
+        { script: "Kamurocho_Banker", sprite: "salaryman_idle", walk: "salaryman_idle_walk", range: 80, x: 180, y: 446, face: "right",
+          text: ["The banks on Senryo lend to\nanyone with land to sell.", "The whole country's buying.\nIt can't ever stop."] },
+        { script: "Kamurocho_Arcade", sprite: "reveller", walk: "reveller_walk", range: 60, x: 470, y: 430, face: "left",
+          text: ["The new fighting game's in!\nI've been here since noon."] },
+        { script: "Kamurocho_Commuter2", sprite: "loiterer", x: 300, y: 418, face: "right",
+          text: ["The bus doesn't come this\nlate. I wait anyway."] },
+        { script: "Kamurocho_Patient", sprite: "drunk_idle", walk: "drunk_idle_walk", range: 50, x: 1060, y: 456, face: "left",
+          text: ["The clinic stitched me up\nno questions asked.", "...That's the third time\nthis month."] }
+      ]
+    },
+    hotels: {
+      title: "Hotel District", image: "assets/kamurocho/hotels.png", width: 1300, encounters: true,
+      floor: [[0, 410], [1300, 410], [1300, 470], [0, 470]],
+      exits: [{ edge: "left", to: "senryo", x: 1370, y: 440, facing: "left" },
+        { edge: "right", to: "shichifuku", x: 30, y: 440, facing: "right" }],
+      people: [
+        { script: "Kamurocho_HotelTout", sprite: "host_idle", x: 120, y: 418, face: "right",
+          text: ["Hotel Venus! Rooms by the\nhour, no questions asked."] },
+        { script: "Kamurocho_Couple", sprite: "clubgoer", walk: "clubgoer_walk", range: 70, x: 520, y: 446, face: "left",
+          text: ["We're... just looking for\nthe station. Honest."] },
+        { script: "Kamurocho_Valet", sprite: "thug_idle", x: 700, y: 418, face: "left",
+          text: ["Parking's full. Has been\nsince 1985."] },
+        { script: "Kamurocho_Detective", sprite: "grunt_idle", walk: "grunt_idle_walk", range: 60, x: 1040, y: 452, face: "left",
+          text: ["Private eye. I'm waiting\nfor someone's husband.", "...He's been in there\nthree hours."] }
+      ]
+    },
+    shichifuku: {
+      title: "Shichifuku Street", image: "assets/kamurocho/shichifuku.png", width: 1400, encounters: true,
+      floor: [[0, 410], [1400, 410], [1400, 470], [0, 470]],
+      exits: [{ edge: "left", to: "hotels", x: 1270, y: 440, facing: "left" },
+        { spot: [520, 645, 410, 426], to: "theater", x: 900, y: 440, facing: "down", text: "Theater Square" }],
+      people: [
+        { script: "Kamurocho_Oden", sprite: "loiterer", x: 200, y: 418, face: "right",
+          text: ["Oden on a cold night.\nNothing better.", "The daikon's been simmering\nsince this morning."] },
+        { script: "Kamurocho_Pawned", sprite: "salaryman_idle", walk: "salaryman_idle_walk", range: 60, x: 420, y: 450, face: "right",
+          text: ["The pawn shop gave me 3,000\nyen for my wedding ring.", "...Don't tell my wife."] },
+        { script: "Kamurocho_Foreman", sprite: "thug_idle", x: 1180, y: 418, face: "left",
+          text: ["Construction site. Keep out.", "Somebody's going to build\nsomething big here, they say."] },
+        { script: "Kamurocho_Noodles", sprite: "reveller", walk: "reveller_walk", range: 60, x: 860, y: 440, face: "left",
+          text: ["The ramen place on Shichifuku's\nopen till 5 in the morning."] }
+      ]
+    },
+    // (The back alleys: no fights.)
+    "nakamichi-alley": {
+      title: "Nakamichi Alley", image: "assets/kamurocho/nakamichi-alley.png", width: 800,
+      floor: [[0, 414], [800, 414], [800, 468], [0, 468]],
+      exits: [{ edge: "left", to: "showa", x: 1060, y: 440, facing: "down" },
+        { edge: "right", to: "theater-alley", x: 30, y: 440, facing: "right" }],
+      people: [
+        { script: "Kamurocho_Loanshark", sprite: "grunt_idle", x: 300, y: 420, face: "left",
+          text: ["You need money? Everybody\nneeds money.", "Ten percent. Every ten days.\nFair's fair."] },
+        { script: "Kamurocho_Smoker", sprite: "drunk_idle", walk: "drunk_idle_walk", range: 50, x: 600, y: 452, face: "right",
+          text: ["Back here's the only place\nthe manager can't find me."] }
+      ]
+    },
+    "pink-alley": {
+      title: "Pink Alley", image: "assets/kamurocho/pink-alley.png", width: 800,
+      floor: [[0, 414], [800, 414], [800, 468], [0, 468]],
+      exits: [{ edge: "left", to: "pink", x: 290, y: 440, facing: "down" },
+        { edge: "right", to: "senryo", x: 850, y: 440, facing: "down" }],
+      people: [
+        { script: "Kamurocho_Mimi", sprite: "host_idle", x: 520, y: 418, face: "left",
+          text: ["Bar Mimi's got three stools\nand one rule: no fighting.", "...Outside's a different\nmatter."] },
+        { script: "Kamurocho_Lost", sprite: "tourist", walk: "tourist_walk", range: 60, x: 220, y: 450, face: "right",
+          text: ["Is this Senryo Avenue?\nIt's all alleys back here."] }
+      ]
+    },
+    "theater-alley": {
+      title: "Theater Alley", image: "assets/kamurocho/theater-alley.png", width: 700,
+      floor: [[0, 414], [700, 414], [700, 468], [0, 468]],
+      exits: [{ edge: "left", to: "nakamichi-alley", x: 770, y: 440, facing: "left" },
+        { edge: "right", to: "theater", x: 460, y: 440, facing: "down" }],
+      people: [
+        { script: "Kamurocho_Actor", sprite: "clubgoer", walk: "clubgoer_walk", range: 60, x: 280, y: 446, face: "right",
+          text: ["The stage door's this way.\nI've got the lead tonight!", "...I'm the third guard from\nthe left. It's a start."] },
+        { script: "Kamurocho_Fan", sprite: "reveller", x: 560, y: 420, face: "left",
+          text: ["I'm waiting for an autograph.\nThe star always leaves this way."] }
       ]
     },
     bacchus: {

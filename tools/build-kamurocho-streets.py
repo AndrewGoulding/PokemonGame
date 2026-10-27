@@ -25,6 +25,13 @@
 #   Pink Street         its clubs in pink neon, the lane to the Champion District
 #   Champion District   lanes of bars no bigger than a closet, wires overhead, their lanterns and signboards
 #   Theater Square      the open square in the north: the Kamuro Theater's arcade and marquee, its lamps
+#   Showa Street        off Taihei's west end: a discount store, sushi, mahjong, the taxi's passage, real estate
+#   Senryo Avenue       along the east: a bank, a game centre, a pharmacy, the way into Pink Alley, a clinic
+#   Hotel District      love hotels in bulbs, violet light, a car park
+#   Shichifuku Street   across the north: its sign, oden, an izakaya, a pawn shop, the lane to Theater Square, ramen,
+#                       the construction site
+#   Nakamichi, Pink and Theater Alleys   back alleys of the Empty Lot's doors, wires over them (back_alley)
+# (Taihei Boulevard is 640 high, its road below the pavement: road(), drawn here in the street's dither.)
 #
 # Writes assets/kamurocho/<scene>.png, as data/kamurocho-street.js's scenes name them.
 import io, os, sys, importlib.util, random
@@ -100,8 +107,8 @@ def light(canvas, cx, cy, rx, ry, colour, strength=0.35):
 def mirror(im): return im.transpose(Image.FLIP_LEFT_RIGHT)
 
 class Scene:
-    def __init__(self, w, seed):
-        self.im = Image.new('RGBA', (w, H), (0, 0, 0, 255)); self.x = 0; self.rnd = random.Random(seed)
+    def __init__(self, w, seed, h=H):
+        self.im = Image.new('RGBA', (w, h), (0, 0, 0, 255)); self.x = 0; self.rnd = random.Random(seed)
     def pave(self, pv, tone=None):
         # (the pavement along the whole street, the strip from the street repeated)
         p = pv if not tone else tone(pv)
@@ -110,6 +117,10 @@ class Scene:
         # (the next front along, standing on the pavement)
         self.im.alpha_composite(im, (self.x, BASE - im.height)); self.x += im.width + gap
         return self.x - im.width - gap
+    def fill(self, *ims):
+        # (fronts, in turn, to the street's end)
+        k = 0
+        while self.x < self.im.width: self.bay(ims[k % len(ims)]); k += 1
     def put(self, im, x, base):
         # (a thing standing with its foot on `base`)
         self.im.alpha_composite(im, (int(x - im.width // 2), int(base - im.height)))
@@ -181,14 +192,49 @@ def pieces(game):
     for k, (x, y, w, h) in PROPS.items(): P[k] = atlas.crop((x, y, x + w, y + h))
     return P, atlas
 
+def road(S, y0, y1, cross=None):
+    # (Taihei Boulevard's road, below its pavement: the kerb, the asphalt in the street's dither (its grain a pixel at a
+    # time, darker and lighter), its edge lines and the dashes between its lanes, worn; a zebra crossing at `cross`
+    # (x0, x1); and the far side's kerb and guard rail, the pavement beyond it)
+    im = S.im; d = ImageDraw.Draw(im); w = im.width; px = im.load()
+    far = y1 - 34
+    for y in range(y0 + 6, far):
+        for x in range(w):
+            k = S.rnd.random()
+            v = 34 + (6 if (x + y) % 2 and k < 0.35 else 0) - (5 if k > 0.93 else 0) + (y - y0) // 24
+            px[x, y] = (v, v, v + 5, 255)
+    # (the kerb: its top lit, its face, its shadow on the road)
+    d.rectangle((0, y0, w, y0 + 2), fill=(150, 148, 140)); d.rectangle((0, y0 + 3, w, y0 + 5), fill=(92, 90, 86))
+    for x in range(0, w, 2): px[x, y0 + 6] = (20, 20, 24, 255)
+    for x in range(0, w, 48): d.line((x, y0, x, y0 + 5), fill=(70, 68, 64))
+    def worn(x0, y, x1, h, col):
+        for yy in range(y, y + h):
+            for xx in range(x0, x1):
+                if S.rnd.random() < 0.86: px[xx, yy] = col
+    edge, mid = y0 + 14, (y0 + far) // 2
+    for x in range(0, w, 4): worn(x, edge, x + 4, 2, (196, 192, 170, 255)); worn(x, far - 12, x + 4, 2, (196, 192, 170, 255))
+    for x in range(0, w, 64):
+        if not (cross and cross[0] - 36 < x < cross[1]): worn(x, mid - 1, x + 36, 3, (214, 200, 120, 255))
+    for x in range(20, w, 64): worn(x, (edge + mid) // 2, x + 30, 2, (180, 178, 160, 255)); worn(x, (mid + far) // 2, x + 30, 2, (180, 178, 160, 255))
+    if cross:
+        for y in range(edge + 6, far - 16, 9): worn(cross[0], y, cross[1], 5, (210, 210, 200, 255))
+    # (the far kerb, its rail's posts and two rails, and the pavement beyond)
+    d.rectangle((0, far, w, far + 2), fill=(120, 118, 112)); d.rectangle((0, far + 3, w, y1), fill=(48, 48, 52))
+    for y in range(far + 3, y1):
+        for x in range((y % 2), w, 2): px[x, y] = (58, 58, 62, 255)
+    for x in range(6, w, 40): d.rectangle((x, far - 18, x + 2, far), fill=(170, 172, 176)); d.line((x + 3, far - 18, x + 3, far), fill=(60, 60, 66))
+    d.rectangle((0, far - 17, w, far - 15), fill=(214, 216, 220)); d.line((0, far - 14, w, far - 14), fill=(90, 92, 98))
+    d.rectangle((0, far - 9, w, far - 8), fill=(190, 192, 196))
+
 def lamps(S, P, xs, base=BASE + 2):
     for x in xs:
         S.put(P['lamp2'], x, base)
         light(S.im, x, base + 26, 70, 22, (230, 220, 170), 0.22)
 
 # ---------- The streets ----------
+TAIHEI_H = 640   # (its road below the pavement: taller than the others)
 def taihei(P, atlas):
-    S = Scene(1600, 31); S.pave(P['pavement'])
+    S = Scene(1600, 31, TAIHEI_H); S.pave(P['pavement'])
     # Poppo; the batting centre's block made the pachinko hall (its walls darker, its neon gone pink, its board
     # in bulbs), the yakiniku place up its steps, the gate, the gyudon place, Fujibashi and the steak house's
     # passage, a block at the end.
@@ -207,6 +253,10 @@ def taihei(P, atlas):
     lamps(S, P, (60, 560, 1150, 1500))
     S.put(P['bike'], 360, BASE + 6); S.put(P['bike2'], 1350, BASE + 6); S.put(P['board'], 1200, BASE + 4)
     S.put(P['kamuro'], gx - 4, BASE + 4)
+    # (Showa Street off its west end: a sign on the corner block)
+    S.at(neon(board(atlas, 'SHOWA ST', (20, 30, 60), (160, 230, 255), 1), (120, 200, 255)), 8, 300)
+    road(S, H, TAIHEI_H, (gx + 70, gx + 200))
+    for x in (60, 560, 1150, 1500): light(S.im, x, H + 40, 90, 30, (230, 220, 170), 0.12)
     return S.im, gx
 
 def tenkaichi(P, atlas):
@@ -324,6 +374,140 @@ def theater(P, atlas):
     S.put(P['bike2'], 1000, BASE + 6)
     return S.im
 
+# ---------- More of Yakuza 0's Kamurocho ----------
+def paint_out(S, x):
+    # (the steak house's own sign, at the top of its bay at `x`, painted out, its wall dark, for another's board)
+    ImageDraw.Draw(S.im).rectangle((x + 2, BASE - 133 + 2, x + 70, BASE - 133 + 40), fill=(16, 14, 24))
+
+def showa(P, atlas):
+    S = Scene(1500, 91); S.pave(P['pavement'], lambda p: ImageEnhance.Brightness(p).enhance(0.95))
+    # Showa Street, along the west: the discount store (the batting centre's block, gone yellow, its board in
+    # bulbs), a sushi counter (the gyudon front, relit), a mahjong parlour up its stairs (the yakiniku place's), the
+    # taxi's passage, a bar (Serena's, turned round), the real estate office (Poppo's front, dimmed), a block.
+    S.bay(P['block'])
+    x = S.bay(hue(P['batting'], 30, 1.4, 1.05))
+    S.at(neon(board(atlas, 'DISCOUNT', (200, 160, 0), (60, 20, 0), 2, bulbs=True), (255, 220, 80)), x + 110, 262)
+    light(S.im, x + 195, 330, 160, 50, (255, 220, 90), 0.2)
+    x = S.bay(hue(P['gyudon'], 120, 1.1, 1.05))
+    S.at(neon(board(atlas, 'SUSHI', (20, 40, 90), (255, 255, 255), 2), (160, 200, 255)), x + 74, 258)
+    x = S.bay(hue(P['yakiniku'], 20, 0.9))
+    S.at(board(atlas, 'MAHJONG', (20, 80, 40), (250, 240, 200), 2), x + 54, 262)
+    S.bay(P['taxi'])
+    S.bay(mirror(hue(P['serena'], 200, 1.1)))
+    x = S.bay(hue(P['poppo'], 60, 0.4, 0.75))
+    S.at(board(atlas, 'REAL ESTATE', (40, 40, 50), (230, 230, 240), 1), x + 40, 276)
+    S.fill(P['block'], P['shadow'])
+    lamps(S, P, (60, 470, 900, 1300))
+    S.put(P['bike'], 300, BASE + 6); S.put(P['cone'], 1040, BASE + 4); S.put(P['cone'], 1062, BASE + 4)
+    S.put(P['noentry'], 1120, BASE + 6); S.put(P['menu1'], 640, BASE + 4)
+    return S.im
+
+def senryo(P, atlas):
+    S = Scene(1400, 101); S.pave(P['pavement'])
+    # Senryo Avenue, along the east: offices and their banks (the arcade's front, darker, its windows lit cold), the
+    # game centre (the batting centre's block, blue), a pharmacy, the way into Pink Alley (the Empty Lot's red door,
+    # its sign), the clinic, a block; the bus stop.
+    S.bay(P['block'])
+    x = S.bay(hue(P['arcade'], 140, 0.6, 0.8))
+    S.at(board(atlas, 'BANK', (20, 40, 80), (230, 240, 255), 2), x + 38, 262)
+    x = S.bay(hue(P['batting'], 120, 1.3))
+    S.at(neon(board(atlas, 'GAME CENTER', (10, 20, 60), (120, 220, 255), 2, bulbs=True), (80, 160, 255)), x + 74, 262)
+    light(S.im, x + 195, 330, 160, 50, (100, 170, 255), 0.22)
+    x = S.bay(hue(P['fujibashi'], 80, 1.0))
+    S.at(board(atlas, 'PHARMACY', (20, 90, 60), (255, 255, 255), 2), x + 18, 266)
+    S.x += 6
+    x = S.bay(P['reddoor'], 6)     # (the way into Pink Alley)
+    S.at(neon(board(atlas, 'PINK ALLEY', (40, 10, 30), (255, 140, 220), 1), (255, 80, 200)), x + 4, 262)
+    x = S.bay(hue(P['serena'], 140, 0.7, 1.1))
+    S.at(board(atlas, 'CLINIC', (240, 240, 240), (200, 30, 30), 1), x + 40, 278)
+    S.bay(mirror(hue(P['arcade'], 140, 0.6, 0.8)))
+    S.fill(P['block'], hue(P['shadow'], 140, 0.6), hue(P['arcade'], 140, 0.6, 0.8))
+    lamps(S, P, (40, 420, 760, 1120, 1360))
+    S.put(P['busstop'], 300, BASE + 6); S.put(P['bench'], 240, BASE + 8); S.put(P['bike2'], 1000, BASE + 6)
+    return S.im
+
+def hotels(P, atlas):
+    S = Scene(1300, 111); S.pave(P['pavement'], lambda p: tint(p, (200, 150, 255), 0.25))
+    # The Hotel District: love hotels side by side, their names in bulbs and their prices on boards (the Stardust,
+    # the arcade's front and Fujibashi's, gone violet, pink and gold), a parking entrance (the steak house's
+    # passage), violet light over all.
+    violet = lambda im: tint(hue(im, 190, 1.3, 1.0), (210, 170, 255), 0.25)
+    S.bay(violet(P['block']))
+    x = S.bay(violet(P['stardust']))
+    S.at(neon(board(atlas, 'HOTEL VENUS', (60, 0, 60), (255, 180, 255), 1, bulbs=True), (255, 100, 255)), x + 20, 262)
+    x = S.bay(hue(P['arcade'], 210, 1.3))
+    S.at(neon(board(atlas, 'MOONLIGHT', (20, 0, 50), (200, 200, 255), 1, bulbs=True), (160, 140, 255)), x + 18, 262)
+    S.at(board(atlas, 'REST 3000', (30, 30, 30), (255, 230, 120), 1), x + 30, 330)
+    x = S.bay(P['shadow'])
+    x = S.bay(hue(P['steak'], 200, 1.1, 0.8))
+    paint_out(S, x)   # (the steak house's sign: the car park's board over it)
+    S.at(board(atlas, 'PARKING', (30, 60, 120), (255, 255, 255), 1), x + 6, 266)
+    x = S.bay(hue(P['fujibashi'], 210, 1.4))
+    S.at(neon(board(atlas, 'HOTEL PRINCESS', (70, 0, 40), (255, 200, 230), 1, bulbs=True), (255, 120, 200)), x + 22, 262)
+    x = S.bay(mirror(violet(P['stardust'])))
+    S.at(neon(board(atlas, 'AMOUR', (50, 0, 20), (255, 140, 170), 2), (255, 80, 140)), x + 40, 300)
+    S.bay(violet(P['serena']))
+    S.fill(violet(P['block']), hue(P['steak'], 200, 1.1, 0.8), violet(P['shadow']))
+    for nx in (150, 420, 700, 980, 1200): light(S.im, nx, 330, 110, 70, (200, 100, 255), 0.2)
+    lamps(S, P, (330, 860))
+    S.put(P['stand2'], 260, BASE + 4); S.put(P['stand4'], 820, BASE + 4)
+    return S.im
+
+def shichifuku(P, atlas):
+    S = Scene(1400, 121); S.pave(P['pavement'], lambda p: ImageEnhance.Brightness(p).enhance(0.9))
+    # Shichifuku Street, across the north: its sign over the corner, an oden stall and an izakaya (the steak house's
+    # and Fujibashi's, warm), the pawn shop, a ramen counter, the lane to Theater Square (the arcade's front, its
+    # sign), the construction site's hoardings (the shadow's wall, a no-entry sign and cones), a block.
+    S.bay(P['block'])
+    S.at(neon(board(atlas, 'SHICHIFUKU', (60, 10, 10), (255, 220, 140), 2, bulbs=True), (255, 160, 80)), 40, 222)
+    x = S.bay(hue(P['steak'], 10, 1.2, 1.05)); paint_out(S, x)
+    S.at(board(atlas, 'ODEN', (200, 40, 30), (255, 240, 220), 2), x + 10, 268)
+    x = S.bay(hue(P['fujibashi'], 245, 1.1, 1.05))
+    S.at(board(atlas, 'IZAKAYA', (120, 30, 20), (255, 230, 180), 2), x + 30, 266)
+    x = S.bay(hue(P['poppo'], 120, 0.5, 0.8))
+    S.at(board(atlas, 'PAWN', (30, 30, 30), (240, 240, 240), 2), x + 52, 276)
+    x = S.bay(P['arcade'])     # (the lane to Theater Square)
+    S.at(neon(board(atlas, 'THEATER SQ', (20, 20, 50), (250, 240, 200), 1), (200, 200, 255)), x + 22, 330)
+    x = S.bay(hue(P['gyudon'], 230, 1.2))
+    S.at(neon(board(atlas, 'RAMEN', (180, 30, 24), (255, 236, 200), 2), (255, 120, 80)), x + 82, 258)
+    for k in range(2): S.bay(ImageEnhance.Brightness(P['shadow']).enhance(0.8))
+    S.fill(P['block'], ImageEnhance.Brightness(P['shadow']).enhance(0.8))
+    lamps(S, P, (300, 640, 1000, 1360))
+    S.put(P['noentry'], 1150, BASE + 6); S.put(P['cone'], 1190, BASE + 4); S.put(P['barrel'], 1230, BASE + 6)
+    S.put(P['bike'], 560, BASE + 6)
+    return S.im
+
+def back_alley(P, atlas, w, seed, names, tone, doors=('pipes', 'reddoor', 'lit', 'bright'), glow=(255, 180, 110)):
+    # (a back alley: the Empty Lot's back doors, one after the next, some turned round, its bins and barrels, the
+    # wires over it, a sign or two)
+    S = Scene(w, seed); S.pave(P['pavement'], lambda p: ImageEnhance.Brightness(p).enhance(0.55))
+    k = 0
+    while S.x < w:
+        im = tone(P[doors[k % len(doors)]])
+        if k % 2: im = mirror(im)
+        x = S.bay(im)
+        if names[k % len(names)]:
+            b = neon(board(atlas, names[k % len(names)], (30, 10, 20), (255, 210, 150), 1), glow)
+            S.at(b, x + (im.width - b.width) // 2, 262)
+        light(S.im, x + im.width // 2, 370, 36, 36, glow, 0.14)
+        k += 1
+    for wx in range(-40, w, 300): S.at(P['wires'], wx, 250)
+    for x in range(90, w, 170): S.put(S.rnd.choice([P['bin'], P['barrel'], P['cone']]), x, BASE + 6)
+    return S.im
+
+def nakamichi_alley(P, atlas):
+    # Nakamichi Alley: behind Nakamichi Street's bars, dim and blue-grey; the mahjong den's door.
+    return back_alley(P, atlas, 800, 131, ['', 'MAHJONG', '', 'BAR', '', ''], lambda im: hue(im, 150, 0.6, 0.85), glow=(150, 180, 255))
+
+def pink_alley(P, atlas):
+    # Pink Alley: between Pink Street and Senryo Avenue, its doors lit pink.
+    return back_alley(P, atlas, 800, 141, ['SNACK', '', 'MASSAGE', '', 'BAR MIMI', ''], lambda im: tint(hue(im, 225, 1.3), (255, 160, 220), 0.3),
+                      glow=(255, 90, 190))
+
+def theater_alley(P, atlas):
+    # Theater Alley: behind the Kamuro Theater, its stage door, warm light.
+    return back_alley(P, atlas, 700, 151, ['', 'STAGE DOOR', '', '', 'BAR'], lambda im: hue(im, 8, 1.0, 0.95), doors=('lit', 'bright', 'pipes', 'reddoor'))
+
 def save(im, name):
     im.convert('RGB').save(os.path.join(K, name + '.png'), optimize=True)
     print('%s: %dx%d' % (name, im.width, im.height))
@@ -334,6 +518,9 @@ def main():
     im, gx = taihei(P, atlas); save(im, 'taihei')
     save(tenkaichi(P, atlas), 'tenkaichi'); save(nakamichi(P, atlas), 'nakamichi'); save(pink(P, atlas), 'pink')
     save(champion(P, atlas), 'champion'); save(theater(P, atlas), 'theater')
+    save(showa(P, atlas), 'showa'); save(senryo(P, atlas), 'senryo'); save(hotels(P, atlas), 'hotels')
+    save(shichifuku(P, atlas), 'shichifuku'); save(nakamichi_alley(P, atlas), 'nakamichi-alley')
+    save(pink_alley(P, atlas), 'pink-alley'); save(theater_alley(P, atlas), 'theater-alley')
 
 if __name__ == '__main__':
     main()
