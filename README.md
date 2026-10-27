@@ -3541,11 +3541,11 @@ The next realm: Dragon Ball, Z, Super and GT, with turn-based battles. Nothing o
 there are only its pictures, taken from the cartridges below (your own dumps of them), in `assets/dragonball/`.
 
 - **Battles** (to come): turn-based, Dragon Quest style, a party of four with MP and many skills each. Every character
-  is one or two of 13 elements, and so is every move: Neutral, Light, Dark, Fire, Water, Grass, Earth (rock,
-  sturdiness), Ice, Steel, Ground (raw force), Poison, Psychic and Electric. Their chart is `REALM_TYPE_CHART` in
+  is one or two of 14 elements, and so is every move: Neutral, Light, Dark, Fire, Water, Grass, Earth (rock,
+  sturdiness), Ice, Steel, Ground (raw force), Poison, Psychic, Electric and Air. Their chart is `REALM_TYPE_CHART` in
   `data/type-chart.js` (attacking element to defending element; two elements multiply). It's only for the realms
   outside the Pokémon one, which keeps the games' own types and `TYPE_CHART`. Neutral hits everything and is hit by
-  everything at 1x; the only immunities are Psychic on Dark and Electric on Ground.
+  everything at 1x; the only immunities are Psychic on Dark, Electric on Ground and Ground on Air.
 
 `tools/build-dbz-webfoot.py` builds the maps, people and portraits of Webfoot's two games on one engine,
 **Dragon Ball Z: The Legacy of Goku II** (USA, game code ALFE; files `LG2_*`) and **Dragonball Z: Buu's Fury**
