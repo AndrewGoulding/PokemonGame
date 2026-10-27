@@ -7243,6 +7243,19 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     for (let n = 0; !lost.over && n < 200; n++) R.turn(lost, [{ act: "defend" }]);
     assert(lost.over === "lost" && lost.allies.concat(lost.reserve).every((f) => f.hp === 0), "lost once everyone's down");
   }
+  // (Kamurocho's streets, side on: every scene's picture and people drawn, everyone and every way in on its floor.)
+  {
+    const K = window.KAMUROCHO_STREET, here = (f) => fs.existsSync(require("path").join(__dirname, "..", f));
+    const inside = (poly, x, y) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
+    assert(K.scenes[K.arrive.scene] && inside(K.scenes[K.arrive.scene].floor, K.arrive.x, K.arrive.y), "the Time Machine leaves you on the floor");
+    for (const [id, S] of Object.entries(K.scenes)) {
+      assert(here(S.image), id + "'s picture");
+      for (const p of S.people || []) assert(here("assets/kamurocho/people/" + p.sprite + ".png") && inside(S.floor, p.x, p.y), id + ": " + p.script);
+      for (const e of S.exits || []) assert(K.scenes[e.to] && inside(K.scenes[e.to].floor, e.x, e.y), id + " to " + e.to);
+      for (const th of S.things || []) assert(here(th.image), th.image);
+    }
+    for (const f of Object.values(window.REALM_FOES)) if (f.street) assert(here("assets/kamurocho/people/" + f.street + ".png"), f.name);
+  }
   // (And each has its looks: parts that are drawn, and skins that are colours.)
   const skins = window.LOOK_COLOURS.skin.map((c) => c[0]);
   for (const r of window.REALM_RACES) {

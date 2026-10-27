@@ -3632,22 +3632,37 @@ python3 tools/build-dbz-advanced-adventure.py "<path to Dragon Ball - Advanced A
 
 ## The Like a Dragon realm (in progress)
 
-The Like a Dragon realm is **Kamurocho** in 1988, as in Yakuza 0. There's no top-down 2D Kamurocho in any game to
-take pictures from, so its map is this game's own: its streets traced from Yakuza 0's map, its pictures cut from **Yu-Gi-Oh!
-The Sacred Cards** (the same cartridge as Domino City's screens). Your Pokémon stay in their balls here, and there
-are no wild Pokémon.
+The Like a Dragon realm is **Kamurocho** in 1988, as in Yakuza 0, and it looks as **Streets of Kamurocho** draws it
+(Empty Clip Studios and SEGA, 2020, given away free and kept on the Internet Archive): side on, its streets walked as
+its beat-'em-up's are, along the street and up and down the pavement, its own pictures. Your Pokémon stay in their
+balls here (bring them along at the Time Machine to fight), and there are no wild Pokémon.
 
-- **Getting there**: the Realm Hub's crimson portal. You come out in the **Empty Lot**, the fenced plot of dirt in
-  the middle of town that Yakuza 0's story is fought over, beside the Time Machine, which takes you back to the Realm
-  Hub.
-- **The streets**: one map, 200 by 216 tiles. West Park fills the north-east corner. The outer roads ring the town,
-  and Pink Street's curved lane and the Champion District's alleys run through the blocks. Beyond the ring the city
-  goes on, but you can't walk into it.
-- **The people**: **Kazuma Kiryu** outside Serena, and **Goro Majima** wandering by Theater Square, from sprite sheets
-  you supplied (halved to The Sacred Cards' 32x32 frames). Townsfolk, in The Sacred Cards' people, stand outside
-  Maharaja, on Pink Street, in the Champion District, by the Empty Lot, by Smile Burger, on Taihei Boulevard and by
-  Mach Bowl, and Poppo's clerk on Tenkaichi Street sells the Like a Dragon games' recovery items and some food (below).
-  No doors or story yet.
+- **The streets** (`ui/street.js`, `data/kamurocho-street.js`): three scenes, each one of Streets of Kamurocho's stage
+  backdrops (480 pixels high, the floor at the bottom), on a screen of their own, 336x224 (Streets of Rage 2's height,
+  3:2 as the game's), the camera following you along and up and down. **The street**: the pavement by the Stardust
+  and Poppo, down the corner past the Gyudon place to the batting cages and Bacchus (its two backdrops side by side,
+  3103 pixels long). **The Empty Lot**: the back alley off its end, where the Time Machine stands. **Bacchus**: the
+  bar, through its door. You're drawn twice your size, to stand as tall as its people. Walk off the street's end into
+  the alley (and back); stand at Bacchus's door and press A to go in; Poppo's door, A, is its shop; the Time Machine's
+  spot, A, is its menu. The floor you can walk on is each scene's polygon (along the slope, you go up or down it as
+  you walk). You're placed by `player.location.street` ({ scene, x, y, facing }); the overworld rests while you're
+  there (ui/game.js's explore loop asks `Street.explore` instead).
+- **Getting there**: the Realm Hub's crimson portal; you come out in the Empty Lot, before the Time Machine, which
+  takes you back to the Realm Hub.
+- **The people**: Streets of Kamurocho's own, standing as they do before a fight, turning to face you when you talk:
+  **Kazuma Kiryu** on the street below the corner, **Goro Majima** in Bacchus, a host touting outside the Stardust,
+  another along from him, a thug on the corner, a brawler by the batting cages, a salaryman and a drunk by Bacchus,
+  and a Yakuza lookout in the alley. Its foes fight in the same: the street punk, the drunk salaryman, the thug, the
+  knife punk (a spear in Streets of Kamurocho), the host, the biker, the Yakuza grunt, Mr. Shakedown and Majima
+  (`REALM_FOES[..].street`), facing you over the street behind you.
+- **The pictures** (`assets/kamurocho/`, committed, so nothing needs the game): `tools/build-kamurocho-sok.py` takes
+  them from it again, given its folder. Its `AR_win32.mtc` indexes `AR_win32.mdf`, each entry AES-128-CBC with a zero
+  IV and the key "e13b293bec6" (a string in its .exe). Entry 15 is a 4096x4096 atlas of the backdrops and most of
+  the people's frames, 29 another of people. The game is Streets of Rage 2's cartridge (entry 9) run with these
+  pictures over its own, so there's no list of whose frame is which: the tool's frames were picked out by hand.
+- **The old map**: the top-down Kamurocho this realm had first (its streets traced from Yakuza 0's map, its pictures
+  The Sacred Cards'), `tools/build-kamurocho.py`, below, is still built (the realm's map entry, its people's words,
+  the Time Machine's picture), but no longer walked.
 - **Heat is MP**: the Like a Dragon games' Heat is this realm's MP, which skills (Heat Actions) spend. Poppo sells
   Staminan, Staminan Spark and Staminan Royale (health and Heat), Toughness Zero and Toughness Infinity (health; the
   Infinity also gets someone who's down back up), Tauriner, Tauriner+ and Tauriner Maxx (Heat), and food: a Rice

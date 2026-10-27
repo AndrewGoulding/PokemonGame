@@ -463,6 +463,10 @@
     }
     if (loc && known(loc.map)) {
       player.location = { map: loc.map, x: loc.x | 0, y: loc.y | 0, facing: loc.facing || "down" };
+      // (Kamurocho's streets, side on: which scene, and where on it: ui/street.js)
+      const st = loc.street;
+      if (st && typeof st === "object" && typeof st.scene === "string" && window.KAMUROCHO_STREET && window.KAMUROCHO_STREET.scenes[st.scene])
+        player.location.street = { scene: st.scene, x: +st.x || 0, y: +st.y || 0, facing: ["up", "down", "left", "right"].includes(st.facing) ? st.facing : "down" };
     } else {
       // A save from before the overworld: the story so far is done.
       player.location = Object.assign({}, OLD_SAVE_LOCATION);

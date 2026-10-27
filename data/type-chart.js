@@ -400,17 +400,18 @@ window.LOOK_COLOURS = {
 
 // Foes: their stats, what beating them gives (EXP, split between the party still standing, and money), and their
 // skills (used now and then, instead of attacking). `sprite`: an overworld sheet (its first frame, facing you), or
-// `battle`: a picture. `boss`: no running away.
+// `battle`: a picture; `street`: on Kamurocho's streets, Streets of Kamurocho's own (assets/kamurocho/people).
+// `boss`: no running away.
 window.REALM_FOES = {
-  punk:      { name: "Street Punk",     elements: ["Neutral"], sprite: "sc_person_68", hp: 18, mp: 0, str: 14, def: 6, int: 0, wis: 3, spd: 8, exp: 6, money: 120, skills: ["cheap_shot"] },
-  drunk:     { name: "Drunk Salaryman", elements: ["Poison"], sprite: "sc_person_47", hp: 15, mp: 0, str: 11, def: 4, int: 0, wis: 2, spd: 4, exp: 4, money: 200, skills: ["dirty_kick"] },
-  thug:      { name: "Thug",            elements: ["Earth"], sprite: "sc_person_71", hp: 30, mp: 0, str: 18, def: 10, int: 0, wis: 5, spd: 6, exp: 12, money: 250, skills: ["bottle_smash"] },
-  knife:     { name: "Knife Punk",      elements: ["Steel"], sprite: "sc_person_50", hp: 22, mp: 0, str: 20, def: 6, int: 0, wis: 3, spd: 14, exp: 11, money: 180, skills: ["slash"] },
-  host:      { name: "Host",            elements: ["Psychic"], sprite: "sc_person_66", hp: 24, mp: 0, str: 15, def: 8, int: 0, wis: 4, spd: 12, exp: 12, money: 400, skills: ["sweet_talk"] },
-  biker:     { name: "Biker",           elements: ["Steel", "Electric"], sprite: "sc_person_58", hp: 34, mp: 0, str: 21, def: 12, int: 0, wis: 6, spd: 11, exp: 16, money: 300, skills: ["revving"] },
-  grunt:     { name: "Yakuza Grunt",    elements: ["Dark"], sprite: "sc_person_77", hp: 40, mp: 0, str: 24, def: 14, int: 0, wis: 7, spd: 10, exp: 22, money: 500, skills: ["headbutt"] },
-  shakedown: { name: "Mr. Shakedown",   elements: ["Ground", "Earth"], sprite: "sc_person_71", big: true, hp: 160, mp: 0, str: 40, def: 22, int: 0, wis: 11, spd: 6, exp: 150, money: 10000, skills: ["haymaker"] },
-  majima:    { name: "Goro Majima",     elements: ["Dark"], battle: "assets/world/sprites/lad_majima_battle.png", boss: true,
+  punk:      { name: "Street Punk",     elements: ["Neutral"], street: "punk", sprite: "sc_person_68", hp: 18, mp: 0, str: 14, def: 6, int: 0, wis: 3, spd: 8, exp: 6, money: 120, skills: ["cheap_shot"] },
+  drunk:     { name: "Drunk Salaryman", elements: ["Poison"], street: "drunk", sprite: "sc_person_47", hp: 15, mp: 0, str: 11, def: 4, int: 0, wis: 2, spd: 4, exp: 4, money: 200, skills: ["dirty_kick"] },
+  thug:      { name: "Thug",            elements: ["Earth"], street: "thug", sprite: "sc_person_71", hp: 30, mp: 0, str: 18, def: 10, int: 0, wis: 5, spd: 6, exp: 12, money: 250, skills: ["bottle_smash"] },
+  knife:     { name: "Knife Punk",      elements: ["Steel"], street: "knife", sprite: "sc_person_50", hp: 22, mp: 0, str: 20, def: 6, int: 0, wis: 3, spd: 14, exp: 11, money: 180, skills: ["slash"] },
+  host:      { name: "Host",            elements: ["Psychic"], street: "host", sprite: "sc_person_66", hp: 24, mp: 0, str: 15, def: 8, int: 0, wis: 4, spd: 12, exp: 12, money: 400, skills: ["sweet_talk"] },
+  biker:     { name: "Biker",           elements: ["Steel", "Electric"], street: "biker", sprite: "sc_person_58", hp: 34, mp: 0, str: 21, def: 12, int: 0, wis: 6, spd: 11, exp: 16, money: 300, skills: ["revving"] },
+  grunt:     { name: "Yakuza Grunt",    elements: ["Dark"], street: "grunt", sprite: "sc_person_77", hp: 40, mp: 0, str: 24, def: 14, int: 0, wis: 7, spd: 10, exp: 22, money: 500, skills: ["headbutt"] },
+  shakedown: { name: "Mr. Shakedown",   elements: ["Ground", "Earth"], street: "shakedown", sprite: "sc_person_71", big: true, hp: 160, mp: 0, str: 40, def: 22, int: 0, wis: 11, spd: 6, exp: 150, money: 10000, skills: ["haymaker"] },
+  majima:    { name: "Goro Majima",     elements: ["Dark"], street: "majima", battle: "assets/world/sprites/lad_majima_battle.png", boss: true,
                hp: 260, mp: 99, str: 34, def: 18, int: 0, wis: 9, spd: 22, exp: 300, money: 0, skills: ["mad_dog_lunge", "breaker_spin", "slugger_swing"] }
 };
 

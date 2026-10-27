@@ -62,6 +62,7 @@
 
   function show(which) {
     if (which !== "world") Overworld.hide();
+    if (window.Street) Street.show(which === "street");
     if (which !== "intro" && window.Intro) Intro.stop();
     $("#world-pic").classList.add("hidden");
     field.classList.toggle("hidden", which !== "field");
@@ -9620,7 +9621,10 @@
   const SANDGEM_BEACH = { map: "SandgemTown", x: 25, y: 29, facing: "down" };
   const LILYCOVE_HARBOR = { map: "LilycoveCity_Harbor", x: 8, y: 11, facing: "down" };
   async function voyage(to, lines, sound) {
-    await Overworld.fadeToBlack();
+    // (Out of Kamurocho's streets the map isn't running: straight to the black screens, and the map picks up from
+    // player.location when exploring starts again.)
+    const fromStreet = Street.isStreet(player.location.map);
+    if (!fromStreet) await Overworld.fadeToBlack();
     music(null);
     Overworld.setAvatar("walk");
     Orre.leave(player);
@@ -9629,7 +9633,10 @@
     for (const l of lines) await GbaMenus.blackScreen(o, l);
     o.classList.add("hidden");
     player.location = Object.assign({}, to);
-    await Overworld.teleport(player.location);
+    // (Into Kamurocho: its streets, by the Time Machine; ui/street.js takes over from there.)
+    if (Street.isStreet(to.map)) { delete player.location.street; Street.place(null); show("street"); }
+    else if (fromStreet) show("world");
+    else await Overworld.teleport(player.location);
     await persist();
   }
   async function sailToSinnoh() {
@@ -9860,6 +9867,13 @@
     if (lot && at.x >= lot.x0 - 1 && at.x <= lot.x1 + 1 && at.y >= lot.y0 - 1 && at.y <= lot.y1 + 1) return null;
     return Math.random() < enc.rate ? { type: "realm-battle" } : null;
   }
+  // (On Kamurocho's street: a step's chance of a fight, its rate as the map's; never in the alley or the bar.)
+  function realmStreetStep() {
+    const enc = window.REALM_ENCOUNTERS && window.REALM_ENCOUNTERS.Kamurocho;
+    if (!enc) return null;
+    if (realmQuiet > 0) { realmQuiet--; return null; }
+    return Math.random() < enc.rate ? { type: "realm-battle" } : null;
+  }
   async function realmEncounter() {
     const enc = window.REALM_ENCOUNTERS[player.location.map], total = enc.groups.reduce((s, [w]) => s + w, 0);
     let r = Math.random() * total, group = enc.groups[0][1];
@@ -9869,16 +9883,24 @@
   // A foe's picture: its battle picture, or its overworld sheet's first frame (facing you).
   function realmFoePic(f) {
     const d = window.REALM_FOES[f.id];
+    // (Kamurocho's own, side on: Streets of Kamurocho's, facing you from the right, as tall as on its streets)
+    if (d.street && Street.isStreet(player.location.map)) return '<img class="rb-street" alt="" onload="this.style.height=(this.naturalHeight/2.24*' + (d.big ? 1.4 : 1) + ')+\'cqh\'" src="assets/kamurocho/people/' + d.street + '.png">';
     if (d.battle) return '<div class="rb-pic big" style="background-image:url(' + d.battle + ')"></div>';
     return '<div class="rb-pic sheet' + (d.big ? " big" : "") + '" style="background-image:url(assets/world/sprites/' + d.sprite + '.png)"></div>';
   }
   // The screen: the street where you stand behind it, the party's windows along the top (name, HP, MP, level),
   // the foes in a row in the middle.
   function realmDraw(b) {
-    const m = window.WORLD_MAPS[player.location.map], at = Overworld.position();
-    const W = m.width * 16, H = m.height * 16, cx = Math.max(0, Math.min(W - 240, at.x * 16 - 112)), cy = Math.max(0, Math.min(H - 160, at.y * 16 - 72));
-    const back = 'background-image:url(assets/world/maps/' + m.name + '.png);background-size:' + (W / 2.4) + '% ' + (H / 1.6) + '%;background-position:' +
-      (cx / (W - 240) * 100) + '% ' + (cy / (H - 160) * 100) + '%';
+    const m = window.WORLD_MAPS[player.location.map];
+    let back;
+    // (On Kamurocho's streets, the street behind you.)
+    if (Street.isStreet(m.name)) { const k = Street.backdrop(); back = "background-image:url(" + k.url + ");background-size:" + k.size + ";background-position:" + k.position; }
+    else {
+      const at = Overworld.position();
+      const W = m.width * 16, H = m.height * 16, cx = Math.max(0, Math.min(W - 240, at.x * 16 - 112)), cy = Math.max(0, Math.min(H - 160, at.y * 16 - 72));
+      back = 'background-image:url(assets/world/maps/' + m.name + '.png);background-size:' + (W / 2.4) + '% ' + (H / 1.6) + '%;background-position:' +
+        (cx / (W - 240) * 100) + '% ' + (cy / (H - 160) * 100) + '%';
+    }
     show("scene");
     scene.classList.add("evo");
     scene.innerHTML = '<div class="rb"><div class="rb-back" style="' + back + '"></div>' +
@@ -10009,8 +10031,8 @@
     const here = window.WORLD_MAPS[player.location.map];
     scene.classList.remove("evo");
     Screen.say(""); clearMenu();
-    show("world");
-    await Overworld.resume();
+    if (Street.isStreet(player.location.map)) show("street");
+    else { show("world"); await Overworld.resume(); }
     if (b.over === "lost" && !opts.keepGoing) {
       const lost = Math.floor(player.money / 2);
       player.money -= lost;
@@ -15621,6 +15643,8 @@
   async function explore() {
     World.setDynamicWarp(player.flags.dynamicWarp);
     for (;;) {
+      // (Kamurocho, side on: its streets, ui/street.js, while you're there.)
+      if (Street.isStreet(player.location.map)) { await exploreStreet(); continue; }
       show("world");
       // (Continuing a save, the area's name shows: FieldCB_ShowMapNameOnContinue.)
       if (continued) {
@@ -15744,6 +15768,24 @@
       }
       await persist();
     }
+  }
+
+  // A turn of Kamurocho's streets: what happened there, as the overworld's (the menu, someone to talk to, a fight).
+  async function exploreStreet() {
+    Player.enterRealm(player, "yakuza");
+    music((window.WORLD_MAPS.Kamurocho || {}).music);
+    const ev = await Street.explore({ player, look: () => Overworld.playerLook(), special, visible: (p) => visible(p, "Kamurocho"),
+      onStep: (fights) => { Player.advanceClock(player); return fights ? realmStreetStep() : saveReminderStep(); } });
+    if (ev.type === "menu") {
+      await startMenu();
+      if (fieldAction) { const act = fieldAction; fieldAction = null; await act(); }
+    } else if (ev.type === "say") await say(ev.pages);
+    else if (ev.type === "talk") await story({ type: "talk", person: ev.person, map: "Kamurocho" });
+    else if (ev.type === "spot") await story({ type: "talk", person: { script: ev.script }, map: "Kamurocho" });
+    else if (ev.type === "realm-battle") await realmEncounter();
+    else if (ev.type === "save-prompt") await savePrompt();
+    if (afterScript) { const act = afterScript; afterScript = null; await act(); }
+    await persist();
   }
 
   async function main() {

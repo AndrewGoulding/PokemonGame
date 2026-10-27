@@ -548,6 +548,8 @@
 .rb-pic { height: 70%; aspect-ratio: 1; image-rendering: pixelated; background-repeat: no-repeat; background-size: 100% 100%; }
 .rb-pic.sheet { background-size: 900% 100%; background-position: 0 0; }
 .rb-pic.big { height: 100%; }
+/* Kamurocho's foes (ui/game.js realmFoePic): Streets of Kamurocho's, as tall as on its 224-high streets, facing left. */
+.rb-street { height: 36cqh; image-rendering: pixelated; transform: scaleX(-1); }
 .rb.shake { animation: rb-shake 0.3s linear 1; }
 @keyframes rb-blink { 50% { opacity: 0; } }
 @keyframes rb-flash { 50% { background: #a01818; } }
