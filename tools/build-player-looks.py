@@ -223,6 +223,10 @@ NECK = {'krillin': 1, 'tien': 1, 'townswoman': -4, 'piccolo': 4, 'piccolo_gi': 3
         'android_16': 5, 'android_17': 5, 'android_18': 3, 'android_19': 5, 'android_20': 1, 'frieza': 1, 'frieza_first': 2,
         'mecha_frieza': 2, 'king_cold': -1, 'kid_buu': 1, 'fat_buu': 4, 'super_buu': 4, 'supreme_kai': 2, 'kibito': 4,
         'kibito_kai': 1, 'king_kai': 1, 'peach': 6, 'toad': 3, 'star_toad': 3, 'bowser': 2, 'koops': 1}
+# (Facing the side, the neck point is the head's bottom row's middle, and hair hanging behind it (Kibito's) puts it
+# back; the Supreme Kai's head has none, so his is forward of the others' and their heads sat forward on him. His,
+# pixels further back.)
+SIDE_NECK = {'supreme_kai': 2}
 def character(pid, name, family, frames, shift, split=True, neck=0, hair=True):
     """frames: N dicts {(x, y): (role, colour)} (standing, steps, betweens). split False: whole (no neck to cut at, the
     Goombas and Piantas). neck: rows lower (+) or higher (-) than the narrowest. hair False: its head's all face."""
@@ -241,12 +245,8 @@ def character(pid, name, family, frames, shift, split=True, neck=0, hair=True):
         if hair: h.update({k: v for k, v in frames[d].items() if k[1] >= n and v[0] == 'hair'})
         # (Its neck point: the middle of the neck, the head's bottom row; not of its face, as from behind there's
         # little of the face, at one side (the townsman's ear), and a head put there sat off to that side.)
-        # (Facing the side, the bottom row of its face, not its hair: hair hanging behind, Kibito's, put his neck
-        # point back, and his head on another's body forward of its neck. Not Link: Hyrule's heads go by their
-        # bottom rows, hair and all, as the game puts them.)
-        side = {k for k in f if k[1] == max((y for x, y in f), default=None)} if d == 2 and f and family != 'hyrule' else None
-        xs = ([x for x, y in side] if side else None) or [x for x, y in head if y == n - 1] or [x for x, y in (f or head)]
-        np_ = [(min(xs) + max(xs) + 1) // 2 + shift[0] if xs else 16, n + shift[1]]
+        xs = [x for x, y in head if y == n - 1] or [x for x, y in (f or head)]
+        np_ = [(min(xs) + max(xs) + 1) // 2 + shift[0] + (SIDE_NECK.get(pid, 0) if d == 2 else 0) if xs else 16, n + shift[1]]
         heads.append((h, f))
         HEADS[pid] = HEADS.get(pid, []) + [(h, f, (np_[0] - shift[0], n))]
         for i in range(N):
