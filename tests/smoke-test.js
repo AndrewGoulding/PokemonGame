@@ -7391,6 +7391,17 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     const size = (f) => { const b = fs.readFileSync(require("path").join(__dirname, "..", f)); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
     for (const [id, S] of Object.entries(K.scenes)) assert.deepStrictEqual(size(S.image), [S.width, S.height || 480], id + "'s size");
     assert(inside(K.scenes.taihei.floor, 800, 590), "Taihei Boulevard's road");
+    // (the karaoke box: its spot, and each song's words within its bars, each line done before the next, a
+    // syllable a note)
+    assert(K.scenes.theater.spots.some((sp) => sp.script === "Kamurocho_Karaoke"), "the karaoke box");
+    for (const song of window.KARAOKE_SONGS) {
+      let end = 0;
+      for (const [start, syl] of song.lines) {
+        assert(start >= end && start >= song.intro * 4, song.id + ": its lines in turn");
+        end = start + syl.reduce((t, [w, midi, len]) => (assert(typeof w === "string" && midi >= 40 && midi <= 96 && len > 0, song.id + ": " + w), t + len), 0);
+      }
+      assert(end <= song.chords.length * 4 && song.chords.every(([r, q]) => r > 0 && ["maj", "min", "7"].includes(q)), song.id + ": its bars");
+    }
   }
   // (And each has its looks: parts that are drawn, and skins that are colours.)
   const skins = window.LOOK_COLOURS.skin.map((c) => c[0]);

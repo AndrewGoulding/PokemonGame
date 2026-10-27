@@ -224,6 +224,8 @@ window.KAMUROCHO_STREET = {
         // (through the Kamuro Theater's arcade: behind it, and out the far side to Shichifuku Street)
         { spot: [400, 520, 410, 426], to: "theater-alley", x: 660, y: 440, facing: "left", text: "Theater Alley" },
         { spot: [840, 960, 410, 426], to: "shichifuku", x: 580, y: 440, facing: "down", text: "Shichifuku Street" }],
+      // (the karaoke box, its board over its door: ui/karaoke.js)
+      spots: [{ x0: 1140, x1: 1192, y0: 410, y1: 426, script: "Kamurocho_Karaoke", text: "Karaoke" }],
       people: [
         { script: "Kamurocho_Moviegoer", sprite: "tourist", walk: "tourist_walk", range: 80, x: 160, y: 440, face: "right",
           text: ["The late show at Kamuro Cinema\nis a yakuza picture.", "Like we don't get enough\nof that out here."] },

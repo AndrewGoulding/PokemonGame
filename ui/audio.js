@@ -323,6 +323,9 @@
       a.play().catch(() => {});
     },
     enabled: () => enabled,
+    // (The sound's way out, for a sequencer of its own (ui/karaoke.js): its context and the master volume, or null
+    // with the sound off or not yet started.)
+    output: () => { unlock(); return enabled && ctx ? { ctx, master } : null; },
     setMono(on) { mono = !!on; setChannels(); },
     setVolume(v) {
       volume = Math.max(0, Math.min(1, +v || 0));

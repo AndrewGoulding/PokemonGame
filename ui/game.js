@@ -3022,7 +3022,7 @@
   const DOMINO_DUELISTS = { DominoHigh_Person12: "yugi", DominoHigh_Person13: "tea", DominoHigh_Person14: "joey", DominoHigh_Person15: "tristan" };
   // (The Time Machine off Pallet Town, and the Realm Hub's portals: timeMachine, realmPortal.)
   for (const sc of ["TimeMachine_EventScript_Machine", "TimeMachine_EventScript_Sign", "TimeMachine_EventScript_Scientist",
-    "RealmHub_EventScript_Portal_pokemon", "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_yakuza", "Kamurocho_TimeMachine", "Kamurocho_Kiryu", "Kamurocho_Majima", "Kamurocho_Clerk", "SacredCards_Fountain", "SacredCards_BackToTown",
+    "RealmHub_EventScript_Portal_pokemon", "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_yakuza", "Kamurocho_TimeMachine", "Kamurocho_Kiryu", "Kamurocho_Majima", "Kamurocho_Clerk", "Kamurocho_Karaoke", "SacredCards_Fountain", "SacredCards_BackToTown",
     "Domino_WorldMap", "KameGame_Grandpa", "Domino_Manhole", "Domino_ManholeUp", "Domino_TimeMachine", ...Object.keys(DOMINO_DUELISTS)]) SPECIAL.add(sc);
   // (and the other pupils and the teacher, with their boosters' decks: classmate)
   for (let i = 0; i < 12; i++) SPECIAL.add("DominoHigh_Person" + i);
@@ -3396,6 +3396,7 @@
     if (script === "Kamurocho_Kiryu") { await kamurochoKiryu(ev.person); return; }
     if (script === "Kamurocho_Majima") { await kamurochoMajima(ev.person); return; }
     if (script === "Kamurocho_Clerk") { await kamurochoShop(); return; }
+    if (script === "Kamurocho_Karaoke") { await kamurochoKaraoke(); return; }
     if (DOMINO_DUELISTS[script]) { await dominoDuel(DOMINO_DUELISTS[script], ev.person); return; }
     if (/^DominoHigh_Person([0-9]|1[01])$/.test(script || "")) { await dominoDuel(classmate(script), ev.person); return; }
     if (ev.person && ev.person.ferry && isSinnoh(ev.map)) { await sinnohFerry(ev.person); return; }
@@ -10240,6 +10241,37 @@
     await fanfare("mus_obtain_key_item");
     await say(["Majima: Hee hee hee! That was the\nmost fun I've had all year!", "I'm stickin' with you! Ain't\nnobody gonna stop me!", realmWrap("Goro Majima joined the party!" + JOINED[where])]);
     await Overworld.refreshPeople();
+  }
+  // The karaoke box off Theater Square (ui/karaoke.js, data/karaoke-songs.js): a song, sung; each song's best score
+  // kept (flags.karaoke), and the first time one scores 90 or more, a Staminan Spark on the house.
+  async function kamurochoKaraoke() {
+    await say("Welcome to the karaoke box!\nPick a song and give it your all!");
+    const S = window.KARAOKE_SONGS, best = player.flags.karaoke = player.flags.karaoke || {};
+    for (;;) {
+      const v = await ask("Which song?", S.map((x, i) => ({ label: x.title + (best[x.id] != null ? "  (best " + best[x.id] + ")" : ""), value: i })).concat([back("Leave")]));
+      if (v === "back") break;
+      const song = S[v], back0 = Street.backdrop();
+      await say(realmWrap("\u266a " + song.title + ", by " + song.by + ".\nPress each button as it reaches the ring!"));
+      Screen.say(""); clearMenu();
+      const img = Object.assign(new Image(), { src: back0.url });
+      const r = await Karaoke.play($("#overlay"), { song, frame: GameOptions.get().frame, back: img });
+      show("street");
+      music((window.WORLD_MAPS[player.location.map] || {}).music);
+      if (!r) { await say("You put the mic down."); continue; }
+      const was = best[song.id];
+      if (was == null || r.score > was) best[song.id] = r.score;
+      await say(realmWrap(r.score + " points! Rank " + r.rank + ". (" + r.great + " great, " + r.good + " good, " + r.miss + " missed; best combo " + r.combo + ")" +
+        (was != null && r.score > was ? " A new best!" : "")));
+      if (r.score >= 90 && !(player.flags.karaokePrize || {})[song.id]) {
+        (player.flags.karaokePrize = player.flags.karaokePrize || {})[song.id] = true;
+        const P = realmParty("yakuza");
+        P.items.staminan_spark = (P.items.staminan_spark || 0) + 1;
+        await fanfare("mus_obtain_item");
+        await say("Staff: What a voice! Here, on the\nhouse: a Staminan Spark!");
+      }
+      await persist();
+    }
+    await say("Come sing again!");
   }
   // Poppo's clerk: the realm's items (REALM_ITEMS), for your money.
   // Poppo's counter: FireRed's Poké Mart buy screen (ui/shop-screen.js), the realm's items (a Pokémon item's picture

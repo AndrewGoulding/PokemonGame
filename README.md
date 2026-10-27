@@ -3676,7 +3676,14 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   lane back to the square), at Bacchus's, Poppo's or Serena's door and press A to go in (out of Bacchus,
   walk off its left; out of Poppo, walk up into its glass door; out of the backlot, walk up the lit passage at its left); in Poppo, stand
   at the counter and press A to talk to the clerk and buy; on the backlot's manhole, A climbs down (the ladder, A,
-  back up); the Time Machine's spot, A, is its menu. The floor you can walk on is each scene's polygon (along the
+  back up); the Time Machine's spot, A, is its menu. **Karaoke** (Yakuza 0's, this game's way: `ui/karaoke.js`): in Theater Square,
+  at the karaoke box's door under its board, A, and pick a song (`data/karaoke-songs.js`, this game's own words and
+  tunes: Kamurocho Nights, 24-Hour Champion and Dojima Blues). It plays on a GBA's kind of sound, its own sequencer
+  (two pulse waves, a triangle bass and noise drums, through the game's volume), so every prompt falls on its note;
+  the words run over the street on the box's screen, lit as they're sung; and for each syllable sung on the beat, its
+  button (A, B, ◀ or ▶) slides along the lane to the ring: press it there for GREAT or GOOD (a wrong one, or none, is a
+  miss). The score's out of 100 with a rank (S to D); each song's best is kept (`flags.karaoke`), and the first 90
+  on each wins a Staminan Spark. START stops. The floor you can walk on is each scene's polygon (along the
   slope, you go up or down it as you walk). Its people stand about at ease or walk up and down the pavement, each
   within a stretch of their own, with a walk of four frames out of Streets of Kamurocho's atlas (stopping to face
   you when you talk to them). On the six streets (not the alley, the backlot, the drain, the bars, the shops or
