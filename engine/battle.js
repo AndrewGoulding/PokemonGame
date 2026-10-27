@@ -4030,3 +4030,231 @@
   Battle.MEGA_MAP = () => { buildIndexes(); return MEGA_MAP; };
   window.Battle = Battle;
 })();
+
+// ---------- RealmBattle: the other realms' battles (Dragon Quest's way, headless) ----------
+//
+// A party of up to four against a group of foes (data/type-chart.js: REALM_FIGHTERS, REALM_FOES, REALM_SKILLS,
+// REALM_ITEMS, REALM_TYPE_CHART). Each turn every one of the party still standing picks what to do; the foes pick
+// theirs; then all of them act, the quickest first (agility times a random half to whole). What happens comes back
+// as steps, each with its text and the HP and MP of everyone after it, for the screen to play out.
+//
+//   const b = RealmBattle.create(members, ["punk", "punk"], { seed });    // members: RealmBattle.member(...)s
+//   const steps = RealmBattle.turn(b, [{ act: "attack", target: 0 }, { act: "skill", skill: "rush", target: 1 }, ...]);
+//   // or RealmBattle.turn(b, "run"); b.over: null, "won", "lost" or "ran"
+//   RealmBattle.spoils(b)   // { exp, money } for a win
+//
+// Damage (Dragon Quest's): an attack does attack/2 - defence/4 (but at least 0 or 1), times 7/8 to 9/8; 1 in 32 is
+// a critical hit, attack times 0.95 to 1.05 whatever the defence. A skill multiplies that by its power, by the
+// element chart against the target's elements, and by 1.25 if it's one of the user's own elements. Defending
+// halves what you take. Running away works half the time, more if you're quicker; never from a boss.
+(function () {
+  "use strict";
+  const D = () => ({ skills: window.REALM_SKILLS, fighters: window.REALM_FIGHTERS, foes: window.REALM_FOES, items: window.REALM_ITEMS, chart: window.REALM_TYPE_CHART });
+  function rng(seed) { let s = (seed >>> 0) || 1; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+
+  // EXP to reach `lv` (from level 1), and a fighter's stats and skills at a level.
+  const expFor = (lv) => Math.round(10 * Math.pow(lv - 1, 2.5));
+  function stats(id, lv) {
+    const f = D().fighters[id], s = {};
+    for (const k in f.base) s[k] = Math.floor(f.base[k] + f.growth[k] * (lv - 1));
+    return s;
+  }
+  const skillsAt = (id, lv) => D().fighters[id].skills.filter(([l]) => l <= lv).map(([, s]) => s);
+  // A party member as saved: { id, lv, exp, hp, mp }, new at level `lv`, at full health.
+  function recruit(id, lv) { const s = stats(id, lv); return { id, lv, exp: expFor(lv), hp: s.hp, mp: s.mp }; }
+  // A member as a fighter in battle (`name` for "you").
+  function member(rec, name) {
+    const f = D().fighters[rec.id], s = stats(rec.id, rec.lv);
+    return { side: "ally", id: rec.id, name: f.name || name, elements: f.elements, lv: rec.lv, hp: Math.min(rec.hp, s.hp), mp: Math.min(rec.mp, s.mp),
+      maxHp: s.hp, maxMp: s.mp, atk: s.atk, def: s.def, agi: s.agi, wis: s.wis, skills: skillsAt(rec.id, rec.lv), status: null, guard: 1, rec };
+  }
+  function foe(id, letter) {
+    const f = D().foes[id];
+    return { side: "foe", id, name: f.name + (letter ? " " + letter : ""), elements: f.elements, hp: f.hp, mp: f.mp, maxHp: f.hp, maxMp: f.mp,
+      atk: f.atk, def: f.def, agi: f.agi, wis: f.wis || 0, skills: f.skills || [], status: null, guard: 1, boss: !!f.boss };
+  }
+  function create(members, foeIds, opts) {
+    opts = opts || {};
+    // (Two or more of a kind are told apart by letter: Street Punk A, Street Punk B.)
+    const count = {}, seen = {};
+    for (const id of foeIds) count[id] = (count[id] || 0) + 1;
+    const foes = foeIds.map((id) => { seen[id] = (seen[id] || 0) + 1; return foe(id, count[id] > 1 ? "ABCD"[seen[id] - 1] : ""); });
+    return { allies: members, foes, over: null, rand: rng(opts.seed == null ? Date.now() : opts.seed), boss: foes.some((f) => f.boss), turnNo: 0 };
+  }
+  const up = (list) => list.filter((f) => f.hp > 0);
+  const snap = (b) => ({ allies: b.allies.map((f) => [f.hp, f.mp]), foes: b.foes.map((f) => f.hp) });
+  // The chart's multiplier of `element` on `elements`.
+  function effect(element, elements) {
+    const row = D().chart[element] || {};
+    return elements.reduce((m, e) => m * (row[e] == null ? 1 : row[e]), 1);
+  }
+  function physical(b, user, target, power, element) {
+    const r = b.rand;
+    let crit = false, dmg;
+    if (power === 1 && r() < 1 / 32) { crit = true; dmg = user.atk * (0.95 + r() * 0.1); }
+    else {
+      const base = user.atk / 2 - target.def * target.guard / 4;
+      dmg = base < 1 ? Math.floor(r() * 2) : base * (0.875 + r() * 0.25);
+      dmg *= power;
+    }
+    return finish(b, user, target, dmg, element, crit);
+  }
+  function finish(b, user, target, dmg, element, crit) {
+    const eff = effect(element, target.elements);
+    dmg *= eff * (element !== "Neutral" && user.elements.includes(element) ? 1.25 : 1);
+    if (target.defending) dmg /= 2;
+    dmg = Math.max(0, Math.round(dmg));
+    if (eff > 0 && dmg === 0 && crit) dmg = 1;
+    target.hp = Math.max(0, target.hp - dmg);
+    return { dmg, eff, crit };
+  }
+  // A foe picks: a skill now and then (a third of the time, a boss half), otherwise an attack, at someone standing.
+  function foeChoice(b, f) {
+    const r = b.rand, targets = up(b.allies);
+    const usable = f.skills.filter((s) => (D().skills[s].mp || 0) <= f.mp);
+    if (usable.length && r() < (f.boss ? 0.5 : 0.34)) return { act: "skill", skill: usable[Math.floor(r() * usable.length)], target: targets[Math.floor(r() * targets.length)] };
+    return { act: "attack", target: targets[Math.floor(r() * targets.length)] };
+  }
+  const STATUS_TEXT = { sleep: " fell asleep!", poison: " was poisoned!" };
+
+  // One turn. `choices`: for each ally (in order; a fallen one's is skipped), { act: "attack" | "skill" | "defend" |
+  // "item", target (an index: a foe's, or an ally's for healing), skill, item }; or "run". -> the steps.
+  function turn(b, choices) {
+    const steps = [], r = b.rand;
+    const say = (text, fx) => steps.push({ text, fx: fx || null, snap: snap(b) });
+    b.turnNo++;
+    for (const f of b.allies.concat(b.foes)) f.defending = false;
+    let order;
+    if (choices === "run") {
+      const mine = up(b.allies).reduce((s, f) => s + f.agi, 0) / Math.max(1, up(b.allies).length);
+      const theirs = up(b.foes).reduce((s, f) => s + f.agi, 0) / Math.max(1, up(b.foes).length);
+      if (b.boss) say("There's no running from this fight!");
+      else if (r() < Math.max(0.25, Math.min(0.9, 0.5 + (mine - theirs) / 60))) { say("You got away!", { kind: "run" }); b.over = "ran"; return steps; }
+      else say("But you couldn't get away!");
+      order = up(b.foes).map((f) => ({ who: f, c: foeChoice(b, f) }));
+    } else {
+      const acts = [];
+      b.allies.forEach((f, i) => { if (f.hp > 0 && choices[i]) acts.push({ who: f, c: choices[i] }); });
+      for (const f of up(b.foes)) acts.push({ who: f, c: foeChoice(b, f) });
+      // (Defending happens first, whatever the order.)
+      for (const a of acts) if (a.c.act === "defend") a.who.defending = true;
+      order = acts.map((a) => Object.assign(a, { speed: a.c.act === "defend" ? 1e9 : a.who.agi * (0.5 + r() * 0.5) })).sort((x, y) => y.speed - x.speed);
+    }
+    for (const { who, c } of order) {
+      if (b.over) break;
+      if (who.hp <= 0) continue;
+      if (who.status === "sleep") {
+        if (r() < 0.5) { who.status = null; say(who.name + " woke up!"); }
+        else { say(who.name + " is fast asleep."); continue; }
+      }
+      act(b, who, c, say);
+      checkOver(b);
+    }
+    // Poison, at the end of the turn: an eighth of their HP.
+    if (!b.over) for (const f of b.allies.concat(b.foes)) {
+      if (f.hp > 0 && f.status === "poison") {
+        const d = Math.max(1, Math.floor(f.maxHp / 8));
+        f.hp = Math.max(0, f.hp - d);
+        say(f.name + " is hurt by the poison! (" + d + ")", { kind: "hit", side: f.side, i: (f.side === "ally" ? b.allies : b.foes).indexOf(f) });
+        if (f.hp === 0) say(f.side === "ally" ? f.name + " collapsed!" : f.name + " is beaten!", { kind: "down", side: f.side, i: (f.side === "ally" ? b.allies : b.foes).indexOf(f) });
+      }
+    }
+    checkOver(b);
+    if (b.over === "won") say("You won the fight!", { kind: "won" });
+    if (b.over === "lost") say("Everyone has fallen...", { kind: "lost" });
+    return steps;
+  }
+  function checkOver(b) {
+    if (b.over) return;
+    if (!up(b.foes).length) b.over = "won";
+    else if (!up(b.allies).length) b.over = "lost";
+  }
+  function act(b, who, c, say) {
+    const r = b.rand, mine = who.side === "ally" ? b.allies : b.foes, theirs = who.side === "ally" ? b.foes : b.allies;
+    const ix = (f) => (f.side === "ally" ? b.allies : b.foes).indexOf(f);
+    // (A target who's fallen since: the next one standing.)
+    const pickFoe = (t) => { const f = typeof t === "number" ? theirs[t] : t; return f && f.hp > 0 ? f : up(theirs)[0]; };
+    const hitText = (f, res) => (res.eff === 0 ? "It has no effect on " + f.name + "!" : res.dmg === 0 ? f.name + " takes no damage!" :
+      f.name + " takes " + res.dmg + " damage!" + (res.eff >= 2 ? " It's super effective!" : res.eff > 0 && res.eff < 1 ? " It's not very effective..." : ""));
+    const struck = (f, res, text) => {
+      say(text + hitText(f, res), { kind: "hit", side: f.side, i: ix(f), eff: res.eff, crit: res.crit });
+      if (f.hp === 0) say(f.side === "ally" ? f.name + " collapsed!" : f.name + " is beaten!", { kind: "down", side: f.side, i: ix(f) });
+    };
+    if (c.act === "defend") { say(who.name + " is on guard."); return; }
+    if (c.act === "attack") {
+      const f = pickFoe(c.target);
+      if (!f) return;
+      if (r() < 1 / 32) { say(who.name + " attacks! " + f.name + " dodges out of the way!", { kind: "miss", side: f.side, i: ix(f) }); return; }
+      const res = physical(b, who, f, 1, "Neutral");
+      struck(f, res, who.name + " attacks! " + (res.crit ? "A critical hit! " : ""));
+      return;
+    }
+    if (c.act === "item") {
+      const it = D().items[c.item], f = b.allies[c.target] || who;
+      const bag = b.items || {};
+      if (!it || !(bag[c.item] > 0)) { say(who.name + " fumbled in the bag... nothing there!"); return; }
+      if (it.revive ? f.hp > 0 : f.hp <= 0) { say(who.name + " used " + it.name + ", but nothing happened."); bag[c.item]--; return; }
+      bag[c.item]--;
+      if (it.revive) { f.hp = Math.max(1, Math.floor(f.maxHp * it.revive)); f.status = null; say(who.name + " used " + it.name + "! " + f.name + " is back on their feet!", { kind: "heal", side: "ally", i: ix(f) }); return; }
+      if (it.heal) { const before = f.hp; f.hp = Math.min(f.maxHp, f.hp + (it.heal === "all" ? f.maxHp : it.heal)); say(who.name + " used " + it.name + "! " + f.name + " gets " + (f.hp - before) + " HP back.", { kind: "heal", side: "ally", i: ix(f) }); }
+      if (it.mp) { const before = f.mp; f.mp = Math.min(f.maxMp, f.mp + it.mp); say(who.name + " used " + it.name + "! " + f.name + " gets " + (f.mp - before) + " MP back.", { kind: "heal", side: "ally", i: ix(f) }); }
+      return;
+    }
+    // A skill.
+    const s = D().skills[c.skill];
+    if (!s || who.mp < (s.mp || 0)) { say(who.name + " tries " + (s ? s.name : "a skill") + ", but hasn't the MP!"); return; }
+    who.mp -= s.mp || 0;
+    const opener = who.name + " uses " + s.name + "! ";
+    if (s.kind === "guard") { who.guard = 1.5; say(opener + who.name + "'s defence goes up!", { kind: "buff", side: who.side, i: ix(who) }); return; }
+    if (s.kind === "heal") {
+      const f = (typeof c.target === "number" ? mine[c.target] : c.target) || who;
+      if (f.hp <= 0) { say(opener + "But " + f.name + " is down!"); return; }
+      const before = f.hp;
+      f.hp = Math.min(f.maxHp, f.hp + Math.round((s.power[0] + r() * (s.power[1] - s.power[0])) * (1 + who.wis / 200)));
+      say(opener + f.name + " gets " + (f.hp - before) + " HP back.", { kind: "heal", side: f.side, i: ix(f) });
+      return;
+    }
+    const targets = s.target === "all" ? up(theirs) : [pickFoe(c.target)].filter(Boolean);
+    if (s.kind === "status") {
+      const f = targets[0];
+      if (!f) return;
+      if (f.status || effect(s.element, f.elements) === 0 || r() >= s.chance) { say(opener + "It doesn't work on " + f.name + "."); return; }
+      f.status = s.status;
+      say(opener + f.name + STATUS_TEXT[s.status], { kind: "status", side: f.side, i: ix(f) });
+      return;
+    }
+    let first = true;
+    for (const f of targets) {
+      if (f.hp <= 0) continue;
+      const res = s.kind === "magic" ? finish(b, who, f, (s.power[0] + r() * (s.power[1] - s.power[0])) * (1 + who.wis / 200), s.element, false)
+        : physical(b, who, f, s.power, s.element);
+      struck(f, res, first ? opener : "");
+      first = false;
+      if (s.status && f.hp > 0 && !f.status && res.eff > 0 && r() < s.chance) { f.status = s.status; say(f.name + STATUS_TEXT[s.status], { kind: "status", side: f.side, i: ix(f) }); }
+    }
+  }
+  // What a win gives: EXP (each of the party still standing gets it all, as in Dragon Quest the total split
+  // between them) and money.
+  function spoils(b) {
+    const foes = D().foes;
+    const exp = b.foes.reduce((s, f) => s + foes[f.id].exp, 0), money = b.foes.reduce((s, f) => s + foes[f.id].money, 0);
+    return { exp: Math.max(1, Math.ceil(exp / Math.max(1, up(b.allies).length))), money };
+  }
+  // EXP into a saved member: their new levels and the skills they learned. (HP and MP go up by what the new
+  // maximums add.)
+  function gainExp(rec, exp) {
+    const out = [];
+    rec.exp += exp;
+    while (rec.lv < 99 && rec.exp >= expFor(rec.lv + 1)) {
+      const was = stats(rec.id, rec.lv), had = skillsAt(rec.id, rec.lv);
+      rec.lv++;
+      const now = stats(rec.id, rec.lv);
+      rec.hp += now.hp - was.hp; rec.mp += now.mp - was.mp;
+      out.push({ lv: rec.lv, gains: Object.keys(now).map((k) => [k, now[k] - was[k]]).filter(([, d]) => d > 0), learned: skillsAt(rec.id, rec.lv).filter((s) => !had.includes(s)) });
+    }
+    return out;
+  }
+  // Back from a battle: each member's HP and MP into their saved record.
+  function keep(b) { for (const f of b.allies) { f.rec.hp = f.hp; f.rec.mp = f.mp; } }
+  window.RealmBattle = { create, turn, spoils, gainExp, keep, member, recruit, stats, skillsAt, expFor, effect, foeChoice, up };
+})();

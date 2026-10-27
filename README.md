@@ -3638,7 +3638,14 @@ are no wild Pokémon.
 - **The people**: **Kazuma Kiryu** outside Serena, and **Goro Majima** wandering by Theater Square, from sprite sheets
   you supplied (halved to The Sacred Cards' 32x32 frames). Townsfolk, in The Sacred Cards' people, stand outside
   Maharaja, on Pink Street, in the Champion District, by the Empty Lot, by Smile Burger, on Taihei Boulevard and by
-  Mach Bowl. Nothing else happens yet: no doors, battles or story.
+  Mach Bowl, and Poppo's clerk on Tenkaichi Street sells Staminan, Staminan Spark, Tauriner and Toughness Zero. No
+  doors or story yet.
+- **Fighting** (the other realms' battles, below): you start alone, at level 1. Ask Kiryu and he joins you (at
+  level 3, or yours if that's higher). Beat Majima and he joins too (at level 8 or more). On the streets (not in the
+  Empty Lot) you're jumped now and then: street punks, drunk salarymen, thugs, knife punks, hosts, bikers, Yakuza
+  grunts, and now and then Mr. Shakedown, who hits hard and pays ¥1,000. Fall in a fight and you wake by the Time
+  Machine with half your money gone. The Time Machine also lets you rest (the party's HP and MP back) and look over
+  your party.
 
 `tools/build-kamurocho.py` builds it:
 
@@ -3674,7 +3681,41 @@ python3 tools/build-kamurocho.py "<path to Yu-Gi-Oh! - The Sacred Cards (USA).gb
   `assets/world/sprites/lad_kiryu.png` and `lad_majima.png`.
 - It writes `assets/world/maps/Kamurocho.png` and `-border.png`, and the map's data into `data/emerald-maps.js`
   (between its markers, before the Time Machine's), with `window.KAMUROCHO` (where the portal puts you).
-  `ui/game.js` runs the portal and the Time Machine (`realmPortal`, `kamurochoTimeMachine`).
+  `ui/game.js` runs the portal and the Time Machine (`realmPortal`, `kamurochoTimeMachine`). With the sprite sheet it
+  also writes each one's fighting stance (the fifth row's first frame, full size) as `lad_kiryu_battle.png` and
+  `lad_majima_battle.png`, their pictures in battle.
+
+## The other realms' battles (Dragon Quest's way)
+
+Outside the Pokémon realm and the Yu-Gi-Oh! realm (which has its card duels), fights are turn-based, as in Dragon
+Quest: you and up to three companions against a group of foes. The Like a Dragon realm has them so far; the Dragon
+Ball realm will use the same system. This system is this game's own, written from how Dragon Quest plays; nothing is
+taken from a Dragon Quest cartridge.
+
+- **A turn**: first **Fight** or **Run**. Then each of the party picks **Attack** (and whom), **Skills** (each costs
+  MP; on one foe, all of them, an ally or yourself), **Defend** (half damage this turn) or **Items**. B goes back to
+  the one before. Then everyone acts, the quickest first: agility times a random half to whole, and defending always
+  comes first. Running away works about half the time, more if your party's quicker, and never in a boss fight.
+- **Damage** (Dragon Quest's formula): attack/2 − defence/4, times 7/8 to 9/8; at less than 1, 0 or 1. One attack
+  in 32 is a critical hit (attack times 0.95 to 1.05, whatever the defence), and one in 32 misses. A skill multiplies
+  that by its power. Elements multiply by `REALM_TYPE_CHART` against the target's elements, and by 1.25 for one of
+  the user's own elements. Magic and healing skills do a set range, plus up to half again for wisdom.
+- **Status**: sleep (a turn's lost, half a chance a turn to wake) and poison (an eighth of HP at the end of each
+  turn). Guard skills raise the user's defence by half for the rest of the fight.
+- **Winning**: the foes' EXP is split between those still standing, and their money is yours. EXP to reach level
+  L is 10 × (L − 1)^2.5. Each level adds that fighter's growth to every stat and may teach a skill. Anyone who fell
+  gets up afterwards with 1 HP.
+- **The screen**: the street where you stand, dimmed, behind the fight; the party's windows along the top, black
+  edged white as Dragon Quest's (yellow when low on HP, red when down); the foes in a row in the middle, in their
+  overworld sprites' first frame, facing you, or a battle picture. A foe hit blinks and one beaten fades; when the
+  party's hit, the screen shakes. It uses the game's own text box and menu, and FireRed's hit, faint and flee sounds
+  and its battle and victory songs.
+- **The data** (in `data/type-chart.js`, beside the elements): `REALM_SKILLS`, `REALM_FIGHTERS` (each companion's
+  elements, stats at level 1, growth and skills by level; "you" is you), `REALM_FOES`, `REALM_ITEMS` and
+  `REALM_ENCOUNTERS` (each map's chance a step and its groups). The Like a Dragon cast's elements: you Neutral,
+  Kiryu Ground/Light, Majima Dark/Steel (his Breaker Spin is Air). The engine is `RealmBattle` at the end of
+  `engine/battle.js` (headless: a turn in, its steps out, each with its text and everyone's HP and MP after it); the
+  screen and the scripts are in `ui/game.js` (`realmFight`), and the party is saved in `flags.realmParty`.
 
 ## Progression rules (Gen 6)
 

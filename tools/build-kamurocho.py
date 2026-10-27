@@ -19,8 +19,8 @@
 #
 # Writes:
 #   assets/world/maps/Kamurocho.png, -border.png
-#   assets/world/sprites/lad_kiryu.png, lad_majima.png     (with the sheet)
-#   data/emerald-maps.js (between its markers)             the map, and window.KAMUROCHO
+#   assets/world/sprites/lad_kiryu.png, lad_majima.png     (with the sheet; and -_battle.png, their fighting stance)
+#   data/emerald-maps.js (between its markers)             the map, and window.KAMUROCHO (where you arrive, the Empty Lot)
 import json, os, struct, subprocess, sys, random
 from collections import deque
 from PIL import Image, ImageFilter
@@ -386,6 +386,12 @@ def people(sheet):
             if flip: f = f.transpose(Image.FLIP_LEFT_RIGHT)
             out.alpha_composite(half(f), (i * 32, 0))
         out.save(os.path.join(SPRITES, 'lad_' + who + '.png'))
+        # (and in battle: the fighting stance, the fifth row's first frame, as it is)
+        stance = src.crop((ox, 4 * 64, ox + 64, 5 * 64)).convert('RGBA'); sp = stance.load()
+        for y in range(64):
+            for x in range(64):
+                if sp[x, y][:3] == (255, 0, 255): sp[x, y] = (0, 0, 0, 0)
+        stance.save(os.path.join(SPRITES, 'lad_' + who + '_battle.png'))
 if len(sys.argv) > 2: people(sys.argv[2])
 
 # ---------- The map's data ----------
@@ -407,7 +413,7 @@ the_map = {
                 'width': 32, 'height': 32, 'frames': 9, 'localId': 'LOCALID_KAMUROCHO_' + p['name'].upper()}
                for i, p in enumerate(SPOTS['people'])],
     'wild': None}
-INFO = {'arrive': dict(ARRIVE, map=NAME)}
+INFO = {'arrive': dict(ARRIVE, map=NAME), 'lot': {'x0': lx0, 'y0': ly0, 'x1': lx1, 'y1': ly1}}
 START = '// The Like a Dragon realm (tools/build-kamurocho.py): Kamurocho.\n'
 END = '// (End of the Like a Dragon realm.)\n'
 js = START + 'window.WORLD_MAPS[' + json.dumps(NAME) + '] = ' + json.dumps(the_map, separators=(',', ':')) + ';\n' + \

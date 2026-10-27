@@ -7171,3 +7171,28 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   assert(WORLD_MAPS.MauvilleCity_Gym.mt && Object.keys(WORLD_MAPS.MauvilleCity_Gym.mt).length > 20 && WORLD_MAPS.PetalburgCity_Gym.mt.METATILE_PetalburgGym_SlidingDoor_Frame4);
   done.then(() => console.log("ok: Hoenn's scripts, Norman's scene and Wally's lesson, Dive, trades, " + Object.keys(HS.s).length + " scripts"));
 }
+
+// The other realms' battles (engine/battle.js's RealmBattle): Kamurocho's fights, played with random choices, end;
+// the chart's immunities hold; EXP levels a member up and teaches their skills.
+{
+  const R = window.RealmBattle, S = window.REALM_SKILLS, groups = window.REALM_ENCOUNTERS.Kamurocho.groups;
+  assert.strictEqual(R.effect("Psychic", ["Dark"]), 0);
+  assert.strictEqual(R.effect("Ground", ["Dark", "Steel"]), 2);
+  for (const id in window.REALM_FIGHTERS) for (const [, s] of window.REALM_FIGHTERS[id].skills) assert(S[s], id + "'s " + s);
+  for (const id in window.REALM_FOES) for (const s of window.REALM_FOES[id].skills) assert(S[s], id + "'s " + s);
+  let turns = 0;
+  for (let g = 0; g < 60; g++) {
+    const recs = [R.recruit("you", 1 + g % 8), R.recruit("kiryu", 3 + g % 8)].concat(g % 2 ? [R.recruit("majima", 8)] : []);
+    const b = R.create(recs.map((r) => R.member(r, "Red")), g % 3 ? groups[g % groups.length][1] : ["majima"], { seed: g + 1 });
+    b.items = { staminan: 2 };
+    for (let n = 0; !b.over; n++) {
+      assert(n < 300, "a realm battle ends");
+      const choices = b.allies.map((f, i) => (g % 4 === 0 && i === 0 ? { act: "item", item: "staminan", target: 1 } : f.skills[n % 3] && S[f.skills[n % 3]].mp <= f.mp ? { act: "skill", skill: f.skills[n % 3], target: 0 } : { act: "attack", target: 0 }));
+      for (const st of R.turn(b, n % 9 === 8 ? "run" : choices)) assert(!/NaN|undefined/.test(st.text), st.text);
+      turns++;
+    }
+  }
+  const rec = R.recruit("you", 1), ups = R.gainExp(rec, R.expFor(5));
+  assert(rec.lv === 5 && ups.length === 4 && ups.some((u) => u.learned.includes("rush")));
+  console.log("ok: realm battles, 60 of Kamurocho's fights finished (" + turns + " turns)");
+}

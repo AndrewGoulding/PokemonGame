@@ -2991,7 +2991,7 @@
   const DOMINO_DUELISTS = { DominoHigh_Person12: "yugi", DominoHigh_Person13: "tea", DominoHigh_Person14: "joey", DominoHigh_Person15: "tristan" };
   // (The Time Machine off Pallet Town, and the Realm Hub's portals: timeMachine, realmPortal.)
   for (const sc of ["TimeMachine_EventScript_Machine", "TimeMachine_EventScript_Sign", "TimeMachine_EventScript_Scientist",
-    "RealmHub_EventScript_Portal_pokemon", "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_yakuza", "Kamurocho_TimeMachine", "SacredCards_Fountain", "SacredCards_BackToTown",
+    "RealmHub_EventScript_Portal_pokemon", "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_yakuza", "Kamurocho_TimeMachine", "Kamurocho_Kiryu", "Kamurocho_Majima", "Kamurocho_Clerk", "SacredCards_Fountain", "SacredCards_BackToTown",
     "Domino_WorldMap", "KameGame_Grandpa", "Domino_Manhole", "Domino_ManholeUp", "Domino_TimeMachine", ...Object.keys(DOMINO_DUELISTS)]) SPECIAL.add(sc);
   // (and the other pupils and the teacher, with their boosters' decks: classmate)
   for (let i = 0; i < 12; i++) SPECIAL.add("DominoHigh_Person" + i);
@@ -3010,6 +3010,8 @@
   function visible(person, map) {
     if (isHoenn(map || player.location.map)) { const dv = deltaVisible(person); if (dv !== undefined) return dv; const b = hoennBerries.visible(person, map || player.location.map); return b !== undefined ? b : hoennVisible(person, map || player.location.map); }
     const f = player.flags;
+    // (Kamurocho's Kiryu and Majima: gone from the streets once they've joined your party.)
+    { const lad = /^Kamurocho_(Kiryu|Majima)$/.exec(person.script || ""); if (lad) return !inRealmParty("yakuza", lad[1].toLowerCase()); }
     // (A Tera Raid den: glowing while its raid is on.)
     { const den = RaidDens.byScript(person.script); if (den) return RaidDens.active(f, den.id) ? { sprite: "raid_den_active" } : true; }
     // (Johto's people: hidden while HGSS's flag for them is set, and where
@@ -3360,6 +3362,9 @@
     if (script === "Domino_Manhole" || script === "Domino_ManholeUp") { await dominoManhole(script === "Domino_Manhole"); return; }
     if (script === "Domino_TimeMachine") { await dominoTimeMachine(); return; }
     if (script === "Kamurocho_TimeMachine") { await kamurochoTimeMachine(); return; }
+    if (script === "Kamurocho_Kiryu") { await kamurochoKiryu(ev.person); return; }
+    if (script === "Kamurocho_Majima") { await kamurochoMajima(ev.person); return; }
+    if (script === "Kamurocho_Clerk") { await kamurochoShop(); return; }
     if (DOMINO_DUELISTS[script]) { await dominoDuel(DOMINO_DUELISTS[script], ev.person); return; }
     if (/^DominoHigh_Person([0-9]|1[01])$/.test(script || "")) { await dominoDuel(classmate(script), ev.person); return; }
     if (ev.person && ev.person.ferry && isSinnoh(ev.map)) { await sinnohFerry(ev.person); return; }
@@ -9694,11 +9699,260 @@
     }
     await say(["A portal of cold stone. Its light\nhas gone out.", "Another realm may open here\nsomeday…"]);
   }
-  // The Time Machine in Kamurocho's Empty Lot: back to the Realm Hub, by the crimson portal.
+  // The Time Machine in Kamurocho's Empty Lot: back to the Realm Hub, by the crimson portal; or a rest beside it
+  // (the party's HP and MP back), or a look at the party.
   async function kamurochoTimeMachine() {
     await say("It's the Time Machine, standing in\nthe middle of the Empty Lot.");
-    if (!(await confirm("Travel back to the Realm Hub?"))) return;
-    await voyage(HUB_YAKUZA_PORTAL, ["The Time Machine whirs to life…", "Kamurocho's lights fade away…", "…and you come out in the Realm Hub."], "se_warp_in");
+    for (;;) {
+      const v = await ask("What will you do?", [{ label: "Rest", value: "rest", className: "action" }, { label: "Party", value: "party", className: "action" },
+        { label: "Realm Hub", value: "hub", className: "action" }, back("Leave")]);
+      if (v === "rest") {
+        for (const rec of realmParty("yakuza").party) { const s = RealmBattle.stats(rec.id, rec.lv); rec.hp = s.hp; rec.mp = s.mp; }
+        await fanfare("mus_heal");
+        await say("You rest a while in the shadow of\nthe Time Machine. Everyone's\nback to full strength!");
+        continue;
+      }
+      if (v === "party") { await realmPartyScreen("yakuza"); continue; }
+      if (v === "hub") {
+        if (!(await confirm("Travel back to the Realm Hub?"))) continue;
+        await voyage(HUB_YAKUZA_PORTAL, ["The Time Machine whirs to life…", "Kamurocho's lights fade away…", "…and you come out in the Realm Hub."], "se_warp_in");
+      }
+      return;
+    }
+  }
+
+  // ---------- The other realms' battles (Dragon Quest's way: engine/battle.js's RealmBattle) ----------
+  //
+  // Out of the Pokémon realm you fight in a party, as in Dragon Quest: you and up to three companions
+  // (data/type-chart.js's REALM_FIGHTERS), each with HP, MP, a level and skills, against a group of foes. Each
+  // realm's party and its items: flags.realmParty[realm] = { party: [{ id, lv, exp, hp, mp }], items: { id: n } }.
+  // In Kamurocho you start alone; Kiryu joins when you ask him, and Majima once you've beaten him. Walking its streets
+  // (not the Empty Lot) you're jumped now and then (REALM_ENCOUNTERS); fall, and you wake by the Time Machine with
+  // half your money gone.
+  function realmParty(realm) {
+    const all = player.flags.realmParty = player.flags.realmParty || {};
+    if (!all[realm]) all[realm] = { party: [RealmBattle.recruit("you", 1)], items: { staminan: 3 } };
+    return all[realm];
+  }
+  const inRealmParty = (realm, id) => !!(player.flags.realmParty && player.flags.realmParty[realm] && player.flags.realmParty[realm].party.some((m) => m.id === id));
+  const realmName = (rec) => window.REALM_FIGHTERS[rec.id].name || player.name;
+  let realmQuiet = 0;   // (steps before the next fight can start: a few after each one)
+  // (A battle's line, broken into the text box's lines at the spaces.)
+  function realmWrap(text) {
+    const out = [];
+    for (const para of String(text).split("\n")) {
+      let line = "";
+      for (const w of para.split(" ")) {
+        if (line && (line + " " + w).length > 30) { out.push(line); line = w; } else line = line ? line + " " + w : w;
+      }
+      out.push(line);
+    }
+    return out.join("\n");
+  }
+  function realmEncounterStep() {
+    const m = player.location.map, enc = window.REALM_ENCOUNTERS && window.REALM_ENCOUNTERS[m];
+    if (!enc) return null;
+    if (realmQuiet > 0) { realmQuiet--; return null; }
+    const at = Overworld.position(), lot = m === "Kamurocho" && window.KAMUROCHO.lot;
+    if (lot && at.x >= lot.x0 - 1 && at.x <= lot.x1 + 1 && at.y >= lot.y0 - 1 && at.y <= lot.y1 + 1) return null;
+    return Math.random() < enc.rate ? { type: "realm-battle" } : null;
+  }
+  async function realmEncounter() {
+    const enc = window.REALM_ENCOUNTERS[player.location.map], total = enc.groups.reduce((s, [w]) => s + w, 0);
+    let r = Math.random() * total, group = enc.groups[0][1];
+    for (const [w, g] of enc.groups) if ((r -= w) < 0) { group = g; break; }
+    await realmFight(group);
+  }
+  // A foe's picture: its battle picture, or its overworld sheet's first frame (facing you).
+  function realmFoePic(f) {
+    const d = window.REALM_FOES[f.id];
+    if (d.battle) return '<div class="rb-pic big" style="background-image:url(' + d.battle + ')"></div>';
+    return '<div class="rb-pic sheet' + (d.big ? " big" : "") + '" style="background-image:url(assets/world/sprites/' + d.sprite + '.png)"></div>';
+  }
+  // The screen: the street where you stand behind it, the party's windows along the top (name, HP, MP, level),
+  // the foes in a row in the middle.
+  function realmDraw(b) {
+    const m = window.WORLD_MAPS[player.location.map], at = Overworld.position();
+    const W = m.width * 16, H = m.height * 16, cx = Math.max(0, Math.min(W - 240, at.x * 16 - 112)), cy = Math.max(0, Math.min(H - 160, at.y * 16 - 72));
+    const back = 'background-image:url(assets/world/maps/' + m.name + '.png);background-size:' + (W / 2.4) + '% ' + (H / 1.6) + '%;background-position:' +
+      (cx / (W - 240) * 100) + '% ' + (cy / (H - 160) * 100) + '%';
+    show("scene");
+    scene.classList.add("evo");
+    scene.innerHTML = '<div class="rb"><div class="rb-back" style="' + back + '"></div>' +
+      '<div class="rb-party">' + b.allies.map((f, i) => '<div class="rb-card" data-i="' + i + '"><b>' + escapeHtml(f.name) + '</b><span class="hp"></span><span class="mp"></span><span>Lv ' + f.lv + '</span></div>').join("") + '</div>' +
+      '<div class="rb-foes">' + b.foes.map((f, i) => '<div class="rb-foe" data-i="' + i + '">' + realmFoePic(f) + '</div>').join("") + '</div></div>';
+    realmShow(b, { allies: b.allies.map((f) => [f.hp, f.mp]), foes: b.foes.map((f) => f.hp) });
+  }
+  function realmShow(b, snap) {
+    scene.querySelectorAll(".rb-card").forEach((el, i) => {
+      const [hp, mp] = snap.allies[i], f = b.allies[i];
+      el.querySelector(".hp").textContent = "HP " + hp;
+      el.querySelector(".mp").textContent = "MP " + mp;
+      el.classList.toggle("down", hp <= 0);
+      el.classList.toggle("low", hp > 0 && hp <= f.maxHp / 4);
+    });
+    scene.querySelectorAll(".rb-foe").forEach((el, i) => el.classList.toggle("gone", snap.foes[i] <= 0));
+  }
+  function realmFx(fx) {
+    if (!fx) return;
+    const el = fx.side === "foe" ? scene.querySelector('.rb-foe[data-i="' + fx.i + '"]') : scene.querySelector('.rb-card[data-i="' + fx.i + '"]');
+    const flash = (cls, ms) => { if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(() => el.classList.remove(cls), ms); };
+    if (fx.kind === "hit") {
+      sfx(fx.eff >= 2 ? "se_super_effective" : fx.eff > 0 && fx.eff < 1 ? "se_not_effective" : fx.crit ? "se_m_mega_kick" : "se_effective");
+      flash("hit", 400);
+      if (fx.side === "ally") { const r = scene.querySelector(".rb"); if (r) { r.classList.remove("shake"); void r.offsetWidth; r.classList.add("shake"); } }
+    } else if (fx.kind === "down") sfx("se_faint");
+    else if (fx.kind === "heal" || fx.kind === "buff") { sfx("se_m_reflect"); flash("healed", 500); }
+    else if (fx.kind === "run") sfx("se_flee");
+    else if (fx.kind === "status") flash("hit", 400);
+  }
+  // Each of the party's choices for the turn (B goes back to the one before), or "run".
+  async function realmChoices(b) {
+    const fight = await ask("What will you do?", [{ label: "Fight", value: "fight", className: "action" }, { label: "Run", value: "run", className: "action" }]);
+    if (fight === "run") return "run";
+    const choices = b.allies.map(() => null), foes = () => b.foes.map((f, i) => [f, i]).filter(([f]) => f.hp > 0);
+    const P = b.items || {}, I = window.REALM_ITEMS, S = window.REALM_SKILLS;
+    const who = b.allies.map((f, i) => i).filter((i) => b.allies[i].hp > 0);
+    const target = async (kind, text) => {
+      if (kind === "all" || kind === "self") return 0;
+      const list = kind === "ally" ? b.allies.map((f, i) => [f, i]) : foes();
+      if (kind !== "ally" && list.length === 1) return list[0][1];
+      const v = await ask(text, list.map(([f, i]) => ({ label: f.name + (kind === "ally" ? "  " + f.hp + "/" + f.maxHp : ""), value: i })).concat([back()]));
+      return v === "back" ? null : v;
+    };
+    for (let k = 0; k < who.length;) {
+      const i = who[k], f = b.allies[i];
+      const v = await ask(f.name + ": what will you do?", [{ label: "Attack", value: "attack", className: "action" }, { label: "Skills", value: "skill", className: "action", disabled: !f.skills.length },
+        { label: "Defend", value: "defend", className: "action" }, { label: "Items", value: "item", className: "action", disabled: !Object.keys(P).some((id) => P[id] > 0) }]
+        .concat(k > 0 ? [back()] : []));
+      if (v === "back") { k--; continue; }
+      if (v === "defend") { choices[i] = { act: "defend" }; k++; continue; }
+      if (v === "attack") {
+        const t = await target("one", "Attack whom?");
+        if (t == null) continue;
+        choices[i] = { act: "attack", target: t }; k++; continue;
+      }
+      if (v === "skill") {
+        const s = await ask(f.name + "'s skills (MP " + f.mp + ")", f.skills.map((id) => ({ label: S[id].name + "  " + S[id].mp + " MP" + (S[id].element !== "Neutral" ? "  (" + S[id].element + ")" : ""), value: id, disabled: S[id].mp > f.mp }))
+          .concat([back()]));
+        if (s === "back") continue;
+        const t = await target(S[s].target, S[s].name + ": on whom?");
+        if (t == null) continue;
+        choices[i] = { act: "skill", skill: s, target: S[s].target === "self" ? i : t }; k++; continue;
+      }
+      const id = await ask("Use which item?", Object.keys(P).filter((x) => P[x] > 0 && I[x]).map((x) => ({ label: I[x].name + "  ×" + P[x], value: x })).concat([back()]));
+      if (id === "back") continue;
+      const t = await target("ally", I[id].name + ": on whom?");
+      if (t == null) continue;
+      choices[i] = { act: "item", item: id, target: t }; k++;
+    }
+    return choices;
+  }
+  // A whole fight: "won", "lost" or "ran". opts: intro (what's said first), after a loss you wake by the Time
+  // Machine (unless opts.keepGoing: the fight just ends).
+  async function realmFight(foeIds, opts) {
+    opts = opts || {};
+    const realm = (window.WORLD_MAPS[player.location.map] || {}).realm, P = realmParty(realm);
+    const b = RealmBattle.create(P.party.map((rec) => RealmBattle.member(rec, player.name)), foeIds, {});
+    b.items = P.items;
+    music(b.boss ? "mus_vs_gym_leader" : "mus_vs_wild");
+    realmDraw(b);
+    const names = b.foes.map((f) => f.name);
+    await message(realmWrap(opts.intro || (names.length === 1 ? names[0] + " picks a fight!" : names.slice(0, -1).join(", ") + " and " + names[names.length - 1] + " pick a fight!")));
+    while (!b.over) {
+      const choices = await realmChoices(b);
+      for (const st of RealmBattle.turn(b, choices)) { realmShow(b, st.snap); realmFx(st.fx); await message(realmWrap(st.text)); }
+    }
+    RealmBattle.keep(b);
+    for (const k of Object.keys(P.items)) if (!(P.items[k] > 0)) delete P.items[k];
+    if (b.over === "won") {
+      const { exp, money } = RealmBattle.spoils(b);
+      music(b.boss ? "mus_victory_gym_leader" : "mus_victory_wild");
+      Player.addMoney(player, money);
+      await message(realmWrap(b.allies.filter((f) => f.hp > 0).length > 1 ? "Each of you gets " + exp + " EXP." : player.name + " gets " + exp + " EXP."));
+      if (money) await message("You picked up ¥" + money + ".");
+      for (const f of b.allies) {
+        if (f.hp <= 0) continue;
+        for (const l of RealmBattle.gainExp(f.rec, exp)) {
+          await fanfare("mus_level_up");
+          await message(realmName(f.rec) + " is now level " + l.lv + "!");
+          for (const s of l.learned) await message(realmWrap(realmName(f.rec) + " learned " + window.REALM_SKILLS[s].name + "!"));
+        }
+      }
+    }
+    // (Anyone who fell gets up with 1 HP, as after a won fight in Dragon Quest you'd have to revive them; here they
+    // walk it off.)
+    if (b.over !== "lost") for (const rec of P.party) if (rec.hp <= 0) rec.hp = 1;
+    realmQuiet = 10;
+    const here = window.WORLD_MAPS[player.location.map];
+    scene.classList.remove("evo");
+    Screen.say(""); clearMenu();
+    show("world");
+    await Overworld.resume();
+    if (b.over === "lost" && !opts.keepGoing) {
+      const lost = Math.floor(player.money / 2);
+      player.money -= lost;
+      for (const rec of P.party) { const s = RealmBattle.stats(rec.id, rec.lv); rec.hp = s.hp; rec.mp = s.mp; }
+      const to = window.KAMUROCHO.arrive;
+      await voyage({ map: to.map, x: to.x, y: to.y, facing: to.facing }, ["Everything goes black…", "You come to in the Empty Lot,\nyour wallet ¥" + lost + " lighter."], "se_faint");
+      return b.over;
+    }
+    if (b.over === "lost") for (const rec of P.party) if (rec.hp <= 0) rec.hp = 1;
+    music(here.music);
+    return b.over;
+  }
+  // The party, out of battle: each one's level, HP, MP, stats, elements, skills and EXP to the next level.
+  async function realmPartyScreen(realm) {
+    const P = realmParty(realm), S = window.REALM_SKILLS, F = window.REALM_FIGHTERS;
+    for (const rec of P.party) {
+      const s = RealmBattle.stats(rec.id, rec.lv);
+      await say([realmName(rec) + "  Lv " + rec.lv + "  (" + F[rec.id].elements.join("/") + ")\nHP " + rec.hp + "/" + s.hp + "  MP " + rec.mp + "/" + s.mp,
+        "Attack " + s.atk + "  Defence " + s.def + "\nAgility " + s.agi + "  Wisdom " + s.wis,
+        "Skills: " + (RealmBattle.skillsAt(rec.id, rec.lv).map((k) => S[k].name).join(", ") || "none") + "\nNext level: " + (RealmBattle.expFor(rec.lv + 1) - rec.exp) + " EXP"]);
+    }
+    const items = Object.keys(P.items).filter((k) => P.items[k] > 0);
+    await say("Items: " + (items.map((k) => window.REALM_ITEMS[k].name + " ×" + P.items[k]).join(", ") || "none"));
+  }
+  // Kiryu: joins you when you ask, at level 3 or yours, whichever's higher.
+  async function kamurochoKiryu(person) {
+    await say(person.text);
+    if (!(await confirm("Kiryu: You look like you can handle\nyourself. Want to walk with me?"))) { await say("Kiryu: Suit yourself."); return; }
+    const P = realmParty("yakuza");
+    P.party.push(RealmBattle.recruit("kiryu", Math.max(3, P.party[0].lv)));
+    await fanfare("mus_obtain_key_item");
+    await say(["Kazuma Kiryu joined the party!", "Kiryu: Let's go. This town doesn't\nsleep, and neither do its punks."]);
+    await Overworld.refreshPeople();
+  }
+  // Majima: a fight, and once he's beaten, he tags along (at level 8 or more).
+  async function kamurochoMajima(person) {
+    await say(person.text);
+    if (!(await confirm("Majima: So whaddya say? You an' me,\nright here, right now!"))) { await say("Majima: Aww, ya chicken! I'll be\nwaitin'!"); return; }
+    const r = await realmFight(["majima"], { intro: "Goro Majima wants to fight!", keepGoing: true });
+    if (r !== "won") { await say("Majima: Hee hee! Come back when\nya've got some more fight in ya!"); return; }
+    const P = realmParty("yakuza");
+    if (P.party.length < 4) {
+      P.party.push(RealmBattle.recruit("majima", Math.max(8, P.party[0].lv)));
+      await fanfare("mus_obtain_key_item");
+      await say(["Majima: Hee hee hee! That was the\nmost fun I've had all year!", "I'm stickin' with you! Ain't\nnobody gonna stop me!", "Goro Majima joined the party!"]);
+      await Overworld.refreshPeople();
+    } else await say("Majima: What a fight! Ya party's\nfull, though. Next time!");
+  }
+  // Poppo's clerk: the realm's items (REALM_ITEMS), for your money.
+  async function kamurochoShop() {
+    await say("Clerk: Welcome to Poppo!");
+    const P = realmParty("yakuza"), I = window.REALM_ITEMS;
+    for (;;) {
+      const id = await ask("You have ¥" + player.money + ". What'll it be?", Object.keys(I).map((k) => ({ label: I[k].name + "  ¥" + I[k].price, value: k })).concat([back("Done")]));
+      if (id === "back") break;
+      await say(I[id].text);
+      if (player.money < I[id].price) { await say("Clerk: Sorry, you're a little short."); continue; }
+      if (!(await confirm("Buy a " + I[id].name + " for ¥" + I[id].price + "?"))) continue;
+      player.money -= I[id].price;
+      P.items[id] = (P.items[id] || 0) + 1;
+      sfx("se_shop");
+      await say("Clerk: Thank you!");
+    }
+    await say("Clerk: Come again!");
   }
   // Domino Square's fountain (and Clock Tower Square's): back through the portal to the Realm Hub, or off round the
   // realm: Battle City's places (The Sacred Cards'), Domino City's and the world's (Reshef of Destruction's:
@@ -15236,7 +15490,7 @@
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step(); sinnohBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
-          return orreCallStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
+          return orreCallStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || realmEncounterStep() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
         adjustWild: (mon, table) => { const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
@@ -15288,6 +15542,7 @@
       else if (ev.type === "red-forest") await redForest();
       else if (ev.type === "leaf-vermilion") await leafVermilion();
       else if (ev.type === "save-prompt") await savePrompt();
+      else if (ev.type === "realm-battle") await realmEncounter();
       else if (ev.type === "jessie-james") await jessieJames();
       else if (ev.type === "jessie-james-later") await laterJessieJames();
       else if (ev.type === "safari-over") { if (ev.hoenn) await runHoenn("SafariZone_EventScript_TimesUp"); else await safariOver(ev.text, false); }
