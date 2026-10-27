@@ -3764,7 +3764,7 @@ Desert Stance, Gerudo Fang, Belly Bounce, Saiyan Pride, Super Saiyan Rage); what
 | Gerudo (Ground) | strong and sturdy | Scimitar Slash (1, Steel), Desert Stance (3, guard), Twin Scimitars (5, Steel, all), Sandstorm (8, all), Fire Arrow (11), Urbosa's Fury (14, Electric, all), Gerudo Fang (19) |
 | Human (Neutral) | quick, every technique | Wolf Fang Fist (1), Solar Flare (3, stun), Afterimage (5, guard), Kamehameha (7), Destructo Disc (10, Steel), Tri-Beam (14, all), Spirit Ball (19, Light) |
 | Majin (Psychic) | most HP, slow, heals itself | Rubber Punch (1), Regeneration (2, self heal), Belly Bounce (4, guard), Candy Beam (6), Angry Explosion (10, all), Absorption (14, Dark, big self heal), Vanishing Ball (19, Dark, all) |
-| Saiyan (Fire) | hardest hitter, little magic | Ki Blast (1), Meteor Smash (3), Saiyan Pride (5, guard), Galick Gun (8, Dark), Big Bang Attack (11, all), Final Flash (15, Light), Super Saiyan Rage (20) |
+| Saiyan (Light, for the Super Saiyan's golden aura) | hardest hitter, little magic | Ki Blast (1), Meteor Smash (3), Saiyan Pride (5, guard), Galick Gun (8, Dark), Big Bang Attack (11, Fire, all), Final Flash (15), Super Saiyan Rage (20) |
 
 ## Progression rules (Gen 6)
 

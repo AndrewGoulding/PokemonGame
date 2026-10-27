@@ -135,13 +135,13 @@ window.REALM_SKILLS = {
   absorption:    { name: "Absorption",             mp: 12, element: "Dark",    kind: "heal",  power: [90, 110], target: "self" },
   vanishing_ball:{ name: "Vanishing Ball",         mp: 18, element: "Dark",    kind: "magic", power: [50, 64], target: "all" },
   // Saiyan
-  ki_blast:      { name: "Ki Blast",               mp: 2,  element: "Fire",    kind: "magic", power: [10, 14], target: "one" },
+  ki_blast:      { name: "Ki Blast",               mp: 2,  element: "Light",    kind: "magic", power: [10, 14], target: "one" },
   meteor_smash:  { name: "Meteor Smash",           mp: 4,  element: "Neutral", kind: "phys",  power: 1.7, target: "one" },
   saiyan_pride:  { name: "Saiyan Pride",           mp: 2,  element: "Neutral", kind: "guard", target: "self" },
   galick_gun:    { name: "Galick Gun",             mp: 9,  element: "Dark",    kind: "magic", power: [38, 48], target: "one" },
   big_bang:      { name: "Big Bang Attack",        mp: 12, element: "Fire",    kind: "magic", power: [34, 44], target: "all" },
   final_flash:   { name: "Final Flash",            mp: 16, element: "Light",   kind: "magic", power: [80, 100], target: "one" },
-  super_saiyan:  { name: "Super Saiyan Rage",      mp: 18, element: "Fire",    kind: "phys",  power: 3.4, target: "one" }
+  super_saiyan:  { name: "Super Saiyan Rage",      mp: 18, element: "Light",    kind: "phys",  power: 3.4, target: "one" }
 };
 
 // The party's fighters: elements, stats at level 1 and what they gain each level, and the skills they know by
@@ -174,7 +174,7 @@ window.REALM_FIGHTERS = {
   majin:  { name: null, elements: ["Psychic"], base: { hp: 42, mp: 12, atk: 13, def: 13, agi: 6, wis: 11 },
             growth: { hp: 7, mp: 2, atk: 2, def: 2, agi: 0.9, wis: 1.5 },
             skills: [[1, "rubber_punch"], [2, "regenerate"], [4, "belly_bounce"], [6, "candy_beam"], [10, "angry_burst"], [14, "absorption"], [19, "vanishing_ball"]] },
-  saiyan: { name: null, elements: ["Fire"], base: { hp: 32, mp: 10, atk: 17, def: 10, agi: 12, wis: 8 },
+  saiyan: { name: null, elements: ["Light"], base: { hp: 32, mp: 10, atk: 17, def: 10, agi: 12, wis: 8 },
             growth: { hp: 5.4, mp: 1.8, atk: 2.7, def: 1.5, agi: 1.7, wis: 1.1 },
             skills: [[1, "ki_blast"], [3, "meteor_smash"], [5, "saiyan_pride"], [8, "galick_gun"], [11, "big_bang"], [15, "final_flash"], [20, "super_saiyan"]] }
 };
