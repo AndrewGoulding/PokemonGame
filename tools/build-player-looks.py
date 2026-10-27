@@ -7,7 +7,8 @@
 # (No cartridge or disc: it builds from what's committed. See DATA, SS_DATA and TTYD_DATA below for taking them again.)
 # Hyrule's people are The Minish Cap's (only their sprites): its townsfolk and children are drawn as a head on a body,
 # so any head goes on any body; and Link, whole. The Dragon World's are the Dragon Ball realm's people sheets already
-# in the repo (assets/dragonball/people/, from Legacy of Goku II and Buu's Fury), whole characters.
+# in the repo (assets/dragonball/people/, from Legacy of Goku II and Buu's Fury), whole characters. Kanto's are
+# FireRed's own Red, Leaf and Gary (their overworld sheets in the repo).
 #
 # Writes:
 #   assets/world/sprites/looks/<part>.png   each part: FireRed's nine frames (standing down, up, left; two steps
@@ -609,6 +610,43 @@ def dragon_world():
         shift = (16 - (min(xs) + max(xs) + 1) // 2, 31 - max(ys))
         character(pid, name, 'lg' if src.startswith('LG') else 'bf', f15, shift, neck=opts.get('neck', 0), hair=opts.get('hair', True))
 
+# ---------- Kanto: FireRed's Red, Leaf and Gary ----------
+# Their overworld sheets as the game has them (assets/world/sprites/red_normal.png, green_normal.png, blue.png: FireRed's
+# nine frames, 16x32), each colour one of the four or its own; each cut at its neck, the row below its chin, by eye
+# (they're chibi: their caps are the widest of them). Red's cap is his clothes' colour and Leaf's hat her trim's, so
+# a cap goes with the hairstyle. Their walks are two steps, so
+# the frames between are them standing.
+FRLG_PARTS = [
+    ('red', 'Red', 'red_normal', 23, {'hair': ['39397b', '7b4141'], 'outfit': ['ff6a4a', 'c53939', '6a2929'], 'trim': ['73a4c5', '39397b'],
+                                      'skin': ['ffc594', 'de9473'], 'above': ['outfit']}),
+    ('leaf', 'Leaf', 'green_normal', 24, {'hair': ['ac7b41', '7b4141'], 'outfit': ['73a4c5', '4141d5', '39397b'], 'trim': ['ff6a4a', 'c53939', '6a2929'],
+                                          'skin': ['ffc594', 'de9473'], 'above': ['trim'], 'below': ['hair']}),
+    ('gary', 'Gary', 'blue', 23, {'hair': ['debd41', 'a48320', '525220'], 'outfit': ['a44a83', '522041'], 'trim': ['204110'],
+                                  'skin': ['ffd5b4', 'f6bd94', 'de9473']}),
+]
+def kanto_roles(px, roles, neck):
+    """As db_roles, but cut at the neck (`neck`: the first row of the body, standing): hair only above it (Leaf's,
+    hanging down her back, too: it's the colour of nothing else there), clothes and trim only below (their colours are
+    the outline of a cap, a face's shadow, above). Unless `above` or `below` says: Red's cap is his clothes' colour,
+    Leaf's hat band her trim's, and her hair hangs down her back."""
+    out = {}
+    for (x, y), col in px.items():
+        h, role = hexc(col)[1:], None
+        for r in ('skin', 'hair', 'outfit', 'trim'):
+            if h not in roles.get(r, ()): continue
+            if r == 'hair' and y >= neck and r not in roles.get('below', ()): continue
+            if r in ('outfit', 'trim') and y < neck and r not in roles.get('above', ()): continue
+            role = r; break
+        out[(x, y)] = (role, col)
+    return out
+def kanto():
+    for pid, name, src, neck, roles in FRLG_PARTS:
+        img = Image.open(os.path.join(ROOT, 'assets/world/sprites', src + '.png')).convert('RGBA'); p = img.load()
+        def cell(i):
+            return kanto_roles({(x, y): p[i * 16 + x, y][:3] for y in range(32) for x in range(16) if p[i * 16 + x, y][3] > 128}, roles, neck)
+        f15 = frames15([cell(0), cell(1), cell(2)], [[cell(3), cell(4)], [cell(5), cell(6)], [cell(7), cell(8)]])
+        character(pid, name, 'frlg', f15, (8, 0), neck=neck - neck_row(f15[0]))
+
 # ---------- The Mushroom Kingdom: Mario & Luigi: Superstar Saga's people ----------
 # How Superstar Saga keeps its sprites (the USA cartridge, A88E; after Yoshi Magic's sprite viewer and the game's own
 # OAM builders, 0x0801EEBC.., in the jellees/mlss decompilation's disassembly):
@@ -1090,6 +1128,7 @@ if __name__ == '__main__':
     hyrule()
     if isinstance(SRC, Cartridge): SRC.save()
     dragon_world()
+    kanto()
     mushroom_kingdom()
     if isinstance(SS, SuperstarSaga): SS.save()
     paper_kingdom()

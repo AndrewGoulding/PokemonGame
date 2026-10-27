@@ -3910,6 +3910,9 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   spots are their "hair"; Superstar Saga has no Toadsworth); and Bowser for the Koopas (shrunk to the others' size, Bowser more). And from Paper Mario:
   The Thousand-Year Door, drawn from its models: a Pianta, Don Pianta, Frankie and Francesca for the Piantas (their
   sprouts are their "hair", their grass skirts the trim); a Goomba and Goombella for the Goombas; Koops for the Koopas.
+  Kanto's Humans are FireRed's own Red, Leaf and Gary (`FRLG_PARTS`, from their overworld sheets), each cut at the row
+  under the chin by eye, as they're chibi; Red's cap and Leaf's hat go with the hairstyle, coloured as his jacket and her
+  skirt.
   Paper Mario's people are paper: the models face you a little to the left and have no side, and Superstar Saga's
   Toad, shrunk, is his back half turned; so their sides are drawn a pixel at a time (`SIDE_ART`: a Pianta's, used for
   all four in their own colours, a Goomba's, Goombella's, Koops's and Toad's, each facing left, its legs striding as
@@ -3997,6 +4000,7 @@ colours) between its markers; each race's choices are `REALM_RACES[..].looks`.
 | Pianta (Water) | most HP of the five, slow | Chuckster Toss (1), Sturdy Belly (3, guard), Squirt Nozzle (5), Durian Drop (8, Grass), Shine Sprite (11, Light, heal), Hover Nozzle Splash (14, all), Turbo Nozzle (19) |
 | Goomba (Ground) | nimble | Headbonk (1), Goomba Huddle (3, guard), Multibonk (5), Goomba Tower (8, all), Paragoomba Dive (11, Air), Big Goomba Stomp (14), Goomboss Charge (19, all) |
 | Koopa (Earth) | toughest defence | Shell Toss (1), Shell Shield (3, guard), Shell Spin (5, all), Dizzy Shell (7, paralysis), Power Shell (10, all), Fire Shell (14, Fire), Shell Slam (19) |
+| Human, of Kanto (Neutral) | the trainer's stats, all-round | Poké Ball Throw (1), Potion (3, heal), X Defend (5, guard), Super Potion (8, heal), Pikachu's Thunderbolt (11, Electric), Charizard's Fire Blast (14, Fire, all), Master Ball (19) |
 
 The Mushroom Kingdom's five are for its realm to come; their looks are above. Some skill names are this game's own
 (the Dragon World's Weighted Cape, Android Barrier, Divine Paralysis, Kaio-ken Attack and Z Sword Slash, and):

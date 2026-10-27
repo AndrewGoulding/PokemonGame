@@ -761,6 +761,12 @@
       for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 11 : 26; pts.push([32 + r * Math.cos(a), 34 + r * Math.sin(a)]); }
       path(pts);
     }
+    if (kind === "pokeball") {
+      g.beginPath(); g.arc(32, 32, 24, 0, Math.PI * 2); g.fill(); g.stroke();
+      g.beginPath(); g.moveTo(8, 32); g.lineTo(25, 32); g.moveTo(39, 32); g.lineTo(56, 32); g.stroke();
+      g.beginPath(); g.arc(32, 32, 7, 0, Math.PI * 2); g.stroke();
+      g.beginPath(); g.arc(32, 32, 3, 0, Math.PI * 2); g.stroke();
+    }
     if (kind === "mushroom") {
       g.beginPath(); g.moveTo(6, 34); g.quadraticCurveTo(8, 8, 32, 8); g.quadraticCurveTo(56, 8, 58, 34); g.closePath(); g.fill(); g.stroke();
       path([[22, 34], [42, 34], [44, 54], [20, 54]]);
