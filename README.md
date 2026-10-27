@@ -3561,6 +3561,19 @@ python3 tools/build-dbz-webfoot.py "<path to Dragonball Z - Buu's Fury (USA).gba
 - **The portraits** (107 and 155): the dialogue faces, 64x64. A few of Legacy of Goku II's first ones use colours the
   game changes while they're on screen, so they come out wrong.
 
+`tools/build-dbz-ssw.py` builds the battle sprites from **Dragonball Z: Supersonic Warriors** (USA, game code AZJE;
+files `fighters/SSW_*`):
+
+```sh
+python3 tools/build-dbz-ssw.py "<path to Dragonball Z - Supersonic Warriors (USA).gba>"
+```
+
+- **The fighters** (19, about 320 frames each, and 7 smaller ones): the game's table of fighters (`AGBD` at
+  `0x608000`). Each has a palette, a bank of 4bpp tiles and a table of frames. A frame is a list of the tiles the game
+  copies to VRAM and its parts (OAM shape, size and offset into that copy). One sheet each, every frame 16 to a row
+  in the ROM's order (the moves come in runs). `fighters/index.json` gives each sheet's cell size, the anchor in a
+  cell and its frame count.
+
 ## Progression rules (Gen 6)
 
 - **Experience**: the six growth curves, and base exp × level / 7 split between
