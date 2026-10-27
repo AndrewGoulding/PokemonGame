@@ -9831,7 +9831,7 @@
     PACK_CARDS = 9, TOKENS_PER_CARD = 3, TOKEN_UP = { c: 50, r: 15, s: 10, u: 5 };
   // (the duelist level each pack's sold from: the weaker Spells', Traps' and monsters' from the start; the rest as you
   // rise, the stronger Spells and Traps with Blue-Eyes White Dragon's)
-  const PACK_LEVEL = { darkhole: 1, spellbinding: 1, redeyes: 1, darkmagician: 10, trihorned: 15, blueeyes: 20, raigeki: 20, traphole: 20, necrofear: 25, skull: 30, jinzo: 35 };
+  const PACK_LEVEL = { darkhole: 1, spellbinding: 1, redeyes: 1, darkmagician: 5, trihorned: 10, raigeki: 15, traphole: 15, blueeyes: 20, necrofear: 25, skull: 30, jinzo: 35 };
   // (the packs before these, a save's: each a Pack Token, for one of these)
   const OLD_PACK_ITEMS = ["legend-of-blue-eyes-pack", "metal-raiders-pack", "spell-ruler-pack", "pharaohs-servant-pack", "labyrinth-of-nightmare-pack",
     "ultimate-great-moth-pack", "gate-guardian-pack", "des-gardius-pack", "dark-ruler-ha-des-pack", "gilford-pack", "berserk-dragon-pack",
@@ -10050,7 +10050,7 @@
   // Domino High's three other pupils: each duels with a deck of the few boosters they've opened, the beginner's
   // packs (window.YUGIOH_SETS): four Red-Eyes Black Dragon packs, a Dark Hole and a Spellbinding Circle, nine cards a
   // pack, their Commons and Rares only (they've traded the rest away), 40 of them as they came (three of a card at
-  // most, about two dozen monsters, Commons that need no Tribute), filled with more Commons from the same sets. Weaker than Yugi's and
+  // most, about two dozen monsters, Commons that need no Tribute, 700 ATK and 900 DEF at most), filled with more Commons from the same sets. Weaker than Yugi's and
   // his friends' decks, as a beginner's is. Each pupil's packs are their own (seeded by who they are), so their deck
   // is the same every time.
   function boosterDeck(seedText) {
@@ -10068,8 +10068,9 @@
     const lv = (no) => C[no][5] || 0;
     const isMon = (no) => ["normal", "effect", "ritual"].includes(C[no][2]) && !(DM.effectOf(no) || {}).specialOnly;
     const take = (no) => { if ((count[no] || 0) >= 3 || deck.length >= 40) return false; count[no] = (count[no] || 0) + 1; deck.push(no); return true; };
-    // (the monsters as they came, Commons that need no Tribute; then the Spells and Traps, and more monsters to make 40)
-    const weak = (no) => isMon(no) && lv(no) <= 4 && R[no] === "c";
+    // (the monsters as they came, Commons that need no Tribute, 700 ATK and 900 DEF at most; then the Spells and Traps,
+    // and more monsters to make 40)
+    const weak = (no) => isMon(no) && lv(no) <= 4 && R[no] === "c" && C[no][6] <= 700 && C[no][7] <= 900;
     for (const no of nos.filter(weak)) { if (deck.length >= 24) break; take(no); }
     for (const no of nos.filter((no) => !isMon(no))) take(no);
     for (const no of nos.filter(weak)) take(no);

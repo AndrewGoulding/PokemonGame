@@ -3252,8 +3252,8 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   Skull** and **Jinzo**, each pack named for one of its Secret Rares (a card's power: for a monster, its ATK and DEF and
   how widely played the card is; for a Spell or Trap, how widely played; each about 150 to 200 cards, its rarities its
   own: three Secret Rares, about 6% Ultra, 10% Super and 20% Rare, the rest Common). Your **Duelist Level** opens them:
-  Dark Hole, Spellbinding Circle and Red-Eyes Black Dragon from the start, Dark Magician at level 10, Tri-Horned Dragon
-  at 15, Blue-Eyes White Dragon, Raigeki and Trap Hole at 20, Dark Necrofear at 25, Summoned Skull at 30 and Jinzo at
+  Dark Hole, Spellbinding Circle and Red-Eyes Black Dragon from the start, Dark Magician at level 5, Tri-Horned Dragon
+  at 10, Raigeki and Trap Hole at 15, Blue-Eyes White Dragon at 20, Dark Necrofear at 25, Summoned Skull at 30 and Jinzo at
   35. Every duel earns EXP toward it (100 for beating Yugi, Joey, Téa or Tristan, 60 for one of the other pupils, 25
   for a loss; 50 EXP from level 1 to 2, and each level 10 more than the one before), shown with your level at the top
   of the Trunk's INVENTORY. ₽300 a pack: the packs down the left as GX shows them (each a card from its set in a pack's
@@ -3419,9 +3419,9 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   duels only with Cyber Commander that season, has it with the machines of Duelist Kingdom, Bandit Keith's among them.
   Domino High's three other pupils duel too, each with a beginner's deck from the few boosters they've opened
   (`boosterDeck` in `ui/game.js`): four Red-Eyes Black Dragon packs, a Dark Hole and a Spellbinding Circle, their
-  Commons and Rares only, Common monsters that need no Tribute, as they came, filled with more Commons from those
+  Commons and Rares only, Common monsters that need no Tribute (700 ATK and 900 DEF at most), as they came, filled with more Commons from those
   packs: far weaker than Yugi's and his friends' (each of whom beats them almost every time); each
-  pupil's packs are their own, so their deck is the same each time.pupil's packs are their own, so their deck is the same each time. You duel with your Trunk's deck, of 40 cards at least: there's no deck
+  pupil's packs are their own, so their deck is the same each time. You duel with your Trunk's deck, of 40 cards at least: there's no deck
   to borrow, you build your first from booster packs. The duel screen (`DuelScreen`, in `ui/bag-screen.js`) is GX Duel Academy's, its
   graphics from that cartridge (`assets/yugioh/duel/`): the field in perspective, the Gym's boards under it and the
   academy's mat between the two sides, the life points, the phases down the left (the one you're in lit) with the
