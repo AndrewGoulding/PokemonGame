@@ -430,6 +430,8 @@
     for (const k of ["gotEventTickets", "enableShipNavelRock", "enableShipBirthIsland", "shownMysticTicket", "shownAuroraTicket",
       "worldMapNavelRock", "worldMapBirthIsland", "foughtHoOh", "hoOhFlewAway", "foughtLugia", "lugiaFlewAway", "foughtDeoxys", "deoxysFlewAway"]) delete player.flags[k];
     player.look = lookOf(data.look);
+    // (Your race in the other realms, data/type-chart.js's REALM_RACES; saves from before races have none yet.)
+    if (data.race && (window.REALM_RACES || []).some((r) => r.id === data.race)) player.race = data.race;
     player.rival = String(data.rival || RIVAL_NAME).slice(0, 12);
     let loc = data.location;
     if (loc && /^(NavelRock|BirthIsland)_/.test(loc.map)) loc = VERMILION_DOCK;

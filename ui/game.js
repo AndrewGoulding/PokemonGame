@@ -289,6 +289,7 @@
     show("intro");
     const r = await Intro.oakSpeech();
     player = old ? Player.newGamePlus(old, r.name, r.look) : Player.create(r.name, r.look);   // the rival is Gary (Player.RIVAL_NAME)
+    player.race = r.race;
     await persist();
   }
 
@@ -9729,11 +9730,21 @@
   // In Kamurocho you start alone; Kiryu joins when you ask him, and Majima once you've beaten him. Walking its streets
   // (not the Empty Lot) you're jumped now and then (REALM_ENCOUNTERS); fall, and you wake by the Time Machine with
   // half your money gone.
+  // You fight as your race (player.race: REALM_RACES); a party saved before that had you as plain "you", and
+  // becomes your race at the same level and EXP.
   function realmParty(realm) {
     const all = player.flags.realmParty = player.flags.realmParty || {};
-    if (!all[realm]) all[realm] = { party: [RealmBattle.recruit("you", 1)], items: { staminan: 3 } };
+    const me = player.race && window.REALM_FIGHTERS[player.race] ? player.race : "you";
+    if (!all[realm]) all[realm] = { party: [RealmBattle.recruit(me, 1)], items: { staminan: 3 } };
+    const rec = all[realm].party[0];
+    if (rec.id === "you" && me !== "you") {
+      rec.id = me;
+      const s = RealmBattle.stats(me, rec.lv);
+      rec.hp = Math.min(rec.hp, s.hp); rec.mp = Math.min(rec.mp, s.mp);
+    }
     return all[realm];
   }
+  const raceName = () => { const r = (window.REALM_RACES || []).find((x) => x.id === player.race); return r ? r.name : null; };
   const inRealmParty = (realm, id) => !!(player.flags.realmParty && player.flags.realmParty[realm] && player.flags.realmParty[realm].party.some((m) => m.id === id));
   const realmName = (rec) => window.REALM_FIGHTERS[rec.id].name || player.name;
   let realmQuiet = 0;   // (steps before the next fight can start: a few after each one)
@@ -9906,7 +9917,9 @@
     const P = realmParty(realm), S = window.REALM_SKILLS, F = window.REALM_FIGHTERS;
     for (const rec of P.party) {
       const s = RealmBattle.stats(rec.id, rec.lv);
-      await say([realmName(rec) + "  Lv " + rec.lv + "  (" + F[rec.id].elements.join("/") + ")\nHP " + rec.hp + "/" + s.hp + "  MP " + rec.mp + "/" + s.mp,
+      const race = F[rec.id].name || !raceName() ? "" : " the " + raceName();
+      await say([realmName(rec) + race + "  Lv " + rec.lv + (race ? "\n" + F[rec.id].elements.join("/") + "  " : "  (" + F[rec.id].elements.join("/") + ")\n") +
+        "HP " + rec.hp + "/" + s.hp + "  MP " + rec.mp + "/" + s.mp,
         "Attack " + s.atk + "  Defence " + s.def + "\nAgility " + s.agi + "  Wisdom " + s.wis,
         "Skills: " + (RealmBattle.skillsAt(rec.id, rec.lv).map((k) => S[k].name).join(", ") || "none") + "\nNext level: " + (RealmBattle.expFor(rec.lv + 1) - rec.exp) + " EXP"]);
     }
@@ -15588,6 +15601,12 @@
         if ((await title()) !== "back") break play;
         show("intro");
       }
+    }
+    // (A game saved before there were races: pick yours now.)
+    if (!player.race && window.REALM_RACES) {
+      show("intro");
+      player.race = await Intro.chooseRace(player.name);
+      await persist();
     }
     lastTick = Date.now();
     await explore();

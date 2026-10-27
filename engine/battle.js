@@ -4115,7 +4115,7 @@
     if (usable.length && r() < (f.boss ? 0.5 : 0.34)) return { act: "skill", skill: usable[Math.floor(r() * usable.length)], target: targets[Math.floor(r() * targets.length)] };
     return { act: "attack", target: targets[Math.floor(r() * targets.length)] };
   }
-  const STATUS_TEXT = { sleep: " fell asleep!", poison: " was poisoned!" };
+  const STATUS_TEXT = { sleep: " fell asleep!", stun: " is stunned!", poison: " was poisoned!" };
 
   // One turn. `choices`: for each ally (in order; a fallen one's is skipped), { act: "attack" | "skill" | "defend" |
   // "item", target (an index: a foe's, or an ally's for healing), skill, item }; or "run". -> the steps.
@@ -4146,6 +4146,13 @@
       if (who.status === "sleep") {
         if (r() < 0.5) { who.status = null; say(who.name + " woke up!"); }
         else { say(who.name + " is fast asleep."); continue; }
+      }
+      // (Stunned: blinded or dazed, a turn or two at most.)
+      if (who.status === "stun") {
+        say(who.name + " is stunned and can't move!");
+        who.stunTurns = (who.stunTurns || 0) + 1;
+        if (who.stunTurns >= 2 || r() < 0.5) { who.status = null; who.stunTurns = 0; }
+        continue;
       }
       act(b, who, c, say);
       checkOver(b);

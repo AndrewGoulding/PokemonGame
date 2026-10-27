@@ -4,7 +4,8 @@
 //
 //   await Intro.movie();                  // copyright, Game Freak, Gengar vs Nidorino (A/Start skips)
 //   await Intro.titleScreen();            // -> "start", or "timeout" to replay the movie
-//   await Intro.oakSpeech()               // -> { name, look }
+//   await Intro.oakSpeech()               // -> { name, look, race }
+//   await Intro.chooseRace(name)          // -> a race's id (REALM_RACES), on the race page alone
 //
 // Frame counts are the GBA's (60 a second). There's no sound.
 // Depends on: window.Screen (text box and menus), window.WORLD_TEXT-style
@@ -786,6 +787,105 @@
     await wait(80);
   }
 
+  // ---------- Your race (data/type-chart.js's REALM_RACES) ----------
+  //
+  // A page of its own, after your name: left and right go through the races (Hyrule's four, then the Dragon
+  // World's three), each with its portrait or crest, elements, stats at level 1 and skills, and its description in
+  // the text box; A picks one (YES / NO to be sure). -> the race's id. Your race is who you are in the realms'
+  // battles (Kamurocho's and on); the Pokémon realm doesn't mind.
+  const racePics = {};
+  function crest(kind, color, x, y) {
+    g.save();
+    g.translate(x, y);
+    g.fillStyle = color; g.strokeStyle = "#fff"; g.lineWidth = 1;
+    const path = (pts) => { g.beginPath(); pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py))); g.closePath(); g.fill(); g.stroke(); };
+    if (kind === "triforce") { path([[32, 8], [44, 30], [20, 30]]); path([[20, 30], [32, 52], [8, 52]]); path([[44, 30], [56, 52], [32, 52]]); }
+    if (kind === "leaf") {
+      g.beginPath(); g.moveTo(32, 6); g.quadraticCurveTo(58, 26, 32, 56); g.quadraticCurveTo(6, 26, 32, 6); g.fill(); g.stroke();
+      g.beginPath(); g.moveTo(32, 12); g.lineTo(32, 58); for (const t of [20, 30, 40]) { g.moveTo(32, t + 4); g.lineTo(22, t - 2); g.moveTo(32, t + 4); g.lineTo(42, t - 2); } g.stroke();
+    }
+    if (kind === "fin") {
+      g.beginPath(); g.moveTo(32, 6); g.bezierCurveTo(50, 28, 52, 40, 32, 56); g.bezierCurveTo(12, 40, 14, 28, 32, 6); g.fill(); g.stroke();
+      g.beginPath(); g.moveTo(20, 40); g.quadraticCurveTo(32, 30, 44, 40); g.moveTo(22, 47); g.quadraticCurveTo(32, 38, 42, 47); g.stroke();
+    }
+    if (kind === "moon") {
+      g.beginPath(); g.arc(30, 32, 22, 0, Math.PI * 2); g.arc(38, 28, 18, 0, Math.PI * 2, true); g.fill("evenodd");
+      path([[46, 40], [49, 47], [56, 48], [50, 52], [52, 59], [46, 55], [40, 59], [42, 52], [36, 48], [43, 47]]);
+    }
+    g.restore();
+  }
+  async function racePage(name) {
+    const races = window.REALM_RACES, F = window.REALM_FIGHTERS, S = window.REALM_SKILLS;
+    for (const r of races) if (r.pic && !racePics[r.id]) { const i = new Image(); i.src = r.pic; racePics[r.id] = i; }
+    const top = {};
+    for (const r of races) for (const k in F[r.id].base) top[k] = Math.max(top[k] || 0, F[r.id].base[k]);
+    const STATS = [["hp", "HP"], ["mp", "MP"], ["atk", "ATK"], ["def", "DEF"], ["agi", "AGI"], ["wis", "WIS"]];
+    let at = 0, t = 0;
+    if (fade.level < 16) await fadeTo("#000", fade.level, 16, 0);
+    const was = paint;
+    paint = () => {
+      const r = races[at], f = F[r.id];
+      g.fillStyle = "#1c2030"; g.fillRect(0, 0, W, H);
+      g.fillStyle = r.color; g.globalAlpha = 0.25; g.fillRect(0, 16, W, H - 16); g.globalAlpha = 1;
+      g.fillStyle = BAR; g.fillRect(0, 0, W, 16);
+      text("CHOOSE YOUR RACE", 6, 3, { bold: true });
+      text("◀ " + (at + 1) + "/" + races.length + " ▶", 234, 3, { bold: true, align: "right" });
+      // (The picture, bobbing a little; the text box covers the page below y 112.)
+      const bob = Math.floor(t / 30) % 2;
+      g.fillStyle = "#0008"; g.fillRect(6, 20, 68, 68);
+      g.fillStyle = r.color; g.fillRect(8, 22, 64, 64);
+      const pic = racePics[r.id];
+      if (pic && pic.complete && pic.naturalWidth) g.drawImage(pic, 8, 22 - bob, 64, 64);
+      else if (r.crest) crest(r.crest, "#fff8", 8, 22 - bob);
+      text(r.name, 82, 18, { bold: true, size: 14 });
+      text("of " + (r.home === "Hyrule" ? "Hyrule" : "the " + r.home) + " · " + f.elements.join("/"), 82, 36, { color: "#e8e8e8", size: 8 });
+      STATS.forEach(([k, label], i) => {
+        const x = i < 3 ? 82 : 160, y = 52 + (i % 3) * 12, v = f.base[k];
+        text(label, x, y, { size: 7, bold: true });
+        g.fillStyle = "#0006"; g.fillRect(x + 20, y + 2, 40, 5);
+        g.fillStyle = r.color; g.fillRect(x + 20, y + 2, Math.round(40 * v / top[k]), 5);
+        text(String(v), x + 63, y, { size: 7 });
+      });
+      // (Its skills and the levels they come at, wrapped to the page.)
+      g.font = "7px 'Trebuchet MS', Verdana, sans-serif";
+      const lines = [""];
+      for (const w of f.skills.map(([lv, k]) => S[k].name.replace(/ /g, " ") + " (" + lv + ")").join(", ").split(" ")) {
+        const l = lines[lines.length - 1], next = l ? l + " " + w : w;
+        if (l && g.measureText(next).width > W - 14) lines.push(w); else lines[lines.length - 1] = next;
+      }
+      text(lines.slice(0, 2).join("\n"), 7, 91, { size: 7, color: "#ffe890", lineHeight: 9 });
+    };
+    const ticker = () => { t++; };
+    actors.add(ticker);
+    await fadeTo("#000", 16, 0, 0);
+    let race = null;
+    while (!race) {
+      show(races[at].text);
+      const k = await window.GbaMenus.keys((k) => (["left", "right", "up", "down", "a"].includes(k) ? k : undefined));
+      if (k === "a") {
+        if (window.GameAudio && window.GameAudio.se) window.GameAudio.se("se_select");
+        const r = races[at];
+        if (await window.Screen.yesNo((name ? name + ", you" : "You") + " are " + (/^[AEIOU]/.test(r.name) ? "an " : "a ") + r.name + "?")) race = r.id;
+        continue;
+      }
+      at = (at + (k === "left" || k === "up" ? races.length - 1 : 1)) % races.length;
+      if (window.GameAudio && window.GameAudio.se) window.GameAudio.se("se_select");
+    }
+    show("");
+    await fadeTo("#000", 0, 16, 0);
+    actors.delete(ticker);
+    paint = was;
+    return race;
+  }
+  // The race page on its own (a game saved before there were races): -> the race's id.
+  async function chooseRace(name) {
+    start();
+    fade = { color: "#000", level: 16 };
+    const race = await racePage(name);
+    stop();
+    return race;
+  }
+
   // 3. Prof. Oak.
   async function speech() {
     if (window.GameAudio) window.GameAudio.music("mus_new_game_intro");
@@ -893,6 +993,13 @@
     }
     show("");
 
+    // Your race: who you'll be in the other realms.
+    await say(["Now, " + name + ", the realms beyond\nthis one are home to many peoples.", "Tell me, where do your roots lie?"]);
+    const race = await racePage(name);
+    await fadeTo("#000", 16, 0, 0);
+    const R = window.REALM_RACES.find((r) => r.id === race);
+    await say("A" + (/^[AEIOU]/.test(R.name) ? "n " : " ") + R.name + "! Splendid!");
+
     // No rival here (FireRed introduces him at this point): you slide back to
     // the middle, and off you go.
     await until((t) => { s.picX = s.platformX = Math.max(0, 60 - (t + 1) * 2); return t >= 29; });
@@ -921,7 +1028,7 @@
     await Promise.all([darken, whiten, shrink]);
     show("");
     await fadeTo("#000", 0, 16, 2);
-    return { name, look };
+    return { name, look, race };
   }
 
   async function oakSpeech() {
@@ -941,6 +1048,7 @@
     movie: async () => { await movie(); },
     titleScreen: async () => { const r = await titleScreen(); return r; },
     oakSpeech,
+    chooseRace,
     stop
   };
 })();

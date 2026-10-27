@@ -7182,7 +7182,8 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   for (const id in window.REALM_FOES) for (const s of window.REALM_FOES[id].skills) assert(S[s], id + "'s " + s);
   let turns = 0;
   for (let g = 0; g < 60; g++) {
-    const recs = [R.recruit("you", 1 + g % 8), R.recruit("kiryu", 3 + g % 8)].concat(g % 2 ? [R.recruit("majima", 8)] : []);
+    const races = window.REALM_RACES.map((r) => r.id).concat("you");
+    const recs = [R.recruit(races[g % races.length], 1 + g % 8), R.recruit("kiryu", 3 + g % 8)].concat(g % 2 ? [R.recruit("majima", 8)] : []);
     const b = R.create(recs.map((r) => R.member(r, "Red")), g % 3 ? groups[g % groups.length][1] : ["majima"], { seed: g + 1 });
     b.items = { staminan: 2 };
     for (let n = 0; !b.over; n++) {
@@ -7194,5 +7195,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   }
   const rec = R.recruit("you", 1), ups = R.gainExp(rec, R.expFor(5));
   assert(rec.lv === 5 && ups.length === 4 && ups.some((u) => u.learned.includes("rush")));
+  // (Each race is a fighter of its own, levelling up through all its skills.)
+  for (const r of window.REALM_RACES) { const x = R.recruit(r.id, 1); R.gainExp(x, R.expFor(20)); assert.strictEqual(R.skillsAt(r.id, x.lv).length, 7, r.id); }
   console.log("ok: realm battles, 60 of Kamurocho's fights finished (" + turns + " turns)");
 }

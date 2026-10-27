@@ -3705,7 +3705,7 @@ taken from a Dragon Quest cartridge.
   in 32 is a critical hit (attack times 0.95 to 1.05, whatever the defence), and one in 32 misses. A skill multiplies
   that by its power. Elements multiply by `REALM_TYPE_CHART` against the target's elements, and by 1.25 for one of
   the user's own elements. Magic and healing skills do a set range, plus up to half again for wisdom.
-- **Status**: sleep (a turn's lost, half a chance a turn to wake) and poison (an eighth of HP at the end of each
+- **Status**: sleep (a turn's lost, half a chance a turn to wake), stun (a turn or two lost) and poison (an eighth of HP at the end of each
   turn). Guard skills raise the user's defence by half for the rest of the fight.
 - **Winning**: the foes' EXP is split between those still standing, and their money is yours. EXP to reach level
   L is 10 × (L − 1)^2.5. Each level adds that fighter's growth to every stat and may teach a skill. Anyone who fell
@@ -3739,8 +3739,32 @@ taken from a Dragon Quest cartridge.
   Host Essence of Door Slamming (it can knock you out cold: sleep), a Biker Essence of Throwing, a Yakuza Grunt
   Essence of Wall Smashing and Mr. Shakedown Essence of No Mercy.
 
-  The engine is `RealmBattle` at the end of `engine/battle.js` (headless: a turn in, its steps out, each with its text and everyone's HP and MP after it); the
+- **The code**: the engine is `RealmBattle` at the end of `engine/battle.js` (headless: a turn in, its steps out, each with its text and everyone's HP and MP after it); the
   screen and the scripts are in `ui/game.js` (`realmFight`), and the party is saved in `flags.realmParty`.
+- **Your race**: you fight as the race you chose at the start (below), with its elements, stats and skills, and
+  not as plain "you" (whose Essence skills above are for a game with no race yet). A Kamurocho party saved before
+  races keeps your level and EXP and becomes your race.
+
+### Your race (the character customizer)
+
+A new game asks your race after your name, on a page of its own in Oak's speech (`ui/intro.js`'s `racePage`):
+left and right go through the seven, each with its portrait (the Dragon World's, from Buu's Fury) or crest (Hyrule's,
+drawn on the page), its home, element, stats at level 1 and skills with the levels they come at, and its description
+in the text box; A and YES pick it. A game saved before races asks on CONTINUE. Your race is `player.race`; each is
+a fighter in `REALM_FIGHTERS` (by its id), and `REALM_RACES` lists them for the page. Hyrule's four are for the Zelda
+realm to come, the Dragon World's three for the Dragon Ball realm; until then they fight in Kamurocho. The skill
+names are their series' own (and a few of this game's: Fairy Companion, Electric Barrier, Nayru's Wave, Tidal Fins,
+Desert Stance, Gerudo Fang, Belly Bounce, Saiyan Pride, Super Saiyan Rage); what each does is this game's own.
+
+| Race (element) | Strengths | Skills (level) |
+|---|---|---|
+| Hylian (Light) | balanced, some magic | Spin Attack (1, all foes), Hylian Shield (3, guard), Fairy's Blessing (5, heal), Din's Fire (8, Fire, all), Light Arrow (11), Great Spin Attack (15, all), Master Sword Beam (20) |
+| Kokiri (Grass) | quickest, frail, a healer | Fairy Slingshot (1), Fairy Companion (2, heal), Deku Nut (4, stun), Deku Seed Volley (7, all), Saria's Song (10, sleep), Kokiri Jump Attack (13), Great Deku Tree's Blessing (17, big heal) |
+| Zora (Water) | most MP and wisdom | Boomerang Fins (1), Healing Waters (2, heal), Zora Scale (4, guard), Electric Barrier (7, Electric, all), Nayru's Wave (10), Mipha's Grace (13, big heal), Tidal Fins (18, all) |
+| Gerudo (Ground) | strong and sturdy | Scimitar Slash (1, Steel), Desert Stance (3, guard), Twin Scimitars (5, Steel, all), Sandstorm (8, all), Fire Arrow (11), Urbosa's Fury (14, Electric, all), Gerudo Fang (19) |
+| Human (Neutral) | quick, every technique | Wolf Fang Fist (1), Solar Flare (3, stun), Afterimage (5, guard), Kamehameha (7), Destructo Disc (10, Steel), Tri-Beam (14, all), Spirit Ball (19, Light) |
+| Majin (Psychic) | most HP, slow, heals itself | Rubber Punch (1), Regeneration (2, self heal), Belly Bounce (4, guard), Candy Beam (6), Angry Explosion (10, all), Absorption (14, Dark, big self heal), Vanishing Ball (19, Dark, all) |
+| Saiyan (Fire) | hardest hitter, little magic | Ki Blast (1), Meteor Smash (3), Saiyan Pride (5, guard), Galick Gun (8, Dark), Big Bang Attack (11, all), Final Flash (15, Light), Super Saiyan Rage (20) |
 
 ## Progression rules (Gen 6)
 
