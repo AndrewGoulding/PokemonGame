@@ -432,6 +432,12 @@
     player.look = lookOf(data.look);
     // (Your race in the other realms, data/type-chart.js's REALM_RACES; saves from before races have none yet.)
     if (data.race && (window.REALM_RACES || []).some((r) => r.id === data.race)) player.race = data.race;
+    // (And how you look: the character creator's parts and colours, PLAYER_LOOK_PARTS and LOOK_COLOURS.)
+    const a = data.appearance, parts = window.PLAYER_LOOK_PARTS || {};
+    if (player.race && a && typeof a === "object" && parts[a.body]) {
+      player.appearance = { body: a.body, head: parts[a.head] ? a.head : null };
+      for (const k of ["hair", "outfit", "trim", "skin"]) player.appearance[k] = typeof a[k] === "string" ? a[k].slice(0, 20) : "own";
+    }
     player.rival = String(data.rival || RIVAL_NAME).slice(0, 12);
     let loc = data.location;
     if (loc && /^(NavelRock|BirthIsland)_/.test(loc.map)) loc = VERMILION_DOCK;

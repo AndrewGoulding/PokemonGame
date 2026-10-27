@@ -1220,12 +1220,12 @@
   const JUMP_OFF_BIRD = [-2, -4, -5, -6, -7, -8, -8, -8, -7, -7, -6, -5, -3, -2, 0, 2, 4, 8];
 
   const look = () => "player_" + (ctx.player.look || "custom");
-  // The player as one of its sheets' frames, centred at (x, y).
-  const standing = (facing) => ({ sheet: look(), w: 16, frame: frameFor(facing, false, 0, 9), flip: facing === "right", x: PLAYER_CX, y: PLAYER_CY });
+  // The player as one of its sheets' frames, centred at (x, y). (Your look from the character creator, below: 32 wide.)
+  const standing = (facing) => ({ sheet: mine() ? "player_look" : look(), w: mine() ? 32 : 16, frame: frameFor(facing, false, 0, 9), flip: facing === "right", x: PLAYER_CX, y: PLAYER_CY });
   const riding = (x, y) => ({ sheet: look() + "_ride", w: 32, frame: 2, x, y });
   // The field-move pose (sAnim_FieldMove), or standing still for a look without one.
   async function fieldMovePose() {
-    const has = ready(spriteImage(look() + "_item"));
+    const has = !mine() && ready(spriteImage(look() + "_item"));
     await everyFrame((t) => {
       fly.player = has ? { sheet: look() + "_item", w: 16, frame: t < 16 ? t >> 2 : 4, x: PLAYER_CX, y: PLAYER_CY } : standing(me.facing);
       return t >= 23;
@@ -1849,6 +1849,62 @@
     }
     if (sunk) drawHotSpring(x + w / 2, y + sh);
   }
+  // ---------- Your look (the character creator: ui/intro.js's race page) ----------
+  //
+  // You're put together from data/type-chart.js's PLAYER_LOOK_PARTS (tools/build-player-looks.py): a body and a
+  // head on it, or a whole character. Each part's sheet is its own colours, then 16 masks: its hair, clothes, trim
+  // and skin, four shades each, darkest first; each mask is filled with that shade of the colour you chose
+  // (LOOK_COLOURS), or of the part's own ("own"). Only compositing, never reading pixels back, so it works when the
+  // game's opened straight from disk. -> a sheet of FireRed's nine frames, 32x32 each.
+  // (Riding the Bicycle, surfing and fishing you're still the trainer: no part has those.)
+  const LOOK_ROLES = ["hair", "outfit", "trim", "skin"];
+  function lookParts(a) {
+    const P = window.PLAYER_LOOK_PARTS || {};
+    if (!a || !P[a.body]) return [];
+    return P[a.body].kind === "whole" || !P[a.head] ? [a.body] : [a.body, a.head];
+  }
+  function lookRamp(a, part, role) {
+    const list = (window.LOOK_COLOURS || {})[role === "outfit" || role === "trim" ? "cloth" : role] || [];
+    const c = a[role] && list.find((x) => x[0] === a[role]);
+    return c ? c.slice(2) : (part.own && part.own[role]) || null;
+  }
+  async function composeLook(a) {
+    const names = lookParts(a);
+    if (!names.length) return null;
+    const imgs = names.map((n) => spriteImage("looks/" + n));
+    await Promise.all(imgs.map((i) => i.loaded));
+    const out = document.createElement("canvas"), tmp = document.createElement("canvas");
+    out.width = tmp.width = 288; out.height = tmp.height = 32;
+    const o = out.getContext("2d"), t = tmp.getContext("2d");
+    names.forEach((n, k) => {
+      const img = imgs[k], part = window.PLAYER_LOOK_PARTS[n];
+      if (!ready(img)) return;
+      o.drawImage(img, 0, 0, 288, 32, 0, 0, 288, 32);
+      LOOK_ROLES.forEach((role, r) => {
+        const ramp = part.roles.includes(role) && lookRamp(a, part, role);
+        if (!ramp) return;
+        for (let l = 0; l < 4; l++) {
+          t.globalCompositeOperation = "copy";
+          t.drawImage(img, 0, (1 + r * 4 + l) * 32, 288, 32, 0, 0, 288, 32);
+          t.globalCompositeOperation = "source-in";
+          t.fillStyle = ramp[l];
+          t.fillRect(0, 0, 288, 32);
+          o.drawImage(tmp, 0, 0);
+        }
+      });
+    });
+    return out;
+  }
+  // The look you walk about as (a composeLook sheet; null: the trainer's own). Wes, in Orre, is always Wes.
+  let myLook = null;
+  function setPlayerLook(sheet) {
+    myLook = sheet;
+    if (sheet) Object.assign(sheet, { complete: true, naturalWidth: sheet.width, loaded: Promise.resolve() });
+    if (sheet) images["assets/world/sprites/player_look.png"] = sheet;
+    else delete images["assets/world/sprites/player_look.png"];
+  }
+  const mine = () => !!myLook && !!ctx && (ctx.player.look || "custom") !== "wes";
+
   // ---------- Reflections (Emerald's: src/field_effect_helpers.c SetUpReflection) ----------
   //
   // Someone standing above still water (a pond, a puddle, Sootopolis's deep water, the water under a bridge) or ice
@@ -2059,6 +2115,11 @@
       frame = frameFor(me.facing, !!me.move && !me.move.slip && (me.move.t % TILE) < TILE / 2, me.parity, 9);
     }
     let w = 16, dx = 0, bob = 0;
+    // (Your look, walking or running: its steps, a stride a tile.)
+    if (mine()) {
+      sheet = "player_look"; w = 32; dx = -8;
+      if (me.move && me.move.run) frame = frameFor(me.facing, (me.move.t % TILE) < TILE / 2, me.parity, 9);
+    }
     if (me.avatar === "bike") {
       // The Bicycle's sheet (32 wide): standing, and pedalling while moving.
       sheet = look + "_bike"; w = 32; dx = -8;
@@ -2238,7 +2299,7 @@
     explore, hide, read: (pages) => read(pages), showAreaName, forceStep, refreshPeople: () => loadPeople(),
     act, addObject, removeObject, unbury: (def) => { for (const p of people) if (p.def.id === def.id && p.def.script === def.script) p.unburied = true; }, removePerson, teleport, battleTransition, resume, pokecenterHeal, flyOut, flyIn, escapeRopeOut, escapeRopeIn,
     fadeToBlack: fadeOut, fadeFromBlack: fadeIn, shake,
-    setAvatar, avatar: () => me.avatar, bikeFastest: () => me.avatar === "bike" && (me.bikeRun || 0) >= BIKE_SPEEDS.length - 1, flash, follower: followerApi, rod: setRod, emote: (mark) => { me.emote = mark ? { mark } : null; }, isDark: () => light != null && !flashOn,
+    setAvatar, avatar: () => me.avatar, composeLook, setPlayerLook, lookParts, bikeFastest: () => me.avatar === "bike" && (me.bikeRun || 0) >= BIKE_SPEEDS.length - 1, flash, follower: followerApi, rod: setRod, emote: (mark) => { me.emote = mark ? { mark } : null; }, isDark: () => light != null && !flashOn,
     // What's in front of you: the tile, whoever stands there, and whether
     // it's water you could start surfing on.
     ahead: () => {

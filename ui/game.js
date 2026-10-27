@@ -276,6 +276,7 @@
         savePromptAt = null;
         tick();
         Save.write(player);   // (the game you loaded is the one saved now)
+        await applyLook();
         await message("Loaded " + player.name + "'s game.");
       }
     }
@@ -290,6 +291,24 @@
     const r = await Intro.oakSpeech();
     player = old ? Player.newGamePlus(old, r.name, r.look) : Player.create(r.name, r.look);   // the rival is Gary (Player.RIVAL_NAME)
     player.race = r.race;
+    player.appearance = r.appearance;
+    await persist();
+  }
+
+  // Your look from the character creator (player.appearance: ui/intro.js's race page), as you walk about everywhere.
+  async function applyLook() {
+    Overworld.setPlayerLook(player.appearance ? await Overworld.composeLook(player.appearance) : null);
+  }
+  // The creator again, from a Time Machine: your race, and how you look. (A new race is who you fight as from now
+  // on, at the level you were: realmParty.)
+  async function changeLook() {
+    show("intro");
+    const r = await Intro.chooseRace(player.name, { race: player.race, appearance: player.appearance });
+    player.race = r.race; player.appearance = r.appearance;
+    await applyLook();
+    Screen.say(""); clearMenu();
+    show("world");
+    await Overworld.resume();
     await persist();
   }
 
@@ -9651,7 +9670,10 @@
     const to = window.TIME_MACHINE;
     if (!player.flags.starter) { await say(["It's a strange machine with a clock\non its dome.", "Its door won't open."]); return; }
     await say("It's the Time Machine!\nIts door glows with a strange light.");
-    if (!(await confirm("Step inside and travel beyond\nthe Pokémon realm?"))) return;
+    // (Its mirror: the character creator again.)
+    const v = await ask("What will you do?", [{ label: "Travel", value: "go", className: "action" }, { label: "Change Look", value: "look", className: "action" }, back("Leave")]);
+    if (v === "look") { await changeLook(); return; }
+    if (v !== "go" || !(await confirm("Step inside and travel beyond\nthe Pokémon realm?"))) return;
     await voyage(to.hub, ["The Time Machine whirs to life…", "The years spin past in a blur\nof light…", "Beyond time itself, the machine\ncomes to rest."], "se_warp_in");
     player.flags.realmHubVisited = true;
     await say(["You've arrived at the Realm Hub,\nthe place between the realms!"]);
@@ -9706,7 +9728,8 @@
     await say("It's the Time Machine, standing in\nthe middle of the Empty Lot.");
     for (;;) {
       const v = await ask("What will you do?", [{ label: "Rest", value: "rest", className: "action" }, { label: "Party", value: "party", className: "action" },
-        { label: "Realm Hub", value: "hub", className: "action" }, back("Leave")]);
+        { label: "Look", value: "look", className: "action" }, { label: "Realm Hub", value: "hub", className: "action" }, back("Leave")]);
+      if (v === "look") { await changeLook(); continue; }
       if (v === "rest") {
         for (const rec of realmParty("yakuza").party) { const s = RealmBattle.stats(rec.id, rec.lv); rec.hp = s.hp; rec.mp = s.mp; }
         await fanfare("mus_heal");
@@ -9731,13 +9754,13 @@
   // (not the Empty Lot) you're jumped now and then (REALM_ENCOUNTERS); fall, and you wake by the Time Machine with
   // half your money gone.
   // You fight as your race (player.race: REALM_RACES); a party saved before that had you as plain "you", and
-  // becomes your race at the same level and EXP.
+  // becomes your race at the same level and EXP (as does a party you've changed race since, at a Time Machine).
   function realmParty(realm) {
     const all = player.flags.realmParty = player.flags.realmParty || {};
     const me = player.race && window.REALM_FIGHTERS[player.race] ? player.race : "you";
     if (!all[realm]) all[realm] = { party: [RealmBattle.recruit(me, 1)], items: { staminan: 3 } };
     const rec = all[realm].party[0];
-    if (rec.id === "you" && me !== "you") {
+    if ((rec.id === "you" || (window.REALM_RACES || []).some((r) => r.id === rec.id)) && rec.id !== me && me !== "you") {
       rec.id = me;
       const s = RealmBattle.stats(me, rec.lv);
       rec.hp = Math.min(rec.hp, s.hp); rec.mp = Math.min(rec.mp, s.mp);
@@ -15602,12 +15625,14 @@
         show("intro");
       }
     }
-    // (A game saved before there were races: pick yours now.)
-    if (!player.race && window.REALM_RACES) {
+    // (A game saved before there were races or looks: choose yours now.)
+    if (!player.race || !player.appearance) {
       show("intro");
-      player.race = await Intro.chooseRace(player.name);
+      const r = await Intro.chooseRace(player.name, { race: player.race });
+      player.race = r.race; player.appearance = r.appearance;
       await persist();
     }
+    await applyLook();
     lastTick = Date.now();
     await explore();
   }

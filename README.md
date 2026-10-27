@@ -3745,16 +3745,54 @@ taken from a Dragon Quest cartridge.
   not as plain "you" (whose Essence skills above are for a game with no race yet). A Kamurocho party saved before
   races keeps your level and EXP and becomes your race.
 
-### Your race (the character customizer)
+### The character creator: your race and your look
 
-A new game asks your race after your name, on a page of its own in Oak's speech (`ui/intro.js`'s `racePage`):
-left and right go through the seven, each with its portrait (the Dragon World's, from Buu's Fury) or crest (Hyrule's,
-drawn on the page), its home, element, stats at level 1 and skills with the levels they come at, and its description
-in the text box; A and YES pick it. A game saved before races asks on CONTINUE. Your race is `player.race`; each is
-a fighter in `REALM_FIGHTERS` (by its id), and `REALM_RACES` lists them for the page. Hyrule's four are for the Zelda
-realm to come, the Dragon World's three for the Dragon Ball realm; until then they fight in Kamurocho. The skill
-names are their series' own (and a few of this game's: Fairy Companion, Electric Barrier, Nayru's Wave, Tidal Fins,
-Desert Stance, Gerudo Fang, Belly Bounce, Saiyan Pride, Super Saiyan Rage); what each does is this game's own.
+A new game makes you after your name, on a page of its own in Oak's speech (`ui/intro.js`'s `racePage`). Up and
+down go through what you can choose, left and right change it, A (and YES) is you:
+
+- **Race**: the seven below, each with its element, stats at level 1 and skills (with the levels they come at) on
+  the page and its description in the text box. Your race is `player.race`; each is a fighter in `REALM_FIGHTERS`
+  (by its id), and it's who you fight as in the realms' battles. Hyrule's four are for the Zelda realm to come, the
+  Dragon World's three for the Dragon Ball realm; until then they fight in Kamurocho.
+- **Body and head**: Hyrule's people are a head on a body, any head on any body (The Minish Cap draws its townsfolk
+  and children that way): 16 grown-ups' heads (hair and faces) and 8 bodies (costumes), the children's 8 and 5 for
+  the Kokiri, and Link whole for the Hylians. The Zora have the bald head with a tail-fin drawn on (The Minish Cap has
+  no Zora), short or long. The Dragon World's are whole characters: Goku, Vegeta, Gohan, Kid Gohan and Trunks for the
+  Saiyans; Krillin, Yamcha, Tien, Bulma, Chi-Chi, a townsman and a townswoman for the Humans; Fat Buu, Kid Buu and
+  Super Buu for the Majin.
+- **Colours**: your hair, your tunic or gi, its trim and your skin, each "Original" (the part's own) or one of
+  `LOOK_COLOURS` (15 hair colours, golden for a Super Saiyan; 17 for clothes; each race's own skins: the Zora's
+  river blue, silver, sea green and coral, the Majin's pinks, lilac, grey and blue).
+
+You turn and walk about in the picture as you choose. Your look is `player.appearance` ({ body, head, hair, outfit,
+trim, skin }), and it's you everywhere you walk, in every realm (riding the Bicycle, surfing and fishing you're
+still the trainer, and Wes in Orre is Wes). `ui/overworld.js`'s `composeLook` puts it together when the game starts
+or loads. A game saved before races or looks asks on CONTINUE, and the Time Machines (Pallet Town's, and the one in
+Kamurocho's Empty Lot) have a mirror to change it: a new race is who you fight as from then on, at your level.
+
+**The parts** (`assets/world/sprites/looks/`, built by `tools/build-player-looks.py`, the output committed):
+
+```sh
+python3 tools/build-player-looks.py "<path to Legend of Zelda, The - The Minish Cap (USA).gba>"
+```
+
+Only The Minish Cap's people's sprites are taken; the Dragon World's come from the Dragon Ball realm's people
+sheets already here (Legacy of Goku II's, and Buu's Fury's for the Buus, Fat Buu and Super Buu halved). Each part is
+FireRed's nine frames (standing down, up and left, then two steps each way), 32x32, in 17 rows: the part's own
+colours where nothing's recoloured, then four masks each (darkest shade to lightest) for its hair, clothes, trim and
+skin. A colour is four shades, one for each mask; `composeLook` only composites (never reads pixels back), so it
+works opened from disk. `data/type-chart.js` gets `PLAYER_LOOK_PARTS` (each part's name, kind, roles and its own
+colours) between its markers; each race's choices are `REALM_RACES[..].looks`.
+
+- **How The Minish Cap keeps its sprites** (the USA cartridge; from the zeldaret/tmc decompilation's notes): a
+  table of sprites at `0x0029B4` (16 bytes each: animations, frames, tiles), each frame's tiles counted from a
+  first tile; `gFrameObjLists` at `0x2F3D74` (for each sprite and frame, its OAM pieces: x, y, shape, size, flips,
+  tile); `gExtraFrameOffsets` at `0x9FB770` (where each body frame puts its head); the object palettes' table at
+  `0x133368`. The townsfolk are sprite 58's heads on sprite 57's bodies (palette 62), the children sprite 59
+  (palette 58), Link sprite 1 (palette 22).
+- **Hair, clothes and skin** come from the palette indices (a ramp each), with care where they share one: the
+  townsfolk's brown hair uses the skin's ramp, so a patch of its light shades counts as hair when hair is most of
+  what's round it. The Dragon World's are by colour, hair only on the head and black hair only inside its outline.
 
 | Race (element) | Strengths | Skills (level) |
 |---|---|---|
