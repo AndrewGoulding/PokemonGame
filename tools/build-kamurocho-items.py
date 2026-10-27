@@ -5,12 +5,14 @@
 #
 #   python3 tools/build-kamurocho-items.py   -> assets/kamurocho/items/<item>.png
 #
-#   Staminan           the brown tonic bottle, its yellow label and red stripe, a gold cap
-#   Staminan Spark     the same, its label blue, a spark beside it
-#   Staminan Royale    the dark bottle, its gold label and crown
-#   Toughness Zero     the white health-drink bottle, its blue band
-#   Toughness Infinity the same, its band gold, ∞ on it
-#   Tauriner, +, Maxx  the small Heat-drink bottle: a red label; blue; black and gold
+#   Staminan           Yakuza 0's Staminan X: the amber bottle, its silver cap banded red, its silver label, a red
+#                      band, the big gold X edged in red, its name in red, a red line
+#   Staminan Spark     the same, its bands blue, a lightning bolt for the X
+#   Staminan Royale    the darker bottle, its gold cap and label, red bands and a red crown
+#   Toughness Zero     a stubby health-drink bottle, gold cap, white label between blue bands, a red 0
+#   Toughness Infinity the same, its bands gold, ∞ on it
+#   Tauriner, +, Maxx  the tall brown bottle with the gold cap (Lipovitan D's look, as Tauriner's is): a white label
+#                      and its red band with the name in white; blue, a red plus; black and gold
 #   Rice Ball          an onigiri, its nori wrapped round its foot
 #   Sandwich           a triangle of it, cut: bread, egg and lettuce
 #   Hot Dog            its bun, the sausage, a line of mustard
@@ -41,31 +43,64 @@ def column(d, x0, y0, x1, y1, c):
         k = (x - x0) / max(1, w - 1)
         d.line((x, y0, x, y1), fill=shade(c, 1.25 if k < 0.25 else 0.7 if k > 0.75 else 1.0))
 
-def bottle(body, label, cap, stripe=None, small=False, mark=None):
-    im = Image.new('RGBA', (24, 24), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
-    x0, x1 = (8, 15) if small else (7, 16)
-    top = 9 if small else 7
-    # its neck and cap
-    column(d, 10, top - 3, 13, top, body)
-    column(d, 10, top - 5, 13, top - 4, cap)
-    # its body, its shoulders rounded
-    column(d, x0, top + 1, x1, 21, body)
-    d.point((x0, top + 1), fill=(0, 0, 0, 0)); d.point((x1, top + 1), fill=(0, 0, 0, 0))
-    # the label
-    ly0, ly1 = (13, 18) if small else (11, 18)
-    column(d, x0, ly0, x1, ly1, label)
-    if stripe: d.line((x0, ly0 + 2, x1, ly0 + 2), fill=shade(stripe, 1))
-    if mark == 'crown':
-        for x, y in ((10, 13), (12, 12), (14, 13), (10, 14), (11, 14), (12, 14), (13, 14), (14, 14)): d.point((x, y), fill=(200, 40, 40, 255))
-    if mark == 'inf':
-        for x, y in ((9, 15), (10, 14), (11, 15), (12, 16), (13, 15), (14, 14), (15, 15), (10, 16), (14, 16)): d.point((x, y), fill=(40, 40, 120, 255))
-    # the glint down its left
-    d.line((x0 + 1, top + 3, x0 + 1, ly0 - 1), fill=(255, 255, 255, 200))
-    return im
-
-def spark(im):
-    d = ImageDraw.Draw(im)
-    for x, y in ((19, 4), (19, 5), (19, 6), (18, 5), (20, 5), (20, 9), (21, 10), (20, 10)): d.point((x, y), fill=(255, 248, 140, 255))
+# The bottles, a pixel at a time: the glass (g light, G, h dark, w its glint), the cap (C light, c, d dark), its
+# outline (k), and L where the label goes, each item's own (LABELS, a row a string, the bottle's width).
+def template(x0, x1, cap_rows, neck_rows, shoulder, body_rows, label_rows, base_rows):
+    # (its rows, each 24 wide: the cap over x 10-15, the neck x 11-14, the body x0-x1, all outlined)
+    def row(a, b, fill):
+        r = ['.'] * 24; r[a - 1] = r[b + 1] = 'k'
+        for x in range(a, b + 1): r[x] = fill(x - a, b - a + 1)
+        return ''.join(r)
+    glass = lambda i, w: 'g' if i == 0 else 'w' if i == 1 else 'h' if i >= w - 2 else 'G'
+    out = ['.' * 10 + 'k' * 6 + '.' * 8]
+    out += [row(10, 15, lambda i, w: 'C' if i == 0 else 'd' if i == w - 1 else 'c')] * cap_rows
+    out += ['.' * 9 + 'k' * 8 + '.' * 7]
+    out += [row(11, 14, glass)] * neck_rows
+    for k in range(shoulder): out.append(row(x0 + shoulder - k, x1 - shoulder + k, glass))
+    out += [row(x0, x1, glass)] * body_rows + [row(x0, x1, lambda i, w: 'L')] * label_rows + [row(x0, x1, glass)] * base_rows
+    out.append('.' * x0 + 'k' * (x1 - x0 + 1) + '.' * (23 - x1))
+    return '\n'.join(r[:24] for r in out)
+TALL = template(8, 17, 2, 2, 2, 2, 8, 3)
+STUBBY = template(7, 17, 1, 1, 2, 2, 7, 2)
+COL = {'S': (232, 232, 238), 's': (190, 192, 204), 'r': (212, 36, 44), 'R': (150, 20, 28), 'y': (248, 208, 64), 'Y': (196, 148, 28),
+       'b': (48, 100, 208), 'B': (24, 56, 144), 'W': (250, 250, 250), 'K': (40, 36, 44)}
+LABELS = {
+    # Staminan X, as Yakuza 0 has it: silver, a red band, the big gold X edged in red, its name in red, a red line
+    'staminan': ["rrrrrrrrrr", "SSSSSSSSSS", "SryyssyyrS", "SSryyyyrSS", "SSryyyyrSS", "SryyssyyrS", "SrSrrSrSrS", "RRRRRRRRRR"],
+    # Spark: its bands blue, a lightning bolt
+    'staminan_spark': ["bbbbbbbbbb", "SSSSSySSSS", "SSSSyySSSS", "SSSyyyyySS", "SSSSSyySSS", "SSSSyySSSS", "SbSbbSbSbS", "BBBBBBBBBB"],
+    # Royale: gold, red bands, a red crown
+    'staminan_royale': ["RRRRRRRRRR", "yyyyyyyyyy", "yyrYyrYryy", "yyrrrrrryy", "yyrrrrrryy", "yyyyyyyyyy", "yRyRRyRyRy", "RRRRRRRRRR"],
+    # Tauriner (Lipovitan D's look): white, its red band with its name in white; Tauriner+ blue, a red plus; Maxx black and gold
+    'tauriner': ["WWWWWWWWWW", "WbbWbbWbbW", "rrrrrrrrrr", "rWWrWWrWWr", "rrrrrrrrrr", "WWWWWWWWWW", "WWbbbbbbWW", "WWWWWWWWWW"],
+    'tauriner_plus': ["WWWWWWWWWW", "WrrWrrWrrW", "bbbbbbbbbb", "bWWbWWbWWb", "bbbbbbbbbb", "WWWWWWrWWW", "WWWWWrrrWW", "WWWWWWrWWW"],
+    'tauriner_maxx': ["KKKKKKKKKK", "KyyKyyKyyK", "yyyyyyyyyy", "yKKyKKyKKy", "yyyyyyyyyy", "KKKKKKKKKK", "KrrKrrKrrK", "KKKKKKKKKK"],
+    # Toughness (a stubby health-drink bottle): Zero white and blue, a red 0; Infinity gold, ∞
+    'toughness_zero': ["bbbbbbbbbbb", "WWWWWWWWWWW", "WWWWrrrWWWW", "WWWWrWrWWWW", "WWWWrrrWWWW", "WWWWWWWWWWW", "bbbbbbbbbbb"],
+    'toughness_infinity': ["yyyyyyyyyyy", "WWWWWWWWWWW", "WWKKWWKKWWW", "WKWWKKWWKWW", "WWKKWWKKWWW", "WWWWWWWWWWW", "yyyyyyyyyyy"],
+}
+def bottle(name, glass, cap, stubby=False, band=None):
+    rows = (STUBBY if stubby else TALL).split("\n")
+    top = 24 - len(rows) - 1
+    im = Image.new('RGBA', (24, 24), (0, 0, 0, 0)); px = im.load()
+    lab = LABELS[name]; ly = None
+    for y, row in enumerate(rows):
+        for x, ch in enumerate(row):
+            Y = y + top
+            if ch == '.': continue
+            if ch == 'k': px[x, Y] = INK
+            elif ch in 'Ccd':
+                # (its cap; a band round its foot, Staminan's red)
+                c = band if band and rows[y + 1].startswith('.' * 9 + 'kk') else cap
+                px[x, Y] = shade(c, {'C': 1.25, 'c': 1.0, 'd': 0.7}[ch])
+            elif ch in 'gGh': px[x, Y] = shade(glass, {'g': 1.3, 'G': 1.0, 'h': 0.65}[ch])
+            elif ch == 'w': px[x, Y] = (255, 236, 200, 255)
+            elif ch == 'L':
+                if ly is None: ly = y
+                x0 = row.index('L'); w = row.count('L'); c = lab[y - ly][x - x0]
+                # (round: lit at its left, shadowed at its right)
+                k = 1.12 if x - x0 == 0 else 0.72 if x - x0 >= w - 2 else 1.0
+                px[x, Y] = shade(COL[c], k)
     return im
 
 def rice_ball():
@@ -126,14 +161,14 @@ def pudding():
     return im
 
 ITEMS = {
-    'staminan': lambda: bottle((150, 84, 32), (240, 208, 56), (216, 176, 64), stripe=(200, 40, 40)),
-    'staminan_spark': lambda: spark(bottle((150, 84, 32), (64, 136, 224), (216, 176, 64), stripe=(255, 255, 255))),
-    'staminan_royale': lambda: bottle((88, 44, 20), (232, 188, 56), (232, 200, 80), mark='crown'),
-    'toughness_zero': lambda: bottle((236, 236, 240), (56, 112, 208), (200, 200, 208), small=True),
-    'toughness_infinity': lambda: bottle((236, 236, 240), (232, 188, 56), (200, 200, 208), small=True, mark='inf'),
-    'tauriner': lambda: bottle((150, 84, 32), (208, 48, 40), (232, 232, 232), small=True),
-    'tauriner_plus': lambda: bottle((150, 84, 32), (48, 96, 200), (232, 232, 232), small=True, stripe=(240, 208, 56)),
-    'tauriner_maxx': lambda: bottle((48, 44, 48), (232, 188, 56), (232, 200, 80), small=True, stripe=(200, 40, 40)),
+    'staminan': lambda: bottle('staminan', (176, 96, 32), (210, 212, 220), band=(208, 40, 44)),
+    'staminan_spark': lambda: bottle('staminan_spark', (176, 96, 32), (210, 212, 220), band=(48, 100, 208)),
+    'staminan_royale': lambda: bottle('staminan_royale', (112, 56, 20), (232, 196, 72)),
+    'toughness_zero': lambda: bottle('toughness_zero', (164, 92, 34), (232, 196, 72), stubby=True),
+    'toughness_infinity': lambda: bottle('toughness_infinity', (164, 92, 34), (232, 196, 72), stubby=True),
+    'tauriner': lambda: bottle('tauriner', (150, 80, 30), (240, 200, 56)),
+    'tauriner_plus': lambda: bottle('tauriner_plus', (150, 80, 30), (240, 200, 56)),
+    'tauriner_maxx': lambda: bottle('tauriner_maxx', (90, 48, 22), (232, 196, 72)),
     'rice_ball': rice_ball, 'sandwich': sandwich, 'hot_dog': hot_dog, 'fried_chicken': fried_chicken,
     'bento': bento, 'pudding': pudding,
 }
