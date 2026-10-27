@@ -4152,7 +4152,11 @@ run without it (`tools/data/roms/` has each cartridge's once it's been run so):
   (LZMA: the ROM's size, each run of bytes read and where, then the bytes; two tools reading one cartridge share its
   file). Run with no cartridge (or its game code, where a tool reads two: `build-dbz-webfoot.py ALFE` or `BG3E`), it
   reads them from there, the same bytes where it read them before, and stops, saying so, should it read one it
-  didn't then.
+  didn't then. A search of the whole cartridge (the Dragon Ball tools look for their maps' headers and sprites' parts
+  so) keeps what it finds, not every byte it looked at (`rom.found`). Kept so far: The Sacred Cards (AY7E, for it and
+  Domino City's map), Legacy of Goku (ALGE), Legacy of Goku II (ALFE), Buu's Fury (BG3E) and Supersonic Warriors
+  (AZJE); still to run once with theirs, Reshef of Destruction (AY8E), GX Duel Academy (BYGE) and Advanced Adventure
+  (BDVE).
 - **The Minish Cap's and Superstar Saga's** (`tools/build-player-looks.py`): the frames it takes, already decoded, in
   `tools/data/minish-cap-people.*` and `tools/data/superstar-saga-people.*`.
 - **Pokémon Colosseum's text** (`tools/build-colosseum-text.js`): `assets/text/colosseum.json` keeps it all; with

@@ -310,7 +310,7 @@ js = START + ''.join('window.WORLD_MAPS[%s] = %s;\n' % (json.dumps(k), json.dump
      'window.RESHEF = ' + json.dumps(INFO, separators=(',', ':')) + ';\n' + END
 path = os.path.join(ROOT, 'data/emerald-maps.js')
 text = open(path, encoding='utf8').read()
-a = text.find(START)
-if a >= 0: text = text[:a] + text[text.index(END, a) + len(END):]
-open(path, 'w', encoding='utf8').write(text + js)
+a = text.find(START)   # (in place, where it was; at the end the first time)
+text = text[:a] + js + text[text.index(END, a) + len(END):] if a >= 0 else text + js
+open(path, 'w', encoding='utf8').write(text)
 print(len(maps), 'screens,', len(people), 'people,', portraits, 'portraits;', len(areas), 'places; groups', groups)

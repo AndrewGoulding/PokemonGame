@@ -97,11 +97,11 @@ def merge_index(folder, entries):
     json.dump(dict(sorted(index.items())), open(path, 'w'), indent=0 if folder == 'maps' else None, separators=(',', ':'))
 
 # ---------- Maps ----------
-maps = []
-for o in range(0, len(rom) - 0x34, 4):
+def is_map(o):
     ws, hs, wt, ht = struct.unpack_from('<HHHH', rom, o)
-    if 1 <= ws <= 20 and 1 <= hs <= 20 and wt == ws * 30 and ht == hs * 20 and all(isptr(R(o + 0x1c + 4 * k)) for k in range(6)):
-        maps.append(o)
+    return 1 <= ws <= 20 and 1 <= hs <= 20 and wt == ws * 30 and ht == hs * 20 and all(isptr(R(o + 0x1c + 4 * k)) for k in range(6))
+# (Searches of the whole cartridge: what they find is kept, tools/lib/romcache.py's found.)
+maps = rom.found('maps', lambda: [o for o in range(0, len(rom) - 0x34, 4) if is_map(o)])
 entries = {}
 for n, e in enumerate(maps):
     ws, hs, wt, ht = struct.unpack_from('<HHHH', rom, e)
@@ -156,9 +156,7 @@ def is_part(p):
     if not isptr(p): return False
     x, y, w, h, count, flags, shape, size = struct.unpack_from('<hhHHBBBB', rom, p & 0x1ffffff)
     return SIZES.get((shape, size)) == (w, h) and count == w * h // 64 and isptr(R(p + 12))
-parts = set()
-for o in range(0, len(rom) - 16, 4):
-    if is_part(o + 0x08000000): parts.add(R(o + 12))
+parts = set(rom.found('parts', lambda: sorted({R(o + 12) for o in range(0, len(rom) - 16, 4) if is_part(o + 0x08000000)})))
 starts = sorted(parts)
 def frames_of(p):
     x, y, w, h, count, flags = struct.unpack_from('<hhHHBB', rom, p & 0x1ffffff); data = R(p + 12)

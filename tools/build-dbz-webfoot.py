@@ -132,10 +132,9 @@ def rgba(idx, pal):
 
 # ---------- Maps ----------
 def find_maps():
-    out = []
-    for o in range(0, len(rom) - 0x50, 4):
-        if all(isptr(R(o + 0x14 + 4 * k)) and R(R(o + 0x14 + 4 * k)) == G['layer_fn'] for k in range(4)): out.append(o + 0x08000000)
-    return out
+    # (A search of the whole cartridge: what it finds is kept, tools/lib/romcache.py's found.)
+    return rom.found('maps', lambda: [o + 0x08000000 for o in range(0, len(rom) - 0x50, 4)
+                                      if all(isptr(R(o + 0x14 + 4 * k)) and R(R(o + 0x14 + 4 * k)) == G['layer_fn'] for k in range(4))])
 def map_tiles(m):
     raw = blob(R(m + 0x48)); lst = list(struct.unpack('<%dH' % (len(raw) // 2), raw))
     for i in range(1, len(lst)): lst[i] = (lst[i] + lst[i - 1] + 1) & 0xffff
@@ -210,14 +209,17 @@ def build_map(m):
 
 def map_names(maps):
     # Each area's entry (its name, a string number, at +c) points at the place in its level that points at the map.
-    where = {}
-    for o in range(0, len(rom) - 4, 4):
-        v = R(o)
-        if v in maps: where[o + 0x08000000] = v
-    names = {}
-    for o in range(0, len(rom) - 4, 4):
-        m = where.get(R(o))
-        if m is not None and 0 < R(o - 0x20) < 1000: names.setdefault(m, set()).add(R(o - 0x20))
+    def search():
+        where = {}
+        for o in range(0, len(rom) - 4, 4):
+            v = R(o)
+            if v in maps: where[o + 0x08000000] = v
+        names = {}
+        for o in range(0, len(rom) - 4, 4):
+            m = where.get(R(o))
+            if m is not None and 0 < R(o - 0x20) < 1000: names.setdefault(m, set()).add(R(o - 0x20))
+        return {str(m): sorted(ids) for m, ids in names.items()}
+    names = {int(m): ids for m, ids in rom.found('map names', search).items()}
     def string(i):
         a = R(G['strings'] + 4 * i) & 0x1ffffff; out = []
         while True:
