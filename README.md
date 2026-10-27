@@ -3651,10 +3651,10 @@ are no wild Pokémon.
   Machine with half your money gone. The Time Machine also lets you rest (the party's HP and MP back) and look over
   your party.
 
-`tools/build-kamurocho.py` builds it:
+`tools/build-kamurocho.py` builds it, from files already in the repo (no cartridge needed):
 
 ```sh
-python3 tools/build-kamurocho.py "<path to Yu-Gi-Oh! - The Sacred Cards (USA).gba>" [<Kiryu and Majima's sheet>]
+python3 tools/build-kamurocho.py
 ```
 
 - **The layout**: `tools/data/kamurocho.txt`, one character a tile, two pixels of Yakuza 0's map to a tile: `.`
@@ -3663,7 +3663,8 @@ python3 tools/build-kamurocho.py "<path to Yu-Gi-Oh! - The Sacred Cards (USA).gb
   bowling ball and the people), each street and block was carried on from where it shows round the icon. The
   Champion District's lanes were drawn by hand from the map: a ring of alley round its bars, two lanes through and
   short alleys across.
-- **The pictures**: The Sacred Cards' screens, read from the cartridge as `tools/build-sacred-cards.py` reads them.
+- **The pictures**: The Sacred Cards' screens, as `tools/build-sacred-cards.py` wrote them from the cartridge into
+  `assets/world/maps` (`SC_<nn>.png`, the ground, and `SC_<nn>-top.png`, the overlay).
   The ground textures come from Domino's road (the streets), its back alley (the alleys: any street a tile or two
   across), the Office Tower's roof (every rooftop, each building tinted a little differently), Kaiba Corporation's
   yard (the Empty Lot) and the graveyard's lawn (West Park). Each texture keeps the patch's grain over its average
@@ -3678,8 +3679,8 @@ python3 tools/build-kamurocho.py "<path to Yu-Gi-Oh! - The Sacred Cards (USA).gb
   pavement under them. Now and then the bank's red sign hangs down a wall (from Domino Square's
   overlay). The city beyond is drawn as darker rooftops in blocks of 12. West Park's trees come from Domino City's
   overlays, and the bottom row of each is solid. The Time Machine is `tools/lib/realm-art.js`'s.
-- **The people**: `tools/data/kamurocho.json`, each with a place, a sprite, a way of standing and what they say. The
-  optional second argument is Kiryu and Majima's sheet: two people side by side, each 3 columns of 64x64 frames
+- **The people**: `tools/data/kamurocho.json`, each with a place, a sprite, a way of standing and what they say. Kiryu
+  and Majima's sheet, as you supplied it, is `tools/data/kamurocho-people.png`: two people side by side, each 3 columns of 64x64 frames
   (standing, two steps) by 5 rows (two facing down-right, two facing up, a fighting stance), on magenta. Each frame is
   halved (each 2x2 averaged) to 32x32: down is the first row, up the third, left the second mirrored. They are
   `assets/world/sprites/lad_kiryu.png` and `lad_majima.png`.

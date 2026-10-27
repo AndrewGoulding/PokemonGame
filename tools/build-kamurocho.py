@@ -1,9 +1,10 @@
 # The Like a Dragon realm's Kamurocho (Yakuza 0's, 1988), this game's own: its streets laid out after the game's own
 # map, its pictures from Yu-Gi-Oh! The Sacred Cards (GBA, Konami, 2003; the USA cartridge, game code AY7E), the same
 # screens as Domino City's (tools/build-sacred-cards.py): its pavements, its asphalt, its rooftops and its shopfronts,
-# cut from the screens and put together block by block. Only its pictures.
+# cut from the screens and put together block by block. Only its pictures, and those from the screens already in
+# assets/world/maps (SC_<nn>.png and -top.png), so it needs no cartridge.
 #
-#   python3 tools/build-kamurocho.py <path to The Sacred Cards' .gba> [<Kiryu and Majima's sheet>]
+#   python3 tools/build-kamurocho.py
 #
 # The layout: tools/data/kamurocho.txt, a tile to a character, 2 pixels of Yakuza 0's map to a tile:
 #   .  street        #  building (a block's buildings are its runs of #, + the lines between them)
@@ -12,16 +13,16 @@
 # city beyond is drawn as more buildings, cut into blocks. Streets are asphalt, with a strip of pavement under each
 # shopfront.
 #
-# Kiryu and Majima's sheet (the second argument; without it their sprites are left as they are): two 3/4-view people
+# Kiryu and Majima's sheet (tools/data/kamurocho-people.png, as it was supplied): two 3/4-view people
 # side by side, each 3 columns of 64x64 frames (standing, two steps) by 5 rows (down-right twice, up twice, a fighting
 # stance), on magenta. Each frame is halved to 32x32, as The Sacred Cards' people are: down is the first row, up the
 # third, left the second mirrored (the game mirrors left for right).
 #
 # Writes:
 #   assets/world/maps/Kamurocho.png, -border.png
-#   assets/world/sprites/lad_kiryu.png, lad_majima.png     (with the sheet; and -_battle.png, their fighting stance)
+#   assets/world/sprites/lad_kiryu.png, lad_majima.png     (and lad_*_battle.png, their fighting stance)
 #   data/emerald-maps.js (between its markers)             the map, and window.KAMUROCHO (where you arrive, the Empty Lot)
-import json, os, struct, subprocess, sys, random
+import base64, json, os, subprocess, random
 from collections import deque
 from PIL import Image, ImageFilter
 
@@ -30,47 +31,13 @@ MAPS = os.path.join(ROOT, 'assets/world/maps')
 SPRITES = os.path.join(ROOT, 'assets/world/sprites')
 NAME, T = 'Kamurocho', 16
 
-rom = open(sys.argv[1], 'rb').read()
-if rom[0xac:0xb0] != b'AY7E': sys.exit('Not Yu-Gi-Oh! The Sacred Cards (USA): its game code is ' + repr(rom[0xac:0xb0]))
-TABLE = 0xd511a0
-def P(k): return struct.unpack_from('<I', rom, TABLE + 4 * k)[0] - 0x08000000
-def rgb(c): return ((c & 31) << 3 | (c & 31) >> 2, (c >> 5 & 31) << 3 | (c >> 5 & 31) >> 2, (c >> 10 & 31) << 3 | (c >> 10 & 31) >> 2)
-def lz77(o):
-    size = rom[o + 1] | rom[o + 2] << 8 | rom[o + 3] << 16
-    out = bytearray(); i = o + 4
-    while len(out) < size:
-        flags = rom[i]; i += 1
-        for b in range(8):
-            if len(out) >= size: break
-            if flags & (0x80 >> b):
-                x = rom[i] << 8 | rom[i + 1]; i += 2
-                n, disp = (x >> 12) + 3, (x & 0xfff) + 1
-                for _ in range(n): out.append(out[-disp])
-            else:
-                out.append(rom[i]); i += 1
-    return bytes(out[:size])
-
-# ---------- The Sacred Cards' screens (as tools/build-sacred-cards.py reads them) ----------
-# A screen: its ground (opaque) and its overlay (colour 0 see-through), 240x160 each.
+# ---------- The Sacred Cards' screens ----------
+# Each screen as tools/build-sacred-cards.py wrote it from the cartridge: SC_<nn>.png its ground (opaque),
+# SC_<nn>-top.png its overlay (see-through where nothing's drawn), 240x160 each.
 _screens = {}
 def screen(s):
-    if s in _screens: return _screens[s]
-    tiles = lz77(P(204 + s))
-    pal = [(0, 0, 0)] * 16 + [rgb(c) for c in struct.unpack_from('<240H', rom, P(378 + s))]
-    def layer(m, opaque):
-        im = Image.new('RGBA', (240, 160), (0, 0, 0, 0)); px = im.load()
-        for ty in range(20):
-            for tx in range(30):
-                e = m[ty * 32 + tx + 1]; t = e & 0x3ff
-                if not opaque and t == 0: continue
-                for y in range(8):
-                    for x in range(8):
-                        sx, sy = (7 - x if e >> 10 & 1 else x), (7 - y if e >> 11 & 1 else y)
-                        k = t * 64 + sy * 8 + sx
-                        ci = tiles[k] if k < len(tiles) else 0
-                        if ci or opaque: px[tx * 8 + x, ty * 8 + y] = pal[ci] + (255,)
-        return im
-    _screens[s] = (layer(struct.unpack_from('<1024H', rom, P(262 + s)), True), layer(struct.unpack_from('<1024H', rom, P(320 + s)), False))
+    if s not in _screens:
+        _screens[s] = tuple(Image.open(os.path.join(MAPS, 'SC_%02d%s.png' % (s, k))).convert('RGBA') for k in ('', '-top'))
     return _screens[s]
 def ground(s, box): return screen(s)[0].crop(box)
 def over(s, box): return screen(s)[1].crop(box)
@@ -353,7 +320,6 @@ for x, y in lot:
                 px[p] = (90, 96, 108, 255) if (k % 8) < 2 else (150, 158, 170, 255)
 TM = json.loads(subprocess.check_output(['node', '-e', 'const c=require("./tools/lib/realm-art").timeMachine();'
     'process.stdout.write(JSON.stringify({w:c.w,h:c.h,d:Buffer.from(c.rgba).toString("base64")}))'], cwd=ROOT))
-import base64
 tm = Image.frombytes('RGBA', (TM['w'], TM['h']), base64.b64decode(TM['d']))
 MACHINE = ((lx0 + lx1) // 2 - 1, (ly0 + ly1) // 2 - 2)
 img.alpha_composite(tm, (MACHINE[0] * T, MACHINE[1] * T))
@@ -392,7 +358,7 @@ def people(sheet):
             for x in range(64):
                 if sp[x, y][:3] == (255, 0, 255): sp[x, y] = (0, 0, 0, 0)
         stance.save(os.path.join(SPRITES, 'lad_' + who + '_battle.png'))
-if len(sys.argv) > 2: people(sys.argv[2])
+people(os.path.join(ROOT, 'tools/data/kamurocho-people.png'))
 
 # ---------- The map's data ----------
 collision = [0 if not solid(x, y) and (x, y) not in blocked else 1 for y in range(H) for x in range(W)]
