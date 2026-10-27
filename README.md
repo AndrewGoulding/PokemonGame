@@ -3565,8 +3565,8 @@ python3 tools/build-dbz-webfoot.py "<path to Dragonball Z - Buu's Fury (USA).gba
 - **The people** (154 and 298): the game's table of everyone's animations. One sheet each, a row an animation in
   the ROM's order (each in fours: down, up, left, right). `people/index.json` gives each sheet's cell size, the
   anchor in a cell (where the person stands) and each row's frame count.
-- **The portraits** (107 and 155): the dialogue faces, 64x64. A few of Legacy of Goku II's first ones use colours the
-  game changes while they're on screen, so they come out wrong.
+- **The portraits** (107 and 155): the dialogue faces, 64x64. Legacy of Goku II's first 18 are the status screen's
+  (the playable characters in each form), drawn with that screen's palette (`0x1d4f50`).
 
 `tools/build-dbz-ssw.py` builds the battle sprites from **Dragonball Z: Supersonic Warriors** (USA, game code AZJE;
 files `fighters/SSW_*`):

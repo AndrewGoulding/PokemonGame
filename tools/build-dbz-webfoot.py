@@ -43,7 +43,7 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 OUT = os.path.join(ROOT, 'assets/dragonball')
 GAMES = {
     b'ALFE': dict(prefix='LG2', layer_fn=0x080056a1, bg_pal=0x1da4c8, obj_pal=0x1da6c8,
-                  people=0x3b4e80, portraits=0x3ec9f4, n_portraits=107, strings=0xe2840, utf16=False),
+                  people=0x3b4e80, portraits=0x3ec9f4, n_portraits=107, menu_portraits=(18, 0x1d4f50), strings=0xe2840, utf16=False),
     b'BG3E': dict(prefix='BF', layer_fn=0x08008087, bg_pal=0x5632c, obj_pal=0x5652c,
                   people=0x6b6bd8, portraits=0x6f395c, n_portraits=155, strings=0x6bce8, utf16=True),
 }
@@ -321,5 +321,7 @@ if ONLY in (None, 'people'):
 if ONLY in (None, 'portraits'):
     for i in range(G['n_portraits']):
         idx = np.frombuffer(blob(R(G['portraits'] + 4 * i)), np.uint8).reshape(64, 64)
-        save(Image.fromarray(OBJ[idx], 'RGB'), 'portraits', '%s_%03d.png' % (pre, i))
+        # (The first few are the status screen's, drawn with its palette.)
+        n, menu = G.get('menu_portraits', (0, 0))
+        save(Image.fromarray((palette(menu) if i < n else OBJ)[idx], 'RGB'), 'portraits', '%s_%03d.png' % (pre, i))
     print(G['n_portraits'], 'portraits')
