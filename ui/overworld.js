@@ -1860,8 +1860,8 @@
   // filled with that shade of the colour you chose (LOOK_COLOURS), or of the part's own ("own"). Only compositing,
   // never reading pixels back, so it works when the game's opened straight from disk. -> a sheet of FireRed's nine
   // frames, then the six between its steps (lookFrame), 32x32 each.
-  // (Riding the Bicycle and surfing you're still the trainer: no part has those. Fishing, your look holds the
-  // trainer's rod: ROD_BODY.)
+  // (Riding the Bicycle and surfing, your look sits on Red's Bicycle or the water he Surfs on: composeRide. Fishing,
+  // your look holds the trainer's rod: ROD_BODY.)
   const LOOK_ROLES = ["hair", "outfit", "trim", "skin"];
   function lookParts(a) {
     const P = window.PLAYER_LOOK_PARTS || {};
@@ -1919,15 +1919,67 @@
         }
       });
     });
+    out.ride = await composeRide(out, names[0]);
     return out;
+  }
+  // Your look on the Bicycle and on the water (tools/build-ride-parts.py: Red's, without him, ride_bike.png and
+  // ride_surf.png; RIDE_PARTS): sitting as he does, from the waist up (the body's `waist` row, standing that way), its
+  // waist at the seat, leaning as he leans. 32x40 frames (RIDE_H: room over the seat for the tall), the Bicycle or the
+  // water where it is in his 32x32 ones. -> { bike, surf, wheelie } sheets as player_<look>_bike, _surf, _wheelie.
+  const RIDE_H = 40;
+  async function composeRide(look, body) {
+    const R = window.RIDE_PARTS;
+    if (!R) return null;
+    const waist = R.waist[body] || [20, 20, 20];
+    const sheet = (n) => { const c = document.createElement("canvas"); c.width = n * 32; c.height = RIDE_H; return c; };
+    const ride = {};
+    for (const name of ["bike", "surf"]) {
+      const img = spriteImage("ride_" + name);
+      await img.loaded;
+      const frames = R[name], c = ride[name] = sheet(frames.length), o = c.getContext("2d");
+      frames.forEach(([f, dx, seat], i) => {
+        const w = waist[f];
+        o.save(); o.beginPath(); o.rect(i * 32, 0, 32, RIDE_H); o.clip();
+        o.drawImage(look, f * 32, 0, 32, w, i * 32 + dx, RIDE_H - 32 + seat - w, 32, w);
+        o.restore();
+        if (ready(img)) o.drawImage(img, i * 32, 0, 32, 32, i * 32, RIDE_H - 32, 32, 32);
+      });
+    }
+    ride.wheelie = wheelieSheet(ride.bike);
+    return ride;
+  }
+  // The wheelie frames from the Bicycle's standing ones, as tools/build-wheelie.js makes the trainer's: facing down
+  // rising, up on the back wheel; up; left (a row or a pixel at a time: no reading pixels back).
+  function wheelieSheet(bike) {
+    const c = document.createElement("canvas"); c.width = 6 * 32; c.height = RIDE_H;
+    const o = c.getContext("2d"), bottom = RIDE_H - 1, wheelTop = bottom - 5;
+    const rows = (i, src, from) => {
+      for (let y = 0; y < RIDE_H; y++) { const sy = from(y); if (sy >= 0 && sy < RIDE_H) o.drawImage(bike, src * 32, sy, 32, 1, i * 32, y, 32, 1); }
+    };
+    const down = (i, lift) => rows(i, 0, (y) => (y + lift < wheelTop ? y + lift : Math.max(wheelTop, y + lift - 1)));
+    const up = (i, lift) => rows(i, 1, (y) => (y >= wheelTop ? y : y + lift < wheelTop ? y + lift : wheelTop));
+    // (Red's Bicycle facing left goes from x 6 to 25: tipped back on its back wheel, at the right.)
+    const left = (i, lift) => {
+      const x0 = 6, pivot = 25 - 4, span = pivot - x0, waist = bottom - 9;
+      const tilt = (x) => (x < pivot ? Math.round(lift * (pivot - x) / span) : 0), mid = tilt(Math.round((x0 + 25) / 2));
+      for (let x = 0; x < 32; x++) for (let y = 0; y < RIDE_H; y++) {
+        const below = y + tilt(x), sy = below >= waist ? below : Math.min(waist - 1, y + mid);
+        if (sy < RIDE_H) o.drawImage(bike, 2 * 32 + x, sy, 1, 1, i * 32 + x, y, 1, 1);
+      }
+    };
+    down(0, 2); down(1, 4); up(2, 1); up(3, 2); left(4, 2); left(5, 5);
+    return c;
   }
   // The look you walk about as (a composeLook sheet; null: the trainer's own). Wes, in Orre, is always Wes.
   let myLook = null;
   function setPlayerLook(sheet) {
     myLook = sheet;
     if (sheet) Object.assign(sheet, { complete: true, naturalWidth: sheet.width, loaded: Promise.resolve() });
-    if (sheet) images["assets/world/sprites/player_look.png"] = sheet;
-    else delete images["assets/world/sprites/player_look.png"];
+    for (const k of ["", "_bike", "_surf", "_wheelie"]) {
+      const c = !sheet ? null : k ? sheet.ride && sheet.ride[k.slice(1)] : sheet;
+      if (c) images["assets/world/sprites/player_look" + k + ".png"] = Object.assign(c, { complete: true, naturalWidth: c.width, loaded: Promise.resolve() });
+      else delete images["assets/world/sprites/player_look" + k + ".png"];
+    }
   }
   const mine = () => !!myLook && !!ctx && (ctx.player.look || "custom") !== "wes";
 
@@ -2140,7 +2192,7 @@
     } else {
       frame = frameFor(me.facing, !!me.move && !me.move.slip && (me.move.t % TILE) < TILE / 2, me.parity, 9);
     }
-    let w = 16, dx = 0, bob = 0;
+    let w = 16, h = 32, dx = 0, bob = 0;
     // (Your look, walking or running: its steps, a stride a tile.)
     if (mine()) {
       sheet = "player_look"; w = 32; dx = -8;
@@ -2159,6 +2211,8 @@
         sheet = look + "_wheelie";
         frame = { down: 0, up: 2, left: 4, right: 4 }[me.facing] + pose;
       }
+      // (Your look rides it: composeRide's sheets, as tall as RIDE_H.)
+      if (mine() && myLook.ride) { sheet = sheet === look + "_wheelie" ? "player_look_wheelie" : "player_look_bike"; h = RIDE_H; }
     } else if (me.avatar === "dive") {
       // Under the water (Emerald's Brendan, diving): down, up or left.
       sheet = "em_brendan_underwater"; w = 32; dx = -8;
@@ -2169,12 +2223,13 @@
       sheet = look + "_surf"; w = 32; dx = -8;
       frame = { down: 0, up: 2, left: 4, right: 4 }[me.facing];
       bob = Math.floor(performance.now() / 500) % 2;
+      if (mine() && myLook.ride) { sheet = "player_look_surf"; h = RIDE_H; }
     }
     let dy = 0, rodOver = null;
     if (rod && me.avatar !== "surf" && mine()) {
       // (Your look fishing: it stands as it is, moved as the trainer's body is in the frame, and the rod alone over it.)
       const r = rodFrame(), [ox, oy] = ROD_BODY[r.frame];
-      frame = frameFor(me.facing, false, 0, 9);
+      sheet = "player_look"; h = 32; frame = frameFor(me.facing, false, 0, 9);
       dx = -8 + r.dx + (me.facing === "right" ? 16 - ox : ox); dy = r.dy + oy;
       rodOver = { frame: r.frame, dx: r.dx, dy: r.dy };
     } else if (rod && me.avatar !== "surf") {
@@ -2187,10 +2242,10 @@
     const lift = me.lift || 0;
     const meSunk = !me.move && me.avatar === "walk" && !lift ? sunkAt(me.map, me.x, me.y) : 0;
     if (!me.hidden && !(fly && fly.player !== undefined)) sprites.push({ y: py, over: meOver || lift >= 16, draw: () => {
-      drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy - lift, meSunk);
+      drawSprite(sheet, w, h, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy - lift, meSunk);
       if (rodOver) drawSprite("player_rod", 32, 32, rodOver.frame, me.facing === "right", px - camX + rodOver.dx, py - camY + rodOver.dy);
     },
-      refl: () => !lift && drawReflection(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy,
+      refl: () => !lift && drawReflection(sheet, w, h, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy,
         [[me.x, me.y]].concat(me.move && (me.move.tmap || me.map) === me.map ? [[me.move.tx, me.move.ty]] : []), camX, camY) });
     if (heal) drawHeal(camX, camY);   // the healing machine's balls and screen, under people
     for (const s of tallGrassSprites(camX, camY, shade)) sprites.push(s);

@@ -3923,9 +3923,16 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   (`bodyLabels`: Koops's hood, Goombella's helmet).
 
 You turn and walk about in the picture as you choose. Your look is `player.appearance` ({ body, face, hairstyle,
-hair, outfit, trim, skin }), and it's you everywhere you walk, in every realm (riding the Bicycle, surfing and fishing you're
-still the trainer, and Wes in Orre is Wes). `ui/overworld.js`'s `composeLook` puts it together when the game starts
-or loads. A game saved before races or looks asks on CONTINUE, and the Time Machines (Pallet Town's, and the one
+hair, outfit, trim, skin }), and it's you everywhere you walk, in every realm (Wes in Orre is Wes). On the Bicycle and
+on the water you sit as Red does, from the waist up, on his Bicycle or the water he Surfs on (`composeRide`; the
+wheelie frames too); fishing, you hold his rod. `ui/overworld.js`'s `composeLook` puts it together when the game starts
+or loads. The Bicycle and the water without Red on them, and where each body's waist is, come from his own sheets:
+
+```sh
+python3 tools/build-ride-parts.py   # -> assets/world/sprites/ride_bike.png, ride_surf.png; RIDE_PARTS in data/type-chart.js
+```
+
+(Run it again after `tools/build-player-looks.py`: a new body needs its waist.) A game saved before races or looks asks on CONTINUE, and the Time Machines (Pallet Town's, and the one
 under the manhole by Serena in Kamurocho) have a mirror to change it: a new race is who you fight as from then on, at your level.
 
 **The parts** (`assets/world/sprites/looks/`, built by `tools/build-player-looks.py` with no cartridge):
