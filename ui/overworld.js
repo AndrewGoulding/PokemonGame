@@ -500,6 +500,9 @@
     rod.resolve = null;
     if (done) done();
   }
+  // (Your look fishing: the rod alone, player_rod.png, cut from the trainer's frames by what isn't the trainer standing;
+  // and where the trainer's body is in each frame, [x, y], for your look to stand there.)
+  const ROD_BODY = [[10, 1], [16, 0], [13, 1], [16, 0], [7, -4], [7, 2], [8, -1], [8, -1], [9, -2], [9, -8], [9, -6], [8, -9]];
   // The frame to draw, and where (AlignFishingAnimationFrames: the cast
   // frames sideways sit 8 pixels toward the rod, up 8 higher, down 8 lower).
   function rodFrame() {
@@ -1857,7 +1860,8 @@
   // filled with that shade of the colour you chose (LOOK_COLOURS), or of the part's own ("own"). Only compositing,
   // never reading pixels back, so it works when the game's opened straight from disk. -> a sheet of FireRed's nine
   // frames, then the six between its steps (lookFrame), 32x32 each.
-  // (Riding the Bicycle, surfing and fishing you're still the trainer: no part has those.)
+  // (Riding the Bicycle and surfing you're still the trainer: no part has those. Fishing, your look holds the
+  // trainer's rod: ROD_BODY.)
   const LOOK_ROLES = ["hair", "outfit", "trim", "skin"];
   function lookParts(a) {
     const P = window.PLAYER_LOOK_PARTS || {};
@@ -2166,8 +2170,14 @@
       frame = { down: 0, up: 2, left: 4, right: 4 }[me.facing];
       bob = Math.floor(performance.now() / 500) % 2;
     }
-    let dy = 0;
-    if (rod && me.avatar !== "surf") {
+    let dy = 0, rodOver = null;
+    if (rod && me.avatar !== "surf" && mine()) {
+      // (Your look fishing: it stands as it is, moved as the trainer's body is in the frame, and the rod alone over it.)
+      const r = rodFrame(), [ox, oy] = ROD_BODY[r.frame];
+      frame = frameFor(me.facing, false, 0, 9);
+      dx = -8 + r.dx + (me.facing === "right" ? 16 - ox : ox); dy = r.dy + oy;
+      rodOver = { frame: r.frame, dx: r.dx, dy: r.dy };
+    } else if (rod && me.avatar !== "surf") {
       // (Fishing on the water, you stay as you are on it.)
       const r = rodFrame();
       sheet = look + "_fish"; w = 32; frame = r.frame; dx = r.dx; dy = r.dy;
@@ -2176,7 +2186,10 @@
     // (Up in the air on an Escape Rope: over everything once a tile up.)
     const lift = me.lift || 0;
     const meSunk = !me.move && me.avatar === "walk" && !lift ? sunkAt(me.map, me.x, me.y) : 0;
-    if (!me.hidden && !(fly && fly.player !== undefined)) sprites.push({ y: py, over: meOver || lift >= 16, draw: () => drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy - lift, meSunk),
+    if (!me.hidden && !(fly && fly.player !== undefined)) sprites.push({ y: py, over: meOver || lift >= 16, draw: () => {
+      drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy - lift, meSunk);
+      if (rodOver) drawSprite("player_rod", 32, 32, rodOver.frame, me.facing === "right", px - camX + rodOver.dx, py - camY + rodOver.dy);
+    },
       refl: () => !lift && drawReflection(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy,
         [[me.x, me.y]].concat(me.move && (me.move.tmap || me.map) === me.map ? [[me.move.tx, me.move.ty]] : []), camX, camY) });
     if (heal) drawHeal(camX, camY);   // the healing machine's balls and screen, under people
@@ -2285,7 +2298,7 @@
       });
     }
     const look = "player_" + (ctx.player.look || "custom");
-    await Promise.all([preloadMap(me.map), ...["_run", "_bike", "_wheelie", "_surf", "_fish"].map((k) => spriteImage(look + k).loaded), spriteImage("em_brendan_underwater").loaded]);
+    await Promise.all([preloadMap(me.map), ...["_run", "_bike", "_wheelie", "_surf", "_fish"].map((k) => spriteImage(look + k).loaded), spriteImage("em_brendan_underwater").loaded, spriteImage("player_rod").loaded]);
     showControls();
     hint();
     ignoreInputUntil = performance.now() + 200;

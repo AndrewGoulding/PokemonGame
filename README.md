@@ -3762,10 +3762,13 @@ taken from a Dragon Quest cartridge.
   level-up (or later, from the party screen's Stat points): a point is one more Strength, Defence, Intelligence,
   Wisdom or Speed, 6 more HP or 2 more MP (`rec.alloc`, `rec.points`). A party saved before them gets the points of
   the levels it already has.
-- **Categories**: every skill is Physical, Magical or Status (`Ultimax.category`), shown in the move box. Physical:
-  the user's Strength against the target's Defence, times its power; Magical: Intelligence against Wisdom, the same
-  way; Status: heals (by the healer's Wisdom: as strong as their power at 10 Wisdom, half again at 20), guards and
-  statuses. A Pokémon's Physical moves are Physical and its Special moves Magical (power: base power / 40).
+- **Categories and damage**: every skill is Physical, Magical or Status (`Ultimax.category`), shown in the move box
+  with a damaging one's base power. Damage is the Pokémon games': ((2 × level / 5 + 2) × power × A / D) / 50 + 2, then
+  85-100% of it, where A / D is the user's Strength over the target's Defence for a Physical skill and their
+  Intelligence over its Wisdom for a Magical one; an attack's power is 40 (a critical hit one time in 16, half as
+  much again). Foes have levels for it (`REALM_FOES[..].lv`). Status: heals (by the healer's Wisdom: as strong as
+  their power at 10 Wisdom, half again at 20), guards and statuses. A Pokémon's moves keep their own base power,
+  Physical moves Physical and Special moves Magical.
 - **The screen** (`ui/ultimax-screen.js`): drawn as FireRed draws a double battle. The street where you stand,
   dimmed, behind the fight; the foes standing at the left, each with its name and FireRed's HP bar over its head (a
   bar that would run into the one before goes a row up); the party's FireRed healthboxes (name, level, HP bar, status)

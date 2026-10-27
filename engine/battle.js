@@ -4083,6 +4083,8 @@
   const D = () => ({ skills: window.REALM_SKILLS, fighters: window.REALM_FIGHTERS, foes: window.REALM_FOES, items: window.REALM_ITEMS, chart: window.REALM_TYPE_CHART });
   function rng(seed) { let s = (seed >>> 0) || 1; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
   const HP_SCALE = 3, FOE_HP_SCALE = 1;
+  // An attack's base power (a skill's is its own: REALM_SKILLS' power, a Pokémon move's).
+  const ATTACK_POWER = 40;
 
   // EXP to reach `lv` (from level 1), and a fighter's stats and skills at a level.
   const expFor = (lv) => Math.round(10 * Math.pow(lv - 1, 2.5));
@@ -4242,8 +4244,8 @@
       const st = base.extras.find((x) => x.status);
       if (st) Object.assign(base, { status: st.status, chance: st.chance });
       // (Physical, Attack against Defense, as Strength against Defence; Special, Special Attack against Special
-      // Defense, as Intelligence against Wisdom: Magical. The same power either way.)
-      return Object.assign(base, { kind: m.cat === "Physical" ? "phys" : "magic", power: Math.round(bp * hits / 40 * 100) / 100 });
+      // Defense, as Intelligence against Wisdom: Magical. Its own base power either way, a multi-hit move's hits in it.)
+      return Object.assign(base, { kind: m.cat === "Physical" ? "phys" : "magic", power: bp * hits });
     }
     if (PROTECT[name]) return Object.assign(base, { kind: "protect", protect: PROTECT[name], target: "self", acc: null });
     if (HEAL_OTHER[name]) return Object.assign(base, { kind: "heal", power: [Math.round(maxHp * (HEAL_OTHER[name] === "party" ? 0.22 : 0.45)), Math.round(maxHp * (HEAL_OTHER[name] === "party" ? 0.28 : 0.55))],
@@ -4286,7 +4288,7 @@
   const healFactor = (who, id) => (who.own && who.own[id] ? 1 : 0.5 + stat(who, "wis") / 20);
   function foe(id, letter) {
     const f = D().foes[id], hp = f.hp * (f.boss ? HP_SCALE : FOE_HP_SCALE);
-    return fighter({ side: "foe", id, name: f.name + (letter ? " " + letter : ""), elements: f.elements, hp, mp: f.mp, maxHp: hp, maxMp: f.mp,
+    return fighter({ side: "foe", id, name: f.name + (letter ? " " + letter : ""), elements: f.elements, lv: f.lv || 1, hp, mp: f.mp, maxHp: hp, maxMp: f.mp,
       str: f.str, def: f.def, int: f.int || 0, wis: f.wis || 0, spd: f.spd, skills: f.skills || [], boss: !!f.boss });
   }
   function create(members, foeIds, opts) {
@@ -4307,17 +4309,17 @@
     const row = D().chart[element] || {};
     return elements.reduce((m, e) => m * (row[e] == null ? 1 : row[e]), 1);
   }
-  // Damage: a Physical skill's (or an attack's) the user's Strength against the target's Defence, a Magical one's
-  // (`magical`) their Intelligence against its Wisdom, times the skill's power either way.
-  function physical(b, user, target, power, element, magical) {
+  // Damage, as the Pokémon games work it out: the skill's base power (an attack's ATTACK_POWER), times the user's
+  // Strength over the target's Defence for a Physical one, their Intelligence over its Wisdom for a Magical one
+  // (`magical`), and the user's level: ((2 × level / 5 + 2) × power × A / D) / 50 + 2, then 85-100% of that. An
+  // attack's a critical hit one time in 16, half as much again.
+  function physical(b, user, target, power, element, magical, attack) {
     const r = b.rand, [atk, def] = magical ? ["int", "wis"] : ["str", "def"];
-    let crit = false, dmg;
-    if (power === 1 && !magical && r() < 1 / 32) { crit = true; dmg = Math.max(user.str, stat(user, "str")) * (0.95 + r() * 0.1); }
-    else {
-      const base = stat(user, atk) / 2 - stat(target, def) * (magical ? 1 : target.guard) / 4;
-      dmg = base < 1 ? Math.floor(r() * 2) : base * (0.875 + r() * 0.25);
-      dmg *= power;
-    }
+    const A = Math.max(1, stat(user, atk)), D = Math.max(1, stat(target, def) * (magical ? 1 : target.guard));
+    let dmg = ((2 * (user.lv || 1) / 5 + 2) * power * A / D) / 50 + 2;
+    dmg *= 0.85 + r() * 0.15;
+    const crit = !!attack && r() < 1 / 16;
+    if (crit) dmg *= 1.5;
     // (Burned: half, a Physical one's.)
     if (user.status === "burn" && !magical) dmg /= 2;
     return finish(b, user, target, dmg, element, crit);
@@ -4389,7 +4391,7 @@
         else {
           say(who.name + " is confused!");
           if (r() < 1 / 3) {
-            const res = physical(b, who, who, 1, "Neutral");
+            const res = physical(b, who, who, ATTACK_POWER, "Neutral");
             say("It hurt itself in its confusion! (" + res.dmg + ")", { kind: "hit", side: who.side, i: ix(who), eff: 1 });
             if (who.hp === 0) down(who);
             who.protectChain = 0;
@@ -4528,7 +4530,7 @@
       if (!f) return;
       const opener = who.name + " attacks! ";
       if (!lands(f, null, opener)) return;
-      const res = physical(b, who, f, 1, "Neutral");
+      const res = physical(b, who, f, ATTACK_POWER, "Neutral", false, true);
       struck(f, res, opener + (res.crit ? "A critical hit! " : ""));
       return;
     }
@@ -4743,5 +4745,5 @@
   // An item's text, its HP as HP_SCALE makes it ("{hp}" in REALM_ITEMS' text).
   const itemText = (id) => String(D().items[id].text).replace(/\{hp\}/g, () => String(D().items[id].heal * HP_SCALE));
   window.Ultimax = { create, turn, spoils, gainExp, keep, member, recruit, rescale, stats, skillsAt, expFor, effect, foeChoice, up,
-    pokemon, pokemonSkill, pokemonElements, pokemonExp, skillOf, category, statsOf, spend, pointsOf, POINTS, POINT_STATS, unsupported, itemText, groupsFor, TYPE_ELEMENT, HP_SCALE, FOE_HP_SCALE, STATUS_TAG };
+    pokemon, pokemonSkill, pokemonElements, pokemonExp, skillOf, category, statsOf, spend, pointsOf, POINTS, POINT_STATS, unsupported, itemText, groupsFor, TYPE_ELEMENT, HP_SCALE, FOE_HP_SCALE, ATTACK_POWER, STATUS_TAG };
 })();

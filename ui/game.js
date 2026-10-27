@@ -9957,12 +9957,14 @@
       }
       // FIGHT: Attack, Defend, then the skills.
       const sk = (id) => Ultimax.skillOf(f, id);
-      // (Each one's category, as a Pokémon move's: Physical, Magical or Status; then its cost and its element.)
-      const moves = [{ name: "Attack", info: [["PHYSICAL"], [f.mon ? "No PP" : "No MP"], [element((f.elements || [])[0])]] },
+      // (Each one's category, as a Pokémon move's: Physical, Magical or Status, and a damaging one's base power; then its
+      // cost and its element.)
+      const cat = (s2) => Ultimax.category(s2).toUpperCase() + (s2.kind === "phys" || s2.kind === "magic" ? " " + s2.power : "");
+      const moves = [{ name: "Attack", info: [["PHYSICAL " + Ultimax.ATTACK_POWER], [f.mon ? "No PP" : "No MP"], [element((f.elements || [])[0])]] },
         { name: "Defend", info: [["STATUS"], [f.mon ? "No PP" : "No MP"], ["Halves damage"]] }]
         .concat(f.skills.map((id) => {
           const s2 = sk(id), short = f.mon ? !(f.pp[id] > 0) : s2.mp > f.mp;
-          return { name: s2.name, dim: short, info: [[Ultimax.category(s2).toUpperCase()],
+          return { name: s2.name, dim: short, info: [[cat(s2)],
             [f.mon ? "PP " + f.pp[id] + "/" + ((f.mon.moves || []).find((m) => "move:" + m.name === id) || {}).maxpp : "MP " + s2.mp + " of " + f.mp, short], [element(s2.element)]] };
         }));
       const r = await box(moves, cursor["fight" + i]);
