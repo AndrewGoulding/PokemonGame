@@ -10,7 +10,8 @@
 #   +c   the palettes, 16 colours each
 #   +10  the 4bpp tiles; +14 the 8bpp tiles
 #   An animation is a script of words: a duration then a frame, or a command (a negative number):
-#   -1 n size  load tiles (n >= 0: 4bpp tile n, size & 0x7ff of them; else 8bpp), -2 p count  load palette p,
+#   -1 n size  load tiles (n >= 0: 4bpp tile n, size & 0x7ff of them; else 8bpp), -2 p count  load palette p (each
+#   frame is drawn in the palette loaded before it),
 #   -3 loop, -4 stop; the rest take 1, 2 or 3 more words and don't change the picture.
 #
 # Writes:
@@ -71,12 +72,12 @@ def animation(script):
                 n, size = s32(R(o + 4)), R(o + 8)
                 if n >= 0: block, bpp8 = (TILES4 & 0x1ffffff) + 32 * n, False
                 else: block, bpp8 = (TILES8 & 0x1ffffff) + 64 * n, True
-            if v == -2 and pal is None: pal = R(o + 4)
+            if v == -2: pal = R(o + 4)
             o += 4 * (1 + ARGS.get(v, 0)); continue
         f = R(o + 4)
-        if (block, f) not in seen: seen.add((block, f)); out.append((block, f, bpp8))
+        if (block, f, pal) not in seen: seen.add((block, f, pal)); out.append((block, f, bpp8, pal))
         o += 8
-    return out, pal
+    return out
 
 starts = sorted({R(ANIMS + 4 * t) for t in range(214)})
 os.makedirs(OUT, exist_ok=True)
@@ -84,30 +85,31 @@ index = {}
 for obj in range(214):
     A = R(ANIMS + 4 * obj)
     nxt = next((s for s in starts if s > A), A + 4 * 200)
-    rows, pal = [], None
+    rows, pals = [], []
     for k in range(min((nxt - A) // 4, 128)):
         s = R(A + 4 * k)
         if not isptr(s): break
-        frames, p = animation(s)
-        if pal is None: pal = p
-        row = [frame(obj, f, b, bpp8) for b, f, bpp8 in frames[:64]]
+        frames = animation(s)[:64]
+        row = [frame(obj, f, b, bpp8) for b, f, bpp8, p in frames]
         if not any(row): break
-        rows.append(row)
+        rows.append(row); pals.append([p for *_, p in frames])
+    # Each frame in the palette its script had loaded by then; before any, the one the object loads most.
+    loaded = [p for r in pals for p in r if p is not None]
+    usual = max(set(loaded), key=loaded.count) if loaded else 0
     ps = [q for r in rows for f in r for q in f]
     if not ps: continue
     left = max([-x for _, x, _ in ps] + [8]); right = max([x + im.shape[1] for im, x, _ in ps] + [8])
     up = max([-y for _, _, y in ps] + [8]); down = max([y + im.shape[0] for im, _, y in ps] + [0])
     half = -(-max(left, right) // 8) * 8; up = -(-up // 8) * 8; down = -(-down // 8) * 8
     cw, ch, cols = 2 * half, up + down, max(len(r) for r in rows) or 1
-    idx = np.zeros((len(rows) * ch, cols * cw), np.uint8)
+    rgba = np.zeros((len(rows) * ch, cols * cw, 4), np.uint8)
     for r, fs in enumerate(rows):
         for c, parts in enumerate(fs):
+            P = palette(pals[r][c] if pals[r][c] is not None else usual)
             for im, x, y in parts:
                 X, Y = c * cw + half + x, r * ch + up + y
-                sub = idx[Y:Y + im.shape[0], X:X + im.shape[1]]
-                sub[...] = np.where(im[:sub.shape[0], :sub.shape[1]] != 0, im[:sub.shape[0], :sub.shape[1]], sub)
-    P = palette(pal or 0)
-    rgba = np.zeros(idx.shape + (4,), np.uint8); rgba[..., :3] = P[idx & 15]; rgba[..., 3] = np.where(idx != 0, 255, 0)
+                sub = rgba[Y:Y + im.shape[0], X:X + im.shape[1]]; im = im[:sub.shape[0], :sub.shape[1]]
+                sub[im != 0, :3] = P[im[im != 0] & 15]; sub[im != 0, 3] = 255
     name = 'DBA_%03d' % obj
     Image.fromarray(rgba, 'RGBA').save(os.path.join(OUT, name + '.png'), optimize=True)
     index[name] = dict(cell=[cw, ch], anchor=[half, up], frames=[len(r) for r in rows])

@@ -3591,7 +3591,7 @@ python3 tools/build-dbz-advanced-adventure.py "<path to Dragon Ball - Advanced A
 - **The objects** (214, people, enemies, effects and pieces of its menus): the game's sprite set at `0x811855c`.
   Each object has its animations, frames (parts and an anchor) and parts (OAM attributes). An animation is a
   script of durations and frames, and of commands that load the tiles and palette it draws with. One sheet each,
-  a row an animation, each different frame once. `side/index.json` gives each sheet's cell size, the anchor in a
+  a row an animation, each different frame once, in the palette its script had loaded by then. `side/index.json` gives each sheet's cell size, the anchor in a
   cell and each row's frame count.
 
 ## Progression rules (Gen 6)
