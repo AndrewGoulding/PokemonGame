@@ -920,7 +920,8 @@
         const value = key === "race" ? r.id : key === "preset" ? presetAt() : look[key];
         if (i === row) { g.fillStyle = "#fff3"; g.fillRect(80, y - 1, 156, gap); }
         text(label, 84, y, { size: 7, bold: true, color: i === row ? "#fff" : "#d8d8d8" });
-        text((i === row ? "◀ " : "") + nameOf(value) + (key === "race" ? " · " + f.elements.join("/") : "") + (i === row ? " ▶" : ""), 132, y, { size: 7, color: i === row ? "#ffe890" : "#e8e8e8" });
+        const arrows = i === row && !(key === "race" && was && was.sameRace && race().id === was.race);
+        text((arrows ? "◀ " : "") + nameOf(value) + (key === "race" ? " · " + f.elements.join("/") : "") + (arrows ? " ▶" : ""), 132, y, { size: 7, color: i === row ? "#ffe890" : "#e8e8e8" });
         y += gap;
         if (key === "preset") {
           text(look.gender === "female" ? "♀ Female" : "♂ Male", 136, y, { size: 6, color: look.gender === "female" ? "#ffa8d0" : "#a8d0ff" });
@@ -953,18 +954,22 @@
       const list = rows();
       row = Math.min(row, list.length - 1);
       // (two lines, as the text box holds)
-      show(row === 0 ? race().text : "Choose your " + list[row][0].toLowerCase() + " with ◀▶.\n▲▼: another row.  Ⓐ: done!");
+      // (At a Time Machine (`was.sameRace`): your look only, your race as it is.)
+      const locked = !!(was && was.sameRace && races[at].id === was.race);
+      show(row === 0 ? (locked ? "You stay " + (/^[AEIOU]/.test(race().name) ? "an " : "a ") + race().name + ": change your look\nwith ▲▼ and ◀▶.  Ⓐ: done!" : race().text)
+        : "Choose your " + list[row][0].toLowerCase() + " with ◀▶.\n▲▼: another row.  Ⓐ: done!");
       const k = await window.GbaMenus.keys((k) => (["left", "right", "up", "down", "a"].includes(k) ? k : undefined));
       se();
       if (k === "a") {
         const r = race();
         // (one of a kind, "a Saiyan"; of a clan, "of the Frieza Clan")
         const of = /Clan$/.test(r.name) ? "of the " : /^[AEIOU]/.test(r.name) ? "an " : "a ";
-        if (await window.Screen.yesNo((name ? name + ", you" : "You") + " are " + of + r.name + "?")) break;
+        if (await window.Screen.yesNo(locked ? "Is this how you want to look?" : (name ? name + ", you" : "You") + " are " + of + r.name + "?")) break;
         continue;
       }
       if (k === "up" || k === "down") { row = (row + (k === "up" ? list.length - 1 : 1)) % list.length; continue; }
       const [, choices, key] = list[row], d = k === "left" ? -1 : 1;
+      if (key === "race" && locked) continue;
       if (key === "race") { at = (at + d + races.length) % races.length; look = startLook(race()); }
       else if (key === "preset") {
         const X = looksOf(race()), i = presetAt();
@@ -983,7 +988,7 @@
     return { race: race().id, appearance: look };
   }
   // The creator on its own (a game saved before there were races or looks, or a change of look at the Time
-  // Machine): -> { race, appearance }. `was`: what you are now.
+  // Machine, `was.sameRace`: your race stays): -> { race, appearance }. `was`: what you are now.
   async function chooseRace(name, was) {
     start();
     fade = { color: "#000", level: 16 };

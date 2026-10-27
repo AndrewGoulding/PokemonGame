@@ -3962,7 +3962,8 @@ python3 tools/build-ride-parts.py   # -> assets/world/sprites/ride_bike.png, rid
 ```
 
 (Run it again after `tools/build-player-looks.py`: a new body needs its waist.) A game saved before races or looks asks on CONTINUE, and the Time Machines (Pallet Town's, and the one
-under the manhole by Serena in Kamurocho) have a mirror to change it: a new race is who you fight as from then on, at your level.
+under the manhole by Serena in Kamurocho) have a mirror to change it: your look only, within the race you are (the
+Race row stays as it is).
 
 **The parts** (`assets/world/sprites/looks/`, built by `tools/build-player-looks.py` with no cartridge):
 

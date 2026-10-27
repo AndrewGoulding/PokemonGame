@@ -304,12 +304,13 @@
   // on, at the level you were: realmParty.)
   async function changeLook() {
     show("intro");
-    const r = await Intro.chooseRace(player.name, { race: player.race, appearance: player.appearance });
+    // (Your look only: your race stays what it is, once you have one.)
+    const r = await Intro.chooseRace(player.name, { race: player.race, appearance: player.appearance, sameRace: !!player.race });
     player.race = r.race; player.appearance = r.appearance;
     await applyLook();
     Screen.say(""); clearMenu();
-    show("world");
-    await Overworld.resume();
+    if (Street.isStreet(player.location.map)) show("street");
+    else { show("world"); await Overworld.resume(); }
     await persist();
   }
 
