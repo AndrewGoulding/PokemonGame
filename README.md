@@ -3858,15 +3858,16 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   Dragon World's seven for the Dragon Ball realm; until then they fight in Kamurocho.
 - **You're your own character**: every race's look is a **body** (clothes), a **face** and a **hairstyle**, and the
   established characters below are its **presets**: the Preset row puts you as one (Goku is Goku's face and hair on
-  Goku's body, in his own colours), and every row after it is yours to change: **Face** (any of the race's
-  characters'), **Hairstyle** (any that fits that face: the race's, and Humans, Saiyans and Androids share theirs, as
+  Goku's body, in his own colours), and every row after it is yours to change: **Face** (any of the race's own
+  characters' and heads': another race's never sat right on its bodies, so a preset that has one, the Saiyan Woman's
+  Chi-Chi, keeps it, as does a look saved with one, but it isn't one to choose), **Hairstyle** (any that fits that face: the race's, and Humans, Saiyans and Androids share theirs, as
   Hylians and Gerudo do; "None" for a bald face) and **Body** ("Custom" once it's no preset). Each character is cut at
   its neck (the narrowest row from 30% to 60% of the way down it standing facing you, the same height every way it
   faces, and by eye where that's in the face: `tools/build-player-looks.py`'s `NECK`), its head then split into its
   face (its skin, what the skin holds, its eyes and mouth, and the outline round that) and its hair (the rest: ribbons
   and clips with it). A face and a hairstyle are the head standing, each way it faces; on any body they move with that
-  body's own head, frame by frame, as far as it moved in its own frames (the body's `headAt`, theirs `ref`:
-  `composeLook`), so a head walks as the body's own did, and the body's own head is cut off, never left peeping out.
+  body's own head, frame by frame, as far as it moved in its own frames (the body's `headAt`, theirs `ref`, each the
+  middle of the neck, the head's bottom row: `composeLook`), so a head walks as the body's own did, and the body's own head is cut off, never left peeping out.
   A hairstyle fits a face when it covers (nearly) all of where the face's own hair was, every way it faces (the face's
   `hairs`). Faces go only on bodies from the same game's sprites. The Goombas and the Piantas have no necks: theirs
   are whole, their presets only; Superstar Saga's and Koops's heads are all face (caps and crowns, not hair). A look
@@ -3880,8 +3881,13 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   Buu's Fury, in pink and in Kai purple), the Mushroom People and the Koopas (in pink: neither game has a woman of
   theirs to draw on).
 - **Walking**: four frames a stride where the sprites have them (the Dragon World's: a step, the frame between, the
-  other step, the frame between), FireRed's nine frames then the six between (`lookFrame`), and so too running and on
-  Kamurocho's streets.
+  other step, the frame between, in the walk's own order: the steps the walk's opposite frames, 0 and 2 or 1 and 3),
+  FireRed's nine frames then the six between (`lookFrame`), and so too running and on Kamurocho's streets. Link's
+  second step facing you and away is his first turned round (the cartridge's frames taken are the same foot twice),
+  and his strides to the side are on the ground. King Cold's sheet has him only from the front and standing to the
+  side, so he's made the rest (`OWN_FRAMES`): from behind, his cape over his back and his head with no face
+  (`back_of`), and a walk to the side from his standing (`side_walk`). In the picture you turn round, facing you,
+  left, away and right, a second and a half each, walking on the spot.
 - **Body and head**: Hyrule's people are a head on a body, any head on any body (The Minish Cap draws its townsfolk
   and children that way): 16 grown-ups' heads (hair and faces) and 8 bodies (costumes), the children's 8 and 5 for
   the Kokiri, and Link (cut, as above) for the Hylians. The Zora have the bald head with a tail-fin drawn on (The Minish Cap has
@@ -3898,9 +3904,11 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   Paper Mario's people are paper: they face you a little to the left, so that's their side too, and turned round
   it's their backs.
 - **Colours**: your hair, your tunic or gi, its trim and your skin, each "Original" (the part's own) or one of
-  `LOOK_COLOURS` (15 hair colours, golden for a Super Saiyan; 17 for clothes; each race's own skins: the Zora's
-  river blue, silver, sea green and coral, the Majin's pinks, lilac, grey and blue, the Koopas' and Piantas' yellow
-  and orange, the Namekians' green and olive, the Frieza Clan's frost white, the Kais' purple). What each colour's called is the race's (`labels`: a Koopa's shell and belly) or a body's own
+  `LOOK_COLOURS` (30 hair colours, Super Saiyan gold, platinum, auburn, mint and the rest; 33 for clothes; each
+  race's own skins, seven or more: people's five and porcelain, olive, golden and deep, the Zora's river blue,
+  silver, sea green, coral, violet and gold, the Majin's pinks, lilac, grey, blue, peach, mint and yellow, the
+  Koopas' and Piantas' yellow, orange and green, the Namekians' green, olive, lime and jade, the Frieza Clan's frost
+  white, gold, ice blue and black, the Kais' purple, blue and green, the Goombas' red and gold). What each colour's called is the race's (`labels`: a Koopa's shell and belly) or a body's own
   (`bodyLabels`: Koops's hood, Goombella's helmet).
 
 You turn and walk about in the picture as you choose. Your look is `player.appearance` ({ body, face, hairstyle,

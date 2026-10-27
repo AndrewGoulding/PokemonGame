@@ -794,6 +794,9 @@
   // Goku's body, his colours his own), and the race's own start. You're your own: any preset is only where you start,
   // every row of it yours to change. A face takes only the hairstyles that cover where its own hair was (its `hairs`,
   // "" for none: tools/build-player-looks.py), and a body only the faces of its own family (its sprites' game).
+  // (The Face row offers only the race's own faces: a preset with another race's, the Saiyan Woman's Chi-Chi or the
+  // Majin Girl's Videl, keeps it, and so does a look saved with one (`known`), but it isn't one to choose: another
+  // race's head never sat right on the race's bodies.)
   const hairsOf = (r) => r.looks.bodies.map((b) => b + "_hair").concat((r.looks.heads || []).map((h) => h + "_hair"));
   function looksOf(r) {
     const P = window.PLAYER_LOOK_PARTS, L = r.looks;
@@ -806,21 +809,23 @@
       .concat((L.presets || []).filter((pr) => P[pr.body]));
     const uniq = (list) => [...new Set(list)];
     const bodies = uniq(L.bodies.concat(presets.map((pr) => pr.body))).filter((b) => P[b]);
-    const faces = uniq(L.bodies.map((b) => b + "_face").concat((L.heads || []).map((h) => h + "_face"), presets.map((pr) => pr.face))).filter((f) => f && P[f]);
+    const faces = uniq(L.bodies.map((b) => b + "_face").concat((L.heads || []).map((h) => h + "_face"))).filter((f) => f && P[f]);
+    const known = uniq(faces.concat(presets.map((pr) => pr.face))).filter((f) => f && P[f]);
     let hairs = hairsOf(r).concat(presets.map((pr) => pr.hairstyle));
     for (const id of L.hairFrom || []) { const o = window.REALM_RACES.find((x) => x.id === id); if (o && o.looks) hairs = hairs.concat(hairsOf(o)); }
     hairs = uniq(hairs).filter((h) => h && P[h]);
-    return { bodies, faces, hairs, presets };
+    return { bodies, faces, known, hairs, presets };
   }
-  // (What can go with what: the faces of a body's family; the hairstyles a face takes, of those the race has.)
-  const facesFor = (X, body) => X.faces.filter((f) => window.PLAYER_LOOK_PARTS[f].family === window.PLAYER_LOOK_PARTS[body].family);
+  // (What can go with what: the faces of a body's family, of the race's own (or of those it knows: `all`); the
+  // hairstyles a face takes, of those the race has.)
+  const facesFor = (X, body, all) => (all ? X.known || X.faces : X.faces).filter((f) => window.PLAYER_LOOK_PARTS[f].family === window.PLAYER_LOOK_PARTS[body].family);
   const hairsFor = (X, face) => { const ok = (window.PLAYER_LOOK_PARTS[face] || {}).hairs || [""]; return ok.filter((h) => h === "" || X.hairs.includes(h)); };
   // (A look made to fit: a face of its body's family, a hairstyle its face takes; else the body's own, the face's own.)
   function fit(X, look) {
     const P = window.PLAYER_LOOK_PARTS;
     if (!P[look.body] || P[look.body].kind === "whole") { look.face = null; look.hairstyle = ""; return look; }
-    const faces = facesFor(X, look.body);
-    if (!faces.includes(look.face)) look.face = faces.includes(look.body + "_face") ? look.body + "_face" : faces[0];
+    const faces = facesFor(X, look.body, true);
+    if (!faces.includes(look.face)) look.face = faces.includes(look.body + "_face") ? look.body + "_face" : facesFor(X, look.body)[0] || faces[0];
     const hairs = hairsFor(X, look.face), own = look.face.replace(/_face$/, "_hair");
     if (!hairs.includes(look.hairstyle || "")) look.hairstyle = hairs.includes(own) ? own : hairs[0] || "";
     return look;
@@ -843,7 +848,9 @@
     const parts = () => window.Overworld.lookParts(look).map((n) => P[n]);
     const has = (role) => parts().some((p) => p.roles.includes(role));
     // The rows: [label, the choices, the one chosen, its name].
-    const colourRow = (label, role, list) => [label, ["own"].concat(list), role, (id) => (id === "own" ? "Original" : (Object.values(C).flat().find((c) => c[0] === id) || [, id])[1])];
+    // (each colour's name from its own list: "sky" is Sky Blue for hair, Sky for clothes)
+    const colourRow = (label, role, list) => [label, ["own"].concat(list), role, (id) => (id === "own" ? "Original" :
+      (C[role === "outfit" || role === "trim" ? "cloth" : role].find((c) => c[0] === id) || Object.values(C).flat().find((c) => c[0] === id) || [, id])[1])];
     // (The preset you look like: one whose head, body and colours are yours; or none, "Custom".)
     const presetAt = () => {
       const X = looksOf(race());
@@ -857,7 +864,7 @@
       out.push(["Preset", X.presets.map((_, i) => i), "preset", (i) => (i < 0 ? "Custom" : X.presets[i].name)]);
       if (P[look.body] && P[look.body].kind !== "whole") {
         const faces = facesFor(X, look.body), hairs = hairsFor(X, look.face);
-        if (faces.length > 1) out.push(["Face", faces, "face", (id) => P[id].name]);
+        if (faces.length > 1 || !faces.includes(look.face)) out.push(["Face", faces, "face", (id) => P[id].name]);
         if (hairs.length > 1) out.push(["Hairstyle", hairs, "hairstyle", (id) => (id ? P[id].name : "None")]);
       }
       if (X.bodies.length > 1) out.push(["Body", X.bodies, "body", (id) => P[id].name]);
@@ -943,7 +950,9 @@
       se();
       if (k === "a") {
         const r = race();
-        if (await window.Screen.yesNo((name ? name + ", you" : "You") + " are " + (/^[AEIOU]/.test(r.name) ? "an " : "a ") + r.name + "?")) break;
+        // (one of a kind, "a Saiyan"; of a clan, "of the Frieza Clan")
+        const of = /Clan$/.test(r.name) ? "of the " : /^[AEIOU]/.test(r.name) ? "an " : "a ";
+        if (await window.Screen.yesNo((name ? name + ", you" : "You") + " are " + of + r.name + "?")) break;
         continue;
       }
       if (k === "up" || k === "down") { row = (row + (k === "up" ? list.length - 1 : 1)) % list.length; continue; }

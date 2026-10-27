@@ -219,7 +219,7 @@ def parts_of(pid, name, family, frames, shift, heads, head_at, ref):
 # the face. Rows lower (+) or higher (-), each by eye, so the body keeps none of the face and the head all of it.)
 NECK = {'krillin': 1, 'tien': 1, 'townswoman': -4, 'piccolo': 4, 'piccolo_gi': 3, 'dende': 3, 'nail': 2, 'moori': 2, 'namekian': 2,
         'android_16': 5, 'android_17': 5, 'android_18': 3, 'android_19': 5, 'android_20': 1, 'frieza': 1, 'frieza_first': 2,
-        'mecha_frieza': 2, 'king_cold': 4, 'kid_buu': 1, 'fat_buu': 4, 'super_buu': 4, 'supreme_kai': 2, 'kibito': 4,
+        'mecha_frieza': 2, 'king_cold': -1, 'kid_buu': 1, 'fat_buu': 4, 'super_buu': 4, 'supreme_kai': 2, 'kibito': 4,
         'kibito_kai': 1, 'king_kai': 1, 'peach': 6, 'toad': 3, 'star_toad': 3, 'bowser': 2, 'koops': 1}
 def character(pid, name, family, frames, shift, split=True, neck=0, hair=True):
     """frames: N dicts {(x, y): (role, colour)} (standing, steps, betweens). split False: whole (no neck to cut at, the
@@ -235,7 +235,9 @@ def character(pid, name, family, frames, shift, split=True, neck=0, hair=True):
         h, f = split_head(head) if hair else ({}, dict(head))
         # (Hair hanging below the neck, Android 18's or a ponytail, is the hair's, not the body's.)
         if hair: h.update({k: v for k, v in frames[d].items() if k[1] >= n and v[0] == 'hair'})
-        xs = [x for x, y in (f or head)]
+        # (Its neck point: the middle of the neck, the head's bottom row; not of its face, as from behind there's
+        # little of the face, at one side (the townsman's ear), and a head put there sat off to that side.)
+        xs = [x for x, y in head if y == n - 1] or [x for x, y in (f or head)]
         np_ = [(min(xs) + max(xs) + 1) // 2 + shift[0] if xs else 16, n + shift[1]]
         heads.append((h, f))
         HEADS[pid] = HEADS.get(pid, []) + [(h, f, (np_[0] - shift[0], n))]
@@ -246,11 +248,13 @@ def character(pid, name, family, frames, shift, split=True, neck=0, hair=True):
             head_at[i] = [np_[0] + dx, np_[1] + dy]; ref[i] = list(np_)
     parts_of(pid, name, family, bodies, shift, heads, head_at, ref)
 def steps_of(stand, walk):
-    """A walk's four frames -> (its two steps, its two betweens): the steps the two most unlike standing."""
+    """A walk's four frames -> (its two steps, its two betweens): the steps the two opposite each other in the walk
+    (0 and 2, or 1 and 3) the more unlike standing, each between the one after its step, so the walk goes round in
+    its own order. (Not simply the two most unlike: those can be side by side, 0 and 1, and the walk then went 0, 2,
+    1, 3, back and forth, Supreme Kai's and the Buus' jerking as they walked and turned.)"""
     diff = lambda f: len(set(f.items()) ^ set(stand.items()))
-    order = sorted(range(len(walk)), key=lambda i: -diff(walk[i]))
-    st = sorted(order[:2]); between = sorted(order[2:4]) or st
-    return [walk[i] for i in st], [walk[i] for i in between]
+    i = max((0, 1), key=lambda i: diff(walk[i]) + diff(walk[i + 2]))
+    return [walk[i], walk[i + 2]], [walk[i + 1], walk[(i + 3) % 4]]
 def frames15(stands, walks):
     """stands: [down, up, left]; walks: [[...] down, up, left] (two steps, or four) -> the N frames."""
     out = list(stands) + [None] * 12
@@ -320,6 +324,15 @@ def tmc_part(pid, name, kind, si, frames, pal, roles, brown, offsets, shift, ext
         if offsets: px = {(x + offsets[i][0], y + offsets[i][1]): v for (x, y), v in px.items()}
         if extra: px = extra(i, px)
         f9.append(tmc_roles(px, pal, roles, brown))
+    if kind == 'whole':
+        # (Link's two steps each way, as taken, are the one step twice, the same foot forward, so he limped: facing
+        # you and away, the other is the first turned round (his head's from his standing frames, so it isn't). To
+        # the side, his strides are 2-3 pixels off the ground: down on it, so he doesn't hop.)
+        turn = lambda f: {(-1 - x, y): v for (x, y), v in f.items()}
+        f9[4], f9[6] = turn(f9[3]), turn(f9[5])
+        foot = max(y for x, y in f9[2])
+        for i in (7, 8):
+            dy = foot - max(y for x, y in f9[i]); f9[i] = {(x, y + dy): v for (x, y), v in f9[i].items()}
     # (The Minish Cap walks in two steps: its betweens are its standing frames.)
     f15 = f9 + [f9[0], f9[0], f9[1], f9[1], f9[2], f9[2]]
     if kind == 'whole': return character(pid, name, 'hyrule', f15, shift)
@@ -472,7 +485,7 @@ DB_PARTS = [
                                                            'skin': ['ffffff', 'dec6de', 'c6c6c6']}),
     ('mecha_frieza', 'Mecha Frieza', 'LG2_046', 1, {'trim': ['7b63e7', '7b63ad', '7b21ad', '5a007b', '210084'], 'skin': ['ffffff', 'adbde7', '7ba5ce']}),
     ('king_cold', 'King Cold', 'LG2_071', 2, {'outfit': ['d61029', 'ad0810', '7b0000'], 'trim': ['7bffce', '00a5a5', '21637b'],
-                                              'skin': ['efadff', 'de84ff', 'ce29ff', '9c00d6', '5a007b']}),
+                                              'skin': ['efadff', 'de84ff', 'ce29ff', '9c00d6', '5a007b']}, {'frames': 'king_cold'}),
     # (Videl, from Buu's Fury: a woman's face and hair for the Majin's and the Kais' presets.)
     ('videl', 'Videl', 'BF_277', 1, {'hair': ['000000', '393939'], 'outfit': ['ffffff', 'f7f7f7', 'dedede', 'c6c6c6'],
                                      'trim': ['a5a5a5', '7b7b7b', '636363', '525252'], 'skin': ['f7c673', 'dead63', 'ad7b39', '845218']}),
@@ -502,6 +515,66 @@ def db_roles(px, roles):
         out[(x, y)] = (role, col)
     return out
 def hexc(c): return '#%02x%02x%02x' % c[:3]
+# King Cold's sheet has him only from the front and the side standing: its "up" rows are his front again, and all
+# its walks (rows 4-7) are the one walk towards you, so he walked up facing you and sideways facing you. Here, his
+# own: towards you, standing (row 0) and his walk (row 4: steps 1 and 3, betweens 0 and 2); from behind, those drawn
+# again from behind (his cape over his back and arms, his head with no face: back_of); and to the side, standing
+# (row 2) and a walk made from it (side_walk), as the sheet has none.
+def back_of(f):
+    """A figure from the front -> from behind: below its shoulders, its cape across it (its outline kept, folds every
+    third column); above, its head's skin over its face (its outline, horns and dome kept)."""
+    ys = [y for x, y in f]; top = min(ys)
+    width = lambda y: max(x for x, yy in f if yy == y) - min(x for x, yy in f if yy == y) + 1
+    head = next(y for y in range(top, max(ys)) if width(y) >= 16)   # (his shoulders: the first row so wide, wider than his horns)
+    hem = max(y for (x, y), v in f.items() if v[0] == 'outfit')
+    xs = [x for x, y in f if y == head]; cx = (min(xs) + max(xs)) // 2
+    has = lambda x, y: (x, y) in f
+    out = dict(f)
+    CAPE = {0: (0x7b, 0x00, 0x00), 1: (0xad, 0x08, 0x10), 2: (0xd6, 0x10, 0x29)}
+    for y in range(head + 2, hem + 1):
+        # (the run of the figure through its middle: the tail, beside it, stays)
+        x0 = x1 = cx
+        if not has(cx, y): continue
+        while has(x0 - 1, y): x0 -= 1
+        while has(x1 + 1, y): x1 += 1
+        for x in range(x0 + 1, x1):
+            k = x - x0
+            out[(x, y)] = ('outfit', CAPE[0 if (x - cx) % 3 == 0 else 2 if k <= 2 else 1])
+        out[(x0, y)] = out[(x1, y)] = (None, (0, 0, 0))
+    for (x, y), v in f.items():
+        if y >= head or v[0] == 'trim': continue
+        if all(has(x + a, y + b) for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1))): out[(x, y)] = ('skin', (0xde, 0x84, 0xff) if y < (top + head) // 2 else (0xce, 0x29, 0xff))
+    return out
+def side_walk(f):
+    """A side standing -> its two steps: the front leg forward and the back one back, then the other way (the feet
+    two pixels, the shins one; the rest of him as he stands)."""
+    ys = [y for x, y in f]; bot = max(ys); legs = bot - 6
+    xs = [x for (x, y) in f if y >= bot - 2]; mid = (min(xs) + max(xs)) // 2
+    steps = []
+    for d in (1, -1):
+        g = {k: v for k, v in f.items() if k[1] < legs}
+        for (x, y), v in sorted(f.items(), key=lambda kv: (kv[0][0] <= mid) == (d > 0)):
+            if y < legs: continue
+            m = 1 if y < bot - 2 else 2
+            g[(x + (-d * m if x <= mid else d * m), y)] = v
+        # (what the legs leave behind at the hem: the stand's, so there's no hole)
+        for (x, y), v in f.items():
+            if legs <= y < bot - 2 and (x, y) not in g and (x - 1, y) in g and (x + 1, y) in g: g[(x, y)] = v
+        steps.append(g)
+    return steps
+def king_cold_frames(cell):
+    down, walk, side = cell(0, 0), [cell(4, c) for c in range(4)], cell(2, 0)
+    up, back = back_of(down), [back_of(w) for w in walk]
+    sa, sb = side_walk(side)
+    stands = [down, up, side]
+    steps = [(walk[1], walk[3]), (back[1], back[3]), (sa, sb)]
+    betweens = [(walk[0], walk[2]), (back[0], back[2]), (side, side)]
+    out = list(stands) + [None] * 12
+    for d in range(3):
+        out[3 + 2 * d], out[4 + 2 * d] = steps[d]
+        out[9 + 2 * d], out[10 + 2 * d] = betweens[d]
+    return out
+OWN_FRAMES = {'king_cold': king_cold_frames}
 def dragon_world():
     index = json.load(open(os.path.join(DB, 'index.json')))
     for pid, name, src, scale, roles, *more in DB_PARTS:
@@ -520,11 +593,14 @@ def dragon_world():
                     half.setdefault((x // 2, y // 2), []).append(col)
                 px = {k: max(set(v), key=v.count) for k, v in half.items() if len(v) >= 2}
             return db_roles(px, roles)
-        # (Standing: rows 0-2's first frames; walking: rows 4-6, all four of each, when it has them.)
-        stands = [cell(r, 0) for r in range(3)]
-        walk = len(e['frames']) >= 8 and e['frames'][4] >= 3
-        walks = [[cell(4 + d, c) for c in range(min(4, e['frames'][4 + d]))] if walk else [stands[d], stands[d]] for d in range(3)]
-        f15 = frames15(stands, walks)
+        # (Standing: rows 0-2's first frames; walking: rows 4-6, all four of each, when it has them. A sheet that's
+        # short of some, its own: OWN_FRAMES.)
+        if opts.get('frames'): f15 = OWN_FRAMES[opts['frames']](cell)
+        else:
+            stands = [cell(r, 0) for r in range(3)]
+            walk = len(e['frames']) >= 8 and e['frames'][4] >= 3
+            walks = [[cell(4 + d, c) for c in range(min(4, e['frames'][4 + d]))] if walk else [stands[d], stands[d]] for d in range(3)]
+            f15 = frames15(stands, walks)
         # (Feet at the cell's bottom and the figure in its middle, by where it stands facing down.)
         xs = [x for x, y in f15[0]]; ys = [y for x, y in f15[0]]
         shift = (16 - (min(xs) + max(xs) + 1) // 2, 31 - max(ys))
