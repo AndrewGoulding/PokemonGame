@@ -1,7 +1,7 @@
 // Kamurocho, side on, as Streets of Kamurocho draws it (data/kamurocho-street.js; its pictures from the game itself,
 // tools/build-kamurocho-sok.py): you walk along the street and up and down its pavement, a beat-'em-up's way, on a
-// screen of its own (336x224, Streets of Rage 2's height, 3:2 like the game's), and drawn twice your size to stand as
-// tall as its people. The game's overworld (ui/overworld.js) rests meanwhile: ui/game.js's explore loop asks this
+// screen of its own (336x224, Streets of Rage 2's height, 3:2 like the game's), and drawn two and a half times your
+// size to stand as tall as its people, your party walking behind you. The game's overworld (ui/overworld.js) rests meanwhile: ui/game.js's explore loop asks this
 // instead while you're in Kamurocho.
 //
 //   const ev = await Street.explore({ player, look, special, say, visible, onStep, level });
@@ -27,7 +27,8 @@
 // gang's back when you come into the street again. (onStep is told there are no fights to roll for: they're these.)
 (function () {
   "use strict";
-  const W = 336, H = 224, SCALE = 2;
+  // (You're drawn two and a half times your size, to stand as tall as its people.)
+  const W = 336, H = 224, SCALE = 2.5;
   const D = () => window.KAMUROCHO_STREET;
   const canvas = document.createElement("canvas");
   canvas.id = "street"; canvas.className = "world hidden"; canvas.width = W; canvas.height = H;
@@ -76,8 +77,10 @@
   function place(loc) {
     const a = loc && D().scenes[loc.scene] ? loc : D().arrive;
     // (put somewhere else in the same scene: its people and gangs where they are)
-    if (!me || me.scene !== a.scene) { for (const k of Object.keys(walkers)) delete walkers[k]; newScene = true; }
+    const moved = !me || me.scene !== a.scene;
+    if (moved) { for (const k of Object.keys(walkers)) delete walkers[k]; newScene = true; }
     me = { scene: a.scene, x: a.x, y: a.y, facing: a.facing || "down", moving: false };
+    if (moved) { trail = []; if (D().scenes[a.scene]) announce(); }
   }
   let newScene = true;   // (the gangs to be sent for: you've come into a scene)
   function walker(p) {
@@ -131,8 +134,10 @@
       g.restore();
     } });
     for (const gang of gangs) gang.members.forEach((m, k) => list.push({ y: m.y, draw: () => drawFoe(gang, m, k) }));
+    for (const f of followers(opts)) list.push({ y: f.y - 0.1, draw: () => drawFollower(f) });
     list.push({ y: me.y, draw: () => drawMe(opts) });
     list.sort((a, b) => a.y - b.y).forEach((o) => o.draw());
+    drawPopup();
     // (a spot's name, while you stand in it)
     const here = spotAt();
     if (here && here.text) { g.font = "bold 9px 'Trebuchet MS', sans-serif"; g.textAlign = "center"; g.fillStyle = "#000a"; const bw = Math.max(92, Math.ceil(g.measureText(here.text + "  Ⓐ").width) + 14); g.fillRect(W / 2 - bw / 2, 4, bw, 14); g.fillStyle = "#ffe890"; g.fillText(here.text + "  Ⓐ", W / 2, 14); g.textAlign = "left"; }
@@ -159,6 +164,78 @@
     }
     g.textAlign = "left";
   }
+  // ---------- Your party, walking behind you ----------
+  // Those fighting beside you (opts.followers(): Kiryu and Majima as Streets of Kamurocho draws them, at ease, a
+  // Pokémon as its HGSS follower sheet) walk where you walked, each a way behind the one before, facing the way you
+  // went along the street; they stop when you do.
+  const GAP = 46;
+  let trail = [];
+  function remember() {
+    const last = trail[trail.length - 1];
+    if (last && Math.hypot(last.x - me.x, last.y - me.y) < 1) return;
+    trail.push({ x: me.x, y: me.y, dir: me.facing === "left" ? -1 : me.facing === "right" ? 1 : last ? last.dir : 1 });
+    if (trail.length > 600) trail.splice(0, trail.length - 600);
+  }
+  function followers(opts) {
+    const who = (opts && opts.followers && opts.followers()) || [];
+    const out = [];
+    let d = 0;
+    who.forEach((f, k) => {
+      d += GAP;
+      // (the point `d` back along the trail; before the trail's start, behind you on the pavement)
+      let at = null, run = 0;
+      for (let j = trail.length - 1; j > 0; j--) { run += Math.hypot(trail[j].x - trail[j - 1].x, trail[j].y - trail[j - 1].y); if (run >= d) { at = trail[j - 1]; break; } }
+      const back = me.facing === "left" ? 1 : -1;
+      if (!at) at = { x: me.x + back * d, y: me.y, dir: -back };
+      if (!onFloor(at.x, at.y)) at = { x: me.x, y: me.y, dir: at.dir };
+      out.push(Object.assign({}, f, { x: at.x, y: at.y, dir: at.dir, moving: me.moving, k }));
+    });
+    return out;
+  }
+  function drawFollower(f) {
+    const x = Math.round(f.x - cam.x), y = Math.round(f.y - cam.y);
+    if (f.mon) {
+      // (an HGSS follower sheet: FireRed's nine frames, facing left 2, its steps 7 and 8; right is left turned)
+      const i = image("assets/world/sprites/" + f.mon + ".png");
+      if (!ready(i)) return;
+      // (twice its size, a big one's sheet as it is: a head shorter than you, as beside you in the Pokémon realm)
+      const size = i.height, k = size > 32 ? 1 : 2, fr = f.moving ? 7 + (Math.floor(t / 8) % 2) : 2;
+      shadow(x, y, 12);
+      g.save(); g.translate(x, y + 2);
+      if (f.dir > 0) g.scale(-1, 1);
+      g.drawImage(i, fr * size, 0, size, size, -size * k / 2, -size * k, size * k, size * k);
+      g.restore();
+      return;
+    }
+    const i = image("assets/kamurocho/people/" + f.stand + ".png"), wk = f.walk && image("assets/kamurocho/people/" + f.walk + ".png");
+    if (!ready(i)) return;
+    const step = f.moving && ready(wk);
+    shadow(x, y, i.width * 0.4);
+    g.save(); g.translate(x, y);
+    if (f.dir < 0) g.scale(-1, 1);
+    if (step) { const fw = wk.width / FRAMES; g.drawImage(wk, (Math.floor((t * (run ? 2.4 : 1.4) + f.k * 9) / 8) % FRAMES) * fw, 0, fw, wk.height, -Math.round(fw / 2), -wk.height, fw, wk.height); }
+    else g.drawImage(i, -Math.round(i.width / 2), -i.height + (Math.floor(t / 30 + f.k) % 2));
+    g.restore();
+  }
+
+  // ---------- The area's name (FireRed's map name popup, ui/overworld.js's) ----------
+  // Coming into a street, its name hangs down from the top left on a sign for a while, then goes back up.
+  let popup = null;   // { text, t }
+  function drawPopup() {
+    if (!popup) return;
+    popup.t++;
+    const T = popup.t, drop = Math.min(1, T / 12, Math.max(0, (150 - T) / 12));
+    if (T > 150) { popup = null; return; }
+    g.font = "bold 10px 'Trebuchet MS', sans-serif";
+    const w = Math.max(96, Math.ceil(g.measureText(popup.text).width) + 20), h = 20, y = Math.round(-h + (h + 4) * drop);
+    g.fillStyle = "#3a2c20"; g.fillRect(4, y, w, h);
+    g.fillStyle = "#f8ecd0"; g.fillRect(6, y + 2, w - 4, h - 4);
+    g.fillStyle = "#d8c49c"; g.fillRect(6, y + h - 5, w - 4, 2);
+    g.fillStyle = "#c8b080"; g.fillRect(8, y + 4, 2, 2); g.fillRect(w - 2, y + 4, 2, 2);
+    g.fillStyle = "#4a3c2c"; g.textAlign = "center"; g.fillText(popup.text, 4 + w / 2, y + 14); g.textAlign = "left";
+  }
+  const announce = () => { const S = scene(); popup = S && S.title ? { text: S.title, t: 0 } : null; };
+
   function shadow(x, y, rx) { g.fillStyle = "#0006"; g.beginPath(); g.ellipse(x, y, rx, rx * 0.25, 0, 0, Math.PI * 2); g.fill(); }
   function drawMe(opts) {
     const sheet = opts.look && opts.look();
@@ -242,7 +319,7 @@
       }
       if (gang.state === "walk") {
         // (seen: you're near and in front of them, or right by them)
-        if (!quiet && ((Math.sign(ax) === gang.dir && Math.abs(ax) < 150 && Math.abs(ay) < 40) || (Math.abs(ax) < 50 && Math.abs(ay) < 24))) { gang.state = "chase"; gang.t = 0; gang.wait = 0; continue; }
+        if (!quiet && ((Math.sign(ax) === gang.dir && Math.abs(ax) < 150 && Math.abs(ay) < 40) || (Math.abs(ax) < 50 && Math.abs(ay) < 24))) { gang.state = "chase"; gang.t = 0; gang.wait = 0; gang.side = 0; continue; }
         if (gang.wait > 0) { gang.wait--; continue; }
         const nx = gang.x + gang.dir * 0.6;
         if (Math.abs(nx - gang.home) > 220 || !onFloor(nx, gang.y)) { gang.dir = -gang.dir; gang.wait = 50 + Math.floor(Math.random() * 80); continue; }
@@ -251,8 +328,11 @@
       } else {
         // (after you: up to you, side on, an arm's length off; lost, if you get well away)
         if (Math.abs(ax) > 280 || Math.abs(ay) > 90) { gang.state = "walk"; gang.home = gang.x; gang.wait = 60; continue; }
-        gang.dir = ax < 0 ? -1 : 1;
-        const tx = me.x - gang.dir * 40, dx = tx - gang.x, dy = me.y - gang.y;
+        // (the side they come at you from: kept, so they don't spin round as they close in, or pass under or over
+        // you; another only once you're well past them)
+        if (!gang.side || (Math.sign(ax) === gang.side && Math.abs(ax) > 60)) gang.side = ax < 0 ? 1 : -1;
+        gang.dir = -gang.side;
+        const tx = me.x + gang.side * 40, dx = tx - gang.x, dy = me.y - gang.y;
         if ((Math.abs(dx) < 3 || Math.abs(ax) < 46) && Math.abs(dy) < 6) {
           gang.state = "bark"; gang.t = 0; me.facing = gang.dir < 0 ? "right" : "left";
           const B = D().barks || {}; gang.bark = (B[gang.foes[0]] || ["Hey, you! Got a problem?"])[Math.floor(Math.random() * (B[gang.foes[0]] || [0]).length)];
@@ -273,6 +353,8 @@
     for (const k of Object.keys(walkers)) delete walkers[k];
     newScene = true;
     me = { scene: e.to, x: e.x, y: e.y, facing: e.facing || me.facing, moving: false };
+    trail = [];
+    announce();
     held.clear();
   }
   function blocked(x, y, opts) {
@@ -330,6 +412,7 @@
           // (out of a door: walking into it, from the spot before it, the way it's `walk`ed)
           const door = (S.exits || []).find((e) => e.walk === dir && e.spot && me.x >= e.spot[0] && me.x <= e.spot[1] && me.y >= e.spot[2] && me.y <= e.spot[3] && !onFloor(nx, ny));
           if (door) { go(door); continue; }
+          remember();
           if (onFloor(nx, ny) && !blocked(nx, ny, opts)) { me.x = nx; me.y = ny; }
           else if (onFloor(nx, me.y) && !blocked(nx, me.y, opts)) me.x = nx;
           else if (dx) {

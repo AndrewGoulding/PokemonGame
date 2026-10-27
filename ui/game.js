@@ -9879,6 +9879,23 @@
     if (realmQuiet > 0) { realmQuiet--; return null; }
     return Math.random() < enc.rate ? { type: "realm-battle" } : null;
   }
+  // Who walks behind you on Kamurocho's streets (ui/street.js): those fighting beside you, standing (Kiryu and Majima
+  // at ease, a Pokémon as its HGSS follower sheet, tools/build-hgss-followers.js).
+  function realmFollowers() {
+    const P = player.flags.realmParty && player.flags.realmParty.yakuza;
+    if (!P) return [];
+    const F = window.JOHTO_FOLLOWERS || { hgss: [] }, me = realmMe(P);
+    return P.party.filter((rec) => rec !== me).map((rec) => {
+      const mon = realmMon(rec);
+      if (mon) {
+        if (mon.hp <= 0) return null;
+        const id = String((window.DEX[mon.species] || {}).id || 0);
+        return F.hgss.includes(id) ? { mon: "follow/" + id } : null;
+      }
+      if (rec.hp <= 0) return null;
+      return rec.id === "kiryu" || rec.id === "majima" ? { stand: rec.id + "_idle", walk: rec.id + "_idle_walk" } : null;
+    }).filter(Boolean);
+  }
   // The party's best level (a Pokémon's or a fighter's): which of the street's gangs come out.
   function realmBestLevel() {
     const P = realmParty((window.WORLD_MAPS[player.location.map] || {}).realm || "yakuza");
@@ -15881,7 +15898,7 @@
   async function exploreStreet() {
     Player.enterRealm(player, "yakuza");
     music((window.WORLD_MAPS.Kamurocho || {}).music);
-    const ev = await Street.explore({ player, look: () => Overworld.playerLook(), special, visible: (p) => visible(p, "Kamurocho"), level: realmBestLevel,
+    const ev = await Street.explore({ player, look: () => Overworld.playerLook(), special, visible: (p) => visible(p, "Kamurocho"), level: realmBestLevel, followers: realmFollowers,
       onStep: (fights) => { Player.advanceClock(player); return fights ? realmStreetStep() : saveReminderStep(); } });
     if (ev.type === "menu") {
       await startMenu();

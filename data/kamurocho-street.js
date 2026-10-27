@@ -106,12 +106,13 @@ window.KAMUROCHO_STREET = {
       exits: [{ spot: [20, 98, 414, 424], walk: "up", to: "street", x: 720, y: 172, facing: "down", text: "Door" }],
       spots: [{ x0: 548, x1: 790, y0: 414, y1: 470, script: "Kamurocho_Clerk", text: "Clerk" }]
     },
-    // (Serena's backlot, behind the bar, this game's own (tools/build-kamurocho-insides.py): out the way you came, off
-    // its left, up the passage to the street; and its manhole cover, the way down to the Time Machine.)
+    // (Serena's backlot, behind the bar, this game's own (tools/build-kamurocho-insides.py): out the way you came, up
+    // the passage at its left to the street; and its manhole cover, the way down to the Time Machine.)
     backlot: {
       title: "Serena's Backlot", image: "assets/kamurocho/backlot.png", width: 640,
       floor: [[0, 414], [640, 414], [640, 470], [0, 470]],
-      exits: [{ edge: "left", to: "street", x: 544, y: 172, facing: "down" },
+      // (out up the lit passage at its left, as into Poppo's door: walk up into it, or press A before it)
+      exits: [{ spot: [8, 68, 414, 424], walk: "up", to: "street", x: 544, y: 172, facing: "down", text: "To the street" },
         { spot: [394, 450, 436, 466], to: "sewer", x: 90, y: 440, facing: "right", text: "Manhole" }],
       things: [{ image: "assets/kamurocho/manhole.png", x: 422, y: 458, scale: 1, floor: true }]
     },

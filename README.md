@@ -3660,10 +3660,13 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   and the storm drain drawn in the street's colours by `tools/build-kamurocho-insides.py` (Poppo's sign off its
   shopfront, its shelves, drinks fridge and counter, its clerk, a man at ease in Poppo's blue uniform; the backlot's
   green tiles, back door, crates, bin bags and fence; the drain's wet concrete, pipes, culvert and ladder, and the
-  Time Machine three times over), and the streets put together by `tools/build-kamurocho-streets.py` out of Streets
+  Time Machine twice over, a head taller than you), and the streets put together by `tools/build-kamurocho-streets.py` out of Streets
   of Kamurocho's own pieces (given the game's folder): the street's shopfronts and pavement, the alley's back doors,
   its title screen's Tenkaichi gate and neon, its atlas's lamp posts, bicycles, signboards and overhead wires, and
-  its own letters for the new signs, recoloured and relit. You're drawn twice your size, to stand as tall as its people. Walk off a
+  its own letters for the new signs, recoloured and relit. You're drawn two and a half times your size, to stand as tall as its people, and those fighting beside you walk
+  where you walked, one behind the other (Kiryu and Majima at ease, their walks made from their standing frames by
+  `tools/build-kamurocho-sok.py`'s `SYNTH_WALKS`; a Pokémon as its HGSS follower sheet). Coming into a street, its
+  name hangs down from the top left on a sign for a while, as FireRed's area names do. Walk off a
   street's end into the next (the street's left end is Nakamichi Street's right, its right the alley; Tenkaichi
   runs from Taihei's gate to Theater Square, Pink Street from Taihei's end to Nakamichi, the Champion District from
   Pink Street to the square, Showa Street off Taihei's west end, Senryo Avenue to the Hotel District to Shichifuku
@@ -3671,7 +3674,7 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   Nakamichi, the way into Pink Street or the Champion District, Showa's passage to Nakamichi Alley, Pink Street's and
   Senryo's ways into Pink Alley, the Kamuro Theater's arcade to Theater Alley or Shichifuku Street and Shichifuku's
   lane back to the square), at Bacchus's, Poppo's or Serena's door and press A to go in (out of Bacchus,
-  walk off its left; out of Poppo, walk up into its glass door; out of the backlot, off its left); in Poppo, stand
+  walk off its left; out of Poppo, walk up into its glass door; out of the backlot, walk up the lit passage at its left); in Poppo, stand
   at the counter and press A to talk to the clerk and buy; on the backlot's manhole, A climbs down (the ladder, A,
   back up); the Time Machine's spot, A, is its menu. The floor you can walk on is each scene's polygon (along the
   slope, you go up or down it as you walk). Its people stand about at ease or walk up and down the pavement, each
@@ -3695,7 +3698,7 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   over the street behind you.
 - **The gangs**: no fights out of nowhere. As in the Yakuza games, gangs (`REALM_ENCOUNTERS.Kamurocho`'s groups, the
   harder ones as your party's level comes to them) walk the streets in plain sight; one that spots you in front of
-  it shows a "!" and comes for you, its leader says his line (`KAMUROCHO_STREET.barks`) and the fight's that gang.
+  it shows a "!" and comes for you (from the side it set out from, facing you, not turning round as it closes in), its leader says his line (`KAMUROCHO_STREET.barks`) and the fight's that gang.
   Run and it gives up; beaten, it's gone, and another comes along in a while. None in the alley, the bars, the
   shops, the backlot, the storm drain or the Champion District.
 - **The pictures** (`assets/kamurocho/`, committed, so nothing needs the game): `tools/build-kamurocho-sok.py` takes

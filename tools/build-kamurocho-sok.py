@@ -81,7 +81,9 @@ FOE_WALKS = {
 # legs: their breath, their spear's sway, the host's cigarette): theirs are made from their standing frame, its
 # legs below the hip sheared apart and together about the crotch a stride at a time, the lifting foot raised, the
 # body bobbing down on the strides. (frame, the hip's row, the crotch's column, the stride))
-SYNTH_WALKS = {'knife': ((15, 2797, 1065, 88, 81), 50, 46, 6), 'host': ((15, 2741, 472, 35, 82), 46, 17, 4)}
+# (And Kiryu and Majima at ease, to walk behind you as your party: their standing frames, the same way.)
+SYNTH_WALKS = {'knife': ((15, 2797, 1065, 88, 81), 50, 46, 6), 'host': ((15, 2741, 472, 35, 82), 46, 17, 4),
+               'kiryu_idle': ((15, 4064, 1952, 30, 82), 46, 15, 4), 'majima_idle': ((15, 1722, 156, 28, 84), 48, 14, 4)}
 
 def stride(im, hip, split, d):
     W, H = im.width + 2 * d + 4, im.height + 2
@@ -102,7 +104,7 @@ def stride(im, hip, split, d):
     return out
 
 # (Those whose frames face left in the atlas: turned round, so all of them face right.)
-FACING_LEFT = {'kiryu_idle', 'majima_idle', 'host_idle', 'loiterer', 'drunk_idle', 'drunk_walk'}
+FACING_LEFT = {'kiryu_idle', 'majima_idle', 'host_idle', 'loiterer', 'drunk_idle', 'drunk_walk', 'kiryu_idle_walk', 'majima_idle_walk'}
 
 def strip(atlas, pid, rects, ims=None):
     # (each frame trimmed to itself, turned to face right, and set in a frame of one width: its head (the middle of

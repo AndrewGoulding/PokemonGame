@@ -14,7 +14,7 @@
 # ui/street.js from manhole.png).
 #
 # Under the manhole in Serena's backlot: a storm drain's chamber, the ladder down at its left, a culvert behind, and
-# the Time Machine (time-machine.png, three times over) standing on its floor; and the manhole cover itself, for
+# the Time Machine (time-machine.png, twice over) standing on its floor; and the manhole cover itself, for
 # the backlot's asphalt.
 #
 #   python3 tools/build-kamurocho-insides.py
@@ -277,11 +277,11 @@ def sewer():
     for _ in range(80):
         x = rnd.randrange(SEWER_W); y = rnd.randrange(floor + 4, H - 14)
         d.line((x, y, x + rnd.randrange(4, 16), y), fill=(120, 126, 112))
-    # The Time Machine, on the floor beyond the ladder, three times over.
+    # The Time Machine, on the floor beyond the ladder, twice over (a head taller than you are on the street).
     tm = Image.open(os.path.join(K, 'time-machine.png')).convert('RGBA')
-    tm = tm.resize((tm.width * 3, tm.height * 3), Image.NEAREST)
+    tm = tm.resize((tm.width * 2, tm.height * 2), Image.NEAREST)
     glow = Image.new('RGBA', im.size, (0, 0, 0, 0)); gd = ImageDraw.Draw(glow)
-    for r in range(90, 0, -15): gd.ellipse((300 - r * 1.6, floor + 20 - r * 0.5, 300 + r * 1.6, floor + 20 + r * 0.5), fill=(120, 200, 255, 14))
+    for r in range(60, 0, -10): gd.ellipse((300 - r * 1.6, floor + 20 - r * 0.5, 300 + r * 1.6, floor + 20 + r * 0.5), fill=(120, 200, 255, 14))
     im.alpha_composite(glow)
     im.alpha_composite(tm, (300 - tm.width // 2, floor + 26 - tm.height))
     im.convert('RGB').save(os.path.join(K, 'sewer.png'), optimize=True)
