@@ -283,15 +283,20 @@
     return null;
   }
 
-  // A new game starts with FireRed's intro: the controls guide, then Prof. Oak
-  // asks whether you're a boy or a girl and names you and your rival.
+  // A new game starts with the character creator (your race and your look) and your name, then you're in the
+  // Realm Hub, between the realms, with ¥10,000; the red portal is the Pokémon realm's (beside Pallet Town, where
+  // Prof. Oak's story starts as ever).
   // (New Game +: from `old`, what Player.newGamePlus keeps.)
+  const NEW_GAME_MONEY = 10000;
   async function newGame(old) {
     show("intro");
-    const r = await Intro.oakSpeech();
-    player = old ? Player.newGamePlus(old, r.name, r.look) : Player.create(r.name, r.look);   // the rival is Gary (Player.RIVAL_NAME)
+    const r = await Intro.newCharacter();
+    player = old ? Player.newGamePlus(old, r.name) : Player.create(r.name);   // the rival is Gary (Player.RIVAL_NAME)
     player.race = r.race;
     player.appearance = r.appearance;
+    player.money = Math.max(old ? player.money : 0, NEW_GAME_MONEY);
+    player.location = Object.assign({}, window.TIME_MACHINE.hub);
+    player.flags.realmHubVisited = true;
     await persist();
   }
 
@@ -9668,7 +9673,7 @@
   const HUB_YUGIOH_PORTAL = { map: "RealmHub", x: 10, y: 5, facing: "down" }, HUB_YAKUZA_PORTAL = { map: "RealmHub", x: 16, y: 5, facing: "down" };
   async function timeMachine() {
     const to = window.TIME_MACHINE;
-    if (!player.flags.starter) { await say(["It's a strange machine with a clock\non its dome.", "Its door won't open."]); return; }
+    if (!player.flags.starter && !player.flags.realmHubVisited) { await say(["It's a strange machine with a clock\non its dome.", "Its door won't open."]); return; }
     await say("It's the Time Machine!\nIts door glows with a strange light.");
     // (Its mirror: the character creator again.)
     const v = await ask("What will you do?", [{ label: "Travel", value: "go", className: "action" }, { label: "Change Look", value: "look", className: "action" }, back("Leave")]);
@@ -9704,7 +9709,8 @@
       if (!(await confirm("Step through the portal?"))) return;
       // (out beside the Time Machine, in its clearing off Pallet Town)
       await voyage(window.TIME_MACHINE.lane, ["You step into the red light…", "Time and space twist around you…", "…and settle back into place."], "se_warp_in");
-      await say("You're back in the Pokémon realm,\nbeside Pallet Town.");
+      await say(player.flags.pokemonVisited || player.flags.starter ? "You're back in the Pokémon realm,\nbeside Pallet Town." : ["You've arrived in the Pokémon realm,\nbeside Pallet Town!", "Prof. Oak's lab is in the town,\njust to the south."]);
+      player.flags.pokemonVisited = true;
       await persist();
       return;
     }

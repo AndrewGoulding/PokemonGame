@@ -1145,6 +1145,12 @@ node tools/build-intro.js pokefirered     # or: POKEFIRERED=pokefirered npm run 
 `src/intro.c`, `src/title_screen.c` and `src/oak_speech.c` (frame counts at 60
 a second). There's no music or cries.
 
+A new game doesn't play Oak's speech any more: NEW GAME goes to the character
+creator (below, "The character creator"), then the naming screen for your name,
+and you start in the Realm Hub with ¥10,000. Its red portal takes you to the
+Pokémon realm, by Pallet Town, where Prof. Oak's story starts as ever (and
+Pallet's Time Machine takes you back, starter or not).
+
 The naming screen is FireRed's `src/naming_screen.c`: `tools/build-naming-screen.js`
 draws its backgrounds (the menu tilemap and the three keyboard pages, in their
 palettes) and cuts out its sprites (the page button and its labels, BACK, OK,
@@ -3747,7 +3753,7 @@ taken from a Dragon Quest cartridge.
 
 ### The character creator: your race and your look
 
-A new game makes you after your name, on a page of its own in Oak's speech (`ui/intro.js`'s `racePage`). Up and
+A new game starts by making you, on a page of its own (`ui/intro.js`'s `racePage`), before your name. Up and
 down go through what you can choose, left and right change it, A (and YES) is you:
 
 - **Race**: the seven below, each with its element, stats at level 1 and skills (with the levels they come at) on

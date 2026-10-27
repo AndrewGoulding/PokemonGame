@@ -4,7 +4,8 @@
 //
 //   await Intro.movie();                  // copyright, Game Freak, Gengar vs Nidorino (A/Start skips)
 //   await Intro.titleScreen();            // -> "start", or "timeout" to replay the movie
-//   await Intro.oakSpeech()               // -> { name, look, race, appearance }
+//   await Intro.newCharacter()            // -> { name, race, appearance }: a new game's character creator and name
+//   await Intro.oakSpeech()               // -> { name, look, race, appearance } (not played now)
 //   await Intro.chooseRace(name, was)     // -> { race, appearance }, on the character creator alone
 //
 // Frame counts are the GBA's (60 a second). There's no sound.
@@ -929,7 +930,34 @@
     return r;
   }
 
-  // 3. Prof. Oak.
+  // A new game: the character creator, then FireRed's naming screen (between fades to black), for your name.
+  // -> { name, race, appearance }.
+  async function newCharacter() {
+    start();
+    skippable = false; skipped = false;
+    fade = { color: "#000", level: 16 };
+    if (window.GameAudio) window.GameAudio.music("mus_new_game_intro");
+    const made = await racePage(null);
+    let name;
+    for (;;) {
+      show(""); window.Screen.clearMenu();
+      await window.NamingScreen.preload(null);
+      const ns = window.NamingScreen.create({ title: "YOUR NAME?", maxChars: 7, fallback: BOY_NAMES[Math.floor(Math.random() * BOY_NAMES.length)], icon: null });
+      paint = () => ns.draw(g);
+      actors.add(() => (paint ? ns.step() : false));
+      await fadeTo("#000", 16, 0, 0);
+      ns.start();
+      name = await ns.done;
+      await fadeTo("#000", 0, 16, 0);
+      paint = null;
+      if (await window.Screen.yesNo("So your name is " + name + "?")) break;
+    }
+    show("");
+    stop();
+    return Object.assign({ name }, made);
+  }
+
+  // 3. Prof. Oak. (No longer played: a new game starts with newCharacter.)
   async function speech() {
     if (window.GameAudio) window.GameAudio.music("mus_new_game_intro");
     const s = {
@@ -1091,6 +1119,7 @@
     movie: async () => { await movie(); },
     titleScreen: async () => { const r = await titleScreen(); return r; },
     oakSpeech,
+    newCharacter,
     chooseRace,
     stop
   };
