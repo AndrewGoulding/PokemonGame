@@ -7228,6 +7228,21 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     assert(pika.moves[0].pp === pf.pp["move:Thunderbolt"] && pika.hp === pf.hp, "its PP and HP go back to it");
     assert(R.pokemonExp(pika, 20) > 0);
   }
+  // (Four fight and four wait in reserve: Swap brings one in, and one comes in for anyone who falls; the fight's lost
+  // only when the reserve's down too.)
+  {
+    const mk = (id, lv) => R.member(R.recruit(id, lv), "Red");
+    const b = R.create([mk("hylian", 3)], ["grunt"], { seed: 3, reserve: [mk("kiryu", 30), mk("majima", 30)] });
+    const k0 = b.reserve[0];
+    R.turn(b, [{ act: "swap", reserve: 0 }]);
+    assert(b.allies[0] === k0 && b.reserve[0].id === "hylian", "a swap");
+    b.allies[0].hp = 1;
+    for (let n = 0; !b.over && n < 60; n++) R.turn(b, [{ act: "attack", target: 0 }]);
+    assert(b.over === "won", "the reserve fights on: " + b.over);
+    const lost = R.create([mk("hylian", 1)], ["shakedown"], { seed: 5, reserve: [mk("hylian", 1)] });
+    for (let n = 0; !lost.over && n < 200; n++) R.turn(lost, [{ act: "defend" }]);
+    assert(lost.over === "lost" && lost.allies.concat(lost.reserve).every((f) => f.hp === 0), "lost once everyone's down");
+  }
   // (And each has its looks: parts that are drawn, and skins that are colours.)
   const skins = window.LOOK_COLOURS.skin.map((c) => c[0]);
   for (const r of window.REALM_RACES) {

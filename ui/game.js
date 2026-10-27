@@ -9763,14 +9763,22 @@
   // half your money gone.
   // You fight as your race (player.race: REALM_RACES); a party saved before that had you as plain "you", and
   // becomes your race at the same level and EXP (as does a party you've changed race since, at a Time Machine).
+  // Four fight (party), four more wait to come in (reserve: in battle, Swap brings one in, and one replaces anyone
+  // who falls), and anyone else waits at the Time Machine (stored); realmJoin puts whoever joins in the first with
+  // room.
   function realmParty(realm) {
     const all = player.flags.realmParty = player.flags.realmParty || {};
     const me = player.race && window.REALM_FIGHTERS[player.race] ? player.race : "you";
     if (!all[realm]) all[realm] = { party: [Ultimax.recruit(me, 1)], items: { staminan: 3 } };
+    const P = all[realm];
+    P.reserve = P.reserve || []; P.stored = P.stored || [];
     // (A Pokémon brought along who's no longer in your party, left in a box or traded, goes back.)
-    all[realm].party = all[realm].party.filter((r) => !r.pokemon || realmMon(r));
-    const rec = all[realm].party[0];
-    if ((rec.id === "you" || (window.REALM_RACES || []).some((r) => r.id === rec.id)) && rec.id !== me && me !== "you") {
+    for (const k of ["party", "reserve", "stored"]) P[k] = P[k].filter((r) => !r.pokemon || realmMon(r));
+    // (Four at most fighting, four in reserve.)
+    while (P.party.length > 4) P.reserve.unshift(P.party.pop());
+    while (P.reserve.length > 4) P.stored.unshift(P.reserve.pop());
+    const rec = realmMe(P);
+    if (rec && (rec.id === "you" || (window.REALM_RACES || []).some((r) => r.id === rec.id)) && rec.id !== me && me !== "you") {
       rec.id = me;
       const s = Ultimax.stats(me, rec.lv);
       rec.hp = Math.min(rec.hp, s.hp); rec.mp = Math.min(rec.mp, s.mp);
@@ -9780,27 +9788,36 @@
   // A Pokémon in a realm's party: { pokemon: its personality }, the record itself staying in your party (so its HP,
   // PP and EXP are the same in both realms). It fights by the Ultimax system's rules (engine/battle.js's
   // Ultimax.pokemon): its stats as theirs, its types as elements, its moves as skills that cost PP.
+  const realmAll = (P) => P.party.concat(P.reserve || [], P.stored || []);
+  // (You: your race's record, wherever you are in the party.)
+  const realmMe = (P) => realmAll(P).find((r) => r.id === "you" || (window.REALM_RACES || []).some((x) => x.id === r.id)) || P.party[0];
+  function realmJoin(P, rec) {
+    const k = P.party.length < 4 ? "party" : P.reserve.length < 4 ? "reserve" : "stored";
+    P[k].push(rec);
+    return k;
+  }
+  const JOINED = { party: "", reserve: " (in reserve)", stored: " They'll wait at the Time Machine." };
   const realmMon = (rec) => rec.pokemon != null ? (player.party || []).find((m) => !m.egg && m.personality === rec.pokemon) || null : null;
   const realmMember = (rec) => {
     const mon = realmMon(rec);
-    return mon ? Ultimax.pokemon(mon, Party.stats(mon), Party.displayName(mon)) : Ultimax.member(rec, player.name);
+    return mon ? Object.assign(Ultimax.pokemon(mon, Party.stats(mon), Party.displayName(mon)), { rec }) : Ultimax.member(rec, player.name);
   };
   // Everyone's HP and MP back (a Pokémon's HP and PP, as at a Pokémon Center).
   function realmRestore(P) {
-    for (const rec of P.party) {
+    for (const rec of realmAll(P)) {
       const mon = realmMon(rec);
       if (mon) Party.heal(mon);
       else { const s = Ultimax.stats(rec.id, rec.lv); rec.hp = s.hp; rec.mp = s.mp; }
     }
   }
-  // Bringing a Pokémon from your party into the realm's (four at most), or sending one back.
+  // Bringing a Pokémon from your party into the realm's (as anyone joins: realmJoin), or sending one back.
   async function realmPokemon(realm) {
     const P = realmParty(realm);
     for (;;) {
-      const here = P.party.filter((r) => realmMon(r)).map(realmMon);
+      const here = realmAll(P).filter((r) => realmMon(r)).map(realmMon);
       const can = (player.party || []).filter((m) => !m.egg && !here.includes(m));
       const v = await ask("Pokémon fight here by this realm's\nrules. Bring one, or send one back?", [
-        { label: "Bring one", value: "bring", className: "action", disabled: P.party.length >= 4 || !can.length },
+        { label: "Bring one", value: "bring", className: "action", disabled: !can.length },
         { label: "Send back", value: "send", className: "action", disabled: !here.length }, back()]);
       if (v === "back") return;
       const list = v === "bring" ? can : here;
@@ -9809,18 +9826,18 @@
       if (pick === "back") continue;
       const mon = list[pick], f = Ultimax.pokemon(mon, Party.stats(mon), Party.displayName(mon));
       if (v === "bring") {
-        P.party.push({ pokemon: mon.personality });
-        await say([Party.displayName(mon) + " joins the party!", realmWrap("Here it's " + f.elements.join("/") + ", with STR " + f.str + ", DEF " + f.def + ", INT " + f.int + ", WIS " + f.wis + " and SPD " + f.spd + "."),
+        const where = realmJoin(P, { pokemon: mon.personality });
+        await say([realmWrap(Party.displayName(mon) + " joins the party!" + JOINED[where]), realmWrap("Here it's " + f.elements.join("/") + ", with STR " + f.str + ", DEF " + f.def + ", INT " + f.int + ", WIS " + f.wis + " and SPD " + f.spd + "."),
           realmWrap(f.skills.length ? "Its moves here: " + f.skills.map((id) => f.own[id].name).join(", ") + "." : "None of its moves work here: it can only attack.")]);
       } else {
-        P.party.splice(P.party.findIndex((r) => realmMon(r) === mon), 1);
+        for (const k of ["party", "reserve", "stored"]) { const i = P[k].findIndex((r) => realmMon(r) === mon); if (i >= 0) P[k].splice(i, 1); }
         await say(Party.displayName(mon) + " goes back to your party.");
       }
       await persist();
     }
   }
   const raceName = () => { const r = (window.REALM_RACES || []).find((x) => x.id === player.race); return r ? r.name : null; };
-  const inRealmParty = (realm, id) => !!(player.flags.realmParty && player.flags.realmParty[realm] && player.flags.realmParty[realm].party.some((m) => m.id === id));
+  const inRealmParty = (realm, id) => !!(player.flags.realmParty && player.flags.realmParty[realm] && realmAll(realmParty(realm)).some((m) => m.id === id));
   const realmName = (rec) => (realmMon(rec) ? Party.displayName(realmMon(rec)) : window.REALM_FIGHTERS[rec.id].name || player.name);
   let realmQuiet = 0;   // (steps before the next fight can start: a few after each one)
   // (A battle's line, broken into the text box's lines at the spaces.)
@@ -9867,15 +9884,18 @@
     scene.innerHTML = '<div class="rb"><div class="rb-back" style="' + back + '"></div>' +
       '<div class="rb-party">' + b.allies.map((f, i) => '<div class="rb-card" data-i="' + i + '"><b>' + escapeHtml(f.name) + '</b><span class="hp"></span><span class="mp"></span><span>Lv ' + f.lv + '</span></div>').join("") + '</div>' +
       '<div class="rb-foes">' + b.foes.map((f, i) => '<div class="rb-foe" data-i="' + i + '">' + realmFoePic(f) + '</div>').join("") + '</div></div>';
-    realmShow(b, { allies: b.allies.map((f) => [f.hp, f.mp]), foes: b.foes.map((f) => f.hp) });
+    realmShow(b, { allies: b.allies.map((f) => [f.hp, f.mp, f.name, f.lv, !!f.mon, f.maxHp]), foes: b.foes.map((f) => f.hp) });
   }
   function realmShow(b, snap) {
     scene.querySelectorAll(".rb-card").forEach((el, i) => {
-      const [hp, mp] = snap.allies[i], f = b.allies[i];
+      // (who's in each place: a swap changes it)
+      const [hp, mp, name, lv, mon, maxHp] = snap.allies[i];
+      el.querySelector("b").textContent = name;
       el.querySelector(".hp").textContent = "HP " + hp;
-      el.querySelector(".mp").textContent = f.mon ? "" : "MP " + mp;
+      el.querySelector(".mp").textContent = mon ? "" : "MP " + mp;
+      el.querySelector("span:last-child").textContent = "Lv " + lv;
       el.classList.toggle("down", hp <= 0);
-      el.classList.toggle("low", hp > 0 && hp <= f.maxHp / 4);
+      el.classList.toggle("low", hp > 0 && hp <= maxHp / 4);
     });
     scene.querySelectorAll(".rb-foe").forEach((el, i) => el.classList.toggle("gone", snap.foes[i] <= 0));
   }
@@ -9889,6 +9909,7 @@
       if (fx.side === "ally") { const r = scene.querySelector(".rb"); if (r) { r.classList.remove("shake"); void r.offsetWidth; r.classList.add("shake"); } }
     } else if (fx.kind === "down") sfx("se_faint");
     else if (fx.kind === "heal" || fx.kind === "buff") { sfx("se_m_reflect"); flash("healed", 500); }
+    else if (fx.kind === "swap") { sfx("se_ball_throw"); flash("healed", 500); }
     else if (fx.kind === "run") sfx("se_flee");
     else if (fx.kind === "status") flash("hit", 400);
   }
@@ -9908,10 +9929,18 @@
     };
     for (let k = 0; k < who.length;) {
       const i = who[k], f = b.allies[i];
+      // (Swap: one of the reserve comes in, this one's turn; each of them once a turn.)
+      const bench = b.reserve.map((x, j) => [x, j]).filter(([x, j]) => x.hp > 0 && !choices.some((c, ci) => ci !== i && c && c.act === "swap" && c.reserve === j));
       const v = await ask(f.name + ": what will you do?", [{ label: "Attack", value: "attack", className: "action" }, { label: "Skills", value: "skill", className: "action", disabled: !f.skills.length },
         { label: "Defend", value: "defend", className: "action" }, { label: "Items", value: "item", className: "action", disabled: !Object.keys(P).some((id) => P[id] > 0) }]
+        .concat(b.reserve.length ? [{ label: "Swap", value: "swap", className: "action", disabled: !bench.length }] : [])
         .concat(k > 0 ? [back()] : []));
       if (v === "back") { k--; continue; }
+      if (v === "swap") {
+        const j = await ask("Who comes in for " + f.name + "?", bench.map(([x, j2]) => ({ label: x.name + "  Lv " + x.lv + "  HP " + x.hp + "/" + x.maxHp, value: j2 })).concat([back()]));
+        if (j === "back") continue;
+        choices[i] = { act: "swap", reserve: j }; k++; continue;
+      }
       if (v === "defend") { choices[i] = { act: "defend" }; k++; continue; }
       if (v === "attack") {
         const t = await target("one", "Attack whom?");
@@ -9942,7 +9971,7 @@
   async function realmFight(foeIds, opts) {
     opts = opts || {};
     const realm = (window.WORLD_MAPS[player.location.map] || {}).realm, P = realmParty(realm);
-    const b = Ultimax.create(P.party.map(realmMember), foeIds, {});
+    const b = Ultimax.create(P.party.map(realmMember), foeIds, { reserve: P.reserve.map(realmMember) });
     b.items = P.items;
     music(b.boss ? "mus_vs_gym_leader" : "mus_vs_wild");
     realmDraw(b);
@@ -9960,7 +9989,8 @@
       Player.addMoney(player, money);
       await message(realmWrap(b.allies.filter((f) => f.hp > 0).length > 1 ? "Each of you gets " + exp + " EXP." : player.name + " gets " + exp + " EXP."));
       if (money) await message("You picked up ¥" + money + ".");
-      for (const f of b.allies) {
+      // (the reserve too, as in Dragon Quest XI)
+      for (const f of b.allies.concat(b.reserve)) {
         if (f.hp <= 0) continue;
         if (f.mon) { await realmMonExp(f.mon, exp); continue; }
         for (const l of Ultimax.gainExp(f.rec, exp)) {
@@ -9972,7 +10002,9 @@
     }
     // (Anyone who fell gets up with 1 HP, as after a won fight in Dragon Quest you'd have to revive them; here they
     // walk it off.)
-    if (b.over !== "lost") for (const rec of P.party) { const r = realmMon(rec) || rec; if (r.hp <= 0) r.hp = 1; }
+    // (Who's fighting and who's in reserve, as the swaps left them.)
+    P.party = b.allies.map((f) => f.rec); P.reserve = b.reserve.map((f) => f.rec);
+    if (b.over !== "lost") for (const rec of realmAll(P)) { const r = realmMon(rec) || rec; if (r.hp <= 0) r.hp = 1; }
     realmQuiet = 10;
     const here = window.WORLD_MAPS[player.location.map];
     scene.classList.remove("evo");
@@ -9987,14 +10019,35 @@
       await voyage({ map: to.map, x: to.x, y: to.y, facing: to.facing }, ["Everything goes black…", "You come to in the Empty Lot,\nyour wallet ¥" + lost + " lighter."], "se_faint");
       return b.over;
     }
-    if (b.over === "lost") for (const rec of P.party) { const r = realmMon(rec) || rec; if (r.hp <= 0) r.hp = 1; }
+    if (b.over === "lost") for (const rec of realmAll(P)) { const r = realmMon(rec) || rec; if (r.hp <= 0) r.hp = 1; }
     music(here.music);
     return b.over;
   }
   // The party, out of battle: each one's level, HP, MP, stats, elements, skills and EXP to the next level.
   async function realmPartyScreen(realm) {
-    const P = realmParty(realm), S = window.REALM_SKILLS, F = window.REALM_FIGHTERS;
-    for (const rec of P.party) {
+    const P = realmParty(realm);
+    for (;;) {
+      const all = realmAll(P), where = (rec) => (P.party.includes(rec) ? "Fighting" : P.reserve.includes(rec) ? "Reserve" : "Time Machine");
+      const v = await ask(realmWrap("Fighting " + P.party.length + "/4, in reserve " + P.reserve.length + "/4, at the Time Machine " + P.stored.length + "."),
+        [{ label: "Look", value: "look", className: "action" }, { label: "Arrange", value: "arrange", className: "action", disabled: all.length < 2 }, back()]);
+      if (v === "back") return;
+      if (v === "look") { await realmPartyLook(P); continue; }
+      // (Arranging: who fights, who waits in reserve and who at the Time Machine; you always fight.)
+      const pick = await ask("Move whom?", all.map((rec, i) => ({ label: realmName(rec) + "  Lv " + (realmMon(rec) ? realmMon(rec).level : rec.lv) + "  (" + where(rec) + ")", value: i, disabled: rec === realmMe(P) })).concat([back()]));
+      if (pick === "back") continue;
+      const rec = all[pick], from = P.party.includes(rec) ? "party" : P.reserve.includes(rec) ? "reserve" : "stored";
+      const to = await ask(realmName(rec) + ": where?", [
+        { label: "Fighting", value: "party", className: "action", disabled: from === "party" || P.party.length >= 4 },
+        { label: "Reserve", value: "reserve", className: "action", disabled: from === "reserve" || P.reserve.length >= 4 },
+        { label: "Time Machine", value: "stored", className: "action", disabled: from === "stored" }, back()]);
+      if (to === "back") continue;
+      P[from].splice(P[from].indexOf(rec), 1); P[to].push(rec);
+      await persist();
+    }
+  }
+  async function realmPartyLook(P) {
+    const S = window.REALM_SKILLS, F = window.REALM_FIGHTERS;
+    for (const rec of realmAll(P)) {
       const mon = realmMon(rec);
       if (mon) {
         const f = realmMember(rec);
@@ -10037,13 +10090,9 @@
     await say(person.text);
     if (!(await confirm("Kiryu: You look like you can handle\nyourself. Want to walk with me?"))) { await say("Kiryu: Suit yourself."); return; }
     const P = realmParty("yakuza");
-    // (Four at most: with four already, the last Pokémon you brought makes room.)
-    let room = null;
-    if (P.party.length >= 4) { const i = P.party.map((r) => !!realmMon(r)).lastIndexOf(true); if (i > 0) room = Party.displayName(realmMon(P.party.splice(i, 1)[0])); }
-    P.party.push(Ultimax.recruit("kiryu", Math.max(3, P.party[0].lv)));
-    if (room) await say(room + " goes back to your party\nto make room.");
+    const where = realmJoin(P, Ultimax.recruit("kiryu", Math.max(3, realmMe(P).lv)));
     await fanfare("mus_obtain_key_item");
-    await say(["Kazuma Kiryu joined the party!", "Kiryu: Let's go. This town doesn't\nsleep, and neither do its punks."]);
+    await say([realmWrap("Kazuma Kiryu joined the party!" + JOINED[where]), "Kiryu: Let's go. This town doesn't\nsleep, and neither do its punks."]);
     await Overworld.refreshPeople();
   }
   // Majima: a fight, and once he's beaten, he tags along (at level 8 or more).
@@ -10053,12 +10102,10 @@
     const r = await realmFight(["majima"], { intro: "Goro Majima wants to fight!", keepGoing: true });
     if (r !== "won") { await say("Majima: Hee hee! Come back when\nya've got some more fight in ya!"); return; }
     const P = realmParty("yakuza");
-    if (P.party.length < 4) {
-      P.party.push(Ultimax.recruit("majima", Math.max(8, P.party[0].lv)));
-      await fanfare("mus_obtain_key_item");
-      await say(["Majima: Hee hee hee! That was the\nmost fun I've had all year!", "I'm stickin' with you! Ain't\nnobody gonna stop me!", "Goro Majima joined the party!"]);
-      await Overworld.refreshPeople();
-    } else await say("Majima: What a fight! Ya party's\nfull, though. Next time!");
+    const where = realmJoin(P, Ultimax.recruit("majima", Math.max(8, realmMe(P).lv)));
+    await fanfare("mus_obtain_key_item");
+    await say(["Majima: Hee hee hee! That was the\nmost fun I've had all year!", "I'm stickin' with you! Ain't\nnobody gonna stop me!", realmWrap("Goro Majima joined the party!" + JOINED[where])]);
+    await Overworld.refreshPeople();
   }
   // Poppo's clerk: the realm's items (REALM_ITEMS), for your money.
   async function kamurochoShop() {

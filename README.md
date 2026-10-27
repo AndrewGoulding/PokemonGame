@@ -3762,8 +3762,16 @@ taken from a Dragon Quest cartridge.
 
 - **The code**: the engine is `Ultimax` at the end of `engine/battle.js` (headless: a turn in, its steps out, each with its text and everyone's HP and MP after it); the
   screen and the scripts are in `ui/game.js` (`realmFight`), and the party is saved in `flags.realmParty`.
+- **The party: four fighting, four in reserve, the rest at the Time Machine.** Four fight at once; four more wait
+  in reserve, and **Swap** (on a fighter's turn, before anyone acts) brings one in for them; at the end of a turn,
+  anyone who fell is replaced by the first of the reserve still standing, and the fight's only lost once the
+  reserve's down too. The reserve gets EXP as the fighters do (Dragon Quest XI's way). Anyone else waits at the Time
+  Machine, out of the fights. Whoever joins (Kiryu, Majima, a Pokémon) goes in the first with room. At the Time
+  Machine, **Party** shows everyone (**Look**) and moves them about (**Arrange**: fighting, reserve or the Time
+  Machine; you always fight); **Rest** heals everyone. Saved as `flags.realmParty[realm]` = { party, reserve,
+  stored, items }.
 - **Pokémon out of their realm**: at the Kamurocho Time Machine, **Pokémon** brings one of your party Pokémon into
-  the realm's party (four in the party at most; Kiryu sends the last one back to make room), or sends one back. It
+  the realm's party (as anyone joins: fighting, reserve or the Time Machine), or sends one back. It
   fights by the Ultimax system's rules (`Ultimax.pokemon` in `engine/battle.js`):
   - **Its stats** are its own (`Party.stats`): Attack its strength, Defence its defence, Special Attack its
     intelligence, Special Defence its wisdom, Speed its speed, HP its HP.

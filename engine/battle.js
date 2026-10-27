@@ -4047,7 +4047,8 @@
 //   wis  Wisdom         (Special Defence)   against magic
 //   spd  Speed          (Speed)             who goes first, and running away
 //
-//   const b = Ultimax.create(members, ["punk", "punk"], { seed });    // members: Ultimax.member(...)s
+//   const b = Ultimax.create(members, ["punk", "punk"], { seed, reserve });    // members: Ultimax.member(...)s, four
+//                                                                              // at most; reserve: four more
 //   const steps = Ultimax.turn(b, [{ act: "attack", target: 0 }, { act: "skill", skill: "rush", target: 1 }, ...]);
 //   // or Ultimax.turn(b, "run"); b.over: null, "won", "lost" or "ran"
 //   Ultimax.spoils(b)   // { exp, money } for a win
@@ -4149,10 +4150,11 @@
     const count = {}, seen = {};
     for (const id of foeIds) count[id] = (count[id] || 0) + 1;
     const foes = foeIds.map((id) => { seen[id] = (seen[id] || 0) + 1; return foe(id, count[id] > 1 ? "ABCD"[seen[id] - 1] : ""); });
-    return { allies: members, foes, over: null, rand: rng(opts.seed == null ? Date.now() : opts.seed), boss: foes.some((f) => f.boss), turnNo: 0 };
+    return { allies: members, reserve: opts.reserve || [], foes, over: null, rand: rng(opts.seed == null ? Date.now() : opts.seed), boss: foes.some((f) => f.boss), turnNo: 0 };
   }
   const up = (list) => list.filter((f) => f.hp > 0);
-  const snap = (b) => ({ allies: b.allies.map((f) => [f.hp, f.mp]), foes: b.foes.map((f) => f.hp) });
+  // (Each ally's HP, MP, name, level and whether it's a Pokémon (PP, not MP): a swap changes who's where.)
+  const snap = (b) => ({ allies: b.allies.map((f) => [f.hp, f.mp, f.name, f.lv, !!f.mon, f.maxHp]), foes: b.foes.map((f) => f.hp) });
   // The chart's multiplier of `element` on `elements`.
   function effect(element, elements) {
     const row = D().chart[element] || {};
@@ -4188,7 +4190,10 @@
   const STATUS_TEXT = { sleep: " fell asleep!", stun: " is stunned!", poison: " was poisoned!" };
 
   // One turn. `choices`: for each ally (in order; a fallen one's is skipped), { act: "attack" | "skill" | "defend" |
-  // "item", target (an index: a foe's, or an ally's for healing), skill, item }; or "run". -> the steps.
+  // "item" | "swap", target (an index: a foe's, or an ally's for healing), skill, item, reserve (an index into
+  // b.reserve: who comes in, for "swap") }; or "run". -> the steps. Swapping happens first, before anyone else acts;
+  // and at the end of the turn, anyone who fell is replaced by the first of the reserve still standing. The fight's
+  // lost only when everyone, the reserve too, is down.
   function turn(b, choices) {
     const steps = [], r = b.rand;
     const say = (text, fx) => steps.push({ text, fx: fx || null, snap: snap(b) });
@@ -4206,9 +4211,9 @@
       const acts = [];
       b.allies.forEach((f, i) => { if (f.hp > 0 && choices[i]) acts.push({ who: f, c: choices[i] }); });
       for (const f of up(b.foes)) acts.push({ who: f, c: foeChoice(b, f) });
-      // (Defending happens first, whatever the order.)
+      // (Defending and swapping happen first, whatever the order.)
       for (const a of acts) if (a.c.act === "defend") a.who.defending = true;
-      order = acts.map((a) => Object.assign(a, { speed: a.c.act === "defend" ? 1e9 : a.who.spd * (0.5 + r() * 0.5) })).sort((x, y) => y.speed - x.speed);
+      order = acts.map((a) => Object.assign(a, { speed: a.c.act === "swap" ? 2e9 : a.c.act === "defend" ? 1e9 : a.who.spd * (0.5 + r() * 0.5) })).sort((x, y) => y.speed - x.speed);
     }
     for (const { who, c } of order) {
       if (b.over) break;
@@ -4236,6 +4241,17 @@
         if (f.hp === 0) say(f.side === "ally" ? f.name + " collapsed!" : f.name + " is beaten!", { kind: "down", side: f.side, i: (f.side === "ally" ? b.allies : b.foes).indexOf(f) });
       }
     }
+    // (The fallen replaced from the reserve.)
+    if (!b.over || b.over === "lost") {
+      b.allies.forEach((f, i) => {
+        if (f.hp > 0) return;
+        const j = b.reserve.findIndex((x) => x.hp > 0);
+        if (j < 0) return;
+        const inn = b.reserve[j]; b.reserve[j] = f; b.allies[i] = inn; inn.defending = false;
+        say(inn.name + " steps in for " + f.name + "!", { kind: "swap", side: "ally", i });
+      });
+      if (b.over === "lost" && up(b.allies).length) b.over = null;
+    }
     checkOver(b);
     if (b.over === "won") say("You won the fight!", { kind: "won" });
     if (b.over === "lost") say("Everyone has fallen...", { kind: "lost" });
@@ -4244,13 +4260,13 @@
   function checkOver(b) {
     if (b.over) return;
     if (!up(b.foes).length) b.over = "won";
-    else if (!up(b.allies).length) b.over = "lost";
+    else if (!up(b.allies).length && !up(b.reserve || []).length) b.over = "lost";
   }
   function act(b, who, c, say) {
     const r = b.rand, mine = who.side === "ally" ? b.allies : b.foes, theirs = who.side === "ally" ? b.foes : b.allies;
     const ix = (f) => (f.side === "ally" ? b.allies : b.foes).indexOf(f);
-    // (A target who's fallen since: the next one standing.)
-    const pickFoe = (t) => { const f = typeof t === "number" ? theirs[t] : t; return f && f.hp > 0 ? f : up(theirs)[0]; };
+    // (A target who's fallen since, or been swapped out: the next one standing.)
+    const pickFoe = (t) => { const f = typeof t === "number" ? theirs[t] : t; return f && f.hp > 0 && theirs.includes(f) ? f : up(theirs)[0]; };
     const hitText = (f, res) => (res.eff === 0 ? "It has no effect on " + f.name + "!" : res.dmg === 0 ? f.name + " takes no damage!" :
       f.name + " takes " + res.dmg + " damage!" + (res.eff >= 2 ? " It's super effective!" : res.eff > 0 && res.eff < 1 ? " It's not very effective..." : ""));
     const struck = (f, res, text) => {
@@ -4258,6 +4274,13 @@
       if (f.hp === 0) say(f.side === "ally" ? f.name + " collapsed!" : f.name + " is beaten!", { kind: "down", side: f.side, i: ix(f) });
     };
     if (c.act === "defend") { say(who.name + " is on guard."); return; }
+    if (c.act === "swap") {
+      const j = c.reserve, inn = b.reserve[j], i = b.allies.indexOf(who);
+      if (!inn || inn.hp <= 0 || i < 0) { say(who.name + " looks round, but no one can come in."); return; }
+      b.reserve[j] = who; b.allies[i] = inn;
+      say(who.name + " steps back, and " + inn.name + " steps in!", { kind: "swap", side: "ally", i });
+      return;
+    }
     if (c.act === "attack") {
       const f = pickFoe(c.target);
       if (!f) return;
@@ -4343,7 +4366,7 @@
   }
   // Back from a battle: each member's HP and MP into their saved record.
   function keep(b) {
-    for (const f of b.allies) {
+    for (const f of b.allies.concat(b.reserve || [])) {
       if (f.mon) {
         f.mon.hp = f.hp;
         for (const slot of f.mon.moves) if ("move:" + slot.name in f.pp) slot.pp = f.pp["move:" + slot.name];
