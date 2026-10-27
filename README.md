@@ -3416,7 +3416,7 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   one, on a strong monster summoned, and its Counter Traps on your cards. It beats random play in about 99 duels in
   100.
 - **Duels**: Yugi, Téa, Joey and Tristan in Domino High's classroom will duel you after they've said hello (each
-  with a deck of their own from the show, `window.YUGIOH_DUELISTS` in `data/items.js`); win, and you get ₽1000 (₽400 from the
+  with a deck of their own from the show, `window.YUGIOH_DUELISTS` in `data/items.js`); win, and you get ₽2000 (₽800 from the
   pupils below) and three cards from their deck, the rarer a card the less likely (Commons 30 to a Secret Rare's 1,
   Rares 10, Super Rares 4, Ultra Rares 2), shown on the shop's list of cards. Their decks are the cards they play in the first season, Duelist Kingdom:
   Yugi's Dark Magician, Celtic Guardian, Gaia, Kuriboh and Multiply, Beaver Warrior, Big Shield Gardna, Exodia, the
@@ -3436,8 +3436,10 @@ pictures, none of its card game. Your Pokémon stay in their balls here (no foll
   under the cursor along the bottom line. Cards on the field lie in their zones in their kinds' colours (face down,
   their backs; sideways in Defense Position). The cursor goes over your hand and both sides of the field: A on a
   card opens its menu (Summon, Set, Activate, Flip Summon, a change of position, its effect, Detail Screen), A on a
-  Graveyard lists its cards, B or START over a card shows it, START elsewhere is the phases' menu (Battle Phase,
-  Main Phase 2, End Turn). In the Battle Phase, A on a monster and then on its target. The cards' questions come up
+  Graveyard lists its cards, B or START over a card shows it, START elsewhere is the phases' menu: in Main Phase 1,
+  Battle Phase, Main Phase 2 (skipping the Battle Phase) or End Turn (straight to the End Phase); in the Battle Phase,
+  Main Phase 2 or End Turn (skipping Main Phase 2); in Main Phase 2, End Turn. The phases down the left of the field
+  are buttons too: tap BP, M2 or EP to go there. In the Battle Phase, A on a monster and then on its target. The cards' questions come up
   as menus, lists or the zones to pick from, blinking; and you're asked whether to answer with a card when your
   opponent plays one, summons or attacks. The debug menu's **Duel Yugi** starts one anywhere.
 - **Not here yet**: the story and the rest of the city on the map.

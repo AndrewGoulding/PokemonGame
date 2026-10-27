@@ -928,10 +928,15 @@
       const noBattle = pl.flags.skipBattle || pl.flags.noBattleThisTurn === this.turn || [0, 1].some((q) => this.allZones(q).some((z) => { const e = this.live(z); return e && e.noBattlePhase && e.noBattlePhase(this, z, q); }));
       if (pl.flags.skipBattle) pl.flags.skipBattle = false;
       this.flags.endBattle = false;
+      // (The Battle Phase, then Main Phase 2: or straight to Main Phase 2, skipping it; or, from the Battle Phase, to the
+      // end of the turn.)
+      let toEnd = false;
       if (next === "battle" && this.turn > 0 && !noBattle) {
         this.phase = "battle"; await this.emit({ type: "phase", phase: "battle", p });
-        await this.battlePhase(p);
+        toEnd = (await this.battlePhase(p)) === "end";
         if (this.over) return;
+      }
+      if ((next === "battle" && this.turn > 0 && !noBattle && !toEnd) || next === "main2") {
         this.phase = "main2"; await this.emit({ type: "phase", phase: "main2", p });
         await this.mainPhase(p);
         if (this.over) return;
@@ -971,7 +976,7 @@
         const acts = this.mainActions(p);
         const r = await this.ask(p, { type: "main", phase: this.phase, prompt: "What will you do?", options: acts });
         const a = acts[r] || acts[acts.length - 1];
-        if (a.act === "battle" || a.act === "end") return a.act;
+        if (a.act === "battle" || a.act === "end" || a.act === "main2") return a.act;
         await this.doAction(p, a);
       }
     },
@@ -1028,6 +1033,8 @@
           acts.push({ act: "ignition", zone: z, label: "Use " + CardInfo.name(no) });
       }
       if (this.phase === "main1" && this.turn > 0 && !pl.flags.skipBattle && pl.flags.noBattleThisTurn !== this.turn) acts.push({ act: "battle", label: "Battle Phase" });
+      // (and from Main Phase 1, on to Main Phase 2 without battling: this game's own)
+      if (this.phase === "main1") acts.push({ act: "main2", label: "Main Phase 2" });
       acts.push({ act: "end", label: "End Turn" });
       return acts;
     },
@@ -1109,9 +1116,10 @@
       for (;;) {
         if (this.over || this.flags.endBattle) return;
         const attackers = this.monsters(p).filter((z) => this.canAttack(z, p));
-        const opts = attackers.map((z) => ({ label: CardInfo.name(z.card.no) + " attacks", zone: z })).concat([{ label: "End Battle Phase", end: true }]);
+        const opts = attackers.map((z) => ({ label: CardInfo.name(z.card.no) + " attacks", zone: z })).concat([{ label: "End Battle Phase", end: true }, { label: "End Turn", endTurn: true }]);
         const r = await this.ask(p, { type: "battle", prompt: "Which monster will attack?", options: opts });
         const o = opts[r];
+        if (o && o.endTurn) return "end";
         if (!o || o.end) return;
         const att = o.zone;
         const targets = this.monsters(q).filter((z) => this.canBeAttacked(z, q, att));
@@ -3792,11 +3800,12 @@
       return mp0.call(this, p);
     };
     d.battlePhase = async function (p) {
-      await bp0.call(this, p);
+      const r = await bp0.call(this, p);
       for (const q of [0, 1]) for (const c of this.players[q].grave.slice()) {
         const e = effectOf(c.no);
         if (e && e.graveBattleEnd && !this.over && this.players[q].grave.includes(c)) await e.graveBattleEnd(this, c, q, p);
       }
+      return r;
     };
     d.emit = async function (ev) {
       if (ev.type === "banish" && ev.card) ev.card.banishedTurn = this.turn;
@@ -8834,7 +8843,7 @@
       let bestScore = 0, best = req.options.findIndex((o) => o.end);
       req.options.forEach((o, i) => {
         // (an attacker it can't pay for, or that didn't get to attack, isn't tried a third time)
-        if (o.end || (attacks.get(o.zone) || 0) >= 2) return;
+        if (o.end || o.endTurn || (attacks.get(o.zone) || 0) >= 2) return;
         const att = o.zone, targets = d.monsters(q).filter((z) => d.canBeAttacked(z, q, att));
         const ae = effect(att.card.no);
         const options = d.monsters(q).length ? targets.slice() : [null];

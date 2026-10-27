@@ -10497,7 +10497,7 @@
       // (Yugi and his friends: who you've beaten, for the story: kaibaScene)
       if (typeof key === "string") y.beaten = Object.assign({}, y.beaten, { [key]: true });
       // (the prizes: money, and three cards from their deck, the rarer the rarer: DUEL_DROP's weights)
-      const money = foe.nos ? 400 : 1000;
+      const money = foe.nos ? 800 : 2000;
       Player.addMoney(player, money);
       const weighted = foeDeck.map((no) => [no, DUEL_DROP[rarityOf(no)]]), total = weighted.reduce((a, w) => a + w[1], 0);
       const won = [];

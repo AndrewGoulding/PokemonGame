@@ -1067,8 +1067,9 @@
 //
 // The controls are the game's: the hand cursor moves over your hand and both sides of the field; A on a card
 // opens its menu (Summon, Set, Activate, Flip Summon, the change of position, its effect, Detail Screen), on a
-// Graveyard its cards; START opens the phases' menu (Battle Phase, Main Phase 2, End Turn) and, over a card,
-// B or START shows the card itself. In the Battle Phase, A on a monster that can attack, then on its target.
+// Graveyard its cards; START opens the phases' menu (in Main Phase 1: Battle Phase, Main Phase 2 or End Turn,
+// straight to the End Phase; in the Battle Phase, Main Phase 2 or End Turn), and a tap on a phase down the left
+// (BP, M2, EP) goes there; over a card, B or START shows the card itself. In the Battle Phase, A on a monster that can attack, then on its target.
 // The questions the cards' effects ask come up as menus, or as the cursor over the zones to pick.
 //
 //   const result = await DuelScreen.open({
@@ -1088,6 +1089,18 @@
   overlayEl.parentNode.insertBefore(canvas, overlayEl);
   const out = canvas.getContext("2d");
   out.imageSmoothingEnabled = false;
+  // (The phases down the left are buttons too: on your turn, a tap on BP, M2 or EP goes there, as START's menu
+  // would: Main Phase 1 to the Battle Phase, Main Phase 2 or the turn's end; the Battle Phase to Main Phase 2 or the
+  // end. The tap is a START press, with the phase it chose.)
+  canvas.addEventListener("click", (e) => {
+    if (!st || !st.cursorOn) return;
+    const r = canvas.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * H;
+    if (x >= 16 || y < 48 || y >= 96) return;
+    const want = { bp: "Battle Phase", m2: "Main Phase 2", ep: "End Turn" }[["dp", "sp", "m1", "bp", "m2", "ep"][Math.floor((y - 48) / 8)]];
+    if (!want) return;
+    st.phaseClick = want;
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Start", bubbles: true }));
+  });
   const images = {};
   function image(url) {
     if (!images[url]) { const img = new Image(); img.src = url; img.onload = () => st && paint(); images[url] = img; }
@@ -1521,7 +1534,7 @@
   function actionsFor(req, e) {
     const out = [];
     req.options.forEach((o, k) => {
-      if (o.act === "battle" || o.act === "end" || o.end) return;
+      if (o.act === "battle" || o.act === "end" || o.act === "main2" || o.end || o.endTurn) return;
       if (e.hand != null ? o.card === e.card && !o.zone : (o.zone && o.zone === e.zone) || (e.zone && o.card === e.zone.card && o.from === "field")) out.push(k);
     });
     return out;
@@ -1549,8 +1562,10 @@
       const e = here();
       if (k === "b") { const no = seen(e); if (no) await showDetail(no.no); continue; }
       if (k === "start" || k === "select") {
-        const opts = req.options.map((o, k2) => ({ o, k: k2 })).filter(({ o }) => o.act === "battle" || o.act === "end" || o.end);
-        const labels = opts.map(({ o }) => o.act === "battle" ? "Battle Phase" : o.end ? "Main Phase 2" : "End Turn");
+        const opts = req.options.map((o, k2) => ({ o, k: k2 })).filter(({ o }) => o.act === "battle" || o.act === "end" || o.act === "main2" || o.end || o.endTurn);
+        const labels = opts.map(({ o }) => o.act === "battle" ? "Battle Phase" : o.end || o.act === "main2" ? "Main Phase 2" : "End Turn");
+        const want = st.phaseClick; st.phaseClick = null;
+        if (want) { const i = labels.indexOf(want); if (i >= 0) { se(); return opts[i].k; } continue; }
         const r = await menu(labels, 16, 48);
         if (r >= 0) return opts[r].k;
         continue;
