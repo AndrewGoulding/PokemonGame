@@ -3579,8 +3579,9 @@ python3 tools/build-dbz-legacy-of-goku.py "<path to Dragon Ball Z - The Legacy o
   flags with each picture's pointer.
 - **The maps** (40, Kame House to Namek and Frieza's ship): each a grid of 240x160 screens, three backgrounds of raw
   30x20 tile entries per screen, its tiles and palette. The front background is the `-top` picture. `-walk.png` is
-  its walking bitmap, a bit for each 8x8 tile. The game doesn't name its places, so `maps/index.json` has only their
-  sizes.
+  its walking bitmap, a bit for each 8x8 tile. Big maps swap tile sets as you go; each screen is drawn with the set
+  that fits it. Not taken yet: the animated tiles (waterfalls and the like), which show as magenta holes. The game
+  doesn't name its places, so `maps/index.json` has only their sizes.
 - **The people** (72): each one's palette and table of animations (19 actions, 4 directions), each a part whose
   frames are 4bpp tiles one after another. A row per action and direction, in `people/` with the others.
 
