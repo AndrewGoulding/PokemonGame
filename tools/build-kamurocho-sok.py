@@ -22,6 +22,8 @@
 # (time-machine.png, the Time Machine, is this game's own, from the top-down Kamurocho it once had: kept as it is.)
 #   bacchus.png   the bar, 816x480 (the first half of its stage: the rest is more of the same)
 #   people/<id>.png   each one standing, facing right, their feet on the bottom row
+#   people/<id>_walk.png   and those who walk (and the foes), their walk: four frames side by side, each the width
+#                 of <id>.png
 import os, struct, sys
 from PIL import Image
 
@@ -36,17 +38,69 @@ PEOPLE = {
     'kiryu': (15, 3858, 1100, 54, 80), 'majima': (29, 1922, 1774, 56, 66), 'punk': (15, 3657, 1034, 49, 81),
     'drunk': (15, 3265, 310, 49, 79), 'thug': (15, 3952, 38, 41, 77), 'knife': (15, 2797, 1065, 88, 81),
     'host': (15, 2741, 472, 35, 82), 'biker': (15, 3632, 870, 44, 80), 'grunt': (15, 3978, 512, 49, 77),
-    'shakedown': (15, 3770, 293, 41, 77), 'host2': (15, 2865, 1360, 54, 90), 'salaryman': (15, 3613, 466, 56, 78),
-    'dancer': (15, 1612, 144, 36, 91),
-    # (The street's people standing about, not squaring up: each one's frame walking or at ease, where the game has
-    # one. Their fights keep the frames above.)
-    'kiryu_idle': (15, 3260, 649, 30, 83), 'majima_idle': (15, 2336, 311, 34, 86), 'host_idle': (15, 3198, 486, 37, 82),
-    'host2_idle': (15, 1904, 241, 47, 90), 'thug_idle': (15, 3614, 1371, 54, 85), 'drunk_idle': (15, 2931, 292, 47, 83),
-    'grunt_idle': (15, 2271, 641, 43, 90), 'suit_walk': (15, 3478, 548, 47, 81), 'loiterer': (15, 4054, 276, 38, 77),
+    'shakedown': (15, 3770, 293, 41, 77), 'salaryman': (15, 3613, 466, 56, 78), 'dancer': (15, 1612, 144, 36, 91),
+    # (Those who stand about and don't walk, at ease, not squaring up: Kiryu upright, his hands at his sides; Majima
+    # with his hands in his jacket; the tout lighting up at the Stardust's door; and Poppo's clerk, made Poppo's by
+    # tools/build-kamurocho-insides.py. Their fights keep the frames above.)
+    'kiryu_idle': (15, 4064, 1952, 30, 82), 'majima_idle': (15, 1722, 156, 28, 84), 'host_idle': (15, 3198, 486, 37, 82),
+    'loiterer': (15, 4054, 276, 38, 77),
+}
+# Those who walk up and down the pavement: their walk, a frame at a time (feet together, a step, a stride, a step:
+# the way Streets of Rage 2's people walk, the same foot always first), as people/<id>_walk.png, each frame as wide
+# as the next, their heads one above the other, their feet on the bottom row; and people/<id>.png, the first of them,
+# standing. (The thug; the drunk, rolling along; a man in a grey suit, out on the town; and the same man in green,
+# open-collared, a Yakuza.)
+WALKS = {
+    'thug_idle': (15, [(3746, 1770, 52, 84), (3614, 1372, 54, 84), (3774, 1348, 52, 82), (2216, 158, 54, 84)]),
+    'drunk_idle': (15, [(2931, 292, 47, 83), (3670, 788, 50, 80), (2931, 292, 47, 83), (3854, 936, 50, 80)]),
+    'grunt_idle': (15, [(3302, 1238, 50, 84), (2430, 40, 50, 82), (2880, 544, 50, 82), (2930, 544, 50, 82)]),
+    'clubgoer': (15, [(3438, 1320, 50, 84), (3076, 712, 48, 82), (2828, 466, 50, 84), (3722, 1372, 50, 82)]),
+}
+# (and the same men again in other suits: the green-suited Yakuza's made navy, a salaryman; the grey suit's made
+# wine-red and tan, men out on the town)
+WALKS['salaryman_idle'] = (15, WALKS['grunt_idle'][1])
+WALKS['reveller'] = (15, WALKS['clubgoer'][1])
+WALKS['tourist'] = (15, WALKS['clubgoer'][1])
+RECOLOUR = {
+    'salaryman_idle': lambda r, g, b: (int(r * 0.7), int(g * 0.75), min(255, int(g * 1.3) + 10)) if g > r + 4 and g >= b else None,
+    'reveller': lambda r, g, b: (min(255, int(g * 1.25) + 20), int(g * 0.45), int(g * 0.55)) if abs(r - g) < 14 and abs(g - b) < 18 and 40 < g < 200 else None,
+    'tourist': lambda r, g, b: (min(255, int(g * 1.15) + 16), min(255, int(g * 1.0) + 6), int(g * 0.7)) if abs(r - g) < 14 and abs(g - b) < 18 and 40 < g < 200 else None,
+}
+# The street's foes' walks, as they come up the street at you (Streets of Rage 2's: squared up as they come), as
+# people/<foe>_walk.png, four frames each as those above; their standing frames are PEOPLE's. (The knife punk, the
+# host and Majima have no walk of their own in the atlas: they come at you standing.)
+FOE_WALKS = {
+    'punk': (15, [(2482, 40, 42, 82), (3046, 544, 54, 82), (3938, 1264, 56, 82), (3316, 802, 54, 82)]),
+    'biker': (15, [(3708, 1034, 46, 82), (3284, 148, 44, 78), (3022, 166, 50, 80), (3772, 372, 44, 78)]),
+    'shakedown': (15, [(2938, 890, 52, 84), (2494, 378, 50, 84), (2376, 40, 52, 82), (3956, 1862, 52, 84)]),
+    'grunt': (15, [(3478, 548, 46, 80), (3754, 1016, 44, 80), (2942, 2, 50, 80), (3754, 1016, 44, 80)]),
+    'thug': WALKS['thug_idle'], 'drunk': WALKS['drunk_idle'],
 }
 
-# (Those whose frame faces left in the atlas: turned round, so all of them face right.)
-FACING_LEFT = {'kiryu_idle', 'majima_idle', 'host_idle', 'drunk_idle', 'suit_walk', 'loiterer'}
+# (Those whose frames face left in the atlas: turned round, so all of them face right.)
+FACING_LEFT = {'kiryu_idle', 'majima_idle', 'host_idle', 'loiterer', 'drunk_idle', 'drunk_walk'}
+
+def strip(atlas, pid, rects):
+    # (each frame trimmed to itself, turned to face right, and set in a frame of one width: its head (the middle of
+    # its top rows) in the middle, its feet on the bottom)
+    frames = []
+    for (x, y, w, h) in rects:
+        im = atlas.crop((x, y, x + w, y + h)); im = im.crop(im.getbbox())
+        if pid in FACING_LEFT: im = im.transpose(Image.FLIP_LEFT_RIGHT)
+        if pid in RECOLOUR:
+            px = im.load()
+            for i in range(im.width):
+                for j in range(im.height):
+                    r, g, b, a = px[i, j]
+                    c = a and RECOLOUR[pid](r, g, b)
+                    if c: px[i, j] = c + (a,)
+        top = [i for i in range(im.width) for j in range(min(12, im.height)) if im.getpixel((i, j))[3]]
+        frames.append((im, sum(top) / len(top)))
+    half = int(max(max(hx, im.width - hx) for im, hx in frames)) + 1
+    fh = max(im.height for im, _ in frames)
+    out = Image.new('RGBA', (half * 2 * len(frames), fh), (0, 0, 0, 0))
+    for k, (im, hx) in enumerate(frames): out.alpha_composite(im, (k * half * 2 + half - round(hx), fh - im.height))
+    return out, half * 2
 
 def entries(folder):
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -74,7 +128,13 @@ def main():
         im = atlas[e].crop((x, y, x + w, y + h))
         if pid in FACING_LEFT: im = im.transpose(Image.FLIP_LEFT_RIGHT)
         im.save(os.path.join(OUT, 'people', pid + '.png'), optimize=True)
-    print('Kamurocho: %d scenes, %d people' % (3, len(PEOPLE)))
+    for pid, (e, rects) in WALKS.items():
+        im, fw = strip(atlas[e], pid, rects)
+        im.save(os.path.join(OUT, 'people', pid + '_walk.png'), optimize=True)
+        im.crop((0, 0, fw, im.height)).save(os.path.join(OUT, 'people', pid + '.png'), optimize=True)
+    for foe, (e, rects) in FOE_WALKS.items():
+        strip(atlas[e], foe + '_walk', rects)[0].save(os.path.join(OUT, 'people', foe + '_walk.png'), optimize=True)
+    print('Kamurocho: %d scenes, %d people, %d of them walking, %d foes' % (3, len(PEOPLE) + len(WALKS), len(WALKS), len(FOE_WALKS)))
 
 if __name__ == '__main__':
     main()

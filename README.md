@@ -3636,33 +3636,56 @@ The Like a Dragon realm is **Kamurocho** in 1988, as in Yakuza 0, and it looks a
 its beat-'em-up's are, along the street and up and down the pavement, its own pictures. Your Pokémon stay in their
 balls here (bring them along at the Time Machine to fight), and there are no wild Pokémon.
 
-- **The streets** (`ui/street.js`, `data/kamurocho-street.js`): five scenes, three of them Streets of Kamurocho's stage
-  backdrops (480 pixels high, the floor at the bottom), on a screen of their own, 336x224 (Streets of Rage 2's height,
-  3:2 as the game's), the camera following you along and up and down. **The street**: the pavement by the Stardust
-  and Poppo, down the corner past the Gyudon place to the batting cages and Bacchus (its two backdrops side by side,
-  3103 pixels long). **The Empty Lot**: the back alley off its end. **Bacchus**: the bar, through its door (the first
-  half of its stage, 816 pixels: the rest is more of the same corridor). **Under the Street**: down the manhole on
-  the pavement outside Serena, a storm drain where the Time Machine stands. **Poppo**: the convenience store, through its door (every convenience store on the street
-  can be gone into; Poppo's the one). Streets of Kamurocho has no insides of its shops, so this one is this game's own
-  (`tools/build-kamurocho-insides.py`): Poppo's sign off its shopfront, its shelves, drinks fridge and counter drawn in
-  the street's colours, and its clerk, a man standing at ease in Poppo's blue uniform, behind the counter. The storm drain under the
-  street is drawn there too (a vault of wet concrete, pipes, a culvert, the ladder up, and the Time Machine three times
-  over), and the manhole cover on the pavement. You're drawn twice your size, to stand as tall as its people. Walk off the street's end into
-  the alley (and back); stand at Bacchus's or Poppo's door and press A to go in (out of Bacchus, walk off its left; out of Poppo, walk up into its glass door); in Poppo, stand at the counter
-  and press A to talk to the clerk and buy (FireRed's Poké Mart buy screen, `ui/shop-screen.js`: each item's picture a Pokémon item's standing in, `REALM_ITEMS`' `icon`); on the manhole by Serena, A climbs down (the ladder, A, back up); the Time
-  Machine's spot, A, is its menu. The floor you can walk on is each scene's polygon (along the slope, you go up or down it as
-  you walk). You're placed by `player.location.street` ({ scene, x, y, facing }); the overworld rests while you're
-  there (ui/game.js's explore loop asks `Street.explore` instead).
+- **The streets** (`ui/street.js`, `data/kamurocho-street.js`): twelve scenes, three of them Streets of Kamurocho's
+  stage backdrops (480 pixels high, the floor at the bottom), on a screen of their own, 336x224 (Streets of Rage 2's
+  height, 3:2 as the game's), the camera following you along and up and down. **The street**: the pavement by the
+  Stardust and Poppo, down the corner past the Gyudon place to the batting cages and Bacchus (its two backdrops side
+  by side, 3103 pixels long). **The Empty Lot**: the back alley off its end. **Bacchus**: the bar, through its door
+  (the first half of its stage, 816 pixels: the rest is more of the same corridor). **Poppo**: the convenience store,
+  through its door (every convenience store on the street can be gone into; Poppo's the one). **Serena's Backlot**:
+  down the passage beside Serena's door, the yard behind the bar, its manhole cover on the asphalt. **Under the
+  Street**: down that manhole, a storm drain where the Time Machine stands. And the rest of Yakuza 0's Kamurocho:
+  **Taihei Boulevard** along the south (a pachinko parlour, the bank, karaoke, a drugstore, an izakaya), the red gate
+  of **Tenkaichi Street** off it (ramen, sushi, a game centre, Smile Burger, robatayaki), **Nakamichi Street** across
+  the middle (a coffee shop, a hostess club, a pawn shop, the love hotel's sign), **Pink Street**'s cabarets and host
+  club, the **Champion District**'s lanes of tiny bars, and **Theater Square** with the Kamuro Theater and its
+  fountain. Streets of Kamurocho has no insides of its shops and only its one street, so those are this game's own,
+  drawn in the street's colours: Poppo, the backlot and the storm drain by `tools/build-kamurocho-insides.py` (Poppo's
+  sign off its shopfront, its shelves, drinks fridge and counter, its clerk, a man at ease in Poppo's blue uniform;
+  the backlot's green tiles, back door, crates, bin bags and fence; the drain's wet concrete, pipes, culvert and
+  ladder, and the Time Machine three times over), the streets by `tools/build-kamurocho-streets.py` (their signs in
+  Japanese, from the IPA Gothic font). You're drawn twice your size, to stand as tall as its people. Walk off a
+  street's end into the next (the street's left end is Nakamichi Street's right, its right the alley; Tenkaichi
+  runs from Taihei's gate to Theater Square, Pink Street from Taihei's end to Nakamichi, the Champion District from
+  Pink Street to the square); stand at a turning (Tenkaichi's gate, the corner of Nakamichi, the way into Pink
+  Street or the Champion District), at Bacchus's, Poppo's or Serena's door and press A to go in (out of Bacchus,
+  walk off its left; out of Poppo, walk up into its glass door; out of the backlot, off its left); in Poppo, stand
+  at the counter and press A to talk to the clerk and buy; on the backlot's manhole, A climbs down (the ladder, A,
+  back up); the Time Machine's spot, A, is its menu. The floor you can walk on is each scene's polygon (along the
+  slope, you go up or down it as you walk). Its people stand about at ease or walk up and down the pavement, each
+  within a stretch of their own, with a walk of four frames out of Streets of Kamurocho's atlas (stopping to face
+  you when you talk to them). On the six streets (not the alley, the backlot, the drain, the bars, the shops or
+  the Champion District's lanes) its gangs walk too, Yakuza's way: groups from `REALM_ENCOUNTERS.Kamurocho` (those
+  your party's level has come to), a gang for every 1200 pixels of street; come near and in front of them and
+  they've seen you (a "!"), they come at you, their leader has his say ("Hey, you! Got a problem?"), and the fight's
+  on. Outrun them (B) and they give up; a gang beaten is gone, another turns up after a while, and they're all back
+  when you come into the street again. You're placed by `player.location.street` ({ scene, x, y, facing }); the
+  overworld rests while you're there (ui/game.js's explore loop asks `Street.explore` instead).
 - **Getting there**: the Realm Hub's crimson portal; you come out under the street, beside the Time Machine, which
   takes you back to the Realm Hub.
-- **The people**: Streets of Kamurocho's own, standing about at ease or walking (frames of its own picked out of its
-  atlas: `kiryu_idle`, `majima_idle` and the rest, not their fighting stances), turning to face you when you talk:
-  **Kazuma Kiryu** on the street below the corner, **Goro Majima** in Bacchus, a host touting outside the Stardust,
-  another along from him, a thug on the corner, a loiterer in a hoodie by the batting cages, a salaryman and a drunk
-  by Bacchus,
-  and a Yakuza lookout in the alley. Its foes fight in the same: the street punk, the drunk salaryman, the thug, the
-  knife punk (a spear in Streets of Kamurocho), the host, the biker, the Yakuza grunt, Mr. Shakedown and Majima
-  (`REALM_FOES[..].street`), facing you over the street behind you.
+- **The people**: Streets of Kamurocho's own, at ease, not in their fighting stances (frames of its own picked out
+  of its atlas): most pace up and down near their spot on a four-frame walk (`people/<id>_walk.png`), pausing now
+  and then, and stop and turn to face you when you talk. **Kazuma Kiryu** on the street below the corner and **Goro
+  Majima** in Bacchus stand still, as do the host touting outside the Stardust and the loiterer by the batting
+  cages; a clubgoer, a thug, salarymen and drunks walk the streets, and a Yakuza lookout keeps the alley. Its foes
+  fight in the same: the street punk, the drunk salaryman, the thug, the knife punk (a spear in Streets of
+  Kamurocho), the host, the biker, the Yakuza grunt, Mr. Shakedown and Majima (`REALM_FOES[..].street`), facing you
+  over the street behind you.
+- **The gangs**: no fights out of nowhere. As in the Yakuza games, gangs (`REALM_ENCOUNTERS.Kamurocho`'s groups, the
+  harder ones as your party's level comes to them) walk the streets in plain sight; one that spots you in front of
+  it shows a "!" and comes for you, its leader says his line (`KAMUROCHO_STREET.barks`) and the fight's that gang.
+  Run and it gives up; beaten, it's gone, and another comes along in a while. None in the alley, the bars, the
+  shops, the backlot, the storm drain or the Champion District.
 - **The pictures** (`assets/kamurocho/`, committed, so nothing needs the game): `tools/build-kamurocho-sok.py` takes
   them from it again, given its folder. Its `AR_win32.mtc` indexes `AR_win32.mdf`, each entry AES-128-CBC with a zero
   IV and the key "e13b293bec6" (a string in its .exe). Entry 15 is a 4096x4096 atlas of the backdrops and most of

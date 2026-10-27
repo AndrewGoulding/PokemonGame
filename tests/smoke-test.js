@@ -7252,6 +7252,36 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     assert(old.hp === 20 * R.HP_SCALE && old.hpScale === R.HP_SCALE && R.stats("kiryu", 5).hp % R.HP_SCALE === 0);
     assert.strictEqual(R.create([], ["punk"]).foes[0].maxHp, window.REALM_FOES.punk.hp * R.FOE_HP_SCALE, "the street's foes keep their own HP");
     assert.strictEqual(R.create([], ["majima"]).foes[0].maxHp, window.REALM_FOES.majima.hp * R.HP_SCALE, "a boss's is scaled");
+    // (Categories: Physical by Strength, Magical by Intelligence, the rest Status, heals by Wisdom; a Pokémon's
+    // Special moves Magical.)
+    const SK = window.REALM_SKILLS;
+    assert.deepStrictEqual([R.category(SK.rush), R.category(SK.kamehameha), R.category(SK.first_aid), R.category(SK.brace)], ["Physical", "Magical", "Status", "Status"]);
+    assert.strictEqual(R.category(R.pokemonSkill("Thunderbolt", 20, 60)), "Magical");
+    assert.strictEqual(R.category(R.pokemonSkill("Tackle", 20, 60)), "Physical");
+    const hitBy = (k, v, skill) => {
+      const me = R.member(R.recruit("human", 10)), b = R.create([me], ["punk"], { seed: 7 });
+      me[k] = v; me.mp = 99; b.foes[0].hp = b.foes[0].maxHp = 9999; b.foes[0].def = b.foes[0].wis = 0;
+      R.turn(b, [{ act: "skill", skill, target: 0 }]);
+      return 9999 - b.foes[0].hp;
+    };
+    assert(hitBy("int", 80, "kamehameha") > hitBy("int", 20, "kamehameha") * 2, "Magical goes by Intelligence");
+    assert(hitBy("str", 80, "wolf_fang") > hitBy("str", 20, "wolf_fang") * 2, "Physical by Strength");
+    const healBy = (wis) => {
+      const me = R.member(R.recruit("you", 10)), b = R.create([me], ["punk"], { seed: 3 });
+      me.wis = wis; me.mp = 99; me.hp = 1; b.foes[0].str = 0;
+      R.turn(b, [{ act: "skill", skill: "first_aid", target: 0 }]);
+      return me.hp;
+    };
+    assert(healBy(40) > healBy(10) * 1.5, "heals by Wisdom");
+    // (Stat points: 3 a level, into any stat; a member saved before them gets their levels' worth.)
+    const pr = R.recruit("kiryu", 1);
+    R.gainExp(pr, R.expFor(3));
+    assert.strictEqual(pr.points, 6);
+    const before = R.statsOf(pr);
+    assert(R.spend(pr, "str") && R.spend(pr, "hp") && R.statsOf(pr).str === before.str + 1 && R.statsOf(pr).hp === before.hp + 2 * R.HP_SCALE && pr.points === 4);
+    const old5 = { id: "kiryu", lv: 5, exp: R.expFor(5), hp: 10, mp: 5, hpScale: R.HP_SCALE };
+    assert.strictEqual(R.pointsOf(old5).points, 12);
+    assert.strictEqual(R.member(pr).str, R.statsOf(pr).str);
     const mon = (moves) => { const m = Party.create("Machamp", 50, { moves }); return R.pokemon(m, Party.stats(m), "Machamp"); };
     // (Swords Dance: Strength two stages up, the damage with it.)
     const sd = mon(["Swords Dance", "Protect", "Thunder Punch", "Bulk Up"]);
@@ -7303,7 +7333,8 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
       assert(m.hp >= 0 && m.hp <= Party.stats(m).hp && (m.hp > 0 || !m.status));
     }
   }
-  // (Kamurocho's streets, side on: every scene's picture and people drawn, everyone and every way in on its floor.)
+  // (Kamurocho's streets, side on: every scene's picture and people drawn, everyone and every way in on its floor;
+  // the manhole in Serena's backlot, the ladder up from the sewer to it.)
   {
     const K = window.KAMUROCHO_STREET, here = (f) => fs.existsSync(require("path").join(__dirname, "..", f));
     const inside = (poly, x, y) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
@@ -7311,10 +7342,27 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     for (const [id, S] of Object.entries(K.scenes)) {
       assert(here(S.image), id + "'s picture");
       for (const p of S.people || []) assert(here("assets/kamurocho/people/" + p.sprite + ".png") && inside(S.floor, p.x, p.y), id + ": " + p.script);
+      // (those who walk: their walk a strip of four frames as wide as they stand, its frames' heights theirs, and
+      // both ends of their beat on the floor)
+      const png = (f) => { const b = fs.readFileSync(require("path").join(__dirname, "..", "assets/kamurocho/people", f + ".png")); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
+      for (const p of (S.people || []).filter((p) => p.walk)) {
+        const [w, h] = png(p.sprite), [ww, wh] = png(p.walk), r = p.range || 50;
+        assert(ww === 4 * w && wh === h && inside(S.floor, p.x - r, p.y) && inside(S.floor, p.x + r, p.y), id + ": " + p.script + " walks");
+      }
       for (const e of S.exits || []) assert(K.scenes[e.to] && inside(K.scenes[e.to].floor, e.x, e.y), id + " to " + e.to);
       for (const th of S.things || []) assert(here(th.image), th.image);
     }
     for (const f of Object.values(window.REALM_FOES)) if (f.street) assert(here("assets/kamurocho/people/" + f.street + ".png"), f.name);
+    assert(K.scenes.street.exits.some((e) => e.to === "backlot" && e.spot) && !K.scenes.street.exits.some((e) => e.to === "sewer"), "Serena's backlot, off the street");
+    assert(K.scenes.backlot.exits.some((e) => e.to === "sewer") && K.scenes.sewer.exits.some((e) => e.to === "backlot") && !K.scenes.backlot.encounters, "the backlot's manhole");
+    // (every scene reached from the sewer, and back; the gangs' foes each with a walk if it's said to have one, and
+    // something to say; no fights off the streets)
+    const reach = (from) => { const seen = new Set([from]), todo = [from]; while (todo.length) for (const e of K.scenes[todo.pop()].exits || []) if (!seen.has(e.to)) { seen.add(e.to); todo.push(e.to); } return seen; };
+    for (const id of Object.keys(K.scenes)) assert(reach(K.arrive.scene).has(id) && reach(id).has(K.arrive.scene), id + " is reached, and left");
+    for (const f of K.foeWalks) assert(here("assets/kamurocho/people/" + f + "_walk.png"), f + "'s walk");
+    for (const [, foes] of window.REALM_ENCOUNTERS.Kamurocho.groups) assert(K.barks[foes[0]] && K.barks[foes[0]].length, foes[0] + "'s bark");
+    for (const id of ["alley", "backlot", "sewer", "poppo", "bacchus", "champion"]) assert(!K.scenes[id].encounters, id + ": no fights");
+    for (const id of ["street", "taihei", "tenkaichi", "nakamichi", "pink", "theater"]) assert(K.scenes[id].encounters, id + ": its gangs");
   }
   // (And each has its looks: parts that are drawn, and skins that are colours.)
   const skins = window.LOOK_COLOURS.skin.map((c) => c[0]);
@@ -7352,6 +7400,16 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
         assert(!p.skin || L.skin.includes(p.skin), p.name + ": skin");
       }
     }
+  }
+  // (The colours: each four shades, darkest first, its id once in its list; a good many of each, and seven skins or
+  // more for every race.)
+  {
+    const C = window.LOOK_COLOURS, lum = (h) => { const n = parseInt(h.slice(1), 16); return 0.3 * (n >> 16) + 0.59 * ((n >> 8) & 255) + 0.11 * (n & 255); };
+    for (const k of ["hair", "cloth", "skin"]) {
+      assert(new Set(C[k].map((c) => c[0])).size === C[k].length && C[k].length >= 25, k + ": its colours");
+      for (const c of C[k]) assert(c.length === 6 && c.slice(2).every((h, i, a) => /^#[0-9a-f]{6}$/.test(h) && (!i || lum(h) > lum(a[i - 1]))), k + ": " + c[0]);
+    }
+    for (const r of window.REALM_RACES) assert(r.looks.skin.length >= 7, r.id + "'s skins");
   }
   // (Android 20 is Dr. Gero, not Mr. Popo; the Frieza Clan by that name)
   assert.strictEqual(window.REALM_RACES.find((r) => r.id === "arcosian").name, "Frieza Clan");

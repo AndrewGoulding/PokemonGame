@@ -4093,8 +4093,32 @@
     return s;
   }
   const skillsAt = (id, lv) => D().fighters[id].skills.filter(([l]) => l <= lv).map(([, s]) => s);
-  // A party member as saved: { id, lv, exp, hp, mp, hpScale }, new at level `lv`, at full health.
-  function recruit(id, lv) { const s = stats(id, lv); return { id, lv, exp: expFor(lv), hp: s.hp, mp: s.mp, hpScale: HP_SCALE }; }
+  // Stat points: POINTS a level, each put into the stat you like (rec.alloc, how many in each; rec.points, those not
+  // put in yet): a point is one more of a stat, POINT_HP more HP (times HP_SCALE, as all HP) or POINT_MP more MP.
+  // A member saved before them gets those of the levels they already have.
+  const POINTS = 3, POINT_HP = 2, POINT_MP = 2, POINT_STATS = ["hp", "mp", "str", "def", "int", "wis", "spd"];
+  function pointsOf(rec) {
+    if (!rec.alloc) { rec.alloc = {}; rec.points = (rec.points || 0) + POINTS * Math.max(0, (rec.lv || 1) - 1); }
+    return rec;
+  }
+  // A member's stats: their level's and their points'.
+  function statsOf(rec) {
+    const s = stats(rec.id, rec.lv), a = pointsOf(rec).alloc;
+    for (const k of POINT_STATS) s[k] += (a[k] || 0) * (k === "hp" ? POINT_HP * HP_SCALE : k === "mp" ? POINT_MP : 1);
+    return s;
+  }
+  // A point into `stat`: false when there's none left. (HP and MP go up with their maximums.)
+  function spend(rec, stat) {
+    pointsOf(rec);
+    if (!(rec.points > 0) || !POINT_STATS.includes(stat)) return false;
+    rec.points--; rec.alloc[stat] = (rec.alloc[stat] || 0) + 1;
+    if (stat === "hp") rec.hp += POINT_HP * HP_SCALE;
+    if (stat === "mp") rec.mp += POINT_MP;
+    return true;
+  }
+  // A party member as saved: { id, lv, exp, hp, mp, hpScale, alloc, points }, new at level `lv`, at full health
+  // (with that level's points to put in).
+  function recruit(id, lv) { const s = stats(id, lv); return pointsOf({ id, lv, exp: expFor(lv), hp: s.hp, mp: s.mp, hpScale: HP_SCALE }); }
   // (A member saved before HP_SCALE, or with another: their HP as much of their maximum as it was.)
   function rescale(rec) {
     if (rec.pokemon != null || rec.hpScale === HP_SCALE) return rec;
@@ -4105,7 +4129,7 @@
   // A member as a fighter in battle (`name` for "you").
   function member(rec, name) {
     rescale(rec);
-    const f = D().fighters[rec.id], s = stats(rec.id, rec.lv);
+    const f = D().fighters[rec.id], s = statsOf(rec);
     return fighter({ side: "ally", id: rec.id, name: f.name || name, elements: f.elements, lv: rec.lv, hp: Math.min(rec.hp, s.hp), mp: Math.min(rec.mp, s.mp),
       maxHp: s.hp, maxMp: s.mp, str: s.str, def: s.def, int: s.int, wis: s.wis, spd: s.spd, skills: skillsAt(rec.id, rec.lv), rec });
   }
@@ -4217,9 +4241,9 @@
       // (Its first status effect, for the screen to say what it can do: "status" and "chance", as before.)
       const st = base.extras.find((x) => x.status);
       if (st) Object.assign(base, { status: st.status, chance: st.chance });
-      if (m.cat === "Physical") return Object.assign(base, { kind: "phys", power: Math.round(bp * hits / 40 * 100) / 100 });
-      const mid = bp * hits * level / 40;
-      return Object.assign(base, { kind: "magic", power: [Math.round(mid * 7 / 8), Math.round(mid * 9 / 8)] });
+      // (Physical, Attack against Defense, as Strength against Defence; Special, Special Attack against Special
+      // Defense, as Intelligence against Wisdom: Magical. The same power either way.)
+      return Object.assign(base, { kind: m.cat === "Physical" ? "phys" : "magic", power: Math.round(bp * hits / 40 * 100) / 100 });
     }
     if (PROTECT[name]) return Object.assign(base, { kind: "protect", protect: PROTECT[name], target: "self", acc: null });
     if (HEAL_OTHER[name]) return Object.assign(base, { kind: "heal", power: [Math.round(maxHp * (HEAL_OTHER[name] === "party" ? 0.22 : 0.45)), Math.round(maxHp * (HEAL_OTHER[name] === "party" ? 0.28 : 0.55))],
@@ -4254,6 +4278,12 @@
   }
   // A skill by its id: the fighter's own (a Pokémon's moves) or REALM_SKILLS'.
   const skillOf = (who, id) => (who.own && who.own[id]) || D().skills[id];
+  // Its category, as a Pokémon move's: "Physical" (Strength), "Magical" (Intelligence) or "Status" (heals, guards,
+  // stat changes and the rest; a heal goes by the healer's Wisdom).
+  const category = (s) => (s.kind === "phys" ? "Physical" : s.kind === "magic" ? "Magical" : "Status");
+  // A heal's times: a realm skill's by the healer's Wisdom (as much as its power at 10, half again at 20); a Pokémon's
+  // is already as much of its HP as it should be.
+  const healFactor = (who, id) => (who.own && who.own[id] ? 1 : 0.5 + stat(who, "wis") / 20);
   function foe(id, letter) {
     const f = D().foes[id], hp = f.hp * (f.boss ? HP_SCALE : FOE_HP_SCALE);
     return fighter({ side: "foe", id, name: f.name + (letter ? " " + letter : ""), elements: f.elements, hp, mp: f.mp, maxHp: hp, maxMp: f.mp,
@@ -4277,17 +4307,19 @@
     const row = D().chart[element] || {};
     return elements.reduce((m, e) => m * (row[e] == null ? 1 : row[e]), 1);
   }
-  function physical(b, user, target, power, element) {
-    const r = b.rand;
+  // Damage: a Physical skill's (or an attack's) the user's Strength against the target's Defence, a Magical one's
+  // (`magical`) their Intelligence against its Wisdom, times the skill's power either way.
+  function physical(b, user, target, power, element, magical) {
+    const r = b.rand, [atk, def] = magical ? ["int", "wis"] : ["str", "def"];
     let crit = false, dmg;
-    if (power === 1 && r() < 1 / 32) { crit = true; dmg = Math.max(user.str, stat(user, "str")) * (0.95 + r() * 0.1); }
+    if (power === 1 && !magical && r() < 1 / 32) { crit = true; dmg = Math.max(user.str, stat(user, "str")) * (0.95 + r() * 0.1); }
     else {
-      const base = stat(user, "str") / 2 - stat(target, "def") * target.guard / 4;
+      const base = stat(user, atk) / 2 - stat(target, def) * (magical ? 1 : target.guard) / 4;
       dmg = base < 1 ? Math.floor(r() * 2) : base * (0.875 + r() * 0.25);
       dmg *= power;
     }
-    // (Burned: half.)
-    if (user.status === "burn") dmg /= 2;
+    // (Burned: half, a Physical one's.)
+    if (user.status === "burn" && !magical) dmg /= 2;
     return finish(b, user, target, dmg, element, crit);
   }
   function finish(b, user, target, dmg, element, crit) {
@@ -4543,7 +4575,7 @@
       return;
     }
     if (s.kind === "heal" && s.target === "party") {
-      const amount = () => Math.round((s.power[0] + r() * (s.power[1] - s.power[0])) * (1 + who.int / 200));
+      const amount = () => Math.round((s.power[0] + r() * (s.power[1] - s.power[0])) * healFactor(who, c.skill));
       const got = up(mine).map((f) => { const before = f.hp; f.hp = Math.min(f.maxHp, f.hp + amount()); return f.name + " " + (f.hp - before); });
       say(opener + "HP back: " + got.join(", ") + ".", { kind: "heal", side: who.side, i: ix(who) });
       return;
@@ -4554,7 +4586,7 @@
       const before = f.hp;
       // (A Pokémon's heal is already as much of its HP as it should be; a skill's is HP_SCALE times its power.)
       const amount = (s.power[0] + r() * (s.power[1] - s.power[0])) * (who.own && who.own[c.skill] ? 1 : HP_SCALE);
-      f.hp = Math.min(f.maxHp, f.hp + Math.round(amount * (1 + who.int / 200)));
+      f.hp = Math.min(f.maxHp, f.hp + Math.round(amount * healFactor(who, c.skill)));
       say(opener + f.name + " gets " + (f.hp - before) + " HP back.", { kind: "heal", side: f.side, i: ix(f) });
       return;
     }
@@ -4591,8 +4623,7 @@
       const head = first ? opener : "";
       first = false;
       if (!lands(f, s, head)) continue;
-      const res = s.kind === "magic" ? finish(b, who, f, (s.power[0] + r() * (s.power[1] - s.power[0])) * (1 + stat(who, "int") / 200) / (1 + stat(f, "wis") / 200), s.element, false)
-        : physical(b, who, f, s.power, s.element);
+      const res = physical(b, who, f, s.power, s.element, s.kind === "magic");
       struck(f, res, head);
       dealt += res.dmg;
       if (res.eff === 0) continue;
@@ -4684,14 +4715,15 @@
   // maximums add.)
   function gainExp(rec, exp) {
     const out = [];
-    rescale(rec);
+    rescale(rec); pointsOf(rec);
     rec.exp += exp;
     while (rec.lv < 99 && rec.exp >= expFor(rec.lv + 1)) {
       const was = stats(rec.id, rec.lv), had = skillsAt(rec.id, rec.lv);
       rec.lv++;
       const now = stats(rec.id, rec.lv);
       rec.hp += now.hp - was.hp; rec.mp += now.mp - was.mp;
-      out.push({ lv: rec.lv, gains: Object.keys(now).map((k) => [k, now[k] - was[k]]).filter(([, d]) => d > 0), learned: skillsAt(rec.id, rec.lv).filter((s) => !had.includes(s)) });
+      rec.points += POINTS;
+      out.push({ lv: rec.lv, points: POINTS, gains: Object.keys(now).map((k) => [k, now[k] - was[k]]).filter(([, d]) => d > 0), learned: skillsAt(rec.id, rec.lv).filter((s) => !had.includes(s)) });
     }
     return out;
   }
@@ -4711,5 +4743,5 @@
   // An item's text, its HP as HP_SCALE makes it ("{hp}" in REALM_ITEMS' text).
   const itemText = (id) => String(D().items[id].text).replace(/\{hp\}/g, () => String(D().items[id].heal * HP_SCALE));
   window.Ultimax = { create, turn, spoils, gainExp, keep, member, recruit, rescale, stats, skillsAt, expFor, effect, foeChoice, up,
-    pokemon, pokemonSkill, pokemonElements, pokemonExp, skillOf, unsupported, itemText, groupsFor, TYPE_ELEMENT, HP_SCALE, FOE_HP_SCALE, STATUS_TAG };
+    pokemon, pokemonSkill, pokemonElements, pokemonExp, skillOf, category, statsOf, spend, pointsOf, POINTS, POINT_STATS, unsupported, itemText, groupsFor, TYPE_ELEMENT, HP_SCALE, FOE_HP_SCALE, STATUS_TAG };
 })();

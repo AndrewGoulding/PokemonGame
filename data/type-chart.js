@@ -52,9 +52,12 @@ window.REALM_TYPE_CHART = {
 
 // Skills: Yakuza 0's Heat Actions, by their names in the game (Kiryu's Brawler, Rush and Beast styles' and Tiger
 // Drop, Majima's Thug, Slugger and Breaker styles', and the ones anyone can do); Yakuza 0 has none that heal or guard,
-// so yours that do keep names of this game's own. kind: "phys" (the user's strength times `power`), "magic" (power: [low, high], plus the user's
-// intelligence, less the target's wisdom), "heal" (power: [low, high], plus intelligence), "guard" (the user's defence up half again for the battle) or "status" (status:
-// the Pokémon realm's: "sleep", "paralysis", "poison", "toxic", "burn", "freeze" or "confusion", chance). target: "one" foe, "all" foes, "ally" (one of your side), "self".
+// so yours that do keep names of this game's own. kind: "phys" (Physical: the user's Strength against the target's
+// Defence, times `power`), "magic" (Magical: the user's Intelligence against the target's Wisdom, times `power`, as a
+// Pokémon's Special moves), "heal" (power: [low, high], times the healer's Wisdom: as it is at 10 Wisdom, half again
+// at 20), "guard" (the user's defence up half again for the battle) or "status" (status: the Pokémon realm's:
+// "sleep", "paralysis", "poison", "toxic", "burn", "freeze" or "confusion", chance); heals, guards and statuses are
+// the Status category (Ultimax.category). target: "one" foe, "all" foes, "ally" (one of your side), "self".
 // A "phys" or "magic" skill can also give one (status, chance) as it hits. Heals are times Ultimax.HP_SCALE, as everyone's HP.
 window.REALM_SKILLS = {
   // (anyone's)
@@ -86,13 +89,13 @@ window.REALM_SKILLS = {
   sweet_talk:    { name: "Essence of Door Slamming",            mp: 0, element: "Psychic", kind: "status", status: "sleep", chance: 0.5, target: "one" },
   headbutt:      { name: "Essence of Wall Smashing",              mp: 0, element: "Ground",  kind: "phys",  power: 1.5, target: "one" },
   haymaker:      { name: "Essence of No Mercy",              mp: 0, element: "Ground",  kind: "phys",  power: 2.0, target: "one" },
-  revving:       { name: "Essence of Throwing",                mp: 0, element: "Electric", kind: "magic", power: [10, 16], target: "all" },
+  revving:       { name: "Essence of Throwing",                mp: 0, element: "Electric", kind: "magic", power: 2.2, target: "all" },
   // (the races' own: yours, by the race you chose at the start, REALM_RACES below)
   // Hylian
   spin_attack:   { name: "Spin Attack",            mp: 4,  element: "Neutral", kind: "phys",  power: 1.1, target: "all" },
   hylian_shield: { name: "Hylian Shield",          mp: 2,  element: "Neutral", kind: "guard", target: "self" },
   fairy_blessing:{ name: "Fairy's Blessing",       mp: 5,  element: "Light",   kind: "heal",  power: [30, 40], target: "ally" },
-  dins_fire:     { name: "Din's Fire",             mp: 8,  element: "Fire",    kind: "magic", power: [20, 28], target: "all" },
+  dins_fire:     { name: "Din's Fire",             mp: 8,  element: "Fire",    kind: "magic", power: 2, target: "all" },
   light_arrow:   { name: "Light Arrow",            mp: 10, element: "Light",   kind: "phys",  power: 2.6, target: "one" },
   great_spin:    { name: "Great Spin Attack",      mp: 12, element: "Neutral", kind: "phys",  power: 1.8, target: "all" },
   sword_beam:    { name: "Master Sword Beam",      mp: 16, element: "Light",   kind: "phys",  power: 3.2, target: "one" },
@@ -108,80 +111,80 @@ window.REALM_SKILLS = {
   boomerang_fin: { name: "Boomerang Fins",         mp: 3,  element: "Water",   kind: "phys",  power: 1.5, target: "one" },
   zora_scale:    { name: "Zora Scale",             mp: 2,  element: "Neutral", kind: "guard", target: "self" },
   healing_water: { name: "Healing Waters",         mp: 4,  element: "Water",   kind: "heal",  power: [30, 40], target: "ally" },
-  zora_barrier:  { name: "Electric Barrier",       mp: 8,  element: "Electric", kind: "magic", power: [20, 28], target: "all" },
-  nayrus_wave:   { name: "Nayru's Wave",           mp: 9,  element: "Water",   kind: "magic", power: [44, 56], target: "one" },
+  zora_barrier:  { name: "Electric Barrier",       mp: 8,  element: "Electric", kind: "magic", power: 1.8, target: "all" },
+  nayrus_wave:   { name: "Nayru's Wave",           mp: 9,  element: "Water",   kind: "magic", power: 3, target: "one" },
   miphas_grace:  { name: "Mipha's Grace",          mp: 12, element: "Water",   kind: "heal",  power: [90, 110], target: "ally" },
-  tidal_fins:    { name: "Tidal Fins",             mp: 16, element: "Water",   kind: "magic", power: [44, 56], target: "all" },
+  tidal_fins:    { name: "Tidal Fins",             mp: 16, element: "Water",   kind: "magic", power: 1.9, target: "all" },
   // Gerudo
   scimitar:      { name: "Scimitar Slash",         mp: 3,  element: "Steel",   kind: "phys",  power: 1.6, target: "one" },
   desert_stance: { name: "Desert Stance",          mp: 2,  element: "Neutral", kind: "guard", target: "self" },
   twin_blades:   { name: "Twin Scimitars",         mp: 6,  element: "Steel",   kind: "phys",  power: 1.2, target: "all" },
-  sandstorm:     { name: "Sandstorm",              mp: 7,  element: "Ground",  kind: "magic", power: [18, 26], target: "all" },
+  sandstorm:     { name: "Sandstorm",              mp: 7,  element: "Ground",  kind: "magic", power: 2.9, target: "all" },
   fire_arrow:    { name: "Fire Arrow",             mp: 9,  element: "Fire",    kind: "phys",  power: 2.6, target: "one" },
-  urbosas_fury:  { name: "Urbosa's Fury",          mp: 14, element: "Electric", kind: "magic", power: [36, 46], target: "all" },
+  urbosas_fury:  { name: "Urbosa's Fury",          mp: 14, element: "Electric", kind: "magic", power: 3.6, target: "all" },
   gerudo_fang:   { name: "Gerudo Fang",            mp: 16, element: "Ground",  kind: "phys",  power: 3.3, target: "one" },
   // Human
   wolf_fang:     { name: "Wolf Fang Fist",         mp: 3,  element: "Neutral", kind: "phys",  power: 1.6, target: "one" },
   solar_flare:   { name: "Solar Flare",            mp: 3,  element: "Light",   kind: "status", status: "paralysis", chance: 0.7, target: "one" },
   afterimage:    { name: "Afterimage",             mp: 2,  element: "Neutral", kind: "guard", target: "self" },
-  kamehameha:    { name: "Kamehameha",             mp: 8,  element: "Neutral", kind: "magic", power: [34, 44], target: "one" },
+  kamehameha:    { name: "Kamehameha",             mp: 8,  element: "Neutral", kind: "magic", power: 4, target: "one" },
   destructo_disc:{ name: "Destructo Disc",         mp: 10, element: "Steel",   kind: "phys",  power: 2.7, target: "one" },
-  tri_beam:      { name: "Tri-Beam",               mp: 14, element: "Neutral", kind: "magic", power: [36, 48], target: "all" },
-  spirit_ball:   { name: "Spirit Ball",            mp: 16, element: "Light",   kind: "magic", power: [80, 100], target: "one" },
+  tri_beam:      { name: "Tri-Beam",               mp: 14, element: "Neutral", kind: "magic", power: 2.7, target: "all" },
+  spirit_ball:   { name: "Spirit Ball",            mp: 16, element: "Light",   kind: "magic", power: 4.6, target: "one" },
   // Majin
   rubber_punch:  { name: "Rubber Punch",           mp: 3,  element: "Neutral", kind: "phys",  power: 1.5, target: "one" },
   regenerate:    { name: "Regeneration",           mp: 4,  element: "Psychic", kind: "heal",  power: [30, 40], target: "self" },
-  candy_beam:    { name: "Candy Beam",             mp: 6,  element: "Psychic", kind: "magic", power: [28, 36], target: "one" },
+  candy_beam:    { name: "Candy Beam",             mp: 6,  element: "Psychic", kind: "magic", power: 3.9, target: "one" },
   belly_bounce:  { name: "Belly Bounce",           mp: 2,  element: "Neutral", kind: "guard", target: "self" },
-  angry_burst:   { name: "Angry Explosion",        mp: 10, element: "Psychic", kind: "magic", power: [24, 32], target: "all" },
+  angry_burst:   { name: "Angry Explosion",        mp: 10, element: "Psychic", kind: "magic", power: 2.5, target: "all" },
   absorption:    { name: "Absorption",             mp: 12, element: "Dark",    kind: "heal",  power: [90, 110], target: "self" },
-  vanishing_ball:{ name: "Vanishing Ball",         mp: 18, element: "Dark",    kind: "magic", power: [50, 64], target: "all" },
+  vanishing_ball:{ name: "Vanishing Ball",         mp: 18, element: "Dark",    kind: "magic", power: 3.2, target: "all" },
   // Saiyan
-  ki_blast:      { name: "Ki Blast",               mp: 2,  element: "Light",    kind: "magic", power: [10, 14], target: "one" },
+  ki_blast:      { name: "Ki Blast",               mp: 2,  element: "Light",    kind: "magic", power: 4, target: "one" },
   meteor_smash:  { name: "Meteor Smash",           mp: 4,  element: "Neutral", kind: "phys",  power: 1.7, target: "one" },
   saiyan_pride:  { name: "Saiyan Pride",           mp: 2,  element: "Neutral", kind: "guard", target: "self" },
-  galick_gun:    { name: "Galick Gun",             mp: 9,  element: "Dark",    kind: "magic", power: [38, 48], target: "one" },
-  big_bang:      { name: "Big Bang Attack",        mp: 12, element: "Fire",    kind: "magic", power: [34, 44], target: "all" },
-  final_flash:   { name: "Final Flash",            mp: 16, element: "Light",   kind: "magic", power: [80, 100], target: "one" },
+  galick_gun:    { name: "Galick Gun",             mp: 9,  element: "Dark",    kind: "magic", power: 6.3, target: "one" },
+  big_bang:      { name: "Big Bang Attack",        mp: 12, element: "Fire",    kind: "magic", power: 4.6, target: "all" },
+  final_flash:   { name: "Final Flash",            mp: 16, element: "Light",   kind: "magic", power: 8.4, target: "one" },
   // Namekian
   demon_hand:    { name: "Demon Hand",             mp: 3,  element: "Neutral", kind: "phys",  power: 1.6, target: "one" },
   namek_heal:    { name: "Namekian Healing",       mp: 4,  element: "Grass",   kind: "heal",  power: [30, 40], target: "ally" },
   weighted_cape: { name: "Weighted Cape",          mp: 2,  element: "Neutral", kind: "guard", target: "self" },
   mafuba:        { name: "Evil Containment Wave",  mp: 4,  element: "Psychic", kind: "status", status: "paralysis", chance: 0.6, target: "one" },
-  masenko:       { name: "Masenko",                mp: 8,  element: "Grass",   kind: "magic", power: [36, 46], target: "one" },
-  hellzone:      { name: "Hellzone Grenade",       mp: 14, element: "Grass",   kind: "magic", power: [36, 48], target: "all" },
-  beam_cannon:   { name: "Special Beam Cannon",    mp: 16, element: "Neutral", kind: "magic", power: [80, 100], target: "one" },
+  masenko:       { name: "Masenko",                mp: 8,  element: "Grass",   kind: "magic", power: 3.6, target: "one" },
+  hellzone:      { name: "Hellzone Grenade",       mp: 14, element: "Grass",   kind: "magic", power: 2.9, target: "all" },
+  beam_cannon:   { name: "Special Beam Cannon",    mp: 16, element: "Neutral", kind: "magic", power: 4.8, target: "one" },
   // Android
   rocket_punch:  { name: "Rocket Punch",           mp: 3,  element: "Steel",   kind: "phys",  power: 1.6, target: "one" },
   barrier:       { name: "Android Barrier",        mp: 2,  element: "Neutral", kind: "guard", target: "self" },
-  photon_flash:  { name: "Photon Flash",           mp: 6,  element: "Electric", kind: "magic", power: [28, 36], target: "one" },
+  photon_flash:  { name: "Photon Flash",           mp: 6,  element: "Electric", kind: "magic", power: 6.2, target: "one" },
   energy_absorb: { name: "Energy Absorption",      mp: 5,  element: "Steel",   kind: "heal",  power: [40, 50], target: "self" },
-  power_blitz:   { name: "Power Blitz",            mp: 10, element: "Light",   kind: "magic", power: [40, 50], target: "one" },
+  power_blitz:   { name: "Power Blitz",            mp: 10, element: "Light",   kind: "magic", power: 5.7, target: "one" },
   accel_dance:   { name: "Accel Dance",            mp: 14, element: "Neutral", kind: "phys",  power: 2.0, target: "all" },
-  hells_flash:   { name: "Hell's Flash",           mp: 16, element: "Steel",   kind: "magic", power: [84, 104], target: "one" },
+  hells_flash:   { name: "Hell's Flash",           mp: 16, element: "Steel",   kind: "magic", power: 7.3, target: "one" },
   // The Frieza Clan
-  death_beam:    { name: "Death Beam",             mp: 2,  element: "Dark",    kind: "magic", power: [10, 14], target: "one" },
+  death_beam:    { name: "Death Beam",             mp: 2,  element: "Dark",    kind: "magic", power: 2.2, target: "one" },
   tail_whip:     { name: "Tail Whip",              mp: 4,  element: "Neutral", kind: "phys",  power: 1.7, target: "one" },
   transform:     { name: "Transformation",         mp: 2,  element: "Neutral", kind: "guard", target: "self" },
   psychokinesis: { name: "Psychokinesis",          mp: 4,  element: "Psychic", kind: "status", status: "paralysis", chance: 0.65, target: "one" },
   death_saucer:  { name: "Death Saucer",           mp: 10, element: "Steel",   kind: "phys",  power: 2.7, target: "one" },
-  death_ball:    { name: "Death Ball",             mp: 14, element: "Ice",     kind: "magic", power: [38, 50], target: "all" },
-  supernova:     { name: "Supernova",              mp: 16, element: "Fire",    kind: "magic", power: [82, 102], target: "one" },
+  death_ball:    { name: "Death Ball",             mp: 14, element: "Ice",     kind: "magic", power: 2.7, target: "all" },
+  supernova:     { name: "Supernova",              mp: 16, element: "Fire",    kind: "magic", power: 4.4, target: "one" },
   // Kai
-  telekinesis:   { name: "Telekinesis",            mp: 2,  element: "Psychic", kind: "magic", power: [10, 14], target: "one" },
+  telekinesis:   { name: "Telekinesis",            mp: 2,  element: "Psychic", kind: "magic", power: 1.6, target: "one" },
   restoration:   { name: "Restoration",            mp: 4,  element: "Light",   kind: "heal",  power: [34, 44], target: "ally" },
   kai_kai:       { name: "Kai Kai",                mp: 2,  element: "Neutral", kind: "guard", target: "self" },
   paralysis:     { name: "Divine Paralysis",       mp: 4,  element: "Psychic", kind: "status", status: "paralysis", chance: 0.7, target: "one" },
   kaioken:       { name: "Kaio-ken Attack",        mp: 9,  element: "Fire",    kind: "phys",  power: 2.5, target: "one" },
-  spirit_bomb:   { name: "Spirit Bomb",            mp: 16, element: "Light",   kind: "magic", power: [44, 56], target: "all" },
+  spirit_bomb:   { name: "Spirit Bomb",            mp: 16, element: "Light",   kind: "magic", power: 2.3, target: "all" },
   z_sword:       { name: "Z Sword Slash",          mp: 14, element: "Steel",   kind: "phys",  power: 3.0, target: "one" },
   // Mushroom Kingdom human
   jump:          { name: "Jump",                   mp: 3,  element: "Neutral", kind: "phys",  power: 1.6, target: "one" },
   mushroom:      { name: "Mushroom",               mp: 4,  element: "Grass",   kind: "heal",  power: [30, 40], target: "ally" },
   superguard:    { name: "Superguard",             mp: 2,  element: "Neutral", kind: "guard", target: "self" },
-  fireball:      { name: "Fireball",               mp: 7,  element: "Fire",    kind: "magic", power: [30, 40], target: "one" },
+  fireball:      { name: "Fireball",               mp: 7,  element: "Fire",    kind: "magic", power: 3.9, target: "one" },
   super_jump:    { name: "Super Jump",             mp: 9,  element: "Neutral", kind: "phys",  power: 2.5, target: "one" },
-  fire_flower:   { name: "Fire Flower",            mp: 12, element: "Fire",    kind: "magic", power: [34, 44], target: "all" },
+  fire_flower:   { name: "Fire Flower",            mp: 12, element: "Fire",    kind: "magic", power: 2.7, target: "all" },
   star_power:    { name: "Super Star",             mp: 18, element: "Light",   kind: "phys",  power: 2.2, target: "all" },
   // Mushroom people
   turnip_toss:   { name: "Turnip Toss",            mp: 2,  element: "Grass",   kind: "phys",  power: 1.4, target: "one" },
@@ -194,10 +197,10 @@ window.REALM_SKILLS = {
   // Pianta
   chuckster:     { name: "Chuckster Toss",         mp: 3,  element: "Neutral", kind: "phys",  power: 1.6, target: "one" },
   sturdy_belly:  { name: "Sturdy Belly",           mp: 2,  element: "Neutral", kind: "guard", target: "self" },
-  squirt_nozzle: { name: "Squirt Nozzle",          mp: 6,  element: "Water",   kind: "magic", power: [24, 32], target: "one" },
+  squirt_nozzle: { name: "Squirt Nozzle",          mp: 6,  element: "Water",   kind: "magic", power: 4.6, target: "one" },
   durian_drop:   { name: "Durian Drop",            mp: 8,  element: "Grass",   kind: "phys",  power: 2.3, target: "one" },
   shine_sprite:  { name: "Shine Sprite",           mp: 10, element: "Light",   kind: "heal",  power: [70, 90], target: "ally" },
-  hover_splash:  { name: "Hover Nozzle Splash",    mp: 13, element: "Water",   kind: "magic", power: [36, 46], target: "all" },
+  hover_splash:  { name: "Hover Nozzle Splash",    mp: 13, element: "Water",   kind: "magic", power: 3.4, target: "all" },
   turbo_nozzle:  { name: "Turbo Nozzle",           mp: 17, element: "Water",   kind: "phys",  power: 3.3, target: "one" },
   // Goomba
   headbonk:      { name: "Headbonk",               mp: 3,  element: "Neutral", kind: "phys",  power: 1.5, target: "one" },
@@ -425,7 +428,7 @@ window.REALM_FOES = {
   thug:      { name: "Thug",            elements: ["Earth"], street: "thug", sprite: "sc_person_71", hp: 30, mp: 0, str: 14, def: 10, int: 0, wis: 5, spd: 6, exp: 12, money: 250, skills: ["bottle_smash"] },
   knife:     { name: "Knife Punk",      elements: ["Steel"], street: "knife", sprite: "sc_person_50", hp: 22, mp: 0, str: 15, def: 6, int: 0, wis: 3, spd: 14, exp: 11, money: 180, skills: ["slash"] },
   host:      { name: "Host",            elements: ["Psychic"], street: "host", sprite: "sc_person_66", hp: 24, mp: 0, str: 12, def: 8, int: 0, wis: 4, spd: 12, exp: 12, money: 400, skills: ["sweet_talk"] },
-  biker:     { name: "Biker",           elements: ["Steel", "Electric"], street: "biker", sprite: "sc_person_58", hp: 34, mp: 0, str: 17, def: 12, int: 0, wis: 6, spd: 11, exp: 16, money: 300, skills: ["revving"] },
+  biker:     { name: "Biker",           elements: ["Steel", "Electric"], street: "biker", sprite: "sc_person_58", hp: 34, mp: 0, str: 17, def: 12, int: 14, wis: 6, spd: 11, exp: 16, money: 300, skills: ["revving"] },
   grunt:     { name: "Yakuza Grunt",    elements: ["Dark"], street: "grunt", sprite: "sc_person_77", hp: 40, mp: 0, str: 19, def: 14, int: 0, wis: 7, spd: 10, exp: 22, money: 500, skills: ["headbutt"] },
   shakedown: { name: "Mr. Shakedown",   elements: ["Ground", "Earth"], street: "shakedown", sprite: "sc_person_71", big: true, hp: 160, mp: 0, str: 32, def: 22, int: 0, wis: 11, spd: 6, exp: 150, money: 10000, skills: ["haymaker"] },
   majima:    { name: "Goro Majima",     elements: ["Dark"], street: "majima", boss: true,

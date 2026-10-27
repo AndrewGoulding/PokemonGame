@@ -18,7 +18,7 @@
 //     // opts.canBack: B gives { action: "back" }, a double battle's second Pokémon)
 //   const m = await GbaMenus.battleMoves(overlay, { moves, cursor, frame })
 //     // moves: [{ name, type, pp, maxpp }] -> { index, cursor } or null (B)
-//     // (or any number, scrolling, each with info: [[text, dim?], [text, dim?]] in place of PP and TYPE)
+//     // (or any number, scrolling, each with info: two or three [text, dim?] lines in place of PP and TYPE)
 //     // (opts.onCursor(cursor) as the cursor moves; opts.keep leaves the menu
 //     // showing after A, for a double battle's target cursor)
 //   const i = await GbaMenus.multichoice(overlay, { left, top, items, cursor, frame })
@@ -859,7 +859,9 @@
       // pokeemerald-expansion's trigger beside your healthbox (opts.mega.toggled).
       const m = moves[cursor];
       if (m && m.info) {
-        m.info.forEach(([t, dim], k) => s.text(t, 21 * 8, (15 + 2 * k) * 8 + 2, dim ? DIM : P5.fg, P5.shadow, "small"));
+        // (three lines closer together)
+        const gap = m.info.length > 2 ? 11 : 16;
+        m.info.forEach(([t, dim], k) => s.text(t, 21 * 8, 15 * 8 + (m.info.length > 2 ? 0 : 2) + gap * k, dim ? DIM : P5.fg, P5.shadow, "small"));
       } else if (m) {
         const st = ppState(m.pp, m.maxpp), col = [pp[st * 2], pp[st * 2 + 1]];
         s.text("PP ", 21 * 8, 15 * 8 + 2, col[0], col[1], "small");

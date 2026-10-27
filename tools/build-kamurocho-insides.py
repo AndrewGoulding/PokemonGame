@@ -7,15 +7,21 @@
 # at ease) in Poppo's blue and white uniform, behind the counter; the shelves, the drinks fridge, the counter
 # and the floor are drawn here, in the street's colours and its 480-high frame (the floor at the bottom).
 #
-# Under the manhole by Serena: a storm drain's chamber, the ladder down at its left, a culvert behind, and the Time
-# Machine (time-machine.png, three times over) standing on its floor; and the manhole cover itself, for the
-# pavement.
+# Serena's backlot: the yard behind the bar, down the passage beside its door on the street, at night: Serena's back
+# wall in its green tiles, its back door (the sign off its front, assets/kamurocho/street.png, beside it) under a
+# lamp, beer crates and bin bags, an air conditioner on the wall and pipes up it, the next building's brown tiles and
+# its outdoor unit, a chain-link fence at the far end, and the asphalt floor (with the manhole cover on it, drawn by
+# ui/street.js from manhole.png).
+#
+# Under the manhole in Serena's backlot: a storm drain's chamber, the ladder down at its left, a culvert behind, and
+# the Time Machine (time-machine.png, three times over) standing on its floor; and the manhole cover itself, for
+# the backlot's asphalt.
 #
 #   python3 tools/build-kamurocho-insides.py
 #
 # (It needs only what's committed; run tools/build-kamurocho-sok.py first if those pictures change.)
 #
-# Writes assets/kamurocho/poppo.png (800x480), sewer.png (640x480) and manhole.png.
+# Writes assets/kamurocho/poppo.png (800x480), backlot.png (640x480), sewer.png (640x480) and manhole.png.
 import os, random
 from PIL import Image, ImageDraw
 
@@ -124,6 +130,103 @@ def poppo():
     im.convert('RGB').save(os.path.join(K, 'poppo.png'), optimize=True)
     print('Poppo: %dx%d' % (W, H))
 
+BACKLOT_W = 640
+def tiles(d, box, base, grout, rnd, tw=8, th=6):
+    # (a wall of small square tiles, as the street's buildings are faced: each a shade off the next, the grout dark)
+    x0, y0, x1, y1 = box
+    d.rectangle(box, fill=grout)
+    for y in range(y0, y1, th):
+        for x in range(x0, x1, tw):
+            d.rectangle((x, y, min(x1, x + tw - 2), min(y1, y + th - 2)), fill=shade(base, rnd.uniform(0.85, 1.12)))
+
+def backlot():
+    rnd = random.Random(23)
+    im = Image.new('RGBA', (BACKLOT_W, H), (0, 0, 0, 255))
+    d = ImageDraw.Draw(im)
+    top, floor = 250, FLOOR_Y
+    # The passage back to the street, at the left: walls close either side, the street's light at its far end.
+    d.rectangle((0, top, 64, floor), fill=(6, 14, 8))
+    d.polygon([(12, floor), (64, floor), (44, 372), (26, 372)], fill=(40, 46, 34))
+    d.rectangle((26, 330, 44, 372), fill=(96, 104, 70)); d.rectangle((28, 334, 42, 372), fill=(150, 150, 104))
+    d.rectangle((0, top, 12, floor), fill=(20, 30, 20)); d.line((12, top, 12, floor), fill=(44, 58, 36))
+    d.polygon([(12, top), (26, 320), (26, 372), (12, floor)], fill=(16, 26, 16))
+    d.polygon([(64, top), (44, 320), (44, 372), (64, floor)], fill=(12, 20, 12))
+    # Serena's back wall: its green tiles, as its front on the street; a ledge along its top.
+    tiles(d, (64, top, 330, floor), (22, 44, 26), (6, 16, 8), rnd)
+    d.rectangle((64, top, 330, top + 8), fill=(40, 52, 34)); d.line((64, top + 8, 330, top + 8), fill=(10, 20, 12))
+    d.rectangle((326, top, 334, floor), fill=(12, 22, 14))
+    # Its back door: steel, a kick plate, a handle; a step before it.
+    d.rectangle((136, 318, 194, floor), fill=(14, 22, 18))
+    d.rectangle((140, 322, 190, floor), fill=(70, 86, 78))
+    d.rectangle((143, 325, 187, floor - 2), fill=(84, 102, 92))
+    d.line((143, 325, 187, 325), fill=(120, 136, 126))
+    d.rectangle((143, floor - 22, 187, floor - 2), fill=(66, 80, 72))
+    d.rectangle((180, 362, 184, 368), fill=(190, 190, 170))
+    d.rectangle((130, floor - 4, 200, floor), fill=(60, 64, 56))
+    # Its lamp over the door, and the light it throws.
+    d.rectangle((158, 300, 172, 306), fill=(40, 44, 38)); d.rectangle((160, 306, 170, 311), fill=(255, 236, 170))
+    glow = Image.new('RGBA', im.size, (0, 0, 0, 0)); gd = ImageDraw.Draw(glow)
+    for r in range(80, 0, -8): gd.ellipse((165 - r, 310 - r * 0.8, 165 + r, 310 + r * 1.3), fill=(255, 220, 140, 9))
+    im.alpha_composite(glow)
+    d = ImageDraw.Draw(im)
+    # Serena's sign, off its front on the street, on the wall beside the door.
+    sign = Image.open(os.path.join(K, 'street.png')).convert('RGBA').crop((537, 68, 572, 108))
+    im.alpha_composite(sign, (212, 312))
+    d.rectangle((210, 310, 248, 350), outline=(30, 40, 26))
+    # An air conditioner on the wall, its pipe down to the floor; a drain pipe from the roof.
+    d.rectangle((246, 270, 306, 300), fill=(176, 180, 168)); d.rectangle((246, 270, 306, 272), fill=(214, 216, 204))
+    d.ellipse((276, 274, 300, 298), fill=(96, 100, 94)); d.ellipse((280, 278, 296, 294), fill=(60, 62, 58))
+    for x in range(250, 272, 4): d.line((x, 276, x, 296), fill=(130, 134, 124))
+    d.rectangle((300, 300, 304, floor), fill=(150, 150, 140)); d.line((300, 300, 300, floor), fill=(190, 190, 180))
+    d.rectangle((84, top, 92, floor), fill=(64, 72, 60)); d.line((85, top, 85, floor), fill=(104, 112, 96))
+    for y in range(top + 20, floor, 46): d.rectangle((82, y, 94, y + 4), fill=(40, 46, 38))
+    # Beer crates stacked by the door (yellow and red), and bin bags.
+    for (x, y, c) in ((96, 384, (220, 170, 30)), (96, 362, (200, 46, 40)), (112, 340, (220, 170, 30)), (116, 362, (220, 170, 30)), (116, 384, (200, 46, 40))):
+        d.rectangle((x, y, x + 20, y + 22), fill=shade(c, 0.6)); d.rectangle((x + 2, y + 2, x + 18, y + 20), fill=c)
+        for k in range(3): d.line((x + 4 + k * 6, y + 4, x + 4 + k * 6, y + 18), fill=shade(c, 0.55))
+        for k in range(3): d.ellipse((x + 3 + k * 6, y - 3, x + 7 + k * 6, y + 2), fill=(60, 110, 50))
+    for (x, y, r) in ((206, 396, 14), (226, 400, 12), (216, 384, 11), (316, 398, 13)):
+        d.ellipse((x - r, y - r, x + r, y + r), fill=(18, 22, 26)); d.ellipse((x - r + 3, y - r + 2, x - 2, y - 2), fill=(52, 58, 66))
+        d.line((x, y - r, x + 2, y - r - 5), fill=(18, 22, 26), width=2)
+    # The next building's back: brown tiles, a barred window lit low, its outdoor unit, a cable run.
+    tiles(d, (334, top, 520, floor), (94, 84, 64), (26, 22, 12), rnd)
+    d.rectangle((370, 290, 430, 336), fill=(20, 18, 12)); d.rectangle((374, 294, 426, 332), fill=(120, 104, 60))
+    for x in range(378, 426, 8): d.line((x, 294, x, 332), fill=(40, 34, 20), width=2)
+    d.line((334, 268, 520, 272), fill=(16, 16, 12), width=2); d.line((334, 274, 520, 280), fill=(16, 16, 12))
+    d.rectangle((452, 360, 512, floor), fill=(150, 154, 146)); d.rectangle((452, 360, 512, 363), fill=(196, 198, 190))
+    d.ellipse((462, 368, 494, 400), fill=(90, 94, 90)); d.ellipse((468, 374, 488, 394), fill=(48, 50, 48))
+    for k in range(4): d.line((478, 384, 478 + (8, -8, 0, 0)[k], 384 + (0, 0, 8, -8)[k]), fill=(130, 134, 128))
+    d.rectangle((504, 366, 510, 400), fill=(120, 124, 116))
+    # The far end: a chain-link fence, the city's glow beyond it.
+    d.rectangle((520, top, BACKLOT_W, floor), fill=(10, 10, 20))
+    glow = Image.new('RGBA', im.size, (0, 0, 0, 0)); gd = ImageDraw.Draw(glow)
+    for r in range(120, 0, -10): gd.ellipse((590 - r, 300 - r * 0.5, 590 + r, 300 + r * 0.5), fill=(200, 60, 140, 8))
+    im.alpha_composite(glow)
+    d = ImageDraw.Draw(im)
+    for x in range(520, BACKLOT_W, 60): d.rectangle((x + 2, 296, x + 6, floor), fill=(90, 96, 100))
+    d.line((520, 298, BACKLOT_W, 298), fill=(110, 116, 120), width=2)
+    for x in range(510, BACKLOT_W + 60, 8):
+        d.line((x, 300, x + 60, floor), fill=(64, 70, 74)); d.line((x + 60, 300, x, floor), fill=(64, 70, 74))
+    # (the night: the walls darker towards their foot)
+    dark = Image.new('RGBA', im.size, (0, 0, 0, 0)); dd = ImageDraw.Draw(dark)
+    for y in range(330, floor): dd.line((64, y, BACKLOT_W, y), fill=(0, 0, 0, int(110 * (y - 330) / (floor - 330))))
+    im.alpha_composite(dark)
+    d = ImageDraw.Draw(im)
+    # The floor: asphalt, a puddle catching the lamp, the kerb of the wall.
+    for y in range(floor, H):
+        k = 0.9 - 0.3 * (y - floor) / (H - floor)
+        d.line((0, y, BACKLOT_W, y), fill=shade((52, 56, 58), k))
+    d.rectangle((0, floor, BACKLOT_W, floor + 3), fill=(34, 36, 36))
+    for _ in range(500):
+        x = rnd.randrange(BACKLOT_W); y = rnd.randrange(floor + 4, H)
+        d.point((x, y), fill=rnd.choice([(70, 74, 76), (36, 40, 42), (84, 86, 84)]))
+    d.ellipse((140, 448, 240, 466), fill=(40, 52, 56)); d.ellipse((160, 452, 200, 460), fill=(150, 136, 96))
+    for _ in range(6):
+        x = rnd.randrange(0, BACKLOT_W - 60); y = rnd.randrange(floor + 10, H - 6)
+        d.line((x, y, x + rnd.randrange(20, 60), y + rnd.randrange(-3, 4)), fill=(30, 32, 34))
+    im.convert('RGB').save(os.path.join(K, 'backlot.png'), optimize=True)
+    print("Serena's backlot: %dx%d" % (BACKLOT_W, H))
+
 SEWER_W = 640
 def sewer():
     rnd = random.Random(11)
@@ -194,4 +297,5 @@ def sewer():
 
 if __name__ == '__main__':
     poppo()
+    backlot()
     sewer()

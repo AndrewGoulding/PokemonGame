@@ -4,15 +4,27 @@
 // tall as its people. The game's overworld (ui/overworld.js) rests meanwhile: ui/game.js's explore loop asks this
 // instead while you're in Kamurocho.
 //
-//   const ev = await Street.explore({ player, look, special, say, visible, onStep });
+//   const ev = await Street.explore({ player, look, special, say, visible, onStep, level });
 //     -> { type: "menu" } (START), { type: "talk", person, map } (someone with a script ui/game.js runs),
-//        { type: "realm-battle" } (jumped on the street), { type: "spot", script } (a spot: Poppo's door, the Time
-//        Machine)
+//        { type: "realm-battle", foes, bark } (a gang's caught you: their foe ids, REALM_FOES', and what they said),
+//        { type: "spot", script } (a spot: Poppo's door, the Time Machine)
 //   player.location.street: { scene, x, y, facing } (KAMUROCHO_STREET.arrive when there's none)
 //   Street.backdrop()   the street behind you now, for the Ultimax battles' screen: { url, size, position }
 //
 // The controls: the D-pad walks (B runs), A talks to whoever's in front of you or uses the spot you're on, START is
 // the menu. Walk off the street's end or into a door, and you're in the next scene.
+//
+// Its people with a `walk` (a strip of four frames, people/<id>_walk.png, each as wide as their standing <id>.png)
+// amble up and down the pavement, within their `range` of where they stand (50 pixels if not said), stopping now
+// and then and turning back at its ends, at the floor's edge, or before you; talk to one and they stop and face you,
+// and walk on once you've gone.
+//
+// And on the streets that have fights (a scene's `encounters`), its gangs walk too, as the Yakuza games' do: a group
+// from REALM_ENCOUNTERS.Kamurocho (only those your party's level has come to: opts.level(), or your realm party's
+// best), a gang for every 1200 pixels of street, pacing up and down it. Come near and in front of them and they've
+// seen you ("!"), and come at you; reach you and their leader has his say, and the fight's on (the event above).
+// Keep away (outrun them: B) and they give up. A gang beaten is gone; another turns up after a while, and every
+// gang's back when you come into the street again. (onStep is told there are no fights to roll for: they're these.)
 (function () {
   "use strict";
   const W = 336, H = 224, SCALE = 2;
@@ -48,6 +60,9 @@
   // ---------- Where you are ----------
   let me = null, cam = { x: 0, y: 0 }, t = 0, stepAcc = 0;
   const turned = {};   // (who's turned to face you, by their script)
+  const walkers = {};  // (where those who walk are now, and which way they're going, by their script)
+  let gangs = [], quiet = 0, regang = 0;   // (the gangs on this street; ticks before any can spot you; till another turns up)
+  const FRAMES = 4;    // (each walk's frames)
   const scene = () => D().scenes[me.scene];
   function inside(poly, x, y) {
     let c = false;
@@ -60,10 +75,37 @@
   const onFloor = (x, y) => inside(scene().floor, x, y);
   function place(loc) {
     const a = loc && D().scenes[loc.scene] ? loc : D().arrive;
+    // (put somewhere else in the same scene: its people and gangs where they are)
+    if (!me || me.scene !== a.scene) { for (const k of Object.keys(walkers)) delete walkers[k]; newScene = true; }
     me = { scene: a.scene, x: a.x, y: a.y, facing: a.facing || "down", moving: false };
   }
+  let newScene = true;   // (the gangs to be sent for: you've come into a scene)
+  function walker(p) {
+    return walkers[p.script] || (walkers[p.script] = { x: p.x, y: p.y, dir: p.face === "left" ? -1 : 1, wait: 30 + Math.floor(Math.random() * 90), moving: false, dist: 0 });
+  }
   function people(opts) {
-    return (scene().people || []).filter((p) => !opts.visible || opts.visible(p)).map((p) => Object.assign({}, p, turned[p.script] ? { face: turned[p.script] } : {}));
+    return (scene().people || []).filter((p) => !opts.visible || opts.visible(p)).map((p) => {
+      const w = p.walk && walker(p);
+      return Object.assign({}, p, { home: p.x }, w ? { x: w.x, y: w.y, face: w.dir < 0 ? "left" : "right", moving: w.moving, dist: w.dist } : {}, turned[p.script] ? { face: turned[p.script] } : {});
+    });
+  }
+  // (A tick of their walking: half a pixel a tick, a frame of their walk every 6 pixels.)
+  function amble() {
+    for (const p of scene().people || []) {
+      if (!p.walk) continue;
+      const w = walker(p);
+      w.moving = false;
+      // (stopped to talk to you, till you've walked off)
+      if (turned[p.script]) { if (Math.abs(me.x - w.x) > 80 || Math.abs(me.y - w.y) > 30) delete turned[p.script]; else continue; }
+      if (w.wait > 0) { w.wait--; continue; }
+      const nx = w.x + w.dir * 0.5;
+      // (the end of their beat, the floor's edge, or you in the way: a pause, and back the other way)
+      if (Math.abs(nx - p.x) > (p.range || 50) || !onFloor(nx, w.y) || (Math.abs(nx - me.x) < 24 && Math.abs(w.y - me.y) < 10 && Math.sign(me.x - w.x) === w.dir)) {
+        w.dir = -w.dir; w.wait = 40 + Math.floor(Math.random() * 80); continue;
+      }
+      w.x = nx; w.dist += 0.5; w.moving = true;
+      if (Math.random() < 1 / 500) w.wait = 60 + Math.floor(Math.random() * 120);   // (stopping a while, now and then)
+    }
   }
 
   // ---------- Drawing ----------
@@ -77,20 +119,45 @@
     const list = [];
     for (const th of S.things || []) list.push({ y: th.floor ? -Infinity : th.y, draw: () => { const i = image(th.image); if (ready(i)) g.drawImage(i, Math.round(th.x - i.width * th.scale / 2 - cam.x), Math.round(th.y - i.height * th.scale - cam.y), i.width * th.scale, i.height * th.scale); } });
     for (const p of people(opts)) list.push({ y: p.y, draw: () => {
-      const i = image("assets/kamurocho/people/" + p.sprite + ".png");
+      const i = image("assets/kamurocho/people/" + p.sprite + ".png"), wk = p.walk && image("assets/kamurocho/people/" + p.walk + ".png");
       if (!ready(i)) return;
-      const x = Math.round(p.x - cam.x), y = Math.round(p.y - cam.y), bob = Math.floor(t / 30 + p.x) % 2;
+      // (walking: their walk's frames in turn; standing, their breath)
+      const step = p.moving && ready(wk), x = Math.round(p.x - cam.x), y = Math.round(p.y - cam.y), bob = step ? 0 : Math.floor(t / 30 + p.home) % 2;
       shadow(x, y, i.width * 0.4);
       g.save(); g.translate(x, y - bob);
       if (p.face === "left") g.scale(-1, 1);
-      g.drawImage(i, -Math.round(i.width / 2), -i.height + bob);
+      if (step) g.drawImage(wk, (Math.floor(p.dist / 6) % FRAMES) * i.width, 0, i.width, i.height, -Math.round(i.width / 2), -i.height, i.width, i.height);
+      else g.drawImage(i, -Math.round(i.width / 2), -i.height + bob);
       g.restore();
     } });
+    for (const gang of gangs) gang.members.forEach((m, k) => list.push({ y: m.y, draw: () => drawFoe(gang, m, k) }));
     list.push({ y: me.y, draw: () => drawMe(opts) });
     list.sort((a, b) => a.y - b.y).forEach((o) => o.draw());
     // (a spot's name, while you stand in it)
     const here = spotAt();
-    if (here && here.text) { g.font = "bold 9px 'Trebuchet MS', sans-serif"; g.textAlign = "center"; g.fillStyle = "#000a"; g.fillRect(W / 2 - 46, 4, 92, 14); g.fillStyle = "#ffe890"; g.fillText(here.text + "  Ⓐ", W / 2, 14); g.textAlign = "left"; }
+    if (here && here.text) { g.font = "bold 9px 'Trebuchet MS', sans-serif"; g.textAlign = "center"; g.fillStyle = "#000a"; const bw = Math.max(92, Math.ceil(g.measureText(here.text + "  Ⓐ").width) + 14); g.fillRect(W / 2 - bw / 2, 4, bw, 14); g.fillStyle = "#ffe890"; g.fillText(here.text + "  Ⓐ", W / 2, 14); g.textAlign = "left"; }
+  }
+  // (one of a gang: walking, their foe's walk if it has one (KAMUROCHO_STREET.foeWalks), else squared up; their
+  // leader's "!" when they've seen you, and his words when they've caught you)
+  function drawFoe(gang, m, k) {
+    const f = window.REALM_FOES[m.id] || {}, i = image("assets/kamurocho/people/" + (f.street || m.id) + ".png");
+    const wk = (D().foeWalks || []).includes(f.street) && image("assets/kamurocho/people/" + f.street + "_walk.png");
+    const x = Math.round(m.x - cam.x), y = Math.round(m.y - cam.y), step = gang.moving && ready(wk);
+    shadow(x, y, 16);
+    g.save(); g.translate(x, y);
+    if (gang.dir < 0) g.scale(-1, 1);
+    if (step) { const fw = wk.width / FRAMES; g.drawImage(wk, (Math.floor((gang.dist + k * 9) / 6) % FRAMES) * fw, 0, fw, wk.height, -Math.round(fw / 2), -wk.height, fw, wk.height); }
+    else if (ready(i)) g.drawImage(i, -Math.round(i.width / 2), -i.height);
+    g.restore();
+    if (k) return;
+    g.font = "bold 9px 'Trebuchet MS', sans-serif"; g.textAlign = "center";
+    if (gang.state === "chase" && gang.t < 50) { g.font = "bold 16px 'Trebuchet MS', sans-serif"; g.fillStyle = "#000"; g.fillText("!", x + 1, y - 89); g.fillStyle = "#ffe040"; g.fillText("!", x, y - 90); g.font = "bold 9px 'Trebuchet MS', sans-serif"; }
+    if (gang.state === "bark") {
+      const w = Math.ceil(g.measureText(gang.bark).width) + 12, bx = Math.max(2, Math.min(W - w - 2, x - w / 2)), by = Math.max(2, y - 112);
+      g.fillStyle = "#fff"; g.fillRect(bx, by, w, 15); g.strokeStyle = "#000"; g.lineWidth = 1; g.strokeRect(bx + 0.5, by + 0.5, w - 1, 14);
+      g.fillStyle = "#000"; g.fillText(gang.bark, bx + w / 2, by + 11);
+    }
+    g.textAlign = "left";
   }
   function shadow(x, y, rx) { g.fillStyle = "#0006"; g.beginPath(); g.ellipse(x, y, rx, rx * 0.25, 0, 0, Math.PI * 2); g.fill(); }
   function drawMe(opts) {
@@ -123,8 +190,87 @@
       return dx ? Math.sign(ax) === dx && Math.abs(ax) < 64 && Math.abs(ay) < 18 : Math.sign(ay) === dy && Math.abs(ay) < 30 && Math.abs(ax) < 30;
     }) || null;
   }
+  // ---------- The gangs ----------
+  function partyLevel(opts) {
+    if (opts.level) return opts.level();
+    const P = opts.player.flags && opts.player.flags.realmParty && opts.player.flags.realmParty.yakuza;
+    return Math.max(1, ...((P && P.party) || []).map((r) => r.lv || 1));
+  }
+  function newGang(opts, far) {
+    const enc = window.REALM_ENCOUNTERS && window.REALM_ENCOUNTERS.Kamurocho, S = scene();
+    if (!enc) return null;
+    const lv = partyLevel(opts), groups = enc.groups.filter((gr) => (gr[2] || 1) <= lv), total = groups.reduce((n, gr) => n + gr[0], 0);
+    let r = Math.random() * total, foes = groups[0][1];
+    for (const gr of groups) if ((r -= gr[0]) < 0) { foes = gr[1]; break; }
+    // (somewhere on the floor, out of your sight: off the screen, a way along the street)
+    const ys = S.floor.map((q) => q[1]), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    for (let k = 0; k < 60; k++) {
+      const x = 40 + Math.random() * (S.width - 80), y = y0 + 12 + Math.random() * (y1 - y0 - 24);
+      if (!onFloor(x, y) || Math.abs(x - me.x) < far) continue;
+      const gang = { foes: foes.slice(), x, y, home: x, dir: Math.random() < 0.5 ? -1 : 1, state: "walk", wait: 0, t: 0, dist: 0, moving: false, members: [] };
+      place2(gang);
+      return gang;
+    }
+    return null;
+  }
+  // (the leader where the gang is, the rest a step behind him, up and down the pavement from him)
+  function place2(gang) {
+    gang.members = gang.foes.map((id, k) => {
+      let x = gang.x - gang.dir * 30 * k, y = gang.y + (k ? (k % 2 ? 10 : -10) : 0);
+      if (!onFloor(x, y)) y = gang.y;
+      if (!onFloor(x, y)) x = gang.x;
+      return { id, x, y };
+    });
+  }
+  function spawnGangs(opts) {
+    gangs = []; quiet = 120; regang = 1800;
+    if (!scene().encounters || !opts) return;
+    for (let k = Math.max(1, Math.floor(scene().width / 1200)); k > 0; k--) { const gang = newGang(opts, 260); if (gang) gangs.push(gang); }
+  }
+  // (A tick of the gangs: pacing, spotting you, coming at you, and catching you: the fight, or null.)
+  function prowl(opts) {
+    if (!scene().encounters) return null;
+    if (quiet > 0) quiet--;
+    if (--regang <= 0) { regang = 1800; if (gangs.length < Math.max(1, Math.floor(scene().width / 1200))) { const gang = newGang(opts, W / 2 + 60); if (gang) gangs.push(gang); } }
+    for (const gang of gangs) {
+      gang.t++; gang.moving = false;
+      const ax = me.x - gang.x, ay = me.y - gang.y;
+      if (gang.state === "bark") {
+        if (gang.t >= 80) { gangs = gangs.filter((o) => o !== gang); quiet = 240; return { type: "realm-battle", foes: gang.foes, bark: gang.bark }; }
+        continue;
+      }
+      if (gang.state === "walk") {
+        // (seen: you're near and in front of them, or right by them)
+        if (!quiet && ((Math.sign(ax) === gang.dir && Math.abs(ax) < 150 && Math.abs(ay) < 40) || (Math.abs(ax) < 50 && Math.abs(ay) < 24))) { gang.state = "chase"; gang.t = 0; gang.wait = 0; continue; }
+        if (gang.wait > 0) { gang.wait--; continue; }
+        const nx = gang.x + gang.dir * 0.6;
+        if (Math.abs(nx - gang.home) > 220 || !onFloor(nx, gang.y)) { gang.dir = -gang.dir; gang.wait = 50 + Math.floor(Math.random() * 80); continue; }
+        gang.x = nx; gang.dist += 0.6; gang.moving = true;
+        if (Math.random() < 1 / 600) gang.wait = 60 + Math.floor(Math.random() * 100);
+      } else {
+        // (after you: up to you, side on, an arm's length off; lost, if you get well away)
+        if (Math.abs(ax) > 280 || Math.abs(ay) > 90) { gang.state = "walk"; gang.home = gang.x; gang.wait = 60; continue; }
+        gang.dir = ax < 0 ? -1 : 1;
+        const tx = me.x - gang.dir * 40, dx = tx - gang.x, dy = me.y - gang.y;
+        if ((Math.abs(dx) < 3 || Math.abs(ax) < 46) && Math.abs(dy) < 6) {
+          gang.state = "bark"; gang.t = 0; me.facing = gang.dir < 0 ? "right" : "left";
+          const B = D().barks || {}; gang.bark = (B[gang.foes[0]] || ["Hey, you! Got a problem?"])[Math.floor(Math.random() * (B[gang.foes[0]] || [0]).length)];
+          continue;
+        }
+        const nx = gang.x + Math.sign(dx) * Math.min(Math.abs(dx), 1.2), ny = gang.y + Math.sign(dy) * Math.min(Math.abs(dy), 0.7);
+        if (onFloor(nx, ny)) { gang.x = nx; gang.y = ny; } else if (onFloor(nx, gang.y)) gang.x = nx;
+        gang.dist += 1.2; gang.moving = true;
+      }
+      place2(gang);
+    }
+    return null;
+  }
+  const caught = () => gangs.some((gang) => gang.state === "bark");
+
   function go(e) {
     for (const k of Object.keys(turned)) delete turned[k];
+    for (const k of Object.keys(walkers)) delete walkers[k];
+    newScene = true;
     me = { scene: e.to, x: e.x, y: e.y, facing: e.facing || me.facing, moving: false };
     held.clear();
   }
@@ -151,6 +297,12 @@
         const n = Math.min(4, Math.round((now - last) / (1000 / 60))); last = now;
         for (let k = 0; k < n; k++) {
           t++;
+          if (newScene) { newScene = false; spawnGangs(opts); }
+          amble();
+          const fight = prowl(opts);
+          if (fight) return finish(fight);
+          // (caught: you stand while their leader has his say)
+          if (caught()) { me.moving = false; pressedA = false; continue; }
           if (pressedMenu) { pressedMenu = false; return finish({ type: "menu" }); }
           if (pressedA) {
             pressedA = false;
@@ -183,11 +335,11 @@
             // (along a slope: up or down it as you go)
             for (const sy of [-1.2, 1.2]) if (onFloor(nx, me.y + sy) && !blocked(nx, me.y + sy, opts)) { me.x = nx; me.y += sy; break; }
           }
-          // (a step every 16 pixels walked: the clock, and the street's fights)
+          // (a step every 16 pixels walked: the clock; the street's fights are its gangs, above, not a roll of the dice)
           stepAcc += Math.abs(dx) + Math.abs(dy);
           if (stepAcc >= 16) {
             stepAcc -= 16;
-            const ev = opts.onStep && opts.onStep(!!S.encounters);
+            const ev = opts.onStep && opts.onStep(false);
             if (ev) return finish(ev);
           }
         }
@@ -209,5 +361,6 @@
       position: (cam.x / Math.max(1, S.width - W) * 100) + "% " + (cam.y / (480 - H) * 100) + "%" };
   }
   const isStreet = (map) => map === "Kamurocho";
-  window.Street = { explore, show, backdrop, isStreet, place: (loc) => place(loc), here: () => me && Object.assign({}, me), redraw: (opts) => me && draw(opts) };
+  window.Street = { explore, show, backdrop, isStreet, place: (loc) => place(loc), here: () => me && Object.assign({}, me), people: () => me ? people({}) : [],
+    gangs: () => gangs.map((gang) => ({ foes: gang.foes, x: Math.round(gang.x), y: Math.round(gang.y), state: gang.state })), redraw: (opts) => me && draw(opts) };
 })();
