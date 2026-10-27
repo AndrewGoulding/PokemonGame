@@ -18,7 +18,6 @@
   const FPS = 59.7275;
   const PER_FRAME = 224;                 // samples per frame at 13,379 Hz
   const MAX_DS = 5, MASTER = 12;         // FireRed's m4aSoundMode
-  const REV_D1 = PER_FRAME * 7, REV_D2 = PER_FRAME * 6;   // the PCM ring buffer (7 frames)
   const CGB_AMP = 24;                    // a Game Boy channel at full volume, in 8-bit sample units
 
   // ---------- Data ----------
@@ -101,7 +100,6 @@
     const cgb = [null, null, null, null];   // square 1, square 2, wave, noise
     const L = [], R = [];     // output frames (Float32Array chunks)
     let outLen = 0;
-    const histL = new Float32Array(REV_D1 + PER_FRAME), histR = new Float32Array(REV_D1 + PER_FRAME);   // (for reverb)
     let ring = [];            // last 7 frames of output, for reverb: [L, R]
     const reverb = song.reverb || 0;
 

@@ -31,7 +31,7 @@
   // ---------- FireRed's tables ----------
 
   // The pages, in the order they cycle (sNamingScreen->currentPage) ...
-  const KBPAGE_SYMBOLS = 0, KBPAGE_LETTERS_UPPER = 1, KBPAGE_LETTERS_LOWER = 2, KBPAGE_COUNT = 3;
+  const KBPAGE_LETTERS_UPPER = 1, KBPAGE_COUNT = 3;   // (the keyboard's pages: symbols 0, upper case 1, lower case 2)
   // ... and the keyboards, as the tables below are indexed.
   const KEYBOARD_LETTERS_LOWER = 0, KEYBOARD_LETTERS_UPPER = 1, KEYBOARD_SYMBOLS = 2;
   const KBROW_COUNT = 4;

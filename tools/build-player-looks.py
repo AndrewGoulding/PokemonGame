@@ -473,6 +473,9 @@ DB_PARTS = [
     ('mecha_frieza', 'Mecha Frieza', 'LG2_046', 1, {'trim': ['7b63e7', '7b63ad', '7b21ad', '5a007b', '210084'], 'skin': ['ffffff', 'adbde7', '7ba5ce']}),
     ('king_cold', 'King Cold', 'LG2_071', 2, {'outfit': ['d61029', 'ad0810', '7b0000'], 'trim': ['7bffce', '00a5a5', '21637b'],
                                               'skin': ['efadff', 'de84ff', 'ce29ff', '9c00d6', '5a007b']}),
+    # (Videl, from Buu's Fury: a woman's face and hair for the Majin's and the Kais' presets.)
+    ('videl', 'Videl', 'BF_277', 1, {'hair': ['000000', '393939'], 'outfit': ['ffffff', 'f7f7f7', 'dedede', 'c6c6c6'],
+                                     'trim': ['a5a5a5', '7b7b7b', '636363', '525252'], 'skin': ['f7c673', 'dead63', 'ad7b39', '845218']}),
     # (The Kais: the Supreme Kai, Kibito, the two fused, and King Kai.)
     ('supreme_kai', 'Supreme Kai', 'BF_073', 1, {'hair': ['ffffff', 'dedede', 'd6adef'], 'outfit': ['00ced6', '009cb5', '006b84', '004263'],
                                                  'trim': ['ff8400', 'd66300', 'ad4a00', '733900'], 'skin': KAI}),

@@ -1663,7 +1663,7 @@ for (const share of [false, true]) {
   const introJs = fs.readFileSync(path.join(root, "ui/intro.js"), "utf8");
   const names = new Set();
   for (const [, list] of introJs.matchAll(/_IMAGES = \[([^\]]+)\]/g)) for (const [, n] of list.matchAll(/"([\w-]+)"/g)) names.add(n);
-  assert(names.size > 30, "intro image lists");
+  assert(names.size > 25, "intro image lists");
   for (const n of names) assert(fs.existsSync(path.join(root, "assets/intro", n + ".png")), "missing intro image " + n);
   for (const [, label] of introJs.matchAll(/IT\("(\w+)"\)/g)) assert(INTRO_TEXT[label], "missing intro text " + label);
   for (const n of ["Red", "Green", "Gary", "Leaf"]) assert(INTRO_TEXT["gNameChoice_" + n], "name choice " + n);
@@ -1853,7 +1853,7 @@ for (const share of [false, true]) {
   for (const [look, l] of Object.entries(Player.LOOKS)) {
     assert.strictEqual(Player.create("T", look).look, look);
     for (const file of ["assets/sprites/trainers/back/" + l.back + ".png", "assets/sprites/trainers/front/" + l.front + ".png",
-      "assets/intro/" + l.speech + ".png", "assets/world/sprites/player_" + look + ".png", "assets/world/sprites/player_" + look + "_run.png"]) {
+      "assets/world/sprites/player_" + look + ".png", "assets/world/sprites/player_" + look + "_run.png"]) {
       assert(fs.existsSync(path.join(root, file)), "missing " + file);
     }
   }
@@ -1862,8 +1862,6 @@ for (const share of [false, true]) {
   assert.strictEqual(Player.load(JSON.parse(JSON.stringify(asRed))).player.look, "custom", "saves as Red or Leaf become the custom character");
   const saved = Object.assign(Player.create("T", "custom"), { party: [Party.create("Pidgey", 5)] });
   assert.strictEqual(Player.load(JSON.parse(JSON.stringify(saved))).player.look, "custom", "the custom look survives saving");
-  // Every picture Oak's speech uses is built (or added by hand, like the custom portrait).
-  assert(fs.readFileSync(path.join(root, "ui/intro.js"), "utf8").includes('"oak-speech-player-character"'));
 }
 
 // Battle backgrounds: every terrain ui/game.js can pick is built, at 512x112
@@ -7338,6 +7336,21 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
       assert(F.hairs.includes(P[b + "_hair"] ? b + "_hair" : ""), b + " takes its own hair");
     }
     if (r.looks.start) for (const k of ["body", "face", "hairstyle"]) assert(!r.looks.start[k] || P[r.looks.start[k]], r.id + "'s start: " + k);
+  }
+  // (Every race has a man and a woman among its presets, each preset's parts there to be drawn, its colours colours.)
+  {
+    const P = window.PLAYER_LOOK_PARTS, C = window.LOOK_COLOURS, ids = (k) => C[k].map((c) => c[0]);
+    for (const r of window.REALM_RACES) {
+      const L = r.looks, pr = L.bodies.filter((b) => P[b].kind === "whole" || P[b + "_face"]).map((b) => ({ body: b, gender: (L.female || []).includes(b) ? "female" : "male" })).concat(L.presets || []);
+      for (const g of ["male", "female"]) assert(pr.some((p) => p.gender === g), r.id + " has a " + g + " preset");
+      for (const p of L.presets || []) {
+        assert(["male", "female"].includes(p.gender) && P[p.body] && (!p.face || P[p.face].kind === "face") && (!p.hairstyle || P[p.hairstyle].kind === "hair"), r.id + ": " + p.name);
+        if (p.face && p.hairstyle !== undefined) assert(P[p.face].hairs.includes(p.hairstyle || ""), p.name + "'s hair fits its face");
+        if (p.face) assert(P[p.face].family === P[p.body].family, p.name + ": one family");
+        for (const k of ["hair", "outfit", "trim"]) assert(!p[k] || ids(k === "hair" ? "hair" : "cloth").includes(p[k]), p.name + ": " + k);
+        assert(!p.skin || L.skin.includes(p.skin), p.name + ": skin");
+      }
+    }
   }
   // (Android 20 is Dr. Gero, not Mr. Popo; the Frieza Clan by that name)
   assert.strictEqual(window.REALM_RACES.find((r) => r.id === "arcosian").name, "Frieza Clan");

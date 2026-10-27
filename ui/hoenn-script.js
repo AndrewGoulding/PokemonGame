@@ -290,19 +290,6 @@
       }
       return env.syncSpecial ? !!env.syncSpecial(name, { set, setVar, getVar, local }) : false;
     }
-    // A script that's run as a map loads: no screens, no waiting.
-    function runSync(label) {
-      const D = DATA(), st = { code: D.s[label], pc: 0, cmp: 0, sw: 0, stack: [] };
-      if (!st.code) return;
-      for (let guard = 0; guard < 20000 && !st.done; guard++) {
-        if (st.pc >= st.code.length) { if (!st.stack.length) return; [st.code, st.pc] = st.stack.pop(); continue; }
-        const [op, ...a] = st.code[st.pc++];
-        if (!flow(st, op, a) && !simple(st, op, a) && env.frontierOp && FRONTIER_OPS.test(op)) {
-          // (The Frontier's commands that only set vars and objects, as a room's OnTransition has them: done before they'd even wait.)
-          env.frontierOp(op, a, { set() {}, setBuffer: (n, v) => { buffers[n] = v; }, setVar, getVar, num, local, flush: async () => {}, flag, setFlag, who });
-        }
-      }
-    }
     const CONTEST_OPS = /^(choosecontestmon|startcontest|showcontestresults|buffercontestname|contestlinktransfer|showcontestpainting)$/;
     const FRONTIER_OPS = /^(frontier|tower|dome|palace|arena|factory|pike|pyramid|slateporttent|verdanturftent|fallarbortent|battletent|apprentice)_/;
 

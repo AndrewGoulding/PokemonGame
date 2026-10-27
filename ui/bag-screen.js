@@ -560,7 +560,6 @@
     return FILTERS.map((f) => all.filter((n) => f.test(card(n))).length);
   }
   const ROWS = 5, GRID = 7;
-  function perPage() { return st.grid && st.col === 0 ? ROWS * GRID : ROWS; }
   function clamp() {
     for (const c of [0, 1]) {
       const n = column(c).length, m = st.cur[c], page = c === 0 && st.grid ? GRID : 1, shown = c === 0 && st.grid ? ROWS * GRID : ROWS;
@@ -1761,14 +1760,6 @@
     p.drawImage(s.canvas(), 0, 0, pw, ph, 0, 0, pw, ph);
     const k = scale || 1;
     g.drawImage(off, 0, 0, pw, ph, Math.round(x), Math.round(y), Math.round(pw * k), Math.round(ph * k));
-  }
-  // A card small, as GX shows one coming out of a pack: its kind's colour and its picture.
-  function smallCard(g, no, x, y) {
-    const c = cardsData().cards[no];
-    g.fillStyle = "#202020"; g.fillRect(Math.round(x) - 1, Math.round(y) - 1, 24, 32);
-    g.fillStyle = KIND_COLOUR[c[2]] || "#e8d040"; g.fillRect(Math.round(x), Math.round(y), 22, 30);
-    g.fillStyle = "#101010"; g.fillRect(Math.round(x) + 2, Math.round(y) + 5, 18, 18);
-    art(g, no, Math.round(x) + 3, Math.round(y) + 6, 16, 16);
   }
   function show() {
     canvas.classList.remove("hidden");

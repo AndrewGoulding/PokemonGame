@@ -55,11 +55,6 @@
   const itemPlural = (name) => (/s$/i.test(name) ? name : /[^aeiou]y$/i.test(name) ? name.slice(0, -1) + "ies" : name + "s");
   const back = (label) => ({ label: label || "Back", value: "back", className: "action", wide: true });
 
-  function playTime(ms) {
-    const mins = Math.floor(ms / 60000);
-    return Math.floor(mins / 60) + ":" + String(mins % 60).padStart(2, "0");
-  }
-
   function show(which) {
     if (which !== "world") Overworld.hide();
     if (window.Street) Street.show(which === "street");
@@ -1637,7 +1632,6 @@
   // (Berries can be sorted by their tiers, BerryPicking.TIERS, as the berry
   // tree gives them: the Bag's "Sort" on a berry, flags.berrySort "tier".)
   const BERRY_TIER_ORDER = () => BerryPicking.TIERS.flatMap((t) => t.berries);
-  const berryTier = (id) => BerryPicking.TIERS.find((t) => t.berries.includes(id));
   // (`bag`: another than yours, as the Bug-Catching Contest's.)
   function bagPockets(bag) {
     bag = bag || player.bag;
@@ -9674,7 +9668,7 @@
   // edge, a scientist's Time Machine (tools/build-time-machine.js) takes you beyond it, once you have a Pokémon of
   // your own, to the Realm Hub: a platform in the void between the realms, with the realms' portals along its north:
   // the Pokémon realm's (back out beside the Time Machine off Pallet Town), the Yu-Gi-Oh! realm's and the Like a
-  // Dragon realm's (Kamurocho: tools/build-kamurocho.py, its Time Machine in the Empty Lot). Each realm's Time Machine (Pallet's, and the one under the Kame Game shop's street) takes you
+  // Dragon realm's (Kamurocho: its streets side on, ui/street.js, its Time Machine under a manhole). Each realm's Time Machine (Pallet's, and the one under the Kame Game shop's street) takes you
   // to the Realm Hub; its portals take you out. The Yu-Gi-Oh! realm's portal comes out by the fountain in Domino City's square:
   // its screens are Yu-Gi-Oh! The Sacred Cards' (tools/build-sacred-cards.py), and its fountain takes you back, or
   // round the city's other places (window.SACRED_CARDS.areas). Your Pokémon stay in their balls in the Yu-Gi-Oh!
@@ -9867,8 +9861,6 @@
     const m = player.location.map, enc = window.REALM_ENCOUNTERS && window.REALM_ENCOUNTERS[m];
     if (!enc) return null;
     if (realmQuiet > 0) { realmQuiet--; return null; }
-    const at = Overworld.position(), lot = m === "Kamurocho" && window.KAMUROCHO.lot;
-    if (lot && at.x >= lot.x0 - 1 && at.x <= lot.x1 + 1 && at.y >= lot.y0 - 1 && at.y <= lot.y1 + 1) return null;
     return Math.random() < enc.rate ? { type: "realm-battle" } : null;
   }
   // (On Kamurocho's street: a step's chance of a fight, its rate as the map's; never in the alley or the bar.)

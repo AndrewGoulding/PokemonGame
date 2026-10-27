@@ -1,9 +1,9 @@
-// Builds the FireRed intro graphics (opening movie, title screen, Prof. Oak's
-// speech) from a pret/pokefirered checkout into assets/intro/.
+// Builds the FireRed intro graphics (opening movie and title screen) from a
+// pret/pokefirered checkout into assets/intro/, and the new game's text.
 //
 //   node tools/build-intro.js <path to pokefirered>     (or set POKEFIRERED)
 //
-// Needs graphics/intro/, graphics/title_screen/ and graphics/oak_speech/ (see
+// Needs graphics/intro/ and graphics/title_screen/ (see
 // README "Intro"). GBA backgrounds are drawn from their tile sheets, tilemaps
 // and palettes into plain images; sprites are cut into RGBA sheets with
 // colour 0 transparent. Timing and placement live in ui/intro.js.
@@ -18,7 +18,7 @@ const { paletteRam, renderBg } = require("./lib/gba");
 const root = path.join(__dirname, "..");
 const pret = process.argv[2] || process.env.POKEFIRERED;
 if (!pret || !fs.existsSync(path.join(pret, "graphics/intro"))) {
-  console.error("usage: node tools/build-intro.js <path to pokefirered>  (needs graphics/intro, title_screen, oak_speech)");
+  console.error("usage: node tools/build-intro.js <path to pokefirered>  (needs graphics/intro, title_screen)");
   process.exit(1);
 }
 const G = (...p) => path.join(pret, "graphics", ...p);
@@ -46,41 +46,6 @@ function renderSprite(file, colours) {
 const save = (name, img) => writePng(path.join(out, name + ".png"), img.width, img.height, img.rgba);
 const pal = (...p) => readPal(G(...p));
 const pngPal = (...p) => readPng(G(...p)).palette;
-
-// ---------- Prof. Oak's speech (graphics/oak_speech) ----------
-
-// Trainer pictures, 64x96, colour 0 transparent.
-for (const who of ["oak", "red", "leaf"]) save("oak-speech-" + who, renderSprite(G("oak_speech", who, "pic.png"), pal("oak_speech", who, "pal.pal")));
-
-// The platform under the picture: three 32x32 pieces (left, middle, right) side by side.
-{
-  const p = renderSprite(G("oak_speech/platform.png"), pal("oak_speech/platform.pal"));
-  const rgba = new Uint8ClampedArray(96 * 32 * 4);
-  for (let f = 0; f < 3; f++) {
-    for (let y = 0; y < 32; y++) rgba.set(p.rgba.subarray(((f * 32 + y) * 32) * 4, ((f * 32 + y) * 32 + 32) * 4), (y * 96 + f * 32) * 4);
-  }
-  save("oak-speech-platform", { width: 96, height: 32, rgba });
-}
-
-// Backgrounds use bg_tiles.png's palette (4 x 16 colours, BG palettes 0-3).
-const speechRam = paletteRam([[0, pngPal("oak_speech/bg_tiles.png")]]);
-save("oak-speech-bg", renderBg({ tiles: G("oak_speech/oak_speech_bg.png"), map: G("oak_speech/oak_speech_bg.bin"),
-  widthTiles: 30, heightTiles: 20, ram: speechRam, opaque: true }));
-
-// The controls guide's button icons (5x16 tiles each page) and the Pikachu
-// page's ruled-paper panel (rows 2-19), all from bg_tiles.png. Its pixels hold
-// their full palette index (8bpp), so the PNG's own palette colours them.
-const tilesPal = paletteRam([[0, readPng(G("oak_speech/bg_tiles.png")).palette]]);
-for (const page of [2, 3]) {
-  save("controls-page-" + page, renderBg({ tiles: G("oak_speech/bg_tiles.png"), map: G("oak_speech/controls_guide_page_" + page + ".bin"),
-    widthTiles: 5, heightTiles: 16, ram: tilesPal, bpp: 8, rowWidth: 5 }));
-}
-save("pikachu-page", renderBg({ tiles: G("oak_speech/bg_tiles.png"), map: G("oak_speech/pikachu_intro/tilemap.bin"),
-  widthTiles: 30, heightTiles: 18, ram: tilesPal, bpp: 8, rowWidth: 30 }));
-
-// The Pikachu in the corner of those pages: body (2 frames 32x32), ears
-// (2 frames 32x16), eyes (2 frames 16x8), with pikachu.pal.
-for (const part of ["body", "ears", "eyes"]) save("pikachu-" + part, renderSprite(G("oak_speech/pikachu_intro", part + ".png"), pal("oak_speech/pikachu_intro/pikachu.pal")));
 
 // ---------- Title screen (graphics/title_screen, FireRed) ----------
 
@@ -186,8 +151,9 @@ for (const f of ["nidorino", "grass", "swipe", "recoil_dust"]) save("movie-s3-" 
 
 // ---------- Text ----------
 //
-// Prof. Oak's speech, the controls guide, the Pikachu pages and the name
-// choices, from data/text/new_game_intro.inc, as pages of plain text.
+// The new game's text, from data/text/new_game_intro.inc, as pages of plain
+// text: its name choices are the names you're offered (Prof. Oak's speech
+// itself isn't played).
 {
   const raw = parseTextFile(path.join(pret, "data/text/new_game_intro.inc"), {});
   const text = {};

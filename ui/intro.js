@@ -5,7 +5,6 @@
 //   await Intro.movie();                  // copyright, Game Freak, Gengar vs Nidorino (A/Start skips)
 //   await Intro.titleScreen();            // -> "start", or "timeout" to replay the movie
 //   await Intro.newCharacter()            // -> { name, race, appearance }: a new game's character creator and name
-//   await Intro.oakSpeech()               // -> { name, look, race, appearance } (not played now)
 //   await Intro.chooseRace(name, was)     // -> { race, appearance }, on the character creator alone
 //
 // Frame counts are the GBA's (60 a second). There's no sound.
@@ -168,11 +167,6 @@
     if (skippable && (pressed.a || pressed.start)) skipped = true;
   });
   const clearInput = () => { pressed.a = pressed.b = pressed.start = false; };
-  // Waits for A.
-  function waitForA() {
-    clearInput();
-    return until(() => pressed.a);
-  }
 
   // A tiny deterministic RNG like the GBA's (x * 1103515245 + 24691).
   function lcg(seed) {
@@ -715,10 +709,8 @@
     return result;
   }
 
-  // ---------- Prof. Oak's speech (src/oak_speech.c) ----------
+  // ---------- The names you're offered (src/oak_speech.c's), and text on the picture ----------
 
-  const SPEECH_IMAGES = ["oak-speech-bg", "oak-speech-oak", "oak-speech-player-character",
-    "oak-speech-platform", "pikachu-page", "pikachu-body", "pikachu-ears", "pikachu-eyes"];
   const IT = (label) => window.INTRO_TEXT[label];
   const NAMES = (labels) => labels.map((l) => IT("gNameChoice_" + l)[0]);
   const BOY_NAMES = NAMES(["Red", "Fire", "Ash", "Kene", "Geki", "Jak", "Janne", "Jonn", "Kamon", "Karl", "Taylor", "Oscar",
@@ -735,58 +727,10 @@
     g.textAlign = "left";
   }
 
-  // The text box and menu under the picture.
-  const say = (pages) => (async () => { for (const p of [].concat(pages)) await window.Screen.read(p); })();
+  // The text box under the picture.
   const show = (page) => window.Screen.say(page);
 
-  // The guide's pages turn with the buttons, as in FireRed: A forward, B back
-  // (not on the first page). Nothing in the text box.
-  function turnPage(page) {
-    show("");
-    window.Screen.clearMenu();
-    return window.GbaMenus.keys((k) => {
-      const se = () => { if (window.GameAudio && window.GameAudio.se) window.GameAudio.se("se_select"); };
-      if (k === "a") { se(); return "next"; }
-      if (k === "b" && page > 1) { se(); return "back"; }
-      return undefined;
-    });
-  }
-
   const BAR = "#283a78";
-
-  // The Pikachu pages about the adventure ahead. (FireRed's controls guide
-  // before them isn't in this game: the buttons are under the screen.)
-  async function pikachuPages() {
-    const s = { page: 1, textAlpha: 1, t: 0 };
-    paint = () => {
-      g.fillStyle = BAR; g.fillRect(0, 0, W, 16);
-      blit("pikachu-page", 0, 0, W, 144, 0, 16);
-      text(s.page === 1 ? "Ⓐ NEXT" : "Ⓐ NEXT  Ⓑ BACK", 234, 3, { bold: true, align: "right" });
-      g.globalAlpha = s.textAlpha;
-      text(IT("gPikachuIntro_Text_Page" + s.page)[0], 11, 37, { color: "#3a3a3a", lineHeight: 14.5 });
-      g.globalAlpha = 1;
-      // Pikachu in the corner: the body bobs every 30 frames, ears twitch, eyes blink.
-      const bob = Math.floor(s.t / 30) % 2, ears = s.t % 120 < 12 ? 1 : 0, eyes = s.t % 90 < 8 ? 1 : 0;
-      sprite("pikachu-body", bob, 32, 32, 16, 17);
-      sprite("pikachu-ears", ears, 32, 16, 16, 9 + bob);
-      sprite("pikachu-eyes", eyes, 16, 8, 24, 13 + bob);
-    };
-    actors.add(() => { s.t++; });
-    await fadeTo("#000", 16, 0, 2);
-    let page = 1;
-    for (;;) {
-      const v = await turnPage(page);
-      const next = v === "next" ? page + 1 : page - 1;
-      if (next > 3) break;
-      await until((t) => (s.textAlpha = Math.max(0, 1 - (t + 1) / 8)) <= 0);
-      page = s.page = next;
-      await until((t) => (s.textAlpha = Math.min(1, (t + 1) / 8)) >= 1);
-    }
-    show("");
-    await wait(24);
-    await fadeTo("#000", 0, 16, 2);
-    await wait(80);
-  }
 
   // ---------- The character creator: your race and your look (data/type-chart.js's REALM_RACES) ----------
   //
@@ -854,14 +798,18 @@
   function looksOf(r) {
     const P = window.PLAYER_LOOK_PARTS, L = r.looks;
     if (!L) return null;
-    const bodies = L.bodies.filter((b) => P[b]);
-    const faces = bodies.map((b) => b + "_face").concat((L.heads || []).map((h) => h + "_face")).filter((f) => P[f]);
-    let hairs = hairsOf(r);
+    // (Its characters, each a preset, a man unless it's among its women; then its other presets, their parts its own
+    // too, any of its family's.)
+    const presets = L.bodies.filter((b) => P[b] && (P[b].kind === "whole" || P[b + "_face"]))
+      .map((b) => ({ name: P[b].name, gender: (L.female || []).includes(b) ? "female" : "male", body: b, face: P[b].kind === "whole" ? null : b + "_face",
+        hairstyle: P[b + "_hair"] ? b + "_hair" : "" }))
+      .concat((L.presets || []).filter((pr) => P[pr.body]));
+    const uniq = (list) => [...new Set(list)];
+    const bodies = uniq(L.bodies.concat(presets.map((pr) => pr.body))).filter((b) => P[b]);
+    const faces = uniq(L.bodies.map((b) => b + "_face").concat((L.heads || []).map((h) => h + "_face"), presets.map((pr) => pr.face))).filter((f) => f && P[f]);
+    let hairs = hairsOf(r).concat(presets.map((pr) => pr.hairstyle));
     for (const id of L.hairFrom || []) { const o = window.REALM_RACES.find((x) => x.id === id); if (o && o.looks) hairs = hairs.concat(hairsOf(o)); }
-    hairs = [...new Set(hairs)].filter((h) => P[h]);
-    const presets = bodies.filter((b) => P[b].kind === "whole" || P[b + "_face"])
-      .map((b) => ({ name: P[b].name, body: b, face: P[b].kind === "whole" ? null : b + "_face", hairstyle: P[b + "_hair"] ? b + "_hair" : "" }));
-    if (L.heads) presets.push(Object.assign({ name: r.name }, L.start));
+    hairs = uniq(hairs).filter((h) => h && P[h]);
     return { bodies, faces, hairs, presets };
   }
   // (What can go with what: the faces of a body's family; the hairstyles a face takes, of those the race has.)
@@ -879,11 +827,12 @@
   }
   // A race's look to start with: its own start, or its first preset, every colour the part's own unless it says.
   // (A race with no looks: no body, and you're the trainer.)
-  const startLook = (r) => (r.looks ? fit(looksOf(r), Object.assign({ hair: "own", outfit: "own", trim: "own", skin: "own" }, r.looks.start || presetLook(looksOf(r).presets[0])))
+  const startLook = (r) => (r.looks ? fit(looksOf(r), Object.assign({ hair: "own", outfit: "own", trim: "own", skin: "own", gender: "male" }, r.looks.start || presetLook(looksOf(r).presets[0])))
     : { body: null, face: null, hairstyle: "" });
   // A preset as your look: its body, face and hairstyle, its colours its own (or its own start's).
   const COLOUR_KEYS = ["hair", "outfit", "trim", "skin"];
-  const presetLook = (pr) => { const q = Object.assign({ hair: "own", outfit: "own", trim: "own", skin: "own" }, pr); delete q.name; return q; };
+  // (Its gender comes with it, and stays with you as you change the rest: appearance.gender.)
+  const presetLook = (pr) => { const q = Object.assign({ hair: "own", outfit: "own", trim: "own", skin: "own", gender: "male" }, pr); delete q.name; return q; };
   async function racePage(name, was) {
     const races = window.REALM_RACES, F = window.REALM_FIGHTERS, S = window.REALM_SKILLS, P = window.PLAYER_LOOK_PARTS, C = window.LOOK_COLOURS;
     for (const r of races) if (r.pic && !racePics[r.id]) { const i = new Image(); i.src = r.pic; racePics[r.id] = i; }
@@ -898,7 +847,7 @@
     // (The preset you look like: one whose head, body and colours are yours; or none, "Custom".)
     const presetAt = () => {
       const X = looksOf(race());
-      return X && P[look.body] ? X.presets.findIndex((pr) => { const q = presetLook(pr); return q.body === look.body && (q.face || null) === (look.face || null) &&
+      return X && P[look.body] ? X.presets.findIndex((pr) => { const q = fit(X, presetLook(pr)); return q.body === look.body && (q.face || null) === (look.face || null) &&
         (q.hairstyle || "") === (look.hairstyle || "") && COLOUR_KEYS.every((k) => (q[k] || "own") === (look[k] || "own")); }) : -1;
     };
     const rows = () => {
@@ -949,12 +898,19 @@
         g.restore();
       }
       if (!r.looks) text("(Its look is to come:\nyou're the trainer\nfor now.)", 84, 32, { size: 7, color: "#e8e8e8", lineHeight: 9 });
-      const all = rows(), gap = all.length > 7 ? 8 : 9;   // (closer together when there are more, above the stats)
+      // (closer together when there are more, above the stats; under the preset's name, its gender)
+      const all = rows(), gap = all.length > 7 ? 7.4 : 9;
+      let y = 19;
       all.forEach(([label, , key, nameOf], i) => {
-        const y = 19 + i * gap, value = key === "race" ? r.id : key === "preset" ? presetAt() : look[key];
+        const value = key === "race" ? r.id : key === "preset" ? presetAt() : look[key];
         if (i === row) { g.fillStyle = "#fff3"; g.fillRect(80, y - 1, 156, gap); }
         text(label, 84, y, { size: 7, bold: true, color: i === row ? "#fff" : "#d8d8d8" });
         text((i === row ? "◀ " : "") + nameOf(value) + (key === "race" ? " · " + f.elements.join("/") : "") + (i === row ? " ▶" : ""), 132, y, { size: 7, color: i === row ? "#ffe890" : "#e8e8e8" });
+        y += gap;
+        if (key === "preset") {
+          text(look.gender === "female" ? "♀ Female" : "♂ Male", 136, y, { size: 6, color: look.gender === "female" ? "#ffa8d0" : "#a8d0ff" });
+          y += 6.5;
+        }
       });
       // (The race's stats and its skills, with the levels they come at, wrapped to the page: the text box covers
       // it below y 112.)
@@ -1048,168 +1004,9 @@
     return Object.assign({ name }, made);
   }
 
-  // 3. Prof. Oak. (No longer played: a new game starts with newCharacter.)
-  async function speech() {
-    if (window.GameAudio) window.GameAudio.music("mus_new_game_intro");
-    const s = {
-      pic: "oak-speech-oak", picAlpha: 1, picX: 0, platform: true, platformX: 0,
-      ball: null, mon: null, monAlpha: 1, flash: 0, naming: null,
-      bgDark: 0, white: 0, scaleX: 1, scaleY: 1
-    };
-    const ball = new Image();
-    ball.src = "assets/sprites/items/ball/poke.png";
-    const nidoran = new Image();
-    nidoran.src = window.Screen.spriteUrl("Nidoran-F", "");
-    paint = () => {
-      if (s.naming) { s.naming.draw(g); return; }
-      blit("oak-speech-bg", 0, 0, W, H, 0, 0);
-      if (s.platform) blit("oak-speech-platform", 0, 0, 96, 32, 72 + s.platformX, 96, { alpha: s.picAlpha });
-      if (s.bgDark) { g.fillStyle = "rgba(0,0,0," + s.bgDark + ")"; g.fillRect(0, 0, W, H); }
-      if (s.pic) {
-        const picImg = s.white > 0 ? tinted(s.pic, "#fff", s.white) : s.pic;
-        g.save();
-        g.translate(120, 84);
-        g.scale(s.scaleX, s.scaleY);
-        g.translate(-120, -84);
-        blit(picImg, 0, 0, 64, 96, 88 + s.picX, 16, { alpha: s.picAlpha });
-        g.restore();
-      }
-      if (s.mon && nidoran.complete) {
-        g.globalAlpha = s.monAlpha;
-        g.drawImage(nidoran, 96 - nidoran.naturalWidth / 2, 96 - nidoran.naturalHeight / 2 + (s.mon.dy || 0));
-        g.globalAlpha = 1;
-      }
-      if (s.ball && ball.complete) g.drawImage(ball, s.ball.x - 16, s.ball.y - 16);
-      if (s.flash) { g.fillStyle = "rgba(255,255,255," + s.flash + ")"; g.fillRect(0, 0, W, H); }
-    };
-    const fadePic = (to, frames) => {
-      const from = s.picAlpha;
-      return until((t) => { s.picAlpha = from + (to - from) * Math.min(1, (t + 1) / frames); if (to === 0 && s.picAlpha < 0.5) s.platform = false; return t + 1 >= frames; });
-    };
-    const flash = async () => { for (const a of [0.6, 1, 0.6, 0.3, 0]) { s.flash = a; await wait(2); } };
-    const fill = (str, name) => str.replace(/\{PLAYER\}/g, name || "");
-
-    // Oak appears.
-    await fadeTo("#000", 16, 0, 5);
-    await wait(80);
-    await say(IT("gOakSpeech_Text_WelcomeToTheWorld"));
-    show(IT("gOakSpeech_Text_ThisWorld")[0]);
-    // Nidoran♀ comes out of a Poké Ball.
-    s.ball = { x: 100, y: 66 };
-    await wait(20);
-    await flash();
-    s.ball = null; s.mon = { dy: 0 }; s.monAlpha = 1;
-    if (window.GameAudio) window.GameAudio.cry("Nidoran-F");
-    await wait(32);
-    await say(IT("gOakSpeech_Text_IsInhabitedFarAndWide"));
-    await say(IT("gOakSpeech_Text_IStudyPokemon"));
-    show("");
-    // ...and goes back in.
-    s.ball = { x: 100, y: 66 };
-    await flash();
-    await until((t) => { if (t > 40) s.mon.dy -= 1; s.monAlpha = Math.max(0, 1 - t / 64); return t >= 63; });
-    s.mon = null; s.ball = null;
-    await wait(48);
-    await say(IT("gOakSpeech_Text_TellMeALittleAboutYourself"));
-    show("");
-    await fadePic(0, 48);
-    await wait(48);
-
-    // You're always the custom character (Red and Leaf are rivals in this
-    // game), so FireRed's "Are you a boy? Or are you a girl?" is skipped.
-    const look = Player.PLAYER_LOOK;
-    const playerPic = Player.LOOKS[look].speech;
-    s.pic = playerPic; s.picX = 0; s.platform = true; s.platformX = 0;
-    await fadePic(1, 24);
-    await wait(32);
-
-    // The player's name.
-    const pickFrom = (list) => list[Math.floor(Math.random() * list.length)];
-    // FireRed's naming screen (ui/naming-screen.js), between fades to black;
-    // OK with nothing typed gives `suggestion`.
-    const nameScreen = async (title, suggestion, overworld) => {
-      await fadeTo("#000", 0, 16, 0);
-      show("");
-      window.Screen.clearMenu();
-      const icon =overworld ? "assets/world/sprites/" + overworld + ".png" : null;
-      await window.NamingScreen.preload(icon);
-      const ns = window.NamingScreen.create({ title, maxChars: 7, fallback: suggestion, icon });
-      s.naming = ns;
-      actors.add(() => (s.naming === ns ? ns.step() : false));
-      await fadeTo("#000", 16, 0, 0);
-      ns.start();
-      const v = await ns.done;
-      await fadeTo("#000", 0, 16, 0);
-      s.naming = null;
-      return v;
-    };
-    let name;
-    await say(IT("gOakSpeech_Text_YourNameWhatIsIt"));
-    for (;;) {
-      name = await nameScreen("YOUR NAME?",pickFrom(BOY_NAMES), "player_" + look);
-      s.picX = 60; s.platformX = 60;
-      await fadeTo("#000", 16, 0, 0);
-      show(fill(IT("gOakSpeech_Text_SoYourNameIsPlayer")[0], name));
-      await wait(25);
-      if (await window.Screen.yesNo(fill(IT("gOakSpeech_Text_SoYourNameIsPlayer")[0], name))) break;
-    }
-    show("");
-
-    // Your race: who you'll be in the other realms.
-    await say(["Now, " + name + ", the realms beyond\nthis one are home to many peoples.", "Tell me, where do your roots lie?"]);
-    const { race, appearance } = await racePage(name);
-    await fadeTo("#000", 16, 0, 0);
-    const R = window.REALM_RACES.find((r) => r.id === race);
-    await say("A" + (/^[AEIOU]/.test(R.name) ? "n " : " ") + R.name + "! Splendid!");
-
-    // No rival here (FireRed introduces him at this point): you slide back to
-    // the middle, and off you go.
-    await until((t) => { s.picX = s.platformX = Math.max(0, 60 - (t + 1) * 2); return t >= 29; });
-    await wait(20);
-    const letsGo = IT("gOakSpeech_Text_LetsGo").map((p) => fill(p, name));
-    await say(letsGo.slice(0, -1));
-    show(letsGo[letsGo.length - 1]);
-    await wait(30);
-
-    // The player turns white and shrinks away as everything goes dark (to
-    // FireRed's closing jingle).
-    if (window.GameAudio) { window.GameAudio.music(null); window.GameAudio.fanfare("mus_new_game_exit"); }
-    const darken = until((t) => (s.bgDark = Math.min(1, (t + 1) / 45)) >= 1).then(() => { s.platform = false; });
-    const whiten = (async () => {
-      await wait(8);
-      for (let c = 0, gap = 7; c <= 14; c++, gap = Math.max(1, gap - 1)) { s.white = c / 16; await wait(gap); }
-      s.white = 1;
-    })();
-    const shrink = (async () => {
-      for (const [sx, sy] of [[0.969, 0.813], [0.844, 0.688], [0.719, 0.563], [0.594, 0.438], [0.469, 0.313]]) {
-        await wait(20);
-        s.scaleX = sx; s.scaleY = sy;
-      }
-      await wait(36);
-    })();
-    await Promise.all([darken, whiten, shrink]);
-    show("");
-    await fadeTo("#000", 0, 16, 2);
-    return { name, look, race, appearance };
-  }
-
-  async function oakSpeech() {
-    await preload(SPEECH_IMAGES);
-    start();
-    skippable = false; skipped = false;
-    fade = { color: "#000", level: 16 };
-    if (window.GameAudio) window.GameAudio.music("mus_new_game_instruct");
-    await pikachuPages();
-    actors.clear();
-    const result = await speech();
-    stop();
-    return result;
-  }
-
   window.Intro = {
     movie: async () => { await movie(); },
     titleScreen: async () => { const r = await titleScreen(); return r; },
-    oakSpeech,
     newCharacter,
     chooseRace,
     stop

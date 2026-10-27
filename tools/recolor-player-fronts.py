@@ -1,11 +1,10 @@
-# Recolours Red's trainer-card picture (assets/sprites/trainers/front/red.png)
-# and Oak's-speech portrait (assets/intro/oak-speech-red.png) into the custom
+# Recolours Red's trainer-card picture (assets/sprites/trainers/front/red.png) into the custom
 # player character's colours, like tools/recolor-player-overworld.py: black cap
 # with an emblem, silver hair, red shirt, black backpack. Red's cap and vest
-# share colours, so each picture is recoloured zone by zone (cap, hair, body).
+# share colours, so the picture is recoloured zone by zone (cap, hair, body).
 #
 #   python3 tools/recolor-player-fronts.py   (needs numpy, Pillow)
-#   -> front_player_character.png, oak-speech-player-character.png, fronts_cmp.png
+#   -> front_player_character.png, fronts_cmp.png
 import numpy as np
 from PIL import Image
 # zones: list of (y0, y1, x0, x1, {colour: new colour}) applied in order to RGBA pixels
@@ -37,17 +36,7 @@ front = recolor_rgba(red, [
 ])
 Image.fromarray(front).save("front_player_character.png")
 
-# Oak's speech portrait (64x96): cap rows 13-24, hair rows 25-33, body below.
-oak = np.asarray(Image.open("/home/user/PokemonGame/assets/intro/oak-speech-red.png").convert("RGBA"))
-reds = [(213, 131, 123), (189, 106, 98), (164, 82, 74), (139, 57, 49), (98, 24, 16)]
-portrait = recolor_rgba(oak, [
-    (0, 25, 0, 64, dict(zip(reds, [(110, 104, 104), (80, 76, 76), (60, 60, 61), (44, 44, 45), (19, 17, 19)])) | {(222, 222, 222): (60, 60, 61), (180, 180, 180): (44, 44, 45)}),
-    (20, 40, 0, 64, {(164, 123, 98): SILVER[0], (115, 74, 49): SILVER[1], (82, 65, 32): SILVER[2]}),
-    (34, 96, 0, 64, dict(zip(reds, [SHIRT["light"], (232, 90, 80), SHIRT["mid"], SHIRT["dark"], SHIRT["darker"]]))
-        | dict(zip([(238, 238, 74), (205, 205, 49), (164, 164, 32), (98, 98, 0)], BLACK))),
-])
-Image.fromarray(portrait).save("oak-speech-player-character.png")
-s = Image.new("RGBA", (64 * 4 + 24, 96), (90, 90, 110, 255))
-for i, im in enumerate([red, front, oak, portrait]):
+s = Image.new("RGBA", (64 * 2 + 8, 64), (90, 90, 110, 255))
+for i, im in enumerate([red, front]):
     s.alpha_composite(Image.fromarray(im), (i * 72, 0))
 s.resize((s.width * 4, s.height * 4), Image.NEAREST).save("fronts_cmp.png")

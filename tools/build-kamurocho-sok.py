@@ -18,7 +18,8 @@
 # Writes assets/kamurocho/:
 #   street.png    the street: the stage's long backdrop (the Stardust and Poppo, down past the Gyudon place to the
 #                 batting cages and Bacchus), its two pieces side by side, 3103x480
-#   alley.png     the back alley, 609x480 (the Empty Lot, with the Time Machine: time-machine.png)
+#   alley.png     the back alley, 609x480 (the Empty Lot)
+# (time-machine.png, the Time Machine, is this game's own, from the top-down Kamurocho it once had: kept as it is.)
 #   bacchus.png   the bar, 816x480 (the first half of its stage: the rest is more of the same)
 #   people/<id>.png   each one standing, facing right, their feet on the bottom row
 import os, struct, sys
@@ -73,14 +74,6 @@ def main():
         im = atlas[e].crop((x, y, x + w, y + h))
         if pid in FACING_LEFT: im = im.transpose(Image.FLIP_LEFT_RIGHT)
         im.save(os.path.join(OUT, 'people', pid + '.png'), optimize=True)
-    # (The Time Machine, as Kamurocho's Empty Lot had it, off its ground: the lot's dirt colours made clear.)
-    lot = Image.open(os.path.join(ROOT, 'assets/world/maps/Kamurocho.png')).convert('RGBA')
-    tm = lot.crop((1246, 1716, 1298, 1784)); g = lot.crop((1120, 1700, 1236, 1800)).load(); px = tm.load()
-    dirt = {g[x, y] for x in range(116) for y in range(100)}
-    for y in range(tm.height):
-        for x in range(tm.width):
-            if px[x, y] in dirt: px[x, y] = (0, 0, 0, 0)
-    tm.crop(tm.getbbox()).save(os.path.join(OUT, 'time-machine.png'), optimize=True)
     print('Kamurocho: %d scenes, %d people' % (3, len(PEOPLE)))
 
 if __name__ == '__main__':

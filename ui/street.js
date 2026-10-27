@@ -63,9 +63,7 @@
     me = { scene: a.scene, x: a.x, y: a.y, facing: a.facing || "down", moving: false };
   }
   function people(opts) {
-    const map = (window.WORLD_MAPS || {}).Kamurocho || {};
-    return (scene().people || []).filter((p) => !opts.visible || opts.visible(p))
-      .map((p) => Object.assign({ text: ((map.people || []).find((q) => q.script === p.script) || {}).text }, p, turned[p.script] ? { face: turned[p.script] } : {}));
+    return (scene().people || []).filter((p) => !opts.visible || opts.visible(p)).map((p) => Object.assign({}, p, turned[p.script] ? { face: turned[p.script] } : {}));
   }
 
   // ---------- Drawing ----------

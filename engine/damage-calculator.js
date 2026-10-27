@@ -45,7 +45,6 @@
   "use strict";
 
   const tr = Math.trunc;
-  const pokeRound = (n) => (n % 1 > 0.5 ? Math.ceil(n) : Math.floor(n));
 
   // 4096-based fixed point helpers (same rounding the games use)
   const modify = (value, mult) => {

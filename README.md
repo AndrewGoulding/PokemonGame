@@ -1131,21 +1131,21 @@ text box is FireRed's size, a game pixel a pixel, with its shadow.
 
 ### Intro
 
-The opening movie, title screen and Prof. Oak's speech use FireRed's own
-graphics and text, converted by `tools/build-intro.js` into `assets/intro/` and
-`data/intro-text.js` (it needs `graphics/intro/`, `graphics/title_screen/`,
-`graphics/oak_speech/` and `data/text/new_game_intro.inc` in the checkout):
+The opening movie and title screen use FireRed's own graphics, converted by
+`tools/build-intro.js` into `assets/intro/`, and the new game's text (the names
+you're offered) into `data/intro-text.js` (it needs `graphics/intro/`,
+`graphics/title_screen/` and `data/text/new_game_intro.inc` in the checkout):
 
 ```sh
-cd pokefirered && git sparse-checkout add graphics/intro/ graphics/title_screen/ graphics/oak_speech/ && cd ..
+cd pokefirered && git sparse-checkout add graphics/intro/ graphics/title_screen/ && cd ..
 node tools/build-intro.js pokefirered     # or: POKEFIRERED=pokefirered npm run build:intro
 ```
 
 `ui/intro.js` plays them on a 240x160 canvas, following the timing in pret's
-`src/intro.c`, `src/title_screen.c` and `src/oak_speech.c` (frame counts at 60
-a second). There's no music or cries.
+`src/intro.c` and `src/title_screen.c` (frame counts at 60 a second). There's
+no music or cries.
 
-A new game doesn't play Oak's speech any more: NEW GAME goes to the character
+A new game doesn't play Oak's speech (it and its pictures are gone): NEW GAME goes to the character
 creator (below, "The character creator"), then the naming screen for your name,
 and you start in the Realm Hub with ¥10,000. Its red portal takes you to the
 Pokémon realm, by Pallet Town, where Prof. Oak's story starts as ever (and
@@ -1301,16 +1301,14 @@ lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scrip
 `window.WORLD_MOVEMENTS`; the converter writes both alongside the maps. Running
 uses the frames from `assets/sprites/overworld/player_character_surf_run.png`.
 You play as a custom character (Red and Leaf aren't playable: they're rivals
-in this game), and your rival is always Gary. Oak's speech asks only your
-name, and doesn't introduce your rival. At the start, Leaf is in Oak's lab
+in this game), and your rival is always Gary. At the start, Leaf is in Oak's lab
 instead of Gary: she takes the starter that beats yours and battles you on
 the way out, with Gary's FireRed lines in her name ("Prof. Oak" for his
 "Gramps"). Gary turns up later, from the Pokédex scene on. The character's pictures: `assets/sprites/trainers/back/player_character.png`,
 `assets/sprites/overworld/player_character_<normal|bike|fish|item|surf|surf_run|vs_seeker_bike>.png`
 (recoloured from Red's by `tools/recolor-player-overworld.py`: black cap,
 silver hair, red shirt, black backpack), and its trainer-card picture
-(`assets/sprites/trainers/front/player_character.png`) and Oak's-speech portrait
-(`assets/intro/oak-speech-player-character.png`), by `tools/recolor-player-fronts.py`.
+(`assets/sprites/trainers/front/player_character.png`), by `tools/recolor-player-fronts.py`.
 `Player.LOOKS` in `game/player.js` lists them.
 
 ### Double and tag battles
@@ -3669,9 +3667,10 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   IV and the key "e13b293bec6" (a string in its .exe). Entry 15 is a 4096x4096 atlas of the backdrops and most of
   the people's frames, 29 another of people. The game is Streets of Rage 2's cartridge (entry 9) run with these
   pictures over its own, so there's no list of whose frame is which: the tool's frames were picked out by hand.
-- **The old map**: the top-down Kamurocho this realm had first (its streets traced from Yakuza 0's map, its pictures
-  The Sacred Cards'), `tools/build-kamurocho.py`, below, is still built (the realm's map entry, its people's words,
-  the Time Machine's picture), but no longer walked.
+- **The map entry**: Kamurocho's place on `WORLD_MAPS` is a stub of one square in `data/kamurocho-street.js` (its
+  name, realm and music: nothing walks it), and `window.KAMUROCHO.arrive` sends the portal and the Time Machine to
+  its streets. (The top-down Kamurocho it once had, built from The Sacred Cards' screens, is gone; its Time Machine
+  picture, `assets/kamurocho/time-machine.png`, stays.)
 - **Heat is MP**: the Like a Dragon games' Heat is this realm's MP, which skills (Heat Actions) spend. Poppo sells
   Staminan, Staminan Spark and Staminan Royale (health and Heat), Toughness Zero and Toughness Infinity (health; the
   Infinity also gets someone who's down back up), Tauriner, Tauriner+ and Tauriner Maxx (Heat), and food: a Rice
@@ -3685,45 +3684,6 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   and pays ¥10,000. Each is winnable alone at the level it comes (tested in simulation). Fall in a fight and you wake by the Time
   Machine with half your money gone. The Time Machine also lets you rest (the party's HP and MP back) and look over
   your party.
-
-`tools/build-kamurocho.py` builds it, from files already in the repo (no cartridge needed):
-
-```sh
-python3 tools/build-kamurocho.py
-```
-
-- **The layout**: `tools/data/kamurocho.txt`, one character a tile, two pixels of Yakuza 0's map to a tile: `.`
-  street, `#` building, `+` the line between two buildings, `P` West Park, `E` the Empty Lot, and a space for the
-  city beyond. Edit it and rebuild to change the streets. Under the map's icons (the save points, taxis, the
-  bowling ball and the people), each street and block was carried on from where it shows round the icon. The
-  Champion District's lanes were drawn by hand from the map: a ring of alley round its bars, two lanes through and
-  short alleys across.
-- **The pictures**: The Sacred Cards' screens, as `tools/build-sacred-cards.py` wrote them from the cartridge into
-  `assets/world/maps` (`SC_<nn>.png`, the ground, and `SC_<nn>-top.png`, the overlay).
-  The ground textures come from Domino's road (the streets), its back alley (the alleys: any street a tile or two
-  across), the Office Tower's roof (every rooftop, each building tinted a little differently), Kaiba Corporation's
-  yard (the Empty Lot) and the graveyard's lawn (West Park). Each texture keeps the patch's grain over its average
-  colour, so its tiling doesn't show. A big building is cut into lots 9 to 14 tiles each way, since a Kamurocho
-  block is many buildings. Each lot is 1 to 3 storeys, and where one stands taller than the lot in front of it, its
-  upper floors (the Game Center's grey neighbour's windows) show above that lot's roof, 20 pixels a storey. Each
-  roof has a lit lip along its north edge, and the Office Tower's water tanks, skylight and vents and the alley's air
-  conditioners go on roofs with room for them. Along any stretch of a building's south side that faces open ground,
-  the builder adds shopfronts: the Game Center's, the card shop's, the café's and their neighbours', cut from their
-  screens at their foot. Only whole shopfronts are used, as many as fit and never the same one twice running. The
-  plain wall of windows fills the space left over, shared out between them, with a strip of the Game Center's
-  pavement under them. Now and then the bank's red sign hangs down a wall (from Domino Square's
-  overlay). The city beyond is drawn as darker rooftops in blocks of 12. West Park's trees come from Domino City's
-  overlays, and the bottom row of each is solid. The Time Machine is `tools/lib/realm-art.js`'s.
-- **The people**: `tools/data/kamurocho.json`, each with a place, a sprite, a way of standing and what they say. Kiryu
-  and Majima's sheet, as you supplied it, is `tools/data/kamurocho-people.png`: two people side by side, each 3 columns of 64x64 frames
-  (standing, two steps) by 5 rows (two facing down-right, two facing up, a fighting stance), on magenta. Each frame is
-  halved (each 2x2 averaged) to 32x32: down is the first row, up the third, left the second mirrored. They are
-  `assets/world/sprites/lad_kiryu.png` and `lad_majima.png`.
-- It writes `assets/world/maps/Kamurocho.png` and `-border.png`, and the map's data into `data/emerald-maps.js`
-  (between its markers, before the Time Machine's), with `window.KAMUROCHO` (where the portal puts you).
-  `ui/game.js` runs the portal and the Time Machine (`realmPortal`, `kamurochoTimeMachine`). With the sprite sheet it
-  also writes each one's fighting stance (the fifth row's first frame, full size) as `lad_kiryu_battle.png` and
-  `lad_majima_battle.png`, their pictures in battle.
 
 ## The Ultimax system: the other realms' battles (Dragon Quest's way)
 
@@ -3873,6 +3833,14 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   `hairs`). Faces go only on bodies from the same game's sprites. The Goombas and the Piantas have no necks: theirs
   are whole, their presets only; Superstar Saga's and Koops's heads are all face (caps and crowns, not hair). A look
   saved with a head (before) loads as that head's face and hair.
+- **Men and women**: every race has at least one of each among its presets, and each preset's gender shows under its
+  name (♂ Male, ♀ Female); it stays yours as you change the rest (`appearance.gender`). A race's characters are men
+  but for its `female` ones (Bulma, Chi-Chi and the townswoman, Android 18, Peach, Francesca, Goombella), and its
+  `presets` add more, put together from its family's parts: a Hylian man and woman, a Kokiri boy and girl, a Zora
+  and a Zora maiden, a Gerudo woman and man, and a woman for the Saiyans (Chi-Chi's face and hair on Vegeta's armour),
+  Namekians (in Namekian green), the Frieza Clan (Android 18's, frost white), the Majin and the Kais (Videl's, from
+  Buu's Fury, in pink and in Kai purple), the Mushroom People and the Koopas (in pink: neither game has a woman of
+  theirs to draw on).
 - **Walking**: four frames a stride where the sprites have them (the Dragon World's: a step, the frame between, the
   other step, the frame between), FireRed's nine frames then the six between (`lookFrame`), and so too running and on
   Kamurocho's streets.
@@ -4316,7 +4284,7 @@ PokeAPI's tables and sprites, smogon/sprites, a Pokémon Essentials project, YGO
 | `assets/sprites/` | Pokémon sprites (front, back, shiny), item icons, trainer and overworld sprites |
 | `assets/tilesets/` | FireRed's tilesets (tiles, palettes, metatiles), the source for the maps |
 | `assets/world/` | Generated map images and transparent overworld sprites |
-| `assets/intro/` | Generated opening movie, title screen and Oak's speech graphics |
+| `assets/intro/` | Generated opening movie and title screen graphics |
 | `assets/battle/` | Generated battle backgrounds (FireRed's battle terrains) |
 | `tests/` | Loads every non-UI script and checks formulas, engine regressions, progression rules and AI choices, plus 200 random battles, 120 random double battles and 100 random battles each of Gen 7, Gen 8 and Gen 9 teams; `tests/browser/lib.js` is a Playwright helper for checking things in the real page (it serves the game, loads a save made in Node, and presses keys long enough to register); `tests/browser/johto-story.js` plays Johto's story in the page from Elm's Lab to Azalea (16 beats, one save the whole way: `node tests/browser/johto-story.js [first] [last]`, resuming from the save after the beat before) |
 

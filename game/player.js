@@ -79,13 +79,12 @@
   // The player character: the custom one (sprites recoloured to match
   // assets/sprites/trainers/back/player_character.png). Red and Leaf aren't
   // playable: they're rivals in this game. A look lists its battle back sprite
-  // and trainer-card picture (assets/sprites/trainers/), Oak's-speech portrait
-  // (assets/intro/), and overworld sprites (assets/world/sprites/player_<look>*.png);
+  // and trainer-card picture (assets/sprites/trainers/), and overworld sprites (assets/world/sprites/player_<look>*.png);
   // `girl` would pick FireRed's lines for girls (Mom, the Magikarp salesman).
   const LOOKS = {
-    custom: { label: "Custom", back: "player_character", front: "player_character", speech: "oak-speech-player-character" },
+    custom: { label: "Custom", back: "player_character", front: "player_character" },
     // Wes, who you are in Orre (game/orre.js): not chosen at the start.
-    wes: { label: "Wes", back: "wes", front: "wes", speech: "oak-speech-player-character" }
+    wes: { label: "Wes", back: "wes", front: "wes" }
   };
   const PLAYER_LOOK = "custom";
   // Saves from when you could play as Red or Leaf become the custom character.
@@ -444,7 +443,7 @@
       const whole = parts[a.body].kind === "whole";
       const face = whole ? null : own(a.face) || (head && own(head + "_face")) || own(a.body + "_face");
       const hairstyle = whole ? "" : typeof a.hairstyle === "string" ? (own(a.hairstyle) || "") : (head && own(head + "_hair")) || own(a.body + "_hair") || "";
-      player.appearance = { body: a.body, face, hairstyle };
+      player.appearance = { body: a.body, face, hairstyle, gender: a.gender === "female" ? "female" : "male" };
       for (const k of ["hair", "outfit", "trim", "skin"]) player.appearance[k] = typeof a[k] === "string" ? a[k].slice(0, 20) : "own";
     }
     player.rival = String(data.rival || RIVAL_NAME).slice(0, 12);

@@ -1340,8 +1340,6 @@
   // (its text on one line, GX's colour codes out, and the TCG's short "GY" and "LP" written out, as the effects read them)
   const text = (no) => (window.YUGIOH_CARDS.cards[no] || ["", ""])[1].replace(/@\d/g, "").replace(/\s+/g, " ").trim()
     .replace(/\bGY\b/g, "Graveyard").replace(/\bLP\b/g, "Life Points");
-  const nameIs = (c, names) => [].concat(names).some((n) => c && !c.token && C.name(c.no) === n);
-  const zoneName = (d, z) => d.name(z.card);
 
   // ---------- Helpers for effects ----------
   const H = {
@@ -1437,7 +1435,6 @@
   // ---------- Templates: families of cards, from their text ----------
   // Each: [pattern, (match, cardNumber) => definition]. Tried in order on the cards nothing else defines.
   const typesIn = (s) => s.replace(/-Type/g, "").split(/,\s*|\s+and\s+|,\s*and\s+/).map((t) => typeNo(t.trim())).filter((t) => t > 0);
-  const attrsIn = (s) => s.split(/,\s*|\s+and\s+|\s+or\s+/).map((a) => ATTR[a.trim()]).filter(Boolean);
   const equip = (filter, stats) => ({
     equip: true,
     activate: {
@@ -1579,7 +1576,6 @@
   const oppMon = (d, l) => d.monsters(1 - l.p);
   const pickMon = (d, link, prompt, filter, sides) => H.target(d, link, prompt, (z, q) => (!sides || sides.includes(q)) && (!filter || filter(z, q)), { area: "monster" });
   const pickST = (d, link, prompt, filter, sides) => H.target(d, link, prompt, (z, q, i) => i >= 5 && (!sides || sides.includes(q)) && (!filter || filter(z, q)), { area: "spell" });
-  const hasMon = (d, p, filter) => d.monsters(p).some((z) => !filter || filter(z));
   const graveMonsters = (d, p, f) => H.graveMon(d, p, f);
 
   // ----- Equips with a condition the templates don't read -----

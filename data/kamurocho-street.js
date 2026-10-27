@@ -7,6 +7,12 @@
 // knows them: Kamurocho_Kiryu and the rest; `face` the way they look). Fights start on the street as you walk
 // (REALM_ENCOUNTERS.Kamurocho), never in the alley, the bar or a shop. Every convenience store on the street (Poppo's
 // the one) has a door in, and its clerk inside sells the realm's items.
+// Kamurocho on the world's list of places (its name, its realm, its music): its streets are walked side on, here, so
+// it has no tiles of its own, one square of nothing; and where the Time Machine leaves you (KAMUROCHO_STREET.arrive).
+window.WORLD_MAPS.Kamurocho = { name: "Kamurocho", title: "Kamurocho", width: 1, height: 1, type: "city", realm: "yakuza", music: "dp_veilstone_city",
+  cycling: false, showName: true, top: false, borderWidth: 1, borderHeight: 1, collision: [1], elevation: [0], behavior: [0], encounter: [0],
+  connections: [], warps: [], signs: [], triggers: [], hidden: [], people: [], wild: null };
+window.KAMUROCHO = { arrive: { map: "Kamurocho", x: 0, y: 0, facing: "down" } };
 window.KAMUROCHO_STREET = {
   // Where the Time Machine leaves you: under the street, beside it.
   arrive: { scene: "sewer", x: 200, y: 446, facing: "right" },
@@ -29,7 +35,8 @@ window.KAMUROCHO_STREET = {
           text: ["Pink Street's lit up all night.", "Every club round here wants a\nregular. Will you be ours?"] },
         { script: "Kamurocho_Thug", sprite: "thug_idle", x: 1110, y: 360, face: "left",
           text: ["Whaddya lookin' at?", "...Hmph. Smile Burger's got the\nbest burgers in town. Don't tell\nanyone I said that."] },
-        { script: "Kamurocho_Kiryu", sprite: "kiryu_idle", x: 1520, y: 430, face: "left" },
+        { script: "Kamurocho_Kiryu", sprite: "kiryu_idle", x: 1520, y: 430, face: "left",
+          text: ["Kiryu: ...Name's Kazuma Kiryu.\nDojima family.", "Or I was, till they pinned a\nkilling in that empty lot on me.", "I'll find who set me up.\nWhatever it takes."] },
         { script: "Kamurocho_Bowler", sprite: "loiterer", x: 2180, y: 410, face: "right",
           text: ["The batting cages are open all\nnight. Step up to the plate!"] },
         { script: "Kamurocho_Salaryman", sprite: "suit_walk", x: 2480, y: 450, face: "left",
@@ -67,7 +74,8 @@ window.KAMUROCHO_STREET = {
       title: "Bacchus", image: "assets/kamurocho/bacchus.png", width: 816,
       floor: [[0, 414], [816, 414], [816, 470], [0, 470]],
       exits: [{ edge: "left", to: "street", x: 3000, y: 450, facing: "down" }],
-      people: [{ script: "Kamurocho_Majima", sprite: "majima_idle", x: 560, y: 450, face: "left" }]
+      people: [{ script: "Kamurocho_Majima", sprite: "majima_idle", x: 560, y: 450, face: "left",
+          text: ["Majima: Heeey! You look like ya\ncan handle yerself!", "Name's Goro Majima.\nThe Mad Dog of Shimano!"] }]
     }
   }
 };

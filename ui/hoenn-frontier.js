@@ -49,7 +49,6 @@
     const streak = () => S().streak[curKey()] || 0;
     const setStreak = (n) => { const s = S(); s.streak[curKey()] = n; if (n > (s.best[curKey()] || 0)) s.best[curKey()] = n; };
     const symbols = (f) => (env.flag("FLAG_SYS_" + Object.keys(FAC)[f] + "_SILVER") ? 1 : 0) + (env.flag("FLAG_SYS_" + Object.keys(FAC)[f] + "_GOLD") ? 1 : 0);
-    const level50 = () => S().lvl === 0;
 
     // ---------- Pokémon ----------
     const maxHp = (r) => window.Party.maxHp(r);
