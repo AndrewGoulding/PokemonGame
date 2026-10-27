@@ -4193,11 +4193,15 @@
       const it = D().items[c.item], f = b.allies[c.target] || who;
       const bag = b.items || {};
       if (!it || !(bag[c.item] > 0)) { say(who.name + " fumbled in the bag... nothing there!"); return; }
-      if (it.revive ? f.hp > 0 : f.hp <= 0) { say(who.name + " used " + it.name + ", but nothing happened."); bag[c.item]--; return; }
       bag[c.item]--;
-      if (it.revive) { f.hp = Math.max(1, Math.floor(f.maxHp * it.revive)); f.status = null; say(who.name + " used " + it.name + "! " + f.name + " is back on their feet!", { kind: "heal", side: "ally", i: ix(f) }); return; }
-      if (it.heal) { const before = f.hp; f.hp = Math.min(f.maxHp, f.hp + (it.heal === "all" ? f.maxHp : it.heal)); say(who.name + " used " + it.name + "! " + f.name + " gets " + (f.hp - before) + " HP back.", { kind: "heal", side: "ally", i: ix(f) }); }
-      if (it.mp) { const before = f.mp; f.mp = Math.min(f.maxMp, f.mp + it.mp); say(who.name + " used " + it.name + "! " + f.name + " gets " + (f.mp - before) + " MP back.", { kind: "heal", side: "ally", i: ix(f) }); }
+      if (f.hp <= 0 && !it.revive) { say(who.name + " used " + it.name + ", but " + f.name + " is down."); return; }
+      // (HP and MP back, said together: "Kiryu gets 40 HP and 10 MP back.")
+      const hp0 = f.hp, mp0 = f.mp;
+      if (it.heal) f.hp = Math.min(f.maxHp, f.hp + (it.heal === "all" ? f.maxHp : it.heal));
+      if (it.mp) f.mp = Math.min(f.maxMp, f.mp + (it.mp === "all" ? f.maxMp : it.mp));
+      if (hp0 <= 0) f.status = null;
+      const got = [f.hp - hp0 ? f.hp - hp0 + " HP" : "", f.mp - mp0 ? f.mp - mp0 + " MP" : ""].filter(Boolean).join(" and ");
+      say(who.name + " used " + it.name + "! " + (hp0 <= 0 ? f.name + " is back on their feet!" : got ? f.name + " gets " + got + " back." : "Nothing happened."), { kind: "heal", side: "ally", i: ix(f) });
       return;
     }
     // A skill.
