@@ -471,15 +471,18 @@ window.LOOK_COLOURS = {
 // Foes: their level (for their damage, as a Pokémon's), their stats, what beating them gives (EXP, split between the party still standing, and money), and their
 // skills (used now and then, instead of attacking). `sprite`: an overworld sheet (its first frame, facing you), or
 // `battle`: a picture; `street`: on Kamurocho's streets, Streets of Kamurocho's own (assets/kamurocho/people).
-// `boss`: no running away. (The street's thugs are all Neutral: only their skills have elements of their own.)
+// `looks`: on Kamurocho's streets, the pictures one of them may wear instead (assets/kamurocho/people, each with its
+// _walk), one picked for each member of a gang. `boss`: no running away. (The street's thugs are all Neutral: only their skills have elements of their own.)
 window.REALM_FOES = {
-  punk:      { name: "Street Punk", lv: 2,     elements: ["Neutral"], street: "punk", sprite: "sc_person_68", hp: 18, mp: 0, str: 10, def: 6, int: 0, wis: 3, spd: 8, exp: 6, money: 120, skills: ["cheap_shot"] },
+  punk:      { name: "Street Punk", lv: 2,     elements: ["Neutral"], street: "punk",
+               looks: ["punk_track", "punk_hoodie", "punk_bomber", "punk_puffer", "punk_shirt", "punk_tank", "punk_casual"], sprite: "sc_person_68", hp: 18, mp: 0, str: 10, def: 6, int: 0, wis: 3, spd: 8, exp: 6, money: 120, skills: ["cheap_shot"] },
   drunk:     { name: "Drunk Salaryman", lv: 2, elements: ["Neutral"], street: "drunk", sprite: "sc_person_47", hp: 15, mp: 0, str: 8, def: 4, int: 0, wis: 2, spd: 4, exp: 4, money: 200, skills: ["dirty_kick"] },
-  thug:      { name: "Thug", lv: 4,            elements: ["Neutral"], street: "thug", sprite: "sc_person_71", hp: 30, mp: 0, str: 14, def: 10, int: 0, wis: 5, spd: 6, exp: 12, money: 250, skills: ["bottle_smash"] },
+  thug:      { name: "Thug", lv: 4,            elements: ["Neutral"], street: "thug", looks: ["thug_gray", "thug_black", "thug_brown"], sprite: "sc_person_71", hp: 30, mp: 0, str: 14, def: 10, int: 0, wis: 5, spd: 6, exp: 12, money: 250, skills: ["bottle_smash"] },
   knife:     { name: "Knife Punk", lv: 5,      elements: ["Neutral"], street: "knife", sprite: "sc_person_50", hp: 22, mp: 0, str: 15, def: 6, int: 0, wis: 3, spd: 14, exp: 11, money: 180, skills: ["slash"] },
   host:      { name: "Host", lv: 5,            elements: ["Neutral"], street: "host", sprite: "sc_person_66", hp: 24, mp: 0, str: 12, def: 8, int: 0, wis: 4, spd: 12, exp: 12, money: 400, skills: ["sweet_talk"] },
   biker:     { name: "Biker", lv: 7,           elements: ["Neutral"], street: "biker", sprite: "sc_person_58", hp: 34, mp: 0, str: 17, def: 12, int: 14, wis: 6, spd: 11, exp: 16, money: 300, skills: ["revving"] },
-  grunt:     { name: "Yakuza Grunt", lv: 9,    elements: ["Neutral"], street: "grunt", sprite: "sc_person_77", hp: 40, mp: 0, str: 19, def: 14, int: 0, wis: 7, spd: 10, exp: 22, money: 500, skills: ["headbutt"] },
+  grunt:     { name: "Yakuza Grunt", lv: 9,    elements: ["Neutral"], street: "grunt",
+               looks: ["grunt_pinstripe", "grunt_solid", "grunt_white", "grunt_purple", "grunt_collar"], sprite: "sc_person_77", hp: 40, mp: 0, str: 19, def: 14, int: 0, wis: 7, spd: 10, exp: 22, money: 500, skills: ["headbutt"] },
   shakedown: { name: "Mr. Shakedown", lv: 15,   elements: ["Neutral"], street: "shakedown", sprite: "sc_person_71", big: true, hp: 160, mp: 0, str: 32, def: 22, int: 0, wis: 11, spd: 6, exp: 150, money: 10000, skills: ["haymaker"] },
   // (the story's, Yakuza 0's first chapter: Bruno, the debt collector outside the Dojima family's office; Yoneda, who
   // guards its top floor; and Daisaku Kuze, the Dojima lieutenant waiting there)

@@ -9933,7 +9933,7 @@
   function realmFoePic(f) {
     const d = window.REALM_FOES[f.id];
     // (Kamurocho's own, side on: Streets of Kamurocho's, facing you from the right, as tall as on its streets)
-    if (d.street && Street.isStreet(player.location.map)) return '<img class="rb-street" alt="" onload="this.style.height=(this.naturalHeight/2.24*' + (d.big ? 1.4 : 1) + ')+\'cqh\'" src="assets/kamurocho/people/' + d.street + '.png">';
+    if (d.street && Street.isStreet(player.location.map)) return '<img class="rb-street" alt="" onload="this.style.height=(this.naturalHeight/2.24*' + (d.big ? 1.4 : 1) + ')+\'cqh\'" src="assets/kamurocho/people/' + (f.look || d.street) + '.png">';
     if (d.battle) return '<div class="rb-pic big" style="background-image:url(' + d.battle + ')"></div>';
     return '<div class="rb-pic sheet' + (d.big ? " big" : "") + '" style="background-image:url(assets/world/sprites/' + d.sprite + '.png)"></div>';
   }
@@ -10034,6 +10034,8 @@
     const realm = (window.WORLD_MAPS[player.location.map] || {}).realm, P = realmParty(realm);
     const b = Ultimax.create(P.party.map(realmMember), foeIds, { reserve: P.reserve.map(realmMember) });
     b.items = P.items;
+    // (each foe as the gang wore them on the street, `opts.looks`, or one of their looks picked now)
+    b.foes.forEach((f, i) => { const looks = (window.REALM_FOES[f.id] || {}).looks; f.look = (opts.looks || [])[i] || (looks ? looks[Math.floor(Math.random() * looks.length)] : null); });
     music(b.boss ? "mus_vs_gym_leader" : "mus_vs_wild");
     realmDraw(b);
     const names = b.foes.map((f) => f.name);
@@ -16344,7 +16346,7 @@
     else if (ev.type === "talk") await story({ type: "talk", person: ev.person, map: "Kamurocho" });
     else if (ev.type === "spot") await story({ type: "talk", person: { script: ev.script }, map: "Kamurocho" });
     // (A gang that walked up to you: that gang, its leader's line first.)
-    else if (ev.type === "realm-battle") { if (ev.foes) await realmFight(ev.foes, ev.bark ? { intro: ev.bark } : {}); else await realmEncounter(); }
+    else if (ev.type === "realm-battle") { if (ev.foes) await realmFight(ev.foes, { intro: ev.bark, looks: ev.looks }); else await realmEncounter(); }
     else if (ev.type === "save-prompt") await savePrompt();
     if (afterScript) { const act = afterScript; afterScript = null; await act(); }
     await persist();

@@ -6,7 +6,8 @@
 //
 //   const ev = await Street.explore({ player, look, special, say, visible, onStep, level });
 //     -> { type: "menu" } (START), { type: "talk", person, map } (someone with a script ui/game.js runs),
-//        { type: "realm-battle", foes, bark } (a gang's caught you: their foe ids, REALM_FOES', and what they said),
+//        { type: "realm-battle", foes, looks, bark } (a gang's caught you: their foe ids, REALM_FOES', what each wears
+//        and what they said),
 //        { type: "spot", script } (a spot: Poppo's door, the Time Machine)
 //   player.location.street: { scene, x, y, facing } (KAMUROCHO_STREET.arrive when there's none)
 //   Street.backdrop()   the street behind you now, for the Ultimax battles' screen: { url, size, position }
@@ -147,8 +148,8 @@
   // (one of a gang: walking, their foe's walk if it has one (KAMUROCHO_STREET.foeWalks), else squared up; their
   // leader's "!" when they've seen you, and his words when they've caught you)
   function drawFoe(gang, m, k) {
-    const f = window.REALM_FOES[m.id] || {}, i = image("assets/kamurocho/people/" + (f.street || m.id) + ".png");
-    const wk = (D().foeWalks || []).includes(f.street) && image("assets/kamurocho/people/" + f.street + "_walk.png");
+    const f = window.REALM_FOES[m.id] || {}, pic = m.look || f.street || m.id, i = image("assets/kamurocho/people/" + pic + ".png");
+    const wk = (m.look || (D().foeWalks || []).includes(f.street)) && image("assets/kamurocho/people/" + pic + "_walk.png");
     const x = Math.round(m.x - cam.x), y = Math.round(m.y - cam.y), step = gang.moving && ready(wk);
     shadow(x, y, 16);
     g.save(); g.translate(x, y);
@@ -299,7 +300,9 @@
       let x = gang.x - gang.dir * 30 * k, y = gang.y + (k ? (k % 2 ? 10 : -10) : 0);
       if (!onFloor(x, y)) y = gang.y;
       if (!onFloor(x, y)) x = gang.x;
-      return { id, x, y };
+      // (what they wear: one of their foe's `looks`, if it has some)
+      const looks = (window.REALM_FOES[id] || {}).looks;
+      return { id, x, y, look: looks ? looks[Math.floor(Math.random() * looks.length)] : null };
     });
   }
   function spawnGangs(opts) {
@@ -316,7 +319,7 @@
       gang.t++; gang.moving = false;
       const ax = me.x - gang.x, ay = me.y - gang.y;
       if (gang.state === "bark") {
-        if (gang.t >= 80) { gangs = gangs.filter((o) => o !== gang); quiet = 240; return { type: "realm-battle", foes: gang.foes, bark: gang.bark }; }
+        if (gang.t >= 80) { gangs = gangs.filter((o) => o !== gang); quiet = 240; return { type: "realm-battle", foes: gang.foes, looks: gang.members.map((m) => m.look), bark: gang.bark }; }
         continue;
       }
       if (gang.state === "walk") {

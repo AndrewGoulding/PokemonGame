@@ -3704,7 +3704,9 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   Shibusawa, Tachibana, Toko Credit's president and Dojima) are from the sheet of them given for the game
   (`assets/kamurocho/cast-sheet/cast.webp`), their right-facing frames cut out by `tools/import-kamurocho-cast.py`; Kiryu, Nishiki and Majima on the streets,
   standing and walking, from its second sheet (`heroes.webp`), over Streets of Kamurocho's (their fighting stances in
-  battle are still its own). The debug menu's **Reset
+  battle are still its own). The street's gangs wear the looks of its third sheet (`gangs.webp`): three suit thugs,
+  seven street punks and five Yakuza grunts (`REALM_FOES`' `looks` for thug, punk and grunt), one picked for each
+  member of a gang as it sets out, and the same one in the fight; their walk is their one frame, bobbing. The debug menu's **Reset
   Kamurocho progress** puts the story back before its opening (and, if asked, the realm's party back to you alone).
   **Karaoke** (Yakuza 0's, this game's way: `ui/karaoke.js`): in Heroine, on its stage, A, and pick a song (`data/karaoke-songs.js`, this game's own words and
   tunes: Kamurocho Nights, 24-Hour Champion and Dojima Blues). It plays on a GBA's kind of sound, its own sequencer
