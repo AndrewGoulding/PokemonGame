@@ -68,7 +68,7 @@ window.KAMUROCHO_STREET = {
       champion: { line: [[314, 226], [340, 226], [340, 208], [358, 208], [358, 226], [368, 226]], w: 1 },
       "nakamichi-alley": { line: [[142, 338], [170, 338], [170, 322], [197, 322]], w: 1 },
       "pink-alley": { line: [[306, 344], [368, 344]], w: 1 },
-      heroine: { at: ["theater", 0.94] }, poppo: { at: ["street", 0.24] }, backlot: { at: ["street", 0.17] }, sewer: { at: ["street", 0.17] }, bacchus: { at: ["street", 0.97] }
+      heroine: { at: ["theater", 0.94] }, tachibana: { at: ["showa", 0.94], title: "Tachibana Real Estate" }, poppo: { at: ["street", 0.24] }, backlot: { at: ["street", 0.17] }, sewer: { at: ["street", 0.17] }, bacchus: { at: ["street", 0.97] }
     }
   },
   scenes: {
@@ -270,6 +270,8 @@ window.KAMUROCHO_STREET = {
         { edge: "right", to: "senryo", x: 30, y: 440, facing: "right" },
         { spot: [332, 416, 410, 426], to: "nakamichi", x: 1370, y: 440, facing: "left", text: "Nakamichi Street" },
         { spot: [1037, 1242, 410, 426], to: "pink", x: 30, y: 440, facing: "right", text: "Pink Street" }],
+      // (Tachibana Real Estate's door: the story's, ui/game.js kamurochoTachibana)
+      spots: [{ x0: 1400, x1: 1540, y0: 410, y1: 426, script: "Kamurocho_Tachibana", text: "Tachibana Real Estate" }],
       people: [
         { script: "Kamurocho_Bargain", sprite: "tourist", walk: "tourist_walk", range: 80, x: 320, y: 444, face: "right",
           text: ["The discount store's got\neverything. Everything!", "I came for toothpaste. I'm\nleaving with a massage chair."] },

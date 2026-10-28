@@ -7394,6 +7394,8 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     // (the karaoke box: its spot, and each song's words within its bars, each line done before the next, a
     // syllable a note)
     assert(K.scenes.heroine.spots.some((sp) => sp.script === "Kamurocho_Karaoke") && K.scenes.theater.exits.some((e) => e.to === "heroine"), "Heroine, the karaoke bar");
+    // (Yakuza 0's first chapter: Kuze to fight at the Empty Lot, Tachibana Real Estate's door on Showa Street and on the Map)
+    assert(window.REALM_FOES.kuze && window.REALM_FOES.kuze.boss && K.scenes.showa.spots.some((sp) => sp.script === "Kamurocho_Tachibana") && K.map.scenes.tachibana.title, "Bound by Oath");
     // (every realm… and kamurocho… function ui/game.js calls is one it defines: a missing one hangs the game where it's
     // called, as realmPoints once did after a level-up)
     {

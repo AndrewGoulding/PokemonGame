@@ -3683,7 +3683,16 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   `tools/build-kamurocho-sok.py`'s `nishiki`) finds him and takes him off to **Heroine**, the karaoke bar in Theater
   Square (its pink neon on the square; inside, this game's own: the bar, a booth, the stage and its screen,
   `tools/build-kamurocho-insides.py`). Then you have yourself back, and Heroine's flagged on the Map
-  (`flags.kamurochoWaypoint`) till you walk in; Kiryu and Nishiki are there, and Kiryu joins you there.
+  (`flags.kamurochoWaypoint`) till you walk in; Kiryu and Nishiki are there, and Kiryu joins you there. Then the rest of
+  **Chapter 1, Bound by Oath**, Yakuza 0's story beats in this game's own words (`flags.y0Step`): at Heroine, Nishiki
+  toasts Kazama in prison and his dream of a family of his own; out in Theater Square, a Dojima man brings the news
+  that the man Kiryu collected from was found shot dead in the Empty Lot, and the street says Kiryu did it (Kiryu
+  joins you then if he hasn't); at the Empty Lot, the one tsubo every Tojo family wants for the Kamurocho
+  Revitalization Project, Dojima lieutenant **Daisaku Kuze** comes for him: a boss fight (`REALM_FOES.kuze`; lose and
+  he waits for you to come back). Beaten, Kuze gets back up and goes; Kiryu leaves the Dojima family to keep the
+  shame off Kazama, Nishiki begging him not to. Last, **Tachibana Real Estate** on Showa Street (its door a spot;
+  the Map flags it): Makoto Oda and Tetsu Tachibana, who want the Empty Lot's hidden owner found as much as Kiryu
+  does. To be continued.
   **Karaoke** (Yakuza 0's, this game's way: `ui/karaoke.js`): in Heroine, on its stage, A, and pick a song (`data/karaoke-songs.js`, this game's own words and
   tunes: Kamurocho Nights, 24-Hour Champion and Dojima Blues). It plays on a GBA's kind of sound, its own sequencer
   (two pulse waves, a triangle bass and noise drums, through the game's volume), so every prompt falls on its note;

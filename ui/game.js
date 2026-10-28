@@ -3022,7 +3022,7 @@
   const DOMINO_DUELISTS = { DominoHigh_Person12: "yugi", DominoHigh_Person13: "tea", DominoHigh_Person14: "joey", DominoHigh_Person15: "tristan" };
   // (The Time Machine off Pallet Town, and the Realm Hub's portals: timeMachine, realmPortal.)
   for (const sc of ["TimeMachine_EventScript_Machine", "TimeMachine_EventScript_Sign", "TimeMachine_EventScript_Scientist",
-    "RealmHub_EventScript_Portal_pokemon", "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_yakuza", "Kamurocho_TimeMachine", "Kamurocho_Kiryu", "Kamurocho_Majima", "Kamurocho_Clerk", "Kamurocho_Karaoke", "SacredCards_Fountain", "SacredCards_BackToTown",
+    "RealmHub_EventScript_Portal_pokemon", "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_yakuza", "Kamurocho_TimeMachine", "Kamurocho_Kiryu", "Kamurocho_Majima", "Kamurocho_Clerk", "Kamurocho_Karaoke", "Kamurocho_Tachibana", "SacredCards_Fountain", "SacredCards_BackToTown",
     "Domino_WorldMap", "KameGame_Grandpa", "Domino_Manhole", "Domino_ManholeUp", "Domino_TimeMachine", ...Object.keys(DOMINO_DUELISTS)]) SPECIAL.add(sc);
   // (and the other pupils and the teacher, with their boosters' decks: classmate)
   for (let i = 0; i < 12; i++) SPECIAL.add("DominoHigh_Person" + i);
@@ -3397,6 +3397,7 @@
     if (script === "Kamurocho_Majima") { await kamurochoMajima(ev.person); return; }
     if (script === "Kamurocho_Clerk") { await kamurochoShop(); return; }
     if (script === "Kamurocho_Karaoke") { await kamurochoKaraoke(); return; }
+    if (script === "Kamurocho_Tachibana") { await kamurochoTachibana(); return; }
     if (DOMINO_DUELISTS[script]) { await dominoDuel(DOMINO_DUELISTS[script], ev.person); return; }
     if (/^DominoHigh_Person([0-9]|1[01])$/.test(script || "")) { await dominoDuel(classmate(script), ev.person); return; }
     if (ev.person && ev.person.ferry && isSinnoh(ev.map)) { await sinnohFerry(ev.person); return; }
@@ -10202,7 +10203,7 @@
       if (wm) {
         const [wx, wy] = T(wm.at ? along(Mp[wm.at[0]].line, wm.at[1]) : along(wm.line, 0.5)).map(Math.round);
         sf.fill(wx, wy - 12, 1, 12, [240, 240, 240]); sf.fill(wx + 1, wy - 12, 6, 4, [232, 48, 48]); sf.fill(wx + 1, wy - 8, 4, 1, [232, 48, 48]);
-        sf.text("\u25b6 " + ((K.scenes[wp] || {}).title || wp), 150, 148, [255, 120, 120], INK, "small");
+        sf.text("\u25b6 " + ((K.scenes[wp] || {}).title || wm.title || wp), 150, 148, [255, 120, 120], INK, "small");
       }
       if (Mp[here] && Mp[here].line && blink) {
         const [x, y] = T(along(Mp[here].line, frac)).map(Math.round);
@@ -10336,20 +10337,138 @@
     await say(["Kiryu and Nishiki are headed for\nHeroine, the karaoke bar in Theater\nSquare.", "It's marked on your Map\n(START, then Map)."]);
     await persist();
   }
-  // (Coming into a street: a scene to play there, or reaching where the Map marks: for ui/street.js's enter.)
+  // (Coming into a street: a scene to play there, or reaching where the Map marks: for ui/street.js's enter. The
+  // story's step: flags.y0Step, "drinking" (at Heroine), "lot" (to the Empty Lot), "tachibana" (to Tachibana Real
+  // Estate on Showa Street), "done".)
   function kamurochoEnter(sceneId) {
     const f = player.flags;
     if (sceneId === "street" && !f.y0Prologue) return { type: "prologue" };
-    if (sceneId === "heroine" && f.kamurochoWaypoint === "heroine") return { type: "heroine" };
+    // (a save from before the story went on past Heroine: its evening there again)
+    if (sceneId === "heroine" && (f.kamurochoWaypoint === "heroine" || (f.y0Prologue && !f.y0Step))) return { type: "heroine" };
+    if (sceneId === "theater" && f.y0Step === "drinking") return { type: "y0-news" };
+    if (sceneId === "alley" && f.y0Step === "lot") return { type: "y0-lot" };
     return null;
   }
+  // Yakuza 0's first chapter, Bound by Oath, as this game tells it (its beats, in words of its own). At Heroine,
+  // Kiryu and Nishiki drink to the night and to Kazama, their oyaji, in prison.
   async function kamurochoHeroine() {
-    player.flags.kamurochoWaypoint = null;
-    await say(["Heroine's lights are low, and the\nkaraoke's loud.", "Nishiki: Hey, you made it! Grab a\nmic, the night's young!"]);
+    const f = player.flags;
+    f.kamurochoWaypoint = null; f.y0Step = "drinking";
+    await say(["Heroine's lights are low, and the\nkaraoke's loud.", "Nishiki: Hey, you made it! Kiryu,\nyou know this one? They're with us\ntonight.",
+      "Kiryu: ...Any friend of Nishiki's.", "Nishiki: To the Dojima family! And to\nKazama-san. May he get out of that\nprison before we're old men.",
+      "Kiryu: He took us in when nobody\nelse would. We owe him everything.", "Nishiki: That's why we've gotta make\nsomething of ourselves, brother.",
+      "Someday I'll have a family of my\nown. And you'll be right beside me.", "Kiryu: Heh. One drink at a time.",
+      "Nishiki: Now get up there and sing!\nThe stage is right over there."]);
     await persist();
   }
-  // The karaoke box off Theater Square (ui/karaoke.js, data/karaoke-songs.js): a song, sung; each song's best score
-  // kept (flags.karaoke), and the first time one scores 90 or more, a Staminan Spark on the house.
+  // Out into Theater Square: a Dojima man with the news. The man Kiryu collected from tonight is dead, shot in the
+  // Empty Lot, and the street says Kiryu did it.
+  async function kamurochoNews() {
+    const f = player.flags, here = Street.here() || { x: 1210, y: 440 };
+    await Street.cutscene([
+      { scene: "theater", cam: [1120, 440] },
+      { actor: "kiryu", sprite: "kiryu_idle", walk: "kiryu_idle_walk", x: 1200, y: 436, face: "left" },
+      { actor: "nishiki", sprite: "nishiki", walk: "nishiki_walk", x: 1250, y: 446, face: "left" },
+      { actor: "runner", sprite: "grunt_idle", walk: "grunt_idle_walk", x: 860, y: 444, face: "right" },
+      { walk: "runner", to: [1130, 444], speed: 2.6 },
+      { say: ["Dojima man: Kiryu-san! Thank god\nI found you!", "That guy you collected from\ntonight... they found him in the\nEmpty Lot.",
+        "Shot. Dead.", "Kiryu: ...What?", "Dojima man: The cops are crawling\nall over it. And the word on the\nstreet is...",
+        "...it was you, Kiryu-san.", "Kiryu: I roughed him up. That's all.\nHe walked away on his own two feet.",
+        "Nishiki: Somebody's setting you up,\nKiryu. That lot's trouble. The whole\nfamily wants it.",
+        "Kiryu: Then I'll go and see it for\nmyself."] },
+      { walk: "runner", to: [820, 444], speed: 2.6 },
+      { gone: "runner" }
+    ], { say });
+    f.y0Step = "lot"; f.kamurochoWaypoint = "alley";
+    show("street");
+    if (!inRealmParty("yakuza", "kiryu")) {
+      const P = realmParty("yakuza"), where = realmJoin(P, Ultimax.recruit("kiryu", Math.max(3, realmMe(P).lv)));
+      await fanfare("mus_obtain_key_item");
+      await say([realmWrap("Kiryu: You're coming too? ...Fine.\nStay close."), realmWrap("Kazuma Kiryu joined the party!" + JOINED[where])]);
+    }
+    await say(["The Empty Lot's marked on your Map:\noff the far end of the street, past\nBacchus."]);
+    await persist();
+  }
+  // The Empty Lot: the tiny lot the whole Tojo Clan wants, for the Kamurocho Revitalization Project, and now a
+  // murder scene. Daisaku Kuze, one of the Dojima family's lieutenants, comes for Kiryu: a fight. Beaten, he gets up
+  // again (he always does), and goes. Kiryu chooses to leave the family, so the shame is his, not Kazama's; Nishiki
+  // begs him not to.
+  async function kamurochoLot() {
+    const f = player.flags;
+    await Street.cutscene([
+      { scene: "alley", cam: [300, 446] },
+      { actor: "kiryu", sprite: "kiryu_idle", walk: "kiryu_idle_walk", x: 200, y: 448, face: "right" },
+      { say: ["The Empty Lot. Rope across it now,\nand a dark stain on the ground.", "Kiryu: One tsubo of dirt. Barely\nroom to stand.",
+        "And every family in the Tojo Clan\nwould kill for it.", "The Kamurocho Revitalization Project\ncan't break ground without it..."] },
+      { actor: "kuze", sprite: "grunt_idle", walk: "grunt_idle_walk", x: 660, y: 452, face: "left" },
+      { walk: "kuze", to: [420, 452], speed: 1.2 },
+      { face: "kiryu", dir: "right" },
+      { say: ["???: So the killer comes back to the\nscene. Ain't that just like a\npunk.", "Kiryu: ...Kuze-san.",
+        "Kuze: Daisaku Kuze, Dojima family\nlieutenant. Thanks to you, the\nfamily's name is mud.",
+        "A body on the one patch of dirt\nthe boss needs. You know what that\ndoes to us?",
+        "Kiryu: I didn't kill anyone.", "Kuze: Don't matter what you did.\nMatters what they're sayin'.",
+        "And a dog that shames its master\ngets put down. Hands up, Kiryu!"] }
+    ], { say });
+    show("street");
+    const r = await realmFight(["kuze"], { intro: "Daisaku Kuze wants to fight!", keepGoing: true });
+    if (r !== "won") {
+      await say(["Kuze: Hah! That the best the Dragon\nof Dojima's got?", "Come back when you've learned your\nplace. I'll be right here."]);
+      await persist();
+      return;
+    }
+    await Street.cutscene([
+      { scene: "alley", cam: [300, 446] },
+      { actor: "kiryu", sprite: "kiryu_idle", walk: "kiryu_idle_walk", x: 200, y: 448, face: "right" },
+      { actor: "kuze", sprite: "grunt_idle", walk: "grunt_idle_walk", x: 420, y: 452, face: "left" },
+      { say: ["Kuze hits the dirt... and gets\nright back up.", "Kuze: Heh... You hit like a truck,\nKiryu. But I ain't done.",
+        "A man ain't beaten till he stops\ngettin' up. Remember that.", "This ain't over. The family's gonna\nhave its pound of flesh."] },
+      { walk: "kuze", to: [680, 452], speed: 1.4 },
+      { gone: "kuze" },
+      { actor: "nishiki", sprite: "nishiki", walk: "nishiki_walk", x: -20, y: 452, face: "right" },
+      { walk: "nishiki", to: [130, 452], speed: 2.2 },
+      { face: "kiryu", dir: "left" },
+      { say: ["Nishiki: Kiryu! I heard about Kuze.\nYou alright?", "Kiryu: Nishiki. I've made up my\nmind.",
+        "I'm leaving the Dojima family.", "Nishiki: What?! Are you out of your\nmind? After everything?",
+        "Kiryu: As long as I'm in the family,\nthis shame lands on Kazama-san.", "If I'm out, it's only mine. I'll\nclear my name on my own.",
+        "Nishiki: ...You stubborn idiot.\nYou never could do it any other way.", "Fine. But I'm still your brother.\nCall me if you need me.",
+        "Kiryu: Look after Kazama-san's place\nin the family for me."] },
+      { walk: "nishiki", to: [-40, 452], speed: 1.6 },
+      { gone: "nishiki" },
+      { say: ["Kiryu: ...Someone wanted me in the\nframe for this. And someone owns\nthis lot.", "If the family won't find out who,\nI will.",
+        "End of Chapter 1: Bound by Oath."] }
+    ], { say });
+    f.y0Step = "tachibana"; f.kamurochoWaypoint = "tachibana";
+    show("street");
+    await say(["Word is a real estate firm on Showa\nStreet knows plenty about the Empty\nLot.", "Tachibana Real Estate is marked on\nyour Map."]);
+    await persist();
+  }
+  // Tachibana Real Estate, on Showa Street: Kiryu, out of the family, meets Tetsu Tachibana, its young boss, and
+  // Makoto Oda, his man. They're after the Empty Lot too, and they'll help him find who's behind it.
+  async function kamurochoTachibana() {
+    const f = player.flags;
+    if (f.y0Step !== "tachibana") {
+      await say(f.y0Step === "done" ? ["Oda: The boss is out on business.\nWe'll find that lot's owner, Kiryu.\nJust you wait."]
+        : ["Tachibana Real Estate. The blinds\nare down, and nobody answers."]);
+      return;
+    }
+    await Street.cutscene([
+      { scene: "showa", cam: [1440, 440] },
+      { actor: "kiryu", sprite: "kiryu_idle", walk: "kiryu_idle_walk", x: 1300, y: 446, face: "right" },
+      { actor: "oda", sprite: "host_idle", x: 1500, y: 440, face: "left" },
+      { say: ["Oda: Kazuma Kiryu, right? Formerly of\nthe Dojima family. News travels\nfast round here.",
+        "Name's Makoto Oda. My boss has been\nwanting to meet you."] },
+      { actor: "tachibana", sprite: "salaryman_idle", x: 1560, y: 430, face: "left" },
+      { walk: "kiryu", to: [1420, 446] },
+      { say: ["Tachibana: Tetsu Tachibana. This\nhumble office is mine.", "You've been framed over the Empty\nLot. We'd like to know who owns it\nas much as you would.",
+        "Every developer and every Tojo family\nin town is chasing that one tsubo.", "Someone's hiding its owner. Find them,\nand you'll find who set you up.",
+        "Work with us, Kiryu-san. We have the\nmoney and the paperwork. You have\nthe fists.",
+        "Kiryu: ...I'm not much for real\nestate.", "Tachibana: You will be. Kamurocho's\nland is worth more than gold right\nnow.",
+        "Kiryu: Fine. Until my name's clean.", "To be continued..."] }
+    ], { say });
+    f.y0Step = "done"; f.kamurochoWaypoint = null;
+    show("street");
+    await persist();
+  }
   async function kamurochoKaraoke() {
     await say("Welcome to the karaoke box!\nPick a song and give it your all!");
     const S = window.KARAOKE_SONGS, best = player.flags.karaoke = player.flags.karaoke || {};
@@ -16044,6 +16163,8 @@
     } else if (ev.type === "say") await say(ev.pages);
     else if (ev.type === "prologue") await kamurochoPrologue();
     else if (ev.type === "heroine") await kamurochoHeroine();
+    else if (ev.type === "y0-news") await kamurochoNews();
+    else if (ev.type === "y0-lot") await kamurochoLot();
     else if (ev.type === "talk") await story({ type: "talk", person: ev.person, map: "Kamurocho" });
     else if (ev.type === "spot") await story({ type: "talk", person: { script: ev.script }, map: "Kamurocho" });
     // (A gang that walked up to you: that gang, its leader's line first.)

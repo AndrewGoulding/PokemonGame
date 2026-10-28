@@ -481,6 +481,9 @@ window.REALM_FOES = {
   biker:     { name: "Biker", lv: 7,           elements: ["Neutral"], street: "biker", sprite: "sc_person_58", hp: 34, mp: 0, str: 17, def: 12, int: 14, wis: 6, spd: 11, exp: 16, money: 300, skills: ["revving"] },
   grunt:     { name: "Yakuza Grunt", lv: 9,    elements: ["Neutral"], street: "grunt", sprite: "sc_person_77", hp: 40, mp: 0, str: 19, def: 14, int: 0, wis: 7, spd: 10, exp: 22, money: 500, skills: ["headbutt"] },
   shakedown: { name: "Mr. Shakedown", lv: 15,   elements: ["Neutral"], street: "shakedown", sprite: "sc_person_71", big: true, hp: 160, mp: 0, str: 32, def: 22, int: 0, wis: 11, spd: 6, exp: 150, money: 10000, skills: ["haymaker"] },
+  // (the story's: Daisaku Kuze, the Dojima family lieutenant who comes for Kiryu at the Empty Lot)
+  kuze:      { name: "Daisaku Kuze", lv: 6,     elements: ["Neutral"], street: "grunt", sprite: "sc_person_77", boss: true,
+               hp: 120, mp: 0, str: 20, def: 14, int: 0, wis: 6, spd: 9, exp: 120, money: 3000, skills: ["haymaker", "headbutt"] },
   majima:    { name: "Goro Majima", lv: 12,     elements: ["Dark"], street: "majima", boss: true,
                hp: 260, mp: 99, str: 34, def: 18, int: 0, wis: 9, spd: 22, exp: 300, money: 0, skills: ["mad_dog_lunge", "breaker_spin", "slugger_swing"] }
 };

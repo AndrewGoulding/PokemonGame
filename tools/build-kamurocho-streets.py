@@ -405,7 +405,7 @@ def showa(P, atlas):
     # Showa Street, along the south, west to east from the foot of Tenkaichi Street: a sushi counter (the gyudon
     # front, relit), the foot of Nakamichi Street (the shadowed passage), the discount store (the batting centre's
     # block, gone yellow, its board in bulbs), a mahjong parlour up its stairs (the yakiniku place's), the foot of
-    # Pink Street (the taxi's passage, lit pink), a bar (Serena's, turned round), the real estate office (Poppo's
+    # Pink Street (the taxi's passage, lit pink), a bar (Serena's, turned round), Tachibana Real Estate (Poppo's
     # front, dimmed), a block; Senryo Avenue at its east end.
     S.bay(P['block'])
     S.at(neon(board(atlas, 'TENKAICHI', *BLUE, 1), BLUE[1]), 8, 300)
@@ -421,9 +421,10 @@ def showa(P, atlas):
     light(S.im, x + 112, 330, 100, 60, (255, 60, 170), 0.3)
     S.bay(mirror(hue(P['serena'], 200, 1.1)))
     x = S.bay(hue(P['poppo'], 60, 0.4, 0.75))
-    S.at(board(atlas, 'REAL ESTATE', (40, 40, 50), (230, 230, 240), 1), x + 40, 276)
+    S.at(board(atlas, 'TACHIBANA', (40, 40, 50), (230, 230, 240), 1), x + 46, 270)   # (Tachibana Real Estate: the story's)
+    S.at(board(atlas, 'REAL ESTATE', (40, 40, 50), (230, 230, 240), 1), x + 40, 286)
     S.fill(P['block'], P['shadow'])
-    S.at(neon(board(atlas, 'SENRYO AVE', *BLUE, 1), BLUE[1]), 1460, 300)
+    S.at(neon(board(atlas, 'SENRYO AVE', *BLUE, 1), BLUE[1]), 1468, 340)
     lamps(S, P, (60, 470, 900, 1300))
     S.put(P['bike'], 600, BASE + 6); S.put(P['cone'], 1300, BASE + 4); S.put(P['cone'], 1322, BASE + 4)
     S.put(P['menu1'], 260, BASE + 4)
