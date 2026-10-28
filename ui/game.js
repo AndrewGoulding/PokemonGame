@@ -2226,6 +2226,7 @@
         { label: "Visit Hoenn (the moving truck)", value: "hoenn", className: "action" },
         { label: "Visit Sinnoh (Twinleaf Town)", value: "sinnoh", className: "action" },
         { label: "Visit the Realm Hub", value: "hub", className: "action" },
+        { label: "Reset Kamurocho progress", value: "kamurocho-reset", className: "action" },
         { label: "Fill the Trunk (3 of every card)", value: "trunk", className: "action" },
         { label: "Clear the Trunk (no cards at all)", value: "clear-trunk", className: "action" },
         { label: "Duel Yugi", value: "duel", className: "action" },
@@ -2274,6 +2275,23 @@
       } else if (v === "duel") {
         await dominoDuel("yugi", null);
         return "battled";
+      } else if (v === "kamurocho-reset") {
+        // Kamurocho's story back to before its opening (flags.y0*, the Map's waypoint, the karaoke's prizes); its
+        // party too, if asked (back to you alone, as on your first trip through the Time Machine).
+        const w = await ask("Reset Kamurocho progress?", [{ label: "The story", value: "story", className: "action" },
+          { label: "The story and the party", value: "all", className: "action" }, back("Cancel")]);
+        if (w === "back") continue;
+        const f = player.flags;
+        for (const k of ["y0Prologue", "y0Step", "y0v2", "kamurochoWaypoint", "karaoke", "karaokePrize"]) delete f[k];
+        if (w === "all" && f.realmParty) delete f.realmParty.yakuza;
+        if (Street.isStreet(player.location.map)) {
+          const a = window.KAMUROCHO_STREET.arrive;
+          player.location.street = { scene: a.scene, x: a.x, y: a.y, facing: a.facing };
+          Street.place(player.location.street);
+        }
+        await persist();
+        await message(w === "all" ? "Kamurocho's story and party are reset. The story starts again the next time you step out onto the street."
+          : "Kamurocho's story is reset. It starts again the next time you step out onto the street.");
       } else if (v === "hub") {
         // The Realm Hub, by the Time Machine (its machine brings you back beside Pallet Town).
         fieldAction = visitRealmHub;
@@ -10460,9 +10478,9 @@
         "Kiryu hails a taxi."] },
       { fade: "out" },
       { scene: "dojima", cam: [400, 440] },
-      { actor: "kuze", sprite: "grunt_idle", x: 470, y: 440, face: "left" },
-      { actor: "awano", sprite: "host_idle", x: 560, y: 446, face: "left" },
-      { actor: "shibusawa", sprite: "salaryman_idle", x: 650, y: 436, face: "left" },
+      { actor: "kuze", sprite: "kuze", x: 470, y: 440, face: "left" },
+      { actor: "awano", sprite: "awano", x: 560, y: 446, face: "left" },
+      { actor: "shibusawa", sprite: "shibusawa", x: 650, y: 436, face: "left" },
       { actor: "kiryu", ...Y0_KIRYU, x: 60, y: 446, face: "right" },
       { fade: "in" },
       { walk: "kiryu", to: [300, 446] },
@@ -10511,11 +10529,11 @@
     await Street.cutscene([
       { scene: "toko", cam: [400, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x: 60, y: 446, face: "right" },
-      { actor: "president", sprite: "salaryman_idle", x: 600, y: 430, face: "left" },
+      { actor: "president", sprite: "president", x: 600, y: 430, face: "left" },
       { walk: "kiryu", to: [440, 446] },
       { say: ["President: H-hold on! I just run a\nloan office!", "Kiryu: The man who died in the lot.\nYou sent him there. Why?",
         "President: I was told to! Kuze said\nsend him to the Empty Lot, and keep\nmy mouth shut!"] },
-      { actor: "kuze", sprite: "grunt_idle", walk: "grunt_idle_walk", x: 20, y: 446, face: "right" },
+      { actor: "kuze", sprite: "kuze", walk: "kuze_walk", x: 20, y: 446, face: "right" },
       { walk: "kuze", to: [380, 446], speed: 1.8 },
       { face: "kiryu", dir: "left" },
       { hit: "kiryu" },
@@ -10539,7 +10557,7 @@
       { scene: "kazama", cam: [400, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x: 60, y: 446, face: "right" },
       { actor: "nishiki", ...Y0_NISHIKI, x: 300, y: 452, face: "right" },
-      { actor: "kashiwagi", sprite: "grunt_idle", x: 560, y: 436, face: "left" },
+      { actor: "kashiwagi", sprite: "kashiwagi", x: 560, y: 436, face: "left" },
       { walk: "kiryu", to: [400, 446] },
       { say: ["Kashiwagi: Sit, Kiryu. You need to\nunderstand what you've walked into.",
         "That lot is barely bigger than a\ndesk. With the bubble on, it's worth\nnear a billion yen.",
@@ -10562,7 +10580,7 @@
     await Street.cutscene([
       { scene: "dojima", cam: [400, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x: 160, y: 446, face: "right" },
-      { actor: "kuze", sprite: "grunt_idle", x: 500, y: 440, face: "left" },
+      { actor: "kuze", sprite: "kuze", x: 500, y: 440, face: "left" },
       { say: ["The top floor.", "Kuze: Still standing? Then I'll put\nyou down myself."] }
     ], { say });
     show("street");
@@ -10570,10 +10588,10 @@
     await Street.cutscene([
       { scene: "dojima", cam: [400, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x: 160, y: 446, face: "right" },
-      { actor: "kuze", sprite: "grunt_idle", x: 460, y: 452, face: "left" },
-      { actor: "dojima", sprite: "thug_idle", walk: "thug_idle_walk", x: 760, y: 436, face: "left" },
-      { actor: "awano", sprite: "host_idle", x: 820, y: 446, face: "left" },
-      { actor: "shibusawa", sprite: "salaryman_idle", x: 860, y: 436, face: "left" },
+      { actor: "kuze", sprite: "kuze", x: 460, y: 452, face: "left" },
+      { actor: "dojima", sprite: "dojima", walk: "dojima_walk", x: 760, y: 436, face: "left" },
+      { actor: "awano", sprite: "awano", x: 820, y: 446, face: "left" },
+      { actor: "shibusawa", sprite: "shibusawa", x: 860, y: 436, face: "left" },
       { walk: "dojima", to: [600, 436] }, { walk: "awano", to: [660, 446] }, { walk: "shibusawa", to: [710, 436] },
       { say: ["Dojima: What is this mess in my\nhouse?", "Awano: Kuze put the word out to have\nKiryu killed, boss. Without asking\nyou.",
         "Shibusawa: Our men are lying on every\nfloor.", "Dojima: Kuze.", "Kuze: ...I overstepped. I'll answer\nfor it, boss.",
@@ -10585,7 +10603,7 @@
       { actor: "kiryu", ...Y0_KIRYU, x: 1380, y: 452, face: "right" },
       { fade: "in" },
       { say: ["11:28 PM. Rain.", "Kiryu sits slumped against a wall,\nalone, soaked through."] },
-      { actor: "tachibana", sprite: "salaryman_idle", walk: "salaryman_idle_walk", x: 1600, y: 446, face: "left" },
+      { actor: "tachibana", sprite: "tachibana", walk: "tachibana_walk", x: 1600, y: 446, face: "left" },
       { walk: "tachibana", to: [1450, 446] },
       { say: ["A man with an umbrella, and a black\nglove over a hand that isn't real.", "Tachibana: Kazuma Kiryu. I've been\nhoping to meet you.",
         "My name is Tachibana. Will you come\nwith me? I think we can help each\nother.", "End of Chapter 1: Bound by Oath."] },
@@ -10611,9 +10629,9 @@
       { scene: "showa", cam: [1440, 440] },
       { say: ["Chapter 2: The Real Estate Broker\nin the Shadows."] },
       { actor: "kiryu", sprite: "kiryu_idle", walk: "kiryu_idle_walk", x: 1300, y: 446, face: "right" },
-      { actor: "oda", sprite: "host_idle", x: 1500, y: 440, face: "left" },
+      { actor: "oda", sprite: "oda", x: 1500, y: 440, face: "left" },
       { say: ["Oda: Morning, Kiryu-san. Slept it\noff? The boss is expecting you.", "Name's Makoto Oda. I work for\nTachibana-san."] },
-      { actor: "tachibana", sprite: "salaryman_idle", x: 1560, y: 430, face: "left" },
+      { actor: "tachibana", sprite: "tachibana", x: 1560, y: 430, face: "left" },
       { walk: "kiryu", to: [1420, 446] },
       { say: ["Tachibana: Welcome to Tachibana Real\nEstate. Tetsu Tachibana, again.", "You've been framed over the Empty\nLot. We'd like to know who owns it\nas much as you would.",
         "Every developer and every Tojo family\nin town is chasing that one tsubo.", "Someone's hiding its owner. Find them,\nand you'll find who set you up.",

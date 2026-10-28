@@ -3700,7 +3700,11 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   go); Dojima's verdict, Kuze's finger, Kiryu out of the family. 11:28 that night, in the rain (`ui/street.js`'s
   cutscene `rain`), Tachibana finds him. Chapter 2 begins at **Tachibana Real Estate** on Showa Street; to be
   continued. The offices are this game's own (`tools/build-kamurocho-insides.py`'s `office`); the Dojima HQ is
-  outside Kamurocho, reached only by the story (`story`).
+  outside Kamurocho, reached only by the story (`story`). The story's people are this game's own
+  (`tools/build-kamurocho-cast.py`): Streets of Kamurocho's suited passers-by made each one someone of their own by
+  suit, shirt and hair and a touch apiece (a shaved head, a scar, a black glove, grey hair, sunglasses off): Kuze,
+  Kashiwagi, Awano, Oda, Shibusawa, Tachibana, Toko Credit's president and Dojima. The debug menu's **Reset
+  Kamurocho progress** puts the story back before its opening (and, if asked, the realm's party back to you alone).
   **Karaoke** (Yakuza 0's, this game's way: `ui/karaoke.js`): in Heroine, on its stage, A, and pick a song (`data/karaoke-songs.js`, this game's own words and
   tunes: Kamurocho Nights, 24-Hour Champion and Dojima Blues). It plays on a GBA's kind of sound, its own sequencer
   (two pulse waves, a triangle bass and noise drums, through the game's volume), so every prompt falls on its note;
