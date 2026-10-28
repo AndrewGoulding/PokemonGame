@@ -3706,7 +3706,11 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   standing and walking, from its second sheet (`heroes.webp`), over Streets of Kamurocho's (their fighting stances in
   battle are still its own). The street's gangs wear the looks of its third sheet (`gangs.webp`): three suit thugs,
   seven street punks and five Yakuza grunts (`REALM_FOES`' `looks` for thug, punk and grunt), one picked for each
-  member of a gang as it sets out, and the same one in the fight; their walk is their one frame, bobbing. The debug menu's **Reset
+  member of a gang as it sets out, and the same one in the fight; their walk is their one frame, bobbing. Everyone else on its streets is in the same chibi style
+  (`tools/build-kamurocho-chibis.py`, after the import): the townsfolk and the other foes (the drunk, the knife punk,
+  the host, the biker, Mr. Shakedown), each one of the sheet's passers-by in clothes of their own (jacket, shirt,
+  trousers and hair recoloured, the shading kept) and a touch apiece (a drunk's red face, sunglasses, a knife, a
+  broader build); Kiryu's and Majima's fighting pictures are their chibi at ease; Bruno and Yoneda wear gang looks. The debug menu's **Reset
   Kamurocho progress** puts the story back before its opening (and, if asked, the realm's party back to you alone).
   **Karaoke** (Yakuza 0's, this game's way: `ui/karaoke.js`): in Heroine, on its stage, A, and pick a song (`data/karaoke-songs.js`, this game's own words and
   tunes: Kamurocho Nights, 24-Hour Champion and Dojima Blues). It plays on a GBA's kind of sound, its own sequencer

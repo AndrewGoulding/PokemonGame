@@ -486,9 +486,9 @@ window.REALM_FOES = {
   shakedown: { name: "Mr. Shakedown", lv: 15,   elements: ["Neutral"], street: "shakedown", sprite: "sc_person_71", big: true, hp: 160, mp: 0, str: 32, def: 22, int: 0, wis: 11, spd: 6, exp: 150, money: 10000, skills: ["haymaker"] },
   // (the story's, Yakuza 0's first chapter: Bruno, the debt collector outside the Dojima family's office; Yoneda, who
   // guards its top floor; and Daisaku Kuze, the Dojima lieutenant waiting there)
-  bruno:     { name: "Bruno", lv: 4,           elements: ["Neutral"], street: "thug", sprite: "sc_person_71", boss: true,
+  bruno:     { name: "Bruno", lv: 4,           elements: ["Neutral"], street: "thug_brown", sprite: "sc_person_71", boss: true,
                hp: 60, mp: 0, str: 15, def: 10, int: 0, wis: 4, spd: 7, exp: 40, money: 1000, skills: ["bottle_smash"] },
-  yoneda:    { name: "Yoneda", lv: 6,          elements: ["Neutral"], street: "grunt", sprite: "sc_person_77", boss: true,
+  yoneda:    { name: "Yoneda", lv: 6,          elements: ["Neutral"], street: "grunt_collar", sprite: "sc_person_77", boss: true,
                hp: 90, mp: 0, str: 18, def: 12, int: 0, wis: 5, spd: 9, exp: 70, money: 2000, skills: ["headbutt"] },
   kuze:      { name: "Daisaku Kuze", lv: 8,     elements: ["Neutral"], street: "kuze", sprite: "sc_person_77", boss: true,
                hp: 150, mp: 0, str: 22, def: 15, int: 0, wis: 6, spd: 10, exp: 150, money: 3000, skills: ["haymaker", "headbutt"] },
