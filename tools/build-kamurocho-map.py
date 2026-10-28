@@ -6,7 +6,8 @@
 #
 #   python3 tools/build-kamurocho-map.py
 #
-# Writes assets/kamurocho/map.png; KAMUROCHO_STREET.map.picture says where it goes on the screen, and its scale.
+# Writes assets/kamurocho/map.png and the same as data, data/kamurocho-map.js (window.KAMUROCHO_MAP_PICTURE: what
+# realmMap draws); KAMUROCHO_STREET.map.picture says where it goes on the screen, and its scale.
 import os
 import numpy as np
 from PIL import Image
@@ -77,6 +78,14 @@ def main():
         for X in range(W):
             if out[Y, X] > 0: px[X, Y] = COLOURS[out[Y, X]] + (255,)
     pic.save(OUT, optimize=True)
+    # (and the same, as data the page can read however it's opened: a browser won't let a page opened from its file
+    # read an image's pixels back; each row a string, a character a pixel: "." outside the town, else its colour's
+    # number in `colours`)
+    rows = ['"' + ''.join('.' if out[Y, X] <= 0 else str(out[Y, X]) for X in range(W)) + '"' for Y in range(H)]
+    js = ('// Kamurocho\'s map picture, made by tools/build-kamurocho-map.py (its map.png as data, for ui/game.js realmMap).\n'
+          'window.KAMUROCHO_MAP_PICTURE = { width: %d, height: %d, colours: %s,\n  rows: [\n    %s\n  ] };\n'
+          % (W, H, '{ ' + ', '.join('%d: [%d, %d, %d]' % ((k,) + c) for k, c in COLOURS.items()) + ' }', ',\n    '.join(rows)))
+    open(os.path.join(ROOT, 'data/kamurocho-map.js'), 'w').write(js)
     print('map: %dx%d' % (W, H))
 
 if __name__ == '__main__':

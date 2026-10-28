@@ -10163,7 +10163,6 @@
   // Kamurocho's map (the start menu's MAP; KAMUROCHO_STREET.map), as Yakuza 0's: the grey town, its streets dark
   // through it, West Park blue, its numbers and their names down the side; the street you're on lit, and you a
   // blinking mark along it as far as you've walked; a red flag where the story's headed. A or B closes it.
-  let realmMapPixels = null;
   async function realmMap() {
     const K = window.KAMUROCHO_STREET, Mp = K.map.scenes, ov = $("#overlay"), loc = player.location.street || K.arrive;
     const here = Mp[loc.scene] && Mp[loc.scene].at ? Mp[loc.scene].at[0] : loc.scene;
@@ -10183,19 +10182,14 @@
       for (let i = 0; i < seg.length; i++) { if (d <= seg[i] || i === seg.length - 1) { const k = seg[i] ? d / seg[i] : 0; return [line[i][0] + (line[i + 1][0] - line[i][0]) * k, line[i][1] + (line[i + 1][1] - line[i][1]) * k]; } d -= seg[i]; }
       return line[0];
     };
-    // (the map's picture, its pixels read once (tools/build-kamurocho-map.py's), and its points on the screen)
+    // (the map's picture, as data (data/kamurocho-map.js, tools/build-kamurocho-map.py's: a page opened from its file
+    // can't read an image's pixels), and its points on the screen)
     const Pic = K.map.picture, T = ([x, y]) => [Pic.at[0] + (x - Pic.crop[0]) * Pic.scale, Pic.at[1] + (y - Pic.crop[1]) * Pic.scale];
-    if (!realmMapPixels) {
-      const img = await new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = Pic.image; });
-      if (img) { const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; const g = c.getContext("2d"); g.drawImage(img, 0, 0); realmMapPixels = g.getImageData(0, 0, img.width, img.height); }
-    }
     const draw = (blink) => {
       const sf = GbaMenus.Surface(), W = [248, 248, 248], INK = [36, 32, 52], ROAD = [62, 64, 74];
       sf.fill(0, 0, 240, 160, INK);
-      if (realmMapPixels) {
-        const { width: pw, height: ph, data } = realmMapPixels;
-        for (let y = 0; y < ph; y++) for (let x = 0; x < pw; x++) { const i = (y * pw + x) * 4; if (data[i + 3] > 128) sf.put(Pic.at[0] + x, Pic.at[1] + y, [data[i], data[i + 1], data[i + 2]]); }
-      }
+      const MP = window.KAMUROCHO_MAP_PICTURE;
+      if (MP) MP.rows.forEach((row, y) => { for (let x = 0; x < row.length; x++) if (row[x] !== ".") sf.put(Pic.at[0] + x, Pic.at[1] + y, MP.colours[row[x]]); });
       const road = (line, w, col) => {
         const pts = line.map(T);
         for (let i = 1; i < pts.length; i++) {
