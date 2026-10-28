@@ -3645,12 +3645,12 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   through its door (every convenience store on the street can be gone into; Poppo's the one). **Serena's Backlot**:
   down the passage beside Serena's door, the yard behind the bar, its manhole cover on the asphalt. **Under the
   Street**: down that manhole, a storm drain where the Time Machine stands. And the rest of Yakuza 0's Kamurocho:
-  **Taihei Boulevard** along the south (Poppo, a pachinko hall, the yakiniku place up its steps, the gyudon place; and
+  **Taihei Boulevard** across the middle (the gate, a pachinko hall, the yakiniku place up its steps, the gyudon place; and
   its wide road below the pavement, a scene 640 high (`height`) so the camera pans down as you walk out onto it: two
   lanes each way in the street's dithered asphalt, worn dashes, a zebra crossing at the gate, the far kerb's guard
-  rail), **Showa Street** off its west end (a discount store, sushi, a mahjong parlour, a real estate office),
-  the red gate of **Tenkaichi Street** off it (ramen, yakiniku, Smile Burger, the corner of Nakamichi),
-  **Nakamichi Street** across the middle (a coffee shop, the hostess club, a bar, a pawn shop), **Pink Street**'s
+  rail), **Showa Street** along the south (a discount store, sushi, a mahjong parlour, a real estate office),
+  the red gate of **Tenkaichi Street** off Taihei (ramen, yakiniku, Smile Burger, the way into Nakamichi Alley),
+  **Nakamichi Street** beside it (a coffee shop, the hostess club, a bar, a pawn shop), **Pink Street**'s
   cabaret, host club, Club Moon and lounge in pink neon, the **Champion District**'s lanes of tiny bars under their
   wires, **Theater Square** with the Kamuro Cinema and the Kamuro Theater's arcade and marquee, **Senryo Avenue**
   along the east (a bank, a game centre, a pharmacy, a clinic, the bus stop), the **Hotel District**'s love hotels
@@ -3852,8 +3852,15 @@ taken from a Dragon Quest cartridge.
   any other box, an empty one too; you always fight), **Points** (stat points to put in), and at the Time Machine
   **Leave** (to wait there) or, on an empty box, **Bring** (one who waits there). **Rest** at the Time Machine heals
   everyone. Saved as `flags.realmParty[realm]` = { party, reserve, stored, items }.
-- **The map** (the start menu's MAP in Kamurocho; `KAMUROCHO_STREET.map`): this game's own, drawn in Yakuza 0's
-  night-blue way from how its streets join, each named; the one you're on lit, you a blinking mark along it.
+- **The map** (the start menu's MAP in Kamurocho; `KAMUROCHO_STREET.map`): Yakuza 0's, laid out from a picture of
+  its map: the grey town and its purple buildings, its streets dark through it, West Park blue at the top, numbers
+  1-18 on it and their names down the side (Tenkaichi Street to Pink Alley); the street you're on lit in yellow
+  (its name too), you a blinking mark along it, a red flag where the story's headed. The streets join as that map
+  has them: Taihei Boulevard across the middle; Tenkaichi, Nakamichi and Pink Street south off it to Showa Street,
+  Nakamichi Alley between the first two; Theater Square, the Kamuro Shopping Area (the street) and the Empty Lot
+  north of it; Pink Street on north to Shichifuku Street, the Champion District off it; Senryo Avenue up the east,
+  Theater Alley up the west, Shichifuku Street across the top and the Hotel District above it. Every turning has
+  its board over it, naming where it goes.
 - **Pokémon out of their realm**: at the Kamurocho Time Machine, **Pokémon** brings one of your party Pokémon into
   the realm's party (as anyone joins: fighting, reserve or the Time Machine), or sends one back. It
   fights by the Ultimax system's rules (`Ultimax.pokemon` in `engine/battle.js`):
