@@ -22,7 +22,7 @@
 # (It needs only what's committed; run tools/build-kamurocho-sok.py first if those pictures change.)
 #
 # Writes assets/kamurocho/poppo.png (800x480), backlot.png (640x480), sewer.png (640x480), heroine.png (760x480),
-# limo.png and manhole.png.
+# limo.png and manhole.png; and the story's offices, dojima.png, kazama.png and toko.png (760x480).
 import os, random
 from PIL import Image, ImageDraw, ImageFilter
 
@@ -358,6 +358,61 @@ def heroine():
     im.convert('RGB').save(os.path.join(K, 'heroine.png'), optimize=True)
     print('Heroine: %dx%d' % (HEROINE_W, H))
 
+# The story's offices (ui/game.js, Yakuza 0's first chapter): a yakuza family's office, or a loan company's, side on,
+# in the 480-high frame: the door at the left, the back wall's panels, the window's blinds, the family's crest and its
+# scroll over the boss's desk, black leather sofas round a low table, a kamidana shelf; the floor's boards. `crest`:
+# the family's mon on the wall; `files`: a loan office's filing cabinets and a counter instead of the sofas.
+OFFICE_W = 760
+def office(name, wall, trim, floorc, crest=True, files=False, seed=51):
+    rnd = random.Random(seed)
+    im = Image.new('RGBA', (OFFICE_W, H), (0, 0, 0, 255)); d = ImageDraw.Draw(im)
+    top, floor = 250, FLOOR_Y
+    for y in range(top, floor):
+        d.line((0, y, OFFICE_W, y), fill=shade(wall, 0.85 - 0.3 * (y - top) / (floor - top)))
+    for x in range(0, OFFICE_W, 40): d.line((x, top, x, floor), fill=shade(wall, 0.55))
+    d.rectangle((0, floor - 40, OFFICE_W, floor - 36), fill=trim)                     # (the dado rail)
+    d.rectangle((0, top - 12, OFFICE_W, top), fill=shade(wall, 0.35))
+    for x in range(30, OFFICE_W, 150): d.rectangle((x, top - 10, x + 40, top - 6), fill=(230, 230, 200))   # (the lights)
+    # the door
+    d.rectangle((12, 296, 92, floor), fill=shade(trim, 0.5)); d.rectangle((18, 302, 86, floor), fill=trim)
+    d.rectangle((74, 352, 80, 358), fill=(230, 200, 120))
+    # the window and its blinds, the night outside
+    d.rectangle((120, 272, 250, 362), fill=(20, 20, 28))
+    for y in range(276, 360, 5): d.line((124, y, 246, y), fill=(150, 150, 160))
+    for _ in range(14): x, y = rnd.randrange(126, 244), rnd.randrange(278, 358); d.point((x, y), fill=rnd.choice([(255, 120, 210), (255, 220, 120), (120, 220, 255)]))
+    if crest:
+        # the family's crest (a ring and a diamond in it), the scroll beside it, the kamidana shelf
+        cx = 520
+        d.ellipse((cx - 30, 268, cx + 30, 328), fill=(16, 12, 12)); d.ellipse((cx - 24, 274, cx + 24, 322), fill=(200, 170, 60))
+        d.polygon([(cx, 280), (cx + 16, 298), (cx, 316), (cx - 16, 298)], fill=(16, 12, 12))
+        d.rectangle((600, 262, 640, 352), fill=(236, 228, 204)); d.rectangle((598, 258, 642, 262), fill=(60, 40, 30)); d.rectangle((598, 352, 642, 356), fill=(60, 40, 30))
+        for y in range(272, 344, 14): d.rectangle((616, y, 624, y + 8), fill=(30, 26, 24))
+        d.rectangle((300, 268, 380, 274), fill=(150, 110, 70)); d.rectangle((316, 256, 364, 268), fill=(190, 150, 100))
+        d.rectangle((336, 258, 344, 268), fill=(220, 220, 220))
+        # the boss's desk and its chair
+        d.rectangle((470, floor - 26, 580, floor + 4), fill=(60, 36, 24)); d.rectangle((464, floor - 32, 586, floor - 26), fill=(96, 60, 40))
+        d.rounded_rectangle((500, floor - 64, 550, floor - 30), 6, fill=(20, 20, 22))
+        # the sofas and the low table
+        for x0 in (270, 640):
+            d.rounded_rectangle((x0, floor - 40, x0 + 100, floor + 4), 8, fill=(22, 22, 24)); d.rectangle((x0 + 6, floor - 14, x0 + 94, floor + 4), fill=(34, 34, 38))
+        d.rectangle((390, floor - 14, 450, floor - 8), fill=(80, 50, 34))
+    if files:
+        # a loan office: its filing cabinets, a counter with a ledger, a safe, a calendar
+        for x in range(290, 470, 44):
+            d.rectangle((x, floor - 80, x + 38, floor + 2), fill=(120, 126, 130))
+            for y in range(floor - 74, floor, 20): d.rectangle((x + 4, y, x + 34, y + 16), fill=(140, 146, 150)); d.rectangle((x + 15, y + 6, x + 23, y + 9), fill=(70, 70, 74))
+        d.rectangle((500, floor - 40, 700, floor + 4), fill=(90, 80, 70)); d.rectangle((496, floor - 46, 704, floor - 40), fill=(130, 116, 100))
+        d.rectangle((560, floor - 52, 600, floor - 46), fill=(220, 210, 170))
+        d.rectangle((710, floor - 60, 750, floor + 4), fill=(50, 54, 60)); d.ellipse((722, floor - 40, 738, floor - 24), fill=(150, 150, 160))
+        d.rectangle((560, 270, 610, 330), fill=(240, 240, 230)); d.rectangle((560, 270, 610, 280), fill=(200, 40, 40))
+        for y in range(286, 326, 8):
+            for x in range(564, 606, 8): d.point((x, y), fill=(60, 60, 60))
+    for y in range(floor + 2, H):
+        d.line((0, y, OFFICE_W, y), fill=shade(floorc, 0.9 - 0.4 * (y - floor) / (H - floor)))
+    for y in (floor + 16, floor + 36, floor + 60): d.line((0, y, OFFICE_W, y), fill=shade(floorc, 0.6))
+    im.convert('RGB').save(os.path.join(K, name + '.png'), optimize=True)
+    print('%s: %dx%d' % (name, OFFICE_W, H))
+
 # A loan shark's limousine, side on, for the street (the prologue's): long and black, its chrome, its windows dark,
 # the rear one down, its wheels.
 def limo():
@@ -381,3 +436,6 @@ if __name__ == '__main__':
     sewer()
     heroine()
     limo()
+    office('dojima', (70, 20, 20), (110, 60, 40), (60, 40, 30), seed=51)
+    office('kazama', (84, 64, 40), (120, 84, 50), (70, 50, 34), seed=61)
+    office('toko', (90, 96, 92), (110, 110, 100), (80, 80, 76), crest=False, files=True, seed=71)

@@ -7382,10 +7382,11 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     // (every scene reached from the sewer, and back; the gangs' foes each with a walk if it's said to have one, and
     // something to say; no fights off the streets)
     const reach = (from) => { const seen = new Set([from]), todo = [from]; while (todo.length) for (const e of K.scenes[todo.pop()].exits || []) if (!seen.has(e.to)) { seen.add(e.to); todo.push(e.to); } return seen; };
-    for (const id of Object.keys(K.scenes)) assert(reach(K.arrive.scene).has(id) && reach(id).has(K.arrive.scene), id + " is reached, and left");
+    // (a room only the story takes you to, `story`: left, and back to the sewer)
+    for (const id of Object.keys(K.scenes)) assert((K.scenes[id].story || reach(K.arrive.scene).has(id)) && reach(id).has(K.arrive.scene), id + " is reached, and left");
     for (const f of K.foeWalks) assert(here("assets/kamurocho/people/" + f + "_walk.png"), f + "'s walk");
     for (const [, foes] of window.REALM_ENCOUNTERS.Kamurocho.groups) assert(K.barks[foes[0]] && K.barks[foes[0]].length, foes[0] + "'s bark");
-    for (const id of ["alley", "backlot", "sewer", "poppo", "bacchus", "champion", "nakamichi-alley", "pink-alley", "theater-alley"]) assert(!K.scenes[id].encounters, id + ": no fights");
+    for (const id of ["alley", "backlot", "sewer", "poppo", "bacchus", "champion", "toko", "kazama", "dojima", "nakamichi-alley", "pink-alley", "theater-alley"]) assert(!K.scenes[id].encounters, id + ": no fights");
     for (const id of ["street", "taihei", "tenkaichi", "nakamichi", "pink", "theater", "showa", "senryo", "hotels", "shichifuku"]) assert(K.scenes[id].encounters, id + ": its gangs");
     // (each picture as wide and as high as its scene says; Taihei Boulevard's road below its pavement, walked on)
     const size = (f) => { const b = fs.readFileSync(require("path").join(__dirname, "..", f)); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };

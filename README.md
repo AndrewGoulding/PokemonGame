@@ -3684,15 +3684,23 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   Square (its pink neon on the square; inside, this game's own: the bar, a booth, the stage and its screen,
   `tools/build-kamurocho-insides.py`). Then you have yourself back, and Heroine's flagged on the Map
   (`flags.kamurochoWaypoint`) till you walk in; Kiryu and Nishiki are there, and Kiryu joins you there. Then the rest of
-  **Chapter 1, Bound by Oath**, Yakuza 0's story beats in this game's own words (`flags.y0Step`): at Heroine, Nishiki
-  toasts Kazama in prison and his dream of a family of his own; out in Theater Square, a Dojima man brings the news
-  that the man Kiryu collected from was found shot dead in the Empty Lot, and the street says Kiryu did it (Kiryu
-  joins you then if he hasn't); at the Empty Lot, the one tsubo every Tojo family wants for the Kamurocho
-  Revitalization Project, Dojima lieutenant **Daisaku Kuze** comes for him: a boss fight (`REALM_FOES.kuze`; lose and
-  he waits for you to come back). Beaten, Kuze gets back up and goes; Kiryu leaves the Dojima family to keep the
-  shame off Kazama, Nishiki begging him not to. Last, **Tachibana Real Estate** on Showa Street (its door a spot;
-  the Map flags it): Makoto Oda and Tetsu Tachibana, who want the Empty Lot's hidden owner found as much as Kiryu
-  does. To be continued.
+  **Chapter 1, Bound by Oath**, scene by scene in Yakuza 0's order, in this game's own words (`flags.y0Step`, each
+  next place flagged on the Map). The opening: a debt beaten out of a salaryman in the Empty Lot, the redevelopment
+  in the paper, Kiryu's cut (¥30,000) and a job turned down at the loan shark's limousine, a student shaken down
+  (a fight; Kiryu joins you), Nishiki. **Pink Street**: two drunks brawling (a fight) and Bacchus, the old fighter,
+  on investing in yourself. **Heroine**: the night's drinking, the Dojima family's ladder, the orphanage and Kazama.
+  Then 6:50 the next morning: the news (the man's been found shot in the Empty Lot), the pager, a payphone, a taxi
+  to the **Dojima Family HQ** and its three lieutenants, Kuze, Awano and Shibusawa (who want a confession and a
+  finger); outside, Bacchus, Kamoji the homeless boxer and **Bruno** (a fight). **Toko Credit**, over Nakamichi
+  Street: three thugs with bats (a fight), its president, who sent the man to the lot on Kuze's word, and Kuze's
+  fist and offer, refused. The **Kazama Family Office**, off Shichifuku Street: Kashiwagi on the lot's billion yen
+  and Kuze's play for Kazama's seat; Kiryu's choice to leave the family, and Kashiwagi's fist. Nishiki's drive back
+  to headquarters (the orphanage remembered) and the fight up through it: two floors of Dojima men, **Yoneda**, and
+  **Kuze** on the top floor (`REALM_FOES.bruno`, `yoneda`, `kuze`; lose one and Kiryu gets back up for another
+  go); Dojima's verdict, Kuze's finger, Kiryu out of the family. 11:28 that night, in the rain (`ui/street.js`'s
+  cutscene `rain`), Tachibana finds him. Chapter 2 begins at **Tachibana Real Estate** on Showa Street; to be
+  continued. The offices are this game's own (`tools/build-kamurocho-insides.py`'s `office`); the Dojima HQ is
+  outside Kamurocho, reached only by the story (`story`).
   **Karaoke** (Yakuza 0's, this game's way: `ui/karaoke.js`): in Heroine, on its stage, A, and pick a song (`data/karaoke-songs.js`, this game's own words and
   tunes: Kamurocho Nights, 24-Hour Champion and Dojima Blues). It plays on a GBA's kind of sound, its own sequencer
   (two pulse waves, a triangle bass and noise drums, through the game's volume), so every prompt falls on its note;

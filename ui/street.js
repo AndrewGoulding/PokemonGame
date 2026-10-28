@@ -390,6 +390,11 @@
     for (const a of Object.values(cs.actors)) list.push({ y: a.y, draw: () => drawPerson(a) });
     list.sort((a, b) => a.y - b.y).forEach((o) => o.draw());
     // (the black bars of a scene from the films, top and bottom; and the fade)
+    // (rain, falling slant across it all: `rain`)
+    if (cs.rain) {
+      g.fillStyle = "rgba(190,200,230,0.55)";
+      for (let k = 0; k < 90; k++) { const x = (k * 53 + t * 3) % (W + 40) - 20, y = (k * 97 + t * 9) % H; for (let j = 0; j < 6; j++) g.fillRect(x - j, y + j * 2, 1, 2); }
+    }
     g.fillStyle = "#000"; g.fillRect(0, 0, W, 14); g.fillRect(0, H - 14, W, 14);
     if (cs.dark > 0) { g.fillStyle = "rgba(0,0,0," + Math.min(1, cs.dark) + ")"; g.fillRect(0, 0, W, H); }
   }
@@ -432,6 +437,7 @@
       else if (st.pan) { const v = st.speed || 2; await until(() => { const dx = st.pan[0] - cs.cam[0], dy = st.pan[1] - cs.cam[1], d = Math.hypot(dx, dy); if (d <= v) { cs.cam = st.pan.slice(); return true; } cs.cam = [cs.cam[0] + dx / d * v, cs.cam[1] + dy / d * v]; return false; }); }
       else if (st.say) { await opts.say(st.say); window.Screen.say(""); }
       else if (st.hit) { cs.shake = 16; if (window.GameAudio) window.GameAudio.se("se_m_comet_punch"); await until(() => cs.shake <= 0); }
+      else if ("rain" in st) cs.rain = st.rain;
       else if (st.wait) { let n = st.wait; await until(() => --n <= 0); }
       else if (st.fade) { const to = st.fade === "out" ? 1 : 0; await until(() => { cs.dark += to ? 0.05 : -0.05; if ((to && cs.dark >= 1) || (!to && cs.dark <= 0)) { cs.dark = to; return true; } return false; }); }
     }

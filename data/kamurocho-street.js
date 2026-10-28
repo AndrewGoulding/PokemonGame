@@ -68,7 +68,7 @@ window.KAMUROCHO_STREET = {
       champion: { line: [[314, 226], [340, 226], [340, 208], [358, 208], [358, 226], [368, 226]], w: 1 },
       "nakamichi-alley": { line: [[142, 338], [170, 338], [170, 322], [197, 322]], w: 1 },
       "pink-alley": { line: [[306, 344], [368, 344]], w: 1 },
-      heroine: { at: ["theater", 0.94] }, tachibana: { at: ["showa", 0.94], title: "Tachibana Real Estate" }, poppo: { at: ["street", 0.24] }, backlot: { at: ["street", 0.17] }, sewer: { at: ["street", 0.17] }, bacchus: { at: ["street", 0.97] }
+      heroine: { at: ["theater", 0.94] }, toko: { at: ["nakamichi", 0.54] }, kazama: { at: ["shichifuku", 0.47] }, tachibana: { at: ["showa", 0.94], title: "Tachibana Real Estate" }, poppo: { at: ["street", 0.24] }, backlot: { at: ["street", 0.17] }, sewer: { at: ["street", 0.17] }, bacchus: { at: ["street", 0.97] }
     }
   },
   scenes: {
@@ -191,7 +191,8 @@ window.KAMUROCHO_STREET = {
       floor: [[0, 410], [1400, 410], [1400, 470], [0, 470]],
       exits: [{ edge: "left", to: "taihei", x: 800, y: 440, facing: "down" },
         { edge: "right", to: "showa", x: 374, y: 440, facing: "down" },
-        { spot: [460, 660, 410, 426], to: "nakamichi-alley", x: 770, y: 440, facing: "left", text: "Nakamichi Alley" }],
+        { spot: [460, 660, 410, 426], to: "nakamichi-alley", x: 770, y: 440, facing: "left", text: "Nakamichi Alley" },
+        { spot: [690, 820, 410, 426], walk: "up", to: "toko", x: 60, y: 432, facing: "right", text: "Toko Credit" }],
       people: [
         { script: "Kamurocho_Regular", sprite: "salaryman_idle", walk: "salaryman_idle_walk", range: 70, x: 140, y: 440, face: "right",
           text: ["The coffee at Alps is awful.\nI come every night anyway."] },
@@ -327,7 +328,8 @@ window.KAMUROCHO_STREET = {
         { edge: "right", to: "senryo", x: 1370, y: 440, facing: "left" },
         { spot: [180, 264, 410, 426], to: "hotels", x: 30, y: 440, facing: "right", text: "Hotel District" },
         { spot: [438, 563, 410, 426], to: "theater", x: 900, y: 440, facing: "down", text: "Theater Square" },
-        { spot: [989, 1194, 410, 426], to: "pink", x: 1410, y: 440, facing: "left", text: "Pink Street" }],
+        { spot: [989, 1194, 410, 426], to: "pink", x: 1410, y: 440, facing: "left", text: "Pink Street" },
+        { spot: [590, 720, 410, 426], walk: "up", to: "kazama", x: 60, y: 432, facing: "right", text: "Kazama Family Office" }],
       people: [
         { script: "Kamurocho_Oden", sprite: "loiterer", x: 120, y: 418, face: "right",
           text: ["Oden on a cold night.\nNothing better.", "The daikon's been simmering\nsince this morning."] },
@@ -393,6 +395,25 @@ window.KAMUROCHO_STREET = {
         { script: "Kamurocho_Nishiki", sprite: "nishiki", x: 400, y: 446, face: "left",
           text: ["Nishiki: Akira Nishikiyama! Kiryu's\nsworn brother.", "Grab a mic! Nobody leaves\nHeroine without a song."] }
       ]
+    },
+    // (The story's offices (tools/build-kamurocho-insides.py's office): Toko Credit, the loan company up over Nakamichi
+    // Street; the Kazama family's office off Shichifuku Street; and the Dojima family's headquarters, outside
+    // Kamurocho: reached only by the story (`story`), by taxi, its door out onto Taihei Boulevard. No fights but the
+    // story's.)
+    toko: {
+      title: "Toko Credit", image: "assets/kamurocho/toko.png", width: 760,
+      floor: [[0, 414], [760, 414], [760, 470], [0, 470]],
+      exits: [{ spot: [12, 92, 414, 424], walk: "up", to: "nakamichi", x: 755, y: 430, facing: "down", text: "Door" }]
+    },
+    kazama: {
+      title: "Kazama Family Office", image: "assets/kamurocho/kazama.png", width: 760,
+      floor: [[0, 414], [760, 414], [760, 470], [0, 470]],
+      exits: [{ spot: [12, 92, 414, 424], walk: "up", to: "shichifuku", x: 655, y: 430, facing: "down", text: "Door" }]
+    },
+    dojima: {
+      title: "Dojima Family HQ", image: "assets/kamurocho/dojima.png", width: 760, story: true,
+      floor: [[0, 414], [760, 414], [760, 470], [0, 470]],
+      exits: [{ spot: [12, 92, 414, 424], walk: "up", to: "taihei", x: 790, y: 440, facing: "down", text: "Door" }]
     },
     bacchus: {
       title: "Bacchus", image: "assets/kamurocho/bacchus.png", width: 816,
