@@ -7,7 +7,7 @@
 //
 //   const r = await Karaoke.play(overlay, { song, frame, back })   // song: a KARAOKE_SONGS entry; back: an image
 //     // -> { score, rank, great, good, miss, combo } (or null: START to stop)
-// The buttons: A (Z), B (X), ◀ and ▶; START stops.
+// The buttons: A (Z), B (X), ◀ and ▶; START pauses (go on, or stop singing).
 (function () {
   "use strict";
   const M = () => window.GbaMenus, G = () => window.GBA_MENUS;
@@ -116,8 +116,16 @@
         const r = dx * dx + dy * dy;
         if (r <= 49) s.put(x + dx, LANE_Y + dy, r > 36 ? INK : r < 9 && dx < 0 && dy < 0 ? [255, 255, 255] : c);
       }
-      const l = LABEL[p.button];
-      s.text(l, x - Math.floor(s.textWidth(l, "small") / 2), LANE_Y - 6, W, INK, "small");
+      // (A and B their letters; ◀ and ▶ the one arrow, drawn, turned round for ◀)
+      if (p.button === "left" || p.button === "right") {
+        const dir = p.button === "right" ? 1 : -1;
+        for (let k = 0; k <= 4; k++) for (let j = -(4 - k); j <= 4 - k; j++) {
+          s.put(x + dir * (k - 1) + 1, LANE_Y + j + 1, INK); s.put(x + dir * (k - 1), LANE_Y + j, W);
+        }
+      } else {
+        const l = LABEL[p.button];
+        s.text(l, x - Math.floor(s.textWidth(l, "small") / 2), LANE_Y - 6, W, INK, "small");
+      }
     }
     if (st.judge && st.judge.t > 0) { const j = st.judge; s.text(j.text, RING - 16, LANE_Y - 24, j.col, INK, "small"); }
     // (the score)
@@ -125,6 +133,11 @@
     s.text(o.song.title, 10, 137, INK, SH, "small");
     const sc = "SCORE " + String(Math.round(st.points)).padStart(3, " ") + (st.combo > 1 ? "  COMBO " + st.combo : "");
     s.text(sc, 230 - s.textWidth(sc, "small"), 137, [56, 120, 200], SH, "small");
+    if (st.pause) {
+      s.fill(80, 40, 80, 52, [0, 0, 0]); s.frame(frame, fp, 11, 6, 8, 5); s.fill(88, 48, 64, 40, W);
+      s.text("PAUSED", 120 - s.textWidth("PAUSED") / 2, 46, [208, 48, 48], SH);
+      ["Resume", "Quit"].forEach((t, k) => s.text((st.pause.at === k ? "▶" : "  ") + t, 96, 60 + k * 13, INK, SH, "small"));
+    }
     if (st.done) {
       s.fill(48, 30, 144, 60, [0, 0, 0]); s.frame(frame, fp, 7, 5, 16, 6); s.fill(56, 40, 128, 48, W);
       s.text(st.done.points + " POINTS", 120 - s.textWidth(st.done.points + " POINTS") / 2, 42, INK, SH);
@@ -135,7 +148,12 @@
     // (the box's screen: the street outside, dimmed, its words over it)
     const g = canvas.getContext("2d"), k = canvas.width / 240;
     g.save(); g.scale(k, k); g.imageSmoothingEnabled = false;
-    if (st.done) { g.restore(); return; }   // (the score over the dark screen)
+    if (st.pause) {
+      s.fill(80, 40, 80, 52, [0, 0, 0]); s.frame(frame, fp, 11, 6, 8, 5); s.fill(88, 48, 64, 40, W);
+      s.text("PAUSED", 120 - s.textWidth("PAUSED") / 2, 46, [208, 48, 48], SH);
+      ["Resume", "Quit"].forEach((t, k) => s.text((st.pause.at === k ? "▶" : "  ") + t, 96, 60 + k * 13, INK, SH, "small"));
+    }
+    if (st.done || st.pause) { g.restore(); return; }   // (the score, or the pause, over the dark screen)
     if (o.back && o.back.complete && o.back.naturalWidth) {
       const pan = ((now / Math.max(1, C.length)) * (o.back.naturalWidth - 1000)) || 0;
       g.globalAlpha = 0.55; g.drawImage(o.back, Math.max(0, pan), 200, 600, 240, 8, 8, 224, 88); g.globalAlpha = 1;
@@ -167,7 +185,10 @@
     const total = C.prompts.length, per = 100 / Math.max(1, total);
     const out = band();
     if (window.GameAudio) window.GameAudio.music(null);
-    const clock = out ? () => out.ctx.currentTime : () => performance.now() / 1000;
+    // (paused: the sound stopped where it is (its context suspended, its clock with it), or the clock held)
+    let held = 0, heldAt = null;
+    const raw = out ? () => out.ctx.currentTime : () => performance.now() / 1000;
+    const clock = () => (heldAt != null ? heldAt : raw()) - held;
     const t0 = clock() + 1.2;
     const stop = out ? schedule(out, o.song, C, t0) : () => {};
     canvas.classList.remove("hidden");
@@ -175,7 +196,18 @@
     const KEY = { z: "a", Z: "a", " ": "a", Enter: "a", x: "b", X: "b", ArrowLeft: "left", ArrowRight: "right" };
     let quit = false;
     const onKey = (e) => {
-      if (["Escape", "m", "M", "Start"].includes(e.key)) { quit = true; e.preventDefault(); e.stopImmediatePropagation(); return; }
+      const start = ["Escape", "m", "M", "Start"].includes(e.key);
+      if (start || st.pause) {
+        e.preventDefault(); e.stopImmediatePropagation();
+        if (e.repeat) return;
+        // (START pauses, and again goes on; paused, ▲▼ and A: go on, or stop singing)
+        const go = () => { st.pause = null; if (out) out.ctx.resume(); else { held += raw() - heldAt; } heldAt = null; };
+        if (!st.pause) { if (start) { st.pause = { at: 0 }; if (out) out.ctx.suspend(); else heldAt = raw(); } return; }
+        if (start || ["x", "X"].includes(e.key)) go();
+        else if (e.key === "ArrowUp" || e.key === "ArrowDown") st.pause.at ^= 1;
+        else if (["z", "Z", " ", "Enter"].includes(e.key)) { if (st.pause.at) { quit = true; st.pause = null; if (out) out.ctx.resume(); } else go(); }
+        return;
+      }
       const b = KEY[e.key];
       if (!b || e.repeat) return;
       e.preventDefault(); e.stopImmediatePropagation();
@@ -194,6 +226,7 @@
     await new Promise((resolve) => {
       const tick = () => {
         const now = clock() - t0;
+        if (st.pause) { draw(canvas, o, C, now, st); requestAnimationFrame(tick); return; }
         for (const p of C.prompts) if (!p.hit && now - p.t > GOOD) { p.hit = "miss"; st.miss++; st.combo = 0; judge("MISS", [160, 160, 176]); }
         if (st.judge) st.judge.t--;
         if (st.flash) st.flash--;

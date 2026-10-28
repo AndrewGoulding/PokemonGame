@@ -173,9 +173,15 @@ ITEMS = {
     'bento': bento, 'pudding': pudding,
 }
 
+def centred(im):
+    # (in the middle of its 24x24, as the shop's and the Bag's icon box shows it)
+    box = im.getbbox(); part = im.crop(box); out = Image.new('RGBA', im.size, (0, 0, 0, 0))
+    out.alpha_composite(part, ((im.width - part.width) // 2, (im.height - part.height) // 2))
+    return out
+
 def main():
     os.makedirs(OUT, exist_ok=True)
-    for name, draw in ITEMS.items(): outline(draw()).save(os.path.join(OUT, name + '.png'), optimize=True)
+    for name, draw in ITEMS.items(): centred(outline(draw())).save(os.path.join(OUT, name + '.png'), optimize=True)
     print('%d items' % len(ITEMS))
 
 main()

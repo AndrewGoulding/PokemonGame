@@ -62,9 +62,8 @@
       s.text("MP", x + 34, y + 21, [56, 120, 200], SHADE, "small"); bar(s, x + 46, y + 24, 28, m.mp, m.maxMp, MPC); right(m.mp + "/" + m.maxMp, y + 21);
       pics.push([m, x + 1, y - 1]);
     }
-    // (the help along the bottom, or what you're doing)
-    s.fill(0, 152, 240, 8, [40, 64, 88]);
-    s.text(swapFrom != null ? "Switch with whom?  {A_BUTTON} OK  {B_BUTTON} Cancel" : "{A_BUTTON} Choose  {B_BUTTON} Back", 4, 151, WHITE, [24, 40, 56], "small", G().palettes.std2);
+    // (what you're doing, while you pick whom to switch with)
+    if (swapFrom != null) { s.fill(0, 152, 240, 8, [40, 64, 88]); s.text("Switch with whom?", 4, 151, WHITE, [24, 40, 56], "small"); }
     if (menu) {
       const w = 9, h = menu.items.length * 2, left = 29 - w, top = 19 - h;
       s.frame(frame, fp, left, top, w, h);
@@ -132,8 +131,7 @@
         if (info) s.text(info, 230 - s.textWidth(info, "small"), 76 + k * 11, [120, 120, 120], SHADE, "small");
       });
       if (!S.skills.length) s.text("None yet", 130, 76, [176, 176, 176], SHADE, "small");
-      s.fill(0, 152, 240, 8, [40, 64, 88]);
-      s.text("{B_BUTTON} Back" + (S.skills.length > 6 ? "  ▲▼ Skills" : ""), 4, 151, WHITE, [24, 40, 56], "small", G().palettes.std2);
+      if (S.skills.length > 6) { s.fill(0, 152, 240, 8, [40, 64, 88]); s.text("▲▼ Skills", 4, 151, WHITE, [24, 40, 56], "small"); }
       s.show(canvas);
       const g = canvas.getContext("2d"), k = canvas.width / 240;
       g.save(); g.imageSmoothingEnabled = false; g.scale(k, k); fit(g, m.icon, m.rect, 10, 9, 32, 32); g.restore();

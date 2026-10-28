@@ -3690,7 +3690,7 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   the words run over the street on the box's screen, lit as they're sung; and for each syllable sung on the beat, its
   button (A, B, ◀ or ▶) slides along the lane to the ring: press it there for GREAT or GOOD (a wrong one, or none, is a
   miss). The score's out of 100 with a rank (S to D); each song's best is kept (`flags.karaoke`), and the first 90
-  on each wins a Staminan Spark. START stops. The floor you can walk on is each scene's polygon (along the
+  on each wins a Staminan Spark. START pauses (Resume or Quit). The floor you can walk on is each scene's polygon (along the
   slope, you go up or down it as you walk). Its people stand about at ease or walk up and down the pavement, each
   within a stretch of their own, with a walk of four frames out of Streets of Kamurocho's atlas (stopping to face
   you when you talk to them). On the six streets (not the alley, the backlot, the drain, the bars, the shops or
