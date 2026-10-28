@@ -10315,7 +10315,7 @@
   // Yakuza 0's first chapter, Bound by Oath, scene by scene as the game plays it, in this game's own words (ui/street.js's
   // cutscenes, and its fights). Its step: flags.y0Step, each next place flagged on the Map (flags.kamurochoWaypoint):
   //   (none)     the first time out onto the street: the beating in the Empty Lot and the redevelopment in the paper;
-  //              the loan shark's limousine, Kiryu's cut and a job turned down; a student shaken down (a fight); Nishiki
+  //              the loan shark's limousine (Toko Credit's president), Kiryu's cut and a job turned down; a student shaken down (a fight); Nishiki
   //   "pink"     Pink Street: two drunks brawling (a fight), and Bacchus, the old fighter, on investing in yourself
   //   "heroine"  Heroine: the night's drinking and singing, the Dojima family's ladder, the orphanage and Kazama
   //   "drinking" out into Theater Square: 6:50 the next morning, the news, the pager, the payphone, a taxi; the three
@@ -10365,9 +10365,9 @@
       { fade: "in" },
       { walk: "kiryu", to: [2724, 460] },
       { face: "kiryu", dir: "left" },
-      { say: ["The limousine's back window rolls\ndown. Kiryu hands the money in.", "Loan shark: Every yen of it. You\nnever let me down, Kiryu.",
+      { say: ["The limousine's back window rolls\ndown. Kiryu hands the money in.", "Toko Credit's president: Every yen\nof it. You never let me down, Kiryu.",
         "Here, your cut. And a little extra,\nfor being quick about it.", "You know, I could use a man like\nyou full-time. Name your price.",
-        "Kiryu: Thanks, but I've got a\nfamily already.", "Loan shark: The Dojima family's\nlucky, then. Have a good night."] },
+        "Kiryu: Thanks, but I've got a\nfamily already.", "President: The Dojima family's\nlucky, then. Have a good night."] },
       { move: "limo", to: 2300, speed: 3 },
       { gone: "limo" }
     ], { say });
@@ -10522,7 +10522,7 @@
     await say(["Toko Credit, over Nakamichi Street,\nis marked on your Map."]);
     await persist();
   }
-  // Toko Credit: three thugs with bats at the door; upstairs, its president, who sent the dead man to the lot on
+  // Toko Credit: three thugs with bats at the door; upstairs, its president (the loan shark of the night before), who sent the dead man to the lot on
   // Kuze's word; and Kuze himself, with a fist and an offer.
   async function kamurochoToko() {
     const f = player.flags;
@@ -10533,7 +10533,7 @@
       { actor: "kiryu", ...Y0_KIRYU, x: 60, y: 446, face: "right" },
       { actor: "president", sprite: "president", x: 600, y: 430, face: "left" },
       { walk: "kiryu", to: [440, 446] },
-      { say: ["President: H-hold on! I just run a\nloan office!", "Kiryu: The man who died in the lot.\nYou sent him there. Why?",
+      { say: ["President: K-Kiryu?! You collected\nfor me only last night! Why are you\nbreaking down my door?", "Kiryu: The man I collected from is\ndead. You sent him to the lot. Why?",
         "President: I was told to! Kuze said\nsend him to the Empty Lot, and keep\nmy mouth shut!"] },
       { actor: "kuze", sprite: "kuze", walk: "kuze_walk", x: 20, y: 446, face: "right" },
       { walk: "kuze", to: [380, 446], speed: 1.8 },

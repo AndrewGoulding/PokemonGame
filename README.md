@@ -3686,7 +3686,7 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   (`flags.kamurochoWaypoint`) till you walk in; Kiryu and Nishiki are there, and Kiryu joins you there. Then the rest of
   **Chapter 1, Bound by Oath**, scene by scene in Yakuza 0's order, in this game's own words (`flags.y0Step`, each
   next place flagged on the Map). The opening: a debt beaten out of a salaryman in the Empty Lot, the redevelopment
-  in the paper, Kiryu's cut (¥30,000) and a job turned down at the loan shark's limousine, a student shaken down
+  in the paper, Kiryu's cut (¥30,000) and a job turned down at the loan shark's limousine (Toko Credit's president), a student shaken down
   (a fight; Kiryu joins you), Nishiki. **Pink Street**: two drunks brawling (a fight) and Bacchus, the old fighter,
   on investing in yourself. **Heroine**: the night's drinking, the Dojima family's ladder, the orphanage and Kazama.
   Then 6:50 the next morning: the news (the man's been found shot in the Empty Lot), the pager, a payphone, a taxi
