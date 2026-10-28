@@ -22,13 +22,13 @@
 #                       Square, Nakamichi Street, the Kamuro Shopping Area and Pink Street, a pachinko hall
 #   Tenkaichi Street    south from the gate to Showa Street, its eating places, the way into Nakamichi Alley
 #   Nakamichi Street    beside it: a hostess club, bars, the way into Nakamichi Alley
-#   Pink Street         north from Showa Street across Taihei to Shichifuku: its clubs in pink neon, Pink Alley,
-#                       the lane to the Champion District
+#   Pink Street         north from Showa Street across Taihei to Shichifuku: its clubs in pink neon, Pink Alley
 #   Champion District   lanes of bars no bigger than a closet, wires overhead, their lanterns and signboards
 #   Theater Square      the open square in the north: the Kamuro Theater's arcade and marquee, its lamps
 #   Showa Street        along the south: sushi, a discount store, mahjong, real estate; the feet of Nakamichi
 #                       and Pink Street
-#   Senryo Avenue       along the east: a bank, Pink Alley, a game centre, Taihei's end, a pharmacy, a clinic
+#   Senryo Avenue       along the east: a bank, Pink Alley, a game centre, Taihei's end, a pharmacy, the Champion
+#                       District, a clinic
 #   Hotel District      love hotels in bulbs, violet light, a car park
 #   Shichifuku Street   across the north: its sign, oden, the Hotel District, an izakaya, the lane to Theater
 #                       Square, a pawn shop, ramen, Pink Street's top, the construction site
@@ -342,7 +342,8 @@ def pink(P, atlas):
     turn(S, 'pink', tint(P['taxi'], (255, 120, 210), 0.3), 'TAIHEI BLVD', *BLUE)
     S.bay(pinkify(P['serena']))
     S.x += 6
-    turn(S, 'pink', P['reddoor'], 'CHAMPION', (30, 10, 10), (255, 200, 120), at=262, gap=6)
+    x = S.bay(P['reddoor'], 6)     # (a snack bar's back door: the Champion District's off Senryo Avenue)
+    S.at(neon(board(atlas, 'SNACK', (30, 10, 10), (255, 200, 120), 1), (255, 140, 80)), x + 36, 262)
     S.fill(pinkify(P['block']), mirror(pinkify(P['steak'])))
     S.at(neon(board(atlas, 'SHICHIFUKU', *GOLD, 1), GOLD[1]), 1340, 300)
     for nx in (240, 560, 760, 1100, 1300):
@@ -447,6 +448,8 @@ def senryo(P, atlas):
     turn(S, 'senryo', P['taxi'], 'TAIHEI BLVD', *BLUE)
     x = S.bay(hue(P['fujibashi'], 80, 1.0))
     S.at(board(atlas, 'PHARMACY', (20, 90, 60), (255, 255, 255), 2), x + 18, 266)
+    S.x += 6
+    turn(S, 'senryo', P['reddoor'], 'CHAMPION', (30, 10, 10), (255, 200, 120), at=262, gap=6)   # (the lanes of the Champion District)
     x = S.bay(hue(P['serena'], 140, 0.7, 1.1))
     S.at(board(atlas, 'CLINIC', (240, 240, 240), (200, 30, 30), 1), x + 40, 278)
     S.fill(mirror(hue(P['arcade'], 140, 0.6, 0.8)), P['block'], hue(P['shadow'], 140, 0.6))

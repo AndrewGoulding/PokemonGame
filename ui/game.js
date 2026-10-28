@@ -10163,10 +10163,19 @@
   // Kamurocho's map (the start menu's MAP; KAMUROCHO_STREET.map), as Yakuza 0's: the grey town, its streets dark
   // through it, West Park blue, its numbers and their names down the side; the street you're on lit, and you a
   // blinking mark along it as far as you've walked; a red flag where the story's headed. A or B closes it.
+  let realmMapPixels = null;
   async function realmMap() {
     const K = window.KAMUROCHO_STREET, Mp = K.map.scenes, ov = $("#overlay"), loc = player.location.street || K.arrive;
     const here = Mp[loc.scene] && Mp[loc.scene].at ? Mp[loc.scene].at[0] : loc.scene;
-    const frac = Mp[loc.scene] && Mp[loc.scene].at ? Mp[loc.scene].at[1] : Math.max(0, Math.min(1, loc.x / ((K.scenes[loc.scene] || {}).width || 1)));
+    // (how far along its line: by its `stops` if it has them, else as far as across its picture)
+    const frac = (() => {
+      if (Mp[loc.scene] && Mp[loc.scene].at) return Mp[loc.scene].at[1];
+      const t = Math.max(0, Math.min(1, loc.x / ((K.scenes[loc.scene] || {}).width || 1))), st = (Mp[loc.scene] || {}).stops;
+      if (!st) return t;
+      const x = t * K.scenes[loc.scene].width;
+      for (let i = 1; i < st.length; i++) if (x <= st[i][0] || i === st.length - 1) return st[i - 1][1] + (st[i][1] - st[i - 1][1]) * Math.max(0, Math.min(1, (x - st[i - 1][0]) / ((st[i][0] - st[i - 1][0]) || 1)));
+      return t;
+    })();
     // (a point that far along a line)
     const along = (line, t) => {
       const seg = line.slice(1).map((p, i) => Math.hypot(p[0] - line[i][0], p[1] - line[i][1])), total = seg.reduce((x, y) => x + y, 0);
@@ -10174,29 +10183,19 @@
       for (let i = 0; i < seg.length; i++) { if (d <= seg[i] || i === seg.length - 1) { const k = seg[i] ? d / seg[i] : 0; return [line[i][0] + (line[i + 1][0] - line[i][0]) * k, line[i][1] + (line[i + 1][1] - line[i][1]) * k]; } d -= seg[i]; }
       return line[0];
     };
-    // (Yakuza 0's map's points, on the screen: the town at the left, its legend down the right)
-    const T = ([x, y]) => [2 + (x - 60) * 0.43, 2 + (y - 45) * 0.43];
+    // (the map's picture, its pixels read once (tools/build-kamurocho-map.py's), and its points on the screen)
+    const Pic = K.map.picture, T = ([x, y]) => [Pic.at[0] + (x - Pic.crop[0]) * Pic.scale, Pic.at[1] + (y - Pic.crop[1]) * Pic.scale];
+    if (!realmMapPixels) {
+      const img = await new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = Pic.image; });
+      if (img) { const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; const g = c.getContext("2d"); g.drawImage(img, 0, 0); realmMapPixels = g.getImageData(0, 0, img.width, img.height); }
+    }
     const draw = (blink) => {
-      const sf = GbaMenus.Surface(), W = [248, 248, 248], INK = [36, 32, 52];
+      const sf = GbaMenus.Surface(), W = [248, 248, 248], INK = [36, 32, 52], ROAD = [62, 64, 74];
       sf.fill(0, 0, 240, 160, INK);
-      // (the town: its outline filled grey, the blocks' faint edges across it)
-      const poly = K.map.outline.map(T);
-      for (let y = 0; y < 160; y++) {
-        const xs = [];
-        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-          const [xi, yi] = poly[i], [xj, yj] = poly[j];
-          if ((yi > y + 0.5) !== (yj > y + 0.5)) xs.push(xi + (y + 0.5 - yi) * (xj - xi) / (yj - yi));
-        }
-        xs.sort((p, q) => p - q);
-        for (let k = 0; k + 1 < xs.length; k += 2) {
-          const x0 = Math.round(xs[k]), x1 = Math.round(xs[k + 1]);
-          sf.fill(x0, y, x1 - x0, 1, y % 7 === 3 ? [168, 168, 180] : [190, 190, 200]);
-          for (let x = x0 + ((y * 3) % 9); x < x1; x += 9) sf.put(x, y, [168, 168, 180]);
-        }
+      if (realmMapPixels) {
+        const { width: pw, height: ph, data } = realmMapPixels;
+        for (let y = 0; y < ph; y++) for (let x = 0; x < pw; x++) { const i = (y * pw + x) * 4; if (data[i + 3] > 128) sf.put(Pic.at[0] + x, Pic.at[1] + y, [data[i], data[i + 1], data[i + 2]]); }
       }
-      const rect = (r, col) => { const [x0, y0] = T([r[0], r[1]]), [x1, y1] = T([r[2], r[3]]); sf.fill(Math.round(x0), Math.round(y0), Math.round(x1 - x0), Math.round(y1 - y0), col); };
-      rect(K.map.park, [120, 200, 248]);
-      for (const r of K.map.buildings) rect(r, [176, 144, 220]);
       const road = (line, w, col) => {
         const pts = line.map(T);
         for (let i = 1; i < pts.length; i++) {
@@ -10204,27 +10203,22 @@
           for (let k = 0; k <= n; k++) { const x = Math.round(x0 + (x1 - x0) * k / n), y = Math.round(y0 + (y1 - y0) * k / n); sf.fill(x - (w >> 1), y - (w >> 1), w, w, col); }
         }
       };
-      // (Theater Square, the open square: paler, the fountain's ring at its middle)
-      for (const m of Object.values(Mp)) if (m.square) {
-        rect(m.square, [208, 208, 216]);
-        const [cx, cy] = T([(m.square[0] + m.square[2]) / 2, (m.square[1] + m.square[3]) / 2]).map(Math.round);
-        sf.fill(cx - 1, cy - 2, 3, 1, [140, 140, 156]); sf.fill(cx - 1, cy + 2, 3, 1, [140, 140, 156]); sf.fill(cx - 2, cy - 1, 1, 3, [140, 140, 156]); sf.fill(cx + 2, cy - 1, 1, 3, [140, 140, 156]);
-      }
-      for (const m of Object.values(Mp)) if (m.line) road(m.line, m.w + 2, [56, 56, 70]);
-      for (const [id, m] of Object.entries(Mp)) if (m.line) road(m.line, m.w, id === here ? [248, 200, 64] : [86, 86, 102]);
+      // (every street's road drawn over the picture again, so none's broken where its name was written; the one you're
+      // on lit)
+      for (const [id, m] of Object.entries(Mp)) if (m.line) road(m.line, m.w, id === here ? [248, 200, 64] : ROAD);
       // (the numbers on it, and their names down the side: where you are in yellow)
       K.map.legend.forEach(([n, name, id, at], k) => {
         const [x, y] = T(at).map(Math.round), t = String(n), on = id && id === here;
         sf.text(t, x - (sf.textWidth(t, "small") >> 1), y - 5, on ? [255, 224, 120] : W, INK, "small");
-        sf.text(t, 150 + (n < 10 ? 5 : 0), 1 + k * 8, on ? [255, 224, 120] : [200, 200, 220], INK, "small");
-        sf.text(name, 162, 1 + k * 8, on ? [255, 224, 120] : W, INK, "small");
+        sf.text(t, 138 + (n < 10 ? 5 : 0), 1 + k * 8, on ? [255, 224, 120] : [200, 200, 220], INK, "small");
+        sf.text(name, 150, 1 + k * 8, on ? [255, 224, 120] : W, INK, "small");
       });
       // (where the story's headed, Heroine: a red flag on it, its name along the bottom)
       const wp = player.flags.kamurochoWaypoint, wm = wp && Mp[wp];
       if (wm) {
         const [wx, wy] = T(wm.at ? along(Mp[wm.at[0]].line, wm.at[1]) : along(wm.line, 0.5)).map(Math.round);
         sf.fill(wx, wy - 12, 1, 12, [240, 240, 240]); sf.fill(wx + 1, wy - 12, 6, 4, [232, 48, 48]); sf.fill(wx + 1, wy - 8, 4, 1, [232, 48, 48]);
-        sf.text("\u25b6 " + ((K.scenes[wp] || {}).title || wm.title || wp), 150, 148, [255, 120, 120], INK, "small");
+        sf.text("\u25b6 " + ((K.scenes[wp] || {}).title || wm.title || wp), 138, 148, [255, 120, 120], INK, "small");
       }
       if (Mp[here] && Mp[here].line && blink) {
         const [x, y] = T(along(Mp[here].line, frac)).map(Math.round);

@@ -3892,15 +3892,18 @@ taken from a Dragon Quest cartridge.
   any other box, an empty one too; you always fight), **Points** (stat points to put in), and at the Time Machine
   **Leave** (to wait there) or, on an empty box, **Bring** (one who waits there). **Rest** at the Time Machine heals
   everyone. Saved as `flags.realmParty[realm]` = { party, reserve, stored, items }.
-- **The map** (the start menu's MAP in Kamurocho; `KAMUROCHO_STREET.map`): Yakuza 0's, laid out from a picture of
-  its map: the grey town and its purple buildings, its streets dark through it, West Park blue at the top, numbers
-  1-18 on it and their names down the side (Tenkaichi Street to Pink Alley); the street you're on lit in yellow
-  (its name too), you a blinking mark along it, a red flag where the story's headed. The streets join as that map
-  has them: Taihei Boulevard across the middle; Tenkaichi, Nakamichi and Pink Street south off it to Showa Street,
-  Nakamichi Alley between the first two; Theater Square, the Kamuro Shopping Area (the street) and the Empty Lot
-  north of it; Pink Street on north to Shichifuku Street, the Champion District off it; Senryo Avenue up the east,
-  Theater Alley up the west, Shichifuku Street across the top and the Hotel District above it. Every turning has
-  its board over it, naming where it goes.
+- **The map** (the start menu's MAP in Kamurocho; `KAMUROCHO_STREET.map`): the picture of Yakuza 0's map given for
+  the game (`assets/kamurocho/map-source.webp`), brought down to the screen by `tools/build-kamurocho-map.py` (each
+  pixel what most of the picture under it is: road, block, West Park, the coloured buildings; the names written on
+  it left out), every street's road drawn back over it; numbers 1-18 on it and their names down the side (Hotel
+  District to Pink Alley, West Park, Park Boulevard and Little Asia among them); the street you're on lit in yellow
+  (its name too), you a blinking mark along it (where a street's turnings aren't evenly spread, its `stops` say how
+  far along its line each is), a red flag where the story's headed. The streets join as that map has them: Taihei
+  Boulevard across the middle; Tenkaichi, Nakamichi and Pink Street south off it to Showa Street, Nakamichi Alley
+  between the first two; Theater Square, the Kamuro Shopping Area and the Empty Lot north of it; Pink Street on north
+  to Shichifuku Street; Senryo Avenue up the east, the Champion District's lanes off it; Theater Alley up the west,
+  Shichifuku Street across the top and the Hotel District above it. Every turning has its board over it, naming
+  where it goes.
 - **Pokémon out of their realm**: at the Kamurocho Time Machine, **Pokémon** brings one of your party Pokémon into
   the realm's party (as anyone joins: fighting, reserve or the Time Machine), or sends one back. It
   fights by the Ultimax system's rules (`Ultimax.pokemon` in `engine/battle.js`):
