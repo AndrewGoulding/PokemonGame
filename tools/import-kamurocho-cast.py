@@ -70,27 +70,39 @@ def facing_right(im):
 STRIDE = 4   # (how far a foot goes forward or back in a step, in pixels)
 
 def steps(im):
-    # (a walk from one side-on frame: its legs, below the hip, split into the near leg and the far one at their
-    # middle, swung forward and back in turn, more the lower down (the foot most); the body a pixel up as the legs
-    # pass under it. Four frames: stride, pass, the other stride, pass.)
+    # (a walk from one side-on frame: its legs, below the hip, are one shape side on (the near leg over the far one),
+    # so a stride is two of that shape: the far leg swung back, a shade darker, behind; the near leg swung forward,
+    # in front; and the other stride the other way. As they pass, the legs as they stand and the body a pixel up.
+    # Four frames: stride, pass, the other stride, pass.)
     px = im.load(); w, h = im.size
     rows = [y for y in range(h) if any(px[x, y][3] for x in range(w))]
     top, bottom = rows[0], rows[-1]
-    hip = top + round((bottom - top) * 0.74)
-    xs = [x for y in range(hip, bottom + 1) for x in range(w) if px[x, y][3]]
-    mid = (min(xs) + max(xs)) / 2 if xs else w / 2
+    hip = top + round((bottom - top) * 0.8)     # (below the hands)
     out = []
     for swing, lift in ((STRIDE, 0), (0, 1), (-STRIDE, 0), (0, 1)):
         f = Image.new('RGBA', (w, h), (0, 0, 0, 0)); fp = f.load()
-        for y in range(h):
+        def leg(dx, dark):
+            for y in range(hip, h):
+                t = (y - hip + 1) / max(1, bottom - hip + 1)
+                for x in range(w):
+                    c = px[x, y]
+                    if not c[3]: continue
+                    nx = x + round(dx * t)
+                    k = dark if y > hip + 2 else 1.0      # (the far leg darker below the hem only)
+                    if 0 <= nx < w: fp[nx, y] = tuple(int(v * k) for v in c[:3]) + (c[3],)
+        if swing:
+            leg(-swing, 0.72)          # (the far leg, behind)
+            leg(swing, 1.0)            # (the near leg, in front)
+        else: leg(0, 1.0)
+        # (the body, a pixel up as the legs pass: its lowest row kept where it was too, so there's no gap over the legs)
+        for y in range(hip):
             for x in range(w):
                 c = px[x, y]
-                if not c[3]: continue
-                if y < hip: nx, ny = x, y - lift
-                else:
-                    t = (y - hip + 1) / max(1, bottom - hip + 1)
-                    nx, ny = x + round((swing if x >= mid else -swing) * t), y - (lift if y < bottom - 2 else 0)
-                if 0 <= nx < w and 0 <= ny < h and not fp[nx, ny][3]: fp[nx, ny] = c
+                if c[3] and 0 <= y - lift: fp[x, y - lift] = c
+        if lift:
+            for x in range(w):
+                c = px[x, hip - 1]
+                if c[3] and not fp[x, hip - 1][3]: fp[x, hip - 1] = c
         out.append(f)
     return out
 

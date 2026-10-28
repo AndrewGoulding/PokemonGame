@@ -3716,8 +3716,8 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   standing and walking, from its second sheet (`heroes.webp`), over Streets of Kamurocho's (their fighting stances in
   battle are still its own). The street's gangs wear the looks of its third sheet (`gangs.webp`): three suit thugs,
   seven street punks and five Yakuza grunts (`REALM_FOES`' `looks` for thug, punk and grunt), one picked for each
-  member of a gang as it sets out, and the same one in the fight; each one's walk is made from their side-on frame (`steps()`: their legs swung forward and back in turn, the
-  body a pixel up as they pass). Everyone else on its streets is in the same chibi style
+  member of a gang as it sets out, and the same one in the fight; each one's walk is made from their side-on frame (`steps()`: in a stride, their legs twice over, the far one
+  swung back a shade darker and the near one forward; as they pass, the body a pixel up). Everyone else on its streets is in the same chibi style
   (`tools/build-kamurocho-chibis.py`, after the import): the townsfolk and the other foes (the drunk, the knife punk,
   the host, the biker, Mr. Shakedown), each one of the sheet's passers-by in clothes of their own (jacket, shirt,
   trousers and hair recoloured, the shading kept) and a touch apiece (a drunk's red face, sunglasses, a knife, a
