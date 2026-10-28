@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Kamurocho's people from the sheets of them given for this game (assets/kamurocho/cast-sheet: cast.webp, the
 # story's cast; heroes.webp, Kiryu, Nishiki and Majima; each one's front, back, left and right, two frames apiece, on
-# black; gangs.webp, the street's gangs, a frame each). The
+# black; gangs.webp, the street's gangs, a frame each; story2.webp, the story's debtor, Bacchus and Kamoji). The
 # streets are side on, so each takes their right-facing pair (ui/street.js turns them round to face left): their
 # black background flooded away from the cell's edge (their own dark outline kept), cut to them, turned to face
 # right where a frame looks left, and brought to the street's people's height.
@@ -38,6 +38,10 @@ for name, x0, x1, row in (('thug_gray', 233, 280, G1), ('thug_black', 550, 596, 
                           ('punk_tank', 1176, 1224, G2), ('punk_casual', 1471, 1519, G2), ('grunt_pinstripe', 231, 280, G3), ('grunt_solid', 554, 606, G3),
                           ('grunt_white', 866, 913, G3), ('grunt_purple', 1167, 1220, G3), ('grunt_collar', 1468, 1516, G3)):
     CAST[name] = ('gangs.webp', (x0, x1), row)
+# (and from story2.webp, the debtor (Taichi Kurihara), Bacchus and Kamoji: its top row, the outfits they wear in
+# the story; its second row is other clothes)
+for name, x0, x1 in (('debtor', 406, 502), ('bacchus', 888, 1005), ('kamoji', 1400, 1499)):
+    CAST[name] = ('story2.webp', (x0, x1), ((395, 616),))
 WALKS = {'kiryu_idle': 'kiryu_idle_walk', 'majima_idle': 'majima_idle_walk'}   # (the rest: <name>_walk)
 
 def cut(sheet, box):
