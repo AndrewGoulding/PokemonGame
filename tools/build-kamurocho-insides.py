@@ -22,7 +22,8 @@
 # (It needs only what's committed; run tools/build-kamurocho-sok.py first if those pictures change.)
 #
 # Writes assets/kamurocho/poppo.png (800x480), backlot.png (640x480), sewer.png (640x480), heroine.png (760x480),
-# limo.png and manhole.png; and the story's offices, dojima.png, kazama.png and toko.png (760x480).
+# limo.png and manhole.png; and the story's rooms, dojima.png, kazama.png, toko.png, penthouse.png (Tachibana's),
+# apartment.png (Kiryu's) and namase.png (the Namase Bar, in the Hakua Building) (760x480).
 import os, random
 from PIL import Image, ImageDraw, ImageFilter
 
@@ -363,7 +364,7 @@ def heroine():
 # scroll over the boss's desk, black leather sofas round a low table, a kamidana shelf; the floor's boards. `crest`:
 # the family's mon on the wall; `files`: a loan office's filing cabinets and a counter instead of the sofas.
 OFFICE_W = 760
-def office(name, wall, trim, floorc, crest=True, files=False, seed=51):
+def office(name, wall, trim, floorc, crest=True, files=False, seed=51, sofa=False, bar=False, home=False):
     rnd = random.Random(seed)
     im = Image.new('RGBA', (OFFICE_W, H), (0, 0, 0, 255)); d = ImageDraw.Draw(im)
     top, floor = 250, FLOOR_Y
@@ -407,6 +408,27 @@ def office(name, wall, trim, floorc, crest=True, files=False, seed=51):
         d.rectangle((560, 270, 610, 330), fill=(240, 240, 230)); d.rectangle((560, 270, 610, 280), fill=(200, 40, 40))
         for y in range(286, 326, 8):
             for x in range(564, 606, 8): d.point((x, y), fill=(60, 60, 60))
+    if sofa:
+        # (a penthouse's: a long white sofa, a glass table, a lamp, the city's lights wide in its window)
+        d.rectangle((300, 272, 700, 362), fill=(16, 18, 30))
+        for _ in range(60): x, y = rnd.randrange(304, 696), rnd.randrange(300, 360); d.point((x, y), fill=rnd.choice([(255, 220, 140), (255, 140, 220), (160, 220, 255)]))
+        d.rectangle((300, 272, 700, 276), fill=shade(trim, 0.6))
+        d.rounded_rectangle((360, floor - 38, 600, floor + 4), 10, fill=(226, 222, 214)); d.rectangle((366, floor - 14, 594, floor + 4), fill=(200, 196, 188))
+        d.rectangle((450, floor - 12, 520, floor - 8), fill=(170, 200, 210))
+        d.line((660, floor, 660, floor - 70), fill=(180, 180, 170), width=2); d.polygon([(648, floor - 70), (672, floor - 70), (666, floor - 86), (654, floor - 86)], fill=(240, 220, 160))
+    if bar:
+        # (a small bar: its counter and stools, a shelf of bottles, a cot in the corner where the family sleeps)
+        d.rectangle((300, 290, 520, 298), fill=(70, 40, 30))
+        for x in range(306, 516, 10):
+            c = rnd.choice([(150, 84, 32), (60, 120, 60), (200, 200, 210), (140, 30, 40)]); d.rectangle((x, 272, x + 5, 290), fill=c)
+        d.rectangle((290, floor - 46, 530, floor + 4), fill=(96, 56, 36)); d.rectangle((290, floor - 50, 530, floor - 44), fill=(150, 96, 60))
+        for x in (320, 380, 440, 500): d.rectangle((x - 6, floor - 30, x + 6, floor - 26), fill=(150, 30, 40)); d.line((x, floor - 26, x, floor + 4), fill=(80, 80, 80))
+        d.rectangle((600, floor - 24, 740, floor + 4), fill=(140, 120, 100)); d.rectangle((604, floor - 30, 650, floor - 22), fill=(230, 230, 220))
+    if home:
+        # (a one-room flat: a low table on the floor, a small television, a futon folded by the wall)
+        d.rectangle((300, floor - 14, 420, floor - 8), fill=(110, 76, 50)); d.rectangle((310, floor - 8, 318, floor + 4), fill=(80, 54, 36)); d.rectangle((402, floor - 8, 410, floor + 4), fill=(80, 54, 36))
+        d.rectangle((470, floor - 56, 540, floor + 4), fill=(40, 40, 44)); d.rectangle((476, floor - 50, 534, floor - 14), fill=(70, 90, 110))
+        d.rectangle((600, floor - 34, 720, floor + 4), fill=(200, 190, 160)); d.rectangle((600, floor - 34, 720, floor - 28), fill=(170, 60, 60))
     for y in range(floor + 2, H):
         d.line((0, y, OFFICE_W, y), fill=shade(floorc, 0.9 - 0.4 * (y - floor) / (H - floor)))
     for y in (floor + 16, floor + 36, floor + 60): d.line((0, y, OFFICE_W, y), fill=shade(floorc, 0.6))
@@ -439,3 +461,6 @@ if __name__ == '__main__':
     office('dojima', (70, 20, 20), (110, 60, 40), (60, 40, 30), seed=51)
     office('kazama', (84, 64, 40), (120, 84, 50), (70, 50, 34), seed=61)
     office('toko', (90, 96, 92), (110, 110, 100), (80, 80, 76), crest=False, files=True, seed=71)
+    office('penthouse', (150, 140, 124), (180, 170, 150), (120, 110, 96), crest=False, sofa=True, seed=81)
+    office('apartment', (120, 110, 90), (130, 100, 70), (150, 130, 90), crest=False, home=True, seed=91)
+    office('namase', (70, 50, 40), (110, 70, 44), (60, 44, 34), crest=False, bar=True, seed=101)

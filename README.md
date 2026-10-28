@@ -3700,7 +3700,17 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   go); Dojima's verdict, Kuze's finger, Kiryu out of the family. 11:28 that night, in the rain (`ui/street.js`'s
   cutscene `rain`), Tachibana finds him. Chapter 2 begins at **Tachibana Real Estate** on Showa Street; to be
   continued. The offices are this game's own (`tools/build-kamurocho-insides.py`'s `office`); the Dojima HQ is
-  outside Kamurocho, reached only by the story (`story`). The story's people (Kuze, Kashiwagi, Awano, Oda,
+  outside Kamurocho, reached only by the story (`story`). **Chapter 2, The Real Estate Broker in the Shadows**,
+  follows the same way: Tachibana's penthouse the morning after (his offer, turned down); Nishiki outside the
+  Kazama office; **Mr. Shakedown** in the Hotel District (a fight) and Nishiki's news in Kiryu's flat (Toko Credit's
+  president shot); the next day, Miss Tatsu, Bacchus and an ambush in the Champion District (a fight); a Jinsei
+  family man at **Cafe Blend** on Nakamichi Street (a fight); the **Namase Bar**, last tenant of the Hakua Building
+  on Shichifuku Street, Oda's money in its owner's face, and a homeless man's warning; Tachibana's homeless men by
+  West Park on Senryo Avenue (a round of drinks, ¥6,000); the Champion District's people (a fight) and Oda's
+  invitation; and at Tachibana Real Estate, his men in the lobby (a fight), **Makoto Oda** (`REALM_FOES.oda`), and
+  Tachibana: Kazama sent him, the town's lights cut and back, the Empty Lot, and Kazama's watch. Chapter 3,
+  Majima's in Sotenbori, isn't in the game yet. New rooms (`build-kamurocho-insides.py`): the penthouse, Kiryu's
+  flat and the Namase Bar. The story's people (Kuze, Kashiwagi, Awano, Oda,
   Shibusawa, Tachibana, Toko Credit's president and Dojima) are from the sheet of them given for the game
   (`assets/kamurocho/cast-sheet/cast.webp`), their right-facing frames cut out by `tools/import-kamurocho-cast.py`; Kiryu, Nishiki and Majima on the streets,
   standing and walking, from its second sheet (`heroes.webp`), over Streets of Kamurocho's (their fighting stances in

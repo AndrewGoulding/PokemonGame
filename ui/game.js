@@ -3040,7 +3040,7 @@
   const DOMINO_DUELISTS = { DominoHigh_Person12: "yugi", DominoHigh_Person13: "tea", DominoHigh_Person14: "joey", DominoHigh_Person15: "tristan" };
   // (The Time Machine off Pallet Town, and the Realm Hub's portals: timeMachine, realmPortal.)
   for (const sc of ["TimeMachine_EventScript_Machine", "TimeMachine_EventScript_Sign", "TimeMachine_EventScript_Scientist",
-    "RealmHub_EventScript_Portal_pokemon", "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_yakuza", "Kamurocho_TimeMachine", "Kamurocho_Kiryu", "Kamurocho_Majima", "Kamurocho_Clerk", "Kamurocho_Karaoke", "Kamurocho_Tachibana", "SacredCards_Fountain", "SacredCards_BackToTown",
+    "RealmHub_EventScript_Portal_pokemon", "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_yakuza", "Kamurocho_TimeMachine", "Kamurocho_Kiryu", "Kamurocho_Majima", "Kamurocho_Clerk", "Kamurocho_Karaoke", "Kamurocho_Tachibana", "Kamurocho_Blend", "SacredCards_Fountain", "SacredCards_BackToTown",
     "Domino_WorldMap", "KameGame_Grandpa", "Domino_Manhole", "Domino_ManholeUp", "Domino_TimeMachine", ...Object.keys(DOMINO_DUELISTS)]) SPECIAL.add(sc);
   // (and the other pupils and the teacher, with their boosters' decks: classmate)
   for (let i = 0; i < 12; i++) SPECIAL.add("DominoHigh_Person" + i);
@@ -3416,6 +3416,7 @@
     if (script === "Kamurocho_Clerk") { await kamurochoShop(); return; }
     if (script === "Kamurocho_Karaoke") { await kamurochoKaraoke(); return; }
     if (script === "Kamurocho_Tachibana") { await kamurochoTachibana(); return; }
+    if (script === "Kamurocho_Blend") { await kamurochoBlend(); return; }
     if (DOMINO_DUELISTS[script]) { await dominoDuel(DOMINO_DUELISTS[script], ev.person); return; }
     if (/^DominoHigh_Person([0-9]|1[01])$/.test(script || "")) { await dominoDuel(classmate(script), ev.person); return; }
     if (ev.person && ev.person.ferry && isSinnoh(ev.map)) { await sinnohFerry(ev.person); return; }
@@ -10417,6 +10418,9 @@
     if (sceneId === "theater" && step === "drinking") return { type: "y0-morning" };
     if (sceneId === "toko" && step === "toko") return { type: "y0-toko" };
     if (sceneId === "kazama" && step === "kazama") return { type: "y0-kazama" };
+    // (Chapter 2's)
+    const c2 = { shichifuku: "c2-kazama", hotels: "c2-hotels", champion: "c2-tatsu", namase: "c2-hakua", senryo: "c2-park" }[sceneId];
+    if (c2 === step || (sceneId === "champion" && step === "c2-champion")) return { type: "y0-c2", step };
     return null;
   }
   // Pink Street: two drunks swinging at each other; Kiryu sobers them up. Bacchus, an old foreign fighter, watches.
@@ -10612,37 +10616,265 @@
       { fade: "out" },
       { rain: false }
     ], { say });
-    f.y0Step = "ch2"; f.kamurochoWaypoint = "tachibana";
-    Street.place({ scene: "showa", x: 1460, y: 440, facing: "up" });
+    f.y0Step = "ch2";
+    await kamurochoCh2();
+  }
+  // Yakuza 0's second chapter, The Real Estate Broker in the Shadows, scene by scene as the game plays it, in this
+  // game's own words. Its steps (flags.y0Step), each next place flagged on the Map:
+  //   "ch2"           Tachibana's penthouse, the morning after the rain: a shower, his offer, Kiryu turns it down
+  //   "c2-kazama"     outside the Kazama family's office on Shichifuku Street: Nishiki, a word for Kashiwagi
+  //   "c2-hotels"     the Hotel District: Mr. Shakedown (a fight); then Kiryu's flat, and Nishiki's news
+  //   "c2-tatsu"      the Champion District, the next day: Miss Tatsu, the debt collector, Bacchus, an ambush (a fight)
+  //   "c2-blend"      Cafe Blend, on Nakamichi Street: a Jinsei family man after his money (a fight), the owner's story
+  //   "c2-hakua"      the Namase Bar in the Hakua Building: its last tenant, Oda's offer; a homeless man's warning
+  //   "c2-park"       Senryo Avenue by West Park: the men who work for Tachibana, a round of drinks, the next target
+  //   "c2-champion"   the Champion District: its people (a fight), and Oda's invitation
+  //   "c2-penthouse"  Tachibana Real Estate: the men in the lobby (a fight), Oda (a fight), Tachibana and the watch
+  //   "ch3"           the third chapter is Majima's, in Sotenbori: not in this game yet
+  const Y0_TACHIBANA = { sprite: "tachibana", walk: "tachibana_walk" };
+  async function kamurochoCh2() {
+    const f = player.flags;
+    await Street.cutscene([
+      { fade: "out" },
+      { scene: "penthouse", cam: [400, 440] },
+      { rain: false },
+      { actor: "kiryu", ...Y0_KIRYU, x: 220, y: 446, face: "right" },
+      { actor: "tachibana", ...Y0_TACHIBANA, x: 520, y: 440, face: "left" },
+      { fade: "in" },
+      { say: ["Chapter 2: The Real Estate Broker\nin the Shadows.", "Tachibana's penthouse. Kiryu's had a\nhot shower, and his suit's back,\ndry and pressed.",
+        "Tachibana: Better? I'm Tetsu\nTachibana. I run a real estate\ncompany.", "Kiryu: ...You know my name. What else\ndo you know?",
+        "Tachibana: The Sunflower orphanage.\nKazama. Last night, at headquarters.", "I want the Empty Lot, Kiryu-san. And\nI think you'd be useful in getting it.",
+        "Kiryu: A stranger pulls me out of the\nrain with a job ready. That's too\nneat.", "I'll pass.",
+        "Tachibana: As you like. Keep my\ncard, though. You'll want it."] },
+      { fade: "out" }
+    ], { say });
+    f.y0Step = "c2-kazama"; f.kamurochoWaypoint = "kazama";
+    Street.place({ scene: "showa", x: 1460, y: 440, facing: "down" });
     show("street");
-    await say(["Tachibana Real Estate, on Showa\nStreet, is marked on your Map."]);
+    await say(["The Kazama Family Office, off\nShichifuku Street, is marked on your\nMap."]);
     await persist();
   }
-  // Tachibana Real Estate, on Showa Street, the second chapter's start: Kiryu, out of the family, comes to Tetsu
-  // Tachibana's office, and Makoto Oda, his man. They're after the Empty Lot too, and they'll help him find who's behind it.
+  async function kamurochoCh2Step(step) {
+    const f = player.flags, here = Street.here() || { x: 600 }, x = Math.max(200, Math.min(1100, here.x));
+    const next = async (st, wp, text) => { f.y0Step = st; f.kamurochoWaypoint = wp; show("street"); if (text) await say(text); await persist(); };
+    if (step === "c2-kazama") {
+      await Street.cutscene([
+        { scene: "shichifuku", cam: [620, 440] },
+        { actor: "kiryu", ...Y0_KIRYU, x: 520, y: 446, face: "right" },
+        { actor: "kashiwagi", sprite: "kashiwagi", x: 660, y: 436, face: "left" },
+        { say: ["Kashiwagi comes out of the office\nand drives off. He doesn't see\nKiryu."] },
+        { gone: "kashiwagi" },
+        { actor: "nishiki", ...Y0_NISHIKI, x: 660, y: 446, face: "left" },
+        { walk: "nishiki", to: [580, 446] },
+        { say: ["Nishiki: Kiryu! Get in here, they're\nall worried sick.", "Kiryu: I can't. I'm not in the\nfamily any more. I'd only bring them\ntrouble.",
+          "Tell Kashiwagi-san I'm alright. And\ncome by my place tonight.", "Nishiki: ...Fine. Tonight, then."] }
+      ], { say });
+      return next("c2-hotels", "hotels", ["On the way home, Kiryu cuts through\nthe Hotel District."]);
+    }
+    if (step === "c2-hotels") {
+      await Street.cutscene([
+        { scene: "hotels", cam: [x + 120, 440] },
+        { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
+        { actor: "egashira", sprite: "shakedown", walk: "shakedown_walk", x: x + 320, y: 446, face: "left" },
+        { walk: "egashira", to: [x + 140, 446] },
+        { say: ["Big man: You. Wallet. Hand it over\nand you walk away.", "Kiryu: Not tonight."] }
+      ], { say });
+      show("street");
+      await y0Fight(["shakedown"], "Mr. Shakedown wants your wallet!");
+      await Street.cutscene([
+        { scene: "hotels", cam: [x + 120, 440] },
+        { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
+        { actor: "egashira", sprite: "shakedown", walk: "shakedown_walk", x: x + 140, y: 446, face: "left" },
+        { say: ["Egashira: Ngh... I'll train harder.\nNext time, you're mine!"] },
+        { walk: "egashira", to: [x + 420, 446], speed: 2.4 }, { gone: "egashira" },
+        { actor: "suit", sprite: "salaryman_idle", x: x - 120, y: 440, face: "right" },
+        { walk: "suit", to: [x - 50, 440] },
+        { say: ["Businessman: You beat Mr. Shakedown!\nThey say he's not the only one, you\nknow. One in every city.", "Watch your wallet."] },
+        { fade: "out" },
+        { scene: "apartment", cam: [400, 440] },
+        { actor: "kiryu", ...Y0_KIRYU, x: 340, y: 446, face: "right" },
+        { actor: "nishiki", ...Y0_NISHIKI, x: 440, y: 452, face: "left" },
+        { fade: "in" },
+        { say: ["Kiryu's flat. Instant ramen and a\ncan of beer each.", "Nishiki: Bad news. Toko Credit's\npresident is dead. Shot.",
+          "Everyone's saying Kuze shut him up.", "Kiryu: Because he talked to me.", "Nishiki: And Tachibana Real Estate...\nthey're no joke, Kiryu.",
+          "They've pushed Tojo men out of\nbuildings. Nobody knows who's behind\nthem.", "Kiryu: Then I'll find out myself."] },
+        { fade: "out" }
+      ], { say });
+      Street.place({ scene: "hotels", x: 640, y: 440, facing: "down" });
+      return next("c2-tatsu", "champion", ["The next day.", "The Champion District is marked on\nyour Map."]);
+    }
+    if (step === "c2-tatsu") {
+      await Street.cutscene([
+        { scene: "champion", cam: [x + 120, 440] },
+        { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
+        { actor: "tatsu", sprite: "clubgoer", x: x + 220, y: 440, face: "left" },
+        { actor: "mark", sprite: "drunk_idle", x: x + 160, y: 448, face: "right" },
+        { hit: "mark" },
+        { say: ["A woman puts a grown man on the\nground with one move and takes what\nhe owes.", "Miss Tatsu: Pay on time next time,\nand we won't have to do this."] },
+        { gone: "mark" },
+        { actor: "bacchus", sprite: "bacchus", x: x - 120, y: 440, face: "right" },
+        { walk: "bacchus", to: [x - 50, 440] },
+        { say: ["Bacchus: Magnificent! Boy, that's Miss\nTatsu. Learn from her and you'll be\ntwice the fighter."] },
+        { actor: "t1", sprite: "punk", x: x + 420, y: 446, face: "left" },
+        { actor: "t2", sprite: "punk", x: x + 460, y: 452, face: "left" },
+        { say: ["Two men creep up behind her with\nclubs.", "Kiryu: Behind you!"] }
+      ], { say });
+      show("street");
+      await y0Fight(["punk", "punk", "thug"], "The ambushers turn on Kiryu!");
+      await Street.cutscene([
+        { scene: "champion", cam: [x + 120, 440] },
+        { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
+        { actor: "tatsu", sprite: "clubgoer", x: x + 220, y: 440, face: "left" },
+        { actor: "bacchus", sprite: "bacchus", x: x - 50, y: 440, face: "right" },
+        { say: ["Miss Tatsu: Not bad. I train down at\nthe pier. Come by if you want to\nlearn to fight properly.",
+          "Bacchus: And then, the championship!", "Kiryu: Maybe the training. Not the\nchampionship."] }
+      ], { say });
+      return next("c2-blend", "blend", ["Kiryu starts asking around about\nTachibana Real Estate.", "Cafe Blend, on Nakamichi Street, is\nmarked on your Map."]);
+    }
+    if (step === "c2-hakua") {
+      await Street.cutscene([
+        { scene: "namase", cam: [400, 440] },
+        { actor: "kiryu", ...Y0_KIRYU, x: 60, y: 446, face: "right" },
+        { actor: "owner", sprite: "salaryman_idle", x: 460, y: 436, face: "left" },
+        { walk: "kiryu", to: [340, 446] },
+        { say: ["The Namase Bar. Closed, but the\ndoor's open. A baby cries behind a\ncurtain.",
+          "Owner: We live here now, my wife,\nmy kid and me. Last ones in the\nbuilding.", "The Jinsei family used to lean on\nus. Then Tachibana drove them off.",
+          "Now Tachibana sends homeless men to\nbang on the walls all night, to make\nus give up."] },
+        { actor: "oda", sprite: "oda", x: 20, y: 446, face: "right" },
+        { walk: "oda", to: [220, 446], speed: 1.6 },
+        { face: "kiryu", dir: "left" },
+        { say: ["Oda: Evening. Tachibana Real Estate.\nHere's money to move. Generous, too:\nit came off the Jinsei family.",
+          "Owner: I'm not leaving.", "Oda throws the bundle of notes in\nthe owner's face.", "Kiryu: Pick it up. And say that\nagain, politely.",
+          "Oda: Kazuma Kiryu. Careful whose\nbusiness you get into.", "Oda: We'll talk again."] },
+        { walk: "oda", to: [-30, 446], speed: 1.6 }, { gone: "oda" },
+        { say: ["Owner: ...I'm staying. But I'll keep\nthe money. My kid needs it more\nthan they do."] },
+        { fade: "out" },
+        { scene: "shichifuku", cam: [1200, 440] },
+        { actor: "kiryu", ...Y0_KIRYU, x: 1290, y: 440, face: "left" },
+        { actor: "bum", sprite: "kamoji", x: 1180, y: 446, face: "right" },
+        { fade: "in" },
+        { say: ["Homeless man: You're asking about\nTachibana? Don't.", "He's worse than any yakuza. The Jinsei\nboss was skimming from the Tojo\nClan...",
+          "...and somebody told them. They took\nhis finger. Who do you think told\nthem?", "Some of us work for Tachibana. They\nsleep in the park off Senryo Avenue."] }
+      ], { say });
+      Street.place({ scene: "shichifuku", x: 1290, y: 440, facing: "down" });
+      return next("c2-park", "senryo", ["Senryo Avenue, by West Park, is\nmarked on your Map."]);
+    }
+    if (step === "c2-park") {
+      await Street.cutscene([
+        { scene: "senryo", cam: [x + 120, 440] },
+        { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
+        { actor: "h1", sprite: "kamoji", x: x + 160, y: 446, face: "left" },
+        { actor: "h2", sprite: "loiterer", x: x + 220, y: 440, face: "left" },
+        { say: ["Homeless men, round a fire by the\npark.", "Homeless man: Talk? Talking's thirsty\nwork. A beer. Sake. Shochu. Scotch.\nAnd champagne!",
+          "Kiryu: ...Champagne."] }
+      ], { say });
+      show("street");
+      const cost = 6000;
+      if (player.money >= cost) { player.money -= cost; await say("Kiryu buys a round from the\nconvenience stores and the discount\nstore: ¥6,000."); }
+      else await say("Kiryu scrapes together what he can\nfor a round.");
+      await Street.cutscene([
+        { scene: "senryo", cam: [x + 120, 440] },
+        { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
+        { actor: "h1", sprite: "kamoji", x: x + 160, y: 446, face: "left" },
+        { actor: "h2", sprite: "loiterer", x: x + 220, y: 440, face: "left" },
+        { say: ["Homeless man: Champagne! You're alright.", "Yeah, we work for Tachibana. The Tojo\nClan too, when they're paying.",
+          "We make noise, we scare tenants. And\nthe next place on Tachibana's list...", "...is the Champion District."] }
+      ], { say });
+      return next("c2-champion", "champion", ["The Champion District is marked on\nyour Map."]);
+    }
+    if (step === "c2-champion") {
+      await Street.cutscene([
+        { scene: "champion", cam: [x + 120, 440] },
+        { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
+        { actor: "r1", sprite: "drunk_idle", x: x + 180, y: 446, face: "left" },
+        { actor: "r2", sprite: "thug_idle", x: x + 240, y: 440, face: "left" },
+        { say: ["Kiryu: I'm asking about Tachibana Real\nEstate.", "Bar owner: A Tojo man, sniffing\naround here? Get him!"] }
+      ], { say });
+      show("street");
+      await y0Fight(["drunk", "punk", "drunk"], "The district's people go for Kiryu!");
+      await Street.cutscene([
+        { scene: "champion", cam: [x + 120, 440] },
+        { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
+        { actor: "r1", sprite: "drunk_idle", x: x + 180, y: 446, face: "left" },
+        { say: ["Bar owner: You're not Tojo? ...Sorry.\nTachibana's the one keeping the\nyakuza off us."] },
+        { actor: "oda", sprite: "oda", x: x + 400, y: 446, face: "left" },
+        { walk: "oda", to: [x + 240, 446] },
+        { say: ["Oda: Kiryu-san. My boss would like to\nsee you. Where you met him.",
+          "He has his policies. People who've\nlived here all their lives have a\nright to stay. We just make sure of\nit."] },
+        { walk: "oda", to: [x + 460, 446] }, { gone: "oda" }
+      ], { say });
+      return next("c2-penthouse", "tachibana", ["Tachibana Real Estate, on Showa\nStreet, is marked on your Map."]);
+    }
+  }
+  // Cafe Blend, on Nakamichi Street: a Jinsei family man shaking down its owner; the owner, on Tachibana.
+  async function kamurochoBlend() {
+    const f = player.flags;
+    if (f.y0Step !== "c2-blend") { await say(["Cafe Blend. The coffee smells good."]); return; }
+    await Street.cutscene([
+      { scene: "nakamichi", cam: [200, 440] },
+      { actor: "kiryu", ...Y0_KIRYU, x: 280, y: 446, face: "left" },
+      { actor: "owner", sprite: "loiterer", x: 80, y: 440, face: "right" },
+      { actor: "jinsei", sprite: "grunt_solid", x: 140, y: 446, face: "left" },
+      { say: ["Jinsei man: Protection money. This\nmonth's, same as always.", "Owner: Protection? Where were you when\nTachibana's people pushed us out?",
+        "Jinsei man: ...You. Are you one of\nTachibana's?", "Kiryu: No. But you're leaving."] }
+    ], { say });
+    show("street");
+    await y0Fight(["grunt"], "The Jinsei family man swings!");
+    await Street.cutscene([
+      { scene: "nakamichi", cam: [200, 440] },
+      { actor: "kiryu", ...Y0_KIRYU, x: 280, y: 446, face: "left" },
+      { actor: "owner", sprite: "loiterer", x: 80, y: 440, face: "right" },
+      { say: ["Owner: Tachibana bought our old place\nout from under us.", "They knew everything. My debts, my\nfamily, my regulars. Everything.",
+        "If you want to see how they work,\ngo to the Hakua Building on\nShichifuku Street.", "One tenant's still holding out."] }
+    ], { say });
+    f.y0Step = "c2-hakua"; f.kamurochoWaypoint = "namase";
+    await say(["The Hakua Building, on Shichifuku\nStreet, is marked on your Map."]);
+    await persist();
+  }
+  // Tachibana Real Estate, on Showa Street: the end of the second chapter (the men in the lobby, Oda, and
+  // Tachibana's plan and the watch); before that, a locked door. (A save from before Chapter 2 came in here:
+  // its opening.)
   async function kamurochoTachibana() {
     const f = player.flags;
-    if (f.y0Step !== "ch2") {
-      await say(f.y0Step === "done" ? ["Oda: The boss is out on business.\nWe'll find that lot's owner, Kiryu.\nJust you wait."]
+    if (f.y0Step === "ch2") return kamurochoCh2();
+    if (f.y0Step !== "c2-penthouse") {
+      await say(f.y0Step === "ch3" ? ["Oda: The boss is out. Kazama-san's\nwatch is in good hands, Kiryu-san."]
         : ["Tachibana Real Estate. The blinds\nare down, and nobody answers."]);
       return;
     }
+    await say(["In the lobby, three of Tachibana's\nmen block the way.", "Man: Oda-san said to give you a\nproper welcome."]);
+    await y0Fight(["grunt", "grunt", "thug"], "Tachibana's men attack!");
     await Street.cutscene([
-      { scene: "showa", cam: [1440, 440] },
-      { say: ["Chapter 2: The Real Estate Broker\nin the Shadows."] },
-      { actor: "kiryu", sprite: "kiryu_idle", walk: "kiryu_idle_walk", x: 1300, y: 446, face: "right" },
-      { actor: "oda", sprite: "oda", x: 1500, y: 440, face: "left" },
-      { say: ["Oda: Morning, Kiryu-san. Slept it\noff? The boss is expecting you.", "Name's Makoto Oda. I work for\nTachibana-san."] },
-      { actor: "tachibana", sprite: "tachibana", x: 1560, y: 430, face: "left" },
-      { walk: "kiryu", to: [1420, 446] },
-      { say: ["Tachibana: Welcome to Tachibana Real\nEstate. Tetsu Tachibana, again.", "You've been framed over the Empty\nLot. We'd like to know who owns it\nas much as you would.",
-        "Every developer and every Tojo family\nin town is chasing that one tsubo.", "Someone's hiding its owner. Find them,\nand you'll find who set you up.",
-        "Work with us, Kiryu-san. We have the\nmoney and the paperwork. You have\nthe fists.",
-        "Kiryu: ...I'm not much for real\nestate.", "Tachibana: You will be. Kamurocho's\nland is worth more than gold right\nnow.",
-        "Kiryu: Fine. Until my name's clean.", "To be continued..."] }
+      { scene: "penthouse", cam: [400, 440] },
+      { actor: "kiryu", ...Y0_KIRYU, x: 60, y: 446, face: "right" },
+      { actor: "oda", sprite: "oda", x: 460, y: 446, face: "left" },
+      { walk: "kiryu", to: [300, 446] },
+      { say: ["Oda: Sorry about downstairs. I wanted\nto see what you're made of.", "Now let's see it up close."] }
     ], { say });
-    f.y0Step = "done"; f.kamurochoWaypoint = null;
+    Street.place({ scene: "penthouse", x: 300, y: 446, facing: "right" });
     show("street");
+    await y0Fight(["oda"], "Makoto Oda draws his baton!");
+    await Street.cutscene([
+      { scene: "penthouse", cam: [400, 440] },
+      { actor: "kiryu", ...Y0_KIRYU, x: 300, y: 446, face: "right" },
+      { actor: "oda", sprite: "oda", x: 460, y: 452, face: "left" },
+      { actor: "tachibana", ...Y0_TACHIBANA, x: 760, y: 440, face: "left" },
+      { walk: "tachibana", to: [560, 440] },
+      { say: ["Tachibana: That's enough, Oda.", "Kiryu-san. I owe you the truth. It\nwasn't chance that I found you.",
+        "Shintaro Kazama asked me to. Your\noyaji, from his prison cell. He wants\nus working together.",
+        "The Tojo Clan owns this town. I mean\nto change that. Watch."] },
+      { fade: "out" },
+      { say: ["Every light in Kamurocho goes out\nat once.", "...and then comes back on."] },
+      { fade: "in" },
+      { say: ["Tachibana: All of it, at the flick\nof a switch. That's what land is.\nPower.",
+        "And the Empty Lot is the switch that\nmatters most.", "Kazama-san gave me this for you.",
+        "A pocket watch. Inside its lid, an old\nphoto: a young Kiryu, a young Nishiki,\nand Kazama.", "Kiryu: ...Oyaji.",
+        "Kiryu: Alright, Tachibana. I'll work\nwith you.", "End of Chapter 2: The Real Estate\nBroker in the Shadows."] }
+    ], { say });
+    f.y0Step = "ch3"; f.kamurochoWaypoint = null;
+    Street.place({ scene: "showa", x: 1460, y: 440, facing: "down" });
+    show("street");
+    await say(["Chapter 3 is Goro Majima's story, in\nSotenbori, Osaka. It isn't in this\ngame yet."]);
     await persist();
   }
   async function kamurochoKaraoke() {
@@ -16343,6 +16575,7 @@
     else if (ev.type === "y0-morning") await kamurochoMorning();
     else if (ev.type === "y0-toko") await kamurochoToko();
     else if (ev.type === "y0-kazama") await kamurochoKazama();
+    else if (ev.type === "y0-c2") await kamurochoCh2Step(ev.step);
     else if (ev.type === "talk") await story({ type: "talk", person: ev.person, map: "Kamurocho" });
     else if (ev.type === "spot") await story({ type: "talk", person: { script: ev.script }, map: "Kamurocho" });
     // (A gang that walked up to you: that gang, its leader's line first.)

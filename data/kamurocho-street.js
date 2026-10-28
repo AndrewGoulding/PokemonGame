@@ -68,7 +68,7 @@ window.KAMUROCHO_STREET = {
       champion: { line: [[314, 226], [340, 226], [340, 208], [358, 208], [358, 226], [368, 226]], w: 1 },
       "nakamichi-alley": { line: [[142, 338], [170, 338], [170, 322], [197, 322]], w: 1 },
       "pink-alley": { line: [[306, 344], [368, 344]], w: 1 },
-      heroine: { at: ["theater", 0.94] }, toko: { at: ["nakamichi", 0.54] }, kazama: { at: ["shichifuku", 0.47] }, tachibana: { at: ["showa", 0.94], title: "Tachibana Real Estate" }, poppo: { at: ["street", 0.24] }, backlot: { at: ["street", 0.17] }, sewer: { at: ["street", 0.17] }, bacchus: { at: ["street", 0.97] }
+      blend: { at: ["nakamichi", 0.06], title: "Cafe Blend" }, namase: { at: ["shichifuku", 0.92] }, heroine: { at: ["theater", 0.94] }, toko: { at: ["nakamichi", 0.54] }, kazama: { at: ["shichifuku", 0.47] }, tachibana: { at: ["showa", 0.94], title: "Tachibana Real Estate" }, poppo: { at: ["street", 0.24] }, backlot: { at: ["street", 0.17] }, sewer: { at: ["street", 0.17] }, bacchus: { at: ["street", 0.97] }
     }
   },
   scenes: {
@@ -193,6 +193,8 @@ window.KAMUROCHO_STREET = {
         { edge: "right", to: "showa", x: 374, y: 440, facing: "down" },
         { spot: [460, 660, 410, 426], to: "nakamichi-alley", x: 770, y: 440, facing: "left", text: "Nakamichi Alley" },
         { spot: [690, 820, 410, 426], walk: "up", to: "toko", x: 60, y: 432, facing: "right", text: "Toko Credit" }],
+      // (Cafe Blend's door: the story's, ui/game.js kamurochoBlend)
+      spots: [{ x0: 20, x1: 150, y0: 410, y1: 426, script: "Kamurocho_Blend", text: "Cafe Blend" }],
       people: [
         { script: "Kamurocho_Regular", sprite: "salaryman_idle", walk: "salaryman_idle_walk", range: 70, x: 140, y: 440, face: "right",
           text: ["The coffee at Alps is awful.\nI come every night anyway."] },
@@ -329,7 +331,8 @@ window.KAMUROCHO_STREET = {
         { spot: [180, 264, 410, 426], to: "hotels", x: 30, y: 440, facing: "right", text: "Hotel District" },
         { spot: [438, 563, 410, 426], to: "theater", x: 900, y: 440, facing: "down", text: "Theater Square" },
         { spot: [989, 1194, 410, 426], to: "pink", x: 1410, y: 440, facing: "left", text: "Pink Street" },
-        { spot: [590, 720, 410, 426], walk: "up", to: "kazama", x: 60, y: 432, facing: "right", text: "Kazama Family Office" }],
+        { spot: [590, 720, 410, 426], walk: "up", to: "kazama", x: 60, y: 432, facing: "right", text: "Kazama Family Office" },
+        { spot: [1220, 1360, 410, 426], walk: "up", to: "namase", x: 60, y: 432, facing: "right", text: "Hakua Building" }],
       people: [
         { script: "Kamurocho_Oden", sprite: "loiterer", x: 120, y: 418, face: "right",
           text: ["Oden on a cold night.\nNothing better.", "The daikon's been simmering\nsince this morning."] },
@@ -409,6 +412,23 @@ window.KAMUROCHO_STREET = {
       title: "Kazama Family Office", image: "assets/kamurocho/kazama.png", width: 760,
       floor: [[0, 414], [760, 414], [760, 470], [0, 470]],
       exits: [{ spot: [12, 92, 414, 424], walk: "up", to: "shichifuku", x: 655, y: 430, facing: "down", text: "Door" }]
+    },
+    // (Chapter 2's rooms: the Namase Bar, the last tenant of the Hakua Building on Shichifuku Street; and, reached by
+    // the story only, Tachibana's penthouse and Kiryu's flat)
+    namase: {
+      title: "Namase Bar", image: "assets/kamurocho/namase.png", width: 760,
+      floor: [[0, 414], [760, 414], [760, 470], [0, 470]],
+      exits: [{ spot: [12, 92, 414, 424], walk: "up", to: "shichifuku", x: 1290, y: 430, facing: "down", text: "Door" }]
+    },
+    penthouse: {
+      title: "Tachibana's Penthouse", image: "assets/kamurocho/penthouse.png", width: 760, story: true,
+      floor: [[0, 414], [760, 414], [760, 470], [0, 470]],
+      exits: [{ spot: [12, 92, 414, 424], walk: "up", to: "showa", x: 1460, y: 430, facing: "down", text: "Door" }]
+    },
+    apartment: {
+      title: "Kiryu's Apartment", image: "assets/kamurocho/apartment.png", width: 760, story: true,
+      floor: [[0, 414], [760, 414], [760, 470], [0, 470]],
+      exits: [{ spot: [12, 92, 414, 424], walk: "up", to: "hotels", x: 640, y: 440, facing: "down", text: "Door" }]
     },
     dojima: {
       title: "Dojima Family HQ", image: "assets/kamurocho/dojima.png", width: 760, story: true,

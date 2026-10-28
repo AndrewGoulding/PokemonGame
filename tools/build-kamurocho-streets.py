@@ -306,8 +306,8 @@ def nakamichi(P, atlas):
     # A coffee shop (Fujibashi's, its board green); the hostess club (the Stardust, its neon gone gold); Serena's
     # neighbour, a bar; the way into Pink Street (the taxi's passage, lit pink from inside); the pawn shop (Poppo's
     # front, dimmed, its board new); the yakiniku place; a ramen counter; a block.
-    x = S.bay(hue(P['fujibashi'], 90, 0.9))
-    S.at(board(atlas, 'COFFEE', (40, 90, 50), (240, 230, 200), 2), x + 46, 266)
+    x = S.bay(hue(P['fujibashi'], 90, 0.9))     # (Cafe Blend: the story's)
+    S.at(board(atlas, 'CAFE BLEND', (40, 90, 50), (240, 230, 200), 1), x + 40, 266)
     x = S.bay(hue(P['stardust'], 40, 1.1))
     S.bay(hue(P['serena'], 230, 1.2))
     x = turn(S, 'nakamichi', hue(P['taxi'], 150, 0.6, 0.85), 'NAKAMICHI ALLEY', *BLUE)     # (the way into the alley)
@@ -504,7 +504,8 @@ def shichifuku(P, atlas):
     x = turn(S, 'shichifuku', tint(P['taxi'], (255, 120, 210), 0.45), 'PINK ST', *PINKB)
     light(S.im, x + 112, 330, 100, 60, (255, 60, 170), 0.3)
     S.fill(ImageEnhance.Brightness(P['shadow']).enhance(0.8), P['block'])
-    S.at(neon(board(atlas, 'SENRYO AVE', *BLUE, 1), BLUE[1]), 1300, 300)
+    S.at(board(atlas, 'HAKUA BLDG', (40, 40, 44), (220, 220, 210), 1), 1236, 286)   # (the last building standing in the site: the story's)
+    S.at(neon(board(atlas, 'SENRYO AVE', *BLUE, 1), BLUE[1]), 1300, 330)
     lamps(S, P, (300, 640, 1000, 1360))
     S.put(P['noentry'], 1230, BASE + 6); S.put(P['cone'], 1270, BASE + 4); S.put(P['barrel'], 1200, BASE + 6)
     S.put(P['bike'], 680, BASE + 6)

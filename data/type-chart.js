@@ -490,6 +490,9 @@ window.REALM_FOES = {
                hp: 60, mp: 0, str: 15, def: 10, int: 0, wis: 4, spd: 7, exp: 40, money: 1000, skills: ["bottle_smash"] },
   yoneda:    { name: "Yoneda", lv: 6,          elements: ["Neutral"], street: "grunt_collar", sprite: "sc_person_77", boss: true,
                hp: 90, mp: 0, str: 18, def: 12, int: 0, wis: 5, spd: 9, exp: 70, money: 2000, skills: ["headbutt"] },
+  // (Chapter 2's: Makoto Oda, Tachibana's right hand, and his baton)
+  oda:       { name: "Makoto Oda", lv: 11,      elements: ["Neutral"], street: "oda", sprite: "sc_person_66", boss: true,
+               hp: 180, mp: 0, str: 24, def: 15, int: 0, wis: 8, spd: 16, exp: 220, money: 5000, skills: ["slash", "cheap_shot"] },
   kuze:      { name: "Daisaku Kuze", lv: 8,     elements: ["Neutral"], street: "kuze", sprite: "sc_person_77", boss: true,
                hp: 150, mp: 0, str: 22, def: 15, int: 0, wis: 6, spd: 10, exp: 150, money: 3000, skills: ["haymaker", "headbutt"] },
   majima:    { name: "Goro Majima", lv: 12,     elements: ["Dark"], street: "majima", boss: true,
