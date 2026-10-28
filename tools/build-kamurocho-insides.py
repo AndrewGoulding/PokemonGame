@@ -21,9 +21,10 @@
 #
 # (It needs only what's committed; run tools/build-kamurocho-sok.py first if those pictures change.)
 #
-# Writes assets/kamurocho/poppo.png (800x480), backlot.png (640x480), sewer.png (640x480) and manhole.png.
+# Writes assets/kamurocho/poppo.png (800x480), backlot.png (640x480), sewer.png (640x480), heroine.png (760x480),
+# limo.png and manhole.png.
 import os, random
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 K = os.path.join(ROOT, 'assets/kamurocho')
@@ -295,7 +296,88 @@ def sewer():
     mh.save(os.path.join(K, 'manhole.png'), optimize=True)
     print('The sewer: %dx%d' % (SEWER_W, H))
 
+# Heroine, the karaoke bar off Theater Square (where Kiryu and Nishiki go drinking, as Yakuza 0 begins): its walls in
+# deep violet under a mirror-ball's spots, its name in pink neon over the stage at the right (the street's letters,
+# off the theatre's board), the stage with its screen and microphone stand, the bar along the left with its bottles
+# and stools, a booth's red seat between, and the floor's dark boards. Its door at the far left.
+HEROINE_W = 760
+def heroine():
+    rnd = random.Random(41)
+    im = Image.new('RGBA', (HEROINE_W, H), (0, 0, 0, 255)); d = ImageDraw.Draw(im)
+    top, floor = 250, FLOOR_Y
+    for y in range(top, floor):
+        k = 0.8 - 0.3 * (y - top) / (floor - top)
+        d.line((0, y, HEROINE_W, y), fill=shade((64, 30, 92), k))
+    for x in range(0, HEROINE_W, 32): d.line((x, top, x, floor), fill=(44, 20, 66))
+    d.rectangle((0, top - 12, HEROINE_W, top), fill=(24, 12, 34))
+    # (the mirror ball's spots on the walls)
+    for _ in range(70):
+        x, y = rnd.randrange(HEROINE_W), rnd.randrange(top + 6, floor - 10)
+        d.rectangle((x, y, x + 1, y + 1), fill=rnd.choice([(255, 220, 255), (200, 220, 255), (255, 255, 200)]))
+    d.ellipse((370, top - 6, 386, top + 10), fill=(200, 200, 220)); d.line((378, top - 12, 378, top - 6), fill=(120, 120, 130))
+    # the door, at the left
+    d.rectangle((12, 296, 92, floor), fill=(40, 22, 30)); d.rectangle((18, 302, 86, floor), fill=(110, 48, 56))
+    d.rectangle((74, 352, 80, 358), fill=(230, 200, 120))
+    # the bar: its shelf of bottles, its counter and stools
+    d.rectangle((110, 290, 300, 300), fill=(70, 40, 30))
+    for x in range(116, 296, 9):
+        c = rnd.choice([(150, 84, 32), (60, 120, 60), (200, 200, 210), (140, 30, 40), (210, 170, 60)])
+        h = rnd.choice([16, 18, 20]); d.rectangle((x, 290 - h, x + 5, 290), fill=c); d.rectangle((x + 1, 290 - h - 4, x + 4, 290 - h), fill=c)
+        d.line((x + 1, 290 - h + 2, x + 1, 288), fill=shade(c, 1.4))
+    d.rectangle((104, floor - 50, 306, floor + 4), fill=(96, 50, 34)); d.rectangle((104, floor - 54, 306, floor - 48), fill=(150, 90, 54))
+    for x in range(110, 306, 24): d.line((x, floor - 46, x, floor + 2), fill=(76, 38, 26))
+    # a booth's red seat
+    d.rounded_rectangle((330, floor - 58, 470, floor + 4), 8, fill=(150, 24, 40)); d.rectangle((336, floor - 26, 464, floor + 4), fill=(120, 18, 32))
+    for x in range(346, 470, 22): d.line((x, floor - 54, x, floor - 30), fill=(120, 18, 32))
+    d.rectangle((370, floor - 18, 430, floor - 10), fill=(60, 36, 30)); d.rectangle((380, floor - 10, 420, floor + 4), fill=(40, 24, 20))
+    # the stage, its screen and the microphone
+    sx = 500
+    d.rectangle((sx, floor - 6, HEROINE_W - 10, floor + 10), fill=(60, 30, 50)); d.line((sx, floor - 6, HEROINE_W - 10, floor - 6), fill=(140, 90, 130))
+    d.rectangle((sx + 40, 286, sx + 200, 372), fill=(20, 20, 24)); d.rectangle((sx + 46, 292, sx + 194, 366), fill=(40, 80, 150))
+    for y in range(292, 366, 3): d.line((sx + 46, y, sx + 194, y), fill=(50, 96, 170))
+    d.rectangle((sx + 60, 340, sx + 180, 348), fill=(250, 250, 250)); d.rectangle((sx + 60, 340, sx + 120, 348), fill=(255, 208, 64))
+    d.line((sx + 120, floor - 6, sx + 120, 344), fill=(170, 170, 180), width=2); d.ellipse((sx + 116, 336, sx + 124, 346), fill=(60, 60, 70))
+    d.line((sx + 108, floor - 6, sx + 132, floor - 6), fill=(170, 170, 180), width=2)
+    # its name in pink neon over the stage
+    sign = Image.new('RGBA', (180, 30), (0, 0, 0, 0)); sd = ImageDraw.Draw(sign)
+    letters = {'H': ['1001', '1001', '1111', '1001', '1001'], 'E': ['1111', '1000', '1110', '1000', '1111'], 'R': ['1110', '1001', '1110', '1010', '1001'],
+               'O': ['0110', '1001', '1001', '1001', '0110'], 'I': ['111', '010', '010', '010', '111'], 'N': ['1001', '1101', '1011', '1001', '1001']}
+    x = 6
+    for ch in 'HEROINE':
+        g = letters[ch]
+        for j, row in enumerate(g):
+            for i, v in enumerate(row):
+                if v == '1': sd.rectangle((x + i * 4, 4 + j * 4, x + i * 4 + 2, 4 + j * 4 + 2), fill=(255, 120, 210))
+        x += len(g[0]) * 4 + 6
+    glow = sign.filter(ImageFilter.GaussianBlur(3)); im.alpha_composite(glow, (sx + 30, 254)); im.alpha_composite(glow, (sx + 30, 254)); im.alpha_composite(sign, (sx + 30, 254))
+    # the floor's dark boards
+    for y in range(floor + 2, H):
+        k = 0.9 - 0.4 * (y - floor) / (H - floor)
+        d.line((0, y, HEROINE_W, y), fill=shade((70, 40, 36), k))
+    for y in (floor + 16, floor + 36, floor + 60): d.line((0, y, HEROINE_W, y), fill=(44, 24, 22))
+    im.convert('RGB').save(os.path.join(K, 'heroine.png'), optimize=True)
+    print('Heroine: %dx%d' % (HEROINE_W, H))
+
+# A loan shark's limousine, side on, for the street (the prologue's): long and black, its chrome, its windows dark,
+# the rear one down, its wheels.
+def limo():
+    im = Image.new('RGBA', (260, 76), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    d.rounded_rectangle((4, 30, 256, 64), 10, fill=(22, 22, 28))                     # the body
+    d.polygon([(52, 30), (72, 8), (196, 8), (220, 30)], fill=(28, 28, 34))            # the cabin
+    d.line((4, 44, 256, 44), fill=(150, 150, 160)); d.line((6, 45, 254, 45), fill=(60, 60, 70))   # the chrome along it
+    for x0, x1 in ((76, 120), (126, 170)): d.polygon([(x0, 12), (x1, 12), (x1, 28), (x0 - 10 if x0 == 76 else x0, 28)], fill=(52, 60, 80))
+    d.polygon([(176, 12), (194, 12), (214, 28), (176, 28)], fill=(52, 60, 80))
+    d.rectangle((126, 22, 170, 28), fill=(14, 14, 18))                                 # the rear window, down a way
+    d.line((74, 10, 198, 10), fill=(90, 90, 104))
+    for cx in (52, 206):
+        d.ellipse((cx - 16, 50, cx + 16, 76), fill=(12, 12, 14)); d.ellipse((cx - 8, 56, cx + 8, 70), fill=(150, 150, 160)); d.ellipse((cx - 3, 61, cx + 3, 66), fill=(70, 70, 80))
+    d.rectangle((248, 36, 255, 41), fill=(250, 240, 200)); d.rectangle((4, 36, 9, 42), fill=(200, 30, 30))
+    for x in range(20, 240, 3): im.putpixel((x, 33), (60, 60, 72, 255))
+    im.save(os.path.join(K, 'limo.png'), optimize=True)
+
 if __name__ == '__main__':
     poppo()
     backlot()
     sewer()
+    heroine()
+    limo()

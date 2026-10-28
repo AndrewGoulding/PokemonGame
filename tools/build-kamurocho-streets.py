@@ -354,10 +354,10 @@ def champion(P, atlas):
     return S.im
 
 def theater(P, atlas):
-    S = Scene(1200, 81); S.pave(P['pavement'], lambda p: ImageEnhance.Brightness(p).enhance(1.15))
+    S = Scene(1300, 81); S.pave(P['pavement'], lambda p: ImageEnhance.Brightness(p).enhance(1.15))
     # The cinema (the batting centre's front, its board the cinema's); the Kamuro Theater, the arcade's front four
-    # times along (its arched windows, its balustrade, its lamps), its marquee in bulbs across; Poppo and the
-    # karaoke on the square's other side. The square open before them: lamps, rails, the red Kamurocho sign.
+    # times along (its arched windows, its balustrade, its lamps), its marquee in bulbs across; Poppo and Heroine,
+    # the karaoke bar, on the square's other side. The square open before them: lamps, rails, the red Kamurocho sign.
     x = S.bay(hue(P['batting'], 150, 0.8))
     S.at(neon(board(atlas, 'KAMURO CINEMA', (20, 20, 50), (250, 240, 200), 2, bulbs=True), (200, 200, 255)), x + 90, 262)
     tx = S.x
@@ -367,8 +367,8 @@ def theater(P, atlas):
     light(S.im, (tx + S.x) // 2, 300, 300, 70, (255, 200, 140), 0.18)
     x = S.bay(P['poppo'])
     x = S.bay(hue(P['fujibashi'], 200, 1.2))
-    S.at(board(atlas, 'KARAOKE', (240, 200, 40), (40, 20, 10), 2), x + 30, 266)
-    lamps(S, P, (40, 300, 990, 1170))
+    S.at(neon(board(atlas, 'HEROINE', (50, 0, 40), (255, 140, 220), 2), (255, 80, 200)), x + 30, 266)   # (the karaoke bar)
+    lamps(S, P, (40, 300, 990, 1270))
     for rx in (420, 700): S.put(P['rail'], rx, BASE + 8)
     S.put(P['kamuro'], 380, BASE + 6); S.put(P['busstop'], 920, BASE + 6)
     S.put(P['bike2'], 1000, BASE + 6)

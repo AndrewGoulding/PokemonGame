@@ -22,6 +22,7 @@
 # (time-machine.png, the Time Machine, is this game's own, from the top-down Kamurocho it once had: kept as it is.)
 #   bacchus.png   the bar, 816x480 (the first half of its stage: the rest is more of the same)
 #   people/<id>.png   each one standing, facing right, their feet on the bottom row
+#   people/nishiki.png, nishiki_walk.png   Nishiki, made from Kiryu (nishiki)
 #   people/<id>_walk.png   and those who walk (and the foes), their walk: four frames side by side, each the width
 #                 of <id>.png
 import os, struct, sys
@@ -85,6 +86,29 @@ FOE_WALKS = {
 SYNTH_WALKS = {'knife': ((15, 2797, 1065, 88, 81), 50, 46, 6), 'host': ((15, 2741, 472, 35, 82), 46, 17, 4),
                'kiryu_idle': ((15, 4064, 1952, 30, 82), 46, 15, 4), 'majima_idle': ((15, 1722, 156, 28, 84), 48, 14, 4)}
 
+# Nishiki (Akira Nishikiyama, Kiryu's sworn brother, as Yakuza 0 has him: shoulder-length black hair, a navy suit, a
+# white shirt): Streets of Kamurocho hasn't him, so he's Kiryu at ease made him: his grey suit navy, his maroon shirt
+# white, his hair grown down the back of his neck; and his walk made from it as Kiryu's is.
+NISHIKI_FROM = (15, 4064, 1952, 30, 82)
+def nishiki(im):
+    im = im.copy(); px = im.load(); w, h = im.size
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            if not a: continue
+            v = (r + g + b) // 3
+            if abs(r - g) < 16 and abs(g - b) < 20 and 60 < v < 250: px[x, y] = (int(v * 0.22) + 8, int(v * 0.27) + 10, int(v * 0.55) + 26, a)   # the suit
+            elif r > g + 50 and g < 70 and abs(g - b) < 30: k = min(1.0, 0.55 + r / 300); px[x, y] = (int(236 * k), int(234 * k), int(226 * k), a)   # the shirt (maroon; not his skin)
+    # (his hair: down the back of his head, two pixels wide, to his collar)
+    hair = [(x, y) for y in range(18) for x in range(w) if px[x, y][3] and sum(px[x, y][:3]) < 120]
+    if hair:
+        bottom = max(y for x, y in hair)
+        for y in range(bottom + 1, bottom + 6):
+            row = [x for x in range(w) if px[x, y][3]]
+            if not row: continue
+            for x in (row[0], row[0] + 1): px[x, y] = (22, 18, 20, 255)
+    return im
+
 def stride(im, hip, split, d):
     W, H = im.width + 2 * d + 4, im.height + 2
     px, bottom, out = im.load(), im.height - 1, []
@@ -104,7 +128,7 @@ def stride(im, hip, split, d):
     return out
 
 # (Those whose frames face left in the atlas: turned round, so all of them face right.)
-FACING_LEFT = {'kiryu_idle', 'majima_idle', 'host_idle', 'loiterer', 'drunk_idle', 'drunk_walk', 'kiryu_idle_walk', 'majima_idle_walk'}
+FACING_LEFT = {'majima_idle', 'host_idle', 'loiterer', 'drunk_idle', 'drunk_walk', 'majima_idle_walk'}   # (Kiryu at ease faces right as it is)
 
 def strip(atlas, pid, rects, ims=None):
     # (each frame trimmed to itself, turned to face right, and set in a frame of one width: its head (the middle of
@@ -161,6 +185,11 @@ def main():
         im.crop((0, 0, fw, im.height)).save(os.path.join(OUT, 'people', pid + '.png'), optimize=True)
     for foe, (e, rects) in FOE_WALKS.items():
         strip(atlas[e], foe + '_walk', rects)[0].save(os.path.join(OUT, 'people', foe + '_walk.png'), optimize=True)
+    x, y, w, h = NISHIKI_FROM[1:]
+    nk = nishiki(atlas[NISHIKI_FROM[0]].crop((x, y, x + w, y + h)))
+    walk_, fw = strip(None, 'nishiki_walk', None, stride(nk, 46, 15, 4))
+    walk_.save(os.path.join(OUT, 'people', 'nishiki_walk.png'), optimize=True)
+    walk_.crop((0, 0, fw, walk_.height)).save(os.path.join(OUT, 'people', 'nishiki.png'), optimize=True)
     for foe, ((e, x, y, w, h), hip, split, d) in SYNTH_WALKS.items():
         ims = stride(atlas[e].crop((x, y, x + w, y + h)), hip, split, d)
         strip(None, foe + '_walk', None, ims)[0].save(os.path.join(OUT, 'people', foe + '_walk.png'), optimize=True)

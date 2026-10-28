@@ -10169,6 +10169,14 @@
       sf.text("KAMUROCHO", 4, 0, W, [8, 12, 28], "small");
       const name = (K.scenes[loc.scene] || {}).title || "";
       sf.text(name, 236 - sf.textWidth(name, "small"), 0, [255, 224, 120], [8, 12, 28], "small");
+      // (where the story's headed, Heroine: a red flag on it, its name along the bottom)
+      const wp = player.flags.kamurochoWaypoint, wm = wp && Mp[wp];
+      if (wm) {
+        const [wx, wy] = (wm.at ? along(Mp[wm.at[0]].line, wm.at[1]) : along(wm.line, 0.5)).map(Math.round);
+        sf.fill(wx, wy - 12, 1, 12, [240, 240, 240]); sf.fill(wx + 1, wy - 12, 6, 4, [232, 48, 48]); sf.fill(wx + 1, wy - 8, 4, 1, [232, 48, 48]);
+        const t2 = "\u25b6 " + ((K.scenes[wp] || {}).title || wp);
+        sf.fill(0, 150, 240, 10, [8, 12, 28]); sf.text(t2, 4, 150, [255, 120, 120], [8, 12, 28], "small");
+      }
       if (Mp[here] && Mp[here].line && blink) {
         const [x, y] = along(Mp[here].line, frac).map(Math.round);
         sf.fill(x - 3, y - 3, 7, 7, [16, 24, 48]); sf.fill(x - 2, y - 2, 5, 5, [232, 56, 56]); sf.put(x, y, W);
@@ -10255,6 +10263,63 @@
     await fanfare("mus_obtain_key_item");
     await say(["Majima: Hee hee hee! That was the\nmost fun I've had all year!", "I'm stickin' with you! Ain't\nnobody gonna stop me!", realmWrap("Goro Majima joined the party!" + JOINED[where])]);
     await Overworld.refreshPeople();
+  }
+  // Yakuza 0's opening, the first time you come out onto Kamurocho's street (ui/street.js's cutscene): December 1988.
+  // In the Empty Lot, Kiryu collects a debt from a man who's run out of excuses; on the street, he hands the money
+  // in at a loan shark's limousine; and Nishiki finds him and drags him off to Heroine, the karaoke bar in Theater
+  // Square. Then you're yourself again where you stood, and Heroine's marked on the Map (flags.kamurochoWaypoint)
+  // until you get there. (flags.y0Prologue: it's been played.)
+  async function kamurochoPrologue() {
+    const f = player.flags;
+    await Street.cutscene([
+      { fade: "out" },
+      { scene: "alley", cam: [300, 446] },
+      { actor: "debtor", sprite: "salaryman_idle", x: 440, y: 448, face: "left" },
+      { actor: "kiryu", sprite: "kiryu_idle", walk: "kiryu_idle_walk", x: -20, y: 448, face: "right" },
+      { fade: "in" },
+      { say: ["Kamurocho, Tokyo. December 1988.", "The Empty Lot, behind the bright\nlights of the street..."] },
+      { walk: "kiryu", to: [380, 448] },
+      { say: ["Man: P-please! I'll pay, I swear!\nJust give me one more week!", "Kiryu: You said that last week."] },
+      { hit: "debtor" },
+      { say: ["Man: Okay, okay! Here! It's all\nthere... every last yen!", "Kiryu: ...Next time, don't borrow\nwhat you can't pay back."] },
+      { walk: "debtor", to: [640, 456], speed: 2.4 },
+      { gone: "debtor" },
+      { fade: "out" },
+      { scene: "street", cam: [2720, 440] },
+      { thing: "limo", image: "assets/kamurocho/limo.png", x: 2700, y: 436 },
+      { actor: "kiryu", sprite: "kiryu_idle", walk: "kiryu_idle_walk", x: 2990, y: 456, face: "left" },
+      { fade: "in" },
+      { walk: "kiryu", to: [2724, 460] },
+      { face: "kiryu", dir: "left" },
+      { say: ["The limo's back window slides down.", "Loan shark: Kiryu-chan! Right on\ntime, as always.", "That's why the Dojima family\nkeeps you around.",
+        "Kiryu: It's all there. Count it\nif you like.", "Loan shark: No need, no need.\nTake the rest of the night off.", "Kamurocho's yours tonight!"] },
+      { move: "limo", to: 2300, speed: 3 },
+      { gone: "limo" },
+      { actor: "nishiki", sprite: "nishiki", walk: "nishiki_walk", x: 2420, y: 452, face: "right" },
+      { walk: "nishiki", to: [2660, 456], speed: 1.6 },
+      { face: "kiryu", dir: "left" },
+      { say: ["Nishiki: Kiryu! There you are!\nAll done with the collecting?", "Kiryu: Just finished, Nishiki.",
+        "Nishiki: Then we're drinking to it!\nHeroine, in Theater Square.", "The new girl there sings like an\nangel. My treat... well, your treat.", "Kiryu: ...Heh. Lead the way."] },
+      { walk: "nishiki", to: [2380, 452], speed: 1.4 },
+      { fade: "out" }
+    ], { say });
+    f.y0Prologue = true;
+    f.kamurochoWaypoint = "heroine";
+    show("street");
+    await say(["Kiryu and Nishiki are headed for\nHeroine, the karaoke bar in Theater\nSquare.", "It's marked on your Map\n(START, then Map)."]);
+    await persist();
+  }
+  // (Coming into a street: a scene to play there, or reaching where the Map marks: for ui/street.js's enter.)
+  function kamurochoEnter(sceneId) {
+    const f = player.flags;
+    if (sceneId === "street" && !f.y0Prologue) return { type: "prologue" };
+    if (sceneId === "heroine" && f.kamurochoWaypoint === "heroine") return { type: "heroine" };
+    return null;
+  }
+  async function kamurochoHeroine() {
+    player.flags.kamurochoWaypoint = null;
+    await say(["Heroine's lights are low, and the\nkaraoke's loud.", "Nishiki: Hey, you made it! Grab a\nmic, the night's young!"]);
+    await persist();
   }
   // The karaoke box off Theater Square (ui/karaoke.js, data/karaoke-songs.js): a song, sung; each song's best score
   // kept (flags.karaoke), and the first time one scores 90 or more, a Staminan Spark on the house.
@@ -15944,12 +16009,14 @@
   async function exploreStreet() {
     Player.enterRealm(player, "yakuza");
     music((window.WORLD_MAPS.Kamurocho || {}).music);
-    const ev = await Street.explore({ player, look: () => Overworld.playerLook(), special, visible: (p) => visible(p, "Kamurocho"), level: realmBestLevel, followers: realmFollowers,
+    const ev = await Street.explore({ player, look: () => Overworld.playerLook(), special, visible: (p) => visible(p, "Kamurocho"), level: realmBestLevel, followers: realmFollowers, enter: kamurochoEnter,
       onStep: (fights) => { Player.advanceClock(player); return fights ? realmStreetStep() : saveReminderStep(); } });
     if (ev.type === "menu") {
       await startMenu();
       if (fieldAction) { const act = fieldAction; fieldAction = null; await act(); }
     } else if (ev.type === "say") await say(ev.pages);
+    else if (ev.type === "prologue") await kamurochoPrologue();
+    else if (ev.type === "heroine") await kamurochoHeroine();
     else if (ev.type === "talk") await story({ type: "talk", person: ev.person, map: "Kamurocho" });
     else if (ev.type === "spot") await story({ type: "talk", person: { script: ev.script }, map: "Kamurocho" });
     // (A gang that walked up to you: that gang, its leader's line first.)

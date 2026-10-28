@@ -3676,8 +3676,15 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   lane back to the square), at Bacchus's, Poppo's or Serena's door and press A to go in (out of Bacchus,
   walk off its left; out of Poppo, walk up into its glass door; out of the backlot, walk up the lit passage at its left); in Poppo, stand
   at the counter and press A to talk to the clerk and buy; on the backlot's manhole, A climbs down (the ladder, A,
-  back up); the Time Machine's spot, A, is its menu. **Karaoke** (Yakuza 0's, this game's way: `ui/karaoke.js`): in Theater Square,
-  at the karaoke box's door under its board, A, and pick a song (`data/karaoke-songs.js`, this game's own words and
+  back up); the Time Machine's spot, A, is its menu. **Yakuza 0's opening**: the first time you come out onto
+  the street (`kamurochoPrologue`, played by `ui/street.js`'s `cutscene`: actors, the camera, words, fades, a blow, the
+  film's black bars): Kiryu collects a debt from a man in the Empty Lot, hands the money in at a loan shark's limousine
+  on the street, and Nishiki (Kiryu at ease recoloured: a navy suit, a white shirt, his hair to his collar,
+  `tools/build-kamurocho-sok.py`'s `nishiki`) finds him and takes him off to **Heroine**, the karaoke bar in Theater
+  Square (its pink neon on the square; inside, this game's own: the bar, a booth, the stage and its screen,
+  `tools/build-kamurocho-insides.py`). Then you have yourself back, and Heroine's flagged on the Map
+  (`flags.kamurochoWaypoint`) till you walk in; Kiryu and Nishiki are there, and Kiryu joins you there.
+  **Karaoke** (Yakuza 0's, this game's way: `ui/karaoke.js`): in Heroine, on its stage, A, and pick a song (`data/karaoke-songs.js`, this game's own words and
   tunes: Kamurocho Nights, 24-Hour Champion and Dojima Blues). It plays on a GBA's kind of sound, its own sequencer
   (two pulse waves, a triangle bass and noise drums, through the game's volume), so every prompt falls on its note;
   the words run over the street on the box's screen, lit as they're sung; and for each syllable sung on the beat, its

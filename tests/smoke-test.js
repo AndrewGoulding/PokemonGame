@@ -7393,7 +7393,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     assert(inside(K.scenes.taihei.floor, 800, 590), "Taihei Boulevard's road");
     // (the karaoke box: its spot, and each song's words within its bars, each line done before the next, a
     // syllable a note)
-    assert(K.scenes.theater.spots.some((sp) => sp.script === "Kamurocho_Karaoke"), "the karaoke box");
+    assert(K.scenes.heroine.spots.some((sp) => sp.script === "Kamurocho_Karaoke") && K.scenes.theater.exits.some((e) => e.to === "heroine"), "Heroine, the karaoke bar");
     // (every realm… and kamurocho… function ui/game.js calls is one it defines: a missing one hangs the game where it's
     // called, as realmPoints once did after a level-up)
     {

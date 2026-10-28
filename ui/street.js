@@ -113,6 +113,7 @@
 
   // ---------- Drawing ----------
   function draw(opts) {
+    if (cs) return drawCutscene();
     const S = scene(), bg = image(S.image);
     cam.x = Math.max(0, Math.min(S.width - W, Math.round(me.x - W / 2)));
     cam.y = Math.max(0, Math.min((S.height || 480) - H, Math.round(me.y - H * 0.72)));
@@ -121,18 +122,7 @@
     // (everyone and everything, the furthest back first)
     const list = [];
     for (const th of S.things || []) list.push({ y: th.floor ? -Infinity : th.y, draw: () => { const i = image(th.image); if (ready(i)) g.drawImage(i, Math.round(th.x - i.width * th.scale / 2 - cam.x), Math.round(th.y - i.height * th.scale - cam.y), i.width * th.scale, i.height * th.scale); } });
-    for (const p of people(opts)) list.push({ y: p.y, draw: () => {
-      const i = image("assets/kamurocho/people/" + p.sprite + ".png"), wk = p.walk && image("assets/kamurocho/people/" + p.walk + ".png");
-      if (!ready(i)) return;
-      // (walking: their walk's frames in turn; standing, their breath)
-      const step = p.moving && ready(wk), x = Math.round(p.x - cam.x), y = Math.round(p.y - cam.y), bob = step ? 0 : Math.floor(t / 30 + p.home) % 2;
-      shadow(x, y, i.width * 0.4);
-      g.save(); g.translate(x, y - bob);
-      if (p.face === "left") g.scale(-1, 1);
-      if (step) g.drawImage(wk, (Math.floor(p.dist / 6) % FRAMES) * i.width, 0, i.width, i.height, -Math.round(i.width / 2), -i.height, i.width, i.height);
-      else g.drawImage(i, -Math.round(i.width / 2), -i.height + bob);
-      g.restore();
-    } });
+    for (const p of people(opts)) list.push({ y: p.y, draw: () => drawPerson(p) });
     for (const gang of gangs) gang.members.forEach((m, k) => list.push({ y: m.y, draw: () => drawFoe(gang, m, k) }));
     for (const f of followers(opts)) list.push({ y: f.y - 0.1, draw: () => drawFollower(f) });
     list.push({ y: me.y, draw: () => drawMe(opts) });
@@ -141,6 +131,18 @@
     // (a spot's name, while you stand in it)
     const here = spotAt();
     if (here && here.text) { g.font = "bold 9px 'Trebuchet MS', sans-serif"; g.textAlign = "center"; g.fillStyle = "#000a"; const bw = Math.max(92, Math.ceil(g.measureText(here.text + "  Ⓐ").width) + 14); g.fillRect(W / 2 - bw / 2, 4, bw, 14); g.fillStyle = "#ffe890"; g.fillText(here.text + "  Ⓐ", W / 2, 14); g.textAlign = "left"; }
+  }
+  // (someone on the street: walking, their walk's frames in turn; standing, their breath)
+  function drawPerson(p) {
+    const i = image("assets/kamurocho/people/" + p.sprite + ".png"), wk = p.walk && image("assets/kamurocho/people/" + p.walk + ".png");
+    if (!ready(i)) return;
+    const step = p.moving && ready(wk), x = Math.round(p.x - cam.x), y = Math.round(p.y - cam.y), bob = step ? 0 : Math.floor(t / 30 + (p.home || 0)) % 2;
+    shadow(x, y, i.width * 0.4);
+    g.save(); g.translate(x, y - bob);
+    if (p.face === "left") g.scale(-1, 1);
+    if (step) { const fw = wk.width / FRAMES; g.drawImage(wk, (Math.floor(p.dist / 6) % FRAMES) * fw, 0, fw, wk.height, -Math.round(fw / 2), -wk.height, fw, wk.height); }
+    else g.drawImage(i, -Math.round(i.width / 2), -i.height + bob);
+    g.restore();
   }
   // (one of a gang: walking, their foe's walk if it has one (KAMUROCHO_STREET.foeWalks), else squared up; their
   // leader's "!" when they've seen you, and his words when they've caught you)
@@ -361,6 +363,85 @@
     return people(opts).some((p) => Math.abs(p.x - x) < 20 && Math.abs(p.y - y) < 7);
   }
 
+  // ---------- Cutscenes ----------
+  // A scene played out on the streets (Yakuza 0's opening: ui/game.js's kamurochoPrologue): its own people (actors),
+  // in a scene of their own, the camera where it's told, and you out of it. Its steps, in turn:
+  //   { scene, cam: [x, y] }                 to that scene, the camera there (its middle)
+  //   { actor, sprite, walk, x, y, face }     someone there (`actor` their name for the steps after)
+  //   { walk: actor, to: [x, y], speed }      they walk there (the camera with them, if `follow`)
+  //   { face: actor, dir }                    they turn
+  //   { gone: actor }                         they're gone
+  //   { thing: name, image, x, y }            a picture on the street (the limo); { move: name, to: x, speed } drives it
+  //   { pan: [x, y], speed }                  the camera glides there
+  //   { say: [pages] }                        words (opts.say, the game's text box)
+  //   { hit: actor }                          a blow: the screen shakes, a sound
+  //   { wait: frames }, { fade: "out" | "in" }
+  // -> when it's done (you back where you were, as you were).
+  let cs = null;
+  function drawCutscene() {
+    const S = D().scenes[cs.scene], bg = image(S.image);
+    const sx = cs.shake > 0 ? (cs.shake % 2 ? 3 : -3) : 0;
+    cam.x = Math.max(0, Math.min(S.width - W, Math.round(cs.cam[0] - W / 2))) + sx;
+    cam.y = Math.max(0, Math.min((S.height || 480) - H, Math.round(cs.cam[1] - H * 0.72)));
+    g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
+    if (ready(bg)) g.drawImage(bg, cam.x, cam.y, W, H, 0, 0, W, H);
+    const list = [];
+    for (const th of (S.things || []).concat(Object.values(cs.things))) list.push({ y: th.floor ? -Infinity : th.y, draw: () => { const i = image(th.image), k = th.scale || 1; if (ready(i)) g.drawImage(i, Math.round(th.x - i.width * k / 2 - cam.x), Math.round(th.y - i.height * k - cam.y), i.width * k, i.height * k); } });
+    for (const a of Object.values(cs.actors)) list.push({ y: a.y, draw: () => drawPerson(a) });
+    list.sort((a, b) => a.y - b.y).forEach((o) => o.draw());
+    // (the black bars of a scene from the films, top and bottom; and the fade)
+    g.fillStyle = "#000"; g.fillRect(0, 0, W, 14); g.fillRect(0, H - 14, W, 14);
+    if (cs.dark > 0) { g.fillStyle = "rgba(0,0,0," + Math.min(1, cs.dark) + ")"; g.fillRect(0, 0, W, H); }
+  }
+  async function cutscene(steps, opts) {
+    const was = active;
+    active = false; held.clear();
+    cs = { scene: (me && me.scene) || "street", cam: [me ? me.x : 0, me ? me.y : 440], actors: {}, things: {}, shake: 0, dark: 0, follow: null };
+    show(true);
+    let running = true, task = null;
+    // (a frame at a time: whoever's walking walks, the camera follows or glides, the screen shakes and fades)
+    const loop = () => {
+      if (!running) return;
+      t++;
+      if (task) task();
+      if (cs.follow && cs.actors[cs.follow]) cs.cam = [cs.actors[cs.follow].x, cs.actors[cs.follow].y];
+      if (cs.shake > 0) cs.shake--;
+      drawCutscene();
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+    const until = (fn) => new Promise((resolve) => { task = () => { if (fn()) { task = null; resolve(); } }; });
+    for (const st of steps) {
+      if (st.scene) { cs.scene = st.scene; cs.actors = {}; cs.things = {}; cs.follow = null; if (st.cam) cs.cam = st.cam.slice(); }
+      else if (st.actor) cs.actors[st.actor] = { sprite: st.sprite, walk: st.walk, x: st.x, y: st.y, face: st.face || "right", moving: false, dist: 0, home: Object.keys(cs.actors).length };
+      else if (st.walk) {
+        const a = cs.actors[st.walk], v = st.speed || 1.2;
+        if (st.follow) cs.follow = st.walk;
+        await until(() => {
+          const dx = st.to[0] - a.x, dy = st.to[1] - a.y, d = Math.hypot(dx, dy);
+          if (d <= v) { a.x = st.to[0]; a.y = st.to[1]; a.moving = false; return true; }
+          a.x += dx / d * v; a.y += dy / d * v * 0.8; a.dist += v; a.moving = true;
+          if (Math.abs(dx) > 0.5) a.face = dx < 0 ? "left" : "right";
+          return false;
+        });
+        if (st.follow) cs.follow = null;
+      } else if (st.face) cs.actors[st.face].face = st.dir;
+      else if (st.gone) delete cs.actors[st.gone];
+      else if (st.thing) cs.things[st.thing] = { image: st.image, x: st.x, y: st.y, scale: st.scale || 1 };
+      else if (st.move) { const th = cs.things[st.move], v = st.speed || 2; await until(() => { const dx = st.to - th.x; if (Math.abs(dx) <= v) { th.x = st.to; return true; } th.x += Math.sign(dx) * v; return false; }); }
+      else if (st.pan) { const v = st.speed || 2; await until(() => { const dx = st.pan[0] - cs.cam[0], dy = st.pan[1] - cs.cam[1], d = Math.hypot(dx, dy); if (d <= v) { cs.cam = st.pan.slice(); return true; } cs.cam = [cs.cam[0] + dx / d * v, cs.cam[1] + dy / d * v]; return false; }); }
+      else if (st.say) { await opts.say(st.say); window.Screen.say(""); }
+      else if (st.hit) { cs.shake = 16; if (window.GameAudio) window.GameAudio.se("se_m_comet_punch"); await until(() => cs.shake <= 0); }
+      else if (st.wait) { let n = st.wait; await until(() => --n <= 0); }
+      else if (st.fade) { const to = st.fade === "out" ? 1 : 0; await until(() => { cs.dark += to ? 0.05 : -0.05; if ((to && cs.dark >= 1) || (!to && cs.dark <= 0)) { cs.dark = to; return true; } return false; }); }
+    }
+    running = false;
+    cs = null;
+    active = was;
+    newScene = false;
+    if (me) draw(opts);
+  }
+
   // ---------- Exploring ----------
   function explore(opts) {
     if (!me || !opts.player.location.street) place(opts.player.location.street);
@@ -380,7 +461,12 @@
         const n = Math.min(4, Math.round((now - last) / (1000 / 60))); last = now;
         for (let k = 0; k < n; k++) {
           t++;
-          if (newScene) { newScene = false; spawnGangs(opts); }
+          if (newScene) {
+            newScene = false; spawnGangs(opts);
+            // (a scene with something to play out when you come in: opts.enter, a cutscene's event)
+            const ev = opts.enter && opts.enter(me.scene);
+            if (ev) return finish(ev);
+          }
           amble();
           const fight = prowl(opts);
           if (fight) return finish(fight);
@@ -446,6 +532,6 @@
       position: (cam.x / Math.max(1, S.width - W) * 100) + "% " + (cam.y / (SH - H) * 100) + "%" };
   }
   const isStreet = (map) => map === "Kamurocho";
-  window.Street = { explore, show, backdrop, isStreet, place: (loc) => place(loc), here: () => me && Object.assign({}, me), people: () => me ? people({}) : [],
+  window.Street = { explore, show, backdrop, isStreet, cutscene, place: (loc) => place(loc), here: () => me && Object.assign({}, me), people: () => me ? people({}) : [],
     gangs: () => gangs.map((gang) => ({ foes: gang.foes, x: Math.round(gang.x), y: Math.round(gang.y), state: gang.state })), redraw: (opts) => me && draw(opts) };
 })();

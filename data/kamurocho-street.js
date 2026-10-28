@@ -56,7 +56,7 @@ window.KAMUROCHO_STREET = {
       "nakamichi-alley": { line: [[44, 132], [44, 70]], w: 2, label: [48, 98], name: "Nakamichi\nAlley" },
       "theater-alley": { line: [[44, 70], [44, 38], [80, 38]], w: 2, label: [48, 50], name: "Theater\nAlley" },
       alley: { line: [[200, 104], [208, 116]], w: 2, label: null },
-      poppo: { at: ["street", 0.24] }, backlot: { at: ["street", 0.17] }, sewer: { at: ["street", 0.17] }, bacchus: { at: ["street", 0.97] }
+      heroine: { at: ["theater", 0.94] }, poppo: { at: ["street", 0.24] }, backlot: { at: ["street", 0.17] }, sewer: { at: ["street", 0.17] }, bacchus: { at: ["street", 0.97] }
     }
   },
   scenes: {
@@ -78,8 +78,6 @@ window.KAMUROCHO_STREET = {
           text: ["Pink Street's lit up all night.", "Every club round here wants a\nregular. I'm everybody's."] },
         { script: "Kamurocho_Thug", sprite: "thug_idle", walk: "thug_idle_walk", range: 60, x: 1110, y: 360, face: "left",
           text: ["Whaddya lookin' at?", "...Hmph. Smile Burger's got the\nbest burgers in town. Don't tell\nanyone I said that."] },
-        { script: "Kamurocho_Kiryu", sprite: "kiryu_idle", x: 1520, y: 430, face: "left",
-          text: ["Kiryu: ...Name's Kazuma Kiryu.\nDojima family.", "Or I was, till they pinned a\nkilling in that empty lot on me.", "I'll find who set me up.\nWhatever it takes."] },
         { script: "Kamurocho_Bowler", sprite: "loiterer", x: 2180, y: 410, face: "right",
           text: ["The batting cages are open all\nnight. Step up to the plate!"] },
         { script: "Kamurocho_Salaryman", sprite: "salaryman_idle", walk: "salaryman_idle_walk", range: 80, x: 2480, y: 450, face: "left",
@@ -217,15 +215,15 @@ window.KAMUROCHO_STREET = {
       ]
     },
     theater: {
-      title: "Theater Square", image: "assets/kamurocho/theater.png", width: 1200, encounters: true,
-      floor: [[0, 410], [1200, 410], [1200, 470], [0, 470]],
+      title: "Theater Square", image: "assets/kamurocho/theater.png", width: 1300, encounters: true,
+      floor: [[0, 410], [1300, 410], [1300, 470], [0, 470]],
       exits: [{ edge: "left", to: "tenkaichi", x: 1370, y: 440, facing: "left" },
         { edge: "right", to: "champion", x: 870, y: 440, facing: "left" },
         // (through the Kamuro Theater's arcade: behind it, and out the far side to Shichifuku Street)
         { spot: [400, 520, 410, 426], to: "theater-alley", x: 660, y: 440, facing: "left", text: "Theater Alley" },
-        { spot: [840, 960, 410, 426], to: "shichifuku", x: 580, y: 440, facing: "down", text: "Shichifuku Street" }],
-      // (the karaoke box, its board over its door: ui/karaoke.js)
-      spots: [{ x0: 1140, x1: 1192, y0: 410, y1: 426, script: "Kamurocho_Karaoke", text: "Karaoke" }],
+        { spot: [840, 960, 410, 426], to: "shichifuku", x: 580, y: 440, facing: "down", text: "Shichifuku Street" },
+        // (Heroine, the karaoke bar, its pink neon over its door)
+        { spot: [1160, 1280, 410, 426], to: "heroine", x: 60, y: 432, facing: "right", text: "Heroine" }],
       people: [
         { script: "Kamurocho_Moviegoer", sprite: "tourist", walk: "tourist_walk", range: 80, x: 160, y: 440, face: "right",
           text: ["The late show at Kamuro Cinema\nis a yakuza picture.", "Like we don't get enough\nof that out here."] },
@@ -338,6 +336,20 @@ window.KAMUROCHO_STREET = {
           text: ["The stage door's this way.\nI've got the lead tonight!", "...I'm the third guard from\nthe left. It's a start."] },
         { script: "Kamurocho_Fan", sprite: "reveller", x: 560, y: 420, face: "left",
           text: ["I'm waiting for an autograph.\nThe star always leaves this way."] }
+      ]
+    },
+    // (Heroine, the karaoke bar off Theater Square, this game's own (tools/build-kamurocho-insides.py): where Kiryu
+    // and Nishiki go drinking as Yakuza 0 begins. Out through its door on the left; its stage, A, to sing.)
+    heroine: {
+      title: "Heroine", image: "assets/kamurocho/heroine.png", width: 760,
+      floor: [[0, 414], [760, 414], [760, 470], [0, 470]],
+      exits: [{ spot: [12, 92, 414, 424], walk: "up", to: "theater", x: 1210, y: 420, facing: "down", text: "Door" }],
+      spots: [{ x0: 560, x1: 740, y0: 414, y1: 440, script: "Kamurocho_Karaoke", text: "Karaoke" }],
+      people: [
+        { script: "Kamurocho_Kiryu", sprite: "kiryu_idle", x: 300, y: 446, face: "right",
+          text: ["Kiryu: ...Name's Kazuma Kiryu.\nDojima family.", "Nishiki and I grew up together.\nSworn brothers, the both of us."] },
+        { script: "Kamurocho_Nishiki", sprite: "nishiki", x: 400, y: 446, face: "left",
+          text: ["Nishiki: Akira Nishikiyama! Kiryu's\nsworn brother.", "Grab a mic! Nobody leaves\nHeroine without a song."] }
       ]
     },
     bacchus: {
