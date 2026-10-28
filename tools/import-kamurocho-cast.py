@@ -8,8 +8,8 @@
 #
 #   python3 tools/import-kamurocho-cast.py
 #
-# Writes assets/kamurocho/people/<name>.png (standing: the first frame) and <name>_walk.png (four frames, the two
-# in turn), for Kuze, Kashiwagi, Awano, Oda, Shibusawa, Tachibana, Toko Credit's president and Dojima; and Kiryu's and
+# Writes assets/kamurocho/people/<name>.png (standing: the first frame) and <name>_walk.png (four frames: its legs
+# swung from that frame, steps()), for Kuze, Kashiwagi, Awano, Oda, Shibusawa, Tachibana, Toko Credit's president and Dojima; and Kiryu's and
 # Majima's at ease (kiryu_idle, kiryu_idle_walk, majima_idle, majima_idle_walk) and Nishiki's, over
 # tools/build-kamurocho-sok.py's (run this after it).
 import os
@@ -67,6 +67,33 @@ def facing_right(im):
     mid = sum(x for x, y in head) / len(head)
     return im if sum(skin) / len(skin) >= mid else im.transpose(Image.FLIP_LEFT_RIGHT)
 
+STRIDE = 4   # (how far a foot goes forward or back in a step, in pixels)
+
+def steps(im):
+    # (a walk from one side-on frame: its legs, below the hip, split into the near leg and the far one at their
+    # middle, swung forward and back in turn, more the lower down (the foot most); the body a pixel up as the legs
+    # pass under it. Four frames: stride, pass, the other stride, pass.)
+    px = im.load(); w, h = im.size
+    rows = [y for y in range(h) if any(px[x, y][3] for x in range(w))]
+    top, bottom = rows[0], rows[-1]
+    hip = top + round((bottom - top) * 0.74)
+    xs = [x for y in range(hip, bottom + 1) for x in range(w) if px[x, y][3]]
+    mid = (min(xs) + max(xs)) / 2 if xs else w / 2
+    out = []
+    for swing, lift in ((STRIDE, 0), (0, 1), (-STRIDE, 0), (0, 1)):
+        f = Image.new('RGBA', (w, h), (0, 0, 0, 0)); fp = f.load()
+        for y in range(h):
+            for x in range(w):
+                c = px[x, y]
+                if not c[3]: continue
+                if y < hip: nx, ny = x, y - lift
+                else:
+                    t = (y - hip + 1) / max(1, bottom - hip + 1)
+                    nx, ny = x + round((swing if x >= mid else -swing) * t), y - (lift if y < bottom - 2 else 0)
+                if 0 <= nx < w and 0 <= ny < h and not fp[nx, ny][3]: fp[nx, ny] = c
+        out.append(f)
+    return out
+
 def main():
     sheets = {}
     for name, (file, (x0, x1), rows) in CAST.items():
@@ -80,12 +107,11 @@ def main():
         frames = []
         for f in fr:
             c = Image.new('RGBA', (w, h), (0, 0, 0, 0)); c.alpha_composite(f, ((w - f.width) // 2, h - f.height)); frames.append(c)
-        frames[0].save(os.path.join(OUT, name + '.png'), optimize=True)
-        walk = Image.new('RGBA', (4 * w, h), (0, 0, 0, 0))
-        if len(frames) == 1:
-            # (one frame only: its walk that frame, bobbing a pixel on every other step)
-            up = Image.new('RGBA', (w, h), (0, 0, 0, 0)); up.alpha_composite(frames[0].crop((0, 1, w, h)), (0, 0)); frames.append(up)
-        for i, f in enumerate([frames[0], frames[1], frames[0], frames[1]]): walk.alpha_composite(f, (i * w, 0))
+        # (standing: the first frame, a little room either side for the walk's stride)
+        stand = Image.new('RGBA', (w + 2 * STRIDE, h), (0, 0, 0, 0)); stand.alpha_composite(frames[0], (STRIDE, 0))
+        stand.save(os.path.join(OUT, name + '.png'), optimize=True)
+        walk = Image.new('RGBA', (4 * stand.width, h), (0, 0, 0, 0))
+        for i, f in enumerate(steps(stand)): walk.alpha_composite(f, (i * stand.width, 0))
         walk.save(os.path.join(OUT, WALKS.get(name, name + '_walk') + '.png'), optimize=True)
         print(name, (w, h))
 
