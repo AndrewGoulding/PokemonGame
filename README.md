@@ -3702,7 +3702,9 @@ balls here (bring them along at the Time Machine to fight), and there are no wil
   continued. The offices are this game's own (`tools/build-kamurocho-insides.py`'s `office`); the Dojima HQ is
   outside Kamurocho, reached only by the story (`story`). The story's people (Kuze, Kashiwagi, Awano, Oda,
   Shibusawa, Tachibana, Toko Credit's president and Dojima) are from the sheet of them given for the game
-  (`assets/kamurocho/cast-sheet/cast.webp`), their right-facing frames cut out by `tools/import-kamurocho-cast.py`. The debug menu's **Reset
+  (`assets/kamurocho/cast-sheet/cast.webp`), their right-facing frames cut out by `tools/import-kamurocho-cast.py`; Kiryu, Nishiki and Majima on the streets,
+  standing and walking, from its second sheet (`heroes.webp`), over Streets of Kamurocho's (their fighting stances in
+  battle are still its own). The debug menu's **Reset
   Kamurocho progress** puts the story back before its opening (and, if asked, the realm's party back to you alone).
   **Karaoke** (Yakuza 0's, this game's way: `ui/karaoke.js`): in Heroine, on its stage, A, and pick a song (`data/karaoke-songs.js`, this game's own words and
   tunes: Kamurocho Nights, 24-Hour Champion and Dojima Blues). It plays on a GBA's kind of sound, its own sequencer

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-# The story's cast for Kamurocho (ui/game.js's Yakuza 0 first chapter), from the sheet of them given for this game
-# (assets/kamurocho/cast-sheet/cast.webp: each one's front, back, left and right, two frames apiece, on black). The
+# Kamurocho's people from the sheets of them given for this game (assets/kamurocho/cast-sheet: cast.webp, the
+# story's cast; heroes.webp, Kiryu, Nishiki and Majima; each one's front, back, left and right, two frames apiece, on
+# black). The
 # streets are side on, so each takes their right-facing pair (ui/street.js turns them round to face left): their
 # black background flooded away from the cell's edge (their own dark outline kept), cut to them, turned to face
 # right where a frame looks left, and brought to the street's people's height.
@@ -8,20 +9,28 @@
 #   python3 tools/import-kamurocho-cast.py
 #
 # Writes assets/kamurocho/people/<name>.png (standing: the first frame) and <name>_walk.png (four frames, the two
-# in turn), for Kuze, Kashiwagi, Awano, Oda, Shibusawa, Tachibana, Toko Credit's president and Dojima.
+# in turn), for Kuze, Kashiwagi, Awano, Oda, Shibusawa, Tachibana, Toko Credit's president and Dojima; and Kiryu's and
+# Majima's at ease (kiryu_idle, kiryu_idle_walk, majima_idle, majima_idle_walk) and Nishiki's, over
+# tools/build-kamurocho-sok.py's (run this after it).
 import os
 from collections import deque
 from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-SHEET = os.path.join(ROOT, 'assets/kamurocho/cast-sheet/cast.webp')
+SHEETS = os.path.join(ROOT, 'assets/kamurocho/cast-sheet')
 OUT = os.path.join(ROOT, 'assets/kamurocho/people')
 TALL = 84          # (the street's people's height)
 
 # (each one's right-facing column on the sheet, x0-x1, and its two rows, y0-y1 each)
 TOP, BOTTOM = ((243, 372), (379, 498)), ((781, 887), (892, 991))
-CAST = {'kuze': ((266, 327), TOP), 'kashiwagi': ((673, 734), TOP), 'awano': ((1057, 1121), TOP), 'oda': ((1445, 1512), TOP),
-        'shibusawa': ((270, 326), BOTTOM), 'tachibana': ((675, 735), BOTTOM), 'president': ((1061, 1122), BOTTOM), 'dojima': ((1445, 1505), BOTTOM)}
+# (and from heroes.webp, Kiryu, Nishiki and Majima, a row a frame: their names as the street knows them, standing
+# and walking)
+ROWS = ((395, 612), (670, 885))
+CAST = {'kuze': ('cast.webp', (266, 327), TOP), 'kashiwagi': ('cast.webp', (673, 734), TOP), 'awano': ('cast.webp', (1057, 1121), TOP),
+        'oda': ('cast.webp', (1445, 1512), TOP), 'shibusawa': ('cast.webp', (270, 326), BOTTOM), 'tachibana': ('cast.webp', (675, 735), BOTTOM),
+        'president': ('cast.webp', (1061, 1122), BOTTOM), 'dojima': ('cast.webp', (1445, 1505), BOTTOM),
+        'kiryu_idle': ('heroes.webp', (386, 474), ROWS), 'nishiki': ('heroes.webp', (898, 998), ROWS), 'majima_idle': ('heroes.webp', (1419, 1510), ROWS)}
+WALKS = {'kiryu_idle': 'kiryu_idle_walk', 'majima_idle': 'majima_idle_walk'}   # (the rest: <name>_walk)
 
 def cut(sheet, box):
     im = sheet.crop(box).convert('RGBA'); px = im.load(); w, h = im.size
@@ -47,8 +56,9 @@ def facing_right(im):
     return im if sum(skin) / len(skin) >= mid else im.transpose(Image.FLIP_LEFT_RIGHT)
 
 def main():
-    sheet = Image.open(SHEET).convert('RGB')
-    for name, ((x0, x1), rows) in CAST.items():
+    sheets = {}
+    for name, (file, (x0, x1), rows) in CAST.items():
+        sheet = sheets.get(file) or sheets.setdefault(file, Image.open(os.path.join(SHEETS, file)).convert('RGB'))
         fr = [facing_right(cut(sheet, (x0, y0, x1, y1))) for y0, y1 in rows]
         k = TALL / max(f.height for f in fr)
         fr = [f.resize((max(1, round(f.width * k)), max(1, round(f.height * k))), Image.LANCZOS) for f in fr]
@@ -61,7 +71,7 @@ def main():
         frames[0].save(os.path.join(OUT, name + '.png'), optimize=True)
         walk = Image.new('RGBA', (4 * w, h), (0, 0, 0, 0))
         for i, f in enumerate([frames[0], frames[1], frames[0], frames[1]]): walk.alpha_composite(f, (i * w, 0))
-        walk.save(os.path.join(OUT, name + '_walk.png'), optimize=True)
+        walk.save(os.path.join(OUT, WALKS.get(name, name + '_walk') + '.png'), optimize=True)
         print(name, (w, h))
 
 if __name__ == '__main__':
