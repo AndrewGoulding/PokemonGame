@@ -7122,6 +7122,8 @@
   }
   if (window.HOENN_DEBUG) window.HoennDebug = Object.assign(window.HoennDebug || {}, { feebasSpots: () => [...feebasSpots()] });
   async function fish() {
+    // (No fishing without a Pokémon to fight what bites.)
+    if (!player.party.some((m) => !m.egg)) { await say("You don't have any POKéMON to fish\nwith!"); Screen.say(""); return; }
     const at = player.location;
     const here = window.WORLD_MAPS[at.map] || {};
     const frames = (n) => sleep(n * 1000 / 60);

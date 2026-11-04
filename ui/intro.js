@@ -964,8 +964,8 @@
       se();
       if (k === "a") {
         const r = race();
-        // (one of a kind, "a Saiyan"; of a people, "of the Frieza Race")
-        const of = /(Clan|Race)$/.test(r.name) ? "of the " : /^[AEIOU]/.test(r.name) ? "an " : "a ";
+        // (one of a kind, "a Saiyan"; of a people named as many, "one of the Arcosians")
+        const of = /(Clan|Race)$/.test(r.name) ? "of the " : /s$/.test(r.name) ? "one of the " : /^[AEIOU]/.test(r.name) ? "an " : "a ";
         if (await window.Screen.yesNo(locked ? "Is this how you want to look?" : (name ? name + ", you" : "You") + " are " + of + r.name + "?")) break;
         continue;
       }

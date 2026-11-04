@@ -7467,8 +7467,8 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     }
     for (const r of window.REALM_RACES) assert(r.looks.skin.length >= 7, r.id + "'s skins");
   }
-  // (Android 20 is Dr. Gero, not Mr. Popo; Frieza's people by the name the Dragon Ball games give them)
-  assert.strictEqual(window.REALM_RACES.find((r) => r.id === "arcosian").name, "Frieza Race");
+  // (Android 20 is Dr. Gero, not Mr. Popo; Frieza's people the Arcosians)
+  assert.strictEqual(window.REALM_RACES.find((r) => r.id === "arcosian").name, "Arcosians");
   // (The reeling game: held in your zone it's landed, perfectly; never reeled, it gets away; a hard fight's zone smaller)
   {
     require("../game/fishing-game.js");

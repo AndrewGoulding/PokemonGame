@@ -347,7 +347,7 @@ window.REALM_RACES = [
   { id: "android", name: "Android", home: "Dragon World", pic: "assets/dragonball/portraits/LG2_020.png", color: "#7888a0",
     text: "Dr. Gero's creations: endless\nenergy, steel bodies, no magic.",
     looks: { bodies: ["race_android"], skin: ["fair", "light", "tan", "brown", "dark", "majin_grey", "porcelain", "olive_skin", "deep", "zora_silver"], labels: { hair: "Hair", trim: "Visor" }, start: { body: "race_android" } } },
-  { id: "arcosian", name: "Frieza Race", home: "Dragon World", pic: "assets/dragonball/portraits/LG2_041.png", color: "#8858c0",
+  { id: "arcosian", name: "Arcosians", home: "Dragon World", pic: "assets/dragonball/portraits/LG2_041.png", color: "#8858c0",
     text: "Frieza's cold, cruel kin: quick\nand deadly, rulers of the stars.",
     looks: { bodies: ["race_arcosian"], skin: ["frost_white", "zora_silver", "majin_lilac", "majin_pink", "frost_gold", "frost_blue", "frost_black", "kai_purple"], labels: { hair: "Horns", outfit: "Armour", trim: "Plates" }, start: { body: "race_arcosian" } } },
   { id: "kai", name: "Kai", home: "Dragon World", pic: "assets/dragonball/portraits/BF_076.png", color: "#a060d0",
