@@ -7435,12 +7435,17 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     }
     if (r.looks.start) for (const k of ["body", "face", "hairstyle"]) assert(!r.looks.start[k] || P[r.looks.start[k]], r.id + "'s start: " + k);
   }
-  // (Every race has a man and a woman among its presets, each preset's parts there to be drawn, its colours colours.)
+  // (Every race offers its own one person, this game's own (race_<id>, tools/race_looks.py): a whole character, its
+  // fifteen frames drawn, its colours to choose; any presets' parts there to be drawn, their colours colours.)
   {
     const P = window.PLAYER_LOOK_PARTS, C = window.LOOK_COLOURS, ids = (k) => C[k].map((c) => c[0]);
+    const fs = require("fs"), path = require("path");
     for (const r of window.REALM_RACES) {
-      const L = r.looks, pr = L.bodies.filter((b) => P[b].kind === "whole" || P[b + "_face"]).map((b) => ({ body: b, gender: (L.female || []).includes(b) ? "female" : "male" })).concat(L.presets || []);
-      for (const g of ["male", "female"]) assert(pr.some((p) => p.gender === g), r.id + " has a " + g + " preset");
+      const L = r.looks, own = "race_" + r.id;
+      assert.deepStrictEqual(L.bodies, [own], r.id + " offers its own person");
+      assert(P[own] && P[own].kind === "whole" && P[own].family === "custom" && P[own].roles.includes("skin"), own);
+      const png = fs.readFileSync(path.join(__dirname, "..", "assets/world/sprites/looks", own + ".png"));
+      assert(png.readUInt32BE(16) === 15 * 32 && png.readUInt32BE(20) === 17 * 32, own + "'s sheet");
       for (const p of L.presets || []) {
         assert(["male", "female"].includes(p.gender) && P[p.body] && (!p.face || P[p.face].kind === "face") && (!p.hairstyle || P[p.hairstyle].kind === "hair"), r.id + ": " + p.name);
         if (p.face && p.hairstyle !== undefined) assert(P[p.face].hairs.includes(p.hairstyle || ""), p.name + "'s hair fits its face");
@@ -7459,12 +7464,6 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
       for (const c of C[k]) assert(c.length === 6 && c.slice(2).every((h, i, a) => /^#[0-9a-f]{6}$/.test(h) && (!i || lum(h) > lum(a[i - 1]))), k + ": " + c[0]);
     }
     for (const r of window.REALM_RACES) assert(r.looks.skin.length >= 7, r.id + "'s skins");
-    // (the Frieza Clan's and the Kais' women have heads of their own race's, made for them, in the Face row)
-    const P = window.PLAYER_LOOK_PARTS;
-    for (const [id, head] of [["arcosian", "arcosian_woman"], ["kai", "kai_woman"]]) {
-      const L = window.REALM_RACES.find((r) => r.id === id).looks, w = L.presets.find((p) => p.gender === "female");
-      assert(L.heads.includes(head) && w.face === head + "_face" && P[w.face].family === P[w.body].family && P[w.face].ref.length === 15, id + "'s woman");
-    }
   }
   // (Android 20 is Dr. Gero, not Mr. Popo; the Frieza Clan by that name)
   assert.strictEqual(window.REALM_RACES.find((r) => r.id === "arcosian").name, "Frieza Clan");

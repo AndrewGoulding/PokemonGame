@@ -8,7 +8,8 @@
 # Hyrule's people are The Minish Cap's (only their sprites): its townsfolk and children are drawn as a head on a body,
 # so any head goes on any body; and Link, whole. The Dragon World's are the Dragon Ball realm's people sheets already
 # in the repo (assets/dragonball/people/, from Legacy of Goku II and Buu's Fury), whole characters. Kanto's are
-# FireRed's own Red, Leaf and Gary (their overworld sheets in the repo).
+# FireRed's own Red, Leaf and Gary (their overworld sheets in the repo). (The creator offers none of these now: each
+# race has one person of this game's own, tools/race_looks.py, own_people(); the rest stay for saves made before.)
 #
 # Writes:
 #   assets/world/sprites/looks/<part>.png   each part: FireRed's nine frames (standing down, up, left; two steps
@@ -1168,6 +1169,13 @@ kggwwwwgHGgk
 }
 SIDE_ART['don_pianta'] = SIDE_ART['frankie'] = SIDE_ART['francesca'] = SIDE_ART['pianta']
 
+# ---------- The creator's own people: one for each race (tools/race_looks.py) ----------
+# This game's own, drawn there: each a whole character ("race_<id>"), the one look its race offers.
+def own_people():
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import race_looks
+    for rid, spec in race_looks.RACES.items():
+        character('race_' + rid, spec['name'], 'custom', race_looks.frames(rid), (0, 0), split=False)
+
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
     hyrule()
@@ -1178,6 +1186,7 @@ if __name__ == '__main__':
     pit_people()
     if isinstance(SS, SuperstarSaga): SS.save()
     paper_kingdom()
+    own_people()
     made_heads()
     hair_fitting()
     # (Each face's and hair's top row, frame by frame: a head too tall for where a body's neck is, a Frieza's on King

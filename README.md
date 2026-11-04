@@ -3953,37 +3953,17 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   the page and its description in the text box. Your race is `player.race`; each is a fighter in `REALM_FIGHTERS`
   (by its id), and it's who you fight as in the realms' battles. Hyrule's four are for the Zelda realm to come, the
   Dragon World's seven for the Dragon Ball realm; until then they fight in Kamurocho.
-- **You're your own character**: every race's look is a **body** (clothes), a **face** and a **hairstyle**, and the
-  established characters below are its **presets**: the Preset row puts you as one (Goku is Goku's face and hair on
-  Goku's body, in his own colours), and every row after it is yours to change: **Face** (any of the race's own
-  characters' and heads': another race's never sat right on its bodies, so a preset that has one, the Saiyan Woman's
-  Chi-Chi, keeps it, as does a look saved with one, but it isn't one to choose), **Hairstyle** (any that fits that face: the race's, and Humans, Saiyans and Androids share theirs, as
-  Hylians and Gerudo do; "None" for a bald face) and **Body** ("Custom" once it's no preset). Each character is cut at
-  its neck (the narrowest row from 30% to 60% of the way down it standing facing you, the same height every way it
-  faces, and by eye where that's in the face: `tools/build-player-looks.py`'s `NECK`), its head then split into its
-  face (its skin, what the skin holds, its eyes and mouth, and the outline round that) and its hair (the rest: ribbons
-  and clips with it). A face and a hairstyle are the head standing, each way it faces; on any body they move with that
-  body's own head, frame by frame, as far as it moved in its own frames (the body's `headAt`, theirs `ref`, each the
-  middle of the neck, the head's bottom row; facing the side, the Supreme Kai's a little further back, as his head
-  has no hair hanging behind it and the others' sat forward on him: `SIDE_NECK`; `composeLook`), so a head walks as the body's own did, and the body's own head is cut off, never left peeping out.
-  A head too tall for where a body's neck is (a Frieza's on King Cold's shoulders) goes down into them until its top
-  is in the frame (each part's `top`).
-  A hairstyle fits a face when it covers (nearly) all of where the face's own hair was, every way it faces (the face's
-  `hairs`). Faces go only on bodies from the same game's sprites. The Goombas and the Piantas have no necks: theirs
-  are whole, their presets only; Superstar Saga's and Koops's heads are all face (caps and crowns, not hair). A look
-  saved with a head (before) loads as that head's face and hair.
-- **Men and women**: every race has at least one of each among its presets, and each preset's gender shows under its
-  name (♂ Male, ♀ Female); it stays yours as you change the rest (`appearance.gender`). A race's characters are men
-  but for its `female` ones (Bulma, Chi-Chi and the townswoman, Android 18, Peach, Francesca, Goombella), and its
-  `presets` add more, put together from its family's parts: a Hylian man and woman, a Kokiri boy and girl, a Zora
-  and a Zora maiden, a Gerudo woman and man, and a woman for the Saiyans, the Namekians, the Majin, the Frieza Clan
-  and the Kais (heads of their own race's made for them, as none has a woman to draw on and another race's never sat
-  right: Gohan's face with lashes and lips under Bulma's hairstyle, a Saiyan's to share, in black, on Vegeta's armour;
-  Dende's with lashes and lips, in Namekian green; Kid Buu's with lashes and his grin painted, in pink; Frieza's head
-  with winged lashes, lips, a softer chin and a pink gem at her brow, in frost white; Kibito's face with lashes and
-  lips under his long white hair, on his robe, in Kai purple: `tools/build-player-looks.py`'s `MADE_HEADS`, each in
-  its race's Face row), the Mushroom People and the Koopas (in pink: neither game has a woman of
-  theirs to draw on).
+- **Your look**: each race offers one person of this game's own, drawn for it (`tools/race_looks.py`; a whole
+  character, `race_<id>`, in FireRed's overworld size and fifteen frames), with that race's traits: the Hylian's long
+  ears and fringe, the Kokiri's leaf hat, the Zora's head fin, the Gerudo's ponytail, the Human's gi and sash, the
+  Majin's round body and tendril, the Saiyan's spiky hair, armour and tail, the Namekian's antennae, the Android's
+  visor, the Frieza Clan's horns, plates and tail, the Kai's mohawk and earrings, the Mushroom Kingdom human's flat
+  cap, the Mushroom Person's spotted cap, the Pianta's sprout, the Goomba's bandana, the Koopa's shell and the
+  Trainer's cap and bag. Its hair, clothes, trim and skin are each yours to colour (the race's `labels` say what
+  they are on it: Spots, Shell, Horns...). Each is drawn from a few shapes (a body, a head, a hairstyle, ears and the
+  race's own), shaded (lighter along each colour's top edge, darker along its bottom and right) and outlined, and
+  built into its recolourable sheet by `tools/build-player-looks.py`'s `own_people`. The games' characters it took
+  looks from before stay among the parts, so a look saved with one still loads.
 - **Walking**: four frames a stride where the sprites have them (the Dragon World's: a step, the frame between, the
   other step, the frame between, in the walk's own order: the steps the walk's opposite frames, 0 and 2 or 1 and 3),
   FireRed's nine frames then the six between (`lookFrame`), and so too running and on Kamurocho's streets. Link's
