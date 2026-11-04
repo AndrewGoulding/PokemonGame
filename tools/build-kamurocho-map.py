@@ -30,7 +30,10 @@ def kind(c):
     if max(c) < 110: return 1                                  # (a road)
     return 2                                                   # (a block)
 
-def main():
+def grid(scale=SCALE, ring_r=6):
+    """The town at `scale` (the picture's pixels to one of the grid's): a list of rows, each cell its kind (0 outside
+    the town, 1 a road, 2 a block, 3 West Park, 4-6 the coloured buildings). tools/build-kamurocho-town.py's too."""
+    SCALE = scale
     im = np.array(Image.open(SRC).convert('RGB').crop(CROP)).astype(int)
     h, w = im.shape[:2]
     W, H = round(w * SCALE), round(h * SCALE)
@@ -49,9 +52,9 @@ def main():
     # (and the dark outline round each name's letters: a few pixels about every white one)
     white = kinds == -1
     ring = white.copy()
-    for dy in range(-6, 7):
-        for dx in range(-6, 7):
-            if dx * dx + dy * dy <= 36: ring |= np.roll(np.roll(white, dy, 0), dx, 1)
+    for dy in range(-ring_r, ring_r + 1):
+        for dx in range(-ring_r, ring_r + 1):
+            if dx * dx + dy * dy <= ring_r * ring_r: ring |= np.roll(np.roll(white, dy, 0), dx, 1)
     kinds[ring] = -1
     out = np.zeros((H, W), int)
     for Y in range(H):
@@ -73,6 +76,10 @@ def main():
     for Y in range(1, H - 1):
         for X in range(1, W - 1):
             if out[Y, X] == 1 and sum(out[j, i] == 1 for j, i in ((Y - 1, X), (Y + 1, X), (Y, X - 1), (Y, X + 1))) <= 1: out[Y, X] = 2
+    return out
+
+def main():
+    out = grid(); H, W = out.shape
     pic = Image.new('RGBA', (W, H), (0, 0, 0, 0)); px = pic.load()
     for Y in range(H):
         for X in range(W):
