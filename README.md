@@ -3962,7 +3962,8 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   (by its id), and it's who you fight as in the realms' battles. Hyrule's four are for the Zelda realm to come, the
   Dragon World's seven for the Dragon Ball realm; until then they fight in Kamurocho.
 - **Your look**: each race's person is from the sprite sheets given for the game
-  (`assets/world/sprites/looks-source`: `races.webp`, a row a race; `sheikah.webp`, the Sheikah's man and woman),
+  (`assets/world/sprites/looks-source`: `races.webp`, a row a race; `backs.webp`, their back views, standing and
+  walking away; `sheikah.webp`, the Sheikah's man and woman),
   cut out by `tools/import-race-sprites.py` (each frame keyed off its panel, brought to the game's 32x32, feet down;
   standing down, up and left, a walk's first and third frames its steps and its middle the frames between) and built
   into parts (`race_<id>`, in their own colours) by `tools/build-player-looks.py`'s `own_people`. The Sheikah's woman

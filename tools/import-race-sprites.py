@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # The races' people (the character creator's, and you as you walk), from the sprite sheets given for the game
-# (assets/world/sprites/looks-source): races.webp, a row for each race (standing facing down, up, left and right;
+# (assets/world/sprites/looks-source): races.webp, a row for each race; backs.webp, their back views (four each:
+# standing, two steps, standing again, for facing away) (standing facing down, up, left and right;
 # then three frames each of walking down, left, up and right, and of running), and sheikah.webp, the Sheikah's man
 # and woman (their standing views down the first panel, and each walk's first row its way).
 #
@@ -95,12 +96,41 @@ def crisp(frames, n=16):
         q.putalpha(f.getchannel('A')); out.append(q)
     return out
 
-def fifteen(stand, walks, k, foot):
-    """stand: down, up, left; walks: {down, up, left: [first, middle, third]} -> the fifteen frames."""
+def fifteen(stand, walks, k, foot, ups=None):
+    """stand: down, up, left; walks: {down, up, left: [first, middle, third]} -> the fifteen frames. `ups`: its back
+    views, already brought down ([standing, a step, the other step, between]), for facing away."""
     s = [small(x, k, foot) for x in stand]
     w = {d: [small(x, k, foot) for x in v] for d, v in walks.items()}
+    if ups: s[1] = ups[0]; w['up'] = [ups[1], ups[3], ups[2]]
     return crisp(s + [w['down'][0], w['down'][2], w['up'][0], w['up'][2], w['left'][0], w['left'][2],
                       w['down'][1], w['down'][1], w['up'][1], w['up'][1], w['left'][1], w['left'][1]])
+
+# backs.webp: each race's back views, four a panel (standing, a step, the other step, standing again), its band of
+# the sheet (y0, y1) and which four of the band's sprites (counting from the left) are its.
+BACKS = {'hylian': ((135, 222), 0), 'kokiri': ((135, 222), 1), 'zora': ((135, 222), 2), 'gerudo': ((135, 222), 3),
+         'human': ((315, 405), 0), 'majin': ((315, 405), 1), 'saiyan': ((315, 405), 2), 'namekian': ((315, 405), 3),
+         'android': ((466, 560), 0), 'arcosian': ((466, 560), 1), 'kai': ((466, 560), 2),
+         'toad': ((655, 762), 1), 'pianta': ((655, 762), 2), 'goomba': ((655, 762), 3), 'koopa': ((655, 762), 4)}
+_back_cache = {}
+def back_views(rid, height):
+    """A race's four back views, each brought down so it stands `height` high (as its front does), feet down."""
+    if rid not in BACKS: return None
+    if 'a' not in _back_cache: _back_cache['a'] = np.array(Image.open(os.path.join(SRC, 'backs.webp')).convert('RGB')).astype(int)
+    a = _back_cache['a']; bg = np.array([23, 19, 31]); (y0, y1), k4 = BACKS[rid]
+    on = (np.abs(a[y0:y1] - bg).sum(2) > 60).any(0)
+    cols, start, last = [], None, None
+    for x, v in enumerate(on):
+        if v:
+            if start is None: start = x
+            last = x
+        elif start is not None and x - last > 3:
+            if last - start >= 12: cols.append((start, last))
+            start = None
+    cols = [c for c in cols if c[1] - c[0] >= 30]   # (not the panels' borders)
+    cells = [cut(a, ((x0 + x1) // 2 - 36, y0, (x0 + x1) // 2 + 36, y1), bg, 30) for x0, x1 in cols[4 * k4:4 * k4 + 4]]
+    boxes = [c.getbbox() for c in cells]
+    k = height / max(b[3] - b[1] for b in boxes); foot = max(b[3] for b in boxes) - 1
+    return [small(c, k, foot) for c in cells]
 
 TALL = 24   # (a race's standing height: as Kanto's people stand, not a head over them)
 def scale_for(stand):
@@ -117,7 +147,10 @@ def races():
         cell = lambda xr: cut(a, ((xr[0] + xr[1]) // 2 - 22, yc - top, (xr[0] + xr[1]) // 2 + 22, yc + 24), bg, 30)
         stand = [cell(COLS['stand'][i]) for i in (0, 1, 2)]
         walks = {d: [cell(x) for x in COLS[d]] for d in ('down', 'left', 'up')}
-        out[rid] = fifteen(stand, walks, *scale_for(stand))
+        k, foot = scale_for(stand)
+        # (its back views, as tall as its front stands)
+        sb = stand[0].getbbox(); ups = back_views(rid, (sb[3] - sb[1]) * k)
+        out[rid] = fifteen(stand, walks, k, foot, ups)
     return out
 
 def sheikah():
