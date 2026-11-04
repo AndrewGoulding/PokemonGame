@@ -7156,8 +7156,18 @@
     const mon = at.map === "Route119" && feebasSpots().has(spot.x + "," + spot.y) && Math.random() < 0.5
       ? { species: "Feebas", level: 20 + Math.floor(Math.random() * 6), xp: Fishing.XP[Fishing.pickRod(before)] } : Fishing.encounter(at.map, before);
     if (!mon) return;
+    // (Reeling it in: the reeling game, game/fishing-game.js. Landed, it's yours to fight; else it got away. A treasure
+    // brought up with it is yours either way.)
+    show("scene"); clearMenu();
+    const reel = await FishingGameScreen.run(scene, FishingGame.create(Math.random, { level: before, rod: mon.rod, slot: mon.slot }),
+      { species: mon.species, level: before });
+    const r = FishingGame.result(reel);
+    if (r.treasure) { Player.addItem(player, r.treasure); await FishingGameScreen.message(player.name + " fished up " + article(Bag.name(r.treasure)) + "!"); }
+    FishingGameScreen.clear();
+    show("world"); await Overworld.resume();
+    if (!r.landed) { if (reel.over !== "quit") await say("It got away‥"); else await say("You let it go."); Screen.say(""); return; }
     player.flags.fishingCaptures = (player.flags.fishingCaptures | 0) + 1;
-    await gainFishingXp(mon.xp);
+    await gainFishingXp(mon.xp + r.xpBonus, r.perfect ? "(a perfect catch!)" : null);
     Screen.say("");
     // (FireRed's pond, or the sea.)
     const ahead = Overworld.ahead();

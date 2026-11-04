@@ -270,7 +270,15 @@ and 100 (level 100 at 5,980 XP). Up to level 9 only the Old Rod's
 Pokémon bite; from 10 the Good Rod's too (60/40); from 25 the Super Rod's
 (30/40/30); from 50, 15/35/50, and from 75, 5/25/70. From level 50 the Super
 Rod's rarer slots come up more often too (35/35/20/7/3, and 30/30/25/10/5
-from 75). The XP and any new level are told after "on the hook!", and the
+from 75). **Reeling it in** (this game's own, `game/fishing-game.js`, `ui/fishing-game.js`): after "on the hook!"
+you have to land it. Down the side is the reel bar: your green catch zone rises while you hold A and sinks when you
+let go, and the fish darts up and down it. While the fish is in your zone the catch meter fills; out of it, it
+drains. Fill it and it's landed (and the battle's on); empty, or after 45 seconds, it got away (B lets it go). How
+hard it fights (one to five stars) goes by the rod its bite came from and how rare its slot was; your fishing level
+widens your zone. Now and then a treasure chest drifts into the bar: keep it in your zone a while and you bring it
+up too (a Pearl, Big Pearl, Heart Scale, Star Piece, Stardust, Nugget or a mushroom), even if the fish gets away.
+Never letting the fish out of your zone is a perfect catch: 10 more fishing XP, and 2 more for each star past the
+first. The XP and any new level are told once it's landed, and the
 back of your Trainer Card shows your fishing level. In the Safari Zone it's a Safari
 battle. You start the game with the Fishing Rod (in FireRed the Fishing
 Guru in Vermilion City gives you the Old Rod); he and his brothers in
