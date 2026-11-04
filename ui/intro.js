@@ -747,6 +747,8 @@
     g.translate(x, y);
     g.fillStyle = color; g.strokeStyle = line || "#fff"; g.lineWidth = 1;
     const path = (pts) => { g.beginPath(); pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py))); g.closePath(); g.fill(); g.stroke(); };
+    // (a throwing knife, point up, a ring at its end: the Sheikah's)
+    if (kind === "kunai") { path([[32, 6], [38, 30], [34, 34], [30, 34], [26, 30]]); path([[29, 34], [35, 34], [34, 46], [30, 46]]); g.beginPath(); g.arc(32, 52, 5, 0, Math.PI * 2); g.stroke(); }
     if (kind === "triforce") { path([[32, 8], [44, 30], [20, 30]]); path([[20, 30], [32, 52], [8, 52]]); path([[44, 30], [56, 52], [32, 52]]); }
     if (kind === "leaf") {
       g.beginPath(); g.moveTo(32, 6); g.quadraticCurveTo(58, 26, 32, 56); g.quadraticCurveTo(6, 26, 32, 6); g.fill(); g.stroke();

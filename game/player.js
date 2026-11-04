@@ -430,6 +430,8 @@
       "worldMapNavelRock", "worldMapBirthIsland", "foughtHoOh", "hoOhFlewAway", "foughtLugia", "lugiaFlewAway", "foughtDeoxys", "deoxysFlewAway"]) delete player.flags[k];
     player.look = lookOf(data.look);
     // (Your race in the other realms, data/type-chart.js's REALM_RACES; saves from before races have none yet.)
+    // (The Mushroom Kingdom's Humans and the Pokémon Trainers are Humans now: one race of them all; their look, a Human's.)
+    if (data.race === "mk_human" || data.race === "kanto") { data.race = "human"; data.appearance = { body: "race_human", hair: "own", outfit: "own", trim: "own", skin: "own", gender: (data.appearance || {}).gender || "male" }; }
     if (data.race && (window.REALM_RACES || []).some((r) => r.id === data.race)) player.race = data.race;
     // (And how you look: the character creator's parts and colours, PLAYER_LOOK_PARTS and LOOK_COLOURS.)
     const a = data.appearance, parts = window.PLAYER_LOOK_PARTS || {};

@@ -3953,17 +3953,17 @@ down go through what you can choose, left and right change it, A (and YES) is yo
   the page and its description in the text box. Your race is `player.race`; each is a fighter in `REALM_FIGHTERS`
   (by its id), and it's who you fight as in the realms' battles. Hyrule's four are for the Zelda realm to come, the
   Dragon World's seven for the Dragon Ball realm; until then they fight in Kamurocho.
-- **Your look**: each race offers one person of this game's own, drawn for it (`tools/race_looks.py`; a whole
-  character, `race_<id>`, in FireRed's overworld size and fifteen frames), with that race's traits: the Hylian's long
-  ears and fringe, the Kokiri's leaf hat, the Zora's head fin, the Gerudo's ponytail, the Human's gi and sash, the
-  Majin's round body and tendril, the Saiyan's spiky hair, armour and tail, the Namekian's antennae, the Android's
-  visor, the Frieza Clan's horns, plates and tail, the Kai's mohawk and earrings, the Mushroom Kingdom human's flat
-  cap, the Mushroom Person's spotted cap, the Pianta's sprout, the Goomba's bandana, the Koopa's shell and the
-  Trainer's cap and bag. Its hair, clothes, trim and skin are each yours to colour (the race's `labels` say what
-  they are on it: Spots, Shell, Horns...). Each is drawn from a few shapes (a body, a head, a hairstyle, ears and the
-  race's own), shaded (lighter along each colour's top edge, darker along its bottom and right) and outlined, and
-  built into its recolourable sheet by `tools/build-player-looks.py`'s `own_people`. The games' characters it took
-  looks from before stay among the parts, so a look saved with one still loads.
+- **Your look**: each race's person is from the sprite sheets given for the game
+  (`assets/world/sprites/looks-source`: `races.webp`, a row a race; `sheikah.webp`, the Sheikah's man and woman),
+  cut out by `tools/import-race-sprites.py` (each frame keyed off its panel, brought to the game's 32x32, feet down;
+  standing down, up and left, a walk's first and third frames its steps and its middle the frames between) and built
+  into parts (`race_<id>`, in their own colours) by `tools/build-player-looks.py`'s `own_people`. The Sheikah's woman
+  is the race's other body (`female`). A race the sheets lack is drawn by `tools/race_looks.py`. The games'
+  characters it took looks from before stay among the parts, so a look saved with one still loads.
+- **The races**: **Human** is one race for every realm (its home "Universal"); the Mushroom Kingdom's Humans and the
+  Pokémon Trainers are gone (a save with either is a Human now, `Player.load`). **Sheikah** (Hyrule, Dark): swift and
+  sharp, with shadow arts of this game's own (Shadow Step, Smoke Veil, Needle Volley, Shade Lash, Vanishing Cut,
+  Eclipse, Night Rite), a throwing-knife crest.
 - **Walking**: four frames a stride where the sprites have them (the Dragon World's: a step, the frame between, the
   other step, the frame between, in the walk's own order: the steps the walk's opposite frames, 0 and 2 or 1 and 3),
   FireRed's nine frames then the six between (`lookFrame`), and so too running and on Kamurocho's streets. Link's

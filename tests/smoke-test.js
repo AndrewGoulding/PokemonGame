@@ -7435,17 +7435,19 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     }
     if (r.looks.start) for (const k of ["body", "face", "hairstyle"]) assert(!r.looks.start[k] || P[r.looks.start[k]], r.id + "'s start: " + k);
   }
-  // (Every race offers its own one person, this game's own (race_<id>, tools/race_looks.py): a whole character, its
-  // fifteen frames drawn, its colours to choose; any presets' parts there to be drawn, their colours colours.)
+  // (Every race offers its own person (race_<id>: the sprite sheets given for the game, tools/import-race-sprites.py;
+  // the Sheikah a woman too): a whole character, its fifteen frames; any presets' parts there to be drawn.)
   {
     const P = window.PLAYER_LOOK_PARTS, C = window.LOOK_COLOURS, ids = (k) => C[k].map((c) => c[0]);
     const fs = require("fs"), path = require("path");
     for (const r of window.REALM_RACES) {
       const L = r.looks, own = "race_" + r.id;
-      assert.deepStrictEqual(L.bodies, [own], r.id + " offers its own person");
-      assert(P[own] && P[own].kind === "whole" && P[own].family === "custom" && P[own].roles.includes("skin"), own);
-      const png = fs.readFileSync(path.join(__dirname, "..", "assets/world/sprites/looks", own + ".png"));
-      assert(png.readUInt32BE(16) === 15 * 32 && png.readUInt32BE(20) === 17 * 32, own + "'s sheet");
+      assert(L.bodies[0] === own && L.bodies.every((b) => b.startsWith(own)), r.id + " offers its own person");
+      for (const b of L.bodies) {
+        assert(P[b] && P[b].kind === "whole" && P[b].family === "custom", b);
+        const png = fs.readFileSync(path.join(__dirname, "..", "assets/world/sprites/looks", b + ".png"));
+        assert(png.readUInt32BE(16) === 15 * 32 && png.readUInt32BE(20) === 17 * 32, b + "'s sheet");
+      }
       for (const p of L.presets || []) {
         assert(["male", "female"].includes(p.gender) && P[p.body] && (!p.face || P[p.face].kind === "face") && (!p.hairstyle || P[p.hairstyle].kind === "hair"), r.id + ": " + p.name);
         if (p.face && p.hairstyle !== undefined) assert(P[p.face].hairs.includes(p.hairstyle || ""), p.name + "'s hair fits its face");
