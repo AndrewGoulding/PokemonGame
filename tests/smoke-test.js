@@ -7476,9 +7476,10 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     const g = FG.create(() => 0.5, { level: 10, rod: "old-rod" });
     for (let i = 0; i < 60 * 60 && !g.over; i++) { g.zone.y = Math.max(0, Math.min(1 - g.zone.size, g.fish.y - g.zone.size / 2)); FG.step(g, { reel: false }); }
     assert(g.over === "landed" && FG.result(g).perfect && FG.result(g).xpBonus >= 10, "reeled in perfectly");
-    const h = FG.create(Math.random, { level: 1, rod: "super-rod", slot: 4 });
-    for (let i = 0; i < 60 * 60 && !h.over; i++) FG.step(h, { reel: false });
-    assert(h.over === "escaped" && !FG.result(h).landed, "never reeled, it got away");
+    // (the fish kept at the top, your zone left at the bottom)
+    const h = FG.create(() => 0.5, { level: 1, rod: "super-rod", slot: 4 });
+    for (let i = 0; i < 60 * 60 && !h.over; i++) { h.fish.y = h.fish.target = 0.95; FG.step(h, { reel: false }); }
+    assert(h.over === "escaped" && !FG.result(h).landed, "out of your zone, it got away");
     assert(h.fight > g.fight && h.zone.size < g.zone.size, "a hard fight's harder");
     assert(FG.TREASURE.every((id) => window.ITEMS[id]), "its treasures are items");
   }
