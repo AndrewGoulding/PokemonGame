@@ -101,6 +101,20 @@ def sheet(views):
     for i, f in enumerate(frames): out.alpha_composite(f, (i * 16, 0))
     return out
 
+def limo():
+    """The loan shark's limousine, for the opening (this game's own): long and black, side on, 32x32 a frame, the
+    same in all nine (it only drives)."""
+    from PIL import ImageDraw
+    f = Image.new('RGBA', (32, 32), (0, 0, 0, 0)); d = ImageDraw.Draw(f)
+    d.rounded_rectangle((0, 14, 31, 27), 3, fill=(22, 22, 28)); d.rectangle((1, 15, 30, 18), fill=(40, 40, 50))
+    d.polygon([(7, 14), (11, 8), (24, 8), (28, 14)], fill=(28, 28, 34)); d.polygon([(12, 9), (23, 9), (26, 13), (9, 13)], fill=(70, 80, 104))
+    d.line((0, 21, 31, 21), fill=(150, 150, 160))
+    for cx in (6, 25): d.ellipse((cx - 4, 24, cx + 4, 31), fill=(10, 10, 12)); d.ellipse((cx - 2, 26, cx + 2, 29), fill=(150, 150, 160))
+    d.rectangle((0, 17, 1, 19), fill=(250, 240, 200)); d.rectangle((30, 17, 31, 19), fill=(200, 30, 30))
+    out = Image.new('RGBA', (32 * 9, 32), (0, 0, 0, 0))
+    for i in range(9): out.alpha_composite(f, (i * 32, 0))
+    return out
+
 def main():
     views = {}
     for file, bands in LAYOUT.items():
@@ -118,6 +132,7 @@ def main():
         extra = {k: v for k, v in extra.items() if k != 'wide'}
         one = lambda im: CHIBI.touches(CHIBI.recolour(im, **colours), **extra)
         sheet([small(one(x)) for x in views[base]]).save(os.path.join(OUT, 'kmr_' + name.replace('_idle', '') + '.png'), optimize=True)
+    limo().save(os.path.join(OUT, 'kmr_limo.png'), optimize=True)
     print(len(views) + len(CHIBI.PEOPLE), 'people')
 
 if __name__ == '__main__':

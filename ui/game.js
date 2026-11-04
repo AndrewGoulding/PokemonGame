@@ -2284,11 +2284,7 @@
         const f = player.flags;
         for (const k of ["y0Prologue", "y0Step", "y0v2", "kamurochoWaypoint", "karaoke", "karaokePrize"]) delete f[k];
         if (w === "all" && f.realmParty) delete f.realmParty.yakuza;
-        if (Street.isStreet(player.location.map)) {
-          const a = window.KAMUROCHO_STREET.arrive;
-          player.location.street = { scene: a.scene, x: a.x, y: a.y, facing: a.facing };
-          Street.place(player.location.street);
-        }
+        if (((window.WORLD_MAPS[player.location.map] || {}).realm) === "yakuza") await Overworld.teleport(Object.assign({}, window.KMR.arrive));
         await persist();
         await message(w === "all" ? "Kamurocho's story and party are reset. The story starts again the next time you step out onto the street."
           : "Kamurocho's story is reset. It starts again the next time you step out onto the street.");
@@ -9934,7 +9930,7 @@
   function realmFoePic(f) {
     const d = window.REALM_FOES[f.id];
     // (Kamurocho's own, side on: Streets of Kamurocho's, facing you from the right, as tall as on its streets)
-    if (d.street && Street.isStreet(player.location.map)) return '<img class="rb-street" alt="" onload="this.style.height=(this.naturalHeight/2.24*' + (d.big ? 1.4 : 1) + ')+\'cqh\'" src="assets/kamurocho/people/' + (f.look || d.street) + '.png">';
+    if (d.street && (window.WORLD_MAPS[player.location.map] || {}).realm === "yakuza") return '<img class="rb-street" alt="" onload="this.style.height=(this.naturalHeight/2.24*' + (d.big ? 1.4 : 1) + ')+\'cqh\'" src="assets/kamurocho/people/' + (f.look || d.street) + '.png">';
     if (d.battle) return '<div class="rb-pic big" style="background-image:url(' + d.battle + ')"></div>';
     return '<div class="rb-pic sheet' + (d.big ? " big" : "") + '" style="background-image:url(assets/world/sprites/' + d.sprite + '.png)"></div>';
   }
@@ -10164,17 +10160,9 @@
   // through it, West Park blue, its numbers and their names down the side; the street you're on lit, and you a
   // blinking mark along it as far as you've walked; a red flag where the story's headed. A or B closes it.
   async function realmMap() {
-    const K = window.KAMUROCHO_STREET, Mp = K.map.scenes, ov = $("#overlay"), loc = player.location.street || K.arrive;
-    const here = Mp[loc.scene] && Mp[loc.scene].at ? Mp[loc.scene].at[0] : loc.scene;
-    // (how far along its line: by its `stops` if it has them, else as far as across its picture)
-    const frac = (() => {
-      if (Mp[loc.scene] && Mp[loc.scene].at) return Mp[loc.scene].at[1];
-      const t = Math.max(0, Math.min(1, loc.x / ((K.scenes[loc.scene] || {}).width || 1))), st = (Mp[loc.scene] || {}).stops;
-      if (!st) return t;
-      const x = t * K.scenes[loc.scene].width;
-      for (let i = 1; i < st.length; i++) if (x <= st[i][0] || i === st.length - 1) return st[i - 1][1] + (st[i][1] - st[i - 1][1]) * Math.max(0, Math.min(1, (x - st[i - 1][0]) / ((st[i][0] - st[i - 1][0]) || 1)));
-      return t;
-    })();
+    const K = window.KAMUROCHO_STREET, Mp = K.map.scenes, ov = $("#overlay"), loc = player.location;
+    // (where you are on it: the town's tile as it is, a room its door's; the street that is)
+    const pos = window.KMR.at(loc.map, loc.x, loc.y) || { point: null, street: null }, here = pos.street;
     // (a point that far along a line)
     const along = (line, t) => {
       const seg = line.slice(1).map((p, i) => Math.hypot(p[0] - line[i][0], p[1] - line[i][1])), total = seg.reduce((x, y) => x + y, 0);
@@ -10214,8 +10202,8 @@
         sf.fill(wx, wy - 12, 1, 12, [240, 240, 240]); sf.fill(wx + 1, wy - 12, 6, 4, [232, 48, 48]); sf.fill(wx + 1, wy - 8, 4, 1, [232, 48, 48]);
         sf.text("\u25b6 " + ((K.scenes[wp] || {}).title || wm.title || wp), 138, 148, [255, 120, 120], INK, "small");
       }
-      if (Mp[here] && Mp[here].line && blink) {
-        const [x, y] = T(along(Mp[here].line, frac)).map(Math.round);
+      if (pos.point && blink) {
+        const [x, y] = T(pos.point).map(Math.round);
         sf.fill(x - 3, y - 3, 7, 7, INK); sf.fill(x - 2, y - 2, 5, 5, [232, 56, 56]); sf.put(x, y, W);
       }
       sf.show(ov);
@@ -10301,6 +10289,117 @@
     await say(["Majima: Hee hee hee! That was the\nmost fun I've had all year!", "I'm stickin' with you! Ain't\nnobody gonna stop me!", realmWrap("Goro Majima joined the party!" + JOINED[where])]);
     await Overworld.refreshPeople();
   }
+  // ---------- Kamurocho's scenes, top down (ui/kamurocho.js: the town and its rooms on the overworld) ----------
+  // The story's scenes are written as the side-on streets had them ({ scene }, { actor, x, y }, { walk, to }, ...:
+  // ui/street.js's cutscene); here they play on the town top down: each scene's place (a street's, as far along its
+  // line as its x; a room's, across it) a tile (KMR.tile), you out of sight where its camera is, its actors people
+  // put on the map (their top-down sheets) and walked there a tile at a time (Overworld.act), the screen shaken for
+  // a blow, faded, rained on.
+  let kmrRain = false;
+  const kmrWait = (frames) => new Promise((r) => setTimeout(r, frames * 16));
+  function kmrMoves(from, to, fast) {
+    const out = [], v = fast ? "walk_fast_" : "walk_";
+    const dx = to.x - from.x, dy = to.y - from.y;
+    for (let i = 0; i < Math.abs(dx); i++) out.push(v + (dx < 0 ? "left" : "right"));
+    for (let i = 0; i < Math.abs(dy); i++) out.push(v + (dy < 0 ? "up" : "down"));
+    return out;
+  }
+  async function kmrCutscene(steps, opts) {
+    const start = Object.assign({}, player.location), actors = {};
+    let scene = (window.KMR.sceneOf(start.map, start.x, start.y)) || "street", cam = { map: start.map, x: start.x, y: start.y };
+    const taken = () => new Set(Object.values(actors).map((a) => a.x + "," + a.y));
+    const look = (sprite) => ({ sprite: sprite === "LIMO" ? "kmr_limo" : window.KMR.sprite(sprite), width: sprite === "LIMO" ? 32 : 16, height: 32, frames: 9 });
+    await Overworld.jump(Object.assign({}, cam, { hidden: true }));
+    show("world");
+    for (const st of steps) {
+      if (st.scene) {
+        for (const id of Object.keys(actors)) { Overworld.removeObject("cs_" + id); delete actors[id]; }
+        scene = st.scene;
+        const t = window.KMR.tile(scene, (st.cam || [400])[0], (st.cam || [0, 446])[1]);
+        cam = t; await Overworld.jump(Object.assign({}, t, { hidden: true }));
+      }
+      else if (st.actor || st.thing) {
+        const id = st.actor || st.thing, t = window.KMR.tile(scene, st.x, st.y, taken());
+        if (t.map !== cam.map) continue;
+        actors[id] = { x: t.x, y: t.y };
+        Overworld.addObject("cs_" + id, { x: t.x, y: t.y, facing: st.face || "left" }, look(st.thing ? "LIMO" : st.sprite));
+      }
+      else if (st.walk || st.move) {
+        const id = st.walk || st.move, a = actors[id];
+        if (!a) continue;
+        const t = window.KMR.tile(scene, st.walk ? st.to[0] : st.to, st.walk ? st.to[1] : 446, taken());
+        const moves = kmrMoves(a, t, (st.speed || 1.2) > 1.8);
+        const tracks = [{ who: "cs_" + id, moves }];
+        if (st.follow) tracks.push({ who: "player", moves: kmrMoves(cam, { x: cam.x + (t.x - a.x), y: cam.y + (t.y - a.y) }, (st.speed || 1.2) > 1.8) });
+        if (moves.length) await Overworld.act(tracks);
+        a.x = t.x; a.y = t.y;
+      }
+      else if (st.face) { if (actors[st.face]) await Overworld.act([{ who: "cs_" + st.face, moves: ["face_" + st.dir] }]); }
+      else if (st.gone) { Overworld.removeObject("cs_" + st.gone); delete actors[st.gone]; }
+      else if (st.pan) { const t = window.KMR.tile(scene, st.pan[0], st.pan[1]); await Overworld.act([{ who: "player", moves: kmrMoves(cam, t) }]); cam = t; }
+      else if (st.say) { await opts.say(st.say); Screen.say(""); }
+      else if (st.hit) { sfx("se_m_comet_punch"); await Overworld.shake(); }
+      else if (st.wait) await kmrWait(st.wait);
+      else if (st.fade) { if (st.fade === "out") await Overworld.fadeToBlack(); else await Overworld.fadeFromBlack(); }
+      else if ("rain" in st) kmrRain = !!st.rain;
+    }
+    for (const id of Object.keys(actors)) Overworld.removeObject("cs_" + id);
+    kmrRain = false;
+    // (back where you were, unless the scene puts you somewhere: kmrPlace)
+    await Overworld.jump(Object.assign({}, start, { hidden: false }));
+    Overworld.fadeFromBlack && await Overworld.fadeFromBlack();
+  }
+  // You, put down in a side-on scene's place (as the story moves you on: out of a taxi, out of a building).
+  async function kmrPlace(loc) {
+    const t = window.KMR.tile(loc.scene, loc.x, loc.y);
+    await Overworld.jump({ map: t.map, x: t.x, y: t.y, facing: loc.facing === "up" ? "up" : "down" });
+  }
+  // (Where you are, as a side-on scene's x: for scenes set about where you stand.)
+  function kmrHere() {
+    const loc = player.location, sc = window.KMR.sceneOf(loc.map, loc.x, loc.y), S = (window.KAMUROCHO_STREET.scenes[sc] || {});
+    return { scene: sc, x: (S.width || 1200) / 2 };
+  }
+  // (Rain over the town in the scene that has it: streaks across the screen, drawn over the map.)
+  function kmrDrawRain(g) {
+    if (!kmrRain) return;
+    const t = performance.now() / 16;
+    g.save(); g.fillStyle = "rgba(190,200,230,0.55)";
+    for (let k = 0; k < 70; k++) { const x = (k * 53 + t * 3) % 280 - 20, y = (k * 97 + t * 9) % 170; for (let j = 0; j < 5; j++) g.fillRect(x - j, y + j * 2, 1, 2); }
+    g.restore();
+  }
+  // Which street you've walked onto (its name up as you come onto it), and the story's scene there, if one's due:
+  // each step on the town (onStep); coming in through a door or the backlot, on arriving (special "enter:").
+  let kmrArea = null, kmrDue = null;
+  function kmrAreaStep() {
+    const loc = player.location;
+    if (loc.map !== "Kamurocho") { kmrArea = null; return null; }
+    const a = window.KMR.area(loc.x, loc.y);
+    if (!a || a === kmrArea) return null;
+    kmrArea = a;
+    const S = window.KAMUROCHO_STREET.scenes[a];
+    if (S && S.title) Overworld.showAreaName("Kamurocho", S.title);
+    const ev = kamurochoEnter(a);
+    return ev ? { type: "kmr-story", ev } : null;
+  }
+  function kmrEnterDue(script) {
+    const m = /^enter:(Kamurocho|Kmr_\w+)$/.exec(script || "");
+    if (!m) return false;
+    const loc = player.location, sc = m[1] === "Kamurocho" ? window.KMR.area(loc.x, loc.y) : window.KMR.sceneOf(m[1]);
+    if (m[1] === "Kamurocho") kmrArea = sc;
+    kmrDue = (!player.flags.y0Prologue && m[1] === "Kamurocho") ? { type: "prologue" } : kamurochoEnter(sc);
+    return !!kmrDue;
+  }
+  async function kmrStory(ev) {
+    if (ev.type === "prologue") await kamurochoPrologue();
+    else if (ev.type === "heroine") await kamurochoHeroine();
+    else if (ev.type === "y0-pink") await kamurochoPink();
+    else if (ev.type === "y0-morning") await kamurochoMorning();
+    else if (ev.type === "y0-toko") await kamurochoToko();
+    else if (ev.type === "y0-kazama") await kamurochoKazama();
+    else if (ev.type === "y0-c2") await kamurochoCh2Step(ev.step);
+    show("world");
+  }
+
   // Yakuza 0's first chapter, Bound by Oath, scene by scene as the game plays it, in this game's own words (ui/street.js's
   // cutscenes, and its fights). Its step: flags.y0Step, each next place flagged on the Map (flags.kamurochoWaypoint):
   //   (none)     the first time out onto the street: the beating in the Empty Lot and the redevelopment in the paper;
@@ -10333,7 +10432,7 @@
   const Y0_KIRYU = { sprite: "kiryu_idle", walk: "kiryu_idle_walk" }, Y0_NISHIKI = { sprite: "nishiki", walk: "nishiki_walk" };
   async function kamurochoPrologue() {
     const f = player.flags;
-    await Street.cutscene([
+    await kmrCutscene([
       { fade: "out" },
       { scene: "alley", cam: [300, 446] },
       { actor: "victim", sprite: "debtor", x: 440, y: 448, face: "left" },
@@ -10349,7 +10448,7 @@
       { say: ["A newspaper tumbles across the lot\nin the wind.", "\"KAMUROCHO TO BE REBUILT: CITY BACKS\nREDEVELOPMENT\""] },
       { fade: "out" },
       { scene: "street", cam: [2720, 440] },
-      { thing: "limo", image: "assets/kamurocho/limo.png", x: 2700, y: 436 },
+      { thing: "limo", x: 2700, y: 436 },
       { actor: "kiryu", ...Y0_KIRYU, x: 2990, y: 456, face: "left" },
       { fade: "in" },
       { walk: "kiryu", to: [2724, 460] },
@@ -10361,10 +10460,10 @@
       { gone: "limo" }
     ], { say });
     Player.addMoney(player, 30000);
-    show("street");
+    show("world");
     await say("Kiryu got ¥30,000: his cut, and a\nbonus.");
     await y0Kiryu();
-    await Street.cutscene([
+    await kmrCutscene([
       { scene: "street", cam: [2520, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x: 2724, y: 460, face: "left" },
       { actor: "student", sprite: "tourist", x: 2420, y: 446, face: "right" },
@@ -10373,9 +10472,9 @@
         "Student: P-please, that's all I\nhave for the month...", "Kiryu: Leave him be."] },
       { walk: "kiryu", to: [2480, 452] }
     ], { say });
-    show("street");
+    show("world");
     await y0Fight(["punk", "punk"], "The punks turn on Kiryu!");
-    await Street.cutscene([
+    await kmrCutscene([
       { scene: "street", cam: [2520, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x: 2480, y: 452, face: "left" },
       { actor: "student", sprite: "tourist", x: 2420, y: 446, face: "right" },
@@ -10390,14 +10489,14 @@
       { fade: "out" }
     ], { say });
     f.y0Prologue = true; f.y0Step = "pink"; f.y0v2 = true; f.kamurochoWaypoint = "pink";
-    show("street");
+    show("world");
     await say(["Nishiki's headed for Pink Street.\nIt's marked on your Map (START,\nthen Map)."]);
     await persist();
   }
   // (Coming into a street: a scene to play there, or reaching where the Map marks: for ui/street.js's enter.)
   function kamurochoEnter(sceneId) {
     const f = player.flags;
-    if (sceneId === "street" && !f.y0Prologue) return { type: "prologue" };
+    if (!f.y0Prologue) return null;   // (the opening: coming out onto the town, kmrEnterDue)
     // (a save from before the chapter played as the game's: on from the night at Heroine)
     if (f.y0Prologue && !f.y0v2) { f.y0v2 = true; f.y0Step = f.y0Step ? "drinking" : "heroine"; f.kamurochoWaypoint = f.y0Step === "heroine" ? "heroine" : "theater"; }
     const step = f.y0Step;
@@ -10413,8 +10512,8 @@
   }
   // Pink Street: two drunks swinging at each other; Kiryu sobers them up. Bacchus, an old foreign fighter, watches.
   async function kamurochoPink() {
-    const f = player.flags, x = Math.max(200, Math.min(1240, (Street.here() || {}).x || 600));
-    await Street.cutscene([
+    const f = player.flags, x = Math.max(200, Math.min(1240, (kmrHere() || {}).x || 600));
+    await kmrCutscene([
       { scene: "pink", cam: [x + 120, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
       { actor: "nishiki", ...Y0_NISHIKI, x: x - 50, y: 452, face: "right" },
@@ -10422,9 +10521,9 @@
       { actor: "drunk2", sprite: "drunk_idle", x: x + 240, y: 448, face: "left" },
       { say: ["Drunk: Say that again! I dare ya!", "Other drunk: You heard me, ya\nbum!", "Nishiki: Every night on this street.\nGo on, Kiryu. Wake 'em up."] }
     ], { say });
-    show("street");
+    show("world");
     await y0Fight(["drunk", "drunk"], "The drunks swing at Kiryu instead!");
-    await Street.cutscene([
+    await kmrCutscene([
       { scene: "pink", cam: [x + 120, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
       { actor: "nishiki", ...Y0_NISHIKI, x: x - 50, y: 452, face: "right" },
@@ -10437,7 +10536,7 @@
       { say: ["Nishiki: Strange old guy. Come on,\nHeroine's waiting. Theater Square!"] }
     ], { say });
     f.y0Step = "heroine"; f.kamurochoWaypoint = "heroine";
-    show("street");
+    show("world");
     await say(["Heroine is marked on your Map."]);
     await persist();
   }
@@ -10459,7 +10558,7 @@
   // again, Bacchus with a debt collector, Bruno, and Kamoji, the homeless boxer; then Bruno, for Kiryu.
   async function kamurochoMorning() {
     const f = player.flags;
-    await Street.cutscene([
+    await kmrCutscene([
       { fade: "out" },
       { scene: "theater", cam: [1120, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x: 1200, y: 436, face: "left" },
@@ -10496,10 +10595,10 @@
       { say: ["Kamoji floors Bruno in a flurry\nof fast jabs... and Bruno gets right\nback up, looking at Kiryu.",
         "Bacchus: Light on your feet, boy!\nHit and move, like Kamoji.", "Bruno: You're with the old man?\nThen you pay too!"] }
     ], { say });
-    Street.place({ scene: "taihei", x: 790, y: 440, facing: "right" });
-    show("street");
+    await kmrPlace({ scene: "taihei", x: 790, y: 440, facing: "right" });
+    show("world");
     await y0Fight(["bruno"], "Bruno wants to fight!");
-    await Street.cutscene([
+    await kmrCutscene([
       { scene: "taihei", cam: [800, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x: 790, y: 440, face: "right" },
       { actor: "bacchus", sprite: "bacchus", x: 900, y: 436, face: "left" },
@@ -10510,7 +10609,7 @@
       { walk: "bruno", to: [1300, 446], speed: 2.6 }, { gone: "bruno" }
     ], { say });
     f.y0Step = "toko"; f.kamurochoWaypoint = "toko";
-    show("street");
+    show("world");
     await say(["Toko Credit, over Nakamichi Street,\nis marked on your Map."]);
     await persist();
   }
@@ -10520,7 +10619,7 @@
     const f = player.flags;
     await say(["Three thugs with baseball bats block\nthe stairs.", "Thug: Toko Credit's closed, pal.\nPermanently, for you."]);
     await y0Fight(["thug", "thug", "thug"], "Toko Credit's thugs attack!");
-    await Street.cutscene([
+    await kmrCutscene([
       { scene: "toko", cam: [400, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x: 60, y: 446, face: "right" },
       { actor: "president", sprite: "president", x: 600, y: 430, face: "left" },
@@ -10536,7 +10635,7 @@
         "Kiryu: You want me to sell out the\nman who raised me?", "...Find someone else.", "Kuze: Your funeral, kid."] },
       { walk: "kiryu", to: [20, 446], speed: 1.4 }
     ], { say });
-    show("street");
+    show("world");
     await say(["Kiryu's pager beeps. A payphone:", "Nishiki: Kiryu! Where've you been?\nGet to the Kazama office, now.\nKashiwagi-san's waiting."]);
     f.y0Step = "kazama"; f.kamurochoWaypoint = "kazama";
     await say(["The Kazama Family Office, off\nShichifuku Street, is marked on your\nMap."]);
@@ -10547,7 +10646,7 @@
   // orphanage, remembered); the fight up through it, Yoneda and Kuze; Dojima comes; and Kiryu, out, in the rain.
   async function kamurochoKazama() {
     const f = player.flags;
-    await Street.cutscene([
+    await kmrCutscene([
       { scene: "kazama", cam: [400, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x: 60, y: 446, face: "right" },
       { actor: "nishiki", ...Y0_NISHIKI, x: 300, y: 452, face: "right" },
@@ -10565,21 +10664,21 @@
       { say: ["In Nishiki's car, Kiryu remembers.", "The Sunflower orphanage. Two boys\nwho swore they'd be yakuza like\nKazama-san.",
         "Kazama beat them both bloody that\nday, to show them what the life\nreally costs.", "They joined anyway. Together."] }
     ], { say });
-    Street.place({ scene: "dojima", x: 120, y: 446, facing: "right" });
-    show("street");
+    await kmrPlace({ scene: "dojima", x: 120, y: 446, facing: "right" });
+    show("world");
     await say(["Dojima Family HQ.", "Kuze's voice comes over the\nintercom: \"Nobody leaves till he's\ndead. Get him!\""]);
     await y0Fight(["grunt", "grunt", "grunt"], "Dojima men pour down the stairs!");
     await y0Fight(["grunt", "thug", "knife"], "More of them, on the next floor!");
     await y0Fight(["yoneda"], "Yoneda blocks the way to the top\nfloor!");
-    await Street.cutscene([
+    await kmrCutscene([
       { scene: "dojima", cam: [400, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x: 160, y: 446, face: "right" },
       { actor: "kuze", sprite: "kuze", x: 500, y: 440, face: "left" },
       { say: ["The top floor.", "Kuze: Still standing? Then I'll put\nyou down myself."] }
     ], { say });
-    show("street");
+    show("world");
     await y0Fight(["kuze"], "Daisaku Kuze wants to fight!");
-    await Street.cutscene([
+    await kmrCutscene([
       { scene: "dojima", cam: [400, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x: 160, y: 446, face: "right" },
       { actor: "kuze", sprite: "kuze", x: 460, y: 452, face: "left" },
@@ -10622,7 +10721,7 @@
   const Y0_TACHIBANA = { sprite: "tachibana", walk: "tachibana_walk" };
   async function kamurochoCh2() {
     const f = player.flags;
-    await Street.cutscene([
+    await kmrCutscene([
       { fade: "out" },
       { scene: "penthouse", cam: [400, 440] },
       { rain: false },
@@ -10637,16 +10736,16 @@
       { fade: "out" }
     ], { say });
     f.y0Step = "c2-kazama"; f.kamurochoWaypoint = "kazama";
-    Street.place({ scene: "showa", x: 1460, y: 440, facing: "down" });
-    show("street");
+    await kmrPlace({ scene: "showa", x: 1460, y: 440, facing: "down" });
+    show("world");
     await say(["The Kazama Family Office, off\nShichifuku Street, is marked on your\nMap."]);
     await persist();
   }
   async function kamurochoCh2Step(step) {
-    const f = player.flags, here = Street.here() || { x: 600 }, x = Math.max(200, Math.min(1100, here.x));
-    const next = async (st, wp, text) => { f.y0Step = st; f.kamurochoWaypoint = wp; show("street"); if (text) await say(text); await persist(); };
+    const f = player.flags, here = kmrHere() || { x: 600 }, x = Math.max(200, Math.min(1100, here.x));
+    const next = async (st, wp, text) => { f.y0Step = st; f.kamurochoWaypoint = wp; show("world"); if (text) await say(text); await persist(); };
     if (step === "c2-kazama") {
-      await Street.cutscene([
+      await kmrCutscene([
         { scene: "shichifuku", cam: [620, 440] },
         { actor: "kiryu", ...Y0_KIRYU, x: 520, y: 446, face: "right" },
         { actor: "kashiwagi", sprite: "kashiwagi", x: 660, y: 436, face: "left" },
@@ -10660,16 +10759,16 @@
       return next("c2-hotels", "hotels", ["On the way home, Kiryu cuts through\nthe Hotel District."]);
     }
     if (step === "c2-hotels") {
-      await Street.cutscene([
+      await kmrCutscene([
         { scene: "hotels", cam: [x + 120, 440] },
         { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
         { actor: "egashira", sprite: "shakedown", walk: "shakedown_walk", x: x + 320, y: 446, face: "left" },
         { walk: "egashira", to: [x + 140, 446] },
         { say: ["Big man: You. Wallet. Hand it over\nand you walk away.", "Kiryu: Not tonight."] }
       ], { say });
-      show("street");
+      show("world");
       await y0Fight(["shakedown"], "Mr. Shakedown wants your wallet!");
-      await Street.cutscene([
+      await kmrCutscene([
         { scene: "hotels", cam: [x + 120, 440] },
         { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
         { actor: "egashira", sprite: "shakedown", walk: "shakedown_walk", x: x + 140, y: 446, face: "left" },
@@ -10688,11 +10787,11 @@
           "They've pushed Tojo men out of\nbuildings. Nobody knows who's behind\nthem.", "Kiryu: Then I'll find out myself."] },
         { fade: "out" }
       ], { say });
-      Street.place({ scene: "hotels", x: 640, y: 440, facing: "down" });
+      await kmrPlace({ scene: "hotels", x: 640, y: 440, facing: "down" });
       return next("c2-tatsu", "champion", ["The next day.", "The Champion District is marked on\nyour Map."]);
     }
     if (step === "c2-tatsu") {
-      await Street.cutscene([
+      await kmrCutscene([
         { scene: "champion", cam: [x + 120, 440] },
         { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
         { actor: "tatsu", sprite: "clubgoer", x: x + 220, y: 440, face: "left" },
@@ -10707,9 +10806,9 @@
         { actor: "t2", sprite: "punk", x: x + 460, y: 452, face: "left" },
         { say: ["Two men creep up behind her with\nclubs.", "Kiryu: Behind you!"] }
       ], { say });
-      show("street");
+      show("world");
       await y0Fight(["punk", "punk", "thug"], "The ambushers turn on Kiryu!");
-      await Street.cutscene([
+      await kmrCutscene([
         { scene: "champion", cam: [x + 120, 440] },
         { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
         { actor: "tatsu", sprite: "clubgoer", x: x + 220, y: 440, face: "left" },
@@ -10720,7 +10819,7 @@
       return next("c2-blend", "blend", ["Kiryu starts asking around about\nTachibana Real Estate.", "Cafe Blend, on Nakamichi Street, is\nmarked on your Map."]);
     }
     if (step === "c2-hakua") {
-      await Street.cutscene([
+      await kmrCutscene([
         { scene: "namase", cam: [400, 440] },
         { actor: "kiryu", ...Y0_KIRYU, x: 60, y: 446, face: "right" },
         { actor: "owner", sprite: "salaryman_idle", x: 460, y: 436, face: "left" },
@@ -10744,11 +10843,11 @@
         { say: ["Homeless man: You're asking about\nTachibana? Don't.", "He's worse than any yakuza. The Jinsei\nboss was skimming from the Tojo\nClan...",
           "...and somebody told them. They took\nhis finger. Who do you think told\nthem?", "Some of us work for Tachibana. They\nsleep in the park off Senryo Avenue."] }
       ], { say });
-      Street.place({ scene: "shichifuku", x: 1290, y: 440, facing: "down" });
+      await kmrPlace({ scene: "shichifuku", x: 1290, y: 440, facing: "down" });
       return next("c2-park", "senryo", ["Senryo Avenue, by West Park, is\nmarked on your Map."]);
     }
     if (step === "c2-park") {
-      await Street.cutscene([
+      await kmrCutscene([
         { scene: "senryo", cam: [x + 120, 440] },
         { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
         { actor: "h1", sprite: "kamoji", x: x + 160, y: 446, face: "left" },
@@ -10756,11 +10855,11 @@
         { say: ["Homeless men, round a fire by the\npark.", "Homeless man: Talk? Talking's thirsty\nwork. A beer. Sake. Shochu. Scotch.\nAnd champagne!",
           "Kiryu: ...Champagne."] }
       ], { say });
-      show("street");
+      show("world");
       const cost = 6000;
       if (player.money >= cost) { player.money -= cost; await say("Kiryu buys a round from the\nconvenience stores and the discount\nstore: ¥6,000."); }
       else await say("Kiryu scrapes together what he can\nfor a round.");
-      await Street.cutscene([
+      await kmrCutscene([
         { scene: "senryo", cam: [x + 120, 440] },
         { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
         { actor: "h1", sprite: "kamoji", x: x + 160, y: 446, face: "left" },
@@ -10771,16 +10870,16 @@
       return next("c2-champion", "champion", ["The Champion District is marked on\nyour Map."]);
     }
     if (step === "c2-champion") {
-      await Street.cutscene([
+      await kmrCutscene([
         { scene: "champion", cam: [x + 120, 440] },
         { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
         { actor: "r1", sprite: "drunk_idle", x: x + 180, y: 446, face: "left" },
         { actor: "r2", sprite: "thug_idle", x: x + 240, y: 440, face: "left" },
         { say: ["Kiryu: I'm asking about Tachibana Real\nEstate.", "Bar owner: A Tojo man, sniffing\naround here? Get him!"] }
       ], { say });
-      show("street");
+      show("world");
       await y0Fight(["drunk", "punk", "drunk"], "The district's people go for Kiryu!");
-      await Street.cutscene([
+      await kmrCutscene([
         { scene: "champion", cam: [x + 120, 440] },
         { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
         { actor: "r1", sprite: "drunk_idle", x: x + 180, y: 446, face: "left" },
@@ -10798,7 +10897,7 @@
   async function kamurochoBlend() {
     const f = player.flags;
     if (f.y0Step !== "c2-blend") { await say(["Cafe Blend. The coffee smells good."]); return; }
-    await Street.cutscene([
+    await kmrCutscene([
       { scene: "nakamichi", cam: [200, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x: 280, y: 446, face: "left" },
       { actor: "owner", sprite: "loiterer", x: 80, y: 440, face: "right" },
@@ -10806,9 +10905,9 @@
       { say: ["Jinsei man: Protection money. This\nmonth's, same as always.", "Owner: Protection? Where were you when\nTachibana's people pushed us out?",
         "Jinsei man: ...You. Are you one of\nTachibana's?", "Kiryu: No. But you're leaving."] }
     ], { say });
-    show("street");
+    show("world");
     await y0Fight(["grunt"], "The Jinsei family man swings!");
-    await Street.cutscene([
+    await kmrCutscene([
       { scene: "nakamichi", cam: [200, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x: 280, y: 446, face: "left" },
       { actor: "owner", sprite: "loiterer", x: 80, y: 440, face: "right" },
@@ -10832,17 +10931,17 @@
     }
     await say(["In the lobby, three of Tachibana's\nmen block the way.", "Man: Oda-san said to give you a\nproper welcome."]);
     await y0Fight(["grunt", "grunt", "thug"], "Tachibana's men attack!");
-    await Street.cutscene([
+    await kmrCutscene([
       { scene: "penthouse", cam: [400, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x: 60, y: 446, face: "right" },
       { actor: "oda", sprite: "oda", x: 460, y: 446, face: "left" },
       { walk: "kiryu", to: [300, 446] },
       { say: ["Oda: Sorry about downstairs. I wanted\nto see what you're made of.", "Now let's see it up close."] }
     ], { say });
-    Street.place({ scene: "penthouse", x: 300, y: 446, facing: "right" });
-    show("street");
+    await kmrPlace({ scene: "penthouse", x: 300, y: 446, facing: "right" });
+    show("world");
     await y0Fight(["oda"], "Makoto Oda draws his baton!");
-    await Street.cutscene([
+    await kmrCutscene([
       { scene: "penthouse", cam: [400, 440] },
       { actor: "kiryu", ...Y0_KIRYU, x: 300, y: 446, face: "right" },
       { actor: "oda", sprite: "oda", x: 460, y: 452, face: "left" },
@@ -10860,8 +10959,8 @@
         "Kiryu: Alright, Tachibana. I'll work\nwith you.", "End of Chapter 2: The Real Estate\nBroker in the Shadows."] }
     ], { say });
     f.y0Step = "ch3"; f.kamurochoWaypoint = null;
-    Street.place({ scene: "showa", x: 1460, y: 440, facing: "down" });
-    show("street");
+    await kmrPlace({ scene: "showa", x: 1460, y: 440, facing: "down" });
+    show("world");
     await say(["Chapter 3 is Goro Majima's story, in\nSotenbori, Osaka. It isn't in this\ngame yet."]);
     await persist();
   }
@@ -10871,7 +10970,7 @@
     for (;;) {
       const v = await ask("Which song?", S.map((x, i) => ({ label: x.title + (best[x.id] != null ? "  (best " + best[x.id] + ")" : ""), value: i })).concat([back("Leave")]));
       if (v === "back") break;
-      const song = S[v], back0 = Street.backdrop();
+      const song = S[v], back0 = { url: "assets/world/maps/Kmr_Heroine.png" };
       await say(realmWrap("\u266a " + song.title + ", by " + song.by + ".\nPress each button as it reaches the ring!"));
       Screen.say(""); clearMenu();
       const img = Object.assign(new Image(), { src: back0.url });
@@ -16277,6 +16376,7 @@
   // ---------- Exploring ----------
 
   function special(script) {
+    if (kmrEnterDue(script)) return true;   // (Kamurocho's story, coming into a room or onto the town)
     if (deltaDue(script)) return true;   // (the Delta Episode's scenes as you come in)
     // (Orre: up the road from the Air Strip to the Outskirt Stand the first time, Folly and Trudly come out.)
     if ((script === "arrive:OutskirtStand" || script === "enter:OutskirtStand") && !(player.flags.orre | 0)) return true;
@@ -16422,6 +16522,11 @@
     for (;;) {
       // (Kamurocho, side on: its streets, ui/street.js, while you're there.)
       if (Street.isStreet(player.location.map)) { await exploreStreet(); continue; }
+      // (A save from Kamurocho's side-on streets, or somewhere the town's walls are now: by the Time Machine.)
+      if (player.location.street || (player.location.map === "Kamurocho" && (window.WORLD_MAPS.Kamurocho.collision[player.location.y * window.WORLD_MAPS.Kamurocho.width + player.location.x] !== 0))) {
+        delete player.location.street;
+        if (player.location.map === "Kamurocho") Object.assign(player.location, window.KMR.arrive);
+      }
       show("world");
       // (Continuing a save, the area's name shows: FieldCB_ShowMapNameOnContinue.)
       if (continued) {
@@ -16441,7 +16546,7 @@
         diveHere: (avatar) => diveHere(avatar),
         canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
         // (Johto's Gyms: Ecruteak's darkness, Violet's lift.)
-        darkness: (map) => (map === PYRAMID_FLOOR ? hoennFrontier.pyramidDark() : gymmicks.darkness(map)), drawMap: (g, map, x, y) => { gymmicks.drawMap(g, map, x, y); johtoSafari.drawMap(g, map, x, y); },
+        darkness: (map) => (map === PYRAMID_FLOOR ? hoennFrontier.pyramidDark() : gymmicks.darkness(map)), drawMap: (g, map, x, y) => { gymmicks.drawMap(g, map, x, y); johtoSafari.drawMap(g, map, x, y); kmrDrawRain(g); },
         faced: (map, x, y, surfing) => johtoSafari.faced(map, x, y, surfing),
         boulderFell: (def) => {
           // (3F's boulder through the hole: it's on 2F now.)
@@ -16461,7 +16566,7 @@
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step(); sinnohBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
-          return orreCallStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || realmEncounterStep() || saveReminderStep();
+          return orreCallStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || kmrAreaStep() || realmEncounterStep() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
         adjustWild: (mon, table) => { const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
@@ -16514,6 +16619,8 @@
       else if (ev.type === "leaf-vermilion") await leafVermilion();
       else if (ev.type === "save-prompt") await savePrompt();
       else if (ev.type === "realm-battle") await realmEncounter();
+      else if (ev.type === "kmr-story") await kmrStory(ev.ev);
+      else if (ev.type === "trigger" && kmrDue && /^enter:(Kamurocho|Kmr_)/.test(ev.trigger.script)) { const due = kmrDue; kmrDue = null; await kmrStory(due); }
       else if (ev.type === "jessie-james") await jessieJames();
       else if (ev.type === "jessie-james-later") await laterJessieJames();
       else if (ev.type === "safari-over") { if (ev.hoenn) await runHoenn("SafariZone_EventScript_TimesUp"); else await safariOver(ev.text, false); }

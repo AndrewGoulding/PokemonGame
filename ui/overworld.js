@@ -1029,6 +1029,16 @@
   // Fades to black, moves the player (a scene's warp), and fades back in.
   function fadeOut() { return new Promise((resolve) => { fadeDir = 1; afterFade = resolve; }); }
   function fadeIn() { return fade ? new Promise((resolve) => { fadeDir = -1; afterFade = resolve; }) : Promise.resolve(); }
+  // Straight to a place, with no fade (a scene's camera, ui/game.js's Kamurocho cutscenes): `hidden` keeps you out
+  // of sight there.
+  async function jump(loc) {
+    me.map = loc.map; me.x = loc.x; me.y = loc.y; if (loc.facing) me.facing = loc.facing;
+    me.move = null; me.hidden = !!loc.hidden; me.emote = null;
+    checkAvatar(); checkLight(); tuckFollower(); followerLook();
+    loadPeople();
+    await preloadMap(me.map);
+    savePosition();
+  }
   async function teleport(loc) {
     if (!fade) await fadeOut();
     me.map = loc.map; me.x = loc.x; me.y = loc.y; me.facing = loc.facing || "down";
@@ -2083,9 +2093,10 @@
     s.text(name, 8 + Math.floor((W - tw) / 2), 10, [98, 98, 98], [213, 213, 205]);
     return s.canvas();
   }
-  function showAreaName(mapName) {
+  // (`text`: a name of the place's own, not its map's: a street of Kamurocho's, ui/game.js.)
+  function showAreaName(mapName, text) {
     mapName = mapName || me.map;
-    const name = areaName(mapName);
+    const name = text || areaName(mapName);
     if (popup) { popup.next = [name, mapName]; popup.state = "out"; return; }
     popup = { canvas: popupCanvas(name, mapName), pos: 0, state: "in", t: 0, next: null };
   }
@@ -2395,7 +2406,7 @@
   window.Overworld = {
     explore, hide, read: (pages) => read(pages), showAreaName, forceStep, refreshPeople: () => loadPeople(),
     act, addObject, removeObject, unbury: (def) => { for (const p of people) if (p.def.id === def.id && p.def.script === def.script) p.unburied = true; }, removePerson, teleport, battleTransition, resume, pokecenterHeal, flyOut, flyIn, escapeRopeOut, escapeRopeIn,
-    fadeToBlack: fadeOut, fadeFromBlack: fadeIn, shake,
+    fadeToBlack: fadeOut, fadeFromBlack: fadeIn, shake, jump,
     setAvatar, avatar: () => me.avatar, composeLook, setPlayerLook, playerLook: () => myLook, lookParts, lookFrame, bikeFastest: () => me.avatar === "bike" && (me.bikeRun || 0) >= BIKE_SPEEDS.length - 1, flash, follower: followerApi, rod: setRod, emote: (mark) => { me.emote = mark ? { mark } : null; }, isDark: () => light != null && !flashOn,
     // What's in front of you: the tile, whoever stands there, and whether
     // it's water you could start surfing on.

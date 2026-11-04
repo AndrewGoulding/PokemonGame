@@ -540,7 +540,8 @@
     return { url: S.image, size: (S.width / W * 100) + "% " + (SH / H * 100) + "%",
       position: (cam.x / Math.max(1, S.width - W) * 100) + "% " + (cam.y / (SH - H) * 100) + "%" };
   }
-  const isStreet = (map) => map === "Kamurocho";
+  // (No map is walked side on now: Kamurocho is top down, ui/kamurocho.js. The engine stays for what it draws.)
+  const isStreet = () => false;
   window.Street = { explore, show, backdrop, isStreet, cutscene, place: (loc) => place(loc), here: () => me && Object.assign({}, me), people: () => me ? people({}) : [],
     gangs: () => gangs.map((gang) => ({ foes: gang.foes, x: Math.round(gang.x), y: Math.round(gang.y), state: gang.state })), redraw: (opts) => me && draw(opts) };
 })();
