@@ -10349,7 +10349,7 @@
       else if (st.gone) { Overworld.removeObject("cs_" + st.gone); delete actors[st.gone]; }
       else if (st.pan) { const t = window.KMR.tile(scene, st.pan[0], st.pan[1]); await Overworld.act([{ who: "player", moves: kmrMoves(cam, t) }]); cam = t; }
       else if (st.say) { await opts.say(st.say); Screen.say(""); }
-      else if (st.hit) { sfx("se_m_comet_punch"); await Overworld.shake(); }
+      else if (st.hit) { sfx("se_m_comet_punch"); await Overworld.shake(8); }
       else if (st.wait) await kmrWait(st.wait);
       else if (st.fade) { if (st.fade === "out") await Overworld.fadeToBlack(); else await Overworld.fadeFromBlack(); }
       else if ("rain" in st) kmrRain = !!st.rain;
