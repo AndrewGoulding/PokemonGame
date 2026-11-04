@@ -5,8 +5,10 @@
 # and woman (their standing views down the first panel, and each walk's first row its way).
 #
 # Each frame: cut from its cell, its panel's dark background flooded away from the cell's edge, the biggest piece
-# of what's left kept (not a neighbour's edge), brought down to the game's size (a race's tallest standing frame 30
-# high; each pixel the average of those under it) and stood in a 32x32 cell, its feet on the bottom row. Into this
+# of what's left kept (not a neighbour's edge), brought down to the game's size (a race's tallest standing frame 24
+# high, as Kanto's people; each pixel the average of those under it), stood in a 32x32 cell where its cell put it
+# (its feet on the bottom row; so a walk keeps still what doesn't move), and a race's frames all in one set of 16
+# colours (crisp, as a GBA sprite's). Into this
 # game's fifteen frames (tools/build-player-looks.py's): standing down, up, left; a walk's first and third frames
 # its steps; its middle frame the frames between.
 #
@@ -62,37 +64,60 @@ def cut(a, box, bg, thr):
             if len(comp) > len(best): best = comp
     img = np.zeros((h, w, 4), np.uint8)
     for u, v in best: img[v, u, :3] = c[v, u]; img[v, u, 3] = 255
-    im = Image.fromarray(img, 'RGBA')
-    return im.crop(im.getbbox())
+    # (the whole cell, not cut to the sprite: where it stands in its cell is kept, so a walk doesn't jump about)
+    return Image.fromarray(img, 'RGBA')
 
-def small(im, k):
+def small(im, k, foot):
+    """A cell brought down by k (each pixel the average of those under it), its `foot` row on the frame's bottom row
+    and its middle the frame's."""
     w, h = max(1, round(im.width * k)), max(1, round(im.height * k))
     a = np.array(im).astype(float); a[..., :3] *= a[..., 3:4] / 255
     b = np.array(Image.fromarray(a.astype(np.uint8), 'RGBA').resize((w, h), Image.BOX)).astype(float); al = b[..., 3:4]
     b[..., :3] = np.where(al > 0, b[..., :3] * 255 / np.maximum(al, 1), 0); b[..., 3] = np.where(b[..., 3] > 110, 255, 0)
-    out = Image.new('RGBA', (32, 32), (0, 0, 0, 0)); out.alpha_composite(Image.fromarray(b.astype(np.uint8), 'RGBA').crop((0, 0, min(w, 32), min(h, 32))), ((32 - min(w, 32)) // 2, 32 - min(h, 32)))
+    out = Image.new('RGBA', (32, 32), (0, 0, 0, 0))
+    out.alpha_composite(Image.fromarray(b.astype(np.uint8), 'RGBA'), (16 - w // 2, 31 - round(foot * k)))
     return out
 
-def fifteen(stand, walks, k):
-    """stand: down, up, left; walks: {down, up, left: [first, middle, third]} -> the fifteen frames."""
-    s = [small(x, k) for x in stand]
-    w = {d: [small(x, k) for x in v] for d, v in walks.items()}
-    return s + [w['down'][0], w['down'][2], w['up'][0], w['up'][2], w['left'][0], w['left'][2],
-                w['down'][1], w['down'][1], w['up'][1], w['up'][1], w['left'][1], w['left'][1]]
+def crisp(frames, n=16):
+    """A race's frames in one small set of colours, the same in every frame (as a GBA sprite's palette): no blur
+    between colours, and nothing changing colour as it walks."""
+    opaque = [f for f in frames]
+    strip = Image.new('RGB', (32 * len(opaque), 32), (0, 0, 0))
+    for i, f in enumerate(opaque): strip.paste(f.convert('RGB'), (i * 32, 0), f)
+    mask = Image.new('L', strip.size, 0)
+    for i, f in enumerate(opaque): mask.paste(f.getchannel('A'), (i * 32, 0))
+    pts = [strip.getpixel((x, y)) for y in range(32) for x in range(strip.width) if mask.getpixel((x, y))]
+    sample = Image.new('RGB', (len(pts), 1)); sample.putdata(pts)
+    pal = sample.quantize(n, method=Image.Quantize.MEDIANCUT)
+    out = []
+    for f in frames:
+        q = f.convert('RGB').quantize(palette=pal, dither=Image.Dither.NONE).convert('RGB').convert('RGBA')
+        q.putalpha(f.getchannel('A')); out.append(q)
+    return out
 
+def fifteen(stand, walks, k, foot):
+    """stand: down, up, left; walks: {down, up, left: [first, middle, third]} -> the fifteen frames."""
+    s = [small(x, k, foot) for x in stand]
+    w = {d: [small(x, k, foot) for x in v] for d, v in walks.items()}
+    return crisp(s + [w['down'][0], w['down'][2], w['up'][0], w['up'][2], w['left'][0], w['left'][2],
+                      w['down'][1], w['down'][1], w['up'][1], w['up'][1], w['left'][1], w['left'][1]])
+
+TALL = 24   # (a race's standing height: as Kanto's people stand, not a head over them)
 def scale_for(stand):
-    t = max(x.height for x in stand)
-    return min(30 / t, 32 / max(x.width for x in stand))
+    """How much smaller, and the row its feet are on in its cells: by its standing frames."""
+    boxes = [x.getbbox() for x in stand]
+    t = max(b[3] - b[1] for b in boxes); wid = max(b[2] - b[0] for b in boxes)
+    return min(TALL / t, 22 / wid), max(b[3] for b in boxes) - 1
 
 def races():
     a = np.array(Image.open(os.path.join(SRC, 'races.webp')).convert('RGB')).astype(int)
     bg = np.array([23, 19, 31]); out = {}
     for rid, yc in ROWS:
         top = TOP.get(rid, 23)
-        cell = lambda xr: cut(a, (xr[0] - 6, yc - top, xr[1] + 7, yc + 24), bg, 30)
+        cell = lambda xr: cut(a, ((xr[0] + xr[1]) // 2 - 22, yc - top, (xr[0] + xr[1]) // 2 + 22, yc + 24), bg, 30)
         stand = [cell(COLS['stand'][i]) for i in (0, 1, 2)]
         walks = {d: [cell(x) for x in COLS[d]] for d in ('down', 'left', 'up')}
-        out[rid] = fifteen(stand, walks, scale_for(stand))
+        out[rid] = fifteen(stand, walks, *scale_for(stand))
     return out
 
 def sheikah():
@@ -101,14 +126,28 @@ def sheikah():
     for rid, half in SHEIKAH.items():
         dy = 0 if half == 0 else 430
         rows = [225 + dy, 325 + dy, 425 + dy]                   # (standing: down, left, up)
-        cell = lambda x, y, hw=40: cut(a, (x - hw, y - 48, x + hw, y + 46), bg, 32)
+        cell = lambda x, y, hw=34: cut(a, (x - hw, y - 48, x + hw, y + 46), bg, 32)
         stand = [cell(310, rows[0]), cell(310, rows[2]), cell(310, rows[1])]
-        walk = lambda x0, x1: [cell(x0, rows[0], 26), None, cell(x1, rows[0], 26)]
+        walk = lambda x0, x1: [cell(x0, rows[0], 27), None, cell(x1, rows[0], 27)]
         walks = {'down': walk(520, 575), 'left': walk(658, 715), 'up': walk(792, 850)}
         # (its walks have two frames: between them, standing)
         for d, i in (('down', 0), ('up', 1), ('left', 2)): walks[d][1] = stand[i]
-        out[rid] = fifteen(stand, walks, scale_for(stand))
+        # (its narrower walk cells, as wide as its standing ones round their middles; and, as its views are from
+        # different panels, each one's feet put on the same row)
+        for d in walks: walks[d] = [x if x.width == stand[0].width else pad(x, stand[0].width) for x in walks[d]]
+        ref = stand[0].getbbox()[3]
+        level = lambda im: shift(im, ref - im.getbbox()[3])
+        stand = [level(x) for x in stand]
+        for d in walks: walks[d] = [level(x) for x in walks[d]]
+        k, foot = scale_for(stand)
+        out[rid] = fifteen(stand, walks, k, foot)
     return out
+
+def shift(im, dy):
+    out = Image.new('RGBA', im.size, (0, 0, 0, 0)); out.alpha_composite(im, (0, dy)) if dy >= 0 else out.alpha_composite(im.crop((0, -dy, im.width, im.height)), (0, 0)); return out
+
+def pad(im, w):
+    out = Image.new('RGBA', (w, im.height), (0, 0, 0, 0)); out.alpha_composite(im, ((w - im.width) // 2, 0)); return out
 
 def main():
     people = races(); people.update(sheikah())
