@@ -446,7 +446,8 @@
       arena: !!opts.arena, palace: !!opts.palace,   // (the Battle Frontier's Arena and Palace rules: engine/battle.js)
       record: !!opts.record,   // (the choices and seed kept, to play it back: a Frontier battle's)
       expShare: expShareOn(),
-      trainer: Player.LOOKS[player.look].back,
+      // (your back: your race's, where it has one, tools/import-race-backs.py)
+      trainer: player.race && (window.RACE_BACKS || []).includes(player.race) ? "race_" + player.race : Player.LOOKS[player.look].back,
       foeTrainer: foe.pic, defeatText: opts.defeatText && opts.defeatText.map((p) => fill(p)),
       victoryMusic: opts.victoryMusic || johtoMusic.win || (wild ? "mus_victory_wild" : leader ? "mus_victory_gym_leader" : "mus_victory_trainer"),
       terrain: battleTerrain(opts),
